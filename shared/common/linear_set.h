@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <algorithm>
+#include <vector>
 #include <cassert>
 
 namespace wowpp
