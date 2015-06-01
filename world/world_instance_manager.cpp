@@ -52,7 +52,7 @@ namespace wowpp
 			*this,
 			map, 
 			m_idGenerator.generateId(), 
-			std::unique_ptr<VisibilityGrid>(new SolidVisibilityGrid(makeVector(64, 64))),
+			std::unique_ptr<VisibilityGrid>(new SolidVisibilityGrid(TileIndex2D(64, 64))),
 			m_objectIdGenerator,
 			std::bind(&RaceEntryManager::getById, &m_project.races, std::placeholders::_1),
 			std::bind(&ClassEntryManager::getById, &m_project.classes, std::placeholders::_1),
