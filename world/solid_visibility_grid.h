@@ -28,7 +28,7 @@ namespace wowpp
 {
 	/// Base class of a visibility grid. A visibility grid manages objects in a world
 	/// instance and decides, which objects are visible for other objects.
-	class SolidVisibilityGrid : VisibilityGrid
+	class SolidVisibilityGrid : public VisibilityGrid
 	{
 	public:
 		explicit SolidVisibilityGrid(const TileIndex2D &worldSize);
