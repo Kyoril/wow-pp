@@ -55,7 +55,7 @@ namespace wowpp
 		for (auto &spawn : m_mapEntry.spawns)
 		{
 			// Create a new spawner
-			std::unique_ptr<CreatureSpawner> spawn(new CreatureSpawner(
+			std::unique_ptr<CreatureSpawner> spawner(new CreatureSpawner(
 				*this,
 				*spawn.unit,
 				spawn.maxCount,
@@ -63,7 +63,7 @@ namespace wowpp
 				spawn.position[0], spawn.position[1], spawn.position[2],
 				spawn.rotation,
 				spawn.radius));
-			m_creatureSpawners.push_back(std::move(spawn));
+			m_creatureSpawners.push_back(std::move(spawner));
 		}
 
 		ILOG("Created instance of map " << m_mapEntry.id);
