@@ -1,0 +1,48 @@
+Dependencies
+
+	- ZLib (1.2.8 or newer recommended: http://www.zlib.net/)
+	- Boost (1.56.0 or newer recommended: http://www.boost.org/)
+
+Build dependencies
+
+	Boost
+
+		To be able to use boost, you should compile it by yourself. Also make sure, that
+		the ZLib component of boost is enabled by following this guide.
+
+		First, run bootstrap.bat to build the boost build engine. This should take a few seconds.
+
+		After that, open a command line window (Win+R, type "cmd" and hit enter). Now navigate to
+		your boost source directory (For example: Mine is at "C:\Source\boost_1_56_0") by using
+		the "cd" command: cd C:\Source\boost_1_56_0
+
+		Now you need to tell boost what you want. In this example, I want to build both, the 32 bit
+		and the 64 bit version of boost.
+
+		Some things to note here: 
+			-sZLIB_SOURCE="..." needs to be altered and should point to the directory which 
+			contains your zlib source code.
+
+			-j4 tells boost to use up to 4 threads during the compilation process. This speeds things
+			up. You may alter the number "4" if you need to (eg. you have more/less than 4 cpu cores)
+
+			--prefix="..." is the directory where the compiled boost libraries will be, as well as the
+			header files etc. You may wish to change the path provided by me in the example below.
+
+		So lets get started:
+
+		1. Build the Win32 binaries:
+			bjam --build-type=complete -sZLIB_SOURCE="C:\Source\zlib-1.2.8" --prefix="D:\Build\boost\Win32" -j4 stage install
+		2. Remove the directories bin.v2 and stage
+		3. Build the Win64 binaries
+			bjam address-model=64 --build-type=complete -sZLIB_SOURCE="C:\Source\zlib-1.2.8" --prefix="D:\Build\boost\Win64" -j4 stage install
+		4. Remove the directories bin.v2 and stage (again)
+
+Configure CMake
+
+	If boost can not be found, you need to set a specific CMake variable. On windows, if you use the CMake GUI,
+	click on "Add Entry" in the top right and name it "BOOST_ROOT" (without quotes). Use "PATH" as type and 
+	specify the path of where you installed boost previously (in my example D:\Build\boost\Win64).
+
+	Also note: If you are compiling the 64 bit version of WoW, you should specifiy the Win64 path of boost and
+	if you compile the 32 bit version of WoW, you should specify the Win32 path of boost.

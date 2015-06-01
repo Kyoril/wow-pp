@@ -1,0 +1,12 @@
+classes = 
+{
+	(id = 1, name = "Krieger", internalName = "WARRIOR", powerType = "rage", flags = 0, spellFamily = 4)
+	(id = 2, name = "Paladin", internalName = "PALADIN", powerType = "mana", flags = 1, spellFamily = 10)
+	(id = 3, name = "Jäger", internalName = "HUNTER", powerType = "mana", flags = 0, spellFamily = 9)
+	(id = 4, name = "Schurke", internalName = "ROGUE", powerType = "energy", flags = 0, spellFamily = 8)
+	(id = 5, name = "Priester", internalName = "PRIEST", powerType = "mana", flags = 0, spellFamily = 6)
+	(id = 7, name = "Schamane", internalName = "SHAMAN", powerType = "mana", flags = 1, spellFamily = 11)
+	(id = 8, name = "Magier", internalName = "MAGE", powerType = "mana", flags = 0, spellFamily = 3)
+	(id = 9, name = "Hexenmeister", internalName = "WARLOCK", powerType = "mana", flags = 0, spellFamily = 5)
+	(id = 11, name = "Druide", internalName = "DRUID", powerType = "mana", flags = 1, spellFamily = 7)
+}
