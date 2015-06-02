@@ -93,6 +93,7 @@ namespace wowpp
 				AddonInfo				= 0x2EF,
 				SetDungeonDifficulty	= 0x329,
 				Motd					= 0x33D,
+				TimeSyncReq				= 0x390,
 				FeatureSystemStatus		= 0x3C8,
 				UnlearnSpells			= 0x41D
 			};
@@ -467,6 +468,11 @@ namespace wowpp
 			void setDungeonDifficulty(
 				game::OutgoingPacket &out_packet
 				//TODO
+				);
+
+			void timeSyncReq(
+				game::OutgoingPacket &out_packet,
+				UInt32 counter
 				);
 		};
 	}

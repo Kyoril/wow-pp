@@ -639,6 +639,16 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void timeSyncReq(
+				game::OutgoingPacket &out_packet,
+				UInt32 counter
+				)
+			{
+				out_packet.start(server_packet::TimeSyncReq);
+				out_packet
+					<< io::write<NetUInt32>(counter);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

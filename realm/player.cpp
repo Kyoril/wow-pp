@@ -509,9 +509,10 @@ namespace wowpp
 		m_instanceId = instanceId;
 
 		// Update character on the realm side with data received from the world server
-		m_gameCharacter->setGuid(createGUID(worldObjectGuid, 0, high_guid::Player));
+		//m_gameCharacter->setGuid(createGUID(worldObjectGuid, 0, high_guid::Player));
 		m_gameCharacter->relocate(x, y, z, o);
 		m_gameCharacter->setMapId(mapId);
+
 		m_gameCharacter->setCreateBits();
 
 		// Send proficiencies
@@ -618,8 +619,8 @@ namespace wowpp
 		// Trigger intro cinematic based on the characters race
 		if (raceEntry)
 		{
-			/*sendPacket(
-				std::bind(game::server_write::triggerCinematic, std::placeholders::_1, raceEntry->cinematic));*/
+			sendPacket(
+				std::bind(game::server_write::triggerCinematic, std::placeholders::_1, raceEntry->cinematic));
 		}
 
 		// Blocks
@@ -650,7 +651,7 @@ namespace wowpp
 				writer
 					<< io::write<NetUInt32>(moveFlags)
 					<< io::write<NetUInt8>(0x00)
-					<< io::write<NetUInt32>(662834250);	//TODO: Time
+					<< io::write<NetUInt32>(static_cast<UInt32>(getCurrentTime()));	//TODO: Time
 
 				// Position & Rotation
 				writer
@@ -686,7 +687,9 @@ namespace wowpp
 			if (updateFlags & 0x10)
 			{
 				writer
-					<< io::write<NetUInt32>(guidHiPart(guid));
+					<< io::write<NetUInt32>(0);
+				/*writer
+					<< io::write<NetUInt32>(guidHiPart(guid));*/
 			}
 
 			// Write values update
@@ -700,13 +703,16 @@ namespace wowpp
 		sendPacket(
 			std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
 
-		/*
 		sendPacket(
 			std::bind(game::server_write::friendList, std::placeholders::_1));
 
 		sendPacket(
 			std::bind(game::server_write::ignoreList, std::placeholders::_1));
-		*/
+
+		// Send time sync request
+		m_timeSyncCounter = 0;
+		sendPacket(
+			std::bind(game::server_write::timeSyncReq, std::placeholders::_1, m_timeSyncCounter++));
 	}
 
 	void Player::sendProxyPacket(UInt16 opCode, const std::vector<char> &buffer)
