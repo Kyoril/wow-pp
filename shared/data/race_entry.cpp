@@ -43,6 +43,17 @@ namespace wowpp
 		wrapper.table.tryGetInteger("language", baseLanguage);
 		wrapper.table.tryGetInteger("startingTaxiMask", startingTaxiMask);
 		wrapper.table.tryGetInteger("cinematic", cinematic);
+		wrapper.table.tryGetInteger("map", startMap);
+		wrapper.table.tryGetInteger("zone", startZone);
+		wrapper.table.tryGetInteger("rotation", startRotation);
+
+		const sff::read::tree::Array<DataFileIterator> *const positionArray = wrapper.table.getArray("position");
+		if (!positionArray ||
+			!loadPosition(startPosition, *positionArray))
+		{
+			context.onError("Invalid position in a race entry");
+			return false;
+		}
 
 		const sff::read::tree::Array<DataFileIterator> *initialSpellArray = wrapper.table.getArray("initial_spells");
 		if (initialSpellArray)
@@ -99,6 +110,16 @@ namespace wowpp
 		context.table.addKey("language", baseLanguage);
 		context.table.addKey("startingTaxiMask", startingTaxiMask);
 		context.table.addKey("cinematic", cinematic);
+		context.table.addKey("map", startMap);
+		context.table.addKey("zone", startZone);
+		{
+			sff::write::Array<char> positionArray(context.table, "position", sff::write::Comma);
+			positionArray.addElement(startPosition[0]);
+			positionArray.addElement(startPosition[1]);
+			positionArray.addElement(startPosition[2]);
+			positionArray.finish();
+		}
+		context.table.addKey("rotation", startRotation);
 
 		// Write stats
 		sff::write::Array<char> initialSpellArray(context.table, "initial_spells", sff::write::MultiLine);

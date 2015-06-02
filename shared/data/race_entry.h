@@ -40,6 +40,10 @@ namespace wowpp
 		UInt32 startingTaxiMask;
 		UInt32 cinematic;
 		InitialClassSpellMap initialSpells;
+		UInt32 startMap;
+		UInt32 startZone;
+		std::array<float, 3> startPosition;
+		float startRotation;
 
 		RaceEntry();
 		bool load(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper);

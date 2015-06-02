@@ -345,6 +345,24 @@ namespace wowpp
 			return;
 		}
 
+		// Get the racial informations
+		const auto *race = m_getRace(character.race);
+		if (!race)
+		{
+			ELOG("Unable to find informations of race " << character.race);
+			sendPacket(
+				std::bind(game::server_write::charCreate, std::placeholders::_1, game::response_code::CharCreateError));
+			return;
+		}
+
+		// Update character location
+		character.mapId = race->startMap;
+		character.zoneId = race->startZone;
+		character.x = race->startPosition[0];
+		character.y = race->startPosition[1];
+		character.z = race->startPosition[2];
+		character.o = race->startRotation;
+
 		// Create character
 		game::ResponseCode result = m_database.createCharacter(m_accountId, character);
 		if (result == game::response_code::CharCreateSuccess)

@@ -130,15 +130,15 @@ namespace wowpp
 					if (isAlliance)
 					{
 						// Horde character not allowed
-						if (game::race::Horde & tmpRace)
+						if ((game::race::Horde & (1 << (tmpRace - 1))) == (1 << (tmpRace - 1)))
 						{
 							return game::response_code::CharCreatePvPTeamsViolation;
 						}
 					}
 					else
 					{
-						// Horde character not allowed
-						if (game::race::Alliance & tmpRace)
+						// Alliance character not allowed
+						if ((game::race::Alliance & (1 << (tmpRace - 1))) == (1 << (tmpRace - 1)))
 						{
 							return game::response_code::CharCreatePvPTeamsViolation;
 						}
@@ -169,15 +169,21 @@ namespace wowpp
 		bytes2 |= static_cast<UInt32>(static_cast<UInt32>(character.facialHair) << (0 * 8));
 
 		if (m_connection.execute((boost::format(
-			//                           0        1      2      3        4        5       6
-			"INSERT INTO `character` (`account`,`name`,`race`,`class`,`gender`,`bytes`,`bytes2`) VALUES (%1%, '%2%', %3%, %4%, %5%, %6%, %7%)")
+			//                           0        1      2      3        4        5       6       7    8        9          10            11            12 
+			"INSERT INTO `character` (`account`,`name`,`race`,`class`,`gender`,`bytes`,`bytes2`,`map`,`zone`,`position_x`,`position_y`,`position_z`,`orientation`) VALUES (%1%, '%2%', %3%, %4%, %5%, %6%, %7%, %8%, %9%, %10%, %11%, %12%, %13%)")
 			% accountId
 			% safeName
 			% static_cast<UInt32>(character.race)
 			% static_cast<UInt32>(character.class_)
 			% static_cast<UInt32>(character.gender)
 			% bytes
-			% bytes2).str()))
+			% bytes2
+			% character.mapId
+			% character.zoneId
+			% character.x
+			% character.y
+			% character.z
+			% character.o).str()))
 		{
 			// Retrieve id of the newly created character
 			wowpp::MySQL::Select select(m_connection,

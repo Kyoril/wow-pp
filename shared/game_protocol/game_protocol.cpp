@@ -159,12 +159,12 @@ namespace wowpp
 						<< io::write<NetUInt8>(entry.hairColor)
 						<< io::write<NetUInt8>(entry.facialHair)
 						<< io::write<NetUInt8>(entry.level)
-						<< io::write<NetUInt32>(0x0C)				// zone
-						<< io::write<NetUInt32>(0x00)				// map
-						<< io::write<float>(-9458.05f)				// x
-						<< io::write<float>(47.8475)				// y
-						<< io::write<float>(56.6068)				// z
-						<< io::write<NetUInt32>(0x00);				// guild guid
+						<< io::write<NetUInt32>(entry.zoneId)				// zone
+						<< io::write<NetUInt32>(entry.mapId)				// map
+						<< io::write<float>(entry.x)						// x
+						<< io::write<float>(entry.y)						// y
+						<< io::write<float>(entry.z)						// z
+						<< io::write<NetUInt32>(0x00);						// guild guid
 
 					UInt32 charFlags = 0;
 					//UInt32 playerFlags = 0;
