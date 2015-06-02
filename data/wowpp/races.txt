@@ -8,6 +8,54 @@ races =
 		(class = 5, spells = {81, 198, 203, 204, 522, 585, 668, 2050, 2382, 2479, 3050, 3365, 5009, 5019, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9078, 9125, 20597, 20598, 20599, 20600, 20864, 21651, 21652, 22027, 22810})
 		(class = 8, spells = {81, 133, 168, 203, 204, 227, 522, 668, 2382, 2479, 3050, 3365, 5009, 5019, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9078, 9125, 20597, 20598, 20599, 20600, 20864, 21651, 21652, 22027, 22810})
 		(class = 9, spells = {81, 203, 204, 522, 668, 686, 687, 1180, 2382, 2479, 3050, 3365, 5009, 5019, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9078, 9125, 20597, 20598, 20599, 20600, 20864, 21651, 21652, 22027, 22810})
+	}, initial_actions = 
+	{
+		(class = 1, buttons = 
+		{
+			(button = 72, action = 6603, type = 0)
+			(button = 73, action = 78, type = 0)
+			(button = 83, action = 117, type = 128)
+		})
+		(class = 2, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 21084, type = 0)
+			(button = 2, action = 635, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 2070, type = 128)
+		})
+		(class = 4, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 1752, type = 0)
+			(button = 2, action = 2098, type = 0)
+			(button = 3, action = 2764, type = 0)
+			(button = 11, action = 2070, type = 128)
+		})
+		(class = 5, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 585, type = 0)
+			(button = 2, action = 2050, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 2070, type = 128)
+		})
+		(class = 8, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 133, type = 0)
+			(button = 2, action = 168, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 2070, type = 128)
+		})
+		(class = 9, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 686, type = 0)
+			(button = 2, action = 687, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 4604, type = 128)
+		})
 	})
 	(id = 2, name = "Orc", faction = 2, maleModel = 51, femaleModel = 52, language = 1, startingTaxiMask = 4194304, cinematic = 21, map = 1, zone = 14, position = {-618.518, -4251.67, 38.718}, rotation = 0, initial_spells = 
 	{
@@ -16,6 +64,51 @@ races =
 		(class = 4, spells = {81, 203, 204, 522, 669, 1180, 1752, 2098, 2382, 2479, 2567, 2764, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9077, 9078, 9125, 16092, 20572, 20573, 20574, 21184, 21563, 21651, 21652, 22027, 22810})
 		(class = 7, spells = {81, 107, 198, 203, 204, 227, 331, 403, 522, 669, 2382, 2479, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9077, 9078, 9116, 9125, 20573, 20574, 21563, 21651, 21652, 22027, 22810, 27763, 33697})
 		(class = 9, spells = {81, 203, 204, 522, 669, 686, 687, 1180, 2382, 2479, 3050, 3365, 5009, 5019, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9078, 9125, 20573, 20574, 20575, 21651, 21652, 22027, 22810, 33702})
+	}, initial_actions = 
+	{
+		(class = 1, buttons = 
+		{
+			(button = 72, action = 6603, type = 0)
+			(button = 73, action = 78, type = 0)
+			(button = 74, action = 20572, type = 0)
+			(button = 83, action = 117, type = 128)
+		})
+		(class = 3, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 2973, type = 0)
+			(button = 2, action = 75, type = 0)
+			(button = 4, action = 20572, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 117, type = 128)
+		})
+		(class = 4, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 1752, type = 0)
+			(button = 2, action = 2098, type = 0)
+			(button = 3, action = 2764, type = 0)
+			(button = 4, action = 20572, type = 0)
+			(button = 11, action = 117, type = 128)
+		})
+		(class = 7, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 403, type = 0)
+			(button = 2, action = 331, type = 0)
+			(button = 3, action = 33697, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 117, type = 128)
+		})
+		(class = 9, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 686, type = 0)
+			(button = 2, action = 687, type = 0)
+			(button = 3, action = 33702, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 117, type = 128)
+		})
 	})
 	(id = 3, name = "Zwerg", faction = 3, maleModel = 53, femaleModel = 54, language = 7, startingTaxiMask = 32, cinematic = 41, map = 0, zone = 1, position = {-6240.32, 331.033, 382.758}, rotation = 6.17716, initial_spells = 
 	{
@@ -24,6 +117,56 @@ races =
 		(class = 3, spells = {75, 81, 196, 203, 204, 266, 522, 668, 672, 2382, 2479, 2481, 2973, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9077, 9078, 9125, 13358, 20594, 20595, 20596, 21651, 21652, 22027, 22810, 24949, 34082})
 		(class = 4, spells = {81, 203, 204, 522, 668, 672, 1180, 1752, 2098, 2382, 2479, 2481, 2567, 2764, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9077, 9078, 9125, 16092, 20594, 20595, 20596, 21184, 21651, 21652, 22027, 22810})
 		(class = 5, spells = {81, 198, 203, 204, 522, 585, 668, 672, 2050, 2382, 2479, 2481, 3050, 3365, 5009, 5019, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9078, 9125, 20594, 20595, 20596, 21651, 21652, 22027, 22810})
+	}, initial_actions = 
+	{
+		(class = 1, buttons = 
+		{
+			(button = 72, action = 6603, type = 0)
+			(button = 73, action = 78, type = 0)
+			(button = 74, action = 20594, type = 0)
+			(button = 75, action = 2481, type = 0)
+			(button = 83, action = 117, type = 128)
+		})
+		(class = 2, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 21084, type = 0)
+			(button = 2, action = 635, type = 0)
+			(button = 3, action = 20594, type = 0)
+			(button = 4, action = 2481, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 4540, type = 128)
+		})
+		(class = 3, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 2973, type = 0)
+			(button = 2, action = 75, type = 0)
+			(button = 3, action = 20594, type = 0)
+			(button = 4, action = 2481, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 117, type = 128)
+		})
+		(class = 4, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 1752, type = 0)
+			(button = 2, action = 2098, type = 0)
+			(button = 3, action = 2764, type = 0)
+			(button = 4, action = 20594, type = 0)
+			(button = 5, action = 2481, type = 0)
+			(button = 11, action = 4540, type = 128)
+		})
+		(class = 5, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 585, type = 0)
+			(button = 2, action = 2050, type = 0)
+			(button = 3, action = 20594, type = 0)
+			(button = 4, action = 2481, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 4540, type = 128)
+		})
 	})
 	(id = 4, name = "Nachtelf", faction = 4, maleModel = 55, femaleModel = 56, language = 7, startingTaxiMask = 100663296, cinematic = 61, map = 1, zone = 141, position = {-10311.3, 832.463, 1326.41}, rotation = 5.69632, initial_spells = 
 	{
@@ -32,6 +175,50 @@ races =
 		(class = 4, spells = {81, 203, 204, 522, 668, 671, 1180, 1752, 2098, 2382, 2479, 2567, 2764, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9077, 9078, 9125, 16092, 20580, 20582, 20583, 20585, 21009, 21184, 21651, 21652, 22027, 22810})
 		(class = 5, spells = {81, 198, 203, 204, 522, 585, 668, 671, 2050, 2382, 2479, 3050, 3365, 5009, 5019, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9078, 9125, 20580, 20582, 20583, 20585, 21009, 21651, 21652, 22027, 22810})
 		(class = 11, spells = {81, 203, 204, 227, 522, 668, 671, 1180, 2382, 2479, 3050, 3365, 5176, 5185, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9077, 9078, 9125, 20580, 20582, 20583, 20585, 21009, 21651, 21652, 22027, 22810, 27764})
+	}, initial_actions = 
+	{
+		(class = 1, buttons = 
+		{
+			(button = 72, action = 6603, type = 0)
+			(button = 73, action = 78, type = 0)
+			(button = 74, action = 20580, type = 0)
+			(button = 83, action = 117, type = 128)
+		})
+		(class = 3, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 2973, type = 0)
+			(button = 2, action = 75, type = 0)
+			(button = 3, action = 20580, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 117, type = 128)
+		})
+		(class = 4, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 1752, type = 0)
+			(button = 2, action = 2098, type = 0)
+			(button = 3, action = 2764, type = 0)
+			(button = 11, action = 4540, type = 128)
+		})
+		(class = 5, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 585, type = 0)
+			(button = 2, action = 2050, type = 0)
+			(button = 3, action = 20580, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 2070, type = 128)
+		})
+		(class = 11, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 5176, type = 0)
+			(button = 2, action = 5185, type = 0)
+			(button = 3, action = 20580, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 4536, type = 128)
+		})
 	})
 	(id = 5, name = "Untoter", faction = 5, maleModel = 57, femaleModel = 58, language = 1, startingTaxiMask = 1024, cinematic = 2, map = 0, zone = 85, position = {1676.71, 1678.31, 121.67}, rotation = 2.70526, initial_spells = 
 	{
@@ -40,6 +227,51 @@ races =
 		(class = 5, spells = {81, 198, 203, 204, 522, 585, 669, 2050, 2382, 2479, 3050, 3365, 5009, 5019, 5227, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 7744, 8386, 9078, 9125, 17737, 20577, 20579, 21651, 21652, 22027, 22810})
 		(class = 8, spells = {81, 133, 168, 203, 204, 227, 522, 669, 2382, 2479, 3050, 3365, 5009, 5019, 5227, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 7744, 8386, 9078, 9125, 17737, 20577, 20579, 21651, 21652, 22027, 22810})
 		(class = 9, spells = {81, 203, 204, 522, 669, 686, 687, 1180, 2382, 2479, 3050, 3365, 5009, 5019, 5227, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 7744, 8386, 9078, 9125, 17737, 20577, 20579, 21651, 21652, 22027, 22810})
+	}, initial_actions = 
+	{
+		(class = 1, buttons = 
+		{
+			(button = 72, action = 6603, type = 0)
+			(button = 73, action = 78, type = 0)
+			(button = 74, action = 20577, type = 0)
+			(button = 83, action = 4604, type = 128)
+		})
+		(class = 4, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 1752, type = 0)
+			(button = 2, action = 2098, type = 0)
+			(button = 3, action = 2764, type = 0)
+			(button = 4, action = 20577, type = 0)
+			(button = 11, action = 4604, type = 128)
+		})
+		(class = 5, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 585, type = 0)
+			(button = 2, action = 2050, type = 0)
+			(button = 3, action = 20577, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 4604, type = 128)
+		})
+		(class = 8, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 133, type = 0)
+			(button = 2, action = 168, type = 0)
+			(button = 3, action = 20577, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 4604, type = 128)
+		})
+		(class = 9, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 686, type = 0)
+			(button = 2, action = 687, type = 0)
+			(button = 3, action = 20577, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 4604, type = 128)
+		})
 	})
 	(id = 6, name = "Tauren", faction = 6, maleModel = 59, femaleModel = 60, language = 1, startingTaxiMask = 2097152, cinematic = 141, map = 1, zone = 215, position = {-2917.58, -257.98, 52.9968}, rotation = 0, initial_spells = 
 	{
@@ -47,6 +279,42 @@ races =
 		(class = 3, spells = {75, 81, 196, 203, 204, 266, 522, 669, 670, 2382, 2479, 2973, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9077, 9078, 9125, 13358, 20549, 20550, 20551, 20552, 21651, 21652, 22027, 22810, 24949, 34082})
 		(class = 7, spells = {81, 107, 198, 203, 204, 227, 331, 403, 522, 669, 670, 2382, 2479, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9077, 9078, 9116, 9125, 20549, 20550, 20551, 20552, 21651, 21652, 22027, 22810, 27763})
 		(class = 11, spells = {81, 198, 203, 204, 227, 522, 669, 670, 2382, 2479, 3050, 3365, 5176, 5185, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9077, 9078, 9125, 20549, 20550, 20551, 20552, 21651, 21652, 22027, 22810, 27764})
+	}, initial_actions = 
+	{
+		(class = 1, buttons = 
+		{
+			(button = 72, action = 6603, type = 0)
+			(button = 73, action = 78, type = 0)
+			(button = 74, action = 20549, type = 0)
+			(button = 83, action = 4540, type = 128)
+		})
+		(class = 3, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 2973, type = 0)
+			(button = 2, action = 75, type = 0)
+			(button = 3, action = 20549, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 117, type = 128)
+		})
+		(class = 7, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 403, type = 0)
+			(button = 2, action = 331, type = 0)
+			(button = 3, action = 20549, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 4604, type = 128)
+		})
+		(class = 11, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 5176, type = 0)
+			(button = 2, action = 5185, type = 0)
+			(button = 3, action = 20549, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 4536, type = 128)
+		})
 	})
 	(id = 7, name = "Gnom", faction = 115, maleModel = 1563, femaleModel = 1564, language = 7, startingTaxiMask = 32, cinematic = 101, map = 0, zone = 1, position = {-6240.32, 331.033, 382.758}, rotation = 0, initial_spells = 
 	{
@@ -54,6 +322,38 @@ races =
 		(class = 4, spells = {81, 203, 204, 522, 668, 1180, 1752, 2098, 2382, 2479, 2567, 2764, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7340, 7355, 8386, 9077, 9078, 9125, 16092, 20589, 20591, 20592, 20593, 21184, 21651, 21652, 22027, 22810})
 		(class = 8, spells = {81, 133, 168, 203, 204, 227, 522, 668, 2382, 2479, 3050, 3365, 5009, 5019, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7340, 7355, 8386, 9078, 9125, 20589, 20591, 20592, 20593, 21651, 21652, 22027, 22810})
 		(class = 9, spells = {81, 203, 204, 522, 668, 686, 687, 1180, 2382, 2479, 3050, 3365, 5009, 5019, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7340, 7355, 8386, 9078, 9125, 20589, 20591, 20592, 20593, 21651, 21652, 22027, 22810})
+	}, initial_actions = 
+	{
+		(class = 1, buttons = 
+		{
+			(button = 72, action = 6603, type = 0)
+			(button = 73, action = 78, type = 0)
+			(button = 83, action = 117, type = 128)
+		})
+		(class = 4, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 1752, type = 0)
+			(button = 2, action = 2098, type = 0)
+			(button = 3, action = 2764, type = 0)
+			(button = 11, action = 117, type = 128)
+		})
+		(class = 8, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 133, type = 0)
+			(button = 2, action = 168, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 4536, type = 128)
+		})
+		(class = 9, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 686, type = 0)
+			(button = 2, action = 687, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 4604, type = 128)
+		})
 	})
 	(id = 8, name = "Troll", faction = 116, maleModel = 1478, femaleModel = 1479, language = 1, startingTaxiMask = 4194304, cinematic = 121, map = 1, zone = 14, position = {-618.518, -4251.67, 38.718}, rotation = 0, initial_spells = 
 	{
@@ -63,8 +363,61 @@ races =
 		(class = 5, spells = {81, 198, 203, 204, 522, 585, 669, 2050, 2382, 2479, 3050, 3365, 5009, 5019, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7341, 7355, 8386, 9078, 9125, 20554, 20555, 20557, 20558, 21651, 21652, 22027, 22810, 26290})
 		(class = 7, spells = {81, 107, 198, 203, 204, 227, 331, 403, 522, 669, 2382, 2479, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7341, 7355, 8386, 9077, 9078, 9116, 9125, 20554, 20555, 20557, 20558, 21651, 21652, 22027, 22810, 26290, 27763})
 		(class = 8, spells = {81, 133, 168, 203, 204, 227, 522, 669, 2382, 2479, 3050, 3365, 5009, 5019, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7341, 7355, 8386, 9078, 9125, 20554, 20555, 20557, 20558, 21651, 21652, 22027, 22810, 26290})
+	}, initial_actions = 
+	{
+		(class = 1, buttons = 
+		{
+			(button = 72, action = 6603, type = 0)
+			(button = 73, action = 78, type = 0)
+			(button = 74, action = 2764, type = 0)
+			(button = 75, action = 26296, type = 0)
+			(button = 83, action = 117, type = 128)
+		})
+		(class = 3, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 2973, type = 0)
+			(button = 2, action = 75, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 4604, type = 128)
+		})
+		(class = 4, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 1752, type = 0)
+			(button = 2, action = 2098, type = 0)
+			(button = 3, action = 2764, type = 0)
+			(button = 4, action = 26972, type = 0)
+			(button = 11, action = 117, type = 128)
+		})
+		(class = 5, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 585, type = 0)
+			(button = 2, action = 2050, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 4540, type = 128)
+		})
+		(class = 7, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 403, type = 0)
+			(button = 2, action = 331, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 117, type = 128)
+		})
+		(class = 8, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 133, type = 0)
+			(button = 2, action = 168, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 117, type = 128)
+		})
 	})
 	(id = 9, name = "Goblin", faction = 1, maleModel = 1140, femaleModel = 1140, language = 7, startingTaxiMask = 0, cinematic = 0, map = 1, zone = 14, position = {-618.518, -4251.67, 38.718}, rotation = 0, initial_spells = 
+	{
+	}, initial_actions = 
 	{
 	})
 	(id = 10, name = "Blutelf", faction = 1610, maleModel = 15476, femaleModel = 15475, language = 1, startingTaxiMask = 4194304, cinematic = 162, map = 530, zone = 3431, position = {10349.6, -6357.29, 33.4026}, rotation = 5.31605, initial_spells = 
@@ -75,6 +428,68 @@ races =
 		(class = 5, spells = {81, 198, 203, 204, 522, 585, 669, 813, 822, 2050, 2382, 2479, 3050, 3365, 5009, 5019, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9078, 9125, 21651, 21652, 22027, 22810, 28730, 28734, 28877})
 		(class = 8, spells = {81, 133, 168, 203, 204, 227, 522, 669, 813, 822, 2382, 2479, 3050, 3365, 5009, 5019, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9078, 9125, 21651, 21652, 22027, 22810, 28730, 28734, 28877})
 		(class = 9, spells = {81, 203, 204, 522, 669, 686, 687, 813, 822, 1180, 2382, 2479, 3050, 3365, 5009, 5019, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9078, 9125, 21651, 21652, 22027, 22810, 28730, 28734, 28877})
+	}, initial_actions = 
+	{
+		(class = 2, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 21084, type = 0)
+			(button = 2, action = 635, type = 0)
+			(button = 3, action = 28734, type = 0)
+			(button = 4, action = 28730, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 20857, type = 128)
+		})
+		(class = 3, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 2973, type = 0)
+			(button = 2, action = 75, type = 0)
+			(button = 3, action = 28734, type = 0)
+			(button = 4, action = 28730, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 20857, type = 128)
+		})
+		(class = 4, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 1752, type = 0)
+			(button = 2, action = 2098, type = 0)
+			(button = 3, action = 2764, type = 0)
+			(button = 4, action = 28734, type = 0)
+			(button = 5, action = 25046, type = 0)
+			(button = 11, action = 20857, type = 128)
+		})
+		(class = 5, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 585, type = 0)
+			(button = 2, action = 2050, type = 0)
+			(button = 3, action = 28734, type = 0)
+			(button = 4, action = 28730, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 20857, type = 128)
+		})
+		(class = 8, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 133, type = 0)
+			(button = 2, action = 168, type = 0)
+			(button = 3, action = 28734, type = 0)
+			(button = 4, action = 28730, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 20857, type = 128)
+		})
+		(class = 9, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 686, type = 0)
+			(button = 2, action = 687, type = 0)
+			(button = 3, action = 28734, type = 0)
+			(button = 4, action = 28730, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 20857, type = 128)
+		})
 	})
 	(id = 11, name = "Draenei", faction = 1629, maleModel = 16125, femaleModel = 16126, language = 7, startingTaxiMask = 4194304, cinematic = 163, map = 530, zone = 3526, position = {-3961.64, -13931.2, 100.615}, rotation = 2.08364, initial_spells = 
 	{
@@ -84,5 +499,59 @@ races =
 		(class = 5, spells = {81, 198, 203, 204, 522, 585, 668, 2050, 2382, 2479, 3050, 3365, 5009, 5019, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9078, 9125, 20579, 21651, 21652, 22027, 22810, 28875, 28878, 28880, 29932})
 		(class = 7, spells = {81, 107, 198, 203, 204, 227, 331, 403, 522, 668, 2382, 2479, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9077, 9078, 9116, 9125, 20579, 21651, 21652, 22027, 22810, 27763, 28875, 28878, 28880, 29932})
 		(class = 8, spells = {81, 133, 168, 203, 204, 227, 522, 668, 2382, 2479, 3050, 3365, 5009, 5019, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9078, 9125, 20579, 21651, 21652, 22027, 22810, 28875, 28878, 28880, 29932})
+	}, initial_actions = 
+	{
+		(class = 1, buttons = 
+		{
+			(button = 72, action = 6603, type = 0)
+			(button = 73, action = 78, type = 0)
+			(button = 74, action = 28880, type = 0)
+			(button = 83, action = 4540, type = 128)
+		})
+		(class = 2, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 21084, type = 0)
+			(button = 2, action = 635, type = 0)
+			(button = 3, action = 28880, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 4540, type = 128)
+		})
+		(class = 3, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 2973, type = 0)
+			(button = 2, action = 75, type = 0)
+			(button = 3, action = 28880, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 4540, type = 128)
+		})
+		(class = 5, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 585, type = 0)
+			(button = 2, action = 2050, type = 0)
+			(button = 3, action = 28880, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 4540, type = 128)
+		})
+		(class = 7, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 403, type = 0)
+			(button = 2, action = 331, type = 0)
+			(button = 3, action = 28880, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 4540, type = 128)
+		})
+		(class = 8, buttons = 
+		{
+			(button = 0, action = 6603, type = 0)
+			(button = 1, action = 133, type = 0)
+			(button = 2, action = 168, type = 0)
+			(button = 3, action = 28880, type = 0)
+			(button = 10, action = 159, type = 128)
+			(button = 11, action = 4540, type = 128)
+		})
 	})
 }

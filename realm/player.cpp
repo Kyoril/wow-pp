@@ -602,8 +602,13 @@ namespace wowpp
 		sendPacket(
 			std::bind(game::server_write::unlearnSpells, std::placeholders::_1));
 
-		sendPacket(
-			std::bind(game::server_write::actionButtons, std::placeholders::_1));
+		auto cls = m_gameCharacter->getClass();
+		auto classBtns = raceEntry->initialActionButtons.find(cls);
+		if (classBtns != raceEntry->initialActionButtons.end())
+		{
+			sendPacket(
+				std::bind(game::server_write::actionButtons, std::placeholders::_1, std::cref(classBtns->second)));
+		}
 		
 		sendPacket(
 			std::bind(game::server_write::initializeFactions, std::placeholders::_1));

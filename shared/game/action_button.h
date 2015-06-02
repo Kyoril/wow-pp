@@ -21,35 +21,47 @@
 
 #pragma once
 
-#include "templates/basic_template.h"
-#include "game/action_button.h"
+#include "common/typedefs.h"
+#include <map>
 
 namespace wowpp
 {
-	struct RaceEntry : BasicTemplate<UInt32>
+	namespace action_button_update_state
 	{
-		typedef BasicTemplate<UInt32> Super;
+		enum Enum
+		{
+			Unchanged = 0,
+			Changed = 1,
+			New = 2,
+			Deleted = 3
+		};
+	}
 
-		typedef std::vector<UInt16> InitialSpellIds;
-		typedef std::map<UInt32, InitialSpellIds> InitialClassSpellMap;
-		typedef std::map<UInt32, ActionButtons> InitialActionButtonsMap;
+	typedef action_button_update_state::Enum ActionButtonUpdateState;
 
-		String name;
-		UInt32 factionID;
-		UInt32 maleModel;
-		UInt32 femaleModel;
-		UInt32 baseLanguage;		//7 = Alliance	1 = Horde
-		UInt32 startingTaxiMask;
-		UInt32 cinematic;
-		InitialClassSpellMap initialSpells;
-		InitialActionButtonsMap initialActionButtons;
-		UInt32 startMap;
-		UInt32 startZone;
-		std::array<float, 3> startPosition;
-		float startRotation;
+	/// Defines data of an action button.
+	struct ActionButton final
+	{
+		UInt16 action;
+		UInt8 type;
+		UInt8 misc;
+		ActionButtonUpdateState state;
 
-		RaceEntry();
-		bool load(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper);
-		void save(BasicTemplateSaveContext &context) const;
+		ActionButton()
+			: action(0)
+			, type(0)
+			, misc(0)
+			, state(action_button_update_state::New)
+		{
+		}
+		ActionButton(UInt16 action_, UInt8 type_, UInt8 misc_)
+			: action(action_)
+			, type(type_)
+			, misc(misc_)
+			, state(action_button_update_state::New)
+		{
+		}
 	};
+
+	typedef std::map<UInt8, ActionButton> ActionButtons;
 }

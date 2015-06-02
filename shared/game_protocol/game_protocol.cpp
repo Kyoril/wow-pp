@@ -571,7 +571,7 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void actionButtons(game::OutgoingPacket &out_packet /*TODO */)
+			void actionButtons(game::OutgoingPacket &out_packet, const ActionButtons &buttons)
 			{
 				const UInt8 maxButtons = 132;
 
@@ -580,9 +580,19 @@ namespace wowpp
 				// For each possible action button the player could have
 				for (UInt8 button = 0; button < maxButtons; ++button)
 				{
-					//TODO
-					out_packet 
-						<< io::write<NetUInt32>(0);
+					auto btn = buttons.find(button);
+					if (btn != buttons.end())
+					{
+						out_packet
+							<< io::write<NetUInt16>(btn->second.action)
+							<< io::write<NetUInt8>(btn->second.misc)
+							<< io::write<NetUInt8>(btn->second.type);
+					}
+					else
+					{
+						out_packet
+							<< io::write<NetUInt32>(0);
+					}
 				}
 
 				out_packet.finish();

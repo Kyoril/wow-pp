@@ -28,6 +28,7 @@
 #include "common/sha1.h"
 #include "game/defines.h"
 #include "data/unit_entry.h"
+#include "game/action_button.h"
 #include <array>
 #include <vector>
 
@@ -376,8 +377,8 @@ namespace wowpp
 				);
 
 			void actionButtons(
-				game::OutgoingPacket &out_packet
-				//TODO
+				game::OutgoingPacket &out_packet,
+				const ActionButtons &buttons
 				);
 
 			void initialSpells(

@@ -96,6 +96,67 @@ namespace wowpp
 			}
 		}
 
+		const sff::read::tree::Array<DataFileIterator> *initialActionsArray = wrapper.table.getArray("initial_actions");
+		if (initialActionsArray)
+		{
+			for (size_t j = 0, d = initialActionsArray->getSize(); j < d; ++j)
+			{
+				const sff::read::tree::Table<DataFileIterator> *const classTable = initialActionsArray->getTable(j);
+				if (!classTable)
+				{
+					context.onError("Invalid initial actions table");
+					return false;
+				}
+
+				// Get class id
+				UInt32 classId;
+				if (!classTable->tryGetInteger("class", classId))
+				{
+					context.onError("Invalid class entry");
+					return false;
+				}
+
+				// Entry already exists?
+				if (initialActionButtons.find(classId) != initialActionButtons.end())
+				{
+					context.onError("Duplicate entry: class already has initial actions for that race");
+					return false;
+				}
+
+				const sff::read::tree::Array<DataFileIterator> *buttonsArray = classTable->getArray("buttons");
+				if (!buttonsArray)
+				{
+					context.onError("Missing buttons array!");
+					return false;
+				}
+
+				// Setup buttons
+				ActionButtons &buttons = initialActionButtons[classId];
+
+				// Iterate through button tables
+				for (size_t n = 0, d2 = buttonsArray->getSize(); n < d2; ++n)
+				{
+					const sff::read::tree::Table<DataFileIterator> *const buttonTable = buttonsArray->getTable(n);
+					if (!buttonTable)
+					{
+						context.onError("Invalid buttons table");
+						return false;
+					}
+
+					UInt32 buttonId = 0;
+					if (!buttonTable->tryGetInteger("button", buttonId))
+					{
+						context.onError("Missing button index");
+						return false;
+					}
+
+					ActionButton &button = buttons[buttonId];
+					buttonTable->tryGetInteger("action", button.action);
+					buttonTable->tryGetInteger("type", button.type);
+				}
+			}
+		}
+
 		return true;
 	}
 
