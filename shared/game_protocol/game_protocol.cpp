@@ -20,6 +20,7 @@
 // 
 
 #include "common/endian_convert.h"
+#include "common/clock.h"
 #include "game_protocol.h"
 #include "log/default_log_levels.h"
 #include "binary_io/stream_source.h"
@@ -659,6 +660,84 @@ namespace wowpp
 					<< io::write<NetUInt32>(counter);
 				out_packet.finish();
 			}
+
+			void monsterMove(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				const Vector<float, 3> &oldPosition,
+				const Vector<float, 3> &position,
+				UInt32 time
+				)
+			{
+				out_packet.start(server_packet::MonsterMove);
+
+				UInt8 packGUID[8 + 1];
+				packGUID[0] = 0;
+				size_t size = 1;
+
+				for (UInt8 i = 0; guid != 0; ++i)
+				{
+					if (guid & 0xFF)
+					{
+						packGUID[0] |= UInt8(1 << i);
+						packGUID[size] = UInt8(guid & 0xFF);
+						++size;
+					}
+
+					guid >>= 8;
+				}
+
+				out_packet
+					<< io::write_range(&packGUID[0], &packGUID[size])
+					<< io::write<float>(oldPosition[0])
+					<< io::write<float>(oldPosition[1])
+					<< io::write<float>(oldPosition[2])
+					<< io::write<NetUInt32>(getCurrentTime())
+					<< io::write<NetUInt8>(0);
+
+				// Movement flags
+				out_packet
+					<< io::write<NetUInt32>(0x01)
+					<< io::write<NetUInt32>(time)
+					<< io::write<NetUInt32>(1)				// One waypoint
+					<< io::write<float>(position[0])
+					<< io::write<float>(position[1])
+					<< io::write<float>(position[2]);
+				out_packet.finish();
+			}
+
+			void logoutResponse(
+				game::OutgoingPacket &out_packet,
+				bool success
+				)
+			{
+				out_packet.start(server_packet::LogoutResponse);
+				if (!success)
+				{
+					out_packet
+						<< io::write<NetUInt8>(0x0C);
+				}
+				out_packet
+					<< io::write<NetUInt32>(0)
+					<< io::write<NetUInt8>(0);
+				out_packet.finish();
+			}
+
+			void logoutCancelAck(
+				game::OutgoingPacket &out_packet
+				)
+			{
+				out_packet.start(server_packet::LogoutCancelAck);
+				out_packet.finish();
+			}
+
+			void logoutComplete(
+				game::OutgoingPacket &out_packet
+				)
+			{
+				out_packet.start(server_packet::LogoutComplete);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
@@ -834,6 +913,26 @@ namespace wowpp
 					>> io::read<NetUInt64>(out_guid);
 			}
 
+			bool playerLogout(
+				io::Reader &packet
+				)
+			{
+				return packet;
+			}
+
+			bool logoutRequest(
+				io::Reader &packet
+				)
+			{
+				return packet;
+			}
+
+			bool logoutCancel(
+				io::Reader &packet
+				)
+			{
+				return packet;
+			}
 		}
 	}
 }

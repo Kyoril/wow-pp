@@ -75,6 +75,8 @@ namespace wowpp
 					WorldInstanceEntered,
 					/// Sent by the world server if a world instance is unavailable.
 					WorldInstanceError,
+					/// Sent by the world server if a player character left a world instance.
+					WorldInstanceLeft,
 					/// Original packet which the realm should encode and send to the client.
 					ClientProxyPacket,
 				};
@@ -115,6 +117,21 @@ namespace wowpp
 
 			typedef login_result::Type LoginResult;
 
+			namespace world_left_reason
+			{
+				enum Type
+				{
+					/// The player wants to log out and return to the character screen.
+					Logout,
+					/// The player was teleported away and thus needs to be transferred to another world instance.
+					Teleport,
+					/// Unknown reason (placeholder for more reasons...)
+					Unknown
+				};
+			}
+
+			typedef world_left_reason::Type WorldLeftReason;
+
 
 			/// Contains methods for writing packets from the world server.
 			namespace world_write
@@ -148,6 +165,13 @@ namespace wowpp
 					float y, 
 					float z, 
 					float o
+					);
+
+				/// 
+				void worldInstanceLeft(
+					pp::OutgoingPacket &out_packet,
+					DatabaseId requesterDbId,
+					WorldLeftReason reason
 					);
 
 				/// 
@@ -232,6 +256,13 @@ namespace wowpp
 					float &out_y,
 					float &out_z,
 					float &out_o
+					);
+
+				/// 
+				bool worldInstanceLeft(
+					io::Reader &packet,
+					DatabaseId &out_requesterDbId,
+					WorldLeftReason &out_reason
 					);
 
 				/// 

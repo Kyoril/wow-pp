@@ -64,6 +64,19 @@ namespace wowpp
 					out_packet.finish();
 				}
 
+				void worldInstanceLeft(
+					pp::OutgoingPacket &out_packet,
+					DatabaseId requesterDbId,
+					WorldLeftReason reason
+					)
+				{
+					out_packet.start(world_packet::WorldInstanceLeft);
+					out_packet
+						<< io::write<NetDatabaseId>(requesterDbId)
+						<< io::write<NetUInt32>(reason);
+					out_packet.finish();
+				}
+
 				void worldInstanceError(pp::OutgoingPacket &out_packet, DatabaseId requesterDbId, world_instance_error::Type error)
 				{
 					out_packet.start(world_packet::WorldInstanceError);
@@ -145,6 +158,17 @@ namespace wowpp
 						>> io::read<float>(out_y)
 						>> io::read<float>(out_z)
 						>> io::read<float>(out_o);
+				}
+
+				bool worldInstanceLeft(
+					io::Reader &packet,
+					DatabaseId &out_requesterDbId,
+					WorldLeftReason &out_reason
+					)
+				{
+					return packet
+						>> io::read<NetDatabaseId>(out_requesterDbId)
+						>> io::read<NetUInt32>(out_reason);
 				}
 
 				bool worldInstanceError(io::Reader &packet, DatabaseId &out_requesterDbId, world_instance_error::Type &out_error)

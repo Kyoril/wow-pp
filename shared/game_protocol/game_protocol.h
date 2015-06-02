@@ -26,6 +26,7 @@
 #include "game_outgoing_packet.h"
 #include "binary_io/reader.h"
 #include "common/sha1.h"
+#include "common/vector.h"
 #include "game/defines.h"
 #include "data/unit_entry.h"
 #include "game/action_button.h"
@@ -52,6 +53,9 @@ namespace wowpp
 				CharEnum				= 0x037,
 				CharDelete				= 0x038,
 				PlayerLogin				= 0x03D,
+				PlayerLogout			= 0x04A,
+				LogoutRequest			= 0x04B,
+				LogoutCancel			= 0x04E,
 				NameQuery				= 0x050,
 				CreatureQuery			= 0x060,
 				Ping					= 0x1DC,
@@ -72,11 +76,15 @@ namespace wowpp
 				CharDelete				= 0x03C,
 				CharacterLoginFailed	= 0x041,
 				LoginSetTimeSpeed		= 0x042,
+				LogoutResponse			= 0x04C,
+				LogoutComplete			= 0x04D,
+				LogoutCancelAck			= 0x04F,
 				NameQueryResponse		= 0x051,
 				CreatureQueryResponse	= 0x061,
 				FriendList				= 0x067,
 				IgnoreList				= 0x06B,
 				UpdateObject			= 0x0A9,
+				MonsterMove				= 0x0DD,
 				TutorialFlags			= 0x0FD,
 				InitializeFactions		= 0x122,
 				SetProficiency			= 0x127,
@@ -300,6 +308,18 @@ namespace wowpp
 				UInt32 &out_entry,
 				UInt64 &out_guid
 				);
+
+			bool playerLogout(
+				io::Reader &packet
+				);
+
+			bool logoutRequest(
+				io::Reader &packet
+				);
+
+			bool logoutCancel(
+				io::Reader &packet
+				);
 		};
 
 
@@ -474,6 +494,27 @@ namespace wowpp
 			void timeSyncReq(
 				game::OutgoingPacket &out_packet,
 				UInt32 counter
+				);
+
+			void monsterMove(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				const Vector<float, 3> &oldPosition,
+				const Vector<float, 3> &position,
+				UInt32 time
+				);
+
+			void logoutResponse(
+				game::OutgoingPacket &out_packet,
+				bool success
+				);
+
+			void logoutCancelAck(
+				game::OutgoingPacket &out_packet
+				);
+
+			void logoutComplete(
+				game::OutgoingPacket &out_packet
 				);
 		};
 	}

@@ -26,6 +26,7 @@
 #include "game_protocol/game_crypted_connection.h"
 #include "data/data_load_context.h"
 #include "common/big_number.h"
+#include "common/countdown.h"
 #include "game/game_character.h"
 #include "binary_io/vector_sink.h"
 #include "realm_connector.h"
@@ -71,6 +72,11 @@ namespace wowpp
 		/// 
 		std::shared_ptr<GameCharacter> getCharacter() { return m_character; }
 
+		/// Starts the 20 second logout timer.
+		void logoutRequest();
+		/// Cancels the 20 second logout timer if it has been set up.
+		void cancelLogoutRequest();
+
 		/// Sends an proxy packet to the realm which will then be redirected to the game client.
 		/// @param generator Packet writer function pointer.
 		template<class F>
@@ -88,11 +94,15 @@ namespace wowpp
 
 	private:
 
+		void onLogout();
+
+	private:
+
 		PlayerManager &m_manager;
 		RealmConnector &m_realmConnector;
 		WorldInstanceManager &m_worldInstanceManager;
 		DatabaseId m_characterId;
 		std::shared_ptr<GameCharacter> m_character;
-
+		Countdown m_logoutCountdown;
 	};
 }

@@ -109,6 +109,7 @@ namespace wowpp
 		void handleLogin(pp::IncomingPacket &packet);
 		void handleWorldInstanceEntered(pp::IncomingPacket &packet);
 		void handleWorldInstanceError(pp::IncomingPacket &packet);
+		void handleWorldInstanceLeft(pp::IncomingPacket &packet);
 		void handleClientProxyPacket(pp::IncomingPacket &packet);
 	};
 }

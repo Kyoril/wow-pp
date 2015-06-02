@@ -720,6 +720,36 @@ namespace wowpp
 			std::bind(game::server_write::timeSyncReq, std::placeholders::_1, m_timeSyncCounter++));
 	}
 
+	void Player::worldInstanceLeft(World &world, UInt32 instanceId, pp::world_realm::WorldLeftReason reason)
+	{
+		switch (reason)
+		{
+			case pp::world_realm::world_left_reason::Logout:
+			{
+				// TODO: We probably want to save our character data
+				WLOG("TODO: Save character data to the database");
+
+				// Notify the client that the logout process is done
+				sendPacket(
+					std::bind(game::server_write::logoutComplete, std::placeholders::_1));
+
+				// We are now longer signed int
+				m_gameCharacter.reset();
+				m_characterId = 0;
+				m_instanceId = 0;
+
+				break;
+			}
+
+			default:
+			{
+				// Unknown reason?
+				WLOG("Player left world instance for unknown reason...")
+				break;
+			}
+		}
+	}
+
 	void Player::sendProxyPacket(UInt16 opCode, const std::vector<char> &buffer)
 	{
 		// Write native packet

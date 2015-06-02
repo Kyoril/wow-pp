@@ -443,18 +443,44 @@ namespace wowpp
 		game::IncomingPacket clientPacket;
 		clientPacket.setSource(&source);
 
+		// Find the sender
+		Player *sender = m_playerManager.getPlayerByCharacterId(characterId);
+		if (!sender)
+		{
+			WLOG("Invalid sender id " << characterId << " for proxy packet 0x" << std::hex << std::uppercase << opCode);
+			return;
+		}
+
 		// Check op code
 		switch (opCode)
 		{
 			case game::client_packet::NameQuery:
 			{
-				handleNameQuery(characterId, clientPacket);
+				handleNameQuery(*sender, clientPacket);
 				break;
 			}
 
 			case game::client_packet::CreatureQuery:
 			{
-				handleCreatureQuery(characterId, clientPacket);
+				handleCreatureQuery(*sender, clientPacket);
+				break;
+			}
+
+			case game::client_packet::PlayerLogout:
+			{
+				DLOG("TODO: CMSG_PLAYER_LOGOUT not handled.");
+				break;
+			}
+
+			case game::client_packet::LogoutRequest:
+			{
+				handleLogoutRequest(*sender, clientPacket);
+				break;
+			}
+
+			case game::client_packet::LogoutCancel:
+			{
+				handleLogoutCancel(*sender, clientPacket);
 				break;
 			}
 
@@ -467,21 +493,13 @@ namespace wowpp
 		}
 	}
 
-	void RealmConnector::handleNameQuery(DatabaseId senderId, game::Protocol::IncomingPacket &packet)
+	void RealmConnector::handleNameQuery(Player &sender, game::Protocol::IncomingPacket &packet)
 	{
 		// Object guid
 		UInt64 objectGuid;
 		if (!game::client_read::nameQuery(packet, objectGuid))
 		{
 			// Could not read packet
-			return;
-		}
-
-		// Find the sender
-		Player *sender = m_playerManager.getPlayerByCharacterId(senderId);
-		if (!sender)
-		{
-			WLOG("Invalid sender id " << senderId);
 			return;
 		}
 
@@ -504,7 +522,7 @@ namespace wowpp
 		String realmName("");	//TODO
 
 		// Send answer
-		sender->sendProxyPacket(
+		sender.sendProxyPacket(
 			std::bind(game::server_write::nameQueryResponse, std::placeholders::_1, objectGuid, std::cref(name), std::cref(realmName), raceId, genderId, classId));
 	}
 
@@ -514,7 +532,13 @@ namespace wowpp
 			std::bind(pp::world_realm::world_write::clientProxyPacket, std::placeholders::_1, senderId, opCode, size, std::cref(buffer)));
 	}
 
-	void RealmConnector::handleCreatureQuery(DatabaseId senderId, game::Protocol::IncomingPacket &packet)
+	void RealmConnector::notifyWorldInstanceLeft(DatabaseId characterId, pp::world_realm::WorldLeftReason reason)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::world_write::worldInstanceLeft, std::placeholders::_1, characterId, reason));
+	}
+
+	void RealmConnector::handleCreatureQuery(Player &sender, game::Protocol::IncomingPacket &packet)
 	{
 		// Read the client packet
 		UInt32 creatureEntry;
@@ -523,16 +547,6 @@ namespace wowpp
 		{
 			// Could not read packet
 			WLOG("Could not read packet data");
-			return;
-		}
-
-		DLOG("TODO: handleCreatureQuery (entry: " << creatureEntry << "; guid: " << objectGuid);
-		
-		// Find the sender
-		Player *sender = m_playerManager.getPlayerByCharacterId(senderId);
-		if (!sender)
-		{
-			WLOG("Invalid sender id " << senderId);
 			return;
 		}
 
@@ -546,7 +560,7 @@ namespace wowpp
 			ILOG("WORLD: CMSG_CREATURE_QUERY '" << unit->name << "' - Entry: " << creatureEntry << ".");
 
 			// Write answer packet
-			sender->sendProxyPacket(
+			sender.sendProxyPacket(
 				std::bind(game::server_write::creatureQueryResponse, std::placeholders::_1, std::cref(*unit)));
 		}
 		else
@@ -556,5 +570,41 @@ namespace wowpp
 			//TODO: Send resulting packet SMSG_CREATURE_QUERY_RESPONSE with only one uin32 value
 			//which is creatureEntry | 0x80000000
 		}
+	}
+
+	void RealmConnector::handleLogoutRequest(Player &sender, game::Protocol::IncomingPacket &packet)
+	{
+		// Read client packet
+		if (!game::client_read::logoutRequest(packet))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		//TODO check if the player is allowed to log out (is in combat? is moving? is frozen by gm? etc.)
+
+		// Send answer and engage logout process
+		sender.sendProxyPacket(
+			std::bind(game::server_write::logoutResponse, std::placeholders::_1, true));
+
+		// Start logout countdown or something? ...
+		sender.logoutRequest();
+	}
+
+	void RealmConnector::handleLogoutCancel(Player &sender, game::Protocol::IncomingPacket &packet)
+	{
+		// Read client packet
+		if (!game::client_read::logoutCancel(packet))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		// Notify the client that we have received it's request
+		sender.sendProxyPacket(
+			std::bind(game::server_write::logoutCancelAck, std::placeholders::_1));
+
+		// Cancel the logout process
+		sender.logoutRequest();
 	}
 }

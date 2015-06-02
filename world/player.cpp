@@ -37,6 +37,31 @@ namespace wowpp
 		, m_worldInstanceManager(worldInstanceManager)
 		, m_characterId(characterId)
 		, m_character(std::move(character))
+		, m_logoutCountdown(worldInstanceManager.getTimerQueue())
 	{
+		m_logoutCountdown.ended.connect(
+			std::bind(&Player::onLogout, this));
+	}
+
+	void Player::logoutRequest()
+	{
+		// Setup the logout countdown
+		m_logoutCountdown.setEnd(
+			getCurrentTime() + (20 * constants::OneSecond));
+	}
+
+	void Player::cancelLogoutRequest()
+	{
+		// Cancel the countdown
+		m_logoutCountdown.cancel();
+	}
+
+	void Player::onLogout()
+	{
+		// Notify the realm
+		m_realmConnector.notifyWorldInstanceLeft(m_characterId, pp::world_realm::world_left_reason::Logout);
+		
+		// Remove player
+		m_manager.playerDisconnected(*this);
 	}
 }

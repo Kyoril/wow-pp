@@ -24,6 +24,7 @@
 #include "game_protocol/game_protocol.h"
 #include "game_protocol/game_connection.h"
 #include "game_protocol/game_crypted_connection.h"
+#include "wowpp_protocol/wowpp_world_realm.h"
 #include "data/data_load_context.h"
 #include "common/big_number.h"
 #include "game/game_character.h"
@@ -89,7 +90,9 @@ namespace wowpp
 		/// A world server notified us that our character instance was successfully spawned in the
 		/// world and will now be visible to other players.
 		void worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, float x, float y, float z, float o);
-
+		/// 
+		void worldInstanceLeft(World &world, UInt32 instanceId, pp::world_realm::WorldLeftReason reason);
+		
 		/// Gets the player connection class used to send packets to the client.
 		Client &getConnection() { assert(m_connection); return *m_connection; }
 		/// Gets the player manager which manages all connected players.

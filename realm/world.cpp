@@ -94,6 +94,12 @@ namespace wowpp
 				break;
 			}
 
+			case world_packet::WorldInstanceLeft:
+			{
+				handleWorldInstanceLeft(packet);
+				break;
+			}
+
 			case world_packet::WorldInstanceError:
 			{
 				handleWorldInstanceError(packet);
@@ -261,6 +267,28 @@ namespace wowpp
 
 		// TODO: Notify player connection
 
+	}
+
+	void World::handleWorldInstanceLeft(pp::IncomingPacket &packet)
+	{
+		DatabaseId characterId;
+		pp::world_realm::WorldLeftReason reason;
+		if (!pp::world_realm::world_read::worldInstanceLeft(packet, characterId, reason))
+		{
+			return;
+		}
+
+		// Notify player about this
+		auto player = m_playerManager.getPlayerByCharacterId(characterId);
+		if (!player)
+		{
+			WLOG("Could not find player with character id " << characterId);
+			return;
+		}
+
+		// Send world instance data
+		UInt32 instanceId = 0;	//TODO
+		player->worldInstanceLeft(*this, instanceId, reason);
 	}
 
 	void World::handleClientProxyPacket(pp::IncomingPacket &packet)

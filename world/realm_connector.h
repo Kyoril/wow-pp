@@ -26,6 +26,7 @@
 #include "game_protocol/game_protocol.h"
 #include "game_protocol/game_incoming_packet.h"
 #include "wowpp_protocol/wowpp_connector.h"
+#include "wowpp_protocol/wowpp_world_realm.h"
 #include "data/data_load_context.h"
 #include "game/game_character.h"
 #include "common/timer_queue.h"
@@ -38,6 +39,7 @@ namespace wowpp
 	class PlayerManager;
 	struct Configuration;
 	class Project;
+	class Player;
 
 	/// This class manages the connection to the realm server.
 	class RealmConnector : public pp::IConnectorListener
@@ -79,6 +81,8 @@ namespace wowpp
 		/// @param buffer
 		void sendProxyPacket(DatabaseId senderId, UInt16 opCode, UInt32 size, const std::vector<char> &buffer);
 
+		void notifyWorldInstanceLeft(DatabaseId characterId, pp::world_realm::WorldLeftReason reason);
+
 	private:
 
 		/// 
@@ -98,8 +102,10 @@ namespace wowpp
 	private:
 
 		// Proxy packet handlers
-		void handleNameQuery(DatabaseId sender, game::Protocol::IncomingPacket &packet);
-		void handleCreatureQuery(DatabaseId sender, game::Protocol::IncomingPacket &packet);
+		void handleNameQuery(Player &sender, game::Protocol::IncomingPacket &packet);
+		void handleCreatureQuery(Player &sender, game::Protocol::IncomingPacket &packet);
+		void handleLogoutRequest(Player &sender, game::Protocol::IncomingPacket &packet);
+		void handleLogoutCancel(Player &sender, game::Protocol::IncomingPacket &packet);
 
 	private:
 

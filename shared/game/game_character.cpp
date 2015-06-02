@@ -44,12 +44,11 @@ namespace wowpp
 		GameUnit::initialize();
 
 		setUInt32Value(object_fields::Type, 25);					//OBJECT_FIELD_TYPE				(TODO: Flags)
-
 		setUInt32Value(character_fields::CharacterFlags, 0x50000);
 
 		setFloatValue(unit_fields::BoundingRadius, 0.388999998569489f);
 		setFloatValue(unit_fields::CombatReach, 1.5f);
-		//setByteValue(unit_fields::Bytes2, 1, 0x08 | 0x20);
+		setByteValue(unit_fields::Bytes2, 1, 0x08 | 0x20);
 		setUInt32Value(unit_fields::Bytes2, 0);
 		setUInt32Value(unit_fields::UnitFlags, 0x08);
 		setFloatValue(unit_fields::ModCastSpeed, 1.0f);
@@ -57,7 +56,6 @@ namespace wowpp
 		// -1
 		setInt32Value(character_fields::WatchedFactionIndex, -1);
 		setUInt32Value(character_fields::CharacterPoints_2, 2);
-
 		setUInt32Value(character_fields::ModHealingDonePos, 0);
 		for (UInt8 i = 0; i < 7; ++i)
 		{
@@ -100,22 +98,6 @@ namespace wowpp
 
 		// Dodge percentage
 		setFloatValue(character_fields::DodgePercentage, 0.0f);
-
-#define MAKE_PAIR32(l, h)  UInt32(UInt16(l) | (UInt32(h) << 16))
-#define PLAYER_SKILL_INDEX(x)       (character_fields::SkillInfo1_1 + ((x)*3))
-#define PLAYER_SKILL_VALUE_INDEX(x) (PLAYER_SKILL_INDEX(x)+1)
-#define PLAYER_SKILL_BONUS_INDEX(x) (PLAYER_SKILL_INDEX(x)+2)
-
-#define MAKE_SKILL_VALUE(v, m) MAKE_PAIR32(v, m)
-#define MAKE_SKILL_BONUS(t, p) MAKE_PAIR32(t, p)
-
-		setUInt32Value(PLAYER_SKILL_INDEX(0), MAKE_PAIR32(98, 0));
-		setUInt32Value(PLAYER_SKILL_VALUE_INDEX(0), MAKE_SKILL_VALUE(300, 300));
-		/*setUInt32Value(PLAYER_SKILL_INDEX(1), MAKE_PAIR32(137, 0));
-		setUInt32Value(PLAYER_SKILL_VALUE_INDEX(1), MAKE_SKILL_VALUE(300, 300));*/
-
-		//UInt32 unitFlags = getUInt32Value(unit_fields::UnitFlags);
-		//setUInt32Value(unit_fields::UnitFlags, unitFlags | 0x00001000);	// Enable PVP
 	}
 
 	void GameCharacter::levelChanged(const LevelEntry &levelInfo)
