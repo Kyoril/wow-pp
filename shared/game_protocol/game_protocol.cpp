@@ -834,6 +834,32 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void movePacket(game::OutgoingPacket &out_packet, UInt16 opCode, UInt64 guid, const MovementInfo &movement)
+			{
+				//TODO: Check given op-code
+				out_packet.start(opCode);
+				
+				UInt8 packGUID[8 + 1];
+				packGUID[0] = 0;
+				size_t size = 1;
+
+				for (UInt8 i = 0; guid != 0; ++i)
+				{
+					if (guid & 0xFF)
+					{
+						packGUID[0] |= UInt8(1 << i);
+						packGUID[size] = UInt8(guid & 0xFF);
+						++size;
+					}
+
+					guid >>= 8;
+				}
+
+				out_packet
+					<< io::write_range(&packGUID[0], &packGUID[size])
+					<< movement;
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
@@ -1028,6 +1054,30 @@ namespace wowpp
 				)
 			{
 				return packet;
+			}
+
+			bool moveStop(io::Reader &packet, MovementInfo &out_info)
+			{
+				return packet
+					>> out_info;
+			}
+
+			bool moveStartForward(io::Reader &packet, MovementInfo &out_info)
+			{
+				return packet
+					>> out_info;
+			}
+
+			bool moveStartBackward(io::Reader &packet, MovementInfo &out_info)
+			{
+				return packet
+					>> out_info;
+			}
+
+			bool moveHeartBeat(io::Reader &packet, MovementInfo &out_info)
+			{
+				return packet
+					>> out_info;
 			}
 		}
 	}

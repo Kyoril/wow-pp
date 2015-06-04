@@ -28,6 +28,7 @@
 #include "configuration.h"
 #include "common/clock.h"
 #include "data/project.h"
+#include "visibility_tile.h"
 #include "binary_io/vector_sink.h"
 #include "log/default_log_levels.h"
 
@@ -274,7 +275,7 @@ namespace wowpp
 		}
 
 		// Fire signal which should create a player instance for us
-		worldInstanceEntered(requesterDbId, character);
+		worldInstanceEntered(requesterDbId, character, *instance);
 
 		// Get character location
 		UInt32 mapId = map->id;
@@ -357,6 +358,27 @@ namespace wowpp
 			case game::client_packet::LogoutCancel:
 			{
 				handleLogoutCancel(*sender, clientPacket);
+				break;
+			}
+
+			case game::client_packet::MoveStartForward:
+			case game::client_packet::MoveStartBackward:
+			case game::client_packet::MoveStop:
+			case game::client_packet::StartStrafeLeft:
+			case game::client_packet::StartStrafeRight:
+			case game::client_packet::StopStrafe:
+			case game::client_packet::Jump:
+			case game::client_packet::StartTurnLeft:
+			case game::client_packet::StartTurnRight:
+			case game::client_packet::StopTurn:
+			case game::client_packet::StartPitchUp:
+			case game::client_packet::StartPitchDown:
+			case game::client_packet::StopPitch:
+			case game::client_packet::SetFacing:
+			case game::client_packet::SetPitch:
+			case game::client_packet::MoveHeartBeat:
+			{
+				handleMovementPacket(*sender, opCode, clientPacket);
 				break;
 			}
 
@@ -483,4 +505,60 @@ namespace wowpp
 		// Cancel the logout process
 		sender.logoutRequest();
 	}
+
+	void RealmConnector::handleMovementPacket(Player &sender, UInt16 opCode, game::Protocol::IncomingPacket &packet)
+	{
+		MovementInfo info;
+		if (!game::client_read::moveHeartBeat(packet, info))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		// Write OP-Code
+		DLOG("MOVEMENT_PACKET: 0x" << std::hex << std::uppercase << opCode);
+
+		// Sender guid
+		auto guid = sender.getCharacter()->getGuid();
+
+		// Get object location
+		float x, y, z, o;
+		sender.getCharacter()->getLocation(x, y, z, o);
+
+		// Transform into grid location
+		TileIndex2D gridIndex;
+		auto &grid = sender.getWorldInstance().getGrid();
+		if (!grid.getTilePosition(x, y, z, gridIndex[0], gridIndex[1]))
+		{
+			// TODO: Error?
+			ELOG("Could not resolve grid location!");
+			return;
+		}
+
+		const UInt32 time = getCurrentTime();
+		const UInt32 clientTimeDelay = time - info.time;
+
+		// Get grid tile
+		auto &tile = grid.requireTile(gridIndex);
+		info.time += clientTimeDelay;
+
+		// Notify all watchers about the new object
+		for (auto &watcher : tile.getWatchers())
+		{
+			if (watcher != &sender)
+			{
+				// Send it
+				watcher->sendProxyPacket(
+					std::bind(game::server_write::movePacket, std::placeholders::_1, opCode, guid, std::cref(info)));
+			}
+		}
+
+		//TODO: Verify new location
+
+		// Update position
+		sender.getCharacter()->relocate(info.x, info.y, info.z, info.o);
+
+		// TODO: Update tile visibility etc.
+	}
+
 }

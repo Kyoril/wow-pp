@@ -42,6 +42,7 @@ namespace wowpp
 	// Forwards
 	class PlayerManager;
 	class WorldInstanceManager;
+	class WorldInstance;
 
 	/// Player connection class.
 	class Player final : public boost::noncopyable
@@ -61,7 +62,8 @@ namespace wowpp
 						RealmConnector &realmConnector,
 						WorldInstanceManager &worldInstanceManager,
 						DatabaseId characterId,
-						std::shared_ptr<GameCharacter> character);
+						std::shared_ptr<GameCharacter> character,
+						WorldInstance &instance);
 
 		/// Gets the player manager which manages all connected players.
 		PlayerManager &getManager() const { return m_manager; }
@@ -71,6 +73,8 @@ namespace wowpp
 		const UInt64 getCharacterGuid() const { return m_character->getGuid(); }
 		/// 
 		std::shared_ptr<GameCharacter> getCharacter() { return m_character; }
+		/// 
+		WorldInstance &getWorldInstance() { return m_instance; }
 
 		/// Starts the 20 second logout timer.
 		void logoutRequest();
@@ -104,5 +108,6 @@ namespace wowpp
 		DatabaseId m_characterId;
 		std::shared_ptr<GameCharacter> m_character;
 		Countdown m_logoutCountdown;
+		WorldInstance &m_instance;
 	};
 }

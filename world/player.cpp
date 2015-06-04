@@ -31,13 +31,14 @@ using namespace std;
 
 namespace wowpp
 {
-	Player::Player(PlayerManager &manager, RealmConnector &realmConnector, WorldInstanceManager &worldInstanceManager, DatabaseId characterId, std::shared_ptr<GameCharacter> character)
+	Player::Player(PlayerManager &manager, RealmConnector &realmConnector, WorldInstanceManager &worldInstanceManager, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance)
 		: m_manager(manager)
 		, m_realmConnector(realmConnector)
 		, m_worldInstanceManager(worldInstanceManager)
 		, m_characterId(characterId)
 		, m_character(std::move(character))
 		, m_logoutCountdown(worldInstanceManager.getTimerQueue())
+		, m_instance(instance)
 	{
 		m_logoutCountdown.ended.connect(
 			std::bind(&Player::onLogout, this));

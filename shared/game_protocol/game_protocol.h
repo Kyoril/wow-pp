@@ -31,6 +31,7 @@
 #include "data/unit_entry.h"
 #include "game/action_button.h"
 #include "game/game_unit.h"
+#include "game/movement_info.h"
 #include <array>
 #include <vector>
 
@@ -59,6 +60,22 @@ namespace wowpp
 				LogoutCancel			= 0x04E,
 				NameQuery				= 0x050,
 				CreatureQuery			= 0x060,
+				MoveStartForward		= 0x0B5,
+				MoveStartBackward		= 0x0B6,
+				MoveStop				= 0x0B7,
+				StartStrafeLeft			= 0x0B8,
+				StartStrafeRight		= 0x0B9,
+				StopStrafe				= 0x0BA,
+				Jump					= 0x0BB,
+				StartTurnLeft			= 0x0BC,
+				StartTurnRight			= 0x0BD,
+				StopTurn				= 0x0BE,
+				StartPitchUp			= 0x0BF,
+				StartPitchDown			= 0x0C0,
+				StopPitch				= 0x0C1,
+				SetFacing				= 0x0DA,
+				SetPitch				= 0x0DB,
+				MoveHeartBeat			= 0x0EE,
 				Ping					= 0x1DC,
 				AuthSession				= 0x1ED,
 				SetDungeonDifficulty	= 0x329,
@@ -87,6 +104,9 @@ namespace wowpp
 				MessageChat				= 0x096,
 				UpdateObject			= 0x0A9,
 				MonsterMove				= 0x0DD,
+				MoveRoot				= 0x0EC,
+				MoveUnroot				= 0x0ED,
+				MoveHeartBeat			= 0x0EE,
 				TutorialFlags			= 0x0FD,
 				InitializeFactions		= 0x122,
 				SetProficiency			= 0x127,
@@ -324,8 +344,29 @@ namespace wowpp
 			bool logoutCancel(
 				io::Reader &packet
 				);
-		};
 
+			bool moveStartForward(
+				io::Reader &packet,
+				MovementInfo &out_info
+				);
+
+			bool moveStartBackward(
+				io::Reader &packet,
+				MovementInfo &out_info
+				);
+
+			bool moveStop(
+				io::Reader &packet,
+				MovementInfo &out_info
+				);
+
+			bool moveHeartBeat(
+				io::Reader &packet,
+				MovementInfo &out_info
+				);
+
+
+		};
 
 		namespace server_write
 		{
@@ -529,6 +570,13 @@ namespace wowpp
 				UInt64 targetGUID,
 				const String &message,
 				GameUnit *speaker
+				);
+
+			void movePacket(
+				game::OutgoingPacket &out_packet,
+				UInt16 opCode,
+				UInt64 guid,
+				const MovementInfo &movement
 				);
 		};
 	}

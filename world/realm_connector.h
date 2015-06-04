@@ -36,6 +36,7 @@ namespace wowpp
 {
 	// Forwards
 	class WorldInstanceManager;
+	class WorldInstance;
 	class PlayerManager;
 	struct Configuration;
 	class Project;
@@ -46,7 +47,7 @@ namespace wowpp
 	{
 	public:
 
-		boost::signals2::signal<void (DatabaseId characterId, std::shared_ptr<GameCharacter> character)> worldInstanceEntered;
+		boost::signals2::signal<void (DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance)> worldInstanceEntered;
 
 	public:
 
@@ -106,6 +107,10 @@ namespace wowpp
 		void handleCreatureQuery(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleLogoutRequest(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleLogoutCancel(Player &sender, game::Protocol::IncomingPacket &packet);
+		void handleMoveStartForward(Player &sender, game::Protocol::IncomingPacket &packet);
+		void handleMoveStartBackward(Player &sender, game::Protocol::IncomingPacket &packet);
+		void handleMoveStop(Player &sender, game::Protocol::IncomingPacket &packet);
+		void handleMovementPacket(Player &sender, UInt16 opCode, game::Protocol::IncomingPacket &packet);
 
 	private:
 
