@@ -39,7 +39,7 @@ project(game_protocol)
 	add_library(game_protocol ${srcFiles} ${networkFiles} ${binaryIOFiles})
 	
 	# Link shared libraries
-	target_link_libraries(game_protocol common log)
+	target_link_libraries(game_protocol common log game)
 
 	# Solution folder
 	if(MSVC)
