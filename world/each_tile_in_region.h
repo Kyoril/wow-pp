@@ -89,7 +89,7 @@ namespace wowpp
 		forEachTileInRange(
 		    grid,
 		    center,
-		    constant::PlayerZoneSight,
+		    constants::PlayerZoneSight,
 		    function);
 	}
 }
