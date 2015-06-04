@@ -21,11 +21,12 @@
 
 #pragma once
 
+#include "common/typedefs.h"
 #include "common/vector.h"
 
 namespace wowpp
 {
-	typedef std::ptrdiff_t TileIndex;
+	typedef Int32 TileIndex;
 	typedef Vector<TileIndex, 2> TileIndex2D;
 	typedef Vector<TileIndex2D, 2> TileIndex2DPair;
 

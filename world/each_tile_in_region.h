@@ -40,7 +40,7 @@ namespace wowpp
 		{
 			for (TileIndex x = topLeft.x(); x < bottomRight.x(); ++x)
 			{
-				auto *const tile = grid.getTile(TileIndex2d(x, y));
+				auto *const tile = grid.getTile(TileIndex2D(x, y));
 				if (tile)
 				{
 					function(*tile);
