@@ -512,11 +512,10 @@ namespace wowpp
 		//m_gameCharacter->setGuid(createGUID(worldObjectGuid, 0, high_guid::Player));
 		m_gameCharacter->relocate(x, y, z, o);
 		m_gameCharacter->setMapId(mapId);
-
 		m_gameCharacter->setCreateBits();
 
 		// Send proficiencies
-		{
+		/*{
 			sendPacket(
 				std::bind(game::server_write::setProficiency, std::placeholders::_1, 0x02, 0x10000000));
 
@@ -543,7 +542,7 @@ namespace wowpp
 
 			sendPacket(
 				std::bind(game::server_write::setProficiency, std::placeholders::_1, 0x04, 0x4F000000));
-		}
+		}*/
 
 		sendPacket(
 			std::bind(game::server_write::setDungeonDifficulty, std::placeholders::_1));
@@ -622,7 +621,9 @@ namespace wowpp
 			std::bind(game::server_write::loginSetTimeSpeed, std::placeholders::_1, 0));
 
 		// Trigger intro cinematic based on the characters race
-		if (raceEntry)
+		game::CharEntry *charEntry = getCharacterById(m_characterId);
+		if (raceEntry && 
+			(charEntry && charEntry->cinematic))
 		{
 			sendPacket(
 				std::bind(game::server_write::triggerCinematic, std::placeholders::_1, raceEntry->cinematic));
@@ -726,6 +727,9 @@ namespace wowpp
 		{
 			case pp::world_realm::world_left_reason::Logout:
 			{
+				// We no longer care about the world node
+				m_worldDisconnected.disconnect();
+
 				// TODO: We probably want to save our character data
 				WLOG("TODO: Save character data to the database");
 

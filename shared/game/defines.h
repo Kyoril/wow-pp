@@ -92,5 +92,92 @@ namespace wowpp
 		}
 
 		typedef char_class::Type CharClass;
+
+		namespace chat_msg
+		{
+			enum Type
+			{
+				Addon				= 0xFFFFFFFF,
+				System				= 0x00,
+				Say					= 0x01,
+				Party				= 0x02,
+				Raid				= 0x03,
+				Guild				= 0x04,
+				Officer				= 0x05,
+				Yell				= 0x06,
+				Whisper				= 0x07,
+				WhisperInform		= 0x08,
+				Reply				= 0x09,
+				Emote				= 0x0A,
+				TextEmote			= 0x0B,
+				MonsterSay			= 0x0C,
+				MonsterParty		= 0x0D,
+				MonsterYell			= 0x0E,
+				MonsterWhisper		= 0x0F,
+				MonsterEmote		= 0x10,
+				Channel				= 0x11,
+				ChannelJoin			= 0x12,
+				ChannelLeave		= 0x13,
+				ChannelList			= 0x14,
+				ChannelNotice		= 0x15,
+				ChannelNoticeUser	= 0x16,
+				Afk					= 0x17,
+				Dnd					= 0x18,
+				Ignored				= 0x19,
+				Skill				= 0x1A,
+				Loot				= 0x1B,
+				Money				= 0x1C,
+				Opening				= 0x1D,
+				TradeSkill			= 0x1E,
+				PetInfo				= 0x1F,
+				CombatMiscInfo		= 0x20,
+				CombatXPGain		= 0x21,
+				CombatHonorGain		= 0x22,
+				CombatFactionChange	= 0x23,
+				BGSystemNeutral		= 0x24,
+				BGSystemAlliance	= 0x25,
+				BGSystemHorde		= 0x26,
+				RaidLeader			= 0x27,
+				RaidWarning			= 0x28,
+				RaidBossWhisper		= 0x29,
+				RaidBossEmote		= 0x2A,
+				Filtered			= 0x2B,
+				Battleground		= 0x2C,
+				BattlegroundLeader	= 0x2D,
+				Restricted			= 0x2E
+			};
+		}
+
+		typedef chat_msg::Type ChatMsg;
+
+		namespace language
+		{
+			enum Type
+			{
+				Universal			= 0x00,
+				Orcish				= 0x01,
+				Darnassian			= 0x02,
+				Taurahe				= 0x03,
+				Dwarvish			= 0x04,
+				Common				= 0x07,
+				Demonic				= 0x08,
+				Titan				= 0x09,
+				Thalassian			= 0x0A,
+				Draconic			= 0x0B,
+				Kalimag				= 0x0C,
+				Gnomish				= 0x0D,
+				Troll				= 0x0E,
+				GutterSpeak			= 0x21,
+				Draenei				= 0x23,
+				Zombie				= 0x24,
+				GnomishBinary		= 0x25,
+				GoblinBinary		= 0x26,
+				Addon				= 0xFFFFFFFF,
+
+				Count_				= 0x13
+			};
+		}
+
+		typedef language::Type Language;
 	}
 }

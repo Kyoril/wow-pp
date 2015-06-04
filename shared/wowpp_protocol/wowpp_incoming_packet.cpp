@@ -21,6 +21,7 @@
 
 #include "wowpp_incoming_packet.h"
 #include "common/constants.h"
+#include "log/default_log_levels.h"
 #include <limits>
 
 namespace wowpp

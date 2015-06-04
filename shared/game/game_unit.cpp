@@ -74,7 +74,7 @@ namespace wowpp
 		setLevel(1);
 
 		setUInt32Value(unit_fields::UnitFlags, 0x00001000);				//UNIT_FIELD_FLAGS				(TODO: Flags)	UNIT_FLAG_PVP_ATTACKABLE
-		/*setUInt32Value(unit_fields::Aura, 0x0999);					//UNIT_FIELD_AURA				(TODO: Flags)
+		setUInt32Value(unit_fields::Aura, 0x0999);						//UNIT_FIELD_AURA				(TODO: Flags)
 		setUInt32Value(unit_fields::AuraFlags, 0x09);					//UNIT_FIELD_AURAFLAGS			(TODO: Flags)
 		setUInt32Value(unit_fields::AuraLevels, 0x01);					//UNIT_FIELD_AURALEVELS			(TODO: Flags)*/
 		setUInt32Value(unit_fields::BaseAttackTime, 2000);				//UNIT_FIELD_BASEATTACKTIME		
@@ -84,7 +84,7 @@ namespace wowpp
 		setUInt32Value(unit_fields::CombatReach, 0xf3c00000);			//UNIT_FIELD_COMBATREACH		(TODO: Float)
 		setUInt32Value(unit_fields::MinDamage, 0x40a49249);				//UNIT_FIELD_MINDAMAGE			(TODO: Float)
 		setUInt32Value(unit_fields::MaxDamage, 0x40c49249);				//UNIT_FIELD_MAXDAMAGE			(TODO: Float)
-		//setUInt32Value(unit_fields::Bytes1, 0x00110000);				//UNIT_FIELD_BYTES_1
+		setUInt32Value(unit_fields::Bytes1, 0x00110000);				//UNIT_FIELD_BYTES_1
 
 		setFloatValue(unit_fields::ModCastSpeed, 1.0f);					//UNIT_MOD_CAST_SPEED
 		setUInt32Value(unit_fields::Resistances, 40);					//UNIT_FIELD_RESISTANCES

@@ -326,7 +326,7 @@ namespace wowpp
 			void initializeFactions(game::OutgoingPacket &out_packet /*TODO */)
 			{
 				out_packet.start(game::server_packet::InitializeFactions);
-
+				/*
 				const std::vector<UInt8> data = 
 				{
 					0x80, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 
@@ -373,12 +373,11 @@ namespace wowpp
 				};
 
 				out_packet
-					<< io::write_range(data);
-				/*
+					<< io::write_range(data);*/
+
 				out_packet
 					<< io::write<NetUInt32>(0x00000040);
 
-				//TODO
 				UInt32 factionCount = 0;
 				for (UInt32 a = factionCount; a != 64; ++a)
 				{
@@ -386,7 +385,7 @@ namespace wowpp
 						<< io::write<NetUInt8>(0x00)
 						<< io::write<NetUInt32>(0x00000000);
 				}
-				*/
+				
 				out_packet.finish();
 			}
 
@@ -738,6 +737,103 @@ namespace wowpp
 				out_packet.start(server_packet::LogoutComplete);
 				out_packet.finish();
 			}
+
+			void messageChat(game::OutgoingPacket &out_packet, ChatMsg type, Language language, const String &channelname, UInt64 targetGUID, const String &message, GameUnit *speaker)
+			{
+				out_packet.start(server_packet::MessageChat);
+				out_packet
+					<< io::write<NetUInt8>(type);
+
+				// Language
+				if ((type != chat_msg::Channel && type != chat_msg::Whisper) || language == language::Addon)
+				{
+					out_packet << io::write<NetUInt32>(language);
+				}
+				else
+				{
+					out_packet << io::write<NetUInt32>(language::Universal);
+				}
+
+				// TODO: Get speaker name from player if available
+				static const String speakerName = "TODO";
+				switch (type)
+				{
+					case chat_msg::Say:
+					case chat_msg::Party:
+					case chat_msg::Raid:
+					case chat_msg::Guild:
+					case chat_msg::Officer:
+					case chat_msg::Yell:
+					case chat_msg::Whisper:
+					case chat_msg::Channel:
+					case chat_msg::RaidLeader:
+					case chat_msg::RaidWarning:
+					case chat_msg::BGSystemNeutral:
+					case chat_msg::BGSystemAlliance:
+					case chat_msg::BGSystemHorde:
+					case chat_msg::Battleground:
+					case chat_msg::BattlegroundLeader:
+						targetGUID = /*TODO: Player ? Player->GetGUID() : 0 */ 0x00;
+						break;
+					case chat_msg::MonsterSay:
+					case chat_msg::MonsterParty:
+					case chat_msg::MonsterYell:
+					case chat_msg::MonsterWhisper:
+					case chat_msg::MonsterEmote:
+					case chat_msg::RaidBossWhisper:
+					case chat_msg::RaidBossEmote:
+					{
+						assert(speaker);
+						out_packet
+							<< io::write<NetUInt64>(speaker->getGuid())
+							<< io::write<NetUInt32>(0x00)
+							<< io::write<NetUInt32>(speakerName.size() + 1)
+							<< io::write_range(speakerName) << io::write<NetUInt8>(0);
+
+						UInt64 listenerGuid = 0x00;
+						out_packet
+							<< io::write<NetUInt64>(listenerGuid);
+
+						if (listenerGuid && !isPlayerGUID(listenerGuid))
+						{
+							out_packet
+								<< io::write<NetUInt32>(0x01)		// String listener name length
+								<< io::write<NetUInt8>(0x00);		// String listener name
+						}
+
+						out_packet
+							<< io::write<NetUInt32>(message.size() + 1)
+							<< io::write_range(message) << io::write<NetUInt8>(0)
+							<< io::write<NetUInt8>(0);				// Chat-Tag always 0 since it's a creature which can't be AFK, DND etc.
+						out_packet.finish();
+						return;
+					}
+					default:
+						if (type == chat_msg::Reply && type != chat_msg::Ignored && type != chat_msg::Dnd && type != chat_msg::Afk)
+						{
+							targetGUID = 0x00;
+						}
+						break;
+				}
+
+				out_packet
+					<< io::write<NetUInt64>(targetGUID)
+					<< io::write<NetUInt32>(0);
+
+				if (type == chat_msg::Channel)
+				{
+					out_packet
+						<< io::write_range(channelname) << io::write<NetUInt8>(0);
+				}
+
+				out_packet
+					<< io::write<NetUInt64>(targetGUID)
+					<< io::write<NetUInt32>(message.size() + 1)
+					<< io::write_range(message) << io::write<NetUInt8>(0)
+					<< io::write<NetUInt8>(0);			// Chat tag: 1: AFK  2: DND  4: GM
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read

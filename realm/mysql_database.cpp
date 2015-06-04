@@ -169,8 +169,8 @@ namespace wowpp
 		bytes2 |= static_cast<UInt32>(static_cast<UInt32>(character.facialHair) << (0 * 8));
 
 		if (m_connection.execute((boost::format(
-			//                           0        1      2      3        4        5       6       7    8        9          10            11            12 
-			"INSERT INTO `character` (`account`,`name`,`race`,`class`,`gender`,`bytes`,`bytes2`,`map`,`zone`,`position_x`,`position_y`,`position_z`,`orientation`) VALUES (%1%, '%2%', %3%, %4%, %5%, %6%, %7%, %8%, %9%, %10%, %11%, %12%, %13%)")
+			//                           0        1      2      3        4        5       6       7    8        9          10            11            12			13
+			"INSERT INTO `character` (`account`,`name`,`race`,`class`,`gender`,`bytes`,`bytes2`,`map`,`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic`) VALUES (%1%, '%2%', %3%, %4%, %5%, %6%, %7%, %8%, %9%, %10%, %11%, %12%, %13%, %14%)")
 			% accountId
 			% safeName
 			% static_cast<UInt32>(character.race)
@@ -183,7 +183,8 @@ namespace wowpp
 			% character.x
 			% character.y
 			% character.z
-			% character.o).str()))
+			% character.o
+			% 1).str()))
 		{
 			// Retrieve id of the newly created character
 			wowpp::MySQL::Select select(m_connection,
@@ -221,8 +222,10 @@ namespace wowpp
 	bool MySQLDatabase::getCharacters(UInt32 accountId, game::CharEntries &out_characters)
 	{
 		wowpp::MySQL::Select select(m_connection,
-							//      0     1       2       3        4        5       6        7       8     9      10           11           12          13
-			(boost::format("SELECT `id`, `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`map`,`zone`,`position_x`,`position_y`,`position_z`,`orientation` FROM `character` WHERE `account`=%1% ORDER BY `id`")
+							//      0     1       2       3        4        5       6        7       8    
+			(boost::format("SELECT `id`, `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`map`,"
+							//		 9       10            11            12           13		  14
+								 "`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic` FROM `character` WHERE `account`=%1% ORDER BY `id`")
 			% accountId).str());
 		if (select.success())
 		{
@@ -257,6 +260,10 @@ namespace wowpp
 				row.getField(11, entry.y);
 				row.getField(12, entry.z);
 				row.getField(13, entry.o);
+				
+				Int32 cinematic = 0;
+				row.getField(14, cinematic);
+				entry.cinematic = (cinematic != 0);
 
 				// Reinterpret bytes
 				entry.skin = static_cast<UInt8>(bytes);

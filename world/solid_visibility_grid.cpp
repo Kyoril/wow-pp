@@ -28,7 +28,7 @@ namespace wowpp
 	namespace constants
 	{
 		static const float MapWidth = 533.3333f;
-		static const size_t MapZonesInParallel = 8;
+		static const size_t MapZonesInParallel = 16;
 		static const size_t ZonesPerMap = MapZonesInParallel * MapZonesInParallel;
 		static const float ZoneWidth = MapWidth / MapZonesInParallel;
 	}
@@ -44,7 +44,7 @@ namespace wowpp
 
 	SolidVisibilityGrid::SolidVisibilityGrid(const TileIndex2D &worldSize)
 		: VisibilityGrid()
-		, m_tiles(getGridLength(worldSize[0], constants::MapWidth / 8.0f), getGridLength(worldSize[1], constants::MapWidth / 8.0f))
+		, m_tiles(getGridLength(worldSize[0], constants::MapWidth / 16.0f), getGridLength(worldSize[1], constants::MapWidth / 16.0f))
 	{
 		for (size_t y = 0; y < m_tiles.height(); ++y)
 		{

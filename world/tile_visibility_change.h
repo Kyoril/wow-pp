@@ -29,7 +29,7 @@ namespace wowpp
 {
 	class VisibilityTile;
 
-	struct TileVisiblityChange
+	struct TileVisibilityChange
 	{
 		typedef VisibilityTile *TilePtr;
 		typedef const TilePtr *TilePtrIterator;

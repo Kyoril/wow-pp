@@ -34,6 +34,7 @@
 namespace wowpp
 {
 	class Project;
+	class PlayerManager;
 
 	/// Manages all available world instances of the server.
 	class WorldInstanceManager final : private boost::noncopyable
@@ -45,6 +46,7 @@ namespace wowpp
 	public:
 
 		explicit WorldInstanceManager(boost::asio::io_service &ioService, 
+			PlayerManager &playerManager,
 			IdGenerator<UInt32> &idGenerator,
 			IdGenerator<UInt64> &objectIdGenerator,
 			Project &project);
@@ -53,10 +55,15 @@ namespace wowpp
 		WorldInstance *createInstance(const MapEntry &map);
 		/// Called once per frame to update all worlds.
 		void update(const boost::system::error_code &error);
+		/// 
 		WorldInstance *getInstanceById(UInt32 instanceId);
+		/// 
 		WorldInstance *getInstanceByMapId(UInt32 MapId);
 
-		TimerQueue &getTimerQueue() { return *m_timerQueue; }
+		/// 
+		inline PlayerManager &getPlayerManager() { return m_playerManager; }
+		/// 
+		inline TimerQueue &getTimerQueue() { return *m_timerQueue; }
 
 	private:
 
@@ -65,6 +72,7 @@ namespace wowpp
 	private:
 
 		boost::asio::io_service &m_ioService;
+		PlayerManager &m_playerManager;
 		IdGenerator<UInt32> &m_idGenerator;
 		IdGenerator<UInt64> &m_objectIdGenerator;
 		boost::asio::deadline_timer m_updateTimer;

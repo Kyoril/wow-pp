@@ -220,7 +220,7 @@ races =
 			(button = 11, action = 4536, type = 128)
 		})
 	})
-	(id = 5, name = "Untoter", faction = 5, maleModel = 57, femaleModel = 58, language = 1, startingTaxiMask = 1024, cinematic = 2, map = 0, zone = 85, position = {1676.71, 1678.31, 121.67}, rotation = 2.70526, initial_spells = 
+	(id = 5, name = "Untoter", faction = 5, maleModel = 57, femaleModel = 58, language = 1, startingTaxiMask = 1024, cinematic = 2, map = 0, zone = 85, position = {1676.71, 1678.31, 121.67}, rotation = 3.1415, initial_spells = 
 	{
 		(class = 1, spells = {78, 81, 107, 201, 202, 203, 204, 522, 669, 1180, 2382, 2457, 2479, 3050, 3365, 5227, 5301, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 7744, 8386, 8737, 9077, 9078, 9116, 9125, 17737, 20577, 20579, 21651, 21652, 22027, 22810, 32215})
 		(class = 4, spells = {81, 203, 204, 522, 669, 1180, 1752, 2098, 2382, 2479, 2567, 2764, 3050, 3365, 5227, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 7744, 8386, 9077, 9078, 9125, 16092, 17737, 20577, 20579, 21184, 21651, 21652, 22027, 22810})

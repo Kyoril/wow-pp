@@ -224,10 +224,11 @@ namespace wowpp
 			return;
 		}
 		
+		// Logging
+		ILOG("Received character data from realm. GUID: " << std::hex << std::uppercase << character->getGuid());
+
 		float x, y, z, o;
 		character->getLocation(x, y, z, o);
-
-		//TODO: Find or create world instance and add player to this instance
 
 		// Let's lookup some informations about the requested map
 		auto map = m_project.maps.getById(character->getMapId());
@@ -272,157 +273,32 @@ namespace wowpp
 			}
 		}
 
+		// Fire signal which should create a player instance for us
+		worldInstanceEntered(requesterDbId, character);
+
 		// Get character location
 		UInt32 mapId = map->id;
 		UInt32 zoneId = 0x0C;	//TODO
 
-		// Player could be added to the world instance - tell the realm
-		assert(instance);
-		//instance->addGameObject(character);
-		
-		// Fire signal which should create a player instance for us
-		worldInstanceEntered(requesterDbId, character);
-
-		// Send packet
+		// Notify the realm that we successfully spawned in this world
 		m_connection->sendSinglePacket(
 			std::bind(
-				pp::world_realm::world_write::worldInstanceEntered, 
-				std::placeholders::_1, 
-				requesterDbId,
-				character->getGuid(),
-				instance->getId(),
-				mapId,
-				zoneId,
-				x,
-				y,
-				z,
-				o
-				));
+			pp::world_realm::world_write::worldInstanceEntered,
+			std::placeholders::_1,
+			requesterDbId,
+			character->getGuid(),
+			instance->getId(),
+			mapId,
+			zoneId,
+			x,
+			y,
+			z,
+			o
+			));
 
-		// Get all objects in the world and add them
-		instance->foreachObject([requesterDbId, this, &character](const GameObject &object)
-		{
-			// Don't spawn ourself
-			if (character->getGuid() == object.getGuid())
-			{
-				return;
-			}
-
-			// Blocks
-			std::vector<std::vector<char>> blocks;
-
-			float x, y, z, o;
-			object.getLocation(x, y, z, o);
-
-			float cx, cy, cz, co;
-			character->getLocation(cx, cy, cz, co);
-
-			// Check 2d distance
-			if (sqrtf((x - cx) * (x - cx) + (y - cy) * (y - cy)) > 80.0f)
-			{
-				return;
-			}
-
-			// Write create object packet
-			std::vector<char> createBlock;
-			io::VectorSink sink(createBlock);
-			io::Writer writer(sink);
-			{
-				UInt8 updateType = 0x02;						// Update type (0x02 = CREATE_OBJECT)
-				if (object.getTypeId() == object_type::Character ||
-					object.getTypeId() == object_type::Corpse ||
-					object.getTypeId() == object_type::DynamicObject ||
-					object.getTypeId() == object_type::Container)
-				{
-					updateType = 0x03;		// CREATE_OBJECT_2
-				}
-				UInt8 updateFlags = 0x10 | 0x20 | 0x40;			// UPDATEFLAG_ALL | UPDATEFLAG_LIVING | UPDATEFLAG_HAS_POSITION
-				UInt8 objectTypeId = object.getTypeId();		// 
-
-				// Header with object guid and type
-				UInt64 guid = object.getGuid();
-				writer
-					<< io::write<NetUInt8>(updateType)
-					<< io::write<NetUInt8>(0xFF) << io::write<NetUInt64>(guid)
-					<< io::write<NetUInt8>(objectTypeId);
-
-				writer
-					<< io::write<NetUInt8>(updateFlags);
-
-				// Write movement update
-				{
-					UInt32 moveFlags = 0x00;
-					writer
-						<< io::write<NetUInt32>(moveFlags)
-						<< io::write<NetUInt8>(0x00)
-						<< io::write<NetUInt32>(662834250);	//TODO: Time
-
-					// Position & Rotation
-					writer
-						<< io::write<float>(x)
-						<< io::write<float>(y)
-						<< io::write<float>(z)
-						<< io::write<float>(o);
-
-					// Fall time
-					writer
-						<< io::write<NetUInt32>(0);
-
-					// Speeds
-					writer
-						<< io::write<float>(2.5f)				// Walk
-						<< io::write<float>(7.0f)				// Run
-						<< io::write<float>(4.5f)				// Backwards
-						<< io::write<NetUInt32>(0x40971c71)		// Swim
-						<< io::write<NetUInt32>(0x40200000)		// Swim Backwards
-						<< io::write<float>(7.0f)				// Fly
-						<< io::write<float>(4.5f)				// Fly Backwards
-						<< io::write<float>(3.1415927);			// Turn (radians / sec: PI)
-				}
-
-				// Lower-GUID update?
-				if (updateFlags & 0x08)
-				{
-					writer
-						<< io::write<NetUInt32>(guidLowerPart(guid));
-				}
-
-				// High-GUID update?
-				if (updateFlags & 0x10)
-				{
-					switch (objectTypeId)
-					{
-						case object_type::Object:
-						case object_type::Item:
-						case object_type::Container:
-						case object_type::GameObject:
-						case object_type::DynamicObject:
-						case object_type::Corpse:
-							writer
-								<< io::write<NetUInt32>(guidHiPart(guid));
-							break;
-						default:
-							writer
-								<< io::write<NetUInt32>(0);
-					}
-				}
-
-				// Write values update
-				object.writeValueUpdateBlock(writer, true);
-
-				// Add block
-				blocks.push_back(createBlock);
-			}
-
-			// Send it
-			std::vector<char> outBuffer;
-			io::VectorSink packetSink(outBuffer);
-			game::OutgoingPacket outPacket(packetSink);
-			game::server_write::compressedUpdateObject(outPacket, blocks);
-
-			this->m_connection->sendSinglePacket(
-				std::bind(pp::world_realm::world_write::clientProxyPacket, std::placeholders::_1, requesterDbId, game::server_packet::CompressedUpdateObject, 0x00, std::cref(outBuffer)));
-		});
+		// Add character to the world
+		assert(instance);
+		instance->addGameObject(*character);
 	}
 
 	void RealmConnector::handleProxyPacket(pp::Protocol::IncomingPacket &packet)

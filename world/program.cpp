@@ -121,7 +121,7 @@ namespace wowpp
 
 		// Create world instance manager
 		auto worldInstanceManager =
-			std::make_shared<wowpp::WorldInstanceManager>(m_ioService, instanceIdGenerator, objectIdGenerator, project);
+			std::make_shared<wowpp::WorldInstanceManager>(m_ioService, *PlayerManager, instanceIdGenerator, objectIdGenerator, project);
 
 		// Create the realm connector
 		auto realmConnector = 

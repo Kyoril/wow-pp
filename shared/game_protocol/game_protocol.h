@@ -30,6 +30,7 @@
 #include "game/defines.h"
 #include "data/unit_entry.h"
 #include "game/action_button.h"
+#include "game/game_unit.h"
 #include <array>
 #include <vector>
 
@@ -83,6 +84,7 @@ namespace wowpp
 				CreatureQueryResponse	= 0x061,
 				FriendList				= 0x067,
 				IgnoreList				= 0x06B,
+				MessageChat				= 0x096,
 				UpdateObject			= 0x0A9,
 				MonsterMove				= 0x0DD,
 				TutorialFlags			= 0x0FD,
@@ -135,6 +137,7 @@ namespace wowpp
 			UInt32 zoneId;
 			float x, y, z;
 			float o;
+			bool cinematic;
 
 			explicit CharEntry()
 				: id(0)
@@ -154,6 +157,7 @@ namespace wowpp
 				, y(0.0f)
 				, z(0.0f)
 				, o(0.0f)
+				, cinematic(false)
 			{
 			}
 		};
@@ -515,6 +519,16 @@ namespace wowpp
 
 			void logoutComplete(
 				game::OutgoingPacket &out_packet
+				);
+
+			void messageChat(
+				game::OutgoingPacket &out_packet,
+				ChatMsg type,
+				Language language,
+				const String &channelname,
+				UInt64 targetGUID,
+				const String &message,
+				GameUnit *speaker
 				);
 		};
 	}

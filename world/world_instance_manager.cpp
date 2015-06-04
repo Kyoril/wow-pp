@@ -31,10 +31,12 @@ namespace wowpp
 {
 	WorldInstanceManager::WorldInstanceManager(
 		boost::asio::io_service &ioService, 
+		PlayerManager &playerManager,
 		IdGenerator<UInt32> &idGenerator, 
 		IdGenerator<UInt64> &objectIdGenerator,
 		Project &project)
 		: m_ioService(ioService)
+		, m_playerManager(playerManager)
 		, m_idGenerator(idGenerator)
 		, m_objectIdGenerator(objectIdGenerator)
 		, m_updateTimer(ioService)

@@ -40,4 +40,37 @@ namespace wowpp
 		virtual VisibilityTile *getTile(const TileIndex2D &position) = 0;
 		virtual VisibilityTile &requireTile(const TileIndex2D &position) = 0;
 	};
+	
+	template <class Handler>
+	void forEachTileInArea(
+		VisibilityGrid &grid,
+		const TileArea &area,
+		const Handler &handler)
+	{
+		for (TileIndex z = area.topLeft[1]; z <= area.bottomRight[1]; ++z)
+		{
+			for (TileIndex x = area.topLeft[0]; x <= area.bottomRight[0]; ++x)
+			{
+				auto *const tile = grid.getTile(TileIndex2D(x, z));
+				if (tile)
+				{
+					handler(*tile);
+				}
+			}
+		}
+	}
+
+	template <class OutputIterator>
+	void copyTilePtrsInArea(
+		VisibilityGrid &grid,
+		const TileArea &area,
+		OutputIterator &dest)
+	{
+		forEachTileInArea(grid, area,
+			[&dest](VisibilityTile & tile)
+		{
+			*dest = &tile;
+			++dest;
+		});
+	}
 }

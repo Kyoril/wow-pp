@@ -21,11 +21,17 @@
 
 #include "world_instance.h"
 #include "world_instance_manager.h"
+#include "player_manager.h"
+#include "player.h"
+#include "realm_connector.h"
 #include "log/default_log_levels.h"
 #include "data/unit_entry.h"
 #include "game/game_unit.h"
 #include "creature_spawner.h"
 #include "tile_visibility_change.h"
+#include "visibility_tile.h"
+#include "each_tile_in_region.h"
+#include "binary_io/vector_sink.h"
 #include <algorithm>
 #include <array>
 #include <memory>
@@ -33,6 +39,145 @@
 
 namespace wowpp
 {
+	namespace
+	{
+		void createUpdateBlocks(GameObject &object, std::vector<std::vector<char>> &out_blocks)
+		{
+			float x, y, z, o;
+			object.getLocation(x, y, z, o);
+			object.setCreateBits();
+
+			// Write create object packet
+			std::vector<char> createBlock;
+			io::VectorSink sink(createBlock);
+			io::Writer writer(sink);
+			{
+				UInt8 updateType = 0x02;						// Update type (0x02 = CREATE_OBJECT)
+				if (object.getTypeId() == object_type::Character ||
+					object.getTypeId() == object_type::Corpse ||
+					object.getTypeId() == object_type::DynamicObject ||
+					object.getTypeId() == object_type::Container)
+				{
+					updateType = 0x03;		// CREATE_OBJECT_2
+				}
+				UInt8 updateFlags = 0x10 | 0x20 | 0x40;			// UPDATEFLAG_ALL | UPDATEFLAG_LIVING | UPDATEFLAG_HAS_POSITION
+				UInt8 objectTypeId = object.getTypeId();		// 
+
+				// Header with object guid and type
+				UInt64 guid = object.getGuid();
+				writer
+					<< io::write<NetUInt8>(updateType)
+					<< io::write<NetUInt8>(0xFF) << io::write<NetUInt64>(guid)
+					<< io::write<NetUInt8>(objectTypeId);
+
+				writer
+					<< io::write<NetUInt8>(updateFlags);
+
+				// Write movement update
+				{
+					UInt32 moveFlags = 0x00;
+					writer
+						<< io::write<NetUInt32>(moveFlags)
+						<< io::write<NetUInt8>(0x00)
+						<< io::write<NetUInt32>(getCurrentTime());
+
+					// Position & Rotation
+					writer
+						<< io::write<float>(x)
+						<< io::write<float>(y)
+						<< io::write<float>(z)
+						<< io::write<float>(o);
+
+					// Fall time
+					writer
+						<< io::write<NetUInt32>(0);
+
+					// Speeds
+					writer
+						<< io::write<float>(2.5f)				// Walk
+						<< io::write<float>(7.0f)				// Run
+						<< io::write<float>(4.5f)				// Backwards
+						<< io::write<NetUInt32>(0x40971c71)		// Swim
+						<< io::write<NetUInt32>(0x40200000)		// Swim Backwards
+						<< io::write<float>(7.0f)				// Fly
+						<< io::write<float>(4.5f)				// Fly Backwards
+						<< io::write<float>(3.1415927);			// Turn (radians / sec: PI)
+				}
+
+				// Lower-GUID update?
+				if (updateFlags & 0x08)
+				{
+					writer
+						<< io::write<NetUInt32>(guidLowerPart(guid));
+				}
+
+				// High-GUID update?
+				if (updateFlags & 0x10)
+				{
+					switch (objectTypeId)
+					{
+						case object_type::Object:
+						case object_type::Item:
+						case object_type::Container:
+						case object_type::GameObject:
+						case object_type::DynamicObject:
+						case object_type::Corpse:
+							writer
+								<< io::write<NetUInt32>(guidHiPart(guid));
+							break;
+						default:
+							writer
+								<< io::write<NetUInt32>(0);
+					}
+				}
+
+				// Write values update
+				object.writeValueUpdateBlock(writer, true);
+			}
+
+			// Add block
+			out_blocks.push_back(createBlock);
+		}
+
+		void doFullSightVisibilityChange(
+			GameObject &object,
+			VisibilityTile &tile,
+			TileVisibility visibility,
+			VisibilityGrid &grid
+			)
+		{
+			std::array<VisibilityTile *, constants::PlayerScopeAreaCount> changedTiles;
+			auto changedTilesEnd = changedTiles.begin();
+			copyTilePtrsInArea(
+				grid,
+				getSightArea(tile.getPosition()),
+				/*ref*/ changedTilesEnd
+				);
+
+			TileVisibilityChange change;
+			change.changed[visibility] =
+				TileVisibilityChange::TileRange(
+				&changedTiles[0],
+				&changedTiles[0] + std::distance(changedTiles.begin(), changedTilesEnd));
+
+			if (isPlayerGUID(object.getGuid()))
+			{
+				size_t objCount = 0;
+				size_t tileCount = 0;
+				for (auto &it : change.changed[visibility])
+				{
+					tileCount++;
+					objCount += it->getGameObjects().size();
+				}
+
+				// Display object count
+				DLOG("Spawning " << objCount << " objects from " << tileCount << " tiles");
+			}
+			
+			//entity.tileSightChanged(change);
+		}
+	}
+
 	WorldInstance::WorldInstance(WorldInstanceManager &manager, 
 		const MapEntry &mapEntry,
 		UInt32 id, 
@@ -86,16 +231,16 @@ namespace wowpp
 
 		spawned->setLevel(entry.minLevel);
 		spawned->setClass(entry.unitClass);														//TODO
-		spawned->setUInt32Value(unit_fields::FactionTemplate, entry.allianceFactionID);			//TODO
+		spawned->setUInt32Value(unit_fields::FactionTemplate, entry.hordeFactionID);			//TODO
 		spawned->setGender(game::gender::Max);
-		//spawned->setUInt32Value(unit_fields::Bytes0, 0x00020000);								//TODO
+		spawned->setUInt32Value(unit_fields::Bytes0, 0x00020000);								//TODO
 		spawned->setUInt32Value(unit_fields::DisplayId, entry.maleModel);						//TODO
 		spawned->setUInt32Value(unit_fields::NativeDisplayId, entry.maleModel);					//TODO
 		spawned->setUInt32Value(unit_fields::BaseHealth, 20);									//TODO
 		spawned->setUInt32Value(unit_fields::Health, entry.minLevelHealth);
 		spawned->setUInt32Value(unit_fields::MaxHealth, entry.minLevelHealth);
 		spawned->setUInt32Value(object_fields::Entry, entry.id);
-		//spawned->setUInt32Value(unit_fields::Bytes2, 0x00001001);								//TODO
+		spawned->setUInt32Value(unit_fields::Bytes2, 0x00001001);								//TODO
 		spawned->setUInt32Value(unit_fields::UnitFlags, 0x0008);
 
 		return spawned;
@@ -113,17 +258,91 @@ namespace wowpp
 
 	void WorldInstance::addGameObject(GameObject& added)
 	{
-		// Assign new guid to object if needed
-		if (added.getGuid() == 0)
-		{
-			const UInt64 lower = static_cast<UInt64>(m_objectIdGenerator.generateId());
-			const UInt64 entry = static_cast<UInt64>(added.getUInt32Value(object_fields::Entry));
-			added.setGuid(createGUID(lower, entry, entry ? high_guid::Unit : high_guid::Player));
-		}
+		auto guid = added.getGuid();
 
 		// Add this game object to the list of objects
 		m_objectsById.insert(
-			std::make_pair(added.getGuid(), &added));
+			std::make_pair(guid, &added));
+
+		// Get object location
+		float x, y, z, o;
+		added.getLocation(x, y, z, o);
+		
+		// Transform into grid location
+		TileIndex2D gridIndex;
+		if (!m_visibilityGrid->getTilePosition(x, y, z, gridIndex[0], gridIndex[1]))
+		{
+			// TODO: Error?
+			ELOG("Could not resolve grid location!");
+			return;
+		}
+
+		Player *player = nullptr;
+		std::array<VisibilityTile *, constants::PlayerScopeAreaCount> changedTiles;
+
+		// Get grid tile
+		auto &tile = m_visibilityGrid->requireTile(gridIndex);
+
+		if (isPlayerGUID(guid))
+		{
+			player = m_manager.getPlayerManager().getPlayerByCharacterGuid(guid);
+			if (!player)
+			{
+				//
+				ELOG("Couldn't find player instance!");
+				return;
+			}
+
+			// Spawn nearby objects
+			auto changedTilesEnd = changedTiles.begin();
+			copyTilePtrsInArea(
+				*m_visibilityGrid,
+				getSightArea(tile.getPosition()),
+				/*ref*/ changedTilesEnd
+				);
+
+			// Spawn objects
+			for (auto &changed : changedTiles)
+			{
+				for (auto it = changed->getGameObjects().begin(); it != changed->getGameObjects().end(); ++it)
+				{
+					auto &object = *it;
+					
+					// Create update block
+					std::vector<std::vector<char>> blocks;
+					createUpdateBlocks(*object, blocks);
+					
+					// Send it
+					player->sendProxyPacket(
+						std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
+				}
+			}
+		}
+
+		// Add to the tile
+		tile.getGameObjects().add(&added);
+		
+		// Create update packet
+		std::vector<std::vector<char>> blocks;
+		createUpdateBlocks(added, blocks);
+
+		// Notify all watchers about the new object
+		for (auto &watcher : tile.getWatchers())
+		{
+			// Send it
+			watcher->sendProxyPacket(
+				std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
+		}
+		
+		// Make us a watcher for these tiles so that we will be notified about new spawns
+		if (player)
+		{
+			// Watch our tiles
+			for (auto &changed : changedTiles)
+			{
+				changed->getWatchers().add(player);
+			}
+		}
 	}
 
 	void WorldInstance::removeGameObject(GameObject &remove)

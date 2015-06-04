@@ -28,25 +28,31 @@
 namespace wowpp
 {
 	class GameObject;
+	class Player;
 
 	class VisibilityTile
 	{
 	public:
 
 		typedef LinearSet<GameObject *> GameObjects;
+		typedef LinearSet<Player *> Watchers;
 
 	public:
 		explicit VisibilityTile();
 		virtual ~VisibilityTile();
 
-		void setPosition(const TileIndex2D &position) { m_position = position; }
-		const TileIndex2D &getPosition() const { return m_position; }
-		GameObjects &getGameObjects() { return m_objects; }
-		const GameObjects &getGameObjects() const { return m_objects; }
+		inline void setPosition(const TileIndex2D &position) { m_position = position; }
+		inline const TileIndex2D &getPosition() const { return m_position; }
+		inline GameObjects &getGameObjects() { return m_objects; }
+		inline const GameObjects &getGameObjects() const { return m_objects; }
+		inline Watchers &getWatchers() { return m_watchers; }
+		inline const Watchers &getWatchers() const { return m_watchers; }
+		
 
 	private:
 
 		TileIndex2D m_position;
 		GameObjects m_objects;
+		Watchers m_watchers;
 	};
 }
