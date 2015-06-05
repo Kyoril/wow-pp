@@ -103,6 +103,12 @@ namespace wowpp
 				break;
 			}
 
+			case pp::world_realm::realm_packet::ChatMessage:
+			{
+				handleChatMessage(packet);
+				break;
+			}
+
 			default:
 			{
 				// Log about unknown or unhandled packet
@@ -594,6 +600,28 @@ namespace wowpp
 			std::bind(game::server_write::standStateUpdate, std::placeholders::_1, standState));
 	}
 
+	void RealmConnector::handleChatMessage(pp::Protocol::IncomingPacket &packet)
+	{
+		UInt64 characterGuid;
+		game::ChatMsg type;
+		game::Language lang;
+		String receiver, channel, message;
+		if (!pp::world_realm::realm_read::chatMessage(packet, characterGuid, type, lang, receiver, channel, message))
+		{
+			WLOG("Could not read realm packet!");
+			return;
+		}
 
+		// Find the player using this character guid
+		Player *player = m_playerManager.getPlayerByCharacterGuid(characterGuid);
+		if (!player)
+		{
+			WLOG("Could not find player for character GUID 0x" << std::hex << std::uppercase << characterGuid);
+			return;
+		}
+
+		// Found the player, handle chat message
+		player->chatMessage(type, lang, receiver, channel, message);
+	}
 
 }

@@ -24,6 +24,7 @@
 #include "log/default_log_levels.h"
 #include "world_instance_manager.h"
 #include "world_instance.h"
+#include "each_tile_in_region.h"
 #include <cassert>
 #include <limits>
 
@@ -81,4 +82,77 @@ namespace wowpp
 		// Remove player
 		m_manager.playerDisconnected(*this);
 	}
+
+	void Player::chatMessage(game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message)
+	{
+		if (!m_character)
+		{
+			return;
+		}
+
+		float x, y, z, o;
+		m_character->getLocation(x, y, z, o);
+
+		// Get a list of potential watchers
+		auto &grid = m_instance.getGrid();
+		
+		// Get tile index
+		TileIndex2D tile;
+		grid.getTilePosition(x, y, z, tile[0], tile[1]);
+
+		// Get all potential characters
+		std::vector<Player*> subscribers;
+		forEachTileInSight(
+			grid,
+			tile,
+			[&subscribers](VisibilityTile &tile)
+		{
+			for (auto * const subscriber : tile.getWatchers().getElements())
+			{
+				subscribers.push_back(subscriber);
+			}
+		});
+
+		switch (type)
+		{
+			case game::chat_msg::Say:
+			{
+				// Send to all subscribers in range
+				for (auto * const subscriber : subscribers)
+				{
+					const float distance = m_character->getDistanceTo(*subscriber->getCharacter());
+					if (distance <= 25.0f)	// 25 yards range
+					{
+						subscriber->sendProxyPacket(
+							std::bind(game::server_write::messageChat, std::placeholders::_1, type, lang, std::cref(channel), m_character->getGuid(), std::cref(message), m_character.get()));
+					}
+				}
+
+				break;
+			}
+
+			case game::chat_msg::Yell:
+			{
+				// Send to all subscribers in range
+				for (auto * const subscriber : subscribers)
+				{
+					const float distance = m_character->getDistanceTo(*subscriber->getCharacter());
+					if (distance <= 300.0f)	// 300 yards range
+					{
+						subscriber->sendProxyPacket(
+							std::bind(game::server_write::messageChat, std::placeholders::_1, type, lang, std::cref(channel), m_character->getGuid(), std::cref(message), m_character.get()));
+					}
+				}
+
+				break;
+			}
+
+			default:
+			{
+				WLOG("Chat mode unimplemented");
+				break;
+			}
+		}
+	}
+
 }

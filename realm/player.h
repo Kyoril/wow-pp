@@ -163,6 +163,7 @@ namespace wowpp
 		DataLoadContext::GetLevel m_getLevel;
 		boost::signals2::scoped_connection m_worldDisconnected;
 		UInt32 m_timeSyncCounter;
+		World *m_worldNode;
 
 	private:
 

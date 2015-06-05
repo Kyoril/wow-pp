@@ -99,6 +99,7 @@ namespace wowpp
 		void handleLoginAnswer(pp::Protocol::IncomingPacket &packet);
 		void handleCharacterLogin(pp::Protocol::IncomingPacket &packet);
 		void handleProxyPacket(pp::Protocol::IncomingPacket &packet);
+		void handleChatMessage(pp::Protocol::IncomingPacket &packet);
 
 	private:
 

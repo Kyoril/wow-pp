@@ -80,6 +80,9 @@ namespace wowpp
 		void logoutRequest();
 		/// Cancels the 20 second logout timer if it has been set up.
 		void cancelLogoutRequest();
+		/// 
+		void chatMessage(game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message);
+
 
 		/// Sends an proxy packet to the realm which will then be redirected to the game client.
 		/// @param generator Packet writer function pointer.

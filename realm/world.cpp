@@ -326,4 +326,9 @@ namespace wowpp
 		player->sendProxyPacket(opCode, outBuffer);
 	}
 
+	void World::sendChatMessage(NetUInt64 characterGuid, game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::realm_write::chatMessage, std::placeholders::_1, characterGuid, type, lang, std::cref(receiver), std::cref(channel), std::cref(message)));
+	}
 }

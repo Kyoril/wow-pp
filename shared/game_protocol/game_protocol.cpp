@@ -698,23 +698,6 @@ namespace wowpp
 				static const String speakerName = "TODO";
 				switch (type)
 				{
-					case chat_msg::Say:
-					case chat_msg::Party:
-					case chat_msg::Raid:
-					case chat_msg::Guild:
-					case chat_msg::Officer:
-					case chat_msg::Yell:
-					case chat_msg::Whisper:
-					case chat_msg::Channel:
-					case chat_msg::RaidLeader:
-					case chat_msg::RaidWarning:
-					case chat_msg::BGSystemNeutral:
-					case chat_msg::BGSystemAlliance:
-					case chat_msg::BGSystemHorde:
-					case chat_msg::Battleground:
-					case chat_msg::BattlegroundLeader:
-						targetGUID = /*TODO: Player ? Player->GetGUID() : 0 */ 0x00;
-						break;
 					case chat_msg::MonsterSay:
 					case chat_msg::MonsterParty:
 					case chat_msg::MonsterYell:

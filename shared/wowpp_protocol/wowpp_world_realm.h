@@ -26,6 +26,7 @@
 #include "wowpp_protocol.h"
 #include "binary_io/reader.h"
 #include "game/game_character.h"
+#include "game/defines.h"
 
 namespace wowpp
 {
@@ -78,7 +79,7 @@ namespace wowpp
 					/// Sent by the world server if a player character left a world instance.
 					WorldInstanceLeft,
 					/// Original packet which the realm should encode and send to the client.
-					ClientProxyPacket,
+					ClientProxyPacket
 				};
 			}
 
@@ -95,6 +96,8 @@ namespace wowpp
 					/// Original packet which was received by the game client and is redirected to the
 					/// world server.
 					ClientProxyPacket,
+					/// Chat message of a player which needs to be handled by the world server (yell-msg for example).
+					ChatMessage
 				};
 			}
 
@@ -217,6 +220,17 @@ namespace wowpp
 					UInt32 size,
 					const std::vector<char> &packetBuffer
 					);
+
+				/// 
+				void chatMessage(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterGuid,
+					game::ChatMsg type,
+					game::Language language,
+					const String &receiver,
+					const String &channel,
+					const String &message
+					);
 			}
 
 			/// Contains methods for reading packets coming from the world server. 
@@ -311,6 +325,17 @@ namespace wowpp
 					UInt16 &out_opCode,
 					UInt32 &out_size,
 					std::vector<char> &out_packetBuffer
+					);
+
+				/// 
+				bool chatMessage(
+					io::Reader &packet,
+					UInt64 &out_characterGuid,
+					game::ChatMsg &out_type,
+					game::Language &out_language,
+					String &out_receiver,
+					String &out_channel,
+					String &out_message
 					);
 			}
 		}

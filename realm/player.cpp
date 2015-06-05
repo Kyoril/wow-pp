@@ -56,6 +56,7 @@ namespace wowpp
 		, m_getRace(std::bind(&RaceEntryManager::getById, &project.races, std::placeholders::_1))
 		, m_getClass(std::bind(&ClassEntryManager::getById, &project.classes, std::placeholders::_1))
 		, m_getLevel(std::bind(&LevelEntryManager::getById, &project.levels, std::placeholders::_1))
+		, m_worldNode(nullptr)
 	{
 		assert(m_connection);
 
@@ -483,8 +484,8 @@ namespace wowpp
 		// which is hosting a fitting world instance or is able to create
 		// a new one
 
-		auto world = m_worldManager.getWorldByMapId(charEntry->mapId);
-		if (!world)
+		m_worldNode = m_worldManager.getWorldByMapId(charEntry->mapId);
+		if (!m_worldNode)
 		{
 			// World does not exist
 			WLOG("Player login failed: Could not find world server for map " << charEntry->mapId);
@@ -500,7 +501,7 @@ namespace wowpp
 		// is valid on the world node and if not, transfer player
 
 		// There should be an instance
-		world->enterWorldInstance(charEntry->id, *m_gameCharacter);
+		m_worldNode->enterWorldInstance(charEntry->id, *m_gameCharacter);
 	}
 
 	void Player::worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, float x, float y, float z, float o)
@@ -765,6 +766,7 @@ namespace wowpp
 				m_gameCharacter.reset();
 				m_characterId = 0;
 				m_instanceId = 0;
+				m_worldNode = nullptr;
 
 				break;
 			}
@@ -814,6 +816,12 @@ namespace wowpp
 			return;
 		}
 
+		if (!m_worldNode)
+		{
+			WLOG("Not connected to a world node right now - chat message will be ignored!");
+			return;
+		}
+
 		switch (type)
 		{
 			// Local chat modes
@@ -821,7 +829,13 @@ namespace wowpp
 			case chat_msg::Yell:
 			{
 				// Redirect chat message to world node
-
+				m_worldNode->sendChatMessage(
+					m_gameCharacter->getGuid(),
+					type,
+					lang,
+					receiver,
+					channel,
+					message);
 				break;
 			}
 			// Can be local or global chat mode
@@ -838,6 +852,4 @@ namespace wowpp
 			}
 		}
 	}
-
-
 }

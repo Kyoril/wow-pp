@@ -129,6 +129,20 @@ namespace wowpp
 						<< io::write_dynamic_range<NetUInt32>(packetBuffer);
 					out_packet.finish();
 				}
+
+				void chatMessage(pp::OutgoingPacket &out_packet, UInt64 characterGuid, game::ChatMsg type, game::Language language, const String &receiver, const String &channel, const String &message)
+				{
+					out_packet.start(realm_packet::ChatMessage);
+					out_packet
+						<< io::write<NetUInt64>(characterGuid)
+						<< io::write<NetUInt32>(type)
+						<< io::write<NetUInt32>(language)
+						<< io::write_dynamic_range<NetUInt8>(receiver)
+						<< io::write_dynamic_range<NetUInt8>(channel)
+						<< io::write_dynamic_range<NetUInt16>(message);
+					out_packet.finish();
+				}
+
 			}
 
 			namespace world_read
@@ -216,6 +230,16 @@ namespace wowpp
 						>> io::read_container<NetUInt32>(out_packetBuffer);
 				}
 
+				bool chatMessage(io::Reader &packet, UInt64 &out_characterGuid, game::ChatMsg &out_type, game::Language &out_language, String &out_receiver, String &out_channel, String &out_message)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterGuid)
+						>> io::read<NetUInt32>(out_type)
+						>> io::read<NetUInt32>(out_language)
+						>> io::read_container<NetUInt8>(out_receiver)
+						>> io::read_container<NetUInt8>(out_channel)
+						>> io::read_container<NetUInt16>(out_message);
+				}
 			}
 		}
 	}

@@ -295,9 +295,9 @@ namespace wowpp
 		other.getLocation(x, y, z, o);
 
 		if (use3D)
-			return (sqrtf(x - m_x * x - m_x + y - m_y * y - m_y + z - m_z * z - m_z));
+			return (sqrtf(((x - m_x) * (x - m_x)) + ((y - m_y) * (y - m_y)) + ((z - m_z) * (z - m_z))));
 		else
-			return (sqrtf(x - m_x * x - m_x + y - m_y * y - m_y));
+			return (sqrtf(((x - m_x) * (x - m_x)) + ((y - m_y) * (y - m_y))));
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameObject const& object)
