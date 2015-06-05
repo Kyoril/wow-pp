@@ -1103,6 +1103,13 @@ namespace wowpp
 					>> io::read<NetUInt64>(out_targetGUID);
 			}
 
+			bool standStateChange(io::Reader &packet, UnitStandState &out_standState)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_standState);
+			}
+
+
 		}
 	}
 }

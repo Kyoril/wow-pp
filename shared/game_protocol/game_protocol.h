@@ -76,6 +76,7 @@ namespace wowpp
 				SetFacing				= 0x0DA,
 				SetPitch				= 0x0DB,
 				MoveHeartBeat			= 0x0EE,
+				StandStateChange		= 0x101,
 				SetSelection			= 0x13D,
 				Ping					= 0x1DC,
 				AuthSession				= 0x1ED,
@@ -371,6 +372,11 @@ namespace wowpp
 			bool setSelection(
 				io::Reader &packet,
 				UInt64 &out_targetGUID
+				);
+
+			bool standStateChange(
+				io::Reader &packet,
+				UnitStandState &out_standState
 				);
 		};
 

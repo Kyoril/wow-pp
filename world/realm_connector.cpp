@@ -336,37 +336,36 @@ namespace wowpp
 				handleNameQuery(*sender, clientPacket);
 				break;
 			}
-
 			case game::client_packet::CreatureQuery:
 			{
 				handleCreatureQuery(*sender, clientPacket);
 				break;
 			}
-
 			case game::client_packet::PlayerLogout:
 			{
 				DLOG("TODO: CMSG_PLAYER_LOGOUT not handled.");
 				break;
 			}
-
 			case game::client_packet::LogoutRequest:
 			{
 				handleLogoutRequest(*sender, clientPacket);
 				break;
 			}
-
 			case game::client_packet::LogoutCancel:
 			{
 				handleLogoutCancel(*sender, clientPacket);
 				break;
 			}
-
 			case game::client_packet::SetSelection:
 			{
 				handleSetSelection(*sender, clientPacket);
 				break;
 			}
-
+			case game::client_packet::StandStateChange:
+			{
+				handleStandStateChange(*sender, clientPacket);
+				break;
+			}
 			case game::client_packet::MoveStartForward:
 			case game::client_packet::MoveStartBackward:
 			case game::client_packet::MoveStop:
@@ -387,7 +386,6 @@ namespace wowpp
 				handleMovementPacket(*sender, opCode, clientPacket);
 				break;
 			}
-
 			default:
 			{
 				// Unhandled packet
@@ -576,6 +574,21 @@ namespace wowpp
 		// Get the player character
 		sender.getCharacter()->setUInt64Value(unit_fields::Target, targetGUID);
 	}
+
+	void RealmConnector::handleStandStateChange(Player &sender, game::Protocol::IncomingPacket &packet)
+	{
+		UnitStandState standState;
+		if (!game::client_read::standStateChange(packet, standState))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		sender.getCharacter()->setByteValue(unit_fields::Bytes1, 0, static_cast<UInt8>(standState));
+		sender.sendProxyPacket(
+			std::bind(game::server_write::standStateUpdate, std::placeholders::_1, standState));
+	}
+
 
 
 }
