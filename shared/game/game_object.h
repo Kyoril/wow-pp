@@ -24,6 +24,7 @@
 #include "common/typedefs.h"
 #include "binary_io/writer.h"
 #include "binary_io/reader.h"
+#include <boost/signals2/signal.hpp>
 #include <vector>
 
 namespace wowpp
@@ -179,6 +180,10 @@ namespace wowpp
 	{
 		friend io::Writer &operator << (io::Writer &w, GameObject const& object);
 		friend io::Reader &operator >> (io::Reader &r, GameObject& object);
+
+	public:
+
+		boost::signals2::signal<void(GameObject &, float, float, float, float)> moved;
 
 	public:
 

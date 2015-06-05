@@ -206,10 +206,14 @@ namespace wowpp
 
 	void GameObject::relocate(float x, float y, float z, float o)
 	{
+		float oldX = m_x, oldY = m_y, oldZ = m_z, oldO = m_o;
+
 		m_x = x;
 		m_y = y;
 		m_z = z;
 		m_o = o;
+
+		moved(*this, oldX, oldY, oldZ, oldO);
 	}
 
 	void GameObject::setMapId(UInt32 mapId)

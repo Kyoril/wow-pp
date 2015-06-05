@@ -33,6 +33,7 @@
 #include "each_tile_in_region.h"
 #include "binary_io/vector_sink.h"
 #include <boost/iterator/indirect_iterator.hpp>
+#include <boost/bind/bind.hpp>
 #include <algorithm>
 #include <array>
 #include <memory>
@@ -280,6 +281,41 @@ namespace wowpp
 			
 			//entity.tileSightChanged(change);
 		}
+
+		static inline bool isInSight(
+			const TileIndex2D &first,
+			const TileIndex2D &second)
+		{
+			const auto diff = abs(second - first);
+			return
+				(static_cast<size_t>(diff.x()) <= constants::PlayerZoneSight) &&
+				(static_cast<size_t>(diff.y()) <= constants::PlayerZoneSight);
+		}
+
+		template <class OnTile>
+		void forEachTileInSightWithout(
+			VisibilityGrid &grid,
+			const TileIndex2D &center,
+			const TileIndex2D &excluded,
+			const OnTile &onTile
+			)
+		{
+			for (TileIndex y = center.y() - constants::PlayerZoneSight;
+				y <= static_cast<TileIndex>(center.y() + constants::PlayerZoneSight); ++y)
+			{
+				for (TileIndex x = center.x() - constants::PlayerZoneSight;
+					x <= static_cast<TileIndex>(center.x() + constants::PlayerZoneSight); ++x)
+				{
+					auto *const tile = grid.getTile(TileIndex2D(x, y));
+
+					if (tile &&
+						!isInSight(excluded, tile->getPosition()))
+					{
+						onTile(*tile);
+					}
+				}
+			}
+		}
 	}
 
 	WorldInstance::WorldInstance(WorldInstanceManager &manager, 
@@ -461,22 +497,28 @@ namespace wowpp
 		createUpdateBlocks(added, blocks);
 
 		// Notify all watchers about the new object
-		for (auto &watcher : tile.getWatchers())
+
+		// Spawn ourself for new watchers
+		forEachTileInSight(
+			*m_visibilityGrid,
+			tile.getPosition(),
+			[&blocks](VisibilityTile &tile)
 		{
-			// Send it
-			watcher->sendProxyPacket(
-				std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
-		}
-		
+			for (const auto * subscriber : tile.getWatchers().getElements())
+			{
+				subscriber->sendProxyPacket(
+					std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
+			}
+		});
+
 		// Make us a watcher for these tiles so that we will be notified about new spawns
 		if (player)
 		{
-			// Watch our tiles
-			for (auto &changed : changedTiles)
-			{
-				changed->getWatchers().add(player);
-			}
+			tile.getWatchers().add(player);
 		}
+
+		added.moved.connect(
+			boost::bind(&WorldInstance::onObjectMoved, this, _1, _2, _3, _4, _5));
 	}
 
 	void WorldInstance::removeGameObject(GameObject &remove)
@@ -502,21 +544,8 @@ namespace wowpp
 				ELOG("Couldn't find player instance!");
 				return;
 			}
-
-			// Spawn nearby objects
-			std::array<VisibilityTile *, constants::PlayerScopeAreaCount> changedTiles;
-			auto changedTilesEnd = changedTiles.begin();
-			copyTilePtrsInArea(
-				*m_visibilityGrid,
-				getSightArea(tile.getPosition()),
-				/*ref*/ changedTilesEnd
-				);
-
-			// Remove ourself as watcher
-			for (auto &changed : changedTiles)
-			{
-				changed->getWatchers().remove(player);
-			}
+			
+			tile.getWatchers().remove(player);
 		}
 
 		// Notify all watchers about the new object
@@ -526,4 +555,103 @@ namespace wowpp
 				std::bind(game::server_write::destroyObject, std::placeholders::_1, remove.getGuid(), false));
 		}
 	}
+
+	void WorldInstance::onObjectMoved(GameObject &object, float oldX, float oldY, float oldZ, float oldO)
+	{
+		// Calculate old tile index
+		TileIndex2D oldIndex;
+		m_visibilityGrid->getTilePosition(oldX, oldY, oldZ, oldIndex[0], oldIndex[1]);
+
+		// Calculate new tile index
+		TileIndex2D newIndex = getObjectTile(object, *m_visibilityGrid);
+
+		// Check if tile changed
+		if (oldIndex != newIndex)
+		{
+			// Get the tiles
+			VisibilityTile *oldTile = m_visibilityGrid->getTile(oldIndex);
+			assert(oldTile);
+			VisibilityTile *newTile = m_visibilityGrid->getTile(newIndex);
+			assert(newTile);
+
+			// Remove the object
+			oldTile->getGameObjects().remove(&object);
+
+			Player * player = nullptr;
+
+			auto guid = object.getGuid();
+			if (isPlayerGUID(guid))
+			{
+				player = m_manager.getPlayerManager().getPlayerByCharacterGuid(guid);
+			}
+
+			if (player)
+			{
+				// Unsubscribe the old tile
+				oldTile->getWatchers().remove(player);
+
+				// Create spawn message blocks
+				std::vector<std::vector<char>> spawnBlocks;
+				createUpdateBlocks(object, spawnBlocks);
+
+				// Spawn ourself for new watchers
+				forEachTileInSightWithout(
+					*m_visibilityGrid,
+					newIndex,
+					oldIndex,
+					[&spawnBlocks, &player](VisibilityTile &tile)
+				{
+					for(const auto * subscriber : tile.getWatchers().getElements())
+					{
+						if (subscriber != player)
+						{
+							subscriber->sendProxyPacket(
+								std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(spawnBlocks)));
+						}
+					}
+
+					// Spawn objects of this tile for the player
+					for (auto *object : tile.getGameObjects().getElements())
+					{
+						std::vector<std::vector<char>> createBlock;
+						createUpdateBlocks(*object, createBlock);
+
+						player->sendProxyPacket(
+							std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(createBlock)));
+					}
+				});
+
+				// Despawn ourself for old watchers
+				forEachTileInSightWithout(
+					*m_visibilityGrid,
+					oldIndex,
+					newIndex,
+					[guid, &player](VisibilityTile &tile)
+				{
+					for (const auto * subscriber : tile.getWatchers().getElements())
+					{
+						if (subscriber != player)
+						{
+							subscriber->sendProxyPacket(
+								std::bind(game::server_write::destroyObject, std::placeholders::_1, guid, false));
+						}
+					}
+
+					// Despawn old objects for the player
+					for (auto *object : tile.getGameObjects().getElements())
+					{
+						player->sendProxyPacket(
+							std::bind(game::server_write::destroyObject, std::placeholders::_1, object->getGuid(), false));
+					}
+				});
+
+				// Subscribe the new tile
+				newTile->getWatchers().add(player);
+			}
+
+			// Add the object
+			newTile->getGameObjects().add(&object);
+		}
+	}
+
 }

@@ -100,6 +100,10 @@ namespace wowpp
 
 	private:
 
+		void onObjectMoved(GameObject &object, float oldX, float oldY, float oldZ, float oldO);
+
+	private:
+
 		WorldInstanceManager &m_manager;
 		std::unique_ptr<VisibilityGrid> m_visibilityGrid;
 		IdGenerator<UInt64> &m_objectIdGenerator;

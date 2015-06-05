@@ -29,6 +29,7 @@
 #include "common/clock.h"
 #include "data/project.h"
 #include "visibility_tile.h"
+#include "each_tile_in_region.h"
 #include "binary_io/vector_sink.h"
 #include "log/default_log_levels.h"
 
@@ -544,15 +545,21 @@ namespace wowpp
 		info.time += clientTimeDelay;
 
 		// Notify all watchers about the new object
-		for (auto &watcher : tile.getWatchers())
+		forEachTileInSight(
+			sender.getWorldInstance().getGrid(),
+			gridIndex,
+			[&sender, guid, opCode, &info](VisibilityTile &tile)
 		{
-			if (watcher != &sender)
+			for (auto &watcher : tile.getWatchers())
 			{
-				// Send it
-				watcher->sendProxyPacket(
-					std::bind(game::server_write::movePacket, std::placeholders::_1, opCode, guid, std::cref(info)));
+				if (watcher != &sender)
+				{
+					// Send it
+					watcher->sendProxyPacket(
+						std::bind(game::server_write::movePacket, std::placeholders::_1, opCode, guid, std::cref(info)));
+				}
 			}
-		}
+		});
 
 		//TODO: Verify new location
 
