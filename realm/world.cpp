@@ -307,8 +307,6 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("RECV PACKET " << opCode << " for player " << characterId);
-
 		// Redirect client packet
 		auto *player = m_playerManager.getPlayerByCharacterId(characterId);
 		if (!player)
