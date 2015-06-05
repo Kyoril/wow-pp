@@ -548,12 +548,18 @@ namespace wowpp
 			tile.getWatchers().remove(player);
 		}
 
-		// Notify all watchers about the new object
-		for (auto &watcher : tile.getWatchers())
+		// Despawn ourself for new watchers
+		forEachTileInSight(
+			*m_visibilityGrid,
+			tile.getPosition(),
+			[&remove](VisibilityTile &tile)
 		{
-			watcher->sendProxyPacket(
-				std::bind(game::server_write::destroyObject, std::placeholders::_1, remove.getGuid(), false));
-		}
+			for (const auto * subscriber : tile.getWatchers().getElements())
+			{
+				subscriber->sendProxyPacket(
+					std::bind(game::server_write::destroyObject, std::placeholders::_1, remove.getGuid(), false));
+			}
+		});
 	}
 
 	void WorldInstance::onObjectMoved(GameObject &object, float oldX, float oldY, float oldZ, float oldO)

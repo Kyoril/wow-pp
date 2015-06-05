@@ -565,8 +565,6 @@ namespace wowpp
 
 		// Update position
 		sender.getCharacter()->relocate(info.x, info.y, info.z, info.o);
-
-		// TODO: Update tile visibility etc.
 	}
 
 	void RealmConnector::handleSetSelection(Player &sender, game::Protocol::IncomingPacket &packet)
