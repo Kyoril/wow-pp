@@ -122,6 +122,7 @@ namespace wowpp
 				AccountDataTimes		= 0x209,
 				SetRestStart			= 0x21E,
 				LoginVerifyWorld		= 0x236,
+				StandStateUpdate		= 0x29D,
 				InitWorldStates			= 0x2C2,
 				AddonInfo				= 0x2EF,
 				SetDungeonDifficulty	= 0x329,
@@ -588,6 +589,11 @@ namespace wowpp
 				UInt16 opCode,
 				UInt64 guid,
 				const MovementInfo &movement
+				);
+
+			void standStateUpdate(
+				game::OutgoingPacket &out_packet,
+				UnitStandState standState
 				);
 		};
 	}

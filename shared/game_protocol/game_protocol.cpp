@@ -870,6 +870,13 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void standStateUpdate(game::OutgoingPacket &out_packet, UnitStandState standState)
+			{
+				out_packet.start(game::server_packet::StandStateUpdate);
+				out_packet
+					<< io::write<NetUInt8>(standState);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

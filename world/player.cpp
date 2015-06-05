@@ -46,6 +46,12 @@ namespace wowpp
 
 	void Player::logoutRequest()
 	{
+		// Make our character sit down
+		auto standState = unit_stand_state::Sit;
+		m_character->setByteValue(unit_fields::Bytes1, 0, standState);
+		sendProxyPacket(
+			std::bind(game::server_write::standStateUpdate, std::placeholders::_1, standState));
+
 		// Setup the logout countdown
 		m_logoutCountdown.setEnd(
 			getCurrentTime() + (20 * constants::OneSecond));
@@ -53,6 +59,12 @@ namespace wowpp
 
 	void Player::cancelLogoutRequest()
 	{
+		// Stand up again
+		auto standState = unit_stand_state::Stand;
+		m_character->setByteValue(unit_fields::Bytes1, 0, standState);
+		sendProxyPacket(
+			std::bind(game::server_write::standStateUpdate, std::placeholders::_1, standState));
+
 		// Cancel the countdown
 		m_logoutCountdown.cancel();
 	}
@@ -61,6 +73,7 @@ namespace wowpp
 	{
 		// Remove the character from the world
 		m_instance.removeGameObject(*m_character);
+		m_character.reset();
 
 		// Notify the realm
 		m_realmConnector.notifyWorldInstanceLeft(m_characterId, pp::world_realm::world_left_reason::Logout);

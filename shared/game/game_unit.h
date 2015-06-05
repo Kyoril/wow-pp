@@ -30,6 +30,24 @@
 
 namespace wowpp
 {
+	namespace unit_stand_state
+	{
+		enum Enum
+		{
+			Stand			= 0x00,
+			Sit				= 0x01,
+			SitChair		= 0x02,
+			Sleep			= 0x03,
+			SitLowChair		= 0x04,
+			SitMediumChais	= 0x05,
+			SitHighChair	= 0x06,
+			Dead			= 0x07,
+			Kneel			= 0x08
+		};
+	}
+
+	typedef unit_stand_state::Enum UnitStandState;
+
 	namespace unit_fields
 	{
 		enum Enum

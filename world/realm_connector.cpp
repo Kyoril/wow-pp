@@ -509,7 +509,7 @@ namespace wowpp
 			std::bind(game::server_write::logoutCancelAck, std::placeholders::_1));
 
 		// Cancel the logout process
-		sender.logoutRequest();
+		sender.cancelLogoutRequest();
 	}
 
 	void RealmConnector::handleMovementPacket(Player &sender, UInt16 opCode, game::Protocol::IncomingPacket &packet)

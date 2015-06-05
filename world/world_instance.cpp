@@ -441,7 +441,7 @@ namespace wowpp
 				for (auto it = changed->getGameObjects().begin(); it != changed->getGameObjects().end(); ++it)
 				{
 					auto &object = *it;
-					
+
 					// Create update block
 					std::vector<std::vector<char>> blocks;
 					createUpdateBlocks(*object, blocks);
