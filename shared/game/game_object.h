@@ -236,6 +236,10 @@ namespace wowpp
 		bool wasUpdated() const { return m_updated; }
 		/// Marks all changed values of this object as unchanged.
 		void clearUpdateMask();
+		/// Calculates the distance of this object to another object.
+		/// @param use3D If true, the distance will be calculated using 3d coordinates, otherwise,
+		///              only 2d coordinates are used.
+		float getDistanceTo(GameObject &other, bool use3D = true) const;
 
 	protected:
 

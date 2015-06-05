@@ -60,6 +60,7 @@ namespace wowpp
 				LogoutCancel			= 0x04E,
 				NameQuery				= 0x050,
 				CreatureQuery			= 0x060,
+				MessageChat				= 0x095,
 				MoveStartForward		= 0x0B5,
 				MoveStartBackward		= 0x0B6,
 				MoveStop				= 0x0B7,
@@ -244,15 +245,15 @@ namespace wowpp
 				CharDeleteFailedArenaCaptain	= 0x3F,
 
 				CharLoginInProgress				= 0x40,
-				CharLoginSuccess				= 0x41,
-				CharLoginNoWorld				= 0x42,
-				CharLoginDuplicateCharacter		= 0x43,
-				CharLoginNoInstances			= 0x44,
-				CharLoginFailed					= 0x45,
-				CharLoginDisabled				= 0x46,
-				CharLoginNoCharacter			= 0x47,
-				CharLoginLockedForTransfer		= 0x48,
-				CharLoginLockedByBilling		= 0x49
+				CharLoginSuccess				= 0x00,
+				CharLoginNoWorld				= 0x01,
+				CharLoginDuplicateCharacter		= 0x02,
+				CharLoginNoInstances			= 0x03,
+				CharLoginFailed					= 0x04,
+				CharLoginDisabled				= 0x05,
+				CharLoginNoCharacter			= 0x06,
+				CharLoginLockedForTransfer		= 0x07,
+				CharLoginLockedByBilling		= 0x08
 			};
 		}
 
@@ -339,6 +340,15 @@ namespace wowpp
 
 			bool playerLogout(
 				io::Reader &packet
+				);
+
+			bool messageChat(
+				io::Reader &packet,
+				ChatMsg &out_type,
+				Language &out_lang,
+				String &out_to,
+				String &out_channel,
+				String &out_message
 				);
 
 			bool logoutRequest(

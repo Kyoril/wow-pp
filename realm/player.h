@@ -190,5 +190,6 @@ namespace wowpp
 		void handleCharCreate(game::IncomingPacket &packet);
 		void handleCharDelete(game::IncomingPacket &packet);
 		void handlePlayerLogin(game::IncomingPacket &packet);
+		void handleMessageChat(game::IncomingPacket &packet);
 	};
 }

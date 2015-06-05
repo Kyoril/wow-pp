@@ -230,6 +230,12 @@ namespace wowpp
 				break;
 			}
 
+			case client_packet::MessageChat:
+			{
+				handleMessageChat(packet);
+				break;
+			}
+
 			default:
 			{
 				// Redirect to world server if attached
@@ -473,9 +479,6 @@ namespace wowpp
 			return;
 		}
 
-		// Use the new character
-		m_gameCharacter = std::move(character);
-
 		// We found the character - now we need to look for a world node
 		// which is hosting a fitting world instance or is able to create
 		// a new one
@@ -489,6 +492,9 @@ namespace wowpp
 				std::bind(game::server_write::charLoginFailed, std::placeholders::_1, game::response_code::CharLoginNoWorld));
 			return;
 		}
+
+		// Use the new character
+		m_gameCharacter = std::move(character);
 
 		//TODO Map found - check if player is member of an instance and if this instance
 		// is valid on the world node and if not, transfer player
@@ -512,9 +518,27 @@ namespace wowpp
 		//m_gameCharacter->setGuid(createGUID(worldObjectGuid, 0, high_guid::Player));
 		m_gameCharacter->relocate(x, y, z, o);
 		m_gameCharacter->setMapId(mapId);
+
+		// TODO: Remove this
+#define MAKE_PAIR32(l, h)  UInt32(UInt16(l) | (UInt32(h) << 16))
+#define PLAYER_SKILL_INDEX(x)       (character_fields::SkillInfo1_1 + ((x)* 3))
+#define PLAYER_SKILL_VALUE_INDEX(x) (PLAYER_SKILL_INDEX(x) + 1)
+#define PLAYER_SKILL_BONUS_INDEX(x) (PLAYER_SKILL_INDEX(x) + 2)
+
+#define MAKE_SKILL_VALUE(v, m) MAKE_PAIR32(v, m)
+#define MAKE_SKILL_BONUS(t, p) MAKE_PAIR32(t, p)
+
+		// If we are an alliance player, learn "Common language", learn "Orcish" otherwise.
+		// This is hacky at the moment, but it will enable the client to send chat messages
+		// to the realm, which we want in order to evaluate debug/dev commands
+		UInt32 languageSkill = (m_gameCharacter->getRaceEntry()->baseLanguage == 7 ? 98 : 109);
+		m_gameCharacter->setUInt32Value(PLAYER_SKILL_INDEX(0), MAKE_PAIR32(languageSkill, 0));
+		m_gameCharacter->setUInt32Value(PLAYER_SKILL_VALUE_INDEX(0), MAKE_SKILL_VALUE(300, 300));
+
+		// Clear mask
 		m_gameCharacter->clearUpdateMask();
 
-		// Send proficiencies
+		// TODO Send proficiencies
 		/*{
 			sendPacket(
 				std::bind(game::server_write::setProficiency, std::placeholders::_1, 0x02, 0x10000000));
@@ -670,7 +694,7 @@ namespace wowpp
 				writer
 					<< io::write<NetUInt32>(0);
 
-				// Speeds
+				// Speeds8
 				writer
 					<< io::write<float>(2.5f)				// Walk
 					<< io::write<float>(7.0f)				// Run
@@ -776,5 +800,44 @@ namespace wowpp
 		// Flush buffers
 		m_connection->flush();
 	}
+
+	void Player::handleMessageChat(game::IncomingPacket &packet)
+	{
+		using namespace wowpp::game;
+
+		ChatMsg type;
+		Language lang;
+		String receiver, channel, message;
+		if (!client_read::messageChat(packet, type, lang, receiver, channel, message))
+		{
+			// Error reading packet
+			return;
+		}
+
+		switch (type)
+		{
+			// Local chat modes
+			case chat_msg::Say:
+			case chat_msg::Yell:
+			{
+				// Redirect chat message to world node
+
+				break;
+			}
+			// Can be local or global chat mode
+			case chat_msg::Channel:
+			{
+				WLOG("Chat mode not yet implemented");
+				break;
+			}
+			// Global chat modes / other
+			default:
+			{
+				WLOG("Chat mode not yet implemented");
+				break;
+			}
+		}
+	}
+
 
 }
