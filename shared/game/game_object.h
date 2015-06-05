@@ -208,8 +208,6 @@ namespace wowpp
 		void setGuid(UInt64 guid) { setUInt64Value(object_fields::Guid, guid); }
 		UInt64 getGuid() const { return getUInt64Value(object_fields::Guid); }
 
-		void setCreateBits();
-
 		/// Writes the value update block of this game object.
 		/// @param writer The writer object used to write the values.
 		/// @param creation Set to true if this is the value update packet used at object creation.
@@ -229,6 +227,10 @@ namespace wowpp
 
 		/// Gets the object type id value.
 		virtual ObjectType getTypeId() const { return object_type::Object; }
+		/// Determines whether the object has been updated.
+		bool wasUpdated() const { return m_updated; }
+		/// Marks all changed values of this object as unchanged.
+		void clearUpdateMask();
 
 	protected:
 
@@ -239,6 +241,7 @@ namespace wowpp
 		float m_o;
 		UInt32 m_objectType;
 		UInt32 m_objectTypeId;
+		bool m_updated;
 
 	};
 

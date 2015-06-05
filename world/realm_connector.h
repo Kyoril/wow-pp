@@ -110,6 +110,7 @@ namespace wowpp
 		void handleMoveStartForward(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleMoveStartBackward(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleMoveStop(Player &sender, game::Protocol::IncomingPacket &packet);
+		void handleSetSelection(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleMovementPacket(Player &sender, UInt16 opCode, game::Protocol::IncomingPacket &packet);
 
 	private:

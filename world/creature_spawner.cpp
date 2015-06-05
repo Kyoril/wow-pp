@@ -80,7 +80,7 @@ namespace wowpp
 			x, y, z, o,
 			m_radius
 			);
-		spawned->setCreateBits();
+		spawned->clearUpdateMask();
 
 		//TODO: watch for removal
 

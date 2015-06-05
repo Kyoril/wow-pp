@@ -84,7 +84,7 @@ namespace wowpp
 		/// Sends an proxy packet to the realm which will then be redirected to the game client.
 		/// @param generator Packet writer function pointer.
 		template<class F>
-		void sendProxyPacket(F generator)
+		void sendProxyPacket(F generator) const
 		{
 			std::vector<char> buffer;
 			io::VectorSink sink(buffer);

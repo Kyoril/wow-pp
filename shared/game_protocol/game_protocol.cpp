@@ -860,6 +860,16 @@ namespace wowpp
 					<< movement;
 				out_packet.finish();
 			}
+
+			void destroyObject(game::OutgoingPacket &out_packet, UInt64 guid, bool death)
+			{
+				out_packet.start(game::server_packet::DestroyObject);
+				out_packet
+					<< io::write<NetUInt64>(guid)
+					<< io::write<NetUInt8>(death ? 1 : 0);
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read
@@ -1079,6 +1089,13 @@ namespace wowpp
 				return packet
 					>> out_info;
 			}
+
+			bool setSelection(io::Reader &packet, UInt64 &out_targetGUID)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_targetGUID);
+			}
+
 		}
 	}
 }

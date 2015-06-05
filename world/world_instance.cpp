@@ -32,6 +32,7 @@
 #include "visibility_tile.h"
 #include "each_tile_in_region.h"
 #include "binary_io/vector_sink.h"
+#include <boost/iterator/indirect_iterator.hpp>
 #include <algorithm>
 #include <array>
 #include <memory>
@@ -39,13 +40,24 @@
 
 namespace wowpp
 {
+	// Helper functions. TODO: Put these in headers in case they are needed elsewhere
 	namespace
 	{
+		TileIndex2D getObjectTile(GameObject &object, VisibilityGrid &grid)
+		{
+			float x, y, z, o;
+			object.getLocation(x, y, z, o);
+
+			TileIndex2D gridIndex;
+			grid.getTilePosition(x, y, z, gridIndex[0], gridIndex[1]);
+
+			return gridIndex;
+		}
+
 		void createUpdateBlocks(GameObject &object, std::vector<std::vector<char>> &out_blocks)
 		{
 			float x, y, z, o;
 			object.getLocation(x, y, z, o);
-			object.setCreateBits();
 
 			// Write create object packet
 			std::vector<char> createBlock;
@@ -137,6 +149,98 @@ namespace wowpp
 
 			// Add block
 			out_blocks.push_back(createBlock);
+		}
+
+		void createValueUpdateBlock(GameObject &object, std::vector<std::vector<char>> &out_blocks)
+		{
+			// Write create object packet
+			std::vector<char> createBlock;
+			io::VectorSink sink(createBlock);
+			io::Writer writer(sink);
+			{
+				UInt8 updateType = 0x00;						// Update type (0x00 = UPDATE_VALUES)
+				
+				// Header with object guid and type
+				UInt64 guid = object.getGuid();
+				writer
+					<< io::write<NetUInt8>(updateType)
+					<< io::write<NetUInt8>(0xFF) << io::write<NetUInt64>(guid);
+
+				// Write values update
+				object.writeValueUpdateBlock(writer, false);
+			}
+
+			// Add block
+			out_blocks.push_back(createBlock);
+		}
+
+		template <class T, class OnTile, class OnSubscriber>
+		static void forEachTileAndEachSubscriber(
+			T tilesBegin,
+			T tilesEnd,
+			const OnTile &onTile,
+			const OnSubscriber &onSubscriber)
+		{
+			for (T t = tilesBegin; t != tilesEnd; ++t)
+			{
+				auto &tile = *t;
+				onTile(tile);
+
+				for (Player * const subscriber : tile.getWatchers().getElements())
+				{
+					onSubscriber(*subscriber);
+				}
+			}
+		}
+
+		static inline std::vector<VisibilityTile *> getTilesInSight(
+			VisibilityGrid &grid,
+			const TileIndex2D &center)
+		{
+			std::vector<VisibilityTile *> tiles;
+
+			for (TileIndex y = center.y() - constants::PlayerZoneSight;
+				y <= static_cast<TileIndex>(center.y() + constants::PlayerZoneSight); ++y)
+			{
+				for (TileIndex x = center.x() - constants::PlayerZoneSight;
+					x <= static_cast<TileIndex>(center.x() + constants::PlayerZoneSight); ++x)
+				{
+					auto *const tile = grid.getTile(TileIndex2D(x, y));
+
+					if (tile)
+					{
+						tiles.push_back(tile);
+					}
+				}
+			}
+
+			return tiles;
+		}
+
+		template <class T, class OnSubscriber>
+		static void forEachSubscriber(
+			T tilesBegin,
+			T tilesEnd,
+			const OnSubscriber &onSubscriber)
+		{
+			forEachTileAndEachSubscriber(
+				tilesBegin,
+				tilesEnd,
+				[](VisibilityTile &) {},
+				onSubscriber);
+		}
+
+		template <class OnSubscriber>
+		void forEachSubscriberInSight(
+			VisibilityGrid &grid,
+			const TileIndex2D &center,
+			const OnSubscriber &onSubscriber)
+		{
+			const auto tiles = getTilesInSight(grid, center);
+			forEachSubscriber(
+				boost::make_indirect_iterator(tiles.begin()),
+				boost::make_indirect_iterator(tiles.end()),
+				onSubscriber);
 		}
 
 		void doFullSightVisibilityChange(
@@ -251,8 +355,38 @@ namespace wowpp
 		// Iterate all game objects added to this world which need to be updated
 		for (auto &gameObject : m_objectsById)
 		{
-			//TODO: Update object
+			// Update values changed...
+			auto *object = gameObject.second;
+			if (object->wasUpdated())
+			{
+				//TODO send updates to all subscribers in sight
+				TileIndex2D center = getObjectTile(*object, *m_visibilityGrid);
+				forEachSubscriberInSight(
+					*m_visibilityGrid,
+					center,
+					[&object](Player &subscriber)
+				{
+					// Create update blocks
+					std::vector<std::vector<char>> blocks;
+					createValueUpdateBlock(*object, blocks);
 
+					if (!blocks.empty() && blocks[0].size() > 100)
+					{
+						// Send an update
+						subscriber.sendProxyPacket(
+							std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
+					}
+					else
+					{
+						// Send an update
+						subscriber.sendProxyPacket(
+							std::bind(game::server_write::updateObject, std::placeholders::_1, std::cref(blocks)));
+					}
+				});
+
+				// We updated the object
+				object->clearUpdateMask();
+			}
 		}
 	}
 
@@ -347,7 +481,49 @@ namespace wowpp
 
 	void WorldInstance::removeGameObject(GameObject &remove)
 	{
+		auto guid = remove.getGuid();
+
+		// Transform into grid location
+		TileIndex2D gridIndex = getObjectTile(remove, *m_visibilityGrid);
+
+		// Get grid tile
+		auto &tile = m_visibilityGrid->requireTile(gridIndex);
+		tile.getGameObjects().remove(&remove);
+
 		// Remove game object from the object list
-		m_objectsById.erase(remove.getGuid());
+		m_objectsById.erase(guid);
+
+		if (isPlayerGUID(guid))
+		{
+			Player *player = m_manager.getPlayerManager().getPlayerByCharacterGuid(guid);
+			if (!player)
+			{
+				//
+				ELOG("Couldn't find player instance!");
+				return;
+			}
+
+			// Spawn nearby objects
+			std::array<VisibilityTile *, constants::PlayerScopeAreaCount> changedTiles;
+			auto changedTilesEnd = changedTiles.begin();
+			copyTilePtrsInArea(
+				*m_visibilityGrid,
+				getSightArea(tile.getPosition()),
+				/*ref*/ changedTilesEnd
+				);
+
+			// Remove ourself as watcher
+			for (auto &changed : changedTiles)
+			{
+				changed->getWatchers().remove(player);
+			}
+		}
+
+		// Notify all watchers about the new object
+		for (auto &watcher : tile.getWatchers())
+		{
+			watcher->sendProxyPacket(
+				std::bind(game::server_write::destroyObject, std::placeholders::_1, remove.getGuid(), false));
+		}
 	}
 }

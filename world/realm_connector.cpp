@@ -361,6 +361,12 @@ namespace wowpp
 				break;
 			}
 
+			case game::client_packet::SetSelection:
+			{
+				handleSetSelection(*sender, clientPacket);
+				break;
+			}
+
 			case game::client_packet::MoveStartForward:
 			case game::client_packet::MoveStartBackward:
 			case game::client_packet::MoveStop:
@@ -515,9 +521,6 @@ namespace wowpp
 			return;
 		}
 
-		// Write OP-Code
-		DLOG("MOVEMENT_PACKET: 0x" << std::hex << std::uppercase << opCode);
-
 		// Sender guid
 		auto guid = sender.getCharacter()->getGuid();
 
@@ -560,5 +563,19 @@ namespace wowpp
 
 		// TODO: Update tile visibility etc.
 	}
+
+	void RealmConnector::handleSetSelection(Player &sender, game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 targetGUID;
+		if (!game::client_read::setSelection(packet, targetGUID))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		// Get the player character
+		sender.getCharacter()->setUInt64Value(unit_fields::Target, targetGUID);
+	}
+
 
 }

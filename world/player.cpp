@@ -59,6 +59,9 @@ namespace wowpp
 
 	void Player::onLogout()
 	{
+		// Remove the character from the world
+		m_instance.removeGameObject(*m_character);
+
 		// Notify the realm
 		m_realmConnector.notifyWorldInstanceLeft(m_characterId, pp::world_realm::world_left_reason::Logout);
 		

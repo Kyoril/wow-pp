@@ -100,6 +100,8 @@ namespace wowpp
 			// Mark bit as changed
 			UInt8 &changed = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
+
+			m_updated = true;
 		}
 	}
 
@@ -118,6 +120,8 @@ namespace wowpp
 			// Mark bit as changed
 			UInt8 &changed = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
+
+			m_updated = true;
 		}
 	}
 
@@ -135,6 +139,8 @@ namespace wowpp
 			// Mark bit as changed
 			UInt8 &changed = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
+
+			m_updated = true;
 		}
 	}
 
@@ -153,6 +159,8 @@ namespace wowpp
 			// Mark bit as changed
 			UInt8 &changed = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
+
+			m_updated = true;
 		}
 	}
 
@@ -171,6 +179,8 @@ namespace wowpp
 			loChanged |= 1 << (index & 0x7);
 			UInt8 &hiChanged = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[(index + 1) >> 3];
 			hiChanged |= 1 << (index & 0x7);
+
+			m_updated = true;
 		}
 	}
 
@@ -189,6 +199,8 @@ namespace wowpp
 			// Mark bit as changed
 			UInt8 &changed = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
+
+			m_updated = true;
 		}
 	}
 
@@ -205,23 +217,6 @@ namespace wowpp
 		m_mapId = mapId;
 	}
 
-	void GameObject::setCreateBits()
-	{
-		std::fill(m_valueBitset.begin(), m_valueBitset.end(), 0);
-		for (size_t i = 0; i < m_values.size(); ++i)
-		{
-			if (m_values[i])
-			{
-				// Calculate bit index
-				UInt16 bitIndex = i >> 3;
-
-				// Mark bit as changed
-				UInt8 &changed = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[bitIndex];
-				changed |= 1 << (i & 0x7);
-			}
-		}
-	}
-
 	void GameObject::writeValueUpdateBlock(io::Writer &writer, bool creation /*= true*/) const
 	{
 		// Number of UInt32 blocks used to represent all values as one bit
@@ -229,13 +224,29 @@ namespace wowpp
 		writer
 			<< io::write<NetUInt8>(blockCount);
 
-		// Write bitset blocks
-		writer
-			<< io::write_range(m_valueBitset);
-
-		// Write the actual values
 		if (creation)
 		{
+			// Create a new bitset which has set all bits to one where the field value
+			// isn't equal to 0, since this will be for a CREATE_OBJECT block (spawn) and not
+			// for an UPDATE_OBJECT block
+			std::vector<UInt32> creationBits(m_valueBitset.size(), 0);
+			for (size_t i = 0; i < m_values.size(); ++i)
+			{
+				if (m_values[i])
+				{
+					// Calculate bit index
+					UInt16 bitIndex = i >> 3;
+
+					// Mark bit as changed
+					UInt8 &changed = (reinterpret_cast<UInt8*>(&creationBits[0]))[bitIndex];
+					changed |= 1 << (i & 0x7);
+				}
+			}
+
+			// Write only the changed bits
+			writer
+				<< io::write_range(creationBits);
+
 			// Write all values != zero
 			for (size_t i = 0; i < m_values.size(); ++i)
 			{
@@ -248,6 +259,10 @@ namespace wowpp
 		}
 		else
 		{
+			// Write only the changed bits
+			writer
+				<< io::write_range(m_valueBitset);
+
 			// Write all values marked as changed
 			for (size_t i = 0; i < m_values.size(); ++i)
 			{
@@ -260,6 +275,13 @@ namespace wowpp
 			}
 		}
 	}
+
+	void GameObject::clearUpdateMask()
+	{
+		std::fill(m_valueBitset.begin(), m_valueBitset.end(), 0);
+		m_updated = false;
+	}
+
 
 	io::Writer & operator<<(io::Writer &w, GameObject const& object)
 	{

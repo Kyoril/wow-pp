@@ -76,6 +76,7 @@ namespace wowpp
 				SetFacing				= 0x0DA,
 				SetPitch				= 0x0DB,
 				MoveHeartBeat			= 0x0EE,
+				SetSelection			= 0x13D,
 				Ping					= 0x1DC,
 				AuthSession				= 0x1ED,
 				SetDungeonDifficulty	= 0x329,
@@ -103,6 +104,7 @@ namespace wowpp
 				IgnoreList				= 0x06B,
 				MessageChat				= 0x096,
 				UpdateObject			= 0x0A9,
+				DestroyObject			= 0x0AA,
 				MonsterMove				= 0x0DD,
 				MoveRoot				= 0x0EC,
 				MoveUnroot				= 0x0ED,
@@ -365,7 +367,10 @@ namespace wowpp
 				MovementInfo &out_info
 				);
 
-
+			bool setSelection(
+				io::Reader &packet,
+				UInt64 &out_targetGUID
+				);
 		};
 
 		namespace server_write
@@ -423,6 +428,12 @@ namespace wowpp
 			void updateObject(
 				game::OutgoingPacket &out_packet,
 				const std::vector<std::vector<char>> &blocks
+				);
+
+			void destroyObject(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				bool death
 				);
 
 			void tutorialFlags(

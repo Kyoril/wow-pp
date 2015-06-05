@@ -512,7 +512,7 @@ namespace wowpp
 		//m_gameCharacter->setGuid(createGUID(worldObjectGuid, 0, high_guid::Player));
 		m_gameCharacter->relocate(x, y, z, o);
 		m_gameCharacter->setMapId(mapId);
-		m_gameCharacter->setCreateBits();
+		m_gameCharacter->clearUpdateMask();
 
 		// Send proficiencies
 		/*{
