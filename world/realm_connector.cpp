@@ -386,9 +386,20 @@ namespace wowpp
 			case game::client_packet::StartPitchUp:
 			case game::client_packet::StartPitchDown:
 			case game::client_packet::StopPitch:
-			case game::client_packet::SetFacing:
 			case game::client_packet::SetPitch:
+			case game::client_packet::MoveSetRunMode:
+			case game::client_packet::MoveSetWalkMode:
+			case game::client_packet::MoveFallLand:
+			case game::client_packet::MoveStartSwim:
+			case game::client_packet::MoveStopSwim:
+			case game::client_packet::SetFacing:
 			case game::client_packet::MoveHeartBeat:
+			case game::client_packet::MoveFallReset:
+			case game::client_packet::MoveSetFly:
+			case game::client_packet::MoveStartAscend:
+			case game::client_packet::MoveStopAscend:
+			case game::client_packet::MoveChangeTransport:
+			case game::client_packet::MoveStartDescend:
 			{
 				handleMovementPacket(*sender, opCode, clientPacket);
 				break;

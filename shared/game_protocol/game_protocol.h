@@ -74,6 +74,11 @@ namespace wowpp
 				StartPitchUp			= 0x0BF,
 				StartPitchDown			= 0x0C0,
 				StopPitch				= 0x0C1,
+				MoveSetRunMode			= 0x0C2,
+				MoveSetWalkMode			= 0x0C3,
+				MoveFallLand			= 0x0C9,
+				MoveStartSwim			= 0x0CA,
+				MoveStopSwim			= 0x0CB,
 				SetFacing				= 0x0DA,
 				SetPitch				= 0x0DB,
 				MoveHeartBeat			= 0x0EE,
@@ -81,7 +86,13 @@ namespace wowpp
 				SetSelection			= 0x13D,
 				Ping					= 0x1DC,
 				AuthSession				= 0x1ED,
+				MoveFallReset			= 0x2CA,
 				SetDungeonDifficulty	= 0x329,
+				MoveSetFly				= 0x346,
+				MoveStartAscend			= 0x359,
+				MoveStopAscend			= 0x35A,
+				MoveChangeTransport		= 0x38D,
+				MoveStartDescend		= 0x3A7,
 			};
 		}
 
