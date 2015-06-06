@@ -5,10 +5,18 @@ WoW++ is a whole new World of Warcraft core system, built from the ground up. It
 There is still A LOT to do on WoW++. Below is a list of the most important things to do next:
 
 - [x] Grid system development (visibility of objects)
-- [ ] Movement system (players and creatures)
+- [ ] Navigation system for creatures
 - [x] Be able to leave a world through the logout command and go back to the character list
 - [ ] Items
 - [ ] Spell system & Combat
-- [ ] AI
+- [ ] Quests
+- [ ] Groups
+- [ ] Guilds
+- [ ] Professions
+- [ ] Trade
+- [ ] Mail
+- [ ] Auction Houses
+- [ ] Weather
+- [ ] World Events (Darkmoon Faire etc.)
 
 Of course there is even more to do... like quests, vendors, gossip options, groups, professions etc. etc., but one step after another.
