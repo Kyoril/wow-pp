@@ -164,8 +164,8 @@ namespace wowpp
 
 		// Get level information
 		const auto *levelInfo = m_getLevel(level);
-		assert(levelInfo);
-
+		if (!levelInfo) return;	// Creatures can have a level higher than 70
+		
 		// Level info changed
 		levelChanged(*levelInfo);
 	}

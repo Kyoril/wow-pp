@@ -97,6 +97,8 @@ namespace wowpp
 		wrapper.table.tryGetInteger("ranged_attack_time", rangedBaseAttackTime);
 		wrapper.table.tryGetInteger("a_faction", allianceFactionID);
 		wrapper.table.tryGetInteger("h_faction", hordeFactionID);
+		wrapper.table.tryGetInteger("unit_flags", unitFlags);
+		wrapper.table.tryGetInteger("npc_flags", npcFlags);
 		
 #undef MIN_MAX_CHECK
 
@@ -128,5 +130,7 @@ namespace wowpp
 		if (rangedBaseAttackTime != 0) context.table.addKey("ranged_attack_time", rangedBaseAttackTime);
 		if (allianceFactionID != 0) context.table.addKey("a_faction", allianceFactionID);
 		if (hordeFactionID != 0) context.table.addKey("h_faction", hordeFactionID);
+		if (hordeFactionID != 0) context.table.addKey("unit_flags", unitFlags);
+		if (hordeFactionID != 0) context.table.addKey("npc_flags", npcFlags);
 	}
 }

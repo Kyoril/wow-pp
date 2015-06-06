@@ -1,6 +1,6 @@
 races = 
 {
-	(id = 1, name = "Mensch", faction = 1, maleModel = 49, femaleModel = 50, language = 7, startingTaxiMask = 2, cinematic = 81, map = 0, zone = 12, position = {-8949.95, -132.493, 83.5312}, rotation = 0, initial_spells = 
+	(id = 1, name = "Mensch", faction = 1, maleModel = 49, femaleModel = 50, language = 7, startingTaxiMask = 2, cinematic = 81, map = 0, zone = 12, position = {-8949.950195, -132.492996, 83.531197}, rotation = 0, initial_spells = 
 	{
 		(class = 1, spells = {78, 81, 107, 196, 198, 201, 203, 204, 522, 668, 2382, 2457, 2479, 3050, 3365, 5301, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 8737, 9077, 9078, 9116, 9125, 20597, 20598, 20599, 20600, 20864, 21651, 21652, 22027, 22810, 32215})
 		(class = 2, spells = {81, 107, 198, 199, 203, 204, 522, 635, 668, 2382, 2479, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 8737, 9077, 9078, 9116, 9125, 20597, 20598, 20599, 20600, 20864, 21084, 21651, 21652, 22027, 22810, 27762})
@@ -57,7 +57,7 @@ races =
 			(button = 11, action = 4604, type = 128)
 		})
 	})
-	(id = 2, name = "Orc", faction = 2, maleModel = 51, femaleModel = 52, language = 1, startingTaxiMask = 4194304, cinematic = 21, map = 1, zone = 14, position = {-618.518, -4251.67, 38.718}, rotation = 0, initial_spells = 
+	(id = 2, name = "Orc", faction = 2, maleModel = 51, femaleModel = 52, language = 1, startingTaxiMask = 4194304, cinematic = 21, map = 1, zone = 14, position = {-618.518005, -4251.669922, 38.717999}, rotation = 0, initial_spells = 
 	{
 		(class = 1, spells = {78, 81, 107, 196, 197, 201, 203, 204, 522, 669, 2382, 2457, 2479, 3050, 3365, 5301, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 8737, 9077, 9078, 9116, 9125, 20572, 20573, 20574, 21563, 21651, 21652, 22027, 22810, 32215})
 		(class = 3, spells = {75, 81, 196, 203, 204, 264, 522, 669, 2382, 2479, 2973, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9077, 9078, 9125, 13358, 20572, 20573, 20574, 20576, 21651, 21652, 22027, 22810, 24949, 34082})
@@ -110,7 +110,7 @@ races =
 			(button = 11, action = 117, type = 128)
 		})
 	})
-	(id = 3, name = "Zwerg", faction = 3, maleModel = 53, femaleModel = 54, language = 7, startingTaxiMask = 32, cinematic = 41, map = 0, zone = 1, position = {-6240.32, 331.033, 382.758}, rotation = 6.17716, initial_spells = 
+	(id = 3, name = "Zwerg", faction = 3, maleModel = 53, femaleModel = 54, language = 7, startingTaxiMask = 32, cinematic = 41, map = 0, zone = 1, position = {-6240.319824, 331.03299, 382.757996}, rotation = 6.17716, initial_spells = 
 	{
 		(class = 1, spells = {78, 81, 107, 196, 197, 198, 203, 204, 522, 668, 672, 2382, 2457, 2479, 2481, 3050, 3365, 5301, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 8737, 9077, 9078, 9116, 9125, 20594, 20595, 20596, 21651, 21652, 22027, 22810, 32215})
 		(class = 2, spells = {81, 107, 198, 199, 203, 204, 522, 635, 668, 672, 2382, 2479, 2481, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 8737, 9077, 9078, 9116, 9125, 20594, 20595, 20596, 21084, 21651, 21652, 22027, 22810, 27762})
@@ -168,7 +168,7 @@ races =
 			(button = 11, action = 4540, type = 128)
 		})
 	})
-	(id = 4, name = "Nachtelf", faction = 4, maleModel = 55, femaleModel = 56, language = 7, startingTaxiMask = 100663296, cinematic = 61, map = 1, zone = 141, position = {-10311.3, 832.463, 1326.41}, rotation = 5.69632, initial_spells = 
+	(id = 4, name = "Nachtelf", faction = 4, maleModel = 55, femaleModel = 56, language = 7, startingTaxiMask = 100663296, cinematic = 61, map = 1, zone = 141, position = {-10311.299805, 832.463013, 1326.410034}, rotation = 5.69632, initial_spells = 
 	{
 		(class = 1, spells = {78, 81, 107, 198, 201, 203, 204, 522, 668, 671, 1180, 2382, 2457, 2479, 3050, 3365, 5301, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 8737, 9077, 9078, 9116, 9125, 20580, 20582, 20583, 20585, 21009, 21651, 21652, 22027, 22810, 32215})
 		(class = 3, spells = {75, 81, 203, 204, 264, 522, 668, 671, 1180, 2382, 2479, 2973, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9077, 9078, 9125, 13358, 20580, 20582, 20583, 20585, 21009, 21651, 21652, 22027, 22810, 24949, 34082})
@@ -220,7 +220,7 @@ races =
 			(button = 11, action = 4536, type = 128)
 		})
 	})
-	(id = 5, name = "Untoter", faction = 5, maleModel = 57, femaleModel = 58, language = 1, startingTaxiMask = 1024, cinematic = 2, map = 0, zone = 85, position = {1676.71, 1678.31, 121.67}, rotation = 3.1415, initial_spells = 
+	(id = 5, name = "Untoter", faction = 5, maleModel = 57, femaleModel = 58, language = 1, startingTaxiMask = 1024, cinematic = 2, map = 0, zone = 85, position = {1676.709961, 1678.310059, 121.669998}, rotation = 3.1415, initial_spells = 
 	{
 		(class = 1, spells = {78, 81, 107, 201, 202, 203, 204, 522, 669, 1180, 2382, 2457, 2479, 3050, 3365, 5227, 5301, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 7744, 8386, 8737, 9077, 9078, 9116, 9125, 17737, 20577, 20579, 21651, 21652, 22027, 22810, 32215})
 		(class = 4, spells = {81, 203, 204, 522, 669, 1180, 1752, 2098, 2382, 2479, 2567, 2764, 3050, 3365, 5227, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 7744, 8386, 9077, 9078, 9125, 16092, 17737, 20577, 20579, 21184, 21651, 21652, 22027, 22810})
@@ -273,7 +273,7 @@ races =
 			(button = 11, action = 4604, type = 128)
 		})
 	})
-	(id = 6, name = "Tauren", faction = 6, maleModel = 59, femaleModel = 60, language = 1, startingTaxiMask = 2097152, cinematic = 141, map = 1, zone = 215, position = {-2917.58, -257.98, 52.9968}, rotation = 0, initial_spells = 
+	(id = 6, name = "Tauren", faction = 6, maleModel = 59, femaleModel = 60, language = 1, startingTaxiMask = 2097152, cinematic = 141, map = 1, zone = 215, position = {-2917.580078, -257.980011, 52.996799}, rotation = 0, initial_spells = 
 	{
 		(class = 1, spells = {78, 81, 107, 196, 198, 199, 203, 204, 522, 669, 670, 2382, 2457, 2479, 3050, 3365, 5301, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 8737, 9077, 9078, 9116, 9125, 20549, 20550, 20551, 20552, 21651, 21652, 22027, 22810, 32215})
 		(class = 3, spells = {75, 81, 196, 203, 204, 266, 522, 669, 670, 2382, 2479, 2973, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9077, 9078, 9125, 13358, 20549, 20550, 20551, 20552, 21651, 21652, 22027, 22810, 24949, 34082})
@@ -316,7 +316,7 @@ races =
 			(button = 11, action = 4536, type = 128)
 		})
 	})
-	(id = 7, name = "Gnom", faction = 115, maleModel = 1563, femaleModel = 1564, language = 7, startingTaxiMask = 32, cinematic = 101, map = 0, zone = 1, position = {-6240.32, 331.033, 382.758}, rotation = 0, initial_spells = 
+	(id = 7, name = "Gnom", faction = 115, maleModel = 1563, femaleModel = 1564, language = 7, startingTaxiMask = 32, cinematic = 101, map = 0, zone = 1, position = {-6240.319824, 331.03299, 382.757996}, rotation = 0, initial_spells = 
 	{
 		(class = 1, spells = {78, 81, 107, 198, 201, 203, 204, 522, 668, 1180, 2382, 2457, 2479, 3050, 3365, 5301, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7340, 7355, 8386, 8737, 9077, 9078, 9116, 9125, 20589, 20591, 20592, 20593, 21651, 21652, 22027, 22810, 32215})
 		(class = 4, spells = {81, 203, 204, 522, 668, 1180, 1752, 2098, 2382, 2479, 2567, 2764, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7340, 7355, 8386, 9077, 9078, 9125, 16092, 20589, 20591, 20592, 20593, 21184, 21651, 21652, 22027, 22810})
@@ -355,7 +355,7 @@ races =
 			(button = 11, action = 4604, type = 128)
 		})
 	})
-	(id = 8, name = "Troll", faction = 116, maleModel = 1478, femaleModel = 1479, language = 1, startingTaxiMask = 4194304, cinematic = 121, map = 1, zone = 14, position = {-618.518, -4251.67, 38.718}, rotation = 0, initial_spells = 
+	(id = 8, name = "Troll", faction = 116, maleModel = 1478, femaleModel = 1479, language = 1, startingTaxiMask = 4194304, cinematic = 121, map = 1, zone = 14, position = {-618.518005, -4251.669922, 38.717999}, rotation = 0, initial_spells = 
 	{
 		(class = 1, spells = {78, 81, 107, 196, 203, 204, 522, 669, 1180, 2382, 2457, 2479, 2567, 2764, 3050, 3365, 5301, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7341, 7355, 8386, 8737, 9077, 9078, 9116, 9125, 20555, 20557, 20558, 21651, 21652, 22027, 22810, 26290, 26296, 32215})
 		(class = 3, spells = {75, 81, 196, 203, 204, 264, 522, 669, 2382, 2479, 2973, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7341, 7355, 8386, 9077, 9078, 9125, 13358, 20554, 20555, 20557, 20558, 21651, 21652, 22027, 22810, 24949, 26290, 34082})
@@ -415,12 +415,12 @@ races =
 			(button = 11, action = 117, type = 128)
 		})
 	})
-	(id = 9, name = "Goblin", faction = 1, maleModel = 1140, femaleModel = 1140, language = 7, startingTaxiMask = 0, cinematic = 0, map = 1, zone = 14, position = {-618.518, -4251.67, 38.718}, rotation = 0, initial_spells = 
+	(id = 9, name = "Goblin", faction = 1, maleModel = 1140, femaleModel = 1140, language = 7, startingTaxiMask = 0, cinematic = 0, map = 1, zone = 14, position = {-618.518005, -4251.669922, 38.717999}, rotation = 0, initial_spells = 
 	{
 	}, initial_actions = 
 	{
 	})
-	(id = 10, name = "Blutelf", faction = 1610, maleModel = 15476, femaleModel = 15475, language = 1, startingTaxiMask = 4194304, cinematic = 162, map = 530, zone = 3431, position = {10349.6, -6357.29, 33.4026}, rotation = 5.31605, initial_spells = 
+	(id = 10, name = "Blutelf", faction = 1610, maleModel = 15476, femaleModel = 15475, language = 1, startingTaxiMask = 4194304, cinematic = 162, map = 530, zone = 3431, position = {10349.599609, -6357.290039, 33.402599}, rotation = 5.31605, initial_spells = 
 	{
 		(class = 2, spells = {81, 107, 201, 202, 203, 204, 522, 635, 669, 813, 822, 2382, 2479, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 8737, 9077, 9078, 9116, 9125, 21084, 21651, 21652, 22027, 22810, 27762, 28730, 28734, 28877})
 		(class = 3, spells = {75, 81, 203, 204, 264, 522, 669, 813, 822, 1180, 2382, 2479, 2973, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6603, 7266, 7267, 7355, 8386, 9077, 9078, 9125, 13358, 21651, 21652, 22027, 22810, 24949, 28730, 28734, 28877, 34082})
@@ -491,7 +491,7 @@ races =
 			(button = 11, action = 20857, type = 128)
 		})
 	})
-	(id = 11, name = "Draenei", faction = 1629, maleModel = 16125, femaleModel = 16126, language = 7, startingTaxiMask = 4194304, cinematic = 163, map = 530, zone = 3526, position = {-3961.64, -13931.2, 100.615}, rotation = 2.08364, initial_spells = 
+	(id = 11, name = "Draenei", faction = 1629, maleModel = 16125, femaleModel = 16126, language = 7, startingTaxiMask = 4194304, cinematic = 163, map = 530, zone = 3526, position = {-3961.639893, -13931.200195, 100.614998}, rotation = 2.08364, initial_spells = 
 	{
 		(class = 1, spells = {78, 81, 107, 198, 201, 202, 203, 204, 522, 668, 2382, 2457, 2479, 3050, 3365, 5301, 6233, 6246, 6247, 6477, 6478, 6562, 6603, 7266, 7267, 7355, 8386, 8737, 9077, 9078, 9116, 9125, 20579, 21651, 21652, 22027, 22810, 28875, 28880, 29932, 32215})
 		(class = 2, spells = {81, 107, 198, 199, 203, 204, 522, 635, 668, 2382, 2479, 3050, 3365, 6233, 6246, 6247, 6477, 6478, 6562, 6603, 7266, 7267, 7355, 8386, 8737, 9077, 9078, 9116, 9125, 20579, 21084, 21651, 21652, 22027, 22810, 27762, 28875, 28880, 29932})

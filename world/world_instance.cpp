@@ -383,9 +383,9 @@ namespace wowpp
 		spawned->setUInt32Value(unit_fields::MaxHealth, entry.minLevelHealth);
 		//spawned->setUInt32Value(unit_fields::Bytes2, 0x00001001);								//TODO
 		spawned->setUInt32Value(unit_fields::UnitFlags, entry.unitFlags);
+		spawned->setUInt32Value(unit_fields::NpcFlags, entry.npcFlags);
 		//spawned->setUInt32Value(unit_fields::UnitFlags2, entry.extraFlags);
-
-
+		
 		spawned->setByteValue(unit_fields::Bytes2, 1, 16);
 
 		return spawned;

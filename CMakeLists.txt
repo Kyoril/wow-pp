@@ -71,6 +71,9 @@ project(WoW)
 		add_definitions("/D_CRT_SECURE_NO_WARNINGS /D_SCL_SECURE_NO_WARNINGS /wd4267 /wd4244 /MP /D_WINSOCK_DEPRECATED_NO_WARNINGS")
 	endif(MSVC)
 	
+	# Editor option
+	option(WOWPP_BUILD_EDITOR "If checked, will try to build the editor. You will need to have OgreSDK and QT 5 installed to build this." OFF)
+	
 	# Add the shared-directory to the list of local include directories
 	include_directories(deps)
 	include_directories(shared)
@@ -81,4 +84,6 @@ project(WoW)
 	add_subdirectory(login)
 	add_subdirectory(realm)
 	add_subdirectory(world)
-	
+	if (WOWPP_BUILD_EDITOR)
+		add_subdirectory(editor)
+	endif()
