@@ -19,4 +19,4 @@ There is still A LOT to do on WoW++. Below is a list of the most important thing
 - [ ] Weather
 - [ ] World Events (Darkmoon Faire etc.)
 
-Of course there is even more to do... like quests, vendors, gossip options, groups, professions etc. etc., but one step after another.
+Of course there is even more to do, and this roadmap is pretty rough. Also, it isn't complete. But let's take one step after another, shall we?
