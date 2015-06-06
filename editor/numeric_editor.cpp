@@ -28,16 +28,15 @@ namespace wowpp
 	{
 		NumericEditor::NumericEditor(NumericProperty &prop)
 			: QDialog()
-			, m_property(prop)
 			, m_ui(new Ui::NumericEditor)
+            , m_property(prop)
 		{
 			// Setup auto generated ui
 			m_ui->setupUi(this);
 
+#ifdef WIN32
 			// Not resizable
             setFixedSize(size());
-            
-#ifdef WIN32
 			setWindowFlags(Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint);
 #endif
             
@@ -53,6 +52,8 @@ namespace wowpp
 				m_ui->propValueField->setDecimals(4);
 				m_ui->propValueField->setValue(static_cast<double>(boost::get<FloatRef&>(val).getValue()));
 			}
+            
+            updateNameFields(prop);
 		}
 
 		void NumericEditor::updateNameFields(const Property &prop)

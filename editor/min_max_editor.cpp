@@ -28,16 +28,15 @@ namespace wowpp
 	{
 		MinMaxEditor::MinMaxEditor(MinMaxProperty &prop)
 			: QDialog()
-			, m_property(prop)
 			, m_ui(new Ui::MinMaxEditor)
+            , m_property(prop)
 		{
 			// Setup auto generated ui
 			m_ui->setupUi(this);
 
+#ifdef WIN32
 			// Not resizable
 			setFixedSize(size());
-
-#ifdef WIN32
             setWindowFlags(Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint);
 #endif
             

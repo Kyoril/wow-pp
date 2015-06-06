@@ -28,16 +28,15 @@ namespace wowpp
 	{
 		StringEditor::StringEditor(StringProperty &prop)
 			: QDialog()
-			, m_property(prop)
 			, m_ui(new Ui::StringEditor)
+            , m_property(prop)
 		{
 			// Setup auto generated ui
 			m_ui->setupUi(this);
-
-			// Not resizable
-            setFixedSize(size());
             
 #ifdef WIN32
+			// Not resizable
+            setFixedSize(size());
             setWindowFlags(Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint);
 #endif
             
