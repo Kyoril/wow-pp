@@ -371,17 +371,22 @@ namespace wowpp
 
 		spawned->setLevel(entry.minLevel);
 		spawned->setClass(entry.unitClass);														//TODO
+		spawned->setUInt32Value(object_fields::Entry, entry.id);
+		spawned->setFloatValue(object_fields::ScaleX, entry.scale);
 		spawned->setUInt32Value(unit_fields::FactionTemplate, entry.hordeFactionID);			//TODO
-		spawned->setGender(game::gender::Max);
-		spawned->setUInt32Value(unit_fields::Bytes0, 0x00020000);								//TODO
+		spawned->setGender(game::gender::Male);
+		//spawned->setUInt32Value(unit_fields::Bytes0, 0x00020000);								//TODO
 		spawned->setUInt32Value(unit_fields::DisplayId, entry.maleModel);						//TODO
 		spawned->setUInt32Value(unit_fields::NativeDisplayId, entry.maleModel);					//TODO
 		spawned->setUInt32Value(unit_fields::BaseHealth, 20);									//TODO
 		spawned->setUInt32Value(unit_fields::Health, entry.minLevelHealth);
 		spawned->setUInt32Value(unit_fields::MaxHealth, entry.minLevelHealth);
-		spawned->setUInt32Value(object_fields::Entry, entry.id);
-		spawned->setUInt32Value(unit_fields::Bytes2, 0x00001001);								//TODO
-		spawned->setUInt32Value(unit_fields::UnitFlags, 0x0008);
+		//spawned->setUInt32Value(unit_fields::Bytes2, 0x00001001);								//TODO
+		spawned->setUInt32Value(unit_fields::UnitFlags, entry.unitFlags);
+		//spawned->setUInt32Value(unit_fields::UnitFlags2, entry.extraFlags);
+
+
+		spawned->setByteValue(unit_fields::Bytes2, 1, 16);
 
 		return spawned;
 	}
