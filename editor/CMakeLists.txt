@@ -70,11 +70,22 @@ project(editor)
 	# Group editor source files
 	source_group(src FILES ${srcFiles})
 	
+	if(APPLE)
+		set(apple_bundle_sources "ico101.icns")
+		set_source_files_properties(
+			"ico101.icns"
+			PROPERTIES
+			MACOSX_PACKAGE_LOCATION Resources
+		)
+
+		set(MACOSX_BUNDLE_ICON_FILE ico101.icns)
+	endif()
+
 	# Create the application
 	if(WIN32)
 		add_executable(editor WIN32 editor.rc ${srcFiles} ${UIS_HDRS} ${resourceSources})
 	elseif(APPLE)
-		add_executable(editor MACOSX_BUNDLE ${srcFiles} ${UIS_HDRS} ${resourceSources})
+		add_executable(editor MACOSX_BUNDLE ${srcFiles} ${UIS_HDRS} ${resourceSources} ${apple_bundle_sources})
 	else()
 		add_executable(editor ${srcFiles} ${UIS_HDRS} ${resourceSources})
 	endif()
