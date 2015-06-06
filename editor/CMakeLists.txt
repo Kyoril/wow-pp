@@ -77,8 +77,7 @@ project(editor)
 			PROPERTIES
 			MACOSX_PACKAGE_LOCATION Resources
 		)
-
-		set(MACOSX_BUNDLE_ICON_FILE ico101.icns)
+		set(MACOSX_BUNDLE_ICON_FILE MacIcon.icns)
 	endif()
 
 	# Create the application
