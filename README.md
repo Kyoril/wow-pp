@@ -18,5 +18,11 @@ There is still A LOT to do on WoW++. Below is a list of the most important thing
 - [ ] Auction Houses
 - [ ] Weather
 - [ ] World Events (Darkmoon Faire etc.)
+- [ ] Dungeons and Raids
+- [ ] Battlegrounds
+- [ ] Arenas
+- [ ] Open World PVP and PVP Events (Nagrand, Hellfire etc.)
+- [ ] Friendlist and Ignore List
+- [ ] GM System (Tickets, GM Mode, GM Spells etc.)
 
 Of course there is even more to do, and this roadmap is pretty rough. Also, it isn't complete. But let's take one step after another, shall we?
