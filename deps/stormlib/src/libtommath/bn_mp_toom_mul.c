@@ -159,7 +159,7 @@ int mp_toom_mul(mp_int *a, mp_int *b, mp_int *c)
        goto ERR;
     }
     
-    /* now solve the matrix 
+    /* now solve the Matrix4 
     
        0  0  0  0  1
        1  2  4  8  16

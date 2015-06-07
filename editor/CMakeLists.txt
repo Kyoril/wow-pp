@@ -80,6 +80,19 @@ project(editor)
 		set(MACOSX_BUNDLE_ICON_FILE ico101.icns)
 	endif()
 
+	include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../deps/ogre-lite/OgreMain/include")
+	include_directories("${CMAKE_BINARY_DIR}/deps/ogre-lite/include")
+	if (OGRE_BUILD_RENDERSYSTEM_GL)
+		include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../deps/ogre-lite/RenderSystems/GL/include")
+		include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../deps/ogre-lite/RenderSystems/GL/src/GLSL/include")
+	endif()
+	if (OGRE_BUILD_PLUGIN_OCTREE)
+		include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../deps/ogre-lite/PlugIns/OctreeSceneManager/include")
+	endif()
+	if (OGRE_BUILD_PLUGIN_PFX)
+		include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../deps/ogre-lite/PlugIns/ParticleFX/include")
+	endif()
+	
 	# Create the application
 	if(WIN32)
 		add_executable(editor WIN32 editor.rc ${srcFiles} ${UIS_HDRS} ${resourceSources})
@@ -91,6 +104,21 @@ project(editor)
 	
 	# Link standard libraries
 	target_link_libraries(editor common templates virtual_directory log data stormlib)
+	
+	# Link OGRE and dependant libraries
+	target_link_libraries(editor OgreMain)
+	if(OGRE_STATIC)
+		target_link_libraries(editor freetype zlib)
+		if (OGRE_BUILD_RENDERSYSTEM_GL)
+			target_link_libraries(editor RenderSystem_GL)
+		endif()
+		if (OGRE_BUILD_PLUGIN_OCTREE)
+			target_link_libraries(editor Plugin_OctreeSceneManager)
+		endif ()
+		if (OGRE_BUILD_PLUGIN_PFX)
+			target_link_libraries(editor Plugin_ParticleFX)
+		endif ()
+	endif()
 	
 	# Link dependency libraries
 	target_link_libraries(editor ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${OPENSSL_LIBRARIES})
@@ -107,4 +135,10 @@ project(editor)
 	if(MSVC)
 		set_property(TARGET editor PROPERTY FOLDER "programs")
 	endif(MSVC)
+	
+	# Install target
+	install(TARGETS editor
+			RUNTIME DESTINATION bin
+			LIBRARY DESTINATION lib
+			ARCHIVE DESTINATION lib/static)
 	

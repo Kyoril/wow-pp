@@ -65,9 +65,9 @@
 #endif /* BYFOUR */
 
 /* Local functions for crc concatenation */
-local unsigned long gf2_matrix_times OF((unsigned long *mat,
+local unsigned long gf2_Matrix4_times OF((unsigned long *mat,
                                          unsigned long vec));
-local void gf2_matrix_square OF((unsigned long *square, unsigned long *mat));
+local void gf2_Matrix4_square OF((unsigned long *square, unsigned long *mat));
 local uLong crc32_combine_(uLong crc1, uLong crc2, z_off64_t len2);
 
 
@@ -341,7 +341,7 @@ local unsigned long crc32_big(crc, buf, len)
 #define GF2_DIM 32      /* dimension of GF(2) vectors (length of CRC) */
 
 /* ========================================================================= */
-local unsigned long gf2_matrix_times(mat, vec)
+local unsigned long gf2_Matrix4_times(mat, vec)
     unsigned long *mat;
     unsigned long vec;
 {
@@ -358,14 +358,14 @@ local unsigned long gf2_matrix_times(mat, vec)
 }
 
 /* ========================================================================= */
-local void gf2_matrix_square(square, mat)
+local void gf2_Matrix4_square(square, mat)
     unsigned long *square;
     unsigned long *mat;
 {
     int n;
 
     for (n = 0; n < GF2_DIM; n++)
-        square[n] = gf2_matrix_times(mat, mat[n]);
+        square[n] = gf2_Matrix4_times(mat, mat[n]);
 }
 
 /* ========================================================================= */
@@ -392,18 +392,18 @@ local uLong crc32_combine_(crc1, crc2, len2)
     }
 
     /* put operator for two zero bits in even */
-    gf2_matrix_square(even, odd);
+    gf2_Matrix4_square(even, odd);
 
     /* put operator for four zero bits in odd */
-    gf2_matrix_square(odd, even);
+    gf2_Matrix4_square(odd, even);
 
     /* apply len2 zeros to crc1 (first square will put the operator for one
        zero byte, eight zero bits, in even) */
     do {
         /* apply zeros operator for this bit of len2 */
-        gf2_matrix_square(even, odd);
+        gf2_Matrix4_square(even, odd);
         if (len2 & 1)
-            crc1 = gf2_matrix_times(even, crc1);
+            crc1 = gf2_Matrix4_times(even, crc1);
         len2 >>= 1;
 
         /* if no more bits set, then done */
@@ -411,9 +411,9 @@ local uLong crc32_combine_(crc1, crc2, len2)
             break;
 
         /* another iteration of the loop with odd and even swapped */
-        gf2_matrix_square(odd, even);
+        gf2_Matrix4_square(odd, even);
         if (len2 & 1)
-            crc1 = gf2_matrix_times(odd, crc1);
+            crc1 = gf2_Matrix4_times(odd, crc1);
         len2 >>= 1;
 
         /* if no more bits set, then done */

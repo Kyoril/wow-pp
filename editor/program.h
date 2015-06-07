@@ -25,6 +25,7 @@
 #include "main_window.h"
 #include "configuration.h"
 #include "data/project.h"
+#include "graphics.h"
 #include <memory>
 #include <QApplication>
 
@@ -43,6 +44,8 @@ namespace wowpp
 			bool run();
 			void saveProject();
 
+			/// Gets the graphics instance
+			Graphics &getGraphics() { return *m_graphics.get(); }
 			/// Gets the configuration structure.
 			const Configuration &getConfiguration() const { return m_configuration; }
 
@@ -51,6 +54,7 @@ namespace wowpp
 			Configuration m_configuration;
 			boost::signals2::scoped_connection m_genericLogConnection;
 			std::unique_ptr<MainWindow> m_mainWindow;
+			std::unique_ptr<Graphics> m_graphics;
 			Project m_project;
 		};
 	}

@@ -80,6 +80,9 @@ namespace wowpp
 				return;
 			}
 
+			// Initialize graphics
+			m_graphics.reset(new Graphics());
+
 			// Setup application name
 			setApplicationName("WoW++ Editor");
 
