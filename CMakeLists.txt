@@ -79,7 +79,7 @@ project(WoW)
 
 	# Find boost
 	set(Boost_USE_STATIC_LIBS ON)
-	find_package(Boost 1.54.0 REQUIRED COMPONENTS system date_time thread iostreams filesystem)
+	find_package(Boost 1.54.0 REQUIRED COMPONENTS system date_time thread iostreams filesystem regex)
 	
 	# Add boost include directories
 	include_directories(${Boost_INCLUDE_DIR})

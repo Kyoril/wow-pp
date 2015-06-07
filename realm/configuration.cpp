@@ -191,7 +191,7 @@ namespace wowpp
 					++it;
 				}
 
-				result.append(last_end, messageOfTheDay.end());
+				result.append<std::string::const_iterator>(last_end, messageOfTheDay.end());
 				messageOfTheDay = std::move(result);
 			}
 		}
