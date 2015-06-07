@@ -21,6 +21,7 @@
 
 #include "render_view.h"
 #include "program.h"
+#include "common/make_unique.h"
 #include "log/default_log_levels.h"
 #include "OgreSceneNode.h"
 #include "OgreManualObject.h"
@@ -120,8 +121,8 @@ namespace wowpp
 #endif
 
 			m_Camera = g.getSceneManager().createCamera("QOgreWidget_Cam");
-			m_Camera->setPosition(Ogre::Vector3(0.0f, 5.0f, -5.0));
-			m_Camera->lookAt(Ogre::Vector3(0, 0, 0));
+			m_Camera->setPosition(Ogre::Vector3(1676.71f, 121.67f, 1678.31f));
+			//m_Camera->lookAt(Ogre::Vector3(0, 0, 0));
 			m_Camera->setNearClipDistance(0.1f);
 			m_Camera->setFarClipDistance(533.333f);
 			m_Camera->setFOVy(Ogre::Degree(45.0f));
@@ -159,6 +160,19 @@ namespace wowpp
 			// Create camera controller
 			m_controller.reset(new CameraController(*m_Camera));
 
+			// Setup viewport grid
+			m_grid = make_unique<ViewportGrid>(program->getGraphics());
+			
+			// Setup world editor
+			auto *map = program->getProject().maps.getEditableById(0);
+			if (map)
+			{
+				m_worldEditor = make_unique<WorldEditor>(
+					g,
+					*m_Camera,
+					*map);
+			}
+
 			// Setup the update timer
 			connect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(repaint()));
 			m_updateTimer.start(1000 / 60);
@@ -168,10 +182,13 @@ namespace wowpp
 		{
             // Update camera controller (TODO: Delta time)
             m_controller->update(1.0f / 60.0f);
-            
+         
+			if (m_worldEditor)
+				m_worldEditor->update(1.0f / 60.0f);
+
 			assert(m_OgreWindow);
             m_OgreWindow->update(false);
-            
+         
             // Be sure to call "OgreWidget->repaint();" to call paintGL
             swapBuffers();
 		}

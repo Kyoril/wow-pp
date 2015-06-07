@@ -109,8 +109,10 @@ namespace wowpp
 				QPoint diff = m_lastMouse - mouseEvent->globalPos();
 				QCursor::setPos(m_lastMouse);
 
-				m_yaw = Ogre::Radian(static_cast<Ogre::Real>(diff.x()) * 0.05f);
-				m_pitch = Ogre::Radian(static_cast<Ogre::Real>(diff.y()) * 0.05f);
+				m_yaw = Ogre::Radian(static_cast<Ogre::Real>(diff.x()) * 0.025f);
+				m_pitch = Ogre::Radian(static_cast<Ogre::Real>(diff.y()) * 0.025f);
+				m_camera.yaw(m_yaw);
+				m_camera.pitch(m_pitch);
 			}
 		}
 
@@ -127,15 +129,13 @@ namespace wowpp
 		{
 			if (m_rmbDown)
 			{
-				m_camera.yaw(m_yaw * Ogre::Math::PI * dt);
-				m_camera.pitch(m_pitch * Ogre::Math::PI * dt);
 				m_yaw = Ogre::Radian(0.0f);
 				m_pitch = Ogre::Radian(0.0f);
 
 				// Move the camera
 				if (m_direction != Ogre::Vector3::ZERO)
 				{
-					m_camera.moveRelative(m_direction.normalisedCopy() * 7.0f * dt);
+					m_camera.moveRelative(m_direction.normalisedCopy() * 33.3333f * dt);
 				}
 			}
 		}

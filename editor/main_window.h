@@ -59,6 +59,7 @@ namespace wowpp
 			void on_actionObjectEditor_triggered();
 			void on_actionLoadMap_triggered();
 			void on_actionSave_triggered();
+			void on_actionExit_triggered();
 
 		private:
 

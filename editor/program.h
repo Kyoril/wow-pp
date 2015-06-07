@@ -46,6 +46,8 @@ namespace wowpp
 
 			/// Gets the graphics instance
 			Graphics &getGraphics() { return *m_graphics.get(); }
+			/// 
+			Project &getProject() { return m_project; }
 			/// Gets the configuration structure.
 			const Configuration &getConfiguration() const { return m_configuration; }
 

@@ -87,5 +87,15 @@ namespace wowpp
 			}
 		}
 
+		void MainWindow::on_actionExit_triggered()
+		{
+			if (m_objectEditor)
+			{
+				m_objectEditor->close();
+				m_objectEditor.reset();
+			}
+
+			close();
+		}
 	}
 }
