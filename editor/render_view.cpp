@@ -120,10 +120,12 @@ namespace wowpp
 #endif
 
 			m_Camera = g.getSceneManager().createCamera("QOgreWidget_Cam");
-			m_Camera->setPosition(Ogre::Vector3(0.0f, 5.0f, 0));
+			m_Camera->setPosition(Ogre::Vector3(0.0f, 5.0f, -5.0));
 			m_Camera->lookAt(Ogre::Vector3(0, 0, 0));
 			m_Camera->setNearClipDistance(0.1f);
 			m_Camera->setFarClipDistance(533.333f);
+			m_Camera->setFOVy(Ogre::Degree(45.0f));
+			m_Camera->setAspectRatio(static_cast<Ogre::Real>(width()) / static_cast<Ogre::Real>(height()));
 			
 			// Setup resources
 			static bool resourcesLoaded = false;
@@ -157,64 +159,6 @@ namespace wowpp
 			// Create camera controller
 			m_controller.reset(new CameraController(*m_Camera));
 
-			// Create a custom material
-			Ogre::MaterialPtr mat = Ogre::MaterialManager::getSingleton().create("TestMaterial", "General");
-			mat->removeAllTechniques();
-
-			// Create a nw technique
-			Ogre::Technique *teq = mat->createTechnique();
-			Ogre::Pass *pass = teq->createPass();
-			pass->setLightingEnabled(true);
-			pass->setAmbient(1.0f, 1.0f, 1.0f);
-			pass->setDiffuse(1.0f, 1.0f, 1.0f, 1.0f);
-			pass->setCullingMode(Ogre::CULL_NONE);
-
-			// Assign BLP texture to the material
-			Ogre::TextureUnitState *texState = pass->createTextureUnitState();
-			texState->setTextureName("Tileset\\Elwynn\\ElwynnDirtMud.blp");
-
-			// Create a simple test
-			Ogre::SceneNode *node = g.getSceneManager().getRootSceneNode()->createChildSceneNode("Test");
-			Ogre::ManualObject *obj = g.getSceneManager().createManualObject("TestObj");
-			obj->begin("TestMaterial", Ogre::RenderOperation::OT_TRIANGLE_LIST);
-			{
-				//			2
-				//
-				// 
-				//
-				// 0		1
-				obj->position(-0.5f, 0.0f, -0.5f);
-				obj->colour(Ogre::ColourValue(1.0f, 1.0f, 1.0f));
-				obj->textureCoord(0.0f, 0.0f);
-
-				obj->position( 0.5f, 0.0f, -0.5f);
-				obj->colour(Ogre::ColourValue(1.0f, 1.0f, 1.0f));
-				obj->textureCoord(1.0f, 0.0f);
-
-				obj->position( 0.5f, 0.0f,  0.5f);
-				obj->colour(Ogre::ColourValue(1.0f, 1.0f, 1.0f));
-				obj->textureCoord(1.0f, 1.0f);
-
-				// 1		0
-				//
-				// 
-				//
-				// 2		
-				obj->position(0.5f, 0.0f, 0.5f);
-				obj->colour(Ogre::ColourValue(1.0f, 1.0f, 1.0f));
-				obj->textureCoord(1.0f, 1.0f);
-
-				obj->position(-0.5f, 0.0f,  0.5f);
-				obj->colour(Ogre::ColourValue(1.0f, 1.0f, 1.0f));
-				obj->textureCoord(0.0f, 1.0f);
-
-				obj->position(-0.5f, 0.0f, -0.5f);
-				obj->colour(Ogre::ColourValue(1.0f, 1.0f, 1.0f));
-				obj->textureCoord(0.0f, 0.0f);
-			}
-			obj->end();
-			node->attachObject(obj);
-
 			// Setup the update timer
 			connect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(repaint()));
 			m_updateTimer.start(1000 / 60);
@@ -239,7 +183,6 @@ namespace wowpp
 				this->pos().y());
 			m_OgreWindow->resize(width, height);
 			m_Camera->setAspectRatio(static_cast<float>(width) / static_cast<float>(height));
-			repaint();
 		}
 
 		void RenderView::keyPressEvent(QKeyEvent *keyEvent)
@@ -256,18 +199,25 @@ namespace wowpp
 
 		void RenderView::mousePressEvent(QMouseEvent *mouseEvent)
 		{
+			this->setCursor(Qt::BlankCursor);
+
 			// Focus this widget so we can receive key events which will then be redirected
 			// to the camera controller
 			setFocus(Qt::MouseFocusReason);
+			m_controller->onMousePressed(mouseEvent);
 		}
 
 		void RenderView::mouseMoveEvent(QMouseEvent *mouseEvent)
 		{
-
+			m_controller->onMouseMoved(mouseEvent);
 		}
 
 		void RenderView::mouseReleaseEvent(QMouseEvent *mouseEvent)
 		{
+			this->unsetCursor();
+
+			m_controller->onMouseReleased(mouseEvent);
+
 			// Remove the focus of this widget
 			auto *p = parentWidget();
 			if (p) p->setFocus();

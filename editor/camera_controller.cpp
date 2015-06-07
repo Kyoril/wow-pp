@@ -21,6 +21,7 @@
 
 #include "camera_controller.h"
 #include "OgreCamera.h"
+#include <QCursor>
 
 namespace wowpp
 {
@@ -28,7 +29,7 @@ namespace wowpp
 	{
 		CameraController::CameraController(Ogre::Camera &camera)
 			: m_camera(camera)
-			, m_direction(0.0f, 0.0f, 0.0f)
+			, m_rmbDown(false)
 		{
 		}
 
@@ -48,25 +49,25 @@ namespace wowpp
 			{
 				case Qt::Key_W:
 				{
-					m_direction.y = 1.0f;
+					m_direction.z = -1.0f;
 					break;
 				}
 
 				case Qt::Key_S:
 				{
-					m_direction.y = -1.0f;
+					m_direction.z = 1.0f;
 					break;
 				}
 
 				case Qt::Key_A:
 				{
-					m_direction.x = 1.0f;
+					m_direction.x = -1.0f;
 					break;
 				}
 
 				case Qt::Key_D:
 				{
-					m_direction.x = -1.0f;
+					m_direction.x = 1.0f;
 					break;
 				}
 			}
@@ -79,7 +80,7 @@ namespace wowpp
 				case Qt::Key_W:
 				case Qt::Key_S:
 				{
-					m_direction.y = 0.0f;
+					m_direction.z = 0.0f;
 					break;
 				}
 
@@ -94,25 +95,48 @@ namespace wowpp
 
 		void CameraController::onMousePressed(QMouseEvent *mouseEvent)
 		{
-
+			if (mouseEvent->button() & Qt::RightButton)
+			{
+				m_rmbDown = true;
+				m_lastMouse = mouseEvent->globalPos();
+			}
 		}
 
 		void CameraController::onMouseMoved(QMouseEvent *mouseEvent)
 		{
+			if (m_rmbDown)
+			{
+				QPoint diff = m_lastMouse - mouseEvent->globalPos();
+				QCursor::setPos(m_lastMouse);
 
+				m_yaw = Ogre::Radian(static_cast<Ogre::Real>(diff.x()) * 0.05f);
+				m_pitch = Ogre::Radian(static_cast<Ogre::Real>(diff.y()) * 0.05f);
+			}
 		}
 
 		void CameraController::onMouseReleased(QMouseEvent *mouseEvent)
 		{
-
+			if (mouseEvent->button() & Qt::RightButton)
+			{
+				m_direction = Ogre::Vector3::ZERO;
+				m_rmbDown = false;
+			}
 		}
 
 		void CameraController::update(float dt)
 		{
-			// Move the camera
-			if (m_direction != Ogre::Vector3::ZERO)
+			if (m_rmbDown)
 			{
-				m_camera.moveRelative(m_direction.normalisedCopy() * 7.0f * dt);
+				m_camera.yaw(m_yaw * Ogre::Math::PI * dt);
+				m_camera.pitch(m_pitch * Ogre::Math::PI * dt);
+				m_yaw = Ogre::Radian(0.0f);
+				m_pitch = Ogre::Radian(0.0f);
+
+				// Move the camera
+				if (m_direction != Ogre::Vector3::ZERO)
+				{
+					m_camera.moveRelative(m_direction.normalisedCopy() * 7.0f * dt);
+				}
 			}
 		}
 

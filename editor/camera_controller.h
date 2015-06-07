@@ -24,6 +24,7 @@
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include "OgreVector3.h"
+#include "OgreVector2.h"
 
 namespace Ogre
 {
@@ -63,6 +64,9 @@ namespace wowpp
 
 			Ogre::Camera &m_camera;
 			Ogre::Vector3 m_direction;
+			QPoint m_lastMouse;
+			Ogre::Radian m_yaw, m_pitch;
+			bool m_rmbDown;
 		};
 	}
 }
