@@ -35,6 +35,7 @@
 #include <iostream>
 #include <memory>
 #include <fstream>
+#include "version.h"
 
 namespace wowpp
 {
@@ -45,6 +46,15 @@ namespace wowpp
 
 	bool Program::run()
 	{
+		// Header
+		ILOG("Starting WoW++ Login Server");
+		ILOG("Version " << Major << "." << Minor << "." << Build << "." << Revisision << " (Commit: " << GitCommit << ")");
+		ILOG("Last Change: " << GitLastChange);
+
+#if defined(DEBUG) || defined(_DEBUG)
+		ILOG("Debug build enabled");
+#endif
+
 		// Load the configuration
 		if (!m_configuration.load("wowpp_login.cfg"))
 		{

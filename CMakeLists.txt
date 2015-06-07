@@ -30,6 +30,39 @@ project(WoW)
 		set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 	endif(MSVC)
 	
+	# Version header
+	if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+		find_package(Git)
+		if(GIT_FOUND)
+			execute_process(
+				COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
+				WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+				OUTPUT_VARIABLE "WOWPP_GIT_COMMIT"
+				ERROR_QUIET
+				OUTPUT_STRIP_TRAILING_WHITESPACE)
+			execute_process(
+				COMMAND ${GIT_EXECUTABLE} rev-list HEAD --count
+				WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+				OUTPUT_VARIABLE "WOWPP_GIT_REVISION"
+				ERROR_QUIET
+				OUTPUT_STRIP_TRAILING_WHITESPACE)
+			execute_process(
+				COMMAND ${GIT_EXECUTABLE} show -s --format=%ci
+				WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+				OUTPUT_VARIABLE "WOWPP_GIT_LASTCHANGE"
+				ERROR_QUIET
+				OUTPUT_STRIP_TRAILING_WHITESPACE)
+			message(STATUS "Git commit: ${WOWPP_GIT_COMMIT}")
+			message(STATUS "Last change: ${WOWPP_GIT_LASTCHANGE}")
+		else(GIT_FOUND)
+			set(WOWPP_GIT_COMMIT 0)
+			set(WOWPP_GIT_REVISION 0)
+		endif(GIT_FOUND)
+	endif()
+
+	include_directories(${PROJECT_BINARY_DIR})
+	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.h.in ${PROJECT_BINARY_DIR}/version.h @ONLY)
+	
 	# Enable C++11 if needed
 	if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 		list(APPEND CMAKE_CXX_FLAGS "-std=c++11")

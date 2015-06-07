@@ -27,6 +27,9 @@
 #include "log/default_log_levels.h"
 #include <fstream>
 #include <limits>
+#include <boost/regex.hpp>
+#include <boost/algorithm/string.hpp>
+#include "version.h"
 
 namespace wowpp
 {
@@ -57,7 +60,7 @@ namespace wowpp
 		, isLogActive(true)
 		, logFileName("wowpp_realm.log")
 		, isLogFileBuffering(false)
-		, messageOfTheDay("Welcome to the WoW++ Realm!")
+		, messageOfTheDay("Welcome to the WoW++ Realm!\\nCore Version: $version\\nLast Change: $lastchange")
 	{
 	}
 
@@ -150,6 +153,46 @@ namespace wowpp
 			{
 				dataPath = game->getString("dataPath", dataPath);
 				messageOfTheDay = game->getString("motd", messageOfTheDay);
+
+				// Replace variable text in motd
+				std::string result;
+				boost::regex re("(\\$.*)");
+
+				boost::sregex_iterator it(messageOfTheDay.begin(), messageOfTheDay.end(), re, boost::regex_constants::match_not_dot_newline);
+				boost::sregex_iterator end;
+				std::string::const_iterator last_end = messageOfTheDay.begin();
+
+				while (it != end)
+				{
+					result.append(it->prefix());
+
+					// Get the token and convert it to lowercase string
+					std::string token = it->str();
+					boost::algorithm::to_lower(token);
+
+					// Version
+					if (token == "$version")
+					{
+						std::stringstream strm;
+						strm << Major << "." << Minor << "." << Build << "." << Revisision << " (" << GitCommit << ")";
+						result.append(strm.str());
+					}
+					else if (token == "$lastchange")
+					{
+						result.append(GitLastChange);
+					}
+					else
+					{
+						// Unknown token, just add it
+						result.append(token);
+					}
+
+					last_end = (*it)[0].second;
+					++it;
+				}
+
+				result.append(last_end, messageOfTheDay.end());
+				messageOfTheDay = std::move(result);
 			}
 		}
 		catch (const sff::read::ParseException<Iterator> &e)
