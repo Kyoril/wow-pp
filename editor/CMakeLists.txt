@@ -140,5 +140,6 @@ project(editor)
 	install(TARGETS editor
 			RUNTIME DESTINATION bin
 			LIBRARY DESTINATION lib
+			BUNDLE DESTINATION bin
 			ARCHIVE DESTINATION lib/static)
 	

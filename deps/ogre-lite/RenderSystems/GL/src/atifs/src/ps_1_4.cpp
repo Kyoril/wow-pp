@@ -679,12 +679,12 @@ PS_1_4::TokenInst PS_1_4::texreg2ar[] = {
 };
 
 PS_1_4::RegModOffset PS_1_4::texreg2xx_RegMods[] = {
-	{1, R_BASE, 0},
-	{7, R_BASE, 0},
-	{13, R_BASE, 0},
-	{15, R_BASE, 0},
-	{4, R_BASE, 1},
-	{10, R_BASE, 1},
+	{1, static_cast<uint>(R_BASE), 0},
+	{7, static_cast<uint>(R_BASE), 0},
+	{13, static_cast<uint>(R_BASE), 0},
+	{15, static_cast<uint>(R_BASE), 0},
+	{4, static_cast<uint>(R_BASE), 1},
+	{10, static_cast<uint>(R_BASE), 1},
 
 };
 
@@ -743,10 +743,10 @@ PS_1_4::TokenInst PS_1_4::texdp3[] = {
 
 
 PS_1_4::RegModOffset PS_1_4::texdp3_RegMods[] = {
-	{1, T_BASE, 0},
-	{3, R_BASE, 0},
-	{5, R_BASE, 0},
-	{7, R_BASE, 1},
+	{1, static_cast<uint>(T_BASE), 0},
+	{3, static_cast<uint>(R_BASE), 0},
+	{5, static_cast<uint>(R_BASE), 0},
+	{7, static_cast<uint>(R_BASE), 1},
 
 };
 
@@ -781,12 +781,12 @@ PS_1_4::TokenInst PS_1_4::texdp3tex[] = {
 
 
 PS_1_4::RegModOffset PS_1_4::texdp3tex_RegMods[] = {
-	{1, T_BASE, 0},
-	{3, R_BASE, 0},
-	{5, R_BASE, 0},
-	{7, R_BASE, 1},
-	{9, R_BASE, 1},
-	{11, R_BASE, 1},
+	{1, static_cast<uint>(T_BASE), 0},
+	{3, static_cast<uint>(R_BASE), 0},
+	{5, static_cast<uint>(R_BASE), 0},
+	{7, static_cast<uint>(R_BASE), 1},
+	{9, static_cast<uint>(R_BASE), 1},
+	{11, static_cast<uint>(R_BASE), 1},
 
 };
 
@@ -817,9 +817,9 @@ PS_1_4::TokenInst PS_1_4::texm3x2pad[] = {
 
 
 PS_1_4::RegModOffset PS_1_4::texm3xxpad_RegMods[] = {
-	{1, T_BASE, 0},
-	{6, R_BASE, 0},
-	{8, R_BASE, 1},
+	{1, static_cast<uint>(T_BASE), 0},
+	{6, static_cast<uint>(R_BASE), 0},
+	{8, static_cast<uint>(R_BASE), 1},
 };
 
 
@@ -854,10 +854,10 @@ PS_1_4::TokenInst PS_1_4::texm3x2tex[] = {
 };
 
 PS_1_4::RegModOffset PS_1_4::texm3xxtex_RegMods[] = {
-	{1, T_BASE, 0},
-	{6, R_BASE, 0},
-	{8, R_BASE, 1},
-	{10, R_BASE, 0}
+	{1, static_cast<uint>(T_BASE), 0},
+	{6, static_cast<uint>(R_BASE), 0},
+	{8, static_cast<uint>(R_BASE), 1},
+	{10, static_cast<uint>(R_BASE), 0}
 };
 
 PS_1_4::MacroRegModify PS_1_4::texm3x2tex_MacroMods = {
@@ -995,10 +995,10 @@ PS_1_4::TokenInst PS_1_4::texm3x3spec[] = {
 };
 
 PS_1_4::RegModOffset PS_1_4::texm3x3spec_RegMods[] = {
-	{8, R_BASE, 1},
-	{15, R_BASE, 2},
-	{21, C_BASE, 2},
-	{33, C_BASE, 2},
+	{8, static_cast<uint>(R_BASE), 1},
+	{15, static_cast<uint>(R_BASE), 2},
+	{21, static_cast<uint>(C_BASE), 2},
+	{33, static_cast<uint>(C_BASE), 2},
 
 };
 

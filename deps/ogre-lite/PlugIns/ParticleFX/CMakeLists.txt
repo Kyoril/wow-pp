@@ -86,9 +86,9 @@ if (APPLE AND NOT OGRE_BUILD_PLATFORM_IPHONE)
     )
 
 	# Copy headers into the main Ogre framework
-	add_custom_command(TARGET Plugin_ParticleFX POST_BUILD
-	  COMMAND /Developer/Library/PrivateFrameworks/DevToolsCore.framework/Resources/pbxcp ARGS -exclude .DS_Store -exclude .hg -exclude 'CMakeLists.txt' -resolve-src-symlinks ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h ${OGRE_BINARY_DIR}/lib/$(CONFIGURATION)/Ogre.framework/Headers/
-	)
+	#add_custom_command(TARGET Plugin_ParticleFX POST_BUILD
+	# COMMAND /Developer/Library/PrivateFrameworks/DevToolsCore.framework/Resources/pbxcp ARGS -exclude .DS_Store -exclude .hg -exclude 'CMakeLists.txt' -resolve-src-symlinks ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h ${OGRE_BINARY_DIR}/lib/$(CONFIGURATION)/Ogre.framework/Headers/
+	#)
 endif()
 
 ogre_config_plugin(Plugin_ParticleFX)

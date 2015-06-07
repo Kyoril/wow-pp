@@ -135,8 +135,8 @@ if (MSVC)
   # MSVC only builds for intel anyway
   set(OGRE_TEST_BIG_ENDIAN FALSE)
 else()
-  include(TestBigEndian)
-  test_big_endian(OGRE_TEST_BIG_ENDIAN)
+  #include(TestBigEndian)
+  #test_big_endian(OGRE_TEST_BIG_ENDIAN)
 endif()
 
 # Add OgreMain include path

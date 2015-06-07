@@ -66,7 +66,7 @@ namespace Ogre
 
         if( miscParams )
         {
-            NameValuePairList::const_iterator opt(NULL);
+            NameValuePairList::const_iterator opt;
             
             // Full screen anti aliasing
             opt = miscParams->find( "FSAA" );
@@ -113,7 +113,7 @@ namespace Ogre
         {
             createAGLContext(fsaa_samples, depth);
 
-            NameValuePairList::const_iterator opt(NULL);
+            NameValuePairList::const_iterator opt;
             if(miscParams)
                 opt = miscParams->find("externalWindowHandle");
 
