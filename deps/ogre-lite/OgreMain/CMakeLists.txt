@@ -488,24 +488,6 @@ if (WIN32)
   endif ()
 
 elseif (APPLE)
-  if (OGRE_BUILD_PLATFORM_IPHONE)
-    include_directories("include/iPhone")
-    set(PLATFORM_HEADER_FILES
-      include/iPhone/OgreConfigDialogImp.h
-      include/iPhone/OgreErrorDialogImp.h
-      include/iPhone/OgreTimerImp.h
-      include/iPhone/macUtils.h
-    )
-    set(PLATFORM_SOURCE_FILES
-      src/iPhone/OgreConfigDialog.cpp
-      src/iPhone/OgreErrorDialog.cpp
-      src/iPhone/OgreTimer.cpp
-      src/iPhone/macUtils.mm
-      src/OgreSearchOps.cpp
-    )
-    set(PLATFORM_LIBS "")
-    set(PLATFORM_HEADER_INSTALL "iPhone")
-  else ()
     include_directories("include/OSX")
     set(PLATFORM_HEADER_FILES
       # Hack around a CMake bug.  The first item has its role set to Project instead of public.
@@ -534,7 +516,6 @@ elseif (APPLE)
 
     set(PLATFORM_LIBS ${Carbon_LIBRARY_FWK} ${Cocoa_LIBRARY_FWK})
     set(PLATFORM_HEADER_INSTALL "OSX")
-  endif ()
 elseif (UNIX)
   include_directories(include/GLX ${X11_INCLUDE_DIR})
   set(PLATFORM_HEADER_FILES
@@ -584,29 +565,11 @@ elseif (OGRE_THREAD_PROVIDER EQUAL 1)
 	set(THREAD_SOURCE_FILES
 		src/Threading/OgreDefaultWorkQueueStandard.cpp
 	)
-elseif (OGRE_THREAD_PROVIDER EQUAL 2)
-	list(APPEND THREAD_HEADER_FILES
-		include/Threading/OgreThreadDefinesPoco.h
-		include/Threading/OgreThreadHeadersPoco.h
-		include/Threading/OgreDefaultWorkQueueStandard.h
-	)
-	set(THREAD_SOURCE_FILES
-		src/Threading/OgreDefaultWorkQueueStandard.cpp
-	)
-elseif (OGRE_THREAD_PROVIDER EQUAL 3)
-	list(APPEND THREAD_HEADER_FILES
-		include/Threading/OgreThreadDefinesTBB.h
-		include/Threading/OgreThreadHeadersTBB.h
-		include/Threading/OgreDefaultWorkQueueTBB.h
-	)
-	set(THREAD_SOURCE_FILES
-		src/Threading/OgreDefaultWorkQueueTBB.cpp
-	)
 endif ()
 
 
 # Add needed definitions and nedmalloc include dir
-add_definitions(-DOGRE_NONCLIENT_BUILD -DFREEIMAGE_LIB -D_MT -D_USRDLL)
+add_definitions(-DOGRE_NONCLIENT_BUILD -D_MT -D_USRDLL)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/nedmalloc)
 
 set(LIBRARIES
@@ -624,30 +587,13 @@ if (OGRE_CONFIG_ENABLE_FREEIMAGE)
   list(APPEND LIBRARIES    "${FreeImage_LIBRARIES}")
 endif()
 
-if (OGRE_CONFIG_ENABLE_DDS)
-  list(APPEND HEADER_FILES include/OgreDDSCodec.h)
-  list(APPEND SOURCE_FILES src/OgreDDSCodec.cpp)
-endif ()
-
-if (OGRE_CONFIG_ENABLE_PVRTC)
-  list(APPEND HEADER_FILES include/OgrePVRTCCodec.h)
-  list(APPEND SOURCE_FILES src/OgrePVRTCCodec.cpp)
-endif ()
-
-if (OGRE_CONFIG_ENABLE_ZIP)
-  list(APPEND HEADER_FILES include/OgreZip.h)
-  list(APPEND SOURCE_FILES src/OgreZip.cpp)
-  list(APPEND LIBRARIES "${ZZip_LIBRARIES}")
-  list(APPEND LIBRARIES "${ZLIB_LIBRARIES}")
-endif ()
-
 set (TARGET_LINK_FLAGS "")
 
 # setup OgreMain target
 add_library(OgreMain ${OGRE_LIB_TYPE} ${PREC_HEADER} ${HEADER_FILES} ${SOURCE_FILES} ${PLATFORM_HEADER_FILES} ${PLATFORM_SOURCE_FILES} ${THREAD_HEADER_FILES} ${THREAD_SOURCE_FILES})
 # In visual studio 2010 - 64 bit we get this error: "LINK : fatal error LNK1210: exceeded internal ILK size limit; link with /INCREMENTAL:NO"
 if(WIN32 AND MSVC10 AND CMAKE_CL_64)
-  set_target_properties(OgreMain PROPERTIES 
+  set_target_properties(OgreMain PROPERTIES s
                         VERSION ${OGRE_SOVERSION}
                         LINK_FLAGS "/INCREMENTAL:NO"
                       )
@@ -657,34 +603,28 @@ endif()
 
 if (APPLE)
   if (NOT OGRE_BUILD_PLATFORM_IPHONE)
-    set_target_properties(OgreMain PROPERTIES FRAMEWORK TRUE)
+    set_target_properties(OgreMain PROPERTIES FRAMEWORK FALSE)
     # Set the INSTALL_PATH so that Frameworks can be local
-    set_target_properties(OgreMain
-       PROPERTIES BUILD_WITH_INSTALL_RPATH 1
-       INSTALL_NAME_DIR "@executable_path/../Frameworks"
-    )
+    #set_target_properties(OgreMain
+    #   PROPERTIES BUILD_WITH_INSTALL_RPATH 1
+    #   INSTALL_NAME_DIR "@executable_path/../Frameworks"
+    #)
     set_target_properties(OgreMain PROPERTIES PUBLIC_HEADER "${HEADER_FILES}")
 	set_target_properties(OgreMain PROPERTIES RESOURCE "${RESOURCE_FILES}")
 	set_source_files_properties("${RESOURCE_FILES}" PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
     set_target_properties(OgreMain PROPERTIES XCODE_ATTRIBUTE_GCC_PRECOMPILE_PREFIX_HEADER "YES")
     set_target_properties(OgreMain PROPERTIES XCODE_ATTRIBUTE_GCC_PREFIX_HEADER "${OGRE_SOURCE_DIR}/OgreMain/include/OgreStableHeaders.h")
     set_target_properties(OgreMain PROPERTIES XCODE_ATTRIBUTE_GCC_UNROLL_LOOPS "YES")
-    add_custom_command(TARGET OgreMain POST_BUILD
-      COMMAND mkdir ARGS -p ${OGRE_BINARY_DIR}/lib/$(CONFIGURATION)/Ogre.framework/Headers/Threading
-	  COMMAND /Developer/Library/PrivateFrameworks/DevToolsCore.framework/Resources/pbxcp ARGS -exclude .DS_Store -exclude .hg -exclude 'CMakeLists.txt' -resolve-src-symlinks ${OGRE_SOURCE_DIR}/OgreMain/include/Threading/* ${OGRE_BINARY_DIR}/lib/$(CONFIGURATION)/Ogre.framework/Headers/Threading/
-      COMMAND mkdir ARGS -p ${OGRE_BINARY_DIR}/lib/$(CONFIGURATION)/Ogre.framework/Headers/OSX
-      COMMAND /Developer/Library/PrivateFrameworks/DevToolsCore.framework/Resources/pbxcp ARGS -exclude .DS_Store -exclude .hg -exclude 'CMakeLists.txt' -resolve-src-symlinks ${OGRE_SOURCE_DIR}/OgreMain/include/OSX/*.h ${OGRE_BINARY_DIR}/lib/$(CONFIGURATION)/Ogre.framework/Headers/OSX/	
-	)
-  else ()
-    set_target_properties(OgreMain PROPERTIES INSTALL_NAME_DIR "OGRE")
-    set_target_properties(OgreMain PROPERTIES XCODE_ATTRIBUTE_GCC_THUMB_SUPPORT "NO")
-    set_target_properties(OgreMain PROPERTIES XCODE_ATTRIBUTE_GCC_UNROLL_LOOPS "YES")
-    set_target_properties(OgreMain PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "iPhone Developer")
-    set_target_properties(OgreMain PROPERTIES XCODE_ATTRIBUTE_GCC_PRECOMPILE_PREFIX_HEADER "YES")
+#    add_custom_command(TARGET OgreMain POST_BUILD
+#      COMMAND mkdir ARGS -p ${OGRE_BINARY_DIR}/lib/$(CONFIGURATION)/Ogre.framework/Headers/Threading
+#	  COMMAND /Developer/Library/PrivateFrameworks/DevToolsCore.framework/Resources/pbxcp ARGS -exclude .DS_Store -exclude .hg -exclude 'CMakeLists.txt' -resolve-src-symlinks ${OGRE_SOURCE_DIR}/OgreMain/include/Threading/* ${OGRE_BINARY_DIR}/lib/$(CONFIGURATION)/Ogre.framework/Headers/Threading/
+#      COMMAND mkdir ARGS -p ${OGRE_BINARY_DIR}/lib/$(CONFIGURATION)/Ogre.framework/Headers/OSX
+#      COMMAND /Developer/Library/PrivateFrameworks/DevToolsCore.framework/Resources/pbxcp ARGS -exclude .DS_Store -exclude .hg -exclude 'CMakeLists.txt' -resolve-src-symlinks ${OGRE_SOURCE_DIR}/OgreMain/include/OSX/*.h ${OGRE_BINARY_DIR}/lib/$(CONFIGURATION)/Ogre.framework/Headers/OSX/	
+#	)
   endif ()
 
   # Framework is called 'Ogre'
-  set_target_properties(OgreMain PROPERTIES	OUTPUT_NAME Ogre)
+  #set_target_properties(OgreMain PROPERTIES	OUTPUT_NAME Ogre)
 endif ()
 target_link_libraries(OgreMain ${LIBRARIES})
 if (MINGW)
