@@ -95,7 +95,12 @@ namespace wowpp
 
 		void CameraController::onMousePressed(QMouseEvent *mouseEvent)
 		{
+#ifndef __MACH__
 			if (mouseEvent->button() & Qt::RightButton)
+#else
+            if (mouseEvent->button() & Qt::RightButton ||
+                mouseEvent->button() & Qt::LeftButton)
+#endif
 			{
 				m_rmbDown = true;
 				m_lastMouse = mouseEvent->globalPos();
@@ -118,7 +123,12 @@ namespace wowpp
 
 		void CameraController::onMouseReleased(QMouseEvent *mouseEvent)
 		{
-			if (mouseEvent->button() & Qt::RightButton)
+#ifndef __MACH__
+            if (mouseEvent->button() & Qt::RightButton)
+#else
+            if (mouseEvent->button() & Qt::RightButton ||
+                mouseEvent->button() & Qt::LeftButton)
+#endif
 			{
 				m_direction = Ogre::Vector3::ZERO;
 				m_rmbDown = false;
