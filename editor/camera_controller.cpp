@@ -70,6 +70,18 @@ namespace wowpp
 					m_direction.x = 1.0f;
 					break;
 				}
+                    
+                case Qt::Key_Q:
+                {
+                    m_direction.y = -1.0f;
+                    break;
+                }
+                    
+                case Qt::Key_E:
+                {
+                    m_direction.y = 1.0f;
+                    break;
+                }
 			}
 		}
 
@@ -90,6 +102,13 @@ namespace wowpp
 					m_direction.x = 0.0f;
 					break;
 				}
+                    
+                case Qt::Key_Q:
+                case Qt::Key_E:
+                {
+                    m_direction.y = 0.0f;
+                    break;
+                }
 			}
 		}
 
