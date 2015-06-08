@@ -24,7 +24,8 @@ namespace wowpp
 			Ogre::MaterialPtr material,
 			UInt32 tileX,
 			UInt32 tileY,
-			terrain::model::Heightmap &tileHeights
+			terrain::model::Heightmap &tileHeights,
+			terrain::model::Normalmap &tileNormals
 			)
 			: Ogre::MovableObject(name)
 			, Ogre::Renderable()
@@ -37,6 +38,7 @@ namespace wowpp
 			, m_boundingRadius(0.0f)
 			, m_lightListDirty(true)
 			, m_tileHeights(tileHeights)
+			, m_tileNormals(tileNormals)
 		{
 			createVertexData();
 			createIndexes();
@@ -149,6 +151,8 @@ namespace wowpp
 			size_t offset = 0;
 			decl->addElement(MAIN_BINDING, offset, Ogre::VET_FLOAT3, Ogre::VES_POSITION);
 			offset += Ogre::VertexElement::getTypeSize(Ogre::VET_FLOAT3);
+            decl->addElement(MAIN_BINDING, offset, Ogre::VET_FLOAT3, Ogre::VES_NORMAL);
+            offset += Ogre::VertexElement::getTypeSize(Ogre::VET_FLOAT3);
 						
 			m_mainBuffer = Ogre::HardwareBufferManager::getSingleton().createVertexBuffer(
 				decl->getVertexSize(MAIN_BINDING),
@@ -167,6 +171,7 @@ namespace wowpp
 			Ogre::Real maxHeight = std::numeric_limits<Ogre::Real>::min();
 
 			const Ogre::VertexElement *posElem = decl->findElementBySemantic(Ogre::VES_POSITION);
+            const Ogre::VertexElement *nrmElem = decl->findElementBySemantic(Ogre::VES_NORMAL);
 			unsigned char *base = static_cast<unsigned char*>(m_mainBuffer->lock(Ogre::HardwareBuffer::HBL_NORMAL));
 
 			const float scale = (constants::MapWidth / static_cast<float>(constants::TilesPerPage)) / 8.0f;
@@ -176,8 +181,10 @@ namespace wowpp
 				for (VertexID i = startX; i < endX; ++i)
 				{
 					Ogre::Real *pos = nullptr;
+                    Ogre::Real *nrm = nullptr;
 
 					posElem->baseVertexPointerToElement(base, &pos);
+                    nrmElem->baseVertexPointerToElement(base, &nrm);
 
 					int relX = i - startX;
 					int relY = j - startY;
@@ -189,6 +196,10 @@ namespace wowpp
 					*pos++ = scale * static_cast<Ogre::Real>(j);
 					*pos++ = height;
 					*pos++ = scale * static_cast<Ogre::Real>(i);
+                    
+                    *nrm++ = -m_tileNormals[heightInd][1];
+                    *nrm++ = m_tileNormals[heightInd][2];
+                    *nrm++ = -m_tileNormals[heightInd][0];
 
 					if (height < minHeight) minHeight = height;
 					if (height > maxHeight) maxHeight = height;
@@ -198,9 +209,11 @@ namespace wowpp
 
 				for (VertexID i = startX; i < endX - 1 ; ++i)
 				{
-					Ogre::Real *pos = nullptr;
-
-					posElem->baseVertexPointerToElement(base, &pos);
+                    Ogre::Real *pos = nullptr;
+                    Ogre::Real *nrm = nullptr;
+                    
+                    posElem->baseVertexPointerToElement(base, &pos);
+                    nrmElem->baseVertexPointerToElement(base, &nrm);
 
 					int relX = i - startX;
 					int relY = j - startY;
@@ -212,6 +225,10 @@ namespace wowpp
 					*pos++ = scale * static_cast<Ogre::Real>(j)+scale * 0.5f;
 					*pos++ = height;
 					*pos++ = scale * static_cast<Ogre::Real>(i)+scale * 0.5f;
+                    
+                    *nrm++ = -m_tileNormals[heightInd][1];
+                    *nrm++ = m_tileNormals[heightInd][2];
+                    *nrm++ = -m_tileNormals[heightInd][0];
 
 					if (height < minHeight) minHeight = height;
 					if (height > maxHeight) maxHeight = height;
@@ -224,9 +241,11 @@ namespace wowpp
 			VertexID j = endY - 1;
 			for (VertexID i = startX; i < endX; ++i)
 			{
-				Ogre::Real *pos = nullptr;
-
-				posElem->baseVertexPointerToElement(base, &pos);
+                Ogre::Real *pos = nullptr;
+                Ogre::Real *nrm = nullptr;
+                
+                posElem->baseVertexPointerToElement(base, &pos);
+                nrmElem->baseVertexPointerToElement(base, &nrm);
 
 				int relX = i - startX;
 				int relY = j - startY;
@@ -238,6 +257,10 @@ namespace wowpp
 				*pos++ = scale * static_cast<Ogre::Real>(j);
 				*pos++ = height;
 				*pos++ = scale * static_cast<Ogre::Real>(i);
+                
+                *nrm++ = -m_tileNormals[heightInd][1];
+                *nrm++ = m_tileNormals[heightInd][2];
+                *nrm++ = -m_tileNormals[heightInd][0];
 
 				if (height < minHeight) minHeight = height;
 				if (height > maxHeight) maxHeight = height;

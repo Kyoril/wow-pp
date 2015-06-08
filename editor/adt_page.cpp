@@ -27,7 +27,10 @@ namespace wowpp
 		static const UInt32 MTXFChunk = MAKE_CHUNK_HEADER('M', 'T', 'X', 'F');		// 
 		// SUB Chunks of MCNK chunk
 		static const UInt32 MCVTSubChunk = MAKE_CHUNK_HEADER('M', 'C', 'V', 'T');	// 
-		static const UInt32 MCNRSubChunk = MAKE_CHUNK_HEADER('M', 'C', 'N', 'R');	// 
+		static const UInt32 MCNRSubChunk = MAKE_CHUNK_HEADER('M', 'C', 'N', 'R');	//
+        static const UInt32 MCSHSubChunk = MAKE_CHUNK_HEADER('M', 'C', 'S', 'H');	//
+        static const UInt32 MCALSubChunk = MAKE_CHUNK_HEADER('M', 'C', 'A', 'L');	//
+        static const UInt32 MCLYSubChunk = MAKE_CHUNK_HEADER('M', 'C', 'L', 'Y');	//
 #undef MAKE_CHUNK_HEADER
 
 		namespace read
@@ -57,6 +60,14 @@ namespace wowpp
 				ptr->skip(chunkSize);
 				return true;
 			}
+            
+            struct MCINEntry
+            {
+                UInt32 offsMCNK;            // absolute offset.
+                UInt32 size;                // the size of the MCNK chunk, this is refering to.
+                UInt32 flags;               // these two are always 0. only set in the client.
+                UInt32 asyncId;
+            };
 
 			struct MCNKHeader
 			{
@@ -112,6 +123,39 @@ namespace wowpp
 
 				return true;
 			}
+            
+            static bool readMCNRSubChunk(adt::Page &page, const Ogre::DataStreamPtr &ptr, UInt32 chunkSize, const MCNKHeader &header)
+            {
+                assert(header.IndexX < constants::TilesPerPage);
+                assert(header.IndexY < constants::TilesPerPage);
+                assert(chunkSize == sizeof(float) * constants::VertsPerTile);
+                
+                // Calculate tile index
+                UInt32 tileIndex = header.IndexY + header.IndexX * constants::TilesPerPage;
+                auto &tileNormals = page.terrain.normals[tileIndex];
+                
+                std::array<std::array<Int8, 3>, constants::VertsPerTile> normals;
+                if (!ptr->read(&normals[0], sizeof(Int8) * 3 * normals.size()))
+                {
+                    ELOG("Could not read MCNR subchunk (eof reached?)");
+                    return false;
+                }
+                
+                // Add tile height
+                UInt32 index = 0;
+                for (auto &normal : normals)
+                {
+                    tileNormals[index][0] = static_cast<float>(normal[0]) / 127.0f;
+                    tileNormals[index][1] = static_cast<float>(normal[1]) / 127.0f;
+                    tileNormals[index][2] = static_cast<float>(normal[2]) / 127.0f;
+                    index++;
+                }
+                
+                // Unknown 13 bytes...
+                ptr->skip(13);
+                
+                return true;
+            }
 
 			static bool readMCNKChunk(adt::Page &page, const Ogre::DataStreamPtr &ptr, UInt32 chunkSize)
 			{
@@ -122,28 +166,20 @@ namespace wowpp
 					ELOG("Could not read MCNK chunk header!");
 					return false;
 				}
-
+                
 				// From here on, we will read subchunks
 				const size_t subStart = ptr->tell();
-				while (ptr->tell() < subStart + chunkSize - 5)
+				while (ptr->tell() < subStart + chunkSize)
 				{
 					// Read header of sub chunk
 					UInt32 subHeader = 0, subSize = 0;
 					bool result = (
 						ptr->read(&subHeader, sizeof(UInt32)) &&
-						ptr->read(&subSize, sizeof(UInt32))
-						);
-					if (!result || subHeader == 0)
+						ptr->read(&subSize, sizeof(UInt32)));
+					if (!result)
 					{
-						ELOG("Could not read MCNK subchunk header!");
+						ELOG("Could not read MCNK subchunk header! " << subHeader << " (" << subSize << ")");
 						return false;
-					}
-
-					// This is a dirty hack... something about the code in here isn't right.
-					if (subHeader == MCNKChunk)
-					{
-						ptr->skip(-8);
-						return true;
 					}
 
 					switch (subHeader)
@@ -156,15 +192,36 @@ namespace wowpp
 
 						case MCNRSubChunk:
 						{
-							ptr->skip(sizeof(UInt8) * 3 * 145 + 13);	// subSize does not match this! Fucking inconsistency...
-							break;
+                            result = readMCNRSubChunk(page, ptr, subSize, header);
+                            break;
 						}
+                            
+                        case MCSHSubChunk:
+                        {
+                            if (subSize != 512)
+                                WLOG("\tMCSH sub chunk has different size than expected: " << subSize << " (expected 512)");
+                            ptr->skip(subSize);
+                            break;
+                        }
+                            
+                        case MCALSubChunk:
+                        {
+                            ptr->skip(subSize);
+                            break;
+                        }
+                            
+                        case MCLYSubChunk:
+                        {
+                            ptr->skip(subSize);
+                            break;
+                        }
 
 						default:
 						{
-							WLOG("Unknown subchunk found: " << subHeader);
-							ptr->skip(subSize);
-							break;
+							//WLOG("Unknown subchunk found: " << subHeader);
+                            ptr->skip(subSize);
+                            break;
+							//break;
 						}
 					}
 
@@ -181,6 +238,8 @@ namespace wowpp
 
 		void load(const Ogre::DataStreamPtr &file, adt::Page &out_page)
 		{
+            std::array<read::MCINEntry, 16*16> MCINEntries;
+            
 			// Chunk data
 			UInt32 chunkHeader = 0, chunkSize = 0;
 
@@ -217,13 +276,17 @@ namespace wowpp
 						break;
 					}
 
-					case MCNKChunk:
-					{
-						result = read::readMCNKChunk(out_page, file, chunkSize);
-						break;
-					}
-
 					case MCINChunk:
+                    {
+                        if (chunkSize != 4096)
+                            WLOG("MCIN chunk size is not 4096, but " << chunkSize);
+                        if (!file->read(&MCINEntries[0], sizeof(read::MCINEntry) * MCINEntries.size()))
+                        {
+                            result = false;
+                        }
+                        break;
+                    }
+                        
 					case MTEXChunk:
 					case MWMOChunk:
 					case MMIDChunk:
@@ -235,6 +298,7 @@ namespace wowpp
 					case MTXPChunk:
 					case MTXFChunk:
 					case MWIDChunk:
+                    case MCNKChunk:
 					{
 						// We don't want to handle these, but we don't want warnings either
 						file->skip(chunkSize);
@@ -244,21 +308,26 @@ namespace wowpp
 					default:
 					{
 						// Skip chunk data
-						//WLOG("Undefined map chunk: " << chunkHeader);
+						//WLOG("Undefined map chunk: " << chunkHeader << " (" << chunkSize << ")");
 						file->skip(chunkSize);
 						break;
 					}
 				}
-
+                
 				// Something failed
 				if (!result)
 				{
 					ELOG("Could not load ADT file");
-					file->close();
-
+					//file->close();
 					break;
 				}
 			}
+            
+            for (auto &entry : MCINEntries)
+            {
+                file->seek(entry.offsMCNK + 8);
+                read::readMCNKChunk(out_page, file, entry.size);
+            }
 		}
 	}
 }

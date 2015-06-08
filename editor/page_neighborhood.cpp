@@ -17,7 +17,7 @@ namespace wowpp
 			std::size_t index = toIndex(position);
 			assert(index < m_pages.size() && "Index out of range");
 
-			m_pages[toIndex(position)] = page;
+			m_pages[index] = page;
 		}
 
 		Page * PageNeighborhood::getPageByRelativePosition(const PagePosition &position) const

@@ -11,6 +11,9 @@
 #include "program.h"
 #include "graphics.h"
 #include "OgreCamera.h"
+#include "OgreLight.h"
+#include "OgreSceneManager.h"
+#include "OgreSceneNode.h"
 
 namespace wowpp
 {
@@ -21,6 +24,7 @@ namespace wowpp
 			, m_camera(camera)
 			, m_map(map)
 			, m_work(new boost::asio::io_service::work(m_workQueue))
+            , m_light(nullptr)
 		{
 			// Create worker thread
 			boost::asio::io_service &workQueue = m_workQueue;
@@ -64,10 +68,21 @@ namespace wowpp
 			m_worldRenderer.reset(new view::WorldRenderer(
 				m_graphics.getSceneManager(),
 				m_camera));
+            
+            m_light = graphics.getSceneManager().createLight("Sun");
+            m_light->setType(Ogre::Light::LT_DIRECTIONAL);
+            m_light->setDirection(Ogre::Vector3(1.0f, -0.8f, 0.0f).normalisedCopy());
+            m_graphics.getSceneManager().getRootSceneNode()->attachObject(m_light);
 		}
 
 		WorldEditor::~WorldEditor()
 		{
+            if (m_light)
+            {
+                m_graphics.getSceneManager().destroyLight(m_light);
+                m_light = nullptr;
+            }
+            
 			// Stop paging
 			m_work.reset();
 			m_workQueue.stop();

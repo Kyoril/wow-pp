@@ -22,11 +22,7 @@
 #pragma once
 
 #include <QMainWindow>
-#ifdef __APPLE__
-#   include <QtMacExtras/QMacToolBar>
-#else
-#	include <QToolBar>
-#endif
+#include <QToolBar>
 #include "object_editor.h"
 #include "data/project.h"
 #include "configuration.h"
@@ -71,11 +67,11 @@ namespace wowpp
 			Project &m_project;
 			Ui::MainWindow *m_ui;
 			std::unique_ptr<ObjectEditor> m_objectEditor;
-#ifdef __APPLE__
+/*#ifdef __APPLE__
             std::unique_ptr<QMacToolBar> m_macToolBar;
-#else
+#else*/
 			std::unique_ptr<QToolBar> m_toolBar;
-#endif
+//#endif
 		};
 	}
 }

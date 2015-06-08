@@ -83,7 +83,8 @@ namespace wowpp
 						m_material, 
 						i,
 						j,
-						m_data.page->heights[j + i * constants::TilesPerPage]));
+						m_data.page->heights[j + i * constants::TilesPerPage],
+                        m_data.page->normals[j + i * constants::TilesPerPage]));
 
 					m_sceneNode->attachObject(tile.get());
 				}
@@ -114,7 +115,7 @@ namespace wowpp
 
 			// Default pass
 			pass = tech->createPass();
-			pass->setPolygonMode(Ogre::PM_WIREFRAME);
+			pass->setPolygonMode(Ogre::PM_SOLID);
 			pass->setLightingEnabled(true);
 			pass->setAmbient(Ogre::ColourValue(0.8f, 0.8f, 0.8f));
 			pass->setDiffuse(Ogre::ColourValue(0.8f, 0.8f, 0.8f));

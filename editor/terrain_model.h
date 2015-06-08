@@ -13,8 +13,11 @@ namespace wowpp
 	{
 		namespace model
 		{
+            typedef std::array<float, 3> Normal;
+            typedef std::array<Normal, constants::VertsPerTile> Normalmap;
 			typedef std::array<float, constants::VertsPerTile> Heightmap;
 			typedef std::array<Heightmap, constants::TilesPerPageSquared> TileHeights;
+            typedef std::array<Normalmap, constants::TilesPerPageSquared> TileNormals;
 			typedef Vector<size_t, 2> PagePosition;
 			typedef Vector<size_t, 2> VertexPosition;
 
@@ -23,6 +26,7 @@ namespace wowpp
 			public:
 
 				TileHeights heights;
+                TileNormals normals;
 				
 				explicit Page();
 				explicit Page(const Page &other);

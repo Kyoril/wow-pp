@@ -17,6 +17,7 @@
 namespace Ogre
 {
 	class Camera;
+    class Light;
 }
 
 namespace wowpp
@@ -61,6 +62,7 @@ namespace wowpp
 			std::unique_ptr<paging::PagePOVPartitioner> m_memoryPointOfView;
 			std::unique_ptr<view::WorldRenderer> m_worldRenderer;
 			std::map<paging::PagePosition, terrain::model::Page> m_pages;
+            Ogre::Light *m_light;
 		};
 	}
 }

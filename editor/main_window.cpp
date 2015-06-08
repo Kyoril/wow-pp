@@ -49,14 +49,14 @@ namespace wowpp
 
 		void MainWindow::setupToolBar()
 		{
-#ifdef __APPLE__
+/*#ifdef __APPLE__
 			m_macToolBar.reset(new QMacToolBar(this));
             m_macToolBar->addItem(QIcon(":/Open.png"), "Load Map");
 			m_macToolBar->addItem(QIcon(":/Save.png"), "Save Project");
             m_macToolBar->addSeparator();
 			m_macToolBar->addItem(QIcon(":/Units.png"), "Object Editor");
 			m_macToolBar->attachToWindow(this->windowHandle());
-#else
+#else*/
 			m_toolBar.reset(new QToolBar("Standard", this));
 			m_toolBar->setMovable(false);
 			m_toolBar->setFloatable(false);
@@ -66,7 +66,7 @@ namespace wowpp
 			m_toolBar->addSeparator();
 			m_toolBar->addAction(m_ui->actionObjectEditor);
 			addToolBar(m_toolBar.get());
-#endif
+//#endif
 		}
 
 		void MainWindow::on_actionLoadMap_triggered()
