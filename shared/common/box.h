@@ -94,20 +94,6 @@ namespace wowpp
 	{
 		return !(left == right);
 	}
-
-
-	template <class T>
-	std::ostream &operator << (std::ostream &os, const Box<T> &right)
-	{
-		std::size_t i = 0;
-		os << "(";
-		os << right.minimum;
-		os << ", ";
-		os << right.maximum;
-		os << ")";
-		os << right[i];
-		return os;
-	}
 	
 	template <class T>
 	Box<T> makeBox(const T &minimum, const T &maximum)

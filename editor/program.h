@@ -55,8 +55,8 @@ namespace wowpp
 
 			Configuration m_configuration;
 			boost::signals2::scoped_connection m_genericLogConnection;
-			std::unique_ptr<MainWindow> m_mainWindow;
 			std::unique_ptr<Graphics> m_graphics;
+            std::unique_ptr<MainWindow> m_mainWindow;
 			Project m_project;
 		};
 	}
