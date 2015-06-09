@@ -335,7 +335,12 @@ namespace wowpp
 
 						default:
 						{
-							//WLOG("Unknown subchunk found: " << subHeader);
+                            if (subStart + subSize >= ptr->size())
+                            {
+                                //TODO: Something is wrong here...
+                                return true;
+                            }
+                            
                             ptr->skip(subSize);
                             break;
 						}

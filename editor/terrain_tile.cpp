@@ -175,10 +175,11 @@ namespace wowpp
 			const Ogre::VertexElement *posElem = decl->findElementBySemantic(Ogre::VES_POSITION);
             const Ogre::VertexElement *nrmElem = decl->findElementBySemantic(Ogre::VES_NORMAL);
 			const Ogre::VertexElement *texElem = decl->findElementBySemantic(Ogre::VES_TEXTURE_COORDINATES, 0);
-			const Ogre::VertexElement *texElemAlpha = decl->findElementBySemantic(Ogre::VES_TEXTURE_COORDINATES, 1);
 			unsigned char *base = static_cast<unsigned char*>(m_mainBuffer->lock(Ogre::HardwareBuffer::HBL_NORMAL));
 
 			const float scale = (constants::MapWidth / static_cast<float>(constants::TilesPerPage)) / 8.0f;
+            size_t index = 0;
+
 			for (VertexID j = startY; j < endY - 1; ++j)
 			{
 				for (VertexID i = startX; i < endX; ++i)
@@ -196,15 +197,15 @@ namespace wowpp
 					int heightInd = relX + relY * 9;
 					heightInd += relY * 8;
 
-					float height = m_tileHeights[heightInd];
+					float height = m_tileHeights[index];
 
 					*pos++ = scale * static_cast<Ogre::Real>(j);
 					*pos++ = height;
 					*pos++ = scale * static_cast<Ogre::Real>(i);
                     
-                    *nrm++ = -m_tileNormals[heightInd][1];
-                    *nrm++ = m_tileNormals[heightInd][2];
-                    *nrm++ = -m_tileNormals[heightInd][0];
+                    *nrm++ = -m_tileNormals[index][1];
+                    *nrm++ = m_tileNormals[index][2];
+                    *nrm++ = -m_tileNormals[index][0];
 
 					*tex++ = relX / 8.0f;
 					*tex++ = relY / 8.0f;
@@ -213,6 +214,7 @@ namespace wowpp
 					if (height > maxHeight) maxHeight = height;
 
 					base += m_mainBuffer->getVertexSize();
+                    index++;
 				}
 
 				for (VertexID i = startX; i < endX - 1 ; ++i)
@@ -230,15 +232,15 @@ namespace wowpp
 					int heightInd = relX + relY * 9;
 					heightInd += relY * 8;
 
-					float height = m_tileHeights[heightInd];
+					float height = m_tileHeights[index];
 
 					*pos++ = scale * static_cast<Ogre::Real>(j)+scale * 0.5f;
 					*pos++ = height;
 					*pos++ = scale * static_cast<Ogre::Real>(i)+scale * 0.5f;
                     
-                    *nrm++ = -m_tileNormals[heightInd][1];
-                    *nrm++ = m_tileNormals[heightInd][2];
-                    *nrm++ = -m_tileNormals[heightInd][0];
+                    *nrm++ = -m_tileNormals[index][1];
+                    *nrm++ = m_tileNormals[index][2];
+                    *nrm++ = -m_tileNormals[index][0];
 
 					float uvScale = 1.0f / 8.0f;
 					*tex++ = (relX / 8.0f + (uvScale * 0.5f));
@@ -248,6 +250,7 @@ namespace wowpp
 					if (height > maxHeight) maxHeight = height;
 
 					base += m_mainBuffer->getVertexSize();
+                    index++;
 				}
 			}
 
@@ -268,15 +271,15 @@ namespace wowpp
 				int heightInd = relX + relY * 9;
 				heightInd += relY * 8;
 
-				float height = m_tileHeights[heightInd];
+				float height = m_tileHeights[index];
 
 				*pos++ = scale * static_cast<Ogre::Real>(j);
 				*pos++ = height;
 				*pos++ = scale * static_cast<Ogre::Real>(i);
                 
-                *nrm++ = -m_tileNormals[heightInd][1];
-                *nrm++ = m_tileNormals[heightInd][2];
-                *nrm++ = -m_tileNormals[heightInd][0];
+                *nrm++ = -m_tileNormals[index][1];
+                *nrm++ = m_tileNormals[index][2];
+                *nrm++ = -m_tileNormals[index][0];
 
 				*tex++ = relX / 8.0f;
 				*tex++ = 1.0f;
@@ -285,6 +288,7 @@ namespace wowpp
 				if (height > maxHeight) maxHeight = height;
 
 				base += m_mainBuffer->getVertexSize();
+                index++;
 			}
 
 			m_mainBuffer->unlock();

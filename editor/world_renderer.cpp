@@ -4,6 +4,7 @@
 #include "common/make_unique.h"
 #include "OgreSceneManager.h"
 #include "OgreCamera.h"
+#include "log/default_log_levels.h"
 #include <cassert>
 
 namespace wowpp

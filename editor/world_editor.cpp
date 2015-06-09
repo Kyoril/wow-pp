@@ -42,7 +42,7 @@ namespace wowpp
 
 			const auto addWork = [&workQueue](const WorldPageLoader::Work &work)
 			{
-				workQueue.post(work);
+                workQueue.post(work);
 			};
 
 			const auto synchronize = [&dispatcher](const WorldPageLoader::Work &work)
