@@ -24,7 +24,7 @@ fragment_program TerrainFP glsl
 		param_named			splat2					int 2
 		param_named			splat3					int 3
 		param_named			splat4					int 4
-		param_named Scale float 16.0
+		param_named Scale float 8.0
 		
 		param_named_auto g_AmbientLight ambient_light_colour
 		param_named_auto g_DiffuseLight light_diffuse_colour 0

@@ -50,5 +50,5 @@ void main()
 	vec4 Lit = lit(NdotL, NdotH, 128.0);
 	
 	vec3 texColor = finalDiffuse.xyz;
-	gl_FragColor = vec4(g_DiffuseLight * Lit.y * texColor + g_AmbientLight * texColor, 1.0);
+    gl_FragColor = vec4(g_DiffuseLight * Lit.y * texColor + g_AmbientLight * texColor, 1.0);
 }

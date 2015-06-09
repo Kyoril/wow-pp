@@ -178,6 +178,7 @@ namespace wowpp
 			unsigned char *base = static_cast<unsigned char*>(m_mainBuffer->lock(Ogre::HardwareBuffer::HBL_NORMAL));
 
 			const float scale = (constants::MapWidth / static_cast<float>(constants::TilesPerPage)) / 8.0f;
+            const float uvScale2 = 1.0f;
             size_t index = 0;
 
 			for (VertexID j = startY; j < endY - 1; ++j)
@@ -192,11 +193,6 @@ namespace wowpp
                     nrmElem->baseVertexPointerToElement(base, &nrm);
 					texElem->baseVertexPointerToElement(base, &tex);
 
-					int relX = i - startX;
-					int relY = j - startY;
-					int heightInd = relX + relY * 9;
-					heightInd += relY * 8;
-
 					float height = m_tileHeights[index];
 
 					*pos++ = scale * static_cast<Ogre::Real>(j);
@@ -207,8 +203,8 @@ namespace wowpp
                     *nrm++ = m_tileNormals[index][2];
                     *nrm++ = -m_tileNormals[index][0];
 
-					*tex++ = relX / 8.0f;
-					*tex++ = relY / 8.0f;
+					*tex++ = i / 8.0f * uvScale2;
+					*tex++ = j / 8.0f * uvScale2;
 
 					if (height < minHeight) minHeight = height;
 					if (height > maxHeight) maxHeight = height;
@@ -227,11 +223,6 @@ namespace wowpp
 					nrmElem->baseVertexPointerToElement(base, &nrm);
 					texElem->baseVertexPointerToElement(base, &tex);
 
-					int relX = i - startX;
-					int relY = j - startY;
-					int heightInd = relX + relY * 9;
-					heightInd += relY * 8;
-
 					float height = m_tileHeights[index];
 
 					*pos++ = scale * static_cast<Ogre::Real>(j)+scale * 0.5f;
@@ -243,8 +234,8 @@ namespace wowpp
                     *nrm++ = -m_tileNormals[index][0];
 
 					float uvScale = 1.0f / 8.0f;
-					*tex++ = (relX / 8.0f + (uvScale * 0.5f));
-					*tex++ = (relY / 8.0f + (uvScale * 0.5f));
+					*tex++ = (i / 8.0f + (uvScale * 0.5f)) * uvScale2;
+					*tex++ = (j / 8.0f + (uvScale * 0.5f)) * uvScale2;
 
 					if (height < minHeight) minHeight = height;
 					if (height > maxHeight) maxHeight = height;
@@ -266,11 +257,6 @@ namespace wowpp
 				nrmElem->baseVertexPointerToElement(base, &nrm);
 				texElem->baseVertexPointerToElement(base, &tex);
 
-				int relX = i - startX;
-				int relY = j - startY;
-				int heightInd = relX + relY * 9;
-				heightInd += relY * 8;
-
 				float height = m_tileHeights[index];
 
 				*pos++ = scale * static_cast<Ogre::Real>(j);
@@ -281,8 +267,8 @@ namespace wowpp
                 *nrm++ = m_tileNormals[index][2];
                 *nrm++ = -m_tileNormals[index][0];
 
-				*tex++ = relX / 8.0f;
-				*tex++ = 1.0f;
+				*tex++ = i / 8.0f * uvScale2;
+				*tex++ = 1.0f * uvScale2;
 
 				if (height < minHeight) minHeight = height;
 				if (height > maxHeight) maxHeight = height;
