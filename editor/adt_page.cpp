@@ -60,6 +60,28 @@ namespace wowpp
 				ptr->skip(chunkSize);
 				return true;
 			}
+
+			static bool readMTEXChunk(adt::Page &page, const Ogre::DataStreamPtr &ptr, UInt32 chunkSize)
+			{
+				String buffer;
+				buffer.resize(chunkSize);
+				if (!ptr->read(&buffer[0], chunkSize))
+				{
+					return false;
+				}
+
+				// Parse for textures
+				char *reader = &buffer[0];
+				while (*reader)
+				{
+					String texture = String(reader);
+					reader += texture.size() + 1;
+
+					page.terrain.textures.push_back(texture);
+				}
+
+				return true;
+			}
             
             struct MCINEntry
             {
@@ -128,8 +150,7 @@ namespace wowpp
             {
                 assert(header.IndexX < constants::TilesPerPage);
                 assert(header.IndexY < constants::TilesPerPage);
-                assert(chunkSize == sizeof(float) * constants::VertsPerTile);
-                
+
                 // Calculate tile index
                 UInt32 tileIndex = header.IndexY + header.IndexX * constants::TilesPerPage;
                 auto &tileNormals = page.terrain.normals[tileIndex];
@@ -157,6 +178,103 @@ namespace wowpp
                 return true;
             }
 
+			struct MapChunkLayerDef
+			{
+				UInt32 textureId;
+				UInt32 flags;
+				UInt32 offsetInMCAL;
+				Int32 effectId;
+			};
+
+			static bool readMCLYSubChunk(adt::Page &page, const Ogre::DataStreamPtr &ptr, UInt32 chunkSize, const MCNKHeader &header)
+			{
+				assert(header.IndexX < constants::TilesPerPage);
+				assert(header.IndexY < constants::TilesPerPage);
+
+				size_t endPos = ptr->tell() + chunkSize;
+
+				UInt32 numLayers = chunkSize / sizeof(MapChunkLayerDef);
+				if (numLayers > 4)
+				{
+					ptr->seek(endPos);
+					return false;
+				}
+
+				// Calculate tile index
+				UInt32 tileIndex = header.IndexY + header.IndexX * constants::TilesPerPage;
+				auto &tileTextures = page.terrain.textureIds[tileIndex];
+
+				for (UInt32 i = 0; i < numLayers; ++i)
+				{
+					MapChunkLayerDef def;
+					if (!(ptr->read(&def, sizeof(MapChunkLayerDef))))
+					{
+						ELOG("Could not read MCLY sub chunk");
+						ptr->seek(endPos);
+						return false;
+					}
+
+					if (def.flags & 0x200)
+					{
+						WLOG("Tile " << header.IndexX << " x " << header.IndexY << " uses compressed alpha layer");
+					}
+
+					// Add texture id
+					tileTextures.push_back(def.textureId);
+				}
+
+				ptr->seek(endPos);
+				return true;
+			}
+
+			static bool readMCALSubChunk(adt::Page &page, const Ogre::DataStreamPtr &ptr, UInt32 chunkSize, const MCNKHeader &header)
+			{
+				assert(header.IndexX < constants::TilesPerPage);
+				assert(header.IndexY < constants::TilesPerPage);
+
+				size_t endPos = ptr->tell() + chunkSize;
+
+				UInt32 numLayers = chunkSize / 2048;
+				if (numLayers > 3)
+				{
+					ptr->seek(endPos);
+					return false;
+				}
+
+				// Calculate tile index
+				UInt32 tileIndex = header.IndexY + header.IndexX * constants::TilesPerPage;
+				auto &alphaMaps = page.terrain.alphaMaps[tileIndex];
+
+				for (UInt32 i = 0; i < numLayers; ++i)
+				{
+					std::array<Int8, 64 * 32> alpha;
+					if (!(ptr->read(&alpha, alpha.size())))
+					{
+						ELOG("Could not read MCAL sub chunk");
+						ptr->seek(endPos);
+						return false;
+					}
+
+					// Convert alpha map
+					terrain::model::AlphaMap map;
+					UInt32 p = 0, p2 = 0;
+					for (int j = 0; j < 64; j++)
+					{
+						for (int i = 0; i < 32; i++)
+						{
+							UInt8 c = alpha[p2++];
+							map[p++] = (c & 0x0f) << 4;
+							map[p++] = (c & 0xf0);
+						}
+					}
+
+					alphaMaps.push_back(map);
+				}
+
+				ptr->seek(endPos);
+				return true;
+			}
+
 			static bool readMCNKChunk(adt::Page &page, const Ogre::DataStreamPtr &ptr, UInt32 chunkSize)
 			{
 				// Read the chunk header
@@ -178,8 +296,7 @@ namespace wowpp
 						ptr->read(&subSize, sizeof(UInt32)));
 					if (!result)
 					{
-						ELOG("Could not read MCNK subchunk header! " << subHeader << " (" << subSize << ")");
-						return false;
+						return true;
 					}
 
 					switch (subHeader)
@@ -206,13 +323,13 @@ namespace wowpp
                             
                         case MCALSubChunk:
                         {
-                            ptr->skip(subSize);
+							result = readMCALSubChunk(page, ptr, subSize, header);
                             break;
                         }
                             
                         case MCLYSubChunk:
                         {
-                            ptr->skip(subSize);
+							result = readMCLYSubChunk(page, ptr, subSize, header);
                             break;
                         }
 
@@ -221,7 +338,6 @@ namespace wowpp
 							//WLOG("Unknown subchunk found: " << subHeader);
                             ptr->skip(subSize);
                             break;
-							//break;
 						}
 					}
 
@@ -288,6 +404,11 @@ namespace wowpp
                     }
                         
 					case MTEXChunk:
+					{
+						result = read::readMTEXChunk(out_page, file, chunkSize);
+						break;
+					}
+
 					case MWMOChunk:
 					case MMIDChunk:
 					case MMDXChunk:

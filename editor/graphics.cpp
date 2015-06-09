@@ -21,6 +21,7 @@
 
 #include "graphics.h"
 #include "OgreColourValue.h"
+#include "OgreMaterialManager.h"
 #include <cassert>
 
 namespace wowpp
@@ -43,6 +44,8 @@ namespace wowpp
 
 			// Initialize the root object
 			m_root->initialise(false);
+
+			Ogre::MaterialManager::getSingleton().setDefaultTextureFiltering(Ogre::TFO_TRILINEAR);
 			
 			// Create our scene manager
 			m_sceneMgr = m_root->createSceneManager(Ogre::ST_EXTERIOR_REAL_FAR);

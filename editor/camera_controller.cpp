@@ -164,7 +164,7 @@ namespace wowpp
 				// Move the camera
 				if (m_direction != Ogre::Vector3::ZERO)
 				{
-					m_camera.moveRelative(m_direction.normalisedCopy() * 33.3333f * dt);
+					m_camera.moveRelative(m_direction.normalisedCopy() * 8.0f * 33.3333f * dt);
 				}
 			}
 		}

@@ -123,8 +123,8 @@ namespace wowpp
 			m_Camera = g.getSceneManager().createCamera("QOgreWidget_Cam");
 			m_Camera->setPosition(Ogre::Vector3(1676.71f, 121.67f, 1678.31f));
 			//m_Camera->lookAt(Ogre::Vector3(0, 0, 0));
-			m_Camera->setNearClipDistance(0.1f);
-			m_Camera->setFarClipDistance(533.333f);
+			m_Camera->setNearClipDistance(0.5f);
+			m_Camera->setFarClipDistance(1500.0f);
 			m_Camera->setFOVy(Ogre::Degree(45.0f));
 			m_Camera->setAspectRatio(static_cast<Ogre::Real>(width()) / static_cast<Ogre::Real>(height()));
 			
@@ -175,16 +175,18 @@ namespace wowpp
 
 			// Setup the update timer
 			connect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(repaint()));
-			m_updateTimer.start(1000 / 60);
+			m_updateTimer.start(1);
 		}
 
 		void RenderView::paintGL()
 		{
+			float delta = 1.0f / m_OgreWindow->getLastFPS();
+
             // Update camera controller (TODO: Delta time)
-            m_controller->update(1.0f / 60.0f);
+			m_controller->update(delta);
          
 			if (m_worldEditor)
-				m_worldEditor->update(1.0f / 60.0f);
+				m_worldEditor->update(delta);
 
 			assert(m_OgreWindow);
             m_OgreWindow->update(false);

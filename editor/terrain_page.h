@@ -49,6 +49,7 @@ namespace wowpp
 			Ogre::Camera &m_camera;
 			TileGrid m_tiles;
 			Ogre::TexturePtr m_terrainTexture;
+			std::vector<Ogre::TexturePtr> m_texturePtrs;
 		};
 	}
 }

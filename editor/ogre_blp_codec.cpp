@@ -96,13 +96,13 @@ namespace wowpp
 			imgData->num_mipmaps = 1;	//Corrected later
 			imgData->flags = 0;
 			imgData->format = Ogre::PF_UNKNOWN;
-			
+
 			// Detect how many mipmaps ara available
 			UInt32 prevSize = 0;
 			for (UInt32 i = 1; i < 16; ++i)
 			{
-				if (header.mipmap_offsets[i] > 0 &&
-					prevSize != header.mipmap_length[i])
+				if (header.mipmap_offsets[i] > 0/* &&
+					prevSize != header.mipmap_length[i]*/)
 				{
 					prevSize = header.mipmap_length[i];
 					imgData->num_mipmaps++;
@@ -185,9 +185,11 @@ namespace wowpp
 				input->read(destPtr, header.mipmap_length[i]);
 				destPtr = static_cast<void*>(static_cast<unsigned char*>(destPtr) + header.mipmap_length[i]);
 
-				mipW /= 2;
-				mipH /= 2;
+				if (mipW > 1) mipW /= 2;
+				if (mipH > 1) mipH /= 2;
 			}
+
+			imgData->num_mipmaps--;
 
 			// Return result
 			Ogre::Codec::DecodeResult ret;
