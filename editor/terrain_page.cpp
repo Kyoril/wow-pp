@@ -49,36 +49,37 @@ namespace wowpp
 					auto &textures = m_data.page->textures;
 					auto &texIds = m_data.page->textureIds[tileIdx];
 					auto &alphas = m_data.page->alphaMaps[tileIdx];
-					
+
 					// Create the alphamap textures
-					if (!alphas.empty())
+					Ogre::TexturePtr tex;
+					if (!Ogre::TextureManager::getSingleton().resourceExists(tileName))
 					{
-						for (size_t t = 0; t < alphas.size(); ++t)
-						{
-							Ogre::String tileTexName = tileName + "_" + Ogre::StringConverter::toString(t + 1);
-							Ogre::TexturePtr tex;
-							if (!Ogre::TextureManager::getSingleton().resourceExists(tileTexName))
-							{
-								// create a manually managed texture resource
-								tex = Ogre::TextureManager::getSingleton().createManual(
-									tileTexName, Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, Ogre::TEX_TYPE_2D,
-									64, 64, 0, Ogre::PF_A8, Ogre::TU_DEFAULT);
-							}
-							else
-							{
-								// create a manually managed texture resource
-								tex = Ogre::TextureManager::getSingleton().getByName(tileTexName);
-							}
-
-							// Save a reference of this
-							m_texturePtrs.push_back(tex);
-
-							Ogre::HardwarePixelBufferSharedPtr buffer = tex->getBuffer();
-							Ogre::PixelBox pixelBox(64, 64, 1, Ogre::PF_A8, alphas[t].data());
-							Ogre::Image::Box imageBox(0, 0, 64, 64);
-							buffer->blitFromMemory(pixelBox, imageBox);
-						}
+						// create a manually managed texture resource
+						tex = Ogre::TextureManager::getSingleton().createManual(
+							tileName, Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, Ogre::TEX_TYPE_2D,
+							64, 64, 0, Ogre::PF_B8G8R8A8, Ogre::TU_DEFAULT);	// BGRA because OpenGL wants it like this
 					}
+					else
+					{
+						// create a manually managed texture resource
+						tex = Ogre::TextureManager::getSingleton().getByName(tileName);
+					}
+
+					Ogre::HardwarePixelBufferSharedPtr buffer = tex->getBuffer();
+					buffer->lock(Ogre::HardwareBuffer::HBL_DISCARD);
+
+					// Copy all image data
+					const Ogre::PixelBox& pixelBox = buffer->getCurrentLock();
+					UInt8* pDest = static_cast<UInt8*>(pixelBox.data);
+					for (size_t tx = 0; tx < 64*64; ++tx)
+					{
+						*pDest++ = (alphas.size() > 2 ? alphas[2][tx] : 0);
+						*pDest++ = (alphas.size() > 1 ? alphas[1][tx] : 0);
+						*pDest++ = (alphas.size() > 0 ? alphas[0][tx] : 0);
+						*pDest++ = 255;	// OpenGL wants an alpha bit
+					}
+
+					buffer->unlock();
 
 					// Create a material for that tile
 					Ogre::MaterialPtr mat;
@@ -101,25 +102,21 @@ namespace wowpp
 					{
 						// Create the base pass
 						Ogre::Pass *p = mat->getTechnique(0)->createPass();
-						p->setLightingEnabled(true);
-						p->createTextureUnitState(textures[texIds[0]]);
+						p->setVertexProgram("TerrainVP");
+						p->setFragmentProgram("TerrainFP");
+						Ogre::TextureUnitState *tex = p->createTextureUnitState(tileName);
+						tex->setTextureAddressingMode(Ogre::TextureUnitState::TAM_CLAMP);
 
-						// Create the alpha passes
-						for (unsigned int t = 0; t < alphas.size(); ++t)
+						// Add tile textures
+						for (auto &tex : texIds)
 						{
-							p = mat->getTechnique(0)->createPass();
-							p->setLightingEnabled(true);
-							p->setSceneBlending(Ogre::SBT_TRANSPARENT_ALPHA);
-
-							Ogre::String tileTexName = tileName + "_" + Ogre::StringConverter::toString(t + 1);
-
-							Ogre::TextureUnitState *ts = p->createTextureUnitState(textures[texIds[t + 1]]); 
-							ts = p->createTextureUnitState(tileTexName, 1);
-							ts->setColourOperationEx(Ogre::LBX_SOURCE1, Ogre::LBS_CURRENT, Ogre::LBS_CURRENT);
-							ts->setAlphaOperation(Ogre::LBX_MODULATE, Ogre::LBS_CURRENT, Ogre::LBS_TEXTURE);
-							ts->setTextureAddressingMode(Ogre::TextureUnitState::TAM_CLAMP);
+							p->createTextureUnitState(textures[tex]);
 						}
 					}
+
+					const float scale = (constants::MapWidth / static_cast<float>(constants::TilesPerPage));
+					Ogre::SceneNode *tileNode = m_sceneNode->createChildSceneNode(
+						Ogre::Vector3(scale * j, 0.0f, scale * i));
 
 					auto &tile = m_tiles(i, j);
 					tile.reset(new TerrainTile(
@@ -128,12 +125,14 @@ namespace wowpp
 						tileName, 
 						*this,
 						mat,
-						i,
-						j,
+						0,
+						0,
 						m_data.page->heights[tileIdx],
 						m_data.page->normals[tileIdx]));
 
-					m_sceneNode->attachObject(tile.get());
+					tileNode->attachObject(tile.get());
+					//tileNode->showBoundingBox(true);
+					//m_sceneNode->showBoundingBox(true);
 				}
 			}
 		}
@@ -143,31 +142,6 @@ namespace wowpp
 			m_sceneNode->detachAllObjects();
 			m_sceneNode->getParentSceneNode()->removeAndDestroyChild(m_sceneNode->getName());
 			m_sceneNode = nullptr;
-		}
-
-		void TerrainPage::createTechnique(Ogre::MaterialPtr material)
-		{
-			// Build page name
-			std::ostringstream stream;
-			stream << "Page " << m_data.position;
-
-			const String textureName = stream.str();
-
-			Ogre::Technique *tech = nullptr;
-			Ogre::Pass *pass = nullptr;
-			Ogre::TextureUnitState* tex = nullptr;
-
-			// Deferred Technique
-			tech = material->createTechnique();
-
-			// Default pass
-			pass = tech->createPass();
-			pass->setPolygonMode(Ogre::PM_SOLID);
-			pass->setLightingEnabled(true);
-			pass->setAmbient(Ogre::ColourValue(0.8f, 0.8f, 0.8f));
-			pass->setDiffuse(Ogre::ColourValue(0.8f, 0.8f, 0.8f));
-			pass->setSpecular(Ogre::ColourValue(0.25f, 0.25f, 0.25f));
-			pass->setShininess(128.0f);
 		}
 	}
 }

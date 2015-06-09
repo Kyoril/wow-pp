@@ -1,0 +1,32 @@
+
+vertex_program TerrainVP glsl
+{
+    source Shaders/TerrainVP.glsl
+
+    default_params
+    {
+		param_named_auto g_WorldViewprojMatrix worldviewproj_matrix
+		param_named_auto g_TexMatrix texture_matrix 0
+		
+		param_named_auto g_eyePosition camera_position_object_space
+		param_named_auto g_lightPosition light_position_object_space 0
+    }
+}
+
+fragment_program TerrainFP glsl
+{
+    source Shaders/TerrainFP.glsl
+	
+    default_params
+    {
+		param_named			alpha					int 0
+		param_named			splat1					int 1
+		param_named			splat2					int 2
+		param_named			splat3					int 3
+		param_named			splat4					int 4
+		param_named Scale float 16.0
+		
+		param_named_auto g_AmbientLight ambient_light_colour
+		param_named_auto g_DiffuseLight light_diffuse_colour 0
+    }
+}

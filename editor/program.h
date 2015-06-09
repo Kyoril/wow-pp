@@ -48,6 +48,8 @@ namespace wowpp
 			Graphics &getGraphics() { return *m_graphics.get(); }
 			/// 
 			Project &getProject() { return m_project; }
+			/// 
+			MainWindow &getMainWindow() { return *m_mainWindow; }
 			/// Gets the configuration structure.
 			const Configuration &getConfiguration() const { return m_configuration; }
 

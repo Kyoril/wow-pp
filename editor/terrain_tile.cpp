@@ -155,8 +155,6 @@ namespace wowpp
             offset += Ogre::VertexElement::getTypeSize(Ogre::VET_FLOAT3);
 			decl->addElement(MAIN_BINDING, offset, Ogre::VET_FLOAT2, Ogre::VES_TEXTURE_COORDINATES, 0);
 			offset += Ogre::VertexElement::getTypeSize(Ogre::VET_FLOAT2);
-			decl->addElement(MAIN_BINDING, offset, Ogre::VET_FLOAT2, Ogre::VES_TEXTURE_COORDINATES, 1);
-			offset += Ogre::VertexElement::getTypeSize(Ogre::VET_FLOAT2);
 						
 			m_mainBuffer = Ogre::HardwareBufferManager::getSingleton().createVertexBuffer(
 				decl->getVertexSize(MAIN_BINDING),
@@ -181,8 +179,6 @@ namespace wowpp
 			unsigned char *base = static_cast<unsigned char*>(m_mainBuffer->lock(Ogre::HardwareBuffer::HBL_NORMAL));
 
 			const float scale = (constants::MapWidth / static_cast<float>(constants::TilesPerPage)) / 8.0f;
-			const float texTile = 16.0f;
-			
 			for (VertexID j = startY; j < endY - 1; ++j)
 			{
 				for (VertexID i = startX; i < endX; ++i)
@@ -190,12 +186,10 @@ namespace wowpp
 					Ogre::Real *pos = nullptr;
                     Ogre::Real *nrm = nullptr;
 					Ogre::Real *tex = nullptr;
-					Ogre::Real *texA = nullptr;
 
 					posElem->baseVertexPointerToElement(base, &pos);
                     nrmElem->baseVertexPointerToElement(base, &nrm);
 					texElem->baseVertexPointerToElement(base, &tex);
-					texElemAlpha->baseVertexPointerToElement(base, &texA);
 
 					int relX = i - startX;
 					int relY = j - startY;
@@ -212,10 +206,8 @@ namespace wowpp
                     *nrm++ = m_tileNormals[heightInd][2];
                     *nrm++ = -m_tileNormals[heightInd][0];
 
-					*tex++ = relX / 8.0f * texTile;
-					*tex++ = relY / 8.0f * texTile;
-					*texA++ = relX / 8.0f;
-					*texA++ = relY / 8.0f;
+					*tex++ = relX / 8.0f;
+					*tex++ = relY / 8.0f;
 
 					if (height < minHeight) minHeight = height;
 					if (height > maxHeight) maxHeight = height;
@@ -228,12 +220,10 @@ namespace wowpp
 					Ogre::Real *pos = nullptr;
 					Ogre::Real *nrm = nullptr;
 					Ogre::Real *tex = nullptr;
-					Ogre::Real *texA = nullptr;
 
 					posElem->baseVertexPointerToElement(base, &pos);
 					nrmElem->baseVertexPointerToElement(base, &nrm);
 					texElem->baseVertexPointerToElement(base, &tex);
-					texElemAlpha->baseVertexPointerToElement(base, &texA);
 
 					int relX = i - startX;
 					int relY = j - startY;
@@ -251,10 +241,8 @@ namespace wowpp
                     *nrm++ = -m_tileNormals[heightInd][0];
 
 					float uvScale = 1.0f / 8.0f;
-					*tex++ = (relX / 8.0f + (uvScale * 0.5f)) * texTile;
-					*tex++ = (relY / 8.0f + (uvScale * 0.5f)) * texTile;
-					*texA++ = (relX / 8.0f + (uvScale * 0.5f));
-					*texA++ = (relY / 8.0f + (uvScale * 0.5f));
+					*tex++ = (relX / 8.0f + (uvScale * 0.5f));
+					*tex++ = (relY / 8.0f + (uvScale * 0.5f));
 
 					if (height < minHeight) minHeight = height;
 					if (height > maxHeight) maxHeight = height;
@@ -270,12 +258,10 @@ namespace wowpp
 				Ogre::Real *pos = nullptr;
 				Ogre::Real *nrm = nullptr;
 				Ogre::Real *tex = nullptr;
-				Ogre::Real *texA = nullptr;
-
+				
 				posElem->baseVertexPointerToElement(base, &pos);
 				nrmElem->baseVertexPointerToElement(base, &nrm);
 				texElem->baseVertexPointerToElement(base, &tex);
-				texElemAlpha->baseVertexPointerToElement(base, &texA);
 
 				int relX = i - startX;
 				int relY = j - startY;
@@ -292,10 +278,8 @@ namespace wowpp
                 *nrm++ = m_tileNormals[heightInd][2];
                 *nrm++ = -m_tileNormals[heightInd][0];
 
-				*tex++ = relX / 8.0f * texTile;
-				*tex++ = 1.0f * texTile;
-				*texA++ = relX / 8.0f;
-				*texA++ = 1.0f;
+				*tex++ = relX / 8.0f;
+				*tex++ = 1.0f;
 
 				if (height < minHeight) minHeight = height;
 				if (height > maxHeight) maxHeight = height;

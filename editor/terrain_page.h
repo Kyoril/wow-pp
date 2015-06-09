@@ -33,10 +33,6 @@ namespace wowpp
 				Ogre::Camera &camera,
 				Ogre::SceneNode &worldNode);
 			~TerrainPage();
-						
-		private:
-
-			void createTechnique(Ogre::MaterialPtr material);
 			
 		private:
 

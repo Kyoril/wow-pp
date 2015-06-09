@@ -143,9 +143,13 @@ namespace wowpp
 				// WoW game path like "C:\Program Files (x86)\World of Warcraft"
 				// Remember: We only support Vanilla WoW (2.4.3)
 				const boost::filesystem::path wowDataPath(c.wowGamePath);
+				const boost::filesystem::path dataPath(c.dataPath);
 
 				// Setup resource locations
 				Ogre::ResourceGroupManager &resMgr = Ogre::ResourceGroupManager::getSingleton();
+				// Internal
+				resMgr.addResourceLocation((dataPath / "editor").string(), "FileSystem", resMgr.DEFAULT_RESOURCE_GROUP_NAME);
+				// WoW
 				resMgr.addResourceLocation((wowDataPath / "Data/patch-2.mpq").string(), "MPQ", "WoW");
 				resMgr.addResourceLocation((wowDataPath / "Data/patch.mpq").string(), "MPQ", "WoW");
 				resMgr.addResourceLocation((wowDataPath / "Data/common.mpq").string(), "MPQ", "WoW");
