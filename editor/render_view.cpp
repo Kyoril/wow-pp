@@ -121,8 +121,10 @@ namespace wowpp
 #endif
 
 			m_Camera = g.getSceneManager().createCamera("QOgreWidget_Cam");
-			m_Camera->setPosition(Ogre::Vector3(1676.71f, 121.67f, 1678.31f));
-			//m_Camera->lookAt(Ogre::Vector3(0, 0, 0));
+			m_Camera->setOrientation(Ogre::Quaternion(Ogre::Degree(90.0f), Ogre::Vector3::UNIT_X));
+			m_Camera->setFixedYawAxis(true, Ogre::Vector3::UNIT_Z);
+
+			m_Camera->setPosition(Ogre::Vector3(1676.71f, 1678.31f, 121.67f));
 			m_Camera->setNearClipDistance(0.5f);
 			m_Camera->setFarClipDistance(1500.0f);
 			m_Camera->setFOVy(Ogre::Degree(45.0f));
@@ -166,20 +168,10 @@ namespace wowpp
 
 			// Setup viewport grid
 			m_grid = make_unique<ViewportGrid>(program->getGraphics());
-			
-			// Setup world editor
-			auto *map = program->getProject().maps.getEditableById(0);
-			if (map)
-			{
-				m_worldEditor = make_unique<WorldEditor>(
-					g,
-					*m_Camera,
-					*map);
-			}
 
 			// Setup the update timer
-			connect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(repaint()));
-			m_updateTimer.start(1);
+			connect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(update()));
+			m_updateTimer.start(10);
 		}
 
 		void RenderView::paintGL()
@@ -189,8 +181,12 @@ namespace wowpp
             // Update camera controller (TODO: Delta time)
 			m_controller->update(delta);
          
-			if (m_worldEditor)
-				m_worldEditor->update(delta);
+			Program *program = static_cast<Program*>(QCoreApplication::instance());
+			if (program)
+			{
+				if (program->getWorldEditor())
+					program->getWorldEditor()->update(delta);
+			}
 
 			assert(m_OgreWindow);
             m_OgreWindow->update(false);

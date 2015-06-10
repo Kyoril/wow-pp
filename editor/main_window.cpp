@@ -74,7 +74,7 @@ namespace wowpp
 			LoadMap loadMapDialog(m_project);
 			if (loadMapDialog.exec() == 1)
 			{
-				//TODO
+
 			}
 		}
 

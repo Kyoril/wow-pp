@@ -36,10 +36,9 @@ namespace wowpp
 
 			const Ogre::Vector3 &camPos = m_camera.getDerivedPosition();
 			float convertedX = (constants::MapWidth * 32.0f) + camPos.x;
-			float convertedY = (constants::MapWidth * 32.0f) + camPos.z;
+			float convertedY = (constants::MapWidth * 32.0f) + camPos.y;
 
-			paging::PagePosition pos(static_cast<size_t>(convertedX / constants::MapWidth), static_cast<size_t>(convertedY / constants::MapWidth));
-
+			paging::PagePosition pos(63 - static_cast<size_t>(convertedX / constants::MapWidth), 63 - static_cast<size_t>(convertedY / constants::MapWidth));
 			const auto addWork = [&workQueue](const WorldPageLoader::Work &work)
 			{
                 workQueue.post(work);
@@ -71,7 +70,7 @@ namespace wowpp
             
             m_light = graphics.getSceneManager().createLight("Sun");
             m_light->setType(Ogre::Light::LT_DIRECTIONAL);
-            m_light->setDirection(Ogre::Vector3(1.0f, -0.8f, 0.0f).normalisedCopy());
+            m_light->setDirection(Ogre::Vector3(0.0f, 0.5f, -0.5f).normalisedCopy());
             m_graphics.getSceneManager().getRootSceneNode()->attachObject(m_light);
 		}
 
@@ -93,9 +92,9 @@ namespace wowpp
 		{
 			const Ogre::Vector3 &camPos = m_camera.getDerivedPosition();
 			float convertedX = (constants::MapWidth * 32.0f) + camPos.x;
-			float convertedY = (constants::MapWidth * 32.0f) + camPos.z;
+			float convertedY = (constants::MapWidth * 32.0f) + camPos.y;
 
-			paging::PagePosition pos(static_cast<size_t>(convertedX / constants::MapWidth), static_cast<size_t>(convertedY / constants::MapWidth));
+			paging::PagePosition pos(63 - static_cast<size_t>(convertedX / constants::MapWidth), 63 - static_cast<size_t>(convertedY / constants::MapWidth));
 
 			m_memoryPointOfView->updateCenter(pos);
 			m_visibleSection->updateCenter(pos);

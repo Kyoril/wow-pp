@@ -29,7 +29,6 @@
 #include <QTimer>
 #include "camera_controller.h"
 #include "viewport_grid.h"
-#include "world_editor.h"
 #include <memory>
 
 namespace wowpp
@@ -45,6 +44,8 @@ namespace wowpp
 
 			/// Initializes a new instance of the main window of the editor application.
 			explicit RenderView(QWidget *Parent = nullptr);
+
+			Ogre::Camera *getCamera() { return m_Camera; }
 
 		protected:
 
@@ -64,7 +65,6 @@ namespace wowpp
 			Ogre::Viewport *m_Viewport;
 			std::unique_ptr<CameraController> m_controller;
 			std::unique_ptr<ViewportGrid> m_grid;
-			std::unique_ptr<WorldEditor> m_worldEditor;
 			QTimer m_updateTimer;
 		};
 	}

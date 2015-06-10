@@ -22,6 +22,9 @@
 #include "load_map.h"
 #include "ui_load_map.h"
 #include "data/map_entry.h"
+#include "program.h"
+#include "data/project.h"
+#include "templates/basic_template.h"
 
 namespace wowpp
 {
@@ -50,6 +53,27 @@ namespace wowpp
 
 		void LoadMap::on_buttonBox_accepted()
 		{
+			auto selectedIndices = m_ui->listWidget->selectionModel()->selectedIndexes();
+			if (selectedIndices.empty())
+			{
+				return;
+			}
+
+			const auto &templates = m_project.maps.getTemplates();
+			
+			// Get the id of the specified map
+			auto mapId = templates.at(selectedIndices[0].row())->id;
+
+			// Get the editable map
+			auto *editable = m_project.maps.getEditableById(mapId);
+			if (!editable)
+				return;
+
+			Program *program = static_cast<Program*>(QCoreApplication::instance());
+			if (program)
+			{
+				program->openMap(*editable);
+			}
 		}
 
 	}

@@ -32,6 +32,15 @@ namespace wowpp
 		Program::Program(int &argc, char** argv)
 			: QApplication(argc, argv)
 		{
+			// Try to load the stylesheet
+			QFile stylesheetFile("styles/Default.qss");
+			if (stylesheetFile.open(QFile::ReadOnly))
+			{
+				// Read stylesheet content
+				QString StyleSheet = QLatin1String(stylesheetFile.readAll());
+				qApp->setStyleSheet(StyleSheet);
+			}
+
 			// Load the configuration
 			if (!m_configuration.load("wowpp_editor.cfg"))
 			{
@@ -116,6 +125,17 @@ namespace wowpp
 					"The data project was successfully saved.");
 			}
 		}
+
+		void Program::openMap(MapEntry &map)
+		{
+			m_worldEditor.reset(
+				new WorldEditor(
+					*m_graphics,
+					*m_graphics->getSceneManager().getCamera("QOgreWidget_Cam"),
+					map));
+			m_worldEditor->update(0.1f);
+		}
+
 
 	}
 }

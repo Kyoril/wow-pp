@@ -32,16 +32,16 @@ namespace wowpp
 
 			m_sceneNode = worldNode.createChildSceneNode();
 			m_sceneNode->setPosition(
-				data.position[0] * constants::MapWidth - (constants::MapWidth * 32.0f),
-				0.0f, 
-				data.position[1] * constants::MapWidth - (constants::MapWidth * 32.0f)
+				(63 - data.position[0]) * constants::MapWidth - (constants::MapWidth * 32.0f),
+				(63 - data.position[1]) * constants::MapWidth - (constants::MapWidth * 32.0f),
+				0.0f
 				);
 
 			// Tiles laden
 			m_tiles = TileGrid(constants::TilesPerPage, constants::TilesPerPage);
-			for (unsigned int i = 0; i < constants::TilesPerPage; i++)
+			for (unsigned int j = 0; j < constants::TilesPerPage; j++)
 			{
-				for (unsigned int j = 0; j < constants::TilesPerPage; j++)
+				for (unsigned int i = 0; i < constants::TilesPerPage; i++)
 				{
 					Ogre::String tileName = m_sceneNode->getName() + "_Tile_" + Ogre::StringConverter::toString(i) + "_" + Ogre::StringConverter::toString(j);
 
@@ -116,7 +116,7 @@ namespace wowpp
 
 					const float scale = (constants::MapWidth / static_cast<float>(constants::TilesPerPage));
 					Ogre::SceneNode *tileNode = m_sceneNode->createChildSceneNode(
-						Ogre::Vector3(scale * j, 0.0f, scale * i));
+						Ogre::Vector3(scale * (16 - j), scale * (16 - i), 0.0f));
 
 					auto &tile = m_tiles(i, j);
 					tile.reset(new TerrainTile(

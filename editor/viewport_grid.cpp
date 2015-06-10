@@ -77,7 +77,7 @@ namespace wowpp
 
 			Ogre::Vector3 newPosition(cameraPos.x, cameraPos.y, cameraPos.z);
 
-			const Ogre::Vector3 mask(1.0f, 0.0f, 1.0f);
+			const Ogre::Vector3 mask(1.0f, 1.0f, 0.0f);
 			newPosition *= mask;
 			newPosition = snapToGrid(newPosition);
 
@@ -163,13 +163,13 @@ namespace wowpp
 
 			for (size_t i = 0; i < m_numRows; ++i)
 			{
-				start.x = 0.0f;
+				start.x = i * m_gridSize;
 				start.y = 0.0f;
-				start.z = i * m_gridSize;
+				start.z = 0.0f;
 
-				end.x = width;
-				end.y = 0.0f;
-				end.z = start.z;
+				end.x = start.z;
+				end.y = width;
+				end.z = 0.0f;
 
 				if (i % m_largeGrid != 0)
 				{
@@ -188,13 +188,13 @@ namespace wowpp
 
 			for (size_t j = 0; j < m_numCols; ++j)
 			{
-				start.x = j * m_gridSize;
-				start.y = 0.0f;
+				start.x = 0.0f;
+				start.y = j * m_gridSize;
 				start.z = 0.0f;
 
-				end.x = start.x;
-				end.y = 0.0f;
-				end.z = length;
+				end.x = length;
+				end.y = start.x;
+				end.z = 0.0f;
 
 				if (j % m_largeGrid != 0)
 				{

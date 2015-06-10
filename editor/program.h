@@ -27,12 +27,15 @@
 #include "data/project.h"
 #include "graphics.h"
 #include <memory>
+#include "world_editor.h"
 #include <QApplication>
 
 namespace wowpp
 {
 	namespace editor
 	{
+		class WorldEditor;
+
 		/// Represents all modules of the editor application.
 		class Program final : public QApplication
 		{
@@ -42,6 +45,7 @@ namespace wowpp
 			explicit Program(int &argc, char** argv);
 
 			bool run();
+			void openMap(MapEntry &map);
 			void saveProject();
 
 			/// Gets the graphics instance
@@ -49,10 +53,10 @@ namespace wowpp
 			/// 
 			Project &getProject() { return m_project; }
 			/// 
-			MainWindow &getMainWindow() { return *m_mainWindow; }
+			WorldEditor *getWorldEditor() { return m_worldEditor.get(); }
 			/// Gets the configuration structure.
 			const Configuration &getConfiguration() const { return m_configuration; }
-
+			
 		private:
 
 			Configuration m_configuration;
@@ -60,6 +64,7 @@ namespace wowpp
 			std::unique_ptr<Graphics> m_graphics;
             std::unique_ptr<MainWindow> m_mainWindow;
 			Project m_project;
+			std::unique_ptr<WorldEditor> m_worldEditor;
 		};
 	}
 }
