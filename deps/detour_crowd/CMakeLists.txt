@@ -19,22 +19,16 @@
 # and lore are copyrighted by Blizzard Entertainment, Inc.
 # 
 
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/detour")
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/detour_crowd")
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/detour_tile_cache")
+file(GLOB SRC_FILES "*.h" "*.cpp")
 
-# Include subdirectories
-add_subdirectory(detour)
-add_subdirectory(detour_crowd)
-add_subdirectory(detour_tile_cache)
+# Source groups
+source_group(src FILES ${SRC_FILES})
 
-if(WOWPP_BUILD_EDITOR)
-	include_directories("${CMAKE_CURRENT_SOURCE_DIR}/recast")
-	include_directories("${CMAKE_CURRENT_SOURCE_DIR}/debug_utils")
+# Add library project
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+add_library(detour_crowd ${SRC_FILES})
 
-	add_subdirectory(ogre-lite)
-	add_subdirectory(stormlib)
-	add_subdirectory(recast)
-	add_subdirectory(debug_utils)
-endif()
-	
+# Solution folder
+if(MSVC)
+	set_property(TARGET detour_crowd PROPERTY FOLDER "deps/detour_crowd")
+endif(MSVC)

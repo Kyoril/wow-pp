@@ -103,7 +103,7 @@ project(editor)
 	endif()
 	
 	# Link standard libraries
-	target_link_libraries(editor common templates virtual_directory log data stormlib)
+	target_link_libraries(editor common templates virtual_directory log data stormlib recast detour detour_crowd detour_tile_cache debug_utils)
 	
 	# Link OGRE and dependant libraries
 	target_link_libraries(editor OgreMain)
