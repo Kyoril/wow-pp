@@ -152,10 +152,16 @@ namespace wowpp
 				// Internal
 				resMgr.addResourceLocation((dataPath / "editor").string(), "FileSystem", resMgr.DEFAULT_RESOURCE_GROUP_NAME);
 				// WoW
-				resMgr.addResourceLocation((wowDataPath / "Data/patch-2.mpq").string(), "MPQ", "WoW");
-				resMgr.addResourceLocation((wowDataPath / "Data/patch.mpq").string(), "MPQ", "WoW");
 				resMgr.addResourceLocation((wowDataPath / "Data/common.mpq").string(), "MPQ", "WoW");
 				resMgr.addResourceLocation((wowDataPath / "Data/expansion.mpq").string(), "MPQ", "WoW");
+				resMgr.addResourceLocation((wowDataPath / "Data/patch.mpq").string(), "MPQ", "WoW");
+				resMgr.addResourceLocation((wowDataPath / "Data/patch-2.mpq").string(), "MPQ", "WoW");
+				// Locale files (TODO: Detect installed languages!)
+				resMgr.addResourceLocation((wowDataPath / "Data/deDE/expansion-locale-deDE.mpq").string(), "MPQ", "Locale");
+				resMgr.addResourceLocation((wowDataPath / "Data/deDE/locale-deDE.mpq").string(), "MPQ", "Locale");
+				resMgr.addResourceLocation((wowDataPath / "Data/deDE/patch-deDE.mpq").string(), "MPQ", "Locale");
+				resMgr.addResourceLocation((wowDataPath / "Data/deDE/patch-deDE-2.mpq").string(), "MPQ", "Locale");
+
 				resMgr.initialiseAllResourceGroups();
 			}
 

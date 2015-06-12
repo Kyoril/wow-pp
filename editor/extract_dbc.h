@@ -21,58 +21,39 @@
 
 #pragma once
 
-#include <QMainWindow>
-#include <QToolBar>
-#include "object_editor.h"
+#include "common/typedefs.h"
 #include "data/project.h"
-#include "configuration.h"
+#include <QDialog>
 #include <memory>
 
 // Forwards
 namespace Ui
 {
-	class MainWindow;
+	class ExtractDBC;
 }
 
 namespace wowpp
 {
 	namespace editor
 	{
-		/// Represents the main window of the editor application.
-		class MainWindow : public QMainWindow
+		/// 
+		class ExtractDBC : public QDialog
 		{
 			Q_OBJECT
 
 		public:
 
-			/// Initializes a new instance of the main window of the editor application.
-			explicit MainWindow(Configuration &config, Project &project);
+			/// 
+			explicit ExtractDBC(Project &project);
 
 		private slots:
 
-			// on_<ACTION_NAME>_<ACTION>() will be automatically linked with
-			// the matching <ACTION_NAME> actions from the .ui file
-			void on_actionObjectEditor_triggered();
-			void on_actionLoadMap_triggered();
-			void on_actionSave_triggered();
-			void on_actionExit_triggered();
-			void on_actionExtractDBC_triggered();
+			void on_cancelButton_clicked();
 
 		private:
 
-			void setupToolBar();
-
-		private:
-
-			Configuration &m_config;
+			Ui::ExtractDBC *m_ui;
 			Project &m_project;
-			Ui::MainWindow *m_ui;
-			std::unique_ptr<ObjectEditor> m_objectEditor;
-/*#ifdef __APPLE__
-            std::unique_ptr<QMacToolBar> m_macToolBar;
-#else*/
-			std::unique_ptr<QToolBar> m_toolBar;
-//#endif
 		};
 	}
 }

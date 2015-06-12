@@ -63,7 +63,7 @@
      <x>0</x>
      <y>0</y>
      <width>1148</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="styleSheet">
@@ -116,6 +116,8 @@
     <property name="separatorsCollapsible">
      <bool>true</bool>
     </property>
+    <addaction name="actionExtractDBC"/>
+    <addaction name="actionBuildNav"/>
    </widget>
    <widget class="QMenu" name="menu_Help">
     <property name="tearOffEnabled">
@@ -202,6 +204,16 @@
    </property>
    <property name="text">
     <string>Load Map</string>
+   </property>
+  </action>
+  <action name="actionExtractDBC">
+   <property name="text">
+    <string>Extract DBC Files</string>
+   </property>
+  </action>
+  <action name="actionBuildNav">
+   <property name="text">
+    <string>Build Navigation Mesh</string>
    </property>
   </action>
  </widget>

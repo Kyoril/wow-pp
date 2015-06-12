@@ -23,6 +23,7 @@
 #include "ui_main_window.h"
 #include "load_map.h"
 #include "program.h"
+#include "extract_dbc.h"
 
 namespace wowpp
 {
@@ -34,10 +35,7 @@ namespace wowpp
 			, m_project(project)
 			, m_ui(new Ui::MainWindow)
 		{
-			// Setup auto generated ui
 			m_ui->setupUi(this);
-            
-			// Setup the main window's toolbar
 			setupToolBar();
 		}
 
@@ -49,14 +47,6 @@ namespace wowpp
 
 		void MainWindow::setupToolBar()
 		{
-/*#ifdef __APPLE__
-			m_macToolBar.reset(new QMacToolBar(this));
-            m_macToolBar->addItem(QIcon(":/Open.png"), "Load Map");
-			m_macToolBar->addItem(QIcon(":/Save.png"), "Save Project");
-            m_macToolBar->addSeparator();
-			m_macToolBar->addItem(QIcon(":/Units.png"), "Object Editor");
-			m_macToolBar->attachToWindow(this->windowHandle());
-#else*/
 			m_toolBar.reset(new QToolBar("Standard", this));
 			m_toolBar->setMovable(false);
 			m_toolBar->setFloatable(false);
@@ -66,7 +56,6 @@ namespace wowpp
 			m_toolBar->addSeparator();
 			m_toolBar->addAction(m_ui->actionObjectEditor);
 			addToolBar(m_toolBar.get());
-//#endif
 		}
 
 		void MainWindow::on_actionLoadMap_triggered()
@@ -97,5 +86,15 @@ namespace wowpp
 
 			close();
 		}
+
+		void MainWindow::on_actionExtractDBC_triggered()
+		{
+			ExtractDBC dbc(m_project);
+			if (dbc.exec())
+			{
+				//TODO 
+			}
+		}
+
 	}
 }
