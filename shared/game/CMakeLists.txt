@@ -22,21 +22,18 @@
 # We want at least CMake 2.8
 cmake_minimum_required(VERSION 2.8)
 
-# This library contains commonly used things...
-project(game)
+# Collect source and header files
+file(GLOB srcFiles "./*.cpp" "./*.h" "./*.hpp")
 
-	# Collect source and header files
-	file(GLOB srcFiles "./*.cpp" "./*.h" "./*.hpp")
-	
-	# Add source groups
-	source_group(src FILES ${srcFiles})
-	
-	# Add library project
-	add_library(game ${srcFiles})
+# Add source groups
+source_group(src FILES ${srcFiles})
 
-	target_link_libraries(game ${OPENSSL_LIBRARIES})
+# Add library project
+add_library(game ${srcFiles})
 
-	# Solution folder
-	if(MSVC)
-		set_property(TARGET game PROPERTY FOLDER "shared")
-	endif(MSVC)
+target_link_libraries(game ${OPENSSL_LIBRARIES})
+
+# Solution folder
+if(MSVC)
+	set_property(TARGET game PROPERTY FOLDER "shared")
+endif(MSVC)

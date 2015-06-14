@@ -27,6 +27,7 @@
 #include "data/level_entry.h"
 #include "game/defines.h"
 #include "data/data_load_context.h"
+#include "movement_info.h"
 
 namespace wowpp
 {
@@ -174,6 +175,8 @@ namespace wowpp
 
 		const RaceEntry *getRaceEntry() const {  return m_raceEntry; }
 		const ClassEntry *getClassEntry() const { return m_classEntry; }
+		const MovementInfo &getMovementInfo() { return m_movementInfo; }
+		void setMovementInfo(const MovementInfo &info) { m_movementInfo = info; }
 
 		virtual ObjectType getTypeId() const override { return object_type::Unit; }
 
@@ -195,6 +198,7 @@ namespace wowpp
 
 		const RaceEntry *m_raceEntry;
 		const ClassEntry *m_classEntry;
+		MovementInfo m_movementInfo;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameUnit const& object);

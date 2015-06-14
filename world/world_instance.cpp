@@ -87,25 +87,98 @@ namespace wowpp
 					<< io::write<NetUInt8>(updateFlags);
 
 				// Write movement update
+				if (updateFlags & 0x20)
 				{
-					UInt32 moveFlags = 0x00;
+					GameUnit *unit = dynamic_cast<GameUnit*>(&object);
+					assert(unit);
+
+					auto &movement = unit->getMovementInfo();
+
+					UInt32 moveFlags = movement.moveFlags;
 					writer
 						<< io::write<NetUInt32>(moveFlags)
 						<< io::write<NetUInt8>(0x00)
 						<< io::write<NetUInt32>(getCurrentTime());
 
 					// Position & Rotation
+					// TODO: Calculate position and rotation from the movement info using interpolation
 					writer
 						<< io::write<float>(x)
 						<< io::write<float>(y)
 						<< io::write<float>(z)
 						<< io::write<float>(o);
 
-					// Fall time
-					writer
-						<< io::write<NetUInt32>(0);
+					// Transport
+					if (moveFlags & (game::movement_flags::OnTransport))
+					{
+						//TODO
+						WLOG("TODO");
+					}
 
-					// Speeds
+					// Pitch info
+					if (moveFlags & (game::movement_flags::Swimming | game::movement_flags::Flying2))
+					{
+						if (object.getTypeId() == type_id::Player)
+						{
+							writer
+								<< io::write<float>(movement.pitch);
+						}
+						else
+						{
+							writer
+								<< io::write<float>(0.0f);
+						}
+					}
+
+					// Fall time
+					if (object.getTypeId() == type_id::Player)
+					{
+						writer
+							<< io::write<NetUInt32>(movement.fallTime);
+					}
+					else
+					{
+						writer
+							<< io::write<NetUInt32>(0);
+					}
+
+					// Fall information
+					if (moveFlags & game::movement_flags::Falling)
+					{
+						if (object.getTypeId() == type_id::Player)
+						{
+							writer
+								<< io::write<float>(movement.jumpVelocity)
+								<< io::write<float>(movement.jumpSinAngle)
+								<< io::write<float>(movement.jumpCosAngle)
+								<< io::write<float>(movement.jumpXYSpeed);
+						}
+						else
+						{
+							writer
+								<< io::write<float>(0.0f)
+								<< io::write<float>(0.0f)
+								<< io::write<float>(0.0f)
+								<< io::write<float>(0.0f);
+						}
+					}
+
+					// Elevation information
+					if (moveFlags & game::movement_flags::SplineElevation)
+					{
+						if (object.getTypeId() == type_id::Player)
+						{
+							writer
+								<< io::write<float>(movement.unknown1);
+						}
+						else
+						{
+							writer
+								<< io::write<float>(0.0f);
+						}
+					}
+
+					// TODO: Speed values
 					writer
 						<< io::write<float>(2.5f)				// Walk
 						<< io::write<float>(7.0f)				// Run

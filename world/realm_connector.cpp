@@ -544,6 +544,9 @@ namespace wowpp
 		float x, y, z, o;
 		sender.getCharacter()->getLocation(x, y, z, o);
 
+		// Store movement information
+		sender.getCharacter()->setMovementInfo(info);
+
 		// Transform into grid location
 		TileIndex2D gridIndex;
 		auto &grid = sender.getWorldInstance().getGrid();
