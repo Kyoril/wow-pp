@@ -176,6 +176,23 @@ namespace wowpp
 	void Player::connectionLost()
 	{
 		ILOG("Client " << m_address << " disconnected");
+
+		// If we are logged in, notify the world node about this
+		if (m_gameCharacter)
+		{
+			// Try to find the world node
+			auto world = m_worldManager.getWorldByInstanceId(m_instanceId);
+			if (world)
+			{
+				world->leaveWorldInstance(m_characterId, pp::world_realm::world_left_reason::Disconnect);
+				ILOG("Sent notification about this to the world node.");
+			}
+			else
+			{
+				WLOG("Failed to find the world node - can't send disconnect notification.");
+			}
+		}
+
 		destroy();
 	}
 
@@ -748,6 +765,26 @@ namespace wowpp
 
 	void Player::worldInstanceLeft(World &world, UInt32 instanceId, pp::world_realm::WorldLeftReason reason)
 	{
+		// Display world instance left reason
+		String reasonString = "UNKNOWN";
+		switch (reason)
+		{
+			case pp::world_realm::world_left_reason::Logout:
+			{
+				reasonString = "LOGOUT";
+				break;
+			}
+
+			case pp::world_realm::world_left_reason::Teleport:
+			{
+				reasonString = "TELEPORT";
+				break;
+			}
+		}
+
+		// Write something to the log just for informations
+		ILOG("Player " << m_accountName << " left world instance " << m_instanceId << " - reason: " << reasonString);
+
 		switch (reason)
 		{
 			case pp::world_realm::world_left_reason::Logout:

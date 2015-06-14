@@ -23,6 +23,7 @@
 
 #include "wowpp_protocol/wowpp_protocol.h"
 #include "wowpp_protocol/wowpp_connection.h"
+#include "wowpp_protocol/wowpp_world_realm.h"
 #include "game/game_character.h"
 #include <boost/noncopyable.hpp>
 #include <boost/signals2.hpp>
@@ -79,6 +80,7 @@ namespace wowpp
 
 		// Called by player
 		void enterWorldInstance(DatabaseId characterDbId, const GameCharacter &character);
+		void leaveWorldInstance(DatabaseId characterDbId, pp::world_realm::WorldLeftReason reason);
 		void sendProxyPacket(DatabaseId characterId, UInt16 opCode, UInt32 size, const std::vector<char> &buffer);
 		void sendChatMessage(NetUInt64 characterGuid, game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message);
 

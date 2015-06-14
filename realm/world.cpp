@@ -181,6 +181,13 @@ namespace wowpp
 			std::bind(pp::world_realm::realm_write::characterLogIn, std::placeholders::_1, characterDbId, std::cref(character)));
 	}
 
+
+	void World::leaveWorldInstance(DatabaseId characterDbId, pp::world_realm::WorldLeftReason reason)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::realm_write::leaveWorldInstance, std::placeholders::_1, characterDbId, reason));
+	}
+
 	void World::sendProxyPacket(DatabaseId characterId, UInt16 opCode, UInt32 size, const std::vector<char> &buffer)
 	{
 		m_connection->sendSinglePacket(

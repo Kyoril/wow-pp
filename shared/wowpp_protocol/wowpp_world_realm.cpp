@@ -143,6 +143,14 @@ namespace wowpp
 					out_packet.finish();
 				}
 
+				void leaveWorldInstance(pp::OutgoingPacket &out_packet, DatabaseId characterRealmId, WorldLeftReason reason)
+				{
+					out_packet.start(realm_packet::LeaveWorldInstance);
+					out_packet
+						<< io::write<NetUInt64>(characterRealmId)
+						<< io::write<NetUInt32>(reason);
+					out_packet.finish();
+				}
 			}
 
 			namespace world_read
@@ -240,6 +248,14 @@ namespace wowpp
 						>> io::read_container<NetUInt8>(out_channel)
 						>> io::read_container<NetUInt16>(out_message);
 				}
+
+				bool leaveWorldInstance(io::Reader &packet, DatabaseId &out_characterRealmId, WorldLeftReason &out_reason)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterRealmId)
+						>> io::read<NetUInt32>(out_reason);
+				}
+
 			}
 		}
 	}

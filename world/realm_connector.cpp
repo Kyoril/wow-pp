@@ -109,6 +109,12 @@ namespace wowpp
 				break;
 			}
 
+			case pp::world_realm::realm_packet::LeaveWorldInstance:
+			{
+				handleLeaveWorldInstance(packet);
+				break;
+			}
+
 			default:
 			{
 				// Log about unknown or unhandled packet
@@ -638,4 +644,37 @@ namespace wowpp
 		player->chatMessage(type, lang, receiver, channel, message);
 	}
 
+	void RealmConnector::handleLeaveWorldInstance(pp::Protocol::IncomingPacket &packet)
+	{
+		UInt64 characterGuid;
+		pp::world_realm::WorldLeftReason reason;
+		if (!pp::world_realm::realm_read::leaveWorldInstance(packet, characterGuid, reason))
+		{
+			WLOG("Could not read realm packet!");
+			return;
+		}
+
+		if (reason == pp::world_realm::world_left_reason::Disconnect)
+		{
+			// TODO: Find the character and remove it from the world instance
+			auto *player = m_playerManager.getPlayerByCharacterGuid(characterGuid);
+			if (!player)
+			{
+				WLOG("Could not find requested character.");
+				return;
+			}
+
+			// Remove the character
+			player->getWorldInstance().removeGameObject(*player->getCharacter());
+
+			// Remove the player instance
+			m_playerManager.playerDisconnected(*player);
+
+			ILOG("Player removed from world instance due to disconnect on realm.");
+		}
+		else
+		{
+			WLOG("Unsupported reason - request ignored");
+		}
+	}
 }

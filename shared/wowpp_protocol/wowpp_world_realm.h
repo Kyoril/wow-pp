@@ -34,7 +34,7 @@ namespace wowpp
 	{
 		namespace world_realm
 		{
-			static const UInt32 ProtocolVersion = 0x01;
+			static const UInt32 ProtocolVersion = 0x02;
 
 			namespace world_instance_error
 			{
@@ -97,7 +97,9 @@ namespace wowpp
 					/// world server.
 					ClientProxyPacket,
 					/// Chat message of a player which needs to be handled by the world server (yell-msg for example).
-					ChatMessage
+					ChatMessage,
+					/// Notifies the world node that a player should leave the world node (for example on disconnect)
+					LeaveWorldInstance
 				};
 			}
 
@@ -128,6 +130,8 @@ namespace wowpp
 					Logout,
 					/// The player was teleported away and thus needs to be transferred to another world instance.
 					Teleport,
+					/// The player disconnected.
+					Disconnect,
 					/// Unknown reason (placeholder for more reasons...)
 					Unknown
 				};
@@ -230,6 +234,13 @@ namespace wowpp
 					const String &receiver,
 					const String &channel,
 					const String &message
+					);
+
+				/// 
+				void leaveWorldInstance(
+					pp::OutgoingPacket &out_packet,
+					DatabaseId characterRealmId,
+					WorldLeftReason reason
 					);
 			}
 
@@ -336,6 +347,13 @@ namespace wowpp
 					String &out_receiver,
 					String &out_channel,
 					String &out_message
+					);
+
+				/// 
+				bool leaveWorldInstance(
+					io::Reader &packet,
+					DatabaseId &out_characterRealmId,
+					WorldLeftReason &out_reason
 					);
 			}
 		}
