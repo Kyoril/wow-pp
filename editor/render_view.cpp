@@ -47,6 +47,8 @@ namespace wowpp
 
 		void RenderView::initializeGL()
 		{
+			DLOG("Initializing OpenGL view...");
+
 			Program *program = static_cast<Program*>(QCoreApplication::instance());
 			if (!program)
 			{
@@ -124,7 +126,7 @@ namespace wowpp
 			m_Camera->setOrientation(Ogre::Quaternion(Ogre::Degree(90.0f), Ogre::Vector3::UNIT_X));
 			m_Camera->setFixedYawAxis(true, Ogre::Vector3::UNIT_Z);
 
-			m_Camera->setPosition(Ogre::Vector3(1676.71f, 1678.31f, 121.67f));
+			m_Camera->setPosition(Ogre::Vector3(10349.599609f, -6357.290039f, 33.402599f));
 			m_Camera->setNearClipDistance(0.5f);
 			m_Camera->setFarClipDistance(1500.0f);
 			m_Camera->setFOVy(Ogre::Degree(45.0f));

@@ -169,8 +169,8 @@ namespace wowpp
 			const VertexID endX = startX + 9;
 			const VertexID endY = startY + 9;
 			
-			Ogre::Real minHeight = std::numeric_limits<Ogre::Real>::max();
-			Ogre::Real maxHeight = std::numeric_limits<Ogre::Real>::min();
+			Ogre::Real minHeight = 9999999.0f;
+			Ogre::Real maxHeight = -9999999.0f;
 
 			const Ogre::VertexElement *posElem = decl->findElementBySemantic(Ogre::VES_POSITION);
             const Ogre::VertexElement *nrmElem = decl->findElementBySemantic(Ogre::VES_NORMAL);
@@ -283,8 +283,8 @@ namespace wowpp
 			if (minHeight == maxHeight) maxHeight = minHeight + 0.1f;
 
 			m_bounds.setExtents(
-				scale * startX, scale * startY, minHeight - (minHeight * 1.1f),
-				scale * endX, scale * endY, maxHeight + (maxHeight * 1.1f)
+				scale * startX, scale * startY, minHeight,
+				scale * endX, scale * endY, maxHeight
 				);
 
 			m_center = m_bounds.getCenter();
