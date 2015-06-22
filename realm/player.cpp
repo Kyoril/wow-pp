@@ -768,6 +768,11 @@ namespace wowpp
 				reasonString = "TELEPORT";
 				break;
 			}
+
+			default:
+			{
+				break;
+			}
 		}
 
 		// Write something to the log just for informations
