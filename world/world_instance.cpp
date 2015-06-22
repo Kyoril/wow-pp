@@ -118,7 +118,7 @@ namespace wowpp
 					// Pitch info
 					if (moveFlags & (game::movement_flags::Swimming | game::movement_flags::Flying2))
 					{
-						if (object.getTypeId() == type_id::Player)
+						if (object.getTypeId() == object_type::Character)
 						{
 							writer
 								<< io::write<float>(movement.pitch);
@@ -131,7 +131,7 @@ namespace wowpp
 					}
 
 					// Fall time
-					if (object.getTypeId() == type_id::Player)
+					if (object.getTypeId() == object_type::Character)
 					{
 						writer
 							<< io::write<NetUInt32>(movement.fallTime);
@@ -145,7 +145,7 @@ namespace wowpp
 					// Fall information
 					if (moveFlags & game::movement_flags::Falling)
 					{
-						if (object.getTypeId() == type_id::Player)
+						if (object.getTypeId() == object_type::Character)
 						{
 							writer
 								<< io::write<float>(movement.jumpVelocity)
@@ -166,7 +166,7 @@ namespace wowpp
 					// Elevation information
 					if (moveFlags & game::movement_flags::SplineElevation)
 					{
-						if (object.getTypeId() == type_id::Player)
+						if (object.getTypeId() == object_type::Character)
 						{
 							writer
 								<< io::write<float>(movement.unknown1);
