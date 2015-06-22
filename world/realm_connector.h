@@ -62,6 +62,7 @@ namespace wowpp
 			WorldInstanceManager &worldInstanceManager,
 			PlayerManager &playerManager,
 			const Configuration &config,
+			UInt32 realmEntryIndex,
 			Project &project,
 			TimerQueue &timer);
 		~RealmConnector();
@@ -126,7 +127,6 @@ namespace wowpp
 		Project &m_project;
 		TimerQueue &m_timer;
 		std::shared_ptr<pp::Connector> m_connection;
-		String m_host;
-		NetPort m_port;
+		UInt32 m_realmEntryIndex;
 	};
 }

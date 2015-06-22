@@ -64,55 +64,46 @@ namespace wowpp
 
 	typedef type_mask::Enum TypeMask;
 
-	namespace high_guid
+	namespace guid_type
 	{
 		enum Enum
 		{
-			Item				= 0x4000,
-			Container			= 0x4000,
-			Player				= 0x0000,
-			GameObject			= 0xF110,
-			Transport			= 0xF120,
-			Unit				= 0xF130,
-			Pet					= 0xF140,
-			DynamicObject		= 0xF100,
-			Corpse				= 0xF101,
-			MOTransport			= 0x1FC0
+			Player = 0x0,
+			GameObject = 0x1,
+			Transport = 0x2,
+			Unit = 0x3,
+			Pet = 0x4,
+			Item = 0x5
 		};
 	}
 
-	typedef high_guid::Enum HighGUID;
+	typedef guid_type::Enum GUIDType;
 
 	/// Gets the high part of a guid which can be used to determine the object type by it's GUID.
-	inline HighGUID guidHiPart(UInt64 guid) { return static_cast<HighGUID>(static_cast<UInt32>((guid >> 0x0000000000000030) & 0x0000FFFF)); }
+	inline GUIDType guidTypeID(UInt64 guid) { return static_cast<GUIDType>(static_cast<UInt32>((guid >> 48) & 0xF)); }
+	/// Gets the realm id of a guid.
+	inline uint16_t guidRealmID(UInt64 guid) { return static_cast<uint16_t>(static_cast<UInt32>((guid >> 56) & 0xFF)); }
 	/// Determines whether the given GUID belongs to a creature.
-	inline bool isCreatureGUID(UInt64 guid) { return guidHiPart(guid) == high_guid::Unit; }
+	inline bool isCreatureGUID(UInt64 guid) { return guidTypeID(guid) == guid_type::Unit; }
 	/// Determines whether the given GUID belongs to a pet.
-	inline bool isPetGUID(UInt64 guid) { return guidHiPart(guid) == high_guid::Pet; }
+	inline bool isPetGUID(UInt64 guid) { return guidTypeID(guid) == guid_type::Pet; }
 	/// Determines whether the given GUID belongs to a player.
-	inline bool isPlayerGUID(UInt64 guid) { return guidHiPart(guid) == high_guid::Player; }
+	inline bool isPlayerGUID(UInt64 guid) { return guidTypeID(guid) == guid_type::Player; }
 	/// Determines whether the given GUID belongs to a unit.
 	inline bool isUnitGUID(UInt64 guid) { return isPlayerGUID(guid) || isCreatureGUID(guid) || isPetGUID(guid); }
 	/// Determines whether the given GUID belongs to an item.
-	inline bool isItemGUID(UInt64 guid) { return guidHiPart(guid) == high_guid::Item; }
+	inline bool isItemGUID(UInt64 guid) { return guidTypeID(guid) == guid_type::Item; }
 	/// Determines whether the given GUID belongs to a game object (chest for example).
-	inline bool isGameObjectGUID(UInt64 guid) { return guidHiPart(guid) == high_guid::GameObject; }
-	/// Determines whether the given GUID belongs to a corpse.
-	inline bool isCorpseGUID(UInt64 guid) { return guidHiPart(guid) == high_guid::Corpse; }
-	/// Determines whether the given GUID belongs to a MO Transport. (what does MO stand for?)
-	inline bool isMOTransportGUID(UInt64 guid) { return guidHiPart(guid) == high_guid::MOTransport; }
+	inline bool isGameObjectGUID(UInt64 guid) { return guidTypeID(guid) == guid_type::GameObject; }
 	/// Creates a GUID based on some settings.
-	inline UInt64 createGUID(UInt64 low, UInt64 entry, HighGUID high) { return static_cast<UInt64>(low | (entry << 24) | (static_cast<UInt64>(high) << 48)); }
+	inline UInt64 createGUID(UInt64 low, UInt64 entry, UInt16 realmID, GUIDType typeID) { return static_cast<UInt64>(low | (entry << 24) | (static_cast<UInt64>(typeID) << 48) | ((static_cast<UInt64>(realmID) << 56))); }
 	/// Determines if a GUID has an entry part based on it's type.
 	inline bool guidHasEntryPart(UInt64 guid)
 	{
-		switch (guidHiPart(guid))
+		switch (guidTypeID(guid))
 		{
-			case high_guid::Item:
-			case high_guid::Player:
-			case high_guid::DynamicObject:
-			case high_guid::Corpse:
-			case high_guid::MOTransport:
+			case guid_type::Item:
+			case guid_type::Player:
 				return false;
 			default:
 				return true;

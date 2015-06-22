@@ -32,7 +32,7 @@ namespace wowpp
 	{
 		namespace realm_login
 		{
-			static const UInt32 ProtocolVersion = 0x01;
+			static const UInt32 ProtocolVersion = 0x02;
 
 			namespace realm_packet
 			{
@@ -149,7 +149,8 @@ namespace wowpp
 				/// @param result The result of the login attempt of the realm.
 				void loginResult(
 					pp::OutgoingPacket &out_packet,
-					LoginResult result
+					LoginResult result,
+					UInt32 realmID
 					);
 
 				/// TODO: ADD DESCRIPTION
@@ -257,7 +258,8 @@ namespace wowpp
 				bool loginResult(
 					io::Reader &packet,
 					LoginResult &out_result,
-					UInt32 &out_serverVersion
+					UInt32 &out_serverVersion,
+					UInt32 &out_realmID
 					);
 
 				/// TODO: ADD DESCRIPTION

@@ -19,37 +19,53 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-#pragma once
-
-#include <boost/noncopyable.hpp>
-#include <boost/asio.hpp>
-#include "configuration.h"
-#include "database.h"
-#include <memory>
-#include <map>
+#include "player_social.h"
+#include "player.h"
 
 namespace wowpp
 {
-	/// This class manages all components of the world server.
-	class Program final : public boost::noncopyable
+	PlayerSocial::PlayerSocial(Player &player)
+		: m_player(player)
 	{
-	public:
+	}
 
-		/// Creates a new instance of the Program class.
-		explicit Program();
+	game::FriendResult PlayerSocial::addToSocialList(UInt32 guid, bool ignore)
+	{
+		// Build flags
+		UInt32 flag = game::social_flag::Friend;
+		if (ignore)
+			flag = game::social_flag::Ignored;
 
-		/// Starts the server application.
-		/// @returns True if the application should be restarted.
-		bool run();
-		/// Shutdown the server application.
-		/// @param restart If set to true, the application will restart.
-		void shutdown(bool restart = false);
+		// TODO: Check if this contact is already in the social list
 
-	private:
+		// TODO: Add
+		return game::friend_result::AddedOffline;
+	}
 
-		boost::asio::io_service m_ioService;
-		Configuration m_configuration;
-		std::unique_ptr<IDatabase> m_database;
-		bool m_shouldRestart;
-	};
+	void PlayerSocial::removeFromSocialList(UInt32 guid, bool ignore)
+	{
+
+	}
+
+	void PlayerSocial::setFriendNote(UInt32 guid, String note)
+	{
+
+	}
+
+	void PlayerSocial::sendSocialList() const
+	{
+
+	}
+
+	bool PlayerSocial::isFriend(UInt32 guid) const
+	{
+		//TODO
+		return false;
+	}
+
+	bool PlayerSocial::isIgnored(UInt32 guid) const
+	{
+		//TODO
+		return false;
+	}
 }

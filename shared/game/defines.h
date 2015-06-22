@@ -22,6 +22,7 @@
 #pragma once
 
 #include "common/typedefs.h"
+#include <map>
 
 namespace wowpp
 {
@@ -40,7 +41,6 @@ namespace wowpp
 		}
 
 		typedef gender::Type Gender;
-
 
 		namespace race
 		{
@@ -67,7 +67,6 @@ namespace wowpp
 		}
 
 		typedef race::Type Race;
-
 
 		namespace char_class
 		{
@@ -232,5 +231,101 @@ namespace wowpp
 		}
 
 		typedef spline_flags::Type SplineFlags;
+
+		namespace friend_result
+		{
+			enum Type
+			{
+				DatabaseError		= 0x00,
+				ListFull			= 0x01,
+				Online				= 0x02,
+				Offline				= 0x03,
+				NotFound			= 0x04,
+				Removed				= 0x05,
+				AddedOnline			= 0x06,
+				AddedOffline		= 0x07,
+				AlreadyAdded		= 0x08,
+				Self				= 0x09,
+				Enemy				= 0x0A,
+				IgnoreFull			= 0x0B,
+				IgnoreSelf			= 0x0C,
+				IgnoreNotFound		= 0x0D,
+				IgnoreAlreadyAdded	= 0x0E,
+				IgnoreAdded			= 0x0F,
+				IgnoreRemoved		= 0x10,
+				IgnoreAmbigous		= 0x11,     // That name is ambiguous, type more of the player's server name
+				MuteFull			= 0x12,
+				MuteSelf			= 0x13,
+				MuteNotFound		= 0x14,
+				MuteAlreadyAdded	= 0x15,
+				MuteAdded			= 0x16,
+				MuteRemoved			= 0x17,
+				MuteAmbigous		= 0x18,     // That name is ambiguous, type more of the player's server name
+				Unknown_7			= 0x19,     // no message at client
+				Uknown				= 0x1A      // Unknown friend response from server
+			};
+		}
+
+		typedef friend_result::Type FriendResult;
+
+		namespace friend_status
+		{
+			enum Type
+			{
+				Offline		= 0x00,
+				Online		= 0x01,
+				Afk			= 0x02,
+				Dnd			= 0x04,
+				Raf			= 0x08
+			};
+		}
+
+		typedef friend_status::Type FriendStatus;
+
+		namespace social_flag
+		{
+			enum Type
+			{
+				Friend		= 0x01,
+				Ignored		= 0x02,
+				Muted		= 0x04
+			};
+		}
+
+		typedef social_flag::Type SocialFlag;
+
+		// TODO: Move this?
+		struct FriendInfo final
+		{
+			FriendStatus status;
+			UInt32 flags;
+			UInt32 area;
+			UInt32 level;
+			UInt32 class_;
+			String note;
+
+			/// 
+			FriendInfo()
+				: status(friend_status::Offline)
+				, flags(0)
+				, area(0)
+				, level(0)
+				, class_(0)
+			{
+			}
+
+			/// 
+			explicit FriendInfo(UInt32 flags_, String note_)
+				: status(friend_status::Offline)
+				, flags(flags_)
+				, area(0)
+				, level(0)
+				, class_(0)
+				, note(std::move(note_))
+			{
+			}
+		};
+
+		typedef std::map<UInt32, FriendInfo> FriendInfoMap;
 	}
 }

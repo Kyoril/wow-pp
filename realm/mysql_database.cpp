@@ -411,4 +411,135 @@ namespace wowpp
 		ELOG("Realm database error: " << m_connection.getErrorMessage());
 	}
 
+	bool MySQLDatabase::getCharacterById(DatabaseId id, game::CharEntry &out_character)
+	{
+		wowpp::MySQL::Select select(m_connection,
+			//      0     1       2       3        4        5       6        7       8    
+			(boost::format("SELECT `id`, `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`map`,"
+			//		 9       10            11            12           13		  14
+			"`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic` FROM `character` WHERE `id`=%1% LIMIT 1")
+			% id).str());
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			if (row)
+			{
+				UInt32 bytes = 0, bytes2 = 0;
+
+				// Basic stuff
+				row.getField(0, out_character.id);
+				row.getField(1, out_character.name);
+
+				// Display
+				UInt32 tmp = 0;
+				row.getField(2, tmp);
+				out_character.race = static_cast<game::Race>(tmp);
+				row.getField(3, tmp);
+				out_character.class_ = static_cast<game::CharClass>(tmp);
+				row.getField(4, tmp);
+				out_character.gender = static_cast<game::Gender>(tmp);
+				row.getField(5, bytes);
+				row.getField(6, bytes2);
+				row.getField(7, tmp);
+				out_character.level = static_cast<UInt8>(tmp);
+
+				// Placement
+				row.getField(8, out_character.mapId);
+				row.getField(9, out_character.zoneId);
+				row.getField(10, out_character.x);
+				row.getField(11, out_character.y);
+				row.getField(12, out_character.z);
+				row.getField(13, out_character.o);
+
+				Int32 cinematic = 0;
+				row.getField(14, cinematic);
+				out_character.cinematic = (cinematic != 0);
+
+				// Reinterpret bytes
+				out_character.skin = static_cast<UInt8>(bytes);
+				out_character.face = static_cast<UInt8>(bytes >> 8);
+				out_character.hairStyle = static_cast<UInt8>(bytes >> 16);
+				out_character.hairColor = static_cast<UInt8>(bytes >> 24);
+				out_character.facialHair = static_cast<UInt8>(bytes2 & 0xff);
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+
+		return true;
+	}
+
+	bool MySQLDatabase::getCharacterByName(const String &name, game::CharEntry &out_character)
+	{
+		wowpp::MySQL::Select select(m_connection,
+			//      0     1       2       3        4        5       6        7       8    
+			(boost::format("SELECT `id`, `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`map`,"
+			//		 9       10            11            12           13		  14
+			"`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic` FROM `character` WHERE `name`='%1%' LIMIT 1")
+			% name).str());
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			if (row)
+			{
+				UInt32 bytes = 0, bytes2 = 0;
+
+				// Basic stuff
+				row.getField(0, out_character.id);
+				row.getField(1, out_character.name);
+
+				// Display
+				UInt32 tmp = 0;
+				row.getField(2, tmp);
+				out_character.race = static_cast<game::Race>(tmp);
+				row.getField(3, tmp);
+				out_character.class_ = static_cast<game::CharClass>(tmp);
+				row.getField(4, tmp);
+				out_character.gender = static_cast<game::Gender>(tmp);
+				row.getField(5, bytes);
+				row.getField(6, bytes2);
+				row.getField(7, tmp);
+				out_character.level = static_cast<UInt8>(tmp);
+
+				// Placement
+				row.getField(8, out_character.mapId);
+				row.getField(9, out_character.zoneId);
+				row.getField(10, out_character.x);
+				row.getField(11, out_character.y);
+				row.getField(12, out_character.z);
+				row.getField(13, out_character.o);
+
+				Int32 cinematic = 0;
+				row.getField(14, cinematic);
+				out_character.cinematic = (cinematic != 0);
+
+				// Reinterpret bytes
+				out_character.skin = static_cast<UInt8>(bytes);
+				out_character.face = static_cast<UInt8>(bytes >> 8);
+				out_character.hairStyle = static_cast<UInt8>(bytes >> 16);
+				out_character.hairColor = static_cast<UInt8>(bytes >> 24);
+				out_character.facialHair = static_cast<UInt8>(bytes2 & 0xff);
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+
+		return true;
+	}
 }

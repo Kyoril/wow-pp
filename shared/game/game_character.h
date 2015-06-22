@@ -296,6 +296,8 @@ namespace wowpp
 
 		void setName(const String &name);
 		const String &getName() const { return m_name; }
+		void setZone(UInt32 zoneIndex) { m_zoneIndex = zoneIndex; }
+		UInt32 getZone() const { return m_zoneIndex; }
 
 	protected:
 
@@ -304,6 +306,7 @@ namespace wowpp
 	private:
 
 		String m_name;
+		UInt32 m_zoneIndex;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameCharacter const& object);

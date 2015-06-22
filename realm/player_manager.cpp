@@ -138,4 +138,34 @@ namespace wowpp
 		return nullptr;
 	}
 
+	Player * PlayerManager::getPlayerByCharacterName(const String &name)
+	{
+		if (name.empty())
+		{
+			return nullptr;
+		}
+
+		// Search for character
+		const auto p = std::find_if(
+			m_players.begin(),
+			m_players.end(),
+			[&name](const std::unique_ptr<Player> &p)
+		{
+			auto *character = p->getGameCharacter();
+			if (character)
+			{
+				return (character->getName() == name);
+			}
+
+			return false;
+		});
+
+		if (p != m_players.end())
+		{
+			return (*p).get();
+		}
+
+		return nullptr;
+	}
+
 }

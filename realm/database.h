@@ -42,6 +42,9 @@ namespace wowpp
 		/// @returns false if the creation process failed.
 		virtual game::ResponseCode createCharacter(UInt32 accountId, game::CharEntry &character) = 0;
 
+		virtual bool getCharacterById(DatabaseId id, game::CharEntry &out_character) = 0;
+		virtual bool getCharacterByName(const String &name, game::CharEntry &out_character) = 0;
+
 		virtual bool getCharacters(UInt32 accountId, game::CharEntries &out_characters) = 0;
 
 		virtual game::ResponseCode deleteCharacter(UInt32 accountId, UInt32 characterGuid) = 0;

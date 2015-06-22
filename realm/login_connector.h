@@ -73,6 +73,9 @@ namespace wowpp
 		/// @param accountId Identifier of the account which the player was logged in with.
 		void notifyPlayerLogout(UInt32 accountId);
 
+		/// Gets the id of this realm in the login server database.
+		UInt32 getRealmID() const { return m_realmID; }
+
 	private:
 
 		/// Schedules the next login attempt after a few seconds in case of disconnection
@@ -121,5 +124,6 @@ namespace wowpp
 		String m_host;
 		NetPort m_port;
 		std::vector<PlayerLoginRequest> m_loginRequests;
+		UInt32 m_realmID;
 	};
 }

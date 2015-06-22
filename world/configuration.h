@@ -28,22 +28,30 @@
 namespace wowpp
 {
 	/// Manages the world server configuration.
-	struct Configuration
+	struct Configuration final
 	{
+		/// This is a struct that stores realm connection settings for one realm
+		/// the world node should connect to.
+		struct RealmConfiguration final
+		{
+			/// The port to be used by the realm server for worlds to log in.
+			NetPort realmPort;
+			/// Maximum number of players this world can handle from this realm.
+			size_t maxPlayers;
+			/// IP/Domain of the realm server.
+			String realmAddress;
+			/// List of map ids hosted on this world server instance for the specified realm.
+			std::vector<UInt32> hostedMaps;
+		};
+
 		/// Config file version: used to detect new configuration files
 		static const UInt32 WorldConfigVersion;
 
-		/// The port to be used by the realm server for worlds to log in.
-		NetPort realmPort;
-		/// Maximum number of players this world can handle.
-		size_t maxPlayers;
-		/// IP/Domain of the realm server.
-		String realmAddress;
-		/// List of map ids hosted on this world server instance.
-		std::vector<UInt32> hostedMaps;
-
 		/// Path to the client data
 		String dataPath;
+
+		/// Contains all realms this world node should connect to.
+		std::vector<RealmConfiguration> realms;
 
 		/// The port to be used for a mysql connection.
 		NetPort mysqlPort;

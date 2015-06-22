@@ -37,6 +37,7 @@
 #include <limits>
 
 using namespace std;
+using namespace wowpp::game;
 
 namespace wowpp
 {
@@ -61,6 +62,7 @@ namespace wowpp
 		assert(m_connection);
 
 		m_connection->setListener(*this);
+		m_social.reset(new PlayerSocial(*this));
 	}
 
 	void Player::sendAuthChallenge()
@@ -202,57 +204,83 @@ namespace wowpp
 		destroy();
 	}
 
+	bool Player::isSessionStatusValid(game::SessionStatus status, bool verbose /*= false*/) const
+	{
+		switch (status)
+		{
+			case game::session_status::Never:
+			{
+				if (verbose) WLOG("Packet isn't handled on the server side!");
+				return false;
+			}
+
+			case game::session_status::Connected:
+			{
+				if (m_authed && verbose) WLOG("Packet is only handled if not yet authenticated!");
+				return !m_authed;
+			}
+
+			case game::session_status::Authentificated:
+			{
+				if (!m_authed && verbose) WLOG("Packet is only handled if the player is authenticated!");
+				return m_authed;
+			}
+
+			case game::session_status::LoggedIn:
+			{
+				if (!m_worldNode && verbose) WLOG("Packet is only handled if the player is logged in!");
+				return (m_worldNode != nullptr);
+			}
+
+			case game::session_status::TransferPending:
+			{
+				if ((m_characterId == 0 || m_worldNode != nullptr) && verbose)
+				{
+					WLOG("Packet is only handled if a transfer is pending!");
+				}
+
+				return (m_characterId != 0 && m_worldNode == nullptr);
+			}
+
+			default:
+			{
+				// Includes game::session_status::Always
+				return true;
+			}
+		}
+	}
+
 	void Player::connectionPacketReceived(game::IncomingPacket &packet)
 	{
-		using namespace wowpp::game;
-
 		// Decrypt position
 		io::MemorySource *memorySource = static_cast<io::MemorySource*>(packet.getSource());
 
 		const auto packetId = packet.getId();
 		switch (packetId)
 		{
-			case client_packet::Ping:
-			{
-				handlePing(packet);
-				break;
+#define WOWPP_HANDLE_PACKET(name, sessionStatus) \
+			case wowpp::game::client_packet::name: \
+			{ \
+				if (!isSessionStatusValid(sessionStatus, true)) \
+					break; \
+				handle##name(packet); \
+				break; \
 			}
 
-			case client_packet::AuthSession:
-			{
-				handleAuthSession(packet);
-				break;
-			}
-
-			case client_packet::CharEnum:
-			{
-				handleCharEnum(packet);
-				break;
-			}
-
-			case client_packet::CharCreate:
-			{
-				handleCharCreate(packet);
-				break;
-			}
-
-			case client_packet::CharDelete:
-			{
-				handleCharDelete(packet);
-				break;
-			}
-
-			case client_packet::PlayerLogin:
-			{
-				handlePlayerLogin(packet);
-				break;
-			}
-
-			case client_packet::MessageChat:
-			{
-				handleMessageChat(packet);
-				break;
-			}
+			WOWPP_HANDLE_PACKET(Ping, game::session_status::Always)
+			WOWPP_HANDLE_PACKET(AuthSession, game::session_status::Connected)
+			WOWPP_HANDLE_PACKET(CharEnum, game::session_status::Authentificated)
+			WOWPP_HANDLE_PACKET(CharCreate, game::session_status::Authentificated)
+			WOWPP_HANDLE_PACKET(CharDelete, game::session_status::Authentificated)
+			WOWPP_HANDLE_PACKET(PlayerLogin, game::session_status::Authentificated)
+			WOWPP_HANDLE_PACKET(MessageChat, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(NameQuery, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(FriendList, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(AddFriend, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(DeleteFriend, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(AddIgnore, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(DeleteIgnore, game::session_status::LoggedIn)
+#undef WOWPP_HANDLE_PACKET
 
 			default:
 			{
@@ -281,31 +309,24 @@ namespace wowpp
 
 	void Player::handlePing(game::IncomingPacket &packet)
 	{
-		using namespace wowpp::game;
-
 		UInt32 ping, latency;
-		if (!client_read::ping(packet, ping, latency))
+		if (!game::client_read::ping(packet, ping, latency))
 		{
 			return;
 		}
 
-		if (m_authed)
-		{
-			// Send pong
-			sendPacket(
-				std::bind(server_write::pong, std::placeholders::_1, ping));
-		}
+		// Send pong
+		sendPacket(
+			std::bind(game::server_write::pong, std::placeholders::_1, ping));
 	}
 
 	void Player::handleAuthSession(game::IncomingPacket &packet)
 	{
-		using namespace wowpp::game;
-
 		// Clear addon list
 		m_addons.clear();
 
 		UInt32 clientBuild;
-		if (!client_read::authSession(packet, clientBuild, m_accountName, m_clientSeed, m_clientHash, m_addons))
+		if (!game::client_read::authSession(packet, clientBuild, m_accountName, m_clientSeed, m_clientHash, m_addons))
 		{
 			return;
 		}
@@ -334,12 +355,6 @@ namespace wowpp
 			return;
 		}
 
-		// Not yet authentificated
-		if (!m_authed)
-		{
-			return;
-		}
-
 		// Send character list
 		sendPacket(
 			std::bind(game::server_write::charEnum, std::placeholders::_1, std::cref(m_characters)));
@@ -349,11 +364,6 @@ namespace wowpp
 	{
 		game::CharEntry character;
 		if (!(game::client_read::charCreate(packet, character)))
-		{
-			return;
-		}
-
-		if (!m_authed)
 		{
 			return;
 		}
@@ -409,12 +419,6 @@ namespace wowpp
 			return;
 		}
 
-		// Check if we are authed
-		if (!m_authed)
-		{
-			return;
-		}
-
 		// Try to remove character from the cache
 		const auto c = std::find_if(
 			m_characters.begin(),
@@ -454,19 +458,6 @@ namespace wowpp
 			return;
 		}
 
-		// Are we authentificated?
-		if (!m_authed)
-		{
-			return;
-		}
-
-		// Are we already logged in?
-		if (m_gameCharacter)
-		{
-			WLOG("We are already logged in using character " << m_gameCharacter->getUInt64Value(object_fields::Guid));
-			return;
-		}
-
 		// Check if the requested character belongs to our account
 		game::CharEntry *charEntry = getCharacterById(characterId);
 		if (!charEntry)
@@ -487,7 +478,7 @@ namespace wowpp
 		// Load the player character data from the database
 		std::unique_ptr<GameCharacter> character(new GameCharacter(m_getRace, m_getClass, m_getLevel));
 		character->initialize();
-		character->setGuid(createGUID(characterId, 0, high_guid::Player));
+		character->setGuid(createGUID(characterId, 0, m_loginConnector.getRealmID(), guid_type::Player));
 		if (!m_database.getGameCharacter(characterId, *character))
 		{
 			// Send error packet
@@ -751,11 +742,8 @@ namespace wowpp
 		sendPacket(
 			std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
 
-		sendPacket(
-			std::bind(game::server_write::friendList, std::placeholders::_1));
-
-		sendPacket(
-			std::bind(game::server_write::ignoreList, std::placeholders::_1));
+		// TODO Load social list
+		m_social->sendSocialList();
 
 		// Send time sync request
 		m_timeSyncCounter = 0;
@@ -791,6 +779,9 @@ namespace wowpp
 			{
 				// We no longer care about the world node
 				m_worldDisconnected.disconnect();
+
+				// Clear social list
+				m_social.reset(new PlayerSocial(*this));
 
 				// TODO: We probably want to save our character data
 				WLOG("TODO: Save character data to the database");
@@ -840,22 +831,41 @@ namespace wowpp
 		m_connection->flush();
 	}
 
+	void Player::handleNameQuery(game::IncomingPacket &packet)
+	{
+		// Object guid
+		UInt64 objectGuid;
+		if (!game::client_read::nameQuery(packet, objectGuid))
+		{
+			// Could not read packet
+			return;
+		}
+
+		// Look for the specified player
+		game::CharEntry entry;
+		if (!m_database.getCharacterById(objectGuid, entry))
+		{
+			// Could not find player name in the database
+			// TODO: Add support for cross-realm battleground queries
+			return;
+		}
+
+		// TODO: In case of cross realm battleground
+		const String realmName("");
+
+		// Send answer
+		sendPacket(
+			std::bind(game::server_write::nameQueryResponse, std::placeholders::_1, objectGuid, std::cref(entry.name), std::cref(realmName), entry.race, entry.gender, entry.class_));
+	}
+
 	void Player::handleMessageChat(game::IncomingPacket &packet)
 	{
-		using namespace wowpp::game;
-
 		ChatMsg type;
 		Language lang;
 		String receiver, channel, message;
 		if (!client_read::messageChat(packet, type, lang, receiver, channel, message))
 		{
 			// Error reading packet
-			return;
-		}
-
-		if (!m_worldNode)
-		{
-			WLOG("Not connected to a world node right now - chat message will be ignored!");
 			return;
 		}
 
@@ -888,5 +898,100 @@ namespace wowpp
 				break;
 			}
 		}
+	}
+
+	void Player::handleFriendList(game::IncomingPacket &packet)
+	{
+		if (!client_read::friendList(packet))
+		{
+			// Error reading packet
+			return;
+		}
+
+		DLOG("TODO: Update " << m_accountName << "'s friend list and send notifications");
+	}
+
+	void Player::handleAddFriend(game::IncomingPacket &packet)
+	{
+		String name, note;
+		if (!client_read::addFriend(packet, name, note))
+		{
+			// Error reading packet
+			return;
+		}
+
+		// Find the character details
+		game::CharEntry friendChar;
+		if (!m_database.getCharacterByName(name, friendChar))
+		{
+			WLOG("Could not find that character");
+			return;
+		}
+		
+		// Result code
+		game::FriendResult result = game::friend_result::AddedOffline;
+		if (friendChar.id == m_characterId)
+		{
+			result = game::friend_result::Self;
+		}
+		else
+		{
+			result = m_social->addToSocialList(friendChar.id, false);
+		}
+
+		// Check if the player is online
+		Player *friendPlayer = m_manager.getPlayerByCharacterGuid(friendChar.id);
+		if (result == game::friend_result::AddedOffline &&
+			friendPlayer != nullptr)
+		{
+			result = game::friend_result::AddedOnline;
+		}
+
+		// Fill friend info
+		game::FriendInfo info;
+		info.flags = game::social_flag::Friend;
+		info.area = friendChar.zoneId;
+		info.level = friendChar.level;
+		info.class_ = friendChar.class_;
+		info.note = std::move(note);
+		info.status = friendPlayer ? game::friend_status::Online : game::friend_status::Offline;
+		sendPacket(
+			std::bind(game::server_write::friendStatus, std::placeholders::_1, friendChar.id, result, std::cref(info)));
+	}
+
+	void Player::handleDeleteFriend(game::IncomingPacket &packet)
+	{
+		UInt64 guid;
+		if (!client_read::deleteFriend(packet, guid))
+		{
+			// Error reading packet
+			return;
+		}
+
+		DLOG("TODO: Player " << m_accountName << " wants to delete " << guid << " from his friend list");
+	}
+
+	void Player::handleAddIgnore(game::IncomingPacket &packet)
+	{
+		String name;
+		if (!client_read::addIgnore(packet, name))
+		{
+			// Error reading packet
+			return;
+		}
+
+		DLOG("TODO: Player " << m_accountName << " wants to add " << name << " to his ignore list");
+	}
+
+	void Player::handleDeleteIgnore(game::IncomingPacket &packet)
+	{
+		UInt64 guid;
+		if (!client_read::deleteIgnore(packet, guid))
+		{
+			// Error reading packet
+			return;
+		}
+
+		DLOG("TODO: Player " << m_accountName << " wants to delete " << guid << " from his ignore list");
 	}
 }

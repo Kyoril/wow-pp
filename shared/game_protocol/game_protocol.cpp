@@ -42,7 +42,6 @@ namespace wowpp
 	{
 		namespace server_write
 		{
-
 			void triggerCinematic(game::OutgoingPacket &out_packet, UInt32 cinematicId)
 			{
 				out_packet.start(game::server_packet::TriggerCinematic);
@@ -548,16 +547,6 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void ignoreList(game::OutgoingPacket &out_packet /*TODO */)
-			{
-				out_packet.start(server_packet::IgnoreList);
-				//TODO
-				const UInt8 ignoreCount = 0;
-				out_packet
-					<< io::write<NetUInt8>(ignoreCount);
-				out_packet.finish();
-			}
-
 			void creatureQueryResponse(game::OutgoingPacket &out_packet, const UnitEntry &unit)
 			{
 				out_packet.start(server_packet::CreatureQueryResponse);
@@ -798,6 +787,36 @@ namespace wowpp
 				out_packet.start(game::server_packet::StandStateUpdate);
 				out_packet
 					<< io::write<NetUInt8>(standState);
+				out_packet.finish();
+			}
+
+			void friendStatus(game::OutgoingPacket &out_packet, UInt64 guid, game::FriendResult result, const game::FriendInfo &info)
+			{
+				out_packet.start(game::server_packet::FriendStatus);
+				out_packet
+					<< io::write<NetUInt8>(result)
+					<< io::write<NetUInt64>(guid);
+
+				switch (result)
+				{
+					case game::friend_result::AddedOffline:
+					case game::friend_result::AddedOnline:
+						out_packet << io::write_range(info.note) << io::write<NetUInt8>(0);
+						break;
+				}
+
+				switch (result)
+				{
+					case game::friend_result::AddedOnline:
+					case game::friend_result::Online:
+						out_packet
+							<< io::write<NetUInt8>(info.status)
+							<< io::write<NetUInt32>(info.area)
+							<< io::write<NetUInt32>(info.level)
+							<< io::write<NetUInt32>(info.class_);
+						break;
+				}
+
 				out_packet.finish();
 			}
 		}
@@ -1134,6 +1153,79 @@ namespace wowpp
 				}
 
 				return packet;
+			}
+
+			bool friendList(io::Reader &packet)
+			{
+				// Skip the next four bytes as they don't seem to be important...
+				packet.skip(4);
+				return packet;
+			}
+
+			bool addFriend(io::Reader &packet, String &out_name, String &out_note)
+			{
+				char c = 0x00;
+				do
+				{
+					if (!(packet >> c))
+					{
+						return false;
+					}
+					if (c != 0)
+					{
+						out_name.push_back(c);
+					}
+				} while (c != 0);
+
+				do
+				{
+					if (!(packet >> c))
+					{
+						return false;
+					}
+					if (c != 0)
+					{
+						out_note.push_back(c);
+					}
+				} while (c != 0);
+
+				return true;
+			}
+
+			bool deleteFriend(io::Reader &packet, UInt64 &out_guid)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_guid);
+			}
+
+			bool setContactNotes(io::Reader &packet /*TODO */)
+			{
+				//TODO
+				return packet;
+			}
+
+			bool addIgnore(io::Reader &packet, String &out_name)
+			{
+				char c = 0x00;
+				do
+				{
+					if (!(packet >> c))
+					{
+						return false;
+					}
+					if (c != 0)
+					{
+						out_name.push_back(c);
+					}
+				} while (c != 0);
+
+				return true;
+			}
+
+			bool deleteIgnore(io::Reader &packet, UInt64 &out_guid)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_guid);
 			}
 		}
 	}

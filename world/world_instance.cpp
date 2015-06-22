@@ -209,7 +209,7 @@ namespace wowpp
 						case object_type::DynamicObject:
 						case object_type::Corpse:
 							writer
-								<< io::write<NetUInt32>(guidHiPart(guid));
+								<< io::write<NetUInt32>(guidTypeID(guid) | guidRealmID(guid));
 							break;
 						default:
 							writer
@@ -438,7 +438,7 @@ namespace wowpp
 			m_getClass,
 			m_getLevel);
 		spawned->initialize();
-		spawned->setGuid(createGUID(m_objectIdGenerator.generateId(), entry.id, high_guid::Unit));
+		spawned->setGuid(createGUID(m_objectIdGenerator.generateId(), entry.id, 0xF1, guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
 		spawned->setMapId(m_mapEntry.id);
 		spawned->relocate(x, y, z, o);
 
@@ -537,7 +537,7 @@ namespace wowpp
 			if (!player)
 			{
 				//
-				ELOG("Couldn't find player instance!");
+				ELOG("Couldn't find player instance for GUID 0x" << std::hex << std::uppercase << std::setfill('0') << std::setw(16) << guid);
 				return;
 			}
 

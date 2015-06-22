@@ -43,7 +43,8 @@ namespace wowpp
 		boost::asio::io_service &ioService, 
 		WorldInstanceManager &worldInstanceManager, 
 		PlayerManager &playerManager, 
-		const Configuration &config, 
+		const Configuration &config,
+		UInt32 realmEntryIndex,
 		Project &project, 
 		TimerQueue &timer
 		)
@@ -53,9 +54,7 @@ namespace wowpp
 		, m_config(config)
 		, m_project(project)
 		, m_timer(timer)
-		, m_host(m_config.realmAddress)
-		, m_port(m_config.realmPort)
-		
+		, m_realmEntryIndex(realmEntryIndex)
 	{
 		tryConnect();
 	}
@@ -66,7 +65,8 @@ namespace wowpp
 
 	void RealmConnector::connectionLost()
 	{
-		WLOG("Lost connection with the realm server at " << m_host << ":" << m_port);
+		const auto &realm = m_config.realms[m_realmEntryIndex];
+		WLOG("Lost connection with the realm server at " << realm.realmAddress << ":" << realm.realmPort);
 		m_connection->resetListener();
 		m_connection.reset();
 		scheduleConnect();
@@ -118,8 +118,9 @@ namespace wowpp
 			default:
 			{
 				// Log about unknown or unhandled packet
+				const auto &realm = m_config.realms[m_realmEntryIndex];
 				WLOG("Received unknown packet " << static_cast<UInt32>(packetId)
-					<< " from realm server at " << m_host << ":" << m_port);
+					<< " from realm server at " << realm.realmAddress << ":" << realm.realmPort);
 				break;
 			}
 		}
@@ -127,6 +128,7 @@ namespace wowpp
 
 	bool RealmConnector::connectionEstablished(bool success)
 	{
+		const auto &realm = m_config.realms[m_realmEntryIndex];
 		if (success)
 		{
 			ILOG("Connected to the realm server");
@@ -138,7 +140,7 @@ namespace wowpp
 
 			// Write packet structure
 			pp::world_realm::world_write::login(packet,
-				m_config.hostedMaps,
+				realm.hostedMaps,
 				instanceIds
 				);
 
@@ -147,7 +149,7 @@ namespace wowpp
 		}
 		else
 		{
-			WLOG("Could not connect to the realm server at " << m_host << ":" << m_port);
+			WLOG("Could not connect to the realm server at " << realm.realmAddress << ":" << realm.realmPort);
 			scheduleConnect();
 		}
 
@@ -163,10 +165,11 @@ namespace wowpp
 
 	void RealmConnector::tryConnect()
 	{
+		const auto &realm = m_config.realms[m_realmEntryIndex];
 		ILOG("Trying to connect to the realm server..");
 
 		m_connection = pp::Connector::create(m_ioService);
-		m_connection->connect(m_host, m_port, *this, m_ioService);
+		m_connection->connect(realm.realmAddress, realm.realmPort, *this, m_ioService);
 	}
 
 	void RealmConnector::scheduleKeepAlive()
@@ -288,6 +291,7 @@ namespace wowpp
 		}
 
 		// Fire signal which should create a player instance for us
+		ILOG("Notify about enter world instance event...");
 		worldInstanceEntered(requesterDbId, character, *instance);
 
 		// Get character location

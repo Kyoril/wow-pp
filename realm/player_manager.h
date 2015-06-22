@@ -62,6 +62,9 @@ namespace wowpp
 		Player *getPlayerByCharacterId(DatabaseId id);
 		/// Gets a player by his account name.
 		Player *getPlayerByCharacterGuid(UInt64 id);
+		/// 
+		Player *getPlayerByCharacterName(const String &name);
+		
 
 	private:
 

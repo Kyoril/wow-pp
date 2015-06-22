@@ -76,12 +76,18 @@ namespace wowpp
 
 			namespace login_write
 			{
-				void loginResult(pp::OutgoingPacket &out_packet, LoginResult result)
+				void loginResult(pp::OutgoingPacket &out_packet, LoginResult result, UInt32 realmID)
 				{
 					out_packet.start(login_packet::LoginResult);
 					out_packet
 						<< io::write<NetUInt32>(ProtocolVersion)
 						<< io::write<NetUInt8>(result);
+
+					if (result == login_result::Success)
+					{
+						out_packet
+							<< io::write<NetUInt32>(realmID);
+					}
 					out_packet.finish();
 				}
 
@@ -158,11 +164,22 @@ namespace wowpp
 
 			namespace login_read
 			{
-				bool loginResult(io::Reader &packet, LoginResult &out_result, UInt32 &out_serverVersion)
+				bool loginResult(io::Reader &packet, LoginResult &out_result, UInt32 &out_serverVersion, UInt32 &out_realmID)
 				{
-					return packet
+					if (!(packet
 						>> io::read<NetUInt32>(out_serverVersion)
-						>> io::read<NetUInt8>(out_result);
+						>> io::read<NetUInt8>(out_result)))
+					{
+						return false;
+					}
+
+					if (out_result == login_result::Success)
+					{
+						return packet
+							>> io::read<NetUInt32>(out_realmID);
+					}
+
+					return true;
 				}
 
 				bool playerLoginSuccess(io::Reader &packet, String &out_accountName, UInt32 &out_accountId, BigNumber &out_sessionKey, BigNumber &out_v, BigNumber &out_s)

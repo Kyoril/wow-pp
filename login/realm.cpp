@@ -161,7 +161,7 @@ namespace wowpp
 		// Send realm answer
 		m_connection->sendSinglePacket(
 			std::bind(
-				login_write::loginResult, std::placeholders::_1, result));
+				login_write::loginResult, std::placeholders::_1, result, m_realmID));
 	}
 
 	void Realm::handlePlayerLogin(pp::IncomingPacket &packet)

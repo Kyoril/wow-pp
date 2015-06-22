@@ -35,13 +35,10 @@ namespace wowpp
 
 
 	Configuration::Configuration()
-		: realmPort(wowpp::constants::DefaultRealmWorldPort)
-		, maxPlayers((std::numeric_limits<decltype(maxPlayers)>::max)())
-		, realmAddress("127.0.0.1")
 #if defined(WIN32) || defined(_WIN32)
-		, dataPath("data")
+		: dataPath("data")
 #else
-		, dataPath("/etc/wow-pp/data")
+		: dataPath("/etc/wow-pp/data")
 #endif
 		, mysqlPort(wowpp::constants::DefaultMySQLPort)
 		, mysqlHost("127.0.0.1")
@@ -109,23 +106,36 @@ namespace wowpp
 				mysqlDatabase = mysqlDatabaseTable->getString("database", mysqlDatabase);
 			}
 
-			if (const Table *const realmConnector = global.getTable("realmConnector"))
+			// Clear realm entries
+			realms.clear();
+
+			if (const sff::read::tree::Array<String::const_iterator> *const realmsArray = global.getArray("realms"))
 			{
-				realmAddress = realmConnector->getString("address", realmAddress);
-				realmPort = realmConnector->getInteger("port", realmPort);
-				maxPlayers = realmConnector->getInteger("maxCount", maxPlayers);
-				
-				if (const sff::read::tree::Array<String::const_iterator> * mapsArray = realmConnector->getArray("hosted_maps"))
+				for (size_t i = 0, d2 = realmsArray->getSize(); i < d2; ++i)
 				{
-					// Reallocate
-					hostedMaps.resize(mapsArray->getSize());
-					for (size_t j = 0, d = mapsArray->getSize(); j < d; ++j)
+					RealmConfiguration realmEntry;
+					if (const Table *const realmTable = realmsArray->getTable(i))
 					{
-						hostedMaps[j] = mapsArray->getInteger(j, 0);
+						realmEntry.realmAddress = realmTable->getString("address", "127.0.0.1");
+						realmEntry.realmPort = realmTable->getInteger("port", constants::DefaultRealmWorldPort);
+						realmEntry.maxPlayers = realmTable->getInteger("maxCount", std::numeric_limits<size_t>::max());
+
+						if (const sff::read::tree::Array<String::const_iterator> * mapsArray = realmTable->getArray("hosted_maps"))
+						{
+							// Reallocate
+							realmEntry.hostedMaps.resize(mapsArray->getSize());
+							for (size_t j = 0, d = mapsArray->getSize(); j < d; ++j)
+							{
+								realmEntry.hostedMaps[j] = mapsArray->getInteger(j, 0);
+							}
+
+							// Unify vector
+							std::unique(realmEntry.hostedMaps.begin(), realmEntry.hostedMaps.end());
+						}
 					}
 
-					// Unify vector
-					std::unique(hostedMaps.begin(), hostedMaps.end());
+					// Add the realm entry
+					realms.push_back(std::move(realmEntry));
 				}
 			}
 
@@ -178,25 +188,26 @@ namespace wowpp
 			mysqlDatabaseTable.finish();
 		}
 
-		global.writer.newLine();
-
-		{
-			sff::write::Table<Char> realmConnector(global, "realmConnector", sff::write::MultiLine);
-			realmConnector.addKey("address", realmAddress);
-			realmConnector.addKey("port", realmPort);
-			realmConnector.addKey("maxCount", maxPlayers);
-			
-			sff::write::Array<char> mapsArray(realmConnector, "hosted_maps", sff::write::Comma);
-			{
-				for (const auto &mapId : hostedMaps)
-				{
-					mapsArray.addElement(mapId);
-				}
-			}
-			mapsArray.finish();
-
-			realmConnector.finish();
-		}
+		//TODO
+// 		global.writer.newLine();
+// 
+// 		{
+// 			sff::write::Table<Char> realmConnector(global, "realmConnector", sff::write::MultiLine);
+// 			realmConnector.addKey("address", realmAddress);
+// 			realmConnector.addKey("port", realmPort);
+// 			realmConnector.addKey("maxCount", maxPlayers);
+// 			
+// 			sff::write::Array<char> mapsArray(realmConnector, "hosted_maps", sff::write::Comma);
+// 			{
+// 				for (const auto &mapId : hostedMaps)
+// 				{
+// 					mapsArray.addElement(mapId);
+// 				}
+// 			}
+// 			mapsArray.finish();
+// 
+// 			realmConnector.finish();
+// 		}
 
 		global.writer.newLine();
 

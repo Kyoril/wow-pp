@@ -29,6 +29,7 @@ namespace wowpp
 		DataLoadContext::GetLevel getLevel)
 		: GameUnit(getRace, getClass, getLevel)
 		, m_name("UNKNOWN")
+		, m_zoneIndex(0)
 	{
 		// Resize values field
 		m_values.resize(character_fields::CharacterFieldCount);

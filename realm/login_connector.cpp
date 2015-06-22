@@ -40,6 +40,7 @@ namespace wowpp
 		, m_timer(timer)
 		, m_host(m_config.loginAddress)
 		, m_port(m_config.loginPort)
+		, m_realmID(0)
 	{
 		tryConnect();
 	}
@@ -196,8 +197,15 @@ namespace wowpp
 		// Read packet contents
 		LoginResult result;
 		UInt32 loginProtocolVersion = 0xffffffff;
-		if (!login_read::loginResult(packet, result, loginProtocolVersion))
+		if (!login_read::loginResult(packet, result, loginProtocolVersion, m_realmID))
 		{
+			return;
+		}
+
+		// Compare protocol version
+		if (loginProtocolVersion != pp::realm_login::ProtocolVersion)
+		{
+			WLOG("Incompatible login server protocol detected! Please update...");
 			return;
 		}
 

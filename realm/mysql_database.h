@@ -43,6 +43,10 @@ namespace wowpp
 		UInt32 getCharacterCount(UInt32 accountId) override;
 		/// @copydoc wowpp::IDatabase::createCharacter
 		game::ResponseCode createCharacter(UInt32 accountId, game::CharEntry &character) override;
+		/// @copydoc wowpp::IDatabase::createCharacterById
+		bool getCharacterById(DatabaseId id, game::CharEntry &out_character) override;
+		/// @copydoc wowpp::IDatabase::createCharacterByName
+		bool getCharacterByName(const String &name, game::CharEntry &out_character) override;
 		/// @copydoc wowpp::IDatabase::getCharacters
 		bool getCharacters(UInt32 accountId, game::CharEntries &out_characters) override;
 		/// @copydoc wowpp::IDatabase::deleteCharacter

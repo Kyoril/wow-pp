@@ -34,6 +34,7 @@
 #include "game/movement_info.h"
 #include <array>
 #include <vector>
+#include <functional>
 
 namespace wowpp
 {
@@ -60,6 +61,12 @@ namespace wowpp
 				LogoutCancel			= 0x04E,
 				NameQuery				= 0x050,
 				CreatureQuery			= 0x060,
+				FriendList				= 0x066,
+				AddFriend				= 0x069,
+				DeleteFriend			= 0x06A,
+				SetContactNotes			= 0x06B,
+				AddIgnore				= 0x06C,
+				DeleteIgnore			= 0x06D,
 				MessageChat				= 0x095,
 				MoveStartForward		= 0x0B5,
 				MoveStartBackward		= 0x0B6,
@@ -96,6 +103,21 @@ namespace wowpp
 			};
 		}
 
+		namespace session_status
+		{
+			enum Type
+			{
+				Never			= 0x00,
+				Always			= 0x01,
+				Connected		= 0x02,
+				Authentificated	= 0x03,
+				LoggedIn		= 0x04,
+				TransferPending	= 0x05
+			};
+		}
+
+		typedef session_status::Type SessionStatus;
+
 		/// Enumerates possible OP codes which the server can send to the client.
 		/// OP codes taken from the MaNGOS project: http://www.getmangos.eu
 		namespace server_packet
@@ -114,7 +136,7 @@ namespace wowpp
 				NameQueryResponse		= 0x051,
 				CreatureQueryResponse	= 0x061,
 				FriendList				= 0x067,
-				IgnoreList				= 0x06B,
+				FriendStatus			= 0x068,
 				MessageChat				= 0x096,
 				UpdateObject			= 0x0A9,
 				DestroyObject			= 0x0AA,
@@ -349,6 +371,37 @@ namespace wowpp
 				UInt64 &out_guid
 				);
 
+			bool friendList(
+				io::Reader &packet
+				//TODO
+				);
+
+			bool addFriend(
+				io::Reader &packet,
+				String &out_name,
+				String &out_note
+				);
+
+			bool deleteFriend(
+				io::Reader &packet,
+				UInt64 &out_guid
+				);
+
+			bool setContactNotes(
+				io::Reader &packet
+				//TODO
+				);
+
+			bool addIgnore(
+				io::Reader &packet,
+				String &out_name
+				);
+
+			bool deleteIgnore(
+				io::Reader &packet,
+				UInt64 &out_guid
+				);
+
 			bool playerLogout(
 				io::Reader &packet
 				);
@@ -448,9 +501,11 @@ namespace wowpp
 				//TODO
 				);
 
-			void ignoreList(
-				game::OutgoingPacket &out_packet
-				//TODO
+			void friendStatus(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				game::FriendResult result,
+				const game::FriendInfo &info
 				);
 
 			void updateObject(

@@ -31,6 +31,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/signals2.hpp>
 #include <log/default_log_levels.h>
+#include "player_social.h"
 #include <algorithm>
 #include <utility>
 #include <cassert>
@@ -76,6 +77,10 @@ namespace wowpp
 		                std::shared_ptr<Client> connection,
 						const String &address);
 
+		/// Determines whether a session status is valid.
+		/// @status The session status to validate.
+		/// @verbose True, if outputs to the log should be made.
+		bool isSessionStatusValid(game::SessionStatus status, bool verbose = false) const;
 		/// This should be called right after a new player connected.
 		void sendAuthChallenge();
 		/// The login server notified us that the player login was successfull.
@@ -103,6 +108,10 @@ namespace wowpp
 		DatabaseId getCharacterId() const { return m_characterId; }
 		/// Gets the world object id of this character.
 		UInt64 getWorldObjectId() const { return (m_gameCharacter ? m_gameCharacter->getGuid() : 0); }
+		/// 
+		GameCharacter *getGameCharacter() const { return m_gameCharacter.get(); }
+		/// 
+		PlayerSocial &getSocial() { return *m_social; }
 
 		/// Sends an encrypted packet to the game client
 		/// @param generator Packet writer function pointer.
@@ -164,6 +173,7 @@ namespace wowpp
 		boost::signals2::scoped_connection m_worldDisconnected;
 		UInt32 m_timeSyncCounter;
 		World *m_worldNode;
+		std::unique_ptr<PlayerSocial> m_social;
 
 	private:
 
@@ -192,5 +202,11 @@ namespace wowpp
 		void handleCharDelete(game::IncomingPacket &packet);
 		void handlePlayerLogin(game::IncomingPacket &packet);
 		void handleMessageChat(game::IncomingPacket &packet);
+		void handleNameQuery(game::IncomingPacket &packet);
+		void handleFriendList(game::IncomingPacket &packet);
+		void handleAddFriend(game::IncomingPacket &packet);
+		void handleDeleteFriend(game::IncomingPacket &packet);
+		void handleAddIgnore(game::IncomingPacket &packet);
+		void handleDeleteIgnore(game::IncomingPacket &packet);
 	};
 }

@@ -17,5 +17,9 @@ namespace wowpp
 		static const UInt32 TilesPerPageSquared = TilesPerPage * TilesPerPage;
 		/// Total number of vertices per tile (both sides).
 		static const UInt32 VertsPerTile = 9 * 9 + 8 * 8;
+		/// Defined by client?
+		static const UInt32 FriendListLimit = 50;
+		/// Defined by client?
+		static const UInt32 IgnoreListLimit = 25;
 	}
 }
