@@ -87,6 +87,7 @@ namespace wowpp
 	{
 		if (!m_character)
 		{
+			WLOG("No character assigned!");
 			return;
 		}
 

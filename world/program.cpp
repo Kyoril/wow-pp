@@ -150,33 +150,17 @@ namespace wowpp
 			auto realmConnector =
 				std::make_shared<wowpp::RealmConnector>(m_ioService, *worldInstanceManager, *PlayerManager, m_configuration, realmIndex++, project, timer);
 
-			// For every subscribed map, assign a realm connector
-			for (const auto &mapId : realm.hostedMaps)
-			{
-				realmConnectorByMap[mapId] = realmConnector.get();
-			}
-
 			// Remember the realm connector
 			realmConnectors.push_back(std::move(realmConnector));
 		}
 		
-		auto const createPlayer = [&PlayerManager, &realmConnectorByMap, &worldInstanceManager](DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance)
+		auto const createPlayer = [&PlayerManager, &worldInstanceManager](RealmConnector &connector, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance)
 		{
-			// Find the realm connector
-			auto it = realmConnectorByMap.find(instance.getMapId());
-			if (it == realmConnectorByMap.end())
-			{
-				WLOG("Could not find realm connector!");
-				return;
-			}
-
-			ILOG("CreatePlayer for character id " << characterId << " in world instance " << instance.getId());
-
 			// Create the player instance
 			std::unique_ptr<wowpp::Player> player(
 				new wowpp::Player(
 					*PlayerManager, 
-					*it->second, 
+					connector, 
 					*worldInstanceManager, 
 					characterId, 
 					std::move(character),
@@ -192,11 +176,6 @@ namespace wowpp
 		for (auto &realm : realmConnectors)
 		{
 			enterConnections[realm.get()] = realm->worldInstanceEntered.connect(createPlayer);
-		}
-
-		for (auto &realm : realmConnectors)
-		{
-			DLOG("Connected: " << enterConnections[realm.get()].connected());
 		}
 
 		// Run IO service

@@ -47,7 +47,7 @@ namespace wowpp
 	{
 	public:
 
-		boost::signals2::signal<void (DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance)> worldInstanceEntered;
+		boost::signals2::signal<void (RealmConnector &connector, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance)> worldInstanceEntered;
 
 	public:
 
@@ -82,8 +82,10 @@ namespace wowpp
 		/// @param size
 		/// @param buffer
 		void sendProxyPacket(DatabaseId senderId, UInt16 opCode, UInt32 size, const std::vector<char> &buffer);
-
+		/// 
 		void notifyWorldInstanceLeft(DatabaseId characterId, pp::world_realm::WorldLeftReason reason);
+		/// 
+		const String &getRealmName() const { return m_realmName; }
 
 	private:
 
@@ -128,5 +130,6 @@ namespace wowpp
 		TimerQueue &m_timer;
 		std::shared_ptr<pp::Connector> m_connection;
 		UInt32 m_realmEntryIndex;
+		String m_realmName;
 	};
 }

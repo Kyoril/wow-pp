@@ -55,6 +55,7 @@ namespace wowpp
 		, m_project(project)
 		, m_timer(timer)
 		, m_realmEntryIndex(realmEntryIndex)
+		, m_realmName("UNKNOWN")
 	{
 		tryConnect();
 	}
@@ -291,8 +292,7 @@ namespace wowpp
 		}
 
 		// Fire signal which should create a player instance for us
-		ILOG("Notify about enter world instance event...");
-		worldInstanceEntered(requesterDbId, character, *instance);
+		worldInstanceEntered(*this, requesterDbId, character, *instance);
 
 		// Get character location
 		UInt32 mapId = map->id;
@@ -449,7 +449,7 @@ namespace wowpp
 		auto classId = character->getClass();
 		auto genderId = character->getGender();
 		const auto &name = character->getName();
-		String realmName("");	//TODO
+		String realmName = player->getRealmName();
 
 		// Send answer
 		sender.sendProxyPacket(

@@ -82,7 +82,8 @@ namespace wowpp
 		void cancelLogoutRequest();
 		/// 
 		void chatMessage(game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message);
-
+		/// 
+		const String &getRealmName() const { return m_realmConnector.getRealmName(); }
 
 		/// Sends an proxy packet to the realm which will then be redirected to the game client.
 		/// @param generator Packet writer function pointer.

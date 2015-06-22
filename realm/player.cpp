@@ -846,21 +846,47 @@ namespace wowpp
 			return;
 		}
 
-		// Look for the specified player
-		game::CharEntry entry;
-		if (!m_database.getCharacterById(objectGuid, entry))
+		// Get the realm ID out of this GUID and check if this is a player
+		UInt32 realmID = guidRealmID(objectGuid);
+		if (realmID != m_loginConnector.getRealmID())
 		{
-			// Could not find player name in the database
-			// TODO: Add support for cross-realm battleground queries
-			return;
+			// Redirect the request to the current world node
+			auto world = m_worldManager.getWorldByInstanceId(m_instanceId);
+			if (world)
+			{
+				// Decrypt position
+				io::MemorySource *memorySource = static_cast<io::MemorySource*>(packet.getSource());
+
+				// Buffer
+				const std::vector<char> packetBuffer(memorySource->getBegin(), memorySource->getEnd());
+				world->sendProxyPacket(m_characterId, game::client_packet::NameQuery, packetBuffer.size(), packetBuffer);
+				return;
+			}
+			else
+			{
+				WLOG("Could not get world node to redirect name query request!");
+			}
 		}
+		else
+		{
+			// Get the character db id
+			UInt32 databaseID = guidLowerPart(objectGuid);
 
-		// TODO: In case of cross realm battleground
-		const String realmName("");
+			// Look for the specified player
+			game::CharEntry entry;
+			if (!m_database.getCharacterById(databaseID, entry))
+			{
+				WLOG("Could not resolve name for player guid " << databaseID);
+				return;
+			}
 
-		// Send answer
-		sendPacket(
-			std::bind(game::server_write::nameQueryResponse, std::placeholders::_1, objectGuid, std::cref(entry.name), std::cref(realmName), entry.race, entry.gender, entry.class_));
+			// Our realm name
+			const String realmName("");
+
+			// Send answer
+			sendPacket(
+				std::bind(game::server_write::nameQueryResponse, std::placeholders::_1, objectGuid, std::cref(entry.name), std::cref(realmName), entry.race, entry.gender, entry.class_));
+		}
 	}
 
 	void Player::handleMessageChat(game::IncomingPacket &packet)
