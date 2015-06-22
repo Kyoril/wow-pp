@@ -80,7 +80,7 @@ namespace wowpp
 	typedef guid_type::Enum GUIDType;
 
 	/// Gets the high part of a guid which can be used to determine the object type by it's GUID.
-	inline GUIDType guidTypeID(UInt64 guid) { return static_cast<GUIDType>(static_cast<UInt32>((guid >> 48) & 0xF)); }
+	inline GUIDType guidTypeID(UInt64 guid) { return static_cast<GUIDType>(static_cast<UInt32>((guid >> 52) & 0xF)); }
 	/// Gets the realm id of a guid.
 	inline uint16_t guidRealmID(UInt64 guid) { return static_cast<uint16_t>(static_cast<UInt32>((guid >> 56) & 0xFF)); }
 	/// Determines whether the given GUID belongs to a creature.
@@ -96,7 +96,7 @@ namespace wowpp
 	/// Determines whether the given GUID belongs to a game object (chest for example).
 	inline bool isGameObjectGUID(UInt64 guid) { return guidTypeID(guid) == guid_type::GameObject; }
 	/// Creates a GUID based on some settings.
-	inline UInt64 createGUID(UInt64 low, UInt64 entry, UInt16 realmID, GUIDType typeID) { return static_cast<UInt64>(low | (entry << 24) | (static_cast<UInt64>(typeID) << 48) | ((static_cast<UInt64>(realmID) << 56))); }
+	inline UInt64 createGUID(UInt64 low, UInt64 entry, UInt16 realmID, GUIDType typeID) { return static_cast<UInt64>(low | (entry << 24) | (static_cast<UInt64>(typeID) << 52) | ((static_cast<UInt64>(realmID) << 56))); }
 	/// Determines if a GUID has an entry part based on it's type.
 	inline bool guidHasEntryPart(UInt64 guid)
 	{

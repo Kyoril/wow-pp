@@ -484,13 +484,18 @@ namespace wowpp
 					std::vector<std::vector<char>> blocks;
 					createValueUpdateBlock(*object, blocks);
 
+					DLOG("Object 0x" << std::hex << std::uppercase << object->getGuid()
+						<< " has selection 0x" << std::hex << std::uppercase 
+						<< object->getUInt64Value(unit_fields::Target));
+
+					DLOG("Sending to player " << subscriber.getCharacterId() << " - " << subscriber.getCharacterGuid());
 					if (!blocks.empty() && blocks[0].size() > 100)
 					{
 						// Send an update
 						subscriber.sendProxyPacket(
 							std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
 					}
-					else
+					else if (!blocks.empty())
 					{
 						// Send an update
 						subscriber.sendProxyPacket(
