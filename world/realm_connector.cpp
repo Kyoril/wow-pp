@@ -188,8 +188,15 @@ namespace wowpp
 		// Read packet
 		UInt32 protocolVersion;
 		LoginResult result;
-		if (!(realm_read::loginAnswer(packet, protocolVersion, result)))
+		if (!(realm_read::loginAnswer(packet, protocolVersion, result, m_realmName)))
 		{
+			return;
+		}
+
+		// Detect version mismatch
+		if (protocolVersion != pp::world_realm::ProtocolVersion)
+		{
+			WLOG("Realm protocol version mismatch detected. Please update...");
 			return;
 		}
 

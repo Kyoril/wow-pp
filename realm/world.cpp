@@ -38,13 +38,14 @@ using namespace std;
 
 namespace wowpp
 {
-	World::World(WorldManager &manager, PlayerManager &playerManager, Project &project, std::shared_ptr<Client> connection, const String &address)
+	World::World(WorldManager &manager, PlayerManager &playerManager, Project &project, std::shared_ptr<Client> connection, String address, String realmName)
 		: m_manager(manager)
 		, m_playerManager(playerManager)
 		, m_project(project)
 		, m_connection(std::move(connection))
-		, m_address(address)
+		, m_address(std::move(address))
 		, m_authed(false)
+		, m_realmName(std::move(realmName))
 	{
 		assert(m_connection);
 
@@ -164,7 +165,7 @@ namespace wowpp
 		{
 			WLOG("No supported map ids: World server at " << m_address << " will be of no use.");
 			m_connection->sendSinglePacket(
-				std::bind(realm_write::loginAnswer, std::placeholders::_1, login_result::MapsAlreadyInUse));
+				std::bind(realm_write::loginAnswer, std::placeholders::_1, login_result::MapsAlreadyInUse, std::cref(m_realmName)));
 			return;
 		}
 
@@ -172,7 +173,7 @@ namespace wowpp
 		ILOG("World node registered successfully");
 		m_authed = true;
 		m_connection->sendSinglePacket(
-			std::bind(realm_write::loginAnswer, std::placeholders::_1, login_result::Success));
+			std::bind(realm_write::loginAnswer, std::placeholders::_1, login_result::Success, std::cref(m_realmName)));
 	}
 
 	void World::enterWorldInstance(DatabaseId characterDbId, const GameCharacter &character)
@@ -180,7 +181,6 @@ namespace wowpp
 		m_connection->sendSinglePacket(
 			std::bind(pp::world_realm::realm_write::characterLogIn, std::placeholders::_1, characterDbId, std::cref(character)));
 	}
-
 
 	void World::leaveWorldInstance(DatabaseId characterDbId, pp::world_realm::WorldLeftReason reason)
 	{

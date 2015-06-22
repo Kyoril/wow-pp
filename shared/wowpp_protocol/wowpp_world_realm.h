@@ -206,7 +206,8 @@ namespace wowpp
 				/// @param result The result of the login attempt of the world server.
 				void loginAnswer(
 					pp::OutgoingPacket &out_packet,
-					LoginResult result
+					LoginResult result,
+					const String &realmName
 					);
 
 				/// 
@@ -319,7 +320,8 @@ namespace wowpp
 				bool loginAnswer(
 					io::Reader &packet,
 					UInt32 &out_protocol,
-					LoginResult &out_result
+					LoginResult &out_result,
+					String &out_realmName
 					);
 
 				/// 

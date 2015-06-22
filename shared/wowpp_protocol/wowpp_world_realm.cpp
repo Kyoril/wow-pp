@@ -101,12 +101,19 @@ namespace wowpp
 
 			namespace realm_write
 			{
-				void loginAnswer(pp::OutgoingPacket &out_packet, LoginResult result)
+				void loginAnswer(pp::OutgoingPacket &out_packet, LoginResult result, const String &realmName)
 				{
 					out_packet.start(realm_packet::LoginAnswer);
 					out_packet
 						<< io::write<NetUInt32>(ProtocolVersion)
 						<< io::write<NetUInt8>(result);
+
+					if (result == login_result::Success)
+					{
+						out_packet
+							<< io::write_dynamic_range<NetUInt8>(realmName);
+					}
+
 					out_packet.finish();
 				}
 
@@ -213,11 +220,22 @@ namespace wowpp
 
 			namespace realm_read
 			{
-				bool loginAnswer(io::Reader &packet, UInt32 &out_protocol, LoginResult &out_result)
+				bool loginAnswer(io::Reader &packet, UInt32 &out_protocol, LoginResult &out_result, String &out_realmName)
 				{
-					return packet
+					if (!(packet
 						>> io::read<NetUInt32>(out_protocol)
-						>> io::read<NetUInt8>(out_result);
+						>> io::read<NetUInt8>(out_result)))
+					{
+						return false;
+					}
+
+					if (out_result == login_result::Success)
+					{
+						return packet
+							>> io::read_container<NetUInt8>(out_realmName);
+					}
+
+					return true;
 				}
 
 				bool characterLogIn(io::Reader &packet, DatabaseId &out_characterRealmId, GameCharacter *out_character)

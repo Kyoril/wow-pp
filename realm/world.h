@@ -65,7 +65,8 @@ namespace wowpp
 						PlayerManager &playerManager,
 						Project &project,
 						std::shared_ptr<Client> connection,
-						const String &address);
+						String address,
+						String realmName);
 
 		/// Gets the player connection class used to send packets to the client.
 		Client &getConnection() { assert(m_connection); return *m_connection; }
@@ -95,6 +96,7 @@ namespace wowpp
 		bool m_authed;							// True if the user has been successfully authentificated.
 		std::vector<UInt32> m_mapIds;			// A vector of map id's which this node does support
 		std::vector<UInt32> m_instances;		// A vector of running instances on this server
+		String m_realmName;
 
 	private:
 

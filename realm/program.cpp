@@ -146,7 +146,8 @@ namespace wowpp
 			return false;
 		}
 
-		auto const createWorld = [&WorldManager, &PlayerManager, &project](std::shared_ptr<wowpp::World::Client> connection)
+		String &realmName = m_configuration.internalName;
+		auto const createWorld = [&WorldManager, &realmName, &PlayerManager, &project](std::shared_ptr<wowpp::World::Client> connection)
 		{
 			connection->startReceiving();
 			boost::asio::ip::address address;
@@ -162,7 +163,7 @@ namespace wowpp
 				return;
 			}
 
-			std::unique_ptr<wowpp::World> world(new wowpp::World(*WorldManager, *PlayerManager, project, std::move(connection), address.to_string()));
+			std::unique_ptr<wowpp::World> world(new wowpp::World(*WorldManager, *PlayerManager, project, std::move(connection), address.to_string(), realmName));
 
 			DLOG("Incoming world connection from " << address);
 			WorldManager->addWorld(std::move(world));
