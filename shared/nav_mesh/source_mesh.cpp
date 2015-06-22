@@ -76,12 +76,12 @@ namespace wowpp
 			m_indices.push_back(v2);
 		}
 
-		size_t SourceMesh::getVertexCount() const
+		std::size_t SourceMesh::getVertexCount() const
 		{
 			return m_vertices.size() / 3;
 		}
 
-		size_t SourceMesh::getTriangleCount() const
+		std::size_t SourceMesh::getTriangleCount() const
 		{
 			return m_indices.size() / 3;
 		}
