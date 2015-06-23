@@ -477,7 +477,7 @@ namespace wowpp
 		// Load the player character data from the database
 		std::unique_ptr<GameCharacter> character(new GameCharacter(m_getRace, m_getClass, m_getLevel));
 		character->initialize();
-		character->setGuid(createGUID(characterId, 0, 0 /*m_loginConnector.getRealmID()*/, guid_type::Player));
+		character->setGuid(createGUID(characterId, 0, m_loginConnector.getRealmID(), guid_type::Player));
 		if (!m_database.getGameCharacter(characterId, *character))
 		{
 			// Send error packet
@@ -674,6 +674,8 @@ namespace wowpp
 			UInt8 objectTypeId = 0x04;						// Player
 
 			UInt64 guid = m_gameCharacter->getGuid();
+			ILOG("My GUID: 0x" << std::hex << std::uppercase << guid);
+
 			// Header with object guid and type
 			writer
 				<< io::write<NetUInt8>(updateType)
@@ -724,10 +726,10 @@ namespace wowpp
 			// High-GUID update?
 			if (updateFlags & 0x10)
 			{
-				writer
-					<< io::write<NetUInt32>(0);
 				/*writer
-					<< io::write<NetUInt32>(guidHiPart(guid));*/
+					<< io::write<NetUInt32>(0);*/
+				writer
+					<< io::write<NetUInt32>(guidTypeID(guid));
 			}
 
 			// Write values update
