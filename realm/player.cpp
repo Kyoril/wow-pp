@@ -159,7 +159,6 @@ namespace wowpp
 		return nullptr;
 	}
 
-
 	void Player::worldNodeDisconnected()
 	{
 		// Disconnect the player client
@@ -478,7 +477,7 @@ namespace wowpp
 		// Load the player character data from the database
 		std::unique_ptr<GameCharacter> character(new GameCharacter(m_getRace, m_getClass, m_getLevel));
 		character->initialize();
-		character->setGuid(createGUID(characterId, 0, m_loginConnector.getRealmID(), guid_type::Player));
+		character->setGuid(createGUID(characterId, 0, 0 /*m_loginConnector.getRealmID()*/, guid_type::Player));
 		if (!m_database.getGameCharacter(characterId, *character))
 		{
 			// Send error packet
