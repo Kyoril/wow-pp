@@ -171,16 +171,8 @@ namespace wowpp
 		UInt64* tmp = reinterpret_cast<UInt64*>(&m_values[index]);
 		if (*tmp != value)
 		{
-			m_values[index] = *(reinterpret_cast<UInt32*>(&value));
-			m_values[index + 1] = *(reinterpret_cast<UInt32*>(&value) + 1);
-			
-			// Mark bits as changed
-			UInt8 &loChanged = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[index >> 3];
-			loChanged |= 1 << (index & 0x7);
-			UInt8 &hiChanged = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[(index + 1) >> 3];
-			hiChanged |= 1 << (index & 0x7);
-
-			m_updated = true;
+			setUInt32Value(index, *(reinterpret_cast<UInt32*>(&value)));
+			setUInt32Value(index + 1, *(reinterpret_cast<UInt32*>(&value) + 1));
 		}
 	}
 

@@ -613,8 +613,34 @@ namespace wowpp
 			return;
 		}
 
+		// Check if we already had a selection and if that selection was a creature
+		UInt64 oldTargetGUID = sender.getCharacter()->getUInt64Value(unit_fields::Target);
+		if (oldTargetGUID && isUnitGUID(oldTargetGUID) && !isPlayerGUID(oldTargetGUID))
+		{
+			// Find that creature
+			GameObject *obj = sender.getWorldInstance().findObjectByGUID(oldTargetGUID);
+			if (obj &&
+				obj->getUInt64Value(unit_fields::Target) == sender.getCharacterGuid())
+			{
+				// It should not have us selected
+				obj->setUInt64Value(unit_fields::Target, 0);
+			}
+		}
+
 		// Get the player character
 		sender.getCharacter()->setUInt64Value(unit_fields::Target, targetGUID);
+
+		// Check if this is an NPC
+		if (isUnitGUID(targetGUID) && !isPlayerGUID(targetGUID))
+		{
+			// Find that creature
+			GameObject *obj = sender.getWorldInstance().findObjectByGUID(targetGUID);
+			if (obj)
+			{
+				// Make that creature select us, too! (Just for testing)
+				obj->setUInt64Value(unit_fields::Target, sender.getCharacterGuid());
+			}
+		}
 	}
 
 	void RealmConnector::handleStandStateChange(Player &sender, game::Protocol::IncomingPacket &packet)

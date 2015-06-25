@@ -126,6 +126,11 @@ namespace wowpp
 			return;
 		}
 
+		for (auto &c : m_characters)
+		{
+			c.id = createRealmGUID(guidLowerPart(c.id), m_loginConnector.getRealmID(), guid_type::Player);
+		}
+
 		// Send response code: AuthOk
 		sendPacket(
 			std::bind(game::server_write::authResponse, std::placeholders::_1, game::response_code::AuthOk, game::expansions::TheBurningCrusade));
@@ -472,13 +477,13 @@ namespace wowpp
 		m_characterId = characterId;
 
 		// Write something to the log just for informations
-		ILOG("Player " << m_accountName << " tries to enter the world with character " << m_characterId);
+		ILOG("Player " << m_accountName << " tries to enter the world with character 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << m_characterId);
 
 		// Load the player character data from the database
 		std::unique_ptr<GameCharacter> character(new GameCharacter(m_getRace, m_getClass, m_getLevel));
 		character->initialize();
-		character->setGuid(createGUID(characterId, 0, m_loginConnector.getRealmID(), guid_type::Player));
-		if (!m_database.getGameCharacter(characterId, *character))
+		character->setGuid(createRealmGUID(characterId, m_loginConnector.getRealmID(), guid_type::Player));
+		if (!m_database.getGameCharacter(guidLowerPart(characterId), *character))
 		{
 			// Send error packet
 			WLOG("Player login failed: Could not load character " << characterId);
@@ -674,12 +679,30 @@ namespace wowpp
 			UInt8 objectTypeId = 0x04;						// Player
 
 			UInt64 guid = m_gameCharacter->getGuid();
-			ILOG("My GUID: 0x" << std::hex << std::uppercase << guid);
+			//ILOG("My GUID: 0x" << std::hex << std::uppercase << guid);
 
 			// Header with object guid and type
 			writer
-				<< io::write<NetUInt8>(updateType)
-				<< io::write<NetUInt8>(0xFF) << io::write<NetUInt64>(guid)
+				<< io::write<NetUInt8>(updateType);
+
+			UInt64 guidCopy = guid;
+			UInt8 packGUID[8 + 1];
+			packGUID[0] = 0;
+			size_t size = 1;
+			for (UInt8 i = 0; guidCopy != 0; ++i)
+			{
+				if (guidCopy & 0xFF)
+				{
+					packGUID[0] |= UInt8(1 << i);
+					packGUID[size] = UInt8(guidCopy & 0xFF);
+					++size;
+				}
+
+				guidCopy >>= 8;
+			}
+				//<< io::write<NetUInt8>(0xFF) << io::write<NetUInt64>(guid)
+			writer.sink().write((const char*)&packGUID[0], size);
+			writer
 				<< io::write<NetUInt8>(objectTypeId);
 
 			writer
@@ -726,10 +749,21 @@ namespace wowpp
 			// High-GUID update?
 			if (updateFlags & 0x10)
 			{
-				/*writer
-					<< io::write<NetUInt32>(0);*/
-				writer
-					<< io::write<NetUInt32>(guidTypeID(guid));
+				switch (objectTypeId)
+				{
+					case object_type::Object:
+					case object_type::Item:
+					case object_type::Container:
+					case object_type::GameObject:
+					case object_type::DynamicObject:
+					case object_type::Corpse:
+						writer
+							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
+						break;
+					default:
+						writer
+							<< io::write<NetUInt32>(0);
+				}
 			}
 
 			// Write values update
@@ -744,7 +778,7 @@ namespace wowpp
 			std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
 
 		// TODO Load social list
-		m_social->sendSocialList();
+		//m_social->sendSocialList();
 
 		// Send time sync request
 		m_timeSyncCounter = 0;

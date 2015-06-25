@@ -491,13 +491,12 @@ namespace wowpp
 				out_packet.start(server_packet::NameQueryResponse);
 				out_packet
 					<< io::write<NetUInt64>(objectGuid)
-					<< io::write_range(name)
-					<< io::write<NetUInt8>(0x00)	// Terminator
-					<< io::write_range(realmName)
-					<< io::write<NetUInt8>(0x00)	// Terminator realm name
-					<< io::write<NetUInt32>(raceId)
-					<< io::write<NetUInt32>(genderId)
-					<< io::write<NetUInt32>(classId);
+					<< io::write_range(name) << io::write<NetUInt8>(0x00)	// Terminator
+					<< io::write_range(realmName) << io::write<NetUInt8>(0x00)	// Terminator realm name
+					<< io::write<NetUInt8>(raceId)
+					<< io::write<NetUInt8>(genderId)
+					<< io::write<NetUInt8>(classId)
+					<< io::write<NetUInt8>(0x00);
 				out_packet.finish();
 			}
 
@@ -553,26 +552,25 @@ namespace wowpp
 
 				out_packet
 					<< io::write<NetUInt32>(unit.id)
-					<< io::write_range(unit.name)
-					<< io::write<NetUInt8>(0x00)	// Terminator: name
+					<< io::write_range(unit.name) << io::write<NetUInt8>(0x00)	// Terminator: name
 					<< io::write<NetUInt8>(0x00)	// Terminator: name2 (always empty)
 					<< io::write<NetUInt8>(0x00)	// Terminator: name3 (always empty)
 					<< io::write<NetUInt8>(0x00)	// Terminator: name4 (always empty)
-					<< io::write_range(unit.subname)
-					<< io::write<NetUInt8>(0x00)	// Terminator: name4 (always empty)
+					<< io::write_range(unit.subname) << io::write<NetUInt8>(0x00)	// Terminator: name4 (always empty)
+					<< io::write<NetUInt8>(0x00)
 					<< io::write<NetUInt32>(unit.creatureTypeFlags)
 					<< io::write<NetUInt32>(0x07)	//TODO: Creature Type
 					<< io::write<NetUInt32>(unit.family)
 					<< io::write<NetUInt32>(unit.rank)
 					<< io::write<NetUInt32>(0x00)	// Unknown
-					<< io::write<NetUInt32>(0x01)	//TODO: CreatureSpellData
+					<< io::write<NetUInt32>(0x00)	//TODO: CreatureSpellData
 					<< io::write<NetUInt32>(unit.maleModel)	//TODO
 					<< io::write<NetUInt32>(unit.maleModel)	//TODO
 					<< io::write<NetUInt32>(unit.maleModel)	//TODO
 					<< io::write<NetUInt32>(unit.maleModel)	//TODO
 					<< io::write<float>(1.0f)	//TODO
 					<< io::write<float>(1.0f)	//TODO
-					<< io::write<NetUInt16>(0x00)	//TODO Is Civilian? False!
+					<< io::write<NetUInt8>(0x00)	//TODO Is Racial Leader
 					;
 
 				out_packet.finish();

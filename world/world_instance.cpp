@@ -79,8 +79,28 @@ namespace wowpp
 				// Header with object guid and type
 				UInt64 guid = object.getGuid();
 				writer
-					<< io::write<NetUInt8>(updateType)
-					<< io::write<NetUInt8>(0xFF) << io::write<NetUInt64>(guid)
+					<< io::write<NetUInt8>(updateType);
+					//<< io::write<NetUInt8>(0xFF) << io::write<NetUInt64>(guid)
+
+				UInt64 guidCopy = guid;
+				UInt8 packGUID[8 + 1];
+				packGUID[0] = 0;
+				size_t size = 1;
+				for (UInt8 i = 0; guidCopy != 0; ++i)
+				{
+					if (guidCopy & 0xFF)
+					{
+						packGUID[0] |= UInt8(1 << i);
+						packGUID[size] = UInt8(guidCopy & 0xFF);
+						++size;
+					}
+
+					guidCopy >>= 8;
+				}
+				//<< io::write<NetUInt8>(0xFF) << io::write<NetUInt64>(guid)
+				writer.sink().write((const char*)&packGUID[0], size);
+
+				writer
 					<< io::write<NetUInt8>(objectTypeId);
 
 				writer
@@ -209,7 +229,7 @@ namespace wowpp
 						case object_type::DynamicObject:
 						case object_type::Corpse:
 							writer
-								<< io::write<NetUInt32>(guidTypeID(guid) | guidRealmID(guid));
+								<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
 							break;
 						default:
 							writer
@@ -237,11 +257,30 @@ namespace wowpp
 				// Header with object guid and type
 				UInt64 guid = object.getGuid();
 				writer
-					<< io::write<NetUInt8>(updateType)
-					<< io::write<NetUInt8>(0xFF) << io::write<NetUInt64>(guid);
+					<< io::write<NetUInt8>(updateType);
+					//<< io::write<NetUInt8>(0xFF) << io::write<NetUInt64>(guid);
+
+
+				UInt64 guidCopy = guid;
+				UInt8 packGUID[8 + 1];
+				packGUID[0] = 0;
+				size_t size = 1;
+				for (UInt8 i = 0; guidCopy != 0; ++i)
+				{
+					if (guidCopy & 0xFF)
+					{
+						packGUID[0] |= UInt8(1 << i);
+						packGUID[size] = UInt8(guidCopy & 0xFF);
+						++size;
+					}
+
+					guidCopy >>= 8;
+				}
+				//<< io::write<NetUInt8>(0xFF) << io::write<NetUInt64>(guid)
+				writer.sink().write((const char*)&packGUID[0], size);
 
 				// Write values update
-				object.writeValueUpdateBlock(writer, false);
+				object.writeValueUpdateBlock(writer, false);	// shouldn't do this but just for testing...
 			}
 
 			// Add block
@@ -438,7 +477,7 @@ namespace wowpp
 			m_getClass,
 			m_getLevel);
 		spawned->initialize();
-		spawned->setGuid(createGUID(m_objectIdGenerator.generateId(), entry.id, 0xF1, guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
+		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id, guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
 		spawned->setMapId(m_mapEntry.id);
 		spawned->relocate(x, y, z, o);
 
@@ -484,11 +523,6 @@ namespace wowpp
 					std::vector<std::vector<char>> blocks;
 					createValueUpdateBlock(*object, blocks);
 
-					DLOG("Object 0x" << std::hex << std::uppercase << object->getGuid()
-						<< " has selection 0x" << std::hex << std::uppercase 
-						<< object->getUInt64Value(unit_fields::Target));
-
-					DLOG("Sending to player " << subscriber.getCharacterId() << " - " << subscriber.getCharacterGuid());
 					if (!blocks.empty() && blocks[0].size() > 100)
 					{
 						// Send an update
@@ -645,6 +679,17 @@ namespace wowpp
 		});
 	}
 
+	GameObject * WorldInstance::findObjectByGUID(UInt64 guid)
+	{
+		auto it = m_objectsById.find(guid);
+		if (it == m_objectsById.end())
+		{
+			return nullptr;
+		}
+
+		return it->second;
+	}
+
 	void WorldInstance::onObjectMoved(GameObject &object, float oldX, float oldY, float oldZ, float oldO)
 	{
 		// Calculate old tile index
@@ -742,5 +787,4 @@ namespace wowpp
 			newTile->getGameObjects().add(&object);
 		}
 	}
-
 }

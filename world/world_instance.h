@@ -84,6 +84,8 @@ namespace wowpp
 		void addGameObject(GameObject& added);
 		/// Removes a specific game object from this world.
 		void removeGameObject(GameObject &remove);
+		/// Finds a game object by it's guid.
+		GameObject *findObjectByGUID(UInt64 guid);
 		/// Updates this world instance. Should be called once per tick.
 		void update();
 
