@@ -45,11 +45,6 @@ namespace wowpp
 		}
 	}
 
-	void WorldPageLoader::loadPage(paging::Page &page)
-	{
-
-	}
-
 	void WorldPageLoader::asyncPerformLoadOperation(std::weak_ptr<paging::Page> page)
 	{
 		const auto strongPage = page.lock();
@@ -59,7 +54,7 @@ namespace wowpp
 			return;
 		}
 
-		loadPage(*strongPage);
+		m_resultListener.onPageLoad(*strongPage);
 
 		const auto notify = [this, page]()
 		{

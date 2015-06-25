@@ -46,7 +46,10 @@ namespace wowpp
 		
 		void WorldRenderer::update(float delta)
 		{
-
+			for (auto &page : m_terrainPages)
+			{
+				page.second->update();
+			}
 		}
 	}
 }

@@ -25,6 +25,7 @@ namespace wowpp
 
 			typedef std::unordered_map<Page *, PageNeighborhood> PageMap;
 
+			virtual void onPageLoad(const Page &page) override;
 			virtual void onPageAvailabilityChanged(const PageNeighborhood &pages, bool isAvailable) override;
 			static void setVisibility(PageMap &map, const PageNeighborhood &pages, bool isVisible);
 

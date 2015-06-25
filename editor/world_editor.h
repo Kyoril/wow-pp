@@ -45,6 +45,7 @@ namespace wowpp
 
 		private:
 
+			void onPageLoad(const paging::Page &page) override;
 			void onPageAvailabilityChanged(const paging::PageNeighborhood &page, bool isAvailable) override;
 			terrain::model::Page *getTerrainPage(terrain::model::PagePosition position);
 

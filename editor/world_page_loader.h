@@ -33,7 +33,6 @@ namespace wowpp
 	private:
 
 		virtual void onPageVisibilityChanged(const paging::PagePosition &page, bool isVisible) override;
-		void loadPage(paging::Page &page);
 		void asyncPerformLoadOperation(std::weak_ptr<paging::Page> page);
 
 	private:

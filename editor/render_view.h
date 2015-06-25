@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include "common/typedefs.h"
 #include "OgreRenderWindow.h"
 #include "OgreCamera.h"
 #include "OgreViewport.h"
@@ -66,6 +67,7 @@ namespace wowpp
 			std::unique_ptr<CameraController> m_controller;
 			std::unique_ptr<ViewportGrid> m_grid;
 			QTimer m_updateTimer;
+			GameTime m_lastTime;
 		};
 	}
 }

@@ -33,6 +33,8 @@ namespace wowpp
 				Ogre::Camera &camera,
 				Ogre::SceneNode &worldNode);
 			~TerrainPage();
+
+			void update();
 			
 		private:
 
@@ -46,6 +48,7 @@ namespace wowpp
 			TileGrid m_tiles;
 			Ogre::TexturePtr m_terrainTexture;
 			std::vector<Ogre::TexturePtr> m_texturePtrs;
+			UInt32 m_tilesLoaded;
 		};
 	}
 }

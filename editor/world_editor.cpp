@@ -110,6 +110,35 @@ namespace wowpp
 			//TODO
 		}
 
+		void WorldEditor::onPageLoad(const paging::Page &page)
+		{
+			const auto &pos = page.getPosition();
+			ILOG("Loading page " << pos[0] << "x" << pos[1]);
+
+			// Add the page if needed
+			auto it = m_pages.find(pos);
+			if (it == m_pages.end())
+			{
+				const Ogre::String fileName =
+					"World\\Maps\\" + m_map.directory + "\\" + m_map.directory + "_" +
+					Ogre::StringConverter::toString(pos[1], 2, '0') + "_" +
+					Ogre::StringConverter::toString(pos[0], 2, '0') + ".adt";
+
+				if (!Ogre::ResourceGroupManager::getSingleton().resourceExistsInAnyGroup(fileName))
+				{
+					WLOG("Page [" << pos.x() << "x" << pos.y() << "] does not have a file and will be skipped (" << fileName << ")");
+					return;
+				}
+
+				Ogre::DataStreamPtr file = Ogre::ResourceGroupManager::getSingleton().openResource(fileName);
+				std::unique_ptr<adt::Page> page = make_unique<adt::Page>();
+				adt::load(file, *page);
+
+				// Store page
+				m_pages[pos] = page->terrain;
+			}
+		}
+
 		void WorldEditor::onPageAvailabilityChanged(const paging::PageNeighborhood &pages, bool isAvailable)
 		{
 			auto &mainPage = pages.getMainPage();
@@ -119,26 +148,8 @@ namespace wowpp
 			{
 				// Add the page if needed
 				auto it = m_pages.find(pos);
-				if (it == m_pages.end())
+				if (it != m_pages.end())
 				{
-					const Ogre::String fileName =
-						"World\\Maps\\" + m_map.directory + "\\" + m_map.directory + "_" +
-						Ogre::StringConverter::toString(pos[1], 2, '0') + "_" +
-						Ogre::StringConverter::toString(pos[0], 2, '0') + ".adt";
-
-					if (!Ogre::ResourceGroupManager::getSingleton().resourceExistsInAnyGroup(fileName))
-					{
-						WLOG("Page [" << pos.x() << "x" << pos.y() << "] does not have a file and will be skipped (" << fileName << ")");
-						return;
-					}
-
-					Ogre::DataStreamPtr file = Ogre::ResourceGroupManager::getSingleton().openResource(fileName);
-					std::unique_ptr<adt::Page> page = make_unique<adt::Page>();
-					adt::load(file, *page);
-					
-					// Store page
-					m_pages[pos] = page->terrain;
-
 					// Add terrain page
 					terrain::editing::PageAdded add;
 					add.added.page = &m_pages[pos];

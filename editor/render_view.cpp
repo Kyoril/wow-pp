@@ -33,6 +33,7 @@
 #include "OgrePass.h"
 #include "OgreTextureUnitState.h"
 #include "ogre_blp_codec.h"
+#include "common/clock.h"
 #include <boost/filesystem.hpp>
 #include <cassert>
 
@@ -179,12 +180,17 @@ namespace wowpp
 
 			// Setup the update timer
 			connect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(update()));
-			m_updateTimer.start(10);
+			m_updateTimer.start(0);
+
+			m_lastTime = getCurrentTime();
 		}
 
 		void RenderView::paintGL()
 		{
-			float delta = 1.0f / m_OgreWindow->getLastFPS();
+			// Calculate fps
+			GameTime currTime = getCurrentTime();
+			float delta = static_cast<float>(static_cast<double>(currTime - m_lastTime) / 1000.0);
+			m_lastTime = currTime;
 
             // Update camera controller (TODO: Delta time)
 			m_controller->update(delta);

@@ -2,6 +2,7 @@
 #include "loaded_page_section.h"
 #include "page_neighborhood.h"
 #include "page_pov_partitioner.h"
+#include "page.h"
 
 namespace wowpp
 {
@@ -84,5 +85,11 @@ namespace wowpp
 				map.erase(&pages.getMainPage());
 			}
 		}
+
+		void LoadedPageSection::onPageLoad(const Page &page)
+		{
+			m_sectionListener.onPageLoad(page);
+		}
+
 	}
 }
