@@ -993,10 +993,13 @@ namespace wowpp
 			WLOG("Could not find that character");
 			return;
 		}
+
+		// Create the characters guid value
+		UInt64 characterGUID = createRealmGUID(friendChar.id, m_loginConnector.getRealmID(), guid_type::Player);
 		
 		// Result code
 		game::FriendResult result = game::friend_result::AddedOffline;
-		if (friendChar.id == m_characterId)
+		if (characterGUID == m_characterId)
 		{
 			result = game::friend_result::Self;
 		}
@@ -1006,7 +1009,7 @@ namespace wowpp
 		}
 
 		// Check if the player is online
-		Player *friendPlayer = m_manager.getPlayerByCharacterGuid(friendChar.id);
+		Player *friendPlayer = m_manager.getPlayerByCharacterGuid(characterGUID);
 		if (result == game::friend_result::AddedOffline &&
 			friendPlayer != nullptr)
 		{
@@ -1022,7 +1025,7 @@ namespace wowpp
 		info.note = std::move(note);
 		info.status = friendPlayer ? game::friend_status::Online : game::friend_status::Offline;
 		sendPacket(
-			std::bind(game::server_write::friendStatus, std::placeholders::_1, friendChar.id, result, std::cref(info)));
+			std::bind(game::server_write::friendStatus, std::placeholders::_1, characterGUID, result, std::cref(info)));
 	}
 
 	void Player::handleDeleteFriend(game::IncomingPacket &packet)

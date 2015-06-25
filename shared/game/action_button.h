@@ -26,13 +26,18 @@
 
 namespace wowpp
 {
+	/// Enumerates possible states of an action bar button.
 	namespace action_button_update_state
 	{
 		enum Enum
 		{
+			/// 
 			Unchanged = 0,
+			/// 
 			Changed = 1,
+			/// 
 			New = 2,
+			/// 
 			Deleted = 3
 		};
 	}
