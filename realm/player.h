@@ -31,7 +31,6 @@
 #include <boost/noncopyable.hpp>
 #include <boost/signals2.hpp>
 #include <log/default_log_levels.h>
-#include "player_social.h"
 #include <algorithm>
 #include <utility>
 #include <cassert>
@@ -47,6 +46,7 @@ namespace wowpp
 	class Project;
 	class World;
 	struct Configuration;
+	class PlayerSocial;
 
 	/// Player connection class.
 	class Player final

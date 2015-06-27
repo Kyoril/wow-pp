@@ -31,6 +31,10 @@ namespace wowpp
 	{
 	}
 
+	PlayerSocial::~PlayerSocial()
+	{
+	}
+
 	game::FriendResult PlayerSocial::addToSocialList(UInt64 guid, bool ignore)
 	{
 		// Build flags

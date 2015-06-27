@@ -21,6 +21,7 @@
 
 #include "player_manager.h"
 #include "player.h"
+#include "player_social.h"
 #include "binary_io/string_sink.h"
 #include "log/default_log_levels.h"
 #include <algorithm>

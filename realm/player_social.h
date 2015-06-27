@@ -24,12 +24,11 @@
 #include "common/typedefs.h"
 #include "game/defines.h"
 #include "log/default_log_levels.h"
+#include "player_manager.h"
+#include "player.h"
 
 namespace wowpp
 {
-	class PlayerManager;
-	class Player;
-
 	/// Handles the social list of this player.
 	class PlayerSocial final
 	{
@@ -39,6 +38,7 @@ namespace wowpp
 		/// a specific player (used in the sendSocialList method for example).
 		/// @param player The player to assign this social list to.
 		explicit PlayerSocial(PlayerManager &manager, Player &player);
+		~PlayerSocial();	// For unique_ptr forward declaration
 
 		/// Adds a new contact to our social list.
 		/// @param guid The contact's guid.

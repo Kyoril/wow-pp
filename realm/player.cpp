@@ -29,6 +29,7 @@
 #include "login_connector.h"
 #include "world_manager.h"
 #include "world.h"
+#include "player_social.h"
 #include "common/big_number.h"
 #include "binary_io/vector_sink.h"
 #include "binary_io/writer.h"
