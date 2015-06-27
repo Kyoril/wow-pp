@@ -51,11 +51,6 @@ namespace wowpp
 		m_players.erase(p);
 	}
 
-	const PlayerManager::Players &PlayerManager::getPlayers() const
-	{
-		return m_players;
-	}
-	
 	bool PlayerManager::hasPlayerCapacityBeenReached() const
 	{
 		return m_players.size() >= m_playerCapacity;

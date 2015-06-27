@@ -788,7 +788,7 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void friendStatus(game::OutgoingPacket &out_packet, UInt64 guid, game::FriendResult result, const game::FriendInfo &info)
+			void friendStatus(game::OutgoingPacket &out_packet, UInt64 guid, game::FriendResult result, const game::SocialInfo &info)
 			{
 				out_packet.start(game::server_packet::FriendStatus);
 				out_packet

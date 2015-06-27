@@ -22,50 +22,89 @@
 #include "player_social.h"
 #include "player.h"
 
+
 namespace wowpp
 {
-	PlayerSocial::PlayerSocial(Player &player)
-		: m_player(player)
+	PlayerSocial::PlayerSocial(PlayerManager &manager, Player &player)
+		: m_manager(manager)
+		, m_player(player)
 	{
 	}
 
-	game::FriendResult PlayerSocial::addToSocialList(UInt32 guid, bool ignore)
+	game::FriendResult PlayerSocial::addToSocialList(UInt64 guid, bool ignore)
 	{
 		// Build flags
-		UInt32 flag = game::social_flag::Friend;
-		if (ignore)
-			flag = game::social_flag::Ignored;
+		UInt32 flag = (ignore ? game::social_flag::Ignored : game::social_flag::Friend);
 
-		// TODO: Check if this contact is already in the social list
+		// Check if this contact is already in the social list
+		auto it = m_contacts.find(guid);
+		if (it != m_contacts.end())
+		{
+			if (it->second.flags == flag)
+			{
+				return (ignore ? game::friend_result::IgnoreAlreadyAdded : game::friend_result::AlreadyAdded);
+			}
+			else
+			{
+				// Change the flags (remove from friend list, add to ignore list and vice versa)
+				it->second.flags = flag;
+			}
+		}
+		else
+		{
+			ILOG("Adding new friend!");
 
-		// TODO: Add
-		return game::friend_result::AddedOffline;
+			// Couldn't find the specified contact - add him
+			game::SocialInfo info;
+			info.flags = flag;
+			m_contacts[guid] = std::move(info);
+			
+			// Just a little check to be absolutely sure....
+			DLOG("Check if the new friend IS a friend: " << isFriend(guid));
+		}
+
+		// Successfully added / switched mode
+		return (ignore ? game::friend_result::IgnoreAdded : game::friend_result::AddedOffline);
 	}
 
-	void PlayerSocial::removeFromSocialList(UInt32 guid, bool ignore)
+	void PlayerSocial::removeFromSocialList(UInt64 guid, bool ignore)
 	{
-
+		//TODO
 	}
 
-	void PlayerSocial::setFriendNote(UInt32 guid, String note)
+	void PlayerSocial::setFriendNote(UInt64 guid, String note)
 	{
-
+		//TODO
 	}
 
 	void PlayerSocial::sendSocialList() const
 	{
-
+		//TODO
 	}
 
-	bool PlayerSocial::isFriend(UInt32 guid) const
+	bool PlayerSocial::isFriend(UInt64 guid) const
 	{
-		//TODO
-		return false;
+		// Find the friend info
+		auto it = m_contacts.find(guid);
+		if (it == m_contacts.end())
+		{
+			return false;
+		}
+
+		// Check the flags
+		return (it->second.flags == game::social_flag::Friend);
 	}
 
-	bool PlayerSocial::isIgnored(UInt32 guid) const
+	bool PlayerSocial::isIgnored(UInt64 guid) const
 	{
-		//TODO
-		return false;
+		// Find the friend info
+		auto it = m_contacts.find(guid);
+		if (it == m_contacts.end())
+		{
+			return false;
+		}
+
+		// Check the flags
+		return (it->second.flags != game::social_flag::Friend);
 	}
 }

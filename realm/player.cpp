@@ -62,7 +62,7 @@ namespace wowpp
 		assert(m_connection);
 
 		m_connection->setListener(*this);
-		m_social.reset(new PlayerSocial(*this));
+		m_social.reset(new PlayerSocial(m_manager, *this));
 	}
 
 	void Player::sendAuthChallenge()
@@ -186,6 +186,13 @@ namespace wowpp
 		// If we are logged in, notify the world node about this
 		if (m_gameCharacter)
 		{
+			// Send notification to friends
+			game::SocialInfo info;
+			info.flags = game::social_flag::Friend;
+			info.status = game::friend_status::Offline;
+			m_social->sendToFriends(
+				std::bind(game::server_write::friendStatus, std::placeholders::_1, m_gameCharacter->getGuid(), game::friend_result::Offline, std::cref(info)));
+
 			// Try to find the world node
 			auto world = m_worldManager.getWorldByInstanceId(m_instanceId);
 			if (world)
@@ -778,7 +785,17 @@ namespace wowpp
 			std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
 
 		// TODO Load social list
-		//m_social->sendSocialList();
+		m_social->sendSocialList();
+
+		// Send notification to friends
+		game::SocialInfo info;
+		info.flags = game::social_flag::Friend;
+		info.area = charEntry->zoneId;
+		info.level = charEntry->level;
+		info.class_ = charEntry->class_;
+		info.status = game::friend_status::Online;
+		m_social->sendToFriends(
+			std::bind(game::server_write::friendStatus, std::placeholders::_1, m_gameCharacter->getGuid(), game::friend_result::Online, std::cref(info)));
 
 		// Send time sync request
 		m_timeSyncCounter = 0;
@@ -820,8 +837,15 @@ namespace wowpp
 				// We no longer care about the world node
 				m_worldDisconnected.disconnect();
 
+				// Send notification to friends
+				game::SocialInfo info;
+				info.flags = game::social_flag::Friend;
+				info.status = game::friend_status::Offline;
+				m_social->sendToFriends(
+					std::bind(game::server_write::friendStatus, std::placeholders::_1, m_gameCharacter->getGuid(), game::friend_result::Offline, std::cref(info)));
+
 				// Clear social list
-				m_social.reset(new PlayerSocial(*this));
+				m_social.reset(new PlayerSocial(m_manager, *this));
 
 				// TODO: We probably want to save our character data
 				WLOG("TODO: Save character data to the database");
@@ -1005,7 +1029,7 @@ namespace wowpp
 		}
 		else
 		{
-			result = m_social->addToSocialList(friendChar.id, false);
+			result = m_social->addToSocialList(characterGUID, false);
 		}
 
 		// Check if the player is online
@@ -1017,7 +1041,7 @@ namespace wowpp
 		}
 
 		// Fill friend info
-		game::FriendInfo info;
+		game::SocialInfo info;
 		info.flags = game::social_flag::Friend;
 		info.area = friendChar.zoneId;
 		info.level = friendChar.level;

@@ -505,7 +505,7 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt64 guid,
 				game::FriendResult result,
-				const game::FriendInfo &info
+				const game::SocialInfo &info
 				);
 
 			void updateObject(

@@ -51,7 +51,7 @@ namespace wowpp
 		/// delete the player instance.
 		void playerDisconnected(Player &player);
 		/// Gets a dynamic array containing all connected player instances.
-		const Players &getPlayers() const;
+		const Players &getPlayers() const { return m_players; }
 		/// Determines whether the player capacity limit has been reached.
 		bool hasPlayerCapacityBeenReached() const;
 		/// Adds a new player instance to the manager.
@@ -65,6 +65,15 @@ namespace wowpp
 		/// 
 		Player *getPlayerByCharacterName(const String &name);
 		
+		/// Executes a function for every connected player.
+		template<class F>
+		void foreachPlayer(F functor)
+		{
+			for (auto &player : m_players)
+			{
+				functor(*player);
+			}
+		}
 
 	private:
 

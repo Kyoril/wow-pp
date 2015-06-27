@@ -295,7 +295,7 @@ namespace wowpp
 		typedef social_flag::Type SocialFlag;
 
 		// TODO: Move this?
-		struct FriendInfo final
+		struct SocialInfo final
 		{
 			FriendStatus status;
 			UInt32 flags;
@@ -305,7 +305,7 @@ namespace wowpp
 			String note;
 
 			/// 
-			FriendInfo()
+			SocialInfo()
 				: status(friend_status::Offline)
 				, flags(0)
 				, area(0)
@@ -315,7 +315,7 @@ namespace wowpp
 			}
 
 			/// 
-			explicit FriendInfo(UInt32 flags_, String note_)
+			explicit SocialInfo(UInt32 flags_, String note_)
 				: status(friend_status::Offline)
 				, flags(flags_)
 				, area(0)
@@ -326,6 +326,6 @@ namespace wowpp
 			}
 		};
 
-		typedef std::map<UInt32, FriendInfo> FriendInfoMap;
+		typedef std::map<UInt64, SocialInfo> SocialInfoMap;
 	}
 }
