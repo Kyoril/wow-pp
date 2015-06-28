@@ -23,7 +23,6 @@
 
 #include "common/typedefs.h"
 #include "game/defines.h"
-#include "log/default_log_levels.h"
 #include "player_manager.h"
 #include "player.h"
 
@@ -53,7 +52,7 @@ namespace wowpp
 		/// @param note The new note of the friend.
 		void setFriendNote(UInt64 guid, String note);
 		/// Sends the current social list to the owning player.
-		void sendSocialList() const;
+		void sendSocialList();
 		/// Determines if the specified guid is a friend of us.
 		/// @param guid The contact's guid.
 		bool isFriend(UInt64 guid) const;
@@ -78,12 +77,7 @@ namespace wowpp
 					if (player.getSocial().isFriend(myself.getCharacterId()))
 					{
 						// Found a character who added us as his friend, so notify him
-						DLOG("We have a friend!!!");
 						player.sendPacket(generator);
-					}
-					else
-					{
-						DLOG("We are no friend of that player :(");
 					}
 				});
 		}

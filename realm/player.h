@@ -203,7 +203,7 @@ namespace wowpp
 		void handlePlayerLogin(game::IncomingPacket &packet);
 		void handleMessageChat(game::IncomingPacket &packet);
 		void handleNameQuery(game::IncomingPacket &packet);
-		void handleFriendList(game::IncomingPacket &packet);
+		void handleContactList(game::IncomingPacket &packet);
 		void handleAddFriend(game::IncomingPacket &packet);
 		void handleDeleteFriend(game::IncomingPacket &packet);
 		void handleAddIgnore(game::IncomingPacket &packet);

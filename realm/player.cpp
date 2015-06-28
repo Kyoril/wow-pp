@@ -287,7 +287,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(PlayerLogin, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(MessageChat, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(NameQuery, game::session_status::LoggedIn)
-			WOWPP_HANDLE_PACKET(FriendList, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(ContactList, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(AddFriend, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(DeleteFriend, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(AddIgnore, game::session_status::LoggedIn)
@@ -516,6 +516,11 @@ namespace wowpp
 
 		// Use the new character
 		m_gameCharacter = std::move(character);
+		m_gameCharacter->setZone(charEntry->zoneId);
+
+		// Load the social list
+		m_social.reset(new PlayerSocial(m_manager, *this));
+		m_database.getCharacterSocialList(m_characterId, *m_social);
 
 		//TODO Map found - check if player is member of an instance and if this instance
 		// is valid on the world node and if not, transfer player
@@ -991,15 +996,19 @@ namespace wowpp
 		}
 	}
 
-	void Player::handleFriendList(game::IncomingPacket &packet)
+	void Player::handleContactList(game::IncomingPacket &packet)
 	{
-		if (!client_read::friendList(packet))
+		if (!client_read::contactList(packet))
 		{
 			// Error reading packet
 			return;
 		}
 
-		DLOG("TODO: Update " << m_accountName << "'s friend list and send notifications");
+		// TODO: Only update the friend list after a specific time interval to prevent 
+		// spamming of this command
+
+		// Send the social list
+		m_social->sendSocialList();
 	}
 
 	void Player::handleAddFriend(game::IncomingPacket &packet)

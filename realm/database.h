@@ -27,6 +27,8 @@
 
 namespace wowpp
 {
+	class PlayerSocial;
+
 	/// Basic interface for a database system used by the realm server.
 	struct IDatabase
 	{
@@ -50,5 +52,7 @@ namespace wowpp
 		virtual game::ResponseCode deleteCharacter(UInt32 accountId, UInt32 characterGuid) = 0;
 
 		virtual bool getGameCharacter(DatabaseId characterId, GameCharacter &out_character) = 0;
+
+		virtual bool getCharacterSocialList(DatabaseId characterId, PlayerSocial &out_social) = 0;
 	};
 }

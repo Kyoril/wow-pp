@@ -21,6 +21,7 @@
 
 #include "player_social.h"
 #include "player.h"
+#include <algorithm>
 
 
 namespace wowpp
@@ -56,15 +57,10 @@ namespace wowpp
 		}
 		else
 		{
-			ILOG("Adding new friend!");
-
 			// Couldn't find the specified contact - add him
 			game::SocialInfo info;
 			info.flags = flag;
 			m_contacts[guid] = std::move(info);
-			
-			// Just a little check to be absolutely sure....
-			DLOG("Check if the new friend IS a friend: " << isFriend(guid));
 		}
 
 		// Successfully added / switched mode
@@ -78,12 +74,57 @@ namespace wowpp
 
 	void PlayerSocial::setFriendNote(UInt64 guid, String note)
 	{
-		//TODO
+		// Find the friend info
+		auto it = m_contacts.find(guid);
+		if (it == m_contacts.end())
+		{
+			return;
+		}
+
+		if (it->second.flags & game::social_flag::Friend)
+		{
+			it->second.note = std::move(note);
+		}
 	}
 
-	void PlayerSocial::sendSocialList() const
+	void PlayerSocial::sendSocialList()
 	{
-		//TODO
+		// Refresh the contact list
+		for (auto &it : m_contacts)
+		{
+			// If it is a friend...
+			if (it.second.flags & game::social_flag::Friend)
+			{
+				// Check if the friend is online and update the friend info
+				Player *player = m_manager.getPlayerByCharacterGuid(it.first);
+				if (player)
+				{
+					// Update area etc.
+					GameCharacter *character = player->getGameCharacter();
+					if (character)
+					{
+						it.second.status = game::friend_status::Online;
+						it.second.level = character->getLevel();
+						it.second.area = character->getZone();
+						it.second.class_ = character->getClass();
+						//TODO: AFK? DND?
+					}
+					else
+					{
+						WLOG("Could not get player character for friend list update!");
+						it.second.status = game::friend_status::Offline;
+					}
+				}
+				else
+				{
+					it.second.status = game::friend_status::Offline;
+				}
+			}
+		}
+
+		// Send the current contact list
+		m_player.sendPacket(
+			std::bind(game::server_write::contactList, std::placeholders::_1, std::cref(m_contacts)));
 	}
 
 	bool PlayerSocial::isFriend(UInt64 guid) const

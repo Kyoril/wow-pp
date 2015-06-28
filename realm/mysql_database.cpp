@@ -24,6 +24,9 @@
 #include "mysql_wrapper/mysql_select.h"
 #include "mysql_wrapper/mysql_statement.h"
 #include "common/constants.h"
+#include "player_social.h"
+#include "player.h"
+#include "player_manager.h"
 #include <boost/format.hpp>
 #include "log/default_log_levels.h"
 
@@ -542,4 +545,46 @@ namespace wowpp
 
 		return true;
 	}
+
+	bool MySQLDatabase::getCharacterSocialList(DatabaseId characterId, PlayerSocial &out_social)
+	{
+		wowpp::MySQL::Select select(m_connection,
+			//                         0		1       2          
+			(boost::format("SELECT `guid_2`, `flags`, `note` FROM `character_social` WHERE `guid_1`='%1%' LIMIT 75")
+			% characterId).str());
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				UInt64 socialGuid = 0;
+				UInt32 flags = 0;
+				String note;
+
+				row.getField(0, socialGuid);
+				row.getField(1, flags);
+				row.getField(2, note);
+
+				const bool isFriend = flags & game::social_flag::Friend;
+				out_social.addToSocialList(socialGuid, !isFriend);
+				
+				if (isFriend)
+				{
+					out_social.setFriendNote(socialGuid, std::move(note));
+				}
+
+				// Next row
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+
+		return true;
+	}
+
 }

@@ -61,7 +61,7 @@ namespace wowpp
 				LogoutCancel			= 0x04E,
 				NameQuery				= 0x050,
 				CreatureQuery			= 0x060,
-				FriendList				= 0x066,
+				ContactList				= 0x066,
 				AddFriend				= 0x069,
 				DeleteFriend			= 0x06A,
 				SetContactNotes			= 0x06B,
@@ -135,7 +135,7 @@ namespace wowpp
 				LogoutCancelAck			= 0x04F,
 				NameQueryResponse		= 0x051,
 				CreatureQueryResponse	= 0x061,
-				FriendList				= 0x067,
+				ContactList				= 0x067,
 				FriendStatus			= 0x068,
 				MessageChat				= 0x096,
 				UpdateObject			= 0x0A9,
@@ -371,9 +371,8 @@ namespace wowpp
 				UInt64 &out_guid
 				);
 
-			bool friendList(
+			bool contactList(
 				io::Reader &packet
-				//TODO
 				);
 
 			bool addFriend(
@@ -496,9 +495,9 @@ namespace wowpp
 				UInt32 classId
 				);
 
-			void friendList(
-				game::OutgoingPacket &out_packet
-				//TODO
+			void contactList(
+				game::OutgoingPacket &out_packet,
+				const game::SocialInfoMap &contacts
 				);
 
 			void friendStatus(
