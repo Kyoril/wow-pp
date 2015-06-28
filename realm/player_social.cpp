@@ -45,14 +45,14 @@ namespace wowpp
 		auto it = m_contacts.find(guid);
 		if (it != m_contacts.end())
 		{
-			if (it->second.flags == flag)
+			if (it->second.flags & flag)
 			{
 				return (ignore ? game::friend_result::IgnoreAlreadyAdded : game::friend_result::AlreadyAdded);
 			}
 			else
 			{
 				// Change the flags (remove from friend list, add to ignore list and vice versa)
-				it->second.flags = flag;
+				it->second.flags |= flag;
 			}
 		}
 		else
@@ -67,9 +67,25 @@ namespace wowpp
 		return (ignore ? game::friend_result::IgnoreAdded : game::friend_result::AddedOffline);
 	}
 
-	void PlayerSocial::removeFromSocialList(UInt64 guid, bool ignore)
+	game::FriendResult PlayerSocial::removeFromSocialList(UInt64 guid, bool ignore)
 	{
-		//TODO
+		// Find the friend info
+		auto it = m_contacts.find(guid);
+		if (it == m_contacts.end())
+		{
+			return (ignore ? game::friend_result::IgnoreNotFound : game::friend_result::NotFound);
+		}
+
+		// Remove the contact from our social list
+		UInt32 flag = (ignore ? game::social_flag::Ignored : game::social_flag::Friend);
+		it->second.flags &= ~flag;
+		if (it->second.flags == 0)
+		{
+			// No more flags - remove it entirely
+			m_contacts.erase(it);
+		}
+
+		return (ignore ? game::friend_result::IgnoreRemoved : game::friend_result::Removed);
 	}
 
 	void PlayerSocial::setFriendNote(UInt64 guid, String note)

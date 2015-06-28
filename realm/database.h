@@ -54,5 +54,8 @@ namespace wowpp
 		virtual bool getGameCharacter(DatabaseId characterId, GameCharacter &out_character) = 0;
 
 		virtual bool getCharacterSocialList(DatabaseId characterId, PlayerSocial &out_social) = 0;
+		virtual bool addCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) = 0;
+		virtual bool updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) = 0;
+		virtual bool removeCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid) = 0;
 	};
 }

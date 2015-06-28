@@ -100,7 +100,6 @@ namespace wowpp
 				if (row)
 				{
 					// There was an error
-					printDatabaseError();
 					return game::response_code::CharCreateNameInUse;
 				}
 			}
@@ -587,4 +586,58 @@ namespace wowpp
 		return true;
 	}
 
+	bool MySQLDatabase::addCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note)
+	{
+		if (m_connection.execute((boost::format(
+			"INSERT INTO `character_social` (`guid_1`, `guid_2`, `flags`, `note`) VALUES (%1%, %2%, %3%, '%4%')")
+			% characterId
+			% socialGuid
+			% flags
+			% note).str()))
+		{
+			return true;
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+	}
+
+	bool MySQLDatabase::updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note)
+	{
+		if (m_connection.execute((boost::format(
+			"UPDATE `character_social` SET `flags`=%1%, `note`='%2%' WHERE `guid_1`=%3% AND `guid_2`=%4%")
+			% flags
+			% note
+			% characterId
+			% socialGuid).str()))
+		{
+			return true;
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+	}
+
+	bool MySQLDatabase::removeCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid)
+	{
+		if (m_connection.execute((boost::format(
+			"DELETE FROM `character_social` WHERE `guid_1`=%1% AND `guid_2`=%2%")
+			% characterId
+			% socialGuid).str()))
+		{
+			return true;
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+	}
 }

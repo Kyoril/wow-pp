@@ -1031,6 +1031,14 @@ namespace wowpp
 		// Create the characters guid value
 		UInt64 characterGUID = createRealmGUID(friendChar.id, m_loginConnector.getRealmID(), guid_type::Player);
 		
+		// Fill friend info
+		game::SocialInfo info;
+		info.flags = game::social_flag::Friend;
+		info.area = friendChar.zoneId;
+		info.level = friendChar.level;
+		info.class_ = friendChar.class_;
+		info.note = std::move(note);
+
 		// Result code
 		game::FriendResult result = game::friend_result::AddedOffline;
 		if (characterGUID == m_characterId)
@@ -1039,25 +1047,28 @@ namespace wowpp
 		}
 		else
 		{
+			// Add to social list
 			result = m_social->addToSocialList(characterGUID, false);
+			if (result == game::friend_result::AddedOffline)
+			{
+				// Add to database
+				const bool shouldUpdate = m_social->isIgnored(characterGUID);
+				if (!m_database.addCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(info.flags), info.note))
+				{
+					result = game::friend_result::DatabaseError;
+				}
+			}
 		}
 
 		// Check if the player is online
 		Player *friendPlayer = m_manager.getPlayerByCharacterGuid(characterGUID);
+		info.status = friendPlayer ? game::friend_status::Online : game::friend_status::Offline;
 		if (result == game::friend_result::AddedOffline &&
 			friendPlayer != nullptr)
 		{
 			result = game::friend_result::AddedOnline;
 		}
 
-		// Fill friend info
-		game::SocialInfo info;
-		info.flags = game::social_flag::Friend;
-		info.area = friendChar.zoneId;
-		info.level = friendChar.level;
-		info.class_ = friendChar.class_;
-		info.note = std::move(note);
-		info.status = friendPlayer ? game::friend_status::Online : game::friend_status::Offline;
 		sendPacket(
 			std::bind(game::server_write::friendStatus, std::placeholders::_1, characterGUID, result, std::cref(info)));
 	}
@@ -1071,7 +1082,19 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("TODO: Player " << m_accountName << " wants to delete " << guid << " from his friend list");
+		// Remove that friend from our social list
+		auto result = m_social->removeFromSocialList(guid, false);
+		if (result == game::friend_result::Removed)
+		{
+			if (!m_database.removeCharacterSocialContact(m_characterId, guid))
+			{
+				result = game::friend_result::DatabaseError;
+			}
+		}
+
+		game::SocialInfo info;
+		sendPacket(
+			std::bind(game::server_write::friendStatus, std::placeholders::_1, guid, result, std::cref(info)));
 	}
 
 	void Player::handleAddIgnore(game::IncomingPacket &packet)

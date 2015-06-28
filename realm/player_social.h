@@ -45,8 +45,8 @@ namespace wowpp
 		game::FriendResult addToSocialList(UInt64 guid, bool ignore);
 		/// Removes a contact from our social list.
 		/// @param guid The contact's guid.
-		/// @param ignore True to remove this friend from the ignore list, otherwise from the friend lsit.
-		void removeFromSocialList(UInt64 guid, bool ignore);
+		/// @param ignore True to remove this friend from the ignore list, otherwise from the friend list.
+		game::FriendResult removeFromSocialList(UInt64 guid, bool ignore);
 		/// Updates the note of a specific friend. Target has to be a friend!
 		/// @param guid The friends guid.
 		/// @param note The new note of the friend.
