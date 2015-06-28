@@ -34,6 +34,7 @@
 #include "binary_io/vector_sink.h"
 #include "binary_io/writer.h"
 #include "data/project.h"
+#include "common/utilities.h"
 #include <cassert>
 #include <limits>
 
@@ -379,6 +380,18 @@ namespace wowpp
 		{
 			return;
 		}
+
+		// Empty character name?
+		character.name = std::move(trim(character.name));
+		if (character.name.empty())
+		{
+			sendPacket(
+				std::bind(game::server_write::charCreate, std::placeholders::_1, game::response_code::CharCreateError));
+			return;
+		}
+
+		// Capitalize the characters name
+		capitalize(character.name);
 
 		// Get number of characters on this account
 		const UInt32 maxCharacters = 11;
@@ -965,6 +978,10 @@ namespace wowpp
 			return;
 		}
 
+		// Convert name
+		if (!receiver.empty())
+			capitalize(receiver);
+
 		switch (type)
 		{
 			// Local chat modes
@@ -1064,6 +1081,16 @@ namespace wowpp
 			return;
 		}
 
+		if (name.empty())
+		{
+			WLOG("Received empty name in CMSG_ADD_FRIEND packet!");
+			return;
+		}
+
+		// Convert name
+		if (!name.empty())
+			capitalize(name);
+
 		// Find the character details
 		game::CharEntry friendChar;
 		if (!m_database.getCharacterByName(name, friendChar))
@@ -1149,6 +1176,16 @@ namespace wowpp
 			// Error reading packet
 			return;
 		}
+
+		if (name.empty())
+		{
+			WLOG("Received empty name in CMSG_ADD_IGNORE packet!");
+			return;
+		}
+
+		// Convert name
+		if (!name.empty())
+			capitalize(name);
 
 		DLOG("TODO: Player " << m_accountName << " wants to add " << name << " to his ignore list");
 	}
