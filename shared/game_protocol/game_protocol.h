@@ -158,6 +158,7 @@ namespace wowpp
 				SetRestStart			= 0x21E,
 				LoginVerifyWorld		= 0x236,
 				StandStateUpdate		= 0x29D,
+				ChatPlayerNotFound		= 0x2A9,
 				InitWorldStates			= 0x2C2,
 				AddonInfo				= 0x2EF,
 				SetDungeonDifficulty	= 0x329,
@@ -516,6 +517,11 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt64 guid,
 				bool death
+				);
+
+			void chatPlayerNotFound(
+				game::OutgoingPacket &out_packet,
+				const String &name
 				);
 
 			void tutorialFlags(

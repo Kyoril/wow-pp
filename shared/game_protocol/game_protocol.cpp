@@ -738,12 +738,12 @@ namespace wowpp
 						out_packet.finish();
 						return;
 					}
-					default:
-						if (type == chat_msg::Reply && type != chat_msg::Ignored && type != chat_msg::Dnd && type != chat_msg::Afk)
-						{
-							targetGUID = 0x00;
-						}
-						break;
+// 					default:
+// 						if (type == chat_msg::Reply && type != chat_msg::Ignored && type != chat_msg::Dnd && type != chat_msg::Afk)
+// 						{
+// 							targetGUID = 0x00;
+// 						}
+// 						break;
 				}
 
 				out_packet
@@ -837,6 +837,15 @@ namespace wowpp
 
 				out_packet.finish();
 			}
+
+			void chatPlayerNotFound(game::OutgoingPacket &out_packet, const String &name)
+			{
+				out_packet.start(game::server_packet::ChatPlayerNotFound);
+				out_packet
+					<< io::write_range(name) << io::write<NetUInt8>(0);
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read

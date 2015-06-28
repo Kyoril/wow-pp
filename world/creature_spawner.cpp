@@ -80,6 +80,7 @@ namespace wowpp
 			x, y, z, o,
 			m_radius
 			);
+		spawned->setFloatValue(object_fields::ScaleX, m_entry.scale);
 		spawned->clearUpdateMask();
 
 		//TODO: watch for removal

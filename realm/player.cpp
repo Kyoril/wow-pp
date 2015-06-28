@@ -981,10 +981,54 @@ namespace wowpp
 					message);
 				break;
 			}
+			// 
+			case chat_msg::Whisper:
+			{
+				DLOG("Whisper message to " << receiver << " received");
+
+				// Get player guid by name
+				game::CharEntry entry;
+				if (!m_database.getCharacterByName(receiver, entry))
+				{
+					sendPacket(
+						std::bind(game::server_write::chatPlayerNotFound, std::placeholders::_1, std::cref(receiver)));
+					break;
+				}
+
+				// Make realm GUID
+				UInt64 guid = createRealmGUID(entry.id, m_loginConnector.getRealmID(), guid_type::Player);
+
+				// Check if that player is online right now
+				Player *other = m_manager.getPlayerByCharacterGuid(guid);
+				if (!other)
+				{
+					sendPacket(
+						std::bind(game::server_write::chatPlayerNotFound, std::placeholders::_1, std::cref(receiver)));
+					break;
+				}
+
+				// TODO: Check if that player is a GM and if he accepts whispers from us, eventually block
+
+				// Change language if needed so that whispers are always readable
+				if (lang != game::language::Addon) lang = game::language::Universal;
+
+				// Send whisper message
+				other->sendPacket(
+					std::bind(game::server_write::messageChat, std::placeholders::_1, chat_msg::Whisper, lang, std::cref(channel), m_characterId, std::cref(message), m_gameCharacter.get()));
+
+				// If not an addon message, send reply message
+				if (lang != game::language::Addon)
+				{
+					sendPacket(
+						std::bind(game::server_write::messageChat, std::placeholders::_1, chat_msg::Reply, lang, std::cref(channel), guid, std::cref(message), m_gameCharacter.get()));
+				}
+
+				break;
+			}
 			// Can be local or global chat mode
 			case chat_msg::Channel:
 			{
-				WLOG("Chat mode not yet implemented");
+				WLOG("Channel Chat mode not yet implemented");
 				break;
 			}
 			// Global chat modes / other
