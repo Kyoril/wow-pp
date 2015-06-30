@@ -1,0 +1,191 @@
+//
+// This file is part of the WoW++ project.
+// 
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Genral Public License as published by
+// the Free Software Foudnation; either version 2 of the Licanse, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software 
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+//
+// World of Warcraft, and all World of Warcraft or Warcraft art, images,
+// and lore are copyrighted by Blizzard Entertainment, Inc.
+// 
+
+#include "defines.h"
+
+namespace wowpp
+{
+	namespace game
+	{
+		namespace constant_literal
+		{
+			const SpellEffectStrings::StringArray strings =
+			{ {
+					"<INVALID>",
+					"InstantKill",
+					"SchoolDamage",
+					"Dummy",
+					"PortalTeleport",
+					"TeleportUnits",
+					"ApplyAura",
+					"EnvironmentalDamage",
+					"PowerDrain",
+					"HealthLeech",
+					"Heal",
+					"Bind",
+					"Portal",
+					"RitualBase",
+					"RitualSpecialize",
+					"RitualActivatePortal",
+					"QuestComplete",
+					"WeaponDamageNoSchool",
+					"Resurrect",
+					"AddExtraAttacks",
+					"Dodge",
+					"Evade",
+					"Parry",
+					"Block",
+					"CreateItem",
+					"Weapon",
+					"Defense",
+					"PersistentAreaAura",
+					"Summon",
+					"Leap",
+					"Energize",
+					"WeaponPercentDamage",
+					"TriggerMissile",
+					"OpenLock",
+					"SummonChangeItem",
+					"ApplyAreaAuraParty",
+					"LearnSpell",
+					"SpellDefense",
+					"Dispel",
+					"Language",
+					"DualWield",
+					"Effect_41",
+					"Effect_42",
+					"TeleportUnitsFaceCaster",
+					"SkillStep",
+					"Effect_45",
+					"Spawn",
+					"TradeSkill",
+					"Stealth",
+					"Detect",
+					"TransDoor",
+					"ForceCriticalHit",
+					"GuaranteeHit",
+					"EnchantItem",
+					"EnchantItemTemporary",
+					"TameCreature",
+					"SummonPet",
+					"LearnPetSpell",
+					"WeaponDamage",
+					"OpenLockItem",
+					"Proficiency",
+					"SendEvent",
+					"PowerBurn",
+					"Threat",
+					"TriggerSpell",
+					"HealthFunnel",
+					"PowerFunnel",
+					"HealMaxHealth",
+					"InterruptCast",
+					"Distract",
+					"Pull",
+					"PickPocket",
+					"AddFarsight",
+					"Effect_73",
+					"Effect_74",
+					"HealMechanical",
+					"SummonObjectWild",
+					"ScriptEffect",
+					"Attack",
+					"Sanctuary",
+					"AddComboPoints",
+					"CreateHouse",
+					"BindSight",
+					"Duel",
+					"Stuck",
+					"SummonPlayer",
+					"ActivateObject",
+					"Effect_87",
+					"Effect_88",
+					"Effect_89",
+					"Effect_90",
+					"ThreatAll",
+					"EnchantHeldItem",
+					"Effect_93",
+					"SelfResurrect",
+					"Skinning",
+					"Charge",
+					"Effect_97",
+					"KnockBack",
+					"Disenchant",
+					"Inebriate",
+					"FeedPet",
+					"DismissPet",
+					"Reputation",
+					"Effect_104",
+					"Effect_105",
+					"Effect_106",
+					"Effect_107",
+					"DispelMechanic",
+					"SummonDeadPet",
+					"DestroyAllTotems",
+					"DurabilityDamage",
+					"ResurrectNew",
+					"AttackMe",
+					"DurabilityDamagePct",
+					"SkinPlayerCorpse",
+					"SpiritHeal",
+					"Skill",
+					"ApplyAreaAuraPet",
+					"TeleportGraveyard",
+					"NormalizedWeaponDmg",
+					"Effect_122",
+					"SendTaxi",
+					"PlayerPull",
+					"ModifyThreatPercent",
+					"StealBeneficialBuff",
+					"Prospecting",
+					"ApplyAreaAuraFriend",
+					"ApplyAreaAuraEnemy",
+					"RedirectThreat",
+					"Effect_131",
+					"PlayMusic",
+					"UnlearnSpecialization",
+					"KillCredit",
+					"CallPet",
+					"HealPct",
+					"EnergizePct",
+					"LeapBack",
+					"ClearQuest",
+					"ForceCast",
+					"Effect_141",
+					"TriggerSpellWithValue",
+					"ApplyAreaAuraOwner",
+					"KnockBack2",
+					"Effect_145",
+					"Effect_146",
+					"QuestFail",
+					"Effect_148",
+					"Effect_149",
+					"Effect_150",
+					"TriggerSpell2",
+					"SummonFriend",
+					"Effect_153"
+				}
+			};
+
+			const SpellEffectStrings spellEffectNames(strings);
+		}
+	}
+}

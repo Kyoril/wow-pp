@@ -49,7 +49,8 @@ namespace wowpp
 			PlayerManager &playerManager,
 			IdGenerator<UInt32> &idGenerator,
 			IdGenerator<UInt64> &objectIdGenerator,
-			Project &project);
+			Project &project,
+			UInt32 worldNodeId);
 
 		/// Creates a new world instance of a specific map id.
 		WorldInstance *createInstance(const MapEntry &map);
@@ -79,5 +80,6 @@ namespace wowpp
 		Instances m_instances;
 		Project &m_project;
 		std::unique_ptr<TimerQueue> m_timerQueue;
+		UInt32 m_worldNodeId;
 	};
 }

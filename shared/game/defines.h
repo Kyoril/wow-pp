@@ -22,6 +22,7 @@
 #pragma once
 
 #include "common/typedefs.h"
+#include "common/enum_strings.h"
 #include <map>
 
 namespace wowpp
@@ -236,33 +237,60 @@ namespace wowpp
 		{
 			enum Type
 			{
+				/// Something went wrong in the database.
 				DatabaseError		= 0x00,
+				/// Friend list capacity reached.
 				ListFull			= 0x01,
+				/// Friend is online notification.
 				Online				= 0x02,
+				/// Friend is offline notification.
 				Offline				= 0x03,
+				/// Could not find player with that name to make him a friend.
 				NotFound			= 0x04,
+				/// Player was removed from the friend list.
 				Removed				= 0x05,
+				/// New player added to the friend list, who is online right now.
 				AddedOnline			= 0x06,
+				/// New player added to the friend list, who is offline right now.
 				AddedOffline		= 0x07,
+				/// That player is already in the friend list.
 				AlreadyAdded		= 0x08,
+				/// You can't add yourself to your friend list.
 				Self				= 0x09,
+				/// That player is an enemy and thus can't be added to the friend list.
 				Enemy				= 0x0A,
+				/// Ignore list capacity reached.
 				IgnoreFull			= 0x0B,
+				/// Can't add yourself to the ignore list.
 				IgnoreSelf			= 0x0C,
+				/// Player couldn't be found so we can't add him to the ignore list.
 				IgnoreNotFound		= 0x0D,
+				/// That player is already on the ignore list.
 				IgnoreAlreadyAdded	= 0x0E,
+				/// New player added to the ignore list.
 				IgnoreAdded			= 0x0F,
+				/// Player was removed from the ignore list.
 				IgnoreRemoved		= 0x10,
-				IgnoreAmbigous		= 0x11,     // That name is ambiguous, type more of the player's server name
+				/// That name is ambiguous, type more of the player's server name.
+				IgnoreAmbigous		= 0x11,
+				/// TODO
 				MuteFull			= 0x12,
+				/// TODO
 				MuteSelf			= 0x13,
+				/// TODO
 				MuteNotFound		= 0x14,
+				/// TODO
 				MuteAlreadyAdded	= 0x15,
+				/// TODO
 				MuteAdded			= 0x16,
+				/// TODO
 				MuteRemoved			= 0x17,
-				MuteAmbigous		= 0x18,     // That name is ambiguous, type more of the player's server name
-				Unknown_7			= 0x19,     // no message at client
-				Uknown				= 0x1A      // Unknown friend response from server
+				/// That name is ambiguous, type more of the player's server name
+				MuteAmbigous		= 0x18,
+				/// No message at the client - unknown.
+				Unknown_7			= 0x19,
+				/// Unknown friend response from server.
+				Uknown				= 0x1A
 			};
 		}
 
@@ -272,10 +300,15 @@ namespace wowpp
 		{
 			enum Type
 			{
+				/// The target is offline.
 				Offline		= 0x00,
+				/// The target is online.
 				Online		= 0x01,
+				/// The target is flagged AFK (Away from keyboard).
 				Afk			= 0x02,
+				/// The target is flagged DND (Do not disturb).
 				Dnd			= 0x04,
+				/// The target is flagged for RAF (Refer a friend)
 				Raf			= 0x08
 			};
 		}
@@ -286,8 +319,11 @@ namespace wowpp
 		{
 			enum Type
 			{
+				/// Target is a friend.
 				Friend		= 0x01,
+				/// Chat messages and invites from this target are ignored.
 				Ignored		= 0x02,
+				/// This target is muted for us in voice chat sessions.
 				Muted		= 0x04
 			};
 		}
@@ -327,5 +363,359 @@ namespace wowpp
 		};
 
 		typedef std::map<UInt64, SocialInfo> SocialInfoMap;
+
+		namespace area_teams
+		{
+			enum Type
+			{
+				/// No favored team on this map (enables PvP on PvP-flagged realms).
+				None		= 0x00,
+				/// Alliance controlled lands.
+				Alliance	= 0x02,
+				/// Horde controlled lands.
+				Horde		= 0x04
+			};
+		}
+
+		typedef area_teams::Type AreaTeams;
+
+		namespace area_flags
+		{
+			enum Type
+			{
+				/// TODO
+				Snow			= 0x00000001,
+				/// TODO
+				SlaveCapital	= 0x00000008,
+				/// TODO
+				SlaveCapital2	= 0x00000020,
+				/// TODO
+				AllowDuels		= 0x00000040,
+				/// TODO
+				Arena			= 0x00000080,
+				/// TODO
+				Capital			= 0x00000100,
+				/// TODO
+				City			= 0x00000200,
+				/// TODO
+				Outland			= 0x00000400,
+				/// TODO
+				Sanctuary		= 0x00000800,
+				/// TODO
+				NeedFly			= 0x00001000,
+				/// TODO
+				Outland2		= 0x00004000,
+				/// TODO
+				PvP				= 0x00008000,
+				/// TODO
+				ArenaInstance	= 0x00010000,
+				/// TODO
+				LowLevel		= 0x00100000,
+				/// TODO
+				Inside			= 0x02000000,
+				/// TODO
+				Outside			= 0x04000000
+			};
+		}
+
+		typedef area_flags::Type AreaFlags;
+
+		namespace faction_template_flags
+		{
+			enum Type
+			{
+				/// This faction attacks players that are involved in PvP combat.
+				ContestedGuard		= 0x00001000
+			};
+		}
+
+		typedef faction_template_flags::Type FactionTemplateFlags;
+
+		namespace faction_masks
+		{
+			enum Type
+			{
+				/// Non-aggressive creature.
+				None			= 0x00,
+				/// Any player.
+				Player			= 0x01,
+				/// Player or creature from alliance team.
+				Alliance		= 0x02,
+				/// Player or creature from horde team.
+				Horde			= 0x04,
+				/// Aggressive creature from monster team
+				Monster			= 0x08
+			};
+		}
+
+		typedef faction_masks::Type FactionMasks;
+
+		namespace map_types
+		{
+			enum Type
+			{
+				/// Only one instance of this map exists, globally.
+				Common			= 0x00,
+				/// An instance PvE Dungeon.
+				Dungeon			= 0x01,
+				/// An instance PvE Dungeon for more than 5 players.
+				Raid			= 0x02,
+				/// An instanced PvP battleground.
+				Battleground	= 0x03,
+				/// An instanced PvP arena.
+				Arena			= 0x04
+			};
+		}
+
+		typedef map_types::Type MapTypes;
+
+		namespace ability_learn_type
+		{
+			enum Type
+			{
+				/// TODO
+				OnGetProfessionSkill	= 0x01,
+				/// TODO
+				OnGetRaceOrClassSkill	= 0x02
+			};
+		};
+
+		typedef ability_learn_type::Type AbilityLearnType;
+
+		namespace item_enchantment_type
+		{
+			enum Type
+			{
+				/// TODO
+				None		= 0x00,
+				/// TODO
+				CombatSpell	= 0x01,
+				/// TODO
+				Damage		= 0x02,
+				/// TODO
+				EquipSkill	= 0x03,
+				/// TODO
+				Resistance	= 0x04,
+				/// TODO
+				Stat		= 0x05,
+				/// TODO
+				Totem		= 0x06
+			};
+		}
+
+		typedef item_enchantment_type::Type ItemEnchantmentType;
+
+		namespace item_enchantment_aura_id
+		{
+			enum Type
+			{
+				/// TODO
+				Poison		= 26,
+				/// TODO
+				Normal		= 28,
+				/// TODO
+				Fire		= 32,
+				/// TODO
+				Frost		= 33,
+				/// TODO
+				Nature		= 81,
+				/// TODO
+				Shadow		= 107
+			};
+		}
+
+		typedef item_enchantment_aura_id::Type ItemEnchantmentAuraID;
+
+		namespace totem_category_type
+		{
+			enum Type
+			{
+				/// TODO
+				Knife		= 0x01,
+				/// TODO
+				Totem		= 0x02,
+				/// TODO
+				Rod			= 0x03,
+				/// TODO
+				Pick		= 0x15,
+				/// TODO
+				Stone		= 0x16,
+				/// TODO
+				Hammer		= 0x17,
+				/// TODO
+				Spanner		= 0x18
+			};
+		}
+
+		namespace spell_effects
+		{
+			enum Type
+			{
+				InstantKill				= 1,
+				SchoolDamage			= 2,
+				Dummy					= 3,
+				PortalTeleport			= 4,
+				TeleportUnits			= 5,
+				ApplyAura				= 6,
+				EnvironmentalDamage		= 7,
+				PowerDrain				= 8,
+				HealthLeech				= 9,
+				Heal					= 10,
+				Bind					= 11,
+				Portal					= 12,
+				RitualBase				= 13,
+				RitualSpecialize		= 14,
+				RitualActivatePortal	= 15,
+				QuestComplete			= 16,
+				WeaponDamageNoSchool	= 17,
+				Resurrect				= 18,
+				AddExtraAttacks			= 19,
+				Dodge					= 20,
+				Evade					= 21,
+				Parry					= 22,
+				Block					= 23,
+				CreateItem				= 24,
+				Weapon					= 25,
+				Defense					= 26,
+				PersistentAreaAura		= 27,
+				Summon					= 28,
+				Leap					= 29,
+				Energize				= 30,
+				WeaponPercentDamage		= 31,
+				TriggerMissile			= 32,
+				OpenLock				= 33,
+				SummonChangeItem		= 34,
+				ApplyAreaAuraParty		= 35,
+				LearnSpell				= 36,
+				SpellDefense			= 37,
+				Dispel					= 38,
+				Language				= 39,
+				DualWield				= 40,
+				Effect_41				= 41,
+				Effect_42				= 42,
+				TeleportUnitsFaceCaster	= 43,
+				SkillStep				= 44,
+				Effect_45				= 45,
+				Spawn					= 46,
+				TradeSkill				= 47,
+				Stealth					= 48,
+				Detect					= 49,
+				TransDoor				= 50,
+				ForceCriticalHit		= 51,
+				GuaranteeHit			= 52,
+				EnchantItem				= 53,
+				EnchantItemTemporary	= 54,
+				TameCreature			= 55,
+				SummonPet				= 56,
+				LearnPetSpell			= 57,
+				WeaponDamage			= 58,
+				OpenLockItem			= 59,
+				Proficiency				= 60,
+				SendEvent				= 61,
+				PowerBurn				= 62,
+				Threat					= 63,
+				TriggerSpell			= 64,
+				HealthFunnel			= 65,
+				PowerFunnel				= 66,
+				HealMaxHealth			= 67,
+				InterruptCast			= 68,
+				Distract				= 69,
+				Pull					= 70,
+				PickPocket				= 71,
+				AddFarsight				= 72,
+				Effect_73				= 73,
+				Effect_74				= 74,
+				HealMechanical			= 75,
+				SummonObjectWild		= 76,
+				ScriptEffect			= 77,
+				Attack					= 78,
+				Sanctuary				= 79,
+				AddComboPoints			= 80,
+				CreateHouse				= 81,
+				BindSight				= 82,
+				Duel					= 83,
+				Stuck					= 84,
+				SummonPlayer			= 85,
+				ActivateObject			= 86,
+				Effect_87				= 87,
+				Effect_88				= 88,
+				Effect_89				= 89,
+				Effect_90				= 90,
+				ThreatAll				= 91,
+				EnchantHeldItem			= 92,
+				Effect_93				= 93,
+				SelfResurrect			= 94,
+				Skinning				= 95,
+				Charge					= 96,
+				Effect_97				= 97,
+				KnockBack				= 98,
+				Disenchant				= 99,
+				Inebriate				= 100,
+				FeedPet					= 101,
+				DismissPet				= 102,
+				Reputation				= 103,
+				Effect_104				= 104,
+				Effect_105				= 105,
+				Effect_106				= 106,
+				Effect_107				= 107,
+				DispelMechanic			= 108,
+				SummonDeadPet			= 109,
+				DestroyAllTotems		= 110,
+				DurabilityDamage		= 111,
+				ResurrectNew			= 113,
+				AttackMe				= 114,
+				DurabilityDamagePct		= 115,
+				SkinPlayerCorpse		= 116,
+				SpiritHeal				= 117,
+				Skill					= 118,
+				ApplyAreaAuraPet		= 119,
+				TeleportGraveyard		= 120,
+				NormalizedWeaponDmg		= 121,
+				Effect_122				= 122,
+				SendTaxi				= 123,
+				PlayerPull				= 124,
+				ModifyThreatPercent		= 125,
+				StealBeneficialBuff		= 126,
+				Prospecting				= 127,
+				ApplyAreaAuraFriend		= 128,
+				ApplyAreaAuraEnemy		= 129,
+				RedirectThreat			= 130,
+				Effect_131				= 131,
+				PlayMusic				= 132,
+				UnlearnSpecialization	= 133,
+				KillCredit				= 134,
+				CallPet					= 135,
+				HealPct					= 136,
+				EnergizePct				= 137,
+				LeapBack				= 138,
+				ClearQuest				= 139,
+				ForceCast				= 140,
+				Effect_141				= 141,
+				TriggerSpellWithValue	= 142,
+				ApplyAreaAuraOwner		= 143,
+				KnockBack2				= 144,
+				Effect_145				= 145,
+				Effect_146				= 146,
+				QuestFail				= 147,
+				Effect_148				= 148,
+				Effect_149				= 149,
+				Effect_150				= 150,
+				TriggerSpell2			= 151,
+				SummonFriend			= 152,
+				Effect_153				= 153,
+
+				Count_					= 153,
+				Invalid_				= 0
+			};
+		}
+
+		typedef spell_effects::Type SpellEffect;
+
+		namespace constant_literal
+		{
+			typedef EnumStrings < SpellEffect, spell_effects::Count_,
+				spell_effects::Invalid_ > SpellEffectStrings;
+			extern const SpellEffectStrings spellEffectNames;
+		}
 	}
 }

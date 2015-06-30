@@ -26,7 +26,7 @@ vec4 lit(float NdotL, float NdotH, float m)
 
 void main()	
 {
-	vec4 coverage = texture2D(alpha, gl_TexCoord[0].st);
+	vec4 coverage = texture2D(alpha, gl_TexCoord[0].st * 0.96875);
 	
 	vec2 scaledUV = gl_TexCoord[0].st * Scale;
 	vec4 diffuse01 = texture2D(splat1, scaledUV);
@@ -51,4 +51,5 @@ void main()
 	
 	vec3 texColor = finalDiffuse.xyz;
     gl_FragColor = vec4(g_DiffuseLight * Lit.y * texColor + g_AmbientLight * texColor, 1.0);
+	//gl_FragColor = vec4(coverage.xyz, 1.0);
 }

@@ -34,7 +34,8 @@ namespace wowpp
 		PlayerManager &playerManager,
 		IdGenerator<UInt32> &idGenerator, 
 		IdGenerator<UInt64> &objectIdGenerator,
-		Project &project)
+		Project &project,
+		UInt32 worldNodeId)
 		: m_ioService(ioService)
 		, m_playerManager(playerManager)
 		, m_idGenerator(idGenerator)
@@ -42,6 +43,7 @@ namespace wowpp
 		, m_updateTimer(ioService)
 		, m_project(project)
 		, m_timerQueue(new TimerQueue(ioService))
+		, m_worldNodeId(worldNodeId)
 	{
 		// Trigger the first update
 		triggerUpdate();
@@ -49,11 +51,14 @@ namespace wowpp
 
 	WorldInstance * WorldInstanceManager::createInstance(const MapEntry &map)
 	{
+		UInt32 instanceId = m_idGenerator.generateId();
+		instanceId |= (m_worldNodeId << 24) & 0xFF;
+
 		// Create world instance
 		std::unique_ptr<WorldInstance> instance(new WorldInstance(
 			*this,
 			map, 
-			m_idGenerator.generateId(), 
+			instanceId, 
 			std::unique_ptr<VisibilityGrid>(new SolidVisibilityGrid(TileIndex2D(64, 64))),
 			m_objectIdGenerator,
 			std::bind(&RaceEntryManager::getById, &m_project.races, std::placeholders::_1),

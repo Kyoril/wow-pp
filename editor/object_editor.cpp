@@ -46,16 +46,33 @@ namespace wowpp
 			m_viewModel.reset(new PropertyViewModel(m_properties, nullptr));
 			ui->unitPropertyWidget->setModel(m_viewModel.get());
 
+			setUpdatesEnabled(false);
+
 			// Fill out unit tree widget
+			QList<QTreeWidgetItem*> unitItems;
 			for (auto &unit : m_project.units.getTemplates())
 			{
 				QString nameString = QString("%1 - %2").arg(QString::number(unit->id), 5, (QLatin1Char)'0').arg(unit->name.c_str());
 
 				QTreeWidgetItem* item = new QTreeWidgetItem(QStringList(nameString));
 				item->setIcon(0, QIcon(":/Units.png"));
-
-				ui->unitsTreeWidget->addTopLevelItem(item);
+				unitItems << item;
 			}
+			ui->unitsTreeWidget->addTopLevelItems(unitItems);
+
+			// Fill out spell tree widget
+			QList<QTreeWidgetItem*> spellItems;
+			for (auto &spell : m_project.spells.getTemplates())
+			{
+				QString nameString = QString("%1 - %2").arg(QString::number(spell->id), 5, (QLatin1Char)'0').arg(spell->name.c_str());
+
+				QTreeWidgetItem* item = new QTreeWidgetItem(QStringList(nameString));
+				item->setIcon(0, QIcon(":/Units.png"));
+				spellItems << item;
+			}
+			ui->spellsTreeWidget->addTopLevelItems(spellItems);
+
+			setUpdatesEnabled(true);
 		}
 
 		void ObjectEditor::on_unitsTreeWidget_currentItemChanged(QTreeWidgetItem* current, QTreeWidgetItem* previous)
@@ -209,6 +226,28 @@ namespace wowpp
 			}
 
 			QList<QTreeWidgetItem*> items = ui->unitsTreeWidget->findItems(newText, Qt::MatchFlag::MatchContains, 0);
+			for (size_t i = 0; i < items.size(); ++i)
+			{
+				items[i]->setHidden(false);
+			}
+		}
+
+		void ObjectEditor::on_spellSearchEdit_textChanged(const QString &newText)
+		{
+			const bool hideAll = !newText.isEmpty();
+
+			// Fill out unit tree widget
+			for (size_t i = 0; i < m_project.spells.getTemplates().size(); ++i)
+			{
+				ui->spellsTreeWidget->topLevelItem(i)->setHidden(hideAll);
+			}
+
+			if (!hideAll)
+			{
+				return;
+			}
+
+			QList<QTreeWidgetItem*> items = ui->spellsTreeWidget->findItems(newText, Qt::MatchFlag::MatchContains, 0);
 			for (size_t i = 0; i < items.size(); ++i)
 			{
 				items[i]->setHidden(false);

@@ -40,7 +40,7 @@ namespace wowpp
 
 		/// Starts the server application.
 		/// @returns True if the application should be restarted.
-		bool run();
+		bool run(const String &configFileName);
 		/// Shutdown the server application.
 		/// @param restart If set to true, the application will restart.
 		void shutdown(bool restart = false);

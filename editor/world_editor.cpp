@@ -34,6 +34,13 @@ namespace wowpp
 				workQueue.run();
 			});
 
+			// Move camera to first spawn position (if any)
+			if (!m_map.spawns.empty())
+			{
+				const auto &spawn = m_map.spawns.front();
+				m_camera.setPosition(spawn.position[0], spawn.position[1], spawn.position[2]);
+			}
+
 			const Ogre::Vector3 &camPos = m_camera.getDerivedPosition();
 			float convertedX = (constants::MapWidth * 32.0f) + camPos.x;
 			float convertedY = (constants::MapWidth * 32.0f) + camPos.y;

@@ -47,7 +47,7 @@ namespace wowpp
 	{
 	}
 
-	bool Program::run()
+	bool Program::run(const String &configFileName)
 	{
 		// Header
 		ILOG("Starting WoW++ World Node");
@@ -59,7 +59,7 @@ namespace wowpp
 #endif
 
 		// Load the configuration
-		if (!m_configuration.load("wowpp_world.cfg"))
+		if (!m_configuration.load(configFileName))
 		{
 			// Shutdown for now
 			return false;
@@ -138,7 +138,7 @@ namespace wowpp
 
 		// Create world instance manager
 		auto worldInstanceManager =
-			std::make_shared<wowpp::WorldInstanceManager>(m_ioService, *PlayerManager, instanceIdGenerator, objectIdGenerator, project);
+			std::make_shared<wowpp::WorldInstanceManager>(m_ioService, *PlayerManager, instanceIdGenerator, objectIdGenerator, project, 0);
 
 		std::vector<std::shared_ptr<RealmConnector>> realmConnectors;
 		std::map<UInt32, RealmConnector*> realmConnectorByMap;

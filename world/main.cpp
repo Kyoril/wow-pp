@@ -22,16 +22,49 @@
 #include "program.h"
 #include "log/default_log_levels.h"
 #include "log/log_std_stream.h"
+#include <boost/program_options.hpp>
 
 using namespace std;
 
 /// Procedural entry point of the application.
 int main(int argc, char* argv[])
 {
+	namespace po = boost::program_options;
+
 	// Add cout to the list of log output streams
 	wowpp::g_DefaultLog.signal().connect(std::bind(
 		wowpp::printLogEntry,
 		std::ref(std::cout), std::placeholders::_1, wowpp::g_DefaultConsoleLogOptions));
+
+	const std::string WorldServerDefaultConfig = "wowpp_world.cfg";
+	std::string configFileName = WorldServerDefaultConfig;
+
+	po::options_description desc("WoW++ world node, available options");
+	desc.add_options()
+		("help,h", "produce help message")
+		("config,c", po::value<std::string>(&configFileName),
+		("configuration file name, default: " + WorldServerDefaultConfig).c_str())
+		;
+
+	po::variables_map vm;
+	try
+	{
+		po::store(
+			po::command_line_parser(argc, argv).options(desc).run(),
+			vm);
+		po::notify(vm);
+	}
+	catch (const po::error &e)
+	{
+		std::cerr << e.what() << '\n';
+		return 1;
+	}
+
+	if (vm.count("help"))
+	{
+		std::cerr << desc << '\n';
+		return 0;
+	}
 
 	// Triggers if the program should be restarted
 	bool shouldRestartProgram = false;
@@ -40,7 +73,7 @@ int main(int argc, char* argv[])
 	{
 		// Run the main program
 		wowpp::Program program;
-		shouldRestartProgram = program.run();
+		shouldRestartProgram = program.run(configFileName);
 	} while (shouldRestartProgram);
 
 	// Shutdown

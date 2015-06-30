@@ -60,6 +60,7 @@ namespace wowpp
 			void on_actionSave_triggered();
 
 			void on_lineEdit_textChanged(const QString &);
+			void on_spellSearchEdit_textChanged(const QString &);
 
 		private:
 
