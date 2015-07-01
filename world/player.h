@@ -30,6 +30,7 @@
 #include "game/game_character.h"
 #include "binary_io/vector_sink.h"
 #include "realm_connector.h"
+#include "each_tile_in_region.h"
 #include <boost/noncopyable.hpp>
 #include <boost/signals2.hpp>
 #include <algorithm>
@@ -98,6 +99,32 @@ namespace wowpp
 
 			// Send the proxy packet to the realm server
 			m_realmConnector.sendProxyPacket(m_characterId, packet.getOpCode(), packet.getSize(), buffer);
+		}
+
+		template<class F>
+		void broadcastProxyPacket(F generator)
+		{
+			float x, y, z, o;
+			m_character->getLocation(x, y, z, o);
+
+			// Get a list of potential watchers
+			auto &grid = m_instance.getGrid();
+
+			// Get tile index
+			TileIndex2D tile;
+			grid.getTilePosition(x, y, z, tile[0], tile[1]);
+
+			// Get all subscribers
+			forEachTileInSight(
+				grid,
+				tile,
+				[&generator](VisibilityTile &tile)
+			{
+				for (auto * const subscriber : tile.getWatchers().getElements())
+				{
+					subscriber->sendProxyPacket(generator);
+				}
+			});
 		}
 
 	private:

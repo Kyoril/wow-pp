@@ -717,5 +717,401 @@ namespace wowpp
 				spell_effects::Invalid_ > SpellEffectStrings;
 			extern const SpellEffectStrings spellEffectNames;
 		}
+
+		namespace targets
+		{
+			enum Type
+			{
+				None					= 0,
+				UnitCaster				= 1,
+				UnitNearbyEnemy			= 2,
+				UnitNearbyParty			= 3,
+				UnitNearbyAlly			= 4,
+				UnitPet					= 5,
+				UnitTargetEnemy			= 6,
+				UnitAreaEntrySrc		= 7,
+				UnitAreaEntryDst		= 8,
+				DstHome					= 9,
+				UnitTargetDestCaster	= 11,
+				UnitAreaEnemySrc		= 15,
+				UnitAreaEnemyDst		= 16,
+				DstDB					= 17,
+				DstCaster				= 18,
+				UnitPartyCaster			= 20,
+				UnitTargetAlly			= 21,
+				SrcCaster				= 22,
+				GameObject				= 23,
+				UnitConeEnemy			= 24,
+				UnitTargetAny			= 25,
+				GameObjectItem			= 26,
+				UnitMaster				= 27,
+				DestDynObjEnemy			= 28,
+				DestDynObjAlly			= 29,
+				UnitAreaAllySrc			= 30,
+				UnitAreaAllyDst			= 31,
+				Minion					= 32,
+				AreaPartySrc			= 33,
+				AreaPartyDst			= 34,
+				UnitTargetParty			= 35,
+				DestCasterRandomUnknown	= 36,
+				UnitPartyTarget			= 37,
+				UnitNearbyEntry			= 38,
+				UnitCasterFishing		= 39,
+				ObjectUse				= 40,
+				DestCasterFrontLeft		= 41,
+				DestCasterBackLeft		= 42,
+				DestCasterBackRight		= 43,
+				DestCasterFrontRight	= 44,
+				UnitChainHeal			= 45,
+				DstNearbyEntry			= 46,
+				DestCasterFront			= 47,
+				DestCasterBack			= 48,
+				DestCasterRight			= 49,
+				DestCasterLeft			= 50,
+				ObjectAreaSrc			= 51,
+				ObjectAreaDst			= 52,
+				DstTargetEnemy			= 53,
+				UnitConeEnemyUnknown	= 54,
+				DestCasterFrontLeap		= 55,
+				UnitRaidCaster			= 56,
+				UnitRaidTargetRaid		= 57,
+				UnitNearbyRaid			= 58,
+				UnitConeAlly			= 59,
+				UnitConeEntry			= 60,
+				UnitClassTarget			= 61,
+				Test					= 62,
+				DestTargetAny			= 63,
+				DestTargetFront			= 64,
+				DestTargetBack			= 65,
+				DestTargetRight			= 66,
+				DestTargetLeft			= 67,
+				DestTargetFrontLeft		= 68,
+				DestTargetBackLeft		= 69,
+				DestTargetBackRight		= 70,
+				DestTargetFrontRight	= 71,
+				DestCasterRandom		= 72,
+				DestCasterRadius		= 73,
+				DestTargetRandom		= 74,
+				DestTargetRadius		= 75,
+				DestChannel				= 76,
+				UnitChannel				= 77,
+				DestDestFront			= 78,
+				DestDestBack			= 79,
+				DestDestRight			= 80,
+				DestDestLeft			= 81,
+				DestDestFrontLeft		= 82,
+				DestDestBackLeft		= 83,
+				DestDestBackRight		= 84,
+				DestDestFrontRight		= 85,
+				DestDestRandom			= 86,
+				DestDest				= 87,
+				DestDynObjNone			= 88,
+				DestTraj				= 89,
+				UnitTargetMinipet		= 90,
+				CorpseAreaEnemyPlayer	= 93
+			};
+		}
+
+		typedef targets::Type Targets;
+
+		namespace spell_cast_target_flags
+		{
+			enum Type
+			{
+				Self				= 0x00000000,
+				Unit				= 0x00000002,
+				Item				= 0x00000010,
+				SourceLocation		= 0x00000020,
+				DestLocation		= 0x00000040,
+				ObjectUnknown		= 0x00000080,
+				PvPCorpse			= 0x00000200,
+				Object				= 0x00000800,
+				TradeItem			= 0x00001000,
+				String				= 0x00002000,
+				Unk1				= 0x00004000,
+				Corpse				= 0x00008000,
+				Unk2				= 0x00010000
+			};
+		}
+
+		typedef spell_cast_target_flags::Type SpellCastTargetFlags;
+
+		namespace spell_miss_info
+		{
+			enum Type
+			{
+				None			= 0,
+				Miss			= 1,
+				Resist			= 2,
+				Dodge			= 3,
+				Parry			= 4,
+				Block			= 5,
+				Evade			= 6,
+				Immune			= 7,
+				Immune2			= 8,
+				Deflect			= 9,
+				Absorb			= 10,
+				Reflect			= 11
+			};
+		}
+
+		typedef spell_miss_info::Type SpellMissInfo;
+
+		namespace spell_hit_type
+		{
+			enum Type
+			{
+				Unk1			= 0x00001,
+				Crit			= 0x00002,
+				Unk2			= 0x00004,
+				Unk3			= 0x00008,
+				Unk4			= 0x00020
+			};
+		}
+
+		typedef spell_hit_type::Type SpellHitType;
+
+		namespace spell_dmg_class
+		{
+			enum Type
+			{
+				None		= 0,
+				Magic		= 1,
+				Melee		= 2,
+				Ranged		= 3
+			};
+		}
+
+		typedef spell_dmg_class::Type SpellDmgClass;
+
+		namespace spell_prevention_type
+		{
+			enum Type
+			{
+				None		= 0,
+				Silence		= 1,
+				Pacify		= 2
+			};
+		}
+
+		typedef spell_prevention_type::Type SpellPreventionType;
+
+		namespace spell_cast_result
+		{
+			enum Type
+			{
+				FailedAffectingCombat				= 0x00,
+				FailedAlreadyAtFullHealth			= 0x01,
+				FailedAlreadyAtFullMana				= 0x02,
+				FailedAlreadyAtFullPower			= 0x03,
+				FailedAlreadyBeingTamed				= 0x04,
+				FailedAlreadyHaveCharm				= 0x05,
+				FailedAlreadyHaveSummon				= 0x06,
+				FailedAlreadyOpen					= 0x07,
+				FailedAuraBounced					= 0x08,
+				FailedAutotrackInterrupted			= 0x09,
+				FailedBadImplicitTargets			= 0x0A,
+				FailedBadTargets					= 0x0B,
+				FailedCantBeCharmed					= 0x0C,
+				FailedCantBeDisenchanted			= 0x0D,
+				FailedCantBeDisenchantedSkill		= 0x0E,
+				FailedCantBeProspected				= 0x0F,
+				FailedCantCastOnTapped				= 0x10,
+				FailedCantDuelWhileInvisible		= 0x11,
+				FailedCantDuelWhileStealthed		= 0x12,
+				FailedCantStealth					= 0x13,
+				FailedCasterAurastate				= 0x14,
+				FailedCasterDead					= 0x15,
+				FailedCharmed						= 0x16,
+				FailedChestInUse					= 0x17,
+				FailedConfused						= 0x18,
+				FailedDontReport					= 0x19,
+				FailedEquippedItem					= 0x1A,
+				FailedEquippedItemClass				= 0x1B,
+				FailedEquippedItemClassMainhand		= 0x1C,
+				FailedEquippedItemClassOffhand		= 0x1D,
+				FailedError							= 0x1E,
+				FailedFizzle						= 0x1F,
+				FailedFleeing						= 0x20,
+				FailedFoodLowLevel					= 0x21,
+				FailedHighLevel						= 0x22,
+				FailedHungerSatiated				= 0x23,
+				FailedImmune						= 0x24,
+				FailedInterrupted					= 0x25,
+				FailedInterruptedCombat				= 0x26,
+				FailedItemAlreadyEnchanted			= 0x27,
+				FailedItemGone						= 0x28,
+				FailedItemNotFound					= 0x29,
+				FailedItemNotReady					= 0x2A,
+				FailedLevelRequirement				= 0x2B,
+				FailedLineOfSight					= 0x2C,
+				FailedLowLevel						= 0x2D,
+				FailedLowCastLevel					= 0x2E,
+				FailedMainhandEmpty					= 0x2F,
+				FailedMoving						= 0x30,
+				FailedNeedAmmo						= 0x31,
+				FailedNeedAmmoPouch					= 0x32,
+				FailedNeedExoticAmmo				= 0x33,
+				FailedNoPath						= 0x34,
+				FailedNotBehind						= 0x35,
+				FailedNotFishable					= 0x36,
+				FailedNotFlying						= 0x37,
+				FailedNotHere						= 0x38,
+				FailedNotInfront					= 0x39,
+				FailedNotInControl					= 0x3A,
+				FailedNotKnown						= 0x3B,
+				FailedNotMounted					= 0x3C,
+				FailedNotOnTaxi						= 0x3D,
+				FailedNotOnTransport				= 0x3E,
+				FailedNotReady						= 0x3F,
+				FailedNotShapeshift					= 0x40,
+				FailedNotStanding					= 0x41,
+				FailedNotTradeable					= 0x42,
+				FailedNotTrading					= 0x43,
+				FailedNotUnsheathed					= 0x44,
+				FailedNotWhileGhost					= 0x45,
+				FailedNoAmmo						= 0x46,
+				FailedNoChargesRemain				= 0x47,
+				FailedNoChampion					= 0x48,
+				FailedNoComboPoints					= 0x49,
+				FailedNoDueling						= 0x4A,
+				FailedNoEndurance					= 0x4B,
+				FailedNoFish						= 0x4C,
+				FailedNoItemsWhileShapeshifted		= 0x4D,
+				FailedNoMountsAllowed				= 0x4E,
+				FailedNoPet							= 0x4F,
+				FailedNoPower						= 0x50,
+				FailedNothingToDispel				= 0x51,
+				FailedNothingToSteal				= 0x52,
+				FailedOnlyAboveWater				= 0x53,
+				FailedOnlyDaytime					= 0x54,
+				FailedOnlyIndoors					= 0x55,
+				FailedOnlyMounted					= 0x56,
+				FailedOnlyNighttime					= 0x57,
+				FailedOnlyOutdoors					= 0x58,
+				FailedOnlyShapeshift				= 0x59,
+				FailedOnlyStealthed					= 0x5A,
+				FailedOnlyUnderwater				= 0x5B,
+				FailedOutOfRange					= 0x5C,
+				FailedPacified						= 0x5D,
+				FailedPossessed						= 0x5E,
+				FailedReagents						= 0x5F,
+				FailedRequiresArea					= 0x60,
+				FailedRequiresSpellFocus			= 0x61,
+				FailedRooted						= 0x62,
+				FailedSilenced						= 0x63,
+				FailedSpellInProgress				= 0x64,
+				FailedSpellLearned					= 0x65,
+				FailedSpellUnavailable				= 0x66,
+				FailedStunned						= 0x67,
+				FailedTargetsDead					= 0x68,
+				FailedTargetAffectingCombat			= 0x69,
+				FailedTargetAuraState				= 0x6A,
+				FailedTargetDueling					= 0x6B,
+				FailedTargetEnemy					= 0x6C,
+				FailedTargetEnraged					= 0x6D,
+				FailedTargetFriendly				= 0x6E,
+				FailedTargetInCombat				= 0x6F,
+				FailedTargetIsPlayer				= 0x70,
+				FailedTargetIsPlayerControlled		= 0x71,
+				FailedTargetNotDead					= 0x72,
+				FailedTargetNotInParty				= 0x73,
+				FailedTargetNotLooted				= 0x74,
+				FailedTargetNotPlayer				= 0x75,
+				FailedTargetNoPockets				= 0x76,
+				FailedTargetNoWeapons				= 0x77,
+				FailedTargetUnskinnable				= 0x78,
+				FailedThirstSatiated				= 0x79,
+				FailedTooClose						= 0x7A,
+				FailedTooManyOfItem					= 0x7B,
+				FailedTotemCategory					= 0x7C,
+				FailedTotems						= 0x7D,
+				FailedTrainingPoints				= 0x7E,
+				FailedTryAgain						= 0x7F,
+				FailedUnitNotBehind					= 0x80,
+				FailedUnitNotInfront				= 0x81,
+				FailedWrongPetFood					= 0x82,
+				FailedNotWhileFatigued				= 0x83,
+				FailedTargetNotInInstance			= 0x84,
+				FailedNotWhileTrading				= 0x85,
+				FailedTargetNotInRaid				= 0x86,
+				FailedDisenchantWhileLooting		= 0x87,
+				FailedProspectWhileLooting			= 0x88,
+				FailedProspectNeedMore				= 0x89,
+				FailedTargetFreeForAll				= 0x8A,
+				FailedNoEdibleCorpses				= 0x8B,
+				FailedOnlyBattlegrounds				= 0x8C,
+				FailedTargetNotGhost				= 0x8D,
+				FailedTooManySkills					= 0x8E,
+				FailedTransformUnusable				= 0x8F,
+				FailedWrongWeather					= 0x90,
+				FailedDamageImmune					= 0x91,
+				FailedPreventedByMechanic			= 0x92,
+				FailedPlayTime						= 0x93,
+				FailedReputation					= 0x94,
+				FailedMinSkill						= 0x95,
+				FailedNotInArena					= 0x96,
+				FailedNotOnShapeshift				= 0x97,
+				FailedNotOnStealthed				= 0x98,
+				FailedNotOnDamageImmune				= 0x99,
+				FailedNotOnMounted					= 0x9A,
+				FailedTooShallow					= 0x9B,
+				FailedTargetNotInSanctuary			= 0x9C,
+				FailedTargetIsTrivial				= 0x9D,
+				FailedBMOrInvisGod					= 0x9E,
+				FailedExpertRidingRequirement		= 0x9F,
+				FailedArtisanRidingRequirement		= 0xA0,
+				FailedNotIdle						= 0xA1,
+				FailedNotInactive					= 0xA2,
+				FailedPartialPlaytime				= 0xA3,
+				FailedNoPlaytime					= 0xA4,
+				FailedNotInBattleground				= 0xA5,
+				FailedOnlyInArena					= 0xA6,
+				FailedTargetLockedToRaidInstance	= 0xA7,
+				FailedUnknown						= 0xA8,
+				/// Custom values used if no error occurred (will not be sent to the client)
+				CastOkay							= 0xFF
+			};
+		}
+
+		typedef spell_cast_result::Type SpellCastResult;
+
+		namespace spell_range_index
+		{
+			enum Type
+			{
+				SelfOnly	= 1,
+				Combat		= 2,
+				Anywhere	= 13
+			};
+		}
+
+		typedef spell_range_index::Type SpellRangeIndex;
+
+		namespace spell_cast_flags
+		{
+			enum Type
+			{
+				Pending			= 0x00000001,
+				Unknown1		= 0x00000002,
+				Unknown2		= 0x00000010,
+				Ammo			= 0x00000020,
+				Unknown3		= 0x00000100
+			};
+		}
+
+		typedef spell_cast_flags::Type SpellCastFlags;
+
+		namespace spell_range_flag
+		{
+			enum Type
+			{
+				Default			= 0,
+				Melee			= 1,
+				Ranged			= 2
+			};
+		}
+
+		typedef spell_range_flag::Type SpellRangeFlag;
 	}
 }

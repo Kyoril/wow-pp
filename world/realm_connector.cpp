@@ -355,41 +355,26 @@ namespace wowpp
 		// Check op code
 		switch (opCode)
 		{
-			case game::client_packet::NameQuery:
-			{
-				handleNameQuery(*sender, clientPacket);
-				break;
+			// Default client packets
+#define WOWPP_HANDLE_PACKET(name) \
+			case wowpp::game::client_packet::name: \
+			{ \
+				handle##name(*sender, clientPacket); \
+				break; \
 			}
-			case game::client_packet::CreatureQuery:
-			{
-				handleCreatureQuery(*sender, clientPacket);
-				break;
-			}
-			case game::client_packet::PlayerLogout:
-			{
-				DLOG("TODO: CMSG_PLAYER_LOGOUT not handled.");
-				break;
-			}
-			case game::client_packet::LogoutRequest:
-			{
-				handleLogoutRequest(*sender, clientPacket);
-				break;
-			}
-			case game::client_packet::LogoutCancel:
-			{
-				handleLogoutCancel(*sender, clientPacket);
-				break;
-			}
-			case game::client_packet::SetSelection:
-			{
-				handleSetSelection(*sender, clientPacket);
-				break;
-			}
-			case game::client_packet::StandStateChange:
-			{
-				handleStandStateChange(*sender, clientPacket);
-				break;
-			}
+
+			WOWPP_HANDLE_PACKET(NameQuery)
+			WOWPP_HANDLE_PACKET(CreatureQuery)
+			WOWPP_HANDLE_PACKET(LogoutRequest)
+			WOWPP_HANDLE_PACKET(LogoutCancel)
+			WOWPP_HANDLE_PACKET(SetSelection)
+			WOWPP_HANDLE_PACKET(StandStateChange)
+			WOWPP_HANDLE_PACKET(CastSpell)
+			WOWPP_HANDLE_PACKET(CancelCast)
+
+#undef WOWPP_HANDLE_PACKET
+
+			// Movement packets get special treatment
 			case game::client_packet::MoveStartForward:
 			case game::client_packet::MoveStartBackward:
 			case game::client_packet::MoveStop:
@@ -713,5 +698,91 @@ namespace wowpp
 		{
 			WLOG("Unsupported reason - request ignored");
 		}
+	}
+
+	void RealmConnector::handleCastSpell(Player &sender, game::Protocol::IncomingPacket &packet)
+	{
+		// Read spell cast packet
+		UInt32 spellId;
+		UInt8 castCount;
+		SpellTargetMap targetMap;
+		if (!game::client_read::castSpell(packet, spellId, castCount, targetMap))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		// Look for the spell
+		const auto *spell = m_project.spells.getById(spellId);
+		if (!spell)
+		{
+			WLOG("Received CMSG_CAST_SPELL with unknown spell id " << spellId);
+			return;
+		}
+
+		// Some debugging output
+		{
+			DLOG("SPELL CAST: " << spellId << " (" << UInt32(castCount) << " times) - target flags: " << targetMap.getTargetMap());
+			if (targetMap.hasUnitTarget())
+			{
+				DLOG("\tUNIT TARGET: 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << targetMap.getUnitTarget());
+			}
+			if (targetMap.hasGOTarget())
+			{
+				DLOG("\tGO TARGET: 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << targetMap.getGOTarget());
+			}
+			if (targetMap.hasItemTarget())
+			{
+				DLOG("\tITEM TARGET: 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << targetMap.getItemTarget());
+			}
+			if (targetMap.hasCorpseTarget())
+			{
+				DLOG("\tCORPSE TARGET: 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << targetMap.getCorpseTarget());
+			}
+			if (targetMap.hasSourceTarget())
+			{
+				float x, y, z;
+				targetMap.getSourceLocation(x, y, z);
+				DLOG("\tSOURCE: " << x << " " << y << " " << z);
+			}
+			if (targetMap.hasDestTarget())
+			{
+				float x, y, z;
+				targetMap.getDestLocation(x, y, z);
+				DLOG("\tDESTINATION: " << x << " " << y << " " << z);
+			}
+			if (targetMap.hasStringTarget())
+			{
+				DLOG("\tSTRING: " << targetMap.getStringTarget());
+			}
+		}
+		
+		// TODO: Spell cast logic
+		sender.broadcastProxyPacket(
+			std::bind(game::server_write::spellStart, std::placeholders::_1, 
+				sender.getCharacterGuid(), 
+				sender.getCharacterGuid(), 
+				std::cref(*spell), 
+				std::cref(targetMap),
+				game::spell_cast_flags::Unknown1,
+				2000,
+				castCount));
+
+		/*// Send error
+		game::SpellCastResult result = game::spell_cast_result::FailedError;
+		sender.sendProxyPacket(
+			std::bind(game::server_write::castFailed, std::placeholders::_1, result, std::cref(*spell), castCount));*/
+	}
+
+	void RealmConnector::handleCancelCast(Player &sender, game::Protocol::IncomingPacket &packet)
+	{
+		UInt32 spellId;
+		if (!game::client_read::cancelCast(packet, spellId))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		// TODO: Cancel the cast
 	}
 }

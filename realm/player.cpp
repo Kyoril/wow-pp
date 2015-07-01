@@ -1001,8 +1001,6 @@ namespace wowpp
 			// 
 			case chat_msg::Whisper:
 			{
-				DLOG("Whisper message to " << receiver << " received");
-
 				// Get player guid by name
 				game::CharEntry entry;
 				if (!m_database.getCharacterByName(receiver, entry))

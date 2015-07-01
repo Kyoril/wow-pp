@@ -846,6 +846,187 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void castFailed(game::OutgoingPacket &out_packet, game::SpellCastResult result, const SpellEntry &spell, UInt8 castCount)
+			{
+				out_packet.start(game::server_packet::CastFailed);
+				out_packet
+					<< io::write<NetUInt32>(spell.id)
+					<< io::write<NetUInt8>(result)
+					<< io::write<NetUInt8>(castCount);
+				// TODO: Send more informations based on the cast result code (which area is required etc.)
+				out_packet.finish();
+			}
+
+			void spellStart(game::OutgoingPacket &out_packet, UInt64 casterGUID, UInt64 casterItemGUID, const SpellEntry &spell, const SpellTargetMap &targets, game::SpellCastFlags castFlags, Int32 castTime, UInt8 castCount)
+			{
+				out_packet.start(game::server_packet::SpellStart);
+
+				// Cast item GUID (or caster GUID if not caused by item)
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; casterItemGUID != 0; ++i)
+					{
+						if (casterItemGUID & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(casterItemGUID & 0xFF);
+							++size;
+						}
+
+						casterItemGUID >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+
+				// Cast GUID
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; casterGUID != 0; ++i)
+					{
+						if (casterGUID & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(casterGUID & 0xFF);
+							++size;
+						}
+
+						casterGUID >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+
+				out_packet
+					<< io::write<NetUInt32>(spell.id)
+					<< io::write<NetUInt8>(castCount)
+					<< io::write<NetUInt16>(castFlags)
+					<< io::write<NetInt32>(castTime)
+					<< targets;
+
+				if (castFlags && game::spell_cast_flags::Ammo)
+				{
+					//TODO: Ammo ids
+				}
+				out_packet.finish();
+			}
+
+			void spellGo(game::OutgoingPacket &out_packet, UInt64 casterGUID, UInt64 casterItemGUID, const SpellEntry &spell, const SpellTargetMap &targets, game::SpellCastFlags castFlags /*TODO: HitInformation */ /*TODO: AmmoInformation */)
+			{
+				out_packet.start(game::server_packet::SpellGo);
+				// Cast item GUID (or caster GUID if not caused by item)
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; casterItemGUID != 0; ++i)
+					{
+						if (casterItemGUID & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(casterItemGUID & 0xFF);
+							++size;
+						}
+
+						casterItemGUID >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+
+				// Cast GUID
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; casterGUID != 0; ++i)
+					{
+						if (casterGUID & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(casterGUID & 0xFF);
+							++size;
+						}
+
+						casterGUID >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+
+				out_packet
+					<< io::write<NetUInt32>(spell.id)
+					<< io::write<NetUInt16>(castFlags)
+					<< io::write<NetUInt32>(getCurrentTime());
+
+				// TODO: Hit information
+				{
+					UInt8 unitHitCount = (targets.hasUnitTarget() ? 1 : 0);
+					out_packet
+						<< io::write<NetUInt8>(unitHitCount);	// Hit count
+					if (unitHitCount > 0)
+					{
+						out_packet
+							<< io::write<NetUInt64>(targets.getUnitTarget());
+					}
+
+					UInt8 goHitCount = (targets.hasGOTarget() ? 1 : 0);
+					out_packet
+						<< io::write<NetUInt8>(goHitCount);	// GO Hit count
+					if (goHitCount > 0)
+					{
+						out_packet
+							<< io::write<NetUInt64>(targets.getGOTarget());
+					}
+
+					out_packet
+						<< io::write<NetUInt8>(0);	// Miss count
+				}
+
+				out_packet
+					<< targets;
+
+				if (castFlags && game::spell_cast_flags::Ammo)
+				{
+					//TODO: Ammo ids
+				}
+
+				out_packet.finish();
+			}
+
+			void spellFailure(game::OutgoingPacket &out_packet, UInt64 casterGUID, UInt32 spellId, game::SpellCastResult result)
+			{
+				out_packet.start(game::server_packet::SpellFailure);
+				out_packet
+					<< io::write<NetUInt64>(casterGUID)
+					<< io::write<NetUInt32>(spellId)
+					<< io::write<NetUInt8>(result);
+				out_packet.finish();
+			}
+
+			void spellCooldown(game::OutgoingPacket &out_packet /*TODO */)
+			{
+				out_packet.start(game::server_packet::SpellCooldown);
+				out_packet.finish();
+			}
+
+			void cooldownEvent(game::OutgoingPacket &out_packet /*TODO */)
+			{
+				out_packet.start(game::server_packet::CooldownEvent);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
@@ -1253,6 +1434,20 @@ namespace wowpp
 			{
 				return packet
 					>> io::read<NetUInt64>(out_guid);
+			}
+
+			bool castSpell(io::Reader &packet, UInt32 &out_spellID, UInt8 &out_castCount, SpellTargetMap &out_targetMap)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_spellID)
+					>> io::read<NetUInt8>(out_castCount)
+					>> out_targetMap;
+			}
+
+			bool cancelCast(io::Reader &packet, UInt32 &out_spellID)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_spellID);
 			}
 		}
 	}

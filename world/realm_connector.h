@@ -118,6 +118,8 @@ namespace wowpp
 		void handleSetSelection(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleStandStateChange(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleMovementPacket(Player &sender, UInt16 opCode, game::Protocol::IncomingPacket &packet);
+		void handleCastSpell(Player &sender, game::Protocol::IncomingPacket &packet);
+		void handleCancelCast(Player &sender, game::Protocol::IncomingPacket &packet);
 
 	private:
 

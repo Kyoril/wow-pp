@@ -32,6 +32,8 @@
 #include "game/action_button.h"
 #include "game/game_unit.h"
 #include "game/movement_info.h"
+#include "game/spell_target_map.h"
+#include "data/spell_entry.h"
 #include <array>
 #include <vector>
 #include <functional>
@@ -90,6 +92,8 @@ namespace wowpp
 				SetPitch				= 0x0DB,
 				MoveHeartBeat			= 0x0EE,
 				StandStateChange		= 0x101,
+				CastSpell				= 0x12E,
+				CancelCast				= 0x12F,
 				SetSelection			= 0x13D,
 				Ping					= 0x1DC,
 				AuthSession				= 0x1ED,
@@ -99,7 +103,7 @@ namespace wowpp
 				MoveStartAscend			= 0x359,
 				MoveStopAscend			= 0x35A,
 				MoveChangeTransport		= 0x38D,
-				MoveStartDescend		= 0x3A7,
+				MoveStartDescend		= 0x3A7
 			};
 		}
 
@@ -149,6 +153,14 @@ namespace wowpp
 				SetProficiency			= 0x127,
 				ActionButtons			= 0x129,
 				InitialSpells			= 0x12A,
+
+				CastFailed				= 0x130,
+				SpellStart				= 0x131,
+				SpellGo					= 0x132,
+				SpellFailure			= 0x133,
+				SpellCooldown			= 0x134,
+				CooldownEvent			= 0x135,
+
 				BindPointUpdate			= 0x155,
 				Pong					= 0x1DD,
 				AuthChallenge			= 0x1EC,
@@ -452,6 +464,18 @@ namespace wowpp
 				io::Reader &packet,
 				UnitStandState &out_standState
 				);
+
+			bool castSpell(
+				io::Reader &packet,
+				UInt32 &out_spellID,
+				UInt8 &out_castCount,
+				SpellTargetMap &out_targetMap
+				);
+
+			bool cancelCast(
+				io::Reader &packet,
+				UInt32 &out_spellID
+				);
 		};
 
 		namespace server_write
@@ -681,6 +705,52 @@ namespace wowpp
 			void standStateUpdate(
 				game::OutgoingPacket &out_packet,
 				UnitStandState standState
+				);
+
+			void castFailed(
+				game::OutgoingPacket &out_packet,
+				game::SpellCastResult result,
+				const SpellEntry &spell,
+				UInt8 castCount
+				);
+
+			void spellStart(
+				game::OutgoingPacket &out_packet,
+				UInt64 casterGUID,
+				UInt64 casterItemGUID,
+				const SpellEntry &spell,
+				const SpellTargetMap &targets,
+				game::SpellCastFlags castFlags,
+				Int32 castTime,
+				UInt8 castCount
+				);
+
+			void spellGo(
+				game::OutgoingPacket &out_packet,
+				UInt64 casterGUID,
+				UInt64 casterItemGUID,
+				const SpellEntry &spell,
+				const SpellTargetMap &targets,
+				game::SpellCastFlags castFlags
+				//TODO: HitInformation
+				//TODO: AmmoInformation
+				);
+
+			void spellFailure(
+				game::OutgoingPacket &out_packet,
+				UInt64 casterGUID,
+				UInt32 spellId,
+				game::SpellCastResult result
+				);
+
+			void spellCooldown(
+				game::OutgoingPacket &out_packet
+				//TODO
+				);
+
+			void cooldownEvent(
+				game::OutgoingPacket &out_packet
+				//TODO
 				);
 		};
 	}
