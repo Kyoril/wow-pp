@@ -47,11 +47,6 @@ namespace wowpp
 			m_ui->spellsListView->setModel(m_spellFilter);
 		}
 
-		ObjectEditor::~ObjectEditor()
-		{
-			delete m_ui;
-		}
-
 		void ObjectEditor::on_unitFilter_editingFinished()
 		{
 			QRegExp::PatternSyntax syntax = QRegExp::RegExp;

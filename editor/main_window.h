@@ -44,10 +44,10 @@ namespace wowpp
 		public:
 
 			explicit MainWindow(EditorApplication &app);
-			~MainWindow();
 
 		private slots:
 
+			void on_actionExit_triggered();
 
 		protected:
 

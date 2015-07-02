@@ -40,11 +40,6 @@ namespace wowpp
 			connect(m_ui->actionObjectEditor, SIGNAL(triggered()), &m_application, SLOT(showObjectEditor()));
 		}
 
-		MainWindow::~MainWindow()
-		{
-			delete m_ui;
-		}
-
 		void MainWindow::closeEvent(QCloseEvent *qEvent)
 		{
 			if (m_application.shutdown())
@@ -56,5 +51,11 @@ namespace wowpp
 				qEvent->ignore();
 			}
 		}
+
+		void MainWindow::on_actionExit_triggered()
+		{
+			close();
+		}
+
 	}
 }

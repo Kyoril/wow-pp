@@ -37,8 +37,8 @@ namespace wowpp
 			glClearColor(0.0f, 0.1f, 0.3f, 0.0f);
 
 			// Setup the update timer
-			connect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(updateGL()));
-			unpause();
+			//connect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(updateGL()));
+			//unpause();
 		}
 
 		void RenderWidget::paintGL()
@@ -57,12 +57,12 @@ namespace wowpp
 
 		void RenderWidget::pause()
 		{
-			m_updateTimer.stop();
+			//m_updateTimer.stop();
 		}
 
 		void RenderWidget::unpause()
 		{
-			m_updateTimer.start(16);
+			//m_updateTimer.start(16);
 		}
 
 	}

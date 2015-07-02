@@ -23,6 +23,7 @@
 #include "main_window.h"
 #include "object_editor.h"
 #include <QApplication>
+#include <QDesktopWidget>
 #include <QMessageBox>
 #include <cassert>
 
@@ -54,6 +55,15 @@ namespace wowpp
 
 			// Show the main window
 			m_mainWindow.reset(new MainWindow(*this));
+
+			// Move this window to the center of the screen manually, since without this, there seems to be a crash
+			// in QtGui somewhere...
+			QRect screen = QApplication::desktop()->availableGeometry();
+			QRect win = m_mainWindow->geometry();
+			m_mainWindow->setGeometry(QRect(screen.center().x() - win.size().width() / 2, screen.center().y() - win.size().height() / 2,
+				win.size().width(), win.size().height()));
+
+			// Show the window
 			m_mainWindow->show();
 
 			// Load the project

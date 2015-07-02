@@ -55,7 +55,9 @@ namespace wowpp
 				if (role == Qt::DisplayRole)
 				{
 					const auto &templates = m_entries.getTemplates();
-					return QString(templates[index.row()]->name.c_str());
+					const T::TemplatePtr &tpl = templates[index.row()];
+
+					return QString("%1 %2").arg(QString::number(tpl->id), 6, QLatin1Char('0')).arg(tpl->name.c_str());
 				}
 
 				return QVariant();

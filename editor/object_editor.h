@@ -45,7 +45,6 @@ namespace wowpp
 		public:
 
 			explicit ObjectEditor(EditorApplication &app);
-			~ObjectEditor();
 
 		private slots:
 

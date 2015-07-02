@@ -48,7 +48,7 @@ namespace wowpp
 
 		private:
 
-			QTimer m_updateTimer;
+			//QTimer m_updateTimer;
 		};
 	}
 }
