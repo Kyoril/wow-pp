@@ -141,6 +141,7 @@
      <string>Modules</string>
     </property>
     <addaction name="actionObjectEditor"/>
+    <addaction name="actionTriggerEditor"/>
    </widget>
    <addaction name="menu_Project"/>
    <addaction name="menu_Edit"/>
@@ -181,6 +182,7 @@
    <addaction name="actionSave"/>
    <addaction name="separator"/>
    <addaction name="actionObjectEditor"/>
+   <addaction name="actionTriggerEditor"/>
   </widget>
   <action name="actionText">
    <property name="text">
@@ -235,6 +237,18 @@
   <action name="actionBuildNav">
    <property name="text">
     <string>Build Navigation Mesh</string>
+   </property>
+  </action>
+  <action name="actionTriggerEditor">
+   <property name="icon">
+    <iconset resource="../qrc/editor.qrc">
+     <normaloff>:/Trigger.png</normaloff>:/Trigger.png</iconset>
+   </property>
+   <property name="text">
+    <string>Trigger Editor</string>
+   </property>
+   <property name="toolTip">
+    <string>Trigger Editor</string>
    </property>
   </action>
  </widget>

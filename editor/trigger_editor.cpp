@@ -19,44 +19,21 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-#include "main_window.h"
+#include "trigger_editor.h"
+#include "main_window.h"	// Needed because of forward declaration with unique_ptr in EditorApplication
 #include "editor_application.h"
-#include "object_editor.h"
-#include "ui_main_window.h"
-#include <QCloseEvent>
+#include "ui_trigger_editor.h"
 
 namespace wowpp
 {
 	namespace editor
 	{
-		MainWindow::MainWindow(EditorApplication &app)
+		TriggerEditor::TriggerEditor(EditorApplication &app)
 			: QMainWindow()
 			, m_application(app)
-			, m_ui(new Ui::MainWindow())
+			, m_ui(new Ui::TriggerEditor())
 		{
 			m_ui->setupUi(this);
-
-			// Connect slots
-			connect(m_ui->actionObjectEditor, SIGNAL(triggered()), &m_application, SLOT(showObjectEditor()));
-			connect(m_ui->actionTriggerEditor, SIGNAL(triggered()), &m_application, SLOT(showTriggerEditor()));
 		}
-
-		void MainWindow::closeEvent(QCloseEvent *qEvent)
-		{
-			if (m_application.shutdown())
-			{
-				qEvent->accept();
-			}
-			else
-			{
-				qEvent->ignore();
-			}
-		}
-
-		void MainWindow::on_actionExit_triggered()
-		{
-			close();
-		}
-
 	}
 }

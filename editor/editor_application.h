@@ -33,6 +33,7 @@ namespace wowpp
 	{
 		class MainWindow;		// main_window.h
 		class ObjectEditor;		// object_editor.h
+		class TriggerEditor;	// trigger_editor.h
 
 		/// Manages and contains all major application objects.
 		class EditorApplication final : public QObject
@@ -65,17 +66,21 @@ namespace wowpp
 
 			/// Displays the object editor window (and activates it if it is in the background).
 			void showObjectEditor();
+			/// 
+			void showTriggerEditor();
 
 		signals:
 
 			/// Fired when the object editor window was showed or activated.
-			void objectEditorShowed();
+			void objectEditorShown();
+			void triggerEditorShown();
 
 		private:
 
 			Configuration m_configuration;
 			std::unique_ptr<MainWindow> m_mainWindow;
 			std::unique_ptr<ObjectEditor> m_objectEditor;
+			std::unique_ptr<TriggerEditor> m_triggerEditor;
 			Project m_project;
 			std::unique_ptr<SpellListModel> m_spellListModel;
 			std::unique_ptr<MapListModel> m_mapListModel;

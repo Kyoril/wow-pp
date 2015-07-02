@@ -19,44 +19,39 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-#include "main_window.h"
-#include "editor_application.h"
-#include "object_editor.h"
-#include "ui_main_window.h"
-#include <QCloseEvent>
+#pragma once
+
+#include <QMainWindow>
+#include <memory>
+
+// Forwards
+namespace Ui
+{
+	class TriggerEditor;
+}
 
 namespace wowpp
 {
 	namespace editor
 	{
-		MainWindow::MainWindow(EditorApplication &app)
-			: QMainWindow()
-			, m_application(app)
-			, m_ui(new Ui::MainWindow())
+		class EditorApplication;
+
+		/// 
+		class TriggerEditor final : public QMainWindow
 		{
-			m_ui->setupUi(this);
+			Q_OBJECT
 
-			// Connect slots
-			connect(m_ui->actionObjectEditor, SIGNAL(triggered()), &m_application, SLOT(showObjectEditor()));
-			connect(m_ui->actionTriggerEditor, SIGNAL(triggered()), &m_application, SLOT(showTriggerEditor()));
-		}
+		public:
 
-		void MainWindow::closeEvent(QCloseEvent *qEvent)
-		{
-			if (m_application.shutdown())
-			{
-				qEvent->accept();
-			}
-			else
-			{
-				qEvent->ignore();
-			}
-		}
+			explicit TriggerEditor(EditorApplication &app);
 
-		void MainWindow::on_actionExit_triggered()
-		{
-			close();
-		}
+		private slots:
 
+
+		private:
+				
+			EditorApplication &m_application;
+			Ui::TriggerEditor *m_ui;
+		};
 	}
 }

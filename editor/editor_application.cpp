@@ -22,6 +22,7 @@
 #include "editor_application.h"
 #include "main_window.h"
 #include "object_editor.h"
+#include "trigger_editor.h"
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QMessageBox>
@@ -85,6 +86,9 @@ namespace wowpp
 
 			// Setup the object editor
 			m_objectEditor.reset(new ObjectEditor(*this));
+
+			// Setup the trigger editor
+			m_triggerEditor.reset(new TriggerEditor(*this));
 			
 			return true;
 		}
@@ -96,7 +100,17 @@ namespace wowpp
 			m_objectEditor->show();
 			m_objectEditor->activateWindow();
 
-			emit objectEditorShowed();
+			emit objectEditorShown();
+		}
+
+		void EditorApplication::showTriggerEditor()
+		{
+			assert(m_triggerEditor);
+
+			m_triggerEditor->show();
+			m_triggerEditor->activateWindow();
+
+			emit triggerEditorShown();
 		}
 
 		bool EditorApplication::shutdown()
@@ -107,6 +121,5 @@ namespace wowpp
 			qApp->quit();
 			return true;
 		}
-
-	}
+}
 }

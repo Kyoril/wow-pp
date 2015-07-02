@@ -1,5 +1,8 @@
 <RCC>
   <qresource prefix="/">
+    <file>File.png</file>
+    <file>Folder.png</file>
+    <file>Trigger.png</file>
     <file>Open.png</file>
     <file>Save.png</file>
     <file>ico101.ico</file>

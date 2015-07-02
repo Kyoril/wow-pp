@@ -25,6 +25,8 @@
 #include "ui_main_window.h"
 #include "object_editor.h"
 #include "ui_object_editor.h"
+#include "trigger_editor.h"
+#include "ui_trigger_editor.h"
 
 using namespace wowpp::editor;
 
