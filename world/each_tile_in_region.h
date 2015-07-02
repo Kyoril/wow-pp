@@ -22,10 +22,11 @@
 #pragma once
 
 #include "visibility_tile.h"
+#include "visibility_grid.h"
 
 namespace wowpp
 {
-	class VisibilityGrid;
+	//class VisibilityGrid;
 
 	template <class F>
 	void forEachTileInArea(
