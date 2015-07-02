@@ -81,6 +81,20 @@ namespace wowpp
 		// Remove player
 		m_manager.playerDisconnected(*this);
 	}
+	
+	TileIndex2D Player::getTileIndex() const
+	{
+		TileIndex2D tile;
+		
+		float x, y, z, o;
+		m_character->getLocation(x, y, z, o);
+
+		// Get a list of potential watchers
+		auto &grid = m_instance.getGrid();
+		grid.getTilePosition(x, y, z, tile[0], tile[1]);
+		
+		return tile;
+	}
 
 	void Player::chatMessage(game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message)
 	{

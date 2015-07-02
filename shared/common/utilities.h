@@ -54,7 +54,7 @@ namespace wowpp
 
 	static inline void capitalize(std::string& word)
 	{
-		std::transform(word.begin(), word.end(), word.begin(), std::tolower);
+		std::transform(word.begin(), word.end(), word.begin(), ::tolower);
 		word[0] = std::toupper(word[0]);
 	}
 }

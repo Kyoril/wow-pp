@@ -31,6 +31,7 @@
 #include "binary_io/vector_sink.h"
 #include "realm_connector.h"
 #include "each_tile_in_region.h"
+#include "world_instance.h"
 #include <boost/noncopyable.hpp>
 #include <boost/signals2.hpp>
 #include <algorithm>
@@ -43,7 +44,7 @@ namespace wowpp
 	// Forwards
 	class PlayerManager;
 	class WorldInstanceManager;
-	class WorldInstance;
+	//class WorldInstance;
 
 	/// Player connection class.
 	class Player final : public boost::noncopyable
@@ -85,7 +86,9 @@ namespace wowpp
 		void chatMessage(game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message);
 		/// 
 		const String &getRealmName() const { return m_realmConnector.getRealmName(); }
-
+		/// 
+		TileIndex2D getTileIndex() const;
+		
 		/// Sends an proxy packet to the realm which will then be redirected to the game client.
 		/// @param generator Packet writer function pointer.
 		template<class F>
@@ -104,19 +107,12 @@ namespace wowpp
 		template<class F>
 		void broadcastProxyPacket(F generator)
 		{
-			float x, y, z, o;
-			m_character->getLocation(x, y, z, o);
-
-			// Get a list of potential watchers
-			auto &grid = m_instance.getGrid();
-
 			// Get tile index
-			TileIndex2D tile;
-			grid.getTilePosition(x, y, z, tile[0], tile[1]);
+			TileIndex2D tile = getTileIndex();
 
 			// Get all subscribers
 			forEachTileInSight(
-				grid,
+				m_instance.getGrid(),
 				tile,
 				[&generator](VisibilityTile &tile)
 			{
