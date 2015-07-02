@@ -22,6 +22,9 @@
 #pragma once
 
 #include <QObject>
+#include "data/project.h"
+#include "template_list_model.h"
+#include "configuration.h"
 #include <memory>
 
 namespace wowpp
@@ -38,6 +41,12 @@ namespace wowpp
 
 		public:
 
+			typedef TemplateListModel<SpellEntryManager> SpellListModel;
+			typedef TemplateListModel<MapEntryManager> MapListModel;
+			typedef TemplateListModel<UnitEntryManager> UnitListModel;
+
+		public:
+
 			explicit EditorApplication();
 
 			/// Initializes our editor application (loads settings and sets everything up properly).
@@ -47,6 +56,10 @@ namespace wowpp
 			/// and asks the user to save them.
 			/// @returns True, if the shutdown request was accepted, false otherwise.
 			bool shutdown();
+
+			SpellListModel *getSpellListModel() { return m_spellListModel.get(); }
+			MapListModel *getMapListModel() { return m_mapListModel.get(); }
+			UnitListModel *getUnitListModel() { return m_unitListModel.get(); }
 
 		public slots:
 
@@ -60,8 +73,13 @@ namespace wowpp
 
 		private:
 
+			Configuration m_configuration;
 			std::unique_ptr<MainWindow> m_mainWindow;
 			std::unique_ptr<ObjectEditor> m_objectEditor;
+			Project m_project;
+			std::unique_ptr<SpellListModel> m_spellListModel;
+			std::unique_ptr<MapListModel> m_mapListModel;
+			std::unique_ptr<UnitListModel> m_unitListModel;
 		};
 	}
 }

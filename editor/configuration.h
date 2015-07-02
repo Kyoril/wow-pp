@@ -21,43 +21,36 @@
 
 #pragma once
 
-#include <QMainWindow>
-#include <QSortFilterProxyModel>
-#include <memory>
-
-// Forwards
-namespace Ui
-{
-	class ObjectEditor;
-}
+#include "simple_file_format/sff_write_table.h"
+#include "common/typedefs.h"
 
 namespace wowpp
 {
 	namespace editor
 	{
-		class EditorApplication;
-
-		/// 
-		class ObjectEditor final : public QMainWindow
+		/// Manages the editor configuration.
+		struct Configuration
 		{
-			Q_OBJECT
+			/// Config file version: used to detect new configuration files
+			static const UInt32 EditorConfigVersion;
 
-		public:
+			/// Path to the data project folder
+			String dataPath;
+			/// Path to WoW
+			String wowGamePath;
 
-			explicit ObjectEditor(EditorApplication &app);
-			~ObjectEditor();
+			/// Indicates whether or not file logging is enabled.
+			bool isLogActive;
+			/// File name of the log file.
+			String logFileName;
+			/// If enabled, the log contents will be buffered before they are written to
+			/// the file, which could be more efficient..
+			bool isLogFileBuffering;
 
-		private slots:
 
-			void on_unitFilter_editingFinished();
-			void on_spellFilter_editingFinished();
-
-		private:
-				
-			EditorApplication &m_application;
-			Ui::ObjectEditor *m_ui;
-			QSortFilterProxyModel *m_unitFilter;
-			QSortFilterProxyModel *m_spellFilter;
+			explicit Configuration();
+			bool load(const String &fileName);
+			bool save(const String &fileName);
 		};
 	}
 }

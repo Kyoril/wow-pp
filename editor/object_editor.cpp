@@ -20,9 +20,10 @@
 // 
 
 #include "object_editor.h"
-#include "editor_application.h"
 #include "main_window.h"	// Needed because of forward declaration with unique_ptr in EditorApplication
+#include "editor_application.h"
 #include "ui_object_editor.h"
+#include <QRegExp>
 
 namespace wowpp
 {
@@ -34,6 +35,16 @@ namespace wowpp
 			, m_ui(new Ui::ObjectEditor())
 		{
 			m_ui->setupUi(this);
+
+			// Automatically deleted since it's a QObject
+			m_unitFilter = new QSortFilterProxyModel;
+			m_unitFilter->setSourceModel(app.getUnitListModel());
+			m_ui->unitsListView->setModel(m_unitFilter);
+
+			// Automatically deleted since it's a QObject
+			m_spellFilter = new QSortFilterProxyModel;
+			m_spellFilter->setSourceModel(app.getSpellListModel());
+			m_ui->spellsListView->setModel(m_spellFilter);
 		}
 
 		ObjectEditor::~ObjectEditor()
@@ -41,5 +52,22 @@ namespace wowpp
 			delete m_ui;
 		}
 
+		void ObjectEditor::on_unitFilter_editingFinished()
+		{
+			QRegExp::PatternSyntax syntax = QRegExp::RegExp;
+			Qt::CaseSensitivity caseSensitivity = Qt::CaseInsensitive;
+
+			QRegExp regExp(m_ui->unitFilter->text(), caseSensitivity, syntax);
+			m_unitFilter->setFilterRegExp(regExp);
+		}
+
+		void ObjectEditor::on_spellFilter_editingFinished()
+		{
+			QRegExp::PatternSyntax syntax = QRegExp::RegExp;
+			Qt::CaseSensitivity caseSensitivity = Qt::CaseInsensitive;
+
+			QRegExp regExp(m_ui->spellFilter->text(), caseSensitivity, syntax);
+			m_spellFilter->setFilterRegExp(regExp);
+		}
 	}
 }

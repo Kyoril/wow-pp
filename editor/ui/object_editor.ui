@@ -71,7 +71,7 @@
           <widget class="QWidget" name="layoutWidget">
            <layout class="QVBoxLayout" name="verticalLayout_2">
             <item>
-             <widget class="QLineEdit" name="lineEdit">
+             <widget class="QLineEdit" name="unitFilter">
               <property name="placeholderText">
                <string>Search</string>
               </property>
@@ -81,7 +81,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QTreeWidget" name="unitsTreeWidget">
+             <widget class="QListView" name="unitsListView">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                 <horstretch>0</horstretch>
@@ -94,20 +94,6 @@
               <property name="alternatingRowColors">
                <bool>true</bool>
               </property>
-              <property name="indentation">
-               <number>0</number>
-              </property>
-              <property name="wordWrap">
-               <bool>false</bool>
-              </property>
-              <attribute name="headerVisible">
-               <bool>false</bool>
-              </attribute>
-              <column>
-               <property name="text">
-                <string notr="true">1</string>
-               </property>
-              </column>
              </widget>
             </item>
            </layout>
@@ -146,7 +132,7 @@
           <widget class="QWidget" name="layoutWidget_2">
            <layout class="QVBoxLayout" name="verticalLayout_4">
             <item>
-             <widget class="QLineEdit" name="spellSearchEdit">
+             <widget class="QLineEdit" name="spellFilter">
               <property name="placeholderText">
                <string>Search</string>
               </property>
@@ -156,7 +142,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QTreeWidget" name="spellsTreeWidget">
+             <widget class="QListView" name="spellsListView">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                 <horstretch>0</horstretch>
@@ -169,20 +155,6 @@
               <property name="alternatingRowColors">
                <bool>true</bool>
               </property>
-              <property name="indentation">
-               <number>0</number>
-              </property>
-              <property name="wordWrap">
-               <bool>false</bool>
-              </property>
-              <attribute name="headerVisible">
-               <bool>false</bool>
-              </attribute>
-              <column>
-               <property name="text">
-                <string notr="true">1</string>
-               </property>
-              </column>
              </widget>
             </item>
            </layout>
