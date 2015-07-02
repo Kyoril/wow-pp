@@ -19,44 +19,49 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-#pragma once
-
-#include <QMainWindow>
-#include <memory>
-
-// Forwards
-namespace Ui
-{
-	class MainWindow;
-}
+#include "editor_application.h"
+#include "main_window.h"
+#include "object_editor.h"
+#include <QApplication>
+#include <cassert>
 
 namespace wowpp
 {
 	namespace editor
 	{
-		class EditorApplication;
-
-		/// 
-		class MainWindow final : public QMainWindow
+		EditorApplication::EditorApplication()
+			: QObject()
 		{
-			Q_OBJECT
+			m_mainWindow.reset(new MainWindow(*this));
+			m_objectEditor.reset(new ObjectEditor(*this));
+		}
 
-		public:
+		bool EditorApplication::initialize()
+		{
+			// Show the main window
+			m_mainWindow->show();
 
-			explicit MainWindow(EditorApplication &app);
-			~MainWindow();
+			return true;
+		}
 
-		private slots:
+		void EditorApplication::showObjectEditor()
+		{
+			assert(m_objectEditor);
 
+			m_objectEditor->show();
+			m_objectEditor->activateWindow();
 
-		protected:
+			emit objectEditorShowed();
+		}
 
-			void closeEvent(QCloseEvent *qEvent) override;
+		bool EditorApplication::shutdown()
+		{
+			// TODO: Check for unsaved changes
+			
+			// Shutdown the application
+			qApp->quit();
+			return true;
+		}
 
-		private:
-				
-			EditorApplication &m_application;
-			Ui::MainWindow *m_ui;
-		};
 	}
 }

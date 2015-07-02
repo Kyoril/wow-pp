@@ -19,44 +19,51 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-#pragma once
-
-#include <QMainWindow>
-#include <memory>
-
-// Forwards
-namespace Ui
-{
-	class MainWindow;
-}
+#include "render_widget.h"
+#include <QOpenGLContext>
 
 namespace wowpp
 {
 	namespace editor
 	{
-		class EditorApplication;
-
-		/// 
-		class MainWindow final : public QMainWindow
+		RenderWidget::RenderWidget(QWidget *parent)
+			: QGLWidget(parent)
 		{
-			Q_OBJECT
+		}
 
-		public:
+		void RenderWidget::initializeGL()
+		{
+			// Setup clear color
+			glClearColor(0.0f, 0.1f, 0.3f, 0.0f);
 
-			explicit MainWindow(EditorApplication &app);
-			~MainWindow();
+			// Setup the update timer
+			connect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(updateGL()));
+			unpause();
+		}
 
-		private slots:
+		void RenderWidget::paintGL()
+		{
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		}
 
-		protected:
+		void RenderWidget::resizeGL(int w, int h)
+		{
+			glViewport(0, 0, w, h);
 
-			void closeEvent(QCloseEvent *qEvent) override;
+			glMatrixMode(GL_MODELVIEW);
+			glLoadIdentity();
+		}
 
-		private:
-				
-			EditorApplication &m_application;
-			Ui::MainWindow *m_ui;
-		};
+		void RenderWidget::pause()
+		{
+			m_updateTimer.stop();
+		}
+
+		void RenderWidget::unpause()
+		{
+			m_updateTimer.start(16);
+		}
+
 	}
 }

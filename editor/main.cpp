@@ -19,7 +19,12 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-#include "program.h"
+#include <QApplication>
+#include "editor_application.h"
+#include "main_window.h"
+#include "ui_main_window.h"
+#include "object_editor.h"
+#include "ui_object_editor.h"
 
 using namespace wowpp::editor;
 
@@ -27,6 +32,16 @@ using namespace wowpp::editor;
 int main(int argc, char *argv[])
 {
 	// Create the qt application instance and set it all up
-	Program app(argc, argv);
-	return 0;
+	QApplication app(argc, argv);
+	
+	// Create and load our own application class, since inheriting QApplication
+	// seems to cause problems.
+	EditorApplication editorAppInstance;
+	if (!editorAppInstance.initialize())
+	{
+		// There was an error during the initialization process
+		return 1;
+	}
+
+	return app.exec();
 }

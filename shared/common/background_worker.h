@@ -24,6 +24,7 @@
 #include "common/typedefs.h"
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
+#include <memory>
 
 namespace wowpp
 {
@@ -45,7 +46,7 @@ namespace wowpp
 	private:
 
 		boost::asio::io_service m_queue;
-		boost::scoped_ptr<boost::asio::io_service::work> m_keepWorkerAlive;
+		std::unique_ptr<boost::asio::io_service::work> m_keepWorkerAlive;
 		boost::thread m_worker;
 	};
 }

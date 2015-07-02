@@ -33,7 +33,6 @@ namespace wowpp
 		{
 		}
 
-
 		ResolveResult resolve(MemoryDirectory &root, const Path &path)
 		{
 			const auto parts = splitRoot(path);

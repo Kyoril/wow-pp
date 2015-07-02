@@ -19,44 +19,16 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-#pragma once
+#include "program.h"
 
-#include <QMainWindow>
-#include <memory>
+using namespace wowpp::editor;
 
-// Forwards
-namespace Ui
+/// Procedural entry point of the application.
+int main(int argc, char *argv[])
 {
-	class MainWindow;
-}
+	// Create the qt application instance and set it all up
+	Program app(argc, argv);
+	app.run();
 
-namespace wowpp
-{
-	namespace editor
-	{
-		class EditorApplication;
-
-		/// 
-		class MainWindow final : public QMainWindow
-		{
-			Q_OBJECT
-
-		public:
-
-			explicit MainWindow(EditorApplication &app);
-			~MainWindow();
-
-		private slots:
-
-
-		protected:
-
-			void closeEvent(QCloseEvent *qEvent) override;
-
-		private:
-				
-			EditorApplication &m_application;
-			Ui::MainWindow *m_ui;
-		};
-	}
+	return 0;
 }

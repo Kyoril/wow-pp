@@ -20,81 +20,41 @@
 // 
 
 #include "main_window.h"
+#include "editor_application.h"
+#include "object_editor.h"
 #include "ui_main_window.h"
-#include "load_map.h"
-#include "program.h"
-#include "extract_dbc.h"
+#include <QCloseEvent>
 
 namespace wowpp
 {
 	namespace editor
 	{
-		MainWindow::MainWindow(Configuration &config, Project &project)
+		MainWindow::MainWindow(EditorApplication &app)
 			: QMainWindow()
-			, m_config(config)
-			, m_project(project)
-			, m_ui(new Ui::MainWindow)
+			, m_application(app)
+			, m_ui(new Ui::MainWindow())
 		{
 			m_ui->setupUi(this);
-			setupToolBar();
+
+			// Connect slots
+			connect(m_ui->actionObjectEditor, SIGNAL(triggered()), &m_application, SLOT(showObjectEditor()));
 		}
 
-		void MainWindow::on_actionObjectEditor_triggered()
+		MainWindow::~MainWindow()
 		{
-            m_objectEditor.reset(new ObjectEditor(m_project));
-            m_objectEditor->show();
+			delete m_ui;
 		}
 
-		void MainWindow::setupToolBar()
+		void MainWindow::closeEvent(QCloseEvent *qEvent)
 		{
-			m_toolBar.reset(new QToolBar("Standard", this));
-			m_toolBar->setMovable(false);
-			m_toolBar->setFloatable(false);
-			m_toolBar->setIconSize(QSize(16, 16));
-			m_toolBar->addAction(m_ui->actionLoadMap);
-			m_toolBar->addAction(m_ui->actionSave);
-			m_toolBar->addSeparator();
-			m_toolBar->addAction(m_ui->actionObjectEditor);
-			addToolBar(m_toolBar.get());
-		}
-
-		void MainWindow::on_actionLoadMap_triggered()
-		{
-			LoadMap loadMapDialog(m_project);
-			if (loadMapDialog.exec() == 1)
+			if (m_application.shutdown())
 			{
-
+				qEvent->accept();
+			}
+			else
+			{
+				qEvent->ignore();
 			}
 		}
-
-		void MainWindow::on_actionSave_triggered()
-		{
-			Program *program = static_cast<Program*>(QCoreApplication::instance());
-			if (program)
-			{
-				program->saveProject();
-			}
-		}
-
-		void MainWindow::on_actionExit_triggered()
-		{
-			if (m_objectEditor)
-			{
-				m_objectEditor->close();
-				m_objectEditor.reset();
-			}
-
-			close();
-		}
-
-		void MainWindow::on_actionExtractDBC_triggered()
-		{
-			ExtractDBC dbc(m_project);
-			if (dbc.exec())
-			{
-				//TODO 
-			}
-		}
-
 	}
 }

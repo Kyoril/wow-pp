@@ -32,7 +32,6 @@ if(WOWPP_BUILD_EDITOR)
 	include_directories("${CMAKE_CURRENT_SOURCE_DIR}/recast")
 	include_directories("${CMAKE_CURRENT_SOURCE_DIR}/debug_utils")
 
-	add_subdirectory(ogre-lite)
 	add_subdirectory(stormlib)
 	add_subdirectory(recast)
 	add_subdirectory(debug_utils)

@@ -22,6 +22,8 @@
 # We want at least CMake 2.8.11 for QT automoc
 cmake_minimum_required(VERSION 2.8.11)
 
+project(editor)
+
 	if(POLICY CMP0043)
 		cmake_policy(SET CMP0043 OLD)
 	endif()
@@ -53,7 +55,7 @@ cmake_minimum_required(VERSION 2.8.11)
 	file(GLOB resources "qrc/*.qrc")
 	
 	# Create cpp files out of qrc files
-    qt5_add_resources(resourceSources ${resources})
+    	qt5_add_resources(resourceSources ${resources})
 	
 	# Create cpp header files out of ui files
 	QT5_WRAP_UI(UIS_HDRS
@@ -77,6 +79,23 @@ cmake_minimum_required(VERSION 2.8.11)
 		)
 		set(MACOSX_BUNDLE_ICON_FILE ico101.icns)
 	endif()
+
+	include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../deps/ogre-lite/OgreMain/include")
+	include_directories("${CMAKE_BINARY_DIR}/deps/ogre-lite/include")
+	if (OGRE_BUILD_RENDERSYSTEM_GL)
+		include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../deps/ogre-lite/RenderSystems/GL/include")
+		include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../deps/ogre-lite/RenderSystems/GL/src/GLSL/include")
+	endif()
+	if (OGRE_BUILD_RENDERSYSTEM_D3D9)
+		include_directories("${DirectX_INCLUDE_DIR}")
+		include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../deps/ogre-lite/RenderSystems/Direct3D9/include")
+	endif()
+	if (OGRE_BUILD_PLUGIN_OCTREE)
+		include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../deps/ogre-lite/PlugIns/OctreeSceneManager/include")
+	endif()
+	if (OGRE_BUILD_PLUGIN_PFX)
+		include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../deps/ogre-lite/PlugIns/ParticleFX/include")
+	endif()
 	
 	# Create the application
 	if(WIN32)
@@ -89,6 +108,25 @@ cmake_minimum_required(VERSION 2.8.11)
 	
 	# Link standard libraries
 	target_link_libraries(editor common templates virtual_directory log data stormlib recast detour detour_crowd detour_tile_cache debug_utils)
+	
+	# Link OGRE and dependant libraries
+	target_link_libraries(editor OgreMain)
+	if(OGRE_STATIC)
+		target_link_libraries(editor freetype zlib)
+		if (OGRE_BUILD_RENDERSYSTEM_GL)
+			target_link_libraries(editor RenderSystem_GL)
+		endif()
+		if (OGRE_BUILD_RENDERSYSTEM_D3D9)
+			target_link_libraries(editor RenderSystem_Direct3D9)
+			target_link_libraries(editor "${DirectX_LIBRARY}")
+		endif()
+		if (OGRE_BUILD_PLUGIN_OCTREE)
+			target_link_libraries(editor Plugin_OctreeSceneManager)
+		endif ()
+		if (OGRE_BUILD_PLUGIN_PFX)
+			target_link_libraries(editor Plugin_ParticleFX)
+		endif ()
+	endif()
 	
 	# Link dependency libraries
 	target_link_libraries(editor ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${OPENSSL_LIBRARIES})

@@ -21,42 +21,41 @@
 
 #pragma once
 
-#include <QMainWindow>
-#include <memory>
-
-// Forwards
-namespace Ui
-{
-	class MainWindow;
-}
+#include "OgreRoot.h"
+#include "OgreSceneManager.h"
+#ifdef OGRE_BUILD_RENDERSYSTEM_D3D9
+#	include "OgreD3D9Plugin.h"
+#endif
+#ifdef OGRE_BUILD_RENDERSYSTEM_GL
+#	include "OgreGLPlugin.h"
+#endif
+#include "render_view.h"
 
 namespace wowpp
 {
 	namespace editor
 	{
-		class EditorApplication;
-
-		/// 
-		class MainWindow final : public QMainWindow
+		/// Initializes and manages everything which is render-related.
+		class Graphics final
 		{
-			Q_OBJECT
-
 		public:
 
-			explicit MainWindow(EditorApplication &app);
-			~MainWindow();
-
-		private slots:
-
-
-		protected:
-
-			void closeEvent(QCloseEvent *qEvent) override;
+			/// 
+			explicit Graphics();
+			
+			/// Gets a reference of the OGRE SceneManager class.
+			Ogre::SceneManager &getSceneManager() { return *m_sceneMgr; }
 
 		private:
-				
-			EditorApplication &m_application;
-			Ui::MainWindow *m_ui;
+
+			std::unique_ptr<Ogre::Root> m_root;
+#ifdef OGRE_BUILD_RENDERSYSTEM_D3D9
+			std::unique_ptr<Ogre::D3D9Plugin> m_renderPlugin;
+#else
+			std::unique_ptr<Ogre::GLPlugin> m_renderPlugin;
+#endif
+			Ogre::SceneManager *m_sceneMgr;
+			RenderView *m_renderView;
 		};
 	}
 }

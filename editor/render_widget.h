@@ -21,42 +21,34 @@
 
 #pragma once
 
-#include <QMainWindow>
-#include <memory>
-
-// Forwards
-namespace Ui
-{
-	class MainWindow;
-}
+#include <QGLWidget>
+#include <QTimer>
 
 namespace wowpp
 {
 	namespace editor
 	{
-		class EditorApplication;
-
 		/// 
-		class MainWindow final : public QMainWindow
+		class RenderWidget final : public QGLWidget
 		{
 			Q_OBJECT
 
 		public:
 
-			explicit MainWindow(EditorApplication &app);
-			~MainWindow();
+			explicit RenderWidget(QWidget *parent);
 
-		private slots:
-
+			void pause();
+			void unpause();
 
 		protected:
 
-			void closeEvent(QCloseEvent *qEvent) override;
+			void initializeGL() override;
+			void paintGL() override;
+			void resizeGL(int w, int h) override;
 
 		private:
-				
-			EditorApplication &m_application;
-			Ui::MainWindow *m_ui;
+
+			QTimer m_updateTimer;
 		};
 	}
 }

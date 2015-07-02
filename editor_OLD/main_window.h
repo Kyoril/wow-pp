@@ -22,6 +22,10 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QToolBar>
+#include "object_editor.h"
+#include "data/project.h"
+#include "configuration.h"
 #include <memory>
 
 // Forwards
@@ -34,29 +38,41 @@ namespace wowpp
 {
 	namespace editor
 	{
-		class EditorApplication;
-
-		/// 
-		class MainWindow final : public QMainWindow
+		/// Represents the main window of the editor application.
+		class MainWindow : public QMainWindow
 		{
 			Q_OBJECT
 
 		public:
 
-			explicit MainWindow(EditorApplication &app);
-			~MainWindow();
+			/// Initializes a new instance of the main window of the editor application.
+			explicit MainWindow(Configuration &config, Project &project);
 
 		private slots:
 
-
-		protected:
-
-			void closeEvent(QCloseEvent *qEvent) override;
+			// on_<ACTION_NAME>_<ACTION>() will be automatically linked with
+			// the matching <ACTION_NAME> actions from the .ui file
+			void on_actionObjectEditor_triggered();
+			void on_actionLoadMap_triggered();
+			void on_actionSave_triggered();
+			void on_actionExit_triggered();
+			void on_actionExtractDBC_triggered();
 
 		private:
-				
-			EditorApplication &m_application;
+
+			void setupToolBar();
+
+		private:
+
+			Configuration &m_config;
+			Project &m_project;
 			Ui::MainWindow *m_ui;
+			std::unique_ptr<ObjectEditor> m_objectEditor;
+/*#ifdef __APPLE__
+            std::unique_ptr<QMacToolBar> m_macToolBar;
+#else*/
+			std::unique_ptr<QToolBar> m_toolBar;
+//#endif
 		};
 	}
 }

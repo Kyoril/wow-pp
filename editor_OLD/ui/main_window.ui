@@ -53,7 +53,7 @@
      <number>0</number>
     </property>
     <item>
-     <widget class="wowpp::editor::RenderWidget" name="renderWidget" native="true"/>
+     <widget class="wowpp::editor::RenderView" name="renderWidget" native="true"/>
     </item>
    </layout>
   </widget>
@@ -161,27 +161,6 @@
     <string notr="true"/>
    </property>
   </widget>
-  <widget class="QToolBar" name="toolBar">
-   <property name="windowTitle">
-    <string>toolBar</string>
-   </property>
-   <property name="movable">
-    <bool>false</bool>
-   </property>
-   <property name="floatable">
-    <bool>false</bool>
-   </property>
-   <attribute name="toolBarArea">
-    <enum>TopToolBarArea</enum>
-   </attribute>
-   <attribute name="toolBarBreak">
-    <bool>false</bool>
-   </attribute>
-   <addaction name="actionLoadMap"/>
-   <addaction name="actionSave"/>
-   <addaction name="separator"/>
-   <addaction name="actionObjectEditor"/>
-  </widget>
   <action name="actionText">
    <property name="text">
     <string>Text</string>
@@ -241,9 +220,9 @@
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
   <customwidget>
-   <class>wowpp::editor::RenderWidget</class>
+   <class>wowpp::editor::RenderView</class>
    <extends>QWidget</extends>
-   <header>render_widget.h</header>
+   <header>render_view.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

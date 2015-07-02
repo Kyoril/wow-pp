@@ -21,42 +21,53 @@
 
 #pragma once
 
+#include "common/typedefs.h"
 #include <QMainWindow>
+#include <QTreeWidget>
+#include <QTreeWidgetItem>
+#include <QAbstractTableModel>
+#include "data/project.h"
+#include "property_view_model.h"
 #include <memory>
 
 // Forwards
 namespace Ui
 {
-	class MainWindow;
+	class ObjectEditor;
 }
 
 namespace wowpp
 {
 	namespace editor
 	{
-		class EditorApplication;
+		class MainWindow;
 
-		/// 
-		class MainWindow final : public QMainWindow
+		/// Represents the main window of the editor application.
+		class ObjectEditor : public QMainWindow
 		{
 			Q_OBJECT
 
 		public:
 
-			explicit MainWindow(EditorApplication &app);
-			~MainWindow();
+			/// Initializes a new instance of the main window of the editor application.
+			explicit ObjectEditor(Project &project);
 
 		private slots:
 
+			void on_unitsTreeWidget_currentItemChanged(QTreeWidgetItem*, QTreeWidgetItem*);
+			void on_unitPropertyWidget_doubleClicked(QModelIndex);
+			void on_actionCreateUnit_triggered();
+			void on_actionSave_triggered();
 
-		protected:
-
-			void closeEvent(QCloseEvent *qEvent) override;
+			void on_lineEdit_textChanged(const QString &);
+			void on_spellSearchEdit_textChanged(const QString &);
 
 		private:
-				
-			EditorApplication &m_application;
-			Ui::MainWindow *m_ui;
+
+			Project &m_project;
+			Ui::ObjectEditor *ui;
+			Properties m_properties;
+			std::unique_ptr<PropertyViewModel> m_viewModel;
 		};
 	}
 }

@@ -21,42 +21,47 @@
 
 #pragma once
 
-#include <QMainWindow>
+#include <QObject>
 #include <memory>
-
-// Forwards
-namespace Ui
-{
-	class MainWindow;
-}
 
 namespace wowpp
 {
 	namespace editor
 	{
-		class EditorApplication;
+		class MainWindow;		// main_window.h
+		class ObjectEditor;		// object_editor.h
 
-		/// 
-		class MainWindow final : public QMainWindow
+		/// Manages and contains all major application objects.
+		class EditorApplication final : public QObject
 		{
 			Q_OBJECT
 
 		public:
 
-			explicit MainWindow(EditorApplication &app);
-			~MainWindow();
+			explicit EditorApplication();
 
-		private slots:
+			/// Initializes our editor application (loads settings and sets everything up properly).
+			/// @returns True if everything went okay, false otherwise.
+			bool initialize();
+			/// Tries to shutdown the running editor application. This will check for unsaved changes
+			/// and asks the user to save them.
+			/// @returns True, if the shutdown request was accepted, false otherwise.
+			bool shutdown();
 
+		public slots:
 
-		protected:
+			/// Displays the object editor window (and activates it if it is in the background).
+			void showObjectEditor();
 
-			void closeEvent(QCloseEvent *qEvent) override;
+		signals:
+
+			/// Fired when the object editor window was showed or activated.
+			void objectEditorShowed();
 
 		private:
-				
-			EditorApplication &m_application;
-			Ui::MainWindow *m_ui;
+
+			std::unique_ptr<MainWindow> m_mainWindow;
+			std::unique_ptr<ObjectEditor> m_objectEditor;
 		};
 	}
 }

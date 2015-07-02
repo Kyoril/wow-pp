@@ -79,11 +79,14 @@ project(WoW)
 
 	# Find boost
 	set(Boost_USE_STATIC_LIBS ON)
-	find_package(Boost 1.54.0 REQUIRED COMPONENTS system date_time thread iostreams filesystem regex)
+	find_package(Boost 1.54.0 REQUIRED COMPONENTS system date_time thread iostreams filesystem regex chrono zlib program_options)
 	
 	# Add boost include directories
 	include_directories(${Boost_INCLUDE_DIR})
 	link_directories(${Boost_LIBRARY_DIR})
+
+	# Since boost 1.58 to make boost::variant::get<U>(...) happy
+	add_definitions("-DBOOST_VARIANT_USE_RELAXED_GET_BY_DEFAULT")
 	
 	# Find OpenSSL
 	find_package(OpenSSL REQUIRED)
