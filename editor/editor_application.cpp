@@ -34,6 +34,7 @@ namespace wowpp
 	{
 		EditorApplication::EditorApplication()
 			: QObject()
+			, m_changed(false)
 		{
 		}
 
@@ -115,11 +116,74 @@ namespace wowpp
 
 		bool EditorApplication::shutdown()
 		{
-			// TODO: Check for unsaved changes
+			// Check for unsaved changes
+			if (m_changed)
+			{
+				int result = QMessageBox::warning(
+					nullptr,
+					"You have unsaved changes",
+					"Do you want to save them now? If not, you will loose all changes!",
+					QMessageBox::Save, QMessageBox::No, QMessageBox::Cancel);
+				if (result == QMessageBox::Cancel)
+				{
+					// Cancelled by user
+					return false;
+				}
+				else if (result == QMessageBox::Save)
+				{
+					// Save project
+					if (!m_project.save(m_configuration.dataPath))
+					{
+						// Display error message
+						QMessageBox::critical(
+							nullptr,
+							"Could not save data project",
+							"There was an error saving the data project.\n\n"
+							"For more details, please open the editor log file (usually wowpp_editor.log).");
+
+						// Cancel shutdown since there was an error
+						return false;
+					}
+				}
+			}
 			
 			// Shutdown the application
 			qApp->quit();
 			return true;
+		}
+
+		void EditorApplication::markAsChanged()
+		{
+			m_changed = true;
+		}
+
+		void EditorApplication::saveUnsavedChanges()
+		{
+			// Optimization
+			if (!m_changed)
+				return;
+
+			// Save data project
+			if (!m_project.save(m_configuration.dataPath))
+			{
+				// Display error message
+				QMessageBox::critical(
+					nullptr,
+					"Could not save data project",
+					"There was an error saving the data project.\n\n"
+					"For more details, please open the editor log file (usually wowpp_editor.log).");
+				return;
+			}
+			else
+			{
+				QMessageBox::information(
+					nullptr,
+					"Data project saved",
+					"The data project was successfully saved.");
+			}
+
+			// No more unsaved changes
+			m_changed = false;
 		}
 }
 }

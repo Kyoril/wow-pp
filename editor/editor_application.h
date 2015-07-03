@@ -61,6 +61,7 @@ namespace wowpp
 			SpellListModel *getSpellListModel() { return m_spellListModel.get(); }
 			MapListModel *getMapListModel() { return m_mapListModel.get(); }
 			UnitListModel *getUnitListModel() { return m_unitListModel.get(); }
+			Project &getProject() { return m_project; }
 
 		public slots:
 
@@ -68,6 +69,10 @@ namespace wowpp
 			void showObjectEditor();
 			/// 
 			void showTriggerEditor();
+			/// 
+			void markAsChanged();
+			/// 
+			void saveUnsavedChanges();
 
 		signals:
 
@@ -85,6 +90,7 @@ namespace wowpp
 			std::unique_ptr<SpellListModel> m_spellListModel;
 			std::unique_ptr<MapListModel> m_mapListModel;
 			std::unique_ptr<UnitListModel> m_unitListModel;
+			bool m_changed;
 		};
 	}
 }

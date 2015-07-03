@@ -1629,7 +1629,7 @@ spells =
 	{
 		(type = 36)
 	})
-	(id = 1373, name = "Teufelsjäger beschwören' lehren", effects = 
+	(id = 1373, name = "Teufelsjäger beschwören\' lehren", effects = 
 	{
 		(type = 36)
 	})
@@ -3051,7 +3051,7 @@ spells =
 	{
 		(type = 2)
 	})
-	(id = 2817, name = "Verdammnisgebell' lehren", effects = 
+	(id = 2817, name = "Verdammnisgebell\' lehren", effects = 
 	{
 		(type = 57)
 	})
@@ -3965,7 +3965,7 @@ spells =
 	{
 		(type = 10)
 	})
-	(id = 3369, name = "Trank 'Stärke II'", effects = 
+	(id = 3369, name = "Trank \'Stärke II\'", effects = 
 	{
 		(type = 6)
 	})
@@ -6190,7 +6190,7 @@ spells =
 	{
 		(type = 5)
 	})
-	(id = 4998, name = "[PH] Nach Grom'Gol teleportieren", effects = 
+	(id = 4998, name = "[PH] Nach Grom\'Gol teleportieren", effects = 
 	{
 		(type = 5)
 	})
@@ -6737,7 +6737,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 5322, name = "Lakota'manis Donner", effects = 
+	(id = 5322, name = "Lakota\'manis Donner", effects = 
 	{
 		(type = 6)
 	})
@@ -7199,7 +7199,7 @@ spells =
 		(type = 6)
 		(type = 77)
 	})
-	(id = 5785, name = "Teufelsross beschwören' lehren", effects = 
+	(id = 5785, name = "Teufelsross beschwören\' lehren", effects = 
 	{
 		(type = 36)
 		(type = 36)
@@ -7651,7 +7651,7 @@ spells =
 	{
 		(type = 3)
 	})
-	(id = 6271, name = "Naralex' Erweckung", effects = 
+	(id = 6271, name = "Naralex\' Erweckung", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -7724,7 +7724,7 @@ spells =
 		(type = 6)
 		(type = 108)
 	})
-	(id = 6304, name = "Rhahk'Zor-Zerschmettern", effects = 
+	(id = 6304, name = "Rhahk\'Zor-Zerschmettern", effects = 
 	{
 		(type = 6)
 		(type = 2)
@@ -7741,7 +7741,7 @@ spells =
 	{
 		(type = 35)
 	})
-	(id = 6310, name = "Zauber 'Rolle der Bestimmung'", effects = 
+	(id = 6310, name = "Zauber \'Rolle der Bestimmung\'", effects = 
 	{
 		(type = 24)
 	})
@@ -8111,8 +8111,8 @@ spells =
 	{
 		(type = 28)
 	})
-	(id = 6488, name = "Sarilus' Elementare - Passiv")
-	(id = 6490, name = "Sarilus' Elementare", effects = 
+	(id = 6488, name = "Sarilus\' Elementare - Passiv")
+	(id = 6490, name = "Sarilus\' Elementare", effects = 
 	{
 		(type = 28)
 	})
@@ -8297,7 +8297,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 6584, name = "Jin'Zils Fluch", effects = 
+	(id = 6584, name = "Jin\'Zils Fluch", effects = 
 	{
 		(type = 6)
 	})
@@ -10975,7 +10975,7 @@ spells =
 	{
 		(type = 46)
 	})
-	(id = 7763, name = "Wichtel beschwören' lehren", effects = 
+	(id = 7763, name = "Wichtel beschwören\' lehren", effects = 
 	{
 		(type = 36)
 	})
@@ -11552,7 +11552,7 @@ spells =
 	{
 		(type = 35)
 	})
-	(id = 7967, name = "Naralex' Alptraum", effects = 
+	(id = 7967, name = "Naralex\' Alptraum", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -11985,7 +11985,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 8136, name = "Naralex' Erweckung", effects = 
+	(id = 8136, name = "Naralex\' Erweckung", effects = 
 	{
 		(type = 3)
 	})
@@ -15082,7 +15082,7 @@ spells =
 		(type = 6)
 		(type = 86)
 	})
-	(id = 9736, name = "Arantir's Täuschung", effects = 
+	(id = 9736, name = "Arantir\'s Täuschung", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -15100,13 +15100,13 @@ spells =
 	{
 		(type = 2)
 	})
-	(id = 9740, name = "Arantir's Täuschung", effects = 
+	(id = 9740, name = "Arantir\'s Täuschung", effects = 
 	{
 		(type = 6)
 		(type = 6)
 		(type = 79)
 	})
-	(id = 9741, name = "Arantir's Zorn", effects = 
+	(id = 9741, name = "Arantir\'s Zorn", effects = 
 	{
 		(type = 6)
 	})
@@ -15748,7 +15748,7 @@ spells =
 	{
 		(type = 28)
 	})
-	(id = 9999, name = "Berührung von Zanzil'-Heilmittel", effects = 
+	(id = 9999, name = "Berührung von Zanzil\'-Heilmittel", effects = 
 	{
 		(type = 38)
 	})
@@ -16152,7 +16152,7 @@ spells =
 		(type = 36)
 		(type = 44)
 	})
-	(id = 10247, name = "Zombies aus Zul'Farrak beschwören", effects = 
+	(id = 10247, name = "Zombies aus Zul\'Farrak beschwören", effects = 
 	{
 		(type = 28)
 		(type = 28)
@@ -16187,7 +16187,7 @@ spells =
 		(type = 2)
 		(type = 6)
 	})
-	(id = 10254, name = "Steinzwerg wecken'-Bild", effects = 
+	(id = 10254, name = "Steinzwerg wecken\'-Bild", effects = 
 	{
 		(type = 3)
 	})
@@ -16367,7 +16367,7 @@ spells =
 	{
 		(type = 2)
 	})
-	(id = 10347, name = "Archaedas wecken'-Bild (DND)", effects = 
+	(id = 10347, name = "Archaedas wecken\'-Bild (DND)", effects = 
 	{
 		(type = 3)
 	})
@@ -16474,7 +16474,7 @@ spells =
 		(type = 68)
 		(type = 2)
 	})
-	(id = 10418, name = "Zauber 'Arugal einbrüten'", effects = 
+	(id = 10418, name = "Zauber \'Arugal einbrüten\'", effects = 
 	{
 		(type = 46)
 	})
@@ -17275,7 +17275,7 @@ spells =
 	{
 		(type = 56)
 	})
-	(id = 10723, name = "Berührung von Zanzil'-Heilmittel", effects = 
+	(id = 10723, name = "Berührung von Zanzil\'-Heilmittel", effects = 
 	{
 		(type = 38)
 	})
@@ -17312,7 +17312,7 @@ spells =
 		(type = 59)
 		(type = 61)
 	})
-	(id = 10747, name = "Zul'Farrak Zombie ankündigen", effects = 
+	(id = 10747, name = "Zul\'Farrak Zombie ankündigen", effects = 
 	{
 		(type = 3)
 	})
@@ -17330,7 +17330,7 @@ spells =
 		(type = 36)
 		(type = 44)
 	})
-	(id = 10770, name = "Weegli's Fass  erzeugen", effects = 
+	(id = 10770, name = "Weegli\'s Fass  erzeugen", effects = 
 	{
 		(type = 50)
 	})
@@ -17915,7 +17915,7 @@ spells =
 	{
 		(type = 98)
 	})
-	(id = 11048, name = "Dauerhafte 'Bischöfin Tyriona'-Illusion", effects = 
+	(id = 11048, name = "Dauerhafte \'Bischöfin Tyriona\'-Illusion", effects = 
 	{
 		(type = 6)
 	})
@@ -17964,15 +17964,15 @@ spells =
 	{
 		(type = 2)
 	})
-	(id = 11086, name = "Zauberschutz von Zum'rah", effects = 
+	(id = 11086, name = "Zauberschutz von Zum\'rah", effects = 
 	{
 		(type = 28)
 	})
-	(id = 11087, name = "Zauberschutz von Zum'rah - Passiv", effects = 
+	(id = 11087, name = "Zauberschutz von Zum\'rah - Passiv", effects = 
 	{
 		(type = 6)
 	})
-	(id = 11088, name = "Zauberschutz von Zum'rah", effects = 
+	(id = 11088, name = "Zauberschutz von Zum\'rah", effects = 
 	{
 		(type = 28)
 	})
@@ -18087,7 +18087,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 11195, name = "Zul'Farraks Tür aufsprengen", effects = 
+	(id = 11195, name = "Zul\'Farraks Tür aufsprengen", effects = 
 	{
 		(type = 86)
 	})
@@ -18442,7 +18442,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 11365, name = "Bly's Band's Escape", effects = 
+	(id = 11365, name = "Bly\'s Band\'s Escape", effects = 
 	{
 		(type = 3)
 	})
@@ -18459,12 +18459,12 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 11371, name = "Arthas' Gabe", effects = 
+	(id = 11371, name = "Arthas\' Gabe", effects = 
 	{
 		(type = 6)
 		(type = 6)
 	})
-	(id = 11374, name = "Arthas' Gabe", effects = 
+	(id = 11374, name = "Arthas\' Gabe", effects = 
 	{
 		(type = 6)
 	})
@@ -18619,11 +18619,11 @@ spells =
 	{
 		(type = 27)
 	})
-	(id = 11434, name = "Gong Zul'Farrak Gong", effects = 
+	(id = 11434, name = "Gong Zul\'Farrak Gong", effects = 
 	{
 		(type = 59)
 	})
-	(id = 11435, name = "Schlaghammer von Zul'Farrak herstellen", effects = 
+	(id = 11435, name = "Schlaghammer von Zul\'Farrak herstellen", effects = 
 	{
 		(type = 24)
 	})
@@ -18745,7 +18745,7 @@ spells =
 	{
 		(type = 24)
 	})
-	(id = 11466, name = "Arthas' Gabe", effects = 
+	(id = 11466, name = "Arthas\' Gabe", effects = 
 	{
 		(type = 24)
 	})
@@ -18815,7 +18815,7 @@ spells =
 	{
 		(type = 28)
 	})
-	(id = 11504, name = "Effekt 'Wandelnde Bombe'", effects = 
+	(id = 11504, name = "Effekt \'Wandelnde Bombe\'", effects = 
 	{
 		(type = 2)
 		(type = 1)
@@ -18838,11 +18838,11 @@ spells =
 		(type = 61)
 		(type = 86)
 	})
-	(id = 11519, name = "Sukkubus beschwören' lehren", effects = 
+	(id = 11519, name = "Sukkubus beschwören\' lehren", effects = 
 	{
 		(type = 36)
 	})
-	(id = 11520, name = "Leerwandler beschwören' lehren", effects = 
+	(id = 11520, name = "Leerwandler beschwören\' lehren", effects = 
 	{
 		(type = 36)
 	})
@@ -19119,15 +19119,15 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 11654, name = "Sul'thrazes Ruf", effects = 
+	(id = 11654, name = "Sul\'thrazes Ruf", effects = 
 	{
 		(type = 24)
 	})
-	(id = 11657, name = "Jang'thraze", effects = 
+	(id = 11657, name = "Jang\'thraze", effects = 
 	{
 		(type = 6)
 	})
-	(id = 11658, name = "Sul'thraze", effects = 
+	(id = 11658, name = "Sul\'thraze", effects = 
 	{
 		(type = 2)
 		(type = 6)
@@ -19618,12 +19618,12 @@ spells =
 		(type = 3)
 		(type = 24)
 	})
-	(id = 11890, name = "Antu'sul's Rettung", effects = 
+	(id = 11890, name = "Antu\'sul\'s Rettung", effects = 
 	{
 		(type = 6)
 		(type = 6)
 	})
-	(id = 11891, name = "Antu'suls Schlag", effects = 
+	(id = 11891, name = "Antu\'suls Schlag", effects = 
 	{
 		(type = 98)
 	})
@@ -19637,11 +19637,11 @@ spells =
 	{
 		(type = 3)
 	})
-	(id = 11894, name = "Antu'suls Diener", effects = 
+	(id = 11894, name = "Antu\'suls Diener", effects = 
 	{
 		(type = 28)
 	})
-	(id = 11895, name = "Welle der Heilung von Antu'sul", effects = 
+	(id = 11895, name = "Welle der Heilung von Antu\'sul", effects = 
 	{
 		(type = 10)
 	})
@@ -19661,7 +19661,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 11902, name = "Gahz'rillas Schmetterschlag", effects = 
+	(id = 11902, name = "Gahz\'rillas Schmetterschlag", effects = 
 	{
 		(type = 58)
 		(type = 98)
@@ -19805,7 +19805,7 @@ spells =
 	{
 		(type = 27)
 	})
-	(id = 11992, name = "Gahz'ridian entdecken", effects = 
+	(id = 11992, name = "Gahz\'ridian entdecken", effects = 
 	{
 		(type = 6)
 	})
@@ -20080,7 +20080,7 @@ spells =
 	{
 		(type = 24)
 	})
-	(id = 12095, name = "Todeswandlergeist der Atal'ai beschwören", effects = 
+	(id = 12095, name = "Todeswandlergeist der Atal\'ai beschwören", effects = 
 	{
 		(type = 28)
 	})
@@ -20120,7 +20120,7 @@ spells =
 	{
 		(type = 36)
 	})
-	(id = 12134, name = "Atal'ai Leichenfressen", effects = 
+	(id = 12134, name = "Atal\'ai Leichenfressen", effects = 
 	{
 		(type = 3)
 		(type = 6)
@@ -20131,7 +20131,7 @@ spells =
 		(type = 10)
 		(type = 3)
 	})
-	(id = 12151, name = "Skelett der Atal'ai beschwören", effects = 
+	(id = 12151, name = "Skelett der Atal\'ai beschwören", effects = 
 	{
 		(type = 28)
 		(type = 3)
@@ -20292,7 +20292,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 12255, name = "Fluch von Tuten'kash", effects = 
+	(id = 12255, name = "Fluch von Tuten\'kash", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -20530,7 +20530,7 @@ spells =
 	{
 		(type = 61)
 	})
-	(id = 12348, name = "Atal'ai - Altar - Licht - Bild (DND)", effects = 
+	(id = 12348, name = "Atal\'ai - Altar - Licht - Bild (DND)", effects = 
 	{
 		(type = 61)
 	})
@@ -20625,7 +20625,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 12458, name = "Böser Gott'-Gegenzauber", effects = 
+	(id = 12458, name = "Böser Gott\'-Gegenzauber", effects = 
 	{
 		(type = 3)
 	})
@@ -20688,11 +20688,11 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 12479, name = "Verhexung von Jammal'an", effects = 
+	(id = 12479, name = "Verhexung von Jammal\'an", effects = 
 	{
 		(type = 6)
 	})
-	(id = 12480, name = "Verhexung von Jammal'an", effects = 
+	(id = 12480, name = "Verhexung von Jammal\'an", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -20769,7 +20769,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 12504, name = "Skelett der Atal'ai beschwören", effects = 
+	(id = 12504, name = "Skelett der Atal\'ai beschwören", effects = 
 	{
 		(type = 28)
 	})
@@ -20778,7 +20778,7 @@ spells =
 		(type = 2)
 		(type = 6)
 	})
-	(id = 12506, name = "Skeletttotem der Atal'ai", effects = 
+	(id = 12506, name = "Skeletttotem der Atal\'ai", effects = 
 	{
 		(type = 28)
 	})
@@ -20875,7 +20875,7 @@ spells =
 	{
 		(type = 59)
 	})
-	(id = 12535, name = "Eranikus' Schemen - Passiv - Bild", effects = 
+	(id = 12535, name = "Eranikus\' Schemen - Passiv - Bild", effects = 
 	{
 		(type = 6)
 	})
@@ -20978,7 +20978,7 @@ spells =
 		(type = 2)
 		(type = 6)
 	})
-	(id = 12564, name = "Schatz-Horde beschwören' - Bild", effects = 
+	(id = 12564, name = "Schatz-Horde beschwören\' - Bild", effects = 
 	{
 		(type = 3)
 	})
@@ -22153,7 +22153,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 12998, name = "Yeh'kinyas Rolle herstellen", effects = 
+	(id = 12998, name = "Yeh\'kinyas Rolle herstellen", effects = 
 	{
 		(type = 24)
 	})
@@ -22797,7 +22797,7 @@ spells =
 	{
 		(type = 2)
 	})
-	(id = 13484, name = "Gor'tesh-Kopf einpflanzen", effects = 
+	(id = 13484, name = "Gor\'tesh-Kopf einpflanzen", effects = 
 	{
 		(type = 59)
 	})
@@ -23843,7 +23843,7 @@ spells =
 	{
 		(type = 53)
 	})
-	(id = 13895, name = "Brut von Bael'Gar beschwören", effects = 
+	(id = 13895, name = "Brut von Bael\'Gar beschwören", effects = 
 	{
 		(type = 2)
 	})
@@ -24038,7 +24038,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 13965, name = "Krom'zars Banner herstellen", effects = 
+	(id = 13965, name = "Krom\'zars Banner herstellen", effects = 
 	{
 		(type = 76)
 	})
@@ -24104,7 +24104,7 @@ spells =
 		(type = 6)
 		(type = 6)
 	})
-	(id = 13982, name = "Bael'Gars feurige Essenz", effects = 
+	(id = 13982, name = "Bael\'Gars feurige Essenz", effects = 
 	{
 		(type = 24)
 	})
@@ -28599,7 +28599,7 @@ spells =
 	{
 		(type = 63)
 	})
-	(id = 15633, name = "Lil' Smoky", effects = 
+	(id = 15633, name = "Lil\' Smoky", effects = 
 	{
 		(type = 24)
 	})
@@ -30780,7 +30780,7 @@ spells =
 		(type = 6)
 		(type = 2)
 	})
-	(id = 16351, name = "Behälter von Mau'ari herstellen", effects = 
+	(id = 16351, name = "Behälter von Mau\'ari herstellen", effects = 
 	{
 		(type = 24)
 	})
@@ -33283,7 +33283,7 @@ spells =
 		(type = 6)
 		(type = 6)
 	})
-	(id = 17178, name = "Alex' Kühnheit", effects = 
+	(id = 17178, name = "Alex\' Kühnheit", effects = 
 	{
 		(type = 6)
 	})
@@ -36363,7 +36363,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 18163, name = "Kraft von Arko'narin", effects = 
+	(id = 18163, name = "Kraft von Arko\'narin", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -38388,7 +38388,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 18949, name = "Gift der Atal'ai", effects = 
+	(id = 18949, name = "Gift der Atal\'ai", effects = 
 	{
 		(type = 6)
 	})
@@ -39677,7 +39677,7 @@ spells =
 	{
 		(type = 17)
 	})
-	(id = 19473, name = "Zauber 'Nagastatue'", effects = 
+	(id = 19473, name = "Zauber \'Nagastatue\'", effects = 
 	{
 		(type = 3)
 	})
@@ -41206,7 +41206,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 20000, name = "Alexander's Test Periodic Aura", effects = 
+	(id = 20000, name = "Alexander\'s Test Periodic Aura", effects = 
 	{
 		(type = 6)
 		(type = 3)
@@ -42791,7 +42791,7 @@ spells =
 		(type = 98)
 		(type = 2)
 	})
-	(id = 20528, name = "Mor'rogal verzaubern", effects = 
+	(id = 20528, name = "Mor\'rogal verzaubern", effects = 
 	{
 		(type = 3)
 	})
@@ -46007,11 +46007,11 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 21871, name = "Verjüngung'-Dauer erhöht", effects = 
+	(id = 21871, name = "Verjüngung\'-Dauer erhöht", effects = 
 	{
 		(type = 6)
 	})
-	(id = 21872, name = "Schnelleres Wirken von 'Nachwachsen'", effects = 
+	(id = 21872, name = "Schnelleres Wirken von \'Nachwachsen\'", effects = 
 	{
 		(type = 6)
 	})
@@ -47077,7 +47077,7 @@ spells =
 		(type = 6)
 		(type = 108)
 	})
-	(id = 22567, name = "Ar'lia beschwören", effects = 
+	(id = 22567, name = "Ar\'lia beschwören", effects = 
 	{
 		(type = 28)
 		(type = 6)
@@ -47585,7 +47585,7 @@ spells =
 	{
 		(type = 61)
 	})
-	(id = 22738, name = "Verringerte Abklingzeit 'Abfangen'", effects = 
+	(id = 22738, name = "Verringerte Abklingzeit \'Abfangen\'", effects = 
 	{
 		(type = 6)
 	})
@@ -47671,7 +47671,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 22778, name = "Verringerte Wutkosten 'Kniesehne'", effects = 
+	(id = 22778, name = "Verringerte Wutkosten \'Kniesehne\'", effects = 
 	{
 		(type = 6)
 	})
@@ -47747,7 +47747,7 @@ spells =
 	{
 		(type = 27)
 	})
-	(id = 22804, name = "Schamane Krit. Trefferchance für 'Schock' erhöht", effects = 
+	(id = 22804, name = "Schamane Krit. Trefferchance für \'Schock\' erhöht", effects = 
 	{
 		(type = 6)
 	})
@@ -47796,16 +47796,16 @@ spells =
 	{
 		(type = 36)
 	})
-	(id = 22817, name = "Fengus' Wildheit", effects = 
+	(id = 22817, name = "Fengus\' Wildheit", effects = 
 	{
 		(type = 6)
 		(type = 6)
 	})
-	(id = 22818, name = "Mol'dars Mut", effects = 
+	(id = 22818, name = "Mol\'dars Mut", effects = 
 	{
 		(type = 6)
 	})
-	(id = 22820, name = "Slip'kiks Grips", effects = 
+	(id = 22820, name = "Slip\'kiks Grips", effects = 
 	{
 		(type = 6)
 	})
@@ -48016,7 +48016,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 22899, name = "Auge von Immol'thar", effects = 
+	(id = 22899, name = "Auge von Immol\'thar", effects = 
 	{
 		(type = 28)
 	})
@@ -48048,7 +48048,7 @@ spells =
 	{
 		(type = 27)
 	})
-	(id = 22909, name = "Auge von Immol'thar", effects = 
+	(id = 22909, name = "Auge von Immol\'thar", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -48175,7 +48175,7 @@ spells =
 	{
 		(type = 24)
 	})
-	(id = 22950, name = "Portal von Immol'thar", effects = 
+	(id = 22950, name = "Portal von Immol\'thar", effects = 
 	{
 		(type = 5)
 	})
@@ -48425,7 +48425,7 @@ spells =
 		(type = 3)
 		(type = 3)
 	})
-	(id = 23025, name = "Verringerte Abklingzeit 'Blinzeln'", effects = 
+	(id = 23025, name = "Verringerte Abklingzeit \'Blinzeln\'", effects = 
 	{
 		(type = 6)
 	})
@@ -48475,15 +48475,15 @@ spells =
 	{
 		(type = 34)
 	})
-	(id = 23043, name = "Chance auf Zauberunterbrechung für 'Gedankenschlag' verringert", effects = 
+	(id = 23043, name = "Chance auf Zauberunterbrechung für \'Gedankenschlag\' verringert", effects = 
 	{
 		(type = 6)
 	})
-	(id = 23044, name = "Dauer für 'Psychischer Schrei' erhöht", effects = 
+	(id = 23044, name = "Dauer für \'Psychischer Schrei\' erhöht", effects = 
 	{
 		(type = 6)
 	})
-	(id = 23046, name = "Chance auf Zauberunterbrechung für 'Sengender Schmerz' verringert", effects = 
+	(id = 23046, name = "Chance auf Zauberunterbrechung für \'Sengender Schmerz\' verringert", effects = 
 	{
 		(type = 6)
 	})
@@ -48784,7 +48784,7 @@ spells =
 	{
 		(type = 24)
 	})
-	(id = 23136, name = "J'eevee erlösen", effects = 
+	(id = 23136, name = "J\'eevee erlösen", effects = 
 	{
 		(type = 61)
 	})
@@ -48796,7 +48796,7 @@ spells =
 	{
 		(type = 5)
 	})
-	(id = 23140, name = "J'eevee beschwört ein Objekt", effects = 
+	(id = 23140, name = "J\'eevee beschwört ein Objekt", effects = 
 	{
 		(type = 3)
 	})
@@ -48961,15 +48961,15 @@ spells =
 	{
 		(type = 24)
 	})
-	(id = 23192, name = "Stellt Rhok'delar her", effects = 
+	(id = 23192, name = "Stellt Rhok\'delar her", effects = 
 	{
 		(type = 24)
 	})
-	(id = 23193, name = "Stellt Lok'delar her", effects = 
+	(id = 23193, name = "Stellt Lok\'delar her", effects = 
 	{
 		(type = 24)
 	})
-	(id = 23194, name = "Stellt Rhok'delar her", effects = 
+	(id = 23194, name = "Stellt Rhok\'delar her", effects = 
 	{
 		(type = 24)
 	})
@@ -49304,7 +49304,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 23302, name = "Verringerte Abklingzeit 'Hammer der Gerechtigkeit'", effects = 
+	(id = 23302, name = "Verringerte Abklingzeit \'Hammer der Gerechtigkeit\'", effects = 
 	{
 		(type = 6)
 	})
@@ -49949,7 +49949,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 23550, name = "Erhöhter kritischer Effekt für 'Gebet der Heilung'", effects = 
+	(id = 23550, name = "Erhöhter kritischer Effekt für \'Gebet der Heilung\'", effects = 
 	{
 		(type = 6)
 	})
@@ -49973,7 +49973,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 23556, name = "Verringerte Abklingzeit für 'Gelassenheit' und 'Hurrikan'", effects = 
+	(id = 23556, name = "Verringerte Abklingzeit für \'Gelassenheit\' und \'Hurrikan\'", effects = 
 	{
 		(type = 6)
 	})
@@ -49996,7 +49996,7 @@ spells =
 		(type = 6)
 		(type = 6)
 	})
-	(id = 23561, name = "Verstärktes 'Rüstung zerreißen'", effects = 
+	(id = 23561, name = "Verstärktes \'Rüstung zerreißen\'", effects = 
 	{
 		(type = 6)
 	})
@@ -50346,7 +50346,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 23685, name = "Sam's Test Spell", effects = 
+	(id = 23685, name = "Sam\'s Test Spell", effects = 
 	{
 		(type = 149)
 	})
@@ -50807,7 +50807,7 @@ spells =
 		(type = 17)
 		(type = 31)
 	})
-	(id = 23849, name = "Venoxis' Verwandlung", effects = 
+	(id = 23849, name = "Venoxis\' Verwandlung", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -51256,7 +51256,7 @@ spells =
 	{
 		(type = 86)
 	})
-	(id = 24084, name = "Mar'li transformieren", effects = 
+	(id = 24084, name = "Mar\'li transformieren", effects = 
 	{
 		(type = 6)
 	})
@@ -51621,17 +51621,17 @@ spells =
 	{
 		(type = 24)
 	})
-	(id = 24202, name = "Herz von Hakkar 'Riss' herstellen", effects = 
+	(id = 24202, name = "Herz von Hakkar \'Riss\' herstellen", effects = 
 	{
 		(type = 50)
 		(type = 50)
 		(type = 50)
 	})
-	(id = 24203, name = "Herz von Hakkar 'Verbannen'", effects = 
+	(id = 24203, name = "Herz von Hakkar \'Verbannen\'", effects = 
 	{
 		(type = 6)
 	})
-	(id = 24204, name = "Herz von Hakkar 'Implodieren'", effects = 
+	(id = 24204, name = "Herz von Hakkar \'Implodieren\'", effects = 
 	{
 		(type = 3)
 	})
@@ -51828,7 +51828,7 @@ spells =
 	{
 		(type = 36)
 	})
-	(id = 24268, name = "Mar'lis fokussierte Gedanken", effects = 
+	(id = 24268, name = "Mar\'lis fokussierte Gedanken", effects = 
 	{
 		(type = 6)
 	})
@@ -51931,11 +51931,11 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 24306, name = "Irrbilder von Jin'do", effects = 
+	(id = 24306, name = "Irrbilder von Jin\'do", effects = 
 	{
 		(type = 6)
 	})
-	(id = 24307, name = "Schemengestalt von Jin'do Passiv", effects = 
+	(id = 24307, name = "Schemengestalt von Jin\'do Passiv", effects = 
 	{
 		(type = 6)
 	})
@@ -52013,7 +52013,7 @@ spells =
 		(type = 3)
 		(type = 61)
 	})
-	(id = 24326, name = "Gahz'rankaschlag", effects = 
+	(id = 24326, name = "Gahz\'rankaschlag", effects = 
 	{
 		(type = 58)
 		(type = 98)
@@ -52997,7 +52997,7 @@ spells =
 	{
 		(type = 28)
 	})
-	(id = 24623, name = "Van'Cleef beschwören", effects = 
+	(id = 24623, name = "Van\'Cleef beschwören", effects = 
 	{
 		(type = 28)
 	})
@@ -53005,7 +53005,7 @@ spells =
 	{
 		(type = 28)
 	})
-	(id = 24625, name = "Aku'mai beschwören", effects = 
+	(id = 24625, name = "Aku\'mai beschwören", effects = 
 	{
 		(type = 28)
 	})
@@ -53176,7 +53176,7 @@ spells =
 		(type = 2)
 		(type = 68)
 	})
-	(id = 24686, name = "Aspekt von Mar'li", effects = 
+	(id = 24686, name = "Aspekt von Mar\'li", effects = 
 	{
 		(type = 6)
 	})
@@ -53699,7 +53699,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 24829, name = "Seelenstärke der Sin'dorei", effects = 
+	(id = 24829, name = "Seelenstärke der Sin\'dorei", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -54833,7 +54833,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 25172, name = "Merithra's Wake Visual DND", effects = 
+	(id = 25172, name = "Merithra\'s Wake Visual DND", effects = 
 	{
 		(type = 6)
 	})
@@ -56327,7 +56327,7 @@ spells =
 		(type = 6)
 		(type = 6)
 	})
-	(id = 25791, name = "Xandivious' Dämonentasche", effects = 
+	(id = 25791, name = "Xandivious\' Dämonentasche", effects = 
 	{
 		(type = 76)
 	})
@@ -56336,43 +56336,43 @@ spells =
 		(type = 50)
 		(type = 61)
 	})
-	(id = 25794, name = "Ahn'Qiraj Belohnung: Stärkungszauber (Nahkampf - 20)", effects = 
+	(id = 25794, name = "Ahn\'Qiraj Belohnung: Stärkungszauber (Nahkampf - 20)", effects = 
 	{
 		(type = 6)
 		(type = 6)
 		(type = 6)
 	})
-	(id = 25795, name = "Ahn'Qiraj Belohnung: Stärkungszauber (Nahkampf - 40)", effects = 
+	(id = 25795, name = "Ahn\'Qiraj Belohnung: Stärkungszauber (Nahkampf - 40)", effects = 
 	{
 		(type = 6)
 		(type = 6)
 		(type = 6)
 	})
-	(id = 25796, name = "Ahn'Qiraj Belohnung: Stärkungszauber (Nahkampf - 60)", effects = 
+	(id = 25796, name = "Ahn\'Qiraj Belohnung: Stärkungszauber (Nahkampf - 60)", effects = 
 	{
 		(type = 6)
 		(type = 6)
 		(type = 6)
 	})
-	(id = 25797, name = "Ahn'Qiraj Belohnung: Stärkungszauber (Zauberer - 20)", effects = 
+	(id = 25797, name = "Ahn\'Qiraj Belohnung: Stärkungszauber (Zauberer - 20)", effects = 
 	{
 		(type = 6)
 		(type = 6)
 		(type = 6)
 	})
-	(id = 25798, name = "Ahn'Qiraj Belohnung: Stärkungszauber (Zauberer - 40)", effects = 
+	(id = 25798, name = "Ahn\'Qiraj Belohnung: Stärkungszauber (Zauberer - 40)", effects = 
 	{
 		(type = 6)
 		(type = 6)
 		(type = 6)
 	})
-	(id = 25799, name = "Ahn'Qiraj Belohnung: Stärkungszauber (Zauberer - 60)", effects = 
+	(id = 25799, name = "Ahn\'Qiraj Belohnung: Stärkungszauber (Zauberer - 60)", effects = 
 	{
 		(type = 6)
 		(type = 6)
 		(type = 6)
 	})
-	(id = 25800, name = "Ahn'Qiraj Belohnung: Stärkungszauber (Auslöser - 20)", effects = 
+	(id = 25800, name = "Ahn\'Qiraj Belohnung: Stärkungszauber (Auslöser - 20)", effects = 
 	{
 		(type = 77)
 	})
@@ -56381,11 +56381,11 @@ spells =
 		(type = 35)
 		(type = 35)
 	})
-	(id = 25802, name = "Ahn'Qiraj Belohnung: Stärkungszauber (Auslöser - 40)", effects = 
+	(id = 25802, name = "Ahn\'Qiraj Belohnung: Stärkungszauber (Auslöser - 40)", effects = 
 	{
 		(type = 77)
 	})
-	(id = 25803, name = "Ahn'Qiraj Belohnung: Stärkungszauber (Auslöser - 60)", effects = 
+	(id = 25803, name = "Ahn\'Qiraj Belohnung: Stärkungszauber (Auslöser - 60)", effects = 
 	{
 		(type = 77)
 	})
@@ -56890,7 +56890,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 26001, name = "Ruf - Ahn'Qiraj Tempelendgegner", effects = 
+	(id = 26001, name = "Ruf - Ahn\'Qiraj Tempelendgegner", effects = 
 	{
 		(type = 103)
 		(type = 103)
@@ -57530,7 +57530,7 @@ spells =
 		(type = 2)
 		(type = 68)
 	})
-	(id = 26195, name = "Geflüster des C'Thun", effects = 
+	(id = 26195, name = "Geflüster des C\'Thun", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -57542,13 +57542,13 @@ spells =
 		(type = 6)
 		(type = 6)
 	})
-	(id = 26197, name = "Geflüster des C'Thun", effects = 
+	(id = 26197, name = "Geflüster des C\'Thun", effects = 
 	{
 		(type = 6)
 		(type = 6)
 		(type = 6)
 	})
-	(id = 26198, name = "Geflüster des C'Thun", effects = 
+	(id = 26198, name = "Geflüster des C\'Thun", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -57618,7 +57618,7 @@ spells =
 		(type = 6)
 		(type = 6)
 	})
-	(id = 26232, name = "C'Thun verwandeln-> Phase 2", effects = 
+	(id = 26232, name = "C\'Thun verwandeln-> Phase 2", effects = 
 	{
 		(type = 6)
 	})
@@ -57630,17 +57630,17 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 26235, name = "C'Thun verwundbar", effects = 
+	(id = 26235, name = "C\'Thun verwundbar", effects = 
 	{
 		(type = 6)
 	})
-	(id = 26258, name = "Geflüster des C'Thun", effects = 
+	(id = 26258, name = "Geflüster des C\'Thun", effects = 
 	{
 		(type = 6)
 		(type = 6)
 		(type = 6)
 	})
-	(id = 26259, name = "Geflüster des C'Thun", effects = 
+	(id = 26259, name = "Geflüster des C\'Thun", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -59181,7 +59181,7 @@ spells =
 	{
 		(type = 24)
 	})
-	(id = 26879, name = "'Verliebt' aufheben", effects = 
+	(id = 26879, name = "\'Verliebt\' aufheben", effects = 
 	{
 		(type = 3)
 	})
@@ -59322,7 +59322,7 @@ spells =
 	{
 		(type = 24)
 	})
-	(id = 26921, name = "'Gebrochenes Herz' aufheben, Band herstellen", effects = 
+	(id = 26921, name = "\'Gebrochenes Herz\' aufheben, Band herstellen", effects = 
 	{
 		(type = 24)
 	})
@@ -60989,7 +60989,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 27561, name = "Auslöser für 'Stille'", effects = 
+	(id = 27561, name = "Auslöser für \'Stille\'", effects = 
 	{
 		(type = 6)
 	})
@@ -61714,7 +61714,7 @@ spells =
 		(type = 6)
 		(type = 6)
 	})
-	(id = 27797, name = "Verringerte Abklingzeit für 'Reinkarnation'", effects = 
+	(id = 27797, name = "Verringerte Abklingzeit für \'Reinkarnation\'", effects = 
 	{
 		(type = 6)
 	})
@@ -61878,7 +61878,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 27847, name = "Verringerte Kosten für 'Reinigung des Glaubens'", effects = 
+	(id = 27847, name = "Verringerte Kosten für \'Reinigung des Glaubens\'", effects = 
 	{
 		(type = 6)
 	})
@@ -61890,11 +61890,11 @@ spells =
 	{
 		(type = 2)
 	})
-	(id = 27850, name = "Rüstung der 'Aura der Hingabe' erhöht", effects = 
+	(id = 27850, name = "Rüstung der \'Aura der Hingabe\' erhöht", effects = 
 	{
 		(type = 6)
 	})
-	(id = 27851, name = "Erhöhter Schaden für 'Klaue' und 'Krallenhieb'", effects = 
+	(id = 27851, name = "Erhöhter Schaden für \'Klaue\' und \'Krallenhieb\'", effects = 
 	{
 		(type = 6)
 	})
@@ -61902,11 +61902,11 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 27853, name = "Erhöhte Heilung für 'Verjüngung'", effects = 
+	(id = 27853, name = "Erhöhte Heilung für \'Verjüngung\'", effects = 
 	{
 		(type = 6)
 	})
-	(id = 27855, name = "Erhöhte Heilung für 'Welle der Heilung'", effects = 
+	(id = 27855, name = "Erhöhte Heilung für \'Welle der Heilung\'", effects = 
 	{
 		(type = 6)
 	})
@@ -63488,11 +63488,11 @@ spells =
 	{
 		(type = 2)
 	})
-	(id = 28408, name = "Ketten von Kel'Thuzad", effects = 
+	(id = 28408, name = "Ketten von Kel\'Thuzad", effects = 
 	{
 		(type = 77)
 	})
-	(id = 28410, name = "Ketten von Kel'Thuzad", effects = 
+	(id = 28410, name = "Ketten von Kel\'Thuzad", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -64904,7 +64904,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 28832, name = "Mal von Korth'azz", effects = 
+	(id = 28832, name = "Mal von Korth\'azz", effects = 
 	{
 		(type = 6)
 	})
@@ -64975,7 +64975,7 @@ spells =
 	{
 		(type = 30)
 	})
-	(id = 28851, name = "Verbesserte 'Lichtblitz'-Heilung", effects = 
+	(id = 28851, name = "Verbesserte \'Lichtblitz\'-Heilung", effects = 
 	{
 		(type = 6)
 	})
@@ -64984,7 +64984,7 @@ spells =
 		(type = 6)
 		(type = 6)
 	})
-	(id = 28853, name = "Verbesserte 'Lichtblitz'-Heilung", effects = 
+	(id = 28853, name = "Verbesserte \'Lichtblitz\'-Heilung", effects = 
 	{
 		(type = 6)
 	})
@@ -64992,7 +64992,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 28855, name = "Erhöhter Schaden für 'Zermalmen' und 'Prankenhieb'", effects = 
+	(id = 28855, name = "Erhöhter Schaden für \'Zermalmen\' und \'Prankenhieb\'", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -65236,7 +65236,7 @@ spells =
 	{
 		(type = 28)
 	})
-	(id = 28932, name = "Geist von Korth'azz beschwören", effects = 
+	(id = 28932, name = "Geist von Korth\'azz beschwören", effects = 
 	{
 		(type = 28)
 	})
@@ -66545,11 +66545,11 @@ spells =
 	{
 		(type = 64)
 	})
-	(id = 29422, name = "Kanalisierung von Kel'Thuzad", effects = 
+	(id = 29422, name = "Kanalisierung von Kel\'Thuzad", effects = 
 	{
 		(type = 3)
 	})
-	(id = 29423, name = "Kanalisierung von Kel'Thuzad", effects = 
+	(id = 29423, name = "Kanalisierung von Kel\'Thuzad", effects = 
 	{
 		(type = 6)
 	})
@@ -70165,7 +70165,7 @@ spells =
 	{
 		(type = 10)
 	})
-	(id = 30605, name = "Explosion von Aman'Thul", effects = 
+	(id = 30605, name = "Explosion von Aman\'Thul", effects = 
 	{
 		(type = 2)
 	})
@@ -70173,7 +70173,7 @@ spells =
 	{
 		(type = 2)
 	})
-	(id = 30607, name = "Flamme von Khaz'goroth", effects = 
+	(id = 30607, name = "Flamme von Khaz\'goroth", effects = 
 	{
 		(type = 2)
 	})
@@ -71347,7 +71347,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 30985, name = "Medivh über Arcanagos' Flucht in Kenntnis setzen", effects = 
+	(id = 30985, name = "Medivh über Arcanagos\' Flucht in Kenntnis setzen", effects = 
 	{
 		(type = 3)
 	})
@@ -72683,7 +72683,7 @@ spells =
 	{
 		(type = 24)
 	})
-	(id = 31447, name = "Mal von Kaz'rogal", effects = 
+	(id = 31447, name = "Mal von Kaz\'rogal", effects = 
 	{
 		(type = 6)
 	})
@@ -72750,7 +72750,7 @@ spells =
 		(type = 6)
 		(type = 6)
 	})
-	(id = 31463, name = "Mal von Kaz'rogal", effects = 
+	(id = 31463, name = "Mal von Kaz\'rogal", effects = 
 	{
 		(type = 2)
 	})
@@ -74460,7 +74460,7 @@ spells =
 	{
 		(type = 17)
 	})
-	(id = 32007, name = "Transformation des Ingeniers der Mo'arg", effects = 
+	(id = 32007, name = "Transformation des Ingeniers der Mo\'arg", effects = 
 	{
 		(type = 6)
 	})
@@ -75063,12 +75063,12 @@ spells =
 	{
 		(type = 7)
 	})
-	(id = 32205, name = "Schlachtstandarte der Mag'har platzieren", effects = 
+	(id = 32205, name = "Schlachtstandarte der Mag\'har platzieren", effects = 
 	{
 		(type = 76)
 		(type = 3)
 	})
-	(id = 32211, name = "Werd' mein Sparringspartner", effects = 
+	(id = 32211, name = "Werd\' mein Sparringspartner", effects = 
 	{
 		(type = 3)
 	})
@@ -75409,7 +75409,7 @@ spells =
 	{
 		(type = 3)
 	})
-	(id = 32314, name = "Banner von Kil'sorge aufstellen", effects = 
+	(id = 32314, name = "Banner von Kil\'sorge aufstellen", effects = 
 	{
 		(type = 76)
 		(type = 77)
@@ -75731,11 +75731,11 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 32402, name = "Erhöhte Heilung für 'Verjüngung'", effects = 
+	(id = 32402, name = "Erhöhte Heilung für \'Verjüngung\'", effects = 
 	{
 		(type = 6)
 	})
-	(id = 32403, name = "Verbesserte Heilung für 'Lichtblitz'", effects = 
+	(id = 32403, name = "Verbesserte Heilung für \'Lichtblitz\'", effects = 
 	{
 		(type = 6)
 	})
@@ -75765,15 +75765,15 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 32410, name = "Erhöhter Schaden für 'Wilder Biss'", effects = 
+	(id = 32410, name = "Erhöhter Schaden für \'Wilder Biss\'", effects = 
 	{
 		(type = 6)
 	})
-	(id = 32411, name = "Erhöhter Schaden für 'Siegel der Rechtschaffenheit'", effects = 
+	(id = 32411, name = "Erhöhter Schaden für \'Siegel der Rechtschaffenheit\'", effects = 
 	{
 		(type = 6)
 	})
-	(id = 32412, name = "Erhöhter Schaden für 'Blitzschlagschild'", effects = 
+	(id = 32412, name = "Erhöhter Schaden für \'Blitzschlagschild\'", effects = 
 	{
 		(type = 6)
 	})
@@ -76205,7 +76205,7 @@ spells =
 	{
 		(type = 24)
 	})
-	(id = 32578, name = "Gor'dreks Salbe", effects = 
+	(id = 32578, name = "Gor\'dreks Salbe", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -76335,7 +76335,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 32616, name = "Barnes' Transformation (Smoking)", effects = 
+	(id = 32616, name = "Barnes\' Transformation (Smoking)", effects = 
 	{
 		(type = 6)
 	})
@@ -76343,7 +76343,7 @@ spells =
 	{
 		(type = 3)
 	})
-	(id = 32622, name = "K'ure aussaugen", effects = 
+	(id = 32622, name = "K\'ure aussaugen", effects = 
 	{
 		(type = 6)
 	})
@@ -76665,7 +76665,7 @@ spells =
 	{
 		(type = 128)
 	})
-	(id = 32729, name = "Stärke der Mag'halar", effects = 
+	(id = 32729, name = "Stärke der Mag\'halar", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -76724,7 +76724,7 @@ spells =
 	{
 		(type = 2)
 	})
-	(id = 32743, name = "Verringerte Abklingzeit für 'Verschwinden'", effects = 
+	(id = 32743, name = "Verringerte Abklingzeit für \'Verschwinden\'", effects = 
 	{
 		(type = 6)
 	})
@@ -76744,7 +76744,7 @@ spells =
 	{
 		(type = 68)
 	})
-	(id = 32748, name = "Unterbrechung bei 'Tödlicher Wurf'", effects = 
+	(id = 32748, name = "Unterbrechung bei \'Tödlicher Wurf\'", effects = 
 	{
 		(type = 6)
 	})
@@ -77358,7 +77358,7 @@ spells =
 		(type = 98)
 		(type = 2)
 	})
-	(id = 32936, name = "Der'izufokus")
+	(id = 32936, name = "Der\'izufokus")
 	(id = 32937, name = "Blinzeln", effects = 
 	{
 		(type = 29)
@@ -77635,7 +77635,7 @@ spells =
 	{
 		(type = 33)
 	})
-	(id = 33018, name = "Verringerte Abklingzeit für 'Sturmschlag'", effects = 
+	(id = 33018, name = "Verringerte Abklingzeit für \'Sturmschlag\'", effects = 
 	{
 		(type = 6)
 	})
@@ -77643,7 +77643,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 33020, name = "Bonus für 'Blitzschlagschild'", effects = 
+	(id = 33020, name = "Bonus für \'Blitzschlagschild\'", effects = 
 	{
 		(type = 6)
 	})
@@ -78757,7 +78757,7 @@ spells =
 	{
 		(type = 10)
 	})
-	(id = 33326, name = "Bannung von 'Gestohlene Seele'", effects = 
+	(id = 33326, name = "Bannung von \'Gestohlene Seele\'", effects = 
 	{
 		(type = 6)
 	})
@@ -78782,7 +78782,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 33333, name = "Veringerung von 'Geschwächte Seele'", effects = 
+	(id = 33333, name = "Veringerung von \'Geschwächte Seele\'", effects = 
 	{
 		(type = 6)
 	})
@@ -79607,7 +79607,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 33565, name = "Schadensbonus für 'Klaue' und 'Krallenhieb'", effects = 
+	(id = 33565, name = "Schadensbonus für \'Klaue\' und \'Krallenhieb\'", effects = 
 	{
 		(type = 6)
 	})
@@ -79985,11 +79985,11 @@ spells =
 	{
 		(type = 50)
 	})
-	(id = 33693, name = "Erhöhter Schaden für 'Schreddern'", effects = 
+	(id = 33693, name = "Erhöhter Schaden für \'Schreddern\'", effects = 
 	{
 		(type = 6)
 	})
-	(id = 33695, name = "Schaden von 'Exorzismus' und 'Heiliger Zorn'", effects = 
+	(id = 33695, name = "Schaden von \'Exorzismus\' und \'Heiliger Zorn\'", effects = 
 	{
 		(type = 6)
 	})
@@ -80504,7 +80504,7 @@ spells =
 	{
 		(type = 3)
 	})
-	(id = 33839, name = "Konzentration der Vir'aani", effects = 
+	(id = 33839, name = "Konzentration der Vir\'aani", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -80631,7 +80631,7 @@ spells =
 		(type = 6)
 		(type = 31)
 	})
-	(id = 33877, name = "Manaverringerung für 'Mondfeuer'", effects = 
+	(id = 33877, name = "Manaverringerung für \'Mondfeuer\'", effects = 
 	{
 		(type = 6)
 	})
@@ -81757,7 +81757,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 34231, name = "Heilungserhöhung für 'Heiliges Licht'", effects = 
+	(id = 34231, name = "Heilungserhöhung für \'Heiliges Licht\'", effects = 
 	{
 		(type = 6)
 	})
@@ -81800,7 +81800,7 @@ spells =
 	{
 		(type = 2)
 	})
-	(id = 34241, name = "Erhöhter Schaden für 'Zerfetzen'", effects = 
+	(id = 34241, name = "Erhöhter Schaden für \'Zerfetzen\'", effects = 
 	{
 		(type = 6)
 	})
@@ -81834,7 +81834,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 34253, name = "Erhöhter Schaden für 'Aufschlitzen'", effects = 
+	(id = 34253, name = "Erhöhter Schaden für \'Aufschlitzen\'", effects = 
 	{
 		(type = 6)
 	})
@@ -82291,7 +82291,7 @@ spells =
 	{
 		(type = 2)
 	})
-	(id = 34371, name = "Drek'Thar freigeben", effects = 
+	(id = 34371, name = "Drek\'Thar freigeben", effects = 
 	{
 		(type = 77)
 		(type = 61)
@@ -82338,7 +82338,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 34384, name = "Krasus' Kompendium erschaffen", effects = 
+	(id = 34384, name = "Krasus\' Kompendium erschaffen", effects = 
 	{
 		(type = 24)
 	})
@@ -83247,7 +83247,7 @@ spells =
 		(type = 98)
 		(type = 2)
 	})
-	(id = 34646, name = "Rune von Kirin'Var aktivieren", effects = 
+	(id = 34646, name = "Rune von Kirin\'Var aktivieren", effects = 
 	{
 		(type = 3)
 	})
@@ -83955,7 +83955,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 34854, name = "Lashh'an Kaliri", effects = 
+	(id = 34854, name = "Lashh\'an Kaliri", effects = 
 	{
 		(type = 56)
 	})
@@ -84718,7 +84718,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 35076, name = "Segen von A'dal", effects = 
+	(id = 35076, name = "Segen von A\'dal", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -87769,7 +87769,7 @@ spells =
 		(type = 6)
 		(type = 2)
 	})
-	(id = 35996, name = "Gul'dans Kanalisierung", effects = 
+	(id = 35996, name = "Gul\'dans Kanalisierung", effects = 
 	{
 		(type = 6)
 	})
@@ -89459,15 +89459,15 @@ spells =
 	{
 		(type = 2)
 	})
-	(id = 36538, name = "Angriff von Grom'tor 01", effects = 
+	(id = 36538, name = "Angriff von Grom\'tor 01", effects = 
 	{
 		(type = 3)
 	})
-	(id = 36539, name = "Angriff von Grom'tor 02", effects = 
+	(id = 36539, name = "Angriff von Grom\'tor 02", effects = 
 	{
 		(type = 3)
 	})
-	(id = 36540, name = "Angriff von Grom'tor 03", effects = 
+	(id = 36540, name = "Angriff von Grom\'tor 03", effects = 
 	{
 		(type = 3)
 	})
@@ -89535,7 +89535,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 36558, name = "Ar'tors Gefängnis", effects = 
+	(id = 36558, name = "Ar\'tors Gefängnis", effects = 
 	{
 		(type = 6)
 	})
@@ -89588,7 +89588,7 @@ spells =
 		(type = 6)
 		(type = 6)
 	})
-	(id = 36575, name = "T'chali der Kopf, gefrorener Zustand", effects = 
+	(id = 36575, name = "T\'chali der Kopf, gefrorener Zustand", effects = 
 	{
 		(type = 6)
 	})
@@ -90787,7 +90787,7 @@ spells =
 	{
 		(type = 28)
 	})
-	(id = 36904, name = "Kanalisierung der Lashh'an", effects = 
+	(id = 36904, name = "Kanalisierung der Lashh\'an", effects = 
 	{
 		(type = 6)
 		(type = 28)
@@ -90931,7 +90931,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 36944, name = "Zorn von Xi'ris", effects = 
+	(id = 36944, name = "Zorn von Xi\'ris", effects = 
 	{
 		(type = 1)
 	})
@@ -91652,7 +91652,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 37166, name = "Kostenreduzierung für 'Ausweiden' und 'Vergiften'", effects = 
+	(id = 37166, name = "Kostenreduzierung für \'Ausweiden\' und \'Vergiften\'", effects = 
 	{
 		(type = 6)
 	})
@@ -91701,11 +91701,11 @@ spells =
 		(type = 58)
 		(type = 98)
 	})
-	(id = 37180, name = "Kostenreduzierung für 'Weihe'", effects = 
+	(id = 37180, name = "Kostenreduzierung für \'Weihe\'", effects = 
 	{
 		(type = 6)
 	})
-	(id = 37181, name = "Verringerte Abklingzeit für 'Rechtschaffene Verteidigung'", effects = 
+	(id = 37181, name = "Verringerte Abklingzeit für \'Rechtschaffene Verteidigung\'", effects = 
 	{
 		(type = 6)
 	})
@@ -91713,7 +91713,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 37183, name = "Verringerte Abklingzeit für 'Göttliche Gunst'", effects = 
+	(id = 37183, name = "Verringerte Abklingzeit für \'Göttliche Gunst\'", effects = 
 	{
 		(type = 6)
 	})
@@ -91738,7 +91738,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 37189, name = "Verringerte Zauberzeit für 'Heiliges Licht'", effects = 
+	(id = 37189, name = "Verringerte Zauberzeit für \'Heiliges Licht\'", effects = 
 	{
 		(type = 6)
 	})
@@ -91874,7 +91874,7 @@ spells =
 		(type = 6)
 		(type = 6)
 	})
-	(id = 37228, name = "Kostenreduzierung für 'Geringe Welle der Heilung'", effects = 
+	(id = 37228, name = "Kostenreduzierung für \'Geringe Welle der Heilung\'", effects = 
 	{
 		(type = 6)
 	})
@@ -91894,7 +91894,7 @@ spells =
 	{
 		(type = 61)
 	})
-	(id = 37237, name = "Kostenreduzierung für 'Blitzschlag'", effects = 
+	(id = 37237, name = "Kostenreduzierung für \'Blitzschlag\'", effects = 
 	{
 		(type = 6)
 	})
@@ -92129,11 +92129,11 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 37314, name = "Bonus für 'Blühendes Leben'", effects = 
+	(id = 37314, name = "Bonus für \'Blühendes Leben\'", effects = 
 	{
 		(type = 6)
 	})
-	(id = 37315, name = "Bonus für 'Nachwachsen' in Tiergestalt", effects = 
+	(id = 37315, name = "Bonus für \'Nachwachsen\' in Tiergestalt", effects = 
 	{
 		(type = 6)
 	})
@@ -92173,7 +92173,7 @@ spells =
 		(type = 6)
 		(type = 134)
 	})
-	(id = 37324, name = "Bonus für 'Nachwachsen' in Mondkingestalt", effects = 
+	(id = 37324, name = "Bonus für \'Nachwachsen\' in Mondkingestalt", effects = 
 	{
 		(type = 6)
 	})
@@ -92181,7 +92181,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 37327, name = "Bonus für 'Sternenfeuer'", effects = 
+	(id = 37327, name = "Bonus für \'Sternenfeuer\'", effects = 
 	{
 		(type = 6)
 	})
@@ -92296,7 +92296,7 @@ spells =
 		(type = 2)
 		(type = 98)
 	})
-	(id = 37364, name = "Das Mal von Kael'thas", effects = 
+	(id = 37364, name = "Das Mal von Kael\'thas", effects = 
 	{
 		(type = 6)
 	})
@@ -92591,7 +92591,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 37446, name = "Verwandlung: Orakel der Ruuan'ok", effects = 
+	(id = 37446, name = "Verwandlung: Orakel der Ruuan\'ok", effects = 
 	{
 		(type = 6)
 	})
@@ -92843,7 +92843,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 37516, name = "Bonus für 'Rache'", effects = 
+	(id = 37516, name = "Bonus für \'Rache\'", effects = 
 	{
 		(type = 6)
 	})
@@ -92851,7 +92851,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 37518, name = "Kostenreduzierung für 'Wirbelwind'", effects = 
+	(id = 37518, name = "Kostenreduzierung für \'Wirbelwind\'", effects = 
 	{
 		(type = 6)
 	})
@@ -92867,7 +92867,7 @@ spells =
 	{
 		(type = 30)
 	})
-	(id = 37522, name = "Blockwert für 'Schildblock'", effects = 
+	(id = 37522, name = "Blockwert für \'Schildblock\'", effects = 
 	{
 		(type = 6)
 	})
@@ -92888,7 +92888,7 @@ spells =
 		(type = 6)
 		(type = 6)
 	})
-	(id = 37528, name = "Bonus für 'Überwältigen'", effects = 
+	(id = 37528, name = "Bonus für \'Überwältigen\'", effects = 
 	{
 		(type = 6)
 	})
@@ -92905,7 +92905,7 @@ spells =
 	{
 		(type = 5)
 	})
-	(id = 37535, name = "Kostenreduzierung für 'Blutdurst' und 'Tödlicher Stoß'", effects = 
+	(id = 37535, name = "Kostenreduzierung für \'Blutdurst\' und \'Tödlicher Stoß\'", effects = 
 	{
 		(type = 6)
 	})
@@ -92985,7 +92985,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 37556, name = "Kostenreduzierung für 'Verbindende Heilung'", effects = 
+	(id = 37556, name = "Kostenreduzierung für \'Verbindende Heilung\'", effects = 
 	{
 		(type = 6)
 	})
@@ -93030,7 +93030,7 @@ spells =
 	{
 		(type = 2)
 	})
-	(id = 37568, name = "Kostenreduzierung für 'Große Heilung'", effects = 
+	(id = 37568, name = "Kostenreduzierung für \'Große Heilung\'", effects = 
 	{
 		(type = 6)
 	})
@@ -93572,24 +93572,24 @@ spells =
 	{
 		(type = 2)
 	})
-	(id = 37736, name = "Erhöhter Schaden für 'Zerfleischen'", effects = 
+	(id = 37736, name = "Erhöhter Schaden für \'Zerfleischen\'", effects = 
 	{
 		(type = 6)
 		(type = 6)
 	})
-	(id = 37737, name = "Verringerte Kosten von 'Nachwachsen'", effects = 
+	(id = 37737, name = "Verringerte Kosten von \'Nachwachsen\'", effects = 
 	{
 		(type = 6)
 	})
-	(id = 37738, name = "Verringerte Kosten für 'Welle der Heilung'", effects = 
+	(id = 37738, name = "Verringerte Kosten für \'Welle der Heilung\'", effects = 
 	{
 		(type = 6)
 	})
-	(id = 37739, name = "Verringerte Kosten für 'Heiliges Licht'", effects = 
+	(id = 37739, name = "Verringerte Kosten für \'Heiliges Licht\'", effects = 
 	{
 		(type = 6)
 	})
-	(id = 37740, name = "Verringerte Kosten für 'Blitzschlag'", effects = 
+	(id = 37740, name = "Verringerte Kosten für \'Blitzschlag\'", effects = 
 	{
 		(type = 6)
 	})
@@ -93655,7 +93655,7 @@ spells =
 	{
 		(type = 28)
 	})
-	(id = 37760, name = "Erhöhter Schaden für 'Zorn'", effects = 
+	(id = 37760, name = "Erhöhter Schaden für \'Zorn\'", effects = 
 	{
 		(type = 6)
 	})
@@ -93663,11 +93663,11 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 37762, name = "Verringerte Kosten für 'Sturmschlag'", effects = 
+	(id = 37762, name = "Verringerte Kosten für \'Sturmschlag\'", effects = 
 	{
 		(type = 6)
 	})
-	(id = 37763, name = "Erhöhter Schaden für 'Kreuzfahrerstoß'", effects = 
+	(id = 37763, name = "Erhöhter Schaden für \'Kreuzfahrerstoß\'", effects = 
 	{
 		(type = 6)
 	})
@@ -94782,7 +94782,7 @@ spells =
 	{
 		(type = 28)
 	})
-	(id = 38119, name = "Windreiter der Kor'kron rufen", effects = 
+	(id = 38119, name = "Windreiter der Kor\'kron rufen", effects = 
 	{
 		(type = 28)
 	})
@@ -95344,11 +95344,11 @@ spells =
 	{
 		(type = 77)
 	})
-	(id = 38290, name = "Santos' Segen", effects = 
+	(id = 38290, name = "Santos\' Segen", effects = 
 	{
 		(type = 6)
 	})
-	(id = 38293, name = "Santos' Segen", effects = 
+	(id = 38293, name = "Santos\' Segen", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -95439,7 +95439,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 38320, name = "Erhöhte Heilung für 'Segen des Lichts'", effects = 
+	(id = 38320, name = "Erhöhte Heilung für \'Segen des Lichts\'", effects = 
 	{
 		(type = 6)
 	})
@@ -95700,7 +95700,7 @@ spells =
 		(type = 6)
 		(type = 6)
 	})
-	(id = 38388, name = "Erhöhte Hast für 'Zerhäckseln'", effects = 
+	(id = 38388, name = "Erhöhte Hast für \'Zerhäckseln\'", effects = 
 	{
 		(type = 6)
 	})
@@ -95740,7 +95740,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 38398, name = "Verringerte Kosten für 'Spalten'", effects = 
+	(id = 38398, name = "Verringerte Kosten für \'Spalten\'", effects = 
 	{
 		(type = 6)
 	})
@@ -95766,7 +95766,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 38410, name = "Verringerte Kosten für 'Gebet der Heilung'", effects = 
+	(id = 38410, name = "Verringerte Kosten für \'Gebet der Heilung\'", effects = 
 	{
 		(type = 6)
 	})
@@ -95778,11 +95778,11 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 38413, name = "Erhöhte Dauer für 'Schattenwort: Schmerz'", effects = 
+	(id = 38413, name = "Erhöhte Dauer für \'Schattenwort: Schmerz\'", effects = 
 	{
 		(type = 6)
 	})
-	(id = 38414, name = "Erhöhte Dauer für 'Mondfeuer'", effects = 
+	(id = 38414, name = "Erhöhte Dauer für \'Mondfeuer\'", effects = 
 	{
 		(type = 6)
 	})
@@ -95795,7 +95795,7 @@ spells =
 		(type = 6)
 		(type = 6)
 	})
-	(id = 38417, name = "Verringerte Abklingzeit für 'Rasche Heilung'", effects = 
+	(id = 38417, name = "Verringerte Abklingzeit für \'Rasche Heilung\'", effects = 
 	{
 		(type = 6)
 	})
@@ -95823,7 +95823,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 38426, name = "Erhöhte kritische Trefferchance für 'Heiliges Licht'", effects = 
+	(id = 38426, name = "Erhöhte kritische Trefferchance für \'Heiliges Licht\'", effects = 
 	{
 		(type = 6)
 	})
@@ -95835,7 +95835,7 @@ spells =
 	{
 		(type = 30)
 	})
-	(id = 38429, name = "Kostenreduzierung für 'Schock'", effects = 
+	(id = 38429, name = "Kostenreduzierung für \'Schock\'", effects = 
 	{
 		(type = 6)
 	})
@@ -95855,7 +95855,7 @@ spells =
 	{
 		(type = 28)
 	})
-	(id = 38434, name = "Kostenreduzierung für 'Kettenheilung'", effects = 
+	(id = 38434, name = "Kostenreduzierung für \'Kettenheilung\'", effects = 
 	{
 		(type = 6)
 	})
@@ -95980,7 +95980,7 @@ spells =
 	{
 		(type = 2)
 	})
-	(id = 38466, name = "Verringerte Abklingzeit für 'Schnelligkeit der Natur'", effects = 
+	(id = 38466, name = "Verringerte Abklingzeit für \'Schnelligkeit der Natur\'", effects = 
 	{
 		(type = 6)
 	})
@@ -96073,11 +96073,11 @@ spells =
 	{
 		(type = 2)
 	})
-	(id = 38499, name = "Verringerte Abklingzeit für 'Schnelligkeit der Natur'", effects = 
+	(id = 38499, name = "Verringerte Abklingzeit für \'Schnelligkeit der Natur\'", effects = 
 	{
 		(type = 6)
 	})
-	(id = 38501, name = "Erhöhte Chance auf kritische Treffer mit 'Geringe Welle der Heilung'", effects = 
+	(id = 38501, name = "Erhöhte Chance auf kritische Treffer mit \'Geringe Welle der Heilung\'", effects = 
 	{
 		(type = 6)
 	})
@@ -96139,7 +96139,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 38522, name = "Erhöhte Krit-Chance für 'Lichtblitz'", effects = 
+	(id = 38522, name = "Erhöhte Krit-Chance für \'Lichtblitz\'", effects = 
 	{
 		(type = 6)
 	})
@@ -96358,7 +96358,7 @@ spells =
 		(type = 2)
 		(type = 6)
 	})
-	(id = 38586, name = "[DND]Charm Rexxar's Rodent", effects = 
+	(id = 38586, name = "[DND]Charm Rexxar\'s Rodent", effects = 
 	{
 		(type = 6)
 	})
@@ -97336,7 +97336,7 @@ spells =
 		(type = 2)
 		(type = 6)
 	})
-	(id = 38867, name = "Rippchen der Mok'Nathal", effects = 
+	(id = 38867, name = "Rippchen der Mok\'Nathal", effects = 
 	{
 		(type = 24)
 	})
@@ -98379,7 +98379,7 @@ spells =
 		(type = 77)
 		(type = 3)
 	})
-	(id = 39157, name = "Ja'ys Betäubungsschuss", effects = 
+	(id = 39157, name = "Ja\'ys Betäubungsschuss", effects = 
 	{
 		(type = 6)
 	})
@@ -98492,7 +98492,7 @@ spells =
 	{
 		(type = 3)
 	})
-	(id = 39189, name = "Fackel der Sha'tari", effects = 
+	(id = 39189, name = "Fackel der Sha\'tari", effects = 
 	{
 		(type = 3)
 		(type = 6)
@@ -98709,7 +98709,7 @@ spells =
 		(type = 3)
 		(type = 3)
 	})
-	(id = 39248, name = "Hai'Shulud beschwören", effects = 
+	(id = 39248, name = "Hai\'Shulud beschwören", effects = 
 	{
 		(type = 28)
 	})
@@ -99399,7 +99399,7 @@ spells =
 	{
 		(type = 103)
 	})
-	(id = 39457, name = "Ruf: +500 Die Sha'tar", effects = 
+	(id = 39457, name = "Ruf: +500 Die Sha\'tar", effects = 
 	{
 		(type = 103)
 	})
@@ -99613,7 +99613,7 @@ spells =
 	{
 		(type = 3)
 	})
-	(id = 39542, name = "Segen von O'ros", effects = 
+	(id = 39542, name = "Segen von O\'ros", effects = 
 	{
 		(type = 6)
 	})
@@ -99857,7 +99857,7 @@ spells =
 		(type = 6)
 		(type = 6)
 	})
-	(id = 39623, name = "Ron's Test Spell", effects = 
+	(id = 39623, name = "Ron\'s Test Spell", effects = 
 	{
 		(type = 6)
 	})
@@ -100045,7 +100045,7 @@ spells =
 	{
 		(type = 76)
 	})
-	(id = 39680, name = "Sai'kkals Unsichtbarkeit", effects = 
+	(id = 39680, name = "Sai\'kkals Unsichtbarkeit", effects = 
 	{
 		(type = 6)
 	})
@@ -100447,11 +100447,11 @@ spells =
 	{
 		(type = 77)
 	})
-	(id = 39826, name = "Segen von O'ros", effects = 
+	(id = 39826, name = "Segen von O\'ros", effects = 
 	{
 		(type = 6)
 	})
-	(id = 39827, name = "OCW Exodar 01 Segen von O'ros auf Meister wirken", effects = 
+	(id = 39827, name = "OCW Exodar 01 Segen von O\'ros auf Meister wirken", effects = 
 	{
 		(type = 77)
 	})
@@ -100482,7 +100482,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 39834, name = "Vim'gol: Bevölkerungstester A für Beschwörungskreis", effects = 
+	(id = 39834, name = "Vim\'gol: Bevölkerungstester A für Beschwörungskreis", effects = 
 	{
 		(type = 6)
 	})
@@ -100548,19 +100548,19 @@ spells =
 		(type = 3)
 	})
 	(id = 39850, name = "Raketenschlag")
-	(id = 39851, name = "Vim'gol: Bevölkerungstester B für Beschwörungskreis", effects = 
+	(id = 39851, name = "Vim\'gol: Bevölkerungstester B für Beschwörungskreis", effects = 
 	{
 		(type = 6)
 	})
-	(id = 39852, name = "Vim'gol: Bevölkerungstester C für Beschwörungskreis", effects = 
+	(id = 39852, name = "Vim\'gol: Bevölkerungstester C für Beschwörungskreis", effects = 
 	{
 		(type = 6)
 	})
-	(id = 39853, name = "Vim'gol: Bevölkerungstester D für Beschwörungskreis", effects = 
+	(id = 39853, name = "Vim\'gol: Bevölkerungstester D für Beschwörungskreis", effects = 
 	{
 		(type = 6)
 	})
-	(id = 39854, name = "Vim'gol: Bevölkerungstester E für Beschwörungskreis", effects = 
+	(id = 39854, name = "Vim\'gol: Bevölkerungstester E für Beschwörungskreis", effects = 
 	{
 		(type = 6)
 	})
@@ -100592,7 +100592,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 39862, name = "Vim'gol: Vim'gols üblen Zauberfolianten beschwören", effects = 
+	(id = 39862, name = "Vim\'gol: Vim\'gols üblen Zauberfolianten beschwören", effects = 
 	{
 		(type = 76)
 	})
@@ -100719,11 +100719,11 @@ spells =
 	{
 		(type = 76)
 	})
-	(id = 39893, name = "Ron's Test Spell #3", effects = 
+	(id = 39893, name = "Ron\'s Test Spell #3", effects = 
 	{
 		(type = 2)
 	})
-	(id = 39894, name = "Ron's Test Spell #2", effects = 
+	(id = 39894, name = "Ron\'s Test Spell #2", effects = 
 	{
 		(type = 27)
 		(type = 6)
@@ -100827,7 +100827,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 39921, name = "Vim'gol: Pentagrammstrahl", effects = 
+	(id = 39921, name = "Vim\'gol: Pentagrammstrahl", effects = 
 	{
 		(type = 6)
 	})
@@ -100937,7 +100937,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 39953, name = "A'dals Kriegshymne", effects = 
+	(id = 39953, name = "A\'dals Kriegshymne", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -100951,7 +100951,7 @@ spells =
 	{
 		(type = 2)
 	})
-	(id = 39956, name = "Naj'entus' Stachel herstellen", effects = 
+	(id = 39956, name = "Naj\'entus\' Stachel herstellen", effects = 
 	{
 		(type = 24)
 	})
@@ -100980,7 +100980,7 @@ spells =
 		(type = 2)
 		(type = 6)
 	})
-	(id = 39966, name = "Kael'thas besiegt", effects = 
+	(id = 39966, name = "Kael\'thas besiegt", effects = 
 	{
 		(type = 6)
 	})
@@ -101554,7 +101554,7 @@ spells =
 	{
 		(type = 28)
 	})
-	(id = 40128, name = "Morthis' Gelassenheitskanalisierung", effects = 
+	(id = 40128, name = "Morthis\' Gelassenheitskanalisierung", effects = 
 	{
 		(type = 35)
 	})
@@ -102347,7 +102347,7 @@ spells =
 		(type = 31)
 		(type = 6)
 	})
-	(id = 40328, name = "Vim'gols Beschwörung", effects = 
+	(id = 40328, name = "Vim\'gols Beschwörung", effects = 
 	{
 		(type = 61)
 		(type = 3)
@@ -102906,7 +102906,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 40479, name = "Legionsring - Verwandlung der Mo'arg", effects = 
+	(id = 40479, name = "Legionsring - Verwandlung der Mo\'arg", effects = 
 	{
 		(type = 6)
 	})
@@ -104247,7 +104247,7 @@ spells =
 	{
 		(type = 3)
 	})
-	(id = 40803, name = "Ron's Test Buff", effects = 
+	(id = 40803, name = "Ron\'s Test Buff", effects = 
 	{
 		(type = 35)
 		(type = 35)
@@ -104827,12 +104827,12 @@ spells =
 		(type = 24)
 		(type = 86)
 	})
-	(id = 40968, name = "Kristallschmiede von Bash'ir: 1 Flasche erstellen", effects = 
+	(id = 40968, name = "Kristallschmiede von Bash\'ir: 1 Flasche erstellen", effects = 
 	{
 		(type = 24)
 		(type = 86)
 	})
-	(id = 40970, name = "Kristallschmiede von Bash'ir: 5 Flaschen erstellen", effects = 
+	(id = 40970, name = "Kristallschmiede von Bash\'ir: 5 Flaschen erstellen", effects = 
 	{
 		(type = 24)
 		(type = 86)
@@ -105105,7 +105105,7 @@ spells =
 	{
 		(type = 64)
 	})
-	(id = 41046, name = "Endgegner von Bash'ir rufen - Osten", effects = 
+	(id = 41046, name = "Endgegner von Bash\'ir rufen - Osten", effects = 
 	{
 		(type = 61)
 	})
@@ -105730,15 +105730,15 @@ spells =
 	{
 		(type = 3)
 	})
-	(id = 41215, name = "Endgegner von Bash'ir rufen - Norden", effects = 
+	(id = 41215, name = "Endgegner von Bash\'ir rufen - Norden", effects = 
 	{
 		(type = 61)
 	})
-	(id = 41216, name = "Endgegner von Bash'ir rufen - Süden", effects = 
+	(id = 41216, name = "Endgegner von Bash\'ir rufen - Süden", effects = 
 	{
 		(type = 61)
 	})
-	(id = 41217, name = "Endgegner von Bash'ir rufen - Westen", effects = 
+	(id = 41217, name = "Endgegner von Bash\'ir rufen - Westen", effects = 
 	{
 		(type = 61)
 	})
@@ -105747,7 +105747,7 @@ spells =
 		(type = 6)
 		(type = 6)
 	})
-	(id = 41219, name = "Endgegner des Landeplatzes von Bash'ir - Reagenz Osten", effects = 
+	(id = 41219, name = "Endgegner des Landeplatzes von Bash\'ir - Reagenz Osten", effects = 
 	{
 		(type = 64)
 	})
@@ -105760,31 +105760,31 @@ spells =
 		(type = 43)
 		(type = 6)
 	})
-	(id = 41222, name = "Endgegner des Landeplatzes von Bash'ir - Reagenz Norden", effects = 
+	(id = 41222, name = "Endgegner des Landeplatzes von Bash\'ir - Reagenz Norden", effects = 
 	{
 		(type = 64)
 	})
-	(id = 41223, name = "Endgegner des Landeplatzes von Bash'ir - Reagenz Süden", effects = 
+	(id = 41223, name = "Endgegner des Landeplatzes von Bash\'ir - Reagenz Süden", effects = 
 	{
 		(type = 64)
 	})
-	(id = 41224, name = "Endgegner des Landeplatzes von Bash'ir - Reagenz Westen", effects = 
+	(id = 41224, name = "Endgegner des Landeplatzes von Bash\'ir - Reagenz Westen", effects = 
 	{
 		(type = 64)
 	})
-	(id = 41225, name = "Endgegner des Landeplatzes von Bash'ir  -  Osten", effects = 
+	(id = 41225, name = "Endgegner des Landeplatzes von Bash\'ir  -  Osten", effects = 
 	{
 		(type = 140)
 	})
-	(id = 41226, name = "Endgegner des Landeplatzes von Bash'ir  -  Norden", effects = 
+	(id = 41226, name = "Endgegner des Landeplatzes von Bash\'ir  -  Norden", effects = 
 	{
 		(type = 140)
 	})
-	(id = 41227, name = "Endgegner des Landeplatzes von Bash'ir  -  Süden", effects = 
+	(id = 41227, name = "Endgegner des Landeplatzes von Bash\'ir  -  Süden", effects = 
 	{
 		(type = 140)
 	})
-	(id = 41228, name = "Endgegner des Landeplatzes von Bash'ir  -  Westen", effects = 
+	(id = 41228, name = "Endgegner des Landeplatzes von Bash\'ir  -  Westen", effects = 
 	{
 		(type = 140)
 	})
@@ -105947,7 +105947,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 41270, name = "Reth'hedron vom Boden zum Himmel Impuls", effects = 
+	(id = 41270, name = "Reth\'hedron vom Boden zum Himmel Impuls", effects = 
 	{
 		(type = 2)
 	})
@@ -106016,15 +106016,15 @@ spells =
 		(type = 98)
 		(type = 6)
 	})
-	(id = 41285, name = "Reth'hedrons Niederschlag: Aggroprüfung", effects = 
+	(id = 41285, name = "Reth\'hedrons Niederschlag: Aggroprüfung", effects = 
 	{
 		(type = 3)
 	})
-	(id = 41286, name = "Reth'hedrons Niederschlag: Aggroexplosion", effects = 
+	(id = 41286, name = "Reth\'hedrons Niederschlag: Aggroexplosion", effects = 
 	{
 		(type = 6)
 	})
-	(id = 41287, name = "Reth'hedrons Niederschlag: Ziel wählen", effects = 
+	(id = 41287, name = "Reth\'hedrons Niederschlag: Ziel wählen", effects = 
 	{
 		(type = 3)
 	})
@@ -106076,7 +106076,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 41302, name = "Entstehungsblitz von Bash'ir", effects = 
+	(id = 41302, name = "Entstehungsblitz von Bash\'ir", effects = 
 	{
 		(type = 6)
 	})
@@ -106154,7 +106154,7 @@ spells =
 	{
 		(type = 24)
 	})
-	(id = 41332, name = "Schergrat: Materialisierungsstrahl von Bash'ir 01", effects = 
+	(id = 41332, name = "Schergrat: Materialisierungsstrahl von Bash\'ir 01", effects = 
 	{
 		(type = 6)
 	})
@@ -106168,11 +106168,11 @@ spells =
 		(type = 6)
 		(type = 108)
 	})
-	(id = 41335, name = "Schergrat: Materialisierungsstrahl von Bash'ir 02", effects = 
+	(id = 41335, name = "Schergrat: Materialisierungsstrahl von Bash\'ir 02", effects = 
 	{
 		(type = 6)
 	})
-	(id = 41336, name = "Schergrat: Materialisierungsstrahl von Bash'ir 03", effects = 
+	(id = 41336, name = "Schergrat: Materialisierungsstrahl von Bash\'ir 03", effects = 
 	{
 		(type = 6)
 	})
@@ -106190,7 +106190,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 41340, name = "Reth'hedron Quest abgeschlossen", effects = 
+	(id = 41340, name = "Reth\'hedron Quest abgeschlossen", effects = 
 	{
 		(type = 16)
 	})
@@ -106289,7 +106289,7 @@ spells =
 		(type = 6)
 		(type = 140)
 	})
-	(id = 41365, name = "Schergrat: Materialisierungsstrahl von Bash'ir 00", effects = 
+	(id = 41365, name = "Schergrat: Materialisierungsstrahl von Bash\'ir 00", effects = 
 	{
 		(type = 6)
 	})
@@ -106435,7 +106435,7 @@ spells =
 	{
 		(type = 2)
 	})
-	(id = 41402, name = "Xi'ris Wiederherstellung", effects = 
+	(id = 41402, name = "Xi\'ris Wiederherstellung", effects = 
 	{
 		(type = 94)
 		(type = 5)
@@ -106445,7 +106445,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 41405, name = "Xi'ris Licht", effects = 
+	(id = 41405, name = "Xi\'ris Licht", effects = 
 	{
 		(type = 6)
 	})
@@ -106923,7 +106923,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 41523, name = "Ehrfürchtige Aura von Ogri'la", effects = 
+	(id = 41523, name = "Ehrfürchtige Aura von Ogri\'la", effects = 
 	{
 		(type = 6)
 	})
@@ -107049,7 +107049,7 @@ spells =
 		(type = 31)
 		(type = 121)
 	})
-	(id = 41557, name = "Ehrfürchtige Aura von Ogri'la", effects = 
+	(id = 41557, name = "Ehrfürchtige Aura von Ogri\'la", effects = 
 	{
 		(type = 6)
 	})
@@ -109460,23 +109460,23 @@ spells =
 	{
 		(type = 86)
 	})
-	(id = 42179, name = "Wachposten der Amani'shi rufen", effects = 
+	(id = 42179, name = "Wachposten der Amani\'shi rufen", effects = 
 	{
 		(type = 77)
 	})
-	(id = 42180, name = "Wachposten der Amani'shi rufen", effects = 
+	(id = 42180, name = "Wachposten der Amani\'shi rufen", effects = 
 	{
 		(type = 28)
 	})
-	(id = 42181, name = "Wachposten der Amani'shi rufen", effects = 
+	(id = 42181, name = "Wachposten der Amani\'shi rufen", effects = 
 	{
 		(type = 28)
 	})
-	(id = 42182, name = "Wachposten der Amani'shi rufen", effects = 
+	(id = 42182, name = "Wachposten der Amani\'shi rufen", effects = 
 	{
 		(type = 28)
 	})
-	(id = 42183, name = "Wachposten der Amani'shi rufen", effects = 
+	(id = 42183, name = "Wachposten der Amani\'shi rufen", effects = 
 	{
 		(type = 28)
 	})
@@ -110312,7 +110312,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 42466, name = "Geisteffekt von Zul'Aman", effects = 
+	(id = 42466, name = "Geisteffekt von Zul\'Aman", effects = 
 	{
 		(type = 6)
 	})
@@ -110462,7 +110462,7 @@ spells =
 	{
 		(type = 24)
 	})
-	(id = 42520, name = "Geist von Zul'Aman abgesaugt", effects = 
+	(id = 42520, name = "Geist von Zul\'Aman abgesaugt", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -110507,7 +110507,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 42540, name = "Verkleidung von Zul'Aman herstellen", effects = 
+	(id = 42540, name = "Verkleidung von Zul\'Aman herstellen", effects = 
 	{
 		(type = 24)
 	})
@@ -110791,7 +110791,7 @@ spells =
 	{
 		(type = 77)
 	})
-	(id = 42656, name = "Zul'Jins Essenz", effects = 
+	(id = 42656, name = "Zul\'Jins Essenz", effects = 
 	{
 		(type = 6)
 	})
@@ -110799,7 +110799,7 @@ spells =
 	{
 		(type = 27)
 	})
-	(id = 42659, name = "Zul'Jins Essenz", effects = 
+	(id = 42659, name = "Zul\'Jins Essenz", effects = 
 	{
 		(type = 6)
 	})
@@ -110881,7 +110881,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 42691, name = "Friede von Ogri'la", effects = 
+	(id = 42691, name = "Friede von Ogri\'la", effects = 
 	{
 		(type = 6)
 		(type = 79)
@@ -111377,7 +111377,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 43116, name = "Headless Horseman Climax - Horseman's Whirlwind", effects = 
+	(id = 43116, name = "Headless Horseman Climax - Horseman\'s Whirlwind", effects = 
 	{
 		(type = 6)
 	})
@@ -111553,7 +111553,7 @@ spells =
 	{
 		(type = 140)
 	})
-	(id = 43207, name = "Headless Horseman Climax - Head's Breath", effects = 
+	(id = 43207, name = "Headless Horseman Climax - Head\'s Breath", effects = 
 	{
 		(type = 2)
 		(type = 6)
@@ -111791,7 +111791,7 @@ spells =
 	{
 		(type = 77)
 	})
-	(id = 43322, name = "Malacrass' Verstärkung aktivieren", effects = 
+	(id = 43322, name = "Malacrass\' Verstärkung aktivieren", effects = 
 	{
 		(type = 77)
 	})
@@ -112122,15 +112122,15 @@ spells =
 		(type = 6)
 		(type = 77)
 	})
-	(id = 43472, name = "Schießbudenerfolg 'Einfach'", effects = 
+	(id = 43472, name = "Schießbudenerfolg \'Einfach\'", effects = 
 	{
 		(type = 16)
 	})
-	(id = 43473, name = "Schießbuden erfolg 'Mittel'", effects = 
+	(id = 43473, name = "Schießbuden erfolg \'Mittel\'", effects = 
 	{
 		(type = 16)
 	})
-	(id = 43474, name = "Schießbudenerfolg 'Schwierig'", effects = 
+	(id = 43474, name = "Schießbudenerfolg \'Schwierig\'", effects = 
 	{
 		(type = 16)
 	})
@@ -112178,7 +112178,7 @@ spells =
 	{
 		(type = 28)
 	})
-	(id = 43486, name = "Krieger der Amani'shi beschwören", effects = 
+	(id = 43486, name = "Krieger der Amani\'shi beschwören", effects = 
 	{
 		(type = 28)
 	})
@@ -112318,7 +112318,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 43552, name = "Cosmetic - Zul'Aman - Jar Explosion", effects = 
+	(id = 43552, name = "Cosmetic - Zul\'Aman - Jar Explosion", effects = 
 	{
 		(type = 6)
 	})
@@ -112337,7 +112337,7 @@ spells =
 		(type = 6)
 		(type = 136)
 	})
-	(id = 43574, name = "Ron's Test Buff2", effects = 
+	(id = 43574, name = "Ron\'s Test Buff2", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -112771,7 +112771,7 @@ spells =
 		(type = 3)
 		(type = 77)
 	})
-	(id = 43736, name = "Verringerte Kosten für 'Verjüngung'", effects = 
+	(id = 43736, name = "Verringerte Kosten für \'Verjüngung\'", effects = 
 	{
 		(type = 6)
 	})
@@ -112837,7 +112837,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 43752, name = "Verringerte Kosten für 'Kettenheilung'", effects = 
+	(id = 43752, name = "Verringerte Kosten für \'Kettenheilung\'", effects = 
 	{
 		(type = 6)
 	})
@@ -113672,7 +113672,7 @@ spells =
 		(type = 6)
 		(type = 6)
 	})
-	(id = 44080, name = "Teleportieren: Instanz von Zul'Aman", effects = 
+	(id = 44080, name = "Teleportieren: Instanz von Zul\'Aman", effects = 
 	{
 		(type = 5)
 		(type = 77)
@@ -113966,7 +113966,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 44183, name = "Kyle's Test for Mod Healing", effects = 
+	(id = 44183, name = "Kyle\'s Test for Mod Healing", effects = 
 	{
 		(type = 6)
 	})
@@ -114144,7 +114144,7 @@ spells =
 	{
 		(type = 3)
 	})
-	(id = 44255, name = "Headless Horseman - Summon Large Jack-o'-Lantern, Missile", effects = 
+	(id = 44255, name = "Headless Horseman - Summon Large Jack-o\'-Lantern, Missile", effects = 
 	{
 		(type = 32)
 	})
@@ -114796,12 +114796,12 @@ spells =
 	{
 		(type = 61)
 	})
-	(id = 44742, name = "Hallow's End Candy, Female (DND)", effects = 
+	(id = 44742, name = "Hallow\'s End Candy, Female (DND)", effects = 
 	{
 		(type = 6)
 		(type = 6)
 	})
-	(id = 44743, name = "Hallow's End Candy, Male (DND)", effects = 
+	(id = 44743, name = "Hallow\'s End Candy, Male (DND)", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -114985,7 +114985,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 44835, name = "Unterbrechung bei 'Zerfleddern'", effects = 
+	(id = 44835, name = "Unterbrechung bei \'Zerfleddern\'", effects = 
 	{
 		(type = 6)
 	})
@@ -115058,7 +115058,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 44856, name = "Phasenvorrichtung von Bash'ir", effects = 
+	(id = 44856, name = "Phasenvorrichtung von Bash\'ir", effects = 
 	{
 		(type = 35)
 		(type = 35)
@@ -115421,7 +115421,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 44985, name = "Nach Zul'Aman teleportieren", effects = 
+	(id = 44985, name = "Nach Zul\'Aman teleportieren", effects = 
 	{
 		(type = 5)
 	})
@@ -115951,7 +115951,7 @@ spells =
 		(type = 28)
 		(type = 28)
 	})
-	(id = 45149, name = "Waffe von Ata'mal reinigen", effects = 
+	(id = 45149, name = "Waffe von Ata\'mal reinigen", effects = 
 	{
 		(type = 24)
 		(type = 3)
@@ -116091,7 +116091,7 @@ spells =
 	{
 		(type = 77)
 	})
-	(id = 45212, name = "Brutallus' Todeswolke", effects = 
+	(id = 45212, name = "Brutallus\' Todeswolke", effects = 
 	{
 		(type = 6)
 	})
@@ -116099,7 +116099,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 45214, name = "Ron's Test Spell #4", effects = 
+	(id = 45214, name = "Ron\'s Test Spell #4", effects = 
 	{
 		(type = 68)
 	})
@@ -116131,7 +116131,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 45222, name = "Objekt von Zul'Aman", effects = 
+	(id = 45222, name = "Objekt von Zul\'Aman", effects = 
 	{
 		(type = 6)
 		(type = 86)
@@ -116477,7 +116477,7 @@ spells =
 	{
 		(type = 63)
 	})
-	(id = 45340, name = "Summon Amani'shi Hatcher", effects = 
+	(id = 45340, name = "Summon Amani\'shi Hatcher", effects = 
 	{
 		(type = 28)
 	})
@@ -117013,7 +117013,7 @@ spells =
 	{
 		(type = 77)
 	})
-	(id = 45715, name = "Clayton's Transaction Test Spell", effects = 
+	(id = 45715, name = "Clayton\'s Transaction Test Spell", effects = 
 	{
 		(type = 6)
 	})
@@ -117295,7 +117295,7 @@ spells =
 		(type = 2)
 		(type = 6)
 	})
-	(id = 45884, name = "Brutallus' Todeswolke beschwören", effects = 
+	(id = 45884, name = "Brutallus\' Todeswolke beschwören", effects = 
 	{
 		(type = 28)
 	})
@@ -118366,7 +118366,7 @@ spells =
 		(type = 2)
 		(type = 77)
 	})
-	(id = 46272, name = "Oshu'gun Cloud Invisibility", effects = 
+	(id = 46272, name = "Oshu\'gun Cloud Invisibility", effects = 
 	{
 		(type = 6)
 	})
@@ -118490,7 +118490,7 @@ spells =
 		(type = 6)
 		(type = 6)
 	})
-	(id = 46302, name = "K'irus Siegeshymne", effects = 
+	(id = 46302, name = "K\'irus Siegeshymne", effects = 
 	{
 		(type = 6)
 		(type = 6)
@@ -119985,7 +119985,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 46841, name = "Flucht zur Insel von Quel'Danas", effects = 
+	(id = 46841, name = "Flucht zur Insel von Quel\'Danas", effects = 
 	{
 		(type = 5)
 	})
@@ -120835,11 +120835,11 @@ spells =
 	{
 		(type = 76)
 	})
-	(id = 48148, name = "Horseman's Conflagration Sound Throttle", effects = 
+	(id = 48148, name = "Horseman\'s Conflagration Sound Throttle", effects = 
 	{
 		(type = 6)
 	})
-	(id = 48149, name = "Horseman's Conflagration Sound", effects = 
+	(id = 48149, name = "Horseman\'s Conflagration Sound", effects = 
 	{
 		(type = 3)
 	})
@@ -121222,7 +121222,7 @@ spells =
 	{
 		(type = 3)
 	})
-	(id = 49615, name = "Thrashin' Crashin Racer Look, Sparks UNUSED", effects = 
+	(id = 49615, name = "Thrashin\' Crashin Racer Look, Sparks UNUSED", effects = 
 	{
 		(type = 3)
 	})
@@ -121634,7 +121634,7 @@ spells =
 	{
 		(type = 6)
 	})
-	(id = 50532, name = "Questgiver Loves Direbrew's Brew", effects = 
+	(id = 50532, name = "Questgiver Loves Direbrew\'s Brew", effects = 
 	{
 		(type = 6)
 	})

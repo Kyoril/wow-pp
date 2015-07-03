@@ -113,7 +113,6 @@ namespace wowpp
 			return true;
 		}
 
-
 		bool Configuration::save(const String &fileName)
 		{
 			std::ofstream file(fileName.c_str());

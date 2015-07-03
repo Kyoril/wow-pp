@@ -34,6 +34,8 @@ namespace wowpp
 			, m_ui(new Ui::TriggerEditor())
 		{
 			m_ui->setupUi(this);
+
+			connect(m_ui->actionSave, SIGNAL(triggered()), &m_application, SLOT(saveUnsavedChanges()));
 		}
 	}
 }

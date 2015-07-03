@@ -99,7 +99,10 @@ namespace wowpp
 		wrapper.table.tryGetInteger("h_faction", hordeFactionID);
 		wrapper.table.tryGetInteger("unit_flags", unitFlags);
 		wrapper.table.tryGetInteger("npc_flags", npcFlags);
-		
+		wrapper.table.tryGetInteger("min_loot_gold", minLootGold);
+		wrapper.table.tryGetInteger("max_loot_gold", maxLootGold);
+		MIN_MAX_CHECK(minLootGold, maxLootGold);
+
 #undef MIN_MAX_CHECK
 
 		return true;
@@ -132,5 +135,7 @@ namespace wowpp
 		if (hordeFactionID != 0) context.table.addKey("h_faction", hordeFactionID);
 		if (hordeFactionID != 0) context.table.addKey("unit_flags", unitFlags);
 		if (hordeFactionID != 0) context.table.addKey("npc_flags", npcFlags);
+		if (minLootGold != 0) context.table.addKey("min_loot_gold", minLootGold);
+		if (maxLootGold != 0) context.table.addKey("max_loot_gold", maxLootGold);
 	}
 }

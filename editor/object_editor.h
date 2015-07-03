@@ -23,6 +23,10 @@
 
 #include <QMainWindow>
 #include <QSortFilterProxyModel>
+#include <QAbstractTableModel>
+#include <QItemSelection>
+#include "data/project.h"
+#include "property_view_model.h"
 #include <memory>
 
 // Forwards
@@ -50,6 +54,8 @@ namespace wowpp
 
 			void on_unitFilter_editingFinished();
 			void on_spellFilter_editingFinished();
+			void onUnitSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
+			void on_unitPropertyWidget_doubleClicked(QModelIndex index);
 
 		private:
 				
@@ -57,6 +63,8 @@ namespace wowpp
 			Ui::ObjectEditor *m_ui;
 			QSortFilterProxyModel *m_unitFilter;
 			QSortFilterProxyModel *m_spellFilter;
+			Properties m_properties;
+			PropertyViewModel *m_viewModel;
 		};
 	}
 }
