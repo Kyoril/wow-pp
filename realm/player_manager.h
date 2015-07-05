@@ -30,6 +30,7 @@ namespace wowpp
 {
 	// Forwards
 	class Player;
+	class TimerQueue;
 
 	/// Manages all connected players.
 	class PlayerManager : public boost::noncopyable
@@ -43,6 +44,7 @@ namespace wowpp
 		/// Initializes a new instance of the player manager class.
 		/// @param playerCapacity The maximum number of connections that can be connected at the same time.
 		explicit PlayerManager(
+			TimerQueue &timers,
 		    size_t playerCapacity
 		);
 		~PlayerManager();
@@ -64,6 +66,8 @@ namespace wowpp
 		Player *getPlayerByCharacterGuid(UInt64 id);
 		/// 
 		Player *getPlayerByCharacterName(const String &name);
+		/// 
+		TimerQueue &getTimers() { return m_timers; }
 		
 		/// Executes a function for every connected player.
 		template<class F>
@@ -77,6 +81,7 @@ namespace wowpp
 
 	private:
 
+		TimerQueue &m_timers;
 		Players m_players;
 		size_t m_playerCapacity;
 	};

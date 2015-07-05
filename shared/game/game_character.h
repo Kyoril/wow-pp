@@ -285,7 +285,9 @@ namespace wowpp
 	public:
 
 		/// 
-		explicit GameCharacter(DataLoadContext::GetRace getRace,
+		explicit GameCharacter(
+			TimerQueue &timers,
+			DataLoadContext::GetRace getRace,
 			DataLoadContext::GetClass getClass,
 			DataLoadContext::GetLevel getLevel);
 		~GameCharacter();

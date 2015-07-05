@@ -21,6 +21,9 @@
 
 #include "game_object.h"
 #include "log/default_log_levels.h"
+#include "binary_io/vector_sink.h"
+#include "common/clock.h"
+#include "visibility_tile.h"
 #include <cassert>
 
 namespace wowpp
@@ -318,4 +321,189 @@ namespace wowpp
 			>> io::read<float>(object.m_o);
 	}
 
+	void createUpdateBlocks(GameObject &object, std::vector<std::vector<char>> &out_blocks)
+	{
+		float x, y, z, o;
+		object.getLocation(x, y, z, o);
+
+		// Write create object packet
+		std::vector<char> createBlock;
+		io::VectorSink sink(createBlock);
+		io::Writer writer(sink);
+		{
+			UInt8 updateType = 0x02;						// Update type (0x02 = CREATE_OBJECT)
+			if (object.getTypeId() == object_type::Character ||
+				object.getTypeId() == object_type::Corpse ||
+				object.getTypeId() == object_type::DynamicObject ||
+				object.getTypeId() == object_type::Container)
+			{
+				updateType = 0x03;		// CREATE_OBJECT_2
+			}
+			UInt8 updateFlags = 0x10 | 0x20 | 0x40;			// UPDATEFLAG_ALL | UPDATEFLAG_LIVING | UPDATEFLAG_HAS_POSITION
+			UInt8 objectTypeId = object.getTypeId();		// 
+
+			// Header with object guid and type
+			UInt64 guid = object.getGuid();
+			writer
+				<< io::write<NetUInt8>(updateType);
+			//<< io::write<NetUInt8>(0xFF) << io::write<NetUInt64>(guid)
+
+			UInt64 guidCopy = guid;
+			UInt8 packGUID[8 + 1];
+			packGUID[0] = 0;
+			size_t size = 1;
+			for (UInt8 i = 0; guidCopy != 0; ++i)
+			{
+				if (guidCopy & 0xFF)
+				{
+					packGUID[0] |= UInt8(1 << i);
+					packGUID[size] = UInt8(guidCopy & 0xFF);
+					++size;
+				}
+
+				guidCopy >>= 8;
+			}
+			writer.sink().write((const char*)&packGUID[0], size);
+
+			writer
+				<< io::write<NetUInt8>(objectTypeId);
+
+			writer
+				<< io::write<NetUInt8>(updateFlags);
+
+			// Write movement update
+			if (updateFlags & 0x20)
+			{
+				auto &movement = object.getMovementInfo();
+
+				UInt32 moveFlags = movement.moveFlags;
+				writer
+					<< io::write<NetUInt32>(moveFlags)
+					<< io::write<NetUInt8>(0x00)
+					<< io::write<NetUInt32>(getCurrentTime());
+
+				// Position & Rotation
+				// TODO: Calculate position and rotation from the movement info using interpolation
+				writer
+					<< io::write<float>(x)
+					<< io::write<float>(y)
+					<< io::write<float>(z)
+					<< io::write<float>(o);
+
+				// Transport
+				if (moveFlags & (game::movement_flags::OnTransport))
+				{
+					//TODO
+					WLOG("TODO");
+				}
+
+				// Pitch info
+				if (moveFlags & (game::movement_flags::Swimming | game::movement_flags::Flying2))
+				{
+					if (object.getTypeId() == object_type::Character)
+					{
+						writer
+							<< io::write<float>(movement.pitch);
+					}
+					else
+					{
+						writer
+							<< io::write<float>(0.0f);
+					}
+				}
+
+				// Fall time
+				if (object.getTypeId() == object_type::Character)
+				{
+					writer
+						<< io::write<NetUInt32>(movement.fallTime);
+				}
+				else
+				{
+					writer
+						<< io::write<NetUInt32>(0);
+				}
+
+				// Fall information
+				if (moveFlags & game::movement_flags::Falling)
+				{
+					if (object.getTypeId() == object_type::Character)
+					{
+						writer
+							<< io::write<float>(movement.jumpVelocity)
+							<< io::write<float>(movement.jumpSinAngle)
+							<< io::write<float>(movement.jumpCosAngle)
+							<< io::write<float>(movement.jumpXYSpeed);
+					}
+					else
+					{
+						writer
+							<< io::write<float>(0.0f)
+							<< io::write<float>(0.0f)
+							<< io::write<float>(0.0f)
+							<< io::write<float>(0.0f);
+					}
+				}
+
+				// Elevation information
+				if (moveFlags & game::movement_flags::SplineElevation)
+				{
+					if (object.getTypeId() == object_type::Character)
+					{
+						writer
+							<< io::write<float>(movement.unknown1);
+					}
+					else
+					{
+						writer
+							<< io::write<float>(0.0f);
+					}
+				}
+
+				// TODO: Speed values
+				writer
+					<< io::write<float>(2.5f)				// Walk
+					<< io::write<float>(7.0f)				// Run
+					<< io::write<float>(4.5f)				// Backwards
+					<< io::write<NetUInt32>(0x40971c71)		// Swim
+					<< io::write<NetUInt32>(0x40200000)		// Swim Backwards
+					<< io::write<float>(7.0f)				// Fly
+					<< io::write<float>(4.5f)				// Fly Backwards
+					<< io::write<float>(3.1415927);			// Turn (radians / sec: PI)
+			}
+
+			// Lower-GUID update?
+			if (updateFlags & 0x08)
+			{
+				writer
+					<< io::write<NetUInt32>(guidLowerPart(guid));
+			}
+
+			// High-GUID update?
+			if (updateFlags & 0x10)
+			{
+				switch (objectTypeId)
+				{
+				case object_type::Object:
+				case object_type::Item:
+				case object_type::Container:
+				case object_type::GameObject:
+				case object_type::DynamicObject:
+				case object_type::Corpse:
+					writer
+						<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
+					break;
+				default:
+					writer
+						<< io::write<NetUInt32>(0);
+				}
+			}
+
+			// Write values update
+			object.writeValueUpdateBlock(writer, true);
+		}
+
+		// Add block
+		out_blocks.push_back(createBlock);
+	}
 }

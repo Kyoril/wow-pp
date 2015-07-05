@@ -22,8 +22,9 @@
 #include "player.h"
 #include "player_manager.h"
 #include "log/default_log_levels.h"
-#include "world_instance_manager.h"
-#include "world_instance.h"
+#include "game/world_instance_manager.h"
+#include "game/world_instance.h"
+#include "game/each_tile_in_sight.h"
 #include <cassert>
 #include <limits>
 
@@ -38,10 +39,18 @@ namespace wowpp
 		, m_characterId(characterId)
 		, m_character(std::move(character))
 		, m_logoutCountdown(worldInstanceManager.getTimerQueue())
+		, m_castCountdown(worldInstanceManager.getTimerQueue())
 		, m_instance(instance)
+		, m_spellCast(nullptr)
 	{
 		m_logoutCountdown.ended.connect(
 			std::bind(&Player::onLogout, this));
+		m_castCountdown.ended.connect(
+			std::bind(&Player::onCast, this));
+		m_character->spawned.connect(
+			std::bind(&Player::onSpawn, this));
+		m_character->tileChangePending.connect(
+			std::bind(&Player::onTileChangePending, this, std::placeholders::_1, std::placeholders::_2));
 	}
 
 	void Player::logoutRequest()
@@ -115,7 +124,7 @@ namespace wowpp
 		grid.getTilePosition(x, y, z, tile[0], tile[1]);
 
 		// Get all potential characters
-		std::vector<Player*> subscribers;
+		std::vector<ITileSubscriber*> subscribers;
 		forEachTileInSight(
 			grid,
 			tile,
@@ -127,46 +136,137 @@ namespace wowpp
 			}
 		});
 
-		switch (type)
+		if (type != game::chat_msg::Say &&
+			type != game::chat_msg::Yell)
 		{
-			case game::chat_msg::Say:
+			WLOG("Unsupported chat mode");
+			return;
+		}
+
+		// Create the chat packet
+		std::vector<char> buffer;
+		io::VectorSink sink(buffer);
+		game::Protocol::OutgoingPacket packet(sink);
+		game::server_write::messageChat(packet, type, lang, channel, m_character->getGuid(), message, m_character.get());
+
+		const float chatRange = (type == game::chat_msg::Yell) ? 300.0f : 25.0f;
+		for (auto * const subscriber : subscribers)
+		{
+			const float distance = m_character->getDistanceTo(*subscriber->getControlledObject());
+			if (distance <= chatRange)
 			{
-				// Send to all subscribers in range
-				for (auto * const subscriber : subscribers)
-				{
-					const float distance = m_character->getDistanceTo(*subscriber->getCharacter());
-					if (distance <= 25.0f)	// 25 yards range
-					{
-						subscriber->sendProxyPacket(
-							std::bind(game::server_write::messageChat, std::placeholders::_1, type, lang, std::cref(channel), m_character->getGuid(), std::cref(message), m_character.get()));
-					}
-				}
-
-				break;
-			}
-
-			case game::chat_msg::Yell:
-			{
-				// Send to all subscribers in range
-				for (auto * const subscriber : subscribers)
-				{
-					const float distance = m_character->getDistanceTo(*subscriber->getCharacter());
-					if (distance <= 300.0f)	// 300 yards range
-					{
-						subscriber->sendProxyPacket(
-							std::bind(game::server_write::messageChat, std::placeholders::_1, type, lang, std::cref(channel), m_character->getGuid(), std::cref(message), m_character.get()));
-					}
-				}
-
-				break;
-			}
-
-			default:
-			{
-				WLOG("Chat mode unimplemented");
-				break;
+				subscriber->sendPacket(packet, buffer);
 			}
 		}
+	}
+
+	void Player::onCast()
+	{
+		broadcastProxyPacket(
+			std::bind(game::server_write::spellGo, std::placeholders::_1,
+			getCharacterGuid(),
+			getCharacterGuid(),
+			std::cref(*m_spellCast),
+			std::cref(m_spellTarget),
+			game::spell_cast_flags::Unknown1));
+	}
+
+	void Player::castSpell(const SpellEntry *spell, Int64 castTime, UInt8 castCount, SpellTargetMap targetMap)
+	{
+		if (m_castCountdown.running)
+		{
+			m_castCountdown.cancel();
+		}
+
+		m_spellCast = spell;
+		m_spellTarget = std::move(targetMap);
+
+		m_castCountdown.setEnd(
+			getCurrentTime() + castTime);
+	}
+
+	void Player::sendPacket(game::Protocol::OutgoingPacket &packet, const std::vector<char> &buffer)
+	{
+		// Send the proxy packet to the realm server
+		m_realmConnector.sendProxyPacket(m_characterId, packet.getOpCode(), packet.getSize(), buffer);
+	}
+
+	void Player::onSpawn()
+	{
+		// Find our tile
+		TileIndex2D tileIndex = getTileIndex();
+		VisibilityTile &tile = m_instance.getGrid().requireTile(tileIndex);
+		tile.getWatchers().add(this);
+	}
+
+	void Player::onTileChangePending(VisibilityTile &oldTile, VisibilityTile &newTile)
+	{
+		// We no longer watch for changes on our old tile
+		oldTile.getWatchers().remove(this);
+
+		// Create spawn message blocks
+		std::vector<std::vector<char>> spawnBlocks;
+		createUpdateBlocks(*m_character, spawnBlocks);
+
+		auto &grid = m_instance.getGrid();
+
+		// Spawn ourself for new watchers
+		forEachTileInSightWithout(
+			grid,
+			newTile.getPosition(),
+			oldTile.getPosition(),
+			[&spawnBlocks, this](VisibilityTile &tile)
+		{
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket packet(sink);
+			game::server_write::compressedUpdateObject(packet, spawnBlocks);
+
+			for(auto * subscriber : tile.getWatchers().getElements())
+			{
+				assert(subscriber != this);
+				subscriber->sendPacket(packet, buffer);
+			}
+
+			for (auto *object : tile.getGameObjects().getElements())
+			{
+				std::vector<std::vector<char>> createBlock;
+				createUpdateBlocks(*object, createBlock);
+
+				this->sendProxyPacket(
+					std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(createBlock)));
+			}
+		});
+
+		// Despawn ourself for old watchers
+		auto guid = m_character->getGuid();
+		forEachTileInSightWithout(
+			grid,
+			oldTile.getPosition(),
+			newTile.getPosition(),
+			[guid, this](VisibilityTile &tile)
+		{
+			// Create the chat packet
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket packet(sink);
+			game::server_write::destroyObject(packet, guid, false);
+
+			for (auto * subscriber : tile.getWatchers().getElements())
+			{
+				assert(subscriber != this);
+				subscriber->sendPacket(packet, buffer);
+			}
+
+			for (auto *object : tile.getGameObjects().getElements())
+			{
+				this->sendProxyPacket(
+					std::bind(game::server_write::destroyObject, std::placeholders::_1, object->getGuid(), false));
+			}
+		});
+
+		// Make us a watcher of the new tile
+		newTile.getWatchers().add(this);
 	}
 
 }

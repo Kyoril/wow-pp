@@ -56,6 +56,7 @@ namespace wowpp
 			void on_spellFilter_editingFinished();
 			void onUnitSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void on_unitPropertyWidget_doubleClicked(QModelIndex index);
+			void onSpellSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 
 		private:
 				

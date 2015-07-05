@@ -26,6 +26,7 @@
 #include "numeric_editor.h"
 #include "min_max_editor.h"
 #include "ui_object_editor.h"
+#include "game/defines.h"
 #include <QRegExp>
 
 namespace wowpp
@@ -56,6 +57,9 @@ namespace wowpp
 			connect(m_ui->unitsListView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
 				this, SLOT(onUnitSelectionChanged(QItemSelection, QItemSelection)));
+			connect(m_ui->spellsListView->selectionModel(),
+				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+				this, SLOT(onSpellSelectionChanged(QItemSelection, QItemSelection)));
 
 			connect(m_ui->actionSave, SIGNAL(triggered()), &m_application, SLOT(saveUnsavedChanges()));
 		}
@@ -188,6 +192,78 @@ namespace wowpp
 					// Value changed
 					m_viewModel->layoutChanged();
 					m_application.markAsChanged();
+				}
+			}
+		}
+
+		void ObjectEditor::onSpellSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
+		{
+			// Get the selected unit
+			if (selection.isEmpty())
+				return;
+
+			QItemSelection source = m_spellFilter->mapSelectionToSource(selection);
+			if (source.isEmpty())
+				return;
+
+			int index = source.indexes().first().row();
+			if (index < 0)
+			{
+				return;
+			}
+	
+			// Get spell entry
+			SpellEntry *spell = m_application.getProject().spells.getTemplates().at(index).get();
+			if (!spell)
+				return;
+
+			m_ui->spellIdField->setText(QString::number(spell->id));
+			m_ui->spellNameField->setText(spell->name.c_str());
+
+			// Determine the cast time of this spell
+			Int64 castTime = 0;
+			if (spell->castTimeIndex != 0)
+			{
+				// Find spell cast time by it's index
+				const auto *castTimeEntry = m_application.getProject().castTimes.getById(spell->castTimeIndex);
+				if (castTimeEntry)
+				{
+					castTime = castTimeEntry->castTime;
+				}
+			}
+
+			m_ui->castTimeField->setText(QString::number(castTime));
+			m_ui->cooldownField->setText(QString::number(spell->cooldown));
+			m_ui->resourceField->setCurrentIndex(spell->powerType);
+			m_ui->costField->setText(QString::number(spell->cost));
+
+			// Check all spell buttons
+			for (size_t i = 0; i < 3; ++i)
+			{
+				QPushButton *button = nullptr;
+				switch (i)
+				{
+				case 0:
+					button = m_ui->effectButton1;
+					break;
+				case 1:
+					button = m_ui->effectButton2;
+					break;
+				case 2:
+					button = m_ui->effectButton3;
+					break;
+				}
+
+				if (button)
+				{
+					// Get effect name
+					QString effectName = QString("NONE");
+					if (i < spell->effects.size())
+					{
+						effectName = game::constant_literal::spellEffectNames.getName(spell->effects[i].type).c_str();
+					}
+
+					button->setText(effectName);
 				}
 			}
 		}

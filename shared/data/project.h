@@ -29,6 +29,7 @@
 #include "level_entry.h"
 #include "creature_type_entry.h"
 #include "unit_entry.h"
+#include "cast_time_entry.h"
 #include "spell_entry.h"
 #include <boost/noncopyable.hpp>
 #include <memory>
@@ -42,6 +43,7 @@ namespace wowpp
 	};
 
 
+	typedef MakeTemplateManager<CastTimeEntry>::type CastTimeEntryManager;
 	typedef MakeTemplateManager<SpellEntry>::type SpellEntryManager;
 	typedef MakeTemplateManager<MapEntry>::type MapEntryManager;
 	typedef MakeTemplateManager<LevelEntry>::type LevelEntryManager;
@@ -55,6 +57,7 @@ namespace wowpp
 	{
 	public:
 
+		CastTimeEntryManager castTimes;
 		SpellEntryManager spells;
 		MapEntryManager maps;
 		LevelEntryManager levels;

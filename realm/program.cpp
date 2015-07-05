@@ -126,7 +126,7 @@ namespace wowpp
 		m_database = std::move(db);
 
 		// Create the player manager
-		std::unique_ptr<wowpp::PlayerManager> PlayerManager(new wowpp::PlayerManager(m_configuration.maxPlayers));
+		std::unique_ptr<wowpp::PlayerManager> PlayerManager(new wowpp::PlayerManager(timer, m_configuration.maxPlayers));
 
 		// Create the world manager
 		std::unique_ptr<wowpp::WorldManager> WorldManager(new wowpp::WorldManager(m_configuration.maxWorlds));

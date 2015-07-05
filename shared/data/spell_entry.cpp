@@ -27,6 +27,9 @@
 namespace wowpp
 {
 	SpellEntry::SpellEntry()
+		: attributes(0)
+		, cooldown(0)
+		, castTimeIndex(1)
 	{
 	}
 
@@ -38,11 +41,17 @@ namespace wowpp
 		}
 
 		wrapper.table.tryGetString("name", name);
+		wrapper.table.tryGetInteger("cast_time", castTimeIndex);
+		wrapper.table.tryGetInteger("cooldown", cooldown);
+		UInt32 powerTypeValue = 0;
+		wrapper.table.tryGetInteger("power", powerTypeValue);
+		powerType = static_cast<PowerType>(powerTypeValue);
+		wrapper.table.tryGetInteger("cost", cost);
 
 		const sff::read::tree::Array<DataFileIterator> *effectsArray = wrapper.table.getArray("effects");
 		if (effectsArray)
 		{
-			effects.resize(effectsArray->getSize(), game::spell_effects::Invalid_);
+			effects.resize(effectsArray->getSize());
 			for (size_t j = 0, d = effectsArray->getSize(); j < d; ++j)
 			{
 				const sff::read::tree::Table<DataFileIterator> *const effectTable = effectsArray->getTable(j);
@@ -68,7 +77,14 @@ namespace wowpp
 					return false;
 				}
 
-				effects[j] = static_cast<game::SpellEffect>(effectIndex);
+				Effect &effect = effects[j];
+				effect.type = static_cast<game::SpellEffect>(effectIndex);
+				effectTable->tryGetInteger("base_points", effect.basePoints);
+				effectTable->tryGetInteger("base_dice", effect.baseDice);
+				effectTable->tryGetInteger("die_sides", effect.dieSides);
+				effectTable->tryGetInteger("mechanic", effect.mechanic);
+				effectTable->tryGetInteger("target_a", effect.targetA);
+				effectTable->tryGetInteger("target_b", effect.targetB);
 			}
 		}
 
@@ -80,6 +96,10 @@ namespace wowpp
 		Super::saveBase(context);
 
 		if (!name.empty()) context.table.addKey("name", name);
+		if (castTimeIndex != 1) context.table.addKey("cast_time", castTimeIndex);
+		if (cooldown != 0) context.table.addKey("cooldown", cooldown);
+		if (powerType != power_type::Mana) context.table.addKey("power", powerType);
+		if (cost != 0) context.table.addKey("cost", cost);
 
 		// Write spell effects
 		if (!effects.empty())
@@ -90,7 +110,13 @@ namespace wowpp
 				{
 					sff::write::Table<char> effectTable(effectsArray, sff::write::Comma);
 					{
-						effectTable.addKey("type", static_cast<UInt32>(effect));
+						effectTable.addKey("type", static_cast<UInt32>(effect.type));
+						if (effect.basePoints != 0) effectTable.addKey("base_points", effect.basePoints);
+						if (effect.baseDice != 0) effectTable.addKey("base_dice", effect.baseDice);
+						if (effect.dieSides != 0) effectTable.addKey("die_sides", effect.dieSides);
+						if (effect.mechanic != 0) effectTable.addKey("mechanic", effect.mechanic);
+						if (effect.targetA != 0) effectTable.addKey("target_a", effect.targetA);
+						if (effect.targetB != 0) effectTable.addKey("target_b", effect.targetB);
 					}
 					effectTable.finish();
 				}

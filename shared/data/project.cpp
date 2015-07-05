@@ -60,6 +60,7 @@ namespace wowpp
 		typedef RealmProjectLoader::ManagerEntry ManagerEntry;
 
 		RealmProjectLoader::Managers managers;
+		managers.push_back(ManagerEntry("cast_times", castTimes, std::bind(&CastTimeEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("spells", spells, std::bind(&SpellEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("races", races, std::bind(&RaceEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("classes", classes, std::bind(&ClassEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
@@ -95,6 +96,7 @@ namespace wowpp
 		typedef ProjectSaver::Manager ManagerEntry;
 
 		RealmProjectSaver::Managers managers;
+		managers.push_back(ManagerEntry("cast_times", "cast_times", castTimes, &CastTimeEntry::save));
 		managers.push_back(ManagerEntry("spells", "spells", spells, &SpellEntry::save));
 		managers.push_back(ManagerEntry("maps", "maps", maps, &MapEntry::save));
 		managers.push_back(ManagerEntry("levels", "levels", levels, &LevelEntry::save));

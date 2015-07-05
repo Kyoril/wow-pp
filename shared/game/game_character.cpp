@@ -24,10 +24,12 @@
 
 namespace wowpp
 {
-	GameCharacter::GameCharacter(DataLoadContext::GetRace getRace,
+	GameCharacter::GameCharacter(
+		TimerQueue &timers,
+		DataLoadContext::GetRace getRace,
 		DataLoadContext::GetClass getClass,
 		DataLoadContext::GetLevel getLevel)
-		: GameUnit(getRace, getClass, getLevel)
+		: GameUnit(timers, getRace, getClass, getLevel)
 		, m_name("UNKNOWN")
 		, m_zoneIndex(0)
 	{
@@ -120,14 +122,16 @@ namespace wowpp
 	{
 		return w
 			<< reinterpret_cast<GameUnit const&>(object)
-			<< io::write_dynamic_range<NetUInt8>(object.m_name);
+			<< io::write_dynamic_range<NetUInt8>(object.m_name)
+			<< io::write<NetUInt32>(object.m_zoneIndex);
 	}
 
 	io::Reader & operator>>(io::Reader &r, GameCharacter& object)
 	{
 		return r
 			>> reinterpret_cast<GameUnit&>(object)
-			>> io::read_container<NetUInt8>(object.m_name);
+			>> io::read_container<NetUInt8>(object.m_name)
+			>> io::read<NetUInt32>(object.m_zoneIndex);
 	}
 
 }

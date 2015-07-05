@@ -23,16 +23,70 @@
 
 #include "templates/basic_template.h"
 #include "game/defines.h"
+#include "class_entry.h"
 
 namespace wowpp
 {
 	struct SpellEntry : BasicTemplate<UInt32>
 	{
-		typedef BasicTemplate<UInt32> Super;
-		typedef std::vector<game::SpellEffect> SpellEffects;	//TODO: Type WILL change...
+		/// Represents data needed by a spell effect.
+		struct Effect
+		{
+			game::SpellEffect type;
+			Int32 basePoints;
+			Int32 dieSides;
+			Int32 baseDice;
+			float dicePerLevel;
+			float pointsPerLevel;
+			UInt32 mechanic;
+			UInt32 targetA;
+			UInt32 targetB;
+			UInt32 radiusIndex;
+			UInt32 auraName;
+			Int32 amplitude;
+			float multipleValue;
+			UInt32 chainTarget;
+			UInt32 itemType;
+			Int32 miscValueA;
+			Int32 miscValueB;
+			UInt32 triggerSpell;
+			Int32 pointsPerComboPoint;
 
+			Effect()
+				: type(game::spell_effects::Invalid_)
+				, basePoints(0)
+				, dieSides(0)
+				, baseDice(0)
+				, dicePerLevel(0.0f)
+				, pointsPerLevel(0.0f)
+				, mechanic(0)
+				, targetA(0)
+				, targetB(0)
+				, radiusIndex(0)
+				, auraName(0)
+				, amplitude(0)
+				, multipleValue(0.0f)
+				, chainTarget(0)
+				, itemType(0)
+				, miscValueA(0)
+				, miscValueB(0)
+				, triggerSpell(0)
+				, pointsPerComboPoint(0)
+			{
+			}
+		};
+
+		typedef BasicTemplate<UInt32> Super;
+		typedef std::vector<Effect> SpellEffects;
+
+		UInt32 attributes;
+		UInt32 attributesEx[6];
 		String name;
 		SpellEffects effects;
+		GameTime cooldown;
+		UInt32 castTimeIndex;
+		PowerType powerType;
+		UInt32 cost;
 
 		SpellEntry();
 		bool load(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper);

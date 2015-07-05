@@ -37,6 +37,7 @@ namespace wowpp
 	public:
 
 		explicit SpellTargetMap();
+		SpellTargetMap(const SpellTargetMap &other);
 
 		/// 
 		UInt32 getTargetMap() const { return m_targetMap; }
@@ -68,6 +69,8 @@ namespace wowpp
 		const bool hasDestTarget() const { return (m_targetMap & game::spell_cast_target_flags::DestLocation) != 0; }
 		/// Determines whether a string target is provided.
 		const bool hasStringTarget() const { return (m_targetMap & game::spell_cast_target_flags::String) != 0; }
+
+		virtual SpellTargetMap &operator =(const SpellTargetMap &other);
 
 	private:
 

@@ -34,6 +34,18 @@ namespace wowpp
 	{
 	}
 
+	SpellTargetMap::SpellTargetMap(const SpellTargetMap &other)
+		: m_targetMap(other.m_targetMap)
+		, m_unitTarget(other.m_unitTarget)
+		, m_goTarget(other.m_goTarget)
+		, m_itemTarget(other.m_itemTarget)
+		, m_corpseTarget(other.m_corpseTarget)
+		, m_srcX(other.m_srcX), m_srcY(other.m_srcY), m_srcZ(other.m_srcZ)
+		, m_dstX(other.m_dstX), m_dstY(other.m_dstY), m_dstZ(other.m_dstZ)
+		, m_stringTarget(other.m_stringTarget)
+	{
+	}
+
 	void SpellTargetMap::getSourceLocation(float &out_X, float &out_Y, float &out_Z) const
 	{
 		out_X = m_srcX;
@@ -47,6 +59,24 @@ namespace wowpp
 		out_Y = m_dstY;
 		out_Z = m_dstZ;
 	}
+
+	SpellTargetMap & SpellTargetMap::operator=(const SpellTargetMap &other)
+	{
+		m_targetMap = other.m_targetMap;
+		m_unitTarget = other.m_unitTarget;
+		m_goTarget = other.m_goTarget;
+		m_itemTarget = other.m_itemTarget;
+		m_corpseTarget = other.m_corpseTarget;
+		m_srcX = other.m_srcX;
+		m_srcY = other.m_srcY;
+		m_srcZ = other.m_srcZ;
+		m_dstX = other.m_dstX;
+		m_dstY = other.m_dstY;
+		m_dstZ = other.m_dstZ;
+		m_stringTarget = other.m_stringTarget;
+		return *this;
+	}
+
 
 	io::Reader & operator>>(io::Reader &r, SpellTargetMap& targetMap)
 	{

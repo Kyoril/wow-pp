@@ -25,9 +25,12 @@
 #include "data/race_entry.h"
 #include "data/class_entry.h"
 #include "data/level_entry.h"
+#include "data/spell_entry.h"
 #include "game/defines.h"
 #include "data/data_load_context.h"
-#include "movement_info.h"
+#include "common/timer_queue.h"
+#include "spell_cast.h"
+#include <boost/signals2.hpp>
 
 namespace wowpp
 {
@@ -147,7 +150,6 @@ namespace wowpp
 		};
 	}
 
-
 	/// 
 	class GameUnit : public GameObject
 	{
@@ -156,8 +158,15 @@ namespace wowpp
 
 	public:
 
+		/// Fired when a spell cast was successfull. Can be used to create network packets.
+		boost::signals2::signal<void(GameUnit &, SpellEntry &spell)> spellCastGo;
+
+	public:
+
 		/// 
-		explicit GameUnit(DataLoadContext::GetRace getRace, 
+		explicit GameUnit(
+			TimerQueue &timers,
+			DataLoadContext::GetRace getRace, 
 			DataLoadContext::GetClass getClass,
 			DataLoadContext::GetLevel getLevel);
 		~GameUnit();
@@ -173,12 +182,15 @@ namespace wowpp
 		UInt8 getGender() const { return getByteValue(unit_fields::Bytes0, 2); }
 		UInt32 getLevel() const { return getUInt32Value(unit_fields::Level); }
 
+		/// Gets the timer queue object needed for countdown events.
+		TimerQueue &getTimers() { return m_timers; }
+
 		const RaceEntry *getRaceEntry() const {  return m_raceEntry; }
 		const ClassEntry *getClassEntry() const { return m_classEntry; }
-		const MovementInfo &getMovementInfo() { return m_movementInfo; }
-		void setMovementInfo(const MovementInfo &info) { m_movementInfo = info; }
 
 		virtual ObjectType getTypeId() const override { return object_type::Unit; }
+
+		void castSpell(GameUnit &target, const SpellEntry &spell);
 
 	protected:
 
@@ -192,13 +204,14 @@ namespace wowpp
 
 	private:
 
+		TimerQueue &m_timers;
 		DataLoadContext::GetRace m_getRace;
 		DataLoadContext::GetClass m_getClass;
 		DataLoadContext::GetLevel m_getLevel;
 
 		const RaceEntry *m_raceEntry;
 		const ClassEntry *m_classEntry;
-		MovementInfo m_movementInfo;
+		std::unique_ptr<SpellCast> m_spellCast;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameUnit const& object);

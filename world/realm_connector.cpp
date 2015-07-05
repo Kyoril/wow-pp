@@ -20,16 +20,16 @@
 // 
 
 #include "realm_connector.h"
-#include "world_instance_manager.h"
-#include "world_instance.h"
+#include "game/world_instance_manager.h"
+#include "game/world_instance.h"
 #include "player_manager.h"
 #include "player.h"
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "configuration.h"
 #include "common/clock.h"
 #include "data/project.h"
-#include "visibility_tile.h"
-#include "each_tile_in_region.h"
+#include "game/visibility_tile.h"
+#include "game/each_tile_in_region.h"
 #include "binary_io/vector_sink.h"
 #include "log/default_log_levels.h"
 
@@ -240,6 +240,7 @@ namespace wowpp
 		// Read packet from the realm
 		DatabaseId requesterDbId;
 		std::shared_ptr<GameCharacter> character(new GameCharacter(
+			m_worldInstanceManager.getTimerQueue(),
 			std::bind(&RaceEntryManager::getById, &m_project.races, std::placeholders::_1),
 			std::bind(&ClassEntryManager::getById, &m_project.classes, std::placeholders::_1),
 			std::bind(&LevelEntryManager::getById, &m_project.levels, std::placeholders::_1)));
@@ -303,7 +304,7 @@ namespace wowpp
 
 		// Get character location
 		UInt32 mapId = map->id;
-		UInt32 zoneId = 0x0C;	//TODO
+		UInt32 zoneId = character->getZone();
 
 		// Notify the realm that we successfully spawned in this world
 		m_connection->sendSinglePacket(
@@ -324,6 +325,32 @@ namespace wowpp
 		// Add character to the world
 		assert(instance);
 		instance->addGameObject(*character);
+
+		// Spawn objects
+		TileIndex2D tileIndex;
+		instance->getGrid().getTilePosition(x, y, z, tileIndex[0], tileIndex[1]);
+		forEachTileInSight(instance->getGrid(), tileIndex, [&character, this](VisibilityTile &tile)
+		{
+			for (auto it = tile.getGameObjects().begin(); it != tile.getGameObjects().end(); ++it)
+			{
+				auto &object = *it;
+				if (object->getGuid() != character->getGuid())
+				{
+					// Create update block
+					std::vector<std::vector<char>> blocks;
+					createUpdateBlocks(*object, blocks);
+
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+					game::Protocol::OutgoingPacket packet(sink);
+					game::server_write::compressedUpdateObject(packet, blocks);
+					this->sendProxyPacket(character->getGuid(), packet.getOpCode(), packet.getSize(), buffer);
+				}
+			}
+		});
+
+		// Get that tile and make us a subscriber
+		instance->getGrid().requireTile(tileIndex);
 	}
 
 	void RealmConnector::handleProxyPacket(pp::Protocol::IncomingPacket &packet)
@@ -566,19 +593,23 @@ namespace wowpp
 		auto &tile = grid.requireTile(gridIndex);
 		info.time += clientTimeDelay;
 
+		// Create the chat packet
+		std::vector<char> buffer;
+		io::VectorSink sink(buffer);
+		game::Protocol::OutgoingPacket movePacket(sink);
+		game::server_write::movePacket(movePacket, opCode, guid, info);
+
 		// Notify all watchers about the new object
 		forEachTileInSight(
 			sender.getWorldInstance().getGrid(),
 			gridIndex,
-			[&sender, guid, opCode, &info](VisibilityTile &tile)
+			[&sender, &movePacket, &buffer](VisibilityTile &tile)
 		{
 			for (auto &watcher : tile.getWatchers())
 			{
 				if (watcher != &sender)
 				{
-					// Send it
-					watcher->sendProxyPacket(
-						std::bind(game::server_write::movePacket, std::placeholders::_1, opCode, guid, std::cref(info)));
+					watcher->sendPacket(movePacket, buffer);
 				}
 			}
 		});
@@ -756,17 +787,33 @@ namespace wowpp
 				DLOG("\tSTRING: " << targetMap.getStringTarget());
 			}
 		}
+
+		// Get the cast time of this spell
+		Int64 castTime = 0;
+		if (spell->castTimeIndex > 0)
+		{
+			const auto *castTimeEntry = m_project.castTimes.getById(spell->castTimeIndex);
+			if (castTimeEntry)
+			{
+				castTime = castTimeEntry->castTime;
+			}
+		}
 		
-		// TODO: Spell cast logic
-		sender.broadcastProxyPacket(
-			std::bind(game::server_write::spellStart, std::placeholders::_1, 
-				sender.getCharacterGuid(), 
-				sender.getCharacterGuid(), 
-				std::cref(*spell), 
+		// Spell cast logic
+		if (castTime > 0)
+		{
+			sender.broadcastProxyPacket(
+				std::bind(game::server_write::spellStart, std::placeholders::_1,
+				sender.getCharacterGuid(),
+				sender.getCharacterGuid(),
+				std::cref(*spell),
 				std::cref(targetMap),
 				game::spell_cast_flags::Unknown1,
-				2000,
+				castTime,
 				castCount));
+
+			sender.castSpell(spell, castTime, castCount, std::move(targetMap));
+		}
 
 		/*// Send error
 		game::SpellCastResult result = game::spell_cast_result::FailedError;

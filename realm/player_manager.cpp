@@ -24,14 +24,17 @@
 #include "player_social.h"
 #include "binary_io/string_sink.h"
 #include "log/default_log_levels.h"
+#include "common/timer_queue.h"
 #include <algorithm>
 #include <cassert>
 
 namespace wowpp
 {
 	PlayerManager::PlayerManager(
+		TimerQueue &timers,
 	    size_t playerCapacity)
-		: m_playerCapacity(playerCapacity)
+		: m_timers(timers)
+		, m_playerCapacity(playerCapacity)
 	{
 	}
 

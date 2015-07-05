@@ -24,10 +24,13 @@
 
 namespace wowpp
 {
-	GameUnit::GameUnit(DataLoadContext::GetRace getRace,
+	GameUnit::GameUnit(
+		TimerQueue &timers,
+		DataLoadContext::GetRace getRace,
 		DataLoadContext::GetClass getClass,
 		DataLoadContext::GetLevel getLevel)
 		: GameObject()
+		, m_timers(timers)
 		, m_getRace(getRace)
 		, m_getClass(getClass)
 		, m_getLevel(getLevel)
@@ -37,6 +40,9 @@ namespace wowpp
 		// Resize values field
 		m_values.resize(unit_fields::UnitFieldCount);
 		m_valueBitset.resize((unit_fields::UnitFieldCount + 31) / 32);
+
+		// Create spell caster
+		m_spellCast.reset(new SpellCast(*this));
 	}
 
 	GameUnit::~GameUnit()
@@ -190,10 +196,17 @@ namespace wowpp
 		}
 	}
 
+	void GameUnit::castSpell(GameUnit &target, const SpellEntry &spell)
+	{
+
+	}
+
+
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)
 	{
 		return w
-			<< reinterpret_cast<GameObject const&>(object);
+			<< reinterpret_cast<GameObject const&>(object)
+			;
 	}
 
 	io::Reader & operator>>(io::Reader &r, GameUnit& object)

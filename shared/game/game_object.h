@@ -24,7 +24,9 @@
 #include "common/typedefs.h"
 #include "binary_io/writer.h"
 #include "binary_io/reader.h"
+#include "movement_info.h"
 #include <boost/signals2/signal.hpp>
+#include "common/timer_queue.h"
 #include <vector>
 
 namespace wowpp
@@ -167,6 +169,7 @@ namespace wowpp
 
 	typedef object_type::Enum ObjectType;
 
+	class VisibilityTile;
 
 	/// 
 	class GameObject
@@ -176,7 +179,16 @@ namespace wowpp
 
 	public:
 
+		/// Fired when the object was added to a world instance and spawned.
+		boost::signals2::signal<void()> spawned;
+		/// Fired when the object was removed from a world instance and despawned.
+		boost::signals2::signal<void()> despawned;
+		/// Fired when the object moved, but before it's tile changed. Note that this will trigger a tile change.
 		boost::signals2::signal<void(GameObject &, float, float, float, float)> moved;
+		/// Fired when a tile change is pending for this object, after it has been moved. Note that at this time,
+		/// the object does not belong to any tile and it's position already points to the new tile.
+		/// First parameter is a reference of the old tile, second references the new tile.
+		boost::signals2::signal<void(VisibilityTile&, VisibilityTile&)> tileChangePending;
 
 	public:
 
@@ -234,6 +246,9 @@ namespace wowpp
 		///              only 2d coordinates are used.
 		float getDistanceTo(GameObject &other, bool use3D = true) const;
 
+		const MovementInfo &getMovementInfo() { return m_movementInfo; }
+		void setMovementInfo(const MovementInfo &info) { m_movementInfo = info; }
+
 	protected:
 
 		std::vector<UInt32> m_values;
@@ -244,9 +259,12 @@ namespace wowpp
 		UInt32 m_objectType;
 		UInt32 m_objectTypeId;
 		bool m_updated;
+		MovementInfo m_movementInfo;
 
 	};
 
 	io::Writer &operator << (io::Writer &w, GameObject const& object);
 	io::Reader &operator >> (io::Reader &r, GameObject& object);
+
+	void createUpdateBlocks(GameObject &object, std::vector<std::vector<char>> &out_blocks);
 }

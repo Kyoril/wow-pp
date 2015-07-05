@@ -26,7 +26,7 @@
 #include "realm_connector.h"
 #include "player_manager.h"
 #include "player.h"
-#include "world_instance_manager.h"
+#include "game/world_instance_manager.h"
 #include "common/background_worker.h"
 #include "log/log_std_stream.h"
 #include "log/log_entry.h"
@@ -138,7 +138,7 @@ namespace wowpp
 
 		// Create world instance manager
 		auto worldInstanceManager =
-			std::make_shared<wowpp::WorldInstanceManager>(m_ioService, *PlayerManager, instanceIdGenerator, objectIdGenerator, project, 0);
+			std::make_shared<wowpp::WorldInstanceManager>(m_ioService, instanceIdGenerator, objectIdGenerator, project, 0);
 
 		std::vector<std::shared_ptr<RealmConnector>> realmConnectors;
 		std::map<UInt32, RealmConnector*> realmConnectorByMap;

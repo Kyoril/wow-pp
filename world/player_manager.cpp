@@ -23,6 +23,7 @@
 #include "player.h"
 #include "binary_io/string_sink.h"
 #include "log/default_log_levels.h"
+#include "game/each_tile_in_sight.h"
 #include <algorithm>
 #include <cassert>
 

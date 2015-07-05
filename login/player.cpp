@@ -244,13 +244,13 @@ namespace wowpp
 		if (A.isZero())
 		{
 			//TODO: Error
+			ELOG("SRP error (A == 0)!");
 			m_connection->sendSinglePacket(
 				std::bind(
 				auth::server_write::logonProof,
 				std::placeholders::_1,
 				auth::auth_result::FailInvalidServer,
 				std::cref(hash)));
-
 			return;
 		}
 

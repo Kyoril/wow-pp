@@ -64,5 +64,10 @@ namespace wowpp
 		{
 			context.table.addKey("id", id);
 		}
+
+		virtual bool operator ==(const BasicTemplate &other) const
+		{
+			return (id == other.id);
+		}
 	};
 }

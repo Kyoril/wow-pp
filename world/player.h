@@ -30,8 +30,9 @@
 #include "game/game_character.h"
 #include "binary_io/vector_sink.h"
 #include "realm_connector.h"
-#include "each_tile_in_region.h"
-#include "world_instance.h"
+#include "game/each_tile_in_region.h"
+#include "game/world_instance.h"
+#include "game/tile_subscriber.h"
 #include <boost/noncopyable.hpp>
 #include <boost/signals2.hpp>
 #include <algorithm>
@@ -47,7 +48,7 @@ namespace wowpp
 	//class WorldInstance;
 
 	/// Player connection class.
-	class Player final : public boost::noncopyable
+	class Player final : public boost::noncopyable, public ITileSubscriber
 	{
 	public:
 
@@ -88,6 +89,9 @@ namespace wowpp
 		const String &getRealmName() const { return m_realmConnector.getRealmName(); }
 		/// 
 		TileIndex2D getTileIndex() const;
+
+		/// 
+		void castSpell(const SpellEntry *spell, Int64 castTime, UInt8 castCount, SpellTargetMap targetMap);
 		
 		/// Sends an proxy packet to the realm which will then be redirected to the game client.
 		/// @param generator Packet writer function pointer.
@@ -118,14 +122,32 @@ namespace wowpp
 			{
 				for (auto * const subscriber : tile.getWatchers().getElements())
 				{
-					subscriber->sendProxyPacket(generator);
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+
+					typename game::Protocol::OutgoingPacket packet(sink);
+					generator(packet);
+
+					subscriber->sendPacket(packet, buffer);
 				}
 			});
 		}
 
+	public:
+
+		GameObject *getControlledObject() override { return m_character.get(); }
+		void sendPacket(game::Protocol::OutgoingPacket &packet, const std::vector<char> &buffer) override;
+
 	private:
 
+		/// 
 		void onLogout();
+		/// 
+		void onCast();
+		/// Executed when the player character spawned.
+		void onSpawn();
+		/// Executed when the player character will move from one grid tile to another one.
+		void onTileChangePending(VisibilityTile &oldTile, VisibilityTile &newTile);
 
 	private:
 
@@ -135,6 +157,9 @@ namespace wowpp
 		DatabaseId m_characterId;
 		std::shared_ptr<GameCharacter> m_character;
 		Countdown m_logoutCountdown;
+		Countdown m_castCountdown;
 		WorldInstance &m_instance;
+		const SpellEntry *m_spellCast;
+		SpellTargetMap m_spellTarget;
 	};
 }
