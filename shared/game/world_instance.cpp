@@ -29,7 +29,6 @@
 #include "game/visibility_tile.h"
 #include "game/each_tile_in_region.h"
 #include "binary_io/vector_sink.h"
-#include <boost/iterator/indirect_iterator.hpp>
 #include <boost/bind/bind.hpp>
 #include "each_tile_in_sight.h"
 #include <algorithm>
