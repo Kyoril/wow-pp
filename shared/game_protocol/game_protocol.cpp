@@ -983,8 +983,6 @@ namespace wowpp
 					}
 
 					UInt8 goHitCount = (targets.hasGOTarget() ? 1 : 0);
-					out_packet
-						<< io::write<NetUInt8>(goHitCount);	// GO Hit count
 					if (goHitCount > 0)
 					{
 						out_packet
