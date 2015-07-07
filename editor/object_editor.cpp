@@ -248,14 +248,17 @@ namespace wowpp
 				}
 			}
 
-			// Attributes Ex 1
-			for (size_t i = 1; i <= 32; ++i)
+			// Attributes Ex 1 - 6
+			for (size_t j = 1; j <= spell->attributesEx.size(); ++j)
 			{
-				QCheckBox *box = m_ui->attributeExTab->findChild<QCheckBox*>(QString("attr_ex_%1_box").arg(i));
-				if (box)
+				for (size_t i = 1; i <= 32; ++i)
 				{
-					const bool hasAttribute = (spell->attributesEx[0] & (1 << (i - 1))) != 0;
-					box->setChecked(hasAttribute);
+					QCheckBox *box = m_ui->attributeTabs->findChild<QCheckBox*>(QString("attr_ex_%1_box_%2").arg(i).arg(j));
+					if (box)
+					{
+						const bool hasAttribute = (spell->attributesEx[j - 1] & (1 << (i - 1))) != 0;
+						box->setChecked(hasAttribute);
+					}
 				}
 			}
 

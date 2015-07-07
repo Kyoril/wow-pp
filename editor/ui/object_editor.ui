@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1053</width>
+    <width>1105</width>
     <height>586</height>
    </rect>
   </property>
@@ -626,13 +626,13 @@
                 </item>
                </layout>
               </widget>
-              <widget class="QWidget" name="attributeExTab">
+              <widget class="QWidget" name="attributeExTab1">
                <attribute name="title">
                 <string>Attributes Ex 1</string>
                </attribute>
                <layout class="QGridLayout" name="gridLayout">
                 <item row="2" column="0">
-                 <widget class="QCheckBox" name="attr_ex_9_box">
+                 <widget class="QCheckBox" name="attr_ex_9_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -642,7 +642,7 @@
                  </widget>
                 </item>
                 <item row="0" column="2">
-                 <widget class="QCheckBox" name="attr_ex_3_box">
+                 <widget class="QCheckBox" name="attr_ex_3_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -652,7 +652,7 @@
                  </widget>
                 </item>
                 <item row="0" column="3">
-                 <widget class="QCheckBox" name="attr_ex_4_box">
+                 <widget class="QCheckBox" name="attr_ex_4_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -662,7 +662,7 @@
                  </widget>
                 </item>
                 <item row="1" column="0">
-                 <widget class="QCheckBox" name="attr_ex_5_box">
+                 <widget class="QCheckBox" name="attr_ex_5_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -672,7 +672,7 @@
                  </widget>
                 </item>
                 <item row="1" column="3">
-                 <widget class="QCheckBox" name="attr_ex_8_box">
+                 <widget class="QCheckBox" name="attr_ex_8_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -682,7 +682,7 @@
                  </widget>
                 </item>
                 <item row="0" column="0">
-                 <widget class="QCheckBox" name="attr_ex_1_box">
+                 <widget class="QCheckBox" name="attr_ex_1_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -692,7 +692,7 @@
                  </widget>
                 </item>
                 <item row="1" column="1">
-                 <widget class="QCheckBox" name="attr_ex_6_box">
+                 <widget class="QCheckBox" name="attr_ex_6_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -702,7 +702,7 @@
                  </widget>
                 </item>
                 <item row="1" column="2">
-                 <widget class="QCheckBox" name="attr_ex_7_box">
+                 <widget class="QCheckBox" name="attr_ex_7_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -712,7 +712,7 @@
                  </widget>
                 </item>
                 <item row="0" column="1">
-                 <widget class="QCheckBox" name="attr_ex_2_box">
+                 <widget class="QCheckBox" name="attr_ex_2_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -722,7 +722,7 @@
                  </widget>
                 </item>
                 <item row="2" column="2">
-                 <widget class="QCheckBox" name="attr_ex_11_box">
+                 <widget class="QCheckBox" name="attr_ex_11_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -732,7 +732,7 @@
                  </widget>
                 </item>
                 <item row="3" column="1">
-                 <widget class="QCheckBox" name="attr_ex_14_box">
+                 <widget class="QCheckBox" name="attr_ex_14_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -742,7 +742,7 @@
                  </widget>
                 </item>
                 <item row="2" column="3">
-                 <widget class="QCheckBox" name="attr_ex_12_box">
+                 <widget class="QCheckBox" name="attr_ex_12_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -752,7 +752,7 @@
                  </widget>
                 </item>
                 <item row="3" column="0">
-                 <widget class="QCheckBox" name="attr_ex_13_box">
+                 <widget class="QCheckBox" name="attr_ex_13_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -762,7 +762,7 @@
                  </widget>
                 </item>
                 <item row="3" column="3">
-                 <widget class="QCheckBox" name="attr_ex_16_box">
+                 <widget class="QCheckBox" name="attr_ex_16_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -772,7 +772,7 @@
                  </widget>
                 </item>
                 <item row="3" column="2">
-                 <widget class="QCheckBox" name="attr_ex_15_box">
+                 <widget class="QCheckBox" name="attr_ex_15_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -782,7 +782,7 @@
                  </widget>
                 </item>
                 <item row="4" column="0">
-                 <widget class="QCheckBox" name="attr_ex_17_box">
+                 <widget class="QCheckBox" name="attr_ex_17_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -792,7 +792,7 @@
                  </widget>
                 </item>
                 <item row="4" column="1">
-                 <widget class="QCheckBox" name="attr_ex_18_box">
+                 <widget class="QCheckBox" name="attr_ex_18_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -802,7 +802,7 @@
                  </widget>
                 </item>
                 <item row="2" column="1">
-                 <widget class="QCheckBox" name="attr_ex_10_box">
+                 <widget class="QCheckBox" name="attr_ex_10_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -812,7 +812,7 @@
                  </widget>
                 </item>
                 <item row="6" column="1">
-                 <widget class="QCheckBox" name="attr_ex_26_box">
+                 <widget class="QCheckBox" name="attr_ex_26_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -822,7 +822,7 @@
                  </widget>
                 </item>
                 <item row="5" column="3">
-                 <widget class="QCheckBox" name="attr_ex_24_box">
+                 <widget class="QCheckBox" name="attr_ex_24_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -832,7 +832,7 @@
                  </widget>
                 </item>
                 <item row="4" column="3">
-                 <widget class="QCheckBox" name="attr_ex_20_box">
+                 <widget class="QCheckBox" name="attr_ex_20_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -842,7 +842,7 @@
                  </widget>
                 </item>
                 <item row="5" column="2">
-                 <widget class="QCheckBox" name="attr_ex_23_box">
+                 <widget class="QCheckBox" name="attr_ex_23_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -852,7 +852,7 @@
                  </widget>
                 </item>
                 <item row="6" column="0">
-                 <widget class="QCheckBox" name="attr_ex_25_box">
+                 <widget class="QCheckBox" name="attr_ex_25_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -862,7 +862,7 @@
                  </widget>
                 </item>
                 <item row="6" column="2">
-                 <widget class="QCheckBox" name="attr_ex_27_box">
+                 <widget class="QCheckBox" name="attr_ex_27_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -872,7 +872,7 @@
                  </widget>
                 </item>
                 <item row="6" column="3">
-                 <widget class="QCheckBox" name="attr_ex_28_box">
+                 <widget class="QCheckBox" name="attr_ex_28_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -882,7 +882,7 @@
                  </widget>
                 </item>
                 <item row="5" column="1">
-                 <widget class="QCheckBox" name="attr_ex_22_box">
+                 <widget class="QCheckBox" name="attr_ex_22_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -892,7 +892,7 @@
                  </widget>
                 </item>
                 <item row="4" column="2">
-                 <widget class="QCheckBox" name="attr_ex_19_box">
+                 <widget class="QCheckBox" name="attr_ex_19_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -902,7 +902,7 @@
                  </widget>
                 </item>
                 <item row="5" column="0">
-                 <widget class="QCheckBox" name="attr_ex_21_box">
+                 <widget class="QCheckBox" name="attr_ex_21_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -912,7 +912,7 @@
                  </widget>
                 </item>
                 <item row="7" column="0">
-                 <widget class="QCheckBox" name="attr_ex_29_box">
+                 <widget class="QCheckBox" name="attr_ex_29_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -922,7 +922,7 @@
                  </widget>
                 </item>
                 <item row="7" column="1">
-                 <widget class="QCheckBox" name="attr_ex_30_box">
+                 <widget class="QCheckBox" name="attr_ex_30_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -932,7 +932,7 @@
                  </widget>
                 </item>
                 <item row="7" column="2">
-                 <widget class="QCheckBox" name="attr_ex_31_box">
+                 <widget class="QCheckBox" name="attr_ex_31_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -942,7 +942,7 @@
                  </widget>
                 </item>
                 <item row="7" column="3">
-                 <widget class="QCheckBox" name="attr_ex_32_box">
+                 <widget class="QCheckBox" name="attr_ex_32_box_1">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -953,30 +953,1640 @@
                 </item>
                </layout>
               </widget>
-              <widget class="QWidget" name="tab_3">
+              <widget class="QWidget" name="attributeExTab2">
                <attribute name="title">
                 <string>Attributes Ex 2</string>
                </attribute>
+               <layout class="QGridLayout" name="gridLayout_3">
+                <item row="0" column="1">
+                 <widget class="QCheckBox" name="attr_ex_2_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_1</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="0">
+                 <widget class="QCheckBox" name="attr_ex_1_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>CAN_TARGET_DEAD</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QCheckBox" name="attr_ex_10_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_9</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="3">
+                 <widget class="QCheckBox" name="attr_ex_4_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_3</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QCheckBox" name="attr_ex_6_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>AUTOREPEAT_FLAG</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QCheckBox" name="attr_ex_5_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>DISPLAY_IN_STANCE_BAR</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="2">
+                 <widget class="QCheckBox" name="attr_ex_7_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>CANT_TARGET_TAPPED</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="0">
+                 <widget class="QCheckBox" name="attr_ex_9_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_8</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="3">
+                 <widget class="QCheckBox" name="attr_ex_8_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_7</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="2">
+                 <widget class="QCheckBox" name="attr_ex_3_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>IGNORE_LINE_OF_SIGHT</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="0">
+                 <widget class="QCheckBox" name="attr_ex_17_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>TAME_BEAST</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="2">
+                 <widget class="QCheckBox" name="attr_ex_11_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_10</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="1">
+                 <widget class="QCheckBox" name="attr_ex_14_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>PRESERVE_ENCHANT_IN_ARENA</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="2">
+                 <widget class="QCheckBox" name="attr_ex_19_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>REQ_DEAD_PET</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="3">
+                 <widget class="QCheckBox" name="attr_ex_16_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_15</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="2">
+                 <widget class="QCheckBox" name="attr_ex_15_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_14</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="0">
+                 <widget class="QCheckBox" name="attr_ex_13_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_12</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="0">
+                 <widget class="QCheckBox" name="attr_ex_21_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_20</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="1">
+                 <widget class="QCheckBox" name="attr_ex_22_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>DAMAGE_REDUCED_SHIELD</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="1">
+                 <widget class="QCheckBox" name="attr_ex_18_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>NOT_RESET_AUTO_ACTIONS</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="3">
+                 <widget class="QCheckBox" name="attr_ex_20_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>NOT_NEED_SHAPESHIFT</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="3">
+                 <widget class="QCheckBox" name="attr_ex_12_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>HEALTH_FUNNEL</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="1">
+                 <widget class="QCheckBox" name="attr_ex_26_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_25</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="0">
+                 <widget class="QCheckBox" name="attr_ex_25_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_24</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="3">
+                 <widget class="QCheckBox" name="attr_ex_28_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_27</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="2">
+                 <widget class="QCheckBox" name="attr_ex_27_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_26</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="2">
+                 <widget class="QCheckBox" name="attr_ex_23_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_22</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="3">
+                 <widget class="QCheckBox" name="attr_ex_24_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>IS_ARCANE_CONCENTRATION</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="0">
+                 <widget class="QCheckBox" name="attr_ex_29_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_28</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="1">
+                 <widget class="QCheckBox" name="attr_ex_30_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>CANT_CRIT</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="2">
+                 <widget class="QCheckBox" name="attr_ex_31_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>TRIGGERED_CAN_TRIGGER_PROC</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="3">
+                 <widget class="QCheckBox" name="attr_ex_32_box_2">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>FOOD_BUFF</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
               </widget>
-              <widget class="QWidget" name="tab_4">
+              <widget class="QWidget" name="attributeExTab3">
                <attribute name="title">
                 <string>Attributes Ex 3</string>
                </attribute>
+               <layout class="QGridLayout" name="gridLayout_4">
+                <item row="0" column="0">
+                 <widget class="QCheckBox" name="attr_ex_1_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_0</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QCheckBox" name="attr_ex_2_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_1</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="2">
+                 <widget class="QCheckBox" name="attr_ex_3_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_3</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="3">
+                 <widget class="QCheckBox" name="attr_ex_4_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>BLOCKABLE_SPELL</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QCheckBox" name="attr_ex_5_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>IGNORE_RESURRECTION_TIMER</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QCheckBox" name="attr_ex_6_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_5</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="2">
+                 <widget class="QCheckBox" name="attr_ex_7_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_6</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="3">
+                 <widget class="QCheckBox" name="attr_ex_8_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>STACK_FOR_DIFF_CASTERS</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="0">
+                 <widget class="QCheckBox" name="attr_ex_9_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>ONLY_TARGET_PLAYERS</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QCheckBox" name="attr_ex_10_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>TRIGGERED_CAN_TRIGGER_PROC2</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="2">
+                 <widget class="QCheckBox" name="attr_ex_11_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>MAIN_HAND_REQUIRED</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="3">
+                 <widget class="QCheckBox" name="attr_ex_12_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>ONLY_IN_BATTLEGROUND</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="0">
+                 <widget class="QCheckBox" name="attr_ex_13_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>ONLY_TARGET_GHOSTS</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="1">
+                 <widget class="QCheckBox" name="attr_ex_14_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_13</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="2">
+                 <widget class="QCheckBox" name="attr_ex_15_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>IS_HONORLESS_TARGET</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="3">
+                 <widget class="QCheckBox" name="attr_ex_16_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_15</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="0">
+                 <widget class="QCheckBox" name="attr_ex_17_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>CANT_TRIGGER_PROC</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="1">
+                 <widget class="QCheckBox" name="attr_ex_18_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>NO_INITIAL_AGGRO</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="2">
+                 <widget class="QCheckBox" name="attr_ex_19_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>IGNORE_HIT_RESULT</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="3">
+                 <widget class="QCheckBox" name="attr_ex_20_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>DISABLE_PROC</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="0">
+                 <widget class="QCheckBox" name="attr_ex_21_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>DEATH_PERSISTENT</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="1">
+                 <widget class="QCheckBox" name="attr_ex_22_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_21</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="2">
+                 <widget class="QCheckBox" name="attr_ex_23_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>WAND_REQUIRED</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="3">
+                 <widget class="QCheckBox" name="attr_ex_24_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_23</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="0">
+                 <widget class="QCheckBox" name="attr_ex_25_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>OFFHAND_REQUIRED</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="1">
+                 <widget class="QCheckBox" name="attr_ex_26_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_25</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="2">
+                 <widget class="QCheckBox" name="attr_ex_27_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>CAN_PROC_WITH_TRIGGERED</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="3">
+                 <widget class="QCheckBox" name="attr_ex_28_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>DRAIN_SOUL</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="0">
+                 <widget class="QCheckBox" name="attr_ex_29_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_28</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="1">
+                 <widget class="QCheckBox" name="attr_ex_30_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>NO_DONE_BONUS</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="2">
+                 <widget class="QCheckBox" name="attr_ex_31_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>DONT_DISPLAY_RANGE</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="3">
+                 <widget class="QCheckBox" name="attr_ex_32_box_3">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_31</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
               </widget>
-              <widget class="QWidget" name="tab_5">
+              <widget class="QWidget" name="attributeExTab4">
                <attribute name="title">
                 <string>Attributes Ex 4</string>
                </attribute>
+               <layout class="QGridLayout" name="gridLayout_5">
+                <item row="0" column="0">
+                 <widget class="QCheckBox" name="attr_ex_1_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>IGNORE_RESISTANCES</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QCheckBox" name="attr_ex_2_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>PROC_ONLY_ON_CASTER</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="2">
+                 <widget class="QCheckBox" name="attr_ex_3_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_2</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="3">
+                 <widget class="QCheckBox" name="attr_ex_4_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_3</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QCheckBox" name="attr_ex_5_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_4</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QCheckBox" name="attr_ex_6_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_5</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="2">
+                 <widget class="QCheckBox" name="attr_ex_7_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>NOT_STEALABLE</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="3">
+                 <widget class="QCheckBox" name="attr_ex_8_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>TRIGGERED</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="0">
+                 <widget class="QCheckBox" name="attr_ex_9_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_8</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QCheckBox" name="attr_ex_10_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>TRIGGER_ACTIVATE</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="2">
+                 <widget class="QCheckBox" name="attr_ex_11_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>SPELL_VS_EXTEND_COST</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="3">
+                 <widget class="QCheckBox" name="attr_ex_12_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_11</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="0">
+                 <widget class="QCheckBox" name="attr_ex_13_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_12</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="1">
+                 <widget class="QCheckBox" name="attr_ex_14_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_13</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="2">
+                 <widget class="QCheckBox" name="attr_ex_15_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>DAMAGE_DOESNT_BREAK_AURAS</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="3">
+                 <widget class="QCheckBox" name="attr_ex_16_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_15</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="0">
+                 <widget class="QCheckBox" name="attr_ex_17_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>NOT_USABLE_IN_ARENA</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="1">
+                 <widget class="QCheckBox" name="attr_ex_18_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>USABLE_IN_ARENA</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="2">
+                 <widget class="QCheckBox" name="attr_ex_19_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>AREA_TARGET_CHAIN</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="3">
+                 <widget class="QCheckBox" name="attr_ex_20_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_19</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="0">
+                 <widget class="QCheckBox" name="attr_ex_21_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>NOT_CHECK_SELFCAST_POWER</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="1">
+                 <widget class="QCheckBox" name="attr_ex_22_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_21</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="2">
+                 <widget class="QCheckBox" name="attr_ex_23_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_22</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="3">
+                 <widget class="QCheckBox" name="attr_ex_24_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_23</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="0">
+                 <widget class="QCheckBox" name="attr_ex_25_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_24</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="1">
+                 <widget class="QCheckBox" name="attr_ex_26_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>IS_PET_SCALING</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="2">
+                 <widget class="QCheckBox" name="attr_ex_27_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>CAST_ONLY_IN_OUTLAND</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="3">
+                 <widget class="QCheckBox" name="attr_ex_28_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_27</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="0">
+                 <widget class="QCheckBox" name="attr_ex_29_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_28</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="1">
+                 <widget class="QCheckBox" name="attr_ex_30_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_29</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="2">
+                 <widget class="QCheckBox" name="attr_ex_31_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_30</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="3">
+                 <widget class="QCheckBox" name="attr_ex_32_box_4">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_31</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
               </widget>
-              <widget class="QWidget" name="tab_6">
+              <widget class="QWidget" name="attributeExTab5">
                <attribute name="title">
                 <string>Attributes Ex 5</string>
                </attribute>
+               <layout class="QGridLayout" name="gridLayout_6">
+                <item row="0" column="0">
+                 <widget class="QCheckBox" name="attr_ex_1_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_0</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QCheckBox" name="attr_ex_2_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>NO_REAGENT_WHILE_PREP</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="2">
+                 <widget class="QCheckBox" name="attr_ex_3_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_2</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="3">
+                 <widget class="QCheckBox" name="attr_ex_4_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>USABLE_WHILE_STUNNED</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QCheckBox" name="attr_ex_5_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_4</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QCheckBox" name="attr_ex_6_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>SINGLE_TARGET_SPELL</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="2">
+                 <widget class="QCheckBox" name="attr_ex_7_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_6</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="3">
+                 <widget class="QCheckBox" name="attr_ex_8_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_7</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="0">
+                 <widget class="QCheckBox" name="attr_ex_9_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_8</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QCheckBox" name="attr_ex_10_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>START_PERIODIC_AT_APPLY</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="2">
+                 <widget class="QCheckBox" name="attr_ex_11_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>HIDE_DURATION</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="3">
+                 <widget class="QCheckBox" name="attr_ex_12_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>ALLOW_TARGET_OF_TARGET</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="0">
+                 <widget class="QCheckBox" name="attr_ex_13_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_12</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="1">
+                 <widget class="QCheckBox" name="attr_ex_14_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>HASTE_AFFECT_DURATION</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="2">
+                 <widget class="QCheckBox" name="attr_ex_15_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_14</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="3">
+                 <widget class="QCheckBox" name="attr_ex_16_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_15</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="0">
+                 <widget class="QCheckBox" name="attr_ex_17_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>SPECIAL_ITEM_CLASS_CHECK</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="1">
+                 <widget class="QCheckBox" name="attr_ex_18_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>USABLE_WHILE_FEARED</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="2">
+                 <widget class="QCheckBox" name="attr_ex_19_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>USABLE_WHILE_CONFUSED</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="3">
+                 <widget class="QCheckBox" name="attr_ex_20_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_19</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="0">
+                 <widget class="QCheckBox" name="attr_ex_21_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_20</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="1">
+                 <widget class="QCheckBox" name="attr_ex_22_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_21</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="2">
+                 <widget class="QCheckBox" name="attr_ex_23_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_22</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="3">
+                 <widget class="QCheckBox" name="attr_ex_24_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_23</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="0">
+                 <widget class="QCheckBox" name="attr_ex_25_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_24</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="1">
+                 <widget class="QCheckBox" name="attr_ex_26_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_25</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="2">
+                 <widget class="QCheckBox" name="attr_ex_27_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_26</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="3">
+                 <widget class="QCheckBox" name="attr_ex_28_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_27</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="0">
+                 <widget class="QCheckBox" name="attr_ex_29_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_28</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="1">
+                 <widget class="QCheckBox" name="attr_ex_30_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_29</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="2">
+                 <widget class="QCheckBox" name="attr_ex_31_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_30</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="3">
+                 <widget class="QCheckBox" name="attr_ex_32_box_5">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_31</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
               </widget>
-              <widget class="QWidget" name="tab_7">
+              <widget class="QWidget" name="attributeExTab6">
                <attribute name="title">
                 <string>Attributes_Ex_6</string>
                </attribute>
+               <layout class="QGridLayout" name="gridLayout_7">
+                <item row="0" column="0">
+                 <widget class="QCheckBox" name="attr_ex_1_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>DONT_DISPLAY_COOLDOWN</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QCheckBox" name="attr_ex_2_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>ONLY_IN_ARENA</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="2">
+                 <widget class="QCheckBox" name="attr_ex_3_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>IGNORE_CASTER_AURAS</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="3">
+                 <widget class="QCheckBox" name="attr_ex_4_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_3</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QCheckBox" name="attr_ex_5_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_4</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QCheckBox" name="attr_ex_6_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_5</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="2">
+                 <widget class="QCheckBox" name="attr_ex_7_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_6</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="3">
+                 <widget class="QCheckBox" name="attr_ex_8_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_7</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="0">
+                 <widget class="QCheckBox" name="attr_ex_9_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>CANT_TARGET_CROWD_CONTROLLED</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QCheckBox" name="attr_ex_10_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_9</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="2">
+                 <widget class="QCheckBox" name="attr_ex_11_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>CAN_TARGET_POSESSED_FRIENDS</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="3">
+                 <widget class="QCheckBox" name="attr_ex_12_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>NOT_IN_RAID_INSTANCE</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="0">
+                 <widget class="QCheckBox" name="attr_ex_13_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>CASTABLE_WHILE_ON_VEHICLE</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="1">
+                 <widget class="QCheckBox" name="attr_ex_14_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>CAN_TARGET_INVISIBLE</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="2">
+                 <widget class="QCheckBox" name="attr_ex_15_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_14</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="3">
+                 <widget class="QCheckBox" name="attr_ex_16_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_15</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="0">
+                 <widget class="QCheckBox" name="attr_ex_17_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_16</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="1">
+                 <widget class="QCheckBox" name="attr_ex_18_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_17</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="2">
+                 <widget class="QCheckBox" name="attr_ex_19_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>CAST_BY_CHARMER</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="3">
+                 <widget class="QCheckBox" name="attr_ex_20_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_19</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="0">
+                 <widget class="QCheckBox" name="attr_ex_21_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_20</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="1">
+                 <widget class="QCheckBox" name="attr_ex_22_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>CLIENT_UI_TARGET_EFFECTS</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="2">
+                 <widget class="QCheckBox" name="attr_ex_23_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_22</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="3">
+                 <widget class="QCheckBox" name="attr_ex_24_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_23</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="0">
+                 <widget class="QCheckBox" name="attr_ex_25_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>CAN_TARGET_UNTARGETABLE</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="1">
+                 <widget class="QCheckBox" name="attr_ex_26_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_25</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="2">
+                 <widget class="QCheckBox" name="attr_ex_27_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_26</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="3">
+                 <widget class="QCheckBox" name="attr_ex_28_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_27</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="0">
+                 <widget class="QCheckBox" name="attr_ex_29_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_28</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="1">
+                 <widget class="QCheckBox" name="attr_ex_30_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>NO_DONE_PCT_DAMAGE_MODS</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="2">
+                 <widget class="QCheckBox" name="attr_ex_31_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_30</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="3">
+                 <widget class="QCheckBox" name="attr_ex_32_box_6">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>UNKNOWN_31</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
               </widget>
              </widget>
             </item>
@@ -1062,7 +2672,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1053</width>
+     <width>1105</width>
      <height>21</height>
     </rect>
    </property>
