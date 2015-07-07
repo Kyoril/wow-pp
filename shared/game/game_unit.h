@@ -30,6 +30,7 @@
 #include "data/data_load_context.h"
 #include "common/timer_queue.h"
 #include "spell_cast.h"
+#include "spell_target_map.h"
 #include <boost/signals2.hpp>
 
 namespace wowpp
@@ -190,7 +191,7 @@ namespace wowpp
 
 		virtual ObjectType getTypeId() const override { return object_type::Unit; }
 
-		void castSpell(GameUnit &target, const SpellEntry &spell);
+		void castSpell(SpellTargetMap target, const SpellEntry &spell, GameTime castTime);
 
 	protected:
 

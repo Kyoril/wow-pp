@@ -27,6 +27,89 @@
 
 namespace wowpp
 {
+	namespace spell_attributes
+	{
+		enum Type
+		{
+			/// Unknown currently
+			Unknown_0				= 0x00000001,
+			/// Spell requires ammo.
+			Ranged					= 0x00000002,
+			/// Spell is executed on next weapon swing.
+			OnNextSwing				= 0x00000004,
+			/// 
+			IsReplenishment			= 0x00000008,
+			/// Spell is a player ability.
+			Ability					= 0x00000010,
+			/// 
+			TradeSpell				= 0x00000020,
+			/// Spell is a passive spell-
+			Passive					= 0x00000040,
+			/// Spell does not appear in the players spell book.
+			HiddenClientSide		= 0x00000080,
+			/// Spell won't display cast time.
+			HiddenCastTime			= 0x00000100,
+			/// Client will automatically target the mainhand item.
+			TargetMainhandItem		= 0x00000200,
+			/// 
+			OnNextSwing_2			= 0x00000400,
+			/// 
+			Unknown_4				= 0x00000800,
+			/// Spell is only executable at day.
+			DaytimeOnly				= 0x00001000,
+			/// Spell is only executable at night
+			NightOnly				= 0x00002000,
+			/// Spell is only executable while indoor.
+			IndoorOnly				= 0x00004000,
+			/// Spell is only executable while outdoor.
+			OutdoorOnly				= 0x00008000,
+			/// Spell is only executable while not shape shifted.
+			NotShapeshifted			= 0x00010000,
+			/// Spell is only executable while in stealth mode.
+			OnlyStealthed			= 0x00020000,
+			/// Spell does not change the players sheath state.
+			DontAffectSheathState	= 0x00040000,
+			/// 
+			LevelDamageCalc			= 0x00080000,
+			/// Spell will stop auto attack.
+			StopAttackTarget		= 0x00100000,
+			/// Spell can't be blocked / dodged / parried
+			NoDefense				= 0x00200000,
+			/// Executer will always look at target while casting this spell.
+			CastTrackTarget			= 0x00400000,
+			/// Spell is usable while caster is dead.
+			CastableWhileDead		= 0x00800000,
+			/// Spell is usable while caster is mounted.
+			CastableWhileMounted	= 0x01000000,
+			/// 
+			DisabledWhileActive		= 0x02000000,
+			/// 
+			Negative				= 0x04000000,
+			/// Cast is usable while caster is sitting.
+			CastableWhileSitting	= 0x08000000,
+			/// Cast is not usable while caster is in combat.
+			NotInCombat				= 0x10000000,
+			/// Spell is usable even on invulnerable targets.
+			IgnoreInvulnerability	= 0x20000000,
+			/// Aura of this spell will break on damage.
+			BreakableByDamage		= 0x40000000,
+			/// Aura can't be cancelled by player.
+			CantCancel				= 0x80000000
+		};
+	}
+
+	typedef spell_attributes::Type SpellAttributes;
+
+	namespace spell_attributes_ex
+	{
+		enum Type
+		{
+			Unknown_0				= 0x00000001
+		};
+	}
+
+	typedef spell_attributes_ex::Type SpellAttributesEx;
+
 	struct SpellEntry : BasicTemplate<UInt32>
 	{
 		/// Represents data needed by a spell effect.
@@ -80,7 +163,7 @@ namespace wowpp
 		typedef std::vector<Effect> SpellEffects;
 
 		UInt32 attributes;
-		UInt32 attributesEx[6];
+		std::array<UInt32, 6> attributesEx;
 		String name;
 		SpellEffects effects;
 		GameTime cooldown;

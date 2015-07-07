@@ -709,7 +709,7 @@ namespace wowpp
 
 		if (reason == pp::world_realm::world_left_reason::Disconnect)
 		{
-			// TODO: Find the character and remove it from the world instance
+			// Find the character and remove it from the world instance
 			auto *player = m_playerManager.getPlayerByCharacterGuid(characterGuid);
 			if (!player)
 			{
@@ -800,25 +800,15 @@ namespace wowpp
 		}
 		
 		// Spell cast logic
-		if (castTime > 0)
-		{
-			sender.broadcastProxyPacket(
-				std::bind(game::server_write::spellStart, std::placeholders::_1,
-				sender.getCharacterGuid(),
-				sender.getCharacterGuid(),
-				std::cref(*spell),
-				std::cref(targetMap),
-				game::spell_cast_flags::Unknown1,
-				castTime,
-				castCount));
+		sender.getCharacter()->castSpell(
+			std::move(targetMap),
+			*spell,
+			castTime);
 
-			sender.castSpell(spell, castTime, castCount, std::move(targetMap));
-		}
-
-		/*// Send error
-		game::SpellCastResult result = game::spell_cast_result::FailedError;
-		sender.sendProxyPacket(
-			std::bind(game::server_write::castFailed, std::placeholders::_1, result, std::cref(*spell), castCount));*/
+		// Send error
+// 		game::SpellCastResult result = game::spell_cast_result::FailedError;
+// 		sender.sendProxyPacket(
+// 			std::bind(game::server_write::castFailed, std::placeholders::_1, result, std::cref(*spell), castCount));
 	}
 
 	void RealmConnector::handleCancelCast(Player &sender, game::Protocol::IncomingPacket &packet)

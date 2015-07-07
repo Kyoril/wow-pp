@@ -20,6 +20,7 @@
 // 
 
 #include "game_unit.h"
+#include "log/default_log_levels.h"
 #include <cassert>
 
 namespace wowpp
@@ -42,7 +43,7 @@ namespace wowpp
 		m_valueBitset.resize((unit_fields::UnitFieldCount + 31) / 32);
 
 		// Create spell caster
-		m_spellCast.reset(new SpellCast(*this));
+		m_spellCast.reset(new SpellCast(m_timers, *this));
 	}
 
 	GameUnit::~GameUnit()
@@ -196,9 +197,9 @@ namespace wowpp
 		}
 	}
 
-	void GameUnit::castSpell(GameUnit &target, const SpellEntry &spell)
+	void GameUnit::castSpell(SpellTargetMap target, const SpellEntry &spell, GameTime castTime)
 	{
-
+		wowpp::castSpell(*m_spellCast, spell, std::move(target), castTime);
 	}
 
 

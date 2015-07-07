@@ -53,7 +53,7 @@ namespace wowpp
 			m_spellFilter = new QSortFilterProxyModel;
 			m_spellFilter->setSourceModel(app.getSpellListModel());
 			m_ui->spellsListView->setModel(m_spellFilter);
-
+			
 			connect(m_ui->unitsListView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
 				this, SLOT(onUnitSelectionChanged(QItemSelection, QItemSelection)));
@@ -236,6 +236,28 @@ namespace wowpp
 			m_ui->cooldownField->setText(QString::number(spell->cooldown));
 			m_ui->resourceField->setCurrentIndex(spell->powerType);
 			m_ui->costField->setText(QString::number(spell->cost));
+
+			// Attributes
+			for (size_t i = 1; i <= 32; ++i)
+			{
+				QCheckBox *box = m_ui->attributeTabs->findChild<QCheckBox*>(QString("attr_%1_box").arg(i));
+				if (box)
+				{
+					const bool hasAttribute = (spell->attributes & (1 << (i - 1))) != 0;
+					box->setChecked(hasAttribute);
+				}
+			}
+
+			// Attributes Ex 1
+			for (size_t i = 1; i <= 32; ++i)
+			{
+				QCheckBox *box = m_ui->attributeExTab->findChild<QCheckBox*>(QString("attr_ex_%1_box").arg(i));
+				if (box)
+				{
+					const bool hasAttribute = (spell->attributesEx[0] & (1 << (i - 1))) != 0;
+					box->setChecked(hasAttribute);
+				}
+			}
 
 			// Check all spell buttons
 			for (size_t i = 0; i < 3; ++i)

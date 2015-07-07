@@ -41,6 +41,14 @@ namespace wowpp
 		}
 
 		wrapper.table.tryGetString("name", name);
+		wrapper.table.tryGetInteger("attributes", attributes);
+		for (size_t i = 0; i < attributesEx.size(); ++i)
+		{
+			std::stringstream strm;
+			strm << "attributes_ex_" << (i + 1);
+			wrapper.table.tryGetInteger(strm.str(), attributesEx[i]);
+		}
+		wrapper.table.tryGetInteger("name", name);
 		wrapper.table.tryGetInteger("cast_time", castTimeIndex);
 		wrapper.table.tryGetInteger("cooldown", cooldown);
 		UInt32 powerTypeValue = 0;
@@ -96,6 +104,16 @@ namespace wowpp
 		Super::saveBase(context);
 
 		if (!name.empty()) context.table.addKey("name", name);
+		if (attributes) context.table.addKey("attributes", attributes);
+		for (size_t i = 0; i < attributesEx.size(); ++i)
+		{
+			if (attributesEx[i])
+			{
+				std::stringstream strm;
+				strm << "attributes_ex_" << (i + 1);
+				context.table.addKey(strm.str(), attributesEx[i]);
+			}
+		}
 		if (castTimeIndex != 1) context.table.addKey("cast_time", castTimeIndex);
 		if (cooldown != 0) context.table.addKey("cooldown", cooldown);
 		if (powerType != power_type::Mana) context.table.addKey("power", powerType);

@@ -39,16 +39,14 @@ namespace wowpp
 		, m_characterId(characterId)
 		, m_character(std::move(character))
 		, m_logoutCountdown(worldInstanceManager.getTimerQueue())
-		, m_castCountdown(worldInstanceManager.getTimerQueue())
 		, m_instance(instance)
-		, m_spellCast(nullptr)
 	{
 		m_logoutCountdown.ended.connect(
 			std::bind(&Player::onLogout, this));
-		m_castCountdown.ended.connect(
-			std::bind(&Player::onCast, this));
 		m_character->spawned.connect(
 			std::bind(&Player::onSpawn, this));
+		m_character->despawned.connect(
+			std::bind(&Player::onDespawn, this));
 		m_character->tileChangePending.connect(
 			std::bind(&Player::onTileChangePending, this, std::placeholders::_1, std::placeholders::_2));
 	}
@@ -160,31 +158,6 @@ namespace wowpp
 		}
 	}
 
-	void Player::onCast()
-	{
-		broadcastProxyPacket(
-			std::bind(game::server_write::spellGo, std::placeholders::_1,
-			getCharacterGuid(),
-			getCharacterGuid(),
-			std::cref(*m_spellCast),
-			std::cref(m_spellTarget),
-			game::spell_cast_flags::Unknown1));
-	}
-
-	void Player::castSpell(const SpellEntry *spell, Int64 castTime, UInt8 castCount, SpellTargetMap targetMap)
-	{
-		if (m_castCountdown.running)
-		{
-			m_castCountdown.cancel();
-		}
-
-		m_spellCast = spell;
-		m_spellTarget = std::move(targetMap);
-
-		m_castCountdown.setEnd(
-			getCurrentTime() + castTime);
-	}
-
 	void Player::sendPacket(game::Protocol::OutgoingPacket &packet, const std::vector<char> &buffer)
 	{
 		// Send the proxy packet to the realm server
@@ -197,6 +170,14 @@ namespace wowpp
 		TileIndex2D tileIndex = getTileIndex();
 		VisibilityTile &tile = m_instance.getGrid().requireTile(tileIndex);
 		tile.getWatchers().add(this);
+	}
+
+	void Player::onDespawn()
+	{
+		// Find our tile
+		TileIndex2D tileIndex = getTileIndex();
+		VisibilityTile &tile = m_instance.getGrid().requireTile(tileIndex);
+		tile.getWatchers().remove(this);
 	}
 
 	void Player::onTileChangePending(VisibilityTile &oldTile, VisibilityTile &newTile)

@@ -24,6 +24,7 @@
 #include "binary_io/vector_sink.h"
 #include "common/clock.h"
 #include "visibility_tile.h"
+#include "world_instance.h"
 #include <cassert>
 
 namespace wowpp
@@ -36,6 +37,7 @@ namespace wowpp
 		, m_o(0.0f)
 		, m_objectType(0x01)
 		, m_objectTypeId(0x01)
+		, m_worldInstance(nullptr)
 	{
 		m_values.resize(object_fields::ObjectFieldCount, 0);
 		m_valueBitset.resize((object_fields::ObjectFieldCount + 31) / 32, 0);
@@ -293,6 +295,27 @@ namespace wowpp
 			return (sqrtf(((x - m_x) * (x - m_x)) + ((y - m_y) * (y - m_y)) + ((z - m_z) * (z - m_z))));
 		else
 			return (sqrtf(((x - m_x) * (x - m_x)) + ((y - m_y) * (y - m_y))));
+	}
+
+	void GameObject::onWorldInstanceDestroyed()
+	{
+		// We are no longer part of the old world instance
+		setWorldInstance(nullptr);
+	}
+
+	void GameObject::setWorldInstance(WorldInstance *instance)
+	{
+		m_worldInstanceDestroyed.disconnect();
+
+		// Use new instance
+		m_worldInstance = instance;
+
+		// Watch for destruction of the new world instance
+		if (m_worldInstance)
+		{
+			m_worldInstanceDestroyed = m_worldInstance->willBeDestroyed.connect(
+				std::bind(&GameObject::onWorldInstanceDestroyed, this));
+		}
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameObject const& object)

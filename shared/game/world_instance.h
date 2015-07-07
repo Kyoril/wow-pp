@@ -28,6 +28,7 @@
 #include "data/data_load_context.h"
 #include "game/visibility_grid.h"
 #include "creature_spawner.h"
+#include "boost/signals2.hpp"
 #include <memory>
 #include <vector>
 
@@ -43,6 +44,11 @@ namespace wowpp
 
 		typedef std::unordered_map<UInt64, GameObject*> GameObjectsById;
 		typedef std::vector<std::unique_ptr<CreatureSpawner>> Spawners;
+
+	public:
+
+		/// Fired when the world instance is about to be destroyed. TODO: Not fired at the moment.
+		boost::signals2::signal<void()> willBeDestroyed;
 
 	public:
 

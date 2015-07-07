@@ -170,6 +170,7 @@ namespace wowpp
 	typedef object_type::Enum ObjectType;
 
 	class VisibilityTile;
+	class WorldInstance;
 
 	/// 
 	class GameObject
@@ -249,6 +250,17 @@ namespace wowpp
 		const MovementInfo &getMovementInfo() { return m_movementInfo; }
 		void setMovementInfo(const MovementInfo &info) { m_movementInfo = info; }
 
+		/// Gets the world instance of this object. May be nullptr, if the object is
+		/// not in any world.
+		WorldInstance *getWorldInstance() { return m_worldInstance; }
+		/// Sets the world instance of this object. nullptr is valid here, if the object
+		/// is not in any world.
+		void setWorldInstance(WorldInstance *instance);
+
+	protected:
+
+		void onWorldInstanceDestroyed();
+
 	protected:
 
 		std::vector<UInt32> m_values;
@@ -260,7 +272,8 @@ namespace wowpp
 		UInt32 m_objectTypeId;
 		bool m_updated;
 		MovementInfo m_movementInfo;
-
+		WorldInstance *m_worldInstance;
+		boost::signals2::scoped_connection m_worldInstanceDestroyed;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameObject const& object);

@@ -23,8 +23,6 @@
 
 namespace wowpp
 {
-	
-
 	DetourWorldNavigation::DetourWorldNavigation(const String &navMeshFile)
 	{
 
@@ -34,5 +32,4 @@ namespace wowpp
 	{
 
 	}
-
 }

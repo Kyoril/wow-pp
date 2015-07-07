@@ -1,6 +1,6 @@
 cast_times = 
 {
-	(id = 1, time = 0)
+	(id = 1)
 	(id = 2, time = 250)
 	(id = 3, time = 500)
 	(id = 4, time = 1000)
@@ -51,7 +51,7 @@ cast_times =
 	(id = 170, time = 8000)
 	(id = 171, time = 6000)
 	(id = 190, time = 100)
-	(id = 191, time = 0)
+	(id = 191)
 	(id = 192, time = 15000)
 	(id = 193, time = 12000)
 	(id = 194, time = -1000000)

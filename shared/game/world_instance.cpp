@@ -235,7 +235,8 @@ namespace wowpp
 
 		// Add to the tile
 		tile.getGameObjects().add(&added);
-		
+		added.setWorldInstance(this);
+
 		// Create update packet
 		std::vector<std::vector<char>> blocks;
 		createUpdateBlocks(added, blocks);
@@ -279,6 +280,7 @@ namespace wowpp
 
 		// Remove game object from the object list
 		m_objectsById.erase(guid);
+		remove.setWorldInstance(nullptr);
 
 		// Notify absout despawn
 		remove.despawned();

@@ -91,7 +91,7 @@ namespace wowpp
 		TileIndex2D getTileIndex() const;
 
 		/// 
-		void castSpell(const SpellEntry *spell, Int64 castTime, UInt8 castCount, SpellTargetMap targetMap);
+		//void castSpell(const SpellEntry *spell, Int64 castTime, UInt8 castCount, SpellTargetMap targetMap);
 		
 		/// Sends an proxy packet to the realm which will then be redirected to the game client.
 		/// @param generator Packet writer function pointer.
@@ -142,10 +142,10 @@ namespace wowpp
 
 		/// 
 		void onLogout();
-		/// 
-		void onCast();
 		/// Executed when the player character spawned.
 		void onSpawn();
+		/// Executed when the player character despawned.
+		void onDespawn();
 		/// Executed when the player character will move from one grid tile to another one.
 		void onTileChangePending(VisibilityTile &oldTile, VisibilityTile &newTile);
 
@@ -157,9 +157,6 @@ namespace wowpp
 		DatabaseId m_characterId;
 		std::shared_ptr<GameCharacter> m_character;
 		Countdown m_logoutCountdown;
-		Countdown m_castCountdown;
 		WorldInstance &m_instance;
-		const SpellEntry *m_spellCast;
-		SpellTargetMap m_spellTarget;
 	};
 }
