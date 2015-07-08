@@ -40,8 +40,10 @@ namespace wowpp
 			Energy			= 0x03,
 			/// Used by hunter pet's - more happiness increases pet damage.
 			Happiness		= 0x04,
+			/// 
+			Health			= 0xFFFFFFFE,
 
-			Count_,
+			Count_			= 0x06,
 			Invalid_ = Count_
 		};
 	}

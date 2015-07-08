@@ -285,6 +285,26 @@ namespace wowpp
 			return;
 		}
 
+		// Create the packet
+		std::vector<char> buffer;
+		io::VectorSink sink(buffer);
+		game::Protocol::OutgoingPacket packet(sink);
+		game::server_write::spellNonMeleeDamageLog(packet, target->getGuid(), caster.getGuid(), m_spell.id, damage, 1, 0, 0, false, 0, false);
+
+		// Send damage notification
+		float x, y, z, o;
+		caster.getLocation(x, y, z, o);
+		TileIndex2D tileIndex;
+		world->getGrid().getTilePosition(x, y, z, tileIndex[0], tileIndex[1]);
+		forEachSubscriberInSight(
+			world->getGrid(),
+			tileIndex,
+			[&packet, &buffer](ITileSubscriber &subscriber)
+		{
+			subscriber.sendPacket(
+				packet, buffer);
+		});
+
 		// Update health value
 		UInt32 health = target->getUInt32Value(unit_fields::Health);
 		if (health > damage)

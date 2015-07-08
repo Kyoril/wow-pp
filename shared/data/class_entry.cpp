@@ -43,7 +43,7 @@ namespace wowpp
 		static_assert(power_type::Focus == 2, "");
 		static_assert(power_type::Energy == 3, "");
 		static_assert(power_type::Happiness == 4, "");
-		static_assert(power_type::Count_ == 5, "");
+		static_assert(power_type::Count_ == 6, "");
 
 		const PowerTypeStrings powerType(strings);
 	}

@@ -170,6 +170,12 @@ namespace wowpp
 		UInt32 castTimeIndex;
 		PowerType powerType;
 		UInt32 cost;
+		Int32 maxLevel;
+		Int32 baseLevel;
+		Int32 spellLevel;
+		float speed;
+		UInt32 schoolMask;
+		UInt32 dmgClass;
 
 		SpellEntry();
 		bool load(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper);

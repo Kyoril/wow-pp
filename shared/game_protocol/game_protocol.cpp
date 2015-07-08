@@ -1025,6 +1025,66 @@ namespace wowpp
 				out_packet.start(game::server_packet::CooldownEvent);
 				out_packet.finish();
 			}
+
+			void spellNonMeleeDamageLog(game::OutgoingPacket &out_packet, UInt64 targetGuid, UInt64 casterGuid, UInt32 spellID, UInt32 damage, UInt8 damageSchoolMask, UInt32 absorbedDamage, UInt32 resistedDamage, bool PhysicalDamage, UInt32 blockedDamage, bool criticalHit)
+			{
+				out_packet.start(game::server_packet::SpellNonMeleeDamageLog);
+				// Target GUID
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; targetGuid != 0; ++i)
+					{
+						if (targetGuid & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(targetGuid & 0xFF);
+							++size;
+						}
+
+						targetGuid >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+				// Caster GUID
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; casterGuid != 0; ++i)
+					{
+						if (casterGuid & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(casterGuid & 0xFF);
+							++size;
+						}
+
+						casterGuid >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+				out_packet
+					<< io::write<NetUInt32>(spellID)
+					<< io::write<NetUInt32>(damage - absorbedDamage - resistedDamage - blockedDamage)
+					<< io::write<NetUInt8>(damageSchoolMask)
+					<< io::write<NetUInt32>(absorbedDamage)
+					<< io::write<NetUInt32>(resistedDamage)
+					<< io::write<NetUInt8>(PhysicalDamage)
+					<< io::write<NetUInt8>(0)
+					<< io::write<NetUInt32>(blockedDamage)
+					<< io::write<NetUInt32>(criticalHit ? 0x27 : 0x25)
+					<< io::write<NetUInt8>(0);
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read

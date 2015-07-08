@@ -153,14 +153,12 @@ namespace wowpp
 				SetProficiency			= 0x127,
 				ActionButtons			= 0x129,
 				InitialSpells			= 0x12A,
-
 				CastFailed				= 0x130,
 				SpellStart				= 0x131,
 				SpellGo					= 0x132,
 				SpellFailure			= 0x133,
 				SpellCooldown			= 0x134,
 				CooldownEvent			= 0x135,
-
 				BindPointUpdate			= 0x155,
 				Pong					= 0x1DD,
 				AuthChallenge			= 0x1EC,
@@ -169,6 +167,7 @@ namespace wowpp
 				AccountDataTimes		= 0x209,
 				SetRestStart			= 0x21E,
 				LoginVerifyWorld		= 0x236,
+				SpellNonMeleeDamageLog	= 0x250,
 				StandStateUpdate		= 0x29D,
 				ChatPlayerNotFound		= 0x2A9,
 				InitWorldStates			= 0x2C2,
@@ -751,6 +750,20 @@ namespace wowpp
 			void cooldownEvent(
 				game::OutgoingPacket &out_packet
 				//TODO
+				);
+
+			void spellNonMeleeDamageLog(
+				game::OutgoingPacket &out_packet,
+				UInt64 targetGuid,
+				UInt64 casterGuid,
+				UInt32 spellID,
+				UInt32 damage,
+				UInt8 damageSchoolMask,
+				UInt32 absorbedDamage,
+				UInt32 resistedDamage,
+				bool PhysicalDamage,
+				UInt32 blockedDamage,
+				bool criticalHit
 				);
 		};
 	}

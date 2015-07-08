@@ -26,11 +26,23 @@
 
 namespace wowpp
 {
+	std::array<UInt32, 6> attributesEx;
+
+
 	SpellEntry::SpellEntry()
 		: attributes(0)
 		, cooldown(0)
 		, castTimeIndex(1)
+		, powerType(power_type::Mana)
+		, cost(0)
+		, maxLevel(0)
+		, baseLevel(0)
+		, spellLevel(0)
+		, speed(0.0f)
+		, schoolMask(0.0f)
+		, dmgClass(0.0f)
 	{
+		attributesEx.fill(0);
 	}
 
 	bool SpellEntry::load(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper)
@@ -51,10 +63,16 @@ namespace wowpp
 		wrapper.table.tryGetInteger("name", name);
 		wrapper.table.tryGetInteger("cast_time", castTimeIndex);
 		wrapper.table.tryGetInteger("cooldown", cooldown);
-		UInt32 powerTypeValue = 0;
+		Int32 powerTypeValue = 0;
 		wrapper.table.tryGetInteger("power", powerTypeValue);
 		powerType = static_cast<PowerType>(powerTypeValue);
 		wrapper.table.tryGetInteger("cost", cost);
+		wrapper.table.tryGetInteger("max_level", maxLevel);
+		wrapper.table.tryGetInteger("base_level", baseLevel);
+		wrapper.table.tryGetInteger("spell_level", spellLevel);
+		wrapper.table.tryGetInteger("speed", speed);
+		wrapper.table.tryGetInteger("school_mask", schoolMask);
+		wrapper.table.tryGetInteger("dmg_class", dmgClass);
 
 		const sff::read::tree::Array<DataFileIterator> *effectsArray = wrapper.table.getArray("effects");
 		if (effectsArray)
@@ -116,8 +134,14 @@ namespace wowpp
 		}
 		if (castTimeIndex != 1) context.table.addKey("cast_time", castTimeIndex);
 		if (cooldown != 0) context.table.addKey("cooldown", cooldown);
-		if (powerType != power_type::Mana) context.table.addKey("power", powerType);
+		if (powerType != power_type::Mana) context.table.addKey("power", static_cast<Int32>(powerType));
 		if (cost != 0) context.table.addKey("cost", cost);
+		if (maxLevel != 0) context.table.addKey("max_level", maxLevel);
+		if (baseLevel != 0) context.table.addKey("base_level", baseLevel);
+		if (spellLevel != 0) context.table.addKey("spell_level", spellLevel);
+		if (speed != 0.0f) context.table.addKey("speed", speed);
+		if (schoolMask != 0) context.table.addKey("school_mask", schoolMask);
+		if (dmgClass != 0) context.table.addKey("dmg_class", dmgClass);
 
 		// Write spell effects
 		if (!effects.empty())
