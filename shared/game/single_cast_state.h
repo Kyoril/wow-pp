@@ -23,6 +23,7 @@
 
 #include "spell_cast.h"
 #include "common/countdown.h"
+#include "data/spell_entry.h"
 #include "boost/signals2.hpp"
 #include <memory>
 
@@ -47,6 +48,10 @@ namespace wowpp
 		void stopCast() override;
 		void onUserStartsMoving() override;
 		SpellCasting &getCasting() { return m_casting; }
+
+	private:
+
+		void spellEffectSchoolDamage(const SpellEntry::Effect &effect);
 
 	private:
 

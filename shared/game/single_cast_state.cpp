@@ -25,12 +25,14 @@
 #include "common/clock.h"
 #include "log/default_log_levels.h"
 #include "world_instance.h"
+#include "game/defines.h"
 #include "visibility_grid.h"
 #include "visibility_tile.h"
 #include "each_tile_in_sight.h"
 #include "binary_io/vector_sink.h"
 #include "game_protocol/game_protocol.h"
 #include <boost/iterator/indirect_iterator.hpp>
+#include <random>
 
 namespace wowpp
 {
@@ -139,8 +141,6 @@ namespace wowpp
 
 	void SingleCastState::sendEndCast(bool success)
 	{
-		DLOG("Spell cast for " << m_spell.id << " finished! Success: " << success);
-
 		auto &executer = m_cast.getExecuter();
 		auto *worldInstance = executer.getWorldInstance();
 		if (!worldInstance)
@@ -193,6 +193,30 @@ namespace wowpp
 		const std::weak_ptr<char> isAlive = m_isAlive;
 
 		// TODO: Apply spell effects on all targets
+		namespace se = game::spell_effects;
+		for (auto &effect : m_spell.effects)
+		{
+			switch (effect.type)
+			{
+				case se::SchoolDamage:
+				{
+					spellEffectSchoolDamage(effect);
+					break;
+				}
+
+				case se::Heal:
+				{
+
+					break;
+				}
+
+				default:
+				{
+					WLOG("Spell effect " << game::constant_literal::spellEffectNames.getName(effect.type) << " not yet implemented");
+					break;
+				}
+			}
+		}
 		
 		if (isAlive.lock())
 		{
@@ -211,4 +235,62 @@ namespace wowpp
 		// This is only triggerd if the spell has the attribute
 		stopCast();
 	}
+
+	static std::default_random_engine generator;
+
+	void SingleCastState::spellEffectSchoolDamage(const SpellEntry::Effect &effect)
+	{	
+		// Calculate the damage done
+		const float basePointsPerLevel = effect.pointsPerLevel;
+		const Int32 basePoints = effect.basePoints;
+		const Int32 randomPoints = effect.dieSides;
+
+		std::uniform_int_distribution<int> distribution(effect.baseDice, randomPoints);
+		const Int32 randomValue = (effect.baseDice >= randomPoints ? effect.baseDice : distribution(generator));
+
+		UInt32 damage = basePoints + randomValue;
+
+		// TODO: Apply combo point damage
+
+		// TODO: Apply spell mods
+
+		// Resolve GUIDs
+		GameObject *target = nullptr;
+		GameUnit &caster = m_cast.getExecuter();
+		auto *world = caster.getWorldInstance();
+
+		if (m_target.getTargetMap() & game::spell_cast_target_flags::Self)
+			target = &caster;
+		else if (world)
+		{
+			UInt64 targetGuid = 0;
+			if (m_target.hasUnitTarget())
+				targetGuid = m_target.getUnitTarget();
+			else if (m_target.hasGOTarget())
+				targetGuid = m_target.getGOTarget();
+			else if (m_target.hasItemTarget())
+				targetGuid = m_target.getItemTarget();
+			
+			if (targetGuid != 0)
+				target = world->findObjectByGUID(targetGuid);
+		}
+
+		// Check target
+		if (!target)
+		{
+			WLOG("EFFECT_SCHOOL_DAMAGE: No valid target found!");
+			return;
+		}
+
+		// Update health value
+		UInt32 health = target->getUInt32Value(unit_fields::Health);
+		if (health > damage)
+			health -= damage;
+		else
+			health = 0;
+		target->setUInt32Value(unit_fields::Health, health);
+
+		DLOG("EFFECT_SCHOOL_DAMAGE: " << damage);
+	}
+
 }

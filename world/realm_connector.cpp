@@ -651,7 +651,7 @@ namespace wowpp
 		{
 			// Find that creature
 			GameObject *obj = sender.getWorldInstance().findObjectByGUID(targetGUID);
-			if (obj)
+			if (obj && obj->getUInt32Value(unit_fields::Health) > 0)
 			{
 				// Make that creature select us, too! (Just for testing)
 				obj->setUInt64Value(unit_fields::Target, sender.getCharacterGuid());
