@@ -25,6 +25,7 @@
 #include "game/game_unit.h"
 #include "common/erase_by_move.h"
 #include "log/default_log_levels.h"
+#include "common/utilities.h"
 #include <memory>
 #include <cassert>
 
@@ -83,8 +84,10 @@ namespace wowpp
 		spawned->setFloatValue(object_fields::ScaleX, m_entry.scale);
 		spawned->clearUpdateMask();
 
-		//TODO: watch for removal
-
+		// watch for removal
+		spawned->despawned.connect(
+			std::bind(&CreatureSpawner::onRemoval, this, std::placeholders::_1));
+		
 		m_world.addGameObject(*spawned);
 
 		// Remember that creature
@@ -98,7 +101,7 @@ namespace wowpp
 		setRespawnTimer();
 	}
 
-	void CreatureSpawner::onRemoval(GameUnit &removed)
+	void CreatureSpawner::onRemoval(GameObject &removed)
 	{
 		--m_currentlySpawned;
 
@@ -112,6 +115,8 @@ namespace wowpp
 
 		assert(i != m_creatures.end());
 		eraseByMove(m_creatures, i);
+
+		setRespawnTimer();
 	}
 
 	void CreatureSpawner::setRespawnTimer()

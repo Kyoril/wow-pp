@@ -29,6 +29,7 @@
 namespace wowpp
 {
 	class WorldInstance;
+	class GameObject;
 	class GameUnit;
 
 	/// Manages a spawn point and all creatures which are spawned by this point info.
@@ -65,7 +66,7 @@ namespace wowpp
 		/// Callback which is fired after a respawn delay invalidated.
 		void onSpawnTime();
 		/// Callback which is fired after a creature despawned.
-		void onRemoval(GameUnit &removed);
+		void onRemoval(GameObject &removed);
 		/// Setup a new respawn timer.
 		void setRespawnTimer();
 

@@ -31,6 +31,7 @@
 #include "binary_io/vector_sink.h"
 #include <boost/bind/bind.hpp>
 #include "each_tile_in_sight.h"
+#include "common/utilities.h"
 #include <algorithm>
 #include <array>
 #include <memory>
@@ -144,23 +145,41 @@ namespace wowpp
 		spawned->setMapId(m_mapEntry.id);
 		spawned->relocate(x, y, z, o);
 
-		spawned->setLevel(entry.minLevel);
-		spawned->setClass(entry.unitClass);														//TODO
+
+		// Choose a level
+		UInt8 creatureLevel = entry.minLevel;
+		if (entry.maxLevel != entry.minLevel)
+		{
+			std::uniform_int_distribution<int> levelDistribution(entry.minLevel, entry.maxLevel);
+			creatureLevel = levelDistribution(randomGenerator);
+		}
+
+		// calculate interpolation factor
+		const float t =
+			(entry.maxLevel != entry.minLevel) ?
+				(creatureLevel - entry.minLevel) / (entry.maxLevel - entry.minLevel) :
+				0.0f;
+
+		// Randomize gender
+		std::uniform_int_distribution<int> genderDistribution(0, 1);
+		int gender = genderDistribution(randomGenerator);
+
+		spawned->setLevel(creatureLevel);
+		spawned->setClass(entry.unitClass);
 		spawned->setUInt32Value(object_fields::Entry, entry.id);
 		spawned->setFloatValue(object_fields::ScaleX, entry.scale);
-		spawned->setUInt32Value(unit_fields::FactionTemplate, entry.hordeFactionID);			//TODO
-		spawned->setGender(game::gender::Male);
-		//spawned->setUInt32Value(unit_fields::Bytes0, 0x00020000);								//TODO
-		spawned->setUInt32Value(unit_fields::DisplayId, entry.maleModel);						//TODO
-		spawned->setUInt32Value(unit_fields::NativeDisplayId, entry.maleModel);					//TODO
+		spawned->setUInt32Value(unit_fields::FactionTemplate, entry.hordeFactionID);
+		spawned->setGender(static_cast<game::Gender>(gender));
+		spawned->setUInt32Value(unit_fields::DisplayId, (gender == game::gender::Male ? entry.maleModel : entry.femaleModel));
+		spawned->setUInt32Value(unit_fields::NativeDisplayId, (gender == game::gender::Male ? entry.maleModel : entry.femaleModel));
 		spawned->setUInt32Value(unit_fields::BaseHealth, 20);									//TODO
-		spawned->setUInt32Value(unit_fields::Health, entry.minLevelHealth);
-		spawned->setUInt32Value(unit_fields::MaxHealth, entry.minLevelHealth);
-		//spawned->setUInt32Value(unit_fields::Bytes2, 0x00001001);								//TODO
+		spawned->setUInt32Value(unit_fields::MaxHealth, interpolate(entry.minLevelHealth, entry.maxLevelHealth, t));
+		spawned->setUInt32Value(unit_fields::Health, spawned->getUInt32Value(unit_fields::MaxHealth));
+		spawned->setUInt32Value(unit_fields::MaxPower1, interpolate(entry.minLevelMana, entry.maxLevelMana, t));
+		spawned->setUInt32Value(unit_fields::Power1, spawned->getUInt32Value(unit_fields::MaxPower1));
+
 		spawned->setUInt32Value(unit_fields::UnitFlags, entry.unitFlags);
 		spawned->setUInt32Value(unit_fields::NpcFlags, entry.npcFlags);
-		//spawned->setUInt32Value(unit_fields::UnitFlags2, entry.extraFlags);
-		
 		spawned->setByteValue(unit_fields::Bytes2, 1, 16);
 
 		return spawned;
@@ -277,18 +296,18 @@ namespace wowpp
 		auto &tile = m_visibilityGrid->requireTile(gridIndex);
 		tile.getGameObjects().remove(&remove);
 
-		// Remove game object from the object list
-		m_objectsById.erase(guid);
-		remove.setWorldInstance(nullptr);
-
-		// Notify absout despawn
-		remove.despawned();
-
-		// Create the chat packet
+		// Create the packet
 		std::vector<char> buffer;
 		io::VectorSink sink(buffer);
 		game::Protocol::OutgoingPacket packet(sink);
 		game::server_write::destroyObject(packet, remove.getGuid(), false);
+
+		// Remove game object from the object list
+		m_objectsById.erase(guid);
+		remove.setWorldInstance(nullptr);
+
+		// Notify absout despawn (Warning: This can (and probably will) make 'remove' invalid!)
+		remove.despawned(remove);
 
 		// Despawn for watchers
 		forEachTileInSight(

@@ -21,6 +21,7 @@
 
 #include "game_unit.h"
 #include "log/default_log_levels.h"
+#include "world_instance.h"
 #include <cassert>
 
 namespace wowpp
@@ -37,6 +38,7 @@ namespace wowpp
 		, m_getLevel(getLevel)
 		, m_raceEntry(nullptr)
 		, m_classEntry(nullptr)
+		, m_despawnCountdown(timers)
 	{
 		// Resize values field
 		m_values.resize(unit_fields::UnitFieldCount);
@@ -44,6 +46,10 @@ namespace wowpp
 
 		// Create spell caster
 		m_spellCast.reset(new SpellCast(m_timers, *this));
+
+		// Setup despawn countdown
+		m_despawnCountdown.ended.connect(
+			std::bind(&GameUnit::onDespawnTimer, this));
 	}
 
 	GameUnit::~GameUnit()
@@ -200,6 +206,21 @@ namespace wowpp
 	void GameUnit::castSpell(SpellTargetMap target, const SpellEntry &spell, GameTime castTime)
 	{
 		wowpp::castSpell(*m_spellCast, spell, std::move(target), castTime);
+	}
+
+	void GameUnit::onDespawnTimer()
+	{
+		if (m_worldInstance)
+		{
+			m_worldInstance->removeGameObject(*this);
+		}
+	}
+
+	void GameUnit::triggerDespawnTimer(GameTime despawnDelay)
+	{
+		// Start despawn countdown (may override previous countdown)
+		m_despawnCountdown.setEnd(
+			getCurrentTime() + despawnDelay);
 	}
 
 

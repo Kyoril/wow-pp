@@ -183,7 +183,7 @@ namespace wowpp
 		/// Fired when the object was added to a world instance and spawned.
 		boost::signals2::signal<void()> spawned;
 		/// Fired when the object was removed from a world instance and despawned.
-		boost::signals2::signal<void()> despawned;
+		boost::signals2::signal<void(GameObject &)> despawned;
 		/// Fired when the object moved, but before it's tile changed. Note that this will trigger a tile change.
 		boost::signals2::signal<void(GameObject &, float, float, float, float)> moved;
 		/// Fired when a tile change is pending for this object, after it has been moved. Note that at this time,

@@ -29,6 +29,7 @@
 #include "game/defines.h"
 #include "data/data_load_context.h"
 #include "common/timer_queue.h"
+#include "common/countdown.h"
 #include "spell_cast.h"
 #include "spell_target_map.h"
 #include <boost/signals2.hpp>
@@ -159,8 +160,9 @@ namespace wowpp
 
 	public:
 
-		/// Fired when a spell cast was successfull. Can be used to create network packets.
-		boost::signals2::signal<void(GameUnit &, SpellEntry &spell)> spellCastGo;
+		/// Fired when this unit was killed. Parameter: GameUnit* killer (may be nullptr if killer 
+		/// information is not available (for example due to environmental damage))
+		boost::signals2::signal<void(GameUnit*)> killed;
 
 	public:
 
@@ -192,6 +194,8 @@ namespace wowpp
 		virtual ObjectType getTypeId() const override { return object_type::Unit; }
 
 		void castSpell(SpellTargetMap target, const SpellEntry &spell, GameTime castTime);
+		/// TODO: Move the logic of this method somewhere else.
+		void triggerDespawnTimer(GameTime despawnDelay);
 
 	protected:
 
@@ -202,6 +206,7 @@ namespace wowpp
 		void raceUpdated();
 		void classUpdated();
 		void updateDisplayIds();
+		void onDespawnTimer();
 
 	private:
 
@@ -209,10 +214,10 @@ namespace wowpp
 		DataLoadContext::GetRace m_getRace;
 		DataLoadContext::GetClass m_getClass;
 		DataLoadContext::GetLevel m_getLevel;
-
 		const RaceEntry *m_raceEntry;
 		const ClassEntry *m_classEntry;
 		std::unique_ptr<SpellCast> m_spellCast;
+		Countdown m_despawnCountdown;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameUnit const& object);

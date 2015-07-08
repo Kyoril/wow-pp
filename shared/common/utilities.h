@@ -26,9 +26,12 @@
 #include <functional> 
 #include <cctype>
 #include <locale>
+#include <random>
 
 namespace wowpp
 {
+	static std::default_random_engine randomGenerator;
+
 	template <class T>
 	T limit(T value, T min, T max)
 	{
@@ -56,5 +59,22 @@ namespace wowpp
 	{
 		std::transform(word.begin(), word.end(), word.begin(), ::tolower);
 		word[0] = std::toupper(word[0]);
+	}
+
+	template<class T>
+	T interpolate(T min, T max, float t)
+	{
+		// Some optimization
+		if (t <= 0.0f)
+		{
+			return min;
+		}
+		else if (t >= 1.0f)
+		{
+			return max;
+		}
+
+		// Linear interpolation
+		return min + (max - min) * t;
 	}
 }

@@ -25,6 +25,7 @@
 #include "common/clock.h"
 #include "log/default_log_levels.h"
 #include "world_instance.h"
+#include "common/utilities.h"
 #include "game/defines.h"
 #include "visibility_grid.h"
 #include "visibility_tile.h"
@@ -236,8 +237,6 @@ namespace wowpp
 		stopCast();
 	}
 
-	static std::default_random_engine generator;
-
 	void SingleCastState::spellEffectSchoolDamage(const SpellEntry::Effect &effect)
 	{	
 		// Calculate the damage done
@@ -246,7 +245,7 @@ namespace wowpp
 		const Int32 randomPoints = effect.dieSides;
 
 		std::uniform_int_distribution<int> distribution(effect.baseDice, randomPoints);
-		const Int32 randomValue = (effect.baseDice >= randomPoints ? effect.baseDice : distribution(generator));
+		const Int32 randomValue = (effect.baseDice >= randomPoints ? effect.baseDice : distribution(randomGenerator));
 
 		UInt32 damage = basePoints + randomValue;
 
@@ -256,6 +255,7 @@ namespace wowpp
 
 		// Resolve GUIDs
 		GameObject *target = nullptr;
+		GameUnit *unitTarget = nullptr;
 		GameUnit &caster = m_cast.getExecuter();
 		auto *world = caster.getWorldInstance();
 
@@ -273,6 +273,9 @@ namespace wowpp
 			
 			if (targetGuid != 0)
 				target = world->findObjectByGUID(targetGuid);
+
+			if (m_target.hasUnitTarget() && isUnitGUID(targetGuid))
+				unitTarget = reinterpret_cast<GameUnit*>(target);
 		}
 
 		// Check target
@@ -288,7 +291,13 @@ namespace wowpp
 			health -= damage;
 		else
 			health = 0;
+
 		target->setUInt32Value(unit_fields::Health, health);
+		if (health == 0 && unitTarget)
+		{
+			unitTarget->killed(&caster);
+			unitTarget->triggerDespawnTimer(constants::OneSecond * 30);
+		}
 
 		DLOG("EFFECT_SCHOOL_DAMAGE: " << damage);
 	}
