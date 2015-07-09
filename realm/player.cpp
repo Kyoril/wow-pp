@@ -119,20 +119,6 @@ namespace wowpp
 
 		//TODO: Load tutorials data
 
-		// Load characters
-		m_characters.clear();
-		if (!m_database.getCharacters(m_accountId, m_characters))
-		{
-			// Disconnect
-			destroy();
-			return;
-		}
-
-		for (auto &c : m_characters)
-		{
-			c.id = createRealmGUID(guidLowerPart(c.id), m_loginConnector.getRealmID(), guid_type::Player);
-		}
-
 		// Send response code: AuthOk
 		sendPacket(
 			std::bind(game::server_write::authResponse, std::placeholders::_1, game::response_code::AuthOk, game::expansions::TheBurningCrusade));
@@ -293,6 +279,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(DeleteFriend, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(AddIgnore, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(DeleteIgnore, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(ItemQuerySingle, game::session_status::LoggedIn)
 #undef WOWPP_HANDLE_PACKET
 
 			default:
@@ -368,6 +355,22 @@ namespace wowpp
 			return;
 		}
 
+		// TODO: Flood protection
+
+		// Load characters
+		m_characters.clear();
+		if (!m_database.getCharacters(m_accountId, m_characters))
+		{
+			// Disconnect
+			destroy();
+			return;
+		}
+
+		for (auto &c : m_characters)
+		{
+			c.id = createRealmGUID(guidLowerPart(c.id), m_loginConnector.getRealmID(), guid_type::Player);
+		}
+
 		// Send character list
 		sendPacket(
 			std::bind(game::server_write::charEnum, std::placeholders::_1, std::cref(m_characters)));
@@ -389,6 +392,8 @@ namespace wowpp
 				std::bind(game::server_write::charCreate, std::placeholders::_1, game::response_code::CharCreateError));
 			return;
 		}
+
+		// TODO: Check for invalid characters (numbers, white spaces etc.)
 
 		// Capitalize the characters name
 		capitalize(character.name);
@@ -412,6 +417,20 @@ namespace wowpp
 			sendPacket(
 				std::bind(game::server_write::charCreate, std::placeholders::_1, game::response_code::CharCreateError));
 			return;
+		}
+
+		auto it1 = race->initialItems.find(character.class_);
+		if (it1 != race->initialItems.end())
+		{
+			auto it2 = it1->second.find(character.gender);
+			if (it2 != it1->second.end())
+			{
+				// Found it - enumerate items
+				for (const auto *item : it2->second)
+				{
+					DLOG("\tCREATE INITIAL ITEM: " << item->id << " - " << item->name);
+				}
+			}
 		}
 
 		// Update character location
@@ -1199,4 +1218,34 @@ namespace wowpp
 
 		DLOG("TODO: Player " << m_accountName << " wants to delete " << guid << " from his ignore list");
 	}
+
+	void Player::handleItemQuerySingle(game::IncomingPacket &packet)
+	{
+		// Object guid
+		UInt32 itemID;
+		if (!game::client_read::itemQuerySingle(packet, itemID))
+		{
+			// Could not read packet
+			return;
+		}
+
+		// Find item
+		const ItemEntry *item = m_project.items.getById(itemID);
+		if (item)
+		{
+			// Write answer
+			ILOG("WORLD: CMSG_ITEM_QUERY_SINGLE '" << item->name << "' - Entry: " << itemID << ".");
+
+			// TODO: Cache multiple query requests and send one, bigger response with multiple items
+
+			// Write answer packet
+			sendPacket(
+				std::bind(game::server_write::itemQuerySingleResponse, std::placeholders::_1, std::cref(*item)));
+		}
+		else
+		{
+			WLOG("WORLD: CMSG_ITEM_QUERY_SINGLE - Entry: " << itemID << " NO ITEM INFO!");
+		}
+	}
+
 }

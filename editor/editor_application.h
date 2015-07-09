@@ -42,6 +42,7 @@ namespace wowpp
 
 		public:
 
+			typedef TemplateListModel<ItemEntryManager> ItemListModel;
 			typedef TemplateListModel<SpellEntryManager> SpellListModel;
 			typedef TemplateListModel<MapEntryManager> MapListModel;
 			typedef TemplateListModel<UnitEntryManager> UnitListModel;
@@ -58,6 +59,7 @@ namespace wowpp
 			/// @returns True, if the shutdown request was accepted, false otherwise.
 			bool shutdown();
 
+			ItemListModel *getItemListModel() { return m_itemListModel.get(); }
 			SpellListModel *getSpellListModel() { return m_spellListModel.get(); }
 			MapListModel *getMapListModel() { return m_mapListModel.get(); }
 			UnitListModel *getUnitListModel() { return m_unitListModel.get(); }
@@ -87,6 +89,7 @@ namespace wowpp
 			std::unique_ptr<ObjectEditor> m_objectEditor;
 			std::unique_ptr<TriggerEditor> m_triggerEditor;
 			Project m_project;
+			std::unique_ptr<ItemListModel> m_itemListModel;
 			std::unique_ptr<SpellListModel> m_spellListModel;
 			std::unique_ptr<MapListModel> m_mapListModel;
 			std::unique_ptr<UnitListModel> m_unitListModel;

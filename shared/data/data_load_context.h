@@ -35,6 +35,8 @@ namespace wowpp
 	struct LevelEntry;
 	struct CreatureTypeEntry;
 	struct UnitEntry;
+	struct SpellEntry;
+	struct ItemEntry;
 
 	struct DataLoadContext : BasicTemplateLoadContext
 	{
@@ -45,12 +47,16 @@ namespace wowpp
 		typedef std::function<const LevelEntry * (UInt32)> GetLevel;
 		typedef std::function<const CreatureTypeEntry * (UInt32)> GetCreatureType;
 		typedef std::function<const UnitEntry * (UInt32)> GetUnit;
+		typedef std::function<const SpellEntry * (UInt32)> GetSpell;
+		typedef std::function<const ItemEntry * (UInt32)> GetItem;
 
 		GetMap getMap;
 		GetRace getRace;
 		GetClass getClass;
 		GetCreatureType getCreatureType;
 		GetUnit getUnit;
+		GetSpell getSpell;
+		GetItem getItem;
 
 		explicit DataLoadContext(
 		    boost::filesystem::path realmDataPath

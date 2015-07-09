@@ -36,6 +36,8 @@ namespace wowpp
 		// Resize values field
 		m_values.resize(character_fields::CharacterFieldCount);
 		m_valueBitset.resize((character_fields::CharacterFieldCount + 31) / 32);
+
+		m_objectType |= type_mask::Player;
 	}
 
 	GameCharacter::~GameCharacter()

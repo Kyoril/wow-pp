@@ -22,6 +22,8 @@
 #include "race_entry.h"
 #include "templates/basic_template_load_context.h"
 #include "templates/basic_template_save_context.h"
+#include "item_entry.h"
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -29,7 +31,7 @@ namespace wowpp
 	{
 	}
 
-	bool RaceEntry::load(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper)
+	bool RaceEntry::load(DataLoadContext &context, const ReadTableWrapper &wrapper)
 	{
 		if (!Super::loadBase(context, wrapper))
 		{
@@ -91,6 +93,77 @@ namespace wowpp
 					for (size_t x = 0, y = spellArray->getSize(); x < y; ++x)
 					{
 						spellIds[x] = spellArray->getInteger(x, 0xffff);
+					}
+				}
+			}
+		}
+
+		const sff::read::tree::Array<DataFileIterator> *initialItemsArray = wrapper.table.getArray("initial_items");
+		if (initialItemsArray)
+		{
+			for (size_t j = 0, d = initialItemsArray->getSize(); j < d; ++j)
+			{
+				const sff::read::tree::Table<DataFileIterator> *const entryTable = initialItemsArray->getTable(j);
+				if (!entryTable)
+				{
+					context.onError("Invalid initial items table");
+					return false;
+				}
+
+				// Get class id
+				UInt32 classId;
+				if (!entryTable->tryGetInteger("class", classId))
+				{
+					context.onError("Invalid class entry");
+					return false;
+				}
+
+				UInt32 genderId;
+				if (!entryTable->tryGetInteger("gender", genderId))
+				{
+					context.onError("Invalid gender id");
+					return false;
+				}
+
+				auto it = initialItems.find(classId);
+				if (it != initialItems.end())
+				{
+					auto it2 = it->second.find(genderId);
+					if (it2 != it->second.end())
+					{
+						context.onError("Duplicate entry: There already is an initial item list for that race/class/gender combination.");
+						return false;
+					}
+				}
+
+				const sff::read::tree::Array<DataFileIterator> *itemArray = entryTable->getArray("items");
+				if (!itemArray)
+				{
+					context.onError("Missing items array!");
+					return false;
+				}
+
+				// Load items later
+				for (size_t x = 0; x < itemArray->getSize(); ++x)
+				{
+					UInt32 itemId = itemArray->getInteger(x, 0);
+					if (itemId > 0)
+					{
+						context.loadLater.push_back(
+							[classId, genderId, itemId, this, &context]() -> bool
+						{
+							const ItemEntry * item = context.getItem(itemId);
+							if (item)
+							{
+								this->initialItems[classId][genderId].push_back(item);
+								return true;
+							}
+							else
+							{
+								ELOG("Unknown item " << itemId << ": Can't be set as initial item");
+								return false;
+							}
+						});
 					}
 				}
 			}

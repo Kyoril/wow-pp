@@ -54,9 +54,11 @@ namespace wowpp
 
 			void on_unitFilter_editingFinished();
 			void on_spellFilter_editingFinished();
+			void on_itemFilter_editingFinished();
 			void onUnitSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void on_unitPropertyWidget_doubleClicked(QModelIndex index);
 			void onSpellSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
+			void onItemSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 
 		private:
 				
@@ -64,6 +66,7 @@ namespace wowpp
 			Ui::ObjectEditor *m_ui;
 			QSortFilterProxyModel *m_unitFilter;
 			QSortFilterProxyModel *m_spellFilter;
+			QSortFilterProxyModel *m_itemFilter;
 			Properties m_properties;
 			PropertyViewModel *m_viewModel;
 		};

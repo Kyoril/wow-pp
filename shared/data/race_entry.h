@@ -23,12 +23,19 @@
 
 #include "templates/basic_template.h"
 #include "game/action_button.h"
+#include "data_load_context.h"
 
 namespace wowpp
 {
+	struct ItemEntry;
+
 	struct RaceEntry : BasicTemplate<UInt32>
 	{
 		typedef BasicTemplate<UInt32> Super;
+
+		typedef std::vector<const ItemEntry*> InitialItemVector;
+		typedef std::map<UInt32, InitialItemVector> GenderItemMap;
+		typedef std::map<UInt32, GenderItemMap> ClassGenderItemMap;
 
 		typedef std::vector<UInt16> InitialSpellIds;
 		typedef std::map<UInt32, InitialSpellIds> InitialClassSpellMap;
@@ -43,13 +50,14 @@ namespace wowpp
 		UInt32 cinematic;
 		InitialClassSpellMap initialSpells;
 		InitialActionButtonsMap initialActionButtons;
+		ClassGenderItemMap initialItems;		// initialItems[class][gender][item_index]
 		UInt32 startMap;
 		UInt32 startZone;
 		std::array<float, 3> startPosition;
 		float startRotation;
 
 		RaceEntry();
-		bool load(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper);
+		bool load(DataLoadContext &context, const ReadTableWrapper &wrapper);
 		void save(BasicTemplateSaveContext &context) const;
 	};
 }

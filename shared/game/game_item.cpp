@@ -23,5 +23,22 @@
 
 namespace wowpp
 {
+	GameItem::GameItem()
+		: GameObject()
+	{
+		// Resize values field
+		m_values.resize(item_fields::ItemFieldCount);
+		m_valueBitset.resize((item_fields::ItemFieldCount + 31) / 32);
 
+		// 2.3.2 - 0x18
+		m_objectType |= type_mask::Item;
+	}
+
+	GameItem::~GameItem()
+	{
+	}
+
+	void GameItem::initialize()
+	{
+	}
 }

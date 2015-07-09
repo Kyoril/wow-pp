@@ -53,6 +53,11 @@ namespace wowpp
 			m_spellFilter = new QSortFilterProxyModel;
 			m_spellFilter->setSourceModel(app.getSpellListModel());
 			m_ui->spellsListView->setModel(m_spellFilter);
+
+			// Automatically deleted since it's a QObject
+			m_itemFilter = new QSortFilterProxyModel;
+			m_itemFilter->setSourceModel(app.getItemListModel());
+			m_ui->itemsListView->setModel(m_itemFilter);
 			
 			connect(m_ui->unitsListView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
@@ -60,6 +65,9 @@ namespace wowpp
 			connect(m_ui->spellsListView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
 				this, SLOT(onSpellSelectionChanged(QItemSelection, QItemSelection)));
+			connect(m_ui->itemsListView->selectionModel(),
+				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+				this, SLOT(onItemSelectionChanged(QItemSelection, QItemSelection)));
 
 			connect(m_ui->actionSave, SIGNAL(triggered()), &m_application, SLOT(saveUnsavedChanges()));
 		}
@@ -80,6 +88,15 @@ namespace wowpp
 
 			QRegExp regExp(m_ui->spellFilter->text(), caseSensitivity, syntax);
 			m_spellFilter->setFilterRegExp(regExp);
+		}
+
+		void ObjectEditor::on_itemFilter_editingFinished()
+		{
+			QRegExp::PatternSyntax syntax = QRegExp::RegExp;
+			Qt::CaseSensitivity caseSensitivity = Qt::CaseInsensitive;
+
+			QRegExp regExp(m_ui->itemFilter->text(), caseSensitivity, syntax);
+			m_itemFilter->setFilterRegExp(regExp);
 		}
 
 		void ObjectEditor::onUnitSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
@@ -292,5 +309,28 @@ namespace wowpp
 				}
 			}
 		}
-	}
+
+		void ObjectEditor::onItemSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
+		{
+			// Get the selected unit
+			if (selection.isEmpty())
+				return;
+
+			QItemSelection source = m_itemFilter->mapSelectionToSource(selection);
+			if (source.isEmpty())
+				return;
+
+			int index = source.indexes().first().row();
+			if (index < 0)
+			{
+				return;
+			}
+
+			// Get item entry
+			ItemEntry *item = m_application.getProject().items.getTemplates().at(index).get();
+			if (!item)
+				return;
+		}
+
+}
 }

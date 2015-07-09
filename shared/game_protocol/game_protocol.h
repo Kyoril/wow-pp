@@ -34,6 +34,7 @@
 #include "game/movement_info.h"
 #include "game/spell_target_map.h"
 #include "data/spell_entry.h"
+#include "data/item_entry.h"
 #include <array>
 #include <vector>
 #include <functional>
@@ -62,6 +63,8 @@ namespace wowpp
 				LogoutRequest			= 0x04B,
 				LogoutCancel			= 0x04E,
 				NameQuery				= 0x050,
+				ItemQuerySingle			= 0x056,
+				ItemQueryMultiple		= 0x057,
 				CreatureQuery			= 0x060,
 				ContactList				= 0x066,
 				AddFriend				= 0x069,
@@ -128,55 +131,57 @@ namespace wowpp
 		{
 			enum
 			{
-				TriggerCinematic		= 0x0FA,
-				CharCreate				= 0x03A,
-				CharEnum				= 0x03B,
-				CharDelete				= 0x03C,
-				CharacterLoginFailed	= 0x041,
-				LoginSetTimeSpeed		= 0x042,
-				LogoutResponse			= 0x04C,
-				LogoutComplete			= 0x04D,
-				LogoutCancelAck			= 0x04F,
-				NameQueryResponse		= 0x051,
-				CreatureQueryResponse	= 0x061,
-				ContactList				= 0x067,
-				FriendStatus			= 0x068,
-				MessageChat				= 0x096,
-				UpdateObject			= 0x0A9,
-				DestroyObject			= 0x0AA,
-				MonsterMove				= 0x0DD,
-				MoveRoot				= 0x0EC,
-				MoveUnroot				= 0x0ED,
-				MoveHeartBeat			= 0x0EE,
-				TutorialFlags			= 0x0FD,
-				InitializeFactions		= 0x122,
-				SetProficiency			= 0x127,
-				ActionButtons			= 0x129,
-				InitialSpells			= 0x12A,
-				CastFailed				= 0x130,
-				SpellStart				= 0x131,
-				SpellGo					= 0x132,
-				SpellFailure			= 0x133,
-				SpellCooldown			= 0x134,
-				CooldownEvent			= 0x135,
-				BindPointUpdate			= 0x155,
-				Pong					= 0x1DD,
-				AuthChallenge			= 0x1EC,
-				AuthResponse			= 0x1EE,
-				CompressedUpdateObject	= 0x1F6,
-				AccountDataTimes		= 0x209,
-				SetRestStart			= 0x21E,
-				LoginVerifyWorld		= 0x236,
-				SpellNonMeleeDamageLog	= 0x250,
-				StandStateUpdate		= 0x29D,
-				ChatPlayerNotFound		= 0x2A9,
-				InitWorldStates			= 0x2C2,
-				AddonInfo				= 0x2EF,
-				SetDungeonDifficulty	= 0x329,
-				Motd					= 0x33D,
-				TimeSyncReq				= 0x390,
-				FeatureSystemStatus		= 0x3C8,
-				UnlearnSpells			= 0x41D
+				TriggerCinematic			= 0x0FA,
+				CharCreate					= 0x03A,
+				CharEnum					= 0x03B,
+				CharDelete					= 0x03C,
+				CharacterLoginFailed		= 0x041,
+				LoginSetTimeSpeed			= 0x042,
+				LogoutResponse				= 0x04C,
+				LogoutComplete				= 0x04D,
+				LogoutCancelAck				= 0x04F,
+				NameQueryResponse			= 0x051,
+				ItemQuerySingleResponse		= 0x058,
+				ItemQueryMultipleResponse	= 0x059,
+				CreatureQueryResponse		= 0x061,
+				ContactList					= 0x067,
+				FriendStatus				= 0x068,
+				MessageChat					= 0x096,
+				UpdateObject				= 0x0A9,
+				DestroyObject				= 0x0AA,
+				MonsterMove					= 0x0DD,
+				MoveRoot					= 0x0EC,
+				MoveUnroot					= 0x0ED,
+				MoveHeartBeat				= 0x0EE,
+				TutorialFlags				= 0x0FD,
+				InitializeFactions			= 0x122,
+				SetProficiency				= 0x127,
+				ActionButtons				= 0x129,
+				InitialSpells				= 0x12A,
+				CastFailed					= 0x130,
+				SpellStart					= 0x131,
+				SpellGo						= 0x132,
+				SpellFailure				= 0x133,
+				SpellCooldown				= 0x134,
+				CooldownEvent				= 0x135,
+				BindPointUpdate				= 0x155,
+				Pong						= 0x1DD,
+				AuthChallenge				= 0x1EC,
+				AuthResponse				= 0x1EE,
+				CompressedUpdateObject		= 0x1F6,
+				AccountDataTimes			= 0x209,
+				SetRestStart				= 0x21E,
+				LoginVerifyWorld			= 0x236,
+				SpellNonMeleeDamageLog		= 0x250,
+				StandStateUpdate			= 0x29D,
+				ChatPlayerNotFound			= 0x2A9,
+				InitWorldStates				= 0x2C2,
+				AddonInfo					= 0x2EF,
+				SetDungeonDifficulty		= 0x329,
+				Motd						= 0x33D,
+				TimeSyncReq					= 0x390,
+				FeatureSystemStatus			= 0x3C8,
+				UnlearnSpells				= 0x41D
 			};
 		}
 
@@ -475,6 +480,11 @@ namespace wowpp
 				io::Reader &packet,
 				UInt32 &out_spellID
 				);
+
+			bool itemQuerySingle(
+				io::Reader &packet,
+				UInt32 &out_itemID
+				);
 		};
 
 		namespace server_write
@@ -517,6 +527,11 @@ namespace wowpp
 				UInt32 raceId,
 				UInt32 genderId,
 				UInt32 classId
+				);
+
+			void itemQuerySingleResponse(
+				game::OutgoingPacket &out_packet,
+				const ItemEntry &item
 				);
 
 			void contactList(

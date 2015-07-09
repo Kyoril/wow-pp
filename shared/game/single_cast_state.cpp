@@ -289,7 +289,7 @@ namespace wowpp
 		std::vector<char> buffer;
 		io::VectorSink sink(buffer);
 		game::Protocol::OutgoingPacket packet(sink);
-		game::server_write::spellNonMeleeDamageLog(packet, target->getGuid(), caster.getGuid(), m_spell.id, damage, 1, 0, 0, false, 0, false);
+		game::server_write::spellNonMeleeDamageLog(packet, target->getGuid(), caster.getGuid(), m_spell.id, damage, m_spell.schoolMask, 0, 0, false, 0, false);
 
 		// Send damage notification
 		float x, y, z, o;

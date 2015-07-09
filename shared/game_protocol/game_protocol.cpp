@@ -1085,6 +1085,137 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void itemQuerySingleResponse(game::OutgoingPacket &out_packet, const ItemEntry &item)
+			{
+				out_packet.start(game::server_packet::ItemQuerySingleResponse);
+				out_packet
+					<< io::write<NetUInt32>(item.id)
+					<< io::write<NetUInt32>(item.itemClass)
+					<< io::write<NetUInt32>(item.subClass)
+					<< io::write<NetUInt32>(0)				// SoundClassOverride (TODO)
+					<< io::write_range(item.name) << io::write<NetUInt8>(0)
+					<< io::write<NetUInt8>(0)				// Second name?
+					<< io::write<NetUInt8>(0)				// Third name?
+					<< io::write<NetUInt8>(0)				// Fourth name?
+					<< io::write<NetUInt32>(item.displayId)
+					<< io::write<NetUInt32>(item.quality)
+					<< io::write<NetUInt32>(item.flags)
+					<< io::write<NetUInt32>(item.buyPrice)
+					<< io::write<NetUInt32>(item.sellPrice)
+					<< io::write<NetUInt32>(item.inventoryType)
+					<< io::write<NetUInt32>(item.allowedRaces)
+					<< io::write<NetUInt32>(item.allowedRaces)
+					<< io::write<NetUInt32>(item.itemLevel)
+					<< io::write<NetUInt32>(item.requiredLevel)
+					<< io::write<NetUInt32>(item.requiredSkill)
+					<< io::write<NetUInt32>(item.requiredSkillRank)
+					<< io::write<NetUInt32>(item.requiredSpell)
+					<< io::write<NetUInt32>(item.requiredHonorRank)
+					<< io::write<NetUInt32>(item.requiredCityRank)
+					<< io::write<NetUInt32>(item.requiredReputation)
+					<< io::write<NetUInt32>(item.requiredReputationRank)
+					<< io::write<NetUInt32>(item.maxCount)
+					<< io::write<NetUInt32>(item.maxStack)
+					<< io::write<NetUInt32>(item.containerSlots);
+				for (auto &stat : item.itemStats)
+				{
+					out_packet
+						<< io::write<NetUInt32>(stat.statType)
+						<< io::write<NetUInt32>(stat.statValue);
+				}
+				for (auto &dmg : item.itemDamage)
+				{
+					out_packet
+						<< io::write<float>(dmg.min)
+						<< io::write<float>(dmg.max)
+						<< io::write<NetUInt32>(dmg.type);
+				}
+				out_packet
+					<< io::write<NetUInt32>(item.armor)
+					<< io::write<NetUInt32>(item.holyResistance)
+					<< io::write<NetUInt32>(item.fireResistance)
+					<< io::write<NetUInt32>(item.natureResistance)
+					<< io::write<NetUInt32>(item.frostResistance)
+					<< io::write<NetUInt32>(item.shadowResistance)
+					<< io::write<NetUInt32>(item.arcaneResistance)
+					<< io::write<NetUInt32>(item.delay)
+					<< io::write<NetUInt32>(item.ammoType)
+					<< io::write<float>(0.0f)		// TODO: RangedModRange (?)
+					;
+				// TODO: Spells
+				for (auto &spell : item.itemSpells)
+				{
+					if (spell.spell)
+					{
+						out_packet
+							<< io::write<NetUInt32>(spell.spell->id)
+							<< io::write<NetUInt32>(spell.trigger)
+							<< io::write<NetUInt32>(-::abs(spell.charges))
+							;
+
+						// TODO: Spell cooldowns
+						const bool useDBData = spell.cooldown >= 0 || spell.categoryCooldown >= 0;
+						if (useDBData)
+						{
+							out_packet
+								<< io::write<NetUInt32>(spell.cooldown)
+								<< io::write<NetUInt32>(spell.category)
+								<< io::write<NetUInt32>(spell.categoryCooldown);
+						}
+						else
+						{
+							out_packet
+								<< io::write<NetUInt32>(-1)						// TODO
+								<< io::write<NetUInt32>(0)						// TODO
+								<< io::write<NetUInt32>(-1);					// TODO
+						}
+					}
+					else
+					{
+						out_packet
+							<< io::write<NetUInt32>(0)
+							<< io::write<NetUInt32>(0)
+							<< io::write<NetUInt32>(0)
+							<< io::write<NetUInt32>(-1)
+							<< io::write<NetUInt32>(0)
+							<< io::write<NetUInt32>(-1);
+					}
+				}
+				out_packet
+					<< io::write<NetUInt32>(item.bonding)
+					<< io::write_range(item.description) << io::write<NetUInt8>(0)
+					<< io::write<NetUInt32>(0)					// TODO: Page Text
+					<< io::write<NetUInt32>(0)					// TODO: Language ID
+					<< io::write<NetUInt32>(0)					// TODO: Page Material
+					<< io::write<NetUInt32>(0)					// TODO: Start Quest
+					<< io::write<NetUInt32>(item.lockId)
+					<< io::write<NetUInt32>(0)					// TODO: Material
+					<< io::write<NetUInt32>(item.sheath)
+					<< io::write<NetUInt32>(item.randomProperty)
+					<< io::write<NetUInt32>(item.randomSuffix)
+					<< io::write<NetUInt32>(item.block)
+					<< io::write<NetUInt32>(item.set)
+					<< io::write<NetUInt32>(item.durability)
+					<< io::write<NetUInt32>(item.area)
+					<< io::write<NetUInt32>(item.map)			// Added in 1.12.X
+					<< io::write<NetUInt32>(item.bagFamily)
+					<< io::write<NetUInt32>(item.totemCategory)
+					;
+				// TODO: Sockets
+				for (size_t i = 0; i < 3; ++i)
+				{
+					out_packet
+						<< io::write<NetUInt32>(0)
+						<< io::write<NetUInt32>(0);
+				}
+				out_packet
+					<< io::write<NetUInt32>(item.socketBonus)
+					<< io::write<NetUInt32>(item.gemProperties)
+					<< io::write<NetUInt32>(item.requiredDisenchantSkill)
+					<< io::write<float>(0.0f)					// TODO: Armor Damage Modifier
+					<< io::write<NetUInt32>(0);					// Added in 2.4.2.8209
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
@@ -1238,7 +1369,7 @@ namespace wowpp
 			bool charDelete(io::Reader &packet, DatabaseId &out_characterId)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_characterId);
+					>> io::read<NetUInt64>(out_characterId);
 			}
 
 			bool nameQuery(io::Reader &packet, NetUInt64 &out_objectId)
@@ -1507,6 +1638,13 @@ namespace wowpp
 				return packet
 					>> io::read<NetUInt32>(out_spellID);
 			}
+
+			bool itemQuerySingle(io::Reader &packet, UInt32 &out_itemID)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_itemID);
+			}
+
 		}
 	}
 }

@@ -208,5 +208,6 @@ namespace wowpp
 		void handleDeleteFriend(game::IncomingPacket &packet);
 		void handleAddIgnore(game::IncomingPacket &packet);
 		void handleDeleteIgnore(game::IncomingPacket &packet);
+		void handleItemQuerySingle(game::IncomingPacket &packet);
 	};
 }

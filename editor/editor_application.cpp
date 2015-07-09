@@ -84,6 +84,7 @@ namespace wowpp
 			m_mapListModel.reset(new MapListModel(m_project.maps));
 			m_unitListModel.reset(new UnitListModel(m_project.units));
 			m_spellListModel.reset(new SpellListModel(m_project.spells));
+			m_itemListModel.reset(new ItemListModel(m_project.items));
 
 			// Setup the object editor
 			m_objectEditor.reset(new ObjectEditor(*this));
