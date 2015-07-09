@@ -281,6 +281,37 @@ namespace wowpp
 		}
 		initialSpellArray.finish();
 
+		// Write initial items
+		sff::write::Array<char> initialItemsArray(context.table, "initial_items", sff::write::MultiLine);
+		{
+			for (const auto &entry : initialItems)
+			{
+				UInt32 classId = entry.first;
+				for (const auto &entry2 : entry.second)
+				{
+					UInt32 genderId = entry2.first;
+					auto &items = entry2.second;
+
+					sff::write::Table<char> classTable(initialItemsArray, sff::write::Comma);
+					{
+						classTable.addKey("class", classId);
+						classTable.addKey("gender", genderId);
+
+						sff::write::Array<char> itemArray(classTable, "items", sff::write::Comma);
+						{
+							for (const auto *item : items)
+							{
+								itemArray.addElement(item->id);
+							}
+						}
+						itemArray.finish();
+					}
+					classTable.finish();
+				}
+			}
+		}
+		initialItemsArray.finish();
+
 		// Write action buttons
 		sff::write::Array<char> initialActionsArray(context.table, "initial_actions", sff::write::MultiLine);
 		{
