@@ -532,6 +532,126 @@ namespace wowpp
 			return;
 		}
 
+		// Test - Equipment :)
+		const auto *race = character->getRaceEntry();
+		auto it1 = race->initialItems.find(character->getClass());
+		if (it1 != race->initialItems.end())
+		{
+			auto it2 = it1->second.find(character->getGender());
+			if (it2 != it1->second.end())
+			{
+				// Found it - enumerate items
+				for (const auto *item : it2->second)
+				{
+					UInt16 slot = 0xffff;
+					switch (item->inventoryType)
+					{
+						case 1:
+						{
+							slot = player_equipment_slots::Head;
+							break;
+						}
+						case 2:
+						{
+							slot = player_equipment_slots::Neck;
+							break;
+						}
+						case 3:
+						{
+							slot = player_equipment_slots::Shoulders;
+							break;
+						}
+						case 4:
+						{
+							slot = player_equipment_slots::Body;
+							break;
+						}
+						case 5:
+						case 20:
+						{
+							slot = player_equipment_slots::Chest;
+							break;
+						}
+						case 6:
+						{
+							slot = player_equipment_slots::Waist;
+							break;
+						}
+						case 7:
+						{
+							slot = player_equipment_slots::Legs;
+							break;
+						}
+						case 8:
+						{
+							slot = player_equipment_slots::Feet;
+							break;
+						}
+						case 9:
+						{
+							slot = player_equipment_slots::Wrists;
+							break;
+						}
+						case 10:
+						{
+							slot = player_equipment_slots::Hands;
+							break;
+						}
+						case 11:
+						{
+							//TODO: Finger1/2
+							slot = player_equipment_slots::Finger1;
+							break;
+						}
+						case 12:
+						{
+							//TODO: Trinket1/2
+							slot = player_equipment_slots::Trinket1;
+							break;
+						}
+						case 13:
+						case 17:
+						case 21:
+						{
+							slot = player_equipment_slots::Mainhand;
+							break;
+						}
+						case 14:
+						case 22:
+						case 23:
+						{
+							slot = player_equipment_slots::Offhand;
+							break;
+						}
+						case 15:
+						case 25:
+						{
+							slot = player_equipment_slots::Ranged;
+							break;
+						}
+						case 16:
+						{
+							slot = player_equipment_slots::Back;
+							break;
+						}
+						case 19:
+						{
+							slot = player_equipment_slots::Tabard;
+							break;
+						}
+					}
+
+					if (slot != 0xffff)
+					{
+						// Make visible
+						int visibleBase = character_fields::VisibleItem1_0 + (slot * 16);
+						character->setUInt32Value(visibleBase, item->id);
+					}
+				}
+			}
+		}
+
+
 		// We found the character - now we need to look for a world node
 		// which is hosting a fitting world instance or is able to create
 		// a new one

@@ -22,6 +22,7 @@
 #pragma once
 
 #include "game_unit.h"
+#include "game_item.h"
 
 namespace wowpp
 {
@@ -275,6 +276,131 @@ namespace wowpp
 			CharacterFieldCount			= 0x54E + unit_fields::UnitFieldCount
 		};
 	}
+
+	namespace player_item_slots
+	{
+		enum Enum
+		{
+			Start		= 0,
+			End			= 118,
+
+			Count_		= (End - Start)
+		};
+	};
+
+	typedef player_item_slots::Enum PlayerItemSlots;
+
+	namespace player_equipment_slots
+	{
+		enum Enum
+		{
+			Start			= 0,
+
+			Head			= 0,
+			Neck			= 1,
+			Shoulders		= 2,
+			Body			= 3,
+			Chest			= 4,
+			Waist			= 5,
+			Legs			= 6,
+			Feet			= 7,
+			Wrists			= 8,
+			Hands			= 9,
+			Finger1			= 10,
+			Finger2			= 11,
+			Trinket1		= 12,
+			Trinket2		= 13,
+			Back			= 14,
+			Mainhand		= 15,
+			Offhand			= 16,
+			Ranged			= 17,
+			Tabard			= 18,
+
+			End				= 19,
+			Count_			= (End - Start)
+		};
+	}
+
+	typedef player_equipment_slots::Enum PlayerEquipmentSlots;
+
+	namespace player_inventory_slots
+	{
+		enum Enum
+		{
+			Bag_0			= 255,
+			Start			= 19,
+			End				= 23,
+
+			Count_			= (End - Start)
+		};
+	}
+
+	typedef player_inventory_slots::Enum PlayerInventorySlots;
+
+	namespace player_inventory_pack_slots
+	{
+		enum Enum
+		{
+			Start			= 23,
+			End				= 39,
+
+			Count_			= (End - Start)
+		};
+	}
+
+	typedef player_inventory_pack_slots::Enum PlayerInventoryPackSlots;
+
+	namespace player_bank_item_slots
+	{
+		enum Enum
+		{
+			Start			= 39,
+			End				= 67,
+
+			Count_			= (End - Start)
+		};
+	}
+
+	typedef player_bank_item_slots::Enum PlayerBankItemSlots;
+
+	namespace player_bank_bag_slots
+	{
+		enum Enum
+		{
+			Start			= 67,
+			End				= 74,
+
+			Count_			= (End - Start)
+		};
+	}
+
+	typedef player_bank_bag_slots::Enum PlayerBankBagSlots;
+
+	namespace player_buy_back_slots
+	{
+		enum Enum
+		{
+			Start			= 74,
+			End				= 86,
+
+			Count_			= (End - Start)
+		};
+	}
+
+	typedef player_buy_back_slots::Enum PlayerBuyBackSlots;
+
+	namespace player_key_ring_slots
+	{
+		enum Enum
+		{
+			Start			= 86,
+			End				= 118,
+
+			Count_			= (End - Start)
+		};
+	}
+
+	typedef player_key_ring_slots::Enum PlayerKeyRingSlots;
 
 	/// 
 	class GameCharacter : public GameUnit
