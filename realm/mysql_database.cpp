@@ -201,22 +201,36 @@ namespace wowpp
 				{
 					row.getField(0, character.id);
 
-					// Add spells
-					for (const auto *spell : spells)
+					if (!spells.empty())
 					{
+						std::ostringstream fmtStrm;
+						fmtStrm << "INSERT INTO `character_spells` (`guid`,`spell`) VALUES ";
+
+						// Add spells
+						bool isFirstEntry = true;
+						for (const auto *spell : spells)
+						{
+							if (isFirstEntry)
+							{
+								isFirstEntry = false;
+							}
+							else
+							{
+								fmtStrm << ",";
+							}
+
+							fmtStrm << "(" << character.id << "," << spell->id << ")";
+						}
+
 						// Now, learn all initial spells
-						if (!m_connection.execute((boost::format(
-							//                                 0        1 
-							"INSERT INTO `character_spells` (`guid`,`spell`) VALUES (%1%, %2%)")
-							% character.id
-							% spell->id).str()))
+						if (!m_connection.execute(fmtStrm.str()))
 						{
 							// Could not learn initial spells
 							printDatabaseError();
 							return game::response_code::CharCreateError;
 						}
 					}
-
+					
 					// TODO: Initialize action bars
 
 
