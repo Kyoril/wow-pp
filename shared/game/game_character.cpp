@@ -32,6 +32,8 @@ namespace wowpp
 		: GameUnit(timers, getRace, getClass, getLevel)
 		, m_name("UNKNOWN")
 		, m_zoneIndex(0)
+		, m_weaponProficiency(0)
+		, m_armorProficiency(0)
 	{
 		// Resize values field
 		m_values.resize(character_fields::CharacterFieldCount);

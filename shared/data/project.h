@@ -32,6 +32,7 @@
 #include "cast_time_entry.h"
 #include "spell_entry.h"
 #include "item_entry.h"
+#include "skill_entry.h"
 #include <boost/noncopyable.hpp>
 #include <memory>
 
@@ -53,6 +54,7 @@ namespace wowpp
 	typedef MakeTemplateManager<CreatureTypeEntry>::type CreatureTypeEntryManager;
 	typedef MakeTemplateManager<UnitEntry>::type UnitEntryManager;
 	typedef MakeTemplateManager<ItemEntry>::type ItemEntryManager;
+	typedef MakeTemplateManager<SkillEntry>::type SkillEntryManager;
 
 
 	class Project : private boost::noncopyable
@@ -68,6 +70,7 @@ namespace wowpp
 		CreatureTypeEntryManager creaturetypes;
 		UnitEntryManager units;
 		ItemEntryManager items;
+		SkillEntryManager skills;
 
 	public:
 

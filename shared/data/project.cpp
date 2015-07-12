@@ -49,6 +49,10 @@ namespace wowpp
 			ELOG(message);
 			++errorCount;
 		};
+		context.onWarning = [](const String & message)
+		{
+			WLOG(message);
+		};
 
 		context.getMap = std::bind(&MapEntryManager::getById, &maps, std::placeholders::_1);
 		context.getRace = std::bind(&RaceEntryManager::getById, &races, std::placeholders::_1);
@@ -57,6 +61,7 @@ namespace wowpp
 		context.getUnit = std::bind(&UnitEntryManager::getById, &units, std::placeholders::_1);
 		context.getSpell = std::bind(&SpellEntryManager::getById, &spells, std::placeholders::_1);
 		context.getItem = std::bind(&ItemEntryManager::getById, &items, std::placeholders::_1);
+		context.getSkill = std::bind(&SkillEntryManager::getById, &skills, std::placeholders::_1);
 
 		typedef ProjectLoader<DataLoadContext> RealmProjectLoader;
 		typedef RealmProjectLoader::ManagerEntry ManagerEntry;
@@ -71,6 +76,7 @@ namespace wowpp
 		managers.push_back(ManagerEntry("units", units, std::bind(&UnitEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("maps", maps, std::bind(&MapEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("items", items, std::bind(&ItemEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+		managers.push_back(ManagerEntry("skills", skills, std::bind(&SkillEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 
 		virtual_dir::FileSystemReader virtualDirectory(context.dataPath);
 		if (!RealmProjectLoader::load(
@@ -89,7 +95,6 @@ namespace wowpp
 	bool Project::save(const String &directory)
 	{
 		ILOG("Saving data...");
-
 		size_t errorCount = 0;
 
 		const boost::filesystem::path dataPath = directory;
@@ -108,6 +113,7 @@ namespace wowpp
 		managers.push_back(ManagerEntry("creature_types", "creature_types", creaturetypes, &CreatureTypeEntry::save));
 		managers.push_back(ManagerEntry("units", "units", units, &UnitEntry::save));
 		managers.push_back(ManagerEntry("items", "items", items, &ItemEntry::save));
+		managers.push_back(ManagerEntry("skills", "skills", skills, &SkillEntry::save));
 
 		if (!RealmProjectSaver::save(realmDataPath, managers))
 		{

@@ -40,6 +40,7 @@ namespace wowpp
 		typedef std::vector<LoadLaterFunction> LoadLater;
 
 		OnError onError;
+		OnError onWarning;
 		LoadLater loadLater;
 		UInt32 version;
 

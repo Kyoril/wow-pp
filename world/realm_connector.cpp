@@ -239,19 +239,17 @@ namespace wowpp
 	{
 		// Read packet from the realm
 		DatabaseId requesterDbId;
+		std::vector<UInt32> spellIds;
 		std::shared_ptr<GameCharacter> character(new GameCharacter(
 			m_worldInstanceManager.getTimerQueue(),
 			std::bind(&RaceEntryManager::getById, &m_project.races, std::placeholders::_1),
 			std::bind(&ClassEntryManager::getById, &m_project.classes, std::placeholders::_1),
 			std::bind(&LevelEntryManager::getById, &m_project.levels, std::placeholders::_1)));
-		if (!(pp::world_realm::realm_read::characterLogIn(packet, requesterDbId, character.get())))
+		if (!(pp::world_realm::realm_read::characterLogIn(packet, requesterDbId, character.get(), spellIds)))
 		{
 			// Error: could not read packet
 			return;
 		}
-		
-		// Logging
-		ILOG("Received character data from realm. GUID: " << std::hex << std::uppercase << character->getGuid());
 
 		float x, y, z, o;
 		character->getLocation(x, y, z, o);
@@ -301,6 +299,29 @@ namespace wowpp
 
 		// Fire signal which should create a player instance for us
 		worldInstanceEntered(*this, requesterDbId, character, *instance);
+
+		// Resolve spells
+		SpellTargetMap target;
+		target.m_targetMap = game::spell_cast_target_flags::Self;
+		target.m_unitTarget = requesterDbId;
+		for (auto &spellId : spellIds)
+		{
+			const auto *spell = m_project.spells.getById(spellId);
+			if (!spell)
+			{
+				WLOG("Received unknown character spell id " << spellId << ": Will be ignored");
+				continue;
+			}
+
+			character->addSpell(*spell);
+
+			// If this is a passive spell, cast it (TODO: Move this to some other place?)
+			if (spell->attributes & 0x40)
+			{
+				// Create target map
+				character->castSpell(target, *spell, 0);
+			}
+		}
 
 		// Get character location
 		UInt32 mapId = map->id;

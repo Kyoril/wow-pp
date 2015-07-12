@@ -178,8 +178,15 @@ namespace wowpp
 
 	void World::enterWorldInstance(DatabaseId characterDbId, const GameCharacter &character)
 	{
+		// Get a list of spells
+		std::vector<UInt32> spellIds;
+		for (const auto *spell : character.getSpells())
+		{
+			spellIds.push_back(spell->id);
+		}
+
 		m_connection->sendSinglePacket(
-			std::bind(pp::world_realm::realm_write::characterLogIn, std::placeholders::_1, characterDbId, std::cref(character)));
+			std::bind(pp::world_realm::realm_write::characterLogIn, std::placeholders::_1, characterDbId, std::cref(character), std::cref(spellIds)));
 	}
 
 	void World::leaveWorldInstance(DatabaseId characterDbId, pp::world_realm::WorldLeftReason reason)

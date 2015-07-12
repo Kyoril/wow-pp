@@ -117,12 +117,13 @@ namespace wowpp
 					out_packet.finish();
 				}
 
-				void characterLogIn(pp::OutgoingPacket &out_packet, DatabaseId characterRealmId, const GameCharacter &character)
+				void characterLogIn(pp::OutgoingPacket &out_packet, DatabaseId characterRealmId, const GameCharacter &character, const std::vector<UInt32> &spellIds)
 				{
 					out_packet.start(realm_packet::CharacterLogIn);
 					out_packet
 						<< io::write<NetDatabaseId>(characterRealmId)
-						<< character;
+						<< character
+						<< io::write_dynamic_range<NetUInt32>(spellIds);
 					out_packet.finish();
 				}
 
@@ -238,13 +239,14 @@ namespace wowpp
 					return true;
 				}
 
-				bool characterLogIn(io::Reader &packet, DatabaseId &out_characterRealmId, GameCharacter *out_character)
+				bool characterLogIn(io::Reader &packet, DatabaseId &out_characterRealmId, GameCharacter *out_character, std::vector<UInt32> &out_spellIds)
 				{
 					assert(out_character);
 
 					return packet
 						>> io::read<NetDatabaseId>(out_characterRealmId)
-						>> *out_character;
+						>> *out_character
+						>> io::read_container<NetUInt32>(out_spellIds);
 				}
 
 				bool clientProxyPacket(io::Reader &packet, DatabaseId &out_characterId, UInt16 &out_opCode, UInt32 &out_size, std::vector<char> &out_packetBuffer)

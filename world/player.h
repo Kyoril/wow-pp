@@ -148,6 +148,8 @@ namespace wowpp
 		void onDespawn();
 		/// Executed when the player character will move from one grid tile to another one.
 		void onTileChangePending(VisibilityTile &oldTile, VisibilityTile &newTile);
+		/// Executed when a proficiency of the player character changed.
+		void onProficiencyChanged(Int32 itemClass, UInt32 mask);
 
 	private:
 

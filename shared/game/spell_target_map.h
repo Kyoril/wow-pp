@@ -28,7 +28,7 @@
 
 namespace wowpp
 {
-	/// 
+	/// TODO: Cleanup this class
 	class SpellTargetMap final
 	{
 		friend io::Writer &operator << (io::Writer &w, SpellTargetMap const& targetMap);
@@ -72,7 +72,7 @@ namespace wowpp
 
 		virtual SpellTargetMap &operator =(const SpellTargetMap &other);
 
-	private:
+	public:
 
 		UInt32 m_targetMap;
 		UInt64 m_unitTarget;

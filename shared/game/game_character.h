@@ -413,6 +413,10 @@ namespace wowpp
 
 	public:
 
+		boost::signals2::signal<void(Int32, UInt32)> proficiencyChanged;
+
+	public:
+
 		/// 
 		explicit GameCharacter(
 			TimerQueue &timers,
@@ -436,6 +440,13 @@ namespace wowpp
 		UInt32 getZone() const { return m_zoneIndex; }
 		const std::vector<const SpellEntry*> &getSpells() const { return m_spells; }
 
+		UInt32 getWeaponProficiency() const { return m_weaponProficiency; }
+		UInt32 getArmorProficiency() const { return m_armorProficiency; }
+		void addWeaponProficiency(UInt32 mask) { m_weaponProficiency |= mask; proficiencyChanged(2, m_weaponProficiency); }
+		void addArmorProficiency(UInt32 mask) { m_armorProficiency |= mask; proficiencyChanged(4, m_armorProficiency); }
+		void removeWeaponProficiency(UInt32 mask) { m_weaponProficiency &= ~mask; proficiencyChanged(2, m_weaponProficiency); }
+		void removeArmorProficiency(UInt32 mask) { m_armorProficiency &= ~mask; proficiencyChanged(4, m_armorProficiency); }
+
 	protected:
 
 		virtual void levelChanged(const LevelEntry &levelInfo) override;
@@ -451,6 +462,8 @@ namespace wowpp
 
 		String m_name;
 		UInt32 m_zoneIndex;
+		UInt32 m_weaponProficiency;
+		UInt32 m_armorProficiency;
 		std::vector<const SpellEntry*> m_spells;
 		std::map<UInt16, std::unique_ptr<GameItem>> m_itemSlots;
 	};

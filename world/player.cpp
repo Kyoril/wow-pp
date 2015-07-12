@@ -49,6 +49,8 @@ namespace wowpp
 			std::bind(&Player::onDespawn, this));
 		m_character->tileChangePending.connect(
 			std::bind(&Player::onTileChangePending, this, std::placeholders::_1, std::placeholders::_2));
+		m_character->proficiencyChanged.connect(
+			std::bind(&Player::onProficiencyChanged, this, std::placeholders::_1, std::placeholders::_2));
 	}
 
 	void Player::logoutRequest()
@@ -248,6 +250,15 @@ namespace wowpp
 
 		// Make us a watcher of the new tile
 		newTile.getWatchers().add(this);
+	}
+
+	void Player::onProficiencyChanged(Int32 itemClass, UInt32 mask)
+	{
+		if (itemClass >= 0)
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::setProficiency, std::placeholders::_1, itemClass, mask));
+		}
 	}
 
 }

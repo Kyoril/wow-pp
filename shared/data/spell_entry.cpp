@@ -26,9 +26,6 @@
 
 namespace wowpp
 {
-	std::array<UInt32, 6> attributesEx;
-
-
 	SpellEntry::SpellEntry()
 		: attributes(0)
 		, cooldown(0)
@@ -41,6 +38,8 @@ namespace wowpp
 		, speed(0.0f)
 		, schoolMask(0.0f)
 		, dmgClass(0.0f)
+		, itemClass(-1)
+		, itemSubClassMask(0)
 	{
 		attributesEx.fill(0);
 	}
@@ -73,6 +72,8 @@ namespace wowpp
 		wrapper.table.tryGetInteger("speed", speed);
 		wrapper.table.tryGetInteger("school_mask", schoolMask);
 		wrapper.table.tryGetInteger("dmg_class", dmgClass);
+		wrapper.table.tryGetInteger("item_class", itemClass);
+		wrapper.table.tryGetInteger("item_subclass_mask", itemSubClassMask);
 
 		const sff::read::tree::Array<DataFileIterator> *effectsArray = wrapper.table.getArray("effects");
 		if (effectsArray)
@@ -142,6 +143,8 @@ namespace wowpp
 		if (speed != 0.0f) context.table.addKey("speed", speed);
 		if (schoolMask != 0) context.table.addKey("school_mask", schoolMask);
 		if (dmgClass != 0) context.table.addKey("dmg_class", dmgClass);
+		if (itemClass != -1) context.table.addKey("item_class", itemClass);
+		if (itemSubClassMask != 0) context.table.addKey("item_subclass_mask", itemSubClassMask);
 
 		// Write spell effects
 		if (!effects.empty())

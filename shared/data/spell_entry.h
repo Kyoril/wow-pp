@@ -176,6 +176,8 @@ namespace wowpp
 		float speed;
 		UInt32 schoolMask;
 		UInt32 dmgClass;
+		Int32 itemClass;
+		UInt32 itemSubClassMask;
 
 		SpellEntry();
 		bool load(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper);

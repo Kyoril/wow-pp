@@ -21,6 +21,7 @@
 
 #include "single_cast_state.h"
 #include "game_unit.h"
+#include "game_character.h"
 #include "no_cast_state.h"
 #include "common/clock.h"
 #include "log/default_log_levels.h"
@@ -83,25 +84,23 @@ namespace wowpp
 		// Check if the executer is in the world
 		auto &executer = m_cast.getExecuter();
 		auto *worldInstance = executer.getWorldInstance();
-		if (!worldInstance)
-		{
-			WLOG("Spell cast executer is not part of any world instance!");
-			return;
-		}
 
 		auto const casterId = executer.getGuid();
 		auto const targetId = target.getUnitTarget();
 		auto const spellId = spell.id;
 
-		sendPacketFromCaster(executer, 
-			std::bind(game::server_write::spellStart, std::placeholders::_1, 
-				casterId, 
-				casterId, 
-				std::cref(m_spell), 
-				std::cref(m_target), 
-				game::spell_cast_flags::Unknown1, 
-				castTime, 
+		if (worldInstance && !(m_spell.attributes & 0x40))
+		{
+			sendPacketFromCaster(executer,
+				std::bind(game::server_write::spellStart, std::placeholders::_1,
+				casterId,
+				casterId,
+				std::cref(m_spell),
+				std::cref(m_target),
+				game::spell_cast_flags::Unknown1,
+				castTime,
 				0));
+		}
 
 		m_countdown.ended.connect([this]()
 		{
@@ -177,12 +176,11 @@ namespace wowpp
 	{
 		auto &executer = m_cast.getExecuter();
 		auto *worldInstance = executer.getWorldInstance();
-		if (!worldInstance)
+		if (!worldInstance || m_spell.attributes & 0x40)
 		{
-			WLOG("Spell cast executer is not part of any world instance!");
 			return;
 		}
-
+		
 		if (success)
 		{
 			sendPacketFromCaster(executer,
@@ -195,7 +193,6 @@ namespace wowpp
 		}
 		else
 		{
-			DLOG("SPELL CAST FAILED");
 			sendPacketFromCaster(executer,
 				std::bind(game::server_write::spellFailure, std::placeholders::_1,
 				executer.getGuid(),
@@ -243,6 +240,12 @@ namespace wowpp
 				case se::Heal:
 				{
 
+					break;
+				}
+
+				case se::Proficiency:
+				{
+					spellEffectProficiency(effect);
 					break;
 				}
 
@@ -412,11 +415,11 @@ namespace wowpp
 			// Send spell damage packet
 			sendPacketFromCaster(caster,
 				std::bind(game::server_write::spellEnergizeLog, std::placeholders::_1,
-				caster.getGuid(),
-				caster.getGuid(),
-				m_spell.id,
-				casterPowerType, 
-				powerToDrain));
+					caster.getGuid(),
+					caster.getGuid(),
+					m_spell.id,
+					casterPowerType, 
+					powerToDrain));
 
 			// Modify casters power values
 			UInt32 casterPower = caster.getUInt32Value(unit_fields::Power1 + casterPowerType);
@@ -424,6 +427,32 @@ namespace wowpp
 			if (casterPower + powerToDrain > maxCasterPower)
 				powerToDrain = maxCasterPower - casterPower;
 			caster.setUInt32Value(unit_fields::Power1 + casterPowerType, casterPower + powerToDrain);
+		}
+	}
+
+	void SingleCastState::spellEffectProficiency(const SpellEntry::Effect &effect)
+	{
+		// Self target
+		GameCharacter *character = nullptr;
+		if (isPlayerGUID(m_cast.getExecuter().getGuid()))
+		{
+			character = dynamic_cast<GameCharacter*>(&m_cast.getExecuter());
+		}
+
+		if (!character)
+		{
+			WLOG("SPELL_EFFECT_PROFICIENCY: Requires character unit target!");
+			return;
+		}
+
+		const UInt32 mask = m_spell.itemSubClassMask;
+		if (m_spell.itemClass == 2 && !(character->getWeaponProficiency() & mask))
+		{
+			character->addWeaponProficiency(mask);
+		}
+		else if (m_spell.itemClass == 4 && !(character->getArmorProficiency() & mask))
+		{
+			character->addArmorProficiency(mask);
 		}
 	}
 
@@ -439,5 +468,4 @@ namespace wowpp
 
 		return basePoints + randomValue;
 	}
-
 }
