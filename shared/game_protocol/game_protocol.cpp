@@ -1014,6 +1014,34 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void spellFailedOther(game::OutgoingPacket &out_packet, UInt64 casterGUID, UInt32 spellId)
+			{
+				out_packet.start(game::server_packet::SpellFailedOther);
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; casterGUID != 0; ++i)
+					{
+						if (casterGUID & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(casterGUID & 0xFF);
+							++size;
+						}
+
+						casterGUID >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+				out_packet
+					<< io::write<NetUInt32>(spellId);
+				out_packet.finish();
+			}
+
 			void spellCooldown(game::OutgoingPacket &out_packet /*TODO */)
 			{
 				out_packet.start(game::server_packet::SpellCooldown);

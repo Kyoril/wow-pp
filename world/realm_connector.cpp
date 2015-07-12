@@ -820,6 +820,7 @@ namespace wowpp
 			return;
 		}
 
-		// TODO: Cancel the cast
+		// Spell cast logic
+		sender.getCharacter()->cancelCast();
 	}
 }

@@ -37,6 +37,41 @@
 
 namespace wowpp
 {
+	namespace
+	{
+		template <class T>
+		void sendPacketFromCaster(GameUnit &caster, T generator)
+		{
+			auto *worldInstance = caster.getWorldInstance();
+			if (!worldInstance)
+			{
+				return;
+			}
+
+			float x, y, z, o;
+			caster.getLocation(x, y, z, o);
+
+			TileIndex2D tileIndex;
+			worldInstance->getGrid().getTilePosition(x, y, z, tileIndex[0], tileIndex[1]);
+
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket packet(sink);
+			generator(packet);
+
+			forEachSubscriberInSight(
+				worldInstance->getGrid(),
+				tileIndex,
+				[&buffer, &packet](ITileSubscriber &subscriber)
+			{
+				subscriber.sendPacket(
+					packet,
+					buffer
+					);
+			});
+		}
+	}
+	
 	SingleCastState::SingleCastState(SpellCast &cast, const SpellEntry &spell, SpellTargetMap target, GameTime castTime)
 		: m_cast(cast)
 		, m_spell(spell)
@@ -58,27 +93,15 @@ namespace wowpp
 		auto const targetId = target.getUnitTarget();
 		auto const spellId = spell.id;
 
-		float x, y, z, o;
-		executer.getLocation(x, y, z, o);
-
-		TileIndex2D tileIndex;
-		worldInstance->getGrid().getTilePosition(x, y, z, tileIndex[0], tileIndex[1]);
-
-		std::vector<char> buffer;
-		io::VectorSink sink(buffer);
-		game::Protocol::OutgoingPacket packet(sink);
-		game::server_write::spellStart(packet, casterId, casterId, m_spell, m_target, game::spell_cast_flags::Unknown1, castTime, 0);
-
-		forEachSubscriberInSight(
-			worldInstance->getGrid(),
-			tileIndex,
-			[&buffer, &packet](ITileSubscriber &subscriber)
-		{
-			subscriber.sendPacket(
-				packet,
-				buffer
-				);
-		});
+		sendPacketFromCaster(executer, 
+			std::bind(game::server_write::spellStart, std::placeholders::_1, 
+				casterId, 
+				casterId, 
+				std::cref(m_spell), 
+				std::cref(m_target), 
+				game::spell_cast_flags::Unknown1, 
+				castTime, 
+				0));
 
 		m_countdown.ended.connect([this]()
 		{
@@ -88,6 +111,10 @@ namespace wowpp
 		if (castTime > 0)
 		{
 			m_countdown.setEnd(getCurrentTime() + castTime);
+
+			// Subscribe to damage events if the spell is cancelled on damage
+			m_onUserMoved = executer.moved.connect(
+				std::bind(&SingleCastState::onUserStartsMoving, this));
 		}
 		else
 		{
@@ -95,8 +122,6 @@ namespace wowpp
 		}
 
 		// TODO: Subscribe to target removed and died events (in both cases, the cast may be interrupted)
-		
-		// TODO: Subscribe to damage events if the spell is cancelled on damage
 
 	}
 
@@ -141,7 +166,11 @@ namespace wowpp
 
 	void SingleCastState::onUserStartsMoving()
 	{
-		// TODO: Interrupt spell cast if moving
+		// Interrupt spell cast if moving
+		if (!m_hasFinished)
+		{
+			stopCast();
+		}
 	}
 
 	void SingleCastState::sendEndCast(bool success)
@@ -156,31 +185,27 @@ namespace wowpp
 
 		if (success)
 		{
-			float x, y, z, o;
-			executer.getLocation(x, y, z, o);
-
-			TileIndex2D tileIndex;
-			worldInstance->getGrid().getTilePosition(x, y, z, tileIndex[0], tileIndex[1]);
-
-			std::vector<char> buffer;
-			io::VectorSink sink(buffer);
-			game::Protocol::OutgoingPacket packet(sink);
-			game::server_write::spellGo(packet, executer.getGuid(), executer.getGuid(), m_spell, m_target, game::spell_cast_flags::Unknown3);
-
-			forEachSubscriberInSight(
-				worldInstance->getGrid(),
-				tileIndex,
-				[&buffer, &packet](ITileSubscriber &subscriber)
-			{
-				subscriber.sendPacket(
-					packet,
-					buffer
-					);
-			});
+			sendPacketFromCaster(executer,
+				std::bind(game::server_write::spellGo, std::placeholders::_1,
+				executer.getGuid(),
+				executer.getGuid(),
+				std::cref(m_spell),
+				std::cref(m_target),
+				game::spell_cast_flags::Unknown3));
 		}
 		else
 		{
-			// Spell cast failed...
+			DLOG("SPELL CAST FAILED");
+			sendPacketFromCaster(executer,
+				std::bind(game::server_write::spellFailure, std::placeholders::_1,
+				executer.getGuid(),
+				m_spell.id,
+				game::spell_cast_result::FailedAffectingCombat));
+
+			sendPacketFromCaster(executer,
+				std::bind(game::server_write::spellFailedOther, std::placeholders::_1,
+				executer.getGuid(),
+				m_spell.id));
 		}
 	}
 
@@ -288,25 +313,19 @@ namespace wowpp
 			return;
 		}
 
-		// Create the packet
-		std::vector<char> buffer;
-		io::VectorSink sink(buffer);
-		game::Protocol::OutgoingPacket packet(sink);
-		game::server_write::spellNonMeleeDamageLog(packet, target->getGuid(), caster.getGuid(), m_spell.id, damage, m_spell.schoolMask, 0, 0, false, 0, false);
-
-		// Send damage notification
-		float x, y, z, o;
-		caster.getLocation(x, y, z, o);
-		TileIndex2D tileIndex;
-		world->getGrid().getTilePosition(x, y, z, tileIndex[0], tileIndex[1]);
-		forEachSubscriberInSight(
-			world->getGrid(),
-			tileIndex,
-			[&packet, &buffer](ITileSubscriber &subscriber)
-		{
-			subscriber.sendPacket(
-				packet, buffer);
-		});
+		// Send spell damage packet
+		sendPacketFromCaster(caster,
+			std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+			target->getGuid(),
+			caster.getGuid(),
+			m_spell.id,
+			damage,
+			m_spell.schoolMask,
+			0,
+			0,
+			false,
+			0,
+			false));
 
 		// Update health value
 		UInt32 health = target->getUInt32Value(unit_fields::Health);
@@ -390,25 +409,14 @@ namespace wowpp
 				return;
 			}
 
-			// Create the packet
-			std::vector<char> buffer;
-			io::VectorSink sink(buffer);
-			game::Protocol::OutgoingPacket packet(sink);
-			game::server_write::spellEnergizeLog(packet, caster.getGuid(), caster.getGuid(), m_spell.id, casterPowerType, powerToDrain);
-
-			// Send notification
-			float x, y, z, o;
-			caster.getLocation(x, y, z, o);
-			TileIndex2D tileIndex;
-			world->getGrid().getTilePosition(x, y, z, tileIndex[0], tileIndex[1]);
-			forEachSubscriberInSight(
-				world->getGrid(),
-				tileIndex,
-				[&packet, &buffer](ITileSubscriber &subscriber)
-			{
-				subscriber.sendPacket(
-					packet, buffer);
-			});
+			// Send spell damage packet
+			sendPacketFromCaster(caster,
+				std::bind(game::server_write::spellEnergizeLog, std::placeholders::_1,
+				caster.getGuid(),
+				caster.getGuid(),
+				m_spell.id,
+				casterPowerType, 
+				powerToDrain));
 
 			// Modify casters power values
 			UInt32 casterPower = caster.getUInt32Value(unit_fields::Power1 + casterPowerType);

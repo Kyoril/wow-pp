@@ -194,6 +194,8 @@ namespace wowpp
 		virtual ObjectType getTypeId() const override { return object_type::Unit; }
 
 		void castSpell(SpellTargetMap target, const SpellEntry &spell, GameTime castTime);
+		void cancelCast();
+
 		/// TODO: Move the logic of this method somewhere else.
 		void triggerDespawnTimer(GameTime despawnDelay);
 

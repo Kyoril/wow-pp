@@ -178,8 +178,10 @@ namespace wowpp
 		spawned->setUInt32Value(unit_fields::Power1, spawned->getUInt32Value(unit_fields::MaxPower1));
 
 		spawned->setUInt32Value(unit_fields::UnitFlags, entry.unitFlags);
+		spawned->setUInt32Value(unit_fields::DynamicFlags, entry.dynamicFlags);
 		spawned->setUInt32Value(unit_fields::NpcFlags, entry.npcFlags);
 		spawned->setByteValue(unit_fields::Bytes2, 1, 16);
+		spawned->setByteValue(unit_fields::Bytes2, 0, 1);		// Sheath State: Melee weapon
 
 		return spawned;
 	}

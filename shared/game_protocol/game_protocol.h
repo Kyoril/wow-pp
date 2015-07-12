@@ -175,6 +175,7 @@ namespace wowpp
 				LoginVerifyWorld			= 0x236,
 				SpellNonMeleeDamageLog		= 0x250,
 				StandStateUpdate			= 0x29D,
+				SpellFailedOther			= 0x2A6,
 				ChatPlayerNotFound			= 0x2A9,
 				InitWorldStates				= 0x2C2,
 				AddonInfo					= 0x2EF,
@@ -182,7 +183,7 @@ namespace wowpp
 				Motd						= 0x33D,
 				TimeSyncReq					= 0x390,
 				FeatureSystemStatus			= 0x3C8,
-				UnlearnSpells				= 0x41D
+				UnlearnSpells				= 0x41D,
 			};
 		}
 
@@ -756,6 +757,12 @@ namespace wowpp
 				UInt64 casterGUID,
 				UInt32 spellId,
 				game::SpellCastResult result
+				);
+
+			void spellFailedOther(
+				game::OutgoingPacket &out_packet,
+				UInt64 casterGUID,
+				UInt32 spellId
 				);
 
 			void spellCooldown(

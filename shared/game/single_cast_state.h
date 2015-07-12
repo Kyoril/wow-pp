@@ -65,7 +65,7 @@ namespace wowpp
 		Countdown m_countdown;
 		std::shared_ptr<char> m_isAlive;
 		boost::signals2::scoped_connection m_onTargetDied, m_onTargetRemoved;
-		boost::signals2::scoped_connection m_onUserDamaged;
+		boost::signals2::scoped_connection m_onUserDamaged, m_onUserMoved;
 
 		void sendEndCast(bool success);
 		void onCastFinished();

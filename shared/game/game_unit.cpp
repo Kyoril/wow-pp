@@ -223,6 +223,10 @@ namespace wowpp
 			getCurrentTime() + despawnDelay);
 	}
 
+	void GameUnit::cancelCast()
+	{
+		m_spellCast->stopCast();
+	}
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)
 	{
