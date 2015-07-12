@@ -51,6 +51,14 @@ CREATE TABLE `character_social` (
   PRIMARY KEY (`guid_1`,`guid_2`,`flags`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
 
+DROP TABLE IF EXISTS `character_spells`;
+
+CREATE TABLE `character_spells` (
+  `guid` bigint(10) unsigned NOT NULL,
+  `spell` bigint(10) unsigned NOT NULL,
+  PRIMARY KEY (`guid`,`spell`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
+
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
