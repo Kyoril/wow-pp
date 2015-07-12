@@ -23,6 +23,7 @@
 #include "templates/basic_template_load_context.h"
 #include "templates/basic_template_save_context.h"
 #include "item_entry.h"
+#include "spell_entry.h"
 #include "log/default_log_levels.h"
 
 namespace wowpp
@@ -85,14 +86,29 @@ namespace wowpp
 				}
 
 				// Setup spellIds
-				InitialSpellIds &spellIds = initialSpells[classId];
+				auto &spells = initialSpells[classId];
 				const sff::read::tree::Array<DataFileIterator> *spellArray = classTable->getArray("spells");
 				if (spellArray)
 				{
-					spellIds.resize(spellArray->getSize());
 					for (size_t x = 0, y = spellArray->getSize(); x < y; ++x)
 					{
-						spellIds[x] = spellArray->getInteger(x, 0xffff);
+						// Resolve spell ids
+						UInt16 spellId = spellArray->getInteger(x, 0);
+						context.loadLater.push_back(
+							[&spells, spellId, this, &context]() -> bool
+						{
+							const SpellEntry *spell = context.getSpell(spellId);
+							if (spell)
+							{
+								spells.push_back(spell);
+								return true;
+							}
+							else
+							{
+								ELOG("Unknown spell " << spellId << ": Can't be set as initial spell");
+								return false;
+							}
+						});
 					}
 				}
 			}
@@ -269,9 +285,9 @@ namespace wowpp
 
 					sff::write::Array<char> spellArray(classTable, "spells", sff::write::Comma);
 					{
-						for (const auto &spell : entry.second)
+						for (const auto *spell : entry.second)
 						{
-							spellArray.addElement(spell);
+							spellArray.addElement(spell->id);
 						}
 					}
 					spellArray.finish();

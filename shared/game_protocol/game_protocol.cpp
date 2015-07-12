@@ -297,7 +297,7 @@ namespace wowpp
 				for (UInt32 i = 0; i < 8; ++i)	// 8 = number of tutorial flags
 				{
 					out_packet
-						<< io::write<NetUInt32>(0xffffffff);		// 0x00 = unchanged
+						<< io::write<NetUInt32>(0x00000000);		// 0x00 = unchanged
 				}
 				out_packet.finish();
 			}
@@ -339,21 +339,21 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void initialSpells(game::OutgoingPacket &out_packet, const std::vector<UInt16> &spellIds)
+			void initialSpells(game::OutgoingPacket &out_packet, const std::vector<const SpellEntry*> &spells)
 			{
 				out_packet.start(game::server_packet::InitialSpells);
 				
 				out_packet
 					<< io::write<NetUInt8>(0x00);
 
-				const UInt16 spellCount = spellIds.size();
+				const UInt16 spellCount = spells.size();
 				out_packet
 					<< io::write<NetUInt16>(spellCount);
 
 				for (UInt16 i = 0; i < spellCount; ++i)
 				{
 					out_packet
-						<< io::write<NetUInt16>(spellIds[i])
+						<< io::write<NetUInt16>(spells[i]->id)
 						<< io::write<NetUInt16>(0x00);				// On Cooldown?
 				}
 
@@ -1216,6 +1216,59 @@ namespace wowpp
 					<< io::write<NetUInt32>(0);					// Added in 2.4.2.8209
 				out_packet.finish();
 			}
+
+			void spellEnergizeLog(game::OutgoingPacket &out_packet, UInt64 targetGuid, UInt64 casterGuid, UInt32 spellID, UInt8 powerType, UInt32 amount)
+			{
+				out_packet.start(game::server_packet::SpellEnergizeLog);
+				// Target GUID
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; targetGuid != 0; ++i)
+					{
+						if (targetGuid & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(targetGuid & 0xFF);
+							++size;
+						}
+
+						targetGuid >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+				// Caster GUID
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; casterGuid != 0; ++i)
+					{
+						if (casterGuid & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(casterGuid & 0xFF);
+							++size;
+						}
+
+						casterGuid >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+				out_packet
+					<< io::write<NetUInt32>(spellID)
+					<< io::write<NetUInt32>(powerType)
+					<< io::write<NetUInt32>(amount);
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read

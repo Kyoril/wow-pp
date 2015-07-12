@@ -419,19 +419,29 @@ namespace wowpp
 			return;
 		}
 
-		auto it1 = race->initialItems.find(character.class_);
-		if (it1 != race->initialItems.end())
+		// Send initial spells
+		const auto &initialSpellsEntry = race->initialSpells.find(character.class_);
+		if (initialSpellsEntry == race->initialSpells.end())
 		{
-			auto it2 = it1->second.find(character.gender);
-			if (it2 != it1->second.end())
-			{
-				// Found it - enumerate items
-				for (const auto *item : it2->second)
-				{
-					DLOG("\tCREATE INITIAL ITEM: " << item->id << " - " << item->name);
-				}
-			}
+			ELOG("No initial spells set up for race " << race->name << " and class " << character.class_);
+			sendPacket(
+				std::bind(game::server_write::charCreate, std::placeholders::_1, game::response_code::CharCreateError));
+			return;
 		}
+
+// 		auto it1 = race->initialItems.find(character.class_);
+// 		if (it1 != race->initialItems.end())
+// 		{
+// 			auto it2 = it1->second.find(character.gender);
+// 			if (it2 != it1->second.end())
+// 			{
+// 				// Found it - enumerate items
+// 				for (const auto *item : it2->second)
+// 				{
+// 					DLOG("\tCREATE INITIAL ITEM: " << item->id << " - " << item->name);
+// 				}
+// 			}
+// 		}
 
 		// Update character location
 		character.mapId = race->startMap;
@@ -442,7 +452,7 @@ namespace wowpp
 		character.o = race->startRotation;
 
 		// Create character
-		game::ResponseCode result = m_database.createCharacter(m_accountId, character);
+		game::ResponseCode result = m_database.createCharacter(m_accountId, initialSpellsEntry->second, character);
 		if (result == game::response_code::CharCreateSuccess)
 		{
 			// Cache the character data
@@ -532,126 +542,6 @@ namespace wowpp
 			return;
 		}
 
-		// Test - Equipment :)
-		const auto *race = character->getRaceEntry();
-		auto it1 = race->initialItems.find(character->getClass());
-		if (it1 != race->initialItems.end())
-		{
-			auto it2 = it1->second.find(character->getGender());
-			if (it2 != it1->second.end())
-			{
-				// Found it - enumerate items
-				for (const auto *item : it2->second)
-				{
-					UInt16 slot = 0xffff;
-					switch (item->inventoryType)
-					{
-						case 1:
-						{
-							slot = player_equipment_slots::Head;
-							break;
-						}
-						case 2:
-						{
-							slot = player_equipment_slots::Neck;
-							break;
-						}
-						case 3:
-						{
-							slot = player_equipment_slots::Shoulders;
-							break;
-						}
-						case 4:
-						{
-							slot = player_equipment_slots::Body;
-							break;
-						}
-						case 5:
-						case 20:
-						{
-							slot = player_equipment_slots::Chest;
-							break;
-						}
-						case 6:
-						{
-							slot = player_equipment_slots::Waist;
-							break;
-						}
-						case 7:
-						{
-							slot = player_equipment_slots::Legs;
-							break;
-						}
-						case 8:
-						{
-							slot = player_equipment_slots::Feet;
-							break;
-						}
-						case 9:
-						{
-							slot = player_equipment_slots::Wrists;
-							break;
-						}
-						case 10:
-						{
-							slot = player_equipment_slots::Hands;
-							break;
-						}
-						case 11:
-						{
-							//TODO: Finger1/2
-							slot = player_equipment_slots::Finger1;
-							break;
-						}
-						case 12:
-						{
-							//TODO: Trinket1/2
-							slot = player_equipment_slots::Trinket1;
-							break;
-						}
-						case 13:
-						case 17:
-						case 21:
-						{
-							slot = player_equipment_slots::Mainhand;
-							break;
-						}
-						case 14:
-						case 22:
-						case 23:
-						{
-							slot = player_equipment_slots::Offhand;
-							break;
-						}
-						case 15:
-						case 25:
-						{
-							slot = player_equipment_slots::Ranged;
-							break;
-						}
-						case 16:
-						{
-							slot = player_equipment_slots::Back;
-							break;
-						}
-						case 19:
-						{
-							slot = player_equipment_slots::Tabard;
-							break;
-						}
-					}
-
-					if (slot != 0xffff)
-					{
-						// Make visible
-						int visibleBase = character_fields::VisibleItem1_0 + (slot * 16);
-						character->setUInt32Value(visibleBase, item->id);
-					}
-				}
-			}
-		}
-
-
 		// We found the character - now we need to look for a world node
 		// which is hosting a fitting world instance or is able to create
 		// a new one
@@ -674,7 +564,7 @@ namespace wowpp
 		m_social.reset(new PlayerSocial(m_manager, *this));
 		m_database.getCharacterSocialList(m_characterId, *m_social);
 
-		//TODO Map found - check if player is member of an instance and if this instance
+		//TODO Map found - check if player is member of a group and if this instance
 		// is valid on the world node and if not, transfer player
 
 		// There should be an instance
@@ -692,59 +582,15 @@ namespace wowpp
 		// Save instance id
 		m_instanceId = instanceId;
 
+		// TODO: These packets shouldn't be sent by the realm, but by the world node
+#if 1
 		// Update character on the realm side with data received from the world server
 		//m_gameCharacter->setGuid(createGUID(worldObjectGuid, 0, high_guid::Player));
 		m_gameCharacter->relocate(x, y, z, o);
 		m_gameCharacter->setMapId(mapId);
 
-		// TODO: Remove this
-#define MAKE_PAIR32(l, h)  UInt32(UInt16(l) | (UInt32(h) << 16))
-#define PLAYER_SKILL_INDEX(x)       (character_fields::SkillInfo1_1 + ((x)* 3))
-#define PLAYER_SKILL_VALUE_INDEX(x) (PLAYER_SKILL_INDEX(x) + 1)
-#define PLAYER_SKILL_BONUS_INDEX(x) (PLAYER_SKILL_INDEX(x) + 2)
-
-#define MAKE_SKILL_VALUE(v, m) MAKE_PAIR32(v, m)
-#define MAKE_SKILL_BONUS(t, p) MAKE_PAIR32(t, p)
-
-		// If we are an alliance player, learn "Common language", learn "Orcish" otherwise.
-		// This is hacky at the moment, but it will enable the client to send chat messages
-		// to the realm, which we want in order to evaluate debug/dev commands
-		UInt32 languageSkill = (m_gameCharacter->getRaceEntry()->baseLanguage == 7 ? 98 : 109);
-		m_gameCharacter->setUInt32Value(PLAYER_SKILL_INDEX(0), MAKE_PAIR32(languageSkill, 0));
-		m_gameCharacter->setUInt32Value(PLAYER_SKILL_VALUE_INDEX(0), MAKE_SKILL_VALUE(300, 300));
-
 		// Clear mask
 		m_gameCharacter->clearUpdateMask();
-
-		// TODO Send proficiencies
-		/*{
-			sendPacket(
-				std::bind(game::server_write::setProficiency, std::placeholders::_1, 0x02, 0x10000000));
-
-			sendPacket(
-				std::bind(game::server_write::setProficiency, std::placeholders::_1, 0x02, 0x90000000));
-
-			sendPacket(
-				std::bind(game::server_write::setProficiency, std::placeholders::_1, 0x02, 0x90800000));
-
-			sendPacket(
-				std::bind(game::server_write::setProficiency, std::placeholders::_1, 0x02, 0x90C00000));
-
-			sendPacket(
-				std::bind(game::server_write::setProficiency, std::placeholders::_1, 0x04, 0x08000000));
-
-			sendPacket(
-				std::bind(game::server_write::setProficiency, std::placeholders::_1, 0x04, 0x0C000000));
-
-			sendPacket(
-				std::bind(game::server_write::setProficiency, std::placeholders::_1, 0x04, 0x0E000000));
-
-			sendPacket(
-				std::bind(game::server_write::setProficiency, std::placeholders::_1, 0x04, 0x4E000000));
-
-			sendPacket(
-				std::bind(game::server_write::setProficiency, std::placeholders::_1, 0x04, 0x4F000000));
-		}*/
 
 		sendPacket(
 			std::bind(game::server_write::setDungeonDifficulty, std::placeholders::_1));
@@ -772,36 +618,24 @@ namespace wowpp
 		sendPacket(
 			std::bind(game::server_write::setRestStart, std::placeholders::_1));
 
-		// Notify about bind point for heathstone (also used in case of corrupted location data)
+		// Notify about bind point for hearthstone (also used in case of corrupted location data)
 		sendPacket(
 			std::bind(game::server_write::bindPointUpdate, std::placeholders::_1, mapId, zoneId, x, y, z));
 		
 		// Send tutorial flags (which tutorials have been viewed etc.)
 		sendPacket(
 			std::bind(game::server_write::tutorialFlags, std::placeholders::_1));
-
-		auto raceEntry = m_gameCharacter->getRaceEntry();
-		assert(raceEntry);
-
-		// Send initial spells
-		const auto &initialSpellsEntry = raceEntry->initialSpells.find(m_gameCharacter->getClass());
-		if (initialSpellsEntry != raceEntry->initialSpells.end())
-		{
-			// Send initial spells of this character
-			const std::vector<UInt16> &spellIds = initialSpellsEntry->second;
-			sendPacket(
-				std::bind(game::server_write::initialSpells, std::placeholders::_1, std::cref(spellIds)));
-		}
-		else
-		{
-			// Send initial spells of this character
-			std::vector<UInt16> spellIds;
-			sendPacket(
-				std::bind(game::server_write::initialSpells, std::placeholders::_1, std::cref(spellIds)));
-		}
+		
+		// Send spells
+		const auto &spells = m_gameCharacter->getSpells();
+		sendPacket(
+			std::bind(game::server_write::initialSpells, std::placeholders::_1, std::cref(spells)));
 
 		sendPacket(
 			std::bind(game::server_write::unlearnSpells, std::placeholders::_1));
+
+		auto raceEntry = m_gameCharacter->getRaceEntry();
+		assert(raceEntry);
 
 		auto cls = m_gameCharacter->getClass();
 		auto classBtns = raceEntry->initialActionButtons.find(cls);
@@ -844,7 +678,6 @@ namespace wowpp
 			UInt8 objectTypeId = 0x04;						// Player
 
 			UInt64 guid = m_gameCharacter->getGuid();
-			//ILOG("My GUID: 0x" << std::hex << std::uppercase << guid);
 
 			// Header with object guid and type
 			writer
@@ -959,6 +792,7 @@ namespace wowpp
 		m_timeSyncCounter = 0;
 		sendPacket(
 			std::bind(game::server_write::timeSyncReq, std::placeholders::_1, m_timeSyncCounter++));
+#endif
 	}
 
 	void Player::worldInstanceLeft(World &world, UInt32 instanceId, pp::world_realm::WorldLeftReason reason)

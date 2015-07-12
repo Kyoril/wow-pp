@@ -29,11 +29,13 @@
 #include "player_manager.h"
 #include <boost/format.hpp>
 #include "log/default_log_levels.h"
+#include "data/project.h"
 
 namespace wowpp
 {
-	MySQLDatabase::MySQLDatabase(const MySQL::DatabaseInfo &connectionInfo)
-		: m_connectionInfo(connectionInfo)
+	MySQLDatabase::MySQLDatabase(Project &project, const MySQL::DatabaseInfo &connectionInfo)
+		: m_project(project)
+		, m_connectionInfo(connectionInfo)
 	{
 	}
 
@@ -84,7 +86,7 @@ namespace wowpp
 		return retCount;
 	}
 
-	game::ResponseCode MySQLDatabase::createCharacter(UInt32 accountId, game::CharEntry &character)
+	game::ResponseCode MySQLDatabase::createCharacter(UInt32 accountId, const std::vector<const SpellEntry*> &spells,  game::CharEntry &character)
 	{
 		// See if the character name is already in use
 		const String safeName = m_connection.escapeString(character.name);
@@ -198,6 +200,26 @@ namespace wowpp
 				if (row)
 				{
 					row.getField(0, character.id);
+
+					// Add spells
+					for (const auto *spell : spells)
+					{
+						// Now, learn all initial spells
+						if (!m_connection.execute((boost::format(
+							//                                 0        1 
+							"INSERT INTO `character_spells` (`guid`,`spell`) VALUES (%1%, %2%)")
+							% character.id
+							% spell->id).str()))
+						{
+							// Could not learn initial spells
+							printDatabaseError();
+							return game::response_code::CharCreateError;
+						}
+					}
+
+					// TODO: Initialize action bars
+
+
 					return game::response_code::CharCreateSuccess;
 				}
 				else
@@ -291,21 +313,53 @@ namespace wowpp
 		return true;
 	}
 
-	game::ResponseCode MySQLDatabase::deleteCharacter(UInt32 accountId, UInt32 characterGuid)
+	game::ResponseCode MySQLDatabase::deleteCharacter(UInt32 accountId, UInt64 characterGuid)
 	{
-		if (m_connection.execute((boost::format(
-			"DELETE FROM `character` WHERE `id`=%1% AND `account`=%2%")
-			% characterGuid 
-			% accountId).str()))
+		const UInt32 lowerPart = guidLowerPart(characterGuid);
+
+		// Start transaction
+		MySQL::Transaction transation(m_connection);
 		{
-			return game::response_code::CharDeleteSuccess;
+			if (!m_connection.execute((boost::format(
+				"DELETE FROM `character` WHERE `id`=%1% AND `account`=%2%")
+				% lowerPart
+				% accountId).str()))
+			{
+				// There was an error
+				printDatabaseError();
+				return game::response_code::CharDeleteFailed;
+			}
+
+			if (!m_connection.execute((boost::format(
+				"DELETE FROM `character_social` WHERE `guid_1`=%1% OR `guid_2`=%1%")
+				% characterGuid).str()))
+			{
+				// There was an error
+				printDatabaseError();
+				return game::response_code::CharDeleteFailed;
+			}
+
+			if (!m_connection.execute((boost::format(
+				"DELETE FROM `character_spells` WHERE `guid`=%1%")
+				% lowerPart).str()))
+			{
+				// There was an error
+				printDatabaseError();
+				return game::response_code::CharDeleteFailed;
+			}
+
+			if (!m_connection.execute((boost::format(
+				"DELETE FROM `character_actions` WHERE `guid`=%1%")
+				% lowerPart).str()))
+			{
+				// There was an error
+				printDatabaseError();
+				return game::response_code::CharDeleteFailed;
+			}
 		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return game::response_code::CharDeleteFailed;
-		}
+		transation.commit();
+
+		return game::response_code::CharDeleteSuccess;
 	}
 
 	bool MySQLDatabase::getGameCharacter(DatabaseId characterId, GameCharacter &out_character)
@@ -391,6 +445,36 @@ namespace wowpp
 				row.getField(14, o);
 				out_character.relocate(x, y, z, o);
 				out_character.setMapId(mapId);
+
+				// Load character spells
+				wowpp::MySQL::Select spellSelect(m_connection, (boost::format(
+					//       0     
+					"SELECT `spell` FROM `character_spells` WHERE `guid`=%1%")
+					% characterId).str());
+				if (select.success())
+				{
+					wowpp::MySQL::Row spellRow(spellSelect);
+					while (spellRow)
+					{
+						UInt32 spellId = 0;
+						spellRow.getField(0, spellId);
+
+						// Try to find that spell
+						const auto *spell = m_project.spells.getById(spellId);
+						if (!spell)
+						{
+							// Could not find spell
+							WLOG("Unknown spell found: " << spellId << " - spell will be ignored!");
+						}
+						else
+						{
+							// Our character knows that spell now
+							out_character.addSpell(*spell);
+						}
+
+						spellRow = spellRow.next(spellSelect);
+					}
+				}
 
 				return true;
 			}

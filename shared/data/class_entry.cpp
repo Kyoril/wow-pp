@@ -37,7 +37,6 @@ namespace wowpp
 			}
 		};
 
-
 		static_assert(power_type::Mana == 0, "");
 		static_assert(power_type::Rage == 1, "");
 		static_assert(power_type::Focus == 2, "");
@@ -77,6 +76,33 @@ namespace wowpp
 		wrapper.table.tryGetInteger("spellFamily", spellFamily);
 		flags = static_cast<ClassFlags>(wrapper.table.getInteger("flags", 0));
 
+		// Load level base values
+		if (const sff::read::tree::Array<DataFileIterator> *const levelArray = wrapper.table.getArray("base_values"))
+		{
+			for (size_t j = 0, d = levelArray->getSize(); j < d; ++j)
+			{
+				const sff::read::tree::Table<DataFileIterator> *const valueTable = levelArray->getTable(j);
+				if (!valueTable)
+				{
+					context.onError("Invalid level");
+					return false;
+				}
+
+				UInt32 level = 0, health = 0, mana = 0;
+				if (!valueTable->tryGetInteger("level", level))
+				{
+					context.onError("No level information provided - skipping entry");
+					continue;
+				}
+				valueTable->tryGetInteger("health", health);
+				valueTable->tryGetInteger("mana", mana);
+
+				auto &info = levelBaseValues[level];
+				info.health = health;
+				info.mana = mana;
+			}
+		}
+
 		return true;
 	}
 
@@ -89,5 +115,23 @@ namespace wowpp
 		context.table.addKey("powerType", constant_literal::powerType.getName(powerType));
 		context.table.addKey("flags", flags);
 		context.table.addKey("spellFamily", spellFamily);
+
+		// Write stats
+		sff::write::Array<char> levelArray(context.table, "base_values", sff::write::MultiLine);
+		{
+			for (const auto &entry : levelBaseValues)
+			{
+				UInt32 level = entry.first;
+
+				// New stat table
+				sff::write::Table<char> valueTable(levelArray, sff::write::Comma);
+				{
+					valueTable.addKey("level", level);
+					valueTable.addKey("health", entry.second.health);
+					valueTable.addKey("mana", entry.second.mana);
+				}
+				valueTable.finish();
+			}
+		}
 	}
 }

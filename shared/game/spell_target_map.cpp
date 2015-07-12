@@ -178,9 +178,9 @@ namespace wowpp
 		if (targetMap.m_targetMap & game::spell_cast_target_flags::DestLocation)
 		{
 			if (!(r
-				>> io::read<float>(targetMap.m_srcX)
-				>> io::read<float>(targetMap.m_srcY)
-				>> io::read<float>(targetMap.m_srcZ)))
+				>> io::read<float>(targetMap.m_dstX)
+				>> io::read<float>(targetMap.m_dstY)
+				>> io::read<float>(targetMap.m_dstZ)))
 			{
 				return r;
 			}

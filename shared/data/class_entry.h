@@ -77,11 +77,26 @@ namespace wowpp
 	{
 		typedef BasicTemplate<UInt32> Super;
 
+		struct ClassBaseValues
+		{
+			UInt32 health;
+			UInt32 mana;
+
+			ClassBaseValues()
+				: health(0)
+				, mana(0)
+			{
+			}
+		};
+
+		typedef std::map<UInt32, ClassBaseValues> ClassLevelBaseValues;
+
 		PowerType powerType;
 		String name;
 		String internalName;
 		UInt32 spellFamily;
 		ClassFlags flags;
+		ClassLevelBaseValues levelBaseValues;
 
 		ClassEntry();
 		bool load(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper);

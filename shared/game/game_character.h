@@ -402,6 +402,9 @@ namespace wowpp
 
 	typedef player_key_ring_slots::Enum PlayerKeyRingSlots;
 
+	struct SpellEntry;
+	struct ItemEntry;
+
 	/// 
 	class GameCharacter : public GameUnit
 	{
@@ -420,21 +423,36 @@ namespace wowpp
 
 		virtual void initialize() override;
 
+		/// Adds an item to a given slot.
+		void addItem(std::unique_ptr<GameItem> item, UInt16 slot);
+		void addSpell(const SpellEntry &spell);
+		bool hasSpell(UInt32 spellId) const;
+
 		virtual ObjectType getTypeId() const override { return object_type::Character; }
 
 		void setName(const String &name);
 		const String &getName() const { return m_name; }
 		void setZone(UInt32 zoneIndex) { m_zoneIndex = zoneIndex; }
 		UInt32 getZone() const { return m_zoneIndex; }
+		const std::vector<const SpellEntry*> &getSpells() const { return m_spells; }
 
 	protected:
 
 		virtual void levelChanged(const LevelEntry &levelInfo) override;
+		void updateAllStats();
+		void updateMaxHealth();
+		void updateMaxPower(PowerType power);
+
+		// TODO: Outsource
+		float getHealthBonusFromStamina() const;
+		float getManaBonusFromIntellect() const;
 
 	private:
 
 		String m_name;
 		UInt32 m_zoneIndex;
+		std::vector<const SpellEntry*> m_spells;
+		std::map<UInt16, std::unique_ptr<GameItem>> m_itemSlots;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameCharacter const& object);

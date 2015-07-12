@@ -112,6 +112,37 @@ namespace wowpp
 
 		// Update xp to next level
 		setUInt32Value(character_fields::NextLevelXp, levelInfo.nextLevelXP);
+		
+		// Try to find base values
+		if (getClassEntry())
+		{
+			auto &levelBaseValues = getClassEntry()->levelBaseValues;
+			auto it = levelBaseValues.find(levelInfo.id);
+			if (it != levelBaseValues.end())
+			{
+				// Update base health and mana
+				setUInt32Value(unit_fields::BaseHealth, it->second.health);
+				setUInt32Value(unit_fields::BaseMana, it->second.mana);
+			}
+			else
+			{
+				DLOG("Couldn't find level entry for level " << levelInfo.id);
+			}
+		}
+		else
+		{
+			DLOG("Couldn't find class entry!");
+		}
+
+		// Update all stats
+		updateAllStats();
+
+		// Maximize health and all powers
+		setUInt32Value(unit_fields::Health, getUInt32Value(unit_fields::MaxHealth));
+		for (size_t i = 0; i < 5; ++i)
+		{
+			setUInt32Value(unit_fields::Power1 + i, getUInt32Value(unit_fields::MaxPower1 + i));
+		}
 	}
 
 	void GameCharacter::setName(const String &name)
@@ -119,6 +150,124 @@ namespace wowpp
 		m_name = name;
 	}
 
+	void GameCharacter::addItem(std::unique_ptr<GameItem> item, UInt16 slot)
+	{
+		// Check if that item already exists
+		auto it = m_itemSlots.find(slot);
+		if (it == m_itemSlots.end())
+		{
+			// Set new item guid
+			setUInt64Value(character_fields::InvSlotHead + (slot * 2), item->getGuid());
+			item->setUInt64Value(item_fields::Contained, getGuid());
+			item->setUInt64Value(item_fields::Owner, getGuid());
+			
+			// If this item was equipped, make it visible for other players
+			if (slot < player_equipment_slots::End)
+			{
+				setUInt64Value(character_fields::VisibleItem1_CREATOR + (slot * 16), item->getUInt64Value(item_fields::Creator));
+
+				const int visibleBase = character_fields::VisibleItem1_0 + (slot * 16);
+				setUInt32Value(visibleBase, guidEntryPart(item->getGuid()));
+
+				// TODO: Apply Enchantment Slots
+
+				// TODO: Apply random property settings
+			}
+
+			// Store new item
+			m_itemSlots[slot] = std::move(item);
+		}
+		else
+		{
+			// Item already exists, increase the stack number, old item will be deleted
+			auto &playerItem = it->second;
+
+			// Increase stack
+			const UInt32 existingStackCount = playerItem->getUInt32Value(item_fields::StackCount);
+			const UInt32 additionalStackCount = item->getUInt32Value(item_fields::StackCount);
+
+			// Apply stack count
+			playerItem->setUInt32Value(item_fields::StackCount, existingStackCount + additionalStackCount);
+		}
+	}
+
+	void GameCharacter::addSpell(const SpellEntry &spell)
+	{
+		if (hasSpell(spell.id))
+		{
+			return;
+		}
+
+		m_spells.push_back(&spell);
+	}
+
+	bool GameCharacter::hasSpell(UInt32 spellId) const
+	{
+		for (const auto *spell : m_spells)
+		{
+			if (spell->id == spellId)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	float GameCharacter::getManaBonusFromIntellect() const
+	{
+		float intellect = float(getUInt32Value(unit_fields::Stat3));
+		
+		float base = intellect < 20.0f ? intellect : 20.0f;
+		float bonus = intellect - base;
+
+		return base + (bonus * 15.0f);
+	}
+
+	float GameCharacter::getHealthBonusFromStamina() const
+	{
+		float stamina = float(getUInt32Value(unit_fields::Stat2));
+
+		float base = stamina < 20.0f ? stamina : 20.0f;
+		float bonus = stamina - base;
+
+		return base + (bonus * 10.0f);
+	}
+
+	void GameCharacter::updateMaxPower(PowerType power)
+	{
+		UInt32 createPower = 0;
+		switch (power)
+		{
+			case power_type::Mana:		createPower = getUInt32Value(unit_fields::BaseMana); break;
+			case power_type::Rage:		createPower = 1000; break;
+			case power_type::Energy:    createPower = 100; break;
+		}
+
+		float powerBonus = (power == power_type::Mana && createPower > 0) ? getManaBonusFromIntellect() : 0;
+
+		float value = createPower;
+		value += powerBonus;
+
+		setUInt32Value(unit_fields::MaxPower1 + static_cast<UInt16>(power), UInt32(value));
+	}
+
+	void GameCharacter::updateMaxHealth()
+	{
+		float value = getUInt32Value(unit_fields::BaseHealth);
+		value += getHealthBonusFromStamina();
+
+		setUInt32Value(unit_fields::MaxHealth, UInt32(value));
+	}
+
+	void GameCharacter::updateAllStats()
+	{
+		updateMaxHealth();
+		for (size_t i = 0; i < power_type::Happiness; ++i)
+		{
+			updateMaxPower(static_cast<PowerType>(i));
+		}
+	}
 
 	io::Writer & operator<<(io::Writer &w, GameCharacter const& object)
 	{

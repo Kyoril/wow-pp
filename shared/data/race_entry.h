@@ -28,6 +28,7 @@
 namespace wowpp
 {
 	struct ItemEntry;
+	struct SpellEntry;
 
 	struct RaceEntry : BasicTemplate<UInt32>
 	{
@@ -37,8 +38,8 @@ namespace wowpp
 		typedef std::map<UInt32, InitialItemVector> GenderItemMap;
 		typedef std::map<UInt32, GenderItemMap> ClassGenderItemMap;
 
-		typedef std::vector<UInt16> InitialSpellIds;
-		typedef std::map<UInt32, InitialSpellIds> InitialClassSpellMap;
+		typedef std::vector<const SpellEntry*> InitialSpellVector;
+		typedef std::map<UInt32, InitialSpellVector> InitialClassSpellMap;
 		typedef std::map<UInt32, ActionButtons> InitialActionButtonsMap;
 
 		String name;

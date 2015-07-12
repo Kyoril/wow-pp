@@ -205,6 +205,12 @@ namespace wowpp
 					break;
 				}
 
+				case se::PowerDrain:
+				{
+					spellEffectDrainPower(effect);
+					break;
+				}
+
 				case se::Heal:
 				{
 
@@ -239,15 +245,8 @@ namespace wowpp
 
 	void SingleCastState::spellEffectSchoolDamage(const SpellEntry::Effect &effect)
 	{	
-		// Calculate the damage done
-		const float basePointsPerLevel = effect.pointsPerLevel;
-		const Int32 basePoints = effect.basePoints;
-		const Int32 randomPoints = effect.dieSides;
-
-		std::uniform_int_distribution<int> distribution(effect.baseDice, randomPoints);
-		const Int32 randomValue = (effect.baseDice >= randomPoints ? effect.baseDice : distribution(randomGenerator));
-
-		UInt32 damage = basePoints + randomValue;
+		// Calculate damage based on base points
+		UInt32 damage = calculateEffectBasePoints(effect);
 
 		// TODO: Apply combo point damage
 
@@ -318,8 +317,115 @@ namespace wowpp
 			unitTarget->killed(&caster);
 			unitTarget->triggerDespawnTimer(constants::OneSecond * 30);
 		}
+	}
 
-		DLOG("EFFECT_SCHOOL_DAMAGE: " << damage);
+	void SingleCastState::spellEffectDrainPower(const SpellEntry::Effect &effect)
+	{
+		// Calculate the power to drain
+		UInt32 powerToDrain = calculateEffectBasePoints(effect);
+		Int32 powerType = effect.miscValueA;
+
+		// Resolve GUIDs
+		GameObject *target = nullptr;
+		GameUnit *unitTarget = nullptr;
+		GameUnit &caster = m_cast.getExecuter();
+		auto *world = caster.getWorldInstance();
+
+		if (m_target.getTargetMap() & game::spell_cast_target_flags::Self)
+			target = &caster;
+		else if (world)
+		{
+			UInt64 targetGuid = 0;
+			if (m_target.hasUnitTarget())
+				targetGuid = m_target.getUnitTarget();
+			else if (m_target.hasGOTarget())
+				targetGuid = m_target.getGOTarget();
+			else if (m_target.hasItemTarget())
+				targetGuid = m_target.getItemTarget();
+
+			if (targetGuid != 0)
+				target = world->findObjectByGUID(targetGuid);
+
+			if (m_target.hasUnitTarget() && isUnitGUID(targetGuid))
+				unitTarget = reinterpret_cast<GameUnit*>(target);
+		}
+
+		// Check target
+		if (!unitTarget)
+		{
+			WLOG("EFFECT_POWER_DRAIN: No valid target found!");
+			return;
+		}
+
+		// Does this have any effect on the target?
+		if (unitTarget->getByteValue(unit_fields::Bytes0, 3) != powerType)
+			return;	// Target does not use this kind of power
+		if (powerToDrain < 0)
+			return;	// Nothing to drain...
+
+		UInt32 currentPower = unitTarget->getUInt32Value(unit_fields::Power1 + powerType);
+		if (currentPower == 0)
+			return;	// Target doesn't have any power left
+
+		// Now drain the power
+		if (powerToDrain > currentPower)
+			powerToDrain = currentPower;
+
+		// Remove power
+		unitTarget->setUInt32Value(unit_fields::Power1 + powerType, currentPower - powerToDrain);
+
+		// If mana was drain, give the same amount of mana to the caster (or energy, if the caster does
+		// not use mana)
+		if (powerType == power_type::Mana)
+		{
+			// Give the same amount of power to the caster, but convert it to energy if needed
+			UInt8 casterPowerType = caster.getByteValue(unit_fields::Bytes0, 3);
+			if (casterPowerType != powerType)
+			{
+				// Only mana will be given
+				return;
+			}
+
+			// Create the packet
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket packet(sink);
+			game::server_write::spellEnergizeLog(packet, caster.getGuid(), caster.getGuid(), m_spell.id, casterPowerType, powerToDrain);
+
+			// Send notification
+			float x, y, z, o;
+			caster.getLocation(x, y, z, o);
+			TileIndex2D tileIndex;
+			world->getGrid().getTilePosition(x, y, z, tileIndex[0], tileIndex[1]);
+			forEachSubscriberInSight(
+				world->getGrid(),
+				tileIndex,
+				[&packet, &buffer](ITileSubscriber &subscriber)
+			{
+				subscriber.sendPacket(
+					packet, buffer);
+			});
+
+			// Modify casters power values
+			UInt32 casterPower = caster.getUInt32Value(unit_fields::Power1 + casterPowerType);
+			UInt32 maxCasterPower = caster.getUInt32Value(unit_fields::MaxPower1 + casterPowerType);
+			if (casterPower + powerToDrain > maxCasterPower)
+				powerToDrain = maxCasterPower - casterPower;
+			caster.setUInt32Value(unit_fields::Power1 + casterPowerType, casterPower + powerToDrain);
+		}
+	}
+
+	UInt32 SingleCastState::calculateEffectBasePoints(const SpellEntry::Effect &effect)
+	{
+		// Calculate the damage done
+		const float basePointsPerLevel = effect.pointsPerLevel;
+		const Int32 basePoints = effect.basePoints;
+		const Int32 randomPoints = effect.dieSides;
+
+		std::uniform_int_distribution<int> distribution(effect.baseDice, randomPoints);
+		const Int32 randomValue = (effect.baseDice >= randomPoints ? effect.baseDice : distribution(randomGenerator));
+
+		return basePoints + randomValue;
 	}
 
 }

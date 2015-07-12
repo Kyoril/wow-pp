@@ -164,6 +164,7 @@ namespace wowpp
 				SpellFailure				= 0x133,
 				SpellCooldown				= 0x134,
 				CooldownEvent				= 0x135,
+				SpellEnergizeLog			= 0x151,
 				BindPointUpdate				= 0x155,
 				Pong						= 0x1DD,
 				AuthChallenge				= 0x1EC,
@@ -585,7 +586,7 @@ namespace wowpp
 
 			void initialSpells(
 				game::OutgoingPacket &out_packet,
-				const std::vector<UInt16> &spellIds
+				const std::vector<const SpellEntry*> &spells
 				);
 
 			void bindPointUpdate(
@@ -779,6 +780,15 @@ namespace wowpp
 				bool PhysicalDamage,
 				UInt32 blockedDamage,
 				bool criticalHit
+				);
+
+			void spellEnergizeLog(
+				game::OutgoingPacket &out_packet,
+				UInt64 targetGuid,
+				UInt64 casterGuid,
+				UInt32 spellID,
+				UInt8 powerType,
+				UInt32 amount
 				);
 		};
 	}

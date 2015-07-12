@@ -111,11 +111,15 @@ namespace wowpp
 		// Setup MySQL database
 		std::unique_ptr<MySQLDatabase> db(
 			new MySQLDatabase(
-			MySQL::DatabaseInfo(m_configuration.mysqlHost,
-			m_configuration.mysqlPort,
-			m_configuration.mysqlUser,
-			m_configuration.mysqlPassword,
-			m_configuration.mysqlDatabase)));
+				project,
+				MySQL::DatabaseInfo(
+					m_configuration.mysqlHost,
+					m_configuration.mysqlPort,
+					m_configuration.mysqlUser,
+					m_configuration.mysqlPassword,
+					m_configuration.mysqlDatabase
+				)
+			));
 		if (!db->load())
 		{
 			// Could not load MySQL database
