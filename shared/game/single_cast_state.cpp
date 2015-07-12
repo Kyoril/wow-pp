@@ -54,40 +54,44 @@ namespace wowpp
 			return;
 		}
 
+		auto const casterId = executer.getGuid();
+		auto const targetId = target.getUnitTarget();
+		auto const spellId = spell.id;
+
+		float x, y, z, o;
+		executer.getLocation(x, y, z, o);
+
+		TileIndex2D tileIndex;
+		worldInstance->getGrid().getTilePosition(x, y, z, tileIndex[0], tileIndex[1]);
+
+		std::vector<char> buffer;
+		io::VectorSink sink(buffer);
+		game::Protocol::OutgoingPacket packet(sink);
+		game::server_write::spellStart(packet, casterId, casterId, m_spell, m_target, game::spell_cast_flags::Unknown1, castTime, 0);
+
+		forEachSubscriberInSight(
+			worldInstance->getGrid(),
+			tileIndex,
+			[&buffer, &packet](ITileSubscriber &subscriber)
+		{
+			subscriber.sendPacket(
+				packet,
+				buffer
+				);
+		});
+
 		m_countdown.ended.connect([this]()
 		{
 			this->onCastFinished();
 		});
 
-		m_countdown.setEnd(getCurrentTime() + castTime);
-
-		//if (castTime > 0)
+		if (castTime > 0)
 		{
-			auto const casterId = executer.getGuid();
-			auto const targetId = target.getUnitTarget();
-			auto const spellId = spell.id;
-			
-			float x, y, z, o;
-			executer.getLocation(x, y, z, o);
-
-			TileIndex2D tileIndex;
-			worldInstance->getGrid().getTilePosition(x, y, z, tileIndex[0], tileIndex[1]);
-			
-			std::vector<char> buffer;
-			io::VectorSink sink(buffer);
-			game::Protocol::OutgoingPacket packet(sink);
-			game::server_write::spellStart(packet, casterId, casterId, m_spell, m_target, game::spell_cast_flags::Unknown1, castTime, 0);
-
-			forEachSubscriberInSight(
-				worldInstance->getGrid(),
-				tileIndex,
-				[&buffer, &packet](ITileSubscriber &subscriber)
-			{
-				subscriber.sendPacket(
-					packet,
-					buffer
-					);
-			});
+			m_countdown.setEnd(getCurrentTime() + castTime);
+		}
+		else
+		{
+			onCastFinished();
 		}
 
 		// TODO: Subscribe to target removed and died events (in both cases, the cast may be interrupted)

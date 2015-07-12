@@ -137,12 +137,12 @@ namespace wowpp
 		// Update all stats
 		updateAllStats();
 
-		// Maximize health and all powers
+		// Maximize health
 		setUInt32Value(unit_fields::Health, getUInt32Value(unit_fields::MaxHealth));
-		for (size_t i = 0; i < 5; ++i)
-		{
-			setUInt32Value(unit_fields::Power1 + i, getUInt32Value(unit_fields::MaxPower1 + i));
-		}
+
+		// Maximize mana and energy
+		setUInt32Value(unit_fields::Power1, getUInt32Value(unit_fields::MaxPower1));
+		setUInt32Value(unit_fields::Power3, getUInt32Value(unit_fields::MaxPower3));
 	}
 
 	void GameCharacter::setName(const String &name)
@@ -284,6 +284,4 @@ namespace wowpp
 			>> io::read_container<NetUInt8>(object.m_name)
 			>> io::read<NetUInt32>(object.m_zoneIndex);
 	}
-
 }
-

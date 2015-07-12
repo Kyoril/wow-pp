@@ -145,7 +145,6 @@ namespace wowpp
 		spawned->setMapId(m_mapEntry.id);
 		spawned->relocate(x, y, z, o);
 
-
 		// Choose a level
 		UInt8 creatureLevel = entry.minLevel;
 		if (entry.maxLevel != entry.minLevel)
