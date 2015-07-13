@@ -23,6 +23,9 @@
 #include "templates/basic_template_load_context.h"
 #include "templates/basic_template_save_context.h"
 #include "game/defines.h"
+#include "skill_entry.h"
+#include "data_load_context.h"
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -44,7 +47,7 @@ namespace wowpp
 		attributesEx.fill(0);
 	}
 
-	bool SpellEntry::load(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper)
+	bool SpellEntry::load(DataLoadContext &context, const ReadTableWrapper &wrapper)
 	{
 		if (!Super::loadBase(context, wrapper))
 		{
@@ -74,6 +77,35 @@ namespace wowpp
 		wrapper.table.tryGetInteger("dmg_class", dmgClass);
 		wrapper.table.tryGetInteger("item_class", itemClass);
 		wrapper.table.tryGetInteger("item_subclass_mask", itemSubClassMask);
+
+		const sff::read::tree::Array<DataFileIterator> *skillsArray = wrapper.table.getArray("skills");
+		if (skillsArray)
+		{
+			for (size_t j = 0, d = skillsArray->getSize(); j < d; ++j)
+			{
+				UInt32 skillId = skillsArray->getInteger(j, 0);
+				if (skillId == 0)
+				{
+					context.onWarning("Invalid skill id in spell entry - skill will be ignored");
+					continue;
+				}
+
+				context.loadLater.push_back([skillId, this, &context]() -> bool
+				{
+					const SkillEntry * skill = context.getSkill(skillId);
+					if (skill)
+					{
+						this->skillsOnLearnSpell.push_back(skill);
+						return true;
+					}
+					else
+					{
+						WLOG("Unknown skill " << skillId << "  for spell entry " << this->id << " - skill will be ignored!");
+						return true;
+					}
+				});
+			}
+		}
 
 		const sff::read::tree::Array<DataFileIterator> *effectsArray = wrapper.table.getArray("effects");
 		if (effectsArray)
@@ -145,6 +177,19 @@ namespace wowpp
 		if (dmgClass != 0) context.table.addKey("dmg_class", dmgClass);
 		if (itemClass != -1) context.table.addKey("item_class", itemClass);
 		if (itemSubClassMask != 0) context.table.addKey("item_subclass_mask", itemSubClassMask);
+
+		// Write skills
+		if (!skillsOnLearnSpell.empty())
+		{
+			sff::write::Array<char> skillsArray(context.table, "skills", sff::write::Comma);
+			{
+				for (auto &skill : skillsOnLearnSpell)
+				{
+					skillsArray.addElement(skill->id);
+				}
+			}
+			skillsArray.finish();
+		}
 
 		// Write spell effects
 		if (!effects.empty())

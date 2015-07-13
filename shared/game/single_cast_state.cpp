@@ -239,13 +239,20 @@ namespace wowpp
 
 				case se::Heal:
 				{
-
 					break;
 				}
 
 				case se::Proficiency:
 				{
 					spellEffectProficiency(effect);
+					break;
+				}
+
+				case se::Weapon:
+				case se::Language:
+				{
+					// Nothing to do here, since the skills for these spells will be applied as soon as the player
+					// learns this spell.
 					break;
 				}
 

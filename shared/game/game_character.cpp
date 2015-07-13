@@ -21,6 +21,7 @@
 
 #include "game_character.h"
 #include <log/default_log_levels.h>
+#include "data/skill_entry.h"
 
 namespace wowpp
 {
@@ -201,6 +202,12 @@ namespace wowpp
 		}
 
 		m_spells.push_back(&spell);
+
+		// Add dependant skills
+		for (const auto *skill : spell.skillsOnLearnSpell)
+		{
+			addSkill(*skill);
+		}
 	}
 
 	bool GameCharacter::hasSpell(UInt32 spellId) const
@@ -268,6 +275,152 @@ namespace wowpp
 		for (size_t i = 0; i < power_type::Happiness; ++i)
 		{
 			updateMaxPower(static_cast<PowerType>(i));
+		}
+	}
+
+	void GameCharacter::addSkill(const SkillEntry &skill)
+	{
+		if (hasSkill(skill.id))
+		{
+			return;
+		}
+
+		UInt16 current = 1;
+		UInt16 max = 1;
+
+		switch (skill.category)
+		{
+			case game::skill_category::Languages:
+			{
+				current = 300;
+				max = 300;
+				break;
+			}
+
+			case game::skill_category::Armor:
+			{
+				current = 1;
+				max = 1;
+				break;
+			}
+
+			case game::skill_category::Weapon:
+			case game::skill_category::Class:
+			{
+				max = getLevel() * 5;
+				break;
+			}
+
+			case game::skill_category::Secondary:
+			case game::skill_category::Profession:
+			{
+				current = 1;
+				max = 1;
+				break;
+			}
+
+			case game::skill_category::NotDisplayed:
+			case game::skill_category::Attributes:
+			{
+				// Invisible / Not added
+				return;
+			}
+
+			default:
+			{
+				WLOG("Unsupported skill category: " << skill.category);
+				return;
+			}
+		}
+
+		// Find the next usable skill slot
+		const UInt32 maxSkills = 127;
+		for (UInt32 i = 0; i < maxSkills; ++i)
+		{
+			// Unit field values
+			const UInt32 skillIndex = character_fields::SkillInfo1_1 + (i * 3);
+
+			// Get current skill
+			UInt32 skillValue = getUInt32Value(skillIndex);
+			if (skillValue == 0 || skillValue == skill.id)
+			{
+				// Update values
+				const UInt32 minMaxValue = UInt32(UInt16(current) | (UInt32(max) << 16));
+				setUInt32Value(skillIndex, skill.id);
+				setUInt32Value(skillIndex + 1, minMaxValue);
+
+				DLOG("SET SKILL " << skill.id << " TO " << current << "/" << max);
+				m_skills.push_back(&skill);
+
+				// TODO: Learn dependant spells if any
+				return;
+			}
+		}
+
+		ELOG("Maximum number of skill for character reached!");
+	}
+
+	bool GameCharacter::hasSkill(UInt32 skillId) const
+	{
+		for (const auto *skill : m_skills)
+		{
+			if (skill->id == skillId)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	void GameCharacter::removeSkill(UInt32 skillId)
+	{
+		// Find the next usable skill slot
+		const UInt32 maxSkills = 127;
+		for (UInt32 i = 0; i < maxSkills; ++i)
+		{
+			// Unit field values
+			const UInt32 skillIndex = character_fields::SkillInfo1_1 + (i * 3);
+
+			// Get current skill
+			if (getUInt32Value(skillIndex) == skillId)
+			{
+				setUInt32Value(skillIndex, 0);
+				setUInt32Value(skillIndex + 1, 0);
+				setUInt32Value(skillIndex + 2, 0);
+			}
+		}
+
+		// Remove skill from the list
+		auto it = m_skills.begin();
+		while (it != m_skills.end())
+		{
+			if ((*it)->id == skillId)
+			{
+				it = m_skills.erase(it);
+				break;
+			}
+
+			++it;
+		}
+	}
+
+	void GameCharacter::setSkillValue(UInt32 skillId, UInt16 current, UInt16 maximum)
+	{
+		// Find the next usable skill slot
+		const UInt32 maxSkills = 127;
+		for (UInt32 i = 0; i < maxSkills; ++i)
+		{
+			// Unit field values
+			const UInt32 skillIndex = character_fields::SkillInfo1_1 + (i * 3);
+
+			// Get current skill
+			if (getUInt32Value(skillIndex) == skillId)
+			{
+				const UInt32 minMaxValue = UInt32(UInt16(current) | (UInt32(maximum) << 16));
+				setUInt32Value(skillIndex + 1, minMaxValue);
+				break;
+			}
 		}
 	}
 

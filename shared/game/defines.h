@@ -1113,5 +1113,22 @@ namespace wowpp
 		}
 
 		typedef spell_range_flag::Type SpellRangeFlag;
+
+		namespace skill_category
+		{
+			enum Type
+			{
+				Attributes		= 5,
+				Weapon			= 6,
+				Class			= 7,
+				Armor			= 8,
+				Secondary		= 9,
+				Languages		= 10,
+				Profession		= 11,
+				NotDisplayed	= 12
+			};
+		}
+
+		typedef skill_category::Type SkillCategory;
 	}
 }

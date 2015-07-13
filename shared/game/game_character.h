@@ -404,6 +404,7 @@ namespace wowpp
 
 	struct SpellEntry;
 	struct ItemEntry;
+	struct SkillEntry;
 
 	/// 
 	class GameCharacter : public GameUnit
@@ -425,27 +426,52 @@ namespace wowpp
 			DataLoadContext::GetLevel getLevel);
 		~GameCharacter();
 
+		/// @copydoc GameObject::initialize()
 		virtual void initialize() override;
+		/// @copydoc GameObject::getTypeId()
+		virtual ObjectType getTypeId() const override { return object_type::Character; }
 
 		/// Adds an item to a given slot.
 		void addItem(std::unique_ptr<GameItem> item, UInt16 slot);
+		/// Adds a spell to the list of known spells of this character.
+		/// Note that passive spells will also be cast after they are added.
 		void addSpell(const SpellEntry &spell);
+		/// Returns true, if the characters knows the specific spell.
 		bool hasSpell(UInt32 spellId) const;
-
-		virtual ObjectType getTypeId() const override { return object_type::Character; }
-
+		/// Sets the name of this character.
 		void setName(const String &name);
+		/// Gets the name of this character.
 		const String &getName() const { return m_name; }
+		/// Updates the zone where this character is. This variable is used by
+		/// the friend list and the /who list.
 		void setZone(UInt32 zoneIndex) { m_zoneIndex = zoneIndex; }
+		/// Gets the zone index where this character is.
 		UInt32 getZone() const { return m_zoneIndex; }
+		/// Gets a list of all known spells of this character.
 		const std::vector<const SpellEntry*> &getSpells() const { return m_spells; }
-
+		/// Gets the weapon proficiency mask of this character (which weapons can be
+		/// wielded)
 		UInt32 getWeaponProficiency() const { return m_weaponProficiency; }
+		/// Gets the armor proficiency mask of this character (which armor types
+		/// can be wielded: Cloth, Leather, Mail, Plate etc.)
 		UInt32 getArmorProficiency() const { return m_armorProficiency; }
+		/// Adds a new weapon proficiency to the mask.
 		void addWeaponProficiency(UInt32 mask) { m_weaponProficiency |= mask; proficiencyChanged(2, m_weaponProficiency); }
+		/// Adds a new armor proficiency to the mask.
 		void addArmorProficiency(UInt32 mask) { m_armorProficiency |= mask; proficiencyChanged(4, m_armorProficiency); }
+		/// Removes a weapon proficiency from the mask.
 		void removeWeaponProficiency(UInt32 mask) { m_weaponProficiency &= ~mask; proficiencyChanged(2, m_weaponProficiency); }
+		/// Removes an armor proficiency from the mask.
 		void removeArmorProficiency(UInt32 mask) { m_armorProficiency &= ~mask; proficiencyChanged(4, m_armorProficiency); }
+		/// Adds a new skill to the list of known skills of this character.
+		void addSkill(const SkillEntry &skill);
+		/// 
+		void removeSkill(UInt32 skillId);
+		/// 
+		void setSkillValue(UInt32 skillId, UInt16 current, UInt16 maximum);
+		/// Returns true if the character knows a specific skill.
+		bool hasSkill(UInt32 skillId) const;
+
 
 	protected:
 
@@ -464,6 +490,7 @@ namespace wowpp
 		UInt32 m_zoneIndex;
 		UInt32 m_weaponProficiency;
 		UInt32 m_armorProficiency;
+		std::vector<const SkillEntry*> m_skills;
 		std::vector<const SpellEntry*> m_spells;
 		std::map<UInt16, std::unique_ptr<GameItem>> m_itemSlots;
 	};

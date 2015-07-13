@@ -110,6 +110,9 @@ namespace wowpp
 
 	typedef spell_attributes_ex::Type SpellAttributesEx;
 
+	struct DataLoadContext;
+	struct SkillEntry;
+
 	struct SpellEntry : BasicTemplate<UInt32>
 	{
 		/// Represents data needed by a spell effect.
@@ -178,9 +181,10 @@ namespace wowpp
 		UInt32 dmgClass;
 		Int32 itemClass;
 		UInt32 itemSubClassMask;
+		std::vector<const SkillEntry*> skillsOnLearnSpell;
 
 		SpellEntry();
-		bool load(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper);
+		bool load(DataLoadContext &context, const ReadTableWrapper &wrapper);
 		void save(BasicTemplateSaveContext &context) const;
 	};
 }
