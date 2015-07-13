@@ -120,6 +120,9 @@ namespace wowpp
 		void handleMovementPacket(Player &sender, UInt16 opCode, game::Protocol::IncomingPacket &packet);
 		void handleCastSpell(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleCancelCast(Player &sender, game::Protocol::IncomingPacket &packet);
+		void handleAttackSwing(Player &sender, game::Protocol::IncomingPacket &packet);
+		void handleAttackStop(Player &sender, game::Protocol::IncomingPacket &packet);
+		void handleSetSheathed(Player &sender, game::Protocol::IncomingPacket &packet);
 
 	private:
 

@@ -98,7 +98,10 @@ namespace wowpp
 				CastSpell				= 0x12E,
 				CancelCast				= 0x12F,
 				SetSelection			= 0x13D,
+				AttackSwing				= 0x141,
+				AttackStop				= 0x142,
 				Ping					= 0x1DC,
+				SetSheathed				= 0x1E0,
 				AuthSession				= 0x1ED,
 				MoveFallReset			= 0x2CA,
 				SetDungeonDifficulty	= 0x329,
@@ -164,6 +167,14 @@ namespace wowpp
 				SpellFailure				= 0x133,
 				SpellCooldown				= 0x134,
 				CooldownEvent				= 0x135,
+				AttackStart					= 0x143,
+				AttackStop					= 0x144,
+				AttackSwingNotInRange		= 0x145,
+				AttackSwingBadFacing		= 0x146,
+				AttackSwingNotStanding		= 0x147,
+				AttackSwingDeadTarget		= 0x148,
+				AttackSwingCantAttack		= 0x149,
+				AttackerStateUpdate			= 0x14A,
 				SpellEnergizeLog			= 0x151,
 				BindPointUpdate				= 0x155,
 				Pong						= 0x1DD,
@@ -183,7 +194,7 @@ namespace wowpp
 				Motd						= 0x33D,
 				TimeSyncReq					= 0x390,
 				FeatureSystemStatus			= 0x3C8,
-				UnlearnSpells				= 0x41D,
+				UnlearnSpells				= 0x41D
 			};
 		}
 
@@ -486,6 +497,20 @@ namespace wowpp
 			bool itemQuerySingle(
 				io::Reader &packet,
 				UInt32 &out_itemID
+				);
+
+			bool attackSwing(
+				io::Reader &packet,
+				UInt64 &out_targetGUID
+				);
+
+			bool attackStop(
+				io::Reader &packet
+				);
+
+			bool setSheathed(
+				io::Reader &packet,
+				UInt32 &out_sheath
 				);
 		};
 
@@ -796,6 +821,12 @@ namespace wowpp
 				UInt32 spellID,
 				UInt8 powerType,
 				UInt32 amount
+				);
+
+			void attackStart(
+				game::OutgoingPacket &out_packet,
+				UInt64 attackerGUID,
+				UInt64 attackedGUID
 				);
 		};
 	}

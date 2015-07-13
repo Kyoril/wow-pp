@@ -1297,6 +1297,15 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void attackStart(game::OutgoingPacket &out_packet, UInt64 attackerGUID, UInt64 attackedGUID)
+			{
+				out_packet.start(game::server_packet::AttackStart);
+				out_packet
+					<< io::write<NetUInt64>(attackerGUID)
+					<< io::write<NetUInt64>(attackedGUID);
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read
@@ -1724,6 +1733,23 @@ namespace wowpp
 			{
 				return packet
 					>> io::read<NetUInt32>(out_itemID);
+			}
+
+			bool attackSwing(io::Reader &packet, UInt64 &out_targetGUID)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_targetGUID);
+			}
+
+			bool attackStop(io::Reader &packet)
+			{
+				return true;
+			}
+
+			bool setSheathed(io::Reader &packet, UInt32 &out_sheath)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_sheath);
 			}
 
 		}

@@ -419,6 +419,9 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(StandStateChange)
 			WOWPP_HANDLE_PACKET(CastSpell)
 			WOWPP_HANDLE_PACKET(CancelCast)
+			WOWPP_HANDLE_PACKET(AttackSwing)
+			WOWPP_HANDLE_PACKET(AttackStop)
+			WOWPP_HANDLE_PACKET(SetSheathed)
 
 #undef WOWPP_HANDLE_PACKET
 
@@ -844,4 +847,61 @@ namespace wowpp
 		// Spell cast logic
 		sender.getCharacter()->cancelCast();
 	}
+
+	void RealmConnector::handleAttackSwing(Player &sender, game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 targetGUID;
+		if (!game::client_read::attackSwing(packet, targetGUID))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		// We can't attack ourself
+		if (targetGUID == sender.getCharacterGuid())
+		{
+			WLOG("Can't attack target: Can't attack own character");
+			return;
+		}
+
+		// Check if target is a unit target
+		if (!isUnitGUID(targetGUID))
+		{
+			WLOG("Can't attack target: Target has to be a unit");
+			return;
+		}
+
+		// Check if target does exist
+		auto *target = dynamic_cast<GameUnit*>(sender.getWorldInstance().findObjectByGUID(targetGUID));
+		if (!target)
+		{
+			WLOG("Can't attack target: Not found in players world instance");
+			return;
+		}
+
+		// Start attacking the given target
+		sender.getCharacter()->startAttack(*target);
+	}
+
+	void RealmConnector::handleAttackStop(Player &sender, game::Protocol::IncomingPacket &packet)
+	{
+		DLOG("RECEIVED CMSG_ATTACK_STOP (TODO)");
+	}
+
+	void RealmConnector::handleSetSheathed(Player &sender, game::Protocol::IncomingPacket &packet)
+	{
+		UInt32 sheathed;
+		if (!game::client_read::setSheathed(packet, sheathed))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		// TODO: Check sheath state
+
+		// TODO: Update visual weapon ids if needed
+
+		sender.getCharacter()->setByteValue(unit_fields::Bytes2, 0, static_cast<UInt8>(sheathed));
+	}
+
 }
