@@ -205,7 +205,7 @@ namespace wowpp
 
 	void GameUnit::castSpell(SpellTargetMap target, const SpellEntry &spell, GameTime castTime)
 	{
-		wowpp::castSpell(*m_spellCast, spell, std::move(target), castTime);
+		auto result = m_spellCast->startCast(spell, std::move(target), castTime, false);
 	}
 
 	void GameUnit::onDespawnTimer()

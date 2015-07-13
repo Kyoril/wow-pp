@@ -348,8 +348,6 @@ namespace wowpp
 				const UInt32 minMaxValue = UInt32(UInt16(current) | (UInt32(max) << 16));
 				setUInt32Value(skillIndex, skill.id);
 				setUInt32Value(skillIndex + 1, minMaxValue);
-
-				DLOG("SET SKILL " << skill.id << " TO " << current << "/" << max);
 				m_skills.push_back(&skill);
 
 				// TODO: Learn dependant spells if any

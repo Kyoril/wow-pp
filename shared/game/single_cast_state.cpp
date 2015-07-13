@@ -129,14 +129,14 @@ namespace wowpp
 		if (!m_hasFinished &&
 			!doReplacePreviousCast)
 		{
+			WLOG("SPELL CAST IS STILL IN PROGRESS!");
 			return std::make_pair(game::spell_cast_result::FailedSpellInProgress, &m_casting);
 		}
 
-		SpellTargetMap targetMap = m_target;
 		SpellCasting &casting = castSpell(
-			m_cast,
-			m_spell,
-			targetMap,
+			cast,
+			spell,
+			std::move(target),
 			castTime);
 
 		return std::make_pair(game::spell_cast_result::CastOkay, &casting);
