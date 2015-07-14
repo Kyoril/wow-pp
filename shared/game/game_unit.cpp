@@ -22,6 +22,9 @@
 #include "game_unit.h"
 #include "log/default_log_levels.h"
 #include "world_instance.h"
+#include "each_tile_in_sight.h"
+#include "binary_io/vector_sink.h"
+#include "game_protocol/game_protocol.h"
 #include <cassert>
 
 namespace wowpp
@@ -39,6 +42,9 @@ namespace wowpp
 		, m_raceEntry(nullptr)
 		, m_classEntry(nullptr)
 		, m_despawnCountdown(timers)
+		, m_victim(nullptr)
+		, m_attackSwingCountdown(timers)
+		, m_lastAttackSwing(0)
 	{
 		// Resize values field
 		m_values.resize(unit_fields::UnitFieldCount);
@@ -50,6 +56,8 @@ namespace wowpp
 		// Setup despawn countdown
 		m_despawnCountdown.ended.connect(
 			std::bind(&GameUnit::onDespawnTimer, this));
+		m_attackSwingCountdown.ended.connect(
+			std::bind(&GameUnit::onAttackSwing, this));
 	}
 
 	GameUnit::~GameUnit()
@@ -226,6 +234,116 @@ namespace wowpp
 	void GameUnit::cancelCast()
 	{
 		m_spellCast->stopCast();
+	}
+
+	void GameUnit::startAttack(GameUnit &target)
+	{
+		TileIndex2D tileIndex;
+		if (!getTileIndex(tileIndex))
+		{
+			// We can't attack since we do not belong to a world
+			return;
+		}
+
+		std::vector<char> buffer;
+		io::VectorSink sink(buffer);
+		game::Protocol::OutgoingPacket packet(sink);
+		game::server_write::attackStart(packet, getGuid(), target.getGuid());
+
+		// Notify all tile subscribers about this event
+		forEachSubscriberInSight(
+			m_worldInstance->getGrid(),
+			tileIndex,
+			[&packet, &buffer](ITileSubscriber &subscriber)
+		{
+			subscriber.sendPacket(packet, buffer);
+		});
+
+		// Update victim
+		m_victim = &target;
+		m_victimDied = target.killed.connect(
+			std::bind(&GameUnit::onVictimKilled, this, std::placeholders::_1));
+		m_victimDespawned = target.despawned.connect(
+			std::bind(&GameUnit::onVictimDespawned, this));
+
+		// Start auto attack timer (immediatly start to attack our target)
+		GameTime nextAttackSwing = getCurrentTime();
+		GameTime attackSwingCooldown = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
+		if (attackSwingCooldown > nextAttackSwing) nextAttackSwing = attackSwingCooldown;
+
+		// Trigger next auto attack
+		m_attackSwingCountdown.setEnd(nextAttackSwing);
+	}
+
+	void GameUnit::stopAttack()
+	{
+		// Check if we are attacking any victim right now
+		if (!m_victim)
+		{
+			return;
+		}
+
+		// Get victim guid
+		UInt64 victimGUID = m_victim->getGuid();
+
+		// Stop auto attack countdown
+		m_attackSwingCountdown.cancel();
+
+		// No longer listen to these events
+		m_victimDespawned.disconnect();
+		m_victimDied.disconnect();
+
+		// Reset victim
+		m_victim = nullptr;
+
+		TileIndex2D tileIndex;
+		if (!getTileIndex(tileIndex))
+		{
+			return;
+		}
+
+		// Notify all subscribers
+		std::vector<char> buffer;
+		io::VectorSink sink(buffer);
+		game::Protocol::OutgoingPacket packet(sink);
+		game::server_write::attackStop(packet, getGuid(), victimGUID);
+
+		// Notify all tile subscribers about this event
+		forEachSubscriberInSight(
+			m_worldInstance->getGrid(),
+			tileIndex,
+			[&packet, &buffer](ITileSubscriber &subscriber)
+		{
+			subscriber.sendPacket(packet, buffer);
+		});
+	}
+
+	void GameUnit::onAttackSwing()
+	{
+		// Check if we still have a victim
+		if (!m_victim)
+		{
+			return;
+		}
+
+		DLOG("ATTACK SWING");
+
+		// Trigger next auto attack swing
+		m_lastAttackSwing = getCurrentTime();
+		GameTime nextAutoAttack = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
+		m_attackSwingCountdown.setEnd(nextAutoAttack);
+	}
+
+	void GameUnit::onVictimKilled(GameUnit *killer)
+	{
+		// Stop attacking our target
+		stopAttack();
+	}
+
+	void GameUnit::onVictimDespawned()
+	{
+		// Stop attacking our target
+		stopAttack();
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)

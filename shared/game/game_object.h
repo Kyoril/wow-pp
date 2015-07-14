@@ -27,6 +27,7 @@
 #include "movement_info.h"
 #include <boost/signals2/signal.hpp>
 #include "common/timer_queue.h"
+#include "tile_index.h"
 #include <vector>
 
 namespace wowpp
@@ -230,6 +231,8 @@ namespace wowpp
 		void getLocation(float &out_x, float &out_y, float &out_z, float &out_o) const { out_x = m_x; out_y = m_y; out_z = m_z; out_o = m_o; }
 		/// Gets the map id of this object.
 		UInt32 getMapId() const { return m_mapId; }
+		/// Gets the unit's tile index in the world grid.
+		bool getTileIndex(TileIndex2D &out_index) const;
 
 		/// Moves the object to the given position on it's map id.
 		void relocate(float x, float y, float z, float o);

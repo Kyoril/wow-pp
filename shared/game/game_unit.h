@@ -195,6 +195,9 @@ namespace wowpp
 
 		void castSpell(SpellTargetMap target, const SpellEntry &spell, GameTime castTime);
 		void cancelCast();
+		void startAttack(GameUnit &target);
+		void stopAttack();
+		GameUnit *getVictim() { return m_victim; }
 
 		/// TODO: Move the logic of this method somewhere else.
 		void triggerDespawnTimer(GameTime despawnDelay);
@@ -209,6 +212,9 @@ namespace wowpp
 		void classUpdated();
 		void updateDisplayIds();
 		void onDespawnTimer();
+		void onVictimKilled(GameUnit *killer);
+		void onVictimDespawned();
+		void onAttackSwing();
 
 	private:
 
@@ -220,6 +226,10 @@ namespace wowpp
 		const ClassEntry *m_classEntry;
 		std::unique_ptr<SpellCast> m_spellCast;
 		Countdown m_despawnCountdown;
+		boost::signals2::scoped_connection m_victimDespawned, m_victimDied;
+		GameUnit *m_victim;
+		Countdown m_attackSwingCountdown;
+		GameTime m_lastAttackSwing;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameUnit const& object);

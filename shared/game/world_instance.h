@@ -84,6 +84,8 @@ namespace wowpp
 		/// Gets the map id of this instance.
 		UInt32 getMapId() const { return m_mapEntry.id; }
 		/// 
+		const VisibilityGrid &getGrid() const { return *m_visibilityGrid; }
+		/// 
 		VisibilityGrid &getGrid() { return *m_visibilityGrid; }
 
 		/// Adds a game object to this world instance.

@@ -1306,6 +1306,54 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void attackStop(game::OutgoingPacket &out_packet, UInt64 attackerGUID, UInt64 attackedGUID)
+			{
+				out_packet.start(game::server_packet::AttackStop);
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; attackerGUID != 0; ++i)
+					{
+						if (attackerGUID & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(attackerGUID & 0xFF);
+							++size;
+						}
+
+						attackerGUID >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; attackedGUID != 0; ++i)
+					{
+						if (attackedGUID & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(attackedGUID & 0xFF);
+							++size;
+						}
+
+						attackedGUID >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+				out_packet
+					<< io::write<NetUInt32>(0);		// TODO
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read

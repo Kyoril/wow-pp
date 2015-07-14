@@ -885,7 +885,8 @@ namespace wowpp
 
 	void RealmConnector::handleAttackStop(Player &sender, game::Protocol::IncomingPacket &packet)
 	{
-		DLOG("RECEIVED CMSG_ATTACK_STOP (TODO)");
+		// Stop auto attack (if any)
+		sender.getCharacter()->stopAttack();
 	}
 
 	void RealmConnector::handleSetSheathed(Player &sender, game::Protocol::IncomingPacket &packet)

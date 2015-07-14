@@ -318,6 +318,18 @@ namespace wowpp
 		}
 	}
 
+	bool GameObject::getTileIndex(TileIndex2D &out_index) const
+	{
+		// This object has to be in a world instance
+		if (!m_worldInstance)
+		{
+			return false;
+		}
+
+		// Try to resolve the objects position
+		return m_worldInstance->getGrid().getTilePosition(m_x, m_y, m_z, out_index[0], out_index[1]);
+	}
+
 	io::Writer & operator<<(io::Writer &w, GameObject const& object)
 	{
 		// Write the bitset and values

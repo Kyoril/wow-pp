@@ -828,6 +828,12 @@ namespace wowpp
 				UInt64 attackerGUID,
 				UInt64 attackedGUID
 				);
+
+			void attackStop(
+				game::OutgoingPacket &out_packet,
+				UInt64 attackerGUID,
+				UInt64 attackedGUID
+				);
 		};
 	}
 }
