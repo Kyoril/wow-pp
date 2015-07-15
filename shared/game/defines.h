@@ -1130,5 +1130,58 @@ namespace wowpp
 		}
 
 		typedef skill_category::Type SkillCategory;
+
+		namespace victim_state
+		{
+			enum Type
+			{
+				Unknown1	= 0,
+				Normal		= 1,
+				Dodge		= 2,
+				Parry		= 3,
+				Interrupt	= 4,
+				Blocks		= 5,
+				Evades		= 6,
+				IsImmune	= 7,
+				Deflects	= 8
+			};
+		}
+		
+		typedef victim_state::Type VictimState;
+
+		namespace hit_info
+		{
+			enum Type
+			{
+				NormalSwing		= 0x00000000,
+				Unknown1		= 0x00000001,
+				NormalSwing2	= 0x00000002,
+				LeftSwing		= 0x00000004,
+				Miss			= 0x00000010,
+				Absorb			= 0x00000020,
+				Resist			= 0x00000040,
+				CriticalHit		= 0x00000080,
+				Unknown2		= 0x00000100,
+				Unknown3		= 0x00000200,
+				Glancing		= 0x00004000,
+				Crushing		= 0x00008000,
+				NoAction		= 0x00010000,
+				SingNoHitSound	= 0x00080000
+			};
+		}
+
+		typedef hit_info::Type HitInfo;
+
+		namespace weapon_attack
+		{
+			enum Type
+			{
+				BaseAttack		= 0,
+				OffhandAttack	= 1,
+				RangedAttack	= 2
+			};
+		}
+
+		typedef weapon_attack::Type WeaponAttack;
 	}
 }

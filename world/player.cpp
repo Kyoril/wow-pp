@@ -51,6 +51,8 @@ namespace wowpp
 			std::bind(&Player::onTileChangePending, this, std::placeholders::_1, std::placeholders::_2));
 		m_character->proficiencyChanged.connect(
 			std::bind(&Player::onProficiencyChanged, this, std::placeholders::_1, std::placeholders::_2));
+		m_character->autoAttackError.connect(
+			std::bind(&Player::onAttackSwingError, this, std::placeholders::_1));
 	}
 
 	void Player::logoutRequest()
@@ -258,6 +260,53 @@ namespace wowpp
 		{
 			sendProxyPacket(
 				std::bind(game::server_write::setProficiency, std::placeholders::_1, itemClass, mask));
+		}
+	}
+
+	void Player::onAttackSwingError(AttackSwingError error)
+	{
+		switch (error)
+		{
+			case attack_swing_error::CantAttack:
+			{
+				sendProxyPacket(
+					std::bind(game::server_write::attackSwingCantAttack, std::placeholders::_1));
+				break;
+			}
+
+			case attack_swing_error::NotStanding:
+			{
+				sendProxyPacket(
+					std::bind(game::server_write::attackSwingNotStanding, std::placeholders::_1));
+				break;
+			}
+
+			case attack_swing_error::OutOfRange:
+			{
+				sendProxyPacket(
+					std::bind(game::server_write::attackSwingNotInRange, std::placeholders::_1));
+				break;
+			}
+
+			case attack_swing_error::WrongFacing:
+			{
+				sendProxyPacket(
+					std::bind(game::server_write::attackSwingBadFacing, std::placeholders::_1));
+				break;
+			}
+
+			case attack_swing_error::TargetDead:
+			{
+				sendProxyPacket(
+					std::bind(game::server_write::attackSwingDeadTarget, std::placeholders::_1));
+				break;
+			}
+
+			default:
+			{
+				WLOG("Unknown attack swing error code: " << error);
+				break;
+			}
 		}
 	}
 

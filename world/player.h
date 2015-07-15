@@ -146,6 +146,8 @@ namespace wowpp
 		void onSpawn();
 		/// Executed when the player character despawned.
 		void onDespawn();
+		/// Executed when an auto attack error occurred.
+		void onAttackSwingError(AttackSwingError error);
 		/// Executed when the player character will move from one grid tile to another one.
 		void onTileChangePending(VisibilityTile &oldTile, VisibilityTile &newTile);
 		/// Executed when a proficiency of the player character changed.

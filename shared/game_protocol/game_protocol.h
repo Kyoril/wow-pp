@@ -834,6 +834,40 @@ namespace wowpp
 				UInt64 attackerGUID,
 				UInt64 attackedGUID
 				);
+
+			void attackStateUpdate(
+				game::OutgoingPacket &out_packet,
+				UInt64 attackerGUID,
+				UInt64 attackedGUID,
+				HitInfo hitInfo,
+				UInt32 totalDamage,
+				UInt32 absorbedDamage,
+				UInt32 resistedDamage,
+				UInt32 blockedDamage,
+				VictimState targetState,
+				WeaponAttack swingType,
+				UInt32 damageSchool
+				);
+
+			void attackSwingBadFacing(
+				game::OutgoingPacket &out_packet
+				);
+
+			void attackSwingCantAttack(
+				game::OutgoingPacket &out_packet
+				);
+
+			void attackSwingDeadTarget(
+				game::OutgoingPacket &out_packet
+				);
+
+			void attackSwingNotStanding(
+				game::OutgoingPacket &out_packet
+				);
+
+			void attackSwingNotInRange(
+				game::OutgoingPacket &out_packet
+				);
 		};
 	}
 }

@@ -20,6 +20,10 @@
 // 
 
 #include "spell_target_map.h"
+#include "world_instance.h"
+#include "game_object.h"
+#include "game_unit.h"
+#include "game_item.h"
 
 namespace wowpp
 {
@@ -75,6 +79,31 @@ namespace wowpp
 		m_dstZ = other.m_dstZ;
 		m_stringTarget = other.m_stringTarget;
 		return *this;
+	}
+
+	bool SpellTargetMap::resolvePointers(WorldInstance &instance, GameUnit **out_unitTarget, GameItem **out_itemTarget, GameObject **out_objectTarget, GameObject **out_corpseTarget)
+	{
+		if (out_unitTarget && m_targetMap & game::spell_cast_target_flags::Unit)
+		{
+			*out_unitTarget = dynamic_cast<GameUnit*>(instance.findObjectByGUID(m_unitTarget));
+		}
+
+		if (out_itemTarget && m_targetMap & game::spell_cast_target_flags::Item)
+		{
+			*out_itemTarget = dynamic_cast<GameItem*>(instance.findObjectByGUID(m_itemTarget));
+		}
+
+		if (out_objectTarget && m_targetMap & game::spell_cast_target_flags::Object)
+		{
+			*out_objectTarget = instance.findObjectByGUID(m_goTarget);
+		}
+
+		if (out_corpseTarget && m_targetMap & game::spell_cast_target_flags::Corpse)
+		{
+			*out_corpseTarget = instance.findObjectByGUID(m_corpseTarget);
+		}
+
+		return true;
 	}
 
 

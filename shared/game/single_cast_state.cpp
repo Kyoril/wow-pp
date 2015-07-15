@@ -348,7 +348,6 @@ namespace wowpp
 		if (health == 0 && unitTarget)
 		{
 			unitTarget->killed(&caster);
-			unitTarget->triggerDespawnTimer(constants::OneSecond * 30);
 		}
 	}
 

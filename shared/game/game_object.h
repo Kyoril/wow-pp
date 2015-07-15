@@ -260,6 +260,11 @@ namespace wowpp
 		/// is not in any world.
 		void setWorldInstance(WorldInstance *instance);
 
+		/// 
+		float getAngle(float x, float z) const;
+		/// 
+		bool isInArc(float arcRadian, float x, float y) const;
+
 	protected:
 
 		void onWorldInstanceDestroyed();

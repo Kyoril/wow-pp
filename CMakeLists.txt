@@ -112,7 +112,10 @@ project(WoW)
 	endif(MSVC)
 	
 	# Editor option
-	option(WOWPP_BUILD_EDITOR "If checked, will try to build the editor. You will need to have OgreSDK and QT 5 installed to build this." OFF)
+	option(WOWPP_BUILD_EDITOR "If checked, will try to build the editor. You will need to have QT 5 installed to build this." OFF)
+	
+	# Tools option
+	option(WOWPP_BUILD_TOOLS "If checked, will try to build tools." OFF)
 	
 	# Add the shared-directory to the list of local include directories
 	include_directories(deps)
@@ -124,6 +127,9 @@ project(WoW)
 	add_subdirectory(login)
 	add_subdirectory(realm)
 	add_subdirectory(world)
+	if (WOWPP_BUILD_TOOLS)
+		add_subdirectory(extractor)
+	endif()
 	if (WOWPP_BUILD_EDITOR)
 		add_subdirectory(editor)
 	endif()

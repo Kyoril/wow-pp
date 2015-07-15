@@ -330,6 +330,44 @@ namespace wowpp
 		return m_worldInstance->getGrid().getTilePosition(m_x, m_y, m_z, out_index[0], out_index[1]);
 	}
 
+	bool GameObject::isInArc(float arcRadian, float x, float y) const
+	{
+		if (x == m_x && y == m_y)
+			return true;
+
+		const float PI = 3.1415927f;
+		float arc = arcRadian;
+
+		// move arc to range 0.. 2*pi
+		while (arc >= 2.0f * PI)
+			arc -= 2.0f * PI;
+		while (arc < 0)
+			arc += 2.0f * PI;
+
+		float angle = getAngle(x, y);
+		angle -= m_o;
+
+		// move angle to range -pi ... +pi
+		while (angle > PI)
+			angle -= 2.0f * PI;
+		while (angle < -PI)
+			angle += 2.0f * PI;
+
+		float lborder = -1 * (arc / 2.0f);                     // in range -pi..0
+		float rborder = (arc / 2.0f);                           // in range 0..pi
+		return ((angle >= lborder) && (angle <= rborder));
+	}
+
+	float GameObject::getAngle(float x, float y) const
+	{
+		float dx = x - m_x;
+		float dy = y - m_y;
+
+		float ang = atan2(dy, dx);
+		ang = (ang >= 0) ? ang : 2 * 3.1415927f + ang;
+		return ang;
+	}
+
 	io::Writer & operator<<(io::Writer &w, GameObject const& object)
 	{
 		// Write the bitset and values

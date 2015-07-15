@@ -152,6 +152,25 @@ namespace wowpp
 		};
 	}
 
+	namespace attack_swing_error
+	{
+		enum Type
+		{
+			/// Can't auto attack while moving (used for ranged auto attacks)
+			NotStanding			= 0,
+			/// Target is out of range (or too close in case of ranged auto attacks).
+			OutOfRange			= 1,
+			/// Can't attack that target (invalid target).
+			CantAttack			= 2,
+			/// Target has to be in front of us (we need to look at the target).
+			WrongFacing			= 3,
+			/// The target is dead and thus can not be attacked.
+			TargetDead			= 4
+		};
+	}
+
+	typedef attack_swing_error::Type AttackSwingError;
+
 	/// 
 	class GameUnit : public GameObject
 	{
@@ -160,9 +179,14 @@ namespace wowpp
 
 	public:
 
+		typedef std::function<void(game::SpellCastResult)> SpellSuccessCallback;
+
 		/// Fired when this unit was killed. Parameter: GameUnit* killer (may be nullptr if killer 
 		/// information is not available (for example due to environmental damage))
 		boost::signals2::signal<void(GameUnit*)> killed;
+		/// Fired when an auto attack error occurred. Used in World Node by the Player class to
+		/// send network packets based on the error code.
+		boost::signals2::signal<void(AttackSwingError)> autoAttackError;
 
 	public:
 
@@ -193,10 +217,15 @@ namespace wowpp
 
 		virtual ObjectType getTypeId() const override { return object_type::Unit; }
 
-		void castSpell(SpellTargetMap target, const SpellEntry &spell, GameTime castTime);
+		/// Starts to cast a spell using the given target map.
+		void castSpell(SpellTargetMap target, const SpellEntry &spell, GameTime castTime, const SpellSuccessCallback &callback);
+		/// Stops the current cast (if any).
 		void cancelCast();
+		/// Starts auto attack on the given target.
 		void startAttack(GameUnit &target);
+		/// Stops auto attacking the given target.
 		void stopAttack();
+		/// 
 		GameUnit *getVictim() { return m_victim; }
 
 		/// TODO: Move the logic of this method somewhere else.
@@ -212,6 +241,7 @@ namespace wowpp
 		void classUpdated();
 		void updateDisplayIds();
 		void onDespawnTimer();
+		void onKilled(GameUnit *killer);
 		void onVictimKilled(GameUnit *killer);
 		void onVictimDespawned();
 		void onAttackSwing();

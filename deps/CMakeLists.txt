@@ -28,7 +28,7 @@ add_subdirectory(detour)
 add_subdirectory(detour_crowd)
 add_subdirectory(detour_tile_cache)
 
-if(WOWPP_BUILD_EDITOR)
+if(WOWPP_BUILD_EDITOR OR WOWPP_BUILD_TOOLS)
 	include_directories("${CMAKE_CURRENT_SOURCE_DIR}/recast")
 	include_directories("${CMAKE_CURRENT_SOURCE_DIR}/debug_utils")
 

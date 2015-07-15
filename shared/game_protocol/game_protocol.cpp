@@ -1354,6 +1354,98 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void attackStateUpdate(game::OutgoingPacket &out_packet, UInt64 attackerGUID, UInt64 attackedGUID, HitInfo hitInfo, UInt32 totalDamage, UInt32 absorbedDamage, UInt32 resistedDamage, UInt32 blockedDamage, VictimState targetState, WeaponAttack swingType, UInt32 damageSchool)
+			{
+				out_packet.start(game::server_packet::AttackerStateUpdate);
+				out_packet
+					<< io::write<NetUInt32>(hitInfo);
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; attackerGUID != 0; ++i)
+					{
+						if (attackerGUID & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(attackerGUID & 0xFF);
+							++size;
+						}
+
+						attackerGUID >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; attackedGUID != 0; ++i)
+					{
+						if (attackedGUID & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(attackedGUID & 0xFF);
+							++size;
+						}
+
+						attackedGUID >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+
+				const UInt32 realDamage = (totalDamage - absorbedDamage - resistedDamage - blockedDamage);
+
+				out_packet
+					<< io::write<NetUInt32>(realDamage)
+					<< io::write<NetUInt8>(1)
+					<< io::write<NetUInt32>(damageSchool)
+					<< io::write<float>(realDamage)				// WTF?
+					<< io::write<NetUInt32>(realDamage)
+					<< io::write<NetUInt32>(absorbedDamage)
+					<< io::write<NetUInt32>(resistedDamage)
+					<< io::write<NetUInt32>(targetState)
+					<< io::write<NetUInt32>(absorbedDamage == 0 ? 0 : -1)
+					<< io::write<NetUInt32>(0)					// Generated rage?
+					<< io::write<NetUInt32>(blockedDamage);
+				out_packet.finish();
+			}
+
+			void attackSwingBadFacing(game::OutgoingPacket &out_packet)
+			{
+				out_packet.start(game::server_packet::AttackSwingBadFacing);
+				out_packet.finish();
+			}
+
+			void attackSwingCantAttack(game::OutgoingPacket &out_packet)
+			{
+				out_packet.start(game::server_packet::AttackSwingCantAttack);
+				out_packet.finish();
+			}
+
+			void attackSwingDeadTarget(game::OutgoingPacket &out_packet)
+			{
+				out_packet.start(game::server_packet::AttackSwingDeadTarget);
+				out_packet.finish();
+			}
+
+			void attackSwingNotStanding(game::OutgoingPacket &out_packet)
+			{
+				out_packet.start(game::server_packet::AttackSwingNotStanding);
+				out_packet.finish();
+			}
+
+			void attackSwingNotInRange(game::OutgoingPacket &out_packet)
+			{
+				out_packet.start(game::server_packet::AttackSwingNotInRange);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

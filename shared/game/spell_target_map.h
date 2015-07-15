@@ -28,6 +28,11 @@
 
 namespace wowpp
 {
+	class GameObject;
+	class GameUnit;
+	class GameItem;
+	class WorldInstance;
+
 	/// TODO: Cleanup this class
 	class SpellTargetMap final
 	{
@@ -38,6 +43,8 @@ namespace wowpp
 
 		explicit SpellTargetMap();
 		SpellTargetMap(const SpellTargetMap &other);
+
+		bool resolvePointers(WorldInstance &instance, GameUnit **out_unitTarget, GameItem **out_itemTarget, GameObject **out_objectTarget, GameObject **out_corpseTarget);
 
 		/// 
 		UInt32 getTargetMap() const { return m_targetMap; }

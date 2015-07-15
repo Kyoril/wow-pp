@@ -58,6 +58,8 @@ namespace wowpp
 			std::bind(&GameUnit::onDespawnTimer, this));
 		m_attackSwingCountdown.ended.connect(
 			std::bind(&GameUnit::onAttackSwing, this));
+		killed.connect(
+			std::bind(&GameUnit::onKilled, this, std::placeholders::_1));
 	}
 
 	GameUnit::~GameUnit()
@@ -211,9 +213,13 @@ namespace wowpp
 		}
 	}
 
-	void GameUnit::castSpell(SpellTargetMap target, const SpellEntry &spell, GameTime castTime)
+	void GameUnit::castSpell(SpellTargetMap target, const SpellEntry &spell, GameTime castTime, const SpellSuccessCallback &callback)
 	{
 		auto result = m_spellCast->startCast(spell, std::move(target), castTime, false);
+		if (callback)
+		{
+			callback(result.first);
+		}
 	}
 
 	void GameUnit::onDespawnTimer()
@@ -238,13 +244,20 @@ namespace wowpp
 
 	void GameUnit::startAttack(GameUnit &target)
 	{
+		// Check if the target is alive
+		if (target.getUInt32Value(unit_fields::Health) == 0)
+		{
+			autoAttackError(attack_swing_error::TargetDead);
+			return;
+		}
+
 		TileIndex2D tileIndex;
 		if (!getTileIndex(tileIndex))
 		{
 			// We can't attack since we do not belong to a world
 			return;
 		}
-
+		
 		std::vector<char> buffer;
 		io::VectorSink sink(buffer);
 		game::Protocol::OutgoingPacket packet(sink);
@@ -326,10 +339,91 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("ATTACK SWING");
+		// Remember this weapon swing
+		m_lastAttackSwing = getCurrentTime();
+
+		// Used to jump to next weapon swing trigger
+		do
+		{
+			// Get target location
+			float vX, vY, vZ, vO;
+			m_victim->getLocation(vX, vY, vZ, vO);
+
+			// Check if that target is in front of us
+			if (!isInArc(2.0f * 3.1415927f / 3.0f, vX, vY))
+			{
+				autoAttackError(attack_swing_error::WrongFacing);
+				break;
+			}
+
+			// Let's do a little test here :)
+			{
+				TileIndex2D tileIndex;
+				if (!getTileIndex(tileIndex))
+				{
+					return;
+				}
+
+				game::HitInfo hitInfo = game::hit_info::NormalSwing2;
+				const UInt32 damage = 1;
+
+				// Notify all subscribers
+				std::vector<char> buffer;
+				io::VectorSink sink(buffer);
+				game::Protocol::OutgoingPacket packet(sink);
+				game::server_write::attackStateUpdate(packet, getGuid(), m_victim->getGuid(), hitInfo, damage, 0, 0, 0, game::victim_state::Normal, game::weapon_attack::BaseAttack, 1);
+
+				// Notify all tile subscribers about this event
+				forEachSubscriberInSight(
+					m_worldInstance->getGrid(),
+					tileIndex,
+					[&packet, &buffer](ITileSubscriber &subscriber)
+				{
+					subscriber.sendPacket(packet, buffer);
+				});
+
+				// Check if we need to give rage
+				if (getByteValue(unit_fields::Bytes0, 3) == power_type::Rage)
+				{
+					const float weaponSpeedHitFactor = (getUInt32Value(unit_fields::BaseAttackTime) / 1000.0f) * 3.5f;
+					const UInt32 level = getLevel();
+					const float rageconversion = ((0.0091107836f * level * level) + 3.225598133f * level) + 4.2652911f;
+					float addRage = ((damage / rageconversion * 7.5f + weaponSpeedHitFactor) / 2.0f) * 10.0f;
+
+					UInt32 currentRage = getUInt32Value(unit_fields::Power2);
+					UInt32 maxRage = getUInt32Value(unit_fields::MaxPower2);
+					if (currentRage + addRage > maxRage)
+					{
+						currentRage = maxRage;
+					}
+					else
+					{
+						currentRage += addRage;
+					}
+					setUInt32Value(unit_fields::Power2, currentRage);
+				}
+
+				// Deal damage
+				UInt32 health = m_victim->getUInt32Value(unit_fields::Health);
+				if (health > damage)
+				{
+					health -= damage;
+				}
+				else
+				{
+					health = 0;
+				}
+				m_victim->setUInt32Value(unit_fields::Health, health);
+
+				if (health == 0)
+				{
+					m_victim->killed(this);
+					return;
+				}
+			}
+		} while (false);
 
 		// Trigger next auto attack swing
-		m_lastAttackSwing = getCurrentTime();
 		GameTime nextAutoAttack = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
 		m_attackSwingCountdown.setEnd(nextAutoAttack);
 	}
@@ -344,6 +438,12 @@ namespace wowpp
 	{
 		// Stop attacking our target
 		stopAttack();
+	}
+
+	void GameUnit::onKilled(GameUnit *killer)
+	{
+		// We were killed, setup despawn timer
+		triggerDespawnTimer(constants::OneSecond * 30);
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)

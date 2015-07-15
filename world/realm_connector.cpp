@@ -319,7 +319,7 @@ namespace wowpp
 			if (spell->attributes & 0x40)
 			{
 				// Create target map
-				character->castSpell(target, *spell, 0);
+				character->castSpell(target, *spell, 0, GameUnit::SpellSuccessCallback());
 			}
 		}
 
@@ -827,7 +827,15 @@ namespace wowpp
 		sender.getCharacter()->castSpell(
 			std::move(targetMap),
 			*spell,
-			castTime);
+			castTime,
+			[&spell, castCount, &sender](game::SpellCastResult result)
+			{
+				if (result != game::spell_cast_result::CastOkay)
+				{
+					sender.sendProxyPacket(
+						std::bind(game::server_write::castFailed, std::placeholders::_1, result, *spell, castCount));
+				}
+			});
 
 		// Send error
 // 		game::SpellCastResult result = game::spell_cast_result::FailedError;
