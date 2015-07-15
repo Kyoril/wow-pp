@@ -26,6 +26,8 @@
 #include "stormlib/src/StormLib.h"
 #include "boost/program_options.hpp"
 #include "boost/format.hpp"
+#include "binary_io/memory_source.h"
+#include "dbc_file.h"
 #include <limits>
 #include <memory>
 #include <deque>
@@ -48,6 +50,39 @@ namespace mpq
 		// Push to open archives
 		mpq::openedArchives.push_front(mpqHandle);
 		return true;
+	}
+
+	static bool openFile(const std::string &file, std::vector<char> &out_buffer)
+	{
+		for (auto &handle : openedArchives)
+		{
+			// Open the file
+			HANDLE hFile = nullptr;
+			if (!SFileOpenFileEx(handle, file.c_str(), 0, &hFile) || !hFile)
+			{
+				// Could not find file in this archive, next one
+				continue;
+			}
+
+			// Determine the file size in bytes
+			DWORD fileSize = 0;
+			fileSize = SFileGetFileSize(hFile, &fileSize);
+
+			// Allocate memory
+			out_buffer.resize(fileSize, 0);
+			if (!SFileReadFile(hFile, &out_buffer[0], fileSize, nullptr, nullptr))
+			{
+				// Error reading the file
+				SFileCloseFile(hFile);
+				return false;
+			}
+
+			// Close the file for reading
+			SFileCloseFile(hFile);
+			return true;
+		}
+
+		return false;
 	}
 }
 
@@ -150,7 +185,88 @@ int main(int argc, char* argv[])
 	}
 
 	// Load map dbc file
+	std::vector<char> mapBuffer;
+	if (!mpq::openFile("DBFilesClient\\Map.dbc", mapBuffer))
+	{
+		ELOG("Unable to find Map.dbc file!");
+		return 1;
+	}
 
+	// Load dbc file contents and parse file
+	io::MemorySource mapSource(mapBuffer);
+	wowpp::DBCFile dbcMap(mapSource);
+	if (!dbcMap.isValid())
+	{
+		ELOG("Could not read Map.dbc: File seems to be broken!");
+		return 1;
+	}
+
+	// Map count
+	const wowpp::UInt32 mapCount = dbcMap.getRecordCount();
+	ILOG("Found " << mapCount << " maps");
+
+	// Load areatable dbc file
+	std::vector<char> areaBuffer;
+	if (!mpq::openFile("DBFilesClient\\AreaTable.dbc", areaBuffer))
+	{
+		ELOG("Unable to find AreaTable.dbc file!");
+		return 1;
+	}
+
+	// Load dbc file contents and parse file
+	io::MemorySource areaSource(areaBuffer);
+	wowpp::DBCFile dbcArea(areaSource);
+	if (!dbcArea.isValid())
+	{
+		ELOG("Could not read AreaTable.dbc: File seems to be broken!");
+		return 1;
+	}
+
+	// Map count
+	const wowpp::UInt32 areaCount = dbcArea.getRecordCount();
+	ILOG("Found " << areaCount << " areas");
+
+	// Iterate through all maps
+	for (wowpp::UInt32 i = 0; i < mapCount; ++i)
+	{
+		// Get Map values
+		wowpp::UInt32 mapId = 0;
+		if (!dbcMap.getValue(i, 0, mapId))
+		{
+			WLOG("Unable to read map id - skipping");
+			continue;
+		}
+
+		wowpp::String mapName;
+		if (!dbcMap.getValue(i, 1, mapName))
+		{
+			WLOG("Unable to read map name - skipping");
+			continue;
+		}
+
+		// Create the map directory (if it doesn't exist)
+		const fs::path mapPath = outputPath / (boost::format("%1%") % mapId).str();
+		if (!fs::is_directory(mapPath))
+		{
+			if (!fs::create_directory(mapPath))
+			{
+				// Skip this map
+				continue;
+			}
+		}
+
+		// Load the WDT file and get infos out of there
+		const wowpp::String wdtFileName = (boost::format("World\\Maps\\%1%\\%1%.wdt") % mapName).str();
+		std::vector<char> wdtBuffer;
+		if (!mpq::openFile(wdtFileName, wdtBuffer))
+		{
+			ELOG("Unable to load " << wdtFileName);
+			continue;
+		}
+
+		// Test
+		DLOG("Loaded " << wdtFileName << " (" << wdtBuffer.size() << " bytes)");
+	}
 
 	// Close all opened MPQ archives
 	for (auto &handle : mpq::openedArchives)

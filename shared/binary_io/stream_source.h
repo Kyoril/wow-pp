@@ -60,6 +60,13 @@ namespace io
 			return static_cast<std::size_t>(new_ - old);
 		}
 
+		virtual void seek(std::size_t pos) override
+		{
+			m_stream.seekg(
+				pos,
+				std::ios::beg);
+		}
+
 		virtual std::size_t size() const override
 		{
 			return m_streamSize;

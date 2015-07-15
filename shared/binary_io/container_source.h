@@ -68,6 +68,12 @@ namespace io
 			return skippable;
 		}
 
+		virtual void seek(std::size_t pos) override
+		{
+			const std::size_t max = m_container.size();
+			m_position = std::min(pos, max);
+		}
+
 		virtual std::size_t size() const override
 		{
 			return m_container.size();

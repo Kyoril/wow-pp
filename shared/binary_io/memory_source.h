@@ -125,6 +125,12 @@ namespace io
 			return static_cast<std::size_t>(m_end - m_begin);
 		}
 
+		virtual void seek(std::size_t pos) override
+		{
+			const std::size_t max = size();
+			m_pos = m_begin + std::min<std::size_t>(pos, max);
+		}
+
 		virtual std::size_t position() const override
 		{
 			return static_cast<size_t>(m_pos - m_begin);
