@@ -20,17 +20,35 @@
 // 
 
 #include "wdt_file.h"
+#include "log/default_log_levels.h"
+#include <iomanip>
 
 namespace wowpp
 {
 	WDTFile::WDTFile(String fileName)
 		: MPQFile(std::move(fileName))
+		, m_isValid(false)
 	{
 	}
 
 	bool WDTFile::load()
 	{
-		//TODO
+		if (!m_source) return false;
+		if (m_isValid) return true;
+
+		// Jump right to the definitions
+		m_source->skip(12);
+
+		// There should be the MPHD file here
+		m_reader.readPOD(m_headerChunk);
+
+		// Read the MAIN chunk
+		m_reader.readPOD(m_mainChunk);
+
+		// Read the MWMO chunk
+		m_reader.readPOD(m_wmoChunk);
+
+		m_isValid = true;
 		return true;
 	}
 

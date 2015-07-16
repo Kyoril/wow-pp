@@ -25,14 +25,206 @@
 #include "boost/filesystem.hpp"
 #include "boost/program_options.hpp"
 #include "boost/format.hpp"
-#include "binary_io/memory_source.h"
 #include "mpq_file.h"
 #include "dbc_file.h"
 #include "wdt_file.h"
+#include "binary_io/writer.h"
+#include "binary_io/stream_sink.h"
+#include <fstream>
 #include <limits>
 #include <memory>
-
 using namespace std;
+using namespace wowpp;
+
+//////////////////////////////////////////////////////////////////////////
+// Shortcuts
+namespace fs = boost::filesystem;
+
+//////////////////////////////////////////////////////////////////////////
+// Path variables
+static const fs::path inputPath(".");
+static const fs::path outputPath("maps");
+
+//////////////////////////////////////////////////////////////////////////
+// DBC files
+static std::unique_ptr<DBCFile> dbcMap;
+static std::unique_ptr<DBCFile> dbcAreaTable;
+static std::unique_ptr<DBCFile> dbcLiquidType;
+
+//////////////////////////////////////////////////////////////////////////
+// Helper functions
+namespace
+{
+	/// Converts an ADT tile of a WDT file.
+	static bool convertADT(UInt32 mapId, const String &mapName, WDTFile &wdt, UInt32 tileIndex)
+	{
+		// Check tile
+		auto &adtTiles = wdt.getMAINChunk().adt;
+		if (adtTiles[tileIndex].exist == 0)
+		{
+			// Nothing to do here since there is no ADT file for this map tile
+			return true;
+		}
+
+		// Calcualte cell index
+		const UInt32 cellX = tileIndex % 64;
+		const UInt32 cellY = tileIndex / 64;
+
+		// TODO: Load ADT file
+		ILOG("\tBuilding tile [" << cellX << "," << cellY << "] ...");
+
+		// Build file names
+		const String adtFile =
+			(boost::format("World\\Maps\\%1%\\%1%_%2%_%3%.adt") % mapName % cellY % cellX).str();
+		const String mapFile =
+			(outputPath / (boost::format("%1%") % mapId).str() / (boost::format("%1%_%2%.map") % cellX % cellY).str()).string();
+
+		// Create files (TODO)
+
+		return true;
+	}
+
+	/// Converts a map.
+	static bool convertMap(UInt32 dbcRow)
+	{
+		// Get Map values
+		UInt32 mapId = 0;
+		if (!dbcMap->getValue(dbcRow, 0, mapId))
+		{
+			return false;;
+		}
+
+		String mapName;
+		if (!dbcMap->getValue(dbcRow, 1, mapName))
+		{
+			return false;
+		}
+
+		// Build map
+		ILOG("Building map " << mapId << " - " << mapName << "...");
+
+		// Create the map directory (if it doesn't exist)
+		const fs::path mapPath = outputPath / (boost::format("%1%") % mapId).str();
+		if (!fs::is_directory(mapPath))
+		{
+			if (!fs::create_directory(mapPath))
+			{
+				// Skip this map
+				return false;
+			}
+		}
+
+		// Load the WDT file and get infos out of there
+		const String wdtFileName = (boost::format("World\\Maps\\%1%\\%1%.wdt") % mapName).str();
+		WDTFile mapWDT(wdtFileName);
+		if (!mapWDT.load())
+		{
+			// Do not warn about invalid map files, since some files are simply missing because 
+			// Blizzard removed them. Players weren't able to visit these worlds anyway.
+			return false;
+		}
+
+		// Get adt tile information
+		auto &adtTiles = mapWDT.getMAINChunk().adt;
+
+		// Iterate through all tiles and create those which are available
+		bool succeeded = true;
+		for (UInt32 tile = 0; tile < adtTiles.size(); ++tile)
+		{
+			if (!convertADT(mapId, mapName, mapWDT, tile))
+			{
+				succeeded = false;
+			}
+		}
+
+		return true;
+	}
+
+	/// Detects the client locale by checking files for existance.
+	/// @returns False if the client localization couldn't be detected.
+	static bool detectLocale(String &out_locale)
+	{
+		std::array<std::string, 16> locales = {
+			"enGB",
+			"enUS",
+			"deDE",
+			"esES",
+			"frFR",
+			"koKR",
+			"zhCN",
+			"zhTW",
+			"enCN",
+			"enTW",
+			"esMX",
+			"ruRU"
+		};
+
+		for (auto &locale : locales)
+		{
+			if (fs::exists(inputPath / "Data" / locale / (boost::format("locale-%1%.MPQ") % locale).str()))
+			{
+				out_locale = locale;
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/// Loads all MPQ files which are available, including localized ones and patch archives.
+	/// @param localeString Client locale string like 'enUS'.
+	static void loadMPQFiles(const String &localeString)
+	{
+		const String commonArchives[] = {
+			"common.MPQ",
+			"expansion.MPQ",
+			"patch.MPQ",
+			"patch-2.MPQ"
+		};
+
+		const String localeArchives[] = {
+			"locale-%1%.MPQ",
+			"patch-%1%.MPQ",
+			"patch-%1%-2.MPQ",
+		};
+
+		for (auto &file : commonArchives)
+		{
+			const String mpqFileName = (inputPath / "Data" / file).string();
+			if (!mpq::loadMPQFile(mpqFileName))
+			{
+				WLOG("Could not load MPQ archive " << mpqFileName);
+			}
+		}
+
+		for (auto &file : localeArchives)
+		{
+			String mpqFileName =
+				(inputPath / "Data" / localeString / (boost::format(file) % localeString).str()).string();
+
+			if (!mpq::loadMPQFile(mpqFileName))
+			{
+				WLOG("Could not load MPQ archive " << mpqFileName);
+			}
+		}
+	}
+
+	/// Loads all required dbc files.
+	/// @returns False if an error occurred.
+	static bool loadDBCFiles()
+	{
+		dbcMap = make_unique<DBCFile>("DBFilesClient\\Map.dbc");
+		if (!dbcMap->load()) return false;
+
+		dbcAreaTable = make_unique<DBCFile>("DBFilesClient\\AreaTable.dbc");
+		if (!dbcAreaTable->load()) return false;
+
+		dbcLiquidType = make_unique<DBCFile>("DBFilesClient\\LiquidType.dbc");
+		if (!dbcLiquidType->load()) return false;
+
+		return true;
+	}
+}
 
 /// Procedural entry point of the application.
 int main(int argc, char* argv[])
@@ -41,13 +233,6 @@ int main(int argc, char* argv[])
 	wowpp::g_DefaultLog.signal().connect(std::bind(
 		wowpp::printLogEntry,
 		std::ref(std::cout), std::placeholders::_1, wowpp::g_DefaultConsoleLogOptions));
-
-	// Create the required directory
-	namespace fs = boost::filesystem;
-
-	// Some variables
-	const fs::path inputPath(".");
-	const fs::path outputPath("maps");
 
 	// Try to create output path
 	if (!fs::is_directory(outputPath))
@@ -59,143 +244,35 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	// Archives to load
-	const std::string commonArchives[] = {
-		"common.MPQ",
-		"expansion.MPQ",
-		"patch.MPQ",
-		"patch-2.MPQ"
-	};
-
-	const std::string localeArchives[] = {
-		"locale-%1%.MPQ",
-		"patch-%1%.MPQ",
-		"patch-%1%-2.MPQ",
-	};
-
-	// Try to load all MPQ files
-	for (auto &file : commonArchives)
+	// Detect client localization
+	String currentLocale;
+	if (!detectLocale(currentLocale))
 	{
-		const std::string mpqFileName = (inputPath / "Data" / file).string();
-		if (!mpq::loadMPQFile(mpqFileName))
-		{
-			WLOG("Could not load MPQ archive " << mpqFileName);
-		}
-	}
-
-	// Locale files
-	std::array<std::string, 16> locales = {
-		"enGB", 
-		"enUS",
-		"deDE",
-		"esES",
-		"frFR",
-		"koKR",
-		"zhCN",
-		"zhTW",
-		"enCN",
-		"enTW", 
-		"esMX",
-		"ruRU"
-	};
-
-	// Detect client locale
-	std::string localeString;
-	for (auto &locale : locales)
-	{
-		if (fs::exists(inputPath / "Data" / locale / (boost::format("locale-%1%.MPQ") % locale).str()))
-		{
-			localeString = locale;
-			break;
-		}
-	}
-
-	if (localeString.empty())
-	{
-		ELOG("Couldn't find any locale!");
-		return 1;
-	}
-	else
-	{
-		ILOG("Detected locale: " << localeString);
-	}
-
-	// Open locale MPQ files
-	for (auto &file : localeArchives)
-	{
-		std::string mpqFileName =
-			(inputPath / "Data" / localeString / (boost::format(file) % localeString).str()).string();
-
-		if (!mpq::loadMPQFile(mpqFileName))
-		{
-			WLOG("Could not load MPQ archive " << mpqFileName);
-		}
-	}
-
-	// Load map dbc file
-	wowpp::DBCFile dbcMap("DBFilesClient\\Map.dbc");
-	if (!dbcMap.load())
-	{
-		ELOG("Could not read Map.dbc: File seems to be broken!");
+		ELOG("Could not detect client localization");
 		return 1;
 	}
 
-	// Map count
-	const wowpp::UInt32 mapCount = dbcMap.getRecordCount();
-	ILOG("Found " << mapCount << " maps");
+	// Print current localization
+	ILOG("Detected locale: " << currentLocale);
 
-	// Load areatable dbc
-	wowpp::DBCFile dbcArea("DBFilesClient\\AreaTable.dbc");
-	if (!dbcArea.load())
+	// Load all mpq files
+	loadMPQFiles(currentLocale);
+
+	// Load all dbc files
+	if (!loadDBCFiles())
 	{
-		ELOG("Could not read AreaTable.dbc: File seems to be broken!");
 		return 1;
 	}
 
-	// Area count
-	const wowpp::UInt32 areaCount = dbcArea.getRecordCount();
-	ILOG("Found " << areaCount << " areas");
+	// Show some statistics
+	ILOG("Found " << dbcMap->getRecordCount() << " maps");
+	ILOG("Found " << dbcAreaTable->getRecordCount() << " areas");
+	ILOG("Found " << dbcLiquidType->getRecordCount() << " liquid types");
 
-	// Iterate through all maps
-	for (wowpp::UInt32 i = 0; i < mapCount; ++i)
+	// Iterate through all maps and build all tiles
+	for (UInt32 i = 0; i < dbcMap->getRecordCount(); ++i)
 	{
-		// Get Map values
-		wowpp::UInt32 mapId = 0;
-		if (!dbcMap.getValue(i, 0, mapId))
-		{
-			WLOG("Unable to read map id - skipping");
-			continue;
-		}
-
-		wowpp::String mapName;
-		if (!dbcMap.getValue(i, 1, mapName))
-		{
-			WLOG("Unable to read map name - skipping");
-			continue;
-		}
-
-		// Create the map directory (if it doesn't exist)
-		const fs::path mapPath = outputPath / (boost::format("%1%") % mapId).str();
-		if (!fs::is_directory(mapPath))
-		{
-			if (!fs::create_directory(mapPath))
-			{
-				// Skip this map
-				continue;
-			}
-		}
-
-		// Load the WDT file and get infos out of there
-		const wowpp::String wdtFileName = (boost::format("World\\Maps\\%1%\\%1%.wdt") % mapName).str();
-		wowpp::WDTFile mapWDT(wdtFileName);
-		if (!mapWDT.load())
-		{
-			// Do not warn about invalid map files, since some files are simply missing because 
-			// Blizzard removed them. Players weren't able to visit these worlds anyway.
-			continue;
-		}
-
-		// TODO
+		convertMap(i);
 	}
 
 	return 0;

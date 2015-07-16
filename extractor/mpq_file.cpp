@@ -27,6 +27,7 @@
 
 namespace mpq
 {
+	/// This deleter struct will make sure that 
 	struct HandleDeleter final
 	{
 		virtual void operator ()(HANDLE* handle)
