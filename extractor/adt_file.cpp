@@ -58,12 +58,36 @@ namespace wowpp
 		// Next one will be MCIN chunk
 		if (m_headerChunk.offsMCIN)
 		{
+			const size_t mcinOffset = m_offsetBase + m_headerChunk.offsMCIN;
+
 			// We have an MCIN chunk, read it
-			m_source->seek(m_offsetBase + m_headerChunk.offsMCIN);
+			m_source->seek(mcinOffset);
 			m_reader.readPOD(m_mcinChunk);
 			if (m_mcinChunk.fourcc != 0x4d43494e || m_mcinChunk.size != 0x1000)
 			{
 				return false;
+			}
+
+			// Load MCNK chunks
+			size_t cellIndex = 0;
+			for (const auto &cell : m_mcinChunk.cells)
+			{
+				// Read MCNK chunk
+				m_source->seek(cell.offMCNK);
+				m_reader.readPOD(m_mcnkChunks[cellIndex]);
+
+				// Read MCVT sub chunk
+				m_source->seek(cell.offMCNK + m_mcnkChunks[cellIndex].offsMCVT);
+				m_reader.readPOD(m_heightChunks[cellIndex]);
+
+				// Read MCLQ sub chunk
+				if (m_mcnkChunks[cellIndex].offsMCLQ)
+				{
+					m_source->seek(cell.offMCNK + m_mcnkChunks[cellIndex].offsMCLQ);
+					m_reader.readPOD(m_liquidChunks[cellIndex]);
+				}
+
+				cellIndex++;
 			}
 		}
 
