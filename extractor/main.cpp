@@ -28,6 +28,7 @@
 #include "mpq_file.h"
 #include "dbc_file.h"
 #include "wdt_file.h"
+#include "adt_file.h"
 #include "binary_io/writer.h"
 #include "binary_io/stream_sink.h"
 #include <fstream>
@@ -67,11 +68,8 @@ namespace
 		}
 
 		// Calcualte cell index
-		const UInt32 cellX = tileIndex % 64;
-		const UInt32 cellY = tileIndex / 64;
-
-		// TODO: Load ADT file
-		ILOG("\tBuilding tile [" << cellX << "," << cellY << "] ...");
+		const UInt32 cellX = tileIndex / 64;
+		const UInt32 cellY = tileIndex % 64;
 
 		// Build file names
 		const String adtFile =
@@ -79,7 +77,28 @@ namespace
 		const String mapFile =
 			(outputPath / (boost::format("%1%") % mapId).str() / (boost::format("%1%_%2%.map") % cellX % cellY).str()).string();
 
+		// Build NavMesh tiles
+		ILOG("\tBuilding tile [" << cellX << "," << cellY << "] ...");
+
+		// Load ADT file
+		ADTFile adt(adtFile);
+		if (!adt.load())
+		{
+			ELOG("Could not load file " << adtFile);
+			return false;
+		}
+
 		// Create files (TODO)
+		std::ofstream fileStrm(mapFile, std::ios::out | std::ios::binary);
+		io::StreamSink sink(fileStrm);
+		io::Writer writer(sink);
+		
+		// Write map header
+		writer
+			<< io::write<UInt32>(0x50414D57)	// "WMAP"
+			<< io::write<UInt32>(0x100);		// 1.0.0
+
+
 
 		return true;
 	}
