@@ -23,68 +23,16 @@
 #include "log/default_log_levels.h"
 #include "log/log_std_stream.h"
 #include "boost/filesystem.hpp"
-#include "stormlib/src/StormLib.h"
 #include "boost/program_options.hpp"
 #include "boost/format.hpp"
 #include "binary_io/memory_source.h"
+#include "mpq_file.h"
 #include "dbc_file.h"
+#include "wdt_file.h"
 #include <limits>
 #include <memory>
-#include <deque>
 
 using namespace std;
-
-namespace mpq
-{
-	static std::deque<HANDLE> openedArchives;
-
-	static bool loadMPQFile(const std::string &file)
-	{
-		HANDLE mpqHandle = nullptr;
-		if (!SFileOpenArchive(file.c_str(), 0, 0, &mpqHandle))
-		{
-			// Could not open MPQ archive file
-			return false;
-		}
-
-		// Push to open archives
-		mpq::openedArchives.push_front(mpqHandle);
-		return true;
-	}
-
-	static bool openFile(const std::string &file, std::vector<char> &out_buffer)
-	{
-		for (auto &handle : openedArchives)
-		{
-			// Open the file
-			HANDLE hFile = nullptr;
-			if (!SFileOpenFileEx(handle, file.c_str(), 0, &hFile) || !hFile)
-			{
-				// Could not find file in this archive, next one
-				continue;
-			}
-
-			// Determine the file size in bytes
-			DWORD fileSize = 0;
-			fileSize = SFileGetFileSize(hFile, &fileSize);
-
-			// Allocate memory
-			out_buffer.resize(fileSize, 0);
-			if (!SFileReadFile(hFile, &out_buffer[0], fileSize, nullptr, nullptr))
-			{
-				// Error reading the file
-				SFileCloseFile(hFile);
-				return false;
-			}
-
-			// Close the file for reading
-			SFileCloseFile(hFile);
-			return true;
-		}
-
-		return false;
-	}
-}
 
 /// Procedural entry point of the application.
 int main(int argc, char* argv[])
@@ -185,17 +133,8 @@ int main(int argc, char* argv[])
 	}
 
 	// Load map dbc file
-	std::vector<char> mapBuffer;
-	if (!mpq::openFile("DBFilesClient\\Map.dbc", mapBuffer))
-	{
-		ELOG("Unable to find Map.dbc file!");
-		return 1;
-	}
-
-	// Load dbc file contents and parse file
-	io::MemorySource mapSource(mapBuffer);
-	wowpp::DBCFile dbcMap(mapSource);
-	if (!dbcMap.isValid())
+	wowpp::DBCFile dbcMap("DBFilesClient\\Map.dbc");
+	if (!dbcMap.load())
 	{
 		ELOG("Could not read Map.dbc: File seems to be broken!");
 		return 1;
@@ -205,24 +144,15 @@ int main(int argc, char* argv[])
 	const wowpp::UInt32 mapCount = dbcMap.getRecordCount();
 	ILOG("Found " << mapCount << " maps");
 
-	// Load areatable dbc file
-	std::vector<char> areaBuffer;
-	if (!mpq::openFile("DBFilesClient\\AreaTable.dbc", areaBuffer))
-	{
-		ELOG("Unable to find AreaTable.dbc file!");
-		return 1;
-	}
-
-	// Load dbc file contents and parse file
-	io::MemorySource areaSource(areaBuffer);
-	wowpp::DBCFile dbcArea(areaSource);
-	if (!dbcArea.isValid())
+	// Load areatable dbc
+	wowpp::DBCFile dbcArea("DBFilesClient\\AreaTable.dbc");
+	if (!dbcArea.load())
 	{
 		ELOG("Could not read AreaTable.dbc: File seems to be broken!");
 		return 1;
 	}
 
-	// Map count
+	// Area count
 	const wowpp::UInt32 areaCount = dbcArea.getRecordCount();
 	ILOG("Found " << areaCount << " areas");
 
@@ -257,23 +187,16 @@ int main(int argc, char* argv[])
 
 		// Load the WDT file and get infos out of there
 		const wowpp::String wdtFileName = (boost::format("World\\Maps\\%1%\\%1%.wdt") % mapName).str();
-		std::vector<char> wdtBuffer;
-		if (!mpq::openFile(wdtFileName, wdtBuffer))
+		wowpp::WDTFile mapWDT(wdtFileName);
+		if (!mapWDT.load())
 		{
-			ELOG("Unable to load " << wdtFileName);
+			// Do not warn about invalid map files, since some files are simply missing because 
+			// Blizzard removed them. Players weren't able to visit these worlds anyway.
 			continue;
 		}
 
-		// Test
-		DLOG("Loaded " << wdtFileName << " (" << wdtBuffer.size() << " bytes)");
+		// TODO
 	}
 
-	// Close all opened MPQ archives
-	for (auto &handle : mpq::openedArchives)
-	{
-		SFileCloseArchive(handle);
-	}
-
-	// Shutdown
 	return 0;
 }

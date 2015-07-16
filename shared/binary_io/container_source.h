@@ -23,6 +23,7 @@
 #pragma once
 
 #include "source.h"
+#include <algorithm>
 
 namespace io
 {

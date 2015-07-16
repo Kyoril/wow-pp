@@ -21,22 +21,21 @@
 
 #pragma once
 
-#include "common/typedefs.h"
-#include "binary_io/reader.h"
-#include "binary_io/source.h"
-#include <memory>
+#include "mpq_file.h"
 
 namespace wowpp
 {
 	/// This class contains data from a dbc file.
-	class DBCFile final
+	class DBCFile final : public MPQFile
 	{
 	public:
 
-		explicit DBCFile(io::ISource &source);
+		/// 
+		explicit DBCFile(String fileName);
 
-		/// Determines whether the file was loaded correctly.
-		bool isValid() const { return m_isValid; }
+		/// @copydoc MPQFile::load()
+		bool load() override;
+
 		/// Gets the number of rows in this dbc file.
 		UInt32 getRecordCount() const { return m_recordCount; }
 		/// Gets the number of fields in this dbc file.
@@ -51,7 +50,7 @@ namespace wowpp
 			// Go to that position
 			const size_t rowOffset = row * m_recordSize;
 			const size_t colOffset = column * 4;
-			m_source.seek(m_recordOffset + rowOffset + colOffset);
+			m_source->seek(m_recordOffset + rowOffset + colOffset);
 
 			// Read value
 			return m_reader
@@ -65,7 +64,7 @@ namespace wowpp
 				return false;
 			}
 
-			m_source.seek(m_stringOffset + stringOffset);
+			m_source->seek(m_stringOffset + stringOffset);
 
 			out_value.clear();
 			char c = 0;
@@ -84,8 +83,6 @@ namespace wowpp
 
 	private:
 
-		io::ISource &m_source;
-		io::Reader m_reader;
 		bool m_isValid;
 		UInt32 m_recordCount;
 		UInt32 m_fieldCount;

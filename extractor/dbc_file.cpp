@@ -20,13 +20,11 @@
 // 
 
 #include "dbc_file.h"
-#include "log/default_log_levels.h"
-#include <iomanip>
 
 namespace wowpp
 {
-	DBCFile::DBCFile(io::ISource &source)
-		: m_source(source)
+	DBCFile::DBCFile(String fileName)
+		: MPQFile(std::move(fileName))
 		, m_isValid(false)
 		, m_recordCount(0)
 		, m_fieldCount(0)
@@ -35,7 +33,12 @@ namespace wowpp
 		, m_recordOffset(0)
 		, m_stringOffset(0)
 	{
-		m_reader.setSource(&m_source);
+	}
+
+	bool DBCFile::load()
+	{
+		if (!m_source) return false;
+		if (m_isValid) return true;
 
 		// Read four-cc code
 		UInt32 fourcc = 0;
@@ -43,7 +46,7 @@ namespace wowpp
 		if (fourcc != 0x43424457)
 		{
 			// No need to parse any more - invalid CC
-			return;
+			return false;
 		}
 
 		if (!(m_reader
@@ -53,20 +56,22 @@ namespace wowpp
 			>> io::read<UInt32>(m_stringSize)))
 		{
 			// Error reading these values
-			return;
+			return false;
 		}
 
 		if (m_fieldCount * 4 != m_recordSize)
 		{
 			// Invalid field count or record size...
-			return;
+			return false;
 		}
 
 		// Calculate data offsets
-		m_recordOffset = m_source.position();
+		m_recordOffset = m_source->position();
 		m_stringOffset = m_recordOffset + (m_recordCount * m_recordSize);
 
 		// File structure seems to be valid
 		m_isValid = true;
+		return true;
 	}
+
 }
