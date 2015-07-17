@@ -31,9 +31,11 @@
 #include "adt_file.h"
 #include "binary_io/writer.h"
 #include "binary_io/stream_sink.h"
+#include "common/make_unique.h"
 #include <fstream>
 #include <limits>
 #include <memory>
+#include <map>
 using namespace std;
 using namespace wowpp;
 
@@ -51,6 +53,45 @@ static const fs::path outputPath("maps");
 static std::unique_ptr<DBCFile> dbcMap;
 static std::unique_ptr<DBCFile> dbcAreaTable;
 static std::unique_ptr<DBCFile> dbcLiquidType;
+
+//////////////////////////////////////////////////////////////////////////
+// Caches
+std::map<UInt32, UInt32> areaFlags;
+
+namespace wowpp
+{
+    /// Header
+    struct MapHeader
+    {
+        UInt32 fourCC;
+        UInt32 size;
+        UInt32 version;
+        UInt32 offsAreaTable;
+        UInt32 areaTableSize;
+        UInt32 offsHeight;
+        UInt32 heightSize;
+    };
+    
+    ///
+    struct MapAreaHeader
+    {
+        UInt32 fourCC;
+        UInt32 size;
+        struct AreaInfo
+        {
+            UInt32 areaId;
+            UInt32 flags;
+            
+            ///
+            AreaInfo()
+                : areaId(0)
+                , flags(0)
+            {
+            }
+        };
+        std::array<AreaInfo, 16 * 16> cellAreas;
+    };
+}
 
 //////////////////////////////////////////////////////////////////////////
 // Helper functions
@@ -93,13 +134,38 @@ namespace
 		io::StreamSink sink(fileStrm);
 		io::Writer writer(sink);
 		
+        // Create map header
+        MapHeader header;
+        header.fourCC = 0x50414D57;
+        header.size = sizeof(MapHeader) - 8;
+        header.version = 0x100;
+        header.offsAreaTable = sizeof(MapHeader);
+        header.areaTableSize = sizeof(MapAreaHeader);
+        header.offsHeight = 0;
+        header.heightSize = 0;
+        
+        // Area header
+        MapAreaHeader areaHeader;
+        areaHeader.fourCC = 0x52414D57;
+        areaHeader.size = sizeof(MapAreaHeader) - 8;
+        for (size_t i = 0; i < 16 * 16; ++i)
+        {
+            UInt32 areaId = adt.getMCNKChunk(0).areaid;
+            UInt32 flags = 0;
+            auto it = areaFlags.find(areaId);
+            if (it != areaFlags.end())
+            {
+                flags = it->second;
+            }
+            
+            areaHeader.cellAreas[i].areaId = areaId;
+            areaHeader.cellAreas[i].flags = flags;
+        }
+        
 		// Write map header
-		writer
-			<< io::write<UInt32>(0x50414D57)	// "WMAP"
-			<< io::write<UInt32>(0x100);		// 1.0.0
-
-
-
+        writer.writePOD(header);
+        writer.writePOD(areaHeader);
+        
 		return true;
 	}
 
@@ -240,6 +306,15 @@ namespace
 
 		dbcLiquidType = make_unique<DBCFile>("DBFilesClient\\LiquidType.dbc");
 		if (!dbcLiquidType->load()) return false;
+        
+        // Parse area flags
+        for (UInt32 i = 0; i < dbcAreaTable->getRecordCount(); ++i)
+        {
+            UInt32 areaId = 0, flags = 0;
+            dbcAreaTable->getValue(i, 0, areaId);
+            dbcAreaTable->getValue(i, 3, flags);
+            areaFlags[areaId] = flags;
+        }
 
 		return true;
 	}
