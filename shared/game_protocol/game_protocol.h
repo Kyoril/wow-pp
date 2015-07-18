@@ -103,6 +103,7 @@ namespace wowpp
 				Ping					= 0x1DC,
 				SetSheathed				= 0x1E0,
 				AuthSession				= 0x1ED,
+				TogglePvP				= 0x253,
 				MoveFallReset			= 0x2CA,
 				SetDungeonDifficulty	= 0x329,
 				MoveSetFly				= 0x346,
@@ -511,6 +512,11 @@ namespace wowpp
 			bool setSheathed(
 				io::Reader &packet,
 				UInt32 &out_sheath
+				);
+
+			bool togglePvP(
+				io::Reader &packet,
+				UInt8 &out_enabled
 				);
 		};
 

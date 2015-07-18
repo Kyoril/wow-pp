@@ -1892,6 +1892,12 @@ namespace wowpp
 					>> io::read<NetUInt32>(out_sheath);
 			}
 
+			bool togglePvP(io::Reader &packet, UInt8 &out_enabled)
+			{
+				return packet
+					>> io::read<NetUInt8>(out_enabled);
+			}
+
 		}
 	}
 }
