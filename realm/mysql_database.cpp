@@ -506,6 +506,32 @@ namespace wowpp
 		}
 	}
 
+	bool MySQLDatabase::saveGameCharacter(const GameCharacter &character)
+	{
+		float x, y, z, o;
+		character.getLocation(x, y, z, o);
+
+		if (m_connection.execute((boost::format(
+			"UPDATE `character` SET `map`=%2%, `zone`=%3%, `position_x`=%4%, `position_y`=%5%, `position_z`=%6%, `orientation`=%7%, `level`=%8%, `xp`=%9%, `gold`=%10% WHERE `id`=%1%")
+			% guidLowerPart(character.getGuid())					// 1
+			% character.getMapId()									// 2
+			% character.getZone()									// 3
+			% x % y % z % o											// 4, 5, 6, 7
+			% character.getLevel()									// 8
+			% character.getUInt32Value(character_fields::Xp)		// 9
+			% character.getUInt32Value(character_fields::Coinage)	// 10
+			).str()))
+		{
+			return true;
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+	}
+
 	void MySQLDatabase::printDatabaseError()
 	{
 		ELOG("Realm database error: " << m_connection.getErrorMessage());

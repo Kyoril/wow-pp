@@ -97,7 +97,9 @@ namespace wowpp
 		void worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, float x, float y, float z, float o);
 		/// 
 		void worldInstanceLeft(World &world, UInt32 instanceId, pp::world_realm::WorldLeftReason reason);
-		
+		/// Saves the current character (if any).
+		void saveCharacter();
+
 		/// Gets the player connection class used to send packets to the client.
 		Client &getConnection() { assert(m_connection); return *m_connection; }
 		/// Gets the player manager which manages all connected players.

@@ -97,6 +97,14 @@ namespace wowpp
 					out_packet.finish();
 				}
 
+				void characterData(pp::OutgoingPacket &out_packet, UInt64 characterId, const GameCharacter &character)
+				{
+					out_packet.start(world_packet::CharacterData);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< character;
+					out_packet.finish();
+				}
 			}
 
 			namespace realm_write
@@ -217,6 +225,12 @@ namespace wowpp
 						>> io::read_container<NetUInt32>(out_packetBuffer);
 				}
 
+				bool characterData(io::Reader &packet, UInt64 characterId, GameCharacter &out_character)
+				{
+					return packet
+						>> io::read<NetUInt64>(characterId)
+						>> out_character;
+				}
 			}
 
 			namespace realm_read

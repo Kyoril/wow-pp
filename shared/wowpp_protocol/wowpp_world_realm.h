@@ -34,7 +34,7 @@ namespace wowpp
 	{
 		namespace world_realm
 		{
-			static const UInt32 ProtocolVersion = 0x03;
+			static const UInt32 ProtocolVersion = 0x04;
 
 			namespace world_instance_error
 			{
@@ -79,7 +79,9 @@ namespace wowpp
 					/// Sent by the world server if a player character left a world instance.
 					WorldInstanceLeft,
 					/// Original packet which the realm should encode and send to the client.
-					ClientProxyPacket
+					ClientProxyPacket,
+					/// Character data from a world node which should be saved by the realm.
+					CharacterData,
 				};
 			}
 
@@ -196,6 +198,13 @@ namespace wowpp
 					UInt32 size,
 					const std::vector<char> &packetBuffer
 					);
+
+				/// 
+				void characterData(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					const GameCharacter &character
+					);
 			}
 
 			/// Contains methods for writing packets from the realm server.
@@ -306,6 +315,13 @@ namespace wowpp
 					UInt16 &out_opCode,
 					UInt32 &out_size,
 					std::vector<char> &out_packetBuffer
+					);
+
+				/// 
+				bool characterData(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					GameCharacter &out_character
 					);
 			}
 

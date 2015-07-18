@@ -21,6 +21,7 @@
 
 #include "world.h"
 #include "world_manager.h"
+#include "database.h"
 #include "log/default_log_levels.h"
 #include "common/clock.h"
 #include "wowpp_protocol/wowpp_protocol.h"
@@ -38,10 +39,11 @@ using namespace std;
 
 namespace wowpp
 {
-	World::World(WorldManager &manager, PlayerManager &playerManager, Project &project, std::shared_ptr<Client> connection, String address, String realmName)
+	World::World(WorldManager &manager, PlayerManager &playerManager, Project &project, IDatabase &database, std::shared_ptr<Client> connection, String address, String realmName)
 		: m_manager(manager)
 		, m_playerManager(playerManager)
 		, m_project(project)
+		, m_database(database)
 		, m_connection(std::move(connection))
 		, m_address(std::move(address))
 		, m_authed(false)
@@ -110,6 +112,12 @@ namespace wowpp
 			case world_packet::ClientProxyPacket:
 			{
 				handleClientProxyPacket(packet);
+				break;
+			}
+
+			case world_packet::CharacterData:
+			{
+				handleCharacterData(packet);
 				break;
 			}
 
@@ -345,4 +353,52 @@ namespace wowpp
 		m_connection->sendSinglePacket(
 			std::bind(pp::world_realm::realm_write::chatMessage, std::placeholders::_1, characterGuid, type, lang, std::cref(receiver), std::cref(channel), std::cref(message)));
 	}
+
+	void World::handleCharacterData(pp::IncomingPacket &packet)
+	{
+		// Read the character ID first
+		UInt64 characterId;
+		if (!(packet >> io::read<NetUInt64>(characterId)))
+		{
+			return;
+		}
+
+		// Find the player using this character
+		auto *player = m_playerManager.getPlayerByCharacterId(characterId);
+		if (!player)
+		{
+			// Maybe the player disconnected already - create a temporary character copy and save this copy
+			std::unique_ptr<GameCharacter> character(new GameCharacter(
+				m_playerManager.getTimers(),
+				std::bind(&RaceEntryManager::getById, &m_project.races, std::placeholders::_1),
+				std::bind(&ClassEntryManager::getById, &m_project.classes, std::placeholders::_1),
+				std::bind(&LevelEntryManager::getById, &m_project.levels, std::placeholders::_1)));
+			character->initialize();
+
+			if (!(packet >> *character))
+			{
+				// Error
+				ELOG("Error reading character data");
+				return;
+			}
+
+			// Save the character data
+			m_database.saveGameCharacter(*character);
+			return;
+		}
+		else
+		{
+			// Update character data
+			if (!(packet >> *player->getGameCharacter()))
+			{
+				// Error
+				ELOG("Error reading character data");
+				return;
+			}
+
+			// Save character
+			player->saveCharacter();
+		}
+	}
+
 }

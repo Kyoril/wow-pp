@@ -86,6 +86,8 @@ namespace wowpp
 		void notifyWorldInstanceLeft(DatabaseId characterId, pp::world_realm::WorldLeftReason reason);
 		/// 
 		const String &getRealmName() const { return m_realmName; }
+		/// Sends data of one character to the realm.
+		void sendCharacterData(GameCharacter &character);
 
 	private:
 

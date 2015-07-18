@@ -37,6 +37,7 @@ namespace wowpp
 	class WorldManager;
 	class PlayerManager;
 	class Project;
+	struct IDatabase;
 
 	/// World connection class.
 	class World final
@@ -64,6 +65,7 @@ namespace wowpp
 		explicit World(WorldManager &manager,
 						PlayerManager &playerManager,
 						Project &project,
+						IDatabase &database,
 						std::shared_ptr<Client> connection,
 						String address,
 						String realmName);
@@ -91,6 +93,7 @@ namespace wowpp
 		WorldManager &m_manager;
 		PlayerManager &m_playerManager;
 		Project &m_project;
+		IDatabase &m_database;
 		std::shared_ptr<Client> m_connection;
 		String m_address;						// IP address in string format
 		bool m_authed;							// True if the user has been successfully authentificated.
@@ -116,5 +119,6 @@ namespace wowpp
 		void handleWorldInstanceError(pp::IncomingPacket &packet);
 		void handleWorldInstanceLeft(pp::IncomingPacket &packet);
 		void handleClientProxyPacket(pp::IncomingPacket &packet);
+		void handleCharacterData(pp::IncomingPacket &packet);
 	};
 }

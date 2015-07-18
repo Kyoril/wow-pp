@@ -581,7 +581,7 @@ namespace wowpp
 
 		// Save instance id
 		m_instanceId = instanceId;
-
+		
 		// TODO: These packets shouldn't be sent by the realm, but by the world node
 #if 1
 		// Update character on the realm side with data received from the world server
@@ -1199,6 +1199,18 @@ namespace wowpp
 		else
 		{
 			WLOG("WORLD: CMSG_ITEM_QUERY_SINGLE - Entry: " << itemID << " NO ITEM INFO!");
+		}
+	}
+
+	void Player::saveCharacter()
+	{
+		if (m_gameCharacter)
+		{
+			float x, y, z, o;
+			m_gameCharacter->getLocation(x, y, z, o);
+
+			DLOG("Saving character. Position: " << x << "," << y << "," << z << "," << o);
+			m_database.saveGameCharacter(*m_gameCharacter);
 		}
 	}
 

@@ -913,4 +913,12 @@ namespace wowpp
 		sender.getCharacter()->setByteValue(unit_fields::Bytes2, 0, static_cast<UInt8>(sheathed));
 	}
 
+	void RealmConnector::sendCharacterData(GameCharacter &character)
+	{
+		io::StringSink sink(m_connection->getSendBuffer());
+		pp::OutgoingPacket packet(sink);
+		pp::world_realm::world_write::characterData(packet, character.getGuid(), character);
+		m_connection->flush();
+	}
+
 }

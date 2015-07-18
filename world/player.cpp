@@ -177,7 +177,10 @@ namespace wowpp
 	}
 
 	void Player::onDespawn()
-	{
+	{	
+		// Send character data to the realm
+		m_realmConnector.sendCharacterData(*m_character);
+
 		// Find our tile
 		TileIndex2D tileIndex = getTileIndex();
 		VisibilityTile &tile = m_instance.getGrid().requireTile(tileIndex);
