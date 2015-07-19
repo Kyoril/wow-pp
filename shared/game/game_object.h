@@ -220,12 +220,15 @@ namespace wowpp
 		void setGuid(UInt64 guid) { setUInt64Value(object_fields::Guid, guid); }
 		UInt64 getGuid() const { return getUInt64Value(object_fields::Guid); }
 
+		/// Writes creation blocks for this object.
+		/// 
+		virtual void writeCreateObjectBlocks(std::vector<std::vector<char>> &out_blocks, bool creation = true) const;
 		/// Writes the value update block of this game object.
 		/// @param writer The writer object used to write the values.
 		/// @param creation Set to true if this is the value update packet used at object creation.
 		///	       At object creation, all values which aren't equal to zero will be written, not just the
 		///	       updated ones.
-		void writeValueUpdateBlock(io::Writer &writer, bool creation = true) const;
+		virtual void writeValueUpdateBlock(io::Writer &writer, bool creation = true) const;
 
 		/// Gets the location of this object.
 		void getLocation(float &out_x, float &out_y, float &out_z, float &out_o) const { out_x = m_x; out_y = m_y; out_z = m_z; out_o = m_o; }

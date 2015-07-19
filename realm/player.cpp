@@ -36,6 +36,7 @@
 #include "data/project.h"
 #include "common/utilities.h"
 #include "game/game_item.h"
+#include "boost/algorithm/string.hpp"
 #include <cassert>
 #include <limits>
 
@@ -1141,7 +1142,6 @@ namespace wowpp
 			return;
 		}
 
-		// Convert name
 		if (!receiver.empty())
 			capitalize(receiver);
 
@@ -1164,6 +1164,41 @@ namespace wowpp
 			// 
 			case chat_msg::Whisper:
 			{
+				// Try to extract the realm name
+				std::vector<String> nameElements;
+				split(receiver, '-', nameElements);
+
+				// Get the realm name (lower case)
+				String realmName = m_config.internalName;
+				boost::algorithm::to_lower(realmName);
+			
+				// Check if a realm name was provided
+				if (nameElements.size() > 1)
+				{
+					String targetRealm = nameElements[1];
+					boost::algorithm::to_lower(targetRealm);
+
+					// There is a realm name - check if it is this realm
+					if (targetRealm != realmName)
+					{
+						// It is another realm - redirect to the world node
+						WLOG("TODO: Redirect whisper message to the world node");
+						m_worldNode->sendChatMessage(
+							m_gameCharacter->getGuid(),
+							type,
+							lang,
+							receiver,
+							channel,
+							message);
+						return;
+					}
+					else
+					{
+						receiver = nameElements[0];
+						capitalize(receiver);
+					}
+				}
+
 				// Get player guid by name
 				game::CharEntry entry;
 				if (!m_database.getCharacterByName(receiver, entry))

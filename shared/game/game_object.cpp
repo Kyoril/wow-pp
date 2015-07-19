@@ -218,6 +218,11 @@ namespace wowpp
 		m_mapId = mapId;
 	}
 
+	void GameObject::writeCreateObjectBlocks(std::vector<std::vector<char>> &out_blocks, bool creation /*= true*/) const
+	{
+		// TODO
+	}
+
 	void GameObject::writeValueUpdateBlock(io::Writer &writer, bool creation /*= true*/) const
 	{
 		// Number of UInt32 blocks used to represent all values as one bit

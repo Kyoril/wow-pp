@@ -115,49 +115,104 @@ namespace wowpp
 			return;
 		}
 
-		float x, y, z, o;
-		m_character->getLocation(x, y, z, o);
-
-		// Get a list of potential watchers
-		auto &grid = m_instance.getGrid();
-		
-		// Get tile index
-		TileIndex2D tile;
-		grid.getTilePosition(x, y, z, tile[0], tile[1]);
-
-		// Get all potential characters
-		std::vector<ITileSubscriber*> subscribers;
-		forEachTileInSight(
-			grid,
-			tile,
-			[&subscribers](VisibilityTile &tile)
+		// Check if this is a whisper message
+		if (type == game::chat_msg::Whisper)
 		{
-			for (auto * const subscriber : tile.getWatchers().getElements())
+			// Get realm name and receiver name
+			std::vector<String> names;
+			split(receiver, '-', names);
+
+			// There has to be a realm name since we are a world node and only receive whisper messages in case of cross
+			// realm whispers
+			if (names.size() != 2)
 			{
-				subscribers.push_back(subscriber);
+				WLOG("Cross realm whisper: No realm name received!");
+				return;
 			}
-		});
 
-		if (type != game::chat_msg::Say &&
-			type != game::chat_msg::Yell)
-		{
-			WLOG("Unsupported chat mode");
-			return;
-		}
-
-		// Create the chat packet
-		std::vector<char> buffer;
-		io::VectorSink sink(buffer);
-		game::Protocol::OutgoingPacket packet(sink);
-		game::server_write::messageChat(packet, type, lang, channel, m_character->getGuid(), message, m_character.get());
-
-		const float chatRange = (type == game::chat_msg::Yell) ? 300.0f : 25.0f;
-		for (auto * const subscriber : subscribers)
-		{
-			const float distance = m_character->getDistanceTo(*subscriber->getControlledObject());
-			if (distance <= chatRange)
+			for (auto &str : names)
 			{
-				subscriber->sendPacket(packet, buffer);
+				capitalize(str);
+			}
+
+			// Change language if needed so that whispers are always readable
+			if (lang != game::language::Addon) lang = game::language::Universal;
+
+			// Build full name
+			std::ostringstream strm;
+			strm << names[0] << "-" << names[1];
+			String fullName = strm.str();
+
+			// Iterate through the players (TODO: Make this more performant)
+			for (const auto &player : m_manager.getPlayers())
+			{
+				if (player->getRealmName() == names[1] &&
+					player->getCharacter()->getName() == names[0])
+				{
+					// Send whisper message
+					player->sendProxyPacket(
+						std::bind(game::server_write::messageChat, std::placeholders::_1, game::chat_msg::Whisper, lang, std::cref(channel), m_characterId, std::cref(message), m_character.get()));
+
+					// If not an addon message, send reply message
+					if (lang != game::language::Addon)
+					{
+						sendProxyPacket(
+							std::bind(game::server_write::messageChat, std::placeholders::_1, game::chat_msg::Reply, lang, std::cref(channel), player->getCharacterGuid(), std::cref(message), m_character.get()));
+					}
+					return;
+				}
+			}
+
+			// Could not find any player using that name
+			sendProxyPacket(
+				std::bind(game::server_write::chatPlayerNotFound, std::placeholders::_1, std::cref(fullName)));
+		}
+		else
+		{
+			float x, y, z, o;
+			m_character->getLocation(x, y, z, o);
+
+			// Get a list of potential watchers
+			auto &grid = m_instance.getGrid();
+
+			// Get tile index
+			TileIndex2D tile;
+			grid.getTilePosition(x, y, z, tile[0], tile[1]);
+
+			// Get all potential characters
+			std::vector<ITileSubscriber*> subscribers;
+			forEachTileInSight(
+				grid,
+				tile,
+				[&subscribers](VisibilityTile &tile)
+			{
+				for (auto * const subscriber : tile.getWatchers().getElements())
+				{
+					subscribers.push_back(subscriber);
+				}
+			});
+
+			if (type != game::chat_msg::Say &&
+				type != game::chat_msg::Yell)
+			{
+				WLOG("Unsupported chat mode");
+				return;
+			}
+
+			// Create the chat packet
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket packet(sink);
+			game::server_write::messageChat(packet, type, lang, channel, m_character->getGuid(), message, m_character.get());
+
+			const float chatRange = (type == game::chat_msg::Yell) ? 300.0f : 25.0f;
+			for (auto * const subscriber : subscribers)
+			{
+				const float distance = m_character->getDistanceTo(*subscriber->getControlledObject());
+				if (distance <= chatRange)
+				{
+					subscriber->sendPacket(packet, buffer);
+				}
 			}
 		}
 	}
