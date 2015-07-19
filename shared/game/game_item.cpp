@@ -20,11 +20,13 @@
 // 
 
 #include "game_item.h"
+#include "data/item_entry.h"
 
 namespace wowpp
 {
-	GameItem::GameItem()
+	GameItem::GameItem(const ItemEntry &entry)
 		: GameObject()
+		, m_entry(entry)
 	{
 		// Resize values field
 		m_values.resize(item_fields::ItemFieldCount);
@@ -40,5 +42,20 @@ namespace wowpp
 
 	void GameItem::initialize()
 	{
+		GameObject::initialize();
+
+		setUInt32Value(object_fields::Entry, m_entry.id);
+		setFloatValue(object_fields::ScaleX, 1.0f);
+
+		setUInt32Value(item_fields::MaxDurability, m_entry.durability);
+		setUInt32Value(item_fields::Durability, m_entry.durability);
+		setUInt32Value(item_fields::StackCount, 1);
+		setUInt32Value(item_fields::Flags, m_entry.flags);
+
+		// Spell charges
+		for (size_t i = 0; i < 5; ++i)
+		{
+			setUInt32Value(item_fields::SpellCharges + i, m_entry.itemSpells[i].charges);
+		}
 	}
 }

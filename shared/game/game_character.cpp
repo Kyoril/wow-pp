@@ -22,6 +22,7 @@
 #include "game_character.h"
 #include <log/default_log_levels.h>
 #include "data/skill_entry.h"
+#include "data/item_entry.h"
 
 namespace wowpp
 {
@@ -167,10 +168,8 @@ namespace wowpp
 			// If this item was equipped, make it visible for other players
 			if (slot < player_equipment_slots::End)
 			{
+				setUInt32Value(character_fields::VisibleItem1_0 + (slot * 16), item->getEntry().id);
 				setUInt64Value(character_fields::VisibleItem1_CREATOR + (slot * 16), item->getUInt64Value(item_fields::Creator));
-
-				const int visibleBase = character_fields::VisibleItem1_0 + (slot * 16);
-				setUInt32Value(visibleBase, guidEntryPart(item->getGuid()));
 
 				// TODO: Apply Enchantment Slots
 

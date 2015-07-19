@@ -25,6 +25,8 @@
 
 namespace wowpp
 {
+	struct ItemEntry;
+
 	namespace item_fields
 	{
 		enum Enum
@@ -60,16 +62,18 @@ namespace wowpp
 	public:
 
 		/// 
-		explicit GameItem();
+		explicit GameItem(const ItemEntry &entry);
 		~GameItem();
 
 		virtual void initialize() override;
 
 		virtual ObjectType getTypeId() const override { return object_type::Item; }
 
+		const ItemEntry &getEntry() const { return m_entry; }
+
 	private:
 
-
+		const ItemEntry &m_entry;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameItem const& object);

@@ -449,6 +449,8 @@ namespace wowpp
 		UInt32 getZone() const { return m_zoneIndex; }
 		/// Gets a list of all known spells of this character.
 		const std::vector<const SpellEntry*> &getSpells() const { return m_spells; }
+		/// Gets a list of all items of this character.
+		const std::map<UInt16, std::unique_ptr<GameItem>> &getItems() const { return m_itemSlots; }
 		/// Gets the weapon proficiency mask of this character (which weapons can be
 		/// wielded)
 		UInt32 getWeaponProficiency() const { return m_weaponProficiency; }

@@ -35,6 +35,7 @@
 #include "binary_io/writer.h"
 #include "data/project.h"
 #include "common/utilities.h"
+#include "game/game_item.h"
 #include <cassert>
 #include <limits>
 
@@ -543,6 +544,131 @@ namespace wowpp
 			return;
 		}
 
+		// TODO
+		static UInt32 itemCounter = 1;
+
+		const auto *race = character->getRaceEntry();
+		auto it1 = race->initialItems.find(character->getClass());
+		if (it1 != race->initialItems.end())
+		{
+			auto it2 = it1->second.find(character->getGender());
+			if (it2 != it1->second.end())
+			{
+				// Found it - enumerate items
+				for (const auto *item : it2->second)
+				{
+					UInt16 slot = 0xffff;
+					switch (item->inventoryType)
+					{
+					case 1:
+					{
+						slot = player_equipment_slots::Head;
+						break;
+					}
+					case 2:
+					{
+						slot = player_equipment_slots::Neck;
+						break;
+					}
+					case 3:
+					{
+						slot = player_equipment_slots::Shoulders;
+						break;
+					}
+					case 4:
+					{
+						slot = player_equipment_slots::Body;
+						break;
+					}
+					case 5:
+					case 20:
+					{
+						slot = player_equipment_slots::Chest;
+						break;
+					}
+					case 6:
+					{
+						slot = player_equipment_slots::Waist;
+						break;
+					}
+					case 7:
+					{
+						slot = player_equipment_slots::Legs;
+						break;
+					}
+					case 8:
+					{
+						slot = player_equipment_slots::Feet;
+						break;
+					}
+					case 9:
+					{
+						slot = player_equipment_slots::Wrists;
+						break;
+					}
+					case 10:
+					{
+						slot = player_equipment_slots::Hands;
+						break;
+					}
+					case 11:
+					{
+						//TODO: Finger1/2
+						slot = player_equipment_slots::Finger1;
+						break;
+					}
+					case 12:
+					{
+						//TODO: Trinket1/2
+						slot = player_equipment_slots::Trinket1;
+						break;
+					}
+					case 13:
+					case 17:
+					case 21:
+					{
+						slot = player_equipment_slots::Mainhand;
+						break;
+					}
+					case 14:
+					case 22:
+					case 23:
+					{
+						slot = player_equipment_slots::Offhand;
+						break;
+					}
+					case 15:
+					case 25:
+					{
+						slot = player_equipment_slots::Ranged;
+						break;
+					}
+					case 16:
+					{
+						slot = player_equipment_slots::Back;
+						break;
+					}
+					case 19:
+					{
+						slot = player_equipment_slots::Tabard;
+						break;
+					}
+					}
+
+					if (slot != 0xffff)
+					{
+						// Create new item
+						std::unique_ptr<GameItem> itemInstance(new GameItem(*item));
+						itemInstance->initialize();
+						itemInstance->setGuid(createEntryGUID(itemCounter++, item->id, guid_type::Item));
+
+						// Add item (this will also make the item visible and assign it properly)
+						character->addItem(std::move(itemInstance), slot);
+					}
+				}
+			}
+		}
+
 		// We found the character - now we need to look for a world node
 		// which is hosting a fitting world instance or is able to create
 		// a new one
@@ -669,6 +795,70 @@ namespace wowpp
 		// Blocks
 		std::vector<std::vector<char>> blocks;
 
+		// Create item spawn packets
+		for (auto &item : m_gameCharacter->getItems())
+		{
+			const UInt16 &slot = item.first;
+			const auto &instance = item.second;
+
+			// If this is an equipped item...
+			if (slot < player_equipment_slots::End)
+			{
+				// Spawn this item
+				std::vector<char> createItemBlock;
+				io::VectorSink createItemSink(createItemBlock);
+				io::Writer createItemWriter(createItemSink);
+				{
+					UInt8 updateType = 0x02;						// Item
+					UInt8 updateFlags = 0x08 | 0x10;				// 
+					UInt8 objectTypeId = 0x01;						// Item
+
+					UInt64 guid = instance->getGuid();
+
+					// Header with object guid and type
+					createItemWriter
+						<< io::write<NetUInt8>(updateType);
+					UInt64 guidCopy = guid;
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+					for (UInt8 i = 0; guidCopy != 0; ++i)
+					{
+						if (guidCopy & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(guidCopy & 0xFF);
+							++size;
+						}
+
+						guidCopy >>= 8;
+					}
+					createItemWriter.sink().write((const char*)&packGUID[0], size);
+					createItemWriter
+						<< io::write<NetUInt8>(objectTypeId)
+						<< io::write<NetUInt8>(updateFlags);
+
+					// Lower-GUID update?
+					if (updateFlags & 0x08)
+					{
+						createItemWriter
+							<< io::write<NetUInt32>(guidLowerPart(guid));
+					}
+
+					// High-GUID update?
+					if (updateFlags & 0x10)
+					{
+						createItemWriter
+							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
+					}
+
+					// Write values update
+					instance->writeValueUpdateBlock(createItemWriter, true);
+				}
+				blocks.emplace_back(createItemBlock);
+			}
+		}
+
 		// Write create object packet
 		std::vector<char> createBlock;
 		io::VectorSink sink(createBlock);
@@ -699,7 +889,6 @@ namespace wowpp
 
 				guidCopy >>= 8;
 			}
-				//<< io::write<NetUInt8>(0xFF) << io::write<NetUInt64>(guid)
 			writer.sink().write((const char*)&packGUID[0], size);
 			writer
 				<< io::write<NetUInt8>(objectTypeId);
@@ -769,7 +958,7 @@ namespace wowpp
 			m_gameCharacter->writeValueUpdateBlock(writer, true);
 
 			// Add block
-			blocks.push_back(createBlock);
+			blocks.emplace_back(createBlock);
 		}
 
 		// Send packet
