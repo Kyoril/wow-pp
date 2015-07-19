@@ -419,7 +419,7 @@ namespace wowpp
 			return;
 		}
 
-		// Send initial spells
+		// Add initial spells
 		const auto &initialSpellsEntry = race->initialSpells.find(character.class_);
 		if (initialSpellsEntry == race->initialSpells.end())
 		{
@@ -429,6 +429,7 @@ namespace wowpp
 			return;
 		}
 
+		// Add initial items
 // 		auto it1 = race->initialItems.find(character.class_);
 // 		if (it1 != race->initialItems.end())
 // 		{

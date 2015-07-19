@@ -59,6 +59,19 @@ CREATE TABLE `character_spells` (
   PRIMARY KEY (`guid`,`spell`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
 
+DROP TABLE IF EXISTS `character_items`;
+
+CREATE TABLE `character_items` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique id of this item on this realm.',
+  `owner` bigint(20) unsigned NOT NULL COMMENT 'GUID of the character who owns this item.',
+  `entry` int(10) unsigned NOT NULL COMMENT 'Entry of the item template.',
+  `slot` smallint(5) unsigned NOT NULL COMMENT 'Slot of this item.',
+  `creator` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'GUID of the creator of this item (may be 0 if no creator information available)',
+  `count` smallint(5) unsigned NOT NULL DEFAULT '1' COMMENT 'Number of items',
+  `durability` smallint(5) unsigned NOT NULL DEFAULT '0' COMMENT 'Item''s durability (if this item has any durability).',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
+
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
