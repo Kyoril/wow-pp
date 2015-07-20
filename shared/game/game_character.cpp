@@ -250,6 +250,8 @@ namespace wowpp
 			case power_type::Mana:		createPower = getUInt32Value(unit_fields::BaseMana); break;
 			case power_type::Rage:		createPower = 1000; break;
 			case power_type::Energy:    createPower = 100; break;
+			default:	// Make compiler happy
+				break;
 		}
 
 		float powerBonus = (power == power_type::Mana && createPower > 0) ? getManaBonusFromIntellect() : 0;

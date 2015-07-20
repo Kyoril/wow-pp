@@ -392,7 +392,7 @@ namespace wowpp
 		// Does this have any effect on the target?
 		if (unitTarget->getByteValue(unit_fields::Bytes0, 3) != powerType)
 			return;	// Target does not use this kind of power
-		if (powerToDrain < 0)
+		if (powerToDrain == 0)
 			return;	// Nothing to drain...
 
 		UInt32 currentPower = unitTarget->getUInt32Value(unit_fields::Power1 + powerType);

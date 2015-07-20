@@ -738,6 +738,8 @@ namespace wowpp
 						out_packet.finish();
 						return;
 					}
+					default:
+						break;
 // 					default:
 // 						if (type == chat_msg::Reply && type != chat_msg::Ignored && type != chat_msg::Dnd && type != chat_msg::Afk)
 // 						{
@@ -821,6 +823,8 @@ namespace wowpp
 					case game::friend_result::AddedOnline:
 						out_packet << io::write_range(info.note) << io::write<NetUInt8>(0);
 						break;
+					default:
+						break;
 				}
 
 				switch (result)
@@ -832,6 +836,8 @@ namespace wowpp
 							<< io::write<NetUInt32>(info.area)
 							<< io::write<NetUInt32>(info.level)
 							<< io::write<NetUInt32>(info.class_);
+						break;
+					default:
 						break;
 				}
 
