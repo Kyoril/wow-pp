@@ -1898,6 +1898,70 @@ namespace wowpp
 					>> io::read<NetUInt8>(out_enabled);
 			}
 
+			bool autoStoreLootItem(io::Reader &packet, UInt8 &out_lootSlot)
+			{
+				return packet
+					>> io::read<NetUInt8>(out_lootSlot);
+			}
+
+			bool autoEquipItem(io::Reader &packet, UInt8 &out_srcBag, UInt8 &out_srcSlot)
+			{
+				return packet
+					>> io::read<NetUInt8>(out_srcBag)
+					>> io::read<NetUInt8>(out_srcSlot);
+			}
+
+			bool autoStoreBagItem(io::Reader &packet, UInt8 &out_srcBag, UInt8 &out_srcSlot, UInt8 &out_dstBag)
+			{
+				return packet
+					>> io::read<NetUInt8>(out_srcBag)
+					>> io::read<NetUInt8>(out_srcSlot)
+					>> io::read<NetUInt8>(out_dstBag);
+			}
+
+			bool swapItem(io::Reader &packet, UInt8 &out_dstBag, UInt8 &out_dstSlot, UInt8 &out_srcBag, UInt8 &out_srcSlot)
+			{
+				return packet
+					>> io::read<NetUInt8>(out_dstBag)
+					>> io::read<NetUInt8>(out_dstSlot)
+					>> io::read<NetUInt8>(out_srcBag)
+					>> io::read<NetUInt8>(out_srcSlot);
+			}
+
+			bool swapInvItem(io::Reader &packet, UInt8 &out_srcSlot, UInt8 &out_dstSlot)
+			{
+				return packet
+					>> io::read<NetUInt8>(out_srcSlot)
+					>> io::read<NetUInt8>(out_dstSlot);
+			}
+
+			bool splitItem(io::Reader &packet, UInt8 &out_srcBag, UInt8 &out_srcSlot, UInt8 &out_dstBag, UInt8 &out_dstSlot, UInt8 &out_count)
+			{
+				return packet
+					>> io::read<NetUInt8>(out_srcBag)
+					>> io::read<NetUInt8>(out_srcSlot)
+					>> io::read<NetUInt8>(out_dstBag)
+					>> io::read<NetUInt8>(out_dstSlot)
+					>> io::read<NetUInt8>(out_count);
+			}
+
+			bool autoEquipItemSlot(io::Reader &packet, UInt64 &out_itemGUID, UInt8 &out_dstSlot)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_itemGUID)
+					>> io::read<NetUInt8>(out_dstSlot);
+			}
+
+			bool destroyItem(io::Reader &packet, UInt8 &out_bag, UInt8 &out_slot, UInt8 &out_count, UInt8 &out_data1, UInt8 &out_data2, UInt8 &out_data3)
+			{
+				return packet
+					>> io::read<NetUInt8>(out_bag)
+					>> io::read<NetUInt8>(out_slot)
+					>> io::read<NetUInt8>(out_count)
+					>> io::read<NetUInt8>(out_data1)
+					>> io::read<NetUInt8>(out_data2)
+					>> io::read<NetUInt8>(out_data3);
+			}
 		}
 	}
 }

@@ -49,7 +49,6 @@ namespace wowpp
 			typedef game::OutgoingPacket OutgoingPacket;
 		};
 
-
 		/// Enumerates all OP codes sent by the client.
 		namespace client_packet
 		{
@@ -95,6 +94,14 @@ namespace wowpp
 				SetPitch				= 0x0DB,
 				MoveHeartBeat			= 0x0EE,
 				StandStateChange		= 0x101,
+				AutoStoreLootItem		= 0x108,
+				AutoEquipItem			= 0x10A,
+				AutoStoreBagItem		= 0x10B,
+				SwapItem				= 0x10C,
+				SwapInvItem				= 0x10D,
+				SplitItem				= 0x10E,
+				AutoEquipItemSlot		= 0x10F,
+				DestroyItem				= 0x111,
 				CastSpell				= 0x12E,
 				CancelCast				= 0x12F,
 				SetSelection			= 0x13D,
@@ -517,6 +524,63 @@ namespace wowpp
 			bool togglePvP(
 				io::Reader &packet,
 				UInt8 &out_enabled
+				);
+
+			bool autoStoreLootItem(
+				io::Reader &packet,
+				UInt8 &out_lootSlot
+				);
+
+			bool autoEquipItem(
+				io::Reader &packet,
+				UInt8 &out_srcBag,
+				UInt8 &out_srcSlot
+				);
+
+			bool autoStoreBagItem(
+				io::Reader &packet,
+				UInt8 &out_srcBag,
+				UInt8 &out_srcSlot,
+				UInt8 &out_dstBag
+				);
+
+			bool swapItem(
+				io::Reader &packet,
+				UInt8 &out_dstBag,
+				UInt8 &out_dstSlot,
+				UInt8 &out_srcBag,
+				UInt8 &out_srcSlot
+				);
+
+			bool swapInvItem(
+				io::Reader &packet,
+				UInt8 &out_srcSlot,
+				UInt8 &out_dstSlot
+				);
+
+			bool splitItem(
+				io::Reader &packet,
+				UInt8 &out_srcBag, 
+				UInt8 &out_srcSlot,
+				UInt8 &out_dstBag,
+				UInt8 &out_dstSlot,
+				UInt8 &out_count
+				);
+
+			bool autoEquipItemSlot(
+				io::Reader &packet,
+				UInt64 &out_itemGUID,
+				UInt8 &out_dstSlot
+				);
+
+			bool destroyItem(
+				io::Reader &packet,
+				UInt8 &out_bag, 
+				UInt8 &out_slot, 
+				UInt8 &out_count, 
+				UInt8 &out_data1, 
+				UInt8 &out_data2, 
+				UInt8 &out_data3
 				);
 		};
 
