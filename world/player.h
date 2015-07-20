@@ -138,6 +138,16 @@ namespace wowpp
 		GameObject *getControlledObject() override { return m_character.get(); }
 		void sendPacket(game::Protocol::OutgoingPacket &packet, const std::vector<char> &buffer) override;
 
+		// Network packet handlers
+		void handleAutoStoreLootItem(game::Protocol::IncomingPacket &packet);
+		void handleAutoEquipItem(game::Protocol::IncomingPacket &packet);
+		void handleAutoStoreBagItem(game::Protocol::IncomingPacket &packet);
+		void handleSwapItem(game::Protocol::IncomingPacket &packet);
+		void handleSwapInvItem(game::Protocol::IncomingPacket &packet);
+		void handleSplitItem(game::Protocol::IncomingPacket &packet);
+		void handleAutoEquipItemSlot(game::Protocol::IncomingPacket &packet);
+		void handleDestroyItem(game::Protocol::IncomingPacket &packet);
+
 	private:
 
 		/// 

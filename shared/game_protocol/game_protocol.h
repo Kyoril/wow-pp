@@ -41,6 +41,8 @@
 
 namespace wowpp
 {
+	class GameItem;
+
 	namespace game
 	{
 		struct Protocol
@@ -165,6 +167,7 @@ namespace wowpp
 				MoveUnroot					= 0x0ED,
 				MoveHeartBeat				= 0x0EE,
 				TutorialFlags				= 0x0FD,
+				InventoryChangeFailure		= 0x112,
 				InitializeFactions			= 0x122,
 				SetProficiency				= 0x127,
 				ActionButtons				= 0x129,
@@ -361,6 +364,95 @@ namespace wowpp
 		}
 
 		typedef expansions::Type Expansions;
+
+		namespace inventory_change_failure
+		{
+			enum Enum
+			{
+				Okay							= 0,
+				CantEquipLevel					= 1,
+				CantEquipSkill					= 2,
+				ItemDoesNotGoToSlot				= 3,
+				BagFull							= 4,
+				NonEmptyBagOverOtherBag			= 5,
+				CantTradeEquipBags				= 6,
+				OnlyAmmoCanGoHere				= 7,
+				NoRequiredProficiency			= 8,
+				NoEquipmentSlotAvailable		= 9,
+				YouCanNeverUseThatItem			= 10,
+				YouCanNeverUseThatItem2			= 11,
+				NoEquipmentSlotAvailable2		= 12,
+				CantEquipWithTwoHanded			= 13,
+				CantDualWield					= 14,
+				ItemDoesntGoIntoBag				= 15,
+				ItemDoesntGoIntoBag2			= 16,
+				CantCarryMoreOfThis				= 17,
+				NoEquipmentSlotAvailable3		= 18,
+				ItemCantStack					= 19,
+				ItemCantBeEquipped				= 20,
+				ItemsCantBeSwapped				= 21,
+				SlotIsEmpty						= 22,
+				ItemNotFound					= 23,
+				CantDropSoulbound				= 24,
+				OutOfRange						= 25,
+				TriedToSplitMoreThanCount		= 26,
+				CouldntSplitItems				= 27,
+				MissingReagent					= 28,
+				NotEnoughMoney					= 29,
+				NotABag							= 30,
+				CanOnlyDoWithEmptyBags			= 31,
+				DontOwnThatItem					= 32,
+				CanEquipOnlyOneQuiver			= 33,
+				MustPurchaseThatBagSlot			= 34,
+				TooFarAwayFromBank				= 35,
+				ItemLocked						= 36,
+				YouAreStunned					= 37,
+				YouAreDead						= 38,
+				CantDoRightNow					= 39,
+				InternalBagError				= 40,
+				CanEquipOnlyOneQuiver2			= 41,
+				CanEquipOnlyOneAmmoPouch		= 42,
+				StackableCantBeWrapped			= 43,
+				EquippedCantBeWrapped			= 44,
+				WrappedCantBeWrapped			= 45,
+				BoundCantBeWrapped				= 46,
+				UniqueCantBeWrapped				= 47,
+				BagsCantBeWrapped				= 48,
+				AlreadyLooted					= 49,
+				InventoryFull					= 50,
+				BankFull						= 51,
+				ItemIsCurrentlySoldOut			= 52,
+				BagFull3						= 53,
+				ItemNotFound2					= 54,
+				ItemCantStack2					= 55,
+				BagFull4						= 56,
+				ItemSoldOut						= 57,
+				ObjectIsBusy					= 58,
+				None							= 59,
+				NotInCombat						= 60,
+				NotWhileDisarmed				= 61,
+				BagFull6						= 62,
+				CantEquipBank					= 63,
+				CantEquipReputation				= 64,
+				TooManySpecialBags				= 65,
+				CantLootThatNow					= 66,
+				ItemUniqueEquippable			= 67,
+				VendorMissingTurnIns			= 68,
+				NotEnoughHonorPoints			= 69,
+				NotEnoughArenaPoints			= 70,
+				ItemMaxCountSocketed			= 71,
+				MailBoundItem					= 72,
+				NoSplitWhileProspecting			= 73,
+				ItemMaxCountEquippedSocketed	= 75,
+				ItemUniqueEquippableSocketed	= 76,
+				TooMuchGold						= 77,
+				NotDuringArenaMatch				= 78,
+				CannotTradeThat					= 79,
+				PersonalArenaRatingTooLow		= 80
+			};
+		}
+
+		typedef inventory_change_failure::Enum InventoryChangeFailure;
 
 		namespace client_read
 		{
@@ -937,6 +1029,13 @@ namespace wowpp
 
 			void attackSwingNotInRange(
 				game::OutgoingPacket &out_packet
+				);
+
+			void inventoryChangeFailure(
+				game::OutgoingPacket &out_packet,
+				InventoryChangeFailure failure,
+				GameItem *itemA,
+				GameItem *itemB
 				);
 		};
 	}

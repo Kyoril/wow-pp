@@ -403,7 +403,7 @@ namespace wowpp
 		// Check op code
 		switch (opCode)
 		{
-			// Default client packets
+			// Client packets handled by connector
 #define WOWPP_HANDLE_PACKET(name) \
 			case wowpp::game::client_packet::name: \
 			{ \
@@ -422,8 +422,25 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(AttackSwing)
 			WOWPP_HANDLE_PACKET(AttackStop)
 			WOWPP_HANDLE_PACKET(SetSheathed)
-
 #undef WOWPP_HANDLE_PACKET
+
+			// Client packets handled by player
+#define WOWPP_HANDLE_PLAYER_PACKET(name) \
+			case wowpp::game::client_packet::name: \
+			{ \
+				sender->handle##name(clientPacket); \
+				break; \
+			}
+
+			WOWPP_HANDLE_PLAYER_PACKET(AutoStoreLootItem)
+			WOWPP_HANDLE_PLAYER_PACKET(AutoEquipItem)
+			WOWPP_HANDLE_PLAYER_PACKET(AutoStoreBagItem)
+			WOWPP_HANDLE_PLAYER_PACKET(SwapItem)
+			WOWPP_HANDLE_PLAYER_PACKET(SwapInvItem)
+			WOWPP_HANDLE_PLAYER_PACKET(SplitItem)
+			WOWPP_HANDLE_PLAYER_PACKET(AutoEquipItemSlot)
+			WOWPP_HANDLE_PLAYER_PACKET(DestroyItem)
+#undef WOWPP_HANDLE_PLAYER_PACKET
 
 			// Movement packets get special treatment
 			case game::client_packet::MoveStartForward:
@@ -920,5 +937,6 @@ namespace wowpp
 		pp::world_realm::world_write::characterData(packet, character.getGuid(), character);
 		m_connection->flush();
 	}
+
 
 }

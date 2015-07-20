@@ -22,6 +22,7 @@
 #include "common/endian_convert.h"
 #include "common/clock.h"
 #include "game_protocol.h"
+#include "game/game_item.h"
 #include "log/default_log_levels.h"
 #include "binary_io/stream_source.h"
 #include "binary_io/stream_sink.h"
@@ -1452,6 +1453,33 @@ namespace wowpp
 				out_packet.start(game::server_packet::AttackSwingNotInRange);
 				out_packet.finish();
 			}
+
+			void inventoryChangeFailure(game::OutgoingPacket &out_packet, InventoryChangeFailure failure, GameItem *itemA, GameItem* itemB)
+			{
+				out_packet.start(game::server_packet::InventoryChangeFailure);
+				out_packet << io::write<NetUInt8>(failure);
+
+				if (failure != inventory_change_failure::Okay)
+				{
+					out_packet 
+						<< io::write<NetUInt64>((itemA != nullptr) ? itemA->getGuid() : 0)
+						<< io::write<NetUInt64>((itemB != nullptr) ? itemB->getGuid() : 0)
+						<< io::write<NetUInt8>(0);
+
+					if (failure == inventory_change_failure::CantEquipLevel)
+					{
+						UInt32 level = 0;
+						if (itemA != nullptr)
+						{
+							level = itemA->getEntry().requiredLevel;
+						}
+
+						out_packet << io::write<NetUInt32>(level);                          // new 2.4.0
+					}
+				}
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read

@@ -368,4 +368,100 @@ namespace wowpp
 		}
 	}
 
+	void Player::handleAutoStoreLootItem(game::Protocol::IncomingPacket &packet)
+	{
+		UInt8 lootSlot;
+		if (!game::client_read::autoStoreLootItem(packet, lootSlot))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		DLOG("CMSG_AUTO_STORE_LOOT_ITEM(loot slot: " << UInt32(lootSlot) << ")");
+	}
+
+	void Player::handleAutoEquipItem(game::Protocol::IncomingPacket &packet)
+	{
+		UInt8 srcBag, srcSlot;
+		if (!game::client_read::autoEquipItem(packet, srcBag, srcSlot))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		DLOG("CMSG_AUTO_EQUIP_ITEM(bag: " << UInt32(srcBag) << ", slot: " << UInt32(srcSlot) << ")");
+	}
+
+	void Player::handleAutoStoreBagItem(game::Protocol::IncomingPacket &packet)
+	{
+		UInt8 srcBag, srcSlot, dstBag;
+		if (!game::client_read::autoStoreBagItem(packet, srcBag, srcSlot, dstBag))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		DLOG("CMSG_AUTO_STORE_BAG_ITEM(src bag: " << UInt32(srcBag) << ", src slot: " << UInt32(srcSlot) << ", dst bag: " << UInt32(dstBag) << ")");
+	}
+
+	void Player::handleSwapItem(game::Protocol::IncomingPacket &packet)
+	{
+		UInt8 srcBag, srcSlot, dstBag, dstSlot;
+		if (!game::client_read::swapItem(packet, dstBag, dstSlot, srcBag, srcSlot))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		DLOG("CMSG_SWAP_ITEM(src bag: " << UInt32(srcBag) << ", src slot: " << UInt32(srcSlot) << ", dst bag: " << UInt32(dstBag) << ", dst slot: " << UInt32(dstSlot) << ")");
+	}
+
+	void Player::handleSwapInvItem(game::Protocol::IncomingPacket &packet)
+	{
+		UInt8 srcSlot, dstSlot;
+		if (!game::client_read::swapInvItem(packet, srcSlot, dstSlot))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		DLOG("CMSG_SWAP_INV_ITEM(src slot: " << UInt32(srcSlot) << ", dst slot: " << UInt32(dstSlot) << ")");
+	}
+
+	void Player::handleSplitItem(game::Protocol::IncomingPacket &packet)
+	{
+		UInt8 srcBag, srcSlot, dstBag, dstSlot, count;
+		if (!game::client_read::splitItem(packet, srcBag, srcSlot, dstBag, dstSlot, count))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		DLOG("CMSG_SPLIT_ITEM(src bag: " << UInt32(srcBag) << ", src slot: " << UInt32(srcSlot) << ", dst bag: " << UInt32(dstBag) << ", dst slot: " << UInt32(dstSlot) << ", count: " << UInt32(count) << ")");
+	}
+
+	void Player::handleAutoEquipItemSlot(game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 itemGUID;
+		UInt8 dstSlot;
+		if (!game::client_read::autoEquipItemSlot(packet, itemGUID, dstSlot))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		DLOG("CMSG_AUTO_EQUIP_ITEM_SLOT(item: 0x" << std::hex << std::uppercase << std::setw(16) << std::setfill('0') << itemGUID << std::dec << ", dst slot: " << UInt32(dstSlot) << ")");
+	}
+
+	void Player::handleDestroyItem(game::Protocol::IncomingPacket &packet)
+	{
+		UInt8 bag, slot, count, data1, data2, data3;
+		if (!game::client_read::destroyItem(packet, bag, slot, count, data1, data2, data3))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		DLOG("CMSG_DESTROY_ITEM(bag: " << UInt32(bag) << ", slot: " << UInt32(slot) << ", count: " << UInt32(count) << ", data1: " << UInt32(data1) << ", data2: " << UInt32(data2) << ", data3: " << UInt32(data3) << ")");
+	}
 }
