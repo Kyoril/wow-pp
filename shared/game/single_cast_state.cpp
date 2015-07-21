@@ -208,6 +208,12 @@ namespace wowpp
 
 	void SingleCastState::onCastFinished()
 	{
+		GameCharacter *character = nullptr;
+		if (isPlayerGUID(m_cast.getExecuter().getGuid()))
+		{
+			character = dynamic_cast<GameCharacter*>(&m_cast.getExecuter());
+		}
+
 		// TODO: We need to check some conditions now
 
 		// TODO: Consume power
@@ -267,6 +273,32 @@ namespace wowpp
 					WLOG("Spell effect " << game::constant_literal::spellEffectNames.getName(effect.type) << " not yet implemented");
 					break;
 				}
+			}
+		}
+
+		// Consume combo points if required
+		if ((m_spell.attributesEx[0] & 0x00100000) && character)
+		{
+			// 0 will reset combo points
+			character->addComboPoints(0, 0);
+		}
+
+		// Start auto attack if required
+		if (m_spell.attributesEx[0] & 0x00000200)
+		{
+			GameUnit *attackTarget = nullptr;
+			if (m_target.hasUnitTarget())
+			{
+				attackTarget = dynamic_cast<GameUnit*>(m_cast.getExecuter().getWorldInstance()->findObjectByGUID(m_target.getUnitTarget()));
+			}
+
+			if (attackTarget)
+			{
+				m_cast.getExecuter().startAttack(*attackTarget);
+			}
+			else
+			{
+				WLOG("Unable to find target for auto attack after spell cast!");
 			}
 		}
 		
@@ -470,15 +502,24 @@ namespace wowpp
 
 	UInt32 SingleCastState::calculateEffectBasePoints(const SpellEntry::Effect &effect)
 	{
+		GameCharacter *character = nullptr;
+		if (isPlayerGUID(m_cast.getExecuter().getGuid()))
+		{
+			character = dynamic_cast<GameCharacter*>(&m_cast.getExecuter());
+		}
+
+		const Int32 comboPoints = character ? character->getComboPoints() : 0;
+
 		// Calculate the damage done
 		const float basePointsPerLevel = effect.pointsPerLevel;
 		const Int32 basePoints = effect.basePoints;
 		const Int32 randomPoints = effect.dieSides;
+		const Int32 comboDamage = effect.pointsPerComboPoint * comboPoints;
 
 		std::uniform_int_distribution<int> distribution(effect.baseDice, randomPoints);
 		const Int32 randomValue = (effect.baseDice >= randomPoints ? effect.baseDice : distribution(randomGenerator));
 
-		return basePoints + randomValue;
+		return basePoints + randomValue + comboDamage;
 	}
 
 	void SingleCastState::spellEffectAddComboPoints(const SpellEntry::Effect &effect)

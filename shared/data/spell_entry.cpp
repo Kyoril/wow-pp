@@ -146,6 +146,7 @@ namespace wowpp
 				effectTable->tryGetInteger("mechanic", effect.mechanic);
 				effectTable->tryGetInteger("target_a", effect.targetA);
 				effectTable->tryGetInteger("target_b", effect.targetB);
+				effectTable->tryGetInteger("per_combo_point", effect.pointsPerComboPoint);
 			}
 		}
 
@@ -210,6 +211,7 @@ namespace wowpp
 						if (effect.mechanic != 0) effectTable.addKey("mechanic", effect.mechanic);
 						if (effect.targetA != 0) effectTable.addKey("target_a", effect.targetA);
 						if (effect.targetB != 0) effectTable.addKey("target_b", effect.targetB);
+						if (effect.pointsPerComboPoint != 0) effectTable.addKey("per_combo_point", effect.pointsPerComboPoint);
 					}
 					effectTable.finish();
 				}
