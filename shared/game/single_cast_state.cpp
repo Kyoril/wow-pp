@@ -260,6 +260,12 @@ namespace wowpp
 					break;
 				}
 
+				case se::NormalizedWeaponDmg:
+				{
+					spellEffectNormalizedWeaponDamage(effect);
+					break;
+				}
+
 				case se::Weapon:
 				case se::Language:
 				{
@@ -347,6 +353,79 @@ namespace wowpp
 			else if (m_target.hasItemTarget())
 				targetGuid = m_target.getItemTarget();
 			
+			if (targetGuid != 0)
+				target = world->findObjectByGUID(targetGuid);
+
+			if (m_target.hasUnitTarget() && isUnitGUID(targetGuid))
+				unitTarget = reinterpret_cast<GameUnit*>(target);
+		}
+
+		// Check target
+		if (!target)
+		{
+			WLOG("EFFECT_SCHOOL_DAMAGE: No valid target found!");
+			return;
+		}
+
+		// Send spell damage packet
+		sendPacketFromCaster(caster,
+			std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+			target->getGuid(),
+			caster.getGuid(),
+			m_spell.id,
+			damage,
+			m_spell.schoolMask,
+			0,
+			0,
+			false,
+			0,
+			false));
+
+		// Update health value
+		UInt32 health = target->getUInt32Value(unit_fields::Health);
+		if (health > damage)
+			health -= damage;
+		else
+			health = 0;
+
+		target->setUInt32Value(unit_fields::Health, health);
+		if (health == 0 && unitTarget)
+		{
+			unitTarget->killed(&caster);
+		}
+	}
+
+	void SingleCastState::spellEffectNormalizedWeaponDamage(const SpellEntry::Effect &effect)
+	{
+		// Calculate damage based on base points
+		UInt32 damage = calculateEffectBasePoints(effect);
+
+		// Add weapon damage
+		const float weaponMin = m_cast.getExecuter().getFloatValue(unit_fields::MinDamage);
+		const float weaponMax = m_cast.getExecuter().getFloatValue(unit_fields::MaxDamage);
+
+		// Randomize weapon damage
+		std::uniform_real_distribution<float> distribution(weaponMin, weaponMax);
+		damage += UInt32(distribution(randomGenerator));
+
+		// Resolve GUIDs
+		GameObject *target = nullptr;
+		GameUnit *unitTarget = nullptr;
+		GameUnit &caster = m_cast.getExecuter();
+		auto *world = caster.getWorldInstance();
+
+		if (m_target.getTargetMap() & game::spell_cast_target_flags::Self)
+			target = &caster;
+		else if (world)
+		{
+			UInt64 targetGuid = 0;
+			if (m_target.hasUnitTarget())
+				targetGuid = m_target.getUnitTarget();
+			else if (m_target.hasGOTarget())
+				targetGuid = m_target.getGOTarget();
+			else if (m_target.hasItemTarget())
+				targetGuid = m_target.getItemTarget();
+
 			if (targetGuid != 0)
 				target = world->findObjectByGUID(targetGuid);
 
@@ -541,5 +620,4 @@ namespace wowpp
 		UInt64 comboTarget = m_target.getUnitTarget();
 		character->addComboPoints(comboTarget, UInt8(calculateEffectBasePoints(effect)));
 	}
-
 }
