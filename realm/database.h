@@ -23,6 +23,7 @@
 
 #include "common/typedefs.h"
 #include "game_protocol/game_protocol.h"
+#include "wowpp_protocol/wowpp_world_realm.h"
 #include "game/game_character.h"
 #include <vector>
 
@@ -44,7 +45,7 @@ namespace wowpp
 		/// @param accountId Account identifier.
 		/// @param character Data of the character to create.
 		/// @returns false if the creation process failed.
-		virtual game::ResponseCode createCharacter(UInt32 accountId, const std::vector<const SpellEntry*> &spells, game::CharEntry &character) = 0;
+		virtual game::ResponseCode createCharacter(UInt32 accountId, const std::vector<const SpellEntry*> &spells, const std::vector<pp::world_realm::ItemData> &items, game::CharEntry &character) = 0;
 
 		virtual bool getCharacterById(DatabaseId id, game::CharEntry &out_character) = 0;
 		virtual bool getCharacterByName(const String &name, game::CharEntry &out_character) = 0;
@@ -53,7 +54,7 @@ namespace wowpp
 
 		virtual game::ResponseCode deleteCharacter(UInt32 accountId, UInt64 characterGuid) = 0;
 
-		virtual bool getGameCharacter(DatabaseId characterId, GameCharacter &out_character) = 0;
+		virtual bool getGameCharacter(DatabaseId characterId, GameCharacter &out_character, std::vector<pp::world_realm::ItemData> &out_items) = 0;
 		virtual bool saveGameCharacter(const GameCharacter &character) = 0;
 
 		virtual bool getCharacterSocialList(DatabaseId characterId, PlayerSocial &out_social) = 0;

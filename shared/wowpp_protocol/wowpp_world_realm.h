@@ -141,6 +141,34 @@ namespace wowpp
 
 			typedef world_left_reason::Type WorldLeftReason;
 
+			/// Contains item data.
+			struct ItemData
+			{
+				UInt32 entry;
+				UInt16 slot;
+				UInt8 stackCount;
+				UInt64 creator;
+				UInt64 contained;
+				UInt16 durability;
+				UInt16 randomPropertyIndex;
+				UInt16 randomSuffixIndex;
+				// TODO
+
+				ItemData()
+					: entry(0)
+					, slot(0)
+					, stackCount(0)
+					, creator(0)
+					, contained(0)
+					, durability(0)
+					, randomPropertyIndex(0)
+					, randomSuffixIndex(0)
+				{
+				}
+			};
+
+			io::Writer &operator << (io::Writer &w, ItemData const& object);
+			io::Reader &operator >> (io::Reader &r, ItemData& object);
 
 			/// Contains methods for writing packets from the world server.
 			namespace world_write
@@ -224,7 +252,8 @@ namespace wowpp
 					pp::OutgoingPacket &out_packet,
 					DatabaseId characterRealmId,
 					const GameCharacter &character,
-					const std::vector<UInt32> &spellIds
+					const std::vector<UInt32> &spellIds,
+					const std::vector<ItemData> &items
 					);
 
 				/// 
@@ -346,7 +375,8 @@ namespace wowpp
 					io::Reader &packet,
 					DatabaseId &out_characterRealmId,
 					GameCharacter *out_character,
-					std::vector<UInt32> &out_spellIds
+					std::vector<UInt32> &out_spellIds,
+					std::vector<ItemData> &out_items
 					);
 
 				/// 

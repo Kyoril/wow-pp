@@ -58,4 +58,17 @@ namespace wowpp
 			setUInt32Value(item_fields::SpellCharges + i, m_entry.itemSpells[i].charges);
 		}
 	}
+
+	io::Writer & operator<<(io::Writer &w, GameItem const& object)
+	{
+		return w
+			<< reinterpret_cast<GameObject const&>(object);
+	}
+
+	io::Reader & operator>>(io::Reader &r, GameItem& object)
+	{
+		return r
+			>> reinterpret_cast<GameObject&>(object);
+	}
+
 }

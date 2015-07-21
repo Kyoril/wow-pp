@@ -431,20 +431,139 @@ namespace wowpp
 			return;
 		}
 
+		// Item data
+		UInt8 bagSlot = 0;
+		std::vector<pp::world_realm::ItemData> items;
+
 		// Add initial items
-// 		auto it1 = race->initialItems.find(character.class_);
-// 		if (it1 != race->initialItems.end())
-// 		{
-// 			auto it2 = it1->second.find(character.gender);
-// 			if (it2 != it1->second.end())
-// 			{
-// 				// Found it - enumerate items
-// 				for (const auto *item : it2->second)
-// 				{
-// 					DLOG("\tCREATE INITIAL ITEM: " << item->id << " - " << item->name);
-// 				}
-// 			}
-// 		}
+		auto it1 = race->initialItems.find(character.class_);
+		if (it1 != race->initialItems.end())
+		{
+			auto it2 = it1->second.find(character.gender);
+			if (it2 != it1->second.end())
+			{
+				for (const auto *item : it2->second)
+				{
+					// Get slot for this item
+					UInt16 slot = 0xffff;
+					switch (item->inventoryType)
+					{
+						case 1:
+						{
+							slot = player_equipment_slots::Head;
+							break;
+						}
+						case 2:
+						{
+							slot = player_equipment_slots::Neck;
+							break;
+						}
+						case 3:
+						{
+							slot = player_equipment_slots::Shoulders;
+							break;
+						}
+						case 4:
+						{
+							slot = player_equipment_slots::Body;
+							break;
+						}
+						case 5:
+						case 20:
+						{
+							slot = player_equipment_slots::Chest;
+							break;
+						}
+						case 6:
+						{
+							slot = player_equipment_slots::Waist;
+							break;
+						}
+						case 7:
+						{
+							slot = player_equipment_slots::Legs;
+							break;
+						}
+						case 8:
+						{
+							slot = player_equipment_slots::Feet;
+							break;
+						}
+						case 9:
+						{
+							slot = player_equipment_slots::Wrists;
+							break;
+						}
+						case 10:
+						{
+							slot = player_equipment_slots::Hands;
+							break;
+						}
+						case 11:
+						{
+							//TODO: Finger1/2
+							slot = player_equipment_slots::Finger1;
+							break;
+						}
+						case 12:
+						{
+							//TODO: Trinket1/2
+							slot = player_equipment_slots::Trinket1;
+							break;
+						}
+						case 13:
+						case 17:
+						case 21:
+						{
+							slot = player_equipment_slots::Mainhand;
+							break;
+						}
+						case 14:
+						case 22:
+						case 23:
+						{
+							slot = player_equipment_slots::Offhand;
+							break;
+						}
+						case 15:
+						case 25:
+						{
+							slot = player_equipment_slots::Ranged;
+							break;
+						}
+						case 16:
+						{
+							slot = player_equipment_slots::Back;
+							break;
+						}
+						case 19:
+						{
+							slot = player_equipment_slots::Tabard;
+							break;
+						}
+
+						default:
+						{
+							if (bagSlot < player_inventory_pack_slots::Count_)
+							{
+								slot = player_inventory_pack_slots::Start + (bagSlot++);
+							}
+							break;
+						}
+					}
+
+					if (slot != 0xffff)
+					{
+						pp::world_realm::ItemData itemData;
+						itemData.entry = item->id;
+						itemData.durability = item->durability;
+						itemData.slot = slot;
+						itemData.stackCount = 1;
+						items.emplace_back(std::move(itemData));
+					}
+				}
+			}
+		}
 
 		// Update character location
 		character.mapId = race->startMap;
@@ -455,7 +574,7 @@ namespace wowpp
 		character.o = race->startRotation;
 
 		// Create character
-		game::ResponseCode result = m_database.createCharacter(m_accountId, initialSpellsEntry->second, character);
+		game::ResponseCode result = m_database.createCharacter(m_accountId, initialSpellsEntry->second, items, character);
 		if (result == game::response_code::CharCreateSuccess)
 		{
 			// Cache the character data
@@ -532,142 +651,20 @@ namespace wowpp
 		// Write something to the log just for informations
 		ILOG("Player " << m_accountName << " tries to enter the world with character 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << m_characterId);
 
+		// Store character items
+		std::vector<pp::world_realm::ItemData> items;
+
 		// Load the player character data from the database
 		std::unique_ptr<GameCharacter> character(new GameCharacter(m_manager.getTimers(), m_getRace, m_getClass, m_getLevel));
 		character->initialize();
 		character->setGuid(createRealmGUID(characterId, m_loginConnector.getRealmID(), guid_type::Player));
-		if (!m_database.getGameCharacter(guidLowerPart(characterId), *character))
+		if (!m_database.getGameCharacter(guidLowerPart(characterId), *character, items))
 		{
 			// Send error packet
 			WLOG("Player login failed: Could not load character " << characterId);
 			sendPacket(
 				std::bind(game::server_write::charLoginFailed, std::placeholders::_1, game::response_code::CharLoginNoCharacter));
 			return;
-		}
-
-		// TODO
-		static UInt32 itemCounter = 1;
-
-		const auto *race = character->getRaceEntry();
-		auto it1 = race->initialItems.find(character->getClass());
-		if (it1 != race->initialItems.end())
-		{
-			auto it2 = it1->second.find(character->getGender());
-			if (it2 != it1->second.end())
-			{
-				// Found it - enumerate items
-				for (const auto *item : it2->second)
-				{
-					UInt16 slot = 0xffff;
-					switch (item->inventoryType)
-					{
-					case 1:
-					{
-						slot = player_equipment_slots::Head;
-						break;
-					}
-					case 2:
-					{
-						slot = player_equipment_slots::Neck;
-						break;
-					}
-					case 3:
-					{
-						slot = player_equipment_slots::Shoulders;
-						break;
-					}
-					case 4:
-					{
-						slot = player_equipment_slots::Body;
-						break;
-					}
-					case 5:
-					case 20:
-					{
-						slot = player_equipment_slots::Chest;
-						break;
-					}
-					case 6:
-					{
-						slot = player_equipment_slots::Waist;
-						break;
-					}
-					case 7:
-					{
-						slot = player_equipment_slots::Legs;
-						break;
-					}
-					case 8:
-					{
-						slot = player_equipment_slots::Feet;
-						break;
-					}
-					case 9:
-					{
-						slot = player_equipment_slots::Wrists;
-						break;
-					}
-					case 10:
-					{
-						slot = player_equipment_slots::Hands;
-						break;
-					}
-					case 11:
-					{
-						//TODO: Finger1/2
-						slot = player_equipment_slots::Finger1;
-						break;
-					}
-					case 12:
-					{
-						//TODO: Trinket1/2
-						slot = player_equipment_slots::Trinket1;
-						break;
-					}
-					case 13:
-					case 17:
-					case 21:
-					{
-						slot = player_equipment_slots::Mainhand;
-						break;
-					}
-					case 14:
-					case 22:
-					case 23:
-					{
-						slot = player_equipment_slots::Offhand;
-						break;
-					}
-					case 15:
-					case 25:
-					{
-						slot = player_equipment_slots::Ranged;
-						break;
-					}
-					case 16:
-					{
-						slot = player_equipment_slots::Back;
-						break;
-					}
-					case 19:
-					{
-						slot = player_equipment_slots::Tabard;
-						break;
-					}
-					}
-
-					if (slot != 0xffff)
-					{
-						// Create new item
-						std::unique_ptr<GameItem> itemInstance(new GameItem(*item));
-						itemInstance->initialize();
-						itemInstance->setGuid(createEntryGUID(itemCounter++, item->id, guid_type::Item));
-
-						// Add item (this will also make the item visible and assign it properly)
-						character->addItem(std::move(itemInstance), slot);
-					}
-				}
-			}
 		}
 
 		// We found the character - now we need to look for a world node
@@ -696,7 +693,7 @@ namespace wowpp
 		// is valid on the world node and if not, transfer player
 
 		// There should be an instance
-		m_worldNode->enterWorldInstance(charEntry->id, *m_gameCharacter);
+		m_worldNode->enterWorldInstance(charEntry->id, *m_gameCharacter, items);
 	}
 
 	void Player::worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, float x, float y, float z, float o)
@@ -710,8 +707,6 @@ namespace wowpp
 		// Save instance id
 		m_instanceId = instanceId;
 		
-		// TODO: These packets shouldn't be sent by the realm, but by the world node
-#if 1
 		// Update character on the realm side with data received from the world server
 		//m_gameCharacter->setGuid(createGUID(worldObjectGuid, 0, high_guid::Player));
 		m_gameCharacter->relocate(x, y, z, o);
@@ -776,198 +771,14 @@ namespace wowpp
 		sendPacket(
 			std::bind(game::server_write::initializeFactions, std::placeholders::_1));
 
-		// Init world states (The little icons shown at the top of the screen on maps like
-		// Silithus and The Eastern Plaguelands)
-		sendPacket(
-			std::bind(game::server_write::initWorldStates, std::placeholders::_1, mapId, zoneId));
-
-		sendPacket(
-			std::bind(game::server_write::loginSetTimeSpeed, std::placeholders::_1, 0));
-
 		// Trigger intro cinematic based on the characters race
 		game::CharEntry *charEntry = getCharacterById(m_characterId);
-		if (raceEntry && 
+		if (raceEntry &&
 			(charEntry && charEntry->cinematic))
 		{
 			sendPacket(
 				std::bind(game::server_write::triggerCinematic, std::placeholders::_1, raceEntry->cinematic));
 		}
-
-		// Blocks
-		std::vector<std::vector<char>> blocks;
-
-		// Create item spawn packets
-		for (auto &item : m_gameCharacter->getItems())
-		{
-			const UInt16 &slot = item.first;
-			const auto &instance = item.second;
-
-			// If this is an equipped item...
-			if (slot < player_equipment_slots::End)
-			{
-				// Spawn this item
-				std::vector<char> createItemBlock;
-				io::VectorSink createItemSink(createItemBlock);
-				io::Writer createItemWriter(createItemSink);
-				{
-					UInt8 updateType = 0x02;						// Item
-					UInt8 updateFlags = 0x08 | 0x10;				// 
-					UInt8 objectTypeId = 0x01;						// Item
-
-					UInt64 guid = instance->getGuid();
-
-					// Header with object guid and type
-					createItemWriter
-						<< io::write<NetUInt8>(updateType);
-					UInt64 guidCopy = guid;
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-					for (UInt8 i = 0; guidCopy != 0; ++i)
-					{
-						if (guidCopy & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guidCopy & 0xFF);
-							++size;
-						}
-
-						guidCopy >>= 8;
-					}
-					createItemWriter.sink().write((const char*)&packGUID[0], size);
-					createItemWriter
-						<< io::write<NetUInt8>(objectTypeId)
-						<< io::write<NetUInt8>(updateFlags);
-
-					// Lower-GUID update?
-					if (updateFlags & 0x08)
-					{
-						createItemWriter
-							<< io::write<NetUInt32>(guidLowerPart(guid));
-					}
-
-					// High-GUID update?
-					if (updateFlags & 0x10)
-					{
-						createItemWriter
-							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
-					}
-
-					// Write values update
-					instance->writeValueUpdateBlock(createItemWriter, true);
-				}
-				blocks.emplace_back(createItemBlock);
-			}
-		}
-
-		// Write create object packet
-		std::vector<char> createBlock;
-		io::VectorSink sink(createBlock);
-		io::Writer writer(sink);
-		{
-			UInt8 updateType = 0x03;						// Player
-			UInt8 updateFlags = 0x01 | 0x10 | 0x20 | 0x40;	// UPDATEFLAG_SELF | UPDATEFLAG_ALL | UPDATEFLAG_LIVING | UPDATEFLAG_HAS_POSITION
-			UInt8 objectTypeId = 0x04;						// Player
-
-			UInt64 guid = m_gameCharacter->getGuid();
-
-			// Header with object guid and type
-			writer
-				<< io::write<NetUInt8>(updateType);
-
-			UInt64 guidCopy = guid;
-			UInt8 packGUID[8 + 1];
-			packGUID[0] = 0;
-			size_t size = 1;
-			for (UInt8 i = 0; guidCopy != 0; ++i)
-			{
-				if (guidCopy & 0xFF)
-				{
-					packGUID[0] |= UInt8(1 << i);
-					packGUID[size] = UInt8(guidCopy & 0xFF);
-					++size;
-				}
-
-				guidCopy >>= 8;
-			}
-			writer.sink().write((const char*)&packGUID[0], size);
-			writer
-				<< io::write<NetUInt8>(objectTypeId);
-
-			writer
-				<< io::write<NetUInt8>(updateFlags);
-
-			// Write movement update
-			{
-				UInt32 moveFlags = 0x00;
-				writer
-					<< io::write<NetUInt32>(moveFlags)
-					<< io::write<NetUInt8>(0x00)
-					<< io::write<NetUInt32>(static_cast<UInt32>(getCurrentTime()));	//TODO: Time
-
-				// Position & Rotation
-				writer
-					<< io::write<float>(x)
-					<< io::write<float>(y)
-					<< io::write<float>(z)
-					<< io::write<float>(o);
-
-				// Fall time
-				writer
-					<< io::write<NetUInt32>(0);
-
-				// Speeds8
-				writer
-					<< io::write<float>(2.5f)				// Walk
-					<< io::write<float>(7.0f)				// Run
-					<< io::write<float>(4.5f)				// Backwards
-					<< io::write<NetUInt32>(0x40971c71)		// Swim
-					<< io::write<NetUInt32>(0x40200000)		// Swim Backwards
-					<< io::write<float>(7.0f)				// Fly
-					<< io::write<float>(4.5f)				// Fly Backwards
-					<< io::write<float>(3.1415927);			// Turn (radians / sec: PI)
-			}
-
-			// Lower-GUID update?
-			if (updateFlags & 0x08)
-			{
-				writer
-					<< io::write<NetUInt32>(guidLowerPart(guid));
-			}
-
-			// High-GUID update?
-			if (updateFlags & 0x10)
-			{
-				switch (objectTypeId)
-				{
-					case object_type::Object:
-					case object_type::Item:
-					case object_type::Container:
-					case object_type::GameObject:
-					case object_type::DynamicObject:
-					case object_type::Corpse:
-						writer
-							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
-						break;
-					default:
-						writer
-							<< io::write<NetUInt32>(0);
-				}
-			}
-
-			// Write values update
-			m_gameCharacter->writeValueUpdateBlock(writer, true);
-
-			// Add block
-			blocks.emplace_back(createBlock);
-		}
-
-		// Send packet
-		sendPacket(
-			std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
-
-		// TODO Load social list
-		m_social->sendSocialList();
 
 		// Send notification to friends
 		game::SocialInfo info;
@@ -978,12 +789,6 @@ namespace wowpp
 		info.status = game::friend_status::Online;
 		m_social->sendToFriends(
 			std::bind(game::server_write::friendStatus, std::placeholders::_1, m_gameCharacter->getGuid(), game::friend_result::Online, std::cref(info)));
-
-		// Send time sync request
-		m_timeSyncCounter = 0;
-		sendPacket(
-			std::bind(game::server_write::timeSyncReq, std::placeholders::_1, m_timeSyncCounter++));
-#endif
 	}
 
 	void Player::worldInstanceLeft(World &world, UInt32 instanceId, pp::world_realm::WorldLeftReason reason)
@@ -1029,9 +834,6 @@ namespace wowpp
 
 				// Clear social list
 				m_social.reset(new PlayerSocial(m_manager, *this));
-
-				// TODO: We probably want to save our character data
-				WLOG("TODO: Save character data to the database");
 
 				// Notify the client that the logout process is done
 				sendPacket(

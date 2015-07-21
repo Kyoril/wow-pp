@@ -82,7 +82,7 @@ namespace wowpp
 		bool hasInstances() const { return !m_instances.empty(); }
 
 		// Called by player
-		void enterWorldInstance(DatabaseId characterDbId, const GameCharacter &character);
+		void enterWorldInstance(DatabaseId characterDbId, const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &out_items);
 		void leaveWorldInstance(DatabaseId characterDbId, pp::world_realm::WorldLeftReason reason);
 		void sendProxyPacket(DatabaseId characterId, UInt16 opCode, UInt32 size, const std::vector<char> &buffer);
 		void sendChatMessage(NetUInt64 characterGuid, game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message);

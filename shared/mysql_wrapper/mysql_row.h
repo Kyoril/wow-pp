@@ -40,7 +40,7 @@ namespace wowpp
 			std::size_t getLength() const;
 			const char *getField(std::size_t index) const;
 
-			template <class T>
+			template <class T, class F = T>
 			bool getField(std::size_t index, T &value) const
 			{
 				try
@@ -50,7 +50,7 @@ namespace wowpp
 					{
 						return false;
 					}
-					value = boost::lexical_cast<T>(field);
+					value = boost::lexical_cast<F>(field);
 				}
 				catch (const boost::bad_lexical_cast &)
 				{

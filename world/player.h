@@ -162,6 +162,8 @@ namespace wowpp
 		void onTileChangePending(VisibilityTile &oldTile, VisibilityTile &newTile);
 		/// Executed when a proficiency of the player character changed.
 		void onProficiencyChanged(Int32 itemClass, UInt32 mask);
+		/// An inventory error occurred.
+		void onInventoryChangeFailure(game::InventoryChangeFailure failure, GameItem *itemA, GameItem *itemB);
 
 	private:
 
@@ -172,5 +174,7 @@ namespace wowpp
 		std::shared_ptr<GameCharacter> m_character;
 		Countdown m_logoutCountdown;
 		WorldInstance &m_instance;
+		boost::signals2::scoped_connection m_onSpawn, m_onDespawn, m_onAtkSwingErr, onProfChanged, onInvFailure;
+		boost::signals2::scoped_connection m_onTileChange;
 	};
 }

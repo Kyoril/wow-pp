@@ -415,6 +415,7 @@ namespace wowpp
 	public:
 
 		boost::signals2::signal<void(Int32, UInt32)> proficiencyChanged;
+		boost::signals2::signal<void(game::InventoryChangeFailure, GameItem*, GameItem*)> inventoryChangeFailure;
 
 	public:
 
@@ -473,6 +474,13 @@ namespace wowpp
 		void setSkillValue(UInt32 skillId, UInt16 current, UInt16 maximum);
 		/// Returns true if the character knows a specific skill.
 		bool hasSkill(UInt32 skillId) const;
+
+		/// Determines whether the given slot is a valid slot in the specified bag.
+		bool isValidItemPos(UInt8 bag, UInt8 slot) const;
+		/// Swaps the items of two given slots.
+		void swapItem(UInt16 src, UInt16 dst);
+		/// Tries to get the item object at the given slot. May return nullptr!
+		GameItem *getItemByPos(UInt8 bag, UInt8 slot) const;
 
 
 	protected:

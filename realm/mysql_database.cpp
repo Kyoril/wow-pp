@@ -86,7 +86,7 @@ namespace wowpp
 		return retCount;
 	}
 
-	game::ResponseCode MySQLDatabase::createCharacter(UInt32 accountId, const std::vector<const SpellEntry*> &spells,  game::CharEntry &character)
+	game::ResponseCode MySQLDatabase::createCharacter(UInt32 accountId, const std::vector<const SpellEntry*> &spells, const std::vector<pp::world_realm::ItemData> &items, game::CharEntry &character)
 	{
 		// See if the character name is already in use
 		const String safeName = m_connection.escapeString(character.name);
@@ -233,6 +233,38 @@ namespace wowpp
 					
 					// TODO: Initialize action bars
 
+					if (!items.empty())
+					{
+						std::ostringstream fmtStrm;
+						fmtStrm << "INSERT INTO `character_items` (`owner`, `entry`, `slot`, `creator`, `count`, `durability`) VALUES ";
+
+						// Add items
+						bool isFirstEntry = true;
+						for (const auto &item : items)
+						{
+							if (item.stackCount == 0)
+								continue;;
+
+							if (isFirstEntry)
+							{
+								isFirstEntry = false;
+							}
+							else
+							{
+								fmtStrm << ",";
+							}
+
+							fmtStrm << "(" << character.id << "," << item.entry << "," << item.slot << "," << item.creator << "," << UInt16(item.stackCount) << "," << item.durability << ")";
+						}
+
+						// Now, learn all initial spells
+						if (!m_connection.execute(fmtStrm.str()))
+						{
+							// Could not learn initial spells
+							printDatabaseError();
+							return game::response_code::CharCreateError;
+						}
+					}
 
 					return game::response_code::CharCreateSuccess;
 				}
@@ -376,7 +408,7 @@ namespace wowpp
 		return game::response_code::CharDeleteSuccess;
 	}
 
-	bool MySQLDatabase::getGameCharacter(DatabaseId characterId, GameCharacter &out_character)
+	bool MySQLDatabase::getGameCharacter(DatabaseId characterId, GameCharacter &out_character, std::vector<pp::world_realm::ItemData> &out_items)
 	{
 		wowpp::MySQL::Select select(m_connection, (boost::format(
 			//       0       1       2        3        4       5        6       7     8       9     
@@ -465,7 +497,7 @@ namespace wowpp
 					//       0     
 					"SELECT `spell` FROM `character_spells` WHERE `guid`=%1%")
 					% characterId).str());
-				if (select.success())
+				if (spellSelect.success())
 				{
 					wowpp::MySQL::Row spellRow(spellSelect);
 					while (spellRow)
@@ -486,7 +518,34 @@ namespace wowpp
 							out_character.addSpell(*spell);
 						}
 
+						// Next row
 						spellRow = spellRow.next(spellSelect);
+					}
+				}
+
+				// Load items
+				wowpp::MySQL::Select itemSelect(m_connection, (boost::format(
+					//       0      1         2        3        4         5          6
+					"SELECT `id`, `owner`, `entry`, `slot`, `creator`, `count`, `durability` FROM `character_items` WHERE `owner`=%1%")
+					% characterId).str());
+				if (itemSelect.success())
+				{
+					wowpp::MySQL::Row itemRow(itemSelect);
+					while (itemRow)
+					{
+						UInt16 tmp = 0;
+
+						// Read item data
+						pp::world_realm::ItemData data;
+						itemRow.getField(2, data.entry);
+						itemRow.getField(3, data.slot);
+						itemRow.getField(4, data.creator);
+						itemRow.getField<UInt8, UInt16>(5, data.stackCount);
+						itemRow.getField(6, data.durability);
+						out_items.emplace_back(std::move(data));
+
+						// Next row
+						itemRow = itemRow.next(itemSelect);
 					}
 				}
 

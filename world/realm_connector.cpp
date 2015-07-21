@@ -240,12 +240,13 @@ namespace wowpp
 		// Read packet from the realm
 		DatabaseId requesterDbId;
 		std::vector<UInt32> spellIds;
+		std::vector<pp::world_realm::ItemData> items;
 		std::shared_ptr<GameCharacter> character(new GameCharacter(
 			m_worldInstanceManager.getTimerQueue(),
 			std::bind(&RaceEntryManager::getById, &m_project.races, std::placeholders::_1),
 			std::bind(&ClassEntryManager::getById, &m_project.classes, std::placeholders::_1),
 			std::bind(&LevelEntryManager::getById, &m_project.levels, std::placeholders::_1)));
-		if (!(pp::world_realm::realm_read::characterLogIn(packet, requesterDbId, character.get(), spellIds)))
+		if (!(pp::world_realm::realm_read::characterLogIn(packet, requesterDbId, character.get(), spellIds, items)))
 		{
 			// Error: could not read packet
 			return;
@@ -321,6 +322,30 @@ namespace wowpp
 				// Create target map
 				character->castSpell(target, *spell, 0, GameUnit::SpellSuccessCallback());
 			}
+		}
+
+		static UInt32 itemCounter = 0;
+
+		// Create items
+		for (auto &item : items)
+		{
+			// Skip items that are not available
+			const auto *entry = m_project.items.getById(item.entry);
+			if (!entry)
+			{
+				WLOG("Unknown item entry: " << item.entry << " - item will be skipped!");
+				continue;
+			}
+
+			// Create item instance
+			std::unique_ptr<GameItem> itemInstance(new GameItem(*entry));
+			itemInstance->initialize();
+			itemInstance->setUInt64Value(object_fields::Guid, createEntryGUID(itemCounter++, entry->id, guid_type::Item));
+			itemInstance->setUInt32Value(item_fields::Durability, item.durability);
+			itemInstance->setUInt64Value(item_fields::Contained, item.contained);
+			itemInstance->setUInt64Value(item_fields::Creator, item.creator);
+			itemInstance->setUInt32Value(item_fields::StackCount, item.stackCount);
+			character->addItem(std::move(itemInstance), item.slot);
 		}
 
 		// Get character location

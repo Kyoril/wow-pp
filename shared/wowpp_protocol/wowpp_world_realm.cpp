@@ -125,13 +125,14 @@ namespace wowpp
 					out_packet.finish();
 				}
 
-				void characterLogIn(pp::OutgoingPacket &out_packet, DatabaseId characterRealmId, const GameCharacter &character, const std::vector<UInt32> &spellIds)
+				void characterLogIn(pp::OutgoingPacket &out_packet, DatabaseId characterRealmId, const GameCharacter &character, const std::vector<UInt32> &spellIds, const std::vector<ItemData> &items)
 				{
 					out_packet.start(realm_packet::CharacterLogIn);
 					out_packet
 						<< io::write<NetDatabaseId>(characterRealmId)
 						<< character
-						<< io::write_dynamic_range<NetUInt32>(spellIds);
+						<< io::write_dynamic_range<NetUInt32>(spellIds)
+						<< io::write_dynamic_range<NetUInt32>(items);
 					out_packet.finish();
 				}
 
@@ -253,14 +254,15 @@ namespace wowpp
 					return true;
 				}
 
-				bool characterLogIn(io::Reader &packet, DatabaseId &out_characterRealmId, GameCharacter *out_character, std::vector<UInt32> &out_spellIds)
+				bool characterLogIn(io::Reader &packet, DatabaseId &out_characterRealmId, GameCharacter *out_character, std::vector<UInt32> &out_spellIds, std::vector<ItemData> &out_items)
 				{
 					assert(out_character);
 
 					return packet
 						>> io::read<NetDatabaseId>(out_characterRealmId)
 						>> *out_character
-						>> io::read_container<NetUInt32>(out_spellIds);
+						>> io::read_container<NetUInt32>(out_spellIds)
+						>> io::read_container<NetUInt32>(out_items);
 				}
 
 				bool clientProxyPacket(io::Reader &packet, DatabaseId &out_characterId, UInt16 &out_opCode, UInt32 &out_size, std::vector<char> &out_packetBuffer)
@@ -290,6 +292,18 @@ namespace wowpp
 						>> io::read<NetUInt32>(out_reason);
 				}
 
+			}
+
+			io::Writer & operator<<(io::Writer &w, ItemData const& object)
+			{
+				w.writePOD(object);
+				return w;
+			}
+
+			io::Reader & operator>>(io::Reader &r, ItemData& object)
+			{
+				r.readPOD(object);
+				return r;
 			}
 		}
 	}

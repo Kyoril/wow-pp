@@ -178,6 +178,7 @@ namespace wowpp
 
 			// Store new item
 			m_itemSlots[slot] = std::move(item);
+			DLOG("STACK COUNT: " << m_itemSlots[slot]->getUInt32Value(item_fields::StackCount));
 		}
 		else
 		{
@@ -423,19 +424,168 @@ namespace wowpp
 		}
 	}
 
+	bool GameCharacter::isValidItemPos(UInt8 bag, UInt8 slot) const
+	{
+		// Has a bag been specified?
+		if (bag == 0)
+			return true;
+
+		// Any bag
+		if (bag == 255)
+		{
+			if (slot == 255)
+				return true;
+
+			// equipment
+			if (slot < player_equipment_slots::End)
+				return true;
+
+			// bag equip slots
+			if (slot >= player_inventory_slots::Start && slot < player_inventory_slots::End)
+				return true;
+
+			// backpack slots
+			if (slot >= player_item_slots::Start && slot < player_item_slots::End)
+				return true;
+
+			// keyring slots
+			if (slot >= player_key_ring_slots::Start && slot < player_key_ring_slots::End)
+				return true;
+
+			// bank main slots
+			if (slot >= player_bank_item_slots::Start && slot < player_bank_item_slots::End)
+				return true;
+
+			// bank bag slots
+			if (slot >= player_bank_bag_slots::Start && slot < player_bank_bag_slots::End)
+				return true;
+
+			// Invalid
+			return false;
+		}
+
+		// bag content slots
+		if (bag >= player_inventory_slots::Start && bag < player_inventory_slots::End)
+		{
+			// TODO: Get bag at the specified position
+
+			// Any slot
+			if (slot == 255)
+				return true;
+
+			//return slot < pBag->GetBagSize();
+			return false;
+		}
+
+		// bank bag content slots
+		if (bag >= player_bank_bag_slots::Start && bag < player_bank_bag_slots::End)
+		{
+			// TODO: Get bag at the specified position
+
+			// Any slot
+			if (slot == 255)
+				return true;
+
+			//return slot < pBag->GetBagSize();
+			return false;
+		}
+
+		return false;
+	}
+
+	void GameCharacter::swapItem(UInt16 src, UInt16 dst)
+	{
+		UInt8 srcBag = src >> 8;
+		UInt8 srcSlot = src & 0xFF;
+
+		UInt8 dstBag = dst >> 8;
+		UInt8 dstSlot = dst & 0xFF;
+
+		GameItem *srcItem = getItemByPos(srcBag, srcSlot);
+		GameItem *dstItem = getItemByPos(dstBag, dstSlot);
+
+		// Check if we have a valid source item
+		if (!srcItem)
+		{
+			inventoryChangeFailure(game::inventory_change_failure::ItemNotFound, srcItem, dstItem);
+			return;
+		}
+
+		// Check if we are alive
+		if (getUInt32Value(unit_fields::Health) == 0)
+		{
+			inventoryChangeFailure(game::inventory_change_failure::YouAreDead, srcItem, dstItem);
+			return;
+		}
+
+		// TODO: Check if source item is in still consisted as loot
+
+		// TODO: Validate source item
+
+		// TODO: Validate dest item
+
+		// Detect case
+		if (!dstItem)
+		{
+			DLOG("TODO: Moving...");
+
+			// Move items (little test)
+			setUInt64Value(character_fields::InvSlotHead + (srcSlot * 2), 0);
+			setUInt64Value(character_fields::InvSlotHead + (dstSlot * 2), srcItem->getGuid());
+		}
+		else
+		{
+			DLOG("TODO: Swapping...");
+
+
+		}
+	}
+
+	GameItem * GameCharacter::getItemByPos(UInt8 bag, UInt8 slot) const
+	{
+		if (bag == player_inventory_slots::Bag_0)
+		{
+			if (slot < player_bank_item_slots::End || (slot >= player_key_ring_slots::Start && slot < player_key_ring_slots::End))
+			{
+				auto it = m_itemSlots.find(slot);
+				if (it != m_itemSlots.end())
+				{
+					return it->second.get();
+				}
+			}
+		}
+		else
+		{
+			// Is this a valid bag slot?
+			const bool isBagSlot = (
+				(bag >= player_inventory_slots::Start && bag < player_inventory_slots::End) ||
+				(bag >= player_bank_bag_slots::Start && bag < player_bank_bag_slots::End)
+				);
+
+			if (isBagSlot)
+			{
+				// TODO: Get item from bag
+			}
+		}
+
+		return nullptr;
+	}
+
 	io::Writer & operator<<(io::Writer &w, GameCharacter const& object)
 	{
-		return w
+		w
 			<< reinterpret_cast<GameUnit const&>(object)
 			<< io::write_dynamic_range<NetUInt8>(object.m_name)
 			<< io::write<NetUInt32>(object.m_zoneIndex);
+		return w;
 	}
 
 	io::Reader & operator>>(io::Reader &r, GameCharacter& object)
 	{
-		return r
+		r
 			>> reinterpret_cast<GameUnit&>(object)
 			>> io::read_container<NetUInt8>(object.m_name)
 			>> io::read<NetUInt32>(object.m_zoneIndex);
+		return r;
 	}
 }
