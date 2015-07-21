@@ -448,95 +448,95 @@ namespace wowpp
 					UInt16 slot = 0xffff;
 					switch (item->inventoryType)
 					{
-						case 1:
+						case inventory_type::Head:
 						{
 							slot = player_equipment_slots::Head;
 							break;
 						}
-						case 2:
+						case inventory_type::Neck:
 						{
 							slot = player_equipment_slots::Neck;
 							break;
 						}
-						case 3:
+						case inventory_type::Shoulders:
 						{
 							slot = player_equipment_slots::Shoulders;
 							break;
 						}
-						case 4:
+						case inventory_type::Body:
 						{
 							slot = player_equipment_slots::Body;
 							break;
 						}
-						case 5:
-						case 20:
+						case inventory_type::Chest:
+						case inventory_type::Robe:
 						{
 							slot = player_equipment_slots::Chest;
 							break;
 						}
-						case 6:
+						case inventory_type::Waist:
 						{
 							slot = player_equipment_slots::Waist;
 							break;
 						}
-						case 7:
+						case inventory_type::Legs:
 						{
 							slot = player_equipment_slots::Legs;
 							break;
 						}
-						case 8:
+						case inventory_type::Feet:
 						{
 							slot = player_equipment_slots::Feet;
 							break;
 						}
-						case 9:
+						case inventory_type::Wrists:
 						{
 							slot = player_equipment_slots::Wrists;
 							break;
 						}
-						case 10:
+						case inventory_type::Hands:
 						{
 							slot = player_equipment_slots::Hands;
 							break;
 						}
-						case 11:
+						case inventory_type::Finger:
 						{
 							//TODO: Finger1/2
 							slot = player_equipment_slots::Finger1;
 							break;
 						}
-						case 12:
+						case inventory_type::Trinket:
 						{
 							//TODO: Trinket1/2
 							slot = player_equipment_slots::Trinket1;
 							break;
 						}
-						case 13:
-						case 17:
-						case 21:
+						case inventory_type::Weapon:
+						case inventory_type::TwoHandWeapon:
+						case inventory_type::WeaponMainHand:
 						{
 							slot = player_equipment_slots::Mainhand;
 							break;
 						}
-						case 14:
-						case 22:
-						case 23:
+						case inventory_type::Shield:
+						case inventory_type::WeaponOffHand:
+						case inventory_type::Holdable:
 						{
 							slot = player_equipment_slots::Offhand;
 							break;
 						}
-						case 15:
-						case 25:
+						case inventory_type::Ranged:
+						case inventory_type::Thrown:
 						{
 							slot = player_equipment_slots::Ranged;
 							break;
 						}
-						case 16:
+						case inventory_type::Cloak:
 						{
 							slot = player_equipment_slots::Back;
 							break;
 						}
-						case 19:
+						case inventory_type::Tabard:
 						{
 							slot = player_equipment_slots::Tabard;
 							break;
