@@ -662,6 +662,7 @@ namespace wowpp
 				SummonDeadPet			= 109,
 				DestroyAllTotems		= 110,
 				DurabilityDamage		= 111,
+				Effect_112				= 112,
 				ResurrectNew			= 113,
 				AttackMe				= 114,
 				DurabilityDamagePct		= 115,
@@ -704,7 +705,7 @@ namespace wowpp
 				SummonFriend			= 152,
 				Effect_153				= 153,
 
-				Count_					= 153,
+				Count_					= 154,
 				Invalid_				= 0
 			};
 		}

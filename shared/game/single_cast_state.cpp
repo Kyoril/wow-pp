@@ -270,7 +270,7 @@ namespace wowpp
 
 				default:
 				{
-					WLOG("Spell effect " << game::constant_literal::spellEffectNames.getName(effect.type) << " not yet implemented");
+					WLOG("Spell effect " << game::constant_literal::spellEffectNames.getName(effect.type) << " (" << effect.type << ") not yet implemented");
 					break;
 				}
 			}

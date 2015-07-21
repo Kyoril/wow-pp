@@ -141,6 +141,7 @@ namespace wowpp
 				"SUMMON_DEAD_PET",
 				"DESTROY_ALL_TOTEMS",
 				"DURABILITY_DAMAGE",
+				"EFFECT_112",
 				"RESURRECT_NEW",
 				"ATTACK_ME",
 				"DURABILITY_DAMAGE_PCT",
