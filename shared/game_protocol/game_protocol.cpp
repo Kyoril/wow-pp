@@ -1480,6 +1480,33 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void updateComboPoints(game::OutgoingPacket &out_packet, UInt64 targetGuid, UInt8 comboPoints)
+			{
+				out_packet.start(game::server_packet::UpdateComboPoints);
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; targetGuid != 0; ++i)
+					{
+						if (targetGuid & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(targetGuid & 0xFF);
+							++size;
+						}
+
+						targetGuid >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+				out_packet
+					<< io::write<NetUInt8>(comboPoints);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

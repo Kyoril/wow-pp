@@ -48,7 +48,6 @@ namespace wowpp
 		inline Watchers &getWatchers() { return m_watchers; }
 		inline const Watchers &getWatchers() const { return m_watchers; }
 		
-
 	private:
 
 		TileIndex2D m_position;

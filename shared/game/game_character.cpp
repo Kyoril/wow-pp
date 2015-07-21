@@ -36,6 +36,8 @@ namespace wowpp
 		, m_zoneIndex(0)
 		, m_weaponProficiency(0)
 		, m_armorProficiency(0)
+		, m_comboTarget(0)
+		, m_comboPoints(0)
 	{
 		// Resize values field
 		m_values.resize(character_fields::CharacterFieldCount);
@@ -618,6 +620,41 @@ namespace wowpp
 		setFloatValue(unit_fields::MinDamage, minDamage);
 		setFloatValue(unit_fields::MaxDamage, maxDamage);
 		setUInt32Value(unit_fields::BaseAttackTime, attackTime);
+	}
+
+	void GameCharacter::addComboPoints(UInt64 target, UInt8 points)
+	{
+		if (target == 0 || points == 0)
+		{
+			// Reset
+			m_comboTarget = 0;
+			m_comboPoints = 0;
+		}
+		else
+		{
+			if (target == m_comboTarget)
+			{
+				if (m_comboPoints < 5)
+				{
+					// Add new combo points
+					m_comboPoints += points;
+				}
+				else
+				{
+					// Nothing to do here since combo points are already maxed out
+					return;
+				}
+			}
+			else
+			{
+				// Set new combo points
+				m_comboTarget = target;
+				m_comboPoints = std::min<UInt8>(5, points);
+			}
+		}
+
+		// Notify about combo point change
+		comboPointsChanged();
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameCharacter const& object)

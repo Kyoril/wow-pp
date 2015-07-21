@@ -55,6 +55,7 @@ namespace wowpp
 		void spellEffectSchoolDamage(const SpellEntry::Effect &effect);
 		void spellEffectDrainPower(const SpellEntry::Effect &effect);
 		void spellEffectProficiency(const SpellEntry::Effect &effect);
+		void spellEffectAddComboPoints(const SpellEntry::Effect &effect);
 
 	private:
 

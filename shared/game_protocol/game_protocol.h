@@ -204,8 +204,9 @@ namespace wowpp
 				SetDungeonDifficulty		= 0x329,
 				Motd						= 0x33D,
 				TimeSyncReq					= 0x390,
+				UpdateComboPoints			= 0x39D,
 				FeatureSystemStatus			= 0x3C8,
-				UnlearnSpells				= 0x41D
+				UnlearnSpells				= 0x41D,
 			};
 		}
 
@@ -947,6 +948,12 @@ namespace wowpp
 				InventoryChangeFailure failure,
 				GameItem *itemA,
 				GameItem *itemB
+				);
+
+			void updateComboPoints(
+				game::OutgoingPacket &out_packet,
+				UInt64 targetGuid,
+				UInt8 comboPoints
 				);
 		};
 	}

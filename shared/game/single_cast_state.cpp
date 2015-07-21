@@ -248,6 +248,12 @@ namespace wowpp
 					break;
 				}
 
+				case se::AddComboPoints:
+				{
+					spellEffectAddComboPoints(effect);
+					break;
+				}
+
 				case se::Weapon:
 				case se::Language:
 				{
@@ -474,4 +480,25 @@ namespace wowpp
 
 		return basePoints + randomValue;
 	}
+
+	void SingleCastState::spellEffectAddComboPoints(const SpellEntry::Effect &effect)
+	{
+		GameCharacter *character = nullptr;
+		if (isPlayerGUID(m_cast.getExecuter().getGuid()))
+		{
+			character = dynamic_cast<GameCharacter*>(&m_cast.getExecuter());
+		}
+
+		if (!character)
+		{
+			ELOG("Invalid character");
+			return;
+		}
+
+		DLOG("Adding combo points: " << effect.basePoints);
+
+		UInt64 comboTarget = m_target.getUnitTarget();
+		character->addComboPoints(comboTarget, UInt8(calculateEffectBasePoints(effect)));
+	}
+
 }

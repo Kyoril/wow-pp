@@ -416,6 +416,7 @@ namespace wowpp
 
 		boost::signals2::signal<void(Int32, UInt32)> proficiencyChanged;
 		boost::signals2::signal<void(game::InventoryChangeFailure, GameItem*, GameItem*)> inventoryChangeFailure;
+		boost::signals2::signal<void()> comboPointsChanged;
 
 	public:
 
@@ -474,6 +475,14 @@ namespace wowpp
 		void setSkillValue(UInt32 skillId, UInt16 current, UInt16 maximum);
 		/// Returns true if the character knows a specific skill.
 		bool hasSkill(UInt32 skillId) const;
+		/// Gets the GUID of the current combo point target.
+		UInt64 getComboTarget() const { return m_comboTarget; }
+		/// Gets the number of combo points of this character.
+		UInt8 getComboPoints() const { return m_comboPoints; }
+		/// Adds combo points to the specified target. This will reset combo points
+		/// if target is a new target combo target. If a value of 0 is specified, the combo
+		/// points will be reset to zero.
+		void addComboPoints(UInt64 target, UInt8 points);
 
 		/// Determines whether the given slot is a valid slot in the specified bag.
 		bool isValidItemPos(UInt8 bag, UInt8 slot) const;
@@ -505,6 +514,8 @@ namespace wowpp
 		std::vector<const SkillEntry*> m_skills;
 		std::vector<const SpellEntry*> m_spells;
 		std::map<UInt16, std::unique_ptr<GameItem>> m_itemSlots;
+		UInt64 m_comboTarget;
+		UInt8 m_comboPoints;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameCharacter const& object);

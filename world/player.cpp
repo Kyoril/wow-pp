@@ -55,6 +55,8 @@ namespace wowpp
 			std::bind(&Player::onAttackSwingError, this, std::placeholders::_1));
 		onInvFailure = m_character->inventoryChangeFailure.connect(
 			std::bind(&Player::onInventoryChangeFailure, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+		m_onComboPoints = m_character->comboPointsChanged.connect(
+			std::bind(&Player::onComboPointsChanged, this));
 	}
 
 	void Player::logoutRequest()
@@ -711,6 +713,12 @@ namespace wowpp
 		// Send network packet about inventory change failure
 		sendProxyPacket(
 			std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, failure, itemA, itemB));
+	}
+
+	void Player::onComboPointsChanged()
+	{
+		sendProxyPacket(
+			std::bind(game::server_write::updateComboPoints, std::placeholders::_1, m_character->getComboTarget(), m_character->getComboPoints()));
 	}
 
 }
