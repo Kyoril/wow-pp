@@ -191,6 +191,12 @@ namespace wowpp
 			// Apply stack count
 			playerItem->setUInt32Value(item_fields::StackCount, existingStackCount + additionalStackCount);
 		}
+
+		// Equipment changed
+		if (slot < player_equipment_slots::End)
+		{
+			updateAllStats();
+		}
 	}
 
 	void GameCharacter::addSpell(const SpellEntry &spell)
@@ -272,6 +278,8 @@ namespace wowpp
 
 	void GameCharacter::updateAllStats()
 	{
+		updateDamage();
+		updateArmor();
 		updateMaxHealth();
 		for (size_t i = 0; i < power_type::Happiness; ++i)
 		{
@@ -568,6 +576,48 @@ namespace wowpp
 		}
 
 		return nullptr;
+	}
+
+	void GameCharacter::updateArmor()
+	{
+		UInt32 baseArmor = 0;
+		for (UInt8 i = player_equipment_slots::Start; i < player_equipment_slots::End; ++i)
+		{
+			auto it = m_itemSlots.find(i);
+			if (it != m_itemSlots.end())
+			{
+				// Add armor value from item
+				baseArmor += it->second->getEntry().armor;
+			}
+		}
+
+		// Add armor from agility
+		baseArmor += getUInt32Value(unit_fields::Stat1) * 2;
+		setUInt32Value(unit_fields::Resistances, baseArmor);
+	}
+
+	void GameCharacter::updateDamage()
+	{
+		float minDamage = 1.0f;
+		float maxDamage = 2.0f;
+		UInt32 attackTime = 2000;
+
+		// TODO: Check druid form etc.
+
+		// Check if we are wearing a weapon in our main hand
+		auto it = m_itemSlots.find(player_equipment_slots::Mainhand);
+		if (it != m_itemSlots.end())
+		{
+			// Get weapon damage values
+			const auto &entry = it->second->getEntry();
+			if (entry.itemDamage[0].min != 0.0f) minDamage = entry.itemDamage[0].min;
+			if (entry.itemDamage[0].max != 0.0f) maxDamage = entry.itemDamage[0].max;
+			if (entry.delay != 0) attackTime = entry.delay;
+		}
+
+		setFloatValue(unit_fields::MinDamage, minDamage);
+		setFloatValue(unit_fields::MaxDamage, maxDamage);
+		setUInt32Value(unit_fields::BaseAttackTime, attackTime);
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameCharacter const& object)

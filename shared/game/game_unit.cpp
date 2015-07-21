@@ -365,7 +365,10 @@ namespace wowpp
 				}
 
 				game::HitInfo hitInfo = game::hit_info::NormalSwing2;
-				const UInt32 damage = 1;
+
+				// Calculate damage between minimum and maximum damage
+				std::uniform_real_distribution<float> distribution(getFloatValue(unit_fields::MinDamage), getFloatValue(unit_fields::MaxDamage) + 1.0f);
+				const UInt32 damage = UInt32(distribution(randomGenerator));
 
 				// Notify all subscribers
 				std::vector<char> buffer;

@@ -489,6 +489,8 @@ namespace wowpp
 		void updateAllStats();
 		void updateMaxHealth();
 		void updateMaxPower(PowerType power);
+		void updateArmor();
+		void updateDamage();
 
 		// TODO: Outsource
 		float getHealthBonusFromStamina() const;
