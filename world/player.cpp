@@ -247,8 +247,12 @@ namespace wowpp
 			const UInt16 &slot = item.first;
 			const auto &instance = item.second;
 
-			// If this is an equipped item...
-			if (slot < player_equipment_slots::End)
+			// Check if we need to send that item
+			const bool sendItemToPlayer = (
+				slot < player_bank_bag_slots::End ||
+				(slot >= player_key_ring_slots::Start && slot < player_key_ring_slots::End)
+				);
+			if (sendItemToPlayer)
 			{
 				// Spawn this item
 				std::vector<char> createItemBlock;

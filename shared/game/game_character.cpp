@@ -178,7 +178,6 @@ namespace wowpp
 
 			// Store new item
 			m_itemSlots[slot] = std::move(item);
-			DLOG("STACK COUNT: " << m_itemSlots[slot]->getUInt32Value(item_fields::StackCount));
 		}
 		else
 		{
