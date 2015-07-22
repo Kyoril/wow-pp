@@ -270,6 +270,8 @@ namespace wowpp
 		Countdown m_regenCountdown;
 	};
 
+	UInt32 calculateArmorReducedDamage(const GameUnit &attacker, const GameUnit &victim, UInt32 damage);
+
 	io::Writer &operator << (io::Writer &w, GameUnit const& object);
 	io::Reader &operator >> (io::Reader &r, GameUnit& object);
 }

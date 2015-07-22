@@ -470,9 +470,12 @@ namespace wowpp
 		// Check target
 		if (!target)
 		{
-			WLOG("EFFECT_SCHOOL_DAMAGE: No valid target found!");
+			WLOG("EFFECT_NORMALIZED_WEAPON_DMG: No valid target found!");
 			return;
 		}
+
+		// Armor reduction
+		damage = calculateArmorReducedDamage(m_cast.getExecuter(), *unitTarget, damage);
 
 		// Send spell damage packet
 		sendPacketFromCaster(caster,

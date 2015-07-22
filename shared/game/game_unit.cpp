@@ -381,7 +381,7 @@ namespace wowpp
 
 				// Calculate damage between minimum and maximum damage
 				std::uniform_real_distribution<float> distribution(getFloatValue(unit_fields::MinDamage), getFloatValue(unit_fields::MaxDamage) + 1.0f);
-				const UInt32 damage = UInt32(distribution(randomGenerator));
+				const UInt32 damage = calculateArmorReducedDamage(*this, *m_victim, UInt32(distribution(randomGenerator)));
 
 				// Notify all subscribers
 				std::vector<char> buffer;
@@ -574,6 +574,39 @@ namespace wowpp
 		object.updateDisplayIds();
 
 		return r;
+	}
+
+	UInt32 calculateArmorReducedDamage(const GameUnit &attacker, const GameUnit &victim, UInt32 damage)
+	{
+		UInt32 newDamage = 0;
+		float armor = float(victim.getUInt32Value(unit_fields::Resistances));
+
+		// TODO: Armor reduction mods
+
+		// Cap armor
+		if (armor < 0.0f) armor = 0.0f;
+
+		float tmp = 0.0f;
+		const UInt32 attackerLevel = attacker.getLevel();
+		if (attackerLevel < 60)
+		{
+			tmp = armor / (armor + 400.0f + 85.0f * attackerLevel);
+		}
+		else if (attackerLevel < 70)
+		{
+			tmp = armor / (armor - 22167.5f + 467.5f * attackerLevel);
+		}
+		else
+		{
+			tmp = armor / (armor + 10557.5f);
+		}
+
+		// Hard caps
+		if (tmp < 0.0f) tmp = 0.0f;
+		if (tmp > 0.75f) tmp = 0.75f;
+
+		newDamage = UInt32(damage - (damage * tmp));
+		return (newDamage > 1 ? newDamage : 1);
 	}
 
 }
