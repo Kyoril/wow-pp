@@ -57,6 +57,9 @@ namespace wowpp
 			std::bind(&Player::onInventoryChangeFailure, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 		m_onComboPoints = m_character->comboPointsChanged.connect(
 			std::bind(&Player::onComboPointsChanged, this));
+
+		// Trigger regeneration for our character
+		m_character->startRegeneration();
 	}
 
 	void Player::logoutRequest()

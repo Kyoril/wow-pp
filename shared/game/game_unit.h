@@ -230,6 +230,10 @@ namespace wowpp
 
 		/// TODO: Move the logic of this method somewhere else.
 		void triggerDespawnTimer(GameTime despawnDelay);
+		/// Starts the regeneration countdown.
+		void startRegeneration();
+		/// Stops the regeneration countdown.
+		void stopRegeneration();
 
 	protected:
 
@@ -245,6 +249,9 @@ namespace wowpp
 		void onVictimKilled(GameUnit *killer);
 		void onVictimDespawned();
 		void onAttackSwing();
+		void onRegeneration();
+		void regenerateHealth();
+		void regeneratePower(PowerType power);
 
 	private:
 
@@ -260,6 +267,7 @@ namespace wowpp
 		GameUnit *m_victim;
 		Countdown m_attackSwingCountdown;
 		GameTime m_lastAttackSwing;
+		Countdown m_regenCountdown;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameUnit const& object);

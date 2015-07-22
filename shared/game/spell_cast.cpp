@@ -27,6 +27,24 @@ namespace wowpp
 			return std::make_pair(game::spell_cast_result::FailedUnknown, nullptr);
 		}
 
+		// Check power
+		if (spell.cost > 0)
+		{
+			if (spell.powerType == power_type::Health)
+			{
+				// Special case
+				DLOG("TODO: Spell cost power type Health");
+			}
+			else
+			{
+				UInt32 currentPower = m_executer.getUInt32Value(unit_fields::Power1 + spell.powerType);
+				if (currentPower < spell.cost)
+				{
+					return std::make_pair(game::spell_cast_result::FailedNoPower, nullptr);
+				}
+			}
+		}
+
 		// TODO: Check spell conditions
 
 		// Check facing (Need to have the target in front of us)

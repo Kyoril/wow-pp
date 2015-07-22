@@ -216,7 +216,29 @@ namespace wowpp
 
 		// TODO: We need to check some conditions now
 
-		// TODO: Consume power
+		// Consume power
+		if (m_spell.cost > 0)
+		{
+			if (m_spell.powerType == power_type::Health)
+			{
+				// Special case
+				DLOG("TODO: Spell cost power type Health");
+			}
+			else
+			{
+				UInt32 currentPower = m_cast.getExecuter().getUInt32Value(unit_fields::Power1 + m_spell.powerType);
+				if (currentPower < m_spell.cost)
+				{
+					sendEndCast(false);
+					m_hasFinished = true;
+					return;
+				}
+
+				currentPower -= m_spell.cost;
+				m_cast.getExecuter().setUInt32Value(unit_fields::Power1 + m_spell.powerType, currentPower);
+			}
+		}
+
 
 		// TODO: Apply cooldown
 
@@ -257,6 +279,18 @@ namespace wowpp
 				case se::AddComboPoints:
 				{
 					spellEffectAddComboPoints(effect);
+					break;
+				}
+
+				case se::WeaponDamageNoSchool:
+				{
+					spellEffectWeaponDamageNoSchool(effect);
+					break;
+				}
+
+				case se::WeaponDamage:
+				{
+					
 					break;
 				}
 
@@ -620,4 +654,17 @@ namespace wowpp
 		UInt64 comboTarget = m_target.getUnitTarget();
 		character->addComboPoints(comboTarget, UInt8(calculateEffectBasePoints(effect)));
 	}
+
+	void SingleCastState::spellEffectWeaponDamageNoSchool(const SpellEntry::Effect &effect)
+	{
+		//TODO: Implement
+		spellEffectNormalizedWeaponDamage(effect);
+	}
+
+	void SingleCastState::spellEffectWeaponDamage(const SpellEntry::Effect &effect)
+	{
+		//TODO: Implement
+		spellEffectNormalizedWeaponDamage(effect);
+	}
+
 }

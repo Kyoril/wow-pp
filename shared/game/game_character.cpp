@@ -600,6 +600,75 @@ namespace wowpp
 
 	void GameCharacter::updateDamage()
 	{
+		float atkPower = 0.0f;
+		float level = float(getLevel());
+
+		// Melee Attack Power
+		{
+			// Update attack power
+			switch (getClass())
+			{
+			case game::char_class::Warrior:
+				atkPower = level * 3.0f + getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
+				break;
+			case game::char_class::Paladin:
+				atkPower = level * 3.0f + getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
+				break;
+			case game::char_class::Rogue:
+				atkPower = level * 2.0f + getUInt32Value(unit_fields::Stat0) + getUInt32Value(unit_fields::Stat1) - 20.0f;
+				break;
+			case game::char_class::Hunter:
+				atkPower = level * 2.0f + getUInt32Value(unit_fields::Stat0) + getUInt32Value(unit_fields::Stat1) - 20.0f;
+				break;
+			case game::char_class::Shaman:
+				atkPower = level * 2.0f + getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
+				break;
+			case game::char_class::Druid:
+				//TODO: Check shapeshift form
+				atkPower = getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
+				break;
+			case game::char_class::Mage:
+				atkPower = getUInt32Value(unit_fields::Stat0) - 10.0f;
+				break;
+			case game::char_class::Priest:
+				atkPower = getUInt32Value(unit_fields::Stat0) - 10.0f;
+				break;
+			case game::char_class::Warlock:
+				atkPower = getUInt32Value(unit_fields::Stat0) - 10.0f;
+				break;
+			}
+
+			setInt32Value(unit_fields::AttackPower, UInt32(atkPower));
+		}
+		
+		// Ranged Attack power
+		{
+			switch (getClass())
+			{
+			case game::char_class::Hunter:
+				atkPower = level * 2.0f + getUInt32Value(unit_fields::Stat1) - 10.0f;
+				break;
+			case game::char_class::Rogue:
+				atkPower = level + getUInt32Value(unit_fields::Stat1) - 10.0f;
+				break;
+			case game::char_class::Warrior:
+				atkPower = level + getUInt32Value(unit_fields::Stat1) - 10.0f;
+				break;
+			case game::char_class::Druid:
+				// TODO shape shift
+				atkPower = getUInt32Value(unit_fields::Stat1) - 10.0f;
+				break;
+			default:
+				atkPower = getUInt32Value(unit_fields::Stat1) - 10.0f;
+				break;
+			}
+
+			setInt32Value(unit_fields::RangedAttackPower, UInt32(atkPower));
+		}
+
+		const float att_speed = getUInt32Value(unit_fields::BaseAttackTime) / 1000.0f;
+		const float base_value = getUInt32Value(unit_fields::AttackPower) / 14.0f * att_speed;
+
 		float minDamage = 1.0f;
 		float maxDamage = 2.0f;
 		UInt32 attackTime = 2000;
@@ -617,8 +686,8 @@ namespace wowpp
 			if (entry.delay != 0) attackTime = entry.delay;
 		}
 
-		setFloatValue(unit_fields::MinDamage, minDamage);
-		setFloatValue(unit_fields::MaxDamage, maxDamage);
+		setFloatValue(unit_fields::MinDamage, base_value + minDamage);
+		setFloatValue(unit_fields::MaxDamage, base_value + maxDamage);
 		setUInt32Value(unit_fields::BaseAttackTime, attackTime);
 	}
 

@@ -45,6 +45,7 @@ namespace wowpp
 		, m_victim(nullptr)
 		, m_attackSwingCountdown(timers)
 		, m_lastAttackSwing(0)
+		, m_regenCountdown(timers)
 	{
 		// Resize values field
 		m_values.resize(unit_fields::UnitFieldCount);
@@ -58,6 +59,8 @@ namespace wowpp
 			std::bind(&GameUnit::onDespawnTimer, this));
 		m_attackSwingCountdown.ended.connect(
 			std::bind(&GameUnit::onAttackSwing, this));
+		m_regenCountdown.ended.connect(
+			std::bind(&GameUnit::onRegeneration, this));
 		killed.connect(
 			std::bind(&GameUnit::onKilled, this, std::placeholders::_1));
 	}
@@ -457,6 +460,99 @@ namespace wowpp
 	{
 		// We were killed, setup despawn timer
 		triggerDespawnTimer(constants::OneSecond * 30);
+	}
+
+	void GameUnit::startRegeneration()
+	{
+		if (!m_regenCountdown.running)
+		{
+			m_regenCountdown.setEnd(
+				getCurrentTime() + (constants::OneSecond * 2));
+		}
+	}
+
+	void GameUnit::stopRegeneration()
+	{
+		m_regenCountdown.cancel();
+	}
+
+	void GameUnit::onRegeneration()
+	{
+		// Dead units don't regenerate
+		if (getUInt32Value(unit_fields::Health) == 0)
+		{
+			return;
+		}
+
+		//TODO: Do this only while not in combat
+		{
+			regenerateHealth();
+			regeneratePower(power_type::Rage);
+		}
+
+		regeneratePower(power_type::Energy);
+		regeneratePower(power_type::Mana);
+
+		// Restart regeneration timer
+		startRegeneration();
+	}
+
+	void GameUnit::regenerateHealth()
+	{
+		// TODO
+	}
+
+	void GameUnit::regeneratePower(PowerType power)
+	{
+		UInt32 current = getUInt32Value(unit_fields::Power1 + static_cast<Int8>(power));
+		UInt32 max = getUInt32Value(unit_fields::MaxPower1 + static_cast<Int8>(power));
+
+		float addPower = 0.0f;
+		switch (power)
+		{
+			case power_type::Mana:
+			{
+				// TODO: Calculate mana regeneration
+				addPower = 20.0f;
+				break;
+			}
+
+			case power_type::Energy:
+			{
+				// 20 energy per tick
+				addPower = 20.0f;
+				break;
+			}
+
+			case power_type::Rage:
+			{
+				// Take 3 rage per tick
+				addPower = 30.0f;
+				break;
+			}
+
+			default:
+				break;
+		}
+
+		if (power != power_type::Rage)
+		{
+			current += UInt32(addPower);
+			if (current > max) current = max;
+		}
+		else
+		{
+			if (current <= UInt32(addPower))
+			{
+				current = 0;
+			}
+			else
+			{
+				current -= UInt32(addPower);
+			}
+		}
+
+		setUInt32Value(unit_fields::Power1 + static_cast<Int8>(power), current);
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)
