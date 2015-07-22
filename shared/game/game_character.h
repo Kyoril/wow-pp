@@ -500,6 +500,7 @@ namespace wowpp
 		void updateMaxPower(PowerType power);
 		void updateArmor();
 		void updateDamage();
+		void updateManaRegen();
 
 		// TODO: Outsource
 		float getHealthBonusFromStamina() const;
@@ -516,6 +517,7 @@ namespace wowpp
 		std::map<UInt16, std::unique_ptr<GameItem>> m_itemSlots;
 		UInt64 m_comboTarget;
 		UInt8 m_comboPoints;
+		float m_manaRegBase;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameCharacter const& object);

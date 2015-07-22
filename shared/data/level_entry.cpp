@@ -76,6 +76,12 @@ namespace wowpp
 
 				// Set value
 				stats[raceId][classId] = arr;
+
+				// Regeneratives
+				auto &regArr = regen[classId];
+				regArr[0] = 0.0f; regArr[1] = 0.0f;
+				statTable->tryGetInteger("hp_reg_pct", regArr[0]);
+				statTable->tryGetInteger("mp_reg_pct", regArr[1]);
 			}
 		}
 
@@ -113,6 +119,13 @@ namespace wowpp
 							strm << "stat_" << i;
 
 							statTable.addKey(strm.str(), arr[i]);
+						}
+
+						auto regenIt = regen.find(classId);
+						if (regenIt != regen.end())
+						{
+							if (regenIt->second[0] != 0.0f) statTable.addKey("hp_reg_pct", regenIt->second[0]);
+							if (regenIt->second[1] != 0.0f) statTable.addKey("mp_reg_pct", regenIt->second[1]);
 						}
 					}
 					statTable.finish();

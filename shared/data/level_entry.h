@@ -36,9 +36,13 @@ namespace wowpp
 		typedef std::map<UInt32, StatArray> ClassStatMap;
 		typedef std::map<UInt32, ClassStatMap> RaceClassMap;
 
-		// Note: id is the level value (1 - 60) here for compatiblity reasons
+		typedef std::array<float, 2> RegenArray;
+		typedef std::map<UInt32, RegenArray> ClassRegenMap;
+
+		// Note: id is the level value (1 - 70) here for compatiblity reasons
 		UInt32 nextLevelXP;
 		RaceClassMap stats;
+		ClassRegenMap regen;
 
 		LevelEntry();
 		bool load(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper);

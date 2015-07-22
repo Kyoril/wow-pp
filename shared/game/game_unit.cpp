@@ -25,6 +25,7 @@
 #include "each_tile_in_sight.h"
 #include "binary_io/vector_sink.h"
 #include "game_protocol/game_protocol.h"
+#include "game_character.h"
 #include <cassert>
 
 namespace wowpp
@@ -512,8 +513,15 @@ namespace wowpp
 		{
 			case power_type::Mana:
 			{
-				// TODO: Calculate mana regeneration
-				addPower = 20.0f;
+				if (getTypeId() == type_id::Player)
+				{
+					// Player mana reg
+					addPower = getFloatValue(character_fields::ModManaRegen) * 2.0f;
+				}
+				else
+				{
+					// TODO: Unit mana reg
+				}
 				break;
 			}
 

@@ -38,6 +38,7 @@ namespace wowpp
 		, m_armorProficiency(0)
 		, m_comboTarget(0)
 		, m_comboPoints(0)
+		, m_manaRegBase(0.0f)
 	{
 		// Resize values field
 		m_values.resize(character_fields::CharacterFieldCount);
@@ -138,6 +139,18 @@ namespace wowpp
 		else
 		{
 			DLOG("Couldn't find class entry!");
+		}
+
+		// Update mana regeneration per spirit
+		auto regenIt = levelInfo.regen.find(getClass());
+		if (regenIt != levelInfo.regen.end())
+		{
+			m_manaRegBase = regenIt->second[1];
+			DLOG("MANA REG BASE: " << m_manaRegBase);
+		}
+		else
+		{
+			m_manaRegBase = 0.0f;
 		}
 
 		// Update all stats
@@ -287,6 +300,8 @@ namespace wowpp
 		{
 			updateMaxPower(static_cast<PowerType>(i));
 		}
+
+		updateManaRegen();
 	}
 
 	void GameCharacter::addSkill(const SkillEntry &skill)
@@ -726,12 +741,22 @@ namespace wowpp
 		comboPointsChanged();
 	}
 
+	void GameCharacter::updateManaRegen()
+	{
+		const float intellect = getUInt32Value(unit_fields::Stat3);
+		const float spirit = getUInt32Value(unit_fields::Stat4) * m_manaRegBase;
+		const float regen = sqrtf(intellect) * spirit;
+
+		setFloatValue(character_fields::ModManaRegen, regen);
+	}
+
 	io::Writer & operator<<(io::Writer &w, GameCharacter const& object)
 	{
 		w
 			<< reinterpret_cast<GameUnit const&>(object)
 			<< io::write_dynamic_range<NetUInt8>(object.m_name)
-			<< io::write<NetUInt32>(object.m_zoneIndex);
+			<< io::write<NetUInt32>(object.m_zoneIndex)
+			<< io::write<float>(object.m_manaRegBase);
 		return w;
 	}
 
@@ -740,7 +765,8 @@ namespace wowpp
 		r
 			>> reinterpret_cast<GameUnit&>(object)
 			>> io::read_container<NetUInt8>(object.m_name)
-			>> io::read<NetUInt32>(object.m_zoneIndex);
+			>> io::read<NetUInt32>(object.m_zoneIndex)
+			>> io::read<float>(object.m_manaRegBase);
 		return r;
 	}
 }
