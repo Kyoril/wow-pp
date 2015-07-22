@@ -229,11 +229,6 @@ namespace wowpp
 
 	void Player::onSpawn()
 	{
-		// Find our tile
-		TileIndex2D tileIndex = getTileIndex();
-		VisibilityTile &tile = m_instance.getGrid().requireTile(tileIndex);
-		tile.getWatchers().add(this);
-
 		// Send self spawn packet
 		sendProxyPacket(
 			std::bind(game::server_write::initWorldStates, std::placeholders::_1, m_character->getMapId(), m_character->getZone()));
@@ -423,10 +418,15 @@ namespace wowpp
 		// Send time sync request packet
 		sendProxyPacket(
 			std::bind(game::server_write::timeSyncReq, std::placeholders::_1, 0));
+
+		// Find our tile
+		TileIndex2D tileIndex = getTileIndex();
+		VisibilityTile &tile = m_instance.getGrid().requireTile(tileIndex);
+		tile.getWatchers().add(this);
 	}
 
 	void Player::onDespawn()
-	{	
+	{
 		// Send character data to the realm
 		m_realmConnector.sendCharacterData(*m_character);
 

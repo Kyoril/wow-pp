@@ -99,7 +99,7 @@ namespace wowpp
 		setUInt32Value(unit_fields::UnitFlags, 0x00001000);				//UNIT_FIELD_FLAGS				(TODO: Flags)	UNIT_FLAG_PVP_ATTACKABLE
 		setUInt32Value(unit_fields::Aura, 0x0999);						//UNIT_FIELD_AURA				(TODO: Flags)
 		setUInt32Value(unit_fields::AuraFlags, 0x09);					//UNIT_FIELD_AURAFLAGS			(TODO: Flags)
-		setUInt32Value(unit_fields::AuraLevels, 0x01);					//UNIT_FIELD_AURALEVELS			(TODO: Flags)*/
+		setUInt32Value(unit_fields::AuraLevels, 0x01);					//UNIT_FIELD_AURALEVELS			(TODO: Flags)
 		setUInt32Value(unit_fields::BaseAttackTime, 2000);				//UNIT_FIELD_BASEATTACKTIME		
 		setUInt32Value(unit_fields::BaseAttackTime + 1, 2000);			//UNIT_FIELD_OFFHANDATTACKTIME	
 		setUInt32Value(unit_fields::RangedAttackTime, 2000);			//UNIT_FIELD_RANGEDATTACKTIME	
@@ -244,6 +244,12 @@ namespace wowpp
 
 	void GameUnit::startAttack(GameUnit &target)
 	{
+		// Check if we already are attacking that unit...
+		if (m_victim && m_victim == &target)
+		{
+			return;
+		}
+
 		// Check if the target is alive
 		if (target.getUInt32Value(unit_fields::Health) == 0)
 		{
@@ -279,6 +285,8 @@ namespace wowpp
 		m_victimDespawned = target.despawned.connect(
 			std::bind(&GameUnit::onVictimDespawned, this));
 
+		DLOG("Auto attack started...");
+
 		// Start auto attack timer (immediatly start to attack our target)
 		GameTime nextAttackSwing = getCurrentTime();
 		GameTime attackSwingCooldown = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
@@ -295,6 +303,8 @@ namespace wowpp
 		{
 			return;
 		}
+
+		DLOG("Auto attack stopped...");
 
 		// Get victim guid
 		UInt64 victimGUID = m_victim->getGuid();

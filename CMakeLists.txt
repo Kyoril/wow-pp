@@ -81,6 +81,11 @@ project(WoW)
 	set(Boost_USE_STATIC_LIBS ON)
 	find_package(Boost 1.54.0 REQUIRED COMPONENTS system date_time thread iostreams filesystem regex chrono program_options)
 	
+	# Boost 1.58.0 has an error in signals2 which will lead to a server crash on creature despawn if a player disconnected
+	if (${Boost_VERSION} STREQUAL "105800")
+		message(FATAL_ERROR "Boost 1.58.0 detected - this version has a bug that will lead to a server crash! Please consider using a different version, 1.56.0 for example.")
+	endif()
+	
 	# Add boost include directories
 	include_directories(${Boost_INCLUDE_DIR})
 	link_directories(${Boost_LIBRARY_DIRS})
