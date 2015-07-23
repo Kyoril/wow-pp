@@ -171,6 +171,129 @@ namespace wowpp
 
 	typedef attack_swing_error::Type AttackSwingError;
 
+	namespace unit_mod_type
+	{
+		enum Type
+		{
+			/// Absolute base value of this unit based on it's level.
+			BaseValue			= 0,
+			/// Base value mulitplier (1.0 = 100%)
+			BasePct				= 1,
+			/// Absolute total value. Final value: BaseValue * BasePct + TotalValue * TotalPct;
+			TotalValue			= 2,
+			/// Total value multiplier.
+			TotalPct			= 3,
+
+			End					= 4
+		};
+	}
+
+	typedef unit_mod_type::Type UnitModType;
+
+	namespace unit_mods
+	{
+		enum Type
+		{
+			/// Strength stat value modifier.
+			StatStrength			= 0,
+			/// Agility stat value modifier.
+			StatAgility				= 1,
+			/// Stamina stat value modifier.
+			StatStamina				= 2,
+			/// Intellect stat value modifier.
+			StatIntellect			= 3,
+			/// Spirit stat value modifier.
+			StatSpirit				= 4,
+			/// Health value modifier.
+			Health					= 5,
+			/// Mana power value modifier.
+			Mana					= 6,
+			/// Rage power value modifier.
+			Rage					= 7,
+			/// Focus power value modifier.
+			Focus					= 8,
+			/// Energy power value modifier.
+			Energy					= 9,
+			/// Happiness power value modifier.
+			Happiness				= 10,
+			/// Armor resistance value modifier.
+			Armor					= 11,
+			/// Holy resistance value modifier.
+			ResistanceHoly			= 12,
+			/// Fire resistance value modifier.
+			ResistanceFire			= 13,
+			/// Nature resistance value modifier.
+			ResistanceNature		= 14,
+			/// Frost resistance value modifier.
+			ResistanceFrost			= 15,
+			/// Shadow resistance value modifier.
+			ResistanceShadow		= 16,
+			/// Arcane resistance value modifier.
+			ResistanceArcane		= 17,
+			/// Melee attack power value modifier.
+			AttackPower				= 18,
+			/// Ranged attack power value modifier.
+			AttackPowerRanged		= 19,
+			/// Main hand weapon damage modifier.
+			DamageMainHand			= 20,
+			/// Off hand weapon damage modifier.
+			DamageOffHand			= 21,
+			/// Ranged weapon damage modifier.
+			DamageRanged			= 22,
+
+			End						= 23,
+			
+			/// Start of stat value modifiers. Used for iteration.
+			StatStart				= StatStrength,
+			/// End of stat value modifiers. Used for iteration.
+			StatEnd					= StatSpirit + 1,
+			/// Start of resistance value modifiers. Used for iteration.
+			ResistanceStart			= Armor,
+			/// End of resistance value modifiers. Used for iteration.
+			ResistanceEnd			= ResistanceArcane + 1,
+			/// Start of power value modifiers. Used for iteration.
+			PowerStart				= Mana,
+			/// End of power value modifiers. Used for iteration.
+			PowerEnd				= Happiness + 1
+		};
+	}
+
+	typedef unit_mods::Type UnitMods;
+
+	namespace base_mod_group
+	{
+		enum Type
+		{
+			/// 
+			CritPercentage			= 0,
+			/// 
+			RangedCritPercentage	= 1,
+			/// 
+			OffHandCritPercentage	= 2,
+			/// 
+			ShieldBlockValue		= 3,
+			
+			End						= 4
+		};
+	}
+
+	typedef base_mod_group::Type BaseModGroup;
+
+	namespace base_mod_type
+	{
+		enum Type
+		{
+			/// Absolute modifier value type.
+			Flat		= 0,
+			/// Percentual modifier value type (float, where 1.0 = 100%).
+			Percentage	= 1,
+			
+			End			= 2
+		};
+	}
+
+	typedef base_mod_type::Type BaseModType;
+
 	/// 
 	class GameUnit : public GameObject
 	{
@@ -239,9 +362,35 @@ namespace wowpp
 		/// 
 		void notifyManaUse();
 
+		/// Gets the specified unit modifier value.
+		float getModifierValue(UnitMods mod, UnitModType type) const;
+		/// Sets the unit modifier value to the given value.
+		void setModifierValue(UnitMods mod, UnitModType type, float value);
+		/// Modifies the given unit modifier value by adding or subtracting it from the current value.
+		void updateModifierValue(UnitMods mod, UnitModType type, float amount, bool apply);
+
+		/// Calculates the stat based on the specified modifier.
+		static UInt8 getStatByUnitMod(UnitMods mod);
+		/// Calculates the power based on the specified unit modifier.
+		static PowerType getPowerTypeByUnitMod(UnitMods mod);
+		/// 
+		static UnitMods getUnitModByStat(UInt8 stat);
+		/// 
+		static UnitMods getUnitModByPower(PowerType power);
+
 	protected:
 
 		virtual void levelChanged(const LevelEntry &levelInfo);
+		virtual void updateAllStats();
+		virtual void updateMaxHealth();
+		virtual void updateMaxPower(PowerType power);
+		virtual void updateArmor();
+		virtual void updateDamage();
+		virtual void updateManaRegen();
+		virtual void updateStats(UInt8 stat);
+
+		float getHealthBonusFromStamina() const;
+		float getManaBonusFromIntellect() const;
 
 	private:
 
@@ -259,6 +408,9 @@ namespace wowpp
 
 	private:
 
+		typedef std::array<float, unit_mod_type::End> UnitModTypeArray;
+		typedef std::array<UnitModTypeArray, unit_mods::End> UnitModArray;
+
 		TimerQueue &m_timers;
 		DataLoadContext::GetRace m_getRace;
 		DataLoadContext::GetClass m_getClass;
@@ -273,6 +425,7 @@ namespace wowpp
 		GameTime m_lastAttackSwing;
 		Countdown m_regenCountdown;
 		GameTime m_lastManaUse;
+		UnitModArray m_unitMods;
 	};
 
 	UInt32 calculateArmorReducedDamage(const GameUnit &attacker, const GameUnit &victim, UInt32 damage);

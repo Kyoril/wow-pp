@@ -122,6 +122,15 @@ namespace wowpp
 		setUInt32Value(unit_fields::RangedAttackPower, 11);				//UNIT_FIELD_RANGED_ATTACK_POWER
 		setUInt32Value(unit_fields::MinRangedDamage, 0x40249249);		//UNIT_FIELD_MINRANGEDDAMAGE	(TODO: Float)
 		setUInt32Value(unit_fields::MaxRangedDamage, 0x40649249);		//UNIT_FIELD_MAXRANGEDDAMAGE	(TODO: Float)
+
+		// Initialize unit mods
+		for (size_t i = 0; i < unit_mods::End; ++i)
+		{
+			m_unitMods[i][unit_mod_type::BaseValue] = 0.0f;
+			m_unitMods[i][unit_mod_type::TotalValue] = 0.0f;
+			m_unitMods[i][unit_mod_type::BasePct] = 1.0f;
+			m_unitMods[i][unit_mod_type::TotalPct] = 1.0f;
+		}
 	}
 
 	void GameUnit::raceUpdated()
@@ -214,7 +223,8 @@ namespace wowpp
 		const LevelEntry::StatArray &stats = classIt->second;
 		for (UInt32 i = 0; i < stats.size(); ++i)
 		{
-			setUInt32Value(unit_fields::Stat0 + i, stats[i]);			//UNIT_FIELD_STAT0 + stat
+			const UnitMods mod = getUnitModByStat(i);
+			setModifierValue(mod, unit_mod_type::BaseValue, stats[i]);
 		}
 	}
 
@@ -290,8 +300,6 @@ namespace wowpp
 		m_victimDespawned = target.despawned.connect(
 			std::bind(&GameUnit::onVictimDespawned, this));
 
-		DLOG("Auto attack started...");
-
 		// Start auto attack timer (immediatly start to attack our target)
 		GameTime nextAttackSwing = getCurrentTime();
 		GameTime attackSwingCooldown = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
@@ -308,8 +316,6 @@ namespace wowpp
 		{
 			return;
 		}
-
-		DLOG("Auto attack stopped...");
 
 		// Get victim guid
 		UInt64 victimGUID = m_victim->getGuid();
@@ -575,11 +581,309 @@ namespace wowpp
 		m_lastManaUse = getCurrentTime();
 	}
 
+	void GameUnit::updateAllStats()
+	{
+		for (UInt8 stat = 0; stat < 5; ++stat)
+		{
+			updateStats(stat);
+		}
+
+		updateDamage();
+		updateArmor();
+		updateMaxHealth();
+		for (size_t i = 0; i < power_type::Happiness; ++i)
+		{
+			updateMaxPower(static_cast<PowerType>(i));
+		}
+
+		updateManaRegen();
+	}
+
+	void GameUnit::updateMaxHealth()
+	{
+		float value = getUInt32Value(unit_fields::BaseHealth);
+		value += getHealthBonusFromStamina();
+
+		setUInt32Value(unit_fields::MaxHealth, UInt32(value));
+	}
+
+	void GameUnit::updateMaxPower(PowerType power)
+	{
+		UInt32 createPower = 0;
+		switch (power)
+		{
+		case power_type::Mana:		createPower = getUInt32Value(unit_fields::BaseMana); break;
+		case power_type::Rage:		createPower = 1000; break;
+		case power_type::Energy:    createPower = 100; break;
+		default:	// Make compiler happy
+			break;
+		}
+
+		float powerBonus = (power == power_type::Mana && createPower > 0) ? getManaBonusFromIntellect() : 0;
+
+		float value = createPower;
+		value += powerBonus;
+
+		setUInt32Value(unit_fields::MaxPower1 + static_cast<UInt16>(power), UInt32(value));
+	}
+
+	void GameUnit::updateArmor()
+	{
+		// Nothing to do here
+	}
+
+	void GameUnit::updateDamage()
+	{
+		// Nothing to do here
+	}
+
+	void GameUnit::updateManaRegen()
+	{
+		// Nothing to do here
+	}
+
+	float GameUnit::getHealthBonusFromStamina() const
+	{
+		float stamina = float(getUInt32Value(unit_fields::Stat2));
+
+		float base = stamina < 20.0f ? stamina : 20.0f;
+		float bonus = stamina - base;
+
+		return base + (bonus * 10.0f);
+	}
+
+	float GameUnit::getManaBonusFromIntellect() const
+	{
+
+		float intellect = float(getUInt32Value(unit_fields::Stat3));
+
+		float base = intellect < 20.0f ? intellect : 20.0f;
+		float bonus = intellect - base;
+
+		return base + (bonus * 15.0f);
+	}
+
+	float GameUnit::getModifierValue(UnitMods mod, UnitModType type) const
+	{
+		return m_unitMods[mod][type];
+	}
+
+	void GameUnit::setModifierValue(UnitMods mod, UnitModType type, float value)
+	{
+		m_unitMods[mod][type] = value;
+	}
+
+	void GameUnit::updateModifierValue(UnitMods mod, UnitModType type, float amount, bool apply)
+	{
+		if (mod >= unit_mods::End || type >= unit_mod_type::End)
+		{
+			return;
+		}
+
+		switch (type)
+		{
+			case unit_mod_type::BaseValue:
+			case unit_mod_type::TotalValue:
+			{
+				m_unitMods[mod][type] += (apply ? amount : -amount);
+				break;
+			}
+
+			case unit_mod_type::BasePct:
+			case unit_mod_type::TotalPct:
+			{
+				if (amount == -100.0f)
+					amount = -99.99f;
+				m_unitMods[mod][type] *= (apply ? (100.0f + amount) / 100.0f : 100.0f / (100.0f + amount));
+				break;
+			}
+
+			default:
+				break;
+		}
+
+		// Update stats
+		switch (mod)
+		{
+			case unit_mods::StatStrength:
+			case unit_mods::StatAgility:
+			case unit_mods::StatStamina:
+			case unit_mods::StatIntellect:
+			case unit_mods::StatSpirit:
+			{
+				updateStats(getStatByUnitMod(mod));
+				break;
+			}
+
+			case unit_mods::Armor:
+			{
+				updateArmor();
+				break;
+			}
+			
+			case unit_mods::Health:
+			{
+				updateMaxHealth();
+				break;
+			}
+
+			case unit_mods::Mana:
+			case unit_mods::Rage:
+			case unit_mods::Focus:
+			case unit_mods::Energy:
+			case unit_mods::Happiness:
+			{
+				updateMaxPower(getPowerTypeByUnitMod(mod));
+				break;
+			}
+
+			case unit_mods::ResistanceHoly:
+			case unit_mods::ResistanceFire:
+			case unit_mods::ResistanceNature:
+			case unit_mods::ResistanceFrost:
+			case unit_mods::ResistanceShadow:
+			case unit_mods::ResistanceArcane:
+			{
+				// TODO: Update resistances
+				break;
+			}
+
+			case unit_mods::AttackPower:
+			case unit_mods::AttackPowerRanged:
+			case unit_mods::DamageMainHand:
+			case unit_mods::DamageOffHand:
+			case unit_mods::DamageRanged:
+			{
+				updateDamage();
+				break;
+			}
+
+			default:
+				break;
+		}
+	}
+
+	void GameUnit::updateStats(UInt8 stat)
+	{
+		// Validate stat
+		if (stat > 4)
+			return;
+
+		// Determine unit mod
+		const UnitMods mod = getUnitModByStat(stat);
+
+		// Calculate values
+		const float baseVal = getModifierValue(mod, unit_mod_type::BaseValue);
+		const float basePct = getModifierValue(mod, unit_mod_type::BasePct);
+		const float totalVal = getModifierValue(mod, unit_mod_type::TotalValue);
+		const float totalPct = getModifierValue(mod, unit_mod_type::TotalPct);
+
+		float value = ((baseVal * basePct) + totalVal) * totalPct;
+		setInt32Value(unit_fields::Stat0 + stat, Int32(value));
+		setInt32Value(unit_fields::PosStat0 + stat, Int32(totalVal));
+
+		// Update values which are related to the stat change
+		switch (stat)
+		{
+		case 0:
+			updateDamage();
+			break;
+		case 1:
+			updateArmor();
+			updateDamage();
+			break;
+		case 2:
+			updateMaxHealth();
+			break;
+		case 3:
+			updateMaxPower(power_type::Mana);
+			break;
+		default:
+			break;
+		}
+	}
+
+	wowpp::UInt8 GameUnit::getStatByUnitMod(UnitMods mod)
+	{
+		UInt8 stat = 0;
+
+		switch (mod)
+		{
+		case unit_mods::StatStrength:	stat = 0;	break;
+		case unit_mods::StatAgility:	stat = 1;	break;
+		case unit_mods::StatStamina:	stat = 2;	break;
+		case unit_mods::StatIntellect:	stat = 3;	break;
+		case unit_mods::StatSpirit:		stat = 4;	break;
+
+		default:
+			break;
+		}
+
+		return stat;
+	}
+
+	wowpp::PowerType GameUnit::getPowerTypeByUnitMod(UnitMods mod)
+	{
+		switch (mod)
+		{
+		case unit_mods::Rage:		return power_type::Rage;
+		case unit_mods::Focus:		return power_type::Focus;
+		case unit_mods::Energy:		return power_type::Energy;
+		case unit_mods::Happiness:	return power_type::Happiness;
+
+		default:
+			break;
+		}
+
+		return power_type::Mana;
+	}
+
+	wowpp::UnitMods GameUnit::getUnitModByStat(UInt8 stat)
+	{
+		switch (stat)
+		{
+		case 1:		return unit_mods::StatAgility;
+		case 2:		return unit_mods::StatStamina;
+		case 3:		return unit_mods::StatIntellect;
+		case 4:		return unit_mods::StatSpirit;
+
+		default:
+			break;
+		}
+
+		return unit_mods::StatStrength;
+	}
+
+	wowpp::UnitMods GameUnit::getUnitModByPower(PowerType power)
+	{
+		switch (power)
+		{
+		case power_type::Rage:		return unit_mods::Rage;
+		case power_type::Energy:	return unit_mods::Energy;
+		case power_type::Happiness:	return unit_mods::Happiness;
+		case power_type::Focus:		return unit_mods::Focus;
+			
+		default:
+			break;
+		}
+
+		return unit_mods::Mana;
+	}
+
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)
 	{
-		return w
-			<< reinterpret_cast<GameObject const&>(object)
-			;
+		w << reinterpret_cast<GameObject const&>(object);
+
+		// Write unit mods
+		for (const auto &it : object.m_unitMods)
+		{
+			for (const auto &it2 : it)
+			{
+				w << io::write<float>(it2);
+			}
+		}
+
+		return w;
 	}
 
 	io::Reader & operator>>(io::Reader &r, GameUnit& object)
@@ -587,6 +891,15 @@ namespace wowpp
 		// Read values
 		r
 			>> reinterpret_cast<GameObject &>(object);
+
+		// Read unit mods
+		for (size_t i = 0; i < object.m_unitMods.size(); ++i)
+		{
+			for (size_t j = 0; j < object.m_unitMods[i].size(); ++j)
+			{
+				r >> io::read<float>(object.m_unitMods[i][j]);
+			}
+		}
 
 		// Update internals based on received values
 		object.raceUpdated();

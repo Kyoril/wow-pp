@@ -51,7 +51,7 @@ namespace wowpp
 
 	private:
 
-		UInt32 calculateEffectBasePoints(const SpellEntry::Effect &effect);
+		Int32 calculateEffectBasePoints(const SpellEntry::Effect &effect);
 		void spellEffectSchoolDamage(const SpellEntry::Effect &effect);
 		void spellEffectHeal(const SpellEntry::Effect &effect);
 		void spellEffectNormalizedWeaponDamage(const SpellEntry::Effect &effect);

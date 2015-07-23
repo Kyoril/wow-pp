@@ -146,7 +146,6 @@ namespace wowpp
 		if (regenIt != levelInfo.regen.end())
 		{
 			m_manaRegBase = regenIt->second[1];
-			DLOG("MANA REG BASE: " << m_manaRegBase);
 		}
 		else
 		{
@@ -241,67 +240,6 @@ namespace wowpp
 		}
 
 		return false;
-	}
-
-	float GameCharacter::getManaBonusFromIntellect() const
-	{
-		float intellect = float(getUInt32Value(unit_fields::Stat3));
-		
-		float base = intellect < 20.0f ? intellect : 20.0f;
-		float bonus = intellect - base;
-
-		return base + (bonus * 15.0f);
-	}
-
-	float GameCharacter::getHealthBonusFromStamina() const
-	{
-		float stamina = float(getUInt32Value(unit_fields::Stat2));
-
-		float base = stamina < 20.0f ? stamina : 20.0f;
-		float bonus = stamina - base;
-
-		return base + (bonus * 10.0f);
-	}
-
-	void GameCharacter::updateMaxPower(PowerType power)
-	{
-		UInt32 createPower = 0;
-		switch (power)
-		{
-			case power_type::Mana:		createPower = getUInt32Value(unit_fields::BaseMana); break;
-			case power_type::Rage:		createPower = 1000; break;
-			case power_type::Energy:    createPower = 100; break;
-			default:	// Make compiler happy
-				break;
-		}
-
-		float powerBonus = (power == power_type::Mana && createPower > 0) ? getManaBonusFromIntellect() : 0;
-
-		float value = createPower;
-		value += powerBonus;
-
-		setUInt32Value(unit_fields::MaxPower1 + static_cast<UInt16>(power), UInt32(value));
-	}
-
-	void GameCharacter::updateMaxHealth()
-	{
-		float value = getUInt32Value(unit_fields::BaseHealth);
-		value += getHealthBonusFromStamina();
-
-		setUInt32Value(unit_fields::MaxHealth, UInt32(value));
-	}
-
-	void GameCharacter::updateAllStats()
-	{
-		updateDamage();
-		updateArmor();
-		updateMaxHealth();
-		for (size_t i = 0; i < power_type::Happiness; ++i)
-		{
-			updateMaxPower(static_cast<PowerType>(i));
-		}
-
-		updateManaRegen();
 	}
 
 	void GameCharacter::addSkill(const SkillEntry &skill)

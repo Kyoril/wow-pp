@@ -252,8 +252,6 @@ namespace wowpp
 
 		const std::weak_ptr<char> isAlive = m_isAlive;
 
-		DLOG("Applying spell effects on target...");
-
 		// Apply spell effects on all targets
 		namespace se = game::spell_effects;
 		for (auto &effect : m_spell.effects)
@@ -281,10 +279,9 @@ namespace wowpp
 				case se::ApplyAura:
 					spellEffectApplyAura(effect);
 					break;
-				/*
 				case se::WeaponDamage:
+					spellEffectWeaponDamage(effect);
 					break;
-				*/
 				case se::NormalizedWeaponDmg:
 					spellEffectNormalizedWeaponDamage(effect);
 					break;
@@ -599,7 +596,7 @@ namespace wowpp
 		}
 	}
 
-	UInt32 SingleCastState::calculateEffectBasePoints(const SpellEntry::Effect &effect)
+	Int32 SingleCastState::calculateEffectBasePoints(const SpellEntry::Effect &effect)
 	{
 		GameCharacter *character = nullptr;
 		if (isPlayerGUID(m_cast.getExecuter().getGuid()))
@@ -635,8 +632,6 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("Adding combo points: " << effect.basePoints);
-
 		UInt64 comboTarget = m_target.getUnitTarget();
 		character->addComboPoints(comboTarget, UInt8(calculateEffectBasePoints(effect)));
 	}
@@ -657,8 +652,41 @@ namespace wowpp
 	{
 		game::AuraType auraType = static_cast<game::AuraType>(effect.auraName);
 		const String auraTypeName = game::constant_literal::auraTypeNames.getName(auraType);
-		DLOG("APPLY_AURA: " << auraTypeName << " (" << effect.auraName << ")");
 
+		// Apply stat buffs
+		switch (auraType)
+		{
+			case game::aura_type::ModStat:
+			{
+				// Get stat value
+				Int32 stat = effect.miscValueA;
+				if (stat < -2 || stat > 4)
+				{
+					WLOG("AURA TYPE " << auraTypeName << ": Invalid stat " << stat);
+					return;
+				}
+
+				// Apply the stat value
+				Int32 value = calculateEffectBasePoints(effect);
+				for (Int32 i = 0; i < 5; ++i)
+				{
+					if (stat < 0 || stat == i)
+					{
+						m_cast.getExecuter().updateModifierValue(GameUnit::getUnitModByStat(i), unit_mod_type::TotalValue, fabsf(value), value > 0);
+					}
+				}
+
+				break;
+			}
+
+			default:
+			{
+				WLOG("AURA TYPE " << auraTypeName << " is not yet implemented!");
+				break;
+			}
+		}
+
+		/*
 		if (!(m_spell.attributes & 0x40))
 		{
 			UInt32 slot = 0;
@@ -676,6 +704,7 @@ namespace wowpp
 			val |= (m_cast.getExecuter().getLevel() << byte);
 			m_cast.getExecuter().setUInt32Value(unit_fields::AuraLevels + index, val);
 		}
+		*/
 	}
 
 	void SingleCastState::spellEffectHeal(const SpellEntry::Effect &effect)

@@ -495,16 +495,9 @@ namespace wowpp
 	protected:
 
 		virtual void levelChanged(const LevelEntry &levelInfo) override;
-		void updateAllStats();
-		void updateMaxHealth();
-		void updateMaxPower(PowerType power);
-		void updateArmor();
-		void updateDamage();
-		void updateManaRegen();
-
-		// TODO: Outsource
-		float getHealthBonusFromStamina() const;
-		float getManaBonusFromIntellect() const;
+		virtual void updateArmor() override;
+		virtual void updateDamage() override;
+		virtual void updateManaRegen() override;
 
 	private:
 
