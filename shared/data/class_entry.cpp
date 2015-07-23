@@ -133,5 +133,6 @@ namespace wowpp
 				valueTable.finish();
 			}
 		}
+		levelArray.finish();
 	}
 }

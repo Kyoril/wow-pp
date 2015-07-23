@@ -286,9 +286,9 @@ namespace wowpp
 		if (arcaneResistance != 0) context.table.addKey("arcane_res", arcaneResistance);
 		if (delay != 0) context.table.addKey("delay", delay);
 		if (ammoType != 0) context.table.addKey("ammo_type", ammoType);
-		if (bonding != 0) context.table.addKey("bonding", bonding);
+		if (bonding != 0) context.table.addKey("bonding", static_cast<UInt16>(bonding));
 		if (lockId != 0) context.table.addKey("lock_id", lockId);
-		if (sheath != 0) context.table.addKey("sheath", sheath);
+		if (sheath != 0) context.table.addKey("sheath", static_cast<UInt16>(sheath));
 		if (randomProperty != 0) context.table.addKey("random_property", randomProperty);
 		if (randomSuffix != 0) context.table.addKey("random_suffix", randomSuffix);
 		if (block != 0) context.table.addKey("block", block);
@@ -297,15 +297,76 @@ namespace wowpp
 		if (area != 0) context.table.addKey("area", area);
 		if (map != 0) context.table.addKey("map", map);
 		if (bagFamily != 0) context.table.addKey("bag_family", bagFamily);
-		if (totemCategory != 0) context.table.addKey("totem_category", totemCategory);
+		if (totemCategory != 0) context.table.addKey("totem_category", static_cast<Int16>(totemCategory));
 		if (socketBonus != 0) context.table.addKey("socket_bonus", socketBonus);
 		if (gemProperties != 0) context.table.addKey("gem_properties", gemProperties);
 		if (requiredDisenchantSkill != 0) context.table.addKey("req_disenchant_skill", requiredDisenchantSkill);
 		if (disenchantId != 0) context.table.addKey("disenchant_id", disenchantId);
-		if (foodType != 0) context.table.addKey("food_type", foodType);
+		if (foodType != 0) context.table.addKey("food_type", static_cast<UInt16>(foodType));
 		if (minLootGold != 0) context.table.addKey("min_loot_gold", minLootGold);
 		if (maxLootGold != 0) context.table.addKey("max_loot_gold", maxLootGold);
 		if (duration != 0) context.table.addKey("duration", duration);
 		if (extraFlags != 0) context.table.addKey("extra_flags", extraFlags);
+
+		// Write stats
+		sff::write::Array<char> statArray(context.table, "stats", sff::write::Comma);
+		{
+			for (const auto &stat : itemStats)
+			{
+				if (stat.statType == 0 && stat.statValue == 0) continue;
+
+				// New stat table
+				sff::write::Table<char> valueTable(statArray, sff::write::Comma);
+				{
+					valueTable.addKey("type", static_cast<UInt16>(stat.statType));
+					valueTable.addKey("value", stat.statValue);
+				}
+				valueTable.finish();
+			}
+		}
+		statArray.finish();
+
+		// Write damage
+		sff::write::Array<char> dmgArray(context.table, "dmg", sff::write::Comma);
+		{
+			for (const auto &dmg : itemDamage)
+			{
+				if (dmg.min == 0.0f && dmg.max == 0.0f && dmg.type == 0) continue;
+
+				// New stat table
+				sff::write::Table<char> valueTable(dmgArray, sff::write::Comma);
+				{
+					valueTable.addKey("min", dmg.min);
+					valueTable.addKey("max", dmg.max);
+					valueTable.addKey("type", static_cast<UInt16>(dmg.type));
+				}
+				valueTable.finish();
+			}
+		}
+		dmgArray.finish();
+
+		// Write spells
+		sff::write::Array<char> spellArray(context.table, "spells", sff::write::MultiLine);
+		{
+			for (const auto &spell : itemSpells)
+			{
+				// Empty spell entry
+				if (!spell.spell) continue;
+
+				// New stat table
+				sff::write::Table<char> valueTable(spellArray, sff::write::Comma);
+				{
+					valueTable.addKey("id", spell.spell->id);
+					if (spell.trigger != 0) valueTable.addKey("trigger", static_cast<UInt16>(spell.trigger));
+					if (spell.charges != 0) valueTable.addKey("charges", spell.charges);
+					if (spell.procRate != 0.0f) valueTable.addKey("proc_rate", spell.procRate);
+					if (spell.cooldown != 0) valueTable.addKey("cooldown", spell.cooldown);
+					if (spell.category != 0) valueTable.addKey("category", spell.category);
+					if (spell.categoryCooldown != 0) valueTable.addKey("category_cooldown", spell.categoryCooldown);
+				}
+				valueTable.finish();
+			}
+		}
+		spellArray.finish();
 	}
 }

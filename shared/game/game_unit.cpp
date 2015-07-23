@@ -47,6 +47,7 @@ namespace wowpp
 		, m_attackSwingCountdown(timers)
 		, m_lastAttackSwing(0)
 		, m_regenCountdown(timers)
+		, m_lastManaUse(0)
 	{
 		// Resize values field
 		m_values.resize(unit_fields::UnitFieldCount);
@@ -515,8 +516,14 @@ namespace wowpp
 			{
 				if (getTypeId() == type_id::Player)
 				{
-					// Player mana reg
-					addPower = getFloatValue(character_fields::ModManaRegen) * 2.0f;
+					if ((m_lastManaUse + constants::OneSecond * 5) < getCurrentTime())
+					{
+						addPower = getFloatValue(character_fields::ModManaRegen) * 2.0f;
+					}
+					else
+					{
+						addPower = getFloatValue(character_fields::ModManaRegenInterrupt) * 2.0f;
+					}
 				}
 				else
 				{
@@ -561,6 +568,11 @@ namespace wowpp
 		}
 
 		setUInt32Value(unit_fields::Power1 + static_cast<Int8>(power), current);
+	}
+
+	void GameUnit::notifyManaUse()
+	{
+		m_lastManaUse = getCurrentTime();
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)

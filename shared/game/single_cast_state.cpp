@@ -236,6 +236,9 @@ namespace wowpp
 
 				currentPower -= m_spell.cost;
 				m_cast.getExecuter().setUInt32Value(unit_fields::Power1 + m_spell.powerType, currentPower);
+
+				if (m_spell.powerType == power_type::Mana)
+					m_cast.getExecuter().notifyManaUse();
 			}
 		}
 

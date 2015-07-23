@@ -234,6 +234,10 @@ namespace wowpp
 		void startRegeneration();
 		/// Stops the regeneration countdown.
 		void stopRegeneration();
+		/// 
+		GameTime getLastManaUse() const { return m_lastManaUse; }
+		/// 
+		void notifyManaUse();
 
 	protected:
 
@@ -268,6 +272,7 @@ namespace wowpp
 		Countdown m_attackSwingCountdown;
 		GameTime m_lastAttackSwing;
 		Countdown m_regenCountdown;
+		GameTime m_lastManaUse;
 	};
 
 	UInt32 calculateArmorReducedDamage(const GameUnit &attacker, const GameUnit &victim, UInt32 damage);

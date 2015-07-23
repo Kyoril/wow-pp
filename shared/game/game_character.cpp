@@ -747,6 +747,8 @@ namespace wowpp
 		const float spirit = getUInt32Value(unit_fields::Stat4) * m_manaRegBase;
 		const float regen = sqrtf(intellect) * spirit;
 
+		float modManaRegenInterrupt = 0.0f;	//TODO
+		setFloatValue(character_fields::ModManaRegenInterrupt, regen * modManaRegenInterrupt);
 		setFloatValue(character_fields::ModManaRegen, regen);
 	}
 
