@@ -229,6 +229,8 @@ namespace wowpp
 				UInt32 currentPower = m_cast.getExecuter().getUInt32Value(unit_fields::Power1 + m_spell.powerType);
 				if (currentPower < m_spell.cost)
 				{
+					WLOG("Not enough power to cast spell!");
+
 					sendEndCast(false);
 					m_hasFinished = true;
 					return;
@@ -250,72 +252,50 @@ namespace wowpp
 
 		const std::weak_ptr<char> isAlive = m_isAlive;
 
-		// TODO: Apply spell effects on all targets
+		DLOG("Applying spell effects on target...");
+
+		// Apply spell effects on all targets
 		namespace se = game::spell_effects;
 		for (auto &effect : m_spell.effects)
 		{
 			switch (effect.type)
 			{
 				case se::SchoolDamage:
-				{
 					spellEffectSchoolDamage(effect);
 					break;
-				}
-
 				case se::PowerDrain:
-				{
 					spellEffectDrainPower(effect);
 					break;
-				}
-
 				case se::Heal:
-				{
+					spellEffectHeal(effect);
 					break;
-				}
-
 				case se::Proficiency:
-				{
 					spellEffectProficiency(effect);
 					break;
-				}
-
 				case se::AddComboPoints:
-				{
 					spellEffectAddComboPoints(effect);
 					break;
-				}
-
 				case se::WeaponDamageNoSchool:
-				{
 					spellEffectWeaponDamageNoSchool(effect);
 					break;
-				}
-
-				case se::WeaponDamage:
-				{
-					
+				case se::ApplyAura:
+					spellEffectApplyAura(effect);
 					break;
-				}
-
+				/*
+				case se::WeaponDamage:
+					break;
+				*/
 				case se::NormalizedWeaponDmg:
-				{
 					spellEffectNormalizedWeaponDamage(effect);
 					break;
-				}
-
 				case se::Weapon:
 				case se::Language:
-				{
 					// Nothing to do here, since the skills for these spells will be applied as soon as the player
 					// learns this spell.
 					break;
-				}
-
 				default:
-				{
 					WLOG("Spell effect " << game::constant_literal::spellEffectNames.getName(effect.type) << " (" << effect.type << ") not yet implemented");
 					break;
-				}
 			}
 		}
 
@@ -671,6 +651,93 @@ namespace wowpp
 	{
 		//TODO: Implement
 		spellEffectNormalizedWeaponDamage(effect);
+	}
+
+	void SingleCastState::spellEffectApplyAura(const SpellEntry::Effect &effect)
+	{
+		game::AuraType auraType = static_cast<game::AuraType>(effect.auraName);
+		const String auraTypeName = game::constant_literal::auraTypeNames.getName(auraType);
+		DLOG("APPLY_AURA: " << auraTypeName << " (" << effect.auraName << ")");
+
+		if (!(m_spell.attributes & 0x40))
+		{
+			UInt32 slot = 0;
+			m_cast.getExecuter().setUInt32Value(unit_fields::Aura + slot, m_spell.id);
+
+			UInt32 index = slot / 4;
+			UInt32 byte = (slot % 4) * 8;
+			UInt32 val = m_cast.getExecuter().getUInt32Value(unit_fields::AuraFlags + index);
+			val &= ~((UInt32)255 << byte);
+			val |= ((UInt32)31 << byte);
+			m_cast.getExecuter().setUInt32Value(unit_fields::AuraFlags + index, val);
+
+			val = m_cast.getExecuter().getUInt32Value(unit_fields::AuraLevels + index);
+			val &= ~((UInt32)255 << byte);
+			val |= (m_cast.getExecuter().getLevel() << byte);
+			m_cast.getExecuter().setUInt32Value(unit_fields::AuraLevels + index, val);
+		}
+	}
+
+	void SingleCastState::spellEffectHeal(const SpellEntry::Effect &effect)
+	{
+		UInt32 healAmount = calculateEffectBasePoints(effect);
+
+		// Resolve GUIDs
+		GameObject *target = nullptr;
+		GameUnit *unitTarget = nullptr;
+		GameUnit &caster = m_cast.getExecuter();
+		auto *world = caster.getWorldInstance();
+
+		if (m_target.getTargetMap() & game::spell_cast_target_flags::Self)
+			target = &caster;
+		else if (world)
+		{
+			UInt64 targetGuid = 0;
+			if (m_target.hasUnitTarget())
+				targetGuid = m_target.getUnitTarget();
+			else if (m_target.hasGOTarget())
+				targetGuid = m_target.getGOTarget();
+			else if (m_target.hasItemTarget())
+				targetGuid = m_target.getItemTarget();
+
+			if (targetGuid != 0)
+				target = world->findObjectByGUID(targetGuid);
+
+			if (m_target.hasUnitTarget() && isUnitGUID(targetGuid))
+				unitTarget = reinterpret_cast<GameUnit*>(target);
+		}
+
+		// Check target
+		if (!unitTarget)
+		{
+			WLOG("EFFECT_POWER_DRAIN: No valid target found!");
+			return;
+		}
+
+		UInt32 health = target->getUInt32Value(unit_fields::Health);
+		UInt32 maxHealth = target->getUInt32Value(unit_fields::MaxHealth);
+		if (health == 0)
+		{
+			WLOG("Can't heal dead target!");
+			return;
+		}
+
+		// Send spell heal packet
+		sendPacketFromCaster(caster,
+			std::bind(game::server_write::spellHealLog, std::placeholders::_1,
+			unitTarget->getGuid(),
+			caster.getGuid(),
+			m_spell.id,
+			healAmount,
+			false));
+
+		// Update health value
+		if (health + healAmount < maxHealth)
+			health += healAmount;
+		else
+			health = maxHealth;
+
+		target->setUInt32Value(unit_fields::Health, health);
 	}
 
 }

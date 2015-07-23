@@ -147,6 +147,17 @@ namespace wowpp
 				effectTable->tryGetInteger("target_a", effect.targetA);
 				effectTable->tryGetInteger("target_b", effect.targetB);
 				effectTable->tryGetInteger("per_combo_point", effect.pointsPerComboPoint);
+				effectTable->tryGetInteger("aura_name", effect.auraName);
+				effectTable->tryGetInteger("dice_per_level", effect.dicePerLevel);
+				effectTable->tryGetInteger("points_per_level", effect.pointsPerLevel);
+				effectTable->tryGetInteger("radius_index", effect.radiusIndex);
+				effectTable->tryGetInteger("amplitude", effect.amplitude);
+				effectTable->tryGetInteger("multiple_val", effect.multipleValue);
+				effectTable->tryGetInteger("chain_target", effect.chainTarget);
+				effectTable->tryGetInteger("item_type", effect.itemType);
+				effectTable->tryGetInteger("misc_val_a", effect.miscValueA);
+				effectTable->tryGetInteger("misc_val_b", effect.miscValueB);
+				effectTable->tryGetInteger("trigger_spell", effect.triggerSpell);
 			}
 		}
 
@@ -212,6 +223,17 @@ namespace wowpp
 						if (effect.targetA != 0) effectTable.addKey("target_a", effect.targetA);
 						if (effect.targetB != 0) effectTable.addKey("target_b", effect.targetB);
 						if (effect.pointsPerComboPoint != 0) effectTable.addKey("per_combo_point", effect.pointsPerComboPoint);
+						if (effect.auraName != 0) effectTable.addKey("aura_name", effect.auraName);
+						if (effect.dicePerLevel != 0.0f) effectTable.addKey("dice_per_level", effect.dicePerLevel);
+						if (effect.pointsPerLevel != 0.0f) effectTable.addKey("points_per_level", effect.pointsPerLevel);
+						if (effect.radiusIndex != 0) effectTable.addKey("radius_index", effect.radiusIndex);
+						if (effect.amplitude != 0) effectTable.addKey("amplitude", effect.amplitude);
+						if (effect.multipleValue != 0.0f) effectTable.addKey("multiple_val", effect.multipleValue);
+						if (effect.chainTarget != 0) effectTable.addKey("chain_target", effect.chainTarget);
+						if (effect.itemType != 0) effectTable.addKey("item_type", effect.itemType);
+						if (effect.miscValueA != 0) effectTable.addKey("misc_val_a", effect.miscValueA);
+						if (effect.miscValueB != 0) effectTable.addKey("misc_val_b", effect.miscValueB);
+						if (effect.triggerSpell != 0) effectTable.addKey("trigger_spell", effect.triggerSpell);
 					}
 					effectTable.finish();
 				}

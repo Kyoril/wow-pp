@@ -185,6 +185,7 @@ namespace wowpp
 				AttackSwingNotStanding		= 0x147,
 				AttackSwingDeadTarget		= 0x148,
 				AttackSwingCantAttack		= 0x149,
+				SpellHealLog				= 0x150,
 				AttackerStateUpdate			= 0x14A,
 				SpellEnergizeLog			= 0x151,
 				BindPointUpdate				= 0x155,
@@ -954,6 +955,15 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt64 targetGuid,
 				UInt8 comboPoints
+				);
+
+			void spellHealLog(
+				game::OutgoingPacket &out_packet,
+				UInt64 targetGuid,
+				UInt64 casterGuid,
+				UInt32 spellId,
+				UInt32 amount,
+				bool critical
 				);
 		};
 	}

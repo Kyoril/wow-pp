@@ -20,12 +20,6 @@ namespace wowpp
 	std::pair<game::SpellCastResult, SpellCasting*> SpellCast::startCast(const SpellEntry &spell, SpellTargetMap target, GameTime castTime, bool doReplacePreviousCast)
 	{
 		assert(m_castState);
-		
-		// Check if we are in a world
-		if (!m_executer.getWorldInstance())
-		{
-			return std::make_pair(game::spell_cast_result::FailedUnknown, nullptr);
-		}
 
 		// Check power
 		if (spell.cost > 0)
@@ -50,23 +44,27 @@ namespace wowpp
 		// Check facing (Need to have the target in front of us)
 		if (spell.facing & 0x01)
 		{
-			GameUnit *unitTarget = nullptr;
-			target.resolvePointers(*m_executer.getWorldInstance(), &unitTarget, nullptr, nullptr, nullptr);
-
-			if (unitTarget)
+			const auto *world = m_executer.getWorldInstance();
+			if (world)
 			{
-				float x, y, z, o;
-				unitTarget->getLocation(x, y, z, o);
+				GameUnit *unitTarget = nullptr;
+				target.resolvePointers(*m_executer.getWorldInstance(), &unitTarget, nullptr, nullptr, nullptr);
 
-				// 120 degree field of view
-				if (!m_executer.isInArc(2.0f * 3.1415927f / 3.0f, x, y))
+				if (unitTarget)
 				{
-					return std::make_pair(game::spell_cast_result::FailedUnitNotInfront, nullptr);
+					float x, y, z, o;
+					unitTarget->getLocation(x, y, z, o);
+
+					// 120 degree field of view
+					if (!m_executer.isInArc(2.0f * 3.1415927f / 3.0f, x, y))
+					{
+						return std::make_pair(game::spell_cast_result::FailedUnitNotInfront, nullptr);
+					}
 				}
-			}
-			else
-			{
-				WLOG("Couldn't find unit target for spell with facing requirement!");
+				else
+				{
+					WLOG("Couldn't find unit target for spell with facing requirement!");
+				}
 			}
 		}
 
