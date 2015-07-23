@@ -653,6 +653,8 @@ namespace wowpp
 		game::AuraType auraType = static_cast<game::AuraType>(effect.auraName);
 		const String auraTypeName = game::constant_literal::auraTypeNames.getName(auraType);
 
+		Int32 value = calculateEffectBasePoints(effect);
+
 		// Apply stat buffs
 		switch (auraType)
 		{
@@ -667,7 +669,6 @@ namespace wowpp
 				}
 
 				// Apply the stat value
-				Int32 value = calculateEffectBasePoints(effect);
 				for (Int32 i = 0; i < 5; ++i)
 				{
 					if (stat < 0 || stat == i)
@@ -676,6 +677,18 @@ namespace wowpp
 					}
 				}
 
+				break;
+			}
+
+			case game::aura_type::ModResistance:
+			{
+				for (UInt8 i = 0; i < 7; ++i)
+				{
+					if (effect.miscValueA & Int32(1 << i))
+					{
+						m_cast.getExecuter().updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), unit_mod_type::TotalValue, value, true);
+					}
+				}
 				break;
 			}
 

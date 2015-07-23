@@ -535,7 +535,9 @@ namespace wowpp
 
 	void GameCharacter::updateArmor()
 	{
-		UInt32 baseArmor = 0;
+		UInt32 baseArmor = getModifierValue(unit_mods::Armor, unit_mod_type::BaseValue);
+
+		// Apply equipment
 		for (UInt8 i = player_equipment_slots::Start; i < player_equipment_slots::End; ++i)
 		{
 			auto it = m_itemSlots.find(i);
@@ -546,9 +548,13 @@ namespace wowpp
 			}
 		}
 
+		UInt32 totalArmor = getModifierValue(unit_mods::Armor, unit_mod_type::TotalValue);
+
 		// Add armor from agility
 		baseArmor += getUInt32Value(unit_fields::Stat1) * 2;
+		baseArmor += totalArmor;
 		setUInt32Value(unit_fields::Resistances, baseArmor);
+		setUInt32Value(unit_fields::ResistancesBuffModsPositive, totalArmor);
 	}
 
 	void GameCharacter::updateDamage()
