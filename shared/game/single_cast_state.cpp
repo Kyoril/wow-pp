@@ -358,7 +358,7 @@ namespace wowpp
 		GameUnit &caster = m_cast.getExecuter();
 		auto *world = caster.getWorldInstance();
 
-		if (m_target.getTargetMap() & game::spell_cast_target_flags::Self)
+		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
 			target = &caster;
 		else if (world)
 		{
@@ -431,7 +431,7 @@ namespace wowpp
 		GameUnit &caster = m_cast.getExecuter();
 		auto *world = caster.getWorldInstance();
 
-		if (m_target.getTargetMap() & game::spell_cast_target_flags::Self)
+		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
 			target = &caster;
 		else if (world)
 		{
@@ -500,7 +500,7 @@ namespace wowpp
 		GameUnit &caster = m_cast.getExecuter();
 		auto *world = caster.getWorldInstance();
 
-		if (m_target.getTargetMap() & game::spell_cast_target_flags::Self)
+		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
 			target = &caster;
 		else if (world)
 		{
@@ -655,7 +655,7 @@ namespace wowpp
 	{
 		// We need a unit target
 		GameUnit *unitTarget = nullptr;
-		if (m_target.getTargetMap() & game::spell_cast_target_flags::Self)
+		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
 		{
 			unitTarget = &m_cast.getExecuter();
 		}
@@ -711,7 +711,7 @@ namespace wowpp
 		GameUnit &caster = m_cast.getExecuter();
 		auto *world = caster.getWorldInstance();
 
-		if (m_target.getTargetMap() & game::spell_cast_target_flags::Self)
+		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
 			target = &caster;
 		else if (world)
 		{
