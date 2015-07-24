@@ -32,6 +32,7 @@
 #include "common/countdown.h"
 #include "spell_cast.h"
 #include "spell_target_map.h"
+#include "aura.h"
 #include <boost/signals2.hpp>
 
 namespace wowpp
@@ -378,6 +379,9 @@ namespace wowpp
 		/// 
 		static UnitMods getUnitModByPower(PowerType power);
 
+		/// Adds the specified aura to the list of aura effects.
+		bool addAura(std::unique_ptr<Aura> aura);
+
 	protected:
 
 		virtual void levelChanged(const LevelEntry &levelInfo);
@@ -405,11 +409,14 @@ namespace wowpp
 		void onRegeneration();
 		void regenerateHealth();
 		void regeneratePower(PowerType power);
+		void onAuraExpired(Aura &aura);
 
 	private:
 
 		typedef std::array<float, unit_mod_type::End> UnitModTypeArray;
 		typedef std::array<UnitModTypeArray, unit_mods::End> UnitModArray;
+
+		typedef std::vector<std::unique_ptr<Aura>> AuraVector;
 
 		TimerQueue &m_timers;
 		DataLoadContext::GetRace m_getRace;
@@ -426,9 +433,10 @@ namespace wowpp
 		Countdown m_regenCountdown;
 		GameTime m_lastManaUse;
 		UnitModArray m_unitMods;
+		AuraVector m_auras;
 	};
 
-	UInt32 calculateArmorReducedDamage(const GameUnit &attacker, const GameUnit &victim, UInt32 damage);
+	UInt32 calculateArmorReducedDamage(UInt32 attackerLevel, const GameUnit &victim, UInt32 damage);
 
 	io::Writer &operator << (io::Writer &w, GameUnit const& object);
 	io::Reader &operator >> (io::Reader &r, GameUnit& object);

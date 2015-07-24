@@ -1559,6 +1559,59 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void periodicAuraLog(game::OutgoingPacket &out_packet, UInt64 targetGuid, UInt64 casterGuid, UInt32 spellId, UInt32 auraType, UInt32 damage, UInt32 dmgSchool, UInt32 absorbed, UInt32 resisted)
+			{
+				out_packet.start(game::server_packet::PeriodicAuraLog);
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; targetGuid != 0; ++i)
+					{
+						if (targetGuid & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(targetGuid & 0xFF);
+							++size;
+						}
+
+						targetGuid >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; casterGuid != 0; ++i)
+					{
+						if (casterGuid & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(casterGuid & 0xFF);
+							++size;
+						}
+
+						casterGuid >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+				out_packet
+					<< io::write<NetUInt32>(spellId)
+					<< io::write<NetUInt32>(1)
+					<< io::write<NetUInt32>(auraType)
+					<< io::write<NetUInt32>(damage)
+					<< io::write<NetUInt32>(dmgSchool)
+					<< io::write<NetUInt32>(absorbed)
+					<< io::write<NetUInt32>(resisted);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

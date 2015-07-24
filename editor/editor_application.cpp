@@ -161,8 +161,8 @@ namespace wowpp
 		void EditorApplication::saveUnsavedChanges()
 		{
 			// Optimization
-			if (!m_changed)
-				return;
+			/*if (!m_changed)
+				return;*/
 
 			// Save data project
 			if (!m_project.save(m_configuration.dataPath))

@@ -34,6 +34,9 @@
 #include "binary_io/vector_sink.h"
 #include "game_protocol/game_protocol.h"
 #include <boost/iterator/indirect_iterator.hpp>
+#include "common/make_unique.h"
+//TODO
+#include "aura.h"
 #include <random>
 
 namespace wowpp
@@ -455,7 +458,7 @@ namespace wowpp
 		}
 
 		// Armor reduction
-		damage = calculateArmorReducedDamage(m_cast.getExecuter(), *unitTarget, damage);
+		damage = calculateArmorReducedDamage(m_cast.getExecuter().getLevel(), *unitTarget, damage);
 
 		// Send spell damage packet
 		sendPacketFromCaster(caster,
@@ -650,74 +653,52 @@ namespace wowpp
 
 	void SingleCastState::spellEffectApplyAura(const SpellEntry::Effect &effect)
 	{
+		// We need a unit target
+		GameUnit *unitTarget = nullptr;
+		if (m_target.getTargetMap() & game::spell_cast_target_flags::Self)
+		{
+			unitTarget = &m_cast.getExecuter();
+		}
+		else if (m_target.hasUnitTarget())
+		{
+			auto *world = m_cast.getExecuter().getWorldInstance();
+			if (world)
+			{
+				unitTarget = dynamic_cast<GameUnit*>(world->findObjectByGUID(m_target.getUnitTarget()));
+			}
+		}
+
+		if (!unitTarget)
+		{
+			WLOG("EFFECT_APPLY_AURA needs a valid unit target!");
+			return;
+		}
+
+		// Casting unit
+		GameUnit &caster = m_cast.getExecuter();
+
+		// Determine aura type
 		game::AuraType auraType = static_cast<game::AuraType>(effect.auraName);
 		const String auraTypeName = game::constant_literal::auraTypeNames.getName(auraType);
+		DLOG("Spell: Aura is: " << auraTypeName);
 
-		Int32 value = calculateEffectBasePoints(effect);
+		// Create a new aura instance
+		const Int32 basePoints = calculateEffectBasePoints(effect);
+		std::unique_ptr<Aura> aura = make_unique<Aura>(m_spell, effect, basePoints, caster, *unitTarget);
 
-		// Apply stat buffs
-		switch (auraType)
+		// TODO: Dimishing return and custom durations
+
+		// TODO: Apply spell haste
+
+		// TODO: Check if aura already expired
+
+		// TODO: Add aura to unit target
+		const bool success = unitTarget->addAura(std::move(aura));
+		if (!success)
 		{
-			case game::aura_type::ModStat:
-			{
-				// Get stat value
-				Int32 stat = effect.miscValueA;
-				if (stat < -2 || stat > 4)
-				{
-					WLOG("AURA TYPE " << auraTypeName << ": Invalid stat " << stat);
-					return;
-				}
-
-				// Apply the stat value
-				for (Int32 i = 0; i < 5; ++i)
-				{
-					if (stat < 0 || stat == i)
-					{
-						m_cast.getExecuter().updateModifierValue(GameUnit::getUnitModByStat(i), unit_mod_type::TotalValue, fabsf(value), value > 0);
-					}
-				}
-
-				break;
-			}
-
-			case game::aura_type::ModResistance:
-			{
-				for (UInt8 i = 0; i < 7; ++i)
-				{
-					if (effect.miscValueA & Int32(1 << i))
-					{
-						m_cast.getExecuter().updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), unit_mod_type::TotalValue, value, true);
-					}
-				}
-				break;
-			}
-
-			default:
-			{
-				WLOG("AURA TYPE " << auraTypeName << " is not yet implemented!");
-				break;
-			}
+			// TODO: What should we do here? Just ignore?
+			WLOG("Aura could not be added to unit target!");
 		}
-
-		/*
-		if (!(m_spell.attributes & 0x40))
-		{
-			UInt32 slot = 0;
-			m_cast.getExecuter().setUInt32Value(unit_fields::Aura + slot, m_spell.id);
-
-			UInt32 index = slot / 4;
-			UInt32 byte = (slot % 4) * 8;
-			UInt32 val = m_cast.getExecuter().getUInt32Value(unit_fields::AuraFlags + index);
-			val &= ~((UInt32)255 << byte);
-			val |= ((UInt32)31 << byte);
-			m_cast.getExecuter().setUInt32Value(unit_fields::AuraFlags + index, val);
-
-			val = m_cast.getExecuter().getUInt32Value(unit_fields::AuraLevels + index);
-			val &= ~((UInt32)255 << byte);
-			val |= (m_cast.getExecuter().getLevel() << byte);
-			m_cast.getExecuter().setUInt32Value(unit_fields::AuraLevels + index, val);
-		}
-		*/
 	}
 
 	void SingleCastState::spellEffectHeal(const SpellEntry::Effect &effect)

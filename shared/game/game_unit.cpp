@@ -389,7 +389,7 @@ namespace wowpp
 
 				// Calculate damage between minimum and maximum damage
 				std::uniform_real_distribution<float> distribution(getFloatValue(unit_fields::MinDamage), getFloatValue(unit_fields::MaxDamage) + 1.0f);
-				const UInt32 damage = calculateArmorReducedDamage(*this, *m_victim, UInt32(distribution(randomGenerator)));
+				const UInt32 damage = calculateArmorReducedDamage(getLevel(), *m_victim, UInt32(distribution(randomGenerator)));
 
 				// Notify all subscribers
 				std::vector<char> buffer;
@@ -797,7 +797,12 @@ namespace wowpp
 			break;
 		case 3:
 			updateMaxPower(power_type::Mana);
+			updateManaRegen();
 			break;
+		case 4:
+			updateManaRegen();
+			break;
+
 		default:
 			break;
 		}
@@ -870,6 +875,29 @@ namespace wowpp
 		return unit_mods::Mana;
 	}
 
+	bool GameUnit::addAura(std::unique_ptr<Aura> aura)
+	{
+		// TODO: Check aura stack system etc.
+
+		// Remove aura on expiration
+		aura->expired.connect(
+			std::bind(&GameUnit::onAuraExpired, this, std::placeholders::_1));
+
+		// Add aura to the list of auras of this unit and apply it's effects
+		aura->applyAura();
+
+		// Store
+		m_auras.emplace_back(std::move(aura));
+
+		return true;
+	}
+
+	void GameUnit::onAuraExpired(Aura &aura)
+	{
+		// TODO: Remove the aura
+		DLOG("AURA " << aura.getEffect().auraName << " EXPIRED");
+	}
+
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)
 	{
 		w << reinterpret_cast<GameObject const&>(object);
@@ -909,7 +937,7 @@ namespace wowpp
 		return r;
 	}
 
-	UInt32 calculateArmorReducedDamage(const GameUnit &attacker, const GameUnit &victim, UInt32 damage)
+	UInt32 calculateArmorReducedDamage(UInt32 attackerLevel, const GameUnit &victim, UInt32 damage)
 	{
 		UInt32 newDamage = 0;
 		float armor = float(victim.getUInt32Value(unit_fields::Resistances));
@@ -920,7 +948,6 @@ namespace wowpp
 		if (armor < 0.0f) armor = 0.0f;
 
 		float tmp = 0.0f;
-		const UInt32 attackerLevel = attacker.getLevel();
 		if (attackerLevel < 60)
 		{
 			tmp = armor / (armor + 400.0f + 85.0f * attackerLevel);

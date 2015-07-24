@@ -44,6 +44,8 @@ namespace wowpp
 		, itemClass(-1)
 		, itemSubClassMask(0)
 		, facing(0)
+		, duration(-1)
+		, maxDuration(-1)
 	{
 		attributesEx.fill(0);
 	}
@@ -70,6 +72,8 @@ namespace wowpp
 		wrapper.table.tryGetInteger("power", powerTypeValue);
 		powerType = static_cast<PowerType>(powerTypeValue);
 		wrapper.table.tryGetInteger("cost", cost);
+		wrapper.table.tryGetInteger("duration", duration);
+		wrapper.table.tryGetInteger("max_duration", maxDuration);
 		wrapper.table.tryGetInteger("facing", facing);
 		wrapper.table.tryGetInteger("max_level", maxLevel);
 		wrapper.table.tryGetInteger("base_level", baseLevel);
@@ -183,6 +187,8 @@ namespace wowpp
 		if (cooldown != 0) context.table.addKey("cooldown", cooldown);
 		if (powerType != power_type::Mana) context.table.addKey("power", static_cast<Int32>(powerType));
 		if (cost != 0) context.table.addKey("cost", cost);
+		if (duration != -1) context.table.addKey("duration", duration);
+		if (maxDuration != -1) context.table.addKey("max_duration", maxDuration);
 		if (facing != 0) context.table.addKey("facing", facing);
 		if (maxLevel != 0) context.table.addKey("max_level", maxLevel);
 		if (baseLevel != 0) context.table.addKey("base_level", baseLevel);

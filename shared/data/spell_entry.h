@@ -183,6 +183,8 @@ namespace wowpp
 		UInt32 itemSubClassMask;
 		std::vector<const SkillEntry*> skillsOnLearnSpell;
 		UInt32 facing;
+		Int32 duration;
+		Int32 maxDuration;
 
 		SpellEntry();
 		bool load(DataLoadContext &context, const ReadTableWrapper &wrapper);
