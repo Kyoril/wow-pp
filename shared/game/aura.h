@@ -70,6 +70,8 @@ namespace wowpp
 		/// 
 		void handleModStat(bool apply);
 		/// 
+		void handleModTotalStatPercentage(bool apply);
+		/// 
 		void handleModResistance(bool apply);
 		/// 
 		void handlePeriodicDamage(bool apply);

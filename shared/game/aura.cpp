@@ -127,6 +127,9 @@ namespace wowpp
 			case aura::ModStat:
 				handleModStat(apply);
 				break;
+			case aura::ModTotalStatPercentage:
+				handleModTotalStatPercentage(apply);
+				break;
 			case aura::ModResistance:
 				handleModResistance(apply);
 				break;
@@ -305,6 +308,25 @@ namespace wowpp
 		{
 			// Start timer
 			startPeriodicTimer();
+		}
+	}
+
+	void Aura::handleModTotalStatPercentage(bool apply)
+	{
+		Int32 stat = m_effect.miscValueA;
+		if (stat < -2 || stat > 4)
+		{
+			WLOG("AURA_TYPE_MOD_STAT_PERCENTAGE: Invalid stat index " << stat << " - skipped");
+			return;
+		}
+
+		// Apply all stats
+		for (Int32 i = 0; i < 5; ++i)
+		{
+			if (stat < 0 || stat == i)
+			{
+				m_target.updateModifierValue(GameUnit::getUnitModByStat(i), unit_mod_type::TotalPct, m_basePoints, apply);
+			}
 		}
 	}
 

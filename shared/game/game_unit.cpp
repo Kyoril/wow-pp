@@ -595,6 +595,10 @@ namespace wowpp
 		{
 			updateMaxPower(static_cast<PowerType>(i));
 		}
+		for (UInt8 i = 0; i < 6; ++i)
+		{
+			updateResistance(i);
+		}
 
 		updateManaRegen();
 	}
@@ -640,6 +644,28 @@ namespace wowpp
 	void GameUnit::updateManaRegen()
 	{
 		// Nothing to do here
+	}
+
+	void GameUnit::updateResistance(UInt8 resistance)
+	{
+		if (resistance > 0)
+		{
+			UnitMods mod = getUnitModByResistance(resistance);
+
+			// Calculate values
+			const float baseVal = getModifierValue(mod, unit_mod_type::BaseValue);
+			const float basePct = getModifierValue(mod, unit_mod_type::BasePct);
+			const float totalVal = getModifierValue(mod, unit_mod_type::TotalValue);
+			const float totalPct = getModifierValue(mod, unit_mod_type::TotalPct);
+			float value = ((baseVal * basePct) + totalVal) * totalPct;
+
+			setUInt32Value(unit_fields::Resistances + resistance, UInt32(value));
+			setUInt32Value(unit_fields::ResistancesBuffModsPositive + resistance, UInt32(totalVal));
+		}
+		else
+		{
+			updateArmor();
+		}
 	}
 
 	float GameUnit::getHealthBonusFromStamina() const
@@ -744,7 +770,7 @@ namespace wowpp
 			case unit_mods::ResistanceShadow:
 			case unit_mods::ResistanceArcane:
 			{
-				// TODO: Update resistances
+				updateResistance(getResistanceByUnitMod(mod));
 				break;
 			}
 
@@ -873,6 +899,43 @@ namespace wowpp
 		}
 
 		return unit_mods::Mana;
+	}
+
+	wowpp::UInt8 GameUnit::getResistanceByUnitMod(UnitMods mod)
+	{
+		switch (mod)
+		{
+		case unit_mods::ResistanceHoly:		return 1;
+		case unit_mods::ResistanceFire:		return 2;
+		case unit_mods::ResistanceNature:	return 3;
+		case unit_mods::ResistanceFrost:	return 4;
+		case unit_mods::ResistanceShadow:	return 5;
+		case unit_mods::ResistanceArcane:	return 6;
+
+		default:
+			break;
+		}
+
+		return 0;
+	}
+
+	wowpp::UnitMods GameUnit::getUnitModByResistance(UInt8 res)
+	{
+		switch (res)
+		{
+		case 0:		return unit_mods::Armor;
+		case 1:		return unit_mods::ResistanceHoly;
+		case 2:		return unit_mods::ResistanceFire;
+		case 3:		return unit_mods::ResistanceNature;
+		case 4:		return unit_mods::ResistanceFrost;
+		case 5:		return unit_mods::ResistanceShadow;
+		case 6:		return unit_mods::ResistanceArcane;
+
+		default:
+			break;
+		}
+
+		return unit_mods::Armor;
 	}
 
 	bool GameUnit::addAura(std::unique_ptr<Aura> aura)

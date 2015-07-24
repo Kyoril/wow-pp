@@ -372,12 +372,16 @@ namespace wowpp
 
 		/// Calculates the stat based on the specified modifier.
 		static UInt8 getStatByUnitMod(UnitMods mod);
+		/// Calculates the resistance based on the specified modifier.
+		static UInt8 getResistanceByUnitMod(UnitMods mod);
 		/// Calculates the power based on the specified unit modifier.
 		static PowerType getPowerTypeByUnitMod(UnitMods mod);
 		/// 
 		static UnitMods getUnitModByStat(UInt8 stat);
 		/// 
 		static UnitMods getUnitModByPower(PowerType power);
+		/// 
+		static UnitMods getUnitModByResistance(UInt8 res);
 
 		/// Adds the specified aura to the list of aura effects.
 		bool addAura(std::unique_ptr<Aura> aura);
@@ -392,6 +396,7 @@ namespace wowpp
 		virtual void updateDamage();
 		virtual void updateManaRegen();
 		virtual void updateStats(UInt8 stat);
+		virtual void updateResistance(UInt8 resistance);
 
 		float getHealthBonusFromStamina() const;
 		float getManaBonusFromIntellect() const;
