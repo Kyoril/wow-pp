@@ -178,6 +178,7 @@ namespace wowpp
 				SpellFailure				= 0x133,
 				SpellCooldown				= 0x134,
 				CooldownEvent				= 0x135,
+				UpdateAuraDuration			= 0x137,
 				AttackStart					= 0x143,
 				AttackStop					= 0x144,
 				AttackSwingNotInRange		= 0x145,
@@ -207,6 +208,8 @@ namespace wowpp
 				Motd						= 0x33D,
 				TimeSyncReq					= 0x390,
 				UpdateComboPoints			= 0x39D,
+				SetExtraAuraInfo			= 0x3A4,
+				SetExtraAuraInfoNeedUpdate	= 0x3A5,
 				FeatureSystemStatus			= 0x3C8,
 				UnlearnSpells				= 0x41D,
 			};
@@ -977,6 +980,30 @@ namespace wowpp
 				UInt32 dmgSchool,
 				UInt32 absorbed,
 				UInt32 resisted
+				);
+
+			void updateAuraDuration(
+				game::OutgoingPacket &out_packet,
+				UInt8 slot,
+				UInt32 durationMS
+				);
+
+			void setExtraAuraInfo(
+				game::OutgoingPacket &out_packet,
+				UInt64 targetGuid,
+				UInt8 slot,
+				UInt32 spellId,
+				UInt32 maxDurationMS,
+				UInt32 durationMS
+				);
+
+			void setExtraAuraInfoNeedUpdate(
+				game::OutgoingPacket &out_packet,
+				UInt64 targetGuid,
+				UInt8 slot,
+				UInt32 spellId,
+				UInt32 maxDurationMS,
+				UInt32 durationMS
 				);
 		};
 	}

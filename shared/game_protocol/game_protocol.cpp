@@ -1612,6 +1612,78 @@ namespace wowpp
 					<< io::write<NetUInt32>(resisted);
 				out_packet.finish();
 			}
+
+			void updateAuraDuration(game::OutgoingPacket &out_packet, UInt8 slot, UInt32 durationMS)
+			{
+				out_packet.start(game::server_packet::UpdateAuraDuration);
+				out_packet
+					<< io::write<NetUInt8>(slot)
+					<< io::write<NetUInt32>(durationMS);
+				out_packet.finish();
+			}
+
+			void setExtraAuraInfo(game::OutgoingPacket &out_packet, UInt64 targetGuid, UInt8 slot, UInt32 spellId, UInt32 maxDurationMS, UInt32 durationMS)
+			{
+				out_packet.start(game::server_packet::SetExtraAuraInfo);
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; targetGuid != 0; ++i)
+					{
+						if (targetGuid & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(targetGuid & 0xFF);
+							++size;
+						}
+
+						targetGuid >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+				out_packet
+					<< io::write<NetUInt8>(slot)
+					<< io::write<NetUInt32>(spellId)
+					<< io::write<NetUInt32>(maxDurationMS)
+					<< io::write<NetUInt32>(durationMS);
+				out_packet.finish();
+			}
+
+			void setExtraAuraInfoNeedUpdate(game::OutgoingPacket &out_packet, UInt64 targetGuid, UInt8 slot, UInt32 spellId, UInt32 maxDurationMS, UInt32 durationMS)
+			{
+				out_packet.start(game::server_packet::SetExtraAuraInfoNeedUpdate);
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; targetGuid != 0; ++i)
+					{
+						if (targetGuid & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(targetGuid & 0xFF);
+							++size;
+						}
+
+						targetGuid >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+				out_packet
+					<< io::write<NetUInt8>(slot)
+					<< io::write<NetUInt32>(spellId)
+					<< io::write<NetUInt32>(maxDurationMS)
+					<< io::write<NetUInt32>(durationMS);
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read
