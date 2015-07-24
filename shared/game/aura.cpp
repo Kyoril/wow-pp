@@ -136,6 +136,9 @@ namespace wowpp
 			case aura::PeriodicDamage:
 				handlePeriodicDamage(apply);
 				break;
+			case aura::PeriodicHeal:
+				handlePeriodicHeal(apply);
+				break;
 			default:
 				WLOG("Unhandled aura type: " << m_effect.auraName);
 				break;
@@ -211,7 +214,6 @@ namespace wowpp
 				{
 					m_target.killed(m_caster);
 				}
-
 				break;
 			}
 			case aura::PeriodicDamagePercent:
@@ -231,7 +233,35 @@ namespace wowpp
 			}
 			case aura::PeriodicHeal:
 			{
-				DLOG("TODO");
+				UInt32 heal = m_basePoints;
+
+				// Send event to all subscribers in sight
+				auto *world = m_target.getWorldInstance();
+				if (world)
+				{
+					TileIndex2D tileIndex;
+					m_target.getTileIndex(tileIndex);
+
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+					wowpp::game::OutgoingPacket packet(sink);
+					game::server_write::periodicAuraLog(packet, m_target.getGuid(), (m_caster ? m_caster->getGuid() : 0), m_spell.id, m_effect.auraName, heal);
+
+					forEachSubscriberInSight(world->getGrid(), tileIndex, [&packet, &buffer](ITileSubscriber &subscriber)
+					{
+						subscriber.sendPacket(packet, buffer);
+					});
+				}
+
+				// Update health value
+				UInt32 health = m_target.getUInt32Value(unit_fields::Health);
+				UInt32 maxHealth = m_target.getUInt32Value(unit_fields::MaxHealth);
+				if (health + maxHealth > maxHealth)
+					health = maxHealth;
+				else
+					health += heal;
+
+				m_target.setUInt32Value(unit_fields::Health, health);
 				break;
 			}
 			case aura::PeriodicHealthFunnel:
@@ -293,6 +323,25 @@ namespace wowpp
 	}
 
 	void Aura::handlePeriodicDamage(bool apply)
+	{
+		// Nothing to do here
+		if (!apply)
+			return;
+
+		// First tick at apply
+		if (m_spell.attributesEx[4] & 0x00000200)
+		{
+			// First tick
+			onTick();
+		}
+		else
+		{
+			// Start timer
+			startPeriodicTimer();
+		}
+	}
+
+	void Aura::handlePeriodicHeal(bool apply)
 	{
 		// Nothing to do here
 		if (!apply)

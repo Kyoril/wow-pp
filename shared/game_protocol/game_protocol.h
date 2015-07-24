@@ -982,6 +982,15 @@ namespace wowpp
 				UInt32 resisted
 				);
 
+			void periodicAuraLog(
+				game::OutgoingPacket &out_packet,
+				UInt64 targetGuid,
+				UInt64 casterGuid,
+				UInt32 spellId,
+				UInt32 auraType,
+				UInt32 heal
+				);
+
 			void updateAuraDuration(
 				game::OutgoingPacket &out_packet,
 				UInt8 slot,
