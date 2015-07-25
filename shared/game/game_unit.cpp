@@ -428,22 +428,7 @@ namespace wowpp
 				}
 
 				// Deal damage
-				UInt32 health = m_victim->getUInt32Value(unit_fields::Health);
-				if (health > damage)
-				{
-					health -= damage;
-				}
-				else
-				{
-					health = 0;
-				}
-				m_victim->setUInt32Value(unit_fields::Health, health);
-
-				if (health == 0)
-				{
-					m_victim->killed(this);
-					return;
-				}
+				m_victim->dealDamage(damage, 0, this);
 			}
 		} while (false);
 
@@ -959,6 +944,27 @@ namespace wowpp
 	{
 		// TODO: Remove the aura
 		DLOG("AURA " << aura.getEffect().auraName << " EXPIRED");
+	}
+
+	void GameUnit::dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker)
+	{
+		UInt32 health = getUInt32Value(unit_fields::Health);
+		if (health == 0)
+		{
+			return;
+		}
+
+		if (health < damage)
+			health = 0;
+		else
+			health -= damage;
+
+		setUInt32Value(unit_fields::Health, health);
+
+		if (health == 0)
+		{
+			killed(attacker);
+		}
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)

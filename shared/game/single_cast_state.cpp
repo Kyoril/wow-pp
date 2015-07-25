@@ -353,32 +353,19 @@ namespace wowpp
 		// TODO: Apply spell mods
 
 		// Resolve GUIDs
-		GameObject *target = nullptr;
 		GameUnit *unitTarget = nullptr;
 		GameUnit &caster = m_cast.getExecuter();
 		auto *world = caster.getWorldInstance();
 
 		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
-			target = &caster;
-		else if (world)
+			unitTarget = &caster;
+		else if (world && m_target.hasUnitTarget())
 		{
-			UInt64 targetGuid = 0;
-			if (m_target.hasUnitTarget())
-				targetGuid = m_target.getUnitTarget();
-			else if (m_target.hasGOTarget())
-				targetGuid = m_target.getGOTarget();
-			else if (m_target.hasItemTarget())
-				targetGuid = m_target.getItemTarget();
-			
-			if (targetGuid != 0)
-				target = world->findObjectByGUID(targetGuid);
-
-			if (m_target.hasUnitTarget() && isUnitGUID(targetGuid))
-				unitTarget = reinterpret_cast<GameUnit*>(target);
+			unitTarget = dynamic_cast<GameUnit*>(world->findObjectByGUID(m_target.getUnitTarget()));
 		}
 
 		// Check target
-		if (!target)
+		if (!unitTarget)
 		{
 			WLOG("EFFECT_SCHOOL_DAMAGE: No valid target found!");
 			return;
@@ -387,7 +374,7 @@ namespace wowpp
 		// Send spell damage packet
 		sendPacketFromCaster(caster,
 			std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-			target->getGuid(),
+			unitTarget->getGuid(),
 			caster.getGuid(),
 			m_spell.id,
 			damage,
@@ -399,17 +386,7 @@ namespace wowpp
 			false));
 
 		// Update health value
-		UInt32 health = target->getUInt32Value(unit_fields::Health);
-		if (health > damage)
-			health -= damage;
-		else
-			health = 0;
-
-		target->setUInt32Value(unit_fields::Health, health);
-		if (health == 0 && unitTarget)
-		{
-			unitTarget->killed(&caster);
-		}
+		unitTarget->dealDamage(damage, m_spell.schoolMask, &caster);
 	}
 
 	void SingleCastState::spellEffectNormalizedWeaponDamage(const SpellEntry::Effect &effect)
@@ -426,32 +403,17 @@ namespace wowpp
 		damage += UInt32(distribution(randomGenerator));
 
 		// Resolve GUIDs
-		GameObject *target = nullptr;
 		GameUnit *unitTarget = nullptr;
 		GameUnit &caster = m_cast.getExecuter();
 		auto *world = caster.getWorldInstance();
 
 		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
-			target = &caster;
-		else if (world)
-		{
-			UInt64 targetGuid = 0;
-			if (m_target.hasUnitTarget())
-				targetGuid = m_target.getUnitTarget();
-			else if (m_target.hasGOTarget())
-				targetGuid = m_target.getGOTarget();
-			else if (m_target.hasItemTarget())
-				targetGuid = m_target.getItemTarget();
-
-			if (targetGuid != 0)
-				target = world->findObjectByGUID(targetGuid);
-
-			if (m_target.hasUnitTarget() && isUnitGUID(targetGuid))
-				unitTarget = reinterpret_cast<GameUnit*>(target);
-		}
+			unitTarget = &caster;
+		else if (world && m_target.hasUnitTarget())
+			unitTarget = dynamic_cast<GameUnit*>(world->findObjectByGUID(m_target.getUnitTarget()));
 
 		// Check target
-		if (!target)
+		if (!unitTarget)
 		{
 			WLOG("EFFECT_NORMALIZED_WEAPON_DMG: No valid target found!");
 			return;
@@ -463,7 +425,7 @@ namespace wowpp
 		// Send spell damage packet
 		sendPacketFromCaster(caster,
 			std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-			target->getGuid(),
+			unitTarget->getGuid(),
 			caster.getGuid(),
 			m_spell.id,
 			damage,
@@ -475,17 +437,7 @@ namespace wowpp
 			false));
 
 		// Update health value
-		UInt32 health = target->getUInt32Value(unit_fields::Health);
-		if (health > damage)
-			health -= damage;
-		else
-			health = 0;
-
-		target->setUInt32Value(unit_fields::Health, health);
-		if (health == 0 && unitTarget)
-		{
-			unitTarget->killed(&caster);
-		}
+		unitTarget->dealDamage(damage, m_spell.schoolMask, &caster);
 	}
 
 	void SingleCastState::spellEffectDrainPower(const SpellEntry::Effect &effect)

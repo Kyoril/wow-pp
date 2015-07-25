@@ -295,10 +295,14 @@ namespace wowpp
 
 	typedef base_mod_type::Type BaseModType;
 
-	/// 
+	/// Base class for all units in the world. A unit is an object with health, which can
+	/// be controlled, fight etc. This class will be inherited by the GameCreature and the
+	/// GameCharacter classes.
 	class GameUnit : public GameObject
 	{
+		/// Serializes an instance of a GameUnit class (binary)
 		friend io::Writer &operator << (io::Writer &w, GameUnit const& object);
+		/// Deserializes an instance of a GameUnit class (binary)
 		friend io::Reader &operator >> (io::Reader &r, GameUnit& object);
 
 	public:
@@ -314,7 +318,7 @@ namespace wowpp
 
 	public:
 
-		/// 
+		/// Creates a new instance of the GameUnit object, which will still be uninitialized.
 		explicit GameUnit(
 			TimerQueue &timers,
 			DataLoadContext::GetRace getRace, 
@@ -322,53 +326,80 @@ namespace wowpp
 			DataLoadContext::GetLevel getLevel);
 		~GameUnit();
 
+		/// @copydoc GameObject::initialize()
 		virtual void initialize() override;
+		/// @copydoc GameObject::getTypeId()
+		virtual ObjectType getTypeId() const override { return object_type::Unit; }
 
+		/// Updates the race index and will also update the race entry object.
 		void setRace(UInt8 raceId);
+		/// Updates the class index and will also update the class entry object.
 		void setClass(UInt8 classId);
+		/// Updates the gender and will also update the appearance.
 		void setGender(game::Gender gender);
+		/// Updates the level and will also update all stats based on the new level.
 		void setLevel(UInt8 level);
+		/// Gets the current race index.
 		UInt8 getRace() const { return getByteValue(unit_fields::Bytes0, 0); }
+		/// Gets the current class index.
 		UInt8 getClass() const { return getByteValue(unit_fields::Bytes0, 1); }
+		/// Gets the current gender.
 		UInt8 getGender() const { return getByteValue(unit_fields::Bytes0, 2); }
+		/// Gets the current level.
 		UInt32 getLevel() const { return getUInt32Value(unit_fields::Level); }
 
 		/// Gets the timer queue object needed for countdown events.
 		TimerQueue &getTimers() { return m_timers; }
-
+		/// Get the current race entry information.
 		const RaceEntry *getRaceEntry() const {  return m_raceEntry; }
+		/// Get the current class entry information.
 		const ClassEntry *getClassEntry() const { return m_classEntry; }
-
-		virtual ObjectType getTypeId() const override { return object_type::Unit; }
 
 		/// Starts to cast a spell using the given target map.
 		void castSpell(SpellTargetMap target, const SpellEntry &spell, GameTime castTime, const SpellSuccessCallback &callback);
 		/// Stops the current cast (if any).
 		void cancelCast();
 		/// Starts auto attack on the given target.
+		/// @param target The unit to attack.
 		void startAttack(GameUnit &target);
-		/// Stops auto attacking the given target.
+		/// Stops auto attacking the given target. Does nothing if auto attack mode
+		/// isn't active right now.
 		void stopAttack();
-		/// 
+		/// Gets the current auto attack victim of this unit (if any).
 		GameUnit *getVictim() { return m_victim; }
-
 		/// TODO: Move the logic of this method somewhere else.
 		void triggerDespawnTimer(GameTime despawnDelay);
 		/// Starts the regeneration countdown.
 		void startRegeneration();
 		/// Stops the regeneration countdown.
 		void stopRegeneration();
-		/// 
+		/// Gets the last time when mana was used. Used for determining mana regeneration mode.
 		GameTime getLastManaUse() const { return m_lastManaUse; }
-		/// 
+		/// Updates the time when we last used mana, so that mana regeneration mode will be changed.
 		void notifyManaUse();
-
 		/// Gets the specified unit modifier value.
+		/// @param mod The unit mod we want to get.
+		/// @param type Which mod type do we want to get (base, total, percentage or absolute).
 		float getModifierValue(UnitMods mod, UnitModType type) const;
 		/// Sets the unit modifier value to the given value.
+		/// @param mod The unit mod to set.
+		/// @param type Which mod type to be changed (base, total, percentage or absolute).
+		/// @param value The new value of the modifier.
 		void setModifierValue(UnitMods mod, UnitModType type, float value);
 		/// Modifies the given unit modifier value by adding or subtracting it from the current value.
+		/// @param mode The unit mod to change.
+		/// @param type Which mod type to be changed (base, total, percentage or absolute).
+		/// @param amount The value amount.
+		/// @param apply Whether to apply or remove the provided amount.
 		void updateModifierValue(UnitMods mod, UnitModType type, float amount, bool apply);
+		/// Adds the specified aura to the list of aura effects.
+		/// @param aura The new aura instance to be added.
+		bool addAura(std::unique_ptr<Aura> aura);
+		/// Deals damage to this unit.
+		/// @param damage The damage value to deal.
+		/// @param school The damage school mask.
+		/// @param attacker The attacking unit.
+		void dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker);
 
 		/// Calculates the stat based on the specified modifier.
 		static UInt8 getStatByUnitMod(UnitMods mod);
@@ -383,8 +414,6 @@ namespace wowpp
 		/// 
 		static UnitMods getUnitModByResistance(UInt8 res);
 
-		/// Adds the specified aura to the list of aura effects.
-		bool addAura(std::unique_ptr<Aura> aura);
 
 	protected:
 

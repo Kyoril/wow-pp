@@ -424,7 +424,6 @@ namespace wowpp
 			UInt64 guid = object.getGuid();
 			writer
 				<< io::write<NetUInt8>(updateType);
-			//<< io::write<NetUInt8>(0xFF) << io::write<NetUInt64>(guid)
 
 			UInt64 guidCopy = guid;
 			UInt8 packGUID[8 + 1];

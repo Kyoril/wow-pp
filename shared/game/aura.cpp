@@ -203,17 +203,7 @@ namespace wowpp
 				}
 
 				// Update health value
-				UInt32 health = m_target.getUInt32Value(unit_fields::Health);
-				if (health > UInt32(damage))
-					health -= damage;
-				else
-					health = 0;
-
-				m_target.setUInt32Value(unit_fields::Health, health);
-				if (health == 0)
-				{
-					m_target.killed(m_caster);
-				}
+				m_target.dealDamage(damage, school, m_caster);
 				break;
 			}
 			case aura::PeriodicDamagePercent:
@@ -324,7 +314,6 @@ namespace wowpp
 
 	void Aura::handlePeriodicDamage(bool apply)
 	{
-		// Nothing to do here
 		if (!apply)
 			return;
 
@@ -343,7 +332,6 @@ namespace wowpp
 
 	void Aura::handlePeriodicHeal(bool apply)
 	{
-		// Nothing to do here
 		if (!apply)
 			return;
 
