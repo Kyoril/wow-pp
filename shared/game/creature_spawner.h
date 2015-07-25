@@ -31,6 +31,7 @@ namespace wowpp
 	class WorldInstance;
 	class GameObject;
 	class GameUnit;
+	class GameCreature;
 
 	/// Manages a spawn point and all creatures which are spawned by this point info.
 	/// It also adds spawned creatures to the given world instance.
@@ -72,7 +73,7 @@ namespace wowpp
 
 	private:
 
-		typedef std::vector<std::shared_ptr<GameUnit>> OwnedCreatures;
+		typedef std::vector<std::shared_ptr<GameCreature>> OwnedCreatures;
 
 		WorldInstance &m_world;
 		const UnitEntry &m_entry;

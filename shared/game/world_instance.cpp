@@ -23,11 +23,12 @@
 #include "world_instance_manager.h"
 #include "log/default_log_levels.h"
 #include "data/unit_entry.h"
-#include "game/game_unit.h"
+#include "game_unit.h"
+#include "game_creature.h"
 #include "creature_spawner.h"
-#include "game/tile_visibility_change.h"
-#include "game/visibility_tile.h"
-#include "game/each_tile_in_region.h"
+#include "tile_visibility_change.h"
+#include "visibility_tile.h"
+#include "each_tile_in_region.h"
 #include "binary_io/vector_sink.h"
 #include <boost/bind/bind.hpp>
 #include "each_tile_in_sight.h"
@@ -129,59 +130,22 @@ namespace wowpp
 		ILOG("Created instance of map " << m_mapEntry.id);
 	}
 
-	std::shared_ptr<GameUnit> WorldInstance::spawnCreature(
+	std::shared_ptr<GameCreature> WorldInstance::spawnCreature(
 		const UnitEntry &entry,
 		float x, float y, float z, float o,
 		float randomWalkRadius)
 	{
 		// Create the unit
-		auto spawned = std::make_shared<GameUnit>(
+		auto spawned = std::make_shared<GameCreature>(
 			m_manager.getTimerQueue(),
 			m_getRace,
 			m_getClass,
-			m_getLevel);
+			m_getLevel,
+			entry);
 		spawned->initialize();
 		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id, guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
 		spawned->setMapId(m_mapEntry.id);
 		spawned->relocate(x, y, z, o);
-
-		// Choose a level
-		UInt8 creatureLevel = entry.minLevel;
-		if (entry.maxLevel != entry.minLevel)
-		{
-			std::uniform_int_distribution<int> levelDistribution(entry.minLevel, entry.maxLevel);
-			creatureLevel = levelDistribution(randomGenerator);
-		}
-
-		// calculate interpolation factor
-		const float t =
-			(entry.maxLevel != entry.minLevel) ?
-				(creatureLevel - entry.minLevel) / (entry.maxLevel - entry.minLevel) :
-				0.0f;
-
-		// Randomize gender
-		std::uniform_int_distribution<int> genderDistribution(0, 1);
-		int gender = genderDistribution(randomGenerator);
-
-		spawned->setLevel(creatureLevel);
-		spawned->setClass(entry.unitClass);
-		spawned->setUInt32Value(object_fields::Entry, entry.id);
-		spawned->setFloatValue(object_fields::ScaleX, entry.scale);
-		spawned->setUInt32Value(unit_fields::FactionTemplate, entry.hordeFactionID);
-		spawned->setGender(static_cast<game::Gender>(gender));
-		spawned->setUInt32Value(unit_fields::DisplayId, (gender == game::gender::Male ? entry.maleModel : entry.femaleModel));
-		spawned->setUInt32Value(unit_fields::NativeDisplayId, (gender == game::gender::Male ? entry.maleModel : entry.femaleModel));
-		spawned->setUInt32Value(unit_fields::BaseHealth, 20);									//TODO
-		spawned->setUInt32Value(unit_fields::MaxHealth, interpolate(entry.minLevelHealth, entry.maxLevelHealth, t));
-		spawned->setUInt32Value(unit_fields::Health, spawned->getUInt32Value(unit_fields::MaxHealth));
-		spawned->setUInt32Value(unit_fields::MaxPower1, interpolate(entry.minLevelMana, entry.maxLevelMana, t));
-		spawned->setUInt32Value(unit_fields::Power1, spawned->getUInt32Value(unit_fields::MaxPower1));
-
-		spawned->setUInt32Value(unit_fields::UnitFlags, entry.unitFlags);
-		spawned->setUInt32Value(unit_fields::DynamicFlags, entry.dynamicFlags);
-		spawned->setUInt32Value(unit_fields::NpcFlags, entry.npcFlags);
-		spawned->setByteValue(unit_fields::Bytes2, 1, 16);
-		spawned->setByteValue(unit_fields::Bytes2, 0, 1);		// Sheath State: Melee weapon
 
 		return spawned;
 	}

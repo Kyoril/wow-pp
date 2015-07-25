@@ -36,6 +36,7 @@ namespace wowpp
 {
 	class WorldInstanceManager;
 	class GameUnit;
+	class GameCreature;
 
 	/// Manages one instance of a game world.
 	class WorldInstance final
@@ -72,7 +73,7 @@ namespace wowpp
 
 		/// Creates a new creature which will belong to this world instance. However,
 		/// the creature won't be spawned yet. This method is used by CreatureSpawner.
-		std::shared_ptr<GameUnit> spawnCreature(
+		std::shared_ptr<GameCreature> spawnCreature(
 			const UnitEntry &entry,
 			float x, float y, float z, float o,
 			float randomWalkRadius);
