@@ -58,6 +58,8 @@ namespace wowpp
 		, damageSchool(0)
 		, minLootGold(0)
 		, maxLootGold(0)
+		, xpMin(0)
+		, xpMax(0)
 	{
 		resistances.fill(0);
 	}
@@ -102,8 +104,11 @@ namespace wowpp
 		wrapper.table.tryGetInteger("unit_class", unitClass);
 		wrapper.table.tryGetInteger("min_loot_gold", minLootGold);
 		wrapper.table.tryGetInteger("max_loot_gold", maxLootGold);
-		wrapper.table.tryGetInteger("family", family);
 		MIN_MAX_CHECK(minLootGold, maxLootGold);
+		wrapper.table.tryGetInteger("family", family);
+		wrapper.table.tryGetInteger("min_xp", xpMin);
+		wrapper.table.tryGetInteger("max_xp", xpMax);
+		MIN_MAX_CHECK(xpMin, xpMax);
 
 #undef MIN_MAX_CHECK
 
@@ -141,5 +146,7 @@ namespace wowpp
 		if (minLootGold != 0) context.table.addKey("min_loot_gold", minLootGold);
 		if (maxLootGold != 0) context.table.addKey("max_loot_gold", maxLootGold);
 		if (family != 0) context.table.addKey("family", family);
+		if (xpMin != 0) context.table.addKey("min_xp", xpMin);
+		if (xpMax != 0) context.table.addKey("max_xp", xpMax);
 	}
 }

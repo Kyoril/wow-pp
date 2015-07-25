@@ -60,6 +60,7 @@ namespace wowpp
 		UInt32 rangedBaseAttackTime;	// ms
 		UInt32 damageSchool;
 		UInt32 minLootGold, maxLootGold;
+		UInt32 xpMin, xpMax;
 
 		UnitEntry();
 		bool load(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper);

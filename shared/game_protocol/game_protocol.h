@@ -190,6 +190,7 @@ namespace wowpp
 				AttackerStateUpdate			= 0x14A,
 				SpellEnergizeLog			= 0x151,
 				BindPointUpdate				= 0x155,
+				LogXPGain					= 0x1D0,
 				Pong						= 0x1DD,
 				AuthChallenge				= 0x1EC,
 				AuthResponse				= 0x1EE,
@@ -1013,6 +1014,14 @@ namespace wowpp
 				UInt32 spellId,
 				UInt32 maxDurationMS,
 				UInt32 durationMS
+				);
+
+			void logXPGain(
+				game::OutgoingPacket &out_packet,
+				UInt64 victimGUID,
+				UInt32 givenXP,
+				UInt32 restXP,
+				bool hasReferAFriendBonus
 				);
 		};
 	}

@@ -696,6 +696,28 @@ namespace wowpp
 		setFloatValue(character_fields::ModManaRegen, regen);
 	}
 
+	void GameCharacter::rewardExperience(GameUnit *victim, UInt32 experience)
+	{
+		// Get current experience points
+		UInt32 currentXP = getUInt32Value(character_fields::Xp);
+		UInt32 nextLevel = getUInt32Value(character_fields::NextLevelXp);
+		UInt32 level = getLevel();
+
+		UInt32 newXP = currentXP + experience;
+		while (newXP > nextLevel && nextLevel > 0)
+		{
+			// Calculate new XP amount
+			newXP -= nextLevel;
+			
+			// Level up!
+			setLevel(level + 1);
+			nextLevel = getUInt32Value(character_fields::NextLevelXp);
+		}
+
+		// Update amount of XP
+		setUInt32Value(character_fields::Xp, newXP);
+	}
+
 	io::Writer & operator<<(io::Writer &w, GameCharacter const& object)
 	{
 		w

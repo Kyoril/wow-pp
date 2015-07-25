@@ -1735,6 +1735,23 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void logXPGain(game::OutgoingPacket &out_packet, UInt64 victimGUID, UInt32 givenXP, UInt32 restXP, bool hasReferAFriendBonus)
+			{
+				out_packet.start(game::server_packet::LogXPGain);
+				out_packet
+					<< io::write<NetUInt32>(victimGUID)
+					<< io::write<NetUInt32>(givenXP + restXP)
+					<< io::write<NetUInt8>(victimGUID != 0 ? 1 : 0);
+				if (victimGUID != 0)
+				{
+					out_packet
+						<< io::write<NetUInt32>(givenXP)
+						<< io::write<float>(1.0f);
+				}
+				out_packet
+					<< io::write<NetUInt8>(hasReferAFriendBonus ? 1 : 0);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

@@ -417,6 +417,7 @@ namespace wowpp
 		boost::signals2::signal<void(Int32, UInt32)> proficiencyChanged;
 		boost::signals2::signal<void(game::InventoryChangeFailure, GameItem*, GameItem*)> inventoryChangeFailure;
 		boost::signals2::signal<void()> comboPointsChanged;
+		boost::signals2::signal<void(UInt64, UInt32, UInt32)> experienceGained;
 
 	public:
 
@@ -483,14 +484,14 @@ namespace wowpp
 		/// if target is a new target combo target. If a value of 0 is specified, the combo
 		/// points will be reset to zero.
 		void addComboPoints(UInt64 target, UInt8 points);
-
 		/// Determines whether the given slot is a valid slot in the specified bag.
 		bool isValidItemPos(UInt8 bag, UInt8 slot) const;
 		/// Swaps the items of two given slots.
 		void swapItem(UInt16 src, UInt16 dst);
 		/// Tries to get the item object at the given slot. May return nullptr!
 		GameItem *getItemByPos(UInt8 bag, UInt8 slot) const;
-
+		/// @copydoc GameUnit::rewardExperience()
+		void rewardExperience(GameUnit *victim, UInt32 experience) override;
 
 	protected:
 

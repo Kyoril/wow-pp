@@ -967,6 +967,11 @@ namespace wowpp
 		}
 	}
 
+	void GameUnit::rewardExperience(GameUnit *victim, UInt32 experience)
+	{
+		// Nothing to do here
+	}
+
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)
 	{
 		w << reinterpret_cast<GameObject const&>(object);
