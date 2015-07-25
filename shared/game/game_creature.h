@@ -60,9 +60,20 @@ namespace wowpp
 		/// have a valid base entry.
 		void setEntry(const UnitEntry &entry);
 
+	protected:
+
+		void onKilled(GameUnit *killer) override;
+
+	private:
+
+		float calcXpModifier(UInt32 attackerLevel) const;
+
 	private:
 
 		const UnitEntry &m_originalEntry;
 		const UnitEntry *m_entry;
 	};
+
+	UInt32 getZeroDiffXPValue(UInt32 killerLevel);
+	UInt32 getGrayLevel(UInt32 killerLevel);
 }

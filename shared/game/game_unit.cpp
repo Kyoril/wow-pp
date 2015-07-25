@@ -63,8 +63,6 @@ namespace wowpp
 			std::bind(&GameUnit::onAttackSwing, this));
 		m_regenCountdown.ended.connect(
 			std::bind(&GameUnit::onRegeneration, this));
-		killed.connect(
-			std::bind(&GameUnit::onKilled, this, std::placeholders::_1));
 	}
 
 	GameUnit::~GameUnit()
@@ -447,12 +445,6 @@ namespace wowpp
 	{
 		// Stop attacking our target
 		stopAttack();
-	}
-
-	void GameUnit::onKilled(GameUnit *killer)
-	{
-		// We were killed, setup despawn timer
-		triggerDespawnTimer(constants::OneSecond * 30);
 	}
 
 	void GameUnit::startRegeneration()
@@ -963,6 +955,8 @@ namespace wowpp
 
 		if (health == 0)
 		{
+			// Call function and signal
+			onKilled(attacker);
 			killed(attacker);
 		}
 	}
@@ -970,6 +964,12 @@ namespace wowpp
 	void GameUnit::rewardExperience(GameUnit *victim, UInt32 experience)
 	{
 		// Nothing to do here
+	}
+
+	void GameUnit::onKilled(GameUnit *killer)
+	{
+		// Despawn as soon as possible
+		triggerDespawnTimer(1);
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)

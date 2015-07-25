@@ -715,6 +715,7 @@ namespace wowpp
 		}
 
 		// Update amount of XP
+		experienceGained(victim ? victim->getGuid() : 0, experience, 0);
 		setUInt32Value(character_fields::Xp, newXP);
 	}
 

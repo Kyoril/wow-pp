@@ -89,4 +89,98 @@ namespace wowpp
 		}
 	}
 
+	void GameCreature::onKilled(GameUnit *killer)
+	{
+		if (killer)
+		{
+			// Reward the killer with experience points
+			const float t =
+				(m_entry->maxLevel != m_entry->minLevel) ?
+				(getLevel() - m_entry->minLevel) / (m_entry->maxLevel - m_entry->minLevel) :
+				0.0f;
+
+			// Base XP for equal level
+			UInt32 xp = interpolate(m_entry->xpMin, m_entry->xpMax, t);
+
+			// Level adjustment factor
+			const float levelXPMod = calcXpModifier(killer->getLevel());
+			xp *= levelXPMod;
+			if (xp > 0)
+			{
+				killer->rewardExperience(this, xp);
+			}
+		}
+
+		// Decide whether to despawn based on unit type
+		const bool isElite = (m_entry->rank > 0 && m_entry->rank < 4);
+		const bool isRare = (m_entry->rank == 4);
+
+		// Calculate despawn delay for rare mobs and elite mobs
+		GameTime despawnDelay = constants::OneSecond * 30;
+		if (isElite || isRare) despawnDelay = constants::OneMinute * 3;
+
+		// Despawn in 30 seconds
+		triggerDespawnTimer(despawnDelay);
+	}
+
+	float GameCreature::calcXpModifier(UInt32 attackerLevel) const
+	{
+		// No experience points
+		const UInt32 level = getLevel();
+		if (level < getGrayLevel(attackerLevel))
+			return 0.0f;
+
+		const UInt32 ZD = getZeroDiffXPValue(attackerLevel);
+		if (level < attackerLevel)
+		{
+			return (1.0f - (attackerLevel - level) / ZD);
+		}
+		else
+		{
+			return (1.0f + 0.05f * (level - attackerLevel));
+		}
+	}
+
+	UInt32 getZeroDiffXPValue(UInt32 killerLevel)
+	{
+		if (killerLevel < 8)
+			return 5;
+		else if (killerLevel < 10)
+			return 6;
+		else if (killerLevel < 12)
+			return 7;
+		else if (killerLevel < 16)
+			return 8;
+		else if (killerLevel < 20)
+			return 9;
+		else if (killerLevel < 30)
+			return 11;
+		else if (killerLevel < 40)
+			return 12;
+		else if (killerLevel < 45)
+			return 13;
+		else if (killerLevel < 50)
+			return 14;
+		else if (killerLevel < 55)
+			return 15;
+		else if (killerLevel < 60)
+			return 16;
+
+		return 17;
+	}
+
+	UInt32 getGrayLevel(UInt32 killerLevel)
+	{
+		if (killerLevel < 6)
+			return 0;
+		else if (killerLevel < 50)
+			return killerLevel - ::floor(killerLevel / 10) - 5;
+		else if (killerLevel == 50)
+			return killerLevel - 10;
+		else if (killerLevel < 60)
+			return killerLevel - ::floor(killerLevel / 5) - 1;
+		
+		return killerLevel - 9;
+	}
+
 }

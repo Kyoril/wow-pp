@@ -57,6 +57,8 @@ namespace wowpp
 			std::bind(&Player::onInventoryChangeFailure, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 		m_onComboPoints = m_character->comboPointsChanged.connect(
 			std::bind(&Player::onComboPointsChanged, this));
+		m_onXP = m_character->experienceGained.connect(
+			std::bind(&Player::onExperienceGained, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
 		// Trigger regeneration for our character
 		m_character->startRegeneration();
@@ -724,6 +726,12 @@ namespace wowpp
 	{
 		sendProxyPacket(
 			std::bind(game::server_write::updateComboPoints, std::placeholders::_1, m_character->getComboTarget(), m_character->getComboPoints()));
+	}
+
+	void Player::onExperienceGained(UInt64 victimGUID, UInt32 baseXP, UInt32 restXP)
+	{
+		sendProxyPacket(
+			std::bind(game::server_write::logXPGain, std::placeholders::_1, victimGUID, baseXP, restXP, false));	// TODO: Refer a friend support
 	}
 
 }

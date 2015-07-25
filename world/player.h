@@ -166,6 +166,8 @@ namespace wowpp
 		void onInventoryChangeFailure(game::InventoryChangeFailure failure, GameItem *itemA, GameItem *itemB);
 		/// Executed when the combo points of the character changed.
 		void onComboPointsChanged();
+		/// Executed when the character gained experience points.
+		void onExperienceGained(UInt64 victimGUID, UInt32 baseXP, UInt32 restXP);
 
 	private:
 
@@ -177,6 +179,6 @@ namespace wowpp
 		Countdown m_logoutCountdown;
 		WorldInstance &m_instance;
 		boost::signals2::scoped_connection m_onSpawn, m_onDespawn, m_onAtkSwingErr, onProfChanged, onInvFailure;
-		boost::signals2::scoped_connection m_onTileChange, m_onComboPoints;
+		boost::signals2::scoped_connection m_onTileChange, m_onComboPoints, m_onXP;
 	};
 }

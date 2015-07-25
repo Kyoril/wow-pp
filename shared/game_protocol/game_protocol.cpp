@@ -1739,7 +1739,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::LogXPGain);
 				out_packet
-					<< io::write<NetUInt32>(victimGUID)
+					<< io::write<NetUInt64>(victimGUID)
 					<< io::write<NetUInt32>(givenXP + restXP)
 					<< io::write<NetUInt8>(victimGUID != 0 ? 1 : 0);
 				if (victimGUID != 0)

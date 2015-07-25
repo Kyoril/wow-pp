@@ -429,6 +429,7 @@ namespace wowpp
 		virtual void updateManaRegen();
 		virtual void updateStats(UInt8 stat);
 		virtual void updateResistance(UInt8 resistance);
+		virtual void onKilled(GameUnit *killer);
 
 		float getHealthBonusFromStamina() const;
 		float getManaBonusFromIntellect() const;
@@ -439,7 +440,7 @@ namespace wowpp
 		void classUpdated();
 		void updateDisplayIds();
 		void onDespawnTimer();
-		void onKilled(GameUnit *killer);
+		
 		void onVictimKilled(GameUnit *killer);
 		void onVictimDespawned();
 		void onAttackSwing();
