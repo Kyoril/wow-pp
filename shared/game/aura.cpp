@@ -58,6 +58,16 @@ namespace wowpp
 		DLOG("Aura " << spell.name << ": Duration " << spell.duration << " / " << spell.maxDuration);
 	}
 
+	Aura::~Aura()
+	{
+		// Cancel countdowns (if running)
+		m_tickCountdown.cancel();
+		m_expireCountdown.cancel();
+
+		// Remove aura modifier from target
+		handleModifier(false);
+	}
+
 	void Aura::handleModNull(bool apply)
 	{
 		// Nothing to do here
@@ -373,4 +383,5 @@ namespace wowpp
 		m_tickCountdown.setEnd(
 			getCurrentTime() + m_effect.amplitude);
 	}
+
 }

@@ -626,6 +626,16 @@ namespace wowpp
 			return;
 		}
 
+		// Check if target is dead
+		UInt32 health = unitTarget->getUInt32Value(unit_fields::Health);
+		if (health == 0 && 
+			!(m_spell.attributesEx[2] & 0x00100000))
+		{
+			// Spell aura is not death persistant and thus can not be added
+			DLOG("Target is dead - can't apply aura");
+			return;
+		}
+
 		// Casting unit
 		GameUnit &caster = m_cast.getExecuter();
 

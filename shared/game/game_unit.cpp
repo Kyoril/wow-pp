@@ -927,7 +927,7 @@ namespace wowpp
 		aura->applyAura();
 
 		// Store
-		m_auras.emplace_back(std::move(aura));
+		m_auras.push_back(std::move(aura));
 
 		return true;
 	}
@@ -936,6 +936,19 @@ namespace wowpp
 	{
 		// TODO: Remove the aura
 		DLOG("AURA " << aura.getEffect().auraName << " EXPIRED");
+
+		// Remove aura
+		auto it = m_auras.begin();
+		while (it != m_auras.end())
+		{
+			if ((*it).get() == &aura)
+			{
+				it = m_auras.erase(it);
+				break;
+			}
+
+			++it;
+		}
 	}
 
 	void GameUnit::dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker)
@@ -968,8 +981,15 @@ namespace wowpp
 
 	void GameUnit::onKilled(GameUnit *killer)
 	{
-		// Despawn as soon as possible
-		triggerDespawnTimer(1);
+		// Remove all auras which are not death persistent
+		auto it = m_auras.begin();
+		while (it != m_auras.end())
+		{
+			if ((*it)->getSpell().attributesEx[2] & 0x00100000)
+				++it;
+			else
+				it = m_auras.erase(it);
+		}
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)

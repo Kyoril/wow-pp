@@ -44,6 +44,7 @@ namespace wowpp
 
 		/// Initializes a new instance of the Aura class.
 		explicit Aura(const SpellEntry &spell, const SpellEntry::Effect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target);
+		~Aura();
 
 		/// Gets the unit target.
 		GameUnit &getTarget() { return m_target; }

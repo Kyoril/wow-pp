@@ -91,6 +91,8 @@ namespace wowpp
 
 	void GameCreature::onKilled(GameUnit *killer)
 	{
+		GameUnit::onKilled(killer);
+
 		if (killer)
 		{
 			// Reward the killer with experience points
