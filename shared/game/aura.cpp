@@ -150,6 +150,9 @@ namespace wowpp
 			case aura::PeriodicHeal:
 				handlePeriodicHeal(apply);
 				break;
+			case aura::ModShapeShift:
+				handleModShapeShift(apply);
+				break;
 			default:
 				WLOG("Unhandled aura type: " << m_effect.auraName);
 				break;
@@ -397,6 +400,21 @@ namespace wowpp
 		if (newSlot != m_slot)
 		{
 			m_slot = newSlot;
+		}
+	}
+
+	void Aura::handleModShapeShift(bool apply)
+	{
+		// This effect is still todo
+
+		UInt8 form = m_effect.miscValueA;
+		if (apply)
+		{
+			m_target.setByteValue(unit_fields::Bytes2, 3, form);
+		}
+		else
+		{
+			m_target.setByteValue(unit_fields::Bytes2, 3, 0);
 		}
 	}
 
