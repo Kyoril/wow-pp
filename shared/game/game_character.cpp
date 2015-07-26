@@ -703,6 +703,10 @@ namespace wowpp
 		UInt32 nextLevel = getUInt32Value(character_fields::NextLevelXp);
 		UInt32 level = getLevel();
 
+		// Nothing to do here
+		if (nextLevel == 0)
+			return;
+
 		UInt32 newXP = currentXP + experience;
 		while (newXP > nextLevel && nextLevel > 0)
 		{
