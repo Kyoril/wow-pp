@@ -84,6 +84,8 @@ namespace wowpp
 		void handlePeriodicHeal(bool apply);
 		/// 
 		void handleModShapeShift(bool apply);
+		/// 
+		void handleModStealth(bool apply);
 
 	private:
 
