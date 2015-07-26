@@ -195,6 +195,7 @@ namespace wowpp
 
 	void GameUnit::setLevel(UInt8 level)
 	{
+		UInt32 prevLevel = getLevel();
 		setUInt32Value(unit_fields::Level, level);
 
 		// Get level information
@@ -203,6 +204,42 @@ namespace wowpp
 		
 		// Level info changed
 		levelChanged(*levelInfo);
+
+		// Get old level information
+		const auto *oldLevel = m_getLevel(prevLevel);
+		if (oldLevel)
+		{
+			const auto raceIt = levelInfo->stats.find(getRace());
+			if (raceIt == levelInfo->stats.end()) return;
+			const auto classIt = raceIt->second.find(getClass());
+			if (classIt == raceIt->second.end()) return;
+
+			const auto raceItOld = oldLevel->stats.find(getRace());
+			if (raceItOld == oldLevel->stats.end()) return;
+			const auto classItOld = raceItOld->second.find(getClass());
+			if (classItOld == raceItOld->second.end()) return;
+
+			// Calculate difference
+			const LevelEntry::StatArray &oldStats = classItOld->second;
+			const LevelEntry::StatArray &newStats = classIt->second;
+
+			auto &levelBaseValues = getClassEntry()->levelBaseValues;
+			auto oldBase = levelBaseValues.find(prevLevel);
+			auto newBase = levelBaseValues.find(level);
+			if (oldBase == levelBaseValues.end() || newBase == levelBaseValues.end())
+				return;
+
+			// Fire signal
+			levelGained(
+				prevLevel,
+				newBase->second.health - oldBase->second.health,
+				newBase->second.mana - oldBase->second.mana,
+				newStats[0] - oldStats[0],
+				newStats[1] - oldStats[1],
+				newStats[2] - oldStats[2],
+				newStats[3] - oldStats[3],
+				newStats[4] - oldStats[4]);
+		}
 	}
 
 	void GameUnit::levelChanged(const LevelEntry &levelInfo)
@@ -1025,8 +1062,6 @@ namespace wowpp
 		// Check if we need to trigger auto attack again
 		if (m_victim)
 		{
-			DLOG("Continue with auto attack spell!");
-
 			m_lastAttackSwing = getCurrentTime();
 			GameTime nextAttackSwing = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
 			m_attackSwingCountdown.setEnd(nextAttackSwing);

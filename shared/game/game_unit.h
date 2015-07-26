@@ -317,6 +317,8 @@ namespace wowpp
 		boost::signals2::signal<void(AttackSwingError)> autoAttackError;
 		/// Fired when a spell cast error occurred.
 		boost::signals2::signal<void(const SpellEntry &, game::SpellCastResult)> spellCastError;
+		/// Fired when the unit level changed.
+		boost::signals2::signal<void(UInt32, Int32, Int32, Int32, Int32, Int32, Int32, Int32)> levelGained;
 
 	public:
 

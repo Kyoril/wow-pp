@@ -170,6 +170,8 @@ namespace wowpp
 		void onExperienceGained(UInt64 victimGUID, UInt32 baseXP, UInt32 restXP);
 		/// Executed when a spell cast error occurred.
 		void onSpellCastError(const SpellEntry &spell, game::SpellCastResult result);
+		/// Executed when the character leveled up.
+		void onLevelGained(UInt32 previousLevel, Int32 healthDiff, Int32 manaDiff, Int32 statDiff0, Int32 statDiff1, Int32 statDiff2, Int32 statDiff3, Int32 statDiff4);
 
 	private:
 
@@ -181,6 +183,6 @@ namespace wowpp
 		Countdown m_logoutCountdown;
 		WorldInstance &m_instance;
 		boost::signals2::scoped_connection m_onSpawn, m_onDespawn, m_onAtkSwingErr, m_onProfChanged, m_onInvFailure;
-		boost::signals2::scoped_connection m_onTileChange, m_onComboPoints, m_onXP, m_onCastError;
+		boost::signals2::scoped_connection m_onTileChange, m_onComboPoints, m_onXP, m_onCastError, m_onGainLevel;
 	};
 }

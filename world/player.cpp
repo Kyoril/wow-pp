@@ -61,6 +61,9 @@ namespace wowpp
 			std::bind(&Player::onExperienceGained, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 		m_onCastError = m_character->spellCastError.connect(
 			std::bind(&Player::onSpellCastError, this, std::placeholders::_1, std::placeholders::_2));
+		m_onGainLevel = m_character->levelGained.connect(
+			std::bind(&Player::onLevelGained, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, 
+													std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, std::placeholders::_8));
 
 		// Trigger regeneration for our character
 		m_character->startRegeneration();
@@ -740,6 +743,23 @@ namespace wowpp
 	{
 		sendProxyPacket(
 			std::bind(game::server_write::castFailed, std::placeholders::_1, result, std::cref(spell), 0));
+	}
+
+	void Player::onLevelGained(UInt32 previousLevel, Int32 healthDiff, Int32 manaDiff, Int32 statDiff0, Int32 statDiff1, Int32 statDiff2, Int32 statDiff3, Int32 statDiff4)
+	{
+		UInt32 level = getCharacter()->getLevel();
+		sendProxyPacket(
+			std::bind(game::server_write::levelUpInfo, 
+				std::placeholders::_1, 
+				level,
+				healthDiff,
+				manaDiff,
+				statDiff0,
+				statDiff1,
+				statDiff2,
+				statDiff3,
+				statDiff4)
+			);
 	}
 
 }
