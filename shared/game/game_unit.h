@@ -318,7 +318,11 @@ namespace wowpp
 		/// Fired when a spell cast error occurred.
 		boost::signals2::signal<void(const SpellEntry &, game::SpellCastResult)> spellCastError;
 		/// Fired when the unit level changed.
+		/// Parameters: Previous Level, Health gained, Mana gained, Stats gained (all 5 stats)
 		boost::signals2::signal<void(UInt32, Int32, Int32, Int32, Int32, Int32, Int32, Int32)> levelGained;
+		/// Fired when some aura information was updated.
+		/// Parameters: Slot, Spell-ID, Duration (ms), Max Duration (ms)
+		boost::signals2::signal<void(UInt8, UInt32, Int32, Int32)> auraUpdated;
 
 	public:
 

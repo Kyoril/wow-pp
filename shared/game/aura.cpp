@@ -44,6 +44,7 @@ namespace wowpp
 		, m_isPeriodic(false)
 		, m_expired(false)
 		, m_attackerLevel(caster.getLevel())
+		, m_slot(0xFF)
 	{
 		// Subscribe to caster despawn event so that we don't hold an invalid pointer
 		m_casterDespawned = caster.despawned.connect(
@@ -163,6 +164,7 @@ namespace wowpp
 		// Apply last tick if periodic
 		if (m_isPeriodic)
 		{
+			DLOG("Tick on expired!");
 			onTick();
 		}
 
@@ -327,6 +329,9 @@ namespace wowpp
 		if (!apply)
 			return;
 
+		// Toggle periodic flag
+		m_isPeriodic = true;
+
 		// First tick at apply
 		if (m_spell.attributesEx[4] & 0x00000200)
 		{
@@ -344,6 +349,9 @@ namespace wowpp
 	{
 		if (!apply)
 			return;
+
+		// Toggle periodic flag
+		m_isPeriodic = true;
 
 		// First tick at apply
 		if (m_spell.attributesEx[4] & 0x00000200)
@@ -382,6 +390,14 @@ namespace wowpp
 		// Start timer
 		m_tickCountdown.setEnd(
 			getCurrentTime() + m_effect.amplitude);
+	}
+
+	void Aura::setSlot(UInt8 newSlot)
+	{
+		if (newSlot != m_slot)
+		{
+			m_slot = newSlot;
+		}
 	}
 
 }

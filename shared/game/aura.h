@@ -58,6 +58,10 @@ namespace wowpp
 		bool isPassive() const { return (m_spell.attributes & spell_attributes::Passive) != 0; }
 		/// Determines whether this is a positive spell aura.
 		bool isPositive() const;
+		/// Gets the current aura slot.
+		UInt8 getSlot() const { return m_slot; }
+		/// Sets the new aura slot to be used.
+		void setSlot(UInt8 newSlot);
 
 		/// Gets the spell which created this aura and hold's it's values.
 		const SpellEntry &getSpell() const { return m_spell; }
@@ -105,5 +109,6 @@ namespace wowpp
 		bool m_isPeriodic;
 		bool m_expired;
 		UInt32 m_attackerLevel;		// Needed for damage calculation
+		UInt8 m_slot;
 	};
 }

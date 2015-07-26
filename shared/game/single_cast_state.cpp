@@ -193,12 +193,20 @@ namespace wowpp
 		
 		if (success)
 		{
+			// Instead of self-targeting, use unit target
+			SpellTargetMap targetMap = m_target;
+			if (targetMap.getTargetMap() == game::spell_cast_target_flags::Self)
+			{
+				targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+				targetMap.m_unitTarget = executer.getGuid();
+			}
+
 			sendPacketFromCaster(executer,
 				std::bind(game::server_write::spellGo, std::placeholders::_1,
 				executer.getGuid(),
 				executer.getGuid(),
 				std::cref(m_spell),
-				std::cref(m_target),
+				std::cref(targetMap),
 				game::spell_cast_flags::Unknown3));
 		}
 		else

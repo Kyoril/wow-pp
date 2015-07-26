@@ -64,6 +64,9 @@ namespace wowpp
 		m_onGainLevel = m_character->levelGained.connect(
 			std::bind(&Player::onLevelGained, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, 
 													std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, std::placeholders::_8));
+		m_onAuraUpdate = m_character->auraUpdated.connect(
+			std::bind(&Player::onAuraUpdated, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+
 
 		// Trigger regeneration for our character
 		m_character->startRegeneration();
@@ -760,6 +763,15 @@ namespace wowpp
 				statDiff3,
 				statDiff4)
 			);
+	}
+
+	void Player::onAuraUpdated(UInt8 slot, UInt32 spellId, Int32 duration, Int32 maxDuration)
+	{
+		sendProxyPacket(
+			std::bind(game::server_write::updateAuraDuration, std::placeholders::_1, slot, duration));
+
+		sendProxyPacket(
+			std::bind(game::server_write::setExtraAuraInfo, std::placeholders::_1, getCharacterGuid(), slot, spellId, maxDuration, duration));
 	}
 
 }

@@ -988,6 +988,82 @@ namespace wowpp
 	{
 		// TODO: Check aura stack system etc.
 
+		// Find the new aura slot to be used
+		UInt8 newSlot = 0xFF;
+		bool isReplacement = false;
+		for (auto it = m_auras.begin(); it != m_auras.end(); ++it)
+		{
+			// Same spell and same caster - don't stack!
+			auto &a = *it;
+			if (a->getCaster() == aura->getCaster() &&
+				a->getSpell().id == aura->getSpell().id)
+			{
+				newSlot = a->getSlot();
+				isReplacement = true;
+
+				// Replace old aura instance
+				if (a->getEffect().auraName == aura->getEffect().auraName)
+				{
+					// Remove aura - new aura will be added
+					it = m_auras.erase(it);
+				}
+				break;
+			}
+		}
+
+		if (!aura->isPassive() || (aura->getSpell().attributesEx[2] & 0x10000000))
+		{
+			if (!isReplacement)
+			{
+				if (aura->isPositive())
+				{
+					for (UInt8 i = 0; i < 40; ++i)
+					{
+						if (getUInt32Value(unit_fields::Aura + i) == 0)
+						{
+							newSlot = i;
+							break;
+						}
+					}
+				}
+				else
+				{
+					for (UInt8 i = 40; i < 56; ++i)
+					{
+						if (getUInt32Value(unit_fields::Aura + i) == 0)
+						{
+							newSlot = i;
+							break;
+						}
+					}
+				}
+			}
+
+			if (newSlot != 0xFF)
+			{
+				aura->setSlot(newSlot);
+				setUInt32Value(unit_fields::Aura + newSlot, aura->getSpell().id);
+
+				UInt32 index = newSlot / 4;
+				UInt32 byte = (newSlot % 4) * 8;
+				UInt32 val = getUInt32Value(unit_fields::AuraLevels + index);
+				val &= ~(0xFF << byte);
+				val |= ((aura->getCaster() ? aura->getCaster()->getLevel() : 70) << byte);
+				setUInt32Value(unit_fields::AuraLevels + index, val);
+
+				val = getUInt32Value(unit_fields::AuraFlags + index);
+				val &= ~(0xFF << byte);
+				if (aura->isPositive())
+					val |= (UInt32(31) << byte);
+				else
+					val |= (UInt32(9) << byte);
+				setUInt32Value(unit_fields::AuraFlags + index, val);
+
+				// Notify caster
+				auraUpdated(newSlot, aura->getSpell().id, aura->getSpell().duration, aura->getSpell().maxDuration);
+			}
+		}
+
 		// Remove aura on expiration
 		aura->expired.connect(
 			std::bind(&GameUnit::onAuraExpired, this, std::placeholders::_1));
@@ -1012,6 +1088,25 @@ namespace wowpp
 		{
 			if ((*it).get() == &aura)
 			{
+				const auto slot = aura.getSlot();
+				if (slot != 0xFF)
+				{
+					if (getUInt32Value(unit_fields::Aura + slot) == aura.getSpell().id)
+					{
+						setUInt32Value(unit_fields::Aura + slot, 0);
+						
+						UInt32 index = slot / 4;
+						UInt32 byte = (slot % 4) * 8;
+						UInt32 val = getUInt32Value(unit_fields::AuraLevels + index);
+						val &= ~(0xFF << byte);
+						setUInt32Value(unit_fields::AuraLevels + index, val);
+
+						val = getUInt32Value(unit_fields::AuraFlags + index);
+						val &= ~(0xFF << byte);
+						setUInt32Value(unit_fields::AuraFlags + index, val);
+					}
+				}
+				
 				it = m_auras.erase(it);
 				break;
 			}
@@ -1057,7 +1152,30 @@ namespace wowpp
 			if ((*it)->getSpell().attributesEx[2] & 0x00100000)
 				++it;
 			else
+			{
+				auto &aura = *it;
+				const auto slot = aura->getSlot();
+				if (slot != 0xFF)
+				{
+					if (getUInt32Value(unit_fields::Aura + slot) == aura->getSpell().id)
+					{
+						setUInt32Value(unit_fields::Aura + slot, 0);
+
+						UInt32 index = slot / 4;
+						UInt32 byte = (slot % 4) * 8;
+						UInt32 val = getUInt32Value(unit_fields::AuraLevels + index);
+						val &= ~(0xFF << byte);
+						setUInt32Value(unit_fields::AuraLevels + index, val);
+
+						val = getUInt32Value(unit_fields::AuraFlags + index);
+						val &= ~(0xFF << byte);
+						setUInt32Value(unit_fields::AuraFlags + index, val);
+					}
+				}
+
 				it = m_auras.erase(it);
+			}
+				
 		}
 	}
 
