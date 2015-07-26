@@ -451,6 +451,7 @@ namespace wowpp
 		void regenerateHealth();
 		void regeneratePower(PowerType power);
 		void onAuraExpired(Aura &aura);
+		void onSpellCastEnded(bool succeeded);
 
 	private:
 

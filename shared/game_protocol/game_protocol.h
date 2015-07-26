@@ -192,6 +192,7 @@ namespace wowpp
 				BindPointUpdate				= 0x155,
 				LogXPGain					= 0x1D0,
 				Pong						= 0x1DD,
+				LevelUpInfo					= 0x1D4,
 				AuthChallenge				= 0x1EC,
 				AuthResponse				= 0x1EE,
 				CompressedUpdateObject		= 0x1F6,
@@ -1022,6 +1023,18 @@ namespace wowpp
 				UInt32 givenXP,
 				UInt32 restXP,
 				bool hasReferAFriendBonus
+				);
+
+			void levelUpInfo(
+				game::OutgoingPacket &out_packet,
+				UInt32 level,
+				Int32 healthGained,
+				Int32 manaGained,
+				Int32 strengthGained,
+				Int32 agilityGained,
+				Int32 staminaGained,
+				Int32 intellectGained,
+				Int32 spiritGained
 				);
 		};
 	}

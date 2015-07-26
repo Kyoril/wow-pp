@@ -240,9 +240,10 @@ namespace wowpp
 		{
 			if (!(spell.attributesEx[1] & 0x00020000))
 			{
-				m_lastAttackSwing = getCurrentTime();
-				GameTime nextAttackSwing = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
-				m_attackSwingCountdown.setEnd(nextAttackSwing);
+				// Pause auto attack during spell cast
+				m_attackSwingCountdown.cancel();
+				result.second->ended.connect(
+					std::bind(&GameUnit::onSpellCastEnded, this, std::placeholders::_1));
 			}
 		}
 	}
@@ -1017,6 +1018,19 @@ namespace wowpp
 	{
 		float reach = getFloatValue(unit_fields::CombatReach);
 		return reach > 2.0f ? reach : 2.0f;
+	}
+
+	void GameUnit::onSpellCastEnded(bool succeeded)
+	{
+		// Check if we need to trigger auto attack again
+		if (m_victim)
+		{
+			DLOG("Continue with auto attack spell!");
+
+			m_lastAttackSwing = getCurrentTime();
+			GameTime nextAttackSwing = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
+			m_attackSwingCountdown.setEnd(nextAttackSwing);
+		}
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)

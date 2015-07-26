@@ -1752,6 +1752,25 @@ namespace wowpp
 					<< io::write<NetUInt8>(0);
 				out_packet.finish();
 			}
+
+			void levelUpInfo(game::OutgoingPacket &out_packet, UInt32 level, Int32 healthGained, Int32 manaGained, Int32 strengthGained, Int32 agilityGained, Int32 staminaGained, Int32 intellectGained, Int32 spiritGained)
+			{
+				out_packet.start(game::server_packet::LevelUpInfo);
+				out_packet
+					<< io::write<NetUInt32>(level)
+					<< io::write<NetInt32>(healthGained)
+					<< io::write<NetInt32>(manaGained)
+					<< io::write<NetUInt32>(0)
+					<< io::write<NetUInt32>(0)
+					<< io::write<NetUInt32>(0)
+					<< io::write<NetUInt32>(0)
+					<< io::write<NetInt32>(strengthGained)
+					<< io::write<NetInt32>(agilityGained)
+					<< io::write<NetInt32>(staminaGained)
+					<< io::write<NetInt32>(intellectGained)
+					<< io::write<NetInt32>(spiritGained);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
