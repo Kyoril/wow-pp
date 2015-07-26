@@ -708,7 +708,7 @@ namespace wowpp
 			return;
 
 		UInt32 newXP = currentXP + experience;
-		while (newXP > nextLevel && nextLevel > 0)
+		while (newXP >= nextLevel && nextLevel > 0)
 		{
 			// Calculate new XP amount
 			newXP -= nextLevel;
