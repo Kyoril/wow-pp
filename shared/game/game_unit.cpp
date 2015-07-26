@@ -274,14 +274,23 @@ namespace wowpp
 		// Reset auto attack timer if requested
 		if (result.first == game::spell_cast_result::CastOkay &&
 			m_attackSwingCountdown.running &&
-			castTime > 0)
+			result.second != nullptr)
 		{
 			if (!(spell.attributesEx[0] & spell_attributes_ex_a::NotResetSwingTimer))
 			{
-				// Pause auto attack during spell cast
-				m_attackSwingCountdown.cancel();
-				result.second->ended.connect(
-					std::bind(&GameUnit::onSpellCastEnded, this, std::placeholders::_1));
+				// Register for casts ended-event
+				if (castTime > 0)
+				{
+					// Pause auto attack during spell cast
+					m_attackSwingCountdown.cancel();
+					result.second->ended.connect(
+						std::bind(&GameUnit::onSpellCastEnded, this, std::placeholders::_1));
+				}
+				else
+				{
+					// Cast already finished since it was an instant cast
+					onSpellCastEnded(true);
+				}
 			}
 		}
 	}
@@ -1063,6 +1072,8 @@ namespace wowpp
 		// Check if we need to trigger auto attack again
 		if (m_victim)
 		{
+			DLOG("Restart swing timer");
+
 			m_lastAttackSwing = getCurrentTime();
 			GameTime nextAttackSwing = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
 			m_attackSwingCountdown.setEnd(nextAttackSwing);
