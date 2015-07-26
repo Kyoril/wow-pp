@@ -317,7 +317,7 @@ namespace wowpp
 			character->addSpell(*spell);
 
 			// If this is a passive spell, cast it (TODO: Move this to some other place?)
-			if (spell->attributes & 0x40)
+			if (spell->attributes & spell_attributes::Passive)
 			{
 				// Create target map
 				character->castSpell(target, *spell, 0, GameUnit::SpellSuccessCallback());

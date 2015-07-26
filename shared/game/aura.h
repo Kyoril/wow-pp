@@ -55,7 +55,7 @@ namespace wowpp
 		/// Executes the aura modifier and applies or removes the aura effects to/from the target.
 		void handleModifier(bool apply);
 		/// Determines whether this is a passive spell aura.
-		bool isPassive() const { return (m_spell.attributes & 0x40) != 0; }
+		bool isPassive() const { return (m_spell.attributes & spell_attributes::Passive) != 0; }
 		/// Determines whether this is a positive spell aura.
 		bool isPositive() const;
 

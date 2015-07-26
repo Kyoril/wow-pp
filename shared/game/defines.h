@@ -1568,5 +1568,7 @@ namespace wowpp
 		}
 
 		typedef area_aura_type::Type AreaAuraType;
+
+		
 	}
 }

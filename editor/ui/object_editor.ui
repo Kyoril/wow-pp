@@ -43,7 +43,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="usesScrollButtons">
        <bool>true</bool>
@@ -309,7 +309,7 @@
             <item>
              <widget class="QTabWidget" name="attributeTabs">
               <property name="currentIndex">
-               <number>0</number>
+               <number>1</number>
               </property>
               <widget class="QWidget" name="attributeTab">
                <attribute name="title">
@@ -889,7 +889,7 @@
                    <bool>false</bool>
                   </property>
                   <property name="text">
-                   <string>UNKNOWN_12</string>
+                   <string>NOT_RESET_SWING_TIMER</string>
                   </property>
                  </widget>
                 </item>

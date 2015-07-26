@@ -100,15 +100,78 @@ namespace wowpp
 
 	typedef spell_attributes::Type SpellAttributes;
 
-	namespace spell_attributes_ex
+	namespace spell_attributes_ex_a
 	{
 		enum Type
 		{
-			Unknown_0				= 0x00000001
+			/// 
+			DismissPet				= 0x00000001,
+			/// 
+			DrainAllPower			= 0x00000002,
+			/// 
+			Channeled_1				= 0x00000004,
+			/// 
+			CantBeRedirected		= 0x00000008,
+			/// 
+			Unknown_1				= 0x00000010,
+			/// 
+			NotBreakStealth			= 0x00000020,
+			/// 
+			Channeled_2				= 0x00000040,
+			/// 
+			CantBeReflected			= 0x00000080,
+			/// 
+			TargetNotInCombat		= 0x00000100,
+			/// 
+			MeleeCombatStart		= 0x00000200,
+			/// 
+			NoThreat				= 0x00000400,
+			/// 
+			Unknown_3				= 0x00000800,
+			/// 
+			PickPocket				= 0x00001000,
+			/// 
+			FarSight				= 0x00002000,
+			/// 
+			ChannelTrackTarget		= 0x00004000,
+			/// 
+			DispelAurasOnImmunity	= 0x00008000,
+			/// 
+			UnaffectedByImmunity	= 0x00010000,
+			/// 
+			NoPetAutoCast			= 0x00020000,
+			/// 
+			Unknown_5				= 0x00040000,
+			/// 
+			CantTargetSelf			= 0x00080000,
+			/// 
+			ReqComboPoints_1		= 0x00100000,
+			/// 
+			Unknown_7				= 0x00200000,
+			/// 
+			ReqComboPoints_2		= 0x00400000,
+			/// 
+			Unknown_8				= 0x00800000,
+			/// 
+			IsFishing				= 0x01000000,
+			/// 
+			Unknown_10				= 0x02000000,
+			/// 
+			Unknown_11				= 0x04000000,
+			/// 
+			NotResetSwingTimer		= 0x08000000,
+			/// 
+			DontDisplayInAuraBar	= 0x10000000,
+			/// 
+			ChannelDisplaySpellName = 0x20000000,
+			/// 
+			EnableAtDodge			= 0x40000000,
+			/// 
+			Unknown_16				= 0x80000000
 		};
 	}
 
-	typedef spell_attributes_ex::Type SpellAttributesEx;
+	typedef spell_attributes_ex_a::Type SpellAttributesExA;
 
 	struct DataLoadContext;
 	struct SkillEntry;

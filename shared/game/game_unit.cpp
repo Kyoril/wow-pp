@@ -273,9 +273,10 @@ namespace wowpp
 
 		// Reset auto attack timer if requested
 		if (result.first == game::spell_cast_result::CastOkay &&
-			m_attackSwingCountdown.running)
+			m_attackSwingCountdown.running &&
+			castTime > 0)
 		{
-			if (!(spell.attributesEx[1] & 0x00020000))
+			if (!(spell.attributesEx[0] & spell_attributes_ex_a::NotResetSwingTimer))
 			{
 				// Pause auto attack during spell cast
 				m_attackSwingCountdown.cancel();

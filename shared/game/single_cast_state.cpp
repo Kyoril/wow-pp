@@ -92,7 +92,7 @@ namespace wowpp
 		auto const targetId = target.getUnitTarget();
 		auto const spellId = spell.id;
 
-		if (worldInstance && !(m_spell.attributes & 0x40))
+		if (worldInstance && !(m_spell.attributes & spell_attributes::Passive))
 		{
 			sendPacketFromCaster(executer,
 				std::bind(game::server_write::spellStart, std::placeholders::_1,
@@ -186,7 +186,7 @@ namespace wowpp
 	{
 		auto &executer = m_cast.getExecuter();
 		auto *worldInstance = executer.getWorldInstance();
-		if (!worldInstance || m_spell.attributes & 0x40)
+		if (!worldInstance || m_spell.attributes & spell_attributes::Passive)
 		{
 			return;
 		}
@@ -333,14 +333,14 @@ namespace wowpp
 		}
 
 		// Consume combo points if required
-		if ((m_spell.attributesEx[0] & 0x00100000) && character)
+		if ((m_spell.attributesEx[0] & spell_attributes_ex_a::ReqComboPoints_1) && character)
 		{
 			// 0 will reset combo points
 			character->addComboPoints(0, 0);
 		}
 
 		// Start auto attack if required
-		if (m_spell.attributesEx[0] & 0x00000200)
+		if (m_spell.attributesEx[0] & spell_attributes_ex_a::MeleeCombatStart)
 		{
 			GameUnit *attackTarget = nullptr;
 			if (m_target.hasUnitTarget())
