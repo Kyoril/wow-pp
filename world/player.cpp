@@ -49,16 +49,18 @@ namespace wowpp
 			std::bind(&Player::onDespawn, this));
 		m_onTileChange = m_character->tileChangePending.connect(
 			std::bind(&Player::onTileChangePending, this, std::placeholders::_1, std::placeholders::_2));
-		onProfChanged = m_character->proficiencyChanged.connect(
+		m_onProfChanged = m_character->proficiencyChanged.connect(
 			std::bind(&Player::onProficiencyChanged, this, std::placeholders::_1, std::placeholders::_2));
 		m_onAtkSwingErr = m_character->autoAttackError.connect(
 			std::bind(&Player::onAttackSwingError, this, std::placeholders::_1));
-		onInvFailure = m_character->inventoryChangeFailure.connect(
+		m_onInvFailure = m_character->inventoryChangeFailure.connect(
 			std::bind(&Player::onInventoryChangeFailure, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 		m_onComboPoints = m_character->comboPointsChanged.connect(
 			std::bind(&Player::onComboPointsChanged, this));
 		m_onXP = m_character->experienceGained.connect(
 			std::bind(&Player::onExperienceGained, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+		m_onCastError = m_character->spellCastError.connect(
+			std::bind(&Player::onSpellCastError, this, std::placeholders::_1, std::placeholders::_2));
 
 		// Trigger regeneration for our character
 		m_character->startRegeneration();
@@ -732,6 +734,12 @@ namespace wowpp
 	{
 		sendProxyPacket(
 			std::bind(game::server_write::logXPGain, std::placeholders::_1, victimGUID, baseXP, restXP, false));	// TODO: Refer a friend support
+	}
+
+	void Player::onSpellCastError(const SpellEntry &spell, game::SpellCastResult result)
+	{
+		sendProxyPacket(
+			std::bind(game::server_write::castFailed, std::placeholders::_1, result, std::cref(spell), 0));
 	}
 
 }

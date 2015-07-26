@@ -233,6 +233,18 @@ namespace wowpp
 		{
 			callback(result.first);
 		}
+
+		// Reset auto attack timer if requested
+		if (result.first == game::spell_cast_result::CastOkay &&
+			m_attackSwingCountdown.running)
+		{
+			if (!(spell.attributesEx[1] & 0x00020000))
+			{
+				m_lastAttackSwing = getCurrentTime();
+				GameTime nextAttackSwing = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
+				m_attackSwingCountdown.setEnd(nextAttackSwing);
+			}
+		}
 	}
 
 	void GameUnit::onDespawnTimer()

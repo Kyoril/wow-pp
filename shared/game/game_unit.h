@@ -315,6 +315,8 @@ namespace wowpp
 		/// Fired when an auto attack error occurred. Used in World Node by the Player class to
 		/// send network packets based on the error code.
 		boost::signals2::signal<void(AttackSwingError)> autoAttackError;
+		/// Fired when a spell cast error occurred.
+		boost::signals2::signal<void(const SpellEntry &, game::SpellCastResult)> spellCastError;
 
 	public:
 

@@ -168,6 +168,8 @@ namespace wowpp
 		void onComboPointsChanged();
 		/// Executed when the character gained experience points.
 		void onExperienceGained(UInt64 victimGUID, UInt32 baseXP, UInt32 restXP);
+		/// Executed when a spell cast error occurred.
+		void onSpellCastError(const SpellEntry &spell, game::SpellCastResult result);
 
 	private:
 
@@ -178,7 +180,7 @@ namespace wowpp
 		std::shared_ptr<GameCharacter> m_character;
 		Countdown m_logoutCountdown;
 		WorldInstance &m_instance;
-		boost::signals2::scoped_connection m_onSpawn, m_onDespawn, m_onAtkSwingErr, onProfChanged, onInvFailure;
-		boost::signals2::scoped_connection m_onTileChange, m_onComboPoints, m_onXP;
+		boost::signals2::scoped_connection m_onSpawn, m_onDespawn, m_onAtkSwingErr, m_onProfChanged, m_onInvFailure;
+		boost::signals2::scoped_connection m_onTileChange, m_onComboPoints, m_onXP, m_onCastError;
 	};
 }

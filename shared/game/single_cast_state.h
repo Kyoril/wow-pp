@@ -73,6 +73,7 @@ namespace wowpp
 		std::shared_ptr<char> m_isAlive;
 		boost::signals2::scoped_connection m_onTargetDied, m_onTargetRemoved;
 		boost::signals2::scoped_connection m_onUserDamaged, m_onUserMoved;
+		float m_x, m_y, m_z;
 
 		void sendEndCast(bool success);
 		void onCastFinished();

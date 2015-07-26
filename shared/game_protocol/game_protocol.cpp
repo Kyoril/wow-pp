@@ -1741,7 +1741,7 @@ namespace wowpp
 				out_packet
 					<< io::write<NetUInt64>(victimGUID)
 					<< io::write<NetUInt32>(givenXP + restXP)
-					<< io::write<NetUInt8>(victimGUID != 0 ? 1 : 0);
+					<< io::write<NetUInt8>(victimGUID != 0 ? 0 : 1);
 				if (victimGUID != 0)
 				{
 					out_packet
@@ -1749,7 +1749,7 @@ namespace wowpp
 						<< io::write<float>(1.0f);
 				}
 				out_packet
-					<< io::write<NetUInt8>(hasReferAFriendBonus ? 1 : 0);
+					<< io::write<NetUInt8>(0);
 				out_packet.finish();
 			}
 		}

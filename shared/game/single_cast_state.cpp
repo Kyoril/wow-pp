@@ -105,6 +105,9 @@ namespace wowpp
 				0));
 		}
 
+		float o = 0.0f;
+		m_cast.getExecuter().getLocation(m_x, m_y, m_z, o);
+
 		m_countdown.ended.connect([this]()
 		{
 			this->onCastFinished();
@@ -132,7 +135,6 @@ namespace wowpp
 		if (!m_hasFinished &&
 			!doReplacePreviousCast)
 		{
-			WLOG("SPELL CAST IS STILL IN PROGRESS!");
 			return std::make_pair(game::spell_cast_result::FailedSpellInProgress, &m_casting);
 		}
 
@@ -168,10 +170,15 @@ namespace wowpp
 
 	void SingleCastState::onUserStartsMoving()
 	{
-		// Interrupt spell cast if moving
 		if (!m_hasFinished)
 		{
-			stopCast();
+			// Interrupt spell cast if moving
+			float x, y, z, o = 0.0f;
+			m_cast.getExecuter().getLocation(x, y, z, o);
+			if (x != m_x || y != m_y || z != m_z)
+			{
+				stopCast();
+			}
 		}
 	}
 
@@ -217,7 +224,33 @@ namespace wowpp
 			character = dynamic_cast<GameCharacter*>(&m_cast.getExecuter());
 		}
 
-		// TODO: We need to check some conditions now
+		// Check facing again (we could have moved during the spell cast)
+		if (m_spell.facing & 0x01)
+		{
+			const auto *world = m_cast.getExecuter().getWorldInstance();
+			if (world)
+			{
+				GameUnit *unitTarget = nullptr;
+				m_target.resolvePointers(*m_cast.getExecuter().getWorldInstance(), &unitTarget, nullptr, nullptr, nullptr);
+
+				if (unitTarget)
+				{
+					float x, y, z, o;
+					unitTarget->getLocation(x, y, z, o);
+
+					// 120 degree field of view
+					if (!m_cast.getExecuter().isInArc(2.0f * 3.1415927f / 3.0f, x, y))
+					{
+						m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedUnitNotInfront);
+
+						sendEndCast(false);
+						m_hasFinished = true;
+
+						return;
+					}
+				}
+			}
+		}
 
 		// Consume power
 		if (m_spell.cost > 0)
