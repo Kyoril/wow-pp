@@ -433,6 +433,7 @@ namespace wowpp
 
 		float getHealthBonusFromStamina() const;
 		float getManaBonusFromIntellect() const;
+		float getMeleeReach() const;
 
 	private:
 

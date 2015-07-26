@@ -375,6 +375,15 @@ namespace wowpp
 				break;
 			}
 
+			// Distance check
+			const float distance = getDistanceTo(*m_victim);
+			const float combatRange = getMeleeReach() + m_victim->getMeleeReach();
+			if (distance > combatRange)
+			{
+				autoAttackError(attack_swing_error::OutOfRange);
+				break;
+			}
+
 			// Let's do a little test here :)
 			{
 				TileIndex2D tileIndex;
@@ -990,6 +999,12 @@ namespace wowpp
 			else
 				it = m_auras.erase(it);
 		}
+	}
+
+	float GameUnit::getMeleeReach() const
+	{
+		float reach = getFloatValue(unit_fields::CombatReach);
+		return reach > 2.0f ? reach : 2.0f;
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)
