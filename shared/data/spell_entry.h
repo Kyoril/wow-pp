@@ -173,6 +173,98 @@ namespace wowpp
 
 	typedef spell_attributes_ex_a::Type SpellAttributesExA;
 
+	namespace spell_interrupt_flags
+	{
+		enum Type
+		{
+			None			= 0x00,
+			Movement		= 0x01,
+			PushBack		= 0x02,
+			Interrupt		= 0x04,
+			AutoAttack		= 0x08,
+			Damage			= 0x10
+		};
+	}
+
+	typedef spell_interrupt_flags::Type SpellInterruptFlags;
+
+	namespace spell_channel_interrupt_flags
+	{
+		enum Type
+		{
+			None			= 0x0000,
+			Damage			= 0x0002,
+			Movement		= 0x0008,
+			Turning			= 0x0010,
+			Damage2			= 0x0080,
+			Delay			= 0x4000
+		};
+	};
+
+	typedef spell_channel_interrupt_flags::Type SpellChannelInterruptFlags;
+
+	namespace spell_aura_interrupt_flags
+	{
+		enum Type
+		{
+			None					= 0x0000000,
+			/// Removed when getting hit by a negative spell.
+			HitBySpell				= 0x00000001,
+			/// Removed by any damage.
+			Damage					= 0x00000002,
+			/// Removed on crowd control effect.
+			CrowdControl			= 0x00000004,
+			/// Removed by any movement.
+			Move					= 0x00000008,
+			/// Removed by any turning.
+			Turning					= 0x00000010,
+			/// Removed by entering combat.
+			EnterCombat				= 0x00000020,
+			/// Removed by unmounting.
+			NotMounted				= 0x00000040,
+			/// Removed by entering water (start swimming).
+			NotAboveWater			= 0x00000080,
+			/// Removed by leaving water.
+			NotUnderWater			= 0x00000100,
+			/// Removed by unsheathing.
+			NotSheathed				= 0x00000200,
+			/// Removed when talking to an npc or loot a creature.
+			Talk					= 0x00000400,
+			/// Removed when mining/using/opening/interact with game object.
+			Use						= 0x00000800,
+			/// Removed by attacking.
+			Attack					= 0x00001000,
+			/// TODO
+			Cast					= 0x00002000,
+			/// TODO
+			Unknown_14				= 0x00004000,
+			/// Removed on transformation.
+			Transform				= 0x00008000,
+			/// TODO
+			Unknown_16				= 0x00010000,
+			/// Removed when mounting.
+			Mount					= 0x00020000,
+			/// Removed when standing up.
+			NotSeated				= 0x00040000,
+			/// Removed when leaving the map.
+			ChangeMap				= 0x00080000,
+			/// TODO
+			Unattackable			= 0x00100000,
+			/// TODO
+			Unknown_21				= 0x00200000,
+			/// Removed when teleported.
+			Teleported				= 0x00400000,
+			/// Removed by entering pvp combat.
+			EnterPvPCombat			= 0x00800000,
+			/// Removed by any direct damage.
+			DirectDamage			= 0x01000000,
+			/// TODO
+			NotVictim =				(HitBySpell | Damage | DirectDamage)
+		};
+	}
+
+	typedef spell_aura_interrupt_flags::Type SpellAuraInterruptFlags;
+
 	struct DataLoadContext;
 	struct SkillEntry;
 
@@ -248,6 +340,12 @@ namespace wowpp
 		UInt32 facing;
 		Int32 duration;
 		Int32 maxDuration;
+		UInt32 interruptFlags;
+		UInt32 channelInterruptFlags;
+		UInt32 auraInterruptFlags;
+		float minRange;
+		float maxRange;
+		UInt32 rangeType;
 
 		SpellEntry();
 		bool load(DataLoadContext &context, const ReadTableWrapper &wrapper);

@@ -46,6 +46,12 @@ namespace wowpp
 		, facing(0)
 		, duration(-1)
 		, maxDuration(-1)
+		, interruptFlags(spell_interrupt_flags::None)
+		, channelInterruptFlags(spell_channel_interrupt_flags::None)
+		, auraInterruptFlags(spell_aura_interrupt_flags::None)
+		, minRange(0.0f)
+		, maxRange(0.0f)
+		, rangeType(0)
 	{
 		attributesEx.fill(0);
 	}
@@ -83,6 +89,12 @@ namespace wowpp
 		wrapper.table.tryGetInteger("dmg_class", dmgClass);
 		wrapper.table.tryGetInteger("item_class", itemClass);
 		wrapper.table.tryGetInteger("item_subclass_mask", itemSubClassMask);
+		wrapper.table.tryGetInteger("interrupt", interruptFlags);
+		wrapper.table.tryGetInteger("channel_interrupt", channelInterruptFlags);
+		wrapper.table.tryGetInteger("aura_interrupt", auraInterruptFlags);
+		wrapper.table.tryGetInteger("min_range", minRange);
+		wrapper.table.tryGetInteger("max_range", maxRange);
+		wrapper.table.tryGetInteger("range_type", rangeType);
 
 		const sff::read::tree::Array<DataFileIterator> *skillsArray = wrapper.table.getArray("skills");
 		if (skillsArray)
@@ -198,6 +210,12 @@ namespace wowpp
 		if (dmgClass != 0) context.table.addKey("dmg_class", dmgClass);
 		if (itemClass != -1) context.table.addKey("item_class", itemClass);
 		if (itemSubClassMask != 0) context.table.addKey("item_subclass_mask", itemSubClassMask);
+		if (interruptFlags != 0) context.table.addKey("interrupt", interruptFlags);
+		if (channelInterruptFlags != 0) context.table.addKey("channel_interrupt", channelInterruptFlags);
+		if (auraInterruptFlags != 0) context.table.addKey("aura_interrupt", auraInterruptFlags);
+		if (minRange != 0.0f) context.table.addKey("min_range", minRange);
+		if (maxRange != 0.0f) context.table.addKey("max_range", maxRange);
+		if (rangeType != 0) context.table.addKey("range_type", rangeType);
 
 		// Write skills
 		if (!skillsOnLearnSpell.empty())
