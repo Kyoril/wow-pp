@@ -428,19 +428,19 @@ namespace wowpp
 			float vX, vY, vZ, vO;
 			m_victim->getLocation(vX, vY, vZ, vO);
 
-			// Check if that target is in front of us
-			if (!isInArc(2.0f * 3.1415927f / 3.0f, vX, vY))
-			{
-				autoAttackError(attack_swing_error::WrongFacing);
-				break;
-			}
-
 			// Distance check
 			const float distance = getDistanceTo(*m_victim);
 			const float combatRange = getMeleeReach() + m_victim->getMeleeReach();
 			if (distance > combatRange)
 			{
 				autoAttackError(attack_swing_error::OutOfRange);
+				break;
+			}
+
+			// Check if that target is in front of us
+			if (!isInArc(2.0f * 3.1415927f / 3.0f, vX, vY))
+			{
+				autoAttackError(attack_swing_error::WrongFacing);
 				break;
 			}
 

@@ -458,8 +458,6 @@ namespace wowpp
 		std::vector<std::vector<char>> spawnBlocks;
 		createUpdateBlocks(*m_character, spawnBlocks);
 
-
-
 		auto &grid = m_instance.getGrid();
 
 		// Spawn ourself for new watchers

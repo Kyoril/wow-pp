@@ -28,6 +28,7 @@ project(WoW)
 	# Enable solution folders in msvc
 	if(MSVC)
 		set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+		add_definitions("-D_ITERATOR_DEBUG_LEVEL=0")
 	endif(MSVC)
 	
 	# Version header

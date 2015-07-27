@@ -21,6 +21,9 @@ namespace wowpp
 	{
 		assert(m_castState);
 
+		GameUnit *unitTarget = nullptr;
+		target.resolvePointers(*m_executer.getWorldInstance(), &unitTarget, nullptr, nullptr, nullptr);
+
 		// Check power
 		if (spell.cost > 0)
 		{
@@ -39,6 +42,23 @@ namespace wowpp
 			}
 		}
 
+		// Range check
+		if (spell.minRange != 0.0f || spell.maxRange != 0.0f)
+		{
+			if (unitTarget)
+			{
+				const float distance = m_executer.getDistanceTo(*unitTarget);
+				if (spell.minRange > 0.0f && distance < spell.minRange)
+				{
+					return std::make_pair(game::spell_cast_result::FailedTooClose, nullptr);
+				}
+				else if (spell.maxRange > 0.0f && distance > spell.maxRange)
+				{
+					return std::make_pair(game::spell_cast_result::FailedOutOfRange, nullptr);
+				}
+			}
+		}
+
 		// TODO: Check spell conditions
 
 		// Check facing (Need to have the target in front of us)
@@ -47,9 +67,6 @@ namespace wowpp
 			const auto *world = m_executer.getWorldInstance();
 			if (world)
 			{
-				GameUnit *unitTarget = nullptr;
-				target.resolvePointers(*m_executer.getWorldInstance(), &unitTarget, nullptr, nullptr, nullptr);
-
 				if (unitTarget)
 				{
 					float x, y, z, o;

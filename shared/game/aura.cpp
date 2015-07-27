@@ -49,10 +49,9 @@ namespace wowpp
 		// Subscribe to caster despawn event so that we don't hold an invalid pointer
 		m_casterDespawned = caster.despawned.connect(
 			std::bind(&Aura::onCasterDespawned, this, std::placeholders::_1));
-
-		m_expireCountdown.ended.connect(
+		m_onExpire = m_expireCountdown.ended.connect(
 			std::bind(&Aura::onExpired, this));
-		m_tickCountdown.ended.connect(
+		m_onTick = m_tickCountdown.ended.connect(
 			std::bind(&Aura::onTick, this));
 
 		// Log duration
@@ -326,6 +325,14 @@ namespace wowpp
 				getCurrentTime() + m_spell.duration);
 		}
 
+		// Watch for unit's movement if the aura should interrupt in this case
+		if ((m_spell.auraInterruptFlags & spell_aura_interrupt_flags::Move) != 0 ||
+			(m_spell.auraInterruptFlags & spell_aura_interrupt_flags::Turning) != 0)
+		{
+			m_targetMoved = m_target.moved.connect(
+				std::bind(&Aura::onTargetMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+		}
+
 		// Apply modifier
 		handleModifier(true);
 	}
@@ -446,4 +453,35 @@ namespace wowpp
 			// TODO: Update visibility mode of unit
 		}
 	}
+
+	void Aura::onTargetMoved(GameObject & /*unused*/, float oldX, float oldY, float oldZ, float oldO)
+	{
+		// Determine flags
+		const bool removeOnMove = (m_spell.auraInterruptFlags & spell_aura_interrupt_flags::Move) != 0;
+		const bool removeOnTurn = (m_spell.auraInterruptFlags & spell_aura_interrupt_flags::Turning) != 0;
+
+		float x, y, z, o;
+		m_target.getLocation(x, y, z, o);
+
+		if (removeOnMove)
+		{
+			if (x != oldX || y != oldY || z != oldZ)
+			{
+				// Moved - remove!
+				DLOG("TODO: Remove aura due to move");
+				return;
+			}
+		}
+
+		if (removeOnTurn)
+		{
+			if (o != oldO)
+			{
+				// Turned - remove!
+				DLOG("TODO: Remove aura due to turning");
+				return;
+			}
+		}
+	}
+
 }

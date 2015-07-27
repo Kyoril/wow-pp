@@ -97,12 +97,14 @@ namespace wowpp
 		void onExpired();
 		/// Executed when this aura ticks.
 		void onTick();
+		/// Executed when the target of this aura moved.
+		void onTargetMoved(GameObject &, float oldX, float oldY, float oldZ, float oldO);
 
 	private:
 
 		const SpellEntry &m_spell;
 		const SpellEntry::Effect &m_effect;
-		boost::signals2::scoped_connection m_casterDespawned;
+		boost::signals2::scoped_connection m_casterDespawned, m_targetMoved, m_onExpire, m_onTick;
 		GameUnit *m_caster;
 		GameUnit &m_target;
 		UInt32 m_tickCount;

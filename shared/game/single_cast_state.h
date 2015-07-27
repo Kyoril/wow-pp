@@ -74,6 +74,7 @@ namespace wowpp
 		boost::signals2::scoped_connection m_onTargetDied, m_onTargetRemoved;
 		boost::signals2::scoped_connection m_onUserDamaged, m_onUserMoved;
 		float m_x, m_y, m_z;
+		GameTime m_castTime;
 
 		void sendEndCast(bool success);
 		void onCastFinished();

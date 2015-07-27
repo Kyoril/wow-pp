@@ -83,6 +83,7 @@ namespace wowpp
 		, m_hasFinished(false)
 		, m_countdown(cast.getTimers())
 		, m_isAlive(std::make_shared<char>(0))
+		, m_castTime(castTime)
 	{
 		// Check if the executer is in the world
 		auto &executer = m_cast.getExecuter();
@@ -232,24 +233,36 @@ namespace wowpp
 			character = dynamic_cast<GameCharacter*>(&m_cast.getExecuter());
 		}
 
-		// Check facing again (we could have moved during the spell cast)
-		if (m_spell.facing & 0x01)
+		if (m_castTime > 0)
 		{
-			const auto *world = m_cast.getExecuter().getWorldInstance();
-			if (world)
+			if (!m_cast.getExecuter().getWorldInstance())
 			{
-				GameUnit *unitTarget = nullptr;
-				m_target.resolvePointers(*m_cast.getExecuter().getWorldInstance(), &unitTarget, nullptr, nullptr, nullptr);
+				ELOG("Caster is no longer in world instance");
+				m_hasFinished = true;
+				return;
+			}
 
+			GameUnit *unitTarget = nullptr;
+			m_target.resolvePointers(*m_cast.getExecuter().getWorldInstance(), &unitTarget, nullptr, nullptr, nullptr);
+
+			// Range check
+			if (m_spell.minRange != 0.0f || m_spell.maxRange != 0.0f)
+			{
 				if (unitTarget)
 				{
-					float x, y, z, o;
-					unitTarget->getLocation(x, y, z, o);
-
-					// 120 degree field of view
-					if (!m_cast.getExecuter().isInArc(2.0f * 3.1415927f / 3.0f, x, y))
+					const float distance = m_cast.getExecuter().getDistanceTo(*unitTarget);
+					if (m_spell.minRange > 0.0f && distance < m_spell.minRange)
 					{
-						m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedUnitNotInfront);
+						m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedTooClose);
+
+						sendEndCast(false);
+						m_hasFinished = true;
+
+						return;
+					}
+					else if (m_spell.maxRange > 0.0f && distance > m_spell.maxRange)
+					{
+						m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedOutOfRange);
 
 						sendEndCast(false);
 						m_hasFinished = true;
@@ -258,7 +271,36 @@ namespace wowpp
 					}
 				}
 			}
+
+			// Check facing again (we could have moved during the spell cast)
+			if (m_spell.facing & 0x01)
+			{
+				const auto *world = m_cast.getExecuter().getWorldInstance();
+				if (world)
+				{
+					GameUnit *unitTarget = nullptr;
+					m_target.resolvePointers(*m_cast.getExecuter().getWorldInstance(), &unitTarget, nullptr, nullptr, nullptr);
+
+					if (unitTarget)
+					{
+						float x, y, z, o;
+						unitTarget->getLocation(x, y, z, o);
+
+						// 120 degree field of view
+						if (!m_cast.getExecuter().isInArc(2.0f * 3.1415927f / 3.0f, x, y))
+						{
+							m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedUnitNotInfront);
+
+							sendEndCast(false);
+							m_hasFinished = true;
+
+							return;
+						}
+					}
+				}
+			}
 		}
+		
 
 		// Consume power
 		if (m_spell.cost > 0)

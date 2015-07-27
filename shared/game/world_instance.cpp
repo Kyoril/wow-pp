@@ -271,7 +271,7 @@ namespace wowpp
 		m_objectsById.erase(guid);
 		remove.setWorldInstance(nullptr);
 
-		// Notify absout despawn (Warning: This can (and probably will) make 'remove' invalid!)
+		// Notify absout despawn
 		remove.despawned(remove);
 
 		// Despawn for watchers
@@ -285,6 +285,12 @@ namespace wowpp
 				subscriber->sendPacket(packet, buffer);
 			}
 		});
+
+		// Destroy this object
+		if (remove.destroy)
+		{
+			remove.destroy(remove);
+		}
 	}
 
 	GameObject * WorldInstance::findObjectByGUID(UInt64 guid)

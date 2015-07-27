@@ -85,9 +85,8 @@ namespace wowpp
 		spawned->setFloatValue(object_fields::ScaleX, m_entry.scale);
 		spawned->clearUpdateMask();
 
-		// watch for removal
-		spawned->despawned.connect(
-			std::bind(&CreatureSpawner::onRemoval, this, std::placeholders::_1));
+		// watch for destruction
+		spawned->destroy = std::bind(&CreatureSpawner::onRemoval, this, std::placeholders::_1);
 		
 		m_world.addGameObject(*spawned);
 
