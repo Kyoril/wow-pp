@@ -1015,7 +1015,7 @@ namespace wowpp
 
 	void GameUnit::onKilled(GameUnit *killer)
 	{
-		
+		m_auras.handleTargetDeath();
 	}
 
 	float GameUnit::getMeleeReach() const

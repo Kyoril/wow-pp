@@ -182,8 +182,12 @@ namespace wowpp
 			onTick();
 		}
 
-		// Destroy this instance
-		m_destroy(*this);
+		// If the target died already, don't destroy this aura (it will be destroyed elsewhere)
+		if (m_target.getUInt32Value(unit_fields::Health) > 0)
+		{
+			// Destroy this instance
+			m_destroy(*this);
+		}
 	}
 
 	void Aura::onTick()
@@ -503,7 +507,7 @@ namespace wowpp
 		std::shared_ptr<Aura> strongThis = shared_from_this();
 		m_post([strongThis]
 		{
-			strongThis->m_destroy(*strongThis);
+			// TODO: Notify about being removed...
 		});
 	}
 
