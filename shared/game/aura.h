@@ -35,15 +35,12 @@ namespace wowpp
 	/// Represents an instance of a spell aura.
 	class Aura : public std::enable_shared_from_this<Aura>
 	{
-	public:
-
-		boost::signals2::signal<void(Aura &aura)> expired;
-
+		typedef std::function<void(std::function<void()>)> PostFunction;
 
 	public:
 
 		/// Initializes a new instance of the Aura class.
-		explicit Aura(const SpellEntry &spell, const SpellEntry::Effect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target);
+		explicit Aura(const SpellEntry &spell, const SpellEntry::Effect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, PostFunction post, std::function<void(Aura&)> onDestroy);
 		~Aura();
 
 		/// Gets the unit target.
@@ -62,6 +59,8 @@ namespace wowpp
 		UInt8 getSlot() const { return m_slot; }
 		/// Sets the new aura slot to be used.
 		void setSlot(UInt8 newSlot);
+		/// Forced aura remove.
+		void onForceRemoval();
 
 		/// Gets the spell which created this aura and hold's it's values.
 		const SpellEntry &getSpell() const { return m_spell; }
@@ -99,12 +98,14 @@ namespace wowpp
 		void onTick();
 		/// Executed when the target of this aura moved.
 		void onTargetMoved(GameObject &, float oldX, float oldY, float oldZ, float oldO);
+		/// 
+		void setRemoved(GameUnit *remover);
 
 	private:
 
 		const SpellEntry &m_spell;
 		const SpellEntry::Effect &m_effect;
-		boost::signals2::scoped_connection m_casterDespawned, m_targetMoved, m_onExpire, m_onTick;
+		boost::signals2::scoped_connection m_casterDespawned, m_targetMoved, m_onExpire, m_onTick, m_onTargetKilled;
 		GameUnit *m_caster;
 		GameUnit &m_target;
 		UInt32 m_tickCount;
@@ -116,5 +117,7 @@ namespace wowpp
 		bool m_expired;
 		UInt32 m_attackerLevel;		// Needed for damage calculation
 		UInt8 m_slot;
+		PostFunction m_post;
+		std::function<void(Aura&)> m_destroy;
 	};
 }

@@ -25,6 +25,7 @@
 #include "game/world_instance_manager.h"
 #include "game/world_instance.h"
 #include "game/each_tile_in_sight.h"
+#include "game/universe.h"
 #include <cassert>
 #include <limits>
 
@@ -38,7 +39,7 @@ namespace wowpp
 		, m_worldInstanceManager(worldInstanceManager)
 		, m_characterId(characterId)
 		, m_character(std::move(character))
-		, m_logoutCountdown(worldInstanceManager.getTimerQueue())
+		, m_logoutCountdown(instance.getUniverse().getTimers())
 		, m_instance(instance)
 	{
 		m_logoutCountdown.ended.connect(

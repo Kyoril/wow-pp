@@ -33,6 +33,7 @@
 #include "spell_cast.h"
 #include "spell_target_map.h"
 #include "aura.h"
+#include "aura_container.h"
 #include <boost/signals2.hpp>
 
 namespace wowpp
@@ -400,9 +401,6 @@ namespace wowpp
 		/// @param amount The value amount.
 		/// @param apply Whether to apply or remove the provided amount.
 		void updateModifierValue(UnitMods mod, UnitModType type, float amount, bool apply);
-		/// Adds the specified aura to the list of aura effects.
-		/// @param aura The new aura instance to be added.
-		bool addAura(std::shared_ptr<Aura> aura);
 		/// Deals damage to this unit.
 		/// @param damage The damage value to deal.
 		/// @param school The damage school mask.
@@ -411,6 +409,8 @@ namespace wowpp
 		/// Rewards experience points to this unit.
 		/// @param experience The amount of experience points to be added.
 		virtual void rewardExperience(GameUnit *victim, UInt32 experience);
+		/// Gets the aura container of this unit.
+		AuraContainer &getAuras() { return m_auras; }
 
 		/// Calculates the stat based on the specified modifier.
 		static UInt8 getStatByUnitMod(UnitMods mod);
@@ -481,7 +481,7 @@ namespace wowpp
 		Countdown m_regenCountdown;
 		GameTime m_lastManaUse;
 		UnitModArray m_unitMods;
-		AuraVector m_auras;
+		AuraContainer m_auras;
 	};
 
 	UInt32 calculateArmorReducedDamage(UInt32 attackerLevel, const GameUnit &victim, UInt32 damage);

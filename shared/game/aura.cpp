@@ -27,11 +27,12 @@
 #include "world_instance.h"
 #include "binary_io/vector_sink.h"
 #include "game_protocol/game_protocol.h"
+#include "universe.h"
 #include "log/default_log_levels.h"
 
 namespace wowpp
 {
-	Aura::Aura(const SpellEntry &spell, const SpellEntry::Effect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target)
+	Aura::Aura(const SpellEntry &spell, const SpellEntry::Effect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, PostFunction post, std::function<void(Aura&)> onDestroy)
 		: m_spell(spell)
 		, m_effect(effect)
 		, m_caster(&caster)
@@ -45,6 +46,8 @@ namespace wowpp
 		, m_expired(false)
 		, m_attackerLevel(caster.getLevel())
 		, m_slot(0xFF)
+		, m_post(std::move(post))
+		, m_destroy(std::move(onDestroy))
 	{
 		// Subscribe to caster despawn event so that we don't hold an invalid pointer
 		m_casterDespawned = caster.despawned.connect(
@@ -64,9 +67,14 @@ namespace wowpp
 		m_tickCountdown.cancel();
 		m_expireCountdown.cancel();
 
+		// Remove aura slot
+		if (m_slot != 0xFF)
+		{
+			m_target.setUInt32Value(unit_fields::Aura + m_slot, 0);
+		}
+
 		// Remove aura modifier from target
 		handleModifier(false);
-		DLOG("~Aura");
 	}
 
 	void Aura::handleModNull(bool apply)
@@ -174,8 +182,8 @@ namespace wowpp
 			onTick();
 		}
 
-		// Raise signal (may destroy this)
-		expired(*this);
+		// Destroy this instance
+		m_destroy(*this);
 	}
 
 	void Aura::onTick()
@@ -483,6 +491,20 @@ namespace wowpp
 				return;
 			}
 		}
+	}
+
+	void Aura::onForceRemoval()
+	{
+		setRemoved(nullptr);
+	}
+
+	void Aura::setRemoved(GameUnit *remover)
+	{
+		std::shared_ptr<Aura> strongThis = shared_from_this();
+		m_post([strongThis]
+		{
+			strongThis->m_destroy(*strongThis);
+		});
 	}
 
 }

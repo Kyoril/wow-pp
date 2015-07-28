@@ -24,22 +24,24 @@
 #include "common/vector.h"
 #include "solid_visibility_grid.h"
 #include "log/default_log_levels.h"
+#include "universe.h"
 #include <cassert>
 
 namespace wowpp
 {
 	WorldInstanceManager::WorldInstanceManager(
 		boost::asio::io_service &ioService,
+		Universe &universe,
 		IdGenerator<UInt32> &idGenerator, 
 		IdGenerator<UInt64> &objectIdGenerator,
 		Project &project,
 		UInt32 worldNodeId)
 		: m_ioService(ioService)
+		, m_universe(universe)
 		, m_idGenerator(idGenerator)
 		, m_objectIdGenerator(objectIdGenerator)
 		, m_updateTimer(ioService)
 		, m_project(project)
-		, m_timerQueue(new TimerQueue(ioService))
 		, m_worldNodeId(worldNodeId)
 	{
 		// Trigger the first update
@@ -54,6 +56,7 @@ namespace wowpp
 		// Create world instance
 		std::unique_ptr<WorldInstance> instance(new WorldInstance(
 			*this,
+			m_universe,
 			map, 
 			instanceId, 
 			std::unique_ptr<VisibilityGrid>(new SolidVisibilityGrid(TileIndex2D(64, 64))),

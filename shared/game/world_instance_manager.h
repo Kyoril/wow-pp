@@ -35,6 +35,7 @@ namespace wowpp
 {
 	class Project;
 	class PlayerManager;
+	class Universe;
 
 	/// Manages all available world instances of the server.
 	class WorldInstanceManager final : private boost::noncopyable
@@ -46,7 +47,7 @@ namespace wowpp
 	public:
 
 		explicit WorldInstanceManager(boost::asio::io_service &ioService, 
-			//PlayerManager &playerManager,
+			Universe &universe,
 			IdGenerator<UInt32> &idGenerator,
 			IdGenerator<UInt64> &objectIdGenerator,
 			Project &project,
@@ -60,11 +61,7 @@ namespace wowpp
 		WorldInstance *getInstanceById(UInt32 instanceId);
 		/// 
 		WorldInstance *getInstanceByMapId(UInt32 MapId);
-
-		/// 
-		//inline PlayerManager &getPlayerManager() { return m_playerManager; }
-		/// 
-		inline TimerQueue &getTimerQueue() { return *m_timerQueue; }
+		Universe &getUniverse() { return m_universe;  }
 
 	private:
 
@@ -73,13 +70,12 @@ namespace wowpp
 	private:
 
 		boost::asio::io_service &m_ioService;
-		//PlayerManager &m_playerManager;
+		Universe &m_universe;
 		IdGenerator<UInt32> &m_idGenerator;
 		IdGenerator<UInt64> &m_objectIdGenerator;
 		boost::asio::deadline_timer m_updateTimer;
 		Instances m_instances;
 		Project &m_project;
-		std::unique_ptr<TimerQueue> m_timerQueue;
 		UInt32 m_worldNodeId;
 	};
 }

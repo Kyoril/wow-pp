@@ -37,6 +37,7 @@ namespace wowpp
 	class WorldInstanceManager;
 	class GameUnit;
 	class GameCreature;
+	class Universe;
 
 	/// Manages one instance of a game world.
 	class WorldInstance final
@@ -62,6 +63,7 @@ namespace wowpp
 		/// @param getClass Callback to obtain informations about a class.
 		/// @param getLevel Callback to obtain informations about a level.
 		explicit WorldInstance(WorldInstanceManager &manager, 
+			Universe &universe,
 			const MapEntry &mapEntry,
 			UInt32 id, 
 			std::unique_ptr<VisibilityGrid> visibilityGrid,
@@ -88,7 +90,8 @@ namespace wowpp
 		const VisibilityGrid &getGrid() const { return *m_visibilityGrid; }
 		/// 
 		VisibilityGrid &getGrid() { return *m_visibilityGrid; }
-
+		/// 
+		Universe &getUniverse() { return m_universe; }
 		/// Adds a game object to this world instance.
 		void addGameObject(GameObject& added);
 		/// Removes a specific game object from this world.
@@ -116,6 +119,7 @@ namespace wowpp
 	private:
 
 		WorldInstanceManager &m_manager;
+		Universe &m_universe;
 		std::unique_ptr<VisibilityGrid> m_visibilityGrid;
 		IdGenerator<UInt64> &m_objectIdGenerator;
 		GameObjectsById m_objectsById;

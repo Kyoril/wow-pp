@@ -35,7 +35,7 @@
 #include "game_protocol/game_protocol.h"
 #include <boost/iterator/indirect_iterator.hpp>
 #include "common/make_unique.h"
-//TODO
+#include "universe.h"
 #include "aura.h"
 #include <random>
 
@@ -727,9 +727,23 @@ namespace wowpp
 		const String auraTypeName = game::constant_literal::auraTypeNames.getName(auraType);
 		DLOG("Spell: Aura is: " << auraTypeName);
 
+		// World was already checked. If world would ne nullptr, unitTarget would be null as well
+		auto *world = m_cast.getExecuter().getWorldInstance();
+		auto &universe = world->getUniverse();
+
 		// Create a new aura instance
 		const Int32 basePoints = calculateEffectBasePoints(effect);
-		std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, basePoints, caster, *unitTarget);
+		std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, basePoints, caster, *unitTarget, [&universe](std::function<void()> work)
+		{
+			universe.post(work);
+		}, [&unitTarget](Aura &self)
+		{
+			auto &auras = self.getTarget().getAuras();
+
+			const auto position = findAuraInstanceIndex(auras, self);
+			assert(position.is_initialized());
+			auras.removeAura(*position);
+		});
 
 		// TODO: Dimishing return and custom durations
 
@@ -738,7 +752,7 @@ namespace wowpp
 		// TODO: Check if aura already expired
 
 		// TODO: Add aura to unit target
-		const bool success = unitTarget->addAura(std::move(aura));
+		const bool success = unitTarget->getAuras().addAura(std::move(aura));
 		if (!success)
 		{
 			// TODO: What should we do here? Just ignore?

@@ -21,59 +21,39 @@
 
 #pragma once
 
-#include "typedefs.h"
-#include <boost/asio.hpp>
+#include "aura.h"
 #include <boost/optional.hpp>
-#include <functional>
-#include <queue>
 
 namespace wowpp
 {
-	class TimerQueue : public boost::noncopyable
+	class GameUnit;
+
+	/// Holds and manages instances of auras for one unit.
+	class AuraContainer final
 	{
 	public:
 
-		typedef std::function<void ()> EventCallback;
+		explicit AuraContainer(GameUnit &owner);
 
-		explicit TimerQueue(boost::asio::io_service &service);
-		GameTime getNow() const;
-		void addEvent(EventCallback callback, GameTime time);
+		bool addAura(std::shared_ptr<Aura> aura);
+		size_t findAura(Aura &aura, size_t begin);
+		void removeAura(size_t index);
+		Aura &get(size_t index);
+		const Aura &get(size_t index) const;
+		void handleTargetDeath();
+
+		GameUnit &getOwner() { return m_owner; }
+		size_t getSize() const { return m_auras.size(); }
 
 	private:
 
-		struct EventEntry
-		{
-			EventCallback callback;
-			GameTime time;
+		typedef std::vector<std::shared_ptr<Aura>> AuraVector;
 
-			struct IsLater
-			{
-				inline bool operator ()(const EventEntry &left, const EventEntry &right) const
-				{
-					return (left.time > right.time);
-				}
-			};
-
-			EventEntry()
-			{
-			}
-
-			EventEntry(const EventCallback &callback, GameTime time)
-				: callback(callback)
-				, time(time)
-			{
-			}
-		};
-
-
-		typedef std::priority_queue<EventEntry, std::vector<EventEntry>, EventEntry::IsLater> Queue;
-		typedef boost::asio::deadline_timer Timer;
-
-		Timer m_timer;
-		boost::optional<GameTime> m_timerTime;
-		Queue m_queue;
-
-		void update(const boost::system::error_code &error);
-		void setTimer();
+		GameUnit &m_owner;
+		AuraVector m_auras;
 	};
+
+	boost::optional<std::size_t> findAuraInstanceIndex(
+		AuraContainer &instances,
+		Aura &instance);
 }

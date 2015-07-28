@@ -33,6 +33,7 @@
 #include <boost/bind/bind.hpp>
 #include "each_tile_in_sight.h"
 #include "common/utilities.h"
+#include "universe.h"
 #include <algorithm>
 #include <array>
 #include <memory>
@@ -95,6 +96,7 @@ namespace wowpp
 	}
 
 	WorldInstance::WorldInstance(WorldInstanceManager &manager, 
+		Universe &universe,
 		const MapEntry &mapEntry,
 		UInt32 id, 
 		std::unique_ptr<VisibilityGrid> visibilityGrid,
@@ -104,6 +106,7 @@ namespace wowpp
 		DataLoadContext::GetLevel getLevel
 		)
 		: m_manager(manager)
+		, m_universe(universe)
 		, m_visibilityGrid(std::move(visibilityGrid))
 		, m_objectIdGenerator(objectIdGenerator)
 		, m_mapEntry(mapEntry)
@@ -137,7 +140,7 @@ namespace wowpp
 	{
 		// Create the unit
 		auto spawned = std::make_shared<GameCreature>(
-			m_manager.getTimerQueue(),
+			m_universe.getTimers(),
 			m_getRace,
 			m_getClass,
 			m_getLevel,

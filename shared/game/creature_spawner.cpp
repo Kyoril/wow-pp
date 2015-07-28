@@ -27,6 +27,7 @@
 #include "common/erase_by_move.h"
 #include "log/default_log_levels.h"
 #include "common/utilities.h"
+#include "universe.h"
 #include <memory>
 #include <cassert>
 
@@ -52,7 +53,7 @@ namespace wowpp
 		, m_rotation(rotation)
 		, m_radius(radius)
 		, m_currentlySpawned(0)
-		, m_respawnCountdown(world.getManager().getTimerQueue())
+		, m_respawnCountdown(world.getUniverse().getTimers())
 	{
 		// Immediatly spawn all creatures
 		for (size_t i = 0; i < m_maxCount; ++i)

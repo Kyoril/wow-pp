@@ -30,6 +30,7 @@
 #include "data/project.h"
 #include "game/visibility_tile.h"
 #include "game/each_tile_in_region.h"
+#include "game/universe.h"
 #include "binary_io/vector_sink.h"
 #include "log/default_log_levels.h"
 
@@ -242,7 +243,7 @@ namespace wowpp
 		std::vector<UInt32> spellIds;
 		std::vector<pp::world_realm::ItemData> items;
 		std::shared_ptr<GameCharacter> character(new GameCharacter(
-			m_worldInstanceManager.getTimerQueue(),
+			m_worldInstanceManager.getUniverse().getTimers(),
 			std::bind(&RaceEntryManager::getById, &m_project.races, std::placeholders::_1),
 			std::bind(&ClassEntryManager::getById, &m_project.classes, std::placeholders::_1),
 			std::bind(&LevelEntryManager::getById, &m_project.levels, std::placeholders::_1)));
@@ -298,7 +299,10 @@ namespace wowpp
 			}
 		}
 
+		assert(instance);
+
 		// Fire signal which should create a player instance for us
+		character->setWorldInstance(instance);	// This is required for spell auras
 		worldInstanceEntered(*this, requesterDbId, character, *instance);
 
 		// Resolve spells

@@ -33,6 +33,7 @@
 #include "log/default_log_levels.h"
 #include "mysql_database.h"
 #include "data/project.h"
+#include "game/universe.h"
 #include "common/timer_queue.h"
 #include "common/id_generator.h"
 #include <iostream>
@@ -74,6 +75,9 @@ namespace wowpp
 
 		// Create a timer queue
 		TimerQueue timer(m_ioService);
+
+		// Create universe
+		Universe universe(m_ioService, timer);
 
 		// The log files are written to in a special background thread
 		std::ofstream logFile;
@@ -138,7 +142,7 @@ namespace wowpp
 
 		// Create world instance manager
 		auto worldInstanceManager =
-			std::make_shared<wowpp::WorldInstanceManager>(m_ioService, instanceIdGenerator, objectIdGenerator, project, 0);
+			std::make_shared<wowpp::WorldInstanceManager>(m_ioService, universe, instanceIdGenerator, objectIdGenerator, project, 0);
 
 		std::vector<std::shared_ptr<RealmConnector>> realmConnectors;
 		std::map<UInt32, RealmConnector*> realmConnectorByMap;
