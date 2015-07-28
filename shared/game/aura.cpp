@@ -66,6 +66,7 @@ namespace wowpp
 
 		// Remove aura modifier from target
 		handleModifier(false);
+		DLOG("~Aura");
 	}
 
 	void Aura::handleModNull(bool apply)

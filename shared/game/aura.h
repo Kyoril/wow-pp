@@ -33,12 +33,12 @@ namespace wowpp
 	class GameUnit;
 
 	/// Represents an instance of a spell aura.
-	class Aura
+	class Aura : public std::enable_shared_from_this<Aura>
 	{
 	public:
 
 		boost::signals2::signal<void(Aura &aura)> expired;
-		boost::signals2::signal<void(Aura &aura)> removed;
+
 
 	public:
 

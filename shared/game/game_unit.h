@@ -402,7 +402,7 @@ namespace wowpp
 		void updateModifierValue(UnitMods mod, UnitModType type, float amount, bool apply);
 		/// Adds the specified aura to the list of aura effects.
 		/// @param aura The new aura instance to be added.
-		bool addAura(std::unique_ptr<Aura> aura);
+		bool addAura(std::shared_ptr<Aura> aura);
 		/// Deals damage to this unit.
 		/// @param damage The damage value to deal.
 		/// @param school The damage school mask.
@@ -464,7 +464,7 @@ namespace wowpp
 		typedef std::array<float, unit_mod_type::End> UnitModTypeArray;
 		typedef std::array<UnitModTypeArray, unit_mods::End> UnitModArray;
 
-		typedef std::vector<std::unique_ptr<Aura>> AuraVector;
+		typedef std::vector<std::shared_ptr<Aura>> AuraVector;
 
 		TimerQueue &m_timers;
 		DataLoadContext::GetRace m_getRace;

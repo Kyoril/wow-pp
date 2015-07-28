@@ -729,7 +729,7 @@ namespace wowpp
 
 		// Create a new aura instance
 		const Int32 basePoints = calculateEffectBasePoints(effect);
-		std::unique_ptr<Aura> aura = make_unique<Aura>(m_spell, effect, basePoints, caster, *unitTarget);
+		std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, basePoints, caster, *unitTarget);
 
 		// TODO: Dimishing return and custom durations
 

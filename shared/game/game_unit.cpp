@@ -984,7 +984,7 @@ namespace wowpp
 		return unit_mods::Armor;
 	}
 
-	bool GameUnit::addAura(std::unique_ptr<Aura> aura)
+	bool GameUnit::addAura(std::shared_ptr<Aura> aura)
 	{
 		// TODO: Check aura stack system etc.
 
