@@ -73,6 +73,14 @@ namespace wowpp
 				SetContactNotes			= 0x06B,
 				AddIgnore				= 0x06C,
 				DeleteIgnore			= 0x06D,
+				GroupInvite				= 0x06E,
+				GroupAccept				= 0x072,
+				GroupDecline			= 0x073,
+				GroupUninvite			= 0x075,
+				GroupUninviteGUID		= 0x076,
+				GroupSetLeader			= 0x078,
+				LootMethod				= 0x07A,
+				GroupDisband			= 0x07B,
 				MessageChat				= 0x095,
 				MoveStartForward		= 0x0B5,
 				MoveStartBackward		= 0x0B6,
@@ -159,6 +167,15 @@ namespace wowpp
 				CreatureQueryResponse		= 0x061,
 				ContactList					= 0x067,
 				FriendStatus				= 0x068,
+				GroupInvite					= 0x06F,
+				GroupCancel					= 0x071,
+				GroupDecline				= 0x074,
+				GroupUninvite				= 0x077,
+				GroupSetLeader				= 0x079,
+				GroupDestroyed				= 0x07C,
+				GroupList					= 0x07D,
+				PartyMemberStatus			= 0x07E,
+				PartyCommandResult			= 0x07F,
 				MessageChat					= 0x096,
 				UpdateObject				= 0x0A9,
 				DestroyObject				= 0x0AA,
@@ -214,6 +231,7 @@ namespace wowpp
 				SetExtraAuraInfoNeedUpdate	= 0x3A5,
 				FeatureSystemStatus			= 0x3C8,
 				UnlearnSpells				= 0x41D,
+				
 			};
 		}
 
@@ -592,6 +610,45 @@ namespace wowpp
 				UInt8 &out_data1, 
 				UInt8 &out_data2, 
 				UInt8 &out_data3
+				);
+
+			bool groupInvite(
+				io::Reader &packet,
+				String &out_memberName
+				);
+
+			bool groupAccept(
+				io::Reader &packet
+				);
+
+			bool groupDecline(
+				io::Reader &packet
+				);
+
+			bool groupUninvite(
+				io::Reader &packet,
+				String &out_memberName
+				);
+
+			bool groupUninviteGUID(
+				io::Reader &packet,
+				UInt64 &out_guid
+				);
+
+			bool groupSetLeader(
+				io::Reader &packet,
+				UInt64 &out_leaderGUID
+				);
+
+			bool lootMethod(
+				io::Reader &packet,
+				UInt32 &out_method,
+				UInt64 &out_masterGUID,
+				UInt32 &out_treshold
+				);
+
+			bool groupDisband(
+				io::Reader &packet
 				);
 		};
 
@@ -1035,6 +1092,44 @@ namespace wowpp
 				Int32 staminaGained,
 				Int32 intellectGained,
 				Int32 spiritGained
+				);
+
+			void groupInvite(
+				game::OutgoingPacket &out_packet,
+				const String &inviterName
+				);
+
+			void groupDecline(
+				game::OutgoingPacket &out_packet,
+				const String &inviterName
+				);
+
+			void groupUninvite(
+				game::OutgoingPacket &out_packet
+				);
+
+			void groupSetLeader(
+				game::OutgoingPacket &out_packet,
+				const String &slotName
+				);
+
+			void groupDestroyed(
+				game::OutgoingPacket &out_packet
+				);
+
+			void groupList(
+				game::OutgoingPacket &out_packet,
+				UInt8 groupType,
+				bool isBattlegroundGroup,
+				UInt8 groupId,
+				UInt8 assistant,
+				UInt64 data1,
+				//TODO Members
+				UInt64 leaderGuid,
+				UInt8 lootMethod,
+				UInt64 lootMasterGUID,
+				UInt8 lootTreshold,
+				UInt8 difficulty
 				);
 		};
 	}

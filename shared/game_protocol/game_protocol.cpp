@@ -2287,6 +2287,78 @@ namespace wowpp
 					>> io::read<NetUInt8>(out_data2)
 					>> io::read<NetUInt8>(out_data3);
 			}
+
+			bool groupInvite(io::Reader &packet, String &out_memberName)
+			{
+				char c = 0x00;
+				do
+				{
+					if (!(packet >> c))
+					{
+						return false;
+					}
+					if (c != 0)
+					{
+						out_memberName.push_back(c);
+					}
+				} while (c != 0);
+				
+				return packet;
+			}
+
+			bool groupAccept(io::Reader &packet)
+			{
+				return packet;
+			}
+
+			bool groupDecline(io::Reader &packet)
+			{
+				return packet;
+			}
+
+			bool groupUninvite(io::Reader &packet, String &out_memberName)
+			{
+				char c = 0x00;
+				do
+				{
+					if (!(packet >> c))
+					{
+						return false;
+					}
+					if (c != 0)
+					{
+						out_memberName.push_back(c);
+					}
+				} while (c != 0);
+
+				return packet;
+			}
+
+			bool groupUninviteGUID(io::Reader &packet, UInt64 &out_guid)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_guid);
+			}
+
+			bool groupSetLeader(io::Reader &packet, UInt64 &out_leaderGUID)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_leaderGUID);
+			}
+
+			bool lootMethod(io::Reader &packet, UInt32 &out_method, UInt64 &out_masterGUID, UInt32 &out_treshold)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_method)
+					>> io::read<NetUInt64>(out_masterGUID)
+					>> io::read<NetUInt32>(out_treshold);
+			}
+
+			bool groupDisband(io::Reader &packet)
+			{
+				return packet;
+			}
+
 		}
 	}
 }

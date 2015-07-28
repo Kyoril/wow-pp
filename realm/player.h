@@ -211,5 +211,13 @@ namespace wowpp
 		void handleAddIgnore(game::IncomingPacket &packet);
 		void handleDeleteIgnore(game::IncomingPacket &packet);
 		void handleItemQuerySingle(game::IncomingPacket &packet);
+		void handleGroupInvite(game::IncomingPacket &packet);
+		void handleGroupAccept(game::IncomingPacket &packet);
+		void handleGroupDecline(game::IncomingPacket &packet);
+		void handleGroupUninvite(game::IncomingPacket &packet);
+		void handleGroupUninviteGUID(game::IncomingPacket &packet);
+		void handleGroupSetLeader(game::IncomingPacket &packet);
+		void handleLootMethod(game::IncomingPacket &packet);
+		void handleGroupDisband(game::IncomingPacket &packet);
 	};
 }

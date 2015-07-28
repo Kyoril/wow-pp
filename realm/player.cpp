@@ -282,6 +282,15 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(AddIgnore, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(DeleteIgnore, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(ItemQuerySingle, game::session_status::LoggedIn)
+
+			WOWPP_HANDLE_PACKET(GroupInvite, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(GroupAccept, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(GroupDecline, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(GroupUninvite, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(GroupUninviteGUID, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(GroupSetLeader, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(LootMethod, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(GroupDisband, game::session_status::LoggedIn)
 #undef WOWPP_HANDLE_PACKET
 
 			default:
@@ -1239,6 +1248,108 @@ namespace wowpp
 			DLOG("Saving character. Position: " << x << "," << y << "," << z << "," << o);
 			m_database.saveGameCharacter(*m_gameCharacter);
 		}
+	}
+
+	void Player::handleGroupInvite(game::IncomingPacket &packet)
+	{
+		String playerName;
+		if (!game::client_read::groupInvite(packet, playerName))
+		{
+			// Could not read packet
+			return;
+		}
+
+		// Capitalize player name
+		capitalize(playerName);
+
+		DLOG("CMSG_GROUP_INVITE: Player " << m_gameCharacter->getName() << " invites player " << playerName);
+	}
+
+	void Player::handleGroupAccept(game::IncomingPacket &packet)
+	{
+		if (!game::client_read::groupAccept(packet))
+		{
+			// Could not read packet
+			return;
+		}
+
+		DLOG("CMSG_GROUP_ACCEPT: Player " << m_gameCharacter->getName() << " accepts group invite");
+	}
+
+	void Player::handleGroupDecline(game::IncomingPacket &packet)
+	{
+		if (!game::client_read::groupDecline(packet))
+		{
+			// Could not read packet
+			return;
+		}
+
+		DLOG("CMSG_GROUP_DECLINE: Player " << m_gameCharacter->getName() << " declines group invite");
+	}
+
+	void Player::handleGroupUninvite(game::IncomingPacket &packet)
+	{
+		String memberName;
+		if (!game::client_read::groupUninvite(packet, memberName))
+		{
+			// Could not read packet
+			return;
+		}
+
+		// Capitalize player name
+		capitalize(memberName);
+
+		DLOG("CMSG_GROUP_UNINVITE: Player " << m_gameCharacter->getName() << " want's to uninvite member " << memberName);
+	}
+
+	void Player::handleGroupUninviteGUID(game::IncomingPacket &packet)
+	{
+		UInt64 memberGUID;
+		if (!game::client_read::groupUninviteGUID(packet, memberGUID))
+		{
+			// Could not read packet
+			return;
+		}
+
+		DLOG("CMSG_GROUP_UNINVITE_GUID: Player " << m_gameCharacter->getName() << " want's to uninvite member 0x" << std::hex << std::uppercase << std::setw(16) << std::setfill('0') << memberGUID);
+	}
+
+	void Player::handleGroupSetLeader(game::IncomingPacket &packet)
+	{
+		UInt64 leaderGUID;
+		if (!game::client_read::groupSetLeader(packet, leaderGUID))
+		{
+			// Could not read packet
+			return;
+		}
+
+		DLOG("CMSG_GROUP_SET_LEADER: Player " << m_gameCharacter->getName() << " want's to change leader to 0x" << std::hex << std::uppercase << std::setw(16) << std::setfill('0') << leaderGUID);
+	}
+
+	void Player::handleLootMethod(game::IncomingPacket &packet)
+	{
+		UInt32 lootMethod, lootTreshold;
+		UInt64 lootMasterGUID;
+		if (!game::client_read::lootMethod(packet, lootMethod, lootMasterGUID, lootTreshold))
+		{
+			// Could not read packet
+			return;
+		}
+
+		DLOG("CMSG_LOOT_METHOD: Player " << m_gameCharacter->getName() << " want's to change loot method to: " << lootMethod);
+		DLOG("Loot master: 0x" << std::hex << std::uppercase << std::setw(16) << std::setfill('0') << lootMasterGUID);
+		DLOG("Loot treshold: " << lootTreshold);
+	}
+
+	void Player::handleGroupDisband(game::IncomingPacket &packet)
+	{
+		if (!game::client_read::groupDisband(packet))
+		{
+			// Could not read packet
+			return;
+		}
+
+		DLOG("CMSG_GROUP_DISBAND: Player " << m_gameCharacter->getName() << " want's to disband his group");
 	}
 
 }
