@@ -1825,10 +1825,41 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void groupList(game::OutgoingPacket &out_packet, UInt8 groupType, bool isBattlegroundGroup, UInt8 groupId, UInt8 assistant, UInt64 data1, /*TODO Members */ UInt64 leaderGuid, UInt8 lootMethod, UInt64 lootMasterGUID, UInt8 lootTreshold, UInt8 difficulty)
+			void groupList(game::OutgoingPacket &out_packet, UInt64 receiver, UInt8 groupType, bool isBattlegroundGroup, UInt8 groupId, UInt8 assistant, UInt64 data1, const std::map<UInt64, GroupMemberSlot> &groupMembers, UInt64 leaderGuid, UInt8 lootMethod, UInt64 lootMasterGUID, UInt8 lootTreshold, UInt8 difficulty)
 			{
 				out_packet.start(game::server_packet::GroupList);
-				// TODO
+				
+				out_packet
+					<< io::write<NetUInt8>(groupType)
+					<< io::write<NetUInt8>(isBattlegroundGroup ? 1 : 0)
+					<< io::write<NetUInt8>(groupId)
+					<< io::write<NetUInt8>(assistant)
+					<< io::write<NetUInt64>(data1)
+					<< io::write<NetUInt32>(groupMembers.size() - 1);
+				for (auto &it : groupMembers)
+				{
+					if (it.first == receiver)
+						continue;
+
+					out_packet
+						<< io::write_range(it.second.name) << io::write<NetUInt8>(0)
+						<< io::write<NetUInt64>(it.first)
+						<< io::write<NetUInt8>(it.second.status)
+						<< io::write<NetUInt8>(it.second.group)
+						<< io::write<NetUInt8>(it.second.assistant ? 1 : 0);
+				}
+
+				out_packet
+					<< io::write<NetUInt64>(leaderGuid);
+				if (groupMembers.size() > 1)
+				{
+					out_packet
+						<< io::write<NetUInt8>(lootMethod)
+						<< io::write<NetUInt64>(lootMasterGUID)
+						<< io::write<NetUInt8>(lootTreshold)
+						<< io::write<NetUInt8>(difficulty);
+
+				}
 				out_packet.finish();
 			}
 

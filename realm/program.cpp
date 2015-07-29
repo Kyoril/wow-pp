@@ -28,6 +28,7 @@
 #include "player_manager.h"
 #include "player.h"
 #include "player_social.h"
+#include "player_group.h"
 #include "world_manager.h"
 #include "world.h"
 #include "login_connector.h"

@@ -37,6 +37,7 @@
 #include "common/utilities.h"
 #include "game/game_item.h"
 #include "boost/algorithm/string.hpp"
+#include "player_group.h"
 #include <cassert>
 #include <limits>
 
@@ -1049,6 +1050,28 @@ namespace wowpp
 
 				break;
 			}
+			case chat_msg::Party:
+			{
+				// Get the players group
+				if (!m_group)
+				{
+					WLOG("Player is not in group");
+					return;
+				}
+
+				// Maybe we were just invited, but are not yet a member of that group
+				if (!m_group->isMember(*m_gameCharacter))
+				{
+					WLOG("Player is not a member of the group, but was just invited.");
+					return;
+				}
+
+				// Broadcast chat packet
+				m_group->broadcastPacket(
+					std::bind(game::server_write::messageChat, std::placeholders::_1, chat_msg::Party, lang, std::cref(channel), m_characterId, std::cref(message), m_gameCharacter.get()));
+
+				break;
+			}
 			// Can be local or global chat mode
 			case chat_msg::Channel:
 			{
@@ -1290,15 +1313,49 @@ namespace wowpp
 			return;
 		}
 
-		// TODO: Create group and perform more checks
+		// Check if target is already member of a group
+		if (player->getGroup())
+		{
+			sendPacket(
+				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, party_operation::Invite, std::cref(playerName), party_result::AlreadyInGroup));
+			return;
+		}
 
 		DLOG("CMSG_GROUP_INVITE: Player " << m_gameCharacter->getName() << " invites player " << playerName);
 
+		// Get players group or create a new one
+		if (!m_group)
+		{
+			// Create the group
+			m_group = std::make_shared<PlayerGroup>(m_manager);
+			m_group->create(*m_gameCharacter);
+		}
+
+		// Check if we are the leader of that group
+		if (m_group->getLeader() != m_gameCharacter->getGuid())
+		{
+			sendPacket(
+				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, party_operation::Invite, "", party_result::YouNotLeader));
+			return;
+		}
+
+		// Invite player to the group
+		auto result = m_group->addInvite(character->getGuid());
+		if (result != game::party_result::Ok)
+		{
+			sendPacket(
+				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, party_operation::Invite, "", result));
+			return;
+		}
+
+		player->setGroup(m_group);
 		player->sendPacket(
 			std::bind(game::server_write::groupInvite, std::placeholders::_1, std::cref(m_gameCharacter->getName())));
 
+		// Send result
 		sendPacket(
 			std::bind(game::server_write::partyCommandResult, std::placeholders::_1, party_operation::Invite, std::cref(playerName), party_result::Ok));
+		m_group->sendUpdate();
 	}
 
 	void Player::handleGroupAccept(game::IncomingPacket &packet)
@@ -1309,7 +1366,21 @@ namespace wowpp
 			return;
 		}
 
+		if (!m_group)
+		{
+			WLOG("Player accepted group invitation, but is not in a group");
+			return;
+		}
+
+		auto result = m_group->addMember(*m_gameCharacter);
+		if (result != party_result::Ok)
+		{
+			// TODO...
+			return;
+		}
+
 		DLOG("CMSG_GROUP_ACCEPT: Player " << m_gameCharacter->getName() << " accepts group invite");
+		m_group->sendUpdate();
 	}
 
 	void Player::handleGroupDecline(game::IncomingPacket &packet)
@@ -1386,6 +1457,11 @@ namespace wowpp
 		}
 
 		DLOG("CMSG_GROUP_DISBAND: Player " << m_gameCharacter->getName() << " want's to disband his group");
+	}
+
+	void Player::setGroup(std::shared_ptr<PlayerGroup> group)
+	{
+		m_group = group;
 	}
 
 }

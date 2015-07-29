@@ -47,6 +47,7 @@ namespace wowpp
 	class World;
 	struct Configuration;
 	class PlayerSocial;
+	class PlayerGroup;
 
 	/// Player connection class.
 	class Player final
@@ -114,6 +115,10 @@ namespace wowpp
 		GameCharacter *getGameCharacter() const { return m_gameCharacter.get(); }
 		/// 
 		PlayerSocial &getSocial() { return *m_social; }
+		/// Returns the players group (or nullptr, if the player is not in a group).
+		PlayerGroup *getGroup() { return m_group.get(); }
+		/// Sets the players new group.
+		void setGroup(std::shared_ptr<PlayerGroup> group);
 
 		/// Sends an encrypted packet to the game client
 		/// @param generator Packet writer function pointer.
@@ -176,6 +181,7 @@ namespace wowpp
 		UInt32 m_timeSyncCounter;
 		World *m_worldNode;
 		std::unique_ptr<PlayerSocial> m_social;
+		std::shared_ptr<PlayerGroup> m_group;
 
 	private:
 

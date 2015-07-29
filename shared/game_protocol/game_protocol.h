@@ -435,6 +435,27 @@ namespace wowpp
 
 		typedef party_result::Type PartyResult;
 
+		/// Stores data of a group member.
+		struct GroupMemberSlot final
+		{
+			/// Group member name.
+			String name;
+			/// Group id (0-7)
+			UInt8 group;
+			/// Is assistant?
+			bool assistant;
+			/// Status
+			UInt32 status;
+
+			/// 
+			GroupMemberSlot()
+				: group(0)
+				, assistant(false)
+				, status(0)
+			{
+			}
+		};
+
 		namespace client_read
 		{
 			bool ping(
@@ -1163,12 +1184,13 @@ namespace wowpp
 
 			void groupList(
 				game::OutgoingPacket &out_packet,
+				UInt64 receiver,
 				UInt8 groupType,
 				bool isBattlegroundGroup,
 				UInt8 groupId,
 				UInt8 assistant,
 				UInt64 data1,
-				//TODO Members
+				const std::map<UInt64, GroupMemberSlot> &groupMembers,
 				UInt64 leaderGuid,
 				UInt8 lootMethod,
 				UInt64 lootMasterGUID,
