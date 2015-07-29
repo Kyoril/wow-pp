@@ -1262,7 +1262,43 @@ namespace wowpp
 		// Capitalize player name
 		capitalize(playerName);
 
+		// Try to find that player
+		auto *player = m_manager.getPlayerByCharacterName(playerName);
+		if (!player)
+		{
+			sendPacket(
+				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, party_operation::Invite, std::cref(playerName), party_result::CantFindTarget));
+			return;
+		}
+
+		// Check that players character faction
+		auto *character = player->getGameCharacter();
+		if (!character)
+		{
+			sendPacket(
+				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, party_operation::Invite, std::cref(playerName), party_result::CantFindTarget));
+			return;
+		}
+
+		// Check team (no cross-faction groups)
+		const bool isAllianceA = ((game::race::Alliance & (1 << (m_gameCharacter->getRace() - 1))) == (1 << (m_gameCharacter->getRace() - 1)));
+		const bool isAllianceB = ((game::race::Alliance & (1 << (character->getRace() - 1))) == (1 << (character->getRace() - 1)));
+		if (isAllianceA != isAllianceB)
+		{
+			sendPacket(
+				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, party_operation::Invite, std::cref(playerName), party_result::TargetUnfriendly));
+			return;
+		}
+
+		// TODO: Create group and perform more checks
+
 		DLOG("CMSG_GROUP_INVITE: Player " << m_gameCharacter->getName() << " invites player " << playerName);
+
+		player->sendPacket(
+			std::bind(game::server_write::groupInvite, std::placeholders::_1, std::cref(m_gameCharacter->getName())));
+
+		sendPacket(
+			std::bind(game::server_write::partyCommandResult, std::placeholders::_1, party_operation::Invite, std::cref(playerName), party_result::Ok));
 	}
 
 	void Player::handleGroupAccept(game::IncomingPacket &packet)

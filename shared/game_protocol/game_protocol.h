@@ -391,6 +391,50 @@ namespace wowpp
 
 		typedef expansions::Type Expansions;
 
+		namespace party_operation
+		{
+			enum Type
+			{
+				Invite		= 0,
+				Leave		= 2
+			};
+		}
+
+		typedef party_operation::Type PartyOperation;
+
+		namespace party_result
+		{
+			enum Type
+			{
+				/// Silent, no client output.
+				Ok						= 0,
+				/// Cannot find player "%s".
+				CantFindTarget			= 1,
+				/// %s is not in your party.
+				NotInYourParty			= 2,
+				/// %s is not in your instance.
+				NotInYourInstance		= 3,
+				/// Your party is full.
+				PartyFull				= 4,
+				/// %s is already in a group.
+				AlreadyInGroup			= 5,
+				/// You aren't in a party.
+				YouNotInGroup			= 6,
+				/// You are not the party leader.
+				YouNotLeader			= 7,
+				/// Target is unfriendly.
+				TargetUnfriendly		= 8,
+				/// %s is ignoring you.
+				TargetIgnoreYou			= 9,
+				/// You already have a pending match.
+				PendingMatch			= 12,
+				/// Trial accounts cannot invite characters into groups.
+				InviteRestricted		= 13
+			};
+		}
+
+		typedef party_result::Type PartyResult;
+
 		namespace client_read
 		{
 			bool ping(
@@ -1130,6 +1174,18 @@ namespace wowpp
 				UInt64 lootMasterGUID,
 				UInt8 lootTreshold,
 				UInt8 difficulty
+				);
+
+			void partyMemberStatus(
+				game::OutgoingPacket &out_packet
+				// TODO
+				);
+
+			void partyCommandResult(
+				game::OutgoingPacket &out_packet,
+				PartyOperation operation,
+				const String &member,
+				PartyResult result
 				);
 		};
 	}

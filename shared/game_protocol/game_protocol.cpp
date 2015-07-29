@@ -1771,6 +1771,67 @@ namespace wowpp
 					<< io::write<NetInt32>(spiritGained);
 				out_packet.finish();
 			}
+
+			void partyMemberStatus(game::OutgoingPacket &out_packet /* TODO */)
+			{
+				out_packet.start(game::server_packet::PartyMemberStatus);
+				// TODO
+				out_packet.finish();
+			}
+
+			void partyCommandResult(game::OutgoingPacket &out_packet, PartyOperation operation, const String &member, PartyResult result)
+			{
+				out_packet.start(game::server_packet::PartyCommandResult);
+				out_packet
+					<< io::write<NetUInt32>(operation)
+					<< io::write_range(member) << io::write<NetUInt8>(0)
+					<< io::write<NetInt32>(result);
+				out_packet.finish();
+			}
+
+			void groupInvite(game::OutgoingPacket &out_packet, const String &inviterName)
+			{
+				out_packet.start(game::server_packet::GroupInvite);
+				out_packet
+					<< io::write_range(inviterName) << io::write<NetUInt8>(0);
+				out_packet.finish();
+			}
+
+			void groupDecline(game::OutgoingPacket &out_packet, const String &inviterName)
+			{
+				out_packet.start(game::server_packet::GroupDecline);
+				out_packet
+					<< io::write_range(inviterName) << io::write<NetUInt8>(0);
+				out_packet.finish();
+			}
+
+			void groupUninvite(game::OutgoingPacket &out_packet)
+			{
+				out_packet.start(game::server_packet::GroupUninvite);
+				out_packet.finish();
+			}
+
+			void groupSetLeader(game::OutgoingPacket &out_packet, const String &slotName)
+			{
+				out_packet.start(game::server_packet::GroupSetLeader);
+				out_packet
+					<< io::write_range(slotName) << io::write<NetUInt8>(0);
+				out_packet.finish();
+			}
+
+			void groupDestroyed(game::OutgoingPacket &out_packet)
+			{
+				out_packet.start(game::server_packet::GroupDestroyed);
+				out_packet.finish();
+			}
+
+			void groupList(game::OutgoingPacket &out_packet, UInt8 groupType, bool isBattlegroundGroup, UInt8 groupId, UInt8 assistant, UInt64 data1, /*TODO Members */ UInt64 leaderGuid, UInt8 lootMethod, UInt64 lootMasterGUID, UInt8 lootTreshold, UInt8 difficulty)
+			{
+				out_packet.start(game::server_packet::GroupList);
+				// TODO
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read
