@@ -36,6 +36,7 @@
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
 #include "binary_io/vector_sink.h"
+#include "game/game_character.h"
 
 namespace wowpp
 {
@@ -1771,11 +1772,274 @@ namespace wowpp
 					<< io::write<NetInt32>(spiritGained);
 				out_packet.finish();
 			}
-
-			void partyMemberStatus(game::OutgoingPacket &out_packet /* TODO */)
+			
+			void partyMemberStats(game::OutgoingPacket &out_packet, const GameCharacter &character)
 			{
-				out_packet.start(game::server_packet::PartyMemberStatus);
-				// TODO
+				out_packet.start(game::server_packet::PartyMemberStats);
+
+				UInt64 guid = character.getGuid();
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; guid != 0; ++i)
+					{
+						if (guid & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(guid & 0xFF);
+							++size;
+						}
+
+						guid >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+				auto updateFlags = character.getGroupUpdateFlags();
+				out_packet
+					<< io::write<NetUInt32>(updateFlags);
+
+				if (updateFlags & group_update_flags::Status)
+				{
+					UInt16 flags = 0;
+					flags = group_member_status::Online;
+					out_packet
+						<< io::write<NetUInt16>(flags);
+				}
+
+				if (updateFlags & group_update_flags::CurrentHP)
+					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::Health));
+
+				if (updateFlags & group_update_flags::MaxHP)
+					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::MaxHealth));
+
+				UInt8 powerType = character.getByteValue(unit_fields::Bytes0, 3);
+				if (updateFlags & group_update_flags::PowerType)
+					out_packet << io::write<NetUInt8>(powerType);
+
+				if (updateFlags & group_update_flags::CurrentPower)
+					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::Power1 + powerType));
+
+				if (updateFlags & group_update_flags::MaxPower)
+					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::MaxPower1 + powerType));
+
+				if (updateFlags & group_update_flags::Level)
+					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::Level));
+
+				if (updateFlags & group_update_flags::Zone)
+					out_packet << io::write<NetUInt16>(character.getZone());
+				
+				if (updateFlags & group_update_flags::Position)
+				{
+					float x, y, z, o;
+					character.getLocation(x, y, z, o);
+					out_packet << io::write<NetUInt16>(UInt16(x)) << io::write<NetUInt16>(UInt16(y));
+				}
+				
+				if (updateFlags & group_update_flags::Auras)
+				{
+					UInt64 auramask = 0;
+					/*for (UInt32 i = 0; i < 56; ++i)
+					{
+						if (character.getUInt32Value(unit_fields::Aura + i) != 0)
+						{
+							auramask |= (UInt64(1) << i);
+						}
+					}*/
+					out_packet 
+						<< io::write<NetUInt64>(auramask);
+					/*for (UInt32 i = 0; i < 56; ++i)
+					{
+						UInt32 aura = character.getUInt32Value(unit_fields::Aura + i);
+						if (aura != 0)
+						{
+							out_packet
+								<< io::write<NetUInt16>(aura) << io::write<NetUInt8>(1);
+						}
+					}*/
+				}
+
+				if (updateFlags & group_update_flags::PetGUID)
+					out_packet << io::write<NetUInt64>(0);
+
+				if (updateFlags & group_update_flags::PetName)
+					out_packet << io::write<NetUInt8>(0);
+
+				if (updateFlags & group_update_flags::PetModelID)
+					out_packet << io::write<NetUInt16>(0);
+
+				if (updateFlags & group_update_flags::PetCurrentHP)
+					out_packet << io::write<NetUInt16>(0);
+
+				if (updateFlags & group_update_flags::PetMaxHP)
+					out_packet << io::write<NetUInt16>(0);
+
+				if (updateFlags & group_update_flags::PetPowerType)
+					out_packet << io::write<NetUInt8>(0);
+
+				if (updateFlags & group_update_flags::PetCurrentPower)
+					out_packet << io::write<NetUInt16>(0);
+
+				if (updateFlags & group_update_flags::PetMaxPower)
+					out_packet << io::write<NetUInt16>(0);
+
+				if (updateFlags & group_update_flags::PetAuras)
+					out_packet << io::write<NetUInt64>(0);
+
+				out_packet.finish();
+			}
+
+			void partyMemberStatsFull(game::OutgoingPacket &out_packet, const GameCharacter &character)
+			{
+				out_packet.start(game::server_packet::PartyMemberStatsFull);
+
+				UInt64 guid = character.getGuid();
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; guid != 0; ++i)
+					{
+						if (guid & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(guid & 0xFF);
+							++size;
+						}
+
+						guid >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+
+				// Full player update
+				auto updateFlags = group_update_flags::Full;
+				updateFlags = static_cast<GroupUpdateFlags>(updateFlags & ~group_update_flags::Pet);
+				out_packet
+					<< io::write<NetUInt32>(updateFlags);
+
+				if (updateFlags & group_update_flags::Status)
+				{
+					UInt16 flags = 0;
+					flags = group_member_status::Online;
+					out_packet
+						<< io::write<NetUInt16>(flags);
+				}
+
+				if (updateFlags & group_update_flags::CurrentHP)
+					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::Health));
+
+				if (updateFlags & group_update_flags::MaxHP)
+					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::MaxHealth));
+
+				UInt8 powerType = character.getByteValue(unit_fields::Bytes0, 3);
+				if (updateFlags & group_update_flags::PowerType)
+					out_packet << io::write<NetUInt8>(powerType);
+
+				if (updateFlags & group_update_flags::CurrentPower)
+					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::Power1 + powerType));
+
+				if (updateFlags & group_update_flags::MaxPower)
+					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::MaxPower1 + powerType));
+
+				if (updateFlags & group_update_flags::Level)
+					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::Level));
+
+				if (updateFlags & group_update_flags::Zone)
+					out_packet << io::write<NetUInt16>(character.getZone());
+
+				if (updateFlags & group_update_flags::Position)
+				{
+					float x, y, z, o;
+					character.getLocation(x, y, z, o);
+					out_packet << io::write<NetUInt16>(UInt16(x)) << io::write<NetUInt16>(UInt16(y));
+				}
+
+				if (updateFlags & group_update_flags::Auras)
+				{
+					UInt64 auramask = 0;
+					for (UInt32 i = 0; i < 56; ++i)
+					{
+						if (character.getUInt32Value(unit_fields::Aura + i) != 0)
+						{
+							auramask |= (UInt64(1) << i);
+						}
+					}
+					out_packet
+						<< io::write<NetUInt64>(auramask);
+					for (UInt32 i = 0; i < 56; ++i)
+					{
+						UInt32 aura = character.getUInt32Value(unit_fields::Aura + i);
+						if (aura != 0)
+						{
+							out_packet
+								<< io::write<NetUInt16>(aura) << io::write<NetUInt8>(1);
+						}
+					}
+				}
+
+				if (updateFlags & group_update_flags::PetGUID)
+					out_packet << io::write<NetUInt64>(0);
+
+				if (updateFlags & group_update_flags::PetName)
+					out_packet << io::write<NetUInt8>(0);
+
+				if (updateFlags & group_update_flags::PetModelID)
+					out_packet << io::write<NetUInt16>(0);
+
+				if (updateFlags & group_update_flags::PetCurrentHP)
+					out_packet << io::write<NetUInt16>(0);
+
+				if (updateFlags & group_update_flags::PetMaxHP)
+					out_packet << io::write<NetUInt16>(0);
+
+				if (updateFlags & group_update_flags::PetPowerType)
+					out_packet << io::write<NetUInt8>(0);
+
+				if (updateFlags & group_update_flags::PetCurrentPower)
+					out_packet << io::write<NetUInt16>(0);
+
+				if (updateFlags & group_update_flags::PetMaxPower)
+					out_packet << io::write<NetUInt16>(0);
+
+				if (updateFlags & group_update_flags::PetAuras)
+					out_packet << io::write<NetUInt64>(0);
+
+				out_packet.finish();
+			}
+
+			void partyMemberStatsFullOffline(game::OutgoingPacket &out_packet, UInt64 offlineGUID)
+			{
+				out_packet.start(game::server_packet::PartyMemberStatsFull);
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; offlineGUID != 0; ++i)
+					{
+						if (offlineGUID & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(offlineGUID & 0xFF);
+							++size;
+						}
+
+						offlineGUID >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+				out_packet
+					<< io::write<NetUInt32>(group_update_flags::Status)
+					<< io::write<NetUInt16>(group_member_status::Offline);
 				out_packet.finish();
 			}
 
@@ -1828,7 +2092,6 @@ namespace wowpp
 			void groupList(game::OutgoingPacket &out_packet, UInt64 receiver, UInt8 groupType, bool isBattlegroundGroup, UInt8 groupId, UInt8 assistant, UInt64 data1, const std::map<UInt64, GroupMemberSlot> &groupMembers, UInt64 leaderGuid, UInt8 lootMethod, UInt64 lootMasterGUID, UInt8 lootTreshold, UInt8 difficulty)
 			{
 				out_packet.start(game::server_packet::GroupList);
-				
 				out_packet
 					<< io::write<NetUInt8>(groupType)
 					<< io::write<NetUInt8>(isBattlegroundGroup ? 1 : 0)
@@ -1848,7 +2111,6 @@ namespace wowpp
 						<< io::write<NetUInt8>(it.second.group)
 						<< io::write<NetUInt8>(it.second.assistant ? 1 : 0);
 				}
-
 				out_packet
 					<< io::write<NetUInt64>(leaderGuid);
 				if (groupMembers.size() > 1)
@@ -2449,6 +2711,12 @@ namespace wowpp
 			bool groupDisband(io::Reader &packet)
 			{
 				return packet;
+			}
+
+			bool requestPartyMemberStats(io::Reader &packet, UInt64 &out_GUID)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_GUID);
 			}
 
 		}

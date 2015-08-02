@@ -28,6 +28,7 @@
 #include "game_protocol/game_protocol.h"
 #include "binary_io/vector_sink.h"
 #include "common/linear_set.h"
+#include "log/default_log_levels.h"
 #include <vector>
 
 namespace wowpp
@@ -49,22 +50,6 @@ namespace wowpp
 
 	typedef roll_vote::Type RollVote;
 
-	namespace group_member_status
-	{
-		enum Type
-		{
-			Offline				= 0x0000,
-			Online				= 0x0001,
-			PvP					= 0x0002,
-			Dead				= 0x0004,
-			Ghost				= 0x0008,
-			Unknown_1			= 0x0040,
-			ReferAFriendBuddy	= 0x0100
-		};
-	}
-
-	typedef group_member_status::Type GroupMemberStatus;
-
 	namespace group_type
 	{
 		enum Type
@@ -77,38 +62,6 @@ namespace wowpp
 	}
 
 	typedef group_type::Type GroupType;
-
-	namespace group_update_flags
-	{
-		enum Type
-		{
-			None			= 0x00000000,
-			Status			= 0x00000001,
-			CurrentHP		= 0x00000002,
-			MaxHP			= 0x00000004,
-			PowerType		= 0x00000008,
-			CurrentPower	= 0x00000010,
-			MaxPower		= 0x00000020,
-			Level			= 0x00000040,
-			Zone			= 0x00000080,
-			Position		= 0x00000100,
-			Auras			= 0x00000200,
-			PetGUID			= 0x00000400,
-			PetName			= 0x00000800,
-			PetModelID		= 0x00001000,
-			PetCurrentHP	= 0x00002000,
-			PetMaxHP		= 0x00004000,
-			PetPowerType	= 0x00008000,
-			PetCurrentPower	= 0x00010000,
-			PetMaxPower		= 0x00020000,
-			PetAuras		= 0x00040000,
-
-			Pet = (PetGUID | PetName | PetModelID | PetCurrentHP | PetMaxHP | PetPowerType | PetCurrentPower | PetMaxPower | PetAuras),
-			Full = (Status | CurrentHP | MaxHP | PowerType | CurrentPower | MaxPower | Level | Zone | Position | Auras | Pet)
-		};
-	}
-
-	typedef group_update_flags::Type GroupUpdateFlags;
 
 	namespace loot_method
 	{
@@ -172,13 +125,18 @@ namespace wowpp
 		UInt64 getLeader() const { return m_leaderGUID; }
 
 		template<class F>
-		void broadcastPacket(F creator)
+		void broadcastPacket(F creator, UInt64 except = 0)
 		{
 			for (auto &member : m_members)
 			{
+				if (member.first == except)
+					continue;
+
 				auto *player = m_playerManager.getPlayerByCharacterGuid(member.first);
 				if (player)
 				{
+					DLOG("SMSG_PARTY_MEMBER_STATS");
+
 					player->sendPacket(creator);
 				}
 			}

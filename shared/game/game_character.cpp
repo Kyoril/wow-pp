@@ -39,6 +39,7 @@ namespace wowpp
 		, m_comboTarget(0)
 		, m_comboPoints(0)
 		, m_manaRegBase(0.0f)
+		, m_groupUpdateFlags(group_update_flags::None)
 	{
 		// Resize values field
 		m_values.resize(character_fields::CharacterFieldCount);
@@ -721,6 +722,18 @@ namespace wowpp
 		// Update amount of XP
 		experienceGained(victim ? victim->getGuid() : 0, experience, 0);
 		setUInt32Value(character_fields::Xp, newXP);
+	}
+
+	void GameCharacter::modifyGroupUpdateFlags(GroupUpdateFlags flags, bool apply)
+	{
+		if (apply)
+		{
+			m_groupUpdateFlags = static_cast<GroupUpdateFlags>(m_groupUpdateFlags | flags);
+		}
+		else
+		{
+			m_groupUpdateFlags = static_cast<GroupUpdateFlags>(m_groupUpdateFlags & ~flags);
+		}
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameCharacter const& object)

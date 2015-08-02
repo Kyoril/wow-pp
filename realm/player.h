@@ -225,5 +225,7 @@ namespace wowpp
 		void handleGroupSetLeader(game::IncomingPacket &packet);
 		void handleLootMethod(game::IncomingPacket &packet);
 		void handleGroupDisband(game::IncomingPacket &packet);
+		void handleRequestPartyMemberStats(game::IncomingPacket &packet);
+
 	};
 }

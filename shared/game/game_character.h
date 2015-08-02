@@ -402,6 +402,38 @@ namespace wowpp
 
 	typedef player_key_ring_slots::Enum PlayerKeyRingSlots;
 
+	namespace group_update_flags
+	{
+		enum Type
+		{
+			None = 0x00000000,
+			Status = 0x00000001,
+			CurrentHP = 0x00000002,
+			MaxHP = 0x00000004,
+			PowerType = 0x00000008,
+			CurrentPower = 0x00000010,
+			MaxPower = 0x00000020,
+			Level = 0x00000040,
+			Zone = 0x00000080,
+			Position = 0x00000100,
+			Auras = 0x00000200,
+			PetGUID = 0x00000400,
+			PetName = 0x00000800,
+			PetModelID = 0x00001000,
+			PetCurrentHP = 0x00002000,
+			PetMaxHP = 0x00004000,
+			PetPowerType = 0x00008000,
+			PetCurrentPower = 0x00010000,
+			PetMaxPower = 0x00020000,
+			PetAuras = 0x00040000,
+
+			Pet = (PetGUID | PetName | PetModelID | PetCurrentHP | PetMaxHP | PetPowerType | PetCurrentPower | PetMaxPower | PetAuras),
+			Full = (Status | CurrentHP | MaxHP | PowerType | CurrentPower | MaxPower | Level | Zone | Position | Auras | Pet)
+		};
+	}
+
+	typedef group_update_flags::Type GroupUpdateFlags;
+
 	struct SpellEntry;
 	struct ItemEntry;
 	struct SkillEntry;
@@ -493,6 +525,10 @@ namespace wowpp
 		/// @copydoc GameUnit::rewardExperience()
 		void rewardExperience(GameUnit *victim, UInt32 experience) override;
 
+		GroupUpdateFlags getGroupUpdateFlags() const { return m_groupUpdateFlags; }
+		void modifyGroupUpdateFlags(GroupUpdateFlags flags, bool apply);
+		void clearGroupUpdateFlags() { m_groupUpdateFlags = group_update_flags::None; }
+
 	protected:
 
 		virtual void levelChanged(const LevelEntry &levelInfo) override;
@@ -512,6 +548,7 @@ namespace wowpp
 		UInt64 m_comboTarget;
 		UInt8 m_comboPoints;
 		float m_manaRegBase;
+		GroupUpdateFlags m_groupUpdateFlags;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameCharacter const& object);

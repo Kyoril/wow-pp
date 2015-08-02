@@ -44,6 +44,9 @@ namespace wowpp
 		newMember.name = m_leaderName;
 		newMember.group = 0;
 		newMember.assistant = false;
+
+		// Other checks have already been done in addInvite method, so we are good to go here
+		leader.modifyGroupUpdateFlags(group_update_flags::Full, true);
 	}
 
 	void PlayerGroup::setLootMethod(LootMethod method)
@@ -79,7 +82,7 @@ namespace wowpp
 		}
 
 		// Remove from invite list
-		m_invited.remove(member.getGuid());
+		m_invited.remove(guid);
 
 		// Already full?
 		if (isFull())
@@ -87,13 +90,20 @@ namespace wowpp
 			return game::party_result::PartyFull;
 		}
 
-		// Other checks have already been done in addInvite method, so we are good to go here
-
 		// Create new group member
 		auto &newMember = m_members[guid];
 		newMember.name = member.getName();
 		newMember.group = 0;
 		newMember.assistant = false;
+
+		// Update group list
+		sendUpdate();
+
+		// Other checks have already been done in addInvite method, so we are good to go here
+		member.modifyGroupUpdateFlags(group_update_flags::Full, true);
+		broadcastPacket(
+			std::bind(game::server_write::partyMemberStats, std::placeholders::_1, std::cref(member)), guid);
+
 		return game::party_result::Ok;
 	}
 
@@ -118,11 +128,11 @@ namespace wowpp
 			if (!player)
 			{
 				// Player seems to be offline, so we don't need to notify him
-				member.second.status = group_member_status::Offline;
+				member.second.status = game::group_member_status::Offline;
 			}
 			else
 			{
-				member.second.status = group_member_status::Online;
+				member.second.status = game::group_member_status::Online;
 			}
 		}
 
@@ -134,6 +144,8 @@ namespace wowpp
 			{
 				continue;
 			}
+
+			DLOG("SMSG_GROUP_LIST");
 
 			// Send packet
 			player->sendPacket(
@@ -148,7 +160,7 @@ namespace wowpp
 					m_leaderGUID, 
 					m_lootMethod, 
 					0,
-					0,
+					0x02,
 					0));
 		}
 	}

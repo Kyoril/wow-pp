@@ -283,7 +283,6 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(AddIgnore, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(DeleteIgnore, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(ItemQuerySingle, game::session_status::LoggedIn)
-
 			WOWPP_HANDLE_PACKET(GroupInvite, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(GroupAccept, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(GroupDecline, game::session_status::LoggedIn)
@@ -292,6 +291,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(GroupSetLeader, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(LootMethod, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(GroupDisband, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(RequestPartyMemberStats, game::session_status::LoggedIn)
 #undef WOWPP_HANDLE_PACKET
 
 			default:
@@ -855,6 +855,13 @@ namespace wowpp
 				m_instanceId = 0;
 				m_worldNode = nullptr;
 
+				// If we are in a group, notify others
+				if (m_group)
+				{
+					m_group->sendUpdate();
+					m_group.reset();
+				}
+
 				break;
 			}
 
@@ -899,6 +906,8 @@ namespace wowpp
 			// Could not read packet
 			return;
 		}
+
+		DLOG("Name query...");
 
 		// Get the realm ID out of this GUID and check if this is a player
 		UInt32 realmID = guidRealmID(objectGuid);
@@ -1348,11 +1357,13 @@ namespace wowpp
 			return;
 		}
 
+		DLOG("SMSG_GROUP_INVITE");
 		player->setGroup(m_group);
 		player->sendPacket(
 			std::bind(game::server_write::groupInvite, std::placeholders::_1, std::cref(m_gameCharacter->getName())));
 
 		// Send result
+		DLOG("SMSG_PARTY_COMMAND_RESULT");
 		sendPacket(
 			std::bind(game::server_write::partyCommandResult, std::placeholders::_1, party_operation::Invite, std::cref(playerName), party_result::Ok));
 		m_group->sendUpdate();
@@ -1372,17 +1383,16 @@ namespace wowpp
 			return;
 		}
 
+		DLOG("CMSG_GROUP_ACCEPT: Player " << m_gameCharacter->getName() << " accepts group invite");
+
 		auto result = m_group->addMember(*m_gameCharacter);
 		if (result != party_result::Ok)
 		{
 			// TODO...
 			return;
 		}
-
-		DLOG("CMSG_GROUP_ACCEPT: Player " << m_gameCharacter->getName() << " accepts group invite");
-		m_group->sendUpdate();
 	}
-
+	
 	void Player::handleGroupDecline(game::IncomingPacket &packet)
 	{
 		if (!game::client_read::groupDecline(packet))
@@ -1462,6 +1472,33 @@ namespace wowpp
 	void Player::setGroup(std::shared_ptr<PlayerGroup> group)
 	{
 		m_group = group;
+	}
+
+	void Player::handleRequestPartyMemberStats(game::IncomingPacket &packet)
+	{
+		UInt64 guid = 0;
+		if (!game::client_read::requestPartyMemberStats(packet, guid))
+		{
+			// Could not read packet
+			return;
+		}
+
+		DLOG("CMSG_REQUEST_PARTY_MEMBER_STATS: Player " << m_gameCharacter->getName() << " requests party member stats of 0x" 
+			<< std::hex << std::uppercase << std::setw(16) << std::setfill('0') << guid);
+
+		// Try to find that player
+		auto *player = m_manager.getPlayerByCharacterGuid(guid);
+		if (!player)
+		{
+			DLOG("Could not find player with character guid - send offline packet");
+			sendPacket(
+				std::bind(game::server_write::partyMemberStatsFullOffline, std::placeholders::_1, guid));
+			return;
+		}
+
+		// Send result
+		sendPacket(
+			std::bind(game::server_write::partyMemberStatsFull, std::placeholders::_1, std::cref(*m_gameCharacter)));
 	}
 
 }

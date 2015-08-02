@@ -274,6 +274,13 @@ namespace wowpp
 			out_packet
 				<< io::write<NetUInt8>(result);
 
+			if (result == auth_result::FailIncorrectPassword || result == auth_result::FailUnknownAccount)
+			{
+				out_packet
+					<< io::write<NetUInt8>(3)
+					<< io::write<NetUInt8>(0);
+			}
+
 			// Append proof hash on success
 			if (result == auth_result::Success)
 			{
@@ -283,7 +290,6 @@ namespace wowpp
 					<< io::write<NetUInt32>(0x00)
 					<< io::write<NetUInt16>(0x00)
 					;
-
 			}
 
 			out_packet.finish();

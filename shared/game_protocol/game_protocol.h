@@ -42,6 +42,7 @@
 namespace wowpp
 {
 	class GameItem;
+	class GameCharacter;
 
 	namespace game
 	{
@@ -121,6 +122,7 @@ namespace wowpp
 				SetSheathed				= 0x1E0,
 				AuthSession				= 0x1ED,
 				TogglePvP				= 0x253,
+				RequestPartyMemberStats	= 0x27F,
 				MoveFallReset			= 0x2CA,
 				SetDungeonDifficulty	= 0x329,
 				MoveSetFly				= 0x346,
@@ -145,6 +147,22 @@ namespace wowpp
 		}
 
 		typedef session_status::Type SessionStatus;
+
+		namespace group_member_status
+		{
+			enum Type
+			{
+				Offline = 0x0000,
+				Online = 0x0001,
+				PvP = 0x0002,
+				Dead = 0x0004,
+				Ghost = 0x0008,
+				Unknown_1 = 0x0040,
+				ReferAFriendBuddy = 0x0100
+			};
+		}
+
+		typedef group_member_status::Type GroupMemberStatus;
 
 		/// Enumerates possible OP codes which the server can send to the client.
 		/// OP codes taken from the MaNGOS project: http://www.getmangos.eu
@@ -174,7 +192,7 @@ namespace wowpp
 				GroupSetLeader				= 0x079,
 				GroupDestroyed				= 0x07C,
 				GroupList					= 0x07D,
-				PartyMemberStatus			= 0x07E,
+				PartyMemberStats			= 0x07E,
 				PartyCommandResult			= 0x07F,
 				MessageChat					= 0x096,
 				UpdateObject				= 0x0A9,
@@ -223,6 +241,7 @@ namespace wowpp
 				ChatPlayerNotFound			= 0x2A9,
 				InitWorldStates				= 0x2C2,
 				AddonInfo					= 0x2EF,
+				PartyMemberStatsFull		= 0x2F2,
 				SetDungeonDifficulty		= 0x329,
 				Motd						= 0x33D,
 				TimeSyncReq					= 0x390,
@@ -715,6 +734,11 @@ namespace wowpp
 			bool groupDisband(
 				io::Reader &packet
 				);
+
+			bool requestPartyMemberStats(
+				io::Reader &packet,
+				UInt64 &out_GUID
+				);
 		};
 
 		namespace server_write
@@ -1198,9 +1222,19 @@ namespace wowpp
 				UInt8 difficulty
 				);
 
-			void partyMemberStatus(
-				game::OutgoingPacket &out_packet
-				// TODO
+			void partyMemberStats(
+				game::OutgoingPacket &out_packet,
+				const GameCharacter &character
+				);
+
+			void partyMemberStatsFull(
+				game::OutgoingPacket &out_packet,
+				const GameCharacter &character
+				);
+
+			void partyMemberStatsFullOffline(
+				game::OutgoingPacket &out_packet,
+				UInt64 offlineGUID
 				);
 
 			void partyCommandResult(
