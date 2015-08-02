@@ -29,6 +29,7 @@
 #include "binary_io/vector_sink.h"
 #include "common/linear_set.h"
 #include "log/default_log_levels.h"
+#include "player.h"
 #include <vector>
 
 namespace wowpp

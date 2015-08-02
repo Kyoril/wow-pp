@@ -21,7 +21,6 @@
 
 #include "player_group.h"
 #include "game/game_character.h"
-#include "player.h"
 
 namespace wowpp
 {
