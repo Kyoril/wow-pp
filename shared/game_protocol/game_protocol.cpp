@@ -795,6 +795,34 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+
+			void moveTeleportAck(game::OutgoingPacket &out_packet, UInt64 guid, const MovementInfo &movement)
+			{
+				out_packet.start(game::server_packet::MoveTeleportAck);
+
+				UInt8 packGUID[8 + 1];
+				packGUID[0] = 0;
+				size_t size = 1;
+
+				for (UInt8 i = 0; guid != 0; ++i)
+				{
+					if (guid & 0xFF)
+					{
+						packGUID[0] |= UInt8(1 << i);
+						packGUID[size] = UInt8(guid & 0xFF);
+						++size;
+					}
+
+					guid >>= 8;
+				}
+
+				out_packet
+					<< io::write_range(&packGUID[0], &packGUID[size])
+					<< io::write<NetUInt32>(0)
+					<< movement;
+				out_packet.finish();
+			}
+
 			void destroyObject(game::OutgoingPacket &out_packet, UInt64 guid, bool death)
 			{
 				out_packet.start(game::server_packet::DestroyObject);
@@ -2125,6 +2153,40 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void newWorld(game::OutgoingPacket &out_packet, UInt32 newMap, float x, float y, float z, float o)
+			{
+				out_packet.start(game::server_packet::NewWorld);
+				out_packet
+					<< io::write<NetUInt32>(newMap)
+					<< io::write<float>(x)
+					<< io::write<float>(y)
+					<< io::write<float>(z)
+					<< io::write<float>(o);
+				out_packet.finish();
+			}
+
+			void transferPending(game::OutgoingPacket &out_packet, UInt32 newMap, UInt32 transportId, UInt32 oldMap)
+			{
+				out_packet.start(game::server_packet::TransferPending);
+				out_packet
+					<< io::write<NetUInt32>(newMap);
+				if (transportId != 0)
+				{
+					out_packet
+						<< io::write<NetUInt32>(transportId)
+						<< io::write<NetUInt32>(oldMap);
+				}
+				out_packet.finish();
+			}
+
+			void transferAborted(game::OutgoingPacket &out_packet, UInt32 map, TransferAbortReason reason)
+			{
+				out_packet.start(game::server_packet::TransferAborted);
+				out_packet
+					<< io::write<NetUInt32>(map)
+					<< io::write<NetUInt16>(reason);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
@@ -2717,6 +2779,11 @@ namespace wowpp
 			{
 				return packet
 					>> io::read<NetUInt64>(out_GUID);
+			}
+
+			bool moveWorldPortAck(io::Reader &packet)
+			{
+				return packet;
 			}
 
 		}

@@ -346,6 +346,8 @@ namespace wowpp
 		float minRange;
 		float maxRange;
 		UInt32 rangeType;
+		UInt32 targetMap;
+		float targetX, targetY, targetZ, targetO;
 
 		SpellEntry();
 		bool load(DataLoadContext &context, const ReadTableWrapper &wrapper);

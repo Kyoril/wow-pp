@@ -557,6 +557,12 @@ namespace wowpp
 			std::bind(pp::world_realm::world_write::worldInstanceLeft, std::placeholders::_1, characterId, reason));
 	}
 
+	void RealmConnector::sendTeleportRequest(DatabaseId characterId, UInt32 map, float x, float y, float z, float o)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::world_write::teleportRequest, std::placeholders::_1, characterId, map, x, y, z, o));
+	}
+
 	void RealmConnector::handleCreatureQuery(Player &sender, game::Protocol::IncomingPacket &packet)
 	{
 		// Read the client packet

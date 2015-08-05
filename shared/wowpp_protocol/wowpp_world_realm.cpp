@@ -105,6 +105,20 @@ namespace wowpp
 						<< character;
 					out_packet.finish();
 				}
+
+				void teleportRequest(pp::OutgoingPacket &out_packet, UInt64 characterId, UInt32 map, float x, float y, float z, float o)
+				{
+					out_packet.start(world_packet::TeleportRequest);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write<NetUInt32>(map)
+						<< io::write<float>(x)
+						<< io::write<float>(y)
+						<< io::write<float>(z)
+						<< io::write<float>(o);
+					out_packet.finish();
+				}
+
 			}
 
 			namespace realm_write
@@ -231,6 +245,18 @@ namespace wowpp
 					return packet
 						>> io::read<NetUInt64>(characterId)
 						>> out_character;
+				}
+
+				bool teleportRequest(io::Reader &packet, UInt64 &out_characterId, UInt32 &out_map, float &out_x, float &out_y, float &out_z, float &out_o)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read<NetUInt32>(out_map)
+						>> io::read<float>(out_x)
+						>> io::read<float>(out_y)
+						>> io::read<float>(out_z)
+						>> io::read<float>(out_o)
+						;
 				}
 			}
 

@@ -371,6 +371,9 @@ namespace wowpp
 				case se::NormalizedWeaponDmg:
 					spellEffectNormalizedWeaponDamage(effect);
 					break;
+				case se::TeleportUnits:
+					spellEffectTeleportUnits(effect);
+					break;
 				case se::Weapon:
 				case se::Language:
 					// Nothing to do here, since the skills for these spells will be applied as soon as the player
@@ -424,6 +427,56 @@ namespace wowpp
 	{
 		// This is only triggerd if the spell has the attribute
 		stopCast();
+	}
+
+	void SingleCastState::spellEffectTeleportUnits(const SpellEntry::Effect &effect)
+	{
+		// Resolve GUIDs
+		GameUnit *unitTarget = nullptr;
+		GameUnit &caster = m_cast.getExecuter();
+		auto *world = caster.getWorldInstance();
+
+		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
+			unitTarget = &caster;
+		else if (world && m_target.hasUnitTarget())
+		{
+			unitTarget = dynamic_cast<GameUnit*>(world->findObjectByGUID(m_target.getUnitTarget()));
+		}
+
+		if (!unitTarget)
+		{
+			WLOG("SPELL_EFFECT_TELEPORT_UNITS: No unit target to teleport!");
+			return;
+		}
+
+		// Check whether it is the same map
+		if (unitTarget->getMapId() != m_spell.targetMap)
+		{
+			// Only players can change maps
+			if (unitTarget->getTypeId() != object_type::Character)
+			{
+				WLOG("SPELL_EFFECT_TELEPORT_UNITS: Only players can be teleported to another map!");
+				return;
+			}
+
+			// Log destination
+			DLOG("Teleporting player to map " << m_spell.targetMap << ": " << m_spell.targetX << " / " << m_spell.targetY << " / " << m_spell.targetZ);
+			unitTarget->teleport(m_spell.targetMap, m_spell.targetX, m_spell.targetY, m_spell.targetZ, m_spell.targetO);
+		}
+		else
+		{
+			// Same map, just move the unit
+			if (unitTarget->getTypeId() == object_type::Character)
+			{
+				// Send teleport signal for player characters
+				unitTarget->teleport(m_spell.targetMap, m_spell.targetX, m_spell.targetY, m_spell.targetZ, m_spell.targetO);
+			}
+			else
+			{
+				// Simply relocate creatures and other stuff
+				unitTarget->relocate(m_spell.targetX, m_spell.targetY, m_spell.targetZ, m_spell.targetO);
+			}
+		}
 	}
 
 	void SingleCastState::spellEffectSchoolDamage(const SpellEntry::Effect &effect)

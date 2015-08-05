@@ -120,5 +120,6 @@ namespace wowpp
 		void handleWorldInstanceLeft(pp::IncomingPacket &packet);
 		void handleClientProxyPacket(pp::IncomingPacket &packet);
 		void handleCharacterData(pp::IncomingPacket &packet);
+		void handleTeleportRequest(pp::IncomingPacket &packet);
 	};
 }

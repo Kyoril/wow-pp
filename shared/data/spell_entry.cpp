@@ -52,6 +52,11 @@ namespace wowpp
 		, minRange(0.0f)
 		, maxRange(0.0f)
 		, rangeType(0)
+		, targetMap(0)
+		, targetX(0.0f)
+		, targetY(0.0f)
+		, targetZ(0.0f)
+		, targetO(0.0f)
 	{
 		attributesEx.fill(0);
 	}
@@ -70,6 +75,15 @@ namespace wowpp
 			std::stringstream strm;
 			strm << "attributes_ex_" << (i + 1);
 			wrapper.table.tryGetInteger(strm.str(), attributesEx[i]);
+		}
+		const sff::read::tree::Table<DataFileIterator> *targetTable = wrapper.table.getTable("target_location");
+		if (targetTable)
+		{
+			targetTable->tryGetInteger("map", targetMap);
+			targetTable->tryGetInteger("x", targetX);
+			targetTable->tryGetInteger("y", targetY);
+			targetTable->tryGetInteger("z", targetZ);
+			targetTable->tryGetInteger("o", targetO);
 		}
 		wrapper.table.tryGetInteger("name", name);
 		wrapper.table.tryGetInteger("cast_time", castTimeIndex);
@@ -194,6 +208,18 @@ namespace wowpp
 				strm << "attributes_ex_" << (i + 1);
 				context.table.addKey(strm.str(), attributesEx[i]);
 			}
+		}
+		if (targetMap != 0 || targetX != 0.0f || targetY != 0.0f || targetZ != 0.0f || targetO != 0.0f)
+		{
+			sff::write::Table<char> targetTable(context.table, "target_location", sff::write::Comma);
+			{
+				targetTable.addKey("map", targetMap);
+				targetTable.addKey("x", targetX);
+				targetTable.addKey("y", targetY);
+				targetTable.addKey("z", targetZ);
+				targetTable.addKey("o", targetO);
+			}
+			targetTable.finish();
 		}
 		if (castTimeIndex != 1) context.table.addKey("cast_time", castTimeIndex);
 		if (cooldown != 0) context.table.addKey("cooldown", cooldown);

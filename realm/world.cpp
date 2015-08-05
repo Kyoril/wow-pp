@@ -121,6 +121,12 @@ namespace wowpp
 				break;
 			}
 
+			case world_packet::TeleportRequest:
+			{
+				handleTeleportRequest(packet);
+				break;
+			}
+
 			default:
 			{
 				WLOG("Unknown packet received from world " << m_address
@@ -401,4 +407,28 @@ namespace wowpp
 		}
 	}
 
+	void World::handleTeleportRequest(pp::IncomingPacket &packet)
+	{
+		// Read the character ID first
+		UInt64 characterId;
+		UInt32 map;
+		float x, y, z, o;
+		if (!(pp::world_realm::world_read::teleportRequest(packet, characterId, map, x, y, z, o)))
+		{
+			return;
+		}
+
+		// Find the player using this character
+		auto *player = m_playerManager.getPlayerByCharacterId(characterId);
+		if (!player)
+		{
+			ELOG("Can't find player by character id - transfer failed");
+			return;
+		}
+
+		DLOG("INITIALIZING TRANSFER TO: " << map << " - " << x << " / " << y << " / " << z << " / " << o);
+
+		// Initialize transfer
+		player->initializeTransfer(map, x, y, z, o);
+	}
 }

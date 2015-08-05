@@ -103,6 +103,7 @@ namespace wowpp
 				MoveStopSwim			= 0x0CB,
 				SetFacing				= 0x0DA,
 				SetPitch				= 0x0DB,
+				MoveWorldPortAck		= 0x0DC,
 				MoveHeartBeat			= 0x0EE,
 				StandStateChange		= 0x101,
 				AutoStoreLootItem		= 0x108,
@@ -132,6 +133,32 @@ namespace wowpp
 				MoveStartDescend		= 0x3A7
 			};
 		}
+
+		namespace transfer_abort_reason
+		{
+			enum Type
+			{
+				None				= 0x0000,
+				/// Transfer Aborted: instance is full
+				MaxPlayers			= 0x0001,
+				/// Transfer aborted: instance not found
+				NotFound			= 0x0002,
+				/// You have entered too many instances recently.
+				TooManyInstances	= 0x0003,
+				/// Unable to zone in while an encounter is in progress.
+				ZoneInCombat		= 0x0005,
+				/// You must have TBC expansion installed to access this area.
+				InsufExpanLevel1	= 0x0106,
+				/// Normal difficulty mode is not available for %s.
+				Difficulty1			= 0x0007,
+				/// Heroic difficulty mode is not available for %s.
+				Difficulty2			= 0x0107,
+				/// Epic difficulty mode is not available for %s.
+				Difficulty3			= 0x0207
+			};
+		}
+
+		typedef transfer_abort_reason::Type TransferAbortReason;
 
 		namespace session_status
 		{
@@ -174,6 +201,9 @@ namespace wowpp
 				CharCreate					= 0x03A,
 				CharEnum					= 0x03B,
 				CharDelete					= 0x03C,
+				NewWorld					= 0x03E,
+				TransferPending				= 0x03F,
+				TransferAborted				= 0x040,
 				CharacterLoginFailed		= 0x041,
 				LoginSetTimeSpeed			= 0x042,
 				LogoutResponse				= 0x04C,
@@ -197,6 +227,7 @@ namespace wowpp
 				MessageChat					= 0x096,
 				UpdateObject				= 0x0A9,
 				DestroyObject				= 0x0AA,
+				MoveTeleportAck				= 0x0C7,
 				MonsterMove					= 0x0DD,
 				MoveRoot					= 0x0EC,
 				MoveUnroot					= 0x0ED,
@@ -739,6 +770,10 @@ namespace wowpp
 				io::Reader &packet,
 				UInt64 &out_GUID
 				);
+
+			bool moveWorldPortAck(
+				io::Reader &packet
+				);
 		};
 
 		namespace server_write
@@ -966,6 +1001,12 @@ namespace wowpp
 			void movePacket(
 				game::OutgoingPacket &out_packet,
 				UInt16 opCode,
+				UInt64 guid,
+				const MovementInfo &movement
+				);
+
+			void moveTeleportAck(
+				game::OutgoingPacket &out_packet,
 				UInt64 guid,
 				const MovementInfo &movement
 				);
@@ -1242,6 +1283,28 @@ namespace wowpp
 				PartyOperation operation,
 				const String &member,
 				PartyResult result
+				);
+
+			void newWorld(
+				game::OutgoingPacket &out_packet,
+				UInt32 newMap,
+				float x,
+				float y,
+				float z,
+				float o
+				);
+
+			void transferPending(
+				game::OutgoingPacket &out_packet,
+				UInt32 newMap,
+				UInt32 transportId,
+				UInt32 oldMap
+				);
+
+			void transferAborted(
+				game::OutgoingPacket &out_packet,
+				UInt32 map,
+				TransferAbortReason reason
 				);
 		};
 	}

@@ -83,6 +83,8 @@ namespace wowpp
 		/// @param buffer
 		void sendProxyPacket(DatabaseId senderId, UInt16 opCode, UInt32 size, const std::vector<char> &buffer);
 		/// 
+		void sendTeleportRequest(DatabaseId characterId, UInt32 map, float x, float y, float z, float o);
+		/// 
 		void notifyWorldInstanceLeft(DatabaseId characterId, pp::world_realm::WorldLeftReason reason);
 		/// 
 		const String &getRealmName() const { return m_realmName; }

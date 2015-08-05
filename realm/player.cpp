@@ -58,11 +58,16 @@ namespace wowpp
 		, m_seed(0x3a6833cd)	//TODO: Randomize
         , m_authed(false)
 		, m_characterId(std::numeric_limits<DatabaseId>::max())
-		, m_instanceId(0x00)
+		, m_instanceId(std::numeric_limits<UInt32>::max())
 		, m_getRace(std::bind(&RaceEntryManager::getById, &project.races, std::placeholders::_1))
 		, m_getClass(std::bind(&ClassEntryManager::getById, &project.classes, std::placeholders::_1))
 		, m_getLevel(std::bind(&LevelEntryManager::getById, &project.levels, std::placeholders::_1))
 		, m_worldNode(nullptr)
+		, m_transferMap(0)
+		, m_transferX(0.0f)
+		, m_transferY(0.0f)
+		, m_transferZ(0.0f)
+		, m_transferO(0.0f)
 	{
 		assert(m_connection);
 
@@ -292,6 +297,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(LootMethod, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(GroupDisband, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(RequestPartyMemberStats, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(MoveWorldPortAck, game::session_status::TransferPending)
 #undef WOWPP_HANDLE_PACKET
 
 			default:
@@ -681,8 +687,8 @@ namespace wowpp
 		// which is hosting a fitting world instance or is able to create
 		// a new one
 
-		m_worldNode = m_worldManager.getWorldByMapId(charEntry->mapId);
-		if (!m_worldNode)
+		auto *worldNode = m_worldManager.getWorldByMapId(charEntry->mapId);
+		if (!worldNode)
 		{
 			// World does not exist
 			WLOG("Player login failed: Could not find world server for map " << charEntry->mapId);
@@ -703,7 +709,7 @@ namespace wowpp
 		// is valid on the world node and if not, transfer player
 
 		// There should be an instance
-		m_worldNode->enterWorldInstance(charEntry->id, *m_gameCharacter, items);
+		worldNode->enterWorldInstance(charEntry->id, *m_gameCharacter, items);
 	}
 
 	void Player::worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, float x, float y, float z, float o)
@@ -711,12 +717,16 @@ namespace wowpp
 		assert(m_gameCharacter);
 
 		// Watch for world node disconnection
+		m_worldNode = &world;
 		m_worldDisconnected = world.onConnectionLost.connect(
 			std::bind(&Player::worldNodeDisconnected, this));
 
+		// If instance id is zero, this is the first time we enter a world since the login
+		const bool isLoginEnter = (m_instanceId == std::numeric_limits<UInt32>::max());
+
 		// Save instance id
 		m_instanceId = instanceId;
-		
+
 		// Update character on the realm side with data received from the world server
 		//m_gameCharacter->setGuid(createGUID(worldObjectGuid, 0, high_guid::Player));
 		m_gameCharacter->relocate(x, y, z, o);
@@ -725,80 +735,83 @@ namespace wowpp
 		// Clear mask
 		m_gameCharacter->clearUpdateMask();
 
-		sendPacket(
-			std::bind(game::server_write::setDungeonDifficulty, std::placeholders::_1));
-
-		// Send world verification packet to the client to proof world coordinates from
-		// the character list
-		sendPacket(
-			std::bind(game::server_write::loginVerifyWorld, std::placeholders::_1, mapId, x, y, z, o));
-
-		// Send account data times (TODO: Find out what this does)
-		std::array<UInt32, 32> times;
-		times.fill(0);
-		sendPacket(
-			std::bind(game::server_write::accountDataTimes, std::placeholders::_1, std::cref(times)));
-
-		// SMSG_FEATURE_SYSTEM_STATUS 
-		sendPacket(
-			std::bind(game::server_write::featureSystemStatus, std::placeholders::_1));
-
-		// SMSG_MOTD 
-		sendPacket(
-			std::bind(game::server_write::motd, std::placeholders::_1, m_config.messageOfTheDay));
-
-		// Don't know what this packet does
-		sendPacket(
-			std::bind(game::server_write::setRestStart, std::placeholders::_1));
-
-		// Notify about bind point for hearthstone (also used in case of corrupted location data)
-		sendPacket(
-			std::bind(game::server_write::bindPointUpdate, std::placeholders::_1, mapId, zoneId, x, y, z));
-		
-		// Send tutorial flags (which tutorials have been viewed etc.)
-		sendPacket(
-			std::bind(game::server_write::tutorialFlags, std::placeholders::_1));
-		
-		// Send spells
-		const auto &spells = m_gameCharacter->getSpells();
-		sendPacket(
-			std::bind(game::server_write::initialSpells, std::placeholders::_1, std::cref(spells)));
-
-		sendPacket(
-			std::bind(game::server_write::unlearnSpells, std::placeholders::_1));
-
-		auto raceEntry = m_gameCharacter->getRaceEntry();
-		assert(raceEntry);
-
-		auto cls = m_gameCharacter->getClass();
-		auto classBtns = raceEntry->initialActionButtons.find(cls);
-		if (classBtns != raceEntry->initialActionButtons.end())
+		if (isLoginEnter)
 		{
 			sendPacket(
-				std::bind(game::server_write::actionButtons, std::placeholders::_1, std::cref(classBtns->second)));
-		}
-		
-		sendPacket(
-			std::bind(game::server_write::initializeFactions, std::placeholders::_1));
+				std::bind(game::server_write::setDungeonDifficulty, std::placeholders::_1));
 
-		// Trigger intro cinematic based on the characters race
-		game::CharEntry *charEntry = getCharacterById(m_characterId);
-		if (raceEntry &&
-			(charEntry && charEntry->cinematic))
-		{
+			// Send world verification packet to the client to proof world coordinates from
+			// the character list
 			sendPacket(
-				std::bind(game::server_write::triggerCinematic, std::placeholders::_1, raceEntry->cinematic));
-		}
+				std::bind(game::server_write::loginVerifyWorld, std::placeholders::_1, mapId, x, y, z, o));
 
-		// Send notification to friends
-		game::SocialInfo info;
-		info.flags = game::social_flag::Friend;
-		info.area = charEntry->zoneId;
-		info.level = charEntry->level;
-		info.class_ = charEntry->class_;
-		info.status = game::friend_status::Online;
-		m_social->sendToFriends(
-			std::bind(game::server_write::friendStatus, std::placeholders::_1, m_gameCharacter->getGuid(), game::friend_result::Online, std::cref(info)));
+			// Send account data times (TODO: Find out what this does)
+			std::array<UInt32, 32> times;
+			times.fill(0);
+			sendPacket(
+				std::bind(game::server_write::accountDataTimes, std::placeholders::_1, std::cref(times)));
+
+			// SMSG_FEATURE_SYSTEM_STATUS 
+			sendPacket(
+				std::bind(game::server_write::featureSystemStatus, std::placeholders::_1));
+
+			// SMSG_MOTD 
+			sendPacket(
+				std::bind(game::server_write::motd, std::placeholders::_1, m_config.messageOfTheDay));
+
+			// Don't know what this packet does
+			sendPacket(
+				std::bind(game::server_write::setRestStart, std::placeholders::_1));
+
+			// Notify about bind point for hearthstone (also used in case of corrupted location data)
+			sendPacket(
+				std::bind(game::server_write::bindPointUpdate, std::placeholders::_1, mapId, zoneId, x, y, z));
+
+			// Send tutorial flags (which tutorials have been viewed etc.)
+			sendPacket(
+				std::bind(game::server_write::tutorialFlags, std::placeholders::_1));
+
+			// Send spells
+			const auto &spells = m_gameCharacter->getSpells();
+			sendPacket(
+				std::bind(game::server_write::initialSpells, std::placeholders::_1, std::cref(spells)));
+
+			sendPacket(
+				std::bind(game::server_write::unlearnSpells, std::placeholders::_1));
+
+			auto raceEntry = m_gameCharacter->getRaceEntry();
+			assert(raceEntry);
+
+			auto cls = m_gameCharacter->getClass();
+			auto classBtns = raceEntry->initialActionButtons.find(cls);
+			if (classBtns != raceEntry->initialActionButtons.end())
+			{
+				sendPacket(
+					std::bind(game::server_write::actionButtons, std::placeholders::_1, std::cref(classBtns->second)));
+			}
+
+			sendPacket(
+				std::bind(game::server_write::initializeFactions, std::placeholders::_1));
+
+			// Trigger intro cinematic based on the characters race
+			game::CharEntry *charEntry = getCharacterById(m_characterId);
+			if (raceEntry &&
+				(charEntry && charEntry->cinematic))
+			{
+				sendPacket(
+					std::bind(game::server_write::triggerCinematic, std::placeholders::_1, raceEntry->cinematic));
+			}
+
+			// Send notification to friends
+			game::SocialInfo info;
+			info.flags = game::social_flag::Friend;
+			info.area = charEntry->zoneId;
+			info.level = charEntry->level;
+			info.class_ = charEntry->class_;
+			info.status = game::friend_status::Online;
+			m_social->sendToFriends(
+				std::bind(game::server_write::friendStatus, std::placeholders::_1, m_gameCharacter->getGuid(), game::friend_result::Online, std::cref(info)));
+		}
 	}
 
 	void Player::worldInstanceLeft(World &world, UInt32 instanceId, pp::world_realm::WorldLeftReason reason)
@@ -828,13 +841,14 @@ namespace wowpp
 		// Write something to the log just for informations
 		ILOG("Player " << m_accountName << " left world instance " << m_instanceId << " - reason: " << reasonString);
 
+		// We no longer care about the world node
+		m_worldDisconnected.disconnect();
+		m_worldNode = nullptr;
+
 		switch (reason)
 		{
 			case pp::world_realm::world_left_reason::Logout:
 			{
-				// We no longer care about the world node
-				m_worldDisconnected.disconnect();
-
 				// Send notification to friends
 				game::SocialInfo info;
 				info.flags = game::social_flag::Friend;
@@ -852,8 +866,7 @@ namespace wowpp
 				// We are now longer signed int
 				m_gameCharacter.reset();
 				m_characterId = 0;
-				m_instanceId = 0;
-				m_worldNode = nullptr;
+				m_instanceId = std::numeric_limits<UInt32>::max();
 
 				// If we are in a group, notify others
 				if (m_group)
@@ -862,6 +875,13 @@ namespace wowpp
 					m_group.reset();
 				}
 
+				break;
+			}
+
+			case pp::world_realm::world_left_reason::Teleport:
+			{
+				// We were removed from the old world node - now we can move on to the new one
+				commitTransfer();
 				break;
 			}
 
@@ -906,8 +926,6 @@ namespace wowpp
 			// Could not read packet
 			return;
 		}
-
-		DLOG("Name query...");
 
 		// Get the realm ID out of this GUID and check if this is a player
 		UInt32 realmID = guidRealmID(objectGuid);
@@ -1499,6 +1517,73 @@ namespace wowpp
 		// Send result
 		sendPacket(
 			std::bind(game::server_write::partyMemberStatsFull, std::placeholders::_1, std::cref(*m_gameCharacter)));
+	}
+
+	void Player::initializeTransfer(UInt32 map, float x, float y, float z, float o)
+	{
+		m_transferMap = map;
+		m_transferX = x;
+		m_transferY = y;
+		m_transferZ = z;
+		m_transferO = o;
+	}
+
+	void Player::commitTransfer()
+	{
+		if (m_transferMap == 0 && m_transferX == 0.0f && m_transferY == 0.0f && m_transferZ == 0.0f && m_transferO == 0.0f)
+		{
+			WLOG("No transfer pending - commit will be ignored.");
+			return;
+		}
+
+		// Load new world
+		sendPacket(
+			std::bind(game::server_write::newWorld, std::placeholders::_1, m_transferMap, m_transferX, m_transferY, m_transferZ, m_transferO));
+	}
+
+	void Player::handleMoveWorldPortAck(game::IncomingPacket &packet)
+	{
+		if (m_transferMap == 0 && m_transferX == 0.0f && m_transferY == 0.0f && m_transferZ == 0.0f && m_transferO == 0.0f)
+		{
+			WLOG("No transfer pending - commit will be ignored.");
+			return;
+		}
+
+		// Update character location
+		m_gameCharacter->setMapId(m_transferMap);
+		m_gameCharacter->relocate(m_transferX, m_transferY, m_transferZ, m_transferO);
+
+		// We found the character - now we need to look for a world node
+		// which is hosting a fitting world instance or is able to create
+		// a new one
+
+		// Find a new world node
+		auto *world = m_worldManager.getWorldByMapId(m_transferMap);
+		if (!world)
+		{
+			// World does not exist
+			WLOG("Player login failed: Could not find world server for map " << m_transferMap);
+			sendPacket(
+				std::bind(game::server_write::transferAborted, std::placeholders::_1, m_transferMap, game::transfer_abort_reason::NotFound));
+			return;
+		}
+
+		//TODO Map found - check if player is member of a group and if this instance
+		// is valid on the world node and if not, transfer player
+
+		// Store character items (TODO)
+		std::vector<pp::world_realm::ItemData> items;
+
+		// There should be an instance
+		m_worldNode = world;
+		m_worldNode->enterWorldInstance(m_characterId, *m_gameCharacter, items);
+
+		// Reset transfer data
+		m_transferMap = 0;
+		m_transferX = 0.0f;
+		m_transferY = 0.0f;
+		m_transferZ = 0.0f;
+		m_transferO = 0.0f;
 	}
 
 }

@@ -68,7 +68,6 @@ namespace wowpp
 				writer
 					<< io::write<NetUInt8>(updateType);
 
-
 				UInt64 guidCopy = guid;
 				UInt8 packGUID[8 + 1];
 				packGUID[0] = 0;

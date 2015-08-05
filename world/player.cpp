@@ -67,7 +67,8 @@ namespace wowpp
 													std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, std::placeholders::_8));
 		m_onAuraUpdate = m_character->auraUpdated.connect(
 			std::bind(&Player::onAuraUpdated, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
-
+		m_onTeleport = m_character->teleport.connect(
+			std::bind(&Player::onTeleport, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 
 		// Trigger regeneration for our character
 		m_character->startRegeneration();
@@ -771,6 +772,47 @@ namespace wowpp
 
 		sendProxyPacket(
 			std::bind(game::server_write::setExtraAuraInfo, std::placeholders::_1, getCharacterGuid(), slot, spellId, maxDuration, duration));
+	}
+
+	void Player::onTeleport(UInt16 map, float x, float y, float z, float o)
+	{
+		// If it's the same map, just send success notification
+		if (m_character->getMapId() == map)
+		{
+			// Apply character position
+			m_character->relocate(x, y, z, o);
+
+			// Reset movement info
+			MovementInfo info = m_character->getMovementInfo();
+			info.moveFlags = game::movement_flags::None;
+			info.x = x;
+			info.y = y;
+			info.z = z;
+			info.o = o;
+			sendProxyPacket(
+				std::bind(game::server_write::moveTeleportAck, std::placeholders::_1, m_character->getGuid(), std::cref(info)));
+
+			// Update movement info
+			m_character->setMovementInfo(std::move(info));
+		}
+		else
+		{
+			// Send transfer pending state. This will show up the loading screen at the client side and will
+			// tell the realm where our character should be sent to
+			sendProxyPacket(
+				std::bind(game::server_write::transferPending, std::placeholders::_1, map, 0, 0));
+			m_realmConnector.sendTeleportRequest(m_characterId, map, x, y, z, o);
+
+			// Remove the character from the world
+			m_instance.removeGameObject(*m_character);
+			m_character.reset();
+
+			// Notify the realm
+			m_realmConnector.notifyWorldInstanceLeft(m_characterId, pp::world_realm::world_left_reason::Teleport);
+
+			// Destroy player instance
+			m_manager.playerDisconnected(*this);
+		}
 	}
 
 }

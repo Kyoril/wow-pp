@@ -95,6 +95,40 @@ namespace wowpp
 		newMember.group = 0;
 		newMember.assistant = false;
 
+		auto *memberPlayer = m_playerManager.getPlayerByCharacterGuid(guid);
+
+		// Make sure that all group members know about us
+		for (auto &it : m_members)
+		{
+			auto *player = m_playerManager.getPlayerByCharacterGuid(it.first);
+			if (!player)
+			{
+				// TODO
+				continue;
+			}
+
+			for (auto &it2 : m_members)
+			{
+				if (it2.first == it.first)
+				{
+					continue;
+				}
+
+				auto *player2 = m_playerManager.getPlayerByCharacterGuid(it2.first);
+				if (!player2)
+				{
+					// TODO
+					continue;
+				}
+
+				// Spawn that player for us
+				std::vector<std::vector<char>> blocks;
+				createUpdateBlocks(*player2->getGameCharacter(), blocks);
+				player->sendPacket(
+					std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
+			}
+		}
+
 		// Update group list
 		sendUpdate();
 
@@ -143,8 +177,6 @@ namespace wowpp
 			{
 				continue;
 			}
-
-			DLOG("SMSG_GROUP_LIST");
 
 			// Send packet
 			player->sendPacket(

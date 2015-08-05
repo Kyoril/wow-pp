@@ -34,7 +34,7 @@ namespace wowpp
 	{
 		namespace world_realm
 		{
-			static const UInt32 ProtocolVersion = 0x06;
+			static const UInt32 ProtocolVersion = 0x07;
 
 			namespace world_instance_error
 			{
@@ -82,6 +82,8 @@ namespace wowpp
 					ClientProxyPacket,
 					/// Character data from a world node which should be saved by the realm.
 					CharacterData,
+					/// A character should be teleported to another world.
+					TeleportRequest,
 				};
 			}
 
@@ -233,6 +235,17 @@ namespace wowpp
 					UInt64 characterId,
 					const GameCharacter &character
 					);
+
+				/// 
+				void teleportRequest(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					UInt32 map,
+					float x,
+					float y,
+					float z,
+					float o
+					);
 			}
 
 			/// Contains methods for writing packets from the realm server.
@@ -351,6 +364,17 @@ namespace wowpp
 					io::Reader &packet,
 					UInt64 &out_characterId,
 					GameCharacter &out_character
+					);
+
+				/// 
+				bool teleportRequest(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					UInt32 &out_map,
+					float &out_x,
+					float &out_y,
+					float &out_z,
+					float &out_o
 					);
 			}
 

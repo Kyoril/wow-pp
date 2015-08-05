@@ -100,6 +100,10 @@ namespace wowpp
 		void worldInstanceLeft(World &world, UInt32 instanceId, pp::world_realm::WorldLeftReason reason);
 		/// Saves the current character (if any).
 		void saveCharacter();
+		/// Inititalizes a character transfer to a new map.
+		void initializeTransfer(UInt32 map, float x, float y, float z, float o);
+		/// Commits an initialized transfer (if any).
+		void commitTransfer();
 
 		/// Gets the player connection class used to send packets to the client.
 		Client &getConnection() { assert(m_connection); return *m_connection; }
@@ -182,6 +186,8 @@ namespace wowpp
 		World *m_worldNode;
 		std::unique_ptr<PlayerSocial> m_social;
 		std::shared_ptr<PlayerGroup> m_group;
+		UInt32 m_transferMap;
+		float m_transferX, m_transferY, m_transferZ, m_transferO;
 
 	private:
 
@@ -226,6 +232,6 @@ namespace wowpp
 		void handleLootMethod(game::IncomingPacket &packet);
 		void handleGroupDisband(game::IncomingPacket &packet);
 		void handleRequestPartyMemberStats(game::IncomingPacket &packet);
-
+		void handleMoveWorldPortAck(game::IncomingPacket &packet);
 	};
 }
