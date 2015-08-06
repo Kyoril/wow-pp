@@ -77,6 +77,7 @@ namespace wowpp
 		managers.push_back(ManagerEntry("maps", maps, std::bind(&MapEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("items", items, std::bind(&ItemEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("skills", skills, std::bind(&SkillEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+		managers.push_back(ManagerEntry("triggers", triggers, std::bind(&TriggerEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 
 		virtual_dir::FileSystemReader virtualDirectory(context.dataPath);
 		if (!RealmProjectLoader::load(
@@ -114,6 +115,7 @@ namespace wowpp
 		managers.push_back(ManagerEntry("units", "units", units, &UnitEntry::save));
 		managers.push_back(ManagerEntry("items", "items", items, &ItemEntry::save));
 		managers.push_back(ManagerEntry("skills", "skills", skills, &SkillEntry::save));
+		managers.push_back(ManagerEntry("triggers", "triggers", triggers, &TriggerEntry::save));
 
 		if (!RealmProjectSaver::save(realmDataPath, managers))
 		{

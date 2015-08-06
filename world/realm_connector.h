@@ -127,6 +127,7 @@ namespace wowpp
 		void handleAttackSwing(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleAttackStop(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleSetSheathed(Player &sender, game::Protocol::IncomingPacket &packet);
+		void handleAreaTrigger(Player &sender, game::Protocol::IncomingPacket &packet);
 
 	private:
 

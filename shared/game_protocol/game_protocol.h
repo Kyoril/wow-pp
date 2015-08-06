@@ -83,6 +83,7 @@ namespace wowpp
 				LootMethod				= 0x07A,
 				GroupDisband			= 0x07B,
 				MessageChat				= 0x095,
+				AreaTrigger				= 0x0B4,
 				MoveStartForward		= 0x0B5,
 				MoveStartBackward		= 0x0B6,
 				MoveStop				= 0x0B7,
@@ -773,6 +774,11 @@ namespace wowpp
 
 			bool moveWorldPortAck(
 				io::Reader &packet
+				);
+
+			bool areaTrigger(
+				io::Reader &packet,
+				UInt32 &out_triggerId
 				);
 		};
 

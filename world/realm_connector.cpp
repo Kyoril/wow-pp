@@ -451,6 +451,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(AttackSwing)
 			WOWPP_HANDLE_PACKET(AttackStop)
 			WOWPP_HANDLE_PACKET(SetSheathed)
+			WOWPP_HANDLE_PACKET(AreaTrigger)
 #undef WOWPP_HANDLE_PACKET
 
 			// Client packets handled by player
@@ -973,5 +974,59 @@ namespace wowpp
 		m_connection->flush();
 	}
 
+	void RealmConnector::handleAreaTrigger(Player &sender, game::Protocol::IncomingPacket &packet)
+	{
+		UInt32 triggerId;
+		if (!game::client_read::areaTrigger(packet, triggerId))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
 
+		// Check the trigger
+		auto *trigger = m_project.triggers.getById(triggerId);
+		if (!trigger)
+		{
+			WLOG("Unknown trigger");
+			return;
+		}
+
+		// Check if the players character could really have triggered that trigger
+		auto &character = sender.getCharacter();
+		if (trigger->map != character->getMapId())
+		{
+			WLOG("Trigger is not on players map!");
+			return;
+		}
+
+		// Get player location for distance checks
+		float x, y, z, o;
+		character->getLocation(x, y, z, o);
+		if (trigger->radius > 0.0f)
+		{
+			const float dist = 
+				::sqrtf(((x - trigger->x) * (x - trigger->x)) + ((y - trigger->y) * (y - trigger->y)) + ((z - trigger->z) * (z - trigger->z)));
+			if (dist > trigger->radius)
+			{
+				WLOG("Player character is too far away from trigger");
+				return;
+			}
+		}
+		else
+		{
+			// TODO: Box check
+		}
+
+		// Check if this is a teleport trigger
+		// TODO: Optimize this, create a trigger type
+		if (trigger->targetMap != 0 || trigger->targetX != 0.0f || trigger->targetY != 0.0f || trigger->targetZ != 0.0f || trigger->targetO != 0.0f)
+		{
+			// Teleport
+			character->teleport(trigger->targetMap, trigger->targetX, trigger->targetY, trigger->targetZ, trigger->targetO);
+		}
+		else
+		{
+			DLOG("TODO: Unknown trigger type '" << trigger->name << "'...");
+		}
+	}
 }

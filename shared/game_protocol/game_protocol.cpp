@@ -2786,6 +2786,12 @@ namespace wowpp
 				return packet;
 			}
 
+			bool areaTrigger(io::Reader &packet, UInt32 &out_triggerId)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_triggerId);
+			}
+
 		}
 	}
 }
