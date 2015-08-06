@@ -992,7 +992,7 @@ namespace wowpp
 		}
 
 		// Check if the players character could really have triggered that trigger
-		auto &character = sender.getCharacter();
+		auto character = sender.getCharacter();
 		if (trigger->map != character->getMapId())
 		{
 			WLOG("Trigger is not on players map!");
