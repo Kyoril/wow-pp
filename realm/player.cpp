@@ -849,6 +849,8 @@ namespace wowpp
 		{
 			case pp::world_realm::world_left_reason::Logout:
 			{
+				auto guid = m_gameCharacter->getGuid();
+
 				// Send notification to friends
 				game::SocialInfo info;
 				info.flags = game::social_flag::Friend;
@@ -871,7 +873,8 @@ namespace wowpp
 				// If we are in a group, notify others
 				if (m_group)
 				{
-					m_group->sendUpdate();
+					m_group->broadcastPacket(
+						std::bind(game::server_write::partyMemberStatsFullOffline, std::placeholders::_1, guid), guid);
 					m_group.reset();
 				}
 
@@ -1501,7 +1504,7 @@ namespace wowpp
 
 		DLOG("CMSG_REQUEST_PARTY_MEMBER_STATS: Player " << m_gameCharacter->getName() << " requests party member stats of 0x" 
 			<< std::hex << std::uppercase << std::setw(16) << std::setfill('0') << guid);
-
+		
 		// Try to find that player
 		auto *player = m_manager.getPlayerByCharacterGuid(guid);
 		if (!player)

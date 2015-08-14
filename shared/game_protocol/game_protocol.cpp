@@ -495,9 +495,9 @@ namespace wowpp
 					<< io::write<NetUInt64>(objectGuid)
 					<< io::write_range(name) << io::write<NetUInt8>(0x00)	// Terminator
 					<< io::write_range(realmName) << io::write<NetUInt8>(0x00)	// Terminator realm name
-					<< io::write<NetUInt8>(raceId)
-					<< io::write<NetUInt8>(genderId)
-					<< io::write<NetUInt8>(classId)
+					<< io::write<NetUInt32>(raceId)
+					<< io::write<NetUInt32>(genderId)
+					<< io::write<NetUInt32>(classId)
 					<< io::write<NetUInt8>(0x00);
 				out_packet.finish();
 			}

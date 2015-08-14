@@ -99,6 +99,9 @@ namespace wowpp
 		member.modifyGroupUpdateFlags(group_update_flags::Full, true);
 		auto *memberPlayer = m_playerManager.getPlayerByCharacterGuid(guid);
 
+		// Update group list
+		sendUpdate();
+
 		// Make sure that all group members know about us
 		for (auto &it : m_members)
 		{
@@ -124,25 +127,16 @@ namespace wowpp
 				}
 
 				// Spawn that player for us
-				/*std::vector<std::vector<char>> blocks;
-				createUpdateBlocks(*player2->getGameCharacter(), blocks);
-				player->sendPacket(
-					std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));*/
-				DLOG("SMSG_PARTY_MEMBER_STATS of " << player2->getGameCharacter()->getName() << " to " << player->getGameCharacter()->getName());
 				player->sendPacket(
 					std::bind(game::server_write::partyMemberStats, std::placeholders::_1, std::cref(*player2->getGameCharacter())));
 			}
 		}
-
-		// Update group list
-		sendUpdate();
 
 		/*
 		// Other checks have already been done in addInvite method, so we are good to go here
 		broadcastPacket(
 			std::bind(game::server_write::partyMemberStats, std::placeholders::_1, std::cref(member)), guid);
 			*/
-
 		return game::party_result::Ok;
 	}
 
