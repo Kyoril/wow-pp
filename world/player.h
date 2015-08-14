@@ -189,5 +189,6 @@ namespace wowpp
 		boost::signals2::scoped_connection m_onSpawn, m_onDespawn, m_onAtkSwingErr, m_onProfChanged, m_onInvFailure;
 		boost::signals2::scoped_connection m_onTileChange, m_onComboPoints, m_onXP, m_onCastError, m_onGainLevel;
 		boost::signals2::scoped_connection m_onAuraUpdate, m_onTeleport;
+		AttackSwingError m_lastError;
 	};
 }

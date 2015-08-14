@@ -429,14 +429,22 @@ namespace wowpp
 			if (distance > combatRange)
 			{
 				autoAttackError(attack_swing_error::OutOfRange);
-				break;
+
+				// Don't reset auto attack
+				GameTime nextAutoAttack = m_lastAttackSwing + (constants::OneSecond / 2);
+				m_attackSwingCountdown.setEnd(nextAutoAttack);
+				return;
 			}
 
 			// Check if that target is in front of us
 			if (!isInArc(2.0f * 3.1415927f / 3.0f, vX, vY))
 			{
 				autoAttackError(attack_swing_error::WrongFacing);
-				break;
+				
+				// Don't reset auto attack
+				GameTime nextAutoAttack = m_lastAttackSwing + (constants::OneSecond / 2);
+				m_attackSwingCountdown.setEnd(nextAutoAttack);
+				return;
 			}
 
 			// Let's do a little test here :)
@@ -493,6 +501,9 @@ namespace wowpp
 				m_victim->dealDamage(damage, 0, this);
 			}
 		} while (false);
+
+		// Notify about successful auto attack to reset last error message
+		autoAttackError(attack_swing_error::Success);
 
 		// Trigger next auto attack swing
 		GameTime nextAutoAttack = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);

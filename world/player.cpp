@@ -41,6 +41,7 @@ namespace wowpp
 		, m_character(std::move(character))
 		, m_logoutCountdown(instance.getUniverse().getTimers())
 		, m_instance(instance)
+		, m_lastError(attack_swing_error::Unknown)
 	{
 		m_logoutCountdown.ended.connect(
 			std::bind(&Player::onLogout, this));
@@ -532,6 +533,13 @@ namespace wowpp
 
 	void Player::onAttackSwingError(AttackSwingError error)
 	{
+		// Nothing to do here, since the client will automatically repeat the last error message periodically
+		if (error == m_lastError)
+			return;
+
+		// Save last error
+		m_lastError = error;
+
 		switch (error)
 		{
 			case attack_swing_error::CantAttack:
@@ -566,6 +574,13 @@ namespace wowpp
 			{
 				sendProxyPacket(
 					std::bind(game::server_write::attackSwingDeadTarget, std::placeholders::_1));
+				break;
+			}
+
+			case attack_swing_error::Success:
+			{
+				// Nothing to do here, since the auto attack was a success. This event is only fired to
+				// reset the variable.
 				break;
 			}
 

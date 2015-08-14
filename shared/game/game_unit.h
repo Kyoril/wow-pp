@@ -167,7 +167,12 @@ namespace wowpp
 			/// Target has to be in front of us (we need to look at the target).
 			WrongFacing			= 3,
 			/// The target is dead and thus can not be attacked.
-			TargetDead			= 4
+			TargetDead			= 4,
+
+			/// Successful auto attack swing. This code is never sent to the client.
+			Success				= 0xFFFFFFFE,
+			/// Unknown attack swing error. This code is never sent to the client.
+			Unknown				= 0xFFFFFFFF
 		};
 	}
 
