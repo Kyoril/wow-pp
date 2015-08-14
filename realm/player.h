@@ -123,6 +123,8 @@ namespace wowpp
 		PlayerGroup *getGroup() { return m_group.get(); }
 		/// Sets the players new group.
 		void setGroup(std::shared_ptr<PlayerGroup> group);
+		/// 
+		UInt32 getWorldInstanceId() const { return m_instanceId; }
 
 		/// Sends an encrypted packet to the game client
 		/// @param generator Packet writer function pointer.

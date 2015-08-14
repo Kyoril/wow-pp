@@ -709,7 +709,7 @@ namespace wowpp
 		// is valid on the world node and if not, transfer player
 
 		// There should be an instance
-		worldNode->enterWorldInstance(charEntry->id, *m_gameCharacter, items);
+		worldNode->enterWorldInstance(charEntry->id, std::numeric_limits<UInt32>::max(), *m_gameCharacter, items);
 	}
 
 	void Player::worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, float x, float y, float z, float o)
@@ -1375,13 +1375,11 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("SMSG_GROUP_INVITE");
 		player->setGroup(m_group);
 		player->sendPacket(
 			std::bind(game::server_write::groupInvite, std::placeholders::_1, std::cref(m_gameCharacter->getName())));
 
 		// Send result
-		DLOG("SMSG_PARTY_COMMAND_RESULT");
 		sendPacket(
 			std::bind(game::server_write::partyCommandResult, std::placeholders::_1, party_operation::Invite, std::cref(playerName), party_result::Ok));
 		m_group->sendUpdate();
@@ -1552,10 +1550,31 @@ namespace wowpp
 		// Update character location
 		m_gameCharacter->setMapId(m_transferMap);
 		m_gameCharacter->relocate(m_transferX, m_transferY, m_transferZ, m_transferO);
-
+		
 		// We found the character - now we need to look for a world node
 		// which is hosting a fitting world instance or is able to create
 		// a new one
+
+		UInt32 groupInstanceId = std::numeric_limits<UInt32>::max();
+
+		// Determine group instance to join
+		auto *player = m_manager.getPlayerByCharacterGuid(m_gameCharacter->getGuid());
+		if (player)
+		{
+			if (auto *group = player->getGroup())
+			{
+				auto leader = group->getLeader();
+				if (leader != m_gameCharacter->getGuid())
+				{
+					// TODO Get leading character and his instance id
+					auto *leadPlayer = m_manager.getPlayerByCharacterId(leader);
+					if (leadPlayer)
+					{
+						groupInstanceId = leadPlayer->getWorldInstanceId();
+					}
+				}
+			}
+		}
 
 		// Find a new world node
 		auto *world = m_worldManager.getWorldByMapId(m_transferMap);
@@ -1576,7 +1595,7 @@ namespace wowpp
 
 		// There should be an instance
 		m_worldNode = world;
-		m_worldNode->enterWorldInstance(m_characterId, *m_gameCharacter, items);
+		m_worldNode->enterWorldInstance(m_characterId, groupInstanceId, *m_gameCharacter, items);
 
 		// Reset transfer data
 		m_transferMap = 0;

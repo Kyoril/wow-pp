@@ -748,11 +748,22 @@ namespace wowpp
 
 	io::Reader & operator>>(io::Reader &r, GameCharacter& object)
 	{
+		object.initialize();
 		r
 			>> reinterpret_cast<GameUnit&>(object)
 			>> io::read_container<NetUInt8>(object.m_name)
 			>> io::read<NetUInt32>(object.m_zoneIndex)
 			>> io::read<float>(object.m_manaRegBase);
+
+		// Reset all auras
+		for (UInt32 i = 0; i < 56; ++i)
+		{
+			object.setUInt32Value(unit_fields::Aura + i, 0);
+		}
+
+		// Update all stats
+		object.updateAllStats();
+
 		return r;
 	}
 }

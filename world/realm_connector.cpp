@@ -240,6 +240,7 @@ namespace wowpp
 	{
 		// Read packet from the realm
 		DatabaseId requesterDbId;
+		UInt32 instanceId;
 		std::vector<UInt32> spellIds;
 		std::vector<pp::world_realm::ItemData> items;
 		std::shared_ptr<GameCharacter> character(new GameCharacter(
@@ -247,7 +248,7 @@ namespace wowpp
 			std::bind(&RaceEntryManager::getById, &m_project.races, std::placeholders::_1),
 			std::bind(&ClassEntryManager::getById, &m_project.classes, std::placeholders::_1),
 			std::bind(&LevelEntryManager::getById, &m_project.levels, std::placeholders::_1)));
-		if (!(pp::world_realm::realm_read::characterLogIn(packet, requesterDbId, character.get(), spellIds, items)))
+		if (!(pp::world_realm::realm_read::characterLogIn(packet, requesterDbId, instanceId, character.get(), spellIds, items)))
 		{
 			// Error: could not read packet
 			return;
@@ -268,37 +269,57 @@ namespace wowpp
 
 		// We know the map now - check if this is a global map
 		WorldInstance *instance = nullptr;
-		if (map->instanceType == map_instance_type::Global)
+		
+		// Find instance
+		if (instanceId != std::numeric_limits<UInt32>::max())
 		{
-			// It is a global map instance... look for an instance of this map
-			instance = m_worldInstanceManager.getInstanceByMapId(map->id);
-			if (!instance)
+			instance = m_worldInstanceManager.getInstanceById(instanceId);
+			if (instance)
 			{
-				// The global world instance for this map does not yet exist - we want to
-				// create it
+				if (instance->getMapId() != map->id)
+				{
+					WLOG("Instance found but different map id - can't enter instance, creating new one.");
+					instance = nullptr;
+				}
+			}
+		}
+
+		// Have we found an instance?
+		if (instance == nullptr)
+		{
+			if (map->instanceType == map_instance_type::Global)
+			{
+				// It is a global map instance... look for an instance of this map
+				instance = m_worldInstanceManager.getInstanceByMapId(map->id);
+				if (!instance)
+				{
+					// The global world instance for this map does not yet exist - we want to
+					// create it
+					instance = m_worldInstanceManager.createInstance(*map);
+					if (!instance)
+					{
+						ELOG("Could not create world instance for map " << map->id);
+						m_connection->sendSinglePacket(
+							std::bind(pp::world_realm::world_write::worldInstanceError, std::placeholders::_1, requesterDbId, pp::world_realm::world_instance_error::InternalError));
+						return;
+					}
+				}
+			}
+			else
+			{
+				// It is an instanced map - create a new instance (TODO: Group handling etc.)
 				instance = m_worldInstanceManager.createInstance(*map);
 				if (!instance)
 				{
-					ELOG("Could not create world instance for map " << map->id);
+					ELOG("Could not create new world instance for map " << map->id);
 					m_connection->sendSinglePacket(
 						std::bind(pp::world_realm::world_write::worldInstanceError, std::placeholders::_1, requesterDbId, pp::world_realm::world_instance_error::InternalError));
 					return;
 				}
 			}
 		}
-		else
-		{
-			// It is an instanced map - create a new instance (TODO: Group handling etc.)
-			instance = m_worldInstanceManager.createInstance(*map);
-			if (!instance)
-			{
-				ELOG("Could not create new world instance for map " << map->id);
-				m_connection->sendSinglePacket(
-					std::bind(pp::world_realm::world_write::worldInstanceError, std::placeholders::_1, requesterDbId, pp::world_realm::world_instance_error::InternalError));
-				return;
-			}
-		}
 
+		// We really need an instance now
 		assert(instance);
 
 		// Fire signal which should create a player instance for us

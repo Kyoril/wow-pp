@@ -264,6 +264,7 @@ namespace wowpp
 				void characterLogIn(
 					pp::OutgoingPacket &out_packet,
 					DatabaseId characterRealmId,
+					UInt32 instanceId,
 					const GameCharacter &character,
 					const std::vector<UInt32> &spellIds,
 					const std::vector<ItemData> &items
@@ -398,6 +399,7 @@ namespace wowpp
 				bool characterLogIn(
 					io::Reader &packet,
 					DatabaseId &out_characterRealmId,
+					UInt32 &out_instanceId,
 					GameCharacter *out_character,
 					std::vector<UInt32> &out_spellIds,
 					std::vector<ItemData> &out_items
