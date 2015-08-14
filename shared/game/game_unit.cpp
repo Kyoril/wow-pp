@@ -74,6 +74,15 @@ namespace wowpp
 	{
 		GameObject::initialize();
 
+		// Initialize unit mods
+		for (size_t i = 0; i < unit_mods::End; ++i)
+		{
+			m_unitMods[i][unit_mod_type::BaseValue] = 0.0f;
+			m_unitMods[i][unit_mod_type::TotalValue] = 0.0f;
+			m_unitMods[i][unit_mod_type::BasePct] = 1.0f;
+			m_unitMods[i][unit_mod_type::TotalPct] = 1.0f;
+		}
+
 		// Initialize some values
 		setUInt32Value(object_fields::Type, 9);							//OBJECT_FIELD_TYPE				(TODO: Flags)
 		setFloatValue(object_fields::ScaleX, 1.0f);						//OBJECT_FIELD_SCALE_X			(Float)
@@ -94,42 +103,26 @@ namespace wowpp
 		setUInt32Value(unit_fields::MaxPower4, 100);					//UNIT_FIELD_MAXPOWER4	Energy
 		setUInt32Value(unit_fields::MaxPower5, 100);					//UNIT_FIELD_MAXPOWER4	Happiness
 
-		// Init some values
-		setRace(1);
-		setClass(1);
-		setGender(game::gender::Male);
-		setLevel(1);
-
 		setUInt32Value(unit_fields::UnitFlags, 0x00001000);				//UNIT_FIELD_FLAGS				(TODO: Flags)	UNIT_FLAG_PVP_ATTACKABLE
-		setUInt32Value(unit_fields::Aura, 0x0999);						//UNIT_FIELD_AURA				(TODO: Flags)
-		setUInt32Value(unit_fields::AuraFlags, 0x09);					//UNIT_FIELD_AURAFLAGS			(TODO: Flags)
-		setUInt32Value(unit_fields::AuraLevels, 0x01);					//UNIT_FIELD_AURALEVELS			(TODO: Flags)
 		setUInt32Value(unit_fields::BaseAttackTime, 2000);				//UNIT_FIELD_BASEATTACKTIME		
 		setUInt32Value(unit_fields::BaseAttackTime + 1, 2000);			//UNIT_FIELD_OFFHANDATTACKTIME	
 		setUInt32Value(unit_fields::RangedAttackTime, 2000);			//UNIT_FIELD_RANGEDATTACKTIME	
 		setUInt32Value(unit_fields::BoundingRadius, 0x3e54fdf4);		//UNIT_FIELD_BOUNDINGRADIUS		(TODO: Float)
 		setUInt32Value(unit_fields::CombatReach, 0xf3c00000);			//UNIT_FIELD_COMBATREACH		(TODO: Float)
-		setUInt32Value(unit_fields::MinDamage, 0x40a49249);				//UNIT_FIELD_MINDAMAGE			(TODO: Float)
-		setUInt32Value(unit_fields::MaxDamage, 0x40c49249);				//UNIT_FIELD_MAXDAMAGE			(TODO: Float)
 		setUInt32Value(unit_fields::Bytes1, 0x00110000);				//UNIT_FIELD_BYTES_1
 
 		setFloatValue(unit_fields::ModCastSpeed, 1.0f);					//UNIT_MOD_CAST_SPEED
-		setUInt32Value(unit_fields::Resistances, 40);					//UNIT_FIELD_RESISTANCES
-		setUInt32Value(unit_fields::BaseHealth, 20);					//UNIT_FIELD_BASE_HEALTH
 		setUInt32Value(unit_fields::Bytes2, 0x00002800);				//UNIT_FIELD_BYTES_2
 		setUInt32Value(unit_fields::AttackPower, 29);					//UNIT_FIELD_ATTACK_POWER
 		setUInt32Value(unit_fields::RangedAttackPower, 11);				//UNIT_FIELD_RANGED_ATTACK_POWER
 		setUInt32Value(unit_fields::MinRangedDamage, 0x40249249);		//UNIT_FIELD_MINRANGEDDAMAGE	(TODO: Float)
 		setUInt32Value(unit_fields::MaxRangedDamage, 0x40649249);		//UNIT_FIELD_MAXRANGEDDAMAGE	(TODO: Float)
 
-		// Initialize unit mods
-		for (size_t i = 0; i < unit_mods::End; ++i)
-		{
-			m_unitMods[i][unit_mod_type::BaseValue] = 0.0f;
-			m_unitMods[i][unit_mod_type::TotalValue] = 0.0f;
-			m_unitMods[i][unit_mod_type::BasePct] = 1.0f;
-			m_unitMods[i][unit_mod_type::TotalPct] = 1.0f;
-		}
+		// Init some values
+		setRace(1);
+		setClass(1);
+		setGender(game::gender::Male);
+		setLevel(1);
 	}
 
 	void GameUnit::raceUpdated()
@@ -245,6 +238,7 @@ namespace wowpp
 
 	void GameUnit::levelChanged(const LevelEntry &levelInfo)
 	{
+
 		// Get race and class
 		const auto race = getRace();
 		const auto cls = getClass();
@@ -1039,15 +1033,6 @@ namespace wowpp
 	{
 		w << reinterpret_cast<GameObject const&>(object);
 
-		// Write unit mods
-		for (const auto &it : object.m_unitMods)
-		{
-			for (const auto &it2 : it)
-			{
-				w << io::write<float>(it2);
-			}
-		}
-
 		return w;
 	}
 
@@ -1056,15 +1041,6 @@ namespace wowpp
 		// Read values
 		r
 			>> reinterpret_cast<GameObject &>(object);
-
-		// Read unit mods
-		for (size_t i = 0; i < object.m_unitMods.size(); ++i)
-		{
-			for (size_t j = 0; j < object.m_unitMods[i].size(); ++j)
-			{
-				r >> io::read<float>(object.m_unitMods[i][j]);
-			}
-		}
 
 		// Update internals based on received values
 		object.raceUpdated();

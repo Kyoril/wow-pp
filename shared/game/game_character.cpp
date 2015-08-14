@@ -762,7 +762,7 @@ namespace wowpp
 		}
 
 		// Update all stats
-		object.updateAllStats();
+		object.setLevel(object.getLevel());
 
 		return r;
 	}
