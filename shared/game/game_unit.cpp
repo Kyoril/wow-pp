@@ -307,6 +307,8 @@ namespace wowpp
 
 	void GameUnit::cancelCast()
 	{
+		// Stop attack swing callback in case there is one
+		if (m_swingCallback) m_swingCallback = AttackSwingCallback();
 		m_spellCast->stopCast();
 	}
 
@@ -389,6 +391,12 @@ namespace wowpp
 			return;
 		}
 
+		// Reset onSwing callback
+		if (m_swingCallback)
+		{
+			m_swingCallback = AttackSwingCallback();
+		}
+
 		// Notify all subscribers
 		std::vector<char> buffer;
 		io::VectorSink sink(buffer);
@@ -430,6 +438,12 @@ namespace wowpp
 			{
 				autoAttackError(attack_swing_error::OutOfRange);
 
+				// Reset attack swing callback
+				if (m_swingCallback)
+				{
+					m_swingCallback = AttackSwingCallback();
+				}
+
 				// Don't reset auto attack
 				GameTime nextAutoAttack = m_lastAttackSwing + (constants::OneSecond / 2);
 				m_attackSwingCountdown.setEnd(nextAutoAttack);
@@ -441,13 +455,28 @@ namespace wowpp
 			{
 				autoAttackError(attack_swing_error::WrongFacing);
 				
+				// Reset attack swing callback
+				if (m_swingCallback)
+				{
+					m_swingCallback = AttackSwingCallback();
+				}
+
 				// Don't reset auto attack
 				GameTime nextAutoAttack = m_lastAttackSwing + (constants::OneSecond / 2);
 				m_attackSwingCountdown.setEnd(nextAutoAttack);
 				return;
 			}
 
-			// Let's do a little test here :)
+			if (m_swingCallback)
+			{
+				// Execute onSwing callback (used by some melee spells which are executed on next attack swing and 
+				// replace auto attack)
+				m_swingCallback();
+
+				// Reset attack swing callback
+				m_swingCallback = AttackSwingCallback();
+			}
+			else
 			{
 				TileIndex2D tileIndex;
 				if (!getTileIndex(tileIndex))
@@ -545,6 +574,7 @@ namespace wowpp
 		}
 
 		//TODO: Do this only while not in combat
+		if (!m_attackSwingCountdown.running)
 		{
 			regenerateHealth();
 			regeneratePower(power_type::Rage);
@@ -1038,6 +1068,11 @@ namespace wowpp
 			GameTime nextAttackSwing = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
 			m_attackSwingCountdown.setEnd(nextAttackSwing);
 		}
+	}
+
+	void GameUnit::setAttackSwingCallback(AttackSwingCallback callback)
+	{
+		m_swingCallback = std::move(callback);
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)

@@ -106,17 +106,18 @@ namespace wowpp
 		m_castState->onUserStartsMoving();
 	}
 
-	void SpellCast::setState(std::unique_ptr<CastState> castState)
+	void SpellCast::setState(std::shared_ptr<CastState> castState)
 	{
 		assert(castState);
 		assert(m_castState);
 
 		m_castState = std::move(castState);
+		m_castState->activate();
 	}
 
 	SpellCasting & castSpell(SpellCast &cast, const SpellEntry &spell, SpellTargetMap target, GameTime castTime)
 	{
-		std::unique_ptr<SingleCastState> newState(
+		std::shared_ptr<SingleCastState> newState(
 			new SingleCastState(cast, spell, std::move(target), castTime)
 			);
 

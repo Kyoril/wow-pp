@@ -315,6 +315,8 @@ namespace wowpp
 
 		typedef std::function<void(game::SpellCastResult)> SpellSuccessCallback;
 
+		typedef std::function<bool()> AttackSwingCallback;
+
 		/// Fired when this unit was killed. Parameter: GameUnit* killer (may be nullptr if killer 
 		/// information is not available (for example due to environmental damage))
 		boost::signals2::signal<void(GameUnit*)> killed;
@@ -433,6 +435,9 @@ namespace wowpp
 		/// 
 		static UnitMods getUnitModByResistance(UInt8 res);
 
+		/// 
+		void setAttackSwingCallback(AttackSwingCallback callback);
+
 
 	protected:
 
@@ -490,6 +495,7 @@ namespace wowpp
 		GameTime m_lastManaUse;
 		UnitModArray m_unitMods;
 		AuraContainer m_auras;
+		AttackSwingCallback m_swingCallback;
 	};
 
 	UInt32 calculateArmorReducedDamage(UInt32 attackerLevel, const GameUnit &victim, UInt32 damage);

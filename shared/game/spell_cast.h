@@ -64,13 +64,13 @@ namespace wowpp
 			bool doReplacePreviousCast);
 		void stopCast();
 		void onUserStartsMoving();
-		void setState(std::unique_ptr<CastState> castState);
+		void setState(std::shared_ptr<CastState> castState);
 
 	private:
 
 		TimerQueue &m_timers;
 		GameUnit &m_executer;
-		std::unique_ptr<CastState> m_castState;
+		std::shared_ptr<CastState> m_castState;
 	};
 
 	/// 
@@ -80,6 +80,7 @@ namespace wowpp
 
 		virtual ~CastState() { }
 
+		virtual void activate() = 0;
 		virtual std::pair<game::SpellCastResult, SpellCasting*> startCast(
 			SpellCast &cast,
 			const SpellEntry &spell,

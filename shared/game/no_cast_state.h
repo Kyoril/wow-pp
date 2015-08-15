@@ -30,6 +30,7 @@ namespace wowpp
 	{
 	public:
 
+		void activate() override;
 		std::pair<game::SpellCastResult, SpellCasting*> startCast(
 			SpellCast &cast,
 			const SpellEntry &spell,

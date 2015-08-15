@@ -25,12 +25,13 @@
 #include "common/countdown.h"
 #include "data/spell_entry.h"
 #include "boost/signals2.hpp"
+#include <boost/noncopyable.hpp>
 #include <memory>
 
 namespace wowpp
 {
 	/// 
-	class SingleCastState final : public SpellCast::CastState
+	class SingleCastState final : public SpellCast::CastState, public std::enable_shared_from_this<SingleCastState>, public boost::noncopyable
 	{
 	public:
 
@@ -39,6 +40,7 @@ namespace wowpp
 			const SpellEntry &spell,
 			SpellTargetMap target,
 			GameTime castTime);
+		void activate() override;
 		std::pair<game::SpellCastResult, SpellCasting *> startCast(
 			SpellCast &cast,
 			const SpellEntry &spell,
@@ -51,6 +53,8 @@ namespace wowpp
 
 	private:
 
+		bool consumePower();
+		void applyAllEffects();
 		Int32 calculateEffectBasePoints(const SpellEntry::Effect &effect);
 		void spellEffectTeleportUnits(const SpellEntry::Effect &effect);
 		void spellEffectSchoolDamage(const SpellEntry::Effect &effect);
@@ -71,7 +75,6 @@ namespace wowpp
 		SpellCasting m_casting;
 		bool m_hasFinished;
 		Countdown m_countdown;
-		std::shared_ptr<char> m_isAlive;
 		boost::signals2::scoped_connection m_onTargetDied, m_onTargetRemoved;
 		boost::signals2::scoped_connection m_onUserDamaged, m_onUserMoved;
 		float m_x, m_y, m_z;

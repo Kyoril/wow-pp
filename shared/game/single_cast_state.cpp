@@ -82,7 +82,6 @@ namespace wowpp
 		, m_target(std::move(target))
 		, m_hasFinished(false)
 		, m_countdown(cast.getTimers())
-		, m_isAlive(std::make_shared<char>(0))
 		, m_castTime(castTime)
 	{
 		// Check if the executer is in the world
@@ -113,22 +112,24 @@ namespace wowpp
 		{
 			this->onCastFinished();
 		});
+	}
 
-		if (castTime > 0)
+	void SingleCastState::activate()
+	{
+		if (m_castTime > 0)
 		{
-			m_countdown.setEnd(getCurrentTime() + castTime);
+			m_countdown.setEnd(getCurrentTime() + m_castTime);
 
 			// Subscribe to damage events if the spell is cancelled on damage
-			m_onUserMoved = executer.moved.connect(
+			m_onUserMoved = m_cast.getExecuter().moved.connect(
 				std::bind(&SingleCastState::onUserStartsMoving, this));
+
+			// TODO: Subscribe to target removed and died events (in both cases, the cast may be interrupted)
 		}
 		else
 		{
 			onCastFinished();
 		}
-
-		// TODO: Subscribe to target removed and died events (in both cases, the cast may be interrupted)
-
 	}
 
 	std::pair<game::SpellCastResult, SpellCasting *> SingleCastState::startCast(SpellCast &cast, const SpellEntry &spell, SpellTargetMap target, GameTime castTime, bool doReplacePreviousCast)
@@ -158,10 +159,10 @@ namespace wowpp
 			m_hasFinished = true;
 		}
 
-		const std::weak_ptr<char> isAlive = m_isAlive;
+		const std::weak_ptr<SingleCastState> weakThis = shared_from_this();
 		m_casting.ended(false);
 
-		if (isAlive.lock())
+		if (weakThis.lock())
 		{
 			m_cast.setState(std::unique_ptr<SpellCast::CastState>(
 				new NoCastState
@@ -216,7 +217,7 @@ namespace wowpp
 				std::bind(game::server_write::spellFailure, std::placeholders::_1,
 				executer.getGuid(),
 				m_spell.id,
-				game::spell_cast_result::FailedAffectingCombat));
+				game::spell_cast_result::FailedNoPower));
 
 			sendPacketFromCaster(executer,
 				std::bind(game::server_write::spellFailedOther, std::placeholders::_1,
@@ -301,89 +302,38 @@ namespace wowpp
 			}
 		}
 		
-
-		// Consume power
-		if (m_spell.cost > 0)
-		{
-			if (m_spell.powerType == power_type::Health)
-			{
-				// Special case
-				DLOG("TODO: Spell cost power type Health");
-			}
-			else
-			{
-				UInt32 currentPower = m_cast.getExecuter().getUInt32Value(unit_fields::Power1 + m_spell.powerType);
-				if (currentPower < m_spell.cost)
-				{
-					WLOG("Not enough power to cast spell!");
-
-					sendEndCast(false);
-					m_hasFinished = true;
-					return;
-				}
-
-				currentPower -= m_spell.cost;
-				m_cast.getExecuter().setUInt32Value(unit_fields::Power1 + m_spell.powerType, currentPower);
-
-				if (m_spell.powerType == power_type::Mana)
-					m_cast.getExecuter().notifyManaUse();
-			}
-		}
-
-
 		// TODO: Apply cooldown
-
-		sendEndCast(true);
-		m_hasFinished = true;
-
-		const std::weak_ptr<char> isAlive = m_isAlive;
-
-		// Apply spell effects on all targets
-		namespace se = game::spell_effects;
-		for (auto &effect : m_spell.effects)
+		
+		auto strongThis = shared_from_this();
+		const std::weak_ptr<SingleCastState> weakThis = strongThis;
+		if (m_spell.attributes & spell_attributes::OnNextSwing)
 		{
-			switch (effect.type)
+			// Execute on next weapon swing
+			m_cast.getExecuter().setAttackSwingCallback([strongThis, this]() -> bool
 			{
-				case se::SchoolDamage:
-					spellEffectSchoolDamage(effect);
-					break;
-				case se::PowerDrain:
-					spellEffectDrainPower(effect);
-					break;
-				case se::Heal:
-					spellEffectHeal(effect);
-					break;
-				case se::Proficiency:
-					spellEffectProficiency(effect);
-					break;
-				case se::AddComboPoints:
-					spellEffectAddComboPoints(effect);
-					break;
-				case se::WeaponDamageNoSchool:
-					spellEffectWeaponDamageNoSchool(effect);
-					break;
-				case se::ApplyAura:
-					spellEffectApplyAura(effect);
-					break;
-				case se::WeaponDamage:
-					spellEffectWeaponDamage(effect);
-					break;
-				case se::NormalizedWeaponDmg:
-					spellEffectNormalizedWeaponDamage(effect);
-					break;
-				case se::TeleportUnits:
-					spellEffectTeleportUnits(effect);
-					break;
-				case se::Weapon:
-				case se::Language:
-					// Nothing to do here, since the skills for these spells will be applied as soon as the player
-					// learns this spell.
-					break;
-				default:
-					WLOG("Spell effect " << game::constant_literal::spellEffectNames.getName(effect.type) << " (" << effect.type << ") not yet implemented");
-					break;
-			}
+				if (strongThis->consumePower())
+				{
+					strongThis->sendEndCast(true);
+					strongThis->applyAllEffects();
+				}
+				else
+				{
+					m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedNoPower);
+				}
+				
+				return true;
+			});
 		}
+		else
+		{
+			if (!consumePower())
+				return;
+
+			sendEndCast(true);
+			applyAllEffects();
+		}
+
+		m_hasFinished = true;
 
 		// Consume combo points if required
 		if ((m_spell.attributesEx[0] & spell_attributes_ex_a::ReqComboPoints_1) && character)
@@ -411,7 +361,7 @@ namespace wowpp
 			}
 		}
 		
-		if (isAlive.lock())
+		if (weakThis.lock())
 		{
 			//may destroy this, too
 			m_casting.ended(true);
@@ -875,4 +825,85 @@ namespace wowpp
 		target->setUInt32Value(unit_fields::Health, health);
 	}
 
+	void SingleCastState::applyAllEffects()
+	{
+		// Execute spell immediatly
+		namespace se = game::spell_effects;
+		for (auto &effect : m_spell.effects)
+		{
+			switch (effect.type)
+			{
+			case se::SchoolDamage:
+				spellEffectSchoolDamage(effect);
+				break;
+			case se::PowerDrain:
+				spellEffectDrainPower(effect);
+				break;
+			case se::Heal:
+				spellEffectHeal(effect);
+				break;
+			case se::Proficiency:
+				spellEffectProficiency(effect);
+				break;
+			case se::AddComboPoints:
+				spellEffectAddComboPoints(effect);
+				break;
+			case se::WeaponDamageNoSchool:
+				spellEffectWeaponDamageNoSchool(effect);
+				break;
+			case se::ApplyAura:
+				spellEffectApplyAura(effect);
+				break;
+			case se::WeaponDamage:
+				spellEffectWeaponDamage(effect);
+				break;
+			case se::NormalizedWeaponDmg:
+				spellEffectNormalizedWeaponDamage(effect);
+				break;
+			case se::TeleportUnits:
+				spellEffectTeleportUnits(effect);
+				break;
+			case se::Weapon:
+			case se::Language:
+				// Nothing to do here, since the skills for these spells will be applied as soon as the player
+				// learns this spell.
+				break;
+			default:
+				WLOG("Spell effect " << game::constant_literal::spellEffectNames.getName(effect.type) << " (" << effect.type << ") not yet implemented");
+				break;
+			}
+		}
+	}
+
+	bool SingleCastState::consumePower()
+	{
+		if (m_spell.cost > 0)
+		{
+			if (m_spell.powerType == power_type::Health)
+			{
+				// Special case
+				DLOG("TODO: Spell cost power type Health");
+			}
+			else
+			{
+				UInt32 currentPower = m_cast.getExecuter().getUInt32Value(unit_fields::Power1 + m_spell.powerType);
+				if (currentPower < m_spell.cost)
+				{
+					WLOG("Not enough power to cast spell!");
+
+					sendEndCast(false);
+					m_hasFinished = true;
+					return false;
+				}
+
+				currentPower -= m_spell.cost;
+				m_cast.getExecuter().setUInt32Value(unit_fields::Power1 + m_spell.powerType, currentPower);
+
+				if (m_spell.powerType == power_type::Mana)
+					m_cast.getExecuter().notifyManaUse();
+			}
+		}
+
+		return true;
+	}
 }

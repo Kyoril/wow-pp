@@ -23,6 +23,11 @@
 
 namespace wowpp
 {
+	void NoCastState::activate()
+	{
+
+	}
+
 	std::pair<game::SpellCastResult, SpellCasting*> NoCastState::startCast(SpellCast &cast, const SpellEntry &spell, SpellTargetMap target, GameTime castTime, bool doReplacePreviousCast)
 	{
 		SpellCasting &casting = castSpell(
