@@ -173,6 +173,19 @@ namespace wowpp
 		m_auras.erase(newEnd, std::end(m_auras));
 	}
 
+	bool AuraContainer::hasAura(game::AuraType type) const
+	{
+		for (auto &it : m_auras)
+		{
+			if (it->getEffect().auraName == type)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	boost::optional<std::size_t> findAuraInstanceIndex(AuraContainer &instances, Aura &instance)
 	{
 		for (size_t i = 0, c = instances.getSize(); i < c; ++i)

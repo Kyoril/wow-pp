@@ -187,7 +187,23 @@ namespace wowpp
 				effectTable->tryGetInteger("item_type", effect.itemType);
 				effectTable->tryGetInteger("misc_val_a", effect.miscValueA);
 				effectTable->tryGetInteger("misc_val_b", effect.miscValueB);
-				effectTable->tryGetInteger("trigger_spell", effect.triggerSpell);
+
+				UInt32 triggerSpell = 0;
+				effectTable->tryGetInteger("trigger_spell", triggerSpell);
+
+				if (triggerSpell != 0)
+				{
+					context.loadLater.push_back([triggerSpell, &effect, &context, this]() -> bool
+					{
+						effect.triggerSpell = context.getSpell(triggerSpell);
+						if (!effect.triggerSpell)
+						{
+							//WLOG("Unknown trigger spell entry " << triggerSpell << " for spell " << id);
+						}
+
+						return true;
+					});
+				}
 			}
 		}
 
@@ -283,7 +299,7 @@ namespace wowpp
 						if (effect.itemType != 0) effectTable.addKey("item_type", effect.itemType);
 						if (effect.miscValueA != 0) effectTable.addKey("misc_val_a", effect.miscValueA);
 						if (effect.miscValueB != 0) effectTable.addKey("misc_val_b", effect.miscValueB);
-						if (effect.triggerSpell != 0) effectTable.addKey("trigger_spell", effect.triggerSpell);
+						if (effect.triggerSpell != nullptr) effectTable.addKey("trigger_spell", effect.triggerSpell->id);
 					}
 					effectTable.finish();
 				}

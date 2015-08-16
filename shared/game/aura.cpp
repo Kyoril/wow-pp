@@ -164,6 +164,9 @@ namespace wowpp
 		case aura::ModStealth:
 			handleModStealth(apply);
 			break;
+		case aura::PeriodicEnergize:
+			handlePeriodicEnergize(apply);
+			break;
 		default:
 			WLOG("Unhandled aura type: " << m_effect.auraName);
 			break;
@@ -248,7 +251,47 @@ namespace wowpp
 		}
 		case aura::PeriodicEnergize:
 		{
-			DLOG("TODO");
+			UInt32 power = m_basePoints;
+			Int32 powerType = m_effect.miscValueA;
+			if (powerType < 0 || powerType > 5)
+			{
+				break;
+			}
+
+			const UInt32 maxPower = m_target.getUInt32Value(unit_fields::MaxPower1 + powerType);
+			if (maxPower == 0)
+			{
+				break;
+			}
+
+			// Send event to all subscribers in sight
+			auto *world = m_target.getWorldInstance();
+			if (world)
+			{
+				TileIndex2D tileIndex;
+				m_target.getTileIndex(tileIndex);
+
+				std::vector<char> buffer;
+				io::VectorSink sink(buffer);
+				wowpp::game::OutgoingPacket packet(sink);
+				game::server_write::periodicAuraLog(packet, m_target.getGuid(), (m_caster ? m_caster->getGuid() : 0), m_spell.id, m_effect.auraName, powerType, power);
+
+				forEachSubscriberInSight(world->getGrid(), tileIndex, [&packet, &buffer](ITileSubscriber &subscriber)
+				{
+					subscriber.sendPacket(packet, buffer);
+				});
+			}
+
+			UInt32 curPower = m_target.getUInt32Value(unit_fields::Power1 + powerType);
+			if (curPower + power > maxPower)
+			{
+				curPower = maxPower;
+			}
+			else
+			{
+				curPower += power;
+			}
+			m_target.setUInt32Value(unit_fields::Power1 + powerType, curPower);
 			break;
 		}
 		case aura::PeriodicHeal:
@@ -377,6 +420,26 @@ namespace wowpp
 			return;
 
 		// Toggle periodic flag
+		m_isPeriodic = true;
+
+		// First tick at apply
+		if (m_spell.attributesEx[4] & 0x00000200)
+		{
+			// First tick
+			onTick();
+		}
+		else
+		{
+			// Start timer
+			startPeriodicTimer();
+		}
+	}
+
+	void Aura::handlePeriodicEnergize(bool apply)
+	{
+		if (!apply)
+			return;
+
 		m_isPeriodic = true;
 
 		// First tick at apply

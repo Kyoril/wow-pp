@@ -66,6 +66,8 @@ namespace wowpp
 		void spellEffectProficiency(const SpellEntry::Effect &effect);
 		void spellEffectAddComboPoints(const SpellEntry::Effect &effect);
 		void spellEffectApplyAura(const SpellEntry::Effect &effect);
+		void spellEffectTriggerSpell(const SpellEntry::Effect &effect);
+		void spellEffectEnergize(const SpellEntry::Effect &effect);
 
 	private:
 

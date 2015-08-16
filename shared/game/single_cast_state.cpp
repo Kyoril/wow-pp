@@ -116,6 +116,7 @@ namespace wowpp
 
 	void SingleCastState::activate()
 	{
+		DLOG("SPELL CAST STATE ACTIVATED FOR SPELL " << m_spell.name << " (" << m_spell.id << ")");
 		if (m_castTime > 0)
 		{
 			m_countdown.setEnd(getCurrentTime() + m_castTime);
@@ -827,6 +828,9 @@ namespace wowpp
 
 	void SingleCastState::applyAllEffects()
 	{
+		// Make sure that this isn't destroyed during the effects
+		auto strong = shared_from_this();
+
 		// Execute spell immediatly
 		namespace se = game::spell_effects;
 		for (auto &effect : m_spell.effects)
@@ -868,6 +872,12 @@ namespace wowpp
 				// Nothing to do here, since the skills for these spells will be applied as soon as the player
 				// learns this spell.
 				break;
+			case se::TriggerSpell:
+				spellEffectTriggerSpell(effect);
+				break;
+			case se::Energize:
+				spellEffectEnergize(effect);
+				break;
 			default:
 				WLOG("Spell effect " << game::constant_literal::spellEffectNames.getName(effect.type) << " (" << effect.type << ") not yet implemented");
 				break;
@@ -906,4 +916,60 @@ namespace wowpp
 
 		return true;
 	}
+
+	void SingleCastState::spellEffectTriggerSpell(const SpellEntry::Effect &effect)
+	{
+		if (!effect.triggerSpell)
+		{
+			WLOG("Spell " << m_spell.id << ": No spell to trigger found! Trigger effect will be ignored.");
+			return;
+		}
+
+		// Get the spell to trigger
+		startCast(m_cast, *effect.triggerSpell, m_target, 0, true);
+	}
+
+	void SingleCastState::spellEffectEnergize(const SpellEntry::Effect &effect)
+	{
+		Int32 powerType = effect.miscValueA;
+		if (powerType < 0 || powerType > 5)
+			return;
+
+		UInt32 power = calculateEffectBasePoints(effect);
+
+		// TODO: Get unit target
+		GameUnit *unitTarget = nullptr;
+		auto *world = m_cast.getExecuter().getWorldInstance();
+		if (!world)
+		{
+			WLOG("Caster not in any world instance right now.");
+			return;
+		}
+
+		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
+			unitTarget = &m_cast.getExecuter();
+		else
+			m_target.resolvePointers(*world, &unitTarget, nullptr, nullptr, nullptr);
+
+		if (!unitTarget)
+		{
+			WLOG("No valid unit target found!");
+			return;
+		}
+
+		UInt32 curPower = unitTarget->getUInt32Value(unit_fields::Power1 + powerType);
+		UInt32 maxPower = unitTarget->getUInt32Value(unit_fields::MaxPower1 + powerType);
+		if (curPower + power > maxPower)
+		{
+			curPower = maxPower;
+		}
+		else
+		{
+			curPower += power;
+		}
+		unitTarget->setUInt32Value(unit_fields::Power1 + powerType, curPower);
+		sendPacketFromCaster(m_cast.getExecuter(),
+			std::bind(game::server_write::spellEnergizeLog, std::placeholders::_1, m_cast.getExecuter().getGuid(), unitTarget->getGuid(), m_spell.id, static_cast<UInt8>(powerType), power));
+	}
+
 }

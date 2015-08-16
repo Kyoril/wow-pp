@@ -44,6 +44,7 @@ namespace wowpp
 
 		GameUnit &getOwner() { return m_owner; }
 		size_t getSize() const { return m_auras.size(); }
+		bool hasAura(game::AuraType type) const;
 
 	private:
 

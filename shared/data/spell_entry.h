@@ -290,7 +290,7 @@ namespace wowpp
 			UInt32 itemType;
 			Int32 miscValueA;
 			Int32 miscValueB;
-			UInt32 triggerSpell;
+			const SpellEntry *triggerSpell;
 			Int32 pointsPerComboPoint;
 
 			Effect()
@@ -311,7 +311,7 @@ namespace wowpp
 				, itemType(0)
 				, miscValueA(0)
 				, miscValueB(0)
-				, triggerSpell(0)
+				, triggerSpell(nullptr)
 				, pointsPerComboPoint(0)
 			{
 			}

@@ -85,6 +85,8 @@ namespace wowpp
 		void handleModShapeShift(bool apply);
 		/// 
 		void handleModStealth(bool apply);
+		/// 
+		void handlePeriodicEnergize(bool apply);
 
 	private:
 

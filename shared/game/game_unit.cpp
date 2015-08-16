@@ -577,7 +577,10 @@ namespace wowpp
 		if (!m_attackSwingCountdown.running)
 		{
 			regenerateHealth();
-			regeneratePower(power_type::Rage);
+			if (!m_auras.hasAura(game::aura_type::InterruptRegen))
+			{
+				regeneratePower(power_type::Rage);
+			}
 		}
 
 		regeneratePower(power_type::Energy);
