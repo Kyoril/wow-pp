@@ -115,6 +115,7 @@ namespace wowpp
 				SplitItem				= 0x10E,
 				AutoEquipItemSlot		= 0x10F,
 				DestroyItem				= 0x111,
+				SetActionButton			= 0x128,
 				CastSpell				= 0x12E,
 				CancelCast				= 0x12F,
 				SetSelection			= 0x13D,
@@ -780,6 +781,14 @@ namespace wowpp
 			bool areaTrigger(
 				io::Reader &packet,
 				UInt32 &out_triggerId
+				);
+
+			bool setActionButton(
+				io::Reader &packet,
+				UInt8 &out_button,
+				UInt8 &out_misc,
+				UInt8 &out_type,
+				UInt16 &out_action
 				);
 		};
 

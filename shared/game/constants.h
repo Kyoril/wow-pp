@@ -21,5 +21,7 @@ namespace wowpp
 		static const UInt32 FriendListLimit = 50;
 		/// Defined by client?
 		static const UInt32 IgnoreListLimit = 25;
+		/// Maximum number of action buttons the client knows.
+		static const UInt32 ActionButtonLimit = 132;
 	}
 }

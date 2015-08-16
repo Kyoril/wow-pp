@@ -38,6 +38,7 @@
 #include "game/game_item.h"
 #include "boost/algorithm/string.hpp"
 #include "player_group.h"
+#include "game/constants.h"
 #include <cassert>
 #include <limits>
 
@@ -194,7 +195,12 @@ namespace wowpp
 			if (world)
 			{
 				world->leaveWorldInstance(m_characterId, pp::world_realm::world_left_reason::Disconnect);
+
 				ILOG("Sent notification about this to the world node.");
+
+				// We don't destroy this player instance yet, as we are still connected to a world node: This world node needs to
+				// send the character's new data back to us, so that we can save it.
+				return;
 			}
 			else
 			{
@@ -299,6 +305,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(GroupDisband, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(RequestPartyMemberStats, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(MoveWorldPortAck, game::session_status::TransferPending)
+			WOWPP_HANDLE_PACKET(SetActionButton, game::session_status::LoggedIn)
 #undef WOWPP_HANDLE_PACKET
 
 			default:
@@ -596,6 +603,13 @@ namespace wowpp
 		{
 			// Cache the character data
 			m_characters.push_back(character);
+
+			// Add initial action buttons
+			const auto classBtns = race->initialActionButtons.find(character.class_);
+			if (classBtns != race->initialActionButtons.end())
+			{
+				m_database.setCharacterActionButtons(character.id, classBtns->second);
+			}
 		}
 
 		// Send disabled message for now
@@ -723,6 +737,10 @@ namespace wowpp
 		m_social.reset(new PlayerSocial(m_manager, *this));
 		m_database.getCharacterSocialList(m_characterId, *m_social);
 
+		// Load action buttons
+		m_actionButtons.clear();
+		m_database.getCharacterActionButtons(m_characterId, m_actionButtons);
+
 		//TODO Map found - check if player is member of a group and if this instance
 		// is valid on the world node and if not, transfer player
 
@@ -800,14 +818,9 @@ namespace wowpp
 			auto raceEntry = m_gameCharacter->getRaceEntry();
 			assert(raceEntry);
 
-			auto cls = m_gameCharacter->getClass();
-			auto classBtns = raceEntry->initialActionButtons.find(cls);
-			if (classBtns != raceEntry->initialActionButtons.end())
-			{
-				sendPacket(
-					std::bind(game::server_write::actionButtons, std::placeholders::_1, std::cref(classBtns->second)));
-			}
-
+			sendPacket(
+				std::bind(game::server_write::actionButtons, std::placeholders::_1, std::cref(m_actionButtons)));
+		
 			sendPacket(
 				std::bind(game::server_write::initializeFactions, std::placeholders::_1));
 
@@ -847,6 +860,12 @@ namespace wowpp
 			case pp::world_realm::world_left_reason::Teleport:
 			{
 				reasonString = "TELEPORT";
+				break;
+			}
+
+			case pp::world_realm::world_left_reason::Disconnect:
+			{
+				reasonString = "DISCONNECT";
 				break;
 			}
 
@@ -903,6 +922,13 @@ namespace wowpp
 			{
 				// We were removed from the old world node - now we can move on to the new one
 				commitTransfer();
+				break;
+			}
+
+			case pp::world_realm::world_left_reason::Disconnect:
+			{
+				// Finally destroy this instance
+				destroy();
 				break;
 			}
 
@@ -1331,11 +1357,13 @@ namespace wowpp
 	{
 		if (m_gameCharacter)
 		{
+			DLOG("Saving player character...");
+
 			float x, y, z, o;
 			m_gameCharacter->getLocation(x, y, z, o);
 
-			DLOG("Saving character. Position: " << x << "," << y << "," << z << "," << o);
 			m_database.saveGameCharacter(*m_gameCharacter);
+			m_database.setCharacterActionButtons(m_gameCharacter->getGuid(), m_actionButtons);
 		}
 	}
 
@@ -1642,6 +1670,45 @@ namespace wowpp
 		m_transferY = 0.0f;
 		m_transferZ = 0.0f;
 		m_transferO = 0.0f;
+	}
+
+	void Player::handleSetActionButton(game::IncomingPacket &packet)
+	{
+		ActionButton button;
+		UInt8 slot = 0;
+		if (!game::client_read::setActionButton(packet, slot, button.misc, button.type, button.action))
+		{
+			// Could not read packet
+			return;
+		}
+
+		// Validate button
+		if (slot > constants::ActionButtonLimit)		// TODO: Maximum number of action buttons
+		{
+			WLOG("Client sent invalid action button number");
+			return;
+		}
+
+		// Check if we want to remove that button or add a new one
+		if (button.action == 0)
+		{
+			DLOG("REMOVING ACTION BUTTON...");
+
+			auto it = m_actionButtons.find(slot);
+			if (it == m_actionButtons.end())
+			{
+				WLOG("Could not find action button to remove - button seems to be empty already!");
+				return;
+			}
+
+			// Clear button
+			m_actionButtons.erase(it);
+		}
+		else
+		{
+			DLOG("SETTING ACTION BUTTON...");
+			m_actionButtons[slot] = button;
+		}
 	}
 
 }

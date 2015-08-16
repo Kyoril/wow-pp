@@ -678,7 +678,7 @@ namespace wowpp
 			(boost::format("SELECT `id`, `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`map`,"
 			//		 9       10            11            12           13		  14
 			"`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic` FROM `character` WHERE `name`='%1%' LIMIT 1")
-			% name).str());
+			% m_connection.escapeString(name)).str());
 		if (select.success())
 		{
 			wowpp::MySQL::Row row(select);
@@ -785,7 +785,7 @@ namespace wowpp
 			% characterId
 			% socialGuid
 			% flags
-			% note).str()))
+			% m_connection.escapeString(note)).str()))
 		{
 			return true;
 		}
@@ -802,7 +802,7 @@ namespace wowpp
 		if (m_connection.execute((boost::format(
 			"UPDATE `character_social` SET `flags`=%1%, `note`='%2%' WHERE `guid_1`=%3% AND `guid_2`=%4%")
 			% flags
-			% note
+			% m_connection.escapeString(note)
 			% characterId
 			% socialGuid).str()))
 		{
@@ -832,4 +832,94 @@ namespace wowpp
 			return false;
 		}
 	}
+
+	bool MySQLDatabase::getCharacterActionButtons(DatabaseId characterId, ActionButtons &out_buttons)
+	{
+		const UInt32 lowerPart = guidLowerPart(characterId);
+
+		wowpp::MySQL::Select select(m_connection,
+			(boost::format("SELECT `button`, `action`, `type` FROM `character_actions` WHERE `guid`=%1%")
+			% lowerPart).str());
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				UInt8 slot = 0;
+				row.getField<UInt8, UInt16>(0, slot);
+
+				ActionButton button;
+				row.getField(1, button.action);
+				row.getField<UInt8, UInt16>(2, button.type);
+
+				// Add to vector
+				out_buttons[slot] = std::move(button);
+
+				// Next row
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+
+		return true;
+	}
+
+	bool MySQLDatabase::setCharacterActionButtons(DatabaseId characterId, const ActionButtons &buttons)
+	{
+		const UInt32 lowerPart = guidLowerPart(characterId);
+
+		// Start transaction
+		MySQL::Transaction transation(m_connection);
+		{
+			if (!m_connection.execute((boost::format(
+				"DELETE FROM `character_actions` WHERE `guid`=%1%")
+				% lowerPart).str()))
+			{
+				// There was an error
+				printDatabaseError();
+				return false;
+			}
+
+			{
+				std::ostringstream fmtStrm;
+				fmtStrm << "INSERT INTO `character_actions` (`guid`, `button`, `action`, `type`) VALUES ";
+
+				// Add actions
+				bool isFirstEntry = true;
+				for (const auto &button : buttons)
+				{
+					if (button.second.action == 0)
+						continue;;
+
+					if (isFirstEntry)
+					{
+						isFirstEntry = false;
+					}
+					else
+					{
+						fmtStrm << ",";
+					}
+
+					fmtStrm << "(" << lowerPart << "," << static_cast<UInt32>(button.first) << "," << button.second.action << "," << static_cast<UInt32>(button.second.type) << ")";
+				}
+
+				// Now, set all actions
+				if (!m_connection.execute(fmtStrm.str()))
+				{
+					// Could not learn initial spells
+					printDatabaseError();
+					return false;
+				}
+			}
+			
+		}
+		transation.commit();
+		return true;
+	}
+
 }

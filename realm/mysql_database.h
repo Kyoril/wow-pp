@@ -65,6 +65,10 @@ namespace wowpp
 		bool updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) override;
 		/// @copydoc wowpp::IDatabase::removeCharacterSocialContact
 		bool removeCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid) override;
+		/// 
+		bool getCharacterActionButtons(DatabaseId characterId, ActionButtons &out_buttons) override;
+		/// 
+		bool setCharacterActionButtons(DatabaseId characterId, const ActionButtons &buttons) override;
 
 	private:
 

@@ -191,6 +191,7 @@ namespace wowpp
 		std::shared_ptr<PlayerGroup> m_group;
 		UInt32 m_transferMap;
 		float m_transferX, m_transferY, m_transferZ, m_transferO;
+		ActionButtons m_actionButtons;
 
 	private:
 
@@ -236,5 +237,6 @@ namespace wowpp
 		void handleGroupDisband(game::IncomingPacket &packet);
 		void handleRequestPartyMemberStats(game::IncomingPacket &packet);
 		void handleMoveWorldPortAck(game::IncomingPacket &packet);
+		void handleSetActionButton(game::IncomingPacket &packet);
 	};
 }

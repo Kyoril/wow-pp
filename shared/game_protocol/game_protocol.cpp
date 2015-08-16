@@ -2851,6 +2851,15 @@ namespace wowpp
 					>> io::read<NetUInt32>(out_triggerId);
 			}
 
+			bool setActionButton(io::Reader &packet, UInt8 &out_button, UInt8 &out_misc, UInt8 &out_type, UInt16 &out_action)
+			{
+				return packet
+					>> io::read<NetUInt8>(out_button)
+					>> io::read<NetUInt16>(out_action)
+					>> io::read<NetUInt8>(out_misc)
+					>> io::read<NetUInt8>(out_type);
+			}
+
 		}
 	}
 }

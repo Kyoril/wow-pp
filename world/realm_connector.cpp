@@ -818,6 +818,9 @@ namespace wowpp
 			// Remove the character
 			player->getWorldInstance().removeGameObject(*player->getCharacter());
 
+			// Notify the realm
+			notifyWorldInstanceLeft(characterGuid, pp::world_realm::world_left_reason::Disconnect);
+
 			// Remove the player instance
 			m_playerManager.playerDisconnected(*player);
 
