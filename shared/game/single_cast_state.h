@@ -40,6 +40,7 @@ namespace wowpp
 			const SpellEntry &spell,
 			SpellTargetMap target,
 			GameTime castTime);
+		~SingleCastState();
 		void activate() override;
 		std::pair<game::SpellCastResult, SpellCasting *> startCast(
 			SpellCast &cast,
@@ -77,6 +78,7 @@ namespace wowpp
 		SpellCasting m_casting;
 		bool m_hasFinished;
 		Countdown m_countdown;
+		Countdown m_impactCountdown;
 		boost::signals2::scoped_connection m_onTargetDied, m_onTargetRemoved;
 		boost::signals2::scoped_connection m_onUserDamaged, m_onUserMoved;
 		float m_x, m_y, m_z;

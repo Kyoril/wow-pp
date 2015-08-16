@@ -82,6 +82,7 @@ namespace wowpp
 		, m_target(std::move(target))
 		, m_hasFinished(false)
 		, m_countdown(cast.getTimers())
+		, m_impactCountdown(cast.getTimers())
 		, m_castTime(castTime)
 	{
 		// Check if the executer is in the world
@@ -305,6 +306,8 @@ namespace wowpp
 		
 		// TODO: Apply cooldown
 		
+		m_hasFinished = true;
+
 		auto strongThis = shared_from_this();
 		const std::weak_ptr<SingleCastState> weakThis = strongThis;
 		if (m_spell.attributes & spell_attributes::OnNextSwing)
@@ -331,10 +334,37 @@ namespace wowpp
 				return;
 
 			sendEndCast(true);
-			applyAllEffects();
-		}
 
-		m_hasFinished = true;
+			if (m_spell.speed > 0.0f)
+			{
+				// Calculate distance to target
+				GameUnit *unitTarget = nullptr;
+				auto *world = m_cast.getExecuter().getWorldInstance();
+				if (world)
+				{
+					m_target.resolvePointers(*world, &unitTarget, nullptr, nullptr, nullptr);
+					if (unitTarget)
+					{
+						// Calculate distance to the target
+						const float dist = m_cast.getExecuter().getDistanceTo(*unitTarget);
+						const float timeMS = (dist / m_spell.speed) * 1000.0f;
+						
+						// This will be executed on the impact
+						m_impactCountdown.ended.connect(
+							[strongThis]() mutable {
+							strongThis->applyAllEffects();
+							strongThis.reset();
+						});
+
+						m_impactCountdown.setEnd(getCurrentTime() + timeMS);
+					}
+				}
+			}
+			else
+			{
+				applyAllEffects();
+			}
+		}
 
 		// Consume combo points if required
 		if ((m_spell.attributesEx[0] & spell_attributes_ex_a::ReqComboPoints_1) && character)
@@ -970,6 +1000,11 @@ namespace wowpp
 		unitTarget->setUInt32Value(unit_fields::Power1 + powerType, curPower);
 		sendPacketFromCaster(m_cast.getExecuter(),
 			std::bind(game::server_write::spellEnergizeLog, std::placeholders::_1, m_cast.getExecuter().getGuid(), unitTarget->getGuid(), m_spell.id, static_cast<UInt8>(powerType), power));
+	}
+
+	SingleCastState::~SingleCastState()
+	{
+		DLOG("SINGLE CAST STATE DESTROYED FOR SPELL " << m_spell.name << " (" << m_spell.id << ")");
 	}
 
 }
