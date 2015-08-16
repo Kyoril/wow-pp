@@ -1050,6 +1050,16 @@ namespace wowpp
 					break;
 				}
 
+				// Check faction
+				const bool isAllianceA = ((game::race::Alliance & (1 << (m_gameCharacter->getRace() - 1))) == (1 << (m_gameCharacter->getRace() - 1)));
+				const bool isAllianceB = ((game::race::Alliance & (1 << (entry.race - 1))) == (1 << (entry.race - 1)));
+				if (isAllianceA != isAllianceB)
+				{
+					sendPacket(
+						std::bind(game::server_write::chatWrongFaction, std::placeholders::_1));
+					break;
+				}
+
 				// Make realm GUID
 				UInt64 guid = createRealmGUID(entry.id, m_loginConnector.getRealmID(), guid_type::Player);
 
@@ -1170,11 +1180,19 @@ namespace wowpp
 		info.class_ = friendChar.class_;
 		info.note = std::move(note);
 
+		// Check faction
+		const bool isAllianceA = ((game::race::Alliance & (1 << (m_gameCharacter->getRace() - 1))) == (1 << (m_gameCharacter->getRace() - 1)));
+		const bool isAllianceB = ((game::race::Alliance & (1 << (friendChar.race - 1))) == (1 << (friendChar.race - 1)));
+		
 		// Result code
 		game::FriendResult result = game::friend_result::AddedOffline;
 		if (characterGUID == m_characterId)
 		{
 			result = game::friend_result::Self;
+		}
+		else if (isAllianceA != isAllianceB)
+		{
+			result = game::friend_result::Enemy;
 		}
 		else
 		{

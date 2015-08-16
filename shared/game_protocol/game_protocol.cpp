@@ -2239,6 +2239,13 @@ namespace wowpp
 					<< io::write<NetUInt16>(reason);
 				out_packet.finish();
 			}
+
+			void chatWrongFaction(game::OutgoingPacket &out_packet)
+			{
+				out_packet.start(game::server_packet::ChatWrongFaction);
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read

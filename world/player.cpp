@@ -169,6 +169,16 @@ namespace wowpp
 				if (player->getRealmName() == names[1] &&
 					player->getCharacter()->getName() == names[0])
 				{
+					// Check faction
+					const bool isAllianceA = ((game::race::Alliance & (1 << (player->getCharacter()->getRace() - 1))) == (1 << (player->getCharacter()->getRace() - 1)));
+					const bool isAllianceB = ((game::race::Alliance & (1 << (m_character->getRace() - 1))) == (1 << (m_character->getRace() - 1)));
+					if (isAllianceA != isAllianceB)
+					{
+						sendProxyPacket(
+							std::bind(game::server_write::chatWrongFaction, std::placeholders::_1));
+						return;
+					}
+
 					// Send whisper message
 					player->sendProxyPacket(
 						std::bind(game::server_write::messageChat, std::placeholders::_1, game::chat_msg::Whisper, lang, std::cref(channel), m_characterId, std::cref(message), m_character.get()));

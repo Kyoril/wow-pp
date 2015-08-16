@@ -264,6 +264,7 @@ namespace wowpp
 				AuthResponse				= 0x1EE,
 				CompressedUpdateObject		= 0x1F6,
 				AccountDataTimes			= 0x209,
+				ChatWrongFaction			= 0x219,
 				SetRestStart				= 0x21E,
 				LoginVerifyWorld			= 0x236,
 				PeriodicAuraLog				= 0x24E,
@@ -1321,6 +1322,10 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt32 map,
 				TransferAbortReason reason
+				);
+
+			void chatWrongFaction(
+				game::OutgoingPacket &out_packet
 				);
 		};
 	}
