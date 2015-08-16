@@ -402,6 +402,15 @@ namespace wowpp
 				printDatabaseError();
 				return game::response_code::CharDeleteFailed;
 			}
+
+			if (!m_connection.execute((boost::format(
+				"DELETE FROM `character_items` WHERE `owner`=%1%")
+				% lowerPart).str()))
+			{
+				// There was an error
+				printDatabaseError();
+				return game::response_code::CharDeleteFailed;
+			}
 		}
 		transation.commit();
 

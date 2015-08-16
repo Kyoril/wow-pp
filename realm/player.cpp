@@ -211,31 +211,31 @@ namespace wowpp
 		destroy();
 	}
 
-	bool Player::isSessionStatusValid(game::SessionStatus status, bool verbose /*= false*/) const
+	bool Player::isSessionStatusValid(const String &name, game::SessionStatus status, bool verbose /*= false*/) const
 	{
 		switch (status)
 		{
 			case game::session_status::Never:
 			{
-				if (verbose) WLOG("Packet isn't handled on the server side!");
+				if (verbose) WLOG("Packet " << name << " isn't handled on the server side!");
 				return false;
 			}
 
 			case game::session_status::Connected:
 			{
-				if (m_authed && verbose) WLOG("Packet is only handled if not yet authenticated!");
+				if (m_authed && verbose) WLOG("Packet " << name << " is only handled if not yet authenticated!");
 				return !m_authed;
 			}
 
 			case game::session_status::Authentificated:
 			{
-				if (!m_authed && verbose) WLOG("Packet is only handled if the player is authenticated!");
+				if (!m_authed && verbose) WLOG("Packet " << name << " is only handled if the player is authenticated!");
 				return m_authed;
 			}
 
 			case game::session_status::LoggedIn:
 			{
-				if (!m_worldNode && verbose) WLOG("Packet is only handled if the player is logged in!");
+				if (!m_worldNode && verbose) WLOG("Packet " << name << " is only handled if the player is logged in!");
 				return (m_worldNode != nullptr);
 			}
 
@@ -243,7 +243,7 @@ namespace wowpp
 			{
 				if ((m_characterId == 0 || m_worldNode != nullptr) && verbose)
 				{
-					WLOG("Packet is only handled if a transfer is pending!");
+					WLOG("Packet " << name << " is only handled if a transfer is pending!");
 				}
 
 				return (m_characterId != 0 && m_worldNode == nullptr);
@@ -265,10 +265,11 @@ namespace wowpp
 		const auto packetId = packet.getId();
 		switch (packetId)
 		{
+#define QUOTE(str) #str
 #define WOWPP_HANDLE_PACKET(name, sessionStatus) \
 			case wowpp::game::client_packet::name: \
 			{ \
-				if (!isSessionStatusValid(sessionStatus, true)) \
+				if (!isSessionStatusValid(#name, sessionStatus, true)) \
 					break; \
 				handle##name(packet); \
 				break; \
@@ -281,7 +282,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(CharDelete, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(PlayerLogin, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(MessageChat, game::session_status::LoggedIn)
-			WOWPP_HANDLE_PACKET(NameQuery, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(NameQuery, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(ContactList, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(AddFriend, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(DeleteFriend, game::session_status::LoggedIn)

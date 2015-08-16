@@ -79,9 +79,10 @@ namespace wowpp
 						const String &address);
 
 		/// Determines whether a session status is valid.
+		/// @name Name of the packet.
 		/// @status The session status to validate.
 		/// @verbose True, if outputs to the log should be made.
-		bool isSessionStatusValid(game::SessionStatus status, bool verbose = false) const;
+		bool isSessionStatusValid(const String &name, game::SessionStatus status, bool verbose = false) const;
 		/// This should be called right after a new player connected.
 		void sendAuthChallenge();
 		/// The login server notified us that the player login was successfull.
