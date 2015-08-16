@@ -630,6 +630,23 @@ namespace wowpp
 			return;
 		}
 
+		std::vector<char> buffer;
+		io::VectorSink sink(buffer);
+		game::OutgoingPacket outPacket(sink);
+		game::server_write::friendStatus(outPacket, characterId, game::friend_result::Removed, game::SocialInfo());
+
+		// Remove ourself from friend lists
+		m_manager.foreachPlayer([characterId, &outPacket, &buffer](Player &player)
+		{
+			auto &social = player.getSocial();
+			auto result = social.removeFromSocialList(characterId, false);
+			if (result == game::friend_result::Removed)
+			{
+				player.sendProxyPacket(outPacket.getOpCode(), buffer);
+			}
+			social.removeFromSocialList(characterId, true);
+		});
+
 		// Remove character from cache
 		m_characters.erase(c);
 
