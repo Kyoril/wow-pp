@@ -40,7 +40,6 @@ namespace wowpp
 			const SpellEntry &spell,
 			SpellTargetMap target,
 			GameTime castTime);
-		~SingleCastState();
 		void activate() override;
 		std::pair<game::SpellCastResult, SpellCasting *> startCast(
 			SpellCast &cast,

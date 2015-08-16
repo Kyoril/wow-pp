@@ -1002,9 +1002,4 @@ namespace wowpp
 			std::bind(game::server_write::spellEnergizeLog, std::placeholders::_1, m_cast.getExecuter().getGuid(), unitTarget->getGuid(), m_spell.id, static_cast<UInt8>(powerType), power));
 	}
 
-	SingleCastState::~SingleCastState()
-	{
-		DLOG("SINGLE CAST STATE DESTROYED FOR SPELL " << m_spell.name << " (" << m_spell.id << ")");
-	}
-
 }
