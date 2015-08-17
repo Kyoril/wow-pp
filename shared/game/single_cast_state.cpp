@@ -1001,5 +1001,4 @@ namespace wowpp
 		sendPacketFromCaster(m_cast.getExecuter(),
 			std::bind(game::server_write::spellEnergizeLog, std::placeholders::_1, m_cast.getExecuter().getGuid(), unitTarget->getGuid(), m_spell.id, static_cast<UInt8>(powerType), power));
 	}
-
 }

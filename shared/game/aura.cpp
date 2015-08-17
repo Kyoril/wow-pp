@@ -544,7 +544,7 @@ namespace wowpp
 			if (x != oldX || y != oldY || z != oldZ)
 			{
 				// Moved - remove!
-				DLOG("TODO: Remove aura due to move");
+				onForceRemoval();
 				return;
 			}
 		}
@@ -554,7 +554,7 @@ namespace wowpp
 			if (o != oldO)
 			{
 				// Turned - remove!
-				DLOG("TODO: Remove aura due to turning");
+				onForceRemoval();
 				return;
 			}
 		}
@@ -571,6 +571,7 @@ namespace wowpp
 		m_post([strongThis]
 		{
 			// TODO: Notify about being removed...
+			strongThis->m_destroy(*strongThis);
 		});
 	}
 
