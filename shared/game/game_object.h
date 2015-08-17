@@ -242,7 +242,7 @@ namespace wowpp
 		bool getTileIndex(TileIndex2D &out_index) const;
 
 		/// Moves the object to the given position on it's map id.
-		void relocate(float x, float y, float z, float o);
+		virtual void relocate(float x, float y, float z, float o);
 		/// Updates the map id of this object.
 		void setMapId(UInt32 mapId);
 

@@ -56,9 +56,6 @@ namespace wowpp
 			std::bind(&Aura::onExpired, this));
 		m_onTick = m_tickCountdown.ended.connect(
 			std::bind(&Aura::onTick, this));
-
-		// Log duration
-		DLOG("Aura " << spell.name << ": Duration " << spell.duration << " / " << spell.maxDuration);
 	}
 
 	Aura::~Aura()
@@ -127,8 +124,6 @@ namespace wowpp
 
 	void Aura::onCasterDespawned(GameObject &object)
 	{
-		WLOG("Caster of aura just despawned");
-
 		// Reset caster
 		m_casterDespawned.disconnect();
 		m_caster = nullptr;

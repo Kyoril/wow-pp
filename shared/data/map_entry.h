@@ -67,7 +67,6 @@ namespace wowpp
 		size_t maxCount;
 		const UnitEntry *unit;
 
-
 		SpawnPlacement()
 			: respawn(true)
 			, respawnDelay(0.0f)
@@ -79,14 +78,42 @@ namespace wowpp
 		}
 	};
 
+	struct ObjectEntry;
+
+	struct ObjectSpawnPlacement
+	{
+		bool respawn;
+		GameTime respawnDelay;
+		std::array<float, 3> position;
+		float orientation;
+		float radius;
+		std::array<float, 4> rotation;
+		UInt32 animProgress;
+		UInt32 state;
+		size_t maxCount;
+		const ObjectEntry *object;
+
+		ObjectSpawnPlacement()
+			: respawn(true)
+			, respawnDelay(0.0f)
+			, orientation(0.0f)
+			, radius(0.0f)
+			, maxCount(1)
+			, object(nullptr)
+		{
+		}
+	};
+
 
 	struct MapEntry : BasicTemplate<UInt32>
 	{
 		typedef BasicTemplate<UInt32> Super;
 		typedef std::vector<SpawnPlacement> Spawns;
+		typedef std::vector<ObjectSpawnPlacement> ObjectSpawns;
 
 
 		Spawns spawns;
+		ObjectSpawns objectSpawns;
 		MapInstanceType instanceType;
 		String directory;
 		String name;

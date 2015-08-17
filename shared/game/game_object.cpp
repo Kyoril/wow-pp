@@ -417,8 +417,27 @@ namespace wowpp
 			{
 				updateType = 0x03;		// CREATE_OBJECT_2
 			}
+			if (object.getTypeId() == object_type::GameObject)
+			{
+				UInt32 objType = object.getUInt32Value(object_fields::ObjectFieldCount + 0x0F);
+				switch (objType)
+				{
+				case 6:
+				case 16:
+				case 24:
+				case 26:
+					updateType = 0x03;		// CREATE_OBJECT_2
+					break;
+				default:
+					break;
+				}
+			}
 			UInt8 updateFlags = 0x10 | 0x20 | 0x40;			// UPDATEFLAG_ALL | UPDATEFLAG_LIVING | UPDATEFLAG_HAS_POSITION
 			UInt8 objectTypeId = object.getTypeId();		// 
+			if (objectTypeId == object_type::GameObject)
+			{
+				//updateFlags = 8 | 16 | 64;
+			}
 
 			// Header with object guid and type
 			UInt64 guid = object.getGuid();
@@ -559,7 +578,7 @@ namespace wowpp
 			// High-GUID update?
 			if (updateFlags & 0x10)
 			{
-				switch (objectTypeId)
+				/*switch (objectTypeId)
 				{
 				case object_type::Object:
 				case object_type::Item:
@@ -570,10 +589,10 @@ namespace wowpp
 					writer
 						<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
 					break;
-				default:
+				default:*/
 					writer
 						<< io::write<NetUInt32>(0);
-				}
+				//}
 			}
 
 			// Write values update

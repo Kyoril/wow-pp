@@ -23,8 +23,10 @@
 #include "world_instance_manager.h"
 #include "log/default_log_levels.h"
 #include "data/unit_entry.h"
+#include "data/object_entry.h"
 #include "game_unit.h"
 #include "game_creature.h"
+#include "game_world_object.h"
 #include "creature_spawner.h"
 #include "tile_visibility_change.h"
 #include "visibility_tile.h"
@@ -114,6 +116,24 @@ namespace wowpp
 		, m_getClass(getClass)
 		, m_getLevel(getLevel)
 	{
+		// Add object spawners
+		for (auto &spawn : m_mapEntry.objectSpawns)
+		{
+			// Create a new spawner
+			std::unique_ptr<WorldObjectSpawner> spawner(new WorldObjectSpawner(
+				*this,
+				*spawn.object,
+				spawn.maxCount,
+				spawn.respawnDelay,
+				spawn.position[0], spawn.position[1], spawn.position[2],
+				spawn.orientation,
+				spawn.rotation,
+				spawn.radius,
+				spawn.animProgress,
+				spawn.state));
+			m_objectSpawners.push_back(std::move(spawner));
+		}
+
 		// Add creature spawners
 		for (auto &spawn : m_mapEntry.spawns)
 		{
@@ -146,6 +166,20 @@ namespace wowpp
 			entry);
 		spawned->initialize();
 		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id, guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
+		spawned->setMapId(m_mapEntry.id);
+		spawned->relocate(x, y, z, o);
+
+		return spawned;
+	}
+
+	std::shared_ptr<WorldObject> WorldInstance::spawnWorldObject(const ObjectEntry &entry, float x, float y, float z, float o, float radius)
+	{
+		// Create the unit
+		auto spawned = std::make_shared<WorldObject>(
+			m_universe.getTimers(),
+			entry);
+		spawned->initialize();
+		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id, guid_type::GameObject));	// RealmID (TODO: these spawns don't need to have a specific realm id)
 		spawned->setMapId(m_mapEntry.id);
 		spawned->relocate(x, y, z, o);
 

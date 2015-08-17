@@ -117,7 +117,6 @@ namespace wowpp
 
 	void SingleCastState::activate()
 	{
-		DLOG("SPELL CAST STATE ACTIVATED FOR SPELL " << m_spell.name << " (" << m_spell.id << ")");
 		if (m_castTime > 0)
 		{
 			m_countdown.setEnd(getCurrentTime() + m_castTime);

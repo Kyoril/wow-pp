@@ -28,6 +28,7 @@
 #include "data/data_load_context.h"
 #include "game/visibility_grid.h"
 #include "creature_spawner.h"
+#include "world_object_spawner.h"
 #include "boost/signals2.hpp"
 #include <memory>
 #include <vector>
@@ -37,6 +38,7 @@ namespace wowpp
 	class WorldInstanceManager;
 	class GameUnit;
 	class GameCreature;
+	class WorldObject;
 	class Universe;
 
 	/// Manages one instance of a game world.
@@ -45,7 +47,8 @@ namespace wowpp
 	private:
 
 		typedef std::unordered_map<UInt64, GameObject*> GameObjectsById;
-		typedef std::vector<std::unique_ptr<CreatureSpawner>> Spawners;
+		typedef std::vector<std::unique_ptr<CreatureSpawner>> CreatureSpawners;
+		typedef std::vector<std::unique_ptr<WorldObjectSpawner>> ObjectSpawners;
 
 	public:
 
@@ -79,6 +82,10 @@ namespace wowpp
 			const UnitEntry &entry,
 			float x, float y, float z, float o,
 			float randomWalkRadius);
+		std::shared_ptr<WorldObject> spawnWorldObject(
+			const ObjectEntry &entry,
+			float x, float y, float z, float o,
+			float radius);
 
 		/// Gets the manager of this and all other instances.
 		WorldInstanceManager &getManager() { return m_manager; }
@@ -128,6 +135,7 @@ namespace wowpp
 		DataLoadContext::GetRace m_getRace;
 		DataLoadContext::GetClass m_getClass;
 		DataLoadContext::GetLevel m_getLevel;
-		Spawners m_creatureSpawners;
+		CreatureSpawners m_creatureSpawners;
+		ObjectSpawners m_objectSpawners;
 	};
 }

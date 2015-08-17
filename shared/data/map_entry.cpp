@@ -22,6 +22,7 @@
 #include "map_entry.h"
 #include "templates/basic_template_save_context.h"
 #include "unit_entry.h"
+#include "object_entry.h"
 
 namespace wowpp
 {
@@ -116,13 +117,71 @@ namespace wowpp
 				spawn.respawn = (spawnTable->getInteger("respawn", static_cast<unsigned>(spawn.respawn)) != 0);
 				spawn.respawnDelay = spawnTable->getInteger("respawnTime", spawn.respawnDelay);
 
-				spawns.push_back(spawn);
+				spawns.push_back(std::move(spawn));
 			}
 		}
 		else
 		{
 			context.onError("Map is missing creature spawn array!");
 			return false;
+		}
+
+		if (const sff::read::tree::Array<DataFileIterator> *const objectSpawnArray = wrapper.table.getArray("object_spawns"))
+		{
+			for (size_t j = 0, d = objectSpawnArray->getSize(); j < d; ++j)
+			{
+				const sff::read::tree::Table<DataFileIterator> *const spawnTable = objectSpawnArray->getTable(j);
+				if (!spawnTable)
+				{
+					context.onError("Invalid spawn");
+					return false;
+				}
+
+				ObjectSpawnPlacement spawn;
+
+				{
+					const sff::read::tree::Array<DataFileIterator> *const positionArray = spawnTable->getArray("position");
+					if (!positionArray ||
+						!loadPosition(spawn.position, *positionArray))
+					{
+						context.onError("Invalid position in a spawn");
+						return false;
+					}
+
+					spawnTable->tryGetInteger("orientation", spawn.orientation);
+
+					const sff::read::tree::Array<DataFileIterator> *const rotationArray = spawnTable->getArray("rotation");
+					if (rotationArray)
+					{
+						for (size_t i = 0, d = std::min(rotationArray->getSize(), spawn.rotation.size()); i < d; ++i)
+						{
+							spawn.rotation[i] = rotationArray->getInteger(i, 0.0f);
+						}
+					}
+				}
+
+				spawn.maxCount = spawnTable->getInteger("count", spawn.maxCount);
+
+				UInt32 objectId;
+				if (!spawnTable->tryGetInteger("object", objectId))
+				{
+					context.onError("Missing unit entry in object spawn entry");
+					return false;
+				}
+
+				spawn.object = context.getObject(objectId);
+				if (!spawn.object)
+				{
+					context.onError("Unknown object in an object spawn");
+					return false;
+				}
+
+				spawn.radius = spawnTable->getInteger("radius", spawn.radius);
+				spawn.respawn = (spawnTable->getInteger("respawn", static_cast<unsigned>(spawn.respawn)) != 0);
+				spawn.respawnDelay = spawnTable->getInteger("respawnTime", spawn.respawnDelay);
+
+				objectSpawns.push_back(std::move(spawn));
+			}
 		}
 
 		return true;
