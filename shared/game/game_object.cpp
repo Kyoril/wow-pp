@@ -436,7 +436,7 @@ namespace wowpp
 			UInt8 objectTypeId = object.getTypeId();		// 
 			if (objectTypeId == object_type::GameObject)
 			{
-				//updateFlags = 8 | 16 | 64;
+				updateFlags = 8 | 16 | 64;
 			}
 
 			// Header with object guid and type
@@ -460,24 +460,23 @@ namespace wowpp
 				guidCopy >>= 8;
 			}
 			writer.sink().write((const char*)&packGUID[0], size);
-
 			writer
-				<< io::write<NetUInt8>(objectTypeId);
-
-			writer
+				<< io::write<NetUInt8>(objectTypeId)
 				<< io::write<NetUInt8>(updateFlags);
-
+			
 			// Write movement update
+			auto &movement = object.getMovementInfo();
+			UInt32 moveFlags = movement.moveFlags;
 			if (updateFlags & 0x20)
 			{
-				auto &movement = object.getMovementInfo();
-
-				UInt32 moveFlags = movement.moveFlags;
 				writer
 					<< io::write<NetUInt32>(moveFlags)
 					<< io::write<NetUInt8>(0x00)
 					<< io::write<NetUInt32>(getCurrentTime());
+			}
 
+			if (updateFlags & 0x40)
+			{
 				// Position & Rotation
 				// TODO: Calculate position and rotation from the movement info using interpolation
 				writer
@@ -485,7 +484,10 @@ namespace wowpp
 					<< io::write<float>(y)
 					<< io::write<float>(z)
 					<< io::write<float>(o);
+			}
 
+			if (updateFlags & 0x20)
+			{
 				// Transport
 				if (moveFlags & (game::movement_flags::OnTransport))
 				{
@@ -578,7 +580,7 @@ namespace wowpp
 			// High-GUID update?
 			if (updateFlags & 0x10)
 			{
-				/*switch (objectTypeId)
+				switch (objectTypeId)
 				{
 				case object_type::Object:
 				case object_type::Item:
@@ -587,12 +589,12 @@ namespace wowpp
 				case object_type::DynamicObject:
 				case object_type::Corpse:
 					writer
-						<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
+						<< io::write<NetUInt32>((guid >> 48) & 0x0000FFFF);
 					break;
-				default:*/
+				default:
 					writer
 						<< io::write<NetUInt32>(0);
-				//}
+				}
 			}
 
 			// Write values update

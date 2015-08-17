@@ -2246,6 +2246,33 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void gameObjectQueryResponse(game::OutgoingPacket &out_packet, const ObjectEntry &entry)
+			{
+				out_packet.start(game::server_packet::GameObjectQueryResponse);
+				out_packet
+					<< io::write<NetUInt32>(entry.id)
+					<< io::write<NetUInt32>(entry.type)
+					<< io::write<NetUInt32>(entry.displayID)
+					<< io::write_range(entry.name) << io::write<NetUInt8>(0)
+					<< io::write<NetUInt8>(0)
+					<< io::write<NetUInt8>(0)
+					<< io::write<NetUInt8>(0)
+					<< io::write<NetUInt8>(0)
+					<< io::write_range(entry.caption) << io::write<NetUInt8>(0)
+					<< io::write<NetUInt8>(0)
+					<< io::write_range(entry.data)
+					<< io::write<float>(entry.scale);
+				out_packet.finish();
+			}
+
+			void gameObjectQueryResponseEmpty(game::OutgoingPacket &out_packet, const UInt32 entry)
+			{
+				out_packet.start(game::server_packet::GameObjectQueryResponse);
+				out_packet
+					<< io::write<NetUInt32>(entry | 0x80000000);
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read
@@ -2858,6 +2885,13 @@ namespace wowpp
 					>> io::read<NetUInt16>(out_action)
 					>> io::read<NetUInt8>(out_misc)
 					>> io::read<NetUInt8>(out_type);
+			}
+
+			bool gameObjectQuery(io::Reader &packet, UInt32 &out_entry, UInt64 &out_guid)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_entry)
+					>> io::read<NetUInt64>(out_guid);
 			}
 
 		}

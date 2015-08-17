@@ -306,6 +306,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(RequestPartyMemberStats, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(MoveWorldPortAck, game::session_status::TransferPending)
 			WOWPP_HANDLE_PACKET(SetActionButton, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(GameObjectQuery, game::session_status::LoggedIn)
 #undef WOWPP_HANDLE_PACKET
 
 			default:
@@ -1709,6 +1710,30 @@ namespace wowpp
 			DLOG("SETTING ACTION BUTTON...");
 			m_actionButtons[slot] = button;
 		}
+	}
+
+	void Player::handleGameObjectQuery(game::IncomingPacket &packet)
+	{
+		UInt32 entry = 0;
+		UInt64 guid = 0;
+		if (!game::client_read::gameObjectQuery(packet, entry, guid))
+		{
+			// Could not read packet
+			return;
+		}
+
+		const auto *objectEntry = m_project.objects.getById(entry);
+		if (!objectEntry)
+		{
+			WLOG("Could not find game object by entry " << entry);
+			sendPacket(
+				std::bind(game::server_write::gameObjectQueryResponseEmpty, std::placeholders::_1, entry));
+			return;
+		}
+
+		// Send response
+		sendPacket(
+			std::bind(game::server_write::gameObjectQueryResponse, std::placeholders::_1, std::cref(*objectEntry)));
 	}
 
 }

@@ -48,12 +48,26 @@ namespace wowpp
 	{
 		GameObject::initialize();
 
+		setUInt32Value(object_fields::Type, 33);
+		setUInt32Value(object_fields::Entry, m_entry.id);
+
 		setUInt32Value(world_object_fields::TypeID, m_entry.type);
 		setUInt32Value(world_object_fields::DisplayId, m_entry.displayID);
 		setUInt32Value(world_object_fields::AnimProgress, 100);
 		setUInt32Value(world_object_fields::State, 1);
 		setUInt32Value(world_object_fields::Faction, m_entry.factionID);
 		setUInt32Value(world_object_fields::Flags, m_entry.flags);
+
+		float x, y, z, o;
+		getLocation(x, y, z, o);
+
+		setFloatValue(world_object_fields::PosX, x);
+		setFloatValue(world_object_fields::PosY, y);
+		setFloatValue(world_object_fields::PosZ, z);
+		setFloatValue(world_object_fields::Facing, o);
+		setFloatValue(world_object_fields::Rotation + 2, sin(o / 2.0f));
+		setFloatValue(world_object_fields::Rotation + 3, cos(o / 2.0f));
+
 	}
 
 	void WorldObject::writeCreateObjectBlocks(std::vector<std::vector<char>> &out_blocks, bool creation /*= true*/) const

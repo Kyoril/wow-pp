@@ -238,5 +238,6 @@ namespace wowpp
 		void handleRequestPartyMemberStats(game::IncomingPacket &packet);
 		void handleMoveWorldPortAck(game::IncomingPacket &packet);
 		void handleSetActionButton(game::IncomingPacket &packet);
+		void handleGameObjectQuery(game::IncomingPacket &packet);
 	};
 }

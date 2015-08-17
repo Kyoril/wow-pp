@@ -256,24 +256,24 @@ namespace wowpp
 		tile.getGameObjects().add(&added);
 		added.setWorldInstance(this);
 
-		// Create update packet
-		std::vector<std::vector<char>> blocks;
-		createUpdateBlocks(added, blocks);
-
-		// Create the packet
-		std::vector<char> buffer;
-		io::VectorSink sink(buffer);
-		game::Protocol::OutgoingPacket packet(sink);
-		game::server_write::compressedUpdateObject(packet, blocks);
-
 		// Spawn ourself for new watchers
 		forEachTileInSight(
 			*m_visibilityGrid,
 			tile.getPosition(),
-			[&packet, &buffer](VisibilityTile &tile)
+			[&added](VisibilityTile &tile)
 		{
 			for (auto * subscriber : tile.getWatchers().getElements())
 			{
+				// Create update packet
+				std::vector<std::vector<char>> blocks;
+				createUpdateBlocks(added, blocks);
+
+				// Create the packet
+				std::vector<char> buffer;
+				io::VectorSink sink(buffer);
+				game::Protocol::OutgoingPacket packet(sink);
+				game::server_write::compressedUpdateObject(packet, blocks);
+
 				subscriber->sendPacket(packet, buffer);
 			}
 		});

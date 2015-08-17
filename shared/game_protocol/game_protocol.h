@@ -35,6 +35,7 @@
 #include "game/spell_target_map.h"
 #include "data/spell_entry.h"
 #include "data/item_entry.h"
+#include "data/object_entry.h"
 #include <array>
 #include <vector>
 #include <functional>
@@ -67,6 +68,7 @@ namespace wowpp
 				NameQuery				= 0x050,
 				ItemQuerySingle			= 0x056,
 				ItemQueryMultiple		= 0x057,
+				GameObjectQuery			= 0x05E,
 				CreatureQuery			= 0x060,
 				ContactList				= 0x066,
 				AddFriend				= 0x069,
@@ -214,6 +216,7 @@ namespace wowpp
 				NameQueryResponse			= 0x051,
 				ItemQuerySingleResponse		= 0x058,
 				ItemQueryMultipleResponse	= 0x059,
+				GameObjectQueryResponse		= 0x05F,
 				CreatureQueryResponse		= 0x061,
 				ContactList					= 0x067,
 				FriendStatus				= 0x068,
@@ -790,6 +793,12 @@ namespace wowpp
 				UInt8 &out_type,
 				UInt16 &out_action
 				);
+
+			bool gameObjectQuery(
+				io::Reader &packet,
+				UInt32 &out_entry,
+				UInt64 &out_guid
+				);
 		};
 
 		namespace server_write
@@ -1335,6 +1344,16 @@ namespace wowpp
 
 			void chatWrongFaction(
 				game::OutgoingPacket &out_packet
+				);
+
+			void gameObjectQueryResponse(
+				game::OutgoingPacket &out_packet,
+				const ObjectEntry &entry
+				);
+
+			void gameObjectQueryResponseEmpty(
+				game::OutgoingPacket &out_packet,
+				const UInt32 entry
 				);
 		};
 	}
