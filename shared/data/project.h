@@ -34,6 +34,7 @@
 #include "item_entry.h"
 #include "skill_entry.h"
 #include "trigger_entry.h"
+#include "object_entry.h"
 #include <boost/noncopyable.hpp>
 #include <memory>
 
@@ -57,6 +58,7 @@ namespace wowpp
 	typedef MakeTemplateManager<ItemEntry>::type ItemEntryManager;
 	typedef MakeTemplateManager<SkillEntry>::type SkillEntryManager;
 	typedef MakeTemplateManager<TriggerEntry>::type TriggerEntryManager;
+	typedef MakeTemplateManager<ObjectEntry>::type ObjectEntryManager;
 
 
 	class Project : private boost::noncopyable
@@ -74,6 +76,7 @@ namespace wowpp
 		ItemEntryManager items;
 		SkillEntryManager skills;
 		TriggerEntryManager triggers;
+		ObjectEntryManager objects;
 
 	public:
 
