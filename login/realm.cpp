@@ -93,6 +93,12 @@ namespace wowpp
 				break;
 			}
 
+			case pp::realm_login::realm_packet::TutorialData:
+			{
+				handleTutorialData(packet);
+				break;
+			}
+
 			default:
 			{
 				// Log unknown or unhandled packet
