@@ -75,5 +75,8 @@ namespace wowpp
 		/// @param players Number of players which are logged in to the realm.
 		/// @returns false if an error occurred.
 		virtual bool setRealmCurrentPlayerCount(UInt32 id, size_t players) = 0;
+
+		virtual bool getTutorialData(UInt32 id, std::array<UInt32, 8> &out_data) = 0;
+		virtual bool setTutorialData(UInt32 id, const std::array<UInt32, 8> data) = 0;
 	};
 }

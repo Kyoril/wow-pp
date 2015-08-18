@@ -47,6 +47,21 @@ CREATE TABLE `realm` (
 
 insert  into `realm`(`id`,`internalName`,`password`,`lastVisibleName`,`lastHost`,`lastPort`,`online`,`players`) values (1,'realm_01','none','Unnamed','127.0.0.1',8129,0,0);
 
+DROP TABLE IF EXISTS `account_tutorials`;
+
+CREATE TABLE `account_tutorials` (
+  `account` int(11) unsigned NOT NULL,
+  `tutorial_0` int(11) unsigned DEFAULT '0',
+  `tutorial_1` int(11) unsigned DEFAULT '0',
+  `tutorial_2` int(11) unsigned DEFAULT '0',
+  `tutorial_3` int(11) unsigned DEFAULT '0',
+  `tutorial_4` int(11) unsigned DEFAULT '0',
+  `tutorial_5` int(11) unsigned DEFAULT '0',
+  `tutorial_6` int(11) unsigned DEFAULT '0',
+  `tutorial_7` int(11) unsigned DEFAULT '0',
+  PRIMARY KEY (`account`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
+
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;

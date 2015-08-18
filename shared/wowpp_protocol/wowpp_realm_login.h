@@ -32,7 +32,7 @@ namespace wowpp
 	{
 		namespace realm_login
 		{
-			static const UInt32 ProtocolVersion = 0x02;
+			static const UInt32 ProtocolVersion = 0x03;
 
 			namespace realm_packet
 			{
@@ -47,7 +47,9 @@ namespace wowpp
 					/// Sent by the realm to notify the login server about a player who logged out.
 					PlayerLogout,
 					/// Ping message to keep the connection between the realm and the login server alive.
-					KeepAlive
+					KeepAlive,
+					/// Sent by the realm to notify the login server about tutorial data.
+					TutorialData
 				};
 			}
 
@@ -139,6 +141,13 @@ namespace wowpp
 				void keepAlive(
 					pp::OutgoingPacket &out_packet
 					);
+
+				/// 
+				void tutorialData(
+					pp::OutgoingPacket &out_packet,
+					UInt32 accountId,
+					const std::array<UInt32, 8> &data
+					);
 			}
 
 			/// Contains methods for writing packets from the login server.
@@ -167,7 +176,8 @@ namespace wowpp
 					UInt32 accountId,
 					const BigNumber &sessionKey,
 					const BigNumber &v,
-					const BigNumber &s
+					const BigNumber &s,
+					const std::array<UInt32, 8> &tutorialData
 					);
 
 				/// TODO: ADD DESCRIPTION
@@ -244,6 +254,13 @@ namespace wowpp
 				bool keepAlive(
 					io::Reader &packet
 					);
+
+				/// 
+				bool tutorialData(
+					io::Reader &packet,
+					UInt32 &out_accountId,
+					std::array<UInt32, 8> &out_data
+					);
 			}
 
 			/// Contains methods for reading packets coming from the login server.
@@ -278,7 +295,8 @@ namespace wowpp
 					UInt32 &out_accountId,
 					BigNumber &out_sessionKey,
 					BigNumber &out_v,
-					BigNumber &out_s
+					BigNumber &out_s,
+					std::array<UInt32, 8> &out_tutorialData
 					);
 
 				/// TODO: ADD DESCRIPTION

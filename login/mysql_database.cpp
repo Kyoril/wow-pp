@@ -263,4 +263,56 @@ namespace wowpp
 		ELOG("Login database error: " << m_connection.getErrorMessage());
 	}
 
+	bool MySQLDatabase::getTutorialData(UInt32 id, std::array<UInt32, 8> &out_data)
+	{
+		wowpp::MySQL::Select select(m_connection,
+			(boost::format("SELECT tutorial_0, tutorial_1, tutorial_2, tutorial_3, tutorial_4, tutorial_5, tutorial_6, tutorial_7 FROM account_tutorials WHERE id=%1% LIMIT 1")
+			% id).str());
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			if (row)
+			{
+				// Account exists: Get S and V
+				for (size_t i = 0; i < out_data.size(); ++i)
+				{
+					row.getField(i, out_data[i]);
+				}
+			}
+			else
+			{
+				// No row found: Account does not exist
+				return false;
+			}
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+
+		return false;
+	}
+
+	bool MySQLDatabase::setTutorialData(UInt32 id, const std::array<UInt32, 8> data)
+	{
+		if (!m_connection.execute((boost::format(
+			"UPDATE account_tutorials SET tutorial_0 = %2%, tutorial_1 = %3%, tutorial_2 = %4%, tutorial_3 = %5%, tutorial_4 = %6%, tutorial_5 = %7%, tutorial_6 = %8%, tutorial_7 = %9% WHERE account = %1%")
+			% id
+			% data[0]
+			% data[1]
+			% data[2]
+			% data[3]
+			% data[4]
+			% data[5]
+			% data[6]
+			% data[7]).str()))
+		{
+			printDatabaseError();
+			return false;
+		}
+
+		return true;
+	}
 }

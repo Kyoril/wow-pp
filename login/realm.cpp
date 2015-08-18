@@ -194,20 +194,29 @@ namespace wowpp
 			if (session->hasEnteredRealm())
 			{
 				//TODO: Player already entered a realm - what to do now?
-				
+				WLOG("Player is already connected!");
 			}
 			else
 			{
+				// Load tutorial data
+				std::array<UInt32, 8> tutorialData;
+				if (!m_database.getTutorialData(session->getUserId(), tutorialData))
+				{
+					WLOG("Unable to load tutorial data!");
+					tutorialData.fill(0);
+				}
+
 				// Send success
 				m_connection->sendSinglePacket(
 					std::bind(
 						login_write::playerLoginSuccess, 
 						std::placeholders::_1, 
-						session->getUserName(), 
+						std::cref(session->getUserName()),
 						session->getUserId(), 
-						session->getKey(),
-						session->getV(),
-						session->getS()));
+						std::cref(session->getKey()),
+						std::cref(session->getV()),
+						std::cref(session->getS()),
+						std::cref(tutorialData)));
 				return;
 			}
 		}
@@ -217,4 +226,45 @@ namespace wowpp
 			std::bind(login_write::playerLoginFailure, std::placeholders::_1, std::cref(accountName)));
 	}
 
+	void Realm::handleTutorialData(pp::IncomingPacket &packet)
+	{
+		using namespace pp::realm_login;
+
+		if (!m_authed)
+		{
+			return;
+		}
+
+		UInt32 accountId = 0;
+		std::array<UInt32, 8> tutorialData;
+		if (!realm_read::tutorialData(packet, accountId, tutorialData))
+		{
+			return;
+		}
+
+		// Find that player
+		// Check if the player is logged in
+		auto player = m_playerManager.getPlayerByAccountID(accountId);
+		if (player)
+		{
+			// Session is always valid here since getPlayerByAccount already checks it
+			const auto session = player->getSession();
+			assert(session != nullptr);
+
+			// Check if the player is not already logged in to a realm
+			if (!session->hasEnteredRealm() ||
+				session->getRealm() != m_realmID)
+			{
+				WLOG("Player is not connected with that realm!");
+				return;
+			}
+
+			// Save tutorial data
+			m_database.setTutorialData(session->getUserId(), tutorialData);
+		}
+		else
+		{
+			WLOG("Could not find player connection.");
+		}
+	}
 }

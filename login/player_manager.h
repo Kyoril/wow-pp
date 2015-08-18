@@ -57,6 +57,8 @@ namespace wowpp
 		void addPlayer(std::unique_ptr<Player> added);
 		/// Gets a player by his account name.
 		Player *getPlayerByAccountName(const String &accountName);
+		/// 
+		Player *getPlayerByAccountID(UInt32 accountId);
 
 	private:
 

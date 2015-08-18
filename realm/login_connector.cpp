@@ -256,7 +256,8 @@ namespace wowpp
 		String accountName;
 		BigNumber key, v, s;
 		UInt32 accountId;
-		if (!pp::realm_login::login_read::playerLoginSuccess(packet, accountName, accountId, key, v, s))
+		std::array<UInt32, 8> tutorialData;
+		if (!pp::realm_login::login_read::playerLoginSuccess(packet, accountName, accountId, key, v, s, tutorialData))
 		{
 			ELOG("Could not read packet!");
 			return;
@@ -267,7 +268,7 @@ namespace wowpp
 		if (player)
 		{
 			// Proceed with login procedure
-			player->loginSucceeded(accountId, key, v, s);
+			player->loginSucceeded(accountId, key, v, s, tutorialData);
 		}
 
 		// Remove pending session
@@ -316,5 +317,18 @@ namespace wowpp
 		{
 			m_loginRequests.erase(p);
 		}
+	}
+
+	void LoginConnector::sendTutorialData(UInt32 accountId, const std::array<UInt32, 8> &data)
+	{
+		using namespace pp::realm_login;
+
+		if (!m_connection)
+		{
+			return;
+		}
+
+		m_connection->sendSinglePacket(
+			std::bind(realm_write::tutorialData, std::placeholders::_1, accountId, std::cref(data)));
 	}
 }

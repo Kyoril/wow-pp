@@ -300,14 +300,11 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void tutorialFlags(game::OutgoingPacket &out_packet /*TODO */)
+			void tutorialFlags(game::OutgoingPacket &out_packet, const std::array<UInt32, 8> &tutorialData)
 			{
 				out_packet.start(game::server_packet::TutorialFlags);
-				for (UInt32 i = 0; i < 8; ++i)	// 8 = number of tutorial flags
-				{
-					out_packet
-						<< io::write<NetUInt32>(0x00000000);		// 0x00 = unchanged
-				}
+				out_packet
+					<< io::write_range(tutorialData);
 				out_packet.finish();
 			}
 
@@ -2975,6 +2972,22 @@ namespace wowpp
 			{
 				return packet
 					>> io::read<NetUInt32>(out_spellId);
+			}
+
+			bool tutorialFlag(io::Reader &packet, UInt32 &out_flag)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_flag);
+			}
+
+			bool tutorialClear(io::Reader &packet)
+			{
+				return packet;
+			}
+
+			bool tutorialReset(io::Reader &packet)
+			{
+				return packet;
 			}
 
 		}

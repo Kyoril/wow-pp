@@ -85,4 +85,24 @@ namespace wowpp
 		return nullptr;
 	}
 
+	Player * PlayerManager::getPlayerByAccountID(UInt32 accountId)
+	{
+		const auto p = std::find_if(
+			m_players.begin(),
+			m_players.end(),
+			[accountId](const std::unique_ptr<Player> &p)
+		{
+			return (p->isAuthentificated() &&
+				accountId == p->getAccountId());
+		});
+
+		if (p != m_players.end())
+		{
+			return (*p).get();
+		}
+
+		return nullptr;
+	}
+
+
 }

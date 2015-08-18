@@ -90,7 +90,7 @@ namespace wowpp
 		/// @param key Sesskion key (K) of the client which was calculated by the login server.
 		/// @param v V value which was calculated by the login server.
 		/// @param s S value which was calculated by the login server.
-		void loginSucceeded(UInt32 accountId, const BigNumber &key, const BigNumber &v, const BigNumber &s);
+		void loginSucceeded(UInt32 accountId, const BigNumber &key, const BigNumber &v, const BigNumber &s, const std::array<UInt32, 8> &tutorialData);
 		/// The login server notified us that the player login failed. This can have several
 		/// different reasons (unknown account name, suspended account etc.),
 		void loginFailed();
@@ -192,6 +192,7 @@ namespace wowpp
 		UInt32 m_transferMap;
 		float m_transferX, m_transferY, m_transferZ, m_transferO;
 		ActionButtons m_actionButtons;
+		std::array<UInt32, 8> m_tutorialData;
 
 	private:
 
@@ -239,5 +240,8 @@ namespace wowpp
 		void handleMoveWorldPortAck(game::IncomingPacket &packet);
 		void handleSetActionButton(game::IncomingPacket &packet);
 		void handleGameObjectQuery(game::IncomingPacket &packet);
+		void handleTutorialFlag(game::IncomingPacket &packet);
+		void handleTutorialClear(game::IncomingPacket &packet);
+		void handleTutorialReset(game::IncomingPacket &packet);
 	};
 }

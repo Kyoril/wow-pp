@@ -53,6 +53,9 @@ namespace wowpp
 		/// @copydoc wow::IDatabase::setRealmCurrentPlayerCount
 		bool setRealmCurrentPlayerCount(UInt32 id, size_t players) override;
 
+		bool getTutorialData(UInt32 id, std::array<UInt32, 8> &out_data) override;
+		bool setTutorialData(UInt32 id, const std::array<UInt32, 8> data) override;
+
 	private:
 
 		void printDatabaseError();

@@ -72,6 +72,16 @@ namespace wowpp
 					// This packet is empty
 					out_packet.finish();
 				}
+
+				void tutorialData(pp::OutgoingPacket &out_packet, UInt32 accountId, const std::array<UInt32, 8> &data)
+				{
+					out_packet.start(realm_packet::TutorialData);
+					out_packet
+						<< io::write<NetUInt32>(accountId)
+						<< io::write_range(data);
+					out_packet.finish();
+				}
+
 			}
 
 			namespace login_write
@@ -91,7 +101,7 @@ namespace wowpp
 					out_packet.finish();
 				}
 
-				void playerLoginSuccess(pp::OutgoingPacket &out_packet, const String &accountName, UInt32 accountId, const BigNumber &sessionKey, const BigNumber &v, const BigNumber &s)
+				void playerLoginSuccess(pp::OutgoingPacket &out_packet, const String &accountName, UInt32 accountId, const BigNumber &sessionKey, const BigNumber &v, const BigNumber &s, const std::array<UInt32, 8> &tutorialData)
 				{
 					out_packet.start(login_packet::PlayerLoginSuccess);
 					out_packet
@@ -105,7 +115,8 @@ namespace wowpp
 					out_packet
 						<< io::write_dynamic_range<NetUInt16>(keyBuf)
 						<< io::write_dynamic_range<NetUInt16>(vBuf)
-						<< io::write_dynamic_range<NetUInt16>(sBuf);
+						<< io::write_dynamic_range<NetUInt16>(sBuf)
+						<< io::write_range(tutorialData);
 
 					out_packet.finish();
 				}
@@ -160,6 +171,14 @@ namespace wowpp
 					//TODO
 					return packet;
 				}
+
+				bool tutorialData(io::Reader &packet, UInt32 &out_accountId, std::array<UInt32, 8> &out_data)
+				{
+					return packet
+						>> io::read<NetUInt32>(out_accountId)
+						>> io::read_range(out_data);
+				}
+
 			}
 
 			namespace login_read
@@ -182,7 +201,7 @@ namespace wowpp
 					return true;
 				}
 
-				bool playerLoginSuccess(io::Reader &packet, String &out_accountName, UInt32 &out_accountId, BigNumber &out_sessionKey, BigNumber &out_v, BigNumber &out_s)
+				bool playerLoginSuccess(io::Reader &packet, String &out_accountName, UInt32 &out_accountId, BigNumber &out_sessionKey, BigNumber &out_v, BigNumber &out_s, std::array<UInt32, 8> &out_tutorialData)
 				{
 					if (!(packet
 						>> io::read_container<NetUInt8>(out_accountName)
@@ -195,7 +214,8 @@ namespace wowpp
 					if (!(packet
 						>> io::read_container<NetUInt16>(sessionKey)
 						>> io::read_container<NetUInt16>(v)
-						>> io::read_container<NetUInt16>(s)))
+						>> io::read_container<NetUInt16>(s)
+						>> io::read_range(out_tutorialData)))
 					{
 						return false;
 					}

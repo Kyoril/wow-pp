@@ -74,6 +74,7 @@ namespace wowpp
 
 		m_connection->setListener(*this);
 		m_social.reset(new PlayerSocial(m_manager, *this));
+		m_tutorialData.fill(0);
 	}
 
 	void Player::sendAuthChallenge()
@@ -82,7 +83,7 @@ namespace wowpp
 			std::bind(game::server_write::authChallenge, std::placeholders::_1, m_seed));
 	}
 
-	void Player::loginSucceeded(UInt32 accountId, const BigNumber &key, const BigNumber &v, const BigNumber &s)
+	void Player::loginSucceeded(UInt32 accountId, const BigNumber &key, const BigNumber &v, const BigNumber &s, const std::array<UInt32, 8> &tutorialData)
 	{
 		// Check that Key and account name are the same on client and server
 		Boost_SHA1HashSink sha;
@@ -103,6 +104,7 @@ namespace wowpp
 			return;
 		}
 
+		m_tutorialData = tutorialData; // std::move won't be faster here, cause of std::array
 		m_accountId = accountId;
 		m_sessionKey = key;
 		m_v = v;
@@ -125,8 +127,6 @@ namespace wowpp
 		crypt.generateKey(cryptKey, m_sessionKey);
 		crypt.setKey(cryptKey.data(), cryptKey.size());
 		crypt.init();
-
-		//TODO: Load tutorials data
 
 		// Send response code: AuthOk
 		sendPacket(
@@ -307,6 +307,9 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(MoveWorldPortAck, game::session_status::TransferPending)
 			WOWPP_HANDLE_PACKET(SetActionButton, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(GameObjectQuery, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(TutorialFlag, game::session_status::Authentificated)
+			WOWPP_HANDLE_PACKET(TutorialClear, game::session_status::Authentificated)
+			WOWPP_HANDLE_PACKET(TutorialReset, game::session_status::Authentificated)
 #undef WOWPP_HANDLE_PACKET
 
 			default:
@@ -812,7 +815,7 @@ namespace wowpp
 
 			// Send tutorial flags (which tutorials have been viewed etc.)
 			sendPacket(
-				std::bind(game::server_write::tutorialFlags, std::placeholders::_1));
+				std::bind(game::server_write::tutorialFlags, std::placeholders::_1, std::cref(m_tutorialData)));
 
 			// Send spells
 			const auto &spells = m_gameCharacter->getSpells();
@@ -1740,6 +1743,54 @@ namespace wowpp
 		// Send response
 		sendPacket(
 			std::bind(game::server_write::gameObjectQueryResponse, std::placeholders::_1, std::cref(*objectEntry)));
+	}
+
+	void Player::handleTutorialFlag(game::IncomingPacket &packet)
+	{
+		UInt32 flag = 0;
+		if (!game::client_read::tutorialFlag(packet, flag))
+		{
+			// Could not read packet
+			return;
+		}
+
+		UInt32 wInt = (flag / 32);
+		if (wInt >= 8)
+		{
+			WLOG("Wrong tutorial flag sent");
+			return;
+		}
+
+		UInt32 rInt = (flag % 32);
+
+		UInt32 &tutflag = m_tutorialData[wInt];
+		tutflag |= (1 << rInt);
+
+		m_loginConnector.sendTutorialData(m_accountId, m_tutorialData);
+	}
+
+	void Player::handleTutorialClear(game::IncomingPacket &packet)
+	{
+		if (!game::client_read::tutorialClear(packet))
+		{
+			// Could not read packet
+			return;
+		}
+
+		m_tutorialData.fill(0xFFFFFFFF);
+		m_loginConnector.sendTutorialData(m_accountId, m_tutorialData);
+	}
+
+	void Player::handleTutorialReset(game::IncomingPacket &packet)
+	{
+		if (!game::client_read::tutorialReset(packet))
+		{
+			// Could not read packet
+			return;
+		}
+
+		m_tutorialData.fill(0);
+		m_loginConnector.sendTutorialData(m_accountId, m_tutorialData);
 	}
 
 }

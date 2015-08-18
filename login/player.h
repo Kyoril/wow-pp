@@ -68,6 +68,8 @@ namespace wowpp
 		/// Gets a pointer to the current session if available or nullptr if
 		/// not authentificated.
 		const Session *getSession() const { return m_session.get(); }
+		/// 
+		UInt32 getAccountId() const { return m_accountId; }
 
 	private:
 

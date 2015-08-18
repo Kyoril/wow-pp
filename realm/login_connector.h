@@ -73,6 +73,8 @@ namespace wowpp
 		/// @param accountId Identifier of the account which the player was logged in with.
 		void notifyPlayerLogout(UInt32 accountId);
 
+		void sendTutorialData(UInt32 accountId, const std::array<UInt32, 8> &data);
+
 		/// Gets the id of this realm in the login server database.
 		UInt32 getRealmID() const { return m_realmID; }
 

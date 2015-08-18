@@ -88,5 +88,6 @@ namespace wowpp
 
 		void handleLogin(pp::IncomingPacket &packet);
 		void handlePlayerLogin(pp::IncomingPacket &packet);
+		void handleTutorialData(pp::IncomingPacket &packet);
 	};
 }

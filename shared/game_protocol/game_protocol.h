@@ -110,6 +110,9 @@ namespace wowpp
 				MoveHeartBeat			= 0x0EE,
 				ForceMoveRootAck		= 0x0E9,
 				ForceMoveUnrootAck		= 0x0EB,
+				TutorialFlag			= 0x0FE,
+				TutorialClear			= 0x0FF,
+				TutorialReset			= 0x100,
 				StandStateChange		= 0x101,
 				AutoStoreLootItem		= 0x108,
 				AutoEquipItem			= 0x10A,
@@ -818,6 +821,19 @@ namespace wowpp
 				io::Reader &packet,
 				UInt32 &out_spellId
 				);
+
+			bool tutorialFlag(
+				io::Reader &packet,
+				UInt32 &out_flag
+				);
+
+			bool tutorialClear(
+				io::Reader &packet
+				);
+
+			bool tutorialReset(
+				io::Reader &packet
+				);
 		};
 
 		namespace server_write
@@ -896,8 +912,8 @@ namespace wowpp
 				);
 
 			void tutorialFlags(
-				game::OutgoingPacket &out_packet
-				//TODO
+				game::OutgoingPacket &out_packet,
+				const std::array<UInt32, 8> &tutorialData
 				);
 
 			void initializeFactions(
