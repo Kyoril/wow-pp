@@ -292,7 +292,7 @@ namespace wowpp
 			return false;
 		}
 
-		return false;
+		return true;
 	}
 
 	bool MySQLDatabase::setTutorialData(UInt32 id, const std::array<UInt32, 8> data)
