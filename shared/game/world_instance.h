@@ -41,6 +41,8 @@ namespace wowpp
 	class WorldObject;
 	class Universe;
 
+	inline UInt32 createMapGUID(UInt32 low, UInt32 map) { return static_cast<UInt32>(low | (map << 16)); }
+
 	/// Manages one instance of a game world.
 	class WorldInstance final
 	{

@@ -50,8 +50,8 @@ namespace wowpp
 
 	WorldInstance * WorldInstanceManager::createInstance(const MapEntry &map)
 	{
-		UInt32 instanceId = m_idGenerator.generateId();
-		instanceId |= (m_worldNodeId << 24) & 0xFF;
+		UInt32 instanceId = createMapGUID(m_idGenerator.generateId(), map.id);
+		//instanceId |= (m_worldNodeId << 24) & 0xFF;
 
 		// Create world instance
 		std::unique_ptr<WorldInstance> instance(new WorldInstance(
