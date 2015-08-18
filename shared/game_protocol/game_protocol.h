@@ -324,6 +324,7 @@ namespace wowpp
 			float x, y, z;
 			float o;
 			bool cinematic;
+			std::map<UInt8, const ItemEntry*> equipment;
 
 			explicit CharEntry()
 				: id(0)

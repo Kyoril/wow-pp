@@ -294,7 +294,7 @@ namespace wowpp
 		wowpp::MySQL::Select select(m_connection,
 							//      0     1       2       3        4        5       6        7       8    
 			(boost::format("SELECT `id`, `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`map`,"
-							//		 9       10            11            12           13		  14
+							//		 9       10            11            12           13		  14            
 								 "`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic` FROM `character` WHERE `account`=%1% ORDER BY `id`")
 			% accountId).str());
 		if (select.success())
@@ -354,6 +354,34 @@ namespace wowpp
 			// There was an error
 			printDatabaseError();
 			return false;
+		}
+
+		for (auto &entry : out_characters)
+		{
+			std::ostringstream strm;
+			strm << "SELECT `entry`, `slot` FROM `character_items` WHERE (`slot` BETWEEN 0 AND 19) AND (`owner` = " << entry.id << ") LIMIT 19;";
+
+			wowpp::MySQL::Select select(m_connection, strm.str());
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					UInt8 slot = 0;
+					row.getField<UInt8, UInt16>(1, slot);
+
+					UInt32 itemEntry = 0;
+					row.getField(0, itemEntry);
+
+					const auto *item = m_project.items.getById(itemEntry);
+					if (item)
+					{
+						entry.equipment[slot] = item;
+					}
+					
+					row = row.next(select);
+				}
+			}
 		}
 
 		return true;

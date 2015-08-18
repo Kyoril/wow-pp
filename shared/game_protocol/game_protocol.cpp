@@ -190,16 +190,23 @@ namespace wowpp
 
 					// Equipment
 					{
-						UInt32 displayInfoID = 0;
-						UInt8 inventoryType = 0;
-						UInt32 enchantAuraId = 0;
-
 						for (size_t i = 0; i < 19; ++i)	// 19 = max equipment slots
 						{
-							out_packet
-								<< io::write<NetUInt32>(displayInfoID)
-								<< io::write<NetUInt8>(inventoryType)
-								<< io::write<NetUInt32>(enchantAuraId);
+							auto it = entry.equipment.find(i);
+							if (it == entry.equipment.end())
+							{
+								out_packet
+									<< io::write<NetUInt32>(0)
+									<< io::write<NetUInt8>(0)
+									<< io::write<NetUInt32>(0);
+							}
+							else
+							{
+								out_packet
+									<< io::write<NetUInt32>(it->second->displayId)
+									<< io::write<NetUInt8>(it->second->inventoryType)
+									<< io::write<NetUInt32>(0);
+							}
 						}
 
 						out_packet
