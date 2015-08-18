@@ -486,15 +486,87 @@ namespace wowpp
 
 	void Aura::handleModShapeShift(bool apply)
 	{
-		// This effect is still todo
-
 		UInt8 form = m_effect.miscValueA;
 		if (apply)
 		{
+			const bool isAlliance = ((game::race::Alliance & (1 << (m_target.getRace() - 1))) == (1 << (m_target.getRace() - 1)));
+
+			UInt32 modelId = 0;
+			UInt32 powerType = power_type::Mana;
+			switch (form)
+			{
+				case 1:			// Cat
+				{
+					modelId = (isAlliance ? 892 : 8571);
+					powerType = power_type::Energy;
+					break;
+				}
+				case 3:			// Travel
+				{
+					modelId = 632;
+					break;
+				}
+				case 4:			// Aqua
+				{
+					modelId = 2428;
+					break;
+				}
+				case 5:			// Bear
+				case 8:
+				{
+					modelId = (isAlliance ? 2281 : 2289);
+					powerType = power_type::Rage;
+					break;
+				}
+				case 7:			// Ghoul
+				{
+					if (isAlliance) modelId = 10045;
+					break;
+				}
+				case 14:		// Creature Bear
+				{
+					modelId = 902;
+					break;
+				}
+				case 16:		// Ghost wolf
+				{
+					modelId = 4613;
+					break;
+				}
+				case 29:		// Flight form
+				{
+					modelId = (isAlliance ? 20857 : 20872);
+					break;
+				}
+				case 31:		// Moonkin
+				{
+					modelId = (isAlliance ? 15374 : 15375);
+					break;
+				}
+				case 27:		// Epic flight form
+				{
+					modelId = (isAlliance ? 21243 : 21244);
+					break;
+				}
+			}
+
+			if (modelId != 0)
+			{
+				m_target.setUInt32Value(unit_fields::DisplayId, modelId);
+			}
+
+			if (powerType != power_type::Mana)
+			{
+				m_target.setByteValue(unit_fields::Bytes0, 3, powerType);
+			}
+
 			m_target.setByteValue(unit_fields::Bytes2, 3, form);
 		}
 		else
 		{
+			m_target.setUInt32Value(unit_fields::DisplayId, m_target.getUInt32Value(unit_fields::NativeDisplayId));
+			m_target.setByteValue(unit_fields::Bytes0, 3, m_target.getClassEntry()->powerType);
+
 			m_target.setByteValue(unit_fields::Bytes2, 3, 0);
 		}
 	}

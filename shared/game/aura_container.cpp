@@ -186,6 +186,23 @@ namespace wowpp
 		return false;
 	}
 
+	void AuraContainer::removeAllAurasDueToSpell(UInt32 spellId)
+	{
+		size_t index = 0;
+		auto it = m_auras.begin();
+		do 
+		{
+			if ((*it)->getSpell().id == spellId)
+			{
+				removeAura(index);
+			}
+			else
+			{
+				++index; ++it;
+			}
+		} while (it != m_auras.end());
+	}
+
 	boost::optional<std::size_t> findAuraInstanceIndex(AuraContainer &instances, Aura &instance)
 	{
 		for (size_t i = 0, c = instances.getSize(); i < c; ++i)

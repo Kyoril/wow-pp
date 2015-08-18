@@ -122,6 +122,7 @@ namespace wowpp
 				SetActionButton			= 0x128,
 				CastSpell				= 0x12E,
 				CancelCast				= 0x12F,
+				CancelAura				= 0x136,
 				SetSelection			= 0x13D,
 				AttackSwing				= 0x141,
 				AttackStop				= 0x142,
@@ -810,6 +811,11 @@ namespace wowpp
 
 			bool forceMoveUnrootAck(
 				io::Reader &packet
+				);
+
+			bool cancelAura(
+				io::Reader &packet,
+				UInt32 &out_spellId
 				);
 		};
 

@@ -2964,6 +2964,12 @@ namespace wowpp
 				return true;
 			}
 
+			bool cancelAura(io::Reader &packet, UInt32 &out_spellId)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_spellId);
+			}
+
 		}
 	}
 }

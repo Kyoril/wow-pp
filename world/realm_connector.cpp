@@ -473,6 +473,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(AttackStop)
 			WOWPP_HANDLE_PACKET(SetSheathed)
 			WOWPP_HANDLE_PACKET(AreaTrigger)
+			WOWPP_HANDLE_PACKET(CancelAura)
 #undef WOWPP_HANDLE_PACKET
 
 			// Client packets handled by player
@@ -1064,4 +1065,34 @@ namespace wowpp
 			DLOG("TODO: Unknown trigger type '" << trigger->name << "'...");
 		}
 	}
+
+	void RealmConnector::handleCancelAura(Player &sender, game::Protocol::IncomingPacket &packet)
+	{
+		UInt32 spellId;
+		if (!game::client_read::cancelAura(packet, spellId))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		// Find that spell
+		const auto *spell = m_project.spells.getById(spellId);
+		if (!spell)
+		{
+			WLOG("Unknown spell id");
+			return;
+		}
+
+		// Check if that spell aura can be cancelled
+		if ((spell->attributes & spell_attributes::CantCancel) != 0)
+		{
+			WLOG("Spell aura can't be cancelled");
+			return;
+		}
+
+		// Find all auras of that spell
+		auto &auras = sender.getCharacter()->getAuras();
+		auras.removeAllAurasDueToSpell(spellId);
+	}
+
 }

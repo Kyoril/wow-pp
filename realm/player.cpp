@@ -734,6 +734,12 @@ namespace wowpp
 		m_gameCharacter = std::move(character);
 		m_gameCharacter->setZone(charEntry->zoneId);
 
+		// TEST: If it is a hunter, set ammo
+		if (m_gameCharacter->getClass() == char_class::Hunter)
+		{
+			m_gameCharacter->setUInt32Value(character_fields::AmmoId, 2512);
+		}
+
 		// Load the social list
 		m_social.reset(new PlayerSocial(m_manager, *this));
 		m_database.getCharacterSocialList(m_characterId, *m_social);

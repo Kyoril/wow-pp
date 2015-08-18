@@ -41,6 +41,7 @@ namespace wowpp
 		Aura &get(size_t index);
 		const Aura &get(size_t index) const;
 		void handleTargetDeath();
+		void removeAllAurasDueToSpell(UInt32 spellId);
 
 		GameUnit &getOwner() { return m_owner; }
 		size_t getSize() const { return m_auras.size(); }
