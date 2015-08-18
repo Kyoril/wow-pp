@@ -83,6 +83,12 @@ namespace wowpp
 		sendProxyPacket(
 			std::bind(game::server_write::standStateUpdate, std::placeholders::_1, standState));
 
+		// Root our character
+		auto flags = m_character->getUInt32Value(unit_fields::UnitFlags);
+		m_character->setUInt32Value(unit_fields::UnitFlags, flags | 0x00040000);
+		sendProxyPacket(
+			std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));
+
 		// Setup the logout countdown
 		m_logoutCountdown.setEnd(
 			getCurrentTime() + (20 * constants::OneSecond));
@@ -90,6 +96,12 @@ namespace wowpp
 
 	void Player::cancelLogoutRequest()
 	{
+		// Unroot
+		auto flags = m_character->getUInt32Value(unit_fields::UnitFlags);
+		m_character->setUInt32Value(unit_fields::UnitFlags, flags & ~0x00040000);
+		sendProxyPacket(
+			std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));
+
 		// Stand up again
 		auto standState = unit_stand_state::Stand;
 		m_character->setByteValue(unit_fields::Bytes1, 0, standState);

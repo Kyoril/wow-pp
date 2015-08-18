@@ -108,6 +108,8 @@ namespace wowpp
 				SetPitch				= 0x0DB,
 				MoveWorldPortAck		= 0x0DC,
 				MoveHeartBeat			= 0x0EE,
+				ForceMoveRootAck		= 0x0E9,
+				ForceMoveUnrootAck		= 0x0EB,
 				StandStateChange		= 0x101,
 				AutoStoreLootItem		= 0x108,
 				AutoEquipItem			= 0x10A,
@@ -234,6 +236,8 @@ namespace wowpp
 				DestroyObject				= 0x0AA,
 				MoveTeleportAck				= 0x0C7,
 				MonsterMove					= 0x0DD,
+				ForceMoveRoot				= 0x0E8,
+				ForceMoveUnroot				= 0x0EA,
 				MoveRoot					= 0x0EC,
 				MoveUnroot					= 0x0ED,
 				MoveHeartBeat				= 0x0EE,
@@ -799,6 +803,14 @@ namespace wowpp
 				UInt32 &out_entry,
 				UInt64 &out_guid
 				);
+
+			bool forceMoveRootAck(
+				io::Reader &packet
+				);
+
+			bool forceMoveUnrootAck(
+				io::Reader &packet
+				);
 		};
 
 		namespace server_write
@@ -1354,6 +1366,18 @@ namespace wowpp
 			void gameObjectQueryResponseEmpty(
 				game::OutgoingPacket &out_packet,
 				const UInt32 entry
+				);
+
+			void forceMoveRoot(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				UInt32 unknown
+				);
+
+			void forceMoveUnroot(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				UInt32 unknown
 				);
 		};
 	}

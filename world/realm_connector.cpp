@@ -664,6 +664,17 @@ namespace wowpp
 			return;
 		}
 
+		if (opCode != game::client_packet::MoveStop)
+		{
+			auto flags = sender.getCharacter()->getUInt32Value(unit_fields::UnitFlags);
+			if ((flags & 0x00040000) != 0 ||
+				(flags & 0x00000004) != 0)
+			{
+				WLOG("Character is unable to move, ignoring move packet");
+				return;
+			}
+		}
+
 		// Sender guid
 		auto guid = sender.getCharacter()->getGuid();
 
