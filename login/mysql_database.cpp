@@ -266,7 +266,7 @@ namespace wowpp
 	bool MySQLDatabase::getTutorialData(UInt32 id, std::array<UInt32, 8> &out_data)
 	{
 		wowpp::MySQL::Select select(m_connection,
-			(boost::format("SELECT tutorial_0, tutorial_1, tutorial_2, tutorial_3, tutorial_4, tutorial_5, tutorial_6, tutorial_7 FROM account_tutorials WHERE id=%1% LIMIT 1")
+			(boost::format("SELECT tutorial_0, tutorial_1, tutorial_2, tutorial_3, tutorial_4, tutorial_5, tutorial_6, tutorial_7 FROM account_tutorials WHERE account=%1% LIMIT 1")
 			% id).str());
 		if (select.success())
 		{

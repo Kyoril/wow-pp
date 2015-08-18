@@ -248,29 +248,9 @@ namespace wowpp
 			return;
 		}
 
-		// Find that player
-		// Check if the player is logged in
-		auto player = m_playerManager.getPlayerByAccountID(accountId);
-		if (player)
-		{
-			// Session is always valid here since getPlayerByAccount already checks it
-			const auto session = player->getSession();
-			assert(session != nullptr);
+		// TODO: Validate that this player is still connected
 
-			// Check if the player is not already logged in to a realm
-			if (!session->hasEnteredRealm() ||
-				session->getRealm() != m_realmID)
-			{
-				WLOG("Player is not connected with that realm!");
-				return;
-			}
-
-			// Save tutorial data
-			m_database.setTutorialData(session->getUserId(), tutorialData);
-		}
-		else
-		{
-			WLOG("Could not find player connection.");
-		}
+		// Save tutorial data
+		m_database.setTutorialData(accountId, tutorialData);
 	}
 }
