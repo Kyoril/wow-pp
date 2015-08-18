@@ -213,6 +213,15 @@ namespace wowpp
 		moved(*this, oldX, oldY, oldZ, oldO);
 	}
 
+	void GameObject::setOrientation(float o)
+	{
+		float oldO = m_o;
+
+		m_o = o;
+
+		moved(*this, m_x, m_y, m_z, oldO);
+	}
+
 	void GameObject::setMapId(UInt32 mapId)
 	{
 		m_mapId = mapId;
@@ -363,12 +372,17 @@ namespace wowpp
 		return ((angle >= lborder) && (angle <= rborder));
 	}
 
+	float GameObject::getAngle(GameObject &other) const
+	{
+		return getAngle(other.m_x, other.m_y);
+	}
+
 	float GameObject::getAngle(float x, float y) const
 	{
 		float dx = x - m_x;
 		float dy = y - m_y;
 
-		float ang = atan2(dy, dx);
+		float ang = ::atan2(dy, dx);
 		ang = (ang >= 0) ? ang : 2 * 3.1415927f + ang;
 		return ang;
 	}

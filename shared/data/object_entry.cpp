@@ -88,18 +88,15 @@ namespace wowpp
 		if (factionID != 0) context.table.addKey("faction", factionID);
 		if (flags != 0) context.table.addKey("flags", flags);
 		if (scale != 1.0f) context.table.addKey("size", scale);
+		if (minGold != 0) context.table.addKey("min_gold", minGold);
+		if (maxGold != 0) context.table.addKey("max_gold", maxGold);
 
 		// Write data
 		sff::write::Array<char> dataArray(context.table, "data", sff::write::Comma);
+		for (const auto &entry : data)
 		{
-			for (const auto &entry : data)
-			{
-				dataArray.addElement(entry);
-			}
+			dataArray.addElement(entry);
 		}
 		dataArray.finish();
-
-		if (minGold != 0) context.table.addKey("min_gold", minGold);
-		if (maxGold != 1.0f) context.table.addKey("max_gold", maxGold);
 	}
 }

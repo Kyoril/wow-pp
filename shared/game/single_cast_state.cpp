@@ -769,13 +769,16 @@ namespace wowpp
 		std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, basePoints, caster, *unitTarget, [&universe](std::function<void()> work)
 		{
 			universe.post(work);
-		}, [&unitTarget](Aura &self)
+		}, [](Aura &self)
 		{
 			auto &auras = self.getTarget().getAuras();
 
 			const auto position = findAuraInstanceIndex(auras, self);
-			assert(position.is_initialized());
-			auras.removeAura(*position);
+			//assert(position.is_initialized());
+			if (position.is_initialized())
+			{
+				auras.removeAura(*position);
+			}
 		});
 
 		// TODO: Dimishing return and custom durations

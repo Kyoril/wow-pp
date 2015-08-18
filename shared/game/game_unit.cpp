@@ -421,6 +421,12 @@ namespace wowpp
 			return;
 		}
 
+		if (getTypeId() != object_type::Character)
+		{
+			// Turn to target if npc
+			setOrientation(getAngle(*m_victim));
+		}
+
 		// Remember this weapon swing
 		m_lastAttackSwing = getCurrentTime();
 

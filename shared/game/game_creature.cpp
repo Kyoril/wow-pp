@@ -78,6 +78,9 @@ namespace wowpp
 		setUInt32Value(unit_fields::NpcFlags, entry.npcFlags);
 		setByteValue(unit_fields::Bytes2, 1, 16);
 		setByteValue(unit_fields::Bytes2, 0, 1);		// Sheath State: Melee weapon
+		setFloatValue(unit_fields::MinDamage, entry.minMeleeDamage);
+		setFloatValue(unit_fields::MaxDamage, entry.maxMeleeDamage);
+		setUInt32Value(unit_fields::BaseAttackTime, entry.meleeBaseAttackTime);
 
 		// Setup new entry
 		m_entry = &entry;

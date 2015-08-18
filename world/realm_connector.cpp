@@ -744,12 +744,13 @@ namespace wowpp
 		if (oldTargetGUID && isUnitGUID(oldTargetGUID) && !isPlayerGUID(oldTargetGUID))
 		{
 			// Find that creature
-			GameObject *obj = sender.getWorldInstance().findObjectByGUID(oldTargetGUID);
+			GameUnit *obj = dynamic_cast<GameUnit*>(sender.getWorldInstance().findObjectByGUID(oldTargetGUID));
 			if (obj &&
 				obj->getUInt64Value(unit_fields::Target) == sender.getCharacterGuid())
 			{
 				// It should not have us selected
 				obj->setUInt64Value(unit_fields::Target, 0);
+				obj->stopAttack();
 			}
 		}
 
@@ -760,11 +761,12 @@ namespace wowpp
 		if (isUnitGUID(targetGUID) && !isPlayerGUID(targetGUID))
 		{
 			// Find that creature
-			GameObject *obj = sender.getWorldInstance().findObjectByGUID(targetGUID);
+			GameUnit *obj = dynamic_cast<GameUnit*>(sender.getWorldInstance().findObjectByGUID(targetGUID));
 			if (obj && obj->getUInt32Value(unit_fields::Health) > 0)
 			{
 				// Make that creature select us, too! (Just for testing)
 				obj->setUInt64Value(unit_fields::Target, sender.getCharacterGuid());
+				obj->startAttack(*sender.getCharacter());
 			}
 		}
 	}

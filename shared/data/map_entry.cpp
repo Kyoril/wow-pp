@@ -179,6 +179,8 @@ namespace wowpp
 				spawn.radius = spawnTable->getInteger("radius", spawn.radius);
 				spawn.respawn = (spawnTable->getInteger("respawn", static_cast<unsigned>(spawn.respawn)) != 0);
 				spawn.respawnDelay = spawnTable->getInteger("respawnTime", spawn.respawnDelay);
+				spawn.animProgress = spawnTable->getInteger("animProgress", spawn.animProgress);
+				spawn.state = spawnTable->getInteger("state", spawn.state);
 
 				objectSpawns.push_back(std::move(spawn));
 			}
@@ -221,6 +223,50 @@ namespace wowpp
 				spawnTable.addKey("radius", static_cast<unsigned>(spawn.radius));
 				spawnTable.addKey("respawn", spawn.respawn ? 1 : 0);
 				spawnTable.addKey("respawnTime", spawn.respawnDelay);
+
+				spawnTable.finish();
+			}
+
+			spawnArray.finish();
+		}
+
+		{
+			sff::write::Array<char> spawnArray(context.table, "object_spawns", sff::write::MultiLine);
+
+			for (auto &spawn : objectSpawns)
+			{
+				sff::write::Table<char> spawnTable(spawnArray, sff::write::Comma);
+
+				spawnTable.addKey("object", spawn.object->id);
+
+				{
+					sff::write::Array<char> positionArray(spawnTable, "position", sff::write::Comma);
+					positionArray.addElement(spawn.position[0]);
+					positionArray.addElement(spawn.position[1]);
+					positionArray.addElement(spawn.position[2]);
+					positionArray.finish();
+				}
+
+				if (spawn.orientation)
+				{
+					spawnTable.addKey("orientation", spawn.orientation);
+				}
+
+				{
+					sff::write::Array<char> rotationArray(spawnTable, "rotation", sff::write::Comma);
+					rotationArray.addElement(spawn.rotation[0]);
+					rotationArray.addElement(spawn.rotation[1]);
+					rotationArray.addElement(spawn.rotation[2]);
+					rotationArray.addElement(spawn.rotation[3]);
+					rotationArray.finish();
+				}
+
+				spawnTable.addKey("count", spawn.maxCount);
+				spawnTable.addKey("radius", static_cast<unsigned>(spawn.radius));
+				spawnTable.addKey("respawn", spawn.respawn ? 1 : 0);
+				spawnTable.addKey("respawnTime", spawn.respawnDelay);
+				spawnTable.addKey("animProgress", spawn.animProgress);
+				spawnTable.addKey("state", spawn.state);
 
 				spawnTable.finish();
 			}

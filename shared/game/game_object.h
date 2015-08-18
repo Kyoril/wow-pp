@@ -243,6 +243,7 @@ namespace wowpp
 
 		/// Moves the object to the given position on it's map id.
 		virtual void relocate(float x, float y, float z, float o);
+		void setOrientation(float o);
 		/// Updates the map id of this object.
 		void setMapId(UInt32 mapId);
 
@@ -257,6 +258,9 @@ namespace wowpp
 		///              only 2d coordinates are used.
 		float getDistanceTo(GameObject &other, bool use3D = true) const;
 
+		float getAngle(GameObject &other) const;
+		float getAngle(float x, float y) const;
+
 		const MovementInfo &getMovementInfo() { return m_movementInfo; }
 		void setMovementInfo(const MovementInfo &info) { m_movementInfo = info; }
 
@@ -267,8 +271,6 @@ namespace wowpp
 		/// is not in any world.
 		void setWorldInstance(WorldInstance *instance);
 
-		/// 
-		float getAngle(float x, float z) const;
 		/// 
 		bool isInArc(float arcRadian, float x, float y) const;
 
