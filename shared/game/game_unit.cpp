@@ -605,7 +605,7 @@ namespace wowpp
 		{
 			case power_type::Mana:
 			{
-				if (getTypeId() == type_id::Player)
+				if (getTypeId() == object_type::Character)
 				{
 					if ((m_lastManaUse + constants::OneSecond * 5) < getCurrentTime())
 					{
