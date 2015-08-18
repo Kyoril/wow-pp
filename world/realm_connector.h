@@ -129,6 +129,8 @@ namespace wowpp
 		void handleSetSheathed(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleAreaTrigger(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleCancelAura(Player &sender, game::Protocol::IncomingPacket &packet);
+		void handleEmote(Player &sender, game::Protocol::IncomingPacket &packet);
+		void handleTextEmote(Player &sender, game::Protocol::IncomingPacket &packet);
 
 	private:
 

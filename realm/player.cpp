@@ -1046,6 +1046,8 @@ namespace wowpp
 			// Local chat modes
 			case chat_msg::Say:
 			case chat_msg::Yell:
+			case chat_msg::Emote:
+			case chat_msg::TextEmote:
 			{
 				// Redirect chat message to world node
 				m_worldNode->sendChatMessage(

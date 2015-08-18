@@ -35,6 +35,7 @@
 #include "skill_entry.h"
 #include "trigger_entry.h"
 #include "object_entry.h"
+#include "emote_entry.h"
 #include <boost/noncopyable.hpp>
 #include <memory>
 
@@ -59,6 +60,7 @@ namespace wowpp
 	typedef MakeTemplateManager<SkillEntry>::type SkillEntryManager;
 	typedef MakeTemplateManager<TriggerEntry>::type TriggerEntryManager;
 	typedef MakeTemplateManager<ObjectEntry>::type ObjectEntryManager;
+	typedef MakeTemplateManager<EmoteEntry>::type EmoteEntryManager;
 
 
 	class Project : private boost::noncopyable
@@ -77,6 +79,7 @@ namespace wowpp
 		SkillEntryManager skills;
 		TriggerEntryManager triggers;
 		ObjectEntryManager objects;
+		EmoteEntryManager emotes;
 
 	public:
 

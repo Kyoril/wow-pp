@@ -2333,6 +2333,36 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void emote(game::OutgoingPacket &out_packet, UInt32 animId, UInt64 guid)
+			{
+				out_packet.start(game::server_packet::Emote);
+				out_packet
+					<< io::write<NetUInt32>(animId)
+					<< io::write<NetUInt64>(guid);
+				out_packet.finish();
+			}
+
+			void textEmote(game::OutgoingPacket &out_packet, UInt64 guid, UInt32 textEmote, UInt32 emoteNum, const String &name)
+			{
+				out_packet.start(game::server_packet::TextEmote);
+				out_packet
+					<< io::write<NetUInt64>(guid)
+					<< io::write<NetUInt32>(textEmote)
+					<< io::write<NetUInt32>(emoteNum)
+					<< io::write<NetUInt32>(name.size() + 1);
+				if (name.size() > 0)
+				{
+					out_packet
+						<< io::write_range(name) << io::write<NetUInt8>(0);
+				}
+				else
+				{
+					out_packet
+						<< io::write<NetUInt8>(0);
+				}
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read
@@ -2988,6 +3018,20 @@ namespace wowpp
 			bool tutorialReset(io::Reader &packet)
 			{
 				return packet;
+			}
+
+			bool emote(io::Reader &packet, UInt32 &out_emote)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_emote);
+			}
+
+			bool textEmote(io::Reader &packet, UInt32 &out_textEmote, UInt32 &out_emoteNum, UInt64 &out_guid)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_textEmote)
+					>> io::read<NetUInt32>(out_emoteNum)
+					>> io::read<NetUInt64>(out_guid);
 			}
 
 		}

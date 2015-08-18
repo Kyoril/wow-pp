@@ -235,9 +235,16 @@ namespace wowpp
 			});
 
 			if (type != game::chat_msg::Say &&
-				type != game::chat_msg::Yell)
+				type != game::chat_msg::Yell &&
+				type != game::chat_msg::Emote &&
+				type != game::chat_msg::TextEmote)
 			{
 				WLOG("Unsupported chat mode");
+				return;
+			}
+
+			if (!m_character->isAlive())
+			{
 				return;
 			}
 
@@ -247,7 +254,7 @@ namespace wowpp
 			game::Protocol::OutgoingPacket packet(sink);
 			game::server_write::messageChat(packet, type, lang, channel, m_character->getGuid(), message, m_character.get());
 
-			const float chatRange = (type == game::chat_msg::Yell) ? 300.0f : 25.0f;
+			const float chatRange = (type == game::chat_msg::Yell || type == game::chat_msg::Emote || type == game::chat_msg::TextEmote) ? 300.0f : 25.0f;
 			for (auto * const subscriber : subscribers)
 			{
 				const float distance = m_character->getDistanceTo(*subscriber->getControlledObject());

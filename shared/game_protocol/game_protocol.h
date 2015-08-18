@@ -114,6 +114,8 @@ namespace wowpp
 				TutorialClear			= 0x0FF,
 				TutorialReset			= 0x100,
 				StandStateChange		= 0x101,
+				Emote					= 0x102,
+				TextEmote				= 0x104,
 				AutoStoreLootItem		= 0x108,
 				AutoEquipItem			= 0x10A,
 				AutoStoreBagItem		= 0x10B,
@@ -246,6 +248,8 @@ namespace wowpp
 				MoveUnroot					= 0x0ED,
 				MoveHeartBeat				= 0x0EE,
 				TutorialFlags				= 0x0FD,
+				Emote						= 0x103,
+				TextEmote					= 0x105,
 				InventoryChangeFailure		= 0x112,
 				InitializeFactions			= 0x122,
 				SetProficiency				= 0x127,
@@ -834,6 +838,18 @@ namespace wowpp
 			bool tutorialReset(
 				io::Reader &packet
 				);
+
+			bool emote(
+				io::Reader &packet,
+				UInt32 &out_emote
+				);
+
+			bool textEmote(
+				io::Reader &packet,
+				UInt32 &out_textEmote,
+				UInt32 &out_emoteNum,
+				UInt64 &out_guid
+				);
 		};
 
 		namespace server_write
@@ -1401,6 +1417,20 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt64 guid,
 				UInt32 unknown
+				);
+
+			void emote(
+				game::OutgoingPacket &out_packet,
+				UInt32 animId,
+				UInt64 guid
+				);
+
+			void textEmote(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				UInt32 textEmote,
+				UInt32 emoteNum,
+				const String &name
 				);
 		};
 	}

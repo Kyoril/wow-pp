@@ -474,6 +474,8 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(SetSheathed)
 			WOWPP_HANDLE_PACKET(AreaTrigger)
 			WOWPP_HANDLE_PACKET(CancelAura)
+			WOWPP_HANDLE_PACKET(Emote)
+			WOWPP_HANDLE_PACKET(TextEmote)
 #undef WOWPP_HANDLE_PACKET
 
 			// Client packets handled by player
@@ -1070,6 +1072,11 @@ namespace wowpp
 
 	void RealmConnector::handleCancelAura(Player &sender, game::Protocol::IncomingPacket &packet)
 	{
+		if (!sender.getCharacter()->isAlive())
+		{
+			return;
+		}
+
 		UInt32 spellId;
 		if (!game::client_read::cancelAura(packet, spellId))
 		{
@@ -1095,6 +1102,145 @@ namespace wowpp
 		// Find all auras of that spell
 		auto &auras = sender.getCharacter()->getAuras();
 		auras.removeAllAurasDueToSpell(spellId);
+	}
+
+	void RealmConnector::handleEmote(Player &sender, game::Protocol::IncomingPacket &packet)
+	{
+		if (!sender.getCharacter()->isAlive())
+		{
+			return;
+		}
+
+		UInt32 emoteId;
+		if (!game::client_read::emote(packet, emoteId))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		// Create the chat packet
+		std::vector<char> buffer;
+		io::VectorSink sink(buffer);
+		game::Protocol::OutgoingPacket emotePacket(sink);
+		game::server_write::emote(emotePacket, emoteId, sender.getCharacterGuid());
+
+		TileIndex2D gridIndex;
+		sender.getCharacter()->getTileIndex(gridIndex);
+
+		// Notify all watchers about the new object
+		forEachTileInSight(
+			sender.getWorldInstance().getGrid(),
+			gridIndex,
+			[&emotePacket, &buffer](VisibilityTile &tile)
+		{
+			for (auto &watcher : tile.getWatchers())
+			{
+				watcher->sendPacket(emotePacket, buffer);
+			}
+		});
+	}
+
+	void RealmConnector::handleTextEmote(Player &sender, game::Protocol::IncomingPacket &packet)
+	{
+		if (!sender.getCharacter()->isAlive())
+		{
+			DLOG("Sender is dead...");
+			return;
+		}
+
+		UInt32 textEmote, emoteNum;
+		UInt64 guid;
+		if (!game::client_read::textEmote(packet, textEmote, emoteNum, guid))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		const auto *emote = m_project.emotes.getById(textEmote);
+		if (!emote)
+		{
+			WLOG("Could not find emote " << textEmote);
+			return;
+		}
+
+		TileIndex2D gridIndex;
+		sender.getCharacter()->getTileIndex(gridIndex);
+
+		UInt32 anim = emote->textId;
+		switch (anim)
+		{
+			case 12:		// SLEEP
+			case 13:		// SIT
+			case 68:		// KNEEL
+			case 0:			// ONESHOT_NONE
+				break;
+
+			default:
+			{
+				// Create the chat packet
+				std::vector<char> buffer;
+				io::VectorSink sink(buffer);
+				game::Protocol::OutgoingPacket emotePacket(sink);
+				game::server_write::emote(emotePacket, anim, sender.getCharacterGuid());
+
+				// Notify all watchers about the new object
+				forEachTileInSight(
+					sender.getWorldInstance().getGrid(),
+					gridIndex,
+					[&emotePacket, &buffer](VisibilityTile &tile)
+				{
+					for (auto &watcher : tile.getWatchers())
+					{
+						watcher->sendPacket(emotePacket, buffer);
+					}
+				});
+			}
+		}
+
+		// Resolve unit name
+		String name;
+		if (guid != 0)
+		{
+			auto * unit = dynamic_cast<GameUnit*>(sender.getWorldInstance().findObjectByGUID(guid));
+			if (unit)
+			{
+				if (isPlayerGUID(guid))
+				{
+					auto * gameChar = dynamic_cast<GameCharacter*>(unit);
+					if (gameChar)
+					{
+						name = gameChar->getName();
+					}
+				}
+				else
+				{
+					UInt32 entry = unit->getUInt32Value(object_fields::Entry);
+					auto *unitEntry = m_project.units.getById(entry);
+					if (unitEntry)
+					{
+						name = unitEntry->name;
+					}
+				}
+			}
+		}
+		
+		// Create the chat packet
+		std::vector<char> buffer;
+		io::VectorSink sink(buffer);
+		game::Protocol::OutgoingPacket emotePacket(sink);
+		game::server_write::textEmote(emotePacket, sender.getCharacterGuid(), textEmote, emoteNum, name);
+
+		// Notify all watchers about the new object
+		forEachTileInSight(
+			sender.getWorldInstance().getGrid(),
+			gridIndex,
+			[&emotePacket, &buffer](VisibilityTile &tile)
+		{
+			for (auto &watcher : tile.getWatchers())
+			{
+				watcher->sendPacket(emotePacket, buffer);
+			}
+		});
 	}
 
 }

@@ -421,6 +421,8 @@ namespace wowpp
 		virtual void rewardExperience(GameUnit *victim, UInt32 experience);
 		/// Gets the aura container of this unit.
 		AuraContainer &getAuras() { return m_auras; }
+		/// 
+		bool isAlive() const { return (getUInt32Value(unit_fields::Health) != 0); }
 
 		/// Calculates the stat based on the specified modifier.
 		static UInt8 getStatByUnitMod(UnitMods mod);
