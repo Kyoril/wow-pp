@@ -132,6 +132,7 @@ namespace wowpp
 				SetSelection			= 0x13D,
 				AttackSwing				= 0x141,
 				AttackStop				= 0x142,
+				RepopRequest			= 0x15A,
 				Ping					= 0x1DC,
 				SetSheathed				= 0x1E0,
 				AuthSession				= 0x1ED,
@@ -280,6 +281,7 @@ namespace wowpp
 				AuthChallenge				= 0x1EC,
 				AuthResponse				= 0x1EE,
 				CompressedUpdateObject		= 0x1F6,
+				EnvironmentalDamageLog		= 0x1FC,
 				AccountDataTimes			= 0x209,
 				ChatWrongFaction			= 0x219,
 				SetRestStart				= 0x21E,
@@ -289,6 +291,7 @@ namespace wowpp
 				StandStateUpdate			= 0x29D,
 				SpellFailedOther			= 0x2A6,
 				ChatPlayerNotFound			= 0x2A9,
+				DurabilityDamageDeath		= 0x2BD,
 				InitWorldStates				= 0x2C2,
 				AddonInfo					= 0x2EF,
 				PartyMemberStatsFull		= 0x2F2,
@@ -855,6 +858,10 @@ namespace wowpp
 			bool completeCinematic(
 				io::Reader &packet
 				);
+
+			bool repopRequest(
+				io::Reader &packet
+				);
 		};
 
 		namespace server_write
@@ -1354,6 +1361,10 @@ namespace wowpp
 				UInt8 difficulty
 				);
 
+			void groupListRemoved(
+				game::OutgoingPacket &out_packet
+				);
+
 			void partyMemberStats(
 				game::OutgoingPacket &out_packet,
 				const GameCharacter &character
@@ -1436,6 +1447,19 @@ namespace wowpp
 				UInt32 textEmote,
 				UInt32 emoteNum,
 				const String &name
+				);
+
+			void environmentalDamageLog(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				UInt8 type,
+				UInt32 damage,
+				UInt32 absorb,
+				UInt32 resist
+				);
+
+			void durabilityDamageDeath(
+				game::OutgoingPacket &out_packet
 				);
 		};
 	}

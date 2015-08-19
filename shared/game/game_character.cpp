@@ -171,6 +171,47 @@ namespace wowpp
 
 	void GameCharacter::addItem(std::unique_ptr<GameItem> item, UInt16 slot)
 	{
+		if (slot < player_equipment_slots::End)
+		{
+			if (item->getEntry().durability == 0 ||
+				item->getUInt32Value(item_fields::Durability) > 0)
+			{
+				// Apply values
+				for (const auto &entry : item->getEntry().itemStats)
+				{
+					if (entry.statValue != 0)
+					{
+						switch (entry.statType)
+						{
+						case 0:		// Mana
+							updateModifierValue(unit_mods::Mana, unit_mod_type::TotalValue, entry.statValue, true);
+							break;
+						case 1:		// Health
+							updateModifierValue(unit_mods::Health, unit_mod_type::TotalValue, entry.statValue, true);
+							break;
+						case 3:		// Agility
+							updateModifierValue(unit_mods::StatAgility, unit_mod_type::TotalValue, entry.statValue, true);
+							break;
+						case 4:		// Strength
+							updateModifierValue(unit_mods::StatStrength, unit_mod_type::TotalValue, entry.statValue, true);
+							break;
+						case 5:		// Intellect
+							updateModifierValue(unit_mods::StatIntellect, unit_mod_type::TotalValue, entry.statValue, true);
+							break;
+						case 6:		// Spirit
+							updateModifierValue(unit_mods::StatSpirit, unit_mod_type::TotalValue, entry.statValue, true);
+							break;
+						case 7:		// Stamina
+							updateModifierValue(unit_mods::StatStamina, unit_mod_type::TotalValue, entry.statValue, true);
+							break;
+						default:
+							break;
+						}
+					}
+				}
+			}
+		}
+
 		// Check if that item already exists
 		auto it = m_itemSlots.find(slot);
 		if (it == m_itemSlots.end())

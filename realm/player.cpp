@@ -700,6 +700,7 @@ namespace wowpp
 
 		// Store character id
 		m_characterId = characterId;
+		m_itemData.clear();
 
 		// Write something to the log just for informations
 		ILOG("Player " << m_accountName << " tries to enter the world with character 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << m_characterId);
@@ -956,7 +957,7 @@ namespace wowpp
 		io::StringSink sink(sendBuffer);
 
 		// Get the end of the buffer (needed for encryption)
-		size_t bufferPos = sink.position();
+		size_t bufferPos = sendBuffer.size();
 
 		game::Protocol::OutgoingPacket packet(sink, true);
 		packet.start(opCode);
@@ -1154,7 +1155,7 @@ namespace wowpp
 				}
 
 				// Maybe we were just invited, but are not yet a member of that group
-				if (!m_group->isMember(*m_gameCharacter))
+				if (!m_group->isMember(m_gameCharacter->getGuid()))
 				{
 					WLOG("Player is not a member of the group, but was just invited.");
 					return;
@@ -1509,7 +1510,29 @@ namespace wowpp
 		// Capitalize player name
 		capitalize(memberName);
 
-		DLOG("CMSG_GROUP_UNINVITE: Player " << m_gameCharacter->getName() << " want's to uninvite member " << memberName);
+		if (!m_group)
+		{
+			sendPacket(
+				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::YouNotInGroup));
+			return;
+		}
+
+		if (m_group->getLeader() != m_gameCharacter->getGuid())
+		{
+			sendPacket(
+				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::YouNotLeader));
+			return;
+		}
+
+		UInt64 guid = m_group->getMemberGuid(memberName);
+		if (guid == 0)
+		{
+			sendPacket(
+				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, std::cref(memberName), game::party_result::NotInYourParty));
+			return;
+		}
+
+		m_group->removeMember(guid);
 	}
 
 	void Player::handleGroupUninviteGUID(game::IncomingPacket &packet)
@@ -1521,7 +1544,28 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_GROUP_UNINVITE_GUID: Player " << m_gameCharacter->getName() << " want's to uninvite member 0x" << std::hex << std::uppercase << std::setw(16) << std::setfill('0') << memberGUID);
+		if (!m_group)
+		{
+			sendPacket(
+				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::YouNotInGroup));
+			return;
+		}
+
+		if (m_group->getLeader() != m_gameCharacter->getGuid())
+		{
+			sendPacket(
+				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::YouNotLeader));
+			return;
+		}
+
+		if (!m_group->isMember(memberGUID))
+		{
+			sendPacket(
+				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::NotInYourParty));
+			return;
+		}
+
+		m_group->removeMember(memberGUID);
 	}
 
 	void Player::handleGroupSetLeader(game::IncomingPacket &packet)
@@ -1533,7 +1577,21 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_GROUP_SET_LEADER: Player " << m_gameCharacter->getName() << " want's to change leader to 0x" << std::hex << std::uppercase << std::setw(16) << std::setfill('0') << leaderGUID);
+		if (!m_group)
+		{
+			WLOG("Player is not a member of a group!");
+			return;
+		}
+		
+		if (m_group->getLeader() == leaderGUID ||
+			m_group->getLeader() != m_gameCharacter->getGuid())
+		{
+			WLOG("Player is not the group leader or no leader change");
+			return;
+		}
+		
+		m_group->setLeader(leaderGUID);
+		m_group->sendUpdate();
 	}
 
 	void Player::handleLootMethod(game::IncomingPacket &packet)
@@ -1546,9 +1604,39 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_LOOT_METHOD: Player " << m_gameCharacter->getName() << " want's to change loot method to: " << lootMethod);
-		DLOG("Loot master: 0x" << std::hex << std::uppercase << std::setw(16) << std::setfill('0') << lootMasterGUID);
-		DLOG("Loot treshold: " << lootTreshold);
+		if (!m_group)
+		{
+			WLOG("Player is not a member of a group!");
+			return;
+		}
+
+		if (m_group->getLeader() != m_gameCharacter->getGuid())
+		{
+			WLOG("Player is not the group leader");
+			return;
+		}
+
+		if (lootMethod > loot_method::NeedBeforeGreed)
+		{
+			WLOG("Invalid loot method");
+			return;
+		}
+
+		if (lootTreshold < 2 || lootTreshold > 6)
+		{
+			WLOG("Invalid loot treshold");
+			return;
+		}
+
+		if (lootMethod == loot_method::MasterLoot &&
+			!m_group->isMember(lootMasterGUID))
+		{
+			WLOG("Invalid loot master guid");
+			return;
+		}
+
+		m_group->setLootMethod(static_cast<LootMethod>(lootMethod), lootMasterGUID, lootTreshold);
+		m_group->sendUpdate();
 	}
 
 	void Player::handleGroupDisband(game::IncomingPacket &packet)
@@ -1559,7 +1647,13 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_GROUP_DISBAND: Player " << m_gameCharacter->getName() << " want's to disband his group");
+		if (m_group)
+		{
+			if (m_group->getLeader() == m_gameCharacter->getGuid())
+			{
+				m_group->disband(false);
+			}
+		}
 	}
 
 	void Player::setGroup(std::shared_ptr<PlayerGroup> group)

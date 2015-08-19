@@ -42,6 +42,8 @@ namespace wowpp
 		, m_logoutCountdown(instance.getUniverse().getTimers())
 		, m_instance(instance)
 		, m_lastError(attack_swing_error::Unknown)
+		, m_lastFallTime(0)
+		, m_lastFallZ(0.0f)
 	{
 		m_logoutCountdown.ended.connect(
 			std::bind(&Player::onLogout, this));
@@ -857,6 +859,28 @@ namespace wowpp
 			// Destroy player instance
 			m_manager.playerDisconnected(*this);
 		}
+	}
+
+	void Player::handleRepopRequest(game::Protocol::IncomingPacket &packet)
+	{
+		if (!m_character)
+		{
+			return;
+		}
+
+		if (m_character->getUInt32Value(unit_fields::Health) > 0)
+		{
+			return;
+		}
+
+		WLOG("TODO: repop at nearest graveyard!");
+		m_character->setUInt32Value(unit_fields::Health, m_character->getUInt32Value(unit_fields::MaxHealth));
+	}
+
+	void Player::setFallInfo(UInt32 time, float z)
+	{
+		m_lastFallTime = time;
+		m_lastFallZ = z;
 	}
 
 }

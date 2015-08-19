@@ -90,8 +90,8 @@ namespace wowpp
 		/// 
 		TileIndex2D getTileIndex() const;
 
-		/// 
-		//void castSpell(const SpellEntry *spell, Int64 castTime, UInt8 castCount, SpellTargetMap targetMap);
+		void getFallInfo(UInt32 &out_time, float &out_z) { out_time = m_lastFallTime; out_z = m_lastFallZ; }
+		void setFallInfo(UInt32 time, float z);
 		
 		/// Sends an proxy packet to the realm which will then be redirected to the game client.
 		/// @param generator Packet writer function pointer.
@@ -147,6 +147,7 @@ namespace wowpp
 		void handleSplitItem(game::Protocol::IncomingPacket &packet);
 		void handleAutoEquipItemSlot(game::Protocol::IncomingPacket &packet);
 		void handleDestroyItem(game::Protocol::IncomingPacket &packet);
+		void handleRepopRequest(game::Protocol::IncomingPacket &packet);
 
 	private:
 
@@ -190,5 +191,7 @@ namespace wowpp
 		boost::signals2::scoped_connection m_onTileChange, m_onComboPoints, m_onXP, m_onCastError, m_onGainLevel;
 		boost::signals2::scoped_connection m_onAuraUpdate, m_onTeleport;
 		AttackSwingError m_lastError;
+		UInt32 m_lastFallTime;
+		float m_lastFallZ;
 	};
 }

@@ -102,18 +102,24 @@ namespace wowpp
 		/// Creates the group and setup a leader.
 		void create(GameCharacter &leader);
 		/// Changes the loot method.
-		void setLootMethod(LootMethod method);
+		void setLootMethod(LootMethod method, UInt64 lootMaster, UInt32 lootTreshold);
 		/// Sets a new group leader. The new leader has to be a member of this group.
-		void setLeader(GameCharacter &newLeader);
+		void setLeader(UInt64 guid);
 		/// Adds a guid to the list of pending invites.
 		game::PartyResult addInvite(UInt64 inviteGuid);
 		/// Adds a new member to the group. The group member has to be invited first.
 		game::PartyResult addMember(GameCharacter &member);
+		/// 
+		UInt64 getMemberGuid(const String &name);
+		/// 
+		void removeMember(UInt64 guid);
 		/// Sends a group update message to all members of the group.
 		void sendUpdate();
+		/// 
+		void disband(bool silent);
 
 		/// Checks if the specified game character is a member of this group.
-		bool isMember(GameCharacter &character) const;
+		bool isMember(UInt64 guid) const;
 		/// Returns the number of group members.
 		size_t getMemberCount() const { return m_members.size(); }
 		/// Determines whether this group has been created.
@@ -136,8 +142,6 @@ namespace wowpp
 				auto *player = m_playerManager.getPlayerByCharacterGuid(member.first);
 				if (player)
 				{
-					DLOG("SMSG_PARTY_MEMBER_STATS");
-
 					player->sendPacket(creator);
 				}
 			}
@@ -152,5 +156,7 @@ namespace wowpp
 		MembersByGUID m_members;	// This is the map of actual party members.
 		InvitedMembers m_invited;	// This is a list of pending member invites
 		LootMethod m_lootMethod;
+		UInt32 m_lootTreshold;
+		UInt64 m_lootMaster;
 	};
 }

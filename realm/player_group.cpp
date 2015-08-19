@@ -29,6 +29,8 @@ namespace wowpp
 		, m_leaderGUID(0)
 		, m_type(group_type::Normal)
 		, m_lootMethod(loot_method::GroupLoot)
+		, m_lootTreshold(2)
+		, m_lootMaster(0)
 	{
 	}
 
@@ -48,28 +50,34 @@ namespace wowpp
 		leader.modifyGroupUpdateFlags(group_update_flags::Full, true);
 	}
 
-	void PlayerGroup::setLootMethod(LootMethod method)
+	void PlayerGroup::setLootMethod(LootMethod method, UInt64 lootMaster, UInt32 lootTreshold)
 	{
 		// TODO: Notify group members about this change
 		m_lootMethod = method;
+		m_lootTreshold = lootTreshold;
+		m_lootMaster = lootMaster;
 	}
 
-	bool PlayerGroup::isMember(GameCharacter &character) const
+	bool PlayerGroup::isMember(UInt64 guid) const
 	{
-		auto it = m_members.find(character.getGuid());
+		auto it = m_members.find(guid);
 		return (it != m_members.end());
 	}
 
-	void PlayerGroup::setLeader(GameCharacter &newLeader)
+	void PlayerGroup::setLeader(UInt64 guid)
 	{
 		// New character has to be a member of this group
-		if (!isMember(newLeader))
+		auto it = m_members.find(guid);
+		if (it == m_members.end())
 		{
 			return;
 		}
 
-		m_leaderGUID = newLeader.getGuid();
-		m_leaderName = newLeader.getName();
+		m_leaderGUID = it->first;
+		m_leaderName = it->second.name;
+
+		broadcastPacket(
+			std::bind(game::server_write::groupSetLeader, std::placeholders::_1, std::cref(m_leaderName)));
 	}
 
 	game::PartyResult PlayerGroup::addMember(GameCharacter &member)
@@ -132,11 +140,6 @@ namespace wowpp
 			}
 		}
 
-		/*
-		// Other checks have already been done in addInvite method, so we are good to go here
-		broadcastPacket(
-			std::bind(game::server_write::partyMemberStats, std::placeholders::_1, std::cref(member)), guid);
-			*/
 		return game::party_result::Ok;
 	}
 
@@ -150,6 +153,47 @@ namespace wowpp
 
 		m_invited.add(inviteGuid);
 		return game::party_result::Ok;
+	}
+
+	void PlayerGroup::removeMember(UInt64 guid)
+	{
+		auto it = m_members.find(guid);
+		if (it != m_members.end())
+		{
+			if (m_members.size() <= 2)
+			{
+				disband(false);
+				return;
+			}
+			else
+			{
+				auto *player = m_playerManager.getPlayerByCharacterGuid(guid);
+				if (player)
+				{
+					// Send packet
+					player->setGroup(std::shared_ptr<PlayerGroup>());
+					player->sendPacket(
+						std::bind(game::server_write::groupListRemoved, std::placeholders::_1));
+				}
+
+				m_members.erase(it);
+
+				if (m_leaderGUID == guid && !m_members.empty())
+				{
+					auto firstMember = m_members.begin();
+					if (firstMember != m_members.end())
+					{
+						setLeader(firstMember->first);
+					}
+					else
+					{
+						WLOG("PlayerGroup::removeMember(): Group seems to be empty now...");
+					}
+				}
+
+				sendUpdate();
+			}
+		}
 	}
 
 	void PlayerGroup::sendUpdate()
@@ -188,11 +232,48 @@ namespace wowpp
 					0x50000000FFFFFFFELL, 
 					std::cref(m_members),
 					m_leaderGUID, 
-					m_lootMethod, 
-					0,
-					0x02,
+					m_lootMethod,
+					m_lootMaster,
+					m_lootTreshold,
 					0));
 		}
+	}
+
+	void PlayerGroup::disband(bool silent)
+	{
+		if (!silent)
+		{
+			broadcastPacket(
+				std::bind(game::server_write::groupDestroyed, std::placeholders::_1));
+		}
+
+		for (auto & it : m_members)
+		{
+			auto *player = m_playerManager.getPlayerByCharacterGuid(it.first);
+			if (player)
+			{
+				// Send packet
+				player->setGroup(std::shared_ptr<PlayerGroup>());
+				player->sendPacket(
+					std::bind(game::server_write::groupListRemoved, std::placeholders::_1));
+			}
+		}
+
+		m_members.clear();
+		return;
+	}
+
+	UInt64 PlayerGroup::getMemberGuid(const String &name)
+	{
+		for (auto &member : m_members)
+		{
+			if (member.second.name == name)
+			{
+				return member.first;
+			}
+		}
+
+		return 0;
 	}
 
 }

@@ -2209,6 +2209,18 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+
+			void groupListRemoved(game::OutgoingPacket &out_packet)
+			{
+				out_packet.start(game::server_packet::GroupList);
+				out_packet
+					<< io::write<NetUInt64>(0)
+					<< io::write<NetUInt64>(0)
+					<< io::write<NetUInt64>(0);
+				out_packet.finish();
+			}
+
+
 			void newWorld(game::OutgoingPacket &out_packet, UInt32 newMap, float x, float y, float z, float o)
 			{
 				out_packet.start(game::server_packet::NewWorld);
@@ -2360,6 +2372,24 @@ namespace wowpp
 					out_packet
 						<< io::write<NetUInt8>(0);
 				}
+				out_packet.finish();
+			}
+
+			void environmentalDamageLog(game::OutgoingPacket &out_packet, UInt64 guid, UInt8 type, UInt32 damage, UInt32 absorb, UInt32 resist)
+			{
+				out_packet.start(game::server_packet::EnvironmentalDamageLog);
+				out_packet
+					<< io::write<NetUInt64>(guid)
+					<< io::write<NetUInt8>(type)
+					<< io::write<NetUInt32>(damage)
+					<< io::write<NetUInt32>(absorb)
+					<< io::write<NetUInt32>(resist);
+				out_packet.finish();
+			}
+
+			void durabilityDamageDeath(game::OutgoingPacket &out_packet)
+			{
+				out_packet.start(game::server_packet::DurabilityDamageDeath);
 				out_packet.finish();
 			}
 
@@ -3036,6 +3066,12 @@ namespace wowpp
 
 			bool completeCinematic(io::Reader &packet)
 			{
+				return true;
+			}
+
+			bool repopRequest(io::Reader &packet)
+			{
+				packet.skip(1);
 				return true;
 			}
 

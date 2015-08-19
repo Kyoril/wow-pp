@@ -494,6 +494,7 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(SplitItem)
 			WOWPP_HANDLE_PLAYER_PACKET(AutoEquipItemSlot)
 			WOWPP_HANDLE_PLAYER_PACKET(DestroyItem)
+			WOWPP_HANDLE_PLAYER_PACKET(RepopRequest)
 #undef WOWPP_HANDLE_PLAYER_PACKET
 
 			// Movement packets get special treatment
@@ -727,6 +728,77 @@ namespace wowpp
 		});
 
 		//TODO: Verify new location
+
+		UInt32 lastFallTime = 0;
+		float lastFallZ = 0.0f;
+		sender.getFallInfo(lastFallTime, lastFallZ);
+
+		// Fall damage
+		if (opCode == game::client_packet::MoveFallLand)
+		{
+			if (info.fallTime >= 1500)
+			{
+				float deltaZ = lastFallZ - info.z;
+				if (sender.getCharacter()->isAlive())
+				{
+					float damageperc = 0.018f * deltaZ - 0.2426f;
+					if (damageperc > 0)
+					{
+						const UInt32 maxHealth = sender.getCharacter()->getUInt32Value(unit_fields::MaxHealth);
+						UInt32 damage = (UInt32)(damageperc * maxHealth);
+						float height = info.z;
+
+						if (damage > 0)
+						{
+							//Prevent fall damage from being more than the player maximum health
+							if (damage > maxHealth) damage = maxHealth;
+							/*
+							std::vector<char> dmgBuffer;
+							io::VectorSink dmgSink(dmgBuffer);
+							game::Protocol::OutgoingPacket dmgPacket(sink);
+							game::server_write::environmentalDamageLog(dmgPacket, sender.getCharacterGuid(), 2, damage, 0, 0);
+
+							// Deal damage
+							forEachTileInSight(
+								sender.getWorldInstance().getGrid(),
+								gridIndex,
+								[&dmgPacket, &dmgBuffer](VisibilityTile &tile)
+							{
+								for (auto &watcher : tile.getWatchers())
+								{
+									watcher->sendPacket(dmgPacket, dmgBuffer);
+								}
+							});
+							*/
+							UInt32 health = sender.getCharacter()->getUInt32Value(unit_fields::Health);
+							if (health < damage)
+							{
+								health = 0;
+							}
+							else
+							{
+								health -= damage;
+							}
+							sender.getCharacter()->setUInt32Value(unit_fields::Health, health);
+
+							if (health == 0)
+							{
+								WLOG("TODO: Durability damage!");
+								sender.sendProxyPacket(
+									std::bind(game::server_write::durabilityDamageDeath, std::placeholders::_1));
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (opCode == game::client_packet::MoveFallLand ||
+			lastFallTime > info.fallTime/* ||
+			info.z < lastFallZ*/)
+		{
+			sender.setFallInfo(info.fallTime, info.z);
+		}
 
 		// Update position
 		sender.getCharacter()->relocate(info.x, info.y, info.z, info.o);
