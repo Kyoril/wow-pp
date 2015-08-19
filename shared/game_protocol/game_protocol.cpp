@@ -3034,6 +3034,11 @@ namespace wowpp
 					>> io::read<NetUInt64>(out_guid);
 			}
 
+			bool completeCinematic(io::Reader &packet)
+			{
+				return true;
+			}
+
 		}
 	}
 }

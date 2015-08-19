@@ -310,6 +310,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(TutorialFlag, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(TutorialClear, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(TutorialReset, game::session_status::Authentificated)
+			WOWPP_HANDLE_PACKET(CompleteCinematic, game::session_status::LoggedIn)
 #undef WOWPP_HANDLE_PACKET
 
 			default:
@@ -703,14 +704,11 @@ namespace wowpp
 		// Write something to the log just for informations
 		ILOG("Player " << m_accountName << " tries to enter the world with character 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << m_characterId);
 
-		// Store character items
-		std::vector<pp::world_realm::ItemData> items;
-
 		// Load the player character data from the database
 		std::unique_ptr<GameCharacter> character(new GameCharacter(m_manager.getTimers(), m_getRace, m_getClass, m_getLevel));
 		character->initialize();
 		character->setGuid(createRealmGUID(characterId, m_loginConnector.getRealmID(), guid_type::Player));
-		if (!m_database.getGameCharacter(guidLowerPart(characterId), *character, items))
+		if (!m_database.getGameCharacter(guidLowerPart(characterId), *character, m_itemData))
 		{
 			// Send error packet
 			WLOG("Player login failed: Could not load character " << characterId);
@@ -755,7 +753,7 @@ namespace wowpp
 		// is valid on the world node and if not, transfer player
 
 		// There should be an instance
-		worldNode->enterWorldInstance(charEntry->id, std::numeric_limits<UInt32>::max(), *m_gameCharacter, items);
+		worldNode->enterWorldInstance(charEntry->id, std::numeric_limits<UInt32>::max(), *m_gameCharacter, m_itemData);
 	}
 
 	void Player::worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, float x, float y, float z, float o)
@@ -1669,12 +1667,9 @@ namespace wowpp
 		//TODO Map found - check if player is member of a group and if this instance
 		// is valid on the world node and if not, transfer player
 
-		// Store character items (TODO)
-		std::vector<pp::world_realm::ItemData> items;
-
 		// There should be an instance
 		m_worldNode = world;
-		m_worldNode->enterWorldInstance(m_characterId, groupInstanceId, *m_gameCharacter, items);
+		m_worldNode->enterWorldInstance(m_characterId, groupInstanceId, *m_gameCharacter, m_itemData);
 
 		// Reset transfer data
 		m_transferMap = 0;
@@ -1793,6 +1788,17 @@ namespace wowpp
 
 		m_tutorialData.fill(0);
 		m_loginConnector.sendTutorialData(m_accountId, m_tutorialData);
+	}
+
+	void Player::handleCompleteCinematic(game::IncomingPacket &packet)
+	{
+		if (!game::client_read::completeCinematic(packet))
+		{
+			// Could not read packet
+			return;
+		}
+
+		m_database.setCinematicState(m_characterId, false);
 	}
 
 }

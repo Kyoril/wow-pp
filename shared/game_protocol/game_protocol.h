@@ -110,6 +110,7 @@ namespace wowpp
 				MoveHeartBeat			= 0x0EE,
 				ForceMoveRootAck		= 0x0E9,
 				ForceMoveUnrootAck		= 0x0EB,
+				CompleteCinematic		= 0x0FC,
 				TutorialFlag			= 0x0FE,
 				TutorialClear			= 0x0FF,
 				TutorialReset			= 0x100,
@@ -849,6 +850,10 @@ namespace wowpp
 				UInt32 &out_textEmote,
 				UInt32 &out_emoteNum,
 				UInt64 &out_guid
+				);
+
+			bool completeCinematic(
+				io::Reader &packet
 				);
 		};
 

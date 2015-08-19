@@ -69,6 +69,8 @@ namespace wowpp
 		bool getCharacterActionButtons(DatabaseId characterId, ActionButtons &out_buttons) override;
 		/// 
 		bool setCharacterActionButtons(DatabaseId characterId, const ActionButtons &buttons) override;
+		/// 
+		bool setCinematicState(DatabaseId characterId, bool state) override;
 
 	private:
 

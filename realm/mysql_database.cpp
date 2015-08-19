@@ -950,4 +950,23 @@ namespace wowpp
 		return true;
 	}
 
+	bool MySQLDatabase::setCinematicState(DatabaseId characterId, bool state)
+	{
+		const UInt32 lowerPart = guidLowerPart(characterId);
+
+		if (m_connection.execute((boost::format(
+			"UPDATE `character` SET `cinematic` = %1% WHERE `id`=%2%")
+			% (state ? 1 : 0)
+			% lowerPart).str()))
+		{
+			return true;
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+	}
+
 }

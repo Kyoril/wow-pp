@@ -193,6 +193,7 @@ namespace wowpp
 		float m_transferX, m_transferY, m_transferZ, m_transferO;
 		ActionButtons m_actionButtons;
 		std::array<UInt32, 8> m_tutorialData;
+		std::vector<pp::world_realm::ItemData> m_itemData;
 
 	private:
 
@@ -243,5 +244,6 @@ namespace wowpp
 		void handleTutorialFlag(game::IncomingPacket &packet);
 		void handleTutorialClear(game::IncomingPacket &packet);
 		void handleTutorialReset(game::IncomingPacket &packet);
+		void handleCompleteCinematic(game::IncomingPacket &packet);
 	};
 }

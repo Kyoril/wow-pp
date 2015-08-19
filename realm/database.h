@@ -64,5 +64,7 @@ namespace wowpp
 
 		virtual bool getCharacterActionButtons(DatabaseId characterId, ActionButtons &out_buttons) = 0;
 		virtual bool setCharacterActionButtons(DatabaseId characterId, const ActionButtons &buttons) = 0;
+
+		virtual bool setCinematicState(DatabaseId characterId, bool state) = 0;
 	};
 }
