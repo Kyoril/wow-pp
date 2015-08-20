@@ -113,6 +113,8 @@ namespace wowpp
 		UInt64 getMemberGuid(const String &name);
 		/// 
 		void removeMember(UInt64 guid);
+		/// 
+		bool removeInvite(UInt64 guid);
 		/// Sends a group update message to all members of the group.
 		void sendUpdate();
 		/// 

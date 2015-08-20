@@ -45,7 +45,6 @@ namespace wowpp
 	// Forwards
 	class PlayerManager;
 	class WorldInstanceManager;
-	//class WorldInstance;
 
 	/// Player connection class.
 	class Player final : public boost::noncopyable, public ITileSubscriber

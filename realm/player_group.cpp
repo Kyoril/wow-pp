@@ -196,6 +196,24 @@ namespace wowpp
 		}
 	}
 
+	bool PlayerGroup::removeInvite(UInt64 guid)
+	{
+		if (!m_invited.contains(guid))
+		{
+			return false;
+		}
+		
+		m_invited.remove(guid);
+
+		// Check if group is empty
+		if (m_members.size() < 2)
+		{
+			disband(true);
+		}
+
+		return true;
+	}
+
 	void PlayerGroup::sendUpdate()
 	{
 		// Update member status

@@ -1477,8 +1477,6 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_GROUP_ACCEPT: Player " << m_gameCharacter->getName() << " accepts group invite");
-
 		auto result = m_group->addMember(*m_gameCharacter);
 		if (result != party_result::Ok)
 		{
@@ -1495,7 +1493,31 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_GROUP_DECLINE: Player " << m_gameCharacter->getName() << " declines group invite");
+		if (!m_group)
+		{
+			WLOG("Player declined group invitation, but is not in a group");
+			return;
+		}
+
+		// Find the group leader
+		UInt64 leader = m_group->getLeader();
+		if (!m_group->removeInvite(m_gameCharacter->getGuid()))
+		{
+			return;
+		}
+
+		// We are no longer a member of this group
+		m_group.reset();
+
+		if (leader != 0)
+		{
+			auto *player = m_manager.getPlayerByCharacterGuid(leader);
+			if (player)
+			{
+				player->sendPacket(
+					std::bind(game::server_write::groupDecline, std::placeholders::_1, std::cref(m_gameCharacter->getName())));
+			}
+		}
 	}
 
 	void Player::handleGroupUninvite(game::IncomingPacket &packet)
