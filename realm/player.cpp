@@ -771,6 +771,11 @@ namespace wowpp
 
 		// Save instance id
 		m_instanceId = instanceId;
+		if (m_group &&
+			m_group->isMember(m_gameCharacter->getGuid()))
+		{
+			m_group->addInstanceBinding(instanceId, mapId);
+		}
 
 		// Update character on the realm side with data received from the world server
 		//m_gameCharacter->setGuid(createGUID(worldObjectGuid, 0, high_guid::Player));
@@ -1756,16 +1761,7 @@ namespace wowpp
 		{
 			if (auto *group = player->getGroup())
 			{
-				auto leader = group->getLeader();
-				if (leader != m_gameCharacter->getGuid())
-				{
-					// TODO Get leading character and his instance id
-					auto *leadPlayer = m_manager.getPlayerByCharacterId(leader);
-					if (leadPlayer)
-					{
-						groupInstanceId = leadPlayer->getWorldInstanceId();
-					}
-				}
+				groupInstanceId = group->instanceBindingForMap(m_transferMap);
 			}
 		}
 

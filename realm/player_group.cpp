@@ -294,4 +294,27 @@ namespace wowpp
 		return 0;
 	}
 
+	UInt32 PlayerGroup::instanceBindingForMap(UInt32 map)
+	{
+		auto it = m_instances.find(map);
+		if (it != m_instances.end())
+		{
+			return it->second;
+		}
+
+		return std::numeric_limits<UInt32>::max();
+	}
+
+	bool PlayerGroup::addInstanceBinding(UInt32 instance, UInt32 map)
+	{
+		auto it = m_instances.find(map);
+		if (it != m_instances.end())
+		{
+			return false;
+		}
+
+		m_instances[map] = instance;
+		return true;
+	}
+
 }

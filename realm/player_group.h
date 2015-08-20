@@ -92,6 +92,7 @@ namespace wowpp
 
 		typedef std::map<UInt64, game::GroupMemberSlot> MembersByGUID;
 		typedef LinearSet<UInt64> InvitedMembers;
+		typedef std::map<UInt32, UInt32> InstancesByMap;
 
 	public:
 
@@ -119,6 +120,10 @@ namespace wowpp
 		void sendUpdate();
 		/// 
 		void disband(bool silent);
+		/// 
+		UInt32 instanceBindingForMap(UInt32 map);
+		/// 
+		bool addInstanceBinding(UInt32 instance, UInt32 map);
 
 		/// Checks if the specified game character is a member of this group.
 		bool isMember(UInt64 guid) const;
@@ -160,5 +165,6 @@ namespace wowpp
 		LootMethod m_lootMethod;
 		UInt32 m_lootTreshold;
 		UInt64 m_lootMaster;
+		InstancesByMap m_instances;
 	};
 }
