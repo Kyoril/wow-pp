@@ -68,9 +68,9 @@ namespace wowpp
 		setGender(static_cast<game::Gender>(gender));
 		setUInt32Value(unit_fields::DisplayId, (gender == game::gender::Male ? entry.maleModel : entry.femaleModel));
 		setUInt32Value(unit_fields::NativeDisplayId, (gender == game::gender::Male ? entry.maleModel : entry.femaleModel));
-		setUInt32Value(unit_fields::BaseHealth, 20);									//TODO
-		setUInt32Value(unit_fields::MaxHealth, interpolate(entry.minLevelHealth, entry.maxLevelHealth, t));
-		setUInt32Value(unit_fields::Health, getUInt32Value(unit_fields::MaxHealth));
+		setUInt32Value(unit_fields::BaseHealth, interpolate(entry.minLevelHealth, entry.maxLevelHealth, t));
+		setUInt32Value(unit_fields::MaxHealth, getUInt32Value(unit_fields::BaseHealth));
+		setUInt32Value(unit_fields::Health, getUInt32Value(unit_fields::BaseHealth));
 		setUInt32Value(unit_fields::MaxPower1, interpolate(entry.minLevelMana, entry.maxLevelMana, t));
 		setUInt32Value(unit_fields::Power1, getUInt32Value(unit_fields::MaxPower1));
 		setUInt32Value(unit_fields::UnitFlags, entry.unitFlags);
@@ -82,6 +82,16 @@ namespace wowpp
 		setFloatValue(unit_fields::MaxDamage, entry.maxMeleeDamage);
 		setUInt32Value(unit_fields::BaseAttackTime, entry.meleeBaseAttackTime);
 
+		// Unit Mods
+		for (UInt32 i = unit_mods::StatStart; i < unit_mods::StatEnd; ++i)
+		{
+			setModifierValue(static_cast<UnitMods>(i), unit_mod_type::BaseValue, 0.0f);
+			setModifierValue(static_cast<UnitMods>(i), unit_mod_type::TotalValue, 0.0f);
+			setModifierValue(static_cast<UnitMods>(i), unit_mod_type::BasePct, 1.0f);
+			setModifierValue(static_cast<UnitMods>(i), unit_mod_type::TotalPct, 1.0f);
+		}
+		setModifierValue(unit_mods::Armor, unit_mod_type::BaseValue, entry.armor);
+
 		// Setup new entry
 		m_entry = &entry;
 
@@ -90,6 +100,8 @@ namespace wowpp
 		{
 			entryChanged();
 		}
+
+		updateAllStats();
 	}
 
 	void GameCreature::onKilled(GameUnit *killer)

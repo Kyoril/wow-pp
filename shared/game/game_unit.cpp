@@ -724,7 +724,17 @@ namespace wowpp
 
 	void GameUnit::updateArmor()
 	{
-		// Nothing to do here
+		Int32 baseArmor = getModifierValue(unit_mods::Armor, unit_mod_type::BaseValue);
+		Int32 totalArmor = getModifierValue(unit_mods::Armor, unit_mod_type::TotalValue);
+
+		// Add armor from agility
+		baseArmor += getUInt32Value(unit_fields::Stat1) * 2;
+		baseArmor += totalArmor;
+
+		if (baseArmor < 0) baseArmor = 0;
+
+		setUInt32Value(unit_fields::Resistances, baseArmor);
+		setUInt32Value(unit_fields::ResistancesBuffModsPositive, totalArmor);
 	}
 
 	void GameUnit::updateDamage()

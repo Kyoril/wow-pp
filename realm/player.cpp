@@ -1811,8 +1811,6 @@ namespace wowpp
 		// Check if we want to remove that button or add a new one
 		if (button.action == 0)
 		{
-			DLOG("REMOVING ACTION BUTTON...");
-
 			auto it = m_actionButtons.find(slot);
 			if (it == m_actionButtons.end())
 			{
@@ -1825,7 +1823,6 @@ namespace wowpp
 		}
 		else
 		{
-			DLOG("SETTING ACTION BUTTON...");
 			m_actionButtons[slot] = button;
 		}
 	}
