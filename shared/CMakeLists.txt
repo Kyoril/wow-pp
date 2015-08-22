@@ -22,21 +22,17 @@
 # We want at least CMake 2.8
 cmake_minimum_required(VERSION 2.8)
 
-# This project contains all the shared libraries used by multiple
-# projects of the WoW project.
-project(shared)
-
-	# Include subdirectories
-	add_subdirectory(common)
-	add_subdirectory(log)
-	add_subdirectory(templates)
-	add_subdirectory(virtual_directory)
-	add_subdirectory(data)
-	add_subdirectory(nav_mesh)
-	add_subdirectory(game)
-	add_subdirectory(auth_protocol)
-	add_subdirectory(game_protocol)
-	add_subdirectory(wowpp_protocol)
-	add_subdirectory(sql_wrapper)
-	add_subdirectory(mysql_wrapper)
+# Include subdirectories
+add_subdirectory(common)
+add_subdirectory(log)
+add_subdirectory(templates)
+add_subdirectory(virtual_directory)
+add_subdirectory(data)
+add_subdirectory(nav_mesh)
+add_subdirectory(game)
+add_subdirectory(auth_protocol)
+add_subdirectory(game_protocol)
+add_subdirectory(wowpp_protocol)
+add_subdirectory(sql_wrapper)
+add_subdirectory(mysql_wrapper)
 	

@@ -24,6 +24,7 @@
 #include "game/world_instance.h"
 #include "player_manager.h"
 #include "player.h"
+#include "game/game_creature.h"
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "configuration.h"
 #include "common/clock.h"
@@ -31,6 +32,7 @@
 #include "game/visibility_tile.h"
 #include "game/each_tile_in_region.h"
 #include "game/universe.h"
+#include "game/trigger_handler.h"
 #include "binary_io/vector_sink.h"
 #include "log/default_log_levels.h"
 
@@ -321,7 +323,7 @@ namespace wowpp
 
 		// We really need an instance now
 		assert(instance);
-
+		
 		// Fire signal which should create a player instance for us
 		character->setWorldInstance(instance);	// This is required for spell auras
 		worldInstanceEntered(*this, requesterDbId, character, *instance);
@@ -835,7 +837,7 @@ namespace wowpp
 		if (isUnitGUID(targetGUID) && !isPlayerGUID(targetGUID))
 		{
 			// Find that creature
-			GameUnit *obj = dynamic_cast<GameUnit*>(sender.getWorldInstance().findObjectByGUID(targetGUID));
+			GameCreature *obj = dynamic_cast<GameCreature*>(sender.getWorldInstance().findObjectByGUID(targetGUID));
 			if (obj && obj->getUInt32Value(unit_fields::Health) > 0)
 			{
 				// Make that creature select us, too! (Just for testing)
@@ -1096,7 +1098,7 @@ namespace wowpp
 		}
 
 		// Check the trigger
-		auto *trigger = m_project.triggers.getById(triggerId);
+		auto *trigger = m_project.areaTriggers.getById(triggerId);
 		if (!trigger)
 		{
 			WLOG("Unknown trigger");

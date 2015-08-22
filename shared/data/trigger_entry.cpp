@@ -25,20 +25,6 @@
 namespace wowpp
 {
 	TriggerEntry::TriggerEntry()
-		: map(0)
-		, x(0.0f)
-		, y(0.0f)
-		, z(0.0f)
-		, radius(0.0f)
-		, box_x(0.0f)
-		, box_y(0.0f)
-		, box_z(0.0f)
-		, box_o(0.0f)
-		, targetMap(0)
-		, targetX(0.0f)
-		, targetY(0.0f)
-		, targetZ(0.0f)
-		, targetO(0.0f)
 	{
 	}
 
@@ -51,24 +37,75 @@ namespace wowpp
 
 		// Load name and directory
 		wrapper.table.tryGetString("name", name);
-		wrapper.table.tryGetInteger("map", map);
-		wrapper.table.tryGetInteger("x", x);
-		wrapper.table.tryGetInteger("y", y);
-		wrapper.table.tryGetInteger("z", z);
-		wrapper.table.tryGetInteger("radius", radius);
-		wrapper.table.tryGetInteger("box_x", box_x);
-		wrapper.table.tryGetInteger("box_y", box_y);
-		wrapper.table.tryGetInteger("box_z", box_z);
-		wrapper.table.tryGetInteger("box_o", box_o);
+		wrapper.table.tryGetString("path", path);
 
-		const sff::read::tree::Table<DataFileIterator> *const teleportTable = wrapper.table.getTable("teleport");
-		if (teleportTable)
+		events.clear();
+
+		const sff::read::tree::Array<DataFileIterator> *eventsArray = wrapper.table.getArray("events");
+		if (eventsArray)
 		{
-			teleportTable->tryGetInteger("map", targetMap);
-			teleportTable->tryGetInteger("x", targetX);
-			teleportTable->tryGetInteger("y", targetY);
-			teleportTable->tryGetInteger("z", targetZ);
-			teleportTable->tryGetInteger("o", targetO);
+			for (size_t j = 0, d = eventsArray->getSize(); j < d; ++j)
+			{
+				events.push_back(eventsArray->getInteger<Int32>(j, 0));
+			}
+		}
+
+		const sff::read::tree::Array<DataFileIterator> *conditionsArray = wrapper.table.getArray("conditions");
+		if (conditionsArray)
+		{
+			for (size_t j = 0, d = conditionsArray->getSize(); j < d; ++j)
+			{
+			}
+		}
+
+		actions.clear();
+
+		const sff::read::tree::Array<DataFileIterator> *actionsArray = wrapper.table.getArray("actions");
+		if (actionsArray)
+		{
+			for (size_t j = 0, d = actionsArray->getSize(); j < d; ++j)
+			{
+				const sff::read::tree::Table<DataFileIterator> *const actionTable = actionsArray->getTable(j);
+				if (!actionTable)
+				{
+					context.onError("Invalid trigger action table");
+					return false;
+				}
+
+				TriggerAction action;
+				if (!actionTable->tryGetInteger("action", action.action))
+				{
+					context.onError("Could not find action parameter");
+					return false;
+				}
+				if (action.action >= trigger_actions::Count_)
+				{
+					context.onError("Invalid trigger action parameter");
+					return false;
+				}
+
+				actionTable->tryGetInteger("target", action.target);
+
+				const sff::read::tree::Array<DataFileIterator> *textsArray = actionTable->getArray("texts");
+				if (textsArray)
+				{
+					for (size_t j = 0, d = textsArray->getSize(); j < d; ++j)
+					{
+						action.texts.push_back(textsArray->getString(j));
+					}
+				}
+
+				const sff::read::tree::Array<DataFileIterator> *dataArray = actionTable->getArray("data");
+				if (dataArray)
+				{
+					for (size_t j = 0, d = dataArray->getSize(); j < d; ++j)
+					{
+						action.data.push_back(dataArray->getInteger<Int32>(j, 0));
+					}
+				}
+
+				actions.push_back(std::move(action));
+			}
 		}
 
 		return true;
@@ -79,27 +116,62 @@ namespace wowpp
 		Super::saveBase(context);
 
 		if (!name.empty()) context.table.addKey("name", name);
-		if (map != 0) context.table.addKey("map", map);
-		if (x != 0.0f) context.table.addKey("x", x);
-		if (y != 0.0f) context.table.addKey("y", y);
-		if (z != 0.0f) context.table.addKey("z", z);
-		if (radius != 0.0f) context.table.addKey("radius", radius);
-		if (box_x != 0.0f) context.table.addKey("box_x", box_x);
-		if (box_y != 0.0f) context.table.addKey("box_y", box_y);
-		if (box_z != 0.0f) context.table.addKey("box_z", box_z);
-		if (box_o != 0.0f) context.table.addKey("box_o", box_o);
+		if (!path.empty()) context.table.addKey("path", path);
 
-		if (targetMap != 0 || targetX != 0.0f || targetY != 0.0f || targetZ != 0.0f || targetO != 0.0f)
+		if (!events.empty())
 		{
-			sff::write::Table<char> teleportTable(context.table, "teleport", sff::write::Comma);
+			sff::write::Array<char> eventsArray(context.table, "events", sff::write::Comma);
 			{
-				teleportTable.addKey("map", targetMap);
-				teleportTable.addKey("x", targetX);
-				teleportTable.addKey("y", targetY);
-				teleportTable.addKey("z", targetZ);
-				teleportTable.addKey("o", targetO);
+				for (auto &e : events)
+				{
+					eventsArray.addElement(e);
+				}
 			}
-			teleportTable.finish();
+			eventsArray.finish();
+		}
+
+		sff::write::Array<char> conditionsArray(context.table, "conditions", sff::write::MultiLine);
+		{
+		}
+		conditionsArray.finish();
+
+		if (!actions.empty())
+		{
+			sff::write::Array<char> actionsArray(context.table, "actions", sff::write::MultiLine);
+			{
+				for (auto &action : actions)
+				{
+					sff::write::Table<char> actionTable(actionsArray, sff::write::Comma);
+					{
+						actionTable.addKey("action", action.action);
+						if (!action.texts.empty())
+						{
+							sff::write::Array<char> actionTextArray(actionTable, "texts", sff::write::Comma);
+							{
+								for (auto &text : action.texts)
+								{
+									actionTextArray.addElement(text);
+								}
+							}
+							actionTextArray.finish();
+						}
+
+						if (!action.data.empty())
+						{
+							sff::write::Array<char> actionDataArray(actionTable, "data", sff::write::Comma);
+							{
+								for (auto &data : action.data)
+								{
+									actionDataArray.addElement(data);
+								}
+							}
+							actionDataArray.finish();
+						}
+					}
+					actionTable.finish();
+				}
+			}
+			actionsArray.finish();
 		}
 	}
 }

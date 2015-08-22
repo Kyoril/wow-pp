@@ -22,9 +22,6 @@
 # We want at least CMake 2.8
 cmake_minimum_required(VERSION 2.8)
 
-# This library contains commonly used things...
-project(log)
-
 	# Collect source and header files
 	file(GLOB srcFiles "./*.cpp" "./*.h" "./*.hpp")
 	

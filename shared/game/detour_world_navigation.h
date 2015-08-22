@@ -23,6 +23,7 @@
 
 #include "common/typedefs.h"
 #include "world_navigation.h"
+#include <memory>
 
 namespace wowpp
 {
@@ -33,8 +34,10 @@ namespace wowpp
 
 		/// 
 		explicit DetourWorldNavigation(const String &navMeshFile);
-		~DetourWorldNavigation();
 
+	private:
 
+		class Impl;
+		std::unique_ptr<Impl> m_impl;
 	};
 }

@@ -22,8 +22,6 @@
 # We want at least CMake 2.8.11 for QT automoc
 cmake_minimum_required(VERSION 2.8.11)
 
-project(editor)
-
 	if(POLICY CMP0043)
 		cmake_policy(SET CMP0043 OLD)
 	endif()

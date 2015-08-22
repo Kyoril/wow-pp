@@ -20,16 +20,30 @@
 // 
 
 #include "detour_world_navigation.h"
+#include "detour/DetourCommon.h"
+#include "detour/DetourNavMesh.h"
+#include "detour/DetourNavMeshQuery.h"
+#include "common/make_unique.h"
 
 namespace wowpp
 {
+	class DetourWorldNavigation::Impl final
+	{
+	public:
+
+		explicit Impl()
+		{
+		}
+
+	private:
+
+
+	};
+
 	DetourWorldNavigation::DetourWorldNavigation(const String &navMeshFile)
+		: m_impl(make_unique<Impl>())
 	{
-
 	}
 
-	DetourWorldNavigation::~DetourWorldNavigation()
-	{
 
-	}
 }

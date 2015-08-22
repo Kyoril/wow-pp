@@ -25,22 +25,91 @@
 
 namespace wowpp
 {
+	namespace trigger_event
+	{
+		enum Type
+		{
+			/// Executed when the unit is spawned.
+			OnSpawn				= 0,
+			/// Executed when the unit will despawn.
+			OnDespawn			= 1,
+			/// Executed when the unit enters the combat.
+			OnAggro				= 2,
+			/// Executed when the unit was killed.
+			OnKilled			= 3,
+			/// Executed when the unit killed another unit.
+			OnKill				= 4,
+			/// Executed when the unit was damaged.
+			OnDamaged			= 5,
+			/// Executed when the unit was healed.
+			OnHealed			= 6,
+			/// Executed when the unit made an auto attack swing.
+			OnAttackSwing		= 7,
+
+			Invalid,
+			Count_ = Invalid
+		};
+	}
+
+	namespace trigger_actions
+	{
+		enum Type
+		{
+			/// Execute another trigger. Targets: NONE; Data: <TRIGGER-ID>; Texts: NONE;
+			Trigger				= 0,
+			/// Makes a unit say a text. Targets: UNIT; Data: <SOUND-ID>,<LANGUAGE>; Texts: <TEXT>;
+			Say					= 1,
+			/// Makes a unit say a text. Targets: UNIT; Data: <SOUND-ID>,<LANGUAGE>; Texts: <TEXT>;
+			Yell				= 2,
+
+			Invalid,
+			Count_ = Invalid
+		};
+	}
+
+	namespace trigger_action_target
+	{
+		enum Type
+		{
+			/// No target. May be invalid for some actions.
+			None				= 0,
+			/// Unit which owns this trigger. May be invalid for some triggers.
+			OwningUnit			= 1,
+			/// Current victim of the unit which owns this trigger. May be invalid.
+			OwningUnitVictim	= 2,
+			/// Random unit in the map instance.
+			RandomUnit			= 3,
+
+			Invalid,
+			Count_ = Invalid
+		};
+	}
+
 	struct TriggerEntry : BasicTemplate<UInt32>
 	{
 		typedef BasicTemplate<UInt32> Super;
 
+		struct TriggerAction final
+		{
+			UInt32 action;
+			UInt32 target;
+			std::vector<String> texts;
+			std::vector<Int32> data;
+
+			TriggerAction()
+				: action(trigger_actions::Count_)
+				, target(trigger_action_target::None)
+			{
+			}
+		};
+
+		typedef std::vector<UInt32> TriggerEvents;
+		typedef std::vector<TriggerAction> TriggerActions;
+
 		String name;
-		UInt32 map;
-		float x;
-		float y;
-		float z;
-		float radius;
-		float box_x;
-		float box_y;
-		float box_z;
-		float box_o;
-		UInt32 targetMap;
-		float targetX, targetY, targetZ, targetO;
+		String path;
+		TriggerEvents events;
+		TriggerActions actions;
 
 		TriggerEntry();
 		bool load(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper);

@@ -22,9 +22,6 @@
 # We want at least CMake 2.8
 cmake_minimum_required(VERSION 2.8)
 
-# This will be the realm server executable.
-project(realm)
-
 	# Collect source and header files
 	file(GLOB srcFiles "./*.cpp" "./*.h" "./*.hpp")
 	file(GLOB sffFiles "./../shared/simple_file_format/*.h")

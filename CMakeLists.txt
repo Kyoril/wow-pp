@@ -87,6 +87,8 @@ project(WoW)
 		message(FATAL_ERROR "Boost 1.58.0 detected - this version has a bug that will lead to a server crash! Please consider using a different version, 1.56.0 for example.")
 	endif()
 	
+	include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+	
 	# Add boost include directories
 	include_directories(${Boost_INCLUDE_DIR})
 	link_directories(${Boost_LIBRARY_DIRS})

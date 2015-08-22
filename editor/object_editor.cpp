@@ -165,6 +165,13 @@ namespace wowpp
 
 			// Update the view 
 			m_viewModel->layoutChanged();
+
+			m_ui->unitTriggerWidget->clear();
+			for (const auto *trigger : unit->triggers)
+			{
+				m_ui->unitTriggerWidget->addItem(
+					QString(trigger->name.c_str()));
+			}
 		}
 		
 		void ObjectEditor::on_unitPropertyWidget_doubleClicked(QModelIndex index)

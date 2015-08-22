@@ -27,6 +27,9 @@
 
 namespace wowpp
 {
+	struct DataLoadContext;
+	struct TriggerEntry;
+
 	struct UnitEntry : BasicTemplate<UInt32>
 	{
 		typedef BasicTemplate<UInt32> Super;
@@ -61,9 +64,11 @@ namespace wowpp
 		UInt32 damageSchool;
 		UInt32 minLootGold, maxLootGold;
 		UInt32 xpMin, xpMax;
+		std::vector<const TriggerEntry*> triggers;
+		std::map<UInt32, std::vector<const TriggerEntry*>> triggersByEvent;
 
 		UnitEntry();
-		bool load(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper);
+		bool load(DataLoadContext &context, const ReadTableWrapper &wrapper);
 		void save(BasicTemplateSaveContext &context) const;
 	};
 }

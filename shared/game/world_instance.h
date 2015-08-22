@@ -51,7 +51,7 @@ namespace wowpp
 		typedef std::unordered_map<UInt64, GameObject*> GameObjectsById;
 		typedef std::vector<std::unique_ptr<CreatureSpawner>> CreatureSpawners;
 		typedef std::vector<std::unique_ptr<WorldObjectSpawner>> ObjectSpawners;
-
+		
 	public:
 
 		/// Fired when the world instance is about to be destroyed. TODO: Not fired at the moment.

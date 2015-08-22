@@ -63,11 +63,13 @@ namespace wowpp
 		context.getItem = std::bind(&ItemEntryManager::getById, &items, std::placeholders::_1);
 		context.getSkill = std::bind(&SkillEntryManager::getById, &skills, std::placeholders::_1);
 		context.getObject = std::bind(&ObjectEntryManager::getById, &objects, std::placeholders::_1);
+		context.getTrigger = std::bind(&TriggerEntryManager::getById, &triggers, std::placeholders::_1);
 
 		typedef ProjectLoader<DataLoadContext> RealmProjectLoader;
 		typedef RealmProjectLoader::ManagerEntry ManagerEntry;
 
 		RealmProjectLoader::Managers managers;
+		managers.push_back(ManagerEntry("triggers", triggers, std::bind(&TriggerEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("cast_times", castTimes, std::bind(&CastTimeEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("spells", spells, std::bind(&SpellEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("races", races, std::bind(&RaceEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
@@ -79,7 +81,7 @@ namespace wowpp
 		managers.push_back(ManagerEntry("maps", maps, std::bind(&MapEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("items", items, std::bind(&ItemEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("skills", skills, std::bind(&SkillEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
-		managers.push_back(ManagerEntry("triggers", triggers, std::bind(&TriggerEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+		managers.push_back(ManagerEntry("area_triggers", areaTriggers, std::bind(&AreaTriggerEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("emotes", emotes, std::bind(&EmoteEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 
 		virtual_dir::FileSystemReader virtualDirectory(context.dataPath);
@@ -108,6 +110,7 @@ namespace wowpp
 		typedef ProjectSaver::Manager ManagerEntry;
 
 		RealmProjectSaver::Managers managers;
+		managers.push_back(ManagerEntry("triggers", "triggers", triggers, &TriggerEntry::save));
 		managers.push_back(ManagerEntry("cast_times", "cast_times", castTimes, &CastTimeEntry::save));
 		managers.push_back(ManagerEntry("spells", "spells", spells, &SpellEntry::save));
 		managers.push_back(ManagerEntry("units", "units", units, &UnitEntry::save));
@@ -119,7 +122,7 @@ namespace wowpp
 		managers.push_back(ManagerEntry("creature_types", "creature_types", creaturetypes, &CreatureTypeEntry::save));
 		managers.push_back(ManagerEntry("items", "items", items, &ItemEntry::save));
 		managers.push_back(ManagerEntry("skills", "skills", skills, &SkillEntry::save));
-		managers.push_back(ManagerEntry("triggers", "triggers", triggers, &TriggerEntry::save));
+		managers.push_back(ManagerEntry("triggers", "triggers", areaTriggers, &AreaTriggerEntry::save));
 		managers.push_back(ManagerEntry("emotes", "emotes", emotes, &EmoteEntry::save));
 
 		if (!RealmProjectSaver::save(realmDataPath, managers))

@@ -22,6 +22,8 @@
 #include "unit_entry.h"
 #include "templates/basic_template_load_context.h"
 #include "templates/basic_template_save_context.h"
+#include "data_load_context.h"
+#include "trigger_entry.h"
 
 namespace wowpp
 {
@@ -64,11 +66,41 @@ namespace wowpp
 		resistances.fill(0);
 	}
 
-	bool UnitEntry::load(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper)
+	bool UnitEntry::load(DataLoadContext &context, const ReadTableWrapper &wrapper)
 	{
 		if (!Super::loadBase(context, wrapper))
 		{
 			return false;
+		}
+
+		triggers.clear();
+		triggersByEvent.clear();
+
+		const sff::read::tree::Array<DataFileIterator> *triggerArray = wrapper.table.getArray("triggers");
+		if (triggerArray)
+		{
+			for (size_t j = 0, d = triggerArray->getSize(); j < d; ++j)
+			{
+				UInt32 triggerId = triggerArray->getInteger(j, 0);
+				if (triggerId == 0)
+				{
+					context.onWarning("Invalid trigger entry");
+					continue;
+				}
+
+				const auto *trigger = context.getTrigger(triggerId);
+				if (!trigger)
+				{
+					context.onWarning("Could not find trigger - skipping");
+					continue;
+				}
+
+				triggers.push_back(trigger);
+				for (auto &e : trigger->events)
+				{
+					triggersByEvent[e].push_back(trigger);
+				}
+			}
 		}
 
 #define MIN_MAX_CHECK(minval, maxval) if (maxval < minval) maxval = minval; else if(minval > maxval) minval = maxval;
