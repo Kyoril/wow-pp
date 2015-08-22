@@ -45,5 +45,10 @@ namespace wowpp
 	{
 	}
 
+	DetourWorldNavigation::~DetourWorldNavigation()
+	{
+
+	}
+
 
 }

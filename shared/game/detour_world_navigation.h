@@ -34,6 +34,7 @@ namespace wowpp
 
 		/// 
 		explicit DetourWorldNavigation(const String &navMeshFile);
+		~DetourWorldNavigation();
 
 	private:
 
