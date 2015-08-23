@@ -625,8 +625,22 @@ namespace wowpp
 				atkPower = level * 2.0f + getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
 				break;
 			case game::char_class::Druid:
-				//TODO: Check shapeshift form
-				atkPower = getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
+				switch (getByteValue(unit_fields::Bytes2, 3))
+				{
+				case 1:		// Cat
+					atkPower = level * 2.0f + getUInt32Value(unit_fields::Stat0) * 2.0f + getUInt32Value(unit_fields::Stat1) - 20.0f;
+					break;
+				case 5:
+				case 8:
+					atkPower = level * 3.0f + getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
+					break;
+				case 31:
+					atkPower = level * 1.5f + getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
+					break;
+				default:
+					atkPower = getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
+					break;
+				}
 				break;
 			case game::char_class::Mage:
 				atkPower = getUInt32Value(unit_fields::Stat0) - 10.0f;
@@ -667,24 +681,44 @@ namespace wowpp
 			setInt32Value(unit_fields::RangedAttackPower, UInt32(atkPower));
 		}
 
-		const float att_speed = getUInt32Value(unit_fields::BaseAttackTime) / 1000.0f;
-		const float base_value = getUInt32Value(unit_fields::AttackPower) / 14.0f * att_speed;
-
 		float minDamage = 1.0f;
 		float maxDamage = 2.0f;
 		UInt32 attackTime = 2000;
 
 		// TODO: Check druid form etc.
 
-		// Check if we are wearing a weapon in our main hand
-		auto it = m_itemSlots.find(player_equipment_slots::Mainhand);
-		if (it != m_itemSlots.end())
+		UInt8 form = getByteValue(unit_fields::Bytes2, 3);
+		if (form == 1 || form == 5 || form == 8)
 		{
-			// Get weapon damage values
-			const auto &entry = it->second->getEntry();
-			if (entry.itemDamage[0].min != 0.0f) minDamage = entry.itemDamage[0].min;
-			if (entry.itemDamage[0].max != 0.0f) maxDamage = entry.itemDamage[0].max;
-			if (entry.delay != 0) attackTime = entry.delay;
+			attackTime = (form == 1 ? 1000 : 2500);
+		}
+		else
+		{
+			// Check if we are wearing a weapon in our main hand
+			auto it = m_itemSlots.find(player_equipment_slots::Mainhand);
+			if (it != m_itemSlots.end())
+			{
+				// Get weapon damage values
+				const auto &entry = it->second->getEntry();
+				if (entry.itemDamage[0].min != 0.0f) minDamage = entry.itemDamage[0].min;
+				if (entry.itemDamage[0].max != 0.0f) maxDamage = entry.itemDamage[0].max;
+				if (entry.delay != 0) attackTime = entry.delay;
+			}
+		}
+
+		const float att_speed = attackTime / 1000.0f;
+		const float base_value = getUInt32Value(unit_fields::AttackPower) / 14.0f * att_speed;
+
+		switch (form)
+		{
+			case 1:
+			case 5:
+			case 8:
+				minDamage = (level > 60 ? 60 : level) * 0.85f * att_speed;
+				maxDamage = (level > 60 ? 60 : level) * 1.25f * att_speed;
+				break;
+			default:
+				break;
 		}
 
 		setFloatValue(unit_fields::MinDamage, base_value + minDamage);

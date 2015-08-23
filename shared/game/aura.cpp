@@ -570,6 +570,22 @@ namespace wowpp
 
 			m_target.setByteValue(unit_fields::Bytes2, 3, 0);
 		}
+
+		m_target.updateAllStats();
+
+		// Shape shift
+		SpellTargetMap targetMap;
+		targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+		targetMap.m_unitTarget = m_target.getGuid();
+
+		switch (form)
+		{
+			case 5:
+			{
+				
+				break;
+			}
+		}
 	}
 
 	void Aura::handleModStealth(bool apply)

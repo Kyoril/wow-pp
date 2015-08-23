@@ -442,10 +442,6 @@ namespace wowpp
 		/// 
 		void setAttackSwingCallback(AttackSwingCallback callback);
 
-
-	protected:
-
-		virtual void levelChanged(const LevelEntry &levelInfo);
 		virtual void updateAllStats();
 		virtual void updateMaxHealth();
 		virtual void updateMaxPower(PowerType power);
@@ -454,6 +450,10 @@ namespace wowpp
 		virtual void updateManaRegen();
 		virtual void updateStats(UInt8 stat);
 		virtual void updateResistance(UInt8 resistance);
+
+	public:
+
+		virtual void levelChanged(const LevelEntry &levelInfo);
 		virtual void onKilled(GameUnit *killer);
 
 		float getHealthBonusFromStamina() const;
