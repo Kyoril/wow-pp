@@ -28,6 +28,8 @@
 #include "game/each_tile_in_region.h"
 #include "game/world_instance.h"
 #include "game/tile_subscriber.h"
+#include "game/world_object_spawner.h"
+#include "game/game_world_object.h"
 #include "log/default_log_levels.h"
 #include "binary_io/vector_sink.h"
 #include "binary_io/writer.h"
@@ -66,6 +68,16 @@ namespace wowpp
 				case trigger_actions::Yell:
 				{
 					handleYell(action, owner);
+					break;
+				}
+				case trigger_actions::SetWorldObjectState:
+				{
+					handleSetWorldObjectState(action, owner);
+					break;
+				}
+				default:
+				{
+					WLOG("Unsupported trigger action: " << action.action);
 					break;
 				}
 			}
@@ -241,4 +253,47 @@ namespace wowpp
 			});
 		}
 	}
+
+	void TriggerHandler::handleSetWorldObjectState(const TriggerEntry::TriggerAction &action, GameUnit *owner)
+	{
+		// Find world
+		WorldInstance *world = nullptr;
+		if (owner)
+		{
+			world = owner->getWorldInstance();
+		}
+
+		if (!world)
+		{
+			ELOG("TRIGGER_ACTION_SET_WORLD_OBJECT_STATE: Could not get world instance - action will be ignored.");
+			return;
+		}
+
+		if (action.target != trigger_action_target::NamedWorldObject)
+		{
+			WLOG("TRIGGER_ACTION_SET_WORLD_OBJECT_STATE: Invalid target");
+			return;
+		}
+
+		// Look for named object
+		auto * spawner = world->findObjectSpawner(action.targetName);
+		if (!spawner)
+		{
+			WLOG("TRIGGER_ACTION_SET_WORLD_OBJECT_STATE: Could not find named world object spawner");
+			return;
+		}
+
+		const auto &spawned = spawner->getSpawnedObjects();
+		if (spawned.empty())
+		{
+			WLOG("TRIGGER_ACTION_SET_WORLD_OBJECT_STATE: No objects spawned");
+			return;
+		}
+
+		for (auto &spawn : spawned)
+		{
+			spawn->setUInt32Value(world_object_fields::State, (action.data.size() > 0 ? action.data[0] : 0));
+		}
+	}
+
 }

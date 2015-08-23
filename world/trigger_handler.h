@@ -45,6 +45,7 @@ namespace wowpp
 		void handleTrigger(const TriggerEntry::TriggerAction &action, GameUnit *owner);
 		void handleSay(const TriggerEntry::TriggerAction &action, GameUnit *owner);
 		void handleYell(const TriggerEntry::TriggerAction &action, GameUnit *owner);
+		void handleSetWorldObjectState(const TriggerEntry::TriggerAction &action, GameUnit *owner);
 
 	private:
 

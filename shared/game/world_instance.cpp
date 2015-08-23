@@ -132,6 +132,11 @@ namespace wowpp
 				spawn.animProgress,
 				spawn.state));
 			m_objectSpawners.push_back(std::move(spawner));
+
+			if (!spawn.name.empty())
+			{
+				m_objectSpawnsByName[spawn.name] = m_objectSpawners.back().get();
+			}
 		}
 
 		// Add creature spawners
@@ -368,4 +373,16 @@ namespace wowpp
 			newTile->getGameObjects().add(&object);
 		}
 	}
+
+	WorldObjectSpawner * WorldInstance::findObjectSpawner(const String &name)
+	{
+		auto it = m_objectSpawnsByName.find(name);
+		if (it == m_objectSpawnsByName.end())
+		{
+			return nullptr;
+		}
+
+		return it->second;
+	}
+
 }

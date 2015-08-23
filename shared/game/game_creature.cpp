@@ -20,6 +20,7 @@
 // 
 
 #include "game_creature.h"
+#include "data/trigger_entry.h"
 
 namespace wowpp
 {
@@ -107,6 +108,15 @@ namespace wowpp
 	void GameCreature::onKilled(GameUnit *killer)
 	{
 		GameUnit::onKilled(killer);
+
+		auto it = m_entry->triggersByEvent.find(trigger_event::OnKilled);
+		if (it != m_entry->triggersByEvent.end())
+		{
+			for (const auto *trigger : it->second)
+			{
+				trigger->execute(*trigger, this);
+			}
+		}
 
 		if (killer)
 		{

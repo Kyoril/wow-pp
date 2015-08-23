@@ -1,9 +1,15 @@
 triggers = 
 {
-	(id = 1, name = "Rhahk'zor - Aggro", path = "Deadmines" events = { 2 }, conditions = 
+	(id = 1, name = "Rhahk'zor - Aggro - Yell", path = "Deadmines" events = { 2 }, conditions = 
 	{
 	}, actions = 
 	{
 		(action = 2, target = 1, texts = { "VanCleef pay big for your heads!" }, data = { 5774, 0 })
+	})
+	(id = 2, name = "Rhahk'zor - Death - Open Door", path = "Deadmines" events = { 3 }, conditions = 
+	{
+	}, actions = 
+	{
+		(action = 3, target = 4, target_name = "Rhahk'Zor - Door", data = { 0 })
 	})
 }

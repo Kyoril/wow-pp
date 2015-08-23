@@ -85,6 +85,7 @@ namespace wowpp
 				}
 
 				actionTable->tryGetInteger("target", action.target);
+				actionTable->tryGetString("target_name", action.targetName);
 
 				const sff::read::tree::Array<DataFileIterator> *textsArray = actionTable->getArray("texts");
 				if (textsArray)
@@ -144,6 +145,10 @@ namespace wowpp
 					sff::write::Table<char> actionTable(actionsArray, sff::write::Comma);
 					{
 						actionTable.addKey("action", action.action);
+
+						if (action.target != 0) actionTable.addKey("target", action.target);
+						if (!action.targetName.empty()) actionTable.addKey("target_name", action.targetName);
+
 						if (!action.texts.empty())
 						{
 							sff::write::Array<char> actionTextArray(actionTable, "texts", sff::write::Comma);

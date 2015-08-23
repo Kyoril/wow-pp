@@ -64,6 +64,8 @@ namespace wowpp
 			Say					= 1,
 			/// Makes a unit say a text. Targets: UNIT; Data: <SOUND-ID>,<LANGUAGE>; Texts: <TEXT>;
 			Yell				= 2,
+			/// Sets the state of a world object. Targets: NAMED_OBJECT; Data: <NEW-STATE>; Texts: NONE;
+			SetWorldObjectState	= 3,
 
 			Invalid,
 			Count_ = Invalid
@@ -82,6 +84,10 @@ namespace wowpp
 			OwningUnitVictim	= 2,
 			/// Random unit in the map instance.
 			RandomUnit			= 3,
+			/// Named world object.
+			NamedWorldObject	= 4,
+			/// Named creature.
+			NamedCreature		= 5,
 
 			Invalid,
 			Count_ = Invalid
@@ -98,6 +104,7 @@ namespace wowpp
 		{
 			UInt32 action;
 			UInt32 target;
+			String targetName;
 			std::vector<String> texts;
 			std::vector<Int32> data;
 

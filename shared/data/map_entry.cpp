@@ -160,6 +160,7 @@ namespace wowpp
 					}
 				}
 
+				spawnTable->tryGetString("name", spawn.name);
 				spawn.maxCount = spawnTable->getInteger("count", spawn.maxCount);
 
 				UInt32 objectId;
@@ -237,6 +238,7 @@ namespace wowpp
 			{
 				sff::write::Table<char> spawnTable(spawnArray, sff::write::Comma);
 
+				if (!spawn.name.empty()) spawnTable.addKey("name", spawn.name);
 				spawnTable.addKey("object", spawn.object->id);
 
 				{

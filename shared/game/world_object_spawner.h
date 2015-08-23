@@ -36,6 +36,8 @@ namespace wowpp
 	/// 
 	class WorldObjectSpawner final
 	{
+		typedef std::vector<std::shared_ptr<WorldObject>> OwnedObjects;
+
 	public:
 		/// 
 		explicit WorldObjectSpawner(
@@ -53,6 +55,9 @@ namespace wowpp
 			UInt32 state);
 		virtual ~WorldObjectSpawner();
 
+		/// 
+		const OwnedObjects &getSpawnedObjects() const { return m_objects; }
+
 	private:
 
 		/// Spawns one more creature and adds it to the world.
@@ -64,9 +69,8 @@ namespace wowpp
 		/// Setup a new respawn timer.
 		void setRespawnTimer();
 
-	private:
 
-		typedef std::vector<std::shared_ptr<WorldObject>> OwnedObjects;
+	private:
 
 		WorldInstance &m_world;
 		const ObjectEntry &m_entry;

@@ -82,6 +82,7 @@ namespace wowpp
 
 	struct ObjectSpawnPlacement
 	{
+		String name;
 		bool respawn;
 		GameTime respawnDelay;
 		std::array<float, 3> position;
@@ -110,7 +111,6 @@ namespace wowpp
 		typedef BasicTemplate<UInt32> Super;
 		typedef std::vector<SpawnPlacement> Spawns;
 		typedef std::vector<ObjectSpawnPlacement> ObjectSpawns;
-
 
 		Spawns spawns;
 		ObjectSpawns objectSpawns;
