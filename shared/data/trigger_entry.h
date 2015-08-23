@@ -22,9 +22,12 @@
 #pragma once
 
 #include "templates/basic_template.h"
+#include <boost/signals2.hpp>
 
 namespace wowpp
 {
+	class GameUnit;
+
 	namespace trigger_event
 	{
 		enum Type
@@ -88,6 +91,8 @@ namespace wowpp
 	struct TriggerEntry : BasicTemplate<UInt32>
 	{
 		typedef BasicTemplate<UInt32> Super;
+
+		boost::signals2::signal<void(const TriggerEntry &, GameUnit *)> execute;
 
 		struct TriggerAction final
 		{

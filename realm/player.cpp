@@ -957,6 +957,10 @@ namespace wowpp
 
 	void Player::sendProxyPacket(UInt16 opCode, const std::vector<char> &buffer)
 	{
+		const size_t bufferSize = buffer.size();
+		if (bufferSize == 0)
+			return;
+
 		// Write native packet
 		wowpp::Buffer &sendBuffer = m_connection->getSendBuffer();
 		io::StringSink sink(sendBuffer);

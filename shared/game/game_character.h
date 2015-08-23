@@ -476,7 +476,7 @@ namespace wowpp
 		/// Sets the name of this character.
 		void setName(const String &name);
 		/// Gets the name of this character.
-		const String &getName() const { return m_name; }
+		const String &getName() const override { return m_name; }
 		/// Updates the zone where this character is. This variable is used by
 		/// the friend list and the /who list.
 		void setZone(UInt32 zoneIndex) { m_zoneIndex = zoneIndex; }

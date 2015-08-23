@@ -374,6 +374,8 @@ namespace wowpp
 		/// Get the current class entry information.
 		const ClassEntry *getClassEntry() const { return m_classEntry; }
 
+		virtual const String &getName() const;
+
 		/// Starts to cast a spell using the given target map.
 		void castSpell(SpellTargetMap target, const SpellEntry &spell, GameTime castTime, const SpellSuccessCallback &callback);
 		/// Stops the current cast (if any).

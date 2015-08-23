@@ -327,6 +327,13 @@ namespace wowpp
 		std::vector<char> buffer;
 		if (!(pp::world_realm::world_read::clientProxyPacket(packet, characterId, opCode, size, buffer)))
 		{
+			WLOG("ERROR READING CLIENT PROXY PACKET!");
+			return;
+		}
+
+		if (opCode == 0)
+		{
+			WLOG("OPCODE ZERO");
 			return;
 		}
 

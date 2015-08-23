@@ -26,6 +26,8 @@
 namespace wowpp
 {
 	class GameUnit;
+	class Project;
+	class PlayerManager;
 
 	/// 
 	class TriggerHandler final
@@ -33,20 +35,20 @@ namespace wowpp
 	public:
 
 		/// 
-		explicit TriggerHandler(GameUnit *owningUnit);
+		explicit TriggerHandler(Project &project, PlayerManager &playerManager);
 
 		/// Fires a trigger event.
-		void executeTrigger(const TriggerEntry &entry);
+		void executeTrigger(const TriggerEntry &entry, GameUnit *owner);
 
 	private:
 
-		void handleTrigger(const TriggerEntry::TriggerAction &action);
-		void handleSay(const TriggerEntry::TriggerAction &action);
-		void handleYell(const TriggerEntry::TriggerAction &action);
+		void handleTrigger(const TriggerEntry::TriggerAction &action, GameUnit *owner);
+		void handleSay(const TriggerEntry::TriggerAction &action, GameUnit *owner);
+		void handleYell(const TriggerEntry::TriggerAction &action, GameUnit *owner);
 
 	private:
 
-		GameUnit *m_owningUnit;
-
+		Project &m_project;
+		PlayerManager &m_playerManager;
 	};
 }

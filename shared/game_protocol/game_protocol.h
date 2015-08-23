@@ -293,6 +293,7 @@ namespace wowpp
 				ChatPlayerNotFound			= 0x2A9,
 				DurabilityDamageDeath		= 0x2BD,
 				InitWorldStates				= 0x2C2,
+				PlaySound					= 0x2D2,
 				AddonInfo					= 0x2EF,
 				PartyMemberStatsFull		= 0x2F2,
 				SetDungeonDifficulty		= 0x329,
@@ -302,8 +303,7 @@ namespace wowpp
 				SetExtraAuraInfo			= 0x3A4,
 				SetExtraAuraInfoNeedUpdate	= 0x3A5,
 				FeatureSystemStatus			= 0x3C8,
-				UnlearnSpells				= 0x41D,
-				
+				UnlearnSpells				= 0x41D,	
 			};
 		}
 
@@ -1460,6 +1460,11 @@ namespace wowpp
 
 			void durabilityDamageDeath(
 				game::OutgoingPacket &out_packet
+				);
+
+			void playSound(
+				game::OutgoingPacket &out_packet,
+				UInt32 soundId
 				);
 		};
 	}

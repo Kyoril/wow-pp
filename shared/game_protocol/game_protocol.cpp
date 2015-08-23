@@ -708,7 +708,7 @@ namespace wowpp
 				}
 
 				// TODO: Get speaker name from player if available
-				static const String speakerName = "TODO";
+				const String speakerName = (speaker ? speaker->getName() : "UNKNOWN");
 				switch (type)
 				{
 					case chat_msg::MonsterSay:
@@ -746,12 +746,6 @@ namespace wowpp
 					}
 					default:
 						break;
-// 					default:
-// 						if (type == chat_msg::Reply && type != chat_msg::Ignored && type != chat_msg::Dnd && type != chat_msg::Afk)
-// 						{
-// 							targetGUID = 0x00;
-// 						}
-// 						break;
 				}
 
 				out_packet
@@ -2390,6 +2384,14 @@ namespace wowpp
 			void durabilityDamageDeath(game::OutgoingPacket &out_packet)
 			{
 				out_packet.start(game::server_packet::DurabilityDamageDeath);
+				out_packet.finish();
+			}
+
+			void playSound(game::OutgoingPacket &out_packet, UInt32 soundId)
+			{
+				out_packet.start(game::server_packet::PlaySound);
+				out_packet
+					<< io::write<NetUInt32>(soundId);
 				out_packet.finish();
 			}
 

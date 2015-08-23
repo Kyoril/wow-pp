@@ -1094,6 +1094,12 @@ namespace wowpp
 		m_swingCallback = std::move(callback);
 	}
 
+	const String & GameUnit::getName() const
+	{
+		static const String name = "UNNAMED";
+		return name;
+	}
+
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)
 	{
 		w << reinterpret_cast<GameObject const&>(object);

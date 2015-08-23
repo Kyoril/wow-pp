@@ -32,7 +32,6 @@
 #include "game/visibility_tile.h"
 #include "game/each_tile_in_region.h"
 #include "game/universe.h"
-#include "game/trigger_handler.h"
 #include "binary_io/vector_sink.h"
 #include "log/default_log_levels.h"
 
@@ -754,10 +753,10 @@ namespace wowpp
 						{
 							//Prevent fall damage from being more than the player maximum health
 							if (damage > maxHealth) damage = maxHealth;
-							/*
+							
 							std::vector<char> dmgBuffer;
 							io::VectorSink dmgSink(dmgBuffer);
-							game::Protocol::OutgoingPacket dmgPacket(sink);
+							game::Protocol::OutgoingPacket dmgPacket(dmgSink);
 							game::server_write::environmentalDamageLog(dmgPacket, sender.getCharacterGuid(), 2, damage, 0, 0);
 
 							// Deal damage
@@ -771,7 +770,7 @@ namespace wowpp
 									watcher->sendPacket(dmgPacket, dmgBuffer);
 								}
 							});
-							*/
+							
 							UInt32 health = sender.getCharacter()->getUInt32Value(unit_fields::Health);
 							if (health < damage)
 							{
@@ -843,6 +842,19 @@ namespace wowpp
 				// Make that creature select us, too! (Just for testing)
 				obj->setUInt64Value(unit_fields::Target, sender.getCharacterGuid());
 				obj->startAttack(*sender.getCharacter());
+
+				// TODO: Simulating aggro
+				if (oldTargetGUID == 0)
+				{
+					auto it = obj->getEntry().triggersByEvent.find(trigger_event::OnAggro);
+					if (it != obj->getEntry().triggersByEvent.end())
+					{
+						for (const auto *trigger : it->second)
+						{
+							trigger->execute(*trigger, obj);
+						}
+					}
+				}
 			}
 		}
 	}

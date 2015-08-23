@@ -158,6 +158,16 @@ namespace wowpp
 		}
 	}
 
+	const String & GameCreature::getName() const
+	{
+		if (!m_entry)
+		{
+			return m_originalEntry.name;
+		}
+		
+		return m_entry->name;
+	}
+
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)
 	{
 		if (killerLevel < 8)

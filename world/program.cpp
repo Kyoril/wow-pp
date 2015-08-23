@@ -34,8 +34,10 @@
 #include "mysql_database.h"
 #include "data/project.h"
 #include "game/universe.h"
+#include "trigger_handler.h"
 #include "common/timer_queue.h"
 #include "common/id_generator.h"
+#include "common/make_unique.h"
 #include <iostream>
 #include <memory>
 #include <fstream>
@@ -139,6 +141,8 @@ namespace wowpp
 
 		// Create the player manager
 		std::unique_ptr<wowpp::PlayerManager> PlayerManager(new wowpp::PlayerManager(std::numeric_limits<size_t>::max()));	//TODO: Max player count
+
+		std::unique_ptr<TriggerHandler> triggerHandler = make_unique<TriggerHandler>(project, *PlayerManager);
 
 		// Create world instance manager
 		auto worldInstanceManager =

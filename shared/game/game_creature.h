@@ -60,6 +60,8 @@ namespace wowpp
 		/// have a valid base entry.
 		void setEntry(const UnitEntry &entry);
 
+		const String &getName() const override;
+
 	protected:
 
 		void onKilled(GameUnit *killer) override;
