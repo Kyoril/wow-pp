@@ -170,6 +170,8 @@ namespace wowpp
 		/// 
 		void writeCreateObjectBlocks(std::vector<std::vector<char>> &out_blocks, bool creation = true) const override;
 
+		const ObjectEntry &getEntry() const { return m_entry; }
+
 		/// Gets the object type id value.
 		ObjectType getTypeId() const override { return object_type::GameObject; }
 

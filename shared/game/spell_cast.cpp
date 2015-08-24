@@ -24,6 +24,15 @@ namespace wowpp
 		GameUnit *unitTarget = nullptr;
 		target.resolvePointers(*m_executer.getWorldInstance(), &unitTarget, nullptr, nullptr, nullptr);
 
+		// Check if caster is dead
+		if ((spell.attributes & spell_attributes::CastableWhileDead) == 0)
+		{
+			if (!m_executer.isAlive())
+			{
+				return std::make_pair(game::spell_cast_result::FailedCasterDead, nullptr);
+			}
+		}
+
 		// Check power
 		if (spell.cost > 0)
 		{

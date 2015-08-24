@@ -99,4 +99,33 @@ namespace wowpp
 		}
 		dataArray.finish();
 	}
+
+	UInt32 ObjectEntry::getLockId() const
+	{
+		UInt32 lockId = 0;
+
+		switch (type)
+		{
+		case 0:
+		case 1:
+			lockId = data[1];
+			break;
+		case 2:
+		case 3:
+		case 6:
+		case 10:
+		case 12:
+		case 13:
+		case 24:
+		case 26:
+			lockId = data[0];
+			break;
+		case 25:
+			lockId = data[4];
+			break;
+		}
+
+		return lockId;
+	}
+
 }

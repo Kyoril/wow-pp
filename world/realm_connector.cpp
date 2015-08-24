@@ -814,12 +814,19 @@ namespace wowpp
 			return;
 		}
 
+		UInt64 prevTarget = 0;
+
 		// Check if we already had a selection and if that selection was a creature
 		UInt64 oldTargetGUID = sender.getCharacter()->getUInt64Value(unit_fields::Target);
 		if (oldTargetGUID && isUnitGUID(oldTargetGUID) && !isPlayerGUID(oldTargetGUID))
 		{
 			// Find that creature
 			GameUnit *obj = dynamic_cast<GameUnit*>(sender.getWorldInstance().findObjectByGUID(oldTargetGUID));
+			if (obj)
+			{
+				prevTarget = obj->getUInt64Value(unit_fields::Target);
+			}
+
 			if (obj &&
 				obj->getUInt64Value(unit_fields::Target) == sender.getCharacterGuid())
 			{
@@ -844,7 +851,7 @@ namespace wowpp
 				obj->startAttack(*sender.getCharacter());
 
 				// TODO: Simulating aggro
-				if (oldTargetGUID == 0)
+				if (prevTarget == 0)
 				{
 					auto it = obj->getEntry().triggersByEvent.find(trigger_event::OnAggro);
 					if (it != obj->getEntry().triggersByEvent.end())

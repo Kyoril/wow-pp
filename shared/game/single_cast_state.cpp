@@ -28,6 +28,8 @@
 #include "world_instance.h"
 #include "common/utilities.h"
 #include "game/defines.h"
+#include "game/game_world_object.h"
+#include "data/object_entry.h"
 #include "visibility_grid.h"
 #include "visibility_tile.h"
 #include "each_tile_in_sight.h"
@@ -910,6 +912,12 @@ namespace wowpp
 			case se::Energize:
 				spellEffectEnergize(effect);
 				break;
+			case se::OpenLock:
+				spellEffectOpenLock(effect);
+				break;
+			case se::Summon:
+				spellEffectSummon(effect);
+				break;
 			default:
 				WLOG("Spell effect " << game::constant_literal::spellEffectNames.getName(effect.type) << " (" << effect.type << ") not yet implemented");
 				break;
@@ -1003,4 +1011,57 @@ namespace wowpp
 		sendPacketFromCaster(m_cast.getExecuter(),
 			std::bind(game::server_write::spellEnergizeLog, std::placeholders::_1, m_cast.getExecuter().getGuid(), unitTarget->getGuid(), m_spell.id, static_cast<UInt8>(powerType), power));
 	}
+
+	void SingleCastState::spellEffectOpenLock(const SpellEntry::Effect &effect)
+	{
+		// Try to get the target
+		WorldObject *obj = nullptr;
+		if (!m_target.hasGOTarget())
+		{
+			DLOG("TODO: SPELL_EFFECT_OPEN_LOCK without GO target");
+			return;
+		}
+
+		auto *world = m_cast.getExecuter().getWorldInstance();
+		if (!world)
+		{
+			return;
+		}
+
+		obj = dynamic_cast<WorldObject*>(world->findObjectByGUID(m_target.getGOTarget()));
+		if (!obj)
+		{
+			WLOG("SPELL_EFFECT_OPEN_LOCK: Could not find target object");
+			return;
+		}
+
+		UInt32 currentState = obj->getUInt32Value(world_object_fields::State);
+
+		const auto &entry = obj->getEntry();
+		UInt32 lockId = entry.getLockId();
+		DLOG("Lock id: " << lockId);
+
+		// TODO: Get lock info
+
+		// If it is a door, try to open it
+		if (entry.type == 0)
+		{
+			obj->setUInt32Value(world_object_fields::State, (currentState == 1 ? 0 : 1));
+			return;
+		}
+	}
+
+	void SingleCastState::spellEffectSummon(const SpellEntry::Effect &effect)
+	{
+		UInt32 entry = effect.miscValueA;
+		if (!entry)
+		{
+			WLOG("Can't summon anything - missing entry");
+			return;
+		}
+
+		// TODO: Spawn a new creature
+		DLOG("Summoning creature of entry " << entry << "...");
+	}
+
 }

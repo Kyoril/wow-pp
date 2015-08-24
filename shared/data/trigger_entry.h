@@ -58,14 +58,27 @@ namespace wowpp
 	{
 		enum Type
 		{
-			/// Execute another trigger. Targets: NONE; Data: <TRIGGER-ID>; Texts: NONE;
-			Trigger				= 0,
-			/// Makes a unit say a text. Targets: UNIT; Data: <SOUND-ID>,<LANGUAGE>; Texts: <TEXT>;
-			Say					= 1,
-			/// Makes a unit say a text. Targets: UNIT; Data: <SOUND-ID>,<LANGUAGE>; Texts: <TEXT>;
-			Yell				= 2,
-			/// Sets the state of a world object. Targets: NAMED_OBJECT; Data: <NEW-STATE>; Texts: NONE;
-			SetWorldObjectState	= 3,
+			/// Execute another trigger. 
+			/// Targets: NONE; Data: <TRIGGER-ID>; Texts: NONE;
+			Trigger					= 0,
+			/// Makes a unit say a text. 
+			/// Targets: UNIT; Data: <SOUND-ID>,<LANGUAGE>; Texts: <TEXT>;
+			Say						= 1,
+			/// Makes a unit say a text. 
+			/// Targets: UNIT; Data: <SOUND-ID>,<LANGUAGE>; Texts: <TEXT>;
+			Yell					= 2,
+			/// Sets the state of a world object. 
+			/// Targets: NAMED_OBJECT; Data: <NEW-STATE>; Texts: NONE;
+			SetWorldObjectState		= 3,
+			/// Activates or deactivates a creature or object spawner. 
+			/// Targets: NAMED_CREATURE/NAMED_OBJECT; Data: <0/1>; Texts: NONE;
+			SetSpawnState			= 4,
+			/// Activates or deactivates respawn of a creature or object spawner.
+			/// Targets: NAMED_CREATURE/NAMED_OBJECT; Data: <0/1>; Texts: NONE;
+			SetRespawnState			= 5,
+			/// Casts a spell.
+			/// Targets: UNIT; Data: <SPELL-ID>; Texts: NONE;
+			CastSpell				= 6,
 
 			Invalid,
 			Count_ = Invalid

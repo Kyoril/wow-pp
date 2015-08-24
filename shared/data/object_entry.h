@@ -44,5 +44,7 @@ namespace wowpp
 		ObjectEntry();
 		bool load(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper);
 		void save(BasicTemplateSaveContext &context) const;
+
+		UInt32 getLockId() const;
 	};
 }

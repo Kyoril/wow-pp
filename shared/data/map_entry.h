@@ -59,6 +59,7 @@ namespace wowpp
 
 	struct SpawnPlacement
 	{
+		String name;
 		bool respawn;
 		GameTime respawnDelay;
 		std::array<float, 3> position;
@@ -66,6 +67,7 @@ namespace wowpp
 		float radius;
 		size_t maxCount;
 		const UnitEntry *unit;
+		bool active;
 
 		SpawnPlacement()
 			: respawn(true)
@@ -74,6 +76,7 @@ namespace wowpp
 			, radius(0.0f)
 			, maxCount(1)
 			, unit(nullptr)
+			, active(true)
 		{
 		}
 	};

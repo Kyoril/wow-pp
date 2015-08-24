@@ -37,6 +37,8 @@ namespace wowpp
 	/// It also adds spawned creatures to the given world instance.
 	class CreatureSpawner final
 	{
+		typedef std::vector<std::shared_ptr<GameCreature>> OwnedCreatures;
+
 	public:
 		/// Creates a new instance of the CreatureSpawner class and initializes it.
 		/// @param world The world instance this spawner belongs to. Creatures will be spawned in this world.
@@ -57,8 +59,21 @@ namespace wowpp
 			float centerY,
 			float centerZ,
 			boost::optional<float> rotation,
-			float radius);
+			float radius,
+			bool active,
+			bool respawn);
 		virtual ~CreatureSpawner();
+
+		/// 
+		const OwnedCreatures &getCreatures() const { return m_creatures; }
+		/// 
+		bool isActive() const { return m_active; }
+		/// 
+		bool isRespawnEnabled() const { return m_respawn; }
+		/// 
+		void setState(bool active);
+		/// 
+		void setRespawn(bool enabled);
 
 	private:
 
@@ -73,8 +88,6 @@ namespace wowpp
 
 	private:
 
-		typedef std::vector<std::shared_ptr<GameCreature>> OwnedCreatures;
-
 		WorldInstance &m_world;
 		const UnitEntry &m_entry;
 		const size_t m_maxCount;
@@ -82,6 +95,8 @@ namespace wowpp
 		const float m_centerX, m_centerY, m_centerZ;
 		const boost::optional<float> m_rotation;
 		const float m_radius;
+		bool m_active;
+		bool m_respawn;
 		size_t m_currentlySpawned;
 		OwnedCreatures m_creatures;
 		Countdown m_respawnCountdown;

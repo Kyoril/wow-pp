@@ -28,6 +28,7 @@ namespace wowpp
 	class GameUnit;
 	class Project;
 	class PlayerManager;
+	class WorldInstance;
 
 	/// 
 	class TriggerHandler final
@@ -42,10 +43,18 @@ namespace wowpp
 
 	private:
 
+		UInt32 getActionData(const TriggerEntry::TriggerAction &action, UInt32 index) const;
+		const String &getActionText(const TriggerEntry::TriggerAction &action, UInt32 index) const;
+		WorldInstance *getWorldInstance(GameUnit *owner) const;
+		GameUnit *getUnitTarget(const TriggerEntry::TriggerAction &action, GameUnit *owner);
+
 		void handleTrigger(const TriggerEntry::TriggerAction &action, GameUnit *owner);
 		void handleSay(const TriggerEntry::TriggerAction &action, GameUnit *owner);
 		void handleYell(const TriggerEntry::TriggerAction &action, GameUnit *owner);
 		void handleSetWorldObjectState(const TriggerEntry::TriggerAction &action, GameUnit *owner);
+		void handleSetSpawnState(const TriggerEntry::TriggerAction &action, GameUnit *owner);
+		void handleSetRespawnState(const TriggerEntry::TriggerAction &action, GameUnit *owner);
+		void handleCastSpell(const TriggerEntry::TriggerAction &action, GameUnit *owner);
 
 	private:
 

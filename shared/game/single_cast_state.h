@@ -68,6 +68,8 @@ namespace wowpp
 		void spellEffectApplyAura(const SpellEntry::Effect &effect);
 		void spellEffectTriggerSpell(const SpellEntry::Effect &effect);
 		void spellEffectEnergize(const SpellEntry::Effect &effect);
+		void spellEffectOpenLock(const SpellEntry::Effect &effect);
+		void spellEffectSummon(const SpellEntry::Effect &effect);
 
 	private:
 

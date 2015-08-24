@@ -100,6 +100,8 @@ namespace wowpp
 				spawn.maxCount = spawnTable->getInteger("count", spawn.maxCount);
 
 				UInt32 unitId;
+				spawnTable->tryGetString("name", spawn.name);
+
 				if (!spawnTable->tryGetInteger("unit", unitId))
 				{
 					context.onError("Missing unit entry in creature spawn entry");
@@ -116,6 +118,7 @@ namespace wowpp
 				spawn.radius = spawnTable->getInteger("radius", spawn.radius);
 				spawn.respawn = (spawnTable->getInteger("respawn", static_cast<unsigned>(spawn.respawn)) != 0);
 				spawn.respawnDelay = spawnTable->getInteger("respawnTime", spawn.respawnDelay);
+				spawn.active = (spawnTable->getInteger("active", static_cast<unsigned>(spawn.active)) != 0);
 
 				spawns.push_back(std::move(spawn));
 			}
@@ -205,6 +208,7 @@ namespace wowpp
 			{
 				sff::write::Table<char> spawnTable(spawnArray, sff::write::Comma);
 
+				if (!name.empty()) spawnTable.addKey("name", spawn.name);
 				spawnTable.addKey("unit", spawn.unit->id);
 
 				{
@@ -224,6 +228,7 @@ namespace wowpp
 				spawnTable.addKey("radius", static_cast<unsigned>(spawn.radius));
 				spawnTable.addKey("respawn", spawn.respawn ? 1 : 0);
 				spawnTable.addKey("respawnTime", spawn.respawnDelay);
+				spawnTable.addKey("active", spawn.active ? 1 : 0);
 
 				spawnTable.finish();
 			}

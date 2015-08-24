@@ -150,8 +150,15 @@ namespace wowpp
 				spawn.respawnDelay,
 				spawn.position[0], spawn.position[1], spawn.position[2],
 				spawn.rotation,
-				spawn.radius));
+				spawn.radius,
+				spawn.active,
+				spawn.respawn));
 			m_creatureSpawners.push_back(std::move(spawner));
+
+			if (!spawn.name.empty())
+			{
+				m_creatureSpawnsByName[spawn.name] = m_creatureSpawners.back().get();
+			}
 		}
 
 		ILOG("Created instance of map " << m_mapEntry.id);
@@ -378,6 +385,17 @@ namespace wowpp
 	{
 		auto it = m_objectSpawnsByName.find(name);
 		if (it == m_objectSpawnsByName.end())
+		{
+			return nullptr;
+		}
+
+		return it->second;
+	}
+
+	CreatureSpawner * WorldInstance::findCreatureSpawner(const String &name)
+	{
+		auto it = m_creatureSpawnsByName.find(name);
+		if (it == m_creatureSpawnsByName.end())
 		{
 			return nullptr;
 		}

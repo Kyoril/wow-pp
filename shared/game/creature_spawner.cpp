@@ -42,7 +42,9 @@ namespace wowpp
 		float centerY,
 		float centerZ,
 		boost::optional<float> rotation,
-		float radius)
+		float radius,
+		bool active,
+		bool respawn)
 		: m_world(world)
 		, m_entry(entry)
 		, m_maxCount(maxCount)
@@ -52,13 +54,17 @@ namespace wowpp
 		, m_centerZ(centerZ)
 		, m_rotation(rotation)
 		, m_radius(radius)
+		, m_active(active)
+		, m_respawn(respawn)
 		, m_currentlySpawned(0)
 		, m_respawnCountdown(world.getUniverse().getTimers())
 	{
-		// Immediatly spawn all creatures
-		for (size_t i = 0; i < m_maxCount; ++i)
+		if (m_active)
 		{
-			spawnOne();
+			for (size_t i = 0; i < m_maxCount; ++i)
+			{
+				spawnOne();
+			}
 		}
 
 		m_respawnCountdown.ended.connect(
@@ -130,4 +136,42 @@ namespace wowpp
 		m_respawnCountdown.setEnd(
 			getCurrentTime() + m_respawnDelay);
 	}
+
+	void CreatureSpawner::setState(bool active)
+	{
+		if (m_active != active)
+		{
+			if (active && !m_currentlySpawned)
+			{
+				for (size_t i = 0; i < m_maxCount; ++i)
+				{
+					spawnOne();
+				}
+			}
+			else
+			{
+				m_respawnCountdown.cancel();
+			}
+
+			m_active = active;
+		}
+	}
+
+	void CreatureSpawner::setRespawn(bool enabled)
+	{
+		if (m_respawn != enabled)
+		{
+			if (!enabled)
+			{
+				m_respawnCountdown.cancel();
+			}
+			else
+			{
+				setRespawnTimer();
+			}
+
+			m_respawn = enabled;
+		}
+	}
+
 }

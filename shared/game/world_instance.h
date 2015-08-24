@@ -110,6 +110,7 @@ namespace wowpp
 		/// Updates this world instance. Should be called once per tick.
 		void update();
 
+		CreatureSpawner *findCreatureSpawner(const String &name);
 		WorldObjectSpawner *findObjectSpawner(const String &name);
 
 		/// Calls a specific callback method for every game object added to the world.
@@ -140,6 +141,7 @@ namespace wowpp
 		DataLoadContext::GetClass m_getClass;
 		DataLoadContext::GetLevel m_getLevel;
 		CreatureSpawners m_creatureSpawners;
+		std::map<String, CreatureSpawner*> m_creatureSpawnsByName;
 		ObjectSpawners m_objectSpawners;
 		std::map<String, WorldObjectSpawner*> m_objectSpawnsByName;
 	};
