@@ -579,6 +579,10 @@ namespace wowpp
 			}
 
 			m_target.setByteValue(unit_fields::Bytes2, 3, form);
+
+			// Reset rage and energy
+			m_target.setUInt32Value(unit_fields::Power2, 0);
+			m_target.setUInt32Value(unit_fields::Power4, 0);
 		}
 		else
 		{
