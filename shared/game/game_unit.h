@@ -342,7 +342,8 @@ namespace wowpp
 			TimerQueue &timers,
 			DataLoadContext::GetRace getRace, 
 			DataLoadContext::GetClass getClass,
-			DataLoadContext::GetLevel getLevel);
+			DataLoadContext::GetLevel getLevel,
+			DataLoadContext::GetSpell getSpell);
 		~GameUnit();
 
 		/// @copydoc GameObject::initialize()
@@ -377,7 +378,7 @@ namespace wowpp
 		virtual const String &getName() const;
 
 		/// Starts to cast a spell using the given target map.
-		void castSpell(SpellTargetMap target, const SpellEntry &spell, GameTime castTime, const SpellSuccessCallback &callback);
+		void castSpell(SpellTargetMap target, UInt32 spell, GameTime castTime, const SpellSuccessCallback &callback);
 		/// Stops the current cast (if any).
 		void cancelCast();
 		/// Starts auto attack on the given target.
@@ -480,13 +481,13 @@ namespace wowpp
 
 		typedef std::array<float, unit_mod_type::End> UnitModTypeArray;
 		typedef std::array<UnitModTypeArray, unit_mods::End> UnitModArray;
-
 		typedef std::vector<std::shared_ptr<Aura>> AuraVector;
 
 		TimerQueue &m_timers;
 		DataLoadContext::GetRace m_getRace;
 		DataLoadContext::GetClass m_getClass;
 		DataLoadContext::GetLevel m_getLevel;
+		DataLoadContext::GetSpell m_getSpell;
 		const RaceEntry *m_raceEntry;
 		const ClassEntry *m_classEntry;
 		std::unique_ptr<SpellCast> m_spellCast;

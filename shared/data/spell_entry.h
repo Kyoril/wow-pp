@@ -267,6 +267,7 @@ namespace wowpp
 
 	struct DataLoadContext;
 	struct SkillEntry;
+	struct UnitEntry;
 
 	struct SpellEntry : BasicTemplate<UInt32>
 	{
@@ -291,6 +292,7 @@ namespace wowpp
 			Int32 miscValueA;
 			Int32 miscValueB;
 			const SpellEntry *triggerSpell;
+			const UnitEntry *summonEntry;
 			Int32 pointsPerComboPoint;
 
 			Effect()
@@ -312,6 +314,7 @@ namespace wowpp
 				, miscValueA(0)
 				, miscValueB(0)
 				, triggerSpell(nullptr)
+				, summonEntry(nullptr)
 				, pointsPerComboPoint(0)
 			{
 			}

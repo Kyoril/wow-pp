@@ -465,6 +465,7 @@ namespace wowpp
 		{
 			if (stat < 0 || stat == i)
 			{
+				DLOG("APPLY STAT " << stat << " TOTAL PCT " << m_basePoints);
 				m_target.updateModifierValue(GameUnit::getUnitModByStat(i), unit_mod_type::TotalPct, m_basePoints, apply);
 			}
 		}
@@ -573,8 +574,39 @@ namespace wowpp
 
 		m_target.updateAllStats();
 
+		SpellTargetMap targetMap;
+		targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+		targetMap.m_unitTarget = m_target.getGuid();
+
 		// TODO: We need to cast some additional spells here, or remove some auras
 		// based on the form (for example, armor and stamina bonus in bear form)
+		UInt32 spell1 = 0, spell2 = 0;
+		switch (form)
+		{
+			case 5:
+			{
+				spell1 = 1178;
+				spell2 = 21178;
+				break;
+			}
+			case 8:
+			{
+				spell1 = 9635;
+				spell2 = 21178;
+				break;
+			}
+		}
+
+		if (apply)
+		{
+			if (spell1 != 0) m_target.castSpell(targetMap, spell1, 0, GameUnit::SpellSuccessCallback());
+			if (spell2 != 0) m_target.castSpell(targetMap, spell2, 0, GameUnit::SpellSuccessCallback());
+		}
+		else
+		{
+			if (spell1 != 0) m_target.getAuras().removeAllAurasDueToSpell(spell1);
+			if (spell2 != 0) m_target.getAuras().removeAllAurasDueToSpell(spell2);
+		}
 	}
 
 	void Aura::handleModStealth(bool apply)

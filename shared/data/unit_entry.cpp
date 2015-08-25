@@ -180,5 +180,17 @@ namespace wowpp
 		if (family != 0) context.table.addKey("family", family);
 		if (xpMin != 0) context.table.addKey("min_xp", xpMin);
 		if (xpMax != 0) context.table.addKey("max_xp", xpMax);
+
+		if (!triggers.empty())
+		{
+			sff::write::Array<char> triggerArray(context.table, "triggers", sff::write::Comma);
+			{
+				for (const auto *t : triggers)
+				{
+					triggerArray.addElement(t->id);
+				}
+			}
+			triggerArray.finish();
+		}
 	}
 }

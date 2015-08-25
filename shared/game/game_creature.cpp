@@ -24,8 +24,14 @@
 
 namespace wowpp
 {
-	GameCreature::GameCreature(TimerQueue &timers, DataLoadContext::GetRace getRace, DataLoadContext::GetClass getClass, DataLoadContext::GetLevel getLevel, const UnitEntry &entry)
-		: GameUnit(timers, getRace, getClass, getLevel)
+	GameCreature::GameCreature(
+		TimerQueue &timers, 
+		DataLoadContext::GetRace getRace, 
+		DataLoadContext::GetClass getClass, 
+		DataLoadContext::GetLevel getLevel, 
+		DataLoadContext::GetSpell getSpell,
+		const UnitEntry &entry)
+		: GameUnit(timers, getRace, getClass, getLevel, getSpell)
 		, m_originalEntry(entry)
 		, m_entry(nullptr)
 	{

@@ -51,6 +51,7 @@ namespace wowpp
 		typedef std::unordered_map<UInt64, GameObject*> GameObjectsById;
 		typedef std::vector<std::unique_ptr<CreatureSpawner>> CreatureSpawners;
 		typedef std::vector<std::unique_ptr<WorldObjectSpawner>> ObjectSpawners;
+		typedef std::map<UInt64, std::shared_ptr<GameCreature>> SummonedCreatures;
 		
 	public:
 
@@ -75,7 +76,8 @@ namespace wowpp
 			IdGenerator<UInt64> &objectIdGenerator,
 			DataLoadContext::GetRace getRace,
 			DataLoadContext::GetClass getClass,
-			DataLoadContext::GetLevel getLevel
+			DataLoadContext::GetLevel getLevel,
+			DataLoadContext::GetSpell getSpell
 			);
 
 		/// Creates a new creature which will belong to this world instance. However,
@@ -84,6 +86,9 @@ namespace wowpp
 			const UnitEntry &entry,
 			float x, float y, float z, float o,
 			float randomWalkRadius);
+		std::shared_ptr<GameCreature> spawnSummonedCreature(
+			const UnitEntry &entry,
+			float x, float y, float z, float o);
 		std::shared_ptr<WorldObject> spawnWorldObject(
 			const ObjectEntry &entry,
 			float x, float y, float z, float o,
@@ -111,6 +116,7 @@ namespace wowpp
 		void update();
 
 		CreatureSpawner *findCreatureSpawner(const String &name);
+
 		WorldObjectSpawner *findObjectSpawner(const String &name);
 
 		/// Calls a specific callback method for every game object added to the world.
@@ -140,9 +146,11 @@ namespace wowpp
 		DataLoadContext::GetRace m_getRace;
 		DataLoadContext::GetClass m_getClass;
 		DataLoadContext::GetLevel m_getLevel;
+		DataLoadContext::GetSpell m_getSpell;
 		CreatureSpawners m_creatureSpawners;
 		std::map<String, CreatureSpawner*> m_creatureSpawnsByName;
 		ObjectSpawners m_objectSpawners;
 		std::map<String, WorldObjectSpawner*> m_objectSpawnsByName;
+		SummonedCreatures m_creatureSummons;
 	};
 }

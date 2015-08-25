@@ -458,7 +458,8 @@ namespace wowpp
 			TimerQueue &timers,
 			DataLoadContext::GetRace getRace,
 			DataLoadContext::GetClass getClass,
-			DataLoadContext::GetLevel getLevel);
+			DataLoadContext::GetLevel getLevel,
+			DataLoadContext::GetSpell getSpell);
 		~GameCharacter();
 
 		/// @copydoc GameObject::initialize()

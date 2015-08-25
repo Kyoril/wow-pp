@@ -184,6 +184,7 @@ namespace wowpp
 		DataLoadContext::GetRace m_getRace;
 		DataLoadContext::GetClass m_getClass;
 		DataLoadContext::GetLevel m_getLevel;
+		DataLoadContext::GetSpell m_getSpell;
 		boost::signals2::scoped_connection m_worldDisconnected;
 		UInt32 m_timeSyncCounter;
 		World *m_worldNode;

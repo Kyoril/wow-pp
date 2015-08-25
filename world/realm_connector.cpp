@@ -248,7 +248,8 @@ namespace wowpp
 			m_worldInstanceManager.getUniverse().getTimers(),
 			std::bind(&RaceEntryManager::getById, &m_project.races, std::placeholders::_1),
 			std::bind(&ClassEntryManager::getById, &m_project.classes, std::placeholders::_1),
-			std::bind(&LevelEntryManager::getById, &m_project.levels, std::placeholders::_1)));
+			std::bind(&LevelEntryManager::getById, &m_project.levels, std::placeholders::_1),
+			std::bind(&SpellEntryManager::getById, &m_project.spells, std::placeholders::_1)));
 		if (!(pp::world_realm::realm_read::characterLogIn(packet, requesterDbId, instanceId, character.get(), spellIds, items)))
 		{
 			// Error: could not read packet
@@ -346,7 +347,7 @@ namespace wowpp
 			if (spell->attributes & spell_attributes::Passive)
 			{
 				// Create target map
-				character->castSpell(target, *spell, 0, GameUnit::SpellSuccessCallback());
+				character->castSpell(target, spell->id, 0, GameUnit::SpellSuccessCallback());
 			}
 		}
 
@@ -1012,7 +1013,7 @@ namespace wowpp
 		// Spell cast logic
 		sender.getCharacter()->castSpell(
 			std::move(targetMap),
-			*spell,
+			spell->id,
 			castTime,
 			[&spell, castCount, &sender](game::SpellCastResult result)
 			{

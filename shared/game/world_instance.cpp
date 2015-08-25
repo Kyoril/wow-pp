@@ -104,7 +104,8 @@ namespace wowpp
 		IdGenerator<UInt64> &objectIdGenerator,
 		DataLoadContext::GetRace getRace,
 		DataLoadContext::GetClass getClass,
-		DataLoadContext::GetLevel getLevel
+		DataLoadContext::GetLevel getLevel,
+		DataLoadContext::GetSpell getSpell
 		)
 		: m_manager(manager)
 		, m_universe(universe)
@@ -115,6 +116,7 @@ namespace wowpp
 		, m_getRace(getRace)
 		, m_getClass(getClass)
 		, m_getLevel(getLevel)
+		, m_getSpell(getSpell)
 	{
 		// Add object spawners
 		for (auto &spawn : m_mapEntry.objectSpawns)
@@ -175,11 +177,41 @@ namespace wowpp
 			m_getRace,
 			m_getClass,
 			m_getLevel,
+			m_getSpell,
 			entry);
 		spawned->initialize();
 		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id, guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
 		spawned->setMapId(m_mapEntry.id);
 		spawned->relocate(x, y, z, o);
+
+		return spawned;
+	}
+
+	std::shared_ptr<GameCreature> WorldInstance::spawnSummonedCreature(const UnitEntry &entry, float x, float y, float z, float o)
+	{
+		// Create the unit
+		auto spawned = std::make_shared<GameCreature>(
+			m_universe.getTimers(),
+			m_getRace,
+			m_getClass,
+			m_getLevel,
+			m_getSpell,
+			entry);
+		spawned->initialize();
+		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id, guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
+		spawned->setMapId(m_mapEntry.id);
+		spawned->relocate(x, y, z, o);
+
+		m_creatureSummons.insert(std::make_pair(spawned->getGuid(), spawned));
+		spawned->despawned.connect(
+			[this](GameObject &obj)
+		{
+			auto it = m_creatureSummons.find(obj.getGuid());
+			if (it != m_creatureSummons.end())
+			{
+				m_creatureSummons.erase(it);
+			}
+		});
 
 		return spawned;
 	}

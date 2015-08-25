@@ -44,6 +44,7 @@ namespace wowpp
 			DataLoadContext::GetRace getRace,
 			DataLoadContext::GetClass getClass,
 			DataLoadContext::GetLevel getLevel,
+			DataLoadContext::GetSpell getSpell,
 			const UnitEntry &entry);
 
 		/// @copydoc GameObject::initialize()

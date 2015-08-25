@@ -24,6 +24,7 @@
 #include "templates/basic_template_save_context.h"
 #include "game/defines.h"
 #include "skill_entry.h"
+#include "unit_entry.h"
 #include "data_load_context.h"
 #include "log/default_log_levels.h"
 
@@ -187,6 +188,15 @@ namespace wowpp
 				effectTable->tryGetInteger("item_type", effect.itemType);
 				effectTable->tryGetInteger("misc_val_a", effect.miscValueA);
 				effectTable->tryGetInteger("misc_val_b", effect.miscValueB);
+
+				if (effectIndex == game::spell_effects::Summon)
+				{
+					context.loadLater.push_back([&effect, &context, this]() -> bool
+					{
+						effect.summonEntry = context.getUnit(effect.miscValueA);
+						return true;
+					});
+				}
 
 				UInt32 triggerSpell = 0;
 				effectTable->tryGetInteger("trigger_spell", triggerSpell);

@@ -30,8 +30,9 @@ namespace wowpp
 		TimerQueue &timers,
 		DataLoadContext::GetRace getRace,
 		DataLoadContext::GetClass getClass,
-		DataLoadContext::GetLevel getLevel)
-		: GameUnit(timers, getRace, getClass, getLevel)
+		DataLoadContext::GetLevel getLevel,
+		DataLoadContext::GetSpell getSpell)
+		: GameUnit(timers, getRace, getClass, getLevel, getSpell)
 		, m_name("UNKNOWN")
 		, m_zoneIndex(0)
 		, m_weaponProficiency(0)

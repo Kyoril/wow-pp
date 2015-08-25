@@ -37,6 +37,7 @@
 #include "game_protocol/game_protocol.h"
 #include <boost/iterator/indirect_iterator.hpp>
 #include "common/make_unique.h"
+#include "game_creature.h"
 #include "universe.h"
 #include "aura.h"
 #include <random>
@@ -1053,15 +1054,36 @@ namespace wowpp
 
 	void SingleCastState::spellEffectSummon(const SpellEntry::Effect &effect)
 	{
-		UInt32 entry = effect.miscValueA;
+		const auto *entry = effect.summonEntry;
 		if (!entry)
 		{
 			WLOG("Can't summon anything - missing entry");
 			return;
 		}
 
-		// TODO: Spawn a new creature
-		DLOG("Summoning creature of entry " << entry << "...");
+		GameUnit &executer = m_cast.getExecuter();
+		auto *world = executer.getWorldInstance();
+		if (!world)
+		{
+			WLOG("Could not find world instance!");
+			return;
+		}
+
+		float x, y, z, o;
+		executer.getLocation(x, y, z, o);
+
+		// TODO: We need to have access to unit entries
+
+		auto spawned = world->spawnSummonedCreature(*entry, x, y, z, o);
+		if (!spawned)
+		{
+			ELOG("Could not spawn creature!");
+			return;
+		}
+
+		spawned->setUInt64Value(unit_fields::SummonedBy, executer.getGuid());
+		
+		world->addGameObject(*spawned);
 	}
 
 }

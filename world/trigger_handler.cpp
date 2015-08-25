@@ -354,7 +354,10 @@ namespace wowpp
 		SpellTargetMap targetMap;
 		targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
 		targetMap.m_unitTarget = target->getGuid();
-		owner->castSpell(std::move(targetMap), *spell, 0, GameUnit::SpellSuccessCallback());
+		owner->castSpell(std::move(targetMap), spell->id, 0, [](game::SpellCastResult result)
+		{
+			DLOG("SPELL_CAST_RESULT: " << result);
+		});
 	}
 
 	UInt32 TriggerHandler::getActionData(const TriggerEntry::TriggerAction &action, UInt32 index) const

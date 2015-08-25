@@ -385,7 +385,8 @@ namespace wowpp
 				m_playerManager.getTimers(),
 				std::bind(&RaceEntryManager::getById, &m_project.races, std::placeholders::_1),
 				std::bind(&ClassEntryManager::getById, &m_project.classes, std::placeholders::_1),
-				std::bind(&LevelEntryManager::getById, &m_project.levels, std::placeholders::_1)));
+				std::bind(&LevelEntryManager::getById, &m_project.levels, std::placeholders::_1),
+				std::bind(&SpellEntryManager::getById, &m_project.spells, std::placeholders::_1)));
 			character->initialize();
 
 			if (!(packet >> *character))

@@ -122,7 +122,7 @@ namespace wowpp
 		managers.push_back(ManagerEntry("creature_types", "creature_types", creaturetypes, &CreatureTypeEntry::save));
 		managers.push_back(ManagerEntry("items", "items", items, &ItemEntry::save));
 		managers.push_back(ManagerEntry("skills", "skills", skills, &SkillEntry::save));
-		managers.push_back(ManagerEntry("triggers", "triggers", areaTriggers, &AreaTriggerEntry::save));
+		managers.push_back(ManagerEntry("area_triggers", "area_triggers", areaTriggers, &AreaTriggerEntry::save));
 		managers.push_back(ManagerEntry("emotes", "emotes", emotes, &EmoteEntry::save));
 
 		if (!RealmProjectSaver::save(realmDataPath, managers))

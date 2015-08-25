@@ -34,12 +34,14 @@ namespace wowpp
 		TimerQueue &timers,
 		DataLoadContext::GetRace getRace,
 		DataLoadContext::GetClass getClass,
-		DataLoadContext::GetLevel getLevel)
+		DataLoadContext::GetLevel getLevel,
+		DataLoadContext::GetSpell getSpell)
 		: GameObject()
 		, m_timers(timers)
 		, m_getRace(getRace)
 		, m_getClass(getClass)
 		, m_getLevel(getLevel)
+		, m_getSpell(getSpell)
 		, m_raceEntry(nullptr)
 		, m_classEntry(nullptr)
 		, m_despawnCountdown(timers)
@@ -258,9 +260,16 @@ namespace wowpp
 		}
 	}
 
-	void GameUnit::castSpell(SpellTargetMap target, const SpellEntry &spell, GameTime castTime, const SpellSuccessCallback &callback)
+	void GameUnit::castSpell(SpellTargetMap target, UInt32 spellId, GameTime castTime, const SpellSuccessCallback &callback)
 	{
-		auto result = m_spellCast->startCast(spell, std::move(target), castTime, false);
+		// Resolve spell
+		const auto *spell = m_getSpell(spellId);
+		if (!spell)
+		{
+			return;
+		}
+
+		auto result = m_spellCast->startCast(*spell, std::move(target), castTime, false);
 		if (callback)
 		{
 			callback(result.first);
@@ -271,7 +280,7 @@ namespace wowpp
 			m_attackSwingCountdown.running &&
 			result.second != nullptr)
 		{
-			if (!(spell.attributesEx[0] & spell_attributes_ex_a::NotResetSwingTimer))
+			if (!(spell->attributesEx[0] & spell_attributes_ex_a::NotResetSwingTimer))
 			{
 				// Register for casts ended-event
 				if (castTime > 0)
