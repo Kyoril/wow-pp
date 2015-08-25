@@ -427,6 +427,8 @@ namespace wowpp
 		/// 
 		bool isAlive() const { return (getUInt32Value(unit_fields::Health) != 0); }
 
+		virtual void addThreat(GameUnit &threatening, float threat);
+
 		/// Calculates the stat based on the specified modifier.
 		static UInt8 getStatByUnitMod(UnitMods mod);
 		/// Calculates the resistance based on the specified modifier.

@@ -30,6 +30,8 @@ namespace wowpp
 	/// Represents an AI controlled creature unit in the game.
 	class GameCreature final : public GameUnit
 	{
+		typedef std::map<UInt64, float> ThreatList;
+
 	public:
 
 		/// Executed when the unit entry was changed after this creature has spawned. This
@@ -63,6 +65,8 @@ namespace wowpp
 
 		const String &getName() const override;
 
+		void addThreat(GameUnit &threatening, float threat) override;
+
 	protected:
 
 		void onKilled(GameUnit *killer) override;
@@ -75,6 +79,7 @@ namespace wowpp
 
 		const UnitEntry &m_originalEntry;
 		const UnitEntry *m_entry;
+		ThreatList m_threat;
 	};
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel);

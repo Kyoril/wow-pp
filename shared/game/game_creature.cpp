@@ -21,6 +21,7 @@
 
 #include "game_creature.h"
 #include "data/trigger_entry.h"
+#include "world_instance.h"
 
 namespace wowpp
 {
@@ -182,6 +183,68 @@ namespace wowpp
 		}
 		
 		return m_entry->name;
+	}
+
+	void GameCreature::addThreat(GameUnit &threatening, float threat)
+	{
+		if (!isAlive())
+		{
+			// We are dead, so we can't have threat
+			return;
+		}
+
+		auto *world = getWorldInstance();
+		if (!world)
+		{
+			// Not in a world
+			return;
+		}
+
+		UInt64 guid = threatening.getGuid();
+
+		float &curThreat = m_threat[guid];
+		curThreat += threat;
+
+		GameUnit *newVictim = &threatening;
+		float maxThreat = -1.0;
+
+		for (auto it : m_threat)
+		{
+			if (it.second > maxThreat)
+			{
+				// Try to find unit
+				newVictim = dynamic_cast<GameUnit*>(world->findObjectByGUID(it.first));
+				if (newVictim)
+				{
+					maxThreat = curThreat;
+				}
+			}
+		}
+
+		if (newVictim &&
+			newVictim != getVictim())
+		{
+			if (!getVictim())
+			{
+				// Aggro event
+				auto it = m_entry->triggersByEvent.find(trigger_event::OnAggro);
+				if (it != m_entry->triggersByEvent.end())
+				{
+					for (const auto *trigger : it->second)
+					{
+						trigger->execute(*trigger, this);
+					}
+				}
+			}
+
+			// New target to attack
+			startAttack(*newVictim);
+		}
+		else if (!newVictim)
+		{
+			// No target any more
+			stopAttack();
+		}
 	}
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)

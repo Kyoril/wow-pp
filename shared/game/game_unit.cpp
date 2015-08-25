@@ -330,11 +330,14 @@ namespace wowpp
 		}
 
 		// Check if the target is alive
-		if (target.getUInt32Value(unit_fields::Health) == 0)
+		if (!target.isAlive())
 		{
 			autoAttackError(attack_swing_error::TargetDead);
 			return;
 		}
+
+		// Target victim
+		setUInt64Value(unit_fields::Target, target.getGuid());
 
 		TileIndex2D tileIndex;
 		if (!getTileIndex(tileIndex))
@@ -1069,6 +1072,14 @@ namespace wowpp
 			onKilled(attacker);
 			killed(attacker);
 		}
+		else
+		{
+			// Add threat
+			if (attacker)
+			{
+				addThreat(*attacker, static_cast<float>(damage));
+			}
+		}
 	}
 
 	void GameUnit::rewardExperience(GameUnit *victim, UInt32 experience)
@@ -1107,6 +1118,11 @@ namespace wowpp
 	{
 		static const String name = "UNNAMED";
 		return name;
+	}
+
+	void GameUnit::addThreat(GameUnit &threatening, float threat)
+	{
+		// Nothing to do here...
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)

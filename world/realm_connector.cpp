@@ -815,56 +815,8 @@ namespace wowpp
 			return;
 		}
 
-		UInt64 prevTarget = 0;
-
-		// Check if we already had a selection and if that selection was a creature
-		UInt64 oldTargetGUID = sender.getCharacter()->getUInt64Value(unit_fields::Target);
-		if (oldTargetGUID && isUnitGUID(oldTargetGUID) && !isPlayerGUID(oldTargetGUID))
-		{
-			// Find that creature
-			GameUnit *obj = dynamic_cast<GameUnit*>(sender.getWorldInstance().findObjectByGUID(oldTargetGUID));
-			if (obj)
-			{
-				prevTarget = obj->getUInt64Value(unit_fields::Target);
-			}
-
-			if (obj &&
-				obj->getUInt64Value(unit_fields::Target) == sender.getCharacterGuid())
-			{
-				// It should not have us selected
-				obj->setUInt64Value(unit_fields::Target, 0);
-				obj->stopAttack();
-			}
-		}
-
 		// Get the player character
 		sender.getCharacter()->setUInt64Value(unit_fields::Target, targetGUID);
-
-		// Check if this is an NPC
-		if (isUnitGUID(targetGUID) && !isPlayerGUID(targetGUID))
-		{
-			// Find that creature
-			GameCreature *obj = dynamic_cast<GameCreature*>(sender.getWorldInstance().findObjectByGUID(targetGUID));
-			if (obj && obj->getUInt32Value(unit_fields::Health) > 0)
-			{
-				// Make that creature select us, too! (Just for testing)
-				obj->setUInt64Value(unit_fields::Target, sender.getCharacterGuid());
-				obj->startAttack(*sender.getCharacter());
-
-				// TODO: Simulating aggro
-				if (prevTarget == 0)
-				{
-					auto it = obj->getEntry().triggersByEvent.find(trigger_event::OnAggro);
-					if (it != obj->getEntry().triggersByEvent.end())
-					{
-						for (const auto *trigger : it->second)
-						{
-							trigger->execute(*trigger, obj);
-						}
-					}
-				}
-			}
-		}
 	}
 
 	void RealmConnector::handleStandStateChange(Player &sender, game::Protocol::IncomingPacket &packet)
