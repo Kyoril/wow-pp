@@ -170,7 +170,7 @@ namespace wowpp
 		m_name = name;
 	}
 
-	void GameCharacter::addItem(std::unique_ptr<GameItem> item, UInt16 slot)
+	void GameCharacter::addItem(std::shared_ptr<GameItem> item, UInt16 slot)
 	{
 		if (slot < player_equipment_slots::End)
 		{
@@ -578,7 +578,7 @@ namespace wowpp
 
 	void GameCharacter::updateArmor()
 	{
-		UInt32 baseArmor = getModifierValue(unit_mods::Armor, unit_mod_type::BaseValue);
+		float baseArmor = getModifierValue(unit_mods::Armor, unit_mod_type::BaseValue);
 
 		// Apply equipment
 		for (UInt8 i = player_equipment_slots::Start; i < player_equipment_slots::End; ++i)
@@ -591,12 +591,15 @@ namespace wowpp
 			}
 		}
 
-		UInt32 totalArmor = getModifierValue(unit_mods::Armor, unit_mod_type::TotalValue);
+		const float basePct = getModifierValue(unit_mods::Armor, unit_mod_type::BasePct);
+		const float totalArmor = getModifierValue(unit_mods::Armor, unit_mod_type::TotalValue);
+		const float totalPct = getModifierValue(unit_mods::Armor, unit_mod_type::TotalPct);
 
 		// Add armor from agility
 		baseArmor += getUInt32Value(unit_fields::Stat1) * 2;
-		baseArmor += totalArmor;
-		setUInt32Value(unit_fields::Resistances, baseArmor);
+		float value = ((baseArmor * basePct) + totalArmor) * totalPct;
+
+		setUInt32Value(unit_fields::Resistances, value);
 		setUInt32Value(unit_fields::ResistancesBuffModsPositive, totalArmor);
 	}
 

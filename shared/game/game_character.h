@@ -468,7 +468,7 @@ namespace wowpp
 		virtual ObjectType getTypeId() const override { return object_type::Character; }
 
 		/// Adds an item to a given slot.
-		void addItem(std::unique_ptr<GameItem> item, UInt16 slot);
+		void addItem(std::shared_ptr<GameItem> item, UInt16 slot);
 		/// Adds a spell to the list of known spells of this character.
 		/// Note that passive spells will also be cast after they are added.
 		void addSpell(const SpellEntry &spell);
@@ -486,7 +486,7 @@ namespace wowpp
 		/// Gets a list of all known spells of this character.
 		const std::vector<const SpellEntry*> &getSpells() const { return m_spells; }
 		/// Gets a list of all items of this character.
-		const std::map<UInt16, std::unique_ptr<GameItem>> &getItems() const { return m_itemSlots; }
+		const std::map<UInt16, std::shared_ptr<GameItem>> &getItems() const { return m_itemSlots; }
 		/// Gets the weapon proficiency mask of this character (which weapons can be
 		/// wielded)
 		UInt32 getWeaponProficiency() const { return m_weaponProficiency; }
@@ -545,7 +545,7 @@ namespace wowpp
 		UInt32 m_armorProficiency;
 		std::vector<const SkillEntry*> m_skills;
 		std::vector<const SpellEntry*> m_spells;
-		std::map<UInt16, std::unique_ptr<GameItem>> m_itemSlots;
+		std::map<UInt16, std::shared_ptr<GameItem>> m_itemSlots;
 		UInt64 m_comboTarget;
 		UInt8 m_comboPoints;
 		float m_manaRegBase;

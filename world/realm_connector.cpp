@@ -365,7 +365,7 @@ namespace wowpp
 			}
 
 			// Create item instance
-			std::unique_ptr<GameItem> itemInstance(new GameItem(*entry));
+			std::shared_ptr<GameItem> itemInstance(new GameItem(*entry));
 			itemInstance->initialize();
 			itemInstance->setUInt64Value(object_fields::Guid, createEntryGUID(itemCounter++, entry->id, guid_type::Item));
 			itemInstance->setUInt32Value(item_fields::Durability, item.durability);

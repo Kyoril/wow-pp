@@ -78,6 +78,8 @@ namespace wowpp
 		/// 
 		void handleModResistance(bool apply);
 		/// 
+		void handleModBaseResistancePct(bool apply);
+		/// 
 		void handlePeriodicDamage(bool apply);
 		/// 
 		void handlePeriodicHeal(bool apply);

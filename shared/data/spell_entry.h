@@ -331,6 +331,7 @@ namespace wowpp
 		UInt32 castTimeIndex;
 		PowerType powerType;
 		UInt32 cost;
+		UInt32 costPct;
 		Int32 maxLevel;
 		Int32 baseLevel;
 		Int32 spellLevel;

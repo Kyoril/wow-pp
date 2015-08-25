@@ -36,6 +36,7 @@ namespace wowpp
 		, castTimeIndex(1)
 		, powerType(power_type::Mana)
 		, cost(0)
+		, costPct(0)
 		, maxLevel(0)
 		, baseLevel(0)
 		, spellLevel(0)
@@ -93,6 +94,7 @@ namespace wowpp
 		wrapper.table.tryGetInteger("power", powerTypeValue);
 		powerType = static_cast<PowerType>(powerTypeValue);
 		wrapper.table.tryGetInteger("cost", cost);
+		wrapper.table.tryGetInteger("cost_pct", costPct);
 		wrapper.table.tryGetInteger("duration", duration);
 		wrapper.table.tryGetInteger("max_duration", maxDuration);
 		wrapper.table.tryGetInteger("facing", facing);
@@ -251,6 +253,7 @@ namespace wowpp
 		if (cooldown != 0) context.table.addKey("cooldown", cooldown);
 		if (powerType != power_type::Mana) context.table.addKey("power", static_cast<Int32>(powerType));
 		if (cost != 0) context.table.addKey("cost", cost);
+		if (costPct != 0) context.table.addKey("cost_pct", costPct);
 		if (duration != -1) context.table.addKey("duration", duration);
 		if (maxDuration != -1) context.table.addKey("max_duration", maxDuration);
 		if (facing != 0) context.table.addKey("facing", facing);

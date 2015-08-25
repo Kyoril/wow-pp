@@ -707,7 +707,7 @@ namespace wowpp
 		ILOG("Player " << m_accountName << " tries to enter the world with character 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << m_characterId);
 
 		// Load the player character data from the database
-		std::unique_ptr<GameCharacter> character(new GameCharacter(m_manager.getTimers(), m_getRace, m_getClass, m_getLevel, m_getSpell));
+		std::shared_ptr<GameCharacter> character(new GameCharacter(m_manager.getTimers(), m_getRace, m_getClass, m_getLevel, m_getSpell));
 		character->initialize();
 		character->setGuid(createRealmGUID(characterId, m_loginConnector.getRealmID(), guid_type::Player));
 		if (!m_database.getGameCharacter(guidLowerPart(characterId), *character, m_itemData))

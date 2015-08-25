@@ -175,7 +175,7 @@ namespace wowpp
 	class GameObject;
 
 	/// 
-	class GameObject
+	class GameObject : public std::enable_shared_from_this<GameObject>
 	{
 		friend io::Writer &operator << (io::Writer &w, GameObject const& object);
 		friend io::Reader &operator >> (io::Reader &r, GameObject& object);

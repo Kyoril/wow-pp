@@ -112,6 +112,19 @@ namespace wowpp
 		}
 	}
 
+	void Aura::handleModBaseResistancePct(bool apply)
+	{
+		// Apply all resistances
+		for (UInt8 i = 0; i < 7; ++i)
+		{
+			if (m_effect.miscValueA & Int32(1 << i))
+			{
+				DLOG("Points to apply: " << m_basePoints);
+				m_target.updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), unit_mod_type::BasePct, m_basePoints, apply);
+			}
+		}
+	}
+
 	bool Aura::isPositive() const
 	{
 		// Negative attribute
@@ -147,6 +160,9 @@ namespace wowpp
 			break;
 		case aura::ModResistance:
 			handleModResistance(apply);
+			break;
+		case aura::ModBaseResistancePct:
+			handleModBaseResistancePct(apply);
 			break;
 		case aura::PeriodicDamage:
 			handlePeriodicDamage(apply);
@@ -574,10 +590,6 @@ namespace wowpp
 
 		m_target.updateAllStats();
 
-		SpellTargetMap targetMap;
-		targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
-		targetMap.m_unitTarget = m_target.getGuid();
-
 		// TODO: We need to cast some additional spells here, or remove some auras
 		// based on the form (for example, armor and stamina bonus in bear form)
 		UInt32 spell1 = 0, spell2 = 0;
@@ -597,15 +609,39 @@ namespace wowpp
 			}
 		}
 
-		if (apply)
+		auto *world = m_target.getWorldInstance();
+		if (!world)
+			return;
+
+		auto strongUnit = m_target.shared_from_this();
+		std::weak_ptr<GameObject> weakUnit(strongUnit);
+
+		if (spell1 != 0 || spell2 != 0)
 		{
-			if (spell1 != 0) m_target.castSpell(targetMap, spell1, 0, GameUnit::SpellSuccessCallback());
-			if (spell2 != 0) m_target.castSpell(targetMap, spell2, 0, GameUnit::SpellSuccessCallback());
-		}
-		else
-		{
-			if (spell1 != 0) m_target.getAuras().removeAllAurasDueToSpell(spell1);
-			if (spell2 != 0) m_target.getAuras().removeAllAurasDueToSpell(spell2);
+			world->getUniverse().post([apply, spell1, spell2, weakUnit]()
+			{
+				if (auto ptr = weakUnit.lock())
+				{
+					GameUnit *unit = dynamic_cast<GameUnit*>(ptr.get());
+					if (unit)
+					{
+						if (apply)
+						{
+							SpellTargetMap targetMap;
+							targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+							targetMap.m_unitTarget = unit->getGuid();
+
+							if (spell1 != 0) unit->castSpell(targetMap, spell1, 0, GameUnit::SpellSuccessCallback());
+							if (spell2 != 0) unit->castSpell(targetMap, spell2, 0, GameUnit::SpellSuccessCallback());
+						}
+						else
+						{
+							if (spell1 != 0) unit->getAuras().removeAllAurasDueToSpell(spell1);
+							if (spell2 != 0) unit->getAuras().removeAllAurasDueToSpell(spell2);
+						}
+					}
+				}
+			});
 		}
 	}
 

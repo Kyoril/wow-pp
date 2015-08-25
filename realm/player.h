@@ -179,7 +179,7 @@ namespace wowpp
 		BigNumber m_v;
 		BigNumber m_s;
 		DatabaseId m_characterId;
-		std::unique_ptr<GameCharacter> m_gameCharacter;
+		std::shared_ptr<GameCharacter> m_gameCharacter;
 		UInt32 m_instanceId;
 		DataLoadContext::GetRace m_getRace;
 		DataLoadContext::GetClass m_getClass;

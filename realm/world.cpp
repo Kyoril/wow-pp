@@ -381,7 +381,7 @@ namespace wowpp
 		if (!player)
 		{
 			// Maybe the player disconnected already - create a temporary character copy and save this copy
-			std::unique_ptr<GameCharacter> character(new GameCharacter(
+			std::shared_ptr<GameCharacter> character(new GameCharacter(
 				m_playerManager.getTimers(),
 				std::bind(&RaceEntryManager::getById, &m_project.races, std::placeholders::_1),
 				std::bind(&ClassEntryManager::getById, &m_project.classes, std::placeholders::_1),
