@@ -21,6 +21,7 @@
 
 #include "trigger_entry.h"
 #include "templates/basic_template_save_context.h"
+#include "common/make_unique.h"
 
 namespace wowpp
 {
@@ -131,10 +132,12 @@ namespace wowpp
 			eventsArray.finish();
 		}
 
+		/*
 		sff::write::Array<char> conditionsArray(context.table, "conditions", sff::write::MultiLine);
 		{
 		}
 		conditionsArray.finish();
+		*/
 
 		if (!actions.empty())
 		{
@@ -143,36 +146,37 @@ namespace wowpp
 				for (auto &action : actions)
 				{
 					sff::write::Table<char> actionTable(actionsArray, sff::write::Comma);
+					
+					actionTable.addKey("action", action.action);
+					if (action.target != 0) actionTable.addKey("target", action.target);
+					if (!action.targetName.empty()) actionTable.addKey("target_name", action.targetName);
+
+					// NOTE: unique_ptr<sff::write::Arra<char>> is used below, since MSVC++ seems to have a bug
+					// The stack gets corrupted or something, and causes m_hasMembers of the array to be true,
+					// thus leading to wrong formatting. This only happens in release mode, so it seems it has 
+					// something to do with optimization.
+
+					if (!action.texts.empty())
 					{
-						actionTable.addKey("action", action.action);
-
-						if (action.target != 0) actionTable.addKey("target", action.target);
-						if (!action.targetName.empty()) actionTable.addKey("target_name", action.targetName);
-
-						if (!action.texts.empty())
+						auto actionTextArray = make_unique<sff::write::Array<char>>(actionTable, "texts", sff::write::Comma);
+						for (auto &text : action.texts)
 						{
-							sff::write::Array<char> actionTextArray(actionTable, "texts", sff::write::Comma);
-							{
-								for (auto &text : action.texts)
-								{
-									actionTextArray.addElement(text);
-								}
-							}
-							actionTextArray.finish();
+							actionTextArray->addElement(text);
 						}
-
-						if (!action.data.empty())
-						{
-							sff::write::Array<char> actionDataArray(actionTable, "data", sff::write::Comma);
-							{
-								for (auto &data : action.data)
-								{
-									actionDataArray.addElement(data);
-								}
-							}
-							actionDataArray.finish();
-						}
+						actionTextArray->finish();
 					}
+
+					// Data
+					if (!action.data.empty())
+					{
+						auto actionDataArray = make_unique<sff::write::Array<char>>(actionTable, "data", sff::write::Comma);
+						for (auto &data : action.data)
+						{
+							actionDataArray->addElement(data);
+						}
+						actionDataArray->finish();
+					}
+
 					actionTable.finish();
 				}
 			}

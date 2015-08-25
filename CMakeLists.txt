@@ -125,6 +125,9 @@ project(WoW)
 	# Tools option
 	option(WOWPP_BUILD_TOOLS "If checked, will try to build tools." OFF)
 	
+	# Tests option
+	option(WOWPP_BUILD_TESTS "If checked, will try to test programs." OFF)
+	
 	# Add the shared-directory to the list of local include directories
 	include_directories(deps)
 	include_directories(shared)
@@ -140,4 +143,7 @@ project(WoW)
 	endif()
 	if (WOWPP_BUILD_EDITOR)
 		add_subdirectory(editor)
+	endif()
+	if (WOWPP_BUILD_TESTS)
+		add_subdirectory(tests)
 	endif()

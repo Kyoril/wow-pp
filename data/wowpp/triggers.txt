@@ -1,28 +1,20 @@
 triggers = 
 {
-	(id = 1, name = "Rhahk\'zor - Aggro - Yell", path = "Deadmines", events = {2}, conditions = 
+	(id = 1, name = "Rhahk\'zor - Aggro - Yell", path = "Deadmines", events = {2}, actions = 
 	{
-	}, actions = 
-	{
-		(action = 2, target = 1, texts = {, "VanCleef pay big for your heads!"}, data = {5774, 0})
+		(action = 2, target = 1, texts = {"VanCleef pay big for your heads!"}, data = {5774, 0})
 	})
-	(id = 2, name = "Rhahk\'zor - Death - Open Door", path = "Deadmines", events = {3}, conditions = 
-	{
-	}, actions = 
+	(id = 2, name = "Rhahk\'zor - Death - Open Door", path = "Deadmines", events = {3}, actions = 
 	{
 		(action = 3, target = 4, target_name = "Rhahk\'Zor - Door", data = {0})
 		(action = 4, target = 5, target_name = "Rhahk\'Zor Patrol A", data = {1})
 		(action = 4, target = 5, target_name = "Rhahk\'Zor Patrol B", data = {1})
 	})
-	(id = 3, name = "Sneed - Death - Open Door", path = "Deadmines", events = {3}, conditions = 
-	{
-	}, actions = 
+	(id = 3, name = "Sneed - Death - Open Door", path = "Deadmines", events = {3}, actions = 
 	{
 		(action = 3, target = 4, target_name = "Sneed - Door", data = {0})
 	})
-	(id = 4, name = "Sneeds Shredder - Death - Spawn Sneed", path = "Deadmines", events = {3}, conditions = 
-	{
-	}, actions = 
+	(id = 4, name = "Sneeds Shredder - Death - Spawn Sneed", path = "Deadmines", events = {3}, actions = 
 	{
 		(action = 6, target = 1, data = {5141})
 	})

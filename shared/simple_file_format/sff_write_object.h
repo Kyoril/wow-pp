@@ -56,6 +56,7 @@ namespace sff
 				, m_parent(nullptr)
 				, m_hasElements(false)
 			{
+				m_hasElements = false;
 			}
 
 			Object(Object &parent, Flags flags)
@@ -64,6 +65,7 @@ namespace sff
 				, m_parent(&parent)
 				, m_hasElements(false)
 			{
+				m_hasElements = false;
 				m_parent->beforeElement();
 			}
 
