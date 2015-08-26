@@ -24,6 +24,7 @@
 #include "templates/basic_template_save_context.h"
 #include "data_load_context.h"
 #include "trigger_entry.h"
+#include "item_entry.h"
 
 namespace wowpp
 {
@@ -62,6 +63,9 @@ namespace wowpp
 		, maxLootGold(0)
 		, xpMin(0)
 		, xpMax(0)
+		, mainHand(nullptr)
+		, offHand(nullptr)
+		, ranged(nullptr)
 	{
 		resistances.fill(0);
 	}
@@ -142,6 +146,22 @@ namespace wowpp
 		wrapper.table.tryGetInteger("max_xp", xpMax);
 		MIN_MAX_CHECK(xpMin, xpMax);
 
+		UInt32 eqMain = 0, eqOff = 0, eqRange = 0;
+		wrapper.table.tryGetInteger("eq_main_hand", eqMain);
+		wrapper.table.tryGetInteger("eq_off_hand", eqOff);
+		wrapper.table.tryGetInteger("eq_ranged", eqRange);
+		if (eqMain != 0 || eqOff != 0 || eqRange != 0)
+		{
+			context.loadLater.push_back([eqMain, eqOff, eqRange, &context, this]() -> bool
+			{
+				if (eqMain != 0) this->mainHand = context.getItem(eqMain);
+				if (eqOff != 0) this->mainHand = context.getItem(eqOff);
+				if (eqRange != 0) this->mainHand = context.getItem(eqRange);
+
+				return true;
+			});
+		}
+
 #undef MIN_MAX_CHECK
 
 		return true;
@@ -180,6 +200,9 @@ namespace wowpp
 		if (family != 0) context.table.addKey("family", family);
 		if (xpMin != 0) context.table.addKey("min_xp", xpMin);
 		if (xpMax != 0) context.table.addKey("max_xp", xpMax);
+		if (mainHand != 0) context.table.addKey("eq_main_hand", mainHand->id);
+		if (offHand != 0) context.table.addKey("eq_off_hand", offHand->id);
+		if (ranged != 0) context.table.addKey("eq_ranged", ranged->id);
 
 		if (!triggers.empty())
 		{

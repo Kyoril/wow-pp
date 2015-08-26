@@ -29,6 +29,7 @@ namespace wowpp
 {
 	struct DataLoadContext;
 	struct TriggerEntry;
+	struct ItemEntry;
 
 	struct UnitEntry : BasicTemplate<UInt32>
 	{
@@ -66,6 +67,7 @@ namespace wowpp
 		UInt32 xpMin, xpMax;
 		std::vector<const TriggerEntry*> triggers;
 		std::map<UInt32, std::vector<const TriggerEntry*>> triggersByEvent;
+		const ItemEntry *mainHand, *offHand, *ranged;
 
 		UnitEntry();
 		bool load(DataLoadContext &context, const ReadTableWrapper &wrapper);

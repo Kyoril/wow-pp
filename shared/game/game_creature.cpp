@@ -21,6 +21,7 @@
 
 #include "game_creature.h"
 #include "data/trigger_entry.h"
+#include "data/item_entry.h"
 #include "world_instance.h"
 
 namespace wowpp
@@ -89,6 +90,13 @@ namespace wowpp
 		setFloatValue(unit_fields::MinDamage, entry.minMeleeDamage);
 		setFloatValue(unit_fields::MaxDamage, entry.maxMeleeDamage);
 		setUInt32Value(unit_fields::BaseAttackTime, entry.meleeBaseAttackTime);
+
+		setVirtualItem(0, entry.mainHand);
+		setVirtualItem(1, entry.offHand);
+		setVirtualItem(2, entry.ranged);
+
+		if (entry.offHand) setUInt32Value(unit_fields::VirtualItemSlotDisplay + 1, entry.mainHand->displayId);
+		if (entry.ranged) setUInt32Value(unit_fields::VirtualItemSlotDisplay + 2, entry.mainHand->displayId);
 
 		// Unit Mods
 		for (UInt32 i = unit_mods::StatStart; i < unit_mods::StatEnd; ++i)
@@ -248,6 +256,25 @@ namespace wowpp
 			// No target any more
 			stopAttack();
 		}
+	}
+
+	void GameCreature::setVirtualItem(UInt32 slot, const ItemEntry *item)
+	{
+		if (!item)
+		{
+			setUInt32Value(unit_fields::VirtualItemSlotDisplay + slot, 0);
+			setUInt32Value(unit_fields::VirtualItemInfo + (slot * 2) + 0, 0);
+			setUInt32Value(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0);
+			return;
+		}
+
+		setUInt32Value(unit_fields::VirtualItemSlotDisplay + slot, item->displayId);
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 0, item->itemClass);
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 1, item->subClass);
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 2, 0);
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 3, 0);
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0, item->inventoryType);
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 1, item->sheath);
 	}
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)

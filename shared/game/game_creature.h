@@ -67,6 +67,8 @@ namespace wowpp
 
 		void addThreat(GameUnit &threatening, float threat) override;
 
+		void setVirtualItem(UInt32 slot, const ItemEntry *item);
+
 	protected:
 
 		void onKilled(GameUnit *killer) override;

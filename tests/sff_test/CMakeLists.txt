@@ -33,7 +33,7 @@ source_group(src\\sff FILES ${sffFiles})
 add_executable(sff_test ${srcFiles} ${sffFiles})
 
 # Link required shared libs
-target_link_libraries(sff_test common log data)
+target_link_libraries(sff_test common log data sql_wrapper mysql_wrapper)
 
 # Link dependency libraries
 target_link_libraries(sff_test ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY})
