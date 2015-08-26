@@ -384,6 +384,9 @@ namespace wowpp
 			return;
 		}
 
+		// Untarget victim
+		setUInt64Value(unit_fields::Target, 0);
+
 		// Get victim guid
 		UInt64 victimGUID = m_victim->getGuid();
 
