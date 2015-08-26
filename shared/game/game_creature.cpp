@@ -116,6 +116,9 @@ namespace wowpp
 	{
 		GameUnit::onKilled(killer);
 
+		// Reset aggro list
+		m_threat.clear();
+
 		auto it = m_entry->triggersByEvent.find(trigger_event::OnKilled);
 		if (it != m_entry->triggersByEvent.end())
 		{

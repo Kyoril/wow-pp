@@ -1113,8 +1113,12 @@ namespace wowpp
 		}
 
 		spawned->setUInt64Value(unit_fields::SummonedBy, executer.getGuid());
-		
 		world->addGameObject(*spawned);
+
+		if (executer.getVictim())
+		{
+			spawned->addThreat(*executer.getVictim(), 0.01f);
+		}
 	}
 
 }

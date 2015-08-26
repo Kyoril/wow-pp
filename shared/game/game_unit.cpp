@@ -433,6 +433,11 @@ namespace wowpp
 			return;
 		}
 
+		if (!isAlive())
+		{
+			return;
+		}
+
 		if (getTypeId() != object_type::Character)
 		{
 			// Turn to target if npc
@@ -1089,6 +1094,9 @@ namespace wowpp
 
 	void GameUnit::onKilled(GameUnit *killer)
 	{
+		// Stop auto attack
+		stopAttack();
+
 		m_auras.handleTargetDeath();
 	}
 
