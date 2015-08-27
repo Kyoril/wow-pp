@@ -368,6 +368,7 @@ namespace wowpp
 		UInt32 area;
 		Int32 map;
 		Int16 bagFamily;
+		Int32 material;
 		Int8 totemCategory;
 		std::array<ItemSocketEntry, 3> itemSockets;
 		UInt16 socketBonus;

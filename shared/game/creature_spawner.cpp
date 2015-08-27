@@ -42,6 +42,7 @@ namespace wowpp
 		float centerY,
 		float centerZ,
 		boost::optional<float> rotation,
+		UInt32 emote,
 		float radius,
 		bool active,
 		bool respawn)
@@ -54,6 +55,7 @@ namespace wowpp
 		, m_centerZ(centerZ)
 		, m_rotation(rotation)
 		, m_radius(radius)
+		, m_emote(emote)
 		, m_active(active)
 		, m_respawn(respawn)
 		, m_currentlySpawned(0)
@@ -90,11 +92,14 @@ namespace wowpp
 			m_radius
 			);
 		spawned->setFloatValue(object_fields::ScaleX, m_entry.scale);
+		if (m_emote != 0)
+		{
+			spawned->setUInt32Value(unit_fields::NpcEmoteState, m_emote);
+		}
 		spawned->clearUpdateMask();
 
 		// watch for destruction
 		spawned->destroy = std::bind(&CreatureSpawner::onRemoval, this, std::placeholders::_1);
-		
 		m_world.addGameObject(*spawned);
 
 		// Remember that creature

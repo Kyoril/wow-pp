@@ -115,6 +115,7 @@ namespace wowpp
 					return false;
 				}
 
+				spawn.emote = spawnTable->getInteger("emote", spawn.emote);
 				spawn.radius = spawnTable->getInteger("radius", spawn.radius);
 				spawn.respawn = (spawnTable->getInteger("respawn", static_cast<unsigned>(spawn.respawn)) != 0);
 				spawn.respawnDelay = spawnTable->getInteger("respawnTime", spawn.respawnDelay);
@@ -219,11 +220,11 @@ namespace wowpp
 					positionArray.finish();
 				}
 
+				if (spawn.emote != 0) spawnTable.addKey("emote", spawn.emote);
 				if (spawn.rotation)
 				{
 					spawnTable.addKey("rotation", spawn.rotation);
 				}
-
 				spawnTable.addKey("count", spawn.maxCount);
 				spawnTable.addKey("radius", static_cast<unsigned>(spawn.radius));
 				spawnTable.addKey("respawn", spawn.respawn ? 1 : 0);

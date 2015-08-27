@@ -59,6 +59,7 @@ namespace wowpp
 			float centerY,
 			float centerZ,
 			boost::optional<float> rotation,
+			UInt32 emote,
 			float radius,
 			bool active,
 			bool respawn);
@@ -95,6 +96,7 @@ namespace wowpp
 		const float m_centerX, m_centerY, m_centerZ;
 		const boost::optional<float> m_rotation;
 		const float m_radius;
+		UInt32 m_emote;
 		bool m_active;
 		bool m_respawn;
 		size_t m_currentlySpawned;

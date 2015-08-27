@@ -152,6 +152,7 @@ namespace wowpp
 				spawn.respawnDelay,
 				spawn.position[0], spawn.position[1], spawn.position[2],
 				spawn.rotation,
+				spawn.emote,
 				spawn.radius,
 				spawn.active,
 				spawn.respawn));

@@ -73,6 +73,7 @@ namespace wowpp
 		, area(0)
 		, map(0)
 		, bagFamily(0)
+		, material(0)
 		, totemCategory(0)
 		, socketBonus(0)
 		, gemProperties(0)
@@ -139,6 +140,7 @@ namespace wowpp
 		wrapper.table.tryGetInteger("area", area);
 		wrapper.table.tryGetInteger("map", map);
 		wrapper.table.tryGetInteger("bag_family", bagFamily);
+		wrapper.table.tryGetInteger("material", material);
 		wrapper.table.tryGetInteger("totem_category", totemCategory);
 		wrapper.table.tryGetInteger("socket_bonus", socketBonus);
 		wrapper.table.tryGetInteger("gem_properties", gemProperties);
@@ -297,6 +299,7 @@ namespace wowpp
 		if (area != 0) context.table.addKey("area", area);
 		if (map != 0) context.table.addKey("map", map);
 		if (bagFamily != 0) context.table.addKey("bag_family", bagFamily);
+		if (material != 0) context.table.addKey("material", material);
 		if (totemCategory != 0) context.table.addKey("totem_category", static_cast<Int16>(totemCategory));
 		if (socketBonus != 0) context.table.addKey("socket_bonus", socketBonus);
 		if (gemProperties != 0) context.table.addKey("gem_properties", gemProperties);

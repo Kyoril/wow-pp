@@ -68,6 +68,7 @@ namespace wowpp
 		size_t maxCount;
 		const UnitEntry *unit;
 		bool active;
+		UInt32 emote;
 
 		SpawnPlacement()
 			: respawn(true)
@@ -77,6 +78,7 @@ namespace wowpp
 			, maxCount(1)
 			, unit(nullptr)
 			, active(true)
+			, emote(0)
 		{
 		}
 	};

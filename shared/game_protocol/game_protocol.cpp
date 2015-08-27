@@ -1251,7 +1251,7 @@ namespace wowpp
 					<< io::write<NetUInt32>(0)					// TODO: Page Material
 					<< io::write<NetUInt32>(0)					// TODO: Start Quest
 					<< io::write<NetUInt32>(item.lockId)
-					<< io::write<NetUInt32>(0)					// TODO: Material
+					<< io::write<NetUInt32>(item.material)
 					<< io::write<NetUInt32>(item.sheath)
 					<< io::write<NetUInt32>(item.randomProperty)
 					<< io::write<NetUInt32>(item.randomSuffix)
