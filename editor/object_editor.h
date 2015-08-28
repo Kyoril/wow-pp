@@ -55,6 +55,8 @@ namespace wowpp
 			void on_unitFilter_editingFinished();
 			void on_spellFilter_editingFinished();
 			void on_itemFilter_editingFinished();
+			void on_unitAddTriggerBtn_clicked();
+			void on_unitRemoveTriggerBtn_clicked();
 			void onUnitSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void on_unitPropertyWidget_doubleClicked(QModelIndex index);
 			void onSpellSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
@@ -69,6 +71,7 @@ namespace wowpp
 			QSortFilterProxyModel *m_itemFilter;
 			Properties m_properties;
 			PropertyViewModel *m_viewModel;
+			UnitEntry *m_selected;
 		};
 	}
 }

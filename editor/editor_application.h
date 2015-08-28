@@ -24,6 +24,7 @@
 #include <QObject>
 #include "data/project.h"
 #include "template_list_model.h"
+#include "trigger_list_model.h"
 #include "configuration.h"
 #include <memory>
 
@@ -63,6 +64,7 @@ namespace wowpp
 			SpellListModel *getSpellListModel() { return m_spellListModel.get(); }
 			MapListModel *getMapListModel() { return m_mapListModel.get(); }
 			UnitListModel *getUnitListModel() { return m_unitListModel.get(); }
+			TriggerListModel *getTriggerListModel() { return m_triggerListModel.get(); }
 			Project &getProject() { return m_project; }
 
 		public slots:
@@ -93,6 +95,7 @@ namespace wowpp
 			std::unique_ptr<SpellListModel> m_spellListModel;
 			std::unique_ptr<MapListModel> m_mapListModel;
 			std::unique_ptr<UnitListModel> m_unitListModel;
+			std::unique_ptr<TriggerListModel> m_triggerListModel;
 			bool m_changed;
 		};
 	}

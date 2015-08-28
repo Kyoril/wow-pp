@@ -18,4 +18,5 @@ triggers =
 	{
 		(action = 6, target = 1, data = {5141})
 	})
+	(id = 5, name = "Cobold Vermin - Aggro - Say")
 }

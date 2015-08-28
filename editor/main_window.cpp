@@ -22,6 +22,7 @@
 #include "main_window.h"
 #include "editor_application.h"
 #include "object_editor.h"
+#include "load_map_dialog.h"
 #include "ui_main_window.h"
 #include <QCloseEvent>
 
@@ -57,6 +58,17 @@ namespace wowpp
 		void MainWindow::on_actionExit_triggered()
 		{
 			close();
+		}
+
+		void MainWindow::on_actionLoadMap_triggered()
+		{
+			LoadMapDialog dialog(m_application);
+			int result = dialog.exec();
+			if (result != QDialog::Accepted)
+			{
+				// TODO
+				return;
+			}
 		}
 
 	}

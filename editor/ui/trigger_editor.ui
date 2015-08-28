@@ -60,6 +60,9 @@
        </attribute>
       </widget>
       <widget class="QSplitter" name="splitter">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
          <horstretch>1</horstretch>
@@ -106,7 +109,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="lineEdit"/>
+          <widget class="QLineEdit" name="triggerNameBox"/>
          </item>
          <item>
           <widget class="QLabel" name="label_3">
@@ -116,7 +119,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="lineEdit_2"/>
+          <widget class="QLineEdit" name="triggerPathBox"/>
          </item>
         </layout>
        </widget>
@@ -272,6 +275,9 @@
    <addaction name="separator"/>
    <addaction name="actionNewCategory"/>
    <addaction name="actionNewTrigger"/>
+   <addaction name="actionAddEvent"/>
+   <addaction name="actionAddAction"/>
+   <addaction name="actionRemove"/>
   </widget>
   <action name="actionSave">
    <property name="icon">
@@ -336,10 +342,28 @@
      <normaloff>:/File.png</normaloff>:/File.png</iconset>
    </property>
    <property name="text">
-    <string>New Trigger</string>
+    <string>Add Trigger</string>
    </property>
    <property name="toolTip">
-    <string>New Trigger</string>
+    <string>Add Trigger</string>
+   </property>
+  </action>
+  <action name="actionRemove">
+   <property name="text">
+    <string>Remove</string>
+   </property>
+   <property name="shortcut">
+    <string>Del</string>
+   </property>
+  </action>
+  <action name="actionAddEvent">
+   <property name="text">
+    <string>Add Event</string>
+   </property>
+  </action>
+  <action name="actionAddAction">
+   <property name="text">
+    <string>Add Action</string>
    </property>
   </action>
  </widget>

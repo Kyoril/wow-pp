@@ -26,8 +26,10 @@
 #include "numeric_editor.h"
 #include "min_max_editor.h"
 #include "ui_object_editor.h"
+#include "choose_trigger_dialog.h"
 #include "game/defines.h"
 #include <QRegExp>
+#include <utility>
 
 namespace wowpp
 {
@@ -37,6 +39,7 @@ namespace wowpp
 			: QMainWindow()
 			, m_application(app)
 			, m_ui(new Ui::ObjectEditor())
+			, m_selected(nullptr)
 		{
 			m_ui->setupUi(this);
 
@@ -103,15 +106,22 @@ namespace wowpp
 		{
 			// Get the selected unit
 			if (selection.isEmpty())
+			{
+				m_selected = nullptr;
 				return;
+			}
 
 			QItemSelection source = m_unitFilter->mapSelectionToSource(selection);
 			if (source.isEmpty())
+			{
+				m_selected = nullptr;
 				return;
+			}
 
 			int index = source.indexes().first().row();
 			if (index < 0)
 			{
+				m_selected = nullptr;
 				return;
 			}
 
@@ -120,6 +130,7 @@ namespace wowpp
 
 			// Get unit entry
 			UnitEntry *unit = m_application.getProject().units.getTemplates().at(index).get();
+			m_selected = unit;
 			if (!unit)
 				return;
 
@@ -340,5 +351,57 @@ namespace wowpp
 				return;
 		}
 
-}
+		void ObjectEditor::on_unitAddTriggerBtn_clicked()
+		{
+			if (!m_selected)
+				return;
+
+			ChooseTriggerDialog dialog(m_application);
+			auto result = dialog.exec();
+			if (result == QDialog::Accepted)
+			{
+				const auto *newTrigger = dialog.getSelectedTrigger();
+				if (newTrigger)
+				{
+					auto it = std::find_if(m_selected->triggers.begin(), m_selected->triggers.end(), [&newTrigger](const TriggerEntry *trigger) -> bool
+					{
+						return (trigger->id == newTrigger->id);
+					});
+
+					if (it == m_selected->triggers.end())
+					{
+						m_selected->triggers.push_back(newTrigger);
+						m_ui->unitTriggerWidget->addItem(
+							QString(newTrigger->name.c_str()));
+
+						m_application.markAsChanged();
+					}
+				}
+			}
+		}
+
+		void ObjectEditor::on_unitRemoveTriggerBtn_clicked()
+		{
+			if (!m_selected)
+				return;
+
+			// Find selected trigger
+			auto index = m_ui->unitTriggerWidget->currentIndex();
+			if (index.isValid())
+			{
+				int row = index.row();
+				if (row < 0 || row >= m_selected->triggers.size())
+					return;
+
+				std::swap(m_selected->triggers.back(), m_selected->triggers[row]);
+				m_selected->triggers.pop_back();
+
+				auto *taken = m_ui->unitTriggerWidget->takeItem(row);
+				delete taken;
+
+				m_application.markAsChanged();
+			}
+		}
+
+	}
 }

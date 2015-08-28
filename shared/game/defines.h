@@ -1569,6 +1569,62 @@ namespace wowpp
 
 		typedef area_aura_type::Type AreaAuraType;
 
-		
+		namespace lock_key_type
+		{
+			enum Type
+			{
+				/// No key requirement.
+				None	= 0,
+				/// An item is required.
+				Item	= 1,
+				/// A specific skill is required.
+				Skill	= 2
+			};
+		}
+
+		namespace lock_type
+		{
+			enum Type
+			{
+				/// 
+				Picklock				= 1,
+				/// 
+				Herbalism				= 2,
+				/// 
+				Mining					= 3,
+				/// 
+				DisarmTrap				= 4,
+				/// 
+				Open					= 5,
+				/// 
+				Treasure				= 6,
+				/// 
+				CalcifiedElvenGems		= 7,
+				/// 
+				Close					= 8,
+				/// 
+				ArmTrap					= 9,
+				/// 
+				QuickOpen				= 10,
+				/// 
+				QuickClose				= 11,
+				/// 
+				OpenTinkering			= 12,
+				/// 
+				OpenKneeling			= 13,
+				/// 
+				OpenAttacking			= 14,
+				/// 
+				Gahzridian				= 15,
+				/// 
+				Blasting				= 16,
+				/// 
+				SlowOpen				= 17,
+				/// 
+				SlowClose				= 18,
+				/// 
+				Fishing					= 19
+			};
+		}
 	}
 }

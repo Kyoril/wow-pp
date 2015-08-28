@@ -47,6 +47,7 @@ namespace wowpp
 
 		private slots:
 
+			void on_actionLoadMap_triggered();
 			void on_actionExit_triggered();
 
 		protected:

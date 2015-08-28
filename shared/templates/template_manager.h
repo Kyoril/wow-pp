@@ -85,6 +85,11 @@ namespace wowpp
 			return m_templates;
 		}
 
+		Templates &getTemplates()
+		{
+			return m_templates;
+		}
+
 		const TemplatesById &getTemplatesById() const
 		{
 			return m_byId;
