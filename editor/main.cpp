@@ -20,6 +20,8 @@
 // 
 
 #include <QApplication>
+#include <QTextStream>
+#include <QFile>
 #include "editor_application.h"
 #include "main_window.h"
 #include "ui_main_window.h"
@@ -36,6 +38,15 @@ int main(int argc, char *argv[])
 	// Create the qt application instance and set it all up
 	QApplication app(argc, argv);
 	
+	// Load stylesheet
+	QFile f(":qdarkstyle/style.qss");
+	if (f.exists())
+	{
+		f.open(QFile::ReadOnly | QFile::Text);
+		QTextStream ts(&f);
+		app.setStyleSheet(ts.readAll());
+	}
+
 	// Create and load our own application class, since inheriting QApplication
 	// seems to cause problems.
 	EditorApplication editorAppInstance;

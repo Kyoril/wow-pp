@@ -267,7 +267,10 @@
                 <item row="0" column="1">
                  <widget class="QLineEdit" name="spellIdField">
                   <property name="enabled">
-                   <bool>false</bool>
+                   <bool>true</bool>
+                  </property>
+                  <property name="readOnly">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
@@ -281,7 +284,10 @@
                 <item row="1" column="1">
                  <widget class="QLineEdit" name="castTimeField">
                   <property name="enabled">
-                   <bool>false</bool>
+                   <bool>true</bool>
+                  </property>
+                  <property name="readOnly">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
@@ -295,7 +301,7 @@
                 <item row="2" column="1">
                  <widget class="QComboBox" name="resourceField">
                   <property name="enabled">
-                   <bool>false</bool>
+                   <bool>true</bool>
                   </property>
                   <item>
                    <property name="text">
@@ -338,7 +344,10 @@
                 <item row="0" column="1">
                  <widget class="QLineEdit" name="spellNameField">
                   <property name="enabled">
-                   <bool>false</bool>
+                   <bool>true</bool>
+                  </property>
+                  <property name="readOnly">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
@@ -352,7 +361,10 @@
                 <item row="1" column="1">
                  <widget class="QLineEdit" name="cooldownField">
                   <property name="enabled">
-                   <bool>false</bool>
+                   <bool>true</bool>
+                  </property>
+                  <property name="readOnly">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
@@ -366,7 +378,10 @@
                 <item row="2" column="1">
                  <widget class="QLineEdit" name="costField">
                   <property name="enabled">
-                   <bool>false</bool>
+                   <bool>true</bool>
+                  </property>
+                  <property name="readOnly">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
@@ -377,7 +392,7 @@
             <item>
              <widget class="QTabWidget" name="attributeTabs">
               <property name="currentIndex">
-               <number>1</number>
+               <number>0</number>
               </property>
               <widget class="QWidget" name="attributeTab">
                <attribute name="title">
