@@ -33,7 +33,8 @@ namespace wowpp
 			"global",
 			"dungeon",
 			"raid",
-			"battleground"
+			"battleground",
+			"arena"
 			}
 		};
 

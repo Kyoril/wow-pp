@@ -39,6 +39,8 @@ namespace wowpp
 			Raid			= 0x02,
 			/// There can be many cross-realm instances with some logic behind (win/loose)
 			Battleground	= 0x03,
+			/// 
+			Arena			= 0x04,
 
 			Count_,
 			Invalid_ = Count_

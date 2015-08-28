@@ -22,6 +22,8 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QItemSelection>
+#include "trigger_list_model.h"
 #include <memory>
 
 // Forwards
@@ -47,10 +49,12 @@ namespace wowpp
 
 		private slots:
 
+			void onTriggerSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 
 		private:
 				
 			EditorApplication &m_application;
+			TriggerListModel *m_listModel;
 			Ui::TriggerEditor *m_ui;
 		};
 	}

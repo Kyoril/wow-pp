@@ -106,7 +106,6 @@ namespace wowpp
 		{
 			if (m_effect.miscValueA & Int32(1 << i))
 			{
-				DLOG("Points to apply: " << m_basePoints);
 				m_target.updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), unit_mod_type::TotalValue, m_basePoints, apply);
 			}
 		}
@@ -119,7 +118,6 @@ namespace wowpp
 		{
 			if (m_effect.miscValueA & Int32(1 << i))
 			{
-				DLOG("Points to apply: " << m_basePoints);
 				m_target.updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), unit_mod_type::BasePct, m_basePoints, apply);
 			}
 		}

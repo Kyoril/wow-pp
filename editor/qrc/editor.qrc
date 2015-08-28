@@ -1,5 +1,11 @@
 <RCC>
   <qresource prefix="/">
+    <file>Trade_Engineering.png</file>
+    <file>UI/branch-closed.png</file>
+    <file>UI/branch-end.png</file>
+    <file>UI/branch-more.png</file>
+    <file>UI/branch-open.png</file>
+    <file>UI/vline.png</file>
     <file>File.png</file>
     <file>Folder.png</file>
     <file>Trigger.png</file>
