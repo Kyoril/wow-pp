@@ -43,7 +43,8 @@ namespace wowpp
 		static_assert(map_instance_type::Dungeon == 1, "");
 		static_assert(map_instance_type::Raid == 2, "");
 		static_assert(map_instance_type::Battleground == 3, "");
-		static_assert(map_instance_type::Count_ == 4, "");
+		static_assert(map_instance_type::Arena == 4, "");
+		static_assert(map_instance_type::Count_ == 5, "");
 
 		const MapInstanceTypeStrings mapInstanceType(strings);
 	}
