@@ -45,5 +45,22 @@ namespace wowpp
 			// TODO
 		}
 
+		MapEntry * LoadMapDialog::getSelectedMap() const
+		{
+			auto *sel = m_ui->treeView->selectionModel();
+			if (!sel)
+				return nullptr;
+
+			auto current = sel->currentIndex();
+			if (!current.isValid())
+				return nullptr;
+
+			auto &templates = m_app.getProject().maps.getTemplates();
+			if (current.row() >= templates.size())
+				return nullptr;
+
+			return templates[current.row()].get();
+		}
+
 	}
 }

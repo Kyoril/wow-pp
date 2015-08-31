@@ -47,7 +47,7 @@ namespace wowpp
 		public:
 
 			/// 
-			explicit ActionDialog(EditorApplication &app);
+			explicit ActionDialog(EditorApplication &app, TriggerEntry::TriggerAction action = TriggerEntry::TriggerAction());
 
 			const TriggerEntry::TriggerAction &getAction() const { return m_action; }
 
@@ -55,6 +55,7 @@ namespace wowpp
 
 			void on_buttonBox_accepted();
 			void on_actionBox_currentIndexChanged(int index);
+			void on_actionTextLabel_linkActivated(const QString &link);
 
 		private:
 

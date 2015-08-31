@@ -47,7 +47,9 @@ namespace wowpp
 		public:
 
 			/// 
-			explicit EventDialog(EditorApplication &app);
+			explicit EventDialog(EditorApplication &app, UInt32 e = 0);
+
+			UInt32 getEvent() const;
 
 		private slots:
 

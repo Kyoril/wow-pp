@@ -22,6 +22,7 @@
 #pragma once
 
 #include <QMainWindow>
+#include "qt_ogre_window.h"
 #include <memory>
 
 // Forwards
@@ -58,6 +59,7 @@ namespace wowpp
 				
 			EditorApplication &m_application;
 			Ui::MainWindow *m_ui;
+			QtOgreWindow *m_ogreWindow;
 		};
 	}
 }

@@ -170,7 +170,22 @@ namespace wowpp
 			auto result = dialog.exec();
 			if (result == QDialog::Accepted)
 			{
-				// TODO: Add event
+				m_selectedTrigger->events.push_back(dialog.getEvent());
+
+				auto *rootItem = m_ui->functionView->topLevelItem(0);
+				if (rootItem)
+				{
+					auto *eventItem = rootItem->child(0);
+					if (eventItem)
+					{
+						QTreeWidgetItem *item = new QTreeWidgetItem();
+						item->setData(0, Qt::DisplayRole, getTriggerEventText(dialog.getEvent()));
+						item->setData(0, Qt::DecorationRole, QImage(":/Units.png"));
+						eventItem->addChild(item);
+					}
+				}
+
+				m_application.markAsChanged();
 			}
 		}
 
@@ -183,7 +198,22 @@ namespace wowpp
 			auto result = dialog.exec();
 			if (result == QDialog::Accepted)
 			{
-				// TODO: Add event
+				m_selectedTrigger->actions.push_back(dialog.getAction());
+				
+				auto *rootItem = m_ui->functionView->topLevelItem(0);
+				if (rootItem)
+				{
+					auto *actionItem = rootItem->child(2);
+					if (actionItem)
+					{
+						QTreeWidgetItem *item = new QTreeWidgetItem();
+						item->setData(0, Qt::DisplayRole, getTriggerActionText(m_application.getProject(), dialog.getAction()));
+						item->setData(0, Qt::DecorationRole, QImage(":/Trade_Engineering.png"));
+						actionItem->addChild(item);
+					}
+				}
+
+				m_application.markAsChanged();
 			}
 		}
 
@@ -213,5 +243,54 @@ namespace wowpp
 			m_application.markAsChanged();
 		}
 
+		void TriggerEditor::on_functionView_itemDoubleClicked(QTreeWidgetItem* item, int column)
+		{
+			if (!item)
+				return;
+
+			if (!m_selectedTrigger)
+				return;
+
+			auto *rootItem = m_ui->functionView->topLevelItem(0);
+			if (!rootItem)
+				return;
+
+			auto *parent = item->parent();
+			if (!parent)
+				return;
+
+			if (parent == rootItem->child(0))
+			{
+				int index = parent->indexOfChild(item);
+				if (index >= m_selectedTrigger->actions.size())
+					return;
+
+				// Event clicked
+				EventDialog dialog(m_application, m_selectedTrigger->events[index]);
+				auto result = dialog.exec();
+				if (result == QDialog::Accepted)
+				{
+					m_selectedTrigger->events[index] = dialog.getEvent();
+					item->setData(0, Qt::DisplayRole, getTriggerEventText(dialog.getEvent()));
+					m_application.markAsChanged();
+				}
+			}
+			else if (parent == rootItem->child(2))
+			{
+				int index = parent->indexOfChild(item);
+				if (index >= m_selectedTrigger->actions.size())
+					return;
+
+				// Action clicked
+				ActionDialog dialog(m_application, m_selectedTrigger->actions[index]);
+				auto result = dialog.exec();
+				if (result == QDialog::Accepted)
+				{
+					m_selectedTrigger->actions[index] = dialog.getAction();
+					item->setData(0, Qt::DisplayRole, getTriggerActionText(m_application.getProject(), dialog.getAction()));
+					m_application.markAsChanged();
+				}
+			}
+		}
 	}
 }

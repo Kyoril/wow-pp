@@ -53,7 +53,7 @@
      <number>0</number>
     </property>
     <item>
-     <widget class="wowpp::editor::RenderWidget" name="renderWidget" native="true"/>
+     <widget class="QWidget" name="renderWidget" native="true"/>
     </item>
    </layout>
   </widget>
@@ -253,14 +253,6 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <customwidgets>
-  <customwidget>
-   <class>wowpp::editor::RenderWidget</class>
-   <extends>QWidget</extends>
-   <header>render_widget.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources>
   <include location="../qrc/editor.qrc"/>
   <include location="../qrc/style.qrc"/>

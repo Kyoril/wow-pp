@@ -122,9 +122,29 @@ namespace wowpp
 			std::vector<Int32> data;
 
 			TriggerAction()
-				: action(trigger_actions::Count_)
+				: action(0)
 				, target(trigger_action_target::None)
 			{
+			}
+			TriggerAction(const TriggerAction &other)
+				: action(other.action)
+				, target(other.target)
+				, targetName(other.targetName)
+				, texts(other.texts)
+				, data(other.data)
+			{
+			}
+			TriggerAction(TriggerAction &&other)
+			{
+				action = other.action;
+				other.action = 0;
+
+				target = other.target;
+				other.target = 0;
+
+				targetName.swap(other.targetName);
+				texts.swap(other.texts);
+				data.swap(other.data);
 			}
 		};
 

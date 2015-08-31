@@ -1,0 +1,13 @@
+
+[General]
+FileSystem=C:/Source/wowpp/data/editor
+
+[WoW]
+MPQ=D:/Games/World of Warcraft 2.4.3/Data/common.mpq
+MPQ=D:/Games/World of Warcraft 2.4.3/Data/expansion.mpq
+MPQ=D:/Games/World of Warcraft 2.4.3/Data/patch.mpq
+MPQ=D:/Games/World of Warcraft 2.4.3/Data/patch-2.mpq
+MPQ=D:/Games/World of Warcraft 2.4.3/Data/deDE/expansion-locale-deDE.mpq
+MPQ=D:/Games/World of Warcraft 2.4.3/Data/locale-deDE.mpq
+MPQ=D:/Games/World of Warcraft 2.4.3/Data/patch-deDE.mpq
+MPQ=D:/Games/World of Warcraft 2.4.3/Data/patch-deDE-2.mpq

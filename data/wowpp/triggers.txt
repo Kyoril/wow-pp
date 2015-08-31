@@ -7,8 +7,8 @@ triggers =
 	(id = 2, name = "Rhahk\'zor - Death - Open Door", path = "Deadmines", events = {3}, actions = 
 	{
 		(action = 3, target = 4, target_name = "Rhahk\'Zor - Door", data = {0})
-		(action = 4, target = 5, target_name = "Rhahk\'Zor Patrol A", data = {1})
-		(action = 4, target = 5, target_name = "Rhahk\'Zor Patrol B", data = {1})
+		(action = 4, target = 5, target_name = "Rhahk\'Zor - Patrol A", data = {1})
+		(action = 4, target = 5, target_name = "Rhahk\'Zor - Patrol B", data = {1})
 	})
 	(id = 3, name = "Sneed - Death - Open Door", path = "Deadmines", events = {3}, actions = 
 	{
@@ -18,5 +18,8 @@ triggers =
 	{
 		(action = 6, target = 1, data = {5141})
 	})
-	(id = 5, name = "Cobold Vermin - Aggro - Say")
+	(id = 5, name = "Cobold Vermin - Aggro - Say", events = {2}, actions = 
+	{
+		(action = 1, target = 1, texts = {"You no take candle!"})
+	})
 }

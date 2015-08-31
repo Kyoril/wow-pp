@@ -1,0 +1,33 @@
+
+struct SOut
+{
+	float4 pos			: POSITION;
+	float2 tex			: TEXCOORD0;
+	float4 out_Pos		: TEXCOORD1;
+	float3 out_Normal	: TEXCOORD2;
+	float4 out_LightPos	: TEXCOORD3;
+	float3 out_EyePos	: TEXCOORD4;
+};
+
+SOut main(	float4 position : POSITION,
+			float3 normal	: NORMAL,
+			float2 uv		: TEXCOORD0,
+			
+			uniform float3		g_eyePosition,
+			uniform float4		g_lightPosition,
+			uniform float4x4	g_WorldViewprojMatrix,
+			uniform float4x4	g_TexMatrix
+			)
+{
+	SOut output;
+	
+	output.pos = mul(g_WorldViewprojMatrix, position);
+	output.tex = mul(g_TexMatrix, float4(uv.xy, 0.0, 0.0)).xy;
+	
+	output.out_Pos = position;
+	output.out_Normal = normal;
+	output.out_LightPos = g_lightPosition;
+	output.out_EyePos = g_eyePosition;
+	
+	return output;
+}

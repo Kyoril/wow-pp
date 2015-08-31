@@ -48,6 +48,8 @@ namespace wowpp
 			/// 
 			explicit LoadMapDialog(EditorApplication &app);
 
+			MapEntry *getSelectedMap() const;
+
 		private slots:
 
 			void on_buttonBox_accepted();

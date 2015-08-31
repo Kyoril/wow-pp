@@ -25,6 +25,9 @@ cmake_minimum_required(VERSION 2.8.11)
 	if(POLICY CMP0043)
 		cmake_policy(SET CMP0043 OLD)
 	endif()
+	
+	find_package(OGRE REQUIRED)
+	include_directories(${OGRE_INCLUDE_DIRS})
 		
 	# Enable CMake automatic moc file generation
 	set(CMAKE_AUTOMOC ON)
@@ -91,7 +94,7 @@ cmake_minimum_required(VERSION 2.8.11)
 	target_link_libraries(editor common templates virtual_directory log data stormlib recast detour detour_crowd detour_tile_cache debug_utils game)
 	
 	# Link dependency libraries
-	target_link_libraries(editor ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${OPENSSL_LIBRARIES})
+	target_link_libraries(editor ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${OPENSSL_LIBRARIES} ${OGRE_LIBRARIES})
 	
 	# Link Qt5 Libraries
 	qt5_use_modules(editor Widgets OpenGL)

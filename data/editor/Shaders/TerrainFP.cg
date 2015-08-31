@@ -1,0 +1,46 @@
+
+float4 main(
+	in float4 pos			: POSITION,
+	in float2 out_Tex		: TEXCOORD0,
+	in float4 out_Pos		: TEXCOORD1,
+	in float3 out_Normal	: TEXCOORD2,
+	in float4 out_LightPos	: TEXCOORD3,
+	in float3 out_EyePos	: TEXCOORD4,
+
+	uniform sampler2D alpha,
+	uniform sampler2D splat1,
+	uniform sampler2D splat2,
+	uniform sampler2D splat3,
+	uniform sampler2D splat4,
+	
+	uniform float Scale,				// Splatting scale
+	uniform float3 g_AmbientLight,
+	uniform float3 g_DiffuseLight
+	) : COLOR0
+{
+	float4 coverage = tex2D(alpha, out_Tex * 0.96875);
+	
+	float2 scaledUV = out_Tex * Scale;
+	float4 diffuse01 = tex2D(splat1, scaledUV);
+	float4 diffuse02 = tex2D(splat2, scaledUV);
+	float4 diffuse03 = tex2D(splat3, scaledUV);
+	float4 diffuse04 = tex2D(splat4, scaledUV);
+	
+	float4 finalDiffuse = 
+		diffuse01 * (1.0 - (coverage.x + coverage.y + coverage.z)) + 
+		diffuse02 * coverage.x + 
+		diffuse03 * coverage.y + 
+		diffuse04 * coverage.z;
+	
+	float3 N = normalize(out_Normal);
+	float3 EyeDir = normalize(out_EyePos - out_Pos.xyz);
+	float3 LightDir = normalize(out_LightPos.xyz - (out_Pos.xyz * out_LightPos.w));
+	float3 HalfAngle = normalize(LightDir + EyeDir);
+	
+	float NdotL = dot(LightDir, N);
+	float NdotH = dot(HalfAngle, N);
+	float4 Lit = lit(NdotL, NdotH, 128.0);
+	
+	float3 texColor = finalDiffuse.xyz;
+    return float4(g_DiffuseLight * Lit.y * texColor + g_AmbientLight * texColor, 1.0);
+}

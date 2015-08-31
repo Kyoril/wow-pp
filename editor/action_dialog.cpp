@@ -26,24 +26,27 @@
 #include "templates/basic_template.h"
 #include "editor_application.h"
 #include "trigger_helper.h"
+#include "text_dialog.h"
+#include "target_dialog.h"
+#include "data_dialog.h"
+#include <QMessageBox>
 
 namespace wowpp
 {
 	namespace editor
 	{
-		ActionDialog::ActionDialog(EditorApplication &app)
+		ActionDialog::ActionDialog(EditorApplication &app, TriggerEntry::TriggerAction action/* = TriggerEntry::TriggerAction()*/)
 			: QDialog()
 			, m_ui(new Ui::ActionDialog)
 			, m_app(app)
+			, m_action(std::move(action))
 		{
 			// Setup auto generated ui
 			m_ui->setupUi(this);
-
-			m_action.action = trigger_actions::Trigger;
-			m_action.target = trigger_action_target::None;
+			m_ui->actionBox->setCurrentIndex(m_action.action);
 
 			connect(m_ui->actionBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_actionBox_currentIndexChanged(int)));
-			on_actionBox_currentIndexChanged(0);
+			m_ui->actionTextLabel->setText(getTriggerActionText(m_app.getProject(), m_action, true));
 		}
 
 		void ActionDialog::on_buttonBox_accepted()
@@ -53,12 +56,63 @@ namespace wowpp
 
 		void ActionDialog::on_actionBox_currentIndexChanged(int index)
 		{
-			m_action.action = index;
-			m_action.texts.clear();
-			m_action.data.clear();
-			m_action.targetName.clear();
+			if (m_action.action != index)
+			{
+				m_action.action = index;
+				m_action.texts.clear();
+				m_action.data.clear();
+				m_action.targetName.clear();
 
-			m_ui->actionTextLabel->setText(getTriggerActionText(m_app.getProject(), m_action, true));
+				m_ui->actionTextLabel->setText(getTriggerActionText(m_app.getProject(), m_action, true));
+			}
+		}
+
+		void ActionDialog::on_actionTextLabel_linkActivated(const QString &link)
+		{
+			if (link == "target")
+			{
+				TargetDialog dialog(m_action.target, m_action.targetName.c_str());
+				auto result = dialog.exec();
+				if (result == QDialog::Accepted)
+				{
+					m_action.target = dialog.getTarget();
+					m_action.targetName = dialog.getTargetName().toStdString();
+					m_ui->actionTextLabel->setText(getTriggerActionText(m_app.getProject(), m_action, true));
+				}
+			}
+			else if (link.startsWith("data-"))
+			{
+				QString numString = link.right(link.size() - 5);
+				int index = numString.toInt();
+
+				if (m_action.data.size() <= index) m_action.data.resize(index + 1);
+				
+				DataDialog dialog(m_app.getProject(), m_action.action, index, m_action.data[index]);
+				auto result = dialog.exec();
+				if (result == QDialog::Accepted)
+				{
+					m_action.data[index] = dialog.getData();
+					m_ui->actionTextLabel->setText(getTriggerActionText(m_app.getProject(), m_action, true));
+				}
+			}
+			else if (link.startsWith("text-"))
+			{
+				QString numString = link.right(link.size() - 5);
+				int index = numString.toInt();
+
+				if (m_action.texts.size() <= index) m_action.texts.resize(index + 1);
+				TextDialog dialog(m_action.texts[index].c_str());
+				auto result = dialog.exec();
+				if (result == QDialog::Accepted)
+				{
+					m_action.texts[index] = dialog.getText().toStdString();
+					m_ui->actionTextLabel->setText(getTriggerActionText(m_app.getProject(), m_action, true));
+				}
+			}
+			else
+			{
+				// Unhandled hyperlink type
+			}
 		}
 
 	}

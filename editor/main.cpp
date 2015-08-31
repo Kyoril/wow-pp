@@ -22,6 +22,10 @@
 #include <QApplication>
 #include <QTextStream>
 #include <QFile>
+#include "common/background_worker.h"
+#include "log/log_std_stream.h"
+#include "log/log_entry.h"
+#include "log/default_log_levels.h"
 #include "editor_application.h"
 #include "main_window.h"
 #include "ui_main_window.h"
@@ -45,6 +49,25 @@ int main(int argc, char *argv[])
 		f.open(QFile::ReadOnly | QFile::Text);
 		QTextStream ts(&f);
 		app.setStyleSheet(ts.readAll());
+	}
+
+	// The log files are written to in a special background thread
+	std::ofstream logFile;
+	wowpp::BackgroundWorker backgroundLogger;
+	wowpp::LogStreamOptions logFileOptions = wowpp::g_DefaultFileLogOptions;
+	boost::signals2::scoped_connection genericLogConnection;
+	logFile.open("wowpp_editor.log", std::ios::app);
+	if (logFile)
+	{
+		genericLogConnection = wowpp::g_DefaultLog.signal().connect(
+			[&logFile, &backgroundLogger, &logFileOptions](const wowpp::LogEntry & entry)
+		{
+			backgroundLogger.addWork(std::bind(
+				wowpp::printLogEntry,
+				std::ref(logFile),
+				entry,
+				std::cref(logFileOptions)));
+		});
 	}
 
 	// Create and load our own application class, since inheriting QApplication

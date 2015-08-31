@@ -31,16 +31,17 @@ namespace wowpp
 {
 	namespace editor
 	{
-		EventDialog::EventDialog(EditorApplication &app)
+		EventDialog::EventDialog(EditorApplication &app, UInt32 e/* = 0*/)
 			: QDialog()
 			, m_ui(new Ui::EventDialog)
 			, m_app(app)
 		{
 			// Setup auto generated ui
 			m_ui->setupUi(this);
+			m_ui->eventBox->setCurrentIndex(e);
 
 			connect(m_ui->eventBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_eventBox_currentIndexChanged(int)));
-			on_eventBox_currentIndexChanged(0);
+			on_eventBox_currentIndexChanged(e);
 		}
 
 		void EventDialog::on_buttonBox_accepted()
@@ -51,6 +52,11 @@ namespace wowpp
 		void EventDialog::on_eventBox_currentIndexChanged(int index)
 		{
 			m_ui->eventTextLabel->setText(getTriggerEventText(index));
+		}
+
+		UInt32 EventDialog::getEvent() const
+		{
+			return m_ui->eventBox->currentIndex();
 		}
 
 	}

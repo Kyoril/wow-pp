@@ -1,8 +1,10 @@
 
-vertex_program TerrainVP glsl
+vertex_program TerrainVP cg
 {
-    source Shaders/TerrainVP.glsl
-
+    source Shaders/TerrainVP.cg
+	entry_point main
+    profiles vs_3_0 arbvp1
+	
     default_params
     {
 		param_named_auto g_WorldViewprojMatrix worldviewproj_matrix
@@ -13,19 +15,15 @@ vertex_program TerrainVP glsl
     }
 }
 
-fragment_program TerrainFP glsl
+fragment_program TerrainFP cg
 {
-    source Shaders/TerrainFP.glsl
+    source Shaders/TerrainFP.cg
+	entry_point main
+    profiles ps_3_0 arbfp1
 	
     default_params
     {
-		param_named			alpha					int 0
-		param_named			splat1					int 1
-		param_named			splat2					int 2
-		param_named			splat3					int 3
-		param_named			splat4					int 4
-		param_named Scale float 8.0
-		
+		param_named Scale float 8.0	
 		param_named_auto g_AmbientLight ambient_light_colour
 		param_named_auto g_DiffuseLight light_diffuse_colour 0
     }

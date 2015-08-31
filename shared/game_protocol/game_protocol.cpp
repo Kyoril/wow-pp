@@ -707,7 +707,6 @@ namespace wowpp
 					out_packet << io::write<NetUInt32>(language::Universal);
 				}
 
-				// TODO: Get speaker name from player if available
 				const String speakerName = (speaker ? speaker->getName() : "UNKNOWN");
 				switch (type)
 				{
@@ -728,16 +727,7 @@ namespace wowpp
 
 						UInt64 listenerGuid = 0x00;
 						out_packet
-							<< io::write<NetUInt64>(listenerGuid);
-
-						if (listenerGuid && !isPlayerGUID(listenerGuid))
-						{
-							out_packet
-								<< io::write<NetUInt32>(0x01)		// String listener name length
-								<< io::write<NetUInt8>(0x00);		// String listener name
-						}
-
-						out_packet
+							<< io::write<NetUInt64>(listenerGuid)
 							<< io::write<NetUInt32>(message.size() + 1)
 							<< io::write_range(message) << io::write<NetUInt8>(0)
 							<< io::write<NetUInt8>(0);				// Chat-Tag always 0 since it's a creature which can't be AFK, DND etc.
