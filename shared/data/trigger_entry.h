@@ -126,7 +126,7 @@ namespace wowpp
 				, target(trigger_action_target::None)
 			{
 			}
-			TriggerAction(const TriggerAction &other)
+			/*TriggerAction(const TriggerAction &other)
 				: action(other.action)
 				, target(other.target)
 				, targetName(other.targetName)
@@ -146,6 +146,28 @@ namespace wowpp
 				texts.swap(other.texts);
 				data.swap(other.data);
 			}
+            TriggerAction& operator=(const TriggerAction& other)
+            {
+                action = other.action;
+                target = other.target;
+                targetName = other.targetName;
+                texts = other.texts;
+                data = other.data;
+                return *this;
+            }
+            TriggerAction& operator=(TriggerAction&& other)
+            {
+                action = other.action;
+                other.action = 0;
+                
+                target = other.target;
+                other.target = 0;
+                
+                targetName.swap(other.targetName);
+                texts.swap(other.texts);
+                data.swap(other.data);
+                return *this;
+            }*/
 		};
 
 		typedef std::vector<UInt32> TriggerEvents;

@@ -61,7 +61,7 @@ namespace wowpp
 				if (role == Qt::DisplayRole)
 				{
 					const auto &templates = m_entries.getTemplates();
-					const T::TemplatePtr &tpl = templates[index.row()];
+					const typename T::TemplatePtr &tpl = templates[index.row()];
 
 					if (index.column() == 0)
 					{
@@ -120,7 +120,7 @@ namespace wowpp
 
 		//////////////////////////////////////////////////////////////////////////
 		// MapEntryManager overloads
-
+/*
 		template<>
 		QVariant TemplateListModel<MapEntryManager>::data(const QModelIndex &index, int role) const
 		{
@@ -175,5 +175,6 @@ namespace wowpp
 				return QString("Row %1").arg(section);
 			}
 		}
+ */
 	}
 }

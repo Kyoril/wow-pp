@@ -80,7 +80,11 @@ namespace wowpp
 			}
 		}
 
+#if (OGRE_VERSION_MAJOR >= 1 && OGRE_VERSION_MINOR == 10)
 		Ogre::DataStreamPtr MPQArchive::open(const Ogre::String &filename, bool readonly)
+#else
+        Ogre::DataStreamPtr MPQArchive::open(const Ogre::String &filename, bool readonly) const
+#endif
 		{
 			// Open the file for reading
 			HANDLE hFile;
@@ -198,7 +202,11 @@ namespace wowpp
 			return ret;
 		}
 
+#if (OGRE_VERSION_MAJOR >= 1 && OGRE_VERSION_MINOR == 10)
 		Ogre::FileInfoListPtr MPQArchive::findFileInfo(const Ogre::String &pattern, bool recursive /*= true*/, bool dirs /*= false*/)
+#else 
+        Ogre::FileInfoListPtr MPQArchive::findFileInfo(const Ogre::String &pattern, bool recursive /*= true*/, bool dirs /*= false*/) const
+#endif
 		{
 			Ogre::FileInfoListPtr ret = Ogre::FileInfoListPtr(OGRE_NEW_T(Ogre::FileInfoList, Ogre::MEMCATEGORY_GENERAL)(), Ogre::SPFM_DELETE_T);
 
