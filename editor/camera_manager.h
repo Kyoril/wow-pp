@@ -28,7 +28,7 @@ namespace OgreQtBites
 			, mTarget(0)
 			, mOrbiting(false)
 			, mZooming(false)
-			, mTopSpeed(150)
+			, mTopSpeed(15)
 			, mVelocity(Ogre::Vector3::ZERO)
 			, mGoingForward(false)
 			, mGoingBack(false)
@@ -210,8 +210,8 @@ namespace OgreQtBites
 				else if (evt.key() == Qt::Key_S || evt.key() == Qt::Key_Down) mGoingBack = true;
 				else if (evt.key() == Qt::Key_A || evt.key() == Qt::Key_Left) mGoingLeft = true;
 				else if (evt.key() == Qt::Key_D || evt.key() == Qt::Key_Right) mGoingRight = true;
-				else if (evt.key() == Qt::Key_PageUp) mGoingUp = true;
-				else if (evt.key() == Qt::Key_PageDown) mGoingDown = true;
+				else if (evt.key() == Qt::Key_E) mGoingUp = true;
+				else if (evt.key() == Qt::Key_Q) mGoingDown = true;
 				else if (evt.key() == Qt::Key_Shift) mFastMove = true;
 			}
 		}
@@ -227,8 +227,8 @@ namespace OgreQtBites
 				else if (evt.key() == Qt::Key_S || evt.key() == Qt::Key_Down) mGoingBack = false;
 				else if (evt.key() == Qt::Key_A || evt.key() == Qt::Key_Left) mGoingLeft = false;
 				else if (evt.key() == Qt::Key_D || evt.key() == Qt::Key_Right) mGoingRight = false;
-				else if (evt.key() == Qt::Key_PageUp) mGoingUp = false;
-				else if (evt.key() == Qt::Key_PageDown) mGoingDown = false;
+				else if (evt.key() == Qt::Key_E) mGoingUp = false;
+				else if (evt.key() == Qt::Key_Q) mGoingDown = false;
 				else if (evt.key() == Qt::Key_Shift) mFastMove = false;
 			}
 		}

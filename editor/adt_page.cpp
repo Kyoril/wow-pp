@@ -455,5 +455,6 @@ namespace wowpp
                 read::readMCNKChunk(out_page, file, entry.size);
             }
 		}
+
 	}
 }

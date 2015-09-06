@@ -32,6 +32,61 @@ namespace wowpp
 {
 	namespace editor
 	{
+		template<>
+		QVariant TemplateListModel<MapEntryManager>::data(const QModelIndex &index, int role) const
+		{
+			if (!index.isValid())
+				return QVariant();
+
+			if (index.row() >= m_entries.getTemplates().size())
+				return QVariant();
+
+			if (role == Qt::DisplayRole)
+			{
+				const auto &templates = m_entries.getTemplates();
+				const auto &tpl = templates[index.row()];
+
+				if (index.column() == 0)
+				{
+					return QString("%1 %2").arg(QString::number(tpl->id), 3, QLatin1Char('0')).arg(tpl->name.c_str());
+				}
+				else
+				{
+					return QString(constant_literal::mapInstanceType.getName(tpl->instanceType).c_str());
+				}
+			}
+
+			return QVariant();
+		}
+
+		template<>
+		int TemplateListModel<MapEntryManager>::columnCount(const QModelIndex &parent) const
+		{
+			return 2;
+		}
+
+		template<>
+		QVariant TemplateListModel<MapEntryManager>::headerData(int section, Qt::Orientation orientation, int role) const
+		{
+			if (role != Qt::DisplayRole)
+				return QVariant();
+
+			if (orientation == Qt::Horizontal)
+			{
+				switch (section)
+				{
+				case 0:
+					return QString("Name");
+				default:
+					return QString("Type");
+				}
+			}
+			else
+			{
+				return QString("Row %1").arg(section);
+			}
+		}
+
 		EditorApplication::EditorApplication()
 			: QObject()
 			, m_changed(false)

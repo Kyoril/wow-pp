@@ -29,6 +29,14 @@
 #include <utility>
 #include "camera_manager.h"
 
+namespace wowpp
+{
+	namespace editor
+	{
+		class MPQArchiveFactory;
+	}
+}
+
 struct IScene
 {
 	virtual ~IScene() { }
@@ -76,6 +84,7 @@ protected:
 	Ogre::ColourValue m_ogreBackground;
 	std::unique_ptr<IScene> m_scene;
 	std::unique_ptr<OgreQtBites::SdkQtCameraMan> m_cameraMan;
+	wowpp::editor::MPQArchiveFactory *m_mpqArchives;
 	bool m_updatePending;
 	bool m_animating;
 

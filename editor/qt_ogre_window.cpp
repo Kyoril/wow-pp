@@ -30,6 +30,7 @@ QtOgreWindow::QtOgreWindow(QWindow *parent /*= nullptr*/)
 	, m_ogreCamera(nullptr)
 	, m_updatePending(false)
 	, m_animating(false)
+	, m_mpqArchives(nullptr)
 {
 	setAnimating(true);
 	installEventFilter(this);
@@ -38,6 +39,14 @@ QtOgreWindow::QtOgreWindow(QWindow *parent /*= nullptr*/)
 
 QtOgreWindow::~QtOgreWindow()
 {
+	auto list = Ogre::ResourceGroupManager::getSingleton().getResourceGroups();
+	for (auto &group : list)
+	{
+		// Destroy resource groups
+		Ogre::ResourceGroupManager::getSingleton().unloadResourceGroup(group, false);
+		Ogre::ResourceGroupManager::getSingleton().destroyResourceGroup(group);
+	}
+
 	delete m_ogreRoot;
 }
 
@@ -66,7 +75,9 @@ void QtOgreWindow::initialize()
 	m_ogreRoot = new Ogre::Root("plugins.cfg");
 
 	wowpp::editor::BLPCodec::startup();
-	Ogre::ArchiveManager::getSingleton().addArchiveFactory(new wowpp::editor::MPQArchiveFactory());
+
+	m_mpqArchives = OGRE_NEW wowpp::editor::MPQArchiveFactory();
+	Ogre::ArchiveManager::getSingleton().addArchiveFactory(m_mpqArchives);
 
 	Ogre::ConfigFile ogreConfig;
 	ogreConfig.load("resources.cfg");
@@ -170,7 +181,7 @@ void QtOgreWindow::initialize()
 	m_ogreSceneMgr = m_ogreRoot->createSceneManager(Ogre::ST_GENERIC);
 
 	m_ogreCamera = m_ogreSceneMgr->createCamera("MainCamera");
-	m_ogreCamera->setPosition(Ogre::Vector3(0.0f, 0.0f, 10.0f));
+	m_ogreCamera->setPosition(Ogre::Vector3(0.0f, 0.0f, 3.0f));
 	m_ogreCamera->lookAt(Ogre::Vector3(0.0f, 0.0f, -300.0f));
 	m_ogreCamera->setNearClipDistance(0.1f);
 	m_ogreCamera->setFarClipDistance(200.0f);
@@ -202,7 +213,8 @@ void QtOgreWindow::createScene()
 	*/
 	m_ogreSceneMgr->setAmbientLight(Ogre::ColourValue(0.5f, 0.5f, 0.5f));
 
-	Ogre::Entity* sphereMesh = m_ogreSceneMgr->createEntity("mySphere", Ogre::SceneManager::PT_SPHERE);
+	Ogre::Entity* sphereMesh = //m_ogreSceneMgr->createEntity("mySphere", "kobold.mesh");
+		m_ogreSceneMgr->createEntity("mySphere", Ogre::SceneManager::PT_SPHERE);
 
 	Ogre::SceneNode* childSceneNode = m_ogreSceneMgr->getRootSceneNode()->createChildSceneNode();
 
@@ -214,8 +226,8 @@ void QtOgreWindow::createScene()
 	sphereMaterial->getTechnique(0)->getPass(0)->setAmbient(0.1f, 0.1f, 0.1f);
 	sphereMaterial->getTechnique(0)->getPass(0)->setDiffuse(0.2f, 0.2f, 0.2f, 1.0f);
 	sphereMaterial->getTechnique(0)->getPass(0)->setSpecular(0.9f, 0.9f, 0.9f, 1.0f);
-	//sphereMaterial->setAmbient(0.2f, 0.2f, 0.5f);
-	//sphereMaterial->setSelfIllumination(0.2f, 0.2f, 0.1f);
+	sphereMaterial->setAmbient(0.2f, 0.2f, 0.5f);
+	sphereMaterial->setSelfIllumination(0.2f, 0.2f, 0.1f);
 
 	sphereMesh->setMaterialName("SphereMaterial");
 	childSceneNode->setPosition(Ogre::Vector3(0.0f, 0.0f, 0.0f));
@@ -379,6 +391,7 @@ bool QtOgreWindow::frameRenderingQueued(const Ogre::FrameEvent &evt)
 
 	if (m_cameraMan)
 		m_cameraMan->frameRenderingQueued(evt);
+
 	return true;
 }
 

@@ -124,7 +124,7 @@ namespace wowpp
 			// Close file
 			SFileCloseFile(hFile);
 			
-			return Ogre::DataStreamPtr(OGRE_NEW Ogre::MemoryDataStream(buffer, fileSize, true, false));
+			return Ogre::DataStreamPtr(OGRE_NEW Ogre::MemoryDataStream(buffer, fileSize, true, readonly));
 		}
 
 		Ogre::StringVectorPtr MPQArchive::list(bool recursive /*= true*/, bool dirs /*= false*/)

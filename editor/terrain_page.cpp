@@ -43,11 +43,21 @@ namespace wowpp
 
 		TerrainPage::~TerrainPage()
 		{
+			for (auto &tile : m_tiles)
+			{
+				if (tile)
+				{
+					const auto &tileName = tile->getName();
+					if (Ogre::TextureManager::getSingleton().resourceExists(tileName))
+					{
+						Ogre::TextureManager::getSingleton().remove(tileName);
+					}
+				}
+			}
+
 			m_sceneNode->detachAllObjects();
 			m_sceneNode->getParentSceneNode()->removeAndDestroyChild(m_sceneNode->getName());
 			m_sceneNode = nullptr;
-
-			DLOG("~TerrainPage");
 		}
 
 		void TerrainPage::update()

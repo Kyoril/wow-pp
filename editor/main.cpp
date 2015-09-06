@@ -55,6 +55,8 @@ int main(int argc, char *argv[])
 	std::ofstream logFile;
 	wowpp::BackgroundWorker backgroundLogger;
 	wowpp::LogStreamOptions logFileOptions = wowpp::g_DefaultFileLogOptions;
+	logFileOptions.alwaysFlush = true;
+
 	boost::signals2::scoped_connection genericLogConnection;
 	logFile.open("wowpp_editor.log", std::ios::app);
 	if (logFile)
