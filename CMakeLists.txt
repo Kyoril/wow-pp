@@ -72,6 +72,12 @@ project(WoW)
 			set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
 		endif()
 	elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+		execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
+                OUTPUT_VARIABLE GCC_VERSION)
+		if (NOT (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6))
+			message(FATAL_ERROR "GCC 4.7 or newer is required in order to build WoW++. Please consider an update or switch over to clang.")
+		endif()
+	
 		list(APPEND CMAKE_CXX_FLAGS "-std=c++0x -pthread")
 	endif()
 
