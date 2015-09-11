@@ -153,7 +153,7 @@ namespace wowpp
 				Ogre::Mesh* mesh = dynamic_cast<Ogre::Mesh*>(resource);
 				if (!mesh)
 				{
-					OGRE_EXCEPT(Ogre::Exception::ERR_INVALID_CALL, "M2MeshLoader can only load Ogre::Mesh resource objects", "M2MeshLoader::loadResource");
+					OGRE_EXCEPT(Ogre::Exception::ERR_INTERNAL_ERROR, "M2MeshLoader can only load Ogre::Mesh resource objects", "M2MeshLoader::loadResource");
 				}
 
 				Ogre::DataStreamPtr ptr = Ogre::ResourceGroupManager::getSingleton().openResource(m_fileName, "WoW", false);
