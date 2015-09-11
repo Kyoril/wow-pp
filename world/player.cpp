@@ -564,7 +564,7 @@ namespace wowpp
 							}
 
 							// Calculate experience points
-							m_character->rewardExperience(nullptr, xp);
+							if (xp > 0) m_character->rewardExperience(nullptr, xp);
 							sendProxyPacket(
 								std::bind(game::server_write::explorationExperience, std::placeholders::_1, areaZone->id, xp));
 						}
