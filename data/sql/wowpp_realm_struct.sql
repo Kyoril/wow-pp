@@ -72,14 +72,14 @@ CREATE TABLE `character_items` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
 
-DROP TABLE IF EXISTS `character_social`;
+DROP TABLE IF EXISTS `character_actions`;
 
-CREATE TABLE `character_social` (
-  `guid_1` bigint(20) unsigned NOT NULL,
-  `guid_2` bigint(20) unsigned NOT NULL,
-  `flags` tinyint(3) unsigned NOT NULL,
-  `note` varchar(48) COLLATE latin1_german1_ci DEFAULT NULL,
-  PRIMARY KEY (`guid_1`,`guid_2`,`flags`)
+CREATE TABLE `character_actions` (
+  `guid` int(10) unsigned NOT NULL,
+  `button` tinyint(3) unsigned NOT NULL,
+  `action` smallint(5) unsigned NOT NULL,
+  `type` tinyint(3) unsigned NOT NULL,
+  PRIMARY KEY (`guid`,`button`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
