@@ -204,7 +204,7 @@ namespace wowpp
 					SIGSEGV, SIGFPE, SIGILL,
 			}};
 
-			foreach (const int sig, HandledSignals)
+			for (const int sig : HandledSignals)
 			{
 				struct sigaction action;
 				sigemptyset(&action.sa_mask);
