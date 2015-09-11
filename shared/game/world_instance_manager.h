@@ -51,7 +51,8 @@ namespace wowpp
 			IdGenerator<UInt32> &idGenerator,
 			IdGenerator<UInt64> &objectIdGenerator,
 			Project &project,
-			UInt32 worldNodeId);
+			UInt32 worldNodeId,
+			const String &dataPath);
 
 		/// Creates a new world instance of a specific map id.
 		WorldInstance *createInstance(const MapEntry &map);
@@ -77,5 +78,6 @@ namespace wowpp
 		Instances m_instances;
 		Project &m_project;
 		UInt32 m_worldNodeId;
+		const String &m_dataPath;
 	};
 }

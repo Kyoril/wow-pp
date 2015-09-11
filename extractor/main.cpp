@@ -36,6 +36,7 @@
 #include <limits>
 #include <memory>
 #include <map>
+#include "game/map.h"
 using namespace std;
 using namespace wowpp;
 
@@ -57,41 +58,6 @@ static std::unique_ptr<DBCFile> dbcLiquidType;
 //////////////////////////////////////////////////////////////////////////
 // Caches
 std::map<UInt32, UInt32> areaFlags;
-
-namespace wowpp
-{
-    /// Header
-    struct MapHeader
-    {
-        UInt32 fourCC;
-        UInt32 size;
-        UInt32 version;
-        UInt32 offsAreaTable;
-        UInt32 areaTableSize;
-        UInt32 offsHeight;
-        UInt32 heightSize;
-    };
-    
-    ///
-    struct MapAreaHeader
-    {
-        UInt32 fourCC;
-        UInt32 size;
-        struct AreaInfo
-        {
-            UInt32 areaId;
-            UInt32 flags;
-            
-            ///
-            AreaInfo()
-                : areaId(0)
-                , flags(0)
-            {
-            }
-        };
-        std::array<AreaInfo, 16 * 16> cellAreas;
-    };
-}
 
 //////////////////////////////////////////////////////////////////////////
 // Helper functions
@@ -135,22 +101,22 @@ namespace
 		io::Writer writer(sink);
 		
         // Create map header
-        MapHeader header;
-        header.fourCC = 0x50414D57;
-        header.size = sizeof(MapHeader) - 8;
+        MapHeaderChunk header;
+        header.fourCC = 0x50414D57;				// WMAP		- WoW Map
+        header.size = sizeof(MapHeaderChunk) - 8;
         header.version = 0x100;
-        header.offsAreaTable = sizeof(MapHeader);
-        header.areaTableSize = sizeof(MapAreaHeader);
-        header.offsHeight = 0;
-        header.heightSize = 0;
+        header.offsAreaTable = sizeof(MapHeaderChunk);
+        header.areaTableSize = sizeof(MapAreaChunk);
+        header.offsHeight = header.offsAreaTable + header.areaTableSize;
+        header.heightSize = sizeof(float) * 145;		// 9*9 + 8*8
         
         // Area header
-        MapAreaHeader areaHeader;
-        areaHeader.fourCC = 0x52414D57;
-        areaHeader.size = sizeof(MapAreaHeader) - 8;
+        MapAreaChunk areaHeader;
+        areaHeader.fourCC = 0x52414D57;			// WMAR		- WoW Map Areas
+        areaHeader.size = sizeof(MapAreaChunk) - 8;
         for (size_t i = 0; i < 16 * 16; ++i)
         {
-            UInt32 areaId = adt.getMCNKChunk(0).areaid;
+            UInt32 areaId = adt.getMCNKChunk(i).areaid;
             UInt32 flags = 0;
             auto it = areaFlags.find(areaId);
             if (it != areaFlags.end())
@@ -161,10 +127,22 @@ namespace
             areaHeader.cellAreas[i].areaId = areaId;
             areaHeader.cellAreas[i].flags = flags;
         }
+		
+		// Map size header
+		MapHeightChunk heightChunk;
+		heightChunk.fourCC = 0x54484D57;		// WMHT		- WoW Map Height
+		heightChunk.size = sizeof(MapHeightChunk) - 8;
+		for (size_t i = 0; i < 16 * 16; ++i)
+		{
+			const auto &chunk = adt.getMCNKChunk(i);
+			UInt32 offsMCVT = chunk.offsMCVT;
+			heightChunk.heights[i].fill(chunk.zpos);
+		}
         
 		// Write map header
         writer.writePOD(header);
         writer.writePOD(areaHeader);
+		writer.writePOD(heightChunk);
         
 		return true;
 	}

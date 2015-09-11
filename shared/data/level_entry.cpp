@@ -26,6 +26,8 @@
 namespace wowpp
 {
 	LevelEntry::LevelEntry()
+		: nextLevelXP(0)
+		, explorationBaseXP(0)
 	{
 	}
 
@@ -38,6 +40,7 @@ namespace wowpp
 
 		// Load xp to next level
 		nextLevelXP = wrapper.table.getInteger("next_level_xp", 0);
+		explorationBaseXP = wrapper.table.getInteger("exp_base_xp", 0);
 
 		// Load class/race stats
 		if (const sff::read::tree::Array<DataFileIterator> *const statArray = wrapper.table.getArray("stats"))
@@ -94,6 +97,7 @@ namespace wowpp
 
 		// Write xp to next level
 		context.table.addKey("next_level_xp", nextLevelXP);
+		context.table.addKey("exp_base_xp", explorationBaseXP);
 
 		// Write stats
 		sff::write::Array<char> statArray(context.table, "stats", sff::write::MultiLine);

@@ -24,10 +24,58 @@
 #include "common/typedefs.h"
 #include <boost/filesystem.hpp>
 #include "world_navigation.h"
+#include "tile_index.h"
+#include "common/grid.h"
 
 namespace wowpp
 {
+	/// Header
+	struct MapHeaderChunk
+	{
+		UInt32 fourCC;
+		UInt32 size;
+		UInt32 version;
+		UInt32 offsAreaTable;
+		UInt32 areaTableSize;
+		UInt32 offsHeight;
+		UInt32 heightSize;
+	};
+
+	/// Map area chunk.
+	struct MapAreaChunk
+	{
+		UInt32 fourCC;
+		UInt32 size;
+		struct AreaInfo
+		{
+			UInt32 areaId;
+			UInt32 flags;
+
+			///
+			AreaInfo()
+				: areaId(0)
+				, flags(0)
+			{
+			}
+		};
+		std::array<AreaInfo, 16 * 16> cellAreas;
+	};
+
+	/// Map size chunk.
+	struct MapHeightChunk
+	{
+		UInt32 fourCC;
+		UInt32 size;
+		std::array<std::array<float, 145>, 16 * 16> heights;
+	};
+
 	struct MapEntry;
+
+	/// Stores map-specific tiled data informations like nav mesh data, height maps and such things.
+	struct MapDataTile final
+	{
+		MapAreaChunk areas;
+	};
 
 	/// This class represents a map with additional geometry and navigation data.
 	class Map final
@@ -36,17 +84,18 @@ namespace wowpp
 
 		/// Creates a new instance of the map class and initializes it.
 		/// @entry The base entry of this map.
-		explicit Map(const MapEntry &entry, const boost::filesystem::path &dataPath);
+		explicit Map(const MapEntry &entry, boost::filesystem::path dataPath);
 
 		/// Gets the map entry data of this map.
 		const MapEntry &getEntry() const { return m_entry; }
-		/// Gets the navigation component of this map.
-		IWorldNavigation &getNavigation() { return *m_navigation; }
+
+		/// Tries to get a specific data tile if it's loaded.
+		MapDataTile *getTile(const TileIndex2D &position);
 
 	private:
 
 		const MapEntry &m_entry;
-		const boost::filesystem::path &m_dataPath;
-		std::unique_ptr<IWorldNavigation> m_navigation;
+		const boost::filesystem::path m_dataPath;
+		Grid<MapDataTile> m_tiles;
 	};
 }

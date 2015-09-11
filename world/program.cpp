@@ -146,7 +146,7 @@ namespace wowpp
 
 		// Create world instance manager
 		auto worldInstanceManager =
-			std::make_shared<wowpp::WorldInstanceManager>(m_ioService, universe, instanceIdGenerator, objectIdGenerator, project, 0);
+			std::make_shared<wowpp::WorldInstanceManager>(m_ioService, universe, instanceIdGenerator, objectIdGenerator, project, 0, m_configuration.dataPath);
 
 		std::vector<std::shared_ptr<RealmConnector>> realmConnectors;
 		std::map<UInt32, RealmConnector*> realmConnectorByMap;
@@ -162,7 +162,7 @@ namespace wowpp
 			realmConnectors.push_back(std::move(realmConnector));
 		}
 		
-		auto const createPlayer = [&PlayerManager, &worldInstanceManager](RealmConnector &connector, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance)
+		auto const createPlayer = [&PlayerManager, &worldInstanceManager, &project](RealmConnector &connector, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance)
 		{
 			// Create the player instance
 			std::unique_ptr<wowpp::Player> player(
@@ -172,7 +172,8 @@ namespace wowpp
 					*worldInstanceManager, 
 					characterId, 
 					std::move(character),
-					instance
+					instance,
+					project
 					)
 				);
 

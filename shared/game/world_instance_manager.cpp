@@ -35,7 +35,8 @@ namespace wowpp
 		IdGenerator<UInt32> &idGenerator, 
 		IdGenerator<UInt64> &objectIdGenerator,
 		Project &project,
-		UInt32 worldNodeId)
+		UInt32 worldNodeId,
+		const String &dataPath)
 		: m_ioService(ioService)
 		, m_universe(universe)
 		, m_idGenerator(idGenerator)
@@ -43,6 +44,7 @@ namespace wowpp
 		, m_updateTimer(ioService)
 		, m_project(project)
 		, m_worldNodeId(worldNodeId)
+		, m_dataPath(dataPath)
 	{
 		// Trigger the first update
 		triggerUpdate();
@@ -51,7 +53,6 @@ namespace wowpp
 	WorldInstance * WorldInstanceManager::createInstance(const MapEntry &map)
 	{
 		UInt32 instanceId = createMapGUID(m_idGenerator.generateId(), map.id);
-		//instanceId |= (m_worldNodeId << 24) & 0xFF;
 
 		// Create world instance
 		std::unique_ptr<WorldInstance> instance(new WorldInstance(
@@ -64,7 +65,8 @@ namespace wowpp
 			std::bind(&RaceEntryManager::getById, &m_project.races, std::placeholders::_1),
 			std::bind(&ClassEntryManager::getById, &m_project.classes, std::placeholders::_1),
 			std::bind(&LevelEntryManager::getById, &m_project.levels, std::placeholders::_1),
-			std::bind(&SpellEntryManager::getById, &m_project.spells, std::placeholders::_1)));
+			std::bind(&SpellEntryManager::getById, &m_project.spells, std::placeholders::_1),
+			m_dataPath));
 		m_instances.push_back(std::move(instance));
 
 		// Return result

@@ -82,6 +82,46 @@ namespace wowpp
 
 				return true;
 			}
+
+			static bool readMMDXChunk(adt::Page &page, const Ogre::DataStreamPtr &ptr, UInt32 chunkSize)
+			{
+				String buffer;
+				buffer.resize(chunkSize);
+				if (!ptr->read(&buffer[0], chunkSize))
+				{
+					return false;
+				}
+
+				// Parse for textures
+				char *reader = &buffer[0];
+				while (*reader)
+				{
+					String model = String(reader);
+					reader += model.size() + 1;
+
+					page.terrain.m2Ids.push_back(model);
+				}
+
+				return true;
+			}
+
+			static bool readMMIDChunk(adt::Page &page, const Ogre::DataStreamPtr &ptr, UInt32 chunkSize)
+			{
+				ptr->skip(chunkSize);
+				return true;
+			}
+
+			static bool readMDDFChunk(adt::Page &page, const Ogre::DataStreamPtr &ptr, UInt32 chunkSize)
+			{
+				size_t numEntries = chunkSize / sizeof(terrain::model::M2Placement);
+				page.terrain.m2Placements.resize(numEntries);
+				for (size_t i = 0; i < numEntries; ++i)
+				{
+					ptr->read(&page.terrain.m2Placements[i], sizeof(terrain::model::M2Placement));
+				}
+
+				return true;
+			}
             
             struct MCINEntry
             {
@@ -414,10 +454,25 @@ namespace wowpp
 						break;
 					}
 
-					case MWMOChunk:
 					case MMIDChunk:
+					{
+						result = read::readMMIDChunk(out_page, file, chunkSize);
+						break;
+					}
+
 					case MMDXChunk:
+					{
+						result = read::readMMDXChunk(out_page, file, chunkSize);
+						break;
+					}
+
 					case MDDFChunk:
+					{
+						result = read::readMDDFChunk(out_page, file, chunkSize);
+						break;
+					}
+
+					case MWMOChunk:
 					case MODFChunk:
 					case MH2OChunk:
 					case MFBOChunk:

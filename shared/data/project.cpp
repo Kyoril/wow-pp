@@ -64,10 +64,13 @@ namespace wowpp
 		context.getSkill = std::bind(&SkillEntryManager::getById, &skills, std::placeholders::_1);
 		context.getObject = std::bind(&ObjectEntryManager::getById, &objects, std::placeholders::_1);
 		context.getTrigger = std::bind(&TriggerEntryManager::getById, &triggers, std::placeholders::_1);
+		context.getZone = std::bind(&ZoneEntryManager::getById, &zones, std::placeholders::_1);
 
 		typedef ProjectLoader<DataLoadContext> RealmProjectLoader;
 		typedef RealmProjectLoader::ManagerEntry ManagerEntry;
 
+		// Note: The loading order is important, as some objects reference other objects. There is a load-later-option available,
+		// but for performance reason, immediate loading is recommended where possible.
 		RealmProjectLoader::Managers managers;
 		managers.push_back(ManagerEntry("triggers", triggers, std::bind(&TriggerEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("cast_times", castTimes, std::bind(&CastTimeEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
@@ -83,6 +86,7 @@ namespace wowpp
 		managers.push_back(ManagerEntry("skills", skills, std::bind(&SkillEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("area_triggers", areaTriggers, std::bind(&AreaTriggerEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("emotes", emotes, std::bind(&EmoteEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+		managers.push_back(ManagerEntry("zones", zones, std::bind(&ZoneEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 
 		virtual_dir::FileSystemReader virtualDirectory(context.dataPath);
 		if (!RealmProjectLoader::load(
@@ -109,6 +113,7 @@ namespace wowpp
 		typedef ProjectSaver RealmProjectSaver;
 		typedef ProjectSaver::Manager ManagerEntry;
 
+		// Here, the order is not as important.
 		RealmProjectSaver::Managers managers;
 		managers.push_back(ManagerEntry("triggers", "triggers", triggers, &TriggerEntry::save));
 		managers.push_back(ManagerEntry("cast_times", "cast_times", castTimes, &CastTimeEntry::save));
@@ -124,6 +129,7 @@ namespace wowpp
 		managers.push_back(ManagerEntry("skills", "skills", skills, &SkillEntry::save));
 		managers.push_back(ManagerEntry("area_triggers", "area_triggers", areaTriggers, &AreaTriggerEntry::save));
 		managers.push_back(ManagerEntry("emotes", "emotes", emotes, &EmoteEntry::save));
+		managers.push_back(ManagerEntry("zones", "zones", zones, &ZoneEntry::save));
 
 		if (!RealmProjectSaver::save(realmDataPath, managers))
 		{

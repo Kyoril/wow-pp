@@ -96,6 +96,8 @@ namespace wowpp
 		}
 	}
 
+	std::map<UInt32, Map> WorldInstance::MapData;
+
 	WorldInstance::WorldInstance(WorldInstanceManager &manager, 
 		Universe &universe,
 		const MapEntry &mapEntry,
@@ -105,7 +107,8 @@ namespace wowpp
 		DataLoadContext::GetRace getRace,
 		DataLoadContext::GetClass getClass,
 		DataLoadContext::GetLevel getLevel,
-		DataLoadContext::GetSpell getSpell
+		DataLoadContext::GetSpell getSpell,
+		const String &dataPath
 		)
 		: m_manager(manager)
 		, m_universe(universe)
@@ -117,7 +120,18 @@ namespace wowpp
 		, m_getClass(getClass)
 		, m_getLevel(getLevel)
 		, m_getSpell(getSpell)
+		, m_map(nullptr)
 	{
+		// Create map instance if needed
+		auto mapIt = MapData.find(m_mapEntry.id);
+		if (mapIt == MapData.end())
+		{
+			// Load map
+			MapData.insert(std::make_pair(m_mapEntry.id, Map(m_mapEntry, dataPath)));
+			mapIt = MapData.find(m_mapEntry.id);
+			if (mapIt != MapData.end()) m_map = &mapIt->second;
+		}
+
 		// Add object spawners
 		for (auto &spawn : m_mapEntry.objectSpawns)
 		{

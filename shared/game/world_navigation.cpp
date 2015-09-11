@@ -23,8 +23,4 @@
 
 namespace wowpp
 {
-	IWorldNavigation::~IWorldNavigation()
-	{
-
-	}
 }

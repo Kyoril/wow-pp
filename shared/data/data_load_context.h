@@ -40,6 +40,7 @@ namespace wowpp
 	struct SkillEntry;
 	struct ObjectEntry;
 	struct TriggerEntry;
+	struct ZoneEntry;
 
 	struct DataLoadContext : BasicTemplateLoadContext
 	{
@@ -55,6 +56,7 @@ namespace wowpp
 		typedef std::function<const SkillEntry * (UInt32)> GetSkill;
 		typedef std::function<const ObjectEntry * (UInt32)> GetObject;
 		typedef std::function<const TriggerEntry * (UInt32)> GetTrigger;
+		typedef std::function<const ZoneEntry * (UInt32)> GetZone;
 
 		GetMap getMap;
 		GetRace getRace;
@@ -66,6 +68,7 @@ namespace wowpp
 		GetSkill getSkill;
 		GetObject getObject;
 		GetTrigger getTrigger;
+		GetZone getZone;
 
 		explicit DataLoadContext(
 		    boost::filesystem::path realmDataPath

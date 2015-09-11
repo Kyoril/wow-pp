@@ -1,6 +1,6 @@
 levels = 
 {
-	(id = 1, next_level_xp = 400, stats = 
+	(id = 1, next_level_xp = 400, exp_base_xp = 5, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 23, stat_1 = 20, stat_2 = 22, stat_3 = 20, stat_4 = 20)
 		(race = 1, class = 2, stat_0 = 22, stat_1 = 20, stat_2 = 22, stat_3 = 20, stat_4 = 21, mp_reg_pct = 0.034965)
@@ -55,7 +55,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 22, stat_1 = 17, stat_2 = 20, stat_3 = 22, stat_4 = 24, mp_reg_pct = 0.034965)
 		(race = 11, class = 8, stat_0 = 21, stat_1 = 17, stat_2 = 19, stat_3 = 24, stat_4 = 24, mp_reg_pct = 0.034965)
 	})
-	(id = 2, next_level_xp = 900, stats = 
+	(id = 2, next_level_xp = 900, exp_base_xp = 15, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 24, stat_1 = 21, stat_2 = 23, stat_3 = 20, stat_4 = 20)
 		(race = 1, class = 2, stat_0 = 23, stat_1 = 21, stat_2 = 23, stat_3 = 21, stat_4 = 22, mp_reg_pct = 0.034191)
@@ -110,7 +110,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 23, stat_1 = 17, stat_2 = 21, stat_3 = 23, stat_4 = 25, mp_reg_pct = 0.034191)
 		(race = 11, class = 8, stat_0 = 21, stat_1 = 17, stat_2 = 19, stat_3 = 25, stat_4 = 25, mp_reg_pct = 0.034191)
 	})
-	(id = 3, next_level_xp = 1400, stats = 
+	(id = 3, next_level_xp = 1400, exp_base_xp = 25, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 26, stat_1 = 22, stat_2 = 24, stat_3 = 20, stat_4 = 21)
 		(race = 1, class = 2, stat_0 = 24, stat_1 = 21, stat_2 = 24, stat_3 = 21, stat_4 = 22, mp_reg_pct = 0.033465)
@@ -165,7 +165,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 24, stat_1 = 18, stat_2 = 22, stat_3 = 24, stat_4 = 26, mp_reg_pct = 0.033465)
 		(race = 11, class = 8, stat_0 = 21, stat_1 = 17, stat_2 = 20, stat_3 = 27, stat_4 = 27, mp_reg_pct = 0.033465)
 	})
-	(id = 4, next_level_xp = 2100, stats = 
+	(id = 4, next_level_xp = 2100, exp_base_xp = 35, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 27, stat_1 = 22, stat_2 = 26, stat_3 = 20, stat_4 = 21)
 		(race = 1, class = 2, stat_0 = 25, stat_1 = 22, stat_2 = 25, stat_3 = 22, stat_4 = 23, mp_reg_pct = 0.032527)
@@ -220,7 +220,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 25, stat_1 = 18, stat_2 = 23, stat_3 = 25, stat_4 = 27, mp_reg_pct = 0.032527)
 		(race = 11, class = 8, stat_0 = 21, stat_1 = 17, stat_2 = 20, stat_3 = 28, stat_4 = 28, mp_reg_pct = 0.032527)
 	})
-	(id = 5, next_level_xp = 2800, stats = 
+	(id = 5, next_level_xp = 2800, exp_base_xp = 45, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 28, stat_1 = 23, stat_2 = 27, stat_3 = 20, stat_4 = 21)
 		(race = 1, class = 2, stat_0 = 26, stat_1 = 22, stat_2 = 26, stat_3 = 23, stat_4 = 24, mp_reg_pct = 0.031661)
@@ -275,7 +275,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 25, stat_1 = 19, stat_2 = 24, stat_3 = 26, stat_4 = 28, mp_reg_pct = 0.031661)
 		(race = 11, class = 8, stat_0 = 21, stat_1 = 18, stat_2 = 20, stat_3 = 29, stat_4 = 29, mp_reg_pct = 0.031661)
 	})
-	(id = 6, next_level_xp = 3600, stats = 
+	(id = 6, next_level_xp = 3600, exp_base_xp = 55, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 30, stat_1 = 24, stat_2 = 28, stat_3 = 20, stat_4 = 21)
 		(race = 1, class = 2, stat_0 = 28, stat_1 = 23, stat_2 = 27, stat_3 = 23, stat_4 = 25, mp_reg_pct = 0.031077)
@@ -330,7 +330,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 26, stat_1 = 19, stat_2 = 25, stat_3 = 27, stat_4 = 29, mp_reg_pct = 0.031077)
 		(race = 11, class = 8, stat_0 = 21, stat_1 = 18, stat_2 = 20, stat_3 = 31, stat_4 = 31, mp_reg_pct = 0.031077)
 	})
-	(id = 7, next_level_xp = 4500, stats = 
+	(id = 7, next_level_xp = 4500, exp_base_xp = 65, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 31, stat_1 = 25, stat_2 = 29, stat_3 = 21, stat_4 = 22)
 		(race = 1, class = 2, stat_0 = 29, stat_1 = 24, stat_2 = 28, stat_3 = 24, stat_4 = 25, mp_reg_pct = 0.030523)
@@ -385,7 +385,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 27, stat_1 = 20, stat_2 = 26, stat_3 = 28, stat_4 = 30, mp_reg_pct = 0.030523)
 		(race = 11, class = 8, stat_0 = 21, stat_1 = 18, stat_2 = 21, stat_3 = 32, stat_4 = 32, mp_reg_pct = 0.030523)
 	})
-	(id = 8, next_level_xp = 5400, stats = 
+	(id = 8, next_level_xp = 5400, exp_base_xp = 70, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 32, stat_1 = 26, stat_2 = 30, stat_3 = 21, stat_4 = 22)
 		(race = 1, class = 2, stat_0 = 30, stat_1 = 24, stat_2 = 29, stat_3 = 25, stat_4 = 26, mp_reg_pct = 0.029995)
@@ -440,7 +440,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 28, stat_1 = 20, stat_2 = 27, stat_3 = 28, stat_4 = 31, mp_reg_pct = 0.029995)
 		(race = 11, class = 8, stat_0 = 22, stat_1 = 18, stat_2 = 21, stat_3 = 34, stat_4 = 33, mp_reg_pct = 0.029995)
 	})
-	(id = 9, next_level_xp = 6500, stats = 
+	(id = 9, next_level_xp = 6500, exp_base_xp = 80, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 34, stat_1 = 26, stat_2 = 32, stat_3 = 21, stat_4 = 22)
 		(race = 1, class = 2, stat_0 = 31, stat_1 = 25, stat_2 = 30, stat_3 = 25, stat_4 = 27, mp_reg_pct = 0.029307)
@@ -495,7 +495,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 29, stat_1 = 21, stat_2 = 28, stat_3 = 29, stat_4 = 32, mp_reg_pct = 0.029307)
 		(race = 11, class = 8, stat_0 = 22, stat_1 = 18, stat_2 = 21, stat_3 = 35, stat_4 = 35, mp_reg_pct = 0.029307)
 	})
-	(id = 10, next_level_xp = 7600, stats = 
+	(id = 10, next_level_xp = 7600, exp_base_xp = 85, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 35, stat_1 = 27, stat_2 = 33, stat_3 = 21, stat_4 = 23)
 		(race = 1, class = 2, stat_0 = 32, stat_1 = 25, stat_2 = 32, stat_3 = 26, stat_4 = 27, mp_reg_pct = 0.028662)
@@ -550,7 +550,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 30, stat_1 = 21, stat_2 = 29, stat_3 = 30, stat_4 = 33, mp_reg_pct = 0.028662)
 		(race = 11, class = 8, stat_0 = 22, stat_1 = 19, stat_2 = 22, stat_3 = 37, stat_4 = 36, mp_reg_pct = 0.028662)
 	})
-	(id = 11, next_level_xp = 8700, stats = 
+	(id = 11, next_level_xp = 8700, exp_base_xp = 90, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 36, stat_1 = 28, stat_2 = 34, stat_3 = 21, stat_4 = 23)
 		(race = 1, class = 2, stat_0 = 33, stat_1 = 26, stat_2 = 33, stat_3 = 27, stat_4 = 28, mp_reg_pct = 0.027585)
@@ -605,7 +605,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 31, stat_1 = 22, stat_2 = 30, stat_3 = 31, stat_4 = 35, mp_reg_pct = 0.027585)
 		(race = 11, class = 8, stat_0 = 22, stat_1 = 19, stat_2 = 22, stat_3 = 38, stat_4 = 37, mp_reg_pct = 0.027585)
 	})
-	(id = 12, next_level_xp = 9800, stats = 
+	(id = 12, next_level_xp = 9800, exp_base_xp = 90, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 38, stat_1 = 29, stat_2 = 35, stat_3 = 21, stat_4 = 23)
 		(race = 1, class = 2, stat_0 = 35, stat_1 = 27, stat_2 = 34, stat_3 = 27, stat_4 = 29, mp_reg_pct = 0.026215)
@@ -660,7 +660,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 32, stat_1 = 22, stat_2 = 31, stat_3 = 32, stat_4 = 36, mp_reg_pct = 0.026215)
 		(race = 11, class = 8, stat_0 = 22, stat_1 = 19, stat_2 = 22, stat_3 = 40, stat_4 = 39, mp_reg_pct = 0.026215)
 	})
-	(id = 13, next_level_xp = 11000, stats = 
+	(id = 13, next_level_xp = 11000, exp_base_xp = 90, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 39, stat_1 = 30, stat_2 = 37, stat_3 = 21, stat_4 = 24)
 		(race = 1, class = 2, stat_0 = 36, stat_1 = 27, stat_2 = 35, stat_3 = 28, stat_4 = 30, mp_reg_pct = 0.025381)
@@ -715,7 +715,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 33, stat_1 = 23, stat_2 = 32, stat_3 = 33, stat_4 = 37, mp_reg_pct = 0.025381)
 		(race = 11, class = 8, stat_0 = 22, stat_1 = 19, stat_2 = 23, stat_3 = 41, stat_4 = 40, mp_reg_pct = 0.025381)
 	})
-	(id = 14, next_level_xp = 12300, stats = 
+	(id = 14, next_level_xp = 12300, exp_base_xp = 100, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 41, stat_1 = 31, stat_2 = 38, stat_3 = 21, stat_4 = 24)
 		(race = 1, class = 2, stat_0 = 37, stat_1 = 28, stat_2 = 36, stat_3 = 29, stat_4 = 31, mp_reg_pct = 0.024301)
@@ -770,7 +770,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 34, stat_1 = 23, stat_2 = 33, stat_3 = 34, stat_4 = 38, mp_reg_pct = 0.024301)
 		(race = 11, class = 8, stat_0 = 22, stat_1 = 19, stat_2 = 23, stat_3 = 43, stat_4 = 42, mp_reg_pct = 0.024301)
 	})
-	(id = 15, next_level_xp = 13600, stats = 
+	(id = 15, next_level_xp = 13600, exp_base_xp = 105, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 42, stat_1 = 32, stat_2 = 39, stat_3 = 21, stat_4 = 24)
 		(race = 1, class = 2, stat_0 = 38, stat_1 = 29, stat_2 = 37, stat_3 = 30, stat_4 = 31, mp_reg_pct = 0.023346)
@@ -825,7 +825,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 34, stat_1 = 24, stat_2 = 35, stat_3 = 35, stat_4 = 39, mp_reg_pct = 0.023346)
 		(race = 11, class = 8, stat_0 = 22, stat_1 = 19, stat_2 = 23, stat_3 = 44, stat_4 = 43, mp_reg_pct = 0.023346)
 	})
-	(id = 16, next_level_xp = 15000, stats = 
+	(id = 16, next_level_xp = 15000, exp_base_xp = 115, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 44, stat_1 = 33, stat_2 = 41, stat_3 = 21, stat_4 = 25)
 		(race = 1, class = 2, stat_0 = 40, stat_1 = 29, stat_2 = 38, stat_3 = 30, stat_4 = 32, mp_reg_pct = 0.022749)
@@ -880,7 +880,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 35, stat_1 = 24, stat_2 = 36, stat_3 = 36, stat_4 = 40, mp_reg_pct = 0.022749)
 		(race = 11, class = 8, stat_0 = 22, stat_1 = 20, stat_2 = 24, stat_3 = 46, stat_4 = 45, mp_reg_pct = 0.022749)
 	})
-	(id = 17, next_level_xp = 16400, stats = 
+	(id = 17, next_level_xp = 16400, exp_base_xp = 125, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 45, stat_1 = 34, stat_2 = 42, stat_3 = 22, stat_4 = 25)
 		(race = 1, class = 2, stat_0 = 41, stat_1 = 30, stat_2 = 40, stat_3 = 31, stat_4 = 33, mp_reg_pct = 0.021959)
@@ -935,7 +935,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 36, stat_1 = 25, stat_2 = 37, stat_3 = 38, stat_4 = 42, mp_reg_pct = 0.021959)
 		(race = 11, class = 8, stat_0 = 23, stat_1 = 20, stat_2 = 24, stat_3 = 47, stat_4 = 46, mp_reg_pct = 0.021959)
 	})
-	(id = 18, next_level_xp = 17800, stats = 
+	(id = 18, next_level_xp = 17800, exp_base_xp = 135, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 47, stat_1 = 34, stat_2 = 43, stat_3 = 22, stat_4 = 25)
 		(race = 1, class = 2, stat_0 = 42, stat_1 = 31, stat_2 = 41, stat_3 = 32, stat_4 = 34, mp_reg_pct = 0.021387)
@@ -990,7 +990,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 37, stat_1 = 25, stat_2 = 38, stat_3 = 39, stat_4 = 43, mp_reg_pct = 0.021387)
 		(race = 11, class = 8, stat_0 = 23, stat_1 = 20, stat_2 = 24, stat_3 = 49, stat_4 = 48, mp_reg_pct = 0.021387)
 	})
-	(id = 19, next_level_xp = 19300, stats = 
+	(id = 19, next_level_xp = 19300, exp_base_xp = 145, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 48, stat_1 = 35, stat_2 = 45, stat_3 = 22, stat_4 = 26)
 		(race = 1, class = 2, stat_0 = 43, stat_1 = 31, stat_2 = 42, stat_3 = 33, stat_4 = 35, mp_reg_pct = 0.020791)
@@ -1045,7 +1045,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 38, stat_1 = 26, stat_2 = 39, stat_3 = 40, stat_4 = 44, mp_reg_pct = 0.020791)
 		(race = 11, class = 8, stat_0 = 23, stat_1 = 20, stat_2 = 25, stat_3 = 50, stat_4 = 49, mp_reg_pct = 0.020791)
 	})
-	(id = 20, next_level_xp = 20800, stats = 
+	(id = 20, next_level_xp = 20800, exp_base_xp = 155, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 50, stat_1 = 36, stat_2 = 46, stat_3 = 22, stat_4 = 26)
 		(race = 1, class = 2, stat_0 = 45, stat_1 = 32, stat_2 = 43, stat_3 = 33, stat_4 = 35, mp_reg_pct = 0.020121)
@@ -1100,7 +1100,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 39, stat_1 = 26, stat_2 = 40, stat_3 = 41, stat_4 = 45, mp_reg_pct = 0.020121)
 		(race = 11, class = 8, stat_0 = 23, stat_1 = 21, stat_2 = 25, stat_3 = 52, stat_4 = 51, mp_reg_pct = 0.020121)
 	})
-	(id = 21, next_level_xp = 22400, stats = 
+	(id = 21, next_level_xp = 22400, exp_base_xp = 165, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 51, stat_1 = 37, stat_2 = 48, stat_3 = 22, stat_4 = 26)
 		(race = 1, class = 2, stat_0 = 46, stat_1 = 33, stat_2 = 45, stat_3 = 34, stat_4 = 36, mp_reg_pct = 0.019733)
@@ -1155,7 +1155,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 40, stat_1 = 27, stat_2 = 41, stat_3 = 42, stat_4 = 46, mp_reg_pct = 0.019733)
 		(race = 11, class = 8, stat_0 = 23, stat_1 = 21, stat_2 = 26, stat_3 = 54, stat_4 = 52, mp_reg_pct = 0.019733)
 	})
-	(id = 22, next_level_xp = 24000, stats = 
+	(id = 22, next_level_xp = 24000, exp_base_xp = 175, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 53, stat_1 = 38, stat_2 = 49, stat_3 = 22, stat_4 = 27)
 		(race = 1, class = 2, stat_0 = 47, stat_1 = 33, stat_2 = 46, stat_3 = 35, stat_4 = 37, mp_reg_pct = 0.019156)
@@ -1210,7 +1210,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 41, stat_1 = 27, stat_2 = 43, stat_3 = 43, stat_4 = 48, mp_reg_pct = 0.019156)
 		(race = 11, class = 8, stat_0 = 23, stat_1 = 21, stat_2 = 26, stat_3 = 55, stat_4 = 54, mp_reg_pct = 0.019156)
 	})
-	(id = 23, next_level_xp = 25500, stats = 
+	(id = 23, next_level_xp = 25500, exp_base_xp = 185, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 54, stat_1 = 39, stat_2 = 51, stat_3 = 22, stat_4 = 27)
 		(race = 1, class = 2, stat_0 = 49, stat_1 = 34, stat_2 = 47, stat_3 = 36, stat_4 = 38, mp_reg_pct = 0.018819)
@@ -1265,7 +1265,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 43, stat_1 = 28, stat_2 = 44, stat_3 = 44, stat_4 = 49, mp_reg_pct = 0.018819)
 		(race = 11, class = 8, stat_0 = 23, stat_1 = 21, stat_2 = 26, stat_3 = 57, stat_4 = 56, mp_reg_pct = 0.018819)
 	})
-	(id = 24, next_level_xp = 27200, stats = 
+	(id = 24, next_level_xp = 27200, exp_base_xp = 195, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 56, stat_1 = 40, stat_2 = 52, stat_3 = 23, stat_4 = 28)
 		(race = 1, class = 2, stat_0 = 50, stat_1 = 35, stat_2 = 48, stat_3 = 37, stat_4 = 39, mp_reg_pct = 0.018317)
@@ -1320,7 +1320,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 44, stat_1 = 28, stat_2 = 45, stat_3 = 45, stat_4 = 50, mp_reg_pct = 0.018317)
 		(race = 11, class = 8, stat_0 = 24, stat_1 = 21, stat_2 = 27, stat_3 = 59, stat_4 = 57, mp_reg_pct = 0.018317)
 	})
-	(id = 25, next_level_xp = 28900, stats = 
+	(id = 25, next_level_xp = 28900, exp_base_xp = 200, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 58, stat_1 = 41, stat_2 = 53, stat_3 = 23, stat_4 = 28)
 		(race = 1, class = 2, stat_0 = 51, stat_1 = 36, stat_2 = 50, stat_3 = 37, stat_4 = 40, mp_reg_pct = 0.017936)
@@ -1375,7 +1375,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 45, stat_1 = 29, stat_2 = 46, stat_3 = 46, stat_4 = 51, mp_reg_pct = 0.017936)
 		(race = 11, class = 8, stat_0 = 24, stat_1 = 22, stat_2 = 27, stat_3 = 60, stat_4 = 59, mp_reg_pct = 0.017936)
 	})
-	(id = 26, next_level_xp = 30500, stats = 
+	(id = 26, next_level_xp = 30500, exp_base_xp = 210, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 59, stat_1 = 42, stat_2 = 55, stat_3 = 23, stat_4 = 28)
 		(race = 1, class = 2, stat_0 = 53, stat_1 = 36, stat_2 = 51, stat_3 = 38, stat_4 = 41, mp_reg_pct = 0.017577)
@@ -1430,7 +1430,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 46, stat_1 = 30, stat_2 = 47, stat_3 = 48, stat_4 = 53, mp_reg_pct = 0.017577)
 		(race = 11, class = 8, stat_0 = 24, stat_1 = 22, stat_2 = 27, stat_3 = 62, stat_4 = 60, mp_reg_pct = 0.017577)
 	})
-	(id = 27, next_level_xp = 32200, stats = 
+	(id = 27, next_level_xp = 32200, exp_base_xp = 220, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 61, stat_1 = 43, stat_2 = 56, stat_3 = 23, stat_4 = 29)
 		(race = 1, class = 2, stat_0 = 54, stat_1 = 37, stat_2 = 52, stat_3 = 39, stat_4 = 42, mp_reg_pct = 0.017201)
@@ -1485,7 +1485,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 47, stat_1 = 30, stat_2 = 49, stat_3 = 49, stat_4 = 54, mp_reg_pct = 0.017201)
 		(race = 11, class = 8, stat_0 = 24, stat_1 = 22, stat_2 = 28, stat_3 = 64, stat_4 = 62, mp_reg_pct = 0.017201)
 	})
-	(id = 28, next_level_xp = 33900, stats = 
+	(id = 28, next_level_xp = 33900, exp_base_xp = 230, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 63, stat_1 = 44, stat_2 = 58, stat_3 = 23, stat_4 = 29)
 		(race = 1, class = 2, stat_0 = 56, stat_1 = 38, stat_2 = 54, stat_3 = 40, stat_4 = 43, mp_reg_pct = 0.016919)
@@ -1540,7 +1540,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 48, stat_1 = 31, stat_2 = 50, stat_3 = 50, stat_4 = 55, mp_reg_pct = 0.016919)
 		(race = 11, class = 8, stat_0 = 24, stat_1 = 22, stat_2 = 28, stat_3 = 65, stat_4 = 64, mp_reg_pct = 0.016919)
 	})
-	(id = 29, next_level_xp = 36300, stats = 
+	(id = 29, next_level_xp = 36300, exp_base_xp = 240, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 64, stat_1 = 45, stat_2 = 59, stat_3 = 23, stat_4 = 30)
 		(race = 1, class = 2, stat_0 = 57, stat_1 = 39, stat_2 = 55, stat_3 = 41, stat_4 = 43, mp_reg_pct = 0.016582)
@@ -1595,7 +1595,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 49, stat_1 = 31, stat_2 = 51, stat_3 = 51, stat_4 = 57, mp_reg_pct = 0.016582)
 		(race = 11, class = 8, stat_0 = 24, stat_1 = 23, stat_2 = 29, stat_3 = 67, stat_4 = 65, mp_reg_pct = 0.016582)
 	})
-	(id = 30, next_level_xp = 38800, stats = 
+	(id = 30, next_level_xp = 38800, exp_base_xp = 245, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 66, stat_1 = 46, stat_2 = 61, stat_3 = 24, stat_4 = 30)
 		(race = 1, class = 2, stat_0 = 58, stat_1 = 39, stat_2 = 56, stat_3 = 42, stat_4 = 44, mp_reg_pct = 0.016234)
@@ -1650,7 +1650,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 50, stat_1 = 32, stat_2 = 53, stat_3 = 52, stat_4 = 58, mp_reg_pct = 0.016234)
 		(race = 11, class = 8, stat_0 = 24, stat_1 = 23, stat_2 = 29, stat_3 = 69, stat_4 = 67, mp_reg_pct = 0.016234)
 	})
-	(id = 31, next_level_xp = 41600, stats = 
+	(id = 31, next_level_xp = 41600, exp_base_xp = 250, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 68, stat_1 = 47, stat_2 = 62, stat_3 = 24, stat_4 = 30)
 		(race = 1, class = 2, stat_0 = 60, stat_1 = 40, stat_2 = 58, stat_3 = 43, stat_4 = 45, mp_reg_pct = 0.015995)
@@ -1705,7 +1705,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 51, stat_1 = 33, stat_2 = 54, stat_3 = 53, stat_4 = 59, mp_reg_pct = 0.015995)
 		(race = 11, class = 8, stat_0 = 25, stat_1 = 23, stat_2 = 30, stat_3 = 71, stat_4 = 69, mp_reg_pct = 0.015995)
 	})
-	(id = 32, next_level_xp = 44600, stats = 
+	(id = 32, next_level_xp = 44600, exp_base_xp = 255, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 69, stat_1 = 48, stat_2 = 64, stat_3 = 24, stat_4 = 31)
 		(race = 1, class = 2, stat_0 = 61, stat_1 = 41, stat_2 = 59, stat_3 = 43, stat_4 = 46, mp_reg_pct = 0.015708)
@@ -1760,7 +1760,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 52, stat_1 = 33, stat_2 = 55, stat_3 = 55, stat_4 = 61, mp_reg_pct = 0.015708)
 		(race = 11, class = 8, stat_0 = 25, stat_1 = 23, stat_2 = 30, stat_3 = 73, stat_4 = 71, mp_reg_pct = 0.015708)
 	})
-	(id = 33, next_level_xp = 48000, stats = 
+	(id = 33, next_level_xp = 48000, exp_base_xp = 265, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 71, stat_1 = 50, stat_2 = 66, stat_3 = 24, stat_4 = 31)
 		(race = 1, class = 2, stat_0 = 63, stat_1 = 42, stat_2 = 60, stat_3 = 44, stat_4 = 47, mp_reg_pct = 0.015464)
@@ -1815,7 +1815,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 53, stat_1 = 34, stat_2 = 56, stat_3 = 56, stat_4 = 62, mp_reg_pct = 0.015464)
 		(race = 11, class = 8, stat_0 = 25, stat_1 = 24, stat_2 = 30, stat_3 = 74, stat_4 = 72, mp_reg_pct = 0.015464)
 	})
-	(id = 34, next_level_xp = 51400, stats = 
+	(id = 34, next_level_xp = 51400, exp_base_xp = 270, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 73, stat_1 = 51, stat_2 = 67, stat_3 = 24, stat_4 = 32)
 		(race = 1, class = 2, stat_0 = 64, stat_1 = 43, stat_2 = 62, stat_3 = 45, stat_4 = 48, mp_reg_pct = 0.015204)
@@ -1870,7 +1870,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 55, stat_1 = 34, stat_2 = 58, stat_3 = 57, stat_4 = 64, mp_reg_pct = 0.015204)
 		(race = 11, class = 8, stat_0 = 25, stat_1 = 24, stat_2 = 31, stat_3 = 76, stat_4 = 74, mp_reg_pct = 0.015204)
 	})
-	(id = 35, next_level_xp = 55000, stats = 
+	(id = 35, next_level_xp = 55000, exp_base_xp = 275, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 74, stat_1 = 52, stat_2 = 69, stat_3 = 24, stat_4 = 32)
 		(race = 1, class = 2, stat_0 = 66, stat_1 = 44, stat_2 = 63, stat_3 = 46, stat_4 = 49, mp_reg_pct = 0.014957)
@@ -1925,7 +1925,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 56, stat_1 = 35, stat_2 = 59, stat_3 = 58, stat_4 = 65, mp_reg_pct = 0.014957)
 		(race = 11, class = 8, stat_0 = 25, stat_1 = 24, stat_2 = 31, stat_3 = 78, stat_4 = 76, mp_reg_pct = 0.014957)
 	})
-	(id = 36, next_level_xp = 58700, stats = 
+	(id = 36, next_level_xp = 58700, exp_base_xp = 280, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 76, stat_1 = 53, stat_2 = 70, stat_3 = 25, stat_4 = 33)
 		(race = 1, class = 2, stat_0 = 67, stat_1 = 44, stat_2 = 65, stat_3 = 47, stat_4 = 50, mp_reg_pct = 0.014745)
@@ -1980,7 +1980,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 57, stat_1 = 36, stat_2 = 60, stat_3 = 60, stat_4 = 66, mp_reg_pct = 0.014745)
 		(race = 11, class = 8, stat_0 = 26, stat_1 = 24, stat_2 = 32, stat_3 = 80, stat_4 = 78, mp_reg_pct = 0.014745)
 	})
-	(id = 37, next_level_xp = 62400, stats = 
+	(id = 37, next_level_xp = 62400, exp_base_xp = 285, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 78, stat_1 = 54, stat_2 = 72, stat_3 = 25, stat_4 = 33)
 		(race = 1, class = 2, stat_0 = 69, stat_1 = 45, stat_2 = 66, stat_3 = 48, stat_4 = 51, mp_reg_pct = 0.014496)
@@ -2035,7 +2035,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 58, stat_1 = 36, stat_2 = 62, stat_3 = 61, stat_4 = 68, mp_reg_pct = 0.014496)
 		(race = 11, class = 8, stat_0 = 26, stat_1 = 25, stat_2 = 32, stat_3 = 82, stat_4 = 79, mp_reg_pct = 0.014496)
 	})
-	(id = 38, next_level_xp = 66200, stats = 
+	(id = 38, next_level_xp = 66200, exp_base_xp = 285, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 80, stat_1 = 55, stat_2 = 74, stat_3 = 25, stat_4 = 34)
 		(race = 1, class = 2, stat_0 = 70, stat_1 = 46, stat_2 = 67, stat_3 = 49, stat_4 = 52, mp_reg_pct = 0.014302)
@@ -2090,7 +2090,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 59, stat_1 = 37, stat_2 = 63, stat_3 = 62, stat_4 = 69, mp_reg_pct = 0.014302)
 		(race = 11, class = 8, stat_0 = 26, stat_1 = 25, stat_2 = 33, stat_3 = 84, stat_4 = 81, mp_reg_pct = 0.014302)
 	})
-	(id = 39, next_level_xp = 70200, stats = 
+	(id = 39, next_level_xp = 70200, exp_base_xp = 300, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 82, stat_1 = 56, stat_2 = 75, stat_3 = 25, stat_4 = 34)
 		(race = 1, class = 2, stat_0 = 72, stat_1 = 47, stat_2 = 69, stat_3 = 50, stat_4 = 53, mp_reg_pct = 0.014095)
@@ -2145,7 +2145,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 61, stat_1 = 38, stat_2 = 65, stat_3 = 63, stat_4 = 71, mp_reg_pct = 0.014095)
 		(race = 11, class = 8, stat_0 = 26, stat_1 = 25, stat_2 = 33, stat_3 = 86, stat_4 = 83, mp_reg_pct = 0.014095)
 	})
-	(id = 40, next_level_xp = 74300, stats = 
+	(id = 40, next_level_xp = 74300, exp_base_xp = 315, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 83, stat_1 = 57, stat_2 = 77, stat_3 = 25, stat_4 = 35)
 		(race = 1, class = 2, stat_0 = 73, stat_1 = 48, stat_2 = 70, stat_3 = 51, stat_4 = 54, mp_reg_pct = 0.013896)
@@ -2200,7 +2200,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 62, stat_1 = 38, stat_2 = 66, stat_3 = 65, stat_4 = 72, mp_reg_pct = 0.013896)
 		(race = 11, class = 8, stat_0 = 26, stat_1 = 26, stat_2 = 34, stat_3 = 87, stat_4 = 85, mp_reg_pct = 0.013896)
 	})
-	(id = 41, next_level_xp = 78500, stats = 
+	(id = 41, next_level_xp = 78500, exp_base_xp = 330, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 85, stat_1 = 58, stat_2 = 79, stat_3 = 26, stat_4 = 35)
 		(race = 1, class = 2, stat_0 = 75, stat_1 = 49, stat_2 = 72, stat_3 = 52, stat_4 = 55, mp_reg_pct = 0.013724)
@@ -2255,7 +2255,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 63, stat_1 = 39, stat_2 = 67, stat_3 = 66, stat_4 = 74, mp_reg_pct = 0.013724)
 		(race = 11, class = 8, stat_0 = 27, stat_1 = 26, stat_2 = 34, stat_3 = 89, stat_4 = 87, mp_reg_pct = 0.013724)
 	})
-	(id = 42, next_level_xp = 82800, stats = 
+	(id = 42, next_level_xp = 82800, exp_base_xp = 345, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 87, stat_1 = 60, stat_2 = 80, stat_3 = 26, stat_4 = 35)
 		(race = 1, class = 2, stat_0 = 77, stat_1 = 49, stat_2 = 73, stat_3 = 53, stat_4 = 56, mp_reg_pct = 0.013522)
@@ -2310,7 +2310,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 64, stat_1 = 40, stat_2 = 69, stat_3 = 67, stat_4 = 75, mp_reg_pct = 0.013522)
 		(race = 11, class = 8, stat_0 = 27, stat_1 = 26, stat_2 = 35, stat_3 = 91, stat_4 = 89, mp_reg_pct = 0.013522)
 	})
-	(id = 43, next_level_xp = 87100, stats = 
+	(id = 43, next_level_xp = 87100, exp_base_xp = 360, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 89, stat_1 = 61, stat_2 = 82, stat_3 = 26, stat_4 = 36)
 		(race = 1, class = 2, stat_0 = 78, stat_1 = 50, stat_2 = 75, stat_3 = 54, stat_4 = 57, mp_reg_pct = 0.013363)
@@ -2365,7 +2365,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 65, stat_1 = 40, stat_2 = 70, stat_3 = 69, stat_4 = 77, mp_reg_pct = 0.013363)
 		(race = 11, class = 8, stat_0 = 27, stat_1 = 27, stat_2 = 35, stat_3 = 93, stat_4 = 91, mp_reg_pct = 0.013363)
 	})
-	(id = 44, next_level_xp = 91600, stats = 
+	(id = 44, next_level_xp = 91600, exp_base_xp = 375, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 91, stat_1 = 62, stat_2 = 84, stat_3 = 26, stat_4 = 36)
 		(race = 1, class = 2, stat_0 = 80, stat_1 = 51, stat_2 = 76, stat_3 = 55, stat_4 = 58, mp_reg_pct = 0.013176)
@@ -2420,7 +2420,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 67, stat_1 = 41, stat_2 = 72, stat_3 = 70, stat_4 = 78, mp_reg_pct = 0.013176)
 		(race = 11, class = 8, stat_0 = 27, stat_1 = 27, stat_2 = 36, stat_3 = 95, stat_4 = 92, mp_reg_pct = 0.013176)
 	})
-	(id = 45, next_level_xp = 96300, stats = 
+	(id = 45, next_level_xp = 96300, exp_base_xp = 390, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 93, stat_1 = 63, stat_2 = 85, stat_3 = 26, stat_4 = 37)
 		(race = 1, class = 2, stat_0 = 81, stat_1 = 52, stat_2 = 78, stat_3 = 56, stat_4 = 59, mp_reg_pct = 0.012996)
@@ -2475,7 +2475,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 68, stat_1 = 42, stat_2 = 73, stat_3 = 71, stat_4 = 80, mp_reg_pct = 0.012996)
 		(race = 11, class = 8, stat_0 = 27, stat_1 = 27, stat_2 = 36, stat_3 = 97, stat_4 = 94, mp_reg_pct = 0.012996)
 	})
-	(id = 46, next_level_xp = 101000, stats = 
+	(id = 46, next_level_xp = 101000, exp_base_xp = 405, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 95, stat_1 = 64, stat_2 = 87, stat_3 = 27, stat_4 = 37)
 		(race = 1, class = 2, stat_0 = 83, stat_1 = 53, stat_2 = 79, stat_3 = 57, stat_4 = 61, mp_reg_pct = 0.012854)
@@ -2530,7 +2530,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 69, stat_1 = 42, stat_2 = 75, stat_3 = 73, stat_4 = 81, mp_reg_pct = 0.012854)
 		(race = 11, class = 8, stat_0 = 28, stat_1 = 27, stat_2 = 37, stat_3 = 99, stat_4 = 96, mp_reg_pct = 0.012854)
 	})
-	(id = 47, next_level_xp = 105800, stats = 
+	(id = 47, next_level_xp = 105800, exp_base_xp = 420, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 97, stat_1 = 66, stat_2 = 89, stat_3 = 27, stat_4 = 38)
 		(race = 1, class = 2, stat_0 = 85, stat_1 = 54, stat_2 = 81, stat_3 = 58, stat_4 = 62, mp_reg_pct = 0.012687)
@@ -2585,7 +2585,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 71, stat_1 = 43, stat_2 = 76, stat_3 = 74, stat_4 = 83, mp_reg_pct = 0.012687)
 		(race = 11, class = 8, stat_0 = 28, stat_1 = 28, stat_2 = 37, stat_3 = 101, stat_4 = 98, mp_reg_pct = 0.012687)
 	})
-	(id = 48, next_level_xp = 110700, stats = 
+	(id = 48, next_level_xp = 110700, exp_base_xp = 440, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 99, stat_1 = 67, stat_2 = 91, stat_3 = 27, stat_4 = 38)
 		(race = 1, class = 2, stat_0 = 86, stat_1 = 55, stat_2 = 83, stat_3 = 59, stat_4 = 63, mp_reg_pct = 0.01254)
@@ -2640,7 +2640,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 72, stat_1 = 44, stat_2 = 78, stat_3 = 76, stat_4 = 84, mp_reg_pct = 0.01254)
 		(race = 11, class = 8, stat_0 = 28, stat_1 = 28, stat_2 = 38, stat_3 = 103, stat_4 = 100, mp_reg_pct = 0.01254)
 	})
-	(id = 49, next_level_xp = 115700, stats = 
+	(id = 49, next_level_xp = 115700, exp_base_xp = 455, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 101, stat_1 = 68, stat_2 = 93, stat_3 = 27, stat_4 = 39)
 		(race = 1, class = 2, stat_0 = 88, stat_1 = 56, stat_2 = 84, stat_3 = 60, stat_4 = 64, mp_reg_pct = 0.012384)
@@ -2695,7 +2695,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 73, stat_1 = 45, stat_2 = 79, stat_3 = 77, stat_4 = 86, mp_reg_pct = 0.012384)
 		(race = 11, class = 8, stat_0 = 28, stat_1 = 28, stat_2 = 38, stat_3 = 105, stat_4 = 102, mp_reg_pct = 0.012384)
 	})
-	(id = 50, next_level_xp = 120900, stats = 
+	(id = 50, next_level_xp = 120900, exp_base_xp = 470, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 103, stat_1 = 69, stat_2 = 94, stat_3 = 28, stat_4 = 40)
 		(race = 1, class = 2, stat_0 = 90, stat_1 = 57, stat_2 = 86, stat_3 = 61, stat_4 = 65, mp_reg_pct = 0.012233)
@@ -2750,7 +2750,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 74, stat_1 = 45, stat_2 = 81, stat_3 = 78, stat_4 = 88, mp_reg_pct = 0.012233)
 		(race = 11, class = 8, stat_0 = 29, stat_1 = 29, stat_2 = 39, stat_3 = 107, stat_4 = 104, mp_reg_pct = 0.012233)
 	})
-	(id = 51, next_level_xp = 126100, stats = 
+	(id = 51, next_level_xp = 126100, exp_base_xp = 490, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 105, stat_1 = 71, stat_2 = 96, stat_3 = 28, stat_4 = 40)
 		(race = 1, class = 2, stat_0 = 91, stat_1 = 58, stat_2 = 87, stat_3 = 62, stat_4 = 66, mp_reg_pct = 0.012114)
@@ -2805,7 +2805,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 76, stat_1 = 46, stat_2 = 82, stat_3 = 80, stat_4 = 89, mp_reg_pct = 0.012114)
 		(race = 11, class = 8, stat_0 = 29, stat_1 = 29, stat_2 = 39, stat_3 = 110, stat_4 = 106, mp_reg_pct = 0.012114)
 	})
-	(id = 52, next_level_xp = 131500, stats = 
+	(id = 52, next_level_xp = 131500, exp_base_xp = 510, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 107, stat_1 = 72, stat_2 = 98, stat_3 = 28, stat_4 = 41)
 		(race = 1, class = 2, stat_0 = 93, stat_1 = 59, stat_2 = 89, stat_3 = 63, stat_4 = 67, mp_reg_pct = 0.011973)
@@ -2860,7 +2860,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 77, stat_1 = 47, stat_2 = 84, stat_3 = 81, stat_4 = 91, mp_reg_pct = 0.011973)
 		(race = 11, class = 8, stat_0 = 29, stat_1 = 29, stat_2 = 40, stat_3 = 112, stat_4 = 108, mp_reg_pct = 0.011973)
 	})
-	(id = 53, next_level_xp = 137000, stats = 
+	(id = 53, next_level_xp = 137000, exp_base_xp = 530, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 109, stat_1 = 73, stat_2 = 100, stat_3 = 28, stat_4 = 41)
 		(race = 1, class = 2, stat_0 = 95, stat_1 = 60, stat_2 = 91, stat_3 = 64, stat_4 = 68, mp_reg_pct = 0.01186)
@@ -2915,7 +2915,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 78, stat_1 = 47, stat_2 = 85, stat_3 = 83, stat_4 = 92, mp_reg_pct = 0.01186)
 		(race = 11, class = 8, stat_0 = 29, stat_1 = 30, stat_2 = 40, stat_3 = 114, stat_4 = 110, mp_reg_pct = 0.01186)
 	})
-	(id = 54, next_level_xp = 142500, stats = 
+	(id = 54, next_level_xp = 142500, exp_base_xp = 540, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 111, stat_1 = 74, stat_2 = 102, stat_3 = 29, stat_4 = 42)
 		(race = 1, class = 2, stat_0 = 97, stat_1 = 61, stat_2 = 92, stat_3 = 65, stat_4 = 69, mp_reg_pct = 0.011715)
@@ -2970,7 +2970,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 80, stat_1 = 48, stat_2 = 87, stat_3 = 84, stat_4 = 94, mp_reg_pct = 0.011715)
 		(race = 11, class = 8, stat_0 = 30, stat_1 = 30, stat_2 = 41, stat_3 = 116, stat_4 = 112, mp_reg_pct = 0.011715)
 	})
-	(id = 55, next_level_xp = 148200, stats = 
+	(id = 55, next_level_xp = 148200, exp_base_xp = 560, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 113, stat_1 = 76, stat_2 = 103, stat_3 = 29, stat_4 = 42)
 		(race = 1, class = 2, stat_0 = 98, stat_1 = 61, stat_2 = 94, stat_3 = 66, stat_4 = 71, mp_reg_pct = 0.011576)
@@ -3025,7 +3025,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 81, stat_1 = 49, stat_2 = 88, stat_3 = 86, stat_4 = 96, mp_reg_pct = 0.011576)
 		(race = 11, class = 8, stat_0 = 30, stat_1 = 30, stat_2 = 41, stat_3 = 118, stat_4 = 114, mp_reg_pct = 0.011576)
 	})
-	(id = 56, next_level_xp = 154000, stats = 
+	(id = 56, next_level_xp = 154000, exp_base_xp = 580, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 115, stat_1 = 77, stat_2 = 105, stat_3 = 29, stat_4 = 43)
 		(race = 1, class = 2, stat_0 = 100, stat_1 = 62, stat_2 = 95, stat_3 = 67, stat_4 = 72, mp_reg_pct = 0.011473)
@@ -3080,7 +3080,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 83, stat_1 = 50, stat_2 = 90, stat_3 = 87, stat_4 = 97, mp_reg_pct = 0.011473)
 		(race = 11, class = 8, stat_0 = 30, stat_1 = 31, stat_2 = 42, stat_3 = 120, stat_4 = 116, mp_reg_pct = 0.011473)
 	})
-	(id = 57, next_level_xp = 159900, stats = 
+	(id = 57, next_level_xp = 159900, exp_base_xp = 600, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 117, stat_1 = 78, stat_2 = 107, stat_3 = 29, stat_4 = 43)
 		(race = 1, class = 2, stat_0 = 102, stat_1 = 63, stat_2 = 97, stat_3 = 68, stat_4 = 73, mp_reg_pct = 0.011342)
@@ -3135,7 +3135,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 84, stat_1 = 50, stat_2 = 91, stat_3 = 89, stat_4 = 99, mp_reg_pct = 0.011342)
 		(race = 11, class = 8, stat_0 = 30, stat_1 = 31, stat_2 = 42, stat_3 = 122, stat_4 = 118, mp_reg_pct = 0.011342)
 	})
-	(id = 58, next_level_xp = 165800, stats = 
+	(id = 58, next_level_xp = 165800, exp_base_xp = 620, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 119, stat_1 = 79, stat_2 = 109, stat_3 = 30, stat_4 = 44)
 		(race = 1, class = 2, stat_0 = 104, stat_1 = 64, stat_2 = 99, stat_3 = 69, stat_4 = 74, mp_reg_pct = 0.011245)
@@ -3190,7 +3190,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 85, stat_1 = 51, stat_2 = 93, stat_3 = 90, stat_4 = 101, mp_reg_pct = 0.011245)
 		(race = 11, class = 8, stat_0 = 31, stat_1 = 31, stat_2 = 43, stat_3 = 125, stat_4 = 121, mp_reg_pct = 0.011245)
 	})
-	(id = 59, next_level_xp = 172000, stats = 
+	(id = 59, next_level_xp = 172000, exp_base_xp = 640, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 121, stat_1 = 81, stat_2 = 111, stat_3 = 30, stat_4 = 44)
 		(race = 1, class = 2, stat_0 = 105, stat_1 = 65, stat_2 = 101, stat_3 = 70, stat_4 = 75, mp_reg_pct = 0.011111)
@@ -3245,7 +3245,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 87, stat_1 = 52, stat_2 = 95, stat_3 = 92, stat_4 = 102, mp_reg_pct = 0.011111)
 		(race = 11, class = 8, stat_0 = 31, stat_1 = 32, stat_2 = 43, stat_3 = 127, stat_4 = 123, mp_reg_pct = 0.011111)
 	})
-	(id = 60, next_level_xp = 494000, stats = 
+	(id = 60, next_level_xp = 494000, exp_base_xp = 660, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 123, stat_1 = 82, stat_2 = 113, stat_3 = 30, stat_4 = 45)
 		(race = 1, class = 2, stat_0 = 107, stat_1 = 66, stat_2 = 102, stat_3 = 71, stat_4 = 77, mp_reg_pct = 0.011)
@@ -3300,7 +3300,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 88, stat_1 = 53, stat_2 = 96, stat_3 = 93, stat_4 = 104, mp_reg_pct = 0.011)
 		(race = 11, class = 8, stat_0 = 31, stat_1 = 32, stat_2 = 44, stat_3 = 129, stat_4 = 125, mp_reg_pct = 0.011)
 	})
-	(id = 61, next_level_xp = 574700, stats = 
+	(id = 61, next_level_xp = 574700, exp_base_xp = 970, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 125, stat_1 = 83, stat_2 = 115, stat_3 = 30, stat_4 = 46)
 		(race = 1, class = 2, stat_0 = 109, stat_1 = 67, stat_2 = 104, stat_3 = 73, stat_4 = 78, mp_reg_pct = 0.010701)
@@ -3355,7 +3355,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 90, stat_1 = 54, stat_2 = 98, stat_3 = 95, stat_4 = 106, mp_reg_pct = 0.010701)
 		(race = 11, class = 8, stat_0 = 31, stat_1 = 33, stat_2 = 45, stat_3 = 131, stat_4 = 127, mp_reg_pct = 0.010701)
 	})
-	(id = 62, next_level_xp = 614400, stats = 
+	(id = 62, next_level_xp = 614400, exp_base_xp = 1000, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 127, stat_1 = 85, stat_2 = 117, stat_3 = 31, stat_4 = 46)
 		(race = 1, class = 2, stat_0 = 111, stat_1 = 69, stat_2 = 106, stat_3 = 74, stat_4 = 79, mp_reg_pct = 0.010523)
@@ -3410,7 +3410,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 91, stat_1 = 54, stat_2 = 99, stat_3 = 96, stat_4 = 108, mp_reg_pct = 0.010523)
 		(race = 11, class = 8, stat_0 = 32, stat_1 = 33, stat_2 = 45, stat_3 = 133, stat_4 = 129, mp_reg_pct = 0.010523)
 	})
-	(id = 63, next_level_xp = 650300, stats = 
+	(id = 63, next_level_xp = 650300, exp_base_xp = 1050, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 129, stat_1 = 86, stat_2 = 119, stat_3 = 31, stat_4 = 47)
 		(race = 1, class = 2, stat_0 = 113, stat_1 = 70, stat_2 = 107, stat_3 = 75, stat_4 = 80, mp_reg_pct = 0.010291)
@@ -3465,7 +3465,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 93, stat_1 = 55, stat_2 = 101, stat_3 = 98, stat_4 = 109, mp_reg_pct = 0.010291)
 		(race = 11, class = 8, stat_0 = 32, stat_1 = 33, stat_2 = 46, stat_3 = 136, stat_4 = 131, mp_reg_pct = 0.010291)
 	})
-	(id = 64, next_level_xp = 682300, stats = 
+	(id = 64, next_level_xp = 682300, exp_base_xp = 1080, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 132, stat_1 = 88, stat_2 = 121, stat_3 = 31, stat_4 = 47)
 		(race = 1, class = 2, stat_0 = 115, stat_1 = 71, stat_2 = 109, stat_3 = 76, stat_4 = 81, mp_reg_pct = 0.01012)
@@ -3520,7 +3520,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 94, stat_1 = 56, stat_2 = 103, stat_3 = 99, stat_4 = 111, mp_reg_pct = 0.01012)
 		(race = 11, class = 8, stat_0 = 32, stat_1 = 34, stat_2 = 46, stat_3 = 138, stat_4 = 134, mp_reg_pct = 0.01012)
 	})
-	(id = 65, next_level_xp = 710200, stats = 
+	(id = 65, next_level_xp = 710200, exp_base_xp = 1100, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 134, stat_1 = 89, stat_2 = 123, stat_3 = 32, stat_4 = 48)
 		(race = 1, class = 2, stat_0 = 116, stat_1 = 72, stat_2 = 111, stat_3 = 77, stat_4 = 83, mp_reg_pct = 0.009969)
@@ -3575,7 +3575,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 95, stat_1 = 57, stat_2 = 104, stat_3 = 101, stat_4 = 113, mp_reg_pct = 0.009969)
 		(race = 11, class = 8, stat_0 = 33, stat_1 = 34, stat_2 = 47, stat_3 = 140, stat_4 = 136, mp_reg_pct = 0.009969)
 	})
-	(id = 66, next_level_xp = 734100, stats = 
+	(id = 66, next_level_xp = 734100, exp_base_xp = 1130, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 136, stat_1 = 90, stat_2 = 125, stat_3 = 32, stat_4 = 49)
 		(race = 1, class = 2, stat_0 = 118, stat_1 = 73, stat_2 = 113, stat_3 = 78, stat_4 = 84, mp_reg_pct = 0.009808)
@@ -3630,7 +3630,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 97, stat_1 = 58, stat_2 = 106, stat_3 = 103, stat_4 = 115, mp_reg_pct = 0.009808)
 		(race = 11, class = 8, stat_0 = 33, stat_1 = 34, stat_2 = 48, stat_3 = 143, stat_4 = 138, mp_reg_pct = 0.009808)
 	})
-	(id = 67, next_level_xp = 753700, stats = 
+	(id = 67, next_level_xp = 753700, exp_base_xp = 1160, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 138, stat_1 = 92, stat_2 = 127, stat_3 = 32, stat_4 = 49)
 		(race = 1, class = 2, stat_0 = 120, stat_1 = 74, stat_2 = 115, stat_3 = 79, stat_4 = 85, mp_reg_pct = 0.009652)
@@ -3685,7 +3685,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 98, stat_1 = 58, stat_2 = 108, stat_3 = 104, stat_4 = 117, mp_reg_pct = 0.009652)
 		(race = 11, class = 8, stat_0 = 33, stat_1 = 35, stat_2 = 48, stat_3 = 145, stat_4 = 140, mp_reg_pct = 0.009652)
 	})
-	(id = 68, next_level_xp = 768900, stats = 
+	(id = 68, next_level_xp = 768900, exp_base_xp = 1200, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 140, stat_1 = 93, stat_2 = 129, stat_3 = 32, stat_4 = 50)
 		(race = 1, class = 2, stat_0 = 122, stat_1 = 75, stat_2 = 116, stat_3 = 81, stat_4 = 86, mp_reg_pct = 0.009553)
@@ -3740,7 +3740,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 100, stat_1 = 59, stat_2 = 110, stat_3 = 106, stat_4 = 118, mp_reg_pct = 0.009553)
 		(race = 11, class = 8, stat_0 = 33, stat_1 = 35, stat_2 = 49, stat_3 = 147, stat_4 = 142, mp_reg_pct = 0.009553)
 	})
-	(id = 69, next_level_xp = 779700, stats = 
+	(id = 69, next_level_xp = 779700, exp_base_xp = 1230, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 143, stat_1 = 95, stat_2 = 131, stat_3 = 33, stat_4 = 50)
 		(race = 1, class = 2, stat_0 = 124, stat_1 = 76, stat_2 = 118, stat_3 = 82, stat_4 = 88, mp_reg_pct = 0.009446)
@@ -3795,7 +3795,7 @@ levels =
 		(race = 11, class = 7, stat_0 = 101, stat_1 = 60, stat_2 = 111, stat_3 = 107, stat_4 = 120, mp_reg_pct = 0.009446)
 		(race = 11, class = 8, stat_0 = 34, stat_1 = 36, stat_2 = 49, stat_3 = 150, stat_4 = 145, mp_reg_pct = 0.009446)
 	})
-	(id = 70, next_level_xp = 0, stats = 
+	(id = 70, next_level_xp = 0, exp_base_xp = 1300, stats = 
 	{
 		(race = 1, class = 1, stat_0 = 145, stat_1 = 96, stat_2 = 133, stat_3 = 33, stat_4 = 51)
 		(race = 1, class = 2, stat_0 = 126, stat_1 = 77, stat_2 = 120, stat_3 = 83, stat_4 = 89, mp_reg_pct = 0.009327)

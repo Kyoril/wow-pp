@@ -45,6 +45,7 @@ namespace wowpp
 	// Forwards
 	class PlayerManager;
 	class WorldInstanceManager;
+	class Project;
 
 	/// Player connection class.
 	class Player final : public boost::noncopyable, public ITileSubscriber
@@ -65,7 +66,8 @@ namespace wowpp
 						WorldInstanceManager &worldInstanceManager,
 						DatabaseId characterId,
 						std::shared_ptr<GameCharacter> character,
-						WorldInstance &instance);
+						WorldInstance &instance,
+						Project &project);
 
 		/// Gets the player manager which manages all connected players.
 		PlayerManager &getManager() const { return m_manager; }
@@ -192,5 +194,6 @@ namespace wowpp
 		AttackSwingError m_lastError;
 		UInt32 m_lastFallTime;
 		float m_lastFallZ;
+		Project &m_project;
 	};
 }

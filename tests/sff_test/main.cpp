@@ -36,6 +36,7 @@
 #include "mysql_wrapper/mysql_statement.h"
 using namespace wowpp;
 
+#if 0
 struct EquipmentEntry
 {
 	const ItemEntry *mainHand, *offHand, *ranged;
@@ -48,31 +49,8 @@ struct EquipmentEntry
 	}
 };
 
-
-/// Procedural entry point of the application.
-int main(int argc, char* argv[])
+bool importEquipment(Project &project, MySQL::Connection &connection)
 {
-	// Add cout to the list of log output streams
-	wowpp::g_DefaultLog.signal().connect(std::bind(
-		wowpp::printLogEntry,
-		std::ref(std::cout), std::placeholders::_1, wowpp::g_DefaultConsoleLogOptions));
-
-	// Database connection
-	MySQL::DatabaseInfo connectionInfo("127.0.0.1", 3306, "root", "", "tbcdb");
-	MySQL::Connection connection;
-	if (!connection.connect(connectionInfo))
-	{
-		ELOG("Could not connect to the database");
-		ELOG(connection.getErrorMessage());
-		return 0;
-	}
-
-	Project proj;
-	if (!proj.load("C:/Source/wowpp/data"))
-	{
-		return 1;
-	}
-
 	// Load equipment entries
 	std::map<UInt32, EquipmentEntry> equipmentEntries;
 	{
@@ -107,7 +85,7 @@ int main(int argc, char* argv[])
 		{
 			// There was an error
 			ELOG(connection.getErrorMessage());
-			return 0;
+			return false;
 		}
 	}
 
@@ -152,8 +130,77 @@ int main(int argc, char* argv[])
 		{
 			// There was an error
 			ELOG(connection.getErrorMessage());
-			return 0;
+			return false;
 		}
+	}
+
+	return true;
+}
+#endif
+
+bool importExplorationBaseXP(Project &project, MySQL::Connection &connection)
+{
+	wowpp::MySQL::Select select(connection, "SELECT `level`, `basexp` FROM `exploration_basexp` WHERE `level` > 0 AND `level` < 71 ORDER BY `level`;");
+	if (select.success())
+	{
+		wowpp::MySQL::Row row(select);
+		while (row)
+		{
+			UInt32 level = 0, baseXp = 0;
+			row.getField(0, level);
+			row.getField(1, baseXp);
+
+			// Find level
+			auto *levelEntry = project.levels.getEditableById(level);
+			if (!levelEntry)
+			{
+				WLOG("Could not find entry for level " << level << " - skipping");
+			}
+			else
+			{
+				levelEntry->explorationBaseXP = baseXp;
+			}
+
+			row = row.next(select);
+		}
+	}
+	else
+	{
+		// There was an error
+		ELOG(connection.getErrorMessage());
+		return false;
+	}
+
+	return true;
+}
+
+/// Procedural entry point of the application.
+int main(int argc, char* argv[])
+{
+	// Add cout to the list of log output streams
+	wowpp::g_DefaultLog.signal().connect(std::bind(
+		wowpp::printLogEntry,
+		std::ref(std::cout), std::placeholders::_1, wowpp::g_DefaultConsoleLogOptions));
+
+	// Database connection
+	MySQL::DatabaseInfo connectionInfo("127.0.0.1", 3306, "root", "", "tbcdb");
+	MySQL::Connection connection;
+	if (!connection.connect(connectionInfo))
+	{
+		ELOG("Could not connect to the database");
+		ELOG(connection.getErrorMessage());
+		return 0;
+	}
+
+	Project proj;
+	if (!proj.load("C:/Source/wowpp/data"))
+	{
+		return 1;
+	}
+	
+	if (!importExplorationBaseXP(proj, connection))
+	{
+		return 1;
 	}
 
 	proj.save("./test-data");

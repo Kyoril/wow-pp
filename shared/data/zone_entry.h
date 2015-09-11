@@ -21,32 +21,39 @@
 
 #pragma once
 
-#include "common/typedefs.h"
 #include "templates/basic_template.h"
-#include <array>
-#include <map>
+#include "data_load_context.h"
 
 namespace wowpp
 {
-	struct LevelEntry : BasicTemplate<UInt32>
+	struct MapEntry;
+
+	/// Contains data for a zone antry. A zone may have a parent, in which case the zone is not a
+	/// zone, but an area of a zone.
+	struct ZoneEntry : BasicTemplate<UInt32>
 	{
 		typedef BasicTemplate<UInt32> Super;
 
-		typedef std::array<UInt32, 5> StatArray;
-		typedef std::map<UInt32, StatArray> ClassStatMap;
-		typedef std::map<UInt32, ClassStatMap> RaceClassMap;
+		/// Name of the zone.
+		String name;
+		/// Parent of the zone.
+		const ZoneEntry *parent;
+		/// Map where this zone is referenced at.
+		const MapEntry *map;
+		/// The exploration bit which is set if this area is explored.
+		UInt32 explore;
+		/// Zone flags.
+		UInt32 flags;
+		/// Which faction does control this zone? This field decides whether to turn on pvp mode on pvp realms.
+		UInt32 team;
+		/// This field is used to calculate the amount of XP gained when exploring this zone.
+		Int32 level;
 
-		typedef std::array<float, 2> RegenArray;
-		typedef std::map<UInt32, RegenArray> ClassRegenMap;
-
-		// Note: id is the level value (1 - 70) here for compatiblity reasons
-		UInt32 nextLevelXP;
-		UInt32 explorationBaseXP;
-		RaceClassMap stats;
-		ClassRegenMap regen;
-
-		LevelEntry();
-		bool load(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper);
+		/// Default constructor.
+		ZoneEntry();
+		/// Loads a zone entry from a data file.
+		bool load(DataLoadContext &context, const ReadTableWrapper &wrapper);
+		/// Writes a zone entry into a data file.
 		void save(BasicTemplateSaveContext &context) const;
 	};
 }

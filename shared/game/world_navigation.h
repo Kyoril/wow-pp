@@ -28,7 +28,7 @@ namespace wowpp
 	{
 	public:
 
-		virtual ~IWorldNavigation();
+		virtual ~IWorldNavigation() { }
 
 
 	};

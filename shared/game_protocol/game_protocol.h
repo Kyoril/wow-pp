@@ -281,6 +281,7 @@ namespace wowpp
 				AuthChallenge				= 0x1EC,
 				AuthResponse				= 0x1EE,
 				CompressedUpdateObject		= 0x1F6,
+				ExplorationExperience		= 0x1F8,
 				EnvironmentalDamageLog		= 0x1FC,
 				AccountDataTimes			= 0x209,
 				ChatWrongFaction			= 0x219,
@@ -1465,6 +1466,12 @@ namespace wowpp
 			void playSound(
 				game::OutgoingPacket &out_packet,
 				UInt32 soundId
+				);
+
+			void explorationExperience(
+				game::OutgoingPacket &out_packet,
+				UInt32 areaId,
+				UInt32 experience
 				);
 		};
 	}

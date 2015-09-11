@@ -2385,6 +2385,14 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void explorationExperience(game::OutgoingPacket &out_packet, UInt32 areaId, UInt32 experience)
+			{
+				out_packet.start(game::server_packet::ExplorationExperience);
+				out_packet
+					<< io::write<NetUInt32>(areaId)
+					<< io::write<NetUInt32>(experience);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

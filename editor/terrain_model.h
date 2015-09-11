@@ -28,6 +28,16 @@ namespace wowpp
 			typedef std::vector<AlphaMap> AlphaMaps;
 			typedef std::array<AlphaMaps, constants::TilesPerPageSquared> TileAlphaMaps;
 
+			struct M2Placement
+			{
+				UInt32 mmidEntry;
+				UInt32 uniqueId;
+				float position[3];
+				float rotation[3];
+				UInt16 scale;
+				UInt16 flags;
+			};
+
 			class Page
 			{
 			public:
@@ -37,6 +47,8 @@ namespace wowpp
 				Textures textures;
 				TileTextureIds textureIds;
 				TileAlphaMaps alphaMaps;
+				std::vector<String> m2Ids;
+				std::vector<M2Placement> m2Placements;
 				
 				explicit Page();
 				explicit Page(const Page &other);

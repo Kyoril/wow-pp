@@ -26,6 +26,7 @@
 #include "game/world_instance.h"
 #include "game/each_tile_in_sight.h"
 #include "game/universe.h"
+#include "data/project.h"
 #include <cassert>
 #include <limits>
 
@@ -33,7 +34,7 @@ using namespace std;
 
 namespace wowpp
 {
-	Player::Player(PlayerManager &manager, RealmConnector &realmConnector, WorldInstanceManager &worldInstanceManager, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance)
+	Player::Player(PlayerManager &manager, RealmConnector &realmConnector, WorldInstanceManager &worldInstanceManager, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance, Project &project)
 		: m_manager(manager)
 		, m_realmConnector(realmConnector)
 		, m_worldInstanceManager(worldInstanceManager)
@@ -44,6 +45,7 @@ namespace wowpp
 		, m_lastError(attack_swing_error::Unknown)
 		, m_lastFallTime(0)
 		, m_lastFallZ(0.0f)
+		, m_project(project)
 	{
 		m_logoutCountdown.ended.connect(
 			std::bind(&Player::onLogout, this));
@@ -491,6 +493,85 @@ namespace wowpp
 		// Create spawn message blocks
 		std::vector<std::vector<char>> spawnBlocks;
 		createUpdateBlocks(*m_character, spawnBlocks);
+
+		// Convert position to ADT position, and to ADT cell position
+		auto newPos = newTile.getPosition();
+		auto adtPos = makeVector<TileIndex>(newPos[0] / 16, newPos[1] / 16);
+		auto localPos = makeVector<TileIndex>(newPos[0] - (adtPos[0] * 16), newPos[1] - (adtPos[1] * 16));
+
+		// Check zone exploration
+		auto *map = m_instance.getMapData();
+		if (map)
+		{
+			// Get or load map tile
+			auto *tile = map->getTile(adtPos);
+			if (tile)
+			{
+				// Find local tile
+				auto &area = tile->areas.cellAreas[localPos[1] + localPos[0] * 16];
+				auto *areaZone = m_project.zones.getById(area.areaId);
+				if (!areaZone)
+				{
+					WLOG("Entering unknown area!");
+				}
+				else
+				{
+					// Exploration
+					UInt32 exploration = areaZone->explore;
+					int offset = exploration / 32;
+
+					UInt32 val = (UInt32)(1 << (exploration % 32));
+					UInt32 currFields = m_character->getUInt32Value(character_fields::ExploredZones_1 + offset);
+
+					if (!(currFields & val))
+					{
+						m_character->setUInt32Value(character_fields::ExploredZones_1 + offset, (UInt32)(currFields | val));
+
+						if (m_character->getLevel() >= 70)
+						{
+							sendProxyPacket(
+								std::bind(game::server_write::explorationExperience, std::placeholders::_1, areaZone->id, 0));
+						}
+						else
+						{
+							const Int32 diff = static_cast<Int32>(m_character->getLevel()) - static_cast<Int32>(areaZone->level);
+							UInt32 xp = 0;
+
+							if (diff < -5)
+							{
+								const auto *levelEntry = m_project.levels.getById(m_character->getLevel() + 5);
+								xp = (levelEntry ? levelEntry->explorationBaseXP : 0);
+							}
+							else if (diff > 5)
+							{
+								Int32 xpPct = (100 - ((diff - 5) * 5));
+								if (xpPct > 100)
+								{
+									xpPct = 100;
+								}
+								else if (xpPct < 0)
+								{
+									xpPct = 0;
+								}
+
+								const auto *levelEntry = m_project.levels.getById(areaZone->level);
+								xp = (levelEntry ? levelEntry->explorationBaseXP : 0) * xpPct / 100;
+							}
+							else
+							{
+								const auto *levelEntry = m_project.levels.getById(areaZone->level);
+								xp = (levelEntry ? levelEntry->explorationBaseXP : 0);
+							}
+
+							// Calculate experience points
+							m_character->rewardExperience(nullptr, xp);
+							sendProxyPacket(
+								std::bind(game::server_write::explorationExperience, std::placeholders::_1, areaZone->id, xp));
+						}
+					}
+				}
+			}
+		}
 
 		auto &grid = m_instance.getGrid();
 

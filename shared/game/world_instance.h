@@ -30,6 +30,7 @@
 #include "creature_spawner.h"
 #include "world_object_spawner.h"
 #include "boost/signals2.hpp"
+#include "map.h"
 #include <memory>
 #include <vector>
 
@@ -46,6 +47,11 @@ namespace wowpp
 	/// Manages one instance of a game world.
 	class WorldInstance final
 	{
+	private:
+
+		/// Loaded static map data like nav meshs, world geometry etc.
+		static std::map<UInt32, Map> MapData;
+
 	private:
 
 		typedef std::unordered_map<UInt64, GameObject*> GameObjectsById;
@@ -77,7 +83,8 @@ namespace wowpp
 			DataLoadContext::GetRace getRace,
 			DataLoadContext::GetClass getClass,
 			DataLoadContext::GetLevel getLevel,
-			DataLoadContext::GetSpell getSpell
+			DataLoadContext::GetSpell getSpell,
+			const String &dataPath
 			);
 
 		/// Creates a new creature which will belong to this world instance. However,
@@ -114,6 +121,10 @@ namespace wowpp
 		GameObject *findObjectByGUID(UInt64 guid);
 		/// Updates this world instance. Should be called once per tick.
 		void update();
+
+		/// Gets the map data of this instance. Note that instances share the same map data to save
+		/// memory.
+		Map *getMapData() { return m_map; }
 
 		CreatureSpawner *findCreatureSpawner(const String &name);
 
@@ -152,5 +163,6 @@ namespace wowpp
 		ObjectSpawners m_objectSpawners;
 		std::map<String, WorldObjectSpawner*> m_objectSpawnsByName;
 		SummonedCreatures m_creatureSummons;
+		Map *m_map;
 	};
 }
