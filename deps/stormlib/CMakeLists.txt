@@ -283,14 +283,10 @@ cmake_minimum_required(VERSION 2.8)
 		endif()
 		set(SRC_ADDITIONAL_FILES ${ZLIB_BZIP2_FILES} ${TOMCRYPT_FILES} ${TOMMATH_FILES})
 		set(LINK_LIBS wininet)
-	endif()
-
-	if(APPLE)
+	elseif(APPLE)
 		#set(LINK_LIBS z bz2)
 		set(SRC_ADDITIONAL_FILES ${ZLIB_BZIP2_FILES} ${TOMCRYPT_FILES} ${TOMMATH_FILES})
-	endif()
-
-	if (${CMAKE_SYSTEM_NAME} STREQUAL Linux)
+	else()
 		set(SRC_ADDITIONAL_FILES ${TOMCRYPT_FILES} ${TOMMATH_FILES} ${ZLIB_BZIP2_FILES})
 	endif()
 
