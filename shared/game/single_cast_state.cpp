@@ -750,7 +750,7 @@ namespace wowpp
 		if (health == 0 && 
 			!(m_spell.attributesEx[2] & 0x00100000))
 		{
-			// Spell aura is not death persistant and thus can not be added
+			// Spell aura is not death persistent and thus can not be added
 			DLOG("Target is dead - can't apply aura");
 			return;
 		}
@@ -810,7 +810,10 @@ namespace wowpp
 		auto *world = caster.getWorldInstance();
 
 		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
+                {
 			target = &caster;
+                        unitTarget = reinterpret_cast<GameUnit*>(target);
+                }
 		else if (world)
 		{
 			UInt64 targetGuid = 0;
@@ -831,7 +834,7 @@ namespace wowpp
 		// Check target
 		if (!unitTarget)
 		{
-			WLOG("EFFECT_POWER_DRAIN: No valid target found!");
+			WLOG("EFFECT_HEAL: No valid target found!");
 			return;
 		}
 
