@@ -271,14 +271,13 @@ namespace wowpp
 			if (player)
 			{
 				// Send packet
-				player->setGroup(std::shared_ptr<PlayerGroup>());
+
+				// If the group is reset for every player, the group will be deleted!
 				player->sendPacket(
 					std::bind(game::server_write::groupListRemoved, std::placeholders::_1));
+				player->setGroup(std::shared_ptr<PlayerGroup>());
 			}
 		}
-
-		m_members.clear();
-		return;
 	}
 
 	UInt64 PlayerGroup::getMemberGuid(const String &name)
