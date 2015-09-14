@@ -121,13 +121,12 @@ namespace wowpp
 		GameObject *findObjectByGUID(UInt64 guid);
 		/// Updates this world instance. Should be called once per tick.
 		void update();
-
 		/// Gets the map data of this instance. Note that instances share the same map data to save
 		/// memory.
 		Map *getMapData() { return m_map; }
-
+		/// 
 		CreatureSpawner *findCreatureSpawner(const String &name);
-
+		/// 
 		WorldObjectSpawner *findObjectSpawner(const String &name);
 
 		/// Calls a specific callback method for every game object added to the world.

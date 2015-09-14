@@ -495,7 +495,7 @@ zones =
 	(id = 640, name = "Schrein der schlafenden Flamme", parent = 14, map = 1, explore = 638, flags = 64)
 	(id = 656, name = "See von Elune\'ara", parent = 493, map = 1, explore = 295, flags = 64, level = 15)
 	(id = 657, name = "Der sichere Hafen", parent = 8, map = 0, explore = 296, flags = 64, level = 37)
-	(id = 676, name = "Scherbenwelt", explore = 297, flags = 64)
+	(id = 676, name = "Scherbenwelt", map = 0, explore = 297, flags = 64)
 	(id = 696, name = "Craftsmen\'s Terrace UNUSED", parent = 141, map = 1, explore = 298, flags = 64)
 	(id = 697, name = "Tradesmen\'s Terrace UNUSED", parent = 141, map = 1, explore = 299, flags = 64)
 	(id = 698, name = "The Temple Gardens UNUSED", parent = 141, map = 1, explore = 300, flags = 64)

@@ -22,4 +22,8 @@ triggers =
 	{
 		(action = 1, target = 1, texts = {"You no take candle!"})
 	})
+	(id = 6, name = "Webwood Spider - Aggro - Light Poison", path = "(Default)", events = {2}, actions = 
+	{
+		(action = 6, target = 1, data = {6751})
+	})
 }

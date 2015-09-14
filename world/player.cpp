@@ -516,6 +516,15 @@ namespace wowpp
 				}
 				else
 				{
+					// Update players zone field
+					auto *topLevelZone = areaZone;
+					while (topLevelZone->parent != nullptr)
+					{
+						topLevelZone = topLevelZone->parent;
+					}
+
+					m_character->setZone(topLevelZone->id);
+
 					// Exploration
 					UInt32 exploration = areaZone->explore;
 					int offset = exploration / 32;

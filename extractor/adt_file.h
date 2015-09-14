@@ -273,6 +273,8 @@ namespace wowpp
 		const MCINChunk &getMCINChunk() const { return m_mcinChunk; }
 		/// 
 		const MCNKChunk &getMCNKChunk(UInt32 index) const { return m_mcnkChunks[index]; }
+		const MCVTChunk &getMCVTChunk(UInt32 index) const { return m_heightChunks[index]; }
+		const MCLQChunk &getMCLQChunk(UInt32 index) const { return m_liquidChunks[index]; }
 
 	private:
 

@@ -231,6 +231,7 @@ namespace wowpp
 				// TODO: Apply Enchantment Slots
 
 				// TODO: Apply random property settings
+
 			}
 
 			// Store new item

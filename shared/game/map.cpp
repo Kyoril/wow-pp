@@ -24,6 +24,7 @@
 #include "detour_world_navigation.h"
 #include "log/default_log_levels.h"
 #include "common/make_unique.h"
+#include "math/vector3.h"
 
 namespace wowpp
 {
@@ -80,7 +81,7 @@ namespace wowpp
 				return nullptr;
 			}
 
-			// Read area table (ignore the rest for now)
+			// Read area table
 			mapFile.seekg(mapHeaderChunk.offsAreaTable, std::ios::beg);
 
 			// Create new tile and read area data
@@ -91,9 +92,70 @@ namespace wowpp
 				//TODO: Should we cancel the loading process?
 			}
 
+			// Read height data
+			mapFile.seekg(mapHeaderChunk.offsHeight, std::ios::beg);
+
+			// Create new tile and read area data
+			mapFile.read(reinterpret_cast<char*>(&tile.heights), sizeof(MapHeightChunk));
+			if (tile.heights.fourCC != 0x54484D57 || tile.heights.size != sizeof(MapHeightChunk) - 8)
+			{
+				WLOG("Map file " << file << " might be corrupted and may contain corrupt data");
+				//TODO: Should we cancel the loading process?
+			}
+
 			return &tile;
 		}
 
 		return nullptr;
+	}
+
+	float Map::getHeightAt(float x, float y)
+	{
+		// Calculate grid x coordinates
+		Int32 tileX = static_cast<Int32>(floor((512.0 - (static_cast<double>(x) / 33.3333))));
+		Int32 tileY = static_cast<Int32>(floor((512.0 - (static_cast<double>(y) / 33.3333))));
+		
+		// Convert to adt tile
+		TileIndex2D adtIndex(tileX / 16, tileY / 16);
+		auto *tile = getTile(adtIndex);
+		if (!tile)
+			return 0.0f;
+
+		// We are looking for p.z
+		math::Vector3 p(x, y, 0.0f);
+
+		// Determine chunk index
+		const UInt32 chunkIndex = (tileY % 16) + (tileX % 16) * 16;
+		if (chunkIndex >= 16 * 16)
+			return 0.0f;
+
+		auto &heights = tile->heights.heights[chunkIndex];
+
+		// Determine the V8 index and the two V9 indices
+		UInt32 v8Index = 0;
+		UInt32 v9Index1 = 0;
+		UInt32 v9Index2 = 0;
+
+		const float offsX = tileX * 33.3333f;
+		const float offsY = tileY * 33.3333f;
+
+		// Determine vertices based on position
+		const math::Vector3 v1(offsX, offsY, 0.0f);	float h1 = 0.0f;
+		const math::Vector3 v2(offsX, offsY, 0.0f);	float h2 = 0.0f;
+		const math::Vector3 v3(offsX, offsY, 0.0f);	float h3 = 0.0f;
+
+		// Calculate vectors from point p to v1, v2 and v3
+		const math::Vector3 f1 = v1 - p;
+		const math::Vector3 f2 = v2 - p;
+		const math::Vector3 f3 = v3 - p;
+
+		// Calculate the areas and factors
+		const float a = (v1 - v2).cross(v1 - v3).length();
+		const float a1 = f2.cross(f3).length() / a;
+		const float a2 = f3.cross(f1).length() / a;
+		const float a3 = f1.cross(f2).length() / a;
+
+		// Update height value
+		return h1 * a1 + h2 * a2 + h3 * a3;
 	}
 }

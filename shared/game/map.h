@@ -75,6 +75,7 @@ namespace wowpp
 	struct MapDataTile final
 	{
 		MapAreaChunk areas;
+		MapHeightChunk heights;
 	};
 
 	/// This class represents a map with additional geometry and navigation data.
@@ -91,6 +92,8 @@ namespace wowpp
 
 		/// Tries to get a specific data tile if it's loaded.
 		MapDataTile *getTile(const TileIndex2D &position);
+		
+		float getHeightAt(float x, float y);
 
 	private:
 
