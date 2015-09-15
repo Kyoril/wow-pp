@@ -804,16 +804,14 @@ namespace wowpp
 		UInt32 healAmount = calculateEffectBasePoints(effect);
 
 		// Resolve GUIDs
-		GameObject *target = nullptr;
 		GameUnit *unitTarget = nullptr;
 		GameUnit &caster = m_cast.getExecuter();
 		auto *world = caster.getWorldInstance();
 
 		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
-                {
-			target = &caster;
-                        unitTarget = reinterpret_cast<GameUnit*>(target);
-                }
+		{
+			unitTarget = &caster;
+		}
 		else if (world)
 		{
 			UInt64 targetGuid = 0;
@@ -825,10 +823,10 @@ namespace wowpp
 				targetGuid = m_target.getItemTarget();
 
 			if (targetGuid != 0)
-				target = world->findObjectByGUID(targetGuid);
+				unitTarget = reinterpret_cast<GameUnit*>(world->findObjectByGUID(targetGuid));
 
-			if (m_target.hasUnitTarget() && isUnitGUID(targetGuid))
-				unitTarget = reinterpret_cast<GameUnit*>(target);
+			if (!m_target.hasUnitTarget() || !isUnitGUID(targetGuid))
+				unitTarget = nullptr;
 		}
 
 		// Check target
@@ -838,8 +836,8 @@ namespace wowpp
 			return;
 		}
 
-		UInt32 health = target->getUInt32Value(unit_fields::Health);
-		UInt32 maxHealth = target->getUInt32Value(unit_fields::MaxHealth);
+		UInt32 health = unitTarget->getUInt32Value(unit_fields::Health);
+		UInt32 maxHealth = unitTarget->getUInt32Value(unit_fields::MaxHealth);
 		if (health == 0)
 		{
 			WLOG("Can't heal dead target!");
@@ -861,7 +859,7 @@ namespace wowpp
 		else
 			health = maxHealth;
 
-		target->setUInt32Value(unit_fields::Health, health);
+		unitTarget->setUInt32Value(unit_fields::Health, health);
 	}
 
 	void SingleCastState::applyAllEffects()
