@@ -807,8 +807,8 @@ namespace wowpp
 		GameUnit *unitTarget = nullptr;
 		GameUnit &caster = m_cast.getExecuter();
 		auto *world = caster.getWorldInstance();
-		
-		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
+
+		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self || effect.targetA == game::targets::UnitCaster)
 			unitTarget = &caster;
 		else if (world && m_target.hasUnitTarget())
 		{
