@@ -585,7 +585,7 @@ namespace wowpp
 					<< io::write_range(unit.subname) << io::write<NetUInt8>(0x00)	// Terminator: name4 (always empty)
 					<< io::write<NetUInt8>(0x00)
 					<< io::write<NetUInt32>(unit.creatureTypeFlags)
-					<< io::write<NetUInt32>(0x07)	//TODO: Creature Type
+					<< io::write<NetUInt32>(unit.type)
 					<< io::write<NetUInt32>(unit.family)
 					<< io::write<NetUInt32>(unit.rank)
 					<< io::write<NetUInt32>(0x00)	// Unknown

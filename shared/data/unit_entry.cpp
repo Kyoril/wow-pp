@@ -44,6 +44,7 @@ namespace wowpp
 		, scale(1.0f)
 		, allianceFactionID(0)
 		, hordeFactionID(0)
+		, type(0)
 		, family(0)
 		, regeneratesHealth(true)
 		, npcFlags(0)
@@ -141,6 +142,7 @@ namespace wowpp
 		wrapper.table.tryGetInteger("min_loot_gold", minLootGold);
 		wrapper.table.tryGetInteger("max_loot_gold", maxLootGold);
 		MIN_MAX_CHECK(minLootGold, maxLootGold);
+		wrapper.table.tryGetInteger("type", type);
 		wrapper.table.tryGetInteger("family", family);
 		wrapper.table.tryGetInteger("min_xp", xpMin);
 		wrapper.table.tryGetInteger("max_xp", xpMax);
@@ -197,6 +199,7 @@ namespace wowpp
 		if (unitClass != 0) context.table.addKey("unit_class", unitClass);
 		if (minLootGold != 0) context.table.addKey("min_loot_gold", minLootGold);
 		if (maxLootGold != 0) context.table.addKey("max_loot_gold", maxLootGold);
+		if (type != 0) context.table.addKey("type", type);
 		if (family != 0) context.table.addKey("family", family);
 		if (xpMin != 0) context.table.addKey("min_xp", xpMin);
 		if (xpMax != 0) context.table.addKey("max_xp", xpMax);

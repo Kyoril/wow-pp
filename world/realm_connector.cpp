@@ -605,7 +605,7 @@ namespace wowpp
 
 		//TODO: Find creature object and check if it exists
 
-		//TODO: Find creature info by entry
+		// Find creature info by entry
 		const UnitEntry *unit = m_project.units.getById(creatureEntry);
 		if (unit)
 		{

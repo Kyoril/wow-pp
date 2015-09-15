@@ -159,7 +159,7 @@ namespace sff
 
 			template <class T, class P>
 			Object<T> *parseObject(P &parser, DataType type);
-
+			 
 			template <class T>
 			class Table;
 

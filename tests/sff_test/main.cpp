@@ -136,7 +136,6 @@ bool importEquipment(Project &project, MySQL::Connection &connection)
 
 	return true;
 }
-#endif
 
 bool importExplorationBaseXP(Project &project, MySQL::Connection &connection)
 {
@@ -159,6 +158,44 @@ bool importExplorationBaseXP(Project &project, MySQL::Connection &connection)
 			else
 			{
 				levelEntry->explorationBaseXP = baseXp;
+			}
+
+			row = row.next(select);
+		}
+	}
+	else
+	{
+		// There was an error
+		ELOG(connection.getErrorMessage());
+		return false;
+	}
+
+	return true;
+}
+#endif
+
+
+bool importCreatureTypes(Project &project, MySQL::Connection &connection)
+{
+	wowpp::MySQL::Select select(connection, "SELECT `entry`, `type` FROM `creature_template`;");
+	if (select.success())
+	{
+		wowpp::MySQL::Row row(select);
+		while (row)
+		{
+			UInt32 entry = 0, type = 0;
+			row.getField(0, entry);
+			row.getField(1, type);
+
+			// Find unit
+			auto *unitEntry = project.units.getEditableById(entry);
+			if (!unitEntry)
+			{
+				WLOG("Could not find entry for unit " << entry << " - skipping");
+			}
+			else
+			{
+				unitEntry->type = type;
 			}
 
 			row = row.next(select);
@@ -198,7 +235,7 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	
-	if (!importExplorationBaseXP(proj, connection))
+	if (!importCreatureTypes(proj, connection))
 	{
 		return 1;
 	}

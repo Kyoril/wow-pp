@@ -52,7 +52,9 @@ namespace wowpp
 		UInt32 femaleModel;
 		/// Unit scale factor. A value of 1.0 means 100%.
 		float scale;
-		/// Unit family type, like "Humanoid", "Animal" etc.
+		/// Unit type like "Humanoid" etc.
+		UInt32 type;
+		/// Unit family type
 		UInt32 family;
 		/// If true, this unit will regenerate health. Some units should not regenerate health, since it is
 		/// required to heal them as a quest target for example.
