@@ -750,7 +750,7 @@ namespace wowpp
 		if (health == 0 && 
 			!(m_spell.attributesEx[2] & 0x00100000))
 		{
-			// Spell aura is not death persistant and thus can not be added
+			// Spell aura is not death persistent and thus can not be added
 			DLOG("Target is dead - can't apply aura");
 			return;
 		}
@@ -804,39 +804,27 @@ namespace wowpp
 		UInt32 healAmount = calculateEffectBasePoints(effect);
 
 		// Resolve GUIDs
-		GameObject *target = nullptr;
 		GameUnit *unitTarget = nullptr;
 		GameUnit &caster = m_cast.getExecuter();
 		auto *world = caster.getWorldInstance();
 
-		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
-			target = &caster;
-		else if (world)
+		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self || effect.targetA == game::targets::UnitCaster)
+			unitTarget = &caster;
+		else if (world && m_target.hasUnitTarget())
 		{
-			UInt64 targetGuid = 0;
-			if (m_target.hasUnitTarget())
-				targetGuid = m_target.getUnitTarget();
-			else if (m_target.hasGOTarget())
-				targetGuid = m_target.getGOTarget();
-			else if (m_target.hasItemTarget())
-				targetGuid = m_target.getItemTarget();
-
-			if (targetGuid != 0)
-				target = world->findObjectByGUID(targetGuid);
-
-			if (m_target.hasUnitTarget() && isUnitGUID(targetGuid))
-				unitTarget = reinterpret_cast<GameUnit*>(target);
+			UInt64 targetGuid = m_target.getUnitTarget();
+			unitTarget = reinterpret_cast<GameUnit*>(world->findObjectByGUID(targetGuid));
 		}
 
 		// Check target
 		if (!unitTarget)
 		{
-			WLOG("EFFECT_POWER_DRAIN: No valid target found!");
+			WLOG("EFFECT_HEAL: No valid target found!");
 			return;
 		}
 
-		UInt32 health = target->getUInt32Value(unit_fields::Health);
-		UInt32 maxHealth = target->getUInt32Value(unit_fields::MaxHealth);
+		UInt32 health = unitTarget->getUInt32Value(unit_fields::Health);
+		UInt32 maxHealth = unitTarget->getUInt32Value(unit_fields::MaxHealth);
 		if (health == 0)
 		{
 			WLOG("Can't heal dead target!");
@@ -858,7 +846,7 @@ namespace wowpp
 		else
 			health = maxHealth;
 
-		target->setUInt32Value(unit_fields::Health, health);
+		unitTarget->setUInt32Value(unit_fields::Health, health);
 	}
 
 	void SingleCastState::applyAllEffects()
