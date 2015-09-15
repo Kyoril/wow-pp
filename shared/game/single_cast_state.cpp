@@ -807,26 +807,13 @@ namespace wowpp
 		GameUnit *unitTarget = nullptr;
 		GameUnit &caster = m_cast.getExecuter();
 		auto *world = caster.getWorldInstance();
-
+		
 		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
-		{
 			unitTarget = &caster;
-		}
-		else if (world)
+		else if (world && m_target.hasUnitTarget())
 		{
-			UInt64 targetGuid = 0;
-			if (m_target.hasUnitTarget())
-				targetGuid = m_target.getUnitTarget();
-			else if (m_target.hasGOTarget())
-				targetGuid = m_target.getGOTarget();
-			else if (m_target.hasItemTarget())
-				targetGuid = m_target.getItemTarget();
-
-			if (targetGuid != 0)
-				unitTarget = reinterpret_cast<GameUnit*>(world->findObjectByGUID(targetGuid));
-
-			if (!m_target.hasUnitTarget() || !isUnitGUID(targetGuid))
-				unitTarget = nullptr;
+			UInt64 targetGuid = m_target.getUnitTarget();
+			unitTarget = reinterpret_cast<GameUnit*>(world->findObjectByGUID(targetGuid));
 		}
 
 		// Check target
