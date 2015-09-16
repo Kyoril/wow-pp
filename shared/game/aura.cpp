@@ -80,6 +80,17 @@ namespace wowpp
 		DLOG("AURA_TYPE_MOD_NULL: Nothing to do");
 	}
 
+	void Aura::handleModStun(bool apply)
+	{
+		if (m_effect.targetA != game::targets::UnitTargetEnemy)
+		{
+			WLOG("AURA_TYPE_MOD_STUN: Target of type " << m_effect.targetA << " is not allowed!");
+			return;
+		}
+		
+		// TODO: prevent movment, attacks and spells
+	}
+
 	void Aura::handleModStat(bool apply)
 	{
 		Int32 stat = m_effect.miscValueA;
@@ -149,6 +160,9 @@ namespace wowpp
 		{
 		case aura::None:
 			handleModNull(apply);
+			break;
+		case aura::ModStun:
+			handleModStun(apply);
 			break;
 		case aura::ModStat:
 			handleModStat(apply);

@@ -72,6 +72,8 @@ namespace wowpp
 		/// 
 		void handleModNull(bool apply);
 		/// 
+		void handleModStun(bool apply);
+		/// 
 		void handleModStat(bool apply);
 		/// 
 		void handleModTotalStatPercentage(bool apply);
