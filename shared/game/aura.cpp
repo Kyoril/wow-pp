@@ -74,10 +74,100 @@ namespace wowpp
 		handleModifier(false);
 	}
 
+	void Aura::handleModifier(bool apply)
+	{
+		namespace aura = game::aura_type;
+
+		switch (m_effect.auraName)
+		{
+		case aura::None:
+			handleModNull(apply);
+			break;
+		case aura::ModStat:
+			handleModStat(apply);
+			break;
+		case aura::ModTotalStatPercentage:
+			handleModTotalStatPercentage(apply);
+			break;
+		case aura::ModStun:
+			handleModStun(apply);
+			break;
+		case aura::ProcTriggerSpell:
+			handleProcTriggerSpell(apply);
+			break;
+		case aura::ModResistance:
+			handleModResistance(apply);
+			break;
+		case aura::ModBaseResistancePct:
+			handleModBaseResistancePct(apply);
+			break;
+		case aura::PeriodicDamage:
+			handlePeriodicDamage(apply);
+			break;
+		case aura::PeriodicHeal:
+			handlePeriodicHeal(apply);
+			break;
+		case aura::ModShapeShift:
+			handleModShapeShift(apply);
+			break;
+		case aura::ModStealth:
+			handleModStealth(apply);
+			break;
+		case aura::PeriodicEnergize:
+			handlePeriodicEnergize(apply);
+			break;
+		default:
+			WLOG("Unhandled aura type: " << m_effect.auraName);
+			break;
+		}
+	}
+
 	void Aura::handleModNull(bool apply)
 	{
 		// Nothing to do here
 		DLOG("AURA_TYPE_MOD_NULL: Nothing to do");
+	}
+
+	void Aura::handlePeriodicDamage(bool apply)
+	{
+		if (!apply)
+			return;
+
+		// Toggle periodic flag
+		m_isPeriodic = true;
+
+		// First tick at apply
+		if (m_spell.attributesEx[4] & 0x00000200)
+		{
+			// First tick
+			onTick();
+		}
+		else
+		{
+			// Start timer
+			startPeriodicTimer();
+		}
+	}
+
+	void Aura::handlePeriodicHeal(bool apply)
+	{
+		if (!apply)
+			return;
+
+		// Toggle periodic flag
+		m_isPeriodic = true;
+
+		// First tick at apply
+		if (m_spell.attributesEx[4] & 0x00000200)
+		{
+			// First tick
+			onTick();
+		}
+		else
+		{
+			// Start timer
+			startPeriodicTimer();
+		}
 	}
 
 	void Aura::handleModStun(bool apply)
@@ -89,6 +179,64 @@ namespace wowpp
 		}
 		
 		// TODO: prevent movment, attacks and spells
+	}
+
+	void Aura::handleModStealth(bool apply)
+	{
+		if (apply)
+		{
+			m_target.setByteValue(unit_fields::Bytes1, 2, 0x02);
+			if (m_target.getTypeId() == object_type::Character)
+			{
+				UInt32 val = m_target.getUInt32Value(character_fields::CharacterBytes2);
+				m_target.setUInt32Value(character_fields::CharacterBytes2, val | 0x20);
+			}
+
+			// TODO: Update visibility mode of unit
+		}
+		else
+		{
+			m_target.setByteValue(unit_fields::Bytes1, 2, 0x00);
+			if (m_target.getTypeId() == object_type::Character)
+			{
+				UInt32 val = m_target.getUInt32Value(character_fields::CharacterBytes2);
+				m_target.setUInt32Value(character_fields::CharacterBytes2, val & ~0x20);
+			}
+
+			// TODO: Update visibility mode of unit
+		}
+	}
+
+	void Aura::handleModResistance(bool apply)
+	{
+		// Apply all resistances
+		for (UInt8 i = 0; i < 7; ++i)
+		{
+			if (m_effect.miscValueA & Int32(1 << i))
+			{
+				m_target.updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), unit_mod_type::TotalValue, m_basePoints, apply);
+			}
+		}
+	}
+
+	void Aura::handlePeriodicEnergize(bool apply)
+	{
+		if (!apply)
+			return;
+
+		m_isPeriodic = true;
+
+		// First tick at apply
+		if (m_spell.attributesEx[4] & 0x00000200)
+		{
+			// First tick
+			onTick();
+		}
+		else
+		{
+			// Start timer
+			startPeriodicTimer();
+		}
 	}
 
 	void Aura::handleModStat(bool apply)
@@ -110,14 +258,190 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleModResistance(bool apply)
+	void Aura::handleModShapeShift(bool apply)
 	{
-		// Apply all resistances
-		for (UInt8 i = 0; i < 7; ++i)
+		UInt8 form = m_effect.miscValueA;
+		if (apply)
 		{
-			if (m_effect.miscValueA & Int32(1 << i))
+			const bool isAlliance = ((game::race::Alliance & (1 << (m_target.getRace() - 1))) == (1 << (m_target.getRace() - 1)));
+
+			UInt32 modelId = 0;
+			UInt32 powerType = power_type::Mana;
+			switch (form)
 			{
-				m_target.updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), unit_mod_type::TotalValue, m_basePoints, apply);
+				case 1:			// Cat
+				{
+					modelId = (isAlliance ? 892 : 8571);
+					powerType = power_type::Energy;
+					break;
+				}
+				case 3:			// Travel
+				{
+					modelId = 632;
+					break;
+				}
+				case 4:			// Aqua
+				{
+					modelId = 2428;
+					break;
+				}
+				case 5:			// Bear
+				case 8:
+				{
+					modelId = (isAlliance ? 2281 : 2289);
+					powerType = power_type::Rage;
+					break;
+				}
+				case 7:			// Ghoul
+				{
+					if (isAlliance) modelId = 10045;
+					break;
+				}
+				case 14:		// Creature Bear
+				{
+					modelId = 902;
+					break;
+				}
+				case 16:		// Ghost wolf
+				{
+					modelId = 4613;
+					break;
+				}
+				case 29:		// Flight form
+				{
+					modelId = (isAlliance ? 20857 : 20872);
+					break;
+				}
+				case 31:		// Moonkin
+				{
+					modelId = (isAlliance ? 15374 : 15375);
+					break;
+				}
+				case 27:		// Epic flight form
+				{
+					modelId = (isAlliance ? 21243 : 21244);
+					break;
+				}
+			}
+
+			if (modelId != 0)
+			{
+				m_target.setUInt32Value(unit_fields::DisplayId, modelId);
+			}
+
+			if (powerType != power_type::Mana)
+			{
+				m_target.setByteValue(unit_fields::Bytes0, 3, powerType);
+			}
+
+			m_target.setByteValue(unit_fields::Bytes2, 3, form);
+
+			// Reset rage and energy
+			m_target.setUInt32Value(unit_fields::Power2, 0);
+			m_target.setUInt32Value(unit_fields::Power4, 0);
+		}
+		else
+		{
+			m_target.setUInt32Value(unit_fields::DisplayId, m_target.getUInt32Value(unit_fields::NativeDisplayId));
+			m_target.setByteValue(unit_fields::Bytes0, 3, m_target.getClassEntry()->powerType);
+
+			m_target.setByteValue(unit_fields::Bytes2, 3, 0);
+		}
+
+		m_target.updateAllStats();
+
+		// TODO: We need to cast some additional spells here, or remove some auras
+		// based on the form (for example, armor and stamina bonus in bear form)
+		UInt32 spell1 = 0, spell2 = 0;
+		switch (form)
+		{
+			case 5:
+			{
+				spell1 = 1178;
+				spell2 = 21178;
+				break;
+			}
+			case 8:
+			{
+				spell1 = 9635;
+				spell2 = 21178;
+				break;
+			}
+		}
+
+		auto *world = m_target.getWorldInstance();
+		if (!world)
+			return;
+
+		auto strongUnit = m_target.shared_from_this();
+		std::weak_ptr<GameObject> weakUnit(strongUnit);
+
+		if (spell1 != 0 || spell2 != 0)
+		{
+			world->getUniverse().post([apply, spell1, spell2, weakUnit]()
+			{
+				if (auto ptr = weakUnit.lock())
+				{
+					GameUnit *unit = dynamic_cast<GameUnit*>(ptr.get());
+					if (unit)
+					{
+						if (apply)
+						{
+							SpellTargetMap targetMap;
+							targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+							targetMap.m_unitTarget = unit->getGuid();
+
+							if (spell1 != 0) unit->castSpell(targetMap, spell1, 0, GameUnit::SpellSuccessCallback());
+							if (spell2 != 0) unit->castSpell(targetMap, spell2, 0, GameUnit::SpellSuccessCallback());
+						}
+						else
+						{
+							if (spell1 != 0) unit->getAuras().removeAllAurasDueToSpell(spell1);
+							if (spell2 != 0) unit->getAuras().removeAllAurasDueToSpell(spell2);
+						}
+					}
+				}
+			});
+		}
+	}
+
+	void Aura::handleProcTriggerSpell(bool apply)
+	{
+		
+		
+//		Int32 stat = m_effect.miscValueA;
+//		if (stat < -2 || stat > 4)
+//		{
+//			WLOG("AURA_TYPE_MOD_STAT: Invalid stat index " << stat << " - skipped");
+//			return;
+//		}
+//
+//		// Apply all stats
+//		for (Int32 i = 0; i < 5; ++i)
+//		{
+//			if (stat < 0 || stat == i)
+//			{
+//				m_target.updateModifierValue(GameUnit::getUnitModByStat(i), unit_mod_type::TotalValue, m_basePoints, apply);
+//			}
+//		}
+	}
+
+	void Aura::handleModTotalStatPercentage(bool apply)
+	{
+		Int32 stat = m_effect.miscValueA;
+		if (stat < -2 || stat > 4)
+		{
+			WLOG("AURA_TYPE_MOD_STAT_PERCENTAGE: Invalid stat index " << stat << " - skipped");
+			return;
+		}
+
+		// Apply all stats
+		for (Int32 i = 0; i < 5; ++i)
+		{
+			if (stat < 0 || stat == i)
+			{
+				DLOG("APPLY STAT " << stat << " TOTAL PCT " << m_basePoints);
+				m_target.updateModifierValue(GameUnit::getUnitModByStat(i), unit_mod_type::TotalPct, m_basePoints, apply);
 			}
 		}
 	}
@@ -150,51 +474,6 @@ namespace wowpp
 		// Reset caster
 		m_casterDespawned.disconnect();
 		m_caster = nullptr;
-	}
-
-	void Aura::handleModifier(bool apply)
-	{
-		namespace aura = game::aura_type;
-
-		switch (m_effect.auraName)
-		{
-		case aura::None:
-			handleModNull(apply);
-			break;
-		case aura::ModStun:
-			handleModStun(apply);
-			break;
-		case aura::ModStat:
-			handleModStat(apply);
-			break;
-		case aura::ModTotalStatPercentage:
-			handleModTotalStatPercentage(apply);
-			break;
-		case aura::ModResistance:
-			handleModResistance(apply);
-			break;
-		case aura::ModBaseResistancePct:
-			handleModBaseResistancePct(apply);
-			break;
-		case aura::PeriodicDamage:
-			handlePeriodicDamage(apply);
-			break;
-		case aura::PeriodicHeal:
-			handlePeriodicHeal(apply);
-			break;
-		case aura::ModShapeShift:
-			handleModShapeShift(apply);
-			break;
-		case aura::ModStealth:
-			handleModStealth(apply);
-			break;
-		case aura::PeriodicEnergize:
-			handlePeriodicEnergize(apply);
-			break;
-		default:
-			WLOG("Unhandled aura type: " << m_effect.auraName);
-			break;
-		}
 	}
 
 	void Aura::onExpired()
@@ -417,88 +696,6 @@ namespace wowpp
 		handleModifier(true);
 	}
 
-	void Aura::handlePeriodicDamage(bool apply)
-	{
-		if (!apply)
-			return;
-
-		// Toggle periodic flag
-		m_isPeriodic = true;
-
-		// First tick at apply
-		if (m_spell.attributesEx[4] & 0x00000200)
-		{
-			// First tick
-			onTick();
-		}
-		else
-		{
-			// Start timer
-			startPeriodicTimer();
-		}
-	}
-
-	void Aura::handlePeriodicHeal(bool apply)
-	{
-		if (!apply)
-			return;
-
-		// Toggle periodic flag
-		m_isPeriodic = true;
-
-		// First tick at apply
-		if (m_spell.attributesEx[4] & 0x00000200)
-		{
-			// First tick
-			onTick();
-		}
-		else
-		{
-			// Start timer
-			startPeriodicTimer();
-		}
-	}
-
-	void Aura::handlePeriodicEnergize(bool apply)
-	{
-		if (!apply)
-			return;
-
-		m_isPeriodic = true;
-
-		// First tick at apply
-		if (m_spell.attributesEx[4] & 0x00000200)
-		{
-			// First tick
-			onTick();
-		}
-		else
-		{
-			// Start timer
-			startPeriodicTimer();
-		}
-	}
-
-	void Aura::handleModTotalStatPercentage(bool apply)
-	{
-		Int32 stat = m_effect.miscValueA;
-		if (stat < -2 || stat > 4)
-		{
-			WLOG("AURA_TYPE_MOD_STAT_PERCENTAGE: Invalid stat index " << stat << " - skipped");
-			return;
-		}
-
-		// Apply all stats
-		for (Int32 i = 0; i < 5; ++i)
-		{
-			if (stat < 0 || stat == i)
-			{
-				DLOG("APPLY STAT " << stat << " TOTAL PCT " << m_basePoints);
-				m_target.updateModifierValue(GameUnit::getUnitModByStat(i), unit_mod_type::TotalPct, m_basePoints, apply);
-			}
-		}
-	}
-
 	void Aura::startPeriodicTimer()
 	{
 		// Start timer
@@ -511,179 +708,6 @@ namespace wowpp
 		if (newSlot != m_slot)
 		{
 			m_slot = newSlot;
-		}
-	}
-
-	void Aura::handleModShapeShift(bool apply)
-	{
-		UInt8 form = m_effect.miscValueA;
-		if (apply)
-		{
-			const bool isAlliance = ((game::race::Alliance & (1 << (m_target.getRace() - 1))) == (1 << (m_target.getRace() - 1)));
-
-			UInt32 modelId = 0;
-			UInt32 powerType = power_type::Mana;
-			switch (form)
-			{
-				case 1:			// Cat
-				{
-					modelId = (isAlliance ? 892 : 8571);
-					powerType = power_type::Energy;
-					break;
-				}
-				case 3:			// Travel
-				{
-					modelId = 632;
-					break;
-				}
-				case 4:			// Aqua
-				{
-					modelId = 2428;
-					break;
-				}
-				case 5:			// Bear
-				case 8:
-				{
-					modelId = (isAlliance ? 2281 : 2289);
-					powerType = power_type::Rage;
-					break;
-				}
-				case 7:			// Ghoul
-				{
-					if (isAlliance) modelId = 10045;
-					break;
-				}
-				case 14:		// Creature Bear
-				{
-					modelId = 902;
-					break;
-				}
-				case 16:		// Ghost wolf
-				{
-					modelId = 4613;
-					break;
-				}
-				case 29:		// Flight form
-				{
-					modelId = (isAlliance ? 20857 : 20872);
-					break;
-				}
-				case 31:		// Moonkin
-				{
-					modelId = (isAlliance ? 15374 : 15375);
-					break;
-				}
-				case 27:		// Epic flight form
-				{
-					modelId = (isAlliance ? 21243 : 21244);
-					break;
-				}
-			}
-
-			if (modelId != 0)
-			{
-				m_target.setUInt32Value(unit_fields::DisplayId, modelId);
-			}
-
-			if (powerType != power_type::Mana)
-			{
-				m_target.setByteValue(unit_fields::Bytes0, 3, powerType);
-			}
-
-			m_target.setByteValue(unit_fields::Bytes2, 3, form);
-
-			// Reset rage and energy
-			m_target.setUInt32Value(unit_fields::Power2, 0);
-			m_target.setUInt32Value(unit_fields::Power4, 0);
-		}
-		else
-		{
-			m_target.setUInt32Value(unit_fields::DisplayId, m_target.getUInt32Value(unit_fields::NativeDisplayId));
-			m_target.setByteValue(unit_fields::Bytes0, 3, m_target.getClassEntry()->powerType);
-
-			m_target.setByteValue(unit_fields::Bytes2, 3, 0);
-		}
-
-		m_target.updateAllStats();
-
-		// TODO: We need to cast some additional spells here, or remove some auras
-		// based on the form (for example, armor and stamina bonus in bear form)
-		UInt32 spell1 = 0, spell2 = 0;
-		switch (form)
-		{
-			case 5:
-			{
-				spell1 = 1178;
-				spell2 = 21178;
-				break;
-			}
-			case 8:
-			{
-				spell1 = 9635;
-				spell2 = 21178;
-				break;
-			}
-		}
-
-		auto *world = m_target.getWorldInstance();
-		if (!world)
-			return;
-
-		auto strongUnit = m_target.shared_from_this();
-		std::weak_ptr<GameObject> weakUnit(strongUnit);
-
-		if (spell1 != 0 || spell2 != 0)
-		{
-			world->getUniverse().post([apply, spell1, spell2, weakUnit]()
-			{
-				if (auto ptr = weakUnit.lock())
-				{
-					GameUnit *unit = dynamic_cast<GameUnit*>(ptr.get());
-					if (unit)
-					{
-						if (apply)
-						{
-							SpellTargetMap targetMap;
-							targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
-							targetMap.m_unitTarget = unit->getGuid();
-
-							if (spell1 != 0) unit->castSpell(targetMap, spell1, 0, GameUnit::SpellSuccessCallback());
-							if (spell2 != 0) unit->castSpell(targetMap, spell2, 0, GameUnit::SpellSuccessCallback());
-						}
-						else
-						{
-							if (spell1 != 0) unit->getAuras().removeAllAurasDueToSpell(spell1);
-							if (spell2 != 0) unit->getAuras().removeAllAurasDueToSpell(spell2);
-						}
-					}
-				}
-			});
-		}
-	}
-
-	void Aura::handleModStealth(bool apply)
-	{
-		if (apply)
-		{
-			m_target.setByteValue(unit_fields::Bytes1, 2, 0x02);
-			if (m_target.getTypeId() == object_type::Character)
-			{
-				UInt32 val = m_target.getUInt32Value(character_fields::CharacterBytes2);
-				m_target.setUInt32Value(character_fields::CharacterBytes2, val | 0x20);
-			}
-
-			// TODO: Update visibility mode of unit
-		}
-		else
-		{
-			m_target.setByteValue(unit_fields::Bytes1, 2, 0x00);
-			if (m_target.getTypeId() == object_type::Character)
-			{
-				UInt32 val = m_target.getUInt32Value(character_fields::CharacterBytes2);
-				m_target.setUInt32Value(character_fields::CharacterBytes2, val & ~0x20);
-			}
-
-			// TODO: Update visibility mode of unit
 		}
 	}
 

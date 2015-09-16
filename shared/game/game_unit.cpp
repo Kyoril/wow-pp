@@ -553,7 +553,7 @@ namespace wowpp
 				}
 
 				// Deal damage
-				m_victim->dealDamage(damage, 0, this);
+				m_victim->hitDealingDamage(damage, 0, this);
 			}
 		} while (false);
 
@@ -1059,6 +1059,12 @@ namespace wowpp
 		return unit_mods::Armor;
 	}
 	
+	void GameUnit::hitDealingDamage(UInt32 damage, UInt32 school, GameUnit *attacker)
+	{
+		dealDamage(damage, school, attacker);
+		onDamageHit(school, attacker);
+	}
+	
 	void GameUnit::dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker)
 	{
 		UInt32 health = getUInt32Value(unit_fields::Health);
@@ -1101,6 +1107,11 @@ namespace wowpp
 		stopAttack();
 
 		m_auras.handleTargetDeath();
+	}
+    
+	void GameUnit::onDamageHit(UInt32 school, GameUnit *attacker)
+	{
+		WLOG("GAME_UNIT: onDamageHit-Event triggered");
 	}
 
 	float GameUnit::getMeleeReach() const
