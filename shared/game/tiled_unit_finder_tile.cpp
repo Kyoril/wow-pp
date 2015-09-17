@@ -19,33 +19,45 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-#pragma once
-
-#include "defines.h"
-#include <array>
+#include "tiled_unit_finder_tile.h"
 
 namespace wowpp
 {
-	/// Represents any 2d shape in the game world.
-	struct IShape
+	TiledUnitFinder::Tile::Tile()
+		: moved(new MoveSignal)
 	{
-		virtual ~IShape();
+	}
 
-		virtual Vector<game::Point, 2> getBoundingRect() const = 0;
-		virtual bool isPointInside(const game::Point &point) const = 0;
-	};
-
-	/// Represents a circle shape in the game world.
-	class Circle : public IShape
+	TiledUnitFinder::Tile::Tile(Tile  &&other)
 	{
-	public:
+		swap(other);
+	}
 
-		game::Distance x, y;
-		game::Distance radius;
+	TiledUnitFinder::Tile &TiledUnitFinder::Tile::operator = (Tile && other)
+	{
+		swap(other);
+		return *this;
+	}
 
-		Circle();
-		explicit Circle(game::Distance x, game::Distance y, game::Distance radius);
-		virtual Vector<game::Point, 2> getBoundingRect() const override;
-		virtual bool isPointInside(const game::Point &point) const override;
-	};
+	void TiledUnitFinder::Tile::swap(Tile &other)
+	{
+		moved.swap(other.moved);
+		m_units.swap(other.m_units);
+	}
+
+	const TiledUnitFinder::Tile::UnitSet &TiledUnitFinder::Tile::getUnits() const
+	{
+		return m_units;
+	}
+
+	void TiledUnitFinder::Tile::addUnit(GameUnit &unit)
+	{
+		m_units.add(&unit);
+		(*moved)(unit);
+	}
+
+	void TiledUnitFinder::Tile::removeUnit(GameUnit &unit)
+	{
+		m_units.remove(&unit);
+	}
 }

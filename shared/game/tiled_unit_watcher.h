@@ -21,31 +21,35 @@
 
 #pragma once
 
-#include "defines.h"
-#include <array>
+#include "unit_watcher.h"
+#include "tile_area.h"
+#include "tiled_unit_finder.h"
+#include <unordered_map>
 
 namespace wowpp
 {
-	/// Represents any 2d shape in the game world.
-	struct IShape
-	{
-		virtual ~IShape();
-
-		virtual Vector<game::Point, 2> getBoundingRect() const = 0;
-		virtual bool isPointInside(const game::Point &point) const = 0;
-	};
-
-	/// Represents a circle shape in the game world.
-	class Circle : public IShape
+	class TiledUnitFinder::TiledUnitWatcher : public UnitWatcher
 	{
 	public:
 
-		game::Distance x, y;
-		game::Distance radius;
+		explicit TiledUnitWatcher(const Circle &shape, TiledUnitFinder &finder);
+		~TiledUnitWatcher();
+		virtual void start() override;
 
-		Circle();
-		explicit Circle(game::Distance x, game::Distance y, game::Distance radius);
-		virtual Vector<game::Point, 2> getBoundingRect() const override;
-		virtual bool isPointInside(const game::Point &point) const override;
+	private:
+
+		typedef TiledUnitFinder::Tile Tile;
+		typedef std::unordered_map<Tile *, boost::signals2::connection> ConnectionsByTile;
+
+		TiledUnitFinder &m_finder;
+		Circle m_previousShape;
+		ConnectionsByTile m_connections;
+
+		TileArea getTileIndexArea(const Circle &shape) const;
+		bool watchTile(Tile &tile);
+		bool unwatchTile(Tile &tile);
+		void onUnitMoved(GameUnit &unit);
+		bool updateTile(Tile &tile);
+		virtual void onShapeUpdated() override;
 	};
 }

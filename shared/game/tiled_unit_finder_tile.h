@@ -21,31 +21,31 @@
 
 #pragma once
 
-#include "defines.h"
-#include <array>
+#include "tiled_unit_finder.h"
+#include "common/linear_set.h"
 
 namespace wowpp
 {
-	/// Represents any 2d shape in the game world.
-	struct IShape
-	{
-		virtual ~IShape();
-
-		virtual Vector<game::Point, 2> getBoundingRect() const = 0;
-		virtual bool isPointInside(const game::Point &point) const = 0;
-	};
-
-	/// Represents a circle shape in the game world.
-	class Circle : public IShape
+	class TiledUnitFinder::Tile final
 	{
 	public:
 
-		game::Distance x, y;
-		game::Distance radius;
+		typedef LinearSet<GameUnit *> UnitSet;
+		typedef boost::signals2::signal<void (GameUnit &)> MoveSignal;
 
-		Circle();
-		explicit Circle(game::Distance x, game::Distance y, game::Distance radius);
-		virtual Vector<game::Point, 2> getBoundingRect() const override;
-		virtual bool isPointInside(const game::Point &point) const override;
+		//unique_ptr, so that Tile is movable
+		std::unique_ptr<MoveSignal> moved;
+
+		Tile();
+		Tile(Tile &&other);
+		Tile &operator = (Tile && other);
+		void swap(Tile &other);
+		const UnitSet &getUnits() const;
+		void addUnit(GameUnit &unit);
+		void removeUnit(GameUnit &unit);
+
+	private:
+
+		UnitSet m_units;
 	};
 }
