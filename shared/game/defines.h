@@ -32,6 +32,7 @@ namespace wowpp
 	{
 		typedef float Distance;
 		typedef Vector<Distance, 2> Point;
+		typedef Vector<Distance, 3> Position;
 
 		namespace gender
 		{
