@@ -505,7 +505,7 @@ namespace wowpp
 			false));
 
 		// Update health value
-		unitTarget->hitDealingDamage(damage, m_spell.schoolMask, &caster);
+		unitTarget->dealDamage(damage, m_spell.schoolMask, &caster);
 	}
 
 	void SingleCastState::spellEffectNormalizedWeaponDamage(const SpellEntry::Effect &effect)
@@ -556,7 +556,7 @@ namespace wowpp
 			false));
 
 		// Update health value
-		unitTarget->hitDealingDamage(damage, m_spell.schoolMask, &caster);
+		unitTarget->dealDamage(damage, m_spell.schoolMask, &caster);
 	}
 
 	void SingleCastState::spellEffectDrainPower(const SpellEntry::Effect &effect)

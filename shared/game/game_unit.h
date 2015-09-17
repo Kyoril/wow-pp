@@ -414,11 +414,6 @@ namespace wowpp
 		/// @param amount The value amount.
 		/// @param apply Whether to apply or remove the provided amount.
 		void updateModifierValue(UnitMods mod, UnitModType type, float amount, bool apply);
-		/// Deals damage to this unit and trigger hit-events
-		/// @param damage The damage value to deal.
-		/// @param school The damage school mask.
-		/// @param attacker The attacking unit.
-		void hitDealingDamage(UInt32 damage, UInt32 school, GameUnit *attacker);
 		/// Deals damage to this unit.
 		/// @param damage The damage value to deal.
 		/// @param school The damage school mask.
@@ -483,7 +478,6 @@ namespace wowpp
 		void regeneratePower(PowerType power);
 		void onAuraExpired(Aura &aura);
 		void onSpellCastEnded(bool succeeded);
-                void onDamageHit(UInt32 school, GameUnit *attacker);
 
 	private:
 
