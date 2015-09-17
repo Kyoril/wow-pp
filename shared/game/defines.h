@@ -23,12 +23,16 @@
 
 #include "common/typedefs.h"
 #include "common/enum_strings.h"
+#include "common/vector.h"
 #include <map>
 
 namespace wowpp
 {
 	namespace game
 	{
+		typedef float Distance;
+		typedef Vector<Distance, 2> Point;
+
 		namespace gender
 		{
 			enum Type

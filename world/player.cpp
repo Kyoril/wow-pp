@@ -503,6 +503,12 @@ namespace wowpp
 		auto *map = m_instance.getMapData();
 		if (map)
 		{
+			// Lets check our Z coordinate
+			float x, y, z, o;
+			m_character->getLocation(x, y, z, o);
+			float terrainHeight = map->getHeightAt(x, y);
+			DLOG("Z Comparison for " << x << " " << y << ": " << z << " (Terrain: " << terrainHeight << ")");
+
 			// Get or load map tile
 			auto *tile = map->getTile(adtPos);
 			if (tile)

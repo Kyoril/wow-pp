@@ -43,64 +43,68 @@ namespace wowpp
 			(position[1] < static_cast<TileIndex>(m_tiles.height()))))
 		{
 			auto &tile = m_tiles(position[0], position[1]);
-
-			std::ostringstream strm;
-			strm << m_dataPath.string() << "/maps/" << m_entry.id << "/" << position[0] << "_" << position[1] << ".map";
-
-			const String file = strm.str();
-			if (!boost::filesystem::exists(file))
+			if (tile.areas.fourCC != 0x52414D57)
 			{
-				// File does not exist
-				DLOG("Could not load map file " << file << ": File does not exist");
-				return nullptr;
-			}
+				std::ostringstream strm;
+				strm << m_dataPath.string() << "/maps/" << m_entry.id << "/" << position[0] << "_" << position[1] << ".map";
 
-			// Open file for reading
-			std::ifstream mapFile(file.c_str(), std::ios::in);
-			if (!mapFile)
-			{
-				return nullptr;
-			}
+				const String file = strm.str();
+				if (!boost::filesystem::exists(file))
+				{
+					// File does not exist
+					DLOG("Could not load map file " << file << ": File does not exist");
+					return nullptr;
+				}
 
-			// Read map header
-			MapHeaderChunk mapHeaderChunk;
-			mapFile.read(reinterpret_cast<char*>(&mapHeaderChunk), sizeof(MapHeaderChunk));
-			if (mapHeaderChunk.fourCC != 0x50414D57)
-			{
-				ELOG("Could not load map file " << file << ": Invalid four-cc code!");
-				return nullptr;
-			}
-			if (mapHeaderChunk.size != sizeof(MapHeaderChunk) - 8)
-			{
-				ELOG("Could not load map file " << file << ": Unexpected header chunk size (" << (sizeof(MapHeaderChunk) - 8) << " expected)!");
-				return nullptr;
-			}
-			if (mapHeaderChunk.version != 0x100)
-			{
-				ELOG("Could not load map file " << file << ": Unsupported file format version!");
-				return nullptr;
-			}
+				// Open file for reading
+				std::ifstream mapFile(file.c_str(), std::ios::in);
+				if (!mapFile)
+				{
+					return nullptr;
+				}
 
-			// Read area table
-			mapFile.seekg(mapHeaderChunk.offsAreaTable, std::ios::beg);
+				// Read map header
+				MapHeaderChunk mapHeaderChunk;
+				mapFile.read(reinterpret_cast<char*>(&mapHeaderChunk), sizeof(MapHeaderChunk));
+				if (mapHeaderChunk.fourCC != 0x50414D57)
+				{
+					ELOG("Could not load map file " << file << ": Invalid four-cc code!");
+					return nullptr;
+				}
+				if (mapHeaderChunk.size != sizeof(MapHeaderChunk) - 8)
+				{
+					ELOG("Could not load map file " << file << ": Unexpected header chunk size (" << (sizeof(MapHeaderChunk) - 8) << " expected)!");
+					return nullptr;
+				}
+				if (mapHeaderChunk.version != 0x100)
+				{
+					ELOG("Could not load map file " << file << ": Unsupported file format version!");
+					return nullptr;
+				}
 
-			// Create new tile and read area data
-			mapFile.read(reinterpret_cast<char*>(&tile.areas), sizeof(MapAreaChunk));
-			if (tile.areas.fourCC != 0x52414D57 || tile.areas.size != sizeof(MapAreaChunk) - 8)
-			{
-				WLOG("Map file " << file << " might be corrupted and may contain corrupt data");
-				//TODO: Should we cancel the loading process?
-			}
+				// Read area table
+				mapFile.seekg(mapHeaderChunk.offsAreaTable, std::ios::beg);
 
-			// Read height data
-			mapFile.seekg(mapHeaderChunk.offsHeight, std::ios::beg);
+				// Create new tile and read area data
+				mapFile.read(reinterpret_cast<char*>(&tile.areas), sizeof(MapAreaChunk));
+				if (tile.areas.fourCC != 0x52414D57 || tile.areas.size != sizeof(MapAreaChunk) - 8)
+				{
+					WLOG("Map file " << file << " might be corrupted and may contain corrupt data");
+					//TODO: Should we cancel the loading process?
+				}
 
-			// Create new tile and read area data
-			mapFile.read(reinterpret_cast<char*>(&tile.heights), sizeof(MapHeightChunk));
-			if (tile.heights.fourCC != 0x54484D57 || tile.heights.size != sizeof(MapHeightChunk) - 8)
-			{
-				WLOG("Map file " << file << " might be corrupted and may contain corrupt data");
-				//TODO: Should we cancel the loading process?
+				// Read height data
+				mapFile.seekg(mapHeaderChunk.offsHeight, std::ios::beg);
+
+				// Create new tile and read area data
+				mapFile.read(reinterpret_cast<char*>(&tile.heights), sizeof(MapHeightChunk));
+				if (tile.heights.fourCC != 0x54484D57 || tile.heights.size != sizeof(MapHeightChunk) - 8)
+				{
+					WLOG("Map file " << file << " might be corrupted and may contain corrupt data");
+					//TODO: Should we cancel the loading process?
+				}
+
+				DLOG("Height data loaded. First value: " << tile.heights.heights[0][0]);
 			}
 
 			return &tile;
@@ -129,7 +133,10 @@ namespace wowpp
 		if (chunkIndex >= 16 * 16)
 			return 0.0f;
 
+		// Get height map values
 		auto &heights = tile->heights.heights[chunkIndex];
+		DLOG("Chunk index: " << chunkIndex << " (ADT: " << adtIndex[0] << "x" << adtIndex[1] << ")");
+		return heights[0];
 
 		// Determine the V8 index and the two V9 indices
 		UInt32 v8Index = 0;
