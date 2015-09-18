@@ -23,6 +23,9 @@
 #include "data/trigger_entry.h"
 #include "data/item_entry.h"
 #include "world_instance.h"
+#include "tiled_unit_watcher.h"
+#include "unit_finder.h"
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -37,6 +40,45 @@ namespace wowpp
 		, m_originalEntry(entry)
 		, m_entry(nullptr)
 	{
+		// TODO: Put the code below into an AI class
+		// This can only be executed when the unit is spawned (so that it is added to a world instance)
+		spawned.connect([this]()
+		{
+			float x, y, z, o;
+			this->getLocation(x, y, z, o);
+
+			Circle circle(x, y, 20.0f);
+			m_aggroWatcher = m_worldInstance->getUnitFinder().watchUnits(circle);
+			m_aggroWatcher->visibilityChanged.connect([this](GameUnit& unit, bool isVisible) -> bool
+			{
+				if (&unit == this)
+				{
+					return false;
+				}
+
+				if (unit.getTypeId() == object_type::Character)
+				{
+					if (isVisible)
+					{
+						// TODO: Determine whether the unit is hostile and we should attack that unit
+
+						// Start attacking that unit
+						addThreat(unit, 0.0001f);
+						return true;
+					}
+					else
+					{
+						// Stop attacking that target.
+						resetThreat(unit);
+						return false;
+					}
+				}
+				
+				return false;
+			});
+
+			m_aggroWatcher->start();
+		});
 	}
 
 	void GameCreature::initialize()
@@ -216,7 +258,52 @@ namespace wowpp
 		float &curThreat = m_threat[guid];
 		curThreat += threat;
 
-		GameUnit *newVictim = &threatening;
+		updateVictim();
+	}
+
+	void GameCreature::resetThreat()
+	{
+		m_threat.clear();
+
+		// We have no more targets
+		stopAttack();
+	}
+
+	void GameCreature::resetThreat(GameUnit &threatening)
+	{
+		auto it = m_threat.find(threatening.getGuid());
+		if (it != m_threat.end())
+		{
+			// Remove from the threat list
+			m_threat.erase(it);
+
+			// Update victim
+			updateVictim();
+		}
+	}
+
+	void GameCreature::setVirtualItem(UInt32 slot, const ItemEntry *item)
+	{
+		if (!item)
+		{
+			setUInt32Value(unit_fields::VirtualItemSlotDisplay + slot, 0);
+			setUInt32Value(unit_fields::VirtualItemInfo + (slot * 2) + 0, 0);
+			setUInt32Value(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0);
+			return;
+		}
+
+		setUInt32Value(unit_fields::VirtualItemSlotDisplay + slot, item->displayId);
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 0, item->itemClass);
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 1, item->subClass);
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 2, 0);
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 3, item->material);
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0, item->inventoryType);
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 1, item->sheath);
+	}
+
+	void GameCreature::updateVictim()
+	{
+		GameUnit *newVictim = getVictim();
 		float maxThreat = -1.0;
 
 		for (auto it : m_threat)
@@ -224,10 +311,10 @@ namespace wowpp
 			if (it.second > maxThreat)
 			{
 				// Try to find unit
-				newVictim = dynamic_cast<GameUnit*>(world->findObjectByGUID(it.first));
+				newVictim = dynamic_cast<GameUnit*>(m_worldInstance->findObjectByGUID(it.first));
 				if (newVictim)
 				{
-					maxThreat = curThreat;
+					maxThreat = it.first;
 				}
 			}
 		}
@@ -256,25 +343,6 @@ namespace wowpp
 			// No target any more
 			stopAttack();
 		}
-	}
-
-	void GameCreature::setVirtualItem(UInt32 slot, const ItemEntry *item)
-	{
-		if (!item)
-		{
-			setUInt32Value(unit_fields::VirtualItemSlotDisplay + slot, 0);
-			setUInt32Value(unit_fields::VirtualItemInfo + (slot * 2) + 0, 0);
-			setUInt32Value(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0);
-			return;
-		}
-
-		setUInt32Value(unit_fields::VirtualItemSlotDisplay + slot, item->displayId);
-		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 0, item->itemClass);
-		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 1, item->subClass);
-		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 2, 0);
-		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 3, item->material);
-		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0, item->inventoryType);
-		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 1, item->sheath);
 	}
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)

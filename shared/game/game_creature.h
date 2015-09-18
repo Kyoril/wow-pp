@@ -23,6 +23,7 @@
 
 #include "game_unit.h"
 #include "data/unit_entry.h"
+#include "unit_watcher.h"
 #include <boost/signals2.hpp>
 
 namespace wowpp
@@ -65,7 +66,10 @@ namespace wowpp
 
 		const String &getName() const override;
 
+		void updateVictim();
 		void addThreat(GameUnit &threatening, float threat) override;
+		void resetThreat() override;
+		void resetThreat(GameUnit &threatening) override;
 
 		void setVirtualItem(UInt32 slot, const ItemEntry *item);
 
@@ -82,6 +86,7 @@ namespace wowpp
 		const UnitEntry &m_originalEntry;
 		const UnitEntry *m_entry;
 		ThreatList m_threat;
+		std::unique_ptr<UnitWatcher> m_aggroWatcher;
 	};
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel);

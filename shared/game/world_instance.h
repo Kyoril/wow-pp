@@ -29,6 +29,7 @@
 #include "game/visibility_grid.h"
 #include "creature_spawner.h"
 #include "world_object_spawner.h"
+#include "unit_finder.h"
 #include "boost/signals2.hpp"
 #include "map.h"
 #include <memory>
@@ -78,6 +79,7 @@ namespace wowpp
 			Universe &universe,
 			const MapEntry &mapEntry,
 			UInt32 id, 
+			std::unique_ptr<UnitFinder> unitFinder,
 			std::unique_ptr<VisibilityGrid> visibilityGrid,
 			IdGenerator<UInt64> &objectIdGenerator,
 			DataLoadContext::GetRace getRace,
@@ -107,6 +109,8 @@ namespace wowpp
 		UInt32 getId() const { return m_id; }
 		/// Gets the map id of this instance.
 		UInt32 getMapId() const { return m_mapEntry.id; }
+		/// 
+		UnitFinder &getUnitFinder() { return *m_unitFinder; }
 		/// 
 		const VisibilityGrid &getGrid() const { return *m_visibilityGrid; }
 		/// 
@@ -148,6 +152,7 @@ namespace wowpp
 
 		WorldInstanceManager &m_manager;
 		Universe &m_universe;
+		std::unique_ptr<UnitFinder> m_unitFinder;
 		std::unique_ptr<VisibilityGrid> m_visibilityGrid;
 		IdGenerator<UInt64> &m_objectIdGenerator;
 		GameObjectsById m_objectsById;

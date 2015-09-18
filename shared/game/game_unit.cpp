@@ -1136,6 +1136,16 @@ namespace wowpp
 		// Nothing to do here...
 	}
 
+	void GameUnit::resetThreat()
+	{
+
+	}
+
+	void GameUnit::resetThreat(GameUnit &threatening)
+	{
+
+	}
+
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)
 	{
 		w << reinterpret_cast<GameObject const&>(object);
