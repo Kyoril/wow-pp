@@ -426,6 +426,8 @@ namespace wowpp
 		AuraContainer &getAuras() { return m_auras; }
 		/// 
 		bool isAlive() const { return (getUInt32Value(unit_fields::Health) != 0); }
+                
+                bool isImmune(UInt8 school);
 
 		virtual void addThreat(GameUnit &threatening, float threat);
 

@@ -669,6 +669,16 @@ namespace wowpp
 			character->addArmorProficiency(mask);
 		}
 	}
+	
+	bool SingleCastState::doesSpellHit(const SpellEntry::Effect &effect, GameUnit &caster, GameUnit &target)
+	{
+		return true;
+	}
+	
+	UInt8 SingleCastState::getResiPercentage(const SpellEntry::Effect &effect, GameUnit &caster, GameUnit &target)
+	{
+		return 0;
+	}
 
 	Int32 SingleCastState::calculateEffectBasePoints(const SpellEntry::Effect &effect)
 	{
@@ -691,7 +701,32 @@ namespace wowpp
 
 		return basePoints + randomValue + comboDamage;
 	}
+	
+	UInt32 SingleCastState::getSpellPower(const SpellEntry::Effect &effect, GameUnit &caster)
+	{
+		return 800;
+	}
+	
+	UInt32 SingleCastState::getSpellBonusPct(const SpellEntry::Effect &effect, GameUnit &caster)
+	{
+		return 0;
+	}
+	
+	UInt32 SingleCastState::getSpellPointsTotal(const SpellEntry::Effect &effect, UInt32 spellPower, UInt32 bonusPct)
+	{
+		return spellPower;
+	}
 
+	float SingleCastState::getCritFactor(const SpellEntry::Effect &effect, GameUnit &caster, GameUnit &target)
+	{
+		return 1.0;
+	}
+	
+	UInt32 SingleCastState::consumeAbsorb(UInt32 damage, UInt8 school, GameUnit &target)
+	{
+		return damage;
+	}
+	
 	void SingleCastState::spellEffectAddComboPoints(const SpellEntry::Effect &effect)
 	{
 		GameCharacter *character = nullptr;
