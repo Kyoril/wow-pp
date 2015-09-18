@@ -126,7 +126,11 @@ namespace wowpp
 		//For BC
 		HMACHash cryptKey;
 		crypt.generateKey(cryptKey, m_sessionKey);
+#if SUPPORTED_CLIENT_BUILD >= 8606
 		crypt.setKey(cryptKey.data(), cryptKey.size());
+#else
+		crypt.setKey(m_sessionKey.asByteArray().data(), 40);
+#endif
 		crypt.init();
 
 		// Send response code: AuthOk
@@ -363,9 +367,8 @@ namespace wowpp
 			return;
 		}
 
-		// Check if the client version is valid: At the moment, we only support
-		// burning crusade (2.4.3)
-		if (clientBuild != 8606)
+		// Check if the client version is valid (defined in CMake)
+		if (clientBuild != SUPPORTED_CLIENT_BUILD)
 		{
 			//TODO Send error result
 			WLOG("Client " << m_address << " tried to login with unsupported client build " << clientBuild);

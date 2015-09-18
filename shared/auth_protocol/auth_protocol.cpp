@@ -286,9 +286,13 @@ namespace wowpp
 			{
 				out_packet
 					<< io::write_range(hash.begin(), hash.end())
+#if SUPPORTED_CLIENT_BUILD >= 8606
 					<< io::write<NetUInt32>(0x00800000)
+#endif
 					<< io::write<NetUInt32>(0x00)
+#if SUPPORTED_CLIENT_BUILD >= 6546
 					<< io::write<NetUInt16>(0x00)
+#endif
 					;
 			}
 
@@ -338,8 +342,10 @@ namespace wowpp
 					<< io::write<NetUInt8>(0)									// C-Style string terminator
 					<< io::write<float>(0.0f)
 					<< io::write<NetUInt8>(AmountOfCharacters)
-					<< io::write<NetUInt8>(9)									// Timezone (Cfg_Categories.dbc)
-					<< io::write<NetUInt8>(0x2C)								// Build 8606+
+					<< io::write<NetUInt8>(0)									// Timezone (Cfg_Categories.dbc)
+#if SUPPORTED_CLIENT_BUILD >= 6546
+					<< io::write<NetUInt8>(0x2C)
+#endif
 					;
 
 				// Build 8606+
@@ -348,9 +354,9 @@ namespace wowpp
 					//TODO
 					out_packet
 						<< io::write<NetUInt8>(2)
-						<< io::write<NetUInt8>(4)
-						<< io::write<NetUInt8>(3)
-						<< io::write<NetUInt16>(8606);
+						<< io::write<NetUInt8>(0)
+						<< io::write<NetUInt8>(12)
+						<< io::write<NetUInt16>(6546);
 				}
 			}
 

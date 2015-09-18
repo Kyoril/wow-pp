@@ -31,6 +31,12 @@ project(WoW)
 		add_definitions("-D_ITERATOR_DEBUG_LEVEL=0")
 	endif(MSVC)
 	
+	set(WOWPP_SUPPORTED_CLIENT  "8606" CACHE STRING "This sets the supported client build. Currently, WoW++ supports build (2.0.12.)6546 and (2.4.3.)8606")
+	if (NOT WOWPP_SUPPORTED_CLIENT MATCHES "6546" AND NOT WOWPP_SUPPORTED_CLIENT MATCHES "8606")
+		message(FATAL_ERROR "Unsupported client build! WoW++ only supports build 6546 and 8606!")
+	endif()
+	add_definitions("-DSUPPORTED_CLIENT_BUILD=${WOWPP_SUPPORTED_CLIENT}")
+	
 	# Version header
 	if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
 		find_package(Git)
