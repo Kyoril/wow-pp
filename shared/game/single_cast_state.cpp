@@ -744,7 +744,15 @@ namespace wowpp
 	
 	UInt32 SingleCastState::getSpellPower(const SpellEntry::Effect &effect, GameUnit &caster)
 	{
-		return 800;
+		if (isPlayerGUID(caster.getGuid()))
+		{
+			GameCharacter &character = dynamic_cast<GameCharacter&>(m_cast.getExecuter());
+			return 0;	//need to get real spellpower
+		}
+		else
+		{
+			return 0;
+		}
 	}
 	
 	UInt32 SingleCastState::getSpellBonusPct(const SpellEntry::Effect &effect, GameUnit &caster)
