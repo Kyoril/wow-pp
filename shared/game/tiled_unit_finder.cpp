@@ -25,6 +25,7 @@
 #include "data/map_entry.h"
 #include "game_unit.h"
 #include "common/make_unique.h"
+#include "log/default_log_levels.h"
 #include <cassert>
 
 namespace wowpp
@@ -33,7 +34,7 @@ namespace wowpp
 	{
 		size_t getGridLength(game::Distance worldLength, game::Distance tileWidth)
 		{
-			return std::min<size_t>(1, static_cast<size_t>(worldLength / tileWidth));
+			return std::max<size_t>(1, static_cast<size_t>(worldLength / tileWidth) * 64);
 		}
 
 		game::Position getUnitPosition(const GameUnit &unit)
@@ -48,7 +49,7 @@ namespace wowpp
 
 	TiledUnitFinder::TiledUnitFinder(const MapEntry &map, game::Distance tileWidth)
 		: UnitFinder(map)
-		, m_grid(getGridLength(static_cast<game::Distance>(64) * 533.33333f, tileWidth), getGridLength(static_cast<game::Distance>(64) * 533.33333f, tileWidth))
+		, m_grid(getGridLength(533.33333f, tileWidth), getGridLength(533.33333f, tileWidth))
 		, m_tileWidth(tileWidth)
 	{
 	}
@@ -60,6 +61,11 @@ namespace wowpp
 		const auto position = getTilePosition(game::planar(unitPos));
 		auto &tile = m_grid(position[0], position[1]);
 		tile.addUnit(findable);
+
+		if (findable.getTypeId() == object_type::Character)
+		{
+			DLOG("Player added to tile " << position[0] << ", " << position[1]);
+		}
 
 		UnitRecord &record = *m_units.insert(std::make_pair(&findable, make_unique<UnitRecord>())).first->second;
 		record.moved = findable.moved.connect([this, &findable](GameObject &obj, float x, float y, float z, float o)
@@ -95,9 +101,9 @@ namespace wowpp
 
 		for (auto x = topLeft[0]; x <= bottomRight[0]; ++x)
 		{
-			for (auto z = topLeft[1]; z <= bottomRight[1]; ++z)
+			for (auto y = topLeft[1]; y <= bottomRight[1]; ++y)
 			{
-				iterationCopyTile = getTile(TileIndex2D(x, z)).getUnits();
+				iterationCopyTile = getTile(TileIndex2D(x, y)).getUnits();
 
 				for (GameUnit * const element : iterationCopyTile.getElements())
 				{
@@ -133,10 +139,13 @@ namespace wowpp
 
 	TileIndex2D TiledUnitFinder::getTilePosition(const Vector<game::Distance, 2> &point) const
 	{
-		return TileIndex2D(
-		           limit<TileIndex>(static_cast<TileIndex>(point[0] / m_tileWidth), 0, m_grid.width() - 1),
-		           limit<TileIndex>(static_cast<TileIndex>(point[1] / m_tileWidth), 0, m_grid.height() - 1)
-		       );
+		TileIndex2D output;
+
+		// Calculate grid coordinates
+		output[0] = static_cast<TileIndex>(floor((static_cast<double>(m_grid.width()) * 0.5 - (static_cast<double>(point[0]) / m_tileWidth))));
+		output[1] = static_cast<TileIndex>(floor((static_cast<double>(m_grid.height()) * 0.5 - (static_cast<double>(point[1]) / m_tileWidth))));
+
+		return output;
 	}
 
 	TiledUnitFinder::Tile &TiledUnitFinder::getUnitsTile(const GameUnit &findable)

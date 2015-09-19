@@ -211,167 +211,167 @@ namespace wowpp
 		namespace aura = game::aura_type;
 		switch (m_effect.auraName)
 		{
-		case aura::PeriodicDamage:
-		{
-			UInt32 school = m_spell.schoolMask;
-			UInt32 fullDamage = m_basePoints;
-			UInt32 absorbed = 0;
-			UInt32 resisted = 0;
-			Int32 damage = fullDamage - absorbed - resisted;
-			if (damage < 0) damage = 0;
-
-			// Reduce by armor if physical
-			if (school & 1 &&
-				m_effect.mechanic != 15)	// Bleeding
+			case aura::PeriodicDamage:
 			{
-				calculateArmorReducedDamage(m_attackerLevel, m_target, damage);
-			}
+				UInt32 school = m_spell.schoolMask;
+				UInt32 fullDamage = m_basePoints;
+				UInt32 absorbed = 0;
+				UInt32 resisted = 0;
+				Int32 damage = fullDamage - absorbed - resisted;
+				if (damage < 0) damage = 0;
 
-			// Send event to all subscribers in sight
-			auto *world = m_target.getWorldInstance();
-			if (world)
-			{
-				TileIndex2D tileIndex;
-				m_target.getTileIndex(tileIndex);
-
-				std::vector<char> buffer;
-				io::VectorSink sink(buffer);
-				wowpp::game::OutgoingPacket packet(sink);
-				game::server_write::periodicAuraLog(packet, m_target.getGuid(), (m_caster ? m_caster->getGuid() : 0), m_spell.id, m_effect.auraName, damage, school, absorbed, resisted);
-
-				forEachSubscriberInSight(world->getGrid(), tileIndex, [&packet, &buffer](ITileSubscriber &subscriber)
+				// Reduce by armor if physical
+				if (school & 1 &&
+					m_effect.mechanic != 15)	// Bleeding
 				{
-					subscriber.sendPacket(packet, buffer);
-				});
-			}
+					calculateArmorReducedDamage(m_attackerLevel, m_target, damage);
+				}
 
-			// Update health value
-			m_target.dealDamage(damage, school, m_caster);
-			break;
-		}
-		case aura::PeriodicDamagePercent:
-		{
-			DLOG("TODO");
-			break;
-		}
-		case aura::PeriodicDummy:
-		{
-			DLOG("TODO");
-			break;
-		}
-		case aura::PeriodicEnergize:
-		{
-			UInt32 power = m_basePoints;
-			Int32 powerType = m_effect.miscValueA;
-			if (powerType < 0 || powerType > 5)
-			{
+				// Send event to all subscribers in sight
+				auto *world = m_target.getWorldInstance();
+				if (world)
+				{
+					TileIndex2D tileIndex;
+					m_target.getTileIndex(tileIndex);
+
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+					wowpp::game::OutgoingPacket packet(sink);
+					game::server_write::periodicAuraLog(packet, m_target.getGuid(), (m_caster ? m_caster->getGuid() : 0), m_spell.id, m_effect.auraName, damage, school, absorbed, resisted);
+
+					forEachSubscriberInSight(world->getGrid(), tileIndex, [&packet, &buffer](ITileSubscriber &subscriber)
+					{
+						subscriber.sendPacket(packet, buffer);
+					});
+				}
+
+				// Update health value
+				m_target.dealDamage(damage, school, m_caster);
 				break;
 			}
-
-			const UInt32 maxPower = m_target.getUInt32Value(unit_fields::MaxPower1 + powerType);
-			if (maxPower == 0)
+			case aura::PeriodicDamagePercent:
 			{
+				DLOG("TODO");
 				break;
 			}
-
-			// Send event to all subscribers in sight
-			auto *world = m_target.getWorldInstance();
-			if (world)
+			case aura::PeriodicDummy:
 			{
-				TileIndex2D tileIndex;
-				m_target.getTileIndex(tileIndex);
-
-				std::vector<char> buffer;
-				io::VectorSink sink(buffer);
-				wowpp::game::OutgoingPacket packet(sink);
-				game::server_write::periodicAuraLog(packet, m_target.getGuid(), (m_caster ? m_caster->getGuid() : 0), m_spell.id, m_effect.auraName, powerType, power);
-
-				forEachSubscriberInSight(world->getGrid(), tileIndex, [&packet, &buffer](ITileSubscriber &subscriber)
+				DLOG("TODO");
+				break;
+			}
+			case aura::PeriodicEnergize:
+			{
+				UInt32 power = m_basePoints;
+				Int32 powerType = m_effect.miscValueA;
+				if (powerType < 0 || powerType > 5)
 				{
-					subscriber.sendPacket(packet, buffer);
-				});
-			}
+					break;
+				}
 
-			UInt32 curPower = m_target.getUInt32Value(unit_fields::Power1 + powerType);
-			if (curPower + power > maxPower)
-			{
-				curPower = maxPower;
-			}
-			else
-			{
-				curPower += power;
-			}
-			m_target.setUInt32Value(unit_fields::Power1 + powerType, curPower);
-			break;
-		}
-		case aura::PeriodicHeal:
-		{
-			UInt32 heal = m_basePoints;
-
-			// Send event to all subscribers in sight
-			auto *world = m_target.getWorldInstance();
-			if (world)
-			{
-				TileIndex2D tileIndex;
-				m_target.getTileIndex(tileIndex);
-
-				std::vector<char> buffer;
-				io::VectorSink sink(buffer);
-				wowpp::game::OutgoingPacket packet(sink);
-				game::server_write::periodicAuraLog(packet, m_target.getGuid(), (m_caster ? m_caster->getGuid() : 0), m_spell.id, m_effect.auraName, heal);
-
-				forEachSubscriberInSight(world->getGrid(), tileIndex, [&packet, &buffer](ITileSubscriber &subscriber)
+				const UInt32 maxPower = m_target.getUInt32Value(unit_fields::MaxPower1 + powerType);
+				if (maxPower == 0)
 				{
-					subscriber.sendPacket(packet, buffer);
-				});
+					break;
+				}
+
+				// Send event to all subscribers in sight
+				auto *world = m_target.getWorldInstance();
+				if (world)
+				{
+					TileIndex2D tileIndex;
+					m_target.getTileIndex(tileIndex);
+
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+					wowpp::game::OutgoingPacket packet(sink);
+					game::server_write::periodicAuraLog(packet, m_target.getGuid(), (m_caster ? m_caster->getGuid() : 0), m_spell.id, m_effect.auraName, powerType, power);
+
+					forEachSubscriberInSight(world->getGrid(), tileIndex, [&packet, &buffer](ITileSubscriber &subscriber)
+					{
+						subscriber.sendPacket(packet, buffer);
+					});
+				}
+
+				UInt32 curPower = m_target.getUInt32Value(unit_fields::Power1 + powerType);
+				if (curPower + power > maxPower)
+				{
+					curPower = maxPower;
+				}
+				else
+				{
+					curPower += power;
+				}
+				m_target.setUInt32Value(unit_fields::Power1 + powerType, curPower);
+				break;
 			}
+			case aura::PeriodicHeal:
+			{
+				UInt32 heal = m_basePoints;
 
-			// Update health value
-			UInt32 health = m_target.getUInt32Value(unit_fields::Health);
-			UInt32 maxHealth = m_target.getUInt32Value(unit_fields::MaxHealth);
-			if (health + heal > maxHealth)
-				health = maxHealth;
-			else
-				health += heal;
+				// Send event to all subscribers in sight
+				auto *world = m_target.getWorldInstance();
+				if (world)
+				{
+					TileIndex2D tileIndex;
+					m_target.getTileIndex(tileIndex);
 
-			m_target.setUInt32Value(unit_fields::Health, health);
-			break;
-		}
-		case aura::PeriodicHealthFunnel:
-		{
-			DLOG("TODO");
-			break;
-		}
-		case aura::PeriodicLeech:
-		{
-			DLOG("TODO");
-			break;
-		}
-		case aura::PeriodicManaFunnel:
-		{
-			DLOG("TODO");
-			break;
-		}
-		case aura::PeriodicManaLeech:
-		{
-			DLOG("TODO");
-			break;
-		}
-		case aura::PeriodicTriggerSpell:
-		{
-			DLOG("TODO");
-			break;
-		}
-		case aura::PeriodicTriggerSpellWithValue:
-		{
-			DLOG("TODO");
-			break;
-		}
-		default:
-		{
-			WLOG("Unhandled aura type for periodic tick: " << m_effect.auraName);
-			break;
-		}
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+					wowpp::game::OutgoingPacket packet(sink);
+					game::server_write::periodicAuraLog(packet, m_target.getGuid(), (m_caster ? m_caster->getGuid() : 0), m_spell.id, m_effect.auraName, heal);
+
+					forEachSubscriberInSight(world->getGrid(), tileIndex, [&packet, &buffer](ITileSubscriber &subscriber)
+					{
+						subscriber.sendPacket(packet, buffer);
+					});
+				}
+
+				// Update health value
+				UInt32 health = m_target.getUInt32Value(unit_fields::Health);
+				UInt32 maxHealth = m_target.getUInt32Value(unit_fields::MaxHealth);
+				if (health + heal > maxHealth)
+					health = maxHealth;
+				else
+					health += heal;
+
+				m_target.setUInt32Value(unit_fields::Health, health);
+				break;
+			}
+			case aura::PeriodicHealthFunnel:
+			{
+				DLOG("TODO");
+				break;
+			}
+			case aura::PeriodicLeech:
+			{
+				DLOG("TODO");
+				break;
+			}
+			case aura::PeriodicManaFunnel:
+			{
+				DLOG("TODO");
+				break;
+			}
+			case aura::PeriodicManaLeech:
+			{
+				DLOG("TODO");
+				break;
+			}
+			case aura::PeriodicTriggerSpell:
+			{
+				DLOG("TODO");
+				break;
+			}
+			case aura::PeriodicTriggerSpellWithValue:
+			{
+				DLOG("TODO");
+				break;
+			}
+			default:
+			{
+				WLOG("Unhandled aura type for periodic tick: " << m_effect.auraName);
+				break;
+			}
 		}
 
 		// Should next tick be triggered?

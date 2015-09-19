@@ -23,6 +23,7 @@
 #include "tiled_unit_finder_tile.h"
 #include "game_unit.h"
 #include <cassert>
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -46,11 +47,11 @@ namespace wowpp
 	{
 		const auto shapeArea = getTileIndexArea(getShape());
 
-		for (TileIndex z = shapeArea.topLeft[1]; z <= shapeArea.bottomRight[1]; ++z)
+		for (TileIndex y = shapeArea.topLeft[1]; y <= shapeArea.bottomRight[1]; ++y)
 		{
 			for (TileIndex x = shapeArea.topLeft[0]; x <= shapeArea.bottomRight[0]; ++x)
 			{
-				auto &tile = m_finder.getTile(TileIndex2D(x, z));
+				auto &tile = m_finder.getTile(TileIndex2D(x, y));
 				if (watchTile(tile))
 				{
 					return;
@@ -126,7 +127,6 @@ namespace wowpp
 		float x, y, z, o;
 		unit.getLocation(x, y, z, o);
 
-		if (getShape().isPointInside(game::Point(x, y)))
 		visibilityChanged(unit, getShape().isPointInside(game::Point(x, y)));
 	}
 

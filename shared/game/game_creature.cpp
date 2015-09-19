@@ -73,7 +73,7 @@ namespace wowpp
 						return false;
 					}
 				}
-				
+
 				return false;
 			});
 
