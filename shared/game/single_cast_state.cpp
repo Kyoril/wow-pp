@@ -765,14 +765,16 @@ namespace wowpp
 	UInt32 SingleCastState::getSpellPointsTotal(const SpellEntry::Effect &effect, UInt32 spellPower, UInt32 bonusPct)
 	{
 		Int32 basePoints = calculateEffectBasePoints(effect);
-		float spellAddCoefficient = (m_spell.castTimeIndex / 3.5);	//TODO need to replace with real casttime
+		float spellAddCoefficient = (m_castTime / 3500.0);
 		float bonusModificator = 1 + (bonusPct / 100);
 		return (basePoints + (spellAddCoefficient * spellPower)) *  bonusModificator;
 	}
 
 	float SingleCastState::getCritFactor(const SpellEntry::Effect &effect, GameUnit &caster, GameUnit &target)
 	{
-		return 1.0;
+		UInt64 baseCrit = caster.getUInt64Value(wowpp::character_fields::SpellCritPercentage);
+		//TODO use resilience to reduce
+		return 1.0 + baseCrit;
 	}
 	
 	/**
