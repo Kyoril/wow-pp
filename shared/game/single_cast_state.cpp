@@ -763,8 +763,9 @@ namespace wowpp
 	UInt32 SingleCastState::getSpellPointsTotal(const SpellEntry::Effect &effect, UInt32 spellPower, UInt32 bonusPct)
 	{
 		Int32 basePoints = calculateEffectBasePoints(effect);
+		float spellAddCoefficient = (m_spell.castTimeIndex / 3.5);	//TODO need to replace with real casttime
 		float bonusModificator = 1 + (bonusPct / 100);
-		return (basePoints + spellPower) *  bonusModificator;
+		return (basePoints + (spellAddCoefficient * spellPower)) *  bonusModificator;
 	}
 
 	float SingleCastState::getCritFactor(const SpellEntry::Effect &effect, GameUnit &caster, GameUnit &target)
