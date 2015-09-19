@@ -70,7 +70,13 @@ namespace wowpp
 		UnitRecord &record = *m_units.insert(std::make_pair(&findable, make_unique<UnitRecord>())).first->second;
 		record.moved = findable.moved.connect([this, &findable](GameObject &obj, float x, float y, float z, float o)
 		{
-			this->onUnitMoved(findable);
+			float x1, y1, z1, o1;
+			findable.getLocation(x1, y1, z1, o1);
+
+			if (x1 != x || y1 != y || z1 != z)
+			{
+				this->onUnitMoved(findable);
+			}
 		});
 		record.lastTile = &tile;
 	}

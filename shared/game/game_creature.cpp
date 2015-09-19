@@ -56,6 +56,11 @@ namespace wowpp
 					return false;
 				}
 
+				if (!isAlive())
+				{
+					return false;
+				}
+
 				if (unit.getTypeId() == object_type::Character)
 				{
 					if (isVisible)
@@ -274,6 +279,8 @@ namespace wowpp
 		auto it = m_threat.find(threatening.getGuid());
 		if (it != m_threat.end())
 		{
+			DLOG("Resetting threat");
+
 			// Remove from the threat list
 			m_threat.erase(it);
 
@@ -303,7 +310,10 @@ namespace wowpp
 
 	void GameCreature::updateVictim()
 	{
-		GameUnit *newVictim = getVictim();
+		if (!isAlive())
+			return;
+
+		GameUnit *newVictim = nullptr;
 		float maxThreat = -1.0;
 
 		for (auto it : m_threat)
