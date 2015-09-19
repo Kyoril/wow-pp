@@ -102,6 +102,7 @@ namespace wowpp
 		Universe &universe,
 		const MapEntry &mapEntry,
 		UInt32 id, 
+		std::unique_ptr<UnitFinder> unitFinder,
 		std::unique_ptr<VisibilityGrid> visibilityGrid,
 		IdGenerator<UInt64> &objectIdGenerator,
 		DataLoadContext::GetRace getRace,
@@ -112,6 +113,7 @@ namespace wowpp
 		)
 		: m_manager(manager)
 		, m_universe(universe)
+		, m_unitFinder(std::move(unitFinder))
 		, m_visibilityGrid(std::move(visibilityGrid))
 		, m_objectIdGenerator(objectIdGenerator)
 		, m_mapEntry(mapEntry)
@@ -340,6 +342,14 @@ namespace wowpp
 		// Notify about being spawned
 		added.spawned();
 
+		// Add to unit finder if it is a unit
+		if (added.getTypeId() == object_type::Unit ||
+			added.getTypeId() == object_type::Character)
+		{
+			GameUnit *unit = dynamic_cast<GameUnit*>(&added);
+			if (unit) m_unitFinder->addUnit(*unit);
+		}
+
 		// Watch for object location changes
 		added.moved.connect(
 			boost::bind(&WorldInstance::onObjectMoved, this, _1, _2, _3, _4, _5));
@@ -348,6 +358,14 @@ namespace wowpp
 	void WorldInstance::removeGameObject(GameObject &remove)
 	{
 		auto guid = remove.getGuid();
+
+		// Remove from unit finder if it is a unit
+		if (remove.getTypeId() == object_type::Unit ||
+			remove.getTypeId() == object_type::Character)
+		{
+			GameUnit *unit = dynamic_cast<GameUnit*>(&remove);
+			if (unit) m_unitFinder->removeUnit(*unit);
+		}
 
 		// Transform into grid location
 		TileIndex2D gridIndex = getObjectTile(remove, *m_visibilityGrid);

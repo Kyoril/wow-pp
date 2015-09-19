@@ -76,6 +76,8 @@ namespace wowpp
 	{
 		MapAreaChunk areas;
 		MapHeightChunk heights;
+
+		~MapDataTile() {}
 	};
 
 	/// This class represents a map with additional geometry and navigation data.
@@ -99,6 +101,8 @@ namespace wowpp
 
 		const MapEntry &m_entry;
 		const boost::filesystem::path m_dataPath;
-		Grid<MapDataTile> m_tiles;
+		// Note: We use a pointer here, because we don't need to load ALL height data 
+		// of all tiles, and Grid allocates them immediatly.
+		Grid<std::shared_ptr<MapDataTile>> m_tiles;
 	};
 }

@@ -23,12 +23,24 @@
 
 #include "common/typedefs.h"
 #include "common/enum_strings.h"
+#include "common/vector.h"
 #include <map>
 
 namespace wowpp
 {
 	namespace game
 	{
+		typedef float Distance;
+		typedef Vector<Distance, 2> Point;
+		typedef Vector<Distance, 3> Position;
+
+		inline Vector<Distance, 2> planar(const Position &point)
+		{
+			return Vector<Distance, 2>(
+				point[0],
+				point[1]);
+		}
+
 		namespace gender
 		{
 			enum Type

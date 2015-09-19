@@ -503,6 +503,12 @@ namespace wowpp
 		auto *map = m_instance.getMapData();
 		if (map)
 		{
+			// Lets check our Z coordinate
+			float x, y, z, o;
+			m_character->getLocation(x, y, z, o);
+			float terrainHeight = map->getHeightAt(x, y);
+			DLOG("Z Comparison for " << x << " " << y << ": " << z << " (Terrain: " << terrainHeight << ")");
+
 			// Get or load map tile
 			auto *tile = map->getTile(adtPos);
 			if (tile)
@@ -958,13 +964,13 @@ namespace wowpp
 			return;
 		}
 
-		if (m_character->getUInt32Value(unit_fields::Health) > 0)
+		if (m_character->isAlive())
 		{
 			return;
 		}
 
 		WLOG("TODO: repop at nearest graveyard!");
-		m_character->setUInt32Value(unit_fields::Health, m_character->getUInt32Value(unit_fields::MaxHealth));
+		m_character->revive(m_character->getUInt32Value(unit_fields::MaxHealth), 0);
 	}
 
 	void Player::setFallInfo(UInt32 time, float z)

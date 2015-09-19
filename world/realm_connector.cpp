@@ -772,18 +772,8 @@ namespace wowpp
 								}
 							});
 							
-							UInt32 health = sender.getCharacter()->getUInt32Value(unit_fields::Health);
-							if (health < damage)
-							{
-								health = 0;
-							}
-							else
-							{
-								health -= damage;
-							}
-							sender.getCharacter()->setUInt32Value(unit_fields::Health, health);
-
-							if (health == 0)
+							sender.getCharacter()->dealDamage(damage, 0, nullptr, true);
+							if (!sender.getCharacter()->isAlive())
 							{
 								WLOG("TODO: Durability damage!");
 								sender.sendProxyPacket(

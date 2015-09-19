@@ -522,7 +522,8 @@ namespace wowpp
 			false));
 
 		// Update health value
-		unitTarget->dealDamage(totalDamage, m_spell.schoolMask, &caster);
+		const bool noThreat = ((m_spell.attributesEx[0] & spell_attributes_ex_a::NoThreat) != 0);
+		unitTarget->dealDamage(damage, m_spell.schoolMask, &caster, noThreat);
 	}
 
 	void SingleCastState::spellEffectNormalizedWeaponDamage(const SpellEntry::Effect &effect)
@@ -573,7 +574,8 @@ namespace wowpp
 			false));
 
 		// Update health value
-		unitTarget->dealDamage(damage, m_spell.schoolMask, &caster);
+		const bool noThreat = ((m_spell.attributesEx[0] & spell_attributes_ex_a::NoThreat) != 0);
+		unitTarget->dealDamage(damage, m_spell.schoolMask, &caster, noThreat);
 	}
 
 	void SingleCastState::spellEffectDrainPower(const SpellEntry::Effect &effect)
@@ -930,12 +932,8 @@ namespace wowpp
 			false));
 
 		// Update health value
-		if (health + healAmount < maxHealth)
-			health += healAmount;
-		else
-			health = maxHealth;
-
-		unitTarget->setUInt32Value(unit_fields::Health, health);
+		const bool noThreat = ((m_spell.attributesEx[0] & spell_attributes_ex_a::NoThreat) != 0);
+		unitTarget->heal(healAmount, &caster, noThreat);
 	}
 
 	void SingleCastState::applyAllEffects()

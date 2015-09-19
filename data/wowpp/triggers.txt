@@ -7,8 +7,8 @@ triggers =
 	(id = 2, name = "Rhahk\'zor - Death - Open Door", path = "Deadmines", events = {3}, actions = 
 	{
 		(action = 3, target = 4, target_name = "Rhahk\'Zor - Door", data = {0})
-		(action = 4, target = 5, target_name = "Rhahk\'Zor - Patrol A", data = {1})
-		(action = 4, target = 5, target_name = "Rhahk\'Zor - Patrol B", data = {1})
+		(action = 4, target = 5, target_name = "Rhahk\'Zor Patrol A", data = {1})
+		(action = 4, target = 5, target_name = "Rhahk\'Zor Patrol B", data = {1})
 	})
 	(id = 3, name = "Sneed - Death - Open Door", path = "Deadmines", events = {3}, actions = 
 	{
@@ -25,5 +25,21 @@ triggers =
 	(id = 6, name = "Webwood Spider - Aggro - Light Poison", path = "(Default)", events = {2}, actions = 
 	{
 		(action = 6, target = 1, data = {6751})
+	})
+	(id = 7, name = "Interrogator Vishas - Aggro - Yell", path = "Scarlet Monastery", events = {2}, actions = 
+	{
+		(action = 2, target = 1, texts = {"Tell me... tell me everything!"}, data = {5847})
+	})
+	(id = 8, name = "Bloodmage Thalnos - Aggro - Yell", path = "Scarlet Monastery", events = {2}, actions = 
+	{
+		(action = 2, target = 1, texts = {"We hunger for vengeance."}, data = {5844})
+	})
+	(id = 9, name = "Houndmaster Loksey - Aggro - Yell", path = "Scarlet Monastery", events = {2}, actions = 
+	{
+		(action = 2, target = 1, texts = {"Release the hounds!"}, data = {5841})
+	})
+	(id = 10, name = "Arcanist Doan - Aggro - Yell", path = "Scarlet Monastery", events = {2}, actions = 
+	{
+		(action = 2, target = 1, texts = {"You will not defile these mysteries!"}, data = {5842})
 	})
 }

@@ -215,10 +215,8 @@ namespace wowpp
 
 		SHA1Hash hash;
 
-		// Check if the client version is valid: At the moment, we only support
-		// vanilla wow (1.12.X)
-		//if (m_build != 5595 && m_build != 5875 && m_build != 6005)
-		if (m_build != 8606)
+		// Check if the client version is valid (SUPPORTED_CLIENT_BUILD is set in CMake)
+		if (m_build != SUPPORTED_CLIENT_BUILD)
 		{
 			// Send failure and stop here
 			WLOG("Player " << m_address << " tried to login with unsupported client build (" << m_build << ")");
