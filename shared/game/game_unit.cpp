@@ -1059,7 +1059,7 @@ namespace wowpp
 		return unit_mods::Armor;
 	}
 	
-	void GameUnit::dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker)
+	void GameUnit::dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, bool noThreat/* = false*/)
 	{
 		UInt32 health = getUInt32Value(unit_fields::Health);
 		if (health == 0)
@@ -1083,7 +1083,7 @@ namespace wowpp
 		else
 		{
 			// Add threat
-			if (attacker)
+			if (attacker && !noThreat)
 			{
 				addThreat(*attacker, static_cast<float>(damage));
 			}

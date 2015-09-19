@@ -418,7 +418,8 @@ namespace wowpp
 		/// @param damage The damage value to deal.
 		/// @param school The damage school mask.
 		/// @param attacker The attacking unit.
-		void dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker);
+		/// @param noThreat If set to true, no threat will be generated from this damage.
+		void dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, bool noThreat = false);
 		/// Rewards experience points to this unit.
 		/// @param experience The amount of experience points to be added.
 		virtual void rewardExperience(GameUnit *victim, UInt32 experience);

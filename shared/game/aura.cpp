@@ -246,7 +246,8 @@ namespace wowpp
 				}
 
 				// Update health value
-				m_target.dealDamage(damage, school, m_caster);
+				const bool noThreat = ((m_spell.attributesEx[0] & spell_attributes_ex_a::NoThreat) != 0);
+				m_target.dealDamage(damage, school, m_caster, noThreat);
 				break;
 			}
 			case aura::PeriodicDamagePercent:
