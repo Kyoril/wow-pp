@@ -515,11 +515,11 @@ namespace wowpp
 			m_spell.id,
 			totalDamage,
 			m_spell.schoolMask,
-			0,
-			0,
+			0,	//absorbed
+			0,	//resisted
 			false,
 			0,
-			false));
+			critFactor > 1.0));	//crit
 
 		// Update health value
 		const bool noThreat = ((m_spell.attributesEx[0] & spell_attributes_ex_a::NoThreat) != 0);
@@ -765,7 +765,10 @@ namespace wowpp
 	UInt32 SingleCastState::getSpellPointsTotal(const SpellEntry::Effect &effect, UInt32 spellPower, UInt32 bonusPct)
 	{
 		Int32 basePoints = calculateEffectBasePoints(effect);
-		float spellAddCoefficient = (m_castTime / 3500.0);
+		float castTime = m_castTime;
+		if (castTime < 1500)
+			castTime = 1500;
+		float spellAddCoefficient = (castTime / 3500.0);
 		float bonusModificator = 1 + (bonusPct / 100);
 		return (basePoints + (spellAddCoefficient * spellPower)) *  bonusModificator;
 	}
@@ -773,8 +776,13 @@ namespace wowpp
 	float SingleCastState::getCritFactor(const SpellEntry::Effect &effect, GameUnit &caster, GameUnit &target)
 	{
 		UInt64 baseCrit = caster.getUInt64Value(wowpp::character_fields::SpellCritPercentage);
-		//TODO use resilience to reduce
-		return 1.0 + baseCrit;
+		UInt64 crit = baseCrit - 0.0;	//TODO use resilience to reduce
+		crit = 15;	//TODO remove hardcoded test-value later
+		std::uniform_int_distribution<int> distribution(0, 99);
+		if (distribution(randomGenerator) < crit)
+			return 2.0;
+		else
+			return 1.0;
 	}
 	
 	/**
@@ -861,8 +869,14 @@ namespace wowpp
 		auto &universe = world->getUniverse();
 
 		// Create a new aura instance
-		const Int32 basePoints = calculateEffectBasePoints(effect);
-		std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, basePoints, caster, *unitTarget, [&universe](std::function<void()> work)
+		//TODO apply spellhit-calc on enemy-targets
+		UInt32 spellPower = getSpellPower(effect, caster);
+		UInt32 spellBonusPct = getSpellBonusPct(effect, caster);
+		
+		UInt32 totalPoints = getSpellPointsTotal(effect, spellPower, spellBonusPct);
+		WLOG("AURA_TOTAL_POINTS:" << totalPoints);
+		
+		std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *unitTarget, [&universe](std::function<void()> work)
 		{
 			universe.post(work);
 		}, [](Aura &self)
@@ -894,8 +908,6 @@ namespace wowpp
 
 	void SingleCastState::spellEffectHeal(const SpellEntry::Effect &effect)
 	{
-		UInt32 healAmount = calculateEffectBasePoints(effect);
-
 		// Resolve GUIDs
 		GameUnit *unitTarget = nullptr;
 		GameUnit &caster = m_cast.getExecuter();
@@ -915,6 +927,13 @@ namespace wowpp
 			WLOG("EFFECT_HEAL: No valid target found!");
 			return;
 		}
+		
+		UInt32 spellPower = getSpellPower(effect, caster);
+		UInt32 spellBonusPct = getSpellBonusPct(effect, caster);
+		
+		UInt32 totalHeal = getSpellPointsTotal(effect, spellPower, spellBonusPct);
+		float critFactor = getCritFactor(effect, caster, *unitTarget);
+		totalHeal *= critFactor;
 
 		UInt32 health = unitTarget->getUInt32Value(unit_fields::Health);
 		UInt32 maxHealth = unitTarget->getUInt32Value(unit_fields::MaxHealth);
@@ -930,12 +949,12 @@ namespace wowpp
 			unitTarget->getGuid(),
 			caster.getGuid(),
 			m_spell.id,
-			healAmount,
-			false));
+			totalHeal,
+			critFactor > 1.0));	//crit
 
 		// Update health value
 		const bool noThreat = ((m_spell.attributesEx[0] & spell_attributes_ex_a::NoThreat) != 0);
-		unitTarget->heal(healAmount, &caster, noThreat);
+		unitTarget->heal(totalHeal, &caster, noThreat);
 	}
 
 	void SingleCastState::applyAllEffects()
