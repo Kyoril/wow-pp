@@ -46,6 +46,8 @@ namespace wowpp
 	void TiledUnitFinder::TiledUnitWatcher::start()
 	{
 		const auto shapeArea = getTileIndexArea(getShape());
+		assert(shapeArea.topLeft[1] <= shapeArea.bottomRight[1]);
+		assert(shapeArea.topLeft[0] <= shapeArea.bottomRight[0]);
 
 		for (TileIndex y = shapeArea.topLeft[1]; y <= shapeArea.bottomRight[1]; ++y)
 		{
@@ -63,8 +65,9 @@ namespace wowpp
 	TileArea TiledUnitFinder::TiledUnitWatcher::getTileIndexArea(const Circle &shape) const
 	{
 		const auto boundingBox = shape.getBoundingRect();
-		const auto topLeft     = m_finder.getTilePosition(boundingBox[0]);
-		const auto bottomRight = m_finder.getTilePosition(boundingBox[1]);
+		// WoW's Coordinate System sucks... topLeft >= bottomRight
+		const auto topLeft     = m_finder.getTilePosition(boundingBox[1]);
+		const auto bottomRight = m_finder.getTilePosition(boundingBox[0]);
 		return TileArea(topLeft, bottomRight);
 	}
 
@@ -127,7 +130,8 @@ namespace wowpp
 		float x, y, z, o;
 		unit.getLocation(x, y, z, o);
 
-		visibilityChanged(unit, getShape().isPointInside(game::Point(x, y)));
+		const bool isInside = getShape().isPointInside(game::Point(x, y));
+		visibilityChanged(unit, isInside);
 	}
 
 	bool TiledUnitFinder::TiledUnitWatcher::updateTile(Tile &tile)
