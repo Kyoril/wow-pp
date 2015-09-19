@@ -964,13 +964,13 @@ namespace wowpp
 			return;
 		}
 
-		if (m_character->getUInt32Value(unit_fields::Health) > 0)
+		if (m_character->isAlive())
 		{
 			return;
 		}
 
 		WLOG("TODO: repop at nearest graveyard!");
-		m_character->setUInt32Value(unit_fields::Health, m_character->getUInt32Value(unit_fields::MaxHealth));
+		m_character->revive(m_character->getUInt32Value(unit_fields::MaxHealth), 0);
 	}
 
 	void Player::setFallInfo(UInt32 time, float z)

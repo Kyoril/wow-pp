@@ -414,12 +414,22 @@ namespace wowpp
 		/// @param amount The value amount.
 		/// @param apply Whether to apply or remove the provided amount.
 		void updateModifierValue(UnitMods mod, UnitModType type, float amount, bool apply);
-		/// Deals damage to this unit.
+		/// Deals damage to this unit. Does not work on dead units!
 		/// @param damage The damage value to deal.
 		/// @param school The damage school mask.
-		/// @param attacker The attacking unit.
+		/// @param attacker The attacking unit or nullptr, if unknown. If nullptr, no threat will be generated.
 		/// @param noThreat If set to true, no threat will be generated from this damage.
 		void dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, bool noThreat = false);
+		/// Heals this unit. Does not work on dead units! Use the revive method for this one.
+		/// @param amount The amount of damage to heal.
+		/// @param healer The healing unit or nullptr, if unknown. If nullptr, no threat will be generated.
+		/// @param noThreat If set to true, no threat will be generated.
+		void heal(UInt32 amount, GameUnit *healer, bool noThreat = false);
+		/// Revives this unit with the given amount of health and mana. Does nothing if the unit is alive.
+		/// @param health The new health value of this unit.
+		/// @param mana The new mana value of this unit. If set to 0, mana won't be changed. If unit does not use
+		///             mana as it's resource, this value is ignored.
+		void revive(UInt32 health, UInt32 mana);
 		/// Rewards experience points to this unit.
 		/// @param experience The amount of experience points to be added.
 		virtual void rewardExperience(GameUnit *victim, UInt32 experience);

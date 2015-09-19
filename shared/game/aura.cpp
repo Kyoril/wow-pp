@@ -328,14 +328,7 @@ namespace wowpp
 				}
 
 				// Update health value
-				UInt32 health = m_target.getUInt32Value(unit_fields::Health);
-				UInt32 maxHealth = m_target.getUInt32Value(unit_fields::MaxHealth);
-				if (health + heal > maxHealth)
-					health = maxHealth;
-				else
-					health += heal;
-
-				m_target.setUInt32Value(unit_fields::Health, health);
+				m_target.heal(heal, m_caster);
 				break;
 			}
 			case aura::PeriodicHealthFunnel:

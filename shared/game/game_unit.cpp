@@ -1090,6 +1090,48 @@ namespace wowpp
 		}
 	}
 
+	void GameUnit::heal(UInt32 amount, GameUnit *healer, bool noThreat /*= false*/)
+	{
+		UInt32 health = getUInt32Value(unit_fields::Health);
+		if (health == 0)
+		{
+			return;
+		}
+
+		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
+		const UInt32 healed = std::min(amount, maxHealth - health);
+		if (health + amount >= maxHealth)
+			health = maxHealth;
+		else
+			health += amount;
+		setUInt32Value(unit_fields::Health, health);
+
+		if (healer && !noThreat)
+		{
+			// TODO: Add threat to all units who are in fight with the healed target, but only
+			// if the units are not friendly towards the healer!
+		}
+	}
+
+	void GameUnit::revive(UInt32 health, UInt32 mana)
+	{
+		if (isAlive())
+			return;
+
+		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
+		if (health > maxHealth) health = maxHealth;
+		setUInt32Value(unit_fields::Health, health);
+
+		if (mana > 0)
+		{
+			const UInt32 maxMana = getUInt32Value(unit_fields::MaxPower1);
+			if (mana > maxMana) mana = maxMana;
+			setUInt32Value(unit_fields::Power1, mana);
+		}
+
+		startRegeneration();
+	}
+
 	void GameUnit::rewardExperience(GameUnit *victim, UInt32 experience)
 	{
 		// Nothing to do here
