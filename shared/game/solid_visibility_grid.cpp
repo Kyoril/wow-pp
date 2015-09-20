@@ -46,13 +46,13 @@ namespace wowpp
 		: VisibilityGrid()
 		, m_tiles(getGridLength(worldSize[0], constants::MapWidth / 16.0f), getGridLength(worldSize[1], constants::MapWidth / 16.0f))
 	{
-		for (size_t y = 0; y < m_tiles.height(); ++y)
+		/*for (size_t y = 0; y < m_tiles.height(); ++y)
 		{
 			for (size_t x = 0; x < m_tiles.width(); ++x)
 			{
 				m_tiles(x, y).setPosition(TileIndex2D(x, y));
 			}
-		}
+		}*/
 	}
 
 	SolidVisibilityGrid::~SolidVisibilityGrid()
@@ -66,7 +66,15 @@ namespace wowpp
 			(position[1] >= 0) &&
 			(position[1] < static_cast<TileIndex>(m_tiles.height()))))
 		{
-			return &m_tiles(position[0], position[1]);
+			auto &tile = m_tiles(position[0], position[1]);
+			if (!tile)
+			{
+				tile.reset(new VisibilityTile());
+				tile->setPosition(position);
+			}
+
+			return tile.get();
+			//return &m_tiles(position[0], position[1]);
 		}
 
 		return nullptr;
@@ -78,6 +86,14 @@ namespace wowpp
 
 		const auto x = limit<TileIndex>(position[0], 0, m_tiles.width() - 1);
 		const auto y = limit<TileIndex>(position[1], 0, m_tiles.height() - 1);
-		return m_tiles(x, y);
+
+		auto &tile = m_tiles(position[0], position[1]);
+		if (!tile)
+		{
+			tile.reset(new VisibilityTile());
+			tile->setPosition(position);
+		}
+
+		return *tile;
 	}
 }

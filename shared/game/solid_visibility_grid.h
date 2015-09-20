@@ -39,7 +39,7 @@ namespace wowpp
 
 	private:
 
-		typedef Grid<VisibilityTile> Tiles;
+		typedef Grid<std::unique_ptr<VisibilityTile>> Tiles;
 
 		Tiles m_tiles;
 	};

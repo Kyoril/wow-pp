@@ -232,6 +232,8 @@ namespace wowpp
 
 	void SingleCastState::onCastFinished()
 	{
+		auto strongThis = shared_from_this();
+
 		GameCharacter *character = nullptr;
 		if (isPlayerGUID(m_cast.getExecuter().getGuid()))
 		{
@@ -310,7 +312,6 @@ namespace wowpp
 		
 		m_hasFinished = true;
 
-		auto strongThis = shared_from_this();
 		const std::weak_ptr<SingleCastState> weakThis = strongThis;
 		if (m_spell.attributes & spell_attributes::OnNextSwing)
 		{
