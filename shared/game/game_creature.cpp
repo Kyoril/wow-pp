@@ -250,6 +250,12 @@ namespace wowpp
 
 	void GameCreature::addThreat(GameUnit &threatening, float threat)
 	{
+		// Can't be threatened by ourself
+		if (&threatening == this)
+		{
+			return;
+		}
+
 		if (!isAlive())
 		{
 			// We are dead, so we can't have threat
