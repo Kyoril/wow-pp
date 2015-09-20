@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -507,7 +507,7 @@ namespace wowpp
 			float x, y, z, o;
 			m_character->getLocation(x, y, z, o);
 			float terrainHeight = map->getHeightAt(x, y);
-			DLOG("Z Comparison for " << x << " " << y << ": " << z << " (Terrain: " << terrainHeight << ")");
+			//DLOG("Z Comparison for " << x << " " << y << ": " << z << " (Terrain: " << terrainHeight << ")");
 
 			// Get or load map tile
 			auto *tile = map->getTile(adtPos);
@@ -516,11 +516,7 @@ namespace wowpp
 				// Find local tile
 				auto &area = tile->areas.cellAreas[localPos[1] + localPos[0] * 16];
 				auto *areaZone = m_project.zones.getById(area.areaId);
-				if (!areaZone)
-				{
-					WLOG("Entering unknown area!");
-				}
-				else
+				if (areaZone)
 				{
 					// Update players zone field
 					auto *topLevelZone = areaZone;
