@@ -437,6 +437,8 @@ namespace wowpp
 		AuraContainer &getAuras() { return m_auras; }
 		/// 
 		bool isAlive() const { return (getUInt32Value(unit_fields::Health) != 0); }
+		/// Determines whether this unit is actually in combat with at least one other unit.
+		virtual bool isInCombat() const = 0;
 
 		virtual void addThreat(GameUnit &threatening, float threat);
 		virtual void resetThreat();

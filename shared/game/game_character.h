@@ -525,10 +525,10 @@ namespace wowpp
 		GameItem *getItemByPos(UInt8 bag, UInt8 slot) const;
 		/// @copydoc GameUnit::rewardExperience()
 		void rewardExperience(GameUnit *victim, UInt32 experience) override;
-
 		GroupUpdateFlags getGroupUpdateFlags() const { return m_groupUpdateFlags; }
 		void modifyGroupUpdateFlags(GroupUpdateFlags flags, bool apply);
 		void clearGroupUpdateFlags() { m_groupUpdateFlags = group_update_flags::None; }
+		bool isInCombat() const override;
 
 	protected:
 

@@ -70,8 +70,8 @@ namespace wowpp
 		void addThreat(GameUnit &threatening, float threat) override;
 		void resetThreat() override;
 		void resetThreat(GameUnit &threatening) override;
-
 		void setVirtualItem(UInt32 slot, const ItemEntry *item);
+		bool isInCombat() const override;
 
 	protected:
 
