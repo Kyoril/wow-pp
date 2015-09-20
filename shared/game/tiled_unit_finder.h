@@ -40,7 +40,7 @@ namespace wowpp
 		virtual void updatePosition(GameUnit &updated,
 			const game::Position &previousPos) override;
 		virtual void findUnits(const Circle &shape,
-			const std::function<bool(GameUnit &)> &resultHandler) const override;
+			const std::function<bool(GameUnit &)> &resultHandler) override;
 		virtual std::unique_ptr<UnitWatcher> watchUnits(const Circle &shape) override;
 
 	private:
@@ -56,7 +56,7 @@ namespace wowpp
 
 		//TODO: avoid the unique_ptr
 		typedef std::unordered_map<GameUnit *, std::unique_ptr<UnitRecord>> UnitRecordsByIdentity;
-		typedef Grid<Tile> TileGrid;
+		typedef Grid<std::unique_ptr<Tile>> TileGrid;
 
 		TileGrid m_grid;
 		UnitRecordsByIdentity m_units;
@@ -64,7 +64,7 @@ namespace wowpp
 
 
 		Tile &getTile(const TileIndex2D &position);
-		const Tile &getTile(const TileIndex2D &position) const;
+		//const Tile &getTile(const TileIndex2D &position) const;
 		TileIndex2D getTilePosition(const Vector<game::Distance, 2> &point) const;
 		Tile &getUnitsTile(const GameUnit &findable);
 		void onUnitMoved(GameUnit &findable);

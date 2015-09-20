@@ -25,8 +25,8 @@
 #include "data/map_entry.h"
 #include "game_unit.h"
 #include "common/make_unique.h"
-#include "log/default_log_levels.h"
 #include <cassert>
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -60,12 +60,9 @@ namespace wowpp
 		const game::Position unitPos = getUnitPosition(findable);
 		const auto position = getTilePosition(game::planar(unitPos));
 		auto &tile = m_grid(position[0], position[1]);
-		tile.addUnit(findable);
-
-		if (findable.getTypeId() == object_type::Character)
-		{
-			DLOG("Player added to tile " << position[0] << ", " << position[1]);
-		}
+		
+		if (!tile) tile.reset(new Tile());
+		tile->addUnit(findable);
 
 		UnitRecord &record = *m_units.insert(std::make_pair(&findable, make_unique<UnitRecord>())).first->second;
 		record.moved = findable.moved.connect([this, &findable](GameObject &obj, float x, float y, float z, float o)
@@ -78,7 +75,7 @@ namespace wowpp
 				this->onUnitMoved(findable);
 			}
 		});
-		record.lastTile = &tile;
+		record.lastTile = tile.get();
 	}
 
 	void TiledUnitFinder::removeUnit(GameUnit &findable)
@@ -97,7 +94,7 @@ namespace wowpp
 
 	void TiledUnitFinder::findUnits(
 	    const Circle &shape,
-	    const std::function<bool (GameUnit &)> &resultHandler) const
+	    const std::function<bool (GameUnit &)> &resultHandler)
 	{
 		const auto boundingBox = shape.getBoundingRect();
 		const auto topLeft = getTilePosition(boundingBox[0]);
@@ -132,15 +129,12 @@ namespace wowpp
 		return make_unique<TiledUnitWatcher>(shape, *this);
 	}
 
-
 	TiledUnitFinder::Tile &TiledUnitFinder::getTile(const TileIndex2D &position)
 	{
-		return m_grid(position[0], position[1]);
-	}
+		auto &tile = m_grid(position[0], position[1]);
+		if (!tile) tile.reset(new Tile());
 
-	const TiledUnitFinder::Tile &TiledUnitFinder::getTile(const TileIndex2D &position) const
-	{
-		return m_grid(position[0], position[1]);
+		return *tile;
 	}
 
 	TileIndex2D TiledUnitFinder::getTilePosition(const Vector<game::Distance, 2> &point) const
