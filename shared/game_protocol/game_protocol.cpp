@@ -2393,6 +2393,15 @@ namespace wowpp
 					<< io::write<NetUInt32>(experience);
 				out_packet.finish();
 			}
+
+			void aiReaction(game::OutgoingPacket &out_packet, UInt64 creatureGUID, UInt32 reaction)
+			{
+				out_packet.start(game::server_packet::AiReaction);
+				out_packet
+					<< io::write<NetUInt64>(creatureGUID)
+					<< io::write<NetUInt32>(reaction);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

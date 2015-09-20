@@ -264,6 +264,7 @@ namespace wowpp
 				SpellCooldown				= 0x134,
 				CooldownEvent				= 0x135,
 				UpdateAuraDuration			= 0x137,
+				AiReaction					= 0x13C,
 				AttackStart					= 0x143,
 				AttackStop					= 0x144,
 				AttackSwingNotInRange		= 0x145,
@@ -1472,6 +1473,12 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt32 areaId,
 				UInt32 experience
+				);
+
+			void aiReaction(
+				game::OutgoingPacket &out_packet,
+				UInt64 creatureGUID,
+				UInt32 reaction
 				);
 		};
 	}
