@@ -25,7 +25,8 @@
 #include "world_instance.h"
 #include "tiled_unit_watcher.h"
 #include "unit_finder.h"
-#include "log/default_log_levels.h"
+#include "each_tile_in_sight.h"
+#include "binary_io/vector_sink.h"
 
 namespace wowpp
 {
@@ -65,6 +66,10 @@ namespace wowpp
 				{
 					if (isVisible)
 					{
+						// We ignore new attack targets if we already are in combat
+						if (isInCombat())
+							return false;
+
 						// TODO: Determine whether the unit is hostile and we should attack that unit
 
 						// Start attacking that unit
@@ -245,6 +250,12 @@ namespace wowpp
 
 	void GameCreature::addThreat(GameUnit &threatening, float threat)
 	{
+		// Can't be threatened by ourself
+		if (&threatening == this)
+		{
+			return;
+		}
+
 		if (!isAlive())
 		{
 			// We are dead, so we can't have threat
@@ -279,8 +290,6 @@ namespace wowpp
 		auto it = m_threat.find(threatening.getGuid());
 		if (it != m_threat.end())
 		{
-			DLOG("Resetting threat");
-
 			// Remove from the threat list
 			m_threat.erase(it);
 
@@ -343,6 +352,24 @@ namespace wowpp
 						trigger->execute(*trigger, this);
 					}
 				}
+
+				// Send aggro message to all clients nearby (this will play the creatures aggro sound)
+				TileIndex2D tile;
+				if (getTileIndex(tile))
+				{
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+					game::Protocol::OutgoingPacket packet(sink);
+					game::server_write::aiReaction(packet, getGuid(), 2);
+
+					forEachSubscriberInSight(
+						m_worldInstance->getGrid(), 
+						tile,
+						[&packet, &buffer](ITileSubscriber &subscriber)
+					{
+						subscriber.sendPacket(packet, buffer);
+					});
+				}
 			}
 
 			// New target to attack
@@ -353,6 +380,11 @@ namespace wowpp
 			// No target any more
 			stopAttack();
 		}
+	}
+
+	bool GameCreature::isInCombat() const
+	{
+		return !m_threat.empty();
 	}
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)

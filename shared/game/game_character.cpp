@@ -816,6 +816,12 @@ namespace wowpp
 		}
 	}
 
+	bool GameCharacter::isInCombat() const
+	{
+		// TODO
+		return false;
+	}
+
 	io::Writer & operator<<(io::Writer &w, GameCharacter const& object)
 	{
 		w

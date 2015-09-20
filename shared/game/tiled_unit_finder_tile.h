@@ -30,7 +30,7 @@ namespace wowpp
 	{
 	public:
 
-		typedef LinearSet<GameUnit *> UnitSet;
+		typedef LinearSet<GameUnit*> UnitSet;
 		typedef boost::signals2::signal<void (GameUnit &)> MoveSignal;
 
 		//unique_ptr, so that Tile is movable
