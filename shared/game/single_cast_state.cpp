@@ -464,13 +464,7 @@ namespace wowpp
 
 	void SingleCastState::spellEffectSchoolDamage(const SpellEntry::Effect &effect)
 	{	
-		// Calculate damage based on base points
-		UInt32 damage = calculateEffectBasePoints(effect);
-
 		// TODO: Apply combo point damage
-
-		// TODO: Apply spell mods
-
 		// Resolve GUIDs
 		GameUnit *unitTarget = nullptr;
 		GameUnit &caster = m_cast.getExecuter();
@@ -489,6 +483,29 @@ namespace wowpp
 			WLOG("EFFECT_SCHOOL_DAMAGE: No valid target found!");
 			return;
 		}
+		
+		if (unitTarget->isImmune(m_spell.schoolMask)) {
+			WLOG("EFFECT_SCHOOL_DAMAGE: Target is immune!");
+			return;
+		}
+		
+		if (!doesSpellHit(effect, caster, *unitTarget)) {
+			WLOG("EFFECT_SCHOOL_DAMAGE: Miss!");
+			return;
+		}
+		
+		UInt32 spellResi = getResiPercentage(effect, caster, *unitTarget);
+		if (spellResi >= 100) {
+			WLOG("EFFECT_SCHOOL_DAMAGE: Full resisted!");
+			return;
+		}
+		
+		UInt32 spellPower = getSpellPower(effect, caster);
+		UInt32 spellBonusPct = getSpellBonusPct(effect, caster);
+		
+		UInt32 totalDamage = getSpellPointsTotal(effect, spellPower, spellBonusPct);
+		float critFactor = getCritFactor(effect, caster, *unitTarget);
+		totalDamage *= critFactor;
 
 		// Send spell damage packet
 		sendPacketFromCaster(caster,
@@ -496,17 +513,17 @@ namespace wowpp
 			unitTarget->getGuid(),
 			caster.getGuid(),
 			m_spell.id,
-			damage,
+			totalDamage,
 			m_spell.schoolMask,
-			0,
-			0,
+			0,	//absorbed
+			0,	//resisted
 			false,
 			0,
-			false));
+			critFactor > 1.0));	//crit
 
 		// Update health value
 		const bool noThreat = ((m_spell.attributesEx[0] & spell_attributes_ex_a::NoThreat) != 0);
-		unitTarget->dealDamage(damage, m_spell.schoolMask, &caster, noThreat);
+		unitTarget->dealDamage(totalDamage, m_spell.schoolMask, &caster, noThreat);
 	}
 
 	void SingleCastState::spellEffectNormalizedWeaponDamage(const SpellEntry::Effect &effect)
@@ -671,6 +688,39 @@ namespace wowpp
 			character->addArmorProficiency(mask);
 		}
 	}
+	
+	bool SingleCastState::doesSpellHit(const SpellEntry::Effect &effect, GameUnit &caster, GameUnit &target)
+	{
+		Int32 levelModificator = target.getLevel() - caster.getLevel();
+		if (levelModificator > 2)
+		{
+			if (isPlayerGUID(target.getGuid()))
+			{
+				levelModificator = (levelModificator * 7) - 12;	//pvp calculation
+			}
+			else
+			{
+				levelModificator = (levelModificator * 11) - 20;	//pve calculation
+			}
+		}
+		
+		Int32 hitChancePct = 96 - levelModificator;	//96 is the basic hit chance to hit enemies on same level
+		
+		//TODO add spell-hit stats and auras
+		
+		if (hitChancePct > 99)
+			hitChancePct = 99;	//hit cap
+		else if (hitChancePct < 1)
+			hitChancePct = 1;	//hit not cap
+		
+		std::uniform_int_distribution<int> distribution(0, 99);
+		return distribution(randomGenerator) < hitChancePct;
+	}
+	
+	UInt8 SingleCastState::getResiPercentage(const SpellEntry::Effect &effect, GameUnit &caster, GameUnit &target)
+	{
+		return 0;
+	}
 
 	Int32 SingleCastState::calculateEffectBasePoints(const SpellEntry::Effect &effect)
 	{
@@ -693,7 +743,56 @@ namespace wowpp
 
 		return basePoints + randomValue + comboDamage;
 	}
+	
+	UInt32 SingleCastState::getSpellPower(const SpellEntry::Effect &effect, GameUnit &caster)
+	{
+		if (isPlayerGUID(caster.getGuid()))
+		{
+			GameCharacter &character = dynamic_cast<GameCharacter&>(m_cast.getExecuter());
+			return 0;	//need to get real spellpower
+		}
+		else
+		{
+			return 0;
+		}
+	}
+	
+	UInt32 SingleCastState::getSpellBonusPct(const SpellEntry::Effect &effect, GameUnit &caster)
+	{
+		return 0;
+	}
+	
+	UInt32 SingleCastState::getSpellPointsTotal(const SpellEntry::Effect &effect, UInt32 spellPower, UInt32 bonusPct)
+	{
+		Int32 basePoints = calculateEffectBasePoints(effect);
+		float castTime = m_castTime;
+		if (castTime < 1500)
+			castTime = 1500;
+		float spellAddCoefficient = (castTime / 3500.0);
+		float bonusModificator = 1 + (bonusPct / 100);
+		return (basePoints + (spellAddCoefficient * spellPower)) *  bonusModificator;
+	}
 
+	float SingleCastState::getCritFactor(const SpellEntry::Effect &effect, GameUnit &caster, GameUnit &target)
+	{
+		float baseCrit = caster.getFloatValue(wowpp::character_fields::SpellCritPercentage);	//TODO school crit
+		float crit = baseCrit - 0.0;	//TODO use resilience to reduce
+		crit = 15;	//TODO remove hardcoded test-value later
+		std::uniform_int_distribution<int> distribution(0, 99);
+		if (distribution(randomGenerator) < crit)
+			return 2.0;
+		else
+			return 1.0;
+	}
+	
+	/**
+     * @return number of unabsorbed damage
+     */
+	UInt32 SingleCastState::consumeAbsorb(UInt32 damage, UInt8 school, GameUnit &target)
+	{
+		return damage;
+	}
+	
 	void SingleCastState::spellEffectAddComboPoints(const SpellEntry::Effect &effect)
 	{
 		GameCharacter *character = nullptr;
@@ -770,8 +869,14 @@ namespace wowpp
 		auto &universe = world->getUniverse();
 
 		// Create a new aura instance
-		const Int32 basePoints = calculateEffectBasePoints(effect);
-		std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, basePoints, caster, *unitTarget, [&universe](std::function<void()> work)
+		//TODO apply spellhit-calc on enemy-targets
+		UInt32 spellPower = getSpellPower(effect, caster);
+		UInt32 spellBonusPct = getSpellBonusPct(effect, caster);
+		
+		UInt32 totalPoints = getSpellPointsTotal(effect, spellPower, spellBonusPct);
+		WLOG("AURA_TOTAL_POINTS:" << totalPoints);
+		
+		std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *unitTarget, [&universe](std::function<void()> work)
 		{
 			universe.post(work);
 		}, [](Aura &self)
@@ -809,8 +914,6 @@ namespace wowpp
 
 	void SingleCastState::spellEffectHeal(const SpellEntry::Effect &effect)
 	{
-		UInt32 healAmount = calculateEffectBasePoints(effect);
-
 		// Resolve GUIDs
 		GameUnit *unitTarget = nullptr;
 		GameUnit &caster = m_cast.getExecuter();
@@ -830,6 +933,13 @@ namespace wowpp
 			WLOG("EFFECT_HEAL: No valid target found!");
 			return;
 		}
+		
+		UInt32 spellPower = getSpellPower(effect, caster);
+		UInt32 spellBonusPct = getSpellBonusPct(effect, caster);
+		
+		UInt32 totalHeal = getSpellPointsTotal(effect, spellPower, spellBonusPct);
+		float critFactor = getCritFactor(effect, caster, *unitTarget);
+		totalHeal *= critFactor;
 
 		UInt32 health = unitTarget->getUInt32Value(unit_fields::Health);
 		UInt32 maxHealth = unitTarget->getUInt32Value(unit_fields::MaxHealth);
@@ -845,12 +955,12 @@ namespace wowpp
 			unitTarget->getGuid(),
 			caster.getGuid(),
 			m_spell.id,
-			healAmount,
-			false));
+			totalHeal,
+			critFactor > 1.0));	//crit
 
 		// Update health value
 		const bool noThreat = ((m_spell.attributesEx[0] & spell_attributes_ex_a::NoThreat) != 0);
-		unitTarget->heal(healAmount, &caster, noThreat);
+		unitTarget->heal(totalHeal, &caster, noThreat);
 	}
 
 	void SingleCastState::applyAllEffects()

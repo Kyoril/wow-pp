@@ -69,26 +69,30 @@ namespace wowpp
 
 	protected:
 
-		/// 
+		/// 0
 		void handleModNull(bool apply);
-		/// 
-		void handleModStat(bool apply);
-		/// 
-		void handleModTotalStatPercentage(bool apply);
-		/// 
-		void handleModResistance(bool apply);
-		/// 
-		void handleModBaseResistancePct(bool apply);
-		/// 
+		/// 3
 		void handlePeriodicDamage(bool apply);
-		/// 
+		/// 8
 		void handlePeriodicHeal(bool apply);
-		/// 
-		void handleModShapeShift(bool apply);
-		/// 
+		/// 12
+		void handleModStun(bool apply);
+		/// 16
 		void handleModStealth(bool apply);
-		/// 
+		/// 22
+		void handleModResistance(bool apply);
+		/// 24
 		void handlePeriodicEnergize(bool apply);
+		/// 29
+		void handleModStat(bool apply);
+		/// 36
+		void handleModShapeShift(bool apply);
+                /// 42
+                void handleProcTriggerSpell(bool apply);
+		/// 137
+		void handleModTotalStatPercentage(bool apply);
+		/// 142
+		void handleModBaseResistancePct(bool apply);
 
 	private:
 

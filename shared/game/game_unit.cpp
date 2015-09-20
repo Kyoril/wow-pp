@@ -1136,6 +1136,12 @@ namespace wowpp
 	{
 		// Nothing to do here
 	}
+	
+	bool GameUnit::isImmune(UInt8 school)
+	{
+		// TODO: check auras and mobtype
+		return false;
+	}
 
 	void GameUnit::onKilled(GameUnit *killer)
 	{
