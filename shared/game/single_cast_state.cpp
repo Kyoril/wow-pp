@@ -775,8 +775,8 @@ namespace wowpp
 
 	float SingleCastState::getCritFactor(const SpellEntry::Effect &effect, GameUnit &caster, GameUnit &target)
 	{
-		UInt64 baseCrit = caster.getUInt64Value(wowpp::character_fields::SpellCritPercentage);
-		UInt64 crit = baseCrit - 0.0;	//TODO use resilience to reduce
+		float baseCrit = caster.getFloatValue(wowpp::character_fields::SpellCritPercentage);	//TODO school crit
+		float crit = baseCrit - 0.0;	//TODO use resilience to reduce
 		crit = 15;	//TODO remove hardcoded test-value later
 		std::uniform_int_distribution<int> distribution(0, 99);
 		if (distribution(randomGenerator) < crit)
