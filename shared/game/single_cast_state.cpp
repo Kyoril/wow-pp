@@ -792,6 +792,12 @@ namespace wowpp
 
 		// TODO: Check if aura already expired
 
+		const bool noThreat = ((m_spell.attributesEx[0] & spell_attributes_ex_a::NoThreat) != 0);
+		if (!noThreat)
+		{
+			unitTarget->addThreat(caster, 0.00001f);
+		}
+
 		// TODO: Add aura to unit target
 		const bool success = unitTarget->getAuras().addAura(std::move(aura));
 		if (!success)
