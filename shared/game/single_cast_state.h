@@ -62,7 +62,6 @@ namespace wowpp
                 UInt32 getSpellBonusPct(const SpellEntry::Effect &effect, GameUnit &caster);
                 UInt32 getSpellPointsTotal(const SpellEntry::Effect &effect, UInt32 spellPower, UInt32 bonusPct);
                 float getCritFactor(const SpellEntry::Effect &effect, GameUnit &caster, GameUnit &target);
-                UInt32 consumeAbsorb(UInt32 damage, UInt8 school, GameUnit &target);
 		void spellEffectTeleportUnits(const SpellEntry::Effect &effect);
 		void spellEffectSchoolDamage(const SpellEntry::Effect &effect);
 		void spellEffectHeal(const SpellEntry::Effect &effect);

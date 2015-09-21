@@ -1142,6 +1142,14 @@ namespace wowpp
 		// TODO: check auras and mobtype
 		return false;
 	}
+	
+	/**
+     * @return absorbed damage
+     */
+	UInt32 GameUnit::consumeAbsorb(UInt32 damage, UInt8 school, GameUnit &target)
+	{
+		return 0;
+	}
 
 	void GameUnit::onKilled(GameUnit *killer)
 	{
