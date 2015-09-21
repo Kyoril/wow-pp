@@ -450,10 +450,10 @@ namespace wowpp
                 float getGlancingChance(GameUnit &caster, GameUnit &target);
                 float getBlockChance(GameUnit &target);
                 float getCrushChance(GameUnit &caster, GameUnit &target);
+                float getCritChance(GameUnit &caster, GameUnit &target);
                 UInt32 getAttackPower(GameUnit &caster);
                 UInt32 getAttackBonusPct(GameUnit &caster);
                 UInt32 getAttackPointsTotal(UInt32 attackPower, UInt32 bonusPct);
-                float getCritFactor(GameUnit &caster, GameUnit &target);
                 UInt32 consumeAbsorb(UInt32 damage, UInt8 school, GameUnit &target);
 
 		virtual void addThreat(GameUnit &threatening, float threat);

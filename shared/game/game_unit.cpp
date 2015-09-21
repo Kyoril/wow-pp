@@ -513,6 +513,7 @@ namespace wowpp
 				game::HitInfo hitInfo = game::hit_info::NormalSwing2;
 				game::VictimState victimState = game::victim_state::Normal;
 				float damageModifier = 1;
+				UInt32 blockValue = 0;
 				
 				//attack table calculation
 				std::uniform_real_distribution<float> hitTableDistribution(0.0, 99.9);
@@ -534,35 +535,44 @@ namespace wowpp
 					//parried
 					victimState = game::victim_state::Parry;
 					damageModifier = 0;
+					//TODO accelerate next m_victim autohit
 				}
 				else if ((hitTableRoll -= getGlancingChance(*this, *m_victim)) < 0)
 				{
 					//glanced
 					hitInfo = game::hit_info::Glancing;
-					damageModifier = 0.7;
+					damageModifier = 0.75;	//TODO more detail
 				}
 				else if ((hitTableRoll -= getBlockChance(*m_victim)) < 0)
 				{
 					//blocked
 					victimState = game::victim_state::Blocks;
-					damageModifier = 0.4;
+					blockValue = 50;	//TODO get from m_victim
 				}
 				else if ((hitTableRoll -= getCrushChance(*this, *m_victim)) < 0)
 				{
 					//crush
 					hitInfo = game::hit_info::Crushing;
 					damageModifier = 1.5;
-				}				
+				}
+				else if ((hitTableRoll -= getCritChance(*this, *m_victim)) < 0)
+				{
+					//crit
+					hitInfo = game::hit_info::CriticalHit;
+					damageModifier = 2;
+				}
 
 				// Calculate damage between minimum and maximum damage
 				std::uniform_real_distribution<float> distribution(getFloatValue(unit_fields::MinDamage), getFloatValue(unit_fields::MaxDamage) + 1.0f);
-				const UInt32 damage = calculateArmorReducedDamage(getLevel(), *m_victim, UInt32(distribution(randomGenerator))) * damageModifier;
+				Int32 damage = (calculateArmorReducedDamage(getLevel(), *m_victim, UInt32(distribution(randomGenerator))) * damageModifier) - blockValue;
+				if (damage < 0)	//avoid negative damage when blockValue is high
+					damage = 0;
 
 				// Notify all subscribers
 				std::vector<char> buffer;
 				io::VectorSink sink(buffer);
 				game::Protocol::OutgoingPacket packet(sink);
-				game::server_write::attackStateUpdate(packet, getGuid(), m_victim->getGuid(), hitInfo, damage, 0, 0, 0, victimState, game::weapon_attack::BaseAttack, 1);
+				game::server_write::attackStateUpdate(packet, getGuid(), m_victim->getGuid(), hitInfo, damage, 0, 0, blockValue, victimState, game::weapon_attack::BaseAttack, 1);
 
 				// Notify all tile subscribers about this event
 				forEachSubscriberInSight(
@@ -1187,17 +1197,18 @@ namespace wowpp
 	
 	float GameUnit::getMissChance(GameUnit &caster, GameUnit &target)
 	{
-		return 10;
+		//TODO dual wield handling
+		return 5 + (target.getLevel() - caster.getLevel()) * 0.5;
 	}
 	
 	float GameUnit::getDodgeChance(GameUnit &caster, GameUnit &target)
 	{
-		return 10;
+		return 5;
 	}
 	
     float GameUnit::getParryChance(GameUnit &caster, GameUnit &target)
 	{
-		return 10;
+		return 5;
 	}
 	
 	float GameUnit::getGlancingChance(GameUnit &caster, GameUnit &target)
@@ -1207,10 +1218,16 @@ namespace wowpp
 	
 	float GameUnit::getBlockChance(GameUnit &target)
 	{
-		return 10;
+		return 5;
 	}
 	
 	float GameUnit::getCrushChance(GameUnit &caster, GameUnit &target)
+	{
+		//TODO only some boss mobs can crush
+		return 5;
+	}
+	
+	float GameUnit::getCritChance(GameUnit &caster, GameUnit &target)
 	{
 		return 10;
 	}
