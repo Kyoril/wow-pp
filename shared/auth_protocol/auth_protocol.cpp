@@ -342,7 +342,7 @@ namespace wowpp
 					<< io::write<NetUInt8>(0)									// C-Style string terminator
 					<< io::write<float>(0.0f)
 					<< io::write<NetUInt8>(AmountOfCharacters)
-					<< io::write<NetUInt8>(0)									// Timezone (Cfg_Categories.dbc)
+					<< io::write<NetUInt8>(1)									// Timezone (Cfg_Categories.dbc)
 #if SUPPORTED_CLIENT_BUILD >= 6546
 					<< io::write<NetUInt8>(0x2C)
 #endif
@@ -351,12 +351,19 @@ namespace wowpp
 				// Build 8606+
 				if (realm.flags & realm_flags::SpecifyBuild)
 				{
-					//TODO
 					out_packet
+#if SUPPORTED_CLIENT_BUILD == 6546
 						<< io::write<NetUInt8>(2)
 						<< io::write<NetUInt8>(0)
 						<< io::write<NetUInt8>(12)
-						<< io::write<NetUInt16>(6546);
+						<< io::write<NetUInt16>(6546)
+#else
+						<< io::write<NetUInt8>(2)
+						<< io::write<NetUInt8>(4)
+						<< io::write<NetUInt8>(3)
+						<< io::write<NetUInt16>(8606)
+#endif
+						;
 				}
 			}
 
