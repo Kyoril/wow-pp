@@ -441,12 +441,12 @@ namespace wowpp
 		virtual bool isInCombat() const = 0;
                 
                 bool isImmune(UInt8 school);
-                bool getMissChance(GameUnit &caster, GameUnit &target);
-                bool getDodgeChance(GameUnit &caster, GameUnit &target);
-                bool getParryChance(GameUnit &caster, GameUnit &target);
-                bool getGlancingChance(GameUnit &caster, GameUnit &target);
-                bool getBlockChance(GameUnit &target);
-                bool getCrushChance(GameUnit &caster, GameUnit &target);
+                float getMissChance(GameUnit &caster, GameUnit &target);
+                float getDodgeChance(GameUnit &caster, GameUnit &target);
+                float getParryChance(GameUnit &caster, GameUnit &target);
+                float getGlancingChance(GameUnit &caster, GameUnit &target);
+                float getBlockChance(GameUnit &target);
+                float getCrushChance(GameUnit &caster, GameUnit &target);
                 UInt32 getAttackPower(GameUnit &caster);
                 UInt32 getAttackBonusPct(GameUnit &caster);
                 UInt32 getAttackPointsTotal(UInt32 attackPower, UInt32 bonusPct);

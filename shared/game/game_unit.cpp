@@ -509,18 +509,60 @@ namespace wowpp
 				{
 					return;
 				}
-
+				
 				game::HitInfo hitInfo = game::hit_info::NormalSwing2;
+				game::VictimState victimState = game::victim_state::Normal;
+				float damageModifier = 1;
+				
+				//attack table calculation
+				std::uniform_real_distribution<float> hitTableDistribution(0.0, 99.9);
+				float hitTableRoll = hitTableDistribution(randomGenerator);
+				if ((hitTableRoll -= getMissChance(*this, *m_victim)) < 0)
+				{
+					//missed
+					hitInfo = game::hit_info::Miss;
+					damageModifier = 0;
+				}
+				else if ((hitTableRoll -= getDodgeChance(*this, *m_victim)) < 0)
+				{
+					//dodged
+					victimState = game::victim_state::Dodge;
+					damageModifier = 0;
+				}
+				else if ((hitTableRoll -= getParryChance(*this, *m_victim)) < 0)
+				{
+					//parried
+					victimState = game::victim_state::Parry;
+					damageModifier = 0;
+				}
+				else if ((hitTableRoll -= getGlancingChance(*this, *m_victim)) < 0)
+				{
+					//glanced
+					hitInfo = game::hit_info::Glancing;
+					damageModifier = 0.7;
+				}
+				else if ((hitTableRoll -= getBlockChance(*m_victim)) < 0)
+				{
+					//blocked
+					victimState = game::victim_state::Blocks;
+					damageModifier = 0.4;
+				}
+				else if ((hitTableRoll -= getCrushChance(*this, *m_victim)) < 0)
+				{
+					//crush
+					hitInfo = game::hit_info::Crushing;
+					damageModifier = 1.5;
+				}				
 
 				// Calculate damage between minimum and maximum damage
 				std::uniform_real_distribution<float> distribution(getFloatValue(unit_fields::MinDamage), getFloatValue(unit_fields::MaxDamage) + 1.0f);
-				const UInt32 damage = calculateArmorReducedDamage(getLevel(), *m_victim, UInt32(distribution(randomGenerator)));
+				const UInt32 damage = calculateArmorReducedDamage(getLevel(), *m_victim, UInt32(distribution(randomGenerator))) * damageModifier;
 
 				// Notify all subscribers
 				std::vector<char> buffer;
 				io::VectorSink sink(buffer);
 				game::Protocol::OutgoingPacket packet(sink);
-				game::server_write::attackStateUpdate(packet, getGuid(), m_victim->getGuid(), hitInfo, damage, 0, 0, 0, game::victim_state::Normal, game::weapon_attack::BaseAttack, 1);
+				game::server_write::attackStateUpdate(packet, getGuid(), m_victim->getGuid(), hitInfo, damage, 0, 0, 0, victimState, game::weapon_attack::BaseAttack, 1);
 
 				// Notify all tile subscribers about this event
 				forEachSubscriberInSight(
@@ -1141,6 +1183,36 @@ namespace wowpp
 	{
 		// TODO: check auras and mobtype
 		return false;
+	}
+	
+	float GameUnit::getMissChance(GameUnit &caster, GameUnit &target)
+	{
+		return 10;
+	}
+	
+	float GameUnit::getDodgeChance(GameUnit &caster, GameUnit &target)
+	{
+		return 10;
+	}
+	
+    float GameUnit::getParryChance(GameUnit &caster, GameUnit &target)
+	{
+		return 10;
+	}
+	
+	float GameUnit::getGlancingChance(GameUnit &caster, GameUnit &target)
+	{
+		return 10;
+	}
+	
+	float GameUnit::getBlockChance(GameUnit &target)
+	{
+		return 10;
+	}
+	
+	float GameUnit::getCrushChance(GameUnit &caster, GameUnit &target)
+	{
+		return 10;
 	}
 	
 	/**
