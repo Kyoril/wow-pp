@@ -507,6 +507,8 @@ namespace wowpp
 		UInt32 totalDamage = getSpellPointsTotal(effect, spellPower, spellBonusPct);
 		float critFactor = getCritFactor(effect, caster, *unitTarget);
 		totalDamage *= critFactor;
+		UInt32 absorbed = unitTarget->consumeAbsorb(totalDamage, m_spell.schoolMask, *unitTarget);
+		totalDamage -= absorbed;
 
 		// Send spell damage packet
 		sendPacketFromCaster(caster,
@@ -516,7 +518,7 @@ namespace wowpp
 			m_spell.id,
 			totalDamage,
 			m_spell.schoolMask,
-			0,	//absorbed
+			absorbed,	//absorbed
 			0,	//resisted
 			false,
 			0,
@@ -784,14 +786,6 @@ namespace wowpp
 			return 2.0;
 		else
 			return 1.0;
-	}
-	
-	/**
-     * @return number of unabsorbed damage
-     */
-	UInt32 SingleCastState::consumeAbsorb(UInt32 damage, UInt8 school, GameUnit &target)
-	{
-		return damage;
 	}
 	
 	void SingleCastState::spellEffectAddComboPoints(const SpellEntry::Effect &effect)
