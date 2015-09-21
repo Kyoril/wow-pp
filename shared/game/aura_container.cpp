@@ -106,6 +106,12 @@ namespace wowpp
 
 				// Notify caster
 				m_owner.auraUpdated(newSlot, aura->getSpell().id, aura->getSpell().duration, aura->getSpell().maxDuration);
+
+				if (aura->getCaster())
+				{
+					aura->getCaster()->targetAuraUpdated(m_owner.getGuid(), newSlot,
+						aura->getSpell().id, aura->getSpell().duration, aura->getSpell().maxDuration);
+				}
 			}
 		}
 

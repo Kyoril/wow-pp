@@ -331,6 +331,9 @@ namespace wowpp
 		/// Fired when some aura information was updated.
 		/// Parameters: Slot, Spell-ID, Duration (ms), Max Duration (ms)
 		boost::signals2::signal<void(UInt8, UInt32, Int32, Int32)> auraUpdated;
+		/// Fired when some aura information was updated on a target.
+		/// Parameters: Slot, Spell-ID, Duration (ms), Max Duration (ms)
+		boost::signals2::signal<void(UInt64, UInt8, UInt32, Int32, Int32)> targetAuraUpdated;
 		/// Fired when the unit should be teleported. This event is only fired when the unit changes world.
 		/// Parameters: Target Map, X, Y, Z, O
 		boost::signals2::signal<void(UInt16, float, float, float, float)> teleport;

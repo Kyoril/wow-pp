@@ -176,6 +176,8 @@ namespace wowpp
 		void onLevelGained(UInt32 previousLevel, Int32 healthDiff, Int32 manaDiff, Int32 statDiff0, Int32 statDiff1, Int32 statDiff2, Int32 statDiff3, Int32 statDiff4);
 		/// Executed when an aura of our character was updated.
 		void onAuraUpdated(UInt8 slot, UInt32 spellId, Int32 duration, Int32 maxDuration);
+		/// Executed when an aura of our character was updated.
+		void onTargetAuraUpdated(UInt64 target, UInt8 slot, UInt32 spellId, Int32 duration, Int32 maxDuration);
 		/// Executed when the character should be teleported.
 		void onTeleport(UInt16 map, float x, float y, float z, float o);
 
@@ -190,7 +192,7 @@ namespace wowpp
 		WorldInstance &m_instance;
 		boost::signals2::scoped_connection m_onSpawn, m_onDespawn, m_onAtkSwingErr, m_onProfChanged, m_onInvFailure;
 		boost::signals2::scoped_connection m_onTileChange, m_onComboPoints, m_onXP, m_onCastError, m_onGainLevel;
-		boost::signals2::scoped_connection m_onAuraUpdate, m_onTeleport;
+		boost::signals2::scoped_connection m_onAuraUpdate, m_onTargetAuraUpdate, m_onTeleport;
 		AttackSwingError m_lastError;
 		UInt32 m_lastFallTime;
 		float m_lastFallZ;
