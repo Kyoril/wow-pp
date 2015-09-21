@@ -1333,7 +1333,43 @@ namespace wowpp
 		if (!name.empty())
 			capitalize(name);
 
-		DLOG("TODO: Player " << m_accountName << " wants to add " << name << " to his ignore list");
+        //DLOG("TODO: Player " << m_accountName << " wants to add " << name << " to his ignore list");
+
+        // Find the character details
+        game::CharEntry ignoredChar;
+        if (!m_database.getCharacterByName(name, ignoredChar))
+        {
+            WLOG("Could not find that character");
+            return;
+        }
+
+        // Create the characters guid value
+        UInt64 characterGUID = createRealmGUID(ignoredChar.id, m_loginConnector.getRealmID(), guid_type::Player);
+
+        // Fill ignored info
+        game::SocialInfo info;
+        info.flags = game::social_flag::Ignored;
+        info.area = ignoredChar.zoneId;
+        info.level = ignoredChar.level;
+        info.class_ = ignoredChar.class_;
+
+        //result
+        game::FriendResult result = m_social->addToSocialList(characterGUID, true);
+
+        if(m_characterId != characterGUID)
+        {
+            if (!m_database.addCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(info.flags), ""))
+            {
+                result = game::friend_result::DatabaseError;
+            }
+        }
+        else
+        {
+            result = game::friend_result::IgnoreSelf;
+        }
+
+        sendPacket(
+            std::bind(game::server_write::friendStatus, std::placeholders::_1, characterGUID, result, std::cref(info)));
 	}
 
 	void Player::handleDeleteIgnore(game::IncomingPacket &packet)
