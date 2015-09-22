@@ -512,61 +512,65 @@ namespace wowpp
 				
 				game::HitInfo hitInfo = game::hit_info::NormalSwing2;
 				game::VictimState victimState = game::victim_state::Normal;
-				float damageModifier = 1;
+				float damageModifier = 1.0f;
 				UInt32 blockValue = 0;
+				Int32 damage = 0;
 				
 				//attack table calculation
 				std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
 				float hitTableRoll = hitTableDistribution(randomGenerator);
-				if ((hitTableRoll -= getMissChance(*this, *m_victim)) < 0)
+				if ((hitTableRoll -= getMissChance(*this, *m_victim)) < 0.0f)
 				{
 					//missed
 					hitInfo = game::hit_info::Miss;
-					damageModifier = 0;
+					damageModifier = 0.0f;
 				}
-				else if ((hitTableRoll -= getDodgeChance(*this, *m_victim)) < 0)
+				else if ((hitTableRoll -= getDodgeChance(*this, *m_victim)) < 0.0f)
 				{
 					//dodged
 					victimState = game::victim_state::Dodge;
-					damageModifier = 0;
+					damageModifier = 0.0f;
 				}
-				else if (m_victim->canParry() && (hitTableRoll -= getParryChance(*this, *m_victim)) < 0)
+				else if (m_victim->canParry() && (hitTableRoll -= getParryChance(*this, *m_victim)) < 0.0f)
 				{
 					//parried
 					victimState = game::victim_state::Parry;
-					damageModifier = 0;
+					damageModifier = 0.0f;
 					//TODO accelerate next m_victim autohit
 				}
-				else if ((hitTableRoll -= getGlancingChance(*this, *m_victim)) < 0)
+				else if ((hitTableRoll -= getGlancingChance(*this, *m_victim)) < 0.0f)
 				{
 					//glanced
 					hitInfo = game::hit_info::Glancing;
-					damageModifier = 0.75;	//TODO more detail
+					damageModifier = 0.75f;	//TODO more detail
 				}
-				else if (m_victim->canBlock() && (hitTableRoll -= getBlockChance(*m_victim)) < 0)
+				else if (m_victim->canBlock() && (hitTableRoll -= getBlockChance(*m_victim)) < 0.0f)
 				{
 					//blocked
 					victimState = game::victim_state::Blocks;
 					blockValue = 50;	//TODO get from m_victim
 				}
-				else if ((hitTableRoll -= getCrushChance(*this, *m_victim)) < 0)
+				else if ((hitTableRoll -= getCrushChance(*this, *m_victim)) < 0.0f)
 				{
 					//crush
 					hitInfo = game::hit_info::Crushing;
-					damageModifier = 1.5;
+					damageModifier = 1.5f;
 				}
-				else if ((hitTableRoll -= getCritChance(*this, *m_victim)) < 0)
+				else if ((hitTableRoll -= getCritChance(*this, *m_victim)) < 0.0f)
 				{
 					//crit
 					hitInfo = game::hit_info::CriticalHit;
-					damageModifier = 2;
+					damageModifier = 2.0f;
 				}
 
-				// Calculate damage between minimum and maximum damage
-				std::uniform_real_distribution<float> distribution(getFloatValue(unit_fields::MinDamage), getFloatValue(unit_fields::MaxDamage) + 1.0f);
-				Int32 damage = (calculateArmorReducedDamage(getLevel(), *m_victim, UInt32(distribution(randomGenerator))) * damageModifier) - blockValue;
-				if (damage < 0)	//avoid negative damage when blockValue is high
-					damage = 0;
+				if (damageModifier > 0)
+				{
+					// Calculate damage between minimum and maximum damage
+					std::uniform_real_distribution<float> distribution(getFloatValue(unit_fields::MinDamage), getFloatValue(unit_fields::MaxDamage) + 1.0f);
+					damage = (calculateArmorReducedDamage(getLevel(), *m_victim, UInt32(distribution(randomGenerator))) * damageModifier) - blockValue;
+					if (damage < 0)	//avoid negative damage when blockValue is high
+						damage = 0;
+				}
 
 				// Notify all subscribers
 				std::vector<char> buffer;
@@ -1198,38 +1202,55 @@ namespace wowpp
 	float GameUnit::getMissChance(GameUnit &caster, GameUnit &target)
 	{
 		//TODO dual wield handling
-		return 5.0f + (static_cast<float>(target.getLevel()) - static_cast<float>(caster.getLevel())) * 0.5f;
+		float chance = 5.0f + (static_cast<float>(target.getLevel()) - static_cast<float>(caster.getLevel())) * 0.5f;
+		if (chance < 0.0f)
+			chance = 0.0f;
+		return chance;
 	}
 	
 	float GameUnit::getDodgeChance(GameUnit &caster, GameUnit &target)
 	{
-		return 5;
+		return 5.0f;
 	}
 	
     float GameUnit::getParryChance(GameUnit &caster, GameUnit &target)
 	{
-		return 5;
+		return 5.0f;
 	}
 	
 	float GameUnit::getGlancingChance(GameUnit &caster, GameUnit &target)
 	{
-		return 10;
+		if (caster.getTypeId() == wowpp::object_type::Character && target.getTypeId() == wowpp::object_type::Unit)
+		{
+			return 10.0f;
+		}
+		else
+		{
+			return 0.0f;
+		}
 	}
 	
 	float GameUnit::getBlockChance(GameUnit &target)
 	{
-		return 5;
+		return 5.0f;
 	}
 	
 	float GameUnit::getCrushChance(GameUnit &caster, GameUnit &target)
 	{
-		//TODO only some boss mobs can crush
-		return 5;
+		if (caster.getTypeId() == wowpp::object_type::Unit)
+		{
+			//TODO only some boss mobs can crush
+			return 5.0f;
+		}
+		else
+		{
+			return 0.0f;
+		}
 	}
 	
 	float GameUnit::getCritChance(GameUnit &caster, GameUnit &target)
 	{
-		return 10;
+		return 10.0f;
 	}
 	
 	/**
