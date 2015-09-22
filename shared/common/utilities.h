@@ -30,10 +30,11 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include "random.h"
 
 namespace wowpp
 {
-	static std::default_random_engine randomGenerator;
+	static RandomnessGenerator randomGenerator;
 
 	template <class T>
 	T limit(T value, T min, T max)

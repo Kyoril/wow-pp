@@ -516,7 +516,7 @@ namespace wowpp
 				UInt32 blockValue = 0;
 				
 				//attack table calculation
-				std::uniform_real_distribution<float> hitTableDistribution(0.0, 99.9);
+				std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
 				float hitTableRoll = hitTableDistribution(randomGenerator);
 				if ((hitTableRoll -= getMissChance(*this, *m_victim)) < 0)
 				{
@@ -1198,7 +1198,7 @@ namespace wowpp
 	float GameUnit::getMissChance(GameUnit &caster, GameUnit &target)
 	{
 		//TODO dual wield handling
-		return 5 + (target.getLevel() - caster.getLevel()) * 0.5;
+		return 5.0f + (static_cast<float>(target.getLevel()) - static_cast<float>(caster.getLevel())) * 0.5f;
 	}
 	
 	float GameUnit::getDodgeChance(GameUnit &caster, GameUnit &target)
