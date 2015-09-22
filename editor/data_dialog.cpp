@@ -35,6 +35,7 @@ namespace wowpp
 			// Setup auto generated ui
 			m_ui->setupUi(this);
 			m_ui->dataField->setText(QString("%1").arg(data));
+			m_ui->dataField->setValidator(new QIntValidator(0, 999999, this));
 
 			bool mayChoose = false;
 			switch (action)

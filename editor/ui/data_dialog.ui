@@ -50,11 +50,7 @@
      <item row="1" column="1">
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
-        <widget class="QLineEdit" name="dataField">
-         <property name="inputMask">
-          <string>0</string>
-         </property>
-        </widget>
+        <widget class="QLineEdit" name="dataField"/>
        </item>
        <item>
         <widget class="QToolButton" name="dataButton">
