@@ -41,6 +41,7 @@ namespace wowpp
 				    Head,
 				    Get,
 				    Post,
+					Options,
 
 				    Unknown_
 				};

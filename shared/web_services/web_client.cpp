@@ -55,6 +55,13 @@ namespace wowpp
 		{
 			io::StringSink sink(m_connection->getSendBuffer());
 			WebResponse response(sink);
+			if (packet.getType() == net::http::IncomingRequest::Options)
+			{
+				response.addHeader("Access-Control-Allow-Origin", "*");
+				response.addHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+				response.addHeader("Access-Control-Allow-Max-Age", "1000");
+				response.addHeader("Access-Control-Allow-Headers", "origin, x-csrftoken, content-type, accept, authentication");
+			}
 			response.addHeader("Connection", "close");
 			handleRequest(packet, response);
 			m_connection->flush();

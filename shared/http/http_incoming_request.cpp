@@ -149,6 +149,10 @@ namespace wowpp
 					{
 						packet.m_type = Post;
 					}
+					else if (method == "OPTIONS")
+					{
+						packet.m_type = Options;
+					}
 					else
 					{
 						return receive_state::Malformed;

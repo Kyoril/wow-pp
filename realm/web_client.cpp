@@ -23,6 +23,9 @@
 #include "web_service.h"
 #include "common/clock.h"
 #include "http/http_incoming_request.h"
+#include "player_manager.h"
+#include "player.h"
+#include "game/game_character.h"
 #include "log/default_log_levels.h"
 
 namespace wowpp
@@ -63,6 +66,25 @@ namespace wowpp
 			std::ostringstream message;
 			message << "<uptime>" << gameTimeToSeconds<unsigned>(getCurrentTime() - startTime) << "</uptime>";
 
+			sendXmlAnswer(response, message.str());
+		}
+		else if (url == "/players")
+		{
+			std::ostringstream message;
+			message << "<players>";
+
+			auto &playerMgr = static_cast<WebService &>(this->getService()).getPlayerManager();
+			for (const auto &player : playerMgr.getPlayers())
+			{
+				const auto *character = player->getGameCharacter();
+				if (character)
+				{
+					message << "<player name=\"" << character->getName() << "\" level=\"" << character->getLevel() << "\" race=\"" << 
+						static_cast<UInt16>(character->getRace()) << "\" class=\"" << static_cast<UInt16>(character->getClass()) << "\" map=\"" << 
+						character->getMapId() << "\" zone=\"" << character->getZone() << "\" />";
+				}
+			}
+			message << "</players>";
 			sendXmlAnswer(response, message.str());
 		}
 		else if (url == "/shutdown")
