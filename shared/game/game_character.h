@@ -529,6 +529,9 @@ namespace wowpp
 		void modifyGroupUpdateFlags(GroupUpdateFlags flags, bool apply);
 		void clearGroupUpdateFlags() { m_groupUpdateFlags = group_update_flags::None; }
 		bool isInCombat() const override;
+		bool canBlock() const override;
+		bool canParry() const override;
+		bool canDodge() const override;
 
 	protected:
 
@@ -550,6 +553,8 @@ namespace wowpp
 		UInt8 m_comboPoints;
 		float m_manaRegBase;
 		GroupUpdateFlags m_groupUpdateFlags;
+		bool m_canBlock;	// Set by spell
+		bool m_canParry;	// Set by spell
 	};
 
 	io::Writer &operator << (io::Writer &w, GameCharacter const& object);

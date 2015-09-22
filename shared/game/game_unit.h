@@ -442,19 +442,22 @@ namespace wowpp
 		bool isAlive() const { return (getUInt32Value(unit_fields::Health) != 0); }
 		/// Determines whether this unit is actually in combat with at least one other unit.
 		virtual bool isInCombat() const = 0;
-                
-                bool isImmune(UInt8 school);
-                float getMissChance(GameUnit &caster, GameUnit &target);
-                float getDodgeChance(GameUnit &caster, GameUnit &target);
-                float getParryChance(GameUnit &caster, GameUnit &target);
-                float getGlancingChance(GameUnit &caster, GameUnit &target);
-                float getBlockChance(GameUnit &target);
-                float getCrushChance(GameUnit &caster, GameUnit &target);
-                float getCritChance(GameUnit &caster, GameUnit &target);
-                UInt32 getAttackPower(GameUnit &caster);
-                UInt32 getAttackBonusPct(GameUnit &caster);
-                UInt32 getAttackPointsTotal(UInt32 attackPower, UInt32 bonusPct);
-                UInt32 consumeAbsorb(UInt32 damage, UInt8 school, GameUnit &target);
+
+		bool isImmune(UInt8 school);
+		float getMissChance(GameUnit &caster, GameUnit &target);
+		float getDodgeChance(GameUnit &caster, GameUnit &target);
+		float getParryChance(GameUnit &caster, GameUnit &target);
+		float getGlancingChance(GameUnit &caster, GameUnit &target);
+		float getBlockChance(GameUnit &target);
+		float getCrushChance(GameUnit &caster, GameUnit &target);
+		float getCritChance(GameUnit &caster, GameUnit &target);
+		UInt32 getAttackPower(GameUnit &caster);
+		UInt32 getAttackBonusPct(GameUnit &caster);
+		UInt32 getAttackPointsTotal(UInt32 attackPower, UInt32 bonusPct);
+		UInt32 consumeAbsorb(UInt32 damage, UInt8 school, GameUnit &target);
+		virtual bool canBlock() const = 0;
+		virtual bool canParry() const = 0;
+		virtual bool canDodge() const = 0;
 
 		virtual void addThreat(GameUnit &threatening, float threat);
 		virtual void resetThreat();

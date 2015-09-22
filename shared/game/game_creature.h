@@ -73,6 +73,10 @@ namespace wowpp
 		void setVirtualItem(UInt32 slot, const ItemEntry *item);
 		bool isInCombat() const override;
 
+		bool canBlock() const override;
+		bool canParry() const override;
+		bool canDodge() const override;
+
 	protected:
 
 		void onKilled(GameUnit *killer) override;

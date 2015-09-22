@@ -530,7 +530,7 @@ namespace wowpp
 					victimState = game::victim_state::Dodge;
 					damageModifier = 0;
 				}
-				else if ((hitTableRoll -= getParryChance(*this, *m_victim)) < 0)
+				else if (m_victim->canParry() && (hitTableRoll -= getParryChance(*this, *m_victim)) < 0)
 				{
 					//parried
 					victimState = game::victim_state::Parry;
@@ -543,7 +543,7 @@ namespace wowpp
 					hitInfo = game::hit_info::Glancing;
 					damageModifier = 0.75;	//TODO more detail
 				}
-				else if ((hitTableRoll -= getBlockChance(*m_victim)) < 0)
+				else if (m_victim->canBlock() && (hitTableRoll -= getBlockChance(*m_victim)) < 0)
 				{
 					//blocked
 					victimState = game::victim_state::Blocks;

@@ -23,6 +23,7 @@
 #include <log/default_log_levels.h>
 #include "data/skill_entry.h"
 #include "data/item_entry.h"
+#include "game_item.h"
 
 namespace wowpp
 {
@@ -41,6 +42,8 @@ namespace wowpp
 		, m_comboPoints(0)
 		, m_manaRegBase(0.0f)
 		, m_groupUpdateFlags(group_update_flags::None)
+		, m_canBlock(false)
+		, m_canParry(false)
 	{
 		// Resize values field
 		m_values.resize(character_fields::CharacterFieldCount);
@@ -264,8 +267,21 @@ namespace wowpp
 			return;
 		}
 
-		m_spells.push_back(&spell);
+		// Evaluate parry and block spells
+		for (auto &effect : spell.effects)
+		{
+			if (effect.type == game::spell_effects::Parry)
+			{
+				m_canParry = true;
+			}
+			else if (effect.type == game::spell_effects::Block)
+			{
+				m_canBlock = true;
+			}
+		}
 
+		m_spells.push_back(&spell);
+		
 		// Add dependant skills
 		for (const auto *skill : spell.skillsOnLearnSpell)
 		{
@@ -820,6 +836,51 @@ namespace wowpp
 	{
 		// TODO
 		return false;
+	}
+
+	bool GameCharacter::canBlock() const
+	{
+		if (!m_canBlock)
+		{
+			return false;
+		}
+
+		const UInt16 slot = static_cast<UInt16>(player_equipment_slots::Offhand);
+		auto it = m_itemSlots.find(slot);
+		if (it == m_itemSlots.end())
+		{
+			return false;
+		}
+
+		auto item = it->second;
+		if (!item)
+		{
+			return false;
+		}
+
+		if (item->getEntry().inventoryType != inventory_type::Shield)
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	bool GameCharacter::canParry() const
+	{
+		if (!m_canParry)
+		{
+			return false;
+		}
+
+		const UInt16 slot = static_cast<UInt16>(player_equipment_slots::Mainhand);
+		auto it = m_itemSlots.find(slot);
+		return (it != m_itemSlots.end());
+	}
+
+	bool GameCharacter::canDodge() const
+	{
+		return true;
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameCharacter const& object)

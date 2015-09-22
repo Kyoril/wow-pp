@@ -387,6 +387,28 @@ namespace wowpp
 		return !m_threat.empty();
 	}
 
+	bool GameCreature::canBlock() const
+	{
+		const UInt32 slot = 1;
+		const auto invType = getByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0);
+
+		// Creatures can only block if they wield a shield
+		return (invType == inventory_type::Shield);
+	}
+
+	bool GameCreature::canParry() const
+	{
+		const UInt32 slot = 0;
+		const auto invType = getByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0);
+
+		return (invType != 0);
+	}
+
+	bool GameCreature::canDodge() const
+	{
+		return true;
+	}
+
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)
 	{
 		if (killerLevel < 8)
