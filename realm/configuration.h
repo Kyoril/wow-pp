@@ -80,6 +80,14 @@ namespace wowpp
 		/// Message of the day which will be displayed to all players which enter the world.
 		String messageOfTheDay;
 
+		/// The port to be used for a web connection.
+		NetPort webPort;
+		/// The port to be used for an ssl web connection.
+		NetPort webSSLPort;
+		/// The user name of the web user.
+		String webUser;
+		/// The password for the web user.
+		String webPassword;
 
 		/// Initializes a new instance of the Configuration class using the default
 		/// values.

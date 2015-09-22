@@ -37,6 +37,7 @@
 #include "log/log_entry.h"
 #include "log/default_log_levels.h"
 #include "mysql_database.h"
+#include "web_service.h"
 #include "common/timer_queue.h"
 #include "data/project.h"
 #include <iostream>
@@ -189,6 +190,14 @@ namespace wowpp
 			ELOG("Could not use player port " << m_configuration.playerPort << "! Maybe there is another server instance running on this port?");
 			return false;
 		}
+
+		std::unique_ptr<WebService> webService;
+		webService.reset(new WebService(
+			m_ioService,
+			m_configuration.webPort,
+			m_configuration.webPassword,
+			*PlayerManager
+			));
 
 		IDatabase &database = *m_database;
 		Configuration &config = m_configuration;
