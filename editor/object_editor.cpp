@@ -141,8 +141,13 @@ namespace wowpp
 			m_properties.push_back(PropertyPtr(new MinMaxProperty("Level", UInt32Ref(unit->minLevel), UInt32Ref((unit->maxLevel)))));
 			m_properties.push_back(PropertyPtr(new MinMaxProperty("Health", UInt32Ref(unit->minLevelHealth), UInt32Ref(unit->maxLevelHealth))));
 			m_properties.push_back(PropertyPtr(new MinMaxProperty("Mana", UInt32Ref(unit->minLevelMana), UInt32Ref(unit->maxLevelMana))));
+			m_properties.push_back(PropertyPtr(new NumericProperty("Damage School", UInt32Ref(unit->damageSchool))));
 			m_properties.push_back(PropertyPtr(new MinMaxProperty("Melee Damage", FloatRef(unit->minMeleeDamage), FloatRef(unit->maxMeleeDamage))));
+			m_properties.push_back(PropertyPtr(new NumericProperty("Melee Attack Power", UInt32Ref(unit->attackPower))));
+			m_properties.push_back(PropertyPtr(new NumericProperty("Melee Attack Time", UInt32Ref(unit->meleeBaseAttackTime))));
 			m_properties.push_back(PropertyPtr(new MinMaxProperty("Ranged Damage", FloatRef(unit->minRangedDamage), FloatRef(unit->maxRangedDamage))));
+			m_properties.push_back(PropertyPtr(new NumericProperty("Ranged Attack Power", UInt32Ref(unit->rangedAttackPower))));
+			m_properties.push_back(PropertyPtr(new NumericProperty("Ranged Attack Time", UInt32Ref(unit->rangedBaseAttackTime))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Scale", FloatRef(unit->scale))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Male Model ID", UInt32Ref(unit->maleModel))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Female Model ID", UInt32Ref(unit->femaleModel))));
@@ -159,15 +164,12 @@ namespace wowpp
 			m_properties.push_back(PropertyPtr(new NumericProperty("Unit Class", UInt32Ref(unit->unitClass))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Rank", UInt32Ref(unit->rank))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Armor", UInt32Ref(unit->armor))));
-			for (size_t i = 0; i < unit->resistances.size(); ++i)
+			for (size_t i = 1; i <= unit->resistances.size(); ++i)
 			{
 				std::stringstream strm;
 				strm << "Resistance " << i;
-				m_properties.push_back(PropertyPtr(new NumericProperty(strm.str(), UInt32Ref(unit->resistances[i]))));
+				m_properties.push_back(PropertyPtr(new NumericProperty(strm.str(), UInt32Ref(unit->resistances[i - 1]))));
 			}
-			m_properties.push_back(PropertyPtr(new NumericProperty("Melee Attack Time", UInt32Ref(unit->meleeBaseAttackTime))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Ranged Attack Time", UInt32Ref(unit->rangedBaseAttackTime))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Damage School", UInt32Ref(unit->damageSchool))));
 			m_properties.push_back(PropertyPtr(new MinMaxProperty("Loot Gold", UInt32Ref(unit->minLootGold), UInt32Ref(unit->maxLootGold))));
 			m_properties.push_back(PropertyPtr(new MinMaxProperty("Experience", UInt32Ref(unit->xpMin), UInt32Ref(unit->xpMax))));
 			/*

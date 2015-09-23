@@ -268,7 +268,7 @@ int main(int argc, char* argv[])
 	}
 
 	Project proj;
-	if (!proj.load("C:/Source/wowpp/data"))
+	if (!proj.load("C:/Source/wowpp-data"))
 	{
 		return 1;
 	}
