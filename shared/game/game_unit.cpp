@@ -493,16 +493,19 @@ namespace wowpp
 				return;
 			}
 
+			bool result = false;
 			if (m_swingCallback)
 			{
 				// Execute onSwing callback (used by some melee spells which are executed on next attack swing and 
 				// replace auto attack)
-				m_swingCallback();
+				result = m_swingCallback();
 
 				// Reset attack swing callback
 				m_swingCallback = AttackSwingCallback();
 			}
-			else
+
+
+			if (!result)
 			{
 				TileIndex2D tileIndex;
 				if (!getTileIndex(tileIndex))

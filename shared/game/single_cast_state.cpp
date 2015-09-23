@@ -326,6 +326,7 @@ namespace wowpp
 				else
 				{
 					m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedNoPower);
+					return false;
 				}
 				
 				return true;
