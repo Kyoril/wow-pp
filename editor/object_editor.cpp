@@ -164,12 +164,12 @@ namespace wowpp
 			m_properties.push_back(PropertyPtr(new NumericProperty("Unit Class", UInt32Ref(unit->unitClass))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Rank", UInt32Ref(unit->rank))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Armor", UInt32Ref(unit->armor))));
-			for (size_t i = 1; i <= unit->resistances.size(); ++i)
-			{
-				std::stringstream strm;
-				strm << "Resistance " << i;
-				m_properties.push_back(PropertyPtr(new NumericProperty(strm.str(), UInt32Ref(unit->resistances[i - 1]))));
-			}
+			m_properties.push_back(PropertyPtr(new NumericProperty("Holy Resistance", UInt32Ref(unit->resistances[0]))));
+			m_properties.push_back(PropertyPtr(new NumericProperty("Fire Resistance", UInt32Ref(unit->resistances[1]))));
+			m_properties.push_back(PropertyPtr(new NumericProperty("Nature Resistance", UInt32Ref(unit->resistances[2]))));
+			m_properties.push_back(PropertyPtr(new NumericProperty("Frost Resistance", UInt32Ref(unit->resistances[3]))));
+			m_properties.push_back(PropertyPtr(new NumericProperty("Shadow Resistance", UInt32Ref(unit->resistances[4]))));
+			m_properties.push_back(PropertyPtr(new NumericProperty("Arcane Resistance", UInt32Ref(unit->resistances[5]))));
 			m_properties.push_back(PropertyPtr(new MinMaxProperty("Loot Gold", UInt32Ref(unit->minLootGold), UInt32Ref(unit->maxLootGold))));
 			m_properties.push_back(PropertyPtr(new MinMaxProperty("Experience", UInt32Ref(unit->xpMin), UInt32Ref(unit->xpMax))));
 
