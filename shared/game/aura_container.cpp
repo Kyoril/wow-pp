@@ -196,7 +196,7 @@ namespace wowpp
 	{
 		size_t index = 0;
 		auto it = m_auras.begin();
-		do 
+		while (it != m_auras.end())
 		{
 			if ((*it)->getSpell().id == spellId)
 			{
@@ -206,7 +206,7 @@ namespace wowpp
 			{
 				++index; ++it;
 			}
-		} while (it != m_auras.end());
+		}
 	}
 
 	boost::optional<std::size_t> findAuraInstanceIndex(AuraContainer &instances, Aura &instance)
