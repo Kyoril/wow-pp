@@ -483,7 +483,7 @@ namespace wowpp
 			SpellTargetMap targetMap;
 			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
 			targetMap.m_unitTarget = attacker.getGuid();
-			m_target.castSpell(targetMap, m_effect.triggerSpell->id, 0, GameUnit::SpellSuccessCallback());
+			m_target.castSpell(targetMap, m_spell.id, 0, GameUnit::SpellSuccessCallback());
 		}
 		else if (m_effect.auraName == aura::DamageShield)
 		{
@@ -491,6 +491,23 @@ namespace wowpp
 			const Int32 randomValue = (m_effect.baseDice >= m_effect.dieSides ? m_effect.baseDice : distribution(randomGenerator));
 			UInt32 damage = m_effect.basePoints + randomValue;
 			attacker.dealDamage(damage, m_spell.schoolMask, &m_target);
+			
+			auto *world = attacker.getWorldInstance();
+			if (world)
+			{
+				TileIndex2D tileIndex;
+				attacker.getTileIndex(tileIndex);
+
+				std::vector<char> buffer;
+				io::VectorSink sink(buffer);
+				wowpp::game::OutgoingPacket packet(sink);
+				wowpp::game::server_write::spellDamageShield(packet, attacker.getGuid(), m_target.getGuid(), m_spell.id, damage, school);
+
+				forEachSubscriberInSight(world->getGrid(), tileIndex, [&packet, &buffer](ITileSubscriber &subscriber)
+				{
+					subscriber.sendPacket(packet, buffer);
+				});
+			}
 		}
 	}
 
