@@ -480,11 +480,17 @@ namespace wowpp
 		namespace aura = game::aura_type;
 		if (m_effect.auraName == aura::ProcTriggerSpell)
 		{
-//			m_effect.triggerSpell;	//TODO: cast this spell
+			SpellTargetMap targetMap;
+			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+			targetMap.m_unitTarget = attacker.getGuid();
+			m_target.castSpell(targetMap, m_effect.triggerSpell->id, 0, GameUnit::SpellSuccessCallback());
 		}
 		else if (m_effect.auraName == aura::DamageShield)
 		{
-			//TODO: deal damage
+			std::uniform_int_distribution<int> distribution(m_effect.baseDice, m_effect.dieSides);
+			const Int32 randomValue = (m_effect.baseDice >= m_effect.dieSides ? m_effect.baseDice : distribution(randomGenerator));
+			UInt32 damage = m_effect.basePoints + randomValue;
+			attacker.dealDamage(damage, m_spell.schoolMask, &m_target);
 		}
 	}
 
