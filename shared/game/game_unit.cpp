@@ -608,11 +608,13 @@ namespace wowpp
 					setUInt32Value(unit_fields::Power2, currentRage);
 				}
 
-				// Deal damage
+				// Deal damage (Note: m_victim can become nullptr, if the target dies)
 				m_victim->dealDamage(damage, 0, this);
-				
-				// Fire signal
-				m_victim->damageHit(0, *this);
+				if (m_victim)
+				{
+					// Fire signal
+					m_victim->damageHit(0, *this);
+				}
 			}
 		} while (false);
 
