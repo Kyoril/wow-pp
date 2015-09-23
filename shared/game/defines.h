@@ -897,6 +897,42 @@ namespace wowpp
 
 		typedef spell_dmg_class::Type SpellDmgClass;
 
+		namespace spell_school
+		{
+			enum Type
+			{
+				Normal		= 0,
+				Holy		= 1,
+				Fire		= 2,
+				Nature		= 3,
+				Frost		= 4,
+				Shadow		= 5,
+				Arcane		= 6
+			};
+		}
+
+		typedef spell_school::Type SpellSchool;
+
+		namespace spell_school_mask
+		{
+			enum Type
+			{
+				None		= 0x00,
+				Normal		= (1 << spell_school::Normal),
+				Holy		= (1 << spell_school::Holy),
+				Fire		= (1 << spell_school::Fire),
+				Nature		= (1 << spell_school::Nature),
+				Frost		= (1 << spell_school::Frost),
+				Shadow		= (1 << spell_school::Shadow),
+				Arcane		= (1 << spell_school::Arcane),
+				Spell		= (Fire | Nature | Frost | Shadow | Arcane),
+				Magic		= (Holy | Spell),
+				All			= (Normal | Magic)
+			};
+		}
+
+		typedef spell_school_mask::Type SpellSchoolMask;
+
 		namespace spell_prevention_type
 		{
 			enum Type

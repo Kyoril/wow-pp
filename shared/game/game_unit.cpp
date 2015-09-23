@@ -613,7 +613,7 @@ namespace wowpp
 				if (m_victim)
 				{
 					// Fire signal
-					m_victim->damageHit(0, *this);
+					m_victim->damageHit(game::spell_school::Normal, *this);
 				}
 			}
 		} while (false);
