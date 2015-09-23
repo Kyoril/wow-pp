@@ -172,9 +172,6 @@ namespace wowpp
 			}
 			m_properties.push_back(PropertyPtr(new MinMaxProperty("Loot Gold", UInt32Ref(unit->minLootGold), UInt32Ref(unit->maxLootGold))));
 			m_properties.push_back(PropertyPtr(new MinMaxProperty("Experience", UInt32Ref(unit->xpMin), UInt32Ref(unit->xpMax))));
-			/*
-			bool regeneratesHealth;
-			*/
 
 			// Update the view 
 			m_viewModel->layoutChanged();
