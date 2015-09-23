@@ -92,9 +92,6 @@ namespace wowpp
 		case aura::ModStun:
 			handleModStun(apply);
 			break;
-		case aura::ProcTriggerSpell:
-			handleProcTriggerSpell(apply);
-			break;
 		case aura::ModResistance:
 			handleModResistance(apply);
 			break;
@@ -115,6 +112,12 @@ namespace wowpp
 			break;
 		case aura::PeriodicEnergize:
 			handlePeriodicEnergize(apply);
+			break;
+		case aura::ProcTriggerSpell:
+			handleProcTriggerSpell(apply);
+			break;
+		case aura::DamageShield:
+			handleDamageShield(apply);
 			break;
 		default:
 			WLOG("Unhandled aura type: " << m_effect.auraName);
@@ -179,6 +182,12 @@ namespace wowpp
 		}
 		
 		// TODO: prevent movment, attacks and spells
+	}
+
+	void Aura::handleDamageShield(bool apply)
+	{
+		m_damageHit = m_target.damageHit.connect(
+			std::bind(&Aura::onDamageHit, this, std::placeholders::_1, std::placeholders::_2));
 	}
 
 	void Aura::handleModStealth(bool apply)
@@ -407,23 +416,13 @@ namespace wowpp
 
 	void Aura::handleProcTriggerSpell(bool apply)
 	{
-		
-		
-//		Int32 stat = m_effect.miscValueA;
-//		if (stat < -2 || stat > 4)
-//		{
-//			WLOG("AURA_TYPE_MOD_STAT: Invalid stat index " << stat << " - skipped");
-//			return;
-//		}
-//
-//		// Apply all stats
-//		for (Int32 i = 0; i < 5; ++i)
-//		{
-//			if (stat < 0 || stat == i)
-//			{
-//				m_target.updateModifierValue(GameUnit::getUnitModByStat(i), unit_mod_type::TotalValue, m_basePoints, apply);
-//			}
-//		}
+		m_damageHit = m_target.damageHit.connect(
+			std::bind(&Aura::onDamageHit, this, std::placeholders::_1, std::placeholders::_2));
+	}
+	
+	void Aura::handleModHealingPct(bool apply)
+	{
+		//TODO
 	}
 
 	void Aura::handleModTotalStatPercentage(bool apply)
@@ -474,6 +473,19 @@ namespace wowpp
 		// Reset caster
 		m_casterDespawned.disconnect();
 		m_caster = nullptr;
+	}
+	
+	void Aura::onDamageHit(UInt8 school, GameUnit &attacker)
+	{
+		namespace aura = game::aura_type;
+		if (m_effect.auraName == aura::ProcTriggerSpell)
+		{
+//			m_effect.triggerSpell;	//TODO: cast this spell
+		}
+		else if (m_effect.auraName == aura::DamageShield)
+		{
+			//TODO: deal damage
+		}
 	}
 
 	void Aura::onExpired()

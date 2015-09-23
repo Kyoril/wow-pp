@@ -337,6 +337,9 @@ namespace wowpp
 		/// Fired when the unit should be teleported. This event is only fired when the unit changes world.
 		/// Parameters: Target Map, X, Y, Z, O
 		boost::signals2::signal<void(UInt16, float, float, float, float)> teleport;
+		/// Fired when hit by any direct damage (excluding dots).
+		/// Parameters: school, &attacker
+		boost::signals2::signal<void(UInt8, GameUnit&)> damageHit;
 
 	public:
 

@@ -77,6 +77,8 @@ namespace wowpp
 		void handlePeriodicHeal(bool apply);
 		/// 12
 		void handleModStun(bool apply);
+		/// 15
+		void handleDamageShield(bool apply);
 		/// 16
 		void handleModStealth(bool apply);
 		/// 22
@@ -89,6 +91,8 @@ namespace wowpp
 		void handleModShapeShift(bool apply);
                 /// 42
                 void handleProcTriggerSpell(bool apply);
+                /// 118
+                void handleModHealingPct(bool apply);
 		/// 137
 		void handleModTotalStatPercentage(bool apply);
 		/// 142
@@ -100,6 +104,8 @@ namespace wowpp
 		void startPeriodicTimer();
 		/// Executed if the caster of this aura is about to despawn.
 		void onCasterDespawned(GameObject &object);
+		/// Executed if the caster suffer a direct damage hit
+		void onDamageHit(UInt8 school, GameUnit &attacker);
 		/// Executed when the aura expires.
 		void onExpired();
 		/// Executed when this aura ticks.
@@ -113,7 +119,7 @@ namespace wowpp
 
 		const SpellEntry &m_spell;
 		const SpellEntry::Effect &m_effect;
-		boost::signals2::scoped_connection m_casterDespawned, m_targetMoved, m_onExpire, m_onTick, m_onTargetKilled;
+		boost::signals2::scoped_connection m_casterDespawned, m_damageHit, m_targetMoved, m_onExpire, m_onTick, m_onTargetKilled;
 		GameUnit *m_caster;
 		GameUnit &m_target;
 		UInt32 m_tickCount;

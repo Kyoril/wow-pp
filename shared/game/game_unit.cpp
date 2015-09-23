@@ -610,6 +610,9 @@ namespace wowpp
 
 				// Deal damage
 				m_victim->dealDamage(damage, 0, this);
+				
+				// Fire signal
+				m_victim->damageHit(0, *this);
 			}
 		} while (false);
 
