@@ -102,6 +102,31 @@ namespace wowpp
 			m_itemFilter->setFilterRegExp(regExp);
 		}
 
+		namespace
+		{
+			static float ArmorReductionHelper(UInt32 armor, UInt32 level)
+			{
+				float tmp = 0.0f;
+				if (level < 60)
+				{
+					tmp = armor / (armor + 400.0f + 85.0f * level);
+				}
+				else if (level < 70)
+				{
+					tmp = armor / (armor - 22167.5f + 467.5f * level);
+				}
+				else
+				{
+					tmp = armor / (armor + 10557.5f);
+				}
+
+				// Hard caps
+				if (tmp < 0.0f) tmp = 0.0f;
+				if (tmp > 0.75f) tmp = 0.75f;
+				return tmp * 100.0f;
+			}
+		}
+
 		void ObjectEditor::onUnitSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
 		{
 			// Get the selected unit
@@ -163,7 +188,7 @@ namespace wowpp
 			m_properties.push_back(PropertyPtr(new NumericProperty("Run Speed", FloatRef(unit->runSpeed))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Unit Class", UInt32Ref(unit->unitClass))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Rank", UInt32Ref(unit->rank))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Armor", UInt32Ref(unit->armor))));
+			m_properties.push_back(PropertyPtr(new NumericProperty("Armor", UInt32Ref(unit->armor), false, [unit]() -> QVariant { return QString("%1%").arg(ArmorReductionHelper(unit->armor, unit->minLevel)); })));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Holy Resistance", UInt32Ref(unit->resistances[0]))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Fire Resistance", UInt32Ref(unit->resistances[1]))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Nature Resistance", UInt32Ref(unit->resistances[2]))));

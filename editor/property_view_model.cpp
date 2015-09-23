@@ -46,6 +46,11 @@ namespace wowpp
 					{
 						return QString("Value");
 					}
+
+					case 2:
+					{
+						return QString("Misc");
+					}
 				}
 			}
 
@@ -60,8 +65,8 @@ namespace wowpp
 
 		int PropertyViewModel::columnCount(const QModelIndex &parent /*= QModelIndex()*/) const
 		{
-			// Two rows: One for the property name, one for the value
-			return 2;
+			// Three columns: One for the property name, one for the value and one for some misc. value
+			return 3;
 		}
 
 		QVariant PropertyViewModel::data(const QModelIndex &index, int role /*= Qt::DisplayRole*/) const
@@ -86,10 +91,14 @@ namespace wowpp
 					{
 						return QString(prop->getDisplayString().c_str());
 					}
+
+					case 2:
+					{
+						return prop->getMiscVale();
+					}
 				}
 			}
 
-			//TODO
 			return QVariant();
 		}
 
