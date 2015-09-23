@@ -77,6 +77,8 @@ namespace wowpp
 		bool canParry() const override;
 		bool canDodge() const override;
 
+		void updateDamage() override;
+
 	protected:
 
 		void onKilled(GameUnit *killer) override;

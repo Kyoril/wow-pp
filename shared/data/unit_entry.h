@@ -105,6 +105,10 @@ namespace wowpp
 		std::map<UInt32, std::vector<const TriggerEntry*>> triggersByEvent;
 		/// Equipment entries of this creature. Only has optical effect right now, maybe should also modify damage, attack speed and amor?
 		const ItemEntry *mainHand, *offHand, *ranged;
+		/// 
+		UInt32 attackPower;
+		/// 
+		UInt32 rangedAttackPower;
 
 		/// Default constructor.
 		UnitEntry();

@@ -59,48 +59,67 @@ namespace wowpp
 		}
 
 		const auto &url = request.getPath();
-		if (url == "/uptime")
+		switch(request.getType())
 		{
-			const GameTime startTime = static_cast<WebService &>(getService()).getStartTime();
-
-			std::ostringstream message;
-			message << "<uptime>" << gameTimeToSeconds<unsigned>(getCurrentTime() - startTime) << "</uptime>";
-
-			sendXmlAnswer(response, message.str());
-		}
-		else if (url == "/players")
-		{
-			std::ostringstream message;
-			message << "<players>";
-
-			auto &playerMgr = static_cast<WebService &>(this->getService()).getPlayerManager();
-			for (const auto &player : playerMgr.getPlayers())
+			case net::http::IncomingRequest::Get:
 			{
-				const auto *character = player->getGameCharacter();
-				if (character)
+				if (url == "/uptime")
 				{
-					message << "<player name=\"" << character->getName() << "\" level=\"" << character->getLevel() << "\" race=\"" << 
-						static_cast<UInt16>(character->getRace()) << "\" class=\"" << static_cast<UInt16>(character->getClass()) << "\" map=\"" << 
-						character->getMapId() << "\" zone=\"" << character->getZone() << "\" />";
+					const GameTime startTime = static_cast<WebService &>(getService()).getStartTime();
+
+					std::ostringstream message;
+					message << "<uptime>" << gameTimeToSeconds<unsigned>(getCurrentTime() - startTime) << "</uptime>";
+
+					sendXmlAnswer(response, message.str());
+				}
+				else if (url == "/players")
+				{
+					std::ostringstream message;
+					message << "<players>";
+
+					auto &playerMgr = static_cast<WebService &>(this->getService()).getPlayerManager();
+					for (const auto &player : playerMgr.getPlayers())
+					{
+						const auto *character = player->getGameCharacter();
+						if (character)
+						{
+							message << "<player name=\"" << character->getName() << "\" level=\"" << character->getLevel() << "\" race=\"" <<
+								static_cast<UInt16>(character->getRace()) << "\" class=\"" << static_cast<UInt16>(character->getClass()) << "\" map=\"" <<
+								character->getMapId() << "\" zone=\"" << character->getZone() << "\" />";
+						}
+					}
+					message << "</players>";
+					sendXmlAnswer(response, message.str());
+				}
+				else
+				{
+					response.setStatus(net::http::OutgoingAnswer::NotFound);
+
+					const String message = "The document '" + url + "' does not exist";
+					response.finishWithContent("text/html", message.data(), message.size());
+				}
+				break;
+			}
+			case net::http::IncomingRequest::Post:
+			{
+				if (url == "/additem")
+				{
+					DLOG("Additem");
+					sendXmlAnswer(response, "<status>SUCCESS</status>");
+				}
+				else if (url == "/shutdown")
+				{
+					ILOG("Shutting down..");
+					sendXmlAnswer(response, "<message>Shutting down..</message>");
+
+					auto &ioService = getService().getIOService();
+					ioService.stop();
 				}
 			}
-			message << "</players>";
-			sendXmlAnswer(response, message.str());
-		}
-		else if (url == "/shutdown")
-		{
-			ILOG("Shutting down..");
-			sendXmlAnswer(response, "<message>shutting down..</message>");
-
-			auto &ioService = getService().getIOService();
-			ioService.stop();
-		}
-		else
-		{
-			response.setStatus(net::http::OutgoingAnswer::NotFound);
-
-			const String message = "The document '" + url + "' does not exist";
-			response.finishWithContent("text/html", message.data(), message.size());
+			default:
+			{
+				break;
+			}
 		}
 	}
 }

@@ -172,8 +172,6 @@ bool importExplorationBaseXP(Project &project, MySQL::Connection &connection)
 
 	return true;
 }
-#endif
-
 
 bool importCreatureTypes(Project &project, MySQL::Connection &connection)
 {
@@ -196,6 +194,46 @@ bool importCreatureTypes(Project &project, MySQL::Connection &connection)
 			else
 			{
 				unitEntry->type = type;
+			}
+
+			row = row.next(select);
+		}
+	}
+	else
+	{
+		// There was an error
+		ELOG(connection.getErrorMessage());
+		return false;
+	}
+
+	return true;
+}
+#endif
+
+
+bool importCreatureAttackPower(Project &project, MySQL::Connection &connection)
+{
+	wowpp::MySQL::Select select(connection, "SELECT `entry`, `attackpower`, `rangedattackpower` FROM `creature_template`;");
+	if (select.success())
+	{
+		wowpp::MySQL::Row row(select);
+		while (row)
+		{
+			UInt32 entry = 0, atk = 0, rng_atk = 0;
+			row.getField(0, entry);
+			row.getField(1, atk);
+			row.getField(2, rng_atk);
+
+			// Find unit
+			auto *unitEntry = project.units.getEditableById(entry);
+			if (!unitEntry)
+			{
+				WLOG("Could not find entry for unit " << entry << " - skipping");
+			}
+			else
+			{
+				unitEntry->attackPower = atk;
+				unitEntry->rangedAttackPower = rng_atk;
 			}
 
 			row = row.next(select);
@@ -235,7 +273,7 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	
-	if (!importCreatureTypes(proj, connection))
+	if (!importCreatureAttackPower(proj, connection))
 	{
 		return 1;
 	}

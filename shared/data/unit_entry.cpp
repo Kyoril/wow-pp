@@ -67,6 +67,8 @@ namespace wowpp
 		, mainHand(nullptr)
 		, offHand(nullptr)
 		, ranged(nullptr)
+		, attackPower(0)
+		, rangedAttackPower(0)
 	{
 		resistances.fill(0);
 	}
@@ -147,7 +149,6 @@ namespace wowpp
 		wrapper.table.tryGetInteger("min_xp", xpMin);
 		wrapper.table.tryGetInteger("max_xp", xpMax);
 		MIN_MAX_CHECK(xpMin, xpMax);
-
 		UInt32 eqMain = 0, eqOff = 0, eqRange = 0;
 		wrapper.table.tryGetInteger("eq_main_hand", eqMain);
 		wrapper.table.tryGetInteger("eq_off_hand", eqOff);
@@ -163,7 +164,8 @@ namespace wowpp
 				return true;
 			});
 		}
-
+		wrapper.table.tryGetInteger("atk_power", attackPower);
+		wrapper.table.tryGetInteger("rng_atk_power", rangedAttackPower);
 #undef MIN_MAX_CHECK
 
 		return true;
@@ -206,6 +208,8 @@ namespace wowpp
 		if (mainHand != 0) context.table.addKey("eq_main_hand", mainHand->id);
 		if (offHand != 0) context.table.addKey("eq_off_hand", offHand->id);
 		if (ranged != 0) context.table.addKey("eq_ranged", ranged->id);
+		if (attackPower != 0) context.table.addKey("atk_power", attackPower);
+		if (rangedAttackPower != 0) context.table.addKey("rng_atk_power", rangedAttackPower);
 
 		if (!triggers.empty())
 		{

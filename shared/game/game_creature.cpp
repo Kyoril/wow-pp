@@ -139,6 +139,8 @@ namespace wowpp
 		setUInt32Value(unit_fields::NpcFlags, entry.npcFlags);
 		setByteValue(unit_fields::Bytes2, 1, 16);
 		setByteValue(unit_fields::Bytes2, 0, 1);		// Sheath State: Melee weapon
+		setFloatValue(unit_fields::AttackPower, entry.attackPower);
+		setFloatValue(unit_fields::RangedAttackPower, entry.rangedAttackPower);
 		setFloatValue(unit_fields::MinDamage, entry.minMeleeDamage);
 		setFloatValue(unit_fields::MaxDamage, entry.maxMeleeDamage);
 		setUInt32Value(unit_fields::BaseAttackTime, entry.meleeBaseAttackTime);
@@ -407,6 +409,16 @@ namespace wowpp
 	bool GameCreature::canDodge() const
 	{
 		return true;
+	}
+
+	void GameCreature::updateDamage()
+	{
+		const float att_speed = static_cast<float>(getUInt32Value(unit_fields::BaseAttackTime)) / 1000.0f;
+		const float base_value = getUInt32Value(unit_fields::AttackPower) / 14.0f * att_speed;
+
+		const UnitEntry *entry = (m_entry ? m_entry : &m_originalEntry);
+		setFloatValue(unit_fields::MinDamage, base_value + entry->minMeleeDamage);
+		setFloatValue(unit_fields::MaxDamage, base_value + entry->maxMeleeDamage);
 	}
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)

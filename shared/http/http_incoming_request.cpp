@@ -22,6 +22,7 @@
 #include "http_incoming_request.h"
 #include "common/constants.h"
 #include "base64/base64.h"
+#include "log/default_log_levels.h"
 #include <cassert>
 
 namespace wowpp
@@ -179,7 +180,15 @@ namespace wowpp
 
 				if (!skipEndOfLine(pos, end))
 				{
+					DLOG("Malformed skipEndOfLine: " << pos);
 					return receive_state::Malformed;
+				}
+
+				// We need at least another end of line
+				if (pos == end)
+				{
+					DLOG("Incomplete");
+					return receive_state::Incomplete;
 				}
 
 				//headers
@@ -195,6 +204,7 @@ namespace wowpp
 
 					if (!skipCharacter(pos, end, ':'))
 					{
+						WLOG("Malformed for header " << name << ": " << pos);
 						return receive_state::Malformed;
 					}
 
@@ -205,6 +215,7 @@ namespace wowpp
 
 					if (!skipEndOfLine(pos, end))
 					{
+						WLOG("Malformed for header " << name << ": " << value << " - " << pos);
 						return receive_state::Malformed;
 					}
 

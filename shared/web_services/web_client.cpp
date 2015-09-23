@@ -47,7 +47,7 @@ namespace wowpp
 
 		void WebClient::connectionMalformedPacket()
 		{
-			WLOG("Bad HTTP request");
+			//WLOG("Bad HTTP request");
 			m_webService.clientDisconnected(*this);
 		}
 
