@@ -52,13 +52,14 @@ namespace wowpp
 
 	typedef item_fields::Enum ItemFields;
 
-
 	/// 
 	class GameItem : public GameObject
 	{
 		friend io::Writer &operator << (io::Writer &w, GameItem const& object);
 		friend io::Reader &operator >> (io::Reader &r, GameItem& object);
 
+		boost::signals2::signal<void()> equipped;
+	
 	public:
 
 		/// 
@@ -70,6 +71,7 @@ namespace wowpp
 		virtual ObjectType getTypeId() const override { return object_type::Item; }
 
 		const ItemEntry &getEntry() const { return m_entry; }
+		void notifyEquipped();
 
 	private:
 

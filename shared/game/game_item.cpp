@@ -59,6 +59,12 @@ namespace wowpp
 		}
 	}
 
+	void GameItem::notifyEquipped()
+	{
+		// Emit signal
+		equipped();
+	}
+
 	io::Writer & operator<<(io::Writer &w, GameItem const& object)
 	{
 		return w

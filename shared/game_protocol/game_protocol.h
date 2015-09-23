@@ -289,6 +289,7 @@ namespace wowpp
 				SetRestStart				= 0x21E,
 				LoginVerifyWorld			= 0x236,
 				PeriodicAuraLog				= 0x24E,
+				SpellDamageShield			= 0x24F,
 				SpellNonMeleeDamageLog		= 0x250,
 				StandStateUpdate			= 0x29D,
 				SpellFailedOther			= 0x2A6,
@@ -1247,6 +1248,15 @@ namespace wowpp
 				UInt32 spellId,
 				UInt32 amount,
 				bool critical
+				);
+
+			void spellDamageShield(
+				game::OutgoingPacket &out_packet,
+				UInt64 targetGuid,
+				UInt64 casterGuid,
+				UInt32 spellId,
+				UInt32 damage,
+				UInt32 dmgSchool
 				);
 
 			void periodicAuraLog(

@@ -2402,6 +2402,19 @@ namespace wowpp
 					<< io::write<NetUInt32>(reaction);
 				out_packet.finish();
 			}
+
+			void spellDamageShield(game::OutgoingPacket &out_packet, UInt64 targetGuid, UInt64 casterGuid, UInt32 spellId, UInt32 damage, UInt32 dmgSchool)
+			{
+				out_packet.start(game::server_packet::SpellDamageShield);
+				out_packet
+					<< io::write<NetUInt64>(targetGuid)
+					<< io::write<NetUInt64>(casterGuid)
+					<< io::write<NetUInt32>(spellId)
+					<< io::write<NetUInt32>(damage)
+					<< io::write<NetUInt32>(dmgSchool);
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read
