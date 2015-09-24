@@ -1710,5 +1710,73 @@ namespace wowpp
 				Relic			= 28
 			};
 		}
+
+		namespace unit_flags
+		{
+			enum Type
+			{
+				/// 
+				Unknown_0			= 0x00000001,
+				/// Unit can't be attackaed.
+				NotAttackable		= 0x00000002,
+				/// 
+				DisableMovement		= 0x00000004,
+				/// Unit has pvp mode enabled, which will flag players for pvp if they attack or support this unit, too.
+				PvPMode				= 0x00000008,
+				/// 
+				Rename				= 0x00000010,
+				/// Doesn't take reagents for spells with attribute ex 5 "NoReatentWhileRep"
+				Preparation			= 0x00000020,
+				/// 
+				Unknown_1			= 0x00000040,
+				/// Must be compined with PvPMode flags. Makes this unit unattackable from pvp targets.
+				NotAttackablePvP	= 0x00000080,
+				/// Unit is not attackable while it is not in combat.
+				OOCNotAttackable	= 0x00000100,
+				/// Makes the unit non-aggressive, even when hostile to other units - until it's attackaed directly.
+				Passive				= 0x00000200,
+				/// Shows the looting animation.
+				Looting				= 0x00000400,
+				/// 
+				PetInCombat			= 0x00000800,
+				/// 
+				PvP					= 0x00001000,
+				/// 
+				Silenced			= 0x00002000,
+				/// 
+				Unknown_2			= 0x00004000,
+				/// 
+				Unknown_3			= 0x00008000,
+				/// Can't be targeted by a spell cast directly.
+				NoSpellTarget		= 0x00010000,
+				/// 
+				Pacified			= 0x00020000,
+				/// 
+				Stunned				= 0x00040000,
+				///
+				InCombat			= 0x00080000,
+				/// Disables casting at client side for spells which aren't allowed during flight.
+				TaxiFlight			= 0x00100000,
+				/// Disables melee spell casting.
+				Disarmed			= 0x00200000,
+				/// 
+				Confused			= 0x00400000,
+				/// 
+				Fleeing				= 0x00800000,
+				/// Used in spell Eye of the Beast for pets.
+				PlayerControlled	= 0x01000000,
+				/// 
+				NotSelectable		= 0x02000000,
+				/// 
+				Skinnable			= 0x04000000,
+				/// 
+				Mount				= 0x08000000,
+				/// 
+				Unknown_4			= 0x10000000,
+				Unknown_5			= 0x20000000,
+				Unknown_6			= 0x40000000,
+				Sheathe				= 0x80000000,
+			};
+		}
 	}
 }

@@ -104,8 +104,12 @@ namespace wowpp
 
 		namespace
 		{
-			static float ArmorReductionHelper(UInt32 armor, UInt32 level)
+			static QVariant ArmorMiscValue(const UnitEntry &unit)
 			{
+				UInt32 armor = unit.armor;
+				UInt32 level = (unit.minLevel + unit.maxLevel) / 2;
+				if (level > 70) level = 70;
+
 				float tmp = 0.0f;
 				if (level < 60)
 				{
@@ -123,7 +127,42 @@ namespace wowpp
 				// Hard caps
 				if (tmp < 0.0f) tmp = 0.0f;
 				if (tmp > 0.75f) tmp = 0.75f;
-				return tmp * 100.0f;
+
+				return QString("%1% reduction at lvl %2").arg(tmp * 100.0f).arg(level);
+			}
+		
+			static QVariant MeleeAttackMiscValue(const UnitEntry &unit)
+			{
+				const float atkSpeed = (unit.meleeBaseAttackTime / 1000.0f);
+				UInt32 dmgBonus = unit.attackPower / 14.0f * atkSpeed;
+				return QString("%1 additional damage").arg(dmgBonus);
+			}
+
+			static QVariant UnitFlagsMiscValue(const UnitEntry &unit)
+			{
+				static const QString flagNames[32] = 
+				{
+					"UNK_0",				"NOT_ATTACKABLE",	"DISABLE_MOVE",	"PVP_ATTACKABLE",
+					"RENAME",				"PREPARATION",		"UNK_6",		"NOT_ATTACKABLE_PVP", 
+					"OOC_NOT_ATTACKABLE",	"PASSIVE",			"LOOTING",		"PET_IN_COMBAT",
+					"PVP",					"SILENCED",			"UNK_14",		"UNK_15",
+					"NO_PL_SPELL_TARGET",	"PACIFIED",			"STUNNED",		"IN_COMBAT", 
+					"TAXI_FLIGHT",			"DISARMED",			"CONFUSED",		"FLEEING",
+					"PLAYER_CONTROLLED",	"NOT_SELECTABLE",	"SKINNABLE",	"MOUNT",
+					"UNK_28",				"UNK_29",			"SHEATHE",		"UNK_31"
+				};
+
+				QString buffer;
+				for (UInt32 mask = 1, bitIndex = 0; mask != 0; mask <<= 1, bitIndex++)
+				{
+					if ((unit.unitFlags & mask) != 0)
+					{
+						if (!buffer.isEmpty()) buffer.append(" | ");
+						buffer.append(QString("%1 ").arg(flagNames[bitIndex]));
+					}
+				}
+
+				return buffer;
 			}
 		}
 
@@ -168,7 +207,7 @@ namespace wowpp
 			m_properties.push_back(PropertyPtr(new MinMaxProperty("Mana", UInt32Ref(unit->minLevelMana), UInt32Ref(unit->maxLevelMana))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Damage School", UInt32Ref(unit->damageSchool))));
 			m_properties.push_back(PropertyPtr(new MinMaxProperty("Melee Damage", FloatRef(unit->minMeleeDamage), FloatRef(unit->maxMeleeDamage))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Melee Attack Power", UInt32Ref(unit->attackPower))));
+			m_properties.push_back(PropertyPtr(new NumericProperty("Melee Attack Power", UInt32Ref(unit->attackPower), false, std::bind(&MeleeAttackMiscValue, std::cref(*unit)))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Melee Attack Time", UInt32Ref(unit->meleeBaseAttackTime))));
 			m_properties.push_back(PropertyPtr(new MinMaxProperty("Ranged Damage", FloatRef(unit->minRangedDamage), FloatRef(unit->maxRangedDamage))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Ranged Attack Power", UInt32Ref(unit->rangedAttackPower))));
@@ -180,7 +219,7 @@ namespace wowpp
 			m_properties.push_back(PropertyPtr(new NumericProperty("Horde Faction ID", UInt32Ref(unit->hordeFactionID))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Family", UInt32Ref(unit->family))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("NPC Flags", UInt32Ref(unit->npcFlags))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Unit Flags", UInt32Ref(unit->unitFlags))));
+			m_properties.push_back(PropertyPtr(new NumericProperty("Unit Flags", UInt32Ref(unit->unitFlags), false, std::bind(&UnitFlagsMiscValue, std::cref(*unit)))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Dynamic Flags", UInt32Ref(unit->dynamicFlags))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Extra Flags", UInt32Ref(unit->extraFlags))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Creature Type Flags", UInt32Ref(unit->creatureTypeFlags))));
@@ -188,7 +227,7 @@ namespace wowpp
 			m_properties.push_back(PropertyPtr(new NumericProperty("Run Speed", FloatRef(unit->runSpeed))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Unit Class", UInt32Ref(unit->unitClass))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Rank", UInt32Ref(unit->rank))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Armor", UInt32Ref(unit->armor), false, [unit]() -> QVariant { return QString("%1%").arg(ArmorReductionHelper(unit->armor, unit->minLevel)); })));
+			m_properties.push_back(PropertyPtr(new NumericProperty("Armor", UInt32Ref(unit->armor), false, std::bind(&ArmorMiscValue, std::cref(*unit)))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Holy Resistance", UInt32Ref(unit->resistances[0]))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Fire Resistance", UInt32Ref(unit->resistances[1]))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Nature Resistance", UInt32Ref(unit->resistances[2]))));
