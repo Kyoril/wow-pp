@@ -77,6 +77,7 @@ namespace wowpp
 		managers.push_back(ManagerEntry("spells", spells, std::bind(&SpellEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("races", races, std::bind(&RaceEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("classes", classes, std::bind(&ClassEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+		managers.push_back(ManagerEntry("factions", factions, std::bind(&FactionEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("levels", levels, std::bind(&LevelEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("creature_types", creaturetypes, std::bind(&CreatureTypeEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("units", units, std::bind(&UnitEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
@@ -124,6 +125,7 @@ namespace wowpp
 		managers.push_back(ManagerEntry("levels", "levels", levels, &LevelEntry::save));
 		managers.push_back(ManagerEntry("races", "races", races, &RaceEntry::save));
 		managers.push_back(ManagerEntry("classes", "classes", classes, &ClassEntry::save));
+		managers.push_back(ManagerEntry("factions", "factions", factions, &FactionEntry::save));
 		managers.push_back(ManagerEntry("creature_types", "creature_types", creaturetypes, &CreatureTypeEntry::save));
 		managers.push_back(ManagerEntry("items", "items", items, &ItemEntry::save));
 		managers.push_back(ManagerEntry("skills", "skills", skills, &SkillEntry::save));
