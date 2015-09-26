@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -585,7 +585,7 @@ namespace wowpp
 					<< io::write_range(unit.subname) << io::write<NetUInt8>(0x00)	// Terminator: name4 (always empty)
 					<< io::write<NetUInt8>(0x00)
 					<< io::write<NetUInt32>(unit.creatureTypeFlags)
-					<< io::write<NetUInt32>(0x07)	//TODO: Creature Type
+					<< io::write<NetUInt32>(unit.type)
 					<< io::write<NetUInt32>(unit.family)
 					<< io::write<NetUInt32>(unit.rank)
 					<< io::write<NetUInt32>(0x00)	// Unknown
@@ -2393,6 +2393,28 @@ namespace wowpp
 					<< io::write<NetUInt32>(experience);
 				out_packet.finish();
 			}
+
+			void aiReaction(game::OutgoingPacket &out_packet, UInt64 creatureGUID, UInt32 reaction)
+			{
+				out_packet.start(game::server_packet::AiReaction);
+				out_packet
+					<< io::write<NetUInt64>(creatureGUID)
+					<< io::write<NetUInt32>(reaction);
+				out_packet.finish();
+			}
+
+			void spellDamageShield(game::OutgoingPacket &out_packet, UInt64 targetGuid, UInt64 casterGuid, UInt32 spellId, UInt32 damage, UInt32 dmgSchool)
+			{
+				out_packet.start(game::server_packet::SpellDamageShield);
+				out_packet
+					<< io::write<NetUInt64>(targetGuid)
+					<< io::write<NetUInt64>(casterGuid)
+					<< io::write<NetUInt32>(spellId)
+					<< io::write<NetUInt32>(damage)
+					<< io::write<NetUInt32>(dmgSchool);
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read

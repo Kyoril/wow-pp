@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -24,7 +24,9 @@
 #include "common/typedefs.h"
 #include <boost/variant.hpp>
 #include <QMessageBox>
+#include <QVariant>
 #include "log/default_log_levels.h"
+#include <functional>
 #include <sstream>
 #include <memory>
 #include <vector>
@@ -38,9 +40,14 @@ namespace wowpp
 		{
 		public:
 
-			Property(const String &name, bool readOnly = false)
+			typedef std::function<QVariant()> MiscValueCallback;
+
+		public:
+
+			Property(const String &name, bool readOnly = false, MiscValueCallback miscCallback = MiscValueCallback())
 				: m_name(name)
 				, m_readOnly(readOnly)
+				, m_callback(miscCallback)
 			{
 			}
 			virtual ~Property()
@@ -50,11 +57,13 @@ namespace wowpp
 			virtual const String &getName() const { return m_name; }
 			virtual bool isReadOnly() const { return m_readOnly; }
 			virtual String getDisplayString() const = 0;
+			QVariant getMiscVale() const { return (m_callback ? m_callback() : QVariant()); }
 
 		private:
 
 			String m_name;
 			bool m_readOnly;
+			MiscValueCallback m_callback;
 		};
 
 		template<typename T>
@@ -85,8 +94,8 @@ namespace wowpp
 		{
 		public:
 
-			MinMaxProperty(const String &name, const NumericValue &minValue, const NumericValue &maxValue, bool readOnly = false)
-				: Property(name, readOnly)
+			MinMaxProperty(const String &name, const NumericValue &minValue, const NumericValue &maxValue, bool readOnly = false, Property::MiscValueCallback miscCallback = Property::MiscValueCallback())
+				: Property(name, readOnly, miscCallback)
 				, m_minValue(minValue)
 				, m_maxValue(maxValue)
 			{
@@ -134,8 +143,8 @@ namespace wowpp
 		{
 		public:
 
-			StringProperty(const String &name, String &value, bool readOnly = false)
-				: Property(name, readOnly)
+			StringProperty(const String &name, String &value, bool readOnly = false, Property::MiscValueCallback miscCallback = Property::MiscValueCallback())
+				: Property(name, readOnly, miscCallback)
 				, m_value(value)
 			{
 			}
@@ -156,8 +165,8 @@ namespace wowpp
 		{
 		public:
 
-			NumericProperty(const String &name, const NumericValue &value, bool readOnly = false)
-				: Property(name, readOnly)
+			NumericProperty(const String &name, const NumericValue &value, bool readOnly = false, Property::MiscValueCallback miscCallback = Property::MiscValueCallback())
+				: Property(name, readOnly, miscCallback)
 				, m_value(value)
 			{
 			}

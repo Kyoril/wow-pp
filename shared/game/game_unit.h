@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -331,9 +331,15 @@ namespace wowpp
 		/// Fired when some aura information was updated.
 		/// Parameters: Slot, Spell-ID, Duration (ms), Max Duration (ms)
 		boost::signals2::signal<void(UInt8, UInt32, Int32, Int32)> auraUpdated;
+		/// Fired when some aura information was updated on a target.
+		/// Parameters: Slot, Spell-ID, Duration (ms), Max Duration (ms)
+		boost::signals2::signal<void(UInt64, UInt8, UInt32, Int32, Int32)> targetAuraUpdated;
 		/// Fired when the unit should be teleported. This event is only fired when the unit changes world.
 		/// Parameters: Target Map, X, Y, Z, O
 		boost::signals2::signal<void(UInt16, float, float, float, float)> teleport;
+		/// Fired when hit by any direct damage (excluding dots).
+		/// Parameters: school, &attacker
+		boost::signals2::signal<void(UInt8, GameUnit&)> damageHit;
 
 	public:
 
@@ -414,11 +420,22 @@ namespace wowpp
 		/// @param amount The value amount.
 		/// @param apply Whether to apply or remove the provided amount.
 		void updateModifierValue(UnitMods mod, UnitModType type, float amount, bool apply);
-		/// Deals damage to this unit.
+		/// Deals damage to this unit. Does not work on dead units!
 		/// @param damage The damage value to deal.
 		/// @param school The damage school mask.
-		/// @param attacker The attacking unit.
-		void dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker);
+		/// @param attacker The attacking unit or nullptr, if unknown. If nullptr, no threat will be generated.
+		/// @param noThreat If set to true, no threat will be generated from this damage.
+		void dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, bool noThreat = false);
+		/// Heals this unit. Does not work on dead units! Use the revive method for this one.
+		/// @param amount The amount of damage to heal.
+		/// @param healer The healing unit or nullptr, if unknown. If nullptr, no threat will be generated.
+		/// @param noThreat If set to true, no threat will be generated.
+		void heal(UInt32 amount, GameUnit *healer, bool noThreat = false);
+		/// Revives this unit with the given amount of health and mana. Does nothing if the unit is alive.
+		/// @param health The new health value of this unit.
+		/// @param mana The new mana value of this unit. If set to 0, mana won't be changed. If unit does not use
+		///             mana as it's resource, this value is ignored.
+		void revive(UInt32 health, UInt32 mana);
 		/// Rewards experience points to this unit.
 		/// @param experience The amount of experience points to be added.
 		virtual void rewardExperience(GameUnit *victim, UInt32 experience);
@@ -426,8 +443,28 @@ namespace wowpp
 		AuraContainer &getAuras() { return m_auras; }
 		/// 
 		bool isAlive() const { return (getUInt32Value(unit_fields::Health) != 0); }
+		/// Determines whether this unit is actually in combat with at least one other unit.
+		virtual bool isInCombat() const = 0;
+
+		bool isImmune(UInt8 school);
+		float getMissChance(GameUnit &caster, GameUnit &target);
+		float getDodgeChance(GameUnit &caster, GameUnit &target);
+		float getParryChance(GameUnit &caster, GameUnit &target);
+		float getGlancingChance(GameUnit &caster, GameUnit &target);
+		float getBlockChance(GameUnit &target);
+		float getCrushChance(GameUnit &caster, GameUnit &target);
+		float getCritChance(GameUnit &caster, GameUnit &target);
+		UInt32 getAttackPower(GameUnit &caster);
+		UInt32 getAttackBonusPct(GameUnit &caster);
+		UInt32 getAttackPointsTotal(UInt32 attackPower, UInt32 bonusPct);
+		UInt32 consumeAbsorb(UInt32 damage, UInt8 school, GameUnit &target);
+		virtual bool canBlock() const = 0;
+		virtual bool canParry() const = 0;
+		virtual bool canDodge() const = 0;
 
 		virtual void addThreat(GameUnit &threatening, float threat);
+		virtual void resetThreat();
+		virtual void resetThreat(GameUnit &threatening);
 
 		/// Calculates the stat based on the specified modifier.
 		static UInt8 getStatByUnitMod(UnitMods mod);

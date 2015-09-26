@@ -38,6 +38,7 @@ CREATE TABLE `character` (
   `bytes2` int(10) unsigned NOT NULL DEFAULT '0',
   `flags` int(10) unsigned NOT NULL DEFAULT '0',
   `at_login` int(11) unsigned NOT NULL,
+  `explored_zones` longtext,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
 

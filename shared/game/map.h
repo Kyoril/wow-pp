@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -75,6 +75,9 @@ namespace wowpp
 	struct MapDataTile final
 	{
 		MapAreaChunk areas;
+		MapHeightChunk heights;
+
+		~MapDataTile() {}
 	};
 
 	/// This class represents a map with additional geometry and navigation data.
@@ -91,11 +94,15 @@ namespace wowpp
 
 		/// Tries to get a specific data tile if it's loaded.
 		MapDataTile *getTile(const TileIndex2D &position);
+		
+		float getHeightAt(float x, float y);
 
 	private:
 
 		const MapEntry &m_entry;
 		const boost::filesystem::path m_dataPath;
-		Grid<MapDataTile> m_tiles;
+		// Note: We use a pointer here, because we don't need to load ALL height data 
+		// of all tiles, and Grid allocates them immediatly.
+		Grid<std::shared_ptr<MapDataTile>> m_tiles;
 	};
 }

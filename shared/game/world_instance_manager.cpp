@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -24,6 +24,7 @@
 #include "common/vector.h"
 #include "solid_visibility_grid.h"
 #include "log/default_log_levels.h"
+#include "tiled_unit_finder.h"
 #include "universe.h"
 #include <cassert>
 
@@ -58,8 +59,9 @@ namespace wowpp
 		std::unique_ptr<WorldInstance> instance(new WorldInstance(
 			*this,
 			m_universe,
-			map, 
-			instanceId, 
+			map,
+			instanceId,
+			std::unique_ptr<UnitFinder>(new TiledUnitFinder(map, 33.3333f)),
 			std::unique_ptr<VisibilityGrid>(new SolidVisibilityGrid(TileIndex2D(64, 64))),
 			m_objectIdGenerator,
 			std::bind(&RaceEntryManager::getById, &m_project.races, std::placeholders::_1),

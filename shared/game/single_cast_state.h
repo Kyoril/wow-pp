@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -55,7 +55,13 @@ namespace wowpp
 
 		bool consumePower();
 		void applyAllEffects();
+                bool doesSpellHit(const SpellEntry::Effect &effect, GameUnit &caster, GameUnit &target);
+                UInt8 getResiPercentage(const SpellEntry::Effect &effect, GameUnit &caster, GameUnit &target);
 		Int32 calculateEffectBasePoints(const SpellEntry::Effect &effect);
+                UInt32 getSpellPower(const SpellEntry::Effect &effect, GameUnit &caster);
+                UInt32 getSpellBonusPct(const SpellEntry::Effect &effect, GameUnit &caster);
+                UInt32 getSpellPointsTotal(const SpellEntry::Effect &effect, UInt32 spellPower, UInt32 bonusPct);
+                float getCritFactor(const SpellEntry::Effect &effect, GameUnit &caster, GameUnit &target);
 		void spellEffectTeleportUnits(const SpellEntry::Effect &effect);
 		void spellEffectSchoolDamage(const SpellEntry::Effect &effect);
 		void spellEffectHeal(const SpellEntry::Effect &effect);

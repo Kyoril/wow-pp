@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -44,6 +44,7 @@ namespace wowpp
 		, scale(1.0f)
 		, allianceFactionID(0)
 		, hordeFactionID(0)
+		, type(0)
 		, family(0)
 		, regeneratesHealth(true)
 		, npcFlags(0)
@@ -66,6 +67,8 @@ namespace wowpp
 		, mainHand(nullptr)
 		, offHand(nullptr)
 		, ranged(nullptr)
+		, attackPower(0)
+		, rangedAttackPower(0)
 	{
 		resistances.fill(0);
 	}
@@ -141,11 +144,11 @@ namespace wowpp
 		wrapper.table.tryGetInteger("min_loot_gold", minLootGold);
 		wrapper.table.tryGetInteger("max_loot_gold", maxLootGold);
 		MIN_MAX_CHECK(minLootGold, maxLootGold);
+		wrapper.table.tryGetInteger("type", type);
 		wrapper.table.tryGetInteger("family", family);
 		wrapper.table.tryGetInteger("min_xp", xpMin);
 		wrapper.table.tryGetInteger("max_xp", xpMax);
 		MIN_MAX_CHECK(xpMin, xpMax);
-
 		UInt32 eqMain = 0, eqOff = 0, eqRange = 0;
 		wrapper.table.tryGetInteger("eq_main_hand", eqMain);
 		wrapper.table.tryGetInteger("eq_off_hand", eqOff);
@@ -161,7 +164,8 @@ namespace wowpp
 				return true;
 			});
 		}
-
+		wrapper.table.tryGetInteger("atk_power", attackPower);
+		wrapper.table.tryGetInteger("rng_atk_power", rangedAttackPower);
 #undef MIN_MAX_CHECK
 
 		return true;
@@ -197,12 +201,15 @@ namespace wowpp
 		if (unitClass != 0) context.table.addKey("unit_class", unitClass);
 		if (minLootGold != 0) context.table.addKey("min_loot_gold", minLootGold);
 		if (maxLootGold != 0) context.table.addKey("max_loot_gold", maxLootGold);
+		if (type != 0) context.table.addKey("type", type);
 		if (family != 0) context.table.addKey("family", family);
 		if (xpMin != 0) context.table.addKey("min_xp", xpMin);
 		if (xpMax != 0) context.table.addKey("max_xp", xpMax);
 		if (mainHand != 0) context.table.addKey("eq_main_hand", mainHand->id);
 		if (offHand != 0) context.table.addKey("eq_off_hand", offHand->id);
 		if (ranged != 0) context.table.addKey("eq_ranged", ranged->id);
+		if (attackPower != 0) context.table.addKey("atk_power", attackPower);
+		if (rangedAttackPower != 0) context.table.addKey("rng_atk_power", rangedAttackPower);
 
 		if (!triggers.empty())
 		{

@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -126,7 +126,11 @@ namespace wowpp
 		//For BC
 		HMACHash cryptKey;
 		crypt.generateKey(cryptKey, m_sessionKey);
+#if SUPPORTED_CLIENT_BUILD >= 8606
 		crypt.setKey(cryptKey.data(), cryptKey.size());
+#else
+		crypt.setKey(m_sessionKey.asByteArray().data(), 40);
+#endif
 		crypt.init();
 
 		// Send response code: AuthOk
@@ -363,9 +367,8 @@ namespace wowpp
 			return;
 		}
 
-		// Check if the client version is valid: At the moment, we only support
-		// burning crusade (2.4.3)
-		if (clientBuild != 8606)
+		// Check if the client version is valid (defined in CMake)
+		if (clientBuild != SUPPORTED_CLIENT_BUILD)
 		{
 			//TODO Send error result
 			WLOG("Client " << m_address << " tried to login with unsupported client build " << clientBuild);
@@ -1330,7 +1333,43 @@ namespace wowpp
 		if (!name.empty())
 			capitalize(name);
 
-		DLOG("TODO: Player " << m_accountName << " wants to add " << name << " to his ignore list");
+        //DLOG("TODO: Player " << m_accountName << " wants to add " << name << " to his ignore list");
+
+        // Find the character details
+        game::CharEntry ignoredChar;
+        if (!m_database.getCharacterByName(name, ignoredChar))
+        {
+            WLOG("Could not find that character");
+            return;
+        }
+
+        // Create the characters guid value
+        UInt64 characterGUID = createRealmGUID(ignoredChar.id, m_loginConnector.getRealmID(), guid_type::Player);
+
+        // Fill ignored info
+        game::SocialInfo info;
+        info.flags = game::social_flag::Ignored;
+        info.area = ignoredChar.zoneId;
+        info.level = ignoredChar.level;
+        info.class_ = ignoredChar.class_;
+
+        //result
+        game::FriendResult result = m_social->addToSocialList(characterGUID, true);
+
+        if(m_characterId != characterGUID)
+        {
+            if (!m_database.addCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(info.flags), ""))
+            {
+                result = game::friend_result::DatabaseError;
+            }
+        }
+        else
+        {
+            result = game::friend_result::IgnoreSelf;
+        }
+
+        sendPacket(
+            std::bind(game::server_write::friendStatus, std::placeholders::_1, characterGUID, result, std::cref(info)));
 	}
 
 	void Player::handleDeleteIgnore(game::IncomingPacket &packet)

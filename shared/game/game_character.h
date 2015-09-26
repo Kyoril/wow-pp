@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -525,10 +525,13 @@ namespace wowpp
 		GameItem *getItemByPos(UInt8 bag, UInt8 slot) const;
 		/// @copydoc GameUnit::rewardExperience()
 		void rewardExperience(GameUnit *victim, UInt32 experience) override;
-
 		GroupUpdateFlags getGroupUpdateFlags() const { return m_groupUpdateFlags; }
 		void modifyGroupUpdateFlags(GroupUpdateFlags flags, bool apply);
 		void clearGroupUpdateFlags() { m_groupUpdateFlags = group_update_flags::None; }
+		bool isInCombat() const override;
+		bool canBlock() const override;
+		bool canParry() const override;
+		bool canDodge() const override;
 
 	protected:
 
@@ -550,6 +553,8 @@ namespace wowpp
 		UInt8 m_comboPoints;
 		float m_manaRegBase;
 		GroupUpdateFlags m_groupUpdateFlags;
+		bool m_canBlock;	// Set by spell
+		bool m_canParry;	// Set by spell
 	};
 
 	io::Writer &operator << (io::Writer &w, GameCharacter const& object);

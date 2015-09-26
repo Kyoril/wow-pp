@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -215,10 +215,8 @@ namespace wowpp
 
 		SHA1Hash hash;
 
-		// Check if the client version is valid: At the moment, we only support
-		// vanilla wow (1.12.X)
-		//if (m_build != 5595 && m_build != 5875 && m_build != 6005)
-		if (m_build != 8606)
+		// Check if the client version is valid (SUPPORTED_CLIENT_BUILD is set in CMake)
+		if (m_build != SUPPORTED_CLIENT_BUILD)
 		{
 			// Send failure and stop here
 			WLOG("Player " << m_address << " tried to login with unsupported client build (" << m_build << ")");

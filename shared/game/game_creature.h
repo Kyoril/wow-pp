@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -23,6 +23,7 @@
 
 #include "game_unit.h"
 #include "data/unit_entry.h"
+#include "unit_watcher.h"
 #include <boost/signals2.hpp>
 
 namespace wowpp
@@ -65,9 +66,18 @@ namespace wowpp
 
 		const String &getName() const override;
 
+		void updateVictim();
 		void addThreat(GameUnit &threatening, float threat) override;
-
+		void resetThreat() override;
+		void resetThreat(GameUnit &threatening) override;
 		void setVirtualItem(UInt32 slot, const ItemEntry *item);
+		bool isInCombat() const override;
+
+		bool canBlock() const override;
+		bool canParry() const override;
+		bool canDodge() const override;
+
+		void updateDamage() override;
 
 	protected:
 
@@ -82,6 +92,7 @@ namespace wowpp
 		const UnitEntry &m_originalEntry;
 		const UnitEntry *m_entry;
 		ThreatList m_threat;
+		std::unique_ptr<UnitWatcher> m_aggroWatcher;
 	};
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel);

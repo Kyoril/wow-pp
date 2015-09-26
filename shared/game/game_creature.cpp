@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -23,6 +23,10 @@
 #include "data/trigger_entry.h"
 #include "data/item_entry.h"
 #include "world_instance.h"
+#include "tiled_unit_watcher.h"
+#include "unit_finder.h"
+#include "each_tile_in_sight.h"
+#include "binary_io/vector_sink.h"
 
 namespace wowpp
 {
@@ -37,6 +41,54 @@ namespace wowpp
 		, m_originalEntry(entry)
 		, m_entry(nullptr)
 	{
+		// TODO: Put the code below into an AI class
+		// This can only be executed when the unit is spawned (so that it is added to a world instance)
+		spawned.connect([this]()
+		{
+			float x, y, z, o;
+			this->getLocation(x, y, z, o);
+
+			Circle circle(x, y, 20.0f);
+			m_aggroWatcher = m_worldInstance->getUnitFinder().watchUnits(circle);
+			m_aggroWatcher->visibilityChanged.connect([this](GameUnit& unit, bool isVisible) -> bool
+			{
+				if (&unit == this)
+				{
+					return false;
+				}
+
+				if (!isAlive())
+				{
+					return false;
+				}
+
+				if (unit.getTypeId() == object_type::Character)
+				{
+					if (isVisible)
+					{
+						// We ignore new attack targets if we already are in combat
+						if (isInCombat())
+							return false;
+
+						// TODO: Determine whether the unit is hostile and we should attack that unit
+
+						// Start attacking that unit
+						addThreat(unit, 0.0001f);
+						return true;
+					}
+					else
+					{
+						// Stop attacking that target.
+						resetThreat(unit);
+						return false;
+					}
+				}
+
+				return false;
+			});
+
+			m_aggroWatcher->start();
+		});
 	}
 
 	void GameCreature::initialize()
@@ -87,6 +139,8 @@ namespace wowpp
 		setUInt32Value(unit_fields::NpcFlags, entry.npcFlags);
 		setByteValue(unit_fields::Bytes2, 1, 16);
 		setByteValue(unit_fields::Bytes2, 0, 1);		// Sheath State: Melee weapon
+		setUInt32Value(unit_fields::AttackPower, entry.attackPower);
+		setUInt32Value(unit_fields::RangedAttackPower, entry.rangedAttackPower);
 		setFloatValue(unit_fields::MinDamage, entry.minMeleeDamage);
 		setFloatValue(unit_fields::MaxDamage, entry.maxMeleeDamage);
 		setUInt32Value(unit_fields::BaseAttackTime, entry.meleeBaseAttackTime);
@@ -198,6 +252,12 @@ namespace wowpp
 
 	void GameCreature::addThreat(GameUnit &threatening, float threat)
 	{
+		// Can't be threatened by ourself
+		if (&threatening == this)
+		{
+			return;
+		}
+
 		if (!isAlive())
 		{
 			// We are dead, so we can't have threat
@@ -216,45 +276,27 @@ namespace wowpp
 		float &curThreat = m_threat[guid];
 		curThreat += threat;
 
-		GameUnit *newVictim = &threatening;
-		float maxThreat = -1.0;
+		updateVictim();
+	}
 
-		for (auto it : m_threat)
-		{
-			if (it.second > maxThreat)
-			{
-				// Try to find unit
-				newVictim = dynamic_cast<GameUnit*>(world->findObjectByGUID(it.first));
-				if (newVictim)
-				{
-					maxThreat = curThreat;
-				}
-			}
-		}
+	void GameCreature::resetThreat()
+	{
+		m_threat.clear();
 
-		if (newVictim &&
-			newVictim != getVictim())
-		{
-			if (!getVictim())
-			{
-				// Aggro event
-				auto it = m_entry->triggersByEvent.find(trigger_event::OnAggro);
-				if (it != m_entry->triggersByEvent.end())
-				{
-					for (const auto *trigger : it->second)
-					{
-						trigger->execute(*trigger, this);
-					}
-				}
-			}
+		// We have no more targets
+		stopAttack();
+	}
 
-			// New target to attack
-			startAttack(*newVictim);
-		}
-		else if (!newVictim)
+	void GameCreature::resetThreat(GameUnit &threatening)
+	{
+		auto it = m_threat.find(threatening.getGuid());
+		if (it != m_threat.end())
 		{
-			// No target any more
-			stopAttack();
+			// Remove from the threat list
+			m_threat.erase(it);
+
+			// Update victim
+			updateVictim();
 		}
 	}
 
@@ -275,6 +317,108 @@ namespace wowpp
 		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 3, item->material);
 		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0, item->inventoryType);
 		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 1, item->sheath);
+	}
+
+	void GameCreature::updateVictim()
+	{
+		if (!isAlive())
+			return;
+
+		GameUnit *newVictim = nullptr;
+		float maxThreat = -1.0;
+
+		for (auto it : m_threat)
+		{
+			if (it.second > maxThreat)
+			{
+				// Try to find unit
+				newVictim = dynamic_cast<GameUnit*>(m_worldInstance->findObjectByGUID(it.first));
+				if (newVictim)
+				{
+					maxThreat = it.first;
+				}
+			}
+		}
+
+		if (newVictim &&
+			newVictim != getVictim())
+		{
+			if (!getVictim())
+			{
+				// Aggro event
+				auto it = m_entry->triggersByEvent.find(trigger_event::OnAggro);
+				if (it != m_entry->triggersByEvent.end())
+				{
+					for (const auto *trigger : it->second)
+					{
+						trigger->execute(*trigger, this);
+					}
+				}
+
+				// Send aggro message to all clients nearby (this will play the creatures aggro sound)
+				TileIndex2D tile;
+				if (getTileIndex(tile))
+				{
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+					game::Protocol::OutgoingPacket packet(sink);
+					game::server_write::aiReaction(packet, getGuid(), 2);
+
+					forEachSubscriberInSight(
+						m_worldInstance->getGrid(), 
+						tile,
+						[&packet, &buffer](ITileSubscriber &subscriber)
+					{
+						subscriber.sendPacket(packet, buffer);
+					});
+				}
+			}
+
+			// New target to attack
+			startAttack(*newVictim);
+		}
+		else if (!newVictim)
+		{
+			// No target any more
+			stopAttack();
+		}
+	}
+
+	bool GameCreature::isInCombat() const
+	{
+		return !m_threat.empty();
+	}
+
+	bool GameCreature::canBlock() const
+	{
+		const UInt32 slot = 1;
+		const auto invType = getByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0);
+
+		// Creatures can only block if they wield a shield
+		return (invType == inventory_type::Shield);
+	}
+
+	bool GameCreature::canParry() const
+	{
+		const UInt32 slot = 0;
+		const auto invType = getByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0);
+
+		return (invType != 0);
+	}
+
+	bool GameCreature::canDodge() const
+	{
+		return true;
+	}
+
+	void GameCreature::updateDamage()
+	{
+		const float att_speed = static_cast<float>(getUInt32Value(unit_fields::BaseAttackTime)) / 1000.0f;
+		const float base_value = static_cast<float>(getUInt32Value(unit_fields::AttackPower)) / 14.0f * att_speed;
+
+		const UnitEntry *entry = (m_entry ? m_entry : &m_originalEntry);
+		setFloatValue(unit_fields::MinDamage, base_value + entry->minMeleeDamage);
+		setFloatValue(unit_fields::MaxDamage, base_value + entry->maxMeleeDamage);
 	}
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)

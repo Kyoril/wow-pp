@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -106,6 +106,12 @@ namespace wowpp
 
 				// Notify caster
 				m_owner.auraUpdated(newSlot, aura->getSpell().id, aura->getSpell().duration, aura->getSpell().maxDuration);
+
+				if (aura->getCaster())
+				{
+					aura->getCaster()->targetAuraUpdated(m_owner.getGuid(), newSlot,
+						aura->getSpell().id, aura->getSpell().duration, aura->getSpell().maxDuration);
+				}
 			}
 		}
 
@@ -190,7 +196,7 @@ namespace wowpp
 	{
 		size_t index = 0;
 		auto it = m_auras.begin();
-		do 
+		while (it != m_auras.end())
 		{
 			if ((*it)->getSpell().id == spellId)
 			{
@@ -200,7 +206,7 @@ namespace wowpp
 			{
 				++index; ++it;
 			}
-		} while (it != m_auras.end());
+		}
 	}
 
 	boost::optional<std::size_t> findAuraInstanceIndex(AuraContainer &instances, Aura &instance)

@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -605,7 +605,7 @@ namespace wowpp
 
 		//TODO: Find creature object and check if it exists
 
-		//TODO: Find creature info by entry
+		// Find creature info by entry
 		const UnitEntry *unit = m_project.units.getById(creatureEntry);
 		if (unit)
 		{
@@ -772,18 +772,8 @@ namespace wowpp
 								}
 							});
 							
-							UInt32 health = sender.getCharacter()->getUInt32Value(unit_fields::Health);
-							if (health < damage)
-							{
-								health = 0;
-							}
-							else
-							{
-								health -= damage;
-							}
-							sender.getCharacter()->setUInt32Value(unit_fields::Health, health);
-
-							if (health == 0)
+							sender.getCharacter()->dealDamage(damage, 0, nullptr, true);
+							if (!sender.getCharacter()->isAlive())
 							{
 								WLOG("TODO: Durability damage!");
 								sender.sendProxyPacket(

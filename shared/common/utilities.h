@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -30,10 +30,11 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include "random.h"
 
 namespace wowpp
 {
-	static std::default_random_engine randomGenerator;
+	static RandomnessGenerator randomGenerator;
 
 	template <class T>
 	T limit(T value, T min, T max)

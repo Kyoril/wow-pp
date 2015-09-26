@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -69,26 +69,34 @@ namespace wowpp
 
 	protected:
 
-		/// 
+		/// 0
 		void handleModNull(bool apply);
-		/// 
-		void handleModStat(bool apply);
-		/// 
-		void handleModTotalStatPercentage(bool apply);
-		/// 
-		void handleModResistance(bool apply);
-		/// 
-		void handleModBaseResistancePct(bool apply);
-		/// 
+		/// 3
 		void handlePeriodicDamage(bool apply);
-		/// 
+		/// 8
 		void handlePeriodicHeal(bool apply);
-		/// 
-		void handleModShapeShift(bool apply);
-		/// 
+		/// 12
+		void handleModStun(bool apply);
+		/// 15
+		void handleDamageShield(bool apply);
+		/// 16
 		void handleModStealth(bool apply);
-		/// 
+		/// 22
+		void handleModResistance(bool apply);
+		/// 24
 		void handlePeriodicEnergize(bool apply);
+		/// 29
+		void handleModStat(bool apply);
+		/// 36
+		void handleModShapeShift(bool apply);
+                /// 42
+                void handleProcTriggerSpell(bool apply);
+                /// 118
+                void handleModHealingPct(bool apply);
+		/// 137
+		void handleModTotalStatPercentage(bool apply);
+		/// 142
+		void handleModBaseResistancePct(bool apply);
 
 	private:
 
@@ -96,6 +104,8 @@ namespace wowpp
 		void startPeriodicTimer();
 		/// Executed if the caster of this aura is about to despawn.
 		void onCasterDespawned(GameObject &object);
+		/// Executed if the caster suffer a direct damage hit
+		void onDamageHit(UInt8 school, GameUnit &attacker);
 		/// Executed when the aura expires.
 		void onExpired();
 		/// Executed when this aura ticks.
@@ -109,7 +119,7 @@ namespace wowpp
 
 		const SpellEntry &m_spell;
 		const SpellEntry::Effect &m_effect;
-		boost::signals2::scoped_connection m_casterDespawned, m_targetMoved, m_onExpire, m_onTick, m_onTargetKilled;
+		boost::signals2::scoped_connection m_casterDespawned, m_damageHit, m_targetMoved, m_onExpire, m_onTick, m_onTargetKilled;
 		GameUnit *m_caster;
 		GameUnit &m_target;
 		UInt32 m_tickCount;

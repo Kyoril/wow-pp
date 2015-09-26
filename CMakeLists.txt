@@ -2,8 +2,8 @@
 # This file is part of the WoW++ project.
 # 
 # This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU Genral Public License as published by
-# the Free Software Foudnation; either version 2 of the Licanse, or
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -30,6 +30,12 @@ project(WoW)
 		set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 		add_definitions("-D_ITERATOR_DEBUG_LEVEL=0")
 	endif(MSVC)
+	
+	set(WOWPP_SUPPORTED_CLIENT  "8606" CACHE STRING "This sets the supported client build. Currently, WoW++ supports build (2.0.12.)6546 and (2.4.3.)8606")
+	if (NOT WOWPP_SUPPORTED_CLIENT MATCHES "6546" AND NOT WOWPP_SUPPORTED_CLIENT MATCHES "8606")
+		message(FATAL_ERROR "Unsupported client build! WoW++ only supports build 6546 and 8606!")
+	endif()
+	add_definitions("-DSUPPORTED_CLIENT_BUILD=${WOWPP_SUPPORTED_CLIENT}")
 	
 	# Version header
 	if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)

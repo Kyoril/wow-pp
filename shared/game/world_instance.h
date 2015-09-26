@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -29,6 +29,7 @@
 #include "game/visibility_grid.h"
 #include "creature_spawner.h"
 #include "world_object_spawner.h"
+#include "unit_finder.h"
 #include "boost/signals2.hpp"
 #include "map.h"
 #include <memory>
@@ -78,6 +79,7 @@ namespace wowpp
 			Universe &universe,
 			const MapEntry &mapEntry,
 			UInt32 id, 
+			std::unique_ptr<UnitFinder> unitFinder,
 			std::unique_ptr<VisibilityGrid> visibilityGrid,
 			IdGenerator<UInt64> &objectIdGenerator,
 			DataLoadContext::GetRace getRace,
@@ -108,6 +110,8 @@ namespace wowpp
 		/// Gets the map id of this instance.
 		UInt32 getMapId() const { return m_mapEntry.id; }
 		/// 
+		UnitFinder &getUnitFinder() { return *m_unitFinder; }
+		/// 
 		const VisibilityGrid &getGrid() const { return *m_visibilityGrid; }
 		/// 
 		VisibilityGrid &getGrid() { return *m_visibilityGrid; }
@@ -121,13 +125,12 @@ namespace wowpp
 		GameObject *findObjectByGUID(UInt64 guid);
 		/// Updates this world instance. Should be called once per tick.
 		void update();
-
 		/// Gets the map data of this instance. Note that instances share the same map data to save
 		/// memory.
 		Map *getMapData() { return m_map; }
-
+		/// 
 		CreatureSpawner *findCreatureSpawner(const String &name);
-
+		/// 
 		WorldObjectSpawner *findObjectSpawner(const String &name);
 
 		/// Calls a specific callback method for every game object added to the world.
@@ -149,6 +152,7 @@ namespace wowpp
 
 		WorldInstanceManager &m_manager;
 		Universe &m_universe;
+		std::unique_ptr<UnitFinder> m_unitFinder;
 		std::unique_ptr<VisibilityGrid> m_visibilityGrid;
 		IdGenerator<UInt64> &m_objectIdGenerator;
 		GameObjectsById m_objectsById;

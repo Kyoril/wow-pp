@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -52,7 +52,9 @@ namespace wowpp
 		UInt32 femaleModel;
 		/// Unit scale factor. A value of 1.0 means 100%.
 		float scale;
-		/// Unit family type, like "Humanoid", "Animal" etc.
+		/// Unit type like "Humanoid" etc.
+		UInt32 type;
+		/// Unit family type
 		UInt32 family;
 		/// If true, this unit will regenerate health. Some units should not regenerate health, since it is
 		/// required to heal them as a quest target for example.
@@ -103,6 +105,10 @@ namespace wowpp
 		std::map<UInt32, std::vector<const TriggerEntry*>> triggersByEvent;
 		/// Equipment entries of this creature. Only has optical effect right now, maybe should also modify damage, attack speed and amor?
 		const ItemEntry *mainHand, *offHand, *ranged;
+		/// 
+		UInt32 attackPower;
+		/// 
+		UInt32 rangedAttackPower;
 
 		/// Default constructor.
 		UnitEntry();

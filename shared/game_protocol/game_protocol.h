@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -264,6 +264,7 @@ namespace wowpp
 				SpellCooldown				= 0x134,
 				CooldownEvent				= 0x135,
 				UpdateAuraDuration			= 0x137,
+				AiReaction					= 0x13C,
 				AttackStart					= 0x143,
 				AttackStop					= 0x144,
 				AttackSwingNotInRange		= 0x145,
@@ -288,6 +289,7 @@ namespace wowpp
 				SetRestStart				= 0x21E,
 				LoginVerifyWorld			= 0x236,
 				PeriodicAuraLog				= 0x24E,
+				SpellDamageShield			= 0x24F,
 				SpellNonMeleeDamageLog		= 0x250,
 				StandStateUpdate			= 0x29D,
 				SpellFailedOther			= 0x2A6,
@@ -1248,6 +1250,15 @@ namespace wowpp
 				bool critical
 				);
 
+			void spellDamageShield(
+				game::OutgoingPacket &out_packet,
+				UInt64 targetGuid,
+				UInt64 casterGuid,
+				UInt32 spellId,
+				UInt32 damage,
+				UInt32 dmgSchool
+				);
+
 			void periodicAuraLog(
 				game::OutgoingPacket &out_packet,
 				UInt64 targetGuid,
@@ -1472,6 +1483,12 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt32 areaId,
 				UInt32 experience
+				);
+
+			void aiReaction(
+				game::OutgoingPacket &out_packet,
+				UInt64 creatureGUID,
+				UInt32 reaction
 				);
 		};
 	}

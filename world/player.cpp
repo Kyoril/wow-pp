@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -72,6 +72,8 @@ namespace wowpp
 													std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, std::placeholders::_8));
 		m_onAuraUpdate = m_character->auraUpdated.connect(
 			std::bind(&Player::onAuraUpdated, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		m_onTargetAuraUpdate = m_character->targetAuraUpdated.connect(
+			std::bind(&Player::onTargetAuraUpdated, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 		m_onTeleport = m_character->teleport.connect(
 			std::bind(&Player::onTeleport, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 
@@ -503,6 +505,12 @@ namespace wowpp
 		auto *map = m_instance.getMapData();
 		if (map)
 		{
+			// Lets check our Z coordinate
+			float x, y, z, o;
+			m_character->getLocation(x, y, z, o);
+			float terrainHeight = map->getHeightAt(x, y);
+			//DLOG("Z Comparison for " << x << " " << y << ": " << z << " (Terrain: " << terrainHeight << ")");
+
 			// Get or load map tile
 			auto *tile = map->getTile(adtPos);
 			if (tile)
@@ -510,12 +518,17 @@ namespace wowpp
 				// Find local tile
 				auto &area = tile->areas.cellAreas[localPos[1] + localPos[0] * 16];
 				auto *areaZone = m_project.zones.getById(area.areaId);
-				if (!areaZone)
+				if (areaZone)
 				{
-					WLOG("Entering unknown area!");
-				}
-				else
-				{
+					// Update players zone field
+					auto *topLevelZone = areaZone;
+					while (topLevelZone->parent != nullptr)
+					{
+						topLevelZone = topLevelZone->parent;
+					}
+
+					m_character->setZone(topLevelZone->id);
+
 					// Exploration
 					UInt32 exploration = areaZone->explore;
 					int offset = exploration / 32;
@@ -901,6 +914,12 @@ namespace wowpp
 			std::bind(game::server_write::setExtraAuraInfo, std::placeholders::_1, getCharacterGuid(), slot, spellId, maxDuration, duration));
 	}
 
+	void Player::onTargetAuraUpdated(UInt64 target, UInt8 slot, UInt32 spellId, Int32 duration, Int32 maxDuration)
+	{
+		sendProxyPacket(
+			std::bind(game::server_write::setExtraAuraInfoNeedUpdate, std::placeholders::_1, target, slot, spellId, maxDuration, duration));
+	}
+
 	void Player::onTeleport(UInt16 map, float x, float y, float z, float o)
 	{
 		// If it's the same map, just send success notification
@@ -949,13 +968,13 @@ namespace wowpp
 			return;
 		}
 
-		if (m_character->getUInt32Value(unit_fields::Health) > 0)
+		if (m_character->isAlive())
 		{
 			return;
 		}
 
 		WLOG("TODO: repop at nearest graveyard!");
-		m_character->setUInt32Value(unit_fields::Health, m_character->getUInt32Value(unit_fields::MaxHealth));
+		m_character->revive(m_character->getUInt32Value(unit_fields::MaxHealth), 0);
 	}
 
 	void Player::setFallInfo(UInt32 time, float z)

@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -108,7 +108,7 @@ namespace
         header.offsAreaTable = sizeof(MapHeaderChunk);
         header.areaTableSize = sizeof(MapAreaChunk);
         header.offsHeight = header.offsAreaTable + header.areaTableSize;
-        header.heightSize = sizeof(float) * 145;		// 9*9 + 8*8
+		header.heightSize = sizeof(MapHeightChunk);
         
         // Area header
         MapAreaChunk areaHeader;
@@ -134,9 +134,14 @@ namespace
 		heightChunk.size = sizeof(MapHeightChunk) - 8;
 		for (size_t i = 0; i < 16 * 16; ++i)
 		{
-			const auto &chunk = adt.getMCNKChunk(i);
-			UInt32 offsMCVT = chunk.offsMCVT;
-			heightChunk.heights[i].fill(chunk.zpos);
+			const auto &mcnk = adt.getMCNKChunk(i);
+			const auto &mcvt = adt.getMCVTChunk(i);
+
+			size_t index = 0;
+			for (auto &height : mcvt.heights)
+			{
+				heightChunk.heights[i][index++] = mcnk.zpos + height;
+			}
 		}
         
 		// Write map header

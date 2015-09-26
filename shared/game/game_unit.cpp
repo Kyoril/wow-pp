@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -493,34 +493,93 @@ namespace wowpp
 				return;
 			}
 
+			bool result = false;
 			if (m_swingCallback)
 			{
 				// Execute onSwing callback (used by some melee spells which are executed on next attack swing and 
 				// replace auto attack)
-				m_swingCallback();
+				result = m_swingCallback();
 
 				// Reset attack swing callback
 				m_swingCallback = AttackSwingCallback();
 			}
-			else
+
+
+			if (!result)
 			{
 				TileIndex2D tileIndex;
 				if (!getTileIndex(tileIndex))
 				{
 					return;
 				}
-
+				
 				game::HitInfo hitInfo = game::hit_info::NormalSwing2;
+				game::VictimState victimState = game::victim_state::Normal;
+				float damageModifier = 1.0f;
+				UInt32 blockValue = 0;
+				Int32 damage = 0;
+				
+				//attack table calculation
+				std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
+				float hitTableRoll = hitTableDistribution(randomGenerator);
+				if ((hitTableRoll -= getMissChance(*this, *m_victim)) < 0.0f)
+				{
+					//missed
+					hitInfo = game::hit_info::Miss;
+					damageModifier = 0.0f;
+				}
+				else if ((hitTableRoll -= getDodgeChance(*this, *m_victim)) < 0.0f)
+				{
+					//dodged
+					victimState = game::victim_state::Dodge;
+					damageModifier = 0.0f;
+				}
+				else if (m_victim->canParry() && (hitTableRoll -= getParryChance(*this, *m_victim)) < 0.0f)
+				{
+					//parried
+					victimState = game::victim_state::Parry;
+					damageModifier = 0.0f;
+					//TODO accelerate next m_victim autohit
+				}
+				else if ((hitTableRoll -= getGlancingChance(*this, *m_victim)) < 0.0f)
+				{
+					//glanced
+					hitInfo = game::hit_info::Glancing;
+					damageModifier = 0.75f;	//TODO more detail
+				}
+				else if (m_victim->canBlock() && (hitTableRoll -= getBlockChance(*m_victim)) < 0.0f)
+				{
+					//blocked
+					victimState = game::victim_state::Blocks;
+					blockValue = 50;	//TODO get from m_victim
+				}
+				else if ((hitTableRoll -= getCrushChance(*this, *m_victim)) < 0.0f)
+				{
+					//crush
+					hitInfo = game::hit_info::Crushing;
+					damageModifier = 1.5f;
+				}
+				else if ((hitTableRoll -= getCritChance(*this, *m_victim)) < 0.0f)
+				{
+					//crit
+					hitInfo = game::hit_info::CriticalHit;
+					damageModifier = 2.0f;
+				}
 
-				// Calculate damage between minimum and maximum damage
-				std::uniform_real_distribution<float> distribution(getFloatValue(unit_fields::MinDamage), getFloatValue(unit_fields::MaxDamage) + 1.0f);
-				const UInt32 damage = calculateArmorReducedDamage(getLevel(), *m_victim, UInt32(distribution(randomGenerator)));
+				if (damageModifier > 0)
+				{
+					// Calculate damage between minimum and maximum damage
+					std::uniform_real_distribution<float> distribution(getFloatValue(unit_fields::MinDamage), getFloatValue(unit_fields::MaxDamage) + 1.0f);
+					damage = (calculateArmorReducedDamage(getLevel(), *m_victim, UInt32(distribution(randomGenerator))) * damageModifier) - blockValue;
+					if (damage < 0)	//avoid negative damage when blockValue is high
+						damage = 0;
+				}
 
 				// Notify all subscribers
 				std::vector<char> buffer;
 				io::VectorSink sink(buffer);
 				game::Protocol::OutgoingPacket packet(sink);
-				game::server_write::attackStateUpdate(packet, getGuid(), m_victim->getGuid(), hitInfo, damage, 0, 0, 0, game::victim_state::Normal, game::weapon_attack::BaseAttack, 1);
+				game::server_write::attackStateUpdate(packet, getGuid(), m_victim->getGuid(), hitInfo, damage, 0, 0, blockValue, victimState, game::weapon_attack::BaseAttack, 1);
 
 				// Notify all tile subscribers about this event
 				forEachSubscriberInSight(
@@ -552,8 +611,13 @@ namespace wowpp
 					setUInt32Value(unit_fields::Power2, currentRage);
 				}
 
-				// Deal damage
+				// Deal damage (Note: m_victim can become nullptr, if the target dies)
 				m_victim->dealDamage(damage, 0, this);
+				if (m_victim)
+				{
+					// Fire signal
+					m_victim->damageHit(game::spell_school::Normal, *this);
+				}
 			}
 		} while (false);
 
@@ -1059,7 +1123,7 @@ namespace wowpp
 		return unit_mods::Armor;
 	}
 	
-	void GameUnit::dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker)
+	void GameUnit::dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, bool noThreat/* = false*/)
 	{
 		UInt32 health = getUInt32Value(unit_fields::Health);
 		if (health == 0)
@@ -1083,16 +1147,126 @@ namespace wowpp
 		else
 		{
 			// Add threat
-			if (attacker)
+			if (attacker && !noThreat)
 			{
 				addThreat(*attacker, static_cast<float>(damage));
 			}
 		}
 	}
 
+	void GameUnit::heal(UInt32 amount, GameUnit *healer, bool noThreat /*= false*/)
+	{
+		UInt32 health = getUInt32Value(unit_fields::Health);
+		if (health == 0)
+		{
+			return;
+		}
+
+		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
+		const UInt32 healed = std::min(amount, maxHealth - health);
+		if (health + amount >= maxHealth)
+			health = maxHealth;
+		else
+			health += amount;
+		setUInt32Value(unit_fields::Health, health);
+
+		if (healer && !noThreat)
+		{
+			// TODO: Add threat to all units who are in fight with the healed target, but only
+			// if the units are not friendly towards the healer!
+		}
+	}
+
+	void GameUnit::revive(UInt32 health, UInt32 mana)
+	{
+		if (isAlive())
+			return;
+
+		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
+		if (health > maxHealth) health = maxHealth;
+		setUInt32Value(unit_fields::Health, health);
+
+		if (mana > 0)
+		{
+			const UInt32 maxMana = getUInt32Value(unit_fields::MaxPower1);
+			if (mana > maxMana) mana = maxMana;
+			setUInt32Value(unit_fields::Power1, mana);
+		}
+
+		startRegeneration();
+	}
+
 	void GameUnit::rewardExperience(GameUnit *victim, UInt32 experience)
 	{
 		// Nothing to do here
+	}
+	
+	bool GameUnit::isImmune(UInt8 school)
+	{
+		// TODO: check auras and mobtype
+		return false;
+	}
+	
+	float GameUnit::getMissChance(GameUnit &caster, GameUnit &target)
+	{
+		//TODO dual wield handling
+		float chance = 5.0f + (static_cast<float>(target.getLevel()) - static_cast<float>(caster.getLevel())) * 0.5f;
+		if (chance < 0.0f)
+			chance = 0.0f;
+		return chance;
+	}
+	
+	float GameUnit::getDodgeChance(GameUnit &caster, GameUnit &target)
+	{
+		return 5.0f;
+	}
+	
+    float GameUnit::getParryChance(GameUnit &caster, GameUnit &target)
+	{
+		return 5.0f;
+	}
+	
+	float GameUnit::getGlancingChance(GameUnit &caster, GameUnit &target)
+	{
+		if (caster.getTypeId() == wowpp::object_type::Character && target.getTypeId() == wowpp::object_type::Unit)
+		{
+			return 10.0f;
+		}
+		else
+		{
+			return 0.0f;
+		}
+	}
+	
+	float GameUnit::getBlockChance(GameUnit &target)
+	{
+		return 5.0f;
+	}
+	
+	float GameUnit::getCrushChance(GameUnit &caster, GameUnit &target)
+	{
+		if (caster.getTypeId() == wowpp::object_type::Unit)
+		{
+			//TODO only some boss mobs can crush
+			return 5.0f;
+		}
+		else
+		{
+			return 0.0f;
+		}
+	}
+	
+	float GameUnit::getCritChance(GameUnit &caster, GameUnit &target)
+	{
+		return 10.0f;
+	}
+	
+	/**
+     * @return absorbed damage
+     */
+	UInt32 GameUnit::consumeAbsorb(UInt32 damage, UInt8 school, GameUnit &target)
+	{
+		return 0;
 	}
 
 	void GameUnit::onKilled(GameUnit *killer)
@@ -1134,6 +1308,16 @@ namespace wowpp
 	void GameUnit::addThreat(GameUnit &threatening, float threat)
 	{
 		// Nothing to do here...
+	}
+
+	void GameUnit::resetThreat()
+	{
+
+	}
+
+	void GameUnit::resetThreat(GameUnit &threatening)
+	{
+
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)

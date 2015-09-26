@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -136,7 +136,6 @@ bool importEquipment(Project &project, MySQL::Connection &connection)
 
 	return true;
 }
-#endif
 
 bool importExplorationBaseXP(Project &project, MySQL::Connection &connection)
 {
@@ -174,6 +173,109 @@ bool importExplorationBaseXP(Project &project, MySQL::Connection &connection)
 	return true;
 }
 
+bool importCreatureTypes(Project &project, MySQL::Connection &connection)
+{
+	wowpp::MySQL::Select select(connection, "SELECT `entry`, `type` FROM `creature_template`;");
+	if (select.success())
+	{
+		wowpp::MySQL::Row row(select);
+		while (row)
+		{
+			UInt32 entry = 0, type = 0;
+			row.getField(0, entry);
+			row.getField(1, type);
+
+			// Find unit
+			auto *unitEntry = project.units.getEditableById(entry);
+			if (!unitEntry)
+			{
+				WLOG("Could not find entry for unit " << entry << " - skipping");
+			}
+			else
+			{
+				unitEntry->type = type;
+			}
+
+			row = row.next(select);
+		}
+	}
+	else
+	{
+		// There was an error
+		ELOG(connection.getErrorMessage());
+		return false;
+	}
+
+	return true;
+}
+#endif
+
+
+bool importCreatureAttackPower(Project &project, MySQL::Connection &connection)
+{
+	wowpp::MySQL::Select select(connection, "SELECT `entry`, `attackpower`, `rangedattackpower` FROM `creature_template`;");
+	if (select.success())
+	{
+		wowpp::MySQL::Row row(select);
+		while (row)
+		{
+			UInt32 entry = 0, atk = 0, rng_atk = 0;
+			row.getField(0, entry);
+			row.getField(1, atk);
+			row.getField(2, rng_atk);
+
+			// Find unit
+			auto *unitEntry = project.units.getEditableById(entry);
+			if (!unitEntry)
+			{
+				WLOG("Could not find entry for unit " << entry << " - skipping");
+			}
+			else
+			{
+				unitEntry->attackPower = atk;
+				unitEntry->rangedAttackPower = rng_atk;
+			}
+
+			row = row.next(select);
+		}
+	}
+	else
+	{
+		// There was an error
+		ELOG(connection.getErrorMessage());
+		return false;
+	}
+
+	return true;
+}
+
+bool fixCreatureDamage(Project &project)
+{
+	static std::vector<UInt32> excluded = { 16876, 19295, 16978, 19408, 19527, 16933, 16928, 16932, 16977, 16901, 19457, 19443, 17058, 16903, 19413, 19419, 26223, 16954, 26216, 19442, 19420, 18945, 18944, 16974, 19305, 16844, 19188, 19397, 22323, 19298, 19299, 21504, 18678, 16964, 19264, 19415, 19422, 16867, 19349, 16880, 19410, 16871, 16947, 16906, 18978, 19263, 16904, 20599, 16950, 16967, 16905, 19312, 16937, 17014, 16975, 19190, 19424, 16973, 19282, 19399, 19398, 16972, 18976, 18952, 16907, 18981, 16929, 18827, 17053, 16863, 19460, 16857, 17035, 17000, 19005, 24919, 16870, 16878, 19423, 16925, 17034, 19414, 18679, 18706, 17039, 19136, 19335, 19640, 19192, 16966, 16968, 19458, 19411, 17084, 16873, 19701, 22259, 19440, 16951, 20798, 22454, 19354, 16934, 16938, 20145, 18977, 21134, 16946, 22273, 18975, 16879, 19434, 19350, 19191, 20160, 16959, 19261, 18677, 19259, 17057, 18946, 24918, 22461, 16960, 19459, 18728, 19400, 26222, 19189, 16927, 17281, 17270, 17307, 17308, 17478, 17264, 17306, 17540, 17280, 17455, 17271, 17309, 17517, 17537, 17269, 17259 };
+	for (auto &unit : project.units.getTemplates())
+	{
+		bool isExcluded = false;
+		for (UInt32 &index : excluded)
+		{
+			if (unit->id == index)
+			{
+				isExcluded = true;
+				break;;
+			}
+		}
+
+		if (isExcluded)
+		{
+			continue;
+		}
+
+		unit->minMeleeDamage *= 1.1f;
+		unit->maxMeleeDamage *= 1.1f;
+	}
+
+	return true;
+}
+
 /// Procedural entry point of the application.
 int main(int argc, char* argv[])
 {
@@ -193,15 +295,16 @@ int main(int argc, char* argv[])
 	}
 
 	Project proj;
-	if (!proj.load("C:/Source/wowpp/data"))
+	if (!proj.load("C:/Source/wowpp-data"))
 	{
 		return 1;
 	}
 	
-	if (!importExplorationBaseXP(proj, connection))
+	fixCreatureDamage(proj);
+	/*if (!importCreatureAttackPower(proj, connection))
 	{
 		return 1;
-	}
+	}*/
 
 	proj.save("./test-data");
 

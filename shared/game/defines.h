@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -23,12 +23,24 @@
 
 #include "common/typedefs.h"
 #include "common/enum_strings.h"
+#include "common/vector.h"
 #include <map>
 
 namespace wowpp
 {
 	namespace game
 	{
+		typedef float Distance;
+		typedef Vector<Distance, 2> Point;
+		typedef Vector<Distance, 3> Position;
+
+		inline Vector<Distance, 2> planar(const Position &point)
+		{
+			return Vector<Distance, 2>(
+				point[0],
+				point[1]);
+		}
+
 		namespace gender
 		{
 			enum Type
@@ -885,6 +897,42 @@ namespace wowpp
 
 		typedef spell_dmg_class::Type SpellDmgClass;
 
+		namespace spell_school
+		{
+			enum Type
+			{
+				Normal		= 0,
+				Holy		= 1,
+				Fire		= 2,
+				Nature		= 3,
+				Frost		= 4,
+				Shadow		= 5,
+				Arcane		= 6
+			};
+		}
+
+		typedef spell_school::Type SpellSchool;
+
+		namespace spell_school_mask
+		{
+			enum Type
+			{
+				None		= 0x00,
+				Normal		= (1 << spell_school::Normal),
+				Holy		= (1 << spell_school::Holy),
+				Fire		= (1 << spell_school::Fire),
+				Nature		= (1 << spell_school::Nature),
+				Frost		= (1 << spell_school::Frost),
+				Shadow		= (1 << spell_school::Shadow),
+				Arcane		= (1 << spell_school::Arcane),
+				Spell		= (Fire | Nature | Frost | Shadow | Arcane),
+				Magic		= (Holy | Spell),
+				All			= (Normal | Magic)
+			};
+		}
+
+		typedef spell_school_mask::Type SpellSchoolMask;
+
 		namespace spell_prevention_type
 		{
 			enum Type
@@ -1624,6 +1672,110 @@ namespace wowpp
 				SlowClose				= 18,
 				/// 
 				Fishing					= 19
+			};
+		}
+
+		namespace inventory_type
+		{
+			enum Type
+			{
+				NonEquip		= 0,
+				Head			= 1,
+				Neck			= 2,
+				Shoulders		= 3,
+				Body			= 4,
+				Chest			= 5,
+				Waist			= 6,
+				Legs			= 7,
+				Feet			= 8,
+				Wrists			= 9,
+				Hands			= 10,
+				Finger			= 11,
+				Trinket			= 12,
+				Weapon			= 13,
+				Shield			= 14,
+				Ranged			= 15,
+				Cloak			= 16,
+				TwoHandedWeapon	= 17,
+				Bag				= 18,
+				Tabard			= 19,
+				Robe			= 20,
+				MainHandWeapon	= 21,
+				OffHandWeapon	= 22,
+				Holdable		= 23,
+				Ammo			= 24,
+				Thrown			= 25,
+				RangedRight		= 26,
+				Quiver			= 27,
+				Relic			= 28
+			};
+		}
+
+		namespace unit_flags
+		{
+			enum Type
+			{
+				/// 
+				Unknown_0			= 0x00000001,
+				/// Unit can't be attackaed.
+				NotAttackable		= 0x00000002,
+				/// 
+				DisableMovement		= 0x00000004,
+				/// Unit has pvp mode enabled, which will flag players for pvp if they attack or support this unit, too.
+				PvPMode				= 0x00000008,
+				/// 
+				Rename				= 0x00000010,
+				/// Doesn't take reagents for spells with attribute ex 5 "NoReatentWhileRep"
+				Preparation			= 0x00000020,
+				/// 
+				Unknown_1			= 0x00000040,
+				/// Must be compined with PvPMode flags. Makes this unit unattackable from pvp targets.
+				NotAttackablePvP	= 0x00000080,
+				/// Unit is not attackable while it is not in combat.
+				OOCNotAttackable	= 0x00000100,
+				/// Makes the unit non-aggressive, even when hostile to other units - until it's attackaed directly.
+				Passive				= 0x00000200,
+				/// Shows the looting animation.
+				Looting				= 0x00000400,
+				/// 
+				PetInCombat			= 0x00000800,
+				/// 
+				PvP					= 0x00001000,
+				/// 
+				Silenced			= 0x00002000,
+				/// 
+				Unknown_2			= 0x00004000,
+				/// 
+				Unknown_3			= 0x00008000,
+				/// Can't be targeted by a spell cast directly.
+				NoSpellTarget		= 0x00010000,
+				/// 
+				Pacified			= 0x00020000,
+				/// 
+				Stunned				= 0x00040000,
+				///
+				InCombat			= 0x00080000,
+				/// Disables casting at client side for spells which aren't allowed during flight.
+				TaxiFlight			= 0x00100000,
+				/// Disables melee spell casting.
+				Disarmed			= 0x00200000,
+				/// 
+				Confused			= 0x00400000,
+				/// 
+				Fleeing				= 0x00800000,
+				/// Used in spell Eye of the Beast for pets.
+				PlayerControlled	= 0x01000000,
+				/// 
+				NotSelectable		= 0x02000000,
+				/// 
+				Skinnable			= 0x04000000,
+				/// 
+				Mount				= 0x08000000,
+				/// 
+				Unknown_4			= 0x10000000,
+				Unknown_5			= 0x20000000,
+				Unknown_6			= 0x40000000,
+				Sheathe				= 0x80000000,
 			};
 		}
 	}

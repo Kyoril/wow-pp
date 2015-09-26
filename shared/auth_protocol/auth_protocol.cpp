@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -286,9 +286,13 @@ namespace wowpp
 			{
 				out_packet
 					<< io::write_range(hash.begin(), hash.end())
+#if SUPPORTED_CLIENT_BUILD >= 8606
 					<< io::write<NetUInt32>(0x00800000)
+#endif
 					<< io::write<NetUInt32>(0x00)
+#if SUPPORTED_CLIENT_BUILD >= 6546
 					<< io::write<NetUInt16>(0x00)
+#endif
 					;
 			}
 
@@ -338,19 +342,28 @@ namespace wowpp
 					<< io::write<NetUInt8>(0)									// C-Style string terminator
 					<< io::write<float>(0.0f)
 					<< io::write<NetUInt8>(AmountOfCharacters)
-					<< io::write<NetUInt8>(9)									// Timezone (Cfg_Categories.dbc)
-					<< io::write<NetUInt8>(0x2C)								// Build 8606+
+					<< io::write<NetUInt8>(1)									// Timezone (Cfg_Categories.dbc)
+#if SUPPORTED_CLIENT_BUILD >= 6546
+					<< io::write<NetUInt8>(0x2C)
+#endif
 					;
 
 				// Build 8606+
 				if (realm.flags & realm_flags::SpecifyBuild)
 				{
-					//TODO
 					out_packet
+#if SUPPORTED_CLIENT_BUILD == 6546
+						<< io::write<NetUInt8>(2)
+						<< io::write<NetUInt8>(0)
+						<< io::write<NetUInt8>(12)
+						<< io::write<NetUInt16>(6546)
+#else
 						<< io::write<NetUInt8>(2)
 						<< io::write<NetUInt8>(4)
 						<< io::write<NetUInt8>(3)
-						<< io::write<NetUInt16>(8606);
+						<< io::write<NetUInt16>(8606)
+#endif
+						;
 				}
 			}
 
