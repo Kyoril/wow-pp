@@ -73,7 +73,7 @@ namespace wowpp
 		if (!name.empty()) context.table.addKey("name", name);
 
 		// Write base reputation values
-		sff::write::Array<char> baseRepArray(context.table, "stats", sff::write::Comma);
+		sff::write::Array<char> baseRepArray(context.table, "base_rep", sff::write::Comma);
 		{
 			for (const auto &rep : baseReputation)
 			{
