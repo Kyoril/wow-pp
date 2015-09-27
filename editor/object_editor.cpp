@@ -28,6 +28,7 @@
 #include "ui_object_editor.h"
 #include "choose_trigger_dialog.h"
 #include "game/defines.h"
+#include "data/faction_template_entry.h"
 #include <QRegExp>
 #include <utility>
 
@@ -215,8 +216,8 @@ namespace wowpp
 			m_properties.push_back(PropertyPtr(new NumericProperty("Scale", FloatRef(unit->scale))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Male Model ID", UInt32Ref(unit->maleModel))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Female Model ID", UInt32Ref(unit->femaleModel))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Alliance Faction ID", UInt32Ref(unit->allianceFactionID))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Horde Faction ID", UInt32Ref(unit->hordeFactionID))));
+// 			m_properties.push_back(PropertyPtr(new NumericProperty("Alliance Faction ID", UInt32Ref(unit->allianceFaction->id))));
+// 			m_properties.push_back(PropertyPtr(new NumericProperty("Horde Faction ID", UInt32Ref(unit->hordeFaction->id))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Family", UInt32Ref(unit->family))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("NPC Flags", UInt32Ref(unit->npcFlags))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Unit Flags", UInt32Ref(unit->unitFlags), false, std::bind(&UnitFlagsMiscValue, std::cref(*unit)))));

@@ -63,8 +63,10 @@ namespace wowpp
 		/// Changes the creatures entry index. Remember, that the creature always has to
 		/// have a valid base entry.
 		void setEntry(const UnitEntry &entry);
-
+		/// 
 		const String &getName() const override;
+		/// 
+		const FactionTemplateEntry &getFactionTemplate() const override;
 
 		void updateVictim();
 		void addThreat(GameUnit &threatening, float threat) override;

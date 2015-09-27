@@ -26,6 +26,7 @@
 #include "binary_io/vector_sink.h"
 #include "game_protocol/game_protocol.h"
 #include "game_character.h"
+#include "data/faction_template_entry.h"
 #include <cassert>
 
 namespace wowpp
@@ -133,7 +134,7 @@ namespace wowpp
 		assert(m_raceEntry);
 
 		// Update faction template
-		setUInt32Value(unit_fields::FactionTemplate, m_raceEntry->factionID);	//UNIT_FIELD_FACTIONTEMPLATE
+		setUInt32Value(unit_fields::FactionTemplate, m_raceEntry->factionTemplate->id);	//UNIT_FIELD_FACTIONTEMPLATE
 	}
 
 	void GameUnit::classUpdated()
@@ -1318,6 +1319,12 @@ namespace wowpp
 	void GameUnit::resetThreat(GameUnit &threatening)
 	{
 
+	}
+
+	const FactionTemplateEntry & GameUnit::getFactionTemplate() const
+	{
+		assert(m_raceEntry);
+		return *m_raceEntry->factionTemplate;
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)

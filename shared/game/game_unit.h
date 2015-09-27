@@ -301,6 +301,8 @@ namespace wowpp
 
 	typedef base_mod_type::Type BaseModType;
 
+	struct FactionTemplateEntry;
+
 	/// Base class for all units in the world. A unit is an object with health, which can
 	/// be controlled, fight etc. This class will be inherited by the GameCreature and the
 	/// GameCharacter classes.
@@ -373,6 +375,8 @@ namespace wowpp
 		UInt8 getGender() const { return getByteValue(unit_fields::Bytes0, 2); }
 		/// Gets the current level.
 		UInt32 getLevel() const { return getUInt32Value(unit_fields::Level); }
+		/// Gets this units faction template.
+		virtual const FactionTemplateEntry &getFactionTemplate() const;
 
 		/// Gets the timer queue object needed for countdown events.
 		TimerQueue &getTimers() { return m_timers; }

@@ -25,6 +25,7 @@
 #include "data_load_context.h"
 #include "trigger_entry.h"
 #include "item_entry.h"
+#include "faction_template_entry.h"
 
 namespace wowpp
 {
@@ -42,8 +43,8 @@ namespace wowpp
 		, minRangedDamage(0)
 		, maxRangedDamage(0)
 		, scale(1.0f)
-		, allianceFactionID(0)
-		, hordeFactionID(0)
+		, allianceFaction(nullptr)
+		, hordeFaction(nullptr)
 		, type(0)
 		, family(0)
 		, regeneratesHealth(true)
@@ -136,8 +137,26 @@ namespace wowpp
 		wrapper.table.tryGetInteger("armor", armor);
 		wrapper.table.tryGetInteger("melee_attack_time", meleeBaseAttackTime);
 		wrapper.table.tryGetInteger("ranged_attack_time", rangedBaseAttackTime);
+		UInt32 allianceFactionID = 0;
 		wrapper.table.tryGetInteger("a_faction", allianceFactionID);
+		allianceFaction = context.getFactionTemplate(allianceFactionID);
+		if (!allianceFaction)
+		{
+			std::ostringstream strm;
+			strm << "Invalid alliance faction id " << allianceFactionID << " for unit " << id;
+			context.onError(strm.str());
+			return false;
+		}
+		UInt32 hordeFactionID = 0;
 		wrapper.table.tryGetInteger("h_faction", hordeFactionID);
+		hordeFaction = context.getFactionTemplate(hordeFactionID);
+		if (!hordeFaction)
+		{
+			std::ostringstream strm;
+			strm << "Invalid alliance faction id " << hordeFactionID << " for unit " << id;
+			context.onError(strm.str());
+			return false;
+		}
 		wrapper.table.tryGetInteger("unit_flags", unitFlags);
 		wrapper.table.tryGetInteger("npc_flags", npcFlags);
 		wrapper.table.tryGetInteger("unit_class", unitClass);
@@ -194,10 +213,10 @@ namespace wowpp
 		if (armor != 0) context.table.addKey("armor", armor);
 		if (meleeBaseAttackTime != 0) context.table.addKey("melee_attack_time", meleeBaseAttackTime);
 		if (rangedBaseAttackTime != 0) context.table.addKey("ranged_attack_time", rangedBaseAttackTime);
-		if (allianceFactionID != 0) context.table.addKey("a_faction", allianceFactionID);
-		if (hordeFactionID != 0) context.table.addKey("h_faction", hordeFactionID);
-		if (hordeFactionID != 0) context.table.addKey("unit_flags", unitFlags);
-		if (hordeFactionID != 0) context.table.addKey("npc_flags", npcFlags);
+		if (allianceFaction != 0) context.table.addKey("a_faction", allianceFaction->id);
+		if (hordeFaction != 0) context.table.addKey("h_faction", hordeFaction->id);
+		if (unitFlags != 0) context.table.addKey("unit_flags", unitFlags);
+		if (npcFlags != 0) context.table.addKey("npc_flags", npcFlags);
 		if (unitClass != 0) context.table.addKey("unit_class", unitClass);
 		if (minLootGold != 0) context.table.addKey("min_loot_gold", minLootGold);
 		if (maxLootGold != 0) context.table.addKey("max_loot_gold", maxLootGold);

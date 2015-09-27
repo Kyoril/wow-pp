@@ -39,6 +39,7 @@
 #include "trigger_entry.h"
 #include "zone_entry.h"
 #include "faction_entry.h"
+#include "faction_template_entry.h"
 #include <boost/noncopyable.hpp>
 #include <memory>
 
@@ -67,6 +68,7 @@ namespace wowpp
 	typedef MakeTemplateManager<TriggerEntry>::type TriggerEntryManager;
 	typedef MakeTemplateManager<ZoneEntry>::type ZoneEntryManager;
 	typedef MakeTemplateManager<FactionEntry>::type FactionEntryManager;
+	typedef MakeTemplateManager<FactionTemplateEntry>::type FactionTemplateEntryManager;
 
 	class Project : private boost::noncopyable
 	{
@@ -79,6 +81,7 @@ namespace wowpp
 		ClassEntryManager classes;
 		RaceEntryManager races;
 		FactionEntryManager factions;
+		FactionTemplateEntryManager factionTemplates;
 		CreatureTypeEntryManager creaturetypes;
 		UnitEntryManager units;
 		ItemEntryManager items;

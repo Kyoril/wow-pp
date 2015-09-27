@@ -24,6 +24,7 @@
 #include "templates/basic_template_save_context.h"
 #include "item_entry.h"
 #include "spell_entry.h"
+#include "faction_template_entry.h"
 #include "log/default_log_levels.h"
 
 namespace wowpp
@@ -40,7 +41,21 @@ namespace wowpp
 		}
 
 		wrapper.table.tryGetString("name", name);
+
+		UInt32 factionID = 0;
 		wrapper.table.tryGetInteger("faction", factionID);
+		context.loadLater.push_back([this, factionID, &context]() -> bool
+		{
+			factionTemplate = context.getFactionTemplate(factionID);
+			if (factionTemplate == nullptr)
+			{
+				ELOG("Could not find faction template for player race " << id << ": " << factionID);
+				return false;
+			}
+
+			return true;
+		});
+
 		wrapper.table.tryGetInteger("maleModel", maleModel);
 		wrapper.table.tryGetInteger("femaleModel", femaleModel);
 		wrapper.table.tryGetInteger("language", baseLanguage);
@@ -254,7 +269,7 @@ namespace wowpp
 		Super::saveBase(context);
 
 		if (!name.empty()) context.table.addKey("name", name);
-		context.table.addKey("faction", factionID);
+		if (factionTemplate) context.table.addKey("faction", factionTemplate->id);
 		context.table.addKey("maleModel", maleModel);
 		context.table.addKey("femaleModel", femaleModel);
 		context.table.addKey("language", baseLanguage);

@@ -65,6 +65,8 @@ namespace wowpp
 		context.getObject = std::bind(&ObjectEntryManager::getById, &objects, std::placeholders::_1);
 		context.getTrigger = std::bind(&TriggerEntryManager::getById, &triggers, std::placeholders::_1);
 		context.getZone = std::bind(&ZoneEntryManager::getById, &zones, std::placeholders::_1);
+		context.getFaction = std::bind(&FactionEntryManager::getById, &factions, std::placeholders::_1);
+		context.getFactionTemplate = std::bind(&FactionTemplateEntryManager::getById, &factionTemplates, std::placeholders::_1);
 
 		typedef ProjectLoader<DataLoadContext> RealmProjectLoader;
 		typedef RealmProjectLoader::ManagerEntry ManagerEntry;
@@ -78,6 +80,7 @@ namespace wowpp
 		managers.push_back(ManagerEntry("races", races, std::bind(&RaceEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("classes", classes, std::bind(&ClassEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("factions", factions, std::bind(&FactionEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+		managers.push_back(ManagerEntry("faction_templates", factionTemplates, std::bind(&FactionTemplateEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("levels", levels, std::bind(&LevelEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("creature_types", creaturetypes, std::bind(&CreatureTypeEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("units", units, std::bind(&UnitEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
@@ -126,6 +129,7 @@ namespace wowpp
 		managers.push_back(ManagerEntry("races", "races", races, &RaceEntry::save));
 		managers.push_back(ManagerEntry("classes", "classes", classes, &ClassEntry::save));
 		managers.push_back(ManagerEntry("factions", "factions", factions, &FactionEntry::save));
+		managers.push_back(ManagerEntry("faction_templates", "faction_templates", factionTemplates, &FactionTemplateEntry::save));
 		managers.push_back(ManagerEntry("creature_types", "creature_types", creaturetypes, &CreatureTypeEntry::save));
 		managers.push_back(ManagerEntry("items", "items", items, &ItemEntry::save));
 		managers.push_back(ManagerEntry("skills", "skills", skills, &SkillEntry::save));

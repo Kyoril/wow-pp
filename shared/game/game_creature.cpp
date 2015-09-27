@@ -22,11 +22,13 @@
 #include "game_creature.h"
 #include "data/trigger_entry.h"
 #include "data/item_entry.h"
+#include "data/faction_template_entry.h"
 #include "world_instance.h"
 #include "tiled_unit_watcher.h"
 #include "unit_finder.h"
 #include "each_tile_in_sight.h"
 #include "binary_io/vector_sink.h"
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -62,7 +64,15 @@ namespace wowpp
 					return false;
 				}
 
-				if (unit.getTypeId() == object_type::Character)
+				// Check if we are hostile against this unit
+				const auto &ourFaction = getFactionTemplate();
+				const auto &unitFaction = unit.getFactionTemplate();
+				if (ourFaction.isNeutralToAll())
+				{
+					return false;
+				}
+
+				if (ourFaction.isHostileTo(unitFaction))
 				{
 					if (isVisible)
 					{
@@ -82,6 +92,9 @@ namespace wowpp
 						resetThreat(unit);
 						return false;
 					}
+
+					// We don't care
+					return false;
 				}
 
 				return false;
@@ -125,7 +138,7 @@ namespace wowpp
 		setClass(entry.unitClass);
 		setUInt32Value(object_fields::Entry, entry.id);
 		setFloatValue(object_fields::ScaleX, entry.scale);
-		setUInt32Value(unit_fields::FactionTemplate, entry.hordeFactionID);
+		setUInt32Value(unit_fields::FactionTemplate, entry.hordeFaction->id);
 		setGender(static_cast<game::Gender>(gender));
 		setUInt32Value(unit_fields::DisplayId, (gender == game::gender::Male ? entry.maleModel : entry.femaleModel));
 		setUInt32Value(unit_fields::NativeDisplayId, (gender == game::gender::Male ? entry.maleModel : entry.femaleModel));
@@ -419,6 +432,21 @@ namespace wowpp
 		const UnitEntry *entry = (m_entry ? m_entry : &m_originalEntry);
 		setFloatValue(unit_fields::MinDamage, base_value + entry->minMeleeDamage);
 		setFloatValue(unit_fields::MaxDamage, base_value + entry->maxMeleeDamage);
+	}
+
+	const FactionTemplateEntry & GameCreature::getFactionTemplate() const
+	{
+		if (m_entry)
+		{
+			// TODO
+			assert(m_entry->allianceFaction);
+			return *m_entry->allianceFaction;
+		}
+		else
+		{
+			assert(m_originalEntry.allianceFaction);
+			return *m_originalEntry.allianceFaction;
+		}
 	}
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)
