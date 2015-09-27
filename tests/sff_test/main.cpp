@@ -34,6 +34,7 @@
 #include "mysql_wrapper/mysql_row.h"
 #include "mysql_wrapper/mysql_select.h"
 #include "mysql_wrapper/mysql_statement.h"
+#include "common/make_unique.h"
 using namespace wowpp;
 
 #if 0
@@ -276,6 +277,122 @@ bool fixCreatureDamage(Project &project)
 	return true;
 }
 
+bool importCreatureLoot(Project &project, MySQL::Connection &connection)
+{
+	// Clear unit loot
+	ILOG("Deleting old loot entries...");
+	for (auto &unit : project.units.getTemplates())
+	{
+		unit->unitLootEntry = nullptr;
+	}
+	project.unitLoot.clear();
+
+	UInt32 lastEntry = 0;
+	UInt32 lastGroup = 0;
+	UInt32 groupIndex = 0;
+
+	wowpp::MySQL::Select select(connection, "SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount`, `active` FROM `wowpp_creature_loot_template` WHERE `lootcondition` = 0 ORDER BY `entry`, `groupid`;");
+	if (select.success())
+	{
+		wowpp::MySQL::Row row(select);
+		while (row)
+		{
+			UInt32 entry = 0, itemId = 0, groupId = 0, minCount = 0, maxCount = 0, active = 1;
+			float dropChance = 0.0f;
+			row.getField(0, entry);
+			row.getField(1, itemId);
+			row.getField(2, dropChance);
+			row.getField(3, groupId);
+			row.getField(4, minCount);
+			row.getField(5, maxCount);
+			row.getField(6, active);
+
+			// Find referenced item
+			const auto *itemEntry = project.items.getById(itemId);
+			if (!itemEntry)
+			{
+				ELOG("Could not find referenced item " << itemId << " (referenced in creature loot entry " << entry << " - group " << groupId << ")");
+				row = row.next(select);
+				continue;
+			}
+
+			// Create a new loot entry
+			bool created = false;
+			if (entry > lastEntry)
+			{
+				std::unique_ptr<LootEntry> ptr = make_unique<LootEntry>();
+				ptr->id = entry;
+				project.unitLoot.add(std::move(ptr));
+
+				lastEntry = entry;
+				lastGroup = groupId;
+				groupIndex = 0;
+				created = true;
+			}
+
+			auto *lootEntry = project.unitLoot.getEditableById(entry);
+			if (!lootEntry)
+			{
+				// Error
+				ELOG("Error retrieving loot entry");
+				row = row.next(select);
+				continue;
+			}
+
+			if (created)
+			{
+				auto *unitEntry = project.units.getEditableById(entry);
+				if (!unitEntry)
+				{
+					WLOG("No unit with entry " << entry << " found - creature loot template will not be assigned!");
+				}
+				else
+				{
+					unitEntry->unitLootEntry = lootEntry;
+				}
+			}
+
+			// If there are no loot groups yet, create a new one
+			if (lootEntry->lootGroups.empty() || groupId > lastGroup)
+			{
+				lootEntry->lootGroups.push_back(LootGroup());
+				if (groupId > lastGroup)
+				{
+					lastGroup = groupId;
+					groupIndex++;
+				}
+			}
+
+			if (lootEntry->lootGroups.empty())
+			{
+				ELOG("Error retrieving loot group");
+				row = row.next(select);
+				continue;
+			}
+
+			LootGroup &group = lootEntry->lootGroups[groupIndex];
+
+			LootDefinition def;
+			def.item = itemEntry;
+			def.minCount = minCount;
+			def.maxCount = maxCount;
+			def.dropChance = dropChance;
+			def.isActive = (active != 0);
+			group.emplace_back(std::move(def));
+
+			row = row.next(select);
+		}
+	}
+	else
+	{
+		// There was an error
+		ELOG(connection.getErrorMessage());
+		return false;
+	}
+
+	return true;
+}
+
 /// Procedural entry point of the application.
 int main(int argc, char* argv[])
 {
@@ -285,7 +402,7 @@ int main(int argc, char* argv[])
 		std::ref(std::cout), std::placeholders::_1, wowpp::g_DefaultConsoleLogOptions));
 
 	// Database connection
-	MySQL::DatabaseInfo connectionInfo("127.0.0.1", 3306, "root", "", "tbcdb");
+	MySQL::DatabaseInfo connectionInfo("nagrand.eu", 3306, "wow-pp-dev", "nagrand.eu", "wow-pp-dev");
 	MySQL::Connection connection;
 	if (!connection.connect(connectionInfo))
 	{
@@ -300,11 +417,10 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	
-	fixCreatureDamage(proj);
-	/*if (!importCreatureAttackPower(proj, connection))
+	if (!importCreatureLoot(proj, connection))
 	{
 		return 1;
-	}*/
+	}
 
 	proj.save("./test-data");
 

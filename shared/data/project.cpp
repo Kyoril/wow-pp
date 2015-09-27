@@ -67,6 +67,7 @@ namespace wowpp
 		context.getZone = std::bind(&ZoneEntryManager::getById, &zones, std::placeholders::_1);
 		context.getFaction = std::bind(&FactionEntryManager::getById, &factions, std::placeholders::_1);
 		context.getFactionTemplate = std::bind(&FactionTemplateEntryManager::getById, &factionTemplates, std::placeholders::_1);
+		context.getUnitLoot = std::bind(&LootEntryManager::getById, &unitLoot, std::placeholders::_1);
 
 		typedef ProjectLoader<DataLoadContext> RealmProjectLoader;
 		typedef RealmProjectLoader::ManagerEntry ManagerEntry;
@@ -91,6 +92,7 @@ namespace wowpp
 		managers.push_back(ManagerEntry("area_triggers", areaTriggers, std::bind(&AreaTriggerEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("emotes", emotes, std::bind(&EmoteEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("zones", zones, std::bind(&ZoneEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+		managers.push_back(ManagerEntry("unit_loot", unitLoot, std::bind(&LootEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 
 		virtual_dir::FileSystemReader virtualDirectory(context.dataPath);
 		if (!RealmProjectLoader::load(
@@ -136,6 +138,7 @@ namespace wowpp
 		managers.push_back(ManagerEntry("area_triggers", "area_triggers", areaTriggers, &AreaTriggerEntry::save));
 		managers.push_back(ManagerEntry("emotes", "emotes", emotes, &EmoteEntry::save));
 		managers.push_back(ManagerEntry("zones", "zones", zones, &ZoneEntry::save));
+		managers.push_back(ManagerEntry("unit_loot", "unit_loot", unitLoot, &LootEntry::save));
 
 		if (!RealmProjectSaver::save(realmDataPath, managers))
 		{

@@ -94,6 +94,9 @@
             </sizepolicy>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_12">
+            <property name="spacing">
+             <number>9</number>
+            </property>
             <property name="leftMargin">
              <number>0</number>
             </property>
@@ -107,59 +110,78 @@
              <number>0</number>
             </property>
             <item>
-             <widget class="QGroupBox" name="groupBox_2">
+             <widget class="QTabWidget" name="tabWidget_2">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                <horstretch>1</horstretch>
-                <verstretch>1</verstretch>
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
                </sizepolicy>
               </property>
-              <property name="title">
-               <string>Trigger</string>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>180</height>
+               </size>
               </property>
-              <layout class="QVBoxLayout" name="verticalLayout_3" stretch="0,0">
-               <item>
-                <widget class="QListWidget" name="unitTriggerWidget">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_3">
-                 <item>
-                  <spacer name="horizontalSpacer">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>40</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="unitAddTriggerBtn">
-                   <property name="text">
-                    <string>Add</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="unitRemoveTriggerBtn">
-                   <property name="text">
-                    <string>Remove</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </item>
-              </layout>
+              <property name="currentIndex">
+               <number>0</number>
+              </property>
+              <widget class="QWidget" name="unitTriggerTab">
+               <attribute name="title">
+                <string>Trigger</string>
+               </attribute>
+               <layout class="QVBoxLayout" name="verticalLayout_3">
+                <item>
+                 <widget class="QListWidget" name="unitTriggerWidget">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_3">
+                  <item>
+                   <spacer name="horizontalSpacer">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="unitAddTriggerBtn">
+                    <property name="text">
+                     <string>Add</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="unitRemoveTriggerBtn">
+                    <property name="text">
+                     <string>Remove</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+               </layout>
+               <zorder>unitTriggerWidget</zorder>
+               <zorder>horizontalSpacer</zorder>
+               <zorder></zorder>
+              </widget>
+              <widget class="QWidget" name="unitLootTab">
+               <attribute name="title">
+                <string>Loot</string>
+               </attribute>
+              </widget>
              </widget>
             </item>
             <item>

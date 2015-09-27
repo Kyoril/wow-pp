@@ -63,6 +63,12 @@ namespace wowpp
 			}
 		}
 
+		void clear()
+		{
+			m_byId.clear();
+			m_templates.clear();
+		}
+
 		const Template *getById(Identifier id) const
 		{
 			const auto i = m_byId.find(id);

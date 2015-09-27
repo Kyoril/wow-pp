@@ -31,6 +31,7 @@ namespace wowpp
 	struct TriggerEntry;
 	struct ItemEntry;
 	struct FactionTemplateEntry;
+	struct LootEntry;
 
 	/// Stores creature related data.
 	struct UnitEntry : BasicTemplate<UInt32>
@@ -110,6 +111,8 @@ namespace wowpp
 		UInt32 attackPower;
 		/// 
 		UInt32 rangedAttackPower;
+		/// 
+		const LootEntry *unitLootEntry;
 
 		/// Default constructor.
 		UnitEntry();

@@ -40,6 +40,7 @@
 #include "zone_entry.h"
 #include "faction_entry.h"
 #include "faction_template_entry.h"
+#include "loot_entry.h"
 #include <boost/noncopyable.hpp>
 #include <memory>
 
@@ -69,6 +70,7 @@ namespace wowpp
 	typedef MakeTemplateManager<ZoneEntry>::type ZoneEntryManager;
 	typedef MakeTemplateManager<FactionEntry>::type FactionEntryManager;
 	typedef MakeTemplateManager<FactionTemplateEntry>::type FactionTemplateEntryManager;
+	typedef MakeTemplateManager<LootEntry>::type LootEntryManager;
 
 	class Project : private boost::noncopyable
 	{
@@ -91,6 +93,7 @@ namespace wowpp
 		EmoteEntryManager emotes;
 		TriggerEntryManager triggers;
 		ZoneEntryManager zones;
+		LootEntryManager unitLoot;
 
 	public:
 

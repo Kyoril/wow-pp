@@ -23,6 +23,7 @@
 
 #include "game_unit.h"
 #include "game_item.h"
+#include "defines.h"
 
 namespace wowpp
 {
@@ -432,6 +433,18 @@ namespace wowpp
 		};
 	}
 
+	struct FactionState
+	{
+		UInt32 id;
+		UInt32 listId;
+		UInt32 flags;
+		Int32 standing;
+		bool changed;
+	};
+
+	typedef std::map<UInt32, FactionState> FactionStateList;
+	typedef std::map<UInt32, game::ReputationRank> ForcedReactions;
+
 	typedef group_update_flags::Type GroupUpdateFlags;
 
 	struct SpellEntry;
@@ -555,6 +568,8 @@ namespace wowpp
 		GroupUpdateFlags m_groupUpdateFlags;
 		bool m_canBlock;	// Set by spell
 		bool m_canParry;	// Set by spell
+		FactionStateList m_factions;
+		ForcedReactions m_forcedReactions;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameCharacter const& object);

@@ -22,51 +22,41 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include "basic_template_load_context.h"
-#include "basic_template_save_context.h"
+#include "data_load_context.h"
+#include "templates/basic_template.h"
 
 namespace wowpp
 {
-	template <class Id>
-	class BasicTemplate
+	struct ItemEntry;
+
+	struct LootDefinition
 	{
-	public:
+		const ItemEntry *item;
+		UInt16 minCount;
+		UInt16 maxCount;
+		float dropChance;
+		bool isActive;
 
-		typedef Id Identifier;
-
-	public:
-
-		Identifier id;
-
-	public:
-
-		BasicTemplate()
+		LootDefinition()
+			: item(nullptr)
+			, minCount(1)
+			, maxCount(1)
+			, dropChance(0.0f)
+			, isActive(true)
 		{
 		}
+	};
 
-		virtual ~BasicTemplate()
-		{
-		}
+	typedef std::vector<LootDefinition> LootGroup;
 
-		bool loadBase(BasicTemplateLoadContext &context, const ReadTableWrapper &wrapper)
-		{
-			if (!wrapper.table.tryGetInteger("id", id))
-			{
-				context.onError("This object has no id");
-				return false;
-			}
+	struct LootEntry : BasicTemplate<UInt32>
+	{
+		typedef BasicTemplate<UInt32> Super;
 
-			return true;
-		}
+		std::vector<LootGroup> lootGroups;
 
-		void saveBase(BasicTemplateSaveContext &context) const
-		{
-			context.table.addKey("id", id);
-		}
-
-		virtual bool operator ==(const BasicTemplate &other) const
-		{
-			return (id == other.id);
-		}
+		LootEntry();
+		bool load(DataLoadContext &context, const ReadTableWrapper &wrapper);
+		void save(BasicTemplateSaveContext &context) const;
 	};
 }
