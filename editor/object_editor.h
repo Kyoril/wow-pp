@@ -50,6 +50,10 @@ namespace wowpp
 
 			explicit ObjectEditor(EditorApplication &app);
 
+		private:
+
+			void addLootItem(const LootDefinition &def);
+
 		private slots:
 
 			void on_unitFilter_editingFinished();
@@ -61,6 +65,7 @@ namespace wowpp
 			void on_unitPropertyWidget_doubleClicked(QModelIndex index);
 			void onSpellSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void onItemSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
+			void on_lootSimulatorButton_clicked();
 
 		private:
 				

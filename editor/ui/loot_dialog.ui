@@ -6,12 +6,16 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>296</width>
-    <height>286</height>
+    <width>313</width>
+    <height>336</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Loot Simulator</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../qrc/editor.qrc">
+    <normaloff>:/Trade_Engineering.png</normaloff>:/Trade_Engineering.png</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -37,6 +41,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../qrc/editor.qrc"/>
+ </resources>
  <connections/>
 </ui>

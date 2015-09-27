@@ -211,7 +211,6 @@ bool importCreatureTypes(Project &project, MySQL::Connection &connection)
 }
 #endif
 
-
 bool importCreatureAttackPower(Project &project, MySQL::Connection &connection)
 {
 	wowpp::MySQL::Select select(connection, "SELECT `entry`, `attackpower`, `rangedattackpower` FROM `creature_template`;");

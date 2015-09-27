@@ -26,6 +26,7 @@
 #include "numeric_editor.h"
 #include "min_max_editor.h"
 #include "ui_object_editor.h"
+#include "loot_dialog.h"
 #include "choose_trigger_dialog.h"
 #include "game/defines.h"
 #include "data/faction_template_entry.h"
@@ -167,6 +168,37 @@ namespace wowpp
 			}
 		}
 
+		void ObjectEditor::addLootItem(const LootDefinition &def)
+		{
+			QListWidgetItem *item = new QListWidgetItem(QString("%1").arg(def.item->name.c_str()), m_ui->lootView);
+			QColor textColor = QColor(Qt::white);
+			switch (def.item->quality)
+			{
+			case 0:
+				textColor = QColor(Qt::gray);
+				break;
+			case 1:
+				textColor = QColor(Qt::white);
+				break;
+			case 2:
+				textColor = QColor(Qt::green);
+				break;
+			case 3:
+				textColor = QColor(0, 114, 198);
+				break;
+			case 4:
+				textColor = QColor(Qt::magenta);
+				break;
+			case 5:
+				textColor = QColor(Qt::yellow);
+				break;
+			default:
+				textColor = QColor(Qt::red);
+				break;
+			}
+			item->setTextColor(textColor);
+		}
+
 		void ObjectEditor::onUnitSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
 		{
 			// Get the selected unit
@@ -198,6 +230,28 @@ namespace wowpp
 			m_selected = unit;
 			if (!unit)
 				return;
+
+			m_ui->lootView->clear();
+			if (!unit->unitLootEntry)
+			{
+				m_ui->lootLine->setText("- NO LOOT -");
+				m_ui->lootToolButton->setDisabled(true);
+				m_ui->lootSimulatorButton->setDisabled(true);
+			}
+			else
+			{
+				for (auto &group : unit->unitLootEntry->lootGroups)
+				{
+					for (auto &def : group)
+					{
+						addLootItem(def);
+					}
+				}
+
+				m_ui->lootLine->setText(QString("Loot Entry %1").arg(unit->unitLootEntry->id));
+				m_ui->lootToolButton->setDisabled(false);
+				m_ui->lootSimulatorButton->setDisabled(false);
+			}
 
 			// Add unit properties
 			m_properties.push_back(PropertyPtr(new NumericProperty("Entry", UInt32Ref(unit->id), true)));
@@ -467,5 +521,16 @@ namespace wowpp
 			}
 		}
 
+		void ObjectEditor::on_lootSimulatorButton_clicked()
+		{
+			if (!m_selected)
+				return;
+
+			if (!m_selected->unitLootEntry)
+				return;
+
+			LootDialog dialog(m_application.getProject(), *m_selected->unitLootEntry);
+			auto result = dialog.exec();
+		}
 	}
 }
