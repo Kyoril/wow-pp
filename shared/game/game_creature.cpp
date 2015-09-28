@@ -387,6 +387,34 @@ namespace wowpp
 				}
 			}
 
+			/* THIS WORKS! (kind of) */
+			TileIndex2D tile;
+			if (getTileIndex(tile))
+			{
+				float o;
+				Vector<float, 3> oldPosition;
+				getLocation(oldPosition[0], oldPosition[1], oldPosition[2], o);
+
+				Vector<float, 3> newPosition;
+				newVictim->getLocation(newPosition[0], newPosition[1], newPosition[2], o);
+
+				const float dist = getDistanceTo(*newVictim);
+				const float speed = 7.5f;
+
+				std::vector<char> buffer;
+				io::VectorSink sink(buffer);
+				game::Protocol::OutgoingPacket packet(sink);
+				game::server_write::monsterMove(packet, getGuid(), oldPosition, newPosition, (dist / speed) * 1000);
+
+				forEachSubscriberInSight(
+					m_worldInstance->getGrid(),
+					tile,
+					[&packet, &buffer](ITileSubscriber &subscriber)
+				{
+					subscriber.sendPacket(packet, buffer);
+				});
+			}
+
 			// New target to attack
 			startAttack(*newVictim);
 		}

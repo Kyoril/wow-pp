@@ -649,7 +649,7 @@ namespace wowpp
 
 				// Movement flags
 				out_packet
-					<< io::write<NetUInt32>(0x01)
+					<< io::write<NetUInt32>(256)
 					<< io::write<NetUInt32>(time)
 					<< io::write<NetUInt32>(1)				// One waypoint
 					<< io::write<float>(position[0])
