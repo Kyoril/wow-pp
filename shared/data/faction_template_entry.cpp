@@ -176,7 +176,7 @@ namespace wowpp
 			}
 		}
 
-		return ((friendMask & entry.selfMask) != 0) || ((selfMask && entry.friendMask) != 0);
+		return ((friendMask & entry.selfMask) != 0) || ((selfMask & entry.friendMask) != 0);
 	}
 
 	bool FactionTemplateEntry::isHostileTo(const FactionTemplateEntry &entry) const
@@ -202,7 +202,7 @@ namespace wowpp
 			}
 		}
 
-		return ((enemyMask & entry.selfMask) != 0) || ((selfMask && entry.enemyMask) != 0);
+		return ((enemyMask & entry.selfMask) != 0) || ((selfMask & entry.enemyMask) != 0);
 	}
 
 	bool FactionTemplateEntry::isHostileToPlayers() const
