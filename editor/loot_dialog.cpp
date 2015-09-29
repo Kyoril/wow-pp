@@ -56,9 +56,15 @@ namespace wowpp
 				std::uniform_real_distribution<float> lootDistribution(0.0f, 100.0f);
 				float groupRoll = lootDistribution(randomGenerator);
 
+				// We need to copy our loot groups here, because otherwise, we invalidate the 
+				// save state of our editor project here. On the world node however, we don't
+				// have to do this!
+				auto shuffled = group;
+				std::shuffle(shuffled.begin(), shuffled.end(), randomGenerator);
+
 				bool foundNonEqualChanced = false;
 				std::vector<const LootDefinition*> equalChanced;
-				for (auto &def : group)
+				for (auto &def : shuffled)
 				{
 					if (def.dropChance == 0.0f)
 					{
