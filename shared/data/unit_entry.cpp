@@ -180,8 +180,8 @@ namespace wowpp
 			context.loadLater.push_back([eqMain, eqOff, eqRange, &context, this]() -> bool
 			{
 				if (eqMain != 0) this->mainHand = context.getItem(eqMain);
-				if (eqOff != 0) this->mainHand = context.getItem(eqOff);
-				if (eqRange != 0) this->mainHand = context.getItem(eqRange);
+				if (eqOff != 0) this->offHand = context.getItem(eqOff);
+				if (eqRange != 0) this->ranged = context.getItem(eqRange);
 
 				return true;
 			});

@@ -158,12 +158,20 @@ namespace wowpp
 		setFloatValue(unit_fields::MaxDamage, entry.maxMeleeDamage);
 		setUInt32Value(unit_fields::BaseAttackTime, entry.meleeBaseAttackTime);
 
+		// Update power type
+		setByteValue(unit_fields::Bytes0, 3, power_type::Mana);
+		if (entry.maxLevelMana > 0)
+		{
+			setByteValue(unit_fields::Bytes1, 1, 0xEE);
+		}
+		else
+		{
+			setByteValue(unit_fields::Bytes1, 1, 0x00);
+		}
+
 		setVirtualItem(0, entry.mainHand);
 		setVirtualItem(1, entry.offHand);
 		setVirtualItem(2, entry.ranged);
-
-		if (entry.offHand) setUInt32Value(unit_fields::VirtualItemSlotDisplay + 1, entry.mainHand->displayId);
-		if (entry.ranged) setUInt32Value(unit_fields::VirtualItemSlotDisplay + 2, entry.mainHand->displayId);
 
 		// Unit Mods
 		for (UInt32 i = unit_mods::StatStart; i < unit_mods::StatEnd; ++i)
@@ -326,10 +334,17 @@ namespace wowpp
 		setUInt32Value(unit_fields::VirtualItemSlotDisplay + slot, item->displayId);
 		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 0, item->itemClass);
 		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 1, item->subClass);
-		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 2, 0);
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 2, 0xFF);
 		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 3, item->material);
 		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0, item->inventoryType);
 		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 1, item->sheath);
+
+		if (m_originalEntry.id == 17259)
+		{
+			DLOG("VirtualItemSlotDisplay + " << slot << ": " << getUInt32Value(unit_fields::VirtualItemSlotDisplay + slot));
+			DLOG("VirtualItemInfo + 0: " << getUInt32Value(unit_fields::VirtualItemInfo + (slot * 2) + 0));
+			DLOG("VirtualItemInfo + 1: " << getUInt32Value(unit_fields::VirtualItemInfo + (slot * 2) + 1));
+		}
 	}
 
 	void GameCreature::updateVictim()
