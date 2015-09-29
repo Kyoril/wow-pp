@@ -80,6 +80,15 @@ namespace wowpp
 						if (isInCombat())
 							return false;
 
+						// Little hack since LoS is not working
+						float tmp = 0.0f, z2 = 0.0f, z = 0.0f;
+						getLocation(tmp, tmp, z, tmp);
+						unit.getLocation(tmp, tmp, z2, tmp);
+						if (::abs(z - z2) > 3.0f)
+						{
+							return false;
+						}
+
 						// TODO: Determine whether the unit is hostile and we should attack that unit
 
 						// Start attacking that unit
@@ -289,6 +298,14 @@ namespace wowpp
 		if (!world)
 		{
 			// Not in a world
+			return;
+		}
+
+		// No aggro for friendly targets
+		const auto &factionA = threatening.getFactionTemplate();
+		const auto &factionB = getFactionTemplate();
+		if (factionA.isFriendlyTo(factionB))
+		{
 			return;
 		}
 

@@ -738,7 +738,7 @@ namespace wowpp
 		// Fall damage
 		if (opCode == game::client_packet::MoveFallLand)
 		{
-			if (info.fallTime >= 1500)
+			if (info.fallTime >= 1100)
 			{
 				float deltaZ = lastFallZ - info.z;
 				if (sender.getCharacter()->isAlive())
