@@ -52,6 +52,7 @@ namespace wowpp
 		, m_regenCountdown(timers)
 		, m_lastManaUse(0)
 		, m_auras(*this)
+		, m_factionTemplate(nullptr)
 	{
 		// Resize values field
 		m_values.resize(unit_fields::UnitFieldCount);
@@ -133,8 +134,12 @@ namespace wowpp
 		m_raceEntry = m_getRace(getRace());
 		assert(m_raceEntry);
 
-		// Update faction template
-		setUInt32Value(unit_fields::FactionTemplate, m_raceEntry->factionTemplate->id);	//UNIT_FIELD_FACTIONTEMPLATE
+		if (!m_factionTemplate)
+		{
+			
+			assert(m_raceEntry->factionTemplate);
+			setFactionTemplate(*m_raceEntry->factionTemplate);
+		}
 	}
 
 	void GameUnit::classUpdated()
@@ -1323,8 +1328,16 @@ namespace wowpp
 
 	const FactionTemplateEntry & GameUnit::getFactionTemplate() const
 	{
-		assert(m_raceEntry);
-		return *m_raceEntry->factionTemplate;
+		assert(m_factionTemplate);
+		return *m_factionTemplate;
+	}
+
+	void GameUnit::setFactionTemplate(const FactionTemplateEntry &faction)
+	{
+		m_factionTemplate = &faction;
+		setUInt32Value(unit_fields::FactionTemplate, m_factionTemplate->id);
+
+		factionChanged(*this);
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)

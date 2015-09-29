@@ -143,6 +143,10 @@ namespace wowpp
 		std::uniform_int_distribution<int> genderDistribution(0, 1);
 		int gender = genderDistribution(randomGenerator);
 
+		// TODO
+		assert(entry.allianceFaction);
+		setFactionTemplate(*entry.allianceFaction);
+
 		setLevel(creatureLevel);
 		setClass(entry.unitClass);
 		setUInt32Value(object_fields::Entry, entry.id);
@@ -492,21 +496,6 @@ namespace wowpp
 		const UnitEntry *entry = (m_entry ? m_entry : &m_originalEntry);
 		setFloatValue(unit_fields::MinDamage, base_value + entry->minMeleeDamage);
 		setFloatValue(unit_fields::MaxDamage, base_value + entry->maxMeleeDamage);
-	}
-
-	const FactionTemplateEntry & GameCreature::getFactionTemplate() const
-	{
-		if (m_entry)
-		{
-			// TODO
-			assert(m_entry->allianceFaction);
-			return *m_entry->allianceFaction;
-		}
-		else
-		{
-			assert(m_originalEntry.allianceFaction);
-			return *m_originalEntry.allianceFaction;
-		}
 	}
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)

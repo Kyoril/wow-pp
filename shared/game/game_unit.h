@@ -342,6 +342,8 @@ namespace wowpp
 		/// Fired when hit by any direct damage (excluding dots).
 		/// Parameters: school, &attacker
 		boost::signals2::signal<void(UInt8, GameUnit&)> damageHit;
+		/// Fired when the units faction changed. This might cause the unit to become friendly to attackers.
+		boost::signals2::signal<void(GameUnit &)> factionChanged;
 
 	public:
 
@@ -376,7 +378,8 @@ namespace wowpp
 		/// Gets the current level.
 		UInt32 getLevel() const { return getUInt32Value(unit_fields::Level); }
 		/// Gets this units faction template.
-		virtual const FactionTemplateEntry &getFactionTemplate() const;
+		const FactionTemplateEntry &getFactionTemplate() const;
+		void setFactionTemplate(const FactionTemplateEntry &faction);
 
 		/// Gets the timer queue object needed for countdown events.
 		TimerQueue &getTimers() { return m_timers; }
@@ -544,6 +547,7 @@ namespace wowpp
 		UnitModArray m_unitMods;
 		AuraContainer m_auras;
 		AttackSwingCallback m_swingCallback;
+		const FactionTemplateEntry *m_factionTemplate;
 	};
 
 	UInt32 calculateArmorReducedDamage(UInt32 attackerLevel, const GameUnit &victim, UInt32 damage);
