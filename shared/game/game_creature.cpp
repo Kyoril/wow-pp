@@ -29,6 +29,8 @@
 #include "each_tile_in_sight.h"
 #include "binary_io/vector_sink.h"
 #include "log/default_log_levels.h"
+#include "common/make_unique.h"
+#include "creature_ai.h"
 
 namespace wowpp
 {
@@ -43,74 +45,6 @@ namespace wowpp
 		, m_originalEntry(entry)
 		, m_entry(nullptr)
 	{
-		// TODO: Put the code below into an AI class
-		// This can only be executed when the unit is spawned (so that it is added to a world instance)
-		spawned.connect([this]()
-		{
-			float x, y, z, o;
-			this->getLocation(x, y, z, o);
-
-			Circle circle(x, y, 20.0f);
-			m_aggroWatcher = m_worldInstance->getUnitFinder().watchUnits(circle);
-			m_aggroWatcher->visibilityChanged.connect([this](GameUnit& unit, bool isVisible) -> bool
-			{
-				if (&unit == this)
-				{
-					return false;
-				}
-
-				if (!isAlive())
-				{
-					return false;
-				}
-
-				// Check if we are hostile against this unit
-				const auto &ourFaction = getFactionTemplate();
-				const auto &unitFaction = unit.getFactionTemplate();
-				if (ourFaction.isNeutralToAll())
-				{
-					return false;
-				}
-
-				if (ourFaction.isHostileTo(unitFaction))
-				{
-					if (isVisible)
-					{
-						// We ignore new attack targets if we already are in combat
-						if (isInCombat())
-							return false;
-
-						// Little hack since LoS is not working
-						float tmp = 0.0f, z2 = 0.0f, z = 0.0f;
-						getLocation(tmp, tmp, z, tmp);
-						unit.getLocation(tmp, tmp, z2, tmp);
-						if (::abs(z - z2) > 3.0f)
-						{
-							return false;
-						}
-
-						// TODO: Determine whether the unit is hostile and we should attack that unit
-
-						// Start attacking that unit
-						addThreat(unit, 0.0001f);
-						return true;
-					}
-					else
-					{
-						// Stop attacking that target.
-						resetThreat(unit);
-						return false;
-					}
-
-					// We don't care
-					return false;
-				}
-
-				return false;
-			});
-
-			m_aggroWatcher->start();
-		});
 	}
 
 	void GameCreature::initialize()
@@ -118,7 +52,14 @@ namespace wowpp
 		// Initialize the unit
 		GameUnit::initialize();
 
+		// Setup entry
 		setEntry(m_originalEntry);
+
+		// TODO: We need to determine the creatures home point somehow
+
+		// Setup AI
+		m_ai = make_unique<CreatureAI>(
+			*this, CreatureAI::Home(makeVector(0.0f, 0.0f, 0.0f)));
 	}
 
 	void GameCreature::setEntry(const UnitEntry &entry)

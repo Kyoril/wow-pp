@@ -28,6 +28,8 @@
 
 namespace wowpp
 {
+	class CreatureAI;
+
 	/// Represents an AI controlled creature unit in the game.
 	class GameCreature final : public GameUnit
 	{
@@ -92,7 +94,8 @@ namespace wowpp
 		const UnitEntry &m_originalEntry;
 		const UnitEntry *m_entry;
 		ThreatList m_threat;
-		std::unique_ptr<UnitWatcher> m_aggroWatcher;
+		//std::unique_ptr<UnitWatcher> m_aggroWatcher;
+		std::unique_ptr<CreatureAI> m_ai;
 	};
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel);
