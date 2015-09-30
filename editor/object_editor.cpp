@@ -172,6 +172,7 @@ namespace wowpp
 		{
 			QTreeWidgetItem *item = new QTreeWidgetItem(parent); 
 			item->setText(0, QString("%1").arg(def.item->name.c_str()));
+			item->setText(1, QString("%1%").arg(def.dropChance));
 
 			QColor textColor = QColor(Qt::white);
 			switch (def.item->quality)
@@ -261,7 +262,7 @@ namespace wowpp
 					}
 
 					groupItem->setText(0, QString("Group %1").arg(groupIndex++));
-					groupItem->setText(1, QString("%1%").arg(totalDropChance));
+					groupItem->setText(1, QString("%1% Total").arg(totalDropChance));
 					groupItem->setText(2, QString("%1 Items").arg(group.size()));
 				}
 
