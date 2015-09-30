@@ -24,6 +24,7 @@
 #include "data/project.h"
 #include "common/utilities.h"
 #include <QListWidgetItem>
+#include <unordered_map>
 
 namespace wowpp
 {
@@ -40,9 +41,42 @@ namespace wowpp
 			rerollLoot();
 		}
 
-		void LootDialog::on_rerollButton_clicked()
+		void LootDialog::addLootItem(const LootDefinition &def)
 		{
-			rerollLoot();
+			UInt32 dropCount = def.minCount;
+			if (def.maxCount > def.minCount)
+			{
+				std::uniform_int_distribution<UInt32> dropDistribution(def.minCount, def.maxCount);
+				dropCount = dropDistribution(randomGenerator);
+			}
+
+			QListWidgetItem *item = new QListWidgetItem(QString("%1x %2").arg(dropCount).arg(def.item->name.c_str()), m_ui->listWidget);
+			QColor textColor = QColor(Qt::white);
+			switch (def.item->quality)
+			{
+			case 0:
+				textColor = QColor(Qt::gray);
+				break;
+			case 1:
+				textColor = QColor(Qt::white);
+				break;
+			case 2:
+				textColor = QColor(Qt::green);
+				break;
+			case 3:
+				textColor = QColor(0, 114, 198);
+				break;
+			case 4:
+				textColor = QColor(Qt::magenta);
+				break;
+			case 5:
+				textColor = QColor(Qt::yellow);
+				break;
+			default:
+				textColor = QColor(Qt::red);
+				break;
+			}
+			item->setTextColor(textColor);
 		}
 
 		void LootDialog::rerollLoot()
@@ -92,42 +126,117 @@ namespace wowpp
 			}
 		}
 
-		void LootDialog::addLootItem(const LootDefinition &def)
+		void LootDialog::rerollStats()
 		{
-			UInt32 dropCount = def.minCount;
-			if (def.maxCount > def.minCount)
+			m_ui->listWidget_2->clear();
+			std::unordered_map<const ItemEntry*, UInt32> drops;
+
+			int killCount = limit(m_ui->killCountBox->value(), 1, 10000);
+			for (int i = 0; i < killCount; ++i)
 			{
-				std::uniform_int_distribution<UInt32> dropDistribution(def.minCount, def.maxCount);
-				dropCount = dropDistribution(randomGenerator);
+				// Roll for all groups
+				for (auto &group : m_loot.lootGroups)
+				{
+					std::uniform_real_distribution<float> lootDistribution(0.0f, 100.0f);
+					float groupRoll = lootDistribution(randomGenerator);
+
+					// We need to copy our loot groups here, because otherwise, we invalidate the 
+					// save state of our editor project here. On the world node however, we don't
+					// have to do this!
+					auto shuffled = group;
+					std::shuffle(shuffled.begin(), shuffled.end(), randomGenerator);
+
+					bool foundNonEqualChanced = false;
+					std::vector<const LootDefinition*> equalChanced;
+					for (auto &def : shuffled)
+					{
+						if (def.dropChance == 0.0f)
+						{
+							equalChanced.push_back(&def);
+						}
+
+						if (def.dropChance > 0.0f &&
+							def.dropChance >= groupRoll)
+						{
+							UInt32 dropCount = def.minCount;
+							if (def.maxCount > def.minCount)
+							{
+								std::uniform_int_distribution<UInt32> dropDistribution(def.minCount, def.maxCount);
+								dropCount = dropDistribution(randomGenerator);
+							}
+
+							UInt32 &count = drops[def.item];
+							count += dropCount;
+
+							foundNonEqualChanced = true;
+							break;
+						}
+
+						groupRoll -= def.dropChance;
+					}
+
+					if (!foundNonEqualChanced &&
+						!equalChanced.empty())
+					{
+						std::uniform_int_distribution<UInt32> equalDistribution(0, equalChanced.size() - 1);
+						UInt32 index = equalDistribution(randomGenerator);
+
+						const auto *def = equalChanced[index];
+
+						UInt32 dropCount = def->minCount;
+						if (def->maxCount > def->minCount)
+						{
+							std::uniform_int_distribution<UInt32> dropDistribution(def->minCount, def->maxCount);
+							dropCount = dropDistribution(randomGenerator);
+						}
+
+						UInt32 &count = drops[def->item];
+						count += dropCount;
+					}
+				}
 			}
 
-			QListWidgetItem *item = new QListWidgetItem(QString("%1x %2").arg(dropCount).arg(def.item->name.c_str()), m_ui->listWidget);
-			QColor textColor = QColor(Qt::white);
-			switch (def.item->quality)
+			for (const auto &lootPair : drops)
 			{
-			case 0:
-				textColor = QColor(Qt::gray);
-				break;
-			case 1:
-				textColor = QColor(Qt::white);
-				break;
-			case 2:
-				textColor = QColor(Qt::green);
-				break;
-			case 3:
-				textColor = QColor(0, 114, 198);
-				break;
-			case 4:
-				textColor = QColor(Qt::magenta);
-				break;
-			case 5:
-				textColor = QColor(Qt::yellow);
-				break;
-			default:
-				textColor = QColor(Qt::red);
-				break;
+				QListWidgetItem *item = new QListWidgetItem(QString("%1x %2").arg(lootPair.second).arg(lootPair.first->name.c_str()), m_ui->listWidget_2);
+				QColor textColor = QColor(Qt::white);
+				switch (lootPair.first->quality)
+				{
+				case 0:
+					textColor = QColor(Qt::gray);
+					break;
+				case 1:
+					textColor = QColor(Qt::white);
+					break;
+				case 2:
+					textColor = QColor(Qt::green);
+					break;
+				case 3:
+					textColor = QColor(0, 114, 198);
+					break;
+				case 4:
+					textColor = QColor(Qt::magenta);
+					break;
+				case 5:
+					textColor = QColor(Qt::yellow);
+					break;
+				default:
+					textColor = QColor(Qt::red);
+					break;
+				}
+				item->setTextColor(textColor);
 			}
-			item->setTextColor(textColor);
 		}
+
+		void LootDialog::on_rerollButton_clicked()
+		{
+			rerollLoot();
+		}
+
+		void LootDialog::on_rebuildStatisticBtn_clicked()
+		{
+			rerollStats();
+		}
+
 	}
 }

@@ -53,10 +53,12 @@ namespace wowpp
 
 			void addLootItem(const LootDefinition &def);
 			void rerollLoot();
+			void rerollStats();
 
 		private slots:
 
 			void on_rerollButton_clicked();
+			void on_rebuildStatisticBtn_clicked();
 
 		private:
 
