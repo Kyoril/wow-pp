@@ -168,9 +168,11 @@ namespace wowpp
 			}
 		}
 
-		void ObjectEditor::addLootItem(const LootDefinition &def)
+		void ObjectEditor::addLootItem(const LootDefinition &def, QTreeWidgetItem *parent)
 		{
-			QListWidgetItem *item = new QListWidgetItem(QString("%1").arg(def.item->name.c_str()), m_ui->lootView);
+			QTreeWidgetItem *item = new QTreeWidgetItem(parent); 
+			item->setText(0, QString("%1").arg(def.item->name.c_str()));
+
 			QColor textColor = QColor(Qt::white);
 			switch (def.item->quality)
 			{
@@ -196,7 +198,7 @@ namespace wowpp
 				textColor = QColor(Qt::red);
 				break;
 			}
-			item->setTextColor(textColor);
+			item->setTextColor(0, textColor);
 		}
 
 		void ObjectEditor::onUnitSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
@@ -240,12 +242,27 @@ namespace wowpp
 			}
 			else
 			{
+				QIcon groupIcon;
+				groupIcon.addFile(QStringLiteral(":/Items.png"), QSize(), QIcon::Normal, QIcon::Off);
+
+				size_t groupIndex = 0;
 				for (auto &group : unit->unitLootEntry->lootGroups)
 				{
+					// Add group
+					QTreeWidgetItem *groupItem = new QTreeWidgetItem();
+					groupItem->setIcon(0, groupIcon);
+					m_ui->lootView->addTopLevelItem(groupItem);
+
+					float totalDropChance = 0.0f;
 					for (auto &def : group)
 					{
-						addLootItem(def);
+						totalDropChance += def.dropChance;
+						addLootItem(def, groupItem);
 					}
+
+					groupItem->setText(0, QString("Group %1").arg(groupIndex++));
+					groupItem->setText(1, QString("%1%").arg(totalDropChance));
+					groupItem->setText(2, QString("%1 Items").arg(group.size()));
 				}
 
 				m_ui->lootLine->setText(QString("Loot Entry %1").arg(unit->unitLootEntry->id));

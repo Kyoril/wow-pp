@@ -25,6 +25,7 @@
 #include <QSortFilterProxyModel>
 #include <QAbstractTableModel>
 #include <QItemSelection>
+#include <QTreeWidgetItem>
 #include "data/project.h"
 #include "property_view_model.h"
 #include <memory>
@@ -52,7 +53,7 @@ namespace wowpp
 
 		private:
 
-			void addLootItem(const LootDefinition &def);
+			void addLootItem(const LootDefinition &def, QTreeWidgetItem *parent);
 
 		private slots:
 
