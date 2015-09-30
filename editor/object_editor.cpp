@@ -171,7 +171,7 @@ namespace wowpp
 		void ObjectEditor::addLootItem(const LootDefinition &def, QTreeWidgetItem *parent)
 		{
 			QTreeWidgetItem *item = new QTreeWidgetItem(parent); 
-			item->setText(0, QString("%1").arg(def.item->name.c_str()));
+			item->setText(0, QString("%1 %2").arg(QString::number(def.item->id), 5, QLatin1Char('0')).arg(def.item->name.c_str()));
 			item->setText(1, QString("%1%").arg(def.dropChance));
 
 			QColor textColor = QColor(Qt::white);
