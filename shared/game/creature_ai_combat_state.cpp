@@ -91,7 +91,12 @@ namespace wowpp
 		auto &controlled = getControlled();
 
 		// All remaining threateners are no longer in combat with this unit
-		// TODO
+		auto it = m_threat.begin();
+		while (it != m_threat.end())
+		{
+			removeThreat(*it->second.threatener);
+			it = m_threat.begin();
+		}
 
 		// Unit is no longer flagged for combat
 		controlled.removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
@@ -135,13 +140,14 @@ namespace wowpp
 			{
 				removeThreat(threatener);
 			});
+
+			// Add this unit to the list of attacking units
+			threatener.addAttackingUnit(getControlled());
 		}
 
 		auto &threatEntry = it->second;
 		threatEntry.amount += amount;
 
-		// Attacker should enter combat
-		threatener.addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 		updateVictim();
 	}
 
@@ -165,6 +171,8 @@ namespace wowpp
 		{
 			m_despawnedSignals.erase(despawnedIt);
 		}
+
+		threatener.removeAttackingUnit(getControlled());
 	}
 
 	void CreatureAICombatState::updateVictim()

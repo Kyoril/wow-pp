@@ -669,8 +669,8 @@ namespace wowpp
 			return;
 		}
 
-		//TODO: Do this only while not in combat
-		if (!m_attackSwingCountdown.running)
+		// Do this only while not in combat
+		if (!isInCombat())
 		{
 			regenerateHealth();
 			if (!m_auras.hasAura(game::aura_type::InterruptRegen))
@@ -1327,6 +1327,34 @@ namespace wowpp
 	bool GameUnit::isInCombat() const
 	{
 		return ((getUInt32Value(unit_fields::UnitFlags) & game::unit_flags::InCombat) != 0);
+	}
+
+	void GameUnit::addAttackingUnit(GameUnit &attacker)
+	{
+		// Add attacking unit to the list of attackers
+		assert(!m_attackingUnits.contains(&attacker));
+		m_attackingUnits.add(&attacker);
+
+		// Flag us for combat
+		addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
+	}
+
+	void GameUnit::removeAttackingUnit(GameUnit &removed)
+	{
+		// Remove attacking unit
+		assert(m_attackingUnits.contains(&removed));
+		m_attackingUnits.remove(&removed);
+
+		// Remove combat flag
+		if (m_attackingUnits.empty())
+		{
+			removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
+		}
+	}
+
+	bool GameUnit::hasAttackingUnits() const
+	{
+		return !m_attackingUnits.empty();
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)

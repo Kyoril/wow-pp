@@ -35,6 +35,7 @@
 #include "aura.h"
 #include "aura_container.h"
 #include "common/macros.h"
+#include "common/linear_set.h"
 #include <boost/signals2.hpp>
 
 namespace wowpp
@@ -382,6 +383,7 @@ namespace wowpp
 		UInt32 getLevel() const { return getUInt32Value(unit_fields::Level); }
 		/// Gets this units faction template.
 		const FactionTemplateEntry &getFactionTemplate() const;
+		/// 
 		void setFactionTemplate(const FactionTemplateEntry &faction);
 
 		/// Gets the timer queue object needed for countdown events.
@@ -390,7 +392,7 @@ namespace wowpp
 		const RaceEntry *getRaceEntry() const {  return m_raceEntry; }
 		/// Get the current class entry information.
 		const ClassEntry *getClassEntry() const { return m_classEntry; }
-
+		/// 
 		virtual const String &getName() const;
 
 		/// Starts to cast a spell using the given target map.
@@ -454,7 +456,7 @@ namespace wowpp
 		/// 
 		bool isAlive() const { return (getUInt32Value(unit_fields::Health) != 0); }
 		/// Determines whether this unit is actually in combat with at least one other unit.
-		virtual bool isInCombat() const;
+		bool isInCombat() const;
 
 		bool isImmune(UInt8 school);
 		float getMissChance(GameUnit &caster, GameUnit &target);
@@ -471,6 +473,19 @@ namespace wowpp
 		virtual bool canBlock() const = 0;
 		virtual bool canParry() const = 0;
 		virtual bool canDodge() const = 0;
+
+		/// Adds a unit to the list of attacking units. This list is used to generate threat
+		/// if this unit is healed by another unit, and to determine, whether a player should
+		/// stay in combat. This method adds may add game::unit_flags::InCombat
+		/// @param attacker The attacking unit.
+		void addAttackingUnit(GameUnit &attacker);
+		/// Forces an attacking unit to be removed from the list of attackers. Note that attacking
+		/// units are removed automatically on despawn and/or death, so this is more useful in PvP
+		/// scenarios. This method may remove game::unit_flags::InCombat
+		/// @param removed The attacking unit to be removed from the list of attackers.
+		void removeAttackingUnit(GameUnit &removed);
+		/// Determines whether this unit is attacked by other units.
+		bool hasAttackingUnits() const;
 
 		/// Calculates the stat based on the specified modifier.
 		static UInt8 getStatByUnitMod(UnitMods mod);
@@ -527,6 +542,7 @@ namespace wowpp
 		typedef std::array<float, unit_mod_type::End> UnitModTypeArray;
 		typedef std::array<UnitModTypeArray, unit_mods::End> UnitModArray;
 		typedef std::vector<std::shared_ptr<Aura>> AuraVector;
+		typedef LinearSet<GameUnit*> AttackingUnitSet;
 
 		TimerQueue &m_timers;
 		DataLoadContext::GetRace m_getRace;
@@ -547,6 +563,7 @@ namespace wowpp
 		AuraContainer m_auras;
 		AttackSwingCallback m_swingCallback;
 		const FactionTemplateEntry *m_factionTemplate;
+		AttackingUnitSet m_attackingUnits;
 	};
 
 	UInt32 calculateArmorReducedDamage(UInt32 attackerLevel, const GameUnit &victim, UInt32 damage);
