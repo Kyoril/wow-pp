@@ -394,7 +394,7 @@ namespace wowpp
 		virtual const String &getName() const;
 
 		/// Starts to cast a spell using the given target map.
-		void castSpell(SpellTargetMap target, UInt32 spell, GameTime castTime, const SpellSuccessCallback &callback);
+		void castSpell(SpellTargetMap target, UInt32 spell, GameTime castTime, bool isProc, const SpellSuccessCallback &callback);
 		/// Stops the current cast (if any).
 		void cancelCast();
 		/// Starts auto attack on the given target.

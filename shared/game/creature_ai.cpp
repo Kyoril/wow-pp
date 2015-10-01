@@ -22,6 +22,8 @@
 #include "creature_ai.h"
 #include "creature_ai_idle_state.h"
 #include "creature_ai_combat_state.h"
+#include "creature_ai_reset_state.h"
+#include "creature_ai_death_state.h"
 #include "game_creature.h"
 #include "game_unit.h"
 #include "common/make_unique.h"
@@ -39,6 +41,11 @@ namespace wowpp
 		// Connect to spawn event
 		m_onSpawned = m_controlled.spawned.connect(
 			std::bind(&CreatureAI::onSpawned, this));
+		m_onKilled = m_controlled.killed.connect([this](GameUnit *killer)
+		{
+			auto state = make_unique<CreatureAIDeathState>(*this);
+			setState(std::move(state));
+		});
 	}
 
 	CreatureAI::~CreatureAI()
@@ -82,6 +89,12 @@ namespace wowpp
 	void CreatureAI::enterCombat(GameUnit &victim)
 	{
 		auto state = make_unique<CreatureAICombatState>(*this, victim);
+		setState(std::move(state));
+	}
+
+	void CreatureAI::reset()
+	{
+		auto state = make_unique<CreatureAIResetState>(*this);
 		setState(std::move(state));
 	}
 

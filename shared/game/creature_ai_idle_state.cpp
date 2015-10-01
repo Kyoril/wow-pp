@@ -83,7 +83,8 @@ namespace wowpp
 				return false;
 			}
 
-			if (ourFaction.isHostileTo(unitFaction))
+			if (ourFaction.isHostileTo(unitFaction) && 
+				!ourFaction.isFriendlyTo(unitFaction))
 			{
 				if (isVisible)
 				{

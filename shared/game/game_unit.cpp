@@ -266,7 +266,7 @@ namespace wowpp
 		}
 	}
 
-	void GameUnit::castSpell(SpellTargetMap target, UInt32 spellId, GameTime castTime, const SpellSuccessCallback &callback)
+	void GameUnit::castSpell(SpellTargetMap target, UInt32 spellId, GameTime castTime, bool isProc, const SpellSuccessCallback &callback)
 	{
 		// Resolve spell
 		const auto *spell = m_getSpell(spellId);
@@ -286,7 +286,7 @@ namespace wowpp
 			m_attackSwingCountdown.running &&
 			result.second != nullptr)
 		{
-			if (!(spell->attributesEx[0] & spell_attributes_ex_a::NotResetSwingTimer))
+			if (!(spell->attributesEx[0] & spell_attributes_ex_a::NotResetSwingTimer) && !isProc)
 			{
 				// Register for casts ended-event
 				if (castTime > 0)
@@ -1143,7 +1143,6 @@ namespace wowpp
 			health -= damage;
 
 		setUInt32Value(unit_fields::Health, health);
-
 		if (health == 0)
 		{
 			// Call function and signal

@@ -193,9 +193,9 @@ namespace wowpp
 		}
 		else if (!newVictim)
 		{
-			// No victim found (threat list probably empty?)
-			// Return to idle state
-			getAI().idle();
+			// No victim found (threat list probably empty?). Warning: this will destroy
+			// the current state.
+			getAI().reset();
 		}
 	}
 

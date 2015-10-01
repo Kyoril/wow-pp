@@ -79,6 +79,9 @@ namespace wowpp
 		void idle();
 		/// Enters the combat state. This is usually called from the creatures idle state.
 		void enterCombat(GameUnit &victim);
+		/// Makes the creature reset, leaving the combat state, reviving itself and run back
+		/// to it's home position.
+		void reset();
 
 	protected:
 
@@ -90,6 +93,6 @@ namespace wowpp
 		GameCreature &m_controlled;
 		std::unique_ptr<CreatureAIState> m_state;
 		Home m_home;
-		boost::signals2::scoped_connection m_onSpawned;
+		boost::signals2::scoped_connection m_onSpawned, m_onKilled;
 	};
 }
