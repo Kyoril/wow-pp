@@ -832,12 +832,6 @@ namespace wowpp
 		}
 	}
 
-	bool GameCharacter::isInCombat() const
-	{
-		// TODO
-		return false;
-	}
-
 	bool GameCharacter::canBlock() const
 	{
 		if (!m_canBlock)

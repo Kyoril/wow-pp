@@ -541,7 +541,6 @@ namespace wowpp
 		GroupUpdateFlags getGroupUpdateFlags() const { return m_groupUpdateFlags; }
 		void modifyGroupUpdateFlags(GroupUpdateFlags flags, bool apply);
 		void clearGroupUpdateFlags() { m_groupUpdateFlags = group_update_flags::None; }
-		bool isInCombat() const override;
 		bool canBlock() const override;
 		bool canParry() const override;
 		bool canDodge() const override;

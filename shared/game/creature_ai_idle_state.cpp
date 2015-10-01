@@ -42,6 +42,14 @@ namespace wowpp
 	void CreatureAIIdleState::onEnter()
 	{
 		auto &controlled = getControlled();
+
+		// Watch for threat events to enter combat
+		m_onThreatened = controlled.threatened.connect([this](GameUnit &threat, float amount)
+		{
+			// Warning: This may destroy the idle state as it enters the combat state
+			getAI().enterCombat(threat);
+		});
+
 		auto *worldInstance = controlled.getWorldInstance();
 		if (!worldInstance)
 		{
@@ -79,10 +87,6 @@ namespace wowpp
 			{
 				if (isVisible)
 				{
-					// We ignore new attack targets if we already are in combat
-					if (getControlled().isInCombat())
-						return false;
-
 					// Little hack since LoS is not working
 					float tmp = 0.0f, z2 = 0.0f, z = 0.0f;
 					controlled.getLocation(tmp, tmp, z, tmp);
@@ -92,17 +96,8 @@ namespace wowpp
 						return false;
 					}
 
-					// TODO: Determine whether the unit is hostile and we should attack that unit
-
-					// Start attacking that unit
-					controlled.addThreat(unit, 0.0001f);
+					getAI().enterCombat(unit);
 					return true;
-				}
-				else
-				{
-					// Stop attacking that target.
-					controlled.resetThreat(unit);
-					return false;
 				}
 
 				// We don't care

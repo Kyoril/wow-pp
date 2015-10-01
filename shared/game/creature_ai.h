@@ -27,6 +27,7 @@
 
 namespace wowpp
 {
+	class GameUnit;
 	class GameCreature;
 	class CreatureAIState;
 
@@ -76,6 +77,8 @@ namespace wowpp
 		const Home &getHome() const;
 		/// Enters the idle state.
 		void idle();
+		/// Enters the combat state. This is usually called from the creatures idle state.
+		void enterCombat(GameUnit &victim);
 
 	protected:
 

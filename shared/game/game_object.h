@@ -220,6 +220,8 @@ namespace wowpp
 		void setInt32Value(UInt16 index, Int32 value);
 		void setUInt64Value(UInt16 index, UInt64 value);
 		void setFloatValue(UInt16 index, float value);
+		void addFlag(UInt16 index, UInt32 flag);
+		void removeFlag(UInt16 index, UInt32 flag);
 
 		void setGuid(UInt64 guid) { setUInt64Value(object_fields::Guid, guid); }
 		UInt64 getGuid() const { return getUInt64Value(object_fields::Guid); }

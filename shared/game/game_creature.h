@@ -33,8 +33,6 @@ namespace wowpp
 	/// Represents an AI controlled creature unit in the game.
 	class GameCreature final : public GameUnit
 	{
-		typedef std::map<UInt64, float> ThreatList;
-
 	public:
 
 		/// Executed when the unit entry was changed after this creature has spawned. This
@@ -56,7 +54,6 @@ namespace wowpp
 		virtual void initialize() override;
 		/// @copydoc GameObject::getTypeId()
 		virtual ObjectType getTypeId() const override { return object_type::Unit; }
-
 		/// Gets the original unit entry (the one, this creature was spawned with).
 		/// This is useful for restoring the original creature state.
 		const UnitEntry &getOriginalEntry() const { return m_originalEntry; }
@@ -67,22 +64,20 @@ namespace wowpp
 		void setEntry(const UnitEntry &entry);
 		/// 
 		const String &getName() const override;
-
-		void updateVictim();
-		void addThreat(GameUnit &threatening, float threat) override;
-		void resetThreat() override;
-		void resetThreat(GameUnit &threatening) override;
+		/// 
 		void setVirtualItem(UInt32 slot, const ItemEntry *item);
-		bool isInCombat() const override;
-
+		/// 
 		bool canBlock() const override;
+		/// 
 		bool canParry() const override;
+		/// 
 		bool canDodge() const override;
-
+		/// 
 		void updateDamage() override;
 
 	protected:
 
+		/// 
 		void onKilled(GameUnit *killer) override;
 
 	private:
@@ -93,8 +88,7 @@ namespace wowpp
 
 		const UnitEntry &m_originalEntry;
 		const UnitEntry *m_entry;
-		ThreatList m_threat;
-		//std::unique_ptr<UnitWatcher> m_aggroWatcher;
+		//ThreatList m_threat;
 		std::unique_ptr<CreatureAI> m_ai;
 	};
 

@@ -21,26 +21,43 @@
 
 #pragma once
 
+#include "common/typedefs.h"
 #include "creature_ai_state.h"
 #include <boost/signals2.hpp>
 #include <memory>
+#include <map>
 
 namespace wowpp
 {
-	class UnitWatcher;
+	class GameUnit;
 
 	/// Handle the idle state of a creature AI. In this state, most units
 	/// watch for hostile units which come close enough, and start attacking these
 	/// units.
-	class CreatureAIIdleState : public CreatureAIState
+	class CreatureAICombatState : public CreatureAIState
 	{
+		struct ThreatEntry
+		{
+			GameUnit *threatener;
+			float amount;
+
+			explicit ThreatEntry(GameUnit *threatener, float amount = 0.0f)
+				: threatener(threatener)
+				, amount(amount)
+			{
+			}
+		};
+
+		typedef std::map<UInt64, ThreatEntry> ThreatList;
+		typedef std::map<UInt64, boost::signals2::scoped_connection> UnitSignals;
+
 	public:
 
 		/// Initializes a new instance of the CreatureAIIdleState class.
 		/// @param ai The ai class instance this state belongs to.
-		explicit CreatureAIIdleState(CreatureAI &ai);
+		explicit CreatureAICombatState(CreatureAI &ai, GameUnit &victim);
 		/// Default destructor.
-		virtual ~CreatureAIIdleState();
+		virtual ~CreatureAICombatState();
 
 		/// 
 		virtual void onEnter() override;
@@ -49,7 +66,14 @@ namespace wowpp
 
 	private:
 
-		std::unique_ptr<UnitWatcher> m_aggroWatcher;
-		boost::signals2::scoped_connection m_onThreatened;
+		void addThreat(GameUnit &threatener, float amount);
+		void removeThreat(GameUnit &threatener);
+		void updateVictim();
+
+	private:
+
+		ThreatList m_threat;
+		UnitSignals m_killedSignals;
+		UnitSignals m_despawnedSignals;
 	};
 }

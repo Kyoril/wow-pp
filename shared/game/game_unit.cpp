@@ -1155,7 +1155,7 @@ namespace wowpp
 			// Add threat
 			if (attacker && !noThreat)
 			{
-				addThreat(*attacker, static_cast<float>(damage));
+				threatened(*attacker, static_cast<float>(damage));
 			}
 		}
 	}
@@ -1311,21 +1311,6 @@ namespace wowpp
 		return name;
 	}
 
-	void GameUnit::addThreat(GameUnit &threatening, float threat)
-	{
-		// Nothing to do here...
-	}
-
-	void GameUnit::resetThreat()
-	{
-
-	}
-
-	void GameUnit::resetThreat(GameUnit &threatening)
-	{
-
-	}
-
 	const FactionTemplateEntry & GameUnit::getFactionTemplate() const
 	{
 		assert(m_factionTemplate);
@@ -1338,6 +1323,11 @@ namespace wowpp
 		setUInt32Value(unit_fields::FactionTemplate, m_factionTemplate->id);
 
 		factionChanged(*this);
+	}
+
+	bool GameUnit::isInCombat() const
+	{
+		return ((getUInt32Value(unit_fields::UnitFlags) & game::unit_flags::InCombat) != 0);
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)

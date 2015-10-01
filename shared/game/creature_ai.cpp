@@ -20,8 +20,10 @@
 // 
 
 #include "creature_ai.h"
-#include "game_creature.h"
 #include "creature_ai_idle_state.h"
+#include "creature_ai_combat_state.h"
+#include "game_creature.h"
+#include "game_unit.h"
 #include "common/make_unique.h"
 
 namespace wowpp
@@ -76,4 +78,11 @@ namespace wowpp
 	{
 		return m_home;
 	}
+
+	void CreatureAI::enterCombat(GameUnit &victim)
+	{
+		auto state = make_unique<CreatureAICombatState>(*this, victim);
+		setState(std::move(state));
+	}
+
 }

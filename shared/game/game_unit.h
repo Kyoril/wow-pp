@@ -34,6 +34,7 @@
 #include "spell_target_map.h"
 #include "aura.h"
 #include "aura_container.h"
+#include "common/macros.h"
 #include <boost/signals2.hpp>
 
 namespace wowpp
@@ -344,6 +345,8 @@ namespace wowpp
 		boost::signals2::signal<void(UInt8, GameUnit&)> damageHit;
 		/// Fired when the units faction changed. This might cause the unit to become friendly to attackers.
 		boost::signals2::signal<void(GameUnit &)> factionChanged;
+		/// 
+		boost::signals2::signal<void(GameUnit &, float)> threatened;
 
 	public:
 
@@ -451,7 +454,7 @@ namespace wowpp
 		/// 
 		bool isAlive() const { return (getUInt32Value(unit_fields::Health) != 0); }
 		/// Determines whether this unit is actually in combat with at least one other unit.
-		virtual bool isInCombat() const = 0;
+		virtual bool isInCombat() const;
 
 		bool isImmune(UInt8 school);
 		float getMissChance(GameUnit &caster, GameUnit &target);
@@ -468,10 +471,6 @@ namespace wowpp
 		virtual bool canBlock() const = 0;
 		virtual bool canParry() const = 0;
 		virtual bool canDodge() const = 0;
-
-		virtual void addThreat(GameUnit &threatening, float threat);
-		virtual void resetThreat();
-		virtual void resetThreat(GameUnit &threatening);
 
 		/// Calculates the stat based on the specified modifier.
 		static UInt8 getStatByUnitMod(UnitMods mod);
