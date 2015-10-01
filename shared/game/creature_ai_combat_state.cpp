@@ -125,18 +125,16 @@ namespace wowpp
 			it = m_threat.insert(m_threat.begin(), std::make_pair(guid, ThreatEntry(&threatener, 0.0f)));
 
 			// Watch for unit killed signal
-			boost::signals2::scoped_connection onKilled = threatener.killed.connect([this, guid, &threatener](GameUnit *killer)
+			m_killedSignals[guid] = threatener.killed.connect([this, guid, &threatener](GameUnit *killer)
 			{
 				removeThreat(threatener);
 			});
-			m_killedSignals[guid] = std::move(onKilled);
-
+			
 			// Watch for unit despawned signal
-			boost::signals2::scoped_connection onDespawned = threatener.despawned.connect([this, &threatener](GameObject &despawned)
+			m_despawnedSignals[guid] = threatener.despawned.connect([this, &threatener](GameObject &despawned)
 			{
 				removeThreat(threatener);
 			});
-			m_despawnedSignals[guid] = std::move(onDespawned);
 		}
 
 		auto &threatEntry = it->second;
