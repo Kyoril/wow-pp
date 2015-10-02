@@ -22,6 +22,7 @@
 #pragma once
 
 #include "creature_ai_state.h"
+#include "common/countdown.h"
 
 namespace wowpp
 {
@@ -45,5 +46,6 @@ namespace wowpp
 
 	private:
 
+		Countdown m_moveUpdate;
 	};
 }

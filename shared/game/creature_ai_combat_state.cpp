@@ -28,15 +28,28 @@
 #include "game_protocol/game_protocol.h"
 #include "each_tile_in_sight.h"
 #include "data/trigger_entry.h"
+#include "common/constants.h"
 #include "log/default_log_levels.h"
 
 namespace wowpp
 {
 	CreatureAICombatState::CreatureAICombatState(CreatureAI &ai, GameUnit &victim)
 		: CreatureAIState(ai)
+		, m_moveUpdate(ai.getControlled().getTimers())
 	{
 		// Add initial threat
 		addThreat(victim, 0.0f);
+		m_moveUpdate.ended.connect([this]()
+		{
+			float angle = 0.0f;
+			auto *victim = getControlled().getVictim();
+			if (victim)
+			{
+				angle = getControlled().getAngle(*victim);
+			}
+
+			getControlled().relocate(m_targetX, m_targetY, m_targetZ, angle);
+		});
 	}
 
 	CreatureAICombatState::~CreatureAICombatState()
@@ -88,7 +101,6 @@ namespace wowpp
 
 	void CreatureAICombatState::onLeave()
 	{
-		DLOG("LEAVING COMBAT STATE FOR CREATURE " << getControlled().getEntry().name << "...");
 		auto &controlled = getControlled();
 
 		// All remaining threateners are no longer in combat with this unit
@@ -102,7 +114,6 @@ namespace wowpp
 
 		// Stop auto attack
 		controlled.stopAttack();
-		DLOG("LEFT COMBAT STATE...");
 	}
 
 	void CreatureAICombatState::addThreat(GameUnit &threatener, float amount)
@@ -204,12 +215,60 @@ namespace wowpp
 		{
 			// Start attacking the new target
 			controlled.startAttack(*newVictim);
+			chaseTarget(*newVictim); 
+
+			// Watch for victim move signal
+			m_onVictimMoved = newVictim->moved.connect([this](GameObject &moved, float oldX, float oldY, float oldZ, float oldO)
+			{
+				// TODO
+			});
 		}
 		else if (!newVictim)
 		{
 			// No victim found (threat list probably empty?). Warning: this will destroy
 			// the current state.
 			getAI().reset();
+		}
+	}
+
+	void CreatureAICombatState::chaseTarget(GameUnit &target)
+	{
+		// Check distance and whether we need to move
+		// TODO: If this creature is a ranged one or casts spells, it need special treatment
+		const float distance = getControlled().getDistanceTo(target);
+		const float combatRange = getControlled().getMeleeReach() + target.getMeleeReach();
+		if (distance > combatRange)
+		{
+			GameTime moveTime = (distance / 7.5f) * constants::OneSecond;
+
+			// Move (TODO: Better way to do this)
+			float tmp = 0.0f;
+			target.getLocation(m_targetX, m_targetY, m_targetZ, tmp);
+
+			// Send move packet
+			TileIndex2D tile;
+			if (getControlled().getTileIndex(tile))
+			{
+				float o;
+				Vector<float, 3> oldPosition;
+				getControlled().getLocation(oldPosition[0], oldPosition[1], oldPosition[2], o);
+				Vector<float, 3> newPosition(m_targetX, m_targetY, m_targetZ);
+
+				std::vector<char> buffer;
+				io::VectorSink sink(buffer);
+				game::Protocol::OutgoingPacket packet(sink);
+				game::server_write::monsterMove(packet, getControlled().getGuid(), oldPosition, newPosition, moveTime);
+
+				forEachSubscriberInSight(
+					getControlled().getWorldInstance()->getGrid(),
+					tile,
+					[&packet, &buffer](ITileSubscriber &subscriber)
+				{
+					subscriber.sendPacket(packet, buffer);
+				});
+			}
+
+			m_moveUpdate.setEnd(getCurrentTime() + moveTime);
 		}
 	}
 

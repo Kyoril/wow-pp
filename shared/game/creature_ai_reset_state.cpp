@@ -22,13 +22,27 @@
 #include "creature_ai_reset_state.h"
 #include "creature_ai.h"
 #include "game_creature.h"
+#include "world_instance.h"
+#include "binary_io/vector_sink.h"
+#include "game_protocol/game_protocol.h"
+#include "each_tile_in_sight.h"
+#include "common/constants.h"
 #include "log/default_log_levels.h"
 
 namespace wowpp
 {
 	CreatureAIResetState::CreatureAIResetState(CreatureAI &ai)
 		: CreatureAIState(ai)
+		, m_moveUpdate(ai.getControlled().getTimers())
 	{
+		m_moveUpdate.ended.connect([this]()
+		{
+			auto &ai = getAI();
+			const auto &pos = ai.getHome().position;
+
+			getControlled().relocate(pos[0], pos[1], pos[2], ai.getHome().orientation);
+			ai.idle();
+		});
 	}
 
 	CreatureAIResetState::~CreatureAIResetState()
@@ -37,10 +51,34 @@ namespace wowpp
 
 	void CreatureAIResetState::onEnter()
 	{
-		ILOG("Creature entered CREATURE_AI_RESET_STATE");
+		const float distance = getControlled().getDistanceTo(getAI().getHome().position);
 
 		// TODO: Make the creature return to it's home
+		GameTime moveTime = (distance / 7.5f) * constants::OneSecond;
 
+		// Send move packet
+		TileIndex2D tile;
+		if (getControlled().getTileIndex(tile))
+		{
+			float o;
+			Vector<float, 3> oldPosition;
+			getControlled().getLocation(oldPosition[0], oldPosition[1], oldPosition[2], o);
+
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket packet(sink);
+			game::server_write::monsterMove(packet, getControlled().getGuid(), oldPosition, getAI().getHome().position, moveTime);
+
+			forEachSubscriberInSight(
+				getControlled().getWorldInstance()->getGrid(),
+				tile,
+				[&packet, &buffer](ITileSubscriber &subscriber)
+			{
+				subscriber.sendPacket(packet, buffer);
+			});
+		}
+
+		m_moveUpdate.setEnd(getCurrentTime() + moveTime);
 	}
 
 	void CreatureAIResetState::onLeave()

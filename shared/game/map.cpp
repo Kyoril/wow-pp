@@ -135,7 +135,7 @@ namespace wowpp
 
 		// Get height map values
 		auto &heights = tile->heights.heights[chunkIndex];
-		DLOG("Chunk index: " << chunkIndex << " (ADT: " << adtIndex[0] << "x" << adtIndex[1] << ")");
+		//DLOG("Chunk index: " << chunkIndex << " (ADT: " << adtIndex[0] << "x" << adtIndex[1] << ")");
 		return heights[0];
 
 		// Determine the V8 index and the two V9 indices

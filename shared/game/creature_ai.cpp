@@ -98,4 +98,9 @@ namespace wowpp
 		setState(std::move(state));
 	}
 
+	void CreatureAI::setHome(Home home)
+	{
+		m_home = std::move(home);
+	}
+
 }

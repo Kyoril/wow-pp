@@ -64,6 +64,10 @@ namespace wowpp
 		// Start regeneration
 		m_onSpawned = spawned.connect([this]()
 		{
+			CreatureAI::Home home(makeVector(0.0f, 0.0f, 0.0f));
+			getLocation(home.position[0], home.position[1], home.position[2], home.orientation);
+
+			m_ai->setHome(std::move(home));
 			startRegeneration();
 		});
 	}

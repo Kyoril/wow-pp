@@ -75,6 +75,8 @@ namespace wowpp
 		GameCreature &getControlled() const;
 		/// Gets a reference of the controlled units home.
 		const Home &getHome() const;
+		/// Sets a new home position
+		void setHome(Home home);
 		/// Enters the idle state.
 		void idle();
 		/// Enters the combat state. This is usually called from the creatures idle state.

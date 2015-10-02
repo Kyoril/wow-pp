@@ -23,6 +23,8 @@
 
 #include "common/typedefs.h"
 #include "creature_ai_state.h"
+#include "common/timer_queue.h"
+#include "common/countdown.h"
 #include <boost/signals2.hpp>
 #include <memory>
 #include <map>
@@ -69,12 +71,15 @@ namespace wowpp
 		void addThreat(GameUnit &threatener, float amount);
 		void removeThreat(GameUnit &threatener);
 		void updateVictim();
+		void chaseTarget(GameUnit &target);
 
 	private:
 
 		ThreatList m_threat;
 		UnitSignals m_killedSignals;
 		UnitSignals m_despawnedSignals;
-		boost::signals2::scoped_connection m_onThreatened;
+		boost::signals2::scoped_connection m_onThreatened, m_onVictimMoved;
+		Countdown m_moveUpdate;
+		float m_targetX, m_targetY, m_targetZ;
 	};
 }

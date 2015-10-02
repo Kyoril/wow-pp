@@ -339,13 +339,19 @@ namespace wowpp
 		if (&other == this)
 			return 0.0f;
 
-		float x, y, z, o;
-		other.getLocation(x, y, z, o);
+		float o;
+		game::Position position;
+		other.getLocation(position[0], position[1], position[2], o);
 
+		return getDistanceTo(position, use3D);
+	}
+
+	float GameObject::getDistanceTo(const game::Position &position, bool use3D /*= true*/) const
+	{
 		if (use3D)
-			return (sqrtf(((x - m_x) * (x - m_x)) + ((y - m_y) * (y - m_y)) + ((z - m_z) * (z - m_z))));
+			return (sqrtf(((position[0] - m_x) * (position[0] - m_x)) + ((position[1] - m_y) * (position[1] - m_y)) + ((position[2] - m_z) * (position[2] - m_z))));
 		else
-			return (sqrtf(((x - m_x) * (x - m_x)) + ((y - m_y) * (y - m_y))));
+			return (sqrtf(((position[0] - m_x) * (position[0] - m_x)) + ((position[1] - m_y) * (position[1] - m_y))));
 	}
 
 	void GameObject::onWorldInstanceDestroyed()
