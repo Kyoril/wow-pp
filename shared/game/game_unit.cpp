@@ -127,6 +127,9 @@ namespace wowpp
 		setClass(1);
 		setGender(game::gender::Male);
 		setLevel(1);
+
+		// Not in fight
+		removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 	}
 
 	void GameUnit::raceUpdated()
