@@ -79,6 +79,7 @@ namespace wowpp
 
 		/// 
 		void onKilled(GameUnit *killer) override;
+		virtual void regenerateHealth() override;
 
 	private:
 

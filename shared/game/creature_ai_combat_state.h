@@ -75,5 +75,6 @@ namespace wowpp
 		ThreatList m_threat;
 		UnitSignals m_killedSignals;
 		UnitSignals m_despawnedSignals;
+		boost::signals2::scoped_connection m_onThreatened;
 	};
 }

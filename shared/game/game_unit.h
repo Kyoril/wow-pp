@@ -532,7 +532,7 @@ namespace wowpp
 		void onVictimDespawned();
 		void onAttackSwing();
 		void onRegeneration();
-		void regenerateHealth();
+		virtual void regenerateHealth() = 0;
 		void regeneratePower(PowerType power);
 		void onAuraExpired(Aura &aura);
 		void onSpellCastEnded(bool succeeded);

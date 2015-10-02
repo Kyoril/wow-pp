@@ -551,6 +551,7 @@ namespace wowpp
 		virtual void updateArmor() override;
 		virtual void updateDamage() override;
 		virtual void updateManaRegen() override;
+		virtual void regenerateHealth() override;
 
 	private:
 
@@ -563,7 +564,7 @@ namespace wowpp
 		std::map<UInt16, std::shared_ptr<GameItem>> m_itemSlots;
 		UInt64 m_comboTarget;
 		UInt8 m_comboPoints;
-		float m_manaRegBase;
+		float m_healthRegBase, m_manaRegBase;
 		GroupUpdateFlags m_groupUpdateFlags;
 		bool m_canBlock;	// Set by spell
 		bool m_canParry;	// Set by spell

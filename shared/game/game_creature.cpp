@@ -366,6 +366,13 @@ namespace wowpp
 		setFloatValue(unit_fields::MaxDamage, base_value + entry->maxMeleeDamage);
 	}
 
+	void GameCreature::regenerateHealth()
+	{
+		const UInt32 maxHealth = getUInt32Value(unit_fields::Health);
+		const UInt32 addHealth = maxHealth / 3;
+		heal(addHealth, nullptr, false);
+	}
+
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)
 	{
 		if (killerLevel < 8)

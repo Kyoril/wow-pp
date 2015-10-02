@@ -686,11 +686,6 @@ namespace wowpp
 		startRegeneration();
 	}
 
-	void GameUnit::regenerateHealth()
-	{
-		// TODO
-	}
-
 	void GameUnit::regeneratePower(PowerType power)
 	{
 		UInt32 current = getUInt32Value(unit_fields::Power1 + static_cast<Int8>(power));

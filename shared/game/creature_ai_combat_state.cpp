@@ -51,7 +51,7 @@ namespace wowpp
 		controlled.addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 
 		// Watch for threat events
-		controlled.threatened.connect([this](GameUnit &threatener, float amount)
+		m_onThreatened = controlled.threatened.connect([this](GameUnit &threatener, float amount)
 		{
 			addThreat(threatener, amount);
 		});
@@ -88,14 +88,13 @@ namespace wowpp
 
 	void CreatureAICombatState::onLeave()
 	{
+		DLOG("LEAVING COMBAT STATE FOR CREATURE " << getControlled().getEntry().name << "...");
 		auto &controlled = getControlled();
 
 		// All remaining threateners are no longer in combat with this unit
-		auto it = m_threat.begin();
-		while (it != m_threat.end())
+		for (auto &pair : m_threat)
 		{
-			removeThreat(*it->second.threatener);
-			it = m_threat.begin();
+			pair.second.threatener->removeAttackingUnit(getControlled());
 		}
 
 		// Unit is no longer flagged for combat
@@ -103,6 +102,7 @@ namespace wowpp
 
 		// Stop auto attack
 		controlled.stopAttack();
+		DLOG("LEFT COMBAT STATE...");
 	}
 
 	void CreatureAICombatState::addThreat(GameUnit &threatener, float amount)
@@ -173,6 +173,12 @@ namespace wowpp
 		}
 
 		threatener.removeAttackingUnit(getControlled());
+
+		if (getControlled().getVictim() == &threatener ||
+			m_threat.empty())
+		{
+			updateVictim();
+		}
 	}
 
 	void CreatureAICombatState::updateVictim()
