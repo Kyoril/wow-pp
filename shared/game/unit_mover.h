@@ -22,26 +22,39 @@
 #pragma once
 
 #include "common/typedefs.h"
+#include "defines.h"
 
 namespace wowpp
 {
-	namespace constants
+	class GameUnit;
+
+	/// This class is meant to control a units movement. This class should be
+	/// inherited, so that, for example, a player character will be controlled
+	/// by network input, while a creature is controlled by AI input.
+	class UnitMover
 	{
-		/// Width or height of a ADT page in world units (Yards).
-		static const float MapWidth = 533.33333f;
-		/// Number of adt pages per map (one side).
-		static const UInt32 PagesPerMap = 64;
-		/// Number of tiles per adt page (one side).
-		static const UInt32 TilesPerPage = 16;
-		/// Total number of tiles per adt page (both sides).
-		static const UInt32 TilesPerPageSquared = TilesPerPage * TilesPerPage;
-		/// Total number of vertices per tile (both sides).
-		static const UInt32 VertsPerTile = 9 * 9 + 8 * 8;
-		/// Defined by client?
-		static const UInt32 FriendListLimit = 50;
-		/// Defined by client?
-		static const UInt32 IgnoreListLimit = 25;
-		/// Maximum number of action buttons the client knows.
-		static const UInt32 ActionButtonLimit = 132;
-	}
+	public:
+		
+		/// 
+		explicit UnitMover(GameUnit &unit);
+		/// 
+		virtual ~UnitMover();
+
+		/// 
+		GameUnit &getMoved() const { return m_unit; }
+		/// 
+		virtual void update() = 0;
+		/// 
+		virtual bool isCurrentlyMoving() const = 0;
+		/// 
+		virtual void onBeforeLeave();
+		/// Interpolates the controlled units position to get the position at 
+		/// a specified time.
+		/// @param when The time value.
+		virtual game::Position getPositionAtTime(GameTime when) = 0;
+
+	private:
+
+		GameUnit &m_unit;
+	};
 }

@@ -26,6 +26,7 @@
 #include "binary_io/vector_sink.h"
 #include "game_protocol/game_protocol.h"
 #include "game_character.h"
+#include "data/faction_template_entry.h"
 #include <cassert>
 
 namespace wowpp
@@ -51,6 +52,7 @@ namespace wowpp
 		, m_regenCountdown(timers)
 		, m_lastManaUse(0)
 		, m_auras(*this)
+		, m_factionTemplate(nullptr)
 	{
 		// Resize values field
 		m_values.resize(unit_fields::UnitFieldCount);
@@ -125,6 +127,9 @@ namespace wowpp
 		setClass(1);
 		setGender(game::gender::Male);
 		setLevel(1);
+
+		// Not in fight
+		removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 	}
 
 	void GameUnit::raceUpdated()
@@ -132,8 +137,12 @@ namespace wowpp
 		m_raceEntry = m_getRace(getRace());
 		assert(m_raceEntry);
 
-		// Update faction template
-		setUInt32Value(unit_fields::FactionTemplate, m_raceEntry->factionID);	//UNIT_FIELD_FACTIONTEMPLATE
+		if (!m_factionTemplate)
+		{
+			
+			assert(m_raceEntry->factionTemplate);
+			setFactionTemplate(*m_raceEntry->factionTemplate);
+		}
 	}
 
 	void GameUnit::classUpdated()
@@ -260,7 +269,7 @@ namespace wowpp
 		}
 	}
 
-	void GameUnit::castSpell(SpellTargetMap target, UInt32 spellId, GameTime castTime, const SpellSuccessCallback &callback)
+	void GameUnit::castSpell(SpellTargetMap target, UInt32 spellId, GameTime castTime, bool isProc, const SpellSuccessCallback &callback)
 	{
 		// Resolve spell
 		const auto *spell = m_getSpell(spellId);
@@ -280,7 +289,7 @@ namespace wowpp
 			m_attackSwingCountdown.running &&
 			result.second != nullptr)
 		{
-			if (!(spell->attributesEx[0] & spell_attributes_ex_a::NotResetSwingTimer))
+			if (!(spell->attributesEx[0] & spell_attributes_ex_a::NotResetSwingTimer) && !isProc)
 			{
 				// Register for casts ended-event
 				if (castTime > 0)
@@ -663,8 +672,8 @@ namespace wowpp
 			return;
 		}
 
-		//TODO: Do this only while not in combat
-		if (!m_attackSwingCountdown.running)
+		// Do this only while not in combat
+		if (!isInCombat())
 		{
 			regenerateHealth();
 			if (!m_auras.hasAura(game::aura_type::InterruptRegen))
@@ -678,11 +687,6 @@ namespace wowpp
 
 		// Restart regeneration timer
 		startRegeneration();
-	}
-
-	void GameUnit::regenerateHealth()
-	{
-		// TODO
 	}
 
 	void GameUnit::regeneratePower(PowerType power)
@@ -1137,7 +1141,6 @@ namespace wowpp
 			health -= damage;
 
 		setUInt32Value(unit_fields::Health, health);
-
 		if (health == 0)
 		{
 			// Call function and signal
@@ -1149,7 +1152,7 @@ namespace wowpp
 			// Add threat
 			if (attacker && !noThreat)
 			{
-				addThreat(*attacker, static_cast<float>(damage));
+				threatened(*attacker, static_cast<float>(damage));
 			}
 		}
 	}
@@ -1273,6 +1276,7 @@ namespace wowpp
 	{
 		// Stop auto attack
 		stopAttack();
+		stopRegeneration();
 
 		m_auras.handleTargetDeath();
 	}
@@ -1305,19 +1309,51 @@ namespace wowpp
 		return name;
 	}
 
-	void GameUnit::addThreat(GameUnit &threatening, float threat)
+	const FactionTemplateEntry & GameUnit::getFactionTemplate() const
 	{
-		// Nothing to do here...
+		assert(m_factionTemplate);
+		return *m_factionTemplate;
 	}
 
-	void GameUnit::resetThreat()
+	void GameUnit::setFactionTemplate(const FactionTemplateEntry &faction)
 	{
+		m_factionTemplate = &faction;
+		setUInt32Value(unit_fields::FactionTemplate, m_factionTemplate->id);
 
+		factionChanged(*this);
 	}
 
-	void GameUnit::resetThreat(GameUnit &threatening)
+	bool GameUnit::isInCombat() const
 	{
+		return ((getUInt32Value(unit_fields::UnitFlags) & game::unit_flags::InCombat) != 0);
+	}
 
+	void GameUnit::addAttackingUnit(GameUnit &attacker)
+	{
+		// Add attacking unit to the list of attackers
+		assert(!m_attackingUnits.contains(&attacker));
+		m_attackingUnits.add(&attacker);
+
+		// Flag us for combat
+		addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
+	}
+
+	void GameUnit::removeAttackingUnit(GameUnit &removed)
+	{
+		// Remove attacking unit
+		assert(m_attackingUnits.contains(&removed));
+		m_attackingUnits.remove(&removed);
+
+		// Remove combat flag
+		if (m_attackingUnits.empty())
+		{
+			removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
+		}
+	}
+
+	bool GameUnit::hasAttackingUnits() const
+	{
+		return !m_attackingUnits.empty();
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)

@@ -41,6 +41,22 @@ namespace wowpp
 				point[1]);
 		}
 
+		namespace unit_stand_state
+		{
+			enum Type
+			{
+				Stand			= 0,
+				Sit				= 1,
+				SitChair		= 2,
+				Sleep			= 3,
+				SitLowChair		= 4,
+				SitMediumChair	= 5,
+				SitHighChair	= 6,
+				Dead			= 7,
+				Kneel			= 8
+			};
+		}
+
 		namespace gender
 		{
 			enum Type
@@ -1778,5 +1794,43 @@ namespace wowpp
 				Sheathe				= 0x80000000,
 			};
 		}
+	
+		namespace faction_flags
+		{
+			enum Type
+			{
+				/// Makes visible in client (set or can be set at interaction with target of this faction)
+				Visible			= 0x01,
+				/// Enable AtWar button in client. Player controlled (except opposition team always war state). Flag only set on initial creation.
+				AtWar			= 0x02,
+				/// Hidden faction from reputation pane in client (Player can gain reputation, but this update is not sent to the client)
+				Hidden			= 0x04,
+				/// Used to hide opposite team factions.
+				InvisibleForced	= 0x08,
+				/// Used to prevent war with own team factions.
+				PeaceForced		= 0x10,
+				/// Player controlled
+				Inactive		= 0x20,
+				/// Flag for the two competing Outland factions
+				Rival			= 0x40
+			};
+		}
+
+		namespace reputation_rank
+		{
+			enum Type
+			{
+				Hated			= 0,
+				Hostile			= 1,
+				Unfriendly		= 2,
+				Neutral			= 3,
+				Friendly		= 4,
+				Honored			= 5,
+				Revered			= 6,
+				Exalted			= 7
+			};
+		}
+
+		typedef reputation_rank::Type ReputationRank;
 	}
 }

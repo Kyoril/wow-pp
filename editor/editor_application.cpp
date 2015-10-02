@@ -33,6 +33,49 @@ namespace wowpp
 	namespace editor
 	{
 		template<>
+		QVariant TemplateListModel<ItemEntryManager>::data(const QModelIndex &index, int role) const
+		{
+			if (!index.isValid())
+				return QVariant();
+
+			if (index.row() >= m_entries.getTemplates().size())
+				return QVariant();
+
+			const auto &templates = m_entries.getTemplates();
+			const auto &tpl = templates[index.row()];
+
+			if (role == Qt::DisplayRole)
+			{
+				if (index.column() == 0)
+				{
+					return QString("%1 %2").arg(QString::number(tpl->id), 5, QLatin1Char('0')).arg(tpl->name.c_str());
+				}
+			}
+			else if (role == Qt::ForegroundRole)
+			{
+				switch (tpl->quality)
+				{
+					case 0:
+						return QColor(Qt::gray);
+					case 1:
+						return QColor(Qt::white);
+					case 2:
+						return QColor(Qt::green);
+					case 3:
+						return QColor(0, 114, 198);
+					case 4:
+						return QColor(Qt::magenta);
+					case 5:
+						return QColor(Qt::yellow);
+					default:
+						return QColor(Qt::red);
+				}
+			}
+
+			return QVariant();
+		}
+
+		template<>
 		QVariant TemplateListModel<MapEntryManager>::data(const QModelIndex &index, int role) const
 		{
 			if (!index.isValid())

@@ -30,6 +30,8 @@ namespace wowpp
 	struct DataLoadContext;
 	struct TriggerEntry;
 	struct ItemEntry;
+	struct FactionTemplateEntry;
+	struct LootEntry;
 
 	/// Stores creature related data.
 	struct UnitEntry : BasicTemplate<UInt32>
@@ -43,9 +45,9 @@ namespace wowpp
 		/// Minimum level and maximum level. If different, the level will be randomized for each spawn.
 		UInt32 minLevel, maxLevel;
 		/// Faction for alliance units.
-		UInt32 allianceFactionID;
+		const FactionTemplateEntry *allianceFaction;
 		/// Faction for horde units.
-		UInt32 hordeFactionID;
+		const FactionTemplateEntry *hordeFaction;
 		/// Display id of this unit if male unit.
 		UInt32 maleModel;
 		/// Display id of this unit if female unit.
@@ -109,6 +111,8 @@ namespace wowpp
 		UInt32 attackPower;
 		/// 
 		UInt32 rangedAttackPower;
+		/// 
+		const LootEntry *unitLootEntry;
 
 		/// Default constructor.
 		UnitEntry();

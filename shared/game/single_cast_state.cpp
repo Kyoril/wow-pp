@@ -896,7 +896,7 @@ namespace wowpp
 		const bool noThreat = ((m_spell.attributesEx[0] & spell_attributes_ex_a::NoThreat) != 0);
 		if (!noThreat)
 		{
-			unitTarget->addThreat(caster, 0.00001f);
+			unitTarget->threatened(caster, 0.00001f);
 		}
 
 		// TODO: Add aura to unit target
@@ -1215,7 +1215,7 @@ namespace wowpp
 
 		if (executer.getVictim())
 		{
-			spawned->addThreat(*executer.getVictim(), 0.01f);
+			spawned->threatened(*executer.getVictim(), 0.0001f);
 		}
 	}
 

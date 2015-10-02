@@ -20,3 +20,4 @@
 # 
 
 add_subdirectory(sff_test)
+add_subdirectory(loot_extractor)

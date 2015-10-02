@@ -26,8 +26,10 @@
 #include "numeric_editor.h"
 #include "min_max_editor.h"
 #include "ui_object_editor.h"
+#include "loot_dialog.h"
 #include "choose_trigger_dialog.h"
 #include "game/defines.h"
+#include "data/faction_template_entry.h"
 #include <QRegExp>
 #include <utility>
 
@@ -166,6 +168,40 @@ namespace wowpp
 			}
 		}
 
+		void ObjectEditor::addLootItem(const LootDefinition &def, QTreeWidgetItem *parent)
+		{
+			QTreeWidgetItem *item = new QTreeWidgetItem(parent); 
+			item->setText(0, QString("%1 %2").arg(QString::number(def.item->id), 5, QLatin1Char('0')).arg(def.item->name.c_str()));
+			item->setText(1, QString("%1%").arg(def.dropChance));
+
+			QColor textColor = QColor(Qt::white);
+			switch (def.item->quality)
+			{
+			case 0:
+				textColor = QColor(Qt::gray);
+				break;
+			case 1:
+				textColor = QColor(Qt::white);
+				break;
+			case 2:
+				textColor = QColor(Qt::green);
+				break;
+			case 3:
+				textColor = QColor(0, 114, 198);
+				break;
+			case 4:
+				textColor = QColor(Qt::magenta);
+				break;
+			case 5:
+				textColor = QColor(Qt::yellow);
+				break;
+			default:
+				textColor = QColor(Qt::red);
+				break;
+			}
+			item->setTextColor(0, textColor);
+		}
+
 		void ObjectEditor::onUnitSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
 		{
 			// Get the selected unit
@@ -198,6 +234,43 @@ namespace wowpp
 			if (!unit)
 				return;
 
+			m_ui->lootView->clear();
+			if (!unit->unitLootEntry)
+			{
+				m_ui->lootLine->setText("- NO LOOT -");
+				m_ui->lootToolButton->setDisabled(true);
+				m_ui->lootSimulatorButton->setDisabled(true);
+			}
+			else
+			{
+				QIcon groupIcon;
+				groupIcon.addFile(QStringLiteral(":/Items.png"), QSize(), QIcon::Normal, QIcon::Off);
+
+				size_t groupIndex = 0;
+				for (auto &group : unit->unitLootEntry->lootGroups)
+				{
+					// Add group
+					QTreeWidgetItem *groupItem = new QTreeWidgetItem();
+					groupItem->setIcon(0, groupIcon);
+					m_ui->lootView->addTopLevelItem(groupItem);
+
+					float totalDropChance = 0.0f;
+					for (auto &def : group)
+					{
+						totalDropChance += def.dropChance;
+						addLootItem(def, groupItem);
+					}
+
+					groupItem->setText(0, QString("Group %1").arg(groupIndex++));
+					groupItem->setText(1, QString("%1% Total").arg(totalDropChance));
+					groupItem->setText(2, QString("%1 Items").arg(group.size()));
+				}
+
+				m_ui->lootLine->setText(QString("Loot Entry %1").arg(unit->unitLootEntry->id));
+				m_ui->lootToolButton->setDisabled(false);
+				m_ui->lootSimulatorButton->setDisabled(false);
+			}
+
 			// Add unit properties
 			m_properties.push_back(PropertyPtr(new NumericProperty("Entry", UInt32Ref(unit->id), true)));
 			m_properties.push_back(PropertyPtr(new StringProperty("Name", unit->name)));
@@ -215,8 +288,8 @@ namespace wowpp
 			m_properties.push_back(PropertyPtr(new NumericProperty("Scale", FloatRef(unit->scale))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Male Model ID", UInt32Ref(unit->maleModel))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Female Model ID", UInt32Ref(unit->femaleModel))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Alliance Faction ID", UInt32Ref(unit->allianceFactionID))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Horde Faction ID", UInt32Ref(unit->hordeFactionID))));
+// 			m_properties.push_back(PropertyPtr(new NumericProperty("Alliance Faction ID", UInt32Ref(unit->allianceFaction->id))));
+// 			m_properties.push_back(PropertyPtr(new NumericProperty("Horde Faction ID", UInt32Ref(unit->hordeFaction->id))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Family", UInt32Ref(unit->family))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("NPC Flags", UInt32Ref(unit->npcFlags))));
 			m_properties.push_back(PropertyPtr(new NumericProperty("Unit Flags", UInt32Ref(unit->unitFlags), false, std::bind(&UnitFlagsMiscValue, std::cref(*unit)))));
@@ -466,5 +539,16 @@ namespace wowpp
 			}
 		}
 
+		void ObjectEditor::on_lootSimulatorButton_clicked()
+		{
+			if (!m_selected)
+				return;
+
+			if (!m_selected->unitLootEntry)
+				return;
+
+			LootDialog dialog(m_application.getProject(), *m_selected->unitLootEntry);
+			auto result = dialog.exec();
+		}
 	}
 }

@@ -35,6 +35,7 @@
 #include <boost/bind/bind.hpp>
 #include "each_tile_in_sight.h"
 #include "common/utilities.h"
+#include "creature_ai.h"
 #include "universe.h"
 #include <algorithm>
 #include <array>

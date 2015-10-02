@@ -34,6 +34,8 @@
 #include "spell_target_map.h"
 #include "aura.h"
 #include "aura_container.h"
+#include "common/macros.h"
+#include "common/linear_set.h"
 #include <boost/signals2.hpp>
 
 namespace wowpp
@@ -301,6 +303,8 @@ namespace wowpp
 
 	typedef base_mod_type::Type BaseModType;
 
+	struct FactionTemplateEntry;
+
 	/// Base class for all units in the world. A unit is an object with health, which can
 	/// be controlled, fight etc. This class will be inherited by the GameCreature and the
 	/// GameCharacter classes.
@@ -340,6 +344,10 @@ namespace wowpp
 		/// Fired when hit by any direct damage (excluding dots).
 		/// Parameters: school, &attacker
 		boost::signals2::signal<void(UInt8, GameUnit&)> damageHit;
+		/// Fired when the units faction changed. This might cause the unit to become friendly to attackers.
+		boost::signals2::signal<void(GameUnit &)> factionChanged;
+		/// 
+		boost::signals2::signal<void(GameUnit &, float)> threatened;
 
 	public:
 
@@ -373,6 +381,10 @@ namespace wowpp
 		UInt8 getGender() const { return getByteValue(unit_fields::Bytes0, 2); }
 		/// Gets the current level.
 		UInt32 getLevel() const { return getUInt32Value(unit_fields::Level); }
+		/// Gets this units faction template.
+		const FactionTemplateEntry &getFactionTemplate() const;
+		/// 
+		void setFactionTemplate(const FactionTemplateEntry &faction);
 
 		/// Gets the timer queue object needed for countdown events.
 		TimerQueue &getTimers() { return m_timers; }
@@ -380,11 +392,11 @@ namespace wowpp
 		const RaceEntry *getRaceEntry() const {  return m_raceEntry; }
 		/// Get the current class entry information.
 		const ClassEntry *getClassEntry() const { return m_classEntry; }
-
+		/// 
 		virtual const String &getName() const;
 
 		/// Starts to cast a spell using the given target map.
-		void castSpell(SpellTargetMap target, UInt32 spell, GameTime castTime, const SpellSuccessCallback &callback);
+		void castSpell(SpellTargetMap target, UInt32 spell, GameTime castTime, bool isProc, const SpellSuccessCallback &callback);
 		/// Stops the current cast (if any).
 		void cancelCast();
 		/// Starts auto attack on the given target.
@@ -444,7 +456,7 @@ namespace wowpp
 		/// 
 		bool isAlive() const { return (getUInt32Value(unit_fields::Health) != 0); }
 		/// Determines whether this unit is actually in combat with at least one other unit.
-		virtual bool isInCombat() const = 0;
+		bool isInCombat() const;
 
 		bool isImmune(UInt8 school);
 		float getMissChance(GameUnit &caster, GameUnit &target);
@@ -462,9 +474,18 @@ namespace wowpp
 		virtual bool canParry() const = 0;
 		virtual bool canDodge() const = 0;
 
-		virtual void addThreat(GameUnit &threatening, float threat);
-		virtual void resetThreat();
-		virtual void resetThreat(GameUnit &threatening);
+		/// Adds a unit to the list of attacking units. This list is used to generate threat
+		/// if this unit is healed by another unit, and to determine, whether a player should
+		/// stay in combat. This method adds may add game::unit_flags::InCombat
+		/// @param attacker The attacking unit.
+		void addAttackingUnit(GameUnit &attacker);
+		/// Forces an attacking unit to be removed from the list of attackers. Note that attacking
+		/// units are removed automatically on despawn and/or death, so this is more useful in PvP
+		/// scenarios. This method may remove game::unit_flags::InCombat
+		/// @param removed The attacking unit to be removed from the list of attackers.
+		void removeAttackingUnit(GameUnit &removed);
+		/// Determines whether this unit is attacked by other units.
+		bool hasAttackingUnits() const;
 
 		/// Calculates the stat based on the specified modifier.
 		static UInt8 getStatByUnitMod(UnitMods mod);
@@ -511,7 +532,7 @@ namespace wowpp
 		void onVictimDespawned();
 		void onAttackSwing();
 		void onRegeneration();
-		void regenerateHealth();
+		virtual void regenerateHealth() = 0;
 		void regeneratePower(PowerType power);
 		void onAuraExpired(Aura &aura);
 		void onSpellCastEnded(bool succeeded);
@@ -521,6 +542,7 @@ namespace wowpp
 		typedef std::array<float, unit_mod_type::End> UnitModTypeArray;
 		typedef std::array<UnitModTypeArray, unit_mods::End> UnitModArray;
 		typedef std::vector<std::shared_ptr<Aura>> AuraVector;
+		typedef LinearSet<GameUnit*> AttackingUnitSet;
 
 		TimerQueue &m_timers;
 		DataLoadContext::GetRace m_getRace;
@@ -540,6 +562,8 @@ namespace wowpp
 		UnitModArray m_unitMods;
 		AuraContainer m_auras;
 		AttackSwingCallback m_swingCallback;
+		const FactionTemplateEntry *m_factionTemplate;
+		AttackingUnitSet m_attackingUnits;
 	};
 
 	UInt32 calculateArmorReducedDamage(UInt32 attackerLevel, const GameUnit &victim, UInt32 damage);

@@ -40,6 +40,7 @@ namespace wowpp
 		, m_armorProficiency(0)
 		, m_comboTarget(0)
 		, m_comboPoints(0)
+		, m_healthRegBase(0.0f)
 		, m_manaRegBase(0.0f)
 		, m_groupUpdateFlags(group_update_flags::None)
 		, m_canBlock(false)
@@ -150,10 +151,12 @@ namespace wowpp
 		auto regenIt = levelInfo.regen.find(getClass());
 		if (regenIt != levelInfo.regen.end())
 		{
+			m_healthRegBase = regenIt->second[0];
 			m_manaRegBase = regenIt->second[1];
 		}
 		else
 		{
+			m_healthRegBase = 0.0f;
 			m_manaRegBase = 0.0f;
 		}
 
@@ -832,12 +835,6 @@ namespace wowpp
 		}
 	}
 
-	bool GameCharacter::isInCombat() const
-	{
-		// TODO
-		return false;
-	}
-
 	bool GameCharacter::canBlock() const
 	{
 		if (!m_canBlock)
@@ -883,12 +880,45 @@ namespace wowpp
 		return true;
 	}
 
+	void GameCharacter::regenerateHealth()
+	{
+		float healthRegRate = 1.0f;
+		if (getLevel() < 15)
+		{
+			healthRegRate *= (2.066f - (getLevel() * 0.066f));
+		}
+
+		// TODO: When polymorphed, regenerate health quickly
+
+		// TODO: One missing value
+		float spirit = static_cast<float>(getUInt32Value(unit_fields::Stat4));
+		float baseSpirit = spirit;
+		if (baseSpirit > 50.0f) baseSpirit = 50.0f;
+		float moreSpirit = spirit - baseSpirit;
+		float spiritRegen = baseSpirit * m_healthRegBase + moreSpirit * m_healthRegBase;
+
+		float addHealth = spiritRegen * healthRegRate;
+		UInt8 standState = getByteValue(unit_fields::Bytes1, 0);
+		if (standState != unit_stand_state::Stand &&
+			standState != unit_stand_state::Dead)
+		{
+			// 50% more regeneration when not standing
+			addHealth *= 1.5f;
+		}
+
+		if (addHealth < 0.0f) 
+			return;
+
+		heal(static_cast<UInt32>(addHealth), nullptr, true);
+	}
+
 	io::Writer & operator<<(io::Writer &w, GameCharacter const& object)
 	{
 		w
 			<< reinterpret_cast<GameUnit const&>(object)
 			<< io::write_dynamic_range<NetUInt8>(object.m_name)
 			<< io::write<NetUInt32>(object.m_zoneIndex)
+			<< io::write<float>(object.m_healthRegBase)
 			<< io::write<float>(object.m_manaRegBase);
 		return w;
 	}
@@ -900,6 +930,7 @@ namespace wowpp
 			>> reinterpret_cast<GameUnit&>(object)
 			>> io::read_container<NetUInt8>(object.m_name)
 			>> io::read<NetUInt32>(object.m_zoneIndex)
+			>> io::read<float>(object.m_healthRegBase)
 			>> io::read<float>(object.m_manaRegBase);
 
 		// Reset all auras

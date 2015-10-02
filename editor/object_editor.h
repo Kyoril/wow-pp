@@ -25,6 +25,7 @@
 #include <QSortFilterProxyModel>
 #include <QAbstractTableModel>
 #include <QItemSelection>
+#include <QTreeWidgetItem>
 #include "data/project.h"
 #include "property_view_model.h"
 #include <memory>
@@ -50,6 +51,10 @@ namespace wowpp
 
 			explicit ObjectEditor(EditorApplication &app);
 
+		private:
+
+			void addLootItem(const LootDefinition &def, QTreeWidgetItem *parent);
+
 		private slots:
 
 			void on_unitFilter_editingFinished();
@@ -61,6 +66,7 @@ namespace wowpp
 			void on_unitPropertyWidget_doubleClicked(QModelIndex index);
 			void onSpellSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void onItemSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
+			void on_lootSimulatorButton_clicked();
 
 		private:
 				

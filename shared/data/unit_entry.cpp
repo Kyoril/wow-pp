@@ -25,6 +25,9 @@
 #include "data_load_context.h"
 #include "trigger_entry.h"
 #include "item_entry.h"
+#include "loot_entry.h"
+#include "faction_template_entry.h"
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -42,8 +45,8 @@ namespace wowpp
 		, minRangedDamage(0)
 		, maxRangedDamage(0)
 		, scale(1.0f)
-		, allianceFactionID(0)
-		, hordeFactionID(0)
+		, allianceFaction(nullptr)
+		, hordeFaction(nullptr)
 		, type(0)
 		, family(0)
 		, regeneratesHealth(true)
@@ -69,6 +72,7 @@ namespace wowpp
 		, ranged(nullptr)
 		, attackPower(0)
 		, rangedAttackPower(0)
+		, unitLootEntry(nullptr)
 	{
 		resistances.fill(0);
 	}
@@ -136,8 +140,26 @@ namespace wowpp
 		wrapper.table.tryGetInteger("armor", armor);
 		wrapper.table.tryGetInteger("melee_attack_time", meleeBaseAttackTime);
 		wrapper.table.tryGetInteger("ranged_attack_time", rangedBaseAttackTime);
+		UInt32 allianceFactionID = 0;
 		wrapper.table.tryGetInteger("a_faction", allianceFactionID);
+		allianceFaction = context.getFactionTemplate(allianceFactionID);
+		if (!allianceFaction)
+		{
+			std::ostringstream strm;
+			strm << "Invalid alliance faction id " << allianceFactionID << " for unit " << id;
+			context.onError(strm.str());
+			return false;
+		}
+		UInt32 hordeFactionID = 0;
 		wrapper.table.tryGetInteger("h_faction", hordeFactionID);
+		hordeFaction = context.getFactionTemplate(hordeFactionID);
+		if (!hordeFaction)
+		{
+			std::ostringstream strm;
+			strm << "Invalid alliance faction id " << hordeFactionID << " for unit " << id;
+			context.onError(strm.str());
+			return false;
+		}
 		wrapper.table.tryGetInteger("unit_flags", unitFlags);
 		wrapper.table.tryGetInteger("npc_flags", npcFlags);
 		wrapper.table.tryGetInteger("unit_class", unitClass);
@@ -158,14 +180,28 @@ namespace wowpp
 			context.loadLater.push_back([eqMain, eqOff, eqRange, &context, this]() -> bool
 			{
 				if (eqMain != 0) this->mainHand = context.getItem(eqMain);
-				if (eqOff != 0) this->mainHand = context.getItem(eqOff);
-				if (eqRange != 0) this->mainHand = context.getItem(eqRange);
+				if (eqOff != 0) this->offHand = context.getItem(eqOff);
+				if (eqRange != 0) this->ranged = context.getItem(eqRange);
 
 				return true;
 			});
 		}
 		wrapper.table.tryGetInteger("atk_power", attackPower);
 		wrapper.table.tryGetInteger("rng_atk_power", rangedAttackPower);
+		UInt32 lootId = 0;
+		wrapper.table.tryGetInteger("unit_loot", lootId);
+		if (lootId != 0)
+		{
+			context.loadLater.push_back([lootId, &context, this]() -> bool
+			{
+				unitLootEntry = context.getUnitLoot(lootId);
+				if (unitLootEntry == nullptr)
+				{
+					WLOG("Unit " << id << " has unknown unit loot entry " << lootId << " - creature will have no unit loot!");
+				}
+				return true;
+			});
+		}
 #undef MIN_MAX_CHECK
 
 		return true;
@@ -194,10 +230,10 @@ namespace wowpp
 		if (armor != 0) context.table.addKey("armor", armor);
 		if (meleeBaseAttackTime != 0) context.table.addKey("melee_attack_time", meleeBaseAttackTime);
 		if (rangedBaseAttackTime != 0) context.table.addKey("ranged_attack_time", rangedBaseAttackTime);
-		if (allianceFactionID != 0) context.table.addKey("a_faction", allianceFactionID);
-		if (hordeFactionID != 0) context.table.addKey("h_faction", hordeFactionID);
-		if (hordeFactionID != 0) context.table.addKey("unit_flags", unitFlags);
-		if (hordeFactionID != 0) context.table.addKey("npc_flags", npcFlags);
+		if (allianceFaction != 0) context.table.addKey("a_faction", allianceFaction->id);
+		if (hordeFaction != 0) context.table.addKey("h_faction", hordeFaction->id);
+		if (unitFlags != 0) context.table.addKey("unit_flags", unitFlags);
+		if (npcFlags != 0) context.table.addKey("npc_flags", npcFlags);
 		if (unitClass != 0) context.table.addKey("unit_class", unitClass);
 		if (minLootGold != 0) context.table.addKey("min_loot_gold", minLootGold);
 		if (maxLootGold != 0) context.table.addKey("max_loot_gold", maxLootGold);
@@ -210,6 +246,7 @@ namespace wowpp
 		if (ranged != 0) context.table.addKey("eq_ranged", ranged->id);
 		if (attackPower != 0) context.table.addKey("atk_power", attackPower);
 		if (rangedAttackPower != 0) context.table.addKey("rng_atk_power", rangedAttackPower);
+		if (unitLootEntry != nullptr) context.table.addKey("unit_loot", unitLootEntry->id);
 
 		if (!triggers.empty())
 		{

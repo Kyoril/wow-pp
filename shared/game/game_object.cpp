@@ -149,6 +149,43 @@ namespace wowpp
 		}
 	}
 
+	void GameObject::addFlag(UInt16 index, UInt32 flag)
+	{
+		assert(index < m_values.size());
+
+		UInt32 newValue = m_values[index] | flag;
+		if (newValue != m_values[index])
+		{
+			m_values[index] = newValue;
+
+			UInt16 bitIndex = index >> 3;
+
+			// Mark bit as changed
+			UInt8 &changed = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[bitIndex];
+			changed |= 1 << (index & 0x7);
+
+			m_updated = true;
+		}
+	}
+
+	void GameObject::removeFlag(UInt16 index, UInt32 flag)
+	{
+		assert(index < m_values.size());
+
+		UInt32 newValue = m_values[index] & ~flag;
+		if (newValue != m_values[index])
+		{
+			m_values[index] = newValue;
+			UInt16 bitIndex = index >> 3;
+
+			// Mark bit as changed
+			UInt8 &changed = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[bitIndex];
+			changed |= 1 << (index & 0x7);
+
+			m_updated = true;
+		}
+	}
+
 	void GameObject::setInt32Value(UInt16 index, Int32 value)
 	{
 		assert(index < m_values.size());

@@ -21,45 +21,39 @@
 
 #pragma once
 
-#include "templates/basic_template.h"
-#include "game/action_button.h"
+#include "common/typedefs.h"
 #include "data_load_context.h"
+#include "templates/basic_template.h"
 
 namespace wowpp
 {
-	struct ItemEntry;
-	struct SpellEntry;
-	struct FactionTemplateEntry;
+	struct FactionEntry;
 
-	struct RaceEntry : BasicTemplate<UInt32>
+	struct FactionTemplateEntry : BasicTemplate<UInt32>
 	{
 		typedef BasicTemplate<UInt32> Super;
 
-		typedef std::vector<const ItemEntry*> InitialItemVector;
-		typedef std::map<UInt32, InitialItemVector> GenderItemMap;
-		typedef std::map<UInt32, GenderItemMap> ClassGenderItemMap;
-
-		typedef std::vector<const SpellEntry*> InitialSpellVector;
-		typedef std::map<UInt32, InitialSpellVector> InitialClassSpellMap;
-		typedef std::map<UInt32, ActionButtons> InitialActionButtonsMap;
-
-		String name;
-		const FactionTemplateEntry *factionTemplate;
-		UInt32 maleModel;
-		UInt32 femaleModel;
-		UInt32 baseLanguage;		//7 = Alliance	1 = Horde
-		UInt32 startingTaxiMask;
-		UInt32 cinematic;
-		InitialClassSpellMap initialSpells;
-		InitialActionButtonsMap initialActionButtons;
-		ClassGenderItemMap initialItems;		// initialItems[class][gender][item_index]
-		UInt32 startMap;
-		UInt32 startZone;
-		std::array<float, 3> startPosition;
-		float startRotation;
-
-		RaceEntry();
+		UInt32 flags;
+		UInt32 selfMask;
+		UInt32 friendMask;
+		UInt32 enemyMask;
+		const FactionEntry *faction;
+		std::vector<const FactionEntry*> friends;
+		std::vector<const FactionEntry*> enemies;
+		
+		FactionTemplateEntry();
 		bool load(DataLoadContext &context, const ReadTableWrapper &wrapper);
 		void save(BasicTemplateSaveContext &context) const;
+
+		/// Determines whether this faction template entry is friendly towards a specific other entry.
+		/// @param entry The other faction template entry to check.
+		bool isFriendlyTo(const FactionTemplateEntry &entry) const;
+		/// Determines whether this faction template entry is hostile towards a specific other entry.
+		/// @param entry The other faction template entry to check.
+		bool isHostileTo(const FactionTemplateEntry &entry) const;
+		/// Determines if this faction template entry is hostile towards (all) players.
+		bool isHostileToPlayers() const;
+		/// Determines if this faction template entry is neutral towards all other factions.
+		bool isNeutralToAll() const;
 	};
 }

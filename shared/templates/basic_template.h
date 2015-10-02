@@ -37,7 +37,6 @@ namespace wowpp
 	public:
 
 		Identifier id;
-		String name;
 
 	public:
 

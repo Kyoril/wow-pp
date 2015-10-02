@@ -34,9 +34,9 @@
 #include "mysql_wrapper/mysql_row.h"
 #include "mysql_wrapper/mysql_select.h"
 #include "mysql_wrapper/mysql_statement.h"
+#include "common/make_unique.h"
 using namespace wowpp;
 
-#if 0
 struct EquipmentEntry
 {
 	const ItemEntry *mainHand, *offHand, *ranged;
@@ -67,15 +67,15 @@ bool importEquipment(Project &project, MySQL::Connection &connection)
 
 				UInt32 equipEntry = 0;
 				row.getField(1, equipEntry);
-				entry.mainHand = proj.items.getById(equipEntry);
+				entry.mainHand = project.items.getById(equipEntry);
 				if (equipEntry != 0 && entry.mainHand == nullptr) WLOG("Could not find item with entry " << equipEntry);
 
 				row.getField(2, equipEntry);
-				entry.offHand = proj.items.getById(equipEntry);
+				entry.offHand = project.items.getById(equipEntry);
 				if (equipEntry != 0 && entry.offHand == nullptr) WLOG("Could not find item with entry " << equipEntry);
 
 				row.getField(3, equipEntry);
-				entry.ranged = proj.items.getById(equipEntry);
+				entry.ranged = project.items.getById(equipEntry);
 				if (equipEntry != 0 && entry.ranged == nullptr) WLOG("Could not find item with entry " << equipEntry);
 
 				row = row.next(select);
@@ -105,7 +105,7 @@ bool importEquipment(Project &project, MySQL::Connection &connection)
 				UInt32 equipmentId = 0;
 				row2.getField(1, equipmentId);
 
-				auto *unit = proj.units.getEditableById(entryId);
+				auto *unit = project.units.getEditableById(entryId);
 				if (unit)
 				{
 					if (equipmentId == 0)
@@ -208,8 +208,6 @@ bool importCreatureTypes(Project &project, MySQL::Connection &connection)
 
 	return true;
 }
-#endif
-
 
 bool importCreatureAttackPower(Project &project, MySQL::Connection &connection)
 {
@@ -234,6 +232,46 @@ bool importCreatureAttackPower(Project &project, MySQL::Connection &connection)
 			{
 				unitEntry->attackPower = atk;
 				unitEntry->rangedAttackPower = rng_atk;
+			}
+
+			row = row.next(select);
+		}
+	}
+	else
+	{
+		// There was an error
+		ELOG(connection.getErrorMessage());
+		return false;
+	}
+
+	return true;
+}
+
+bool importCreatureFlags(Project &project, MySQL::Connection &connection)
+{
+	wowpp::MySQL::Select select(connection, "SELECT `entry`, `unit_flags`, `dynamicflags`, `npcflag` FROM `creature_template`;");
+	if (select.success())
+	{
+		wowpp::MySQL::Row row(select);
+		while (row)
+		{
+			UInt32 entry = 0, unitFlags = 0, dynamicflags = 0, npcflag = 0;
+			row.getField(0, entry);
+			row.getField(1, unitFlags);
+			row.getField(2, dynamicflags);
+			row.getField(3, npcflag);
+
+			// Find unit
+			auto *unitEntry = project.units.getEditableById(entry);
+			if (!unitEntry)
+			{
+				WLOG("Could not find entry for unit " << entry << " - skipping");
+			}
+			else
+			{
+				unitEntry->unitFlags = unitFlags;
+				unitEntry->dynamicFlags = dynamicflags;
+				unitEntry->npcFlags = npcflag;
 			}
 
 			row = row.next(select);
@@ -276,6 +314,7 @@ bool fixCreatureDamage(Project &project)
 	return true;
 }
 
+
 /// Procedural entry point of the application.
 int main(int argc, char* argv[])
 {
@@ -300,11 +339,10 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	
-	fixCreatureDamage(proj);
-	/*if (!importCreatureAttackPower(proj, connection))
+	if (!importEquipment(proj, connection))
 	{
 		return 1;
-	}*/
+	}
 
 	proj.save("./test-data");
 

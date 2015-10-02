@@ -23,6 +23,7 @@
 
 #include "game_unit.h"
 #include "game_item.h"
+#include "defines.h"
 
 namespace wowpp
 {
@@ -432,6 +433,18 @@ namespace wowpp
 		};
 	}
 
+	struct FactionState
+	{
+		UInt32 id;
+		UInt32 listId;
+		UInt32 flags;
+		Int32 standing;
+		bool changed;
+	};
+
+	typedef std::map<UInt32, FactionState> FactionStateList;
+	typedef std::map<UInt32, game::ReputationRank> ForcedReactions;
+
 	typedef group_update_flags::Type GroupUpdateFlags;
 
 	struct SpellEntry;
@@ -528,7 +541,6 @@ namespace wowpp
 		GroupUpdateFlags getGroupUpdateFlags() const { return m_groupUpdateFlags; }
 		void modifyGroupUpdateFlags(GroupUpdateFlags flags, bool apply);
 		void clearGroupUpdateFlags() { m_groupUpdateFlags = group_update_flags::None; }
-		bool isInCombat() const override;
 		bool canBlock() const override;
 		bool canParry() const override;
 		bool canDodge() const override;
@@ -539,6 +551,7 @@ namespace wowpp
 		virtual void updateArmor() override;
 		virtual void updateDamage() override;
 		virtual void updateManaRegen() override;
+		virtual void regenerateHealth() override;
 
 	private:
 
@@ -551,10 +564,12 @@ namespace wowpp
 		std::map<UInt16, std::shared_ptr<GameItem>> m_itemSlots;
 		UInt64 m_comboTarget;
 		UInt8 m_comboPoints;
-		float m_manaRegBase;
+		float m_healthRegBase, m_manaRegBase;
 		GroupUpdateFlags m_groupUpdateFlags;
 		bool m_canBlock;	// Set by spell
 		bool m_canParry;	// Set by spell
+		FactionStateList m_factions;
+		ForcedReactions m_forcedReactions;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameCharacter const& object);

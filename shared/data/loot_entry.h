@@ -22,26 +22,41 @@
 #pragma once
 
 #include "common/typedefs.h"
+#include "data_load_context.h"
+#include "templates/basic_template.h"
 
 namespace wowpp
 {
-	namespace constants
+	struct ItemEntry;
+
+	struct LootDefinition
 	{
-		/// Width or height of a ADT page in world units (Yards).
-		static const float MapWidth = 533.33333f;
-		/// Number of adt pages per map (one side).
-		static const UInt32 PagesPerMap = 64;
-		/// Number of tiles per adt page (one side).
-		static const UInt32 TilesPerPage = 16;
-		/// Total number of tiles per adt page (both sides).
-		static const UInt32 TilesPerPageSquared = TilesPerPage * TilesPerPage;
-		/// Total number of vertices per tile (both sides).
-		static const UInt32 VertsPerTile = 9 * 9 + 8 * 8;
-		/// Defined by client?
-		static const UInt32 FriendListLimit = 50;
-		/// Defined by client?
-		static const UInt32 IgnoreListLimit = 25;
-		/// Maximum number of action buttons the client knows.
-		static const UInt32 ActionButtonLimit = 132;
-	}
+		const ItemEntry *item;
+		UInt16 minCount;
+		UInt16 maxCount;
+		float dropChance;
+		bool isActive;
+
+		LootDefinition()
+			: item(nullptr)
+			, minCount(1)
+			, maxCount(1)
+			, dropChance(0.0f)
+			, isActive(true)
+		{
+		}
+	};
+
+	typedef std::vector<LootDefinition> LootGroup;
+
+	struct LootEntry : BasicTemplate<UInt32>
+	{
+		typedef BasicTemplate<UInt32> Super;
+
+		std::vector<LootGroup> lootGroups;
+
+		LootEntry();
+		bool load(DataLoadContext &context, const ReadTableWrapper &wrapper);
+		void save(BasicTemplateSaveContext &context) const;
+	};
 }

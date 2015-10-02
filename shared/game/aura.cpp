@@ -186,8 +186,15 @@ namespace wowpp
 
 	void Aura::handleDamageShield(bool apply)
 	{
-		m_damageHit = m_target.damageHit.connect(
-			std::bind(&Aura::onDamageHit, this, std::placeholders::_1, std::placeholders::_2));
+		if (apply)
+		{
+			m_damageHit = m_target.damageHit.connect(
+				std::bind(&Aura::onDamageHit, this, std::placeholders::_1, std::placeholders::_2));
+		}
+		else
+		{
+			m_damageHit.disconnect();
+		}
 	}
 
 	void Aura::handleModStealth(bool apply)
@@ -400,8 +407,8 @@ namespace wowpp
 							targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
 							targetMap.m_unitTarget = unit->getGuid();
 
-							if (spell1 != 0) unit->castSpell(targetMap, spell1, 0, GameUnit::SpellSuccessCallback());
-							if (spell2 != 0) unit->castSpell(targetMap, spell2, 0, GameUnit::SpellSuccessCallback());
+							if (spell1 != 0) unit->castSpell(targetMap, spell1, 0, true, GameUnit::SpellSuccessCallback());
+							if (spell2 != 0) unit->castSpell(targetMap, spell2, 0, true, GameUnit::SpellSuccessCallback());
 						}
 						else
 						{
@@ -480,10 +487,16 @@ namespace wowpp
 		namespace aura = game::aura_type;
 		if (m_effect.auraName == aura::ProcTriggerSpell)
 		{
+			if (!m_effect.triggerSpell)
+			{
+				WLOG("WARNING: PROC_TRIGGER_SPELL aura of spell " << m_spell.id << " does not have a trigger spell provided");
+				return;
+			}
+
 			SpellTargetMap targetMap;
 			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
 			targetMap.m_unitTarget = attacker.getGuid();
-			m_target.castSpell(targetMap, m_spell.id, 0, GameUnit::SpellSuccessCallback());
+			m_target.castSpell(targetMap, m_effect.triggerSpell->id, 0, true, GameUnit::SpellSuccessCallback());
 		}
 		else if (m_effect.auraName == aura::DamageShield)
 		{

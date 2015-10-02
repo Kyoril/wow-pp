@@ -22,11 +22,15 @@
 #include "game_creature.h"
 #include "data/trigger_entry.h"
 #include "data/item_entry.h"
+#include "data/faction_template_entry.h"
 #include "world_instance.h"
 #include "tiled_unit_watcher.h"
 #include "unit_finder.h"
 #include "each_tile_in_sight.h"
 #include "binary_io/vector_sink.h"
+#include "log/default_log_levels.h"
+#include "common/make_unique.h"
+#include "creature_ai.h"
 
 namespace wowpp
 {
@@ -41,54 +45,6 @@ namespace wowpp
 		, m_originalEntry(entry)
 		, m_entry(nullptr)
 	{
-		// TODO: Put the code below into an AI class
-		// This can only be executed when the unit is spawned (so that it is added to a world instance)
-		spawned.connect([this]()
-		{
-			float x, y, z, o;
-			this->getLocation(x, y, z, o);
-
-			Circle circle(x, y, 20.0f);
-			m_aggroWatcher = m_worldInstance->getUnitFinder().watchUnits(circle);
-			m_aggroWatcher->visibilityChanged.connect([this](GameUnit& unit, bool isVisible) -> bool
-			{
-				if (&unit == this)
-				{
-					return false;
-				}
-
-				if (!isAlive())
-				{
-					return false;
-				}
-
-				if (unit.getTypeId() == object_type::Character)
-				{
-					if (isVisible)
-					{
-						// We ignore new attack targets if we already are in combat
-						if (isInCombat())
-							return false;
-
-						// TODO: Determine whether the unit is hostile and we should attack that unit
-
-						// Start attacking that unit
-						addThreat(unit, 0.0001f);
-						return true;
-					}
-					else
-					{
-						// Stop attacking that target.
-						resetThreat(unit);
-						return false;
-					}
-				}
-
-				return false;
-			});
-
-			m_aggroWatcher->start();
-		});
 	}
 
 	void GameCreature::initialize()
@@ -96,7 +52,20 @@ namespace wowpp
 		// Initialize the unit
 		GameUnit::initialize();
 
+		// Setup entry
 		setEntry(m_originalEntry);
+
+		// TODO: We need to determine the creatures home point somehow
+
+		// Setup AI
+		m_ai = make_unique<CreatureAI>(
+			*this, CreatureAI::Home(makeVector(0.0f, 0.0f, 0.0f)));
+
+		// Start regeneration
+		m_onSpawned = spawned.connect([this]()
+		{
+			startRegeneration();
+		});
 	}
 
 	void GameCreature::setEntry(const UnitEntry &entry)
@@ -121,11 +90,15 @@ namespace wowpp
 		std::uniform_int_distribution<int> genderDistribution(0, 1);
 		int gender = genderDistribution(randomGenerator);
 
+		// TODO
+		assert(entry.allianceFaction);
+		setFactionTemplate(*entry.allianceFaction);
+
 		setLevel(creatureLevel);
 		setClass(entry.unitClass);
 		setUInt32Value(object_fields::Entry, entry.id);
 		setFloatValue(object_fields::ScaleX, entry.scale);
-		setUInt32Value(unit_fields::FactionTemplate, entry.hordeFactionID);
+		setUInt32Value(unit_fields::FactionTemplate, entry.hordeFaction->id);
 		setGender(static_cast<game::Gender>(gender));
 		setUInt32Value(unit_fields::DisplayId, (gender == game::gender::Male ? entry.maleModel : entry.femaleModel));
 		setUInt32Value(unit_fields::NativeDisplayId, (gender == game::gender::Male ? entry.maleModel : entry.femaleModel));
@@ -145,12 +118,20 @@ namespace wowpp
 		setFloatValue(unit_fields::MaxDamage, entry.maxMeleeDamage);
 		setUInt32Value(unit_fields::BaseAttackTime, entry.meleeBaseAttackTime);
 
+		// Update power type
+		setByteValue(unit_fields::Bytes0, 3, power_type::Mana);
+		if (entry.maxLevelMana > 0)
+		{
+			setByteValue(unit_fields::Bytes1, 1, 0xEE);
+		}
+		else
+		{
+			setByteValue(unit_fields::Bytes1, 1, 0x00);
+		}
+
 		setVirtualItem(0, entry.mainHand);
 		setVirtualItem(1, entry.offHand);
 		setVirtualItem(2, entry.ranged);
-
-		if (entry.offHand) setUInt32Value(unit_fields::VirtualItemSlotDisplay + 1, entry.mainHand->displayId);
-		if (entry.ranged) setUInt32Value(unit_fields::VirtualItemSlotDisplay + 2, entry.mainHand->displayId);
 
 		// Unit Mods
 		for (UInt32 i = unit_mods::StatStart; i < unit_mods::StatEnd; ++i)
@@ -177,9 +158,6 @@ namespace wowpp
 	void GameCreature::onKilled(GameUnit *killer)
 	{
 		GameUnit::onKilled(killer);
-
-		// Reset aggro list
-		m_threat.clear();
 
 		auto it = m_entry->triggersByEvent.find(trigger_event::OnKilled);
 		if (it != m_entry->triggersByEvent.end())
@@ -250,56 +228,6 @@ namespace wowpp
 		return m_entry->name;
 	}
 
-	void GameCreature::addThreat(GameUnit &threatening, float threat)
-	{
-		// Can't be threatened by ourself
-		if (&threatening == this)
-		{
-			return;
-		}
-
-		if (!isAlive())
-		{
-			// We are dead, so we can't have threat
-			return;
-		}
-
-		auto *world = getWorldInstance();
-		if (!world)
-		{
-			// Not in a world
-			return;
-		}
-
-		UInt64 guid = threatening.getGuid();
-
-		float &curThreat = m_threat[guid];
-		curThreat += threat;
-
-		updateVictim();
-	}
-
-	void GameCreature::resetThreat()
-	{
-		m_threat.clear();
-
-		// We have no more targets
-		stopAttack();
-	}
-
-	void GameCreature::resetThreat(GameUnit &threatening)
-	{
-		auto it = m_threat.find(threatening.getGuid());
-		if (it != m_threat.end())
-		{
-			// Remove from the threat list
-			m_threat.erase(it);
-
-			// Update victim
-			updateVictim();
-		}
-	}
-
 	void GameCreature::setVirtualItem(UInt32 slot, const ItemEntry *item)
 	{
 		if (!item)
@@ -313,81 +241,104 @@ namespace wowpp
 		setUInt32Value(unit_fields::VirtualItemSlotDisplay + slot, item->displayId);
 		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 0, item->itemClass);
 		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 1, item->subClass);
-		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 2, 0);
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 2, 0xFF);
 		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 3, item->material);
 		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0, item->inventoryType);
 		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 1, item->sheath);
 	}
 
-	void GameCreature::updateVictim()
-	{
-		if (!isAlive())
-			return;
-
-		GameUnit *newVictim = nullptr;
-		float maxThreat = -1.0;
-
-		for (auto it : m_threat)
-		{
-			if (it.second > maxThreat)
-			{
-				// Try to find unit
-				newVictim = dynamic_cast<GameUnit*>(m_worldInstance->findObjectByGUID(it.first));
-				if (newVictim)
-				{
-					maxThreat = it.first;
-				}
-			}
-		}
-
-		if (newVictim &&
-			newVictim != getVictim())
-		{
-			if (!getVictim())
-			{
-				// Aggro event
-				auto it = m_entry->triggersByEvent.find(trigger_event::OnAggro);
-				if (it != m_entry->triggersByEvent.end())
-				{
-					for (const auto *trigger : it->second)
-					{
-						trigger->execute(*trigger, this);
-					}
-				}
-
-				// Send aggro message to all clients nearby (this will play the creatures aggro sound)
-				TileIndex2D tile;
-				if (getTileIndex(tile))
-				{
-					std::vector<char> buffer;
-					io::VectorSink sink(buffer);
-					game::Protocol::OutgoingPacket packet(sink);
-					game::server_write::aiReaction(packet, getGuid(), 2);
-
-					forEachSubscriberInSight(
-						m_worldInstance->getGrid(), 
-						tile,
-						[&packet, &buffer](ITileSubscriber &subscriber)
-					{
-						subscriber.sendPacket(packet, buffer);
-					});
-				}
-			}
-
-			// New target to attack
-			startAttack(*newVictim);
-		}
-		else if (!newVictim)
-		{
-			// No target any more
-			stopAttack();
-		}
-	}
-
-	bool GameCreature::isInCombat() const
-	{
-		return !m_threat.empty();
-	}
+// 	void GameCreature::updateVictim()
+// 	{
+// 		if (!isAlive())
+// 			return;
+// 
+// 		GameUnit *newVictim = nullptr;
+// 		float maxThreat = -1.0;
+// 
+// 		for (auto it : m_threat)
+// 		{
+// 			if (it.second > maxThreat)
+// 			{
+// 				// Try to find unit
+// 				newVictim = dynamic_cast<GameUnit*>(m_worldInstance->findObjectByGUID(it.first));
+// 				if (newVictim)
+// 				{
+// 					maxThreat = it.first;
+// 				}
+// 			}
+// 		}
+// 
+// 		if (newVictim &&
+// 			newVictim != getVictim())
+// 		{
+// 			if (!getVictim())
+// 			{
+// 				// Aggro event
+// 				auto it = m_entry->triggersByEvent.find(trigger_event::OnAggro);
+// 				if (it != m_entry->triggersByEvent.end())
+// 				{
+// 					for (const auto *trigger : it->second)
+// 					{
+// 						trigger->execute(*trigger, this);
+// 					}
+// 				}
+// 
+// 				// Send aggro message to all clients nearby (this will play the creatures aggro sound)
+// 				TileIndex2D tile;
+// 				if (getTileIndex(tile))
+// 				{
+// 					std::vector<char> buffer;
+// 					io::VectorSink sink(buffer);
+// 					game::Protocol::OutgoingPacket packet(sink);
+// 					game::server_write::aiReaction(packet, getGuid(), 2);
+// 
+// 					forEachSubscriberInSight(
+// 						m_worldInstance->getGrid(), 
+// 						tile,
+// 						[&packet, &buffer](ITileSubscriber &subscriber)
+// 					{
+// 						subscriber.sendPacket(packet, buffer);
+// 					});
+// 				}
+// 			}
+// 
+// 			/* THIS WORKS! (kind of) */
+// 			TileIndex2D tile;
+// 			if (getTileIndex(tile))
+// 			{
+// 				float o;
+// 				Vector<float, 3> oldPosition;
+// 				getLocation(oldPosition[0], oldPosition[1], oldPosition[2], o);
+// 
+// 				Vector<float, 3> newPosition;
+// 				newVictim->getLocation(newPosition[0], newPosition[1], newPosition[2], o);
+// 
+// 				const float dist = getDistanceTo(*newVictim);
+// 				const float speed = 7.5f;
+// 
+// 				std::vector<char> buffer;
+// 				io::VectorSink sink(buffer);
+// 				game::Protocol::OutgoingPacket packet(sink);
+// 				game::server_write::monsterMove(packet, getGuid(), oldPosition, newPosition, (dist / speed) * 1000);
+// 
+// 				forEachSubscriberInSight(
+// 					m_worldInstance->getGrid(),
+// 					tile,
+// 					[&packet, &buffer](ITileSubscriber &subscriber)
+// 				{
+// 					subscriber.sendPacket(packet, buffer);
+// 				});
+// 			}
+// 
+// 			// New target to attack
+// 			startAttack(*newVictim);
+// 		}
+// 		else if (!newVictim)
+// 		{
+// 			// No target any more
+// 			stopAttack();
+// 		}
+// 	}
 
 	bool GameCreature::canBlock() const
 	{
@@ -419,6 +370,13 @@ namespace wowpp
 		const UnitEntry *entry = (m_entry ? m_entry : &m_originalEntry);
 		setFloatValue(unit_fields::MinDamage, base_value + entry->minMeleeDamage);
 		setFloatValue(unit_fields::MaxDamage, base_value + entry->maxMeleeDamage);
+	}
+
+	void GameCreature::regenerateHealth()
+	{
+		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
+		const UInt32 addHealth = maxHealth / 3;
+		heal(addHealth, nullptr, false);
 	}
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)
