@@ -89,8 +89,8 @@ namespace wowpp
 
 		const UnitEntry &m_originalEntry;
 		const UnitEntry *m_entry;
-		//ThreatList m_threat;
 		std::unique_ptr<CreatureAI> m_ai;
+		boost::signals2::scoped_connection m_onSpawned;
 	};
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel);

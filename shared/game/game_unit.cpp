@@ -1273,6 +1273,7 @@ namespace wowpp
 	{
 		// Stop auto attack
 		stopAttack();
+		stopRegeneration();
 
 		m_auras.handleTargetDeath();
 	}

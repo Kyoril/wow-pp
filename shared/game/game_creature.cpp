@@ -60,6 +60,12 @@ namespace wowpp
 		// Setup AI
 		m_ai = make_unique<CreatureAI>(
 			*this, CreatureAI::Home(makeVector(0.0f, 0.0f, 0.0f)));
+
+		// Start regeneration
+		m_onSpawned = spawned.connect([this]()
+		{
+			startRegeneration();
+		});
 	}
 
 	void GameCreature::setEntry(const UnitEntry &entry)
@@ -368,7 +374,7 @@ namespace wowpp
 
 	void GameCreature::regenerateHealth()
 	{
-		const UInt32 maxHealth = getUInt32Value(unit_fields::Health);
+		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
 		const UInt32 addHealth = maxHealth / 3;
 		heal(addHealth, nullptr, false);
 	}
