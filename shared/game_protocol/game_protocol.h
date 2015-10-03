@@ -133,6 +133,9 @@ namespace wowpp
 				AttackSwing				= 0x141,
 				AttackStop				= 0x142,
 				RepopRequest			= 0x15A,
+				Loot					= 0x15D,
+				LootMoney				= 0x15E,
+				LootRelease				= 0x15F,
 				Ping					= 0x1DC,
 				SetSheathed				= 0x1E0,
 				AuthSession				= 0x1ED,
@@ -272,10 +275,16 @@ namespace wowpp
 				AttackSwingNotStanding		= 0x147,
 				AttackSwingDeadTarget		= 0x148,
 				AttackSwingCantAttack		= 0x149,
-				SpellHealLog				= 0x150,
 				AttackerStateUpdate			= 0x14A,
+				SpellHealLog				= 0x150,
 				SpellEnergizeLog			= 0x151,
 				BindPointUpdate				= 0x155,
+				LootResponse				= 0x160,
+				LootReleaseResponse			= 0x161,
+				LootRemoved					= 0x162,
+				LootMoneyNotify				= 0x163,
+				LootItemNotify				= 0x164,
+				LootClearMoney				= 0x165,
 				LogXPGain					= 0x1D0,
 				Pong						= 0x1DD,
 				LevelUpInfo					= 0x1D4,
@@ -864,6 +873,21 @@ namespace wowpp
 
 			bool repopRequest(
 				io::Reader &packet
+				);
+
+			bool loot(
+				io::Reader &packet,
+				UInt64 &out_targetGuid
+				);
+
+			bool lootMoney(
+				io::Reader &packet
+				//TODO
+				);
+
+			bool lootRelease(
+				io::Reader &packet,
+				UInt64 &out_targetGuid
 				);
 		};
 
@@ -1489,6 +1513,44 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt64 creatureGUID,
 				UInt32 reaction
+				);
+
+			void lootResponseError(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				loot_type::Type type,
+				loot_error::Type error
+				);
+
+			void lootResponse(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				loot_type::Type type
+				// TODO: Loot
+				);
+
+			void lootReleaseResponse(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid
+				);
+
+			void lootRemoved(
+				game::OutgoingPacket &out_packet,
+				UInt8 slot
+				);
+
+			void lootMoneyNotify(
+				game::OutgoingPacket &out_packet,
+				UInt32 moneyPerPlayer
+				);
+
+			void lootItemNotify(
+				game::OutgoingPacket &out_packet
+				// TODO
+				);
+
+			void lootClearMoney(
+				game::OutgoingPacket &out_packet
 				);
 		};
 	}

@@ -2415,6 +2415,63 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void lootResponseError(game::OutgoingPacket &out_packet, UInt64 guid, loot_type::Type type, loot_error::Type error)
+			{
+				out_packet.start(game::server_packet::LootResponse);
+				out_packet
+					<< io::write<NetUInt64>(guid)
+					<< io::write<NetUInt8>(type)
+					<< io::write<NetUInt8>(error);
+				out_packet.finish();
+			}
+
+			void lootResponse(game::OutgoingPacket &out_packet, UInt64 guid, loot_type::Type type /* TODO: Loot */)
+			{
+				out_packet.start(game::server_packet::LootResponse);
+				out_packet
+					<< io::write<NetUInt64>(guid)
+					<< io::write<NetUInt8>(type);
+				// TODO...
+				out_packet.finish();
+			}
+
+			void lootReleaseResponse(game::OutgoingPacket &out_packet, UInt64 guid)
+			{
+				out_packet.start(game::server_packet::LootReleaseResponse);
+				out_packet
+					<< io::write<NetUInt64>(guid)
+					<< io::write<NetUInt8>(1);
+				out_packet.finish();
+			}
+
+			void lootRemoved(game::OutgoingPacket &out_packet, UInt8 slot)
+			{
+				out_packet.start(game::server_packet::LootRemoved);
+				out_packet
+					<< io::write<NetUInt8>(slot);
+				out_packet.finish();
+			}
+
+			void lootMoneyNotify(game::OutgoingPacket &out_packet, UInt32 moneyPerPlayer)
+			{
+				out_packet.start(game::server_packet::LootMoneyNotify);
+				out_packet
+					<< io::write<NetUInt32>(moneyPerPlayer);
+				out_packet.finish();
+			}
+
+			void lootItemNotify(game::OutgoingPacket &out_packet /* TODO */)
+			{
+				out_packet.start(game::server_packet::LootItemNotify);
+				out_packet.finish();
+			}
+
+			void lootClearMoney(game::OutgoingPacket &out_packet)
+			{
+				out_packet.start(game::server_packet::LootClearMoney);
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read
@@ -3095,6 +3152,23 @@ namespace wowpp
 			{
 				packet.skip(1);
 				return true;
+			}
+
+			bool loot(io::Reader &packet, UInt64 &out_targetGuid)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_targetGuid);
+			}
+
+			bool lootMoney(io::Reader &packet /*TODO */)
+			{
+				return true;
+			}
+
+			bool lootRelease(io::Reader &packet, UInt64 &out_targetGuid)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_targetGuid);
 			}
 
 		}

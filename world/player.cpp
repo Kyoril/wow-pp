@@ -867,6 +867,49 @@ namespace wowpp
 			std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::InternalBagError, nullptr, nullptr));
 	}
 
+	void Player::handleLoot(game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 creatureId;
+		if (!game::client_read::loot(packet, creatureId))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		if (!m_character->isAlive())
+		{
+			WLOG("Dead players can't loot");
+			return;
+		}
+
+		DLOG("TODO: Handle CMSG_LOOT");
+		sendProxyPacket(
+			std::bind(game::server_write::lootResponseError, std::placeholders::_1, creatureId, game::loot_type::None, game::loot_error::Locked));
+	}
+
+	void Player::handleLootMoney(game::Protocol::IncomingPacket &packet)
+	{
+		if (!game::client_read::lootMoney(packet))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		DLOG("TODO: Handle CMSG_LOOT_MONEY");
+	}
+
+	void Player::handleLootRelease(game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 creatureId;
+		if (!game::client_read::lootRelease(packet, creatureId))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		DLOG("TODO: Handle CMSG_LOOT_RELEASE");
+	}
+
 	void Player::onInventoryChangeFailure(game::InventoryChangeFailure failure, GameItem *itemA, GameItem *itemB)
 	{
 		// Send network packet about inventory change failure

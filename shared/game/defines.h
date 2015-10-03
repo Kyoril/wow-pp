@@ -41,6 +41,82 @@ namespace wowpp
 				point[1]);
 		}
 
+		namespace loot_type
+		{
+			enum Type
+			{
+				/// No loot type
+				None			= 0,
+				/// Corpse loot (dead creatures).
+				Corpse			= 1,
+				/// 
+				Skinning		= 2,
+				/// 
+				Fishing			= 3,
+
+				/// Unsupported by client - sending Skinning instead
+				Pickpocketing	= 4,
+				/// Unsupported by client - sending Skinning instead
+				Disenchanting	= 5,
+				/// Unsupported by client - sending Skinning instead
+				Prospecting		= 6,
+				/// Unsupported by client - sending Skinning instead
+				Insignia		= 7,
+				/// Unsupported by client - sending Fishing instead
+				FishingHole		= 8
+			};
+		}
+
+		namespace loot_error
+		{
+			enum Type
+			{
+				/// You don't have permission to loot that corpse.
+				DidntKill				= 0,
+				/// You are too far away to loot that corpse.
+				TooFar					= 4,
+				/// You must be facing the corpse to loot it.
+				BadFacing				= 5,
+				/// Someone is already looting that corpse.
+				Locked					= 6,
+				/// You need to be standing up to loot something!
+				NotStanding				= 8,
+				/// You can't loot anything while stunned!
+				Stunned					= 9,
+				/// Player not found.
+				PlayerNotFound			= 10,
+				/// Maximum play time exceeded (China WoW only?)
+				PlayTimeExceeded		= 11,
+				/// That player's inventory is full.
+				MasterInvFull			= 12,
+				/// Player has too many of that item already.
+				MasterUniqueItem		= 13,
+				/// Can't assign item to that player.
+				MasterOther				= 14,
+				/// Your target has already hat it's pockets picked.
+				AlreadyPickpocketed		= 15,
+				/// You can't do that while shapeshifted.
+				NotWhileShapeshifted	= 16
+			};
+		}
+
+		namespace loot_slot_type
+		{
+			enum Type
+			{
+				/// Player can loot the item.
+				AllowLoot	= 0,
+				/// Roll is ongoing. Player cannot loot.
+				RollOngoing	= 1,
+				/// Item can only be distributed by group loot master.
+				Master		= 2,
+				/// Item is shown in red. Player cannot loot.
+				Locked		= 3,
+				/// Ignore binding confirmation and etc., for single player looting.
+				Owner		= 4
+			};			
+		}
+
 		namespace unit_stand_state
 		{
 			enum Type

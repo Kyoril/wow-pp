@@ -149,6 +149,9 @@ namespace wowpp
 		void handleAutoEquipItemSlot(game::Protocol::IncomingPacket &packet);
 		void handleDestroyItem(game::Protocol::IncomingPacket &packet);
 		void handleRepopRequest(game::Protocol::IncomingPacket &packet);
+		void handleLoot(game::Protocol::IncomingPacket &packet);
+		void handleLootMoney(game::Protocol::IncomingPacket &packet);
+		void handleLootRelease(game::Protocol::IncomingPacket &packet);
 
 	private:
 

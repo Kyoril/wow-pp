@@ -508,6 +508,10 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(AutoEquipItemSlot)
 			WOWPP_HANDLE_PLAYER_PACKET(DestroyItem)
 			WOWPP_HANDLE_PLAYER_PACKET(RepopRequest)
+			WOWPP_HANDLE_PLAYER_PACKET(Loot)
+			WOWPP_HANDLE_PLAYER_PACKET(LootMoney)
+			WOWPP_HANDLE_PLAYER_PACKET(LootRelease)
+
 #undef WOWPP_HANDLE_PLAYER_PACKET
 
 			// Movement packets get special treatment
