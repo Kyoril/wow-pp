@@ -382,6 +382,17 @@ namespace wowpp
 		       ).length();
 	}
 
+	template <class T, size_t D = 3>
+	Vector<T, D> lerp(const Vector<T, D> &first, const Vector<T, D> &second, float t)
+	{
+		if (t <= 0.0f)
+			return first;
+		else if (t >= 1.0f)
+			return second;
+		
+		return first + (second - first) * t;
+	}
+
 	template <class T>
 	Vector<T, 2> makeVector(T x, T y)
 	{

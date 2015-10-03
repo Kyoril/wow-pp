@@ -83,5 +83,6 @@ namespace wowpp
 		boost::signals2::scoped_connection m_onThreatened, m_onVictimMoved;
 		Countdown m_moveUpdate;
 		float m_targetX, m_targetY, m_targetZ;
+		GameTime m_moveStart, m_moveEnd;
 	};
 }

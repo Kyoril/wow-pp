@@ -38,6 +38,8 @@ namespace wowpp
 	CreatureAICombatState::CreatureAICombatState(CreatureAI &ai, GameUnit &victim)
 		: CreatureAIState(ai)
 		, m_moveUpdate(ai.getControlled().getTimers())
+		, m_moveStart(0)
+		, m_moveEnd(0)
 	{
 		// Add initial threat
 		addThreat(victim, 0.0f);
@@ -225,7 +227,7 @@ namespace wowpp
 			// Watch for victim move signal
 			m_onVictimMoved = newVictim->moved.connect([this](GameObject &moved, float oldX, float oldY, float oldZ, float oldO)
 			{
-				// TODO
+				chaseTarget(static_cast<GameUnit&>(moved));
 			});
 		}
 		else if (!newVictim)
@@ -238,31 +240,42 @@ namespace wowpp
 
 	void CreatureAICombatState::chaseTarget(GameUnit &target)
 	{
+		float o, o2;
+		Vector<float, 3> oldPosition, oldTarget(m_targetX, m_targetY, m_targetZ), newTarget;
+		getControlled().getLocation(oldPosition[0], oldPosition[1], oldPosition[2], o);
+		target.getLocation(newTarget[0], newTarget[1], newTarget[2], o2);
+		if (m_moveStart != 0)
+		{
+			// Interpolate positions
+			oldPosition = lerp(oldPosition, oldTarget, static_cast<float>(static_cast<double>(getCurrentTime()) / static_cast<double>(m_moveEnd)));
+		}
+
+		const float distance =
+			sqrtf(
+				((oldPosition[0] - newTarget[0]) * (oldPosition[0] - newTarget[0])) + 
+				((oldPosition[1] - newTarget[1]) * (oldPosition[1] - newTarget[1])) + 
+				((oldPosition[2] - newTarget[2]) * (oldPosition[2] - newTarget[2])));
+
 		// Check distance and whether we need to move
 		// TODO: If this creature is a ranged one or casts spells, it need special treatment
-		const float distance = getControlled().getDistanceTo(target);
 		const float combatRange = getControlled().getMeleeReach() + target.getMeleeReach();
 		if (distance > combatRange)
 		{
 			GameTime moveTime = (distance / 7.5f) * constants::OneSecond;
+			m_moveStart = getCurrentTime();
+			m_moveEnd = m_moveStart + moveTime;
 
 			// Move (TODO: Better way to do this)
-			float tmp = 0.0f;
-			target.getLocation(m_targetX, m_targetY, m_targetZ, tmp);
+			m_targetX = newTarget[0]; m_targetY = newTarget[1]; m_targetZ = newTarget[2];
 
 			// Send move packet
 			TileIndex2D tile;
 			if (getControlled().getTileIndex(tile))
 			{
-				float o;
-				Vector<float, 3> oldPosition;
-				getControlled().getLocation(oldPosition[0], oldPosition[1], oldPosition[2], o);
-				Vector<float, 3> newPosition(m_targetX, m_targetY, m_targetZ);
-
 				std::vector<char> buffer;
 				io::VectorSink sink(buffer);
 				game::Protocol::OutgoingPacket packet(sink);
-				game::server_write::monsterMove(packet, getControlled().getGuid(), oldPosition, newPosition, moveTime);
+				game::server_write::monsterMove(packet, getControlled().getGuid(), oldPosition, newTarget, moveTime);
 
 				forEachSubscriberInSight(
 					getControlled().getWorldInstance()->getGrid(),
@@ -273,7 +286,7 @@ namespace wowpp
 				});
 			}
 
-			m_moveUpdate.setEnd(getCurrentTime() + moveTime);
+			m_moveUpdate.setEnd(m_moveEnd);
 		}
 	}
 
