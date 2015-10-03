@@ -23,17 +23,21 @@
 
 #include "game_unit.h"
 #include "data/unit_entry.h"
+#include "world_instance.h"
 #include "unit_watcher.h"
+#include "game_character.h"
+#include "common/linear_set.h"
 #include <boost/signals2.hpp>
 
 namespace wowpp
 {
 	class CreatureAI;
-	class GameCharacter;
 
 	/// Represents an AI controlled creature unit in the game.
 	class GameCreature final : public GameUnit
 	{
+		typedef LinearSet<UInt64> LootRecipients;
+
 	public:
 
 		/// Executed when the unit entry was changed after this creature has spawned. This
@@ -76,11 +80,29 @@ namespace wowpp
 		/// 
 		void updateDamage() override;
 		/// Updates the creatures loot recipient. Values of 0 mean no recipient.
-		void setLootRecipient(UInt64 guid, UInt64 group);
+		void addLootRecipient(UInt64 guid);
+		/// Removes all loot recipients.
+		void removeLootRecipients();
 		/// Determines whether a specific character is allowed to loot this creature.
 		bool isLootRecipient(GameCharacter &character) const;
 		/// Determines whether this creature is tagged by a player or group.
-		bool isTagged() const { return (m_lootRecipient != 0 || m_lootRecipientGroup != 0); }
+		bool isTagged() const { return !m_lootRecipients.empty(); }
+
+		template<typename OnRecipient>
+		void forEachLootRecipient(OnRecipient callback)
+		{
+			if (!getWorldInstance())
+				return;
+
+			for (auto &guid : m_lootRecipients)
+			{
+				GameCharacter *character = dynamic_cast<GameCharacter*>(getWorldInstance()->findObjectByGUID(guid));
+				if (character)
+				{
+					callback(*character);
+				}
+			}
+		}
 
 	protected:
 
@@ -98,8 +120,7 @@ namespace wowpp
 		const UnitEntry *m_entry;
 		std::unique_ptr<CreatureAI> m_ai;
 		boost::signals2::scoped_connection m_onSpawned;
-		UInt64 m_lootRecipient;
-		UInt64 m_lootRecipientGroup;
+		LootRecipients m_lootRecipients;
 	};
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel);

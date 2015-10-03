@@ -45,8 +45,6 @@ namespace wowpp
 		: GameUnit(timers, getRace, getClass, getLevel, getSpell)
 		, m_originalEntry(entry)
 		, m_entry(nullptr)
-		, m_lootRecipient(0)
-		, m_lootRecipientGroup(0)
 	{
 	}
 
@@ -78,7 +76,7 @@ namespace wowpp
 	void GameCreature::setEntry(const UnitEntry &entry)
 	{
 		const bool isInitialize = (m_entry == nullptr);
-		
+
 		// Choose a level
 		UInt8 creatureLevel = entry.minLevel;
 		if (entry.maxLevel != entry.minLevel)
@@ -165,27 +163,7 @@ namespace wowpp
 	void GameCreature::onKilled(GameUnit *killer)
 	{
 		GameUnit::onKilled(killer);
-
-		if (killer)
-		{
-			// Reward the killer with experience points
-			const float t =
-				(m_entry->maxLevel != m_entry->minLevel) ?
-				(getLevel() - m_entry->minLevel) / (m_entry->maxLevel - m_entry->minLevel) :
-				0.0f;
-
-			// Base XP for equal level
-			UInt32 xp = interpolate(m_entry->xpMin, m_entry->xpMax, t);
-
-			// Level adjustment factor
-			const float levelXPMod = calcXpModifier(killer->getLevel());
-			xp *= levelXPMod;
-			if (xp > 0)
-			{
-				killer->rewardExperience(this, xp);
-			}
-		}
-
+		
 		// Decide whether to despawn based on unit type
 		const bool isElite = (m_entry->rank > 0 && m_entry->rank < 4);
 		const bool isRare = (m_entry->rank == 4);
@@ -377,23 +355,19 @@ namespace wowpp
 		heal(addHealth, nullptr, false);
 	}
 
-	void GameCreature::setLootRecipient(UInt64 guid, UInt64 group)
+	void GameCreature::addLootRecipient(UInt64 guid)
 	{
-		m_lootRecipient = guid;
-		m_lootRecipientGroup = group;
+		m_lootRecipients.add(guid);
 	}
 
 	bool GameCreature::isLootRecipient(GameCharacter &character) const
 	{
-		if (m_lootRecipient != 0 &&
-			character.getGuid() == m_lootRecipient)
-			return true;
+		return m_lootRecipients.contains(character.getGuid());
+	}
 
-		if (m_lootRecipientGroup != 0 &&
-			character.getGroupId() == m_lootRecipientGroup)
-			return true;
-
-		return false;
+	void GameCreature::removeLootRecipients()
+	{
+		m_lootRecipients.clear();
 	}
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)

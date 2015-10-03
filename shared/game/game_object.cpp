@@ -282,7 +282,6 @@ namespace wowpp
 				const GameCreature *creature = static_cast<const GameCreature*>(this);
 				if (!creature->isLootRecipient(receiver))
 				{
-					DLOG("You are not allowed to loot. Receiver name: " << receiver.getName() << "; Has tagger: " << creature->isTagged());
 					writer << io::write<NetUInt32>(m_values[index] & ~game::unit_dynamic_flags::Lootable);
 				}
 				else

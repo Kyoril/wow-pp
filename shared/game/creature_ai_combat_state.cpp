@@ -89,6 +89,9 @@ namespace wowpp
 			});
 		}
 
+		// No more loot recipients
+		controlled.removeLootRecipients();
+
 		// Raise OnAggro triggers
 		auto &entry = controlled.getEntry();
 		auto it = entry.triggersByEvent.find(trigger_event::OnAggro);
@@ -284,8 +287,36 @@ namespace wowpp
 
 		if (!controlled.isTagged())
 		{
+			// Add attacking unit to the list of loot recipients
+			controlled.addLootRecipient(attacker.getGuid());
+
+			// If the attacking player is in a group...
 			GameCharacter *character = static_cast<GameCharacter*>(&attacker);
-			controlled.setLootRecipient(attacker.getGuid(), character->getGroupId());
+			auto groupId = character->getGroupId();
+			if (groupId != 0)
+			{
+				float x, y, tmp;
+				attacker.getLocation(x, y, tmp, tmp);
+
+				// Find nearby group members and make them loot recipients, too
+				controlled.getWorldInstance()->getUnitFinder().findUnits(Circle(x, y, 200.0f), [&controlled, groupId](GameUnit &unit) -> bool
+				{
+					// Only characters
+					if (unit.getTypeId() != object_type::Character)
+					{
+						return true;
+					}
+
+					// Check characters group
+					GameCharacter *character = static_cast<GameCharacter*>(&unit);
+					if (character->getGroupId() == groupId)
+					{
+						controlled.addLootRecipient(unit.getGuid());
+					}
+
+					return true;
+				});
+			}
 
 			getControlled().addFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::OtherTagger);
 		}

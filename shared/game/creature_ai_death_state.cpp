@@ -51,10 +51,55 @@ namespace wowpp
 			}
 		}
 
-		// Make creature lootable
-		if (controlled.getEntry().unitLootEntry)
+		// Reward all loot recipients
+		if (controlled.isTagged())
 		{
-			controlled.addFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
+			// Reward all loot recipients if we can still find them (no disconnect etc.)
+			std::vector<GameCharacter*> lootRecipients;
+			controlled.forEachLootRecipient([&lootRecipients](GameCharacter &character)
+			{
+				lootRecipients.push_back(&character);
+			});
+
+			// Reward the killer with experience points
+			const float t =
+				(controlled.getEntry().maxLevel != controlled.getEntry().minLevel) ?
+				(controlled.getLevel() - controlled.getEntry().minLevel) / (controlled.getEntry().maxLevel - controlled.getEntry().minLevel) :
+				0.0f;
+
+			// Base XP for equal level
+			UInt32 xp = interpolate(controlled.getEntry().xpMin, controlled.getEntry().xpMax, t);
+
+			// TODO: Level adjustment factor
+			
+			// Group xp modifier
+			float groupModifier = 1.0f;
+			if (lootRecipients.size() == 3)
+			{
+				groupModifier = 1.166f;
+			}
+			else if (lootRecipients.size() == 4)
+			{
+				groupModifier = 1.3f;
+			}
+			else if (lootRecipients.size() == 5)
+			{
+				groupModifier = 1.4f;
+			}
+
+			xp = (xp / lootRecipients.size()) * groupModifier;
+			for (auto *character : lootRecipients)
+			{
+				character->rewardExperience(&controlled, xp);
+			}
+
+			// Make creature lootable
+			if (controlled.getEntry().unitLootEntry)
+			{
+				// TODO: Generate loot
+
+				controlled.addFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
+			}
 		}
 	}
 
