@@ -430,7 +430,7 @@ namespace wowpp
 
 		ILOG("Character group id of 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << characterId << " changed to: " << groupId);
 
-		auto &character = player->getCharacter();
+		auto character = player->getCharacter();
 		if (character)
 		{
 			character->setGroupId(groupId);
