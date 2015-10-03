@@ -21,7 +21,9 @@
 
 #include "creature_ai_combat_state.h"
 #include "creature_ai.h"
+#include "defines.h"
 #include "game_creature.h"
+#include "game_character.h"
 #include "world_instance.h"
 #include "data/faction_template_entry.h"
 #include "binary_io/vector_sink.h"
@@ -269,6 +271,23 @@ namespace wowpp
 			}
 
 			m_moveUpdate.setEnd(getCurrentTime() + moveTime);
+		}
+	}
+
+	void CreatureAICombatState::onDamage(GameUnit &attacker)
+	{
+		auto &controlled = getControlled();
+		
+		// Only player characters will tag for loot (no, not even player pets)
+		if (attacker.getTypeId() != object_type::Character)
+			return;
+
+		if (!controlled.isTagged())
+		{
+			GameCharacter *character = static_cast<GameCharacter*>(&attacker);
+			controlled.setLootRecipient(attacker.getGuid(), character->getGroupId());
+
+			getControlled().addFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::OtherTagger);
 		}
 	}
 

@@ -34,7 +34,7 @@ namespace wowpp
 	{
 		namespace world_realm
 		{
-			static const UInt32 ProtocolVersion = 0x08;
+			static const UInt32 ProtocolVersion = 0x09;
 
 			namespace world_instance_error
 			{
@@ -103,7 +103,9 @@ namespace wowpp
 					/// Chat message of a player which needs to be handled by the world server (yell-msg for example).
 					ChatMessage,
 					/// Notifies the world node that a player should leave the world node (for example on disconnect)
-					LeaveWorldInstance
+					LeaveWorldInstance,
+					/// Notifies the world node about a group change of a character.
+					CharacterGroupChanged
 				};
 			}
 
@@ -296,6 +298,13 @@ namespace wowpp
 					DatabaseId characterRealmId,
 					WorldLeftReason reason
 					);
+
+				/// 
+				void characterGroupChanged(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					UInt64 groupId
+					);
 			}
 
 			/// Contains methods for reading packets coming from the world server. 
@@ -430,6 +439,13 @@ namespace wowpp
 					io::Reader &packet,
 					DatabaseId &out_characterRealmId,
 					WorldLeftReason &out_reason
+					);
+
+				/// 
+				bool characterGroupChanged(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					UInt64 &out_groupId
 					);
 			}
 		}

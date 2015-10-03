@@ -29,6 +29,7 @@
 namespace wowpp
 {
 	class CreatureAI;
+	class GameCharacter;
 
 	/// Represents an AI controlled creature unit in the game.
 	class GameCreature final : public GameUnit
@@ -74,6 +75,12 @@ namespace wowpp
 		bool canDodge() const override;
 		/// 
 		void updateDamage() override;
+		/// Updates the creatures loot recipient. Values of 0 mean no recipient.
+		void setLootRecipient(UInt64 guid, UInt64 group);
+		/// Determines whether a specific character is allowed to loot this creature.
+		bool isLootRecipient(GameCharacter &character) const;
+		/// Determines whether this creature is tagged by a player or group.
+		bool isTagged() const { return (m_lootRecipient != 0 || m_lootRecipientGroup != 0); }
 
 	protected:
 
@@ -91,6 +98,8 @@ namespace wowpp
 		const UnitEntry *m_entry;
 		std::unique_ptr<CreatureAI> m_ai;
 		boost::signals2::scoped_connection m_onSpawned;
+		UInt64 m_lootRecipient;
+		UInt64 m_lootRecipientGroup;
 	};
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel);

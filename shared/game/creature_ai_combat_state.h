@@ -65,6 +65,8 @@ namespace wowpp
 		virtual void onEnter() override;
 		/// 
 		virtual void onLeave() override;
+		/// 
+		virtual void onDamage(GameUnit &attacker) override;
 
 	private:
 

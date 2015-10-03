@@ -86,6 +86,7 @@ namespace wowpp
 		void leaveWorldInstance(DatabaseId characterDbId, pp::world_realm::WorldLeftReason reason);
 		void sendProxyPacket(DatabaseId characterId, UInt16 opCode, UInt32 size, const std::vector<char> &buffer);
 		void sendChatMessage(NetUInt64 characterGuid, game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message);
+		void characterGroupChanged(UInt64 characterGuid, UInt64 groupId);
 
 	private:
 

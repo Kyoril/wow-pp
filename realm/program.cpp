@@ -39,6 +39,7 @@
 #include "mysql_database.h"
 #include "web_service.h"
 #include "common/timer_queue.h"
+#include "common/id_generator.h"
 #include "data/project.h"
 #include <iostream>
 #include <memory>
@@ -199,9 +200,11 @@ namespace wowpp
 			*PlayerManager
 			));
 
+		IdGenerator<UInt64> groupIdGenerator(0x01);
+
 		IDatabase &database = *m_database;
 		Configuration &config = m_configuration;
-		auto const createPlayer = [&PlayerManager, &loginConnector, &WorldManager, &database, &project, &config](std::shared_ptr<wowpp::Player::Client> connection)
+		auto const createPlayer = [&PlayerManager, &loginConnector, &WorldManager, &database, &project, &config, &groupIdGenerator](std::shared_ptr<wowpp::Player::Client> connection)
 		{
 			connection->startReceiving();
 			boost::asio::ip::address address;
@@ -217,7 +220,7 @@ namespace wowpp
 				return;
 			}
 
-			std::unique_ptr<wowpp::Player> player(new wowpp::Player(config, *PlayerManager, *loginConnector, *WorldManager, database, project, std::move(connection), address.to_string()));
+			std::unique_ptr<wowpp::Player> player(new wowpp::Player(config, groupIdGenerator, *PlayerManager, *loginConnector, *WorldManager, database, project, std::move(connection), address.to_string()));
 
 			DLOG("Incoming player connection from " << address);
 			PlayerManager->addPlayer(std::move(player));

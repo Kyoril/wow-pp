@@ -27,6 +27,7 @@
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "data/data_load_context.h"
 #include "common/big_number.h"
+#include "common/id_generator.h"
 #include "game/game_character.h"
 #include <boost/noncopyable.hpp>
 #include <boost/signals2.hpp>
@@ -70,6 +71,7 @@ namespace wowpp
 		/// @param connection The connection instance as a shared pointer.
 		/// @param address The remote address of the player (ip address) as string.
 		explicit Player(Configuration &config,
+						IdGenerator<UInt64> &groupIdGenerator,
 						PlayerManager &manager,
 						LoginConnector &loginConnector,
 						WorldManager &worldManager,
@@ -126,6 +128,8 @@ namespace wowpp
 		void setGroup(std::shared_ptr<PlayerGroup> group);
 		/// 
 		UInt32 getWorldInstanceId() const { return m_instanceId; }
+		/// Gets the connected world node
+		World *getWorldNode() { return m_worldNode; }
 
 		/// Sends an encrypted packet to the game client
 		/// @param generator Packet writer function pointer.
@@ -160,6 +164,7 @@ namespace wowpp
 	private:
 
 		Configuration &m_config;
+		IdGenerator<UInt64> &m_groupIdGenerator;
 		PlayerManager &m_manager;
 		LoginConnector &m_loginConnector;
 		WorldManager &m_worldManager;

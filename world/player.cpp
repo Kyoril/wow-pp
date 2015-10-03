@@ -351,7 +351,7 @@ namespace wowpp
 					}
 
 					// Write values update
-					instance->writeValueUpdateBlock(createItemWriter, true);
+					instance->writeValueUpdateBlock(createItemWriter, *m_character, true);
 				}
 				blocks.emplace_back(std::move(createItemBlock));
 			}
@@ -456,7 +456,7 @@ namespace wowpp
 			}
 
 			// Write values update
-			m_character->writeValueUpdateBlock(writer, true);
+			m_character->writeValueUpdateBlock(writer, *m_character, true);
 
 			// Add block
 			blocks.emplace_back(std::move(createBlock));
@@ -491,10 +491,6 @@ namespace wowpp
 	{
 		// We no longer watch for changes on our old tile
 		oldTile.getWatchers().remove(this);
-
-		// Create spawn message blocks
-		std::vector<std::vector<char>> spawnBlocks;
-		createUpdateBlocks(*m_character, spawnBlocks);
 
 		// Convert position to ADT position, and to ADT cell position
 		auto newPos = newTile.getPosition();
@@ -593,15 +589,23 @@ namespace wowpp
 			grid,
 			newTile.getPosition(),
 			oldTile.getPosition(),
-			[&spawnBlocks, this](VisibilityTile &tile)
+			[this](VisibilityTile &tile)
 		{
-			std::vector<char> buffer;
-			io::VectorSink sink(buffer);
-			game::Protocol::OutgoingPacket packet(sink);
-			game::server_write::compressedUpdateObject(packet, spawnBlocks);
-
 			for(auto * subscriber : tile.getWatchers().getElements())
 			{
+				auto *character = subscriber->getControlledObject();
+				if (!character)
+					continue;
+
+				// Create spawn message blocks
+				std::vector<std::vector<char>> spawnBlocks;
+				createUpdateBlocks(*m_character, *character, spawnBlocks);
+
+				std::vector<char> buffer;
+				io::VectorSink sink(buffer);
+				game::Protocol::OutgoingPacket packet(sink);
+				game::server_write::compressedUpdateObject(packet, spawnBlocks);
+
 				assert(subscriber != this);
 				subscriber->sendPacket(packet, buffer);
 			}
@@ -609,7 +613,7 @@ namespace wowpp
 			for (auto *object : tile.getGameObjects().getElements())
 			{
 				std::vector<std::vector<char>> createBlock;
-				createUpdateBlocks(*object, createBlock);
+				createUpdateBlocks(*object, *m_character, createBlock);
 
 				this->sendProxyPacket(
 					std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(createBlock)));

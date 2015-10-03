@@ -439,4 +439,11 @@ namespace wowpp
 		// Initialize transfer
 		player->initializeTransfer(map, x, y, z, o);
 	}
+
+	void World::characterGroupChanged(UInt64 characterGuid, UInt64 groupId)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::realm_write::characterGroupChanged, std::placeholders::_1, characterGuid, groupId));
+	}
+
 }

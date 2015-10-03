@@ -98,7 +98,7 @@ namespace wowpp
 
 		/// Creates a new instance of a player group. Note that a group has to be
 		/// created using the create method before it will be valid.
-		explicit PlayerGroup(PlayerManager &playerManager);
+		explicit PlayerGroup(UInt64 id, PlayerManager &playerManager);
 
 		/// Creates the group and setup a leader.
 		void create(GameCharacter &leader);
@@ -137,6 +137,8 @@ namespace wowpp
 		LootMethod getLootMethod() const { return m_lootMethod; }
 		/// Gets the group leaders GUID.
 		UInt64 getLeader() const { return m_leaderGUID; }
+		/// Gets the group id.
+		UInt64 getId() const { return m_id; }
 
 		template<class F>
 		void broadcastPacket(F creator, UInt64 except = 0)
@@ -156,6 +158,7 @@ namespace wowpp
 
 	private:
 
+		UInt64 m_id;
 		PlayerManager &m_playerManager;
 		UInt64 m_leaderGUID;
 		String m_leaderName;

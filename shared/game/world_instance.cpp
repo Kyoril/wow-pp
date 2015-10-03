@@ -57,7 +57,7 @@ namespace wowpp
 			return gridIndex;
 		}
 
-		static void createValueUpdateBlock(GameObject &object, std::vector<std::vector<char>> &out_blocks)
+		static void createValueUpdateBlock(GameObject &object, GameCharacter &receiver, std::vector<std::vector<char>> &out_blocks)
 		{
 			// Write create object packet
 			std::vector<char> createBlock;
@@ -89,7 +89,7 @@ namespace wowpp
 				writer.sink().write((const char*)&packGUID[0], size);
 
 				// Write values update
-				object.writeValueUpdateBlock(writer, false);
+				object.writeValueUpdateBlock(writer, receiver, false);
 			}
 
 			// Add block
@@ -264,9 +264,13 @@ namespace wowpp
 					center,
 					[&object](ITileSubscriber &subscriber)
 				{
+					auto *character = subscriber.getControlledObject();
+					if (!character)
+						return;
+
 					// Create update blocks
 					std::vector<std::vector<char>> blocks;
-					createValueUpdateBlock(*object, blocks);
+					createValueUpdateBlock(*object, *character, blocks);
 
 					std::vector<char> buffer;
 					io::VectorSink sink(buffer);
@@ -326,9 +330,13 @@ namespace wowpp
 		{
 			for (auto * subscriber : tile.getWatchers().getElements())
 			{
+				auto *character = subscriber->getControlledObject();
+				if (!character)
+					continue;
+
 				// Create update packet
 				std::vector<std::vector<char>> blocks;
-				createUpdateBlocks(added, blocks);
+				createUpdateBlocks(added, *character, blocks);
 
 				// Create the packet
 				std::vector<char> buffer;

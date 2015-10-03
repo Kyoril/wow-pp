@@ -919,7 +919,8 @@ namespace wowpp
 			<< io::write_dynamic_range<NetUInt8>(object.m_name)
 			<< io::write<NetUInt32>(object.m_zoneIndex)
 			<< io::write<float>(object.m_healthRegBase)
-			<< io::write<float>(object.m_manaRegBase);
+			<< io::write<float>(object.m_manaRegBase)
+			<< io::write<NetUInt64>(object.m_groupId);
 		return w;
 	}
 
@@ -931,7 +932,8 @@ namespace wowpp
 			>> io::read_container<NetUInt8>(object.m_name)
 			>> io::read<NetUInt32>(object.m_zoneIndex)
 			>> io::read<float>(object.m_healthRegBase)
-			>> io::read<float>(object.m_manaRegBase);
+			>> io::read<float>(object.m_manaRegBase)
+			>> io::read<NetUInt64>(object.m_groupId);
 
 		// Reset all auras
 		for (UInt32 i = 0; i < 56; ++i)

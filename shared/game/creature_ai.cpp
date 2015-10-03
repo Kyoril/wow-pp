@@ -41,11 +41,6 @@ namespace wowpp
 		// Connect to spawn event
 		m_onSpawned = m_controlled.spawned.connect(
 			std::bind(&CreatureAI::onSpawned, this));
-		m_onKilled = m_controlled.killed.connect([this](GameUnit *killer)
-		{
-			auto state = make_unique<CreatureAIDeathState>(*this);
-			setState(std::move(state));
-		});
 	}
 
 	CreatureAI::~CreatureAI()
@@ -54,6 +49,16 @@ namespace wowpp
 
 	void CreatureAI::onSpawned()
 	{
+		m_onKilled = m_controlled.killed.connect([this](GameUnit *killer)
+		{
+			auto state = make_unique<CreatureAIDeathState>(*this);
+			setState(std::move(state));
+		});
+		m_onDamaged = m_controlled.damageHit.connect([this](UInt8 school, GameUnit &attacker)
+		{
+			m_state->onDamage(attacker);
+		});
+
 		// Enter the idle state after spawned
 		idle();
 	}

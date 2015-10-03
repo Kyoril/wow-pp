@@ -22,6 +22,7 @@
 #include "creature_ai_death_state.h"
 #include "creature_ai.h"
 #include "game_creature.h"
+#include "data/trigger_entry.h"
 #include "log/default_log_levels.h"
 
 namespace wowpp
@@ -38,7 +39,23 @@ namespace wowpp
 
 	void CreatureAIDeathState::onEnter()
 	{
-		ILOG("Creature entered CREATURE_AI_DEATH_STATE");
+		auto &controlled = getControlled();
+
+		// Raise OnKilled trigger
+		auto it = controlled.getEntry().triggersByEvent.find(trigger_event::OnKilled);
+		if (it != controlled.getEntry().triggersByEvent.end())
+		{
+			for (const auto *trigger : it->second)
+			{
+				trigger->execute(*trigger, &controlled);
+			}
+		}
+
+		// Make creature lootable
+		if (controlled.getEntry().unitLootEntry)
+		{
+			controlled.addFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
+		}
 	}
 
 	void CreatureAIDeathState::onLeave()

@@ -20,6 +20,8 @@
 // 
 
 #include "game_object.h"
+#include "game_character.h"
+#include "game_creature.h"
 #include "log/default_log_levels.h"
 #include "binary_io/vector_sink.h"
 #include "common/clock.h"
@@ -269,7 +271,38 @@ namespace wowpp
 		// TODO
 	}
 
-	void GameObject::writeValueUpdateBlock(io::Writer &writer, bool creation /*= true*/) const
+	void GameObject::writeUpdateValue(io::Writer &writer, GameCharacter &receiver, UInt16 index) const
+	{
+		if (getTypeId() == object_type::Unit)
+		{
+			switch (index)
+			{
+			case unit_fields::DynamicFlags:
+			{
+				const GameCreature *creature = static_cast<const GameCreature*>(this);
+				if (!creature->isLootRecipient(receiver))
+				{
+					DLOG("You are not allowed to loot. Receiver name: " << receiver.getName() << "; Has tagger: " << creature->isTagged());
+					writer << io::write<NetUInt32>(m_values[index] & ~game::unit_dynamic_flags::Lootable);
+				}
+				else
+				{
+					writer << io::write<NetUInt32>(m_values[index] & ~game::unit_dynamic_flags::OtherTagger);
+				}
+				break;
+			}
+			default:
+				writer << io::write<NetUInt32>(m_values[index]);
+				break;
+			}
+		}
+		else
+		{
+			writer << io::write<NetUInt32>(m_values[index]);
+		}
+	}
+
+	void GameObject::writeValueUpdateBlock(io::Writer &writer, GameCharacter &receiver, bool creation /*= true*/) const
 	{
 		// Number of UInt32 blocks used to represent all values as one bit
 		UInt8 blockCount = m_valueBitset.size();
@@ -304,8 +337,7 @@ namespace wowpp
 			{
 				if (m_values[i] != 0)
 				{
-					writer
-						<< io::write<NetUInt32>(m_values[i]);
+					writeUpdateValue(writer, receiver, i);
 				}
 			}
 		}
@@ -321,8 +353,7 @@ namespace wowpp
 				const UInt8 &changed = (reinterpret_cast<const UInt8*>(&m_valueBitset[0]))[i >> 3];
 				if ((changed & (1 << (i & 0x7))) != 0)
 				{
-					writer
-						<< io::write<NetUInt32>(m_values[i]);
+					writeUpdateValue(writer, receiver, i);
 				}
 			}
 		}
@@ -456,7 +487,7 @@ namespace wowpp
 			>> io::read<float>(object.m_o);
 	}
 
-	void createUpdateBlocks(GameObject &object, std::vector<std::vector<char>> &out_blocks)
+	void createUpdateBlocks(GameObject &object, GameCharacter &receiver, std::vector<std::vector<char>> &out_blocks)
 	{
 		float x, y, z, o;
 		object.getLocation(x, y, z, o);
@@ -655,7 +686,7 @@ namespace wowpp
 			}
 
 			// Write values update
-			object.writeValueUpdateBlock(writer, true);
+			object.writeValueUpdateBlock(writer, receiver, true);
 		}
 
 		// Add block

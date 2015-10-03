@@ -21,6 +21,7 @@
 
 #include "creature_ai_reset_state.h"
 #include "creature_ai.h"
+#include "defines.h"
 #include "game_creature.h"
 #include "world_instance.h"
 #include "binary_io/vector_sink.h"
@@ -83,7 +84,9 @@ namespace wowpp
 
 	void CreatureAIResetState::onLeave()
 	{
-
+		auto &controlled = getControlled();
+		controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
+		controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::OtherTagger);
 	}
 
 }

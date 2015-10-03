@@ -11,7 +11,7 @@ namespace wowpp
 		virtual ~ITileSubscriber() { }
 
 		/// Gets the controlled object (if any) of the subscriber. Could be nullptr!
-		virtual GameObject *getControlledObject() = 0;
+		virtual GameCharacter *getControlledObject() = 0;
 		/// Sends a packet to the tile subscriber.
 		virtual void sendPacket(game::Protocol::OutgoingPacket &packet, const std::vector<char> &buffer) = 0;
 	};

@@ -183,6 +183,15 @@ namespace wowpp
 						<< io::write<NetUInt32>(reason);
 					out_packet.finish();
 				}
+
+				void characterGroupChanged(pp::OutgoingPacket &out_packet, UInt64 characterId, UInt64 groupId)
+				{
+					out_packet.start(realm_packet::CharacterGroupChanged);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write<NetUInt64>(groupId);
+					out_packet.finish();
+				}
 			}
 
 			namespace world_read
@@ -318,6 +327,13 @@ namespace wowpp
 					return packet
 						>> io::read<NetUInt64>(out_characterRealmId)
 						>> io::read<NetUInt32>(out_reason);
+				}
+
+				bool characterGroupChanged(io::Reader &packet, UInt64 &out_characterId, UInt64 &out_groupId)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read<NetUInt64>(out_groupId);
 				}
 
 			}

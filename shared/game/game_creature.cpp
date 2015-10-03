@@ -20,6 +20,7 @@
 // 
 
 #include "game_creature.h"
+#include "game_character.h"
 #include "data/trigger_entry.h"
 #include "data/item_entry.h"
 #include "data/faction_template_entry.h"
@@ -44,6 +45,8 @@ namespace wowpp
 		: GameUnit(timers, getRace, getClass, getLevel, getSpell)
 		, m_originalEntry(entry)
 		, m_entry(nullptr)
+		, m_lootRecipient(0)
+		, m_lootRecipientGroup(0)
 	{
 	}
 
@@ -162,15 +165,6 @@ namespace wowpp
 	void GameCreature::onKilled(GameUnit *killer)
 	{
 		GameUnit::onKilled(killer);
-
-		auto it = m_entry->triggersByEvent.find(trigger_event::OnKilled);
-		if (it != m_entry->triggersByEvent.end())
-		{
-			for (const auto *trigger : it->second)
-			{
-				trigger->execute(*trigger, this);
-			}
-		}
 
 		if (killer)
 		{
@@ -381,6 +375,25 @@ namespace wowpp
 		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
 		const UInt32 addHealth = maxHealth / 3;
 		heal(addHealth, nullptr, false);
+	}
+
+	void GameCreature::setLootRecipient(UInt64 guid, UInt64 group)
+	{
+		m_lootRecipient = guid;
+		m_lootRecipientGroup = group;
+	}
+
+	bool GameCreature::isLootRecipient(GameCharacter &character) const
+	{
+		if (m_lootRecipient != 0 &&
+			character.getGuid() == m_lootRecipient)
+			return true;
+
+		if (m_lootRecipientGroup != 0 &&
+			character.getGroupId() == m_lootRecipientGroup)
+			return true;
+
+		return false;
 	}
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)

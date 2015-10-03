@@ -21,11 +21,13 @@
 
 #include "player_group.h"
 #include "game/game_character.h"
+#include "world.h"
 
 namespace wowpp
 {
-	PlayerGroup::PlayerGroup(PlayerManager &playerManager)
-		: m_playerManager(playerManager)
+	PlayerGroup::PlayerGroup(UInt64 id, PlayerManager &playerManager)
+		: m_id(id)
+		, m_playerManager(playerManager)
 		, m_leaderGUID(0)
 		, m_type(group_type::Normal)
 		, m_lootMethod(loot_method::GroupLoot)
@@ -170,10 +172,16 @@ namespace wowpp
 				auto *player = m_playerManager.getPlayerByCharacterGuid(guid);
 				if (player)
 				{
+					auto *node = player->getWorldNode();
+					if (node)
+					{
+						node->characterGroupChanged(guid, 0);
+					}
+
 					// Send packet
-					player->setGroup(std::shared_ptr<PlayerGroup>());
 					player->sendPacket(
 						std::bind(game::server_write::groupListRemoved, std::placeholders::_1));
+					player->setGroup(std::shared_ptr<PlayerGroup>());
 				}
 
 				m_members.erase(it);
@@ -270,7 +278,11 @@ namespace wowpp
 			auto *player = m_playerManager.getPlayerByCharacterGuid(it.first);
 			if (player)
 			{
-				// Send packet
+				auto *node = player->getWorldNode();
+				if (node)
+				{
+					node->characterGroupChanged(it.first, 0);
+				}
 
 				// If the group is reset for every player, the group will be deleted!
 				player->sendPacket(

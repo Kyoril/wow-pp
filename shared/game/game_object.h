@@ -173,7 +173,7 @@ namespace wowpp
 
 	class VisibilityTile;
 	class WorldInstance;
-	class GameObject;
+	class GameCharacter;
 
 	/// 
 	class GameObject : public std::enable_shared_from_this<GameObject>
@@ -235,7 +235,8 @@ namespace wowpp
 		/// @param creation Set to true if this is the value update packet used at object creation.
 		///	       At object creation, all values which aren't equal to zero will be written, not just the
 		///	       updated ones.
-		virtual void writeValueUpdateBlock(io::Writer &writer, bool creation = true) const;
+		virtual void writeValueUpdateBlock(io::Writer &writer, GameCharacter &receiver, bool creation = true) const;
+		void writeUpdateValue(io::Writer &writer, GameCharacter &receiver, UInt16 index) const;
 
 		/// Gets the location of this object.
 		void getLocation(float &out_x, float &out_y, float &out_z, float &out_o) const { out_x = m_x; out_y = m_y; out_z = m_z; out_o = m_o; }
@@ -300,5 +301,5 @@ namespace wowpp
 	io::Writer &operator << (io::Writer &w, GameObject const& object);
 	io::Reader &operator >> (io::Reader &r, GameObject& object);
 
-	void createUpdateBlocks(GameObject &object, std::vector<std::vector<char>> &out_blocks);
+	void createUpdateBlocks(GameObject &object, GameCharacter &receiver, std::vector<std::vector<char>> &out_blocks);
 }

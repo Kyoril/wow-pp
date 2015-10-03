@@ -47,8 +47,9 @@ using namespace wowpp::game;
 
 namespace wowpp
 {
-	Player::Player(Configuration &config, PlayerManager &manager, LoginConnector &loginConnector, WorldManager &worldManager, IDatabase &database, Project &project, std::shared_ptr<Client> connection, const String &address)
+	Player::Player(Configuration &config, IdGenerator<UInt64> &groupIdGenerator, PlayerManager &manager, LoginConnector &loginConnector, WorldManager &worldManager, IDatabase &database, Project &project, std::shared_ptr<Client> connection, const String &address)
 		: m_config(config)
+		, m_groupIdGenerator(groupIdGenerator)
 		, m_manager(manager)
 		, m_loginConnector(loginConnector)
 		, m_worldManager(worldManager)
@@ -1475,14 +1476,15 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_GROUP_INVITE: Player " << m_gameCharacter->getName() << " invites player " << playerName);
-
 		// Get players group or create a new one
 		if (!m_group)
 		{
 			// Create the group
-			m_group = std::make_shared<PlayerGroup>(m_manager);
+			m_group = std::make_shared<PlayerGroup>(m_groupIdGenerator.generateId(), m_manager);
 			m_group->create(*m_gameCharacter);
+
+			// Send to world node
+			m_worldNode->characterGroupChanged(m_gameCharacter->getGuid(), m_group->getId());
 		}
 
 		// Check if we are the leader of that group
@@ -1532,6 +1534,9 @@ namespace wowpp
 			// TODO...
 			return;
 		}
+
+		// Send to world node
+		m_worldNode->characterGroupChanged(m_gameCharacter->getGuid(), m_group->getId());
 	}
 	
 	void Player::handleGroupDecline(game::IncomingPacket &packet)

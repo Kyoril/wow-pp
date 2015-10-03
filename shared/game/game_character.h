@@ -545,6 +545,11 @@ namespace wowpp
 		bool canParry() const override;
 		bool canDodge() const override;
 
+		/// Gets the characters group id.
+		UInt64 getGroupId() const { return m_groupId; }
+		/// Sets the characters group id.
+		void setGroupId(UInt64 groupId) { m_groupId = groupId; }
+
 	protected:
 
 		virtual void levelChanged(const LevelEntry &levelInfo) override;
@@ -570,6 +575,7 @@ namespace wowpp
 		bool m_canParry;	// Set by spell
 		FactionStateList m_factions;
 		ForcedReactions m_forcedReactions;
+		UInt64 m_groupId;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameCharacter const& object);

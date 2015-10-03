@@ -136,7 +136,7 @@ namespace wowpp
 
 	public:
 
-		GameObject *getControlledObject() override { return m_character.get(); }
+		GameCharacter *getControlledObject() override { return m_character.get(); }
 		void sendPacket(game::Protocol::OutgoingPacket &packet, const std::vector<char> &buffer) override;
 
 		// Network packet handlers

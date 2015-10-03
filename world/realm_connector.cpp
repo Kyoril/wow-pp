@@ -89,43 +89,29 @@ namespace wowpp
 		switch (packetId)
 		{
 			case pp::world_realm::realm_packet::LoginAnswer:
-			{
 				handleLoginAnswer(packet);
 				break;
-			}
-
 			case pp::world_realm::realm_packet::CharacterLogIn:
-			{
 				handleCharacterLogin(packet);
 				break;
-			}
-
 			case pp::world_realm::realm_packet::ClientProxyPacket:
-			{
 				handleProxyPacket(packet);
 				break;
-			}
-
 			case pp::world_realm::realm_packet::ChatMessage:
-			{
 				handleChatMessage(packet);
 				break;
-			}
-
 			case pp::world_realm::realm_packet::LeaveWorldInstance:
-			{
 				handleLeaveWorldInstance(packet);
 				break;
-			}
-
+			case pp::world_realm::realm_packet::CharacterGroupChanged:
+				handleCharacterGroupChanged(packet);
+				break;
 			default:
-			{
 				// Log about unknown or unhandled packet
 				const auto &realm = m_config.realms[m_realmEntryIndex];
 				WLOG("Received unknown packet " << static_cast<UInt32>(packetId)
 					<< " from realm server at " << realm.realmAddress << ":" << realm.realmPort);
 				break;
-			}
 		}
 	}
 
@@ -411,7 +397,7 @@ namespace wowpp
 				{
 					// Create update block
 					std::vector<std::vector<char>> blocks;
-					createUpdateBlocks(*object, blocks);
+					createUpdateBlocks(*object, *character, blocks);
 
 					std::vector<char> buffer;
 					io::VectorSink sink(buffer);
@@ -424,6 +410,31 @@ namespace wowpp
 
 		// Get that tile and make us a subscriber
 		instance->getGrid().requireTile(tileIndex);
+	}
+
+	void RealmConnector::handleCharacterGroupChanged(pp::Protocol::IncomingPacket &packet)
+	{
+		UInt64 characterId, groupId;
+		if (!(pp::world_realm::realm_read::characterGroupChanged(packet, characterId, groupId)))
+		{
+			return;
+		}
+
+		// Try to find character
+		auto *player = m_playerManager.getPlayerByCharacterGuid(characterId);
+		if (!player)
+		{
+			WLOG("Could not find character by guid 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << characterId);
+			return;
+		}
+
+		ILOG("Character group id of 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << characterId << " changed to: " << groupId);
+
+		auto &character = player->getCharacter();
+		if (character)
+		{
+			character->setGroupId(groupId);
+		}
 	}
 
 	void RealmConnector::handleProxyPacket(pp::Protocol::IncomingPacket &packet)

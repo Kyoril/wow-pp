@@ -57,6 +57,29 @@ namespace wowpp
 			};
 		}
 
+		namespace unit_dynamic_flags
+		{
+			enum Type
+			{
+				/// No flags set.
+				None = 0x0000,
+				/// Creature appears to be lootable. Should only be set when loot is available.
+				Lootable = 0x0001,
+				/// TODO
+				TrackUnit = 0x0002,
+				/// Creature name appears gray, indicating that the player will not receieve any rewards from this creature.
+				OtherTagger = 0x0004,
+				/// TODO
+				Rooted = 0x0008,
+				/// TODO Hunter spell?
+				SpecialInfo = 0x0010,
+				/// TODO Fake death?
+				Dead = 0x0020,
+				/// Marks this player character as a referred friend.
+				ReferAFriend = 0x0040
+			};
+		}
+
 		namespace gender
 		{
 			enum Type

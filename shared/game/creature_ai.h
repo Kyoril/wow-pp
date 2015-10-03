@@ -95,6 +95,6 @@ namespace wowpp
 		GameCreature &m_controlled;
 		std::unique_ptr<CreatureAIState> m_state;
 		Home m_home;
-		boost::signals2::scoped_connection m_onSpawned, m_onKilled;
+		boost::signals2::scoped_connection m_onSpawned, m_onKilled, m_onDamaged;
 	};
 }
