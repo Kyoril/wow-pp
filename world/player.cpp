@@ -920,6 +920,8 @@ namespace wowpp
 
 				sendProxyPacket(
 					std::bind(game::server_write::lootResponse, std::placeholders::_1, objectGuid, game::loot_type::Corpse, std::cref(*loot)));
+
+				m_character->addFlag(unit_fields::UnitFlags, game::unit_flags::Looting);
 			}
 		}
 		else
@@ -939,15 +941,67 @@ namespace wowpp
 			return;
 		}
 
-		// TODO: Share money amongst group members
-
-		if (m_loot)
+		if (!m_loot)
 		{
-			// Warning: takeGold may make m_loot invalid, because the loot will be reset if it is empty.
-			UInt32 lootGold = m_loot->getGold();
-			m_loot->takeGold();
+			WLOG("Player isn't looting anything");
+			return;
+		}
 
-			UInt32 coinage = getCharacter()->getUInt32Value(character_fields::Coinage);
+		// Find loot recipients
+		auto lootGuid = m_loot->getLootGuid();
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+		{
+			WLOG("Player is not in world instance");
+			return;
+		}
+
+		// Get loot object
+		GameObject *object = world->findObjectByGUID(lootGuid);
+		if (!object)
+		{
+			WLOG("Loot object not found");
+			return;
+		}
+
+		// Warning: takeGold may make m_loot invalid, because the loot will be reset if it is empty.
+		UInt32 lootGold = m_loot->getGold();
+		if (lootGold == 0)
+		{
+			WLOG("No gold available to loot");
+			return;
+		}
+
+		// Check if it's a creature
+		std::vector<GameCharacter*> recipients;
+		if (object->getTypeId() == object_type::Unit)
+		{
+			GameCreature *creature = reinterpret_cast<GameCreature*>(object);
+			creature->forEachLootRecipient([&recipients](GameCharacter &recipient)
+			{
+				recipients.push_back(&recipient);
+			});
+
+			// Share gold
+			lootGold /= recipients.size();
+			if (lootGold == 0)
+			{
+				lootGold = 1;
+			}
+		}
+		else
+		{
+			WLOG("Unsupported loot object");
+			return;
+		}
+
+		// Take gold (WARNING: May reset m_loot as loot may become empty after this)
+		m_loot->takeGold();
+
+		// Reward with gold
+		for (auto *recipient : recipients)
+		{
+			UInt32 coinage = recipient->getUInt32Value(character_fields::Coinage);
 			if (coinage >= std::numeric_limits<UInt32>::max() - lootGold)
 			{
 				coinage = std::numeric_limits<UInt32>::max();
@@ -956,11 +1010,15 @@ namespace wowpp
 			{
 				coinage += lootGold;
 			}
-			getCharacter()->setUInt32Value(character_fields::Coinage, coinage);
-		}
-		else
-		{
-			WLOG("No loot opened...");
+			recipient->setUInt32Value(character_fields::Coinage, coinage);
+
+			// Notify players
+			auto *player = m_manager.getPlayerByCharacterGuid(recipient->getGuid());
+			if (player)
+			{
+				player->sendProxyPacket(
+					std::bind(game::server_write::lootMoneyNotify, std::placeholders::_1, lootGold));
+			}
 		}
 	}
 
@@ -1106,6 +1164,8 @@ namespace wowpp
 			sendProxyPacket(
 				std::bind(game::server_write::lootReleaseResponse, std::placeholders::_1, m_loot->getLootGuid()));
 			m_loot = nullptr;
+
+			m_character->removeFlag(unit_fields::UnitFlags, game::unit_flags::Looting);
 		}
 	}
 

@@ -253,7 +253,6 @@ namespace wowpp
 		}
 
 		o = getControlled().getAngle(newTarget[0], newTarget[1]);
-
 		const float distance =
 			sqrtf(
 				((oldPosition[0] - newTarget[0]) * (oldPosition[0] - newTarget[0])) + 

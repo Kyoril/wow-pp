@@ -91,7 +91,9 @@ namespace wowpp
 		/// Get unit loot.
 		LootInstance *getUnitLoot() { return m_unitLoot.get(); }
 		void setUnitLoot(std::unique_ptr<LootInstance> unitLoot);
-
+		/// Gets the number of loot recipients.
+		UInt32 getLootRecipientCount() const { return m_lootRecipients.size(); }
+		/// Executes a callback function for every valid loot recipient.
 		template<typename OnRecipient>
 		void forEachLootRecipient(OnRecipient callback)
 		{
