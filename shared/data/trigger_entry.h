@@ -48,6 +48,10 @@ namespace wowpp
 			OnHealed			= 6,
 			/// Executed when the unit made an auto attack swing.
 			OnAttackSwing		= 7,
+			/// Executed when the unit resets.
+			OnReset				= 8,
+			/// Executed when the unit reached it's home point after reset.
+			OnReachedHome		= 9,
 
 			Invalid,
 			Count_ = Invalid

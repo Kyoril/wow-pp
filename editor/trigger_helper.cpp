@@ -45,7 +45,10 @@ namespace wowpp
 				return "Triggering unit was killed";
 			case trigger_event::OnSpawn:
 				return "Triggering object spawned";
-				break;
+			case trigger_event::OnReset:
+				return "Triggering unit resets";
+			case trigger_event::OnReachedHome:
+				return "Triggering unit reached home after reset";
 			default:
 				return "(INVALID EVENT)";
 			}

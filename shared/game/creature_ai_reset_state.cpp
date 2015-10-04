@@ -28,6 +28,7 @@
 #include "game_protocol/game_protocol.h"
 #include "each_tile_in_sight.h"
 #include "common/constants.h"
+#include "data/trigger_entry.h"
 #include "log/default_log_levels.h"
 
 namespace wowpp
@@ -54,7 +55,7 @@ namespace wowpp
 	{
 		const float distance = getControlled().getDistanceTo(getAI().getHome().position);
 
-		// TODO: Make the creature return to it's home
+		// Make the creature return to it's home
 		GameTime moveTime = (distance / 7.5f) * constants::OneSecond;
 
 		// Send move packet
@@ -80,6 +81,17 @@ namespace wowpp
 		}
 
 		m_moveUpdate.setEnd(getCurrentTime() + moveTime);
+
+		// Raise OnReset trigger
+		auto &controlled = getControlled();
+		auto it = controlled.getEntry().triggersByEvent.find(trigger_event::OnReset);
+		if (it != controlled.getEntry().triggersByEvent.end())
+		{
+			for (const auto *trigger : it->second)
+			{
+				trigger->execute(*trigger, &controlled);
+			}
+		}
 	}
 
 	void CreatureAIResetState::onLeave()
@@ -92,6 +104,16 @@ namespace wowpp
 		if (controlled.isAlive())
 		{
 			controlled.heal(controlled.getUInt32Value(unit_fields::MaxHealth), nullptr, true);
+		}
+
+		// Raise OnReachedHome trigger
+		auto it = controlled.getEntry().triggersByEvent.find(trigger_event::OnReachedHome);
+		if (it != controlled.getEntry().triggersByEvent.end())
+		{
+			for (const auto *trigger : it->second)
+			{
+				trigger->execute(*trigger, &controlled);
+			}
 		}
 	}
 
