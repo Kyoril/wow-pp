@@ -105,6 +105,15 @@ namespace wowpp
 				trigger->execute(*trigger, &controlled);
 			}
 		}
+
+		m_onControlledMoved = controlled.moved.connect([this](GameObject &moved, float oldX, float oldY, float oldZ, float oldO)
+		{
+			auto &homePos = getAI().getHome().position;
+			if (moved.getDistanceTo(homePos, false) >= 60.0f)
+			{
+				getAI().reset();
+			}
+		});
 	}
 
 	void CreatureAICombatState::onLeave()

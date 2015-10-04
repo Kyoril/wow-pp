@@ -87,6 +87,12 @@ namespace wowpp
 		auto &controlled = getControlled();
 		controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
 		controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::OtherTagger);
+
+		// Fully heal unit
+		if (controlled.isAlive())
+		{
+			controlled.heal(controlled.getUInt32Value(unit_fields::MaxHealth), nullptr, true);
+		}
 	}
 
 }
