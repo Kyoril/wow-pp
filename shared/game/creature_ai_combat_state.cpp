@@ -41,6 +41,7 @@ namespace wowpp
 		, m_moveUpdate(ai.getControlled().getTimers())
 		, m_moveStart(0)
 		, m_moveEnd(0)
+		, m_lastThreatTime(0)
 	{
 		// Add initial threat
 		addThreat(victim, 0.0f);
@@ -109,7 +110,8 @@ namespace wowpp
 		m_onControlledMoved = controlled.moved.connect([this](GameObject &moved, float oldX, float oldY, float oldZ, float oldO)
 		{
 			auto &homePos = getAI().getHome().position;
-			if (moved.getDistanceTo(homePos, false) >= 60.0f)
+			if (getCurrentTime() >= (m_lastThreatTime + constants::OneSecond * 10) &&
+				moved.getDistanceTo(homePos, false) >= 60.0f)
 			{
 				getAI().reset();
 			}
@@ -175,6 +177,8 @@ namespace wowpp
 
 		auto &threatEntry = it->second;
 		threatEntry.amount += amount;
+
+		m_lastThreatTime = getCurrentTime();
 
 		updateVictim();
 	}

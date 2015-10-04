@@ -84,5 +84,6 @@ namespace wowpp
 		Countdown m_moveUpdate;
 		float m_targetX, m_targetY, m_targetZ;
 		GameTime m_moveStart, m_moveEnd;
+		GameTime m_lastThreatTime;
 	};
 }
