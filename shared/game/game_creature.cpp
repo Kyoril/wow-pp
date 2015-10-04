@@ -370,6 +370,11 @@ namespace wowpp
 		m_lootRecipients.clear();
 	}
 
+	void GameCreature::setUnitLoot(LootInstance unitLoot)
+	{
+		m_unitLoot = std::move(unitLoot);
+	}
+
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)
 	{
 		if (killerLevel < 8)

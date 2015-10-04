@@ -312,7 +312,7 @@ namespace wowpp
 				attacker.getLocation(x, y, tmp, tmp);
 
 				// Find nearby group members and make them loot recipients, too
-				controlled.getWorldInstance()->getUnitFinder().findUnits(Circle(x, y, 200.0f), [&controlled, groupId](GameUnit &unit) -> bool
+				controlled.getWorldInstance()->getUnitFinder().findUnits(Circle(x, y, 200.0f), [&attacker, &controlled, groupId](GameUnit &unit) -> bool
 				{
 					// Only characters
 					if (unit.getTypeId() != object_type::Character)
@@ -322,7 +322,8 @@ namespace wowpp
 
 					// Check characters group
 					GameCharacter *character = static_cast<GameCharacter*>(&unit);
-					if (character->getGroupId() == groupId)
+					if (character->getGroupId() == groupId &&
+						character->getGuid() != attacker.getGuid())
 					{
 						controlled.addLootRecipient(unit.getGuid());
 					}

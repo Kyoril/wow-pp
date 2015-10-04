@@ -44,6 +44,7 @@ namespace wowpp
 {
 	class GameItem;
 	class GameCharacter;
+	class LootInstance;
 
 	namespace game
 	{
@@ -1525,8 +1526,8 @@ namespace wowpp
 			void lootResponse(
 				game::OutgoingPacket &out_packet,
 				UInt64 guid,
-				loot_type::Type type
-				// TODO: Loot
+				loot_type::Type type,
+				const LootInstance &loot
 				);
 
 			void lootReleaseResponse(

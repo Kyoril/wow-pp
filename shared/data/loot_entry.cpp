@@ -79,10 +79,6 @@ namespace wowpp
 						itemTable->tryGetInteger("min_count", def.minCount);
 						itemTable->tryGetInteger("max_count", def.maxCount);
 						itemTable->tryGetInteger("drop_chance", def.dropChance);
-						if (def.dropChance <= 0.0f)
-						{
-							context.onWarning("Item with drop chance <= 0 found - item will not drop!");
-						}
 
 						UInt32 isActive = 1;
 						itemTable->tryGetInteger("active", isActive);

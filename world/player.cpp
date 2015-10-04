@@ -27,6 +27,9 @@
 #include "game/each_tile_in_sight.h"
 #include "game/universe.h"
 #include "data/project.h"
+#include "data/unit_entry.h"
+#include "game/game_creature.h"
+#include "game/loot_instance.h"
 #include <cassert>
 #include <limits>
 
@@ -869,8 +872,8 @@ namespace wowpp
 
 	void Player::handleLoot(game::Protocol::IncomingPacket &packet)
 	{
-		UInt64 creatureId;
-		if (!game::client_read::loot(packet, creatureId))
+		UInt64 objectGuid;
+		if (!game::client_read::loot(packet, objectGuid))
 		{
 			WLOG("Could not read packet data");
 			return;
@@ -882,9 +885,36 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("TODO: Handle CMSG_LOOT");
-		sendProxyPacket(
-			std::bind(game::server_write::lootResponseError, std::placeholders::_1, creatureId, game::loot_type::None, game::loot_error::Locked));
+		// Find game object
+		GameObject *lootObject = m_character->getWorldInstance()->findObjectByGUID(objectGuid);
+		if (!lootObject)
+		{
+			WLOG("No loot object found!");
+			return;
+		}
+
+		// Is it a creature?
+		if (lootObject->getTypeId() == object_type::Unit)
+		{
+			GameCreature *creature = reinterpret_cast<GameCreature*>(lootObject);
+			if (creature->isAlive())
+			{
+				WLOG("Target creature is not dead and thus has no loot");
+				return;
+			}
+
+			// TODO: Get loot from creature
+			const auto &loot = creature->getUnitLoot();
+			sendProxyPacket(
+				std::bind(game::server_write::lootResponse, std::placeholders::_1, objectGuid, game::loot_type::Corpse, std::cref(loot)));
+		}
+		else
+		{
+			// TODO
+			WLOG("Only creatures are lootable at the moment.");
+			sendProxyPacket(
+				std::bind(game::server_write::lootResponseError, std::placeholders::_1, objectGuid, game::loot_type::None, game::loot_error::Locked));
+		}
 	}
 
 	void Player::handleLootMoney(game::Protocol::IncomingPacket &packet)

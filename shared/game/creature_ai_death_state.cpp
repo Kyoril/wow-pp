@@ -23,6 +23,7 @@
 #include "creature_ai.h"
 #include "game_creature.h"
 #include "data/trigger_entry.h"
+#include "loot_instance.h"
 #include "log/default_log_levels.h"
 
 namespace wowpp
@@ -94,11 +95,16 @@ namespace wowpp
 			}
 
 			// Make creature lootable
-			if (controlled.getEntry().unitLootEntry)
+			auto &entry = controlled.getEntry();
+			if (entry.unitLootEntry)
 			{
 				// TODO: Generate loot
-
-				controlled.addFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
+				LootInstance loot(*entry.unitLootEntry, entry.minLootGold, entry.maxLootGold);
+				if (!loot.isEmpty())
+				{
+					controlled.setUnitLoot(std::move(loot));
+					controlled.addFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
+				}
 			}
 		}
 	}

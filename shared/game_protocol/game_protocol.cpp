@@ -23,6 +23,7 @@
 #include "common/clock.h"
 #include "game_protocol.h"
 #include "game/game_item.h"
+#include "game/loot_instance.h"
 #include "log/default_log_levels.h"
 #include "binary_io/stream_source.h"
 #include "binary_io/stream_sink.h"
@@ -2425,13 +2426,13 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void lootResponse(game::OutgoingPacket &out_packet, UInt64 guid, loot_type::Type type /* TODO: Loot */)
+			void lootResponse(game::OutgoingPacket &out_packet, UInt64 guid, loot_type::Type type, const LootInstance &loot)
 			{
 				out_packet.start(game::server_packet::LootResponse);
 				out_packet
 					<< io::write<NetUInt64>(guid)
-					<< io::write<NetUInt8>(type);
-				// TODO...
+					<< io::write<NetUInt8>(type)
+					<< loot;
 				out_packet.finish();
 			}
 

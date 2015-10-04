@@ -26,6 +26,7 @@
 #include "world_instance.h"
 #include "unit_watcher.h"
 #include "game_character.h"
+#include "loot_instance.h"
 #include "common/linear_set.h"
 #include <boost/signals2.hpp>
 
@@ -87,6 +88,9 @@ namespace wowpp
 		bool isLootRecipient(GameCharacter &character) const;
 		/// Determines whether this creature is tagged by a player or group.
 		bool isTagged() const { return !m_lootRecipients.empty(); }
+		/// Get unit loot.
+		LootInstance &getUnitLoot() { return m_unitLoot; }
+		void setUnitLoot(LootInstance unitLoot);
 
 		template<typename OnRecipient>
 		void forEachLootRecipient(OnRecipient callback)
@@ -121,6 +125,7 @@ namespace wowpp
 		std::unique_ptr<CreatureAI> m_ai;
 		boost::signals2::scoped_connection m_onSpawned;
 		LootRecipients m_lootRecipients;
+		LootInstance m_unitLoot;
 	};
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel);
