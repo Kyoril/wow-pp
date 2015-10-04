@@ -528,6 +528,7 @@ namespace wowpp
 		// Update health value
 		const bool noThreat = ((m_spell.attributesEx[0] & spell_attributes_ex_a::NoThreat) != 0);
 		unitTarget->dealDamage(totalDamage, m_spell.schoolMask, &caster, noThreat);
+		unitTarget->damageHit(m_spell.schoolMask, caster);
 	}
 
 	void SingleCastState::spellEffectNormalizedWeaponDamage(const SpellEntry::Effect &effect)

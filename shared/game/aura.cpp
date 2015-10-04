@@ -546,6 +546,10 @@ namespace wowpp
 
 	void Aura::onTick()
 	{
+		// Prevent this aura from being deleted. This can happen in the
+		// dealDamage-Methods, when a creature dies from that damage.
+		auto strongThis = shared_from_this();
+
 		// Increase tick counter
 		m_tickCount++;
 

@@ -349,6 +349,7 @@ namespace wowpp
 		/// 
 		boost::signals2::signal<void(GameUnit &, float)> threatened;
 
+
 	public:
 
 		/// Creates a new instance of the GameUnit object, which will still be uninitialized.
