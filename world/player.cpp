@@ -1031,7 +1031,7 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("TODO: Handle CMSG_LOOT_RELEASE");
+		releaseLoot();
 	}
 
 	void Player::onInventoryChangeFailure(game::InventoryChangeFailure failure, GameItem *itemA, GameItem *itemB)
