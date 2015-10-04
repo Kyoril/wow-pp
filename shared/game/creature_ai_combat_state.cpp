@@ -22,6 +22,7 @@
 #include "creature_ai_combat_state.h"
 #include "creature_ai.h"
 #include "defines.h"
+#include "universe.h"
 #include "game_creature.h"
 #include "game_character.h"
 #include "world_instance.h"
@@ -244,11 +245,14 @@ namespace wowpp
 		Vector<float, 3> oldPosition, oldTarget(m_targetX, m_targetY, m_targetZ), newTarget;
 		getControlled().getLocation(oldPosition[0], oldPosition[1], oldPosition[2], o);
 		target.getLocation(newTarget[0], newTarget[1], newTarget[2], o2);
-		if (m_moveStart != 0)
+		if (m_moveStart != 0 && m_moveEnd > m_moveStart)
 		{
 			// Interpolate positions
-			oldPosition = lerp(oldPosition, oldTarget, static_cast<float>(static_cast<double>(getCurrentTime()) / static_cast<double>(m_moveEnd)));
+			const float t = static_cast<float>(static_cast<double>(getCurrentTime() - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));
+			oldPosition = lerp(oldPosition, oldTarget, t);
 		}
+
+		o = getControlled().getAngle(newTarget[0], newTarget[1]);
 
 		const float distance =
 			sqrtf(
@@ -264,6 +268,19 @@ namespace wowpp
 			GameTime moveTime = (distance / 7.5f) * constants::OneSecond;
 			m_moveStart = getCurrentTime();
 			m_moveEnd = m_moveStart + moveTime;
+
+			// Delay relocation
+			auto strongUnit = getControlled().shared_from_this();
+			std::weak_ptr<GameObject> weakUnit(strongUnit);
+
+			getControlled().getWorldInstance()->getUniverse().post([weakUnit, oldPosition, o]()
+			{
+				auto strongUnit = weakUnit.lock();
+				if (strongUnit)
+				{
+					strongUnit->relocate(oldPosition[0], oldPosition[1], oldPosition[2], o);
+				}
+			});
 
 			// Move (TODO: Better way to do this)
 			m_targetX = newTarget[0]; m_targetY = newTarget[1]; m_targetZ = newTarget[2];

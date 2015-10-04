@@ -49,6 +49,7 @@ namespace wowpp
 		, m_lastFallTime(0)
 		, m_lastFallZ(0.0f)
 		, m_project(project)
+		, m_loot(nullptr)
 	{
 		m_logoutCountdown.ended.connect(
 			std::bind(&Player::onLogout, this));
@@ -903,10 +904,23 @@ namespace wowpp
 				return;
 			}
 
-			// TODO: Get loot from creature
-			const auto &loot = creature->getUnitLoot();
-			sendProxyPacket(
-				std::bind(game::server_write::lootResponse, std::placeholders::_1, objectGuid, game::loot_type::Corpse, std::cref(loot)));
+			// Get loot from creature
+			auto *loot = creature->getUnitLoot();
+			if (loot && !loot->isEmpty())
+			{
+				m_loot = loot;
+				m_onLootInvalidate = creature->despawned.connect([this](GameObject &despawned)
+				{
+					releaseLoot();
+				});
+				m_onLootCleared = m_loot->cleared.connect([this]()
+				{
+					releaseLoot();
+				});
+
+				sendProxyPacket(
+					std::bind(game::server_write::lootResponse, std::placeholders::_1, objectGuid, game::loot_type::Corpse, std::cref(*loot)));
+			}
 		}
 		else
 		{
@@ -925,7 +939,29 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("TODO: Handle CMSG_LOOT_MONEY");
+		// TODO: Share money amongst group members
+
+		if (m_loot)
+		{
+			// Warning: takeGold may make m_loot invalid, because the loot will be reset if it is empty.
+			UInt32 lootGold = m_loot->getGold();
+			m_loot->takeGold();
+
+			UInt32 coinage = getCharacter()->getUInt32Value(character_fields::Coinage);
+			if (coinage >= std::numeric_limits<UInt32>::max() - lootGold)
+			{
+				coinage = std::numeric_limits<UInt32>::max();
+			}
+			else
+			{
+				coinage += lootGold;
+			}
+			getCharacter()->setUInt32Value(character_fields::Coinage, coinage);
+		}
+		else
+		{
+			WLOG("No loot opened...");
+		}
 	}
 
 	void Player::handleLootRelease(game::Protocol::IncomingPacket &packet)
@@ -1058,6 +1094,19 @@ namespace wowpp
 	{
 		m_lastFallTime = time;
 		m_lastFallZ = z;
+	}
+
+	void Player::releaseLoot()
+	{
+		if (m_loot)
+		{
+			m_onLootCleared.disconnect();
+			m_onLootInvalidate.disconnect();
+
+			sendProxyPacket(
+				std::bind(game::server_write::lootReleaseResponse, std::placeholders::_1, m_loot->getLootGuid()));
+			m_loot = nullptr;
+		}
 	}
 
 }

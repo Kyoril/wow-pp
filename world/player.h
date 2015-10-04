@@ -93,6 +93,8 @@ namespace wowpp
 
 		void getFallInfo(UInt32 &out_time, float &out_z) { out_time = m_lastFallTime; out_z = m_lastFallZ; }
 		void setFallInfo(UInt32 time, float z);
+
+		void releaseLoot();
 		
 		/// Sends an proxy packet to the realm which will then be redirected to the game client.
 		/// @param generator Packet writer function pointer.
@@ -195,10 +197,11 @@ namespace wowpp
 		WorldInstance &m_instance;
 		boost::signals2::scoped_connection m_onSpawn, m_onDespawn, m_onAtkSwingErr, m_onProfChanged, m_onInvFailure;
 		boost::signals2::scoped_connection m_onTileChange, m_onComboPoints, m_onXP, m_onCastError, m_onGainLevel;
-		boost::signals2::scoped_connection m_onAuraUpdate, m_onTargetAuraUpdate, m_onTeleport;
+		boost::signals2::scoped_connection m_onAuraUpdate, m_onTargetAuraUpdate, m_onTeleport, m_onLootCleared, m_onLootInvalidate;
 		AttackSwingError m_lastError;
 		UInt32 m_lastFallTime;
 		float m_lastFallZ;
 		Project &m_project;
+		LootInstance *m_loot;
 	};
 }

@@ -89,8 +89,8 @@ namespace wowpp
 		/// Determines whether this creature is tagged by a player or group.
 		bool isTagged() const { return !m_lootRecipients.empty(); }
 		/// Get unit loot.
-		LootInstance &getUnitLoot() { return m_unitLoot; }
-		void setUnitLoot(LootInstance unitLoot);
+		LootInstance *getUnitLoot() { return m_unitLoot.get(); }
+		void setUnitLoot(std::unique_ptr<LootInstance> unitLoot);
 
 		template<typename OnRecipient>
 		void forEachLootRecipient(OnRecipient callback)
@@ -125,7 +125,7 @@ namespace wowpp
 		std::unique_ptr<CreatureAI> m_ai;
 		boost::signals2::scoped_connection m_onSpawned;
 		LootRecipients m_lootRecipients;
-		LootInstance m_unitLoot;
+		std::unique_ptr<LootInstance> m_unitLoot;
 	};
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel);

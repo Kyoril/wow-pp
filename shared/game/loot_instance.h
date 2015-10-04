@@ -24,6 +24,7 @@
 #include "common/typedefs.h"
 #include "binary_io/writer.h"
 #include "data/loot_entry.h"
+#include <boost/signals2.hpp>
 
 namespace wowpp
 {
@@ -35,12 +36,22 @@ namespace wowpp
 
 	public:
 
-		/// Initializes a new instance of the loot instance.
-		explicit LootInstance();
-		explicit LootInstance(const LootEntry &entry, UInt32 minGold, UInt32 maxGold);
+		boost::signals2::signal<void()> cleared;
 
+	public:
+
+		/// Initializes a new instance of the loot instance.
+		explicit LootInstance(UInt64 lootGuid);
+		explicit LootInstance(UInt64 lootGuid, const LootEntry *entry, UInt32 minGold, UInt32 maxGold);
+
+		/// 
+		UInt64 getLootGuid() const { return m_lootGuid; }
 		/// Determines whether the loot is empty.
 		bool isEmpty() const { return (m_gold == 0 && m_items.empty()); }
+		/// 
+		UInt32 getGold() const { return m_gold; }
+		/// 
+		void takeGold();
 
 	private:
 
@@ -48,6 +59,7 @@ namespace wowpp
 
 	private:
 
+		UInt64 m_lootGuid;
 		UInt32 m_gold;
 		std::vector<std::pair<UInt32, LootDefinition>> m_items;
 	};

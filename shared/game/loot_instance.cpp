@@ -27,49 +27,53 @@
 
 namespace wowpp
 {
-	LootInstance::LootInstance()
-		: m_gold(0)
+	LootInstance::LootInstance(UInt64 lootGuid)
+		: m_lootGuid(lootGuid)
+		, m_gold(0)
 	{
 	}
 
-	LootInstance::LootInstance(const LootEntry &entry, UInt32 minGold, UInt32 maxGold)
-		: m_gold(0)
+	LootInstance::LootInstance(UInt64 lootGuid, const LootEntry *entry, UInt32 minGold, UInt32 maxGold)
+		: m_lootGuid(lootGuid)
+		, m_gold(0)
 	{
-		// Roll for all groups
-		for (auto &group : entry.lootGroups)
+		if (entry)
 		{
-			std::uniform_real_distribution<float> lootDistribution(0.0f, 100.0f);
-			float groupRoll = lootDistribution(randomGenerator);
-
-			auto shuffled = group;
-			std::shuffle(shuffled.begin(), shuffled.end(), randomGenerator);
-
-			bool foundNonEqualChanced = false;
-			std::vector<const LootDefinition*> equalChanced;
-			for (auto &def : shuffled)
+			for (auto &group : entry->lootGroups)
 			{
-				if (def.dropChance == 0.0f)
+				std::uniform_real_distribution<float> lootDistribution(0.0f, 100.0f);
+				float groupRoll = lootDistribution(randomGenerator);
+
+				auto shuffled = group;
+				std::shuffle(shuffled.begin(), shuffled.end(), randomGenerator);
+
+				bool foundNonEqualChanced = false;
+				std::vector<const LootDefinition*> equalChanced;
+				for (auto &def : shuffled)
 				{
-					equalChanced.push_back(&def);
+					if (def.dropChance == 0.0f)
+					{
+						equalChanced.push_back(&def);
+					}
+
+					if (def.dropChance > 0.0f &&
+						def.dropChance >= groupRoll)
+					{
+						addLootItem(def);
+						foundNonEqualChanced = true;
+						break;
+					}
+
+					groupRoll -= def.dropChance;
 				}
 
-				if (def.dropChance > 0.0f &&
-					def.dropChance >= groupRoll)
+				if (!foundNonEqualChanced &&
+					!equalChanced.empty())
 				{
-					addLootItem(def);
-					foundNonEqualChanced = true;
-					break;
+					std::uniform_int_distribution<UInt32> equalDistribution(0, equalChanced.size() - 1);
+					UInt32 index = equalDistribution(randomGenerator);
+					addLootItem(*equalChanced[index]);
 				}
-
-				groupRoll -= def.dropChance;
-			}
-
-			if (!foundNonEqualChanced &&
-				!equalChanced.empty())
-			{
-				std::uniform_int_distribution<UInt32> equalDistribution(0, equalChanced.size() - 1);
-				UInt32 index = equalDistribution(randomGenerator);
-				addLootItem(*equalChanced[index]);
 			}
 		}
 
@@ -90,6 +94,15 @@ namespace wowpp
 		m_items.push_back(std::make_pair(dropCount, def));
 	}
 
+	void LootInstance::takeGold()
+	{
+		m_gold = 0;
+		if (isEmpty())
+		{
+			cleared();
+		}
+	}
+
 	io::Writer & operator<<(io::Writer &w, LootInstance const& loot)
 	{
 		w
@@ -106,7 +119,7 @@ namespace wowpp
 				<< io::write<NetUInt32>(def.second.item->displayId)
 				<< io::write<NetUInt32>(0)
 				<< io::write<NetUInt32>(0)
-				<< io::write<NetUInt8>(game::loot_slot_type::Locked)
+				<< io::write<NetUInt8>(game::loot_slot_type::AllowLoot)
 				;
 		}
 

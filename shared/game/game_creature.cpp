@@ -223,99 +223,6 @@ namespace wowpp
 		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 1, item->sheath);
 	}
 
-// 	void GameCreature::updateVictim()
-// 	{
-// 		if (!isAlive())
-// 			return;
-// 
-// 		GameUnit *newVictim = nullptr;
-// 		float maxThreat = -1.0;
-// 
-// 		for (auto it : m_threat)
-// 		{
-// 			if (it.second > maxThreat)
-// 			{
-// 				// Try to find unit
-// 				newVictim = dynamic_cast<GameUnit*>(m_worldInstance->findObjectByGUID(it.first));
-// 				if (newVictim)
-// 				{
-// 					maxThreat = it.first;
-// 				}
-// 			}
-// 		}
-// 
-// 		if (newVictim &&
-// 			newVictim != getVictim())
-// 		{
-// 			if (!getVictim())
-// 			{
-// 				// Aggro event
-// 				auto it = m_entry->triggersByEvent.find(trigger_event::OnAggro);
-// 				if (it != m_entry->triggersByEvent.end())
-// 				{
-// 					for (const auto *trigger : it->second)
-// 					{
-// 						trigger->execute(*trigger, this);
-// 					}
-// 				}
-// 
-// 				// Send aggro message to all clients nearby (this will play the creatures aggro sound)
-// 				TileIndex2D tile;
-// 				if (getTileIndex(tile))
-// 				{
-// 					std::vector<char> buffer;
-// 					io::VectorSink sink(buffer);
-// 					game::Protocol::OutgoingPacket packet(sink);
-// 					game::server_write::aiReaction(packet, getGuid(), 2);
-// 
-// 					forEachSubscriberInSight(
-// 						m_worldInstance->getGrid(), 
-// 						tile,
-// 						[&packet, &buffer](ITileSubscriber &subscriber)
-// 					{
-// 						subscriber.sendPacket(packet, buffer);
-// 					});
-// 				}
-// 			}
-// 
-// 			/* THIS WORKS! (kind of) */
-// 			TileIndex2D tile;
-// 			if (getTileIndex(tile))
-// 			{
-// 				float o;
-// 				Vector<float, 3> oldPosition;
-// 				getLocation(oldPosition[0], oldPosition[1], oldPosition[2], o);
-// 
-// 				Vector<float, 3> newPosition;
-// 				newVictim->getLocation(newPosition[0], newPosition[1], newPosition[2], o);
-// 
-// 				const float dist = getDistanceTo(*newVictim);
-// 				const float speed = 7.5f;
-// 
-// 				std::vector<char> buffer;
-// 				io::VectorSink sink(buffer);
-// 				game::Protocol::OutgoingPacket packet(sink);
-// 				game::server_write::monsterMove(packet, getGuid(), oldPosition, newPosition, (dist / speed) * 1000);
-// 
-// 				forEachSubscriberInSight(
-// 					m_worldInstance->getGrid(),
-// 					tile,
-// 					[&packet, &buffer](ITileSubscriber &subscriber)
-// 				{
-// 					subscriber.sendPacket(packet, buffer);
-// 				});
-// 			}
-// 
-// 			// New target to attack
-// 			startAttack(*newVictim);
-// 		}
-// 		else if (!newVictim)
-// 		{
-// 			// No target any more
-// 			stopAttack();
-// 		}
-// 	}
-
 	bool GameCreature::canBlock() const
 	{
 		const UInt32 slot = 1;
@@ -370,7 +277,7 @@ namespace wowpp
 		m_lootRecipients.clear();
 	}
 
-	void GameCreature::setUnitLoot(LootInstance unitLoot)
+	void GameCreature::setUnitLoot(std::unique_ptr<LootInstance> unitLoot)
 	{
 		m_unitLoot = std::move(unitLoot);
 	}

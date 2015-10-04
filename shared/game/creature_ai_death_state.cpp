@@ -25,6 +25,7 @@
 #include "data/trigger_entry.h"
 #include "loot_instance.h"
 #include "log/default_log_levels.h"
+#include "common/make_unique.h"
 
 namespace wowpp
 {
@@ -96,15 +97,24 @@ namespace wowpp
 
 			// Make creature lootable
 			auto &entry = controlled.getEntry();
-			if (entry.unitLootEntry)
+
+			// Loot callback functions
+			auto onCleared = [&controlled]()
 			{
-				// TODO: Generate loot
-				LootInstance loot(*entry.unitLootEntry, entry.minLootGold, entry.maxLootGold);
-				if (!loot.isEmpty())
+				controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
+			};
+
+			// Generate loot
+			auto loot = make_unique<LootInstance>(controlled.getGuid(), entry.unitLootEntry, entry.minLootGold, entry.maxLootGold);
+			if (!loot->isEmpty())
+			{
+				m_onLootCleared = loot->cleared.connect([&controlled]()
 				{
-					controlled.setUnitLoot(std::move(loot));
-					controlled.addFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
-				}
+					controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
+				});
+
+				controlled.setUnitLoot(std::move(loot));
+				controlled.addFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
 			}
 		}
 	}
