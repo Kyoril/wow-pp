@@ -166,6 +166,6 @@ namespace wowpp
 		}
 
 		// Check the flags
-		return (it->second.flags != game::social_flag::Friend);
+		return (it->second.flags & game::social_flag::Friend) != 0;
 	}
 }

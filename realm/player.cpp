@@ -1383,6 +1383,30 @@ namespace wowpp
 		}
 
 		DLOG("TODO: Player " << m_accountName << " wants to delete " << guid << " from his ignore list");
+
+		// Find the character details
+		game::CharEntry ignoredChar;
+
+		// Fill ignored info
+		game::SocialInfo info;
+
+		//result
+		game::FriendResult result = m_social->removeFromSocialList(guid, true);
+
+		if (result != game::friend_result::IgnoreNotFound)
+		{
+			if ()
+			{
+				if (!m_database.updateCharacterSocialContact(m_characterId, guid, game::social_flag::Friend))
+				{
+					result = game::friend_result::DatabaseError;
+				}
+			}
+		}
+		
+
+		sendPacket(
+			std::bind(game::server_write::friendStatus, std::placeholders::_1, guid, result, std::cref(info)));
 	}
 
 	void Player::handleItemQuerySingle(game::IncomingPacket &packet)
