@@ -57,7 +57,17 @@ namespace wowpp
 				angle = getControlled().getAngle(*victim);
 			}
 
-			getControlled().relocate(m_targetX, m_targetY, m_targetZ, angle);
+			// Update creatures position
+			auto strongUnit = getControlled().shared_from_this();
+			std::weak_ptr<GameObject> weakUnit(strongUnit);
+			getControlled().getWorldInstance()->getUniverse().post([weakUnit, this, angle]()
+			{
+				auto strongUnit = weakUnit.lock();
+				if (strongUnit)
+				{
+					strongUnit->relocate(m_targetX, m_targetY, m_targetZ, angle);
+				}
+			});
 		});
 
 		m_moveUpdated.ended.connect([this]()
@@ -78,13 +88,14 @@ namespace wowpp
 			}
 
 			m_moveStart = time;
-			getControlled().relocate(oldPosition[0], oldPosition[1], oldPosition[2], o);
 
 			const GameTime duration = constants::OneSecond / 4;
 			if (time < m_moveEnd - duration)
 			{
 				m_moveUpdated.setEnd(time + duration);
 			}
+
+			getControlled().relocate(oldPosition[0], oldPosition[1], oldPosition[2], o);
 		});
 	}
 
