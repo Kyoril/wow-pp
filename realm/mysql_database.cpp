@@ -828,7 +828,7 @@ namespace wowpp
 	bool MySQLDatabase::updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags)
 	{
 		if (m_connection.execute((boost::format(
-			"UPDATE `character_social` SET `flags`=%1%, WHERE `guid_1`=%2% AND `guid_2`=%3%")
+			"UPDATE `character_social` SET `flags`=%1% WHERE `guid_1`=%2% AND `guid_2`=%3%")
 			% flags
 			% characterId
 			% socialGuid).str()))
