@@ -1271,9 +1271,19 @@ namespace wowpp
 			{
 				// Add to database
 				const bool shouldUpdate = m_social->isIgnored(characterGUID);
-				if (!m_database.addCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(info.flags), info.note))
+				if (!shouldUpdate)
 				{
-					result = game::friend_result::DatabaseError;
+					if (!m_database.addCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(info.flags), info.note))
+					{
+						result = game::friend_result::DatabaseError;
+					}
+				}
+				else
+				{
+					if (!m_database.updateCharacterSocialContact(m_characterId, characterGUID, static_cast<SocialFlag>(game::social_flag::Friend | game::social_flag::Ignored)))
+					{
+						result = game::friend_result::DatabaseError;
+					}
 				}
 			}
 		}
@@ -1371,10 +1381,21 @@ namespace wowpp
 
         if(m_characterId != characterGUID)
         {
-            if (!m_database.addCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(info.flags), ""))
-            {
-                result = game::friend_result::DatabaseError;
-            }
+			const bool shouldUpdate = m_social->isFriend(characterGUID);
+			if (!shouldUpdate)
+			{
+				if (!m_database.addCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(info.flags), ""))
+				{
+					result = game::friend_result::DatabaseError;
+				}
+			}
+			else
+			{
+				if (!m_database.updateCharacterSocialContact(m_characterId, characterGUID, static_cast<SocialFlag>(game::social_flag::Friend | game::social_flag::Ignored)))
+				{
+					result = game::friend_result::DatabaseError;
+				}
+			}
         }
         else
         {
@@ -1403,19 +1424,30 @@ namespace wowpp
 		game::SocialInfo info;
 
 		//result
-		game::FriendResult result = m_social->removeFromSocialList(guid, true);
-
-		if (result != game::friend_result::IgnoreNotFound)
+		auto result = m_social->removeFromSocialList(guid, true);
+		if (result == game::friend_result::IgnoreRemoved)
 		{
-			if ()
+			if (m_social->isFriend(guid))
 			{
+				ILOG("PLAYER is still a friend - updating flags");
 				if (!m_database.updateCharacterSocialContact(m_characterId, guid, game::social_flag::Friend))
 				{
 					result = game::friend_result::DatabaseError;
 				}
 			}
+			else
+			{
+				ILOG("PLAYER will be completely removed from the database");
+				if (!m_database.removeCharacterSocialContact(m_characterId, guid))
+				{
+					result = game::friend_result::DatabaseError;
+				}
+			}
 		}
-		
+		else
+		{
+			WLOG("handleDeleteIgnore: result " << result);
+		}
 
 		sendPacket(
 			std::bind(game::server_write::friendStatus, std::placeholders::_1, guid, result, std::cref(info)));
