@@ -122,6 +122,47 @@ namespace wowpp
 	{
 		auto &controlled = getControlled();
 
+		// Calculate new position
+		float o;
+		Vector<float, 3> oldPosition, oldTarget(m_targetX, m_targetY, m_targetZ);
+		controlled.getLocation(oldPosition[0], oldPosition[1], oldPosition[2], o);
+		if (m_moveStart != 0 && m_moveEnd > m_moveStart)
+		{
+			// Interpolate positions
+			const float t = static_cast<float>(static_cast<double>(getCurrentTime() - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));
+			oldPosition = lerp(oldPosition, oldTarget, t);
+		}
+
+		// Update creatures position
+		auto strongUnit = getControlled().shared_from_this();
+		std::weak_ptr<GameObject> weakUnit(strongUnit);
+		getControlled().getWorldInstance()->getUniverse().post([weakUnit, oldPosition, o]()
+		{
+			auto strongUnit = weakUnit.lock();
+			if (strongUnit)
+			{
+				strongUnit->relocate(oldPosition[0], oldPosition[1], oldPosition[2], o);
+			}
+		});
+
+		// Send move packet
+		TileIndex2D tile;
+		if (getControlled().getTileIndex(tile))
+		{
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket packet(sink);
+			game::server_write::monsterMove(packet, getControlled().getGuid(), oldPosition, oldPosition, 0);
+
+			forEachSubscriberInSight(
+				getControlled().getWorldInstance()->getGrid(),
+				tile,
+				[&packet, &buffer](ITileSubscriber &subscriber)
+			{
+				subscriber.sendPacket(packet, buffer);
+			});
+		}
+
 		// All remaining threateners are no longer in combat with this unit
 		for (auto &pair : m_threat)
 		{
