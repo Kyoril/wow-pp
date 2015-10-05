@@ -23,7 +23,6 @@
 #include "player.h"
 #include <algorithm>
 
-
 namespace wowpp
 {
 	PlayerSocial::PlayerSocial(PlayerManager &manager, Player &player)
