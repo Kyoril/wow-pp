@@ -38,15 +38,18 @@ namespace wowpp
 {
 	CreatureAICombatState::CreatureAICombatState(CreatureAI &ai, GameUnit &victim)
 		: CreatureAIState(ai)
-		, m_moveUpdate(ai.getControlled().getTimers())
+		, m_moveReached(ai.getControlled().getTimers())
+		, m_moveUpdated(ai.getControlled().getTimers())
 		, m_moveStart(0)
 		, m_moveEnd(0)
 		, m_lastThreatTime(0)
 	{
 		// Add initial threat
 		addThreat(victim, 0.0f);
-		m_moveUpdate.ended.connect([this]()
+		m_moveReached.ended.connect([this]()
 		{
+			m_moveUpdated.cancel();
+
 			float angle = 0.0f;
 			auto *victim = getControlled().getVictim();
 			if (victim)
@@ -55,6 +58,33 @@ namespace wowpp
 			}
 
 			getControlled().relocate(m_targetX, m_targetY, m_targetZ, angle);
+		});
+
+		m_moveUpdated.ended.connect([this]()
+		{
+			GameTime time = getCurrentTime();
+			if (time >= m_moveEnd)
+				return;
+
+			// Calculate new position
+			float o;
+			Vector<float, 3> oldPosition, oldTarget(m_targetX, m_targetY, m_targetZ);
+			getControlled().getLocation(oldPosition[0], oldPosition[1], oldPosition[2], o);
+			if (m_moveStart != 0 && m_moveEnd > m_moveStart)
+			{
+				// Interpolate positions
+				const float t = static_cast<float>(static_cast<double>(time - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));
+				oldPosition = lerp(oldPosition, oldTarget, t);
+			}
+
+			m_moveStart = time;
+			getControlled().relocate(oldPosition[0], oldPosition[1], oldPosition[2], o);
+
+			const GameTime duration = constants::OneSecond / 4;
+			if (time < m_moveEnd - duration)
+			{
+				m_moveUpdated.setEnd(time + duration);
+			}
 		});
 	}
 
@@ -356,7 +386,8 @@ namespace wowpp
 				});
 			}
 
-			m_moveUpdate.setEnd(m_moveEnd);
+			m_moveReached.setEnd(m_moveEnd);
+			m_moveUpdated.setEnd(m_moveStart + constants::OneSecond / 4);
 		}
 	}
 

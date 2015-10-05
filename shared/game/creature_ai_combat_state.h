@@ -81,7 +81,7 @@ namespace wowpp
 		UnitSignals m_killedSignals;
 		UnitSignals m_despawnedSignals;
 		boost::signals2::scoped_connection m_onThreatened, m_onVictimMoved, m_onControlledMoved;
-		Countdown m_moveUpdate;
+		Countdown m_moveReached, m_moveUpdated;
 		float m_targetX, m_targetY, m_targetZ;
 		GameTime m_moveStart, m_moveEnd;
 		GameTime m_lastThreatTime;
