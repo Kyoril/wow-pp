@@ -33,6 +33,7 @@
 #include "game/each_tile_in_region.h"
 #include "game/world_instance.h"
 #include "game/tile_subscriber.h"
+#include "game/loot_instance.h"
 #include <boost/noncopyable.hpp>
 #include <boost/signals2.hpp>
 #include <algorithm>
@@ -94,6 +95,9 @@ namespace wowpp
 		void getFallInfo(UInt32 &out_time, float &out_z) { out_time = m_lastFallTime; out_z = m_lastFallZ; }
 		void setFallInfo(UInt32 time, float z);
 
+		/// Gets the current loot instance. May return nullptr.
+		bool isLooting(UInt64 lootGuid) const { return (m_loot ? (m_loot->getLootGuid() == lootGuid) : false); }
+		/// Releases the current loot.
 		void releaseLoot();
 		
 		/// Sends an proxy packet to the realm which will then be redirected to the game client.

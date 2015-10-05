@@ -29,7 +29,6 @@
 #include "data/project.h"
 #include "data/unit_entry.h"
 #include "game/game_creature.h"
-#include "game/loot_instance.h"
 #include <cassert>
 #include <limits>
 
@@ -995,9 +994,6 @@ namespace wowpp
 			return;
 		}
 
-		// Take gold (WARNING: May reset m_loot as loot may become empty after this)
-		m_loot->takeGold();
-
 		// Reward with gold
 		for (auto *recipient : recipients)
 		{
@@ -1016,10 +1012,23 @@ namespace wowpp
 			auto *player = m_manager.getPlayerByCharacterGuid(recipient->getGuid());
 			if (player)
 			{
-				player->sendProxyPacket(
-					std::bind(game::server_write::lootMoneyNotify, std::placeholders::_1, lootGold));
+				if (recipients.size() > 1)
+				{
+					player->sendProxyPacket(
+						std::bind(game::server_write::lootMoneyNotify, std::placeholders::_1, lootGold));
+				}
+
+				// TODO: Put this packet into the LootInstance class or in an event callback maybe
+				if (player->isLooting(lootGuid))
+				{
+					player->sendProxyPacket(
+						std::bind(game::server_write::lootClearMoney, std::placeholders::_1));
+				}
 			}
 		}
+
+		// Take gold (WARNING: May reset m_loot as loot may become empty after this)
+		m_loot->takeGold();
 	}
 
 	void Player::handleLootRelease(game::Protocol::IncomingPacket &packet)
