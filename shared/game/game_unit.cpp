@@ -450,10 +450,14 @@ namespace wowpp
 			return;
 		}
 
+		// Save pointer to victim because there are many places where m_victim may
+		// become invalid during this function
+		GameUnit *victim = m_victim;
+
 		if (getTypeId() != object_type::Character)
 		{
 			// Turn to target if npc
-			setOrientation(getAngle(*m_victim));
+			setOrientation(getAngle(*victim));
 		}
 
 		// Remember this weapon swing
@@ -464,11 +468,11 @@ namespace wowpp
 		{
 			// Get target location
 			float vX, vY, vZ, vO;
-			m_victim->getLocation(vX, vY, vZ, vO);
+			victim->getLocation(vX, vY, vZ, vO);
 
 			// Distance check
-			const float distance = getDistanceTo(*m_victim);
-			const float combatRange = getMeleeReach() + m_victim->getMeleeReach();
+			const float distance = getDistanceTo(*victim);
+			const float combatRange = getMeleeReach() + victim->getMeleeReach();
 			if (distance > combatRange)
 			{
 				autoAttackError(attack_swing_error::OutOfRange);
@@ -531,44 +535,44 @@ namespace wowpp
 				//attack table calculation
 				std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
 				float hitTableRoll = hitTableDistribution(randomGenerator);
-				if ((hitTableRoll -= getMissChance(*this, *m_victim)) < 0.0f)
+				if ((hitTableRoll -= getMissChance(*this, *victim)) < 0.0f)
 				{
 					//missed
 					hitInfo = game::hit_info::Miss;
 					damageModifier = 0.0f;
 				}
-				else if ((hitTableRoll -= getDodgeChance(*this, *m_victim)) < 0.0f)
+				else if ((hitTableRoll -= getDodgeChance(*this, *victim)) < 0.0f)
 				{
 					//dodged
 					victimState = game::victim_state::Dodge;
 					damageModifier = 0.0f;
 				}
-				else if (m_victim->canParry() && (hitTableRoll -= getParryChance(*this, *m_victim)) < 0.0f)
+				else if (m_victim->canParry() && (hitTableRoll -= getParryChance(*this, *victim)) < 0.0f)
 				{
 					//parried
 					victimState = game::victim_state::Parry;
 					damageModifier = 0.0f;
 					//TODO accelerate next m_victim autohit
 				}
-				else if ((hitTableRoll -= getGlancingChance(*this, *m_victim)) < 0.0f)
+				else if ((hitTableRoll -= getGlancingChance(*this, *victim)) < 0.0f)
 				{
 					//glanced
 					hitInfo = game::hit_info::Glancing;
 					damageModifier = 0.75f;	//TODO more detail
 				}
-				else if (m_victim->canBlock() && (hitTableRoll -= getBlockChance(*m_victim)) < 0.0f)
+				else if (m_victim->canBlock() && (hitTableRoll -= getBlockChance(*victim)) < 0.0f)
 				{
 					//blocked
 					victimState = game::victim_state::Blocks;
 					blockValue = 50;	//TODO get from m_victim
 				}
-				else if ((hitTableRoll -= getCrushChance(*this, *m_victim)) < 0.0f)
+				else if ((hitTableRoll -= getCrushChance(*this, *victim)) < 0.0f)
 				{
 					//crush
 					hitInfo = game::hit_info::Crushing;
 					damageModifier = 1.5f;
 				}
-				else if ((hitTableRoll -= getCritChance(*this, *m_victim)) < 0.0f)
+				else if ((hitTableRoll -= getCritChance(*this, *victim)) < 0.0f)
 				{
 					//crit
 					hitInfo = game::hit_info::CriticalHit;
@@ -579,7 +583,7 @@ namespace wowpp
 				{
 					// Calculate damage between minimum and maximum damage
 					std::uniform_real_distribution<float> distribution(getFloatValue(unit_fields::MinDamage), getFloatValue(unit_fields::MaxDamage) + 1.0f);
-					damage = (calculateArmorReducedDamage(getLevel(), *m_victim, UInt32(distribution(randomGenerator))) * damageModifier) - blockValue;
+					damage = (calculateArmorReducedDamage(getLevel(), *victim, UInt32(distribution(randomGenerator))) * damageModifier) - blockValue;
 					if (damage < 0)	//avoid negative damage when blockValue is high
 						damage = 0;
 				}
@@ -588,7 +592,7 @@ namespace wowpp
 				std::vector<char> buffer;
 				io::VectorSink sink(buffer);
 				game::Protocol::OutgoingPacket packet(sink);
-				game::server_write::attackStateUpdate(packet, getGuid(), m_victim->getGuid(), hitInfo, damage, 0, 0, blockValue, victimState, game::weapon_attack::BaseAttack, 1);
+				game::server_write::attackStateUpdate(packet, getGuid(), victim->getGuid(), hitInfo, damage, 0, 0, blockValue, victimState, game::weapon_attack::BaseAttack, 1);
 
 				// Notify all tile subscribers about this event
 				forEachSubscriberInSight(
@@ -621,21 +625,25 @@ namespace wowpp
 				}
 
 				// Deal damage (Note: m_victim can become nullptr, if the target dies)
-				m_victim->dealDamage(damage, 0, this);
-				if (m_victim)
+				victim->dealDamage(damage, 0, this);
+				if (m_victim && m_victim->isAlive())
 				{
 					// Fire signal
-					m_victim->damageHit(game::spell_school::Normal, *this);
+					victim->damageHit(game::spell_school::Normal, *this);
 				}
 			}
 		} while (false);
+		
+		// Do we still have an attack target? If so, trigger the next attack swing
+		if (m_victim)
+		{
+			// Notify about successful auto attack to reset last error message
+			autoAttackError(attack_swing_error::Success);
 
-		// Notify about successful auto attack to reset last error message
-		autoAttackError(attack_swing_error::Success);
-
-		// Trigger next auto attack swing
-		GameTime nextAutoAttack = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
-		m_attackSwingCountdown.setEnd(nextAutoAttack);
+			// Trigger next auto attack swing
+			GameTime nextAutoAttack = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
+			m_attackSwingCountdown.setEnd(nextAutoAttack);
+		}
 	}
 
 	void GameUnit::onVictimKilled(GameUnit *killer)
