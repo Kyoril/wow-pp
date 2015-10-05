@@ -163,17 +163,6 @@ namespace wowpp
 	void GameCreature::onKilled(GameUnit *killer)
 	{
 		GameUnit::onKilled(killer);
-		
-		// Decide whether to despawn based on unit type
-		const bool isElite = (m_entry->rank > 0 && m_entry->rank < 4);
-		const bool isRare = (m_entry->rank == 4);
-
-		// Calculate despawn delay for rare mobs and elite mobs
-		GameTime despawnDelay = constants::OneSecond * 30;
-		if (isElite || isRare) despawnDelay = constants::OneMinute * 3;
-
-		// Despawn in 30 seconds
-		triggerDespawnTimer(despawnDelay);
 	}
 
 	float GameCreature::calcXpModifier(UInt32 attackerLevel) const

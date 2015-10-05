@@ -53,6 +53,16 @@ namespace wowpp
 			}
 		}
 
+
+		// Decide whether to despawn based on unit type
+		auto &entry = controlled.getEntry();
+		const bool isElite = (entry.rank > 0 && entry.rank < 4);
+		const bool isRare = (entry.rank == 4);
+
+		// Calculate despawn delay for rare mobs and elite mobs
+		GameTime despawnDelay = constants::OneSecond * 30;
+		if (isElite || isRare) despawnDelay = constants::OneMinute * 3;
+
 		// Reward all loot recipients
 		if (controlled.isTagged())
 		{
@@ -95,9 +105,6 @@ namespace wowpp
 				character->rewardExperience(&controlled, xp);
 			}
 
-			// Make creature lootable
-			auto &entry = controlled.getEntry();
-
 			// Loot callback functions
 			auto onCleared = [&controlled]()
 			{
@@ -108,15 +115,24 @@ namespace wowpp
 			auto loot = make_unique<LootInstance>(controlled.getGuid(), entry.unitLootEntry, entry.minLootGold, entry.maxLootGold);
 			if (!loot->isEmpty())
 			{
+				// 3 Minutes of despawn delay if creature still has loot
+				despawnDelay = constants::OneMinute * 3;
+
 				m_onLootCleared = loot->cleared.connect([&controlled]()
 				{
 					controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
+
+					// 30 more seconds until despawn from now on
+					controlled.triggerDespawnTimer(constants::OneSecond * 30);
 				});
 
 				controlled.setUnitLoot(std::move(loot));
 				controlled.addFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
 			}
 		}
+
+		// Despawn in 30 seconds
+		controlled.triggerDespawnTimer(despawnDelay);
 	}
 
 	void CreatureAIDeathState::onLeave()
