@@ -49,6 +49,9 @@ namespace wowpp
 		typedef AbstractConnection<pp::Protocol> Client;
 		typedef boost::signals2::signal<void()> DisconnectedSignal;
 
+		typedef std::vector<UInt32> MapList;
+		typedef std::vector<UInt32> InstanceList;
+
 	public:
 
 		/// Triggered if the connection was lost or closed somehow.
@@ -80,6 +83,11 @@ namespace wowpp
 		bool hasInstance(UInt32 instanceId) const { return std::find(m_instances.begin(), m_instances.end(), instanceId) != m_instances.end(); }
 		/// Determines whether there are instances running on this world server.
 		bool hasInstances() const { return !m_instances.empty(); }
+		/// Returns an array of supported map id's of this world node.
+		const MapList &getMapList() const { return m_mapIds; }
+		/// Returns an array of opened instance id's of this world node.
+		const InstanceList &getInstanceList() const { return m_instances; }
+		
 
 		// Called by player
 		void enterWorldInstance(DatabaseId characterDbId, UInt32 instanceId, const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &out_items);
@@ -98,8 +106,8 @@ namespace wowpp
 		std::shared_ptr<Client> m_connection;
 		String m_address;						// IP address in string format
 		bool m_authed;							// True if the user has been successfully authentificated.
-		std::vector<UInt32> m_mapIds;			// A vector of map id's which this node does support
-		std::vector<UInt32> m_instances;		// A vector of running instances on this server
+		MapList m_mapIds;			// A vector of map id's which this node does support
+		InstanceList m_instances;		// A vector of running instances on this server
 		String m_realmName;
 
 	private:

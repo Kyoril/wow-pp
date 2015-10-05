@@ -25,6 +25,8 @@
 #include "http/http_incoming_request.h"
 #include "player_manager.h"
 #include "player.h"
+#include "world_manager.h"
+#include "world.h"
 #include "game/game_character.h"
 #include "log/default_log_levels.h"
 
@@ -89,6 +91,30 @@ namespace wowpp
 						}
 					}
 					message << "</players>";
+					sendXmlAnswer(response, message.str());
+				}
+				else if (url == "/nodes")
+				{
+					std::ostringstream message;
+					message << "<nodes>";
+
+					auto &worldMgr = static_cast<WebService &>(this->getService()).getWorldManager();
+					for (const auto &world : worldMgr.getWorlds())
+					{
+						message << "<node><maps>";
+						for (auto &mapId : world->getMapList())
+						{
+							message << "<map id=\"" << mapId << "\" />";
+						}
+						message << "</maps><instances>";
+						for (auto &instanceId : world->getInstanceList())
+						{
+							message << "<instance id=\"" << instanceId << "\" />";
+						}
+						message << "</instances>";
+						message << "</node>";
+					}
+					message << "</nodes>";
 					sendXmlAnswer(response, message.str());
 				}
 				else
