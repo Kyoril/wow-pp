@@ -160,11 +160,6 @@ namespace wowpp
 		updateAllStats();
 	}
 
-	void GameCreature::onKilled(GameUnit *killer)
-	{
-		GameUnit::onKilled(killer);
-	}
-
 	float GameCreature::calcXpModifier(UInt32 attackerLevel) const
 	{
 		// No experience points
