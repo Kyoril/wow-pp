@@ -61,7 +61,9 @@ namespace wowpp
 		bool getCharacterSocialList(DatabaseId characterId, PlayerSocial &out_social) override;
 		/// @copydoc wowpp::IDatabase::addCharacterSocialContact
 		bool addCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) override;
-		/// @copydoc wowpp::IDatabase::addCharacterSocialContact
+		/// @copydoc wowpp::IDatabase::updateCharacterSocialContact
+		bool updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags) override;
+		/// @copydoc wowpp::IDatabase::updateCharacterSocialContact
 		bool updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) override;
 		/// @copydoc wowpp::IDatabase::removeCharacterSocialContact
 		bool removeCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid) override;

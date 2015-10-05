@@ -1304,9 +1304,21 @@ namespace wowpp
 		auto result = m_social->removeFromSocialList(guid, false);
 		if (result == game::friend_result::Removed)
 		{
-			if (!m_database.removeCharacterSocialContact(m_characterId, guid))
+			if (m_social->isIgnored(guid))
 			{
-				result = game::friend_result::DatabaseError;
+				// Old friend is still ignored - update flags
+				if (!m_database.updateCharacterSocialContact(m_characterId, guid, game::social_flag::Ignored, ""))
+				{
+					result = game::friend_result::DatabaseError;
+				}
+			}
+			else
+			{
+				// Completely remove contact, as he is neither ignored nor a friend
+				if (!m_database.removeCharacterSocialContact(m_characterId, guid))
+				{
+					result = game::friend_result::DatabaseError;
+				}
 			}
 		}
 
