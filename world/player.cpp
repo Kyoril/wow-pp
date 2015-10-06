@@ -49,6 +49,8 @@ namespace wowpp
 		, m_lastFallZ(0.0f)
 		, m_project(project)
 		, m_loot(nullptr)
+		, m_clientDelayMs(0)
+		, m_nextDelayReset(0)
 	{
 		m_logoutCountdown.ended.connect(
 			std::bind(&Player::onLogout, this));
@@ -1176,6 +1178,152 @@ namespace wowpp
 
 			m_character->removeFlag(unit_fields::UnitFlags, game::unit_flags::Looting);
 		}
+	}
+
+	void Player::handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode)
+	{
+		MovementInfo info;
+		if (!game::client_read::moveHeartBeat(packet, info))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		UInt64 currentTime = getCurrentTime();
+		if (m_nextDelayReset <= currentTime)
+		{
+			m_clientDelayMs = 0;
+			m_nextDelayReset = currentTime + constants::OneSecond * 30;
+		}
+
+		if (opCode != game::client_packet::MoveStop)
+		{
+			auto flags = m_character->getUInt32Value(unit_fields::UnitFlags);
+			if ((flags & 0x00040000) != 0 ||
+				(flags & 0x00000004) != 0)
+			{
+				WLOG("Character is unable to move, ignoring move packet");
+				return;
+			}
+		}
+
+		// Sender guid
+		auto guid = m_character->getGuid();
+
+		// Get object location
+		float x, y, z, o;
+		m_character->getLocation(x, y, z, o);
+
+		// Store movement information
+		m_character->setMovementInfo(info);
+
+		// Transform into grid location
+		TileIndex2D gridIndex;
+		auto &grid = getWorldInstance().getGrid();
+		if (!grid.getTilePosition(x, y, z, gridIndex[0], gridIndex[1]))
+		{
+			// TODO: Error?
+			ELOG("Could not resolve grid location!");
+			return;
+		}
+
+		UInt32 msTime = mTimeStamp();
+		if (m_clientDelayMs == 0)
+		{
+			m_clientDelayMs = msTime - info.time;
+		}
+		UInt32 move_time = (info.time - (msTime - m_clientDelayMs)) + 500 + msTime;
+
+		// Get grid tile
+		auto &tile = grid.requireTile(gridIndex);
+		info.time = move_time;
+
+		// Create the chat packet
+		std::vector<char> buffer;
+		io::VectorSink sink(buffer);
+		game::Protocol::OutgoingPacket movePacket(sink);
+		game::server_write::movePacket(movePacket, opCode, guid, info);
+
+		// Notify all watchers about the new object
+		forEachTileInSight(
+			getWorldInstance().getGrid(),
+			gridIndex,
+			[this, &movePacket, &buffer](VisibilityTile &tile)
+		{
+			for (auto &watcher : tile.getWatchers())
+			{
+				if (watcher != this)
+				{
+					watcher->sendPacket(movePacket, buffer);
+				}
+			}
+		});
+
+		//TODO: Verify new location
+
+		UInt32 lastFallTime = 0;
+		float lastFallZ = 0.0f;
+		getFallInfo(lastFallTime, lastFallZ);
+
+		// Fall damage
+		if (opCode == game::client_packet::MoveFallLand)
+		{
+			if (info.fallTime >= 1100)
+			{
+				float deltaZ = lastFallZ - info.z;
+				if (m_character->isAlive())
+				{
+					float damageperc = 0.018f * deltaZ - 0.2426f;
+					if (damageperc > 0)
+					{
+						const UInt32 maxHealth = m_character->getUInt32Value(unit_fields::MaxHealth);
+						UInt32 damage = (UInt32)(damageperc * maxHealth);
+						float height = info.z;
+
+						if (damage > 0)
+						{
+							//Prevent fall damage from being more than the player maximum health
+							if (damage > maxHealth) damage = maxHealth;
+
+							std::vector<char> dmgBuffer;
+							io::VectorSink dmgSink(dmgBuffer);
+							game::Protocol::OutgoingPacket dmgPacket(dmgSink);
+							game::server_write::environmentalDamageLog(dmgPacket, getCharacterGuid(), 2, damage, 0, 0);
+
+							// Deal damage
+							forEachTileInSight(
+								getWorldInstance().getGrid(),
+								gridIndex,
+								[&dmgPacket, &dmgBuffer](VisibilityTile &tile)
+							{
+								for (auto &watcher : tile.getWatchers())
+								{
+									watcher->sendPacket(dmgPacket, dmgBuffer);
+								}
+							});
+
+							m_character->dealDamage(damage, 0, nullptr, true);
+							if (!m_character->isAlive())
+							{
+								WLOG("TODO: Durability damage!");
+								sendProxyPacket(
+									std::bind(game::server_write::durabilityDamageDeath, std::placeholders::_1));
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (opCode == game::client_packet::MoveFallLand ||
+			lastFallTime > info.fallTime/* ||
+										info.z < lastFallZ*/)
+		{
+			setFallInfo(info.fallTime, info.z);
+		}
+
+		// Update position
+		m_character->relocate(info.x, info.y, info.z, info.o);
 	}
 
 }

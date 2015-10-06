@@ -158,6 +158,7 @@ namespace wowpp
 		void handleLoot(game::Protocol::IncomingPacket &packet);
 		void handleLootMoney(game::Protocol::IncomingPacket &packet);
 		void handleLootRelease(game::Protocol::IncomingPacket &packet);
+		void handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode);
 
 	private:
 
@@ -207,5 +208,7 @@ namespace wowpp
 		float m_lastFallZ;
 		Project &m_project;
 		LootInstance *m_loot;
+		UInt32 m_clientDelayMs;
+		UInt64 m_nextDelayReset;
 	};
 }
