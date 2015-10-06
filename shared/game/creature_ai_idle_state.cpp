@@ -46,6 +46,11 @@ namespace wowpp
 		// Watch for threat events to enter combat
 		m_onThreatened = controlled.threatened.connect([this](GameUnit &threat, float amount)
 		{
+			if (&threat == &getControlled())
+			{
+				return;
+			}
+
 			// Warning: This may destroy the idle state as it enters the combat state
 			getAI().enterCombat(threat);
 		});
