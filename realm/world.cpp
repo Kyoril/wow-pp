@@ -143,14 +143,21 @@ namespace wowpp
 
 		// Read login packet
 		UInt32 protocolVersion;
-		std::vector<UInt32> mapIds;
-		if (!world_read::login(packet, protocolVersion, mapIds, m_instances))
+		MapList mapIds;
+		std::vector<UInt32> instances;
+		if (!world_read::login(packet, protocolVersion, mapIds, instances))
 		{
 			return;
 		}
 
 		// Notify
-		ILOG("World node announcement: " << mapIds.size() << " maps and " << m_instances.size() << " instances");
+		ILOG("World node announcement: " << mapIds.size() << " maps and " << instances.size() << " instances");
+
+		// Apply instances
+		for (auto &instance : instances)
+		{
+			m_instances.add(instance);
+		}
 
 		// Check all maps
 		for (auto &mapId : mapIds)
@@ -233,8 +240,10 @@ namespace wowpp
 		ILOG("World instance ready for character " << characterDbId << ": " << instanceId);
 
 		// Store instance id if not already available
-		m_instances.push_back(instanceId);
-		std::unique(m_instances.begin(), m_instances.end());
+		if (!m_instances.contains(instanceId))
+		{
+			m_instances.add(instanceId);
+		}
 
 		// Notify player about this
 		auto player = m_playerManager.getPlayerByCharacterId(characterDbId);

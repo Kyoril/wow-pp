@@ -27,6 +27,7 @@
 #include "game/game_character.h"
 #include <boost/noncopyable.hpp>
 #include <boost/signals2.hpp>
+#include "common/linear_set.h"
 #include <algorithm>
 #include <utility>
 #include <cassert>
@@ -50,7 +51,7 @@ namespace wowpp
 		typedef boost::signals2::signal<void()> DisconnectedSignal;
 
 		typedef std::vector<UInt32> MapList;
-		typedef std::vector<UInt32> InstanceList;
+		typedef LinearSet<UInt32> InstanceList;
 
 	public:
 
