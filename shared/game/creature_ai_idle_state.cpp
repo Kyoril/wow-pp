@@ -51,8 +51,14 @@ namespace wowpp
 				return;
 			}
 
-			// Warning: This may destroy the idle state as it enters the combat state
-			getAI().enterCombat(threat);
+			// Check if we are hostile against this unit
+			const auto &ourFaction = getControlled().getFactionTemplate();
+			const auto &unitFaction = threat.getFactionTemplate();
+			if (!ourFaction.isFriendlyTo(unitFaction))
+			{
+				// Warning: This may destroy the idle state as it enters the combat state
+				getAI().enterCombat(threat);
+			}
 		});
 
 		auto *worldInstance = controlled.getWorldInstance();
