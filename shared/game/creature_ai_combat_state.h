@@ -80,7 +80,7 @@ namespace wowpp
 		ThreatList m_threat;
 		UnitSignals m_killedSignals;
 		UnitSignals m_despawnedSignals;
-		boost::signals2::scoped_connection m_onThreatened, m_onVictimMoved, m_onControlledMoved;
+		boost::signals2::scoped_connection m_onThreatened, m_onVictimMoved;
 		Countdown m_moveReached, m_moveUpdated;
 		float m_targetX, m_targetY, m_targetZ;
 		GameTime m_moveStart, m_moveEnd;

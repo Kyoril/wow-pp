@@ -68,6 +68,13 @@ namespace wowpp
 					strongUnit->relocate(m_targetX, m_targetY, m_targetZ, angle);
 				}
 			});
+
+			auto &homePos = getAI().getHome().position;
+			if (getCurrentTime() >= (m_lastThreatTime + constants::OneSecond * 10) &&
+				getControlled().getDistanceTo(homePos, false) >= 60.0f)
+			{
+				getAI().reset();
+			}
 		});
 
 		m_moveUpdated.ended.connect([this]()
@@ -95,7 +102,24 @@ namespace wowpp
 				m_moveUpdated.setEnd(time + duration);
 			}
 
-			getControlled().relocate(oldPosition[0], oldPosition[1], oldPosition[2], o);
+			// Update creatures position
+			auto strongUnit = getControlled().shared_from_this();
+			std::weak_ptr<GameObject> weakUnit(strongUnit);
+			getControlled().getWorldInstance()->getUniverse().post([weakUnit, oldPosition, o]()
+			{
+				auto strongUnit = weakUnit.lock();
+				if (strongUnit)
+				{
+					strongUnit->relocate(oldPosition[0], oldPosition[1], oldPosition[2], o);
+				}
+			});
+
+			auto &homePos = getAI().getHome().position;
+			if (getCurrentTime() >= (m_lastThreatTime + constants::OneSecond * 10) &&
+				getControlled().getDistanceTo(homePos, false) >= 60.0f)
+			{
+				getAI().reset();
+			}
 		});
 	}
 
@@ -147,16 +171,6 @@ namespace wowpp
 				trigger->execute(*trigger, &controlled);
 			}
 		}
-
-		m_onControlledMoved = controlled.moved.connect([this](GameObject &moved, float oldX, float oldY, float oldZ, float oldO)
-		{
-			auto &homePos = getAI().getHome().position;
-			if (getCurrentTime() >= (m_lastThreatTime + constants::OneSecond * 10) &&
-				moved.getDistanceTo(homePos, false) >= 60.0f)
-			{
-				getAI().reset();
-			}
-		});
 	}
 
 	void CreatureAICombatState::onLeave()
@@ -261,7 +275,6 @@ namespace wowpp
 		threatEntry.amount += amount;
 
 		m_lastThreatTime = getCurrentTime();
-
 		updateVictim();
 	}
 
@@ -287,7 +300,6 @@ namespace wowpp
 		}
 
 		threatener.removeAttackingUnit(getControlled());
-
 		if (getControlled().getVictim() == &threatener ||
 			m_threat.empty())
 		{
