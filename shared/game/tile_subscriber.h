@@ -10,6 +10,8 @@ namespace wowpp
 	{
 		virtual ~ITileSubscriber() { }
 
+		/// 
+		virtual UInt32 convertTimestamp(UInt32 otherTimestamp, UInt32 otherTicks) const = 0;
 		/// Gets the controlled object (if any) of the subscriber. Could be nullptr!
 		virtual GameCharacter *getControlledObject() = 0;
 		/// Sends a packet to the tile subscriber.

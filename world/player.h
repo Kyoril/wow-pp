@@ -100,7 +100,7 @@ namespace wowpp
 		/// Releases the current loot.
 		void releaseLoot();
 
-		UInt32 getClientTicks() const { return m_clientTicks; }
+		UInt32 convertTimestamp(UInt32 otherTimestamp, UInt32 otherTick) const override;
 		
 		/// Sends an proxy packet to the realm which will then be redirected to the game client.
 		/// @param generator Packet writer function pointer.
@@ -212,7 +212,7 @@ namespace wowpp
 		Project &m_project;
 		LootInstance *m_loot;
 		UInt32 m_clientDelayMs;
-		UInt64 m_nextDelayReset;
+		GameTime m_nextDelayReset;
 		UInt32 m_clientTicks;
 	};
 }

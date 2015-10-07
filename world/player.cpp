@@ -1227,36 +1227,38 @@ namespace wowpp
 			ELOG("Could not resolve grid location!");
 			return;
 		}
-
+		/*
 		UInt32 msTime = getCurrentTime();
 		if (m_clientDelayMs == 0)
 		{
 			m_clientDelayMs = msTime - info.time;
-			DLOG("m_clientDelayMS for " << m_character->getName() << ": " << m_clientDelayMs << "ms");
-			// 1.772.906.882
 		}
 		UInt32 move_time = (info.time - (msTime - m_clientDelayMs)) + 500 + msTime;
-
+		*/
 		// Get grid tile
 		auto &tile = grid.requireTile(gridIndex);
-		info.time = move_time;
-
-		// Create the chat packet
-		std::vector<char> buffer;
-		io::VectorSink sink(buffer);
-		game::Protocol::OutgoingPacket movePacket(sink);
-		game::server_write::movePacket(movePacket, opCode, guid, info);
+		//info.time = move_time;
 
 		// Notify all watchers about the new object
 		forEachTileInSight(
 			getWorldInstance().getGrid(),
 			gridIndex,
-			[this, &movePacket, &buffer](VisibilityTile &tile)
+			[this, &info, opCode, guid](VisibilityTile &tile)
 		{
 			for (auto &watcher : tile.getWatchers())
 			{
 				if (watcher != this)
 				{
+					// Convert timestamps
+					info.time = watcher->convertTimestamp(info.time, m_clientTicks);
+					info.fallTime = watcher->convertTimestamp(info.fallTime, m_clientTicks);
+
+					// Create the chat packet
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+					game::Protocol::OutgoingPacket movePacket(sink);
+					game::server_write::movePacket(movePacket, opCode, guid, info);
+
 					watcher->sendPacket(movePacket, buffer);
 				}
 			}
@@ -1340,6 +1342,12 @@ namespace wowpp
 
 		DLOG("TIME SYNC RESPONSE " << m_character->getName() << ": Counter " << counter << "; Ticks: " << ticks);
 		m_clientTicks = ticks;
+	}
+
+	UInt32 Player::convertTimestamp(UInt32 otherTimestamp, UInt32 otherTick) const
+	{
+		UInt32 otherDiff = otherTimestamp - otherTick;
+		return m_clientTicks + otherDiff;
 	}
 
 }
