@@ -1250,8 +1250,8 @@ namespace wowpp
 				if (watcher != this)
 				{
 					// Convert timestamps
-					info.time = watcher->convertTimestamp(info.time, m_clientTicks);
-					info.fallTime = watcher->convertTimestamp(info.fallTime, m_clientTicks);
+					info.time = watcher->convertTimestamp(info.time, m_clientTicks) + 500;
+					//info.fallTime = watcher->convertTimestamp(info.fallTime, m_clientTicks) + 500;
 
 					// Create the chat packet
 					std::vector<char> buffer;
