@@ -51,6 +51,7 @@ namespace wowpp
 		, m_loot(nullptr)
 		, m_clientDelayMs(0)
 		, m_nextDelayReset(0)
+		, m_clientTicks(0)
 	{
 		m_logoutCountdown.ended.connect(
 			std::bind(&Player::onLogout, this));
@@ -1232,6 +1233,7 @@ namespace wowpp
 		{
 			m_clientDelayMs = msTime - info.time;
 			DLOG("m_clientDelayMS for " << m_character->getName() << ": " << m_clientDelayMs << "ms");
+			// 1.772.906.882
 		}
 		UInt32 move_time = (info.time - (msTime - m_clientDelayMs)) + 500 + msTime;
 
@@ -1325,6 +1327,19 @@ namespace wowpp
 
 		// Update position
 		m_character->relocate(info.x, info.y, info.z, info.o);
+	}
+
+	void Player::handleTimeSyncResponse(game::Protocol::IncomingPacket &packet)
+	{
+		UInt32 counter, ticks;
+		if (!game::client_read::timeSyncResponse(packet, counter, ticks))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		DLOG("TIME SYNC RESPONSE " << m_character->getName() << ": Counter " << counter << "; Ticks: " << ticks);
+		m_clientTicks = ticks;
 	}
 
 }

@@ -99,6 +99,8 @@ namespace wowpp
 		bool isLooting(UInt64 lootGuid) const { return (m_loot ? (m_loot->getLootGuid() == lootGuid) : false); }
 		/// Releases the current loot.
 		void releaseLoot();
+
+		UInt32 getClientTicks() const { return m_clientTicks; }
 		
 		/// Sends an proxy packet to the realm which will then be redirected to the game client.
 		/// @param generator Packet writer function pointer.
@@ -159,6 +161,7 @@ namespace wowpp
 		void handleLootMoney(game::Protocol::IncomingPacket &packet);
 		void handleLootRelease(game::Protocol::IncomingPacket &packet);
 		void handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode);
+		void handleTimeSyncResponse(game::Protocol::IncomingPacket &packet);
 
 	private:
 
@@ -210,5 +213,6 @@ namespace wowpp
 		LootInstance *m_loot;
 		UInt32 m_clientDelayMs;
 		UInt64 m_nextDelayReset;
+		UInt32 m_clientTicks;
 	};
 }

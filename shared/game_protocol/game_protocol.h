@@ -148,6 +148,7 @@ namespace wowpp
 				MoveStartAscend			= 0x359,
 				MoveStopAscend			= 0x35A,
 				MoveChangeTransport		= 0x38D,
+				TimeSyncResponse		= 0x391,
 				MoveStartDescend		= 0x3A7
 			};
 		}
@@ -889,6 +890,12 @@ namespace wowpp
 			bool lootRelease(
 				io::Reader &packet,
 				UInt64 &out_targetGuid
+				);
+
+			bool timeSyncResponse(
+				io::Reader &packet,
+				UInt32 &out_counter,
+				UInt32 &out_ticks
 				);
 		};
 
