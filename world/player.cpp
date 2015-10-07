@@ -1227,10 +1227,11 @@ namespace wowpp
 			return;
 		}
 
-		UInt32 msTime = mTimeStamp();
+		UInt32 msTime = getCurrentTime();
 		if (m_clientDelayMs == 0)
 		{
 			m_clientDelayMs = msTime - info.time;
+			DLOG("m_clientDelayMS for " << m_character->getName() << ": " << m_clientDelayMs << "ms");
 		}
 		UInt32 move_time = (info.time - (msTime - m_clientDelayMs)) + 500 + msTime;
 
