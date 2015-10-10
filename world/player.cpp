@@ -406,7 +406,7 @@ namespace wowpp
 				writer
 					<< io::write<NetUInt32>(moveFlags)
 					<< io::write<NetUInt8>(0x00)
-					<< io::write<NetUInt32>(static_cast<UInt32>(getCurrentTime()));	//TODO: Time
+					<< io::write<NetUInt32>(mTimeStamp());	//TODO: Time
 
 				// Position & Rotation
 				float x, y, z, o;
@@ -1232,30 +1232,30 @@ namespace wowpp
 			ELOG("Could not resolve grid location!");
 			return;
 		}
-		/*
-		UInt32 msTime = getCurrentTime();
+
+		UInt32 msTime = mTimeStamp();
 		if (m_clientDelayMs == 0)
 		{
 			m_clientDelayMs = msTime - info.time;
 		}
 		UInt32 move_time = (info.time - (msTime - m_clientDelayMs)) + 500 + msTime;
-		*/
+
 		// Get grid tile
 		auto &tile = grid.requireTile(gridIndex);
-		//info.time = move_time;
+		info.time = move_time;
 
 		// Notify all watchers about the new object
 		forEachTileInSight(
 			getWorldInstance().getGrid(),
 			gridIndex,
-			[this, &info, opCode, guid](VisibilityTile &tile)
+			[this, &info, opCode, guid, move_time](VisibilityTile &tile)
 		{
 			for (auto &watcher : tile.getWatchers())
 			{
 				if (watcher != this)
 				{
 					// Convert timestamps
-					info.time = watcher->convertTimestamp(info.time, m_clientTicks) + 500;
+					//info.time = watcher->convertTimestamp(move_time, m_clientTicks) + 500;
 					//info.fallTime = watcher->convertTimestamp(info.fallTime, m_clientTicks) + 500;
 
 					// Create the chat packet
