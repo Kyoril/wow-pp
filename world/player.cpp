@@ -203,6 +203,12 @@ namespace wowpp
 						return;
 					}
 
+					if (player->isIgnored(getCharacterGuid()))
+					{
+						WLOG("TODO: Target player ignores us.");
+						return;
+					}
+
 					// Send whisper message
 					player->sendProxyPacket(
 						std::bind(game::server_write::messageChat, std::placeholders::_1, game::chat_msg::Whisper, lang, std::cref(channel), m_characterId, std::cref(message), m_character.get()));

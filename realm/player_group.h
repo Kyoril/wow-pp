@@ -29,6 +29,7 @@
 #include "binary_io/vector_sink.h"
 #include "common/linear_set.h"
 #include "log/default_log_levels.h"
+#include "player_social.h"
 #include "player.h"
 #include <vector>
 
@@ -141,7 +142,7 @@ namespace wowpp
 		UInt64 getId() const { return m_id; }
 
 		template<class F>
-		void broadcastPacket(F creator, UInt64 except = 0)
+		void broadcastPacket(F creator, UInt64 except = 0, UInt64 causer = 0)
 		{
 			for (auto &member : m_members)
 			{
@@ -151,6 +152,15 @@ namespace wowpp
 				auto *player = m_playerManager.getPlayerByCharacterGuid(member.first);
 				if (player)
 				{
+					if (causer != 0)
+					{
+						// Ignored
+						if (player->getSocial().isIgnored(causer))
+						{
+							continue;
+						}
+					}
+
 					player->sendPacket(creator);
 				}
 			}

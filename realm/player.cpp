@@ -1148,7 +1148,6 @@ namespace wowpp
 					break;
 				}
 
-				DLOG("Realm whisper received. TODO: CHECK IGNORE LIST");
 				if (other->getSocial().isIgnored(m_gameCharacter->getGuid()))
 				{
 					DLOG("TODO: Other player ignores us - notify our client about this...");
@@ -1191,7 +1190,7 @@ namespace wowpp
 
 				// Broadcast chat packet
 				m_group->broadcastPacket(
-					std::bind(game::server_write::messageChat, std::placeholders::_1, chat_msg::Party, lang, std::cref(channel), m_characterId, std::cref(message), m_gameCharacter.get()));
+					std::bind(game::server_write::messageChat, std::placeholders::_1, chat_msg::Party, lang, std::cref(channel), m_characterId, std::cref(message), m_gameCharacter.get()), 0, m_gameCharacter->getGuid());
 
 				break;
 			}
@@ -1554,6 +1553,12 @@ namespace wowpp
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, party_operation::Invite, std::cref(playerName), party_result::AlreadyInGroup));
+			return;
+		}
+
+		if (player->getSocial().isIgnored(m_gameCharacter->getGuid()))
+		{
+			WLOG("Target player ignores us");
 			return;
 		}
 
