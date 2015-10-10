@@ -238,11 +238,11 @@ namespace wowpp
 			forEachTileInSight(
 				grid,
 				tile,
-				[&subscribers](VisibilityTile &tile)
+				[this, &subscribers](VisibilityTile &tile)
 			{
 				for (auto * const subscriber : tile.getWatchers().getElements())
 				{
-					subscribers.push_back(subscriber);
+					if(!isIgnored(subscriber->getControlledObject()->getGuid())) subscribers.push_back(subscriber);
 				}
 			});
 
@@ -1179,6 +1179,11 @@ namespace wowpp
 
 			m_character->removeFlag(unit_fields::UnitFlags, game::unit_flags::Looting);
 		}
+	}
+
+	bool Player::isIgnored(UInt64 guid) const
+	{
+		return guid == 504403158265495562;
 	}
 
 	void Player::handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode)

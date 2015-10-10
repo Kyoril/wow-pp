@@ -99,6 +99,9 @@ namespace wowpp
 		bool isLooting(UInt64 lootGuid) const { return (m_loot ? (m_loot->getLootGuid() == lootGuid) : false); }
 		/// Releases the current loot.
 		void releaseLoot();
+		/// Returns true if Player with 'guid' is ignored by the Player
+		bool isIgnored(UInt64 guid) const;
+
 
 		UInt32 convertTimestamp(UInt32 otherTimestamp, UInt32 otherTick) const override;
 		
