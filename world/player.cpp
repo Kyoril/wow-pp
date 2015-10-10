@@ -1355,4 +1355,14 @@ namespace wowpp
 		return m_clientTicks + otherDiff;
 	}
 
+	void Player::addIgnore(UInt64 guid)
+	{
+		if (!m_ignoredGUIDs.contains(guid)) m_ignoredGUIDs.add(guid);
+	}
+
+	void Player::removeIgnore(UInt64 guid)
+	{
+		if (m_ignoredGUIDs.contains(guid)) m_ignoredGUIDs.remove(guid);
+	}
+
 }

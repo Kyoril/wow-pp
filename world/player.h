@@ -21,13 +21,13 @@
 
 #pragma once
 
-#include "common\linear_set.h"
 #include "game_protocol/game_protocol.h"
 #include "game_protocol/game_connection.h"
 #include "game_protocol/game_crypted_connection.h"
 #include "data/data_load_context.h"
 #include "common/big_number.h"
 #include "common/countdown.h"
+#include "common/linear_set.h"
 #include "game/game_character.h"
 #include "binary_io/vector_sink.h"
 #include "realm_connector.h"

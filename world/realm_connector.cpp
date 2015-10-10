@@ -463,8 +463,6 @@ namespace wowpp
 			return;
 		}
 
-		ILOG("Recieved IgnoreList from Realm");
-
 		for (auto &guid : ignoreList)
 		{
 			player->addIgnore(guid);
@@ -487,7 +485,6 @@ namespace wowpp
 			return;
 		}
 
-		ILOG("Recieved AddIgnore from Realm");
 		player->addIgnore(ignoreGUID);
 	}
 
@@ -506,7 +503,7 @@ namespace wowpp
 			WLOG("Could not find character by guid 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << characterId);
 			return;
 		}
-		ILOG("Recieved RemoveIgnore from Realm");
+
 		player->removeIgnore(ignoreGUID);
 	}
 
