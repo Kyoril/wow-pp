@@ -559,7 +559,7 @@ namespace wowpp
 				writer
 					<< io::write<NetUInt32>(moveFlags)
 					<< io::write<NetUInt8>(0x00)
-					<< io::write<NetUInt32>(getCurrentTime());
+					<< io::write<NetUInt32>(mTimeStamp());
 			}
 
 			if (updateFlags & 0x40)

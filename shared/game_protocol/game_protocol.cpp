@@ -645,7 +645,7 @@ namespace wowpp
 					<< io::write<float>(oldPosition[0])
 					<< io::write<float>(oldPosition[1])
 					<< io::write<float>(oldPosition[2])
-					<< io::write<NetUInt32>(getCurrentTime())
+					<< io::write<NetUInt32>(mTimeStamp())
 					<< io::write<NetUInt8>(0);
 
 				// Movement flags
@@ -994,7 +994,7 @@ namespace wowpp
 				out_packet
 					<< io::write<NetUInt32>(spell.id)
 					<< io::write<NetUInt16>(castFlags)
-					<< io::write<NetUInt32>(getCurrentTime());
+					<< io::write<NetUInt32>(mTimeStamp());
 
 				// TODO: Hit information
 				{
