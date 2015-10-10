@@ -100,7 +100,7 @@ namespace wowpp
 		/// Releases the current loot.
 		void releaseLoot();
 		/// Returns true if Player with 'guid' is ignored by the Player
-		bool isIgnored(UInt64 guid) const;
+		bool isIgnored(UInt64 guid) const override;
 
 
 		UInt32 convertTimestamp(UInt32 otherTimestamp, UInt32 otherTick) const override;

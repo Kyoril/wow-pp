@@ -10,6 +10,8 @@ namespace wowpp
 	{
 		virtual ~ITileSubscriber() { }
 
+		/// Determines whether this subscriber wants to ignore a specific guid.
+		virtual bool isIgnored(UInt64 guid) const = 0;
 		/// 
 		virtual UInt32 convertTimestamp(UInt32 otherTimestamp, UInt32 otherTicks) const = 0;
 		/// Gets the controlled object (if any) of the subscriber. Could be nullptr!
