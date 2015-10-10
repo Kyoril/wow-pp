@@ -59,6 +59,8 @@ namespace wowpp
 		/// Determines if the specified guid is ignored by us.
 		/// @param guid The contact's guid.
 		bool isIgnored(UInt64 guid) const;
+		/// Retrieves a list of ignored character GUIDs of this client.
+		bool getIgnoreList(std::vector<UInt64> &out_list);
 
 		/// Sends a packet to all friends of this player who are online right now.
 		template<class F>

@@ -192,6 +192,31 @@ namespace wowpp
 						<< io::write<NetUInt64>(groupId);
 					out_packet.finish();
 				}
+
+				void ignoreList(pp::OutgoingPacket &out_packet, UInt64 characterId, const std::vector<UInt64> &list)
+				{
+					out_packet.start(realm_packet::IgnoreList);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write_dynamic_range<NetUInt8>(list);
+					out_packet.finish();
+				}
+				void addIgnore(pp::OutgoingPacket &out_packet, UInt64 characterId, UInt64 ignoreGuid)
+				{
+					out_packet.start(realm_packet::AddIgnore);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write<NetUInt64>(ignoreGuid);
+					out_packet.finish();
+				}
+				void removeIgnore(pp::OutgoingPacket &out_packet, UInt64 characterId, UInt64 removeGuid)
+				{
+					out_packet.start(realm_packet::RemoveIgnore);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write<NetUInt64>(removeGuid);
+					out_packet.finish();
+				}
 			}
 
 			namespace world_read
@@ -334,6 +359,25 @@ namespace wowpp
 					return packet
 						>> io::read<NetUInt64>(out_characterId)
 						>> io::read<NetUInt64>(out_groupId);
+				}
+
+				bool ignoreList(io::Reader &packet, UInt64 &out_characterId, std::vector<UInt64> &out_list)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read_container<NetUInt8>(out_list);
+				}
+				bool addIgnore(io::Reader &packet, UInt64 &out_characterId, UInt64 &out_ignoreGuid)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read<NetUInt64>(out_ignoreGuid);
+				}
+				bool removeIgnore(io::Reader &packet, UInt64 &out_characterId, UInt64 &out_removeGuid)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read<NetUInt64>(out_removeGuid);
 				}
 
 			}

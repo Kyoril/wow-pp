@@ -106,6 +106,15 @@ namespace wowpp
 			case pp::world_realm::realm_packet::CharacterGroupChanged:
 				handleCharacterGroupChanged(packet);
 				break;
+			case pp::world_realm::realm_packet::IgnoreList:
+				handleIgnoreList(packet);
+				break;
+			case pp::world_realm::realm_packet::AddIgnore:
+				handleAddIgnore(packet);
+				break;
+			case pp::world_realm::realm_packet::RemoveIgnore:
+				handleRemoveIgnore(packet);
+				break;
 			default:
 				// Log about unknown or unhandled packet
 				const auto &realm = m_config.realms[m_realmEntryIndex];
@@ -435,6 +444,70 @@ namespace wowpp
 		{
 			character->setGroupId(groupId);
 		}
+	}
+
+	void RealmConnector::handleIgnoreList(pp::Protocol::IncomingPacket &packet)
+	{
+		UInt64 characterId;
+		std::vector<UInt64> ignoreList;
+		if (!(pp::world_realm::realm_read::ignoreList(packet, characterId, ignoreList)))
+		{
+			return;
+		}
+
+		// Try to find character
+		auto *player = m_playerManager.getPlayerByCharacterGuid(characterId);
+		if (!player)
+		{
+			WLOG("Could not find character by guid 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << characterId);
+			return;
+		}
+
+		ILOG("Recieved IgnoreList from Realm");
+
+		for (auto &guid : ignoreList)
+		{
+			player->addIgnore(guid);
+		}
+	}
+
+	void RealmConnector::handleAddIgnore(pp::Protocol::IncomingPacket &packet)
+	{
+		UInt64 characterId, ignoreGUID;
+		if (!(pp::world_realm::realm_read::addIgnore(packet, characterId, ignoreGUID)))
+		{
+			return;
+		}
+
+		// Try to find character
+		auto *player = m_playerManager.getPlayerByCharacterGuid(characterId);
+		if (!player)
+		{
+			WLOG("Could not find character by guid 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << characterId);
+			return;
+		}
+
+		ILOG("Recieved AddIgnore from Realm");
+		player->addIgnore(ignoreGUID);
+	}
+
+	void RealmConnector::handleRemoveIgnore(pp::Protocol::IncomingPacket &packet)
+	{
+		UInt64 characterId, ignoreGUID;
+		if (!(pp::world_realm::realm_read::addIgnore(packet, characterId, ignoreGUID)))
+		{
+			return;
+		}
+
+		// Try to find character
+		auto *player = m_playerManager.getPlayerByCharacterGuid(characterId);
+		if (!player)
+		{
+			WLOG("Could not find character by guid 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << characterId);
+			return;
+		}
+		ILOG("Recieved RemoveIgnore from Realm");
+		player->removeIgnore(ignoreGUID);
 	}
 
 	void RealmConnector::handleProxyPacket(pp::Protocol::IncomingPacket &packet)

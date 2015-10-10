@@ -862,6 +862,11 @@ namespace wowpp
 			m_social->sendToFriends(
 				std::bind(game::server_write::friendStatus, std::placeholders::_1, m_gameCharacter->getGuid(), game::friend_result::Online, std::cref(info)));
 		}
+		
+		// Retrieve ignore list and send it to the new world node
+		std::vector<UInt64> ignoreList;
+		m_social->getIgnoreList(ignoreList);
+		m_worldNode->characterIgnoreList(m_gameCharacter->getGuid(), ignoreList);
 	}
 
 	void Player::worldInstanceLeft(World &world, UInt32 instanceId, pp::world_realm::WorldLeftReason reason)
@@ -1051,6 +1056,8 @@ namespace wowpp
 			return;
 		}
 
+		DLOG("RECEIVED CMSG_MESSAGE_CHAT. Type: " << type << "; Lang: " << lang << "; Receiver: " << receiver << "; Channel: " << channel << "; Msg: " << message);
+
 		if (!receiver.empty())
 			capitalize(receiver);
 
@@ -1138,6 +1145,13 @@ namespace wowpp
 				{
 					sendPacket(
 						std::bind(game::server_write::chatPlayerNotFound, std::placeholders::_1, std::cref(receiver)));
+					break;
+				}
+
+				DLOG("Realm whisper received. TODO: CHECK IGNORE LIST");
+				if (other->getSocial().isIgnored(m_gameCharacter->getGuid()))
+				{
+					DLOG("TODO: Other player ignores us - notify our client about this...");
 					break;
 				}
 
@@ -1378,9 +1392,8 @@ namespace wowpp
 
         //result
         game::FriendResult result = m_social->addToSocialList(characterGUID, true);
-
-        if(m_characterId != characterGUID)
-        {
+		if (result == game::friend_result::IgnoreAdded)
+		{
 			const bool shouldUpdate = m_social->isFriend(characterGUID);
 			if (!shouldUpdate)
 			{
@@ -1396,11 +1409,9 @@ namespace wowpp
 					result = game::friend_result::DatabaseError;
 				}
 			}
-        }
-        else
-        {
-            result = game::friend_result::IgnoreSelf;
-        }
+
+			m_worldNode->characterAddIgnore(m_characterId, characterGUID);
+		}
 
         sendPacket(
             std::bind(game::server_write::friendStatus, std::placeholders::_1, characterGUID, result, std::cref(info)));
@@ -1443,6 +1454,8 @@ namespace wowpp
 					result = game::friend_result::DatabaseError;
 				}
 			}
+
+			m_worldNode->characterRemoveIgnore(m_characterId, guid);
 		}
 		else
 		{

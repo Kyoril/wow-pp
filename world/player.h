@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include "common\linear_set.h"
 #include "game_protocol/game_protocol.h"
 #include "game_protocol/game_connection.h"
 #include "game_protocol/game_crypted_connection.h"
@@ -101,6 +102,9 @@ namespace wowpp
 		void releaseLoot();
 		/// Returns true if Player with 'guid' is ignored by the Player
 		bool isIgnored(UInt64 guid) const override;
+
+		void addIgnore(UInt64 guid);
+		void removeIgnore(UInt64 guid);
 
 
 		UInt32 convertTimestamp(UInt32 otherTimestamp, UInt32 otherTick) const override;
@@ -217,5 +221,6 @@ namespace wowpp
 		UInt32 m_clientDelayMs;
 		GameTime m_nextDelayReset;
 		UInt32 m_clientTicks;
+		LinearSet<UInt64> m_ignoredGUIDs;
 	};
 }

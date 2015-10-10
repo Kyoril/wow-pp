@@ -455,4 +455,19 @@ namespace wowpp
 			std::bind(pp::world_realm::realm_write::characterGroupChanged, std::placeholders::_1, characterGuid, groupId));
 	}
 
+	void World::characterIgnoreList(UInt64 characterGuid, const std::vector<UInt64> &list)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::realm_write::ignoreList, std::placeholders::_1, characterGuid, std::cref(list)));
+	}
+	void World::characterAddIgnore(UInt64 characterId, UInt64 ignoreGuid)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::realm_write::addIgnore, std::placeholders::_1, characterId, ignoreGuid));
+	}
+	void World::characterRemoveIgnore(UInt64 characterId, UInt64 removeGuid)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::realm_write::removeIgnore, std::placeholders::_1, characterId, removeGuid));
+	}
 }

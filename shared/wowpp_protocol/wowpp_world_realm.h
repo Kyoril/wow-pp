@@ -34,7 +34,7 @@ namespace wowpp
 	{
 		namespace world_realm
 		{
-			static const UInt32 ProtocolVersion = 0x09;
+			static const UInt32 ProtocolVersion = 0x0A;
 
 			namespace world_instance_error
 			{
@@ -105,7 +105,13 @@ namespace wowpp
 					/// Notifies the world node that a player should leave the world node (for example on disconnect)
 					LeaveWorldInstance,
 					/// Notifies the world node about a group change of a character.
-					CharacterGroupChanged
+					CharacterGroupChanged,
+					///Send complete Ignorelist
+					IgnoreList,
+					///Add entry to Ignorelist
+					AddIgnore,
+					///Remove entry to Ignorelist
+					RemoveIgnore
 				};
 			}
 
@@ -305,6 +311,22 @@ namespace wowpp
 					UInt64 characterId,
 					UInt64 groupId
 					);
+
+				void ignoreList(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					const std::vector<UInt64> &list
+					);
+				void addIgnore(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					UInt64 ignoreGuid
+					);
+				void removeIgnore(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					UInt64 removeGuid
+					);
 			}
 
 			/// Contains methods for reading packets coming from the world server. 
@@ -446,6 +468,22 @@ namespace wowpp
 					io::Reader &packet,
 					UInt64 &out_characterId,
 					UInt64 &out_groupId
+					);
+
+				bool ignoreList(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					std::vector<UInt64> &out_list
+					);
+				bool addIgnore(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					UInt64 &out_ignoreGuid
+					);
+				bool removeIgnore(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					UInt64 &out_removeGuid
 					);
 			}
 		}

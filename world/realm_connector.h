@@ -109,6 +109,9 @@ namespace wowpp
 		void handleChatMessage(pp::Protocol::IncomingPacket &packet);
 		void handleLeaveWorldInstance(pp::Protocol::IncomingPacket &packet);
 		void handleCharacterGroupChanged(pp::Protocol::IncomingPacket &packet);
+		void handleIgnoreList(pp::Protocol::IncomingPacket &packet);
+		void handleAddIgnore(pp::Protocol::IncomingPacket &packet);
+		void handleRemoveIgnore(pp::Protocol::IncomingPacket &packet);
 
 	private:
 
