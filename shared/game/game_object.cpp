@@ -151,6 +151,18 @@ namespace wowpp
 		}
 	}
 
+	void GameObject::forceFieldUpdate(UInt16 index)
+	{
+		assert(index < m_values.size());
+		UInt16 bitIndex = index >> 3;
+
+		// Mark bit as changed
+		UInt8 &changed = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[bitIndex];
+		changed |= 1 << (index & 0x7);
+
+		m_updated = true;
+	}
+
 	void GameObject::addFlag(UInt16 index, UInt32 flag)
 	{
 		assert(index < m_values.size());
@@ -287,6 +299,62 @@ namespace wowpp
 				else
 				{
 					writer << io::write<NetUInt32>(m_values[index] & ~game::unit_dynamic_flags::OtherTagger);
+				}
+				break;
+			}
+			case unit_fields::MaxHealth:
+			{
+				writer << io::write<NetUInt32>(100);
+				break;
+			}
+			case unit_fields::Health:
+			{
+				float maxHealth = static_cast<float>(m_values[unit_fields::MaxHealth]);
+				UInt32 healthPct = static_cast<UInt32>(::ceil(static_cast<float>(m_values[index]) / maxHealth * 100.0f));
+
+				// Prevent display of 0
+				if (healthPct == 0 && m_values[index] > 0) healthPct = 1;
+				writer << io::write<NetUInt32>(healthPct);
+				break;
+			}
+			default:
+				writer << io::write<NetUInt32>(m_values[index]);
+				break;
+			}
+		}
+		else if (getTypeId() == object_type::Character)
+		{
+			const auto *character = reinterpret_cast<const GameCharacter*>(this);
+			const bool isHealthVisible = (character == &receiver || (character->getGroupId() != 0 && character->getGroupId() == receiver.getGroupId()));
+
+			switch (index)
+			{
+			case unit_fields::MaxHealth:
+			{
+				if (!isHealthVisible)
+				{
+					writer << io::write<NetUInt32>(100);
+				}
+				else
+				{
+					writer << io::write<NetUInt32>(m_values[index]);
+				}
+				break;
+			}
+			case unit_fields::Health:
+			{
+				if (!isHealthVisible)
+				{
+					float maxHealth = static_cast<float>(m_values[unit_fields::MaxHealth]);
+					UInt32 healthPct = static_cast<UInt32>(::ceil(static_cast<float>(m_values[index]) / maxHealth * 100.0f));
+
+					// Prevent display of 0
+					if (healthPct == 0 && m_values[index] > 0) healthPct = 1;
+					writer << io::write<NetUInt32>(healthPct);
+				}
+				else
+				{
+					writer << io::write<NetUInt32>(m_values[index]);
 				}
 				break;
 			}

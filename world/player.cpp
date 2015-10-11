@@ -1410,7 +1410,31 @@ namespace wowpp
 	{
 		if (m_character)
 		{
+			UInt64 oldGroup = m_character->getGroupId();
 			m_character->setGroupId(group);
+
+			m_character->forceFieldUpdate(unit_fields::Health);
+			m_character->forceFieldUpdate(unit_fields::MaxHealth);
+
+			// For every group member in range, also update health fields
+			TileIndex2D tileIndex;
+			m_character->getTileIndex(tileIndex);
+			forEachSubscriberInSight(
+				m_character->getWorldInstance()->getGrid(),
+				tileIndex,
+				[oldGroup, group](ITileSubscriber &subscriber)
+			{
+				auto *character = subscriber.getControlledObject();
+				if (character)
+				{
+					if ((oldGroup != 0 && character->getGroupId() == oldGroup) ||
+						(group != 0 && character->getGroupId() == group))
+					{
+						character->forceFieldUpdate(unit_fields::Health);
+						character->forceFieldUpdate(unit_fields::MaxHealth);
+					}
+				}
+			});
 		}
 
 		if (group != 0)

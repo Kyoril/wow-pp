@@ -125,14 +125,16 @@ namespace wowpp
 
 		// Update power type
 		setByteValue(unit_fields::Bytes0, 3, power_type::Mana);
-		if (entry.maxLevelMana > 0)
-		{
-			setByteValue(unit_fields::Bytes1, 1, 0xEE);
-		}
-		else
-		{
-			setByteValue(unit_fields::Bytes1, 1, 0x00);
-		}
+		setUInt32Value(unit_fields::BaseMana, getUInt32Value(unit_fields::MaxPower1));
+		setUInt32Value(unit_fields::Bytes0, 0x00020200);
+// 		if (entry.maxLevelMana > 0)
+// 		{
+// 			setByteValue(unit_fields::Bytes1, 1, 0xEE);
+// 		}
+// 		else
+// 		{
+// 			setByteValue(unit_fields::Bytes1, 1, 0x00);
+// 		}
 
 		setVirtualItem(0, entry.mainHand);
 		setVirtualItem(1, entry.offHand);
