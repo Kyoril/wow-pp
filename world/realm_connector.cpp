@@ -437,13 +437,7 @@ namespace wowpp
 			return;
 		}
 
-		ILOG("Character group id of 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << characterId << " changed to: " << groupId);
-
-		auto character = player->getCharacter();
-		if (character)
-		{
-			character->setGroupId(groupId);
-		}
+		player->updateCharacterGroup(groupId);
 	}
 
 	void RealmConnector::handleIgnoreList(pp::Protocol::IncomingPacket &packet)
@@ -1229,6 +1223,24 @@ namespace wowpp
 				watcher->sendPacket(emotePacket, buffer);
 			}
 		});
+	}
+
+	void RealmConnector::sendCharacterGroupUpdate(GameCharacter &character, const std::vector<UInt64> &nearbyMembers)
+	{
+		float x, y, z, o;
+		character.getLocation(x, y, z, o);
+
+		auto powerType = character.getByteValue(unit_fields::Bytes0, 3);
+		std::vector<UInt32> auras;
+		// TODO: Auras
+
+		io::StringSink sink(m_connection->getSendBuffer());
+		pp::OutgoingPacket packet(sink);
+		pp::world_realm::world_write::characterGroupUpdate(packet, character.getGuid(), nearbyMembers,
+			character.getUInt32Value(unit_fields::Health), character.getUInt32Value(unit_fields::MaxHealth),
+			character.getByteValue(unit_fields::Bytes0, 3), character.getUInt32Value(unit_fields::Power1 + powerType), character.getUInt32Value(unit_fields::MaxPower1 + powerType),
+			character.getUInt32Value(unit_fields::Level), character.getMapId(), character.getZone(), x, y, z, auras);
+		m_connection->flush();
 	}
 
 }

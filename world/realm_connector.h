@@ -90,6 +90,8 @@ namespace wowpp
 		const String &getRealmName() const { return m_realmName; }
 		/// Sends data of one character to the realm.
 		void sendCharacterData(GameCharacter &character);
+		/// Sends a group update to the realm.
+		void sendCharacterGroupUpdate(GameCharacter &character, const std::vector<UInt64> &nearbyMembers);
 
 	private:
 

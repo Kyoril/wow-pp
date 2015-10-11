@@ -150,13 +150,26 @@ namespace wowpp
 		UInt64 getId() const { return m_id; }
 
 		template<class F>
-		void broadcastPacket(F creator, UInt64 except = 0, UInt64 causer = 0)
+		void broadcastPacket(F creator, std::vector<UInt64> *except = nullptr, UInt64 causer = 0)
 		{
 			for (auto &member : m_members)
 			{
-				if (member.first == except)
-					continue;
+				if (except)
+				{
+					bool exclude = false;
+					for (const auto &exceptGuid : *except)
+					{
+						if (member.first == exceptGuid)
+						{
+							exclude = true;
+							break;
+						}
+					}
 
+					if (exclude)
+						continue;
+				}
+				
 				auto *player = m_playerManager.getPlayerByCharacterGuid(member.first);
 				if (player)
 				{

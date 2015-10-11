@@ -34,7 +34,7 @@ namespace wowpp
 	{
 		namespace world_realm
 		{
-			static const UInt32 ProtocolVersion = 0x0A;
+			static const UInt32 ProtocolVersion = 0x0B;
 
 			namespace world_instance_error
 			{
@@ -84,6 +84,8 @@ namespace wowpp
 					CharacterData,
 					/// A character should be teleported to another world.
 					TeleportRequest,
+					/// Update packet for a character who is a group member.
+					CharacterGroupUpdate,
 				};
 			}
 
@@ -254,6 +256,25 @@ namespace wowpp
 					float z,
 					float o
 					);
+
+				/// 
+				void characterGroupUpdate(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					const std::vector<UInt64> &nearbyMembers,
+					UInt32 health,
+					UInt32 maxHealth,
+					UInt8 powerType,
+					UInt32 power,
+					UInt32 maxPower,
+					UInt8 level,
+					UInt32 map,
+					UInt32 zone,
+					float x, 
+					float y,
+					float z,
+					const std::vector<UInt32> &auras
+					);
 			}
 
 			/// Contains methods for writing packets from the realm server.
@@ -407,6 +428,25 @@ namespace wowpp
 					float &out_y,
 					float &out_z,
 					float &out_o
+					);
+
+				/// 
+				bool characterGroupUpdate(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					std::vector<UInt64> &out_nearbyMembers,
+					UInt32 &out_health,
+					UInt32 &out_maxHealth,
+					UInt8 &out_powerType,
+					UInt32 &out_power,
+					UInt32 &out_maxPower,
+					UInt8 &out_level,
+					UInt32 &out_map,
+					UInt32 &out_zone,
+					float &out_x,
+					float &out_y,
+					float &out_z,
+					std::vector<UInt32> &out_auras
 					);
 			}
 

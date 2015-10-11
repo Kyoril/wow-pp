@@ -37,6 +37,7 @@
 #include "game/loot_instance.h"
 #include <boost/noncopyable.hpp>
 #include <boost/signals2.hpp>
+#include "common/macros.h"
 #include <algorithm>
 #include <utility>
 #include <cassert>
@@ -81,7 +82,6 @@ namespace wowpp
 		std::shared_ptr<GameCharacter> getCharacter() { return m_character; }
 		/// 
 		WorldInstance &getWorldInstance() { return m_instance; }
-
 		/// Starts the 20 second logout timer.
 		void logoutRequest();
 		/// Cancels the 20 second logout timer if it has been set up.
@@ -92,25 +92,34 @@ namespace wowpp
 		const String &getRealmName() const { return m_realmConnector.getRealmName(); }
 		/// 
 		TileIndex2D getTileIndex() const;
-
+		/// Gets the player characters fall information.
 		void getFallInfo(UInt32 &out_time, float &out_z) { out_time = m_lastFallTime; out_z = m_lastFallZ; }
+		/// Updates the player characters fall information.
 		void setFallInfo(UInt32 time, float z);
-
 		/// Gets the current loot instance. May return nullptr.
+		/// @param lootGuid Guid of the loot object to check.
 		bool isLooting(UInt64 lootGuid) const { return (m_loot ? (m_loot->getLootGuid() == lootGuid) : false); }
 		/// Releases the current loot.
 		void releaseLoot();
-		/// Returns true if Player with 'guid' is ignored by the Player
+		/// Returns true if a player character's guid is on the ignore list.
+		/// @param guid The character guid to check.
 		bool isIgnored(UInt64 guid) const override;
-
+		/// Adds a player guid to the players ignore list.
+		/// @param guid The player guid to add to the ignore list.
 		void addIgnore(UInt64 guid);
+		/// Removes a player guid from the players ignore list.
+		/// @param guid The player guid to remove from the ignore list.
 		void removeIgnore(UInt64 guid);
-
-
-		UInt32 convertTimestamp(UInt32 otherTimestamp, UInt32 otherTick) const override;
+		/// Converts a timestamp value from another player to this players timestamp value.
+		/// @param otherTimestamp The other players timestamp values.
+		/// @param otherTick The other players tick count.
+		WOWPP_DEPRECATED UInt32 convertTimestamp(UInt32 otherTimestamp, UInt32 otherTick) const override;
+		/// Updates the player characters group id.
+		/// @param group The new group id or 0, if not in a group.
+		void updateCharacterGroup(UInt64 group);
 		
 		/// Sends an proxy packet to the realm which will then be redirected to the game client.
-		/// @param generator Packet writer function pointer.
+		/// @param generator The packet writer function.
 		template<class F>
 		void sendProxyPacket(F generator) const
 		{
@@ -123,7 +132,8 @@ namespace wowpp
 			// Send the proxy packet to the realm server
 			m_realmConnector.sendProxyPacket(m_characterId, packet.getOpCode(), packet.getSize(), buffer);
 		}
-
+		/// Sends a proxy packet to all tile subscribers near the player character.
+		/// @param generator The packet writer function.
 		template<class F>
 		void broadcastProxyPacket(F generator)
 		{
@@ -151,7 +161,9 @@ namespace wowpp
 
 	public:
 
+		/// @copydoc ITileSubscriber::getControlledObject()
 		GameCharacter *getControlledObject() override { return m_character.get(); }
+		/// @copydoc ITileSubscriber::sendPacket()
 		void sendPacket(game::Protocol::OutgoingPacket &packet, const std::vector<char> &buffer) override;
 
 		// Network packet handlers
@@ -222,5 +234,6 @@ namespace wowpp
 		GameTime m_nextDelayReset;
 		UInt32 m_clientTicks;
 		LinearSet<UInt64> m_ignoredGUIDs;
+		Countdown m_groupUpdate;
 	};
 }

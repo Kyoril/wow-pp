@@ -119,6 +119,26 @@ namespace wowpp
 					out_packet.finish();
 				}
 
+				void characterGroupUpdate(pp::OutgoingPacket &out_packet, UInt64 characterId, const std::vector<UInt64> &nearbyMembers, UInt32 health, UInt32 maxHealth, UInt8 powerType, UInt32 power, UInt32 maxPower, UInt8 level, UInt32 map, UInt32 zone, float x, float y, float z, const std::vector<UInt32> &auras)
+				{
+					out_packet.start(world_packet::CharacterGroupUpdate);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write_dynamic_range<UInt8>(nearbyMembers)
+						<< io::write<NetUInt32>(health)
+						<< io::write<NetUInt32>(maxHealth)
+						<< io::write<NetUInt8>(powerType)
+						<< io::write<NetUInt32>(power)
+						<< io::write<NetUInt32>(maxPower)
+						<< io::write<NetUInt8>(level)
+						<< io::write<NetUInt32>(map)
+						<< io::write<NetUInt32>(zone)
+						<< io::write<float>(x)
+						<< io::write<float>(y)
+						<< io::write<float>(z)
+						<< io::write_dynamic_range<UInt8>(auras);
+					out_packet.finish();
+				}
 			}
 
 			namespace realm_write
@@ -293,6 +313,27 @@ namespace wowpp
 						>> io::read<float>(out_o)
 						;
 				}
+
+				bool characterGroupUpdate(io::Reader &packet, UInt64 &out_characterId, std::vector<UInt64> &out_nearbyMembers, UInt32 &out_health, UInt32 &out_maxHealth, UInt8 &out_powerType, UInt32 &out_power, UInt32 &out_maxPower, UInt8 &out_level, UInt32 &out_map, UInt32 &out_zone, float &out_x, float &out_y, float &out_z, std::vector<UInt32> &out_auras)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read_container<NetUInt8>(out_nearbyMembers)
+						>> io::read<NetUInt32>(out_health)
+						>> io::read<NetUInt32>(out_maxHealth)
+						>> io::read<NetUInt8>(out_powerType)
+						>> io::read<NetUInt32>(out_power)
+						>> io::read<NetUInt32>(out_maxPower)
+						>> io::read<NetUInt8>(out_level)
+						>> io::read<NetUInt32>(out_map)
+						>> io::read<NetUInt32>(out_zone)
+						>> io::read<float>(out_x)
+						>> io::read<float>(out_y)
+						>> io::read<float>(out_z)
+						>> io::read_container<NetUInt8>(out_auras)
+						;
+				}
+
 			}
 
 			namespace realm_read

@@ -31,6 +31,7 @@
 #include "data/project.h"
 #include "player_manager.h"
 #include "player.h"
+#include "player_group.h"
 #include <algorithm>
 #include <cassert>
 #include <limits>
@@ -86,47 +87,29 @@ namespace wowpp
 		switch (packetId)
 		{
 			case world_packet::Login:
-			{
 				handleLogin(packet);
 				break;
-			}
-
 			case world_packet::WorldInstanceEntered:
-			{
 				handleWorldInstanceEntered(packet);
 				break;
-			}
-
 			case world_packet::WorldInstanceLeft:
-			{
 				handleWorldInstanceLeft(packet);
 				break;
-			}
-
 			case world_packet::WorldInstanceError:
-			{
 				handleWorldInstanceError(packet);
 				break;
-			}
-
 			case world_packet::ClientProxyPacket:
-			{
 				handleClientProxyPacket(packet);
 				break;
-			}
-
 			case world_packet::CharacterData:
-			{
 				handleCharacterData(packet);
 				break;
-			}
-
 			case world_packet::TeleportRequest:
-			{
 				handleTeleportRequest(packet);
 				break;
-			}
-
+			case world_packet::CharacterGroupUpdate:
+				handleCharacterGroupUpdate(packet);
+				break;
 			default:
 			{
 				WLOG("Unknown packet received from world " << m_address
@@ -449,6 +432,61 @@ namespace wowpp
 		player->initializeTransfer(map, x, y, z, o);
 	}
 
+	void World::handleCharacterGroupUpdate(pp::IncomingPacket &packet)
+	{
+		UInt64 characterId;
+		std::vector<UInt64> nearbyMembers;
+		UInt32 map, zone, health, maxHealth, power, maxPower;
+		UInt8 powerType, level;
+		float x, y, z;
+		std::vector<UInt32> auras;
+		if (!(pp::world_realm::world_read::characterGroupUpdate(packet, characterId, nearbyMembers, health, maxHealth, powerType, power, maxPower, level, map, zone, x, y, z, auras)))
+		{
+			return;
+		}
+
+		auto *player = m_playerManager.getPlayerByCharacterGuid(characterId);
+		if (!player)
+		{
+			WLOG("Couldn't find player by character id for group update");
+			return;
+		}
+
+		auto *group = player->getGroup();
+		if (!group)
+		{
+			return;
+		}
+
+		// Optimization (if all members are nearby, no update is needed
+		if (nearbyMembers.size() >= group->getMemberCount())
+		{
+			return;
+		}
+
+		// We don't want to be notified either
+		nearbyMembers.push_back(characterId);
+
+		auto *character = player->getGameCharacter();
+		if (character)
+		{
+			character->setUInt32Value(unit_fields::Level, level);
+			character->setUInt32Value(unit_fields::Health, health);
+			character->setUInt32Value(unit_fields::MaxHealth, maxHealth);
+			character->setByteValue(unit_fields::Bytes0, 3, powerType);
+			character->setUInt32Value(unit_fields::Power1 + powerType, power);
+			character->setUInt32Value(unit_fields::MaxPower1 + powerType, maxPower);
+			character->setMapId(map);
+			character->setZone(zone);
+			character->relocate(x, y, z, 0.0f);
+			// TODO: Auras
+
+			// TODO: Do some heavy optimization here
+			group->broadcastPacket(
+				std::bind(game::server_write::partyMemberStats, std::placeholders::_1, std::cref(*character)), &nearbyMembers);
+		}
+	}
+
 	void World::characterGroupChanged(UInt64 characterGuid, UInt64 groupId)
 	{
 		m_connection->sendSinglePacket(
@@ -470,4 +508,5 @@ namespace wowpp
 		m_connection->sendSinglePacket(
 			std::bind(pp::world_realm::realm_write::removeIgnore, std::placeholders::_1, characterId, removeGuid));
 	}
+
 }

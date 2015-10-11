@@ -52,6 +52,7 @@ namespace wowpp
 		, m_clientDelayMs(0)
 		, m_nextDelayReset(0)
 		, m_clientTicks(0)
+		, m_groupUpdate(instance.getUniverse().getTimers())
 	{
 		m_logoutCountdown.ended.connect(
 			std::bind(&Player::onLogout, this));
@@ -82,6 +83,40 @@ namespace wowpp
 			std::bind(&Player::onTargetAuraUpdated, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 		m_onTeleport = m_character->teleport.connect(
 			std::bind(&Player::onTeleport, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+
+		m_groupUpdate.ended.connect([this]()
+		{
+			float x, y, z, o;
+			m_character->getLocation(x, y, z, o);
+
+			// Get group id
+			auto groupId = m_character->getGroupId();
+			std::vector<UInt64> nearbyMembers;
+
+			// Determine nearby party members
+			m_instance.getUnitFinder().findUnits(Circle(x, y, 100.0f), [this, groupId, &nearbyMembers](GameUnit &unit) -> bool
+			{
+				// Only characters
+				if (unit.getTypeId() != object_type::Character)
+				{
+					return true;
+				}
+
+				// Check characters group
+				GameCharacter *character = static_cast<GameCharacter*>(&unit);
+				if (character->getGroupId() == groupId &&
+					character->getGuid() != getCharacterGuid())
+				{
+					nearbyMembers.push_back(character->getGuid());
+				}
+
+				return true;
+			});
+
+			// Send packet to world node
+			m_realmConnector.sendCharacterGroupUpdate(*m_character, nearbyMembers);
+			m_groupUpdate.setEnd(getCurrentTime() + constants::OneSecond * 3);
+		});
 
 		// Trigger regeneration for our character
 		m_character->startRegeneration();
@@ -1369,6 +1404,25 @@ namespace wowpp
 	void Player::removeIgnore(UInt64 guid)
 	{
 		if (m_ignoredGUIDs.contains(guid)) m_ignoredGUIDs.remove(guid);
+	}
+
+	void Player::updateCharacterGroup(UInt64 group)
+	{
+		if (m_character)
+		{
+			m_character->setGroupId(group);
+		}
+
+		if (group != 0)
+		{
+			// Trigger next group member update
+			m_groupUpdate.setEnd(getCurrentTime() + (constants::OneSecond * 3));
+		}
+		else
+		{
+			// Stop group member update
+			m_groupUpdate.cancel();
+		}
 	}
 
 }

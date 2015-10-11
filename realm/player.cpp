@@ -934,8 +934,11 @@ namespace wowpp
 				// If we are in a group, notify others
 				if (m_group)
 				{
+					std::vector<UInt64> exclude;
+					exclude.push_back(guid);
+
 					m_group->broadcastPacket(
-						std::bind(game::server_write::partyMemberStatsFullOffline, std::placeholders::_1, guid), guid);
+						std::bind(game::server_write::partyMemberStatsFullOffline, std::placeholders::_1, guid), &exclude);
 					m_group.reset();
 				}
 
@@ -1190,7 +1193,7 @@ namespace wowpp
 
 				// Broadcast chat packet
 				m_group->broadcastPacket(
-					std::bind(game::server_write::messageChat, std::placeholders::_1, chat_msg::Party, lang, std::cref(channel), m_characterId, std::cref(message), m_gameCharacter.get()), 0, m_gameCharacter->getGuid());
+					std::bind(game::server_write::messageChat, std::placeholders::_1, chat_msg::Party, lang, std::cref(channel), m_characterId, std::cref(message), m_gameCharacter.get()), nullptr, m_gameCharacter->getGuid());
 
 				break;
 			}
