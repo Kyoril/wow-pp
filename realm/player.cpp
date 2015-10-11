@@ -1809,13 +1809,15 @@ namespace wowpp
 			return;
 		}
 
-		if (m_group)
+		if (!m_group)
 		{
-			if (m_group->getLeader() == m_gameCharacter->getGuid())
-			{
-				m_group->disband(false);
-			}
+			WLOG("Player has no group to disband");
+			return;
 		}
+
+		// Remove this group member
+		// Note: This will make m_group invalid
+		m_group->removeMember(m_gameCharacter->getGuid());
 	}
 
 	void Player::setGroup(std::shared_ptr<PlayerGroup> group)
