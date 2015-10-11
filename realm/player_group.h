@@ -94,6 +94,7 @@ namespace wowpp
 		typedef std::map<UInt64, game::GroupMemberSlot> MembersByGUID;
 		typedef LinearSet<UInt64> InvitedMembers;
 		typedef std::map<UInt32, UInt32> InstancesByMap;
+		typedef std::array<UInt64, 8> TargetIcons;
 
 	public:
 
@@ -125,6 +126,13 @@ namespace wowpp
 		UInt32 instanceBindingForMap(UInt32 map);
 		/// 
 		bool addInstanceBinding(UInt32 instance, UInt32 map);
+		/// Sends the groups target list to a specific player instance.
+		/// @param player 
+		void sendTargetList(Player &player);
+		/// Updates a group target icon.
+		/// @param target 
+		/// @param guid 
+		void setTargetIcon(UInt8 target, UInt64 guid);
 
 		/// Checks if the specified game character is a member of this group.
 		bool isMember(UInt64 guid) const;
@@ -179,5 +187,6 @@ namespace wowpp
 		UInt32 m_lootTreshold;
 		UInt64 m_lootMaster;
 		InstancesByMap m_instances;
+		TargetIcons m_targetIcons;
 	};
 }

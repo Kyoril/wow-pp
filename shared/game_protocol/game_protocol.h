@@ -143,6 +143,7 @@ namespace wowpp
 				TogglePvP				= 0x253,
 				RequestPartyMemberStats	= 0x27F,
 				MoveFallReset			= 0x2CA,
+				RaidTargetUpdate		= 0x321,
 				SetDungeonDifficulty	= 0x329,
 				MoveSetFly				= 0x346,
 				MoveStartAscend			= 0x359,
@@ -150,6 +151,7 @@ namespace wowpp
 				MoveChangeTransport		= 0x38D,
 				TimeSyncResponse		= 0x391,
 				MoveStartDescend		= 0x3A7
+
 			};
 		}
 
@@ -310,6 +312,7 @@ namespace wowpp
 				PlaySound					= 0x2D2,
 				AddonInfo					= 0x2EF,
 				PartyMemberStatsFull		= 0x2F2,
+				RaidTargetUpdate			= 0x321,
 				SetDungeonDifficulty		= 0x329,
 				Motd						= 0x33D,
 				TimeSyncReq					= 0x390,
@@ -896,6 +899,12 @@ namespace wowpp
 				io::Reader &packet,
 				UInt32 &out_counter,
 				UInt32 &out_ticks
+				);
+
+			bool raidTargetUpdate(
+				io::Reader &packet,
+				UInt8 &out_mode,
+				UInt64 &out_guidOptional
 				);
 		};
 
@@ -1559,6 +1568,17 @@ namespace wowpp
 
 			void lootClearMoney(
 				game::OutgoingPacket &out_packet
+				);
+
+			void raidTargetUpdateList(
+				game::OutgoingPacket &out_packet,
+				const std::array<UInt64, 8> &list
+				);
+
+			void raidTargetUpdate(
+				game::OutgoingPacket &out_packet,
+				UInt8 slot,
+				UInt64 guid
 				);
 		};
 	}

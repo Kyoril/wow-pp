@@ -2473,6 +2473,36 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void raidTargetUpdateList(game::OutgoingPacket &out_packet, const std::array<UInt64, 8> &list)
+			{
+				out_packet.start(game::server_packet::RaidTargetUpdate);
+				out_packet
+					<< io::write<NetUInt8>(0x01);	// List mode
+				UInt8 slot = 0;
+				for (auto &guid : list)
+				{
+					if (guid != 0)
+					{
+						out_packet
+							<< io::write<NetUInt8>(slot)
+							<< io::write<NetUInt64>(guid);
+					}
+
+					slot++;
+				}
+				out_packet.finish();
+			}
+
+			void raidTargetUpdate(game::OutgoingPacket &out_packet, UInt8 slot, UInt64 guid)
+			{
+				out_packet.start(game::server_packet::RaidTargetUpdate);
+				out_packet
+					<< io::write<NetUInt8>(0x00)	// No list
+					<< io::write<NetUInt8>(slot)
+					<< io::write<NetUInt64>(guid)
+					;
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
@@ -3177,6 +3207,23 @@ namespace wowpp
 				return packet
 					>> io::read<NetUInt32>(out_counter)
 					>> io::read<NetUInt32>(out_ticks);
+			}
+
+			bool raidTargetUpdate(io::Reader &packet, UInt8 &out_mode, UInt64 &out_guidOptional)
+			{
+				if (!(packet
+					>> io::read<NetUInt8>(out_mode)))
+				{
+					return false;
+				}
+
+				if (out_mode != 0xFF)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_guidOptional);
+				}
+
+				return packet;
 			}
 
 		}

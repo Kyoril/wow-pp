@@ -201,7 +201,6 @@ namespace wowpp
 			if (world)
 			{
 				world->leaveWorldInstance(m_characterId, pp::world_realm::world_left_reason::Disconnect);
-
 				ILOG("Sent notification about this to the world node.");
 
 				// We don't destroy this player instance yet, as we are still connected to a world node: This world node needs to
@@ -317,6 +316,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(TutorialClear, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(TutorialReset, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(CompleteCinematic, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(RaidTargetUpdate, game::session_status::LoggedIn)
 #undef WOWPP_HANDLE_PACKET
 
 			default:
@@ -2045,6 +2045,43 @@ namespace wowpp
 		}
 
 		m_database.setCinematicState(m_characterId, false);
+	}
+
+	void Player::handleRaidTargetUpdate(game::IncomingPacket &packet)
+	{
+		UInt8 mode = 0;
+		UInt64 guid = 0;
+		if (!(game::client_read::raidTargetUpdate(packet, mode, guid)))
+		{
+			return;
+		}
+
+		if (!m_group)
+		{
+			WLOG("Player is not a group member");
+			return;
+		}
+		if (!m_group->isMember(m_gameCharacter->getGuid()))
+		{
+			WLOG("Player seems to be invited to the group, but is not yet a member");
+			return;
+		}
+
+		if (mode == 0xFF)
+		{
+			ILOG("Player requested raid target list");
+			m_group->sendTargetList(*this);
+		}
+		else
+		{
+			if (m_group->getLeader() != m_gameCharacter->getGuid())
+			{
+				WLOG("Only the group leader is allowed to update raid target icons!");
+				return;
+			}
+
+			m_group->setTargetIcon(mode, guid);
+		}
 	}
 
 }

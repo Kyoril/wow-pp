@@ -34,6 +34,7 @@ namespace wowpp
 		, m_lootTreshold(2)
 		, m_lootMaster(0)
 	{
+		m_targetIcons.fill(0);
 	}
 
 	void PlayerGroup::create(GameCharacter &leader)
@@ -105,9 +106,7 @@ namespace wowpp
 		newMember.name = member.getName();
 		newMember.group = 0;
 		newMember.assistant = false;
-		
 		member.modifyGroupUpdateFlags(group_update_flags::Full, true);
-		auto *memberPlayer = m_playerManager.getPlayerByCharacterGuid(guid);
 
 		// Update group list
 		sendUpdate();
@@ -192,10 +191,6 @@ namespace wowpp
 					if (firstMember != m_members.end())
 					{
 						setLeader(firstMember->first);
-					}
-					else
-					{
-						WLOG("PlayerGroup::removeMember(): Group seems to be empty now...");
 					}
 				}
 
@@ -326,6 +321,40 @@ namespace wowpp
 
 		m_instances[map] = instance;
 		return true;
+	}
+
+	void PlayerGroup::setTargetIcon(UInt8 target, UInt64 guid)
+	{
+		if (target >= m_targetIcons.size())
+		{
+			WLOG("Invalid target icon slot");
+			return;
+		}
+
+		// Clean other target icons
+		if (guid != 0)
+		{
+			UInt8 slot = 0;
+			for (auto &targetGuid : m_targetIcons)
+			{
+				if (targetGuid == guid)
+				{
+					setTargetIcon(slot, 0);
+				}
+
+				slot++;
+			}
+		}
+
+		m_targetIcons[target] = guid;
+		broadcastPacket(
+			std::bind(game::server_write::raidTargetUpdate, std::placeholders::_1, target, guid));
+	}
+
+	void PlayerGroup::sendTargetList(Player &player)
+	{
+		player.sendPacket(
+			std::bind(game::server_write::raidTargetUpdateList, std::placeholders::_1, std::cref(m_targetIcons)));
 	}
 
 }

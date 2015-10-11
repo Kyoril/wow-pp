@@ -251,5 +251,6 @@ namespace wowpp
 		void handleTutorialClear(game::IncomingPacket &packet);
 		void handleTutorialReset(game::IncomingPacket &packet);
 		void handleCompleteCinematic(game::IncomingPacket &packet);
+		void handleRaidTargetUpdate(game::IncomingPacket &packet);
 	};
 }
