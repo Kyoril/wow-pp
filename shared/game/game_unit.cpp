@@ -136,13 +136,8 @@ namespace wowpp
 	{
 		m_raceEntry = m_getRace(getRace());
 		assert(m_raceEntry);
-
-		if (!m_factionTemplate)
-		{
-			
-			assert(m_raceEntry->factionTemplate);
-			setFactionTemplate(*m_raceEntry->factionTemplate);
-		}
+		assert(m_raceEntry->factionTemplate);
+		setFactionTemplate(*m_raceEntry->factionTemplate);
 	}
 
 	void GameUnit::classUpdated()
