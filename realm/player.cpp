@@ -1179,13 +1179,47 @@ namespace wowpp
 
 				break;
 			}
+			case chat_msg::Raid:
 			case chat_msg::Party:
+			case chat_msg::RaidLeader:
+			case chat_msg::RaidWarning:
 			{
 				// Get the players group
 				if (!m_group)
 				{
 					WLOG("Player is not in group");
 					return;
+				}
+
+				auto groupType = m_group->getType();
+				if (groupType == group_type::Raid)
+				{
+					if (type == chat_msg::Party)
+					{
+						// Only affect players subgroup
+						DLOG("TODO: Player subgroup");
+					}
+
+					const bool isRaidLead = m_group->getLeader() == m_gameCharacter->getGuid();
+					if (type == chat_msg::RaidLeader &&
+						!isRaidLead)
+					{
+						type = chat_msg::Raid;
+					}
+					else if (type == chat_msg::RaidWarning &&
+						!isRaidLead)
+					{
+						WLOG("Raid warning can only be done by raid leader or assistants");
+						return;
+					}
+				}
+				else
+				{
+					if (type == chat_msg::Raid)
+					{
+						DLOG("Not a raid group!");
+						return;
+					}
 				}
 
 				// Maybe we were just invited, but are not yet a member of that group
@@ -1197,7 +1231,7 @@ namespace wowpp
 
 				// Broadcast chat packet
 				m_group->broadcastPacket(
-					std::bind(game::server_write::messageChat, std::placeholders::_1, chat_msg::Party, lang, std::cref(channel), m_characterId, std::cref(message), m_gameCharacter.get()), nullptr, m_gameCharacter->getGuid());
+					std::bind(game::server_write::messageChat, std::placeholders::_1, type, lang, std::cref(channel), m_characterId, std::cref(message), m_gameCharacter.get()), nullptr, m_gameCharacter->getGuid());
 
 				break;
 			}

@@ -35,6 +35,7 @@
 #include "mysql_wrapper/mysql_select.h"
 #include "mysql_wrapper/mysql_statement.h"
 #include "common/make_unique.h"
+#include "common/linear_set.h"
 using namespace wowpp;
 
 struct EquipmentEntry
@@ -314,6 +315,155 @@ bool fixCreatureDamage(Project &project)
 	return true;
 }
 
+struct EventCreature
+{
+	UInt64 guid;
+	UInt32 event;
+};
+
+bool removeEventCreatures(Project &project, MySQL::Connection &connection)
+{
+	LinearSet<UInt64> creatureGuids;
+	{
+		wowpp::MySQL::Select select(connection, "SELECT `guid`, `event` FROM `game_event_creature`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				UInt64 guid;
+				row.getField(0, guid);
+				creatureGuids.add(guid);
+
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			// There was an error
+			ELOG(connection.getErrorMessage());
+			return false;
+		}
+	}
+
+	LinearSet<UInt32> creatureEntries;
+	{
+		wowpp::MySQL::Select select = wowpp::MySQL::Select(connection, "SELECT `guid`,`id` FROM `creature`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				UInt64 guid = 0;
+				UInt32 entry = 0;
+				row.getField(0, guid);
+				row.getField(1, entry);
+
+				if (creatureGuids.contains(guid) && entry != 0 && !creatureEntries.contains(entry))
+				{
+					creatureEntries.add(entry);
+				}
+
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			// There was an error
+			ELOG(connection.getErrorMessage());
+			return false;
+		}
+	}
+
+	for (auto &map : project.maps.getTemplates())
+	{
+		auto it = map->spawns.begin();
+		while (it != map->spawns.end())
+		{
+			if (creatureEntries.contains((*it).unit->id))
+			{
+				it->active = false;
+			}
+
+			it++;
+		}
+	}
+
+	return true;
+}
+
+bool removeEventObjects(Project &project, MySQL::Connection &connection)
+{
+	LinearSet<UInt64> objectGuids;
+	{
+		wowpp::MySQL::Select select(connection, "SELECT `guid`, `event` FROM `game_event_gameobject`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				UInt64 guid;
+				row.getField(0, guid);
+
+				if (!objectGuids.contains(guid)) objectGuids.add(guid);
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			// There was an error
+			ELOG(connection.getErrorMessage());
+			return false;
+		}
+	}
+
+	LinearSet<UInt32> objectEntries;
+	{
+		wowpp::MySQL::Select select = wowpp::MySQL::Select(connection, "SELECT `guid`, `id` FROM `gameobject`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				UInt64 guid = 0;
+				UInt32 entry = 0;
+				row.getField(0, guid);
+				row.getField(1, entry);
+
+				if (objectGuids.contains(guid) && entry != 0 && !objectEntries.contains(entry))
+				{
+					objectEntries.add(entry);
+				}
+
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			// There was an error
+			ELOG(connection.getErrorMessage());
+			return false;
+		}
+	}
+
+	for (auto &map : project.maps.getTemplates())
+	{
+		auto it = map->objectSpawns.begin();
+		while (it != map->objectSpawns.end())
+		{
+			if (objectEntries.contains((*it).object->id))
+			{
+				it = map->objectSpawns.erase(it);
+			}
+			else
+			{
+				it++;
+			}
+		}
+	}
+
+	return true;
+}
 
 /// Procedural entry point of the application.
 int main(int argc, char* argv[])
@@ -339,7 +489,14 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	
-	if (!importEquipment(proj, connection))
+	ILOG("Removing event creatures...");
+	if (!removeEventCreatures(proj, connection))
+	{
+		return 1;
+	}
+
+	ILOG("Removeing event objects...");
+	if (!removeEventObjects(proj, connection))
 	{
 		return 1;
 	}
