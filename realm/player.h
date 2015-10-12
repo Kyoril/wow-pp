@@ -254,5 +254,7 @@ namespace wowpp
 		void handleRaidTargetUpdate(game::IncomingPacket &packet);
 		void handleGroupRaidConvert(game::IncomingPacket &packet);
 		void handleGroupAssistentLeader(game::IncomingPacket &packet);
+		void handleRaidReadyCheck(game::IncomingPacket &packet);
+		void handleRaidReadyCheckFinished(game::IncomingPacket &packet);
 	};
 }

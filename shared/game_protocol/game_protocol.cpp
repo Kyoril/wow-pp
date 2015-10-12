@@ -2503,6 +2503,32 @@ namespace wowpp
 					;
 				out_packet.finish();
 			}
+
+			void raidReadyCheck(game::OutgoingPacket &out_packet, UInt64 guid)
+			{
+				out_packet.start(game::server_packet::RaidReadyCheck);
+				out_packet
+					<< io::write<NetUInt64>(guid)
+					;
+				out_packet.finish();
+			}
+
+			void raidReadyCheckConfirm(game::OutgoingPacket &out_packet, UInt64 guid, UInt8 state)
+			{
+				out_packet.start(game::server_packet::RaidReadyCheckConfirm);
+				out_packet
+					<< io::write<NetUInt64>(guid)
+					<< io::write<NetUInt8>(state)
+					;
+				out_packet.finish();
+			}
+
+			void raidReadyCheckFinished(game::OutgoingPacket &out_packet)
+			{
+				out_packet.start(game::server_packet::RaidReadyCheckFinished);
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read
@@ -3236,6 +3262,19 @@ namespace wowpp
 				return packet
 					>> io::read<NetUInt64>(out_guid)
 					>> io::read<NetUInt8>(out_flag);
+			}
+
+			bool raidReadyCheck(io::Reader &packet, bool &out_hasState, UInt8 &out_state)
+			{
+				if (packet.getSource()->end())
+				{
+					out_hasState = false;
+					return true;
+				}
+
+				out_hasState = true;
+				return packet
+					>> io::read<NetUInt8>(out_state);
 			}
 
 		}

@@ -146,14 +146,15 @@ namespace wowpp
 				GroupAssistentLeader	= 0x28F,
 				MoveFallReset			= 0x2CA,
 				RaidTargetUpdate		= 0x321,
+				RaidReadyCheck			= 0x322,
 				SetDungeonDifficulty	= 0x329,
 				MoveSetFly				= 0x346,
 				MoveStartAscend			= 0x359,
 				MoveStopAscend			= 0x35A,
 				MoveChangeTransport		= 0x38D,
 				TimeSyncResponse		= 0x391,
-				MoveStartDescend		= 0x3A7
-
+				MoveStartDescend		= 0x3A7,
+				RaidReadyCheckFinished	= 0x3C5
 			};
 		}
 
@@ -315,12 +316,15 @@ namespace wowpp
 				AddonInfo					= 0x2EF,
 				PartyMemberStatsFull		= 0x2F2,
 				RaidTargetUpdate			= 0x321,
+				RaidReadyCheck				= 0x322,
 				SetDungeonDifficulty		= 0x329,
 				Motd						= 0x33D,
 				TimeSyncReq					= 0x390,
 				UpdateComboPoints			= 0x39D,
 				SetExtraAuraInfo			= 0x3A4,
 				SetExtraAuraInfoNeedUpdate	= 0x3A5,
+				RaidReadyCheckConfirm		= 0x3AE,
+				RaidReadyCheckFinished		= 0x3C5,
 				FeatureSystemStatus			= 0x3C8,
 				UnlearnSpells				= 0x41D,	
 			};
@@ -917,6 +921,12 @@ namespace wowpp
 				io::Reader &packet,
 				UInt64 &out_guid,
 				UInt8 &out_flag
+				);
+
+			bool raidReadyCheck(
+				io::Reader &packet,
+				bool &out_hasState,
+				UInt8 &out_state
 				);
 		};
 
@@ -1591,6 +1601,21 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt8 slot,
 				UInt64 guid
+				);
+
+			void raidReadyCheck(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid
+				);
+
+			void raidReadyCheckConfirm(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				UInt8 state
+				);
+
+			void raidReadyCheckFinished(
+				game::OutgoingPacket &out_packet
 				);
 		};
 	}

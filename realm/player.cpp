@@ -319,6 +319,8 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(RaidTargetUpdate, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(GroupRaidConvert, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(GroupAssistentLeader, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(RaidReadyCheck, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(RaidReadyCheckFinished, game::session_status::LoggedIn)
 #undef WOWPP_HANDLE_PACKET
 
 			default:
@@ -2127,6 +2129,69 @@ namespace wowpp
 		}
 
 		DLOG("TODO: CMSG_GROUP_ASSISTENT_LEADER");
+	}
+
+	void Player::handleRaidReadyCheck(game::IncomingPacket &packet)
+	{
+		bool hasState = false;
+		UInt8 state = 0;
+		if (!(game::client_read::raidReadyCheck(packet, hasState, state)))
+		{
+			return;
+		}
+
+		if (!m_group)
+		{
+			WLOG("Player is not a group member");
+			return;
+		}
+		if (!m_group->isMember(m_gameCharacter->getGuid()))
+		{
+			WLOG("Player seems to be invited to the group, but is not yet a member");
+			return;
+		}
+
+		if (!hasState)
+		{
+			if (m_group->getLeader() != m_gameCharacter->getGuid())
+			{
+				WLOG("Only the group leader is allowed to start a ready check");
+				return;
+			}
+
+			// Ready check request
+			m_group->broadcastPacket(
+				std::bind(game::server_write::raidReadyCheck, std::placeholders::_1, m_gameCharacter->getGuid()));
+		}
+		else
+		{
+			// Ready check request
+			m_group->broadcastPacket(
+				std::bind(game::server_write::raidReadyCheckConfirm, std::placeholders::_1, m_gameCharacter->getGuid(), state));
+		}
+	}
+
+	void Player::handleRaidReadyCheckFinished(game::IncomingPacket &packet)
+	{
+		if (!m_group)
+		{
+			WLOG("Player is not a group member");
+			return;
+		}
+		if (!m_group->isMember(m_gameCharacter->getGuid()))
+		{
+			WLOG("Player seems to be invited to the group, but is not yet a member");
+			return;
+		}
+		if (m_group->getLeader() != m_gameCharacter->getGuid())
+		{
+			WLOG("Only the group leader is allowed to start a ready check");
+			return;
+		}
+
+		// Ready check request
+		m_group->broadcastPacket(
+			std::bind(game::server_write::raidReadyCheckFinished, std::placeholders::_1));
 	}
 
 }

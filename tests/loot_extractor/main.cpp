@@ -322,7 +322,6 @@ bool importCreatureLoot(Project &project, MySQL::Connection &connection)
 			}
 
 			LootGroup &group = lootEntry->lootGroups[groupIndex];
-
 			LootDefinition def;
 			def.item = itemEntry;
 			def.minCount = minCount;
