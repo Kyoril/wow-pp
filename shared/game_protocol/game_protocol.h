@@ -142,6 +142,8 @@ namespace wowpp
 				AuthSession				= 0x1ED,
 				TogglePvP				= 0x253,
 				RequestPartyMemberStats	= 0x27F,
+				GroupRaidConvert		= 0x28E,
+				GroupAssistentLeader	= 0x28F,
 				MoveFallReset			= 0x2CA,
 				RaidTargetUpdate		= 0x321,
 				SetDungeonDifficulty	= 0x329,
@@ -905,6 +907,16 @@ namespace wowpp
 				io::Reader &packet,
 				UInt8 &out_mode,
 				UInt64 &out_guidOptional
+				);
+
+			bool groupRaidConvert(
+				io::Reader &packet
+				);
+
+			bool groupAssistentLeader(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				UInt8 &out_flag
 				);
 		};
 

@@ -133,7 +133,11 @@ namespace wowpp
 		/// @param target 
 		/// @param guid 
 		void setTargetIcon(UInt8 target, UInt64 guid);
+		/// Converts the group into a raid group.
+		void convertToRaidGroup();
 
+		/// Returns the current group type (normal, raid).
+		GroupType getType() const { return m_type; }
 		/// Checks if the specified game character is a member of this group.
 		bool isMember(UInt64 guid) const;
 		/// Returns the number of group members.

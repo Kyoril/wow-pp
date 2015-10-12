@@ -252,5 +252,7 @@ namespace wowpp
 		void handleTutorialReset(game::IncomingPacket &packet);
 		void handleCompleteCinematic(game::IncomingPacket &packet);
 		void handleRaidTargetUpdate(game::IncomingPacket &packet);
+		void handleGroupRaidConvert(game::IncomingPacket &packet);
+		void handleGroupAssistentLeader(game::IncomingPacket &packet);
 	};
 }

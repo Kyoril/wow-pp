@@ -357,4 +357,15 @@ namespace wowpp
 			std::bind(game::server_write::raidTargetUpdateList, std::placeholders::_1, std::cref(m_targetIcons)));
 	}
 
+	void PlayerGroup::convertToRaidGroup()
+	{
+		if (m_type == group_type::Raid)
+		{
+			return;
+		}
+
+		m_type = group_type::Raid;
+		sendUpdate();
+	}
+
 }

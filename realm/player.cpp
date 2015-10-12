@@ -317,6 +317,8 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(TutorialReset, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(CompleteCinematic, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(RaidTargetUpdate, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(GroupRaidConvert, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(GroupAssistentLeader, game::session_status::LoggedIn)
 #undef WOWPP_HANDLE_PACKET
 
 			default:
@@ -2085,6 +2087,46 @@ namespace wowpp
 
 			m_group->setTargetIcon(mode, guid);
 		}
+	}
+
+	void Player::handleGroupRaidConvert(game::IncomingPacket &packet)
+	{
+		if (!(game::client_read::groupRaidConvert(packet)))
+		{
+			return;
+		}
+
+		if (!m_group)
+		{
+			WLOG("Player is not a group member");
+			return;
+		}
+		if (!m_group->isMember(m_gameCharacter->getGuid()))
+		{
+			WLOG("Player seems to be invited to the group, but is not yet a member");
+			return;
+		}
+		if (m_group->getLeader() != m_gameCharacter->getGuid())
+		{
+			WLOG("Only the group leader is allowed to convert into a raid group");
+			return;
+		}
+
+		sendPacket(
+			std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Invite, "", game::party_result::Ok));
+		m_group->convertToRaidGroup();
+	}
+
+	void Player::handleGroupAssistentLeader(game::IncomingPacket &packet)
+	{
+		UInt64 guid;
+		UInt8 flags;
+		if (!(game::client_read::groupAssistentLeader(packet, guid, flags)))
+		{
+			return;
+		}
+
+		DLOG("TODO: CMSG_GROUP_ASSISTENT_LEADER");
 	}
 
 }

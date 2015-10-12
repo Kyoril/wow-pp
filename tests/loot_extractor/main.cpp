@@ -285,7 +285,7 @@ bool importCreatureLoot(Project &project, MySQL::Connection &connection)
 			if (!lootEntry)
 			{
 				// Error
-				ELOG("Error retrieving loot entry");
+				ELOG("Loot entry " << entry << " found, but no creature to assign found");
 				row = row.next(select);
 				continue;
 			}

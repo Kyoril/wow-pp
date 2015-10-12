@@ -3226,6 +3226,18 @@ namespace wowpp
 				return packet;
 			}
 
+			bool groupRaidConvert(io::Reader &packet)
+			{
+				return packet;
+			}
+
+			bool groupAssistentLeader(io::Reader &packet, UInt64 &out_guid, UInt8 &out_flag)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_guid)
+					>> io::read<NetUInt8>(out_flag);
+			}
+
 		}
 	}
 }
