@@ -124,11 +124,7 @@ namespace wowpp
 		GameUnit::levelChanged(levelInfo);
 
 		// One talent point per level
-		Int32 talentPoints = getLevel() - 9;
-		if (talentPoints > 0)
-		{
-			setUInt32Value(character_fields::CharacterPoints_1, talentPoints);
-		}
+		updateTalentPoints();
 
 		// Update xp to next level
 		setUInt32Value(character_fields::NextLevelXp, levelInfo.nextLevelXP);
@@ -296,6 +292,12 @@ namespace wowpp
 		for (const auto *skill : spell.skillsOnLearnSpell)
 		{
 			addSkill(*skill);
+		}
+
+		// Talent point update
+		if (spell.talentCost > 0)
+		{
+			updateTalentPoints();
 		}
 	}
 
@@ -917,6 +919,26 @@ namespace wowpp
 			return;
 
 		heal(static_cast<UInt32>(addHealth), nullptr, true);
+	}
+
+	void GameCharacter::updateTalentPoints()
+	{
+		auto level = getLevel();
+
+		UInt32 talentPoints = 0;
+		if (level >= 10)
+		{
+			// This is the maximum number of talent points available at the current character level
+			talentPoints = level - 9;
+
+			// Now iterate through every learned spell and reduce the amount of talent points
+			for (auto &spell : m_spells)
+			{
+				talentPoints -= spell->talentCost;
+			}
+		}
+
+		setUInt32Value(character_fields::CharacterPoints_1, talentPoints);
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameCharacter const& object)

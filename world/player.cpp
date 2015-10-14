@@ -1457,4 +1457,63 @@ namespace wowpp
 		}
 	}
 
+	void Player::handleLearnTalent(game::Protocol::IncomingPacket &packet)
+	{
+		UInt32 talentId = 0, rank = 0;
+		if (!game::client_read::learnTalent(packet, talentId, rank))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		// Try to find talent
+		auto *talent = m_project.talents.getById(talentId);
+		if (!talent)
+		{
+			WLOG("Could not find requested talent id " << talentId);
+			return;
+		}
+
+		// Check rank
+		if (talent->ranks.size() < rank)
+		{
+			WLOG("Talent " << talentId << " does offer " << talent->ranks.size() << " ranks, but rank " << rank << " is requested!");
+			return;
+		}
+
+		// TODO: Check whether the player is allowed to learn that talent, based on his class
+
+		// Check if another talent is required
+		if (talent->dependsOn != nullptr)
+		{
+			// Check if we have learned the requested talent rank
+			auto *dependantRank = talent->dependsOn->ranks[talent->dependsOnRank];
+			if (!m_character->hasSpell(dependantRank->id))
+			{
+				WLOG("Dependent talent not learned!");
+				return;
+			}
+		}
+
+		// Check if another spell is required
+		if (talent->dependsOnSpell != nullptr)
+		{
+			if (!m_character->hasSpell(talent->dependsOnSpell->id))
+			{
+				WLOG("Dependent spell not learned!");
+				return;
+			}
+		}
+
+		// Check if we have enough talent points (TODO)
+		UInt32 freeTalentPoints = m_character->getUInt32Value(character_fields::CharacterPoints_1);
+		if (freeTalentPoints == 0)
+		{
+			WLOG("Not enough talent points available");
+			return;
+		}
+
+		// TODO: Add new spell, and maybe remove old spells
+	}
+
 }

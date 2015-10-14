@@ -3277,6 +3277,13 @@ namespace wowpp
 					>> io::read<NetUInt8>(out_state);
 			}
 
+			bool learnTalent(io::Reader &packet, UInt32 &out_talentId, UInt32 &out_rank)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_talentId)
+					>> io::read<NetUInt32>(out_rank);
+			}
+
 		}
 	}
 }

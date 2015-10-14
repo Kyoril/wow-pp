@@ -140,6 +140,7 @@ namespace wowpp
 				Ping					= 0x1DC,
 				SetSheathed				= 0x1E0,
 				AuthSession				= 0x1ED,
+				LearnTalent				= 0x251,
 				TogglePvP				= 0x253,
 				RequestPartyMemberStats	= 0x27F,
 				GroupRaidConvert		= 0x28E,
@@ -927,6 +928,12 @@ namespace wowpp
 				io::Reader &packet,
 				bool &out_hasState,
 				UInt8 &out_state
+				);
+
+			bool learnTalent(
+				io::Reader &packet,
+				UInt32 &out_talentId,
+				UInt32 &out_rank
 				);
 		};
 

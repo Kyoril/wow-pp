@@ -60,6 +60,7 @@ namespace wowpp
 		, targetZ(0.0f)
 		, targetO(0.0f)
 		, maxTargets(0)
+		, talentCost(0)
 	{
 		attributesEx.fill(0);
 	}

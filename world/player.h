@@ -181,6 +181,7 @@ namespace wowpp
 		void handleLootRelease(game::Protocol::IncomingPacket &packet);
 		void handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode);
 		void handleTimeSyncResponse(game::Protocol::IncomingPacket &packet);
+		void handleLearnTalent(game::Protocol::IncomingPacket &packet);
 
 	private:
 

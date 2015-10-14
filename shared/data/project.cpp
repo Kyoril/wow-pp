@@ -60,6 +60,7 @@ namespace wowpp
 		context.getCreatureType = std::bind(&CreatureTypeEntryManager::getById, &creaturetypes, std::placeholders::_1);
 		context.getUnit = std::bind(&UnitEntryManager::getById, &units, std::placeholders::_1);
 		context.getSpell = std::bind(&SpellEntryManager::getById, &spells, std::placeholders::_1);
+		context.getEditableSpell = std::bind(&SpellEntryManager::getEditableById, &spells, std::placeholders::_1);
 		context.getItem = std::bind(&ItemEntryManager::getById, &items, std::placeholders::_1);
 		context.getSkill = std::bind(&SkillEntryManager::getById, &skills, std::placeholders::_1);
 		context.getObject = std::bind(&ObjectEntryManager::getById, &objects, std::placeholders::_1);

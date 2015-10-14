@@ -56,6 +56,7 @@ namespace wowpp
 			context.loadLater.push_back([entry, &dep, &context]() -> bool
 			{
 				*dep = context.getTalent(entry);
+				return true;
 			});
 		}
 
@@ -93,6 +94,13 @@ namespace wowpp
 					continue;
 				}
 
+				auto *editableSpell = context.getEditableSpell(spellId);
+				if (!editableSpell)
+				{
+					continue;
+				}
+
+				editableSpell->talentCost = ranks.size() + 1;
 				ranks.push_back(spell);
 			}
 		}

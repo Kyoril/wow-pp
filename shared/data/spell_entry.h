@@ -353,6 +353,7 @@ namespace wowpp
 		UInt32 targetMap;
 		float targetX, targetY, targetZ, targetO;
 		UInt32 maxTargets;
+		UInt32 talentCost;		// This value will be dynamically set during load of talent entries
 
 		SpellEntry();
 		bool load(DataLoadContext &context, const ReadTableWrapper &wrapper);

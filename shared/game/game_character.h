@@ -560,6 +560,10 @@ namespace wowpp
 
 	private:
 
+		void updateTalentPoints();
+
+	private:
+
 		String m_name;
 		UInt32 m_zoneIndex;
 		UInt32 m_weaponProficiency;

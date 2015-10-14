@@ -56,6 +56,7 @@ namespace wowpp
 		typedef std::function<const CreatureTypeEntry * (UInt32)> GetCreatureType;
 		typedef std::function<const UnitEntry * (UInt32)> GetUnit;
 		typedef std::function<const SpellEntry * (UInt32)> GetSpell;
+		typedef std::function<SpellEntry * (UInt32)> GetEditableSpell;
 		typedef std::function<const ItemEntry * (UInt32)> GetItem;
 		typedef std::function<const SkillEntry * (UInt32)> GetSkill;
 		typedef std::function<const ObjectEntry * (UInt32)> GetObject;
@@ -72,6 +73,7 @@ namespace wowpp
 		GetCreatureType getCreatureType;
 		GetUnit getUnit;
 		GetSpell getSpell;
+		GetEditableSpell getEditableSpell;
 		GetItem getItem;
 		GetSkill getSkill;
 		GetObject getObject;
