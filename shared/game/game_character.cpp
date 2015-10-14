@@ -123,6 +123,13 @@ namespace wowpp
 		// Superclass
 		GameUnit::levelChanged(levelInfo);
 
+		// One talent point per level
+		Int32 talentPoints = getLevel() - 9;
+		if (talentPoints > 0)
+		{
+			setUInt32Value(character_fields::CharacterPoints_1, talentPoints);
+		}
+
 		// Update xp to next level
 		setUInt32Value(character_fields::NextLevelXp, levelInfo.nextLevelXP);
 		
