@@ -777,7 +777,15 @@ namespace wowpp
 			return;
 		}
 
+		// Check if the player is looting
+		if (!m_loot)
+		{
+			WLOG("Player isn't looting anything");
+			return;
+		}
+
 		DLOG("CMSG_AUTO_STORE_LOOT_ITEM(loot slot: " << UInt32(lootSlot) << ")");
+
 
 		// TODO
 		sendProxyPacket(

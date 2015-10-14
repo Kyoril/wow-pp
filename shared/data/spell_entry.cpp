@@ -59,6 +59,7 @@ namespace wowpp
 		, targetY(0.0f)
 		, targetZ(0.0f)
 		, targetO(0.0f)
+		, maxTargets(0)
 	{
 		attributesEx.fill(0);
 	}
@@ -112,6 +113,7 @@ namespace wowpp
 		wrapper.table.tryGetInteger("min_range", minRange);
 		wrapper.table.tryGetInteger("max_range", maxRange);
 		wrapper.table.tryGetInteger("range_type", rangeType);
+		wrapper.table.tryGetInteger("max_targets", maxTargets);
 
 		const sff::read::tree::Array<DataFileIterator> *skillsArray = wrapper.table.getArray("skills");
 		if (skillsArray)
@@ -183,7 +185,7 @@ namespace wowpp
 				effectTable->tryGetInteger("aura_name", effect.auraName);
 				effectTable->tryGetInteger("dice_per_level", effect.dicePerLevel);
 				effectTable->tryGetInteger("points_per_level", effect.pointsPerLevel);
-				effectTable->tryGetInteger("radius_index", effect.radiusIndex);
+				effectTable->tryGetInteger("radius", effect.radius);
 				effectTable->tryGetInteger("amplitude", effect.amplitude);
 				effectTable->tryGetInteger("multiple_val", effect.multipleValue);
 				effectTable->tryGetInteger("chain_target", effect.chainTarget);
@@ -271,6 +273,7 @@ namespace wowpp
 		if (minRange != 0.0f) context.table.addKey("min_range", minRange);
 		if (maxRange != 0.0f) context.table.addKey("max_range", maxRange);
 		if (rangeType != 0) context.table.addKey("range_type", rangeType);
+		if (maxTargets != 0) context.table.addKey("max_targets", maxTargets);
 
 		// Write skills
 		if (!skillsOnLearnSpell.empty())
@@ -305,7 +308,7 @@ namespace wowpp
 						if (effect.auraName != 0) effectTable.addKey("aura_name", effect.auraName);
 						if (effect.dicePerLevel != 0.0f) effectTable.addKey("dice_per_level", effect.dicePerLevel);
 						if (effect.pointsPerLevel != 0.0f) effectTable.addKey("points_per_level", effect.pointsPerLevel);
-						if (effect.radiusIndex != 0) effectTable.addKey("radius_index", effect.radiusIndex);
+						if (effect.radius != 0.0f) effectTable.addKey("radius", effect.radius);
 						if (effect.amplitude != 0) effectTable.addKey("amplitude", effect.amplitude);
 						if (effect.multipleValue != 0.0f) effectTable.addKey("multiple_val", effect.multipleValue);
 						if (effect.chainTarget != 0) effectTable.addKey("chain_target", effect.chainTarget);

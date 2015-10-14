@@ -91,7 +91,8 @@ namespace wowpp
 			dropCount = dropDistribution(randomGenerator);
 		}
 
-		m_items.push_back(std::make_pair(dropCount, def));
+		UInt8 itemCount = static_cast<UInt8>(m_items.size());
+		m_items.insert(std::make_pair(itemCount, std::make_pair(dropCount, def)));
 	}
 
 	void LootInstance::takeGold()
@@ -103,20 +104,39 @@ namespace wowpp
 		}
 	}
 
+	game::InventoryChangeFailure LootInstance::takeItem(UInt8 slot, UInt32 &out_count, LootDefinition &out_item)
+	{
+		auto it = m_items.find(slot);
+		if (it == m_items.end())
+		{
+			return game::inventory_change_failure::SlotIsEmpty;
+		}
+
+		out_count = it->second.first;
+		out_item = std::move(it->second.second);
+		m_items.erase(it);
+
+		if (isEmpty())
+		{
+			cleared();
+		}
+
+		return game::inventory_change_failure::Okay;
+	}
+
 	io::Writer & operator<<(io::Writer &w, LootInstance const& loot)
 	{
 		w
 			<< io::write<NetUInt32>(loot.m_gold)
 			<< io::write<NetUInt8>(loot.m_items.size());			// Count
 
-		UInt8 index = 0;
 		for (const auto &def : loot.m_items)
 		{
 			w
-				<< io::write<NetUInt8>(index++)
-				<< io::write<NetUInt32>(def.second.item->id)
-				<< io::write<NetUInt32>(def.first)
-				<< io::write<NetUInt32>(def.second.item->displayId)
+				<< io::write<NetUInt8>(def.first)
+				<< io::write<NetUInt32>(def.second.second.item->id)
+				<< io::write<NetUInt32>(def.second.first)
+				<< io::write<NetUInt32>(def.second.second.item->displayId)
 				<< io::write<NetUInt32>(0)
 				<< io::write<NetUInt32>(0)
 				<< io::write<NetUInt8>(game::loot_slot_type::AllowLoot)

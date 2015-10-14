@@ -22,10 +22,12 @@
 #include "single_cast_state.h"
 #include "game_unit.h"
 #include "game_character.h"
+#include "data/faction_template_entry.h"
 #include "no_cast_state.h"
 #include "common/clock.h"
 #include "log/default_log_levels.h"
 #include "world_instance.h"
+#include "unit_finder.h"
 #include "common/utilities.h"
 #include "game/defines.h"
 #include "game/game_world_object.h"
@@ -843,6 +845,40 @@ namespace wowpp
 			return;
 		}
 
+		std::list<GameUnit*> targets;
+		switch (effect.targetB)
+		{
+		case game::targets::UnitAreaEnemySrc:
+			{
+				float x, y, z, o;
+				m_cast.getExecuter().getLocation(x, y, z, o);
+				
+				auto &finder = m_cast.getExecuter().getWorldInstance()->getUnitFinder();
+				finder.findUnits(Circle(x, y, effect.radius), [this, &targets](GameUnit &unit) -> bool
+				{
+					const auto &factionA = unit.getFactionTemplate();
+					const auto &factionB = m_cast.getExecuter().getFactionTemplate();
+					if (factionA.isHostileTo(factionB))
+					{
+						targets.push_back(&unit);
+						if (m_spell.maxTargets > 0 &&
+							targets.size() >= m_spell.maxTargets)
+						{
+							// No more units
+							return false;
+						}
+					}
+
+					return true;
+				});
+			}
+			break;
+
+		default:
+			targets.push_back(unitTarget);
+			break;
+		}
+
 		// Check if target is dead
 		UInt32 health = unitTarget->getUInt32Value(unit_fields::Health);
 		if (health == 0 && 
@@ -861,7 +897,7 @@ namespace wowpp
 		const String auraTypeName = game::constant_literal::auraTypeNames.getName(auraType);
 		DLOG("Spell: Aura is: " << auraTypeName);
 
-		// World was already checked. If world would ne nullptr, unitTarget would be null as well
+		// World was already checked. If world would be nullptr, unitTarget would be null as well
 		auto *world = m_cast.getExecuter().getWorldInstance();
 		auto &universe = world->getUniverse();
 
@@ -873,39 +909,42 @@ namespace wowpp
 		UInt32 totalPoints = getSpellPointsTotal(effect, spellPower, spellBonusPct);
 		WLOG("AURA_TOTAL_POINTS:" << totalPoints);
 		
-		std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *unitTarget, [&universe](std::function<void()> work)
+		for (auto &target : targets)
 		{
-			universe.post(work);
-		}, [](Aura &self)
-		{
-			auto &auras = self.getTarget().getAuras();
-
-			const auto position = findAuraInstanceIndex(auras, self);
-			//assert(position.is_initialized());
-			if (position.is_initialized())
+			std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *target, [&universe](std::function<void()> work)
 			{
-				auras.removeAura(*position);
+				universe.post(work);
+			}, [](Aura &self)
+			{
+				auto &auras = self.getTarget().getAuras();
+
+				const auto position = findAuraInstanceIndex(auras, self);
+				//assert(position.is_initialized());
+				if (position.is_initialized())
+				{
+					auras.removeAura(*position);
+				}
+			});
+
+			// TODO: Dimishing return and custom durations
+
+			// TODO: Apply spell haste
+
+			// TODO: Check if aura already expired
+
+			const bool noThreat = ((m_spell.attributesEx[0] & spell_attributes_ex_a::NoThreat) != 0);
+			if (!noThreat)
+			{
+				target->threatened(caster, 0.00001f);
 			}
-		});
 
-		// TODO: Dimishing return and custom durations
-
-		// TODO: Apply spell haste
-
-		// TODO: Check if aura already expired
-
-		const bool noThreat = ((m_spell.attributesEx[0] & spell_attributes_ex_a::NoThreat) != 0);
-		if (!noThreat)
-		{
-			unitTarget->threatened(caster, 0.00001f);
-		}
-
-		// TODO: Add aura to unit target
-		const bool success = unitTarget->getAuras().addAura(std::move(aura));
-		if (!success)
-		{
-			// TODO: What should we do here? Just ignore?
-			WLOG("Aura could not be added to unit target!");
+			// TODO: Add aura to unit target
+			const bool success = target->getAuras().addAura(std::move(aura));
+			if (!success)
+			{
+				// TODO: What should we do here? Just ignore?
+				WLOG("Aura could not be added to unit target!");
+			}
 		}
 	}
 

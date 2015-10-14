@@ -283,7 +283,7 @@ namespace wowpp
 			UInt32 mechanic;
 			UInt32 targetA;
 			UInt32 targetB;
-			UInt32 radiusIndex;
+			float radius;
 			UInt32 auraName;
 			Int32 amplitude;
 			float multipleValue;
@@ -305,7 +305,7 @@ namespace wowpp
 				, mechanic(0)
 				, targetA(0)
 				, targetB(0)
-				, radiusIndex(0)
+				, radius(0.0f)
 				, auraName(0)
 				, amplitude(0)
 				, multipleValue(0.0f)
@@ -352,6 +352,7 @@ namespace wowpp
 		UInt32 rangeType;
 		UInt32 targetMap;
 		float targetX, targetY, targetZ, targetO;
+		UInt32 maxTargets;
 
 		SpellEntry();
 		bool load(DataLoadContext &context, const ReadTableWrapper &wrapper);

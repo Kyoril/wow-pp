@@ -22,8 +22,10 @@
 #pragma once
 
 #include "common/typedefs.h"
+#include "game/defines.h"
 #include "binary_io/writer.h"
 #include "data/loot_entry.h"
+#include <map>
 #include <boost/signals2.hpp>
 
 namespace wowpp
@@ -52,6 +54,8 @@ namespace wowpp
 		UInt32 getGold() const { return m_gold; }
 		/// 
 		void takeGold();
+		/// Take items from loot slot.
+		game::InventoryChangeFailure takeItem(UInt8 slot, UInt32 &out_count, LootDefinition &out_item);
 
 	private:
 
@@ -61,7 +65,7 @@ namespace wowpp
 
 		UInt64 m_lootGuid;
 		UInt32 m_gold;
-		std::vector<std::pair<UInt32, LootDefinition>> m_items;
+		std::map<UInt8, std::pair<UInt32, LootDefinition>> m_items;
 	};
 
 	io::Writer &operator << (io::Writer &w, LootInstance const& loot);

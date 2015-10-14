@@ -333,10 +333,10 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::InitializeFactions);
 				out_packet
-					<< io::write<NetUInt32>(0x00000040);
+					<< io::write<NetUInt32>(0x00000080);
 
 				UInt32 factionCount = 0;
-				for (UInt32 a = factionCount; a != 64; ++a)
+				for (UInt32 a = factionCount; a != 128; ++a)
 				{
 					out_packet 
 						<< io::write<NetUInt8>(0x00)
