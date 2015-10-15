@@ -1505,7 +1505,7 @@ namespace wowpp
 			}
 		}
 
-		// Check if we have enough talent points (TODO)
+		// Check if we have enough talent points
 		UInt32 freeTalentPoints = m_character->getUInt32Value(character_fields::CharacterPoints_1);
 		if (freeTalentPoints == 0)
 		{
@@ -1513,7 +1513,19 @@ namespace wowpp
 			return;
 		}
 
-		// TODO: Add new spell, and maybe remove old spells
+		// Remove all previous learnt ranks, learn the highest one
+		for (UInt32 i = 0; i < rank; ++i)
+		{
+			if (m_character->removeSpell(*talent->ranks[i]))
+			{
+				// TODO: Send packet maybe?
+			}
+		}
+
+		// Add new spell, and maybe remove old spells
+		m_character->addSpell(*talent->ranks[rank]);
+		sendProxyPacket(
+			std::bind(game::server_write::learnedSpell, std::placeholders::_1, talent->ranks[rank]->id));
 	}
 
 }

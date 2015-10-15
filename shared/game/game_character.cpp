@@ -288,7 +288,7 @@ namespace wowpp
 
 		m_spells.push_back(&spell);
 		
-		// Add dependant skills
+		// Add dependent skills
 		for (const auto *skill : spell.skillsOnLearnSpell)
 		{
 			addSkill(*skill);
@@ -299,6 +299,47 @@ namespace wowpp
 		{
 			updateTalentPoints();
 		}
+	}
+
+	bool GameCharacter::removeSpell(const SpellEntry &spell)
+	{
+		auto it = std::find(m_spells.begin(), m_spells.end(), &spell);
+		if (it == m_spells.end())
+		{
+			return false;
+		}
+
+		it = m_spells.erase(it);
+
+		// Evaluate parry and block spells
+		for (auto &effect : spell.effects)
+		{
+			if (effect.type == game::spell_effects::Parry)
+			{
+				m_canParry = false;
+			}
+			else if (effect.type == game::spell_effects::Block)
+			{
+				m_canBlock = false;
+			}
+		}
+
+		// Remove spell aura effects
+		getAuras().removeAllAurasDueToSpell(spell.id);
+
+		// Remove dependent skills
+		for (const auto *skill : spell.skillsOnLearnSpell)
+		{
+			removeSkill(skill->id);
+		}
+
+		// Talent point update
+		if (spell.talentCost > 0)
+		{
+			updateTalentPoints();
+		}
+
+		return true;
 	}
 
 	bool GameCharacter::hasSpell(UInt32 spellId) const

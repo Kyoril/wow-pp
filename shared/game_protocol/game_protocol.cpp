@@ -2529,6 +2529,14 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void learnedSpell(game::OutgoingPacket &out_packet, UInt32 spellId)
+			{
+				out_packet.start(game::server_packet::LearnedSpell);
+				out_packet
+					<< io::write<NetUInt32>(spellId)
+					;
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

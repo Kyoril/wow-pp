@@ -487,6 +487,8 @@ namespace wowpp
 		void addSpell(const SpellEntry &spell);
 		/// Returns true, if the characters knows the specific spell.
 		bool hasSpell(UInt32 spellId) const;
+		/// Returns a spell from the list of known spells.
+		bool removeSpell(const SpellEntry &spell);
 		/// Sets the name of this character.
 		void setName(const String &name);
 		/// Gets the name of this character.

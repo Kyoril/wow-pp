@@ -268,6 +268,7 @@ namespace wowpp
 				SetProficiency				= 0x127,
 				ActionButtons				= 0x129,
 				InitialSpells				= 0x12A,
+				LearnedSpell				= 0x12B,
 				CastFailed					= 0x130,
 				SpellStart					= 0x131,
 				SpellGo						= 0x132,
@@ -1623,6 +1624,11 @@ namespace wowpp
 
 			void raidReadyCheckFinished(
 				game::OutgoingPacket &out_packet
+				);
+
+			void learnedSpell(
+				game::OutgoingPacket &out_packet,
+				UInt32 spellId
 				);
 		};
 	}
