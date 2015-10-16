@@ -294,6 +294,7 @@ namespace wowpp
 				LootMoneyNotify				= 0x163,
 				LootItemNotify				= 0x164,
 				LootClearMoney				= 0x165,
+				ItemPushResult				= 0x166,
 				LogXPGain					= 0x1D0,
 				Pong						= 0x1DD,
 				LevelUpInfo					= 0x1D4,
@@ -1629,6 +1630,18 @@ namespace wowpp
 			void learnedSpell(
 				game::OutgoingPacket &out_packet,
 				UInt32 spellId
+				);
+
+			void itemPushResult(
+				game::OutgoingPacket &out_packet,
+				UInt64 playerGuid,
+				const GameItem &item,
+				bool wasLooted,
+				bool wasCreated,
+				UInt8 bagSlot,
+				UInt8 slot,
+				UInt32 addedCount,
+				UInt32 totalCount
 				);
 		};
 	}

@@ -91,8 +91,9 @@ namespace wowpp
 			dropCount = dropDistribution(randomGenerator);
 		}
 
-		UInt8 itemCount = static_cast<UInt8>(m_items.size());
-		m_items.insert(std::make_pair(itemCount, std::make_pair(dropCount, def)));
+		// Always at least 1 item
+		if (dropCount == 0) dropCount = 1;
+		m_items.emplace_back(LootItem(dropCount, def));
 	}
 
 	void LootInstance::takeGold()
@@ -104,56 +105,86 @@ namespace wowpp
 		}
 	}
 
-	game::InventoryChangeFailure LootInstance::takeItem(UInt8 slot, UInt32 &out_count, LootDefinition &out_item)
+	const LootItem * LootInstance::getLootDefinition(UInt8 slot) const
 	{
-		auto it = m_items.find(slot);
-		if (it == m_items.end())
+		if (slot >= m_items.size()) return nullptr;
+		return &m_items[slot];
+	}
+
+	bool LootInstance::isEmpty() const
+	{
+		const bool noGold = (m_gold == 0);
+		if (m_items.empty())
 		{
-			return game::inventory_change_failure::SlotIsEmpty;
+			return noGold;
+		}
+		else if (noGold)
+		{
+			for (auto &item : m_items)
+			{
+				if (!item.isLooted)
+					return false;
+			}
+
+			return true;
 		}
 
-		out_count = it->second.first;
-		out_item = std::move(it->second.second);
-		m_items.erase(it);
+		return false;
+	}
 
+	void LootInstance::takeItem(UInt8 slot)
+	{
+		if (slot >= m_items.size()) 
+			return;
+
+		if (m_items[slot].isLooted)
+		{
+			return;
+		}
+
+		m_items[slot].isLooted = true;
 		if (isEmpty())
 		{
 			cleared();
 		}
-
-		return game::inventory_change_failure::Okay;
 	}
 
 	io::Writer & operator<<(io::Writer &w, LootInstance const& loot)
 	{
+		// Write gold
 		w
-			<< io::write<NetUInt32>(loot.m_gold)
-			<< io::write<NetUInt8>(loot.m_items.size());			// Count
+			<< io::write<NetUInt32>(loot.m_gold);
 
+		// Write placeholder item count (real value will be overwritten later)
+		const size_t itemCountpos = w.sink().position();
+		w
+			<< io::write<NetUInt8>(loot.m_items.size());
+
+		// Iterate through all loot items...
+		UInt8 realCount = 0;
+		UInt8 slot = 0;
 		for (const auto &def : loot.m_items)
 		{
-			w
-				<< io::write<NetUInt8>(def.first)
-				<< io::write<NetUInt32>(def.second.second.item->id)
-				<< io::write<NetUInt32>(def.second.first)
-				<< io::write<NetUInt32>(def.second.second.item->displayId)
-				<< io::write<NetUInt32>(0)
-				<< io::write<NetUInt32>(0)
-				<< io::write<NetUInt8>(game::loot_slot_type::AllowLoot)
-				;
+			// Only write item entry if the item hasn't been looted yet
+			if (!def.isLooted)
+			{
+				w
+					<< io::write<NetUInt8>(slot)
+					<< io::write<NetUInt32>(def.definition.item->id)
+					<< io::write<NetUInt32>(def.count)
+					<< io::write<NetUInt32>(def.definition.item->displayId)
+					<< io::write<NetUInt32>(0)	// RandomSuffixIndex TODO
+					<< io::write<NetUInt32>(0)	// RandomPropertyId TODO
+					<< io::write<NetUInt8>(game::loot_slot_type::AllowLoot)
+					;
+				realCount++;
+			}
+			
+			slot++;
 		}
 
+		// Overwrite real item count
+		w.writePOD(itemCountpos, realCount);
 		return w;
-		// Serialized like this:
-		// uint32(gold)
-		// uint8(itemCount)
-		// foreach(item)
-		//		uint8(index++)
-		//		uint32(itemId)
-		//		uint32(count)
-		//		uint32(displayInfoId)
-		//		uint32(randomSuffixIndex)
-		//		uint32(randomPropertyId)
-		//		uint8(slotType)
 	}
 }

@@ -369,6 +369,8 @@ namespace wowpp
 			itemInstance->setUInt64Value(item_fields::Creator, item.creator);
 			itemInstance->setUInt32Value(item_fields::StackCount, item.stackCount);
 			character->addItem(std::move(itemInstance), item.slot);
+
+
 		}
 
 		// Get character location

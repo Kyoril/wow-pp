@@ -451,6 +451,20 @@ namespace wowpp
 	struct ItemEntry;
 	struct SkillEntry;
 
+	struct ItemPosCount final
+	{
+		UInt16 position;
+		UInt8 count;
+
+		explicit ItemPosCount(UInt16 position, UInt8 count)
+			: position(position)
+			, count(count)
+		{
+		}
+	};
+
+	typedef std::vector<ItemPosCount> ItemPosCountVector;
+
 	/// 
 	class GameCharacter : public GameUnit
 	{
@@ -540,6 +554,9 @@ namespace wowpp
 		GameItem *getItemByPos(UInt8 bag, UInt8 slot) const;
 		/// @copydoc GameUnit::rewardExperience()
 		void rewardExperience(GameUnit *victim, UInt32 experience) override;
+
+		game::InventoryChangeFailure canStoreItem(UInt8 bag, UInt8 slot, ItemPosCountVector &dest, const ItemEntry &item, UInt32 count, bool swap, UInt32 *noSpaceCount = nullptr) const;
+
 		GroupUpdateFlags getGroupUpdateFlags() const { return m_groupUpdateFlags; }
 		void modifyGroupUpdateFlags(GroupUpdateFlags flags, bool apply);
 		void clearGroupUpdateFlags() { m_groupUpdateFlags = group_update_flags::None; }

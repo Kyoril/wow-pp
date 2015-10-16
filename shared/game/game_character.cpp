@@ -24,6 +24,7 @@
 #include "data/skill_entry.h"
 #include "data/item_entry.h"
 #include "game_item.h"
+#include "common/utilities.h"
 
 namespace wowpp
 {
@@ -980,6 +981,51 @@ namespace wowpp
 		}
 
 		setUInt32Value(character_fields::CharacterPoints_1, talentPoints);
+	}
+
+	game::InventoryChangeFailure GameCharacter::canStoreItem(UInt8 bag, UInt8 slot, ItemPosCountVector &dest, const ItemEntry &item, UInt32 count, bool swap, UInt32 *noSpaceCount /*= nullptr*/) const
+	{
+		// No specific bag, find first free slot
+		if (bag == 0xFF && slot == 0xFF)
+		{
+			// Find items
+			for (auto &itemInst : m_itemSlots)
+			{
+				if (itemInst.second->getEntry().id == item.id)
+				{
+					// Check item stack
+					UInt32 stackCount = itemInst.second->getUInt32Value(item_fields::StackCount);
+					if (stackCount < item.maxStack)
+					{
+						UInt32 delta = limit<UInt32>(item.maxStack - stackCount, 0, count);
+						count -= delta;
+						dest.emplace_back(ItemPosCount(itemInst.first, delta));
+						DLOG("New count: " << count);
+
+						if (count == 0)
+							return game::inventory_change_failure::Okay;
+					}
+				}
+			}
+
+			DLOG("No stacks found");
+
+			// Iterate through items by slot
+			for (UInt8 i = player_inventory_pack_slots::Start; i < player_inventory_pack_slots::End; ++i)
+			{
+				auto it = m_itemSlots.find(i);
+				if (it == m_itemSlots.end())
+				{
+					// Found an empty slot!
+					dest.emplace_back(ItemPosCount(i, count));
+					return game::inventory_change_failure::Okay;
+				}
+			}
+
+			return game::inventory_change_failure::BagFull;
+		}
+
+		return game::inventory_change_failure::InternalBagError;
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameCharacter const& object)

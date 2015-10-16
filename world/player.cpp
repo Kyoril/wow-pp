@@ -784,12 +784,158 @@ namespace wowpp
 			return;
 		}
 
+		// Try to get loot at slot
+		auto *lootItem = m_loot->getLootDefinition(lootSlot);
+		if (!lootItem)
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::SlotIsEmpty, nullptr, nullptr));
+			return;
+		}
+
+		// Already looted?
+		if (lootItem->isLooted)
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::AlreadyLooted, nullptr, nullptr));
+			return;
+		}
+
+		// Check if we can store that item
+		ItemPosCountVector slots;
+		auto result = m_character->canStoreItem(0xFF, 0xFF, slots, *lootItem->definition.item, lootItem->count, false, nullptr);
+		if (result != game::inventory_change_failure::Okay)
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, result, nullptr, nullptr));
+			return;
+		}
+
+		if (slots.empty())
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::BagFull, nullptr, nullptr));
+			return;
+		}
+
+		static UInt64 lootCounter = 0x800000;
+
+		for (auto &pos : slots)
+		{
+			auto *itemAtSlot= m_character->getItemByPos(0xFF, pos.position);
+
+			// Loot items and add them
+			auto inst = std::make_shared<GameItem>(*lootItem->definition.item);
+			inst->initialize();
+			inst->setUInt64Value(object_fields::Guid, createEntryGUID(lootCounter++, lootItem->definition.item->id, guid_type::Item));
+			inst->setUInt32Value(item_fields::StackCount, pos.count);
+			m_character->addItem(inst, pos.position);
+
+			// Spawn this item
+			std::vector<std::vector<char>> blocks;
+			std::vector<char> createItemBlock;
+			if (itemAtSlot == nullptr)
+			{
+				io::VectorSink createItemSink(createItemBlock);
+				io::Writer createItemWriter(createItemSink);
+				{
+					UInt8 updateType = 0x02;						// Item
+					UInt8 updateFlags = 0x08 | 0x10;				// 
+					UInt8 objectTypeId = 0x01;						// Item
+
+					UInt64 guid = inst->getGuid();
+
+					// Header with object guid and type
+					createItemWriter
+						<< io::write<NetUInt8>(updateType);
+					UInt64 guidCopy = guid;
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+					for (UInt8 i = 0; guidCopy != 0; ++i)
+					{
+						if (guidCopy & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(guidCopy & 0xFF);
+							++size;
+						}
+
+						guidCopy >>= 8;
+					}
+					createItemWriter.sink().write((const char*)&packGUID[0], size);
+					createItemWriter
+						<< io::write<NetUInt8>(objectTypeId)
+						<< io::write<NetUInt8>(updateFlags);
+
+					// Lower-GUID update?
+					if (updateFlags & 0x08)
+					{
+						createItemWriter
+							<< io::write<NetUInt32>(guidLowerPart(guid));
+					}
+
+					// High-GUID update?
+					if (updateFlags & 0x10)
+					{
+						createItemWriter
+							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
+					}
+
+					// Write values update
+					inst->writeValueUpdateBlock(createItemWriter, *m_character, true);
+				}
+			}
+			else
+			{
+				io::VectorSink sink(createItemBlock);
+				io::Writer writer(sink);
+				{
+					UInt8 updateType = 0x00;						// Update type (0x00 = UPDATE_VALUES)
+
+					// Header with object guid and type
+					UInt64 guid = itemAtSlot->getGuid();
+					writer
+						<< io::write<NetUInt8>(updateType);
+
+					UInt64 guidCopy = guid;
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+					for (UInt8 i = 0; guidCopy != 0; ++i)
+					{
+						if (guidCopy & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(guidCopy & 0xFF);
+							++size;
+						}
+
+						guidCopy >>= 8;
+					}
+					writer.sink().write((const char*)&packGUID[0], size);
+
+					// Write values update
+					itemAtSlot->writeValueUpdateBlock(writer, *m_character, false);
+				}
+
+				itemAtSlot->clearUpdateMask();
+			}
+
+			// Send packet
+			blocks.emplace_back(std::move(createItemBlock));
+			sendProxyPacket(
+				std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
+			
+			// TODO: Group broadcasting
+
+			sendProxyPacket(
+				std::bind(game::server_write::itemPushResult, std::placeholders::_1, 
+					m_character->getGuid(), std::cref(*inst), true, false, 0xFF, pos.position, pos.count, pos.count));
+		}
+
 		DLOG("CMSG_AUTO_STORE_LOOT_ITEM(loot slot: " << UInt32(lootSlot) << ")");
-
-
-		// TODO
-		sendProxyPacket(
-			std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::InternalBagError, nullptr, nullptr));
+		m_loot->takeItem(lootSlot);
 	}
 
 	void Player::handleAutoEquipItem(game::Protocol::IncomingPacket &packet)

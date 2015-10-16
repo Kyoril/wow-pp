@@ -2537,6 +2537,26 @@ namespace wowpp
 					;
 				out_packet.finish();
 			}
+
+			void itemPushResult(game::OutgoingPacket &out_packet, UInt64 playerGuid, const GameItem &item, bool wasLooted, bool wasCreated, UInt8 bagSlot, UInt8 slot, UInt32 addedCount, UInt32 totalCount)
+			{
+				out_packet.start(game::server_packet::ItemPushResult);
+				out_packet
+					<< io::write<NetUInt64>(playerGuid)
+					<< io::write<NetUInt32>(wasLooted ? 0 : 1)
+					<< io::write<NetUInt32>(wasCreated ? 1 : 0)
+					<< io::write<NetUInt32>(1)
+					<< io::write<NetUInt8>(bagSlot)
+					<< io::write<NetUInt32>((addedCount == item.getUInt32Value(item_fields::StackCount)) ? slot : -1)
+					<< io::write<NetUInt32>(item.getEntry().id)
+					<< io::write<NetUInt32>(0)
+					<< io::write<NetInt32>(0)
+					<< io::write<NetUInt32>(addedCount)
+					<< io::write<NetUInt32>(totalCount)
+					;
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read

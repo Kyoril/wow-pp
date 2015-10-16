@@ -30,6 +30,20 @@
 
 namespace wowpp
 {
+	struct LootItem final
+	{
+		bool isLooted;
+		UInt32 count;
+		LootDefinition definition;
+
+		explicit LootItem(UInt32 count, LootDefinition def)
+			: isLooted(false)
+			, count(count)
+			, definition(std::move(def))
+		{
+		}
+	};
+
 	/// Represents an instance of loot. This will, for example, be generated on
 	/// creature death and can be sent to the client.
 	class LootInstance
@@ -49,13 +63,15 @@ namespace wowpp
 		/// 
 		UInt64 getLootGuid() const { return m_lootGuid; }
 		/// Determines whether the loot is empty.
-		bool isEmpty() const { return (m_gold == 0 && m_items.empty()); }
+		bool isEmpty() const;
 		/// 
 		UInt32 getGold() const { return m_gold; }
 		/// 
 		void takeGold();
-		/// Take items from loot slot.
-		game::InventoryChangeFailure takeItem(UInt8 slot, UInt32 &out_count, LootDefinition &out_item);
+		/// Get loot item definition from the requested slot.
+		const LootItem *getLootDefinition(UInt8 slot) const;
+		/// 
+		void takeItem(UInt8 slot);
 
 	private:
 
@@ -65,7 +81,7 @@ namespace wowpp
 
 		UInt64 m_lootGuid;
 		UInt32 m_gold;
-		std::map<UInt8, std::pair<UInt32, LootDefinition>> m_items;
+		std::vector<LootItem> m_items;
 	};
 
 	io::Writer &operator << (io::Writer &w, LootInstance const& loot);
