@@ -1063,8 +1063,6 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("RECEIVED CMSG_MESSAGE_CHAT. Type: " << type << "; Lang: " << lang << "; Receiver: " << receiver << "; Channel: " << channel << "; Msg: " << message);
-
 		if (!receiver.empty())
 			capitalize(receiver);
 
@@ -1107,7 +1105,6 @@ namespace wowpp
 					if (targetRealm != realmName)
 					{
 						// It is another realm - redirect to the world node
-						WLOG("TODO: Redirect whisper message to the world node");
 						m_worldNode->sendChatMessage(
 							m_gameCharacter->getGuid(),
 							type,
@@ -1201,13 +1198,15 @@ namespace wowpp
 					}
 
 					const bool isRaidLead = m_group->getLeader() == m_gameCharacter->getGuid();
+					const bool isAssistant = m_group->isLeaderOrAssistant(m_gameCharacter->getGuid());
 					if (type == chat_msg::RaidLeader &&
 						!isRaidLead)
 					{
 						type = chat_msg::Raid;
 					}
 					else if (type == chat_msg::RaidWarning &&
-						!isRaidLead)
+						!isRaidLead && 
+						!isAssistant)
 					{
 						WLOG("Raid warning can only be done by raid leader or assistants");
 						return;
@@ -2090,23 +2089,20 @@ namespace wowpp
 
 		if (!m_group)
 		{
-			WLOG("Player is not a group member");
 			return;
 		}
 		if (!m_group->isMember(m_gameCharacter->getGuid()))
 		{
-			WLOG("Player seems to be invited to the group, but is not yet a member");
 			return;
 		}
 
 		if (mode == 0xFF)
 		{
-			ILOG("Player requested raid target list");
 			m_group->sendTargetList(*this);
 		}
 		else
 		{
-			if (m_group->getLeader() != m_gameCharacter->getGuid())
+			if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
 			{
 				WLOG("Only the group leader is allowed to update raid target icons!");
 				return;
@@ -2123,19 +2119,9 @@ namespace wowpp
 			return;
 		}
 
-		if (!m_group)
+		const bool isLeader = (m_group && (m_group->getLeader() == m_gameCharacter->getGuid()));
+		if (!isLeader)
 		{
-			WLOG("Player is not a group member");
-			return;
-		}
-		if (!m_group->isMember(m_gameCharacter->getGuid()))
-		{
-			WLOG("Player seems to be invited to the group, but is not yet a member");
-			return;
-		}
-		if (m_group->getLeader() != m_gameCharacter->getGuid())
-		{
-			WLOG("Only the group leader is allowed to convert into a raid group");
 			return;
 		}
 
@@ -2189,7 +2175,7 @@ namespace wowpp
 
 		if (!hasState)
 		{
-			if (m_group->getLeader() != m_gameCharacter->getGuid())
+			if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
 			{
 				return;
 			}
@@ -2212,11 +2198,7 @@ namespace wowpp
 		{
 			return;
 		}
-		if (!m_group->isMember(m_gameCharacter->getGuid()))
-		{
-			return;
-		}
-		if (m_group->getLeader() != m_gameCharacter->getGuid())
+		if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
 		{
 			return;
 		}
