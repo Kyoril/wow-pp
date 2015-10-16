@@ -1466,8 +1466,6 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("TODO: Player " << m_accountName << " wants to delete " << guid << " from his ignore list");
-
 		// Find the character details
 		game::CharEntry ignoredChar;
 
@@ -1480,7 +1478,6 @@ namespace wowpp
 		{
 			if (m_social->isFriend(guid))
 			{
-				ILOG("PLAYER is still a friend - updating flags");
 				if (!m_database.updateCharacterSocialContact(m_characterId, guid, game::social_flag::Friend))
 				{
 					result = game::friend_result::DatabaseError;
@@ -1488,7 +1485,6 @@ namespace wowpp
 			}
 			else
 			{
-				ILOG("PLAYER will be completely removed from the database");
 				if (!m_database.removeCharacterSocialContact(m_characterId, guid))
 				{
 					result = game::friend_result::DatabaseError;
@@ -1615,7 +1611,7 @@ namespace wowpp
 		}
 
 		// Check if we are the leader of that group
-		if (m_group->getLeader() != m_gameCharacter->getGuid())
+		if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, party_operation::Invite, "", party_result::YouNotLeader));
@@ -1720,7 +1716,7 @@ namespace wowpp
 			return;
 		}
 
-		if (m_group->getLeader() != m_gameCharacter->getGuid())
+		if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::YouNotLeader));
@@ -1754,7 +1750,7 @@ namespace wowpp
 			return;
 		}
 
-		if (m_group->getLeader() != m_gameCharacter->getGuid())
+		if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::YouNotLeader));
@@ -1776,7 +1772,6 @@ namespace wowpp
 		UInt64 leaderGUID;
 		if (!game::client_read::groupSetLeader(packet, leaderGUID))
 		{
-			// Could not read packet
 			return;
 		}
 
@@ -1852,7 +1847,6 @@ namespace wowpp
 
 		if (!m_group)
 		{
-			WLOG("Player has no group to disband");
 			return;
 		}
 
@@ -1875,9 +1869,6 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_REQUEST_PARTY_MEMBER_STATS: Player " << m_gameCharacter->getName() << " requests party member stats of 0x" 
-			<< std::hex << std::uppercase << std::setw(16) << std::setfill('0') << guid);
-		
 		// Try to find that player
 		auto *player = m_manager.getPlayerByCharacterGuid(guid);
 		if (!player)
@@ -2162,7 +2153,20 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("TODO: CMSG_GROUP_ASSISTENT_LEADER");
+		if (!m_group)
+		{
+			return;
+		}
+		if (m_group->getType() != group_type::Raid)
+		{
+			return;
+		}
+		if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
+		{
+			return;
+		}
+
+		m_group->setAssistant(guid, flags);
 	}
 
 	void Player::handleRaidReadyCheck(game::IncomingPacket &packet)
@@ -2176,12 +2180,10 @@ namespace wowpp
 
 		if (!m_group)
 		{
-			WLOG("Player is not a group member");
 			return;
 		}
 		if (!m_group->isMember(m_gameCharacter->getGuid()))
 		{
-			WLOG("Player seems to be invited to the group, but is not yet a member");
 			return;
 		}
 
@@ -2189,7 +2191,6 @@ namespace wowpp
 		{
 			if (m_group->getLeader() != m_gameCharacter->getGuid())
 			{
-				WLOG("Only the group leader is allowed to start a ready check");
 				return;
 			}
 
@@ -2209,17 +2210,14 @@ namespace wowpp
 	{
 		if (!m_group)
 		{
-			WLOG("Player is not a group member");
 			return;
 		}
 		if (!m_group->isMember(m_gameCharacter->getGuid()))
 		{
-			WLOG("Player seems to be invited to the group, but is not yet a member");
 			return;
 		}
 		if (m_group->getLeader() != m_gameCharacter->getGuid())
 		{
-			WLOG("Only the group leader is allowed to start a ready check");
 			return;
 		}
 

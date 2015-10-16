@@ -108,6 +108,8 @@ namespace wowpp
 		void setLootMethod(LootMethod method, UInt64 lootMaster, UInt32 lootTreshold);
 		/// Sets a new group leader. The new leader has to be a member of this group.
 		void setLeader(UInt64 guid);
+		/// Sets a new group assistant.
+		void setAssistant(UInt64 guid, UInt8 flags);
 		/// Adds a guid to the list of pending invites.
 		game::PartyResult addInvite(UInt64 inviteGuid);
 		/// Adds a new member to the group. The group member has to be invited first.
@@ -140,6 +142,8 @@ namespace wowpp
 		GroupType getType() const { return m_type; }
 		/// Checks if the specified game character is a member of this group.
 		bool isMember(UInt64 guid) const;
+		/// Checks whether the specified guid is the group leader or an assistant.
+		bool isLeaderOrAssistant(UInt64 guid) const;
 		/// Returns the number of group members.
 		size_t getMemberCount() const { return m_members.size(); }
 		/// Determines whether this group has been created.

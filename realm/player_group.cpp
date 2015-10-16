@@ -67,6 +67,8 @@ namespace wowpp
 		return (it != m_members.end());
 	}
 
+	
+
 	void PlayerGroup::setLeader(UInt64 guid)
 	{
 		// New character has to be a member of this group
@@ -366,6 +368,27 @@ namespace wowpp
 
 		m_type = group_type::Raid;
 		sendUpdate();
+	}
+
+	void PlayerGroup::setAssistant(UInt64 guid, UInt8 flags)
+	{
+		auto it = m_members.find(guid);
+		if (it != m_members.end())
+		{
+			it->second.assistant = (flags != 0);
+			sendUpdate();
+		}
+	}
+
+	bool PlayerGroup::isLeaderOrAssistant(UInt64 guid) const
+	{
+		auto it = m_members.find(guid);
+		if (it != m_members.end())
+		{
+			return (it->first == m_leaderGUID || it->second.assistant);
+		}
+
+		return false;
 	}
 
 }
