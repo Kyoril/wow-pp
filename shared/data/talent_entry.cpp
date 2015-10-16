@@ -52,10 +52,9 @@ namespace wowpp
 		wrapper.table.tryGetInteger("depends_on_talent", entry);
 		if (entry != 0)
 		{
-			const TalentEntry **dep = &dependsOn;
-			context.loadLater.push_back([entry, &dep, &context]() -> bool
+			context.loadLater.push_back([entry, this, &context]() -> bool
 			{
-				*dep = context.getTalent(entry);
+				dependsOn = context.getTalent(entry);
 				return true;
 			});
 		}
