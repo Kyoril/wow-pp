@@ -1524,6 +1524,14 @@ namespace wowpp
 
 		// Add new spell, and maybe remove old spells
 		m_character->addSpell(*talent->ranks[rank]);
+		if ((talent->ranks[rank]->attributes & spell_attributes::Passive) != 0)
+		{
+			SpellTargetMap targets;
+			targets.m_targetMap = game::spell_cast_target_flags::Unit;
+			targets.m_unitTarget = m_character->getGuid();
+			m_character->castSpell(std::move(targets), talent->ranks[rank]->id, 0, false, GameUnit::SpellSuccessCallback());
+		}
+
 		sendProxyPacket(
 			std::bind(game::server_write::learnedSpell, std::placeholders::_1, talent->ranks[rank]->id));
 	}
