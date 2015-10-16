@@ -1594,7 +1594,8 @@ namespace wowpp
 
 		if (player->getSocial().isIgnored(m_gameCharacter->getGuid()))
 		{
-			WLOG("Target player ignores us");
+			sendPacket(
+				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, party_operation::Invite, std::cref(playerName), party_result::TargetIgnoreYou));
 			return;
 		}
 
@@ -1671,7 +1672,6 @@ namespace wowpp
 
 		if (!m_group)
 		{
-			WLOG("Player declined group invitation, but is not in a group");
 			return;
 		}
 
@@ -1727,6 +1727,15 @@ namespace wowpp
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, std::cref(memberName), game::party_result::NotInYourParty));
+			return;
+		}
+
+		// Raid assistants may not kick the leader
+		if (m_gameCharacter->getGuid() != m_group->getLeader() &&
+			m_group->getLeader() == guid)
+		{
+			sendPacket(
+				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::YouNotLeader));
 			return;
 		}
 
