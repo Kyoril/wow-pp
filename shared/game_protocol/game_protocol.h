@@ -86,6 +86,7 @@ namespace wowpp
 				LootMethod				= 0x07A,
 				GroupDisband			= 0x07B,
 				MessageChat				= 0x095,
+				UseItem					= 0x0AB,
 				AreaTrigger				= 0x0B4,
 				MoveStartForward		= 0x0B5,
 				MoveStartBackward		= 0x0B6,
@@ -936,6 +937,16 @@ namespace wowpp
 				io::Reader &packet,
 				UInt32 &out_talentId,
 				UInt32 &out_rank
+				);
+
+			bool useItem(
+				io::Reader &packet,
+				UInt8 &out_bag,
+				UInt8 &out_slot,
+				UInt8 &out_spellCount,
+				UInt8 &out_castCount,
+				UInt64 &out_itemGuid,
+				SpellTargetMap &out_targetMap
 				);
 		};
 

@@ -3312,6 +3312,18 @@ namespace wowpp
 					>> io::read<NetUInt32>(out_rank);
 			}
 
+			bool useItem(io::Reader &packet, UInt8 &out_bag, UInt8 &out_slot, UInt8 &out_spellCount, UInt8 &out_castCount, UInt64 &out_itemGuid, SpellTargetMap &out_targetMap)
+			{
+				return packet
+					>> io::read<NetUInt8>(out_bag)
+					>> io::read<NetUInt8>(out_slot)
+					>> io::read<NetUInt8>(out_spellCount)
+					>> io::read<NetUInt8>(out_castCount)
+					>> io::read<NetUInt64>(out_itemGuid)
+					>> out_targetMap
+					;
+			}
+
 		}
 	}
 }

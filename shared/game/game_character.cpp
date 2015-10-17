@@ -1000,15 +1000,12 @@ namespace wowpp
 						UInt32 delta = limit<UInt32>(item.maxStack - stackCount, 0, count);
 						count -= delta;
 						dest.emplace_back(ItemPosCount(itemInst.first, delta));
-						DLOG("New count: " << count);
-
+						
 						if (count == 0)
 							return game::inventory_change_failure::Okay;
 					}
 				}
 			}
-
-			DLOG("No stacks found");
 
 			// Iterate through items by slot
 			for (UInt8 i = player_inventory_pack_slots::Start; i < player_inventory_pack_slots::End; ++i)
@@ -1022,7 +1019,7 @@ namespace wowpp
 				}
 			}
 
-			return game::inventory_change_failure::BagFull;
+			return game::inventory_change_failure::InventoryFull;
 		}
 
 		return game::inventory_change_failure::InternalBagError;

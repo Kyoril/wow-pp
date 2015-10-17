@@ -182,6 +182,7 @@ namespace wowpp
 		void handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode);
 		void handleTimeSyncResponse(game::Protocol::IncomingPacket &packet);
 		void handleLearnTalent(game::Protocol::IncomingPacket &packet);
+		void handleUseItem(game::Protocol::IncomingPacket &packet);
 
 	private:
 

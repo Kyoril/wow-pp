@@ -436,8 +436,27 @@ namespace wowpp
 			return;
 		}
 
+		UInt32 targetMap = 0;
+		float targetX = 0.0f, targetY = 0.0f, targetZ = 0.0f, targetO = 0.0f;
+		switch (effect.targetB)
+		{
+		case game::targets::DstHome:
+			DLOG("TODO: Teleport to home point");
+			return;
+		case game::targets::DstDB:
+			targetMap = m_spell.targetMap;
+			targetX = m_spell.targetX;
+			targetY = m_spell.targetY;
+			targetZ = m_spell.targetZ;
+			targetO = m_spell.targetO;
+			break;
+		default:
+			WLOG("Unhandled destination type " << effect.targetB << " - not teleporting!");
+			return;
+		}
+
 		// Check whether it is the same map
-		if (unitTarget->getMapId() != m_spell.targetMap)
+		if (unitTarget->getMapId() != targetMap)
 		{
 			// Only players can change maps
 			if (unitTarget->getTypeId() != object_type::Character)
@@ -447,8 +466,7 @@ namespace wowpp
 			}
 
 			// Log destination
-			DLOG("Teleporting player to map " << m_spell.targetMap << ": " << m_spell.targetX << " / " << m_spell.targetY << " / " << m_spell.targetZ);
-			unitTarget->teleport(m_spell.targetMap, m_spell.targetX, m_spell.targetY, m_spell.targetZ, m_spell.targetO);
+			unitTarget->teleport(targetMap, targetX, targetY, targetZ, targetO);
 		}
 		else
 		{
@@ -456,12 +474,12 @@ namespace wowpp
 			if (unitTarget->getTypeId() == object_type::Character)
 			{
 				// Send teleport signal for player characters
-				unitTarget->teleport(m_spell.targetMap, m_spell.targetX, m_spell.targetY, m_spell.targetZ, m_spell.targetO);
+				unitTarget->teleport(targetMap, targetX, targetY, targetZ, targetO);
 			}
 			else
 			{
 				// Simply relocate creatures and other stuff
-				unitTarget->relocate(m_spell.targetX, m_spell.targetY, m_spell.targetZ, m_spell.targetO);
+				unitTarget->relocate(targetX, targetY, targetZ, targetO);
 			}
 		}
 	}

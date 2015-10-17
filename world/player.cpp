@@ -1682,4 +1682,59 @@ namespace wowpp
 			std::bind(game::server_write::learnedSpell, std::placeholders::_1, talent->ranks[rank]->id));
 	}
 
+	void Player::handleUseItem(game::Protocol::IncomingPacket &packet)
+	{
+		UInt8 bagId = 0, slotId = 0, spellCount = 0, castCount = 0;
+		UInt64 itemGuid = 0;
+		SpellTargetMap targetMap;
+		if (!game::client_read::useItem(packet, bagId, slotId, spellCount, castCount, itemGuid, targetMap))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		// Get item
+		auto *item = m_character->getItemByPos(bagId, slotId);
+		if (!item)
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::ItemNotFound, nullptr, nullptr));
+			return;
+		}
+
+		if (item->getGuid() != itemGuid)
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::ItemNotFound, nullptr, nullptr));
+			return;
+		}
+
+		// DLOG
+		DLOG("CMSG_USE_ITEM: bag " << UInt16(bagId) << "; slot " << UInt16(slotId) << "; item: 0x"
+			<< std::hex << std::uppercase << std::setw(16) << std::setfill('0') << itemGuid);
+
+		auto &entry = item->getEntry();
+		for (auto &spell : entry.itemSpells)
+		{
+			if (!spell.spell)
+			{
+				continue;
+			}
+
+			// Spell effect has to be triggered "on use", not "on equip" etc.
+			if (spell.trigger != 0 && spell.trigger != 5)
+			{
+				continue;
+			}
+
+			UInt64 time = 0;
+			const auto *castTime = m_project.castTimes.getById(spell.spell->castTimeIndex);
+			if (castTime)
+			{
+				time = castTime->castTime;
+			}
+			m_character->castSpell(std::move(targetMap), spell.spell->id, time, false, GameUnit::SpellSuccessCallback());
+		}
+	}
+
 }
