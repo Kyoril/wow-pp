@@ -25,6 +25,7 @@
 #include "game_protocol/game_protocol.h"
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "game/game_character.h"
+#include "log/log_exception.h"
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <functional>
