@@ -132,6 +132,22 @@ namespace wowpp
 		// Set database instance
 		m_database = std::move(db);
 
+		// Setup async database requester
+		boost::asio::io_service databaseWorkQueue;
+		boost::asio::io_service::work databaseWork(databaseWorkQueue);
+		(void)databaseWork;
+		const auto async = [&databaseWorkQueue](Action action)
+		{
+			databaseWorkQueue.post(std::move(action));
+		};
+		const auto sync = [this](Action action)
+		{
+			m_ioService.post(std::move(action));
+		};
+		AsyncDatabase asyncDatabase(*m_database, async, sync);
+		
+		// TODO: Use async database requests so no blocking occurs
+
 		// Create the player manager
 		std::unique_ptr<wowpp::PlayerManager> PlayerManager(new wowpp::PlayerManager(timer, m_configuration.maxPlayers));
 

@@ -361,12 +361,16 @@ namespace wowpp
 
 	void World::handleCharacterData(pp::IncomingPacket &packet)
 	{
+		const size_t packetStart = packet.getSource()->position();
+
 		// Read the character ID first
 		UInt64 characterId;
 		if (!(packet >> io::read<NetUInt64>(characterId)))
 		{
 			return;
 		}
+
+		packet.getSource()->seek(packetStart);
 
 		// Find the player using this character
 		auto *player = m_playerManager.getPlayerByCharacterId(characterId);
@@ -381,23 +385,27 @@ namespace wowpp
 				std::bind(&SpellEntryManager::getById, &m_project.spells, std::placeholders::_1)));
 			character->initialize();
 
-			if (!(packet >> *character))
+			std::vector<UInt32> spellIds;
+			std::vector<pp::world_realm::ItemData> items;
+			if (!(pp::world_realm::world_read::characterData(packet, characterId, *character, spellIds, items)))
 			{
-				// Error
 				ELOG("Error reading character data");
 				return;
 			}
 
 			// Save the character data
-			m_database.saveGameCharacter(*character);
+			m_database.saveGameCharacter(*character, items);
 			return;
 		}
 		else
 		{
-			// Update character data
-			if (!(packet >> *player->getGameCharacter()))
+			std::vector<UInt32> spellIds;
+
+			auto &items = player->getItemData();
+			items.clear();
+
+			if (!(pp::world_realm::world_read::characterData(packet, characterId, *player->getGameCharacter(), spellIds, items)))
 			{
-				// Error
 				ELOG("Error reading character data");
 				return;
 			}

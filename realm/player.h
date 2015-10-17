@@ -131,6 +131,8 @@ namespace wowpp
 		/// Gets the connected world node
 		World *getWorldNode() { return m_worldNode; }
 
+		std::vector<pp::world_realm::ItemData> &getItemData() { return m_itemData; }
+
 		/// Sends an encrypted packet to the game client
 		/// @param generator Packet writer function pointer.
 		template<class F>

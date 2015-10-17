@@ -21,6 +21,8 @@
 
 #include <iostream>
 #include "wowpp_world_realm.h"
+#include "game/game_item.h"
+#include "data/item_entry.h"
 #include <cassert>
 
 namespace wowpp
@@ -102,7 +104,30 @@ namespace wowpp
 					out_packet.start(world_packet::CharacterData);
 					out_packet
 						<< io::write<NetUInt64>(characterId)
-						<< character;
+						<< character
+						<< io::write<NetUInt32>(character.getSpells().size());
+					for (const auto &spell : character.getSpells())
+					{
+						out_packet
+							<< io::write<NetUInt32>(spell->id);
+					}
+
+					std::vector<ItemData> items;
+					for (const auto &item : character.getItems())
+					{
+						ItemData data;
+						data.entry = item.second->getEntry().id;
+						data.contained = item.second->getUInt64Value(item_fields::Contained);
+						data.creator = item.second->getUInt64Value(item_fields::Creator);
+						data.durability = item.second->getUInt32Value(item_fields::Durability);
+						data.randomPropertyIndex = item.second->getUInt32Value(item_fields::RandomPropertiesID);
+						data.randomSuffixIndex = 0;
+						data.slot = item.first;
+						data.stackCount = item.second->getUInt32Value(item_fields::StackCount);
+						items.emplace_back(data);
+					}
+					out_packet
+						<< io::write_dynamic_range<NetUInt32>(items);
 					out_packet.finish();
 				}
 
@@ -295,11 +320,14 @@ namespace wowpp
 						>> io::read_container<NetUInt32>(out_packetBuffer);
 				}
 
-				bool characterData(io::Reader &packet, UInt64 characterId, GameCharacter &out_character)
+				bool characterData(io::Reader &packet, UInt64 &out_characterId, GameCharacter &out_character, std::vector<UInt32> &out_spellIds, std::vector<ItemData> &out_items)
 				{
 					return packet
-						>> io::read<NetUInt64>(characterId)
-						>> out_character;
+						>> io::read<NetUInt64>(out_characterId)
+						>> out_character
+						>> io::read_container<NetUInt32>(out_spellIds)
+						>> io::read_container<NetUInt32>(out_items)
+						;
 				}
 
 				bool teleportRequest(io::Reader &packet, UInt64 &out_characterId, UInt32 &out_map, float &out_x, float &out_y, float &out_z, float &out_o)

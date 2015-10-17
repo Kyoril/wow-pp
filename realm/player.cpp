@@ -1539,7 +1539,7 @@ namespace wowpp
 			float x, y, z, o;
 			m_gameCharacter->getLocation(x, y, z, o);
 
-			m_database.saveGameCharacter(*m_gameCharacter);
+			m_database.saveGameCharacter(*m_gameCharacter, m_itemData);
 			m_database.setCharacterActionButtons(m_gameCharacter->getGuid(), m_actionButtons);
 		}
 	}

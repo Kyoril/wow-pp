@@ -56,7 +56,7 @@ namespace wowpp
 		/// @copydoc wowpp::IDatabase::getGameCharacter
 		bool getGameCharacter(DatabaseId characterId, GameCharacter &out_character, std::vector<pp::world_realm::ItemData> &out_items) override;
 		/// @copydoc wowpp::IDatabase::saveGamecharacter
-		bool saveGameCharacter(const GameCharacter &character) override;
+		bool saveGameCharacter(const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &items) override;
 		/// @copydoc wowpp::IDatabase::getCharacterSocialList
 		bool getCharacterSocialList(DatabaseId characterId, PlayerSocial &out_social) override;
 		/// @copydoc wowpp::IDatabase::addCharacterSocialContact
