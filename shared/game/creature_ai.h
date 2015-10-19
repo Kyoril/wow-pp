@@ -85,6 +85,11 @@ namespace wowpp
 		/// to it's home position.
 		void reset();
 
+	public:
+
+		// These methods are meant to be called by the AI states on specific events.
+		void onThreatened(GameUnit &threat, float amount);
+
 	protected:
 
 		void setState(std::unique_ptr<CreatureAIState> state);

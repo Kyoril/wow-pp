@@ -44,57 +44,9 @@ namespace wowpp
 	{
 		auto &controlled = getControlled();
 
-		// Watch for threat events to enter combat
-		m_onThreatened = controlled.threatened.connect([this](GameUnit &threat, float amount)
-		{
-			auto &controlled = getControlled();
-			if (threat.getGuid() == controlled.getGuid())
-			{
-				return;
-			}
-
-			auto *worldInstance = controlled.getWorldInstance();
-			assert(worldInstance);
-
-			// Check if we are hostile against this unit
-			const auto &ourFaction = getControlled().getFactionTemplate();
-			const auto &unitFaction = threat.getFactionTemplate();
-			if (!ourFaction.isFriendlyTo(unitFaction))
-			{
-				float x, y, z, o;
-				controlled.getLocation(x, y, z, o);
-
-				// Call for assistance
-				if (!ourFaction.isNeutralToAll())
-				{
-					worldInstance->getUnitFinder().findUnits(Circle(x, y, 8.0f), [&ourFaction, &threat, &worldInstance](GameUnit &unit) -> bool
-					{
-						if (unit.getTypeId() != object_type::Unit)
-							return true;
-
-						if (!unit.isAlive())
-							return true;
-
-						if (unit.isInCombat())
-							return true;
-
-						const auto &unitFaction = unit.getFactionTemplate();
-						if (unitFaction.isFriendlyTo(ourFaction))
-						{
-							worldInstance->getUniverse().post([&unit, &threat]()
-							{
-								unit.threatened(threat, 0.0f);
-							});
-						}
-
-						return false;
-					});
-				}
-				
-				// Warning: This may destroy the idle state as it enters the combat state
-				getAI().enterCombat(threat);
-			}
-		});
+		// Handle incoming threat
+		auto &ai = getAI();
+		m_onThreatened = controlled.threatened.connect(std::bind(&CreatureAI::onThreatened, &ai, std::placeholders::_1, std::placeholders::_2));
 
 		auto *worldInstance = controlled.getWorldInstance();
 		assert(worldInstance);

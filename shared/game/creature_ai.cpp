@@ -20,12 +20,18 @@
 // 
 
 #include "creature_ai.h"
+#include "creature_ai_prepare_state.h"
 #include "creature_ai_idle_state.h"
 #include "creature_ai_combat_state.h"
 #include "creature_ai_reset_state.h"
 #include "creature_ai_death_state.h"
 #include "game_creature.h"
 #include "game_unit.h"
+#include "world_instance.h"
+#include "universe.h"
+#include "unit_finder.h"
+#include "unit_watcher.h"
+#include "data/faction_template_entry.h"
 #include "common/make_unique.h"
 
 namespace wowpp
@@ -59,8 +65,9 @@ namespace wowpp
 			m_state->onDamage(attacker);
 		});
 
-		// Enter the idle state after spawned
-		idle();
+		// Enter the preparation state
+		auto state = make_unique<CreatureAIPrepareState>(*this);
+		setState(std::move(state));
 	}
 
 	void CreatureAI::idle()
@@ -106,6 +113,57 @@ namespace wowpp
 	void CreatureAI::setHome(Home home)
 	{
 		m_home = std::move(home);
+	}
+
+	void CreatureAI::onThreatened(GameUnit &threat, float amount)
+	{
+		auto &controlled = getControlled();
+		if (threat.getGuid() == controlled.getGuid())
+		{
+			return;
+		}
+
+		auto *worldInstance = controlled.getWorldInstance();
+		assert(worldInstance);
+
+		// Check if we are hostile against this unit
+		const auto &ourFaction = getControlled().getFactionTemplate();
+		const auto &unitFaction = threat.getFactionTemplate();
+		if (!ourFaction.isFriendlyTo(unitFaction))
+		{
+			float x, y, z, o;
+			controlled.getLocation(x, y, z, o);
+
+			// Call for assistance
+			if (!ourFaction.isNeutralToAll())
+			{
+				worldInstance->getUnitFinder().findUnits(Circle(x, y, 8.0f), [&ourFaction, &threat, &worldInstance](GameUnit &unit) -> bool
+				{
+					if (unit.getTypeId() != object_type::Unit)
+						return true;
+
+					if (!unit.isAlive())
+						return true;
+
+					if (unit.isInCombat())
+						return true;
+
+					const auto &unitFaction = unit.getFactionTemplate();
+					if (unitFaction.isFriendlyTo(ourFaction))
+					{
+						worldInstance->getUniverse().post([&unit, &threat]()
+						{
+							unit.threatened(threat, 0.0f);
+						});
+					}
+
+					return false;
+				});
+			}
+
+			// Warning: This destroys the current AI state as it enters the combat state
+			enterCombat(threat);
+		}
 	}
 
 }
