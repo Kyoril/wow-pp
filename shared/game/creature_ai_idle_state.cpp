@@ -25,6 +25,7 @@
 #include "world_instance.h"
 #include "tiled_unit_watcher.h"
 #include "unit_finder.h"
+#include "universe.h"
 #include "data/faction_template_entry.h"
 #include "log/default_log_levels.h"
 
@@ -46,37 +47,67 @@ namespace wowpp
 		// Watch for threat events to enter combat
 		m_onThreatened = controlled.threatened.connect([this](GameUnit &threat, float amount)
 		{
-			if (&threat == &getControlled())
+			auto &controlled = getControlled();
+			if (threat.getGuid() == controlled.getGuid())
 			{
 				return;
 			}
+
+			auto *worldInstance = controlled.getWorldInstance();
+			assert(worldInstance);
 
 			// Check if we are hostile against this unit
 			const auto &ourFaction = getControlled().getFactionTemplate();
 			const auto &unitFaction = threat.getFactionTemplate();
 			if (!ourFaction.isFriendlyTo(unitFaction))
 			{
+				float x, y, z, o;
+				controlled.getLocation(x, y, z, o);
+
+				// Call for assistance
+				if (!ourFaction.isNeutralToAll())
+				{
+					worldInstance->getUnitFinder().findUnits(Circle(x, y, 8.0f), [&ourFaction, &threat, &worldInstance](GameUnit &unit) -> bool
+					{
+						if (unit.getTypeId() != object_type::Unit)
+							return true;
+
+						if (!unit.isAlive())
+							return true;
+
+						if (unit.isInCombat())
+							return true;
+
+						const auto &unitFaction = unit.getFactionTemplate();
+						if (unitFaction.isFriendlyTo(ourFaction))
+						{
+							worldInstance->getUniverse().post([&unit, &threat]()
+							{
+								unit.threatened(threat, 0.0f);
+							});
+						}
+
+						return false;
+					});
+				}
+				
 				// Warning: This may destroy the idle state as it enters the combat state
 				getAI().enterCombat(threat);
 			}
 		});
 
 		auto *worldInstance = controlled.getWorldInstance();
-		if (!worldInstance)
-		{
-			ELOG("Creature entered Idle State but is not in a world instance");
-			return;
-		}
+		assert(worldInstance);
 
 		float x, y, z, o;
 		controlled.getLocation(x, y, z, o);
 
-		Circle circle(x, y, 20.0f);
+		Circle circle(x, y, 40.0f);
 		m_aggroWatcher = worldInstance->getUnitFinder().watchUnits(circle);
 		m_aggroWatcher->visibilityChanged.connect([this](GameUnit& unit, bool isVisible) -> bool
 		{
 			auto &controlled = getControlled();
-			if (&unit == &controlled)
+			if (unit.getGuid() == controlled.getGuid())
 			{
 				return false;
 			}
@@ -94,11 +125,34 @@ namespace wowpp
 				return false;
 			}
 
-			if (ourFaction.isHostileTo(unitFaction) && 
-				!ourFaction.isFriendlyTo(unitFaction))
+			const float dist = controlled.getDistanceTo(unit, false);
+
+			const bool isHostile = ourFaction.isHostileTo(unitFaction);
+			const bool isFriendly = ourFaction.isFriendlyTo(unitFaction);
+			if (isHostile && !isFriendly)
 			{
 				if (isVisible)
 				{
+					const Int32 ourLevel = static_cast<Int32>(controlled.getLevel());
+					const Int32 otherLevel = static_cast<Int32>(unit.getLevel());
+					const Int32 diff = ::abs(ourLevel - otherLevel);
+
+					// Check distance
+					float reqDist = 20.0f;
+					if (ourLevel < otherLevel)
+					{
+						reqDist = limit<float>(5.0f, 40.0f, reqDist - diff);
+					}
+					else if (otherLevel < ourLevel)
+					{
+						reqDist = limit<float>(5.0f, 40.0f, reqDist + diff);
+					}
+
+					if (dist > reqDist)
+					{
+						return false;
+					}
+
 					// Little hack since LoS is not working
 					float tmp = 0.0f, z2 = 0.0f, z = 0.0f;
 					controlled.getLocation(tmp, tmp, z, tmp);
@@ -114,6 +168,21 @@ namespace wowpp
 
 				// We don't care
 				return false;
+			}
+			else if (isFriendly)
+			{
+				if (isVisible)
+				{
+					if (dist < 8.0f)
+					{
+						auto *victim = unit.getVictim();
+						if (unit.isInCombat() && victim != nullptr)
+						{
+							getAI().enterCombat(*victim);
+							return true;
+						}
+					}
+				}
 			}
 
 			return false;
