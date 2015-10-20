@@ -32,6 +32,7 @@ namespace wowpp
 	struct ItemEntry;
 	struct FactionTemplateEntry;
 	struct LootEntry;
+	struct VendorEntry;
 
 	/// Stores creature related data.
 	struct UnitEntry : BasicTemplate<UInt32>
@@ -107,12 +108,14 @@ namespace wowpp
 		std::map<UInt32, std::vector<const TriggerEntry*>> triggersByEvent;
 		/// Equipment entries of this creature. Only has optical effect right now, maybe should also modify damage, attack speed and amor?
 		const ItemEntry *mainHand, *offHand, *ranged;
-		/// 
+		/// Melee attack power of this creature.
 		UInt32 attackPower;
-		/// 
+		/// Ranged attack power of this creature.
 		UInt32 rangedAttackPower;
-		/// 
+		/// NPC loot template entry.
 		const LootEntry *unitLootEntry;
+		/// NPC vendor template entry.
+		const VendorEntry *vendorEntry;
 
 		/// Default constructor.
 		UnitEntry();

@@ -29,6 +29,7 @@
 #include "data/project.h"
 #include "data/unit_entry.h"
 #include "game/game_creature.h"
+#include <iomanip>
 #include <cassert>
 #include <limits>
 
@@ -1709,10 +1710,6 @@ namespace wowpp
 			return;
 		}
 
-		// DLOG
-		DLOG("CMSG_USE_ITEM: bag " << UInt16(bagId) << "; slot " << UInt16(slotId) << "; item: 0x"
-			<< std::hex << std::uppercase << std::setw(16) << std::setfill('0') << itemGuid);
-
 		auto &entry = item->getEntry();
 		for (auto &spell : entry.itemSpells)
 		{
@@ -1735,6 +1732,93 @@ namespace wowpp
 			}
 			m_character->castSpell(std::move(targetMap), spell.spell->id, time, false, GameUnit::SpellSuccessCallback());
 		}
+	}
+
+	void Player::handleListInventory(game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 vendorGuid = 0;
+		if (!game::client_read::listInventory(packet, vendorGuid))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		if (!m_character->isAlive())
+			return;
+
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+			return;
+
+		// Try to find that vendor
+		GameCreature *vendor = dynamic_cast<GameCreature*>(m_character->getWorldInstance()->findObjectByGUID(vendorGuid));
+		if (!vendor)
+		{
+			// Could not find vendor by GUID or vendor is not a creature
+			return;
+		}
+
+		// Check if vendor is alive and not in fight
+		if (!vendor->isAlive() || vendor->isInCombat())
+			return;
+
+		// Check if vendor is not hostile against players
+		const auto &vendorFaction = m_character->getFactionTemplate();
+		if (vendorFaction.isHostileToPlayers())
+			return;
+
+		// Check if that vendor has the vendor flag
+		if ((vendor->getUInt32Value(unit_fields::NpcFlags) & game::unit_npc_flags::Vendor) == 0)
+			return;
+
+		// Check if the vendor DO sell items
+		const auto *vendorEntry = vendor->getEntry().vendorEntry;
+		if (!vendorEntry)
+			return;
+
+		sendProxyPacket(
+			std::bind(game::server_write::listInventory, std::placeholders::_1, vendor->getGuid(), std::cref(vendorEntry->items)));
+	}
+
+	void Player::handleBuyItem(game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 vendorGuid = 0;
+		UInt32 item = 0;
+		UInt8 count = 0;
+		if (!(game::client_read::buyItem(packet, vendorGuid, item, count)))
+		{
+			WLOG("Coult not read CMSG_BUY_ITEM packet");
+			return;
+		}
+
+		DLOG("Received CMSG_BUY_ITEM...");
+	}
+
+	void Player::handleBuyItemInSlot(game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 vendorGuid = 0, bagGuid = 0;
+		UInt32 item = 0;
+		UInt8 slot = 0, count = 0;
+		if (!(game::client_read::buyItemInSlot(packet, vendorGuid, item, bagGuid, slot, count)))
+		{
+			WLOG("Coult not read CMSG_BUY_ITEM_IN_SLOT packet");
+			return;
+		}
+
+		DLOG("Received CMSG_BUY_ITEM_IN_SLOT...");
+	}
+
+	void Player::handleSellItem(game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 vendorGuid = 0, itemGuid = 0;
+		UInt8 count = 0;
+		if (!(game::client_read::sellItem(packet, vendorGuid, itemGuid, count)))
+		{
+			WLOG("Coult not read CMSG_SELL_ITEM packet");
+			return;
+		}
+
+		DLOG("Received CMSG_SELL_ITEM...");
 	}
 
 }

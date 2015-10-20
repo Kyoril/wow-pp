@@ -581,7 +581,10 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(TimeSyncResponse)
 			WOWPP_HANDLE_PLAYER_PACKET(LearnTalent)
 			WOWPP_HANDLE_PLAYER_PACKET(UseItem)
-
+			WOWPP_HANDLE_PLAYER_PACKET(ListInventory)
+			WOWPP_HANDLE_PLAYER_PACKET(SellItem)
+			WOWPP_HANDLE_PLAYER_PACKET(BuyItem)
+			WOWPP_HANDLE_PLAYER_PACKET(BuyItemInSlot)
 #undef WOWPP_HANDLE_PLAYER_PACKET
 
 			// Movement packets get special treatment

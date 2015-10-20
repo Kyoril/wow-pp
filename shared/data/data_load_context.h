@@ -45,6 +45,7 @@ namespace wowpp
 	struct FactionTemplateEntry;
 	struct LootEntry;
 	struct TalentEntry;
+	struct VendorEntry;
 
 	struct DataLoadContext : BasicTemplateLoadContext
 	{
@@ -66,6 +67,7 @@ namespace wowpp
 		typedef std::function<const FactionTemplateEntry * (UInt32)> GetFactionTemplate;
 		typedef std::function<const LootEntry * (UInt32)> GetLoot;
 		typedef std::function<const TalentEntry * (UInt32)> GetTalent;
+		typedef std::function<const VendorEntry * (UInt32)> GetVendor;
 
 		GetMap getMap;
 		GetRace getRace;
@@ -83,6 +85,7 @@ namespace wowpp
 		GetFactionTemplate getFactionTemplate;
 		GetLoot getUnitLoot;
 		GetTalent getTalent;
+		GetVendor getVendor;
 
 		explicit DataLoadContext(
 		    boost::filesystem::path realmDataPath

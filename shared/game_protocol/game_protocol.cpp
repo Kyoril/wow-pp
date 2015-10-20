@@ -2557,6 +2557,28 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void listInventory(game::OutgoingPacket &out_packet, UInt64 vendorGuid, const std::vector<VendorItemEntry> &itemList)
+			{
+				out_packet.start(game::server_packet::ListInventory);
+				out_packet
+					<< io::write<NetUInt64>(vendorGuid)
+					<< io::write<NetUInt8>(itemList.size());
+				UInt32 index = 0;
+				for (const auto &entry : itemList)
+				{
+					out_packet
+						<< io::write<NetUInt32>(++index)
+						<< io::write<NetUInt32>(entry.item->id)
+						<< io::write<NetUInt32>(entry.item->displayId)
+						<< io::write<NetUInt32>(entry.maxCount <= 0 ? 0xFFFFFFFF : entry.maxCount)		// TODO
+						<< io::write<NetUInt32>(entry.item->buyPrice)	// TODO: reputation discount
+						<< io::write<NetUInt32>(entry.item->durability)
+						<< io::write<NetUInt32>(entry.item->buyCount)
+						<< io::write<NetUInt32>(entry.extendedCost)
+						;
+				}
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
@@ -3322,6 +3344,40 @@ namespace wowpp
 					>> io::read<NetUInt64>(out_itemGuid)
 					>> out_targetMap
 					;
+			}
+
+			bool listInventory(io::Reader &packet, UInt64 &out_guid)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_guid);
+			}
+
+			bool sellItem(io::Reader &packet, UInt64 &out_vendorGuid, UInt64 &out_itemGuid, UInt8 &out_count)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_vendorGuid)
+					>> io::read<NetUInt64>(out_itemGuid)
+					>> io::read<NetUInt8>(out_count);
+			}
+
+			bool buyItem(io::Reader &packet, UInt64 &out_vendorGuid, UInt32 &out_item, UInt8 &out_count)
+			{
+				UInt8 skipped = 0;
+				return packet
+					>> io::read<NetUInt64>(out_vendorGuid)
+					>> io::read<NetUInt32>(out_item)
+					>> io::read<NetUInt8>(out_count)
+					>> io::read<NetUInt8>(skipped);
+			}
+
+			bool buyItemInSlot(io::Reader &packet, UInt64 &out_vendorGuid, UInt32 &out_item, UInt64 &out_bagGuid, UInt8 &out_slot, UInt8 &out_count)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_vendorGuid)
+					>> io::read<NetUInt32>(out_item)
+					>> io::read<NetUInt64>(out_bagGuid)
+					>> io::read<NetUInt8>(out_slot)
+					>> io::read<NetUInt8>(out_count);
 			}
 
 		}

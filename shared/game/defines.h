@@ -156,6 +156,41 @@ namespace wowpp
 			};
 		}
 
+		namespace unit_npc_flags
+		{
+			enum Type
+			{
+				None					= 0x00000000,
+				Gossip					= 0x00000001,       // 100%
+				QuestGiver				= 0x00000002,       // guessed, probably ok
+				Unknown1				= 0x00000004,
+				Unknown2				= 0x00000008,
+				Trainer					= 0x00000010,       // 100%
+				TrainerClass			= 0x00000020,       // 100%
+				TrainerProfession		= 0x00000040,       // 100%
+				Vendor					= 0x00000080,       // 100%
+				VendorAmmo				= 0x00000100,       // 100%, general goods vendor
+				VendorFood				= 0x00000200,       // 100%
+				VendorPoison			= 0x00000400,       // guessed
+				VendorReagents			= 0x00000800,       // 100%
+				Repair					= 0x00001000,       // 100%
+				FlightMaster			= 0x00002000,       // 100%
+				SpiritHealer			= 0x00004000,       // guessed
+				SpiritGuide				= 0x00008000,       // guessed
+				InnKeeper				= 0x00010000,       // 100%
+				Banker					= 0x00020000,       // 100%
+				Petitioner				= 0x00040000,       // 100% 0xC0000 = guild petitions, 0x40000 = arena team petitions
+				TabardDesigner			= 0x00080000,       // 100%
+				Battlemaster			= 0x00100000,       // 100%
+				Auctioneer				= 0x00200000,       // 100%
+				Stablemaster			= 0x00400000,       // 100%
+				GuildBanker				= 0x00800000,       // cause client to send 997 opcode
+				SpellClick				= 0x01000000,       // cause client to send 1015 opcode (spell click)
+				Guard					= 0x10000000,       // custom flag for guards
+				OutdoorPvP				= 0x20000000,       // custom flag for outdoor pvp creatures
+			};
+		}
+
 		namespace gender
 		{
 			enum Type

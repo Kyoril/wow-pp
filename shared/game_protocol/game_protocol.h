@@ -36,6 +36,7 @@
 #include "data/spell_entry.h"
 #include "data/item_entry.h"
 #include "data/object_entry.h"
+#include "data/vendor_entry.h"
 #include <array>
 #include <vector>
 #include <functional>
@@ -138,6 +139,10 @@ namespace wowpp
 				Loot					= 0x15D,
 				LootMoney				= 0x15E,
 				LootRelease				= 0x15F,
+				ListInventory			= 0x19E,
+				SellItem				= 0x1A0,
+				BuyItem					= 0x1A2,
+				BuyItemInSlot			= 0x1A3,
 				Ping					= 0x1DC,
 				SetSheathed				= 0x1E0,
 				AuthSession				= 0x1ED,
@@ -296,6 +301,7 @@ namespace wowpp
 				LootItemNotify				= 0x164,
 				LootClearMoney				= 0x165,
 				ItemPushResult				= 0x166,
+				ListInventory				= 0x19F,
 				LogXPGain					= 0x1D0,
 				Pong						= 0x1DD,
 				LevelUpInfo					= 0x1D4,
@@ -947,6 +953,32 @@ namespace wowpp
 				UInt8 &out_castCount,
 				UInt64 &out_itemGuid,
 				SpellTargetMap &out_targetMap
+				);
+
+			bool listInventory(
+				io::Reader &packet,
+				UInt64 &out_guid
+				);
+
+			bool sellItem(
+				io::Reader &packet,
+				UInt64 &out_vendorGuid,
+				UInt64 &out_itemGuid,
+				UInt8 &out_count
+				);
+			bool buyItem(
+				io::Reader &packet,
+				UInt64 &out_vendorGuid,
+				UInt32 &out_item,
+				UInt8 &out_count
+				);
+			bool buyItemInSlot(
+				io::Reader &packet,
+				UInt64 &out_vendorGuid,
+				UInt32 &out_item,
+				UInt64 &out_bagGuid,
+				UInt8 &out_slot,
+				UInt8 &out_count
 				);
 		};
 
@@ -1653,6 +1685,12 @@ namespace wowpp
 				UInt8 slot,
 				UInt32 addedCount,
 				UInt32 totalCount
+				);
+
+			void listInventory(
+				game::OutgoingPacket &out_packet,
+				UInt64 vendorGuid,
+				const std::vector<VendorItemEntry> &itemList
 				);
 		};
 	}

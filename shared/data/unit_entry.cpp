@@ -26,6 +26,7 @@
 #include "trigger_entry.h"
 #include "item_entry.h"
 #include "loot_entry.h"
+#include "vendor_entry.h"
 #include "faction_template_entry.h"
 #include "log/default_log_levels.h"
 
@@ -73,6 +74,7 @@ namespace wowpp
 		, attackPower(0)
 		, rangedAttackPower(0)
 		, unitLootEntry(nullptr)
+		, vendorEntry(nullptr)
 	{
 		resistances.fill(0);
 	}
@@ -190,15 +192,29 @@ namespace wowpp
 		wrapper.table.tryGetInteger("rng_atk_power", rangedAttackPower);
 		UInt32 lootId = 0;
 		wrapper.table.tryGetInteger("unit_loot", lootId);
-		if (lootId != 0)
+		UInt32 vendorId = 0;
+		wrapper.table.tryGetInteger("unit_vendor", vendorId);
+		if (lootId != 0 || vendorId != 0)
 		{
-			context.loadLater.push_back([lootId, &context, this]() -> bool
+			context.loadLater.push_back([lootId, vendorId, &context, this]() -> bool
 			{
-				unitLootEntry = context.getUnitLoot(lootId);
-				if (unitLootEntry == nullptr)
+				if (lootId != 0)
 				{
-					WLOG("Unit " << id << " has unknown unit loot entry " << lootId << " - creature will have no unit loot!");
+					unitLootEntry = context.getUnitLoot(lootId);
+					if (unitLootEntry == nullptr)
+					{
+						WLOG("Unit " << id << " has unknown unit loot entry " << lootId << " - creature will have no unit loot!");
+					}
 				}
+				if (vendorId != 0)
+				{
+					vendorEntry = context.getVendor(vendorId);
+					if (vendorEntry == nullptr)
+					{
+						WLOG("Unit " << id << " has unknown unit vendor entry " << vendorId << " - creature will have no vendor data!");
+					}
+				}
+				
 				return true;
 			});
 		}
@@ -247,6 +263,7 @@ namespace wowpp
 		if (attackPower != 0) context.table.addKey("atk_power", attackPower);
 		if (rangedAttackPower != 0) context.table.addKey("rng_atk_power", rangedAttackPower);
 		if (unitLootEntry != nullptr) context.table.addKey("unit_loot", unitLootEntry->id);
+		if (vendorEntry != nullptr) context.table.addKey("unit_vendor", vendorEntry->id);
 
 		if (!triggers.empty())
 		{
