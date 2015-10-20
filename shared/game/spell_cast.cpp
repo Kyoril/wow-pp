@@ -56,12 +56,13 @@ namespace wowpp
 		{
 			if (unitTarget)
 			{
+				const float combatReach = unitTarget->getFloatValue(unit_fields::CombatReach) + m_executer.getFloatValue(unit_fields::CombatReach);
 				const float distance = m_executer.getDistanceTo(*unitTarget);
 				if (spell.minRange > 0.0f && distance < spell.minRange)
 				{
 					return std::make_pair(game::spell_cast_result::FailedTooClose, nullptr);
 				}
-				else if (spell.maxRange > 0.0f && distance > spell.maxRange)
+				else if (spell.maxRange > 0.0f && distance > spell.maxRange + combatReach)
 				{
 					return std::make_pair(game::spell_cast_result::FailedOutOfRange, nullptr);
 				}

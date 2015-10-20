@@ -236,7 +236,7 @@ namespace wowpp
 					if (!items.empty())
 					{
 						std::ostringstream fmtStrm;
-						fmtStrm << "INSERT INTO `character_items` (`owner`, `entry`, `slot`, `creator`, `count`, `durability`) VALUES ";
+						fmtStrm << "INSERT INTO `character_items` (`owner`, `entry`, `slot`, `count`, `durability`) VALUES ";
 
 						// Add items
 						bool isFirstEntry = true;
@@ -254,7 +254,7 @@ namespace wowpp
 								fmtStrm << ",";
 							}
 
-							fmtStrm << "(" << character.id << "," << item.entry << "," << item.slot << "," << item.creator << "," << UInt16(item.stackCount) << "," << item.durability << ")";
+							fmtStrm << "(" << character.id << "," << item.entry << "," << item.slot << "," << UInt16(item.stackCount) << "," << item.durability << ")";
 						}
 
 						// Now, learn all initial spells
@@ -624,7 +624,16 @@ namespace wowpp
 					isFirstItem = false;
 				}
 
-				strm << "(" << lowerGuid << "," << item.entry << "," << item.slot << "," << item.creator << "," << UInt16(item.stackCount) << "," << item.durability << ")";
+				strm << "(" << lowerGuid << "," << item.entry << "," << item.slot << ",";
+				if (item.creator == 0)
+				{
+					strm << "NULL";
+				}
+				else
+				{
+					strm << item.creator;
+				}
+				strm << "," << UInt16(item.stackCount) << "," << item.durability << ")";
 			}
 			strm << ";";
 
