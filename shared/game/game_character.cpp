@@ -728,6 +728,9 @@ namespace wowpp
 				break;
 			}
 
+			setModifierValue(unit_mods::AttackPower, unit_mod_type::BaseValue, atkPower);
+			float base_attPower = atkPower * getModifierValue(unit_mods::AttackPower, unit_mod_type::BasePct);
+			atkPower = base_attPower + getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue) * getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalPct);
 			setInt32Value(unit_fields::AttackPower, UInt32(atkPower));
 		}
 		

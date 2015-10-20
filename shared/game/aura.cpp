@@ -48,6 +48,7 @@ namespace wowpp
 		, m_slot(0xFF)
 		, m_post(std::move(post))
 		, m_destroy(std::move(onDestroy))
+		, m_totalTicks(effect.amplitude == 0 ? 0 : spell.duration / effect.amplitude)
 	{
 		// Subscribe to caster despawn event so that we don't hold an invalid pointer
 		m_casterDespawned = caster.despawned.connect(
@@ -118,6 +119,9 @@ namespace wowpp
 			break;
 		case aura::DamageShield:
 			handleDamageShield(apply);
+			break;
+		case aura::ModAttackPower:
+			handleModAttackPower(apply);
 			break;
 		default:
 			WLOG("Unhandled aura type: " << m_effect.auraName);
@@ -446,7 +450,6 @@ namespace wowpp
 		{
 			if (stat < 0 || stat == i)
 			{
-				DLOG("APPLY STAT " << stat << " TOTAL PCT " << m_basePoints);
 				m_target.updateModifierValue(GameUnit::getUnitModByStat(i), unit_mod_type::TotalPct, m_basePoints, apply);
 			}
 		}
@@ -462,6 +465,11 @@ namespace wowpp
 				m_target.updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), unit_mod_type::BasePct, m_basePoints, apply);
 			}
 		}
+	}
+
+	void Aura::handleModAttackPower(bool apply)
+	{
+		m_target.updateModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue, m_basePoints, apply);
 	}
 
 	bool Aura::isPositive() const
@@ -546,6 +554,10 @@ namespace wowpp
 
 	void Aura::onTick()
 	{
+		// No more ticks
+		if (m_tickCount >= m_totalTicks)
+			return;
+
 		// Prevent this aura from being deleted. This can happen in the
 		// dealDamage-Methods, when a creature dies from that damage.
 		auto strongThis = shared_from_this();

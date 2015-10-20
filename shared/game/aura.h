@@ -89,10 +89,12 @@ namespace wowpp
 		void handleModStat(bool apply);
 		/// 36
 		void handleModShapeShift(bool apply);
-                /// 42
-                void handleProcTriggerSpell(bool apply);
-                /// 118
-                void handleModHealingPct(bool apply);
+        /// 42
+        void handleProcTriggerSpell(bool apply);
+		/// 99
+		void handleModAttackPower(bool apply);
+        /// 118
+        void handleModHealingPct(bool apply);
 		/// 137
 		void handleModTotalStatPercentage(bool apply);
 		/// 142
@@ -133,5 +135,6 @@ namespace wowpp
 		UInt8 m_slot;
 		PostFunction m_post;
 		std::function<void(Aura&)> m_destroy;
+		UInt32 m_totalTicks;
 	};
 }

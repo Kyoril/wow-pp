@@ -758,10 +758,22 @@ namespace wowpp
 
 		const Int32 comboPoints = character ? character->getComboPoints() : 0;
 
+		Int32 level = static_cast<Int32>(m_cast.getExecuter().getLevel());
+		if (level > m_spell.maxLevel && m_spell.maxLevel > 0)
+		{
+			level = m_spell.maxLevel;
+		}
+		else if (level < m_spell.baseLevel)
+		{
+			level = m_spell.baseLevel;
+		}
+		level -= m_spell.spellLevel;
+
 		// Calculate the damage done
 		const float basePointsPerLevel = effect.pointsPerLevel;
-		const Int32 basePoints = effect.basePoints;
-		const Int32 randomPoints = effect.dieSides;
+		const float randomPointsPerLevel = effect.dicePerLevel;
+		const Int32 basePoints = effect.basePoints + level * basePointsPerLevel;
+		const Int32 randomPoints = effect.dieSides + level * randomPointsPerLevel;
 		const Int32 comboDamage = effect.pointsPerComboPoint * comboPoints;
 
 		std::uniform_int_distribution<int> distribution(effect.baseDice, randomPoints);
@@ -894,6 +906,7 @@ namespace wowpp
 			break;
 
 		default:
+			DLOG("TARGET_B: " << effect.targetB);
 			targets.push_back(unitTarget);
 			break;
 		}
