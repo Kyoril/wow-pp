@@ -588,7 +588,7 @@ namespace wowpp
 		}
 
 		// Check if we are alive
-		if (getUInt32Value(unit_fields::Health) == 0)
+		if (!isAlive())
 		{
 			inventoryChangeFailure(game::inventory_change_failure::YouAreDead, srcItem, dstItem);
 			return;
@@ -600,21 +600,55 @@ namespace wowpp
 
 		// TODO: Validate dest item
 
+		bool updateStats = false;
+
 		// Detect case
 		if (!dstItem)
 		{
-			DLOG("TODO: Moving...");
-
 			// Move items (little test)
 			setUInt64Value(character_fields::InvSlotHead + (srcSlot * 2), 0);
 			setUInt64Value(character_fields::InvSlotHead + (dstSlot * 2), srcItem->getGuid());
+
+			if (srcSlot < player_equipment_slots::End)
+			{
+				setUInt32Value(character_fields::VisibleItem1_0 + (srcSlot * 16), 0);
+				setUInt64Value(character_fields::VisibleItem1_CREATOR + (srcSlot * 16), 0);
+				updateStats = true;
+			}
+			if (dstSlot < player_equipment_slots::End)
+			{
+				setUInt32Value(character_fields::VisibleItem1_0 + (dstSlot * 16), srcItem->getEntry().id);
+				setUInt64Value(character_fields::VisibleItem1_CREATOR + (dstSlot * 16), srcItem->getUInt64Value(item_fields::Creator));
+				updateStats = true;
+			}
+
+			auto srcIt = m_itemSlots.find(srcSlot);
+			std::swap(m_itemSlots[dstSlot], srcIt->second);
+			m_itemSlots.erase(srcIt);
 		}
 		else
 		{
-			DLOG("TODO: Swapping...");
+			setUInt64Value(character_fields::InvSlotHead + (srcSlot * 2), dstItem->getGuid());
+			setUInt64Value(character_fields::InvSlotHead + (dstSlot * 2), srcItem->getGuid());
 
+			if (srcSlot < player_equipment_slots::End)
+			{
+				setUInt32Value(character_fields::VisibleItem1_0 + (srcSlot * 16), dstItem->getEntry().id);
+				setUInt64Value(character_fields::VisibleItem1_CREATOR + (srcSlot * 16), dstItem->getUInt64Value(item_fields::Creator));
+				updateStats = true;
+			}
+			if (dstSlot < player_equipment_slots::End)
+			{
+				setUInt32Value(character_fields::VisibleItem1_0 + (dstSlot * 16), srcItem->getEntry().id);
+				setUInt64Value(character_fields::VisibleItem1_CREATOR + (dstSlot * 16), srcItem->getUInt64Value(item_fields::Creator));
+				updateStats = true;
+			}
 
+			std::swap(m_itemSlots[srcSlot], m_itemSlots[dstSlot]);
 		}
+
+		if (updateStats)
+			updateAllStats();
 	}
 
 	GameItem * GameCharacter::getItemByPos(UInt8 bag, UInt8 slot) const

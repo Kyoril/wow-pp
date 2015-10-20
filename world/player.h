@@ -117,6 +117,8 @@ namespace wowpp
 		/// Updates the player characters group id.
 		/// @param group The new group id or 0, if not in a group.
 		void updateCharacterGroup(UInt64 group);
+
+		void buyItemFromVendor(UInt64 vendorGuid, UInt32 itemEntry, UInt64 bagGuid, UInt8 slot, UInt8 count);
 		
 		/// Sends an proxy packet to the realm which will then be redirected to the game client.
 		/// @param generator The packet writer function.

@@ -948,11 +948,88 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_AUTO_EQUIP_ITEM(bag: " << UInt32(srcBag) << ", slot: " << UInt32(srcSlot) << ")");
+		// Get item
+		auto *item = m_character->getItemByPos(srcBag, srcSlot);
+		if (!item)
+		{
+			return;
+		}
 
-		// TODO
-		sendProxyPacket(
-			std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::InternalBagError, nullptr, nullptr));
+		UInt8 targetSlot = 0xFF;
+
+		// Check if item is equippable
+		const auto &entry = item->getEntry();
+		switch (entry.inventoryType)
+		{
+		case game::inventory_type::Ammo:
+			// TODO
+			break;
+		case game::inventory_type::Head :
+			targetSlot = player_equipment_slots::Head;
+			break;
+		case game::inventory_type::Cloak:
+			targetSlot = player_equipment_slots::Back;
+			break;
+		case game::inventory_type::Neck:
+			targetSlot = player_equipment_slots::Neck;
+			break;
+		case game::inventory_type::Feet:
+			targetSlot = player_equipment_slots::Feet;
+			break;
+		case game::inventory_type::Body:
+			targetSlot = player_equipment_slots::Body;
+			break;
+		case game::inventory_type::Chest:
+		case game::inventory_type::Robe:
+			targetSlot = player_equipment_slots::Chest;
+			break;
+		case game::inventory_type::Legs:
+			targetSlot = player_equipment_slots::Legs;
+			break;
+		case game::inventory_type::Shoulders:
+			targetSlot = player_equipment_slots::Shoulders;
+			break;
+		case game::inventory_type::MainHandWeapon:
+			targetSlot = player_equipment_slots::Mainhand;
+			break;
+		case game::inventory_type::OffHandWeapon:
+		case game::inventory_type::Shield:
+			targetSlot = player_equipment_slots::Offhand;
+			break;
+		case game::inventory_type::Weapon:
+			targetSlot = player_equipment_slots::Mainhand;	// TODO
+			break;
+		case game::inventory_type::Finger:
+			targetSlot = player_equipment_slots::Finger1;
+			break;
+		case game::inventory_type::Trinket:
+			targetSlot = player_equipment_slots::Trinket1;
+			break;
+		case game::inventory_type::Wrists:
+			targetSlot = player_equipment_slots::Wrists;
+			break;
+		case game::inventory_type::Tabard:
+			targetSlot = player_equipment_slots::Tabard;
+			break;
+		case game::inventory_type::Hands:
+			targetSlot = player_equipment_slots::Hands;
+			break;
+		case game::inventory_type::Waist:
+			targetSlot = player_equipment_slots::Waist;
+			break;
+		default:
+			WLOG("TODO");
+			break;
+		}
+
+		if (targetSlot >= player_equipment_slots::End)
+		{
+			// Not equippable
+			return;
+		}
+
+		// Get item at target slot
+		m_character->swapItem(srcSlot | 0xFF00, targetSlot | 0xFF00);
 	}
 
 	void Player::handleAutoStoreBagItem(game::Protocol::IncomingPacket &packet)
@@ -1791,7 +1868,7 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("Received CMSG_BUY_ITEM...");
+		buyItemFromVendor(vendorGuid, item, 0, 0xFF, count);
 	}
 
 	void Player::handleBuyItemInSlot(game::Protocol::IncomingPacket &packet)
@@ -1805,7 +1882,7 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("Received CMSG_BUY_ITEM_IN_SLOT...");
+		buyItemFromVendor(vendorGuid, item, bagGuid, slot, count);
 	}
 
 	void Player::handleSellItem(game::Protocol::IncomingPacket &packet)
@@ -1819,6 +1896,183 @@ namespace wowpp
 		}
 
 		DLOG("Received CMSG_SELL_ITEM...");
+	}
+
+	void Player::buyItemFromVendor(UInt64 vendorGuid, UInt32 itemEntry, UInt64 bagGuid, UInt8 slot, UInt8 count)
+	{
+		if (count < 1) count = 1;
+
+		const UInt8 MaxBagSlots = 36;
+		if (slot != 0xFF && slot >= MaxBagSlots)
+			return;
+
+		if (!m_character->isAlive())
+			return;
+
+		const auto *item = m_project.items.getById(itemEntry);
+		if (!item)
+			return;
+
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+			return;
+
+		GameCreature *creature = dynamic_cast<GameCreature*>(world->findObjectByGUID(vendorGuid));
+		if (!creature)
+			return;
+
+		const auto *vendorEntry = creature->getEntry().vendorEntry;
+		if (!vendorEntry || vendorEntry->items.empty())
+			return;
+
+		bool validEntry = false;
+		for (auto &entry : vendorEntry->items)
+		{
+			if (entry.item == item)
+			{
+				validEntry = true;
+				break;
+			}
+		}
+
+		if (!validEntry)
+			return;
+
+		// TODO: Check item amount
+
+		// Check if item is storable
+		ItemPosCountVector slots;
+		auto result = m_character->canStoreItem(0xFF, slot, slots, *item, count, false);
+		if (result != game::inventory_change_failure::Okay)
+		{
+			// TODO: Send error
+			WLOG("Can't store item");
+			return;
+		}
+
+		// Take money
+		UInt32 price = item->buyPrice * count;
+		UInt32 money = m_character->getUInt32Value(character_fields::Coinage);
+		if (money < price)
+		{
+			// TODO: Send error message
+			WLOG("Not enough money");
+			return;
+		}
+
+		m_character->setUInt32Value(character_fields::Coinage, money - price);
+
+		static UInt64 vendorCounter = 0x100000;
+		for (auto &pos : slots)
+		{
+			auto *itemAtSlot = m_character->getItemByPos(0xFF, pos.position);
+
+			// Loot items and add them
+			auto inst = std::make_shared<GameItem>(*item);
+			inst->initialize();
+			inst->setUInt64Value(object_fields::Guid, createEntryGUID(vendorCounter++, item->id, guid_type::Item));
+			inst->setUInt32Value(item_fields::StackCount, pos.count);
+			m_character->addItem(inst, pos.position);
+
+			// Spawn this item
+			std::vector<std::vector<char>> blocks;
+			std::vector<char> createItemBlock;
+			if (itemAtSlot == nullptr)
+			{
+				io::VectorSink createItemSink(createItemBlock);
+				io::Writer createItemWriter(createItemSink);
+				{
+					UInt8 updateType = 0x02;						// Item
+					UInt8 updateFlags = 0x08 | 0x10;				// 
+					UInt8 objectTypeId = 0x01;						// Item
+
+					UInt64 guid = inst->getGuid();
+
+					// Header with object guid and type
+					createItemWriter
+						<< io::write<NetUInt8>(updateType);
+					UInt64 guidCopy = guid;
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+					for (UInt8 i = 0; guidCopy != 0; ++i)
+					{
+						if (guidCopy & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(guidCopy & 0xFF);
+							++size;
+						}
+
+						guidCopy >>= 8;
+					}
+					createItemWriter.sink().write((const char*)&packGUID[0], size);
+					createItemWriter
+						<< io::write<NetUInt8>(objectTypeId)
+						<< io::write<NetUInt8>(updateFlags);
+
+					// Lower-GUID update?
+					if (updateFlags & 0x08)
+					{
+						createItemWriter
+							<< io::write<NetUInt32>(guidLowerPart(guid));
+					}
+
+					// High-GUID update?
+					if (updateFlags & 0x10)
+					{
+						createItemWriter
+							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
+					}
+
+					// Write values update
+					inst->writeValueUpdateBlock(createItemWriter, *m_character, true);
+				}
+			}
+			else
+			{
+				io::VectorSink sink(createItemBlock);
+				io::Writer writer(sink);
+				{
+					UInt8 updateType = 0x00;						// Update type (0x00 = UPDATE_VALUES)
+
+					// Header with object guid and type
+					UInt64 guid = itemAtSlot->getGuid();
+					writer
+						<< io::write<NetUInt8>(updateType);
+
+					UInt64 guidCopy = guid;
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+					for (UInt8 i = 0; guidCopy != 0; ++i)
+					{
+						if (guidCopy & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(guidCopy & 0xFF);
+							++size;
+						}
+
+						guidCopy >>= 8;
+					}
+					writer.sink().write((const char*)&packGUID[0], size);
+
+					// Write values update
+					itemAtSlot->writeValueUpdateBlock(writer, *m_character, false);
+				}
+
+				itemAtSlot->clearUpdateMask();
+			}
+
+			// Send packet
+			blocks.emplace_back(std::move(createItemBlock));
+			sendProxyPacket(
+				std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
+			sendProxyPacket(
+				std::bind(game::server_write::itemPushResult, std::placeholders::_1,
+				m_character->getGuid(), std::cref(*inst), false, false, 0xFF, pos.position, pos.count, pos.count));
+		}
 	}
 
 }
