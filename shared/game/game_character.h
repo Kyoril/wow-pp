@@ -557,6 +557,8 @@ namespace wowpp
 
 		game::InventoryChangeFailure canStoreItem(UInt8 bag, UInt8 slot, ItemPosCountVector &dest, const ItemEntry &item, UInt32 count, bool swap, UInt32 *noSpaceCount = nullptr) const;
 
+		void removeItem(UInt8 bag, UInt8 slot, UInt8 count);
+
 		GroupUpdateFlags getGroupUpdateFlags() const { return m_groupUpdateFlags; }
 		void modifyGroupUpdateFlags(GroupUpdateFlags flags, bool apply);
 		void clearGroupUpdateFlags() { m_groupUpdateFlags = group_update_flags::None; }

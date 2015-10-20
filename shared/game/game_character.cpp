@@ -1062,6 +1062,37 @@ namespace wowpp
 		return game::inventory_change_failure::InternalBagError;
 	}
 
+	void GameCharacter::removeItem(UInt8 bag, UInt8 slot, UInt8 count)
+	{
+		if (bag == 0xFF)
+		{
+			auto it = m_itemSlots.find(slot);
+			if (it != m_itemSlots.end())
+			{
+				UInt32 stackCount = it->second->getUInt32Value(item_fields::StackCount);
+				if (stackCount > count && count > 0)
+				{
+					stackCount -= count;
+					it->second->setUInt32Value(item_fields::StackCount, stackCount);
+
+					// TODO: Update item instance
+
+					return;
+				}
+
+				setUInt64Value(character_fields::InvSlotHead + (slot * 2), 0);
+				m_itemSlots.erase(it);
+
+				if (slot < player_equipment_slots::End)
+				{
+					setUInt32Value(character_fields::VisibleItem1_0 + (slot * 16), 0);
+					setUInt64Value(character_fields::VisibleItem1_CREATOR + (slot * 16), 0);
+					updateAllStats();
+				}
+			}
+		}
+	}
+
 	io::Writer & operator<<(io::Writer &w, GameCharacter const& object)
 	{
 		w

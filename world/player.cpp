@@ -1139,11 +1139,15 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_DESTROY_ITEM(bag: " << UInt32(bag) << ", slot: " << UInt32(slot) << ", count: " << UInt32(count) << ", data1: " << UInt32(data1) << ", data2: " << UInt32(data2) << ", data3: " << UInt32(data3) << ")");
+		auto *item = m_character->getItemByPos(bag, slot);
+		if (!item)
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::ItemNotFound, nullptr, nullptr));
+			return;
+		}
 
-		// TODO
-		sendProxyPacket(
-			std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::InternalBagError, nullptr, nullptr));
+		m_character->removeItem(bag, slot, count);
 	}
 
 	void Player::handleLoot(game::Protocol::IncomingPacket &packet)
