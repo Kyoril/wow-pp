@@ -620,11 +620,19 @@ namespace wowpp
 				}
 
 				// Deal damage (Note: m_victim can become nullptr, if the target dies)
-				victim->dealDamage(damage, 0, this);
+				if (damage > 0)
+				{
+					victim->dealDamage(damage, 0, this);
+				}
+
 				if (m_victim && m_victim->isAlive())
 				{
-					// Fire signal
-					victim->damageHit(game::spell_school::Normal, *this);
+					if (damage > 0 ||
+						victimState == game::victim_state::Blocks ||
+						victimState == game::victim_state::Parry)
+					{
+						victim->damageHit(1 << game::spell_school::Normal, *this);
+					}
 				}
 			}
 		} while (false);

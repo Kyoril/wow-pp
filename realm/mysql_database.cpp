@@ -181,7 +181,7 @@ namespace wowpp
 			"INSERT INTO `character` (`account`,`name`,`race`,`class`,`gender`,`bytes`,`bytes2`,`map`,`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic`,"
 			//						  14		 15		  16	   17		18		
 									 "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`) "
-			"VALUES (%1%, '%2%', %3%, %4%, %5%, %6%, %7%, %8%, %9%, %10%, %11%, %12%, %13%, %14%, %15%, %16%, %17%, %18%)")
+			"VALUES (%1%, '%2%', %3%, %4%, %5%, %6%, %7%, %8%, %9%, %10%, %11%, %12%, %13%, %14%, %15%, %16%, %17%, %18%, %19%)")
 			% accountId										// 0
 			% safeName										// 1
 			% static_cast<UInt32>(character.race)			// 2

@@ -522,7 +522,7 @@ namespace wowpp
 				std::vector<char> buffer;
 				io::VectorSink sink(buffer);
 				wowpp::game::OutgoingPacket packet(sink);
-				wowpp::game::server_write::spellDamageShield(packet, attacker.getGuid(), m_target.getGuid(), m_spell.id, damage, school);
+				wowpp::game::server_write::spellDamageShield(packet, m_target.getGuid(), attacker.getGuid(), m_spell.id, damage, m_spell.schoolMask);
 
 				forEachSubscriberInSight(world->getGrid(), tileIndex, [&packet, &buffer](ITileSubscriber &subscriber)
 				{
