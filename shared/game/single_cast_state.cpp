@@ -438,22 +438,33 @@ namespace wowpp
 		}
 
 		UInt32 targetMap = 0;
-		float targetX = 0.0f, targetY = 0.0f, targetZ = 0.0f, targetO = 0.0f;
+		game::Position targetPos(0.0f, 0.0f, 0.0f);
+		float targetO = 0.0f;
 		switch (effect.targetB)
 		{
-		case game::targets::DstHome:
-			DLOG("TODO: Teleport to home point");
-			return;
-		case game::targets::DstDB:
-			targetMap = m_spell.targetMap;
-			targetX = m_spell.targetX;
-			targetY = m_spell.targetY;
-			targetZ = m_spell.targetZ;
-			targetO = m_spell.targetO;
-			break;
-		default:
-			WLOG("Unhandled destination type " << effect.targetB << " - not teleporting!");
-			return;
+			case game::targets::DstHome:
+			{
+				GameCharacter *character = dynamic_cast<GameCharacter*>(&caster);
+				if (!character)
+				{
+					WLOG("Only characters do have a home point");
+					return;
+				}
+				character->getHome(targetMap, targetPos, targetO);
+				break;
+			}
+			case game::targets::DstDB:
+			{
+				targetMap = m_spell.targetMap;
+				targetPos[0] = m_spell.targetX;
+				targetPos[1] = m_spell.targetY;
+				targetPos[2] = m_spell.targetZ;
+				targetO = m_spell.targetO;
+				break;
+			}
+			default:
+				WLOG("Unhandled destination type " << effect.targetB << " - not teleporting!");
+				return;
 		}
 
 		// Check whether it is the same map
@@ -467,7 +478,7 @@ namespace wowpp
 			}
 
 			// Log destination
-			unitTarget->teleport(targetMap, targetX, targetY, targetZ, targetO);
+			unitTarget->teleport(targetMap, targetPos[0], targetPos[1], targetPos[2], targetO);
 		}
 		else
 		{
@@ -475,12 +486,12 @@ namespace wowpp
 			if (unitTarget->getTypeId() == object_type::Character)
 			{
 				// Send teleport signal for player characters
-				unitTarget->teleport(targetMap, targetX, targetY, targetZ, targetO);
+				unitTarget->teleport(targetMap, targetPos[0], targetPos[1], targetPos[2], targetO);
 			}
 			else
 			{
 				// Simply relocate creatures and other stuff
-				unitTarget->relocate(targetX, targetY, targetZ, targetO);
+				unitTarget->relocate(targetPos[0], targetPos[1], targetPos[2], targetO);
 			}
 		}
 	}

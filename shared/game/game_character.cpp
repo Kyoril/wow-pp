@@ -1093,6 +1093,24 @@ namespace wowpp
 		}
 	}
 
+	void GameCharacter::getHome(UInt32 &out_map, game::Position &out_pos, float &out_rot) const
+	{
+		out_map = m_homeMap;
+		out_pos = m_homePos;
+		out_rot = m_homeRotation;
+	}
+
+	void GameCharacter::setHome(UInt32 map, const game::Position &pos, float rot)
+	{
+		// Save new home position
+		m_homeMap = map;
+		m_homePos = pos;
+		m_homeRotation = rot;
+
+		// Raise signal
+		homeChanged();
+	}
+
 	io::Writer & operator<<(io::Writer &w, GameCharacter const& object)
 	{
 		w
@@ -1101,7 +1119,12 @@ namespace wowpp
 			<< io::write<NetUInt32>(object.m_zoneIndex)
 			<< io::write<float>(object.m_healthRegBase)
 			<< io::write<float>(object.m_manaRegBase)
-			<< io::write<NetUInt64>(object.m_groupId);
+			<< io::write<NetUInt64>(object.m_groupId)
+			<< io::write<NetUInt32>(object.m_homeMap)
+			<< io::write<float>(object.m_homePos[0])
+			<< io::write<float>(object.m_homePos[1])
+			<< io::write<float>(object.m_homePos[2])
+			<< io::write<float>(object.m_homeRotation);
 		return w;
 	}
 
@@ -1114,7 +1137,12 @@ namespace wowpp
 			>> io::read<NetUInt32>(object.m_zoneIndex)
 			>> io::read<float>(object.m_healthRegBase)
 			>> io::read<float>(object.m_manaRegBase)
-			>> io::read<NetUInt64>(object.m_groupId);
+			>> io::read<NetUInt64>(object.m_groupId)
+			>> io::read<NetUInt32>(object.m_homeMap)
+			>> io::read<float>(object.m_homePos[0])
+			>> io::read<float>(object.m_homePos[1])
+			>> io::read<float>(object.m_homePos[2])
+			>> io::read<float>(object.m_homeRotation);
 
 		// Reset all auras
 		for (UInt32 i = 0; i < 56; ++i)

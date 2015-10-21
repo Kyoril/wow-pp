@@ -128,7 +128,7 @@ project(WoW)
 	endif(WIN32)
 	
 	if(MSVC)
-		add_definitions("/D_CRT_SECURE_NO_WARNINGS /D_SCL_SECURE_NO_WARNINGS /wd4267 /wd4244 /MP /D_WINSOCK_DEPRECATED_NO_WARNINGS")
+		add_definitions("/D_CRT_SECURE_NO_WARNINGS /D_SCL_SECURE_NO_WARNINGS /wd4267 /wd4244 /MP /D_WINSOCK_DEPRECATED_NO_WARNINGS /bigobj")
 	endif(MSVC)
 	
 	# Editor option

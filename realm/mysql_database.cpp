@@ -86,7 +86,11 @@ namespace wowpp
 		return retCount;
 	}
 
-	game::ResponseCode MySQLDatabase::createCharacter(UInt32 accountId, const std::vector<const SpellEntry*> &spells, const std::vector<pp::world_realm::ItemData> &items, game::CharEntry &character)
+	game::ResponseCode MySQLDatabase::createCharacter(
+		UInt32 accountId, 
+		const std::vector<const SpellEntry*> &spells, 
+		const std::vector<pp::world_realm::ItemData> &items, 
+		game::CharEntry &character)
 	{
 		// See if the character name is already in use
 		const String safeName = m_connection.escapeString(character.name);
@@ -173,22 +177,31 @@ namespace wowpp
 		bytes2 |= static_cast<UInt32>(static_cast<UInt32>(character.facialHair) << (0 * 8));
 
 		if (m_connection.execute((boost::format(
-			//                           0        1      2      3        4        5       6       7    8        9          10            11            12			13
-			"INSERT INTO `character` (`account`,`name`,`race`,`class`,`gender`,`bytes`,`bytes2`,`map`,`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic`) VALUES (%1%, '%2%', %3%, %4%, %5%, %6%, %7%, %8%, %9%, %10%, %11%, %12%, %13%, %14%)")
-			% accountId
-			% safeName
-			% static_cast<UInt32>(character.race)
-			% static_cast<UInt32>(character.class_)
-			% static_cast<UInt32>(character.gender)
-			% bytes
-			% bytes2
-			% character.mapId
-			% character.zoneId
-			% character.x
-			% character.y
-			% character.z
-			% character.o
-			% 1).str()))
+			//                        0         1      2      3       4        5       6        7     8      9            10           11           12			  13		  
+			"INSERT INTO `character` (`account`,`name`,`race`,`class`,`gender`,`bytes`,`bytes2`,`map`,`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic`,"
+			//						  14		 15		  16	   17		18		
+									 "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`) "
+			"VALUES (%1%, '%2%', %3%, %4%, %5%, %6%, %7%, %8%, %9%, %10%, %11%, %12%, %13%, %14%, %15%, %16%, %17%, %18%)")
+			% accountId										// 0
+			% safeName										// 1
+			% static_cast<UInt32>(character.race)			// 2
+			% static_cast<UInt32>(character.class_)			// 3
+			% static_cast<UInt32>(character.gender)			// 4
+			% bytes											// 5
+			% bytes2										// 6
+			% character.mapId	// Location					// 7
+			% character.zoneId								// 8
+			% character.x									// 9
+			% character.y									// 10
+			% character.z									// 11
+			% character.o									// 12 
+			% 1												// 13
+			% character.mapId	// Home point				// 14
+			% character.x									// 15
+			% character.y									// 16
+			% character.z									// 17
+			% character.o									// 18
+			).str()))
 		{
 			// Retrieve id of the newly created character
 			wowpp::MySQL::Select select(m_connection,
@@ -424,7 +437,9 @@ namespace wowpp
 			//       0       1       2        3        4       5        6       7     8       9     
 			"SELECT `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`xp`, `gold`, `map`,"
 			//       10     11           12           13           14
-				   "`zone`,`position_x`,`position_y`,`position_z`,`orientation` FROM `character` WHERE `id`=%1% LIMIT 1")
+				   "`zone`,`position_x`,`position_y`,`position_z`,`orientation`,"
+            //       15        16       17       18       19	   20
+				   "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`,`explored_zones` FROM `character` WHERE `id`=%1% LIMIT 1")
 			% characterId).str());
 		if (select.success())
 		{
@@ -501,6 +516,27 @@ namespace wowpp
 				row.getField(14, o);
 				out_character.relocate(x, y, z, o);
 				out_character.setMapId(mapId);
+
+				// Home point
+				row.getField(15, mapId);
+				row.getField(16, x);
+				row.getField(17, y);
+				row.getField(18, z);
+				row.getField(19, o);
+				out_character.setHome(mapId, game::Position(x, y, z), o);
+
+				String zoneBuffer;
+				row.getField(20, zoneBuffer);
+				if (!zoneBuffer.empty())
+				{
+					std::stringstream strm(zoneBuffer);
+					for (size_t i = 0; i < 64; ++i)
+					{
+						UInt32 zone = 0;
+						strm >> zone;
+						out_character.setUInt32Value(character_fields::ExploredZones_1 + i, zone);
+					}
+				}
 
 				// Load character spells
 				wowpp::MySQL::Select spellSelect(m_connection, (boost::format(
@@ -583,10 +619,22 @@ namespace wowpp
 		float x, y, z, o;
 		character.getLocation(x, y, z, o);
 
+		UInt32 homeMap;
+		game::Position homePos;
+		float homeO;
+		character.getHome(homeMap, homePos, homeO);
+
+		std::ostringstream strm;
+		for (UInt32 i = 0; i < 64; ++i)
+		{
+			strm << character.getUInt32Value(character_fields::ExploredZones_1 + i) << " ";
+		}
+
 		const UInt32 lowerGuid = guidLowerPart(character.getGuid());
 
 		if (!m_connection.execute((boost::format(
-			"UPDATE `character` SET `map`=%2%, `zone`=%3%, `position_x`=%4%, `position_y`=%5%, `position_z`=%6%, `orientation`=%7%, `level`=%8%, `xp`=%9%, `gold`=%10% WHERE `id`=%1%;")
+			"UPDATE `character` SET `map`=%2%, `zone`=%3%, `position_x`=%4%, `position_y`=%5%, `position_z`=%6%, `orientation`=%7%, `level`=%8%, `xp`=%9%, `gold`=%10%, "
+			"`home_map`=%11%, `home_x`=%12%, `home_y`=%13%, `home_z`=%14%, `home_o`=%15%, `explored_zones`='%16%' WHERE `id`=%1%;")
 			% lowerGuid												// 1
 			% character.getMapId()									// 2
 			% character.getZone()									// 3
@@ -594,6 +642,9 @@ namespace wowpp
 			% character.getLevel()									// 8
 			% character.getUInt32Value(character_fields::Xp)		// 9
 			% character.getUInt32Value(character_fields::Coinage)	// 10
+			% homeMap												// 11
+			% homePos[0] % homePos[1] % homePos[2] % homeO			// 12, 13, 14, 15
+			% strm.str()											// 16
 			).str()))
 		{
 			// There was an error

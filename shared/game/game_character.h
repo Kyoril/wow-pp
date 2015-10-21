@@ -477,6 +477,7 @@ namespace wowpp
 		boost::signals2::signal<void(game::InventoryChangeFailure, GameItem*, GameItem*)> inventoryChangeFailure;
 		boost::signals2::signal<void()> comboPointsChanged;
 		boost::signals2::signal<void(UInt64, UInt32, UInt32)> experienceGained;
+		boost::signals2::signal<void()> homeChanged;
 
 	public:
 
@@ -554,10 +555,14 @@ namespace wowpp
 		GameItem *getItemByPos(UInt8 bag, UInt8 slot) const;
 		/// @copydoc GameUnit::rewardExperience()
 		void rewardExperience(GameUnit *victim, UInt32 experience) override;
-
+		/// Determines, whether a specific amount of items can be stored.
 		game::InventoryChangeFailure canStoreItem(UInt8 bag, UInt8 slot, ItemPosCountVector &dest, const ItemEntry &item, UInt32 count, bool swap, UInt32 *noSpaceCount = nullptr) const;
-
+		/// Removes an amount of items from the player.
 		void removeItem(UInt8 bag, UInt8 slot, UInt8 count);
+		/// Gets the characters home location.
+		void getHome(UInt32 &out_map, game::Position &out_pos, float &out_rot) const;
+		/// Updates the characters home location.
+		void setHome(UInt32 map, const game::Position &pos, float rot);
 
 		GroupUpdateFlags getGroupUpdateFlags() const { return m_groupUpdateFlags; }
 		void modifyGroupUpdateFlags(GroupUpdateFlags flags, bool apply);
@@ -601,6 +606,9 @@ namespace wowpp
 		FactionStateList m_factions;
 		ForcedReactions m_forcedReactions;
 		UInt64 m_groupId;
+		UInt32 m_homeMap;
+		game::Position m_homePos;
+		float m_homeRotation;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameCharacter const& object);
