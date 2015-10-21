@@ -1202,6 +1202,11 @@ namespace wowpp
 
 				m_character->addFlag(unit_fields::UnitFlags, game::unit_flags::Looting);
 			}
+			else
+			{
+				sendProxyPacket(
+					std::bind(game::server_write::lootResponseError, std::placeholders::_1, objectGuid, game::loot_type::None, game::loot_error::Locked));
+			}
 		}
 		else
 		{
