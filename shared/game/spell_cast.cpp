@@ -33,6 +33,20 @@ namespace wowpp
 			}
 		}
 
+		//Must be behind the target.
+		if (unitTarget)
+		{
+			float x, y, tmp;
+			m_executer.getLocation(x, y, tmp, tmp);
+
+			if (spell.attributesEx[1] == 0x100000 &&
+				(spell.attributesEx[0] & spell_attributes_ex_a::MeleeCombatStart) == spell_attributes_ex_a::MeleeCombatStart &&
+				unitTarget->isInArc(3.1415927f, x, y))
+			{
+				return std::make_pair(game::spell_cast_result::FailedNotBehind, nullptr);
+			}
+		}
+		
 		// Check power
 		if (spell.cost > 0)
 		{
