@@ -69,6 +69,11 @@ namespace wowpp
 				return false;
 			}
 
+			if (!unit.isAlive())
+			{
+				return false;
+			}
+
 			// Check if we are hostile against this unit
 			const auto &ourFaction = controlled.getFactionTemplate();
 			const auto &unitFaction = unit.getFactionTemplate();

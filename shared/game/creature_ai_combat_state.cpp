@@ -57,15 +57,19 @@ namespace wowpp
 				angle = getControlled().getAngle(*victim);
 			}
 
+			float targetX = m_targetX;
+			float targetY = m_targetY;
+			float targetZ = m_targetZ;
+
 			// Update creatures position
 			auto strongUnit = getControlled().shared_from_this();
 			std::weak_ptr<GameObject> weakUnit(strongUnit);
-			getControlled().getWorldInstance()->getUniverse().post([weakUnit, this, angle]()
+			getControlled().getWorldInstance()->getUniverse().post([weakUnit, targetX, targetY, targetZ, angle]()
 			{
 				auto strongUnit = weakUnit.lock();
 				if (strongUnit)
 				{
-					strongUnit->relocate(m_targetX, m_targetY, m_targetZ, angle);
+					strongUnit->relocate(targetX, targetY, targetZ, angle);
 				}
 			});
 
@@ -130,6 +134,7 @@ namespace wowpp
 	void CreatureAICombatState::onEnter()
 	{
 		auto &controlled = getControlled();
+		auto id = controlled.getEntry().id;
 
 		// Flag controlled unit for combat
 		controlled.addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
@@ -176,6 +181,7 @@ namespace wowpp
 	void CreatureAICombatState::onLeave()
 	{
 		auto &controlled = getControlled();
+		auto id = controlled.getEntry().id;
 
 		// Calculate new position
 		float o;

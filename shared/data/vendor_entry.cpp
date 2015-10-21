@@ -85,7 +85,7 @@ namespace wowpp
 			{
 				sff::write::Table<char> itemTable(itemArray, sff::write::Comma);
 				{
-					if (entry.item != nullptr) itemTable.addKey("item", entry.item->id);
+					if (entry.item != nullptr) itemTable.addKey("entry", entry.item->id);
 					if (entry.maxCount != 0) itemTable.addKey("max_count", entry.maxCount);
 					if (entry.interval != 0) itemTable.addKey("interval", entry.interval);
 					if (entry.extendedCost != 0) itemTable.addKey("extended_cost", entry.extendedCost);

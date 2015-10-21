@@ -1188,6 +1188,9 @@ namespace wowpp
 		if (isAlive())
 			return;
 
+		float x, y, z, o;
+		getLocation(x, y, z, o);
+
 		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
 		if (health > maxHealth) health = maxHealth;
 		setUInt32Value(unit_fields::Health, health);
@@ -1200,6 +1203,9 @@ namespace wowpp
 		}
 
 		startRegeneration();
+
+		// Raise moved event for aggro etc.
+		moved(*this, x, y, z - 0.1f, o);
 	}
 
 	void GameUnit::rewardExperience(GameUnit *victim, UInt32 experience)
