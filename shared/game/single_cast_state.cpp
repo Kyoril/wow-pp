@@ -887,14 +887,49 @@ namespace wowpp
 			return;
 		}
 
+		float x, y, z, o;
+		m_cast.getExecuter().getLocation(x, y, z, o);
+
 		std::list<GameUnit*> targets;
+		switch (effect.targetA)
+		{
+		case game::targets::UnitPartyCaster:
+			{
+				GameCharacter *casterChar = dynamic_cast<GameCharacter*>(&m_cast.getExecuter());
+				if (casterChar)
+				{
+					auto &finder = m_cast.getExecuter().getWorldInstance()->getUnitFinder();
+					finder.findUnits(Circle(x, y, effect.radius), [this, &casterChar, &targets](GameUnit &unit) -> bool
+					{
+						if (unit.getTypeId() != object_type::Character)
+							return true;
+
+						GameCharacter *unitChar = reinterpret_cast<GameCharacter*>(&unit);
+						if (unitChar == casterChar || 
+							(unitChar->getGroupId() != 0 &&
+							unitChar->getGroupId() == casterChar->getGroupId()))
+						{
+							targets.push_back(&unit);
+							if (m_spell.maxTargets > 0 &&
+								targets.size() >= m_spell.maxTargets)
+							{
+								// No more units
+								return false;
+							}
+						}
+
+						return true;
+					});
+				}
+			}
+			break;
+		default:
+			break;
+		}
 		switch (effect.targetB)
 		{
 		case game::targets::UnitAreaEnemySrc:
 			{
-				float x, y, z, o;
-				m_cast.getExecuter().getLocation(x, y, z, o);
-				
 				auto &finder = m_cast.getExecuter().getWorldInstance()->getUnitFinder();
 				finder.findUnits(Circle(x, y, effect.radius), [this, &targets](GameUnit &unit) -> bool
 				{
@@ -915,10 +950,8 @@ namespace wowpp
 				});
 			}
 			break;
-
 		default:
-			DLOG("TARGET_B: " << effect.targetB);
-			targets.push_back(unitTarget);
+			if (targets.empty()) targets.push_back(unitTarget);
 			break;
 		}
 
