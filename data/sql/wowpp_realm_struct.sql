@@ -38,8 +38,14 @@ CREATE TABLE `character` (
   `bytes2` int(10) unsigned NOT NULL DEFAULT '0',
   `flags` int(10) unsigned NOT NULL DEFAULT '0',
   `at_login` int(11) unsigned NOT NULL,
+  `home_map` int(10) unsigned NOT NULL DEFAULT '0',
+  `home_x` double NOT NULL,
+  `home_y` double NOT NULL,
+  `home_z` double NOT NULL,
+  `home_o` double NOT NULL,
+  `explored_zones` longtext COLLATE latin1_german1_ci,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
 
 /*Table structure for table `character_actions` */
 
@@ -71,7 +77,7 @@ CREATE TABLE `character_items` (
   KEY `creator_field` (`creator`),
   CONSTRAINT `character_items_ibfk_1` FOREIGN KEY (`owner`) REFERENCES `character` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `character_items_ibfk_2` FOREIGN KEY (`creator`) REFERENCES `character` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=248 DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
 
 /*Table structure for table `character_social` */
 
