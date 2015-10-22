@@ -28,6 +28,7 @@
 #include "loot_entry.h"
 #include "vendor_entry.h"
 #include "trainer_entry.h"
+#include "common/make_unique.h"
 #include "faction_template_entry.h"
 #include "log/default_log_levels.h"
 
@@ -281,14 +282,14 @@ namespace wowpp
 
 		if (!triggers.empty())
 		{
-			sff::write::Array<char> triggerArray(context.table, "triggers", sff::write::Comma);
+			auto triggerArray = make_unique<sff::write::Array<char>>(context.table, "triggers", sff::write::Comma);
 			{
 				for (const auto *t : triggers)
 				{
-					triggerArray.addElement(t->id);
+					triggerArray->addElement(t->id);
 				}
 			}
-			triggerArray.finish();
+			triggerArray->finish();
 		}
 	}
 }
