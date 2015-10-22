@@ -1898,7 +1898,21 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("Received CMSG_SELL_ITEM...");
+		// Find the item by it's guid
+		UInt8 bag = 0xFF, slot = 0xFF;
+		auto *item = m_character->getItemByGUID(itemGuid, bag, slot);
+		if (!item)
+		{
+			return;
+		}
+
+		// Check the amount
+		DLOG("Received CMSG_SELL_ITEM... (Count: " << UInt16(count) << ")");
+
+		UInt32 stack = item->getUInt32Value(item_fields::StackCount);
+		UInt32 money = stack * item->getEntry().sellPrice;
+		m_character->removeItem(bag, slot, stack);
+		m_character->setUInt32Value(character_fields::Coinage, m_character->getUInt32Value(character_fields::Coinage) + money);
 	}
 
 	void Player::buyItemFromVendor(UInt64 vendorGuid, UInt32 itemEntry, UInt64 bagGuid, UInt8 slot, UInt8 count)

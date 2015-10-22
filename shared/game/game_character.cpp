@@ -1111,6 +1111,21 @@ namespace wowpp
 		homeChanged();
 	}
 
+	GameItem * GameCharacter::getItemByGUID(UInt64 guid, UInt8 &out_bag, UInt8 &out_slot)
+	{
+		for (auto &item : m_itemSlots)
+		{
+			if (item.second->getGuid() == guid)
+			{
+				out_bag = 0xFF;
+				out_slot = static_cast<UInt8>(item.first);
+				return item.second.get();
+			}
+		}
+
+		return nullptr;
+	}
+
 	io::Writer & operator<<(io::Writer &w, GameCharacter const& object)
 	{
 		w

@@ -563,6 +563,8 @@ namespace wowpp
 		void getHome(UInt32 &out_map, game::Position &out_pos, float &out_rot) const;
 		/// Updates the characters home location.
 		void setHome(UInt32 map, const game::Position &pos, float rot);
+		/// Gets an item by it's guid.
+		GameItem *getItemByGUID(UInt64 guid, UInt8 &out_bag, UInt8 &out_slot);
 
 		GroupUpdateFlags getGroupUpdateFlags() const { return m_groupUpdateFlags; }
 		void modifyGroupUpdateFlags(GroupUpdateFlags flags, bool apply);
