@@ -527,40 +527,80 @@ namespace wowpp
 			WLOG("EFFECT_SCHOOL_DAMAGE: Miss!");
 			return;
 		}
-		
-		UInt32 spellResi = getResiPercentage(effect, caster, *unitTarget);
-		if (spellResi >= 100) {
-			WLOG("EFFECT_SCHOOL_DAMAGE: Full resisted!");
-			return;
+
+		float x, y, tmp;
+		m_cast.getExecuter().getLocation(x, y, tmp, tmp);
+
+		std::vector<GameUnit*> targets;
+		switch (effect.targetB)
+		{
+		case game::targets::UnitAreaEnemySrc:
+			{
+				auto &finder = m_cast.getExecuter().getWorldInstance()->getUnitFinder();
+				finder.findUnits(Circle(x, y, effect.radius), [this, &targets](GameUnit &unit) -> bool
+				{
+					const auto &factionA = unit.getFactionTemplate();
+					const auto &factionB = m_cast.getExecuter().getFactionTemplate();
+					if (factionA.isHostileTo(factionB) ||
+						(!factionA.isFriendlyTo(factionB) && m_cast.getExecuter().isInCombat()))
+					{
+						targets.push_back(&unit);
+						if (m_spell.maxTargets > 0 &&
+							targets.size() >= m_spell.maxTargets)
+						{
+							// No more units
+							return false;
+						}
+					}
+
+					return true;
+				});
+			}
+			break;
+		default:
+			if (targets.empty()) targets.push_back(unitTarget);
+			break;
 		}
-		
-		UInt32 spellPower = getSpellPower(effect, caster);
-		UInt32 spellBonusPct = getSpellBonusPct(effect, caster);
-		
-		UInt32 totalDamage = getSpellPointsTotal(effect, spellPower, spellBonusPct);
-		float critFactor = getCritFactor(effect, caster, *unitTarget);
-		totalDamage *= critFactor;
-		UInt32 absorbed = unitTarget->consumeAbsorb(totalDamage, m_spell.schoolMask, *unitTarget);
-		totalDamage -= absorbed;
 
-		// Send spell damage packet
-		sendPacketFromCaster(caster,
-			std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-			unitTarget->getGuid(),
-			caster.getGuid(),
-			m_spell.id,
-			totalDamage,
-			m_spell.schoolMask,
-			absorbed,	//absorbed
-			0,	//resisted
-			false,
-			0,
-			critFactor > 1.0));	//crit
+		for (auto &targetUnit : targets)
+		{
+			UInt32 spellResi = getResiPercentage(effect, caster, *targetUnit);
+			if (spellResi >= 100) {
+				WLOG("EFFECT_SCHOOL_DAMAGE: Full resisted!");
+				return;
+			}
 
-		// Update health value
-		const bool noThreat = ((m_spell.attributesEx[0] & spell_attributes_ex_a::NoThreat) != 0);
-		unitTarget->dealDamage(totalDamage, m_spell.schoolMask, &caster, noThreat);
-		unitTarget->damageHit(m_spell.schoolMask, caster);
+			UInt32 spellPower = getSpellPower(effect, caster);
+			UInt32 spellBonusPct = getSpellBonusPct(effect, caster);
+
+			UInt32 totalDamage = getSpellPointsTotal(effect, spellPower, spellBonusPct);
+			float critFactor = getCritFactor(effect, caster, *targetUnit);
+			totalDamage *= critFactor;
+			UInt32 absorbed = targetUnit->consumeAbsorb(totalDamage, m_spell.schoolMask, *targetUnit);
+			totalDamage -= absorbed;
+
+			// Send spell damage packet
+			sendPacketFromCaster(caster,
+				std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+				targetUnit->getGuid(),
+				caster.getGuid(),
+				m_spell.id,
+				totalDamage,
+				m_spell.schoolMask,
+				absorbed,	//absorbed
+				0,	//resisted
+				false,
+				0,
+				critFactor > 1.0));	//crit
+
+			// Update health value
+			const bool noThreat = ((m_spell.attributesEx[0] & spell_attributes_ex_a::NoThreat) != 0);
+			targetUnit->dealDamage(totalDamage, m_spell.schoolMask, &caster, noThreat);
+			if (targetUnit->isAlive())
+			{
+				targetUnit->damageHit(m_spell.schoolMask, caster);
+			}
+		}
 	}
 
 	void SingleCastState::spellEffectNormalizedWeaponDamage(const SpellEntry::Effect &effect)
@@ -926,6 +966,7 @@ namespace wowpp
 		default:
 			break;
 		}
+
 		switch (effect.targetB)
 		{
 		case game::targets::UnitAreaEnemySrc:
@@ -935,7 +976,8 @@ namespace wowpp
 				{
 					const auto &factionA = unit.getFactionTemplate();
 					const auto &factionB = m_cast.getExecuter().getFactionTemplate();
-					if (factionA.isHostileTo(factionB))
+					if (factionA.isHostileTo(factionB) ||
+						(!factionA.isFriendlyTo(factionB) && unit.isInCombat()))
 					{
 						targets.push_back(&unit);
 						if (m_spell.maxTargets > 0 &&

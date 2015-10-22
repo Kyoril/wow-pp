@@ -2235,6 +2235,14 @@ namespace wowpp
 		m_character->setUInt32Value(character_fields::Coinage, money - cost);
 
 		m_character->addSpell(*entry);
+		if ((entry->attributes & spell_attributes::Passive) != 0)
+		{
+			SpellTargetMap targetMap;
+			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+			targetMap.m_unitTarget = m_character->getGuid();
+			m_character->castSpell(std::move(targetMap), spellId, 0, false, GameUnit::SpellSuccessCallback());
+		}
+
 		sendProxyPacket(
 			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spellId));
 		sendProxyPacket(
