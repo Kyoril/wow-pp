@@ -145,6 +145,7 @@ namespace wowpp
 				SellItem				= 0x1A0,
 				BuyItem					= 0x1A2,
 				BuyItemInSlot			= 0x1A3,
+				TrainerBuySpell			= 0x1B2,
 				Ping					= 0x1DC,
 				SetSheathed				= 0x1E0,
 				AuthSession				= 0x1ED,
@@ -306,12 +307,16 @@ namespace wowpp
 				GossipMessage				= 0x17D,
 				ListInventory				= 0x19F,
 				TrainerList					= 0x1B1,
+				TrainerBuySucceeded			= 0x1B3,
+				TrainerBuyFailed			= 0x1B4,
 				LogXPGain					= 0x1D0,
 				Pong						= 0x1DD,
 				LevelUpInfo					= 0x1D4,
 				AuthChallenge				= 0x1EC,
 				AuthResponse				= 0x1EE,
+				PlaySpellVisual				= 0x1F3,
 				CompressedUpdateObject		= 0x1F6,
+				PlaySpellImpact				= 0x1F7,
 				ExplorationExperience		= 0x1F8,
 				EnvironmentalDamageLog		= 0x1FC,
 				AccountDataTimes			= 0x209,
@@ -988,6 +993,12 @@ namespace wowpp
 			bool gossipHello(
 				io::Reader &packet,
 				UInt64 &out_npcGuid
+				);
+
+			bool trainerBuySpell(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				UInt32 &out_spell
 				);
 		};
 
@@ -1715,6 +1726,23 @@ namespace wowpp
 				UInt32 titleTextId
 				);
 
+			void trainerBuySucceeded(
+				game::OutgoingPacket &out_packet,
+				UInt64 trainerGuid,
+				UInt32 spellId
+				);
+
+			void playSpellVisual(
+				game::OutgoingPacket &out_packet,
+				UInt64 unitGuid,
+				UInt32 visualId
+				);
+
+			void playSpellImpact(
+				game::OutgoingPacket &out_packet,
+				UInt64 unitGuid,
+				UInt32 spellId
+				);
 		};
 	}
 }

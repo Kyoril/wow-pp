@@ -2639,6 +2639,33 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void trainerBuySucceeded(game::OutgoingPacket &out_packet, UInt64 trainerGuid, UInt32 spellId)
+			{
+				out_packet.start(game::server_packet::TrainerBuySucceeded);
+				out_packet
+					<< io::write<NetUInt64>(trainerGuid)
+					<< io::write<NetUInt32>(spellId);
+				out_packet.finish();
+			}
+
+			void playSpellVisual(game::OutgoingPacket &out_packet, UInt64 unitGuid, UInt32 visualId)
+			{
+				out_packet.start(game::server_packet::PlaySpellVisual);
+				out_packet
+					<< io::write<NetUInt64>(unitGuid)
+					<< io::write<NetUInt32>(visualId);
+				out_packet.finish();
+			}
+
+			void playSpellImpact(game::OutgoingPacket &out_packet, UInt64 unitGuid, UInt32 spellId)
+			{
+				out_packet.start(game::server_packet::PlaySpellImpact);
+				out_packet
+					<< io::write<NetUInt64>(unitGuid)
+					<< io::write<NetUInt32>(spellId);
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read
@@ -3444,6 +3471,13 @@ namespace wowpp
 			{
 				return packet
 					>> io::read<NetUInt64>(out_npcGuid);
+			}
+
+			bool trainerBuySpell(io::Reader &packet, UInt64 &out_guid, UInt32 &out_spell)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_guid)
+					>> io::read<NetUInt32>(out_spell);
 			}
 
 		}

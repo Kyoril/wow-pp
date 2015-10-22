@@ -2167,8 +2167,78 @@ namespace wowpp
 
 			return;
 		}
+	}
 
-		
+	void Player::handleTrainerBuySpell(game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 npcGuid = 0;
+		UInt32 spellId = 0;
+		if (!(game::client_read::trainerBuySpell(packet, npcGuid, spellId)))
+		{
+			return;
+		}
+
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+		{
+			return;
+		}
+
+		GameCreature *creature = dynamic_cast<GameCreature*>(world->findObjectByGUID(npcGuid));
+		if (!creature)
+		{
+			return;
+		}
+
+		const auto *trainerEntry = creature->getEntry().trainerEntry;
+		if (!trainerEntry)
+		{
+			return;
+		}
+
+		if (trainerEntry->trainerType == trainer_types::ClassTrainer &&
+			m_character->getClass() != trainerEntry->classId)
+		{
+			return;
+		}
+
+		UInt32 cost = 0;
+		const SpellEntry *entry = nullptr;
+		for (const auto &spell : trainerEntry->spells)
+		{
+			if (spell.spell->id == spellId)
+			{
+				entry = spell.spell;
+				cost = spell.spellCost;
+				break;
+			}
+		}
+
+		if (!entry)
+		{
+			return;
+		}
+
+		if (m_character->hasSpell(spellId))
+		{
+			return;
+		}
+
+		sendProxyPacket(
+			std::bind(game::server_write::playSpellVisual, std::placeholders::_1, npcGuid, 0xB3));
+		sendProxyPacket(
+			std::bind(game::server_write::playSpellImpact, std::placeholders::_1, m_character->getGuid(), 0x016A));
+
+		UInt32 money = m_character->getUInt32Value(character_fields::Coinage);
+		if (money < cost)
+			return;
+		m_character->setUInt32Value(character_fields::Coinage, money - cost);
+
+		m_character->addSpell(*entry);
+		sendProxyPacket(
+			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spellId));
+		sendProxyPacket(
+			std::bind(game::server_write::trainerBuySucceeded, std::placeholders::_1, npcGuid, spellId));
 	}
 
 }
