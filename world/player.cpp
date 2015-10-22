@@ -1849,7 +1849,12 @@ namespace wowpp
 		// Check if the vendor DO sell items
 		const auto *vendorEntry = vendor->getEntry().vendorEntry;
 		if (!vendorEntry)
+		{
+			VendorItems emptyList;
+			sendProxyPacket(
+				std::bind(game::server_write::listInventory, std::placeholders::_1, vendor->getGuid(), std::cref(emptyList)));
 			return;
+		}
 
 		sendProxyPacket(
 			std::bind(game::server_write::listInventory, std::placeholders::_1, vendor->getGuid(), std::cref(vendorEntry->items)));

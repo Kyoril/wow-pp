@@ -2563,6 +2563,11 @@ namespace wowpp
 				out_packet
 					<< io::write<NetUInt64>(vendorGuid)
 					<< io::write<NetUInt8>(itemList.size());
+				if (itemList.empty())
+				{
+					out_packet << io::write<NetUInt8>(0);		// Error code: 0 (no error, just an empty list)
+				}
+
 				UInt32 index = 0;
 				for (const auto &entry : itemList)
 				{
