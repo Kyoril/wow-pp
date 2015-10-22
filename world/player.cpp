@@ -1135,7 +1135,6 @@ namespace wowpp
 		UInt8 bag, slot, count, data1, data2, data3;
 		if (!game::client_read::destroyItem(packet, bag, slot, count, data1, data2, data3))
 		{
-			WLOG("Could not read packet data");
 			return;
 		}
 
@@ -1155,13 +1154,10 @@ namespace wowpp
 		UInt64 objectGuid;
 		if (!game::client_read::loot(packet, objectGuid))
 		{
-			WLOG("Could not read packet data");
 			return;
 		}
-
 		if (!m_character->isAlive())
 		{
-			WLOG("Dead players can't loot");
 			return;
 		}
 
@@ -1169,7 +1165,6 @@ namespace wowpp
 		GameObject *lootObject = m_character->getWorldInstance()->findObjectByGUID(objectGuid);
 		if (!lootObject)
 		{
-			WLOG("No loot object found!");
 			return;
 		}
 
@@ -1221,13 +1216,10 @@ namespace wowpp
 	{
 		if (!game::client_read::lootMoney(packet))
 		{
-			WLOG("Could not read packet data");
 			return;
 		}
-
 		if (!m_loot)
 		{
-			WLOG("Player isn't looting anything");
 			return;
 		}
 
@@ -1236,7 +1228,6 @@ namespace wowpp
 		auto *world = m_character->getWorldInstance();
 		if (!world)
 		{
-			WLOG("Player is not in world instance");
 			return;
 		}
 
@@ -1244,7 +1235,6 @@ namespace wowpp
 		GameObject *object = world->findObjectByGUID(lootGuid);
 		if (!object)
 		{
-			WLOG("Loot object not found");
 			return;
 		}
 
@@ -1252,7 +1242,6 @@ namespace wowpp
 		UInt32 lootGold = m_loot->getGold();
 		if (lootGold == 0)
 		{
-			WLOG("No gold available to loot");
 			return;
 		}
 

@@ -697,17 +697,12 @@ namespace wowpp
 		const UnitEntry *unit = m_project.units.getById(creatureEntry);
 		if (unit)
 		{
-			// Write answer
-			ILOG("WORLD: CMSG_CREATURE_QUERY '" << unit->name << "' - Entry: " << creatureEntry << ".");
-
 			// Write answer packet
 			sender.sendProxyPacket(
 				std::bind(game::server_write::creatureQueryResponse, std::placeholders::_1, std::cref(*unit)));
 		}
 		else
 		{
-			WLOG("WORLD: CMSG_CREATURE_QUERY - Guid: " << objectGuid << " Entry: " << creatureEntry << " NO CREATURE INFO!");
-
 			//TODO: Send resulting packet SMSG_CREATURE_QUERY_RESPONSE with only one uin32 value
 			//which is creatureEntry | 0x80000000
 		}

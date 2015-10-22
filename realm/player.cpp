@@ -1515,18 +1515,11 @@ namespace wowpp
 		const ItemEntry *item = m_project.items.getById(itemID);
 		if (item)
 		{
-			// Write answer
-			ILOG("WORLD: CMSG_ITEM_QUERY_SINGLE '" << item->name << "' - Entry: " << itemID << ".");
-
 			// TODO: Cache multiple query requests and send one, bigger response with multiple items
 
 			// Write answer packet
 			sendPacket(
 				std::bind(game::server_write::itemQuerySingleResponse, std::placeholders::_1, std::cref(*item)));
-		}
-		else
-		{
-			WLOG("WORLD: CMSG_ITEM_QUERY_SINGLE - Entry: " << itemID << " NO ITEM INFO!");
 		}
 	}
 
@@ -1534,8 +1527,6 @@ namespace wowpp
 	{
 		if (m_gameCharacter)
 		{
-			DLOG("Saving player character...");
-
 			float x, y, z, o;
 			m_gameCharacter->getLocation(x, y, z, o);
 
@@ -1812,32 +1803,23 @@ namespace wowpp
 
 		if (!m_group)
 		{
-			WLOG("Player is not a member of a group!");
 			return;
 		}
-
 		if (m_group->getLeader() != m_gameCharacter->getGuid())
 		{
-			WLOG("Player is not the group leader");
 			return;
 		}
-
 		if (lootMethod > loot_method::NeedBeforeGreed)
 		{
-			WLOG("Invalid loot method");
 			return;
 		}
-
 		if (lootTreshold < 2 || lootTreshold > 6)
 		{
-			WLOG("Invalid loot treshold");
 			return;
 		}
-
 		if (lootMethod == loot_method::MasterLoot &&
 			!m_group->isMember(lootMasterGUID))
 		{
-			WLOG("Invalid loot master guid");
 			return;
 		}
 

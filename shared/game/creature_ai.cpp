@@ -148,8 +148,10 @@ namespace wowpp
 					if (unit.isInCombat())
 						return true;
 
+					const auto &threatFaction = threat.getFactionTemplate();
 					const auto &unitFaction = unit.getFactionTemplate();
-					if (unitFaction.isFriendlyTo(ourFaction))
+					if (unitFaction.isFriendlyTo(ourFaction) &&
+						unitFaction.isHostileTo(threatFaction))
 					{
 						worldInstance->getUniverse().post([&unit, &threat]()
 						{

@@ -135,6 +135,9 @@ namespace wowpp
 						auto *victim = unit.getVictim();
 						if (unit.isInCombat() && victim != nullptr)
 						{
+							if (!unitFaction.isHostileTo(victim->getFactionTemplate()))
+								return false;
+
 							getAI().enterCombat(*victim);
 							return true;
 						}
