@@ -289,6 +289,24 @@ namespace wowpp
 		{
 			switch (index)
 			{
+			case unit_fields::NpcFlags:
+			{
+				UInt32 value = m_values[index];
+				if ((value & game::unit_npc_flags::Trainer) != 0)
+				{
+					const GameCreature *creature = static_cast<const GameCreature*>(this);
+					const auto *trainerEntry = creature->getEntry().trainerEntry;
+					if (!trainerEntry ||
+						((trainerEntry->trainerType == trainer_types::ClassTrainer) && trainerEntry->classId != receiver.getClass()))
+					{
+						value &= ~game::unit_npc_flags::Trainer;
+						value &= ~game::unit_npc_flags::TrainerClass;
+						value &= ~game::unit_npc_flags::TrainerProfession;
+					}
+				}
+				writer << io::write<NetUInt32>(value);
+				break;
+			}
 			case unit_fields::DynamicFlags:
 			{
 				const GameCreature *creature = static_cast<const GameCreature*>(this);

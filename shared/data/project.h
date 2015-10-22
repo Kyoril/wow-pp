@@ -43,6 +43,7 @@
 #include "loot_entry.h"
 #include "talent_entry.h"
 #include "vendor_entry.h"
+#include "trainer_entry.h"
 #include <boost/noncopyable.hpp>
 #include <memory>
 
@@ -75,6 +76,7 @@ namespace wowpp
 	typedef MakeTemplateManager<LootEntry>::type LootEntryManager;
 	typedef MakeTemplateManager<TalentEntry>::type TalentEntryManager;
 	typedef MakeTemplateManager<VendorEntry>::type VendorEntryManager;
+	typedef MakeTemplateManager<TrainerEntry>::type TrainerEntryManager;
 
 	class Project : private boost::noncopyable
 	{
@@ -100,6 +102,7 @@ namespace wowpp
 		LootEntryManager unitLoot;
 		TalentEntryManager talents;
 		VendorEntryManager vendors;
+		TrainerEntryManager trainers;
 
 	public:
 

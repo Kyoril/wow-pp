@@ -37,6 +37,7 @@
 #include "data/item_entry.h"
 #include "data/object_entry.h"
 #include "data/vendor_entry.h"
+#include "data/trainer_entry.h"
 #include <array>
 #include <vector>
 #include <functional>
@@ -139,6 +140,7 @@ namespace wowpp
 				Loot					= 0x15D,
 				LootMoney				= 0x15E,
 				LootRelease				= 0x15F,
+				GossipHello				= 0x17B,
 				ListInventory			= 0x19E,
 				SellItem				= 0x1A0,
 				BuyItem					= 0x1A2,
@@ -301,7 +303,9 @@ namespace wowpp
 				LootItemNotify				= 0x164,
 				LootClearMoney				= 0x165,
 				ItemPushResult				= 0x166,
+				GossipMessage				= 0x17D,
 				ListInventory				= 0x19F,
+				TrainerList					= 0x1B1,
 				LogXPGain					= 0x1D0,
 				Pong						= 0x1DD,
 				LevelUpInfo					= 0x1D4,
@@ -979,6 +983,11 @@ namespace wowpp
 				UInt64 &out_bagGuid,
 				UInt8 &out_slot,
 				UInt8 &out_count
+				);
+
+			bool gossipHello(
+				io::Reader &packet,
+				UInt64 &out_npcGuid
 				);
 		};
 
@@ -1692,6 +1701,20 @@ namespace wowpp
 				UInt64 vendorGuid,
 				const std::vector<VendorItemEntry> &itemList
 				);
+
+			void trainerList(
+				game::OutgoingPacket &out_packet,
+				const GameCharacter &character,
+				UInt64 trainerGuid,
+				const TrainerEntry &trainerEntry
+				);
+
+			void gossipMessage(
+				game::OutgoingPacket &out_packet,
+				UInt64 objectGuid,
+				UInt32 titleTextId
+				);
+
 		};
 	}
 }

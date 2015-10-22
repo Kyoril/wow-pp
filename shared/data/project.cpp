@@ -71,6 +71,7 @@ namespace wowpp
 		context.getUnitLoot = std::bind(&LootEntryManager::getById, &unitLoot, std::placeholders::_1);
 		context.getTalent = std::bind(&TalentEntryManager::getById, &talents, std::placeholders::_1);
 		context.getVendor = std::bind(&VendorEntryManager::getById, &vendors, std::placeholders::_1);
+		context.getTrainer = std::bind(&TrainerEntryManager::getById, &trainers, std::placeholders::_1);
 
 		typedef ProjectLoader<DataLoadContext> RealmProjectLoader;
 		typedef RealmProjectLoader::ManagerEntry ManagerEntry;
@@ -98,6 +99,7 @@ namespace wowpp
 		managers.push_back(ManagerEntry("unit_loot", unitLoot, std::bind(&LootEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("talents", talents, std::bind(&TalentEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("unit_vendor", vendors, std::bind(&VendorEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+		managers.push_back(ManagerEntry("trainers", trainers, std::bind(&TrainerEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 
 		virtual_dir::FileSystemReader virtualDirectory(context.dataPath);
 		if (!RealmProjectLoader::load(
@@ -146,6 +148,7 @@ namespace wowpp
 		managers.push_back(ManagerEntry("unit_loot", "unit_loot", unitLoot, &LootEntry::save));
 		managers.push_back(ManagerEntry("talents", "talents", talents, &TalentEntry::save));
 		managers.push_back(ManagerEntry("unit_vendor", "unit_vendor", vendors, &VendorEntry::save));
+		managers.push_back(ManagerEntry("trainers", "trainers", trainers, &TrainerEntry::save));
 
 		if (!RealmProjectSaver::save(realmDataPath, managers))
 		{

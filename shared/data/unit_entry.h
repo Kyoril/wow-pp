@@ -33,6 +33,7 @@ namespace wowpp
 	struct FactionTemplateEntry;
 	struct LootEntry;
 	struct VendorEntry;
+	struct TrainerEntry;
 
 	/// Stores creature related data.
 	struct UnitEntry : BasicTemplate<UInt32>
@@ -116,6 +117,8 @@ namespace wowpp
 		const LootEntry *unitLootEntry;
 		/// NPC vendor template entry.
 		const VendorEntry *vendorEntry;
+		/// NPC trainer entry.
+		const TrainerEntry *trainerEntry;
 
 		/// Default constructor.
 		UnitEntry();

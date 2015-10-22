@@ -29,6 +29,7 @@
 #include "binary_io/stream_sink.h"
 #include "binary_io/reader.h"
 #include "binary_io/writer.h"
+#include "data/skill_entry.h"
 #include <iostream>
 #include <sstream>
 #include <ostream>
@@ -2584,6 +2585,60 @@ namespace wowpp
 				}
 				out_packet.finish();
 			}
+
+			void trainerList(game::OutgoingPacket &out_packet, const GameCharacter &character, UInt64 trainerGuid, const TrainerEntry &trainerEntry)
+			{
+				out_packet.start(game::server_packet::TrainerList);
+				out_packet
+					<< io::write<NetUInt64>(trainerGuid)
+					<< io::write<NetUInt32>(trainerEntry.trainerType)
+					<< io::write<NetUInt32>(trainerEntry.spells.size());
+
+				const UInt8 GreenSpell = 0;
+				const UInt8 RedSpell = 1;
+				const UInt8 GreySpell = 2;
+
+				UInt32 index = 0;
+				for (const auto &spell : trainerEntry.spells)
+				{
+					UInt8 state = GreenSpell;
+					if (character.hasSpell(spell.spell->id))
+						state = GreySpell;
+					else if (character.getLevel() < spell.reqLevel && spell.reqLevel > 0)
+						state = RedSpell;
+					// TODO More checks
+
+					out_packet
+						<< io::write<NetUInt32>(spell.spell->id)		// Spell ID
+						<< io::write<NetUInt8>(state)					// Spell State
+						<< io::write<NetUInt32>(spell.spellCost)		// Spell cost
+						<< io::write<NetUInt32>(0)		// TODO			// Primary Prof
+						<< io::write<NetUInt32>(0)		// TODO			// Must be equal to previous field
+						<< io::write<NetUInt8>(spell.reqLevel)			// Required character level
+						<< io::write<NetUInt32>(spell.reqSkill == nullptr ? 0 : spell.reqSkill->id)	// Required skill id
+						<< io::write<NetUInt32>(spell.reqSkillValue)	// Required skill value
+						<< io::write<NetUInt32>(0)						// Previous spell
+						<< io::write<NetUInt32>(0)						// Required spell
+						<< io::write<NetUInt32>(0)						// Unknown
+						;
+				}
+
+				out_packet << io::write_range(trainerEntry.title) << io::write<NetUInt8>(0);
+				out_packet.finish();
+			}
+
+			void gossipMessage(game::OutgoingPacket &out_packet, UInt64 objectGuid, UInt32 titleTextId)
+			{
+				out_packet.start(game::server_packet::GossipMessage);
+				out_packet
+					<< io::write<NetUInt64>(objectGuid)
+					<< io::write<NetUInt32>(0)				// Menu ID
+					<< io::write<NetUInt32>(titleTextId)
+					<< io::write<NetUInt32>(0)				// Menu item count
+					<< io::write<NetUInt32>(0);				// Quest item count
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read
@@ -3383,6 +3438,12 @@ namespace wowpp
 					>> io::read<NetUInt64>(out_bagGuid)
 					>> io::read<NetUInt8>(out_slot)
 					>> io::read<NetUInt8>(out_count);
+			}
+
+			bool gossipHello(io::Reader &packet, UInt64 &out_npcGuid)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_npcGuid);
 			}
 
 		}

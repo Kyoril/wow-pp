@@ -2092,4 +2092,83 @@ namespace wowpp
 		}
 	}
 
+	void Player::handleGossipHello(game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 npcGuid = 0;
+		if (!(game::client_read::gossipHello(packet, npcGuid)))
+		{
+			return;
+		}
+
+		// TODO: Proper gossip menu handling
+
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+		{
+			WLOG("No world found");
+			return;
+		}
+
+		GameCreature *creature = dynamic_cast<GameCreature*>(world->findObjectByGUID(npcGuid));
+		if (!creature)
+		{
+			WLOG("Could not find creature by guid");
+			return;
+		}
+
+		const auto *trainerEntry = creature->getEntry().trainerEntry;
+		if (trainerEntry)
+		{
+			UInt32 titleId = 0;
+			if (trainerEntry->trainerType == trainer_types::ClassTrainer)
+			{
+				if (trainerEntry->classId != m_character->getClass())
+				{
+					// Not your class!
+					return;
+				}
+
+				switch (m_character->getClass())
+				{
+				case game::char_class::Druid:
+					titleId = 4913;
+					break;
+				case game::char_class::Hunter:
+					titleId = 10090;
+					break;
+				case game::char_class::Mage:
+					titleId = 328;
+					break;
+				case game::char_class::Paladin:
+					titleId = 1635;
+					break;
+				case game::char_class::Priest:
+					titleId = 4436;
+					break;
+				case game::char_class::Rogue:
+					titleId = 4797;
+					break;
+				case game::char_class::Shaman:
+					titleId = 5003;
+					break;
+				case game::char_class::Warlock:
+					titleId = 5836;
+					break;
+				case game::char_class::Warrior:
+					titleId = 4985;
+					break;
+				}
+			}
+
+			sendProxyPacket(
+				std::bind(game::server_write::gossipMessage, std::placeholders::_1, npcGuid, titleId));
+			sendProxyPacket(
+				std::bind(game::server_write::trainerList, std::placeholders::_1, std::cref(*m_character), npcGuid, std::cref(*trainerEntry)));
+
+			return;
+		}
+
+		
+	}
+
 }

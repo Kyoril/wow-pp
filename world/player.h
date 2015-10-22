@@ -189,6 +189,7 @@ namespace wowpp
 		void handleBuyItem(game::Protocol::IncomingPacket &packet);
 		void handleBuyItemInSlot(game::Protocol::IncomingPacket &packet);
 		void handleSellItem(game::Protocol::IncomingPacket &packet);
+		void handleGossipHello(game::Protocol::IncomingPacket &packet);
 
 	private:
 

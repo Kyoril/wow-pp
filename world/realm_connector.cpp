@@ -585,6 +585,7 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(SellItem)
 			WOWPP_HANDLE_PLAYER_PACKET(BuyItem)
 			WOWPP_HANDLE_PLAYER_PACKET(BuyItemInSlot)
+			WOWPP_HANDLE_PLAYER_PACKET(GossipHello)
 #undef WOWPP_HANDLE_PLAYER_PACKET
 
 			// Movement packets get special treatment
