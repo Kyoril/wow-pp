@@ -1146,7 +1146,7 @@ namespace wowpp
 					<< io::write<NetUInt32>(item.id)
 					<< io::write<NetUInt32>(item.itemClass)
 					<< io::write<NetUInt32>(item.subClass)
-					<< io::write<NetUInt32>(0)				// SoundClassOverride (TODO)
+					<< io::write<NetUInt32>(-1)				// SoundClassOverride (TODO)
 					<< io::write_range(item.name) << io::write<NetUInt8>(0)
 					<< io::write<NetUInt8>(0)				// Second name?
 					<< io::write<NetUInt8>(0)				// Third name?
@@ -1157,7 +1157,7 @@ namespace wowpp
 					<< io::write<NetUInt32>(item.buyPrice)
 					<< io::write<NetUInt32>(item.sellPrice)
 					<< io::write<NetUInt32>(item.inventoryType)
-					<< io::write<NetUInt32>(item.allowedRaces)
+					<< io::write<NetUInt32>(item.allowedClasses)
 					<< io::write<NetUInt32>(item.allowedRaces)
 					<< io::write<NetUInt32>(item.itemLevel)
 					<< io::write<NetUInt32>(item.requiredLevel)
