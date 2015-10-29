@@ -955,6 +955,20 @@ namespace wowpp
 			return;
 		}
 
+		if (item->getEntry().requiredLevel > 0 &&
+			item->getEntry().requiredLevel > m_character->getLevel())
+		{
+			m_character->inventoryChangeFailure(game::inventory_change_failure::CantEquipLevel, nullptr, nullptr);
+			return;
+		}
+
+		if (item->getEntry().requiredSkill != 0 &&
+			!m_character->hasSkill(item->getEntry().requiredSkill))
+		{
+			m_character->inventoryChangeFailure(game::inventory_change_failure::CantEquipSkill, nullptr, nullptr);
+			return;
+		}
+
 		UInt8 targetSlot = 0xFF;
 
 		// Check if item is equippable
