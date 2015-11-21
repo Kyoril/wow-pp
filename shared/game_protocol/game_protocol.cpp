@@ -3480,6 +3480,18 @@ namespace wowpp
 					>> io::read<NetUInt32>(out_spell);
 			}
 
+			bool realmSplit(io::Reader & packet, UInt32 & out_preferredRealm)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_preferredRealm);
+			}
+
+			bool voiceSessionEnable(io::Reader & packet, UInt16 & out_unknown)
+			{
+				return packet
+					>> io::read<NetUInt16>(out_unknown);
+			}
+
 		}
 	}
 }

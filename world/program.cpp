@@ -135,13 +135,14 @@ namespace wowpp
 		// Setup id generator
 		IdGenerator<UInt32> instanceIdGenerator;			
 		IdGenerator<UInt64> objectIdGenerator(0x01);		// Object guid 0 is invalid and will lead to a client crash!
+		IdGenerator<UInt64> itemIdGenerator(0x01);
+		IdGenerator<UInt64> worldObjectIdGenerator(0x01);
 
 		// Set database instance
 		m_database = std::move(db);
 
 		// Create the player manager
 		std::unique_ptr<wowpp::PlayerManager> PlayerManager(new wowpp::PlayerManager(std::numeric_limits<size_t>::max()));	//TODO: Max player count
-
 		std::unique_ptr<TriggerHandler> triggerHandler = make_unique<TriggerHandler>(project, *PlayerManager);
 
 		// Create world instance manager

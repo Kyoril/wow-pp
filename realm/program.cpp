@@ -48,8 +48,9 @@
 
 namespace wowpp
 {
-	Program::Program()
-		: m_shouldRestart(false)
+	Program::Program(bool asService)
+		: m_isService(asService)
+		, m_shouldRestart(false)
 	{
 	}
 

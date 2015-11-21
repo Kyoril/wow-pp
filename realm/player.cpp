@@ -321,6 +321,8 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(GroupAssistentLeader, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(RaidReadyCheck, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(RaidReadyCheckFinished, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(RealmSplit, game::session_status::Authentificated)
+			WOWPP_HANDLE_PACKET(VoiceSessionEnable, game::session_status::Authentificated)
 #undef WOWPP_HANDLE_PACKET
 
 			default:
@@ -2197,6 +2199,36 @@ namespace wowpp
 		// Ready check request
 		m_group->broadcastPacket(
 			std::bind(game::server_write::raidReadyCheckFinished, std::placeholders::_1));
+	}
+
+	void Player::handleRealmSplit(game::IncomingPacket & packet)
+	{
+		UInt32 preferred = 0;
+		if (!(game::client_read::realmSplit(packet, preferred)))
+		{
+			return;
+		}
+
+		if (preferred == 0xFFFFFFFF)
+		{
+			// The player requests his preferred realm id from the server
+			// TODO: Determine if a realm split is happening and if so, send SMSG_REALM_SPLIT message
+		}
+		else
+		{
+			DLOG("TODO...");
+		}
+	}
+
+	void Player::handleVoiceSessionEnable(game::IncomingPacket & packet)
+	{
+		UInt16 unknown = 0;
+		if (!(game::client_read::voiceSessionEnable(packet, unknown)))
+		{
+			return;
+		}
+
+		// TODO
 	}
 
 }

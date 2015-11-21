@@ -161,9 +161,11 @@ namespace wowpp
 				MoveSetFly				= 0x346,
 				MoveStartAscend			= 0x359,
 				MoveStopAscend			= 0x35A,
+				RealmSplit				= 0x38C,
 				MoveChangeTransport		= 0x38D,
 				TimeSyncResponse		= 0x391,
 				MoveStartDescend		= 0x3A7,
+				VoiceSessionEnable		= 0x3AF,
 				RaidReadyCheckFinished	= 0x3C5
 			};
 		}
@@ -999,6 +1001,16 @@ namespace wowpp
 				io::Reader &packet,
 				UInt64 &out_guid,
 				UInt32 &out_spell
+				);
+
+			bool realmSplit(
+				io::Reader &packet,
+				UInt32 &out_preferredRealm
+				);
+
+			bool voiceSessionEnable(
+				io::Reader &packet,
+				UInt16 &out_unknown
 				);
 		};
 

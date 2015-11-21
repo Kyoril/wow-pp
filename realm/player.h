@@ -258,5 +258,7 @@ namespace wowpp
 		void handleGroupAssistentLeader(game::IncomingPacket &packet);
 		void handleRaidReadyCheck(game::IncomingPacket &packet);
 		void handleRaidReadyCheckFinished(game::IncomingPacket &packet);
+		void handleRealmSplit(game::IncomingPacket &packet);
+		void handleVoiceSessionEnable(game::IncomingPacket &packet);
 	};
 }

@@ -1169,6 +1169,9 @@ namespace wowpp
 			case se::Energize:
 				spellEffectEnergize(effect);
 				break;
+			case se::Charge:
+				spellEffectCharge(effect);
+				break;
 			case se::OpenLock:
 				spellEffectOpenLock(effect);
 				break;
@@ -1375,6 +1378,12 @@ namespace wowpp
 		{
 			spawned->threatened(*executer.getVictim(), 0.0001f);
 		}
+	}
+
+	void wowpp::SingleCastState::spellEffectCharge(const SpellEntry::Effect & effect)
+	{
+		Int32 basePoints = calculateEffectBasePoints(effect);
+		DLOG("CHARGE (POINTS: " << basePoints << ")");
 	}
 
 }

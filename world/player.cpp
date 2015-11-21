@@ -337,74 +337,6 @@ namespace wowpp
 		// Blocks
 		std::vector<std::vector<char>> blocks;
 
-		// Create item spawn packets
-		for (auto &item : m_character->getItems())
-		{
-			const UInt16 &slot = item.first;
-			const auto &instance = item.second;
-
-			// Check if we need to send that item
-			const bool sendItemToPlayer = (
-				slot < player_bank_bag_slots::End ||
-				(slot >= player_key_ring_slots::Start && slot < player_key_ring_slots::End)
-				);
-			if (sendItemToPlayer)
-			{
-				// Spawn this item
-				std::vector<char> createItemBlock;
-				io::VectorSink createItemSink(createItemBlock);
-				io::Writer createItemWriter(createItemSink);
-				{
-					UInt8 updateType = 0x02;						// Item
-					UInt8 updateFlags = 0x08 | 0x10;				// 
-					UInt8 objectTypeId = 0x01;						// Item
-
-					UInt64 guid = instance->getGuid();
-
-					// Header with object guid and type
-					createItemWriter
-						<< io::write<NetUInt8>(updateType);
-					UInt64 guidCopy = guid;
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-					for (UInt8 i = 0; guidCopy != 0; ++i)
-					{
-						if (guidCopy & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guidCopy & 0xFF);
-							++size;
-						}
-
-						guidCopy >>= 8;
-					}
-					createItemWriter.sink().write((const char*)&packGUID[0], size);
-					createItemWriter
-						<< io::write<NetUInt8>(objectTypeId)
-						<< io::write<NetUInt8>(updateFlags);
-
-					// Lower-GUID update?
-					if (updateFlags & 0x08)
-					{
-						createItemWriter
-							<< io::write<NetUInt32>(guidLowerPart(guid));
-					}
-
-					// High-GUID update?
-					if (updateFlags & 0x10)
-					{
-						createItemWriter
-							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
-					}
-
-					// Write values update
-					instance->writeValueUpdateBlock(createItemWriter, *m_character, true);
-				}
-				blocks.emplace_back(std::move(createItemBlock));
-			}
-		}
-
 		// Write create object packet
 		std::vector<char> createBlock;
 		io::VectorSink sink(createBlock);
@@ -508,6 +440,74 @@ namespace wowpp
 
 			// Add block
 			blocks.emplace_back(std::move(createBlock));
+		}
+
+		// Create item spawn packets
+		for (auto &item : m_character->getItems())
+		{
+			const UInt16 &slot = item.first;
+			const auto &instance = item.second;
+
+			// Check if we need to send that item
+			const bool sendItemToPlayer = (
+				slot < player_bank_bag_slots::End ||
+				(slot >= player_key_ring_slots::Start && slot < player_key_ring_slots::End)
+				);
+			if (sendItemToPlayer)
+			{
+				// Spawn this item
+				std::vector<char> createItemBlock;
+				io::VectorSink createItemSink(createItemBlock);
+				io::Writer createItemWriter(createItemSink);
+				{
+					UInt8 updateType = 0x02;						// Item
+					UInt8 updateFlags = 0x08 | 0x10;				// 
+					UInt8 objectTypeId = 0x01;						// Item
+
+					UInt64 guid = instance->getGuid();
+
+					// Header with object guid and type
+					createItemWriter
+						<< io::write<NetUInt8>(updateType);
+					UInt64 guidCopy = guid;
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+					for (UInt8 i = 0; guidCopy != 0; ++i)
+					{
+						if (guidCopy & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(guidCopy & 0xFF);
+							++size;
+						}
+
+						guidCopy >>= 8;
+					}
+					createItemWriter.sink().write((const char*)&packGUID[0], size);
+					createItemWriter
+						<< io::write<NetUInt8>(objectTypeId)
+						<< io::write<NetUInt8>(updateFlags);
+
+					// Lower-GUID update?
+					if (updateFlags & 0x08)
+					{
+						createItemWriter
+							<< io::write<NetUInt32>(guidLowerPart(guid));
+					}
+
+					// High-GUID update?
+					if (updateFlags & 0x10)
+					{
+						createItemWriter
+							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
+					}
+
+					// Write values update
+					instance->writeValueUpdateBlock(createItemWriter, *m_character, true);
+				}
+				blocks.emplace_back(std::move(createItemBlock));
+			}
 		}
 
 		// Send packet

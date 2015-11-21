@@ -35,7 +35,7 @@ namespace wowpp
 	public:
 
 		/// Creates a new instance of the Program class.
-		explicit Program();
+		explicit Program(bool asService);
 
 		/// Starts the server application.
 		/// @returns True if the application should be restarted.
@@ -46,6 +46,7 @@ namespace wowpp
 
 	private:
 
+		bool m_isService;
 		boost::asio::io_service m_ioService;
 		Configuration m_configuration;
 		std::unique_ptr<IDatabase> m_database;

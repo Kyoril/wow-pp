@@ -348,7 +348,7 @@ bool removeEventCreatures(Project &project, MySQL::Connection &connection)
 
 	LinearSet<UInt32> creatureEntries;
 	{
-		wowpp::MySQL::Select select = wowpp::MySQL::Select(connection, "SELECT `guid`,`id` FROM `creature`;");
+		wowpp::MySQL::Select select(connection, "SELECT `guid`,`id` FROM `creature`;");
 		if (select.success())
 		{
 			wowpp::MySQL::Row row(select);
@@ -419,7 +419,7 @@ bool removeEventObjects(Project &project, MySQL::Connection &connection)
 
 	LinearSet<UInt32> objectEntries;
 	{
-		wowpp::MySQL::Select select = wowpp::MySQL::Select(connection, "SELECT `guid`, `id` FROM `gameobject`;");
+		wowpp::MySQL::Select select(connection, "SELECT `guid`, `id` FROM `gameobject`;");
 		if (select.success())
 		{
 			wowpp::MySQL::Row row(select);
@@ -488,7 +488,7 @@ int main(int argc, char* argv[])
 	{
 		return 1;
 	}
-	
+	/*
 	ILOG("Removing event creatures...");
 	if (!removeEventCreatures(proj, connection))
 	{
@@ -499,7 +499,7 @@ int main(int argc, char* argv[])
 	if (!removeEventObjects(proj, connection))
 	{
 		return 1;
-	}
+	}*/
 
 	proj.save("./test-data");
 
