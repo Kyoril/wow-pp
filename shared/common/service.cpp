@@ -1,6 +1,7 @@
 #include "service.h"
 #include <exception>
 #ifdef __linux__
+#	include <unistd.h>
 #	include <sys/stat.h>
 #endif
 
