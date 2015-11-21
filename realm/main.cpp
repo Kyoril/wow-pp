@@ -70,28 +70,31 @@ int main(int argc, char* argv[])
 		false;
 #endif
 
+	auto openStdLog = []() {
+		// Add cout to the list of log output streams
+		wowpp::g_DefaultLog.signal().connect(std::bind(
+			wowpp::printLogEntry,
+			std::ref(std::cout), std::placeholders::_1, wowpp::g_DefaultConsoleLogOptions));
+	};
+
 	if (startAsService)
 	{
 		switch (wowpp::createService())
 		{
 			case wowpp::create_service_result::IsObsoleteProcess:
-				//we can exit here
+				std::cout << "Process is obsolete, exiting" << '\n';
 				return 0;
 
 			case wowpp::create_service_result::IsServiceProcess:
 			{
-				// Add cout to the list of log output streams
-				wowpp::g_DefaultLog.signal().connect(std::bind(
-					wowpp::printLogEntry,
-					std::ref(std::cout), std::placeholders::_1, wowpp::g_DefaultConsoleLogOptions));
-
+				openStdLog();
 				ILOG("Successfully running as a service");
 			} break;
 		}
 	}
 	else
 	{
-
+		openStdLog();
 	}
 
 	//constructor enables error handling
