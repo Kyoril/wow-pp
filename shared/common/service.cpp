@@ -37,10 +37,10 @@ namespace wowpp
 			}
 		}
 
-		if (chdir("/") < 0)
+		/*if (chdir("/") < 0)
 		{
 			throw std::runtime_error("chdir failed");
-		}
+		}*/
 
 		close(STDIN_FILENO);
 		close(STDOUT_FILENO);
