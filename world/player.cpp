@@ -1765,7 +1765,7 @@ namespace wowpp
 			SpellTargetMap targets;
 			targets.m_targetMap = game::spell_cast_target_flags::Unit;
 			targets.m_unitTarget = m_character->getGuid();
-			m_character->castSpell(std::move(targets), talent->ranks[rank]->id, 0, false, GameUnit::SpellSuccessCallback());
+			m_character->castSpell(std::move(targets), talent->ranks[rank]->id);
 		}
 
 		sendProxyPacket(
@@ -1819,7 +1819,7 @@ namespace wowpp
 			{
 				time = castTime->castTime;
 			}
-			m_character->castSpell(std::move(targetMap), spell.spell->id, time, false, GameUnit::SpellSuccessCallback());
+			m_character->castSpell(std::move(targetMap), spell.spell->id, -1, time);
 		}
 	}
 
@@ -2254,7 +2254,7 @@ namespace wowpp
 			SpellTargetMap targetMap;
 			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
 			targetMap.m_unitTarget = m_character->getGuid();
-			m_character->castSpell(std::move(targetMap), spellId, 0, false, GameUnit::SpellSuccessCallback());
+			m_character->castSpell(std::move(targetMap), spellId);
 		}
 
 		sendProxyPacket(

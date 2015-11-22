@@ -41,6 +41,65 @@ namespace wowpp
 				point[1]);
 		}
 
+		namespace spell_proc_flags
+		{
+			enum Type
+			{
+				/// No proc.
+				None						= 0x00000000,
+				/// Killed by aggressor.	
+				Killed						= 0x00000001,
+				/// Killed a target.
+				Kill						= 0x00000002,
+				/// Done melee attack.
+				DoneMeleeAutoAttack			= 0x00000004,
+				/// Taken melee attack.
+				TakenMeleeAutoAttack		= 0x00000008,
+				/// 
+				DoneSpellMeleeDmgClass		= 0x00000010,
+				/// 
+				TakenSpellMeleeDmgClass		= 0x00000020,
+				/// Done ranged auto attack.
+				DoneRangedAutoAttack		= 0x00000040,
+				/// Taken ranged auto attack.
+				TakenRangedAutoAttack		= 0x00000080,
+				/// 
+				DoneSpellRangedDmgClass		= 0x00000100,
+				/// 
+				TakenSpellRangedDmgClass	= 0x00000200,
+				/// 
+				DoneSpellNoneDmgClassPos	= 0x00000400,
+				/// 
+				TakenSpellNoneDmgClassPos	= 0x00000800,
+				/// 
+				DoneSpellNoneDmgClassNeg	= 0x00001000,
+				/// 
+				TakenSpellNoneDmgClassNeg	= 0x00002000,
+				/// 
+				DoneSpellMagicDmgClassPos	= 0x00004000,
+				/// 
+				TakenSpellMagicDmgClassPos	= 0x00008000,
+				/// 
+				DoneSpellMagicDmgClassNeg	= 0x00010000,
+				/// 
+				TakenSpellMagicDmgClassNeg	= 0x00020000,
+				/// On periodic tick done.
+				DonePeriodic				= 0x00040000,
+				/// On periodic tick received.
+				TakenPeriodic				= 0x00080000,
+				/// On any damage taken.
+				TakenDamage					= 0x00100000,
+				/// On trap activation.
+				DoneTrapActivation			= 0x00200000,
+				/// Done main hand attack.
+				DoneMainhandAttack			= 0x00400000,
+				/// Done off hand attack.
+				DoneOffhandAttack			= 0x00800000,
+				/// Died in any way.
+				Death						= 0x01000000
+			};
+		}
+
 		namespace loot_type
 		{
 			enum Type

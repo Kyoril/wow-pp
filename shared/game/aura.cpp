@@ -84,6 +84,9 @@ namespace wowpp
 		case aura::None:
 			handleModNull(apply);
 			break;
+		case aura::Dummy:
+			handleDummy(apply);
+			break;
 		case aura::ModStat:
 			handleModStat(apply);
 			break;
@@ -129,6 +132,34 @@ namespace wowpp
 		}
 	}
 
+	void Aura::handleProcModifier(GameUnit *target/* = nullptr*/)
+	{
+		// Determine if proc should happen
+		if (m_spell.procChance < 100)
+		{
+			std::uniform_int_distribution<UInt32> dist(1, 100);
+			UInt32 chanceRoll = dist(randomGenerator);
+			if (chanceRoll > m_spell.procChance)
+				return;
+		}
+
+		namespace aura = game::aura_type;
+
+		switch (m_effect.auraName)
+		{
+			case aura::Dummy:
+			{
+				handleDummyProc(target);
+				break;
+			}
+			default:
+			{
+				WLOG("Unhandled aura proc: " << m_effect.auraName);
+				break;
+			}
+		}
+	}
+
 	void Aura::handleModNull(bool apply)
 	{
 		// Nothing to do here
@@ -154,6 +185,14 @@ namespace wowpp
 			// Start timer
 			startPeriodicTimer();
 		}
+	}
+
+	void Aura::handleDummy(bool apply)
+	{
+		if (!apply)
+			return;
+
+
 	}
 
 	void Aura::handlePeriodicHeal(bool apply)
@@ -411,8 +450,8 @@ namespace wowpp
 							targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
 							targetMap.m_unitTarget = unit->getGuid();
 
-							if (spell1 != 0) unit->castSpell(targetMap, spell1, 0, true, GameUnit::SpellSuccessCallback());
-							if (spell2 != 0) unit->castSpell(targetMap, spell2, 0, true, GameUnit::SpellSuccessCallback());
+							if (spell1 != 0) unit->castSpell(targetMap, spell1, -1, 0, true);
+							if (spell2 != 0) unit->castSpell(targetMap, spell2, -1, 0, true);
 						}
 						else
 						{
@@ -467,6 +506,54 @@ namespace wowpp
 		}
 	}
 
+	void Aura::handleDummyProc(GameUnit * victim)
+	{
+		if (!victim)
+		{
+			return;
+		}
+
+		if (!m_caster)
+		{
+			return;
+		}
+
+		SpellTargetMap target;
+		target.m_targetMap = game::spell_cast_target_flags::Unit;
+		target.m_unitTarget = victim->getGuid();
+
+		if (m_effect.triggerSpell)
+		{
+			// TODO: Do this only for Seal of Righteousness, however: I have no clude about
+			// how to know when to trigger this, so it might be necessary to hard-code it
+
+			// TODO: Replace these constants
+			float weaponSpeed = 0.0f;
+			float maxWeaponDmg = 0.0f;
+			float minWeaponDmg = 0.0f;
+			float scaleFactor = 0.85f;
+			if (m_caster->getTypeId() == object_type::Character)
+			{
+				GameCharacter *character = reinterpret_cast<GameCharacter*>(m_caster);
+				auto *weapon = character->getItemByPos(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand);
+				if (weapon)
+				{
+					scaleFactor = 1.2f;
+					minWeaponDmg = weapon->getEntry().itemDamage[0].min;
+					maxWeaponDmg = weapon->getEntry().itemDamage[0].max;
+					weaponSpeed = weapon->getEntry().delay / 1000.0f;
+				}
+			}
+
+			// Calculate damage based on blizzards formula
+			const Int32 damage =
+				scaleFactor * (m_basePoints * 1.2f * 1.03f * weaponSpeed / 100) + 0.03f * (maxWeaponDmg + minWeaponDmg) / 2 + 1;
+
+			// Cast the triggered spell with custom damage value
+			m_caster->castSpell(std::move(target), m_effect.triggerSpell->id, damage, 0, true);
+		}
+	}
+
 	void Aura::handleModAttackPower(bool apply)
 	{
 		m_target.updateModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue, m_basePoints, apply);
@@ -504,7 +591,7 @@ namespace wowpp
 			SpellTargetMap targetMap;
 			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
 			targetMap.m_unitTarget = attacker.getGuid();
-			m_target.castSpell(targetMap, m_effect.triggerSpell->id, 0, true, GameUnit::SpellSuccessCallback());
+			m_target.castSpell(targetMap, m_effect.triggerSpell->id, -1, 0, true);
 		}
 		else if (m_effect.auraName == aura::DamageShield)
 		{
@@ -750,7 +837,19 @@ namespace wowpp
 				std::bind(&Aura::onTargetMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 		}
 
-		// Apply modifier
+		if (m_spell.procFlags != game::spell_proc_flags::None)
+		{
+			// Melee auto attack
+			if ((m_spell.procFlags & game::spell_proc_flags::DoneMeleeAutoAttack) != 0)
+			{
+				m_procAutoAttack = m_caster->procMeleeAutoAttack.connect(
+					[&](GameUnit *victim) {
+					handleProcModifier(victim);
+				});
+			}
+		}
+
+		// Apply modifiers now
 		handleModifier(true);
 	}
 

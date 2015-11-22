@@ -60,6 +60,7 @@ namespace wowpp
 		std::pair<game::SpellCastResult, SpellCasting*> startCast(
 			const SpellEntry &spell,
 			SpellTargetMap target,
+			Int32 basePoints,
 			GameTime castTime,
 			bool doReplacePreviousCast);
 		void stopCast();
@@ -85,6 +86,7 @@ namespace wowpp
 			SpellCast &cast,
 			const SpellEntry &spell,
 			SpellTargetMap target,
+			Int32 basePoints,
 			GameTime castTime,
 			bool doReplacePreviousCast
 			) = 0;
@@ -96,6 +98,7 @@ namespace wowpp
 		SpellCast &cast,
 		const SpellEntry &spell,
 		SpellTargetMap target,
+		Int32 basePoints,
 		GameTime castTime
 		);
 

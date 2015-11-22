@@ -17,7 +17,7 @@ namespace wowpp
 	{
 	}
 
-	std::pair<game::SpellCastResult, SpellCasting*> SpellCast::startCast(const SpellEntry &spell, SpellTargetMap target, GameTime castTime, bool doReplacePreviousCast)
+	std::pair<game::SpellCastResult, SpellCasting*> SpellCast::startCast(const SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool doReplacePreviousCast)
 	{
 		assert(m_castState);
 
@@ -114,6 +114,7 @@ namespace wowpp
 			(*this,
 			spell,
 			target,
+			basePoints,
 			castTime,
 			doReplacePreviousCast);
 	}
@@ -139,10 +140,10 @@ namespace wowpp
 		m_castState->activate();
 	}
 
-	SpellCasting & castSpell(SpellCast &cast, const SpellEntry &spell, SpellTargetMap target, GameTime castTime)
+	SpellCasting & castSpell(SpellCast &cast, const SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime)
 	{
 		std::shared_ptr<SingleCastState> newState(
-			new SingleCastState(cast, spell, std::move(target), castTime)
+			new SingleCastState(cast, spell, std::move(target), basePoints, castTime)
 			);
 
 		auto &casting = newState->getCasting();

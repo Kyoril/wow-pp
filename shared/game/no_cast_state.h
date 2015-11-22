@@ -35,6 +35,7 @@ namespace wowpp
 			SpellCast &cast,
 			const SpellEntry &spell,
 			SpellTargetMap target,
+			Int32 basePoints,
 			GameTime castTime,
 			bool doReplacePreviousCast
 			) override;

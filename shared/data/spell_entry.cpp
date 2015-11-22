@@ -61,6 +61,9 @@ namespace wowpp
 		, targetO(0.0f)
 		, maxTargets(0)
 		, talentCost(0)
+		, procFlags(0)
+		, procChance(101)
+		, procCharges(0)
 	{
 		attributesEx.fill(0);
 	}
@@ -115,6 +118,9 @@ namespace wowpp
 		wrapper.table.tryGetInteger("max_range", maxRange);
 		wrapper.table.tryGetInteger("range_type", rangeType);
 		wrapper.table.tryGetInteger("max_targets", maxTargets);
+		wrapper.table.tryGetInteger("proc_flags", procFlags);
+		wrapper.table.tryGetInteger("proc_chance", procChance);
+		wrapper.table.tryGetInteger("proc_charges", procCharges);
 
 		const sff::read::tree::Array<DataFileIterator> *skillsArray = wrapper.table.getArray("skills");
 		if (skillsArray)
@@ -175,6 +181,7 @@ namespace wowpp
 				}
 
 				Effect &effect = effects[j];
+				effect.index = static_cast<UInt8>(j);
 				effect.type = static_cast<game::SpellEffect>(effectIndex);
 				effectTable->tryGetInteger("base_points", effect.basePoints);
 				effectTable->tryGetInteger("base_dice", effect.baseDice);
@@ -275,6 +282,9 @@ namespace wowpp
 		if (maxRange != 0.0f) context.table.addKey("max_range", maxRange);
 		if (rangeType != 0) context.table.addKey("range_type", rangeType);
 		if (maxTargets != 0) context.table.addKey("max_targets", maxTargets);
+		if (procFlags != 0) context.table.addKey("proc_flags", procFlags);
+		if (procChance != 101) context.table.addKey("proc_chance", procChance);
+		if (procCharges != 0) context.table.addKey("proc_charges", procCharges);
 
 		// Write skills
 		if (!skillsOnLearnSpell.empty())

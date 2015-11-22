@@ -264,7 +264,7 @@ namespace wowpp
 		}
 	}
 
-	void GameUnit::castSpell(SpellTargetMap target, UInt32 spellId, GameTime castTime, bool isProc, const SpellSuccessCallback &callback)
+	void GameUnit::castSpell(SpellTargetMap target, UInt32 spellId, Int32 basePoints, GameTime castTime, bool isProc, SpellSuccessCallback callback)
 	{
 		// Resolve spell
 		const auto *spell = m_getSpell(spellId);
@@ -273,7 +273,7 @@ namespace wowpp
 			return;
 		}
 
-		auto result = m_spellCast->startCast(*spell, std::move(target), castTime, false);
+		auto result = m_spellCast->startCast(*spell, std::move(target), basePoints, castTime, isProc);
 		if (callback)
 		{
 			callback(result.first);
@@ -512,7 +512,6 @@ namespace wowpp
 				m_swingCallback = AttackSwingCallback();
 			}
 
-
 			if (!result)
 			{
 				TileIndex2D tileIndex;
@@ -623,6 +622,9 @@ namespace wowpp
 				if (damage > 0)
 				{
 					victim->dealDamage(damage, 0, this);
+
+					// Trigger auto attack procs
+					procMeleeAutoAttack(m_victim);
 				}
 
 				if (m_victim && m_victim->isAlive())

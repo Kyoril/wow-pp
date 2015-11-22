@@ -122,6 +122,17 @@ namespace wowpp
 				break;
 			}
 
+			case auth::client_packet::ReconnectChallenge:
+			{
+				handleReconnectChallenge(packet);
+				break;
+			}
+			case auth::client_packet::ReconnectProof:
+			{
+				handleReconnectProof(packet);
+				break;
+			}
+
 			case auth::client_packet::RealmList:
 			{
 				handleRealmList(packet);
@@ -364,6 +375,23 @@ namespace wowpp
 				std::placeholders::_1,
 				proofResult,
 				std::cref(hash)));
+	}
+
+	void Player::handleReconnectChallenge(auth::IncomingPacket & packet)
+	{
+		// Read packet data and save it
+		if (!auth::client_read::reconnectChallenge(packet, m_version1, m_version2, m_version3, m_build, m_platform, m_system, m_locale, m_userName))
+		{
+			ELOG("Could not read packet CMD_AUTH_RECONNECT_CHALLENGE");
+			return;
+		}
+
+		WLOG("TODO: Reconnect challenge");
+	}
+
+	void Player::handleReconnectProof(auth::IncomingPacket & packet)
+	{
+		WLOG("TODO: Reconnect proof");
 	}
 
 	void Player::handleRealmList(auth::IncomingPacket &packet)

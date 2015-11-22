@@ -343,7 +343,7 @@ namespace wowpp
 			if (spell->attributes & spell_attributes::Passive)
 			{
 				// Create target map
-				character->castSpell(target, spell->id, 0, true, GameUnit::SpellSuccessCallback());
+				character->castSpell(target, spell->id, -1, 0, true);
 			}
 		}
 
@@ -906,6 +906,7 @@ namespace wowpp
 		sender.getCharacter()->castSpell(
 			std::move(targetMap),
 			spell->id,
+			-1,
 			castTime,
 			false,
 			[&spell, castCount, &sender](game::SpellCastResult result)

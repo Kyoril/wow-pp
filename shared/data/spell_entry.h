@@ -274,6 +274,7 @@ namespace wowpp
 		/// Represents data needed by a spell effect.
 		struct Effect
 		{
+			UInt8 index;
 			game::SpellEffect type;
 			Int32 basePoints;
 			Int32 dieSides;
@@ -296,7 +297,8 @@ namespace wowpp
 			Int32 pointsPerComboPoint;
 
 			Effect()
-				: type(game::spell_effects::Invalid_)
+				: index(0)
+				, type(game::spell_effects::Invalid_)
 				, basePoints(0)
 				, dieSides(0)
 				, baseDice(0)
@@ -354,6 +356,9 @@ namespace wowpp
 		float targetX, targetY, targetZ, targetO;
 		UInt32 maxTargets;
 		UInt32 talentCost;		// This value will be dynamically set during load of talent entries
+		UInt32 procFlags;
+		UInt32 procChance;
+		UInt32 procCharges;
 
 		SpellEntry();
 		bool load(DataLoadContext &context, const ReadTableWrapper &wrapper);

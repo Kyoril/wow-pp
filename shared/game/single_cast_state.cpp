@@ -81,7 +81,7 @@ namespace wowpp
 		}
 	}
 	
-	SingleCastState::SingleCastState(SpellCast &cast, const SpellEntry &spell, SpellTargetMap target, GameTime castTime)
+	SingleCastState::SingleCastState(SpellCast &cast, const SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime)
 		: m_cast(cast)
 		, m_spell(spell)
 		, m_target(std::move(target))
@@ -89,6 +89,7 @@ namespace wowpp
 		, m_countdown(cast.getTimers())
 		, m_impactCountdown(cast.getTimers())
 		, m_castTime(castTime)
+		, m_basePoints(basePoints)
 	{
 		// Check if the executer is in the world
 		auto &executer = m_cast.getExecuter();
@@ -138,7 +139,7 @@ namespace wowpp
 		}
 	}
 
-	std::pair<game::SpellCastResult, SpellCasting *> SingleCastState::startCast(SpellCast &cast, const SpellEntry &spell, SpellTargetMap target, GameTime castTime, bool doReplacePreviousCast)
+	std::pair<game::SpellCastResult, SpellCasting *> SingleCastState::startCast(SpellCast &cast, const SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool doReplacePreviousCast)
 	{
 		if (!m_hasFinished &&
 			!doReplacePreviousCast)
@@ -150,6 +151,7 @@ namespace wowpp
 			cast,
 			spell,
 			std::move(target),
+			basePoints,
 			castTime);
 
 		return std::make_pair(game::spell_cast_result::CastOkay, &casting);
@@ -823,7 +825,7 @@ namespace wowpp
 		// Calculate the damage done
 		const float basePointsPerLevel = effect.pointsPerLevel;
 		const float randomPointsPerLevel = effect.dicePerLevel;
-		const Int32 basePoints = effect.basePoints + level * basePointsPerLevel;
+		const Int32 basePoints = (m_basePoints == -1 ? effect.basePoints : m_basePoints) + level * basePointsPerLevel;
 		const Int32 randomPoints = effect.dieSides + level * randomPointsPerLevel;
 		const Int32 comboDamage = effect.pointsPerComboPoint * comboPoints;
 
@@ -1257,7 +1259,7 @@ namespace wowpp
 		}
 
 		// Get the spell to trigger
-		startCast(m_cast, *effect.triggerSpell, m_target, 0, true);
+		startCast(m_cast, *effect.triggerSpell, m_target, -1, 0, true);
 	}
 
 	void SingleCastState::spellEffectEnergize(const SpellEntry::Effect &effect)

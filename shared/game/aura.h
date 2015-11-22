@@ -51,6 +51,8 @@ namespace wowpp
 		void applyAura();
 		/// Executes the aura modifier and applies or removes the aura effects to/from the target.
 		void handleModifier(bool apply);
+		/// 
+		void handleProcModifier(GameUnit *target = nullptr);
 		/// Determines whether this is a passive spell aura.
 		bool isPassive() const { return (m_spell.attributes & spell_attributes::Passive) != 0; }
 		/// Determines whether this is a positive spell aura.
@@ -73,6 +75,8 @@ namespace wowpp
 		void handleModNull(bool apply);
 		/// 3
 		void handlePeriodicDamage(bool apply);
+		/// 4
+		void handleDummy(bool apply);
 		/// 8
 		void handlePeriodicHeal(bool apply);
 		/// 12
@@ -100,6 +104,11 @@ namespace wowpp
 		/// 142
 		void handleModBaseResistancePct(bool apply);
 
+	protected:
+
+		/// 4
+		void handleDummyProc(GameUnit *victim);
+
 	private:
 
 		/// Starts the periodic tick timer.
@@ -122,6 +131,7 @@ namespace wowpp
 		const SpellEntry &m_spell;
 		const SpellEntry::Effect &m_effect;
 		boost::signals2::scoped_connection m_casterDespawned, m_damageHit, m_targetMoved, m_onExpire, m_onTick, m_onTargetKilled;
+		boost::signals2::scoped_connection m_procAutoAttack;
 		GameUnit *m_caster;
 		GameUnit &m_target;
 		UInt32 m_tickCount;

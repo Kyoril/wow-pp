@@ -39,12 +39,14 @@ namespace wowpp
 			SpellCast &cast,
 			const SpellEntry &spell,
 			SpellTargetMap target,
+			Int32 basePoints,
 			GameTime castTime);
 		void activate() override;
 		std::pair<game::SpellCastResult, SpellCasting *> startCast(
 			SpellCast &cast,
 			const SpellEntry &spell,
 			SpellTargetMap target,
+			Int32 basePoints,
 			GameTime castTime,
 			bool doReplacePreviousCast) override;
 		void stopCast() override;
@@ -91,6 +93,7 @@ namespace wowpp
 		boost::signals2::scoped_connection m_onUserDamaged, m_onUserMoved;
 		float m_x, m_y, m_z;
 		GameTime m_castTime;
+		Int32 m_basePoints;
 
 		void sendEndCast(bool success);
 		void onCastFinished();

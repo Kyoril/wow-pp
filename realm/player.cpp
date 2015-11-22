@@ -184,8 +184,6 @@ namespace wowpp
 
 	void Player::connectionLost()
 	{
-		ILOG("Client " << m_address << " disconnected");
-
 		// If we are logged in, notify the world node about this
 		if (m_gameCharacter)
 		{
@@ -201,8 +199,6 @@ namespace wowpp
 			if (world)
 			{
 				world->leaveWorldInstance(m_characterId, pp::world_realm::world_left_reason::Disconnect);
-				ILOG("Sent notification about this to the world node.");
-
 				// We don't destroy this player instance yet, as we are still connected to a world node: This world node needs to
 				// send the character's new data back to us, so that we can save it.
 				return;
