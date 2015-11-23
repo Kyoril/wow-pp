@@ -115,6 +115,7 @@ namespace wowpp
 	{
 		typedef BasicTemplate<UInt32> Super;
 
+		/// Fired when the trigger should be executed.
 		boost::signals2::signal<void(const TriggerEntry &, GameUnit *)> execute;
 
 		struct TriggerAction final

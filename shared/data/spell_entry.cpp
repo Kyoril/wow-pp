@@ -289,49 +289,49 @@ namespace wowpp
 		// Write skills
 		if (!skillsOnLearnSpell.empty())
 		{
-			sff::write::Array<char> skillsArray(context.table, "skills", sff::write::Comma);
+			auto skillsArray = std::make_unique<sff::write::Array<char>>(context.table, "skills", sff::write::Comma);
 			{
 				for (auto &skill : skillsOnLearnSpell)
 				{
-					skillsArray.addElement(skill->id);
+					skillsArray->addElement(skill->id);
 				}
 			}
-			skillsArray.finish();
+			skillsArray->finish();
 		}
 
 		// Write spell effects
 		if (!effects.empty())
 		{
-			sff::write::Array<char> effectsArray(context.table, "effects", sff::write::MultiLine);
+			auto effectsArray = std::make_unique<sff::write::Array<char>>(context.table, "effects", sff::write::MultiLine);
 			{
 				for (auto &effect : effects)
 				{
-					sff::write::Table<char> effectTable(effectsArray, sff::write::Comma);
+					auto effectTable = std::make_unique<sff::write::Table<char>>(*effectsArray, sff::write::Comma);
 					{
-						effectTable.addKey("type", static_cast<UInt32>(effect.type));
-						if (effect.basePoints != 0) effectTable.addKey("base_points", effect.basePoints);
-						if (effect.baseDice != 0) effectTable.addKey("base_dice", effect.baseDice);
-						if (effect.dieSides != 0) effectTable.addKey("die_sides", effect.dieSides);
-						if (effect.mechanic != 0) effectTable.addKey("mechanic", effect.mechanic);
-						if (effect.targetA != 0) effectTable.addKey("target_a", effect.targetA);
-						if (effect.targetB != 0) effectTable.addKey("target_b", effect.targetB);
-						if (effect.pointsPerComboPoint != 0) effectTable.addKey("per_combo_point", effect.pointsPerComboPoint);
-						if (effect.auraName != 0) effectTable.addKey("aura_name", effect.auraName);
-						if (effect.dicePerLevel != 0.0f) effectTable.addKey("dice_per_level", effect.dicePerLevel);
-						if (effect.pointsPerLevel != 0.0f) effectTable.addKey("points_per_level", effect.pointsPerLevel);
-						if (effect.radius != 0.0f) effectTable.addKey("radius", effect.radius);
-						if (effect.amplitude != 0) effectTable.addKey("amplitude", effect.amplitude);
-						if (effect.multipleValue != 0.0f) effectTable.addKey("multiple_val", effect.multipleValue);
-						if (effect.chainTarget != 0) effectTable.addKey("chain_target", effect.chainTarget);
-						if (effect.itemType != 0) effectTable.addKey("item_type", effect.itemType);
-						if (effect.miscValueA != 0) effectTable.addKey("misc_val_a", effect.miscValueA);
-						if (effect.miscValueB != 0) effectTable.addKey("misc_val_b", effect.miscValueB);
-						if (effect.triggerSpell != nullptr) effectTable.addKey("trigger_spell", effect.triggerSpell->id);
+						effectTable->addKey("type", static_cast<UInt32>(effect.type));
+						if (effect.basePoints != 0) effectTable->addKey("base_points", effect.basePoints);
+						if (effect.baseDice != 0) effectTable->addKey("base_dice", effect.baseDice);
+						if (effect.dieSides != 0) effectTable->addKey("die_sides", effect.dieSides);
+						if (effect.mechanic != 0) effectTable->addKey("mechanic", effect.mechanic);
+						if (effect.targetA != 0) effectTable->addKey("target_a", effect.targetA);
+						if (effect.targetB != 0) effectTable->addKey("target_b", effect.targetB);
+						if (effect.pointsPerComboPoint != 0) effectTable->addKey("per_combo_point", effect.pointsPerComboPoint);
+						if (effect.auraName != 0) effectTable->addKey("aura_name", effect.auraName);
+						if (effect.dicePerLevel != 0.0f) effectTable->addKey("dice_per_level", effect.dicePerLevel);
+						if (effect.pointsPerLevel != 0.0f) effectTable->addKey("points_per_level", effect.pointsPerLevel);
+						if (effect.radius != 0.0f) effectTable->addKey("radius", effect.radius);
+						if (effect.amplitude != 0) effectTable->addKey("amplitude", effect.amplitude);
+						if (effect.multipleValue != 0.0f) effectTable->addKey("multiple_val", effect.multipleValue);
+						if (effect.chainTarget != 0) effectTable->addKey("chain_target", effect.chainTarget);
+						if (effect.itemType != 0) effectTable->addKey("item_type", effect.itemType);
+						if (effect.miscValueA != 0) effectTable->addKey("misc_val_a", effect.miscValueA);
+						if (effect.miscValueB != 0) effectTable->addKey("misc_val_b", effect.miscValueB);
+						if (effect.triggerSpell != nullptr) effectTable->addKey("trigger_spell", effect.triggerSpell->id);
 					}
-					effectTable.finish();
+					effectTable->finish();
 				}
 			}
-			effectsArray.finish();
+			effectsArray->finish();
 		}
 	}
 }

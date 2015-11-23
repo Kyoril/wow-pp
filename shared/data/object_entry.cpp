@@ -92,12 +92,12 @@ namespace wowpp
 		if (maxGold != 0) context.table.addKey("max_gold", maxGold);
 
 		// Write data
-		sff::write::Array<char> dataArray(context.table, "data", sff::write::Comma);
+		auto dataArray = std::make_unique<sff::write::Array<char>>(context.table, "data", sff::write::Comma);
 		for (const auto &entry : data)
 		{
-			dataArray.addElement(entry);
+			dataArray->addElement(entry);
 		}
-		dataArray.finish();
+		dataArray->finish();
 	}
 
 	UInt32 ObjectEntry::getLockId() const

@@ -63,6 +63,7 @@ namespace wowpp
 		typedef std::function<const SkillEntry * (UInt32)> GetSkill;
 		typedef std::function<const ObjectEntry * (UInt32)> GetObject;
 		typedef std::function<const TriggerEntry * (UInt32)> GetTrigger;
+		typedef std::function<TriggerEntry * (UInt32)> GetEditableTrigger;
 		typedef std::function<const ZoneEntry * (UInt32)> GetZone;
 		typedef std::function<const FactionEntry * (UInt32)> GetFaction;
 		typedef std::function<const FactionTemplateEntry * (UInt32)> GetFactionTemplate;
@@ -82,6 +83,7 @@ namespace wowpp
 		GetSkill getSkill;
 		GetObject getObject;
 		GetTrigger getTrigger;
+		GetEditableTrigger getEditableTrigger;
 		GetZone getZone;
 		GetFaction getFaction;
 		GetFactionTemplate getFactionTemplate;

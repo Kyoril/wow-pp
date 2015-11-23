@@ -121,14 +121,14 @@ namespace wowpp
 		// Write spell effects
 		if (!ranks.empty())
 		{
-			sff::write::Array<char> ranksArray(context.table, "ranks", sff::write::Comma);
+			auto ranksArray = std::make_unique<sff::write::Array<char>>(context.table, "ranks", sff::write::Comma);
 			{
 				for (auto &rank : ranks)
 				{
-					ranksArray.addElement(rank->id);
+					ranksArray->addElement(rank->id);
 				}
 			}
-			ranksArray.finish();
+			ranksArray->finish();
 		}
 	}
 }

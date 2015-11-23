@@ -31,6 +31,7 @@
 #include "common/make_unique.h"
 #include "faction_template_entry.h"
 #include "log/default_log_levels.h"
+#include <boost/signals2.hpp>
 
 namespace wowpp
 {
@@ -110,7 +111,7 @@ namespace wowpp
 					context.onWarning("Could not find trigger - skipping");
 					continue;
 				}
-
+				
 				triggers.push_back(trigger);
 				for (auto &e : trigger->events)
 				{
@@ -290,6 +291,36 @@ namespace wowpp
 				}
 			}
 			triggerArray->finish();
+		}
+	}
+	void UnitEntry::unlinkTrigger(UInt32 id)
+	{
+		// Remove trigger from the list of triggers
+		for (auto it = triggers.begin(); it != triggers.end();)
+		{
+			if ((*it)->id == id)
+			{
+				for (auto &e : (*it)->events)
+				{
+					for (auto it2 = triggersByEvent[e].begin(); it2 != triggersByEvent[e].end();)
+					{
+						if ((*it2)->id == id)
+						{
+							it2 = triggersByEvent[e].erase(it2);
+						}
+						else
+						{
+							it2++;
+						}
+					}
+				}
+
+				it = triggers.erase(it);
+			}
+			else
+			{
+				it++;
+			}
 		}
 	}
 }

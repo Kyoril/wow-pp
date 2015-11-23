@@ -237,6 +237,13 @@ namespace wowpp
 		{
 			if (!m_selectedTrigger)
 				return;
+
+			// Unlink trigger
+			auto &unitEntries = m_application.getProject().units.getTemplates();
+			for (auto &unit : unitEntries)
+			{
+				unit->unlinkTrigger(m_selectedTrigger->id);
+			}
 			
 			// Remove selected trigger
 			m_application.getProject().triggers.remove(m_selectedTrigger->id);

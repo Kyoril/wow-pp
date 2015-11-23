@@ -24,6 +24,7 @@
 #include "common/typedefs.h"
 #include "templates/basic_template.h"
 #include <array>
+#include <map>
 
 namespace wowpp
 {
@@ -129,5 +130,8 @@ namespace wowpp
 		/// Saves this unit entry into a data file.
 		/// @param context Context which stores some objects and provides more information needed for saving.
 		void save(BasicTemplateSaveContext &context) const;
+
+		/// Removes a given trigger if attached.
+		void unlinkTrigger(UInt32 id);
 	};
 }
