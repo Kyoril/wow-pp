@@ -72,7 +72,8 @@ project(WoW)
 	
 	# Enable C++14 if needed
 	if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-		list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
+		list(APPEND CMAKE_CXX_FLAGS "-std=c++11 -stdlib=libc++")
+		list(APPEND CMAKE_C_FLAGS "-std=c++11 -stdlib=libc++")
 		if(APPLE)
 			set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++11")
 			set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
