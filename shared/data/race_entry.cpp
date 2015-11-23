@@ -26,6 +26,7 @@
 #include "spell_entry.h"
 #include "faction_template_entry.h"
 #include "log/default_log_levels.h"
+#include <memory>
 
 namespace wowpp
 {

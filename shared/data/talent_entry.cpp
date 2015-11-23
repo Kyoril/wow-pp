@@ -24,6 +24,7 @@
 #include "templates/basic_template_save_context.h"
 #include "data_load_context.h"
 #include "spell_entry.h"
+#include <memory>
 
 namespace wowpp
 {

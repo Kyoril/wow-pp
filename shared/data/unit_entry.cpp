@@ -32,6 +32,7 @@
 #include "faction_template_entry.h"
 #include "log/default_log_levels.h"
 #include <boost/signals2.hpp>
+#include <memory>
 
 namespace wowpp
 {

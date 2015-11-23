@@ -27,6 +27,7 @@
 #include "unit_entry.h"
 #include "data_load_context.h"
 #include "log/default_log_levels.h"
+#include <memory>
 
 namespace wowpp
 {

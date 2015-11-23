@@ -22,6 +22,7 @@
 #include "object_entry.h"
 #include "templates/basic_template_load_context.h"
 #include "templates/basic_template_save_context.h"
+#include <memory>
 
 namespace wowpp
 {
