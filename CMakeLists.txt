@@ -72,19 +72,19 @@ project(WoW)
 	
 	# Enable C++11 if needed
 	if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-		list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
+		list(APPEND CMAKE_CXX_FLAGS "-std=c++14")
 		if(APPLE)
-			set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++11")
+			set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++14")
 			set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
 		endif()
 	elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 		execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
                 OUTPUT_VARIABLE GCC_VERSION)
-		if (NOT (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6))
-			message(FATAL_ERROR "GCC 4.7 or newer is required in order to build WoW++. Please consider an update or switch over to clang.")
+		if (NOT (GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8))
+			message(FATAL_ERROR "GCC 4.8 or newer is required in order to build WoW++. Please consider an update or switch over to clang.")
 		endif()
 	
-		list(APPEND CMAKE_CXX_FLAGS "-std=c++0x -pthread")
+		list(APPEND CMAKE_CXX_FLAGS "-std=c++14 -pthread")
 	endif()
 
 	# Include additional cmake modules
@@ -93,11 +93,6 @@ project(WoW)
 	# Find boost
 	set(Boost_USE_STATIC_LIBS ON)
 	find_package(Boost 1.54.0 REQUIRED COMPONENTS system date_time thread iostreams filesystem regex chrono program_options)
-	
-	# Boost 1.58.0 has an error in signals2 which will lead to a server crash on creature despawn if a player disconnected
-	if (${Boost_VERSION} STREQUAL "105800")
-		message(FATAL_ERROR "Boost 1.58.0 detected - this version has a bug that will lead to a server crash! Please consider using a different version, 1.56.0 for example.")
-	endif()
 	
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 	
