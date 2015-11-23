@@ -38,7 +38,7 @@ namespace wowpp
 		bool isReplacement = false;
 		for (auto it = m_auras.begin(); it != m_auras.end(); ++it)
 		{
-			// Same spell and same caster - don't stack!
+			// Same spell, same caster and same effect index - don't stack!
 			auto &a = *it;
 			if (a->getCaster() == aura->getCaster() &&
 				a->getSpell().id == aura->getSpell().id)
@@ -47,7 +47,8 @@ namespace wowpp
 				isReplacement = true;
 
 				// Replace old aura instance
-				if (a->getEffect().auraName == aura->getEffect().auraName)
+				if (a->getEffect().auraName == aura->getEffect().auraName &&
+					a->getEffect().index == aura->getEffect().index)
 				{
 					// Remove aura - new aura will be added
 					it = m_auras.erase(it);
