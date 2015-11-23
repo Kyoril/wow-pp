@@ -22,7 +22,7 @@
 #include "object_entry.h"
 #include "templates/basic_template_load_context.h"
 #include "templates/basic_template_save_context.h"
-#include <memory>
+#include "common/make_unique.h"
 
 namespace wowpp
 {
@@ -93,7 +93,7 @@ namespace wowpp
 		if (maxGold != 0) context.table.addKey("max_gold", maxGold);
 
 		// Write data
-		auto dataArray = std::make_unique<sff::write::Array<char>>(context.table, "data", sff::write::Comma);
+		auto dataArray = make_unique<sff::write::Array<char>>(context.table, "data", sff::write::Comma);
 		for (const auto &entry : data)
 		{
 			dataArray->addElement(entry);

@@ -70,7 +70,7 @@ project(WoW)
 	include_directories(${PROJECT_BINARY_DIR})
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.h.in ${PROJECT_BINARY_DIR}/version.h @ONLY)
 	
-	# Enable C++11 if needed
+	# Enable C++14 if needed
 	if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 		list(APPEND CMAKE_CXX_FLAGS "-std=c++14")
 		if(APPLE)
@@ -84,7 +84,7 @@ project(WoW)
 			message(FATAL_ERROR "GCC 4.8 or newer is required in order to build WoW++. Please consider an update or switch over to clang.")
 		endif()
 	
-		list(APPEND CMAKE_CXX_FLAGS "-std=c++14 -pthread")
+		list(APPEND CMAKE_CXX_FLAGS "-std=c++11 -pthread")
 	endif()
 
 	# Include additional cmake modules

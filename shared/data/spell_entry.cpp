@@ -27,7 +27,7 @@
 #include "unit_entry.h"
 #include "data_load_context.h"
 #include "log/default_log_levels.h"
-#include <memory>
+#include "common/make_unique.h"
 
 namespace wowpp
 {
@@ -290,7 +290,7 @@ namespace wowpp
 		// Write skills
 		if (!skillsOnLearnSpell.empty())
 		{
-			auto skillsArray = std::make_unique<sff::write::Array<char>>(context.table, "skills", sff::write::Comma);
+			auto skillsArray = make_unique<sff::write::Array<char>>(context.table, "skills", sff::write::Comma);
 			{
 				for (auto &skill : skillsOnLearnSpell)
 				{
@@ -303,11 +303,11 @@ namespace wowpp
 		// Write spell effects
 		if (!effects.empty())
 		{
-			auto effectsArray = std::make_unique<sff::write::Array<char>>(context.table, "effects", sff::write::MultiLine);
+			auto effectsArray = make_unique<sff::write::Array<char>>(context.table, "effects", sff::write::MultiLine);
 			{
 				for (auto &effect : effects)
 				{
-					auto effectTable = std::make_unique<sff::write::Table<char>>(*effectsArray, sff::write::Comma);
+					auto effectTable = make_unique<sff::write::Table<char>>(*effectsArray, sff::write::Comma);
 					{
 						effectTable->addKey("type", static_cast<UInt32>(effect.type));
 						if (effect.basePoints != 0) effectTable->addKey("base_points", effect.basePoints);

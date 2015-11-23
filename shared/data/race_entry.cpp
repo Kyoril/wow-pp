@@ -26,7 +26,7 @@
 #include "spell_entry.h"
 #include "faction_template_entry.h"
 #include "log/default_log_levels.h"
-#include <memory>
+#include "common/make_unique.h"
 
 namespace wowpp
 {
@@ -288,18 +288,18 @@ namespace wowpp
 		context.table.addKey("rotation", startRotation);
 
 		// Write stats
-		auto initialSpellArray = std::make_unique<sff::write::Array<char>>(context.table, "initial_spells", sff::write::MultiLine);
+		auto initialSpellArray = make_unique<sff::write::Array<char>>(context.table, "initial_spells", sff::write::MultiLine);
 		{
 			for (const auto &entry : initialSpells)
 			{
 				UInt32 classId = entry.first;
 
 				// New stat table
-				auto classTable = std::make_unique<sff::write::Table<char>>(*initialSpellArray, sff::write::Comma);
+				auto classTable = make_unique<sff::write::Table<char>>(*initialSpellArray, sff::write::Comma);
 				{
 					classTable->addKey("class", classId);
 
-					auto spellArray = std::make_unique<sff::write::Array<char>>(*classTable, "spells", sff::write::Comma);
+					auto spellArray = make_unique<sff::write::Array<char>>(*classTable, "spells", sff::write::Comma);
 					{
 						for (const auto *spell : entry.second)
 						{
@@ -313,8 +313,8 @@ namespace wowpp
 		}
 		initialSpellArray->finish();
 
-		// Write initial items
-		auto initialItemsArray = std::make_unique<sff::write::Array<char>>(context.table, "initial_items", sff::write::MultiLine);
+		// Write initial 
+		auto initialItemsArray = make_unique<sff::write::Array<char>>(context.table, "initial_items", sff::write::MultiLine);
 		{
 			for (const auto &entry : initialItems)
 			{
@@ -324,12 +324,12 @@ namespace wowpp
 					UInt32 genderId = entry2.first;
 					auto &items = entry2.second;
 
-					auto classTable = std::make_unique<sff::write::Table<char>>(*initialItemsArray, sff::write::Comma);
+					auto classTable = make_unique<sff::write::Table<char>>(*initialItemsArray, sff::write::Comma);
 					{
 						classTable->addKey("class", classId);
 						classTable->addKey("gender", genderId);
 
-						auto itemArray = std::make_unique<sff::write::Array<char>>(*classTable, "items", sff::write::Comma);
+						auto itemArray = make_unique<sff::write::Array<char>>(*classTable, "items", sff::write::Comma);
 						{
 							for (const auto *item : items)
 							{
@@ -345,22 +345,22 @@ namespace wowpp
 		initialItemsArray->finish();
 
 		// Write action buttons
-		auto initialActionsArray = std::make_unique<sff::write::Array<char>>(context.table, "initial_actions", sff::write::MultiLine);
+		auto initialActionsArray = make_unique<sff::write::Array<char>>(context.table, "initial_actions", sff::write::MultiLine);
 		{
 			for (const auto &entry : initialActionButtons)
 			{
 				UInt32 classId = entry.first;
 
 				// New stat table
-				auto classTable = std::make_unique<sff::write::Table<char>>(*initialActionsArray, sff::write::Comma);
+				auto classTable = make_unique<sff::write::Table<char>>(*initialActionsArray, sff::write::Comma);
 				{
 					classTable->addKey("class", classId);
 
-					auto buttonsArray = std::make_unique<sff::write::Array<char>>(*classTable, "buttons", sff::write::MultiLine);
+					auto buttonsArray = make_unique<sff::write::Array<char>>(*classTable, "buttons", sff::write::MultiLine);
 					{
 						for (const auto &button : entry.second)
 						{
-							auto buttonTable = std::make_unique<sff::write::Table<char>>(*buttonsArray, sff::write::Comma);
+							auto buttonTable = make_unique<sff::write::Table<char>>(*buttonsArray, sff::write::Comma);
 							{
 								buttonTable->addKey("button", static_cast<UInt32>(button.first));
 								buttonTable->addKey("action", button.second.action);

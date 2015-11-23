@@ -24,7 +24,7 @@
 #include "templates/basic_template_save_context.h"
 #include "data_load_context.h"
 #include "spell_entry.h"
-#include <memory>
+#include "common/make_unique.h"
 
 namespace wowpp
 {
@@ -122,7 +122,7 @@ namespace wowpp
 		// Write spell effects
 		if (!ranks.empty())
 		{
-			auto ranksArray = std::make_unique<sff::write::Array<char>>(context.table, "ranks", sff::write::Comma);
+			auto ranksArray = make_unique<sff::write::Array<char>>(context.table, "ranks", sff::write::Comma);
 			{
 				for (auto &rank : ranks)
 				{
