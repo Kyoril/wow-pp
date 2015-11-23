@@ -41,6 +41,7 @@ namespace wowpp
 
 			// Load trigger display
 			m_ui->triggerView->setModel(m_application.getTriggerListModel());
+			updateSelection(false);
 
 			connect(m_ui->actionSave, SIGNAL(triggered()), &m_application, SLOT(saveUnsavedChanges()));
 			connect(m_ui->triggerView->selectionModel(),
@@ -53,6 +54,7 @@ namespace wowpp
 			// Get the selected unit
 			if (selection.isEmpty())
 			{
+				updateSelection(false);
 				m_selectedTrigger = nullptr;
 				return;
 			}
@@ -60,6 +62,7 @@ namespace wowpp
 			int index = selection.indexes().first().row();
 			if (index < 0)
 			{
+				updateSelection(false);
 				m_selectedTrigger = nullptr;
 				return;
 			}
@@ -68,7 +71,10 @@ namespace wowpp
 			auto *trigger = m_application.getProject().triggers.getTemplates()[index].get();
 			m_selectedTrigger = trigger;
 			if (!trigger)
+			{
+				updateSelection(false);
 				return;
+			}
 
 			m_ui->triggerNameBox->setText(trigger->name.c_str());
 			m_ui->triggerPathBox->setText((trigger->path.empty() ? "(Default)" : trigger->path.c_str()));
@@ -123,6 +129,7 @@ namespace wowpp
 			}
 
 			rootItem->setExpanded(true);
+			updateSelection(true);
 		}
 
 		void TriggerEditor::on_actionNewTrigger_triggered()
@@ -159,6 +166,15 @@ namespace wowpp
 			m_ui->triggerView->setCurrentIndex(last);
 
 			m_application.markAsChanged();
+		}
+
+		void TriggerEditor::updateSelection(bool enabled)
+		{
+			m_ui->actionRemove->setEnabled(enabled);
+			m_ui->actionAddAction->setEnabled(enabled);
+			m_ui->actionAddEvent->setEnabled(enabled);
+			m_ui->frame->setEnabled(enabled);
+			m_ui->frame_2->setEnabled(enabled);
 		}
 
 		void TriggerEditor::on_actionAddEvent_triggered()
@@ -215,6 +231,32 @@ namespace wowpp
 
 				m_application.markAsChanged();
 			}
+		}
+
+		void TriggerEditor::on_actionRemove_triggered()
+		{
+			if (!m_selectedTrigger)
+				return;
+			
+			// Remove selected trigger
+			m_application.getProject().triggers.remove(m_selectedTrigger->id);
+			m_selectedTrigger = nullptr;
+
+			// This will update all views
+			emit m_application.getTriggerListModel()->layoutChanged();
+			m_application.markAsChanged();
+
+			// Update UI
+			auto rows = m_ui->triggerView->selectionModel()->selectedRows();
+			auto selection = m_ui->triggerView->selectionModel()->selection();
+			if (rows.empty())
+			{
+				selection = QItemSelection();
+			}
+
+			onTriggerSelectionChanged(
+				selection, 
+				selection);
 		}
 
 		void TriggerEditor::on_triggerNameBox_editingFinished()

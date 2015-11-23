@@ -49,11 +49,16 @@ namespace wowpp
 
 			explicit TriggerEditor(EditorApplication &app);
 
+		private:
+
+			void updateSelection(bool enabled);
+
 		private slots:
 
 			void on_actionNewTrigger_triggered();
 			void on_actionAddEvent_triggered();
 			void on_actionAddAction_triggered();
+			void on_actionRemove_triggered();
 			void on_triggerNameBox_editingFinished();
 			void on_triggerPathBox_editingFinished();
 			void on_functionView_itemDoubleClicked(QTreeWidgetItem*, int);

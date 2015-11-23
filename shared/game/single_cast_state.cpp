@@ -1180,6 +1180,9 @@ namespace wowpp
 			case se::Summon:
 				spellEffectSummon(effect);
 				break;
+			case se::ScriptEffect:
+				spellEffectScript(effect);
+				break;
 			default:
 				WLOG("Spell effect " << game::constant_literal::spellEffectNames.getName(effect.type) << " (" << effect.type << ") not yet implemented");
 				break;
@@ -1386,6 +1389,11 @@ namespace wowpp
 	{
 		Int32 basePoints = calculateEffectBasePoints(effect);
 		DLOG("CHARGE (POINTS: " << basePoints << ")");
+	}
+
+	void wowpp::SingleCastState::spellEffectScript(const SpellEntry::Effect & effect)
+	{
+		
 	}
 
 }

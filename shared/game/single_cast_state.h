@@ -79,6 +79,7 @@ namespace wowpp
 		void spellEffectOpenLock(const SpellEntry::Effect &effect);
 		void spellEffectSummon(const SpellEntry::Effect &effect);
 		void spellEffectCharge(const SpellEntry::Effect &effect);
+		void spellEffectScript(const SpellEntry::Effect &effect);
 
 	private:
 

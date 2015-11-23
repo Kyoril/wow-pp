@@ -61,7 +61,7 @@ namespace wowpp
 					const auto &templates = m_entries.getTemplates();
 					const auto &tpl = templates[index.row()];
 
-					return QString("%1").arg(tpl->name.c_str());
+					return QString("%1 %2").arg(QString::number(tpl->id), 6, QLatin1Char('0')).arg(tpl->name.c_str());
 				}
 				else if (role == Qt::DecorationRole)
 				{
