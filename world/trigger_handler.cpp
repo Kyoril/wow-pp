@@ -34,25 +34,53 @@
 #include "binary_io/vector_sink.h"
 #include "binary_io/writer.h"
 #include "game_protocol/game_protocol.h"
+#include "common/make_unique.h"
 
 namespace wowpp
 {
-	TriggerHandler::TriggerHandler(Project &project, PlayerManager &playerManager)
+	TriggerHandler::TriggerHandler(Project &project, PlayerManager &playerManager, TimerQueue &timers)
 		: m_project(project)
 		, m_playerManager(playerManager)
+		, m_timers(timers)
 	{
 		// Iterate through all triggers and watch for their execution
 		for (const auto &trigger : m_project.triggers.getTemplates())
 		{
 			trigger->execute.connect(
-				std::bind(&TriggerHandler::executeTrigger, this, std::placeholders::_1, std::placeholders::_2));
+				std::bind(&TriggerHandler::executeTrigger, this, std::placeholders::_1, 0, std::placeholders::_2));
 		}
 	}
 
-	void TriggerHandler::executeTrigger(const TriggerEntry &entry, GameUnit *owner)
+	void TriggerHandler::executeTrigger(const TriggerEntry &entry, UInt32 actionOffset, GameUnit *owner)
 	{
-		for (auto &action : entry.actions)
+		// Keep owner alive if provided
+		std::shared_ptr<GameObject> strongOwner;
+		if (owner) strongOwner = owner->shared_from_this();
+		auto weakOwner = std::weak_ptr<GameObject>(strongOwner);
+
+		// TODO: Find a better way to do this...
+		// Remove all expired delays
+		for (auto it = m_delays.begin(); it != m_delays.end();)
 		{
+			if (!(*it)->running)
+			{
+				it = m_delays.erase(it);
+			}
+			else
+			{
+				it++;
+			}
+		}
+
+		if (actionOffset >= entry.actions.size())
+		{
+			// Nothing to do here
+			return;
+		}
+
+		for (UInt32 i = actionOffset; i < entry.actions.size(); ++i)
+		{
+			const auto &action = entry.actions[i];
 			switch (action.action)
 			{
 #define WOWPP_HANDLE_TRIGGER_ACTION(name) \
@@ -60,16 +88,52 @@ namespace wowpp
 					handle##name(action, owner); \
 					break;
 
-				WOWPP_HANDLE_TRIGGER_ACTION(Trigger)
-				WOWPP_HANDLE_TRIGGER_ACTION(Say)
-				WOWPP_HANDLE_TRIGGER_ACTION(Yell)
-				WOWPP_HANDLE_TRIGGER_ACTION(SetWorldObjectState)
-				WOWPP_HANDLE_TRIGGER_ACTION(SetSpawnState)
-				WOWPP_HANDLE_TRIGGER_ACTION(SetRespawnState)
-				WOWPP_HANDLE_TRIGGER_ACTION(CastSpell)
-
+			WOWPP_HANDLE_TRIGGER_ACTION(Trigger)
+			WOWPP_HANDLE_TRIGGER_ACTION(Say)
+			WOWPP_HANDLE_TRIGGER_ACTION(Yell)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetWorldObjectState)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetSpawnState)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetRespawnState)
+			WOWPP_HANDLE_TRIGGER_ACTION(CastSpell)
 #undef WOWPP_HANDLE_TRIGGER_ACTION
 
+				case trigger_actions::Delay:
+				{
+					UInt32 timeMS = getActionData(action, 0);
+					if (timeMS == 0)
+					{
+						WLOG("Delay with 0 ms ignored");
+						break;
+					}
+
+					if (i == entry.actions.size() - 1)
+					{
+						WLOG("Delay as last trigger action has no effect and is ignored");
+						break;
+					}
+
+					// Save delay
+					auto delayCountdown = make_unique<Countdown>(m_timers);
+					delayCountdown->ended.connect([&entry, i, this, owner, weakOwner]()
+					{
+						GameUnit *triggeringUnit = owner;
+
+						auto strongOwner = weakOwner.lock();
+						if (owner != nullptr && strongOwner == nullptr)
+						{
+							WLOG("Triggering unit no longer exists, so the executing trigger might fail.");
+							triggeringUnit = nullptr;
+						}
+
+						executeTrigger(entry, i + 1, triggeringUnit);
+					});
+					delayCountdown->setEnd(getCurrentTime() + timeMS);
+					m_delays.emplace_back(std::move(delayCountdown));
+
+					// Skip the other actions for now
+					i = entry.actions.size();
+					break;
+				}
 				default:
 				{
 					WLOG("Unsupported trigger action: " << action.action);

@@ -98,8 +98,8 @@ namespace wowpp
 				return QString("Unit - Make %1 yell %2 and play sound %3")
 					.arg(getTriggerTargetName(action, withLinks)).arg(getTriggerActionString(action, 0, withLinks)).arg(getTriggerActionData(action, 0, withLinks));
 			case trigger_actions::CastSpell:
-				return QString("Unit - Make %1 cast spell %2")
-					.arg(getTriggerTargetName(action, withLinks)).arg(actionDataEntry(project.spells, action, 0, withLinks));
+				return QString("Unit - Make %1 cast spell %2 on %3")
+					.arg(getTriggerTargetName(action, withLinks)).arg(actionDataEntry(project.spells, action, 0, withLinks).arg(getTriggerTargetName(action, withLinks)));
 			case trigger_actions::SetSpawnState:
 				return QString("Unit - Set spawn state of %1 to %2")
 					.arg(getTriggerTargetName(action, withLinks)).arg(getTriggerActionData(action, 0, withLinks));
@@ -112,6 +112,9 @@ namespace wowpp
 			case trigger_actions::Trigger:
 				return QString("Common - Execute trigger %1")
 					.arg(actionDataEntry(project.triggers, action, 0, withLinks));
+			case trigger_actions::Delay:
+				return QString("Common - Delay execution for %1 ms")
+					.arg(getTriggerActionData(action, 0, withLinks));
 			default:
 				return QString("UNKNOWN TRIGGER ACTION");
 			}

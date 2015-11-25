@@ -143,7 +143,7 @@ namespace wowpp
 
 		// Create the player manager
 		std::unique_ptr<wowpp::PlayerManager> PlayerManager(new wowpp::PlayerManager(std::numeric_limits<size_t>::max()));	//TODO: Max player count
-		std::unique_ptr<TriggerHandler> triggerHandler = make_unique<TriggerHandler>(project, *PlayerManager);
+		std::unique_ptr<TriggerHandler> triggerHandler = make_unique<TriggerHandler>(project, *PlayerManager, timer);
 
 		// Create world instance manager
 		auto worldInstanceManager =

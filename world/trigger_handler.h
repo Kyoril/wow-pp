@@ -22,6 +22,9 @@
 #pragma once
 
 #include "data/trigger_entry.h"
+#include "common/timer_queue.h"
+#include "common/countdown.h"
+#include <memory>
 
 namespace wowpp
 {
@@ -36,10 +39,12 @@ namespace wowpp
 	public:
 
 		/// 
-		explicit TriggerHandler(Project &project, PlayerManager &playerManager);
+		explicit TriggerHandler(Project &project, PlayerManager &playerManager, TimerQueue &timers);
 
 		/// Fires a trigger event.
-		void executeTrigger(const TriggerEntry &entry, GameUnit *owner);
+		void executeTrigger(const TriggerEntry &entry, UInt32 actionOffset = 0, GameUnit *owner = nullptr);
+
+	private:
 
 	private:
 
@@ -60,5 +65,7 @@ namespace wowpp
 
 		Project &m_project;
 		PlayerManager &m_playerManager;
+		TimerQueue &m_timers;
+		std::vector<std::unique_ptr<Countdown>> m_delays;
 	};
 }

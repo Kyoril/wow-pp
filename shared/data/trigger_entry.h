@@ -83,6 +83,9 @@ namespace wowpp
 			/// Casts a spell.
 			/// Targets: UNIT; Data: <SPELL-ID>; Texts: NONE;
 			CastSpell				= 6,
+			/// Delays the following actions.
+			/// Targets: NONE; Data: <DELAY-TIME-MS>; Texts: NONE;
+			Delay					= 7,
 
 			Invalid,
 			Count_ = Invalid

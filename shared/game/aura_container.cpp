@@ -21,6 +21,8 @@
 
 #include "aura_container.h"
 #include "game_unit.h"
+#include "log/default_log_levels.h"
+#include "data/spell_entry.h"
 #include <algorithm>
 #include <cassert>
 
@@ -121,6 +123,7 @@ namespace wowpp
 
 		// Store aura instance
 		m_auras.push_back(std::move(aura));
+
 		return true;
 	}
 
