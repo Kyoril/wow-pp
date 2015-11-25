@@ -34,7 +34,7 @@ namespace wowpp
 	{
 		namespace world_realm
 		{
-			static const UInt32 ProtocolVersion = 0x0D;
+			static const UInt32 ProtocolVersion = 0x0E;
 
 			namespace world_instance_error
 			{
@@ -108,12 +108,16 @@ namespace wowpp
 					LeaveWorldInstance,
 					/// Notifies the world node about a group change of a character.
 					CharacterGroupChanged,
-					///Send complete Ignorelist
+					/// Send complete Ignorelist
 					IgnoreList,
-					///Add entry to Ignorelist
+					/// Add entry to Ignorelist
 					AddIgnore,
-					///Remove entry to Ignorelist
-					RemoveIgnore
+					/// Remove entry to Ignorelist
+					RemoveIgnore,
+					/// Received one or more item data entries for creation and/or updates. Maybe this packet becomes obsoelete.
+					ItemData,
+					/// One or more items have been deleted. Only slots are specified here.
+					ItemsRemoved,
 				};
 			}
 
@@ -348,6 +352,16 @@ namespace wowpp
 					UInt64 characterId,
 					UInt64 removeGuid
 					);
+				void itemData(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					const std::map<UInt16, ItemData> &data
+					);
+				void itemsRemoved(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					const std::vector<UInt16> &data
+					);
 			}
 
 			/// Contains methods for reading packets coming from the world server. 
@@ -526,6 +540,16 @@ namespace wowpp
 					io::Reader &packet,
 					UInt64 &out_characterId,
 					UInt64 &out_removeGuid
+					);
+				bool itemData(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					std::map<UInt16, ItemData> &out_data
+					);
+				bool itemsRemoved(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					std::vector<UInt16> &out_slots
 					);
 			}
 		}

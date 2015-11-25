@@ -122,14 +122,23 @@ namespace wowpp
 				{
 					response.setStatus(net::http::OutgoingAnswer::NotFound);
 
-					const String message = "The document '" + url + "' does not exist";
+					const String message = "The command '" + url + "' does not exist";
 					response.finishWithContent("text/html", message.data(), message.size());
 				}
 				break;
 			}
 			case net::http::IncomingRequest::Post:
 			{
-				if (url == "/additem")
+				if (url == "/shutdown")
+				{
+					ILOG("Shutting down..");
+					sendXmlAnswer(response, "<message>Shutting down..</message>");
+
+					auto &ioService = getService().getIOService();
+					ioService.stop();
+				}
+#ifdef WOWPP_WITH_DEV_COMMANDS
+				else if (url == "/additem")
 				{
 					// Parse arguments
 					std::vector<String> arguments;
@@ -191,13 +200,11 @@ namespace wowpp
 							return;
 					}
 				}
-				else if (url == "/shutdown")
+#endif
+				else
 				{
-					ILOG("Shutting down..");
-					sendXmlAnswer(response, "<message>Shutting down..</message>");
-
-					auto &ioService = getService().getIOService();
-					ioService.stop();
+					const String message = "The command '" + url + "' does not exist";
+					response.finishWithContent("text/html", message.data(), message.size());
 				}
 			}
 			default:

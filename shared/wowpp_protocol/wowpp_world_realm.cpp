@@ -262,6 +262,29 @@ namespace wowpp
 						<< io::write<NetUInt64>(removeGuid);
 					out_packet.finish();
 				}
+				void itemData(pp::OutgoingPacket & out_packet, UInt64 characterId, const std::map<UInt16, ItemData>& data)
+				{
+					out_packet.start(realm_packet::ItemData);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write<NetUInt32>(data.size());
+
+					for (const auto &it : data)
+					{
+						out_packet
+							<< io::write<NetUInt16>(it.first)
+							<< it.second;
+					}
+					out_packet.finish();
+				}
+				void itemsRemoved(pp::OutgoingPacket & out_packet, UInt64 characterId, const std::vector<UInt16>& data)
+				{
+					out_packet.start(realm_packet::ItemsRemoved);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write_dynamic_range<NetUInt32>(data);
+					out_packet.finish();
+				}
 			}
 
 			namespace world_read
@@ -447,6 +470,40 @@ namespace wowpp
 					return packet
 						>> io::read<NetUInt64>(out_characterId)
 						>> io::read<NetUInt64>(out_removeGuid);
+				}
+
+				bool itemData(io::Reader & packet, UInt64 & out_characterId, std::map<UInt16, ItemData>& out_data)
+				{
+					UInt32 count = 0;
+					if (!(packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read<NetUInt32>(count)))
+					{
+						return false;
+					}
+
+					for (UInt32 i = 0; i < count; ++i)
+					{
+						UInt16 slot = 0;
+						ItemData data;
+						if (!(packet
+							>> io::read<NetUInt16>(slot)
+							>> data))
+						{
+							return false;
+						}
+
+						out_data.insert(std::make_pair(slot, std::move(data)));
+					}
+
+					return packet;
+				}
+
+				bool itemsRemoved(io::Reader & packet, UInt64 & out_characterId, std::vector<UInt16>& out_slots)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read_container<NetUInt32>(out_slots);
 				}
 
 			}

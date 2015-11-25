@@ -116,6 +116,9 @@ namespace wowpp
 			case pp::world_realm::realm_packet::RemoveIgnore:
 				handleRemoveIgnore(packet);
 				break;
+			case pp::world_realm::realm_packet::ItemData:
+				handleItemData(packet);
+				break;
 			default:
 				// Log about unknown or unhandled packet
 				const auto &realm = m_config.realms[m_realmEntryIndex];
@@ -502,6 +505,38 @@ namespace wowpp
 		}
 
 		player->removeIgnore(ignoreGUID);
+	}
+
+	void RealmConnector::handleItemData(pp::Protocol::IncomingPacket & packet)
+	{
+		UInt64 characterId;
+		std::map<UInt16, pp::world_realm::ItemData> data;
+		if (!(pp::world_realm::realm_read::itemData(packet, characterId, data)))
+		{
+			return;
+		}
+
+		// Check if data is empty
+		if (data.empty())
+			return;
+
+		// Find requested character
+		auto *player = m_playerManager.getPlayerByCharacterGuid(characterId);
+		if (!player)
+		{
+			WLOG("Received item data from realm but couldn't find player connection!");
+			return;
+		}
+
+		auto character = player->getCharacter();
+		if (!character)
+		{
+			WLOG("Received item data, but could not find players game character!");
+			return;
+		}
+
+		// Update characters item
+		DLOG("TODO: Updating " << data.size() << " items...");
 	}
 
 	void RealmConnector::handleProxyPacket(pp::Protocol::IncomingPacket &packet)

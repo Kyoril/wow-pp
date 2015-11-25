@@ -61,8 +61,11 @@ namespace wowpp
 		ILOG("Version " << Major << "." << Minor << "." << Build << "." << Revisision << " (Commit: " << GitCommit << ")");
 		ILOG("Last Change: " << GitLastChange);
 
+#ifdef WOWPP_WITH_DEV_COMMANDS
+		ILOG("[Developer Commands Enabled]");
+#endif
 #if defined(DEBUG) || defined(_DEBUG)
-		ILOG("Debug build enabled");
+		DLOG("[Debug build enabled]");
 #endif
 
 		// Load the configuration

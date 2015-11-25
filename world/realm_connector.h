@@ -114,6 +114,7 @@ namespace wowpp
 		void handleIgnoreList(pp::Protocol::IncomingPacket &packet);
 		void handleAddIgnore(pp::Protocol::IncomingPacket &packet);
 		void handleRemoveIgnore(pp::Protocol::IncomingPacket &packet);
+		void handleItemData(pp::Protocol::IncomingPacket &packet);
 
 	private:
 

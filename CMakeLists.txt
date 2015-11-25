@@ -31,7 +31,7 @@ project(WoW)
 		add_definitions("-D_ITERATOR_DEBUG_LEVEL=0")
 	endif(MSVC)
 	
-	set(WOWPP_SUPPORTED_CLIENT  "8606" CACHE STRING "This sets the supported client build. Currently, WoW++ supports build (2.0.12.)6546 and (2.4.3.)8606")
+	set(WOWPP_SUPPORTED_CLIENT "8606" CACHE STRING "This sets the supported client build. Currently, WoW++ supports build (2.0.12.)6546 and (2.4.3.)8606")
 	if (NOT WOWPP_SUPPORTED_CLIENT MATCHES "6546" AND NOT WOWPP_SUPPORTED_CLIENT MATCHES "8606")
 		message(FATAL_ERROR "Unsupported client build! WoW++ only supports build 6546 and 8606!")
 	endif()
@@ -116,6 +116,12 @@ project(WoW)
 	
 	# Add mysql include directories
 	include_directories(${MYSQL_INCLUDE_DIR})
+	
+	# Build with developer commands
+	option(WOWPP_WITH_DEV_COMMANDS "If checked, developer commands will be available." OFF)
+	if(WOWPP_WITH_DEV_COMMANDS)
+		add_definitions("-DWOWPP_WITH_DEV_COMMANDS")
+	endif(WOWPP_WITH_DEV_COMMANDS)
 	
 	# We want to use Vista or later API since we need this for
 	# GetTickCount64 which is not available on XP and prior
