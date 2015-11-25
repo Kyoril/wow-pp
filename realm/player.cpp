@@ -57,7 +57,6 @@ namespace wowpp
 		, m_project(project)
 		, m_connection(std::move(connection))
 		, m_address(address)
-		, m_seed(0x3a6833cd)	//TODO: Randomize
         , m_authed(false)
 		, m_characterId(std::numeric_limits<DatabaseId>::max())
 		, m_instanceId(std::numeric_limits<UInt32>::max())
@@ -72,6 +71,10 @@ namespace wowpp
 		, m_transferZ(0.0f)
 		, m_transferO(0.0f)
 	{
+		// Randomize seed
+		std::uniform_int_distribution<UInt32> dist;
+		m_seed = dist(randomGenerator);
+
 		assert(m_connection);
 
 		m_connection->setListener(*this);
