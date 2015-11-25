@@ -29,6 +29,7 @@
 #include "world.h"
 #include "game/game_character.h"
 #include "log/default_log_levels.h"
+#include <boost/algorithm/string.hpp>
 
 namespace wowpp
 {
@@ -130,7 +131,48 @@ namespace wowpp
 			{
 				if (url == "/additem")
 				{
-					DLOG("Additem");
+					// Parse arguments
+					std::vector<String> arguments;
+					boost::split(arguments, request.getPostData(), boost::is_any_of("&"));
+
+					// Handle required data
+					String characterName;
+					UInt32 itemGuid = 0;
+
+					for (auto &arg : arguments)
+					{
+						auto delimiterPos = arg.find('=');
+						String argName = arg.substr(0, delimiterPos);
+						String argValue = arg.substr(delimiterPos + 1);
+
+						if (argName == "character")
+						{
+							characterName = argValue;
+						}
+						else if (argName == "item")
+						{
+							itemGuid = atoi(argValue.c_str());
+						}
+					}
+
+					if (itemGuid == 0 || characterName.empty())
+					{
+						sendXmlAnswer(response, "<status>MISSING_DATA</status>");
+						break;
+					}
+
+					auto &playerMgr = static_cast<WebService &>(this->getService()).getPlayerManager();
+					auto *player = playerMgr.getPlayerByCharacterName(characterName);
+					if (!player)
+					{
+						// TODO: Add item when offline
+						sendXmlAnswer(response, "<status>PLAYER_NOT_ONLINE</status>");
+						break;
+					}
+
+					// TODO: Send a create item request to the world node
+
+
 					sendXmlAnswer(response, "<status>SUCCESS</status>");
 				}
 				else if (url == "/shutdown")
