@@ -170,10 +170,26 @@ namespace wowpp
 						break;
 					}
 
-					// TODO: Send a create item request to the world node
-
-
-					sendXmlAnswer(response, "<status>SUCCESS</status>");
+					// Send a create item request
+					auto result = player->addItem(itemGuid, 1);
+					switch (result)
+					{
+						case add_item_result::Success:
+							sendXmlAnswer(response, "<status>SUCCESS</status>");
+							return;
+						case add_item_result::ItemNotFound:
+							sendXmlAnswer(response, "<status>UNKNOWN_ITEM</status>");
+							return;
+						case add_item_result::BagIsFull:
+							sendXmlAnswer(response, "<status>INVENTORY_FULL</status>");
+							return;
+						case add_item_result::TooManyItems:
+							sendXmlAnswer(response, "<status>TOO_MANY_ITEMS</status>");
+							return;
+						default:
+							sendXmlAnswer(response, "<status>UNKNOWN_ERROR</status>");
+							return;
+					}
 				}
 				else if (url == "/shutdown")
 				{

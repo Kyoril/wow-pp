@@ -997,6 +997,72 @@ namespace wowpp
 		m_connection->flush();
 	}
 
+	AddItemResult Player::addItem(UInt32 itemId, UInt32 amount)
+	{
+		const auto *itemEntry = m_project.items.getById(itemId);
+		if (!itemEntry)
+		{
+			return add_item_result::ItemNotFound;
+		}
+
+		if (!m_worldNode)
+		{
+			// Player is not in a world right now (maybe loading screen)
+			return add_item_result::Unknown;
+		}
+
+		if (amount > itemEntry->maxStack) amount = itemEntry->maxStack;
+
+		// Iterate all available items
+		LinearSet<UInt16> usedSlots;
+		for (auto &item : m_itemData)
+		{
+			if (item.slot >= player_inventory_pack_slots::Start &&
+				item.slot < player_inventory_pack_slots::End)
+			{
+				usedSlots.add(item.slot);
+				if (item.entry == itemId &&
+					itemEntry->maxStack > 1 &&
+					item.stackCount < itemEntry->maxStack + amount)
+				{
+					item.stackCount += amount;
+					amount = 0;
+					break;
+				}
+			}
+		}
+
+		if (amount > 0)
+		{
+			for (UInt16 i = player_inventory_pack_slots::Start; i < player_inventory_pack_slots::End; ++i)
+			{
+				if (!usedSlots.contains(i))
+				{
+					pp::world_realm::ItemData data;
+					data.contained = 0;
+					data.creator = 0;
+					data.durability = itemEntry->durability;
+					data.entry = itemId;
+					data.randomPropertyIndex = 0;
+					data.randomSuffixIndex = 0;
+					data.slot = i;
+					data.stackCount = amount;
+					m_itemData.emplace_back(std::move(data));
+					amount = 0;
+					break;
+				}
+			}
+		}
+
+		// Notify world node about this
+		sendPacket(
+			std::bind(game::server_write::messageChat, std::placeholders::_1, chat_msg::System, language::Universal, "", 0, "Successfully added item(s).", nullptr));
+
+		// Save items
+		m_database.saveGameCharacter(*m_gameCharacter, m_itemData);
+		return add_item_result::Success;
+	}
+
 	void Player::handleNameQuery(game::IncomingPacket &packet)
 	{
 		// Object guid

@@ -50,6 +50,25 @@ namespace wowpp
 	class PlayerSocial;
 	class PlayerGroup;
 
+	namespace add_item_result
+	{
+		enum Type
+		{
+			/// Successfully added item.
+			Success,
+			/// Item could not be found.
+			ItemNotFound,
+			/// Players bag is full.
+			BagIsFull,
+			/// Player has too many instances of that item.
+			TooManyItems,
+			/// Unkwown error.
+			Unknown
+		};
+	}
+
+	typedef add_item_result::Type AddItemResult;
+
 	/// Player connection class.
 	class Player final
 			: public game::IConnectionListener
@@ -130,7 +149,7 @@ namespace wowpp
 		UInt32 getWorldInstanceId() const { return m_instanceId; }
 		/// Gets the connected world node
 		World *getWorldNode() { return m_worldNode; }
-
+		/// 
 		std::vector<pp::world_realm::ItemData> &getItemData() { return m_itemData; }
 
 		/// Sends an encrypted packet to the game client
@@ -162,6 +181,11 @@ namespace wowpp
 		/// @param opCode The packet's identifier.
 		/// @param buffer The packet content buffer which also includes the op code and the packet size.
 		void sendProxyPacket(UInt16 opCode, const std::vector<char> &buffer);
+
+	public:
+
+		/// Adds a new item to the players inventory if logged in.
+		AddItemResult addItem(UInt32 itemId, UInt32 amount);
 
 	private:
 
