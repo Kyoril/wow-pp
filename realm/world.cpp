@@ -133,9 +133,6 @@ namespace wowpp
 			return;
 		}
 
-		// Notify
-		ILOG("World node announcement: " << mapIds.size() << " maps and " << instances.size() << " instances");
-
 		// Apply instances
 		for (auto &instance : instances)
 		{
@@ -180,7 +177,7 @@ namespace wowpp
 			std::bind(realm_write::loginAnswer, std::placeholders::_1, login_result::Success, std::cref(m_realmName)));
 	}
 
-	void World::enterWorldInstance(DatabaseId characterDbId, UInt32 instanceId, const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &out_items)
+	void World::enterWorldInstance(UInt64 characterGuid, UInt32 instanceId, const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &out_items)
 	{
 		// Get a list of spells
 		std::vector<UInt32> spellIds;
@@ -190,19 +187,19 @@ namespace wowpp
 		}
 
 		m_connection->sendSinglePacket(
-			std::bind(pp::world_realm::realm_write::characterLogIn, std::placeholders::_1, characterDbId, instanceId, std::cref(character), std::cref(spellIds), std::cref(out_items)));
+			std::bind(pp::world_realm::realm_write::characterLogIn, std::placeholders::_1, characterGuid, instanceId, std::cref(character), std::cref(spellIds), std::cref(out_items)));
 	}
 
-	void World::leaveWorldInstance(DatabaseId characterDbId, pp::world_realm::WorldLeftReason reason)
+	void World::leaveWorldInstance(UInt64 characterGuid, pp::world_realm::WorldLeftReason reason)
 	{
 		m_connection->sendSinglePacket(
-			std::bind(pp::world_realm::realm_write::leaveWorldInstance, std::placeholders::_1, characterDbId, reason));
+			std::bind(pp::world_realm::realm_write::leaveWorldInstance, std::placeholders::_1, characterGuid, reason));
 	}
 
-	void World::sendProxyPacket(DatabaseId characterId, UInt16 opCode, UInt32 size, const std::vector<char> &buffer)
+	void World::sendProxyPacket(UInt64 characterGuid, UInt16 opCode, UInt32 size, const std::vector<char> &buffer)
 	{
 		m_connection->sendSinglePacket(
-			std::bind(pp::world_realm::realm_write::clientProxyPacket, std::placeholders::_1, characterId, opCode, size, std::cref(buffer)));
+			std::bind(pp::world_realm::realm_write::clientProxyPacket, std::placeholders::_1, characterGuid, opCode, size, std::cref(buffer)));
 	}
 
 	void World::handleWorldInstanceEntered(pp::IncomingPacket &packet)
@@ -219,8 +216,6 @@ namespace wowpp
 		{
 			return;
 		}
-
-		ILOG("World instance ready for character " << characterDbId << ": " << instanceId);
 
 		// Store instance id if not already available
 		if (!m_instances.contains(instanceId))
@@ -353,7 +348,7 @@ namespace wowpp
 		player->sendProxyPacket(opCode, outBuffer);
 	}
 
-	void World::sendChatMessage(NetUInt64 characterGuid, game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message)
+	void World::sendChatMessage(UInt64 characterGuid, game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message)
 	{
 		m_connection->sendSinglePacket(
 			std::bind(pp::world_realm::realm_write::chatMessage, std::placeholders::_1, characterGuid, type, lang, std::cref(receiver), std::cref(channel), std::cref(message)));
@@ -506,15 +501,21 @@ namespace wowpp
 		m_connection->sendSinglePacket(
 			std::bind(pp::world_realm::realm_write::ignoreList, std::placeholders::_1, characterGuid, std::cref(list)));
 	}
-	void World::characterAddIgnore(UInt64 characterId, UInt64 ignoreGuid)
+	void World::characterAddIgnore(UInt64 characterGuid, UInt64 ignoreGuid)
 	{
 		m_connection->sendSinglePacket(
-			std::bind(pp::world_realm::realm_write::addIgnore, std::placeholders::_1, characterId, ignoreGuid));
+			std::bind(pp::world_realm::realm_write::addIgnore, std::placeholders::_1, characterGuid, ignoreGuid));
 	}
-	void World::characterRemoveIgnore(UInt64 characterId, UInt64 removeGuid)
+	void World::characterRemoveIgnore(UInt64 characterGuid, UInt64 removeGuid)
 	{
 		m_connection->sendSinglePacket(
-			std::bind(pp::world_realm::realm_write::removeIgnore, std::placeholders::_1, characterId, removeGuid));
+			std::bind(pp::world_realm::realm_write::removeIgnore, std::placeholders::_1, characterGuid, removeGuid));
+	}
+
+	void World::itemData(UInt64 characterGuid, const std::map<UInt16, pp::world_realm::ItemData>& items)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::realm_write::itemData, std::placeholders::_1, characterGuid, std::cref(items)));
 	}
 
 }

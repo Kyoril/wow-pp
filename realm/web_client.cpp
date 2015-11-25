@@ -129,6 +129,10 @@ namespace wowpp
 			}
 			case net::http::IncomingRequest::Post:
 			{
+				// Parse arguments
+				std::vector<String> arguments;
+				boost::split(arguments, request.getPostData(), boost::is_any_of("&"));
+
 				if (url == "/shutdown")
 				{
 					ILOG("Shutting down..");
@@ -140,10 +144,6 @@ namespace wowpp
 #ifdef WOWPP_WITH_DEV_COMMANDS
 				else if (url == "/additem")
 				{
-					// Parse arguments
-					std::vector<String> arguments;
-					boost::split(arguments, request.getPostData(), boost::is_any_of("&"));
-
 					// Handle required data
 					String characterName;
 					UInt32 itemGuid = 0;
