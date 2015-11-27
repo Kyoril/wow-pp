@@ -932,7 +932,7 @@ namespace wowpp
 
 			sendProxyPacket(
 				std::bind(game::server_write::itemPushResult, std::placeholders::_1, 
-					m_character->getGuid(), std::cref(*inst), true, false, 0xFF, pos.position, pos.count, pos.count));
+					m_character->getGuid(), std::cref(*inst), false, true, 0xFF, pos.position, pos.count, pos.count));
 		}
 
 		DLOG("CMSG_AUTO_STORE_LOOT_ITEM(loot slot: " << UInt32(lootSlot) << ")");

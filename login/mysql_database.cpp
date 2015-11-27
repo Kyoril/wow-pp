@@ -45,7 +45,6 @@ namespace wowpp
 
 		// Mark all realms as offline
 		setAllRealmsOffline();
-
 		ILOG("Connected to MySQL at " <<
 			m_connectionInfo.host << ":" <<
 			m_connectionInfo.port);
@@ -61,7 +60,6 @@ namespace wowpp
 		wowpp::MySQL::Select select(m_connection,
 			(boost::format("SELECT id,password FROM account WHERE username='%1%' LIMIT 1")
 			% safeName).str());
-
 		if (select.success())
 		{
 			wowpp::MySQL::Row row(select);

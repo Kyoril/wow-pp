@@ -212,6 +212,12 @@ namespace wowpp
 			}
 		}
 
+		if (m_authed)
+		{
+			// Notify login server about disconnection so that the session can be closed
+
+		}
+
 		destroy();
 	}
 
@@ -1016,6 +1022,9 @@ namespace wowpp
 
 		if (amount > itemEntry->maxStack) amount = itemEntry->maxStack;
 
+		// 
+		std::map<UInt16, pp::world_realm::ItemData> modifiedItems;
+
 		// Iterate all available items
 		LinearSet<UInt16> usedSlots;
 		for (auto &item : m_itemData)
@@ -1026,10 +1035,12 @@ namespace wowpp
 				usedSlots.add(item.slot);
 				if (item.entry == itemId &&
 					itemEntry->maxStack > 1 &&
-					item.stackCount < itemEntry->maxStack + amount)
+					item.stackCount <= itemEntry->maxStack - amount)
 				{
 					item.stackCount += amount;
 					amount = 0;
+
+					modifiedItems[item.slot] = item;
 					break;
 				}
 			}
@@ -1050,6 +1061,7 @@ namespace wowpp
 					data.randomSuffixIndex = 0;
 					data.slot = i;
 					data.stackCount = amount;
+					modifiedItems[i] = data;
 					m_itemData.emplace_back(std::move(data));
 					amount = 0;
 					break;
@@ -1058,11 +1070,12 @@ namespace wowpp
 		}
 
 		// Notify world node about this
-		sendPacket(
-			std::bind(game::server_write::messageChat, std::placeholders::_1, chat_msg::System, language::Universal, "", 0, "Successfully added item(s).", nullptr));
+		m_worldNode->itemData(m_gameCharacter->getGuid(), std::cref(modifiedItems));
+		//sendPacket(
+		//	std::bind(game::server_write::messageChat, std::placeholders::_1, chat_msg::System, language::Universal, "", 0, "Successfully added item(s).", nullptr));
 
 		// Save items
-		m_database.saveGameCharacter(*m_gameCharacter, m_itemData);
+		//m_database.saveGameCharacter(*m_gameCharacter, m_itemData);
 		return add_item_result::Success;
 	}
 

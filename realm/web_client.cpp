@@ -147,6 +147,7 @@ namespace wowpp
 					// Handle required data
 					String characterName;
 					UInt32 itemGuid = 0;
+					UInt32 amount = 1;
 
 					for (auto &arg : arguments)
 					{
@@ -161,6 +162,11 @@ namespace wowpp
 						else if (argName == "item")
 						{
 							itemGuid = atoi(argValue.c_str());
+						}
+						else if (argName == "amount")
+						{
+							amount = atoi(argValue.c_str());
+							if (amount < 1) amount = 1;
 						}
 					}
 
@@ -180,7 +186,7 @@ namespace wowpp
 					}
 
 					// Send a create item request
-					auto result = player->addItem(itemGuid, 1);
+					auto result = player->addItem(itemGuid, amount);
 					switch (result)
 					{
 						case add_item_result::Success:

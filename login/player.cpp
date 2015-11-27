@@ -387,6 +387,8 @@ namespace wowpp
 		}
 
 		WLOG("TODO: Reconnect challenge");
+		DLOG("Account-ID: " << m_accountId);
+		DLOG("Is authentificated: " << isAuthentificated());
 	}
 
 	void Player::handleReconnectProof(auth::IncomingPacket & packet)

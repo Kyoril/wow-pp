@@ -372,8 +372,6 @@ namespace wowpp
 			itemInstance->setUInt64Value(item_fields::Creator, item.creator);
 			itemInstance->setUInt32Value(item_fields::StackCount, item.stackCount);
 			character->addItem(std::move(itemInstance), item.slot);
-
-
 		}
 
 		// Get character location
@@ -535,8 +533,145 @@ namespace wowpp
 			return;
 		}
 
-		// Update characters item
-		DLOG("TODO: Updating " << data.size() << " items...");
+		// Spawn this item
+		std::vector<std::vector<char>> blocks;
+		
+		// Create items
+		for (auto &it : data)
+		{
+			std::vector<char> createItemBlock;
+
+			// Skip items that are not available
+			const auto *entry = m_project.items.getById(it.second.entry);
+			if (!entry)
+			{
+				WLOG("Unknown item entry: " << it.second.entry << " - item will be skipped!");
+				continue;
+			}
+
+			if (auto *item = character->getItemByPos(0xFF, static_cast<UInt8>(it.first)))
+			{
+				UInt32 oldStackCount = item->getUInt32Value(item_fields::StackCount);
+				item->setUInt32Value(item_fields::StackCount, it.second.stackCount);
+				item->setUInt32Value(item_fields::Durability, it.second.durability);
+				item->setUInt64Value(item_fields::Contained, it.second.contained);
+				item->setUInt64Value(item_fields::Creator, it.second.creator);
+
+				io::VectorSink sink(createItemBlock);
+				io::Writer writer(sink);
+				{
+					UInt8 updateType = 0x00;						// Update type (0x00 = UPDATE_VALUES)
+																	// Header with object guid and type
+					UInt64 guid = item->getGuid();
+					writer
+						<< io::write<NetUInt8>(updateType);
+
+					UInt64 guidCopy = guid;
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+					for (UInt8 i = 0; guidCopy != 0; ++i)
+					{
+						if (guidCopy & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(guidCopy & 0xFF);
+							++size;
+						}
+
+						guidCopy >>= 8;
+					}
+					writer.sink().write((const char*)&packGUID[0], size);
+
+					// Write values update
+					item->writeValueUpdateBlock(writer, *character, false);
+				}
+
+				item->clearUpdateMask();
+
+				player->sendProxyPacket(
+					std::bind(game::server_write::itemPushResult, std::placeholders::_1,
+						character->getGuid(), std::cref(*item), true, false, 0xFF, it.first, it.second.stackCount - oldStackCount, it.second.stackCount));
+
+				// Update inventory fields
+				character->forceFieldUpdate(character_fields::InvSlotHead + (it.first * 2));
+				character->forceFieldUpdate(character_fields::InvSlotHead + (it.first * 2) + 1);
+			}
+			else
+			{
+				static UInt32 itemCounter = 0xF0000;
+
+				// Create item instance
+				std::shared_ptr<GameItem> itemInstance(new GameItem(*entry));
+				itemInstance->initialize();
+				itemInstance->setUInt64Value(object_fields::Guid, createEntryGUID(itemCounter++, entry->id, guid_type::Item));
+				itemInstance->setUInt32Value(item_fields::Durability, it.second.durability);
+				itemInstance->setUInt64Value(item_fields::Contained, it.second.contained);
+				itemInstance->setUInt64Value(item_fields::Creator, it.second.creator);
+				itemInstance->setUInt32Value(item_fields::StackCount, it.second.stackCount);
+				character->addItem(itemInstance, it.second.slot);
+
+				io::VectorSink createItemSink(createItemBlock);
+				io::Writer createItemWriter(createItemSink);
+				{
+					UInt8 updateType = 0x02;						// Item
+					UInt8 updateFlags = 0x08 | 0x10;				// 
+					UInt8 objectTypeId = 0x01;						// Item
+
+					UInt64 guid = itemInstance->getGuid();
+
+					// Header with object guid and type
+					createItemWriter
+						<< io::write<NetUInt8>(updateType);
+					UInt64 guidCopy = guid;
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+					for (UInt8 i = 0; guidCopy != 0; ++i)
+					{
+						if (guidCopy & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(guidCopy & 0xFF);
+							++size;
+						}
+
+						guidCopy >>= 8;
+					}
+					createItemWriter.sink().write((const char*)&packGUID[0], size);
+					createItemWriter
+						<< io::write<NetUInt8>(objectTypeId)
+						<< io::write<NetUInt8>(updateFlags);
+
+					// Lower-GUID update?
+					if (updateFlags & 0x08)
+					{
+						createItemWriter
+							<< io::write<NetUInt32>(guidLowerPart(guid));
+					}
+
+					// High-GUID update?
+					if (updateFlags & 0x10)
+					{
+						createItemWriter
+							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
+					}
+
+					// Write values update
+					itemInstance->writeValueUpdateBlock(createItemWriter, *character, true);
+				}
+
+				player->sendProxyPacket(
+					std::bind(game::server_write::itemPushResult, std::placeholders::_1,
+						character->getGuid(), std::cref(*itemInstance), true, false, 0xFF, it.first, it.second.stackCount, it.second.stackCount));
+			}
+
+			// Send packet
+			blocks.emplace_back(std::move(createItemBlock));
+		}
+
+		player->sendProxyPacket(
+			std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
 	}
 
 	void RealmConnector::handleProxyPacket(pp::Protocol::IncomingPacket &packet)
