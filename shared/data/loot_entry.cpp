@@ -60,7 +60,7 @@ namespace wowpp
 						LootDefinition &def = group[n];
 
 						UInt32 itemId = 0;
-						itemTable->tryGetInteger("item", itemId);
+						itemTable->tryGetInteger("i", itemId);
 						context.loadLater.push_back([&context, &def, itemId]() -> bool
 						{
 							def.item = context.getItem(itemId);
@@ -76,9 +76,9 @@ namespace wowpp
 							return true;
 						});
 
-						itemTable->tryGetInteger("min_count", def.minCount);
-						itemTable->tryGetInteger("max_count", def.maxCount);
-						itemTable->tryGetInteger("drop_chance", def.dropChance);
+						itemTable->tryGetInteger("min", def.minCount);
+						itemTable->tryGetInteger("max", def.maxCount);
+						itemTable->tryGetInteger("r", def.dropChance);
 
 						UInt32 isActive = 1;
 						itemTable->tryGetInteger("active", isActive);
@@ -109,10 +109,10 @@ namespace wowpp
 					{
 						sff::write::Table<char> itemTable(itemsArray, sff::write::Comma);
 						{
-							if (def.item != nullptr) itemTable.addKey("item", def.item->id);
-							if (def.minCount != 1) itemTable.addKey("min_count", def.minCount);
-							if (def.maxCount != 1) itemTable.addKey("max_count", def.maxCount);
-							itemTable.addKey("drop_chance", def.dropChance);
+							if (def.item != nullptr) itemTable.addKey("i", def.item->id);
+							if (def.minCount != 1) itemTable.addKey("min", def.minCount);
+							if (def.maxCount != 1) itemTable.addKey("max", def.maxCount);
+							itemTable.addKey("r", def.dropChance);
 						}
 						itemTable.finish();
 					}
