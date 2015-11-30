@@ -928,11 +928,9 @@ namespace wowpp
 			sendProxyPacket(
 				std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
 			
-			// Create the chat packet
-			std::vector<char> buffer;
-			io::VectorSink sink(buffer);
-			game::Protocol::OutgoingPacket itemPacket(sink);
-			game::server_write::itemPushResult(itemPacket, m_character->getGuid(), *inst, false, true, 0xFF, pos.position, pos.count, pos.count);
+			sendProxyPacket(
+				std::bind(game::server_write::itemPushResult, std::placeholders::_1, 
+					m_character->getGuid(), std::cref(*inst), true, false, 0xFF, pos.position, pos.count, pos.count));
 
 			// Group broadcasting
 			if (m_character->getGroupId() != 0)
@@ -940,6 +938,12 @@ namespace wowpp
 				TileIndex2D tile;
 				if (m_character->getTileIndex(tile))
 				{
+					// Create the packet
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+					game::Protocol::OutgoingPacket itemPacket(sink);
+					game::server_write::itemPushResult(itemPacket, m_character->getGuid(), *inst, true, false, 0xFF, pos.position, pos.count, pos.count);
+
 					forEachSubscriberInSight(
 						m_character->getWorldInstance()->getGrid(),
 						tile,
