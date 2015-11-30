@@ -928,11 +928,34 @@ namespace wowpp
 			sendProxyPacket(
 				std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
 			
-			// TODO: Group broadcasting
+			// Create the chat packet
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket itemPacket(sink);
+			game::server_write::itemPushResult(itemPacket, m_character->getGuid(), *inst, false, true, 0xFF, pos.position, pos.count, pos.count);
 
-			sendProxyPacket(
-				std::bind(game::server_write::itemPushResult, std::placeholders::_1, 
-					m_character->getGuid(), std::cref(*inst), false, true, 0xFF, pos.position, pos.count, pos.count));
+			// Group broadcasting
+			if (m_character->getGroupId() != 0)
+			{
+				TileIndex2D tile;
+				if (m_character->getTileIndex(tile))
+				{
+					forEachSubscriberInSight(
+						m_character->getWorldInstance()->getGrid(),
+						tile,
+						[&](ITileSubscriber &subscriber)
+					{
+						if (subscriber.getControlledObject()->getGuid() != m_character->getGuid())
+						{
+							auto subscriberGroup = subscriber.getControlledObject()->getGroupId();
+							if (subscriberGroup != 0 && subscriberGroup == m_character->getGroupId())
+							{
+								subscriber.sendPacket(itemPacket, buffer);
+							}
+						}
+					});
+				}
+			}
 		}
 
 		DLOG("CMSG_AUTO_STORE_LOOT_ITEM(loot slot: " << UInt32(lootSlot) << ")");
