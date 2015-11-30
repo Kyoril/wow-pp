@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
 	desc.add_options()
 		("help,h", "produce help message")
 #ifdef __linux__
-		("service,s", "run the realm as a background process on linux")
+		("service,s", "run the realm as a background process")
 #endif
 		;
 
@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
 		switch (wowpp::createService())
 		{
 			case wowpp::create_service_result::IsObsoleteProcess:
-				std::cout << "Process is obsolete, exiting" << '\n';
+				std::cout << "Realm service is now running." << '\n';
 				return 0;
 
 			case wowpp::create_service_result::IsServiceProcess:
