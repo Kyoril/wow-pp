@@ -389,7 +389,7 @@ namespace wowpp
 			}
 
 			// Save the character data
-			m_database.saveGameCharacter(*character, items);
+			m_database.saveGameCharacter(*character, items, spellIds);
 			return;
 		}
 		else
@@ -406,7 +406,7 @@ namespace wowpp
 			}
 
 			// Save character
-			player->saveCharacter();
+			m_database.saveGameCharacter(*player->getGameCharacter(), items, spellIds);
 		}
 	}
 

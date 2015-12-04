@@ -611,7 +611,7 @@ namespace wowpp
 		}
 	}
 
-	bool MySQLDatabase::saveGameCharacter(const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &items)
+	bool MySQLDatabase::saveGameCharacter(const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &items, const std::vector<UInt32> &spells)
 	{
 		GameTime start = getCurrentTime();
 		MySQL::Transaction transaction(m_connection);
@@ -662,6 +662,16 @@ namespace wowpp
 			return false;
 		}
 
+		if (!m_connection.execute((boost::format(
+			"DELETE FROM `character_spells` WHERE `guid`=%1%;")
+			% lowerGuid					// 1
+			).str()))
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+
 		if (!items.empty())
 		{
 			std::ostringstream strm;
@@ -685,6 +695,31 @@ namespace wowpp
 					strm << item.creator;
 				}
 				strm << "," << UInt16(item.stackCount) << "," << item.durability << ")";
+			}
+			strm << ";";
+
+			if (!m_connection.execute(strm.str()))
+			{
+				// There was an error
+				printDatabaseError();
+				return false;
+			}
+		}
+
+		if (!spells.empty())
+		{
+			std::ostringstream strm;
+			strm << "INSERT INTO `character_spells` (`guid`, `spell`) VALUES ";
+			bool isFirstItem = true;
+			for (auto &spell : spells)
+			{
+				if (!isFirstItem) strm << ",";
+				else
+				{
+					isFirstItem = false;
+				}
+
+				strm << "(" << lowerGuid << "," << spell << ")";
 			}
 			strm << ";";
 

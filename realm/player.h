@@ -121,7 +121,7 @@ namespace wowpp
 		/// 
 		void worldInstanceLeft(World &world, UInt32 instanceId, pp::world_realm::WorldLeftReason reason);
 		/// Saves the current character (if any).
-		void saveCharacter();
+		//void saveCharacter();
 		/// Inititalizes a character transfer to a new map.
 		void initializeTransfer(UInt32 map, float x, float y, float z, float o);
 		/// Commits an initialized transfer (if any).

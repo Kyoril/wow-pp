@@ -1602,19 +1602,16 @@ namespace wowpp
 				std::bind(game::server_write::itemQuerySingleResponse, std::placeholders::_1, std::cref(*item)));
 		}
 	}
-
+	/*
 	void Player::saveCharacter()
 	{
 		if (m_gameCharacter)
 		{
-			float x, y, z, o;
-			m_gameCharacter->getLocation(x, y, z, o);
-
-			m_database.saveGameCharacter(*m_gameCharacter, m_itemData);
+			//m_database.saveGameCharacter(*m_gameCharacter, m_itemData);
 			m_database.setCharacterActionButtons(m_gameCharacter->getGuid(), m_actionButtons);
 		}
 	}
-
+	*/
 	void Player::handleGroupInvite(game::IncomingPacket &packet)
 	{
 		String playerName;

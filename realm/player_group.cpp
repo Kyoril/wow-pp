@@ -67,8 +67,6 @@ namespace wowpp
 		return (it != m_members.end());
 	}
 
-	
-
 	void PlayerGroup::setLeader(UInt64 guid)
 	{
 		// New character has to be a member of this group

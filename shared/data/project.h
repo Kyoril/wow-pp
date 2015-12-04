@@ -44,6 +44,7 @@
 #include "talent_entry.h"
 #include "vendor_entry.h"
 #include "trainer_entry.h"
+#include "quest_entry.h"
 #include <boost/noncopyable.hpp>
 #include <memory>
 
@@ -77,6 +78,7 @@ namespace wowpp
 	typedef MakeTemplateManager<TalentEntry>::type TalentEntryManager;
 	typedef MakeTemplateManager<VendorEntry>::type VendorEntryManager;
 	typedef MakeTemplateManager<TrainerEntry>::type TrainerEntryManager;
+	typedef MakeTemplateManager<QuestEntry>::type QuestEntryManager;
 
 	class Project : private boost::noncopyable
 	{
@@ -103,6 +105,7 @@ namespace wowpp
 		TalentEntryManager talents;
 		VendorEntryManager vendors;
 		TrainerEntryManager trainers;
+		QuestEntryManager quests;
 
 	public:
 
