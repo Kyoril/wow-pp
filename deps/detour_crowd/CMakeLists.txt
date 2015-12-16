@@ -30,5 +30,5 @@ add_library(detour_crowd ${SRC_FILES})
 
 # Solution folder
 if(MSVC)
-	set_property(TARGET detour_crowd PROPERTY FOLDER "deps/detour_crowd")
+	set_property(TARGET detour_crowd PROPERTY FOLDER "deps")
 endif(MSVC)

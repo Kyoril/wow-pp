@@ -30,5 +30,5 @@ add_library(debug_utils ${SRC_FILES})
 
 # Solution folder
 if(MSVC)
-	set_property(TARGET debug_utils PROPERTY FOLDER "deps/debug_utils")
+	set_property(TARGET debug_utils PROPERTY FOLDER "deps")
 endif(MSVC)

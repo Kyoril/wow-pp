@@ -317,5 +317,5 @@ cmake_minimum_required(VERSION 2.8)
 
 	# Solution folder
 	if(MSVC)
-		set_property(TARGET stormlib PROPERTY FOLDER "deps/stormlib")
+		set_property(TARGET stormlib PROPERTY FOLDER "deps")
 	endif(MSVC)
