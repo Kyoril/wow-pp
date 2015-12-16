@@ -36,5 +36,5 @@ message VendorEntry {
 }
 
 message Vendors {
-	repeated VendorEntry vendors = 1;
+	repeated VendorEntry entry = 1;
 }

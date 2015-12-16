@@ -85,5 +85,5 @@ message SpellEntry {
 }
 
 message Spells {
-	repeated SpellEntry spells = 1;
+	repeated SpellEntry entry = 1;
 }

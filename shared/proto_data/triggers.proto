@@ -39,5 +39,5 @@ message TriggerEntry {
 }
 
 message Triggers {
-	repeated TriggerEntry triggers = 1;
+	repeated TriggerEntry entry = 1;
 }

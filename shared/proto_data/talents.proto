@@ -34,5 +34,5 @@ message TalentEntry {
 }
 
 message Talents {
-	repeated TalentEntry talents = 1;
+	repeated TalentEntry entry = 1;
 }

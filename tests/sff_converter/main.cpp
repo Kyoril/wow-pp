@@ -65,6 +65,81 @@ namespace wowpp
 {
 	namespace proto
 	{
+		template<class T1, class T2>
+		struct TemplateManager
+		{
+		private:
+
+			T1 m_data;
+			std::map<wowpp::UInt32, T2*> m_templatesById;
+
+		public:
+
+			bool load(std::istream &stream)
+			{
+				if (!m_data.ParseFromIstream(&stream))
+				{
+					return false;
+				}
+
+				// Iterate through all data entries and store ids for quick id lookup
+				for (int i = 0; i < m_data.entry_size(); ++i)
+				{
+					T2 *entry = m_data.mutable_entry(i);
+					m_templatesById[entry->id()] = entry;
+				}
+
+				return true;
+			}
+
+			bool save(std::ostream &stream) const
+			{
+				return m_data.SerializeToOstream(&stream);
+			}
+
+			const T1 &getTemplates() const
+			{
+				return m_data;
+			}
+
+			/// Adds a new entry using the specified id.
+			T2* add(UInt32 id)
+			{
+				// Check id for existance
+				if (getById(id) != nullptr)
+					return nullptr;
+
+				// Add new entry
+				auto* added = m_data.add_entry();
+				added->set_id(id);
+
+				// Store in array and return
+				m_templatesById[id] = added;
+				return added;
+			}
+			/// Removes an existing entry from the data set.
+			void remove(UInt32 id)
+			{
+				// Remove entry from id list
+				auto it = m_templatesById.find(id);
+				if (it != m_templatesById.end())
+				{
+					m_templatesById.erase(it);
+				}
+
+				// TODO
+				WLOG("TODO: TemplateManager::remove(id)");
+			}
+			/// Retrieves a pointer to an object by its id.
+			const T2* getById(UInt32 id) const
+			{
+				const auto it = m_templatesById.find(id);
+				if (it == m_templatesById.end()) return nullptr;
+
+				return it->second;
+			}
+		};
+
 		struct DataLoadContext
 		{
 			typedef std::function<void(const String &)> OnError;
@@ -106,9 +181,10 @@ namespace wowpp
 				String name;
 				LoadFunction load;
 
+				template<typename T>
 				ManagerEntry(
 					const String &name,
-					::google::protobuf::Message &manager
+					T &manager
 					)
 					: name(name)
 					, load([this, name, &manager](
@@ -123,14 +199,15 @@ namespace wowpp
 
 			private:
 
+				template<typename T>
 				static bool loadManagerFromFile(
 					std::istream &file,
 					const String &fileName,
 					Context &context,
-					::google::protobuf::Message &manager,
+					T &manager,
 					const String &arrayName)
 				{
-					return manager.ParseFromIstream(&file);
+					return manager.load(file);
 				}
 			};
 
@@ -239,31 +316,35 @@ namespace wowpp
 					typedef void (T::*Type)(BasicTemplateSaveContext &) const;
 				};
 
-
 				String fileName;
 				String name;
 				SaveManager save;
-
 
 				Manager()
 				{
 				}
 
+				template<class T>
 				Manager(const String &name,
 					const String &fileName,
-					const ::google::protobuf::Message &manager)
+					const T &manager)
 					: fileName(fileName)
 					, name(name)
-					, save(std::bind(&Manager::saveManagerToFile, std::placeholders::_1, name, std::cref(manager)))
+					, save([this, name, &manager](
+						const String &fileName) mutable -> bool
+				{
+					return this->saveManagerToFile(fileName, name, manager);
+				})
 				{
 				}
 
 			private:
 
+				template<class T>
 				static bool saveManagerToFile(
 					const String &fileName,
 					const String &name,
-					const ::google::protobuf::Message &manager)
+					const T &manager)
 				{
 					std::ofstream file(fileName.c_str(), std::ios::out | std::ios::binary);
 					if (!file)
@@ -272,7 +353,7 @@ namespace wowpp
 						return false;
 					}
 
-					return manager.SerializeToOstream(&file);
+					return manager.save(file);
 				}
 			};
 
@@ -315,46 +396,44 @@ namespace wowpp
 				sff::save_file(projectFileName, std::bind(saveProjectToTable, std::placeholders::_1, directory, boost::cref(managers)));
 		}
 
+		typedef TemplateManager<wowpp::proto::Objects, wowpp::proto::ObjectEntry> ObjectManager;
+		typedef TemplateManager<wowpp::proto::Units, wowpp::proto::UnitEntry> UnitManager;
+		typedef TemplateManager<wowpp::proto::Maps, wowpp::proto::MapEntry> MapManager;
+		typedef TemplateManager<wowpp::proto::Emotes, wowpp::proto::EmoteEntry> EmoteManager;
+		typedef TemplateManager<wowpp::proto::UnitLoot, wowpp::proto::LootEntry> UnitLootManager;
+		typedef TemplateManager<wowpp::proto::Spells, wowpp::proto::SpellEntry> SpellManager;
+		typedef TemplateManager<wowpp::proto::Skills, wowpp::proto::SkillEntry> SkillManager;
+		typedef TemplateManager<wowpp::proto::Trainers, wowpp::proto::TrainerEntry> TrainerManager;
+		typedef TemplateManager<wowpp::proto::Vendors, wowpp::proto::VendorEntry> VendorManager;
+		typedef TemplateManager<wowpp::proto::Talents, wowpp::proto::TalentEntry> TalentManager;
+		typedef TemplateManager<wowpp::proto::Items, wowpp::proto::ItemEntry> ItemManager;
+		typedef TemplateManager<wowpp::proto::Classes, wowpp::proto::ClassEntry> ClassManager;
+		typedef TemplateManager<wowpp::proto::Races, wowpp::proto::RaceEntry> RaceManager;
+		typedef TemplateManager<wowpp::proto::Levels, wowpp::proto::LevelEntry> LevelManager;
+		typedef TemplateManager<wowpp::proto::Triggers, wowpp::proto::TriggerEntry> TriggerManager;
+		typedef TemplateManager<wowpp::proto::Zones, wowpp::proto::ZoneEntry> ZoneManager;
+		typedef TemplateManager<wowpp::proto::Quests, wowpp::proto::QuestEntry> QuestManager;
+
 		struct Project : boost::noncopyable
 		{
-			// This macro creates three methods, and two variables per manager entry
-			// =====================================================================
-			// METHODS
-			// 	|BASE|* get|BASE|ById(UInt32 id);
-			// 	void add|BASE|(|BASE| &elem);
-			// 	void remove|BASE|(UInt32 id);
-			// =====================================================================
-			// VARIABLES
-			//	wowpp::proto::|TYPE| |NAME|;
-			//	std::map<UInt32, |BASE|*> |NAME|ById;
-#define WOWPP_PROTO_MANAGER(type, base, name) \
-			wowpp::proto::type name; \
-			std::map<UInt32, wowpp::proto::base*> name ## ById; \
-			wowpp::proto::base *get ## base ## ById(UInt32 id) { \
-				std::map<UInt32, wowpp::proto::base*>::iterator it = name ## ById.find(id); \
-				return ((it == name ## ById.end()) ? it->second : nullptr); \
-			}
-
-			// Add manager variables and method, including getById(UInt32), add(&) and remove(UInt32)
-			WOWPP_PROTO_MANAGER(Units, UnitEntry, units)
-			WOWPP_PROTO_MANAGER(Objects, ObjectEntry, objects)
-			WOWPP_PROTO_MANAGER(Maps, MapEntry, maps)
-			WOWPP_PROTO_MANAGER(Emotes, EmoteEntry, emotes)
-			WOWPP_PROTO_MANAGER(UnitLoot, LootEntry, unitLoot)
-			WOWPP_PROTO_MANAGER(Spells, SpellEntry, spells)
-			WOWPP_PROTO_MANAGER(Skills, SkillEntry, skills)
-			WOWPP_PROTO_MANAGER(Trainers, TrainerEntry, trainers)
-			WOWPP_PROTO_MANAGER(Vendors, VendorEntry, vendors)
-			WOWPP_PROTO_MANAGER(Talents, TalentEntry, talents)
-			WOWPP_PROTO_MANAGER(Items, ItemEntry, items)
-			WOWPP_PROTO_MANAGER(Classes, ClassEntry, classes)
-			WOWPP_PROTO_MANAGER(Races, RaceEntry, races)
-			WOWPP_PROTO_MANAGER(Levels, LevelEntry, levels)
-			WOWPP_PROTO_MANAGER(Triggers, TriggerEntry, triggers)
-			WOWPP_PROTO_MANAGER(Zones, ZoneEntry, zones)
-			WOWPP_PROTO_MANAGER(Quests, QuestEntry, quests)
-
-#undef WOWPP_PROTO_MANAGER
+			// Managers
+			ObjectManager objects;
+			UnitManager units;
+			MapManager maps;
+			EmoteManager emotes;
+			UnitLootManager unitLoot;
+			SpellManager spells;
+			SkillManager skills;
+			TrainerManager trainers;
+			VendorManager vendors;
+			TalentManager talents;
+			ItemManager items;
+			ClassManager classes;
+			RaceManager races;
+			LevelManager levels;
+			TriggerManager triggers;
+			ZoneManager zones;
+			QuestManager quests;
 
 		public:
 
@@ -431,7 +510,7 @@ namespace wowpp
 
 				typedef ProjectSaver RealmProjectSaver;
 				typedef ProjectSaver::Manager ManagerEntry;
-
+				
 				RealmProjectSaver::Managers managers;
 				managers.push_back(ManagerEntry("spells", "spells", spells));
 				managers.push_back(ManagerEntry("units", "units", units));
@@ -481,7 +560,7 @@ int main(int argc, char* argv[])
 	{
 		return 1;
 	}
-
+	
 	// Create a new proto project
 	wowpp::proto::Project protoProject;
 	/*if (!protoProject.load("./"))
@@ -489,13 +568,14 @@ int main(int argc, char* argv[])
 		return 1;
 	}*/
 
+#if 1
+
 	//////////////////////////////////////////////////////////////////////////
 
 	// Copy units
 	for (const auto &unit : proj.units.getTemplates())
 	{
-		auto *added = protoProject.units.add_units();
-		added->set_id(unit->id);
+		auto *added = protoProject.units.add(unit->id);
 		added->set_name(unit->name);
 		if (!unit->subname.empty()) added->set_subname(unit->subname);
 		
@@ -557,9 +637,7 @@ int main(int argc, char* argv[])
 	// Copy unit loot
 	for (const auto &loot : proj.unitLoot.getTemplates())
 	{
-		auto *added = protoProject.unitLoot.add_unitloot();
-		added->set_id(loot->id);
-
+		auto *added = protoProject.unitLoot.add(loot->id);
 		for (auto &group : loot->lootGroups)
 		{
 			auto *addedGroup = added->add_groups();
@@ -581,8 +659,7 @@ int main(int argc, char* argv[])
 	// Copy emotes
 	for (const auto &emote : proj.emotes.getTemplates())
 	{
-		auto *added = protoProject.emotes.add_emotes();
-		added->set_id(emote->id);
+		auto *added = protoProject.emotes.add(emote->id);
 		added->set_name(emote->name);
 		added->set_textid(emote->textId);
 	}
@@ -592,7 +669,7 @@ int main(int argc, char* argv[])
 	// Copy objects
 	for (const auto &object : proj.objects.getTemplates())
 	{
-		auto *added = protoProject.objects.add_objects();
+		auto *added = protoProject.objects.add(object->id);
 		added->set_id(object->id);
 		added->set_name(object->name);
 		if (!object->caption.empty()) added->set_caption(object->caption);
@@ -615,8 +692,7 @@ int main(int argc, char* argv[])
 	// Copy maps
 	for (const auto &map : proj.maps.getTemplates())
 	{
-		auto *added = protoProject.maps.add_maps();
-		added->set_id(map->id);
+		auto *added = protoProject.maps.add(map->id);
 		added->set_name(map->name);
 		added->set_directory(map->directory);
 		added->set_instancetype(static_cast<wowpp::proto::MapEntry_MapInstanceType>(map->instanceType));
@@ -662,8 +738,7 @@ int main(int argc, char* argv[])
 	// Copy spells
 	for (const auto &spell : proj.spells.getTemplates())
 	{
-		auto *added = protoProject.spells.add_spells();
-		added->set_id(spell->id);
+		auto *added = protoProject.spells.add(spell->id);
 		added->set_name(spell->name);
 
 		added->add_attributes(spell->attributes);
@@ -738,8 +813,7 @@ int main(int argc, char* argv[])
 	// Copy triggers
 	for (const auto &trigger : proj.triggers.getTemplates())
 	{
-		auto *added = protoProject.triggers.add_triggers();
-		added->set_id(trigger->id);
+		auto *added = protoProject.triggers.add(trigger->id);
 		added->set_name(trigger->name);
 		if (!trigger->path.empty()) added->set_category(trigger->path);
 
@@ -769,8 +843,7 @@ int main(int argc, char* argv[])
 	// Copy talents
 	for (const auto &talent : proj.talents.getTemplates())
 	{
-		auto *added = protoProject.talents.add_talents();
-		added->set_id(talent->id);
+		auto *added = protoProject.talents.add(talent->id);
 		added->set_tab(talent->tab);
 		added->set_row(talent->row);
 		added->set_column(talent->column);
@@ -788,8 +861,7 @@ int main(int argc, char* argv[])
 	// Copy skills
 	for (const auto &skill : proj.skills.getTemplates())
 	{
-		auto *added = protoProject.skills.add_skills();
-		added->set_id(skill->id);
+		auto *added = protoProject.skills.add(skill->id);
 		added->set_name(skill->name);
 		added->set_category(skill->category);
 		added->set_cost(skill->cost);
@@ -800,8 +872,7 @@ int main(int argc, char* argv[])
 	// Copy levels
 	for (const auto &level : proj.levels.getTemplates())
 	{
-		auto *added = protoProject.levels.add_levels();
-		added->set_id(level->id);
+		auto *added = protoProject.levels.add(level->id);
 		added->set_nextlevelxp(level->nextLevelXP);
 		added->set_explorationbasexp(level->explorationBaseXP);
 		auto &map = *added->mutable_stats();
@@ -831,8 +902,7 @@ int main(int argc, char* argv[])
 	// Copy classes
 	for (const auto &class_ : proj.classes.getTemplates())
 	{
-		auto *added = protoProject.classes.add_classes();
-		added->set_id(class_->id);
+		auto *added = protoProject.classes.add(class_->id);
 		added->set_name(class_->name);
 		added->set_internalname(class_->internalName);
 		added->set_powertype(static_cast<wowpp::proto::ClassEntry_PowerType>(class_->powerType));
@@ -855,8 +925,7 @@ int main(int argc, char* argv[])
 	// Copy races
 	for (const auto &race : proj.races.getTemplates())
 	{
-		auto *added = protoProject.races.add_races();
-		added->set_id(race->id);
+		auto *added = protoProject.races.add(race->id);
 		added->set_name(race->name);
 		if (race->factionTemplate) added->set_faction(race->factionTemplate->id);
 		added->set_malemodel(race->maleModel);
@@ -910,7 +979,7 @@ int main(int argc, char* argv[])
 	// Copy trainers
 	for (const auto &trainer : proj.trainers.getTemplates())
 	{
-		auto *added = protoProject.trainers.add_trainers();
+		auto *added = protoProject.trainers.add(trainer->id);
 		added->set_id(trainer->id);
 		added->set_type(static_cast<wowpp::proto::TrainerEntry_TrainerType>(trainer->trainerType));
 		added->set_classid(trainer->classId);
@@ -931,8 +1000,7 @@ int main(int argc, char* argv[])
 	// Copy vendors
 	for (const auto &vendor : proj.vendors.getTemplates())
 	{
-		auto *added = protoProject.vendors.add_vendors();
-		added->set_id(vendor->id);
+		auto *added = protoProject.vendors.add(vendor->id);
 		for (auto &item : vendor->items)
 		{
 			auto *addedItem = added->add_items();
@@ -949,8 +1017,7 @@ int main(int argc, char* argv[])
 	// Copy quests
 	for (const auto &quest : proj.quests.getTemplates())
 	{
-		auto *added = protoProject.quests.add_quests();
-		added->set_id(quest->id);
+		auto *added = protoProject.quests.add(quest->id);
 		added->set_name(quest->name);
 
 		// TODO
@@ -961,8 +1028,7 @@ int main(int argc, char* argv[])
 	// Copy items
 	for (const auto &item : proj.items.getTemplates())
 	{
-		auto *added = protoProject.items.add_items();
-		added->set_id(item->id);
+		auto *added = protoProject.items.add(item->id);
 		added->set_name(item->name);
 		added->set_description(item->description);
 		added->set_itemclass(item->itemClass);
@@ -1059,8 +1125,7 @@ int main(int argc, char* argv[])
 	// Copy zones
 	for (const auto &zone : proj.zones.getTemplates())
 	{
-		auto *added = protoProject.zones.add_zones();
-		added->set_id(zone->id);
+		auto *added = protoProject.zones.add(zone->id);
 		added->set_name(zone->name);
 		if (zone->parent != nullptr) added->set_parentzone(zone->parent->id);
 		if (zone->map != nullptr) added->set_map(zone->map->id);
@@ -1077,6 +1142,9 @@ int main(int argc, char* argv[])
 	{
 		return 1;
 	}
+#endif
+
+	std::cin.get();
 
 	google::protobuf::ShutdownProtobufLibrary();
 

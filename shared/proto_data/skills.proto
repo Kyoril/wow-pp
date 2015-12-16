@@ -30,5 +30,5 @@ message SkillEntry {
 }
 
 message Skills {
-	repeated SkillEntry skills = 1;
+	repeated SkillEntry entry = 1;
 }

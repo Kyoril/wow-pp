@@ -46,5 +46,5 @@ message ClassEntry {
 }
 
 message Classes {
-	repeated ClassEntry classes = 1;
+	repeated ClassEntry entry = 1;
 }

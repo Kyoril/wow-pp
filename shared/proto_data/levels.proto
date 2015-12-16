@@ -45,5 +45,5 @@ message LevelEntry {
 }
 
 message Levels {
-	repeated LevelEntry levels = 1;
+	repeated LevelEntry entry = 1;
 }

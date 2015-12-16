@@ -34,5 +34,5 @@ message ZoneEntry {
 }
 
 message Zones {
-	repeated ZoneEntry zones = 1;
+	repeated ZoneEntry entry = 1;
 }

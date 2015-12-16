@@ -45,5 +45,5 @@ message TrainerEntry {
 }
 
 message Trainers {
-	repeated TrainerEntry trainers = 1;
+	repeated TrainerEntry entry = 1;
 }

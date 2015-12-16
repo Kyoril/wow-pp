@@ -29,5 +29,5 @@ message EmoteEntry {
 }
 
 message Emotes {
-	repeated EmoteEntry emotes = 1;
+	repeated EmoteEntry entry = 1;
 }

@@ -68,5 +68,5 @@ message RaceEntry {
 }
 
 message Races {
-	repeated RaceEntry races = 1;
+	repeated RaceEntry entry = 1;
 }

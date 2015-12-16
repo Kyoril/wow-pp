@@ -28,5 +28,5 @@ message QuestEntry {
 }
 
 message Quests {
-	repeated QuestEntry quests = 1;
+	repeated QuestEntry entry = 1;
 }

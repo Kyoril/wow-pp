@@ -74,5 +74,5 @@ message UnitEntry {
 }
 
 message Units {
-	repeated UnitEntry units = 1;
+	repeated UnitEntry entry = 1;
 }

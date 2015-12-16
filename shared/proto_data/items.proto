@@ -113,5 +113,5 @@ message ItemEntry {
 }
 
 message Items {
-	repeated ItemEntry items = 1;
+	repeated ItemEntry entry = 1;
 }

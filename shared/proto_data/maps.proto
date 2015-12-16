@@ -73,5 +73,5 @@ message MapEntry {
 }
 
 message Maps {
-	repeated MapEntry maps = 1;
+	repeated MapEntry entry = 1;
 }

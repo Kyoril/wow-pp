@@ -37,5 +37,5 @@ message ObjectEntry {
 }
 
 message Objects {
-	repeated ObjectEntry objects = 1;
+	repeated ObjectEntry entry = 1;
 }
