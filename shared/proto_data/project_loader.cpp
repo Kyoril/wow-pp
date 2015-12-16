@@ -19,5 +19,12 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-// This file is a placeholder so that cmake can determine that we want
-// to compile a c++ library.
+#include "project_loader.h"
+
+namespace wowpp
+{
+	namespace proto
+	{
+
+	}
+}

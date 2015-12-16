@@ -41,508 +41,10 @@
 #include "mysql_wrapper/mysql_statement.h"
 #include "common/make_unique.h"
 #include "common/linear_set.h"
-#include "shared/proto_data/units.pb.h"
-#include "shared/proto_data/spells.pb.h"
-#include "shared/proto_data/unit_loot.pb.h"
-#include "shared/proto_data/maps.pb.h"
-#include "shared/proto_data/emotes.pb.h"
-#include "shared/proto_data/objects.pb.h"
-#include "shared/proto_data/skills.pb.h"
-#include "shared/proto_data/talents.pb.h"
-#include "shared/proto_data/vendors.pb.h"
-#include "shared/proto_data/trainers.pb.h"
-#include "shared/proto_data/triggers.pb.h"
-#include "shared/proto_data/zones.pb.h"
-#include "shared/proto_data/quests.pb.h"
-#include "shared/proto_data/items.pb.h"
-#include "shared/proto_data/races.pb.h"
-#include "shared/proto_data/classes.pb.h"
-#include "shared/proto_data/levels.pb.h"
 #include "virtual_directory/file_system_reader.h"
-#include <boost/noncopyable.hpp>
-
-namespace wowpp
-{
-	namespace proto
-	{
-		template<class T1, class T2>
-		struct TemplateManager
-		{
-		private:
-
-			T1 m_data;
-			std::map<wowpp::UInt32, T2*> m_templatesById;
-
-		public:
-
-			bool load(std::istream &stream)
-			{
-				if (!m_data.ParseFromIstream(&stream))
-				{
-					return false;
-				}
-
-				// Iterate through all data entries and store ids for quick id lookup
-				for (int i = 0; i < m_data.entry_size(); ++i)
-				{
-					T2 *entry = m_data.mutable_entry(i);
-					m_templatesById[entry->id()] = entry;
-				}
-
-				return true;
-			}
-
-			bool save(std::ostream &stream) const
-			{
-				return m_data.SerializeToOstream(&stream);
-			}
-
-			const T1 &getTemplates() const
-			{
-				return m_data;
-			}
-
-			/// Adds a new entry using the specified id.
-			T2* add(UInt32 id)
-			{
-				// Check id for existance
-				if (getById(id) != nullptr)
-					return nullptr;
-
-				// Add new entry
-				auto* added = m_data.add_entry();
-				added->set_id(id);
-
-				// Store in array and return
-				m_templatesById[id] = added;
-				return added;
-			}
-			/// Removes an existing entry from the data set.
-			void remove(UInt32 id)
-			{
-				// Remove entry from id list
-				auto it = m_templatesById.find(id);
-				if (it != m_templatesById.end())
-				{
-					m_templatesById.erase(it);
-				}
-
-				// TODO
-				WLOG("TODO: TemplateManager::remove(id)");
-			}
-			/// Retrieves a pointer to an object by its id.
-			const T2* getById(UInt32 id) const
-			{
-				const auto it = m_templatesById.find(id);
-				if (it == m_templatesById.end()) return nullptr;
-
-				return it->second;
-			}
-		};
-
-		struct DataLoadContext
-		{
-			typedef std::function<void(const String &)> OnError;
-			typedef std::function<bool()> LoadLaterFunction;
-			typedef std::vector<LoadLaterFunction> LoadLater;
-
-			OnError onError;
-			OnError onWarning;
-			LoadLater loadLater;
-			UInt32 version;
-
-			virtual ~DataLoadContext()
-			{
-
-			}
-			bool executeLoadLater()
-			{
-				bool success = true;
-
-				for (const LoadLaterFunction & function : loadLater)
-				{
-					if (!function())
-					{
-						success = false;
-					}
-				}
-
-				return success;
-			}
-		};
-
-		template <class Context>
-		struct ProjectLoader
-		{
-			struct ManagerEntry
-			{
-				typedef std::function < bool(std::istream &file, const String &fileName, Context &context) > LoadFunction;
-
-				String name;
-				LoadFunction load;
-
-				template<typename T>
-				ManagerEntry(
-					const String &name,
-					T &manager
-					)
-					: name(name)
-					, load([this, name, &manager](
-						std::istream &file,
-						const String &fileName,
-						Context &context) mutable -> bool
-				{
-					return this->loadManagerFromFile(file, fileName, context, manager, name);
-				})
-				{
-				}
-
-			private:
-
-				template<typename T>
-				static bool loadManagerFromFile(
-					std::istream &file,
-					const String &fileName,
-					Context &context,
-					T &manager,
-					const String &arrayName)
-				{
-					return manager.load(file);
-				}
-			};
-
-			typedef std::vector<ManagerEntry> Managers;
-
-			typedef String::const_iterator StringIterator;
-
-			static bool load(virtual_dir::IReader &directory, const Managers &managers, Context &context)
-			{
-				const virtual_dir::Path projectFilePath = "project.txt";
-				const auto projectFile = directory.readFile(projectFilePath, false);
-				if (!projectFile)
-				{
-					ELOG("Could not open project file '" << projectFilePath << "'");
-					return false;
-				}
-
-				std::string fileContent;
-				sff::read::tree::Table<StringIterator> fileTable;
-				if (!loadSffFile(fileTable, *projectFile, fileContent, projectFilePath))
-				{
-					return false;
-				}
-
-				const auto projectVersion =
-					fileTable.getInteger<unsigned>("version", 4);
-				if (projectVersion != 4)
-				{
-					ELOG("Unsupported project version: " << projectVersion);
-					return false;
-				}
-
-				bool success = true;
-
-				for (const auto & manager : managers)
-				{
-					String relativeFileName;
-
-					if (!fileTable.tryGetString(manager.name, relativeFileName))
-					{
-						success = false;
-
-						ELOG("File name of '" << manager.name << "' is missing in the project");
-						continue;
-					}
-
-					const auto managerFile = directory.readFile(relativeFileName, false);
-					if (!managerFile)
-					{
-						success = false;
-
-						ELOG("Could not open file '" << relativeFileName << "'");
-						continue;
-					}
-					if (!manager.load(*managerFile, relativeFileName, context))
-					{
-						ELOG("Could not load '" << manager.name << "'");
-						success = false;
-					}
-				}
-
-				return success &&
-					context.executeLoadLater();
-			}
-
-			template <class FileName>
-			static bool loadSffFile(
-				sff::read::tree::Table<StringIterator> &fileTable,
-				std::istream &source,
-				std::string &content,
-				const FileName &fileName)
-			{
-				try
-				{
-					sff::loadTableFromFile(fileTable, content, source);
-					return true;
-				}
-				catch (const sff::read::ParseException<StringIterator> &exception)
-				{
-					const auto line = std::count<StringIterator>(
-						content.begin(),
-						exception.position.begin,
-						'\n');
-
-					const String relevantLine(
-						exception.position.begin,
-						std::find<StringIterator>(exception.position.begin, content.end(), '\n'));
-
-					ELOG("Error in SFF file " << fileName << ":" << (1 + line));
-					ELOG("Parser error: " << exception.what() << " at '" << relevantLine << "'");
-					return false;
-				}
-			}
-		};
-
-		struct ProjectSaver
-		{
-			struct Manager
-			{
-				typedef std::function<bool(const String &)> SaveManager;
-
-
-				template <class T>
-				struct SaveObjectMethod
-				{
-					typedef void (T::*Type)(BasicTemplateSaveContext &) const;
-				};
-
-				String fileName;
-				String name;
-				SaveManager save;
-
-				Manager()
-				{
-				}
-
-				template<class T>
-				Manager(const String &name,
-					const String &fileName,
-					const T &manager)
-					: fileName(fileName)
-					, name(name)
-					, save([this, name, &manager](
-						const String &fileName) mutable -> bool
-				{
-					return this->saveManagerToFile(fileName, name, manager);
-				})
-				{
-				}
-
-			private:
-
-				template<class T>
-				static bool saveManagerToFile(
-					const String &fileName,
-					const String &name,
-					const T &manager)
-				{
-					std::ofstream file(fileName.c_str(), std::ios::out | std::ios::binary);
-					if (!file)
-					{
-						ELOG("Could not save file '" << fileName << "'");
-						return false;
-					}
-
-					return manager.save(file);
-				}
-			};
-
-			typedef std::vector<Manager> Managers;
-
-			static bool save(const boost::filesystem::path &directory, const Managers &managers);
-		};
-
-		static bool saveAndAddManagerToTable(sff::write::Table<char> &fileTable, const boost::filesystem::path &directory, const ProjectSaver::Manager &manager)
-		{
-			const String managerRelativeFileName = (manager.fileName + ".wppdat");
-			fileTable.addKey(manager.name, managerRelativeFileName);
-
-			const String managerAbsoluteFileName = (directory / managerRelativeFileName).string();
-
-			return manager.save(managerAbsoluteFileName);
-		}
-
-		static bool saveProjectToTable(sff::write::Table<char> &fileTable, const boost::filesystem::path &directory, const ProjectSaver::Managers &managers)
-		{
-			fileTable.addKey("version", 4);
-
-			bool success = true;
-
-			for (const ProjectSaver::Manager & manager : managers)
-			{
-				success =
-					saveAndAddManagerToTable(fileTable, directory, manager) &&
-					success;
-			}
-
-			return success;
-		}
-
-		bool ProjectSaver::save(const boost::filesystem::path &directory, const Managers &managers)
-		{
-			const String projectFileName = (directory / "project.txt").string();
-
-			return
-				sff::save_file(projectFileName, std::bind(saveProjectToTable, std::placeholders::_1, directory, boost::cref(managers)));
-		}
-
-		typedef TemplateManager<wowpp::proto::Objects, wowpp::proto::ObjectEntry> ObjectManager;
-		typedef TemplateManager<wowpp::proto::Units, wowpp::proto::UnitEntry> UnitManager;
-		typedef TemplateManager<wowpp::proto::Maps, wowpp::proto::MapEntry> MapManager;
-		typedef TemplateManager<wowpp::proto::Emotes, wowpp::proto::EmoteEntry> EmoteManager;
-		typedef TemplateManager<wowpp::proto::UnitLoot, wowpp::proto::LootEntry> UnitLootManager;
-		typedef TemplateManager<wowpp::proto::Spells, wowpp::proto::SpellEntry> SpellManager;
-		typedef TemplateManager<wowpp::proto::Skills, wowpp::proto::SkillEntry> SkillManager;
-		typedef TemplateManager<wowpp::proto::Trainers, wowpp::proto::TrainerEntry> TrainerManager;
-		typedef TemplateManager<wowpp::proto::Vendors, wowpp::proto::VendorEntry> VendorManager;
-		typedef TemplateManager<wowpp::proto::Talents, wowpp::proto::TalentEntry> TalentManager;
-		typedef TemplateManager<wowpp::proto::Items, wowpp::proto::ItemEntry> ItemManager;
-		typedef TemplateManager<wowpp::proto::Classes, wowpp::proto::ClassEntry> ClassManager;
-		typedef TemplateManager<wowpp::proto::Races, wowpp::proto::RaceEntry> RaceManager;
-		typedef TemplateManager<wowpp::proto::Levels, wowpp::proto::LevelEntry> LevelManager;
-		typedef TemplateManager<wowpp::proto::Triggers, wowpp::proto::TriggerEntry> TriggerManager;
-		typedef TemplateManager<wowpp::proto::Zones, wowpp::proto::ZoneEntry> ZoneManager;
-		typedef TemplateManager<wowpp::proto::Quests, wowpp::proto::QuestEntry> QuestManager;
-
-		struct Project : boost::noncopyable
-		{
-			// Managers
-			ObjectManager objects;
-			UnitManager units;
-			MapManager maps;
-			EmoteManager emotes;
-			UnitLootManager unitLoot;
-			SpellManager spells;
-			SkillManager skills;
-			TrainerManager trainers;
-			VendorManager vendors;
-			TalentManager talents;
-			ItemManager items;
-			ClassManager classes;
-			RaceManager races;
-			LevelManager levels;
-			TriggerManager triggers;
-			ZoneManager zones;
-			QuestManager quests;
-
-		public:
-
-			/// Loads the project.
-			bool load(
-				const String &directory)
-			{
-				ILOG("Loading data...");
-				auto loadStart = getCurrentTime();
-
-				size_t errorCount = 0;
-				DataLoadContext context;
-				context.onError = [&errorCount](const String & message)
-				{
-					ELOG(message);
-					++errorCount;
-				};
-				context.onWarning = [](const String & message)
-				{
-					WLOG(message);
-				};
-
-				const boost::filesystem::path dataPath = directory;
-				const auto realmDataPath = (dataPath / "wowpp");
-
-				typedef ProjectLoader<DataLoadContext> RealmProjectLoader;
-				typedef RealmProjectLoader::ManagerEntry ManagerEntry;
-
-				RealmProjectLoader::Managers managers;
-				managers.push_back(ManagerEntry("spells", spells));
-				managers.push_back(ManagerEntry("units", units));
-				managers.push_back(ManagerEntry("objects", objects));
-				managers.push_back(ManagerEntry("maps", maps));
-				managers.push_back(ManagerEntry("emotes", emotes));
-				managers.push_back(ManagerEntry("unit_loot", unitLoot));
-				managers.push_back(ManagerEntry("skills", skills));
-				managers.push_back(ManagerEntry("trainers", trainers));
-				managers.push_back(ManagerEntry("vendors", vendors));
-				managers.push_back(ManagerEntry("talents", talents));
-				managers.push_back(ManagerEntry("items", items));
-				managers.push_back(ManagerEntry("classes", classes));
-				managers.push_back(ManagerEntry("races", races));
-				managers.push_back(ManagerEntry("levels", levels));
-				managers.push_back(ManagerEntry("triggers", triggers));
-				managers.push_back(ManagerEntry("zones", zones));
-				managers.push_back(ManagerEntry("quests", quests));
-
-				virtual_dir::FileSystemReader virtualDirectory(realmDataPath);
-				if (!RealmProjectLoader::load(
-					virtualDirectory,
-					managers,
-					context))
-				{
-					ELOG("Game data error count: " << errorCount << "+");
-					return false;
-				}
-
-				auto loadEnd = getCurrentTime();
-				ILOG("Loading finished in " << (loadEnd - loadStart) << "ms");
-
-				return true;
-			}
-			/// Saves the project.
-			bool save(
-				const String &directory)
-			{
-				ILOG("Saving data...");
-				auto saveStart = getCurrentTime();
-
-				size_t errorCount = 0;
-
-				const boost::filesystem::path dataPath = directory;
-				const auto realmDataPath = (dataPath / "wowpp");
-
-				typedef ProjectSaver RealmProjectSaver;
-				typedef ProjectSaver::Manager ManagerEntry;
-				
-				RealmProjectSaver::Managers managers;
-				managers.push_back(ManagerEntry("spells", "spells", spells));
-				managers.push_back(ManagerEntry("units", "units", units));
-				managers.push_back(ManagerEntry("objects", "objects", objects));
-				managers.push_back(ManagerEntry("maps", "maps", maps));
-				managers.push_back(ManagerEntry("emotes", "emotes", emotes));
-				managers.push_back(ManagerEntry("unit_loot", "unit_loot", unitLoot));
-				managers.push_back(ManagerEntry("skills", "skills", skills));
-				managers.push_back(ManagerEntry("trainers", "trainers", trainers));
-				managers.push_back(ManagerEntry("vendors", "vendors", vendors));
-				managers.push_back(ManagerEntry("talents", "talents", talents));
-				managers.push_back(ManagerEntry("items", "items", items));
-				managers.push_back(ManagerEntry("classes", "classes", classes));
-				managers.push_back(ManagerEntry("races", "races", races));
-				managers.push_back(ManagerEntry("levels", "levels", levels));
-				managers.push_back(ManagerEntry("triggers", "triggers", triggers));
-				managers.push_back(ManagerEntry("zones", "zones", zones));
-				managers.push_back(ManagerEntry("quests", "quests", quests));
-
-				if (!RealmProjectSaver::save(realmDataPath, managers))
-				{
-					ELOG("Could not save data project!");
-					return false;
-				}
-
-				auto saveEnd = getCurrentTime();
-				ILOG("Saving finished in " << (saveEnd - saveStart) << "ms");
-				return true;
-			}
-		};
-	}
-}
+#include "proto_data/project_loader.h"
+#include "proto_data/project_saver.h"
+#include "proto_data/project.h"
 
 /// Procedural entry point of the application.
 int main(int argc, char* argv[])
@@ -563,14 +65,15 @@ int main(int argc, char* argv[])
 	
 	// Create a new proto project
 	wowpp::proto::Project protoProject;
-	/*if (!protoProject.load("./"))
+
+#if 0
+	// Load existing project
+	if (!protoProject.load("./"))
 	{
 		return 1;
-	}*/
-
-#if 1
-
-	//////////////////////////////////////////////////////////////////////////
+	}
+#else
+	// Copy all data from the old text-based project to our new protobuf binary project
 
 	// Copy units
 	for (const auto &unit : proj.units.getTemplates())
@@ -632,8 +135,6 @@ int main(int argc, char* argv[])
 		if (unit->trainerEntry != nullptr) added->set_trainerentry(unit->trainerEntry->id);
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-
 	// Copy unit loot
 	for (const auto &loot : proj.unitLoot.getTemplates())
 	{
@@ -654,8 +155,6 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-
 	// Copy emotes
 	for (const auto &emote : proj.emotes.getTemplates())
 	{
@@ -663,8 +162,6 @@ int main(int argc, char* argv[])
 		added->set_name(emote->name);
 		added->set_textid(emote->textId);
 	}
-
-	//////////////////////////////////////////////////////////////////////////
 
 	// Copy objects
 	for (const auto &object : proj.objects.getTemplates())
@@ -686,8 +183,6 @@ int main(int argc, char* argv[])
 			added->add_data(data);
 		}
 	}
-
-	//////////////////////////////////////////////////////////////////////////
 
 	// Copy maps
 	for (const auto &map : proj.maps.getTemplates())
@@ -732,8 +227,6 @@ int main(int argc, char* argv[])
 			addedSpawn->set_state(objSpawn.state);
 		}
 	}
-
-	//////////////////////////////////////////////////////////////////////////
 
 	// Copy spells
 	for (const auto &spell : proj.spells.getTemplates())
@@ -808,8 +301,6 @@ int main(int argc, char* argv[])
 		added->set_proccharges(spell->procCharges);
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-
 	// Copy triggers
 	for (const auto &trigger : proj.triggers.getTemplates())
 	{
@@ -838,8 +329,6 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-
 	// Copy talents
 	for (const auto &talent : proj.talents.getTemplates())
 	{
@@ -856,8 +345,6 @@ int main(int argc, char* argv[])
 		if(talent->dependsOnSpell) added->set_dependsonspell(talent->dependsOnSpell->id);
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-
 	// Copy skills
 	for (const auto &skill : proj.skills.getTemplates())
 	{
@@ -866,8 +353,6 @@ int main(int argc, char* argv[])
 		added->set_category(skill->category);
 		added->set_cost(skill->cost);
 	}
-
-	//////////////////////////////////////////////////////////////////////////
 
 	// Copy levels
 	for (const auto &level : proj.levels.getTemplates())
@@ -897,8 +382,6 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-
 	// Copy classes
 	for (const auto &class_ : proj.classes.getTemplates())
 	{
@@ -919,8 +402,6 @@ int main(int argc, char* argv[])
 			}
 		}
 	}
-
-	//////////////////////////////////////////////////////////////////////////
 
 	// Copy races
 	for (const auto &race : proj.races.getTemplates())
@@ -974,8 +455,6 @@ int main(int argc, char* argv[])
 		added->set_startrotation(race->startRotation);
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-
 	// Copy trainers
 	for (const auto &trainer : proj.trainers.getTemplates())
 	{
@@ -995,8 +474,6 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-
 	// Copy vendors
 	for (const auto &vendor : proj.vendors.getTemplates())
 	{
@@ -1012,8 +489,6 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-
 	// Copy quests
 	for (const auto &quest : proj.quests.getTemplates())
 	{
@@ -1022,8 +497,6 @@ int main(int argc, char* argv[])
 
 		// TODO
 	}
-
-	//////////////////////////////////////////////////////////////////////////
 
 	// Copy items
 	for (const auto &item : proj.items.getTemplates())
@@ -1120,8 +593,6 @@ int main(int argc, char* argv[])
 		added->set_extraflags(item->extraFlags);
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-
 	// Copy zones
 	for (const auto &zone : proj.zones.getTemplates())
 	{
@@ -1135,8 +606,6 @@ int main(int argc, char* argv[])
 		added->set_level(zone->level);
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-
 	// Save proto project
 	if (!protoProject.save("./"))
 	{
@@ -1144,8 +613,10 @@ int main(int argc, char* argv[])
 	}
 #endif
 
+	// Wait for user input to finish
 	std::cin.get();
 
+	// Shutdown protobuf and free all memory (optional)
 	google::protobuf::ShutdownProtobufLibrary();
 
 	return 0;
