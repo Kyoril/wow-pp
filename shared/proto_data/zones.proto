@@ -1,0 +1,38 @@
+//
+// This file is part of the WoW++ project.
+// 
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software 
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+//
+// World of Warcraft, and all World of Warcraft or Warcraft art, images,
+// and lore are copyrighted by Blizzard Entertainment, Inc.
+// 
+
+syntax = "proto2";
+package wowpp.proto;
+
+message ZoneEntry {
+	required uint32 id = 1;
+	required string name = 2;
+	optional uint32 parentzone = 3;
+	optional uint32 map = 4;
+	optional uint32 explore = 5;
+	optional uint32 flags = 6;
+	optional uint32 team = 7;
+	optional int32 level = 8;
+}
+
+message Zones {
+	repeated ZoneEntry zones = 1;
+}

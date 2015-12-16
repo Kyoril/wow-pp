@@ -56,6 +56,8 @@ namespace wowpp
 
 	bool Program::run()
 	{
+		auto start = getCurrentTime();
+
 		// Header
 		ILOG("Starting WoW++ Realm");
 		ILOG("Version " << Major << "." << Minor << "." << Build << "." << Revisision << " (Commit: " << GitCommit << ")");
@@ -150,6 +152,9 @@ namespace wowpp
 		};
 		AsyncDatabase asyncDatabase(*m_database, async, sync);
 		
+		auto end = getCurrentTime();
+		DLOG("Realm started in " << (end - start) << " ms");
+
 		// TODO: Use async database requests so no blocking occurs
 
 		// Create the player manager

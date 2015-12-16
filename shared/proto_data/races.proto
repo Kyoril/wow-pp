@@ -1,0 +1,72 @@
+//
+// This file is part of the WoW++ project.
+// 
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software 
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+//
+// World of Warcraft, and all World of Warcraft or Warcraft art, images,
+// and lore are copyrighted by Blizzard Entertainment, Inc.
+// 
+
+syntax = "proto2";
+package wowpp.proto;
+
+message ActionButton {
+	required uint32 action = 1;
+	optional uint32 type = 2;
+	optional uint32 misc = 3;
+	enum ActionButtonUpdateState {
+		UNCHANGED	= 0;
+		CHANGED		= 1;
+		NEW			= 2;
+		DELETED		= 3;
+	}
+	optional ActionButtonUpdateState state = 4 [default = UNCHANGED];
+}
+
+message InitialActionButtons {
+	map<uint32, ActionButton> actionButtons = 1;
+}
+
+message InitialSpells {
+	repeated uint32 spells = 1;
+}
+
+message InitialItems {
+	repeated uint32 items = 1;
+}
+
+message RaceEntry {
+	required uint32 id = 1;
+	required string name = 2;
+	required uint32 faction = 3;
+	required uint32 malemodel = 4;
+	required uint32 femalemodel = 5;
+	required uint32 baselanguage = 6;
+	required uint32 startingtaximask = 7;
+	required uint32 cinematic = 8;
+	map<uint32, InitialSpells> initialSpells = 9;
+	map<uint32, InitialActionButtons> initialActionButtons = 10;
+	map<uint32, InitialItems> initialItems = 11;
+	required uint32 startmap = 12;
+	required uint32 startzone = 13;
+	required float startposx = 14;
+	required float startposy = 15;
+	required float startposz = 16;
+	required float startrotation = 17;
+}
+
+message Races {
+	repeated RaceEntry races = 1;
+}

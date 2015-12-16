@@ -1,0 +1,77 @@
+//
+// This file is part of the WoW++ project.
+// 
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software 
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+//
+// World of Warcraft, and all World of Warcraft or Warcraft art, images,
+// and lore are copyrighted by Blizzard Entertainment, Inc.
+// 
+
+syntax = "proto2";
+package wowpp.proto;
+
+message UnitSpawnEntry {
+	optional string name = 1;
+	optional bool respawn = 2 [default = true];
+	optional uint64 respawndelay = 3;
+	required float positionx = 4;
+	required float positiony = 5;
+	required float positionz = 6;
+	optional float rotation = 7;
+	optional float radius = 8;
+	optional uint32 maxcount = 9 [default = 1];
+	required uint32 unitentry = 10;
+	optional uint32 defaultemote = 11;
+	optional bool isactive = 12 [default = true];
+}
+
+message ObjectSpawnEntry {
+	optional string name = 1;
+	optional bool respawn = 2 [default = true];
+	optional uint64 respawndelay = 3;
+	required float positionx = 4;
+	required float positiony = 5;
+	required float positionz = 6;
+	optional float rotationw = 7;
+	optional float rotationx = 8;
+	optional float rotationy = 9;
+	optional float rotationz = 10;
+	optional float radius = 11;
+	optional uint32 animProgress = 12 [default = 100];
+	optional uint32 state = 13 [default = 1];
+	optional uint32 maxcount = 14 [default = 1];
+	required uint32 objectentry = 15;
+	optional bool isactive = 16 [default = true];
+}
+
+message MapEntry {
+	required uint32 id = 1;
+	required string name = 2;
+	required string directory = 3;
+	enum MapInstanceType {
+		GLOBAL = 0;
+		DUNGEON = 1;
+		RAID = 2;
+		BATTLEGROUND = 3;
+		ARENA = 4;
+	}
+	optional MapInstanceType instancetype = 4 [default = GLOBAL];
+	repeated UnitSpawnEntry unitspawns = 5;
+	repeated ObjectSpawnEntry objectspawns = 6;
+}
+
+message Maps {
+	repeated MapEntry maps = 1;
+}

@@ -28,7 +28,6 @@ project(WoW)
 	# Enable solution folders in msvc
 	if(MSVC)
 		set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-		add_definitions("-D_ITERATOR_DEBUG_LEVEL=0")
 	endif(MSVC)
 	
 	set(WOWPP_SUPPORTED_CLIENT "8606" CACHE STRING "This sets the supported client build. Currently, WoW++ supports build (2.0.12.)6546 and (2.4.3.)8606")
@@ -95,6 +94,10 @@ project(WoW)
 	set(Boost_USE_STATIC_LIBS ON)
 	find_package(Boost 1.54.0 REQUIRED COMPONENTS system date_time thread iostreams filesystem regex chrono program_options)
 	
+	# Find protobuf
+	find_package(Protobuf REQUIRED)
+	include_directories(${PROTOBUF_INCLUDE_DIRS})
+	
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 	
 	# Add boost include directories
@@ -130,7 +133,7 @@ project(WoW)
 	endif(WIN32)
 	
 	if(MSVC)
-		add_definitions("/D_CRT_SECURE_NO_WARNINGS /D_SCL_SECURE_NO_WARNINGS /wd4267 /wd4244 /MP /D_WINSOCK_DEPRECATED_NO_WARNINGS /bigobj")
+		add_definitions("/D_CRT_SECURE_NO_WARNINGS /D_SCL_SECURE_NO_WARNINGS /wd4267 /wd4244 /wd4800 /MP /D_WINSOCK_DEPRECATED_NO_WARNINGS /bigobj")
 	endif(MSVC)
 	
 	# Editor option
