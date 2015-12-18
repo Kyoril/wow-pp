@@ -20,7 +20,8 @@
 // 
 
 #include "world_instance_manager.h"
-#include "data/project.h"
+//#include "data/project.h"
+#include "proto_data/project.h"
 #include "common/vector.h"
 #include "solid_visibility_grid.h"
 #include "log/default_log_levels.h"
@@ -35,7 +36,7 @@ namespace wowpp
 		Universe &universe,
 		IdGenerator<UInt32> &idGenerator, 
 		IdGenerator<UInt64> &objectIdGenerator,
-		Project &project,
+		proto::Project &project,
 		UInt32 worldNodeId,
 		const String &dataPath)
 		: m_ioService(ioService)
@@ -51,23 +52,20 @@ namespace wowpp
 		triggerUpdate();
 	}
 
-	WorldInstance * WorldInstanceManager::createInstance(const MapEntry &map)
+	WorldInstance * WorldInstanceManager::createInstance(const proto::MapEntry &map)
 	{
-		UInt32 instanceId = createMapGUID(m_idGenerator.generateId(), map.id);
+		UInt32 instanceId = createMapGUID(m_idGenerator.generateId(), map.id());
 
 		// Create world instance
 		std::unique_ptr<WorldInstance> instance(new WorldInstance(
 			*this,
 			m_universe,
+			m_project,
 			map,
 			instanceId,
 			std::unique_ptr<UnitFinder>(new TiledUnitFinder(map, 33.3333f)),
 			std::unique_ptr<VisibilityGrid>(new SolidVisibilityGrid(TileIndex2D(64, 64))),
 			m_objectIdGenerator,
-			std::bind(&RaceEntryManager::getById, &m_project.races, std::placeholders::_1),
-			std::bind(&ClassEntryManager::getById, &m_project.classes, std::placeholders::_1),
-			std::bind(&LevelEntryManager::getById, &m_project.levels, std::placeholders::_1),
-			std::bind(&SpellEntryManager::getById, &m_project.spells, std::placeholders::_1),
 			m_dataPath));
 		m_instances.push_back(std::move(instance));
 

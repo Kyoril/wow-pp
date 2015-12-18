@@ -447,9 +447,12 @@ namespace wowpp
 
 	typedef group_update_flags::Type GroupUpdateFlags;
 
-	struct SpellEntry;
-	struct ItemEntry;
-	struct SkillEntry;
+	namespace proto
+	{
+		class SpellEntry;
+		class ItemEntry;
+		class SkillEntry;
+	}
 
 	struct ItemPosCount final
 	{
@@ -483,11 +486,8 @@ namespace wowpp
 
 		/// 
 		explicit GameCharacter(
-			TimerQueue &timers,
-			DataLoadContext::GetRace getRace,
-			DataLoadContext::GetClass getClass,
-			DataLoadContext::GetLevel getLevel,
-			DataLoadContext::GetSpell getSpell);
+			proto::Project &project,
+			TimerQueue &timers);
 		~GameCharacter();
 
 		/// @copydoc GameObject::initialize()
@@ -499,11 +499,11 @@ namespace wowpp
 		void addItem(std::shared_ptr<GameItem> item, UInt16 slot);
 		/// Adds a spell to the list of known spells of this character.
 		/// Note that passive spells will also be cast after they are added.
-		void addSpell(const SpellEntry &spell);
+		void addSpell(const proto::SpellEntry &spell);
 		/// Returns true, if the characters knows the specific spell.
 		bool hasSpell(UInt32 spellId) const;
 		/// Returns a spell from the list of known spells.
-		bool removeSpell(const SpellEntry &spell);
+		bool removeSpell(const proto::SpellEntry &spell);
 		/// Sets the name of this character.
 		void setName(const String &name);
 		/// Gets the name of this character.
@@ -514,7 +514,7 @@ namespace wowpp
 		/// Gets the zone index where this character is.
 		UInt32 getZone() const { return m_zoneIndex; }
 		/// Gets a list of all known spells of this character.
-		const std::vector<const SpellEntry*> &getSpells() const { return m_spells; }
+		const std::vector<const proto::SpellEntry*> &getSpells() const { return m_spells; }
 		/// Gets a list of all items of this character.
 		const std::map<UInt16, std::shared_ptr<GameItem>> &getItems() const { return m_itemSlots; }
 		/// Gets the weapon proficiency mask of this character (which weapons can be
@@ -532,7 +532,7 @@ namespace wowpp
 		/// Removes an armor proficiency from the mask.
 		void removeArmorProficiency(UInt32 mask) { m_armorProficiency &= ~mask; proficiencyChanged(4, m_armorProficiency); }
 		/// Adds a new skill to the list of known skills of this character.
-		void addSkill(const SkillEntry &skill);
+		void addSkill(const proto::SkillEntry &skill);
 		/// 
 		void removeSkill(UInt32 skillId);
 		/// 
@@ -556,7 +556,7 @@ namespace wowpp
 		/// @copydoc GameUnit::rewardExperience()
 		void rewardExperience(GameUnit *victim, UInt32 experience) override;
 		/// Determines, whether a specific amount of items can be stored.
-		game::InventoryChangeFailure canStoreItem(UInt8 bag, UInt8 slot, ItemPosCountVector &dest, const ItemEntry &item, UInt32 count, bool swap, UInt32 *noSpaceCount = nullptr) const;
+		game::InventoryChangeFailure canStoreItem(UInt8 bag, UInt8 slot, ItemPosCountVector &dest, const proto::ItemEntry &item, UInt32 count, bool swap, UInt32 *noSpaceCount = nullptr) const;
 		/// Removes an amount of items from the player.
 		void removeItem(UInt8 bag, UInt8 slot, UInt8 count);
 		/// Gets the characters home location.
@@ -580,7 +580,7 @@ namespace wowpp
 
 	protected:
 
-		virtual void levelChanged(const LevelEntry &levelInfo) override;
+		virtual void levelChanged(const proto::LevelEntry &levelInfo) override;
 		virtual void updateArmor() override;
 		virtual void updateDamage() override;
 		virtual void updateManaRegen() override;
@@ -596,8 +596,8 @@ namespace wowpp
 		UInt32 m_zoneIndex;
 		UInt32 m_weaponProficiency;
 		UInt32 m_armorProficiency;
-		std::vector<const SkillEntry*> m_skills;
-		std::vector<const SpellEntry*> m_spells;
+		std::vector<const proto::SkillEntry*> m_skills;
+		std::vector<const proto::SpellEntry*> m_spells;
 		std::map<UInt16, std::shared_ptr<GameItem>> m_itemSlots;
 		UInt64 m_comboTarget;
 		UInt8 m_comboPoints;

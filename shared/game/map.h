@@ -69,7 +69,10 @@ namespace wowpp
 		std::array<std::array<float, 145>, 16 * 16> heights;
 	};
 
-	struct MapEntry;
+	namespace proto
+	{
+		class MapEntry;
+	}
 
 	/// Stores map-specific tiled data informations like nav mesh data, height maps and such things.
 	struct MapDataTile final
@@ -87,10 +90,10 @@ namespace wowpp
 
 		/// Creates a new instance of the map class and initializes it.
 		/// @entry The base entry of this map.
-		explicit Map(const MapEntry &entry, boost::filesystem::path dataPath);
+		explicit Map(const proto::MapEntry &entry, boost::filesystem::path dataPath);
 
 		/// Gets the map entry data of this map.
-		const MapEntry &getEntry() const { return m_entry; }
+		const proto::MapEntry &getEntry() const { return m_entry; }
 
 		/// Tries to get a specific data tile if it's loaded.
 		MapDataTile *getTile(const TileIndex2D &position);
@@ -99,7 +102,7 @@ namespace wowpp
 
 	private:
 
-		const MapEntry &m_entry;
+		const proto::MapEntry &m_entry;
 		const boost::filesystem::path m_dataPath;
 		// Note: We use a pointer here, because we don't need to load ALL height data 
 		// of all tiles, and Grid allocates them immediatly.

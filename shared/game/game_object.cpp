@@ -27,12 +27,14 @@
 #include "common/clock.h"
 #include "visibility_tile.h"
 #include "world_instance.h"
+#include "proto_data/project.h"
 #include <cassert>
 
 namespace wowpp
 {
-	GameObject::GameObject()
-		: m_mapId(0)
+	GameObject::GameObject(proto::Project &project)
+		: m_project(project)
+		, m_mapId(0)
 		, m_x(0.0f)
 		, m_y(0.0f)
 		, m_z(0.0f)
@@ -295,9 +297,9 @@ namespace wowpp
 				if ((value & game::unit_npc_flags::Trainer) != 0)
 				{
 					const GameCreature *creature = static_cast<const GameCreature*>(this);
-					const auto *trainerEntry = creature->getEntry().trainerEntry;
+					const auto *trainerEntry = getProject().trainers.getById(creature->getEntry().trainerentry());
 					if (!trainerEntry ||
-						((trainerEntry->trainerType == trainer_types::ClassTrainer) && trainerEntry->classId != receiver.getClass()))
+						((trainerEntry->type() == proto::TrainerEntry_TrainerType_CLASS_TRAINER) && trainerEntry->classid() != receiver.getClass()))
 					{
 						value &= ~game::unit_npc_flags::Trainer;
 						value &= ~game::unit_npc_flags::TrainerClass;

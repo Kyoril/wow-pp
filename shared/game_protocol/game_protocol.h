@@ -28,16 +28,17 @@
 #include "common/sha1.h"
 #include "common/vector.h"
 #include "game/defines.h"
-#include "data/unit_entry.h"
+//#include "data/unit_entry.h"
 #include "game/action_button.h"
 #include "game/game_unit.h"
 #include "game/movement_info.h"
 #include "game/spell_target_map.h"
-#include "data/spell_entry.h"
-#include "data/item_entry.h"
-#include "data/object_entry.h"
-#include "data/vendor_entry.h"
-#include "data/trainer_entry.h"
+//#include "data/spell_entry.h"
+//#include "data/item_entry.h"
+//#include "data/object_entry.h"
+//#include "data/vendor_entry.h"
+//#include "data/trainer_entry.h"
+#include "proto_data/project.h"
 #include <array>
 #include <vector>
 #include <functional>
@@ -379,7 +380,7 @@ namespace wowpp
 			float x, y, z;
 			float o;
 			bool cinematic;
-			std::map<UInt8, const ItemEntry*> equipment;
+			std::map<UInt8, const proto::ItemEntry*> equipment;
 
 			explicit CharEntry()
 				: id(0)
@@ -1058,7 +1059,7 @@ namespace wowpp
 
 			void itemQuerySingleResponse(
 				game::OutgoingPacket &out_packet,
-				const ItemEntry &item
+				const proto::ItemEntry &item
 				);
 
 			void contactList(
@@ -1112,7 +1113,7 @@ namespace wowpp
 
 			void initialSpells(
 				game::OutgoingPacket &out_packet,
-				const std::vector<const SpellEntry*> &spells
+				const std::vector<const proto::SpellEntry*> &spells
 				);
 
 			void bindPointUpdate(
@@ -1192,7 +1193,7 @@ namespace wowpp
 
 			void creatureQueryResponse(
 				game::OutgoingPacket &out_packet,
-				const UnitEntry &unit
+				const proto::UnitEntry &unit
 				);
 
 			void setDungeonDifficulty(
@@ -1257,7 +1258,7 @@ namespace wowpp
 			void castFailed(
 				game::OutgoingPacket &out_packet,
 				game::SpellCastResult result,
-				const SpellEntry &spell,
+				const proto::SpellEntry &spell,
 				UInt8 castCount
 				);
 
@@ -1265,7 +1266,7 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt64 casterGUID,
 				UInt64 casterItemGUID,
-				const SpellEntry &spell,
+				const proto::SpellEntry &spell,
 				const SpellTargetMap &targets,
 				game::SpellCastFlags castFlags,
 				Int32 castTime,
@@ -1276,7 +1277,7 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt64 casterGUID,
 				UInt64 casterItemGUID,
-				const SpellEntry &spell,
+				const proto::SpellEntry &spell,
 				const SpellTargetMap &targets,
 				game::SpellCastFlags castFlags
 				//TODO: HitInformation
@@ -1574,7 +1575,7 @@ namespace wowpp
 
 			void gameObjectQueryResponse(
 				game::OutgoingPacket &out_packet,
-				const ObjectEntry &entry
+				const proto::ObjectEntry &entry
 				);
 
 			void gameObjectQueryResponseEmpty(
@@ -1722,14 +1723,15 @@ namespace wowpp
 			void listInventory(
 				game::OutgoingPacket &out_packet,
 				UInt64 vendorGuid,
-				const std::vector<VendorItemEntry> &itemList
+				const proto::ItemManager &itemManager,
+				const std::vector<proto::VendorItemEntry> &itemList
 				);
 
 			void trainerList(
 				game::OutgoingPacket &out_packet,
 				const GameCharacter &character,
 				UInt64 trainerGuid,
-				const TrainerEntry &trainerEntry
+				const proto::TrainerEntry &trainerEntry
 				);
 
 			void gossipMessage(

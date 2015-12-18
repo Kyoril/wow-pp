@@ -21,9 +21,10 @@
 
 #include "game_creature.h"
 #include "game_character.h"
-#include "data/trigger_entry.h"
-#include "data/item_entry.h"
-#include "data/faction_template_entry.h"
+//#include "data/trigger_entry.h"
+//#include "data/item_entry.h"
+//#include "data/faction_template_entry.h"
+#include "proto_data/project.h"
 #include "world_instance.h"
 #include "tiled_unit_watcher.h"
 #include "unit_finder.h"
@@ -36,13 +37,10 @@
 namespace wowpp
 {
 	GameCreature::GameCreature(
+		proto::Project &project,
 		TimerQueue &timers, 
-		DataLoadContext::GetRace getRace, 
-		DataLoadContext::GetClass getClass, 
-		DataLoadContext::GetLevel getLevel, 
-		DataLoadContext::GetSpell getSpell,
-		const UnitEntry &entry)
-		: GameUnit(timers, getRace, getClass, getLevel, getSpell)
+		const proto::UnitEntry &entry)
+		: GameUnit(project, timers)
 		, m_originalEntry(entry)
 		, m_entry(nullptr)
 	{
@@ -73,22 +71,22 @@ namespace wowpp
 		});
 	}
 
-	void GameCreature::setEntry(const UnitEntry &entry)
+	void GameCreature::setEntry(const proto::UnitEntry &entry)
 	{
 		const bool isInitialize = (m_entry == nullptr);
 
 		// Choose a level
-		UInt8 creatureLevel = entry.minLevel;
-		if (entry.maxLevel != entry.minLevel)
+		UInt8 creatureLevel = entry.minlevel();
+		if (entry.maxlevel() != entry.minlevel())
 		{
-			std::uniform_int_distribution<int> levelDistribution(entry.minLevel, entry.maxLevel);
+			std::uniform_int_distribution<int> levelDistribution(entry.minlevel(), entry.maxlevel());
 			creatureLevel = levelDistribution(randomGenerator);
 		}
 
 		// calculate interpolation factor
 		const float t =
-			(entry.maxLevel != entry.minLevel) ?
-			(creatureLevel - entry.minLevel) / (entry.maxLevel - entry.minLevel) :
+			(entry.maxlevel() != entry.minlevel()) ?
+			(creatureLevel - entry.minlevel()) / (entry.maxlevel() - entry.minlevel()) :
 			0.0f;
 
 		// Randomize gender
@@ -96,35 +94,36 @@ namespace wowpp
 		int gender = genderDistribution(randomGenerator);
 
 		// TODO
-		assert(entry.allianceFaction);
-		setFactionTemplate(*entry.allianceFaction);
+		const auto *faction = getProject().factionTemplates.getById(entry.alliancefaction());
+		assert(faction);
+		setFactionTemplate(*faction);
 
 		setLevel(creatureLevel);
-		setClass(entry.unitClass);
-		setUInt32Value(object_fields::Entry, entry.id);
-		setFloatValue(object_fields::ScaleX, entry.scale);
-		setUInt32Value(unit_fields::FactionTemplate, entry.hordeFaction->id);
+		setClass(entry.unitclass());
+		setUInt32Value(object_fields::Entry, entry.id());
+		setFloatValue(object_fields::ScaleX, entry.scale());
+		setUInt32Value(unit_fields::FactionTemplate, faction->id());
 		setGender(static_cast<game::Gender>(gender));
-		setUInt32Value(unit_fields::DisplayId, (gender == game::gender::Male ? entry.maleModel : entry.femaleModel));
-		setUInt32Value(unit_fields::NativeDisplayId, (gender == game::gender::Male ? entry.maleModel : entry.femaleModel));
-		setUInt32Value(unit_fields::BaseHealth, interpolate(entry.minLevelHealth, entry.maxLevelHealth, t));
+		setUInt32Value(unit_fields::DisplayId, (gender == game::gender::Male ? entry.malemodel() : entry.femalemodel()));
+		setUInt32Value(unit_fields::NativeDisplayId, (gender == game::gender::Male ? entry.malemodel() : entry.femalemodel()));
+		setUInt32Value(unit_fields::BaseHealth, interpolate(entry.minlevelhealth(), entry.maxlevelhealth(), t));
 		setUInt32Value(unit_fields::MaxHealth, getUInt32Value(unit_fields::BaseHealth));
 		setUInt32Value(unit_fields::Health, getUInt32Value(unit_fields::BaseHealth));
-		setUInt32Value(unit_fields::MaxPower1, interpolate(entry.minLevelMana, entry.maxLevelMana, t));
+		setUInt32Value(unit_fields::MaxPower1, interpolate(entry.minlevelmana(), entry.maxlevelmana(), t));
 		setUInt32Value(unit_fields::Power1, getUInt32Value(unit_fields::MaxPower1));
-		setUInt32Value(unit_fields::UnitFlags, entry.unitFlags);
-		setUInt32Value(unit_fields::DynamicFlags, entry.dynamicFlags);
-		setUInt32Value(unit_fields::NpcFlags, entry.npcFlags);
+		setUInt32Value(unit_fields::UnitFlags, entry.unitflags());
+		setUInt32Value(unit_fields::DynamicFlags, entry.dynamicflags());
+		setUInt32Value(unit_fields::NpcFlags, entry.npcflags());
 		setByteValue(unit_fields::Bytes2, 1, 16);
 		setByteValue(unit_fields::Bytes2, 0, 1);		// Sheath State: Melee weapon
-		setUInt32Value(unit_fields::AttackPower, entry.attackPower);
-		setUInt32Value(unit_fields::RangedAttackPower, entry.rangedAttackPower);
-		setFloatValue(unit_fields::MinDamage, entry.minMeleeDamage);
-		setFloatValue(unit_fields::MaxDamage, entry.maxMeleeDamage);
-		setUInt32Value(unit_fields::BaseAttackTime, entry.meleeBaseAttackTime);
+		setUInt32Value(unit_fields::AttackPower, entry.attackpower());
+		setUInt32Value(unit_fields::RangedAttackPower, entry.rangedattackpower());
+		setFloatValue(unit_fields::MinDamage, entry.minmeleedmg());
+		setFloatValue(unit_fields::MaxDamage, entry.maxmeleedmg());
+		setUInt32Value(unit_fields::BaseAttackTime, entry.meleeattacktime());
 
 		// Update power type
-		setByteValue(unit_fields::Bytes0, 3, power_type::Mana);
+		setByteValue(unit_fields::Bytes0, 3, game::power_type::Mana);
 		setUInt32Value(unit_fields::BaseMana, getUInt32Value(unit_fields::MaxPower1));
 		setUInt32Value(unit_fields::Bytes0, 0x00020200);
 // 		if (entry.maxLevelMana > 0)
@@ -136,9 +135,9 @@ namespace wowpp
 // 			setByteValue(unit_fields::Bytes1, 1, 0x00);
 // 		}
 
-		setVirtualItem(0, entry.mainHand);
-		setVirtualItem(1, entry.offHand);
-		setVirtualItem(2, entry.ranged);
+		setVirtualItem(0, getProject().items.getById(entry.mainhandweapon()));
+		setVirtualItem(1, getProject().items.getById(entry.offhandweapon()));
+		setVirtualItem(2, getProject().items.getById(entry.rangedweapon()));
 
 		// Unit Mods
 		for (UInt32 i = unit_mods::StatStart; i < unit_mods::StatEnd; ++i)
@@ -148,7 +147,7 @@ namespace wowpp
 			setModifierValue(static_cast<UnitMods>(i), unit_mod_type::BasePct, 1.0f);
 			setModifierValue(static_cast<UnitMods>(i), unit_mod_type::TotalPct, 1.0f);
 		}
-		setModifierValue(unit_mods::Armor, unit_mod_type::BaseValue, entry.armor);
+		setModifierValue(unit_mods::Armor, unit_mod_type::BaseValue, entry.armor());
 
 		// Setup new entry
 		m_entry = &entry;
@@ -184,13 +183,13 @@ namespace wowpp
 	{
 		if (!m_entry)
 		{
-			return m_originalEntry.name;
+			return m_originalEntry.name();
 		}
 		
-		return m_entry->name;
+		return m_entry->name();
 	}
 
-	void GameCreature::setVirtualItem(UInt32 slot, const ItemEntry *item)
+	void GameCreature::setVirtualItem(UInt32 slot, const proto::ItemEntry *item)
 	{
 		if (!item)
 		{
@@ -200,13 +199,13 @@ namespace wowpp
 			return;
 		}
 
-		setUInt32Value(unit_fields::VirtualItemSlotDisplay + slot, item->displayId);
-		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 0, item->itemClass);
-		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 1, item->subClass);
+		setUInt32Value(unit_fields::VirtualItemSlotDisplay + slot, item->displayid());
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 0, item->itemclass());
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 1, item->subclass());
 		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 2, 0xFF);
-		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 3, item->material);
-		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0, item->inventoryType);
-		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 1, item->sheath);
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 3, item->material());
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0, item->inventorytype());
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 1, item->sheath());
 	}
 
 	bool GameCreature::canBlock() const
@@ -215,7 +214,7 @@ namespace wowpp
 		const auto invType = getByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0);
 
 		// Creatures can only block if they wield a shield
-		return (invType == inventory_type::Shield);
+		return (invType == game::inventory_type::Shield);
 	}
 
 	bool GameCreature::canParry() const
@@ -236,9 +235,9 @@ namespace wowpp
 		const float att_speed = static_cast<float>(getUInt32Value(unit_fields::BaseAttackTime)) / 1000.0f;
 		const float base_value = static_cast<float>(getUInt32Value(unit_fields::AttackPower)) / 14.0f * att_speed;
 
-		const UnitEntry *entry = (m_entry ? m_entry : &m_originalEntry);
-		setFloatValue(unit_fields::MinDamage, base_value + entry->minMeleeDamage);
-		setFloatValue(unit_fields::MaxDamage, base_value + entry->maxMeleeDamage);
+		const auto *entry = (m_entry ? m_entry : &m_originalEntry);
+		setFloatValue(unit_fields::MinDamage, base_value + entry->minmeleedmg());
+		setFloatValue(unit_fields::MaxDamage, base_value + entry->maxmeleedmg());
 	}
 
 	void GameCreature::regenerateHealth()

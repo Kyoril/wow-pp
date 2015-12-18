@@ -19,27 +19,23 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-#pragma once
+syntax = "proto2";
+package wowpp.proto;
 
-#include "spell_cast.h"
+message FactionBaseRep {
+	optional uint32 racemask = 1;
+	optional uint32 classmask = 2;
+	optional int32 value = 3;
+	optional uint32 flags = 4;
+}
 
-namespace wowpp
-{
-	/// 
-	class NoCastState final : public SpellCast::CastState
-	{
-	public:
+message FactionEntry {
+	required uint32 id = 1;
+	required string name = 2;
+	optional int32 replistid = 3;
+	repeated FactionBaseRep baserep = 4;
+}
 
-		void activate() override;
-		std::pair<game::SpellCastResult, SpellCasting*> startCast(
-			SpellCast &cast,
-			const proto::SpellEntry &spell,
-			SpellTargetMap target,
-			Int32 basePoints,
-			GameTime castTime,
-			bool doReplacePreviousCast
-			) override;
-		void stopCast() override;
-		void onUserStartsMoving() override;
-	};
+message Factions {
+	repeated FactionEntry entry = 1;
 }

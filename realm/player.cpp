@@ -33,7 +33,8 @@
 #include "common/big_number.h"
 #include "binary_io/vector_sink.h"
 #include "binary_io/writer.h"
-#include "data/project.h"
+//#include "data/project.h"
+#include "proto_data/project.h"
 #include "common/utilities.h"
 #include "game/game_item.h"
 #include "boost/algorithm/string.hpp"
@@ -47,7 +48,7 @@ using namespace wowpp::game;
 
 namespace wowpp
 {
-	Player::Player(Configuration &config, IdGenerator<UInt64> &groupIdGenerator, PlayerManager &manager, LoginConnector &loginConnector, WorldManager &worldManager, IDatabase &database, Project &project, std::shared_ptr<Client> connection, const String &address)
+	Player::Player(Configuration &config, IdGenerator<UInt64> &groupIdGenerator, PlayerManager &manager, LoginConnector &loginConnector, WorldManager &worldManager, IDatabase &database, proto::Project &project, std::shared_ptr<Client> connection, const String &address)
 		: m_config(config)
 		, m_groupIdGenerator(groupIdGenerator)
 		, m_manager(manager)
@@ -60,10 +61,6 @@ namespace wowpp
         , m_authed(false)
 		, m_characterId(std::numeric_limits<DatabaseId>::max())
 		, m_instanceId(std::numeric_limits<UInt32>::max())
-		, m_getRace(std::bind(&RaceEntryManager::getById, &project.races, std::placeholders::_1))
-		, m_getClass(std::bind(&ClassEntryManager::getById, &project.classes, std::placeholders::_1))
-		, m_getLevel(std::bind(&LevelEntryManager::getById, &project.levels, std::placeholders::_1))
-		, m_getSpell(std::bind(&SpellEntryManager::getById, &project.spells, std::placeholders::_1))
 		, m_worldNode(nullptr)
 		, m_transferMap(0)
 		, m_transferX(0.0f)
@@ -457,7 +454,7 @@ namespace wowpp
 		}
 
 		// Get the racial informations
-		const auto *race = m_getRace(character.race);
+		const auto *race = m_project.races.getById(character.race);
 		if (!race)
 		{
 			ELOG("Unable to find informations of race " << character.race);
@@ -467,10 +464,10 @@ namespace wowpp
 		}
 
 		// Add initial spells
-		const auto &initialSpellsEntry = race->initialSpells.find(character.class_);
-		if (initialSpellsEntry == race->initialSpells.end())
+		const auto &initialSpellsEntry = race->initialspells().find(character.class_);
+		if (initialSpellsEntry == race->initialspells().end())
 		{
-			ELOG("No initial spells set up for race " << race->name << " and class " << character.class_);
+			ELOG("No initial spells set up for race " << race->name() << " and class " << character.class_);
 			sendPacket(
 				std::bind(game::server_write::charCreate, std::placeholders::_1, game::response_code::CharCreateError));
 			return;
@@ -481,155 +478,176 @@ namespace wowpp
 		std::vector<pp::world_realm::ItemData> items;
 
 		// Add initial items
-		auto it1 = race->initialItems.find(character.class_);
-		if (it1 != race->initialItems.end())
+		auto it1 = race->initialitems().find(character.class_);
+		if (it1 != race->initialitems().end())
 		{
-			auto it2 = it1->second.find(character.gender);
-			if (it2 != it1->second.end())
+			for (int i = 0; i < it1->second.items_size(); ++i)
 			{
-				for (const auto *item : it2->second)
+				const auto *item = m_project.items.getById(it1->second.items(i));
+				if (!item)
+					continue;
+
+				// Get slot for this item
+				UInt16 slot = 0xffff;
+				switch (item->inventorytype())
 				{
-					// Get slot for this item
-					UInt16 slot = 0xffff;
-					switch (item->inventoryType)
+					case game::inventory_type::Head:
 					{
-						case inventory_type::Head:
-						{
-							slot = player_equipment_slots::Head;
-							break;
-						}
-						case inventory_type::Neck:
-						{
-							slot = player_equipment_slots::Neck;
-							break;
-						}
-						case inventory_type::Shoulders:
-						{
-							slot = player_equipment_slots::Shoulders;
-							break;
-						}
-						case inventory_type::Body:
-						{
-							slot = player_equipment_slots::Body;
-							break;
-						}
-						case inventory_type::Chest:
-						case inventory_type::Robe:
-						{
-							slot = player_equipment_slots::Chest;
-							break;
-						}
-						case inventory_type::Waist:
-						{
-							slot = player_equipment_slots::Waist;
-							break;
-						}
-						case inventory_type::Legs:
-						{
-							slot = player_equipment_slots::Legs;
-							break;
-						}
-						case inventory_type::Feet:
-						{
-							slot = player_equipment_slots::Feet;
-							break;
-						}
-						case inventory_type::Wrists:
-						{
-							slot = player_equipment_slots::Wrists;
-							break;
-						}
-						case inventory_type::Hands:
-						{
-							slot = player_equipment_slots::Hands;
-							break;
-						}
-						case inventory_type::Finger:
-						{
-							//TODO: Finger1/2
-							slot = player_equipment_slots::Finger1;
-							break;
-						}
-						case inventory_type::Trinket:
-						{
-							//TODO: Trinket1/2
-							slot = player_equipment_slots::Trinket1;
-							break;
-						}
-						case inventory_type::Weapon:
-						case inventory_type::TwoHandWeapon:
-						case inventory_type::WeaponMainHand:
-						{
-							slot = player_equipment_slots::Mainhand;
-							break;
-						}
-						case inventory_type::Shield:
-						case inventory_type::WeaponOffHand:
-						case inventory_type::Holdable:
-						{
-							slot = player_equipment_slots::Offhand;
-							break;
-						}
-						case inventory_type::Ranged:
-						case inventory_type::Thrown:
-						{
-							slot = player_equipment_slots::Ranged;
-							break;
-						}
-						case inventory_type::Cloak:
-						{
-							slot = player_equipment_slots::Back;
-							break;
-						}
-						case inventory_type::Tabard:
-						{
-							slot = player_equipment_slots::Tabard;
-							break;
-						}
-
-						default:
-						{
-							if (bagSlot < player_inventory_pack_slots::Count_)
-							{
-								slot = player_inventory_pack_slots::Start + (bagSlot++);
-							}
-							break;
-						}
+						slot = player_equipment_slots::Head;
+						break;
+					}
+					case game::inventory_type::Neck:
+					{
+						slot = player_equipment_slots::Neck;
+						break;
+					}
+					case game::inventory_type::Shoulders:
+					{
+						slot = player_equipment_slots::Shoulders;
+						break;
+					}
+					case game::inventory_type::Body:
+					{
+						slot = player_equipment_slots::Body;
+						break;
+					}
+					case game::inventory_type::Chest:
+					case game::inventory_type::Robe:
+					{
+						slot = player_equipment_slots::Chest;
+						break;
+					}
+					case game::inventory_type::Waist:
+					{
+						slot = player_equipment_slots::Waist;
+						break;
+					}
+					case game::inventory_type::Legs:
+					{
+						slot = player_equipment_slots::Legs;
+						break;
+					}
+					case game::inventory_type::Feet:
+					{
+						slot = player_equipment_slots::Feet;
+						break;
+					}
+					case game::inventory_type::Wrists:
+					{
+						slot = player_equipment_slots::Wrists;
+						break;
+					}
+					case game::inventory_type::Hands:
+					{
+						slot = player_equipment_slots::Hands;
+						break;
+					}
+					case game::inventory_type::Finger:
+					{
+						//TODO: Finger1/2
+						slot = player_equipment_slots::Finger1;
+						break;
+					}
+					case game::inventory_type::Trinket:
+					{
+						//TODO: Trinket1/2
+						slot = player_equipment_slots::Trinket1;
+						break;
+					}
+					case game::inventory_type::Weapon:
+					case game::inventory_type::TwoHandedWeapon:
+					case game::inventory_type::MainHandWeapon:
+					{
+						slot = player_equipment_slots::Mainhand;
+						break;
+					}
+					case game::inventory_type::Shield:
+					case game::inventory_type::OffHandWeapon:
+					case game::inventory_type::Holdable:
+					{
+						slot = player_equipment_slots::Offhand;
+						break;
+					}
+					case game::inventory_type::Ranged:
+					case game::inventory_type::Thrown:
+					{
+						slot = player_equipment_slots::Ranged;
+						break;
+					}
+					case game::inventory_type::Cloak:
+					{
+						slot = player_equipment_slots::Back;
+						break;
+					}
+					case game::inventory_type::Tabard:
+					{
+						slot = player_equipment_slots::Tabard;
+						break;
 					}
 
-					if (slot != 0xffff)
+					default:
 					{
-						pp::world_realm::ItemData itemData;
-						itemData.entry = item->id;
-						itemData.durability = item->durability;
-						itemData.slot = slot;
-						itemData.stackCount = 1;
-						items.emplace_back(std::move(itemData));
+						if (bagSlot < player_inventory_pack_slots::Count_)
+						{
+							slot = player_inventory_pack_slots::Start + (bagSlot++);
+						}
+						break;
 					}
+				}
+
+				if (slot != 0xffff)
+				{
+					pp::world_realm::ItemData itemData;
+					itemData.entry = item->id();
+					itemData.durability = item->durability();
+					itemData.slot = slot;
+					itemData.stackCount = 1;
+					items.emplace_back(std::move(itemData));
 				}
 			}
 		}
 
 		// Update character location
-		character.mapId = race->startMap;
-		character.zoneId = race->startZone;
-		character.x = race->startPosition[0];
-		character.y = race->startPosition[1];
-		character.z = race->startPosition[2];
-		character.o = race->startRotation;
+		character.mapId = race->startmap();
+		character.zoneId = race->startzone();
+		character.x = race->startposx();
+		character.y = race->startposy();
+		character.z = race->startposz();
+		character.o = race->startrotation();
+
+		std::vector<const proto::SpellEntry*> initialSpells;
+		for (int i = 0; i < initialSpellsEntry->second.spells_size(); ++i)
+		{
+			const auto &spellid = initialSpellsEntry->second.spells(i);
+			const auto *spell = m_project.spells.getById(spellid);
+			if (spell)
+			{
+				initialSpells.push_back(spell);
+			}
+		}
 
 		// Create character
-		game::ResponseCode result = m_database.createCharacter(m_accountId, initialSpellsEntry->second, items, character);
+		game::ResponseCode result = m_database.createCharacter(m_accountId, initialSpells, items, character);
 		if (result == game::response_code::CharCreateSuccess)
 		{
 			// Cache the character data
 			m_characters.push_back(character);
 
 			// Add initial action buttons
-			const auto classBtns = race->initialActionButtons.find(character.class_);
-			if (classBtns != race->initialActionButtons.end())
+			const auto classBtns = race->initialactionbuttons().find(character.class_);
+			if (classBtns != race->initialactionbuttons().end())
 			{
-				m_database.setCharacterActionButtons(character.id, classBtns->second);
+				wowpp::ActionButtons buttons;
+				for (const auto &btn : classBtns->second.actionbuttons())
+				{
+					auto &entry = buttons[btn.first];
+					entry.action = btn.second.action();
+					entry.misc = btn.second.misc();
+					entry.state = static_cast<ActionButtonUpdateState>(btn.second.state());
+					entry.type = btn.second.type();
+				}
+
+				m_database.setCharacterActionButtons(character.id, buttons);
 			}
 		}
 
@@ -722,7 +740,7 @@ namespace wowpp
 		ILOG("Player " << m_accountName << " tries to enter the world with character 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << m_characterId);
 
 		// Load the player character data from the database
-		std::shared_ptr<GameCharacter> character(new GameCharacter(m_manager.getTimers(), m_getRace, m_getClass, m_getLevel, m_getSpell));
+		std::shared_ptr<GameCharacter> character(new GameCharacter(m_project, m_manager.getTimers()));
 		character->initialize();
 		character->setGuid(createRealmGUID(characterId, m_loginConnector.getRealmID(), guid_type::Player));
 		if (!m_database.getGameCharacter(guidLowerPart(characterId), *character, m_itemData))
@@ -860,7 +878,7 @@ namespace wowpp
 				(charEntry && charEntry->cinematic))
 			{
 				sendPacket(
-					std::bind(game::server_write::triggerCinematic, std::placeholders::_1, raceEntry->cinematic));
+					std::bind(game::server_write::triggerCinematic, std::placeholders::_1, raceEntry->cinematic()));
 			}
 
 			// Send notification to friends
@@ -1020,7 +1038,7 @@ namespace wowpp
 			return add_item_result::Unknown;
 		}
 
-		if (amount > itemEntry->maxStack) amount = itemEntry->maxStack;
+		if (amount > itemEntry->maxstack()) amount = itemEntry->maxstack();
 
 		// 
 		std::map<UInt16, pp::world_realm::ItemData> modifiedItems;
@@ -1034,8 +1052,8 @@ namespace wowpp
 			{
 				usedSlots.add(item.slot);
 				if (item.entry == itemId &&
-					itemEntry->maxStack > 1 &&
-					item.stackCount <= itemEntry->maxStack - amount)
+					itemEntry->maxstack() > 1 &&
+					item.stackCount <= itemEntry->maxstack() - amount)
 				{
 					item.stackCount += amount;
 					amount = 0;
@@ -1055,7 +1073,7 @@ namespace wowpp
 					pp::world_realm::ItemData data;
 					data.contained = 0;
 					data.creator = 0;
-					data.durability = itemEntry->durability;
+					data.durability = itemEntry->durability();
 					data.entry = itemId;
 					data.randomPropertyIndex = 0;
 					data.randomSuffixIndex = 0;
@@ -1071,11 +1089,8 @@ namespace wowpp
 
 		// Notify world node about this
 		m_worldNode->itemData(m_gameCharacter->getGuid(), std::cref(modifiedItems));
-		//sendPacket(
-		//	std::bind(game::server_write::messageChat, std::placeholders::_1, chat_msg::System, language::Universal, "", 0, "Successfully added item(s).", nullptr));
-
+	
 		// Save items
-		//m_database.saveGameCharacter(*m_gameCharacter, m_itemData);
 		return add_item_result::Success;
 	}
 
@@ -1489,8 +1504,6 @@ namespace wowpp
 		if (!name.empty())
 			capitalize(name);
 
-        //DLOG("TODO: Player " << m_accountName << " wants to add " << name << " to his ignore list");
-
         // Find the character details
         game::CharEntry ignoredChar;
         if (!m_database.getCharacterByName(name, ignoredChar))
@@ -1592,7 +1605,7 @@ namespace wowpp
 		}
 
 		// Find item
-		const ItemEntry *item = m_project.items.getById(itemID);
+		const auto *item = m_project.items.getById(itemID);
 		if (item)
 		{
 			// TODO: Cache multiple query requests and send one, bigger response with multiple items

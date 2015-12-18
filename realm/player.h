@@ -25,7 +25,7 @@
 #include "game_protocol/game_connection.h"
 #include "game_protocol/game_crypted_connection.h"
 #include "wowpp_protocol/wowpp_world_realm.h"
-#include "data/data_load_context.h"
+//#include "data/data_load_context.h"
 #include "common/big_number.h"
 #include "common/id_generator.h"
 #include "game/game_character.h"
@@ -44,11 +44,14 @@ namespace wowpp
 	class LoginConnector;
 	class WorldManager;
 	struct IDatabase;
-	class Project;
 	class World;
 	struct Configuration;
 	class PlayerSocial;
 	class PlayerGroup;
+	namespace proto
+	{
+		class Project;
+	}
 
 	namespace add_item_result
 	{
@@ -95,7 +98,7 @@ namespace wowpp
 						LoginConnector &loginConnector,
 						WorldManager &worldManager,
 						IDatabase &database,
-						Project &project,
+						proto::Project &project,
 		                std::shared_ptr<Client> connection,
 						const String &address);
 
@@ -195,7 +198,7 @@ namespace wowpp
 		LoginConnector &m_loginConnector;
 		WorldManager &m_worldManager;
 		IDatabase &m_database;
-		Project &m_project;
+		proto::Project &m_project;
 		std::shared_ptr<Client> m_connection;
 		String m_address;								// IP address in string format
 		String m_accountName;
@@ -212,10 +215,6 @@ namespace wowpp
 		DatabaseId m_characterId;
 		std::shared_ptr<GameCharacter> m_gameCharacter;
 		UInt32 m_instanceId;
-		DataLoadContext::GetRace m_getRace;
-		DataLoadContext::GetClass m_getClass;
-		DataLoadContext::GetLevel m_getLevel;
-		DataLoadContext::GetSpell m_getSpell;
 		boost::signals2::scoped_connection m_worldDisconnected;
 		UInt32 m_timeSyncCounter;
 		World *m_worldNode;

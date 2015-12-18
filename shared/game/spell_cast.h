@@ -22,7 +22,8 @@
 #pragma once
 
 #include "game/defines.h"
-#include "data/spell_entry.h"
+//#include "data/spell_entry.h"
+#include "shared/proto_data/spells.pb.h"
 #include "spell_target_map.h"
 #include "common/timer_queue.h"
 #include <boost/signals2.hpp>
@@ -58,7 +59,7 @@ namespace wowpp
 		TimerQueue &getTimers() const { return m_timers; }
 
 		std::pair<game::SpellCastResult, SpellCasting*> startCast(
-			const SpellEntry &spell,
+			const proto::SpellEntry &spell,
 			SpellTargetMap target,
 			Int32 basePoints,
 			GameTime castTime,
@@ -84,7 +85,7 @@ namespace wowpp
 		virtual void activate() = 0;
 		virtual std::pair<game::SpellCastResult, SpellCasting*> startCast(
 			SpellCast &cast,
-			const SpellEntry &spell,
+			const proto::SpellEntry &spell,
 			SpellTargetMap target,
 			Int32 basePoints,
 			GameTime castTime,
@@ -96,14 +97,14 @@ namespace wowpp
 
 	SpellCasting &castSpell(
 		SpellCast &cast,
-		const SpellEntry &spell,
+		const proto::SpellEntry &spell,
 		SpellTargetMap target,
 		Int32 basePoints,
 		GameTime castTime
 		);
 
 	bool isInSkillRange(
-		const SpellEntry &spell,
+		const proto::SpellEntry &spell,
 		GameUnit &user,
 		SpellTargetMap &target);
 }

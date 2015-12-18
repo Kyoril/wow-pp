@@ -22,12 +22,12 @@
 #pragma once
 
 #include "game_object.h"
-#include "data/race_entry.h"
-#include "data/class_entry.h"
-#include "data/level_entry.h"
-#include "data/spell_entry.h"
+//#include "data/race_entry.h"
+//#include "data/class_entry.h"
+//#include "data/level_entry.h"
+//#include "data/spell_entry.h"
+//#include "data/data_load_context.h"
 #include "game/defines.h"
-#include "data/data_load_context.h"
 #include "common/timer_queue.h"
 #include "common/countdown.h"
 #include "spell_cast.h"
@@ -303,7 +303,13 @@ namespace wowpp
 
 	typedef base_mod_type::Type BaseModType;
 
-	struct FactionTemplateEntry;
+	namespace proto
+	{
+		class ClassEntry;
+		class RaceEntry;
+		class LevelEntry;
+		class FactionTemplateEntry;
+	}
 
 	/// Base class for all units in the world. A unit is an object with health, which can
 	/// be controlled, fight etc. This class will be inherited by the GameCreature and the
@@ -328,7 +334,7 @@ namespace wowpp
 		/// send network packets based on the error code.
 		boost::signals2::signal<void(AttackSwingError)> autoAttackError;
 		/// Fired when a spell cast error occurred.
-		boost::signals2::signal<void(const SpellEntry &, game::SpellCastResult)> spellCastError;
+		boost::signals2::signal<void(const proto::SpellEntry &, game::SpellCastResult)> spellCastError;
 		/// Fired when the unit level changed.
 		/// Parameters: Previous Level, Health gained, Mana gained, Stats gained (all 5 stats)
 		boost::signals2::signal<void(UInt32, Int32, Int32, Int32, Int32, Int32, Int32, Int32)> levelGained;
@@ -356,11 +362,8 @@ namespace wowpp
 
 		/// Creates a new instance of the GameUnit object, which will still be uninitialized.
 		explicit GameUnit(
-			TimerQueue &timers,
-			DataLoadContext::GetRace getRace, 
-			DataLoadContext::GetClass getClass,
-			DataLoadContext::GetLevel getLevel,
-			DataLoadContext::GetSpell getSpell);
+			proto::Project &project,
+			TimerQueue &timers);
 		~GameUnit();
 
 		/// @copydoc GameObject::initialize()
@@ -385,16 +388,16 @@ namespace wowpp
 		/// Gets the current level.
 		UInt32 getLevel() const { return getUInt32Value(unit_fields::Level); }
 		/// Gets this units faction template.
-		const FactionTemplateEntry &getFactionTemplate() const;
+		const proto::FactionTemplateEntry &getFactionTemplate() const;
 		/// 
-		void setFactionTemplate(const FactionTemplateEntry &faction);
+		void setFactionTemplate(const proto::FactionTemplateEntry &faction);
 
 		/// Gets the timer queue object needed for countdown events.
 		TimerQueue &getTimers() { return m_timers; }
 		/// Get the current race entry information.
-		const RaceEntry *getRaceEntry() const {  return m_raceEntry; }
+		const proto::RaceEntry *getRaceEntry() const {  return m_raceEntry; }
 		/// Get the current class entry information.
-		const ClassEntry *getClassEntry() const { return m_classEntry; }
+		const proto::ClassEntry *getClassEntry() const { return m_classEntry; }
 		/// 
 		virtual const String &getName() const;
 
@@ -469,9 +472,9 @@ namespace wowpp
 		float getBlockChance(GameUnit &target);
 		float getCrushChance(GameUnit &caster, GameUnit &target);
 		float getCritChance(GameUnit &caster, GameUnit &target);
-		UInt32 getAttackPower(GameUnit &caster);
-		UInt32 getAttackBonusPct(GameUnit &caster);
-		UInt32 getAttackPointsTotal(UInt32 attackPower, UInt32 bonusPct);
+//		UInt32 getAttackPower(GameUnit &caster);
+//		UInt32 getAttackBonusPct(GameUnit &caster);
+//		UInt32 getAttackPointsTotal(UInt32 attackPower, UInt32 bonusPct);
 		UInt32 consumeAbsorb(UInt32 damage, UInt8 school, GameUnit &target);
 		virtual bool canBlock() const = 0;
 		virtual bool canParry() const = 0;
@@ -495,11 +498,11 @@ namespace wowpp
 		/// Calculates the resistance based on the specified modifier.
 		static UInt8 getResistanceByUnitMod(UnitMods mod);
 		/// Calculates the power based on the specified unit modifier.
-		static PowerType getPowerTypeByUnitMod(UnitMods mod);
+		static game::PowerType getPowerTypeByUnitMod(UnitMods mod);
 		/// 
 		static UnitMods getUnitModByStat(UInt8 stat);
 		/// 
-		static UnitMods getUnitModByPower(PowerType power);
+		static UnitMods getUnitModByPower(game::PowerType power);
 		/// 
 		static UnitMods getUnitModByResistance(UInt8 res);
 
@@ -508,7 +511,7 @@ namespace wowpp
 
 		virtual void updateAllStats();
 		virtual void updateMaxHealth();
-		virtual void updateMaxPower(PowerType power);
+		virtual void updateMaxPower(game::PowerType power);
 		virtual void updateArmor();
 		virtual void updateDamage();
 		virtual void updateManaRegen();
@@ -517,7 +520,7 @@ namespace wowpp
 
 	public:
 
-		virtual void levelChanged(const LevelEntry &levelInfo);
+		virtual void levelChanged(const proto::LevelEntry &levelInfo);
 		virtual void onKilled(GameUnit *killer);
 
 		float getHealthBonusFromStamina() const;
@@ -536,8 +539,8 @@ namespace wowpp
 		void onAttackSwing();
 		void onRegeneration();
 		virtual void regenerateHealth() = 0;
-		void regeneratePower(PowerType power);
-		void onAuraExpired(Aura &aura);
+		void regeneratePower(game::PowerType power);
+//		void onAuraExpired(Aura &aura);
 		void onSpellCastEnded(bool succeeded);
 
 	private:
@@ -548,12 +551,9 @@ namespace wowpp
 		typedef LinearSet<GameUnit*> AttackingUnitSet;
 
 		TimerQueue &m_timers;
-		DataLoadContext::GetRace m_getRace;
-		DataLoadContext::GetClass m_getClass;
-		DataLoadContext::GetLevel m_getLevel;
-		DataLoadContext::GetSpell m_getSpell;
-		const RaceEntry *m_raceEntry;
-		const ClassEntry *m_classEntry;
+		const proto::RaceEntry *m_raceEntry;
+		const proto::ClassEntry *m_classEntry;
+		const proto::FactionTemplateEntry *m_factionTemplate;
 		std::unique_ptr<SpellCast> m_spellCast;
 		Countdown m_despawnCountdown;
 		boost::signals2::scoped_connection m_victimDespawned, m_victimDied;
@@ -565,7 +565,6 @@ namespace wowpp
 		UnitModArray m_unitMods;
 		AuraContainer m_auras;
 		AttackSwingCallback m_swingCallback;
-		const FactionTemplateEntry *m_factionTemplate;
 		AttackingUnitSet m_attackingUnits;
 	};
 

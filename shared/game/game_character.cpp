@@ -21,20 +21,18 @@
 
 #include "game_character.h"
 #include <log/default_log_levels.h>
-#include "data/skill_entry.h"
-#include "data/item_entry.h"
+//#include "data/skill_entry.h"
+//#include "data/item_entry.h"
+#include "proto_data/project.h"
 #include "game_item.h"
 #include "common/utilities.h"
 
 namespace wowpp
 {
 	GameCharacter::GameCharacter(
-		TimerQueue &timers,
-		DataLoadContext::GetRace getRace,
-		DataLoadContext::GetClass getClass,
-		DataLoadContext::GetLevel getLevel,
-		DataLoadContext::GetSpell getSpell)
-		: GameUnit(timers, getRace, getClass, getLevel, getSpell)
+		proto::Project &project,
+		TimerQueue &timers)
+		: GameUnit(project, timers)
 		, m_name("UNKNOWN")
 		, m_zoneIndex(0)
 		, m_weaponProficiency(0)
@@ -119,7 +117,7 @@ namespace wowpp
 		setFloatValue(character_fields::DodgePercentage, 0.0f);
 	}
 
-	void GameCharacter::levelChanged(const LevelEntry &levelInfo)
+	void GameCharacter::levelChanged(const proto::LevelEntry &levelInfo)
 	{
 		// Superclass
 		GameUnit::levelChanged(levelInfo);
@@ -128,22 +126,21 @@ namespace wowpp
 		updateTalentPoints();
 
 		// Update xp to next level
-		setUInt32Value(character_fields::NextLevelXp, levelInfo.nextLevelXP);
+		setUInt32Value(character_fields::NextLevelXp, levelInfo.nextlevelxp());
 		
 		// Try to find base values
 		if (getClassEntry())
 		{
-			auto &levelBaseValues = getClassEntry()->levelBaseValues;
-			auto it = levelBaseValues.find(levelInfo.id);
-			if (it != levelBaseValues.end())
+			int levelIndex = levelInfo.id() - 1;
+			if (levelIndex < getClassEntry()->levelbasevalues_size())
 			{
 				// Update base health and mana
-				setUInt32Value(unit_fields::BaseHealth, it->second.health);
-				setUInt32Value(unit_fields::BaseMana, it->second.mana);
+				setUInt32Value(unit_fields::BaseHealth, getClassEntry()->levelbasevalues(levelIndex).health());
+				setUInt32Value(unit_fields::BaseMana, getClassEntry()->levelbasevalues(levelIndex).mana());
 			}
 			else
 			{
-				DLOG("Couldn't find level entry for level " << levelInfo.id);
+				DLOG("Couldn't find level entry for level " << levelInfo.id());
 			}
 		}
 		else
@@ -151,7 +148,8 @@ namespace wowpp
 			DLOG("Couldn't find class entry!");
 		}
 
-		// Update mana regeneration per spirit
+		// TODO
+		/*// Update mana regeneration per spirit
 		auto regenIt = levelInfo.regen.find(getClass());
 		if (regenIt != levelInfo.regen.end())
 		{
@@ -159,10 +157,10 @@ namespace wowpp
 			m_manaRegBase = regenIt->second[1];
 		}
 		else
-		{
+		{*/
 			m_healthRegBase = 0.0f;
 			m_manaRegBase = 0.0f;
-		}
+		//}
 
 		// Update all stats
 		updateAllStats();
@@ -184,36 +182,37 @@ namespace wowpp
 	{
 		if (slot < player_equipment_slots::End)
 		{
-			if (item->getEntry().durability == 0 ||
+			if (item->getEntry().durability() == 0 ||
 				item->getUInt32Value(item_fields::Durability) > 0)
 			{
 				// Apply values
-				for (const auto &entry : item->getEntry().itemStats)
+				for (int i = 0; i < item->getEntry().stats_size(); ++i)
 				{
-					if (entry.statValue != 0)
+					const auto &entry = item->getEntry().stats(i);
+					if (entry.value() != 0)
 					{
-						switch (entry.statType)
+						switch (entry.type())
 						{
 						case 0:		// Mana
-							updateModifierValue(unit_mods::Mana, unit_mod_type::TotalValue, entry.statValue, true);
+							updateModifierValue(unit_mods::Mana, unit_mod_type::TotalValue, entry.value(), true);
 							break;
 						case 1:		// Health
-							updateModifierValue(unit_mods::Health, unit_mod_type::TotalValue, entry.statValue, true);
+							updateModifierValue(unit_mods::Health, unit_mod_type::TotalValue, entry.value(), true);
 							break;
 						case 3:		// Agility
-							updateModifierValue(unit_mods::StatAgility, unit_mod_type::TotalValue, entry.statValue, true);
+							updateModifierValue(unit_mods::StatAgility, unit_mod_type::TotalValue, entry.value(), true);
 							break;
 						case 4:		// Strength
-							updateModifierValue(unit_mods::StatStrength, unit_mod_type::TotalValue, entry.statValue, true);
+							updateModifierValue(unit_mods::StatStrength, unit_mod_type::TotalValue, entry.value(), true);
 							break;
 						case 5:		// Intellect
-							updateModifierValue(unit_mods::StatIntellect, unit_mod_type::TotalValue, entry.statValue, true);
+							updateModifierValue(unit_mods::StatIntellect, unit_mod_type::TotalValue, entry.value(), true);
 							break;
 						case 6:		// Spirit
-							updateModifierValue(unit_mods::StatSpirit, unit_mod_type::TotalValue, entry.statValue, true);
+							updateModifierValue(unit_mods::StatSpirit, unit_mod_type::TotalValue, entry.value(), true);
 							break;
 						case 7:		// Stamina
-							updateModifierValue(unit_mods::StatStamina, unit_mod_type::TotalValue, entry.statValue, true);
+							updateModifierValue(unit_mods::StatStamina, unit_mod_type::TotalValue, entry.value(), true);
 							break;
 						default:
 							break;
@@ -235,7 +234,7 @@ namespace wowpp
 			// If this item was equipped, make it visible for other players
 			if (slot < player_equipment_slots::End)
 			{
-				setUInt32Value(character_fields::VisibleItem1_0 + (slot * 16), item->getEntry().id);
+				setUInt32Value(character_fields::VisibleItem1_0 + (slot * 16), item->getEntry().id());
 				setUInt64Value(character_fields::VisibleItem1_CREATOR + (slot * 16), item->getUInt64Value(item_fields::Creator));
 
 				// TODO: Apply Enchantment Slots
@@ -267,21 +266,22 @@ namespace wowpp
 		}
 	}
 
-	void GameCharacter::addSpell(const SpellEntry &spell)
+	void GameCharacter::addSpell(const proto::SpellEntry &spell)
 	{
-		if (hasSpell(spell.id))
+		if (hasSpell(spell.id()))
 		{
 			return;
 		}
 
 		// Evaluate parry and block spells
-		for (auto &effect : spell.effects)
+		for (int i = 0; i < spell.effects_size(); ++i)
 		{
-			if (effect.type == game::spell_effects::Parry)
+			const auto &effect = spell.effects(i);
+			if (effect.type() == game::spell_effects::Parry)
 			{
 				m_canParry = true;
 			}
-			else if (effect.type == game::spell_effects::Block)
+			else if (effect.type() == game::spell_effects::Block)
 			{
 				m_canBlock = true;
 			}
@@ -290,19 +290,24 @@ namespace wowpp
 		m_spells.push_back(&spell);
 		
 		// Add dependent skills
-		for (const auto *skill : spell.skillsOnLearnSpell)
+		for (int i = 0; i < spell.skillsonlearnspell_size(); ++i)
 		{
+			const auto *skill = m_project.skills.getById(spell.skillsonlearnspell(i));
+			if (!skill)
+				continue;
+
+			// Add dependent skill
 			addSkill(*skill);
 		}
 
 		// Talent point update
-		if (spell.talentCost > 0)
+		if (spell.talentcost() > 0)
 		{
 			updateTalentPoints();
 		}
 	}
 
-	bool GameCharacter::removeSpell(const SpellEntry &spell)
+	bool GameCharacter::removeSpell(const proto::SpellEntry &spell)
 	{
 		auto it = std::find(m_spells.begin(), m_spells.end(), &spell);
 		if (it == m_spells.end())
@@ -313,29 +318,31 @@ namespace wowpp
 		it = m_spells.erase(it);
 
 		// Evaluate parry and block spells
-		for (auto &effect : spell.effects)
+		for (int i = 0; i < spell.effects_size(); ++i)
 		{
-			if (effect.type == game::spell_effects::Parry)
+			const auto &effect = spell.effects(i);
+			if (effect.type() == game::spell_effects::Parry)
 			{
 				m_canParry = false;
 			}
-			else if (effect.type == game::spell_effects::Block)
+			else if (effect.type() == game::spell_effects::Block)
 			{
 				m_canBlock = false;
 			}
 		}
 
 		// Remove spell aura effects
-		getAuras().removeAllAurasDueToSpell(spell.id);
+		getAuras().removeAllAurasDueToSpell(spell.id());
 
 		// Remove dependent skills
-		for (const auto *skill : spell.skillsOnLearnSpell)
+		for (int i = 0; i < spell.skillsonlearnspell_size(); ++i)
 		{
-			removeSkill(skill->id);
+			// Remove dependent skill
+			removeSkill(spell.skillsonlearnspell(i));
 		}
 
 		// Talent point update
-		if (spell.talentCost > 0)
+		if (spell.talentcost() > 0)
 		{
 			updateTalentPoints();
 		}
@@ -347,7 +354,7 @@ namespace wowpp
 	{
 		for (const auto *spell : m_spells)
 		{
-			if (spell->id == spellId)
+			if (spell->id() == spellId)
 			{
 				return true;
 			}
@@ -356,9 +363,9 @@ namespace wowpp
 		return false;
 	}
 
-	void GameCharacter::addSkill(const SkillEntry &skill)
+	void GameCharacter::addSkill(const proto::SkillEntry &skill)
 	{
-		if (hasSkill(skill.id))
+		if (hasSkill(skill.id()))
 		{
 			return;
 		}
@@ -366,7 +373,7 @@ namespace wowpp
 		UInt16 current = 1;
 		UInt16 max = 1;
 
-		switch (skill.category)
+		switch (skill.category())
 		{
 			case game::skill_category::Languages:
 			{
@@ -406,7 +413,7 @@ namespace wowpp
 
 			default:
 			{
-				WLOG("Unsupported skill category: " << skill.category);
+				WLOG("Unsupported skill category: " << skill.category());
 				return;
 			}
 		}
@@ -420,11 +427,11 @@ namespace wowpp
 
 			// Get current skill
 			UInt32 skillValue = getUInt32Value(skillIndex);
-			if (skillValue == 0 || skillValue == skill.id)
+			if (skillValue == 0 || skillValue == skill.id())
 			{
 				// Update values
 				const UInt32 minMaxValue = UInt32(UInt16(current) | (UInt32(max) << 16));
-				setUInt32Value(skillIndex, skill.id);
+				setUInt32Value(skillIndex, skill.id());
 				setUInt32Value(skillIndex + 1, minMaxValue);
 				m_skills.push_back(&skill);
 
@@ -440,7 +447,7 @@ namespace wowpp
 	{
 		for (const auto *skill : m_skills)
 		{
-			if (skill->id == skillId)
+			if (skill->id() == skillId)
 			{
 				return true;
 			}
@@ -471,7 +478,7 @@ namespace wowpp
 		auto it = m_skills.begin();
 		while (it != m_skills.end())
 		{
-			if ((*it)->id == skillId)
+			if ((*it)->id() == skillId)
 			{
 				it = m_skills.erase(it);
 				break;
@@ -617,7 +624,7 @@ namespace wowpp
 			}
 			if (dstSlot < player_equipment_slots::End)
 			{
-				setUInt32Value(character_fields::VisibleItem1_0 + (dstSlot * 16), srcItem->getEntry().id);
+				setUInt32Value(character_fields::VisibleItem1_0 + (dstSlot * 16), srcItem->getEntry().id());
 				setUInt64Value(character_fields::VisibleItem1_CREATOR + (dstSlot * 16), srcItem->getUInt64Value(item_fields::Creator));
 				updateStats = true;
 			}
@@ -633,13 +640,13 @@ namespace wowpp
 
 			if (srcSlot < player_equipment_slots::End)
 			{
-				setUInt32Value(character_fields::VisibleItem1_0 + (srcSlot * 16), dstItem->getEntry().id);
+				setUInt32Value(character_fields::VisibleItem1_0 + (srcSlot * 16), dstItem->getEntry().id());
 				setUInt64Value(character_fields::VisibleItem1_CREATOR + (srcSlot * 16), dstItem->getUInt64Value(item_fields::Creator));
 				updateStats = true;
 			}
 			if (dstSlot < player_equipment_slots::End)
 			{
-				setUInt32Value(character_fields::VisibleItem1_0 + (dstSlot * 16), srcItem->getEntry().id);
+				setUInt32Value(character_fields::VisibleItem1_0 + (dstSlot * 16), srcItem->getEntry().id());
 				setUInt64Value(character_fields::VisibleItem1_CREATOR + (dstSlot * 16), srcItem->getUInt64Value(item_fields::Creator));
 				updateStats = true;
 			}
@@ -692,7 +699,7 @@ namespace wowpp
 			if (it != m_itemSlots.end())
 			{
 				// Add armor value from item
-				baseArmor += it->second->getEntry().armor;
+				baseArmor += it->second->getEntry().armor();
 			}
 		}
 
@@ -812,9 +819,9 @@ namespace wowpp
 			{
 				// Get weapon damage values
 				const auto &entry = it->second->getEntry();
-				if (entry.itemDamage[0].min != 0.0f) minDamage = entry.itemDamage[0].min;
-				if (entry.itemDamage[0].max != 0.0f) maxDamage = entry.itemDamage[0].max;
-				if (entry.delay != 0) attackTime = entry.delay;
+				if (entry.damage(0).mindmg() != 0.0f) minDamage = entry.damage(0).mindmg();
+				if (entry.damage(0).maxdmg() != 0.0f) maxDamage = entry.damage(0).maxdmg();
+				if (entry.delay() != 0) attackTime = entry.delay();
 			}
 		}
 
@@ -943,7 +950,7 @@ namespace wowpp
 			return false;
 		}
 
-		if (item->getEntry().inventoryType != inventory_type::Shield)
+		if (item->getEntry().inventorytype() != game::inventory_type::Shield)
 		{
 			return false;
 		}
@@ -1013,14 +1020,14 @@ namespace wowpp
 			// Now iterate through every learned spell and reduce the amount of talent points
 			for (auto &spell : m_spells)
 			{
-				talentPoints -= spell->talentCost;
+				talentPoints -= spell->talentcost();
 			}
 		}
 
 		setUInt32Value(character_fields::CharacterPoints_1, talentPoints);
 	}
 
-	game::InventoryChangeFailure GameCharacter::canStoreItem(UInt8 bag, UInt8 slot, ItemPosCountVector &dest, const ItemEntry &item, UInt32 count, bool swap, UInt32 *noSpaceCount /*= nullptr*/) const
+	game::InventoryChangeFailure GameCharacter::canStoreItem(UInt8 bag, UInt8 slot, ItemPosCountVector &dest, const proto::ItemEntry &item, UInt32 count, bool swap, UInt32 *noSpaceCount /*= nullptr*/) const
 	{
 		// No specific bag, find first free slot
 		if (bag == 0xFF && slot == 0xFF)
@@ -1028,13 +1035,13 @@ namespace wowpp
 			// Find items
 			for (auto &itemInst : m_itemSlots)
 			{
-				if (itemInst.second->getEntry().id == item.id)
+				if (itemInst.second->getEntry().id() == item.id())
 				{
 					// Check item stack
 					UInt32 stackCount = itemInst.second->getUInt32Value(item_fields::StackCount);
-					if (stackCount < item.maxStack)
+					if (stackCount < item.maxstack())
 					{
-						UInt32 delta = limit<UInt32>(item.maxStack - stackCount, 0, count);
+						UInt32 delta = limit<UInt32>(item.maxstack() - stackCount, 0, count);
 						count -= delta;
 						dest.emplace_back(ItemPosCount(itemInst.first, delta));
 						

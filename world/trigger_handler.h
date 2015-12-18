@@ -21,7 +21,8 @@
 
 #pragma once
 
-#include "data/trigger_entry.h"
+//#include "data/trigger_entry.h"
+#include "shared/proto_data/triggers.pb.h"
 #include "common/timer_queue.h"
 #include "common/countdown.h"
 #include <memory>
@@ -29,9 +30,12 @@
 namespace wowpp
 {
 	class GameUnit;
-	class Project;
 	class PlayerManager;
 	class WorldInstance;
+	namespace proto
+	{
+		class Project;
+	}
 
 	/// 
 	class TriggerHandler final
@@ -39,31 +43,31 @@ namespace wowpp
 	public:
 
 		/// 
-		explicit TriggerHandler(Project &project, PlayerManager &playerManager, TimerQueue &timers);
+		explicit TriggerHandler(proto::Project &project, PlayerManager &playerManager, TimerQueue &timers);
 
 		/// Fires a trigger event.
-		void executeTrigger(const TriggerEntry &entry, UInt32 actionOffset = 0, GameUnit *owner = nullptr);
+		void executeTrigger(const proto::TriggerEntry &entry, UInt32 actionOffset = 0, GameUnit *owner = nullptr);
 
 	private:
 
 	private:
 
-		UInt32 getActionData(const TriggerEntry::TriggerAction &action, UInt32 index) const;
-		const String &getActionText(const TriggerEntry::TriggerAction &action, UInt32 index) const;
+		UInt32 getActionData(const proto::TriggerAction &action, UInt32 index) const;
+		const String &getActionText(const proto::TriggerAction &action, UInt32 index) const;
 		WorldInstance *getWorldInstance(GameUnit *owner) const;
-		GameUnit *getUnitTarget(const TriggerEntry::TriggerAction &action, GameUnit *owner);
+		GameUnit *getUnitTarget(const proto::TriggerAction &action, GameUnit *owner);
 
-		void handleTrigger(const TriggerEntry::TriggerAction &action, GameUnit *owner);
-		void handleSay(const TriggerEntry::TriggerAction &action, GameUnit *owner);
-		void handleYell(const TriggerEntry::TriggerAction &action, GameUnit *owner);
-		void handleSetWorldObjectState(const TriggerEntry::TriggerAction &action, GameUnit *owner);
-		void handleSetSpawnState(const TriggerEntry::TriggerAction &action, GameUnit *owner);
-		void handleSetRespawnState(const TriggerEntry::TriggerAction &action, GameUnit *owner);
-		void handleCastSpell(const TriggerEntry::TriggerAction &action, GameUnit *owner);
+		void handleTrigger(const proto::TriggerAction &action, GameUnit *owner);
+		void handleSay(const proto::TriggerAction &action, GameUnit *owner);
+		void handleYell(const proto::TriggerAction &action, GameUnit *owner);
+		void handleSetWorldObjectState(const proto::TriggerAction &action, GameUnit *owner);
+		void handleSetSpawnState(const proto::TriggerAction &action, GameUnit *owner);
+		void handleSetRespawnState(const proto::TriggerAction &action, GameUnit *owner);
+		void handleCastSpell(const proto::TriggerAction &action, GameUnit *owner);
 
 	private:
 
-		Project &m_project;
+		proto::Project &m_project;
 		PlayerManager &m_playerManager;
 		TimerQueue &m_timers;
 		std::vector<std::unique_ptr<Countdown>> m_delays;

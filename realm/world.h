@@ -37,8 +37,11 @@ namespace wowpp
 	// Forwards
 	class WorldManager;
 	class PlayerManager;
-	class Project;
 	struct IDatabase;
+	namespace proto
+	{
+		class Project;
+	}
 
 	/// World connection class.
 	class World final
@@ -68,7 +71,7 @@ namespace wowpp
 		/// @param address
 		explicit World(WorldManager &manager,
 						PlayerManager &playerManager,
-						Project &project,
+						proto::Project &project,
 						IDatabase &database,
 						std::shared_ptr<Client> connection,
 						String address,
@@ -106,7 +109,7 @@ namespace wowpp
 		// Variables
 		WorldManager &m_manager;
 		PlayerManager &m_playerManager;
-		Project &m_project;
+		proto::Project &m_project;
 		IDatabase &m_database;
 		std::shared_ptr<Client> m_connection;
 		String m_address;						// IP address in string format

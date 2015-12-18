@@ -21,25 +21,15 @@
 
 #pragma once
 
-#include "spell_cast.h"
-
 namespace wowpp
 {
-	/// 
-	class NoCastState final : public SpellCast::CastState
+	namespace proto
 	{
-	public:
+		class FactionTemplateEntry;
+	}
 
-		void activate() override;
-		std::pair<game::SpellCastResult, SpellCasting*> startCast(
-			SpellCast &cast,
-			const proto::SpellEntry &spell,
-			SpellTargetMap target,
-			Int32 basePoints,
-			GameTime castTime,
-			bool doReplacePreviousCast
-			) override;
-		void stopCast() override;
-		void onUserStartsMoving() override;
-	};
+	bool isHostileToPlayers(const proto::FactionTemplateEntry &faction);
+	bool isNeutralToAll(const proto::FactionTemplateEntry &faction);
+	bool isFriendlyTo(const proto::FactionTemplateEntry &factionA, const proto::FactionTemplateEntry &factionB);
+	bool isHostileTo(const proto::FactionTemplateEntry &factionA, const proto::FactionTemplateEntry &factionB);
 }

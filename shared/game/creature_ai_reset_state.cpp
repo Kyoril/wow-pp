@@ -82,6 +82,8 @@ namespace wowpp
 
 		m_moveUpdate.setEnd(getCurrentTime() + moveTime);
 
+		/*
+		// TODO
 		// Raise OnReset trigger
 		auto &controlled = getControlled();
 		auto it = controlled.getEntry().triggersByEvent.find(trigger_event::OnReset);
@@ -92,6 +94,7 @@ namespace wowpp
 				trigger->execute(*trigger, &controlled);
 			}
 		}
+		*/
 	}
 
 	void CreatureAIResetState::onLeave()
@@ -106,6 +109,8 @@ namespace wowpp
 			controlled.heal(controlled.getUInt32Value(unit_fields::MaxHealth), nullptr, true);
 		}
 
+		// TODO
+		/*
 		// Raise OnReachedHome trigger
 		auto it = controlled.getEntry().triggersByEvent.find(trigger_event::OnReachedHome);
 		if (it != controlled.getEntry().triggersByEvent.end())
@@ -115,6 +120,7 @@ namespace wowpp
 				trigger->execute(*trigger, &controlled);
 			}
 		}
+		*/
 	}
 
 }

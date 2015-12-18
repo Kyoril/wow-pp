@@ -22,7 +22,8 @@
 #include <iostream>
 #include "wowpp_world_realm.h"
 #include "game/game_item.h"
-#include "data/item_entry.h"
+//#include "data/item_entry.h"
+#include "shared/proto_data/items.pb.h"
 #include <cassert>
 
 namespace wowpp
@@ -109,14 +110,14 @@ namespace wowpp
 					for (const auto &spell : character.getSpells())
 					{
 						out_packet
-							<< io::write<NetUInt32>(spell->id);
+							<< io::write<NetUInt32>(spell->id());
 					}
 
 					std::vector<ItemData> items;
 					for (const auto &item : character.getItems())
 					{
 						ItemData data;
-						data.entry = item.second->getEntry().id;
+						data.entry = item.second->getEntry().id();
 						data.contained = item.second->getUInt64Value(item_fields::Contained);
 						data.creator = item.second->getUInt64Value(item_fields::Creator);
 						data.durability = item.second->getUInt32Value(item_fields::Durability);

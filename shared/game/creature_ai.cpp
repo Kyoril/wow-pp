@@ -31,7 +31,8 @@
 #include "universe.h"
 #include "unit_finder.h"
 #include "unit_watcher.h"
-#include "data/faction_template_entry.h"
+//#include "data/faction_template_entry.h"
+#include "proto_data/faction_helper.h"
 #include "common/make_unique.h"
 
 namespace wowpp
@@ -129,13 +130,13 @@ namespace wowpp
 		// Check if we are hostile against this unit
 		const auto &ourFaction = getControlled().getFactionTemplate();
 		const auto &unitFaction = threat.getFactionTemplate();
-		if (!ourFaction.isFriendlyTo(unitFaction))
+		if (!isFriendlyTo(ourFaction, unitFaction))
 		{
 			float x, y, z, o;
 			controlled.getLocation(x, y, z, o);
 
 			// Call for assistance
-			if (!ourFaction.isNeutralToAll())
+			if (!isNeutralToAll(ourFaction))
 			{
 				worldInstance->getUnitFinder().findUnits(Circle(x, y, 8.0f), [&ourFaction, &threat, &worldInstance](GameUnit &unit) -> bool
 				{
@@ -150,8 +151,8 @@ namespace wowpp
 
 					const auto &threatFaction = threat.getFactionTemplate();
 					const auto &unitFaction = unit.getFactionTemplate();
-					if (unitFaction.isFriendlyTo(ourFaction) &&
-						unitFaction.isHostileTo(threatFaction))
+					if (isFriendlyTo(unitFaction, ourFaction) &&
+						isHostileTo(unitFaction, threatFaction))
 					{
 						worldInstance->getUniverse().post([&unit, &threat]()
 						{

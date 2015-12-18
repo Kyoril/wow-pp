@@ -34,7 +34,10 @@
 namespace wowpp
 {
 	class PlayerSocial;
-	struct SpellEntry;
+	namespace proto
+	{
+		class SpellEntry;
+	}
 
 	/// Basic interface for a database system used by the realm server.
 	struct IDatabase
@@ -49,7 +52,7 @@ namespace wowpp
 		/// @param accountId Account identifier.
 		/// @param character Data of the character to create.
 		/// @returns false if the creation process failed.
-		virtual game::ResponseCode createCharacter(UInt32 accountId, const std::vector<const SpellEntry*> &spells, const std::vector<pp::world_realm::ItemData> &items, game::CharEntry &character) = 0;
+		virtual game::ResponseCode createCharacter(UInt32 accountId, const std::vector<const proto::SpellEntry*> &spells, const std::vector<pp::world_realm::ItemData> &items, game::CharEntry &character) = 0;
 
 		virtual bool getCharacterById(DatabaseId id, game::CharEntry &out_character) = 0;
 		virtual bool getCharacterByName(const String &name, game::CharEntry &out_character) = 0;

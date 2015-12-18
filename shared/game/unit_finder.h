@@ -30,7 +30,10 @@
 namespace wowpp
 {
 	class UnitWatcher;
-	struct MapEntry;
+	namespace proto
+	{
+		class MapEntry;
+	}
 	class GameUnit;
 
 	/// 
@@ -40,12 +43,12 @@ namespace wowpp
 		
 		/// 
 		/// @param map 
-		explicit UnitFinder(const MapEntry &map);
+		explicit UnitFinder(const proto::MapEntry &map);
 		/// Default destructor.
 		virtual ~UnitFinder();
 
 		/// 
-		const MapEntry &getMapEntry() const { return m_map; }
+		const proto::MapEntry &getMapEntry() const { return m_map; }
 		/// 
 		/// @param findable 
 		virtual void addUnit(GameUnit &findable) = 0;
@@ -66,6 +69,6 @@ namespace wowpp
 
 	private:
 
-		const MapEntry &m_map;
+		const proto::MapEntry &m_map;
 	};
 }

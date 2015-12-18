@@ -26,14 +26,18 @@
 #include "world_instance.h"
 #include "common/id_generator.h"
 #include "common/timer_queue.h"
-#include "data/data_load_context.h"
-#include "data/map_entry.h"
+//#include "data/data_load_context.h"
+//#include "data/map_entry.h"
 #include <vector>
 #include <memory>
 
 namespace wowpp
 {
-	class Project;
+	namespace proto
+	{
+		class MapEntry;
+		class Project;
+	}
 	class PlayerManager;
 	class Universe;
 
@@ -50,12 +54,12 @@ namespace wowpp
 			Universe &universe,
 			IdGenerator<UInt32> &idGenerator,
 			IdGenerator<UInt64> &objectIdGenerator,
-			Project &project,
+			proto::Project &project,
 			UInt32 worldNodeId,
 			const String &dataPath);
 
 		/// Creates a new world instance of a specific map id.
-		WorldInstance *createInstance(const MapEntry &map);
+		WorldInstance *createInstance(const proto::MapEntry &map);
 		/// Called once per frame to update all worlds.
 		void update(const boost::system::error_code &error);
 		/// 
@@ -76,7 +80,7 @@ namespace wowpp
 		IdGenerator<UInt64> &m_objectIdGenerator;
 		boost::asio::deadline_timer m_updateTimer;
 		Instances m_instances;
-		Project &m_project;
+		proto::Project &m_project;
 		UInt32 m_worldNodeId;
 		const String &m_dataPath;
 	};

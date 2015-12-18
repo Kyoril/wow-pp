@@ -33,6 +33,11 @@
 
 namespace wowpp
 {
+	namespace proto
+	{
+		class Project;
+	}
+
 	namespace type_id
 	{
 		enum Enum
@@ -200,7 +205,7 @@ namespace wowpp
 	public:
 
 		/// 
-		explicit GameObject();
+		explicit GameObject(proto::Project &project);
 		virtual ~GameObject();
 
 		virtual void initialize();
@@ -279,6 +284,8 @@ namespace wowpp
 
 		/// 
 		bool isInArc(float arcRadian, float x, float y) const;
+		/// Gets the data project.
+		proto::Project &getProject() const { return m_project; }
 
 	protected:
 
@@ -286,6 +293,7 @@ namespace wowpp
 
 	protected:
 
+		proto::Project &m_project;		// TODO: Maybe move this, but right now, it's comfortable to use this
 		std::vector<UInt32> m_values;
 		std::vector<UInt32> m_valueBitset;
 		UInt32 m_mapId;

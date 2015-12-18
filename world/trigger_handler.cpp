@@ -21,7 +21,9 @@
 
 #include "trigger_handler.h"
 #include "game/game_unit.h"
-#include "data/project.h"
+//#include "data/project.h"
+#include "proto_data/project.h"
+#include "proto_data/trigger_helper.h"
 #include "player_manager.h"
 #include "game/visibility_grid.h"
 #include "game/visibility_tile.h"
@@ -38,20 +40,20 @@
 
 namespace wowpp
 {
-	TriggerHandler::TriggerHandler(Project &project, PlayerManager &playerManager, TimerQueue &timers)
+	TriggerHandler::TriggerHandler(proto::Project &project, PlayerManager &playerManager, TimerQueue &timers)
 		: m_project(project)
 		, m_playerManager(playerManager)
 		, m_timers(timers)
 	{
 		// Iterate through all triggers and watch for their execution
-		for (const auto &trigger : m_project.triggers.getTemplates())
+		/*for (const auto &trigger : m_project.triggers.getTemplates())
 		{
 			trigger->execute.connect(
 				std::bind(&TriggerHandler::executeTrigger, this, std::placeholders::_1, 0, std::placeholders::_2));
-		}
+		}*/
 	}
 
-	void TriggerHandler::executeTrigger(const TriggerEntry &entry, UInt32 actionOffset, GameUnit *owner)
+	void TriggerHandler::executeTrigger(const proto::TriggerEntry &entry, UInt32 actionOffset, GameUnit *owner)
 	{
 		// Keep owner alive if provided
 		std::shared_ptr<GameObject> strongOwner;
@@ -72,16 +74,16 @@ namespace wowpp
 			}
 		}
 
-		if (actionOffset >= entry.actions.size())
+		if (actionOffset >= entry.actions_size())
 		{
 			// Nothing to do here
 			return;
 		}
 
-		for (UInt32 i = actionOffset; i < entry.actions.size(); ++i)
+		for (UInt32 i = actionOffset; i < entry.actions_size(); ++i)
 		{
-			const auto &action = entry.actions[i];
-			switch (action.action)
+			const auto &action = entry.actions(i);
+			switch (action.action())
 			{
 #define WOWPP_HANDLE_TRIGGER_ACTION(name) \
 			case trigger_actions::name: \
@@ -106,7 +108,7 @@ namespace wowpp
 						break;
 					}
 
-					if (i == entry.actions.size() - 1)
+					if (i == entry.actions_size() - 1)
 					{
 						WLOG("Delay as last trigger action has no effect and is ignored");
 						break;
@@ -131,21 +133,21 @@ namespace wowpp
 					m_delays.emplace_back(std::move(delayCountdown));
 
 					// Skip the other actions for now
-					i = entry.actions.size();
+					i = entry.actions_size();
 					break;
 				}
 				default:
 				{
-					WLOG("Unsupported trigger action: " << action.action);
+					WLOG("Unsupported trigger action: " << action.action());
 					break;
 				}
 			}
 		}
 	}
 
-	void TriggerHandler::handleTrigger(const TriggerEntry::TriggerAction &action, GameUnit *owner)
+	void TriggerHandler::handleTrigger(const proto::TriggerAction &action, GameUnit *owner)
 	{
-		if (action.target != trigger_action_target::None)
+		if (action.target() != trigger_action_target::None)
 		{
 			WLOG("Unsupported target provided for TRIGGER_ACTION_TRIGGER - has no effect");
 		}
@@ -160,13 +162,14 @@ namespace wowpp
 			return;
 		}
 
-		trigger->execute(*trigger, owner);
+		//TODO 
+		//trigger->execute(*trigger, owner);
 	}
 
-	void TriggerHandler::handleSay(const TriggerEntry::TriggerAction &action, GameUnit *owner)
+	void TriggerHandler::handleSay(const proto::TriggerAction &action, GameUnit *owner)
 	{
 		GameUnit *target = nullptr;
-		switch (action.target)
+		switch (action.target())
 		{
 			case trigger_action_target::OwningUnit:
 			{
@@ -219,11 +222,11 @@ namespace wowpp
 		});
 	}
 
-	void TriggerHandler::handleYell(const TriggerEntry::TriggerAction &action, GameUnit *owner)
+	void TriggerHandler::handleYell(const proto::TriggerAction &action, GameUnit *owner)
 	{
 		// TODO: Better way to resolve targets
 		GameUnit *target = nullptr;
-		switch (action.target)
+		switch (action.target())
 		{
 			case trigger_action_target::OwningUnit:
 			{
@@ -275,13 +278,13 @@ namespace wowpp
 			}
 		});
 
-		if (action.data.size() > 0 &&
-			action.data[0] > 0)
+		if (action.data_size() > 0 &&
+			action.data(0) > 0)
 		{
 			std::vector<char> soundBuffer;
 			io::VectorSink soundSink(soundBuffer);
 			game::OutgoingPacket soundPacket(soundSink);
-			game::server_write::playSound(soundPacket, action.data[0]);
+			game::server_write::playSound(soundPacket, action.data(0));
 
 			forEachTileInRange(
 				world->getGrid(),
@@ -297,7 +300,7 @@ namespace wowpp
 		}
 	}
 
-	void TriggerHandler::handleSetWorldObjectState(const TriggerEntry::TriggerAction &action, GameUnit *owner)
+	void TriggerHandler::handleSetWorldObjectState(const proto::TriggerAction &action, GameUnit *owner)
 	{
 		auto world = getWorldInstance(owner);
 		if (!world)
@@ -305,15 +308,15 @@ namespace wowpp
 			return;
 		}
 
-		if (action.target != trigger_action_target::NamedWorldObject ||
-			action.targetName.empty())
+		if (action.target() != trigger_action_target::NamedWorldObject ||
+			action.targetname().empty())
 		{
 			WLOG("TRIGGER_ACTION_SET_WORLD_OBJECT_STATE: Invalid target");
 			return;
 		}
 
 		// Look for named object
-		auto * spawner = world->findObjectSpawner(action.targetName);
+		auto * spawner = world->findObjectSpawner(action.targetname());
 		if (!spawner)
 		{
 			WLOG("TRIGGER_ACTION_SET_WORLD_OBJECT_STATE: Could not find named world object spawner");
@@ -333,7 +336,7 @@ namespace wowpp
 		}
 	}
 
-	void TriggerHandler::handleSetSpawnState(const TriggerEntry::TriggerAction &action, GameUnit *owner)
+	void TriggerHandler::handleSetSpawnState(const proto::TriggerAction &action, GameUnit *owner)
 	{
 		auto world = getWorldInstance(owner);
 		if (!world)
@@ -341,16 +344,16 @@ namespace wowpp
 			return;
 		}
 
-		if ((action.target != trigger_action_target::NamedCreature && action.target != trigger_action_target::NamedWorldObject) ||
-			action.targetName.empty())
+		if ((action.target() != trigger_action_target::NamedCreature && action.target() != trigger_action_target::NamedWorldObject) ||
+			action.targetname().empty())
 		{
 			WLOG("TRIGGER_ACTION_SET_SPAWN_STATE: Invalid target");
 			return;
 		}
 
-		if (action.target == trigger_action_target::NamedCreature)
+		if (action.target() == trigger_action_target::NamedCreature)
 		{
-			auto * spawner = world->findCreatureSpawner(action.targetName);
+			auto * spawner = world->findCreatureSpawner(action.targetname());
 			if (!spawner)
 			{
 				WLOG("TRIGGER_ACTION_SET_SPAWN_STATE: Could not find named creature spawner");
@@ -366,7 +369,7 @@ namespace wowpp
 		}
 	}
 
-	void TriggerHandler::handleSetRespawnState(const TriggerEntry::TriggerAction &action, GameUnit *owner)
+	void TriggerHandler::handleSetRespawnState(const proto::TriggerAction &action, GameUnit *owner)
 	{
 		auto world = getWorldInstance(owner);
 		if (!world)
@@ -374,16 +377,16 @@ namespace wowpp
 			return;
 		}
 
-		if ((action.target != trigger_action_target::NamedCreature && action.target != trigger_action_target::NamedWorldObject) ||
-			action.targetName.empty())
+		if ((action.target() != trigger_action_target::NamedCreature && action.target() != trigger_action_target::NamedWorldObject) ||
+			action.targetname().empty())
 		{
 			WLOG("TRIGGER_ACTION_SET_RESPAWN_STATE: Invalid target");
 			return;
 		}
 
-		if (action.target == trigger_action_target::NamedCreature)
+		if (action.target() == trigger_action_target::NamedCreature)
 		{
-			auto * spawner = world->findCreatureSpawner(action.targetName);
+			auto * spawner = world->findCreatureSpawner(action.targetname());
 			if (!spawner)
 			{
 				WLOG("TRIGGER_ACTION_SET_RESPAWN_STATE: Could not find named creature spawner");
@@ -399,7 +402,7 @@ namespace wowpp
 		}
 	}
 
-	void TriggerHandler::handleCastSpell(const TriggerEntry::TriggerAction &action, GameUnit *owner)
+	void TriggerHandler::handleCastSpell(const proto::TriggerAction &action, GameUnit *owner)
 	{
 		GameUnit *target = getUnitTarget(action, owner);
 		if (!target)
@@ -418,28 +421,28 @@ namespace wowpp
 		SpellTargetMap targetMap;
 		targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
 		targetMap.m_unitTarget = target->getGuid();
-		owner->castSpell(std::move(targetMap), spell->id);
+		owner->castSpell(std::move(targetMap), spell->id());
 	}
 
-	UInt32 TriggerHandler::getActionData(const TriggerEntry::TriggerAction &action, UInt32 index) const
+	UInt32 TriggerHandler::getActionData(const proto::TriggerAction &action, UInt32 index) const
 	{
 		// Return default value (0) if not enough data provided
-		if (index >= action.data.size())
+		if (index >= action.data_size())
 			return 0;
 
-		return action.data[index];
+		return action.data(index);
 	}
 
-	const String & TriggerHandler::getActionText(const TriggerEntry::TriggerAction &action, UInt32 index) const
+	const String & TriggerHandler::getActionText(const proto::TriggerAction &action, UInt32 index) const
 	{
 		// Return default string (empty) if not enough data provided
-		if (index >= action.texts.size())
+		if (index >= action.texts_size())
 		{
 			static String invalidString = "<INVALID_TEXT>";
 			return invalidString;
 		}
 
-		return action.texts[index];
+		return action.texts(index);
 	}
 
 	WorldInstance * TriggerHandler::getWorldInstance(GameUnit *owner) const
@@ -458,9 +461,9 @@ namespace wowpp
 		return world;
 	}
 
-	GameUnit * TriggerHandler::getUnitTarget(const TriggerEntry::TriggerAction &action, GameUnit *owner)
+	GameUnit * TriggerHandler::getUnitTarget(const proto::TriggerAction &action, GameUnit *owner)
 	{
-		switch (action.target)
+		switch (action.target())
 		{
 		case trigger_action_target::OwningUnit:
 			return owner;

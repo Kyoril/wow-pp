@@ -20,8 +20,9 @@
 // 
 
 #include "loot_instance.h"
-#include "data/loot_entry.h"
-#include "data/item_entry.h"
+//#include "data/loot_entry.h"
+//#include "data/item_entry.h"
+#include "proto_data/project.h"
 #include "defines.h"
 #include "common/utilities.h"
 
@@ -33,38 +34,41 @@ namespace wowpp
 	{
 	}
 
-	LootInstance::LootInstance(UInt64 lootGuid, const LootEntry *entry, UInt32 minGold, UInt32 maxGold)
+	LootInstance::LootInstance(UInt64 lootGuid, const proto::LootEntry *entry, UInt32 minGold, UInt32 maxGold)
 		: m_lootGuid(lootGuid)
 		, m_gold(0)
 	{
 		if (entry)
 		{
-			for (auto &group : entry->lootGroups)
+			for (int i = 0; i < entry->groups_size(); ++i)
 			{
+				const auto &group = entry->groups(i);
+
 				std::uniform_real_distribution<float> lootDistribution(0.0f, 100.0f);
 				float groupRoll = lootDistribution(randomGenerator);
 
 				auto shuffled = group;
-				std::shuffle(shuffled.begin(), shuffled.end(), randomGenerator);
+				//TODO std::shuffle(shuffled.definitions().begin(), shuffled.definitions().end(), randomGenerator);
 
 				bool foundNonEqualChanced = false;
-				std::vector<const LootDefinition*> equalChanced;
-				for (auto &def : shuffled)
+				std::vector<const proto::LootDefinition*> equalChanced;
+				for (int i = 0; i < shuffled.definitions_size(); ++i)
 				{
-					if (def.dropChance == 0.0f)
+					const auto &def = shuffled.definitions(i);
+					if (def.dropchance() == 0.0f)
 					{
 						equalChanced.push_back(&def);
 					}
 
-					if (def.dropChance > 0.0f &&
-						def.dropChance >= groupRoll)
+					if (def.dropchance() > 0.0f &&
+						def.dropchance() >= groupRoll)
 					{
 						addLootItem(def);
 						foundNonEqualChanced = true;
 						break;
 					}
 
-					groupRoll -= def.dropChance;
+					groupRoll -= def.dropchance();
 				}
 
 				if (!foundNonEqualChanced &&
@@ -82,12 +86,12 @@ namespace wowpp
 		m_gold = goldDistribution(randomGenerator);
 	}
 
-	void LootInstance::addLootItem(const LootDefinition &def)
+	void LootInstance::addLootItem(const proto::LootDefinition &def)
 	{
-		UInt32 dropCount = def.minCount;
-		if (def.maxCount > def.minCount)
+		UInt32 dropCount = def.mincount();
+		if (def.maxcount() > def.mincount())
 		{
-			std::uniform_int_distribution<UInt32> dropDistribution(def.minCount, def.maxCount);
+			std::uniform_int_distribution<UInt32> dropDistribution(def.mincount(), def.maxcount());
 			dropCount = dropDistribution(randomGenerator);
 		}
 
@@ -170,9 +174,9 @@ namespace wowpp
 			{
 				w
 					<< io::write<NetUInt8>(slot)
-					<< io::write<NetUInt32>(def.definition.item->id)
+					<< io::write<NetUInt32>(def.definition.item())
 					<< io::write<NetUInt32>(def.count)
-					<< io::write<NetUInt32>(def.definition.item->displayId)
+					<< io::write<NetUInt32>(0)  //TODO def.definition.item())
 					<< io::write<NetUInt32>(0)	// RandomSuffixIndex TODO
 					<< io::write<NetUInt32>(0)	// RandomPropertyId TODO
 					<< io::write<NetUInt8>(game::loot_slot_type::AllowLoot)

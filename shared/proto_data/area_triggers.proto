@@ -19,27 +19,28 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-#pragma once
+syntax = "proto2";
+package wowpp.proto;
 
-#include "spell_cast.h"
+message AreaTriggerEntry {
+	required uint32 id = 1;
+	required string name = 2;
+	required uint32 map = 3;
+	required float x = 4;
+	required float y = 5;
+	required float z = 6;
+	optional float radius = 7;
+	optional float box_x = 8;
+	optional float box_y = 9;
+	optional float box_z = 10;
+	optional float box_o = 11;
+	required uint32 targetmap = 12;
+	required float target_x = 13;
+	required float target_y = 14;
+	required float target_z = 15;
+	required float target_o = 16;
+}
 
-namespace wowpp
-{
-	/// 
-	class NoCastState final : public SpellCast::CastState
-	{
-	public:
-
-		void activate() override;
-		std::pair<game::SpellCastResult, SpellCasting*> startCast(
-			SpellCast &cast,
-			const proto::SpellEntry &spell,
-			SpellTargetMap target,
-			Int32 basePoints,
-			GameTime castTime,
-			bool doReplacePreviousCast
-			) override;
-		void stopCast() override;
-		void onUserStartsMoving() override;
-	};
+message AreaTriggers {
+	repeated AreaTriggerEntry entry = 1;
 }

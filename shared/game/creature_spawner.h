@@ -23,7 +23,7 @@
 
 #include "common/typedefs.h"
 #include "common/countdown.h"
-#include "data/unit_entry.h"
+//#include "data/unit_entry.h"
 #include <boost/optional.hpp>
 
 namespace wowpp
@@ -32,6 +32,10 @@ namespace wowpp
 	class GameObject;
 	class GameUnit;
 	class GameCreature;
+	namespace proto
+	{
+		class UnitEntry;
+	}
 
 	/// Manages a spawn point and all creatures which are spawned by this point info.
 	/// It also adds spawned creatures to the given world instance.
@@ -52,7 +56,7 @@ namespace wowpp
 		/// @param radius The radius in which creatures will spawn. Also used as the maximum random walk distance.
 		explicit CreatureSpawner(
 			WorldInstance &world,
-			const UnitEntry &entry,
+			const proto::UnitEntry &entry,
 			size_t maxCount,
 			GameTime respawnDelay,
 			float centerX,
@@ -90,7 +94,7 @@ namespace wowpp
 	private:
 
 		WorldInstance &m_world;
-		const UnitEntry &m_entry;
+		const proto::UnitEntry &m_entry;
 		const size_t m_maxCount;
 		const GameTime m_respawnDelay;
 		const float m_centerX, m_centerY, m_centerZ;

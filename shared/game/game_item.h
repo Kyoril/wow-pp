@@ -25,7 +25,10 @@
 
 namespace wowpp
 {
-	struct ItemEntry;
+	namespace proto
+	{
+		class ItemEntry;
+	}
 
 	namespace item_fields
 	{
@@ -63,19 +66,19 @@ namespace wowpp
 	public:
 
 		/// 
-		explicit GameItem(const ItemEntry &entry);
+		explicit GameItem(proto::Project &project, const proto::ItemEntry &entry);
 		~GameItem();
 
 		virtual void initialize() override;
 
 		virtual ObjectType getTypeId() const override { return object_type::Item; }
 
-		const ItemEntry &getEntry() const { return m_entry; }
+		const proto::ItemEntry &getEntry() const { return m_entry; }
 		void notifyEquipped();
 
 	private:
 
-		const ItemEntry &m_entry;
+		const proto::ItemEntry &m_entry;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameItem const& object);

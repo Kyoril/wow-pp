@@ -26,11 +26,13 @@
 #include "game_creature.h"
 #include "game_character.h"
 #include "world_instance.h"
-#include "data/faction_template_entry.h"
+//#include "data/faction_template_entry.h"
+//#include "data/trigger_entry.h"
+#include "proto_data/faction_helper.h"
+#include "shared/proto_data/units.pb.h"
 #include "binary_io/vector_sink.h"
 #include "game_protocol/game_protocol.h"
 #include "each_tile_in_sight.h"
-#include "data/trigger_entry.h"
 #include "common/constants.h"
 #include "log/default_log_levels.h"
 
@@ -134,7 +136,7 @@ namespace wowpp
 	void CreatureAICombatState::onEnter()
 	{
 		auto &controlled = getControlled();
-		auto id = controlled.getEntry().id;
+		auto id = controlled.getEntry().id();
 
 		// Flag controlled unit for combat
 		controlled.addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
@@ -167,7 +169,8 @@ namespace wowpp
 		controlled.removeLootRecipients();
 
 		// Raise OnAggro triggers
-		auto &entry = controlled.getEntry();
+		// TODO:
+/*		auto &entry = controlled.getEntry();
 		auto it = entry.triggersByEvent.find(trigger_event::OnAggro);
 		if (it != entry.triggersByEvent.end())
 		{
@@ -176,12 +179,13 @@ namespace wowpp
 				trigger->execute(*trigger, &controlled);
 			}
 		}
+		*/
 	}
 
 	void CreatureAICombatState::onLeave()
 	{
 		auto &controlled = getControlled();
-		auto id = controlled.getEntry().id;
+		auto id = controlled.getEntry().id();
 
 		// Calculate new position
 		float o;
@@ -249,7 +253,7 @@ namespace wowpp
 		// No aggro on friendly units
 		const auto &factionB = threatener.getFactionTemplate();
 		const auto &factionA = getControlled().getFactionTemplate();
-		if (factionA.isFriendlyTo(factionB))
+		if (isFriendlyTo(factionA, factionB))
 			return;
 
 		// Add threat amount (Note: A value of 0 is fine here, as it will still add an
