@@ -74,13 +74,13 @@ namespace wowpp
 			}
 		}
 
-		if (actionOffset >= entry.actions_size())
+		if (static_cast<int>(actionOffset) >= entry.actions_size())
 		{
 			// Nothing to do here
 			return;
 		}
 
-		for (UInt32 i = actionOffset; i < entry.actions_size(); ++i)
+		for (int i = actionOffset; i < entry.actions_size(); ++i)
 		{
 			const auto &action = entry.actions(i);
 			switch (action.action())
@@ -427,7 +427,7 @@ namespace wowpp
 	UInt32 TriggerHandler::getActionData(const proto::TriggerAction &action, UInt32 index) const
 	{
 		// Return default value (0) if not enough data provided
-		if (index >= action.data_size())
+		if (static_cast<int>(index) >= action.data_size())
 			return 0;
 
 		return action.data(index);
@@ -436,7 +436,7 @@ namespace wowpp
 	const String & TriggerHandler::getActionText(const proto::TriggerAction &action, UInt32 index) const
 	{
 		// Return default string (empty) if not enough data provided
-		if (index >= action.texts_size())
+		if (static_cast<int>(index) >= action.texts_size())
 		{
 			static String invalidString = "<INVALID_TEXT>";
 			return invalidString;

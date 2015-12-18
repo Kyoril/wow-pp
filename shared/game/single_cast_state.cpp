@@ -1384,8 +1384,7 @@ namespace wowpp
 
 	void SingleCastState::spellEffectSummon(const proto::SpellEffect &effect)
 	{
-		/*
-		const auto *entry = effect.summonunit();
+		const auto *entry = m_cast.getExecuter().getProject().units.getById(effect.summonunit());
 		if (!entry)
 		{
 			WLOG("Can't summon anything - missing entry");
@@ -1419,7 +1418,6 @@ namespace wowpp
 		{
 			spawned->threatened(*executer.getVictim(), 0.0001f);
 		}
-		*/
 	}
 
 	void wowpp::SingleCastState::spellEffectCharge(const proto::SpellEffect & effect)
