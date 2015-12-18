@@ -277,8 +277,11 @@ namespace wowpp
 		const auto *spell = getProject().spells.getById(spellId);
 		if (!spell)
 		{
+			WLOG("Could not find spell " << spellId);
 			return;
 		}
+
+		DLOG("Casting spell " << spellId << " - " << spell->name());
 
 		auto result = m_spellCast->startCast(*spell, std::move(target), basePoints, castTime, isProc);
 		if (callback)

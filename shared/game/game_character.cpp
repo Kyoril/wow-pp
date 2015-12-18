@@ -148,19 +148,19 @@ namespace wowpp
 			DLOG("Couldn't find class entry!");
 		}
 
-		// TODO
-		/*// Update mana regeneration per spirit
-		auto regenIt = levelInfo.regen.find(getClass());
-		if (regenIt != levelInfo.regen.end())
+		m_healthRegBase = 0.0f;
+		m_manaRegBase = 0.0f;
+
+		const auto &raceStatIt = levelInfo.stats().find(getRace());
+		if (raceStatIt != levelInfo.stats().end())
 		{
-			m_healthRegBase = regenIt->second[0];
-			m_manaRegBase = regenIt->second[1];
+			const auto &classStatIt = raceStatIt->second.stats().find(getClass());
+			if (classStatIt != raceStatIt->second.stats().end())
+			{
+				m_healthRegBase = classStatIt->second.regenhp();
+				m_manaRegBase = classStatIt->second.regenmp();
+			}
 		}
-		else
-		{*/
-			m_healthRegBase = 0.0f;
-			m_manaRegBase = 0.0f;
-		//}
 
 		// Update all stats
 		updateAllStats();
