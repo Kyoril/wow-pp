@@ -54,6 +54,7 @@ namespace wowpp
 		protected:
 
 			void closeEvent(QCloseEvent *qEvent) override;
+			void readSettings();
 
 		private:
 				

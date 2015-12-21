@@ -29,6 +29,7 @@
 #include "world_editor.h"
 #include <QCloseEvent>
 #include <QVBoxLayout>
+#include <QSettings>
 
 namespace wowpp
 {
@@ -56,18 +57,31 @@ namespace wowpp
 			// Container will be automatically deleted on destruction
 			QWidget *container = QWidget::createWindowContainer(m_ogreWindow, nullptr);
 			layout->addWidget(container, 1);
+
+			readSettings();
 		}
 
 		void MainWindow::closeEvent(QCloseEvent *qEvent)
 		{
 			if (m_application.shutdown())
 			{
+				QSettings settings("WoW++", "WoW++ Editor");
+				settings.setValue("geometry", saveGeometry());
+				settings.setValue("windowState", saveState());
+
 				qEvent->accept();
 			}
 			else
 			{
 				qEvent->ignore();
 			}
+		}
+
+		void MainWindow::readSettings()
+		{
+			QSettings settings("WoW++", "Wow++ Editor");
+			restoreGeometry(settings.value("geometry").toByteArray());
+			restoreState(settings.value("windowState").toByteArray());
 		}
 
 		void MainWindow::on_actionExit_triggered()
