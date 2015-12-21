@@ -30,6 +30,10 @@ namespace wowpp
 		template<class T1, class T2>
 		struct TemplateManager
 		{
+		public:
+
+			typedef T2 EntryType;
+
 		private:
 
 			T1 m_data;
@@ -65,6 +69,10 @@ namespace wowpp
 
 			/// Gets a list of all template entries in this list.
 			const T1 &getTemplates() const
+			{
+				return m_data;
+			}
+			T1 &getTemplates()
 			{
 				return m_data;
 			}

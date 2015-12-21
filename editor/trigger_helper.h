@@ -22,8 +22,9 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include "data/trigger_entry.h"
-#include "data/project.h"
+//#include "data/trigger_entry.h"
+//#include "data/project.h"
+#include "proto_data/project.h"
 #include <QString>
 
 namespace wowpp
@@ -32,25 +33,25 @@ namespace wowpp
 	{
 		QString getTriggerEventText(UInt32 e);
 
-		QString getTriggerTargetName(const TriggerEntry::TriggerAction &action, bool link = false);
+		QString getTriggerTargetName(const proto::TriggerAction &action, bool link = false);
 
-		QString getTriggerActionString(const TriggerEntry::TriggerAction &action, UInt32 i, bool link = false);
+		QString getTriggerActionString(const proto::TriggerAction &action, UInt32 i, bool link = false);
 
-		QString getTriggerActionData(const TriggerEntry::TriggerAction &action, UInt32 i, bool link = false);
+		QString getTriggerActionData(const proto::TriggerAction &action, UInt32 i, bool link = false);
 
-		QString getTriggerActionText(const Project &project, const TriggerEntry::TriggerAction &action, bool withLinks = false);
+		QString getTriggerActionText(const proto::Project &project, const proto::TriggerAction &action, bool withLinks = false);
 
 		template<class T>
-		static QString actionDataEntry(const T& manager, const TriggerEntry::TriggerAction &action, UInt32 i, bool link = false)
+		static QString actionDataEntry(const T& manager, const proto::TriggerAction &action, UInt32 i, bool link = false)
 		{
 			QString temp = (link ? "<a href=\"data-%2\" style=\"color: #ffae00;\">%1</a>" : "%1");
 
-			Int32 data = (i >= action.data.size() ? 0 : action.data[i]);
+			Int32 data = (static_cast<Int32>(i) >= action.data_size() ? 0 : action.data(i));
 			const auto *entry = manager.getById(data);
 			if (!entry)
 				return temp.arg("(INVALID)").arg(i);
 
-			return temp.arg(QString("(%1)").arg(entry->name.c_str())).arg(i);
+			return temp.arg(QString("(%1)").arg(entry->name().c_str())).arg(i);
 		}
 	}
 }

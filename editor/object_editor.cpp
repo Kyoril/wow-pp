@@ -106,10 +106,10 @@ namespace wowpp
 
 		namespace
 		{
-			static QVariant ArmorMiscValue(const UnitEntry &unit)
+			static QVariant ArmorMiscValue(const proto::UnitEntry &unit)
 			{
-				UInt32 armor = unit.armor;
-				UInt32 level = (unit.minLevel + unit.maxLevel) / 2;
+				UInt32 armor = unit.armor();
+				UInt32 level = (unit.minlevel() + unit.maxlevel()) / 2;
 				if (level > 70) level = 70;
 
 				float tmp = 0.0f;
@@ -133,14 +133,14 @@ namespace wowpp
 				return QString("%1% reduction at lvl %2").arg(tmp * 100.0f).arg(level);
 			}
 		
-			static QVariant MeleeAttackMiscValue(const UnitEntry &unit)
+			static QVariant MeleeAttackMiscValue(const proto::UnitEntry &unit)
 			{
-				const float atkSpeed = (unit.meleeBaseAttackTime / 1000.0f);
-				UInt32 dmgBonus = unit.attackPower / 14.0f * atkSpeed;
+				const float atkSpeed = (unit.meleeattacktime() / 1000.0f);
+				UInt32 dmgBonus = unit.attackpower() / 14.0f * atkSpeed;
 				return QString("%1 additional damage").arg(dmgBonus);
 			}
 
-			static QVariant UnitFlagsMiscValue(const UnitEntry &unit)
+			static QVariant UnitFlagsMiscValue(const proto::UnitEntry &unit)
 			{
 				static const QString flagNames[32] = 
 				{
@@ -157,7 +157,7 @@ namespace wowpp
 				QString buffer;
 				for (UInt32 mask = 1, bitIndex = 0; mask != 0; mask <<= 1, bitIndex++)
 				{
-					if ((unit.unitFlags & mask) != 0)
+					if ((unit.unitflags() & mask) != 0)
 					{
 						if (!buffer.isEmpty()) buffer.append(" | ");
 						buffer.append(QString("%1 ").arg(flagNames[bitIndex]));
@@ -168,14 +168,18 @@ namespace wowpp
 			}
 		}
 
-		void ObjectEditor::addLootItem(const LootDefinition &def, QTreeWidgetItem *parent)
+		void ObjectEditor::addLootItem(const proto::LootDefinition &def, QTreeWidgetItem *parent)
 		{
+			const auto *itemEntry = m_application.getProject().items.getById(def.item());
+			if (!itemEntry)
+				return;
+
 			QTreeWidgetItem *item = new QTreeWidgetItem(parent); 
-			item->setText(0, QString("%1 %2").arg(QString::number(def.item->id), 5, QLatin1Char('0')).arg(def.item->name.c_str()));
-			item->setText(1, QString("%1%").arg(def.dropChance));
+			item->setText(0, QString("%1 %2").arg(QString::number(def.item()), 5, QLatin1Char('0')).arg(itemEntry->name().c_str()));
+			item->setText(1, QString("%1%").arg(def.dropchance()));
 
 			QColor textColor = QColor(Qt::white);
-			switch (def.item->quality)
+			switch (itemEntry->quality())
 			{
 			case 0:
 				textColor = QColor(Qt::gray);
@@ -229,13 +233,13 @@ namespace wowpp
 			m_properties.clear();
 
 			// Get unit entry
-			UnitEntry *unit = m_application.getProject().units.getTemplates().at(index).get();
+			auto *unit = m_application.getProject().units.getTemplates().mutable_entry(index);
 			m_selected = unit;
 			if (!unit)
 				return;
 
 			m_ui->lootView->clear();
-			if (!unit->unitLootEntry)
+			if (!unit->unitlootentry())
 			{
 				m_ui->lootLine->setText("- NO LOOT -");
 				m_ui->lootToolButton->setDisabled(true);
@@ -247,30 +251,34 @@ namespace wowpp
 				groupIcon.addFile(QStringLiteral(":/Items.png"), QSize(), QIcon::Normal, QIcon::Off);
 
 				size_t groupIndex = 0;
-				for (auto &group : unit->unitLootEntry->lootGroups)
+				const auto *lootEntry = m_application.getProject().unitLoot.getById(unit->unitlootentry());
+				if (lootEntry)
 				{
-					// Add group
-					QTreeWidgetItem *groupItem = new QTreeWidgetItem();
-					groupItem->setIcon(0, groupIcon);
-					m_ui->lootView->addTopLevelItem(groupItem);
-
-					float totalDropChance = 0.0f;
-					for (auto &def : group)
+					for (const auto &group : lootEntry->groups())
 					{
-						totalDropChance += def.dropChance;
-						addLootItem(def, groupItem);
-					}
+						// Add group
+						QTreeWidgetItem *groupItem = new QTreeWidgetItem();
+						groupItem->setIcon(0, groupIcon);
+						m_ui->lootView->addTopLevelItem(groupItem);
 
-					groupItem->setText(0, QString("Group %1").arg(groupIndex++));
-					groupItem->setText(1, QString("%1% Total").arg(totalDropChance));
-					groupItem->setText(2, QString("%1 Items").arg(group.size()));
+						float totalDropChance = 0.0f;
+						for (const auto &def : group.definitions())
+						{
+							totalDropChance += def.dropchance();
+							addLootItem(def, groupItem);
+						}
+
+						groupItem->setText(0, QString("Group %1").arg(groupIndex++));
+						groupItem->setText(1, QString("%1% Total").arg(totalDropChance));
+						groupItem->setText(2, QString("%1 Items").arg(group.definitions_size()));
+					}
 				}
 
-				m_ui->lootLine->setText(QString("Loot Entry %1").arg(unit->unitLootEntry->id));
+				m_ui->lootLine->setText(QString("Loot Entry %1").arg(unit->unitlootentry()));
 				m_ui->lootToolButton->setDisabled(false);
 				m_ui->lootSimulatorButton->setDisabled(false);
 			}
-
+			/*
 			// Add unit properties
 			m_properties.push_back(PropertyPtr(new NumericProperty("Entry", UInt32Ref(unit->id), true)));
 			m_properties.push_back(PropertyPtr(new StringProperty("Name", unit->name)));
@@ -309,15 +317,19 @@ namespace wowpp
 			m_properties.push_back(PropertyPtr(new NumericProperty("Arcane Resistance", UInt32Ref(unit->resistances[5]))));
 			m_properties.push_back(PropertyPtr(new MinMaxProperty("Loot Gold", UInt32Ref(unit->minLootGold), UInt32Ref(unit->maxLootGold))));
 			m_properties.push_back(PropertyPtr(new MinMaxProperty("Experience", UInt32Ref(unit->xpMin), UInt32Ref(unit->xpMax))));
-
+			*/
 			// Update the view 
 			m_viewModel->layoutChanged();
 
 			m_ui->unitTriggerWidget->clear();
-			for (const auto *trigger : unit->triggers)
+			for (const auto &triggerId : unit->triggers())
 			{
-				m_ui->unitTriggerWidget->addItem(
-					QString(trigger->name.c_str()));
+				const auto *triggerEntry = m_application.getProject().triggers.getById(triggerId);
+				if (triggerEntry)
+				{
+					m_ui->unitTriggerWidget->addItem(
+						QString(triggerEntry->name().c_str()));
+				}
 			}
 		}
 		
@@ -385,29 +397,20 @@ namespace wowpp
 			}
 	
 			// Get spell entry
-			SpellEntry *spell = m_application.getProject().spells.getTemplates().at(index).get();
+			auto *spell = m_application.getProject().spells.getTemplates().mutable_entry(index);
 			if (!spell)
 				return;
 
-			m_ui->spellIdField->setText(QString::number(spell->id));
-			m_ui->spellNameField->setText(spell->name.c_str());
+			m_ui->spellIdField->setText(QString::number(spell->id()));
+			m_ui->spellNameField->setText(spell->name().c_str());
 
 			// Determine the cast time of this spell
-			Int64 castTime = 0;
-			if (spell->castTimeIndex != 0)
-			{
-				// Find spell cast time by it's index
-				const auto *castTimeEntry = m_application.getProject().castTimes.getById(spell->castTimeIndex);
-				if (castTimeEntry)
-				{
-					castTime = castTimeEntry->castTime;
-				}
-			}
+			Int64 castTime = spell->casttime();
 
 			m_ui->castTimeField->setText(QString::number(castTime));
-			m_ui->cooldownField->setText(QString::number(spell->cooldown));
-			m_ui->resourceField->setCurrentIndex(spell->powerType);
-			m_ui->costField->setText(QString::number(spell->cost));
+			m_ui->cooldownField->setText(QString::number(spell->cooldown()));
+			m_ui->resourceField->setCurrentIndex(spell->powertype());
+			m_ui->costField->setText(QString::number(spell->cost()));
 
 			// Attributes
 			for (size_t i = 1; i <= 32; ++i)
@@ -415,20 +418,20 @@ namespace wowpp
 				QCheckBox *box = m_ui->attributeTabs->findChild<QCheckBox*>(QString("attr_%1_box").arg(i));
 				if (box)
 				{
-					const bool hasAttribute = (spell->attributes & (1 << (i - 1))) != 0;
+					const bool hasAttribute = (spell->attributes(0) & (1 << (i - 1))) != 0;
 					box->setChecked(hasAttribute);
 				}
 			}
 
 			// Attributes Ex 1 - 6
-			for (size_t j = 1; j <= spell->attributesEx.size(); ++j)
+			for (size_t j = 1; j < spell->attributes_size(); ++j)
 			{
 				for (size_t i = 1; i <= 32; ++i)
 				{
 					QCheckBox *box = m_ui->attributeTabs->findChild<QCheckBox*>(QString("attr_ex_%1_box_%2").arg(i).arg(j));
 					if (box)
 					{
-						const bool hasAttribute = (spell->attributesEx[j - 1] & (1 << (i - 1))) != 0;
+						const bool hasAttribute = (spell->attributes(j) & (1 << (i - 1))) != 0;
 						box->setChecked(hasAttribute);
 					}
 				}
@@ -455,9 +458,9 @@ namespace wowpp
 				{
 					// Get effect name
 					QString effectName = QString("NONE");
-					if (i < spell->effects.size())
+					if (i < spell->effects_size())
 					{
-						effectName = game::constant_literal::spellEffectNames.getName(spell->effects[i].type).c_str();
+						effectName = "TODO"; //game::constant_literal::spellEffectNames.getName(spell->effects(i).type()).c_str();
 					}
 
 					button->setText(effectName);
@@ -482,7 +485,7 @@ namespace wowpp
 			}
 
 			// Get item entry
-			ItemEntry *item = m_application.getProject().items.getTemplates().at(index).get();
+			auto *item = m_application.getProject().items.getTemplates().mutable_entry(index);
 			if (!item)
 				return;
 		}
@@ -499,16 +502,16 @@ namespace wowpp
 				const auto *newTrigger = dialog.getSelectedTrigger();
 				if (newTrigger)
 				{
-					auto it = std::find_if(m_selected->triggers.begin(), m_selected->triggers.end(), [&newTrigger](const TriggerEntry *trigger) -> bool
+					auto it = std::find_if(m_selected->triggers().begin(), m_selected->triggers().end(), [&newTrigger](const UInt32 &trigger) -> bool
 					{
-						return (trigger->id == newTrigger->id);
+						return (trigger == newTrigger->id());
 					});
 
-					if (it == m_selected->triggers.end())
+					if (it == m_selected->triggers().end())
 					{
-						m_selected->triggers.push_back(newTrigger);
+						m_selected->mutable_triggers()->Add(newTrigger->id());
 						m_ui->unitTriggerWidget->addItem(
-							QString(newTrigger->name.c_str()));
+							QString(newTrigger->name().c_str()));
 
 						m_application.markAsChanged();
 					}
@@ -526,11 +529,15 @@ namespace wowpp
 			if (index.isValid())
 			{
 				int row = index.row();
-				if (row < 0 || row >= m_selected->triggers.size())
+				if (row < 0 || row >= m_selected->triggers_size())
 					return;
 
-				std::swap(m_selected->triggers.back(), m_selected->triggers[row]);
-				m_selected->triggers.pop_back();
+				if (m_selected->triggers_size() > 1 &&
+					row != m_selected->triggers_size() - 1)
+				{
+					m_selected->mutable_triggers()->SwapElements(row, m_selected->triggers_size() - 1);
+				}
+				m_selected->mutable_triggers()->RemoveLast();
 
 				auto *taken = m_ui->unitTriggerWidget->takeItem(row);
 				delete taken;
@@ -544,11 +551,11 @@ namespace wowpp
 			if (!m_selected)
 				return;
 
-			if (!m_selected->unitLootEntry)
+			if (!m_selected->unitlootentry())
 				return;
 
-			LootDialog dialog(m_application.getProject(), *m_selected->unitLootEntry);
-			auto result = dialog.exec();
+			/*LootDialog dialog(m_application.getProject(), *m_selected->unitLootEntry);
+			auto result = dialog.exec();*/
 		}
 	}
 }

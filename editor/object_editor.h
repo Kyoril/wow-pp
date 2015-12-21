@@ -26,7 +26,8 @@
 #include <QAbstractTableModel>
 #include <QItemSelection>
 #include <QTreeWidgetItem>
-#include "data/project.h"
+//#include "data/project.h"
+#include "proto_data/project.h"
 #include "property_view_model.h"
 #include <memory>
 
@@ -53,7 +54,7 @@ namespace wowpp
 
 		private:
 
-			void addLootItem(const LootDefinition &def, QTreeWidgetItem *parent);
+			void addLootItem(const proto::LootDefinition &def, QTreeWidgetItem *parent);
 
 		private slots:
 
@@ -77,7 +78,7 @@ namespace wowpp
 			QSortFilterProxyModel *m_itemFilter;
 			Properties m_properties;
 			PropertyViewModel *m_viewModel;
-			UnitEntry *m_selected;
+			proto::UnitEntry *m_selected;
 		};
 	}
 }

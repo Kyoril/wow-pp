@@ -45,7 +45,7 @@ namespace wowpp
 			// TODO
 		}
 
-		MapEntry * LoadMapDialog::getSelectedMap() const
+		proto::MapEntry * LoadMapDialog::getSelectedMap() const
 		{
 			auto *sel = m_ui->treeView->selectionModel();
 			if (!sel)
@@ -56,10 +56,10 @@ namespace wowpp
 				return nullptr;
 
 			auto &templates = m_app.getProject().maps.getTemplates();
-			if (current.row() >= templates.size())
+			if (current.row() >= templates.entry_size())
 				return nullptr;
 
-			return templates[current.row()].get();
+			return templates.mutable_entry(current.row());
 		}
 
 	}

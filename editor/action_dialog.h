@@ -22,7 +22,8 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include "data/project.h"
+//#include "data/project.h"
+#include "proto_data/project.h"
 #include <QDialog>
 #include <QItemSelection>
 #include <memory>
@@ -47,9 +48,9 @@ namespace wowpp
 		public:
 
 			/// 
-			explicit ActionDialog(EditorApplication &app, TriggerEntry::TriggerAction action = TriggerEntry::TriggerAction());
+			explicit ActionDialog(EditorApplication &app, proto::TriggerAction action = proto::TriggerAction());
 
-			const TriggerEntry::TriggerAction &getAction() const { return m_action; }
+			const proto::TriggerAction &getAction() const { return m_action; }
 
 		private slots:
 
@@ -61,7 +62,7 @@ namespace wowpp
 
 			Ui::ActionDialog *m_ui;
 			EditorApplication &m_app;
-			TriggerEntry::TriggerAction m_action;
+			proto::TriggerAction m_action;
 		};
 	}
 }

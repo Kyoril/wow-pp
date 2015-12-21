@@ -21,13 +21,15 @@
 
 #include "data_dialog.h"
 #include "ui_data_dialog.h"
-#include "data/project.h"
+//#include "data/project.h"
+#include "proto_data/project.h"
+#include "proto_data/trigger_helper.h"
 
 namespace wowpp
 {
 	namespace editor
 	{
-		DataDialog::DataDialog(Project &project, UInt32 action, UInt32 index, UInt32 data)
+		DataDialog::DataDialog(proto::Project &project, UInt32 action, UInt32 index, UInt32 data)
 			: QDialog()
 			, m_ui(new Ui::DataDialog)
 			, m_project(project)

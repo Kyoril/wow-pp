@@ -33,27 +33,27 @@ namespace wowpp
 	namespace editor
 	{
 		template<>
-		QVariant TemplateListModel<ItemEntryManager>::data(const QModelIndex &index, int role) const
+		QVariant TemplateListModel<proto::ItemManager>::data(const QModelIndex &index, int role) const
 		{
 			if (!index.isValid())
 				return QVariant();
 
-			if (index.row() >= m_entries.getTemplates().size())
+			if (index.row() >= m_entries.getTemplates().entry_size())
 				return QVariant();
 
 			const auto &templates = m_entries.getTemplates();
-			const auto &tpl = templates[index.row()];
+			const auto &tpl = templates.entry(index.row());
 
 			if (role == Qt::DisplayRole)
 			{
 				if (index.column() == 0)
 				{
-					return QString("%1 %2").arg(QString::number(tpl->id), 5, QLatin1Char('0')).arg(tpl->name.c_str());
+					return QString("%1 %2").arg(QString::number(tpl.id()), 5, QLatin1Char('0')).arg(tpl.name().c_str());
 				}
 			}
 			else if (role == Qt::ForegroundRole)
 			{
-				switch (tpl->quality)
+				switch (tpl.quality())
 				{
 					case 0:
 						return QColor(Qt::gray);
@@ -76,26 +76,26 @@ namespace wowpp
 		}
 
 		template<>
-		QVariant TemplateListModel<MapEntryManager>::data(const QModelIndex &index, int role) const
+		QVariant TemplateListModel<proto::MapManager>::data(const QModelIndex &index, int role) const
 		{
 			if (!index.isValid())
 				return QVariant();
 
-			if (index.row() >= m_entries.getTemplates().size())
+			if (index.row() >= m_entries.getTemplates().entry_size())
 				return QVariant();
 
 			if (role == Qt::DisplayRole)
 			{
 				const auto &templates = m_entries.getTemplates();
-				const auto &tpl = templates[index.row()];
+				const proto::MapManager::EntryType &tpl = templates.entry(index.row());
 
 				if (index.column() == 0)
 				{
-					return QString("%1 %2").arg(QString::number(tpl->id), 3, QLatin1Char('0')).arg(tpl->name.c_str());
+					return QString("%1 %2").arg(QString::number(tpl.id()), 3, QLatin1Char('0')).arg(tpl.name().c_str());
 				}
 				else
 				{
-					return QString(constant_literal::mapInstanceType.getName(tpl->instanceType).c_str());
+					return QString("TODO"); //constant_literal::mapInstanceType.getName(static_cast<MapInstanceType>(tpl.instancetype())).c_str());
 				}
 			}
 
@@ -103,13 +103,13 @@ namespace wowpp
 		}
 
 		template<>
-		int TemplateListModel<MapEntryManager>::columnCount(const QModelIndex &parent) const
+		int TemplateListModel<proto::MapManager>::columnCount(const QModelIndex &parent) const
 		{
 			return 2;
 		}
 
 		template<>
-		QVariant TemplateListModel<MapEntryManager>::headerData(int section, Qt::Orientation orientation, int role) const
+		QVariant TemplateListModel<proto::MapManager>::headerData(int section, Qt::Orientation orientation, int role) const
 		{
 			if (role != Qt::DisplayRole)
 				return QVariant();

@@ -23,7 +23,10 @@ namespace Ogre
 
 namespace wowpp
 {
-	struct MapEntry;
+	namespace proto
+	{
+		class MapEntry;
+	}
 
 	namespace editor
 	{
@@ -31,7 +34,7 @@ namespace wowpp
 		{
 		public:
 
-			explicit WorldEditor(Ogre::SceneManager &sceneMgr, Ogre::Camera &camera, MapEntry &map);
+			explicit WorldEditor(Ogre::SceneManager &sceneMgr, Ogre::Camera &camera, proto::MapEntry &map);
 			~WorldEditor();
 
 			void update(float delta) override;
@@ -52,7 +55,7 @@ namespace wowpp
 
 			Ogre::SceneManager &m_sceneMgr;
 			Ogre::Camera &m_camera;
-			MapEntry &m_map;
+			proto::MapEntry &m_map;
 			boost::asio::io_service m_dispatcher;
 			boost::asio::io_service m_workQueue;
 			std::unique_ptr<boost::asio::io_service::work> m_work;
