@@ -26,6 +26,7 @@
 #include <fstream>
 #include <vector>
 #include <boost/filesystem.hpp>
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {
