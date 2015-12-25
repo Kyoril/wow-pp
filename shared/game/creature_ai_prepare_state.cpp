@@ -28,6 +28,7 @@
 #include "universe.h"
 #include "data/faction_template_entry.h"
 #include "log/default_log_levels.h"
+#include "proto_data/trigger_helper.h"
 
 namespace wowpp
 {
@@ -54,6 +55,9 @@ namespace wowpp
 		// Watch for threat events to enter combat
 		auto &ai = getAI();
 		m_onThreatened = getControlled().threatened.connect(std::bind(&CreatureAI::onThreatened, &ai, std::placeholders::_1, std::placeholders::_2));
+
+		auto &controlled = getControlled();
+		controlled.raiseTrigger(trigger_event::OnSpawn);
 	}
 
 	void CreatureAIPrepareState::onLeave()

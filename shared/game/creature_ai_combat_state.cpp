@@ -28,6 +28,7 @@
 #include "world_instance.h"
 #include "proto_data/faction_helper.h"
 #include "shared/proto_data/units.pb.h"
+#include "proto_data/trigger_helper.h"
 #include "binary_io/vector_sink.h"
 #include "game_protocol/game_protocol.h"
 #include "each_tile_in_sight.h"
@@ -167,17 +168,7 @@ namespace wowpp
 		controlled.removeLootRecipients();
 
 		// Raise OnAggro triggers
-		// TODO:
-/*		auto &entry = controlled.getEntry();
-		auto it = entry.triggersByEvent.find(trigger_event::OnAggro);
-		if (it != entry.triggersByEvent.end())
-		{
-			for (const auto *trigger : it->second)
-			{
-				trigger->execute(*trigger, &controlled);
-			}
-		}
-		*/
+		controlled.raiseTrigger(trigger_event::OnAggro);
 	}
 
 	void CreatureAICombatState::onLeave()

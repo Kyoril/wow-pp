@@ -44,12 +44,6 @@ namespace wowpp
 		, m_playerManager(playerManager)
 		, m_timers(timers)
 	{
-		// Iterate through all triggers and watch for their execution
-		/*for (const auto &trigger : m_project.triggers.getTemplates())
-		{
-			trigger->execute.connect(
-				std::bind(&TriggerHandler::executeTrigger, this, std::placeholders::_1, 0, std::placeholders::_2));
-		}*/
 	}
 
 	void TriggerHandler::executeTrigger(const proto::TriggerEntry &entry, UInt32 actionOffset, GameUnit *owner)

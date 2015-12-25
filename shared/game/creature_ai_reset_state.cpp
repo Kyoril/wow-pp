@@ -28,7 +28,7 @@
 #include "game_protocol/game_protocol.h"
 #include "each_tile_in_sight.h"
 #include "common/constants.h"
-#include "data/trigger_entry.h"
+#include "proto_data/trigger_helper.h"
 #include "log/default_log_levels.h"
 
 namespace wowpp
@@ -82,19 +82,8 @@ namespace wowpp
 
 		m_moveUpdate.setEnd(getCurrentTime() + moveTime);
 
-		/*
-		// TODO
-		// Raise OnReset trigger
 		auto &controlled = getControlled();
-		auto it = controlled.getEntry().triggersByEvent.find(trigger_event::OnReset);
-		if (it != controlled.getEntry().triggersByEvent.end())
-		{
-			for (const auto *trigger : it->second)
-			{
-				trigger->execute(*trigger, &controlled);
-			}
-		}
-		*/
+		controlled.raiseTrigger(trigger_event::OnReset);
 	}
 
 	void CreatureAIResetState::onLeave()
@@ -109,18 +98,7 @@ namespace wowpp
 			controlled.heal(controlled.getUInt32Value(unit_fields::MaxHealth), nullptr, true);
 		}
 
-		// TODO
-		/*
-		// Raise OnReachedHome trigger
-		auto it = controlled.getEntry().triggersByEvent.find(trigger_event::OnReachedHome);
-		if (it != controlled.getEntry().triggersByEvent.end())
-		{
-			for (const auto *trigger : it->second)
-			{
-				trigger->execute(*trigger, &controlled);
-			}
-		}
-		*/
+		controlled.raiseTrigger(trigger_event::OnReachedHome);
 	}
 
 }

@@ -31,6 +31,7 @@
 #include "aura_container.h"
 #include "common/macros.h"
 #include "common/linear_set.h"
+#include "proto_data/trigger_helper.h"
 #include <boost/signals2.hpp>
 
 namespace wowpp
@@ -304,6 +305,7 @@ namespace wowpp
 		class RaceEntry;
 		class LevelEntry;
 		class FactionTemplateEntry;
+		class TriggerEntry;
 	}
 
 	/// Base class for all units in the world. A unit is an object with health, which can
@@ -351,6 +353,8 @@ namespace wowpp
 		boost::signals2::signal<void(GameUnit &, float)> threatened;
 		/// Fired when an auto attack hit.
 		boost::signals2::signal<void(GameUnit *)> procMeleeAutoAttack;
+		/// Fired when a unit trigger should be executed.
+		boost::signals2::signal<void(const proto::TriggerEntry &, GameUnit &)> unitTrigger;
 
 
 	public:

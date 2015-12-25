@@ -264,6 +264,25 @@ namespace wowpp
 		m_unitLoot = std::move(unitLoot);
 	}
 
+	void GameCreature::raiseTrigger(trigger_event::Type e)
+	{
+		for (const auto &triggerId : getEntry().triggers())
+		{
+			const auto *triggerEntry = getProject().triggers.getById(triggerId);
+			if (triggerEntry)
+			{
+				for (const auto &triggerEvent : triggerEntry->events())
+				{
+					if (triggerEvent == e)
+					{
+						unitTrigger(std::cref(*triggerEntry), std::ref(*this));
+						return;
+					}
+				}
+			}
+		}
+	}
+
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)
 	{
 		if (killerLevel < 8)

@@ -82,7 +82,7 @@ namespace wowpp
 		{
 			QString temp = (link ? "<a href=\"text-%2\" style=\"color: #ffae00;\">%1</a>" : "%1");
 
-			if (i >= action.texts_size())
+			if (static_cast<int>(i) >= action.texts_size())
 				return temp.arg("(INVALID TEXT)").arg(i);
 
 			return temp.arg(action.texts(i).c_str()).arg(i);
@@ -125,7 +125,7 @@ namespace wowpp
 		{
 			QString temp = (link ? "<a href=\"data-%2\" style=\"color: #ffae00;\">%1</a>" : "%1");
 
-			if (i >= action.data_size())
+			if (static_cast<int>(i) >= action.data_size())
 				return temp.arg(0).arg(i);
 
 			return temp.arg(action.data(i)).arg(i);

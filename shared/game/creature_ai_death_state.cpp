@@ -26,6 +26,7 @@
 #include "log/default_log_levels.h"
 #include "common/make_unique.h"
 #include "proto_data/project.h"
+#include "proto_data/trigger_helper.h"
 
 namespace wowpp
 {
@@ -42,19 +43,7 @@ namespace wowpp
 	void CreatureAIDeathState::onEnter()
 	{
 		auto &controlled = getControlled();
-
-		/*
-		// TODO
-		// Raise OnKilled trigger
-		auto it = controlled.getEntry().triggersByEvent.find(trigger_event::OnKilled);
-		if (it != controlled.getEntry().triggersByEvent.end())
-		{
-			for (const auto *trigger : it->second)
-			{
-				trigger->execute(*trigger, &controlled);
-			}
-		}
-		*/
+		controlled.raiseTrigger(trigger_event::OnKilled);
 
 		// Decide whether to despawn based on unit type
 		auto &entry = controlled.getEntry();
@@ -106,12 +95,6 @@ namespace wowpp
 			{
 				character->rewardExperience(&controlled, xp);
 			}
-
-			// Loot callback functions
-			auto onCleared = [&controlled]()
-			{
-				controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
-			};
 
 			const auto *lootEntry = controlled.getProject().unitLoot.getById(entry.unitlootentry());
 
