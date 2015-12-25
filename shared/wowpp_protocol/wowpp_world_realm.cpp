@@ -22,7 +22,6 @@
 #include <iostream>
 #include "wowpp_world_realm.h"
 #include "game/game_item.h"
-//#include "data/item_entry.h"
 #include "shared/proto_data/items.pb.h"
 #include <cassert>
 

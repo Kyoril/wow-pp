@@ -26,7 +26,6 @@
 #include <QAbstractTableModel>
 #include <QItemSelection>
 #include <QTreeWidgetItem>
-//#include "data/project.h"
 #include "proto_data/project.h"
 #include "property_view_model.h"
 #include <memory>

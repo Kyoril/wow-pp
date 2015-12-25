@@ -22,7 +22,6 @@
 #pragma once
 
 #include <QObject>
-//#include "data/project.h"
 #include "proto_data/project.h"
 #include "template_list_model.h"
 #include "trigger_list_model.h"

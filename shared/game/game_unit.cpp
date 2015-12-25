@@ -26,7 +26,6 @@
 #include "binary_io/vector_sink.h"
 #include "game_protocol/game_protocol.h"
 #include "game_character.h"
-//#include "data/faction_template_entry.h"
 #include "proto_data/project.h"
 #include <cassert>
 

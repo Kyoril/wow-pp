@@ -21,9 +21,6 @@
 
 #include "game_creature.h"
 #include "game_character.h"
-//#include "data/trigger_entry.h"
-//#include "data/item_entry.h"
-//#include "data/faction_template_entry.h"
 #include "proto_data/project.h"
 #include "world_instance.h"
 #include "tiled_unit_watcher.h"

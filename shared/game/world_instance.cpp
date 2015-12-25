@@ -22,8 +22,6 @@
 #include "world_instance.h"
 #include "world_instance_manager.h"
 #include "log/default_log_levels.h"
-//#include "data/unit_entry.h"
-//#include "data/object_entry.h"
 #include "proto_data/project.h"
 #include "game_unit.h"
 #include "game_creature.h"

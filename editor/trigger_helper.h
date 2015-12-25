@@ -22,8 +22,6 @@
 #pragma once
 
 #include "common/typedefs.h"
-//#include "data/trigger_entry.h"
-//#include "data/project.h"
 #include "proto_data/project.h"
 #include <QString>
 

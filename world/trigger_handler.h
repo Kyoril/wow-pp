@@ -21,10 +21,10 @@
 
 #pragma once
 
-//#include "data/trigger_entry.h"
 #include "shared/proto_data/triggers.pb.h"
 #include "common/timer_queue.h"
 #include "common/countdown.h"
+#include "game/trigger_handler.h"
 #include <memory>
 
 namespace wowpp
@@ -38,7 +38,7 @@ namespace wowpp
 	}
 
 	/// 
-	class TriggerHandler final
+	class TriggerHandler final : public game::ITriggerHandler
 	{
 	public:
 
@@ -46,7 +46,7 @@ namespace wowpp
 		explicit TriggerHandler(proto::Project &project, PlayerManager &playerManager, TimerQueue &timers);
 
 		/// Fires a trigger event.
-		void executeTrigger(const proto::TriggerEntry &entry, UInt32 actionOffset = 0, GameUnit *owner = nullptr);
+		virtual void executeTrigger(const proto::TriggerEntry &entry, UInt32 actionOffset = 0, GameUnit *owner = nullptr) override;
 
 	private:
 

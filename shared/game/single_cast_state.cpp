@@ -22,8 +22,6 @@
 #include "single_cast_state.h"
 #include "game_unit.h"
 #include "game_character.h"
-//#include "data/faction_template_entry.h"
-//#include "data/object_entry.h"
 #include "no_cast_state.h"
 #include "common/clock.h"
 #include "log/default_log_levels.h"

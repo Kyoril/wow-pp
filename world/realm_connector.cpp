@@ -28,7 +28,6 @@
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "configuration.h"
 #include "common/clock.h"
-//#include "data/project.h"
 #include "proto_data/project.h"
 #include "game/game_world_object.h"
 #include "game/visibility_tile.h"

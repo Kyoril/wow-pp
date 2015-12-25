@@ -26,8 +26,6 @@
 #include "game_creature.h"
 #include "game_character.h"
 #include "world_instance.h"
-//#include "data/faction_template_entry.h"
-//#include "data/trigger_entry.h"
 #include "proto_data/faction_helper.h"
 #include "shared/proto_data/units.pb.h"
 #include "binary_io/vector_sink.h"

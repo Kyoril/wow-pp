@@ -26,8 +26,6 @@
 #include "game/world_instance.h"
 #include "game/each_tile_in_sight.h"
 #include "game/universe.h"
-//#include "data/project.h"
-//#include "data/unit_entry.h"
 #include "proto_data/project.h"
 #include "proto_data/faction_helper.h"
 #include "game/game_creature.h"

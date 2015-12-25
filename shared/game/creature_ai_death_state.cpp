@@ -22,7 +22,6 @@
 #include "creature_ai_death_state.h"
 #include "creature_ai.h"
 #include "game_creature.h"
-//#include "data/trigger_entry.h"
 #include "loot_instance.h"
 #include "log/default_log_levels.h"
 #include "common/make_unique.h"

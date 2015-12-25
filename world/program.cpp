@@ -32,7 +32,6 @@
 #include "log/log_entry.h"
 #include "log/default_log_levels.h"
 #include "mysql_database.h"
-//#include "data/project.h"
 #include "proto_data/project.h"
 #include "game/universe.h"
 #include "trigger_handler.h"

@@ -23,7 +23,6 @@
 
 #include <QAbstractListModel>
 #include <QObject>
-//#include "data/project.h"
 #include "proto_data/project.h"
 #include "qfilesystemmodel.h"
 

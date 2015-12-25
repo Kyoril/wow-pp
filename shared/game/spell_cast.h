@@ -22,7 +22,6 @@
 #pragma once
 
 #include "game/defines.h"
-//#include "data/spell_entry.h"
 #include "shared/proto_data/spells.pb.h"
 #include "spell_target_map.h"
 #include "common/timer_queue.h"

@@ -23,7 +23,6 @@
 
 #include "common/typedefs.h"
 #include "defines.h"
-//#include "data/spell_entry.h"
 #include "shared/proto_data/spells.pb.h"
 #include "common/countdown.h"
 #include "boost/signals2.hpp"

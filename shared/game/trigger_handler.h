@@ -19,48 +19,30 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-#include "data_dialog.h"
-#include "ui_data_dialog.h"
-#include "proto_data/project.h"
-#include "proto_data/trigger_helper.h"
+#pragma once
+
+#include "common/typedefs.h"
+#include <boost/noncopyable.hpp>
 
 namespace wowpp
 {
-	namespace editor
+	class GameUnit;
+	namespace proto
 	{
-		DataDialog::DataDialog(proto::Project &project, UInt32 action, UInt32 index, UInt32 data)
-			: QDialog()
-			, m_ui(new Ui::DataDialog)
-			, m_project(project)
+		class TriggerEntry;
+	}
+
+	namespace game
+	{
+		struct ITriggerHandler : boost::noncopyable
 		{
-			// Setup auto generated ui
-			m_ui->setupUi(this);
-			m_ui->dataField->setText(QString("%1").arg(data));
-			m_ui->dataField->setValidator(new QIntValidator(0, 999999, this));
+			virtual ~ITriggerHandler() {};
 
-			bool mayChoose = false;
-			switch (action)
-			{
-			case trigger_actions::CastSpell:	// SpellId
-			case trigger_actions::Trigger:		// TriggerId
-				mayChoose = (index == 0);
-				break;
-			default:
-				break;
-			}
-
-			m_ui->dataButton->setVisible(mayChoose);
-		}
-
-		void DataDialog::on_buttonBox_accepted()
-		{
-			// TODO
-		}
-
-		UInt32 DataDialog::getData() const
-		{
-			return m_ui->dataField->text().toInt();
-		}
-
+			/// Executes a unit trigger.
+			/// @param entry The trigger to execute.
+			/// @param actionOffset The action to execute.
+			/// @param owner The executing unit. TODO: Replace by context object
+			virtual void executeTrigger(const proto::TriggerEntry &entry, UInt32 actionOffset = 0, GameUnit *owner = nullptr) = 0;
+		};
 	}
 }

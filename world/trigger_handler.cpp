@@ -21,7 +21,6 @@
 
 #include "trigger_handler.h"
 #include "game/game_unit.h"
-//#include "data/project.h"
 #include "proto_data/project.h"
 #include "proto_data/trigger_helper.h"
 #include "player_manager.h"

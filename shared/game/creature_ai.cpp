@@ -31,7 +31,6 @@
 #include "universe.h"
 #include "unit_finder.h"
 #include "unit_watcher.h"
-//#include "data/faction_template_entry.h"
 #include "proto_data/faction_helper.h"
 #include "common/make_unique.h"
 

@@ -29,7 +29,6 @@
 #include "player_manager.h"
 #include <boost/format.hpp>
 #include "log/default_log_levels.h"
-//#include "data/project.h"
 #include "proto_data/project.h"
 
 namespace wowpp

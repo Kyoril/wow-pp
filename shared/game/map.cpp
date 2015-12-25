@@ -20,7 +20,6 @@
 // 
 
 #include "map.h"
-//#include "data/map_entry.h"
 #include "shared/proto_data/maps.pb.h"
 #include "detour_world_navigation.h"
 #include "log/default_log_levels.h"

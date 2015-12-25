@@ -22,11 +22,6 @@
 #pragma once
 
 #include "game_object.h"
-//#include "data/race_entry.h"
-//#include "data/class_entry.h"
-//#include "data/level_entry.h"
-//#include "data/spell_entry.h"
-//#include "data/data_load_context.h"
 #include "game/defines.h"
 #include "common/timer_queue.h"
 #include "common/countdown.h"

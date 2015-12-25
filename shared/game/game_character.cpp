@@ -21,8 +21,6 @@
 
 #include "game_character.h"
 #include <log/default_log_levels.h>
-//#include "data/skill_entry.h"
-//#include "data/item_entry.h"
 #include "proto_data/project.h"
 #include "game_item.h"
 #include "common/utilities.h"

@@ -22,7 +22,6 @@
 #pragma once
 
 #include "game_unit.h"
-//#include "data/unit_entry.h"
 #include "world_instance.h"
 #include "unit_watcher.h"
 #include "game_character.h"

@@ -22,7 +22,6 @@
 #pragma once
 
 #include "game_object.h"
-//#include "data/object_entry.h"
 #include "common/timer_queue.h"
 #include "common/countdown.h"
 

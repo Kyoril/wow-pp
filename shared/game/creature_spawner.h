@@ -23,7 +23,6 @@
 
 #include "common/typedefs.h"
 #include "common/countdown.h"
-//#include "data/unit_entry.h"
 #include <boost/optional.hpp>
 
 namespace wowpp

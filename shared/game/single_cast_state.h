@@ -23,7 +23,6 @@
 
 #include "spell_cast.h"
 #include "common/countdown.h"
-//#include "data/spell_entry.h"
 #include "shared/proto_data/spells.pb.h"
 #include "boost/signals2.hpp"
 #include <boost/noncopyable.hpp>

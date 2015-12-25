@@ -1,7 +1,5 @@
 
 #include "world_editor.h"
-//#include "data/map_entry.h"
-//#include "data/project.h"
 #include "proto_data/project.h"
 #include "common/typedefs.h"
 #include "common/constants.h"

@@ -28,7 +28,6 @@
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "binary_io/vector_sink.h"
 #include "binary_io/writer.h"
-//#include "data/project.h"
 #include "proto_data/project.h"
 #include "player_manager.h"
 #include "player.h"

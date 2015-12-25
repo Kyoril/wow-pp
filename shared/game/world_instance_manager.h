@@ -26,8 +26,6 @@
 #include "world_instance.h"
 #include "common/id_generator.h"
 #include "common/timer_queue.h"
-//#include "data/data_load_context.h"
-//#include "data/map_entry.h"
 #include <vector>
 #include <memory>
 

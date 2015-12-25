@@ -20,8 +20,6 @@
 // 
 
 #include "loot_instance.h"
-//#include "data/loot_entry.h"
-//#include "data/item_entry.h"
 #include "proto_data/project.h"
 #include "defines.h"
 #include "common/utilities.h"

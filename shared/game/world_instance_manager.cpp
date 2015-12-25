@@ -20,7 +20,6 @@
 // 
 
 #include "world_instance_manager.h"
-//#include "data/project.h"
 #include "proto_data/project.h"
 #include "common/vector.h"
 #include "solid_visibility_grid.h"

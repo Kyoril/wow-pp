@@ -20,7 +20,6 @@
 // 
 
 #include "game_item.h"
-//#include "data/item_entry.h"
 #include "proto_data/project.h"
 
 namespace wowpp

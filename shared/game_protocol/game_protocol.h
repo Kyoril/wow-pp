@@ -28,16 +28,10 @@
 #include "common/sha1.h"
 #include "common/vector.h"
 #include "game/defines.h"
-//#include "data/unit_entry.h"
 #include "game/action_button.h"
 #include "game/game_unit.h"
 #include "game/movement_info.h"
 #include "game/spell_target_map.h"
-//#include "data/spell_entry.h"
-//#include "data/item_entry.h"
-//#include "data/object_entry.h"
-//#include "data/vendor_entry.h"
-//#include "data/trainer_entry.h"
 #include "proto_data/project.h"
 #include <array>
 #include <vector>

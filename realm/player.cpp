@@ -33,7 +33,6 @@
 #include "common/big_number.h"
 #include "binary_io/vector_sink.h"
 #include "binary_io/writer.h"
-//#include "data/project.h"
 #include "proto_data/project.h"
 #include "common/utilities.h"
 #include "game/game_item.h"

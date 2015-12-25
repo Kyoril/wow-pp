@@ -24,8 +24,6 @@
 #include "common/typedefs.h"
 #include "game/game_object.h"
 #include "common/id_generator.h"
-//#include "data/map_entry.h"
-//#include "data/data_load_context.h"
 #include "shared/proto_data/maps.pb.h"
 #include "game/visibility_grid.h"
 #include "creature_spawner.h"

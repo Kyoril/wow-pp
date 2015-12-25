@@ -27,7 +27,6 @@
 #include "game_protocol/game_incoming_packet.h"
 #include "wowpp_protocol/wowpp_connector.h"
 #include "wowpp_protocol/wowpp_world_realm.h"
-//#include "data/data_load_context.h"
 #include "game/game_character.h"
 #include "common/timer_queue.h"
 #include <boost/signals2.hpp>

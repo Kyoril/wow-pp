@@ -26,7 +26,6 @@
 #include "tiled_unit_watcher.h"
 #include "unit_finder.h"
 #include "universe.h"
-//#include "data/faction_template_entry.h"
 #include "proto_data/faction_helper.h"
 #include "log/default_log_levels.h"
 
