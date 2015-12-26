@@ -25,6 +25,7 @@
 #include "solid_visibility_grid.h"
 #include "log/default_log_levels.h"
 #include "tiled_unit_finder.h"
+#include "trigger_handler.h"
 #include "universe.h"
 #include <cassert>
 
@@ -33,6 +34,7 @@ namespace wowpp
 	WorldInstanceManager::WorldInstanceManager(
 		boost::asio::io_service &ioService,
 		Universe &universe,
+		game::ITriggerHandler &triggerHandler,
 		IdGenerator<UInt32> &idGenerator, 
 		IdGenerator<UInt64> &objectIdGenerator,
 		proto::Project &project,
@@ -40,6 +42,7 @@ namespace wowpp
 		const String &dataPath)
 		: m_ioService(ioService)
 		, m_universe(universe)
+		, m_triggerHandler(triggerHandler)
 		, m_idGenerator(idGenerator)
 		, m_objectIdGenerator(objectIdGenerator)
 		, m_updateTimer(ioService)
@@ -59,6 +62,7 @@ namespace wowpp
 		std::unique_ptr<WorldInstance> instance(new WorldInstance(
 			*this,
 			m_universe,
+			m_triggerHandler,
 			m_project,
 			map,
 			instanceId,

@@ -34,6 +34,7 @@
 #include <boost/bind/bind.hpp>
 #include "each_tile_in_sight.h"
 #include "common/utilities.h"
+#include "trigger_handler.h"
 #include "creature_ai.h"
 #include "universe.h"
 #include <algorithm>
@@ -98,8 +99,10 @@ namespace wowpp
 
 	std::map<UInt32, Map> WorldInstance::MapData;
 
-	WorldInstance::WorldInstance(WorldInstanceManager &manager, 
+	WorldInstance::WorldInstance(
+		WorldInstanceManager &manager, 
 		Universe &universe,
+		game::ITriggerHandler &triggerHandler,
 		proto::Project &project,
 		const proto::MapEntry &mapEntry,
 		UInt32 id, 
@@ -110,6 +113,7 @@ namespace wowpp
 		)
 		: m_manager(manager)
 		, m_universe(universe)
+		, m_triggerHandler(triggerHandler)
 		, m_unitFinder(std::move(unitFinder))
 		, m_visibilityGrid(std::move(visibilityGrid))
 		, m_objectIdGenerator(objectIdGenerator)
@@ -298,6 +302,15 @@ namespace wowpp
 		// Add this game object to the list of objects
 		m_objectsById.insert(
 			std::make_pair(guid, &added));
+
+		// Enable trigger execution
+		if (added.getTypeId() == object_type::Unit)
+		{
+			GameUnit *unitObj = reinterpret_cast<GameUnit*>(&added);
+			unitObj->unitTrigger.connect([this](const proto::TriggerEntry &trigger, GameUnit &owner) {
+				m_triggerHandler.executeTrigger(trigger, 0, &owner);
+			});
+		}
 
 		// Get object location
 		float x, y, z, o;

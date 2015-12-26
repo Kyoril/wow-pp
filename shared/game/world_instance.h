@@ -37,6 +37,10 @@
 
 namespace wowpp
 {
+	namespace game
+	{
+		struct ITriggerHandler;
+	}
 	class WorldInstanceManager;
 	class GameUnit;
 	class GameCreature;
@@ -81,8 +85,10 @@ namespace wowpp
 		/// @param getRace Callback to obtain informations about a race.
 		/// @param getClass Callback to obtain informations about a class.
 		/// @param getLevel Callback to obtain informations about a level.
-		explicit WorldInstance(WorldInstanceManager &manager, 
+		explicit WorldInstance(
+			WorldInstanceManager &manager, 
 			Universe &universe,
+			game::ITriggerHandler &triggerHandler,
 			proto::Project &project,
 			const proto::MapEntry &mapEntry,
 			UInt32 id, 
@@ -155,6 +161,7 @@ namespace wowpp
 
 		WorldInstanceManager &m_manager;
 		Universe &m_universe;
+		game::ITriggerHandler &m_triggerHandler;
 		std::unique_ptr<UnitFinder> m_unitFinder;
 		std::unique_ptr<VisibilityGrid> m_visibilityGrid;
 		IdGenerator<UInt64> &m_objectIdGenerator;

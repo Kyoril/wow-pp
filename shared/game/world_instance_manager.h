@@ -36,6 +36,10 @@ namespace wowpp
 		class MapEntry;
 		class Project;
 	}
+	namespace game
+	{
+		struct ITriggerHandler;
+	}
 	class PlayerManager;
 	class Universe;
 
@@ -48,8 +52,9 @@ namespace wowpp
 
 	public:
 
-		explicit WorldInstanceManager(boost::asio::io_service &ioService, 
+		explicit WorldInstanceManager(boost::asio::io_service &ioService,
 			Universe &universe,
+			game::ITriggerHandler &triggerHandler,
 			IdGenerator<UInt32> &idGenerator,
 			IdGenerator<UInt64> &objectIdGenerator,
 			proto::Project &project,
@@ -74,6 +79,7 @@ namespace wowpp
 
 		boost::asio::io_service &m_ioService;
 		Universe &m_universe;
+		game::ITriggerHandler &m_triggerHandler;
 		IdGenerator<UInt32> &m_idGenerator;
 		IdGenerator<UInt64> &m_objectIdGenerator;
 		boost::asio::deadline_timer m_updateTimer;

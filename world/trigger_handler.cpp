@@ -155,8 +155,8 @@ namespace wowpp
 			return;
 		}
 
-		//TODO 
-		//trigger->execute(*trigger, owner);
+		// Execute another trigger
+		executeTrigger(*trigger, 0, owner);
 	}
 
 	void TriggerHandler::handleSay(const proto::TriggerAction &action, GameUnit *owner)
