@@ -28,6 +28,7 @@
 #include <map>
 #include <boost/signals2.hpp>
 #include "shared/proto_data/loot_entry.pb.h"
+#include "proto_data/project.h"
 
 namespace wowpp
 {
@@ -58,8 +59,8 @@ namespace wowpp
 	public:
 
 		/// Initializes a new instance of the loot instance.
-		explicit LootInstance(UInt64 lootGuid);
-		explicit LootInstance(UInt64 lootGuid, const proto::LootEntry *entry, UInt32 minGold, UInt32 maxGold);
+		explicit LootInstance(proto::ItemManager &items, UInt64 lootGuid);
+		explicit LootInstance(proto::ItemManager &items, UInt64 lootGuid, const proto::LootEntry *entry, UInt32 minGold, UInt32 maxGold);
 
 		/// 
 		UInt64 getLootGuid() const { return m_lootGuid; }
@@ -80,6 +81,7 @@ namespace wowpp
 
 	private:
 
+		proto::ItemManager &m_itemManager;
 		UInt64 m_lootGuid;
 		UInt32 m_gold;
 		std::vector<LootItem> m_items;

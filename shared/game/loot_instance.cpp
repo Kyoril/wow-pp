@@ -26,14 +26,16 @@
 
 namespace wowpp
 {
-	LootInstance::LootInstance(UInt64 lootGuid)
-		: m_lootGuid(lootGuid)
+	LootInstance::LootInstance(proto::ItemManager &items, UInt64 lootGuid)
+		: m_itemManager(items)
+		, m_lootGuid(lootGuid)
 		, m_gold(0)
 	{
 	}
 
-	LootInstance::LootInstance(UInt64 lootGuid, const proto::LootEntry *entry, UInt32 minGold, UInt32 maxGold)
-		: m_lootGuid(lootGuid)
+	LootInstance::LootInstance(proto::ItemManager &items, UInt64 lootGuid, const proto::LootEntry *entry, UInt32 minGold, UInt32 maxGold)
+		: m_itemManager(items)
+		, m_lootGuid(lootGuid)
 		, m_gold(0)
 	{
 		if (entry)
@@ -45,14 +47,14 @@ namespace wowpp
 				std::uniform_real_distribution<float> lootDistribution(0.0f, 100.0f);
 				float groupRoll = lootDistribution(randomGenerator);
 
-				auto shuffled = group;
+				//auto shuffled = group;
 				//TODO std::shuffle(shuffled.definitions().begin(), shuffled.definitions().end(), randomGenerator);
 
 				bool foundNonEqualChanced = false;
 				std::vector<const proto::LootDefinition*> equalChanced;
-				for (int i = 0; i < shuffled.definitions_size(); ++i)
+				for (int i = 0; i < group.definitions_size(); ++i)
 				{
-					const auto &def = shuffled.definitions(i);
+					const auto &def = group.definitions(i);
 					if (def.dropchance() == 0.0f)
 					{
 						equalChanced.push_back(&def);
@@ -170,16 +172,20 @@ namespace wowpp
 			// Only write item entry if the item hasn't been looted yet
 			if (!def.isLooted)
 			{
-				w
-					<< io::write<NetUInt8>(slot)
-					<< io::write<NetUInt32>(def.definition.item())
-					<< io::write<NetUInt32>(def.count)
-					<< io::write<NetUInt32>(0)  //TODO def.definition.item())
-					<< io::write<NetUInt32>(0)	// RandomSuffixIndex TODO
-					<< io::write<NetUInt32>(0)	// RandomPropertyId TODO
-					<< io::write<NetUInt8>(game::loot_slot_type::AllowLoot)
-					;
-				realCount++;
+				const auto *itemEntry = loot.m_itemManager.getById(def.definition.item());
+				if (itemEntry)
+				{
+					w
+						<< io::write<NetUInt8>(slot)
+						<< io::write<NetUInt32>(def.definition.item())
+						<< io::write<NetUInt32>(def.count)
+						<< io::write<NetUInt32>(itemEntry->displayid())
+						<< io::write<NetUInt32>(0)	// RandomSuffixIndex TODO
+						<< io::write<NetUInt32>(0)	// RandomPropertyId TODO
+						<< io::write<NetUInt8>(game::loot_slot_type::AllowLoot)
+						;
+					realCount++;
+				}
 			}
 			
 			slot++;
