@@ -177,6 +177,14 @@ namespace wowpp
 			QTreeWidgetItem *item = new QTreeWidgetItem(parent); 
 			item->setText(0, QString("%1 %2").arg(QString::number(def.item()), 5, QLatin1Char('0')).arg(itemEntry->name().c_str()));
 			item->setText(1, QString("%1%").arg(def.dropchance()));
+			if (def.maxcount() > def.mincount())
+			{
+				item->setText(2, QString("%1x - %2x").arg(def.mincount()).arg(def.maxcount()));
+			}
+			else
+			{
+				item->setText(2, QString("%1x").arg(def.mincount()));
+			}
 
 			QColor textColor = QColor(Qt::white);
 			switch (itemEntry->quality())

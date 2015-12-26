@@ -147,8 +147,8 @@ int main(int argc, char* argv[])
 			{
 				auto *addedDef = addedGroup->add_definitions();
 				addedDef->set_item(def.item->id);
-				if (def.minCount != 1) addedDef->set_mincount(def.minCount);
-				if (def.maxCount != 1) addedDef->set_maxcount(def.maxCount);
+				addedDef->set_mincount(def.minCount);
+				addedDef->set_maxcount(def.maxCount);
 				addedDef->set_dropchance(def.dropChance);
 				if (!def.isActive) addedDef->set_isactive(def.isActive);
 			}

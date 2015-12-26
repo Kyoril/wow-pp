@@ -25,7 +25,7 @@ package wowpp.proto;
 message LootDefinition {
 	required uint32 item = 1;
 	optional uint32 mincount = 2 [default = 1];
-	optional uint32 maxcount = 3 [default = 2];
+	optional uint32 maxcount = 3 [default = 1];
 	required float dropchance = 4;
 	optional bool isactive = 5 [default = true];
 }

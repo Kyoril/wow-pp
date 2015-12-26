@@ -88,11 +88,24 @@ namespace wowpp
 
 	void LootInstance::addLootItem(const proto::LootDefinition &def)
 	{
+		const auto *lootItem = m_itemManager.getById(def.item());
+		if (!lootItem)
+			return;
+
+		DLOG("New loot item: " << lootItem->id() << " - " << lootItem->name() << " [" << def.mincount() << " - " << def.maxcount() << "]");
+
 		UInt32 dropCount = def.mincount();
 		if (def.maxcount() > def.mincount())
 		{
 			std::uniform_int_distribution<UInt32> dropDistribution(def.mincount(), def.maxcount());
 			dropCount = dropDistribution(randomGenerator);
+		}
+
+		DLOG("Drop count: " << dropCount);
+		if (dropCount > lootItem->maxstack())
+		{
+			WLOG("Item drop count was " << dropCount << " but max item stack count is " << lootItem->maxstack());
+			dropCount = lootItem->maxstack();
 		}
 
 		// Always at least 1 item
