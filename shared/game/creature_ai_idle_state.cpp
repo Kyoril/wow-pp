@@ -98,11 +98,11 @@ namespace wowpp
 					float reqDist = 20.0f;
 					if (ourLevel < otherLevel)
 					{
-						reqDist = limit<float>(5.0f, 40.0f, reqDist - diff);
+						reqDist = limit<float>(reqDist - diff, 5.0f, 40.0f);
 					}
 					else if (otherLevel < ourLevel)
 					{
-						reqDist = limit<float>(5.0f, 40.0f, reqDist + diff);
+						reqDist = limit<float>(reqDist + diff, 5.0f, 40.0f);
 					}
 
 					if (dist > reqDist)
