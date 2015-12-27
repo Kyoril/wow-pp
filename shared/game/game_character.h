@@ -572,6 +572,7 @@ namespace wowpp
 		bool canBlock() const override;
 		bool canParry() const override;
 		bool canDodge() const override;
+		bool canDualWield() const override;
 
 		/// Gets the characters group id.
 		UInt64 getGroupId() const { return m_groupId; }
@@ -605,6 +606,7 @@ namespace wowpp
 		GroupUpdateFlags m_groupUpdateFlags;
 		bool m_canBlock;	// Set by spell
 		bool m_canParry;	// Set by spell
+		bool m_canDualWield;// Set by spell
 		FactionStateList m_factions;
 		ForcedReactions m_forcedReactions;
 		UInt64 m_groupId;

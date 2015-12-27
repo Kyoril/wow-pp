@@ -227,6 +227,11 @@ namespace wowpp
 		return true;
 	}
 
+	bool GameCreature::canDualWield() const
+	{
+		return true;
+	}
+
 	void GameCreature::updateDamage()
 	{
 		const float att_speed = static_cast<float>(getUInt32Value(unit_fields::BaseAttackTime)) / 1000.0f;

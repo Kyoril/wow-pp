@@ -80,6 +80,8 @@ namespace wowpp
 		/// 
 		bool canDodge() const override;
 		/// 
+		bool canDualWield() const override;
+		/// 
 		void updateDamage() override;
 		/// Updates the creatures loot recipient. Values of 0 mean no recipient.
 		void addLootRecipient(UInt64 guid);

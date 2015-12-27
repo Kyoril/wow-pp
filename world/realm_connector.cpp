@@ -681,7 +681,7 @@ namespace wowpp
 		{
 			return;
 		}
-
+		
 		// Setup packet
 		io::MemorySource source(reinterpret_cast<const char*>(&buffer[0]), reinterpret_cast<const char*>(&buffer[0]) + size);
 

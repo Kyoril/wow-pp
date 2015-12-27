@@ -24,6 +24,7 @@
 #include "proto_data/project.h"
 #include "game_item.h"
 #include "common/utilities.h"
+#include "defines.h"
 
 namespace wowpp
 {
@@ -42,6 +43,7 @@ namespace wowpp
 		, m_groupUpdateFlags(group_update_flags::None)
 		, m_canBlock(false)
 		, m_canParry(false)
+		, m_canDualWield(false)
 	{
 		// Resize values field
 		m_values.resize(character_fields::CharacterFieldCount);
@@ -283,6 +285,10 @@ namespace wowpp
 			{
 				m_canBlock = true;
 			}
+			else if (effect.type() == game::spell_effects::DualWield)
+			{
+				m_canDualWield = true;
+			}
 		}
 
 		m_spells.push_back(&spell);
@@ -326,6 +332,10 @@ namespace wowpp
 			else if (effect.type() == game::spell_effects::Block)
 			{
 				m_canBlock = false;
+			}
+			else if (effect.type() == game::spell_effects::DualWield)
+			{
+				m_canDualWield = false;
 			}
 		}
 
@@ -574,6 +584,68 @@ namespace wowpp
 		return false;
 	}
 
+	namespace
+	{
+		game::weapon_prof::Type weaponProficiency(UInt32 subclass)
+		{
+			switch (subclass)
+			{
+				case game::item_subclass_weapon::Axe:
+					return game::weapon_prof::OneHandAxe;
+				case game::item_subclass_weapon::Axe2:
+					return game::weapon_prof::TwoHandAxe;
+				case game::item_subclass_weapon::Bow:
+					return game::weapon_prof::Bow;
+				case game::item_subclass_weapon::CrossBow:
+					return game::weapon_prof::Crossbow;
+				case game::item_subclass_weapon::Dagger:
+					return game::weapon_prof::Dagger;
+				case game::item_subclass_weapon::Fist:
+					return game::weapon_prof::Fist;
+				case game::item_subclass_weapon::Gun:
+					return game::weapon_prof::Gun;
+				case game::item_subclass_weapon::Mace:
+					return game::weapon_prof::OneHandMace;
+				case game::item_subclass_weapon::Mace2:
+					return game::weapon_prof::TwoHandMace;
+				case game::item_subclass_weapon::Polearm:
+					return game::weapon_prof::Polearm;
+				case game::item_subclass_weapon::Staff:
+					return game::weapon_prof::Staff;
+				case game::item_subclass_weapon::Sword:
+					return game::weapon_prof::OneHandSword;
+				case game::item_subclass_weapon::Sword2:
+					return game::weapon_prof::TwoHandSword;
+				case game::item_subclass_weapon::Thrown:
+					return game::weapon_prof::Throw;
+				case game::item_subclass_weapon::Wand:
+					return game::weapon_prof::Wand;
+			}
+
+			return game::weapon_prof::None;
+		}
+		game::armor_prof::Type armorProficiency(UInt32 subclass)
+		{
+			switch (subclass)
+			{
+				case game::item_subclass_armor::Misc:
+					return game::armor_prof::Common;
+				case game::item_subclass_armor::Buckler:
+					return game::armor_prof::Shield;
+				case game::item_subclass_armor::Cloth:
+					return game::armor_prof::Cloth;
+				case game::item_subclass_armor::Leather:
+					return game::armor_prof::Leather;
+				case game::item_subclass_armor::Mail:
+					return game::armor_prof::Mail;
+				case game::item_subclass_armor::Plate:
+					return game::armor_prof::Plate;
+			}
+
+			return game::armor_prof::None;
+		}
+	}
+
 	void GameCharacter::swapItem(UInt16 src, UInt16 dst)
 	{
 		UInt8 srcBag = src >> 8;
@@ -597,6 +669,137 @@ namespace wowpp
 		{
 			inventoryChangeFailure(game::inventory_change_failure::YouAreDead, srcItem, dstItem);
 			return;
+		}
+
+		// Check equipment
+		if (dstSlot < player_inventory_slots::End)
+		{
+			auto armorProf = getArmorProficiency();
+			auto weaponProf = getWeaponProficiency();
+
+			if (srcItem->getEntry().itemclass() == game::item_class::Weapon)
+			{
+				if ((weaponProf & weaponProficiency(srcItem->getEntry().subclass())) == 0)
+				{
+					inventoryChangeFailure(game::inventory_change_failure::NoRequiredProficiency, srcItem, dstItem);
+					return;
+				}
+			}
+			else if (srcItem->getEntry().itemclass() == game::item_class::Armor)
+			{
+				if ((armorProf & armorProficiency(srcItem->getEntry().subclass())) == 0)
+				{
+					inventoryChangeFailure(game::inventory_change_failure::NoRequiredProficiency, srcItem, dstItem);
+					return;
+				}
+			}
+
+			auto srcInvType = srcItem->getEntry().inventorytype();
+			auto result = game::inventory_change_failure::None;
+			switch (dstSlot)
+			{
+				case player_equipment_slots::Head:
+					if (srcInvType != game::inventory_type::Head)
+						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
+					break;
+				case player_equipment_slots::Body:
+					if (srcInvType != game::inventory_type::Body)
+						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
+					break;
+				case player_equipment_slots::Chest:
+					if (srcInvType != game::inventory_type::Chest && 
+						srcInvType != game::inventory_type::Robe)
+						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
+					break;
+				case player_equipment_slots::Feet:
+					if (srcInvType != game::inventory_type::Feet)
+						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
+					break;
+				case player_equipment_slots::Finger1:
+				case player_equipment_slots::Finger2:
+					if (srcInvType != game::inventory_type::Finger)
+						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
+					break;
+				case player_equipment_slots::Trinket1:
+				case player_equipment_slots::Trinket2:
+					if (srcInvType != game::inventory_type::Trinket)
+						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
+					break;
+				case player_equipment_slots::Hands:
+					if (srcInvType != game::inventory_type::Hands)
+						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
+					break;
+				case player_equipment_slots::Legs:
+					if (srcInvType != game::inventory_type::Legs)
+						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
+					break;
+				case player_equipment_slots::Mainhand:
+					if (srcInvType != game::inventory_type::MainHandWeapon &&
+						srcInvType != game::inventory_type::TwoHandedWeapon &&
+						srcInvType != game::inventory_type::Weapon)
+					{
+						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
+					}
+					else
+					{
+						// TODO: We need to unequip shield + onehand weapon and then equip the main hand weapon
+
+						// Determine free slots
+					}
+					break;
+				case player_equipment_slots::Offhand:
+					if (srcInvType != game::inventory_type::OffHandWeapon &&
+						srcInvType != game::inventory_type::Shield &&
+						srcInvType != game::inventory_type::Weapon)
+					{
+						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
+					}
+					else
+					{
+						if (srcInvType != game::inventory_type::Shield &&
+							!canDualWield())
+						{
+							result = game::inventory_change_failure::CantDualWield;
+							break;
+						}
+
+						auto *item = getItemByPos(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand);
+						if (item &&
+							item->getEntry().inventorytype() == game::inventory_type::TwoHandedWeapon)
+						{
+							// Can't equip offhand weapon when 2H weapon is equipped
+							result = game::inventory_change_failure::CantEquipWithTwoHanded;
+							break;
+						}
+					}
+					break;
+				case player_equipment_slots::Ranged:
+					if (srcInvType != game::inventory_type::Ranged)
+						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
+					break;
+				case player_equipment_slots::Shoulders:
+					if (srcInvType != game::inventory_type::Shoulders)
+						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
+					break;
+				case player_equipment_slots::Tabard:
+					if (srcInvType != game::inventory_type::Tabard)
+						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
+					break;
+				case player_equipment_slots::Waist:
+					if (srcInvType != game::inventory_type::Waist)
+						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
+					break;
+				case player_equipment_slots::Wrists:
+					if (srcInvType != game::inventory_type::Wrists)
+						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
+					break;
+			}
+
+			if (result != game::inventory_change_failure::None)
+			{
+				inventoryChangeFailure(result, srcItem, dstItem);
+				return;
+			}
 		}
 
 		// TODO: Check if source item is in still consisted as loot
@@ -971,6 +1174,11 @@ namespace wowpp
 	bool GameCharacter::canDodge() const
 	{
 		return true;
+	}
+
+	bool GameCharacter::canDualWield() const
+	{
+		return false;
 	}
 
 	void GameCharacter::regenerateHealth()

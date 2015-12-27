@@ -1040,6 +1040,7 @@ namespace wowpp
 		case game::inventory_type::Shoulders:
 			targetSlot = player_equipment_slots::Shoulders;
 			break;
+		case game::inventory_type::TwoHandedWeapon:
 		case game::inventory_type::MainHandWeapon:
 			targetSlot = player_equipment_slots::Mainhand;
 			break;
@@ -1069,7 +1070,7 @@ namespace wowpp
 			targetSlot = player_equipment_slots::Waist;
 			break;
 		default:
-			WLOG("TODO");
+			m_character->inventoryChangeFailure(game::inventory_change_failure::ItemCantBeEquipped, nullptr, nullptr);
 			break;
 		}
 
@@ -1123,6 +1124,8 @@ namespace wowpp
 			WLOG("Could not read packet data");
 			return;
 		}
+
+		DLOG("CMSG_SWAP_INV_ITEM from " << UInt32(srcSlot) << " to " << UInt32(dstSlot));
 
 		// We don't need to do anything
 		if (srcSlot == dstSlot)

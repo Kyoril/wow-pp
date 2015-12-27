@@ -478,6 +478,7 @@ namespace wowpp
 		virtual bool canBlock() const = 0;
 		virtual bool canParry() const = 0;
 		virtual bool canDodge() const = 0;
+		virtual bool canDualWield() const = 0;
 
 		/// Adds a unit to the list of attacking units. This list is used to generate threat
 		/// if this unit is healed by another unit, and to determine, whether a player should
