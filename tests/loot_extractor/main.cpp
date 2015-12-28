@@ -49,7 +49,7 @@ namespace wowpp
 	struct Configuration
 	{
 		/// Config file version: used to detect new configuration files
-		static const UInt32 ImporterConfigVersion = 0x01;
+		static const UInt32 ImporterConfigVersion;
 
 		/// Path to the client data
 		String dataPath;
@@ -222,6 +222,8 @@ namespace wowpp
 			return true;
 		}
 	};
+
+	const UInt32 Configuration::ImporterConfigVersion = 0x01;
 }
 
 
