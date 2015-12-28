@@ -21,6 +21,9 @@
 
 #pragma once
 
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+
 namespace wowpp
 {
 	namespace proto
@@ -45,10 +48,22 @@ namespace wowpp
 			/// @param stream The stream to load data from.
 			bool load(std::istream &stream)
 			{
-				if (!m_data.ParseFromIstream(&stream))
+				// Set byte limit to 128MB
+				const int byteLimit = 1024 * 1024 * 128;
+
+				google::protobuf::io::IstreamInputStream zeroCopyStream(&stream);
+				google::protobuf::io::CodedInputStream decoder(&zeroCopyStream);
+				decoder.SetTotalBytesLimit(byteLimit, byteLimit);
+
+				if (!(m_data.ParseFromCodedStream(&decoder) && decoder.ConsumedEntireMessage()))
 				{
 					return false;
 				}
+
+				/*if (!m_data.ParseFromIstream(&stream))
+				{
+					return false;
+				}*/
 
 				// Iterate through all data entries and store ids for quick id lookup
 				for (int i = 0; i < m_data.entry_size(); ++i)
