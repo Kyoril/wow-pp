@@ -785,6 +785,7 @@ namespace wowpp
 				setUInt32Value(character_fields::VisibleItem1_0 + (srcSlot * 16), 0);
 				setUInt64Value(character_fields::VisibleItem1_CREATOR + (srcSlot * 16), 0);
 				applyItemStats(*srcItem, false);
+				DLOG("!dstItem: Apply srcItem FALSE");
 				updateStats = true;
 			}
 			if (dstSlot < player_equipment_slots::End)
@@ -1081,7 +1082,7 @@ namespace wowpp
 							updateModifierValue(unit_mods::StatSpirit, unit_mod_type::TotalValue, entry.value(), apply);
 							break;
 						case 7:		// Stamina
-							updateModifierValue(unit_mods::StatStamina, unit_mod_type::TotalValue, entry.value(), true);
+							updateModifierValue(unit_mods::StatStamina, unit_mod_type::TotalValue, entry.value(), apply);
 							break;
 						default:
 							break;
