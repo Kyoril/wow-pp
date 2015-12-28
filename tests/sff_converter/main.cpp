@@ -471,7 +471,7 @@ int main(int argc, char* argv[])
 		added->set_type(static_cast<wowpp::proto::TrainerEntry_TrainerType>(trainer->trainerType));
 		added->set_classid(trainer->classId);
 		added->set_title(trainer->title);
-		for (auto &spell : trainer->spells)
+		for (const auto &spell : trainer->spells)
 		{
 			auto *addedSpell = added->add_spells();
 			addedSpell->set_spell(spell.spell->id);
@@ -486,7 +486,7 @@ int main(int argc, char* argv[])
 	for (const auto &vendor : proj.vendors.getTemplates())
 	{
 		auto *added = protoProject.vendors.add(vendor->id);
-		for (auto &item : vendor->items)
+		for (const auto &item : vendor->items)
 		{
 			auto *addedItem = added->add_items();
 			addedItem->set_item(item.item->id);
@@ -571,13 +571,13 @@ int main(int argc, char* argv[])
 		added->set_maxcount(item->maxCount);
 		added->set_maxstack(item->maxStack);
 		added->set_containerslots(item->containerSlots);
-		for (auto &stat : item->itemStats)
+		for (const auto &stat : item->itemStats)
 		{
 			auto *addedStat = added->add_stats();
 			addedStat->set_type(stat.statType);
 			addedStat->set_value(stat.statValue);
 		}
-		for (auto &dmg : item->itemDamage)
+		for (const auto &dmg : item->itemDamage)
 		{
 			auto *addedDmg = added->add_damage();
 			addedDmg->set_mindmg(dmg.min);
@@ -593,7 +593,7 @@ int main(int argc, char* argv[])
 		added->set_arcaneres(item->arcaneResistance);
 		added->set_delay(item->delay);
 		added->set_ammotype(item->ammoType);
-		for (auto &spell : item->itemSpells)
+		for (const auto &spell : item->itemSpells)
 		{
 			if (spell.spell != nullptr)
 			{
@@ -620,7 +620,7 @@ int main(int argc, char* argv[])
 		added->set_bagfamily(item->bagFamily);
 		added->set_material(item->material);
 		added->set_totemcategory(item->totemCategory);
-		for (auto &socket : item->itemSockets)
+		for (const auto &socket : item->itemSockets)
 		{
 			auto *addedSocket = added->add_sockets();
 			addedSocket->set_color(socket.color);
