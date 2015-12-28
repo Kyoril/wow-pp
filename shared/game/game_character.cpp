@@ -594,6 +594,7 @@ namespace wowpp
 				case game::item_subclass_armor::Misc:
 					return game::armor_prof::Common;
 				case game::item_subclass_armor::Buckler:
+				case game::item_subclass_armor::Shield:
 					return game::armor_prof::Shield;
 				case game::item_subclass_armor::Cloth:
 					return game::armor_prof::Cloth;
@@ -644,6 +645,7 @@ namespace wowpp
 			{
 				if ((weaponProf & weaponProficiency(srcItem->getEntry().subclass())) == 0)
 				{
+					WLOG("CAN'T EQUIP: Armor prof mask = 0x" << std::hex << std::uppercase << weaponProf << "; Required: 0x" << std::hex << std::uppercase << weaponProficiency(srcItem->getEntry().subclass()));
 					inventoryChangeFailure(game::inventory_change_failure::NoRequiredProficiency, srcItem, dstItem);
 					return;
 				}
@@ -652,6 +654,7 @@ namespace wowpp
 			{
 				if ((armorProf & armorProficiency(srcItem->getEntry().subclass())) == 0)
 				{
+					WLOG("CAN'T EQUIP: Armor prof mask = 0x" << std::hex << std::uppercase << armorProf << "; Required: 0x" << std::hex << std::uppercase << armorProficiency(srcItem->getEntry().subclass()));
 					inventoryChangeFailure(game::inventory_change_failure::NoRequiredProficiency, srcItem, dstItem);
 					return;
 				}
@@ -703,11 +706,14 @@ namespace wowpp
 					{
 						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
 					}
-					else
+					else if(srcInvType == game::inventory_type::TwoHandedWeapon)
 					{
-						// TODO: We need to unequip shield + onehand weapon and then equip the main hand weapon
-
-						// Determine free slots
+						auto *offhand = getItemByPos(0xFF, player_equipment_slots::Offhand);
+						if (offhand)
+						{
+							// Check for free inventory slot
+							
+						}
 					}
 					break;
 				case player_equipment_slots::Offhand:
@@ -715,6 +721,7 @@ namespace wowpp
 						srcInvType != game::inventory_type::Shield &&
 						srcInvType != game::inventory_type::Weapon)
 					{
+						WLOG("Invalid item for offhand slot");
 						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
 					}
 					else
@@ -722,6 +729,7 @@ namespace wowpp
 						if (srcInvType != game::inventory_type::Shield &&
 							!canDualWield())
 						{
+							WLOG("Can't dual-wield yet");
 							result = game::inventory_change_failure::CantDualWield;
 							break;
 						}
