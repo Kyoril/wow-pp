@@ -711,8 +711,31 @@ namespace wowpp
 						auto *offhand = getItemByPos(0xFF, player_equipment_slots::Offhand);
 						if (offhand)
 						{
-							// Check for free inventory slot
-							
+							bool foundFreeSlot = false;
+
+							// Check for free inventory slot to unequip shield
+							for (UInt8 slot = player_inventory_pack_slots::Start; slot < player_inventory_pack_slots::End; ++slot)
+							{
+								auto *test = getItemByPos(0xFF, slot);
+								if (!test)
+								{
+									// Swap shield
+									swapItem(player_equipment_slots::Offhand | 0xFF00, slot | 0xFF00);
+									if (getItemByPos(0xFF, player_equipment_slots::Offhand))
+									{
+										// Stop, something went wrong!
+										return;
+									}
+
+									foundFreeSlot = true;
+									break;
+								}
+							}
+
+							if (!foundFreeSlot)
+							{
+								result = game::inventory_change_failure::InventoryFull;
+							}
 						}
 					}
 					break;
@@ -793,7 +816,6 @@ namespace wowpp
 				setUInt32Value(character_fields::VisibleItem1_0 + (srcSlot * 16), 0);
 				setUInt64Value(character_fields::VisibleItem1_CREATOR + (srcSlot * 16), 0);
 				applyItemStats(*srcItem, false);
-				DLOG("!dstItem: Apply srcItem FALSE");
 				updateStats = true;
 			}
 			if (dstSlot < player_equipment_slots::End)
