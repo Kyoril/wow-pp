@@ -23,7 +23,7 @@
 
 #include "spell_cast.h"
 #include "common/countdown.h"
-#include "data/spell_entry.h"
+#include "shared/proto_data/spells.pb.h"
 #include "boost/signals2.hpp"
 #include <boost/noncopyable.hpp>
 #include <memory>
@@ -37,14 +37,14 @@ namespace wowpp
 
 		explicit SingleCastState(
 			SpellCast &cast,
-			const SpellEntry &spell,
+			const proto::SpellEntry &spell,
 			SpellTargetMap target,
 			Int32 basePoints,
 			GameTime castTime);
 		void activate() override;
 		std::pair<game::SpellCastResult, SpellCasting *> startCast(
 			SpellCast &cast,
-			const SpellEntry &spell,
+			const proto::SpellEntry &spell,
 			SpellTargetMap target,
 			Int32 basePoints,
 			GameTime castTime,
@@ -57,34 +57,34 @@ namespace wowpp
 
 		bool consumePower();
 		void applyAllEffects();
-                bool doesSpellHit(const SpellEntry::Effect &effect, GameUnit &caster, GameUnit &target);
-                UInt8 getResiPercentage(const SpellEntry::Effect &effect, GameUnit &caster, GameUnit &target);
-		Int32 calculateEffectBasePoints(const SpellEntry::Effect &effect);
-                UInt32 getSpellPower(const SpellEntry::Effect &effect, GameUnit &caster);
-                UInt32 getSpellBonusPct(const SpellEntry::Effect &effect, GameUnit &caster);
-                UInt32 getSpellPointsTotal(const SpellEntry::Effect &effect, UInt32 spellPower, UInt32 bonusPct);
-                float getCritFactor(const SpellEntry::Effect &effect, GameUnit &caster, GameUnit &target);
-		void spellEffectTeleportUnits(const SpellEntry::Effect &effect);
-		void spellEffectSchoolDamage(const SpellEntry::Effect &effect);
-		void spellEffectHeal(const SpellEntry::Effect &effect);
-		void spellEffectNormalizedWeaponDamage(const SpellEntry::Effect &effect);
-		void spellEffectWeaponDamageNoSchool(const SpellEntry::Effect &effect);
-		void spellEffectWeaponDamage(const SpellEntry::Effect &effect);
-		void spellEffectDrainPower(const SpellEntry::Effect &effect);
-		void spellEffectProficiency(const SpellEntry::Effect &effect);
-		void spellEffectAddComboPoints(const SpellEntry::Effect &effect);
-		void spellEffectApplyAura(const SpellEntry::Effect &effect);
-		void spellEffectTriggerSpell(const SpellEntry::Effect &effect);
-		void spellEffectEnergize(const SpellEntry::Effect &effect);
-		void spellEffectOpenLock(const SpellEntry::Effect &effect);
-		void spellEffectSummon(const SpellEntry::Effect &effect);
-		void spellEffectCharge(const SpellEntry::Effect &effect);
-		void spellEffectScript(const SpellEntry::Effect &effect);
+                bool doesSpellHit(const proto::SpellEffect &effect, GameUnit &caster, GameUnit &target);
+                UInt8 getResiPercentage(const proto::SpellEffect &effect, GameUnit &caster, GameUnit &target);
+		Int32 calculateEffectBasePoints(const proto::SpellEffect &effect);
+                UInt32 getSpellPower(const proto::SpellEffect &effect, GameUnit &caster);
+                UInt32 getSpellBonusPct(const proto::SpellEffect &effect, GameUnit &caster);
+                UInt32 getSpellPointsTotal(const proto::SpellEffect &effect, UInt32 spellPower, UInt32 bonusPct);
+                float getCritFactor(const proto::SpellEffect &effect, GameUnit &caster, GameUnit &target);
+		void spellEffectTeleportUnits(const proto::SpellEffect &effect);
+		void spellEffectSchoolDamage(const proto::SpellEffect &effect);
+		void spellEffectHeal(const proto::SpellEffect &effect);
+		void spellEffectNormalizedWeaponDamage(const proto::SpellEffect &effect);
+		void spellEffectWeaponDamageNoSchool(const proto::SpellEffect &effect);
+		void spellEffectWeaponDamage(const proto::SpellEffect &effect);
+		void spellEffectDrainPower(const proto::SpellEffect &effect);
+		void spellEffectProficiency(const proto::SpellEffect &effect);
+		void spellEffectAddComboPoints(const proto::SpellEffect &effect);
+		void spellEffectApplyAura(const proto::SpellEffect &effect);
+		void spellEffectTriggerSpell(const proto::SpellEffect &effect);
+		void spellEffectEnergize(const proto::SpellEffect &effect);
+		void spellEffectOpenLock(const proto::SpellEffect &effect);
+		void spellEffectSummon(const proto::SpellEffect &effect);
+		void spellEffectCharge(const proto::SpellEffect &effect);
+		void spellEffectScript(const proto::SpellEffect &effect);
 
 	private:
 
 		SpellCast &m_cast;
-		const SpellEntry &m_spell;
+		const proto::SpellEntry &m_spell;
 		SpellTargetMap m_target;
 		SpellCasting m_casting;
 		bool m_hasFinished;

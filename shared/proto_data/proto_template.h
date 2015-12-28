@@ -30,6 +30,10 @@ namespace wowpp
 		template<class T1, class T2>
 		struct TemplateManager
 		{
+		public:
+
+			typedef T2 EntryType;
+
 		private:
 
 			T1 m_data;
@@ -63,8 +67,17 @@ namespace wowpp
 				return m_data.SerializeToOstream(&stream);
 			}
 
+			void clear()
+			{
+				m_templatesById.clear();
+				m_data.clear_entry();
+			}
 			/// Gets a list of all template entries in this list.
 			const T1 &getTemplates() const
+			{
+				return m_data;
+			}
+			T1 &getTemplates()
 			{
 				return m_data;
 			}
@@ -102,6 +115,13 @@ namespace wowpp
 
 			/// Retrieves a pointer to an object by its id.
 			const T2* getById(UInt32 id) const
+			{
+				const auto it = m_templatesById.find(id);
+				if (it == m_templatesById.end()) return nullptr;
+
+				return it->second;
+			}
+			T2* getById(UInt32 id)
 			{
 				const auto it = m_templatesById.find(id);
 				if (it == m_templatesById.end()) return nullptr;

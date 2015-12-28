@@ -33,7 +33,10 @@ namespace Ui
 
 namespace wowpp
 {
-	class Project;
+	namespace proto
+	{
+		class Project;
+	}
 
 	namespace editor
 	{
@@ -45,7 +48,7 @@ namespace wowpp
 		public:
 
 			/// 
-			explicit DataDialog(Project &project, UInt32 action, UInt32 index, UInt32 data);
+			explicit DataDialog(proto::Project &project, UInt32 action, UInt32 index, UInt32 data);
 
 			UInt32 getData() const;
 
@@ -56,7 +59,7 @@ namespace wowpp
 		private:
 
 			Ui::DataDialog *m_ui;
-			Project &m_project;
+			proto::Project &m_project;
 		};
 	}
 }

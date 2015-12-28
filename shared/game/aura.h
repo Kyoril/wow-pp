@@ -22,7 +22,8 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include "data/spell_entry.h"
+#include "defines.h"
+#include "shared/proto_data/spells.pb.h"
 #include "common/countdown.h"
 #include "boost/signals2.hpp"
 
@@ -40,7 +41,7 @@ namespace wowpp
 	public:
 
 		/// Initializes a new instance of the Aura class.
-		explicit Aura(const SpellEntry &spell, const SpellEntry::Effect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, PostFunction post, std::function<void(Aura&)> onDestroy);
+		explicit Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, PostFunction post, std::function<void(Aura&)> onDestroy);
 		~Aura();
 
 		/// Gets the unit target.
@@ -54,7 +55,7 @@ namespace wowpp
 		/// 
 		void handleProcModifier(GameUnit *target = nullptr);
 		/// Determines whether this is a passive spell aura.
-		bool isPassive() const { return (m_spell.attributes & spell_attributes::Passive) != 0; }
+		bool isPassive() const { return (m_spell.attributes(0) & game::spell_attributes::Passive) != 0; }
 		/// Determines whether this is a positive spell aura.
 		bool isPositive() const;
 		/// Gets the current aura slot.
@@ -65,9 +66,9 @@ namespace wowpp
 		void onForceRemoval();
 
 		/// Gets the spell which created this aura and hold's it's values.
-		const SpellEntry &getSpell() const { return m_spell; }
+		const proto::SpellEntry &getSpell() const { return m_spell; }
 		/// Gets the spell effect which created this aura.
-		const SpellEntry::Effect &getEffect() const { return m_effect; }
+		const proto::SpellEffect &getEffect() const { return m_effect; }
 
 	protected:
 
@@ -128,8 +129,8 @@ namespace wowpp
 
 	private:
 
-		const SpellEntry &m_spell;
-		const SpellEntry::Effect &m_effect;
+		const proto::SpellEntry &m_spell;
+		const proto::SpellEffect &m_effect;
 		boost::signals2::scoped_connection m_casterDespawned, m_damageHit, m_targetMoved, m_onExpire, m_onTick, m_onTargetKilled;
 		boost::signals2::scoped_connection m_procAutoAttack;
 		GameUnit *m_caster;

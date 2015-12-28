@@ -22,7 +22,7 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include "data/project.h"
+#include "proto_data/project.h"
 #include <QDialog>
 #include <QItemSelection>
 #include <memory>
@@ -50,7 +50,7 @@ namespace wowpp
 			explicit ChooseTriggerDialog(EditorApplication &app);
 
 			/// 
-			const TriggerEntry * getSelectedTrigger() const { return m_selected; }
+			const proto::TriggerEntry * getSelectedTrigger() const { return m_selected; }
 
 		private slots:
 
@@ -61,7 +61,7 @@ namespace wowpp
 
 			Ui::ChooseTriggerDialog *m_ui;
 			EditorApplication &m_app;
-			const TriggerEntry *m_selected;
+			const proto::TriggerEntry *m_selected;
 		};
 	}
 }

@@ -56,13 +56,6 @@ int main(int argc, char* argv[])
 		wowpp::printLogEntry,
 		std::ref(std::cout), std::placeholders::_1, wowpp::g_DefaultConsoleLogOptions));
 	
-	// Load old project file
-	wowpp::Project proj;
-	if (!proj.load("C:/Source/wowpp-data"))
-	{
-		return 1;
-	}
-	
 	// Create a new proto project
 	wowpp::proto::Project protoProject;
 
@@ -73,6 +66,13 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 #else
+	// Load old project file
+	wowpp::Project proj;
+	if (!proj.load("C:/Source/wowpp-data"))
+	{
+		return 1;
+	}
+
 	// Copy all data from the old text-based project to our new protobuf binary project
 
 	// Copy units
@@ -147,8 +147,8 @@ int main(int argc, char* argv[])
 			{
 				auto *addedDef = addedGroup->add_definitions();
 				addedDef->set_item(def.item->id);
-				if (def.minCount != 1) addedDef->set_mincount(def.minCount);
-				if (def.maxCount != 1) addedDef->set_maxcount(def.maxCount);
+				addedDef->set_mincount(def.minCount);
+				addedDef->set_maxcount(def.maxCount);
 				addedDef->set_dropchance(def.dropChance);
 				if (!def.isActive) addedDef->set_isactive(def.isActive);
 			}
@@ -244,6 +244,7 @@ int main(int argc, char* argv[])
 		{
 			auto addedEff = added->add_effects();
 			addedEff->set_index(effIndex++);
+			addedEff->set_type(eff.type);
 			addedEff->set_basepoints(eff.basePoints);
 			addedEff->set_diesides(eff.dieSides);
 			addedEff->set_basedice(eff.baseDice);
@@ -265,7 +266,14 @@ int main(int argc, char* argv[])
 			addedEff->set_pointspercombopoint(eff.pointsPerComboPoint);
 		}
 		added->set_cooldown(spell->cooldown);
-		added->set_casttime(spell->castTimeIndex);
+
+		wowpp::UInt32 castTimeMS = 0;
+		const auto *castTime = proj.castTimes.getById(spell->castTimeIndex);
+		if (castTime)
+		{
+			castTimeMS = static_cast<wowpp::UInt32>(castTime->castTime);
+		}
+		added->set_casttime(castTimeMS);
 		added->set_powertype(spell->powerType);
 		added->set_cost(spell->cost);
 		added->set_costpct(spell->costPct);
@@ -498,6 +506,42 @@ int main(int argc, char* argv[])
 		// TODO
 	}
 
+	// Copy factions
+	for (const auto &faction : proj.factions.getTemplates())
+	{
+		auto *added = protoProject.factions.add(faction->id);
+		added->set_name(faction->name);
+		added->set_replistid(faction->repListId);
+		for (const auto &baseRep : faction->baseReputation)
+		{
+			auto *addedRep = added->add_baserep();
+			addedRep->set_racemask(baseRep.raceMask);
+			addedRep->set_classmask(baseRep.classMask);
+			addedRep->set_value(baseRep.value);
+			addedRep->set_flags(baseRep.flags);
+		}
+	}
+
+	// Copy faction templates
+	for (const auto &faction : proj.factionTemplates.getTemplates())
+	{
+		auto *added = protoProject.factionTemplates.add(faction->id);
+		added->set_flags(faction->flags);
+		added->set_selfmask(faction->selfMask);
+		added->set_friendmask(faction->friendMask);
+		added->set_enemymask(faction->enemyMask);
+		if (faction->faction) added->set_faction(faction->faction->id);
+
+		for (const auto &f : faction->friends)
+		{
+			added->add_friends(f->id);
+		}
+		for (const auto &e : faction->enemies)
+		{
+			added->add_enemies(e->id);
+		}
+	}
+
 	// Copy items
 	for (const auto &item : proj.items.getTemplates())
 	{
@@ -604,6 +648,27 @@ int main(int argc, char* argv[])
 		added->set_flags(zone->flags);
 		added->set_team(zone->team);
 		added->set_level(zone->level);
+	}
+
+	// Copy area triggerrs
+	for (const auto &areaTrigger : proj.areaTriggers.getTemplates())
+	{
+		auto *added = protoProject.areaTriggers.add(areaTrigger->id);
+		added->set_name(areaTrigger->name);
+		added->set_map(areaTrigger->map);
+		added->set_x(areaTrigger->x);
+		added->set_y(areaTrigger->y);
+		added->set_z(areaTrigger->z);
+		added->set_radius(areaTrigger->radius);
+		added->set_box_x(areaTrigger->box_x);
+		added->set_box_y(areaTrigger->box_y);
+		added->set_box_z(areaTrigger->box_z);
+		added->set_box_o(areaTrigger->box_o);
+		added->set_targetmap(areaTrigger->targetMap);
+		added->set_target_x(areaTrigger->targetX);
+		added->set_target_y(areaTrigger->targetY);
+		added->set_target_z(areaTrigger->targetZ);
+		added->set_target_o(areaTrigger->targetO);
 	}
 
 	// Save proto project

@@ -34,7 +34,10 @@ namespace Ui
 
 namespace wowpp
 {
-	struct TriggerEntry;
+	namespace proto
+	{
+		class TriggerEntry;
+	}
 
 	namespace editor
 	{
@@ -68,7 +71,7 @@ namespace wowpp
 				
 			EditorApplication &m_application;
 			Ui::TriggerEditor *m_ui;
-			TriggerEntry *m_selectedTrigger;
+			proto::TriggerEntry *m_selectedTrigger;
 		};
 	}
 }

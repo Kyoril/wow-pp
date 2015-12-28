@@ -48,7 +48,10 @@ namespace wowpp
 	// Forwards
 	class PlayerManager;
 	class WorldInstanceManager;
-	class Project;
+	namespace proto
+	{
+		class Project;
+	}
 
 	/// Player connection class.
 	class Player final : public boost::noncopyable, public ITileSubscriber
@@ -70,7 +73,7 @@ namespace wowpp
 						DatabaseId characterId,
 						std::shared_ptr<GameCharacter> character,
 						WorldInstance &instance,
-						Project &project);
+						proto::Project &project);
 
 		/// Gets the player manager which manages all connected players.
 		PlayerManager &getManager() const { return m_manager; }
@@ -213,7 +216,7 @@ namespace wowpp
 		/// Executed when the character gained experience points.
 		void onExperienceGained(UInt64 victimGUID, UInt32 baseXP, UInt32 restXP);
 		/// Executed when a spell cast error occurred.
-		void onSpellCastError(const SpellEntry &spell, game::SpellCastResult result);
+		void onSpellCastError(const proto::SpellEntry &spell, game::SpellCastResult result);
 		/// Executed when the character leveled up.
 		void onLevelGained(UInt32 previousLevel, Int32 healthDiff, Int32 manaDiff, Int32 statDiff0, Int32 statDiff1, Int32 statDiff2, Int32 statDiff3, Int32 statDiff4);
 		/// Executed when an aura of our character was updated.
@@ -238,7 +241,7 @@ namespace wowpp
 		AttackSwingError m_lastError;
 		UInt32 m_lastFallTime;
 		float m_lastFallZ;
-		Project &m_project;
+		proto::Project &m_project;
 		LootInstance *m_loot;
 		UInt32 m_clientDelayMs;
 		GameTime m_nextDelayReset;

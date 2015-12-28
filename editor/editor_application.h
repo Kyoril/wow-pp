@@ -22,7 +22,7 @@
 #pragma once
 
 #include <QObject>
-#include "data/project.h"
+#include "proto_data/project.h"
 #include "template_list_model.h"
 #include "trigger_list_model.h"
 #include "configuration.h"
@@ -43,10 +43,10 @@ namespace wowpp
 
 		public:
 
-			typedef TemplateListModel<ItemEntryManager> ItemListModel;
-			typedef TemplateListModel<SpellEntryManager> SpellListModel;
-			typedef TemplateListModel<MapEntryManager> MapListModel;
-			typedef TemplateListModel<UnitEntryManager> UnitListModel;
+			typedef TemplateListModel<proto::ItemManager> ItemListModel;
+			typedef TemplateListModel<proto::SpellManager> SpellListModel;
+			typedef TemplateListModel<proto::MapManager> MapListModel;
+			typedef TemplateListModel<proto::UnitManager> UnitListModel;
 
 		public:
 
@@ -65,7 +65,8 @@ namespace wowpp
 			MapListModel *getMapListModel() { return m_mapListModel.get(); }
 			UnitListModel *getUnitListModel() { return m_unitListModel.get(); }
 			TriggerListModel *getTriggerListModel() { return m_triggerListModel.get(); }
-			Project &getProject() { return m_project; }
+			proto::Project &getProject() { return m_project; }
+			Configuration &getConfiguration() { return m_configuration; }
 
 		public slots:
 
@@ -90,7 +91,7 @@ namespace wowpp
 			std::unique_ptr<MainWindow> m_mainWindow;
 			std::unique_ptr<ObjectEditor> m_objectEditor;
 			std::unique_ptr<TriggerEditor> m_triggerEditor;
-			Project m_project;
+			proto::Project m_project;
 			std::unique_ptr<ItemListModel> m_itemListModel;
 			std::unique_ptr<SpellListModel> m_spellListModel;
 			std::unique_ptr<MapListModel> m_mapListModel;

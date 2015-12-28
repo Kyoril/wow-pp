@@ -77,24 +77,20 @@ namespace wowpp
 			auto &maxVal = m_property.getMaxValue();
 			if (minVal.type() == typeid(UInt32Ref))
 			{
-				auto &realVal = boost::get<UInt32Ref&>(minVal).getValue();
-				realVal = static_cast<UInt32>(m_ui->propMinValueField->value());
+				boost::get<UInt32Ref&>(minVal).setValue(m_ui->propMinValueField->value());
 			}
 			else if (minVal.type() == typeid(FloatRef))
 			{
-				auto &realVal = boost::get<FloatRef&>(minVal).getValue();
-				realVal = static_cast<float>(m_ui->propMinValueField->value());
+				boost::get<FloatRef&>(minVal).setValue(m_ui->propMinValueField->value());
 			}
 
 			if (maxVal.type() == typeid(UInt32Ref))
 			{
-				auto &realVal = boost::get<UInt32Ref&>(maxVal).getValue();
-				realVal = static_cast<UInt32>(m_ui->propMaxValueField->value());
+				boost::get<UInt32Ref&>(maxVal).setValue(m_ui->propMaxValueField->value());
 			}
 			else if (maxVal.type() == typeid(FloatRef))
 			{
-				auto &realVal = boost::get<FloatRef&>(maxVal).getValue();
-				realVal = static_cast<float>(m_ui->propMaxValueField->value());
+				boost::get<FloatRef&>(maxVal).setValue(m_ui->propMaxValueField->value());
 			}
 		}
 

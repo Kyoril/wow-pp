@@ -20,7 +20,7 @@
 // 
 
 #include "map.h"
-#include "data/map_entry.h"
+#include "shared/proto_data/maps.pb.h"
 #include "detour_world_navigation.h"
 #include "log/default_log_levels.h"
 #include "common/make_unique.h"
@@ -28,7 +28,7 @@
 
 namespace wowpp
 {
-	Map::Map(const MapEntry &entry, boost::filesystem::path dataPath)
+	Map::Map(const proto::MapEntry &entry, boost::filesystem::path dataPath)
 		: m_entry(entry)
 		, m_dataPath(std::move(dataPath))
 		, m_tiles(64, 64)
@@ -46,7 +46,7 @@ namespace wowpp
 			if (!tile)
 			{
 				std::ostringstream strm;
-				strm << m_dataPath.string() << "/maps/" << m_entry.id << "/" << position[0] << "_" << position[1] << ".map";
+				strm << m_dataPath.string() << "/maps/" << m_entry.id() << "/" << position[0] << "_" << position[1] << ".map";
 
 				const String file = strm.str();
 				if (!boost::filesystem::exists(file))

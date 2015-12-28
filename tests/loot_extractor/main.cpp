@@ -238,10 +238,13 @@ bool importCreatureLoot(Project &project, MySQL::Connection &connection)
 	UInt32 lastEntry = 0;
 	UInt32 lastGroup = 0;
 	UInt32 groupIndex = 0;
-
+	/*
 	wowpp::MySQL::Select select(connection, "(SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount`, `active` FROM `wowpp_FERTIG_creatureloot` WHERE `lootcondition` = 0) "
 		"UNION "
 		"(SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount`, `active` FROM `wowpp_creature_loot_template` WHERE `lootcondition` = 0) "
+		"ORDER BY `entry`, `groupid`;");
+		*/
+	wowpp::MySQL::Select select(connection, "(SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount`, `active` FROM `wowpp_creature_loot_template` WHERE `lootcondition` = 0) "
 		"ORDER BY `entry`, `groupid`;");
 	if (select.success())
 	{

@@ -28,7 +28,7 @@
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "configuration.h"
 #include "common/clock.h"
-#include "data/project.h"
+#include "proto_data/project.h"
 #include "game/game_world_object.h"
 #include "game/visibility_tile.h"
 #include "game/each_tile_in_region.h"
@@ -48,7 +48,7 @@ namespace wowpp
 		PlayerManager &playerManager, 
 		const Configuration &config,
 		UInt32 realmEntryIndex,
-		Project &project, 
+		proto::Project &project, 
 		TimerQueue &timer
 		)
 		: m_ioService(ioService)
@@ -244,11 +244,8 @@ namespace wowpp
 		std::vector<UInt32> spellIds;
 		std::vector<pp::world_realm::ItemData> items;
 		std::shared_ptr<GameCharacter> character(new GameCharacter(
-			m_worldInstanceManager.getUniverse().getTimers(),
-			std::bind(&RaceEntryManager::getById, &m_project.races, std::placeholders::_1),
-			std::bind(&ClassEntryManager::getById, &m_project.classes, std::placeholders::_1),
-			std::bind(&LevelEntryManager::getById, &m_project.levels, std::placeholders::_1),
-			std::bind(&SpellEntryManager::getById, &m_project.spells, std::placeholders::_1)));
+			m_project,
+			m_worldInstanceManager.getUniverse().getTimers()));
 		if (!(pp::world_realm::realm_read::characterLogIn(packet, requesterDbId, instanceId, character.get(), spellIds, items)))
 		{
 			// Error: could not read packet
@@ -277,7 +274,7 @@ namespace wowpp
 			instance = m_worldInstanceManager.getInstanceById(instanceId);
 			if (instance)
 			{
-				if (instance->getMapId() != map->id)
+				if (instance->getMapId() != map->id())
 				{
 					WLOG("Instance found but different map id - can't enter instance, creating new one.");
 					instance = nullptr;
@@ -288,10 +285,10 @@ namespace wowpp
 		// Have we found an instance?
 		if (instance == nullptr)
 		{
-			if (map->instanceType == map_instance_type::Global)
+			if (map->instancetype() == proto::MapEntry_MapInstanceType_GLOBAL)
 			{
 				// It is a global map instance... look for an instance of this map
-				instance = m_worldInstanceManager.getInstanceByMapId(map->id);
+				instance = m_worldInstanceManager.getInstanceByMapId(map->id());
 				if (!instance)
 				{
 					// The global world instance for this map does not yet exist - we want to
@@ -299,7 +296,7 @@ namespace wowpp
 					instance = m_worldInstanceManager.createInstance(*map);
 					if (!instance)
 					{
-						ELOG("Could not create world instance for map " << map->id);
+						ELOG("Could not create world instance for map " << map->id());
 						m_connection->sendSinglePacket(
 							std::bind(pp::world_realm::world_write::worldInstanceError, std::placeholders::_1, requesterDbId, pp::world_realm::world_instance_error::InternalError));
 						return;
@@ -312,7 +309,7 @@ namespace wowpp
 				instance = m_worldInstanceManager.createInstance(*map);
 				if (!instance)
 				{
-					ELOG("Could not create new world instance for map " << map->id);
+					ELOG("Could not create new world instance for map " << map->id());
 					m_connection->sendSinglePacket(
 						std::bind(pp::world_realm::world_write::worldInstanceError, std::placeholders::_1, requesterDbId, pp::world_realm::world_instance_error::InternalError));
 					return;
@@ -343,10 +340,10 @@ namespace wowpp
 			character->addSpell(*spell);
 
 			// If this is a passive spell, cast it (TODO: Move this to some other place?)
-			if (spell->attributes & spell_attributes::Passive)
+			if (spell->attributes(0) & game::spell_attributes::Passive)
 			{
 				// Create target map
-				character->castSpell(target, spell->id, -1, 0, true);
+				character->castSpell(target, spell->id(), -1, 0, true);
 			}
 		}
 
@@ -364,9 +361,9 @@ namespace wowpp
 			}
 
 			// Create item instance
-			std::shared_ptr<GameItem> itemInstance(new GameItem(*entry));
+			std::shared_ptr<GameItem> itemInstance(new GameItem(m_project, *entry));
 			itemInstance->initialize();
-			itemInstance->setUInt64Value(object_fields::Guid, createEntryGUID(itemCounter++, entry->id, guid_type::Item));
+			itemInstance->setUInt64Value(object_fields::Guid, createEntryGUID(itemCounter++, entry->id(), guid_type::Item));
 			itemInstance->setUInt32Value(item_fields::Durability, item.durability);
 			itemInstance->setUInt64Value(item_fields::Contained, item.contained);
 			itemInstance->setUInt64Value(item_fields::Creator, item.creator);
@@ -375,7 +372,7 @@ namespace wowpp
 		}
 
 		// Get character location
-		UInt32 mapId = map->id;
+		UInt32 mapId = map->id();
 		UInt32 zoneId = character->getZone();
 
 		// Notify the realm that we successfully spawned in this world
@@ -602,9 +599,9 @@ namespace wowpp
 				static UInt32 itemCounter = 0xF0000;
 
 				// Create item instance
-				std::shared_ptr<GameItem> itemInstance(new GameItem(*entry));
+				std::shared_ptr<GameItem> itemInstance(new GameItem(m_project, *entry));
 				itemInstance->initialize();
-				itemInstance->setUInt64Value(object_fields::Guid, createEntryGUID(itemCounter++, entry->id, guid_type::Item));
+				itemInstance->setUInt64Value(object_fields::Guid, createEntryGUID(itemCounter++, entry->id(), guid_type::Item));
 				itemInstance->setUInt32Value(item_fields::Durability, it.second.durability);
 				itemInstance->setUInt64Value(item_fields::Contained, it.second.contained);
 				itemInstance->setUInt64Value(item_fields::Creator, it.second.creator);
@@ -684,7 +681,7 @@ namespace wowpp
 		{
 			return;
 		}
-
+		
 		// Setup packet
 		io::MemorySource source(reinterpret_cast<const char*>(&buffer[0]), reinterpret_cast<const char*>(&buffer[0]) + size);
 
@@ -866,7 +863,7 @@ namespace wowpp
 		//TODO: Find creature object and check if it exists
 
 		// Find creature info by entry
-		const UnitEntry *unit = m_project.units.getById(creatureEntry);
+		const auto *unit = m_project.units.getById(creatureEntry);
 		if (unit)
 		{
 			// Write answer packet
@@ -1062,20 +1059,12 @@ namespace wowpp
 		}
 
 		// Get the cast time of this spell
-		Int64 castTime = 0;
-		if (spell->castTimeIndex > 0)
-		{
-			const auto *castTimeEntry = m_project.castTimes.getById(spell->castTimeIndex);
-			if (castTimeEntry)
-			{
-				castTime = castTimeEntry->castTime;
-			}
-		}
+		Int64 castTime = spell->casttime();
 		
 		// Spell cast logic
 		sender.getCharacter()->castSpell(
 			std::move(targetMap),
-			spell->id,
+			spell->id(),
 			-1,
 			castTime,
 			false,
@@ -1182,7 +1171,7 @@ namespace wowpp
 		}
 
 		// Check the trigger
-		auto *trigger = m_project.areaTriggers.getById(triggerId);
+		const auto *trigger = m_project.areaTriggers.getById(triggerId);
 		if (!trigger)
 		{
 			WLOG("Unknown trigger");
@@ -1191,7 +1180,7 @@ namespace wowpp
 
 		// Check if the players character could really have triggered that trigger
 		auto character = sender.getCharacter();
-		if (trigger->map != character->getMapId())
+		if (trigger->map() != character->getMapId())
 		{
 			WLOG("Trigger is not on players map!");
 			return;
@@ -1200,11 +1189,11 @@ namespace wowpp
 		// Get player location for distance checks
 		float x, y, z, o;
 		character->getLocation(x, y, z, o);
-		if (trigger->radius > 0.0f)
+		if (trigger->radius() > 0.0f)
 		{
 			const float dist = 
-				::sqrtf(((x - trigger->x) * (x - trigger->x)) + ((y - trigger->y) * (y - trigger->y)) + ((z - trigger->z) * (z - trigger->z)));
-			if (dist > trigger->radius)
+				::sqrtf(((x - trigger->x()) * (x - trigger->x())) + ((y - trigger->y()) * (y - trigger->y())) + ((z - trigger->z()) * (z - trigger->z())));
+			if (dist > trigger->radius())
 			{
 				WLOG("Player character is too far away from trigger");
 				return;
@@ -1217,14 +1206,14 @@ namespace wowpp
 
 		// Check if this is a teleport trigger
 		// TODO: Optimize this, create a trigger type
-		if (trigger->targetMap != 0 || trigger->targetX != 0.0f || trigger->targetY != 0.0f || trigger->targetZ != 0.0f || trigger->targetO != 0.0f)
+		if (trigger->targetmap() != 0 || trigger->target_x() != 0.0f || trigger->target_y() != 0.0f || trigger->target_z() != 0.0f || trigger->target_o() != 0.0f)
 		{
 			// Teleport
-			character->teleport(trigger->targetMap, trigger->targetX, trigger->targetY, trigger->targetZ, trigger->targetO);
+			character->teleport(trigger->targetmap(), trigger->target_x(), trigger->target_y(), trigger->target_z(), trigger->target_o());
 		}
 		else
 		{
-			DLOG("TODO: Unknown trigger type '" << trigger->name << "'...");
+			DLOG("TODO: Unknown trigger type '" << trigger->name() << "'...");
 		}
 	}
 
@@ -1251,7 +1240,7 @@ namespace wowpp
 		}
 
 		// Check if that spell aura can be cancelled
-		if ((spell->attributes & spell_attributes::CantCancel) != 0)
+		if ((spell->attributes(0) & game::spell_attributes::CantCancel) != 0)
 		{
 			WLOG("Spell aura can't be cancelled");
 			return;
@@ -1324,7 +1313,7 @@ namespace wowpp
 		TileIndex2D gridIndex;
 		sender.getCharacter()->getTileIndex(gridIndex);
 
-		UInt32 anim = emote->textId;
+		UInt32 anim = emote->textid();
 		switch (anim)
 		{
 			case 12:		// SLEEP
@@ -1376,7 +1365,7 @@ namespace wowpp
 					auto *unitEntry = m_project.units.getById(entry);
 					if (unitEntry)
 					{
-						name = unitEntry->name;
+						name = unitEntry->name();
 					}
 				}
 			}

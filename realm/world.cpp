@@ -28,7 +28,7 @@
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "binary_io/vector_sink.h"
 #include "binary_io/writer.h"
-#include "data/project.h"
+#include "proto_data/project.h"
 #include "player_manager.h"
 #include "player.h"
 #include "player_group.h"
@@ -40,7 +40,7 @@ using namespace std;
 
 namespace wowpp
 {
-	World::World(WorldManager &manager, PlayerManager &playerManager, Project &project, IDatabase &database, std::shared_ptr<Client> connection, String address, String realmName)
+	World::World(WorldManager &manager, PlayerManager &playerManager, proto::Project &project, IDatabase &database, std::shared_ptr<Client> connection, String address, String realmName)
 		: m_manager(manager)
 		, m_playerManager(playerManager)
 		, m_project(project)
@@ -183,7 +183,7 @@ namespace wowpp
 		std::vector<UInt32> spellIds;
 		for (const auto *spell : character.getSpells())
 		{
-			spellIds.push_back(spell->id);
+			spellIds.push_back(spell->id());
 		}
 
 		m_connection->sendSinglePacket(
@@ -373,11 +373,8 @@ namespace wowpp
 		{
 			// Maybe the player disconnected already - create a temporary character copy and save this copy
 			std::shared_ptr<GameCharacter> character(new GameCharacter(
-				m_playerManager.getTimers(),
-				std::bind(&RaceEntryManager::getById, &m_project.races, std::placeholders::_1),
-				std::bind(&ClassEntryManager::getById, &m_project.classes, std::placeholders::_1),
-				std::bind(&LevelEntryManager::getById, &m_project.levels, std::placeholders::_1),
-				std::bind(&SpellEntryManager::getById, &m_project.spells, std::placeholders::_1)));
+				m_project,
+				m_playerManager.getTimers()));
 			character->initialize();
 
 			std::vector<UInt32> spellIds;

@@ -26,8 +26,8 @@
 #include "game/world_instance.h"
 #include "game/each_tile_in_sight.h"
 #include "game/universe.h"
-#include "data/project.h"
-#include "data/unit_entry.h"
+#include "proto_data/project.h"
+#include "proto_data/faction_helper.h"
 #include "game/game_creature.h"
 #include <iomanip>
 #include <cassert>
@@ -37,7 +37,7 @@ using namespace std;
 
 namespace wowpp
 {
-	Player::Player(PlayerManager &manager, RealmConnector &realmConnector, WorldInstanceManager &worldInstanceManager, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance, Project &project)
+	Player::Player(PlayerManager &manager, RealmConnector &realmConnector, WorldInstanceManager &worldInstanceManager, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance, proto::Project &project)
 		: m_manager(manager)
 		, m_realmConnector(realmConnector)
 		, m_worldInstanceManager(worldInstanceManager)
@@ -561,20 +561,20 @@ namespace wowpp
 			{
 				// Find local tile
 				auto &area = tile->areas.cellAreas[localPos[1] + localPos[0] * 16];
-				auto *areaZone = m_project.zones.getById(area.areaId);
+				const auto *areaZone = m_project.zones.getById(area.areaId);
 				if (areaZone)
 				{
 					// Update players zone field
-					auto *topLevelZone = areaZone;
-					while (topLevelZone->parent != nullptr)
+					const auto *topLevelZone = areaZone;
+					while (topLevelZone->parentzone())
 					{
-						topLevelZone = topLevelZone->parent;
+						topLevelZone = m_project.zones.getById(topLevelZone->parentzone());
 					}
 
-					m_character->setZone(topLevelZone->id);
+					m_character->setZone(topLevelZone->id());
 
 					// Exploration
-					UInt32 exploration = areaZone->explore;
+					UInt32 exploration = areaZone->explore();
 					int offset = exploration / 32;
 
 					UInt32 val = (UInt32)(1 << (exploration % 32));
@@ -587,17 +587,17 @@ namespace wowpp
 						if (m_character->getLevel() >= 70)
 						{
 							sendProxyPacket(
-								std::bind(game::server_write::explorationExperience, std::placeholders::_1, areaZone->id, 0));
+								std::bind(game::server_write::explorationExperience, std::placeholders::_1, areaZone->id(), 0));
 						}
 						else
 						{
-							const Int32 diff = static_cast<Int32>(m_character->getLevel()) - static_cast<Int32>(areaZone->level);
+							const Int32 diff = static_cast<Int32>(m_character->getLevel()) - static_cast<Int32>(areaZone->level());
 							UInt32 xp = 0;
 
 							if (diff < -5)
 							{
 								const auto *levelEntry = m_project.levels.getById(m_character->getLevel() + 5);
-								xp = (levelEntry ? levelEntry->explorationBaseXP : 0);
+								xp = (levelEntry ? levelEntry->explorationbasexp() : 0);
 							}
 							else if (diff > 5)
 							{
@@ -611,19 +611,19 @@ namespace wowpp
 									xpPct = 0;
 								}
 
-								const auto *levelEntry = m_project.levels.getById(areaZone->level);
-								xp = (levelEntry ? levelEntry->explorationBaseXP : 0) * xpPct / 100;
+								const auto *levelEntry = m_project.levels.getById(areaZone->level());
+								xp = (levelEntry ? levelEntry->explorationbasexp() : 0) * xpPct / 100;
 							}
 							else
 							{
-								const auto *levelEntry = m_project.levels.getById(areaZone->level);
-								xp = (levelEntry ? levelEntry->explorationBaseXP : 0);
+								const auto *levelEntry = m_project.levels.getById(areaZone->level());
+								xp = (levelEntry ? levelEntry->explorationbasexp() : 0);
 							}
 
 							// Calculate experience points
 							if (xp > 0) m_character->rewardExperience(nullptr, xp);
 							sendProxyPacket(
-								std::bind(game::server_write::explorationExperience, std::placeholders::_1, areaZone->id, xp));
+								std::bind(game::server_write::explorationExperience, std::placeholders::_1, areaZone->id(), xp));
 						}
 					}
 				}
@@ -802,9 +802,16 @@ namespace wowpp
 			return;
 		}
 
+		const auto *item = m_project.items.getById(lootItem->definition.item());
+		if (!item)
+		{
+			WLOG("Can't find item!");
+			return;
+		}
+
 		// Check if we can store that item
 		ItemPosCountVector slots;
-		auto result = m_character->canStoreItem(0xFF, 0xFF, slots, *lootItem->definition.item, lootItem->count, false, nullptr);
+		auto result = m_character->canStoreItem(0xFF, 0xFF, slots, *item, lootItem->count, false, nullptr);
 		if (result != game::inventory_change_failure::Okay)
 		{
 			sendProxyPacket(
@@ -826,9 +833,12 @@ namespace wowpp
 			auto *itemAtSlot= m_character->getItemByPos(0xFF, pos.position);
 
 			// Loot items and add them
-			auto inst = std::make_shared<GameItem>(*lootItem->definition.item);
+			const auto *item = m_project.items.getById(lootItem->definition.item());
+			assert(item);
+
+			auto inst = std::make_shared<GameItem>(m_project, *item);
 			inst->initialize();
-			inst->setUInt64Value(object_fields::Guid, createEntryGUID(lootCounter++, lootItem->definition.item->id, guid_type::Item));
+			inst->setUInt64Value(object_fields::Guid, createEntryGUID(lootCounter++, lootItem->definition.item(), guid_type::Item));
 			inst->setUInt32Value(item_fields::StackCount, pos.count);
 			m_character->addItem(inst, pos.position);
 
@@ -982,15 +992,15 @@ namespace wowpp
 			return;
 		}
 
-		if (item->getEntry().requiredLevel > 0 &&
-			item->getEntry().requiredLevel > m_character->getLevel())
+		if (item->getEntry().requiredlevel() > 0 &&
+			item->getEntry().requiredlevel() > m_character->getLevel())
 		{
 			m_character->inventoryChangeFailure(game::inventory_change_failure::CantEquipLevel, nullptr, nullptr);
 			return;
 		}
 
-		if (item->getEntry().requiredSkill != 0 &&
-			!m_character->hasSkill(item->getEntry().requiredSkill))
+		if (item->getEntry().requiredskill() != 0 &&
+			!m_character->hasSkill(item->getEntry().requiredskill()))
 		{
 			m_character->inventoryChangeFailure(game::inventory_change_failure::CantEquipSkill, nullptr, nullptr);
 			return;
@@ -1000,7 +1010,7 @@ namespace wowpp
 
 		// Check if item is equippable
 		const auto &entry = item->getEntry();
-		switch (entry.inventoryType)
+		switch (entry.inventorytype())
 		{
 		case game::inventory_type::Ammo:
 			// TODO
@@ -1030,6 +1040,7 @@ namespace wowpp
 		case game::inventory_type::Shoulders:
 			targetSlot = player_equipment_slots::Shoulders;
 			break;
+		case game::inventory_type::TwoHandedWeapon:
 		case game::inventory_type::MainHandWeapon:
 			targetSlot = player_equipment_slots::Mainhand;
 			break;
@@ -1059,7 +1070,7 @@ namespace wowpp
 			targetSlot = player_equipment_slots::Waist;
 			break;
 		default:
-			WLOG("TODO");
+			m_character->inventoryChangeFailure(game::inventory_change_failure::ItemCantBeEquipped, nullptr, nullptr);
 			break;
 		}
 
@@ -1113,6 +1124,8 @@ namespace wowpp
 			WLOG("Could not read packet data");
 			return;
 		}
+
+		DLOG("CMSG_SWAP_INV_ITEM from " << UInt32(srcSlot) << " to " << UInt32(dstSlot));
 
 		// We don't need to do anything
 		if (srcSlot == dstSlot)
@@ -1377,7 +1390,7 @@ namespace wowpp
 			std::bind(game::server_write::logXPGain, std::placeholders::_1, victimGUID, baseXP, restXP, false));	// TODO: Refer a friend support
 	}
 
-	void Player::onSpellCastError(const SpellEntry &spell, game::SpellCastResult result)
+	void Player::onSpellCastError(const proto::SpellEntry &spell, game::SpellCastResult result)
 	{
 		sendProxyPacket(
 			std::bind(game::server_write::castFailed, std::placeholders::_1, result, std::cref(spell), 0));
@@ -1738,20 +1751,23 @@ namespace wowpp
 		}
 
 		// Check rank
-		if (talent->ranks.size() < rank)
+		if (talent->ranks_size() < static_cast<int>(rank))
 		{
-			WLOG("Talent " << talentId << " does offer " << talent->ranks.size() << " ranks, but rank " << rank << " is requested!");
+			WLOG("Talent " << talentId << " does offer " << talent->ranks_size() << " ranks, but rank " << rank << " is requested!");
 			return;
 		}
 
 		// TODO: Check whether the player is allowed to learn that talent, based on his class
 
 		// Check if another talent is required
-		if (talent->dependsOn != nullptr)
+		if (talent->dependson())
 		{
+			const auto *dependson = m_project.talents.getById(talentId);
+			assert(dependson);
+
 			// Check if we have learned the requested talent rank
-			auto *dependantRank = talent->dependsOn->ranks[talent->dependsOnRank];
-			if (!m_character->hasSpell(dependantRank->id))
+			auto dependantRank = dependson->ranks(talent->dependsonrank());
+			if (!m_character->hasSpell(dependantRank))
 			{
 				WLOG("Dependent talent not learned!");
 				return;
@@ -1759,9 +1775,9 @@ namespace wowpp
 		}
 
 		// Check if another spell is required
-		if (talent->dependsOnSpell != nullptr)
+		if (talent->dependsonspell())
 		{
-			if (!m_character->hasSpell(talent->dependsOnSpell->id))
+			if (!m_character->hasSpell(talent->dependsonspell()))
 			{
 				WLOG("Dependent spell not learned!");
 				return;
@@ -1779,24 +1795,27 @@ namespace wowpp
 		// Remove all previous learnt ranks, learn the highest one
 		for (UInt32 i = 0; i < rank; ++i)
 		{
-			if (m_character->removeSpell(*talent->ranks[i]))
+			const auto *spell = m_project.spells.getById(talent->ranks(i));
+			if (m_character->removeSpell(*spell))
 			{
 				// TODO: Send packet maybe?
 			}
 		}
 
+		const auto *spell = m_project.spells.getById(talent->ranks(rank));
+
 		// Add new spell, and maybe remove old spells
-		m_character->addSpell(*talent->ranks[rank]);
-		if ((talent->ranks[rank]->attributes & spell_attributes::Passive) != 0)
+		m_character->addSpell(*spell);
+		if ((spell->attributes(0) & game::spell_attributes::Passive) != 0)
 		{
 			SpellTargetMap targets;
 			targets.m_targetMap = game::spell_cast_target_flags::Unit;
 			targets.m_unitTarget = m_character->getGuid();
-			m_character->castSpell(std::move(targets), talent->ranks[rank]->id);
+			m_character->castSpell(std::move(targets), spell->id());
 		}
 
 		sendProxyPacket(
-			std::bind(game::server_write::learnedSpell, std::placeholders::_1, talent->ranks[rank]->id));
+			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spell->id()));
 	}
 
 	void Player::handleUseItem(game::Protocol::IncomingPacket &packet)
@@ -1827,26 +1846,28 @@ namespace wowpp
 		}
 
 		auto &entry = item->getEntry();
-		for (auto &spell : entry.itemSpells)
+		for (int i = 0; i < entry.spells_size(); ++i)
 		{
-			if (!spell.spell)
+			const auto &spell = entry.spells(i);
+			if (!spell.spell())
 			{
 				continue;
 			}
 
 			// Spell effect has to be triggered "on use", not "on equip" etc.
-			if (spell.trigger != 0 && spell.trigger != 5)
+			if (spell.trigger() != 0 && spell.trigger() != 5)
 			{
 				continue;
 			}
 
-			UInt64 time = 0;
-			const auto *castTime = m_project.castTimes.getById(spell.spell->castTimeIndex);
-			if (castTime)
+			const auto *spellEntry = m_project.spells.getById(spell.spell());
+			if (!spellEntry)
 			{
-				time = castTime->castTime;
+				continue;
 			}
-			m_character->castSpell(std::move(targetMap), spell.spell->id, -1, time);
+
+			UInt64 time = spellEntry->casttime();
+			m_character->castSpell(std::move(targetMap), spell.spell(), -1, time);
 		}
 	}
 
@@ -1880,7 +1901,7 @@ namespace wowpp
 
 		// Check if vendor is not hostile against players
 		const auto &vendorFaction = m_character->getFactionTemplate();
-		if (vendorFaction.isHostileToPlayers())
+		if (isHostileToPlayers(vendorFaction))
 			return;
 
 		// Check if that vendor has the vendor flag
@@ -1888,17 +1909,24 @@ namespace wowpp
 			return;
 
 		// Check if the vendor DO sell items
-		const auto *vendorEntry = vendor->getEntry().vendorEntry;
+		const auto *vendorEntry = m_project.vendors.getById(vendor->getEntry().vendorentry());
 		if (!vendorEntry)
 		{
-			VendorItems emptyList;
+			std::vector<proto::VendorItemEntry> emptyList;
 			sendProxyPacket(
-				std::bind(game::server_write::listInventory, std::placeholders::_1, vendor->getGuid(), std::cref(emptyList)));
+				std::bind(game::server_write::listInventory, std::placeholders::_1, vendor->getGuid(), std::cref(m_project.items), std::cref(emptyList)));
 			return;
 		}
 
+		// TODO
+		std::vector<proto::VendorItemEntry> list;
+		for (const auto &entry : vendorEntry->items())
+		{
+			list.push_back(entry);
+		}
+
 		sendProxyPacket(
-			std::bind(game::server_write::listInventory, std::placeholders::_1, vendor->getGuid(), std::cref(vendorEntry->items)));
+			std::bind(game::server_write::listInventory, std::placeholders::_1, vendor->getGuid(), std::cref(m_project.items), std::cref(list)));
 	}
 
 	void Player::handleBuyItem(game::Protocol::IncomingPacket &packet)
@@ -1951,7 +1979,7 @@ namespace wowpp
 		DLOG("Received CMSG_SELL_ITEM... (Count: " << UInt16(count) << ")");
 
 		UInt32 stack = item->getUInt32Value(item_fields::StackCount);
-		UInt32 money = stack * item->getEntry().sellPrice;
+		UInt32 money = stack * item->getEntry().sellprice();
 		m_character->removeItem(bag, slot, stack);
 		m_character->setUInt32Value(character_fields::Coinage, m_character->getUInt32Value(character_fields::Coinage) + money);
 	}
@@ -1979,14 +2007,14 @@ namespace wowpp
 		if (!creature)
 			return;
 
-		const auto *vendorEntry = creature->getEntry().vendorEntry;
-		if (!vendorEntry || vendorEntry->items.empty())
+		const auto *vendorEntry = m_project.vendors.getById(creature->getEntry().vendorentry());
+		if (!vendorEntry || vendorEntry->items().empty())
 			return;
 
 		bool validEntry = false;
-		for (auto &entry : vendorEntry->items)
+		for (auto &entry : vendorEntry->items())
 		{
-			if (entry.item == item)
+			if (entry.item() == item->id())
 			{
 				validEntry = true;
 				break;
@@ -2009,7 +2037,7 @@ namespace wowpp
 		}
 
 		// Take money
-		UInt32 price = item->buyPrice * count;
+		UInt32 price = item->buyprice() * count;
 		UInt32 money = m_character->getUInt32Value(character_fields::Coinage);
 		if (money < price)
 		{
@@ -2026,9 +2054,9 @@ namespace wowpp
 			auto *itemAtSlot = m_character->getItemByPos(0xFF, pos.position);
 
 			// Loot items and add them
-			auto inst = std::make_shared<GameItem>(*item);
+			auto inst = std::make_shared<GameItem>(m_project, *item);
 			inst->initialize();
-			inst->setUInt64Value(object_fields::Guid, createEntryGUID(vendorCounter++, item->id, guid_type::Item));
+			inst->setUInt64Value(object_fields::Guid, createEntryGUID(vendorCounter++, item->id(), guid_type::Item));
 			inst->setUInt32Value(item_fields::StackCount, pos.count);
 			m_character->addItem(inst, pos.position);
 
@@ -2157,13 +2185,13 @@ namespace wowpp
 			return;
 		}
 
-		const auto *trainerEntry = creature->getEntry().trainerEntry;
+		const auto *trainerEntry = m_project.trainers.getById(creature->getEntry().trainerentry());
 		if (trainerEntry)
 		{
 			UInt32 titleId = 0;
-			if (trainerEntry->trainerType == trainer_types::ClassTrainer)
+			if (trainerEntry->type() == proto::TrainerEntry_TrainerType_CLASS_TRAINER)
 			{
-				if (trainerEntry->classId != m_character->getClass())
+				if (trainerEntry->classid() != m_character->getClass())
 				{
 					// Not your class!
 					return;
@@ -2231,26 +2259,26 @@ namespace wowpp
 			return;
 		}
 
-		const auto *trainerEntry = creature->getEntry().trainerEntry;
+		const auto *trainerEntry = m_project.trainers.getById(creature->getEntry().trainerentry());
 		if (!trainerEntry)
 		{
 			return;
 		}
 
-		if (trainerEntry->trainerType == trainer_types::ClassTrainer &&
-			m_character->getClass() != trainerEntry->classId)
+		if (trainerEntry->type() == proto::TrainerEntry_TrainerType_CLASS_TRAINER &&
+			m_character->getClass() != trainerEntry->classid())
 		{
 			return;
 		}
 
 		UInt32 cost = 0;
-		const SpellEntry *entry = nullptr;
-		for (const auto &spell : trainerEntry->spells)
+		const proto::SpellEntry *entry = nullptr;
+		for (const auto &spell : trainerEntry->spells())
 		{
-			if (spell.spell->id == spellId)
+			if (spell.spell() == spellId)
 			{
-				entry = spell.spell;
-				cost = spell.spellCost;
+				entry = m_project.spells.getById(spell.spell());
+				cost = spell.spellcost();
 				break;
 			}
 		}
@@ -2276,7 +2304,7 @@ namespace wowpp
 		m_character->setUInt32Value(character_fields::Coinage, money - cost);
 
 		m_character->addSpell(*entry);
-		if ((entry->attributes & spell_attributes::Passive) != 0)
+		if ((entry->attributes(0) & game::spell_attributes::Passive) != 0)
 		{
 			SpellTargetMap targetMap;
 			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;

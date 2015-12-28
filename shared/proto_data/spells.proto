@@ -24,25 +24,26 @@ package wowpp.proto;
 
 message SpellEffect {
 	required uint32 index = 1;
-	optional int32 basepoints = 2;
-	optional int32 diesides = 3;
-	optional int32 basedice = 4;
-	optional float diceperlevel = 5;
-	optional float pointsperlevel = 6;
-	optional uint32 mechanic = 7;
-	optional uint32 targeta = 8;
-	optional uint32 targetb = 9;
-	optional float radius = 10;
-	optional uint32 aura = 11;
-	optional int32 amplitude = 12;
-	optional float multiplevalue = 13;
-	optional uint32 chaintarget = 14;
-	optional uint32 itemtype = 15;
-	optional int32 miscvaluea = 16;
-	optional int32 miscvalueb = 17;
-	optional uint32 triggerspell = 18;
-	optional uint32 summonunit = 19;
-	optional int32 pointspercombopoint = 20;
+	required uint32 type = 2;
+	optional int32 basepoints = 3;
+	optional int32 diesides = 4;
+	optional int32 basedice = 5;
+	optional float diceperlevel = 6;
+	optional float pointsperlevel = 7;
+	optional uint32 mechanic = 8;
+	optional uint32 targeta = 9;
+	optional uint32 targetb = 10;
+	optional float radius = 11;
+	optional uint32 aura = 12;
+	optional int32 amplitude = 13;
+	optional float multiplevalue = 14;
+	optional uint32 chaintarget = 15;
+	optional uint32 itemtype = 16;
+	optional int32 miscvaluea = 17;
+	optional int32 miscvalueb = 18;
+	optional uint32 triggerspell = 19;
+	optional uint32 summonunit = 20;
+	optional int32 pointspercombopoint = 21;
 }
 
 message SpellEntry {

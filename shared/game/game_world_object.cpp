@@ -25,14 +25,16 @@
 #include "common/clock.h"
 #include "visibility_tile.h"
 #include "world_instance.h"
+#include "proto_data/project.h"
 #include <cassert>
 
 namespace wowpp
 {
 	WorldObject::WorldObject(
+		proto::Project &project,
 		TimerQueue &timers,
-		const ObjectEntry &entry)
-		: GameObject()
+		const proto::ObjectEntry &entry)
+		: GameObject(project)
 		, m_timers(timers)
 		, m_entry(entry)
 	{
@@ -49,14 +51,14 @@ namespace wowpp
 		GameObject::initialize();
 
 		setUInt32Value(object_fields::Type, 33);
-		setUInt32Value(object_fields::Entry, m_entry.id);
+		setUInt32Value(object_fields::Entry, m_entry.id());
 
-		setUInt32Value(world_object_fields::TypeID, m_entry.type);
-		setUInt32Value(world_object_fields::DisplayId, m_entry.displayID);
+		setUInt32Value(world_object_fields::TypeID, m_entry.type());
+		setUInt32Value(world_object_fields::DisplayId, m_entry.displayid());
 		setUInt32Value(world_object_fields::AnimProgress, 100);
 		setUInt32Value(world_object_fields::State, 1);
-		setUInt32Value(world_object_fields::Faction, m_entry.factionID);
-		setUInt32Value(world_object_fields::Flags, m_entry.flags);
+		setUInt32Value(world_object_fields::Faction, m_entry.factionid());
+		setUInt32Value(world_object_fields::Flags, m_entry.flags());
 
 		float x, y, z, o;
 		getLocation(x, y, z, o);

@@ -26,23 +26,16 @@
 #include "binary_io/vector_sink.h"
 #include "game_protocol/game_protocol.h"
 #include "game_character.h"
-#include "data/faction_template_entry.h"
+#include "proto_data/project.h"
 #include <cassert>
 
 namespace wowpp
 {
 	GameUnit::GameUnit(
-		TimerQueue &timers,
-		DataLoadContext::GetRace getRace,
-		DataLoadContext::GetClass getClass,
-		DataLoadContext::GetLevel getLevel,
-		DataLoadContext::GetSpell getSpell)
-		: GameObject()
+		proto::Project &project,
+		TimerQueue &timers)
+		: GameObject(project)
 		, m_timers(timers)
-		, m_getRace(getRace)
-		, m_getClass(getClass)
-		, m_getLevel(getLevel)
-		, m_getSpell(getSpell)
 		, m_raceEntry(nullptr)
 		, m_classEntry(nullptr)
 		, m_despawnCountdown(timers)
@@ -134,23 +127,26 @@ namespace wowpp
 
 	void GameUnit::raceUpdated()
 	{
-		m_raceEntry = m_getRace(getRace());
+		m_raceEntry = getProject().races.getById(getRace());// m_getRace(getRace());
 		assert(m_raceEntry);
-		assert(m_raceEntry->factionTemplate);
-		setFactionTemplate(*m_raceEntry->factionTemplate);
+
+		const auto *factionTemplate = getProject().factionTemplates.getById(m_raceEntry->faction());
+		assert(factionTemplate);
+
+		setFactionTemplate(*factionTemplate);
 	}
 
 	void GameUnit::classUpdated()
 	{
-		m_classEntry = m_getClass(getClass());
+		m_classEntry = m_project.classes.getById(getClass());
 		assert(m_classEntry);
 
 		// Update power type
-		setByteValue(unit_fields::Bytes0, 3, m_classEntry->powerType);
+		setByteValue(unit_fields::Bytes0, 3, m_classEntry->powertype());
 
 		// Unknown what this does...
-		if (m_classEntry->powerType == power_type::Rage ||
-			m_classEntry->powerType == power_type::Mana)
+		if (m_classEntry->powertype() == game::power_type::Rage ||
+			m_classEntry->powertype() == game::power_type::Mana)
 		{
 			setByteValue(unit_fields::Bytes1, 1, 0xEE);
 		}
@@ -183,13 +179,13 @@ namespace wowpp
 		//UNIT_FIELD_DISPLAYID && UNIT_FIELD_NATIVEDISPLAYID
 		if (getGender() == game::gender::Male)
 		{
-			setUInt32Value(unit_fields::DisplayId, m_raceEntry->maleModel);
-			setUInt32Value(unit_fields::NativeDisplayId, m_raceEntry->maleModel);
+			setUInt32Value(unit_fields::DisplayId, m_raceEntry->malemodel());
+			setUInt32Value(unit_fields::NativeDisplayId, m_raceEntry->malemodel());
 		}
 		else
 		{
-			setUInt32Value(unit_fields::DisplayId, m_raceEntry->femaleModel);
-			setUInt32Value(unit_fields::NativeDisplayId, m_raceEntry->femaleModel);
+			setUInt32Value(unit_fields::DisplayId, m_raceEntry->femalemodel());
+			setUInt32Value(unit_fields::NativeDisplayId, m_raceEntry->femalemodel());
 		}
 	}
 
@@ -199,79 +195,92 @@ namespace wowpp
 		setUInt32Value(unit_fields::Level, level);
 
 		// Get level information
-		const auto *levelInfo = m_getLevel(level);
+		const auto *levelInfo = getProject().levels.getById(level);
 		if (!levelInfo) return;	// Creatures can have a level higher than 70
 		
 		// Level info changed
 		levelChanged(*levelInfo);
 
 		// Get old level information
-		const auto *oldLevel = m_getLevel(prevLevel);
+		const auto *oldLevel = getProject().levels.getById(prevLevel);
 		if (oldLevel)
 		{
-			const auto raceIt = levelInfo->stats.find(getRace());
-			if (raceIt == levelInfo->stats.end()) return;
-			const auto classIt = raceIt->second.find(getClass());
-			if (classIt == raceIt->second.end()) return;
+			const auto raceIt = levelInfo->stats().find(getRace());
+			if (raceIt == levelInfo->stats().end()) return;
+			const auto classIt = raceIt->second.stats().find(getClass());
+			if (classIt == raceIt->second.stats().end()) return;
 
-			const auto raceItOld = oldLevel->stats.find(getRace());
-			if (raceItOld == oldLevel->stats.end()) return;
-			const auto classItOld = raceItOld->second.find(getClass());
-			if (classItOld == raceItOld->second.end()) return;
+			const auto raceItOld = oldLevel->stats().find(getRace());
+			if (raceItOld == oldLevel->stats().end()) return;
+			const auto classItOld = raceItOld->second.stats().find(getClass());
+			if (classItOld == raceItOld->second.stats().end()) return;
 
 			// Calculate difference
-			const LevelEntry::StatArray &oldStats = classItOld->second;
-			const LevelEntry::StatArray &newStats = classIt->second;
+			const auto &oldStats = classItOld->second;
+			const auto &newStats = classIt->second;
 
-			auto &levelBaseValues = getClassEntry()->levelBaseValues;
-			auto oldBase = levelBaseValues.find(prevLevel);
-			auto newBase = levelBaseValues.find(level);
-			if (oldBase == levelBaseValues.end() || newBase == levelBaseValues.end())
+			// Prevent overflow
+			if (static_cast<int>(prevLevel) > getClassEntry()->levelbasevalues_size() ||
+				level > getClassEntry()->levelbasevalues_size())
+			{
 				return;
+			}
 
+			auto oldBase = getClassEntry()->levelbasevalues(prevLevel - 1);
+			auto newBase = getClassEntry()->levelbasevalues(level - 1);
+			
 			// Fire signal
 			levelGained(
 				prevLevel,
-				newBase->second.health - oldBase->second.health,
-				newBase->second.mana - oldBase->second.mana,
-				newStats[0] - oldStats[0],
-				newStats[1] - oldStats[1],
-				newStats[2] - oldStats[2],
-				newStats[3] - oldStats[3],
-				newStats[4] - oldStats[4]);
+				newBase.health() - oldBase.health(),
+				newBase.mana() - oldBase.mana(),
+				newStats.stat1() - oldStats.stat1(),
+				newStats.stat2() - oldStats.stat2(),
+				newStats.stat3() - oldStats.stat3(),
+				newStats.stat4() - oldStats.stat4(),
+				newStats.stat5() - oldStats.stat5());
 		}
 	}
 
-	void GameUnit::levelChanged(const LevelEntry &levelInfo)
+	void GameUnit::levelChanged(const proto::LevelEntry &levelInfo)
 	{
-
 		// Get race and class
 		const auto race = getRace();
 		const auto cls = getClass();
 
-		const auto raceIt = levelInfo.stats.find(race);
-		if (raceIt == levelInfo.stats.end()) return;
+		const auto raceIt = levelInfo.stats().find(race);
+		if (raceIt == levelInfo.stats().end()) return;
 
-		const auto classIt = raceIt->second.find(cls);
-		if (classIt == raceIt->second.end()) return;
+		const auto classIt = raceIt->second.stats().find(cls);
+		if (classIt == raceIt->second.stats().end()) return;
 
 		// Update stats based on level information
-		const LevelEntry::StatArray &stats = classIt->second;
-		for (UInt32 i = 0; i < stats.size(); ++i)
+		const auto &stats = classIt->second;
+		for (UInt32 i = 0; i < 5; ++i)
 		{
 			const UnitMods mod = getUnitModByStat(i);
-			setModifierValue(mod, unit_mod_type::BaseValue, stats[i]);
+			switch (i)
+			{
+				case 0: setModifierValue(mod, unit_mod_type::BaseValue, stats.stat1()); break;
+				case 1: setModifierValue(mod, unit_mod_type::BaseValue, stats.stat2()); break;
+				case 2: setModifierValue(mod, unit_mod_type::BaseValue, stats.stat3()); break;
+				case 3: setModifierValue(mod, unit_mod_type::BaseValue, stats.stat4()); break;
+				case 4: setModifierValue(mod, unit_mod_type::BaseValue, stats.stat5()); break;
+			}
 		}
 	}
 
 	void GameUnit::castSpell(SpellTargetMap target, UInt32 spellId, Int32 basePoints, GameTime castTime, bool isProc, SpellSuccessCallback callback)
 	{
 		// Resolve spell
-		const auto *spell = m_getSpell(spellId);
+		const auto *spell = getProject().spells.getById(spellId);
 		if (!spell)
 		{
+			WLOG("Could not find spell " << spellId);
 			return;
 		}
+
+		DLOG("Casting spell " << spellId << " - " << spell->name());
 
 		auto result = m_spellCast->startCast(*spell, std::move(target), basePoints, castTime, isProc);
 		if (callback)
@@ -284,7 +293,7 @@ namespace wowpp
 			m_attackSwingCountdown.running &&
 			result.second != nullptr)
 		{
-			if (!(spell->attributesEx[0] & spell_attributes_ex_a::NotResetSwingTimer) && !isProc)
+			if (!(spell->attributes(1) & game::spell_attributes_ex_a::NotResetSwingTimer) && !isProc)
 			{
 				// Register for casts ended-event
 				if (castTime > 0)
@@ -598,7 +607,7 @@ namespace wowpp
 				});
 
 				// Check if we need to give rage
-				if (getByteValue(unit_fields::Bytes0, 3) == power_type::Rage)
+				if (getByteValue(unit_fields::Bytes0, 3) == game::power_type::Rage)
 				{
 					const float weaponSpeedHitFactor = (getUInt32Value(unit_fields::BaseAttackTime) / 1000.0f) * 3.5f;
 					const UInt32 level = getLevel();
@@ -691,18 +700,18 @@ namespace wowpp
 			regenerateHealth();
 			if (!m_auras.hasAura(game::aura_type::InterruptRegen))
 			{
-				regeneratePower(power_type::Rage);
+				regeneratePower(game::power_type::Rage);
 			}
 		}
 
-		regeneratePower(power_type::Energy);
-		regeneratePower(power_type::Mana);
+		regeneratePower(game::power_type::Energy);
+		regeneratePower(game::power_type::Mana);
 
 		// Restart regeneration timer
 		startRegeneration();
 	}
 
-	void GameUnit::regeneratePower(PowerType power)
+	void GameUnit::regeneratePower(game::PowerType power)
 	{
 		UInt32 current = getUInt32Value(unit_fields::Power1 + static_cast<Int8>(power));
 		UInt32 max = getUInt32Value(unit_fields::MaxPower1 + static_cast<Int8>(power));
@@ -710,7 +719,7 @@ namespace wowpp
 		float addPower = 0.0f;
 		switch (power)
 		{
-			case power_type::Mana:
+			case game::power_type::Mana:
 			{
 				if (getTypeId() == object_type::Character)
 				{
@@ -730,14 +739,14 @@ namespace wowpp
 				break;
 			}
 
-			case power_type::Energy:
+			case game::power_type::Energy:
 			{
 				// 20 energy per tick
 				addPower = 20.0f;
 				break;
 			}
 
-			case power_type::Rage:
+			case game::power_type::Rage:
 			{
 				// Take 3 rage per tick
 				addPower = 30.0f;
@@ -748,7 +757,7 @@ namespace wowpp
 				break;
 		}
 
-		if (power != power_type::Rage)
+		if (power != game::power_type::Rage)
 		{
 			current += UInt32(addPower);
 			if (current > max) current = max;
@@ -783,9 +792,9 @@ namespace wowpp
 		updateDamage();
 		updateArmor();
 		updateMaxHealth();
-		for (size_t i = 0; i < power_type::Happiness; ++i)
+		for (size_t i = 0; i < game::power_type::Happiness; ++i)
 		{
-			updateMaxPower(static_cast<PowerType>(i));
+			updateMaxPower(static_cast<game::PowerType>(i));
 		}
 		for (UInt8 i = 0; i < 6; ++i)
 		{
@@ -803,19 +812,19 @@ namespace wowpp
 		setUInt32Value(unit_fields::MaxHealth, UInt32(value));
 	}
 
-	void GameUnit::updateMaxPower(PowerType power)
+	void GameUnit::updateMaxPower(game::PowerType power)
 	{
 		UInt32 createPower = 0;
 		switch (power)
 		{
-		case power_type::Mana:		createPower = getUInt32Value(unit_fields::BaseMana); break;
-		case power_type::Rage:		createPower = 1000; break;
-		case power_type::Energy:    createPower = 100; break;
+		case game::power_type::Mana:		createPower = getUInt32Value(unit_fields::BaseMana); break;
+		case game::power_type::Rage:		createPower = 1000; break;
+		case game::power_type::Energy:    createPower = 100; break;
 		default:	// Make compiler happy
 			break;
 		}
 
-		float powerBonus = (power == power_type::Mana && createPower > 0) ? getManaBonusFromIntellect() : 0;
+		float powerBonus = (power == game::power_type::Mana && createPower > 0) ? getManaBonusFromIntellect() : 0;
 
 		float value = createPower;
 		value += powerBonus;
@@ -1024,7 +1033,7 @@ namespace wowpp
 			updateMaxHealth();
 			break;
 		case 3:
-			updateMaxPower(power_type::Mana);
+			updateMaxPower(game::power_type::Mana);
 			updateManaRegen();
 			break;
 		case 4:
@@ -1055,20 +1064,20 @@ namespace wowpp
 		return stat;
 	}
 
-	wowpp::PowerType GameUnit::getPowerTypeByUnitMod(UnitMods mod)
+	wowpp::game::PowerType GameUnit::getPowerTypeByUnitMod(UnitMods mod)
 	{
 		switch (mod)
 		{
-		case unit_mods::Rage:		return power_type::Rage;
-		case unit_mods::Focus:		return power_type::Focus;
-		case unit_mods::Energy:		return power_type::Energy;
-		case unit_mods::Happiness:	return power_type::Happiness;
+		case unit_mods::Rage:		return game::power_type::Rage;
+		case unit_mods::Focus:		return game::power_type::Focus;
+		case unit_mods::Energy:		return game::power_type::Energy;
+		case unit_mods::Happiness:	return game::power_type::Happiness;
 
 		default:
 			break;
 		}
 
-		return power_type::Mana;
+		return game::power_type::Mana;
 	}
 
 	wowpp::UnitMods GameUnit::getUnitModByStat(UInt8 stat)
@@ -1087,14 +1096,14 @@ namespace wowpp
 		return unit_mods::StatStrength;
 	}
 
-	wowpp::UnitMods GameUnit::getUnitModByPower(PowerType power)
+	wowpp::UnitMods GameUnit::getUnitModByPower(game::PowerType power)
 	{
 		switch (power)
 		{
-		case power_type::Rage:		return unit_mods::Rage;
-		case power_type::Energy:	return unit_mods::Energy;
-		case power_type::Happiness:	return unit_mods::Happiness;
-		case power_type::Focus:		return unit_mods::Focus;
+		case game::power_type::Rage:		return unit_mods::Rage;
+		case game::power_type::Energy:	return unit_mods::Energy;
+		case game::power_type::Happiness:	return unit_mods::Happiness;
+		case game::power_type::Focus:		return unit_mods::Focus;
 			
 		default:
 			break;
@@ -1328,16 +1337,16 @@ namespace wowpp
 		return name;
 	}
 
-	const FactionTemplateEntry & GameUnit::getFactionTemplate() const
+	const proto::FactionTemplateEntry & GameUnit::getFactionTemplate() const
 	{
 		assert(m_factionTemplate);
 		return *m_factionTemplate;
 	}
 
-	void GameUnit::setFactionTemplate(const FactionTemplateEntry &faction)
+	void GameUnit::setFactionTemplate(const proto::FactionTemplateEntry &faction)
 	{
 		m_factionTemplate = &faction;
-		setUInt32Value(unit_fields::FactionTemplate, m_factionTemplate->id);
+		setUInt32Value(unit_fields::FactionTemplate, m_factionTemplate->id());
 
 		factionChanged(*this);
 	}

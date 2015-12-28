@@ -67,8 +67,8 @@ namespace wowpp
 			}
 
 			// Get trigger entry
-			const auto *trigger = m_app.getProject().triggers.getTemplates()[index].get();
-			m_selected = trigger;
+			const auto &trigger = m_app.getProject().triggers.getTemplates().entry(index);
+			m_selected = &trigger;
 		}
 
 	}

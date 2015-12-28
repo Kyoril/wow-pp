@@ -47,7 +47,7 @@ namespace wowpp
 		}
 	}
 
-	TiledUnitFinder::TiledUnitFinder(const MapEntry &map, game::Distance tileWidth)
+	TiledUnitFinder::TiledUnitFinder(const proto::MapEntry &map, game::Distance tileWidth)
 		: UnitFinder(map)
 		, m_grid(getGridLength(533.33333f, tileWidth), getGridLength(533.33333f, tileWidth))
 		, m_tileWidth(tileWidth)

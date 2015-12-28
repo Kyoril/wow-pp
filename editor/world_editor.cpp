@@ -1,7 +1,6 @@
 
 #include "world_editor.h"
-#include "data/map_entry.h"
-#include "data/project.h"
+#include "proto_data/project.h"
 #include "common/typedefs.h"
 #include "common/constants.h"
 #include "common/make_unique.h"
@@ -17,7 +16,7 @@ namespace wowpp
 {
 	namespace editor
 	{
-		WorldEditor::WorldEditor(Ogre::SceneManager &sceneMgr, Ogre::Camera &camera, MapEntry &map)
+		WorldEditor::WorldEditor(Ogre::SceneManager &sceneMgr, Ogre::Camera &camera, proto::MapEntry &map)
 			: m_sceneMgr(sceneMgr)
 			, m_camera(camera)
 			, m_map(map)
@@ -33,15 +32,16 @@ namespace wowpp
 			});
 
 			// Move camera to first spawn position (if any)
-			if (!m_map.spawns.empty())
+			if (!m_map.unitspawns().empty())
 			{
-				const auto &spawn = m_map.spawns.front();
-				m_camera.setPosition(spawn.position[0], spawn.position[1], spawn.position[2] + 5.0f);
+				const auto &spawn = m_map.unitspawns().begin();
+				m_camera.setPosition(spawn->positionx(), spawn->positiony(), spawn->positionz() + 5.0f);
 			}
 
 			Ogre::MeshPtr mesh = Ogre::MeshManager::getSingleton().createManual("Kobold", "WoW", new M2MeshLoader("CREATURE\\Kobold\\kobold.m2"));
 			mesh->load();
 
+			/*
 			// Spawn all entities
 			UInt32 i = 0;
 			for (auto &spawn : m_map.spawns)
@@ -52,6 +52,7 @@ namespace wowpp
 				node->setPosition(spawn.position[0], spawn.position[1], spawn.position[2]);
 				node->setOrientation(Ogre::Quaternion(Ogre::Radian(spawn.rotation), Ogre::Vector3::UNIT_Z));
 			}
+			*/
 
 			const Ogre::Vector3 &camPos = m_camera.getDerivedPosition();
 			float convertedX = (constants::MapWidth * 32.0f) + camPos.x;
@@ -138,7 +139,7 @@ namespace wowpp
 			if (it == m_pages.end())
 			{
 				const Ogre::String fileName =
-					"World\\Maps\\" + m_map.directory + "\\" + m_map.directory + "_" +
+					"World\\Maps\\" + m_map.directory() + "\\" + m_map.directory() + "_" +
 					Ogre::StringConverter::toString(pos[1], 2, '0') + "_" +
 					Ogre::StringConverter::toString(pos[0], 2, '0') + ".adt";
 

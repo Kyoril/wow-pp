@@ -27,6 +27,7 @@
 #include "common/erase_by_move.h"
 #include "log/default_log_levels.h"
 #include "common/utilities.h"
+#include "shared/proto_data/units.pb.h"
 #include "universe.h"
 #include <memory>
 #include <cassert>
@@ -35,7 +36,7 @@ namespace wowpp
 {
 	CreatureSpawner::CreatureSpawner(
 		WorldInstance &world,
-		const UnitEntry &entry,
+		const proto::UnitEntry &entry,
 		size_t maxCount,
 		GameTime respawnDelay,
 		float centerX,
@@ -91,7 +92,7 @@ namespace wowpp
 			x, y, z, o,
 			m_radius
 			);
-		spawned->setFloatValue(object_fields::ScaleX, m_entry.scale);
+		spawned->setFloatValue(object_fields::ScaleX, m_entry.scale());
 		if (m_emote != 0)
 		{
 			spawned->setUInt32Value(unit_fields::NpcEmoteState, m_emote);

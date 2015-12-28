@@ -27,7 +27,26 @@ namespace wowpp
 	{
 		namespace constant_literal
 		{
-			const SpellEffectStrings::StringArray strings =
+			const PowerTypeStrings::StringArray powerStrings =
+			{ {
+					"mana",
+					"rage",
+				"focus",
+				"energy",
+				"happiness"
+				}
+			};
+
+			static_assert(power_type::Mana == 0, "");
+			static_assert(power_type::Rage == 1, "");
+			static_assert(power_type::Focus == 2, "");
+			static_assert(power_type::Energy == 3, "");
+			static_assert(power_type::Happiness == 4, "");
+			static_assert(power_type::Count_ == 6, "");
+
+			const PowerTypeStrings powerType(powerStrings);
+
+			const SpellEffectStrings::StringArray spellEffectStrings =
 			{
 				"<INVALID>",
 				"INSTANT_KILL",
@@ -185,7 +204,7 @@ namespace wowpp
 				"EFFECT_153"
 			};
 
-			const SpellEffectStrings spellEffectNames(strings);
+			const SpellEffectStrings spellEffectNames(spellEffectStrings);
 
 			const AuraTypeStrings::StringArray auraStrings =
 			{

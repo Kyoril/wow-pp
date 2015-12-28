@@ -23,7 +23,7 @@
 
 #include <QAbstractListModel>
 #include <QObject>
-#include "data/project.h"
+#include "proto_data/project.h"
 #include "qfilesystemmodel.h"
 
 namespace wowpp
@@ -34,7 +34,7 @@ namespace wowpp
 		{
 		public:
 
-			explicit TriggerListModel(TriggerEntryManager &entries, QObject *parent = nullptr)
+			explicit TriggerListModel(proto::TriggerManager &entries, QObject *parent = nullptr)
 				: QAbstractListModel(parent)
 				, m_entries(entries)
 			{
@@ -42,7 +42,7 @@ namespace wowpp
 
 			virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override
 			{
-				return m_entries.getTemplates().size();
+				return m_entries.getTemplates().entry_size();
 			}
 			
 			QVariant data(const QModelIndex &index, int role) const
@@ -50,7 +50,7 @@ namespace wowpp
 				if (!index.isValid())
 					return QVariant();
 
-				if (index.row() >= m_entries.getTemplates().size())
+				if (index.row() >= m_entries.getTemplates().entry_size())
 					return QVariant();
 
 				static QImage fileImage(":/File.png");
@@ -59,9 +59,9 @@ namespace wowpp
 				if (role == Qt::DisplayRole)
 				{
 					const auto &templates = m_entries.getTemplates();
-					const auto &tpl = templates[index.row()];
+					const auto &tpl = templates.entry(index.row());
 
-					return QString("%1 %2").arg(QString::number(tpl->id), 6, QLatin1Char('0')).arg(tpl->name.c_str());
+					return QString("%1 %2").arg(QString::number(tpl.id()), 6, QLatin1Char('0')).arg(tpl.name().c_str());
 				}
 				else if (role == Qt::DecorationRole)
 				{
@@ -114,7 +114,7 @@ namespace wowpp
 
 		private:
 
-			TriggerEntryManager &m_entries;
+			proto::TriggerManager &m_entries;
 		};
 	}
 }

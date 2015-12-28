@@ -32,7 +32,7 @@
 #include "log/log_entry.h"
 #include "log/default_log_levels.h"
 #include "mysql_database.h"
-#include "data/project.h"
+#include "proto_data/project.h"
 #include "game/universe.h"
 #include "trigger_handler.h"
 #include "common/timer_queue.h"
@@ -111,7 +111,7 @@ namespace wowpp
 		}
 
 		// Load project
-		Project project;
+		proto::Project project;
 		if (!project.load(m_configuration.dataPath))
 		{
 			ELOG("Could not load data project!");
@@ -147,7 +147,7 @@ namespace wowpp
 
 		// Create world instance manager
 		auto worldInstanceManager =
-			std::make_shared<wowpp::WorldInstanceManager>(m_ioService, universe, instanceIdGenerator, objectIdGenerator, project, 0, m_configuration.dataPath);
+			std::make_shared<wowpp::WorldInstanceManager>(m_ioService, universe, *triggerHandler, instanceIdGenerator, objectIdGenerator, project, 0, m_configuration.dataPath);
 
 		std::vector<std::shared_ptr<RealmConnector>> realmConnectors;
 		std::map<UInt32, RealmConnector*> realmConnectorByMap;

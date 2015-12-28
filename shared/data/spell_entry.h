@@ -32,69 +32,69 @@ namespace wowpp
 		enum Type
 		{
 			/// Unknown currently
-			Unknown_0				= 0x00000001,
+			Unknown_0 = 0x00000001,
 			/// Spell requires ammo.
-			Ranged					= 0x00000002,
+			Ranged = 0x00000002,
 			/// Spell is executed on next weapon swing.
-			OnNextSwing				= 0x00000004,
+			OnNextSwing = 0x00000004,
 			/// 
-			IsReplenishment			= 0x00000008,
+			IsReplenishment = 0x00000008,
 			/// Spell is a player ability.
-			Ability					= 0x00000010,
+			Ability = 0x00000010,
 			/// 
-			TradeSpell				= 0x00000020,
+			TradeSpell = 0x00000020,
 			/// Spell is a passive spell-
-			Passive					= 0x00000040,
+			Passive = 0x00000040,
 			/// Spell does not appear in the players spell book.
-			HiddenClientSide		= 0x00000080,
+			HiddenClientSide = 0x00000080,
 			/// Spell won't display cast time.
-			HiddenCastTime			= 0x00000100,
+			HiddenCastTime = 0x00000100,
 			/// Client will automatically target the mainhand item.
-			TargetMainhandItem		= 0x00000200,
+			TargetMainhandItem = 0x00000200,
 			/// 
-			OnNextSwing_2			= 0x00000400,
+			OnNextSwing_2 = 0x00000400,
 			/// 
-			Unknown_4				= 0x00000800,
+			Unknown_4 = 0x00000800,
 			/// Spell is only executable at day.
-			DaytimeOnly				= 0x00001000,
+			DaytimeOnly = 0x00001000,
 			/// Spell is only executable at night
-			NightOnly				= 0x00002000,
+			NightOnly = 0x00002000,
 			/// Spell is only executable while indoor.
-			IndoorOnly				= 0x00004000,
+			IndoorOnly = 0x00004000,
 			/// Spell is only executable while outdoor.
-			OutdoorOnly				= 0x00008000,
+			OutdoorOnly = 0x00008000,
 			/// Spell is only executable while not shape shifted.
-			NotShapeshifted			= 0x00010000,
+			NotShapeshifted = 0x00010000,
 			/// Spell is only executable while in stealth mode.
-			OnlyStealthed			= 0x00020000,
+			OnlyStealthed = 0x00020000,
 			/// Spell does not change the players sheath state.
-			DontAffectSheathState	= 0x00040000,
+			DontAffectSheathState = 0x00040000,
 			/// 
-			LevelDamageCalc			= 0x00080000,
+			LevelDamageCalc = 0x00080000,
 			/// Spell will stop auto attack.
-			StopAttackTarget		= 0x00100000,
+			StopAttackTarget = 0x00100000,
 			/// Spell can't be blocked / dodged / parried
-			NoDefense				= 0x00200000,
+			NoDefense = 0x00200000,
 			/// Executer will always look at target while casting this spell.
-			CastTrackTarget			= 0x00400000,
+			CastTrackTarget = 0x00400000,
 			/// Spell is usable while caster is dead.
-			CastableWhileDead		= 0x00800000,
+			CastableWhileDead = 0x00800000,
 			/// Spell is usable while caster is mounted.
-			CastableWhileMounted	= 0x01000000,
+			CastableWhileMounted = 0x01000000,
 			/// 
-			DisabledWhileActive		= 0x02000000,
+			DisabledWhileActive = 0x02000000,
 			/// 
-			Negative				= 0x04000000,
+			Negative = 0x04000000,
 			/// Cast is usable while caster is sitting.
-			CastableWhileSitting	= 0x08000000,
+			CastableWhileSitting = 0x08000000,
 			/// Cast is not usable while caster is in combat.
-			NotInCombat				= 0x10000000,
+			NotInCombat = 0x10000000,
 			/// Spell is usable even on invulnerable targets.
-			IgnoreInvulnerability	= 0x20000000,
+			IgnoreInvulnerability = 0x20000000,
 			/// Aura of this spell will break on damage.
-			BreakableByDamage		= 0x40000000,
+			BreakableByDamage = 0x40000000,
 			/// Aura can't be cancelled by player.
-			CantCancel				= 0x80000000
+			CantCancel = 0x80000000
 		};
 	}
 
@@ -105,69 +105,69 @@ namespace wowpp
 		enum Type
 		{
 			/// 
-			DismissPet				= 0x00000001,
+			DismissPet = 0x00000001,
 			/// 
-			DrainAllPower			= 0x00000002,
+			DrainAllPower = 0x00000002,
 			/// 
-			Channeled_1				= 0x00000004,
+			Channeled_1 = 0x00000004,
 			/// 
-			CantBeRedirected		= 0x00000008,
+			CantBeRedirected = 0x00000008,
 			/// 
-			Unknown_1				= 0x00000010,
+			Unknown_1 = 0x00000010,
 			/// 
-			NotBreakStealth			= 0x00000020,
+			NotBreakStealth = 0x00000020,
 			/// 
-			Channeled_2				= 0x00000040,
+			Channeled_2 = 0x00000040,
 			/// 
-			CantBeReflected			= 0x00000080,
+			CantBeReflected = 0x00000080,
 			/// 
-			TargetNotInCombat		= 0x00000100,
+			TargetNotInCombat = 0x00000100,
 			/// 
-			MeleeCombatStart		= 0x00000200,
+			MeleeCombatStart = 0x00000200,
 			/// 
-			NoThreat				= 0x00000400,
+			NoThreat = 0x00000400,
 			/// 
-			Unknown_3				= 0x00000800,
+			Unknown_3 = 0x00000800,
 			/// 
-			PickPocket				= 0x00001000,
+			PickPocket = 0x00001000,
 			/// 
-			FarSight				= 0x00002000,
+			FarSight = 0x00002000,
 			/// 
-			ChannelTrackTarget		= 0x00004000,
+			ChannelTrackTarget = 0x00004000,
 			/// 
-			DispelAurasOnImmunity	= 0x00008000,
+			DispelAurasOnImmunity = 0x00008000,
 			/// 
-			UnaffectedByImmunity	= 0x00010000,
+			UnaffectedByImmunity = 0x00010000,
 			/// 
-			NoPetAutoCast			= 0x00020000,
+			NoPetAutoCast = 0x00020000,
 			/// 
-			Unknown_5				= 0x00040000,
+			Unknown_5 = 0x00040000,
 			/// 
-			CantTargetSelf			= 0x00080000,
+			CantTargetSelf = 0x00080000,
 			/// 
-			ReqComboPoints_1		= 0x00100000,
+			ReqComboPoints_1 = 0x00100000,
 			/// 
-			Unknown_7				= 0x00200000,
+			Unknown_7 = 0x00200000,
 			/// 
-			ReqComboPoints_2		= 0x00400000,
+			ReqComboPoints_2 = 0x00400000,
 			/// 
-			Unknown_8				= 0x00800000,
+			Unknown_8 = 0x00800000,
 			/// 
-			IsFishing				= 0x01000000,
+			IsFishing = 0x01000000,
 			/// 
-			Unknown_10				= 0x02000000,
+			Unknown_10 = 0x02000000,
 			/// 
-			Unknown_11				= 0x04000000,
+			Unknown_11 = 0x04000000,
 			/// 
-			NotResetSwingTimer		= 0x08000000,
+			NotResetSwingTimer = 0x08000000,
 			/// 
-			DontDisplayInAuraBar	= 0x10000000,
+			DontDisplayInAuraBar = 0x10000000,
 			/// 
 			ChannelDisplaySpellName = 0x20000000,
 			/// 
-			EnableAtDodge			= 0x40000000,
+			EnableAtDodge = 0x40000000,
 			/// 
-			Unknown_16				= 0x80000000
+			Unknown_16 = 0x80000000
 		};
 	}
 
@@ -177,12 +177,12 @@ namespace wowpp
 	{
 		enum Type
 		{
-			None			= 0x00,
-			Movement		= 0x01,
-			PushBack		= 0x02,
-			Interrupt		= 0x04,
-			AutoAttack		= 0x08,
-			Damage			= 0x10
+			None = 0x00,
+			Movement = 0x01,
+			PushBack = 0x02,
+			Interrupt = 0x04,
+			AutoAttack = 0x08,
+			Damage = 0x10
 		};
 	}
 
@@ -192,12 +192,12 @@ namespace wowpp
 	{
 		enum Type
 		{
-			None			= 0x0000,
-			Damage			= 0x0002,
-			Movement		= 0x0008,
-			Turning			= 0x0010,
-			Damage2			= 0x0080,
-			Delay			= 0x4000
+			None = 0x0000,
+			Damage = 0x0002,
+			Movement = 0x0008,
+			Turning = 0x0010,
+			Damage2 = 0x0080,
+			Delay = 0x4000
 		};
 	};
 
@@ -207,59 +207,59 @@ namespace wowpp
 	{
 		enum Type
 		{
-			None					= 0x0000000,
+			None = 0x0000000,
 			/// Removed when getting hit by a negative spell.
-			HitBySpell				= 0x00000001,
+			HitBySpell = 0x00000001,
 			/// Removed by any damage.
-			Damage					= 0x00000002,
+			Damage = 0x00000002,
 			/// Removed on crowd control effect.
-			CrowdControl			= 0x00000004,
+			CrowdControl = 0x00000004,
 			/// Removed by any movement.
-			Move					= 0x00000008,
+			Move = 0x00000008,
 			/// Removed by any turning.
-			Turning					= 0x00000010,
+			Turning = 0x00000010,
 			/// Removed by entering combat.
-			EnterCombat				= 0x00000020,
+			EnterCombat = 0x00000020,
 			/// Removed by unmounting.
-			NotMounted				= 0x00000040,
+			NotMounted = 0x00000040,
 			/// Removed by entering water (start swimming).
-			NotAboveWater			= 0x00000080,
+			NotAboveWater = 0x00000080,
 			/// Removed by leaving water.
-			NotUnderWater			= 0x00000100,
+			NotUnderWater = 0x00000100,
 			/// Removed by unsheathing.
-			NotSheathed				= 0x00000200,
+			NotSheathed = 0x00000200,
 			/// Removed when talking to an npc or loot a creature.
-			Talk					= 0x00000400,
+			Talk = 0x00000400,
 			/// Removed when mining/using/opening/interact with game object.
-			Use						= 0x00000800,
+			Use = 0x00000800,
 			/// Removed by attacking.
-			Attack					= 0x00001000,
+			Attack = 0x00001000,
 			/// TODO
-			Cast					= 0x00002000,
+			Cast = 0x00002000,
 			/// TODO
-			Unknown_14				= 0x00004000,
+			Unknown_14 = 0x00004000,
 			/// Removed on transformation.
-			Transform				= 0x00008000,
+			Transform = 0x00008000,
 			/// TODO
-			Unknown_16				= 0x00010000,
+			Unknown_16 = 0x00010000,
 			/// Removed when mounting.
-			Mount					= 0x00020000,
+			Mount = 0x00020000,
 			/// Removed when standing up.
-			NotSeated				= 0x00040000,
+			NotSeated = 0x00040000,
 			/// Removed when leaving the map.
-			ChangeMap				= 0x00080000,
+			ChangeMap = 0x00080000,
 			/// TODO
-			Unattackable			= 0x00100000,
+			Unattackable = 0x00100000,
 			/// TODO
-			Unknown_21				= 0x00200000,
+			Unknown_21 = 0x00200000,
 			/// Removed when teleported.
-			Teleported				= 0x00400000,
+			Teleported = 0x00400000,
 			/// Removed by entering pvp combat.
-			EnterPvPCombat			= 0x00800000,
+			EnterPvPCombat = 0x00800000,
 			/// Removed by any direct damage.
-			DirectDamage			= 0x01000000,
+			DirectDamage = 0x01000000,
 			/// TODO
-			NotVictim =				(HitBySpell | Damage | DirectDamage)
+			NotVictim = (HitBySpell | Damage | DirectDamage)
 		};
 	}
 

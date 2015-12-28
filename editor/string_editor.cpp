@@ -49,8 +49,7 @@ namespace wowpp
 
 		void StringEditor::on_buttonBox_accepted()
 		{
-			auto &str = m_property.getValue();
-			str = m_ui->propValueField->text().toStdString();
+			m_property.setValue(m_ui->propValueField->text().toStdString());
 		}
 
 	}

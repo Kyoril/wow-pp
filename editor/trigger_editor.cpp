@@ -68,7 +68,7 @@ namespace wowpp
 			}
 
 			// Get trigger entry
-			auto *trigger = m_application.getProject().triggers.getTemplates()[index].get();
+			auto *trigger = m_application.getProject().triggers.getTemplates().mutable_entry(index);
 			m_selectedTrigger = trigger;
 			if (!trigger)
 			{
@@ -76,14 +76,14 @@ namespace wowpp
 				return;
 			}
 
-			m_ui->triggerNameBox->setText(trigger->name.c_str());
-			m_ui->triggerPathBox->setText((trigger->path.empty() ? "(Default)" : trigger->path.c_str()));
+			m_ui->triggerNameBox->setText(trigger->name().c_str());
+			m_ui->triggerPathBox->setText((trigger->category().empty() ? "(Default)" : trigger->category().c_str()));
 			m_ui->splitter->setEnabled(true);
 
 			auto *rootItem = m_ui->functionView->topLevelItem(0);
 			if (rootItem)
 			{
-				rootItem->setText(0, trigger->name.c_str());
+				rootItem->setText(0, trigger->name().c_str());
 			}
 
 			auto *eventItem = rootItem->child(0);
@@ -91,7 +91,7 @@ namespace wowpp
 			{
 				qDeleteAll(eventItem->takeChildren());
 
-				for (const auto &e : trigger->events)
+				for (const auto &e : trigger->events())
 				{
 					QTreeWidgetItem *item = new QTreeWidgetItem();
 
@@ -115,7 +115,7 @@ namespace wowpp
 			{
 				qDeleteAll(actionItem->takeChildren());
 
-				for (const auto &action : trigger->actions)
+				for (const auto &action : trigger->actions())
 				{
 					QTreeWidgetItem *item = new QTreeWidgetItem();
 
@@ -151,18 +151,14 @@ namespace wowpp
 				return;
 			}
 
-			std::unique_ptr<TriggerEntry> newTrigger(new TriggerEntry());
-			newTrigger->id = newId;
-			newTrigger->name = "New Trigger";
-
-			m_application.getProject().triggers.add(
-				std::move(newTrigger));
+			auto *newTrigger = m_application.getProject().triggers.add(newId);
+			newTrigger->set_name("New Trigger");
 
 			// This will update all views
 			emit m_application.getTriggerListModel()->layoutChanged();
 
 			// Select our new trigger
-			QModelIndex last = m_application.getTriggerListModel()->index(proj.triggers.getTemplates().size() - 1);
+			QModelIndex last = m_application.getTriggerListModel()->index(proj.triggers.getTemplates().entry_size() - 1);
 			m_ui->triggerView->setCurrentIndex(last);
 
 			m_application.markAsChanged();
@@ -186,7 +182,7 @@ namespace wowpp
 			auto result = dialog.exec();
 			if (result == QDialog::Accepted)
 			{
-				m_selectedTrigger->events.push_back(dialog.getEvent());
+				m_selectedTrigger->mutable_events()->Add(dialog.getEvent());
 
 				auto *rootItem = m_ui->functionView->topLevelItem(0);
 				if (rootItem)
@@ -214,8 +210,9 @@ namespace wowpp
 			auto result = dialog.exec();
 			if (result == QDialog::Accepted)
 			{
-				m_selectedTrigger->actions.push_back(dialog.getAction());
-				
+				auto *added = m_selectedTrigger->mutable_actions()->Add();
+				*added = dialog.getAction();
+
 				auto *rootItem = m_ui->functionView->topLevelItem(0);
 				if (rootItem)
 				{
@@ -239,14 +236,14 @@ namespace wowpp
 				return;
 
 			// Unlink trigger
-			auto &unitEntries = m_application.getProject().units.getTemplates();
+			auto &unitEntries = m_application.getProject().units.getTemplates().entry();
 			for (auto &unit : unitEntries)
 			{
-				unit->unlinkTrigger(m_selectedTrigger->id);
+				//unit->unlinkTrigger(m_selectedTrigger->id);
 			}
 			
 			// Remove selected trigger
-			m_application.getProject().triggers.remove(m_selectedTrigger->id);
+			m_application.getProject().triggers.remove(m_selectedTrigger->id());
 			m_selectedTrigger = nullptr;
 
 			// This will update all views
@@ -272,7 +269,7 @@ namespace wowpp
 				return;
 
 			// Rename
-			m_selectedTrigger->name = m_ui->triggerNameBox->text().toStdString();
+			m_selectedTrigger->set_name(m_ui->triggerNameBox->text().toStdString());
 
 			// This will update all views
 			emit m_application.getTriggerListModel()->layoutChanged();
@@ -285,7 +282,7 @@ namespace wowpp
 				return;
 
 			// Move
-			m_selectedTrigger->path = m_ui->triggerPathBox->text().toStdString();
+			m_selectedTrigger->set_category(m_ui->triggerPathBox->text().toStdString());
 
 			// This will update all views
 			emit m_application.getTriggerListModel()->layoutChanged();
@@ -311,15 +308,15 @@ namespace wowpp
 			if (parent == rootItem->child(0))
 			{
 				int index = parent->indexOfChild(item);
-				if (index >= m_selectedTrigger->actions.size())
+				if (index >= m_selectedTrigger->events_size())
 					return;
 
 				// Event clicked
-				EventDialog dialog(m_application, m_selectedTrigger->events[index]);
+				EventDialog dialog(m_application, m_selectedTrigger->events(index));
 				auto result = dialog.exec();
 				if (result == QDialog::Accepted)
 				{
-					m_selectedTrigger->events[index] = dialog.getEvent();
+					m_selectedTrigger->mutable_events()->Set(index, dialog.getEvent());
 					item->setData(0, Qt::DisplayRole, getTriggerEventText(dialog.getEvent()));
 					m_application.markAsChanged();
 				}
@@ -327,15 +324,15 @@ namespace wowpp
 			else if (parent == rootItem->child(2))
 			{
 				int index = parent->indexOfChild(item);
-				if (index >= m_selectedTrigger->actions.size())
+				if (index >= m_selectedTrigger->actions_size())
 					return;
 
 				// Action clicked
-				ActionDialog dialog(m_application, m_selectedTrigger->actions[index]);
+				ActionDialog dialog(m_application, m_selectedTrigger->actions(index));
 				auto result = dialog.exec();
 				if (result == QDialog::Accepted)
 				{
-					m_selectedTrigger->actions[index] = dialog.getAction();
+					*m_selectedTrigger->mutable_actions()->Mutable(index) = dialog.getAction();
 					item->setData(0, Qt::DisplayRole, getTriggerActionText(m_application.getProject(), dialog.getAction()));
 					m_application.markAsChanged();
 				}

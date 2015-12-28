@@ -24,24 +24,34 @@
 #include "common/typedefs.h"
 #include "game/game_object.h"
 #include "common/id_generator.h"
-#include "data/map_entry.h"
-#include "data/data_load_context.h"
+#include "shared/proto_data/maps.pb.h"
 #include "game/visibility_grid.h"
 #include "creature_spawner.h"
 #include "world_object_spawner.h"
 #include "unit_finder.h"
 #include "boost/signals2.hpp"
 #include "map.h"
+#include <unordered_map>
 #include <memory>
 #include <vector>
 
 namespace wowpp
 {
+	namespace game
+	{
+		struct ITriggerHandler;
+	}
 	class WorldInstanceManager;
 	class GameUnit;
 	class GameCreature;
 	class WorldObject;
 	class Universe;
+	namespace proto
+	{
+		class Project;
+		class UnitEntry;
+		class ObjectEntry;
+	}
 
 	inline UInt32 createMapGUID(UInt32 low, UInt32 map) { return static_cast<UInt32>(low | (map << 16)); }
 
@@ -75,31 +85,30 @@ namespace wowpp
 		/// @param getRace Callback to obtain informations about a race.
 		/// @param getClass Callback to obtain informations about a class.
 		/// @param getLevel Callback to obtain informations about a level.
-		explicit WorldInstance(WorldInstanceManager &manager, 
+		explicit WorldInstance(
+			WorldInstanceManager &manager, 
 			Universe &universe,
-			const MapEntry &mapEntry,
+			game::ITriggerHandler &triggerHandler,
+			proto::Project &project,
+			const proto::MapEntry &mapEntry,
 			UInt32 id, 
 			std::unique_ptr<UnitFinder> unitFinder,
 			std::unique_ptr<VisibilityGrid> visibilityGrid,
 			IdGenerator<UInt64> &objectIdGenerator,
-			DataLoadContext::GetRace getRace,
-			DataLoadContext::GetClass getClass,
-			DataLoadContext::GetLevel getLevel,
-			DataLoadContext::GetSpell getSpell,
 			const String &dataPath
 			);
 
 		/// Creates a new creature which will belong to this world instance. However,
 		/// the creature won't be spawned yet. This method is used by CreatureSpawner.
 		std::shared_ptr<GameCreature> spawnCreature(
-			const UnitEntry &entry,
+			const proto::UnitEntry &entry,
 			float x, float y, float z, float o,
 			float randomWalkRadius);
 		std::shared_ptr<GameCreature> spawnSummonedCreature(
-			const UnitEntry &entry,
+			const proto::UnitEntry &entry,
 			float x, float y, float z, float o);
 		std::shared_ptr<WorldObject> spawnWorldObject(
-			const ObjectEntry &entry,
+			const proto::ObjectEntry &entry,
 			float x, float y, float z, float o,
 			float radius);
 
@@ -108,7 +117,7 @@ namespace wowpp
 		/// Gets the id of this instance.
 		UInt32 getId() const { return m_id; }
 		/// Gets the map id of this instance.
-		UInt32 getMapId() const { return m_mapEntry.id; }
+		UInt32 getMapId() const { return m_mapEntry.id(); }
 		/// 
 		UnitFinder &getUnitFinder() { return *m_unitFinder; }
 		/// 
@@ -152,16 +161,14 @@ namespace wowpp
 
 		WorldInstanceManager &m_manager;
 		Universe &m_universe;
+		game::ITriggerHandler &m_triggerHandler;
 		std::unique_ptr<UnitFinder> m_unitFinder;
 		std::unique_ptr<VisibilityGrid> m_visibilityGrid;
 		IdGenerator<UInt64> &m_objectIdGenerator;
 		GameObjectsById m_objectsById;
-		const MapEntry &m_mapEntry;
+		proto::Project &m_project;
+		const proto::MapEntry &m_mapEntry;
 		UInt32 m_id;
-		DataLoadContext::GetRace m_getRace;
-		DataLoadContext::GetClass m_getClass;
-		DataLoadContext::GetLevel m_getLevel;
-		DataLoadContext::GetSpell m_getSpell;
 		CreatureSpawners m_creatureSpawners;
 		std::map<String, CreatureSpawner*> m_creatureSpawnsByName;
 		ObjectSpawners m_objectSpawners;

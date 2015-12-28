@@ -20,6 +20,7 @@
 // 
 
 #include "trigger_helper.h"
+#include "proto_data/trigger_helper.h"
 
 namespace wowpp
 {
@@ -54,11 +55,11 @@ namespace wowpp
 			}
 		}
 
-		QString getTriggerTargetName(const TriggerEntry::TriggerAction &action, bool link/* = false*/)
+		QString getTriggerTargetName(const proto::TriggerAction &action, bool link/* = false*/)
 		{
 			QString temp = (link ? "<a href=\"target\" style=\"color: #ffae00;\">%1</a>" : "%1");
 
-			switch (action.target)
+			switch (action.target())
 			{
 			case trigger_action_target::None:
 				return temp.arg("(NONE)");
@@ -69,27 +70,27 @@ namespace wowpp
 			case trigger_action_target::RandomUnit:
 				return temp.arg("(Random Nearby Unit)");
 			case trigger_action_target::NamedCreature:
-				return temp.arg(QString("(Creature Named '%1')").arg(action.targetName.c_str()));
+				return temp.arg(QString("(Creature Named '%1')").arg(action.targetname().c_str()));
 			case trigger_action_target::NamedWorldObject:
-				return temp.arg(QString("(Object Named '%1')").arg(action.targetName.c_str()));
+				return temp.arg(QString("(Object Named '%1')").arg(action.targetname().c_str()));
 			default:
 				return temp.arg("(INVALID)");
 			}
 		}
 
-		QString getTriggerActionString(const TriggerEntry::TriggerAction &action, UInt32 i, bool link/* = false*/)
+		QString getTriggerActionString(const proto::TriggerAction &action, UInt32 i, bool link/* = false*/)
 		{
 			QString temp = (link ? "<a href=\"text-%2\" style=\"color: #ffae00;\">%1</a>" : "%1");
 
-			if (i >= action.texts.size())
+			if (static_cast<int>(i) >= action.texts_size())
 				return temp.arg("(INVALID TEXT)").arg(i);
 
-			return temp.arg(action.texts[i].c_str()).arg(i);
+			return temp.arg(action.texts(i).c_str()).arg(i);
 		}
 
-		QString getTriggerActionText(const Project &project, const TriggerEntry::TriggerAction &action, bool withLinks/* = false*/)
+		QString getTriggerActionText(const proto::Project &project, const proto::TriggerAction &action, bool withLinks/* = false*/)
 		{
-			switch (action.action)
+			switch (action.action())
 			{
 			case trigger_actions::Say:
 				return QString("Unit - Make %1 say %2 and play sound %3")
@@ -120,14 +121,14 @@ namespace wowpp
 			}
 		}
 
-		QString getTriggerActionData(const TriggerEntry::TriggerAction &action, UInt32 i, bool link/* = false*/)
+		QString getTriggerActionData(const proto::TriggerAction &action, UInt32 i, bool link/* = false*/)
 		{
 			QString temp = (link ? "<a href=\"data-%2\" style=\"color: #ffae00;\">%1</a>" : "%1");
 
-			if (i >= action.data.size())
+			if (static_cast<int>(i) >= action.data_size())
 				return temp.arg(0).arg(i);
 
-			return temp.arg(action.data[i]).arg(i);
+			return temp.arg(action.data(i)).arg(i);
 		}
 	}
 }

@@ -26,7 +26,7 @@
 #include "tiled_unit_watcher.h"
 #include "unit_finder.h"
 #include "universe.h"
-#include "data/faction_template_entry.h"
+#include "proto_data/faction_helper.h"
 #include "log/default_log_levels.h"
 
 namespace wowpp
@@ -77,15 +77,15 @@ namespace wowpp
 			// Check if we are hostile against this unit
 			const auto &ourFaction = controlled.getFactionTemplate();
 			const auto &unitFaction = unit.getFactionTemplate();
-			if (ourFaction.isNeutralToAll())
+			if (isNeutralToAll(ourFaction))
 			{
 				return false;
 			}
 
 			const float dist = controlled.getDistanceTo(unit, false);
 
-			const bool isHostile = ourFaction.isHostileTo(unitFaction);
-			const bool isFriendly = ourFaction.isFriendlyTo(unitFaction);
+			const bool isHostile = isHostileTo(ourFaction, unitFaction);
+			const bool isFriendly = isFriendlyTo(ourFaction, unitFaction);
 			if (isHostile && !isFriendly)
 			{
 				if (isVisible)
@@ -98,11 +98,11 @@ namespace wowpp
 					float reqDist = 20.0f;
 					if (ourLevel < otherLevel)
 					{
-						reqDist = limit<float>(5.0f, 40.0f, reqDist - diff);
+						reqDist = limit<float>(reqDist - diff, 5.0f, 40.0f);
 					}
 					else if (otherLevel < ourLevel)
 					{
-						reqDist = limit<float>(5.0f, 40.0f, reqDist + diff);
+						reqDist = limit<float>(reqDist + diff, 5.0f, 40.0f);
 					}
 
 					if (dist > reqDist)
@@ -135,7 +135,7 @@ namespace wowpp
 						auto *victim = unit.getVictim();
 						if (unit.isInCombat() && victim != nullptr)
 						{
-							if (!unitFaction.isHostileTo(victim->getFactionTemplate()))
+							if (!isHostileTo(unitFaction, victim->getFactionTemplate()))
 								return false;
 
 							getAI().enterCombat(*victim);

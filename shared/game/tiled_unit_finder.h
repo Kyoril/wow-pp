@@ -34,7 +34,7 @@ namespace wowpp
 	{
 	public:
 
-		explicit TiledUnitFinder(const MapEntry &map, game::Distance tileWidth);
+		explicit TiledUnitFinder(const proto::MapEntry &map, game::Distance tileWidth);
 		virtual void addUnit(GameUnit &findable) override;
 		virtual void removeUnit(GameUnit &findable) override;
 		virtual void updatePosition(GameUnit &updated,

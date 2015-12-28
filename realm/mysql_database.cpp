@@ -29,11 +29,11 @@
 #include "player_manager.h"
 #include <boost/format.hpp>
 #include "log/default_log_levels.h"
-#include "data/project.h"
+#include "proto_data/project.h"
 
 namespace wowpp
 {
-	MySQLDatabase::MySQLDatabase(Project &project, const MySQL::DatabaseInfo &connectionInfo)
+	MySQLDatabase::MySQLDatabase(proto::Project &project, const MySQL::DatabaseInfo &connectionInfo)
 		: m_project(project)
 		, m_connectionInfo(connectionInfo)
 	{
@@ -88,7 +88,7 @@ namespace wowpp
 
 	game::ResponseCode MySQLDatabase::createCharacter(
 		UInt32 accountId, 
-		const std::vector<const SpellEntry*> &spells, 
+		const std::vector<const proto::SpellEntry*> &spells, 
 		const std::vector<pp::world_realm::ItemData> &items, 
 		game::CharEntry &character)
 	{
@@ -232,7 +232,7 @@ namespace wowpp
 								fmtStrm << ",";
 							}
 
-							fmtStrm << "(" << character.id << "," << spell->id << ")";
+							fmtStrm << "(" << character.id << "," << spell->id() << ")";
 						}
 
 						// Now, learn all initial spells

@@ -22,10 +22,11 @@
 #include "creature_ai_death_state.h"
 #include "creature_ai.h"
 #include "game_creature.h"
-#include "data/trigger_entry.h"
 #include "loot_instance.h"
 #include "log/default_log_levels.h"
 #include "common/make_unique.h"
+#include "proto_data/project.h"
+#include "proto_data/trigger_helper.h"
 
 namespace wowpp
 {
@@ -42,22 +43,12 @@ namespace wowpp
 	void CreatureAIDeathState::onEnter()
 	{
 		auto &controlled = getControlled();
-
-		// Raise OnKilled trigger
-		auto it = controlled.getEntry().triggersByEvent.find(trigger_event::OnKilled);
-		if (it != controlled.getEntry().triggersByEvent.end())
-		{
-			for (const auto *trigger : it->second)
-			{
-				trigger->execute(*trigger, &controlled);
-			}
-		}
-
+		controlled.raiseTrigger(trigger_event::OnKilled);
 
 		// Decide whether to despawn based on unit type
 		auto &entry = controlled.getEntry();
-		const bool isElite = (entry.rank > 0 && entry.rank < 4);
-		const bool isRare = (entry.rank == 4);
+		const bool isElite = (entry.rank() > 0 && entry.rank() < 4);
+		const bool isRare = (entry.rank() == 4);
 
 		// Calculate despawn delay for rare mobs and elite mobs
 		GameTime despawnDelay = constants::OneSecond * 30;
@@ -75,12 +66,12 @@ namespace wowpp
 
 			// Reward the killer with experience points
 			const float t =
-				(controlled.getEntry().maxLevel != controlled.getEntry().minLevel) ?
-				(controlled.getLevel() - controlled.getEntry().minLevel) / (controlled.getEntry().maxLevel - controlled.getEntry().minLevel) :
+				(controlled.getEntry().maxlevel() != controlled.getEntry().minlevel()) ?
+				(controlled.getLevel() - controlled.getEntry().minlevel()) / (controlled.getEntry().maxlevel() - controlled.getEntry().minlevel()) :
 				0.0f;
 
 			// Base XP for equal level
-			UInt32 xp = interpolate(controlled.getEntry().xpMin, controlled.getEntry().xpMax, t);
+			UInt32 xp = interpolate(controlled.getEntry().minlevelxp(), controlled.getEntry().maxlevelxp(), t);
 
 			// TODO: Level adjustment factor
 			
@@ -105,14 +96,10 @@ namespace wowpp
 				character->rewardExperience(&controlled, xp);
 			}
 
-			// Loot callback functions
-			auto onCleared = [&controlled]()
-			{
-				controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
-			};
+			const auto *lootEntry = controlled.getProject().unitLoot.getById(entry.unitlootentry());
 
 			// Generate loot
-			auto loot = make_unique<LootInstance>(controlled.getGuid(), entry.unitLootEntry, entry.minLootGold, entry.maxLootGold);
+			auto loot = make_unique<LootInstance>(controlled.getProject().items, controlled.getGuid(), lootEntry, entry.minlootgold(), entry.maxlootgold());
 			if (!loot->isEmpty())
 			{
 				// 3 Minutes of despawn delay if creature still has loot

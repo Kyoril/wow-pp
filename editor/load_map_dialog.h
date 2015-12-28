@@ -22,7 +22,7 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include "data/project.h"
+#include "proto_data/project.h"
 #include <QDialog>
 #include <memory>
 
@@ -48,7 +48,7 @@ namespace wowpp
 			/// 
 			explicit LoadMapDialog(EditorApplication &app);
 
-			MapEntry *getSelectedMap() const;
+			proto::MapEntry *getSelectedMap() const;
 
 		private slots:
 

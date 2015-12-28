@@ -42,7 +42,7 @@ namespace wowpp
 
 			int rowCount(const QModelIndex &parent = QModelIndex()) const
 			{
-				return m_entries.getTemplates().size();
+				return m_entries.getTemplates().entry_size();
 			}
 
 			int columnCount(const QModelIndex &parent) const
@@ -55,17 +55,17 @@ namespace wowpp
 				if (!index.isValid())
 					return QVariant();
 
-				if (index.row() >= m_entries.getTemplates().size())
+				if (index.row() >= m_entries.getTemplates().entry_size())
 					return QVariant();
 
 				if (role == Qt::DisplayRole)
 				{
 					const auto &templates = m_entries.getTemplates();
-					const typename T::TemplatePtr &tpl = templates[index.row()];
+					const T::EntryType &tpl = templates.entry(index.row());
 
 					if (index.column() == 0)
 					{
-						return QString("%1 %2").arg(QString::number(tpl->id), 6, QLatin1Char('0')).arg(tpl->name.c_str());
+						return QString("%1 %2").arg(QString::number(tpl.id()), 6, QLatin1Char('0')).arg(tpl.name().c_str());
 					}
 				}
 

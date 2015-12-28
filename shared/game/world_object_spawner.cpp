@@ -26,6 +26,7 @@
 #include "common/erase_by_move.h"
 #include "log/default_log_levels.h"
 #include "common/utilities.h"
+#include "shared/proto_data/objects.pb.h"
 #include "universe.h"
 #include <memory>
 #include <cassert>
@@ -34,7 +35,7 @@ namespace wowpp
 {
 	WorldObjectSpawner::WorldObjectSpawner(
 		WorldInstance &world,
-		const ObjectEntry &entry,
+		const proto::ObjectEntry &entry,
 		size_t maxCount,
 		GameTime respawnDelay,
 		float centerX,
@@ -88,7 +89,7 @@ namespace wowpp
 			x, y, z, o,
 			m_radius
 			);
-		spawned->setFloatValue(object_fields::ScaleX, m_entry.scale);
+		spawned->setFloatValue(object_fields::ScaleX, m_entry.scale());
 		for (size_t i = 0; i < 4; ++i)
 		{
 			spawned->setFloatValue(world_object_fields::Rotation + i, m_rotation[i]);

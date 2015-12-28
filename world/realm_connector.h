@@ -27,7 +27,6 @@
 #include "game_protocol/game_incoming_packet.h"
 #include "wowpp_protocol/wowpp_connector.h"
 #include "wowpp_protocol/wowpp_world_realm.h"
-#include "data/data_load_context.h"
 #include "game/game_character.h"
 #include "common/timer_queue.h"
 #include <boost/signals2.hpp>
@@ -39,8 +38,11 @@ namespace wowpp
 	class WorldInstance;
 	class PlayerManager;
 	struct Configuration;
-	class Project;
 	class Player;
+	namespace proto
+	{
+		class Project;
+	}
 
 	/// This class manages the connection to the realm server.
 	class RealmConnector : public pp::IConnectorListener
@@ -63,7 +65,7 @@ namespace wowpp
 			PlayerManager &playerManager,
 			const Configuration &config,
 			UInt32 realmEntryIndex,
-			Project &project,
+			proto::Project &project,
 			TimerQueue &timer);
 		~RealmConnector();
 
@@ -145,7 +147,7 @@ namespace wowpp
 		WorldInstanceManager &m_worldInstanceManager;
 		PlayerManager &m_playerManager;
 		const Configuration &m_config;
-		Project &m_project;
+		proto::Project &m_project;
 		TimerQueue &m_timer;
 		std::shared_ptr<pp::Connector> m_connection;
 		UInt32 m_realmEntryIndex;

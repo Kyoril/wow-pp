@@ -43,14 +43,14 @@ namespace wowpp
 			// Same spell, same caster and same effect index - don't stack!
 			auto &a = *it;
 			if (a->getCaster() == aura->getCaster() &&
-				a->getSpell().id == aura->getSpell().id)
+				a->getSpell().id() == aura->getSpell().id())
 			{
 				newSlot = a->getSlot();
 				isReplacement = true;
 
 				// Replace old aura instance
-				if (a->getEffect().auraName == aura->getEffect().auraName &&
-					a->getEffect().index == aura->getEffect().index)
+				if (a->getEffect().aura() == aura->getEffect().aura() &&
+					a->getEffect().index() == aura->getEffect().index())
 				{
 					// Remove aura - new aura will be added
 					it = m_auras.erase(it);
@@ -59,7 +59,7 @@ namespace wowpp
 			}
 		}
 
-		if (!aura->isPassive() || (aura->getSpell().attributesEx[2] & 0x10000000))
+		if (!aura->isPassive() || (aura->getSpell().attributes(3) & 0x10000000))
 		{
 			if (!isReplacement)
 			{
@@ -90,7 +90,7 @@ namespace wowpp
 			if (newSlot != 0xFF)
 			{
 				aura->setSlot(newSlot);
-				m_owner.setUInt32Value(unit_fields::Aura + newSlot, aura->getSpell().id);
+				m_owner.setUInt32Value(unit_fields::Aura + newSlot, aura->getSpell().id());
 
 				UInt32 index = newSlot / 4;
 				UInt32 byte = (newSlot % 4) * 8;
@@ -108,12 +108,12 @@ namespace wowpp
 				m_owner.setUInt32Value(unit_fields::AuraFlags + index, val);
 
 				// Notify caster
-				m_owner.auraUpdated(newSlot, aura->getSpell().id, aura->getSpell().duration, aura->getSpell().maxDuration);
+				m_owner.auraUpdated(newSlot, aura->getSpell().id(), aura->getSpell().duration(), aura->getSpell().maxduration());
 
 				if (aura->getCaster())
 				{
 					aura->getCaster()->targetAuraUpdated(m_owner.getGuid(), newSlot,
-						aura->getSpell().id, aura->getSpell().duration, aura->getSpell().maxDuration);
+						aura->getSpell().id(), aura->getSpell().duration(), aura->getSpell().maxduration());
 				}
 			}
 		}
@@ -171,7 +171,7 @@ namespace wowpp
 			std::end(m_auras),
 			[](const std::shared_ptr<Aura> &instance)
 		{
-			return (instance->getSpell().attributesEx[2] & 0x00100000) != 0;
+			return (instance->getSpell().attributes(3) & 0x00100000) != 0;
 		});
 
 		for (auto i = newEnd; i != std::end(m_auras); ++i)
@@ -187,7 +187,7 @@ namespace wowpp
 	{
 		for (auto &it : m_auras)
 		{
-			if (it->getEffect().auraName == type)
+			if (it->getEffect().aura() == type)
 			{
 				return true;
 			}
@@ -202,7 +202,7 @@ namespace wowpp
 		auto it = m_auras.begin();
 		while (it != m_auras.end())
 		{
-			if ((*it)->getSpell().id == spellId)
+			if ((*it)->getSpell().id() == spellId)
 			{
 				removeAura(index);
 			}

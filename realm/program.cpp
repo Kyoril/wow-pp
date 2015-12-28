@@ -40,7 +40,7 @@
 #include "web_service.h"
 #include "common/timer_queue.h"
 #include "common/id_generator.h"
-#include "data/project.h"
+#include "proto_data/project.h"
 #include <iostream>
 #include <memory>
 #include <fstream>
@@ -110,7 +110,7 @@ namespace wowpp
 		}
 
 		// Load project
-		Project project;
+		proto::Project project;
 		if (!project.load(m_configuration.dataPath))
 		{
 			ELOG("Could not load data project!");

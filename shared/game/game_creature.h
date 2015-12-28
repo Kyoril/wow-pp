@@ -22,7 +22,6 @@
 #pragma once
 
 #include "game_unit.h"
-#include "data/unit_entry.h"
 #include "world_instance.h"
 #include "unit_watcher.h"
 #include "game_character.h"
@@ -33,6 +32,11 @@
 namespace wowpp
 {
 	class CreatureAI;
+	namespace proto
+	{
+		class UnitEntry;
+		class ItemEntry;
+	}
 
 	/// Represents an AI controlled creature unit in the game.
 	class GameCreature final : public GameUnit
@@ -49,12 +53,9 @@ namespace wowpp
 
 		/// Creates a new instance of the GameCreature class.
 		explicit GameCreature(
+			proto::Project &project,
 			TimerQueue &timers,
-			DataLoadContext::GetRace getRace,
-			DataLoadContext::GetClass getClass,
-			DataLoadContext::GetLevel getLevel,
-			DataLoadContext::GetSpell getSpell,
-			const UnitEntry &entry);
+			const proto::UnitEntry &entry);
 
 		/// @copydoc GameObject::initialize()
 		virtual void initialize() override;
@@ -62,22 +63,24 @@ namespace wowpp
 		virtual ObjectType getTypeId() const override { return object_type::Unit; }
 		/// Gets the original unit entry (the one, this creature was spawned with).
 		/// This is useful for restoring the original creature state.
-		const UnitEntry &getOriginalEntry() const { return m_originalEntry; }
+		const proto::UnitEntry &getOriginalEntry() const { return m_originalEntry; }
 		/// Gets the unit entry on which base this creature has been created.
-		const UnitEntry &getEntry() const { return *m_entry; }
+		const proto::UnitEntry &getEntry() const { return *m_entry; }
 		/// Changes the creatures entry index. Remember, that the creature always has to
 		/// have a valid base entry.
-		void setEntry(const UnitEntry &entry);
+		void setEntry(const proto::UnitEntry &entry);
 		/// 
 		const String &getName() const override;
 		/// 
-		void setVirtualItem(UInt32 slot, const ItemEntry *item);
+		void setVirtualItem(UInt32 slot, const proto::ItemEntry *item);
 		/// 
 		bool canBlock() const override;
 		/// 
 		bool canParry() const override;
 		/// 
 		bool canDodge() const override;
+		/// 
+		bool canDualWield() const override;
 		/// 
 		void updateDamage() override;
 		/// Updates the creatures loot recipient. Values of 0 mean no recipient.
@@ -93,6 +96,8 @@ namespace wowpp
 		void setUnitLoot(std::unique_ptr<LootInstance> unitLoot);
 		/// Gets the number of loot recipients.
 		UInt32 getLootRecipientCount() const { return m_lootRecipients.size(); }
+		/// 
+		void raiseTrigger(trigger_event::Type e);
 		/// Executes a callback function for every valid loot recipient.
 		template<typename OnRecipient>
 		void forEachLootRecipient(OnRecipient callback)
@@ -121,8 +126,8 @@ namespace wowpp
 
 	private:
 
-		const UnitEntry &m_originalEntry;
-		const UnitEntry *m_entry;
+		const proto::UnitEntry &m_originalEntry;
+		const proto::UnitEntry *m_entry;
 		std::unique_ptr<CreatureAI> m_ai;
 		boost::signals2::scoped_connection m_onSpawned;
 		LootRecipients m_lootRecipients;

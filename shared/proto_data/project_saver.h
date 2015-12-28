@@ -26,6 +26,7 @@
 #include <fstream>
 #include <vector>
 #include <boost/filesystem.hpp>
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -63,14 +64,14 @@ namespace wowpp
 
 				template<class T>
 				static bool saveManagerToFile(
-					const String &fileName,
+					const String &filename,
 					const String &name,
 					const T &manager)
 				{
-					std::ofstream file(fileName.c_str(), std::ios::out | std::ios::binary);
+					std::ofstream file(filename.c_str(), std::ios::out | std::ios::binary);
 					if (!file)
 					{
-						ELOG("Could not save file '" << fileName << "'");
+						ELOG("Could not save file '" << filename << "'");
 						return false;
 					}
 

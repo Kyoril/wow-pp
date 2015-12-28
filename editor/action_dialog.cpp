@@ -21,8 +21,6 @@
 
 #include "action_dialog.h"
 #include "ui_action_dialog.h"
-#include "data/trigger_entry.h"
-#include "data/project.h"
 #include "templates/basic_template.h"
 #include "editor_application.h"
 #include "trigger_helper.h"
@@ -35,7 +33,7 @@ namespace wowpp
 {
 	namespace editor
 	{
-		ActionDialog::ActionDialog(EditorApplication &app, TriggerEntry::TriggerAction action/* = TriggerEntry::TriggerAction()*/)
+		ActionDialog::ActionDialog(EditorApplication &app, proto::TriggerAction action/* = TriggerEntry::TriggerAction()*/)
 			: QDialog()
 			, m_ui(new Ui::ActionDialog)
 			, m_app(app)
@@ -43,7 +41,7 @@ namespace wowpp
 		{
 			// Setup auto generated ui
 			m_ui->setupUi(this);
-			m_ui->actionBox->setCurrentIndex(m_action.action);
+			m_ui->actionBox->setCurrentIndex(m_action.action());
 
 			connect(m_ui->actionBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_actionBox_currentIndexChanged(int)));
 			m_ui->actionTextLabel->setText(getTriggerActionText(m_app.getProject(), m_action, true));
@@ -56,12 +54,12 @@ namespace wowpp
 
 		void ActionDialog::on_actionBox_currentIndexChanged(int index)
 		{
-			if (m_action.action != index)
+			if (m_action.action() != index)
 			{
-				m_action.action = index;
-				m_action.texts.clear();
-				m_action.data.clear();
-				m_action.targetName.clear();
+				m_action.set_action(index);
+				m_action.clear_texts();
+				m_action.clear_data();
+				m_action.clear_targetname();
 
 				m_ui->actionTextLabel->setText(getTriggerActionText(m_app.getProject(), m_action, true));
 			}
@@ -71,12 +69,12 @@ namespace wowpp
 		{
 			if (link == "target")
 			{
-				TargetDialog dialog(m_action.target, m_action.targetName.c_str());
+				TargetDialog dialog(m_action.target(), m_action.targetname().c_str());
 				auto result = dialog.exec();
 				if (result == QDialog::Accepted)
 				{
-					m_action.target = dialog.getTarget();
-					m_action.targetName = dialog.getTargetName().toStdString();
+					m_action.set_target(dialog.getTarget());
+					m_action.set_targetname(dialog.getTargetName().toStdString());
 					m_ui->actionTextLabel->setText(getTriggerActionText(m_app.getProject(), m_action, true));
 				}
 			}
@@ -85,13 +83,13 @@ namespace wowpp
 				QString numString = link.right(link.size() - 5);
 				int index = numString.toInt();
 
-				if (m_action.data.size() <= index) m_action.data.resize(index + 1);
+				if (m_action.data_size() <= index) m_action.mutable_data()->Resize(index + 1, 0);
 				
-				DataDialog dialog(m_app.getProject(), m_action.action, index, m_action.data[index]);
+				DataDialog dialog(m_app.getProject(), m_action.action(), index, m_action.data(index));
 				auto result = dialog.exec();
 				if (result == QDialog::Accepted)
 				{
-					m_action.data[index] = dialog.getData();
+					m_action.mutable_data()->Set(index, dialog.getData());
 					m_ui->actionTextLabel->setText(getTriggerActionText(m_app.getProject(), m_action, true));
 				}
 			}
@@ -100,12 +98,12 @@ namespace wowpp
 				QString numString = link.right(link.size() - 5);
 				int index = numString.toInt();
 
-				if (m_action.texts.size() <= index) m_action.texts.resize(index + 1);
-				TextDialog dialog(m_action.texts[index].c_str());
+				if (m_action.texts_size() <= index) m_action.mutable_texts()->Reserve(index + 1);
+				TextDialog dialog(m_action.texts(index).c_str());
 				auto result = dialog.exec();
 				if (result == QDialog::Accepted)
 				{
-					m_action.texts[index] = dialog.getText().toStdString();
+					*m_action.mutable_texts()->Mutable(index) = dialog.getText().toStdString();
 					m_ui->actionTextLabel->setText(getTriggerActionText(m_app.getProject(), m_action, true));
 				}
 			}

@@ -22,8 +22,7 @@
 #include "world_instance.h"
 #include "world_instance_manager.h"
 #include "log/default_log_levels.h"
-#include "data/unit_entry.h"
-#include "data/object_entry.h"
+#include "proto_data/project.h"
 #include "game_unit.h"
 #include "game_creature.h"
 #include "game_world_object.h"
@@ -35,6 +34,7 @@
 #include <boost/bind/bind.hpp>
 #include "each_tile_in_sight.h"
 #include "common/utilities.h"
+#include "trigger_handler.h"
 #include "creature_ai.h"
 #include "universe.h"
 #include <algorithm>
@@ -99,125 +99,125 @@ namespace wowpp
 
 	std::map<UInt32, Map> WorldInstance::MapData;
 
-	WorldInstance::WorldInstance(WorldInstanceManager &manager, 
+	WorldInstance::WorldInstance(
+		WorldInstanceManager &manager, 
 		Universe &universe,
-		const MapEntry &mapEntry,
+		game::ITriggerHandler &triggerHandler,
+		proto::Project &project,
+		const proto::MapEntry &mapEntry,
 		UInt32 id, 
 		std::unique_ptr<UnitFinder> unitFinder,
 		std::unique_ptr<VisibilityGrid> visibilityGrid,
 		IdGenerator<UInt64> &objectIdGenerator,
-		DataLoadContext::GetRace getRace,
-		DataLoadContext::GetClass getClass,
-		DataLoadContext::GetLevel getLevel,
-		DataLoadContext::GetSpell getSpell,
 		const String &dataPath
 		)
 		: m_manager(manager)
 		, m_universe(universe)
+		, m_triggerHandler(triggerHandler)
 		, m_unitFinder(std::move(unitFinder))
 		, m_visibilityGrid(std::move(visibilityGrid))
 		, m_objectIdGenerator(objectIdGenerator)
+		, m_project(project)
 		, m_mapEntry(mapEntry)
 		, m_id(id)
-		, m_getRace(getRace)
-		, m_getClass(getClass)
-		, m_getLevel(getLevel)
-		, m_getSpell(getSpell)
 		, m_map(nullptr)
 	{
 		// Create map instance if needed
-		auto mapIt = MapData.find(m_mapEntry.id);
+		auto mapIt = MapData.find(m_mapEntry.id());
 		if (mapIt == MapData.end())
 		{
 			// Load map
-			MapData.insert(std::make_pair(m_mapEntry.id, Map(m_mapEntry, dataPath)));
-			mapIt = MapData.find(m_mapEntry.id);
+			MapData.insert(std::make_pair(m_mapEntry.id(), Map(m_mapEntry, dataPath)));
+			mapIt = MapData.find(m_mapEntry.id());
 			if (mapIt != MapData.end()) m_map = &mapIt->second;
 		}
 
 		// Add object spawners
-		for (auto &spawn : m_mapEntry.objectSpawns)
+		for (int i = 0; i < m_mapEntry.objectspawns_size(); ++i)
 		{
 			// Create a new spawner
+			const auto &spawn = m_mapEntry.objectspawns(i);
+
+			const auto *objectEntry = m_project.objects.getById(spawn.objectentry());
+			assert(objectEntry);
+
 			std::unique_ptr<WorldObjectSpawner> spawner(new WorldObjectSpawner(
 				*this,
-				*spawn.object,
-				spawn.maxCount,
-				spawn.respawnDelay,
-				spawn.position[0], spawn.position[1], spawn.position[2],
-				spawn.orientation,
-				spawn.rotation,
-				spawn.radius,
-				spawn.animProgress,
-				spawn.state));
+				*objectEntry,
+				spawn.maxcount(),
+				spawn.respawndelay(),
+				spawn.positionx(), spawn.positiony(), spawn.positionz(),
+				0.0f, //TODO spawn.orientation,
+				{ spawn.rotationw(), spawn.rotationx(), spawn.rotationy(), spawn.rotationz() },
+				spawn.radius(),
+				spawn.animprogress(),
+				spawn.state()));
 			m_objectSpawners.push_back(std::move(spawner));
-
-			if (!spawn.name.empty())
+			if (!spawn.name().empty())
 			{
-				m_objectSpawnsByName[spawn.name] = m_objectSpawners.back().get();
+				m_objectSpawnsByName[spawn.name()] = m_objectSpawners.back().get();
 			}
 		}
 
 		// Add creature spawners
-		for (auto &spawn : m_mapEntry.spawns)
+		for (int i = 0; i < m_mapEntry.unitspawns_size(); ++i)
 		{
 			// Create a new spawner
+			const auto &spawn = m_mapEntry.unitspawns(i);
+
+			const auto *unitEntry = m_project.units.getById(spawn.unitentry());
+			assert(unitEntry);
+
 			std::unique_ptr<CreatureSpawner> spawner(new CreatureSpawner(
 				*this,
-				*spawn.unit,
-				spawn.maxCount,
-				spawn.respawnDelay,
-				spawn.position[0], spawn.position[1], spawn.position[2],
-				spawn.rotation,
-				spawn.emote,
-				spawn.radius,
-				spawn.active,
-				spawn.respawn));
+				*unitEntry,
+				spawn.maxcount(),
+				spawn.respawndelay(),
+				spawn.positionx(), spawn.positiony(), spawn.positionz(),
+				spawn.rotation(),
+				spawn.defaultemote(),
+				spawn.radius(),
+				spawn.isactive(),
+				spawn.respawn()));
 			m_creatureSpawners.push_back(std::move(spawner));
 
-			if (!spawn.name.empty())
+			if (!spawn.name().empty())
 			{
-				m_creatureSpawnsByName[spawn.name] = m_creatureSpawners.back().get();
+				m_creatureSpawnsByName[spawn.name()] = m_creatureSpawners.back().get();
 			}
 		}
 
-		ILOG("Created instance of map " << m_mapEntry.id);
+		ILOG("Created instance of map " << m_mapEntry.id());
 	}
 
 	std::shared_ptr<GameCreature> WorldInstance::spawnCreature(
-		const UnitEntry &entry,
+		const proto::UnitEntry &entry,
 		float x, float y, float z, float o,
 		float randomWalkRadius)
 	{
 		// Create the unit
 		auto spawned = std::make_shared<GameCreature>(
+			m_project,
 			m_universe.getTimers(),
-			m_getRace,
-			m_getClass,
-			m_getLevel,
-			m_getSpell,
 			entry);
 		spawned->initialize();
-		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id, guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
-		spawned->setMapId(m_mapEntry.id);
+		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id(), guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
+		spawned->setMapId(m_mapEntry.id());
 		spawned->relocate(x, y, z, o);
 
 		return spawned;
 	}
 
-	std::shared_ptr<GameCreature> WorldInstance::spawnSummonedCreature(const UnitEntry &entry, float x, float y, float z, float o)
+	std::shared_ptr<GameCreature> WorldInstance::spawnSummonedCreature(const proto::UnitEntry &entry, float x, float y, float z, float o)
 	{
 		// Create the unit
 		auto spawned = std::make_shared<GameCreature>(
+			m_project,
 			m_universe.getTimers(),
-			m_getRace,
-			m_getClass,
-			m_getLevel,
-			m_getSpell,
 			entry);
 		spawned->initialize();
-		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id, guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
-		spawned->setMapId(m_mapEntry.id);
+		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id(), guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
+		spawned->setMapId(m_mapEntry.id());
 		spawned->relocate(x, y, z, o);
 
 		m_creatureSummons.insert(std::make_pair(spawned->getGuid(), spawned));
@@ -234,15 +234,16 @@ namespace wowpp
 		return spawned;
 	}
 
-	std::shared_ptr<WorldObject> WorldInstance::spawnWorldObject(const ObjectEntry &entry, float x, float y, float z, float o, float radius)
+	std::shared_ptr<WorldObject> WorldInstance::spawnWorldObject(const proto::ObjectEntry &entry, float x, float y, float z, float o, float radius)
 	{
 		// Create the unit
 		auto spawned = std::make_shared<WorldObject>(
+			m_project,
 			m_universe.getTimers(),
 			entry);
 		spawned->initialize();
-		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id, guid_type::GameObject));	// RealmID (TODO: these spawns don't need to have a specific realm id)
-		spawned->setMapId(m_mapEntry.id);
+		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id(), guid_type::GameObject));	// RealmID (TODO: these spawns don't need to have a specific realm id)
+		spawned->setMapId(m_mapEntry.id());
 		spawned->relocate(x, y, z, o);
 
 		return spawned;
@@ -301,6 +302,15 @@ namespace wowpp
 		// Add this game object to the list of objects
 		m_objectsById.insert(
 			std::make_pair(guid, &added));
+
+		// Enable trigger execution
+		if (added.getTypeId() == object_type::Unit)
+		{
+			GameUnit *unitObj = reinterpret_cast<GameUnit*>(&added);
+			unitObj->unitTrigger.connect([this](const proto::TriggerEntry &trigger, GameUnit &owner) {
+				m_triggerHandler.executeTrigger(trigger, 0, &owner);
+			});
+		}
 
 		// Get object location
 		float x, y, z, o;

@@ -69,13 +69,11 @@ namespace wowpp
 			auto &val = m_property.getValue();
 			if (val.type() == typeid(UInt32Ref))
 			{
-				auto &realVal = boost::get<UInt32Ref&>(val).getValue();
-				realVal = static_cast<UInt32>(m_ui->propValueField->value());
+				boost::get<UInt32Ref&>(val).setValue(m_ui->propValueField->value());
 			}
 			else if (val.type() == typeid(FloatRef))
 			{
-				auto &realVal = boost::get<FloatRef&>(val).getValue();
-				realVal = static_cast<float>(m_ui->propValueField->value());
+				boost::get<FloatRef&>(val).setValue(m_ui->propValueField->value());
 			}
 		}
 	}

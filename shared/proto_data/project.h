@@ -44,6 +44,9 @@
 #include "shared/proto_data/races.pb.h"
 #include "shared/proto_data/classes.pb.h"
 #include "shared/proto_data/levels.pb.h"
+#include "shared/proto_data/factions.pb.h"
+#include "shared/proto_data/faction_templates.pb.h"
+#include "shared/proto_data/area_triggers.pb.h"
 
 namespace wowpp
 {
@@ -66,10 +69,14 @@ namespace wowpp
 		typedef TemplateManager<wowpp::proto::Triggers, wowpp::proto::TriggerEntry> TriggerManager;
 		typedef TemplateManager<wowpp::proto::Zones, wowpp::proto::ZoneEntry> ZoneManager;
 		typedef TemplateManager<wowpp::proto::Quests, wowpp::proto::QuestEntry> QuestManager;
+		typedef TemplateManager<wowpp::proto::Factions, wowpp::proto::FactionEntry> FactionManager;
+		typedef TemplateManager<wowpp::proto::FactionTemplates, wowpp::proto::FactionTemplateEntry> FactionTemplateManager;
+		typedef TemplateManager<wowpp::proto::AreaTriggers, wowpp::proto::AreaTriggerEntry> AreaTriggerManager;
 
-		struct Project : boost::noncopyable
+		class Project : public boost::noncopyable
 		{
-			// Managers
+		public:
+
 			ObjectManager objects;
 			UnitManager units;
 			MapManager maps;
@@ -87,6 +94,9 @@ namespace wowpp
 			TriggerManager triggers;
 			ZoneManager zones;
 			QuestManager quests;
+			FactionManager factions;
+			FactionTemplateManager factionTemplates;
+			AreaTriggerManager areaTriggers;
 
 		public:
 
@@ -133,6 +143,9 @@ namespace wowpp
 				managers.push_back(ManagerEntry("triggers", triggers));
 				managers.push_back(ManagerEntry("zones", zones));
 				managers.push_back(ManagerEntry("quests", quests));
+				managers.push_back(ManagerEntry("factions", factions));
+				managers.push_back(ManagerEntry("faction_templates", factionTemplates));
+				managers.push_back(ManagerEntry("area_triggers", areaTriggers));
 
 				virtual_dir::FileSystemReader virtualDirectory(realmDataPath);
 				if (!RealmProjectLoader::load(
@@ -182,6 +195,9 @@ namespace wowpp
 				managers.push_back(ManagerEntry("triggers", "triggers", triggers));
 				managers.push_back(ManagerEntry("zones", "zones", zones));
 				managers.push_back(ManagerEntry("quests", "quests", quests));
+				managers.push_back(ManagerEntry("factions", "factions", factions));
+				managers.push_back(ManagerEntry("faction_templates", "faction_templates", factionTemplates));
+				managers.push_back(ManagerEntry("area_triggers", "area_triggers", areaTriggers));
 
 				if (!RealmProjectSaver::save(realmDataPath, managers))
 				{
