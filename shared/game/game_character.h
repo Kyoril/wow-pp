@@ -547,6 +547,8 @@ namespace wowpp
 		/// if target is a new target combo target. If a value of 0 is specified, the combo
 		/// points will be reset to zero.
 		void addComboPoints(UInt64 target, UInt8 points);
+		/// Applies or removes item stats for this character.
+		void applyItemStats(GameItem &item, bool apply);
 		/// Determines whether the given slot is a valid slot in the specified bag.
 		bool isValidItemPos(UInt8 bag, UInt8 slot) const;
 		/// Swaps the items of two given slots.

@@ -182,44 +182,7 @@ namespace wowpp
 	{
 		if (slot < player_equipment_slots::End)
 		{
-			if (item->getEntry().durability() == 0 ||
-				item->getUInt32Value(item_fields::Durability) > 0)
-			{
-				// Apply values
-				for (int i = 0; i < item->getEntry().stats_size(); ++i)
-				{
-					const auto &entry = item->getEntry().stats(i);
-					if (entry.value() != 0)
-					{
-						switch (entry.type())
-						{
-						case 0:		// Mana
-							updateModifierValue(unit_mods::Mana, unit_mod_type::TotalValue, entry.value(), true);
-							break;
-						case 1:		// Health
-							updateModifierValue(unit_mods::Health, unit_mod_type::TotalValue, entry.value(), true);
-							break;
-						case 3:		// Agility
-							updateModifierValue(unit_mods::StatAgility, unit_mod_type::TotalValue, entry.value(), true);
-							break;
-						case 4:		// Strength
-							updateModifierValue(unit_mods::StatStrength, unit_mod_type::TotalValue, entry.value(), true);
-							break;
-						case 5:		// Intellect
-							updateModifierValue(unit_mods::StatIntellect, unit_mod_type::TotalValue, entry.value(), true);
-							break;
-						case 6:		// Spirit
-							updateModifierValue(unit_mods::StatSpirit, unit_mod_type::TotalValue, entry.value(), true);
-							break;
-						case 7:		// Stamina
-							updateModifierValue(unit_mods::StatStamina, unit_mod_type::TotalValue, entry.value(), true);
-							break;
-						default:
-							break;
-						}
-					}
-				}
-			}
+			applyItemStats(*item, true);
 		}
 
 		// Check if that item already exists
@@ -821,12 +784,14 @@ namespace wowpp
 			{
 				setUInt32Value(character_fields::VisibleItem1_0 + (srcSlot * 16), 0);
 				setUInt64Value(character_fields::VisibleItem1_CREATOR + (srcSlot * 16), 0);
+				applyItemStats(*srcItem, false);
 				updateStats = true;
 			}
 			if (dstSlot < player_equipment_slots::End)
 			{
 				setUInt32Value(character_fields::VisibleItem1_0 + (dstSlot * 16), srcItem->getEntry().id());
 				setUInt64Value(character_fields::VisibleItem1_CREATOR + (dstSlot * 16), srcItem->getUInt64Value(item_fields::Creator));
+				applyItemStats(*srcItem, true);
 				updateStats = true;
 			}
 
@@ -843,12 +808,15 @@ namespace wowpp
 			{
 				setUInt32Value(character_fields::VisibleItem1_0 + (srcSlot * 16), dstItem->getEntry().id());
 				setUInt64Value(character_fields::VisibleItem1_CREATOR + (srcSlot * 16), dstItem->getUInt64Value(item_fields::Creator));
+				applyItemStats(*srcItem, false);
 				updateStats = true;
 			}
 			if (dstSlot < player_equipment_slots::End)
 			{
 				setUInt32Value(character_fields::VisibleItem1_0 + (dstSlot * 16), srcItem->getEntry().id());
 				setUInt64Value(character_fields::VisibleItem1_CREATOR + (dstSlot * 16), srcItem->getUInt64Value(item_fields::Creator));
+				applyItemStats(*dstItem, false);
+				applyItemStats(*srcItem, true);
 				updateStats = true;
 			}
 
@@ -1079,6 +1047,48 @@ namespace wowpp
 
 		// Notify about combo point change
 		comboPointsChanged();
+	}
+
+	void GameCharacter::applyItemStats(GameItem & item, bool apply)
+	{
+		if (item.getEntry().durability() == 0 ||
+			item.getUInt32Value(item_fields::Durability) > 0)
+		{
+			// Apply values
+			for (int i = 0; i < item.getEntry().stats_size(); ++i)
+			{
+				const auto &entry = item.getEntry().stats(i);
+				if (entry.value() != 0)
+				{
+					switch (entry.type())
+					{
+						case 0:		// Mana
+							updateModifierValue(unit_mods::Mana, unit_mod_type::TotalValue, entry.value(), apply);
+							break;
+						case 1:		// Health
+							updateModifierValue(unit_mods::Health, unit_mod_type::TotalValue, entry.value(), apply);
+							break;
+						case 3:		// Agility
+							updateModifierValue(unit_mods::StatAgility, unit_mod_type::TotalValue, entry.value(), apply);
+							break;
+						case 4:		// Strength
+							updateModifierValue(unit_mods::StatStrength, unit_mod_type::TotalValue, entry.value(), apply);
+							break;
+						case 5:		// Intellect
+							updateModifierValue(unit_mods::StatIntellect, unit_mod_type::TotalValue, entry.value(), apply);
+							break;
+						case 6:		// Spirit
+							updateModifierValue(unit_mods::StatSpirit, unit_mod_type::TotalValue, entry.value(), apply);
+							break;
+						case 7:		// Stamina
+							updateModifierValue(unit_mods::StatStamina, unit_mod_type::TotalValue, entry.value(), true);
+							break;
+						default:
+							break;
+					}
+				}
+			}
+		}
 	}
 
 	void GameCharacter::updateManaRegen()
