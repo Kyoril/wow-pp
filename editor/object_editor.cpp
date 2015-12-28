@@ -684,17 +684,83 @@ namespace wowpp
 
 				return true;
 			};
-			task.afterImport = []() {};
-
+			
 			// Do import job
 			ImportDialog dialog(m_application, std::move(task));
 			auto result = dialog.exec();
 		}
 		void ObjectEditor::on_actionImport_Vendors_triggered()
 		{
+			UInt32 lastEntry = 0;
+
 			ImportTask task;
 			task.countQuery = "SELECT COUNT(*) FROM `wowpp_npc_vendor`;";
 			task.selectQuery = "SELECT `entry`, `item`, `maxcount`, `incrtime`, `ExtendedCost` FROM `wowpp_npc_vendor` ORDER BY `entry`, `item`;";
+			task.beforeImport = [this]() {
+				for (int i = 0; i < m_application.getProject().units.getTemplates().entry_size(); ++i)
+				{
+					auto *unit = m_application.getProject().units.getTemplates().mutable_entry(i);
+					unit->set_vendorentry(0);
+				}
+				m_application.getProject().vendors.clear();
+			};
+			task.onImport = [this, &lastEntry](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0, itemId = 0, maxCount = 0, incrTime = 0, extendedCost = 0;
+				row.getField(0, entry);
+				row.getField(1, itemId);
+				row.getField(2, maxCount);
+				row.getField(3, incrTime);
+				row.getField(4, extendedCost);
+
+				// Find referenced item
+				const auto *itemEntry = m_application.getProject().items.getById(itemId);
+				if (!itemEntry)
+				{
+					ELOG("Could not find referenced item " << itemId << " (referenced in vendor entry " << entry << ")");
+					return false;
+				}
+
+				// Create a new loot entry
+				bool created = false;
+				if (entry > lastEntry)
+				{
+					auto *added = m_application.getProject().vendors.add(entry);
+
+					lastEntry = entry;
+					created = true;
+				}
+
+				auto *vendorEntry = m_application.getProject().vendors.getById(entry);
+				if (!vendorEntry)
+				{
+					// Error
+					ELOG("Vendor entry " << entry << " not found!");
+					return false;
+				}
+
+				// Add items
+				auto *addedItem = vendorEntry->add_items();
+				addedItem->set_item(itemId);
+				addedItem->set_interval(incrTime);
+				addedItem->set_isactive(true);
+				addedItem->set_maxcount(maxCount);
+				addedItem->set_extendedcost(extendedCost);
+
+				if (created)
+				{
+					auto *unitEntry = m_application.getProject().units.getById(entry);
+					if (!unitEntry)
+					{
+						WLOG("No unit with entry " << entry << " found - vendor will not be assigned!");
+					}
+					else
+					{
+						unitEntry->set_vendorentry(vendorEntry->id());
+					}
+				}
+
+				return true;
+			};
 
 			// Do import job
 			ImportDialog dialog(m_application, std::move(task));
