@@ -402,7 +402,7 @@ int main(int argc, char* argv[])
 		for (wowpp::UInt32 level = 1; level <= 70; ++level)
 		{
 			auto *addedLevel = added->add_levelbasevalues();
-			auto &it = class_->levelBaseValues.find(level);
+			const auto &it = class_->levelBaseValues.find(level);
 			if (it != class_->levelBaseValues.end())
 			{
 				addedLevel->set_health(it->second.health);

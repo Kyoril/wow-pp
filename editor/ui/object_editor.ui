@@ -195,7 +195,7 @@
                     <number>3</number>
                    </property>
                    <attribute name="headerVisible">
-                    <bool>true</bool>
+                    <bool>false</bool>
                    </attribute>
                    <attribute name="headerDefaultSectionSize">
                     <number>200</number>
@@ -2982,6 +2982,8 @@
      <string>&amp;Tools</string>
     </property>
     <addaction name="actionImport"/>
+    <addaction name="actionImport_Vendors"/>
+    <addaction name="actionImport_Trainers"/>
    </widget>
    <addaction name="menu_Project"/>
    <addaction name="menu_Edit"/>
@@ -3052,6 +3054,16 @@
   <action name="actionImport">
    <property name="text">
     <string>Import Unit Loot</string>
+   </property>
+  </action>
+  <action name="actionImport_Vendors">
+   <property name="text">
+    <string>Import Vendors</string>
+   </property>
+  </action>
+  <action name="actionImport_Trainers">
+   <property name="text">
+    <string>Import Trainers</string>
    </property>
   </action>
  </widget>

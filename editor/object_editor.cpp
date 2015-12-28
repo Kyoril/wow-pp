@@ -588,8 +588,121 @@ namespace wowpp
 
 		void ObjectEditor::on_actionImport_triggered()
 		{
-			ImportDialog dialog(m_application);
+			// Counter variables used by the import method
+			UInt32 lastEntry = 0;
+			UInt32 lastGroup = 0;
+			UInt32 groupIndex = 0;
+
+			// Prepare the import task
+			ImportTask task;
+			task.countQuery = "(SELECT COUNT(*) FROM `wowpp_creature_loot_template` WHERE `lootcondition` = 0 AND `active` != 0);";
+			task.selectQuery = "(SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount` FROM `wowpp_creature_loot_template` WHERE `lootcondition` = 0  AND `active` != 0) ORDER BY `entry`, `groupid`;";
+			task.beforeImport = [this]() {
+				// Remove old unit loot
+				for (int i = 0; i < m_application.getProject().units.getTemplates().entry_size(); ++i)
+				{
+					auto *unit = m_application.getProject().units.getTemplates().mutable_entry(i);
+					unit->set_unitlootentry(0);
+				}
+				m_application.getProject().unitLoot.clear();
+			};
+			task.onImport = [this, &lastEntry, &lastGroup, &groupIndex](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0, itemId = 0, groupId = 0, minCount = 0, maxCount = 0;
+				float dropChance = 0.0f;
+				row.getField(0, entry);
+				row.getField(1, itemId);
+				row.getField(2, dropChance);
+				row.getField(3, groupId);
+				row.getField(4, minCount);
+				row.getField(5, maxCount);
+
+				// Find referenced item
+				const auto *itemEntry = m_application.getProject().items.getById(itemId);
+				if (!itemEntry)
+				{
+					ELOG("Could not find referenced item " << itemId << " (referenced in creature loot entry " << entry << " - group " << groupId << ")");
+					return false;
+				}
+
+				// Create a new loot entry
+				bool created = false;
+				if (entry > lastEntry)
+				{
+					auto *added = m_application.getProject().unitLoot.add(entry);
+
+					lastEntry = entry;
+					lastGroup = groupId;
+					groupIndex = 0;
+					created = true;
+				}
+
+				auto *lootEntry = m_application.getProject().unitLoot.getById(entry);
+				if (!lootEntry)
+				{
+					// Error
+					ELOG("Loot entry " << entry << " found, but no creature to assign found");
+					return false;
+				}
+
+				if (created)
+				{
+					auto *unitEntry = m_application.getProject().units.getById(entry);
+					if (!unitEntry)
+					{
+						WLOG("No unit with entry " << entry << " found - creature loot template will not be assigned!");
+					}
+					else
+					{
+						unitEntry->set_unitlootentry(lootEntry->id());
+					}
+				}
+
+				// If there are no loot groups yet, create a new one
+				if (lootEntry->groups().empty() || groupId > lastGroup)
+				{
+					auto *addedGroup = lootEntry->add_groups();
+					if (groupId > lastGroup)
+					{
+						lastGroup = groupId;
+						groupIndex++;
+					}
+				}
+
+				if (lootEntry->groups().empty())
+				{
+					ELOG("Error retrieving loot group");
+					return false;
+				}
+
+				auto *group = lootEntry->mutable_groups(groupIndex);
+				auto *def = group->add_definitions();
+				def->set_item(itemEntry->id());
+				def->set_mincount(minCount);
+				def->set_maxcount(maxCount);
+				def->set_dropchance(dropChance);
+				def->set_isactive(true);
+
+				return true;
+			};
+			task.afterImport = []() {};
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
 			auto result = dialog.exec();
+		}
+		void ObjectEditor::on_actionImport_Vendors_triggered()
+		{
+			ImportTask task;
+			task.countQuery = "(SELECT COUNT(*) FROM `wowpp_npc_vendor`;";
+			task.selectQuery = "(SELECT `entry`, `item`, `maxcount`, `incrtime`, `ExtendedCost` FROM `wowpp_npc_vendor` ORDER BY `entry`, `item`;";
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
+			auto result = dialog.exec();
+		}
+		void ObjectEditor::on_actionImport_Trainers_triggered()
+		{
+
 		}
 	}
 }

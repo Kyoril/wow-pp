@@ -22,10 +22,6 @@
 #include "import_dialog.h"
 #include "ui_import_dialog.h"
 #include "editor_application.h"
-#include "mysql_wrapper/mysql_connection.h"
-#include "mysql_wrapper/mysql_row.h"
-#include "mysql_wrapper/mysql_select.h"
-#include "mysql_wrapper/mysql_statement.h"
 #include <qtconcurrentrun.h>
 #include <QMessageBox>
 
@@ -33,10 +29,11 @@ namespace wowpp
 {
 	namespace editor
 	{
-		ImportDialog::ImportDialog(EditorApplication &app)
+		ImportDialog::ImportDialog(EditorApplication &app, ImportTask task)
 			: QDialog()
 			, m_ui(new Ui::ImportDialog)
 			, m_app(app)
+			, m_task(task)
 		{
 			// Setup auto generated ui
 			m_ui->setupUi(this);
@@ -92,19 +89,19 @@ namespace wowpp
 			}
 
 			UInt32 currentEntry = 0;
-			UInt32 lootCount = 0;
+			UInt32 entryCount = 0;
 
 			// Not collect data
 			emit progressRangeChanged(0, 100);
 			emit progressTextChanged("Collecting data...");
 			{
-				wowpp::MySQL::Select select(connection, "(SELECT COUNT(*) FROM `wowpp_creature_loot_template` WHERE `lootcondition` = 0 AND `active` != 0);");
+				wowpp::MySQL::Select select(connection, m_task.countQuery.toStdString());
 				if (select.success())
 				{
 					wowpp::MySQL::Row row(select);
 					if (row)
 					{
-						row.getField(0, lootCount);
+						row.getField(0, entryCount);
 						row = row.next(select);
 					}
 				}
@@ -114,114 +111,40 @@ namespace wowpp
 					return;
 				}
 			}
-			
-			// Remove old unit loot
-			for (int i = 0; i < m_app.getProject().units.getTemplates().entry_size(); ++i)
-			{
-				auto *unit = m_app.getProject().units.getTemplates().mutable_entry(i);
-				unit->set_unitlootentry(0);
-			}
-			m_app.getProject().unitLoot.clear();
 
-			UInt32 lastEntry = 0;
-			UInt32 lastGroup = 0;
-			UInt32 groupIndex = 0;
+			// Execute procedure before import (mostly cleanup work is done here)
+			if (m_task.beforeImport) m_task.beforeImport();
 
 			// Import items...
-			emit progressTextChanged(QString("Importing %1 entries...").arg(lootCount));
+			emit progressTextChanged(QString("Importing %1 entries...").arg(entryCount));
 			{
-				wowpp::MySQL::Select select(connection, "(SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount` FROM `wowpp_creature_loot_template` WHERE `lootcondition` = 0  AND `active` != 0) "
-					"ORDER BY `entry`, `groupid`;");
+				wowpp::MySQL::Select select(connection, m_task.selectQuery.toStdString());
 				if (select.success())
 				{
 					wowpp::MySQL::Row row(select);
 					while (row)
 					{
-						emit progressValueChanged(static_cast<int>(static_cast<double>(currentEntry) / static_cast<double>(lootCount) * 100.0));
+						// Increase counter
+						emit progressValueChanged(static_cast<int>(static_cast<double>(currentEntry) / static_cast<double>(entryCount) * 100.0));
 						currentEntry++;
 
-						UInt32 entry = 0, itemId = 0, groupId = 0, minCount = 0, maxCount = 0;
-						float dropChance = 0.0f;
-						row.getField(0, entry);
-						row.getField(1, itemId);
-						row.getField(2, dropChance);
-						row.getField(3, groupId);
-						row.getField(4, minCount);
-						row.getField(5, maxCount);
-
-						// Find referenced item
-						const auto *itemEntry = m_app.getProject().items.getById(itemId);
-						if (!itemEntry)
+						if (m_task.onImport)
 						{
-							ELOG("Could not find referenced item " << itemId << " (referenced in creature loot entry " << entry << " - group " << groupId << ")");
-							row = row.next(select);
-							continue;
-						}
-
-						// Create a new loot entry
-						bool created = false;
-						if (entry > lastEntry)
-						{
-							auto *added = m_app.getProject().unitLoot.add(entry);
-
-							lastEntry = entry;
-							lastGroup = groupId;
-							groupIndex = 0;
-							created = true;
-						}
-
-						auto *lootEntry = m_app.getProject().unitLoot.getById(entry);
-						if (!lootEntry)
-						{
-							// Error
-							ELOG("Loot entry " << entry << " found, but no creature to assign found");
-							row = row.next(select);
-							continue;
-						}
-
-						if (created)
-						{
-							auto *unitEntry = m_app.getProject().units.getById(entry);
-							if (!unitEntry)
+							bool result = m_task.onImport(row);
+							if (!result)
 							{
-								WLOG("No unit with entry " << entry << " found - creature loot template will not be assigned!");
-							}
-							else
-							{
-								unitEntry->set_unitlootentry(lootEntry->id());
+								// TODO: Handle import error
 							}
 						}
 
-						// If there are no loot groups yet, create a new one
-						if (lootEntry->groups().empty() || groupId > lastGroup)
-						{
-							auto *addedGroup = lootEntry->add_groups();
-							if (groupId > lastGroup)
-							{
-								lastGroup = groupId;
-								groupIndex++;
-							}
-						}
-
-						if (lootEntry->groups().empty())
-						{
-							ELOG("Error retrieving loot group");
-							row = row.next(select);
-							continue;
-						}
-
-						auto *group = lootEntry->mutable_groups(groupIndex);
-						auto *def = group->add_definitions();
-						def->set_item(itemEntry->id());
-						def->set_mincount(minCount);
-						def->set_maxcount(maxCount);
-						def->set_dropchance(dropChance);
-						def->set_isactive(true);
-
+						// Next row
 						row = row.next(select);
 					}
 				}
 			}
+
+			// Execute procedure after import
+			if (m_task.afterImport) m_task.afterImport();
 
 			emit progressValueChanged(100);
 			emit progressTextChanged("Finished");

@@ -68,6 +68,8 @@ namespace wowpp
 			void onItemSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void on_lootSimulatorButton_clicked();
 			void on_actionImport_triggered();
+			void on_actionImport_Vendors_triggered();
+			void on_actionImport_Trainers_triggered();
 
 		private:
 				
