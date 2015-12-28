@@ -19,38 +19,61 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-#include "string_editor.h"
-#include "ui_string_editor.h"
+#pragma once
+
+#include "common/typedefs.h"
+#include "proto_data/project.h"
+#include <QDialog>
+#include <QItemSelection>
+#include <QFutureWatcher>
+#include <QFuture>
+#include <memory>
+
+// Forwards
+namespace Ui
+{
+	class ImportDialog;
+}
 
 namespace wowpp
 {
 	namespace editor
 	{
-		StringEditor::StringEditor(StringProperty &prop)
-			: QDialog()
-			, m_ui(new Ui::StringEditor)
-            , m_property(prop)
+		class EditorApplication;
+
+		/// 
+		class ImportDialog : public QDialog
 		{
-			// Setup auto generated ui
-			m_ui->setupUi(this);
-            
-#ifdef WIN32
-			// Not resizable
-            setFixedSize(size());
-            setWindowFlags(Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint);
-#endif
-            
-			// Update name label and title
-			m_ui->propNameLabel->setText(QString("%1:").arg(prop.getName().c_str()));
-			setWindowTitle(QString("%1 - String Value").arg(prop.getName().c_str()));
+			Q_OBJECT
 
-			m_ui->propValueField->setText(prop.getDisplayString().c_str());
-		}
+		public:
 
-		void StringEditor::on_buttonBox_accepted()
-		{
-			m_property.setValue(m_ui->propValueField->text().toStdString());
-		}
+			/// 
+			explicit ImportDialog(EditorApplication &app);
 
+		signals:
+
+			void progressRangeChanged(int minimum, int maximum);
+			void progressValueChanged(int value);
+			void progressTextChanged(QString text);
+			void calculationFinished();
+
+		private Q_SLOTS:
+
+			void on_progressRangeChanged(int minimum, int maximum);
+			void on_progressValueChanged(int value);
+			void on_progressTextChanged(QString text);
+			void on_calculationFinished();
+
+		private:
+
+			void importData();
+
+		private:
+
+			Ui::ImportDialog *m_ui;
+			EditorApplication &m_app;
+			QFutureWatcher<void> m_watcher;
+		};
 	}
 }

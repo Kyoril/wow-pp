@@ -195,7 +195,7 @@
                     <number>3</number>
                    </property>
                    <attribute name="headerVisible">
-                    <bool>false</bool>
+                    <bool>true</bool>
                    </attribute>
                    <attribute name="headerDefaultSectionSize">
                     <number>200</number>
@@ -2977,8 +2977,15 @@
      <string>&amp;Edit</string>
     </property>
    </widget>
+   <widget class="QMenu" name="menu_Tools">
+    <property name="title">
+     <string>&amp;Tools</string>
+    </property>
+    <addaction name="actionImport"/>
+   </widget>
    <addaction name="menu_Project"/>
    <addaction name="menu_Edit"/>
+   <addaction name="menu_Tools"/>
   </widget>
   <widget class="QToolBar" name="toolBar">
    <property name="windowTitle">
@@ -3040,6 +3047,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="actionImport">
+   <property name="text">
+    <string>Import Unit Loot</string>
    </property>
   </action>
  </widget>

@@ -33,9 +33,12 @@ namespace Ui
 
 namespace wowpp
 {
-	class Project;
-	struct LootEntry;
-	struct LootDefinition;
+	namespace proto
+	{
+		class Project;
+		class LootEntry;
+		class LootDefinition;
+	}
 
 	namespace editor
 	{
@@ -47,11 +50,11 @@ namespace wowpp
 		public:
 
 			/// 
-			explicit LootDialog(Project &project, const LootEntry &loot);
+			explicit LootDialog(proto::Project &project, const proto::LootEntry &loot);
 
 		private:
 
-			void addLootItem(const LootDefinition &def);
+			void addLootItem(const proto::LootDefinition &def);
 			void rerollLoot();
 			void rerollStats();
 
@@ -63,8 +66,8 @@ namespace wowpp
 		private:
 
 			Ui::LootDialog *m_ui;
-			Project &m_project;
-			const LootEntry &m_loot;
+			proto::Project &m_project;
+			const proto::LootEntry &m_loot;
 		};
 	}
 }

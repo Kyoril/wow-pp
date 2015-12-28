@@ -66,6 +66,7 @@ namespace wowpp
 			UnitListModel *getUnitListModel() { return m_unitListModel.get(); }
 			TriggerListModel *getTriggerListModel() { return m_triggerListModel.get(); }
 			proto::Project &getProject() { return m_project; }
+			Configuration &getConfiguration() { return m_configuration; }
 
 		public slots:
 

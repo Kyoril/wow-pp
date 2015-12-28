@@ -29,9 +29,10 @@
 #include "loot_dialog.h"
 #include "choose_trigger_dialog.h"
 #include "game/defines.h"
-#include "data/faction_template_entry.h"
+#include "import_dialog.h"
 #include <QRegExp>
 #include <utility>
+#include <memory>
 
 namespace wowpp
 {
@@ -286,46 +287,61 @@ namespace wowpp
 				m_ui->lootToolButton->setDisabled(false);
 				m_ui->lootSimulatorButton->setDisabled(false);
 			}
-			/*
+			
 			// Add unit properties
-			m_properties.push_back(PropertyPtr(new NumericProperty("Entry", UInt32Ref(unit->id), true)));
-			m_properties.push_back(PropertyPtr(new StringProperty("Name", unit->name)));
-			m_properties.push_back(PropertyPtr(new StringProperty("Subname", unit->subname)));
-			m_properties.push_back(PropertyPtr(new MinMaxProperty("Level", UInt32Ref(unit->minLevel), UInt32Ref((unit->maxLevel)))));
-			m_properties.push_back(PropertyPtr(new MinMaxProperty("Health", UInt32Ref(unit->minLevelHealth), UInt32Ref(unit->maxLevelHealth))));
-			m_properties.push_back(PropertyPtr(new MinMaxProperty("Mana", UInt32Ref(unit->minLevelMana), UInt32Ref(unit->maxLevelMana))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Damage School", UInt32Ref(unit->damageSchool))));
-			m_properties.push_back(PropertyPtr(new MinMaxProperty("Melee Damage", FloatRef(unit->minMeleeDamage), FloatRef(unit->maxMeleeDamage))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Melee Attack Power", UInt32Ref(unit->attackPower), false, std::bind(&MeleeAttackMiscValue, std::cref(*unit)))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Melee Attack Time", UInt32Ref(unit->meleeBaseAttackTime))));
-			m_properties.push_back(PropertyPtr(new MinMaxProperty("Ranged Damage", FloatRef(unit->minRangedDamage), FloatRef(unit->maxRangedDamage))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Ranged Attack Power", UInt32Ref(unit->rangedAttackPower))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Ranged Attack Time", UInt32Ref(unit->rangedBaseAttackTime))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Scale", FloatRef(unit->scale))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Male Model ID", UInt32Ref(unit->maleModel))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Female Model ID", UInt32Ref(unit->femaleModel))));
-// 			m_properties.push_back(PropertyPtr(new NumericProperty("Alliance Faction ID", UInt32Ref(unit->allianceFaction->id))));
-// 			m_properties.push_back(PropertyPtr(new NumericProperty("Horde Faction ID", UInt32Ref(unit->hordeFaction->id))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Family", UInt32Ref(unit->family))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("NPC Flags", UInt32Ref(unit->npcFlags))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Unit Flags", UInt32Ref(unit->unitFlags), false, std::bind(&UnitFlagsMiscValue, std::cref(*unit)))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Dynamic Flags", UInt32Ref(unit->dynamicFlags))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Extra Flags", UInt32Ref(unit->extraFlags))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Creature Type Flags", UInt32Ref(unit->creatureTypeFlags))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Walk Speed", FloatRef(unit->walkSpeed))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Run Speed", FloatRef(unit->runSpeed))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Unit Class", UInt32Ref(unit->unitClass))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Rank", UInt32Ref(unit->rank))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Armor", UInt32Ref(unit->armor), false, std::bind(&ArmorMiscValue, std::cref(*unit)))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Holy Resistance", UInt32Ref(unit->resistances[0]))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Fire Resistance", UInt32Ref(unit->resistances[1]))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Nature Resistance", UInt32Ref(unit->resistances[2]))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Frost Resistance", UInt32Ref(unit->resistances[3]))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Shadow Resistance", UInt32Ref(unit->resistances[4]))));
-			m_properties.push_back(PropertyPtr(new NumericProperty("Arcane Resistance", UInt32Ref(unit->resistances[5]))));
-			m_properties.push_back(PropertyPtr(new MinMaxProperty("Loot Gold", UInt32Ref(unit->minLootGold), UInt32Ref(unit->maxLootGold))));
-			m_properties.push_back(PropertyPtr(new MinMaxProperty("Experience", UInt32Ref(unit->xpMin), UInt32Ref(unit->xpMax))));
-			*/
+#define WOWPP_NUM_PROPERTY(name, type, ref, prop, readonly) { \
+			auto getBinder = [unit]() -> type { return unit->##prop(); }; \
+			auto setBinder = [unit](type value) { unit->set_##prop(value); }; \
+			m_properties.push_back(PropertyPtr(new NumericProperty(name, ref(getBinder, setBinder), readonly))); }
+#define WOWPP_STR_PROPERTY(name, prop, readonly) { \
+			auto getBinder = [unit]() -> String { return unit->##prop(); }; \
+			auto setBinder = [unit](const String &value) { unit->set_##prop(value.c_str()); }; \
+			m_properties.push_back(PropertyPtr(new StringProperty(name, getBinder, setBinder, readonly))); }
+#define WOWPP_MIN_MAX_PROPERTY(name, type, ref, prop, readonly) { \
+			auto getMinBinder = [unit]() -> type { return unit->min##prop(); }; \
+			auto setMinBinder = [unit](type value) { unit->set_min##prop(value); }; \
+			auto getMaxBinder = [unit]() -> type { return unit->max##prop(); }; \
+			auto setMaxBinder = [unit](type value) { unit->set_max##prop(value); }; \
+			m_properties.push_back(PropertyPtr(new MinMaxProperty(name, ref(getMinBinder, setMinBinder), ref(getMaxBinder, setMaxBinder), readonly))); }
+
+			WOWPP_NUM_PROPERTY("Entry", UInt32, UInt32Ref, id, true);
+			WOWPP_STR_PROPERTY("Name", name, false);
+			WOWPP_STR_PROPERTY("Subname", subname, false);
+			WOWPP_MIN_MAX_PROPERTY("Level", UInt32, UInt32Ref, level, false);
+			WOWPP_MIN_MAX_PROPERTY("Health", UInt32, UInt32Ref, levelhealth, false);
+			WOWPP_MIN_MAX_PROPERTY("Mana", UInt32, UInt32Ref, levelmana, false);
+			WOWPP_NUM_PROPERTY("Damage School", UInt32, UInt32Ref, damageschool, false);
+			WOWPP_MIN_MAX_PROPERTY("Melee Damage", float, FloatRef, meleedmg, false);
+			WOWPP_NUM_PROPERTY("Melee Attack Power", UInt32, UInt32Ref, attackpower, false);
+			WOWPP_NUM_PROPERTY("Melee Attack Time", UInt32, UInt32Ref, meleeattacktime, false);
+			WOWPP_MIN_MAX_PROPERTY("Ranged Damage", float, FloatRef, rangeddmg, false);
+			WOWPP_NUM_PROPERTY("Ranged Attack Power", UInt32, UInt32Ref, rangedattackpower, false);
+			WOWPP_NUM_PROPERTY("Ranged Attack Time", UInt32, UInt32Ref, rangedattacktime, false);
+			WOWPP_NUM_PROPERTY("Scale", float, FloatRef, scale, false);
+			WOWPP_NUM_PROPERTY("Male Model ID", UInt32, UInt32Ref, malemodel, false);
+			WOWPP_NUM_PROPERTY("Female Model ID", UInt32, UInt32Ref, femalemodel, false);
+			WOWPP_NUM_PROPERTY("Alliance Faction ID", UInt32, UInt32Ref, alliancefaction, false);
+			WOWPP_NUM_PROPERTY("Horde Faction ID", UInt32, UInt32Ref, hordefaction, false);
+			WOWPP_NUM_PROPERTY("Family", UInt32, UInt32Ref, family, false);
+			WOWPP_NUM_PROPERTY("NPC Flags", UInt32, UInt32Ref, npcflags, false);
+			WOWPP_NUM_PROPERTY("Unit Flags", UInt32, UInt32Ref, unitflags, false);
+			WOWPP_NUM_PROPERTY("Dynamic Flags", UInt32, UInt32Ref, dynamicflags, false);
+			WOWPP_NUM_PROPERTY("Extra Flags", UInt32, UInt32Ref, extraflags, false);
+			WOWPP_NUM_PROPERTY("Creature Type Flags", UInt32, UInt32Ref, creaturetypeflags, false);
+			WOWPP_NUM_PROPERTY("Walk Speed Factor", float, FloatRef, walkspeed, false);
+			WOWPP_NUM_PROPERTY("Run Speed Factor", float, FloatRef, runspeed, false);
+			WOWPP_NUM_PROPERTY("Unit Class", UInt32, UInt32Ref, unitclass, false);
+			WOWPP_NUM_PROPERTY("Rank", UInt32, UInt32Ref, rank, false);
+			WOWPP_NUM_PROPERTY("Armor", UInt32, UInt32Ref, armor, false);
+			/*WOWPP_NUM_PROPERTY("Holy Resistance", UInt32, UInt32Ref, armor, false);
+			WOWPP_NUM_PROPERTY("Fire Resistance", UInt32, UInt32Ref, armor, false);
+			WOWPP_NUM_PROPERTY("Nature Resistance", UInt32, UInt32Ref, armor, false);
+			WOWPP_NUM_PROPERTY("Frost Resistance", UInt32, UInt32Ref, armor, false);
+			WOWPP_NUM_PROPERTY("Shadow Resistance", UInt32, UInt32Ref, armor, false);
+			WOWPP_NUM_PROPERTY("Arcane Resistance", UInt32, UInt32Ref, armor, false);*/
+			WOWPP_MIN_MAX_PROPERTY("Loot Gold", UInt32, UInt32Ref, lootgold, false);
+			WOWPP_MIN_MAX_PROPERTY("Experience", UInt32, UInt32Ref, levelxp, false);
+
 			// Update the view 
 			m_viewModel->layoutChanged();
 
@@ -562,8 +578,18 @@ namespace wowpp
 			if (!m_selected->unitlootentry())
 				return;
 
-			/*LootDialog dialog(m_application.getProject(), *m_selected->unitLootEntry);
-			auto result = dialog.exec();*/
+			const auto *loot = m_application.getProject().unitLoot.getById(m_selected->unitlootentry());
+			if (!loot)
+				return;
+
+			LootDialog dialog(m_application.getProject(), *loot);
+			auto result = dialog.exec();
+		}
+
+		void ObjectEditor::on_actionImport_triggered()
+		{
+			ImportDialog dialog(m_application);
+			auto result = dialog.exec();
 		}
 	}
 }

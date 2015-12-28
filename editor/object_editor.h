@@ -67,6 +67,7 @@ namespace wowpp
 			void onSpellSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void onItemSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void on_lootSimulatorButton_clicked();
+			void on_actionImport_triggered();
 
 		private:
 				

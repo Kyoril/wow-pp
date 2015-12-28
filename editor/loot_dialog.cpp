@@ -21,7 +21,7 @@
 
 #include "loot_dialog.h"
 #include "ui_loot_dialog.h"
-#include "data/project.h"
+#include "proto_data/project.h"
 #include "common/utilities.h"
 #include <QListWidgetItem>
 #include <unordered_map>
@@ -30,7 +30,7 @@ namespace wowpp
 {
 	namespace editor
 	{
-		LootDialog::LootDialog(Project &project, const LootEntry &loot)
+		LootDialog::LootDialog(proto::Project &project, const proto::LootEntry &loot)
 			: QDialog()
 			, m_ui(new Ui::LootDialog)
 			, m_project(project)
@@ -41,18 +41,22 @@ namespace wowpp
 			rerollLoot();
 		}
 
-		void LootDialog::addLootItem(const LootDefinition &def)
+		void LootDialog::addLootItem(const proto::LootDefinition &def)
 		{
-			UInt32 dropCount = def.minCount;
-			if (def.maxCount > def.minCount)
+			UInt32 dropCount = def.mincount();
+			if (def.maxcount() > def.mincount())
 			{
-				std::uniform_int_distribution<UInt32> dropDistribution(def.minCount, def.maxCount);
+				std::uniform_int_distribution<UInt32> dropDistribution(def.mincount(), def.maxcount());
 				dropCount = dropDistribution(randomGenerator);
 			}
 
-			QListWidgetItem *item = new QListWidgetItem(QString("%1x %2").arg(dropCount).arg(def.item->name.c_str()), m_ui->listWidget);
+			const auto *item = m_project.items.getById(def.item());
+			if (!item)
+				return;
+
+			QListWidgetItem *widget = new QListWidgetItem(QString("%1x %2").arg(dropCount).arg(item->name().c_str()), m_ui->listWidget);
 			QColor textColor = QColor(Qt::white);
-			switch (def.item->quality)
+			switch (item->quality())
 			{
 			case 0:
 				textColor = QColor(Qt::gray);
@@ -76,7 +80,7 @@ namespace wowpp
 				textColor = QColor(Qt::red);
 				break;
 			}
-			item->setTextColor(textColor);
+			widget->setTextColor(textColor);
 		}
 
 		void LootDialog::rerollLoot()
@@ -85,7 +89,7 @@ namespace wowpp
 			m_ui->listWidget->clear();
 
 			// Roll for all groups
-			for (auto &group : m_loot.lootGroups)
+			for (const auto &group : m_loot.groups())
 			{
 				std::uniform_real_distribution<float> lootDistribution(0.0f, 100.0f);
 				float groupRoll = lootDistribution(randomGenerator);
@@ -93,27 +97,27 @@ namespace wowpp
 				// We need to copy our loot groups here, because otherwise, we invalidate the 
 				// save state of our editor project here. On the world node however, we don't
 				// have to do this!
-				auto shuffled = group;
-				std::shuffle(shuffled.begin(), shuffled.end(), randomGenerator);
+				/*auto shuffled = group;
+				std::shuffle(shuffled.begin(), shuffled.end(), randomGenerator);*/
 
 				bool foundNonEqualChanced = false;
-				std::vector<const LootDefinition*> equalChanced;
-				for (auto &def : shuffled)
+				std::vector<const proto::LootDefinition*> equalChanced;
+				for (const auto &def : group.definitions())
 				{
-					if (def.dropChance == 0.0f)
+					if (def.dropchance() == 0.0f)
 					{
 						equalChanced.push_back(&def);
 					}
 
-					if (def.dropChance > 0.0f &&
-						def.dropChance >= groupRoll)
+					if (def.dropchance() > 0.0f &&
+						def.dropchance() >= groupRoll)
 					{
 						addLootItem(def);
 						foundNonEqualChanced = true;
 						break;
 					}
 
-					groupRoll -= def.dropChance;
+					groupRoll -= def.dropchance();
 				}
 
 				if (!foundNonEqualChanced &&
@@ -129,13 +133,13 @@ namespace wowpp
 		void LootDialog::rerollStats()
 		{
 			m_ui->listWidget_2->clear();
-			std::unordered_map<const ItemEntry*, UInt32> drops;
+			std::unordered_map<const proto::ItemEntry*, UInt32> drops;
 
 			int killCount = limit(m_ui->killCountBox->value(), 1, 10000);
 			for (int i = 0; i < killCount; ++i)
 			{
 				// Roll for all groups
-				for (auto &group : m_loot.lootGroups)
+				for (const auto &group : m_loot.groups())
 				{
 					std::uniform_real_distribution<float> lootDistribution(0.0f, 100.0f);
 					float groupRoll = lootDistribution(randomGenerator);
@@ -143,36 +147,40 @@ namespace wowpp
 					// We need to copy our loot groups here, because otherwise, we invalidate the 
 					// save state of our editor project here. On the world node however, we don't
 					// have to do this!
-					auto shuffled = group;
-					std::shuffle(shuffled.begin(), shuffled.end(), randomGenerator);
+					/*auto shuffled = group;
+					std::shuffle(shuffled.begin(), shuffled.end(), randomGenerator);*/
 
 					bool foundNonEqualChanced = false;
-					std::vector<const LootDefinition*> equalChanced;
-					for (auto &def : shuffled)
+					std::vector<const proto::LootDefinition*> equalChanced;
+					for (const auto &def : group.definitions())
 					{
-						if (def.dropChance == 0.0f)
+						auto *itemEntry = m_project.items.getById(def.item());
+						if (!itemEntry)
+							continue;
+
+						if (def.dropchance() == 0.0f)
 						{
 							equalChanced.push_back(&def);
 						}
 
-						if (def.dropChance > 0.0f &&
-							def.dropChance >= groupRoll)
+						if (def.dropchance() > 0.0f &&
+							def.dropchance() >= groupRoll)
 						{
-							UInt32 dropCount = def.minCount;
-							if (def.maxCount > def.minCount)
+							UInt32 dropCount = def.mincount();
+							if (def.maxcount() > def.mincount())
 							{
-								std::uniform_int_distribution<UInt32> dropDistribution(def.minCount, def.maxCount);
+								std::uniform_int_distribution<UInt32> dropDistribution(def.mincount(), def.maxcount());
 								dropCount = dropDistribution(randomGenerator);
 							}
 
-							UInt32 &count = drops[def.item];
+							UInt32 &count = drops[itemEntry];
 							count += dropCount;
 
 							foundNonEqualChanced = true;
 							break;
 						}
 
-						groupRoll -= def.dropChance;
+						groupRoll -= def.dropchance();
 					}
 
 					if (!foundNonEqualChanced &&
@@ -182,15 +190,18 @@ namespace wowpp
 						UInt32 index = equalDistribution(randomGenerator);
 
 						const auto *def = equalChanced[index];
+						auto *itemEntry = m_project.items.getById(def->item());
+						if (!itemEntry)
+							continue;
 
-						UInt32 dropCount = def->minCount;
-						if (def->maxCount > def->minCount)
+						UInt32 dropCount = def->mincount();
+						if (def->maxcount() > def->mincount())
 						{
-							std::uniform_int_distribution<UInt32> dropDistribution(def->minCount, def->maxCount);
+							std::uniform_int_distribution<UInt32> dropDistribution(def->mincount(), def->maxcount());
 							dropCount = dropDistribution(randomGenerator);
 						}
 
-						UInt32 &count = drops[def->item];
+						UInt32 &count = drops[itemEntry];
 						count += dropCount;
 					}
 				}
@@ -198,9 +209,9 @@ namespace wowpp
 
 			for (const auto &lootPair : drops)
 			{
-				QListWidgetItem *item = new QListWidgetItem(QString("%1x %2").arg(lootPair.second).arg(lootPair.first->name.c_str()), m_ui->listWidget_2);
+				QListWidgetItem *item = new QListWidgetItem(QString("%1x %2").arg(lootPair.second).arg(lootPair.first->name().c_str()), m_ui->listWidget_2);
 				QColor textColor = QColor(Qt::white);
-				switch (lootPair.first->quality)
+				switch (lootPair.first->quality())
 				{
 				case 0:
 					textColor = QColor(Qt::gray);
