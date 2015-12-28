@@ -40,6 +40,72 @@ namespace wowpp
 
 	}
 
+	namespace xp
+	{
+		static UInt32 getGrayLevel(UInt32 level)
+		{
+			if (level <= 5)
+				return 0;
+
+			if (level <= 39)
+				return level - 5 - level / 10;
+
+			if (level <= 59)
+				return level - 1 - level / 5;
+
+			return level - 9;
+		}
+
+		static UInt32 getZeroDifference(UInt32 level)
+		{
+			if (level < 8) return 5;
+			if (level < 10) return 6;
+			if (level < 12) return 7;
+			if (level < 16) return 8;
+			if (level < 20) return 9;
+			if (level < 30) return 11;
+			if (level < 40) return 12;
+			if (level < 45) return 13;
+			if (level < 50) return 14;
+			if (level < 55) return 15;
+			if (level < 60) return 16;
+			return 17;
+		}
+
+		static UInt32 getXpDiff(UInt32 level)
+		{
+			if (level < 29)
+				return 0;
+			if (level == 29)
+				return 1;
+			if (level == 30)
+				return 3;
+			if (level == 31)
+				return 6;
+
+			return 5 * (level - 30);
+		}
+
+		static float getGroupXpRate(UInt32 count, bool raid)
+		{
+			if (raid)
+			{
+				return 1.0f;
+			}
+			else
+			{
+				if (count <= 2)
+					return 1.0f;
+				if (count == 3)
+					return 1.166f;
+				if (count == 4)
+					return 1.3f;
+
+				return 1.4f;
+			}
+		}
+	}
+
 	void CreatureAIDeathState::onEnter()
 	{
 		auto &controlled = getControlled();
@@ -58,9 +124,23 @@ namespace wowpp
 		if (controlled.isTagged())
 		{
 			// Reward all loot recipients if we can still find them (no disconnect etc.)
+			UInt32 sum_lvl = 0;
+			GameCharacter *maxLevelChar = nullptr;
 			std::vector<GameCharacter*> lootRecipients;
-			controlled.forEachLootRecipient([&lootRecipients](GameCharacter &character)
+			controlled.forEachLootRecipient([&sum_lvl, &maxLevelChar, &controlled, &lootRecipients](GameCharacter &character)
 			{
+				if (character.isAlive())
+					sum_lvl += character.getLevel();
+
+				const UInt32 greyLevel = xp::getGrayLevel(character.getLevel());
+				if (controlled.getLevel() > greyLevel)
+				{
+					if (!maxLevelChar || maxLevelChar->getLevel() < character.getLevel())
+					{
+						maxLevelChar = &character;
+					}
+				}
+
 				lootRecipients.push_back(&character);
 			});
 
@@ -72,28 +152,50 @@ namespace wowpp
 
 			// Base XP for equal level
 			UInt32 xp = interpolate(controlled.getEntry().minlevelxp(), controlled.getEntry().maxlevelxp(), t);
-
-			// TODO: Level adjustment factor
-			
+			if (!maxLevelChar)
+			{
+				xp = 0;
+			}
+			else
+			{
+				if (controlled.getLevel() >= maxLevelChar->getLevel())
+				{
+					UInt32 levelDiff = controlled.getLevel() - maxLevelChar->getLevel();
+					if (levelDiff > 4) levelDiff = 4;
+					xp = ((maxLevelChar->getLevel() * 5 + xp) * (20 + levelDiff) / 10 + 1) / 2;
+				}
+				else
+				{
+					UInt32 grayLevel = xp::getGrayLevel(maxLevelChar->getLevel());
+					if (controlled.getLevel() > grayLevel)
+					{
+						UInt32 zd = xp::getZeroDifference(maxLevelChar->getLevel());
+						xp = (maxLevelChar->getLevel() * 5 + xp) * (zd + controlled.getLevel() - maxLevelChar->getLevel()) / zd;
+					}
+					else
+					{
+						xp = 0;
+					}
+				}
+			}
+						
 			// Group xp modifier
-			float groupModifier = 1.0f;
-			if (lootRecipients.size() == 3)
-			{
-				groupModifier = 1.166f;
-			}
-			else if (lootRecipients.size() == 4)
-			{
-				groupModifier = 1.3f;
-			}
-			else if (lootRecipients.size() == 5)
-			{
-				groupModifier = 1.4f;
-			}
-
-			xp = (xp / lootRecipients.size()) * groupModifier;
+			float groupModifier = xp::getGroupXpRate(lootRecipients.size(), false);
 			for (auto *character : lootRecipients)
 			{
-				character->rewardExperience(&controlled, xp);
+				const UInt32 greyLevel = xp::getGrayLevel(character->getLevel());
+				if (controlled.getLevel() <= greyLevel)
+					continue;
+
+				float rate = groupModifier * static_cast<float>(character->getLevel()) / sum_lvl;
+
+				// Only alive characters will receive loot
+				if (!character->isAlive())
+				{
+					continue;
+				}
+
+				character->rewardExperience(&controlled, xp * rate);
 			}
 
 			const auto *lootEntry = controlled.getProject().unitLoot.getById(entry.unitlootentry());
