@@ -1999,6 +1999,9 @@ namespace wowpp
 		if (!item)
 			return;
 
+		// Multiply item count
+		UInt8 totalCount = count * item->buycount();
+
 		auto *world = m_character->getWorldInstance();
 		if (!world)
 			return;
@@ -2028,7 +2031,7 @@ namespace wowpp
 
 		// Check if item is storable
 		ItemPosCountVector slots;
-		auto result = m_character->canStoreItem(0xFF, slot, slots, *item, count, false);
+		auto result = m_character->canStoreItem(0xFF, slot, slots, *item, totalCount, false);
 		if (result != game::inventory_change_failure::Okay)
 		{
 			// TODO: Send error
