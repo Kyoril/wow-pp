@@ -228,6 +228,7 @@ namespace wowpp
 
 		// Stop auto attack
 		controlled.stopAttack();
+
 	}
 
 	void CreatureAICombatState::addThreat(GameUnit &threatener, float amount)

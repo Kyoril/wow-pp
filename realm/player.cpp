@@ -186,6 +186,9 @@ namespace wowpp
 		// If we are logged in, notify the world node about this
 		if (m_gameCharacter)
 		{
+			// Decline pending group invite
+			declineGroupInvite();
+
 			// Send notification to friends
 			game::SocialInfo info;
 			info.flags = game::social_flag::Friend;
@@ -938,6 +941,9 @@ namespace wowpp
 		{
 			case pp::world_realm::world_left_reason::Logout:
 			{
+				// Decline pending group invite
+				declineGroupInvite();
+
 				auto guid = m_gameCharacter->getGuid();
 
 				// Send notification to friends
@@ -1750,30 +1756,7 @@ namespace wowpp
 			return;
 		}
 
-		if (!m_group)
-		{
-			return;
-		}
-
-		// Find the group leader
-		UInt64 leader = m_group->getLeader();
-		if (!m_group->removeInvite(m_gameCharacter->getGuid()))
-		{
-			return;
-		}
-
-		// We are no longer a member of this group
-		m_group.reset();
-
-		if (leader != 0)
-		{
-			auto *player = m_manager.getPlayerByCharacterGuid(leader);
-			if (player)
-			{
-				player->sendPacket(
-					std::bind(game::server_write::groupDecline, std::placeholders::_1, std::cref(m_gameCharacter->getName())));
-			}
-		}
+		declineGroupInvite();
 	}
 
 	void Player::handleGroupUninvite(game::IncomingPacket &packet)
@@ -1937,6 +1920,34 @@ namespace wowpp
 	void Player::setGroup(std::shared_ptr<PlayerGroup> group)
 	{
 		m_group = group;
+	}
+
+	void Player::declineGroupInvite()
+	{
+		if (!m_group || !m_gameCharacter)
+		{
+			return;
+		}
+
+		// Find the group leader
+		UInt64 leader = m_group->getLeader();
+		if (!m_group->removeInvite(m_gameCharacter->getGuid()))
+		{
+			return;
+		}
+
+		// We are no longer a member of this group
+		m_group.reset();
+
+		if (leader != 0)
+		{
+			auto *player = m_manager.getPlayerByCharacterGuid(leader);
+			if (player)
+			{
+				player->sendPacket(
+					std::bind(game::server_write::groupDecline, std::placeholders::_1, std::cref(m_gameCharacter->getName())));
+			}
+		}
 	}
 
 	void Player::handleRequestPartyMemberStats(game::IncomingPacket &packet)

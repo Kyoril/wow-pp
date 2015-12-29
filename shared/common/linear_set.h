@@ -60,9 +60,9 @@ namespace wowpp
 		typename std::enable_if<std::is_convertible<U, T>::value, void>::type
 		add(U &&element)
 		{
-			assert(!contains(element));
+			//assert(!contains(element));
 			optionalAdd(std::forward<U>(element));
-			assert(contains(element));
+			//assert(contains(element));
 		}
 
 		//Release: O(1), Debug: O(n)

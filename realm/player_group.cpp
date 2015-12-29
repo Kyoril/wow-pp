@@ -268,7 +268,8 @@ namespace wowpp
 				std::bind(game::server_write::groupDestroyed, std::placeholders::_1));
 		}
 
-		for (auto & it : m_members)
+		auto memberList = m_members;
+		for (auto & it : memberList)
 		{
 			auto *player = m_playerManager.getPlayerByCharacterGuid(it.first);
 			if (player)

@@ -153,6 +153,8 @@ namespace wowpp
 		World *getWorldNode() { return m_worldNode; }
 		/// 
 		std::vector<pp::world_realm::ItemData> &getItemData() { return m_itemData; }
+		/// Declines a pending group invite (if available).
+		void declineGroupInvite();
 
 		/// Sends an encrypted packet to the game client
 		/// @param generator Packet writer function pointer.
