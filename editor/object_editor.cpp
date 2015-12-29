@@ -596,7 +596,7 @@ namespace wowpp
 			// Prepare the import task
 			ImportTask task;
 			task.countQuery = "SELECT COUNT(*) FROM `wowpp_creature_loot_template` WHERE `lootcondition` = 0 AND `active` != 0;";
-			task.selectQuery = "SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount` FROM `wowpp_creature_loot_template` WHERE `lootcondition` = 0  AND `active` != 0) ORDER BY `entry`, `groupid`;";
+			task.selectQuery = "SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount` FROM `wowpp_creature_loot_template` WHERE `lootcondition` = 0  AND `active` != 0 ORDER BY `entry`, `groupid`;";
 			task.beforeImport = [this]() {
 				// Remove old unit loot
 				for (int i = 0; i < m_application.getProject().units.getTemplates().entry_size(); ++i)
