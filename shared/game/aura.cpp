@@ -120,7 +120,7 @@ namespace wowpp
 			handlePeriodicEnergize(apply);
 			break;
 		case aura::ProcTriggerSpell:
-			handleProcTriggerSpell(apply);
+			//are added in applyAura
 			break;
 		case aura::DamageShield:
 			handleDamageShield(apply);
@@ -152,6 +152,16 @@ namespace wowpp
 			case aura::Dummy:
 			{
 				handleDummyProc(target);
+				break;
+			}
+			case aura::DamageShield:
+			{
+				handleDamageShieldProc(target);
+				break;
+			}
+			case aura::ProcTriggerSpell:
+			{
+				handleTriggerSpellProc(target);
 				break;
 			}
 			default:
@@ -233,12 +243,10 @@ namespace wowpp
 	{
 		if (apply)
 		{
-			m_damageHit = m_target.damageHit.connect(
-				std::bind(&Aura::onDamageHit, this, std::placeholders::_1, std::placeholders::_2));
-		}
-		else
-		{
-			m_damageHit.disconnect();
+			m_procTakenAutoAttack = m_caster->procMeleeTakenAutoAttack.connect(
+				[&](GameUnit *victim) {
+				handleProcModifier(victim);
+			});
 		}
 	}
 
@@ -465,12 +473,6 @@ namespace wowpp
 			});
 		}
 	}
-
-	void Aura::handleProcTriggerSpell(bool apply)
-	{
-		m_damageHit = m_target.damageHit.connect(
-			std::bind(&Aura::onDamageHit, this, std::placeholders::_1, std::placeholders::_2));
-	}
 	
 	void Aura::handleModHealingPct(bool apply)
 	{
@@ -556,6 +558,60 @@ namespace wowpp
 		}
 	}
 
+	void Aura::handleDamageShieldProc(GameUnit * attacker)
+	{
+		std::uniform_int_distribution<int> distribution(m_effect.basedice(), m_effect.diesides());
+		const Int32 randomValue = (m_effect.basedice() >= m_effect.diesides() ? m_effect.basedice() : distribution(randomGenerator));
+		UInt32 damage = m_effect.basepoints() + randomValue;
+		attacker->dealDamage(damage, m_spell.schoolmask(), &m_target);
+
+		auto *world = attacker->getWorldInstance();
+		if (world)
+		{
+			TileIndex2D tileIndex;
+			attacker->getTileIndex(tileIndex);
+
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			wowpp::game::OutgoingPacket packet(sink);
+			wowpp::game::server_write::spellDamageShield(packet, m_target.getGuid(), attacker->getGuid(), m_spell.id(), damage, m_spell.schoolmask());
+
+			forEachSubscriberInSight(world->getGrid(), tileIndex, [&packet, &buffer](ITileSubscriber &subscriber)
+			{
+				subscriber.sendPacket(packet, buffer);
+			});
+		}
+	}
+
+	void Aura::handleTriggerSpellProc(GameUnit * attacker)
+	{
+		if (!attacker)
+		{
+			return;
+		}
+
+		if (!m_caster)
+		{
+			return;
+		}
+
+		SpellTargetMap target;
+		target.m_targetMap = game::spell_cast_target_flags::Unit;
+		target.m_unitTarget = attacker->getGuid();
+
+		if (m_effect.triggerspell() != 0)
+		{
+			if (!m_effect.triggerspell())
+			{
+				WLOG("WARNING: PROC_TRIGGER_SPELL aura of spell " << m_spell.id() << " does not have a trigger spell provided");
+				return;
+			}
+
+			SpellTargetMap targetMap;
+			m_target.castSpell(target, m_effect.triggerspell(), -1, 0, true);
+		}
+	}
+
 	void Aura::handleModAttackPower(bool apply)
 	{
 		m_target.updateModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue, m_basePoints, apply);
@@ -577,48 +633,6 @@ namespace wowpp
 		// Reset caster
 		m_casterDespawned.disconnect();
 		m_caster = nullptr;
-	}
-	
-	void Aura::onDamageHit(UInt8 school, GameUnit &attacker)
-	{
-		namespace aura = game::aura_type;
-		if (m_effect.aura() == aura::ProcTriggerSpell)
-		{
-			if (!m_effect.triggerspell())
-			{
-				WLOG("WARNING: PROC_TRIGGER_SPELL aura of spell " << m_spell.id() << " does not have a trigger spell provided");
-				return;
-			}
-
-			SpellTargetMap targetMap;
-			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
-			targetMap.m_unitTarget = attacker.getGuid();
-			m_target.castSpell(targetMap, m_effect.triggerspell(), -1, 0, true);
-		}
-		else if (m_effect.aura() == aura::DamageShield)
-		{
-			std::uniform_int_distribution<int> distribution(m_effect.basedice(), m_effect.diesides());
-			const Int32 randomValue = (m_effect.basedice() >= m_effect.diesides() ? m_effect.basedice() : distribution(randomGenerator));
-			UInt32 damage = m_effect.basepoints() + randomValue;
-			attacker.dealDamage(damage, m_spell.schoolmask(), &m_target);
-			
-			auto *world = attacker.getWorldInstance();
-			if (world)
-			{
-				TileIndex2D tileIndex;
-				attacker.getTileIndex(tileIndex);
-
-				std::vector<char> buffer;
-				io::VectorSink sink(buffer);
-				wowpp::game::OutgoingPacket packet(sink);
-				wowpp::game::server_write::spellDamageShield(packet, m_target.getGuid(), attacker.getGuid(), m_spell.id(), damage, m_spell.schoolmask());
-
-				forEachSubscriberInSight(world->getGrid(), tileIndex, [&packet, &buffer](ITileSubscriber &subscriber)
-				{
-					subscriber.sendPacket(packet, buffer);
-				});
-			}
-		}
 	}
 
 	void Aura::onExpired()
@@ -845,6 +859,14 @@ namespace wowpp
 			if ((m_spell.procflags() & game::spell_proc_flags::DoneMeleeAutoAttack) != 0)
 			{
 				m_procAutoAttack = m_caster->procMeleeAutoAttack.connect(
+					[&](GameUnit *victim) {
+					handleProcModifier(victim);
+				});
+			}
+			
+			if ((m_spell.procflags() & game::spell_proc_flags::TakenMeleeAutoAttack) != 0)
+			{
+				m_procTakenAutoAttack = m_caster->procMeleeTakenAutoAttack.connect(
 					[&](GameUnit *victim) {
 					handleProcModifier(victim);
 				});

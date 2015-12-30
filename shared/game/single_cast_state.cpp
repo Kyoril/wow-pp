@@ -599,7 +599,7 @@ namespace wowpp
 			targetUnit->dealDamage(totalDamage, m_spell.schoolmask(), &caster, noThreat);
 			if (targetUnit->isAlive())
 			{
-				targetUnit->damageHit(m_spell.schoolmask(), caster);
+//				targetUnit->damageHit(m_spell.schoolmask(), caster);
 			}
 		}
 	}

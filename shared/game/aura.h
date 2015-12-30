@@ -94,8 +94,6 @@ namespace wowpp
 		void handleModStat(bool apply);
 		/// 36
 		void handleModShapeShift(bool apply);
-        /// 42
-        void handleProcTriggerSpell(bool apply);
 		/// 99
 		void handleModAttackPower(bool apply);
         /// 118
@@ -109,6 +107,10 @@ namespace wowpp
 
 		/// 4
 		void handleDummyProc(GameUnit *victim);
+		/// 15
+		void handleDamageShieldProc(GameUnit *attacker);
+		/// 42
+		void handleTriggerSpellProc(GameUnit *attacker);
 
 	private:
 
@@ -116,8 +118,6 @@ namespace wowpp
 		void startPeriodicTimer();
 		/// Executed if the caster of this aura is about to despawn.
 		void onCasterDespawned(GameObject &object);
-		/// Executed if the caster suffer a direct damage hit
-		void onDamageHit(UInt8 school, GameUnit &attacker);
 		/// Executed when the aura expires.
 		void onExpired();
 		/// Executed when this aura ticks.
@@ -131,8 +131,8 @@ namespace wowpp
 
 		const proto::SpellEntry &m_spell;
 		const proto::SpellEffect &m_effect;
-		boost::signals2::scoped_connection m_casterDespawned, m_damageHit, m_targetMoved, m_onExpire, m_onTick, m_onTargetKilled;
-		boost::signals2::scoped_connection m_procAutoAttack;
+		boost::signals2::scoped_connection m_casterDespawned, m_targetMoved, m_onExpire, m_onTick, m_onTargetKilled;
+		boost::signals2::scoped_connection m_procAutoAttack, m_procTakenAutoAttack;
 		GameUnit *m_caster;
 		GameUnit &m_target;
 		UInt32 m_tickCount;

@@ -344,15 +344,14 @@ namespace wowpp
 		/// Fired when the unit should be teleported. This event is only fired when the unit changes world.
 		/// Parameters: Target Map, X, Y, Z, O
 		boost::signals2::signal<void(UInt16, float, float, float, float)> teleport;
-		/// Fired when hit by any direct damage (excluding dots).
-		/// Parameters: school, &attacker
-		boost::signals2::signal<void(UInt8, GameUnit&)> damageHit;
 		/// Fired when the units faction changed. This might cause the unit to become friendly to attackers.
 		boost::signals2::signal<void(GameUnit &)> factionChanged;
 		/// 
 		boost::signals2::signal<void(GameUnit &, float)> threatened;
 		/// Fired when an auto attack hit.
 		boost::signals2::signal<void(GameUnit *)> procMeleeAutoAttack;
+		/// Fired when an auto attack hit.
+		boost::signals2::signal<void(GameUnit *)> procMeleeTakenAutoAttack;
 		/// Fired when a unit trigger should be executed.
 		boost::signals2::signal<void(const proto::TriggerEntry &, GameUnit &)> unitTrigger;
 

@@ -630,20 +630,11 @@ namespace wowpp
 				// Deal damage (Note: m_victim can become nullptr, if the target dies)
 				if (damage > 0)
 				{
+					m_victim->procMeleeTakenAutoAttack(this);
 					victim->dealDamage(damage, 0, this);
 
 					// Trigger auto attack procs
 					procMeleeAutoAttack(m_victim);
-				}
-
-				if (m_victim && m_victim->isAlive())
-				{
-					if (damage > 0 ||
-						victimState == game::victim_state::Blocks ||
-						victimState == game::victim_state::Parry)
-					{
-						victim->damageHit(1 << game::spell_school::Normal, *this);
-					}
 				}
 			}
 		} while (false);
