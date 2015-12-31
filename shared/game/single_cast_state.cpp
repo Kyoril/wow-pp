@@ -499,71 +499,10 @@ namespace wowpp
 
 	void SingleCastState::spellEffectSchoolDamage(const proto::SpellEffect &effect)
 	{	
-		// TODO: Apply combo point damage
-		// Resolve GUIDs
-		GameUnit *unitTarget = nullptr;
+		refreshTargets(effect);
 		GameUnit &caster = m_cast.getExecuter();
-		auto *world = caster.getWorldInstance();
 
-		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
-			unitTarget = &caster;
-		else if (world && m_target.hasUnitTarget())
-		{
-			unitTarget = dynamic_cast<GameUnit*>(world->findObjectByGUID(m_target.getUnitTarget()));
-		}
-
-		// Check target
-		if (!unitTarget)
-		{
-			WLOG("EFFECT_SCHOOL_DAMAGE: No valid target found!");
-			return;
-		}
-		
-		if (unitTarget->isImmune(m_spell.schoolmask())) {
-			WLOG("EFFECT_SCHOOL_DAMAGE: Target is immune!");
-			return;
-		}
-		
-		if (!doesSpellHit(effect, caster, *unitTarget)) {
-			WLOG("EFFECT_SCHOOL_DAMAGE: Miss!");
-			return;
-		}
-
-		float x, y, tmp;
-		m_cast.getExecuter().getLocation(x, y, tmp, tmp);
-
-		std::vector<GameUnit*> targets;
-		switch (effect.targetb())
-		{
-		case game::targets::UnitAreaEnemySrc:
-			{
-				auto &finder = m_cast.getExecuter().getWorldInstance()->getUnitFinder();
-				finder.findUnits(Circle(x, y, effect.radius()), [this, &targets](GameUnit &unit) -> bool
-				{
-					const auto &factionA = unit.getFactionTemplate();
-					const auto &factionB = m_cast.getExecuter().getFactionTemplate();
-					if (isHostileTo(factionA, factionB) ||
-						(!isFriendlyTo(factionA, factionB) && m_cast.getExecuter().isInCombat()))
-					{
-						targets.push_back(&unit);
-						if (m_spell.maxtargets() > 0 &&
-							targets.size() >= m_spell.maxtargets())
-						{
-							// No more units
-							return false;
-						}
-					}
-
-					return true;
-				});
-			}
-			break;
-		default:
-			if (targets.empty()) targets.push_back(unitTarget);
-			break;
-		}
-
-		for (auto &targetUnit : targets)
+		for (auto &targetUnit : m_targets)
 		{
 			UInt32 spellResi = getResiPercentage(effect, caster, *targetUnit);
 			if (spellResi >= 100) {
@@ -907,107 +846,7 @@ namespace wowpp
 
 	void SingleCastState::spellEffectApplyAura(const proto::SpellEffect &effect)
 	{
-		// We need a unit target
-		GameUnit *unitTarget = nullptr;
-		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
-		{
-			unitTarget = &m_cast.getExecuter();
-		}
-		else if (m_target.hasUnitTarget())
-		{
-			auto *world = m_cast.getExecuter().getWorldInstance();
-			if (world)
-			{
-				unitTarget = dynamic_cast<GameUnit*>(world->findObjectByGUID(m_target.getUnitTarget()));
-			}
-		}
-
-		if (!unitTarget)
-		{
-			WLOG("EFFECT_APPLY_AURA needs a valid unit target!");
-			return;
-		}
-
-		float x, y, z, o;
-		m_cast.getExecuter().getLocation(x, y, z, o);
-
-		std::list<GameUnit*> targets;
-		switch (effect.targeta())
-		{
-		case game::targets::UnitPartyCaster:
-			{
-				GameCharacter *casterChar = dynamic_cast<GameCharacter*>(&m_cast.getExecuter());
-				if (casterChar)
-				{
-					auto &finder = m_cast.getExecuter().getWorldInstance()->getUnitFinder();
-					finder.findUnits(Circle(x, y, effect.radius()), [this, &casterChar, &targets](GameUnit &unit) -> bool
-					{
-						if (unit.getTypeId() != object_type::Character)
-							return true;
-
-						GameCharacter *unitChar = reinterpret_cast<GameCharacter*>(&unit);
-						if (unitChar == casterChar || 
-							(unitChar->getGroupId() != 0 &&
-							unitChar->getGroupId() == casterChar->getGroupId()))
-						{
-							targets.push_back(&unit);
-							if (m_spell.maxtargets() > 0 &&
-								targets.size() >= m_spell.maxtargets())
-							{
-								// No more units
-								return false;
-							}
-						}
-
-						return true;
-					});
-				}
-			}
-			break;
-		default:
-			break;
-		}
-
-		switch (effect.targetb())
-		{
-		case game::targets::UnitAreaEnemySrc:
-			{
-				auto &finder = m_cast.getExecuter().getWorldInstance()->getUnitFinder();
-				finder.findUnits(Circle(x, y, effect.radius()), [this, &targets](GameUnit &unit) -> bool
-				{
-					const auto &factionA = unit.getFactionTemplate();
-					const auto &factionB = m_cast.getExecuter().getFactionTemplate();
-					if (isHostileTo(factionA, factionB) ||
-						(!isFriendlyTo(factionA, factionB) && unit.isInCombat()))
-					{
-						targets.push_back(&unit);
-						if (m_spell.maxtargets() > 0 &&
-							targets.size() >= m_spell.maxtargets())
-						{
-							// No more units
-							return false;
-						}
-					}
-
-					return true;
-				});
-			}
-			break;
-		default:
-			if (targets.empty()) targets.push_back(unitTarget);
-			break;
-		}
-
-		// Check if target is dead
-		UInt32 health = unitTarget->getUInt32Value(unit_fields::Health);
-		if (health == 0 && 
-			!(m_spell.attributes(3) & 0x00100000))
-		{
-			// Spell aura is not death persistent and thus can not be added
-			DLOG("Target is dead - can't apply aura");
-			return;
-		}
-
+		refreshTargets(effect);
 		// Casting unit
 		GameUnit &caster = m_cast.getExecuter();
 
@@ -1028,7 +867,7 @@ namespace wowpp
 		UInt32 totalPoints = getSpellPointsTotal(effect, spellPower, spellBonusPct);
 		WLOG("AURA_TOTAL_POINTS:" << totalPoints);
 		
-		for (auto &target : targets)
+		for (auto &target : m_targets)
 		{
 			std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *target, [&universe](std::function<void()> work)
 			{
@@ -1427,6 +1266,90 @@ namespace wowpp
 	void wowpp::SingleCastState::spellEffectScript(const proto::SpellEffect & effect)
 	{
 		
+	}
+	
+	void SingleCastState::refreshTargets(const proto::SpellEffect &effect)
+	{
+		m_targets.clear();
+		
+		float x, y, tmp;
+		m_cast.getExecuter().getLocation(x, y, tmp, tmp);
+
+		switch (effect.targeta())
+		{
+		case game::targets::UnitPartyCaster:
+			{
+				GameCharacter *casterChar = dynamic_cast<GameCharacter*>(&m_cast.getExecuter());
+				if (casterChar)
+				{
+					auto &finder = m_cast.getExecuter().getWorldInstance()->getUnitFinder();
+					finder.findUnits(Circle(x, y, effect.radius()), [this, &casterChar](GameUnit &unit) -> bool
+					{
+						if (unit.getTypeId() != object_type::Character)
+							return true;
+
+						GameCharacter *unitChar = reinterpret_cast<GameCharacter*>(&unit);
+						if (unitChar == casterChar || 
+							(unitChar->getGroupId() != 0 &&
+							unitChar->getGroupId() == casterChar->getGroupId()))
+						{
+							m_targets.push_back(&unit);
+							if (m_spell.maxtargets() > 0 &&
+								m_targets.size() >= m_spell.maxtargets())
+							{
+								// No more units
+								return false;
+							}
+						}
+
+						return true;
+					});
+				}
+			}
+			break;
+		default:
+			break;
+		}
+		
+		switch (effect.targetb())
+		{
+		case game::targets::UnitAreaEnemySrc:
+			{
+				auto &finder = m_cast.getExecuter().getWorldInstance()->getUnitFinder();
+				finder.findUnits(Circle(x, y, effect.radius()), [this](GameUnit &unit) -> bool
+				{
+					const auto &factionA = unit.getFactionTemplate();
+					const auto &factionB = m_cast.getExecuter().getFactionTemplate();
+					if (isHostileTo(factionA, factionB) ||
+						(!isFriendlyTo(factionA, factionB) && m_cast.getExecuter().isInCombat()))
+					{
+						m_targets.push_back(&unit);
+						if (m_spell.maxtargets() > 0 &&
+							m_targets.size() >= m_spell.maxtargets())
+						{
+							// No more units
+							return false;
+						}
+					}
+
+					return true;
+				});
+			}
+			break;
+		default:
+			GameUnit *unitTarget = nullptr;
+			GameUnit &caster = m_cast.getExecuter();
+			auto *world = caster.getWorldInstance();
+
+			if (m_target.getTargetMap() == game::spell_cast_target_flags::Self || effect.targeta() == game::targets::UnitCaster)
+				unitTarget = &caster;
+			else if (world && m_target.hasUnitTarget())
+			{
+				unitTarget = dynamic_cast<GameUnit*>(world->findObjectByGUID(m_target.getUnitTarget()));
+			}
+			if (unitTarget && m_targets.empty()) m_targets.push_back(unitTarget);
+			break;
+		}
 	}
 
 }
