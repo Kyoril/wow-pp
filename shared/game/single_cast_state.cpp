@@ -1323,7 +1323,7 @@ namespace wowpp
 				{
 					const auto &factionA = unit.getFactionTemplate();
 					const auto &factionB = m_cast.getExecuter().getFactionTemplate();
-					if (!isFriendlyTo(factionA, factionB))
+					if (!isFriendlyTo(factionA, factionB) && unit.isAlive())
 					{
 						m_targets.push_back(&unit);
 						if (m_spell.maxtargets() > 0 &&
