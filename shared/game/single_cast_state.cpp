@@ -869,6 +869,9 @@ namespace wowpp
 		
 		for (auto &target : m_targets)
 		{
+			if (!target->isAlive())
+				continue;
+			
 			std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *target, [&universe](std::function<void()> work)
 			{
 				universe.post(work);
@@ -1320,8 +1323,7 @@ namespace wowpp
 				{
 					const auto &factionA = unit.getFactionTemplate();
 					const auto &factionB = m_cast.getExecuter().getFactionTemplate();
-					if (isHostileTo(factionA, factionB) ||
-						(!isFriendlyTo(factionA, factionB) && m_cast.getExecuter().isInCombat()))
+					if (!isFriendlyTo(factionA, factionB))
 					{
 						m_targets.push_back(&unit);
 						if (m_spell.maxtargets() > 0 &&
