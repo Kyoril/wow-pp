@@ -60,10 +60,9 @@ namespace wowpp
 			auto state = make_unique<CreatureAIDeathState>(*this);
 			setState(std::move(state));
 		});
-//		m_onDamaged = m_controlled.damageHit.connect([this](UInt8 school, GameUnit &attacker)
-//		{
-//			m_state->onDamage(attacker);
-//		});
+		m_onDamaged = m_controlled.takenDamage.connect([this](GameUnit *attacker) {
+			if (attacker) m_state->onDamage(*attacker);
+		});
 
 		// Enter the preparation state
 		auto state = make_unique<CreatureAIPrepareState>(*this);
