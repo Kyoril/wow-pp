@@ -888,7 +888,7 @@ namespace wowpp
 			
 			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
 			{
-				m_doneSpellMagicDmgClassNeg = m_caster->takenMeleeAutoAttack.connect(
+				m_doneSpellMagicDmgClassNeg = m_caster->doneSpellMagicDmgClassNeg.connect(
 					[&](GameUnit *victim) {
 					handleProcModifier(victim);
 				});
