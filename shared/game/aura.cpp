@@ -886,6 +886,14 @@ namespace wowpp
 				});
 			}
 			
+			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
+			{
+				m_doneSpellMagicDmgClassNeg = m_caster->takenMeleeAutoAttack.connect(
+					[&](GameUnit *victim) {
+					handleProcModifier(victim);
+				});
+			}
+			
 			if ((m_spell.procflags() & game::spell_proc_flags::TakenDamage) != 0)
 			{
 				m_takenDamage = m_caster->takenDamage.connect(

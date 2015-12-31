@@ -134,7 +134,7 @@ namespace wowpp
 		const proto::SpellEntry &m_spell;
 		const proto::SpellEffect &m_effect;
 		boost::signals2::scoped_connection m_casterDespawned, m_targetMoved, m_onExpire, m_onTick, m_onTargetKilled;
-		boost::signals2::scoped_connection m_procAutoAttack, m_procTakenAutoAttack, m_takenDamage;
+		boost::signals2::scoped_connection m_procAutoAttack, m_procTakenAutoAttack, m_doneSpellMagicDmgClassNeg, m_takenDamage;
 		GameUnit *m_caster;
 		GameUnit &m_target;
 		UInt32 m_tickCount;
