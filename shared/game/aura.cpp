@@ -243,9 +243,9 @@ namespace wowpp
 	{
 		if (apply)
 		{
-			m_procTakenAutoAttack = m_caster->procMeleeTakenAutoAttack.connect(
+			m_procTakenAutoAttack = m_caster->takenMeleeAutoAttack.connect(
 				[&](GameUnit *victim) {
-				handleProcModifier(victim);
+				handleDamageShieldProc(victim);
 			});
 		}
 	}
@@ -509,6 +509,11 @@ namespace wowpp
 			}
 		}
 	}
+	
+	void Aura::handleTakenDamage(GameUnit * attacker)
+	{
+		
+	}
 
 	void Aura::handleDummyProc(GameUnit * victim)
 	{
@@ -708,6 +713,7 @@ namespace wowpp
 				// Update health value
 				const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
 				m_target.dealDamage(damage, school, m_caster, noThreat);
+				m_target.takenDamage(m_caster);
 				break;
 			}
 			case aura::PeriodicDamagePercent:
@@ -852,6 +858,14 @@ namespace wowpp
 			m_targetMoved = m_target.moved.connect(
 				std::bind(&Aura::onTargetMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 		}
+		
+		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Damage) != 0)
+		{
+			m_takenDamage = m_target.takenDamage.connect(
+				[&](GameUnit *victim) {
+				setRemoved(victim);
+			});
+		}
 
 		if (m_spell.procflags() != game::spell_proc_flags::None)
 		{
@@ -866,9 +880,17 @@ namespace wowpp
 			
 			if ((m_spell.procflags() & game::spell_proc_flags::TakenMeleeAutoAttack) != 0)
 			{
-				m_procTakenAutoAttack = m_caster->procMeleeTakenAutoAttack.connect(
+				m_procTakenAutoAttack = m_caster->takenMeleeAutoAttack.connect(
 					[&](GameUnit *victim) {
 					handleProcModifier(victim);
+				});
+			}
+			
+			if ((m_spell.procflags() & game::spell_proc_flags::TakenDamage) != 0)
+			{
+				m_takenDamage = m_caster->takenDamage.connect(
+					[&](GameUnit *victim) {
+					handleTakenDamage(victim);
 				});
 			}
 		}

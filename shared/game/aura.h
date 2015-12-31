@@ -96,8 +96,8 @@ namespace wowpp
 		void handleModShapeShift(bool apply);
 		/// 99
 		void handleModAttackPower(bool apply);
-        /// 118
-        void handleModHealingPct(bool apply);
+		/// 118
+		void handleModHealingPct(bool apply);
 		/// 137
 		void handleModTotalStatPercentage(bool apply);
 		/// 142
@@ -105,6 +105,8 @@ namespace wowpp
 
 	protected:
 
+		/// general
+		void handleTakenDamage(GameUnit *attacker);
 		/// 4
 		void handleDummyProc(GameUnit *victim);
 		/// 15
@@ -132,7 +134,7 @@ namespace wowpp
 		const proto::SpellEntry &m_spell;
 		const proto::SpellEffect &m_effect;
 		boost::signals2::scoped_connection m_casterDespawned, m_targetMoved, m_onExpire, m_onTick, m_onTargetKilled;
-		boost::signals2::scoped_connection m_procAutoAttack, m_procTakenAutoAttack;
+		boost::signals2::scoped_connection m_procAutoAttack, m_procTakenAutoAttack, m_takenDamage;
 		GameUnit *m_caster;
 		GameUnit &m_target;
 		UInt32 m_tickCount;

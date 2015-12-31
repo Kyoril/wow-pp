@@ -350,8 +350,10 @@ namespace wowpp
 		boost::signals2::signal<void(GameUnit &, float)> threatened;
 		/// Fired when an auto attack hit.
 		boost::signals2::signal<void(GameUnit *)> procMeleeAutoAttack;
-		/// Fired when an auto attack hit.
-		boost::signals2::signal<void(GameUnit *)> procMeleeTakenAutoAttack;
+		/// Fired when hit by an auto attack.
+		boost::signals2::signal<void(GameUnit *)> takenMeleeAutoAttack;
+		/// Fired when hit by any damage.
+		boost::signals2::signal<void(GameUnit *)> takenDamage;
 		/// Fired when a unit trigger should be executed.
 		boost::signals2::signal<void(const proto::TriggerEntry &, GameUnit &)> unitTrigger;
 
