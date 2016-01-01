@@ -61,7 +61,7 @@ namespace wowpp
 		GameUnit::initialize();
 
 		setUInt32Value(object_fields::Type, 25);					//OBJECT_FIELD_TYPE				(TODO: Flags)
-		setUInt32Value(character_fields::CharacterFlags, 0x50000);
+		setUInt32Value(character_fields::CharacterFlags, 0x40000);
 
 		setFloatValue(unit_fields::BoundingRadius, 0.388999998569489f);
 		setFloatValue(unit_fields::CombatReach, 1.5f);
@@ -112,6 +112,13 @@ namespace wowpp
 		setFloatValue(character_fields::ParryPercentage, 0.0f);
 		setFloatValue(character_fields::BlockPercentage, 0.0f);
 		setUInt32Value(character_fields::ShieldBlock, 0);
+
+		// Flag for pvp
+		addFlag(character_fields::CharacterFlags, 512);
+		addFlag(unit_fields::UnitFlags, game::unit_flags::PvP);
+
+		removeFlag(unit_fields::UnitFlags, game::unit_flags::NotAttackable);
+		removeFlag(unit_fields::UnitFlags, game::unit_flags::NotAttackablePvP);
 
 		// Dodge percentage
 		setFloatValue(character_fields::DodgePercentage, 0.0f);

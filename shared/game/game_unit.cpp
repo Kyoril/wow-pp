@@ -124,6 +124,7 @@ namespace wowpp
 
 		// Not in fight
 		removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
+		addFlag(unit_fields::UnitFlags, game::unit_flags::PvP);
 	}
 
 	void GameUnit::raceUpdated()
