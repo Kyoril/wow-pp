@@ -593,7 +593,7 @@ namespace wowpp
 						damage = 0;
 				}
 				UInt32 absorbed = victim->consumeAbsorb(damage, game::spell_school_mask::Normal);
-				if (absorbed == damage)
+				if (absorbed > 0 && absorbed == damage)
 				{
 					hitInfo = static_cast<game::HitInfo>(hitInfo | game::hit_info::Absorb);
 				}
