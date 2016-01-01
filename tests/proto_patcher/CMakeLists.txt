@@ -23,28 +23,26 @@ cmake_minimum_required(VERSION 2.8.11)
 
 # Collect source and header files
 file(GLOB srcFiles "./*.cpp" "./*.h" "./*.hpp")
-file(GLOB sffFiles "./../shared/simple_file_format/*.h")
 
 # Add source groups
 source_group(src FILES ${srcFiles})
-source_group(src\\sff FILES ${sffFiles})
 
 # Add library project
-add_executable(sff_converter ${srcFiles} ${sffFiles})
+add_executable(proto_patcher ${srcFiles} ${sffFiles})
 
 # Link required shared libs
-target_link_libraries(sff_converter common log data sql_wrapper mysql_wrapper proto_data)
+target_link_libraries(proto_patcher common log sql_wrapper mysql_wrapper proto_data virtual_directory)
 
 # Link dependency libraries
-target_link_libraries(sff_converter ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY} ${PROTOBUF_LIBRARIES})
+target_link_libraries(proto_patcher ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY} ${PROTOBUF_LIBRARIES})
 
 # Install target
-install(TARGETS sff_converter
+install(TARGETS proto_patcher
 		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib/static)
 		
 # Solution folder
 if(MSVC)
-	set_property(TARGET sff_converter PROPERTY FOLDER "programs/tests")
+	set_property(TARGET proto_patcher PROPERTY FOLDER "programs/tests")
 endif(MSVC)

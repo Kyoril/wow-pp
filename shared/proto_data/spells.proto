@@ -83,6 +83,8 @@ message SpellEntry {
 	optional uint32 procflags = 34;
 	optional uint32 procchance = 35;
 	optional uint32 proccharges = 36;
+	optional uint32 mechanic = 37;
+	repeated uint32 additionalspells = 38;
 }
 
 message Spells {

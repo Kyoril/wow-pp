@@ -23,25 +23,28 @@
 #include <fstream>
 #include <string>
 #include "common/typedefs.h"
-#include "log/log_std_stream.h"
-#include "log/log_entry.h"
-#include "log/default_log_levels.h"
+#include "common/clock.h"
+#include "common/constants.h"
 #include "simple_file_format/sff_write_file.h"
 #include "simple_file_format/sff_write_array.h"
 #include "simple_file_format/sff_write_array.h"
 #include "simple_file_format/sff_write.h"
 #include "simple_file_format/sff_read_tree.h"
 #include "simple_file_format/sff_load_file.h"
-#include "data/project.h"
+#include "log/default_log.h"
+#include "log/log_std_stream.h"
+#include "log/default_log_levels.h"
 #include "mysql_wrapper/mysql_connection.h"
 #include "mysql_wrapper/mysql_row.h"
 #include "mysql_wrapper/mysql_select.h"
 #include "mysql_wrapper/mysql_statement.h"
 #include "common/make_unique.h"
-#include "common/constants.h"
-#include <fstream>
+#include "common/linear_set.h"
+#include "virtual_directory/file_system_reader.h"
+#include "proto_data/project_loader.h"
+#include "proto_data/project_saver.h"
+#include "proto_data/project.h"
 using namespace wowpp;
-
 
 namespace wowpp
 {
@@ -49,7 +52,7 @@ namespace wowpp
 	struct Configuration
 	{
 		/// Config file version: used to detect new configuration files
-		static const UInt32 ImporterConfigVersion;
+		static const UInt32 PatcherConfigVersion;
 
 		/// Path to the client data
 		String dataPath;
@@ -76,18 +79,14 @@ namespace wowpp
 		/// Initializes a new instance of the Configuration class using the default
 		/// values.
 		explicit Configuration()
-#if defined(WIN32) || defined(_WIN32)
-			: dataPath("data")
-#else
-			: dataPath("/etc/wow-pp/data")
-#endif
+			: dataPath("./")
 			, mysqlPort(wowpp::constants::DefaultMySQLPort)
 			, mysqlHost("127.0.0.1")
 			, mysqlUser("username")
 			, mysqlPassword("password")
-			, mysqlDatabase("database")
+			, mysqlDatabase("dbc")
 			, isLogActive(true)
-			, logFileName("wowpp_extractor.log")
+			, logFileName("wowpp_patcher.log")
 			, isLogFileBuffering(false)
 		{
 		}
@@ -125,7 +124,7 @@ namespace wowpp
 				// Read config version
 				UInt32 fileVersion = 0;
 				if (!global.tryGetInteger("version", fileVersion) ||
-					fileVersion != ImporterConfigVersion)
+					fileVersion != PatcherConfigVersion)
 				{
 					file.close();
 
@@ -188,7 +187,7 @@ namespace wowpp
 			sff::write::File<Char> global(file, sff::write::MultiLine);
 
 			// Save file version
-			global.addKey("version", ImporterConfigVersion);
+			global.addKey("version", PatcherConfigVersion);
 			global.writer.newLine();
 
 			{
@@ -223,142 +222,61 @@ namespace wowpp
 		}
 	};
 
-	const UInt32 Configuration::ImporterConfigVersion = 0x01;
+	const UInt32 Configuration::PatcherConfigVersion = 0x01;
 }
 
-
-bool importCreatureLoot(Project &project, MySQL::Connection &connection)
+namespace wowpp
 {
-	// Clear unit loot
-	ILOG("Deleting old loot entries...");
-	for (auto &unit : project.units.getTemplates())
+	static bool importSpellMechanics(proto::Project &project, MySQL::Connection &conn)
 	{
-		unit->unitLootEntry = nullptr;
-	}
-	project.unitLoot.clear();
-
-	UInt32 lastEntry = 0;
-	UInt32 lastGroup = 0;
-	UInt32 groupIndex = 0;
-	/*
-	wowpp::MySQL::Select select(connection, "(SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount`, `active` FROM `wowpp_FERTIG_creatureloot` WHERE `lootcondition` = 0) "
-		"UNION "
-		"(SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount`, `active` FROM `wowpp_creature_loot_template` WHERE `lootcondition` = 0) "
-		"ORDER BY `entry`, `groupid`;");
-		*/
-	wowpp::MySQL::Select select(connection, "(SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount`, `active` FROM `wowpp_creature_loot_template` WHERE `lootcondition` = 0) "
-		"ORDER BY `entry`, `groupid`;");
-	if (select.success())
-	{
-		wowpp::MySQL::Row row(select);
-		while (row)
+		wowpp::MySQL::Select select(conn, "SELECT `Id`, `Mechanic` FROM `dbc_spell`;");
+		if (select.success())
 		{
-			UInt32 entry = 0, itemId = 0, groupId = 0, minCount = 0, maxCount = 0, active = 1;
-			float dropChance = 0.0f;
-			row.getField(0, entry);
-			row.getField(1, itemId);
-			row.getField(2, dropChance);
-			row.getField(3, groupId);
-			row.getField(4, minCount);
-			row.getField(5, maxCount);
-			row.getField(6, active);
-
-			// Find referenced item
-			const auto *itemEntry = project.items.getById(itemId);
-			if (!itemEntry)
+			wowpp::MySQL::Row row(select);
+			while (row)
 			{
-				ELOG("Could not find referenced item " << itemId << " (referenced in creature loot entry " << entry << " - group " << groupId << ")");
-				row = row.next(select);
-				continue;
-			}
+				// Get row data
+				UInt32 id = 0, mechanic = 0;
+				row.getField(0, id);
+				row.getField(1, mechanic);
 
-			// Create a new loot entry
-			bool created = false;
-			if (entry > lastEntry)
-			{
-				std::unique_ptr<LootEntry> ptr = make_unique<LootEntry>();
-				ptr->id = entry;
-				project.unitLoot.add(std::move(ptr));
-
-				lastEntry = entry;
-				lastGroup = groupId;
-				groupIndex = 0;
-				created = true;
-			}
-
-			auto *lootEntry = project.unitLoot.getEditableById(entry);
-			if (!lootEntry)
-			{
-				// Error
-				ELOG("Loot entry " << entry << " found, but no creature to assign found");
-				row = row.next(select);
-				continue;
-			}
-
-			if (created)
-			{
-				auto *unitEntry = project.units.getEditableById(entry);
-				if (!unitEntry)
+				// 0 = default mechanic
+				if (mechanic != 0)
 				{
-					WLOG("No unit with entry " << entry << " found - creature loot template will not be assigned!");
+					// Find spell by id
+					auto * spell = project.spells.getById(id);
+					if (spell)
+					{
+						spell->set_mechanic(mechanic);
+					}
+					else
+					{
+						WLOG("Unable to find spell by id: " << id);
+					}
 				}
-				else
-				{
-					unitEntry->unitLootEntry = lootEntry;
-				}
-			}
-
-			// If there are no loot groups yet, create a new one
-			if (lootEntry->lootGroups.empty() || groupId > lastGroup)
-			{
-				lootEntry->lootGroups.push_back(LootGroup());
-				if (groupId > lastGroup)
-				{
-					lastGroup = groupId;
-					groupIndex++;
-				}
-			}
-
-			if (lootEntry->lootGroups.empty())
-			{
-				ELOG("Error retrieving loot group");
+				
+				// Next row
 				row = row.next(select);
-				continue;
 			}
-
-			LootGroup &group = lootEntry->lootGroups[groupIndex];
-			LootDefinition def;
-			def.item = itemEntry;
-			def.minCount = minCount;
-			def.maxCount = maxCount;
-			def.dropChance = dropChance;
-			def.isActive = (active != 0);
-			group.emplace_back(std::move(def));
-
-			row = row.next(select);
 		}
-	}
-	else
-	{
-		// There was an error
-		ELOG(connection.getErrorMessage());
-		return false;
-	}
 
-	return true;
+		return true;
+	}
 }
 
 /// Procedural entry point of the application.
 int main(int argc, char* argv[])
 {
+	GOOGLE_PROTOBUF_VERIFY_VERSION;
+
 	// Add cout to the list of log output streams
 	wowpp::g_DefaultLog.signal().connect(std::bind(
 		wowpp::printLogEntry,
 		std::ref(std::cout), std::placeholders::_1, wowpp::g_DefaultConsoleLogOptions));
-
+	
 	// Load the configuration
 	wowpp::Configuration configuration;
-	if (!configuration.load("wowpp_realm.cfg"))
+	if (!configuration.load("proto_patcher.cfg"))
 	{
 		// Shutdown for now
 		return false;
@@ -391,7 +309,14 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	// Database connection
+	// Load existing project
+	wowpp::proto::Project protoProject;
+	if (!protoProject.load(configuration.dataPath))
+	{
+		return 1;
+	}
+
+	// Load all spell mechanics
 	MySQL::DatabaseInfo connectionInfo(configuration.mysqlHost, configuration.mysqlPort, configuration.mysqlUser, configuration.mysqlPassword, configuration.mysqlDatabase);
 	MySQL::Connection connection;
 	if (!connection.connect(connectionInfo))
@@ -400,19 +325,28 @@ int main(int argc, char* argv[])
 		ELOG(connection.getErrorMessage());
 		return 0;
 	}
+	else
+	{
+		ILOG("MySQL connection established!");
+	}
 
-	Project proj;
-	if (!proj.load(configuration.dataPath))
+	if (!importSpellMechanics(protoProject, connection))
+	{
+		ELOG("Failed to import spell mechanics");
+		return 1;
+	}
+
+	// Save project
+	if (!protoProject.save(configuration.dataPath))
 	{
 		return 1;
 	}
-	
-	if (!importCreatureLoot(proj, connection))
-	{
-		return 1;
-	}
 
-	proj.save(configuration.dataPath);
+	// Wait for user input to finish
+	std::cin.get();
+
+	// Shutdown protobuf and free all memory (optional)
+	google::protobuf::ShutdownProtobufLibrary();
 
 	return 0;
 }
