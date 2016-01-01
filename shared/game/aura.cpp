@@ -142,6 +142,9 @@ namespace wowpp
 		case aura::ManaShield:
 			handleManaShield(apply);
 			break;
+		case aura::ModManaRegenInterrupt:
+			handleModManaRegenInterrupt(apply);
+			break;
 		default:
 			WLOG("Unhandled aura type: " << m_effect.aura());
 			break;
@@ -491,6 +494,14 @@ namespace wowpp
 	void Aura::handleModHealingPct(bool apply)
 	{
 		//TODO
+	}
+	
+	void Aura::handleModManaRegenInterrupt(bool apply)
+	{
+		if (m_target.getTypeId() == object_type::Character)
+		{
+			m_target.updateManaRegen();
+		}
 	}
 
 	void Aura::handleModTotalStatPercentage(bool apply)
