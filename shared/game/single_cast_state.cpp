@@ -500,11 +500,9 @@ namespace wowpp
 	void SingleCastState::spellEffectSchoolDamage(const proto::SpellEffect &effect)
 	{	
 		refreshTargets(effect);
-		std::vector<std::vector<std::vector<GameUnit*>>>::iterator ta = m_targets.begin() + effect.targeta();
-		std::vector<std::vector<GameUnit*>>::iterator tb = ta->begin() + effect.targetb();
 		GameUnit &caster = m_cast.getExecuter();
 
-		for (auto &targetUnit : *tb)
+		for (auto &targetUnit : m_targets[effect.targeta()][effect.targetb()])
 		{
 			UInt32 spellResi = getResiPercentage(effect, caster, *targetUnit);
 			if (spellResi >= 100) {
@@ -850,8 +848,6 @@ namespace wowpp
 	void SingleCastState::spellEffectApplyAura(const proto::SpellEffect &effect)
 	{
 		refreshTargets(effect);
-		std::vector<std::vector<std::vector<GameUnit*>>>::iterator ta = m_targets.begin() + effect.targeta();
-		std::vector<std::vector<GameUnit*>>::iterator tb = ta->begin() + effect.targetb();
 		// Casting unit
 		GameUnit &caster = m_cast.getExecuter();
 
@@ -872,7 +868,7 @@ namespace wowpp
 		UInt32 totalPoints = getSpellPointsTotal(effect, spellPower, spellBonusPct);
 		WLOG("AURA_TOTAL_POINTS:" << totalPoints);
 		
-		for (auto &target : *tb)
+		for (auto &target : m_targets[effect.targeta()][effect.targetb()])
 		{
 			if (!target->isAlive())
 				continue;
@@ -1278,7 +1274,14 @@ namespace wowpp
 	
 	void SingleCastState::refreshTargets(const proto::SpellEffect &effect)
 	{
-//		m_targets.clear();
+		std::unordered_map<UInt32,std::unordered_map<UInt32,std::vector<GameUnit*>>>::iterator ta = m_targets.find(effect.targeta());
+		if (ta != m_targets.end())
+		{
+			std::unordered_map<UInt32,std::vector<GameUnit*>>::iterator tb = (*ta).second.find(effect.targetb());
+			if (tb != (*ta).second.end()) {
+				return;
+			}
+		}
 		std::vector<GameUnit*> targets;
 		float x, y, tmp;
 		m_cast.getExecuter().getLocation(x, y, tmp, tmp);
@@ -1358,10 +1361,7 @@ namespace wowpp
 			break;
 		}
 		
-		std::vector<std::vector<std::vector<GameUnit*>>>::iterator ta = m_targets.begin() + effect.targeta();
-		m_targets.insert(ta, std::vector<std::vector<GameUnit*>>());
-		std::vector<std::vector<GameUnit*>>::iterator tb = ta->begin() + effect.targetb();
-		ta->insert(tb, targets);
+		m_targets[effect.targeta()][effect.targetb()] = targets;
 	}
 
 }
