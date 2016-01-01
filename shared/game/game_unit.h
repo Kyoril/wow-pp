@@ -484,6 +484,10 @@ namespace wowpp
 		virtual bool canDodge() const = 0;
 		virtual bool canDualWield() const = 0;
 
+		void addMechanicImmunity(UInt32 mechanic);
+		void removeMechanicImmunity(UInt32 mechanic);
+		bool isImmuneAgainstMechanic(UInt32 mechanic) const;
+
 		/// Adds a unit to the list of attacking units. This list is used to generate threat
 		/// if this unit is healed by another unit, and to determine, whether a player should
 		/// stay in combat. This method adds may add game::unit_flags::InCombat
@@ -553,6 +557,7 @@ namespace wowpp
 		typedef std::array<UnitModTypeArray, unit_mods::End> UnitModArray;
 		typedef std::vector<std::shared_ptr<Aura>> AuraVector;
 		typedef LinearSet<GameUnit*> AttackingUnitSet;
+		typedef LinearSet<UInt32> MechanicImmunitySet;
 
 		TimerQueue &m_timers;
 		const proto::RaceEntry *m_raceEntry;
@@ -570,6 +575,7 @@ namespace wowpp
 		AuraContainer m_auras;
 		AttackSwingCallback m_swingCallback;
 		AttackingUnitSet m_attackingUnits;
+		MechanicImmunitySet m_mechanicImmunity;
 	};
 
 	UInt32 calculateArmorReducedDamage(UInt32 attackerLevel, const GameUnit &victim, UInt32 damage);

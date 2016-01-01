@@ -33,6 +33,17 @@ namespace wowpp
 			}
 		}
 
+		if (spell.mechanic() != 0)
+		{
+			if (unitTarget)
+			{
+				if (unitTarget->isImmuneAgainstMechanic(spell.mechanic()))
+				{
+					return std::make_pair(game::spell_cast_result::FailedPreventedByMechanic, nullptr);
+				}
+			}
+		}
+
 		//Must be behind the target.
 		if (unitTarget)
 		{
