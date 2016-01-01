@@ -228,6 +228,17 @@ namespace wowpp
 				{
 					absorbed += damage;
 					manaShielded += damage;
+					
+					const Int32 manaToConsume = (damage * it->getEffect().multiplevalue());
+					if (ownerMana >= manaToConsume)
+					{
+						ownerMana -= manaToConsume;
+					}
+					else
+					{
+						ownerMana = 0;
+					}
+
 					it->setBasePoints(toConsume - damage);
 					break;
 				}
@@ -237,7 +248,17 @@ namespace wowpp
 					{
 						absorbed += toConsume;
 						manaShielded += toConsume;
-						ownerMana -= toConsume * 2; 
+
+						const Int32 manaToConsume = (toConsume * it->getEffect().multiplevalue());
+						if (ownerMana >= manaToConsume)
+						{
+							ownerMana -= manaToConsume;
+						}
+						else
+						{
+							ownerMana = 0;
+						}
+
 						it->setBasePoints(0);
 					}
 					else
@@ -250,8 +271,10 @@ namespace wowpp
 				}
 			}
 		}
+		
 		if (manaShielded > 0)
 		{
+			DLOG("Mana shielded: " << manaShielded);
 			m_owner.setUInt32Value(unit_fields::Power1, ownerMana);
 		}
 		return absorbed;
