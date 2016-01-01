@@ -100,6 +100,9 @@ namespace wowpp
 		case aura::ModStat:
 			handleModStat(apply);
 			break;
+		case aura::MechanicImmunity:
+			handleMechanicImmunity(apply);
+			break;
 		case aura::ModTotalStatPercentage:
 			handleModTotalStatPercentage(apply);
 			break;
@@ -650,6 +653,20 @@ namespace wowpp
 	void Aura::handleSchoolAbsorb(bool apply)
 	{
 		//ToDo: Add talent modifiers
+	}
+
+	void Aura::handleMechanicImmunity(bool apply)
+	{
+		if (apply)
+		{
+			m_target.addMechanicImmunity(m_spell.mechanic());
+		}
+		else
+		{
+			// TODO: We need to check if there are still other auras which provide the same immunity
+			WLOG("TODO");
+			m_target.removeMechanicImmunity(m_spell.mechanic());
+		}
 	}
 	
 	void Aura::handleManaShield(bool apply)

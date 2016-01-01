@@ -283,8 +283,6 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("Casting spell " << spellId << " - " << spell->name());
-
 		auto result = m_spellCast->startCast(*spell, std::move(target), basePoints, castTime, isProc);
 		if (callback)
 		{
@@ -1447,4 +1445,18 @@ namespace wowpp
 		return (newDamage > 1 ? newDamage : 1);
 	}
 
+	void GameUnit::addMechanicImmunity(UInt32 mechanic)
+	{
+		m_mechanicImmunity.optionalAdd(mechanic);
+	}
+
+	void GameUnit::removeMechanicImmunity(UInt32 mechanic)
+	{
+		m_mechanicImmunity.optionalRemove(mechanic);
+	}
+
+	bool GameUnit::isImmuneAgainstMechanic(UInt32 mechanic) const
+	{
+		return m_mechanicImmunity.contains(mechanic);
+	}
 }

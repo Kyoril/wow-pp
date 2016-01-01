@@ -879,6 +879,13 @@ namespace wowpp
 					<< io::write<NetUInt32>(spell.id())
 					<< io::write<NetUInt8>(result)
 					<< io::write<NetUInt8>(castCount);
+
+				if (result == game::spell_cast_result::FailedPreventedByMechanic)
+				{
+					out_packet
+						<< io::write<NetUInt32>(spell.mechanic());
+				}
+
 				// TODO: Send more informations based on the cast result code (which area is required etc.)
 				out_packet.finish();
 			}
