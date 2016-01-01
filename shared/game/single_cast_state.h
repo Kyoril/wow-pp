@@ -88,7 +88,7 @@ namespace wowpp
 		const proto::SpellEntry &m_spell;
 		SpellTargetMap m_target;
 		SpellCasting m_casting;
-		std::vector<GameUnit*> m_targets;
+		std::vector<std::vector<std::vector<GameUnit*>>> m_targets;
 		bool m_hasFinished;
 		Countdown m_countdown;
 		Countdown m_impactCountdown;

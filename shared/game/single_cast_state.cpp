@@ -500,9 +500,11 @@ namespace wowpp
 	void SingleCastState::spellEffectSchoolDamage(const proto::SpellEffect &effect)
 	{	
 		refreshTargets(effect);
+		std::vector<std::vector<std::vector<GameUnit*>>>::iterator ta = m_targets.begin() + effect.targeta();
+		std::vector<std::vector<GameUnit*>>::iterator tb = ta->begin() + effect.targetb();
 		GameUnit &caster = m_cast.getExecuter();
 
-		for (auto &targetUnit : m_targets)
+		for (auto &targetUnit : *tb)
 		{
 			UInt32 spellResi = getResiPercentage(effect, caster, *targetUnit);
 			if (spellResi >= 100) {
@@ -848,6 +850,8 @@ namespace wowpp
 	void SingleCastState::spellEffectApplyAura(const proto::SpellEffect &effect)
 	{
 		refreshTargets(effect);
+		std::vector<std::vector<std::vector<GameUnit*>>>::iterator ta = m_targets.begin() + effect.targeta();
+		std::vector<std::vector<GameUnit*>>::iterator tb = ta->begin() + effect.targetb();
 		// Casting unit
 		GameUnit &caster = m_cast.getExecuter();
 
@@ -868,7 +872,7 @@ namespace wowpp
 		UInt32 totalPoints = getSpellPointsTotal(effect, spellPower, spellBonusPct);
 		WLOG("AURA_TOTAL_POINTS:" << totalPoints);
 		
-		for (auto &target : m_targets)
+		for (auto &target : *tb)
 		{
 			if (!target->isAlive())
 				continue;
@@ -1274,8 +1278,8 @@ namespace wowpp
 	
 	void SingleCastState::refreshTargets(const proto::SpellEffect &effect)
 	{
-		m_targets.clear();
-		
+//		m_targets.clear();
+		std::vector<GameUnit*> targets;
 		float x, y, tmp;
 		m_cast.getExecuter().getLocation(x, y, tmp, tmp);
 
@@ -1287,7 +1291,7 @@ namespace wowpp
 				if (casterChar)
 				{
 					auto &finder = m_cast.getExecuter().getWorldInstance()->getUnitFinder();
-					finder.findUnits(Circle(x, y, effect.radius()), [this, &casterChar](GameUnit &unit) -> bool
+					finder.findUnits(Circle(x, y, effect.radius()), [this, &casterChar, &targets](GameUnit &unit) -> bool
 					{
 						if (unit.getTypeId() != object_type::Character)
 							return true;
@@ -1297,9 +1301,9 @@ namespace wowpp
 							(unitChar->getGroupId() != 0 &&
 							unitChar->getGroupId() == casterChar->getGroupId()))
 						{
-							m_targets.push_back(&unit);
+							targets.push_back(&unit);
 							if (m_spell.maxtargets() > 0 &&
-								m_targets.size() >= m_spell.maxtargets())
+								targets.size() >= m_spell.maxtargets())
 							{
 								// No more units
 								return false;
@@ -1320,15 +1324,15 @@ namespace wowpp
 		case game::targets::UnitAreaEnemySrc:
 			{
 				auto &finder = m_cast.getExecuter().getWorldInstance()->getUnitFinder();
-				finder.findUnits(Circle(x, y, effect.radius()), [this](GameUnit &unit) -> bool
+				finder.findUnits(Circle(x, y, effect.radius()), [this, &targets](GameUnit &unit) -> bool
 				{
 					const auto &factionA = unit.getFactionTemplate();
 					const auto &factionB = m_cast.getExecuter().getFactionTemplate();
 					if (!isFriendlyTo(factionA, factionB) && unit.isAlive())
 					{
-						m_targets.push_back(&unit);
+						targets.push_back(&unit);
 						if (m_spell.maxtargets() > 0 &&
-							m_targets.size() >= m_spell.maxtargets())
+							targets.size() >= m_spell.maxtargets())
 						{
 							// No more units
 							return false;
@@ -1350,9 +1354,14 @@ namespace wowpp
 			{
 				unitTarget = dynamic_cast<GameUnit*>(world->findObjectByGUID(m_target.getUnitTarget()));
 			}
-			if (unitTarget && m_targets.empty()) m_targets.push_back(unitTarget);
+			if (unitTarget && targets.empty()) targets.push_back(unitTarget);
 			break;
 		}
+		
+		std::vector<std::vector<std::vector<GameUnit*>>>::iterator ta = m_targets.begin() + effect.targeta();
+		m_targets.insert(ta, std::vector<std::vector<GameUnit*>>());
+		std::vector<std::vector<GameUnit*>>::iterator tb = ta->begin() + effect.targetb();
+		ta->insert(tb, targets);
 	}
 
 }
