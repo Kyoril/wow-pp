@@ -1031,6 +1031,12 @@ namespace wowpp
 				break;
 			}
 		}
+
+		// Cast all additional spells if available
+		for (const auto &spell : m_spell.additionalspells())
+		{
+			m_cast.getExecuter().castSpell(m_target, spell, -1, 0, true);
+		}
 	}
 
 	bool SingleCastState::consumePower()

@@ -130,7 +130,7 @@ namespace wowpp
 
 					if (save(fileName))
 					{
-						ILOG("Saved updated settings with default values as " << fileName);
+ILOG("Saved updated settings with default values as " << fileName);
 					}
 					else
 					{
@@ -227,6 +227,48 @@ namespace wowpp
 
 namespace wowpp
 {
+	static bool addSpellLinks(proto::Project &project)
+	{
+		auto *spellEntries = project.spells.getTemplates().mutable_entry();
+		if (spellEntries)
+		{
+			auto it = spellEntries->begin();
+			while (it != spellEntries->end())
+			{
+				// Remove all additional spell entries
+				it->clear_additionalspells();
+
+				// Check this spell
+				switch (it->id())
+				{
+					//////////////////////////////////////////////////////////////////////////
+					// Power Word: Shield
+					case 17:	// Rank 1
+					case 592:	// Rank 2
+					case 600:	// Rank 3
+					case 3747:	// Rank 4
+					case 6065:	// Rank 5
+					case 6066:	// Rank 6
+					case 10898:	// Rank 7
+					case 10899:	// Rank 8
+					case 10900: // Rank 9
+					case 10901:	// Rank 10
+					case 25217:	// Rank 11
+					case 25218:	// Rank 12
+						it->add_additionalspells(6788);	// Weakened Soul
+						break;
+
+					//////////////////////////////////////////////////////////////////////////
+					// OTHER SPELLS GO HERE
+				}
+
+				it++;
+			}
+		}
+
+		return true;
+	}
+
 	static bool importSpellMechanics(proto::Project &project, MySQL::Connection &conn)
 	{
 		wowpp::MySQL::Select select(conn, "SELECT `Id`, `Mechanic` FROM `dbc_spell`;");
@@ -333,6 +375,12 @@ int main(int argc, char* argv[])
 	if (!importSpellMechanics(protoProject, connection))
 	{
 		ELOG("Failed to import spell mechanics");
+		return 1;
+	}
+
+	if (!addSpellLinks(protoProject))
+	{
+		ELOG("Failed to add spell links");
 		return 1;
 	}
 
