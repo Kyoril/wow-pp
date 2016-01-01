@@ -195,6 +195,31 @@ namespace wowpp
 
 		return false;
 	}
+	
+	UInt32 AuraContainer::consumeAbsorb(UInt32 damage, UInt8 school)
+	{
+		UInt32 absorbed = 0;
+		for (auto &it : m_auras)
+		{
+			if (it->getEffect().aura() == game::aura_type::SchoolAbsorb
+				&& ((it->getEffect().miscvaluea() & school) != 0))
+			{
+				Int32 toConsume = it->getBasePoints();
+				if (toConsume >= damage)
+				{
+					absorbed += damage;
+					it->setBasePoints(toConsume - damage);
+					break;
+				}
+				else
+				{
+					absorbed += toConsume;
+					it->setBasePoints(0);
+				}
+			}
+		}
+		return absorbed;
+	}
 
 	void AuraContainer::removeAllAurasDueToSpell(UInt32 spellId)
 	{

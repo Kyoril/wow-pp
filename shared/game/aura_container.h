@@ -46,6 +46,7 @@ namespace wowpp
 		GameUnit &getOwner() { return m_owner; }
 		size_t getSize() const { return m_auras.size(); }
 		bool hasAura(game::AuraType type) const;
+		UInt32 consumeAbsorb(UInt32 damage, UInt8 school);
 
 	private:
 
@@ -53,6 +54,7 @@ namespace wowpp
 
 		GameUnit &m_owner;
 		AuraVector m_auras;
+		
 	};
 
 	boost::optional<std::size_t> findAuraInstanceIndex(

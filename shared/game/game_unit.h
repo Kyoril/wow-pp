@@ -477,7 +477,7 @@ namespace wowpp
 //		UInt32 getAttackPower(GameUnit &caster);
 //		UInt32 getAttackBonusPct(GameUnit &caster);
 //		UInt32 getAttackPointsTotal(UInt32 attackPower, UInt32 bonusPct);
-		UInt32 consumeAbsorb(UInt32 damage, UInt8 school, GameUnit &target);
+		UInt32 consumeAbsorb(UInt32 damage, UInt8 school);
 		virtual bool canBlock() const = 0;
 		virtual bool canParry() const = 0;
 		virtual bool canDodge() const = 0;

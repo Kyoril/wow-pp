@@ -516,8 +516,7 @@ namespace wowpp
 			UInt32 totalDamage = getSpellPointsTotal(effect, spellPower, spellBonusPct);
 			float critFactor = getCritFactor(effect, caster, *targetUnit);
 			totalDamage *= critFactor;
-			UInt32 absorbed = targetUnit->consumeAbsorb(totalDamage, m_spell.schoolmask(), *targetUnit);
-			totalDamage -= absorbed;
+			UInt32 absorbed = targetUnit->consumeAbsorb(totalDamage, m_spell.schoolmask());
 
 			// Send spell damage packet
 			sendPacketFromCaster(caster,
@@ -527,7 +526,7 @@ namespace wowpp
 				m_spell.id(),
 				totalDamage,
 				m_spell.schoolmask(),
-				absorbed,	//absorbed
+				absorbed,
 				0,	//resisted
 				false,
 				0,
@@ -535,7 +534,7 @@ namespace wowpp
 
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
-			targetUnit->dealDamage(totalDamage, m_spell.schoolmask(), &caster, noThreat);
+			targetUnit->dealDamage(totalDamage - absorbed, m_spell.schoolmask(), &caster, noThreat);
 			if (targetUnit->isAlive())
 			{
 				caster.doneSpellMagicDmgClassNeg(targetUnit);
@@ -576,6 +575,7 @@ namespace wowpp
 
 		// Armor reduction
 		damage = calculateArmorReducedDamage(m_cast.getExecuter().getLevel(), *unitTarget, damage);
+		UInt32 absorbed = unitTarget->consumeAbsorb(damage, m_spell.schoolmask());
 
 		// Send spell damage packet
 		sendPacketFromCaster(caster,
@@ -585,7 +585,7 @@ namespace wowpp
 			m_spell.id(),
 			damage,
 			m_spell.schoolmask(),
-			0,
+			absorbed,
 			0,
 			false,
 			0,
@@ -593,7 +593,7 @@ namespace wowpp
 
 		// Update health value
 		const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
-		unitTarget->dealDamage(damage, m_spell.schoolmask(), &caster, noThreat);
+		unitTarget->dealDamage(damage - absorbed, m_spell.schoolmask(), &caster, noThreat);
 	}
 
 	void SingleCastState::spellEffectDrainPower(const proto::SpellEffect &effect)

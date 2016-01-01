@@ -590,12 +590,13 @@ namespace wowpp
 					if (damage < 0)	//avoid negative damage when blockValue is high
 						damage = 0;
 				}
-
+				UInt32 absorbed = victim->consumeAbsorb(damage, game::spell_school_mask::Normal);
+				
 				// Notify all subscribers
 				std::vector<char> buffer;
 				io::VectorSink sink(buffer);
 				game::Protocol::OutgoingPacket packet(sink);
-				game::server_write::attackStateUpdate(packet, getGuid(), victim->getGuid(), hitInfo, damage, 0, 0, blockValue, victimState, game::weapon_attack::BaseAttack, 1);
+				game::server_write::attackStateUpdate(packet, getGuid(), victim->getGuid(), hitInfo, damage, absorbed, 0, blockValue, victimState, game::weapon_attack::BaseAttack, 1);
 
 				// Notify all tile subscribers about this event
 				forEachSubscriberInSight(
@@ -632,7 +633,7 @@ namespace wowpp
 				{
 					m_victim->takenDamage(this);
 					m_victim->takenMeleeAutoAttack(this);
-					victim->dealDamage(damage, 0, this);
+					victim->dealDamage(damage - absorbed, 0, this);
 
 					// Trigger auto attack procs
 					procMeleeAutoAttack(m_victim);
@@ -1287,9 +1288,9 @@ namespace wowpp
 	/**
      * @return absorbed damage
      */
-	UInt32 GameUnit::consumeAbsorb(UInt32 damage, UInt8 school, GameUnit &target)
+	UInt32 GameUnit::consumeAbsorb(UInt32 damage, UInt8 school)
 	{
-		return 0;
+		return m_auras.consumeAbsorb(damage, school);
 	}
 
 	void GameUnit::onKilled(GameUnit *killer)

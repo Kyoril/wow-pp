@@ -76,6 +76,14 @@ namespace wowpp
 		// Remove aura modifier from target
 		handleModifier(false);
 	}
+	
+	void Aura::setBasePoints(Int32 basePoints) {
+		m_basePoints = basePoints;
+
+		if (basePoints < 1) {
+			m_destroy(*this);
+		}
+	}
 
 	void Aura::handleModifier(bool apply)
 	{
@@ -127,6 +135,9 @@ namespace wowpp
 			break;
 		case aura::ModAttackPower:
 			handleModAttackPower(apply);
+			break;
+		case aura::SchoolAbsorb:
+			// nothing to do here
 			break;
 		default:
 			WLOG("Unhandled aura type: " << m_effect.aura());
@@ -679,10 +690,10 @@ namespace wowpp
 			case aura::PeriodicDamage:
 			{
 				UInt32 school = m_spell.schoolmask();
-				UInt32 fullDamage = m_basePoints;
-				UInt32 absorbed = 0;
+				Int32 damage = m_basePoints;
 				UInt32 resisted = 0;
-				Int32 damage = fullDamage - absorbed - resisted;
+				UInt32 absorbed = m_target.consumeAbsorb(damage, m_spell.schoolmask());
+				damage -= absorbed;
 				if (damage < 0) damage = 0;
 
 				// Reduce by armor if physical

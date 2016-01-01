@@ -69,6 +69,10 @@ namespace wowpp
 		const proto::SpellEntry &getSpell() const { return m_spell; }
 		/// Gets the spell effect which created this aura.
 		const proto::SpellEffect &getEffect() const { return m_effect; }
+		
+		Int32 getBasePoints() { return m_basePoints; }
+		
+		void setBasePoints(Int32 basePoints);
 
 	protected:
 
