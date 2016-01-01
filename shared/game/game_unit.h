@@ -353,7 +353,7 @@ namespace wowpp
 		/// Fired when hit by an auto attack.
 		boost::signals2::signal<void(GameUnit *)> takenMeleeAutoAttack;
 		/// Fired when done any magic damage
-		boost::signals2::signal<void(GameUnit *)> doneSpellMagicDmgClassNeg;
+		boost::signals2::signal<void(GameUnit *, UInt32)> doneSpellMagicDmgClassNeg;
 		/// Fired when hit by any damage.
 		boost::signals2::signal<void(GameUnit *)> takenDamage;
 		/// Fired when a unit trigger should be executed.
