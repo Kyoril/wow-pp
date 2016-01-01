@@ -257,7 +257,80 @@ namespace wowpp
 					case 25218:	// Rank 12
 						it->add_additionalspells(6788);	// Weakened Soul
 						break;
-
+					//////////////////////////////////////////////////////////////////////////
+					// Holy Nova
+					case 15237:	// Rank 1
+						it->add_additionalspells(23455);
+						break;	
+					case 15430:	// Rank 2
+						it->add_additionalspells(23458);
+						break;	
+					case 15431:	// Rank 3
+						it->add_additionalspells(23459);
+						break;	
+					case 27799:	// Rank 4
+						it->add_additionalspells(27803);
+						break;	
+					case 27800:	// Rank 5
+						it->add_additionalspells(27804);
+						break;	
+					case 27801:	// Rank 6
+						it->add_additionalspells(27805);
+						break;	
+					case 25331:	// Rank 7
+						it->add_additionalspells(25329);
+						break;
+					//////////////////////////////////////////////////////////////////////////
+					// Iceblock
+					case 45438:
+						it->add_additionalspells(41425);
+						break;
+					//////////////////////////////////////////////////////////////////////////
+					// Bandages
+					case 45438:
+					case 746:
+					case 1159:
+					case 3267:
+					case 3268:
+					case 7926:
+					case 7927:
+					case 10838:
+					case 10839:
+					case 18608:
+					case 18610:
+					case 23567:
+					case 23568:
+					case 23569:
+					case 23696:
+					case 24412:
+					case 24413:
+					case 24414:
+					case 27030:
+					case 27031:
+					case 30020:
+						it->add_additionalspells(11196);
+						break;
+					//////////////////////////////////////////////////////////////////////////
+					// Blood Fury
+					case 20572:
+					case 33697:
+					case 33702:
+						it->add_additionalspells(23230);
+						break;
+					//////////////////////////////////////////////////////////////////////////
+					// Paladin bubble debuff
+					// Divine Protection
+					case 498:	// Rank 1
+					case 5573:	// Rank 2
+					// Divine Shield
+					case 642:	// Rank 1
+					case 1020:	// Rank 2
+					// Hand of Protection
+					case 1022:	// Rank 1
+					case 5599:	// Rank 2
+					case 10278:	// Rank 3
+						it->add_additionalspells(25771);
+						break;
 					//////////////////////////////////////////////////////////////////////////
 					// OTHER SPELLS GO HERE
 				}
