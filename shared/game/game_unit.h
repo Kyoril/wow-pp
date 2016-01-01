@@ -358,7 +358,8 @@ namespace wowpp
 		boost::signals2::signal<void(GameUnit *)> takenDamage;
 		/// Fired when a unit trigger should be executed.
 		boost::signals2::signal<void(const proto::TriggerEntry &, GameUnit &)> unitTrigger;
-
+		/// Fired when a target was killed by this unit, which could trigger Kill-Procs. Only fired when XP or honor is rewarded.
+		boost::signals2::signal<void(GameUnit &)> procKilledTarget;
 
 	public:
 

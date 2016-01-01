@@ -902,6 +902,14 @@ namespace wowpp
 					handleProcModifier(game::spell_proc_flags::Killed, killer);
 				});
 			}
+
+			if ((m_spell.procflags() & game::spell_proc_flags::Kill) != 0)
+			{
+				m_procKill = m_caster->procKilledTarget.connect(
+					[&](GameUnit &killed) {
+					handleProcModifier(game::spell_proc_flags::Kill, &killed);
+				});
+			}
 			
 			if ((m_spell.procflags() & game::spell_proc_flags::TakenMeleeAutoAttack) != 0)
 			{

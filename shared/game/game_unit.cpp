@@ -27,6 +27,7 @@
 #include "game_protocol/game_protocol.h"
 #include "game_character.h"
 #include "proto_data/project.h"
+#include "experience.h"
 #include <cassert>
 
 namespace wowpp
@@ -1305,6 +1306,16 @@ namespace wowpp
 		stopRegeneration();
 
 		m_auras.handleTargetDeath();
+
+		if (killer)
+		{
+			// Check if this target should reward honor points / xp
+			UInt32 killerGreyLevel = xp::getGrayLevel(killer->getLevel());
+			if (getLevel() > killerGreyLevel)
+			{
+				killer->procKilledTarget(*this);
+			}
+		}
 	}
 
 	float GameUnit::getMeleeReach() const
