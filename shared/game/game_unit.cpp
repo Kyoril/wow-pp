@@ -145,8 +145,9 @@ namespace wowpp
 		setByteValue(unit_fields::Bytes0, 3, m_classEntry->powertype());
 
 		// Unknown what this does...
-		if (m_classEntry->powertype() == game::power_type::Rage ||
-			m_classEntry->powertype() == game::power_type::Mana)
+		if (m_classEntry->powertype() == static_cast<wowpp::proto::ClassEntry_PowerType>(game::power_type::Rage) ||
+			m_classEntry->powertype() == static_cast<wowpp::proto::ClassEntry_PowerType>(game::power_type::Mana))
+			
 		{
 			setByteValue(unit_fields::Bytes1, 1, 0xEE);
 		}
