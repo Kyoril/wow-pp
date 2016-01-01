@@ -145,7 +145,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleProcModifier(GameUnit *target/* = nullptr*/)
+	void Aura::handleProcModifier(game::spell_proc_flags::Type procType, GameUnit *target/* = nullptr*/)
 	{
 		// Determine if proc should happen
 		if (m_spell.procchance() < 100)
@@ -723,6 +723,12 @@ namespace wowpp
 
 				// Update health value
 				const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
+				// If spell is channeled, it can cause procs
+				if (m_caster && 
+					m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1)
+				{
+					m_caster->doneSpellMagicDmgClassNeg(&m_target, school);
+				}
 				m_target.dealDamage(damage, school, m_caster, noThreat);
 				m_target.takenDamage(m_caster);
 				break;
@@ -885,7 +891,7 @@ namespace wowpp
 			{
 				m_procAutoAttack = m_caster->procMeleeAutoAttack.connect(
 					[&](GameUnit *victim) {
-					handleProcModifier(victim);
+					handleProcModifier(game::spell_proc_flags::DoneMeleeAutoAttack, victim);
 				});
 			}
 
@@ -893,7 +899,7 @@ namespace wowpp
 			{
 				m_procKilled = m_caster->killed.connect(
 					[&](GameUnit *killer) {
-					handleProcModifier(killer);
+					handleProcModifier(game::spell_proc_flags::Killed, killer);
 				});
 			}
 			
@@ -901,15 +907,29 @@ namespace wowpp
 			{
 				m_procTakenAutoAttack = m_caster->takenMeleeAutoAttack.connect(
 					[&](GameUnit *victim) {
-					handleProcModifier(victim);
+					handleProcModifier(game::spell_proc_flags::TakenMeleeAutoAttack, victim);
 				});
 			}
 			
 			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
 			{
 				m_doneSpellMagicDmgClassNeg = m_caster->doneSpellMagicDmgClassNeg.connect(
-					[&](GameUnit *victim) {
-					handleProcModifier(victim);
+					[&](GameUnit *victim, UInt32 schoolMask) {
+					UInt32 spellSchoolMask = m_spell.schoolmask();
+					if (m_effect.aura() == game::aura_type::ProcTriggerSpell ||
+						m_effect.aura() == game::aura_type::ProcTriggerSpellWithValue)
+					{
+						auto *triggerSpell = m_caster->getProject().spells.getById(m_effect.triggerspell());
+						if (triggerSpell)
+						{
+							spellSchoolMask = triggerSpell->schoolmask();
+						}
+					}
+
+					if ((schoolMask & spellSchoolMask) != 0)
+					{
+						handleProcModifier(game::spell_proc_flags::DoneSpellMagicDmgClassNeg, victim);
+					}
 				});
 			}
 			

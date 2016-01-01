@@ -537,7 +537,7 @@ namespace wowpp
 			targetUnit->dealDamage(totalDamage - absorbed, m_spell.schoolmask(), &caster, noThreat);
 			if (targetUnit->isAlive())
 			{
-				caster.doneSpellMagicDmgClassNeg(targetUnit);
+				caster.doneSpellMagicDmgClassNeg(targetUnit, m_spell.schoolmask());
 				targetUnit->takenDamage(&caster);
 			}
 		}
