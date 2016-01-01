@@ -137,7 +137,10 @@ namespace wowpp
 			handleModAttackPower(apply);
 			break;
 		case aura::SchoolAbsorb:
-			// nothing to do here
+			handleSchoolAbsorb(apply);
+			break;
+		case aura::ManaShield:
+			handleManaShield(apply);
 			break;
 		default:
 			WLOG("Unhandled aura type: " << m_effect.aura());
@@ -631,6 +634,16 @@ namespace wowpp
 	void Aura::handleModAttackPower(bool apply)
 	{
 		m_target.updateModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue, m_basePoints, apply);
+	}
+	
+	void Aura::handleSchoolAbsorb(bool apply)
+	{
+		//ToDo: Add talent modifiers
+	}
+	
+	void Aura::handleManaShield(bool apply)
+	{
+		//ToDo: Add talent modifiers
 	}
 
 	bool Aura::isPositive() const

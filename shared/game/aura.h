@@ -98,6 +98,10 @@ namespace wowpp
 		void handleModStat(bool apply);
 		/// 36
 		void handleModShapeShift(bool apply);
+		/// 69
+		void handleSchoolAbsorb(bool apply);
+		/// 97
+		void handleManaShield(bool apply);
 		/// 99
 		void handleModAttackPower(bool apply);
 		/// 118

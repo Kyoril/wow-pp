@@ -199,6 +199,8 @@ namespace wowpp
 	UInt32 AuraContainer::consumeAbsorb(UInt32 damage, UInt8 school)
 	{
 		UInt32 absorbed = 0;
+		UInt32 ownerMana = m_owner.getUInt32Value(unit_fields::Power1);
+		UInt32 manaShielded = 0;
 		for (auto &it : m_auras)
 		{
 			if (it->getEffect().aura() == game::aura_type::SchoolAbsorb
@@ -217,6 +219,40 @@ namespace wowpp
 					it->setBasePoints(0);
 				}
 			}
+			else if (it->getEffect().aura() == game::aura_type::ManaShield
+				&& ((it->getEffect().miscvaluea() & school) != 0))
+			{
+				Int32 toConsume = it->getBasePoints();
+				Int32 toConsumeByMana = ownerMana / 2;
+				if (toConsume >= damage && toConsumeByMana >= damage)
+				{
+					absorbed += damage;
+					manaShielded += damage;
+					it->setBasePoints(toConsume - damage);
+					break;
+				}
+				else
+				{
+					if (toConsume < toConsumeByMana)
+					{
+						absorbed += toConsume;
+						manaShielded += toConsume;
+						ownerMana -= toConsume * 2; 
+						it->setBasePoints(0);
+					}
+					else
+					{
+						absorbed += toConsumeByMana;
+						manaShielded += toConsumeByMana;
+						ownerMana -= toConsumeByMana * 2;
+						it->setBasePoints(toConsume - toConsumeByMana);
+					}
+				}
+			}
+		}
+		if (manaShielded > 0)
+		{
+			m_owner.setUInt32Value(unit_fields::Power1, ownerMana);
 		}
 		return absorbed;
 	}
