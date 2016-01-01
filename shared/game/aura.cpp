@@ -888,6 +888,14 @@ namespace wowpp
 					handleProcModifier(victim);
 				});
 			}
+
+			if ((m_spell.procflags() & game::spell_proc_flags::Killed) != 0)
+			{
+				m_procKilled = m_caster->killed.connect(
+					[&](GameUnit *killer) {
+					handleProcModifier(killer);
+				});
+			}
 			
 			if ((m_spell.procflags() & game::spell_proc_flags::TakenMeleeAutoAttack) != 0)
 			{
