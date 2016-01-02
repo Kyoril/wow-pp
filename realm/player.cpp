@@ -937,6 +937,12 @@ namespace wowpp
 		m_worldDisconnected.disconnect();
 		m_worldNode = nullptr;
 
+		// Save action buttons
+		if (m_gameCharacter)
+		{
+			m_database.setCharacterActionButtons(m_gameCharacter->getGuid(), m_actionButtons);
+		}
+
 		switch (reason)
 		{
 			case pp::world_realm::world_left_reason::Logout:

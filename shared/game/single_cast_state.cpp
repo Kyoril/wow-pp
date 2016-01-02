@@ -1292,8 +1292,6 @@ namespace wowpp
 							return true;
 
 						GameCharacter *unitChar = reinterpret_cast<GameCharacter*>(&unit);
-						WLOG("Group1: " << casterChar->getGroupId());
-						WLOG("Group2: " << unitChar->getGroupId());
 						if (unitChar == casterChar || 
 							(unitChar->getGroupId() != 0 &&
 							unitChar->getGroupId() == casterChar->getGroupId()))
