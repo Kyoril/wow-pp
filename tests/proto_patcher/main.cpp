@@ -330,17 +330,307 @@ namespace wowpp
 					case 10278:	// Rank 3
 						it->add_additionalspells(25771);
 						break;
+						
 					//////////////////////////////////////////////////////////////////////////
+					/////////////////////// AURA TRIGGER SPELLS //////////////////////////////
+					//////////////////////////////////////////////////////////////////////////
+						
+					////////////////////////////// Warrior ///////////////////////////////////
+						
+					// Sweeping Strikes (fury talent)
+					case 12328:
+					case 18765:
+					case 35429:
+						it->mutable_effects(0)->set_triggerspell(26654);
+						break;
+					// Retaliation
+					case 20230:
+						it->mutable_effects(0)->set_triggerspell(22858);
+						break;
+					// Second Wind
+					case 29834:	// Rank 1
+						it->mutable_effects(0)->set_triggerspell(29841);
+						break;
+					case 29838:	// Rank 2
+						it->mutable_effects(0)->set_triggerspell(29842);
+						break;
+						
+					////////////////////////////// Paladin ///////////////////////////////////
+						
+					// Eye for an Eye
+					case 9799:	// Rank 1
+					case 25988:	// Rank 2
+						it->mutable_effects(0)->set_triggerspell(25997);
+						break;
+//					// Seal of Righteousness
+//					case 21084:	// Rank 1
+//						it->mutable_effects(0)->set_triggerspell(25742);
+//						break;
+//					case 20287:	// Rank 2
+//						it->mutable_effects(0)->set_triggerspell(25740);
+//						break;
+//					case 20288:	// Rank 3
+//						it->mutable_effects(0)->set_triggerspell(25739);
+//						break;
+//					case 20289:	// Rank 4
+//						it->mutable_effects(0)->set_triggerspell(25738);
+//						break;
+//					case 20290:	// Rank 5
+//						it->mutable_effects(0)->set_triggerspell(25737);
+//						break;
+//					case 20291:	// Rank 6
+//						it->mutable_effects(0)->set_triggerspell(25736);
+//						break;
+//					case 20292:	// Rank 7
+//						it->mutable_effects(0)->set_triggerspell(25735);
+//						break;
+//					case 20293:	// Rank 8
+//						it->mutable_effects(0)->set_triggerspell(25713);
+//						break;
+//					case 27155:	// Rank 9
+//						it->mutable_effects(0)->set_triggerspell(27156);
+//						break;
+					// Seal of Blood
+					case 31892:	// Rank 1
+						it->mutable_effects(0)->set_triggerspell(31893);
+						it->mutable_effects(1)->set_triggerspell(32221);
+						break;
+					// Spiritual Attunement
+					case 31785: // Rank 1
+					case 33776: // Rank 2
+						it->mutable_effects(0)->set_triggerspell(31786);
+						break;
+					// Seal of Vengeance
+					case 31801: // Rank 1
+						it->mutable_effects(0)->set_triggerspell(31803);
+						break;
+						
+					////////////////////////////// Hunter ////////////////////////////////////
+						
+					// Thrill of the Hunt
+					case 34497:
+					case 34498:
+					case 34499:
+						it->mutable_effects(0)->set_triggerspell(34720);
+						break;
+						
+					////////////////////////////// Rogue /////////////////////////////////////
+						
+					// Clean Escape - T1 set bonus
+					case 23582:
+						it->mutable_effects(0)->set_triggerspell(23583);
+						break;
+					// Quick Recovery - talent
+					case 31244:
+					case 31245:
+						it->mutable_effects(0)->set_triggerspell(31663);
+						break;
+						
+					////////////////////////////// Priest ////////////////////////////////////
+						
+					// Mana Leech (Passive) (Priest Pet Aura)
+					case 28305:
+						it->mutable_effects(0)->set_triggerspell(34650);
+						break;
+					// Vampiric Touch
+					case 34914:
+					case 34916:
+					case 34917:
+						it->mutable_effects(0)->set_triggerspell(34919);
+						break;
+					// Vampiric Embrace
+					case 15286:
+						it->mutable_effects(0)->set_triggerspell(15290);
+						break;
+					// Oracle Healing Bonus ("Garments of the Oracle" set)
+					case 26169:
+						it->mutable_effects(0)->set_triggerspell(26170);
+						break;
+					// Priest T3 set bonus
+					case 28809:
+						it->mutable_effects(0)->set_triggerspell(28810);
+						break;
+						
+					////////////////////////////// Shaman ////////////////////////////////////
+						
 					// Lightning Shield
 					case 324:	// Rank 1
 						it->mutable_effects(0)->set_triggerspell(26364);	// FIRST effect needs to be fixed: New spell id
 						break;
 					case 325:	// Rank 2
-						//TODO
+						it->mutable_effects(0)->set_triggerspell(26365);
 						break;
-
-					//////////////////////////////////////////////////////////////////////////
-					// OTHER SPELLS GO HERE
+					case 905:	// Rank 3
+						it->mutable_effects(0)->set_triggerspell(26366);
+						break;
+					case 945:	// Rank 4
+						it->mutable_effects(0)->set_triggerspell(26367);
+						break;
+					case 8134:	// Rank 5
+						it->mutable_effects(0)->set_triggerspell(26369);
+						break;
+					case 10431:	// Rank 6
+						it->mutable_effects(0)->set_triggerspell(26370);
+						break;
+					case 10432:	// Rank 7
+						it->mutable_effects(0)->set_triggerspell(26363);
+						break;
+					case 25469:	// Rank 8
+						it->mutable_effects(0)->set_triggerspell(26371);
+						break;
+					case 25472:	// Rank 9
+						it->mutable_effects(0)->set_triggerspell(26372);
+						break;
+					case 23551:	// Shaman Tier2 set bonus effect
+						it->mutable_effects(0)->set_triggerspell(27635);
+						break;
+					// Totem of Flowing Water Relic
+					case 28849:
+						it->mutable_effects(0)->set_triggerspell(28850);
+						break;
+					// Earth Shield
+					case 974:	// Rank 1
+					case 32593:	// Rank 2
+					case 32594:	// Rank 3
+					case 32734: // npc spell
+						it->mutable_effects(0)->set_triggerspell(379);
+						break;
+						
+					////////////////////////////// Mage //////////////////////////////////////
+						
+					// Magic Absorption (arcan talent)
+					case 29441:	// Rank 1
+					case 29444:	// Rank 2
+					case 29445:	// Rank 3
+					case 29446:	// Rank 4
+					case 29447:	// Rank 5
+						it->mutable_effects(0)->set_triggerspell(29442);
+						break;
+					// Master of Elements (fire talent)
+					case 29074:	// Rank 1
+					case 29075:	// Rank 2
+					case 29076:	// Rank 3
+						it->mutable_effects(0)->set_triggerspell(29077);
+						break;
+					// Ignite (fire talent)
+					case 11119:	// Rank 1
+					case 11120:	// Rank 2
+					case 12846:	// Rank 3
+					case 12847:	// Rank 4
+					case 12848:	// Rank 5
+						it->mutable_effects(0)->set_triggerspell(12654);
+						break;
+					// Combustion (fire talent)
+					case 11129:
+						it->mutable_effects(0)->set_triggerspell(28682);
+						break;
+						
+					////////////////////////////// Warlock ///////////////////////////////////
+						
+					// Seed of Corruption
+					case 27243:	// Rank 1
+						it->mutable_effects(1)->set_triggerspell(27285);
+						break;
+					case 32863:	// tbc dungeon trash spells
+					case 36123:
+					case 38252:
+					case 39367:
+					case 44141:
+						it->mutable_effects(1)->set_triggerspell(32865);
+						break;
+					// Nightfall
+					case 18094:	// Rank 1
+					case 18095:	// Rank 2
+						it->mutable_effects(0)->set_triggerspell(17941);
+						break;
+					// Soul Leech
+					case 30293:	// Rank 1
+					case 30295:	// Rank 2
+					case 30296:	// Rank 3
+						it->mutable_effects(0)->set_triggerspell(30294);
+						break;
+					// Shadowflame (T4 set bonus)
+					case 37377:
+						it->mutable_effects(0)->set_triggerspell(37379);
+						break;
+					// Shadowflame Hellfire (T4 set bonus)
+					case 39437:
+						it->mutable_effects(0)->set_triggerspell(37378);
+						break;
+					// Pet Healing (T5 set bonus of warlock and hunter)
+					case 37381:
+						it->mutable_effects(0)->set_triggerspell(37382);
+						break;
+						
+					////////////////////////////// Druid /////////////////////////////////////
+					
+					// T3 set bonus
+					case 28719:
+						it->mutable_effects(0)->set_triggerspell(28742);
+						break;
+					// Idol of Longevity
+					case 28847:
+						it->mutable_effects(0)->set_triggerspell(28848);
+						break;
+					// T4 set bonus
+					case 37288:
+					case 37295:
+						it->mutable_effects(0)->set_triggerspell(37238);
+						break;
+					// Maim Interrupt
+					case 44835:	// druid pvp set bonus
+					case 32748:	// rogue pvp hand effect
+						it->mutable_effects(0)->set_triggerspell(32747);
+						break;
+						
+					////////////////////////////// Creature Spells ///////////////////////////
+					
+					// Twisted Reflection
+					case 21063:	// Doom Lord Kazzak boss spell
+						it->mutable_effects(0)->set_triggerspell(21064);
+						break;
+					// Mark of Malice
+					case 33493:	// schlabby trash spell
+						it->mutable_effects(0)->set_triggerspell(33494);
+						break;
+					// Vampiric Aura
+					case 38196:	// Anetheron boss spell
+						it->mutable_effects(0)->set_triggerspell(31285);
+						break;
+						
+					////////////////////////////// Item Effects //////////////////////////////
+					
+					// Hakkar Quest trinket effects
+					case 24574:	// Brittle Armor - use effect of trinket (19948)
+						it->mutable_effects(0)->set_triggerspell(24575);
+						break;
+					case 24658:	// Unstable Power - use effect of trinket (19950)
+						it->mutable_effects(0)->set_triggerspell(24659);
+						break;
+					case 24661:	// Restless Strength - use effect of trinket (19949)
+						it->mutable_effects(0)->set_triggerspell(24662);
+						break;
+					// Frozen Shadoweave (Shadow's Embrace set)
+					case 39372:
+						it->mutable_effects(0)->set_triggerspell(39373);
+						break;
+						
+					// PROBLEM: 28764 mage T3 set effect trigger: 28765 | 28766 | 28768 | 28769 | 28770	
+					// PROBLEM: 27539 Obsidian Armor effect trigger: 27533 | 27534 | 27535 | 27536 | 27538 | 27540
+					// PROBLEM: 39446 Aura of Madness (Darkmoon Card: Madness trinket)
+					// PROBLEM: 45481 Sunwell Exalted Caster Neck (Shattered Sun Pendant of Acumen neck)
+					// PROBLEM: 45482 Sunwell Exalted Melee Neck (Shattered Sun Pendant of Might neck)
+					// PROBLEM: 45483 Sunwell Exalted Tank Neck (Shattered Sun Pendant of Resolve neck)
+					// PROBLEM: 45484 Sunwell Exalted Healer Neck (Shattered Sun Pendant of Restoration neck)
+					// PROBLEM: 46569 Sunwell Exalted Caster Neck (??? neck) // old unused version
+					// PROBLEM: 40438 Priest T6 Trinket (Ashtongue Talisman) trigger: 40440 | 40441
+					// PROBLEM: 40442 Druid T6 Trinket (Ashtongue Talisman) trigger: 40445 | 40446 | 40452
+					// PROBLEM: 28789 Paladin T3 set bonus trigger: 28795 | 28793 | 28791 | 28790
+					// PROBLEM: 40470 Paladin T6 trinket trigger: 40471 | 40472
+					// PROBLEM: 28823 Shaman T3 set bonus trigger: 28824 | 28825 | 28826 | 28827
+					// PROBLEM: 33757 Shaman windfury
+					// PROBLEM: 40463 Shaman T6 trinket trigger: 40465 | 40465 | 40466
+					// PROBLEM: Shaman: Lightning Overload
 				}
 
 				it++;
