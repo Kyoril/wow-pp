@@ -331,6 +331,15 @@ namespace wowpp
 						it->add_additionalspells(25771);
 						break;
 					//////////////////////////////////////////////////////////////////////////
+					// Lightning Shield
+					case 324:	// Rank 1
+						it->mutable_effects(0)->set_triggerspell(26364);	// FIRST effect needs to be fixed: New spell id
+						break;
+					case 325:	// Rank 2
+						//TODO
+						break;
+
+					//////////////////////////////////////////////////////////////////////////
 					// OTHER SPELLS GO HERE
 				}
 
