@@ -1265,7 +1265,7 @@ namespace wowpp
 
 	void wowpp::SingleCastState::spellEffectScript(const proto::SpellEffect & effect)
 	{
-		switch (effect.id())
+		switch (effect.index())
 		{
 			case 20271:	// Judgment
 				// aura = get active seal from aura_container (Dummy-effect)
