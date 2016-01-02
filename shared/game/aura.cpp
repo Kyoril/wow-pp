@@ -84,6 +84,22 @@ namespace wowpp
 			m_destroy(*this);
 		}
 	}
+	
+	UInt32 Aura::getEffectSchoolMask()
+	{
+		UInt32 effectSchoolMask = m_spell.schoolmask();
+		if (m_effect.aura() == game::aura_type::ProcTriggerSpell ||
+			m_effect.aura() == game::aura_type::ProcTriggerSpellWithValue ||
+			m_effect.aura() == game::aura_type::AddTargetTrigger)
+		{
+			auto *triggerSpell = m_caster->getProject().spells.getById(m_effect.triggerspell());
+			if (triggerSpell)
+			{
+				effectSchoolMask = triggerSpell->schoolmask();
+			}
+		}
+		return effectSchoolMask;
+	}
 
 	void Aura::handleModifier(bool apply)
 	{
@@ -983,19 +999,7 @@ namespace wowpp
 			{
 				m_doneSpellMagicDmgClassNeg = m_caster->doneSpellMagicDmgClassNeg.connect(
 					[&](GameUnit *victim, UInt32 schoolMask) {
-					UInt32 spellSchoolMask = m_spell.schoolmask();
-					if (m_effect.aura() == game::aura_type::ProcTriggerSpell ||
-						m_effect.aura() == game::aura_type::ProcTriggerSpellWithValue ||
-						m_effect.aura() == game::aura_type::AddTargetTrigger)
-					{
-						auto *triggerSpell = m_caster->getProject().spells.getById(m_effect.triggerspell());
-						if (triggerSpell)
-						{
-							spellSchoolMask = triggerSpell->schoolmask();
-						}
-					}
-
-					if ((schoolMask & spellSchoolMask) != 0)
+					if ((schoolMask & getEffectSchoolMask()) != 0)
 					{
 						handleProcModifier(game::spell_proc_flags::DoneSpellMagicDmgClassNeg, victim);
 					}
@@ -1012,19 +1016,9 @@ namespace wowpp
 		}
 		else if (m_effect.aura() == game::aura_type::AddTargetTrigger)
 		{
-			m_doneSpellMagicDmgClassNeg = m_caster->doneSpellMagicDmgClassNeg.connect(	//duplicate code!
+			m_doneSpellMagicDmgClassNeg = m_caster->doneSpellMagicDmgClassNeg.connect(
 				[&](GameUnit *victim, UInt32 schoolMask) {
-				UInt32 spellSchoolMask = m_spell.schoolmask();
-				if (m_effect.aura() == game::aura_type::AddTargetTrigger)
-				{
-					auto *triggerSpell = m_caster->getProject().spells.getById(m_effect.triggerspell());
-					if (triggerSpell)
-					{
-						spellSchoolMask = triggerSpell->schoolmask();
-					}
-				}
-
-				if ((schoolMask & spellSchoolMask) != 0)
+				if ((schoolMask & getEffectSchoolMask()) != 0)
 				{
 					handleProcModifier(game::spell_proc_flags::DoneSpellMagicDmgClassNeg, victim);
 				}

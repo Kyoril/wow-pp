@@ -73,6 +73,8 @@ namespace wowpp
 		Int32 getBasePoints() { return m_basePoints; }
 		
 		void setBasePoints(Int32 basePoints);
+		
+		UInt32 getEffectSchoolMask();
 
 	protected:
 
