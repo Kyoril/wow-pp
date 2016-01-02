@@ -42,6 +42,7 @@ namespace wowpp
 		, m_tickCount(0)
 		, m_applyTime(getCurrentTime())
 		, m_basePoints(basePoints)
+		, m_procCharges(spell.proccharges())
 		, m_expireCountdown(target.getTimers())
 		, m_tickCountdown(target.getTimers())
 		, m_isPeriodic(false)
@@ -219,11 +220,23 @@ namespace wowpp
 				handleTriggerSpellProc(target);
 				break;
 			}
+			case aura::ModResistance:
+			{
+				// nothing to do
+				break;
+			}
 			default:
 			{
 				WLOG("Unhandled aura proc: " << m_effect.aura());
 				break;
 			}
+		}
+		
+		if (m_procCharges > 0)
+		{
+			m_procCharges--;
+			if (m_procCharges == 0)
+				m_destroy(*this);
 		}
 	}
 

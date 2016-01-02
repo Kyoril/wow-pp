@@ -156,6 +156,7 @@ namespace wowpp
 		UInt32 m_tickCount;
 		GameTime m_applyTime;
 		Int32 m_basePoints;
+		UInt8 m_procCharges;
 		Countdown m_expireCountdown;
 		Countdown m_tickCountdown;
 		bool m_isPeriodic;
