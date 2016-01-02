@@ -912,53 +912,39 @@ namespace wowpp
 
 	void SingleCastState::spellEffectHeal(const proto::SpellEffect &effect)
 	{
-		// Resolve GUIDs
-		GameUnit *unitTarget = nullptr;
+		refreshTargets(effect);
 		GameUnit &caster = m_cast.getExecuter();
-		auto *world = caster.getWorldInstance();
 
-		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self || effect.targeta() == game::targets::UnitCaster)
-			unitTarget = &caster;
-		else if (world && m_target.hasUnitTarget())
-		{
-			UInt64 targetGuid = m_target.getUnitTarget();
-			unitTarget = reinterpret_cast<GameUnit*>(world->findObjectByGUID(targetGuid));
-		}
-
-		// Check target
-		if (!unitTarget)
-		{
-			WLOG("EFFECT_HEAL: No valid target found!");
-			return;
-		}
-		
 		UInt32 spellPower = getSpellPower(effect, caster);
 		UInt32 spellBonusPct = getSpellBonusPct(effect, caster);
 		
 		UInt32 totalHeal = getSpellPointsTotal(effect, spellPower, spellBonusPct);
-		float critFactor = getCritFactor(effect, caster, *unitTarget);
-		totalHeal *= critFactor;
-
-		UInt32 health = unitTarget->getUInt32Value(unit_fields::Health);
-		UInt32 maxHealth = unitTarget->getUInt32Value(unit_fields::MaxHealth);
-		if (health == 0)
+		for (auto &targetUnit : m_targets[effect.targeta()][effect.targetb()])
 		{
-			WLOG("Can't heal dead target!");
-			return;
+			float critFactor = getCritFactor(effect, caster, *targetUnit);
+			totalHeal *= critFactor;
+
+			UInt32 health = targetUnit->getUInt32Value(unit_fields::Health);
+			UInt32 maxHealth = targetUnit->getUInt32Value(unit_fields::MaxHealth);
+			if (health == 0)
+			{
+				WLOG("Can't heal dead target!");
+				return;
+			}
+
+			// Send spell heal packet
+			sendPacketFromCaster(caster,
+				std::bind(game::server_write::spellHealLog, std::placeholders::_1,
+				targetUnit->getGuid(),
+				caster.getGuid(),
+				m_spell.id(),
+				totalHeal,
+				critFactor > 1.0));	//crit
+
+			// Update health value
+			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
+			targetUnit->heal(totalHeal, &caster, noThreat);
 		}
-
-		// Send spell heal packet
-		sendPacketFromCaster(caster,
-			std::bind(game::server_write::spellHealLog, std::placeholders::_1,
-			unitTarget->getGuid(),
-			caster.getGuid(),
-			m_spell.id(),
-			totalHeal,
-			critFactor > 1.0));	//crit
-
-		// Update health value
-		const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
-		unitTarget->heal(totalHeal, &caster, noThreat);
 	}
 
 	void SingleCastState::applyAllEffects()
@@ -1306,6 +1292,8 @@ namespace wowpp
 							return true;
 
 						GameCharacter *unitChar = reinterpret_cast<GameCharacter*>(&unit);
+						WLOG("Group1: " << casterChar->getGroupId());
+						WLOG("Group2: " << unitChar->getGroupId());
 						if (unitChar == casterChar || 
 							(unitChar->getGroupId() != 0 &&
 							unitChar->getGroupId() == casterChar->getGroupId()))
