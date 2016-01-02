@@ -169,7 +169,7 @@ namespace wowpp
 			//are added in applyAura
 			break;
 		default:
-			WLOG("Unhandled aura type: " << m_effect.aura());
+//			WLOG("Unhandled aura type: " << m_effect.aura());
 			break;
 		}
 	}
@@ -748,7 +748,6 @@ namespace wowpp
 		// Apply last tick if periodic
 		if (m_isPeriodic)
 		{
-			DLOG("Tick on expired!");
 			onTick();
 		}
 

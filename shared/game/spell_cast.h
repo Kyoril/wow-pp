@@ -62,7 +62,7 @@ namespace wowpp
 			SpellTargetMap target,
 			Int32 basePoints,
 			GameTime castTime,
-			bool doReplacePreviousCast);
+			bool isProc);
 		void stopCast();
 		void onUserStartsMoving();
 		void setState(std::shared_ptr<CastState> castState);

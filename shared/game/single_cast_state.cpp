@@ -80,7 +80,7 @@ namespace wowpp
 		}
 	}
 	
-	SingleCastState::SingleCastState(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime)
+	SingleCastState::SingleCastState(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool isProc/* = false*/)
 		: m_cast(cast)
 		, m_spell(spell)
 		, m_target(std::move(target))
@@ -89,6 +89,7 @@ namespace wowpp
 		, m_impactCountdown(cast.getTimers())
 		, m_castTime(castTime)
 		, m_basePoints(basePoints)
+		, m_isProc(isProc)
 	{
 		// Check if the executer is in the world
 		auto &executer = m_cast.getExecuter();
@@ -98,7 +99,7 @@ namespace wowpp
 		auto const targetId = target.getUnitTarget();
 		auto const spellId = spell.id();
 
-		if (worldInstance && !(m_spell.attributes(0) & game::spell_attributes::Passive))
+		if (worldInstance && !(m_spell.attributes(0) & game::spell_attributes::Passive) && !m_isProc)
 		{
 			sendPacketFromCaster(executer,
 				std::bind(game::server_write::spellStart, std::placeholders::_1,
@@ -210,13 +211,19 @@ namespace wowpp
 				targetMap.m_unitTarget = executer.getGuid();
 			}
 
+			UInt32 flags = game::spell_cast_flags::Unknown3;
+			if (m_isProc)
+			{
+				flags |= game::spell_cast_flags::Pending;
+			}
+
 			sendPacketFromCaster(executer,
 				std::bind(game::server_write::spellGo, std::placeholders::_1,
 				executer.getGuid(),
 				executer.getGuid(),
 				std::cref(m_spell),
 				std::cref(targetMap),
-				game::spell_cast_flags::Unknown3));
+				static_cast<game::SpellCastFlags>(flags)));
 		}
 		else
 		{
@@ -853,8 +860,8 @@ namespace wowpp
 
 		// Determine aura type
 		game::AuraType auraType = static_cast<game::AuraType>(effect.aura());
-		const String auraTypeName = game::constant_literal::auraTypeNames.getName(auraType);
-		DLOG("Spell: Aura is: " << auraTypeName);
+//		const String auraTypeName = game::constant_literal::auraTypeNames.getName(auraType);
+//		DLOG("Spell: Aura is: " << auraTypeName);
 
 		// World was already checked. If world would be nullptr, unitTarget would be null as well
 		auto *world = m_cast.getExecuter().getWorldInstance();
@@ -864,10 +871,7 @@ namespace wowpp
 		//TODO apply spellhit-calc on enemy-targets
 		UInt32 spellPower = getSpellPower(effect, caster);
 		UInt32 spellBonusPct = getSpellBonusPct(effect, caster);
-		
 		UInt32 totalPoints = getSpellPointsTotal(effect, spellPower, spellBonusPct);
-		WLOG("AURA_TOTAL_POINTS:" << totalPoints);
-		
 		for (auto &target : m_targets[effect.targeta()][effect.targetb()])
 		{
 			if (!target->isAlive())

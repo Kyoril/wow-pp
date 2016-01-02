@@ -291,8 +291,8 @@ namespace wowpp
 
 		// Reset auto attack timer if requested
 		if (result.first == game::spell_cast_result::CastOkay &&
-			m_attackSwingCountdown.running &&
-			result.second != nullptr)
+			m_attackSwingCountdown.running && 
+			result.second)
 		{
 			if (!(spell->attributes(1) & game::spell_attributes_ex_a::NotResetSwingTimer) && !isProc)
 			{

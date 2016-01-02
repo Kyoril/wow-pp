@@ -17,7 +17,7 @@ namespace wowpp
 	{
 	}
 
-	std::pair<game::SpellCastResult, SpellCasting*> SpellCast::startCast(const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool doReplacePreviousCast)
+	std::pair<game::SpellCastResult, SpellCasting*> SpellCast::startCast(const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool isProc)
 	{
 		assert(m_castState);
 
@@ -121,13 +121,26 @@ namespace wowpp
 		}
 
 		// Check if we have enough resources for that spell
-		return m_castState->startCast
-			(*this,
-			spell,
-			target,
-			basePoints,
-			castTime,
-			doReplacePreviousCast);
+		if (isProc)
+		{
+			ILOG("PROC!!!");
+			std::shared_ptr<SingleCastState> newState(
+				new SingleCastState(*this, spell, std::move(target), basePoints, castTime, true)
+				);
+			newState->activate();
+
+			return std::make_pair(game::spell_cast_result::CastOkay, nullptr);
+		}
+		else
+		{
+			return m_castState->startCast
+				(*this,
+					spell,
+					std::move(target),
+					basePoints,
+					castTime,
+					false);
+		}
 	}
 
 	void SpellCast::stopCast()
