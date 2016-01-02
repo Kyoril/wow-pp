@@ -223,22 +223,13 @@ namespace wowpp
 				&& ((it->getEffect().miscvaluea() & school) != 0))
 			{
 				Int32 toConsume = it->getBasePoints();
-				Int32 toConsumeByMana = ownerMana / 2;
+				Int32 toConsumeByMana = (float) ownerMana / it->getEffect().multiplevalue();
 				if (toConsume >= damage && toConsumeByMana >= damage)
 				{
 					absorbed += damage;
 					manaShielded += damage;
-					
 					const Int32 manaToConsume = (damage * it->getEffect().multiplevalue());
-					if (ownerMana >= manaToConsume)
-					{
-						ownerMana -= manaToConsume;
-					}
-					else
-					{
-						ownerMana = 0;
-					}
-
+					ownerMana -= manaToConsume;
 					it->setBasePoints(toConsume - damage);
 					break;
 				}
@@ -248,17 +239,8 @@ namespace wowpp
 					{
 						absorbed += toConsume;
 						manaShielded += toConsume;
-
 						const Int32 manaToConsume = (toConsume * it->getEffect().multiplevalue());
-						if (ownerMana >= manaToConsume)
-						{
-							ownerMana -= manaToConsume;
-						}
-						else
-						{
-							ownerMana = 0;
-						}
-
+						ownerMana -= manaToConsume;
 						it->setBasePoints(0);
 					}
 					else
