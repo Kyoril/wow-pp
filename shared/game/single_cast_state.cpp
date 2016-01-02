@@ -1265,7 +1265,15 @@ namespace wowpp
 
 	void wowpp::SingleCastState::spellEffectScript(const proto::SpellEffect & effect)
 	{
-		
+		switch (effect.id())
+		{
+			case 20271:	// Judgment
+				// aura = get active seal from aura_container (Dummy-effect)
+				// m_cast.getExecuter().castSpell(target, aura.getBasePoints(), -1, 0, false);
+				break;
+			default:
+				break;
+		}
 	}
 	
 	void SingleCastState::refreshTargets(const proto::SpellEffect &effect)
