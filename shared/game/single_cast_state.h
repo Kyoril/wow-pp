@@ -41,7 +41,8 @@ namespace wowpp
 			const proto::SpellEntry &spell,
 			SpellTargetMap target,
 			Int32 basePoints,
-			GameTime castTime);
+			GameTime castTime,
+			bool isProc = false);
 		void activate() override;
 		std::pair<game::SpellCastResult, SpellCasting *> startCast(
 			SpellCast &cast,
@@ -98,6 +99,7 @@ namespace wowpp
 		float m_x, m_y, m_z;
 		GameTime m_castTime;
 		Int32 m_basePoints;
+		bool m_isProc;
 
 		void sendEndCast(bool success);
 		void onCastFinished();
