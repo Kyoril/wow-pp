@@ -362,34 +362,35 @@ namespace wowpp
 					case 25988:	// Rank 2
 						it->mutable_effects(0)->set_triggerspell(25997);
 						break;
-//					// Seal of Righteousness
-//					case 21084:	// Rank 1
-//						it->mutable_effects(0)->set_triggerspell(25742);
-//						break;
-//					case 20287:	// Rank 2
-//						it->mutable_effects(0)->set_triggerspell(25740);
-//						break;
-//					case 20288:	// Rank 3
-//						it->mutable_effects(0)->set_triggerspell(25739);
-//						break;
-//					case 20289:	// Rank 4
-//						it->mutable_effects(0)->set_triggerspell(25738);
-//						break;
-//					case 20290:	// Rank 5
-//						it->mutable_effects(0)->set_triggerspell(25737);
-//						break;
-//					case 20291:	// Rank 6
-//						it->mutable_effects(0)->set_triggerspell(25736);
-//						break;
-//					case 20292:	// Rank 7
-//						it->mutable_effects(0)->set_triggerspell(25735);
-//						break;
-//					case 20293:	// Rank 8
-//						it->mutable_effects(0)->set_triggerspell(25713);
-//						break;
-//					case 27155:	// Rank 9
-//						it->mutable_effects(0)->set_triggerspell(27156);
-//						break;
+					// Judgement of Light
+                    case 20185:	// Rank 1
+						it->mutable_effects(0)->set_triggerspell(20267);
+						break;
+                    case 20344:	// Rank 2
+						it->mutable_effects(0)->set_triggerspell(20341);
+						break;
+                    case 20345:	// Rank 3
+						it->mutable_effects(0)->set_triggerspell(20342);
+						break;
+                    case 20346:	// Rank 4
+						it->mutable_effects(0)->set_triggerspell(20343);
+						break;
+                    case 27162:	// Rank 5
+						it->mutable_effects(0)->set_triggerspell(27163);
+						break;
+                    // Judgement of Wisdom
+                    case 20186:	// Rank 1
+						it->mutable_effects(0)->set_triggerspell(20268);
+						break;
+                    case 20354:	// Rank 2
+						it->mutable_effects(0)->set_triggerspell(20352);
+						break;
+                    case 20355:	// Rank 3
+						it->mutable_effects(0)->set_triggerspell(20353);
+						break;
+                    case 27164:	// Rank 4
+						it->mutable_effects(0)->set_triggerspell(27165);
+						break;
 					// Seal of Blood
 					case 31892:	// Rank 1
 						it->mutable_effects(0)->set_triggerspell(31893);
