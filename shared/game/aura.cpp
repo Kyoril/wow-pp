@@ -148,6 +148,9 @@ namespace wowpp
 		case aura::ModManaRegenInterrupt:
 			handleModManaRegenInterrupt(apply);
 			break;
+		case aura::AddTargetTrigger:
+			//are added in applyAura
+			break;
 		default:
 			WLOG("Unhandled aura type: " << m_effect.aura());
 			break;
@@ -156,16 +159,27 @@ namespace wowpp
 
 	void Aura::handleProcModifier(game::spell_proc_flags::Type procType, GameUnit *target/* = nullptr*/)
 	{
+		namespace aura = game::aura_type;
+		
 		// Determine if proc should happen
-		if (m_spell.procchance() < 100)
+		UInt32 procChance = 0;
+		if (m_effect.aura() == aura::AddTargetTrigger)
+		{
+			procChance = m_effect.basepoints();
+			WLOG("triggerProc chance: " << procChance);
+		}
+		else
+		{
+			procChance = m_spell.procchance();
+		}
+		
+		if (procChance < 100)
 		{
 			std::uniform_int_distribution<UInt32> dist(1, 100);
 			UInt32 chanceRoll = dist(randomGenerator);
-			if (chanceRoll > m_spell.procchance())
+			if (chanceRoll > procChance)
 				return;
 		}
-
-		namespace aura = game::aura_type;
 
 		switch (m_effect.aura())
 		{
@@ -180,6 +194,11 @@ namespace wowpp
 				break;
 			}
 			case aura::ProcTriggerSpell:
+			{
+				handleTriggerSpellProc(target);
+				break;
+			}
+			case aura::AddTargetTrigger:
 			{
 				handleTriggerSpellProc(target);
 				break;
@@ -966,7 +985,8 @@ namespace wowpp
 					[&](GameUnit *victim, UInt32 schoolMask) {
 					UInt32 spellSchoolMask = m_spell.schoolmask();
 					if (m_effect.aura() == game::aura_type::ProcTriggerSpell ||
-						m_effect.aura() == game::aura_type::ProcTriggerSpellWithValue)
+						m_effect.aura() == game::aura_type::ProcTriggerSpellWithValue ||
+						m_effect.aura() == game::aura_type::AddTargetTrigger)
 					{
 						auto *triggerSpell = m_caster->getProject().spells.getById(m_effect.triggerspell());
 						if (triggerSpell)
@@ -989,6 +1009,26 @@ namespace wowpp
 					handleTakenDamage(victim);
 				});
 			}
+		}
+		else if (m_effect.aura() == game::aura_type::AddTargetTrigger)
+		{
+			m_doneSpellMagicDmgClassNeg = m_caster->doneSpellMagicDmgClassNeg.connect(	//duplicate code!
+				[&](GameUnit *victim, UInt32 schoolMask) {
+				UInt32 spellSchoolMask = m_spell.schoolmask();
+				if (m_effect.aura() == game::aura_type::AddTargetTrigger)
+				{
+					auto *triggerSpell = m_caster->getProject().spells.getById(m_effect.triggerspell());
+					if (triggerSpell)
+					{
+						spellSchoolMask = triggerSpell->schoolmask();
+					}
+				}
+
+				if ((schoolMask & spellSchoolMask) != 0)
+				{
+					handleProcModifier(game::spell_proc_flags::DoneSpellMagicDmgClassNeg, victim);
+				}
+			});
 		}
 
 		// Apply modifiers now
