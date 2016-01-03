@@ -210,24 +210,46 @@ namespace wowpp
 						}
 						else if (argName == "items[]")
 						{
-							if (bagSlot < player_inventory_pack_slots::End)
+							UInt32 itemId = atoi(argValue.c_str());
+							if (itemId != 0)
 							{
-								UInt32 itemId = atoi(argValue.c_str());
-								if (itemId != 0)
+								auto *item = project.items.getById(itemId);
+								if (item)
 								{
-									auto *item = project.items.getById(itemId);
-									if (item)
+									if (item->maxstack() > 1)
 									{
-										pp::world_realm::ItemData data;
-										data.entry = item->id();
-										data.creator = 0;
-										data.contained = 0;
-										data.durability = item->durability();
-										data.randomPropertyIndex = 0;
-										data.randomSuffixIndex = 0;
-										data.slot = (bagSlot++) | 0xFF00;
-										data.stackCount = 1;
-										items.emplace_back(std::move(data));
+										// Check if we should add stacks
+										bool addedStack = false;
+										for (auto &data : items)
+										{
+											if (data.stackCount < item->maxstack())
+											{
+												data.stackCount++;
+												addedStack = true;
+												break;
+											}
+										}
+
+										if (addedStack)
+										{
+											// Item was added - next argument
+											continue;
+										}
+									}
+									else
+									{
+										if (bagSlot < player_inventory_pack_slots::End)
+										{
+											// Create a new stack
+											pp::world_realm::ItemData data;
+											data.entry = item->id();
+											data.durability = item->durability();
+											data.randomPropertyIndex = 0;
+											data.randomSuffixIndex = 0;
+											data.slot = (bagSlot++) | 0xFF00;
+											data.stackCount = 1;
+											items.emplace_back(std::move(data));
+										}
 									}
 								}
 							}
