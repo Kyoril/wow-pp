@@ -206,7 +206,7 @@ namespace wowpp
 			if (it->getEffect().aura() == game::aura_type::SchoolAbsorb
 				&& ((it->getEffect().miscvaluea() & school) != 0))
 			{
-				Int32 toConsume = it->getBasePoints();
+				UInt32 toConsume = static_cast<UInt32>(it->getBasePoints());
 				if (toConsume >= damage)
 				{
 					absorbed += damage;
@@ -222,8 +222,8 @@ namespace wowpp
 			else if (it->getEffect().aura() == game::aura_type::ManaShield
 				&& ((it->getEffect().miscvaluea() & school) != 0))
 			{
-				Int32 toConsume = it->getBasePoints();
-				Int32 toConsumeByMana = (float) ownerMana / it->getEffect().multiplevalue();
+				UInt32 toConsume = static_cast<UInt32>(it->getBasePoints());
+				UInt32 toConsumeByMana = (float) ownerMana / it->getEffect().multiplevalue();
 				if (toConsume >= damage && toConsumeByMana >= damage)
 				{
 					absorbed += damage;
