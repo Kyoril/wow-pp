@@ -1176,6 +1176,26 @@ namespace wowpp
 			}
 		}
 	}
+	
+	UInt32 GameUnit::removeMana(UInt32 amount)
+	{
+		if (getByteValue(unit_fields::Bytes0, 3) == game::power_type::Mana)
+		{
+			UInt32 mana = getUInt32Value(unit_fields::Power1);
+			UInt32 removed = amount;
+			if (mana < removed)
+			{
+				removed = mana;
+			}
+			mana -= removed;
+			setUInt32Value(unit_fields::Power1, mana);
+			return removed;
+		}
+		else
+		{
+			return 0;
+		}
+	}
 
 	void GameUnit::heal(UInt32 amount, GameUnit *healer, bool noThreat /*= false*/)
 	{

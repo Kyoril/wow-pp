@@ -447,6 +447,9 @@ namespace wowpp
 		/// @param attacker The attacking unit or nullptr, if unknown. If nullptr, no threat will be generated.
 		/// @param noThreat If set to true, no threat will be generated from this damage.
 		void dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, bool noThreat = false);
+		/// Remove mana of this unit. Does not work on dead, oom or non-mana units!
+		/// @param amount The amount of mana to remove.
+		UInt32 removeMana(UInt32 amount);
 		/// Heals this unit. Does not work on dead units! Use the revive method for this one.
 		/// @param amount The amount of damage to heal.
 		/// @param healer The healing unit or nullptr, if unknown. If nullptr, no threat will be generated.

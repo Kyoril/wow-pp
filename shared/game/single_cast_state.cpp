@@ -1004,6 +1004,9 @@ namespace wowpp
 			case se::Energize:
 				spellEffectEnergize(effect);
 				break;
+			case se::PowerBurn:
+				spellEffectPowerBurn(effect);
+				break;
 			case se::Charge:
 				spellEffectCharge(effect);
 				break;
@@ -1146,6 +1149,45 @@ namespace wowpp
 		sendPacketFromCaster(m_cast.getExecuter(),
 			std::bind(game::server_write::spellEnergizeLog, std::placeholders::_1, 
 				m_cast.getExecuter().getGuid(), unitTarget->getGuid(), m_spell.id(), static_cast<UInt8>(powerType), power));
+	}
+	
+	void SingleCastState::spellEffectPowerBurn(const proto::SpellEffect &effect)
+	{
+		refreshTargets(effect);
+		GameUnit &caster = m_cast.getExecuter();
+
+		for (auto &targetUnit : m_targets[effect.targeta()][effect.targetb()])
+		{
+			UInt32 burn = calculateEffectBasePoints(effect);
+			WLOG("BURN Base: " << burn);
+			burn = targetUnit->removeMana(burn);
+			UInt32 damage = burn * effect.multiplevalue();
+			UInt32 absorbed = targetUnit->consumeAbsorb(damage, m_spell.schoolmask());
+			WLOG("BURN damage: " << damage);
+
+			// Send spell damage packet
+			sendPacketFromCaster(caster,
+				std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+				targetUnit->getGuid(),
+				caster.getGuid(),
+				m_spell.id(),
+				damage,
+				m_spell.schoolmask(),
+				absorbed,
+				0,	//resisted
+				false,
+				0,
+				false));	//crit
+
+			// Update health value
+			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
+			targetUnit->dealDamage(damage - absorbed, m_spell.schoolmask(), &caster, noThreat);
+			if (targetUnit->isAlive())
+			{
+				caster.doneSpellMagicDmgClassNeg(targetUnit, m_spell.schoolmask());
+				targetUnit->takenDamage(&caster);
+			}
+		}
 	}
 
 	namespace
