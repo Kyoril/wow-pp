@@ -199,7 +199,7 @@ namespace wowpp
 						{
 							o = atof(argValue.c_str());
 						}
-						else if (argName == "spells[]")
+						else if (argName == "spells%5B0%5D")
 						{
 							UInt32 spellId = atoi(argValue.c_str());
 							if (spellId != 0)
@@ -208,7 +208,7 @@ namespace wowpp
 								if (spell) spells.push_back(spell);
 							}
 						}
-						else if (argName == "items[]")
+						else if (argName == "items%5B0%5D")
 						{
 							UInt32 itemId = atoi(argValue.c_str());
 							if (itemId != 0)
