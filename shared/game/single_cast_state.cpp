@@ -1353,6 +1353,7 @@ namespace wowpp
 		{
 		case game::targets::UnitCaster:
 		case game::targets::UnitTargetAlly:
+		case game::targets::UnitTargetEnemy:
 			if (unitTarget) targets.push_back(unitTarget);
 			break;
 		case game::targets::UnitPartyCaster:
