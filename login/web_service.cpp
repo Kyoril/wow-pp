@@ -31,18 +31,15 @@ namespace wowpp
 	    boost::asio::io_service &service,
 	    UInt16 port,
 	    String password,
-	    PlayerManager &playerManager
+	    PlayerManager &playerManager,
+		IDatabase &database
 	)
 		: web::WebService(service, port)
 		, m_playerManager(playerManager)
+		, m_database(database)
 		, m_startTime(getCurrentTime())
 		, m_password(std::move(password))
 	{
-	}
-
-	PlayerManager &WebService::getPlayerManager() const
-	{
-		return m_playerManager;
 	}
 
 	GameTime WebService::getStartTime() const

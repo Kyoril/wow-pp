@@ -201,7 +201,8 @@ namespace wowpp
 			m_ioService,
 			m_configuration.webPort,
 			m_configuration.webPassword,
-			*PlayerManager
+			*PlayerManager,
+			Database
 			));
 
 		// Log start

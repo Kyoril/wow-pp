@@ -26,6 +26,7 @@
 namespace wowpp
 {
 	class PlayerManager;
+	struct IDatabase;
 
 	class WebService : public web::WebService
 	{
@@ -35,10 +36,12 @@ namespace wowpp
 		    boost::asio::io_service &service,
 		    UInt16 port,
 		    String password,
-		    PlayerManager &playerManager
+		    PlayerManager &playerManager,
+			IDatabase &database
 		);
 
-		PlayerManager &getPlayerManager() const;
+		PlayerManager &getPlayerManager() const { return m_playerManager; }
+		IDatabase &getDatabase() const { return m_database; }
 		GameTime getStartTime() const;
 		const String &getPassword() const;
 
@@ -47,6 +50,7 @@ namespace wowpp
 	private:
 
 		PlayerManager &m_playerManager;
+		IDatabase &m_database;
 		const GameTime m_startTime;
 		const String m_password;
 	};

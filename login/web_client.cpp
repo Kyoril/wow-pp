@@ -27,6 +27,7 @@
 #include "player.h"
 #include "game/game_character.h"
 #include "log/default_log_levels.h"
+#include "database.h"
 #include <boost/algorithm/string.hpp>
 
 namespace wowpp
@@ -108,6 +109,18 @@ namespace wowpp
 						String argName = arg.substr(0, delimiterPos);
 						String argValue = arg.substr(delimiterPos + 1);
 
+						if (argName == "id")
+						{
+							accountId = atoi(argValue.c_str());
+						}
+						else if (argName == "username")
+						{
+							accountName = boost::to_upper_copy(argValue);
+						}
+						else if (argName == "password")
+						{
+							accountPassword = boost::to_upper_copy(argValue);
+						}
 					}
 
 					if (accountId == 0 || accountName.empty() || accountPassword.empty())
@@ -125,7 +138,66 @@ namespace wowpp
 						break;
 					}
 
+					// Check if account already exists
+					auto &database = static_cast<WebService &>(this->getService()).getDatabase();
+					
+					// Check database values
+					String dbName, dbHash;
+					if (!database.getAccountInfos(accountId, dbName, dbHash))
+					{
+						sendXmlAnswer(response, "<status>DATABASE_ERROR</status>");
+						break;
+					}
 
+					// Convert to uppercase characters
+					boost::to_upper(dbName);
+					boost::to_upper(dbHash);
+
+					// If the account doesn't already exist...
+					if (dbName.empty())
+					{
+						// Check if account name is already taken
+						UInt32 tmpId = 0;
+						String tmpPass;
+						if (!database.getPlayerPassword(accountName, tmpId, tmpPass))
+						{
+							sendXmlAnswer(response, "<status>DATABASE_ERROR</status>");
+							break;
+						}
+
+						if (tmpId != 0 &&
+							tmpId != accountId)
+						{
+							sendXmlAnswer(response, "<status>ACCOUNT_NAME_ALREADY_IN_USE</status>");
+							break;
+						}
+
+						// Create new user account
+						if (!database.createAccount(accountId, accountName, accountPassword))
+						{
+							sendXmlAnswer(response, "<status>DATABASE_ERROR</status>");
+							break;
+						}
+					}
+					else
+					{
+						// Account already existed: Compare account name
+						if (accountName != dbName)
+						{
+							sendXmlAnswer(response, "<status>ACCOUNT_DATA_MISMATCH</status>");
+							break;
+						}
+
+						// Update account password
+						if (!database.setPlayerPassword(accountId, accountPassword))
+						{
+							sendXmlAnswer(response, "<status>DATABASE_ERROR</status>");
+							break;
+						}
+					}
+
+					// Succeeded
+					sendXmlAnswer(response, "<status>SUCCESS</status>");
 				}
 				else
 				{

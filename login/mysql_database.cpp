@@ -52,6 +52,85 @@ namespace wowpp
 		return true;
 	}
 
+	bool MySQLDatabase::createAccount(UInt64 accountId, const String & accountName, const String & passwordHash)
+	{
+		const String safeName = m_connection.escapeString(accountName);
+		const String safeHash = m_connection.escapeString(passwordHash);
+
+		bool result = false;
+		if (accountId != 0)
+		{
+			result = m_connection.execute((boost::format(
+				"INSERT INTO account (`id`,`username`,`password`) VALUES (%1%, '%2%', '%3%');")
+				% accountId
+				% safeName
+				% safeHash).str());
+		}
+		else
+		{
+			result = m_connection.execute((boost::format(
+				"INSERT INTO account (`username`,`password`) VALUES ('%1%', '%2%');")
+				% safeName
+				% safeHash).str());
+		}
+
+		if (!result)
+		{
+			printDatabaseError();
+		}
+
+		return result;
+	}
+
+	bool MySQLDatabase::setPlayerPassword(UInt64 accountId, const String & passwordHash)
+	{
+		const String safeHash = m_connection.escapeString(passwordHash);
+
+		if (m_connection.execute((boost::format(
+			"UPDATE account SET password='%1%' WHERE id=%2%")
+			% safeHash
+			% accountId).str()))
+		{
+			return true;
+		}
+		else
+		{
+			printDatabaseError();
+		}
+
+		return false;
+	}
+
+	bool MySQLDatabase::getAccountInfos(UInt64 accountId, String & out_name, String & out_passwordHash)
+	{
+		wowpp::MySQL::Select select(m_connection,
+			(boost::format("SELECT username,password FROM account WHERE id=%1% LIMIT 1")
+				% accountId).str());
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			if (row)
+			{
+				// Account exists: Get name and password
+				row.getField(0, out_name);
+				row.getField(1, out_passwordHash);
+			}
+			else
+			{
+				// No row found: Account does not exist
+				return false;
+			}
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+
+		return true;
+	}
+
 	bool MySQLDatabase::getPlayerPassword(const String &userName, UInt32 &out_id, String &out_passwordHash)
 	{
 		// Escape string to avoid sql injection
