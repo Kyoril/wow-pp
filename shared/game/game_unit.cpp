@@ -539,7 +539,7 @@ namespace wowpp
 				//attack table calculation
 				std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
 				float hitTableRoll = hitTableDistribution(randomGenerator);
-				if ((hitTableRoll -= getMissChance(*this, *victim)) < 0.0f)
+				if ((hitTableRoll -= getMissChance(*this, *victim, game::spell_school::Normal)) < 0.0f)
 				{
 					//missed
 					hitInfo = game::hit_info::Miss;
@@ -576,7 +576,7 @@ namespace wowpp
 					hitInfo = game::hit_info::Crushing;
 					damageModifier = 1.5f;
 				}
-				else if ((hitTableRoll -= getCritChance(*this, *victim)) < 0.0f)
+				else if ((hitTableRoll -= getCritChance(*this, *victim, game::spell_school::Normal)) < 0.0f)
 				{
 					//crit
 					hitInfo = game::hit_info::CriticalHit;
@@ -1250,13 +1250,13 @@ namespace wowpp
 		// Nothing to do here
 	}
 	
-	bool GameUnit::isImmune(UInt8 school)
+	bool GameUnit::isImmune(game::SpellSchool school)
 	{
 		// TODO: check auras and mobtype
 		return false;
 	}
 	
-	float GameUnit::getMissChance(GameUnit &caster, GameUnit &target)
+	float GameUnit::getMissChance(GameUnit &caster, GameUnit &target, game::SpellSchool school)
 	{
 		//TODO dual wield handling
 		float chance = 5.0f + (static_cast<float>(target.getLevel()) - static_cast<float>(caster.getLevel())) * 0.5f;
@@ -1305,9 +1305,19 @@ namespace wowpp
 		}
 	}
 	
-	float GameUnit::getCritChance(GameUnit &caster, GameUnit &target)
+	float GameUnit::getCritChance(GameUnit &caster, GameUnit &target, game::SpellSchool school)
 	{
 		return 10.0f;
+	}
+	
+	UInt32 GameUnit::getBonus(GameUnit &caster, game::SpellSchool school)
+	{
+		return 0;
+	}
+	
+	UInt32 GameUnit::getBonusPct(GameUnit &caster, game::SpellSchool school)
+	{
+		return 0;
 	}
 	
 	/**

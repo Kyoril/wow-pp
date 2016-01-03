@@ -1013,6 +1013,9 @@ namespace wowpp
 			case se::OpenLock:
 				spellEffectOpenLock(effect);
 				break;
+			case se::ApplyAreaAuraParty:
+				spellEffectApplyAreaAuraParty(effect);
+				break;
 			case se::Summon:
 				spellEffectSummon(effect);
 				break;
@@ -1259,6 +1262,11 @@ namespace wowpp
 			obj->setUInt32Value(world_object_fields::State, (currentState == 1 ? 0 : 1));
 			return;
 		}
+	}
+	
+	void SingleCastState::spellEffectApplyAreaAuraParty(const proto::SpellEffect &effect)
+	{
+		
 	}
 
 	void SingleCastState::spellEffectSummon(const proto::SpellEffect &effect)

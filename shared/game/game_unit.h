@@ -470,17 +470,17 @@ namespace wowpp
 		/// Determines whether this unit is actually in combat with at least one other unit.
 		bool isInCombat() const;
 
-		bool isImmune(UInt8 school);
-		float getMissChance(GameUnit &caster, GameUnit &target);
+		float getMissChance(GameUnit &caster, GameUnit &target, game::SpellSchool school);
+		bool isImmune(game::SpellSchool school);
 		float getDodgeChance(GameUnit &caster, GameUnit &target);
 		float getParryChance(GameUnit &caster, GameUnit &target);
 		float getGlancingChance(GameUnit &caster, GameUnit &target);
 		float getBlockChance(GameUnit &target);
 		float getCrushChance(GameUnit &caster, GameUnit &target);
-		float getCritChance(GameUnit &caster, GameUnit &target);
-//		UInt32 getAttackPower(GameUnit &caster);
-//		UInt32 getAttackBonusPct(GameUnit &caster);
-//		UInt32 getAttackPointsTotal(UInt32 attackPower, UInt32 bonusPct);
+//		UInt8 getResiPercentage(const proto::SpellEffect &effect, GameUnit &caster, GameUnit &target);
+		float getCritChance(GameUnit &caster, GameUnit &target, game::SpellSchool school);
+		UInt32 getBonus(GameUnit &caster, game::SpellSchool school);
+		UInt32 getBonusPct(GameUnit &caster, game::SpellSchool school);
 		UInt32 consumeAbsorb(UInt32 damage, UInt8 school);
 		virtual bool canBlock() const = 0;
 		virtual bool canParry() const = 0;

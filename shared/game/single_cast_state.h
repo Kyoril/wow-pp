@@ -80,6 +80,7 @@ namespace wowpp
 		void spellEffectEnergize(const proto::SpellEffect &effect);
 		void spellEffectPowerBurn(const proto::SpellEffect &effect);
 		void spellEffectOpenLock(const proto::SpellEffect &effect);
+		void spellEffectApplyAreaAuraParty(const proto::SpellEffect &effect);
 		void spellEffectSummon(const proto::SpellEffect &effect);
 		void spellEffectCharge(const proto::SpellEffect &effect);
 		void spellEffectScript(const proto::SpellEffect &effect);
