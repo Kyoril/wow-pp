@@ -162,37 +162,42 @@ namespace wowpp
 		// The temporary result
 		auth::AuthResult result = auth::auth_result::FailUnknownAccount;
 
+		m_accountId = 0;
+
 		// Try to get user settings
 		String dbPassword;
 		if (m_database.getPlayerPassword(m_userName, m_accountId, dbPassword))
 		{
-			// TODO: Check if the account is banned / suspended etc.
-			BigNumber tmpS, tmpV;
-			m_database.getSVFields(m_accountId, tmpS, tmpV);
-
-			if (tmpS.getNumBytes() != ByteCountS || tmpV.getNumBytes() != ByteCountS)
+			if (m_accountId != 0)
 			{
+				// TODO: Check if the account is banned / suspended etc.
+				BigNumber tmpS, tmpV;
+				m_database.getSVFields(m_accountId, tmpS, tmpV);
+
+				if (tmpS.getNumBytes() != ByteCountS || tmpV.getNumBytes() != ByteCountS)
+				{
+					setVSFields(dbPassword);
+				}
+				else
+				{
+					m_s = tmpS;
+					m_v = tmpV;
+				}
+
+				// We are NOT banned so continue
+				result = auth::auth_result::Success;
+
+				// TODO: Try to get V and S from the database instead of calculating them everytime
 				setVSFields(dbPassword);
+
+				m_b.setRand(19 * 8);
+				BigNumber gmod = constants::srp::g.modExp(m_b, constants::srp::N);
+				m_B = ((m_v * 3) + gmod) % constants::srp::N;
+
+				assert(gmod.getNumBytes() <= 32);
+
+				m_unk3.setRand(16 * 8);
 			}
-			else
-			{
-				m_s = tmpS;
-				m_v = tmpV;
-			}
-
-			// We are NOT banned so continue
-			result = auth::auth_result::Success;
-
-			// TODO: Try to get V and S from the database instead of calculating them everytime
-			setVSFields(dbPassword);
-
-			m_b.setRand(19 * 8);
-			BigNumber gmod = constants::srp::g.modExp(m_b, constants::srp::N);
-			m_B = ((m_v * 3) + gmod) % constants::srp::N;
-
-			assert(gmod.getNumBytes() <= 32);
-
-			m_unk3.setRand(16 * 8);
 		}
 
 		// Send packet
