@@ -1265,7 +1265,7 @@ namespace wowpp
 
 	void wowpp::SingleCastState::spellEffectScript(const proto::SpellEffect & effect)
 	{
-		switch (effect.index())
+		switch (m_spell.id())
 		{
 			case 20271:	// Judgment
 				// aura = get active seal from aura_container (Dummy-effect)
@@ -1287,39 +1287,60 @@ namespace wowpp
 			}
 		}
 		std::vector<GameUnit*> targets;
+		GameUnit &caster = m_cast.getExecuter();
 		float x, y, tmp;
-		m_cast.getExecuter().getLocation(x, y, tmp, tmp);
 
 		switch (effect.targeta())
 		{
 		case game::targets::UnitPartyCaster:
 			{
-				GameCharacter *casterChar = dynamic_cast<GameCharacter*>(&m_cast.getExecuter());
-				if (casterChar)
+				caster.getLocation(x, y, tmp, tmp);
+				auto &finder = caster.getWorldInstance()->getUnitFinder();
+				finder.findUnits(Circle(x, y, effect.radius()), [this, &caster, &targets](GameUnit &unit) -> bool
 				{
-					auto &finder = m_cast.getExecuter().getWorldInstance()->getUnitFinder();
-					finder.findUnits(Circle(x, y, effect.radius()), [this, &casterChar, &targets](GameUnit &unit) -> bool
-					{
-						if (unit.getTypeId() != object_type::Character)
-							return true;
-
-						GameCharacter *unitChar = reinterpret_cast<GameCharacter*>(&unit);
-						if (unitChar == casterChar || 
-							(unitChar->getGroupId() != 0 &&
-							unitChar->getGroupId() == casterChar->getGroupId()))
-						{
-							targets.push_back(&unit);
-							if (m_spell.maxtargets() > 0 &&
-								targets.size() >= m_spell.maxtargets())
-							{
-								// No more units
-								return false;
-							}
-						}
-
+					if (unit.getTypeId() != object_type::Character)
 						return true;
-					});
-				}
+
+					GameCharacter *unitChar = dynamic_cast<GameCharacter*>(&unit);
+					GameCharacter *casterChar = dynamic_cast<GameCharacter*>(&caster);
+					if (unitChar == casterChar || 
+						(unitChar->getGroupId() != 0 &&
+						unitChar->getGroupId() == casterChar->getGroupId()))
+					{
+						targets.push_back(&unit);
+						if (m_spell.maxtargets() > 0 &&
+							targets.size() >= m_spell.maxtargets())
+						{
+							// No more units
+							return false;
+						}
+					}
+
+					return true;
+				});
+			}
+			break;
+		case game::targets::UnitAreaEnemyDst:
+			{
+				m_target.getDestLocation(x, y, tmp);
+				auto &finder = caster.getWorldInstance()->getUnitFinder();
+				finder.findUnits(Circle(x, y, effect.radius()), [this, &caster, &targets](GameUnit &unit) -> bool
+				{
+					const auto &factionA = unit.getFactionTemplate();
+					const auto &factionB = caster.getFactionTemplate();
+					if (!isFriendlyTo(factionA, factionB) && unit.isAlive())
+					{
+						targets.push_back(&unit);
+						if (m_spell.maxtargets() > 0 &&
+							targets.size() >= m_spell.maxtargets())
+						{
+							// No more units
+							return false;
+						}
+					}
+
+					return true;
+				});
 			}
 			break;
 		default:
@@ -1330,11 +1351,12 @@ namespace wowpp
 		{
 		case game::targets::UnitAreaEnemySrc:
 			{
-				auto &finder = m_cast.getExecuter().getWorldInstance()->getUnitFinder();
-				finder.findUnits(Circle(x, y, effect.radius()), [this, &targets](GameUnit &unit) -> bool
+				caster.getLocation(x, y, tmp, tmp);
+				auto &finder = caster.getWorldInstance()->getUnitFinder();
+				finder.findUnits(Circle(x, y, effect.radius()), [this, &caster, &targets](GameUnit &unit) -> bool
 				{
 					const auto &factionA = unit.getFactionTemplate();
-					const auto &factionB = m_cast.getExecuter().getFactionTemplate();
+					const auto &factionB = caster.getFactionTemplate();
 					if (!isFriendlyTo(factionA, factionB) && unit.isAlive())
 					{
 						targets.push_back(&unit);
@@ -1352,7 +1374,6 @@ namespace wowpp
 			break;
 		default:
 			GameUnit *unitTarget = nullptr;
-			GameUnit &caster = m_cast.getExecuter();
 			auto *world = caster.getWorldInstance();
 
 			if (m_target.getTargetMap() == game::spell_cast_target_flags::Self || effect.targeta() == game::targets::UnitCaster)
