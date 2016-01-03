@@ -327,6 +327,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(RaidReadyCheckFinished, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(RealmSplit, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(VoiceSessionEnable, game::session_status::Authentificated)
+			WOWPP_HANDLE_PACKET(CharRename, game::session_status::Authentificated)
 #undef WOWPP_HANDLE_PACKET
 
 			default:
@@ -403,23 +404,7 @@ namespace wowpp
 
 		// TODO: Flood protection
 
-		// Load characters
-		m_characters.clear();
-		if (!m_database.getCharacters(m_accountId, m_characters))
-		{
-			// Disconnect
-			destroy();
-			return;
-		}
-
-		for (auto &c : m_characters)
-		{
-			c.id = createRealmGUID(guidLowerPart(c.id), m_loginConnector.getRealmID(), guid_type::Player);
-		}
-
-		// Send character list
-		sendPacket(
-			std::bind(game::server_write::charEnum, std::placeholders::_1, std::cref(m_characters)));
+		reloadCharacters();
 	}
 
 	void Player::handleCharCreate(game::IncomingPacket &packet)
@@ -731,6 +716,12 @@ namespace wowpp
 			WLOG("Requested character id " << characterId << " does not belong to account " << m_accountId << " or does not exist");
 			sendPacket(
 				std::bind(game::server_write::charLoginFailed, std::placeholders::_1, game::response_code::CharLoginNoCharacter));
+			return;
+		}
+
+		// Make sure that a character, who is flagged for rename, is renamed first!
+		if (charEntry->atLogin & game::atlogin_flags::Rename)
+		{
 			return;
 		}
 
@@ -1956,6 +1947,27 @@ namespace wowpp
 		}
 	}
 
+	void Player::reloadCharacters()
+	{
+		// Load characters
+		m_characters.clear();
+		if (!m_database.getCharacters(m_accountId, m_characters))
+		{
+			// Disconnect
+			destroy();
+			return;
+		}
+
+		for (auto &c : m_characters)
+		{
+			c.id = createRealmGUID(guidLowerPart(c.id), m_loginConnector.getRealmID(), guid_type::Player);
+		}
+
+		// Send character list
+		sendPacket(
+			std::bind(game::server_write::charEnum, std::placeholders::_1, std::cref(m_characters)));
+	}
+
 	void Player::handleRequestPartyMemberStats(game::IncomingPacket &packet)
 	{
 		UInt64 guid = 0;
@@ -2333,6 +2345,41 @@ namespace wowpp
 		}
 
 		// TODO
+	}
+
+	void Player::handleCharRename(game::IncomingPacket & packet)
+	{
+		UInt64 characterId = 0;
+		String newName;
+		if (!(game::client_read::charRename(packet, characterId, newName)))
+		{
+			return;
+		}
+
+		// Rename character
+		game::ResponseCode response = game::response_code::CharCreateError;
+		for (auto &entry : m_characters)
+		{
+			if (entry.id == characterId)
+			{
+				// Capitalize the characters name
+				capitalize(newName);
+
+				response = m_database.renameCharacter(characterId, newName);
+				if (response == game::response_code::Success)
+				{
+					// Fix entry
+					entry.name = newName;
+					entry.atLogin = static_cast<game::AtLoginFlags>(entry.atLogin & ~game::atlogin_flags::Rename);
+				}
+
+				break;
+			}
+		}
+
+		// Send response
+		sendPacket(
+			std::bind(game::server_write::charRename, std::placeholders::_1, response, characterId, std::cref(newName)));
 	}
 
 }

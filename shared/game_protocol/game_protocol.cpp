@@ -170,7 +170,11 @@ namespace wowpp
 						<< io::write<float>(entry.z)						// z
 						<< io::write<NetUInt32>(0x00);						// guild guid
 
-					UInt32 charFlags = 0;
+					UInt32 charFlags = character_flags::None;
+					if (entry.atLogin & atlogin_flags::Rename)
+					{
+						charFlags |= character_flags::Rename;
+					}
 					//UInt32 playerFlags = 0;
 					//UInt32 atLoginFlags = 0x20;
 
@@ -2699,6 +2703,21 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void charRename(game::OutgoingPacket & out_packet, game::ResponseCode response, UInt64 unitGuid, const String & newName)
+			{
+				out_packet.start(game::server_packet::CharRename);
+				out_packet
+					<< io::write<NetUInt8>(response);
+
+				if (response == game::response_code::Success)
+				{
+					out_packet
+						<< io::write<NetUInt64>(unitGuid)
+						<< io::write_range(newName) << io::write<NetUInt8>(0);
+				}
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read
@@ -3523,6 +3542,27 @@ namespace wowpp
 			{
 				return packet
 					>> io::read<NetUInt16>(out_unknown);
+			}
+
+			bool charRename(io::Reader & packet, UInt64 & out_guid, String & out_name)
+			{
+				packet
+					>> io::read<NetUInt64>(out_guid);
+
+				char c = 0x00;
+				do
+				{
+					if (!(packet >> c))
+					{
+						return false;
+					}
+					if (c != 0)
+					{
+						out_name.push_back(c);
+					}
+				} while (c != 0);
+
+				return packet;
 			}
 
 		}

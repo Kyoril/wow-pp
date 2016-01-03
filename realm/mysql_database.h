@@ -44,6 +44,8 @@ namespace wowpp
 		/// Tries to establish a connection to the MySQL server.
 		bool load();
 
+		/// @copydoc wowpp::IDatabase::renameCharacter
+		game::ResponseCode renameCharacter(DatabaseId id, const String &newName) override;
 		/// @copydoc wowpp::IDatabase::getCharacterCount
 		UInt32 getCharacterCount(UInt32 accountId) override;
 		/// @copydoc wowpp::IDatabase::createCharacter

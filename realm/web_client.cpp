@@ -29,6 +29,8 @@
 #include "world.h"
 #include "game/game_character.h"
 #include "log/default_log_levels.h"
+#include "database.h"
+#include "proto_data/project.h"
 #include <boost/algorithm/string.hpp>
 
 namespace wowpp
@@ -140,6 +142,206 @@ namespace wowpp
 
 					auto &ioService = getService().getIOService();
 					ioService.stop();
+				}
+				else if (url == "/copy-premade")
+				{
+					auto &project = static_cast<WebService &>(this->getService()).getProject();
+
+					UInt32 mapId = 0xffffffff;
+					float x = 0.0f, y = 0.0f, z = 0.0f, o = 0.0f;
+					UInt32 accountId = 0, charRace = 0, charClass = 0, charLvl = 0;
+					std::vector<const proto::SpellEntry*> spells;
+					std::vector<pp::world_realm::ItemData> items;
+
+					UInt8 bagSlot = player_inventory_pack_slots::Start;
+
+					for (auto &arg : arguments)
+					{
+						auto delimiterPos = arg.find('=');
+						String argName = arg.substr(0, delimiterPos);
+						String argValue = arg.substr(delimiterPos + 1);
+
+						if (argName == "acc")
+						{
+							accountId = atoi(argValue.c_str());
+						}
+						else if (argName == "race")
+						{
+							charRace = atoi(argValue.c_str());
+						}
+						else if (argName == "class")
+						{
+							charClass = atoi(argValue.c_str());
+						}
+						else if (argName == "lvl")
+						{
+							charLvl = atoi(argValue.c_str());
+							if (charLvl < 1) charLvl = 1;
+							else if (charLvl > 70) charLvl = 70;
+						}
+						else if (argName == "map")
+						{
+							mapId = atoi(argValue.c_str());
+						}
+						else if (argName == "x")
+						{
+							x = atof(argValue.c_str());
+						}
+						else if (argName == "y")
+						{
+							y = atof(argValue.c_str());
+						}
+						else if (argName == "z")
+						{
+							z = atof(argValue.c_str());
+						}
+						else if (argName == "o")
+						{
+							o = atof(argValue.c_str());
+						}
+						else if (argName == "spells[]")
+						{
+							UInt32 spellId = atoi(argValue.c_str());
+							if (spellId != 0)
+							{
+								auto *spell = project.spells.getById(spellId);
+								if (spell) spells.push_back(spell);
+							}
+						}
+						else if (argName == "items[]")
+						{
+							if (bagSlot < player_inventory_pack_slots::End)
+							{
+								UInt32 itemId = atoi(argValue.c_str());
+								if (itemId != 0)
+								{
+									auto *item = project.items.getById(itemId);
+									if (item)
+									{
+										pp::world_realm::ItemData data;
+										data.entry = item->id();
+										data.creator = 0;
+										data.contained = 0;
+										data.durability = item->durability();
+										data.randomPropertyIndex = 0;
+										data.randomSuffixIndex = 0;
+										data.slot = (bagSlot++) | 0xFF00;
+										data.stackCount = 1;
+										items.emplace_back(std::move(data));
+									}
+								}
+							}
+						}
+					}
+
+					if (accountId == 0 || charRace == 0 || charClass == 0 || charLvl == 0)
+					{
+						sendXmlAnswer(response, "<status>MISSING_DATA</status>");
+						break;
+					}
+
+					auto &database = static_cast<WebService &>(this->getService()).getDatabase();
+
+					// Check character limit
+					if (database.getCharacterCount(accountId) > 11)
+					{
+						sendXmlAnswer(response, "<status>CHARACTER_REALM_LIMIT</status>");
+						break;
+					}
+
+					// Get race entry
+					auto *race = project.races.getById(charRace);
+					if (!race)
+					{
+						sendXmlAnswer(response, "<status>INVALID_RACE</status>");
+						break;
+					}
+
+					// Get class entry
+					auto *class_ = project.classes.getById(charClass);
+					if (!class_)
+					{
+						sendXmlAnswer(response, "<status>INVALID_CLASS</status>");
+						break;
+					}
+
+					// Add initial spells
+					const auto &initialSpellsEntry = race->initialspells().find(charClass);
+					if (initialSpellsEntry == race->initialspells().end())
+					{
+						sendXmlAnswer(response, "<status>INVALID_RACE_CLASS_COMBINATION</status>");
+						break;
+					}
+
+					for (int i = 0; i < initialSpellsEntry->second.spells_size(); ++i)
+					{
+						const auto &spellid = initialSpellsEntry->second.spells(i);
+						const auto *spell = project.spells.getById(spellid);
+						if (spell)
+						{
+							spells.push_back(spell);
+						}
+					}
+
+					std::uniform_int_distribution<> genderDist(0, 1);
+					auto gender = genderDist(randomGenerator);
+
+					game::CharEntry characterData;
+					characterData.race = static_cast<game::Race>(charRace);
+					characterData.class_ = static_cast<game::CharClass>(charClass);
+					characterData.cinematic = false;
+					characterData.face = 0;
+					characterData.facialHair = 0;
+					characterData.hairColor = 0;
+					characterData.hairStyle = 0;
+					characterData.skin = 0;
+					characterData.gender = static_cast<game::Gender>(gender);
+					characterData.id = 0;
+					characterData.name = randomText(12);
+					characterData.atLogin = game::atlogin_flags::Rename;
+					characterData.outfitId = 0;
+					characterData.level = charLvl;
+					characterData.mapId = (mapId == 0xffffffff ? race->startmap() : mapId);
+					characterData.zoneId = race->startzone();
+					characterData.x = (x == 0.0f ? race->startposx() : x);
+					characterData.y = (y == 0.0f ? race->startposy() : y);
+					characterData.z = (z == 0.0f ? race->startposz() : z);
+					characterData.o = (o == 0.0f ? race->startrotation() : o);
+
+					// Create the character
+					auto result = database.createCharacter(accountId, spells, items, characterData);
+					switch (result)
+					{
+						case game::response_code::CharCreatePvPTeamsViolation:
+						{
+							sendXmlAnswer(response, "<status>PVP_VIOLATION</status>");
+							break;
+						}
+
+						case game::response_code::CharCreateError:
+						{
+							sendXmlAnswer(response, "<status>DATABASE_ERROR</status>");
+							break;
+						}
+
+						case game::response_code::CharCreateNameInUse:
+						{
+							sendXmlAnswer(response, "<status>NAME_IN_USE</status>");
+							break;
+						}
+
+						case game::response_code::CharCreateSuccess:
+						{
+							sendXmlAnswer(response, "<status>SUCCESS</status>");
+							break;
+						}
+
+						default:
+						{
+							sendXmlAnswer(response, "<status>UNKNOWN_ERROR</status>");
+							break;
+						}
+					}
 				}
 #ifdef WOWPP_WITH_DEV_COMMANDS
 				else if (url == "/additem")

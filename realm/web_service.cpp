@@ -32,34 +32,18 @@ namespace wowpp
 	    UInt16 port,
 	    String password,
 	    PlayerManager &playerManager,
-		WorldManager &worldManager
+		WorldManager &worldManager,
+		IDatabase &database,
+		proto::Project &project
 	)
 		: web::WebService(service, port)
 		, m_playerManager(playerManager)
 		, m_worldManager(worldManager)
+		, m_database(database)
+		, m_project(project)
 		, m_startTime(getCurrentTime())
 		, m_password(std::move(password))
 	{
-	}
-
-	PlayerManager &WebService::getPlayerManager() const
-	{
-		return m_playerManager;
-	}
-
-	WorldManager & WebService::getWorldManager() const
-	{
-		return m_worldManager;
-	}
-
-	GameTime WebService::getStartTime() const
-	{
-		return m_startTime;
-	}
-
-	const String &WebService::getPassword() const
-	{
-		return m_password;
 	}
 
 	std::unique_ptr<web::WebClient> WebService::createClient(std::shared_ptr<Client> connection)

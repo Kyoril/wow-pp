@@ -150,6 +150,7 @@ namespace wowpp
 				GroupRaidConvert		= 0x28E,
 				GroupAssistentLeader	= 0x28F,
 				MoveFallReset			= 0x2CA,
+				CharRename				= 0x2C7,
 				RaidTargetUpdate		= 0x321,
 				RaidReadyCheck			= 0x322,
 				SetDungeonDifficulty	= 0x329,
@@ -328,6 +329,7 @@ namespace wowpp
 				ChatPlayerNotFound			= 0x2A9,
 				DurabilityDamageDeath		= 0x2BD,
 				InitWorldStates				= 0x2C2,
+				CharRename					= 0x2C8,
 				PlaySound					= 0x2D2,
 				AddonInfo					= 0x2EF,
 				PartyMemberStatsFull		= 0x2F2,
@@ -355,6 +357,42 @@ namespace wowpp
 
 		typedef std::vector<AddonEntry> AddonEntries;
 
+		namespace atlogin_flags
+		{
+			enum Type
+			{
+				/// Nothing special happens at login.
+				None = 0x00,
+				/// Player will be forced to rename his character before entering the world.
+				Rename = 0x01,
+				/// Character spellbook will be reset (unlearn all learned spells).
+				ResetSpells = 0x02,
+				/// Character talents will be reset.
+				ResetTalents = 0x04,
+				/// Indicates that this character never logged in before.
+				FirstLogin = 0x20,
+			};
+		}
+
+		typedef atlogin_flags::Type AtLoginFlags;
+
+		namespace character_flags
+		{
+			enum Type
+			{
+				None = 0x00000000,
+				LockedForTransfer = 0x00000004,
+				HideHelm = 0x00000400,
+				HideCloak = 0x00000800,
+				Ghost = 0x00002000,
+				Rename = 0x00004000,
+				LockedByBilling = 0x01000000,
+				Declined = 0x02000000
+			};
+		}
+
+		typedef character_flags::Type CharacterFlags;
+
 		struct CharEntry
 		{
 			DatabaseId id;
@@ -375,6 +413,7 @@ namespace wowpp
 			float o;
 			bool cinematic;
 			std::map<UInt8, const proto::ItemEntry*> equipment;
+			AtLoginFlags atLogin;
 
 			explicit CharEntry()
 				: id(0)
@@ -394,7 +433,8 @@ namespace wowpp
 				, y(0.0f)
 				, z(0.0f)
 				, o(0.0f)
-				, cinematic(false)
+				, cinematic(true)
+				, atLogin(atlogin_flags::None)
 			{
 			}
 		};
@@ -465,30 +505,29 @@ namespace wowpp
 				CharLoginDisabled				= 0x05,
 				CharLoginNoCharacter			= 0x06,
 				CharLoginLockedForTransfer		= 0x07,
-				CharLoginLockedByBilling		= 0x08
+				CharLoginLockedByBilling		= 0x08,
+
+				CharNameSuccess					= 0x4A,
+				CharNameFailure					= 0x4B,
+				CharNameNoName					= 0x4C,
+				CharNameTooShort				= 0x4D,
+				CharNameTooLong					= 0x4E,
+				CharNameInvalidCharacters		= 0x4F,
+				CharNameMixedLanguages			= 0x50,
+				CharNameProfane					= 0x51,
+				CharNameReserved				= 0x52,
+				CharNameInvalidApostrophe		= 0x53,
+				CharNameMultipleApostrophes		= 0x54,
+				CharNameThreeConsecutive		= 0x55,
+				CharNameInvalidSpace			= 0x56,
+				CharNameConsecutiveSpaces		= 0x57,
+				CharNameRussianConsecutiveSilentCharacters	= 0x58,
+				CharNameRussianSilentCharacterAtBeginningOrEnd	= 0x59,
+				CharNameDeclensionDoesntMatchBaseName	= 0x5A,
 			};
 		}
 
 		typedef response_code::Type ResponseCode;
-
-		namespace atlogin_flags
-		{
-			enum Type
-			{
-				/// Nothing special happens at login.
-				None			= 0x00,
-				/// Player will be forced to rename his character before entering the world.
-				Rename			= 0x01,
-				/// Character spellbook will be reset (unlearn all learned spells).
-				ResetSpells		= 0x02,
-				/// Character talents will be reset.
-				ResetTalents	= 0x04,
-				/// Indicates that this character never logged in before.
-				FirstLogin		= 0x20,
-			};
-		}
-
-		typedef atlogin_flags::Type AtLoginFlags;
 
 		namespace expansions
 		{
@@ -1006,6 +1045,12 @@ namespace wowpp
 			bool voiceSessionEnable(
 				io::Reader &packet,
 				UInt16 &out_unknown
+				);
+
+			bool charRename(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				String &out_name
 				);
 		};
 
@@ -1750,6 +1795,13 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt64 unitGuid,
 				UInt32 spellId
+				);
+
+			void charRename(
+				game::OutgoingPacket &out_packet,
+				game::ResponseCode response,
+				UInt64 unitGuid,
+				const String &newName
 				);
 		};
 	}

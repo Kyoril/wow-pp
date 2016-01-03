@@ -223,7 +223,9 @@ namespace wowpp
 			m_configuration.webPort,
 			m_configuration.webPassword,
 			*PlayerManager,
-			*WorldManager
+			*WorldManager,
+			*m_database,
+			project
 			));
 
 		IdGenerator<UInt64> groupIdGenerator(0x01);

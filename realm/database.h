@@ -54,6 +54,8 @@ namespace wowpp
 		/// @returns false if the creation process failed.
 		virtual game::ResponseCode createCharacter(UInt32 accountId, const std::vector<const proto::SpellEntry*> &spells, const std::vector<pp::world_realm::ItemData> &items, game::CharEntry &character) = 0;
 
+		virtual game::ResponseCode renameCharacter(DatabaseId id, const String &newName) = 0;
+
 		virtual bool getCharacterById(DatabaseId id, game::CharEntry &out_character) = 0;
 		virtual bool getCharacterByName(const String &name, game::CharEntry &out_character) = 0;
 

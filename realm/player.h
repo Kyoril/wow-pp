@@ -155,6 +155,8 @@ namespace wowpp
 		std::vector<pp::world_realm::ItemData> &getItemData() { return m_itemData; }
 		/// Declines a pending group invite (if available).
 		void declineGroupInvite();
+		/// 
+		void reloadCharacters();
 
 		/// Sends an encrypted packet to the game client
 		/// @param generator Packet writer function pointer.
@@ -284,5 +286,6 @@ namespace wowpp
 		void handleRaidReadyCheckFinished(game::IncomingPacket &packet);
 		void handleRealmSplit(game::IncomingPacket &packet);
 		void handleVoiceSessionEnable(game::IncomingPacket &packet);
+		void handleCharRename(game::IncomingPacket &packet);
 	};
 }

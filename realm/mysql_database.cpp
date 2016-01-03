@@ -24,6 +24,7 @@
 #include "mysql_wrapper/mysql_select.h"
 #include "mysql_wrapper/mysql_statement.h"
 #include "common/constants.h"
+#include "game_protocol/game_protocol.h"
 #include "player_social.h"
 #include "player.h"
 #include "player_manager.h"
@@ -53,6 +54,46 @@ namespace wowpp
 			m_connectionInfo.port);
 
 		return true;
+	}
+
+	game::ResponseCode MySQLDatabase::renameCharacter(DatabaseId id, const String & newName)
+	{
+		const String safeName = m_connection.escapeString(newName);
+
+		// Check if name is already in use
+		wowpp::MySQL::Select select(m_connection,
+			(boost::format("SELECT `id` FROM `character` WHERE `name`='%1%' LIMIT 1")
+				% safeName).str());
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			if (row)
+			{
+				return game::response_code::CharCreateNameInUse;
+			}
+		}
+		else
+		{
+			printDatabaseError();
+			return game::response_code::CharNameFailure;
+		}
+
+		const UInt32 lowerGuid = guidLowerPart(id);
+
+		if (m_connection.execute((boost::format(
+			"UPDATE `character` SET `name`='%1%', `at_login`=`at_login` & ~%2% WHERE `id`=%3%")
+			% safeName
+			% game::atlogin_flags::Rename
+			% lowerGuid).str()))
+		{
+			return game::response_code::Success;
+		}
+		else
+		{
+			printDatabaseError();
+		}
+
+		return game::response_code::CharNameFailure;
 	}
 
 	wowpp::UInt32 MySQLDatabase::getCharacterCount(UInt32 accountId)
@@ -179,9 +220,9 @@ namespace wowpp
 		if (m_connection.execute((boost::format(
 			//                        0         1      2      3       4        5       6        7     8      9            10           11           12			  13		  
 			"INSERT INTO `character` (`account`,`name`,`race`,`class`,`gender`,`bytes`,`bytes2`,`map`,`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic`,"
-			//						  14		 15		  16	   17		18		
-									 "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`) "
-			"VALUES (%1%, '%2%', %3%, %4%, %5%, %6%, %7%, %8%, %9%, %10%, %11%, %12%, %13%, %14%, %15%, %16%, %17%, %18%, %19%)")
+			//						  14		 15		  16	   17		18		  19	  20
+									 "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`,`level`, `at_login`) "
+			"VALUES (%1%, '%2%', %3%, %4%, %5%, %6%, %7%, %8%, %9%, %10%, %11%, %12%, %13%, %14%, %15%, %16%, %17%, %18%, %19%, %20%, %21%)")
 			% accountId										// 0
 			% safeName										// 1
 			% static_cast<UInt32>(character.race)			// 2
@@ -195,12 +236,14 @@ namespace wowpp
 			% character.y									// 10
 			% character.z									// 11
 			% character.o									// 12 
-			% 1												// 13
+			% static_cast<UInt32>(character.cinematic)		// 13
 			% character.mapId	// Home point				// 14
 			% character.x									// 15
 			% character.y									// 16
 			% character.z									// 17
 			% character.o									// 18
+			% static_cast<UInt32>(character.level)			// 19
+			% static_cast<UInt32>(character.atLogin)		// 20
 			).str()))
 		{
 			// Retrieve id of the newly created character
@@ -307,8 +350,8 @@ namespace wowpp
 		wowpp::MySQL::Select select(m_connection,
 							//      0     1       2       3        4        5       6        7       8    
 			(boost::format("SELECT `id`, `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`map`,"
-							//		 9       10            11            12           13		  14            
-								 "`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic` FROM `character` WHERE `account`=%1% ORDER BY `id`")
+							//		 9       10            11            12           13		  14		15   
+								 "`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic`, `at_login` FROM `character` WHERE `account`=%1% ORDER BY `id`")
 			% accountId).str());
 		if (select.success())
 		{
@@ -347,6 +390,9 @@ namespace wowpp
 				Int32 cinematic = 0;
 				row.getField(14, cinematic);
 				entry.cinematic = (cinematic != 0);
+
+				row.getField(15, tmp);
+				entry.atLogin = static_cast<game::AtLoginFlags>(tmp);
 
 				// Reinterpret bytes
 				entry.skin = static_cast<UInt8>(bytes);
@@ -740,6 +786,7 @@ namespace wowpp
 	void MySQLDatabase::printDatabaseError()
 	{
 		ELOG("Realm database error: " << m_connection.getErrorMessage());
+		assert(false);
 	}
 
 	bool MySQLDatabase::getCharacterById(DatabaseId id, game::CharEntry &out_character)
@@ -1040,6 +1087,7 @@ namespace wowpp
 				return false;
 			}
 
+			if (!buttons.empty())
 			{
 				std::ostringstream fmtStrm;
 				fmtStrm << "INSERT INTO `character_actions` (`guid`, `button`, `action`, `type`) VALUES ";
