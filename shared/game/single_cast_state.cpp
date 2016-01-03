@@ -1339,12 +1339,14 @@ namespace wowpp
 		{
 			unitTarget = dynamic_cast<GameUnit*>(world->findObjectByGUID(m_target.getUnitTarget()));
 		}
-		if (unitTarget) targets.push_back(unitTarget);
-		
 		
 		float x, y, tmp;
 		switch (effect.targeta())
 		{
+		case game::targets::UnitCaster:
+		case game::targets::UnitTargetAlly:
+			if (unitTarget) targets.push_back(unitTarget);
+			break;
 		case game::targets::UnitPartyCaster:
 			{
 				caster.getLocation(x, y, tmp, tmp);
@@ -1409,7 +1411,7 @@ namespace wowpp
 
 						GameCharacter *unitChar = dynamic_cast<GameCharacter*>(&unit);
 						GameCharacter *targetChar = dynamic_cast<GameCharacter*>(unitTarget);
-						if (unitChar != targetChar &&
+						if (unitChar == targetChar ||
 							(unitChar->getGroupId() != 0 &&
 							unitChar->getGroupId() == targetChar->getGroupId()))
 						{
