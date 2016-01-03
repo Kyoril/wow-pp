@@ -118,7 +118,7 @@ namespace wowpp
 			else
 			{
 				// No row found: Account does not exist
-				return false;
+				return true;
 			}
 		}
 		else
