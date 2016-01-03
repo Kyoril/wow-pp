@@ -216,13 +216,17 @@ namespace wowpp
 								auto *item = project.items.getById(itemId);
 								if (item)
 								{
+									UInt16 preferredBagSlot = bagSlot;
+									UInt16 preferredSlot = preferredBagSlot;
+
 									if (item->maxstack() > 1)
 									{
 										// Check if we should add stacks
 										bool addedStack = false;
 										for (auto &data : items)
 										{
-											if (data.stackCount < item->maxstack())
+											if (data.entry == item->id() &&
+												data.stackCount < item->maxstack())
 											{
 												data.stackCount++;
 												addedStack = true;
@@ -240,17 +244,98 @@ namespace wowpp
 									{
 										if (bagSlot < player_inventory_pack_slots::End)
 										{
-											// Create a new stack
-											pp::world_realm::ItemData data;
-											data.entry = item->id();
-											data.durability = item->durability();
-											data.randomPropertyIndex = 0;
-											data.randomSuffixIndex = 0;
-											data.slot = (bagSlot++) | 0xFF00;
-											data.stackCount = 1;
-											items.emplace_back(std::move(data));
+											// Find preferred item slot based on inventory type
+											switch (item->inventorytype())
+											{
+												case game::inventory_type::Head:
+													preferredSlot = player_equipment_slots::Head | 0x0;
+													break;
+												case game::inventory_type::Neck:
+													preferredSlot = player_equipment_slots::Neck | 0x0;
+													break;
+												case game::inventory_type::Shoulders:
+													preferredSlot = player_equipment_slots::Shoulders | 0x0;
+													break;
+												case game::inventory_type::Body:
+													preferredSlot = player_equipment_slots::Body | 0x0;
+													break;
+												case game::inventory_type::Chest:
+												case game::inventory_type::Robe:
+													preferredSlot = player_equipment_slots::Chest | 0x0;
+													break;
+												case game::inventory_type::Waist:
+													preferredSlot = player_equipment_slots::Waist | 0x0;
+													break;
+												case game::inventory_type::Legs:
+													preferredSlot = player_equipment_slots::Legs | 0x0;
+													break;
+												case game::inventory_type::Feet:
+													preferredSlot = player_equipment_slots::Feet | 0x0;
+													break;
+												case game::inventory_type::Wrists:
+													preferredSlot = player_equipment_slots::Wrists | 0x0;
+													break;
+												case game::inventory_type::Hands:
+													preferredSlot = player_equipment_slots::Hands | 0x0;
+													break;
+												case game::inventory_type::Finger:
+													preferredSlot = player_equipment_slots::Finger1 | 0x0;
+													break;
+												case game::inventory_type::Trinket:
+													preferredSlot = player_equipment_slots::Trinket1 | 0x0;
+													break;
+												case game::inventory_type::Weapon:
+												case game::inventory_type::TwoHandedWeapon:
+												case game::inventory_type::MainHandWeapon:
+													preferredSlot = player_equipment_slots::Mainhand | 0x0;
+													break;
+												case game::inventory_type::Shield:
+												case game::inventory_type::OffHandWeapon:
+												case game::inventory_type::Holdable:
+													preferredSlot = player_equipment_slots::Offhand | 0x0;
+													break;
+												case game::inventory_type::Ranged:
+												case game::inventory_type::Thrown:
+													preferredSlot = player_equipment_slots::Ranged | 0x0;
+													break;
+												case game::inventory_type::Cloak:
+													preferredSlot = player_equipment_slots::Back | 0x0;
+													break;
+												case game::inventory_type::Tabard:
+													preferredSlot = player_equipment_slots::Tabard | 0x0;
+													break;
+											}
+
+											// Check if the item is equippable
+											if (preferredSlot != preferredBagSlot)
+											{
+												for (auto &data : items)
+												{
+													if (data.slot == preferredSlot)
+													{
+														preferredSlot = preferredBagSlot;
+														break;
+													}
+												}
+											}
 										}
 									}
+
+									// New bag slot will be used
+									if (preferredSlot == preferredBagSlot)
+									{
+										bagSlot++;
+									}
+
+									// Create a new stack
+									pp::world_realm::ItemData data;
+									data.entry = item->id();
+									data.durability = item->durability();
+									data.randomPropertyIndex = 0;
+									data.randomSuffixIndex = 0;
+									data.slot = preferredSlot;
+									data.stackCount = 1;
+									items.emplace_back(std::move(data));
 								}
 							}
 						}
