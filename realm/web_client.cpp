@@ -152,6 +152,7 @@ namespace wowpp
 					UInt32 accountId = 0, charRace = 0, charClass = 0, charLvl = 0;
 					std::vector<const proto::SpellEntry*> spells;
 					std::vector<pp::world_realm::ItemData> items;
+					UInt32 itemIndex = 0, spellIndex = 0;
 
 					UInt8 bagSlot = player_inventory_pack_slots::Start;
 
@@ -160,6 +161,11 @@ namespace wowpp
 						auto delimiterPos = arg.find('=');
 						String argName = arg.substr(0, delimiterPos);
 						String argValue = arg.substr(delimiterPos + 1);
+
+						std::stringstream spellarg;
+						spellarg << "spells%5B" << spellIndex << "%5D";
+						std::stringstream itemarg;
+						itemarg << "items%5B" << itemIndex << "%5D";
 
 						if (argName == "acc")
 						{
@@ -199,8 +205,10 @@ namespace wowpp
 						{
 							o = atof(argValue.c_str());
 						}
-						else if (argName == "spells%5B0%5D")
+						else if (argName == spellarg.str())
 						{
+							spellIndex++;
+
 							UInt32 spellId = atoi(argValue.c_str());
 							if (spellId != 0)
 							{
@@ -208,8 +216,10 @@ namespace wowpp
 								if (spell) spells.push_back(spell);
 							}
 						}
-						else if (argName == "items%5B0%5D")
+						else if (argName == itemarg.str())
 						{
+							itemIndex++;
+
 							UInt32 itemId = atoi(argValue.c_str());
 							if (itemId != 0)
 							{
