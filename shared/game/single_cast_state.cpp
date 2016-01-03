@@ -1330,8 +1330,19 @@ namespace wowpp
 		}
 		std::vector<GameUnit*> targets;
 		GameUnit &caster = m_cast.getExecuter();
-		float x, y, tmp;
+		GameUnit *unitTarget = nullptr;
+		auto *world = caster.getWorldInstance();
 
+		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self || effect.targeta() == game::targets::UnitCaster)
+			unitTarget = &caster;
+		else if (world && m_target.hasUnitTarget())
+		{
+			unitTarget = dynamic_cast<GameUnit*>(world->findObjectByGUID(m_target.getUnitTarget()));
+		}
+		if (unitTarget) targets.push_back(unitTarget);
+		
+		
+		float x, y, tmp;
 		switch (effect.targeta())
 		{
 		case game::targets::UnitPartyCaster:
@@ -1345,7 +1356,7 @@ namespace wowpp
 
 					GameCharacter *unitChar = dynamic_cast<GameCharacter*>(&unit);
 					GameCharacter *casterChar = dynamic_cast<GameCharacter*>(&caster);
-					if (unitChar == casterChar || 
+					if (unitChar == casterChar ||
 						(unitChar->getGroupId() != 0 &&
 						unitChar->getGroupId() == casterChar->getGroupId()))
 					{
@@ -1385,6 +1396,37 @@ namespace wowpp
 				});
 			}
 			break;
+		case game::targets::UnitPartyTarget:
+			{
+				if (unitTarget)
+				{
+					unitTarget->getLocation(x, y, tmp, tmp);
+					auto &finder = caster.getWorldInstance()->getUnitFinder();
+					finder.findUnits(Circle(x, y, effect.radius()), [this, unitTarget, &targets](GameUnit &unit) -> bool
+					{
+						if (unit.getTypeId() != object_type::Character)
+							return true;
+
+						GameCharacter *unitChar = dynamic_cast<GameCharacter*>(&unit);
+						GameCharacter *targetChar = dynamic_cast<GameCharacter*>(unitTarget);
+						if (unitChar != targetChar &&
+							(unitChar->getGroupId() != 0 &&
+							unitChar->getGroupId() == targetChar->getGroupId()))
+						{
+							targets.push_back(&unit);
+							if (m_spell.maxtargets() > 0 &&
+								targets.size() >= m_spell.maxtargets())
+							{
+								// No more units
+								return false;
+							}
+						}
+
+						return true;
+					});
+				}
+			}
+			break;
 		default:
 			break;
 		}
@@ -1415,16 +1457,6 @@ namespace wowpp
 			}
 			break;
 		default:
-			GameUnit *unitTarget = nullptr;
-			auto *world = caster.getWorldInstance();
-
-			if (m_target.getTargetMap() == game::spell_cast_target_flags::Self || effect.targeta() == game::targets::UnitCaster)
-				unitTarget = &caster;
-			else if (world && m_target.hasUnitTarget())
-			{
-				unitTarget = dynamic_cast<GameUnit*>(world->findObjectByGUID(m_target.getUnitTarget()));
-			}
-			if (unitTarget && targets.empty()) targets.push_back(unitTarget);
 			break;
 		}
 		

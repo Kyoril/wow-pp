@@ -1458,11 +1458,11 @@ namespace wowpp
 				UnitAreaEntryDst		= 8,
 				DstHome					= 9,
 				UnitTargetDestCaster	= 11,
-				UnitAreaEnemySrc		= 15,
-				UnitAreaEnemyDst		= 16,
+				UnitAreaEnemySrc		= 15,	// Arcane Explosion
+				UnitAreaEnemyDst		= 16,	// Dynamite / Shadowfury
 				DstDB					= 17,
 				DstCaster				= 18,
-				UnitPartyCaster			= 20,
+				UnitPartyCaster			= 20,	// Prayer of Healing
 				UnitTargetAlly			= 21,
 				SrcCaster				= 22,
 				GameObject				= 23,
@@ -1479,7 +1479,7 @@ namespace wowpp
 				AreaPartyDst			= 34,
 				UnitTargetParty			= 35,
 				DestCasterRandomUnknown	= 36,
-				UnitPartyTarget			= 37,
+				UnitPartyTarget			= 37,	// Circle of Healing
 				UnitNearbyEntry			= 38,
 				UnitCasterFishing		= 39,
 				ObjectUse				= 40,
