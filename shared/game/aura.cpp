@@ -788,7 +788,7 @@ namespace wowpp
 				if (school & 1 &&
 					m_effect.mechanic() != 15)	// Bleeding
 				{
-					calculateArmorReducedDamage(m_attackerLevel, m_target, damage);
+					m_target.calculateArmorReducedDamage(m_attackerLevel, damage);
 				}
 
 				// Send event to all subscribers in sight

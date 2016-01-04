@@ -446,15 +446,15 @@ namespace wowpp
 		/// @param school The damage school mask.
 		/// @param attacker The attacking unit or nullptr, if unknown. If nullptr, no threat will be generated.
 		/// @param noThreat If set to true, no threat will be generated from this damage.
-		void dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, bool noThreat = false);
-		/// Remove mana of this unit. Does not work on dead, oom or non-mana units!
-		/// @param amount The amount of mana to remove.
-		UInt32 removeMana(UInt32 amount);
+		bool dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, bool noThreat = false);
 		/// Heals this unit. Does not work on dead units! Use the revive method for this one.
 		/// @param amount The amount of damage to heal.
 		/// @param healer The healing unit or nullptr, if unknown. If nullptr, no threat will be generated.
 		/// @param noThreat If set to true, no threat will be generated.
-		void heal(UInt32 amount, GameUnit *healer, bool noThreat = false);
+		bool heal(UInt32 amount, GameUnit *healer, bool noThreat = false);
+		/// Remove mana of this unit. Does not work on dead, oom or non-mana units!
+		/// @param amount The amount of mana to remove.
+		UInt32 removeMana(UInt32 amount);
 		/// Revives this unit with the given amount of health and mana. Does nothing if the unit is alive.
 		/// @param health The new health value of this unit.
 		/// @param mana The new mana value of this unit. If set to 0, mana won't be changed. If unit does not use
@@ -470,18 +470,19 @@ namespace wowpp
 		/// Determines whether this unit is actually in combat with at least one other unit.
 		bool isInCombat() const;
 
-		float getMissChance(GameUnit &caster, GameUnit &target, game::SpellSchool school);
-		bool isImmune(game::SpellSchool school);
-		float getDodgeChance(GameUnit &caster, GameUnit &target);
-		float getParryChance(GameUnit &caster, GameUnit &target);
-		float getGlancingChance(GameUnit &caster, GameUnit &target);
-		float getBlockChance(GameUnit &target);
-		float getCrushChance(GameUnit &caster, GameUnit &target);
-//		UInt8 getResiPercentage(const proto::SpellEffect &effect, GameUnit &caster, GameUnit &target);
-		float getCritChance(GameUnit &caster, GameUnit &target, game::SpellSchool school);
-		UInt32 getBonus(GameUnit &caster, game::SpellSchool school);
-		UInt32 getBonusPct(GameUnit &caster, game::SpellSchool school);
+		float getMissChance(GameUnit &caster, UInt8 school);
+		bool isImmune(UInt8 school);
+		float getDodgeChance(GameUnit &caster);
+		float getParryChance(GameUnit &caster);
+		float getGlancingChance(GameUnit &caster);
+		float getBlockChance();
+		float getCrushChance(GameUnit &caster);
+		float getResiPercentage(const proto::SpellEffect &effect, GameUnit &caster);
+		float getCritChance(GameUnit &caster, UInt8 school);
+		UInt32 getBonus(UInt8 school);
+		UInt32 getBonusPct(UInt8 school);
 		UInt32 consumeAbsorb(UInt32 damage, UInt8 school);
+		UInt32 calculateArmorReducedDamage(UInt32 attackerLevel, UInt32 damage);
 		virtual bool canBlock() const = 0;
 		virtual bool canParry() const = 0;
 		virtual bool canDodge() const = 0;
@@ -580,8 +581,6 @@ namespace wowpp
 		AttackingUnitSet m_attackingUnits;
 		MechanicImmunitySet m_mechanicImmunity;
 	};
-
-	UInt32 calculateArmorReducedDamage(UInt32 attackerLevel, const GameUnit &victim, UInt32 damage);
 
 	io::Writer &operator << (io::Writer &w, GameUnit const& object);
 	io::Reader &operator >> (io::Reader &r, GameUnit& object);

@@ -539,44 +539,44 @@ namespace wowpp
 				//attack table calculation
 				std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
 				float hitTableRoll = hitTableDistribution(randomGenerator);
-				if ((hitTableRoll -= getMissChance(*this, *victim, game::spell_school::Normal)) < 0.0f)
+				if ((hitTableRoll -= getMissChance(*this, game::spell_school::Normal)) < 0.0f)
 				{
 					//missed
 					hitInfo = game::hit_info::Miss;
 					damageModifier = 0.0f;
 				}
-				else if ((hitTableRoll -= getDodgeChance(*this, *victim)) < 0.0f)
+				else if ((hitTableRoll -= getDodgeChance(*this)) < 0.0f)
 				{
 					//dodged
 					victimState = game::victim_state::Dodge;
 					damageModifier = 0.0f;
 				}
-				else if (m_victim->canParry() && (hitTableRoll -= getParryChance(*this, *victim)) < 0.0f)
+				else if (m_victim->canParry() && (hitTableRoll -= getParryChance(*this)) < 0.0f)
 				{
 					//parried
 					victimState = game::victim_state::Parry;
 					damageModifier = 0.0f;
 					//TODO accelerate next m_victim autohit
 				}
-				else if ((hitTableRoll -= getGlancingChance(*this, *victim)) < 0.0f)
+				else if ((hitTableRoll -= getGlancingChance(*this)) < 0.0f)
 				{
 					//glanced
 					hitInfo = game::hit_info::Glancing;
 					damageModifier = 0.75f;	//TODO more detail
 				}
-				else if (m_victim->canBlock() && (hitTableRoll -= getBlockChance(*victim)) < 0.0f)
+				else if (m_victim->canBlock() && (hitTableRoll -= getBlockChance()) < 0.0f)
 				{
 					//blocked
 					victimState = game::victim_state::Blocks;
 					blockValue = 50;	//TODO get from m_victim
 				}
-				else if ((hitTableRoll -= getCrushChance(*this, *victim)) < 0.0f)
+				else if ((hitTableRoll -= getCrushChance(*this)) < 0.0f)
 				{
 					//crush
 					hitInfo = game::hit_info::Crushing;
 					damageModifier = 1.5f;
 				}
-				else if ((hitTableRoll -= getCritChance(*this, *victim, game::spell_school::Normal)) < 0.0f)
+				else if ((hitTableRoll -= getCritChance(*this, game::spell_school::Normal)) < 0.0f)
 				{
 					//crit
 					hitInfo = game::hit_info::CriticalHit;
@@ -587,7 +587,7 @@ namespace wowpp
 				{
 					// Calculate damage between minimum and maximum damage
 					std::uniform_real_distribution<float> distribution(getFloatValue(unit_fields::MinDamage), getFloatValue(unit_fields::MaxDamage) + 1.0f);
-					damage = (calculateArmorReducedDamage(getLevel(), *victim, UInt32(distribution(randomGenerator))) * damageModifier) - blockValue;
+					damage = (victim->calculateArmorReducedDamage(getLevel(), UInt32(distribution(randomGenerator))) * damageModifier) - blockValue;
 					if (damage < 0)	//avoid negative damage when blockValue is high
 						damage = 0;
 				}
@@ -1147,12 +1147,12 @@ namespace wowpp
 		return unit_mods::Armor;
 	}
 	
-	void GameUnit::dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, bool noThreat/* = false*/)
+	bool GameUnit::dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, bool noThreat/* = false*/)
 	{
 		UInt32 health = getUInt32Value(unit_fields::Health);
-		if (health == 0)
+		if (health < 1)
 		{
-			return;
+			return false;
 		}
 
 		if (health < damage)
@@ -1175,6 +1175,31 @@ namespace wowpp
 				threatened(*attacker, static_cast<float>(damage));
 			}
 		}
+		return true;
+	}
+
+	bool GameUnit::heal(UInt32 amount, GameUnit *healer, bool noThreat /*= false*/)
+	{
+		UInt32 health = getUInt32Value(unit_fields::Health);
+		if (health < 1)
+		{
+			return false;
+		}
+
+		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
+		if (health + amount >= maxHealth)
+			health = maxHealth;
+		else
+			health += amount;
+		
+		setUInt32Value(unit_fields::Health, health);
+
+		if (healer && !noThreat)
+		{
+			// TODO: Add threat to all units who are in fight with the healed target, but only
+			// if the units are not friendly towards the healer!
+		}
+		return true;
 	}
 	
 	UInt32 GameUnit::removeMana(UInt32 amount)
@@ -1194,29 +1219,6 @@ namespace wowpp
 		else
 		{
 			return 0;
-		}
-	}
-
-	void GameUnit::heal(UInt32 amount, GameUnit *healer, bool noThreat /*= false*/)
-	{
-		UInt32 health = getUInt32Value(unit_fields::Health);
-		if (health == 0)
-		{
-			return;
-		}
-
-		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
-		const UInt32 healed = std::min(amount, maxHealth - health);
-		if (health + amount >= maxHealth)
-			health = maxHealth;
-		else
-			health += amount;
-		setUInt32Value(unit_fields::Health, health);
-
-		if (healer && !noThreat)
-		{
-			// TODO: Add threat to all units who are in fight with the healed target, but only
-			// if the units are not friendly towards the healer!
 		}
 	}
 
@@ -1250,34 +1252,34 @@ namespace wowpp
 		// Nothing to do here
 	}
 	
-	bool GameUnit::isImmune(game::SpellSchool school)
+	bool GameUnit::isImmune(UInt8 school)
 	{
 		// TODO: check auras and mobtype
 		return false;
 	}
 	
-	float GameUnit::getMissChance(GameUnit &caster, GameUnit &target, game::SpellSchool school)
+	float GameUnit::getMissChance(GameUnit &caster, UInt8 school)
 	{
 		//TODO dual wield handling
-		float chance = 5.0f + (static_cast<float>(target.getLevel()) - static_cast<float>(caster.getLevel())) * 0.5f;
+		float chance = 5.0f + (static_cast<float>(this->getLevel()) - static_cast<float>(caster.getLevel())) * 0.5f;
 		if (chance < 0.0f)
 			chance = 0.0f;
 		return chance;
 	}
 	
-	float GameUnit::getDodgeChance(GameUnit &caster, GameUnit &target)
+	float GameUnit::getDodgeChance(GameUnit &caster)
 	{
 		return 5.0f;
 	}
 	
-    float GameUnit::getParryChance(GameUnit &caster, GameUnit &target)
+    float GameUnit::getParryChance(GameUnit &caster)
 	{
 		return 5.0f;
 	}
 	
-	float GameUnit::getGlancingChance(GameUnit &caster, GameUnit &target)
+	float GameUnit::getGlancingChance(GameUnit &caster)
 	{
-		if (caster.getTypeId() == wowpp::object_type::Character && target.getTypeId() == wowpp::object_type::Unit)
+		if (caster.getTypeId() == wowpp::object_type::Character && this->getTypeId() == wowpp::object_type::Unit)
 		{
 			return 10.0f;
 		}
@@ -1287,12 +1289,12 @@ namespace wowpp
 		}
 	}
 	
-	float GameUnit::getBlockChance(GameUnit &target)
+	float GameUnit::getBlockChance()
 	{
 		return 5.0f;
 	}
 	
-	float GameUnit::getCrushChance(GameUnit &caster, GameUnit &target)
+	float GameUnit::getCrushChance(GameUnit &caster)
 	{
 		if (caster.getTypeId() == wowpp::object_type::Unit)
 		{
@@ -1305,17 +1307,22 @@ namespace wowpp
 		}
 	}
 	
-	float GameUnit::getCritChance(GameUnit &caster, GameUnit &target, game::SpellSchool school)
-	{
-		return 10.0f;
-	}
-	
-	UInt32 GameUnit::getBonus(GameUnit &caster, game::SpellSchool school)
+	float GameUnit::getResiPercentage(const proto::SpellEffect &effect, GameUnit &caster)
 	{
 		return 0;
 	}
 	
-	UInt32 GameUnit::getBonusPct(GameUnit &caster, game::SpellSchool school)
+	float GameUnit::getCritChance(GameUnit &caster, UInt8 school)
+	{
+		return 10.0f;
+	}
+	
+	UInt32 GameUnit::getBonus(UInt8 school)
+	{
+		return 0;
+	}
+	
+	UInt32 GameUnit::getBonusPct(UInt8 school)
 	{
 		return 0;
 	}
@@ -1326,6 +1333,38 @@ namespace wowpp
 	UInt32 GameUnit::consumeAbsorb(UInt32 damage, UInt8 school)
 	{
 		return m_auras.consumeAbsorb(damage, school);
+	}
+	
+	UInt32 GameUnit::calculateArmorReducedDamage(UInt32 attackerLevel, UInt32 damage)
+	{
+		UInt32 newDamage = 0;
+		float armor = float(this->getUInt32Value(unit_fields::Resistances));
+
+		// TODO: Armor reduction mods
+
+		// Cap armor
+		if (armor < 0.0f) armor = 0.0f;
+
+		float tmp = 0.0f;
+		if (attackerLevel < 60)
+		{
+			tmp = armor / (armor + 400.0f + 85.0f * attackerLevel);
+		}
+		else if (attackerLevel < 70)
+		{
+			tmp = armor / (armor - 22167.5f + 467.5f * attackerLevel);
+		}
+		else
+		{
+			tmp = armor / (armor + 10557.5f);
+		}
+
+		// Hard caps
+		if (tmp < 0.0f) tmp = 0.0f;
+		if (tmp > 0.75f) tmp = 0.75f;
+
+		newDamage = UInt32(damage - (damage * tmp));
+		return (newDamage > 1 ? newDamage : 1);
 	}
 
 	void GameUnit::onKilled(GameUnit *killer)
@@ -1441,38 +1480,6 @@ namespace wowpp
 		object.updateDisplayIds();
 
 		return r;
-	}
-
-	UInt32 calculateArmorReducedDamage(UInt32 attackerLevel, const GameUnit &victim, UInt32 damage)
-	{
-		UInt32 newDamage = 0;
-		float armor = float(victim.getUInt32Value(unit_fields::Resistances));
-
-		// TODO: Armor reduction mods
-
-		// Cap armor
-		if (armor < 0.0f) armor = 0.0f;
-
-		float tmp = 0.0f;
-		if (attackerLevel < 60)
-		{
-			tmp = armor / (armor + 400.0f + 85.0f * attackerLevel);
-		}
-		else if (attackerLevel < 70)
-		{
-			tmp = armor / (armor - 22167.5f + 467.5f * attackerLevel);
-		}
-		else
-		{
-			tmp = armor / (armor + 10557.5f);
-		}
-
-		// Hard caps
-		if (tmp < 0.0f) tmp = 0.0f;
-		if (tmp > 0.75f) tmp = 0.75f;
-
-		newDamage = UInt32(damage - (damage * tmp));
-		return (newDamage > 1 ? newDamage : 1);
 	}
 
 	void GameUnit::addMechanicImmunity(UInt32 mechanic)

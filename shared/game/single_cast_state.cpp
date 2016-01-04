@@ -509,43 +509,71 @@ namespace wowpp
 		refreshTargets(effect);
 		GameUnit &caster = m_cast.getExecuter();
 
-		for (auto &targetUnit : m_targets[effect.targeta()][effect.targetb()])
+		for (GameUnit* targetUnit : m_targets[effect.targeta()][effect.targetb()])
 		{
-			UInt32 spellResi = getResiPercentage(effect, caster, *targetUnit);
-			if (spellResi >= 100) {
-				WLOG("EFFECT_SCHOOL_DAMAGE: Full resisted!");
-				return;
+			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
+			float hitTableRoll = hitTableDistribution(randomGenerator);
+			
+			UInt32 totalDamage;
+			bool crit = false;
+			UInt32 resisted = 0;
+			UInt32 absorbed = 0;
+			if ((hitTableRoll -= targetUnit->getMissChance(caster, m_spell.schoolmask())) < 0.0f)
+			{
+				totalDamage = 0;	// miss
 			}
-
-			UInt32 spellPower = getSpellPower(effect, caster);
-			UInt32 spellBonusPct = getSpellBonusPct(effect, caster);
-
-			UInt32 totalDamage = getSpellPointsTotal(effect, spellPower, spellBonusPct);
-			float critFactor = getCritFactor(effect, caster, *targetUnit);
-			totalDamage *= critFactor;
-			UInt32 absorbed = targetUnit->consumeAbsorb(totalDamage, m_spell.schoolmask());
-
-			// Send spell damage packet
-			sendPacketFromCaster(caster,
-				std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-				targetUnit->getGuid(),
-				caster.getGuid(),
-				m_spell.id(),
-				totalDamage,
-				m_spell.schoolmask(),
-				absorbed,
-				0,	//resisted
-				false,
-				0,
-				critFactor > 1.0));	//crit
+			else if (targetUnit->isImmune(m_spell.schoolmask()))
+			{
+				totalDamage = 0;	// immune
+			}
+			else
+			{
+				float spellResi = targetUnit->getResiPercentage(effect, caster);
+				if (spellResi >= 100.0f) {
+					totalDamage = 0;	// full resist
+				}
+				else
+				{
+					UInt32 spellPower = caster.getBonus(m_spell.schoolmask());
+					UInt32 spellBonusPct = caster.getBonusPct(m_spell.schoolmask());
+					totalDamage = getSpellPointsTotal(effect, spellPower, spellBonusPct);
+					if ((hitTableRoll -= targetUnit->getCritChance(caster, m_spell.schoolmask())) < 0.0f)
+					{
+						crit = true;
+						totalDamage *= 2.0;
+					}
+					if (spellResi > 0.0f)
+					{
+						resisted = totalDamage * spellResi;
+						totalDamage -= resisted;	// partial resist
+					}
+					absorbed = targetUnit->consumeAbsorb(totalDamage, m_spell.schoolmask());
+				}
+			}
 
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
-			targetUnit->dealDamage(totalDamage - absorbed, m_spell.schoolmask(), &caster, noThreat);
-			if (targetUnit->isAlive())
+			if (targetUnit->dealDamage(totalDamage - absorbed, m_spell.schoolmask(), &caster, noThreat))
 			{
-				caster.doneSpellMagicDmgClassNeg(targetUnit, m_spell.schoolmask());
-				targetUnit->takenDamage(&caster);
+				// Send spell damage packet
+				sendPacketFromCaster(caster,
+					std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+					targetUnit->getGuid(),
+					caster.getGuid(),
+					m_spell.id(),
+					totalDamage,
+					m_spell.schoolmask(),
+					absorbed,
+					resisted,	//resisted
+					false,
+					0,
+					crit));
+				
+				if (targetUnit->isAlive())
+				{
+					caster.doneSpellMagicDmgClassNeg(targetUnit, m_spell.schoolmask());
+					targetUnit->takenDamage(&caster);
+				}
 			}
 		}
 	}
@@ -581,7 +609,7 @@ namespace wowpp
 		}
 
 		// Armor reduction
-		damage = calculateArmorReducedDamage(m_cast.getExecuter().getLevel(), *unitTarget, damage);
+		damage = unitTarget->calculateArmorReducedDamage(caster.getLevel(), damage);
 		UInt32 absorbed = unitTarget->consumeAbsorb(damage, m_spell.schoolmask());
 
 		// Send spell damage packet
@@ -919,35 +947,35 @@ namespace wowpp
 		refreshTargets(effect);
 		GameUnit &caster = m_cast.getExecuter();
 
-		UInt32 spellPower = getSpellPower(effect, caster);
-		UInt32 spellBonusPct = getSpellBonusPct(effect, caster);
+		UInt32 addHeal = caster.getBonus(m_spell.schoolmask());
+		UInt32 addHealPct = caster.getBonusPct(m_spell.schoolmask());
+		UInt32 totalHeal = getSpellPointsTotal(effect, addHeal, addHealPct);
 		
-		UInt32 totalHeal = getSpellPointsTotal(effect, spellPower, spellBonusPct);
-		for (auto &targetUnit : m_targets[effect.targeta()][effect.targetb()])
+		for (GameUnit* targetUnit : m_targets[effect.targeta()][effect.targetb()])
 		{
-			float critFactor = getCritFactor(effect, caster, *targetUnit);
-			totalHeal *= critFactor;
-
-			UInt32 health = targetUnit->getUInt32Value(unit_fields::Health);
-			UInt32 maxHealth = targetUnit->getUInt32Value(unit_fields::MaxHealth);
-			if (health == 0)
+			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
+			float hitTableRoll = hitTableDistribution(randomGenerator);
+			
+			bool crit = false;
+			if ((hitTableRoll -= targetUnit->getCritChance(caster, m_spell.schoolmask())) < 0.0f)
 			{
-				WLOG("Can't heal dead target!");
-				return;
+				crit = true;
+				totalHeal *= 2.0;
 			}
-
-			// Send spell heal packet
-			sendPacketFromCaster(caster,
-				std::bind(game::server_write::spellHealLog, std::placeholders::_1,
-				targetUnit->getGuid(),
-				caster.getGuid(),
-				m_spell.id(),
-				totalHeal,
-				critFactor > 1.0));	//crit
-
+			
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
-			targetUnit->heal(totalHeal, &caster, noThreat);
+			if (targetUnit->heal(totalHeal, &caster, noThreat))
+			{
+				// Send spell heal packet
+				sendPacketFromCaster(caster,
+					std::bind(game::server_write::spellHealLog, std::placeholders::_1,
+					targetUnit->getGuid(),
+					caster.getGuid(),
+					m_spell.id(),
+					totalHeal,
+					crit));
+			}
 		}
 	}
 
@@ -1161,13 +1189,41 @@ namespace wowpp
 
 		for (auto &targetUnit : m_targets[effect.targeta()][effect.targetb()])
 		{
-			UInt32 burn = calculateEffectBasePoints(effect);
-			WLOG("BURN Base: " << burn);
-			burn = targetUnit->removeMana(burn);
-			UInt32 damage = burn * effect.multiplevalue();
-			UInt32 absorbed = targetUnit->consumeAbsorb(damage, m_spell.schoolmask());
-			WLOG("BURN damage: " << damage);
-
+			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
+			float hitTableRoll = hitTableDistribution(randomGenerator);
+			
+			UInt32 burn;
+			UInt32 damage = 0;
+			UInt32 resisted = 0;
+			UInt32 absorbed = 0;
+			if ((hitTableRoll -= targetUnit->getMissChance(caster, m_spell.schoolmask())) < 0.0f)
+			{
+				burn = 0;	// miss
+			}
+			else if (targetUnit->isImmune(m_spell.schoolmask()))
+			{
+				burn = 0;	// immune
+			}
+			else
+			{
+				float spellResi = targetUnit->getResiPercentage(effect, caster);
+				if (spellResi >= 100.0f) {
+					burn = 0;	// full resist
+				}
+				else
+				{
+					burn = calculateEffectBasePoints(effect);
+					if (spellResi > 0.0f)
+					{
+						resisted = burn * spellResi;
+						burn -= resisted;	// partial resist
+					}
+					UInt32 damage = burn * effect.multiplevalue();
+					resisted *= effect.multiplevalue();
+					absorbed = targetUnit->consumeAbsorb(damage, m_spell.schoolmask());
+				}
+			}
+			
 			// Send spell damage packet
 			sendPacketFromCaster(caster,
 				std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
@@ -1177,7 +1233,7 @@ namespace wowpp
 				damage,
 				m_spell.schoolmask(),
 				absorbed,
-				0,	//resisted
+				resisted,	//resisted
 				false,
 				0,
 				false));	//crit
