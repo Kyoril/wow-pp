@@ -900,7 +900,7 @@ namespace wowpp
 		UInt32 spellPower = getSpellPower(effect, caster);
 		UInt32 spellBonusPct = getSpellBonusPct(effect, caster);
 		UInt32 totalPoints = getSpellPointsTotal(effect, spellPower, spellBonusPct);
-		for (auto &target : m_targets[effect.targeta()][effect.targetb()])
+		for (GameUnit* target : m_targets[effect.targeta()][effect.targetb()])
 		{
 			if (!target->isAlive())
 				continue;
@@ -1134,8 +1134,8 @@ namespace wowpp
 			return;
 		}
 
-		// Get the spell to trigger
-		// startCast(m_cast, *effect.triggerSpell, m_target, -1, 0, true);
+		GameUnit &caster = m_cast.getExecuter();
+		caster.castSpell(m_target, effect.triggerspell(), -1, 0, true);
 	}
 
 	void SingleCastState::spellEffectEnergize(const proto::SpellEffect &effect)
