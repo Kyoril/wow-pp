@@ -26,7 +26,7 @@
 #include "world_navigation.h"
 #include "tile_index.h"
 #include "common/grid.h"
-#include "math/vector3.h"
+#include "math/ray.h"
 
 namespace wowpp
 {

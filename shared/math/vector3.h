@@ -21,6 +21,8 @@
 
 #pragma once
 
+#include <cassert>
+
 namespace wowpp
 {
 	namespace math
@@ -47,6 +49,11 @@ namespace wowpp
 				, y(other.y)
 				, z(other.z)
 			{
+			}
+			/// Calculates the dot-product of this vector and another vector.
+			float dot(const Vector3 &other) const
+			{
+				return x * other.x + y * other.y + z * other.z;
 			}
 			/// Calculates the cross-product of this vector and another vector.
 			/// Results in a new vector from this x other.
@@ -79,6 +86,17 @@ namespace wowpp
 				return len;
 			}
 
+			inline float operator [] (const size_t i) const
+			{
+				assert(i < 3);
+				return *(&x + i);
+			}
+
+			inline float& operator [] (const size_t i)
+			{
+				assert(i < 3);
+				return *(&x + i);
+			}
 			inline Vector3 operator +(const Vector3 &v) const
 			{
 				return Vector3(x + v.x, y + v.y, z + v.z);
@@ -102,6 +120,28 @@ namespace wowpp
 			inline bool operator !=(const Vector3 &other) const
 			{
 				return (x != other.x || y != other.y || z != other.z);
+			}
+			inline bool operator < (const Vector3& other) const
+			{
+				return (x < other.x && y < other.y && z < other.z);
+			}
+			inline bool operator > (const Vector3& other) const
+			{
+				return (x > other.x && y > other.y && z > other.z);
+			}
+			inline Vector3& operator = (const Vector3& other)
+			{
+				x = other.x;
+				y = other.y;
+				z = other.z;
+				return *this;
+			}
+			inline Vector3& operator = (const float scalar)
+			{
+				x = scalar;
+				y = scalar;
+				z = scalar;
+				return *this;
 			}
 		};
 	}
