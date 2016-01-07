@@ -35,9 +35,6 @@ namespace wowpp
 	GameObject::GameObject(proto::Project &project)
 		: m_project(project)
 		, m_mapId(0)
-		, m_x(0.0f)
-		, m_y(0.0f)
-		, m_z(0.0f)
 		, m_o(0.0f)
 		, m_objectType(0x01)
 		, m_objectTypeId(0x01)
@@ -256,11 +253,11 @@ namespace wowpp
 
 	void GameObject::relocate(float x, float y, float z, float o)
 	{
-		float oldX = m_x, oldY = m_y, oldZ = m_z, oldO = m_o;
+		float oldX = m_position.x, oldY = m_position.y, oldZ = m_position.z, oldO = m_o;
 
-		m_x = x;
-		m_y = y;
-		m_z = z;
+		m_position.x = x;
+		m_position.y = y;
+		m_position.z = z;
 		m_o = o;
 
 		moved(*this, oldX, oldY, oldZ, oldO);
@@ -272,7 +269,7 @@ namespace wowpp
 
 		m_o = o;
 
-		moved(*this, m_x, m_y, m_z, oldO);
+		moved(*this, m_position.x, m_position.y, m_position.z, oldO);
 	}
 
 	void GameObject::setMapId(UInt32 mapId)
@@ -467,9 +464,9 @@ namespace wowpp
 	float GameObject::getDistanceTo(const game::Position &position, bool use3D /*= true*/) const
 	{
 		if (use3D)
-			return (sqrtf(((position[0] - m_x) * (position[0] - m_x)) + ((position[1] - m_y) * (position[1] - m_y)) + ((position[2] - m_z) * (position[2] - m_z))));
+			return (sqrtf(((position[0] - m_position.x) * (position[0] - m_position.x)) + ((position[1] - m_position.y) * (position[1] - m_position.y)) + ((position[2] - m_position.z) * (position[2] - m_position.z))));
 		else
-			return (sqrtf(((position[0] - m_x) * (position[0] - m_x)) + ((position[1] - m_y) * (position[1] - m_y))));
+			return (sqrtf(((position[0] - m_position.x) * (position[0] - m_position.x)) + ((position[1] - m_position.y) * (position[1] - m_position.y))));
 	}
 
 	void GameObject::onWorldInstanceDestroyed()
@@ -502,12 +499,12 @@ namespace wowpp
 		}
 
 		// Try to resolve the objects position
-		return m_worldInstance->getGrid().getTilePosition(m_x, m_y, m_z, out_index[0], out_index[1]);
+		return m_worldInstance->getGrid().getTilePosition(m_position.x, m_position.y, m_position.z, out_index[0], out_index[1]);
 	}
 
 	bool GameObject::isInArc(float arcRadian, float x, float y) const
 	{
-		if (x == m_x && y == m_y)
+		if (x == m_position.x && y == m_position.y)
 			return true;
 
 		const float PI = 3.1415927f;
@@ -535,13 +532,13 @@ namespace wowpp
 
 	float GameObject::getAngle(GameObject &other) const
 	{
-		return getAngle(other.m_x, other.m_y);
+		return getAngle(other.m_position.x, other.m_position.y);
 	}
 
 	float GameObject::getAngle(float x, float y) const
 	{
-		float dx = x - m_x;
-		float dy = y - m_y;
+		float dx = x - m_position.x;
+		float dy = y - m_position.y;
 
 		float ang = ::atan2(dy, dx);
 		ang = (ang >= 0) ? ang : 2 * 3.1415927f + ang;
@@ -555,9 +552,9 @@ namespace wowpp
 			<< io::write_dynamic_range<NetUInt8>(object.m_valueBitset)
 			<< io::write_dynamic_range<NetUInt16>(object.m_values)
 			<< io::write<NetUInt32>(object.m_mapId)
-			<< io::write<float>(object.m_x)
-			<< io::write<float>(object.m_y)
-			<< io::write<float>(object.m_z)
+			<< io::write<float>(object.m_position.x)
+			<< io::write<float>(object.m_position.y)
+			<< io::write<float>(object.m_position.z)
 			<< io::write<float>(object.m_o);
 	}
 
@@ -568,9 +565,9 @@ namespace wowpp
 			>> io::read_container<NetUInt8>(object.m_valueBitset)
 			>> io::read_container<NetUInt16>(object.m_values)
 			>> io::read<NetUInt32>(object.m_mapId)
-			>> io::read<float>(object.m_x)
-			>> io::read<float>(object.m_y)
-			>> io::read<float>(object.m_z)
+			>> io::read<float>(object.m_position.x)
+			>> io::read<float>(object.m_position.y)
+			>> io::read<float>(object.m_position.z)
 			>> io::read<float>(object.m_o);
 	}
 

@@ -29,6 +29,8 @@
 #include <boost/signals2/signal.hpp>
 #include "common/timer_queue.h"
 #include "tile_index.h"
+#include "math/vector3.h"
+#include "common/macros.h"
 #include <vector>
 
 namespace wowpp
@@ -244,8 +246,12 @@ namespace wowpp
 		virtual void writeValueUpdateBlock(io::Writer &writer, GameCharacter &receiver, bool creation = true) const;
 		void writeUpdateValue(io::Writer &writer, GameCharacter &receiver, UInt16 index) const;
 
+		/// Gets the targets location.
+		const math::Vector3 &getLocation() const { return m_position; }
 		/// Gets the location of this object.
-		void getLocation(float &out_x, float &out_y, float &out_z, float &out_o) const { out_x = m_x; out_y = m_y; out_z = m_z; out_o = m_o; }
+		void WOWPP_DEPRECATED getLocation(float &out_x, float &out_y, float &out_z, float &out_o) const { out_x = m_position.x; out_y = m_position.y; out_z = m_position.z; out_o = m_o; }
+		/// Gets the targets orientation (yaw value in radians).
+		float getOrientation() const { return m_o; }
 		/// Gets the map id of this object.
 		UInt32 getMapId() const { return m_mapId; }
 		/// Gets the unit's tile index in the world grid.
@@ -297,7 +303,7 @@ namespace wowpp
 		std::vector<UInt32> m_values;
 		std::vector<UInt32> m_valueBitset;
 		UInt32 m_mapId;
-		float m_x, m_y, m_z;
+		math::Vector3 m_position;
 		float m_o;
 		UInt32 m_objectType;
 		UInt32 m_objectTypeId;

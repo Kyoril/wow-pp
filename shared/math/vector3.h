@@ -95,6 +95,14 @@ namespace wowpp
 			{
 				return Vector3(x / value, y / value, z / value);
 			}
+			inline bool operator ==(const Vector3 &other) const
+			{
+				return (x == other.x && y == other.y && z == other.z);
+			}
+			inline bool operator !=(const Vector3 &other) const
+			{
+				return (x != other.x || y != other.y || z != other.z);
+			}
 		};
 	}
 }

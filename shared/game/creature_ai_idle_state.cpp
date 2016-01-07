@@ -110,11 +110,7 @@ namespace wowpp
 						return false;
 					}
 
-					// Little hack since LoS is not working
-					float tmp = 0.0f, z2 = 0.0f, z = 0.0f;
-					controlled.getLocation(tmp, tmp, z, tmp);
-					unit.getLocation(tmp, tmp, z2, tmp);
-					if (::abs(z - z2) > 3.0f)
+					if (!controlled.isInLineOfSight(unit))
 					{
 						return false;
 					}

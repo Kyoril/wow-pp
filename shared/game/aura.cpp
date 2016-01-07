@@ -1062,12 +1062,13 @@ namespace wowpp
 		const bool removeOnMove = (m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Move) != 0;
 		const bool removeOnTurn = (m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Turning) != 0;
 
-		float x, y, z, o;
-		m_target.getLocation(x, y, z, o);
+		const auto &location = m_target.getLocation();
+		float orientation = m_target.getOrientation();
+		math::Vector3 oldLocation(oldX, oldY, oldZ);
 
 		if (removeOnMove)
 		{
-			if (x != oldX || y != oldY || z != oldZ)
+			if (location != oldLocation)
 			{
 				// Moved - remove!
 				onForceRemoval();
@@ -1077,7 +1078,7 @@ namespace wowpp
 
 		if (removeOnTurn)
 		{
-			if (o != oldO)
+			if (orientation != oldO)
 			{
 				// Turned - remove!
 				onForceRemoval();
