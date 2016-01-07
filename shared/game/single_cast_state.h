@@ -85,7 +85,6 @@ namespace wowpp
 		void spellEffectSummon(const proto::SpellEffect &effect);
 		void spellEffectCharge(const proto::SpellEffect &effect);
 		void spellEffectScript(const proto::SpellEffect &effect);
-		void refreshTargets(const proto::SpellEffect &effect);
 
 	private:
 
@@ -94,7 +93,6 @@ namespace wowpp
 		SpellTargetMap m_target;
 		SpellCasting m_casting;
 		AttackTable m_attackTable;
-		std::unordered_map<UInt32,std::unordered_map<UInt32,std::vector<GameUnit*>>> m_targets;
 		bool m_hasFinished;
 		Countdown m_countdown;
 		Countdown m_impactCountdown;

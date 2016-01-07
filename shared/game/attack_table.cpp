@@ -26,6 +26,66 @@ namespace wowpp
 	AttackTable::AttackTable() {
 	}
 	
+	void AttackTable::checkPositiveSpell(GameUnit* attacker, SpellTargetMap &targetMap, const proto::SpellEntry &spell, const proto::SpellEffect &effect, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
+	{
+		UInt32 targetA = effect.targeta();
+		UInt32 targetB = effect.targetb();
+		if (!checkIndex(targetA, targetB))
+		{
+			UInt8 school = spell.schoolmask();
+			refreshTargets(*attacker, targetMap, targetA, targetB, effect.radius(), spell.maxtargets());
+			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
+
+			for (GameUnit* targetUnit : m_targets[targetA][targetB])
+			{
+				m_hitInfos[targetA][targetB].push_back(game::hit_info::NoAction);
+				m_victimStates[targetA][targetB].push_back(game::victim_state::Unknown1);
+				float hitTableRoll = hitTableDistribution(randomGenerator);
+				if (targetUnit->isImmune(school))
+				{
+					m_victimStates[targetA][targetB].back() = game::victim_state::IsImmune;
+				}
+				else if ((hitTableRoll -= targetUnit->getCritChance(*attacker, school)) < 0.0f)
+				{
+					m_hitInfos[targetA][targetB].back() = game::hit_info::CriticalHit;
+				}
+				m_resists[targetA][targetB].push_back(0.0f);
+			}
+		}
+		
+		targets = m_targets[targetA][targetB];
+		victimStates = m_victimStates[targetA][targetB];
+		hitInfos = m_hitInfos[targetA][targetB];
+		resists = m_resists[targetA][targetB];
+	}
+	
+	void AttackTable::checkPositiveSpellNoCrit(GameUnit* attacker, SpellTargetMap &targetMap, const proto::SpellEntry &spell, const proto::SpellEffect &effect, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
+	{
+		UInt32 targetA = effect.targeta();
+		UInt32 targetB = effect.targetb();
+		if (!checkIndex(targetA, targetB))
+		{
+			UInt8 school = spell.schoolmask();
+			refreshTargets(*attacker, targetMap, targetA, targetB, effect.radius(), spell.maxtargets());
+
+			for (GameUnit* targetUnit : m_targets[targetA][targetB])
+			{
+				m_hitInfos[targetA][targetB].push_back(game::hit_info::NoAction);
+				m_victimStates[targetA][targetB].push_back(game::victim_state::Unknown1);
+				if (targetUnit->isImmune(school))
+				{
+					m_victimStates[targetA][targetB].back() = game::victim_state::IsImmune;
+				}
+				m_resists[targetA][targetB].push_back(0.0f);
+			}
+		}
+		
+		targets = m_targets[targetA][targetB];
+		victimStates = m_victimStates[targetA][targetB];
+		hitInfos = m_hitInfos[targetA][targetB];
+		resists = m_resists[targetA][targetB];
+	}
+	
 	void AttackTable::checkNonBinarySpell(GameUnit* attacker, SpellTargetMap &targetMap, const proto::SpellEntry &spell, const proto::SpellEffect &effect, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
 	{
 		UInt32 targetA = effect.targeta();
@@ -52,6 +112,40 @@ namespace wowpp
 				else if ((hitTableRoll -= targetUnit->getCritChance(*attacker, school)) < 0.0f)
 				{
 					m_hitInfos[targetA][targetB].back() = game::hit_info::CriticalHit;
+				}
+
+				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(effect, *attacker));
+			}
+		}
+		
+		targets = m_targets[targetA][targetB];
+		victimStates = m_victimStates[targetA][targetB];
+		hitInfos = m_hitInfos[targetA][targetB];
+		resists = m_resists[targetA][targetB];
+	}
+	
+	void AttackTable::checkNonBinarySpellNoCrit(GameUnit* attacker, SpellTargetMap &targetMap, const proto::SpellEntry &spell, const proto::SpellEffect &effect, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
+	{
+		UInt32 targetA = effect.targeta();
+		UInt32 targetB = effect.targetb();
+		if (!checkIndex(targetA, targetB))
+		{
+			UInt8 school = spell.schoolmask();
+			refreshTargets(*attacker, targetMap, targetA, targetB, effect.radius(), spell.maxtargets());
+			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
+
+			for (GameUnit* targetUnit : m_targets[targetA][targetB])
+			{
+				m_hitInfos[targetA][targetB].push_back(game::hit_info::NoAction);
+				m_victimStates[targetA][targetB].push_back(game::victim_state::Normal);
+				float hitTableRoll = hitTableDistribution(randomGenerator);
+				if ((hitTableRoll -= targetUnit->getMissChance(*attacker, school)) < 0.0f)
+				{
+					m_hitInfos[targetA][targetB].back() = game::hit_info::Miss;
+				}
+				else if (targetUnit->isImmune(school))
+				{
+					m_victimStates[targetA][targetB].back() = game::victim_state::IsImmune;
 				}
 
 				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(effect, *attacker));
