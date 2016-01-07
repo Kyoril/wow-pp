@@ -109,7 +109,7 @@ namespace
         header.areaTableSize = sizeof(MapAreaChunk);
         header.offsHeight = header.offsAreaTable + header.areaTableSize;
 		header.heightSize = sizeof(MapHeightChunk);
-        
+		
         // Area header
         MapAreaChunk areaHeader;
         areaHeader.fourCC = 0x52414D57;			// WMAR		- WoW Map Areas
@@ -204,6 +204,9 @@ namespace
 				succeeded = false;
 			}
 		}
+
+		// Get wmo information
+
 
 		return true;
 	}

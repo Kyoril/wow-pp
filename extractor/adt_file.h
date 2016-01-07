@@ -286,5 +286,7 @@ namespace wowpp
 		std::array<MCNKChunk, 16 * 16> m_mcnkChunks;
 		std::array<MCVTChunk, 16 * 16> m_heightChunks;
 		std::array<MCLQChunk, 16 * 16> m_liquidChunks;
+		const char *m_wmoFilenames;
+		std::vector<UInt32> m_wmoIndex;
 	};
 }

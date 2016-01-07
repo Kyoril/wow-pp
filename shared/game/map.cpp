@@ -165,4 +165,11 @@ namespace wowpp
 		// Update height value
 		return h1 * a1 + h2 * a2 + h3 * a3;
 	}
+
+	bool Map::isInLineOfSight(const math::Vector3 & posA, const math::Vector3 & posB)
+	{
+		// TODO
+
+		return true;
+	}
 }

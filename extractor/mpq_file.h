@@ -53,10 +53,10 @@ namespace wowpp
 
 		std::unique_ptr<io::ISource> m_source;
 		io::Reader m_reader;
+		std::vector<char> m_buffer;
 
 	private:
 
 		String m_fileName;
-		std::vector<char> m_buffer;
 	};
 }
