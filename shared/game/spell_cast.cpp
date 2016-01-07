@@ -139,7 +139,7 @@ namespace wowpp
 			math::Vector3 posB;
 			if (unitTarget)
 			{
-				unitTarget->getLocation(posA.x, posA.y, posA.z, tmp);
+				unitTarget->getLocation(posB.x, posB.y, posB.z, tmp);
 			}
 			else
 			{
