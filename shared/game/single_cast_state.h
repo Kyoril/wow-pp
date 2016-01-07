@@ -22,6 +22,7 @@
 #pragma once
 
 #include "spell_cast.h"
+#include "attack_table.h"
 #include "common/countdown.h"
 #include "shared/proto_data/spells.pb.h"
 #include "boost/signals2.hpp"
@@ -92,6 +93,7 @@ namespace wowpp
 		const proto::SpellEntry &m_spell;
 		SpellTargetMap m_target;
 		SpellCasting m_casting;
+		AttackTable m_attackTable;
 		std::unordered_map<UInt32,std::unordered_map<UInt32,std::vector<GameUnit*>>> m_targets;
 		bool m_hasFinished;
 		Countdown m_countdown;

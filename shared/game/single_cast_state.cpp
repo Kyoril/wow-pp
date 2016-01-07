@@ -90,6 +90,7 @@ namespace wowpp
 		, m_castTime(castTime)
 		, m_basePoints(basePoints)
 		, m_isProc(isProc)
+		, m_attackTable()
 	{
 		// Check if the executer is in the world
 		auto &executer = m_cast.getExecuter();
@@ -505,55 +506,48 @@ namespace wowpp
 	}
 
 	void SingleCastState::spellEffectSchoolDamage(const proto::SpellEffect &effect)
-	{	
-		refreshTargets(effect);
+	{
 		GameUnit &caster = m_cast.getExecuter();
-
-		for (GameUnit* targetUnit : m_targets[effect.targeta()][effect.targetb()])
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkNonBinarySpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+		
+		for (int i=0; i<targets.size(); i++)
 		{
-			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
-			float hitTableRoll = hitTableDistribution(randomGenerator);
-			
+			GameUnit* targetUnit = targets[i];
+			UInt8 school = m_spell.schoolmask();
 			UInt32 totalDamage;
 			bool crit = false;
 			UInt32 resisted = 0;
 			UInt32 absorbed = 0;
-			if ((hitTableRoll -= targetUnit->getMissChance(caster, m_spell.schoolmask())) < 0.0f)
+			if (victimStates[i] == game::victim_state::IsImmune)
 			{
-				totalDamage = 0;	// miss
+				totalDamage = 0;
 			}
-			else if (targetUnit->isImmune(m_spell.schoolmask()))
+			if (hitInfos[i] == game::hit_info::Miss)
 			{
-				totalDamage = 0;	// immune
+				totalDamage = 0;
 			}
 			else
 			{
-				float spellResi = targetUnit->getResiPercentage(effect, caster);
-				if (spellResi >= 100.0f) {
-					totalDamage = 0;	// full resist
-				}
-				else
+				UInt32 spellPower = caster.getBonus(school);
+				UInt32 spellBonusPct = caster.getBonusPct(school);
+				totalDamage = getSpellPointsTotal(effect, spellPower, spellBonusPct);
+				if (hitInfos[i] == game::hit_info::CriticalHit)
 				{
-					UInt32 spellPower = caster.getBonus(m_spell.schoolmask());
-					UInt32 spellBonusPct = caster.getBonusPct(m_spell.schoolmask());
-					totalDamage = getSpellPointsTotal(effect, spellPower, spellBonusPct);
-					if ((hitTableRoll -= targetUnit->getCritChance(caster, m_spell.schoolmask())) < 0.0f)
-					{
-						crit = true;
-						totalDamage *= 2.0;
-					}
-					if (spellResi > 0.0f)
-					{
-						resisted = totalDamage * spellResi;
-						totalDamage -= resisted;	// partial resist
-					}
-					absorbed = targetUnit->consumeAbsorb(totalDamage, m_spell.schoolmask());
+					crit = true;
+					totalDamage *= 2.0f;
 				}
+				resisted = totalDamage * resists[i];
+				totalDamage -= resisted;
+				absorbed = targetUnit->consumeAbsorb(totalDamage, school);
 			}
-
+			
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
-			if (targetUnit->dealDamage(totalDamage - absorbed, m_spell.schoolmask(), &caster, noThreat))
+			if (targetUnit->dealDamage(totalDamage - absorbed, school, &caster, noThreat))
 			{
 				// Send spell damage packet
 				sendPacketFromCaster(caster,
@@ -562,7 +556,7 @@ namespace wowpp
 					caster.getGuid(),
 					m_spell.id(),
 					totalDamage,
-					m_spell.schoolmask(),
+					school,
 					absorbed,
 					resisted,	//resisted
 					false,
@@ -571,7 +565,7 @@ namespace wowpp
 				
 				if (targetUnit->isAlive())
 				{
-					caster.doneSpellMagicDmgClassNeg(targetUnit, m_spell.schoolmask());
+					caster.doneSpellMagicDmgClassNeg(targetUnit, school);
 					targetUnit->takenDamage(&caster);
 				}
 			}
@@ -883,7 +877,6 @@ namespace wowpp
 	void SingleCastState::spellEffectApplyAura(const proto::SpellEffect &effect)
 	{
 		refreshTargets(effect);
-		// Casting unit
 		GameUnit &caster = m_cast.getExecuter();
 
 		// Determine aura type
@@ -895,17 +888,40 @@ namespace wowpp
 		auto *world = m_cast.getExecuter().getWorldInstance();
 		auto &universe = world->getUniverse();
 
-		// Create a new aura instance
-		//TODO apply spellhit-calc on enemy-targets
-		UInt32 spellPower = getSpellPower(effect, caster);
-		UInt32 spellBonusPct = getSpellBonusPct(effect, caster);
-		UInt32 totalPoints = getSpellPointsTotal(effect, spellPower, spellBonusPct);
-		for (GameUnit* target : m_targets[effect.targeta()][effect.targetb()])
+		for (GameUnit* targetUnit : m_targets[effect.targeta()][effect.targetb()])
 		{
-			if (!target->isAlive())
+//			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
+//			float hitTableRoll = hitTableDistribution(randomGenerator);
+//			
+			UInt32 totalPoints;
+//			bool resisted = false;
+//			if ((hitTableRoll -= targetUnit->getMissChance(caster, m_spell.schoolmask())) < 0.0f)
+//			{
+//				totalPoints = 0;	// miss
+//			}
+//			else if (targetUnit->isImmune(m_spell.schoolmask()))
+//			{
+//				totalPoints = 0;	// immune
+//			}
+//			else
+//			{
+//				float spellResi = targetUnit->getResiPercentage(effect, caster);
+//				if (spellResi >= 100.0f) {
+//					totalPoints = 0;	// full resist
+//					resisted = true;
+//				}
+//				else
+//				{
+					UInt32 bonus = caster.getBonus(m_spell.schoolmask());
+					UInt32 bonusPct = caster.getBonusPct(m_spell.schoolmask());
+					totalPoints = getSpellPointsTotal(effect, bonus, bonusPct);
+//				}
+//			}
+			
+			if (!targetUnit->isAlive())
 				continue;
 			
-			std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *target, [&universe](std::function<void()> work)
+			std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *targetUnit, [&universe](std::function<void()> work)
 			{
 				universe.post(work);
 			}, [](Aura &self)
@@ -929,11 +945,11 @@ namespace wowpp
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
 			if (!noThreat)
 			{
-				target->threatened(caster, 0.00001f);
+				targetUnit->threatened(caster, 0.00001f);
 			}
 
 			// TODO: Add aura to unit target
-			const bool success = target->getAuras().addAura(std::move(aura));
+			const bool success = targetUnit->getAuras().addAura(std::move(aura));
 			if (!success)
 			{
 				// TODO: What should we do here? Just ignore?
