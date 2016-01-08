@@ -130,28 +130,6 @@ namespace wowpp
 			}
 		}
 
-
-		// Check for line of sight
-		{
-			float tmp = 0.0f;
-			math::Vector3 posA;
-			m_executer.getLocation(posA.x, posA.y, posA.z, tmp);
-			math::Vector3 posB;
-			if (unitTarget)
-			{
-				unitTarget->getLocation(posB.x, posB.y, posB.z, tmp);
-			}
-			else
-			{
-				target.getDestLocation(posB.x, posB.y, posB.z);
-			}
-
-			if (!map->isInLineOfSight(posA, posB))
-			{
-				return std::make_pair(game::spell_cast_result::FailedLineOfSight, nullptr);
-			}
-		}
-
 		// Check if we have enough resources for that spell
 		if (isProc)
 		{
@@ -164,6 +142,26 @@ namespace wowpp
 		}
 		else
 		{
+			// Check for line of sight
+			{
+				float tmp = 0.0f;
+				math::Vector3 posA;
+				m_executer.getLocation(posA.x, posA.y, posA.z, tmp);
+				math::Vector3 posB;
+				if (unitTarget)
+				{
+					unitTarget->getLocation(posB.x, posB.y, posB.z, tmp);
+				}
+
+				if (unitTarget && unitTarget != &m_executer)
+				{
+					if (!m_executer.isInLineOfSight(*unitTarget))
+					{
+						return std::make_pair(game::spell_cast_result::FailedLineOfSight, nullptr);
+					}
+				}
+			}
+
 			return m_castState->startCast
 				(*this,
 					spell,
