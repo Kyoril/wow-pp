@@ -25,6 +25,7 @@
 #include "log/default_log_levels.h"
 #include "common/make_unique.h"
 #include "math/vector3.h"
+#include "common/clock.h"
 
 namespace wowpp
 {
@@ -168,6 +169,8 @@ namespace wowpp
 
 	bool Map::isInLineOfSight(const math::Vector3 & posA, const math::Vector3 & posB)
 	{
+		auto startTime = getCurrentTime();
+
 		// Create a ray
 		math::Ray ray(posA, posB);
 
@@ -177,9 +180,10 @@ namespace wowpp
 		math::Vector3 vB(-9047.82f, -105.309f, 85.0f);
 		math::Vector3 vC(-9042.37f, -99.0209f, 99.0f);
 
-
-
 		auto result = ray.intersectsTriangle(vA, vB, vC);
+		auto endTime = getCurrentTime();
+		DLOG("isInLineOfSight time: " << (endTime - startTime) << " ms");
+
 		return !result.first;
 	}
 }

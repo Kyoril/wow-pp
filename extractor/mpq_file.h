@@ -48,6 +48,8 @@ namespace wowpp
 		/// Called to load the file.
 		/// @returns False, if any errors occurred during the loading process.
 		virtual bool load() = 0;
+		/// Returns the file name of this MPQ file inside the archive.
+		const String &getFileName() const { return m_fileName; }
 
 	protected:
 

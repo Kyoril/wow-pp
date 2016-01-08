@@ -22,9 +22,83 @@
 #pragma once
 
 #include "mpq_file.h"
+#include "math/vector3.h"
+#include <array>
 
 namespace wowpp
 {
+	struct MVERChunk final
+	{
+		UInt32 cc;
+		UInt32 size;
+		UInt32 version;
+
+		explicit MVERChunk()
+			: cc(0)
+			, size(0)
+			, version(0)
+		{
+		}
+	};
+
+	struct MOHDChunk final
+	{
+		UInt32 textureCount;
+		UInt32 groupCount;
+		UInt32 portalCount;
+		UInt32 lightCount;
+		UInt32 doodadNameCount;
+		UInt32 doodadDefCount;
+		UInt32 doodadSetCount;
+		UInt32 colorRGBX;
+		UInt32 wmoId;
+		math::Vector3 boundsMin;
+		math::Vector3 boundsMax;
+		UInt32 flags;
+
+		explicit MOHDChunk()
+			: textureCount(0)
+			, groupCount(0)
+			, portalCount(0)
+			, lightCount(0)
+			, doodadNameCount(0)
+			, doodadDefCount(0)
+			, colorRGBX(0)
+			, wmoId(0)
+			, flags(0)
+		{
+		}
+	};
+
+	struct MOGPChunk final
+	{
+		UInt32 groupName;
+		UInt32 descriptiveName;
+		UInt32 flags;
+		math::Vector3 boundsMin;
+		math::Vector3 boundsMax;
+		UInt16 moprIndex;
+		UInt16 mopfUseCount;
+		UInt16 numberOfBatchesA;
+		UInt16 numberOfBatchesInterior;
+		UInt16 numberOfBatchesExterior;
+		std::array<UInt8, 4> fogIndices;
+		UInt32 liquidType;
+		UInt32 wmoGroupId;	// area
+		UInt32 unknown1;
+		UInt32 unknown2;
+
+		explicit MOGPChunk()
+			: groupName(0)
+			, descriptiveName(0)
+			, flags(0)
+			, moprIndex(0)
+			, mopfUseCount(0)
+			, numberOfBatchesA(0)
+		{
+		}
+	};
+
 	/// This class contains data from a wmo file.
 	class WMOFile final : public MPQFile
 	{
@@ -35,9 +109,21 @@ namespace wowpp
 
 		/// @copydoc MPQFile::load()
 		bool load() override;
-		
+		/// Determines whether this is a root WMO or a group WMO.
+		bool isRootWMO() const { return m_isRoot; }
+
+		/// Returns a constant reference to the MOHD chunk data.
+		/// Only filled with valid data if this is a root WMO.
+		const MOHDChunk &getMOHDChunk() const { return m_rootHeader; }
+		/// 
+		const MOGPChunk &getMOGPChunk() const { return m_groupHeader; }
+
 	private:
 
+		MOHDChunk m_rootHeader;
+		MOGPChunk m_groupHeader;
 		bool m_isValid;
+		bool m_isRoot;
+		std::vector<std::unique_ptr<WMOFile>> m_wmoGroups;
 	};
 }
