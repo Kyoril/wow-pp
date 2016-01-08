@@ -22,6 +22,7 @@
 #pragma once
 
 #include "mpq_file.h"
+#include "math/vector3.h"
 #include <array>
 
 namespace wowpp
@@ -257,6 +258,45 @@ namespace wowpp
 			}
 		};
 
+		/// 
+		struct MODFChunk final
+		{
+			UInt32 fourcc;
+			UInt32 size;
+
+			struct Entry final
+			{
+				UInt32 mwidEntry;
+				UInt32 uniqueId;
+				math::Vector3 position;
+				math::Vector3 rotation;
+				math::Vector3 lowerBounds;
+				math::Vector3 upperBounds;
+				UInt16 flags;
+				UInt16 doodadSet;
+				UInt16 nameSet;
+				UInt16 unk;
+
+				Entry()
+					: mwidEntry(0)
+					, uniqueId(0)
+					, flags(0)
+					, doodadSet(0)
+					, nameSet(0)
+					, unk(0)
+				{
+				}
+			};
+			
+			std::vector<Entry> entries;
+
+			MODFChunk()
+				: fourcc(0)
+				, size(0)
+			{
+			}
+		};
+
 	public:
 
 		/// @copydoc MPQFile::MPQFile()
@@ -275,6 +315,7 @@ namespace wowpp
 		const MCNKChunk &getMCNKChunk(UInt32 index) const { return m_mcnkChunks[index]; }
 		const MCVTChunk &getMCVTChunk(UInt32 index) const { return m_heightChunks[index]; }
 		const MCLQChunk &getMCLQChunk(UInt32 index) const { return m_liquidChunks[index]; }
+		const MODFChunk &getMODFChunk() const { return m_modfChunk; }
 
 	private:
 
@@ -288,5 +329,6 @@ namespace wowpp
 		std::array<MCLQChunk, 16 * 16> m_liquidChunks;
 		const char *m_wmoFilenames;
 		std::vector<UInt32> m_wmoIndex;
+		MODFChunk m_modfChunk;
 	};
 }

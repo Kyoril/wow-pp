@@ -110,6 +110,33 @@ namespace wowpp
 			}
 		}
 
+		// WMO definitions
+		if (m_headerChunk.offsObjectsDef)
+		{
+			const size_t modfOffset = m_offsetBase + m_headerChunk.offsObjectsDef;
+			m_source->seek(modfOffset);
+
+			// Read as many MODF chunks as available
+			m_reader >> io::read<UInt32>(m_modfChunk.fourcc) >> io::read<UInt32>(m_modfChunk.size);
+			if (m_modfChunk.fourcc == 0x4d4f4446)
+			{
+				if (m_modfChunk.size % sizeof(MODFChunk::Entry) == 0)
+				{
+					m_modfChunk.entries.resize(m_modfChunk.size / sizeof(MODFChunk::Entry));
+					for (size_t i = 0; i < m_modfChunk.entries.size(); ++i)
+					{
+						m_reader.readPOD(m_modfChunk.entries[i]);
+					}
+
+					DLOG("Got " << m_modfChunk.entries.size() << " MODF entries");
+				}
+				else
+				{
+					WLOG("Number of MODF entries mismatch!");
+				}
+			}
+		}
+
 		// Next one will be MCIN chunk
 		if (m_headerChunk.offsMCIN)
 		{
