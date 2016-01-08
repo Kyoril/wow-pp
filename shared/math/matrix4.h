@@ -23,6 +23,8 @@
 
 #include "vector3.h"
 #include <cassert>
+#include <utility>
+#include <cmath>
 
 namespace wowpp
 {
@@ -94,13 +96,13 @@ namespace wowpp
 				std::swap(m[3][3], other.m[3][3]);
 			}
 
-			inline Real* operator [] (size_t iRow)
+			inline float* operator [] (size_t iRow)
 			{
 				assert(iRow < 4);
 				return m[iRow];
 			}
 
-			inline const Real *operator [] (size_t iRow) const
+			inline const float *operator [] (size_t iRow) const
 			{
 				assert(iRow < 4);
 				return m[iRow];
@@ -221,6 +223,31 @@ namespace wowpp
 				return r;
 			}
 
+			void fromAngleAxis(const Vector3& rkAxis, float fRadians)
+			{
+				float fCos = ::cosf(fRadians);
+				float fSin = ::sinf(fRadians);
+				float fOneMinusCos = 1.0f - fCos;
+				float fX2 = rkAxis.x*rkAxis.x;
+				float fY2 = rkAxis.y*rkAxis.y;
+				float fZ2 = rkAxis.z*rkAxis.z;
+				float fXYM = rkAxis.x*rkAxis.y*fOneMinusCos;
+				float fXZM = rkAxis.x*rkAxis.z*fOneMinusCos;
+				float fYZM = rkAxis.y*rkAxis.z*fOneMinusCos;
+				float fXSin = rkAxis.x*fSin;
+				float fYSin = rkAxis.y*fSin;
+				float fZSin = rkAxis.z*fSin;
+
+				m[0][0] = fX2*fOneMinusCos + fCos;
+				m[0][1] = fXYM - fZSin;
+				m[0][2] = fXZM + fYSin;
+				m[1][0] = fXYM + fZSin;
+				m[1][1] = fY2*fOneMinusCos + fCos;
+				m[1][2] = fYZM - fXSin;
+				m[2][0] = fXZM - fYSin;
+				m[2][1] = fYZM + fXSin;
+				m[2][2] = fZ2*fOneMinusCos + fCos;
+			}
 
 
 			inline Matrix4 operator * (const Matrix4 &m2) const
@@ -311,6 +338,6 @@ namespace wowpp
 					m[2][0] != m2.m[2][0] || m[2][1] != m2.m[2][1] || m[2][2] != m2.m[2][2] || m[2][3] != m2.m[2][3] ||
 					m[3][0] != m2.m[3][0] || m[3][1] != m2.m[3][1] || m[3][2] != m2.m[3][2] || m[3][3] != m2.m[3][3]);
 			}
-		}
+		};
 	}
 }

@@ -22,6 +22,7 @@
 #pragma once
 
 #include <cassert>
+#include <cmath>
 
 namespace wowpp
 {

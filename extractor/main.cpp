@@ -37,6 +37,8 @@
 #include <memory>
 #include <map>
 #include "game/map.h"
+#include "math/matrix4.h"
+#include "math/vector3.h"
 using namespace std;
 using namespace wowpp;
 
