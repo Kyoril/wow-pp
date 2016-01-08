@@ -22,6 +22,8 @@
 #include "ogre_mpq_archive.h"
 #include "log/default_log_levels.h"
 #include <cassert>
+#include <algorithm>
+#include <string>
 
 namespace wowpp
 {

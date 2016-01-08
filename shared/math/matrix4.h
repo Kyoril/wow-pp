@@ -25,6 +25,7 @@
 #include <cassert>
 #include <utility>
 #include <cmath>
+#include <cstddef>
 
 namespace wowpp
 {
@@ -96,13 +97,13 @@ namespace wowpp
 				std::swap(m[3][3], other.m[3][3]);
 			}
 
-			inline float* operator [] (size_t iRow)
+			inline float* operator [] (std::size_t iRow)
 			{
 				assert(iRow < 4);
 				return m[iRow];
 			}
 
-			inline const float *operator [] (size_t iRow) const
+			inline const float *operator [] (std::size_t iRow) const
 			{
 				assert(iRow < 4);
 				return m[iRow];

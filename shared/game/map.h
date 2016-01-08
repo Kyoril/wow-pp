@@ -40,6 +40,17 @@ namespace wowpp
 		UInt32 areaTableSize;
 		UInt32 offsHeight;
 		UInt32 heightSize;
+
+		MapHeaderChunk()
+			: fourCC(0)
+			, size(0)
+			, version(0)
+			, offsAreaTable(0)
+			, areaTableSize(0)
+			, offsHeight(0)
+			, heightSize(0)
+		{
+		}
 	};
 
 	/// Map area chunk.

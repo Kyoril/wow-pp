@@ -29,6 +29,7 @@
 #include "dbc_file.h"
 #include "wdt_file.h"
 #include "adt_file.h"
+#include "wmo_file.h"
 #include "binary_io/writer.h"
 #include "binary_io/stream_sink.h"
 #include "common/make_unique.h"
@@ -97,6 +98,30 @@ namespace
 			return false;
 		}
 
+		// Now load all required WMO files
+		std::vector<std::unique_ptr<WMOFile>> wmos;
+		for (UInt32 i = 0; i < adt.getWMOCount(); ++i)
+		{
+			// Retrieve WMO file name
+			const String filename = adt.getWMO(i);
+			auto wmoFile = make_unique<WMOFile>(filename);
+			if (!wmoFile->load())
+			{
+				ELOG("Error loading WMO: " << filename);
+				return false;
+			}
+
+			// Push back to the list of WMO files
+			wmos.emplace_back(std::move(wmoFile));
+		}
+
+		// Now, for every WMO placement, apply line of sight blocking polygons
+		for (const auto &entry : adt.getMODFChunk().entries)
+		{
+			// TODO: Entry placement
+
+		}
+
 		// Create files (TODO)
 		std::ofstream fileStrm(mapFile, std::ios::out | std::ios::binary);
 		io::StreamSink sink(fileStrm);
@@ -130,7 +155,7 @@ namespace
             areaHeader.cellAreas[i].flags = flags;
         }
 		
-		// Map size header
+		// Map height header
 		MapHeightChunk heightChunk;
 		heightChunk.fourCC = 0x54484D57;		// WMHT		- WoW Map Height
 		heightChunk.size = sizeof(MapHeightChunk) - 8;

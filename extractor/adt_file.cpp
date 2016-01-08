@@ -127,8 +127,6 @@ namespace wowpp
 					{
 						m_reader.readPOD(m_modfChunk.entries[i]);
 					}
-
-					DLOG("Got " << m_modfChunk.entries.size() << " MODF entries");
 				}
 				else
 				{
@@ -182,6 +180,15 @@ namespace wowpp
 
 		m_isValid = true;
 		return true;
+	}
+
+	const String ADTFile::getWMO(UInt32 index) const
+	{
+		if (index > getWMOCount())
+			return String();
+
+		const char *filename = m_wmoFilenames + (m_wmoIndex[index]);
+		return String(filename);
 	}
 
 }
