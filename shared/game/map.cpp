@@ -176,6 +176,9 @@ namespace wowpp
 		math::Vector3 vA(-9033.53f, -92.0307f, 85.0f);
 		math::Vector3 vB(-9047.82f, -105.309f, 85.0f);
 		math::Vector3 vC(-9042.37f, -99.0209f, 99.0f);
+
+
+
 		auto result = ray.intersectsTriangle(vA, vB, vC);
 		return !result.first;
 	}
