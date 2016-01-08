@@ -26,6 +26,7 @@
 #include "world_navigation.h"
 #include "tile_index.h"
 #include "common/grid.h"
+#include "math/ray.h"
 
 namespace wowpp
 {
@@ -39,6 +40,17 @@ namespace wowpp
 		UInt32 areaTableSize;
 		UInt32 offsHeight;
 		UInt32 heightSize;
+
+		MapHeaderChunk()
+			: fourCC(0)
+			, size(0)
+			, version(0)
+			, offsAreaTable(0)
+			, areaTableSize(0)
+			, offsHeight(0)
+			, heightSize(0)
+		{
+		}
 	};
 
 	/// Map area chunk.
@@ -91,14 +103,20 @@ namespace wowpp
 		/// Creates a new instance of the map class and initializes it.
 		/// @entry The base entry of this map.
 		explicit Map(const proto::MapEntry &entry, boost::filesystem::path dataPath);
-
 		/// Gets the map entry data of this map.
 		const proto::MapEntry &getEntry() const { return m_entry; }
-
 		/// Tries to get a specific data tile if it's loaded.
 		MapDataTile *getTile(const TileIndex2D &position);
-		
+		/// Determines the height value at a given coordinate.
+		/// @param x The x coordinate to check.
+		/// @param y The y coordinate to check.
+		/// @returns The height value at the given coordinate, or quiet NaN if no valid height.
 		float getHeightAt(float x, float y);
+		/// Determines whether position B is in line of sight from position A.
+		/// @param posA The source position the raycast is fired off.
+		/// @param posB The destination position where the raycast is fired to.
+		/// @returns true, if nothing prevents the line of sight, false otherwise.
+		bool isInLineOfSight(const math::Vector3 &posA, const math::Vector3 &posB);
 
 	private:
 

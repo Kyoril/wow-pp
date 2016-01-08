@@ -21,42 +21,23 @@
 
 #pragma once
 
-#include "common/typedefs.h"
-#include "binary_io/reader.h"
-#include "binary_io/container_source.h"
-#include "stormlib/src/StormLib.h"
-#include "boost/noncopyable.hpp"
-#include <memory>
-#include <vector>
-
-namespace mpq
-{
-	bool loadMPQFile(const std::string &file);
-}
+#include "mpq_file.h"
 
 namespace wowpp
 {
-	/// This class represents a file which will be loaded from an MPQ archive.
-	class MPQFile : public boost::noncopyable
+	/// This class contains data from a wmo file.
+	class WMOFile final : public MPQFile
 	{
 	public:
 
-		/// Initializes the file and loads it's content from the loaded MPQ archive.
-		explicit MPQFile(String fileName);
-		virtual ~MPQFile();
+		/// 
+		explicit WMOFile(String fileName);
 
-		/// Called to load the file.
-		/// @returns False, if any errors occurred during the loading process.
-		virtual bool load() = 0;
-
-	protected:
-
-		std::unique_ptr<io::ISource> m_source;
-		io::Reader m_reader;
-		std::vector<char> m_buffer;
-
+		/// @copydoc MPQFile::load()
+		bool load() override;
+		
 	private:
 
-		String m_fileName;
+		bool m_isValid;
 	};
 }

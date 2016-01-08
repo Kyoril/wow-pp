@@ -469,6 +469,10 @@ namespace wowpp
 		bool isAlive() const { return (getUInt32Value(unit_fields::Health) != 0); }
 		/// Determines whether this unit is actually in combat with at least one other unit.
 		bool isInCombat() const;
+		/// Determines whether another game object is in line of sight.
+		bool isInLineOfSight(GameObject &other);
+		/// Determines whether a position is in line of sight.
+		bool isInLineOfSight(const math::Vector3 &position);
 
 		float getMissChance(GameUnit &caster, UInt8 school);
 		bool isImmune(UInt8 school);

@@ -1433,6 +1433,22 @@ namespace wowpp
 		return ((getUInt32Value(unit_fields::UnitFlags) & game::unit_flags::InCombat) != 0);
 	}
 
+	bool GameUnit::isInLineOfSight(GameObject & other)
+	{
+		// TODO: Determine unit's height based on unit model for correct line of sight calculation
+		return isInLineOfSight(other.getLocation());
+	}
+
+	bool GameUnit::isInLineOfSight(const math::Vector3 & position)
+	{
+		if (!m_worldInstance) return false;
+
+		auto *map = m_worldInstance->getMapData();
+		if (!map) return false;
+
+		return map->isInLineOfSight(m_position, position);
+	}
+
 	void GameUnit::addAttackingUnit(GameUnit &attacker)
 	{
 		// Add attacking unit to the list of attackers

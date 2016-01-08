@@ -35,7 +35,7 @@ cmake_minimum_required(VERSION 2.8)
 	add_executable(world ${srcFiles} ${sffFiles})
 	
 	# Link required shared libs
-	target_link_libraries(world common log game_protocol wowpp_protocol sql_wrapper mysql_wrapper virtual_directory templates game detour detour_crowd detour_tile_cache proto_data)
+	target_link_libraries(world common log game_protocol wowpp_protocol sql_wrapper mysql_wrapper virtual_directory templates game detour detour_crowd detour_tile_cache proto_data math)
 	
 	# Link dependency libraries
 	target_link_libraries(world ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY} ${PROTOBUF_LIBRARIES})

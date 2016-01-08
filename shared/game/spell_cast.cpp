@@ -33,6 +33,18 @@ namespace wowpp
 			}
 		}
 
+		auto *instance = m_executer.getWorldInstance();
+		if (!instance)
+		{
+			return std::make_pair(game::spell_cast_result::FailedError, nullptr);
+		}
+
+		auto *map = instance->getMapData();
+		if (!map)
+		{
+			return std::make_pair(game::spell_cast_result::FailedError, nullptr);
+		}
+
 		if (spell.mechanic() != 0)
 		{
 			if (unitTarget)
@@ -94,8 +106,6 @@ namespace wowpp
 			}
 		}
 
-		// TODO: Check spell conditions
-
 		// Check facing (Need to have the target in front of us)
 		if (spell.facing() & 0x01)
 		{
@@ -120,10 +130,31 @@ namespace wowpp
 			}
 		}
 
+
+		// Check for line of sight
+		{
+			float tmp = 0.0f;
+			math::Vector3 posA;
+			m_executer.getLocation(posA.x, posA.y, posA.z, tmp);
+			math::Vector3 posB;
+			if (unitTarget)
+			{
+				unitTarget->getLocation(posB.x, posB.y, posB.z, tmp);
+			}
+			else
+			{
+				target.getDestLocation(posB.x, posB.y, posB.z);
+			}
+
+			if (!map->isInLineOfSight(posA, posB))
+			{
+				return std::make_pair(game::spell_cast_result::FailedLineOfSight, nullptr);
+			}
+		}
+
 		// Check if we have enough resources for that spell
 		if (isProc)
 		{
-			ILOG("PROC!!!");
 			std::shared_ptr<SingleCastState> newState(
 				new SingleCastState(*this, spell, std::move(target), basePoints, castTime, true)
 				);

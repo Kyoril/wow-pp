@@ -102,15 +102,18 @@ namespace wowpp
 
 		if (worldInstance && !(m_spell.attributes(0) & game::spell_attributes::Passive) && !m_isProc)
 		{
-			sendPacketFromCaster(executer,
-				std::bind(game::server_write::spellStart, std::placeholders::_1,
-				casterId,
-				casterId,
-				std::cref(m_spell),
-				std::cref(m_target),
-				game::spell_cast_flags::Unknown1,
-				castTime,
-				0));
+			sendPacketFromCaster(
+				executer,
+				std::bind(game::server_write::spellStart, 
+					std::placeholders::_1,					// Packet
+					casterId,								// Caster
+					casterId,								// Target
+					std::cref(m_spell),						// Spell cref
+					std::cref(m_target),					// Target map cref
+					game::spell_cast_flags::Unknown1,		// Cast flags
+					static_cast<Int32>(castTime),			// Cast time in ms
+					0)										// Cast count (unknown)
+				);
 		}
 
 		float o = 0.0f;
