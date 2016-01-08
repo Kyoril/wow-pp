@@ -375,7 +375,8 @@ namespace wowpp
 	bool MySQLDatabase::setTutorialData(UInt32 id, const std::array<UInt32, 8> data)
 	{
 		if (!m_connection.execute((boost::format(
-			"UPDATE account_tutorials SET tutorial_0 = %2%, tutorial_1 = %3%, tutorial_2 = %4%, tutorial_3 = %5%, tutorial_4 = %6%, tutorial_5 = %7%, tutorial_6 = %8%, tutorial_7 = %9% WHERE account = %1%")
+			"INSERT INTO account_tutorials SET account = %1%, tutorial_0 = %2%, tutorial_1 = %3%, tutorial_2 = %4%, tutorial_3 = %5%, tutorial_4 = %6%, tutorial_5 = %7%, tutorial_6 = %8%, tutorial_7 = %9% ON DUPLICATE KEY UPDATE "
+				"tutorial_0 = %2%, tutorial_1 = %3%, tutorial_2 = %4%, tutorial_3 = %5%, tutorial_4 = %6%, tutorial_5 = %7%, tutorial_6 = %8%, tutorial_7 = %9%")
 			% id
 			% data[0]
 			% data[1]
