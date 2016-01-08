@@ -23,6 +23,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstddef>
 
 namespace wowpp
 {
@@ -87,13 +88,13 @@ namespace wowpp
 				return len;
 			}
 
-			inline float operator [] (const size_t i) const
+			inline float operator [] (const std::size_t i) const
 			{
 				assert(i < 3);
 				return *(&x + i);
 			}
 
-			inline float& operator [] (const size_t i)
+			inline float& operator [] (const std::size_t i)
 			{
 				assert(i < 3);
 				return *(&x + i);
