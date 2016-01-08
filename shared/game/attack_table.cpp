@@ -26,6 +26,129 @@ namespace wowpp
 	AttackTable::AttackTable() {
 	}
 	
+	void AttackTable::checkMeleeAutoAttack(GameUnit* attacker, GameUnit *target, UInt8 school, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
+	{
+		UInt32 targetA = game::targets::UnitTargetEnemy;
+		UInt32 targetB = game::targets::None;
+		if (!checkIndex(targetA, targetB))
+		{
+			SpellTargetMap targetMap;
+			refreshTargets(*attacker, targetMap, targetA, targetB, 0.0f, 0.0f);
+			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
+
+			for (GameUnit* targetUnit : m_targets[targetA][targetB])
+			{
+				m_hitInfos[targetA][targetB].push_back(game::hit_info::NormalSwing);
+				m_victimStates[targetA][targetB].push_back(game::victim_state::Normal);
+				float attackTableRoll = hitTableDistribution(randomGenerator);
+				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school)) < 0.0f)
+				{
+					m_hitInfos[targetA][targetB].back() = game::hit_info::Miss;
+				}
+				else if (targetUnit->isImmune(school))
+				{
+					m_victimStates[targetA][targetB].back() = game::victim_state::IsImmune;
+				}
+				else if ((attackTableRoll -= targetUnit->getDodgeChance(*attacker)) < 0.0f)
+				{
+					m_victimStates[targetA][targetB].back() = game::victim_state::Dodge;
+				}
+				else if ((attackTableRoll -= targetUnit->getParryChance(*attacker)) < 0.0f)
+				{
+					m_victimStates[targetA][targetB].back() = game::victim_state::Parry;
+				}
+				else if ((attackTableRoll -= targetUnit->getGlancingChance(*attacker)) < 0.0f)
+				{
+					m_hitInfos[targetA][targetB].back() = game::hit_info::CriticalHit;
+				}
+				else if ((attackTableRoll -= targetUnit->getBlockChance()) < 0.0f)
+				{
+					m_victimStates[targetA][targetB].back() = game::victim_state::Blocks;
+				}
+				else if ((attackTableRoll -= targetUnit->getCritChance(*attacker, school)) < 0.0f)
+				{
+					m_hitInfos[targetA][targetB].back() = game::hit_info::CriticalHit;
+				}
+				else if ((attackTableRoll -= targetUnit->getCrushChance(*attacker)) < 0.0f)
+				{
+					m_hitInfos[targetA][targetB].back() = game::hit_info::Crushing;
+				}
+
+//				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(effect, *attacker));
+				m_resists[targetA][targetB].push_back(0.0f);
+			}
+		}
+		
+		targets = m_targets[targetA][targetB];
+		victimStates = m_victimStates[targetA][targetB];
+		hitInfos = m_hitInfos[targetA][targetB];
+		resists = m_resists[targetA][targetB];
+	}
+	
+	void AttackTable::checkSpecialMeleeAttack(GameUnit* attacker, SpellTargetMap &targetMap, UInt8 school, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
+	{
+		UInt32 targetA = game::targets::UnitTargetEnemy;
+		UInt32 targetB = game::targets::None;
+		if (!checkIndex(targetA, targetB))
+		{
+			SpellTargetMap targetMap;
+			refreshTargets(*attacker, targetMap, targetA, targetB, 0.0f, 0.0f);
+			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
+
+			for (GameUnit* targetUnit : m_targets[targetA][targetB])
+			{
+				m_hitInfos[targetA][targetB].push_back(game::hit_info::NormalSwing);
+				m_victimStates[targetA][targetB].push_back(game::victim_state::Normal);
+				float attackTableRoll = hitTableDistribution(randomGenerator);
+				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school)) < 0.0f)
+				{
+					m_hitInfos[targetA][targetB].back() = game::hit_info::Miss;
+				}
+				else if (targetUnit->isImmune(school))
+				{
+					m_victimStates[targetA][targetB].back() = game::victim_state::IsImmune;
+				}
+				else if ((attackTableRoll -= targetUnit->getDodgeChance(*attacker)) < 0.0f)
+				{
+					m_victimStates[targetA][targetB].back() = game::victim_state::Dodge;
+				}
+				else if ((attackTableRoll -= targetUnit->getParryChance(*attacker)) < 0.0f)
+				{
+					m_victimStates[targetA][targetB].back() = game::victim_state::Parry;
+				}
+				else if ((attackTableRoll -= targetUnit->getGlancingChance(*attacker)) < 0.0f)
+				{
+					m_hitInfos[targetA][targetB].back() = game::hit_info::CriticalHit;
+				}
+				else if ((attackTableRoll -= targetUnit->getBlockChance()) < 0.0f)
+				{
+					m_victimStates[targetA][targetB].back() = game::victim_state::Blocks;
+				}
+				else if ((attackTableRoll -= targetUnit->getCritChance(*attacker, school)) < 0.0f)
+				{
+					m_hitInfos[targetA][targetB].back() = game::hit_info::CriticalHit;
+				}
+				else if ((attackTableRoll -= targetUnit->getCrushChance(*attacker)) < 0.0f)
+				{
+					m_hitInfos[targetA][targetB].back() = game::hit_info::Crushing;
+				}
+
+//				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(effect, *attacker));
+				m_resists[targetA][targetB].push_back(0.0f);
+			}
+		}
+		
+		targets = m_targets[targetA][targetB];
+		victimStates = m_victimStates[targetA][targetB];
+		hitInfos = m_hitInfos[targetA][targetB];
+		resists = m_resists[targetA][targetB];
+	}
+	
+	void AttackTable::checkRangedAttack(GameUnit* attacker, SpellTargetMap &targetMap, UInt8 school, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
+	{
+		
+	}
+	
 	void AttackTable::checkPositiveSpell(GameUnit* attacker, SpellTargetMap &targetMap, const proto::SpellEntry &spell, const proto::SpellEffect &effect, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
 	{
 		UInt32 targetA = effect.targeta();
@@ -40,12 +163,12 @@ namespace wowpp
 			{
 				m_hitInfos[targetA][targetB].push_back(game::hit_info::NoAction);
 				m_victimStates[targetA][targetB].push_back(game::victim_state::Unknown1);
-				float hitTableRoll = hitTableDistribution(randomGenerator);
+				float attackTableRoll = hitTableDistribution(randomGenerator);
 				if (targetUnit->isImmune(school))
 				{
 					m_victimStates[targetA][targetB].back() = game::victim_state::IsImmune;
 				}
-				else if ((hitTableRoll -= targetUnit->getCritChance(*attacker, school)) < 0.0f)
+				else if ((attackTableRoll -= targetUnit->getCritChance(*attacker, school)) < 0.0f)
 				{
 					m_hitInfos[targetA][targetB].back() = game::hit_info::CriticalHit;
 				}
@@ -100,8 +223,8 @@ namespace wowpp
 			{
 				m_hitInfos[targetA][targetB].push_back(game::hit_info::NoAction);
 				m_victimStates[targetA][targetB].push_back(game::victim_state::Normal);
-				float hitTableRoll = hitTableDistribution(randomGenerator);
-				if ((hitTableRoll -= targetUnit->getMissChance(*attacker, school)) < 0.0f)
+				float attackTableRoll = hitTableDistribution(randomGenerator);
+				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school)) < 0.0f)
 				{
 					m_hitInfos[targetA][targetB].back() = game::hit_info::Miss;
 				}
@@ -109,7 +232,7 @@ namespace wowpp
 				{
 					m_victimStates[targetA][targetB].back() = game::victim_state::IsImmune;
 				}
-				else if ((hitTableRoll -= targetUnit->getCritChance(*attacker, school)) < 0.0f)
+				else if ((attackTableRoll -= targetUnit->getCritChance(*attacker, school)) < 0.0f)
 				{
 					m_hitInfos[targetA][targetB].back() = game::hit_info::CriticalHit;
 				}
@@ -138,8 +261,8 @@ namespace wowpp
 			{
 				m_hitInfos[targetA][targetB].push_back(game::hit_info::NoAction);
 				m_victimStates[targetA][targetB].push_back(game::victim_state::Normal);
-				float hitTableRoll = hitTableDistribution(randomGenerator);
-				if ((hitTableRoll -= targetUnit->getMissChance(*attacker, school)) < 0.0f)
+				float attackTableRoll = hitTableDistribution(randomGenerator);
+				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school)) < 0.0f)
 				{
 					m_hitInfos[targetA][targetB].back() = game::hit_info::Miss;
 				}
@@ -181,9 +304,9 @@ namespace wowpp
 			break;
 		case game::targets::UnitPartyCaster:
 			{
-				attacker.getLocation(x, y, tmp, tmp);
+				math::Vector3 location = attacker.getLocation();
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
-				finder.findUnits(Circle(x, y, radius), [this, &attacker, &targets, maxtargets](GameUnit &unit) -> bool
+				finder.findUnits(Circle(location.x, location.y, radius), [this, &attacker, &targets, maxtargets](GameUnit &unit) -> bool
 				{
 					if (unit.getTypeId() != object_type::Character)
 						return true;
@@ -234,9 +357,9 @@ namespace wowpp
 			{
 				if (unitTarget)
 				{
-					unitTarget->getLocation(x, y, tmp, tmp);
+					math::Vector3 location = attacker.getLocation();
 					auto &finder = attacker.getWorldInstance()->getUnitFinder();
-					finder.findUnits(Circle(x, y, radius), [this, unitTarget, &targets, maxtargets](GameUnit &unit) -> bool
+					finder.findUnits(Circle(location.x, location.y, radius), [this, unitTarget, &targets, maxtargets](GameUnit &unit) -> bool
 					{
 						if (unit.getTypeId() != object_type::Character)
 							return true;
@@ -269,9 +392,9 @@ namespace wowpp
 		{
 		case game::targets::UnitAreaEnemySrc:
 			{
-				attacker.getLocation(x, y, tmp, tmp);
+				math::Vector3 location = attacker.getLocation();
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
-				finder.findUnits(Circle(x, y, radius), [this, &attacker, &targets, maxtargets](GameUnit &unit) -> bool
+				finder.findUnits(Circle(location.x, location.y, radius), [this, &attacker, &targets, maxtargets](GameUnit &unit) -> bool
 				{
 					const auto &factionA = unit.getFactionTemplate();
 					const auto &factionB = attacker.getFactionTemplate();
