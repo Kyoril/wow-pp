@@ -62,9 +62,7 @@ namespace wowpp
 		, m_instanceId(std::numeric_limits<UInt32>::max())
 		, m_worldNode(nullptr)
 		, m_transferMap(0)
-		, m_transferX(0.0f)
-		, m_transferY(0.0f)
-		, m_transferZ(0.0f)
+		, m_transfer(math::Vector3(0.0f, 0.0f, 0.0f))
 		, m_transferO(0.0f)
 	{
 		// Randomize seed
@@ -597,9 +595,9 @@ namespace wowpp
 		// Update character location
 		character.mapId = race->startmap();
 		character.zoneId = race->startzone();
-		character.x = race->startposx();
-		character.y = race->startposy();
-		character.z = race->startposz();
+		character.location.x = race->startposx();
+		character.location.y = race->startposy();
+		character.location.z = race->startposz();
 		character.o = race->startrotation();
 
 		std::vector<const proto::SpellEntry*> initialSpells;
@@ -784,7 +782,7 @@ namespace wowpp
 		worldNode->enterWorldInstance(charEntry->id, std::numeric_limits<UInt32>::max(), *m_gameCharacter, m_itemData);
 	}
 
-	void Player::worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, float x, float y, float z, float o)
+	void Player::worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, math::Vector3 location, float o)
 	{
 		assert(m_gameCharacter);
 
@@ -806,7 +804,7 @@ namespace wowpp
 
 		// Update character on the realm side with data received from the world server
 		//m_gameCharacter->setGuid(createGUID(worldObjectGuid, 0, high_guid::Player));
-		m_gameCharacter->relocate(x, y, z, o);
+		m_gameCharacter->relocate(location, o);
 		m_gameCharacter->setMapId(mapId);
 
 		// Clear mask
@@ -820,7 +818,7 @@ namespace wowpp
 			// Send world verification packet to the client to proof world coordinates from
 			// the character list
 			sendPacket(
-				std::bind(game::server_write::loginVerifyWorld, std::placeholders::_1, mapId, x, y, z, o));
+				std::bind(game::server_write::loginVerifyWorld, std::placeholders::_1, mapId, location, o));
 
 			// Send account data times (TODO: Find out what this does)
 			std::array<UInt32, 32> times;
@@ -842,7 +840,7 @@ namespace wowpp
 
 			// Notify about bind point for hearthstone (also used in case of corrupted location data)
 			sendPacket(
-				std::bind(game::server_write::bindPointUpdate, std::placeholders::_1, mapId, zoneId, x, y, z));
+				std::bind(game::server_write::bindPointUpdate, std::placeholders::_1, mapId, zoneId, location));
 
 			// Send tutorial flags (which tutorials have been viewed etc.)
 			sendPacket(
@@ -1992,18 +1990,16 @@ namespace wowpp
 			std::bind(game::server_write::partyMemberStatsFull, std::placeholders::_1, std::cref(*m_gameCharacter)));
 	}
 
-	void Player::initializeTransfer(UInt32 map, float x, float y, float z, float o)
+	void Player::initializeTransfer(UInt32 map, math::Vector3 location, float o)
 	{
 		m_transferMap = map;
-		m_transferX = x;
-		m_transferY = y;
-		m_transferZ = z;
+		m_transfer = location;
 		m_transferO = o;
 	}
 
 	void Player::commitTransfer()
 	{
-		if (m_transferMap == 0 && m_transferX == 0.0f && m_transferY == 0.0f && m_transferZ == 0.0f && m_transferO == 0.0f)
+		if (m_transferMap == 0 && m_transfer.x == 0.0f && m_transfer.y == 0.0f && m_transfer.z == 0.0f && m_transferO == 0.0f)
 		{
 			WLOG("No transfer pending - commit will be ignored.");
 			return;
@@ -2011,12 +2007,12 @@ namespace wowpp
 
 		// Load new world
 		sendPacket(
-			std::bind(game::server_write::newWorld, std::placeholders::_1, m_transferMap, m_transferX, m_transferY, m_transferZ, m_transferO));
+			std::bind(game::server_write::newWorld, std::placeholders::_1, m_transferMap, m_transfer, m_transferO));
 	}
 
 	void Player::handleMoveWorldPortAck(game::IncomingPacket &packet)
 	{
-		if (m_transferMap == 0 && m_transferX == 0.0f && m_transferY == 0.0f && m_transferZ == 0.0f && m_transferO == 0.0f)
+		if (m_transferMap == 0 && m_transfer.x == 0.0f && m_transfer.y == 0.0f && m_transfer.z == 0.0f && m_transferO == 0.0f)
 		{
 			WLOG("No transfer pending - commit will be ignored.");
 			return;
@@ -2024,7 +2020,7 @@ namespace wowpp
 
 		// Update character location
 		m_gameCharacter->setMapId(m_transferMap);
-		m_gameCharacter->relocate(m_transferX, m_transferY, m_transferZ, m_transferO);
+		m_gameCharacter->relocate(m_transfer, m_transferO);
 		
 		// We found the character - now we need to look for a world node
 		// which is hosting a fitting world instance or is able to create
@@ -2062,9 +2058,7 @@ namespace wowpp
 
 		// Reset transfer data
 		m_transferMap = 0;
-		m_transferX = 0.0f;
-		m_transferY = 0.0f;
-		m_transferZ = 0.0f;
+		m_transfer = math::Vector3(0.0f, 0.0f, 0.0f);
 		m_transferO = 0.0f;
 	}
 

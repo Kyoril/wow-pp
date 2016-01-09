@@ -83,7 +83,7 @@ namespace wowpp
 		m_onTargetAuraUpdate = m_character->targetAuraUpdated.connect(
 			std::bind(&Player::onTargetAuraUpdated, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 		m_onTeleport = m_character->teleport.connect(
-			std::bind(&Player::onTeleport, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+			std::bind(&Player::onTeleport, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
 		m_groupUpdate.ended.connect([this]()
 		{
@@ -180,7 +180,7 @@ namespace wowpp
 
 		// Get a list of potential watchers
 		auto &grid = m_instance.getGrid();
-		grid.getTilePosition(location.x, location.y, location.z, tile[0], tile[1]);
+		grid.getTilePosition(location, tile[0], tile[1]);
 		
 		return tile;
 	}
@@ -270,7 +270,7 @@ namespace wowpp
 
 			// Get tile index
 			TileIndex2D tile;
-			grid.getTilePosition(location.x, location.y, location.z, tile[0], tile[1]);
+			grid.getTilePosition(location, tile[0], tile[1]);
 
 			// Get all potential characters
 			std::vector<ITileSubscriber*> subscribers;
@@ -1425,20 +1425,20 @@ namespace wowpp
 			std::bind(game::server_write::setExtraAuraInfoNeedUpdate, std::placeholders::_1, target, slot, spellId, maxDuration, duration));
 	}
 
-	void Player::onTeleport(UInt16 map, float x, float y, float z, float o)
+	void Player::onTeleport(UInt16 map, math::Vector3 location, float o)
 	{
 		// If it's the same map, just send success notification
 		if (m_character->getMapId() == map)
 		{
 			// Apply character position
-			m_character->relocate(x, y, z, o);
+			m_character->relocate(location, o);
 
 			// Reset movement info
 			MovementInfo info = m_character->getMovementInfo();
 			info.moveFlags = game::movement_flags::None;
-			info.x = x;
-			info.y = y;
-			info.z = z;
+			info.x = location.x;
+			info.y = location.y;
+			info.z = location.z;
 			info.o = o;
 			sendProxyPacket(
 				std::bind(game::server_write::moveTeleportAck, std::placeholders::_1, m_character->getGuid(), std::cref(info)));
@@ -1452,7 +1452,7 @@ namespace wowpp
 			// tell the realm where our character should be sent to
 			sendProxyPacket(
 				std::bind(game::server_write::transferPending, std::placeholders::_1, map, 0, 0));
-			m_realmConnector.sendTeleportRequest(m_characterId, map, x, y, z, o);
+			m_realmConnector.sendTeleportRequest(m_characterId, map, location, o);
 
 			// Remove the character from the world
 			m_instance.removeGameObject(*m_character);
@@ -1547,7 +1547,7 @@ namespace wowpp
 		// Transform into grid location
 		TileIndex2D gridIndex;
 		auto &grid = getWorldInstance().getGrid();
-		if (!grid.getTilePosition(location.x, location.y, location.z, gridIndex[0], gridIndex[1]))
+		if (!grid.getTilePosition(location, gridIndex[0], gridIndex[1]))
 		{
 			// TODO: Error?
 			ELOG("Could not resolve grid location!");
@@ -1654,7 +1654,7 @@ namespace wowpp
 		}
 
 		// Update position
-		m_character->relocate(info.x, info.y, info.z, info.o);
+		m_character->relocate(math::Vector3(info.x, info.y, info.z), info.o);
 	}
 
 	void Player::handleTimeSyncResponse(game::Protocol::IncomingPacket &packet)

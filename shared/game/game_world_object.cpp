@@ -77,16 +77,16 @@ namespace wowpp
 		// TODO
 	}
 
-	void WorldObject::relocate(float x, float y, float z, float o)
+	void WorldObject::relocate(math::Vector3 position, float o)
 	{
-		setFloatValue(world_object_fields::PosX, x);
-		setFloatValue(world_object_fields::PosY, y);
-		setFloatValue(world_object_fields::PosZ, z);
+		setFloatValue(world_object_fields::PosX, position.x);
+		setFloatValue(world_object_fields::PosY, position.y);
+		setFloatValue(world_object_fields::PosZ, position.z);
 		setFloatValue(world_object_fields::Facing, o);
 		setFloatValue(world_object_fields::Rotation + 2, sin(o / 2.0f));
 		setFloatValue(world_object_fields::Rotation + 3, cos(o / 2.0f));
 
-		GameObject::relocate(x, y, z, o);
+		GameObject::relocate(position, o);
 	}
 
 

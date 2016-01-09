@@ -385,9 +385,7 @@ namespace wowpp
 			instance->getId(),
 			mapId,
 			zoneId,
-			location.x,
-			location.y,
-			location.z,
+			location,
 			o
 			));
 
@@ -397,7 +395,7 @@ namespace wowpp
 
 		// Spawn objects
 		TileIndex2D tileIndex;
-		instance->getGrid().getTilePosition(location.x, location.y, location.z, tileIndex[0], tileIndex[1]);
+		instance->getGrid().getTilePosition(location, tileIndex[0], tileIndex[1]);
 		forEachTileInSight(instance->getGrid(), tileIndex, [&character, this](VisibilityTile &tile)
 		{
 			for (auto it = tile.getGameObjects().begin(); it != tile.getGameObjects().end(); ++it)
@@ -844,10 +842,10 @@ namespace wowpp
 			std::bind(pp::world_realm::world_write::worldInstanceLeft, std::placeholders::_1, characterId, reason));
 	}
 
-	void RealmConnector::sendTeleportRequest(DatabaseId characterId, UInt32 map, float x, float y, float z, float o)
+	void RealmConnector::sendTeleportRequest(DatabaseId characterId, UInt32 map, math::Vector3 location, float o)
 	{
 		m_connection->sendSinglePacket(
-			std::bind(pp::world_realm::world_write::teleportRequest, std::placeholders::_1, characterId, map, x, y, z, o));
+			std::bind(pp::world_realm::world_write::teleportRequest, std::placeholders::_1, characterId, map, location, o));
 	}
 
 	void RealmConnector::handleCreatureQuery(Player &sender, game::Protocol::IncomingPacket &packet)
@@ -1210,7 +1208,7 @@ namespace wowpp
 		if (trigger->targetmap() != 0 || trigger->target_x() != 0.0f || trigger->target_y() != 0.0f || trigger->target_z() != 0.0f || trigger->target_o() != 0.0f)
 		{
 			// Teleport
-			character->teleport(trigger->targetmap(), trigger->target_x(), trigger->target_y(), trigger->target_z(), trigger->target_o());
+			character->teleport(trigger->targetmap(), math::Vector3(trigger->target_x(), trigger->target_y(), trigger->target_z()), trigger->target_o());
 		}
 		else
 		{
@@ -1404,7 +1402,7 @@ namespace wowpp
 		pp::world_realm::world_write::characterGroupUpdate(packet, character.getGuid(), nearbyMembers,
 			character.getUInt32Value(unit_fields::Health), character.getUInt32Value(unit_fields::MaxHealth),
 			character.getByteValue(unit_fields::Bytes0, 3), character.getUInt32Value(unit_fields::Power1 + powerType), character.getUInt32Value(unit_fields::MaxPower1 + powerType),
-			character.getUInt32Value(unit_fields::Level), character.getMapId(), character.getZone(), location.x, location.y, location.z, auras);
+			character.getUInt32Value(unit_fields::Level), character.getMapId(), character.getZone(), location, auras);
 		m_connection->flush();
 	}
 

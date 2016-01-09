@@ -198,7 +198,7 @@ namespace wowpp
 		/// Fired when the object should be destroyed. The object should be destroyed after this call.
 		std::function<void(GameObject&)> destroy;
 		/// Fired when the object moved, but before it's tile changed. Note that this will trigger a tile change.
-		boost::signals2::signal<void(GameObject &, float, float, float, float)> moved;
+		boost::signals2::signal<void(GameObject &, math::Vector3, float)> moved;
 		/// Fired when a tile change is pending for this object, after it has been moved. Note that at this time,
 		/// the object does not belong to any tile and it's position already points to the new tile.
 		/// First parameter is a reference of the old tile, second references the new tile.
@@ -258,7 +258,7 @@ namespace wowpp
 		bool getTileIndex(TileIndex2D &out_index) const;
 
 		/// Moves the object to the given position on it's map id.
-		virtual void relocate(float x, float y, float z, float o);
+		virtual void relocate(math::Vector3 position, float o);
 		void setOrientation(float o);
 		/// Updates the map id of this object.
 		void setMapId(UInt32 mapId);

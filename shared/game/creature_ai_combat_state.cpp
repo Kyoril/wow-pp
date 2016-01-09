@@ -58,19 +58,17 @@ namespace wowpp
 				angle = getControlled().getAngle(*victim);
 			}
 
-			float targetX = m_targetX;
-			float targetY = m_targetY;
-			float targetZ = m_targetZ;
+			math::Vector3 target(m_target);
 
 			// Update creatures position
 			auto strongUnit = getControlled().shared_from_this();
 			std::weak_ptr<GameObject> weakUnit(strongUnit);
-			getControlled().getWorldInstance()->getUniverse().post([weakUnit, targetX, targetY, targetZ, angle]()
+			getControlled().getWorldInstance()->getUniverse().post([weakUnit, target, angle]()
 			{
 				auto strongUnit = weakUnit.lock();
 				if (strongUnit)
 				{
-					strongUnit->relocate(targetX, targetY, targetZ, angle);
+					strongUnit->relocate(target, angle);
 				}
 			});
 
@@ -90,7 +88,7 @@ namespace wowpp
 
 			// Calculate new position
 			float o = getControlled().getOrientation();
-			math::Vector3 oldPosition(getControlled().getLocation()), oldTarget(m_targetX, m_targetY, m_targetZ);
+			math::Vector3 oldPosition(getControlled().getLocation()), oldTarget(m_target);
 			if (m_moveStart != 0 && m_moveEnd > m_moveStart)
 			{
 				// Interpolate positions
@@ -114,7 +112,7 @@ namespace wowpp
 				auto strongUnit = weakUnit.lock();
 				if (strongUnit)
 				{
-					strongUnit->relocate(oldPosition.x, oldPosition.y, oldPosition.z, o);
+					strongUnit->relocate(oldPosition, o);
 				}
 			});
 
@@ -177,7 +175,7 @@ namespace wowpp
 
 		// Calculate new position
 		float o = getControlled().getOrientation();
-		math::Vector3 oldPosition(getControlled().getLocation()), oldTarget(m_targetX, m_targetY, m_targetZ);
+		math::Vector3 oldPosition(getControlled().getLocation()), oldTarget(m_target);
 		if (m_moveStart != 0 && m_moveEnd > m_moveStart)
 		{
 			// Interpolate positions
@@ -193,7 +191,7 @@ namespace wowpp
 			auto strongUnit = weakUnit.lock();
 			if (strongUnit)
 			{
-				strongUnit->relocate(oldPosition.x, oldPosition.y, oldPosition.z, o);
+				strongUnit->relocate(oldPosition, o);
 			}
 		});
 
@@ -331,7 +329,7 @@ namespace wowpp
 			chaseTarget(*newVictim); 
 
 			// Watch for victim move signal
-			m_onVictimMoved = newVictim->moved.connect([this](GameObject &moved, float oldX, float oldY, float oldZ, float oldO)
+			m_onVictimMoved = newVictim->moved.connect([this](GameObject &moved, math::Vector3 oldPosition, float oldO)
 			{
 				chaseTarget(static_cast<GameUnit&>(moved));
 			});
@@ -347,7 +345,7 @@ namespace wowpp
 	void CreatureAICombatState::chaseTarget(GameUnit &target)
 	{
 		float o = getControlled().getOrientation(), o2 = target.getOrientation();
-		math::Vector3 oldPosition(getControlled().getLocation()), oldTarget(m_targetX, m_targetY, m_targetZ), newTarget(target.getLocation());
+		math::Vector3 oldPosition(getControlled().getLocation()), oldTarget(m_target), newTarget(target.getLocation());
 		if (m_moveStart != 0 && m_moveEnd > m_moveStart)
 		{
 			// Interpolate positions
@@ -380,12 +378,12 @@ namespace wowpp
 				auto strongUnit = weakUnit.lock();
 				if (strongUnit)
 				{
-					strongUnit->relocate(oldPosition.x, oldPosition.y, oldPosition.z, o);
+					strongUnit->relocate(oldPosition, o);
 				}
 			});
 
-			// Move (TODO: Better way to do this)
-			m_targetX = newTarget.x; m_targetY = newTarget.y; m_targetZ = newTarget.z;
+			// Move
+			m_target = newTarget;
 
 			// Send move packet
 			TileIndex2D tile;

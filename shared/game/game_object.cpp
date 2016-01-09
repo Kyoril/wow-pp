@@ -251,16 +251,15 @@ namespace wowpp
 		}
 	}
 
-	void GameObject::relocate(float x, float y, float z, float o)
+	void GameObject::relocate(math::Vector3 position, float o)
 	{
-		float oldX = m_position.x, oldY = m_position.y, oldZ = m_position.z, oldO = m_o;
+		float oldO = m_o;
+		math::Vector3 oldPosition(m_position);
 
-		m_position.x = x;
-		m_position.y = y;
-		m_position.z = z;
+		m_position = position;
 		m_o = o;
 
-		moved(*this, oldX, oldY, oldZ, oldO);
+		moved(*this, oldPosition, oldO);
 	}
 
 	void GameObject::setOrientation(float o)
@@ -269,7 +268,7 @@ namespace wowpp
 
 		m_o = o;
 
-		moved(*this, m_position.x, m_position.y, m_position.z, oldO);
+		moved(*this, m_position, oldO);
 	}
 
 	void GameObject::setMapId(UInt32 mapId)
@@ -497,7 +496,7 @@ namespace wowpp
 		}
 
 		// Try to resolve the objects position
-		return m_worldInstance->getGrid().getTilePosition(m_position.x, m_position.y, m_position.z, out_index[0], out_index[1]);
+		return m_worldInstance->getGrid().getTilePosition(m_position, out_index[0], out_index[1]);
 	}
 
 	bool GameObject::isInArc(float arcRadian, float x, float y) const

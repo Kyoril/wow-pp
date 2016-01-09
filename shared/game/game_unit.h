@@ -343,7 +343,7 @@ namespace wowpp
 		boost::signals2::signal<void(UInt64, UInt8, UInt32, Int32, Int32)> targetAuraUpdated;
 		/// Fired when the unit should be teleported. This event is only fired when the unit changes world.
 		/// Parameters: Target Map, X, Y, Z, O
-		boost::signals2::signal<void(UInt16, float, float, float, float)> teleport;
+		boost::signals2::signal<void(UInt16, math::Vector3, float)> teleport;
 		/// Fired when the units faction changed. This might cause the unit to become friendly to attackers.
 		boost::signals2::signal<void(GameUnit &)> factionChanged;
 		/// 

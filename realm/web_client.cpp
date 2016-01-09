@@ -420,9 +420,9 @@ namespace wowpp
 					characterData.level = charLvl;
 					characterData.mapId = (mapId == 0xffffffff ? race->startmap() : mapId);
 					characterData.zoneId = race->startzone();
-					characterData.x = (x == 0.0f ? race->startposx() : x);
-					characterData.y = (y == 0.0f ? race->startposy() : y);
-					characterData.z = (z == 0.0f ? race->startposz() : z);
+					characterData.location.x = (x == 0.0f ? race->startposx() : x);
+					characterData.location.y = (y == 0.0f ? race->startposy() : y);
+					characterData.location.z = (z == 0.0f ? race->startposz() : z);
 					characterData.o = (o == 0.0f ? race->startrotation() : o);
 
 					// Create the character

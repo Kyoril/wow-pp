@@ -224,7 +224,7 @@ namespace wowpp
 		/// Executed when an aura of our character was updated.
 		void onTargetAuraUpdated(UInt64 target, UInt8 slot, UInt32 spellId, Int32 duration, Int32 maxDuration);
 		/// Executed when the character should be teleported.
-		void onTeleport(UInt16 map, float x, float y, float z, float o);
+		void onTeleport(UInt16 map, math::Vector3 location, float o);
 
 	private:
 

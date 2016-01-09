@@ -141,7 +141,7 @@ namespace wowpp
 		/// Executed when this aura ticks.
 		void onTick();
 		/// Executed when the target of this aura moved.
-		void onTargetMoved(GameObject &, float oldX, float oldY, float oldZ, float oldO);
+		void onTargetMoved(GameObject &, math::Vector3 oldPosition, float oldO);
 		/// 
 		void setRemoved(GameUnit *remover);
 

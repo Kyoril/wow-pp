@@ -40,9 +40,9 @@ namespace wowpp
 		m_moveUpdate.ended.connect([this]()
 		{
 			auto &ai = getAI();
-			const auto &pos = ai.getHome().position;
+			const math::Vector3 &position = ai.getHome().position;
 
-			getControlled().relocate(pos[0], pos[1], pos[2], ai.getHome().orientation);
+			getControlled().relocate(position, ai.getHome().orientation);
 			ai.idle();
 		});
 	}

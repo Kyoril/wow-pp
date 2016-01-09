@@ -50,7 +50,7 @@ namespace wowpp
 				}
 
 
-				void worldInstanceEntered(pp::OutgoingPacket &out_packet, DatabaseId requesterDbId, UInt64 worldObjectGuid, UInt32 instanceId, UInt32 mapId, UInt32 zoneId, float x, float y, float z, float o)
+				void worldInstanceEntered(pp::OutgoingPacket &out_packet, DatabaseId requesterDbId, UInt64 worldObjectGuid, UInt32 instanceId, UInt32 mapId, UInt32 zoneId, math::Vector3 location, float o)
 				{
 					out_packet.start(world_packet::WorldInstanceEntered);
 					out_packet
@@ -59,9 +59,9 @@ namespace wowpp
 						<< io::write<NetUInt32>(instanceId)
 						<< io::write<NetUInt32>(mapId)
 						<< io::write<NetUInt32>(zoneId)
-						<< io::write<float>(x)
-						<< io::write<float>(y)
-						<< io::write<float>(z)
+						<< io::write<float>(location.x)
+						<< io::write<float>(location.y)
+						<< io::write<float>(location.z)
 						<< io::write<float>(o);
 					out_packet.finish();
 				}
@@ -131,20 +131,20 @@ namespace wowpp
 					out_packet.finish();
 				}
 
-				void teleportRequest(pp::OutgoingPacket &out_packet, UInt64 characterId, UInt32 map, float x, float y, float z, float o)
+				void teleportRequest(pp::OutgoingPacket &out_packet, UInt64 characterId, UInt32 map, math::Vector3 location, float o)
 				{
 					out_packet.start(world_packet::TeleportRequest);
 					out_packet
 						<< io::write<NetUInt64>(characterId)
 						<< io::write<NetUInt32>(map)
-						<< io::write<float>(x)
-						<< io::write<float>(y)
-						<< io::write<float>(z)
+						<< io::write<float>(location.x)
+						<< io::write<float>(location.y)
+						<< io::write<float>(location.z)
 						<< io::write<float>(o);
 					out_packet.finish();
 				}
 
-				void characterGroupUpdate(pp::OutgoingPacket &out_packet, UInt64 characterId, const std::vector<UInt64> &nearbyMembers, UInt32 health, UInt32 maxHealth, UInt8 powerType, UInt32 power, UInt32 maxPower, UInt8 level, UInt32 map, UInt32 zone, float x, float y, float z, const std::vector<UInt32> &auras)
+				void characterGroupUpdate(pp::OutgoingPacket &out_packet, UInt64 characterId, const std::vector<UInt64> &nearbyMembers, UInt32 health, UInt32 maxHealth, UInt8 powerType, UInt32 power, UInt32 maxPower, UInt8 level, UInt32 map, UInt32 zone, math::Vector3 location, const std::vector<UInt32> &auras)
 				{
 					out_packet.start(world_packet::CharacterGroupUpdate);
 					out_packet
@@ -158,9 +158,9 @@ namespace wowpp
 						<< io::write<NetUInt8>(level)
 						<< io::write<NetUInt32>(map)
 						<< io::write<NetUInt32>(zone)
-						<< io::write<float>(x)
-						<< io::write<float>(y)
-						<< io::write<float>(z)
+						<< io::write<float>(location.x)
+						<< io::write<float>(location.y)
+						<< io::write<float>(location.z)
 						<< io::write_dynamic_range<UInt8>(auras);
 					out_packet.finish();
 				}
@@ -302,7 +302,7 @@ namespace wowpp
 					return packet;
 				}
 				
-				bool worldInstanceEntered(io::Reader &packet, DatabaseId &out_requesterDbId, UInt64 &out_worldObjectGuid, UInt32 &out_instanceId, UInt32 &out_mapId, UInt32 &out_zoneId, float &out_x, float &out_y, float &out_z, float &out_o)
+				bool worldInstanceEntered(io::Reader &packet, DatabaseId &out_requesterDbId, UInt64 &out_worldObjectGuid, UInt32 &out_instanceId, UInt32 &out_mapId, UInt32 &out_zoneId, math::Vector3 &out, float &out_o)
 				{
 					return packet
 						>> io::read<NetDatabaseId>(out_requesterDbId)
@@ -310,9 +310,9 @@ namespace wowpp
 						>> io::read<NetUInt32>(out_instanceId)
 						>> io::read<NetUInt32>(out_mapId)
 						>> io::read<NetUInt32>(out_zoneId)
-						>> io::read<float>(out_x)
-						>> io::read<float>(out_y)
-						>> io::read<float>(out_z)
+						>> io::read<float>(out.x)
+						>> io::read<float>(out.y)
+						>> io::read<float>(out.z)
 						>> io::read<float>(out_o);
 				}
 
@@ -353,19 +353,19 @@ namespace wowpp
 						;
 				}
 
-				bool teleportRequest(io::Reader &packet, UInt64 &out_characterId, UInt32 &out_map, float &out_x, float &out_y, float &out_z, float &out_o)
+				bool teleportRequest(io::Reader &packet, UInt64 &out_characterId, UInt32 &out_map, math::Vector3 &out, float &out_o)
 				{
 					return packet
 						>> io::read<NetUInt64>(out_characterId)
 						>> io::read<NetUInt32>(out_map)
-						>> io::read<float>(out_x)
-						>> io::read<float>(out_y)
-						>> io::read<float>(out_z)
+						>> io::read<float>(out.x)
+						>> io::read<float>(out.y)
+						>> io::read<float>(out.z)
 						>> io::read<float>(out_o)
 						;
 				}
 
-				bool characterGroupUpdate(io::Reader &packet, UInt64 &out_characterId, std::vector<UInt64> &out_nearbyMembers, UInt32 &out_health, UInt32 &out_maxHealth, UInt8 &out_powerType, UInt32 &out_power, UInt32 &out_maxPower, UInt8 &out_level, UInt32 &out_map, UInt32 &out_zone, float &out_x, float &out_y, float &out_z, std::vector<UInt32> &out_auras)
+				bool characterGroupUpdate(io::Reader &packet, UInt64 &out_characterId, std::vector<UInt64> &out_nearbyMembers, UInt32 &out_health, UInt32 &out_maxHealth, UInt8 &out_powerType, UInt32 &out_power, UInt32 &out_maxPower, UInt8 &out_level, UInt32 &out_map, UInt32 &out_zone, math::Vector3 &out, std::vector<UInt32> &out_auras)
 				{
 					return packet
 						>> io::read<NetUInt64>(out_characterId)
@@ -378,9 +378,9 @@ namespace wowpp
 						>> io::read<NetUInt8>(out_level)
 						>> io::read<NetUInt32>(out_map)
 						>> io::read<NetUInt32>(out_zone)
-						>> io::read<float>(out_x)
-						>> io::read<float>(out_y)
-						>> io::read<float>(out_z)
+						>> io::read<float>(out.x)
+						>> io::read<float>(out.y)
+						>> io::read<float>(out.z)
 						>> io::read_container<NetUInt8>(out_auras)
 						;
 				}

@@ -63,11 +63,11 @@ namespace wowpp
 		tile->addUnit(findable);
 
 		UnitRecord &record = *m_units.insert(std::make_pair(&findable, make_unique<UnitRecord>())).first->second;
-		record.moved = findable.moved.connect([this, &findable](GameObject &obj, float x, float y, float z, float o)
+		record.moved = findable.moved.connect([this, &findable](GameObject &obj, math::Vector3 position, float o)
 		{
 			math::Vector3 location(findable.getLocation());
 
-			if (location.x != x || location.y != y || location.z != z)
+			if (location.x != position.x || location.y != position.y || location.z != position.z)
 			{
 				this->onUnitMoved(findable);
 			}

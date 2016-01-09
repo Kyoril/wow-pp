@@ -1243,7 +1243,8 @@ namespace wowpp
 		startRegeneration();
 
 		// Raise moved event for aggro etc.
-		moved(*this, location.x, location.y, location.z - 0.1f, o);
+		location.z -= 0.1f;
+		moved(*this, location, o);
 	}
 
 	void GameUnit::rewardExperience(GameUnit *victim, UInt32 experience)

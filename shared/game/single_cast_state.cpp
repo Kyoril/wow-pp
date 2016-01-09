@@ -59,7 +59,7 @@ namespace wowpp
 			math::Vector3 location(caster.getLocation());
 
 			TileIndex2D tileIndex;
-			worldInstance->getGrid().getTilePosition(location.x, location.y, location.z, tileIndex[0], tileIndex[1]);
+			worldInstance->getGrid().getTilePosition(location, tileIndex[0], tileIndex[1]);
 
 			std::vector<char> buffer;
 			io::VectorSink sink(buffer);
@@ -447,7 +447,7 @@ namespace wowpp
 		}
 
 		UInt32 targetMap = 0;
-		game::Position targetPos(0.0f, 0.0f, 0.0f);
+		math::Vector3 targetPos(0.0f, 0.0f, 0.0f);
 		float targetO = 0.0f;
 		switch (effect.targetb())
 		{
@@ -465,9 +465,9 @@ namespace wowpp
 			case game::targets::DstDB:
 			{
 				targetMap = m_spell.targetmap();
-				targetPos[0] = m_spell.targetx();
-				targetPos[1] = m_spell.targety();
-				targetPos[2] = m_spell.targetz();
+				targetPos.x = m_spell.targetx();
+				targetPos.y = m_spell.targety();
+				targetPos.z = m_spell.targetz();
 				targetO = m_spell.targeto();
 				break;
 			}
@@ -487,7 +487,7 @@ namespace wowpp
 			}
 
 			// Log destination
-			unitTarget->teleport(targetMap, targetPos[0], targetPos[1], targetPos[2], targetO);
+			unitTarget->teleport(targetMap, targetPos, targetO);
 		}
 		else
 		{
@@ -495,12 +495,12 @@ namespace wowpp
 			if (unitTarget->getTypeId() == object_type::Character)
 			{
 				// Send teleport signal for player characters
-				unitTarget->teleport(targetMap, targetPos[0], targetPos[1], targetPos[2], targetO);
+				unitTarget->teleport(targetMap, targetPos, targetO);
 			}
 			else
 			{
 				// Simply relocate creatures and other stuff
-				unitTarget->relocate(targetPos[0], targetPos[1], targetPos[2], targetO);
+				unitTarget->relocate(targetPos, targetO);
 			}
 		}
 	}
@@ -1381,7 +1381,7 @@ namespace wowpp
 
 		// TODO: We need to have access to unit entries
 
-		auto spawned = world->spawnSummonedCreature(*entry, location.x, location.y, location.z, o);
+		auto spawned = world->spawnSummonedCreature(*entry, location, o);
 		if (!spawned)
 		{
 			ELOG("Could not spawn creature!");

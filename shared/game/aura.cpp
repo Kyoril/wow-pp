@@ -960,7 +960,7 @@ namespace wowpp
 			(m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Turning) != 0)
 		{
 			m_targetMoved = m_target.moved.connect(
-				std::bind(&Aura::onTargetMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+				std::bind(&Aura::onTargetMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 		}
 		
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Damage) != 0)
@@ -1054,7 +1054,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::onTargetMoved(GameObject & /*unused*/, float oldX, float oldY, float oldZ, float oldO)
+	void Aura::onTargetMoved(GameObject & /*unused*/, math::Vector3 oldPosition, float oldO)
 	{
 		// Determine flags
 		const bool removeOnMove = (m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Move) != 0;
@@ -1062,11 +1062,10 @@ namespace wowpp
 
 		const auto &location = m_target.getLocation();
 		float orientation = m_target.getOrientation();
-		math::Vector3 oldLocation(oldX, oldY, oldZ);
 
 		if (removeOnMove)
 		{
-			if (location != oldLocation)
+			if (location != oldPosition)
 			{
 				// Moved - remove!
 				onForceRemoval();

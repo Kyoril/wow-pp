@@ -562,9 +562,9 @@ namespace wowpp
 		/// Removes an amount of items from the player.
 		void removeItem(UInt8 bag, UInt8 slot, UInt8 count);
 		/// Gets the characters home location.
-		void getHome(UInt32 &out_map, game::Position &out_pos, float &out_rot) const;
+		void getHome(UInt32 &out_map, math::Vector3 &out_pos, float &out_rot) const;
 		/// Updates the characters home location.
-		void setHome(UInt32 map, const game::Position &pos, float rot);
+		void setHome(UInt32 map, const math::Vector3 &pos, float rot);
 		/// Gets an item by it's guid.
 		GameItem *getItemByGUID(UInt64 guid, UInt8 &out_bag, UInt8 &out_slot);
 
@@ -613,7 +613,7 @@ namespace wowpp
 		ForcedReactions m_forcedReactions;
 		UInt64 m_groupId;
 		UInt32 m_homeMap;
-		game::Position m_homePos;
+		math::Vector3 m_homePos;
 		float m_homeRotation;
 	};
 
