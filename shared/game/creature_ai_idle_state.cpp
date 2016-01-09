@@ -51,10 +51,9 @@ namespace wowpp
 		auto *worldInstance = controlled.getWorldInstance();
 		assert(worldInstance);
 
-		float x, y, z, o;
-		controlled.getLocation(x, y, z, o);
+		math::Vector3 location(controlled.getLocation());
 
-		Circle circle(x, y, 40.0f);
+		Circle circle(location.x, location.y, 40.0f);
 		m_aggroWatcher = worldInstance->getUnitFinder().watchUnits(circle);
 		m_aggroWatcher->visibilityChanged.connect([this](GameUnit& unit, bool isVisible) -> bool
 		{

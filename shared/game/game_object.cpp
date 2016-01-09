@@ -454,19 +454,17 @@ namespace wowpp
 		if (&other == this)
 			return 0.0f;
 
-		float o;
-		game::Position position;
-		other.getLocation(position[0], position[1], position[2], o);
+		math::Vector3 position = other.getLocation();
 
 		return getDistanceTo(position, use3D);
 	}
 
-	float GameObject::getDistanceTo(const game::Position &position, bool use3D /*= true*/) const
+	float GameObject::getDistanceTo(const math::Vector3 &position, bool use3D /*= true*/) const
 	{
 		if (use3D)
-			return (sqrtf(((position[0] - m_position.x) * (position[0] - m_position.x)) + ((position[1] - m_position.y) * (position[1] - m_position.y)) + ((position[2] - m_position.z) * (position[2] - m_position.z))));
+			return (sqrtf(((position.x - m_position.x) * (position.x - m_position.x)) + ((position.y - m_position.y) * (position.y - m_position.y)) + ((position.z - m_position.z) * (position.z - m_position.z))));
 		else
-			return (sqrtf(((position[0] - m_position.x) * (position[0] - m_position.x)) + ((position[1] - m_position.y) * (position[1] - m_position.y))));
+			return (sqrtf(((position.x - m_position.x) * (position.x - m_position.x)) + ((position.y - m_position.y) * (position.y - m_position.y))));
 	}
 
 	void GameObject::onWorldInstanceDestroyed()
@@ -573,8 +571,8 @@ namespace wowpp
 
 	void createUpdateBlocks(GameObject &object, GameCharacter &receiver, std::vector<std::vector<char>> &out_blocks)
 	{
-		float x, y, z, o;
-		object.getLocation(x, y, z, o);
+		float o = object.getOrientation();
+		math::Vector3 location(object.getLocation());
 
 		// Write create object packet
 		std::vector<char> createBlock;
@@ -652,9 +650,9 @@ namespace wowpp
 				// Position & Rotation
 				// TODO: Calculate position and rotation from the movement info using interpolation
 				writer
-					<< io::write<float>(x)
-					<< io::write<float>(y)
-					<< io::write<float>(z)
+					<< io::write<float>(location.x)
+					<< io::write<float>(location.y)
+					<< io::write<float>(location.z)
 					<< io::write<float>(o);
 			}
 

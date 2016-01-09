@@ -472,8 +472,7 @@ namespace wowpp
 		do
 		{
 			// Get target location
-			float vX, vY, vZ, vO;
-			victim->getLocation(vX, vY, vZ, vO);
+			math::Vector3 location(victim->getLocation());
 
 			// Distance check
 			const float distance = getDistanceTo(*victim);
@@ -495,7 +494,7 @@ namespace wowpp
 			}
 
 			// Check if that target is in front of us
-			if (!isInArc(2.0f * 3.1415927f / 3.0f, vX, vY))
+			if (!isInArc(2.0f * 3.1415927f / 3.0f, location.x, location.y))
 			{
 				autoAttackError(attack_swing_error::WrongFacing);
 				
@@ -1227,8 +1226,8 @@ namespace wowpp
 		if (isAlive())
 			return;
 
-		float x, y, z, o;
-		getLocation(x, y, z, o);
+		float o = getOrientation();
+		math::Vector3 location(getLocation());
 
 		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
 		if (health > maxHealth) health = maxHealth;
@@ -1244,7 +1243,7 @@ namespace wowpp
 		startRegeneration();
 
 		// Raise moved event for aggro etc.
-		moved(*this, x, y, z - 0.1f, o);
+		moved(*this, location.x, location.y, location.z - 0.1f, o);
 	}
 
 	void GameUnit::rewardExperience(GameUnit *victim, UInt32 experience)

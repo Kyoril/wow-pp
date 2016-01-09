@@ -60,12 +60,12 @@ namespace wowpp
 		setUInt32Value(world_object_fields::Faction, m_entry.factionid());
 		setUInt32Value(world_object_fields::Flags, m_entry.flags());
 
-		float x, y, z, o;
-		getLocation(x, y, z, o);
+		float o = getOrientation();
+		math::Vector3 location(getLocation());
 
-		setFloatValue(world_object_fields::PosX, x);
-		setFloatValue(world_object_fields::PosY, y);
-		setFloatValue(world_object_fields::PosZ, z);
+		setFloatValue(world_object_fields::PosX, location.x);
+		setFloatValue(world_object_fields::PosY, location.y);
+		setFloatValue(world_object_fields::PosZ, location.z);
 		setFloatValue(world_object_fields::Facing, o);
 		setFloatValue(world_object_fields::Rotation + 2, sin(o / 2.0f));
 		setFloatValue(world_object_fields::Rotation + 3, cos(o / 2.0f));

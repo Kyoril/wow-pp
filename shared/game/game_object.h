@@ -273,7 +273,7 @@ namespace wowpp
 		/// @param use3D If true, the distance will be calculated using 3d coordinates, otherwise,
 		///              only 2d coordinates are used.
 		float getDistanceTo(GameObject &other, bool use3D = true) const;
-		float getDistanceTo(const game::Position &position, bool use3D = true) const;
+		float getDistanceTo(const math::Vector3 &position, bool use3D = true) const;
 
 		float getAngle(GameObject &other) const;
 		float getAngle(float x, float y) const;

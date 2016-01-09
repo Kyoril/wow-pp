@@ -62,9 +62,8 @@ namespace wowpp
 		TileIndex2D tile;
 		if (getControlled().getTileIndex(tile))
 		{
-			float o;
-			Vector<float, 3> oldPosition;
-			getControlled().getLocation(oldPosition[0], oldPosition[1], oldPosition[2], o);
+			float o = getControlled().getOrientation();
+			math::Vector3 oldPosition(getControlled().getLocation());
 
 			std::vector<char> buffer;
 			io::VectorSink sink(buffer);

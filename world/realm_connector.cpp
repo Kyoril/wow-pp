@@ -252,8 +252,8 @@ namespace wowpp
 			return;
 		}
 
-		float x, y, z, o;
-		character->getLocation(x, y, z, o);
+		float o = character->getOrientation();
+		math::Vector3 location(character->getLocation());
 
 		// Let's lookup some informations about the requested map
 		auto map = m_project.maps.getById(character->getMapId());
@@ -385,9 +385,9 @@ namespace wowpp
 			instance->getId(),
 			mapId,
 			zoneId,
-			x,
-			y,
-			z,
+			location.x,
+			location.y,
+			location.z,
 			o
 			));
 
@@ -397,7 +397,7 @@ namespace wowpp
 
 		// Spawn objects
 		TileIndex2D tileIndex;
-		instance->getGrid().getTilePosition(x, y, z, tileIndex[0], tileIndex[1]);
+		instance->getGrid().getTilePosition(location.x, location.y, location.z, tileIndex[0], tileIndex[1]);
 		forEachTileInSight(instance->getGrid(), tileIndex, [&character, this](VisibilityTile &tile)
 		{
 			for (auto it = tile.getGameObjects().begin(); it != tile.getGameObjects().end(); ++it)
@@ -1189,12 +1189,11 @@ namespace wowpp
 		}
 
 		// Get player location for distance checks
-		float x, y, z, o;
-		character->getLocation(x, y, z, o);
+		math::Vector3 location(character->getLocation());
 		if (trigger->radius() > 0.0f)
 		{
 			const float dist = 
-				::sqrtf(((x - trigger->x()) * (x - trigger->x())) + ((y - trigger->y()) * (y - trigger->y())) + ((z - trigger->z()) * (z - trigger->z())));
+				::sqrtf(((location.x - trigger->x()) * (location.x - trigger->x())) + ((location.y - trigger->y()) * (location.y - trigger->y())) + ((location.z - trigger->z()) * (location.z - trigger->z())));
 			if (dist > trigger->radius())
 			{
 				WLOG("Player character is too far away from trigger");
@@ -1394,8 +1393,7 @@ namespace wowpp
 
 	void RealmConnector::sendCharacterGroupUpdate(GameCharacter &character, const std::vector<UInt64> &nearbyMembers)
 	{
-		float x, y, z, o;
-		character.getLocation(x, y, z, o);
+		math::Vector3 location(character.getLocation());
 
 		auto powerType = character.getByteValue(unit_fields::Bytes0, 3);
 		std::vector<UInt32> auras;
@@ -1406,7 +1404,7 @@ namespace wowpp
 		pp::world_realm::world_write::characterGroupUpdate(packet, character.getGuid(), nearbyMembers,
 			character.getUInt32Value(unit_fields::Health), character.getUInt32Value(unit_fields::MaxHealth),
 			character.getByteValue(unit_fields::Bytes0, 3), character.getUInt32Value(unit_fields::Power1 + powerType), character.getUInt32Value(unit_fields::MaxPower1 + powerType),
-			character.getUInt32Value(unit_fields::Level), character.getMapId(), character.getZone(), x, y, z, auras);
+			character.getUInt32Value(unit_fields::Level), character.getMapId(), character.getZone(), location.x, location.y, location.z, auras);
 		m_connection->flush();
 	}
 

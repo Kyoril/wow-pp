@@ -87,6 +87,16 @@ namespace wowpp
 
 				return len;
 			}
+			
+			Vector3 lerp(const Vector3 &target, float t)
+			{
+				if (t <= 0.0f)
+					return *this;
+				else if (t >= 1.0f)
+					return target;
+
+				return *this + (target - *this) * t;
+			}
 
 			inline float operator [] (const std::size_t i) const
 			{

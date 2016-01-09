@@ -87,15 +87,14 @@ namespace wowpp
 
 		m_groupUpdate.ended.connect([this]()
 		{
-			float x, y, z, o;
-			m_character->getLocation(x, y, z, o);
+			math::Vector3 location(m_character->getLocation());
 
 			// Get group id
 			auto groupId = m_character->getGroupId();
 			std::vector<UInt64> nearbyMembers;
 
 			// Determine nearby party members
-			m_instance.getUnitFinder().findUnits(Circle(x, y, 100.0f), [this, groupId, &nearbyMembers](GameUnit &unit) -> bool
+			m_instance.getUnitFinder().findUnits(Circle(location.x, location.y, 100.0f), [this, groupId, &nearbyMembers](GameUnit &unit) -> bool
 			{
 				// Only characters
 				if (unit.getTypeId() != object_type::Character)
@@ -177,12 +176,11 @@ namespace wowpp
 	{
 		TileIndex2D tile;
 		
-		float x, y, z, o;
-		m_character->getLocation(x, y, z, o);
+		math::Vector3 location(m_character->getLocation());
 
 		// Get a list of potential watchers
 		auto &grid = m_instance.getGrid();
-		grid.getTilePosition(x, y, z, tile[0], tile[1]);
+		grid.getTilePosition(location.x, location.y, location.z, tile[0], tile[1]);
 		
 		return tile;
 	}
@@ -265,15 +263,14 @@ namespace wowpp
 		}
 		else
 		{
-			float x, y, z, o;
-			m_character->getLocation(x, y, z, o);
+			math::Vector3 location(m_character->getLocation());
 
 			// Get a list of potential watchers
 			auto &grid = m_instance.getGrid();
 
 			// Get tile index
 			TileIndex2D tile;
-			grid.getTilePosition(x, y, z, tile[0], tile[1]);
+			grid.getTilePosition(location.x, location.y, location.z, tile[0], tile[1]);
 
 			// Get all potential characters
 			std::vector<ITileSubscriber*> subscribers;
@@ -383,13 +380,14 @@ namespace wowpp
 					<< io::write<NetUInt32>(mTimeStamp());	//TODO: Time
 
 				// Position & Rotation
-				float x, y, z, o;
-				m_character->getLocation(x, y, z, o);
+				float o = m_character->getOrientation();
+				math::Vector3 location(m_character->getLocation());
+				
 
 				writer
-					<< io::write<float>(x)
-					<< io::write<float>(y)
-					<< io::write<float>(z)
+					<< io::write<float>(location.x)
+					<< io::write<float>(location.y)
+					<< io::write<float>(location.z)
 					<< io::write<float>(o);
 
 				// Fall time
@@ -550,9 +548,8 @@ namespace wowpp
 		if (map)
 		{
 			// Lets check our Z coordinate
-			float x, y, z, o;
-			m_character->getLocation(x, y, z, o);
-			float terrainHeight = map->getHeightAt(x, y);
+			math::Vector3 location(m_character->getLocation());
+			float terrainHeight = map->getHeightAt(location.x, location.y);
 			//DLOG("Z Comparison for " << x << " " << y << ": " << z << " (Terrain: " << terrainHeight << ")");
 
 			// Get or load map tile
@@ -1542,8 +1539,7 @@ namespace wowpp
 		auto guid = m_character->getGuid();
 
 		// Get object location
-		float x, y, z, o;
-		m_character->getLocation(x, y, z, o);
+		math::Vector3 location(m_character->getLocation());
 
 		// Store movement information
 		m_character->setMovementInfo(info);
@@ -1551,7 +1547,7 @@ namespace wowpp
 		// Transform into grid location
 		TileIndex2D gridIndex;
 		auto &grid = getWorldInstance().getGrid();
-		if (!grid.getTilePosition(x, y, z, gridIndex[0], gridIndex[1]))
+		if (!grid.getTilePosition(location.x, location.y, location.z, gridIndex[0], gridIndex[1]))
 		{
 			// TODO: Error?
 			ELOG("Could not resolve grid location!");

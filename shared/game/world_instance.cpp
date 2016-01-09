@@ -48,11 +48,10 @@ namespace wowpp
 	{
 		static TileIndex2D getObjectTile(GameObject &object, VisibilityGrid &grid)
 		{
-			float x, y, z, o;
-			object.getLocation(x, y, z, o);
+			math::Vector3 location(object.getLocation());
 
 			TileIndex2D gridIndex;
-			grid.getTilePosition(x, y, z, gridIndex[0], gridIndex[1]);
+			grid.getTilePosition(location.x, location.y, location.z, gridIndex[0], gridIndex[1]);
 
 			return gridIndex;
 		}
@@ -313,12 +312,11 @@ namespace wowpp
 		}
 
 		// Get object location
-		float x, y, z, o;
-		added.getLocation(x, y, z, o);
+		math::Vector3 location(added.getLocation());
 		
 		// Transform into grid location
 		TileIndex2D gridIndex;
-		if (!m_visibilityGrid->getTilePosition(x, y, z, gridIndex[0], gridIndex[1]))
+		if (!m_visibilityGrid->getTilePosition(location.x, location.y, location.z, gridIndex[0], gridIndex[1]))
 		{
 			// TODO: Error?
 			ELOG("Could not resolve grid location!");

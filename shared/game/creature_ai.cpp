@@ -130,13 +130,12 @@ namespace wowpp
 		const auto &unitFaction = threat.getFactionTemplate();
 		if (!isFriendlyTo(ourFaction, unitFaction))
 		{
-			float x, y, z, o;
-			controlled.getLocation(x, y, z, o);
+			math::Vector3 location(controlled.getLocation());
 
 			// Call for assistance
 			if (!isNeutralToAll(ourFaction))
 			{
-				worldInstance->getUnitFinder().findUnits(Circle(x, y, 8.0f), [&ourFaction, &threat, &worldInstance](GameUnit &unit) -> bool
+				worldInstance->getUnitFinder().findUnits(Circle(location.x, location.y, 8.0f), [&ourFaction, &threat, &worldInstance](GameUnit &unit) -> bool
 				{
 					if (unit.getTypeId() != object_type::Unit)
 						return true;

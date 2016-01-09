@@ -662,8 +662,8 @@ namespace wowpp
 		GameTime start = getCurrentTime();
 		MySQL::Transaction transaction(m_connection);
 
-		float x, y, z, o;
-		character.getLocation(x, y, z, o);
+		float o = character.getOrientation();
+		math::Vector3 location(character.getLocation());
 
 		UInt32 homeMap;
 		game::Position homePos;
@@ -684,7 +684,7 @@ namespace wowpp
 			% lowerGuid												// 1
 			% character.getMapId()									// 2
 			% character.getZone()									// 3
-			% x % y % z % o											// 4, 5, 6, 7
+			% location.x % location.y % location.z % o											// 4, 5, 6, 7
 			% character.getLevel()									// 8
 			% character.getUInt32Value(character_fields::Xp)		// 9
 			% character.getUInt32Value(character_fields::Coinage)	// 10

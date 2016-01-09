@@ -22,6 +22,7 @@
 #pragma once
 
 #include "defines.h"
+#include "math/vector3.h"
 #include <memory>
 #include <boost/signals2.hpp>
 
@@ -40,7 +41,7 @@ namespace wowpp
 		/// Defines the home of a creature.
 		struct Home final
 		{
-			game::Position position;
+			math::Vector3 position;
 			float orientation;
 			float radius;
 
@@ -48,7 +49,7 @@ namespace wowpp
 			/// @param pos The position of this home point in world units.
 			/// @param o The orientation of this home point in radians.
 			/// @param radius The tolerance radius of this home point in world units.
-			explicit Home(const game::Position &pos, float o = 0.0f, float radius = 0.0f)
+			explicit Home(const math::Vector3 &pos, float o = 0.0f, float radius = 0.0f)
 				: position(pos)
 				, orientation(o)
 				, radius(radius)

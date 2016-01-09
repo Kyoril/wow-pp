@@ -622,8 +622,8 @@ namespace wowpp
 			void monsterMove(
 				game::OutgoingPacket &out_packet,
 				UInt64 guid,
-				const Vector<float, 3> &oldPosition,
-				const Vector<float, 3> &position,
+				const math::Vector3 &oldPosition,
+				const math::Vector3 &position,
 				UInt32 time
 				)
 			{
@@ -647,9 +647,9 @@ namespace wowpp
 
 				out_packet
 					<< io::write_range(&packGUID[0], &packGUID[size])
-					<< io::write<float>(oldPosition[0])
-					<< io::write<float>(oldPosition[1])
-					<< io::write<float>(oldPosition[2])
+					<< io::write<float>(oldPosition.x)
+					<< io::write<float>(oldPosition.y)
+					<< io::write<float>(oldPosition.z)
 					<< io::write<NetUInt32>(mTimeStamp())
 					<< io::write<NetUInt8>(0);
 
@@ -658,9 +658,9 @@ namespace wowpp
 					<< io::write<NetUInt32>(256)
 					<< io::write<NetUInt32>(time)
 					<< io::write<NetUInt32>(1)				// One waypoint
-					<< io::write<float>(position[0])
-					<< io::write<float>(position[1])
-					<< io::write<float>(position[2]);
+					<< io::write<float>(position.x)
+					<< io::write<float>(position.y)
+					<< io::write<float>(position.z);
 				out_packet.finish();
 			}
 
@@ -1935,9 +1935,8 @@ namespace wowpp
 				
 				if (updateFlags & group_update_flags::Position)
 				{
-					float x, y, z, o;
-					character.getLocation(x, y, z, o);
-					out_packet << io::write<NetUInt16>(UInt16(x)) << io::write<NetUInt16>(UInt16(y));
+					math::Vector3 location(character.getLocation());
+					out_packet << io::write<NetUInt16>(UInt16(location.x)) << io::write<NetUInt16>(UInt16(location.y));
 				}
 				
 				if (updateFlags & group_update_flags::Auras)
@@ -2057,9 +2056,8 @@ namespace wowpp
 
 				if (updateFlags & group_update_flags::Position)
 				{
-					float x, y, z, o;
-					character.getLocation(x, y, z, o);
-					out_packet << io::write<NetUInt16>(UInt16(x)) << io::write<NetUInt16>(UInt16(y));
+					math::Vector3 location(character.getLocation());
+					out_packet << io::write<NetUInt16>(UInt16(location.x)) << io::write<NetUInt16>(UInt16(location.y));
 				}
 
 				if (updateFlags & group_update_flags::Auras)

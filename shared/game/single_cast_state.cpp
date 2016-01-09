@@ -56,11 +56,10 @@ namespace wowpp
 				return;
 			}
 
-			float x, y, z, o;
-			caster.getLocation(x, y, z, o);
+			math::Vector3 location(caster.getLocation());
 
 			TileIndex2D tileIndex;
-			worldInstance->getGrid().getTilePosition(x, y, z, tileIndex[0], tileIndex[1]);
+			worldInstance->getGrid().getTilePosition(location.x, location.y, location.z, tileIndex[0], tileIndex[1]);
 
 			std::vector<char> buffer;
 			io::VectorSink sink(buffer);
@@ -116,8 +115,8 @@ namespace wowpp
 				);
 		}
 
-		float o = 0.0f;
-		m_cast.getExecuter().getLocation(m_x, m_y, m_z, o);
+		math::Vector3 location(m_cast.getExecuter().getLocation());
+		m_x = location.x, m_y = location.y, m_z = location.z;
 
 		m_countdown.ended.connect([this]()
 		{
@@ -187,9 +186,8 @@ namespace wowpp
 		if (!m_hasFinished)
 		{
 			// Interrupt spell cast if moving
-			float x, y, z, o = 0.0f;
-			m_cast.getExecuter().getLocation(x, y, z, o);
-			if (x != m_x || y != m_y || z != m_z)
+			math::Vector3 location(m_cast.getExecuter().getLocation());
+			if (location.x != m_x || location.y != m_y || location.z != m_z)
 			{
 				stopCast();
 			}
@@ -305,11 +303,10 @@ namespace wowpp
 
 					if (unitTarget)
 					{
-						float x, y, z, o;
-						unitTarget->getLocation(x, y, z, o);
+						math::Vector3 location(unitTarget->getLocation());
 
 						// 120 degree field of view
-						if (!m_cast.getExecuter().isInArc(2.0f * 3.1415927f / 3.0f, x, y))
+						if (!m_cast.getExecuter().isInArc(2.0f * 3.1415927f / 3.0f, location.x, location.y))
 						{
 							m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedUnitNotInfront);
 
@@ -1379,12 +1376,12 @@ namespace wowpp
 			return;
 		}
 
-		float x, y, z, o;
-		executer.getLocation(x, y, z, o);
+		float o = executer.getOrientation();
+		math::Vector3 location(executer.getLocation());
 
 		// TODO: We need to have access to unit entries
 
-		auto spawned = world->spawnSummonedCreature(*entry, x, y, z, o);
+		auto spawned = world->spawnSummonedCreature(*entry, location.x, location.y, location.z, o);
 		if (!spawned)
 		{
 			ELOG("Could not spawn creature!");
