@@ -640,7 +640,7 @@ namespace wowpp
 					victim->dealDamage(damage - absorbed, 0, this);
 
 					// Trigger auto attack procs
-					procMeleeAutoAttack(m_victim);
+					doneMeleeAutoAttack(m_victim);
 				}
 			}
 		} while (false);
@@ -1160,7 +1160,7 @@ namespace wowpp
 			health -= damage;
 
 		setUInt32Value(unit_fields::Health, health);
-		if (health == 0)
+		if (health < 1)
 		{
 			// Call function and signal
 			onKilled(attacker);

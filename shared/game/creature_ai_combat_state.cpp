@@ -114,7 +114,7 @@ namespace wowpp
 				auto strongUnit = weakUnit.lock();
 				if (strongUnit)
 				{
-					strongUnit->relocate(oldPosition[0], oldPosition[1], oldPosition[2], o);
+					strongUnit->relocate(oldPosition.x, oldPosition.y, oldPosition.z, o);
 				}
 			});
 

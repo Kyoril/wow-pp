@@ -664,9 +664,9 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleTriggerSpellProc(GameUnit * attacker)
+	void Aura::handleTriggerSpellProc(GameUnit * target)
 	{
-		if (!attacker)
+		if (!target)
 		{
 			return;
 		}
@@ -676,20 +676,19 @@ namespace wowpp
 			return;
 		}
 
-		SpellTargetMap target;
-		target.m_targetMap = game::spell_cast_target_flags::Unit;
-		target.m_unitTarget = attacker->getGuid();
+		SpellTargetMap targetMap;
+		targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+		targetMap.m_unitTarget = target->getGuid();
 
-		if (m_effect.triggerspell() != 0)
+		UInt32 triggerSpell = m_effect.triggerspell();
+		if (triggerSpell != 0)
 		{
-			if (!m_effect.triggerspell())
-			{
-				WLOG("WARNING: PROC_TRIGGER_SPELL aura of spell " << m_spell.id() << " does not have a trigger spell provided");
-				return;
-			}
-
-			SpellTargetMap targetMap;
-			m_target.castSpell(target, m_effect.triggerspell(), -1, 0, true);
+			m_target.castSpell(targetMap, m_effect.triggerspell(), -1, 0, true);
+		}
+		else
+		{
+			WLOG("WARNING: PROC_TRIGGER_SPELL aura of spell " << m_spell.id() << " does not have a trigger spell provided");
+			return;
 		}
 	}
 
@@ -974,12 +973,38 @@ namespace wowpp
 
 		if (m_spell.procflags() != game::spell_proc_flags::None)
 		{
-			// Melee auto attack
+			if ((m_spell.procflags() & game::spell_proc_flags::TakenDamage) != 0)
+			{
+				m_takenDamage = m_caster->takenDamage.connect(
+					[&](GameUnit *victim) {
+					handleTakenDamage(victim);
+				});
+			}
+			
 			if ((m_spell.procflags() & game::spell_proc_flags::DoneMeleeAutoAttack) != 0)
 			{
-				m_procAutoAttack = m_caster->procMeleeAutoAttack.connect(
+				m_procAutoAttack = m_caster->doneMeleeAutoAttack.connect(
 					[&](GameUnit *victim) {
 					handleProcModifier(game::spell_proc_flags::DoneMeleeAutoAttack, victim);
+				});
+			}
+			
+			if ((m_spell.procflags() & game::spell_proc_flags::TakenMeleeAutoAttack) != 0)
+			{
+				m_procTakenAutoAttack = m_caster->takenMeleeAutoAttack.connect(
+					[&](GameUnit *attacker) {
+					handleProcModifier(game::spell_proc_flags::TakenMeleeAutoAttack, attacker);
+				});
+			}
+			
+			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
+			{
+				m_doneSpellMagicDmgClassNeg = m_caster->doneSpellMagicDmgClassNeg.connect(
+					[&](GameUnit *victim, UInt32 schoolMask) {
+					if ((schoolMask & getEffectSchoolMask()) != 0)
+					{
+						handleProcModifier(game::spell_proc_flags::DoneSpellMagicDmgClassNeg, victim);
+					}
 				});
 			}
 
@@ -996,33 +1021,6 @@ namespace wowpp
 				m_procKill = m_caster->procKilledTarget.connect(
 					[&](GameUnit &killed) {
 					handleProcModifier(game::spell_proc_flags::Kill, &killed);
-				});
-			}
-			
-			if ((m_spell.procflags() & game::spell_proc_flags::TakenMeleeAutoAttack) != 0)
-			{
-				m_procTakenAutoAttack = m_caster->takenMeleeAutoAttack.connect(
-					[&](GameUnit *victim) {
-					handleProcModifier(game::spell_proc_flags::TakenMeleeAutoAttack, victim);
-				});
-			}
-			
-			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
-			{
-				m_doneSpellMagicDmgClassNeg = m_caster->doneSpellMagicDmgClassNeg.connect(
-					[&](GameUnit *victim, UInt32 schoolMask) {
-					if ((schoolMask & getEffectSchoolMask()) != 0)
-					{
-						handleProcModifier(game::spell_proc_flags::DoneSpellMagicDmgClassNeg, victim);
-					}
-				});
-			}
-			
-			if ((m_spell.procflags() & game::spell_proc_flags::TakenDamage) != 0)
-			{
-				m_takenDamage = m_caster->takenDamage.connect(
-					[&](GameUnit *victim) {
-					handleTakenDamage(victim);
 				});
 			}
 		}

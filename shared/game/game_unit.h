@@ -349,7 +349,7 @@ namespace wowpp
 		/// 
 		boost::signals2::signal<void(GameUnit &, float)> threatened;
 		/// Fired when an auto attack hit.
-		boost::signals2::signal<void(GameUnit *)> procMeleeAutoAttack;
+		boost::signals2::signal<void(GameUnit *)> doneMeleeAutoAttack;
 		/// Fired when hit by an auto attack.
 		boost::signals2::signal<void(GameUnit *)> takenMeleeAutoAttack;
 		/// Fired when done any magic damage
