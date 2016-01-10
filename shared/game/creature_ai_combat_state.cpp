@@ -369,18 +369,8 @@ namespace wowpp
 			m_moveStart = getCurrentTime();
 			m_moveEnd = m_moveStart + moveTime;
 
-			// Delay relocation
-			auto strongUnit = getControlled().shared_from_this();
-			std::weak_ptr<GameObject> weakUnit(strongUnit);
-
-			getControlled().getWorldInstance()->getUniverse().post([weakUnit, oldPosition, o]()
-			{
-				auto strongUnit = weakUnit.lock();
-				if (strongUnit)
-				{
-					strongUnit->relocate(oldPosition, o);
-				}
-			});
+			// Relocate unit without firing a signal
+			getControlled().relocate(oldPosition, o, false);
 
 			// Move
 			m_target = newTarget;
@@ -404,7 +394,8 @@ namespace wowpp
 			}
 
 			m_moveReached.setEnd(m_moveEnd);
-			m_moveUpdated.setEnd(m_moveStart + constants::OneSecond / 4);
+			if (!m_moveUpdated.running)
+				m_moveUpdated.setEnd(m_moveStart + constants::OneSecond / 4);
 		}
 	}
 

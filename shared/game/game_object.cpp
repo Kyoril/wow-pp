@@ -251,7 +251,7 @@ namespace wowpp
 		}
 	}
 
-	void GameObject::relocate(math::Vector3 position, float o)
+	void GameObject::relocate(math::Vector3 position, float o, bool fire/* = true*/)
 	{
 		float oldO = m_o;
 		math::Vector3 oldPosition(m_position);
@@ -259,7 +259,10 @@ namespace wowpp
 		m_position = position;
 		m_o = o;
 
-		moved(*this, oldPosition, oldO);
+		if (fire)
+		{
+			moved(*this, oldPosition, oldO);
+		}
 	}
 
 	void GameObject::setOrientation(float o)

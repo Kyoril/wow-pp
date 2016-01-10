@@ -149,6 +149,8 @@ namespace wowpp
 
 	bool Map::isInLineOfSight(const math::Vector3 & posA, const math::Vector3 & posB)
 	{
+		return true;
+
 		if (posA == posB)
 			return true;
 
