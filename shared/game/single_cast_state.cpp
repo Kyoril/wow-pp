@@ -563,11 +563,8 @@ namespace wowpp
 					0,
 					crit));
 				
-				if (targetUnit->isAlive())
-				{
-					caster.doneSpellMagicDmgClassNeg(targetUnit, school);
-					targetUnit->takenDamage(&caster);
-				}
+				caster.doneSpellMagicDmgClassNeg(targetUnit, school);
+				targetUnit->takenDamage(&caster);
 			}
 		}
 	}
@@ -735,39 +732,6 @@ namespace wowpp
 			character->addArmorProficiency(mask);
 		}
 	}
-	
-	bool SingleCastState::doesSpellHit(const proto::SpellEffect &effect, GameUnit &caster, GameUnit &target)
-	{
-		Int32 levelModificator = target.getLevel() - caster.getLevel();
-		if (levelModificator > 2)
-		{
-			if (isPlayerGUID(target.getGuid()))
-			{
-				levelModificator = (levelModificator * 7) - 12;	//pvp calculation
-			}
-			else
-			{
-				levelModificator = (levelModificator * 11) - 20;	//pve calculation
-			}
-		}
-		
-		Int32 hitChancePct = 96 - levelModificator;	//96 is the basic hit chance to hit enemies on same level
-		
-		//TODO add spell-hit stats and auras
-		
-		if (hitChancePct > 99)
-			hitChancePct = 99;	//hit cap
-		else if (hitChancePct < 1)
-			hitChancePct = 1;	//hit not cap
-		
-		std::uniform_int_distribution<int> distribution(0, 99);
-		return distribution(randomGenerator) < hitChancePct;
-	}
-	
-	UInt8 SingleCastState::getResiPercentage(const proto::SpellEffect &effect, GameUnit &caster, GameUnit &target)
-	{
-		return 0;
-	}
 
 	Int32 SingleCastState::calculateEffectBasePoints(const proto::SpellEffect &effect)
 	{
@@ -803,24 +767,6 @@ namespace wowpp
 		return basePoints + randomValue + comboDamage;
 	}
 	
-	UInt32 SingleCastState::getSpellPower(const proto::SpellEffect &effect, GameUnit &caster)
-	{
-		if (isPlayerGUID(caster.getGuid()))
-		{
-			GameCharacter &character = dynamic_cast<GameCharacter&>(m_cast.getExecuter());
-			return 0;	//need to get real spellpower
-		}
-		else
-		{
-			return 0;
-		}
-	}
-	
-	UInt32 SingleCastState::getSpellBonusPct(const proto::SpellEffect &effect, GameUnit &caster)
-	{
-		return 0;
-	}
-	
 	UInt32 SingleCastState::getSpellPointsTotal(const proto::SpellEffect &effect, UInt32 spellPower, UInt32 bonusPct)
 	{
 		Int32 basePoints = calculateEffectBasePoints(effect);
@@ -830,18 +776,6 @@ namespace wowpp
 		float spellAddCoefficient = (castTime / 3500.0);
 		float bonusModificator = 1 + (bonusPct / 100);
 		return (basePoints + (spellAddCoefficient * spellPower)) *  bonusModificator;
-	}
-
-	float SingleCastState::getCritFactor(const proto::SpellEffect &effect, GameUnit &caster, GameUnit &target)
-	{
-		float baseCrit = caster.getFloatValue(wowpp::character_fields::SpellCritPercentage);	//TODO school crit
-		float crit = baseCrit - 0.0;	//TODO use resilience to reduce
-		crit = 15;	//TODO remove hardcoded test-value later
-		std::uniform_int_distribution<int> distribution(0, 99);
-		if (distribution(randomGenerator) < crit)
-			return 2.0;
-		else
-			return 1.0;
 	}
 	
 	void SingleCastState::spellEffectAddComboPoints(const proto::SpellEffect &effect)

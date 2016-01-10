@@ -1319,7 +1319,12 @@ namespace wowpp
 	
 	UInt32 GameUnit::getBonus(UInt8 school)
 	{
-		return 0;
+		UInt32 bonus = 0;
+		if (getTypeId() == object_type::Character)
+		{
+			bonus = getUInt32Value(character_fields::ModDamageDonePos + sqrt(school));
+		}
+		return bonus;
 	}
 	
 	UInt32 GameUnit::getBonusPct(UInt8 school)

@@ -88,6 +88,8 @@ namespace wowpp
 		void handlePeriodicHeal(bool apply);
 		/// 12
 		void handleModStun(bool apply);
+		/// 13
+		void handleModDamageDone(bool apply);
 		/// 15
 		void handleDamageShield(bool apply);
 		/// 16

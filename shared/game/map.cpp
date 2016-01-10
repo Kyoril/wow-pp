@@ -185,7 +185,7 @@ namespace wowpp
 
 		auto result = ray.intersectsTriangle(vA, vB, vC);
 		auto endTime = getCurrentTime();
-		DLOG("isInLineOfSight time: " << (endTime - startTime) << " ms");
+//		DLOG("isInLineOfSight time: " << (endTime - startTime) << " ms");
 
 		return !result.first;
 	}

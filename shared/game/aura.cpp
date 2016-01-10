@@ -150,6 +150,9 @@ namespace wowpp
 		case aura::ProcTriggerSpell:
 			//are added in applyAura
 			break;
+		case aura::ModDamageDone:
+			handleModDamageDone(apply);
+			break;
 		case aura::DamageShield:
 			handleDamageShield(apply);
 			break;
@@ -305,6 +308,27 @@ namespace wowpp
 		}
 		
 		// TODO: prevent movment, attacks and spells
+	}
+	
+	void Aura::handleModDamageDone(bool apply)
+	{
+		if (m_target.getTypeId() == object_type::Character)
+		{
+			UInt8 schoolMask = m_effect.miscvaluea();
+			for (UInt8 i = 1; i < 7; i++)
+			{
+				if (schoolMask & Int32(1 << i))
+				{
+					UInt32 bonus = m_target.getUInt32Value(character_fields::ModDamageDonePos + i);
+					if (apply)
+						bonus += m_basePoints;
+					else
+						bonus -= m_basePoints;
+					
+					m_target.setUInt32Value(character_fields::ModDamageDonePos + i, bonus);
+				}
+			}
+		}
 	}
 
 	void Aura::handleDamageShield(bool apply)
