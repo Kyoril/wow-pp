@@ -262,7 +262,7 @@ namespace wowpp
 		if (fire)
 		{
 			moved(*this, m_lastFiredPosition, oldO);
-			m_lastFiredPosition = oldPosition;
+			m_lastFiredPosition = m_position;
 		}
 	}
 
@@ -562,7 +562,7 @@ namespace wowpp
 	io::Reader & operator>>(io::Reader &r, GameObject& object)
 	{
 		// Read the bitset and values
-		return r
+		r
 			>> io::read_container<NetUInt8>(object.m_valueBitset)
 			>> io::read_container<NetUInt16>(object.m_values)
 			>> io::read<NetUInt32>(object.m_mapId)
@@ -570,6 +570,9 @@ namespace wowpp
 			>> io::read<float>(object.m_position.y)
 			>> io::read<float>(object.m_position.z)
 			>> io::read<float>(object.m_o);
+
+		object.m_lastFiredPosition = object.m_position;
+		return r;
 	}
 
 	void createUpdateBlocks(GameObject &object, GameCharacter &receiver, std::vector<std::vector<char>> &out_blocks)
