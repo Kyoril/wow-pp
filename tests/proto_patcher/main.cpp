@@ -344,6 +344,7 @@ namespace wowpp
 								eff.basepoints() != 0)
 							{
 								eff.set_type(game::spell_effects::Energize);
+								eff.set_misc_val_a(1);	// Energize Rage
 								break;
 							}
 						}
