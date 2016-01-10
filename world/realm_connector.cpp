@@ -1017,45 +1017,7 @@ namespace wowpp
 		const auto *spell = m_project.spells.getById(spellId);
 		if (!spell)
 		{
-			WLOG("Received CMSG_CAST_SPELL with unknown spell id " << spellId);
 			return;
-		}
-
-		// Some debugging output
-		{
-			DLOG("SPELL CAST: " << spellId << " (" << UInt32(castCount) << " times) - target flags: " << targetMap.getTargetMap());
-			if (targetMap.hasUnitTarget())
-			{
-				DLOG("\tUNIT TARGET: 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << targetMap.getUnitTarget());
-			}
-			if (targetMap.hasGOTarget())
-			{
-				DLOG("\tGO TARGET: 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << targetMap.getGOTarget());
-			}
-			if (targetMap.hasItemTarget())
-			{
-				DLOG("\tITEM TARGET: 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << targetMap.getItemTarget());
-			}
-			if (targetMap.hasCorpseTarget())
-			{
-				DLOG("\tCORPSE TARGET: 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << targetMap.getCorpseTarget());
-			}
-			if (targetMap.hasSourceTarget())
-			{
-				float x, y, z;
-				targetMap.getSourceLocation(x, y, z);
-				DLOG("\tSOURCE: " << x << " " << y << " " << z);
-			}
-			if (targetMap.hasDestTarget())
-			{
-				float x, y, z;
-				targetMap.getDestLocation(x, y, z);
-				DLOG("\tDESTINATION: " << x << " " << y << " " << z);
-			}
-			if (targetMap.hasStringTarget())
-			{
-				DLOG("\tSTRING: " << targetMap.getStringTarget());
-			}
 		}
 
 		// Get the cast time of this spell
@@ -1076,11 +1038,6 @@ namespace wowpp
 						std::bind(game::server_write::castFailed, std::placeholders::_1, result, *spell, castCount));
 				}
 			});
-
-		// Send error
-// 		game::SpellCastResult result = game::spell_cast_result::FailedError;
-// 		sender.sendProxyPacket(
-// 			std::bind(game::server_write::castFailed, std::placeholders::_1, result, std::cref(*spell), castCount));
 	}
 
 	void RealmConnector::handleCancelCast(Player &sender, game::Protocol::IncomingPacket &packet)
@@ -1101,21 +1058,18 @@ namespace wowpp
 		UInt64 targetGUID;
 		if (!game::client_read::attackSwing(packet, targetGUID))
 		{
-			WLOG("Could not read packet data");
 			return;
 		}
 
 		// We can't attack ourself
 		if (targetGUID == sender.getCharacterGuid())
 		{
-			WLOG("Can't attack target: Can't attack own character");
 			return;
 		}
 
 		// Check if target is a unit target
 		if (!isUnitGUID(targetGUID))
 		{
-			WLOG("Can't attack target: Target has to be a unit");
 			return;
 		}
 
@@ -1123,7 +1077,6 @@ namespace wowpp
 		auto *target = dynamic_cast<GameUnit*>(sender.getWorldInstance().findObjectByGUID(targetGUID));
 		if (!target)
 		{
-			WLOG("Can't attack target: Not found in players world instance");
 			return;
 		}
 
@@ -1174,7 +1127,6 @@ namespace wowpp
 		const auto *trigger = m_project.areaTriggers.getById(triggerId);
 		if (!trigger)
 		{
-			WLOG("Unknown trigger");
 			return;
 		}
 
@@ -1182,7 +1134,6 @@ namespace wowpp
 		auto character = sender.getCharacter();
 		if (trigger->map() != character->getMapId())
 		{
-			WLOG("Trigger is not on players map!");
 			return;
 		}
 
@@ -1194,7 +1145,6 @@ namespace wowpp
 				::sqrtf(((location.x - trigger->x()) * (location.x - trigger->x())) + ((location.y - trigger->y()) * (location.y - trigger->y())) + ((location.z - trigger->z()) * (location.z - trigger->z())));
 			if (dist > trigger->radius())
 			{
-				WLOG("Player character is too far away from trigger");
 				return;
 			}
 		}
@@ -1226,7 +1176,6 @@ namespace wowpp
 		UInt32 spellId;
 		if (!game::client_read::cancelAura(packet, spellId))
 		{
-			WLOG("Could not read packet data");
 			return;
 		}
 
@@ -1234,14 +1183,12 @@ namespace wowpp
 		const auto *spell = m_project.spells.getById(spellId);
 		if (!spell)
 		{
-			WLOG("Unknown spell id");
 			return;
 		}
 
 		// Check if that spell aura can be cancelled
 		if ((spell->attributes(0) & game::spell_attributes::CantCancel) != 0)
 		{
-			WLOG("Spell aura can't be cancelled");
 			return;
 		}
 

@@ -38,6 +38,9 @@ namespace wowpp
 
 					for (const auto &placement : addEvent->added.page->m2Placements)
 					{
+						// Code below not yet ready
+						break;
+
 						if (placement.mmidEntry >= addEvent->added.page->m2Ids.size())
 						{
 							ELOG("INVALID M2 ID");
