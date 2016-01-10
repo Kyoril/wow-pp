@@ -52,6 +52,7 @@ namespace wowpp
 
 			inline Matrix4()
 			{
+				identity();
 			}
 			inline Matrix4(
 				float m00, float m01, float m02, float m03,
@@ -76,7 +77,13 @@ namespace wowpp
 				m[3][2] = m32;
 				m[3][3] = m33;
 			}
-
+			void identity()
+			{
+				m[0][0] = 1.0f; m[0][1] = 0.0f; m[0][2] = 0.0f; m[0][3] = 0.0f;
+				m[1][0] = 0.0f; m[1][1] = 1.0f; m[1][2] = 0.0f; m[1][3] = 0.0f;
+				m[2][0] = 0.0f; m[2][1] = 0.0f; m[2][2] = 1.0f; m[2][3] = 0.0f;
+				m[3][0] = 0.0f; m[3][1] = 0.0f; m[3][2] = 0.0f; m[3][3] = 1.0f;
+			}
 			inline void swap(Matrix4& other)
 			{
 				std::swap(m[0][0], other.m[0][0]);
@@ -224,6 +231,25 @@ namespace wowpp
 				return r;
 			}
 
+			static Matrix4 fromEulerAnglesZYX(float fYAngle, float fPAngle, float fRAngle)
+			{
+				float fCos, fSin;
+
+				fCos = cos(fYAngle);
+				fSin = sin(fYAngle);
+				Matrix4 kZMat(fCos, -fSin, 0.0f, 0.0f, fSin, fCos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+
+				fCos = cos(fPAngle);
+				fSin = sin(fPAngle);
+				Matrix4 kYMat(fCos, 0.0f, fSin, 0.0f, 0.0, 1.0f, 0.0f, 0.0f, -fSin, 0.0f, fCos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+
+				fCos = cos(fRAngle);
+				fSin = sin(fRAngle);
+				Matrix4 kXMat(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, fCos, -fSin, 0.0f, 0.0f, fSin, fCos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+
+				return kZMat * (kYMat * kXMat);
+			}
+
 			void fromAngleAxis(const Vector3& rkAxis, float fRadians)
 			{
 				float fCos = ::cosf(fRadians);
@@ -248,6 +274,7 @@ namespace wowpp
 				m[2][0] = fXZM - fYSin;
 				m[2][1] = fYZM + fXSin;
 				m[2][2] = fZ2*fOneMinusCos + fCos;
+				m[3][3] = 1.0f;
 			}
 
 

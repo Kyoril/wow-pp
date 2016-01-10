@@ -27,6 +27,7 @@
 #include "tile_index.h"
 #include "common/grid.h"
 #include "math/ray.h"
+#include <vector>
 
 namespace wowpp
 {
@@ -38,8 +39,10 @@ namespace wowpp
 		UInt32 version;
 		UInt32 offsAreaTable;
 		UInt32 areaTableSize;
-		UInt32 offsHeight;
-		UInt32 heightSize;
+//		UInt32 offsHeight;
+//		UInt32 heightSize;
+		UInt32 offsCollision;
+		UInt32 collisionSize;
 
 		MapHeaderChunk()
 			: fourCC(0)
@@ -47,8 +50,10 @@ namespace wowpp
 			, version(0)
 			, offsAreaTable(0)
 			, areaTableSize(0)
-			, offsHeight(0)
-			, heightSize(0)
+//			, offsHeight(0)
+//			, heightSize(0)
+			, offsCollision(0)
+			, collisionSize(0)
 		{
 		}
 	};
@@ -74,11 +79,43 @@ namespace wowpp
 	};
 
 	/// Map size chunk.
-	struct MapHeightChunk
+	/*struct MapHeightChunk
 	{
 		UInt32 fourCC;
 		UInt32 size;
 		std::array<std::array<float, 145>, 16 * 16> heights;
+	};*/
+
+	struct Triangle
+	{
+		UInt32 indexA, indexB, indexC;
+
+		explicit Triangle()
+			: indexA(0)
+			, indexB(0)
+			, indexC(0)
+		{
+		}
+	};
+
+	typedef math::Vector3 Vertex;
+
+	struct MapCollisionChunk
+	{
+		UInt32 fourCC;
+		UInt32 size;
+		UInt32 vertexCount;
+		UInt32 triangleCount;
+		std::vector<Vertex> vertices;
+		std::vector<Triangle> triangles;
+
+		explicit MapCollisionChunk()
+			: fourCC(0)
+			, size(0)
+			, vertexCount(0)
+			, triangleCount(0)
+		{
+		}
 	};
 
 	namespace proto
@@ -90,7 +127,8 @@ namespace wowpp
 	struct MapDataTile final
 	{
 		MapAreaChunk areas;
-		MapHeightChunk heights;
+		//MapHeightChunk heights;
+		MapCollisionChunk collision;
 
 		~MapDataTile() {}
 	};

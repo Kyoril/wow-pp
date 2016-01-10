@@ -550,10 +550,7 @@ namespace wowpp
 		if (map)
 		{
 			// Lets check our Z coordinate
-			float x, y, z, o;
-			m_character->getLocation(x, y, z, o);
-			float terrainHeight = map->getHeightAt(x, y);
-			//DLOG("Z Comparison for " << x << " " << y << ": " << z << " (Terrain: " << terrainHeight << ")");
+			const auto &pos = m_character->getLocation();
 
 			// Get or load map tile
 			auto *tile = map->getTile(adtPos);

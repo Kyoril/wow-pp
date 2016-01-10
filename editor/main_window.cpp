@@ -30,6 +30,7 @@
 #include <QCloseEvent>
 #include <QVBoxLayout>
 #include <QSettings>
+#include "game/map.h"
 
 namespace wowpp
 {
@@ -124,6 +125,52 @@ namespace wowpp
 				std::unique_ptr<WorldEditor> scene(
 					new WorldEditor(*sceneMgr, *camera, *entry));
 				m_ogreWindow->setScene(std::move(scene));
+
+				std::unique_ptr<Map> mapInst(new Map(
+					*entry, m_application.getConfiguration().dataPath));
+				auto *tile = mapInst->getTile(TileIndex2D(31, 32));
+				if (!tile)
+				{
+					return;
+				}
+
+				auto material = Ogre::MaterialManager::getSingleton().createOrRetrieve("LineOfSightBlock", "General", true);
+				Ogre::MaterialPtr matPtr = material.first.dynamicCast<Ogre::Material>();
+				matPtr->removeAllTechniques();
+				auto *teq = matPtr->createTechnique();
+				teq->removeAllPasses();
+				teq->setCullingMode(Ogre::CULL_NONE);
+				teq->setManualCullingMode(Ogre::ManualCullingMode::MANUAL_CULL_NONE);
+				auto *pass = teq->createPass();
+				pass->setPolygonMode(Ogre::PM_SOLID);
+				pass->setSceneBlending(Ogre::SceneBlendType::SBT_TRANSPARENT_ALPHA);
+				pass->setDiffuse(0.7f, 0.7f, 0.7f, 1.0f);
+				pass = teq->createPass();
+				pass->setPolygonMode(Ogre::PM_WIREFRAME);
+				pass->setSceneBlending(Ogre::SceneBlendType::SBT_MODULATE);
+				pass->setDiffuse(0.0f, 0.0f, 0.0f, 1.0f);
+				pass->setAmbient(0.0f, 0.0f, 0.0f);
+
+				// Create collision for this map
+				Ogre::ManualObject *obj = sceneMgr->createManualObject();
+				obj->begin("LineOfSightBlock", Ogre::RenderOperation::OT_TRIANGLE_LIST);
+				obj->estimateVertexCount(tile->collision.vertexCount);
+				obj->estimateIndexCount(tile->collision.triangleCount * 3);
+				for (auto &vert : tile->collision.vertices)
+				{
+					obj->position(vert.x, vert.y, vert.z);
+				}
+				for (auto &tri : tile->collision.triangles)
+				{
+					obj->index(tri.indexA);
+					obj->index(tri.indexB);
+					obj->index(tri.indexC);
+				}
+				obj->end();
+
+				camera->setPosition(tile->collision.vertices[0].x, tile->collision.vertices[0].y, tile->collision.vertices[0].z);
+				camera->setFarClipDistance(0.0f);
+				sceneMgr->getRootSceneNode()->attachObject(obj);
 			}
 		}
 

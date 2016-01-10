@@ -88,11 +88,67 @@ namespace wowpp
 			m_isRoot = false;
 			m_reader.readPOD(m_groupHeader);
 
-
+			// Read sub chunks
+			UInt32 cc = 0, size = 0;
+			do
+			{
+				if (!(m_reader >> io::read<UInt32>(cc) >> io::read<UInt32>(size)))
+				{
+					break;
+				}
+				switch (cc)
+				{
+					case 0x4D4F5649:		// MOVI
+					{
+						m_indices.resize(size / sizeof(UInt16));
+						m_reader >> io::read_range(m_indices);
+						break;
+					}
+					case 0x4D4F5654:		// MOVT
+					{
+						m_vertices.resize(size / sizeof(math::Vector3));
+						for (UInt32 i = 0; i < m_vertices.size(); ++i)
+						{
+							m_reader.readPOD(m_vertices[i]);
+						}
+						break;
+					}
+					case 0x4D4F5059:					// MOPY
+					{
+						m_triangleProps.resize(size);
+						m_reader >> io::read_range(m_triangleProps);
+						break;
+					}
+					default:
+					{
+						m_reader.skip(size);
+						break;
+					}
+				}
+			} while (cc != 0 && size != 0);
 		}
 
 		// File structure seems to be valid
 		m_isValid = true;
+		return true;
+	}
+
+	const bool WMOFile::isCollisionTriangle(UInt32 triangleIndex) const
+	{
+		if (triangleIndex >= m_triangleProps.size())
+		{
+			WLOG("Index out of bounds!");
+			return true;
+		}
+
+		const auto &flags = m_triangleProps[triangleIndex * 2];
+
+		//if (!(flags & 0x40)) return false;					// Only wall surfaces
+
+		if (flags & 0x02) return false;						// Detail
+		else if (flags & 0x04) return false;				// No collision
+		else if (!(flags & (0x08 | 0x20))) return false;
+
 		return true;
 	}
 

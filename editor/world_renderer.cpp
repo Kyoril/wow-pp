@@ -74,17 +74,37 @@ namespace wowpp
 						Ogre::Entity *ent = m_sceneMgr.createEntity("Doodad_" + Ogre::StringConverter::toString(index++), mesh);
 						Ogre::SceneNode *node = m_sceneMgr.getRootSceneNode()->createChildSceneNode();
 						node->attachObject(ent);
-						node->setPosition(pos);
-						
-						/*
-						Ogre::Quaternion rotX(Ogre::Degree(placement.rotation[1] - 90.0f), Ogre::Vector3::UNIT_Y);
-						Ogre::Quaternion rotY(Ogre::Degree(-placement.rotation[0]), Ogre::Vector3::UNIT_Z);
-						Ogre::Quaternion rotZ(Ogre::Degree(placement.rotation[2]), Ogre::Vector3::UNIT_X);
-						node->setOrientation(rotY * rotX * rotZ);
-						*/
-						DLOG("Position: " << Ogre::StringConverter::toString(pos) << "; Page: " << addEvent->added.position[0] << " " << addEvent->added.position[1]);
 
-						node->setScale(Ogre::Vector3(placement.scale / 1024.0f));
+						Ogre::Vector3 position(
+							placement.position[0],
+							placement.position[1],
+							placement.position[2]);
+						position.x = 32.0f * 533.33333f - position.x;
+						position.z = 32.0f * 533.33333f - position.z;
+
+						node->setPosition(0.0f, 0.0f, 0.0f);
+						node->setOrientation(Ogre::Quaternion::IDENTITY);
+						node->setScale(1.0f, 1.0f, 1.0f);
+
+						Ogre::Quaternion rot = Ogre::Quaternion::IDENTITY;
+						rot = rot * Ogre::Quaternion(Ogre::Degree(90), Ogre::Vector3::UNIT_X);
+						rot = rot * Ogre::Quaternion(Ogre::Degree(90), Ogre::Vector3::UNIT_Y);
+						node->setOrientation(rot);
+
+						node->translate(position, Ogre::Node::TS_LOCAL);
+
+						Ogre::Quaternion ownRot = Ogre::Quaternion::IDENTITY;
+						ownRot = ownRot * Ogre::Quaternion(Ogre::Degree(placement.rotation[2] - 270), Ogre::Vector3::UNIT_Y);
+						ownRot = ownRot * Ogre::Quaternion(Ogre::Degree(placement.position[1]), Ogre::Vector3::UNIT_Z);
+						ownRot = ownRot * Ogre::Quaternion(Ogre::Degree(placement.position[0] - 90), Ogre::Vector3::UNIT_X);
+						
+						node->rotate(ownRot, Ogre::Node::TS_PARENT);
+
+						/*node->rotate(Ogre::Quaternion(Ogre::Degree(placement.rotation[1] - 270), Ogre::Vector3::UNIT_Y), Ogre::Node::TS_PARENT);
+						node->rotate(Ogre::Quaternion(Ogre::Degree(-placement.position[0]), Ogre::Vector3::UNIT_Z), Ogre::Node::TS_PARENT);
+						node->rotate(Ogre::Quaternion(Ogre::Degree(placement.position[2] - 90), Ogre::Vector3::UNIT_X), Ogre::Node::TS_PARENT);*/
+
+						node->scale(Ogre::Vector3(placement.scale / 1024.0f));
 					}
 
 					m_terrainPages[addEvent->added.position] = page;

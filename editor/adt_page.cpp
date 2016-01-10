@@ -1,6 +1,9 @@
 
 #include "adt_page.h"
 #include "log/default_log_levels.h"
+#include "OgreMatrix4.h"
+#include "OgreVector3.h"
+#include "OgreQuaternion.h"
 #include <cassert>
 
 namespace wowpp
@@ -117,7 +120,8 @@ namespace wowpp
 				page.terrain.m2Placements.resize(numEntries);
 				for (size_t i = 0; i < numEntries; ++i)
 				{
-					ptr->read(&page.terrain.m2Placements[i], sizeof(terrain::model::M2Placement));
+					auto &placement = page.terrain.m2Placements[i];
+					ptr->read(&placement, sizeof(terrain::model::M2Placement));
 				}
 
 				return true;

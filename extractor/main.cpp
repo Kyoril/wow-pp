@@ -115,29 +115,24 @@ namespace
 			wmos.emplace_back(std::move(wmoFile));
 		}
 
-		// Now, for every WMO placement, apply line of sight blocking polygons
-		for (const auto &entry : adt.getMODFChunk().entries)
-		{
-			// TODO: Entry placement
-
-		}
-
 		// Create files (TODO)
 		std::ofstream fileStrm(mapFile, std::ios::out | std::ios::binary);
 		io::StreamSink sink(fileStrm);
 		io::Writer writer(sink);
 		
-        // Create map header
+        // Create map header chunk
         MapHeaderChunk header;
         header.fourCC = 0x50414D57;				// WMAP		- WoW Map
         header.size = sizeof(MapHeaderChunk) - 8;
-        header.version = 0x100;
+        header.version = 0x110;
         header.offsAreaTable = sizeof(MapHeaderChunk);
         header.areaTableSize = sizeof(MapAreaChunk);
-        header.offsHeight = header.offsAreaTable + header.areaTableSize;
-		header.heightSize = sizeof(MapHeightChunk);
+        //header.offsHeight = header.offsAreaTable + header.areaTableSize;
+		//header.heightSize = sizeof(MapHeightChunk);
+		header.offsCollision = header.offsAreaTable + header.areaTableSize;
+		header.collisionSize = 0;	// TODO
 		
-        // Area header
+        // Area header chunk
         MapAreaChunk areaHeader;
         areaHeader.fourCC = 0x52414D57;			// WMAR		- WoW Map Areas
         areaHeader.size = sizeof(MapAreaChunk) - 8;
@@ -155,6 +150,115 @@ namespace
             areaHeader.cellAreas[i].flags = flags;
         }
 		
+		std::ostringstream outStrm;
+		outStrm << "obj/" << cellX << "_" << cellY << ".obj";
+		FILE *file = fopen(outStrm.str().c_str(), "w");
+
+		// Collision chunk
+		MapCollisionChunk collisionChunk;
+		collisionChunk.fourCC = 0x4C434D57;
+		collisionChunk.size = sizeof(UInt32) * 4;
+
+		UInt32 vertexCount = 0;
+		UInt32 triangleCount = 0;
+
+		UInt32 groupCount = 0;
+		for (const auto &entry : adt.getMODFChunk().entries)
+		{
+			fprintf(file, "\n\no Group %d\n", groupCount++);
+
+			// Entry placement
+			auto &wmo = wmos[entry.mwidEntry];
+			if (!wmo->isRootWMO())
+			{
+				WLOG("Group wmo placed, but root wmo expected");
+				continue;
+			}
+
+			const float TILESIZE = 533.33333333f;
+			const float posX = 32.0f * TILESIZE - entry.position.x;
+			const float posY = entry.position.y;
+			const float posZ = 32.0f * TILESIZE - entry.position.z;
+
+			math::Matrix4 mat;
+
+#define WOWPP_DEG_TO_RAD(x) (x * 3.14159265358979323846 / 180.0)
+			// Move to right position
+			math::Matrix4 matTrans;
+			matTrans.makeTranslation(posX, posY, posZ);
+			mat = mat * matTrans;
+
+			// Apply placement rotation
+			math::Matrix4 matRotY2; matRotY2.fromAngleAxis(math::Vector3(0.0f, 1.0f, 0.0f), WOWPP_DEG_TO_RAD(entry.rotation[1]-270.0f));
+			mat = mat * matRotY2;
+			math::Matrix4 matRotZ2; matRotZ2.fromAngleAxis(math::Vector3(0.0f, 0.0f, 1.0f), WOWPP_DEG_TO_RAD(-entry.rotation[0]));
+			mat = mat * matRotZ2;
+			math::Matrix4 matRotX2; matRotX2.fromAngleAxis(math::Vector3(1.0f, 0.0f, 0.0f), WOWPP_DEG_TO_RAD(entry.rotation[2]-90.0f));
+			mat = mat * matRotX2;
+
+			// Rotate into Z-Up
+			math::Matrix4 matRotX; matRotX.fromAngleAxis(math::Vector3(1.0f, 0.0f, 0.0f), WOWPP_DEG_TO_RAD(90));
+			math::Matrix4 matRotY; matRotY.fromAngleAxis(math::Vector3(0.0f, 1.0f, 0.0f), WOWPP_DEG_TO_RAD(90));
+			mat = mat * matRotX;
+			mat = mat * matRotY;
+#undef WOWPP_DEG_TO_RAD
+
+			// Transform vertices
+			for (auto &group : wmo->getGroups())
+			{
+				UInt32 groupStartIndex = vertexCount;
+
+				const auto &verts = group->getVertices();
+				const auto &inds = group->getIndices();
+
+				vertexCount += verts.size();
+				UInt32 groupTris = inds.size() / 3;
+				for (auto &vert : verts)
+				{
+					// Transform vertex and push it to the list
+					math::Vector3 transformed = mat * vert;
+					collisionChunk.vertices.emplace_back(std::move(transformed));
+
+					fprintf(file, "v %f %f %f\n", transformed.x, transformed.y, transformed.z);
+				}
+				for (UInt32 i = 0; i < inds.size(); i += 3)
+				{
+					if (!group->isCollisionTriangle(i / 3))
+					{
+						// Skip this triangle
+						groupTris--;
+						continue;
+					}
+
+					fprintf(file, "f %d %d %d\n", inds[i] + groupStartIndex + 1, inds[i + 1] + groupStartIndex + 1, inds[i + 2] + groupStartIndex + 1);
+
+					Triangle tri;
+					tri.indexA = inds[i] + groupStartIndex;
+					tri.indexB = inds[i+1] + groupStartIndex;
+					tri.indexC = inds[i+2] + groupStartIndex;
+					collisionChunk.triangles.emplace_back(std::move(tri));
+				}
+
+				triangleCount += groupTris;
+			}
+
+			collisionChunk.vertexCount += vertexCount;
+			collisionChunk.triangleCount += triangleCount;
+		}
+		collisionChunk.size += sizeof(math::Vector3) * collisionChunk.vertexCount;
+		collisionChunk.size += sizeof(UInt32) * 3 * collisionChunk.triangleCount;
+		header.collisionSize = collisionChunk.size;
+		if (collisionChunk.vertexCount == 0)
+		{
+			header.offsCollision = 0;
+			header.collisionSize = 0;
+		}
+
+		fprintf(file, "\n\n# TRIANGLE COUNT IN TOTAL: %d\n", collisionChunk.triangleCount);
+		fprintf(file, "# VERTEX COUNT IN TOTAL: %d\n", collisionChunk.vertexCount);
+		fclose(file);
+
+#if 0
 		// Map height header
 		MapHeightChunk heightChunk;
 		heightChunk.fourCC = 0x54484D57;		// WMHT		- WoW Map Height
@@ -170,11 +274,33 @@ namespace
 				heightChunk.heights[i][index++] = mcnk.zpos + height;
 			}
 		}
-        
+#endif
+
 		// Write map header
         writer.writePOD(header);
         writer.writePOD(areaHeader);
-		writer.writePOD(heightChunk);
+		if (header.offsCollision)
+		{
+			writer << io::write<UInt32>(collisionChunk.fourCC);
+			writer << io::write<UInt32>(collisionChunk.size);
+			writer << io::write<UInt32>(collisionChunk.vertexCount);
+			writer << io::write<UInt32>(collisionChunk.triangleCount);
+
+			for (auto &vert : collisionChunk.vertices)
+			{
+				writer
+					<< io::write<float>(vert.x)
+					<< io::write<float>(vert.y)
+					<< io::write<float>(vert.z);
+			}
+			for (auto &triangle : collisionChunk.triangles)
+			{
+				writer
+					<< io::write<UInt32>(triangle.indexA)
+					<< io::write<UInt32>(triangle.indexB)
+					<< io::write<UInt32>(triangle.indexC);
+			}
+		}
         
 		return true;
 	}
@@ -188,6 +314,8 @@ namespace
 		{
 			return false;;
 		}
+		if (mapId != 36)
+			return true;
 
 		String mapName;
 		if (!dbcMap->getValue(dbcRow, 1, mapName))
