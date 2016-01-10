@@ -44,6 +44,7 @@
 #include "proto_data/project_loader.h"
 #include "proto_data/project_saver.h"
 #include "proto_data/project.h"
+#include "game/defines.h"
 using namespace wowpp;
 
 namespace wowpp
@@ -330,7 +331,21 @@ namespace wowpp
 					case 10278:	// Rank 3
 						it->add_additionalspells(25771);
 						break;
-						
+					//////////////////////////////////////////////////////////////////////////
+					// Charge
+					case 100:	// Rank 1
+						for (auto &eff : *it->mutable_effects())
+						{
+							// Instead of "DUMMY" effect, we make this a "ENERGIZE" effect, since this is all it does.
+							if (eff.type() == game::spell_effects::Dummy &&
+								eff.basepoints() != 0)
+							{
+								eff.set_type(game::spell_effects::Energize);
+								break;
+							}
+						}
+						break;
+
 					//////////////////////////////////////////////////////////////////////////
 					/////////////////////// AURA TRIGGER SPELLS //////////////////////////////
 					//////////////////////////////////////////////////////////////////////////
