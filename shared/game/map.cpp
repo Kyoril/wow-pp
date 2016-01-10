@@ -169,6 +169,9 @@ namespace wowpp
 
 	bool Map::isInLineOfSight(const math::Vector3 & posA, const math::Vector3 & posB)
 	{
+		if (posA == posB)
+			return true;
+		
 		auto startTime = getCurrentTime();
 
 		// Create a ray
