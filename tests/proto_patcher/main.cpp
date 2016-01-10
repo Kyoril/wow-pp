@@ -334,6 +334,9 @@ namespace wowpp
 					//////////////////////////////////////////////////////////////////////////
 					// Charge
 					case 100:	// Rank 1
+					case 6178:	// Rank 2
+					case 11578:	// Rank 3
+					case 35754:	// unknown npc spell
 						for (auto &eff : *it->mutable_effects())
 						{
 							// Instead of "DUMMY" effect, we make this a "ENERGIZE" effect, since this is all it does.
