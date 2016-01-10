@@ -304,6 +304,7 @@ namespace wowpp
 		std::vector<UInt32> m_valueBitset;
 		UInt32 m_mapId;
 		math::Vector3 m_position;
+		math::Vector3 m_lastFiredPosition;	// This is needed for move signal
 		float m_o;
 		UInt32 m_objectType;
 		UInt32 m_objectTypeId;

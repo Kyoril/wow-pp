@@ -261,7 +261,8 @@ namespace wowpp
 
 		if (fire)
 		{
-			moved(*this, oldPosition, oldO);
+			moved(*this, m_lastFiredPosition, oldO);
+			m_lastFiredPosition = oldPosition;
 		}
 	}
 
