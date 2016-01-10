@@ -55,13 +55,13 @@ namespace wowpp
 
 		// Setup AI
 		m_ai = make_unique<CreatureAI>(
-			*this, CreatureAI::Home(makeVector(0.0f, 0.0f, 0.0f)));
+			*this, CreatureAI::Home(math::Vector3(0.0f, 0.0f, 0.0f)));
 
 		// Start regeneration
 		m_onSpawned = spawned.connect([this]()
 		{
-			CreatureAI::Home home(makeVector(0.0f, 0.0f, 0.0f));
-			getLocation(home.position[0], home.position[1], home.position[2], home.orientation);
+			math::Vector3 location(getLocation());
+			CreatureAI::Home home(location);
 
 			m_ai->setHome(std::move(home));
 			startRegeneration();

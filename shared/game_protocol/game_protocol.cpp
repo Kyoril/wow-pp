@@ -148,7 +148,7 @@ namespace wowpp
 				out_packet
 					<< io::write<NetUInt8>(characters.size());
 				
-				for (auto &entry : characters)
+				for (const game::CharEntry &entry : characters)
 				{
 					out_packet
 						<< io::write<NetUInt64>(entry.id)
@@ -165,9 +165,9 @@ namespace wowpp
 						<< io::write<NetUInt8>(entry.level)
 						<< io::write<NetUInt32>(entry.zoneId)				// zone
 						<< io::write<NetUInt32>(entry.mapId)				// map
-						<< io::write<float>(entry.x)						// x
-						<< io::write<float>(entry.y)						// y
-						<< io::write<float>(entry.z)						// z
+						<< io::write<float>(entry.location.x)				// x
+						<< io::write<float>(entry.location.y)				// y
+						<< io::write<float>(entry.location.z)				// z
 						<< io::write<NetUInt32>(0x00);						// guild guid
 
 					UInt32 charFlags = character_flags::None;
@@ -277,14 +277,14 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void loginVerifyWorld(game::OutgoingPacket &out_packet, UInt32 mapId, float x, float y, float z, float o)
+			void loginVerifyWorld(game::OutgoingPacket &out_packet, UInt32 mapId, math::Vector3 location, float o)
 			{
 				out_packet.start(game::server_packet::LoginVerifyWorld);
 				out_packet
 					<< io::write<NetUInt32>(mapId)
-					<< io::write<float>(x)
-					<< io::write<float>(y)
-					<< io::write<float>(z)
+					<< io::write<float>(location.x)
+					<< io::write<float>(location.y)
+					<< io::write<float>(location.z)
 					<< io::write<float>(o);
 				out_packet.finish();
 			}
@@ -314,13 +314,13 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void bindPointUpdate(game::OutgoingPacket &out_packet, UInt32 mapId, UInt32 areaId, float x, float y, float z)
+			void bindPointUpdate(game::OutgoingPacket &out_packet, UInt32 mapId, UInt32 areaId, math::Vector3 location)
 			{
 				out_packet.start(game::server_packet::BindPointUpdate);
 				out_packet
-					<< io::write<float>(x)
-					<< io::write<float>(y)
-					<< io::write<float>(z)
+					<< io::write<float>(location.x)
+					<< io::write<float>(location.y)
+					<< io::write<float>(location.z)
 					<< io::write<UInt32>(mapId)
 					<< io::write<UInt32>(areaId);
 				out_packet.finish();
@@ -622,8 +622,8 @@ namespace wowpp
 			void monsterMove(
 				game::OutgoingPacket &out_packet,
 				UInt64 guid,
-				const Vector<float, 3> &oldPosition,
-				const Vector<float, 3> &position,
+				const math::Vector3 &oldPosition,
+				const math::Vector3 &position,
 				UInt32 time
 				)
 			{
@@ -647,9 +647,9 @@ namespace wowpp
 
 				out_packet
 					<< io::write_range(&packGUID[0], &packGUID[size])
-					<< io::write<float>(oldPosition[0])
-					<< io::write<float>(oldPosition[1])
-					<< io::write<float>(oldPosition[2])
+					<< io::write<float>(oldPosition.x)
+					<< io::write<float>(oldPosition.y)
+					<< io::write<float>(oldPosition.z)
 					<< io::write<NetUInt32>(mTimeStamp())
 					<< io::write<NetUInt8>(0);
 
@@ -658,9 +658,9 @@ namespace wowpp
 					<< io::write<NetUInt32>(256)
 					<< io::write<NetUInt32>(time)
 					<< io::write<NetUInt32>(1)				// One waypoint
-					<< io::write<float>(position[0])
-					<< io::write<float>(position[1])
-					<< io::write<float>(position[2]);
+					<< io::write<float>(position.x)
+					<< io::write<float>(position.y)
+					<< io::write<float>(position.z);
 				out_packet.finish();
 			}
 
@@ -1935,9 +1935,8 @@ namespace wowpp
 				
 				if (updateFlags & group_update_flags::Position)
 				{
-					float x, y, z, o;
-					character.getLocation(x, y, z, o);
-					out_packet << io::write<NetUInt16>(UInt16(x)) << io::write<NetUInt16>(UInt16(y));
+					math::Vector3 location(character.getLocation());
+					out_packet << io::write<NetUInt16>(UInt16(location.x)) << io::write<NetUInt16>(UInt16(location.y));
 				}
 				
 				if (updateFlags & group_update_flags::Auras)
@@ -2057,9 +2056,8 @@ namespace wowpp
 
 				if (updateFlags & group_update_flags::Position)
 				{
-					float x, y, z, o;
-					character.getLocation(x, y, z, o);
-					out_packet << io::write<NetUInt16>(UInt16(x)) << io::write<NetUInt16>(UInt16(y));
+					math::Vector3 location(character.getLocation());
+					out_packet << io::write<NetUInt16>(UInt16(location.x)) << io::write<NetUInt16>(UInt16(location.y));
 				}
 
 				if (updateFlags & group_update_flags::Auras)
@@ -2238,14 +2236,14 @@ namespace wowpp
 			}
 
 
-			void newWorld(game::OutgoingPacket &out_packet, UInt32 newMap, float x, float y, float z, float o)
+			void newWorld(game::OutgoingPacket &out_packet, UInt32 newMap, math::Vector3 location, float o)
 			{
 				out_packet.start(game::server_packet::NewWorld);
 				out_packet
 					<< io::write<NetUInt32>(newMap)
-					<< io::write<float>(x)
-					<< io::write<float>(y)
-					<< io::write<float>(z)
+					<< io::write<float>(location.x)
+					<< io::write<float>(location.y)
+					<< io::write<float>(location.z)
 					<< io::write<float>(o);
 				out_packet.finish();
 			}

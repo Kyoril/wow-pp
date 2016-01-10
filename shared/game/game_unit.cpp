@@ -472,8 +472,7 @@ namespace wowpp
 		do
 		{
 			// Get target location
-			float vX, vY, vZ, vO;
-			victim->getLocation(vX, vY, vZ, vO);
+			math::Vector3 location(victim->getLocation());
 
 			// Distance check
 			const float distance = getDistanceTo(*victim);
@@ -495,7 +494,7 @@ namespace wowpp
 			}
 
 			// Check if that target is in front of us
-			if (!isInArc(2.0f * 3.1415927f / 3.0f, vX, vY))
+			if (!isInArc(2.0f * 3.1415927f / 3.0f, location.x, location.y))
 			{
 				autoAttackError(attack_swing_error::WrongFacing);
 				
@@ -641,7 +640,7 @@ namespace wowpp
 					victim->dealDamage(damage - absorbed, 0, this);
 
 					// Trigger auto attack procs
-					procMeleeAutoAttack(m_victim);
+					doneMeleeAutoAttack(m_victim);
 				}
 			}
 		} while (false);
@@ -1161,7 +1160,7 @@ namespace wowpp
 			health -= damage;
 
 		setUInt32Value(unit_fields::Health, health);
-		if (health == 0)
+		if (health < 1)
 		{
 			// Call function and signal
 			onKilled(attacker);
@@ -1227,8 +1226,8 @@ namespace wowpp
 		if (isAlive())
 			return;
 
-		float x, y, z, o;
-		getLocation(x, y, z, o);
+		float o = getOrientation();
+		math::Vector3 location(getLocation());
 
 		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
 		if (health > maxHealth) health = maxHealth;
@@ -1244,7 +1243,8 @@ namespace wowpp
 		startRegeneration();
 
 		// Raise moved event for aggro etc.
-		moved(*this, x, y, z - 0.1f, o);
+		location.z -= 0.1f;
+		moved(*this, location, o);
 	}
 
 	void GameUnit::rewardExperience(GameUnit *victim, UInt32 experience)
@@ -1319,7 +1319,12 @@ namespace wowpp
 	
 	UInt32 GameUnit::getBonus(UInt8 school)
 	{
-		return 0;
+		UInt32 bonus = 0;
+		if (getTypeId() == object_type::Character)
+		{
+			bonus = getUInt32Value(character_fields::ModDamageDonePos + sqrt(school));
+		}
+		return bonus;
 	}
 	
 	UInt32 GameUnit::getBonusPct(UInt8 school)

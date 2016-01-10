@@ -149,25 +149,23 @@ namespace wowpp
 
 	bool Map::isInLineOfSight(const math::Vector3 & posA, const math::Vector3 & posB)
 	{
-		auto start = getCurrentTime();
+		if (posA == posB)
+			return true;
 
 		// Calculate grid x coordinates
 		TileIndex2D startTileIdx;
 		startTileIdx[0] = static_cast<Int32>(floor((32.0 - (static_cast<double>(posA.x) / 533.3333333))));
 		startTileIdx[1] = static_cast<Int32>(floor((32.0 - (static_cast<double>(posA.y) / 533.3333333))));
-		DLOG("TILE INDEX: " << startTileIdx);
 
 		auto *startTile = getTile(startTileIdx);
 		if (!startTile)
 		{
 			// Unable to get / load tile - always in line of sight
-			DLOG("No collision tile available");
 			return true;
 		}
 
 		if (startTile->collision.triangleCount == 0)
 		{
-			DLOG("No triangles in start tile");
 			return true;
 		}
 
@@ -183,13 +181,6 @@ namespace wowpp
 			auto result = ray.intersectsTriangle(vA, vB, vC);
 			if (!result.first)
 				return false;
-		}
-
-		auto end = getCurrentTime();
-		auto diff = end - start;
-		if (diff >= 5)
-		{
-			WLOG("Map::isInLineOfSight took " << diff << "ms");
 		}
 
 		// Target is in line of sight

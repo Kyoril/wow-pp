@@ -232,15 +232,15 @@ namespace wowpp
 			% bytes2										// 6
 			% character.mapId	// Location					// 7
 			% character.zoneId								// 8
-			% character.x									// 9
-			% character.y									// 10
-			% character.z									// 11
+			% character.location.x							// 9
+			% character.location.y							// 10
+			% character.location.z							// 11
 			% character.o									// 12 
 			% static_cast<UInt32>(character.cinematic)		// 13
 			% character.mapId	// Home point				// 14
-			% character.x									// 15
-			% character.y									// 16
-			% character.z									// 17
+			% character.location.x							// 15
+			% character.location.y							// 16
+			% character.location.z							// 17
 			% character.o									// 18
 			% static_cast<UInt32>(character.level)			// 19
 			% static_cast<UInt32>(character.atLogin)		// 20
@@ -382,9 +382,9 @@ namespace wowpp
 				// Placement
 				row.getField(8, entry.mapId);
 				row.getField(9, entry.zoneId);
-				row.getField(10, entry.x);
-				row.getField(11, entry.y);
-				row.getField(12, entry.z);
+				row.getField(10, entry.location.x);
+				row.getField(11, entry.location.y);
+				row.getField(12, entry.location.z);
 				row.getField(13, entry.o);
 				
 				Int32 cinematic = 0;
@@ -560,7 +560,7 @@ namespace wowpp
 				row.getField(12, y);
 				row.getField(13, z);
 				row.getField(14, o);
-				out_character.relocate(x, y, z, o);
+				out_character.relocate(math::Vector3(x, y, z), o);
 				out_character.setMapId(mapId);
 
 				// Home point
@@ -569,7 +569,7 @@ namespace wowpp
 				row.getField(17, y);
 				row.getField(18, z);
 				row.getField(19, o);
-				out_character.setHome(mapId, game::Position(x, y, z), o);
+				out_character.setHome(mapId, math::Vector3(x, y, z), o);
 
 				String zoneBuffer;
 				row.getField(20, zoneBuffer);
@@ -662,11 +662,11 @@ namespace wowpp
 		GameTime start = getCurrentTime();
 		MySQL::Transaction transaction(m_connection);
 
-		float x, y, z, o;
-		character.getLocation(x, y, z, o);
+		float o = character.getOrientation();
+		math::Vector3 location(character.getLocation());
 
 		UInt32 homeMap;
-		game::Position homePos;
+		math::Vector3 homePos;
 		float homeO;
 		character.getHome(homeMap, homePos, homeO);
 
@@ -684,12 +684,12 @@ namespace wowpp
 			% lowerGuid												// 1
 			% character.getMapId()									// 2
 			% character.getZone()									// 3
-			% x % y % z % o											// 4, 5, 6, 7
+			% location.x % location.y % location.z % o											// 4, 5, 6, 7
 			% character.getLevel()									// 8
 			% character.getUInt32Value(character_fields::Xp)		// 9
 			% character.getUInt32Value(character_fields::Coinage)	// 10
 			% homeMap												// 11
-			% homePos[0] % homePos[1] % homePos[2] % homeO			// 12, 13, 14, 15
+			% homePos.x % homePos.y % homePos.z % homeO			// 12, 13, 14, 15
 			% strm.str()											// 16
 			).str()))
 		{
@@ -824,9 +824,9 @@ namespace wowpp
 				// Placement
 				row.getField(8, out_character.mapId);
 				row.getField(9, out_character.zoneId);
-				row.getField(10, out_character.x);
-				row.getField(11, out_character.y);
-				row.getField(12, out_character.z);
+				row.getField(10, out_character.location.x);
+				row.getField(11, out_character.location.y);
+				row.getField(12, out_character.location.z);
 				row.getField(13, out_character.o);
 
 				Int32 cinematic = 0;
@@ -890,9 +890,9 @@ namespace wowpp
 				// Placement
 				row.getField(8, out_character.mapId);
 				row.getField(9, out_character.zoneId);
-				row.getField(10, out_character.x);
-				row.getField(11, out_character.y);
-				row.getField(12, out_character.z);
+				row.getField(10, out_character.location.x);
+				row.getField(11, out_character.location.y);
+				row.getField(12, out_character.location.z);
 				row.getField(13, out_character.o);
 
 				Int32 cinematic = 0;

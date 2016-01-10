@@ -39,9 +39,7 @@ namespace wowpp
 		const proto::UnitEntry &entry,
 		size_t maxCount,
 		GameTime respawnDelay,
-		float centerX,
-		float centerY,
-		float centerZ,
+		math::Vector3 center,
 		boost::optional<float> rotation,
 		UInt32 emote,
 		float radius,
@@ -51,9 +49,7 @@ namespace wowpp
 		, m_entry(entry)
 		, m_maxCount(maxCount)
 		, m_respawnDelay(respawnDelay)
-		, m_centerX(centerX)
-		, m_centerY(centerY)
-		, m_centerZ(centerZ)
+		, m_center(center)
 		, m_rotation(rotation)
 		, m_radius(radius)
 		, m_emote(emote)
@@ -83,15 +79,11 @@ namespace wowpp
 		assert(m_currentlySpawned < m_maxCount);
 
 		// TODO: Generate random point and if needed, random rotation
-		const float x = m_centerX, y = m_centerY, z = m_centerZ;
+		const math::Vector3 location(m_center);
 		const float o = m_rotation ? *m_rotation : 0.0f;
 
 		// Spawn a new creature
-		auto spawned = m_world.spawnCreature(
-			m_entry,
-			x, y, z, o,
-			m_radius
-			);
+		auto spawned = m_world.spawnCreature(m_entry, location, o, m_radius);
 		spawned->setFloatValue(object_fields::ScaleX, m_entry.scale());
 		if (m_emote != 0)
 		{

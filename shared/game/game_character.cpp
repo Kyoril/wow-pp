@@ -1354,18 +1354,18 @@ namespace wowpp
 		}
 	}
 
-	void GameCharacter::getHome(UInt32 &out_map, game::Position &out_pos, float &out_rot) const
+	void GameCharacter::getHome(UInt32 &out_map, math::Vector3 &out_pos, float &out_rot) const
 	{
 		out_map = m_homeMap;
 		out_pos = m_homePos;
 		out_rot = m_homeRotation;
 	}
 
-	void GameCharacter::setHome(UInt32 map, const game::Position &pos, float rot)
+	void GameCharacter::setHome(UInt32 map, const math::Vector3 &position, float rot)
 	{
 		// Save new home position
 		m_homeMap = map;
-		m_homePos = pos;
+		m_homePos = position;
 		m_homeRotation = rot;
 
 		// Raise signal

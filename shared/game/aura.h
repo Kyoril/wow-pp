@@ -53,7 +53,7 @@ namespace wowpp
 		/// Executes the aura modifier and applies or removes the aura effects to/from the target.
 		void handleModifier(bool apply);
 		/// 
-		void handleProcModifier(game::spell_proc_flags::Type procType, GameUnit *target = nullptr);
+		void handleProcModifier(game::spell_proc_flags::Type procType, GameUnit *attacker = nullptr);
 		/// Determines whether this is a passive spell aura.
 		bool isPassive() const { return (m_spell.attributes(0) & game::spell_attributes::Passive) != 0; }
 		/// Determines whether this is a positive spell aura.
@@ -88,6 +88,8 @@ namespace wowpp
 		void handlePeriodicHeal(bool apply);
 		/// 12
 		void handleModStun(bool apply);
+		/// 13
+		void handleModDamageDone(bool apply);
 		/// 15
 		void handleDamageShield(bool apply);
 		/// 16
@@ -141,7 +143,7 @@ namespace wowpp
 		/// Executed when this aura ticks.
 		void onTick();
 		/// Executed when the target of this aura moved.
-		void onTargetMoved(GameObject &, float oldX, float oldY, float oldZ, float oldO);
+		void onTargetMoved(GameObject &, math::Vector3 oldPosition, float oldO);
 		/// 
 		void setRemoved(GameUnit *remover);
 

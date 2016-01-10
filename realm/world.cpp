@@ -211,8 +211,9 @@ namespace wowpp
 		DatabaseId characterDbId;
 		UInt64 worldObjectGuid;
 		UInt32 mapId, zoneId;
-		float x, y, z, o;
-		if (!world_read::worldInstanceEntered(packet, characterDbId, worldObjectGuid, instanceId, mapId, zoneId, x, y, z, o))
+		math::Vector3 location;
+		float o;
+		if (!world_read::worldInstanceEntered(packet, characterDbId, worldObjectGuid, instanceId, mapId, zoneId, location, o))
 		{
 			return;
 		}
@@ -232,7 +233,7 @@ namespace wowpp
 		}
 
 		// Send world instance data
-		player->worldInstanceEntered(*this, instanceId, worldObjectGuid, mapId, zoneId, x, y, z, o);
+		player->worldInstanceEntered(*this, instanceId, worldObjectGuid, mapId, zoneId, location, o);
 	}
 
 	void World::handleWorldInstanceError(pp::IncomingPacket &packet)
@@ -412,8 +413,9 @@ namespace wowpp
 		// Read the character ID first
 		UInt64 characterId;
 		UInt32 map;
-		float x, y, z, o;
-		if (!(pp::world_realm::world_read::teleportRequest(packet, characterId, map, x, y, z, o)))
+		math::Vector3 location;
+		float o;
+		if (!(pp::world_realm::world_read::teleportRequest(packet, characterId, map, location, o)))
 		{
 			return;
 		}
@@ -426,10 +428,10 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("INITIALIZING TRANSFER TO: " << map << " - " << x << " / " << y << " / " << z << " / " << o);
+		DLOG("INITIALIZING TRANSFER TO: " << map << " - " << location.x << " / " << location.y << " / " << location.z << " / " << o);
 
 		// Initialize transfer
-		player->initializeTransfer(map, x, y, z, o);
+		player->initializeTransfer(map, location, o);
 	}
 
 	void World::handleCharacterGroupUpdate(pp::IncomingPacket &packet)
@@ -438,9 +440,9 @@ namespace wowpp
 		std::vector<UInt64> nearbyMembers;
 		UInt32 map, zone, health, maxHealth, power, maxPower;
 		UInt8 powerType, level;
-		float x, y, z;
+		math::Vector3 location;
 		std::vector<UInt32> auras;
-		if (!(pp::world_realm::world_read::characterGroupUpdate(packet, characterId, nearbyMembers, health, maxHealth, powerType, power, maxPower, level, map, zone, x, y, z, auras)))
+		if (!(pp::world_realm::world_read::characterGroupUpdate(packet, characterId, nearbyMembers, health, maxHealth, powerType, power, maxPower, level, map, zone, location, auras)))
 		{
 			return;
 		}
@@ -478,7 +480,7 @@ namespace wowpp
 			character->setUInt32Value(unit_fields::MaxPower1 + powerType, maxPower);
 			character->setMapId(map);
 			character->setZone(zone);
-			character->relocate(x, y, z, 0.0f);
+			character->relocate(location, 0.0f);
 			// TODO: Auras
 
 			// TODO: Do some heavy optimization here

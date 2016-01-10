@@ -25,6 +25,7 @@
 #include "creature_ai_state.h"
 #include "common/timer_queue.h"
 #include "common/countdown.h"
+#include "math/vector3.h"
 #include <boost/signals2.hpp>
 #include <memory>
 #include <map>
@@ -82,7 +83,7 @@ namespace wowpp
 		UnitSignals m_despawnedSignals;
 		boost::signals2::scoped_connection m_onThreatened, m_onVictimMoved;
 		Countdown m_moveReached, m_moveUpdated;
-		float m_targetX, m_targetY, m_targetZ;
+		math::Vector3 m_target;
 		GameTime m_moveStart, m_moveEnd;
 		GameTime m_lastThreatTime;
 	};

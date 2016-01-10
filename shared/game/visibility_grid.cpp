@@ -34,15 +34,15 @@ namespace wowpp
 	{
 	}
 
-	bool VisibilityGrid::getTilePosition(float x, float y, float z, Int32 &outX, Int32 &outY) const
+	bool VisibilityGrid::getTilePosition(math::Vector3 position, Int32 &outX, Int32 &outY) const
 	{
 		// Calculate grid x coordinates
-		outX  = static_cast<Int32>(floor((512.0 - (static_cast<double>(x) / 33.3333))));
+		outX  = static_cast<Int32>(floor((512.0 - (static_cast<double>(position.x) / 33.3333))));
 		if (outX < 0 || outX >= 1024)
 			return false;
 
 		// Calculate grid y coordinates
-		outY = static_cast<Int32>(floor((512.0 - (static_cast<double>(y) / 33.3333))));
+		outY = static_cast<Int32>(floor((512.0 - (static_cast<double>(position.y) / 33.3333))));
 		if (outY < 0 || outY >= 1024)
 			return false;
 

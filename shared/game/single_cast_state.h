@@ -22,6 +22,7 @@
 #pragma once
 
 #include "spell_cast.h"
+#include "attack_table.h"
 #include "common/countdown.h"
 #include "shared/proto_data/spells.pb.h"
 #include "boost/signals2.hpp"
@@ -59,13 +60,8 @@ namespace wowpp
 
 		bool consumePower();
 		void applyAllEffects();
-		bool doesSpellHit(const proto::SpellEffect &effect, GameUnit &caster, GameUnit &target);
-		UInt8 getResiPercentage(const proto::SpellEffect &effect, GameUnit &caster, GameUnit &target);
 		Int32 calculateEffectBasePoints(const proto::SpellEffect &effect);
-		UInt32 getSpellPower(const proto::SpellEffect &effect, GameUnit &caster);
-		UInt32 getSpellBonusPct(const proto::SpellEffect &effect, GameUnit &caster);
 		UInt32 getSpellPointsTotal(const proto::SpellEffect &effect, UInt32 spellPower, UInt32 bonusPct);
-		float getCritFactor(const proto::SpellEffect &effect, GameUnit &caster, GameUnit &target);
 		void spellEffectTeleportUnits(const proto::SpellEffect &effect);
 		void spellEffectSchoolDamage(const proto::SpellEffect &effect);
 		void spellEffectHeal(const proto::SpellEffect &effect);
@@ -84,7 +80,6 @@ namespace wowpp
 		void spellEffectSummon(const proto::SpellEffect &effect);
 		void spellEffectCharge(const proto::SpellEffect &effect);
 		void spellEffectScript(const proto::SpellEffect &effect);
-		void refreshTargets(const proto::SpellEffect &effect);
 
 	private:
 
@@ -92,7 +87,7 @@ namespace wowpp
 		const proto::SpellEntry &m_spell;
 		SpellTargetMap m_target;
 		SpellCasting m_casting;
-		std::unordered_map<UInt32,std::unordered_map<UInt32,std::vector<GameUnit*>>> m_targets;
+		AttackTable m_attackTable;
 		bool m_hasFinished;
 		Countdown m_countdown;
 		Countdown m_impactCountdown;

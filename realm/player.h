@@ -119,13 +119,13 @@ namespace wowpp
 		void loginFailed();
 		/// A world server notified us that our character instance was successfully spawned in the
 		/// world and will now be visible to other players.
-		void worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, float x, float y, float z, float o);
+		void worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, math::Vector3 location, float o);
 		/// 
 		void worldInstanceLeft(World &world, UInt32 instanceId, pp::world_realm::WorldLeftReason reason);
 		/// Saves the current character (if any).
 		//void saveCharacter();
 		/// Inititalizes a character transfer to a new map.
-		void initializeTransfer(UInt32 map, float x, float y, float z, float o);
+		void initializeTransfer(UInt32 map, math::Vector3 location, float o);
 		/// Commits an initialized transfer (if any).
 		void commitTransfer();
 
@@ -224,7 +224,8 @@ namespace wowpp
 		std::unique_ptr<PlayerSocial> m_social;
 		std::shared_ptr<PlayerGroup> m_group;
 		UInt32 m_transferMap;
-		float m_transferX, m_transferY, m_transferZ, m_transferO;
+		math::Vector3 m_transfer;
+		float m_transferO;
 		ActionButtons m_actionButtons;
 		std::array<UInt32, 8> m_tutorialData;
 		std::vector<pp::world_realm::ItemData> m_itemData;

@@ -23,6 +23,7 @@
 
 #include "common/typedefs.h"
 #include "common/countdown.h"
+#include "math/vector3.h"
 #include <boost/optional.hpp>
 
 namespace wowpp
@@ -58,9 +59,7 @@ namespace wowpp
 			const proto::UnitEntry &entry,
 			size_t maxCount,
 			GameTime respawnDelay,
-			float centerX,
-			float centerY,
-			float centerZ,
+			math::Vector3 center,
 			boost::optional<float> rotation,
 			UInt32 emote,
 			float radius,
@@ -96,7 +95,7 @@ namespace wowpp
 		const proto::UnitEntry &m_entry;
 		const size_t m_maxCount;
 		const GameTime m_respawnDelay;
-		const float m_centerX, m_centerY, m_centerZ;
+		const math::Vector3 m_center;
 		const boost::optional<float> m_rotation;
 		const float m_radius;
 		UInt32 m_emote;

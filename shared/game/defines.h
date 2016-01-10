@@ -24,6 +24,7 @@
 #include "common/typedefs.h"
 #include "common/enum_strings.h"
 #include "common/vector.h"
+#include "math/vector3.h"
 #include <map>
 
 namespace wowpp
@@ -34,7 +35,7 @@ namespace wowpp
 		typedef Vector<Distance, 2> Point;
 		typedef Vector<Distance, 3> Position;
 
-		inline Vector<Distance, 2> planar(const Position &point)
+		inline Vector<Distance, 2> planar(const math::Vector3 &point)
 		{
 			return Vector<Distance, 2>(
 				point[0],

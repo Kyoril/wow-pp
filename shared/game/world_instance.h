@@ -100,17 +100,9 @@ namespace wowpp
 
 		/// Creates a new creature which will belong to this world instance. However,
 		/// the creature won't be spawned yet. This method is used by CreatureSpawner.
-		std::shared_ptr<GameCreature> spawnCreature(
-			const proto::UnitEntry &entry,
-			float x, float y, float z, float o,
-			float randomWalkRadius);
-		std::shared_ptr<GameCreature> spawnSummonedCreature(
-			const proto::UnitEntry &entry,
-			float x, float y, float z, float o);
-		std::shared_ptr<WorldObject> spawnWorldObject(
-			const proto::ObjectEntry &entry,
-			float x, float y, float z, float o,
-			float radius);
+		std::shared_ptr<GameCreature> spawnCreature(const proto::UnitEntry &entry, math::Vector3 position, float o, float randomWalkRadius);
+		std::shared_ptr<GameCreature> spawnSummonedCreature(const proto::UnitEntry &entry, math::Vector3 position, float o);
+		std::shared_ptr<WorldObject> spawnWorldObject(const proto::ObjectEntry &entry, math::Vector3 position, float o, float radius);
 
 		/// Gets the manager of this and all other instances.
 		WorldInstanceManager &getManager() { return m_manager; }
@@ -155,7 +147,7 @@ namespace wowpp
 
 	private:
 
-		void onObjectMoved(GameObject &object, float oldX, float oldY, float oldZ, float oldO);
+		void onObjectMoved(GameObject &object, math::Vector3 oldPosition, float oldO);
 
 	private:
 

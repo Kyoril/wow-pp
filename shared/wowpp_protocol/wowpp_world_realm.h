@@ -214,9 +214,7 @@ namespace wowpp
 					UInt32 instanceId,
 					UInt32 mapId,
 					UInt32 zoneId,
-					float x, 
-					float y, 
-					float z, 
+					math::Vector3 location,
 					float o
 					);
 
@@ -255,9 +253,7 @@ namespace wowpp
 					pp::OutgoingPacket &out_packet,
 					UInt64 characterId,
 					UInt32 map,
-					float x,
-					float y,
-					float z,
+					math::Vector3 location,
 					float o
 					);
 
@@ -274,9 +270,7 @@ namespace wowpp
 					UInt8 level,
 					UInt32 map,
 					UInt32 zone,
-					float x, 
-					float y,
-					float z,
+					math::Vector3 location,
 					const std::vector<UInt32> &auras
 					);
 			}
@@ -397,9 +391,7 @@ namespace wowpp
 					UInt32 &out_instanceId,
 					UInt32 &out_mapId,
 					UInt32 &out_zoneId,
-					float &out_x,
-					float &out_y,
-					float &out_z,
+					math::Vector3 &out,
 					float &out_o
 					);
 
@@ -440,9 +432,7 @@ namespace wowpp
 					io::Reader &packet,
 					UInt64 &out_characterId,
 					UInt32 &out_map,
-					float &out_x,
-					float &out_y,
-					float &out_z,
+					math::Vector3 &out,
 					float &out_o
 					);
 
@@ -459,9 +449,7 @@ namespace wowpp
 					UInt8 &out_level,
 					UInt32 &out_map,
 					UInt32 &out_zone,
-					float &out_x,
-					float &out_y,
-					float &out_z,
+					math::Vector3 &out,
 					std::vector<UInt32> &out_auras
 					);
 			}

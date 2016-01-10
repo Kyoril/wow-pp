@@ -56,11 +56,10 @@ namespace wowpp
 				return;
 			}
 
-			float x, y, z, o;
-			caster.getLocation(x, y, z, o);
+			math::Vector3 location(caster.getLocation());
 
 			TileIndex2D tileIndex;
-			worldInstance->getGrid().getTilePosition(x, y, z, tileIndex[0], tileIndex[1]);
+			worldInstance->getGrid().getTilePosition(location, tileIndex[0], tileIndex[1]);
 
 			std::vector<char> buffer;
 			io::VectorSink sink(buffer);
@@ -90,6 +89,7 @@ namespace wowpp
 		, m_castTime(castTime)
 		, m_basePoints(basePoints)
 		, m_isProc(isProc)
+		, m_attackTable()
 	{
 		// Check if the executer is in the world
 		auto &executer = m_cast.getExecuter();
@@ -115,8 +115,8 @@ namespace wowpp
 				);
 		}
 
-		float o = 0.0f;
-		m_cast.getExecuter().getLocation(m_x, m_y, m_z, o);
+		math::Vector3 location(m_cast.getExecuter().getLocation());
+		m_x = location.x, m_y = location.y, m_z = location.z;
 
 		m_countdown.ended.connect([this]()
 		{
@@ -186,9 +186,8 @@ namespace wowpp
 		if (!m_hasFinished)
 		{
 			// Interrupt spell cast if moving
-			float x, y, z, o = 0.0f;
-			m_cast.getExecuter().getLocation(x, y, z, o);
-			if (x != m_x || y != m_y || z != m_z)
+			math::Vector3 location(m_cast.getExecuter().getLocation());
+			if (location.x != m_x || location.y != m_y || location.z != m_z)
 			{
 				stopCast();
 			}
@@ -304,11 +303,10 @@ namespace wowpp
 
 					if (unitTarget)
 					{
-						float x, y, z, o;
-						unitTarget->getLocation(x, y, z, o);
+						math::Vector3 location(unitTarget->getLocation());
 
 						// 120 degree field of view
-						if (!m_cast.getExecuter().isInArc(2.0f * 3.1415927f / 3.0f, x, y))
+						if (!m_cast.getExecuter().isInArc(2.0f * 3.1415927f / 3.0f, location.x, location.y))
 						{
 							m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedUnitNotInfront);
 
@@ -449,7 +447,7 @@ namespace wowpp
 		}
 
 		UInt32 targetMap = 0;
-		game::Position targetPos(0.0f, 0.0f, 0.0f);
+		math::Vector3 targetPos(0.0f, 0.0f, 0.0f);
 		float targetO = 0.0f;
 		switch (effect.targetb())
 		{
@@ -467,9 +465,9 @@ namespace wowpp
 			case game::targets::DstDB:
 			{
 				targetMap = m_spell.targetmap();
-				targetPos[0] = m_spell.targetx();
-				targetPos[1] = m_spell.targety();
-				targetPos[2] = m_spell.targetz();
+				targetPos.x = m_spell.targetx();
+				targetPos.y = m_spell.targety();
+				targetPos.z = m_spell.targetz();
 				targetO = m_spell.targeto();
 				break;
 			}
@@ -489,7 +487,7 @@ namespace wowpp
 			}
 
 			// Log destination
-			unitTarget->teleport(targetMap, targetPos[0], targetPos[1], targetPos[2], targetO);
+			unitTarget->teleport(targetMap, targetPos, targetO);
 		}
 		else
 		{
@@ -497,66 +495,59 @@ namespace wowpp
 			if (unitTarget->getTypeId() == object_type::Character)
 			{
 				// Send teleport signal for player characters
-				unitTarget->teleport(targetMap, targetPos[0], targetPos[1], targetPos[2], targetO);
+				unitTarget->teleport(targetMap, targetPos, targetO);
 			}
 			else
 			{
 				// Simply relocate creatures and other stuff
-				unitTarget->relocate(targetPos[0], targetPos[1], targetPos[2], targetO);
+				unitTarget->relocate(targetPos, targetO);
 			}
 		}
 	}
 
 	void SingleCastState::spellEffectSchoolDamage(const proto::SpellEffect &effect)
-	{	
-		refreshTargets(effect);
+	{
 		GameUnit &caster = m_cast.getExecuter();
-
-		for (GameUnit* targetUnit : m_targets[effect.targeta()][effect.targetb()])
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkNonBinarySpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+		
+		for (int i=0; i<targets.size(); i++)
 		{
-			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
-			float hitTableRoll = hitTableDistribution(randomGenerator);
-			
+			GameUnit* targetUnit = targets[i];
+			UInt8 school = m_spell.schoolmask();
 			UInt32 totalDamage;
 			bool crit = false;
 			UInt32 resisted = 0;
 			UInt32 absorbed = 0;
-			if ((hitTableRoll -= targetUnit->getMissChance(caster, m_spell.schoolmask())) < 0.0f)
+			if (victimStates[i] == game::victim_state::IsImmune)
 			{
-				totalDamage = 0;	// miss
+				totalDamage = 0;
 			}
-			else if (targetUnit->isImmune(m_spell.schoolmask()))
+			if (hitInfos[i] == game::hit_info::Miss)
 			{
-				totalDamage = 0;	// immune
+				totalDamage = 0;
 			}
 			else
 			{
-				float spellResi = targetUnit->getResiPercentage(effect, caster);
-				if (spellResi >= 100.0f) {
-					totalDamage = 0;	// full resist
-				}
-				else
+				UInt32 spellPower = caster.getBonus(school);
+				UInt32 spellBonusPct = caster.getBonusPct(school);
+				totalDamage = getSpellPointsTotal(effect, spellPower, spellBonusPct);
+				if (hitInfos[i] == game::hit_info::CriticalHit)
 				{
-					UInt32 spellPower = caster.getBonus(m_spell.schoolmask());
-					UInt32 spellBonusPct = caster.getBonusPct(m_spell.schoolmask());
-					totalDamage = getSpellPointsTotal(effect, spellPower, spellBonusPct);
-					if ((hitTableRoll -= targetUnit->getCritChance(caster, m_spell.schoolmask())) < 0.0f)
-					{
-						crit = true;
-						totalDamage *= 2.0;
-					}
-					if (spellResi > 0.0f)
-					{
-						resisted = totalDamage * spellResi;
-						totalDamage -= resisted;	// partial resist
-					}
-					absorbed = targetUnit->consumeAbsorb(totalDamage, m_spell.schoolmask());
+					crit = true;
+					totalDamage *= 2.0f;
 				}
+				resisted = totalDamage * resists[i];
+				totalDamage -= resisted;
+				absorbed = targetUnit->consumeAbsorb(totalDamage, school);
 			}
-
+			
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
-			if (targetUnit->dealDamage(totalDamage - absorbed, m_spell.schoolmask(), &caster, noThreat))
+			if (targetUnit->dealDamage(totalDamage - absorbed, school, &caster, noThreat))
 			{
 				// Send spell damage packet
 				sendPacketFromCaster(caster,
@@ -565,18 +556,15 @@ namespace wowpp
 					caster.getGuid(),
 					m_spell.id(),
 					totalDamage,
-					m_spell.schoolmask(),
+					school,
 					absorbed,
 					resisted,	//resisted
 					false,
 					0,
 					crit));
 				
-				if (targetUnit->isAlive())
-				{
-					caster.doneSpellMagicDmgClassNeg(targetUnit, m_spell.schoolmask());
-					targetUnit->takenDamage(&caster);
-				}
+				caster.doneSpellMagicDmgClassNeg(targetUnit, school);
+				targetUnit->takenDamage(&caster);
 			}
 		}
 	}
@@ -744,39 +732,6 @@ namespace wowpp
 			character->addArmorProficiency(mask);
 		}
 	}
-	
-	bool SingleCastState::doesSpellHit(const proto::SpellEffect &effect, GameUnit &caster, GameUnit &target)
-	{
-		Int32 levelModificator = target.getLevel() - caster.getLevel();
-		if (levelModificator > 2)
-		{
-			if (isPlayerGUID(target.getGuid()))
-			{
-				levelModificator = (levelModificator * 7) - 12;	//pvp calculation
-			}
-			else
-			{
-				levelModificator = (levelModificator * 11) - 20;	//pve calculation
-			}
-		}
-		
-		Int32 hitChancePct = 96 - levelModificator;	//96 is the basic hit chance to hit enemies on same level
-		
-		//TODO add spell-hit stats and auras
-		
-		if (hitChancePct > 99)
-			hitChancePct = 99;	//hit cap
-		else if (hitChancePct < 1)
-			hitChancePct = 1;	//hit not cap
-		
-		std::uniform_int_distribution<int> distribution(0, 99);
-		return distribution(randomGenerator) < hitChancePct;
-	}
-	
-	UInt8 SingleCastState::getResiPercentage(const proto::SpellEffect &effect, GameUnit &caster, GameUnit &target)
-	{
-		return 0;
-	}
 
 	Int32 SingleCastState::calculateEffectBasePoints(const proto::SpellEffect &effect)
 	{
@@ -812,24 +767,6 @@ namespace wowpp
 		return basePoints + randomValue + comboDamage;
 	}
 	
-	UInt32 SingleCastState::getSpellPower(const proto::SpellEffect &effect, GameUnit &caster)
-	{
-		if (isPlayerGUID(caster.getGuid()))
-		{
-			GameCharacter &character = dynamic_cast<GameCharacter&>(m_cast.getExecuter());
-			return 0;	//need to get real spellpower
-		}
-		else
-		{
-			return 0;
-		}
-	}
-	
-	UInt32 SingleCastState::getSpellBonusPct(const proto::SpellEffect &effect, GameUnit &caster)
-	{
-		return 0;
-	}
-	
 	UInt32 SingleCastState::getSpellPointsTotal(const proto::SpellEffect &effect, UInt32 spellPower, UInt32 bonusPct)
 	{
 		Int32 basePoints = calculateEffectBasePoints(effect);
@@ -839,18 +776,6 @@ namespace wowpp
 		float spellAddCoefficient = (castTime / 3500.0);
 		float bonusModificator = 1 + (bonusPct / 100);
 		return (basePoints + (spellAddCoefficient * spellPower)) *  bonusModificator;
-	}
-
-	float SingleCastState::getCritFactor(const proto::SpellEffect &effect, GameUnit &caster, GameUnit &target)
-	{
-		float baseCrit = caster.getFloatValue(wowpp::character_fields::SpellCritPercentage);	//TODO school crit
-		float crit = baseCrit - 0.0;	//TODO use resilience to reduce
-		crit = 15;	//TODO remove hardcoded test-value later
-		std::uniform_int_distribution<int> distribution(0, 99);
-		if (distribution(randomGenerator) < crit)
-			return 2.0;
-		else
-			return 1.0;
 	}
 	
 	void SingleCastState::spellEffectAddComboPoints(const proto::SpellEffect &effect)
@@ -885,10 +810,21 @@ namespace wowpp
 
 	void SingleCastState::spellEffectApplyAura(const proto::SpellEffect &effect)
 	{
-		refreshTargets(effect);
-		// Casting unit
 		GameUnit &caster = m_cast.getExecuter();
-
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		bool isNegative = false;
+		
+		if (isNegative) {
+			m_attackTable.checkNonBinarySpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//DoT
+		}
+		else
+		{
+			m_attackTable.checkPositiveSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);		//Buff, HoT
+		}
+		
 		// Determine aura type
 		game::AuraType auraType = static_cast<game::AuraType>(effect.aura());
 //		const String auraTypeName = game::constant_literal::auraTypeNames.getName(auraType);
@@ -897,78 +833,111 @@ namespace wowpp
 		// World was already checked. If world would be nullptr, unitTarget would be null as well
 		auto *world = m_cast.getExecuter().getWorldInstance();
 		auto &universe = world->getUniverse();
-
-		// Create a new aura instance
-		//TODO apply spellhit-calc on enemy-targets
-		UInt32 spellPower = getSpellPower(effect, caster);
-		UInt32 spellBonusPct = getSpellBonusPct(effect, caster);
-		UInt32 totalPoints = getSpellPointsTotal(effect, spellPower, spellBonusPct);
-		for (GameUnit* target : m_targets[effect.targeta()][effect.targetb()])
+		for (int i=0; i<targets.size(); i++)
 		{
-			if (!target->isAlive())
-				continue;
+			GameUnit* targetUnit = targets[i];
+			UInt8 school = m_spell.schoolmask();
+			UInt32 totalPoints;
+			bool resisted = false;
 			
-			std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *target, [&universe](std::function<void()> work)
+			if (hitInfos[i] == game::hit_info::Miss)
 			{
-				universe.post(work);
-			}, [](Aura &self)
-			{
-				auto &auras = self.getTarget().getAuras();
-
-				const auto position = findAuraInstanceIndex(auras, self);
-				//assert(position.is_initialized());
-				if (position.is_initialized())
-				{
-					auras.removeAura(*position);
-				}
-			});
-
-			// TODO: Dimishing return and custom durations
-
-			// TODO: Apply spell haste
-
-			// TODO: Check if aura already expired
-
-			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
-			if (!noThreat)
-			{
-				target->threatened(caster, 0.00001f);
+				totalPoints = 0;
 			}
-
-			// TODO: Add aura to unit target
-			const bool success = target->getAuras().addAura(std::move(aura));
-			if (!success)
+			else if (victimStates[i] == game::victim_state::IsImmune)
 			{
-				// TODO: What should we do here? Just ignore?
-				WLOG("Aura could not be added to unit target!");
+				totalPoints = 0;
+			}
+			else if (victimStates[i] == game::victim_state::Normal)
+			{
+				UInt32 spellPower = caster.getBonus(school);
+				UInt32 spellBonusPct = caster.getBonusPct(school);
+				totalPoints = getSpellPointsTotal(effect, spellPower, spellBonusPct);
+				if (resists[i] == 100.0f)
+				{
+					resisted = true;
+					totalPoints = 0;
+				}
+			}
+			else
+			{
+				totalPoints = calculateEffectBasePoints(effect);
+			}
+			
+			if (targetUnit->isAlive() && (isNegative == false || totalPoints > 0))
+			{
+				std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *targetUnit, [&universe](std::function<void()> work)
+				{
+					universe.post(work);
+				}, [](Aura &self)
+				{
+					auto &auras = self.getTarget().getAuras();
+
+					const auto position = findAuraInstanceIndex(auras, self);
+					//assert(position.is_initialized());
+					if (position.is_initialized())
+					{
+						auras.removeAura(*position);
+					}
+				});
+
+				// TODO: Dimishing return and custom durations
+
+				// TODO: Apply spell haste
+
+				// TODO: Check if aura already expired
+
+				const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
+				if (!noThreat)
+				{
+					targetUnit->threatened(caster, 0.00001f);
+				}
+
+				// TODO: Add aura to unit target
+				const bool success = targetUnit->getAuras().addAura(std::move(aura));
+				if (!success)
+				{
+					// TODO: What should we do here? Just ignore?
+					WLOG("Aura could not be added to unit target!");
+				}
 			}
 		}
 	}
 
 	void SingleCastState::spellEffectHeal(const proto::SpellEffect &effect)
 	{
-		refreshTargets(effect);
 		GameUnit &caster = m_cast.getExecuter();
-
-		UInt32 addHeal = caster.getBonus(m_spell.schoolmask());
-		UInt32 addHealPct = caster.getBonusPct(m_spell.schoolmask());
-		UInt32 totalHeal = getSpellPointsTotal(effect, addHeal, addHealPct);
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);		//Buff, HoT
 		
-		for (GameUnit* targetUnit : m_targets[effect.targeta()][effect.targetb()])
+		for (int i=0; i<targets.size(); i++)
 		{
-			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
-			float hitTableRoll = hitTableDistribution(randomGenerator);
-			
+			GameUnit* targetUnit = targets[i];
+			UInt8 school = m_spell.schoolmask();
+			UInt32 totalPoints;
 			bool crit = false;
-			if ((hitTableRoll -= targetUnit->getCritChance(caster, m_spell.schoolmask())) < 0.0f)
+			if (victimStates[i] == game::victim_state::IsImmune)
 			{
-				crit = true;
-				totalHeal *= 2.0;
+				totalPoints = 0;
+			}
+			else
+			{
+				UInt32 spellPower = caster.getBonus(school);
+				UInt32 spellBonusPct = caster.getBonusPct(school);
+				totalPoints = getSpellPointsTotal(effect, spellPower, spellBonusPct);
+				if (hitInfos[i] == game::hit_info::CriticalHit)
+				{
+					crit = true;
+					totalPoints *= 2.0f;
+				}
 			}
 			
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
-			if (targetUnit->heal(totalHeal, &caster, noThreat))
+			if (targetUnit->heal(totalPoints, &caster, noThreat))
 			{
 				// Send spell heal packet
 				sendPacketFromCaster(caster,
@@ -976,7 +945,7 @@ namespace wowpp
 					targetUnit->getGuid(),
 					caster.getGuid(),
 					m_spell.id(),
-					totalHeal,
+					totalPoints,
 					crit));
 			}
 		}
@@ -1187,67 +1156,63 @@ namespace wowpp
 	
 	void SingleCastState::spellEffectPowerBurn(const proto::SpellEffect &effect)
 	{
-		refreshTargets(effect);
 		GameUnit &caster = m_cast.getExecuter();
-
-		for (auto &targetUnit : m_targets[effect.targeta()][effect.targetb()])
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkNonBinarySpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+		
+		for (int i=0; i<targets.size(); i++)
 		{
-			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
-			float hitTableRoll = hitTableDistribution(randomGenerator);
-			
+			GameUnit* targetUnit = targets[i];
+			UInt8 school = m_spell.schoolmask();
 			UInt32 burn;
 			UInt32 damage = 0;
 			UInt32 resisted = 0;
 			UInt32 absorbed = 0;
-			if ((hitTableRoll -= targetUnit->getMissChance(caster, m_spell.schoolmask())) < 0.0f)
+			if (victimStates[i] == game::victim_state::IsImmune)
 			{
-				burn = 0;	// miss
+				burn = 0;
 			}
-			else if (targetUnit->isImmune(m_spell.schoolmask()))
+			if (hitInfos[i] == game::hit_info::Miss)
 			{
-				burn = 0;	// immune
+				burn = 0;
 			}
 			else
 			{
-				float spellResi = targetUnit->getResiPercentage(effect, caster);
-				if (spellResi >= 100.0f) {
-					burn = 0;	// full resist
-				}
-				else
-				{
-					burn = calculateEffectBasePoints(effect);
-					if (spellResi > 0.0f)
-					{
-						resisted = burn * spellResi;
-						burn -= resisted;	// partial resist
-					}
-					UInt32 damage = burn * effect.multiplevalue();
-					resisted *= effect.multiplevalue();
-					absorbed = targetUnit->consumeAbsorb(damage, m_spell.schoolmask());
-				}
+				burn = calculateEffectBasePoints(effect);
+				resisted = burn * resists[i];
+				burn -= resisted;
+				burn = targetUnit->removeMana(burn);
+				damage = burn * effect.multiplevalue();
+				resisted *= effect.multiplevalue();
+				absorbed = targetUnit->consumeAbsorb(damage, school);
 			}
 			
-			// Send spell damage packet
-			sendPacketFromCaster(caster,
-				std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-				targetUnit->getGuid(),
-				caster.getGuid(),
-				m_spell.id(),
-				damage,
-				m_spell.schoolmask(),
-				absorbed,
-				resisted,	//resisted
-				false,
-				0,
-				false));	//crit
-
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
-			targetUnit->dealDamage(damage - absorbed, m_spell.schoolmask(), &caster, noThreat);
-			if (targetUnit->isAlive())
+			if (targetUnit->dealDamage(damage - absorbed, school, &caster, noThreat))
 			{
-				caster.doneSpellMagicDmgClassNeg(targetUnit, m_spell.schoolmask());
-				targetUnit->takenDamage(&caster);
+				// Send spell damage packet
+				sendPacketFromCaster(caster,
+					std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+					targetUnit->getGuid(),
+					caster.getGuid(),
+					m_spell.id(),
+					damage,
+					school,
+					absorbed,
+					resisted,
+					false,
+					0,
+					false));	//crit
+				
+				if (targetUnit->isAlive())
+				{
+					caster.doneSpellMagicDmgClassNeg(targetUnit, school);
+					targetUnit->takenDamage(&caster);
+				}
 			}
 		}
 	}
@@ -1345,12 +1310,12 @@ namespace wowpp
 			return;
 		}
 
-		float x, y, z, o;
-		executer.getLocation(x, y, z, o);
+		float o = executer.getOrientation();
+		math::Vector3 location(executer.getLocation());
 
 		// TODO: We need to have access to unit entries
 
-		auto spawned = world->spawnSummonedCreature(*entry, x, y, z, o);
+		auto spawned = world->spawnSummonedCreature(*entry, location, o);
 		if (!spawned)
 		{
 			ELOG("Could not spawn creature!");
@@ -1384,153 +1349,4 @@ namespace wowpp
 				break;
 		}
 	}
-	
-	void SingleCastState::refreshTargets(const proto::SpellEffect &effect)
-	{
-		std::unordered_map<UInt32,std::unordered_map<UInt32,std::vector<GameUnit*>>>::iterator ta = m_targets.find(effect.targeta());
-		if (ta != m_targets.end())
-		{
-			std::unordered_map<UInt32,std::vector<GameUnit*>>::iterator tb = (*ta).second.find(effect.targetb());
-			if (tb != (*ta).second.end()) {
-				return;
-			}
-		}
-		std::vector<GameUnit*> targets;
-		GameUnit &caster = m_cast.getExecuter();
-		GameUnit *unitTarget = nullptr;
-		auto *world = caster.getWorldInstance();
-
-		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self || effect.targeta() == game::targets::UnitCaster)
-			unitTarget = &caster;
-		else if (world && m_target.hasUnitTarget())
-		{
-			unitTarget = dynamic_cast<GameUnit*>(world->findObjectByGUID(m_target.getUnitTarget()));
-		}
-		
-		float x, y, tmp;
-		switch (effect.targeta())
-		{
-		case game::targets::UnitCaster:
-		case game::targets::UnitTargetAlly:
-		case game::targets::UnitTargetEnemy:
-			if (unitTarget) targets.push_back(unitTarget);
-			break;
-		case game::targets::UnitPartyCaster:
-			{
-				caster.getLocation(x, y, tmp, tmp);
-				auto &finder = caster.getWorldInstance()->getUnitFinder();
-				finder.findUnits(Circle(x, y, effect.radius()), [this, &caster, &targets](GameUnit &unit) -> bool
-				{
-					if (unit.getTypeId() != object_type::Character)
-						return true;
-
-					GameCharacter *unitChar = dynamic_cast<GameCharacter*>(&unit);
-					GameCharacter *casterChar = dynamic_cast<GameCharacter*>(&caster);
-					if (unitChar == casterChar ||
-						(unitChar->getGroupId() != 0 &&
-						unitChar->getGroupId() == casterChar->getGroupId()))
-					{
-						targets.push_back(&unit);
-						if (m_spell.maxtargets() > 0 &&
-							targets.size() >= m_spell.maxtargets())
-						{
-							// No more units
-							return false;
-						}
-					}
-
-					return true;
-				});
-			}
-			break;
-		case game::targets::UnitAreaEnemyDst:
-			{
-				m_target.getDestLocation(x, y, tmp);
-				auto &finder = caster.getWorldInstance()->getUnitFinder();
-				finder.findUnits(Circle(x, y, effect.radius()), [this, &caster, &targets](GameUnit &unit) -> bool
-				{
-					const auto &factionA = unit.getFactionTemplate();
-					const auto &factionB = caster.getFactionTemplate();
-					if (!isFriendlyTo(factionA, factionB) && unit.isAlive())
-					{
-						targets.push_back(&unit);
-						if (m_spell.maxtargets() > 0 &&
-							targets.size() >= m_spell.maxtargets())
-						{
-							// No more units
-							return false;
-						}
-					}
-
-					return true;
-				});
-			}
-			break;
-		case game::targets::UnitPartyTarget:
-			{
-				if (unitTarget)
-				{
-					unitTarget->getLocation(x, y, tmp, tmp);
-					auto &finder = caster.getWorldInstance()->getUnitFinder();
-					finder.findUnits(Circle(x, y, effect.radius()), [this, unitTarget, &targets](GameUnit &unit) -> bool
-					{
-						if (unit.getTypeId() != object_type::Character)
-							return true;
-
-						GameCharacter *unitChar = dynamic_cast<GameCharacter*>(&unit);
-						GameCharacter *targetChar = dynamic_cast<GameCharacter*>(unitTarget);
-						if (unitChar == targetChar ||
-							(unitChar->getGroupId() != 0 &&
-							unitChar->getGroupId() == targetChar->getGroupId()))
-						{
-							targets.push_back(&unit);
-							if (m_spell.maxtargets() > 0 &&
-								targets.size() >= m_spell.maxtargets())
-							{
-								// No more units
-								return false;
-							}
-						}
-
-						return true;
-					});
-				}
-			}
-			break;
-		default:
-			break;
-		}
-		
-		switch (effect.targetb())
-		{
-		case game::targets::UnitAreaEnemySrc:
-			{
-				caster.getLocation(x, y, tmp, tmp);
-				auto &finder = caster.getWorldInstance()->getUnitFinder();
-				finder.findUnits(Circle(x, y, effect.radius()), [this, &caster, &targets](GameUnit &unit) -> bool
-				{
-					const auto &factionA = unit.getFactionTemplate();
-					const auto &factionB = caster.getFactionTemplate();
-					if (!isFriendlyTo(factionA, factionB) && unit.isAlive())
-					{
-						targets.push_back(&unit);
-						if (m_spell.maxtargets() > 0 &&
-							targets.size() >= m_spell.maxtargets())
-						{
-							// No more units
-							return false;
-						}
-					}
-
-					return true;
-				});
-			}
-			break;
-		default:
-			break;
-		}
-		
-		m_targets[effect.targeta()][effect.targetb()] = targets;
-	}
-
 }

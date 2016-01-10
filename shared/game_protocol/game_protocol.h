@@ -409,7 +409,7 @@ namespace wowpp
 			UInt8 outfitId;
 			UInt32 mapId;
 			UInt32 zoneId;
-			float x, y, z;
+			math::Vector3 location;
 			float o;
 			bool cinematic;
 			std::map<UInt8, const proto::ItemEntry*> equipment;
@@ -429,9 +429,7 @@ namespace wowpp
 				, outfitId(0)
 				, mapId(0)
 				, zoneId(0)
-				, x(0.0f)
-				, y(0.0f)
-				, z(0.0f)
+				, location(0.0f, 0.0f, 0.0f)
 				, o(0.0f)
 				, cinematic(true)
 				, atLogin(atlogin_flags::None)
@@ -1159,9 +1157,7 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt32 mapId,
 				UInt32 areaId,
-				float x,
-				float y,
-				float z
+				math::Vector3 location
 				);
 
 			void pong(
@@ -1197,9 +1193,7 @@ namespace wowpp
 			void loginVerifyWorld(
 				game::OutgoingPacket &out_packet,
 				UInt32 mapId,
-				float x,
-				float y,
-				float z,
+				math::Vector3 location,
 				float o
 				);
 
@@ -1248,8 +1242,8 @@ namespace wowpp
 			void monsterMove(
 				game::OutgoingPacket &out_packet,
 				UInt64 guid,
-				const Vector<float, 3> &oldPosition,
-				const Vector<float, 3> &position,
+				const math::Vector3 &oldPosition,
+				const math::Vector3 &position,
 				UInt32 time
 				);
 
@@ -1589,9 +1583,7 @@ namespace wowpp
 			void newWorld(
 				game::OutgoingPacket &out_packet,
 				UInt32 newMap,
-				float x,
-				float y,
-				float z,
+				math::Vector3 location,
 				float o
 				);
 

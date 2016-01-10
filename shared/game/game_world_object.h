@@ -171,7 +171,7 @@ namespace wowpp
 		/// 
 		void initialize() override;
 		/// 
-		void relocate(float x, float y, float z, float o) override;
+		void relocate(math::Vector3 position, float o) override;
 		/// 
 		void writeCreateObjectBlocks(std::vector<std::vector<char>> &out_blocks, bool creation = true) const override;
 

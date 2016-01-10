@@ -58,19 +58,17 @@ namespace wowpp
 				angle = getControlled().getAngle(*victim);
 			}
 
-			float targetX = m_targetX;
-			float targetY = m_targetY;
-			float targetZ = m_targetZ;
+			math::Vector3 target(m_target);
 
 			// Update creatures position
 			auto strongUnit = getControlled().shared_from_this();
 			std::weak_ptr<GameObject> weakUnit(strongUnit);
-			getControlled().getWorldInstance()->getUniverse().post([weakUnit, targetX, targetY, targetZ, angle]()
+			getControlled().getWorldInstance()->getUniverse().post([weakUnit, target, angle]()
 			{
 				auto strongUnit = weakUnit.lock();
 				if (strongUnit)
 				{
-					strongUnit->relocate(targetX, targetY, targetZ, angle);
+					strongUnit->relocate(target, angle);
 				}
 			});
 
@@ -89,14 +87,13 @@ namespace wowpp
 				return;
 
 			// Calculate new position
-			float o;
-			Vector<float, 3> oldPosition, oldTarget(m_targetX, m_targetY, m_targetZ);
-			getControlled().getLocation(oldPosition[0], oldPosition[1], oldPosition[2], o);
+			float o = getControlled().getOrientation();
+			math::Vector3 oldPosition(getControlled().getLocation()), oldTarget(m_target);
 			if (m_moveStart != 0 && m_moveEnd > m_moveStart)
 			{
 				// Interpolate positions
 				const float t = static_cast<float>(static_cast<double>(time - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));
-				oldPosition = lerp(oldPosition, oldTarget, t);
+				oldPosition = oldPosition.lerp(oldTarget, t);
 			}
 
 			m_moveStart = time;
@@ -115,7 +112,7 @@ namespace wowpp
 				auto strongUnit = weakUnit.lock();
 				if (strongUnit)
 				{
-					strongUnit->relocate(oldPosition[0], oldPosition[1], oldPosition[2], o);
+					strongUnit->relocate(oldPosition, o);
 				}
 			});
 
@@ -177,14 +174,13 @@ namespace wowpp
 		auto id = controlled.getEntry().id();
 
 		// Calculate new position
-		float o;
-		Vector<float, 3> oldPosition, oldTarget(m_targetX, m_targetY, m_targetZ);
-		controlled.getLocation(oldPosition[0], oldPosition[1], oldPosition[2], o);
+		float o = getControlled().getOrientation();
+		math::Vector3 oldPosition(getControlled().getLocation()), oldTarget(m_target);
 		if (m_moveStart != 0 && m_moveEnd > m_moveStart)
 		{
 			// Interpolate positions
 			const float t = static_cast<float>(static_cast<double>(getCurrentTime() - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));
-			oldPosition = lerp(oldPosition, oldTarget, t);
+			oldPosition = oldPosition.lerp(oldTarget, t);
 		}
 
 		// Update creatures position
@@ -195,7 +191,7 @@ namespace wowpp
 			auto strongUnit = weakUnit.lock();
 			if (strongUnit)
 			{
-				strongUnit->relocate(oldPosition[0], oldPosition[1], oldPosition[2], o);
+				strongUnit->relocate(oldPosition, o);
 			}
 		});
 
@@ -333,7 +329,7 @@ namespace wowpp
 			chaseTarget(*newVictim); 
 
 			// Watch for victim move signal
-			m_onVictimMoved = newVictim->moved.connect([this](GameObject &moved, float oldX, float oldY, float oldZ, float oldO)
+			m_onVictimMoved = newVictim->moved.connect([this](GameObject &moved, math::Vector3 oldPosition, float oldO)
 			{
 				chaseTarget(static_cast<GameUnit&>(moved));
 			});
@@ -348,23 +344,21 @@ namespace wowpp
 
 	void CreatureAICombatState::chaseTarget(GameUnit &target)
 	{
-		float o, o2;
-		Vector<float, 3> oldPosition, oldTarget(m_targetX, m_targetY, m_targetZ), newTarget;
-		getControlled().getLocation(oldPosition[0], oldPosition[1], oldPosition[2], o);
-		target.getLocation(newTarget[0], newTarget[1], newTarget[2], o2);
+		float o = getControlled().getOrientation(), o2 = target.getOrientation();
+		math::Vector3 oldPosition(getControlled().getLocation()), oldTarget(m_target), newTarget(target.getLocation());
 		if (m_moveStart != 0 && m_moveEnd > m_moveStart)
 		{
 			// Interpolate positions
 			const float t = static_cast<float>(static_cast<double>(getCurrentTime() - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));
-			oldPosition = lerp(oldPosition, oldTarget, t);
+			oldPosition = oldPosition.lerp(oldTarget, t);
 		}
 
-		o = getControlled().getAngle(newTarget[0], newTarget[1]);
+		o = getControlled().getAngle(newTarget.x, newTarget.z);
 		const float distance =
 			sqrtf(
-				((oldPosition[0] - newTarget[0]) * (oldPosition[0] - newTarget[0])) + 
-				((oldPosition[1] - newTarget[1]) * (oldPosition[1] - newTarget[1])) + 
-				((oldPosition[2] - newTarget[2]) * (oldPosition[2] - newTarget[2])));
+				((oldPosition.x - newTarget.x) * (oldPosition.x - newTarget.x)) + 
+				((oldPosition.y - newTarget.y) * (oldPosition.y - newTarget.y)) + 
+				((oldPosition.z - newTarget.z) * (oldPosition.z - newTarget.z)));
 
 		// Check distance and whether we need to move
 		// TODO: If this creature is a ranged one or casts spells, it need special treatment
@@ -384,12 +378,12 @@ namespace wowpp
 				auto strongUnit = weakUnit.lock();
 				if (strongUnit)
 				{
-					strongUnit->relocate(oldPosition[0], oldPosition[1], oldPosition[2], o);
+					strongUnit->relocate(oldPosition, o);
 				}
 			});
 
-			// Move (TODO: Better way to do this)
-			m_targetX = newTarget[0]; m_targetY = newTarget[1]; m_targetZ = newTarget[2];
+			// Move
+			m_target = newTarget;
 
 			// Send move packet
 			TileIndex2D tile;
@@ -432,11 +426,10 @@ namespace wowpp
 			auto groupId = character->getGroupId();
 			if (groupId != 0)
 			{
-				float x, y, tmp;
-				attacker.getLocation(x, y, tmp, tmp);
+				math::Vector3 location(attacker.getLocation());
 
 				// Find nearby group members and make them loot recipients, too
-				controlled.getWorldInstance()->getUnitFinder().findUnits(Circle(x, y, 200.0f), [&attacker, &controlled, groupId](GameUnit &unit) -> bool
+				controlled.getWorldInstance()->getUnitFinder().findUnits(Circle(location.x, location.y, 200.0f), [&attacker, &controlled, groupId](GameUnit &unit) -> bool
 				{
 					// Only characters
 					if (unit.getTypeId() != object_type::Character)

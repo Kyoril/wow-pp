@@ -59,12 +59,11 @@ namespace wowpp
 		//Must be behind the target.
 		if (unitTarget)
 		{
-			float x, y, tmp;
-			m_executer.getLocation(x, y, tmp, tmp);
+			math::Vector3 location(m_executer.getLocation());
 
 			if (spell.attributes(2) == 0x100000 &&
 				(spell.attributes(1) & game::spell_attributes_ex_a::MeleeCombatStart) == game::spell_attributes_ex_a::MeleeCombatStart &&
-				unitTarget->isInArc(3.1415927f, x, y))
+				unitTarget->isInArc(3.1415927f, location.x, location.y))
 			{
 				return std::make_pair(game::spell_cast_result::FailedNotBehind, nullptr);
 			}
@@ -114,11 +113,10 @@ namespace wowpp
 			{
 				if (unitTarget)
 				{
-					float x, y, z, o;
-					unitTarget->getLocation(x, y, z, o);
+					math::Vector3 location(unitTarget->getLocation());
 
 					// 120 degree field of view
-					if (!m_executer.isInArc(2.0f * 3.1415927f / 3.0f, x, y))
+					if (!m_executer.isInArc(2.0f * 3.1415927f / 3.0f, location.x, location.y))
 					{
 						return std::make_pair(game::spell_cast_result::FailedUnitNotInfront, nullptr);
 					}

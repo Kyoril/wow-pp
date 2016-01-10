@@ -251,16 +251,15 @@ namespace wowpp
 		}
 	}
 
-	void GameObject::relocate(float x, float y, float z, float o)
+	void GameObject::relocate(math::Vector3 position, float o)
 	{
-		float oldX = m_position.x, oldY = m_position.y, oldZ = m_position.z, oldO = m_o;
+		float oldO = m_o;
+		math::Vector3 oldPosition(m_position);
 
-		m_position.x = x;
-		m_position.y = y;
-		m_position.z = z;
+		m_position = position;
 		m_o = o;
 
-		moved(*this, oldX, oldY, oldZ, oldO);
+		moved(*this, oldPosition, oldO);
 	}
 
 	void GameObject::setOrientation(float o)
@@ -269,7 +268,7 @@ namespace wowpp
 
 		m_o = o;
 
-		moved(*this, m_position.x, m_position.y, m_position.z, oldO);
+		moved(*this, m_position, oldO);
 	}
 
 	void GameObject::setMapId(UInt32 mapId)
@@ -454,19 +453,17 @@ namespace wowpp
 		if (&other == this)
 			return 0.0f;
 
-		float o;
-		game::Position position;
-		other.getLocation(position[0], position[1], position[2], o);
+		math::Vector3 position = other.getLocation();
 
 		return getDistanceTo(position, use3D);
 	}
 
-	float GameObject::getDistanceTo(const game::Position &position, bool use3D /*= true*/) const
+	float GameObject::getDistanceTo(const math::Vector3 &position, bool use3D /*= true*/) const
 	{
 		if (use3D)
-			return (sqrtf(((position[0] - m_position.x) * (position[0] - m_position.x)) + ((position[1] - m_position.y) * (position[1] - m_position.y)) + ((position[2] - m_position.z) * (position[2] - m_position.z))));
+			return (sqrtf(((position.x - m_position.x) * (position.x - m_position.x)) + ((position.y - m_position.y) * (position.y - m_position.y)) + ((position.z - m_position.z) * (position.z - m_position.z))));
 		else
-			return (sqrtf(((position[0] - m_position.x) * (position[0] - m_position.x)) + ((position[1] - m_position.y) * (position[1] - m_position.y))));
+			return (sqrtf(((position.x - m_position.x) * (position.x - m_position.x)) + ((position.y - m_position.y) * (position.y - m_position.y))));
 	}
 
 	void GameObject::onWorldInstanceDestroyed()
@@ -499,7 +496,7 @@ namespace wowpp
 		}
 
 		// Try to resolve the objects position
-		return m_worldInstance->getGrid().getTilePosition(m_position.x, m_position.y, m_position.z, out_index[0], out_index[1]);
+		return m_worldInstance->getGrid().getTilePosition(m_position, out_index[0], out_index[1]);
 	}
 
 	bool GameObject::isInArc(float arcRadian, float x, float y) const
@@ -573,8 +570,8 @@ namespace wowpp
 
 	void createUpdateBlocks(GameObject &object, GameCharacter &receiver, std::vector<std::vector<char>> &out_blocks)
 	{
-		float x, y, z, o;
-		object.getLocation(x, y, z, o);
+		float o = object.getOrientation();
+		math::Vector3 location(object.getLocation());
 
 		// Write create object packet
 		std::vector<char> createBlock;
@@ -652,9 +649,9 @@ namespace wowpp
 				// Position & Rotation
 				// TODO: Calculate position and rotation from the movement info using interpolation
 				writer
-					<< io::write<float>(x)
-					<< io::write<float>(y)
-					<< io::write<float>(z)
+					<< io::write<float>(location.x)
+					<< io::write<float>(location.y)
+					<< io::write<float>(location.z)
 					<< io::write<float>(o);
 			}
 

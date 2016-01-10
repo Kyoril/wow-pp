@@ -48,11 +48,10 @@ namespace wowpp
 	{
 		static TileIndex2D getObjectTile(GameObject &object, VisibilityGrid &grid)
 		{
-			float x, y, z, o;
-			object.getLocation(x, y, z, o);
+			math::Vector3 location(object.getLocation());
 
 			TileIndex2D gridIndex;
-			grid.getTilePosition(x, y, z, gridIndex[0], gridIndex[1]);
+			grid.getTilePosition(location, gridIndex[0], gridIndex[1]);
 
 			return gridIndex;
 		}
@@ -146,7 +145,7 @@ namespace wowpp
 				*objectEntry,
 				spawn.maxcount(),
 				spawn.respawndelay(),
-				spawn.positionx(), spawn.positiony(), spawn.positionz(),
+				math::Vector3(spawn.positionx(), spawn.positiony(), spawn.positionz()),
 				0.0f, //TODO spawn.orientation,
 				{ spawn.rotationw(), spawn.rotationx(), spawn.rotationy(), spawn.rotationz() },
 				spawn.radius(),
@@ -173,7 +172,7 @@ namespace wowpp
 				*unitEntry,
 				spawn.maxcount(),
 				spawn.respawndelay(),
-				spawn.positionx(), spawn.positiony(), spawn.positionz(),
+				math::Vector3(spawn.positionx(), spawn.positiony(), spawn.positionz()),
 				spawn.rotation(),
 				spawn.defaultemote(),
 				spawn.radius(),
@@ -192,7 +191,8 @@ namespace wowpp
 
 	std::shared_ptr<GameCreature> WorldInstance::spawnCreature(
 		const proto::UnitEntry &entry,
-		float x, float y, float z, float o,
+		math::Vector3 position,
+		float o,
 		float randomWalkRadius)
 	{
 		// Create the unit
@@ -203,12 +203,12 @@ namespace wowpp
 		spawned->initialize();
 		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id(), guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
 		spawned->setMapId(m_mapEntry.id());
-		spawned->relocate(x, y, z, o);
+		spawned->relocate(position, o);
 
 		return spawned;
 	}
 
-	std::shared_ptr<GameCreature> WorldInstance::spawnSummonedCreature(const proto::UnitEntry &entry, float x, float y, float z, float o)
+	std::shared_ptr<GameCreature> WorldInstance::spawnSummonedCreature(const proto::UnitEntry &entry, math::Vector3 position, float o)
 	{
 		// Create the unit
 		auto spawned = std::make_shared<GameCreature>(
@@ -218,7 +218,7 @@ namespace wowpp
 		spawned->initialize();
 		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id(), guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
 		spawned->setMapId(m_mapEntry.id());
-		spawned->relocate(x, y, z, o);
+		spawned->relocate(position, o);
 
 		m_creatureSummons.insert(std::make_pair(spawned->getGuid(), spawned));
 		spawned->despawned.connect(
@@ -234,7 +234,7 @@ namespace wowpp
 		return spawned;
 	}
 
-	std::shared_ptr<WorldObject> WorldInstance::spawnWorldObject(const proto::ObjectEntry &entry, float x, float y, float z, float o, float radius)
+	std::shared_ptr<WorldObject> WorldInstance::spawnWorldObject(const proto::ObjectEntry &entry, math::Vector3 position, float o, float radius)
 	{
 		// Create the unit
 		auto spawned = std::make_shared<WorldObject>(
@@ -244,7 +244,7 @@ namespace wowpp
 		spawned->initialize();
 		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id(), guid_type::GameObject));	// RealmID (TODO: these spawns don't need to have a specific realm id)
 		spawned->setMapId(m_mapEntry.id());
-		spawned->relocate(x, y, z, o);
+		spawned->relocate(position, o);
 
 		return spawned;
 	}
@@ -313,12 +313,11 @@ namespace wowpp
 		}
 
 		// Get object location
-		float x, y, z, o;
-		added.getLocation(x, y, z, o);
+		math::Vector3 location(added.getLocation());
 		
 		// Transform into grid location
 		TileIndex2D gridIndex;
-		if (!m_visibilityGrid->getTilePosition(x, y, z, gridIndex[0], gridIndex[1]))
+		if (!m_visibilityGrid->getTilePosition(location, gridIndex[0], gridIndex[1]))
 		{
 			// TODO: Error?
 			ELOG("Could not resolve grid location!");
@@ -371,7 +370,7 @@ namespace wowpp
 
 		// Watch for object location changes
 		added.moved.connect(
-			boost::bind(&WorldInstance::onObjectMoved, this, _1, _2, _3, _4, _5));
+			boost::bind(&WorldInstance::onObjectMoved, this, _1, _2, _3));
 	}
 
 	void WorldInstance::removeGameObject(GameObject &remove)
@@ -436,11 +435,11 @@ namespace wowpp
 		return it->second;
 	}
 
-	void WorldInstance::onObjectMoved(GameObject &object, float oldX, float oldY, float oldZ, float oldO)
+	void WorldInstance::onObjectMoved(GameObject &object, math::Vector3 oldPosition, float oldO)
 	{
 		// Calculate old tile index
 		TileIndex2D oldIndex;
-		m_visibilityGrid->getTilePosition(oldX, oldY, oldZ, oldIndex[0], oldIndex[1]);
+		m_visibilityGrid->getTilePosition(oldPosition, oldIndex[0], oldIndex[1]);
 
 		// Calculate new tile index
 		TileIndex2D newIndex = getObjectTile(object, *m_visibilityGrid);
