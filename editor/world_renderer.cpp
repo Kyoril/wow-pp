@@ -97,10 +97,9 @@ namespace wowpp
 						node->translate(position, Ogre::Node::TS_LOCAL);
 
 						Ogre::Quaternion ownRot = Ogre::Quaternion::IDENTITY;
-						ownRot = ownRot * Ogre::Quaternion(Ogre::Degree(placement.rotation[2] - 270), Ogre::Vector3::UNIT_Y);
-						ownRot = ownRot * Ogre::Quaternion(Ogre::Degree(placement.position[1]), Ogre::Vector3::UNIT_Z);
-						ownRot = ownRot * Ogre::Quaternion(Ogre::Degree(placement.position[0] - 90), Ogre::Vector3::UNIT_X);
-						
+						ownRot = ownRot * Ogre::Quaternion(Ogre::Degree(placement.rotation[1] - 270), Ogre::Vector3::UNIT_Y);
+						ownRot = ownRot * Ogre::Quaternion(Ogre::Degree(placement.position[0]), Ogre::Vector3::UNIT_Z);
+						ownRot = ownRot * Ogre::Quaternion(Ogre::Degree(placement.position[2] - 90), Ogre::Vector3::UNIT_X);
 						node->rotate(ownRot, Ogre::Node::TS_PARENT);
 
 						/*node->rotate(Ogre::Quaternion(Ogre::Degree(placement.rotation[1] - 270), Ogre::Vector3::UNIT_Y), Ogre::Node::TS_PARENT);

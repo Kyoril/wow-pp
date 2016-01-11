@@ -149,7 +149,7 @@ namespace wowpp
 
 	bool Map::isInLineOfSight(const math::Vector3 & posA, const math::Vector3 & posB)
 	{
-		return true;
+		//return true;
 
 		if (posA == posB)
 			return true;
@@ -181,8 +181,10 @@ namespace wowpp
 			auto &vB = startTile->collision.vertices[triangle.indexB];
 			auto &vC = startTile->collision.vertices[triangle.indexC];
 			auto result = ray.intersectsTriangle(vA, vB, vC);
-			if (!result.first)
+			if (result.first)
+			{
 				return false;
+			}
 		}
 
 		// Target is in line of sight

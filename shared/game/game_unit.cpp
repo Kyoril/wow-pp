@@ -458,7 +458,6 @@ namespace wowpp
 		// Save pointer to victim because there are many places where m_victim may
 		// become invalid during this function
 		GameUnit *victim = m_victim;
-
 		if (getTypeId() != object_type::Character)
 		{
 			// Turn to target if npc
@@ -510,6 +509,10 @@ namespace wowpp
 				return;
 			}
 
+			// Check if we are in front of the target for parry
+			const bool targetLookingAtUs = 
+				victim->isInArc(2.0f * 3.1415927f / 3.0f, getLocation().x, getLocation().y);
+
 			bool result = false;
 			if (m_swingCallback)
 			{
@@ -550,7 +553,10 @@ namespace wowpp
 					victimState = game::victim_state::Dodge;
 					damageModifier = 0.0f;
 				}
-				else if (m_victim->canParry() && (hitTableRoll -= getParryChance(*this)) < 0.0f)
+				else if (
+					targetLookingAtUs &&			// Target can only parry if it looks at us
+					m_victim->canParry() && 
+					(hitTableRoll -= getParryChance(*this)) < 0.0f)
 				{
 					//parried
 					victimState = game::victim_state::Parry;
@@ -580,6 +586,20 @@ namespace wowpp
 					//crit
 					hitInfo = game::hit_info::CriticalHit;
 					damageModifier = 2.0f;
+				}
+
+				// Hard coded overpower proc for warrior: Blizzard implemented this with combo points
+				// When the target dodges, the warrior simply gets a combo point.
+				// Since overpower uses all combo points (just like all finishing moves for rogues and ferals),
+				// it doesn't matter if we add more than one combo point to the target.
+				if (victimState == game::victim_state::Dodge)
+				{
+					// Hard coded: TODO proper implementation
+					if (getTypeId() == object_type::Character &&
+						getClass() == game::char_class::Warrior)
+					{
+						reinterpret_cast<GameCharacter*>(this)->addComboPoints(m_victim->getGuid(), 1);
+					}
 				}
 
 				if (damageModifier > 0)
@@ -1441,7 +1461,7 @@ namespace wowpp
 	bool GameUnit::isInLineOfSight(GameObject & other)
 	{
 		// TODO: Determine unit's height based on unit model for correct line of sight calculation
-		return isInLineOfSight(other.getLocation());
+		return isInLineOfSight(other.getLocation() + math::Vector3(0.0f, 0.0f, 2.0f));
 	}
 
 	bool GameUnit::isInLineOfSight(const math::Vector3 & position)
@@ -1451,7 +1471,7 @@ namespace wowpp
 		auto *map = m_worldInstance->getMapData();
 		if (!map) return false;
 
-		return map->isInLineOfSight(m_position, position);
+		return map->isInLineOfSight(m_position + math::Vector3(0.0f, 0.0f, 2.0f), position);
 	}
 
 	void GameUnit::addAttackingUnit(GameUnit &attacker)

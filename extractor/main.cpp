@@ -183,24 +183,25 @@ namespace
 			math::Matrix4 mat;
 
 #define WOWPP_DEG_TO_RAD(x) (x * 3.14159265358979323846 / 180.0)
-			// Move to right position
-			math::Matrix4 matTrans;
-			matTrans.makeTranslation(posX, posY, posZ);
-			mat = mat * matTrans;
-
-			// Apply placement rotation
-			math::Matrix4 matRotY2; matRotY2.fromAngleAxis(math::Vector3(0.0f, 1.0f, 0.0f), WOWPP_DEG_TO_RAD(entry.rotation[1]-270.0f));
-			mat = mat * matRotY2;
-			math::Matrix4 matRotZ2; matRotZ2.fromAngleAxis(math::Vector3(0.0f, 0.0f, 1.0f), WOWPP_DEG_TO_RAD(-entry.rotation[0]));
-			mat = mat * matRotZ2;
-			math::Matrix4 matRotX2; matRotX2.fromAngleAxis(math::Vector3(1.0f, 0.0f, 0.0f), WOWPP_DEG_TO_RAD(entry.rotation[2]-90.0f));
-			mat = mat * matRotX2;
-
 			// Rotate into Z-Up
 			math::Matrix4 matRotX; matRotX.fromAngleAxis(math::Vector3(1.0f, 0.0f, 0.0f), WOWPP_DEG_TO_RAD(90));
 			math::Matrix4 matRotY; matRotY.fromAngleAxis(math::Vector3(0.0f, 1.0f, 0.0f), WOWPP_DEG_TO_RAD(90));
 			mat = mat * matRotX;
 			mat = mat * matRotY;
+
+			// Move to right position
+			math::Matrix4 matTrans;
+			matTrans.makeTranslation(posX, posY, posZ);
+			mat = mat * matTrans;
+			/*
+			// Apply placement rotation
+			math::Matrix4 matRotY2; matRotY2.fromAngleAxis(math::Vector3(0.0f, 1.0f, 0.0f), WOWPP_DEG_TO_RAD(entry.rotation[1]-270.0f));
+			mat = mat * matRotY2;*/
+			math::Matrix4 matRotZ2; matRotZ2.fromAngleAxis(math::Vector3(0.0f, 0.0f, 1.0f), WOWPP_DEG_TO_RAD(-entry.rotation[0]));
+			mat = mat * matRotZ2;
+			math::Matrix4 matRotX2; matRotX2.fromAngleAxis(math::Vector3(1.0f, 0.0f, 0.0f), WOWPP_DEG_TO_RAD(entry.rotation[2]-90.0f));
+			mat = mat * matRotX2;
+
 #undef WOWPP_DEG_TO_RAD
 
 			// Transform vertices
@@ -314,7 +315,7 @@ namespace
 		{
 			return false;;
 		}
-		if (mapId != 36)
+		if (mapId != 0)
 			return true;
 
 		String mapName;
