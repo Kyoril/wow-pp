@@ -475,15 +475,15 @@ namespace wowpp
 		/// Determines whether a position is in line of sight.
 		bool isInLineOfSight(const math::Vector3 &position);
 
-		float getMissChance(GameUnit &caster, UInt8 school);
+		float getMissChance(GameUnit &attacker, UInt8 school);
 		bool isImmune(UInt8 school);
-		float getDodgeChance(GameUnit &caster);
-		float getParryChance(GameUnit &caster);
-		float getGlancingChance(GameUnit &caster);
+		float getDodgeChance(GameUnit &attacker);
+		float getParryChance(GameUnit &attacker);
+		float getGlancingChance(GameUnit &attacker);
 		float getBlockChance();
-		float getCrushChance(GameUnit &caster);
-		float getResiPercentage(const proto::SpellEffect &effect, GameUnit &caster);
-		float getCritChance(GameUnit &caster, UInt8 school);
+		float getCrushChance(GameUnit &attacker);
+		float getResiPercentage(const proto::SpellEffect &effect, GameUnit &attacker);
+		float getCritChance(GameUnit &attacker, UInt8 school);
 		UInt32 getBonus(UInt8 school);
 		UInt32 getBonusPct(UInt8 school);
 		UInt32 consumeAbsorb(UInt32 damage, UInt8 school);

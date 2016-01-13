@@ -1268,28 +1268,82 @@ namespace wowpp
 		return false;
 	}
 	
-	float GameUnit::getMissChance(GameUnit &caster, UInt8 school)
+	float GameUnit::getMissChance(GameUnit &attacker, UInt8 school)
 	{
-		//TODO dual wield handling
-		float chance = 5.0f + (static_cast<float>(this->getLevel()) - static_cast<float>(caster.getLevel())) * 0.5f;
-		if (chance < 0.0f)
-			chance = 0.0f;
+		float chance;
+		if (school == game::spell_school::Normal)	// melee
+		{
+			float attackerRating = attacker.getLevel() * 5;	//TODO get real rating
+			float victimRating = getLevel() * 5;
+			if (false)	//TODO if(dualwield)
+			{
+				chance = 19.0f;
+			}
+			else
+			{
+				chance = 5.0f;
+			}
+			if (getTypeId() == wowpp::object_type::Character)	// hit an character
+			{
+				if (victimRating > attackerRating)
+				{
+					chance += (victimRating - attackerRating) * 0.04f;
+				}
+				else if (victimRating < attackerRating)
+				{
+					chance -= (attackerRating - victimRating) * 0.02f;
+				}
+			}
+			else	// hit an creature
+			{
+				if (victimRating > attackerRating + 10.0f)
+				{
+					chance += 2.0f + ((victimRating - attackerRating - 10.0f) * 0.4f);
+				}
+				else
+				{
+					chance += (victimRating - attackerRating) * 0.1f;
+				}
+			}
+			if (chance < 0.0f)
+				chance = 0.0f;
+		}
+		else	// spell
+		{
+			float levelModificator = attacker.getLevel() - getLevel();
+			if (levelModificator < -2.0f)
+			{
+				if (getTypeId() == wowpp::object_type::Character)
+				{
+					levelModificator = (levelModificator * 7) + 12;		//pvp calculation
+				}
+				else
+				{
+					levelModificator = (levelModificator * 11) + 20;	//pve calculation
+				}
+			}
+			chance = 4.0f - levelModificator;
+			if (chance < 1.0f)
+				chance = 1.0f;
+			if (chance > 99.0f)
+				chance = 99.0f;
+		}
 		return chance;
 	}
 	
-	float GameUnit::getDodgeChance(GameUnit &caster)
+	float GameUnit::getDodgeChance(GameUnit &attacker)
 	{
 		return 5.0f;
 	}
 	
-    float GameUnit::getParryChance(GameUnit &caster)
+    float GameUnit::getParryChance(GameUnit &attacker)
 	{
 		return 5.0f;
 	}
 	
-	float GameUnit::getGlancingChance(GameUnit &caster)
+	float GameUnit::getGlancingChance(GameUnit &attacker)
 	{
-		if (caster.getTypeId() == wowpp::object_type::Character && this->getTypeId() == wowpp::object_type::Unit)
+		if (attacker.getTypeId() == wowpp::object_type::Character && this->getTypeId() == wowpp::object_type::Unit)
 		{
 			return 10.0f;
 		}
@@ -1304,9 +1358,9 @@ namespace wowpp
 		return 5.0f;
 	}
 	
-	float GameUnit::getCrushChance(GameUnit &caster)
+	float GameUnit::getCrushChance(GameUnit &attacker)
 	{
-		if (caster.getTypeId() == wowpp::object_type::Unit)
+		if (attacker.getTypeId() == wowpp::object_type::Unit)
 		{
 			//TODO only some boss mobs can crush
 			return 5.0f;
@@ -1317,12 +1371,12 @@ namespace wowpp
 		}
 	}
 	
-	float GameUnit::getResiPercentage(const proto::SpellEffect &effect, GameUnit &caster)
+	float GameUnit::getResiPercentage(const proto::SpellEffect &effect, GameUnit &attacker)
 	{
 		return 0;
 	}
 	
-	float GameUnit::getCritChance(GameUnit &caster, UInt8 school)
+	float GameUnit::getCritChance(GameUnit &attacker, UInt8 school)
 	{
 		return 10.0f;
 	}
