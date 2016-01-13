@@ -445,12 +445,7 @@ namespace wowpp
 	void GameUnit::onAttackSwing()
 	{
 		// Check if we still have a victim
-		if (!m_victim)
-		{
-			return;
-		}
-
-		if (!isAlive())
+		if (!m_victim || !isAlive())
 		{
 			return;
 		}
@@ -509,10 +504,6 @@ namespace wowpp
 				return;
 			}
 
-			// Check if we are in front of the target for parry
-			const bool targetLookingAtUs = 
-				victim->isInArc(2.0f * 3.1415927f / 3.0f, getLocation().x, getLocation().y);
-
 			bool result = false;
 			if (m_swingCallback)
 			{
@@ -532,135 +523,134 @@ namespace wowpp
 					return;
 				}
 				
-				game::HitInfo hitInfo = game::hit_info::NormalSwing2;
-				game::VictimState victimState = game::victim_state::Normal;
-				float damageModifier = 1.0f;
-				UInt32 blockValue = 0;
-				Int32 damage = 0;
+				std::vector<GameUnit*> targets;
+				std::vector<game::VictimState> victimStates;
+				std::vector<game::HitInfo> hitInfos;
+				std::vector<float> resists;
+				AttackTable attackTable;
+				UInt8 school = game::spell_school::Normal;	// may vary
+				attackTable.checkMeleeAutoAttack(this, victim, school, targets, victimStates, hitInfos, resists);
 				
-				//attack table calculation
-				std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
-				float hitTableRoll = hitTableDistribution(randomGenerator);
-				if ((hitTableRoll -= getMissChance(*this, game::spell_school::Normal)) < 0.0f)
+				for (int i=0; i<targets.size(); i++)
 				{
-					//missed
-					hitInfo = game::hit_info::Miss;
-					damageModifier = 0.0f;
-				}
-				else if ((hitTableRoll -= getDodgeChance(*this)) < 0.0f)
-				{
-					//dodged
-					victimState = game::victim_state::Dodge;
-					damageModifier = 0.0f;
-				}
-				else if (
-					targetLookingAtUs &&			// Target can only parry if it looks at us
-					m_victim->canParry() && 
-					(hitTableRoll -= getParryChance(*this)) < 0.0f)
-				{
-					//parried
-					victimState = game::victim_state::Parry;
-					damageModifier = 0.0f;
-					//TODO accelerate next m_victim autohit
-				}
-				else if ((hitTableRoll -= getGlancingChance(*this)) < 0.0f)
-				{
-					//glanced
-					hitInfo = game::hit_info::Glancing;
-					damageModifier = 0.75f;	//TODO more detail
-				}
-				else if (m_victim->canBlock() && (hitTableRoll -= getBlockChance()) < 0.0f)
-				{
-					//blocked
-					victimState = game::victim_state::Blocks;
-					blockValue = 50;	//TODO get from m_victim
-				}
-				else if ((hitTableRoll -= getCrushChance(*this)) < 0.0f)
-				{
-					//crush
-					hitInfo = game::hit_info::Crushing;
-					damageModifier = 1.5f;
-				}
-				else if ((hitTableRoll -= getCritChance(*this, game::spell_school::Normal)) < 0.0f)
-				{
-					//crit
-					hitInfo = game::hit_info::CriticalHit;
-					damageModifier = 2.0f;
-				}
-
-				// Hard coded overpower proc for warrior: Blizzard implemented this with combo points
-				// When the target dodges, the warrior simply gets a combo point.
-				// Since overpower uses all combo points (just like all finishing moves for rogues and ferals),
-				// it doesn't matter if we add more than one combo point to the target.
-				if (victimState == game::victim_state::Dodge)
-				{
-					// Hard coded: TODO proper implementation
-					if (getTypeId() == object_type::Character &&
-						getClass() == game::char_class::Warrior)
+					GameUnit* targetUnit = targets[i];
+					
+					UInt32 totalDamage = 0;
+					UInt32 blockValue = 0;
+					bool crit = false;
+					UInt32 resisted = 0;
+					UInt32 absorbed = 0;
+					if (victimStates[i] == game::victim_state::IsImmune)
 					{
-						reinterpret_cast<GameCharacter*>(this)->addComboPoints(m_victim->getGuid(), 1);
+						totalDamage = 0;
 					}
-				}
-
-				if (damageModifier > 0)
-				{
-					// Calculate damage between minimum and maximum damage
-					std::uniform_real_distribution<float> distribution(getFloatValue(unit_fields::MinDamage), getFloatValue(unit_fields::MaxDamage) + 1.0f);
-					damage = (victim->calculateArmorReducedDamage(getLevel(), UInt32(distribution(randomGenerator))) * damageModifier) - blockValue;
-					if (damage < 0)	//avoid negative damage when blockValue is high
-						damage = 0;
-				}
-				UInt32 absorbed = victim->consumeAbsorb(damage, game::spell_school_mask::Normal);
-				if (absorbed > 0 && absorbed == damage)
-				{
-					hitInfo = static_cast<game::HitInfo>(hitInfo | game::hit_info::Absorb);
-				}
-				
-				// Notify all subscribers
-				std::vector<char> buffer;
-				io::VectorSink sink(buffer);
-				game::Protocol::OutgoingPacket packet(sink);
-				game::server_write::attackStateUpdate(packet, getGuid(), victim->getGuid(), hitInfo, damage, absorbed, 0, blockValue, victimState, game::weapon_attack::BaseAttack, 1);
-
-				// Notify all tile subscribers about this event
-				forEachSubscriberInSight(
-					m_worldInstance->getGrid(),
-					tileIndex,
-					[&packet, &buffer](ITileSubscriber &subscriber)
-				{
-					subscriber.sendPacket(packet, buffer);
-				});
-
-				// Check if we need to give rage
-				if (getByteValue(unit_fields::Bytes0, 3) == game::power_type::Rage)
-				{
-					const float weaponSpeedHitFactor = (getUInt32Value(unit_fields::BaseAttackTime) / 1000.0f) * 3.5f;
-					const UInt32 level = getLevel();
-					const float rageconversion = ((0.0091107836f * level * level) + 3.225598133f * level) + 4.2652911f;
-					float addRage = ((damage / rageconversion * 7.5f + weaponSpeedHitFactor) / 2.0f) * 10.0f;
-
-					UInt32 currentRage = getUInt32Value(unit_fields::Power2);
-					UInt32 maxRage = getUInt32Value(unit_fields::MaxPower2);
-					if (currentRage + addRage > maxRage)
+					else if (hitInfos[i] == game::hit_info::Miss)
 					{
-						currentRage = maxRage;
+						totalDamage = 0;
 					}
-					else
+					else if (victimStates[i] == game::victim_state::Dodge)
 					{
-						currentRage += addRage;
+						totalDamage = 0;
+						// Hard coded overpower proc for warrior: Blizzard implemented this with combo points
+						// When the target dodges, the warrior simply gets a combo point.
+						// Since overpower uses all combo points (just like all finishing moves for rogues and ferals),
+						// it doesn't matter if we add more than one combo point to the target.
+						// Hard coded: TODO proper implementation
+						if (getTypeId() == object_type::Character &&
+							getClass() == game::char_class::Warrior)
+						{
+							reinterpret_cast<GameCharacter*>(this)->addComboPoints(m_victim->getGuid(), 1);
+						}
 					}
-					setUInt32Value(unit_fields::Power2, currentRage);
-				}
+					else if (victimStates[i] == game::victim_state::Parry)
+					{
+						totalDamage = 0;
+						//TODO accelerate next m_victim autohit
+					}
+					else 
+					{
+						// Calculate damage between minimum and maximum damage
+						std::uniform_real_distribution<float> distribution(getFloatValue(unit_fields::MinDamage), getFloatValue(unit_fields::MaxDamage) + 1.0f);
+						totalDamage = victim->calculateArmorReducedDamage(getLevel(), UInt32(distribution(randomGenerator)));
+						if (totalDamage < 0)	//avoid negative damage when blockValue is high
+							totalDamage = 0;
+						
+						if (hitInfos[i] == game::hit_info::Glancing)
+						{
+							totalDamage *= 0.75f;	//TODO more detail
+						}
+						else if (victimStates[i] == game::victim_state::Blocks)
+						{
+							blockValue = 50;	//TODO get from m_victim
+							totalDamage -= blockValue;
+							if (totalDamage < 0)	//avoid negative damage when blockValue is high
+								totalDamage = 0;
+						}
+						else if (hitInfos[i] == game::hit_info::CriticalHit)
+						{
+							crit = true;
+							totalDamage *= 2.0f;
+						}
+						else if (hitInfos[i] == game::hit_info::Crushing)
+						{
+							totalDamage *= 1.5f;
+						}
+						
+						resisted = totalDamage * resists[i];
+						totalDamage -= resisted;
+						absorbed = targetUnit->consumeAbsorb(totalDamage, school);
+						if (absorbed > 0 && absorbed == totalDamage)
+						{
+							hitInfos[i] = static_cast<game::HitInfo>(hitInfos[i] | game::hit_info::Absorb);
+						}
+					}
+					
+					// Notify all subscribers
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+					game::Protocol::OutgoingPacket packet(sink);
+					game::server_write::attackStateUpdate(packet, getGuid(), victim->getGuid(), hitInfos[i], totalDamage, absorbed, 0, blockValue, victimStates[i], game::weapon_attack::BaseAttack, 1);
 
-				// Deal damage (Note: m_victim can become nullptr, if the target dies)
-				if (damage > 0)
-				{
-					m_victim->takenDamage(this);
-					m_victim->takenMeleeAutoAttack(this);
-					victim->dealDamage(damage - absorbed, 0, this);
+					// Notify all tile subscribers about this event
+					forEachSubscriberInSight(
+						m_worldInstance->getGrid(),
+						tileIndex,
+						[&packet, &buffer](ITileSubscriber &subscriber)
+					{
+						subscriber.sendPacket(packet, buffer);
+					});
 
-					// Trigger auto attack procs
-					doneMeleeAutoAttack(m_victim);
+					// Check if we need to give rage
+					if (getByteValue(unit_fields::Bytes0, 3) == game::power_type::Rage)
+					{
+						const float weaponSpeedHitFactor = (getUInt32Value(unit_fields::BaseAttackTime) / 1000.0f) * 3.5f;
+						const UInt32 level = getLevel();
+						const float rageconversion = ((0.0091107836f * level * level) + 3.225598133f * level) + 4.2652911f;
+						float addRage = ((totalDamage / rageconversion * 7.5f + weaponSpeedHitFactor) / 2.0f) * 10.0f;
+
+						UInt32 currentRage = getUInt32Value(unit_fields::Power2);
+						UInt32 maxRage = getUInt32Value(unit_fields::MaxPower2);
+						if (currentRage + addRage > maxRage)
+						{
+							currentRage = maxRage;
+						}
+						else
+						{
+							currentRage += addRage;
+						}
+						setUInt32Value(unit_fields::Power2, currentRage);
+					}
+
+					// Deal damage (Note: m_victim can become nullptr, if the target dies)
+					if (totalDamage > 0)
+					{
+						m_victim->takenDamage(this);
+						m_victim->takenMeleeAutoAttack(this);
+						victim->dealDamage(totalDamage - absorbed, 0, this);
+
+						// Trigger auto attack procs
+						doneMeleeAutoAttack(m_victim);
+					}
 				}
 			}
 		} while (false);

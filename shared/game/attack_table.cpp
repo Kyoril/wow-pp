@@ -20,6 +20,7 @@
 //
 
 #include "attack_table.h"
+#include "game_character.h"
 
 namespace wowpp
 {
@@ -38,6 +39,8 @@ namespace wowpp
 
 			for (GameUnit* targetUnit : m_targets[targetA][targetB])
 			{
+				// Check if we are in front of the target for parry
+				const bool targetLookingAtUs = targetUnit->isInArc(2.0f * 3.1415927f / 3.0f, attacker->getLocation().x, attacker->getLocation().y);
 				m_hitInfos[targetA][targetB].push_back(game::hit_info::NormalSwing);
 				m_victimStates[targetA][targetB].push_back(game::victim_state::Normal);
 				float attackTableRoll = hitTableDistribution(randomGenerator);
@@ -53,15 +56,15 @@ namespace wowpp
 				{
 					m_victimStates[targetA][targetB].back() = game::victim_state::Dodge;
 				}
-				else if ((attackTableRoll -= targetUnit->getParryChance(*attacker)) < 0.0f)
+				else if (targetLookingAtUs && targetUnit->canParry() && (attackTableRoll -= targetUnit->getParryChance(*attacker)) < 0.0f)
 				{
 					m_victimStates[targetA][targetB].back() = game::victim_state::Parry;
 				}
 				else if ((attackTableRoll -= targetUnit->getGlancingChance(*attacker)) < 0.0f)
 				{
-					m_hitInfos[targetA][targetB].back() = game::hit_info::CriticalHit;
+					m_hitInfos[targetA][targetB].back() = game::hit_info::Glancing;
 				}
-				else if ((attackTableRoll -= targetUnit->getBlockChance()) < 0.0f)
+				else if (targetLookingAtUs && targetUnit->canBlock() && (attackTableRoll -= targetUnit->getBlockChance()) < 0.0f)
 				{
 					m_victimStates[targetA][targetB].back() = game::victim_state::Blocks;
 				}

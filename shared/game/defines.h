@@ -1582,6 +1582,42 @@ namespace wowpp
 		}
 
 		typedef spell_miss_info::Type SpellMissInfo;
+		
+		namespace spell_modifier
+		{
+			enum Type
+			{
+				Damage				= 0,
+				Duration			= 1,
+				Threat				= 2,
+				Effect1				= 3,
+				Charges				= 4,
+				Range				= 5,
+				Radius				= 6,
+				CriticalChance		= 7,
+				AllEffects			= 8,
+				NotLoseCastingTtime	= 9,
+				CastingTime			= 10,
+				Cooldown			= 11,
+				Effect2				= 12,
+				Cost				= 14,
+				CritDamageBonus		= 15,
+				ResistMissChance	= 16,
+				JumpTargets			= 17,
+				ChanceOfSuccess		= 18,
+				ActivationTime		= 19,
+				EffectPastFirst		= 20,
+				CastingTimeOld		= 21,
+				Dot					= 22,
+				Effect3				= 23,
+				SpellBonusDamage	= 24,
+				FrequencyOfSuccess	= 26,
+				MultipleValue		= 27,
+				ResistDispelChance	= 28
+			};
+		}
+		
+		typedef spell_modifier::Type SpellModifier;
 
 		namespace spell_hit_type
 		{

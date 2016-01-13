@@ -31,6 +31,7 @@
 #include "aura_container.h"
 #include "common/macros.h"
 #include "common/linear_set.h"
+#include "attack_table.h"
 #include "proto_data/trigger_helper.h"
 #include <boost/signals2.hpp>
 

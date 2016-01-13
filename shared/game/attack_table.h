@@ -23,7 +23,6 @@
 
 #include "game/defines.h"
 #include "game/game_unit.h"
-#include "game/game_character.h"
 #include "game/world_instance.h"
 #include "proto_data/faction_helper.h"
 #include <unordered_map>

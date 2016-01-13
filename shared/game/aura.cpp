@@ -721,6 +721,17 @@ namespace wowpp
 		m_target.updateModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue, m_basePoints, apply);
 	}
 	
+	void Aura::handleAddFlatModifier(bool apply)
+	{
+		switch (m_effect.miscvaluea())
+		{
+			case game::spell_modifier::CastingTime:
+				break;
+			default:
+				break;
+		}
+	}
+	
 	void Aura::handleSchoolAbsorb(bool apply)
 	{
 		//ToDo: Add talent modifiers

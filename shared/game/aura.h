@@ -110,6 +110,8 @@ namespace wowpp
 		void handleManaShield(bool apply);
 		/// 99
 		void handleModAttackPower(bool apply);
+		/// 107
+		void handleAddFlatModifier(bool apply);
 		/// 109
 		void handleAddTargetTrigger(bool apply);
 		/// 118
