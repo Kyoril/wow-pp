@@ -508,6 +508,7 @@ namespace wowpp
 	void SingleCastState::spellEffectSchoolDamage(const proto::SpellEffect &effect)
 	{
 		GameUnit &caster = m_cast.getExecuter();
+		UInt8 school = m_spell.schoolmask();
 		std::vector<GameUnit*> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
@@ -517,7 +518,6 @@ namespace wowpp
 		for (int i=0; i<targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
-			UInt8 school = m_spell.schoolmask();
 			UInt32 totalDamage;
 			bool crit = false;
 			UInt32 resisted = 0;
@@ -571,55 +571,122 @@ namespace wowpp
 
 	void SingleCastState::spellEffectNormalizedWeaponDamage(const proto::SpellEffect &effect)
 	{
-		// Calculate damage based on base points
-		UInt32 damage = calculateEffectBasePoints(effect);
-
-		// Add weapon damage
-		const float weaponMin = m_cast.getExecuter().getFloatValue(unit_fields::MinDamage);
-		const float weaponMax = m_cast.getExecuter().getFloatValue(unit_fields::MaxDamage);
-
-		// Randomize weapon damage
-		std::uniform_real_distribution<float> distribution(weaponMin, weaponMax);
-		damage += UInt32(distribution(randomGenerator));
-
-		// Resolve GUIDs
-		GameUnit *unitTarget = nullptr;
-		GameUnit &caster = m_cast.getExecuter();
-		auto *world = caster.getWorldInstance();
-
-		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
-			unitTarget = &caster;
-		else if (world && m_target.hasUnitTarget())
-			unitTarget = dynamic_cast<GameUnit*>(world->findObjectByGUID(m_target.getUnitTarget()));
-
-		// Check target
-		if (!unitTarget)
+		GameUnit &attacker = m_cast.getExecuter();
+		UInt8 school = m_spell.schoolmask();
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkSpecialMeleeAttack(&attacker, m_target, school, targets, victimStates, hitInfos, resists);
+		
+		for (int i=0; i<targets.size(); i++)
 		{
-			WLOG("EFFECT_NORMALIZED_WEAPON_DMG: No valid target found!");
-			return;
+			GameUnit* targetUnit = targets[i];
+			UInt32 totalDamage;
+			UInt32 blocked = 0;
+			bool crit = false;
+			UInt32 resisted = 0;
+			UInt32 absorbed = 0;
+			if (victimStates[i] == game::victim_state::IsImmune)
+			{
+				totalDamage = 0;
+			}
+			else if (hitInfos[i] == game::hit_info::Miss)
+			{
+				totalDamage = 0;
+			}
+			else if (victimStates[i] == game::victim_state::Dodge)
+			{
+				totalDamage = 0;
+				// Hard coded overpower proc for warrior: Blizzard implemented this with combo points
+				// When the target dodges, the warrior simply gets a combo point.
+				// Since overpower uses all combo points (just like all finishing moves for rogues and ferals),
+				// it doesn't matter if we add more than one combo point to the target.
+				// Hard coded: TODO proper implementation
+				if (attacker.getTypeId() == object_type::Character &&
+					attacker.getClass() == game::char_class::Warrior)
+				{
+					reinterpret_cast<GameCharacter*>(this)->addComboPoints(targetUnit->getGuid(), 1);
+				}
+			}
+			else if (victimStates[i] == game::victim_state::Parry)
+			{
+				totalDamage = 0;
+				//TODO accelerate next m_victim autohit
+			}
+			else 
+			{
+				// Calculate damage based on base points
+				totalDamage = calculateEffectBasePoints(effect);
+
+				// Add weapon damage
+				const float weaponMin = attacker.getFloatValue(unit_fields::MinDamage);
+				const float weaponMax = attacker.getFloatValue(unit_fields::MaxDamage);
+
+				// Randomize weapon damage
+				std::uniform_real_distribution<float> distribution(weaponMin, weaponMax);
+				totalDamage += UInt32(distribution(randomGenerator));
+				
+				// Armor reduction
+				totalDamage = targetUnit->calculateArmorReducedDamage(attacker.getLevel(), totalDamage);
+				if (totalDamage < 0)	//avoid negative damage when blockValue is high
+					totalDamage = 0;
+
+				if (hitInfos[i] == game::hit_info::Glancing)
+				{
+					totalDamage *= 0.75f;	//TODO more detail
+				}
+				else if (victimStates[i] == game::victim_state::Blocks)
+				{
+					UInt32 blockValue = 50;	//TODO get from m_victim
+					if (blockValue >= totalDamage)	//avoid negative damage when blockValue is high
+					{
+						totalDamage = 0;
+						blocked = totalDamage;
+					}
+					else
+					{
+						totalDamage -= blockValue;
+						blocked = blockValue;
+					}
+				}
+				else if (hitInfos[i] == game::hit_info::CriticalHit)
+				{
+					crit = true;
+					totalDamage *= 2.0f;
+				}
+				else if (hitInfos[i] == game::hit_info::Crushing)
+				{
+					totalDamage *= 1.5f;
+				}
+				resisted = totalDamage * resists[i];
+				totalDamage -= resisted;
+				absorbed = targetUnit->consumeAbsorb(totalDamage, school);
+				if (absorbed > 0 && absorbed == totalDamage)
+				{
+					hitInfos[i] = static_cast<game::HitInfo>(hitInfos[i] | game::hit_info::Absorb);
+				}
+			}
+			
+			// Send spell damage packet
+			sendPacketFromCaster(attacker,
+				std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+				targetUnit->getGuid(),
+				attacker.getGuid(),
+				m_spell.id(),
+				totalDamage,
+				school,
+				absorbed,
+				0,
+				false,
+				0,
+				crit));
+
+			// Update health value
+			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
+			targetUnit->dealDamage(totalDamage - absorbed, school, &attacker, noThreat);
+			WLOG("DMG: " << totalDamage);
 		}
-
-		// Armor reduction
-		damage = unitTarget->calculateArmorReducedDamage(caster.getLevel(), damage);
-		UInt32 absorbed = unitTarget->consumeAbsorb(damage, m_spell.schoolmask());
-
-		// Send spell damage packet
-		sendPacketFromCaster(caster,
-			std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-			unitTarget->getGuid(),
-			caster.getGuid(),
-			m_spell.id(),
-			damage,
-			m_spell.schoolmask(),
-			absorbed,
-			0,
-			false,
-			0,
-			false));
-
-		// Update health value
-		const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
-		unitTarget->dealDamage(damage - absorbed, m_spell.schoolmask(), &caster, noThreat);
 	}
 
 	void SingleCastState::spellEffectDrainPower(const proto::SpellEffect &effect)
@@ -815,7 +882,7 @@ namespace wowpp
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
-		bool isNegative = false;
+		bool isNegative = false;	//TODO check it
 		
 		if (isNegative) {
 			m_attackTable.checkNonBinarySpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//DoT

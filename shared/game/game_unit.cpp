@@ -536,7 +536,7 @@ namespace wowpp
 					GameUnit* targetUnit = targets[i];
 					
 					UInt32 totalDamage = 0;
-					UInt32 blockValue = 0;
+					UInt32 blocked = 0;
 					bool crit = false;
 					UInt32 resisted = 0;
 					UInt32 absorbed = 0;
@@ -581,10 +581,17 @@ namespace wowpp
 						}
 						else if (victimStates[i] == game::victim_state::Blocks)
 						{
-							blockValue = 50;	//TODO get from m_victim
-							totalDamage -= blockValue;
-							if (totalDamage < 0)	//avoid negative damage when blockValue is high
+							UInt32 blockValue = 50;	//TODO get from m_victim
+							if (blockValue >= totalDamage)	//avoid negative damage when blockValue is high
+							{
 								totalDamage = 0;
+								blocked = totalDamage;
+							}
+							else
+							{
+								totalDamage -= blockValue;
+								blocked = blockValue;
+							}
 						}
 						else if (hitInfos[i] == game::hit_info::CriticalHit)
 						{
@@ -609,7 +616,7 @@ namespace wowpp
 					std::vector<char> buffer;
 					io::VectorSink sink(buffer);
 					game::Protocol::OutgoingPacket packet(sink);
-					game::server_write::attackStateUpdate(packet, getGuid(), victim->getGuid(), hitInfos[i], totalDamage, absorbed, 0, blockValue, victimStates[i], game::weapon_attack::BaseAttack, 1);
+					game::server_write::attackStateUpdate(packet, getGuid(), victim->getGuid(), hitInfos[i], totalDamage, absorbed, 0, blocked, victimStates[i], game::weapon_attack::BaseAttack, 1);
 
 					// Notify all tile subscribers about this event
 					forEachSubscriberInSight(
@@ -1268,14 +1275,14 @@ namespace wowpp
 		return false;
 	}
 	
-	float GameUnit::getMissChance(GameUnit &attacker, UInt8 school)
+	float GameUnit::getMissChance(GameUnit &attacker, UInt8 school, bool isWhiteDamage)
 	{
 		float chance;
 		if (school == game::spell_school::Normal)	// melee
 		{
 			float attackerRating = attacker.getLevel() * 5;	//TODO get real rating
 			float victimRating = getLevel() * 5;
-			if (false)	//TODO if(dualwield)
+			if (isWhiteDamage && false)	//TODO if(dualwield)
 			{
 				chance = 19.0f;
 			}

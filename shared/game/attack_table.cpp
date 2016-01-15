@@ -44,7 +44,7 @@ namespace wowpp
 				m_hitInfos[targetA][targetB].push_back(game::hit_info::NormalSwing);
 				m_victimStates[targetA][targetB].push_back(game::victim_state::Normal);
 				float attackTableRoll = hitTableDistribution(randomGenerator);
-				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school)) < 0.0f)
+				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school, true)) < 0.0f)
 				{
 					m_hitInfos[targetA][targetB].back() = game::hit_info::Miss;
 				}
@@ -52,7 +52,7 @@ namespace wowpp
 				{
 					m_victimStates[targetA][targetB].back() = game::victim_state::IsImmune;
 				}
-				else if ((attackTableRoll -= targetUnit->getDodgeChance(*attacker)) < 0.0f)
+				else if ((targetLookingAtUs || targetUnit->getTypeId() != object_type::Character) && (attackTableRoll -= targetUnit->getDodgeChance(*attacker)) < 0.0f)
 				{
 					m_victimStates[targetA][targetB].back() = game::victim_state::Dodge;
 				}
@@ -100,10 +100,11 @@ namespace wowpp
 
 			for (GameUnit* targetUnit : m_targets[targetA][targetB])
 			{
+				const bool targetLookingAtUs = targetUnit->isInArc(2.0f * 3.1415927f / 3.0f, attacker->getLocation().x, attacker->getLocation().y);
 				m_hitInfos[targetA][targetB].push_back(game::hit_info::NormalSwing);
 				m_victimStates[targetA][targetB].push_back(game::victim_state::Normal);
 				float attackTableRoll = hitTableDistribution(randomGenerator);
-				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school)) < 0.0f)
+				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school, false)) < 0.0f)
 				{
 					m_hitInfos[targetA][targetB].back() = game::hit_info::Miss;
 				}
@@ -111,29 +112,43 @@ namespace wowpp
 				{
 					m_victimStates[targetA][targetB].back() = game::victim_state::IsImmune;
 				}
-				else if ((attackTableRoll -= targetUnit->getDodgeChance(*attacker)) < 0.0f)
+				else if ((targetLookingAtUs || targetUnit->getTypeId() != object_type::Character) && (attackTableRoll -= targetUnit->getDodgeChance(*attacker)) < 0.0f)
 				{
 					m_victimStates[targetA][targetB].back() = game::victim_state::Dodge;
 				}
-				else if ((attackTableRoll -= targetUnit->getParryChance(*attacker)) < 0.0f)
+				else if (targetLookingAtUs && targetUnit->canParry() && (attackTableRoll -= targetUnit->getParryChance(*attacker)) < 0.0f)
 				{
 					m_victimStates[targetA][targetB].back() = game::victim_state::Parry;
 				}
 				else if ((attackTableRoll -= targetUnit->getGlancingChance(*attacker)) < 0.0f)
 				{
-					m_hitInfos[targetA][targetB].back() = game::hit_info::CriticalHit;
+					m_hitInfos[targetA][targetB].back() = game::hit_info::Glancing;
 				}
-				else if ((attackTableRoll -= targetUnit->getBlockChance()) < 0.0f)
+				else if (targetLookingAtUs && targetUnit->canBlock() && (attackTableRoll -= targetUnit->getBlockChance()) < 0.0f)
 				{
 					m_victimStates[targetA][targetB].back() = game::victim_state::Blocks;
 				}
-				else if ((attackTableRoll -= targetUnit->getCritChance(*attacker, school)) < 0.0f)
+				else
 				{
-					m_hitInfos[targetA][targetB].back() = game::hit_info::CriticalHit;
-				}
-				else if ((attackTableRoll -= targetUnit->getCrushChance(*attacker)) < 0.0f)
-				{
-					m_hitInfos[targetA][targetB].back() = game::hit_info::Crushing;
+					if (attacker->getTypeId() == wowpp::object_type::Character)
+					{
+						attackTableRoll = hitTableDistribution(randomGenerator);
+						if ((attackTableRoll -= targetUnit->getCritChance(*attacker, school)) < 0.0f)
+						{
+							m_hitInfos[targetA][targetB].back() = game::hit_info::CriticalHit;
+						}
+					}
+					else
+					{
+						if ((attackTableRoll -= targetUnit->getCritChance(*attacker, school)) < 0.0f)
+						{
+							m_hitInfos[targetA][targetB].back() = game::hit_info::CriticalHit;
+						}
+						else if ((attackTableRoll -= targetUnit->getCrushChance(*attacker)) < 0.0f)
+						{
+							m_hitInfos[targetA][targetB].back() = game::hit_info::Crushing;
+						}
+					}
 				}
 
 //				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(effect, *attacker));
@@ -227,7 +242,7 @@ namespace wowpp
 				m_hitInfos[targetA][targetB].push_back(game::hit_info::NoAction);
 				m_victimStates[targetA][targetB].push_back(game::victim_state::Normal);
 				float attackTableRoll = hitTableDistribution(randomGenerator);
-				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school)) < 0.0f)
+				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school, false)) < 0.0f)
 				{
 					m_hitInfos[targetA][targetB].back() = game::hit_info::Miss;
 				}
@@ -265,7 +280,7 @@ namespace wowpp
 				m_hitInfos[targetA][targetB].push_back(game::hit_info::NoAction);
 				m_victimStates[targetA][targetB].push_back(game::victim_state::Normal);
 				float attackTableRoll = hitTableDistribution(randomGenerator);
-				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school)) < 0.0f)
+				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school, false)) < 0.0f)
 				{
 					m_hitInfos[targetA][targetB].back() = game::hit_info::Miss;
 				}
