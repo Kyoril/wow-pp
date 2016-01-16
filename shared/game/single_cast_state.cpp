@@ -668,24 +668,26 @@ namespace wowpp
 				}
 			}
 			
-			// Send spell damage packet
-			sendPacketFromCaster(attacker,
-				std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-				targetUnit->getGuid(),
-				attacker.getGuid(),
-				m_spell.id(),
-				totalDamage,
-				school,
-				absorbed,
-				0,
-				false,
-				0,
-				crit));
-
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
-			targetUnit->dealDamage(totalDamage - absorbed, school, &attacker, noThreat);
-			WLOG("DMG: " << totalDamage);
+			if (targetUnit->dealDamage(totalDamage - absorbed, school, &attacker, noThreat))
+			{
+				// Send spell damage packet
+				sendPacketFromCaster(attacker,
+					std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+					targetUnit->getGuid(),
+					attacker.getGuid(),
+					m_spell.id(),
+					totalDamage,
+					school,
+					absorbed,
+					0,
+					false,
+					0,
+					crit));
+				
+				targetUnit->takenDamage(&attacker);
+			}
 		}
 	}
 

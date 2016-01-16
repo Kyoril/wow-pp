@@ -21,6 +21,7 @@
 
 #include "attack_table.h"
 #include "game_character.h"
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -94,7 +95,6 @@ namespace wowpp
 		UInt32 targetB = game::targets::None;
 		if (!checkIndex(targetA, targetB))
 		{
-			SpellTargetMap targetMap;
 			refreshTargets(*attacker, targetMap, targetA, targetB, 0.0f, 0.0f);
 			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
 
@@ -306,7 +306,9 @@ namespace wowpp
 		WorldInstance *world = attacker.getWorldInstance();
 
 		if (targetMap.getTargetMap() == game::spell_cast_target_flags::Self || targetA == game::targets::UnitCaster)
+		{
 			unitTarget = &attacker;
+		}
 		else if (world && targetMap.hasUnitTarget())
 		{
 			unitTarget = dynamic_cast<GameUnit*>(world->findObjectByGUID(targetMap.getUnitTarget()));
