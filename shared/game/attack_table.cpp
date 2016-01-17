@@ -317,9 +317,10 @@ namespace wowpp
 		float x, y, tmp;
 		switch (targetA)
 		{
-		case game::targets::UnitCaster:
-		case game::targets::UnitTargetAlly:
-		case game::targets::UnitTargetEnemy:
+		case game::targets::UnitCaster:			//1
+		case game::targets::UnitTargetEnemy:	//6
+		case game::targets::UnitTargetAlly:		//21
+		case game::targets::UnitTargetAny:		//25
 			if (unitTarget) targets.push_back(unitTarget);
 			break;
 		case game::targets::UnitPartyCaster:

@@ -425,6 +425,22 @@ namespace wowpp
 		// This is only triggerd if the spell has the attribute
 		stopCast();
 	}
+	
+	void SingleCastState::spellEffectInstantKill(const proto::SpellEffect &effect)
+	{
+		GameUnit &caster = m_cast.getExecuter();
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+		
+		for (int i=0; i<targets.size(); i++)
+		{
+			GameUnit* targetUnit = targets[i];
+			targetUnit->dealDamage(targetUnit->getUInt32Value(unit_fields::Health), m_spell.schoolmask(), &caster, true);
+		}
+	}
 
 	void SingleCastState::spellEffectTeleportUnits(const proto::SpellEffect &effect)
 	{
@@ -1032,6 +1048,9 @@ namespace wowpp
 			const auto &effect = m_spell.effects(i);
 			switch (effect.type())
 			{
+			case se::InstantKill:
+				spellEffectInstantKill(effect);
+				break;
 			case se::SchoolDamage:
 				spellEffectSchoolDamage(effect);
 				break;
@@ -1316,6 +1335,11 @@ namespace wowpp
 
 			return lockId;
 		}
+	}
+	
+	void SingleCastState::spellEffectWeaponPercentDamage(const proto::SpellEffect &effect)
+	{
+		
 	}
 
 	void SingleCastState::spellEffectOpenLock(const proto::SpellEffect &effect)

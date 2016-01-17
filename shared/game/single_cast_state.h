@@ -62,6 +62,7 @@ namespace wowpp
 		void applyAllEffects();
 		Int32 calculateEffectBasePoints(const proto::SpellEffect &effect);
 		UInt32 getSpellPointsTotal(const proto::SpellEffect &effect, UInt32 spellPower, UInt32 bonusPct);
+		void spellEffectInstantKill(const proto::SpellEffect &effect);
 		void spellEffectTeleportUnits(const proto::SpellEffect &effect);
 		void spellEffectSchoolDamage(const proto::SpellEffect &effect);
 		void spellEffectHeal(const proto::SpellEffect &effect);
@@ -75,6 +76,7 @@ namespace wowpp
 		void spellEffectTriggerSpell(const proto::SpellEffect &effect);
 		void spellEffectEnergize(const proto::SpellEffect &effect);
 		void spellEffectPowerBurn(const proto::SpellEffect &effect);
+		void spellEffectWeaponPercentDamage(const proto::SpellEffect &effect);
 		void spellEffectOpenLock(const proto::SpellEffect &effect);
 		void spellEffectApplyAreaAuraParty(const proto::SpellEffect &effect);
 		void spellEffectSummon(const proto::SpellEffect &effect);
