@@ -25,6 +25,8 @@
 #include "boost/filesystem.hpp"
 #include "boost/program_options.hpp"
 #include "boost/format.hpp"
+#include "boost/asio.hpp"
+#include "boost/thread.hpp"
 #include "mpq_file.h"
 #include "dbc_file.h"
 #include "wdt_file.h"
@@ -147,23 +149,24 @@ namespace
             areaHeader.cellAreas[i].areaId = areaId;
             areaHeader.cellAreas[i].flags = flags;
         }
-		
+
+		/*
 		std::ostringstream outStrm;
 		outStrm << "obj/" << cellX << "_" << cellY << ".obj";
 		FILE *file = fopen(outStrm.str().c_str(), "w");
+		*/
 
 		// Collision chunk
 		MapCollisionChunk collisionChunk;
 		collisionChunk.fourCC = 0x4C434D57;
 		collisionChunk.size = sizeof(UInt32) * 4;
-
-		UInt32 vertexCount = 0;
-		UInt32 triangleCount = 0;
+		collisionChunk.vertexCount = 0;
+		collisionChunk.triangleCount = 0;
 
 		UInt32 groupCount = 0;
 		for (const auto &entry : adt.getMODFChunk().entries)
 		{
-			fprintf(file, "\n\no Group %d\n", groupCount++);
+			//fprintf(file, "\n\no Group %d\n", groupCount++);
 
 			// Entry placement
 			auto &wmo = wmos[entry.mwidEntry];
@@ -175,52 +178,34 @@ namespace
 
 			math::Matrix4 mat;
 
-#define WOWPP_DEG_TO_RAD(x) (x * 3.14159265358979323846 / 180.0)
-			// Scale is not needed (always set to 1)
-			/*
-			// Fix coordinate system into Z-up
-			math::Matrix4 matRotX; matRotX.fromAngleAxis(math::Vector3(1.0f, 0.0f, 0.0f), WOWPP_DEG_TO_RAD(90));
-			math::Matrix4 matRotY; matRotY.fromAngleAxis(math::Vector3(0.0f, 1.0f, 0.0f), WOWPP_DEG_TO_RAD(90));
-			mat = mat * matRotX;
-			mat = mat * matRotY;
-			*/
-			// Rotate object
-			math::Matrix4 rotMat; 
-			/*rotMat.fromAngleAxis(math::Vector3(0.0f, 1.0f, 0.0f), WOWPP_DEG_TO_RAD(entry.rotation.y));
-			mat = mat * rotMat;*/
-			rotMat.fromAngleAxis(math::Vector3(0.0f, 0.0f, 1.0f), WOWPP_DEG_TO_RAD(-entry.rotation.y));
-			mat = mat * rotMat;
-			/*rotMat.fromAngleAxis(math::Vector3(1.0f, 0.0f, 0.0f), WOWPP_DEG_TO_RAD(entry.rotation.z));
-			mat = mat * rotMat;*/
+#define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * x / -180.0)
+			math::Matrix4 rotMat = math::Matrix4::fromEulerAnglesXYZ(
+				WOWPP_DEG_TO_RAD(entry.rotation[2]), WOWPP_DEG_TO_RAD(entry.rotation[0]), WOWPP_DEG_TO_RAD(-entry.rotation[1]));
 
-			// Move into place (translate)
-			const float OFFSET = 533.33333f * 32.0f;
-			mat = mat * math::Matrix4::getTranslation(OFFSET - entry.position.x, -(OFFSET - entry.position.z), entry.position.y);
-			
-			//DLOG("POSITION: " << entry.position);
-			//DLOG("ROTATION: " << entry.rotation);
+			math::Vector3 position(entry.position.z, entry.position.x, entry.position.y);
+			position.x -= 32 * 533.3333f;
+			position.y -= 32 * 533.3333f;
 #undef WOWPP_DEG_TO_RAD
 
 			// Transform vertices
 			for (auto &group : wmo->getGroups())
 			{
-				UInt32 groupStartIndex = vertexCount;
+				UInt32 groupStartIndex = collisionChunk.vertexCount;
 
 				const auto &verts = group->getVertices();
 				const auto &inds = group->getIndices();
 
-				vertexCount += verts.size();
+				collisionChunk.vertexCount += verts.size();
 				UInt32 groupTris = inds.size() / 3;
 				for (auto &vert : verts)
 				{
 					// Transform vertex and push it to the list
-					math::Vector3 transformed = mat * vert;
-					/*transformed.x += OFFSET - entry.position.z;
-					transformed.y += OFFSET - entry.position.x;
-					transformed.z += entry.position.y;*/
+					math::Vector3 transformed = (rotMat * vert) + position;
+					transformed.x *= -1.f;
+					transformed.y *= -1.f;
 					collisionChunk.vertices.push_back(transformed);
 
-					fprintf(file, "v %f %f %f\n", transformed.x, transformed.y, transformed.z);
+					//fprintf(file, "v %f %f %f\n", transformed.x, transformed.y, transformed.z);
 				}
 				for (UInt32 i = 0; i < inds.size(); i += 3)
 				{
@@ -231,7 +216,7 @@ namespace
 						continue;
 					}
 
-					fprintf(file, "f %d %d %d\n", inds[i] + groupStartIndex + 1, inds[i + 1] + groupStartIndex + 1, inds[i + 2] + groupStartIndex + 1);
+					//fprintf(file, "f %d %d %d\n", inds[i] + groupStartIndex + 1, inds[i + 1] + groupStartIndex + 1, inds[i + 2] + groupStartIndex + 1);
 
 					Triangle tri;
 					tri.indexA = inds[i] + groupStartIndex;
@@ -240,11 +225,9 @@ namespace
 					collisionChunk.triangles.emplace_back(std::move(tri));
 				}
 
-				triangleCount += groupTris;
+				collisionChunk.triangleCount += groupTris;
 			}
 
-			collisionChunk.vertexCount += vertexCount;
-			collisionChunk.triangleCount += triangleCount;
 		}
 		collisionChunk.size += sizeof(math::Vector3) * collisionChunk.vertexCount;
 		collisionChunk.size += sizeof(UInt32) * 3 * collisionChunk.triangleCount;
@@ -255,8 +238,8 @@ namespace
 			header.collisionSize = 0;
 		}
 
-		fprintf(file, "\n\n# TRIANGLE COUNT IN TOTAL: %d\n", collisionChunk.triangleCount);
-		fprintf(file, "# VERTEX COUNT IN TOTAL: %d\n", collisionChunk.vertexCount);
+		//fprintf(file, "\n\n# TRIANGLE COUNT IN TOTAL: %d\n", collisionChunk.triangleCount);
+		//fprintf(file, "# VERTEX COUNT IN TOTAL: %d\n", collisionChunk.vertexCount);
 
 #if 0
 		// Map height header
@@ -276,7 +259,7 @@ namespace
 		}
 #endif
 
-		fclose(file);
+		//fclose(file);
 
 		// Write map header
         writer.writePOD(header);
@@ -316,8 +299,6 @@ namespace
 		{
 			return false;;
 		}
-		if (mapId != 36)
-			return true;
 
 		String mapName;
 		if (!dbcMap->getValue(dbcRow, 1, mapName))
@@ -466,10 +447,13 @@ namespace
 /// Procedural entry point of the application.
 int main(int argc, char* argv[])
 {
-	// Add cout to the list of log output streams
-	wowpp::g_DefaultLog.signal().connect(std::bind(
-		wowpp::printLogEntry,
-		std::ref(std::cout), std::placeholders::_1, wowpp::g_DefaultConsoleLogOptions));
+	// Multithreaded log support
+	boost::mutex logMutex;
+	wowpp::g_DefaultLog.signal().connect([&logMutex](const wowpp::LogEntry &entry)
+	{
+		boost::mutex::scoped_lock lock(logMutex);
+		wowpp::printLogEntry(std::cout, entry, wowpp::g_DefaultConsoleLogOptions);
+	});
 
 	// Try to create output path
 	if (!fs::is_directory(outputPath))
@@ -506,10 +490,32 @@ int main(int argc, char* argv[])
 	ILOG("Found " << dbcAreaTable->getRecordCount() << " areas");
 	ILOG("Found " << dbcLiquidType->getRecordCount() << " liquid types");
 
-	// Iterate through all maps and build all tiles
+	boost::asio::io_service dispatcher;
 	for (UInt32 i = 0; i < dbcMap->getRecordCount(); ++i)
 	{
-		convertMap(i);
+		dispatcher.post(
+			std::bind(convertMap, i));
+	}
+
+	std::size_t concurrency = boost::thread::hardware_concurrency();
+	concurrency = std::max<size_t>(1, concurrency);
+	ILOG("Using " << concurrency << " threads");
+
+	std::vector<std::unique_ptr<boost::thread>> workers;
+	for (size_t i = 1, c = concurrency; i < c; ++i)
+	{
+		workers.push_back(make_unique<boost::thread>(
+			[&dispatcher]()
+		{
+			dispatcher.run();
+		}));
+	}
+
+	dispatcher.run();
+
+	for(auto &worker : workers)
+	{
+		worker->join();
 	}
 
 	return 0;

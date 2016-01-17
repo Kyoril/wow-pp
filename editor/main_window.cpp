@@ -128,7 +128,7 @@ namespace wowpp
 
 				std::unique_ptr<Map> mapInst(new Map(
 					*entry, m_application.getConfiguration().dataPath));
-				auto *tile = mapInst->getTile(TileIndex2D(32, 32));
+				auto *tile = mapInst->getTile(TileIndex2D(52, 29));
 				if (!tile)
 				{
 					return;
@@ -143,8 +143,6 @@ namespace wowpp
 				teq->setManualCullingMode(Ogre::ManualCullingMode::MANUAL_CULL_NONE);
 				auto *pass = teq->createPass();
 				pass->setPolygonMode(Ogre::PM_SOLID);
-				pass->setSceneBlending(Ogre::SceneBlendType::SBT_TRANSPARENT_ALPHA);
-				//pass->setDiffuse(0.7f, 0.7f, 0.7f, 1.0f);
 				pass->setVertexColourTracking(Ogre::TVC_DIFFUSE);
 				pass = teq->createPass();
 				pass->setPolygonMode(Ogre::PM_WIREFRAME);
@@ -152,7 +150,10 @@ namespace wowpp
 				pass->setDiffuse(0.0f, 0.0f, 0.0f, 1.0f);
 				pass->setAmbient(0.0f, 0.0f, 0.0f);
 
-				const UInt32 collisionTriIndex = 2916;
+				const UInt32 collisionTriIndex = 0;
+
+				Ogre::Vector3 vMin = Ogre::Vector3(99999.0f, 99999.0f, 99999.0f);
+				Ogre::Vector3 vMax = Ogre::Vector3(-99999.0f, -99999.0f, -99999.0f);
 
 				// Create collision for this map
 				Ogre::ManualObject *obj = sceneMgr->createManualObject();
@@ -161,6 +162,14 @@ namespace wowpp
 				obj->estimateIndexCount(tile->collision.triangleCount * 3);
 				for (auto &vert : tile->collision.vertices)
 				{
+					if (vert.x < vMin.x) vMin.x = vert.x;
+					if (vert.y < vMin.y) vMin.y = vert.y;
+					if (vert.z < vMin.z) vMin.z = vert.z;
+
+					if (vert.x > vMax.x) vMax.x = vert.x;
+					if (vert.y > vMax.y) vMax.y = vert.y;
+					if (vert.z > vMax.z) vMax.z = vert.z;
+
 					obj->position(vert.x, vert.y, vert.z);
 					obj->colour(Ogre::ColourValue(0.5f, 0.5f, 0.5f));
 				}
@@ -191,8 +200,8 @@ namespace wowpp
 				obj->triangle(0, 1, 2);
 				obj->end();
 
-				math::Vector3 vStart(-186.254196f, -430.123688f, 55.836506f);
-				math::Vector3 vEnd(-192.914993f, -448.210999f, 56.433899f);
+				math::Vector3 vStart(-11039.700195f, 1459.349976f, 47.321106f);
+				math::Vector3 vEnd(-11015.700195f, 1475.300049f, 45.880798f);
 
 				obj->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_LINE_STRIP);
 				obj->position(vStart.x, vStart.y, vStart.z);
@@ -202,9 +211,15 @@ namespace wowpp
 				obj->index(0); obj->index(1);
 				obj->end();
 
-				camera->setPosition(vStart.x, vStart.y, vStart.z);
-				camera->setFarClipDistance(0.0f);
-				sceneMgr->getRootSceneNode()->attachObject(obj);
+				auto &firstVert = tile->collision.vertices[0];
+				camera->setPosition(vA.x, vA.y, vA.z);
+				camera->setFarClipDistance(1000.0f);
+
+				obj->setBoundingBox(Ogre::AxisAlignedBox(vMin, vMax));
+
+				Ogre::SceneNode *child = sceneMgr->getRootSceneNode()->createChildSceneNode();
+				child->attachObject(obj);
+				child->showBoundingBox(true);
 			}
 		}
 
