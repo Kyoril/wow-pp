@@ -53,7 +53,7 @@ namespace wowpp
 				if (!boost::filesystem::exists(file))
 				{
 					// File does not exist
-					//DLOG("Could not load map file " << file << ": File does not exist");
+					DLOG("Could not load map file " << file << ": File does not exist");
 					return nullptr;
 				}
 
@@ -74,12 +74,12 @@ namespace wowpp
 				}
 				if (mapHeaderChunk.size != sizeof(MapHeaderChunk) - 8)
 				{
-					//ELOG("Could not load map file " << file << ": Unexpected header chunk size (" << (sizeof(MapHeaderChunk) - 8) << " expected)!");
+					ELOG("Could not load map file " << file << ": Unexpected header chunk size (" << (sizeof(MapHeaderChunk) - 8) << " expected)!");
 					return nullptr;
 				}
 				if (mapHeaderChunk.version != 0x110)
 				{
-					//ELOG("Could not load map file " << file << ": Unsupported file format version!");
+					ELOG("Could not load map file " << file << ": Unsupported file format version!");
 					return nullptr;
 				}
 
@@ -92,7 +92,7 @@ namespace wowpp
 				mapFile.read(reinterpret_cast<char*>(&tile->areas), sizeof(MapAreaChunk));
 				if (tile->areas.fourCC != 0x52414D57 || tile->areas.size != sizeof(MapAreaChunk) - 8)
 				{
-					//WLOG("Map file " << file << " seems to be corrupted: Wrong area chunk");
+					WLOG("Map file " << file << " seems to be corrupted: Wrong area chunk");
 					//TODO: Should we cancel the loading process?
 				}
 			
@@ -108,7 +108,7 @@ namespace wowpp
 					mapFile.read(reinterpret_cast<char*>(&tile->collision.triangleCount), sizeof(UInt32));
 					if (tile->collision.fourCC != 0x4C434D57 || tile->collision.size < sizeof(UInt32) * 4)
 					{
-						//WLOG("Map file " << file << " seems to be corrupted: Wrong collision chunk (Size: " << tile->collision.size);
+						WLOG("Map file " << file << " seems to be corrupted: Wrong collision chunk (Size: " << tile->collision.size);
 						//TODO: Should we cancel the loading process?
 					}
 
@@ -171,13 +171,11 @@ namespace wowpp
 
 		// Create a ray
 		math::Ray ray(posA, posB);
-		//ILOG("\tSTART: " << posA);
-		//ILOG("\tEND: " << posB);
 
 		const float dist = (posB - posA).length();
 
 		// Test: Check every triangle (TODO: Use octree nodes)
-		//UInt32 triangleIndex = 0;
+		UInt32 triangleIndex = 0;
 		for (const auto &triangle : startTile->collision.triangles)
 		{
 			auto &vA = startTile->collision.vertices[triangle.indexA];
@@ -186,11 +184,10 @@ namespace wowpp
 			auto result = ray.intersectsTriangle(vA, vB, vC);
 			if (result.first && result.second <= dist)
 			{
-				//ILOG("Hit triangle #" << triangleIndex << " at distance of " << result.second);
 				return false;
 			}
 
-			//triangleIndex++;
+			triangleIndex++;
 		}
 
 		// Target is in line of sight

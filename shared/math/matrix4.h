@@ -231,21 +231,61 @@ namespace wowpp
 				return r;
 			}
 
+			static Matrix4 fromEulerAnglesXYZ(float fYAngle, float fPAngle, float fRAngle)
+			{
+				float fCos, fSin;
+
+				fCos = cosf(fYAngle);
+				fSin = sinf(fYAngle);
+				Matrix4 kXMat(1.0f, 0.0f, 0.0f, 0.0f,
+					0.0f, fCos, -fSin, 0.0f,
+					0.0, fSin, fCos, 0.0f,
+					0.0f, 0.0f, 0.0f, 1.0f);
+
+				fCos = cosf(fPAngle);
+				fSin = sinf(fPAngle);
+				Matrix4 kYMat(fCos, 0.0f, fSin, 0.0f,
+					0.0f, 1.0f, 0.0f, 0.0f,
+					-fSin, 0.0f, fCos, 0.0f,
+					0.0f, 0.0f, 0.0f, 1.0f);
+
+				fCos = cosf(fRAngle);
+				fSin = sinf(fRAngle);
+				Matrix4 kZMat(fCos, -fSin, 0.0f, 0.0f,
+					fSin, fCos, 0.0f, 0.0f,
+					0.0f, 0.0f, 1.0f, 0.0f, 
+					0.0f, 0.0f, 0.0f, 1.0f);
+
+				return kXMat * (kYMat * kZMat);
+			}
+
 			static Matrix4 fromEulerAnglesZYX(float fYAngle, float fPAngle, float fRAngle)
 			{
 				float fCos, fSin;
 
 				fCos = cos(fYAngle);
 				fSin = sin(fYAngle);
-				Matrix4 kZMat(fCos, -fSin, 0.0f, 0.0f, fSin, fCos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+				Matrix4 kZMat(
+					fCos, -fSin, 0.0f, 0.0f, 
+					fSin, fCos, 0.0f, 0.0f, 
+					0.0f, 0.0f, 1.0f, 0.0f, 
+					0.0f, 0.0f, 0.0f, 1.0f);
 
 				fCos = cos(fPAngle);
 				fSin = sin(fPAngle);
-				Matrix4 kYMat(fCos, 0.0f, fSin, 0.0f, 0.0, 1.0f, 0.0f, 0.0f, -fSin, 0.0f, fCos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+				Matrix4 kYMat(
+					fCos, 0.0f, fSin, 0.0f, 
+					0.0f, 1.0f, 0.0f, 0.0f, 
+					-fSin, 0.0f, fCos, 0.0f, 
+					0.0f, 0.0f, 0.0f, 1.0f);
 
 				fCos = cos(fRAngle);
 				fSin = sin(fRAngle);
-				Matrix4 kXMat(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, fCos, -fSin, 0.0f, 0.0f, fSin, fCos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+				Matrix4 kXMat(
+					1.0f, 0.0f, 0.0f, 0.0f,
+					0.0f, fCos, -fSin, 0.0f, 
+					0.0f, fSin, fCos, 0.0f, 
+					0.0f, 0.0f, 0.0f, 1.0f);
 
 				return kZMat * (kYMat * kXMat);
 			}
