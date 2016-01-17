@@ -852,7 +852,6 @@ namespace wowpp
 					m_caster->doneSpellMagicDmgClassNeg(&m_target, school);
 				}
 				m_target.dealDamage(damage, school, m_caster, noThreat);
-				m_target.takenDamage(m_caster);
 				break;
 			}
 			case aura::PeriodicDamagePercent:

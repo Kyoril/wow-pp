@@ -651,7 +651,6 @@ namespace wowpp
 					// Deal damage (Note: m_victim can become nullptr, if the target dies)
 					if (totalDamage > 0)
 					{
-						m_victim->takenDamage(this);
 						m_victim->takenMeleeAutoAttack(this);
 						victim->dealDamage(totalDamage - absorbed, 0, this);
 
@@ -1170,6 +1169,14 @@ namespace wowpp
 		{
 			return false;
 		}
+		
+		// Add threat
+		if (attacker && !noThreat)
+		{
+			threatened(*attacker, static_cast<float>(damage));
+		}
+		
+		takenDamage(attacker);
 
 		if (health < damage)
 			health = 0;
@@ -1182,14 +1189,6 @@ namespace wowpp
 			// Call function and signal
 			onKilled(attacker);
 			killed(attacker);
-		}
-		else
-		{
-			// Add threat
-			if (attacker && !noThreat)
-			{
-				threatened(*attacker, static_cast<float>(damage));
-			}
 		}
 		return true;
 	}
