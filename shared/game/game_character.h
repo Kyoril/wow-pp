@@ -592,6 +592,7 @@ namespace wowpp
 	private:
 
 		void updateTalentPoints();
+		void initClassEffects();	// init class specific effects
 
 	private:
 
@@ -615,6 +616,7 @@ namespace wowpp
 		UInt32 m_homeMap;
 		math::Vector3 m_homePos;
 		float m_homeRotation;
+		boost::signals2::scoped_connection m_takenMeleeAttack;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameCharacter const& object);

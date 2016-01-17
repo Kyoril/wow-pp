@@ -80,6 +80,9 @@ namespace wowpp
 
 //				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(effect, *attacker));
 				m_resists[targetA][targetB].push_back(0.0f);
+		
+				attacker->doneMeleeAttack(targetUnit, m_victimStates[targetA][targetB].back());
+				targetUnit->takenMeleeAttack(attacker, m_victimStates[targetA][targetB].back());
 			}
 		}
 		
@@ -153,6 +156,9 @@ namespace wowpp
 
 //				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(effect, *attacker));
 				m_resists[targetA][targetB].push_back(0.0f);
+		
+				attacker->doneMeleeAttack(targetUnit, m_victimStates[targetA][targetB].back());
+				targetUnit->takenMeleeAttack(attacker, m_victimStates[targetA][targetB].back());
 			}
 		}
 		

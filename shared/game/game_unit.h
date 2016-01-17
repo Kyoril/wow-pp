@@ -351,6 +351,10 @@ namespace wowpp
 		boost::signals2::signal<void(GameUnit &, float)> threatened;
 		/// Fired when an auto attack hit.
 		boost::signals2::signal<void(GameUnit *)> doneMeleeAutoAttack;
+		/// Fired when done an melee attack hit  (include miss/dodge...)
+		boost::signals2::signal<void(GameUnit *, game::VictimState)> doneMeleeAttack;
+		/// Fired when hit by a melee attack (include miss/dodge...)
+		boost::signals2::signal<void(GameUnit *, game::VictimState)> takenMeleeAttack;
 		/// Fired when hit by an auto attack.
 		boost::signals2::signal<void(GameUnit *)> takenMeleeAutoAttack;
 		/// Fired when done any magic damage
