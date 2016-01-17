@@ -92,7 +92,7 @@ namespace wowpp
 					if (denom > +std::numeric_limits<float>::epsilon())
 					{
 						// Back face hit
-						return std::pair<bool, float>(false, 0.0f);
+						//return std::pair<bool, float>(false, 0.0f);
 					}
 					else if (denom < -std::numeric_limits<float>::epsilon())
 					{
