@@ -1200,46 +1200,41 @@ namespace wowpp
 
 	void SingleCastState::spellEffectEnergize(const proto::SpellEffect &effect)
 	{
-		Int32 powerType = effect.miscvaluea();
-		if (powerType < 0 || powerType > 5)
-			return;
-
-		UInt32 power = calculateEffectBasePoints(effect);
-
-		// TODO: Get unit target
-		GameUnit *unitTarget = nullptr;
-		auto *world = m_cast.getExecuter().getWorldInstance();
-		if (!world)
+		GameUnit &caster = m_cast.getExecuter();
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);		//Buff, HoT
+		
+		for (int i=0; i<targets.size(); i++)
 		{
-			WLOG("Caster not in any world instance right now.");
-			return;
-		}
+			GameUnit* targetUnit = targets[i];
+			Int32 powerType = effect.miscvaluea();
+			if (powerType < 0 || powerType > 5)
+				return;
 
-		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
-			unitTarget = &m_cast.getExecuter();
-		else
-			m_target.resolvePointers(*world, &unitTarget, nullptr, nullptr, nullptr);
+			UInt32 power = calculateEffectBasePoints(effect);
+			if (victimStates[i] == game::victim_state::IsImmune)
+			{
+				power = 0;
+			}
 
-		if (!unitTarget)
-		{
-			WLOG("No valid unit target found!");
-			return;
+			UInt32 curPower = targetUnit->getUInt32Value(unit_fields::Power1 + powerType);
+			UInt32 maxPower = targetUnit->getUInt32Value(unit_fields::MaxPower1 + powerType);
+			if (curPower + power > maxPower)
+			{
+				curPower = maxPower;
+			}
+			else
+			{
+				curPower += power;
+			}
+			targetUnit->setUInt32Value(unit_fields::Power1 + powerType, curPower);
+			sendPacketFromCaster(m_cast.getExecuter(),
+				std::bind(game::server_write::spellEnergizeLog, std::placeholders::_1, 
+					m_cast.getExecuter().getGuid(), targetUnit->getGuid(), m_spell.id(), static_cast<UInt8>(powerType), power));
 		}
-
-		UInt32 curPower = unitTarget->getUInt32Value(unit_fields::Power1 + powerType);
-		UInt32 maxPower = unitTarget->getUInt32Value(unit_fields::MaxPower1 + powerType);
-		if (curPower + power > maxPower)
-		{
-			curPower = maxPower;
-		}
-		else
-		{
-			curPower += power;
-		}
-		unitTarget->setUInt32Value(unit_fields::Power1 + powerType, curPower);
-		sendPacketFromCaster(m_cast.getExecuter(),
-			std::bind(game::server_write::spellEnergizeLog, std::placeholders::_1, 
-				m_cast.getExecuter().getGuid(), unitTarget->getGuid(), m_spell.id(), static_cast<UInt8>(powerType), power));
 	}
 	
 	void SingleCastState::spellEffectPowerBurn(const proto::SpellEffect &effect)
