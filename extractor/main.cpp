@@ -127,8 +127,6 @@ namespace
         header.version = 0x110;
         header.offsAreaTable = sizeof(MapHeaderChunk);
         header.areaTableSize = sizeof(MapAreaChunk);
-        //header.offsHeight = header.offsAreaTable + header.areaTableSize;
-		//header.heightSize = sizeof(MapHeightChunk);
 		header.offsCollision = header.offsAreaTable + header.areaTableSize;
 		header.collisionSize = 0;	// TODO
 		
@@ -175,33 +173,32 @@ namespace
 				continue;
 			}
 
-			const float TILESIZE = 533.33333333f;
-			const float posX = 32.0f * TILESIZE - entry.position.x;
-			const float posY = entry.position.y;
-			const float posZ = 32.0f * TILESIZE - entry.position.z;
-
 			math::Matrix4 mat;
 
 #define WOWPP_DEG_TO_RAD(x) (x * 3.14159265358979323846 / 180.0)
-			// Rotate into Z-Up
+			// Scale is not needed (always set to 1)
+			/*
+			// Fix coordinate system into Z-up
 			math::Matrix4 matRotX; matRotX.fromAngleAxis(math::Vector3(1.0f, 0.0f, 0.0f), WOWPP_DEG_TO_RAD(90));
 			math::Matrix4 matRotY; matRotY.fromAngleAxis(math::Vector3(0.0f, 1.0f, 0.0f), WOWPP_DEG_TO_RAD(90));
 			mat = mat * matRotX;
 			mat = mat * matRotY;
+			*/
+			// Rotate object
+			math::Matrix4 rotMat; 
+			/*rotMat.fromAngleAxis(math::Vector3(0.0f, 1.0f, 0.0f), WOWPP_DEG_TO_RAD(entry.rotation.y));
+			mat = mat * rotMat;*/
+			rotMat.fromAngleAxis(math::Vector3(0.0f, 0.0f, 1.0f), WOWPP_DEG_TO_RAD(-entry.rotation.y));
+			mat = mat * rotMat;
+			/*rotMat.fromAngleAxis(math::Vector3(1.0f, 0.0f, 0.0f), WOWPP_DEG_TO_RAD(entry.rotation.z));
+			mat = mat * rotMat;*/
 
-			// Move to right position
-			math::Matrix4 matTrans;
-			matTrans.makeTranslation(posX, posY, posZ);
-			mat = mat * matTrans;
-			/*
-			// Apply placement rotation
-			math::Matrix4 matRotY2; matRotY2.fromAngleAxis(math::Vector3(0.0f, 1.0f, 0.0f), WOWPP_DEG_TO_RAD(entry.rotation[1]-270.0f));
-			mat = mat * matRotY2;*/
-			math::Matrix4 matRotZ2; matRotZ2.fromAngleAxis(math::Vector3(0.0f, 0.0f, 1.0f), WOWPP_DEG_TO_RAD(-entry.rotation[0]));
-			mat = mat * matRotZ2;
-			math::Matrix4 matRotX2; matRotX2.fromAngleAxis(math::Vector3(1.0f, 0.0f, 0.0f), WOWPP_DEG_TO_RAD(entry.rotation[2]-90.0f));
-			mat = mat * matRotX2;
-
+			// Move into place (translate)
+			const float OFFSET = 533.33333f * 32.0f;
+			mat = mat * math::Matrix4::getTranslation(OFFSET - entry.position.x, -(OFFSET - entry.position.z), entry.position.y);
+			
+			//DLOG("POSITION: " << entry.position);
+			//DLOG("ROTATION: " << entry.rotation);
 #undef WOWPP_DEG_TO_RAD
 
 			// Transform vertices
@@ -218,7 +215,10 @@ namespace
 				{
 					// Transform vertex and push it to the list
 					math::Vector3 transformed = mat * vert;
-					collisionChunk.vertices.emplace_back(std::move(transformed));
+					/*transformed.x += OFFSET - entry.position.z;
+					transformed.y += OFFSET - entry.position.x;
+					transformed.z += entry.position.y;*/
+					collisionChunk.vertices.push_back(transformed);
 
 					fprintf(file, "v %f %f %f\n", transformed.x, transformed.y, transformed.z);
 				}
@@ -257,7 +257,6 @@ namespace
 
 		fprintf(file, "\n\n# TRIANGLE COUNT IN TOTAL: %d\n", collisionChunk.triangleCount);
 		fprintf(file, "# VERTEX COUNT IN TOTAL: %d\n", collisionChunk.vertexCount);
-		fclose(file);
 
 #if 0
 		// Map height header
@@ -276,6 +275,8 @@ namespace
 			}
 		}
 #endif
+
+		fclose(file);
 
 		// Write map header
         writer.writePOD(header);
@@ -315,7 +316,7 @@ namespace
 		{
 			return false;;
 		}
-		if (mapId != 0)
+		if (mapId != 36)
 			return true;
 
 		String mapName;

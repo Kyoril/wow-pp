@@ -92,6 +92,7 @@ namespace wowpp
 					if (denom > +std::numeric_limits<float>::epsilon())
 					{
 						// Back face hit
+						return std::pair<bool, float>(false, 0.0f);
 					}
 					else if (denom < -std::numeric_limits<float>::epsilon())
 					{
@@ -101,14 +102,14 @@ namespace wowpp
 					{
 						// Parallel or triangle area is close to zero when
 						// the plane normal not normalised.
-						return std::pair<bool, float>(false, 8.0f);
+						return std::pair<bool, float>(false, 0.0f);
 					}
 
 					t = normal.dot(a - origin) / denom;
 					if (t < 0)
 					{
 						// Intersection is behind origin
-						return std::pair<bool, float>(false, 9.0f);
+						return std::pair<bool, float>(false, 0.0f);
 					}
 				}
 
@@ -150,12 +151,12 @@ namespace wowpp
 					if (area > 0)
 					{
 						if (alpha < tolerance || beta < tolerance || alpha + beta > area - tolerance)
-							return std::pair<bool, float>(false, 10.0f);
+							return std::pair<bool, float>(false, 0.0f);
 					}
 					else
 					{
 						if (alpha > tolerance || beta > tolerance || alpha + beta < area - tolerance)
-							return std::pair<bool, float>(false, 11.0f);
+							return std::pair<bool, float>(false, 0.0f);
 					}
 				}
 

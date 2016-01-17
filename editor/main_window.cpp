@@ -128,7 +128,7 @@ namespace wowpp
 
 				std::unique_ptr<Map> mapInst(new Map(
 					*entry, m_application.getConfiguration().dataPath));
-				auto *tile = mapInst->getTile(TileIndex2D(31, 32));
+				auto *tile = mapInst->getTile(TileIndex2D(32, 32));
 				if (!tile)
 				{
 					return;

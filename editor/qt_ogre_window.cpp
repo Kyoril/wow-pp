@@ -22,6 +22,7 @@
 #include "qt_ogre_window.h"
 #include "ogre_blp_codec.h"
 #include "ogre_mpq_archive.h"
+#include <QPainter>
 
 QtOgreWindow::QtOgreWindow(QWindow *parent /*= nullptr*/)
 	: QWindow(parent)
@@ -68,6 +69,15 @@ void QtOgreWindow::render()
 	*/
 	Ogre::WindowEventUtilities::messagePump();
 	m_ogreRoot->renderOneFrame();
+
+	QWindow *p = parent();
+	while (p->parent())
+	{
+		p = p->parent();
+	}
+
+	p->setTitle(QString("Camera position: %1").arg(
+		Ogre::StringConverter::toString(m_ogreCamera->getPosition()).c_str()));
 }
 
 void QtOgreWindow::initialize()

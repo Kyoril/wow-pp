@@ -31,7 +31,7 @@ source_group(src FILES ${srcFiles})
 # Add library project
 add_library(game ${srcFiles})
 
-target_link_libraries(game ${OPENSSL_LIBRARIES})
+target_link_libraries(game math ${OPENSSL_LIBRARIES})
 
 # Solution folder
 if(MSVC)

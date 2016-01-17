@@ -94,10 +94,16 @@ namespace wowpp
 	    const std::function<bool (GameUnit &)> &resultHandler)
 	{
 		const auto boundingBox = shape.getBoundingRect();
-		const auto topLeft = getTilePosition(boundingBox[1]);
-		const auto bottomRight = getTilePosition(boundingBox[0]);
+		auto topLeft = getTilePosition(boundingBox[1]);
+		auto bottomRight = getTilePosition(boundingBox[0]);
 
 		Tile::UnitSet iterationCopyTile;
+
+		// Crash protection
+		if (topLeft[0] < 0) topLeft[0] = 0;
+		if (topLeft[1] < 0) topLeft[1] = 0;
+		if (bottomRight[0] >= m_grid.getSize()[0]) bottomRight[0] = m_grid.getSize()[0] - 1;
+		if (bottomRight[1] >= m_grid.getSize()[1]) bottomRight[1] = m_grid.getSize()[1] - 1;
 
 		for (auto x = topLeft[0]; x <= bottomRight[0]; ++x)
 		{

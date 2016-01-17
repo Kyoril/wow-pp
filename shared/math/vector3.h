@@ -24,6 +24,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstddef>
+#include <ostream>
 
 namespace wowpp
 {
@@ -156,5 +157,7 @@ namespace wowpp
 				return *this;
 			}
 		};
+
+		std::ostream &operator << (std::ostream &os, const Vector3 &right);
 	}
 }
