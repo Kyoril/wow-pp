@@ -133,6 +133,11 @@ namespace wowpp
 							if (!isHostileTo(unitFaction, victim->getFactionTemplate()))
 								return false;
 
+							if (!controlled.isInLineOfSight(unit))
+							{
+								return false;
+							}
+
 							getAI().enterCombat(*victim);
 							return true;
 						}
