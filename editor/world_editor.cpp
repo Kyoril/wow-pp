@@ -41,18 +41,16 @@ namespace wowpp
 			Ogre::MeshPtr mesh = Ogre::MeshManager::getSingleton().createManual("Kobold", "WoW", new M2MeshLoader("CREATURE\\Kobold\\kobold.m2"));
 			mesh->load();
 
-			/*
 			// Spawn all entities
 			UInt32 i = 0;
-			for (auto &spawn : m_map.spawns)
+			for (const auto &spawn : m_map.unitspawns())
 			{
 				Ogre::Entity *ent = m_sceneMgr.createEntity("Spawn_" + Ogre::StringConverter::toString(i++), mesh);
 				Ogre::SceneNode *node = m_sceneMgr.getRootSceneNode()->createChildSceneNode();
 				node->attachObject(ent);
-				node->setPosition(spawn.position[0], spawn.position[1], spawn.position[2]);
-				node->setOrientation(Ogre::Quaternion(Ogre::Radian(spawn.rotation), Ogre::Vector3::UNIT_Z));
+				node->setPosition(spawn.positionx(), spawn.positiony(), spawn.positionz());
+				node->setOrientation(Ogre::Quaternion(Ogre::Radian(spawn.rotation()), Ogre::Vector3::UNIT_Z));
 			}
-			*/
 
 			const Ogre::Vector3 &camPos = m_camera.getDerivedPosition();
 			float convertedX = (constants::MapWidth * 32.0f) + camPos.x;
