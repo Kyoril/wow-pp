@@ -144,12 +144,15 @@ namespace wowpp
 				auto *pass = teq->createPass();
 				pass->setPolygonMode(Ogre::PM_SOLID);
 				pass->setSceneBlending(Ogre::SceneBlendType::SBT_TRANSPARENT_ALPHA);
-				pass->setDiffuse(0.7f, 0.7f, 0.7f, 1.0f);
+				//pass->setDiffuse(0.7f, 0.7f, 0.7f, 1.0f);
+				pass->setVertexColourTracking(Ogre::TVC_DIFFUSE);
 				pass = teq->createPass();
 				pass->setPolygonMode(Ogre::PM_WIREFRAME);
 				pass->setSceneBlending(Ogre::SceneBlendType::SBT_MODULATE);
 				pass->setDiffuse(0.0f, 0.0f, 0.0f, 1.0f);
 				pass->setAmbient(0.0f, 0.0f, 0.0f);
+
+				const UInt32 collisionTriIndex = 2916;
 
 				// Create collision for this map
 				Ogre::ManualObject *obj = sceneMgr->createManualObject();
@@ -159,16 +162,47 @@ namespace wowpp
 				for (auto &vert : tile->collision.vertices)
 				{
 					obj->position(vert.x, vert.y, vert.z);
+					obj->colour(Ogre::ColourValue(0.5f, 0.5f, 0.5f));
 				}
+				UInt32 triIndex = 0;
 				for (auto &tri : tile->collision.triangles)
 				{
-					obj->index(tri.indexA);
-					obj->index(tri.indexB);
-					obj->index(tri.indexC);
+					if (triIndex != collisionTriIndex)
+					{
+						obj->index(tri.indexA);
+						obj->index(tri.indexB);
+						obj->index(tri.indexC);
+					}
+					triIndex++;
 				}
 				obj->end();
 
-				camera->setPosition(tile->collision.vertices[0].x, tile->collision.vertices[0].y, tile->collision.vertices[0].z);
+				obj->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_TRIANGLE_LIST);
+				auto &tri = tile->collision.triangles[collisionTriIndex];
+				auto &vA = tile->collision.vertices[tri.indexA];
+				auto &vB = tile->collision.vertices[tri.indexB];
+				auto &vC = tile->collision.vertices[tri.indexC];
+				obj->position(vA.x, vA.y, vA.z);
+				obj->colour(Ogre::ColourValue::Red);
+				obj->position(vB.x, vB.y, vB.z);
+				obj->colour(Ogre::ColourValue::Red);
+				obj->position(vC.x, vC.y, vC.z);
+				obj->colour(Ogre::ColourValue::Red);
+				obj->triangle(0, 1, 2);
+				obj->end();
+
+				math::Vector3 vStart(-186.254196f, -430.123688f, 55.836506f);
+				math::Vector3 vEnd(-192.914993f, -448.210999f, 56.433899f);
+
+				obj->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_LINE_STRIP);
+				obj->position(vStart.x, vStart.y, vStart.z);
+				obj->colour(Ogre::ColourValue::Green);
+				obj->position(vEnd.x, vEnd.y, vEnd.z);
+				obj->colour(Ogre::ColourValue::Green);
+				obj->index(0); obj->index(1);
+				obj->end();
+
+				camera->setPosition(vStart.x, vStart.y, vStart.z);
 				camera->setFarClipDistance(0.0f);
 				sceneMgr->getRootSceneNode()->attachObject(obj);
 			}

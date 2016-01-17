@@ -157,42 +157,40 @@ namespace wowpp
 		startTileIdx[0] = static_cast<Int32>(floor((32.0 - (static_cast<double>(posA.x) / 533.3333333))));
 		startTileIdx[1] = static_cast<Int32>(floor((32.0 - (static_cast<double>(posA.y) / 533.3333333))));
 
-		WLOG("Start tile index: " << startTileIdx);
-
 		auto *startTile = getTile(startTileIdx);
 		if (!startTile)
 		{
 			// Unable to get / load tile - always in line of sight
-			WLOG("Could not get start tile");
 			return true;
 		}
 
 		if (startTile->collision.triangleCount == 0)
 		{
-			WLOG("No triangles for source tile");
 			return true;
 		}
 
 		// Create a ray
 		math::Ray ray(posA, posB);
-		ILOG("\tSTART: " << posA);
-		ILOG("\tEND: " << posB);
+		//ILOG("\tSTART: " << posA);
+		//ILOG("\tEND: " << posB);
+
+		const float dist = (posB - posA).length();
 
 		// Test: Check every triangle (TODO: Use octree nodes)
-		UInt32 triangleIndex = 0;
+		//UInt32 triangleIndex = 0;
 		for (const auto &triangle : startTile->collision.triangles)
 		{
 			auto &vA = startTile->collision.vertices[triangle.indexA];
 			auto &vB = startTile->collision.vertices[triangle.indexB];
 			auto &vC = startTile->collision.vertices[triangle.indexC];
 			auto result = ray.intersectsTriangle(vA, vB, vC);
-			if (result.first)
+			if (result.first && result.second <= dist)
 			{
-				ILOG("Hit triangle #" << triangleIndex << " at distance of " << result.second);
+				//ILOG("Hit triangle #" << triangleIndex << " at distance of " << result.second);
 				return false;
 			}
 
-			triangleIndex++;
+			//triangleIndex++;
 		}
 
 		// Target is in line of sight

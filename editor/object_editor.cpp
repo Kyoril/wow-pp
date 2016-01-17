@@ -484,7 +484,8 @@ namespace wowpp
 					QString effectName = QString("NONE");
 					if (i < spell->effects_size())
 					{
-						effectName = "TODO"; //game::constant_literal::spellEffectNames.getName(spell->effects(i).type()).c_str();
+						effectName = QString("%1 (%2)").arg(game::constant_literal::spellEffectNames.getName(
+							static_cast<game::SpellEffect>(spell->effects(i).type())).c_str()).arg(spell->effects(i).basepoints());
 					}
 
 					button->setText(effectName);
