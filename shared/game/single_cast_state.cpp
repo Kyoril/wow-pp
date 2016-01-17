@@ -614,16 +614,6 @@ namespace wowpp
 			else if (victimStates[i] == game::victim_state::Dodge)
 			{
 				totalDamage = 0;
-				// Hard coded overpower proc for warrior: Blizzard implemented this with combo points
-				// When the target dodges, the warrior simply gets a combo point.
-				// Since overpower uses all combo points (just like all finishing moves for rogues and ferals),
-				// it doesn't matter if we add more than one combo point to the target.
-				// Hard coded: TODO proper implementation
-				if (attacker.getTypeId() == object_type::Character &&
-					attacker.getClass() == game::char_class::Warrior)
-				{
-					reinterpret_cast<GameCharacter*>(this)->addComboPoints(targetUnit->getGuid(), 1);
-				}
 			}
 			else if (victimStates[i] == game::victim_state::Parry)
 			{

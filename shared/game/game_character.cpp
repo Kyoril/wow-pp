@@ -122,6 +122,8 @@ namespace wowpp
 
 		// Dodge percentage
 		setFloatValue(character_fields::DodgePercentage, 0.0f);
+		
+		initClassEffects();
 	}
 
 	void GameCharacter::levelChanged(const proto::LevelEntry &levelInfo)
