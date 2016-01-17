@@ -1293,13 +1293,13 @@ namespace wowpp
 				// Since overpower uses all combo points (just like all finishing moves for rogues and ferals),
 				// it doesn't matter if we add more than one combo point to the target.
 				// Hard coded: TODO proper implementation
-				m_takenMeleeAttack = takenMeleeAttack.connect(
-					[&](GameUnit *attacker, game::VictimState victimState) {
-					if (victimState == game::victim_state::Dodge)
-					{
-						reinterpret_cast<GameCharacter*>(this)->addComboPoints(this->getGuid(), 1);
-					}
-				});
+				m_doneMeleeAttack = doneMeleeAttack.connect(
+					[this](GameUnit *victim, game::VictimState victimState) {
+						if (victim && victimState == game::victim_state::Dodge)
+						{
+							addComboPoints(victim->getGuid(), 1);
+						}
+					});
 				break;
 			default:
 				break;

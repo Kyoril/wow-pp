@@ -616,7 +616,7 @@ namespace wowpp
 		UInt32 m_homeMap;
 		math::Vector3 m_homePos;
 		float m_homeRotation;
-		boost::signals2::scoped_connection m_takenMeleeAttack;
+		boost::signals2::scoped_connection m_doneMeleeAttack;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameCharacter const& object);
