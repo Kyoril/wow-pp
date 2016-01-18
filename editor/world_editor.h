@@ -25,6 +25,7 @@ namespace wowpp
 {
 	namespace proto
 	{
+		class Project;
 		class MapEntry;
 	}
 
@@ -34,7 +35,7 @@ namespace wowpp
 		{
 		public:
 
-			explicit WorldEditor(Ogre::SceneManager &sceneMgr, Ogre::Camera &camera, proto::MapEntry &map);
+			explicit WorldEditor(Ogre::SceneManager &sceneMgr, Ogre::Camera &camera, proto::MapEntry &map, proto::Project &project);
 			~WorldEditor();
 
 			void update(float delta) override;
@@ -66,6 +67,7 @@ namespace wowpp
 			std::unique_ptr<view::WorldRenderer> m_worldRenderer;
 			std::map<paging::PagePosition, terrain::model::Page> m_pages;
             Ogre::Light *m_light;
+			proto::Project &m_project;
 		};
 	}
 }

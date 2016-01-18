@@ -16,12 +16,13 @@ namespace wowpp
 {
 	namespace editor
 	{
-		WorldEditor::WorldEditor(Ogre::SceneManager &sceneMgr, Ogre::Camera &camera, proto::MapEntry &map)
+		WorldEditor::WorldEditor(Ogre::SceneManager &sceneMgr, Ogre::Camera &camera, proto::MapEntry &map, proto::Project &project)
 			: m_sceneMgr(sceneMgr)
 			, m_camera(camera)
 			, m_map(map)
 			, m_work(new boost::asio::io_service::work(m_workQueue))
             , m_light(nullptr)
+			, m_project(project)
 		{
 			// Create worker thread
 			boost::asio::io_service &workQueue = m_workQueue;
@@ -38,18 +39,51 @@ namespace wowpp
 				m_camera.setPosition(spawn->positionx(), spawn->positiony(), spawn->positionz() + 5.0f);
 			}
 
-			Ogre::MeshPtr mesh = Ogre::MeshManager::getSingleton().createManual("Kobold", "WoW", new M2MeshLoader("CREATURE\\Kobold\\kobold.m2"));
-			mesh->load();
+			Ogre::String realFileName = "CREATURE\\Furbolg\\Furbolg.m2";
 
 			// Spawn all entities
 			UInt32 i = 0;
 			for (const auto &spawn : m_map.unitspawns())
 			{
+				Ogre::MeshPtr mesh;
+				if (!Ogre::MeshManager::getSingleton().resourceExists(realFileName))
+				{
+					mesh = Ogre::MeshManager::getSingleton().createManual(realFileName, "WoW", new editor::M2MeshLoader(realFileName));
+					mesh->load();
+				}
+				else
+				{
+					mesh = Ogre::MeshManager::getSingleton().getByName(realFileName, "WoW");
+				}
+
 				Ogre::Entity *ent = m_sceneMgr.createEntity("Spawn_" + Ogre::StringConverter::toString(i++), mesh);
 				Ogre::SceneNode *node = m_sceneMgr.getRootSceneNode()->createChildSceneNode();
 				node->attachObject(ent);
 				node->setPosition(spawn.positionx(), spawn.positiony(), spawn.positionz());
 				node->setOrientation(Ogre::Quaternion(Ogre::Radian(spawn.rotation()), Ogre::Vector3::UNIT_Z));
+			}
+
+			Ogre::String objectFileName = "WORLD\\GENERIC\\HUMAN\\ACTIVEDOODADS\\DOORS\\DEADMINEDOOR01.M2";
+
+			i = 0;
+			for (const auto &spawn : m_map.objectspawns())
+			{
+				Ogre::MeshPtr mesh;
+				if (!Ogre::MeshManager::getSingleton().resourceExists(objectFileName))
+				{
+					mesh = Ogre::MeshManager::getSingleton().createManual(objectFileName, "WoW", new editor::M2MeshLoader(objectFileName));
+					mesh->load();
+				}
+				else
+				{
+					mesh = Ogre::MeshManager::getSingleton().getByName(objectFileName, "WoW");
+				}
+
+				Ogre::Entity *ent = m_sceneMgr.createEntity("ObjSpawn_" + Ogre::StringConverter::toString(i++), mesh);
+				Ogre::SceneNode *node = m_sceneMgr.getRootSceneNode()->createChildSceneNode();
+				node->attachObject(ent);
+				node->setPosition(spawn.positionx(), spawn.positiony(), spawn.positionz());
+				node->setOrientation(Ogre::Quaternion(spawn.rotationz(), spawn.rotationw(), spawn.rotationx(), spawn.rotationy()));
 			}
 
 			const Ogre::Vector3 &camPos = m_camera.getDerivedPosition();

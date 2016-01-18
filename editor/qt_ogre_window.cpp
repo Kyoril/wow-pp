@@ -69,15 +69,6 @@ void QtOgreWindow::render()
 	*/
 	Ogre::WindowEventUtilities::messagePump();
 	m_ogreRoot->renderOneFrame();
-
-	QWindow *p = parent();
-	while (p->parent())
-	{
-		p = p->parent();
-	}
-
-	p->setTitle(QString("Camera position: %1").arg(
-		Ogre::StringConverter::toString(m_ogreCamera->getPosition()).c_str()));
 }
 
 void QtOgreWindow::initialize()
