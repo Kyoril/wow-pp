@@ -28,6 +28,8 @@
 #include "game_character.h"
 #include "proto_data/project.h"
 #include "experience.h"
+#include "unit_mover.h"
+#include "common/make_unique.h"
 #include <cassert>
 
 namespace wowpp
@@ -51,6 +53,9 @@ namespace wowpp
 		// Resize values field
 		m_values.resize(unit_fields::UnitFieldCount);
 		m_valueBitset.resize((unit_fields::UnitFieldCount + 31) / 32);
+
+		// Setup unit mover
+		m_mover = make_unique<UnitMover>(*this);
 
 		// Create spell caster
 		m_spellCast.reset(new SpellCast(m_timers, *this));
