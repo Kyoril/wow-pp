@@ -593,9 +593,8 @@ namespace wowpp
 							totalDamage *= 1.5f;
 						}
 						
-						resisted = totalDamage * resists[i];
-						totalDamage -= resisted;
-						absorbed = targetUnit->consumeAbsorb(totalDamage, school);
+						resisted = totalDamage * (resists[i] / 100.0f);
+						absorbed = targetUnit->consumeAbsorb(totalDamage - resisted, school);
 						if (absorbed > 0 && absorbed == totalDamage)
 						{
 							hitInfos[i] = static_cast<game::HitInfo>(hitInfos[i] | game::hit_info::Absorb);
@@ -606,7 +605,7 @@ namespace wowpp
 					std::vector<char> buffer;
 					io::VectorSink sink(buffer);
 					game::Protocol::OutgoingPacket packet(sink);
-					game::server_write::attackStateUpdate(packet, getGuid(), victim->getGuid(), hitInfos[i], totalDamage, absorbed, 0, blocked, victimStates[i], game::weapon_attack::BaseAttack, 1);
+					game::server_write::attackStateUpdate(packet, getGuid(), victim->getGuid(), hitInfos[i], totalDamage, absorbed, resisted, blocked, victimStates[i], game::weapon_attack::BaseAttack, 1);
 
 					// Notify all tile subscribers about this event
 					forEachSubscriberInSight(
@@ -642,7 +641,7 @@ namespace wowpp
 					if (totalDamage > 0)
 					{
 						m_victim->takenMeleeAutoAttack(this);
-						victim->dealDamage(totalDamage - absorbed, 0, this);
+						victim->dealDamage(totalDamage - resisted - absorbed, 0, this);
 
 						// Trigger auto attack procs
 						doneMeleeAutoAttack(m_victim);
@@ -1306,16 +1305,16 @@ namespace wowpp
 		}
 		else	// spell
 		{
-			float levelModificator = attacker.getLevel() - getLevel();
+			float levelModificator = static_cast<float>(attacker.getLevel()) - static_cast<float>(getLevel());
 			if (levelModificator < -2.0f)
 			{
 				if (getTypeId() == wowpp::object_type::Character)
 				{
-					levelModificator = (levelModificator * 7) + 12;		//pvp calculation
+					levelModificator = (levelModificator * 7.0f) + 12.0f;	//pvp calculation
 				}
 				else
 				{
-					levelModificator = (levelModificator * 11) + 20;	//pve calculation
+					levelModificator = (levelModificator * 11.0f) + 20.0f;	//pve calculation
 				}
 			}
 			chance = 4.0f - levelModificator;
@@ -1369,7 +1368,7 @@ namespace wowpp
 	
 	float GameUnit::getResiPercentage(const proto::SpellEffect &effect, GameUnit &attacker)
 	{
-		return 0;
+		return 0.0f;
 	}
 	
 	float GameUnit::getCritChance(GameUnit &attacker, UInt8 school)

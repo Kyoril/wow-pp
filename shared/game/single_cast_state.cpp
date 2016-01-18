@@ -542,7 +542,7 @@ namespace wowpp
 			{
 				totalDamage = 0;
 			}
-			if (hitInfos[i] == game::hit_info::Miss)
+			else if (hitInfos[i] == game::hit_info::Miss)
 			{
 				totalDamage = 0;
 			}
@@ -556,14 +556,13 @@ namespace wowpp
 					crit = true;
 					totalDamage *= 2.0f;
 				}
-				resisted = totalDamage * resists[i];
-				totalDamage -= resisted;
-				absorbed = targetUnit->consumeAbsorb(totalDamage, school);
+				resisted = totalDamage * (resists[i] / 100.0f);
+				absorbed = targetUnit->consumeAbsorb(totalDamage - resisted, school);
 			}
 			
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
-			if (targetUnit->dealDamage(totalDamage - absorbed, school, &caster, noThreat))
+			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, &caster, noThreat))
 			{
 				// Send spell damage packet
 				sendPacketFromCaster(caster,
@@ -665,9 +664,8 @@ namespace wowpp
 				{
 					totalDamage *= 1.5f;
 				}
-				resisted = totalDamage * resists[i];
-				totalDamage -= resisted;
-				absorbed = targetUnit->consumeAbsorb(totalDamage, school);
+				resisted = totalDamage * (resists[i] / 100.0f);
+				absorbed = targetUnit->consumeAbsorb(totalDamage - resisted, school);
 				if (absorbed > 0 && absorbed == totalDamage)
 				{
 					hitInfos[i] = static_cast<game::HitInfo>(hitInfos[i] | game::hit_info::Absorb);
@@ -676,7 +674,7 @@ namespace wowpp
 			
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
-			if (targetUnit->dealDamage(totalDamage - absorbed, school, &attacker, noThreat))
+			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, &attacker, noThreat))
 			{
 				// Send spell damage packet
 				sendPacketFromCaster(attacker,
@@ -1255,11 +1253,10 @@ namespace wowpp
 			else
 			{
 				burn = calculateEffectBasePoints(effect);
-				resisted = burn * resists[i];
+				resisted = burn * (resists[i] / 100.0f);
 				burn -= resisted;
 				burn = targetUnit->removeMana(burn);
 				damage = burn * effect.multiplevalue();
-				resisted *= effect.multiplevalue();
 				absorbed = targetUnit->consumeAbsorb(damage, school);
 			}
 			

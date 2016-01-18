@@ -813,10 +813,8 @@ namespace wowpp
 			{
 				UInt32 school = m_spell.schoolmask();
 				Int32 damage = m_basePoints;
-				UInt32 resisted = 0;
-				UInt32 absorbed = m_target.consumeAbsorb(damage, m_spell.schoolmask());
-				damage -= absorbed;
-				if (damage < 0) damage = 0;
+				UInt32 resisted = damage * (m_target.getResiPercentage(m_effect, *m_caster) / 100.0f);
+				UInt32 absorbed = m_target.consumeAbsorb(damage - resisted, m_spell.schoolmask());
 
 				// Reduce by armor if physical
 				if (school & 1 &&
@@ -851,7 +849,7 @@ namespace wowpp
 				{
 					m_caster->doneSpellMagicDmgClassNeg(&m_target, school);
 				}
-				m_target.dealDamage(damage, school, m_caster, noThreat);
+				m_target.dealDamage(damage - resisted - absorbed, school, m_caster, noThreat);
 				break;
 			}
 			case aura::PeriodicDamagePercent:
