@@ -34,19 +34,19 @@
 #include "each_tile_in_sight.h"
 #include "common/constants.h"
 #include "log/default_log_levels.h"
+#include "unit_mover.h"
 
 namespace wowpp
 {
 	CreatureAICombatState::CreatureAICombatState(CreatureAI &ai, GameUnit &victim)
 		: CreatureAIState(ai)
-		, m_moveReached(ai.getControlled().getTimers())
-		, m_moveUpdated(ai.getControlled().getTimers())
-		, m_moveStart(0)
-		, m_moveEnd(0)
+//		, m_moveReached(ai.getControlled().getTimers())
+//		, m_moveUpdated(ai.getControlled().getTimers())
+//		, m_moveStart(0)
+//		, m_moveEnd(0)
 		, m_lastThreatTime(0)
 	{
-		// Add initial threat
-		addThreat(victim, 0.0f);
+		/*
 		m_moveReached.ended.connect([this]()
 		{
 			m_moveUpdated.cancel();
@@ -123,6 +123,10 @@ namespace wowpp
 				getAI().reset();
 			}
 		});
+		*/
+
+		// Add initial threat
+		addThreat(victim, 0.0f);
 	}
 
 	CreatureAICombatState::~CreatureAICombatState()
@@ -141,6 +145,17 @@ namespace wowpp
 		m_onThreatened = controlled.threatened.connect([this](GameUnit &threatener, float amount)
 		{
 			addThreat(threatener, amount);
+		});
+
+		// Reset AI eventually
+		getControlled().getMover().targetChanged.connect([this]
+		{
+			auto &homePos = getAI().getHome().position;
+			if (getCurrentTime() >= (m_lastThreatTime + constants::OneSecond * 10) &&
+				getControlled().getDistanceTo(homePos, false) >= 60.0f)
+			{
+				getAI().reset();
+			}
 		});
 
 		// Process aggro event
@@ -172,7 +187,7 @@ namespace wowpp
 	{
 		auto &controlled = getControlled();
 		auto id = controlled.getEntry().id();
-
+		/*
 		// Calculate new position
 		float o = getControlled().getOrientation();
 		math::Vector3 oldPosition(getControlled().getLocation()), oldTarget(m_target);
@@ -211,7 +226,10 @@ namespace wowpp
 			{
 				subscriber.sendPacket(packet, buffer);
 			});
-		}
+		}*/
+
+		// Stop movement!
+		controlled.getMover().stopMovement();
 
 		// All remaining threateners are no longer in combat with this unit
 		for (auto &pair : m_threat)
@@ -344,6 +362,7 @@ namespace wowpp
 
 	void CreatureAICombatState::chaseTarget(GameUnit &target)
 	{
+		/*
 		float o = getControlled().getOrientation(), o2 = target.getOrientation();
 		math::Vector3 oldPosition(getControlled().getLocation()), oldTarget(m_target), newTarget(target.getLocation());
 		if (m_moveStart != 0 && m_moveEnd > m_moveStart)
@@ -353,19 +372,25 @@ namespace wowpp
 			oldPosition = oldPosition.lerp(oldTarget, t);
 		}
 
-		o = getControlled().getAngle(newTarget.x, newTarget.z);
+		o = getControlled().getAngle(newTarget.x, newTarget.z);*/
+		auto currentLocation = getControlled().getMover().getCurrentLocation();
+		const auto &newTargetLocation = target.getLocation();
+
 		const float distance =
-			sqrtf(
+			(newTargetLocation - currentLocation).length();
+/*			sqrtf(
 				((oldPosition.x - newTarget.x) * (oldPosition.x - newTarget.x)) + 
 				((oldPosition.y - newTarget.y) * (oldPosition.y - newTarget.y)) + 
-				((oldPosition.z - newTarget.z) * (oldPosition.z - newTarget.z)));
+				((oldPosition.z - newTarget.z) * (oldPosition.z - newTarget.z)));*/
 
 		// Check distance and whether we need to move
 		// TODO: If this creature is a ranged one or casts spells, it need special treatment
 		const float combatRange = getControlled().getMeleeReach() + target.getMeleeReach();
 		if (distance > combatRange)
 		{
-			GameTime moveTime = (distance / 7.5f) * constants::OneSecond;
+			// Chase the target
+			getControlled().getMover().moveTo(newTargetLocation);
+/*			GameTime moveTime = (distance / 7.5f) * constants::OneSecond;
 			m_moveStart = getCurrentTime();
 			m_moveEnd = m_moveStart + moveTime;
 
@@ -396,6 +421,7 @@ namespace wowpp
 			m_moveReached.setEnd(m_moveEnd);
 			if (!m_moveUpdated.running)
 				m_moveUpdated.setEnd(m_moveStart + constants::OneSecond / 4);
+				*/
 		}
 	}
 

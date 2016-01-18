@@ -50,23 +50,15 @@ namespace wowpp
 			float o = getMoved().getOrientation();
 			o = getMoved().getAngle(m_target.x, m_target.y);
 
-			math::Vector3 oldPosition(getMoved().getLocation()), oldTarget(m_target);
-			if (m_moveStart != 0 && m_moveEnd > m_moveStart)
+			math::Vector3 oldPosition = getCurrentLocation();
+
+			// Trigger next update if needed
+			if (time < m_moveEnd - UnitMover::UpdateFrequency)
 			{
-				// Interpolate positions
-				const float t = static_cast<float>(static_cast<double>(time - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));
-				oldPosition = oldPosition.lerp(oldTarget, t);
+				m_moveUpdated.setEnd(time + UnitMover::UpdateFrequency);
 			}
 
-			m_moveStart = time;
-
-			const GameTime duration = constants::OneSecond / 4;
-			if (time < m_moveEnd - duration)
-			{
-				m_moveUpdated.setEnd(time + duration);
-			}
-
-			// Update creatures position
+			// Update creatures position in the next update frame
 			auto strongUnit = getMoved().shared_from_this();
 			std::weak_ptr<GameObject> weakUnit(strongUnit);
 			getMoved().getWorldInstance()->getUniverse().post([weakUnit, oldPosition, o]()
@@ -78,6 +70,7 @@ namespace wowpp
 				}
 			});
 		});
+
 		m_moveReached.ended.connect([this]()
 		{
 			// Cancel update timer
@@ -150,12 +143,9 @@ namespace wowpp
 		}
 
 		// Use new values
-		m_start = getCurrentLocation();
+		m_start = currentLoc;
 		m_target = target;
 		float distance = (m_target - m_start).length();
-
-		// Raise signal
-		targetChanged();
 
 		// Update timing
 		m_moveStart = getCurrentTime();
@@ -193,6 +183,10 @@ namespace wowpp
 
 		// Setup end timer
 		m_moveReached.setEnd(m_moveEnd);
+
+		// Raise signal
+		targetChanged();
+
 		return true;
 	}
 
@@ -225,10 +219,6 @@ namespace wowpp
 
 		// Linear interpolation
 		const float t = static_cast<float>(static_cast<double>(getCurrentTime() - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));
-		
-		math::Vector3 currentLocation = m_start;
-		currentLocation.lerp(m_target, t);
-
-		return currentLocation;
+		return m_start.lerp(m_target, t);
 	}
 }
