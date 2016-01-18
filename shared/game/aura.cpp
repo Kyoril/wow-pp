@@ -126,6 +126,9 @@ namespace wowpp
 		case aura::ModStun:
 			handleModStun(apply);
 			break;
+		case aura::ModRoot:
+			handleModRoot(apply);
+			break;
 		case aura::ModResistance:
 			handleModResistance(apply);
 			break;
@@ -307,7 +310,7 @@ namespace wowpp
 			return;
 		}
 		
-		// TODO: prevent movment, attacks and spells
+		m_target.notifyStunChanged();
 	}
 	
 	void Aura::handleModDamageDone(bool apply)
@@ -398,6 +401,17 @@ namespace wowpp
 			// Start timer
 			startPeriodicTimer();
 		}
+	}
+
+	void Aura::handleModRoot(bool apply)
+	{
+		if (m_effect.targeta() != game::targets::UnitTargetEnemy)
+		{
+			WLOG("AURA_TYPE_MOD_ROOT: Target of type " << m_effect.targeta() << " is not allowed!");
+			return;
+		}
+
+		m_target.notifyRootChanged();
 	}
 
 	void Aura::handleModStat(bool apply)

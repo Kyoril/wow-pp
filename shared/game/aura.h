@@ -98,6 +98,8 @@ namespace wowpp
 		void handleModResistance(bool apply);
 		/// 24
 		void handlePeriodicEnergize(bool apply);
+		/// 26
+		void handleModRoot(bool apply);
 		/// 29
 		void handleModStat(bool apply);
 		/// 36
