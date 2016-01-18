@@ -309,6 +309,8 @@ namespace wowpp
 		class TriggerEntry;
 	}
 
+	class UnitMover;
+
 	/// Base class for all units in the world. A unit is an object with health, which can
 	/// be controlled, fight etc. This class will be inherited by the GameCreature and the
 	/// GameCharacter classes.
@@ -539,6 +541,9 @@ namespace wowpp
 		virtual void updateStats(UInt8 stat);
 		virtual void updateResistance(UInt8 resistance);
 
+		/// Gets the current unit mover.
+		UnitMover &getMover() {	return *m_mover; }
+
 	public:
 
 		virtual void levelChanged(const proto::LevelEntry &levelInfo);
@@ -573,6 +578,7 @@ namespace wowpp
 		typedef LinearSet<UInt32> MechanicImmunitySet;
 
 		TimerQueue &m_timers;
+		std::unique_ptr<UnitMover> m_mover;
 		const proto::RaceEntry *m_raceEntry;
 		const proto::ClassEntry *m_classEntry;
 		const proto::FactionTemplateEntry *m_factionTemplate;
