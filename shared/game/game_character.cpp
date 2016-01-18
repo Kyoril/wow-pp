@@ -1297,6 +1297,7 @@ namespace wowpp
 					[this](GameUnit *victim, game::VictimState victimState) {
 						if (victim && victimState == game::victim_state::Dodge)
 						{
+							WLOG("added combo to " << victim->getName());
 							addComboPoints(victim->getGuid(), 1);
 						}
 					});

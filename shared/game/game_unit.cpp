@@ -1328,7 +1328,7 @@ namespace wowpp
 	
 	float GameUnit::getDodgeChance(GameUnit &attacker)
 	{
-		return 5.0f;
+		return 20.0f;
 	}
 	
     float GameUnit::getParryChance(GameUnit &attacker)

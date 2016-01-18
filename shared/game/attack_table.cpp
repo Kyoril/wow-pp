@@ -35,6 +35,8 @@ namespace wowpp
 		if (!checkIndex(targetA, targetB))
 		{
 			SpellTargetMap targetMap;
+			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+			targetMap.m_unitTarget = target->getGuid();
 			refreshTargets(*attacker, targetMap, targetA, targetB, 0.0f, 0.0f);
 			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
 
@@ -82,7 +84,10 @@ namespace wowpp
 				m_resists[targetA][targetB].push_back(0.0f);
 				m_hitInfos[targetA][targetB].push_back(hitInfo);
 				m_victimStates[targetA][targetB].push_back(victimState);
-		
+				if (attacker->getTypeId() == wowpp::object_type::Character)
+				{
+					WLOG("targetUnit " << targetUnit->getName());
+				}
 				attacker->doneMeleeAttack(targetUnit, victimState);
 				targetUnit->takenMeleeAttack(attacker, victimState);
 			}
