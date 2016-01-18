@@ -53,6 +53,8 @@ namespace wowpp
 		controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
 		controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::OtherTagger);
 		controlled.raiseTrigger(trigger_event::OnReset);
+
+		controlled.getMover().moveTo(getAI().getHome().position);
 	}
 
 	void CreatureAIResetState::onLeave()
