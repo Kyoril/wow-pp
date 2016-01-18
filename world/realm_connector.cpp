@@ -1022,7 +1022,8 @@ namespace wowpp
 
 		// Get the cast time of this spell
 		Int64 castTime = spell->casttime();
-		
+		DLOG("Player casts spell " << spellId << ": " << spell->name());
+
 		// Spell cast logic
 		sender.getCharacter()->castSpell(
 			std::move(targetMap),

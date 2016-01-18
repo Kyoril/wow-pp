@@ -36,12 +36,14 @@ namespace wowpp
 		auto *instance = m_executer.getWorldInstance();
 		if (!instance)
 		{
+			ELOG("Caster is not in a world instance");
 			return std::make_pair(game::spell_cast_result::FailedError, nullptr);
 		}
 
 		auto *map = instance->getMapData();
 		if (!map)
 		{
+			ELOG("World instance has no map data loaded");
 			return std::make_pair(game::spell_cast_result::FailedError, nullptr);
 		}
 

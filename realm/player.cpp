@@ -791,6 +791,8 @@ namespace wowpp
 		m_worldDisconnected = world.onConnectionLost.connect(
 			std::bind(&Player::worldNodeDisconnected, this));
 
+		ILOG("Player " << m_gameCharacter->getName() << " entered world instance 0x" << std::hex << std::uppercase << instanceId);
+
 		// If instance id is zero, this is the first time we enter a world since the login
 		const bool isLoginEnter = (m_instanceId == std::numeric_limits<UInt32>::max());
 

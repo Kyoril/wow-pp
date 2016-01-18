@@ -130,6 +130,10 @@ namespace wowpp
 			mapIt = MapData.find(m_mapEntry.id());
 			if (mapIt != MapData.end()) m_map = &mapIt->second;
 		}
+		else
+		{
+			m_map = &mapIt->second;
+		}
 
 		// Add object spawners
 		for (int i = 0; i < m_mapEntry.objectspawns_size(); ++i)
