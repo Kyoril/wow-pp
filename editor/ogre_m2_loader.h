@@ -185,6 +185,24 @@ namespace wowpp
 						ptr->read(&textures[0], sizeof(M2Texture) * header.nTextures);
 					}
 
+					std::vector<String> textureNames;
+					for (auto &texture : textures)
+					{
+						if (texture.fileNameOffs > 0 && texture.fileNameLen > 1)
+						{
+							ptr->seek(texture.fileNameOffs);
+							
+							String name(texture.fileNameLen - 1, '\0');
+							ptr->read(&name[0], texture.fileNameLen - 1);
+
+							textureNames.push_back(name);
+						}
+						else
+						{
+							textureNames.push_back("");
+						}
+					}
+
 					// Setup vertex attribute declaration
 					Ogre::VertexDeclaration* decl = vertData->vertexDeclaration;
 					size_t offset = decl->addElement(0, 0, Ogre::VET_FLOAT3, Ogre::VES_POSITION).getSize();
@@ -295,8 +313,18 @@ namespace wowpp
 							pass->removeAllTextureUnitStates();
 							pass->setSceneBlending(Ogre::SBF_ONE, Ogre::SBF_ONE_MINUS_DEST_ALPHA);
 
+							String textureToUse = "CREATURE\\Kobold\\koboldskinNormal.blp";
+							for (const auto &str : textureNames)
+							{
+								if (!str.empty())
+								{
+									textureToUse = str;
+									break;
+								}
+							}
+
 							auto *texUnit = pass->createTextureUnitState();
-							texUnit->setTextureName("CREATURE\\Kobold\\koboldskinNormal.blp");
+							texUnit->setTextureName(textureToUse);
 
 							// Create a new submesh
 							Ogre::SubMesh *subMesh = mesh->createSubMesh();

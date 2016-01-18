@@ -123,12 +123,12 @@ namespace wowpp
 				camera->pitch(Ogre::Degree(-45.0f));
 
 				std::unique_ptr<WorldEditor> scene(
-					new WorldEditor(*sceneMgr, *camera, *entry));
+					new WorldEditor(*sceneMgr, *camera, *entry, m_application.getProject()));
 				m_ogreWindow->setScene(std::move(scene));
 
 				std::unique_ptr<Map> mapInst(new Map(
 					*entry, m_application.getConfiguration().dataPath));
-				auto *tile = mapInst->getTile(TileIndex2D(52, 29));
+				auto *tile = mapInst->getTile(TileIndex2D(32, 32));
 				if (!tile)
 				{
 					return;
