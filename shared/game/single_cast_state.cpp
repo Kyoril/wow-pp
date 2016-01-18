@@ -874,6 +874,23 @@ namespace wowpp
 		//TODO: Implement
 		spellEffectNormalizedWeaponDamage(effect);
 	}
+	
+	void SingleCastState::spellEffectCreateItem(const proto::SpellEffect &effect)
+	{
+		GameUnit &caster = m_cast.getExecuter();
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		
+		m_attackTable.checkPositiveSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+		
+		for (int i=0; i<targets.size(); i++)
+		{
+			GameUnit* targetUnit = targets[i];
+			
+		}
+	}
 
 	void SingleCastState::spellEffectWeaponDamage(const proto::SpellEffect &effect)
 	{
@@ -1056,6 +1073,8 @@ namespace wowpp
 				break;
 			case se::WeaponDamageNoSchool:
 				spellEffectWeaponDamageNoSchool(effect);
+			case se::CreateItem:
+				spellEffectCreateItem(effect);
 				break;
 			case se::ApplyAura:
 				spellEffectApplyAura(effect);
