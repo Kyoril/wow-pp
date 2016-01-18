@@ -25,6 +25,9 @@
 #include <deque>
 #include "log/default_log_levels.h"
 
+// Define MPQ lock mutex
+boost::mutex wowpp::MPQFile::MPQMutex;
+
 namespace mpq
 {
 	/// This deleter struct will make sure that 
@@ -40,6 +43,8 @@ namespace mpq
 
 	bool loadMPQFile(const std::string &file)
 	{
+		boost::mutex::scoped_lock lock(wowpp::MPQFile::MPQMutex);
+
 		std::unique_ptr<HANDLE, HandleDeleter> mpqHandle(new HANDLE(nullptr));
 		if (!SFileOpenArchive(file.c_str(), 0, 0, mpqHandle.get()))
 		{
@@ -54,6 +59,7 @@ namespace mpq
 
 	static bool openFile(const std::string &file, std::vector<char> &out_buffer)
 	{
+		boost::mutex::scoped_lock lock(wowpp::MPQFile::MPQMutex);
 		for (auto &handle : openedArchives)
 		{
 			// Open the file

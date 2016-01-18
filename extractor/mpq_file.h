@@ -25,7 +25,8 @@
 #include "binary_io/reader.h"
 #include "binary_io/container_source.h"
 #include "stormlib/src/StormLib.h"
-#include "boost/noncopyable.hpp"
+#include <boost/noncopyable.hpp>
+#include <boost/thread.hpp>
 #include <memory>
 #include <vector>
 
@@ -39,6 +40,10 @@ namespace wowpp
 	/// This class represents a file which will be loaded from an MPQ archive.
 	class MPQFile : public boost::noncopyable
 	{
+	public:
+
+		static boost::mutex MPQMutex;
+		
 	public:
 
 		/// Initializes the file and loads it's content from the loaded MPQ archive.
