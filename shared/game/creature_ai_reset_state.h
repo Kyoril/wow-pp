@@ -22,7 +22,7 @@
 #pragma once
 
 #include "creature_ai_state.h"
-#include "common/countdown.h"
+#include <boost/signals2.hpp>
 
 namespace wowpp
 {
@@ -46,6 +46,6 @@ namespace wowpp
 
 	private:
 
-		Countdown m_moveUpdate;
+		boost::signals2::scoped_connection m_onHomeReached;
 	};
 }

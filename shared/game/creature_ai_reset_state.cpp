@@ -30,20 +30,16 @@
 #include "common/constants.h"
 #include "proto_data/trigger_helper.h"
 #include "log/default_log_levels.h"
+#include "unit_mover.h"
 
 namespace wowpp
 {
 	CreatureAIResetState::CreatureAIResetState(CreatureAI &ai)
 		: CreatureAIState(ai)
-		, m_moveUpdate(ai.getControlled().getTimers())
 	{
-		m_moveUpdate.ended.connect([this]()
-		{
-			auto &ai = getAI();
-			const math::Vector3 &position = ai.getHome().position;
-
-			getControlled().relocate(position, ai.getHome().orientation);
-			ai.idle();
+		// Enter idle mode when home point was reached
+		m_onHomeReached = getControlled().getMover().targetReached.connect([this]() {
+			getAI().idle();
 		});
 	}
 
@@ -53,43 +49,15 @@ namespace wowpp
 
 	void CreatureAIResetState::onEnter()
 	{
-		const float distance = getControlled().getDistanceTo(getAI().getHome().position);
-
-		// Make the creature return to it's home
-		GameTime moveTime = (distance / 7.5f) * constants::OneSecond;
-
-		// Send move packet
-		TileIndex2D tile;
-		if (getControlled().getTileIndex(tile))
-		{
-			float o = getControlled().getOrientation();
-			math::Vector3 oldPosition(getControlled().getLocation());
-
-			std::vector<char> buffer;
-			io::VectorSink sink(buffer);
-			game::Protocol::OutgoingPacket packet(sink);
-			game::server_write::monsterMove(packet, getControlled().getGuid(), oldPosition, getAI().getHome().position, moveTime);
-
-			forEachSubscriberInSight(
-				getControlled().getWorldInstance()->getGrid(),
-				tile,
-				[&packet, &buffer](ITileSubscriber &subscriber)
-			{
-				subscriber.sendPacket(packet, buffer);
-			});
-		}
-
-		m_moveUpdate.setEnd(getCurrentTime() + moveTime);
-
 		auto &controlled = getControlled();
+		controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
+		controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::OtherTagger);
 		controlled.raiseTrigger(trigger_event::OnReset);
 	}
 
 	void CreatureAIResetState::onLeave()
 	{
 		auto &controlled = getControlled();
-		controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
-		controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::OtherTagger);
 
 		// Fully heal unit
 		if (controlled.isAlive())

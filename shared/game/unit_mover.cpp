@@ -80,7 +80,11 @@ namespace wowpp
 		});
 		m_moveReached.ended.connect([this]()
 		{
+			// Cancel update timer
 			m_moveUpdated.cancel();
+
+			// Fire signal since we reached our target
+			targetReached();
 
 			float angle = getMoved().getOrientation();
 			auto &target = m_target;
@@ -105,6 +109,10 @@ namespace wowpp
 
 	bool UnitMover::moveTo(const math::Vector3 & target)
 	{
+		// Same target!
+		if (m_target == target)
+			return true;
+
 		// Dead units can't move
 		if (!getMoved().isAlive())
 			return false;
@@ -114,6 +122,13 @@ namespace wowpp
 
 		// Get current location
 		auto currentLoc = getCurrentLocation();
+
+		// Do we really need to move?
+		if (target == currentLoc)
+		{
+			stopMovement();
+			return true;
+		}
 
 		// Now we need to stop the current movement
 		if (m_moveReached.running)
@@ -134,14 +149,13 @@ namespace wowpp
 			getMoved().relocate(currentLoc, o, false);
 		}
 
-		// We are already there!
-		if (m_target == target)
-			return true;
-
 		// Use new values
 		m_start = getCurrentLocation();
 		m_target = target;
 		float distance = (m_target - m_start).length();
+
+		// Raise signal
+		targetChanged();
 
 		// Update timing
 		m_moveStart = getCurrentTime();
@@ -197,6 +211,10 @@ namespace wowpp
 
 		// Update with grid notification
 		getMoved().relocate(currentLoc, o);
+
+		// Fire this trigger only here, not when movement was updated,
+		// since only then we are really stopping
+		movementStopped();
 	}
 
 	math::Vector3 UnitMover::getCurrentLocation() const
