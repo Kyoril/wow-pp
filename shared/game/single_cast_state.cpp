@@ -982,7 +982,7 @@ namespace wowpp
 				const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
 				if (!noThreat)
 				{
-					targetUnit->threatened(caster, 0.00001f);
+					targetUnit->threatened(caster, 0.0f);
 				}
 
 				// TODO: Add aura to unit target

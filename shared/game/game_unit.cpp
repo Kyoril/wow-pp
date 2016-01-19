@@ -1575,12 +1575,11 @@ namespace wowpp
 		m_isStunned = m_auras.hasAura(game::aura_type::ModStun);
 		if (wasStunned && !m_isStunned)
 		{
-			// We are no longer stunned
 			stunStateChanged(false);
 		}
 		else if(!wasStunned && m_isStunned)
 		{
-			// We are now stunned
+			m_mover->stopMovement();
 			stunStateChanged(true);
 		}
 	}
@@ -1595,6 +1594,7 @@ namespace wowpp
 		}
 		else if (!wasRooted && m_isRooted)
 		{
+			m_mover->stopMovement();
 			rootStateChanged(true);
 		}
 	}

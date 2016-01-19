@@ -80,6 +80,7 @@ namespace wowpp
 		UnitSignals m_killedSignals;
 		UnitSignals m_despawnedSignals;
 		boost::signals2::scoped_connection m_onThreatened, m_onVictimMoved, m_onMoveTargetChanged;
+		boost::signals2::scoped_connection m_onStunChanged, m_onRootChanged;
 		GameTime m_lastThreatTime;
 	};
 }

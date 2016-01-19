@@ -75,6 +75,32 @@ namespace wowpp
 			}
 		});
 
+		m_onStunChanged = getControlled().stunStateChanged.connect([this](bool stunned)
+		{
+			// If we are no longer stunned, update victim again
+			if (!stunned)
+			{
+				updateVictim();
+			}
+			else
+			{
+				// Do not watch for unit motion
+				m_onVictimMoved.disconnect();
+
+				// No longer attack unit if stunned
+				getControlled().cancelCast();
+				getControlled().stopAttack();
+			}
+		});
+		m_onRootChanged = getControlled().rootStateChanged.connect([this](bool rooted)
+		{
+			// If we are no longer rooted, update victim again
+			if (!rooted)
+			{
+				updateVictim();
+			}
+		});
+
 		// Process aggro event
 		TileIndex2D tile;
 		if (controlled.getTileIndex(tile))

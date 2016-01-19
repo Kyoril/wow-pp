@@ -102,17 +102,6 @@ namespace wowpp
 
 	bool UnitMover::moveTo(const math::Vector3 & target)
 	{
-		// Same target!
-		if (m_target == target)
-			return true;
-
-		// Dead units can't move
-		if (!getMoved().isAlive())
-			return false;
-
-		// Stunned / Rooted units can't move either
-		// TODO
-
 		// Get current location
 		auto currentLoc = getCurrentLocation();
 
@@ -141,6 +130,10 @@ namespace wowpp
 			// movement update tick will do this for us automatically).
 			getMoved().relocate(currentLoc, o, false);
 		}
+
+		// Dead units can't move
+		if (!getMoved().canMove())
+			return false;
 
 		// Use new values
 		m_start = currentLoc;
@@ -207,6 +200,25 @@ namespace wowpp
 
 			// Update with grid notification
 			getMoved().relocate(currentLoc, o);
+
+			// Send movement packet
+			TileIndex2D tile;
+			if (getMoved().getTileIndex(tile))
+			{
+				// TODO: Maybe, player characters need another movement packet for this...
+				std::vector<char> buffer;
+				io::VectorSink sink(buffer);
+				game::Protocol::OutgoingPacket packet(sink);
+				game::server_write::monsterMove(packet, getMoved().getGuid(), currentLoc, currentLoc, 0);
+
+				forEachSubscriberInSight(
+					getMoved().getWorldInstance()->getGrid(),
+					tile,
+					[&packet, &buffer](ITileSubscriber &subscriber)
+				{
+					subscriber.sendPacket(packet, buffer);
+				});
+			}
 
 			// Fire this trigger only here, not when movement was updated,
 			// since only then we are really stopping
