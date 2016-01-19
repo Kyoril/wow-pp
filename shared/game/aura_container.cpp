@@ -186,7 +186,7 @@ namespace wowpp
 			(*i)->onForceRemoval();
 		}
 
-		m_auras.erase(newEnd, std::end(m_auras));
+		//m_auras.erase(newEnd, std::end(m_auras));
 	}
 
 	bool AuraContainer::hasAura(game::AuraType type) const
