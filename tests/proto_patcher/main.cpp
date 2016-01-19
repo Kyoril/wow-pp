@@ -340,7 +340,7 @@ namespace wowpp
 						for (auto &eff : *it->mutable_effects())
 						{
 							// Instead of "DUMMY" effect, we make this a "ENERGIZE" effect, since this is all it does.
-							if (eff.type() == game::spell_effects::Dummy &&
+							if ((eff.type() == game::spell_effects::Dummy || eff.type() == game::spell_effects::Energize) && 
 								eff.basepoints() != 0)
 							{
 								eff.set_type(game::spell_effects::Energize);

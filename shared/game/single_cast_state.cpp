@@ -1210,6 +1210,8 @@ namespace wowpp
 
 	void SingleCastState::spellEffectEnergize(const proto::SpellEffect &effect)
 	{
+		DLOG("ENERGIZE");
+
 		GameUnit &caster = m_cast.getExecuter();
 		std::vector<GameUnit*> targets;
 		std::vector<game::VictimState> victimStates;
@@ -1217,12 +1219,16 @@ namespace wowpp
 		std::vector<float> resists;
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);		//Buff, HoT
 		
+		Int32 powerType = effect.miscvaluea();
+		if (powerType < 0 || powerType > 5)
+			return;
+
+		DLOG("TARGETS: " << targets.size());
+		DLOG("POWER TYPE: " << powerType);
+
 		for (int i=0; i<targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
-			Int32 powerType = effect.miscvaluea();
-			if (powerType < 0 || powerType > 5)
-				return;
 
 			UInt32 power = calculateEffectBasePoints(effect);
 			if (victimStates[i] == game::victim_state::IsImmune)
