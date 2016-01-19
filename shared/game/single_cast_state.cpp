@@ -963,8 +963,7 @@ namespace wowpp
 				{
 					// Prevent aura from being deleted before being removed from the list
 					auto strong = self.shared_from_this();
-					strong->misapplyAura();
-
+					
 					// Remove aura from the list
 					auto &auras = self.getTarget().getAuras();
 					const auto position = findAuraInstanceIndex(auras, self);
@@ -972,6 +971,8 @@ namespace wowpp
 					{
 						auras.removeAura(*position);
 					}
+
+					strong->misapplyAura();
 				});
 
 				// TODO: Dimishing return and custom durations
@@ -1210,8 +1211,6 @@ namespace wowpp
 
 	void SingleCastState::spellEffectEnergize(const proto::SpellEffect &effect)
 	{
-		DLOG("ENERGIZE");
-
 		GameUnit &caster = m_cast.getExecuter();
 		std::vector<GameUnit*> targets;
 		std::vector<game::VictimState> victimStates;
@@ -1222,9 +1221,6 @@ namespace wowpp
 		Int32 powerType = effect.miscvaluea();
 		if (powerType < 0 || powerType > 5)
 			return;
-
-		DLOG("TARGETS: " << targets.size());
-		DLOG("POWER TYPE: " << powerType);
 
 		for (int i=0; i<targets.size(); i++)
 		{

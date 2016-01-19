@@ -187,10 +187,6 @@ namespace wowpp
 	{
 		if (isMoving())
 		{
-			// Cancel timers
-			m_moveReached.cancel();
-			m_moveUpdated.cancel();
-
 			// Update current location
 			auto currentLoc = getCurrentLocation();
 			const float dx = m_target.x - currentLoc.x;
@@ -200,6 +196,10 @@ namespace wowpp
 
 			// Update with grid notification
 			getMoved().relocate(currentLoc, o);
+
+			// Cancel timers
+			m_moveReached.cancel();
+			m_moveUpdated.cancel();
 
 			// Send movement packet
 			TileIndex2D tile;
