@@ -868,6 +868,25 @@ namespace wowpp
 		UInt64 comboTarget = m_target.getUnitTarget();
 		character->addComboPoints(comboTarget, UInt8(calculateEffectBasePoints(effect)));
 	}
+	
+	void SingleCastState::spellEffectDuel(const proto::SpellEffect &effect)
+	{
+		GameUnit &caster = m_cast.getExecuter();
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+		
+		for (int i=0; i<targets.size(); i++)
+		{
+			GameUnit* targetUnit = targets[i];
+			
+			SpellTargetMap targetMap;
+			targetMap.m_targetMap = game::spell_cast_target_flags::Self;
+			targetUnit->castSpell(targetMap, 7267, -1, 0, true);	// cast beg at loser
+		}
+	}
 
 	void SingleCastState::spellEffectWeaponDamageNoSchool(const proto::SpellEffect &effect)
 	{
@@ -1070,6 +1089,9 @@ namespace wowpp
 				break;
 			case se::AddComboPoints:
 				spellEffectAddComboPoints(effect);
+				break;
+			case se::Duel:
+				spellEffectDuel(effect);
 				break;
 			case se::WeaponDamageNoSchool:
 				spellEffectWeaponDamageNoSchool(effect);

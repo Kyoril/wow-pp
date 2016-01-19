@@ -81,6 +81,7 @@ namespace wowpp
 		void spellEffectTriggerSpell(const proto::SpellEffect &effect);
 		void spellEffectScript(const proto::SpellEffect &effect);
 		void spellEffectAddComboPoints(const proto::SpellEffect &effect);
+		void spellEffectDuel(const proto::SpellEffect &effect);
 		void spellEffectCharge(const proto::SpellEffect &effect);
 		void spellEffectNormalizedWeaponDamage(const proto::SpellEffect &effect);
 
