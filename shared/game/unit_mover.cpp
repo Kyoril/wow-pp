@@ -50,23 +50,15 @@ namespace wowpp
 			float o = getMoved().getOrientation();
 			o = getMoved().getAngle(m_target.x, m_target.y);
 
-			math::Vector3 oldPosition(getMoved().getLocation()), oldTarget(m_target);
-			if (m_moveStart != 0 && m_moveEnd > m_moveStart)
+			math::Vector3 oldPosition = getCurrentLocation();
+
+			// Trigger next update if needed
+			if (time < m_moveEnd - UnitMover::UpdateFrequency)
 			{
-				// Interpolate positions
-				const float t = static_cast<float>(static_cast<double>(time - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));
-				oldPosition = oldPosition.lerp(oldTarget, t);
+				m_moveUpdated.setEnd(time + UnitMover::UpdateFrequency);
 			}
 
-			m_moveStart = time;
-
-			const GameTime duration = constants::OneSecond / 4;
-			if (time < m_moveEnd - duration)
-			{
-				m_moveUpdated.setEnd(time + duration);
-			}
-
-			// Update creatures position
+			// Update creatures position in the next update frame
 			auto strongUnit = getMoved().shared_from_this();
 			std::weak_ptr<GameObject> weakUnit(strongUnit);
 			getMoved().getWorldInstance()->getUniverse().post([weakUnit, oldPosition, o]()
@@ -78,6 +70,7 @@ namespace wowpp
 				}
 			});
 		});
+
 		m_moveReached.ended.connect([this]()
 		{
 			// Cancel update timer
@@ -109,17 +102,6 @@ namespace wowpp
 
 	bool UnitMover::moveTo(const math::Vector3 & target)
 	{
-		// Same target!
-		if (m_target == target)
-			return true;
-
-		// Dead units can't move
-		if (!getMoved().isAlive())
-			return false;
-
-		// Stunned / Rooted units can't move either
-		// TODO
-
 		// Get current location
 		auto currentLoc = getCurrentLocation();
 
@@ -149,13 +131,14 @@ namespace wowpp
 			getMoved().relocate(currentLoc, o, false);
 		}
 
+		// Dead units can't move
+		if (!getMoved().canMove())
+			return false;
+
 		// Use new values
-		m_start = getCurrentLocation();
+		m_start = currentLoc;
 		m_target = target;
 		float distance = (m_target - m_start).length();
-
-		// Raise signal
-		targetChanged();
 
 		// Update timing
 		m_moveStart = getCurrentTime();
@@ -193,28 +176,54 @@ namespace wowpp
 
 		// Setup end timer
 		m_moveReached.setEnd(m_moveEnd);
+
+		// Raise signal
+		targetChanged();
+
 		return true;
 	}
 
 	void UnitMover::stopMovement()
 	{
-		// Cancel timers
-		m_moveReached.cancel();
-		m_moveUpdated.cancel();
+		if (isMoving())
+		{
+			// Update current location
+			auto currentLoc = getCurrentLocation();
+			const float dx = m_target.x - currentLoc.x;
+			const float dy = m_target.y - currentLoc.y;
+			float o = ::atan2(dy, dx);
+			o = (o >= 0) ? o : 2 * 3.1415927f + o;
 
-		// Update current location
-		auto currentLoc = getCurrentLocation();
-		const float dx = m_target.x - currentLoc.x;
-		const float dy = m_target.y - currentLoc.y;
-		float o = ::atan2(dy, dx);
-		o = (o >= 0) ? o : 2 * 3.1415927f + o;
+			// Update with grid notification
+			getMoved().relocate(currentLoc, o);
 
-		// Update with grid notification
-		getMoved().relocate(currentLoc, o);
+			// Cancel timers
+			m_moveReached.cancel();
+			m_moveUpdated.cancel();
 
-		// Fire this trigger only here, not when movement was updated,
-		// since only then we are really stopping
-		movementStopped();
+			// Send movement packet
+			TileIndex2D tile;
+			if (getMoved().getTileIndex(tile))
+			{
+				// TODO: Maybe, player characters need another movement packet for this...
+				std::vector<char> buffer;
+				io::VectorSink sink(buffer);
+				game::Protocol::OutgoingPacket packet(sink);
+				game::server_write::monsterMove(packet, getMoved().getGuid(), currentLoc, currentLoc, 0);
+
+				forEachSubscriberInSight(
+					getMoved().getWorldInstance()->getGrid(),
+					tile,
+					[&packet, &buffer](ITileSubscriber &subscriber)
+				{
+					subscriber.sendPacket(packet, buffer);
+				});
+			}
+
+			// Fire this trigger only here, not when movement was updated,
+			// since only then we are really stopping
+			movementStopped();
+		}
 	}
 
 	math::Vector3 UnitMover::getCurrentLocation() const
@@ -225,10 +234,6 @@ namespace wowpp
 
 		// Linear interpolation
 		const float t = static_cast<float>(static_cast<double>(getCurrentTime() - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));
-		
-		math::Vector3 currentLocation = m_start;
-		currentLocation.lerp(m_target, t);
-
-		return currentLocation;
+		return m_start.lerp(m_target, t);
 	}
 }

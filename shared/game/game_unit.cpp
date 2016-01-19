@@ -49,6 +49,8 @@ namespace wowpp
 		, m_lastManaUse(0)
 		, m_auras(*this)
 		, m_factionTemplate(nullptr)
+		, m_isStunned(false)
+		, m_isRooted(false)
 	{
 		// Resize values field
 		m_values.resize(unit_fields::UnitFieldCount);
@@ -1565,6 +1567,36 @@ namespace wowpp
 		object.updateDisplayIds();
 
 		return r;
+	}
+
+	void GameUnit::notifyStunChanged()
+	{
+		const bool wasStunned = m_isStunned;
+		m_isStunned = m_auras.hasAura(game::aura_type::ModStun);
+		if (wasStunned && !m_isStunned)
+		{
+			stunStateChanged(false);
+		}
+		else if(!wasStunned && m_isStunned)
+		{
+			m_mover->stopMovement();
+			stunStateChanged(true);
+		}
+	}
+
+	void GameUnit::notifyRootChanged()
+	{
+		const bool wasRooted = m_isRooted;
+		m_isRooted = m_auras.hasAura(game::aura_type::ModRoot);
+		if (wasRooted && !m_isRooted)
+		{
+			rootStateChanged(false);
+		}
+		else if (!wasRooted && m_isRooted)
+		{
+			m_mover->stopMovement();
+			rootStateChanged(true);
+		}
 	}
 
 	void GameUnit::addMechanicImmunity(UInt32 mechanic)

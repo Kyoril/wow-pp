@@ -89,7 +89,7 @@ namespace wowpp
 				return len;
 			}
 			
-			Vector3 lerp(const Vector3 &target, float t)
+			Vector3 lerp(const Vector3 &target, float t) const
 			{
 				if (t <= 0.0f)
 					return *this;

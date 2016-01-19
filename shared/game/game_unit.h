@@ -367,6 +367,10 @@ namespace wowpp
 		boost::signals2::signal<void(const proto::TriggerEntry &, GameUnit &)> unitTrigger;
 		/// Fired when a target was killed by this unit, which could trigger Kill-Procs. Only fired when XP or honor is rewarded.
 		boost::signals2::signal<void(GameUnit &)> procKilledTarget;
+		/// Fired when this unit gets rooted or unrooted.
+		boost::signals2::signal<void(bool)> rootStateChanged;
+		/// Fired when this unit gets stunned or unstunned.
+		boost::signals2::signal<void(bool)> stunStateChanged;
 
 	public:
 
@@ -499,6 +503,12 @@ namespace wowpp
 		virtual bool canDodge() const = 0;
 		virtual bool canDualWield() const = 0;
 
+		bool isStunned() const { return m_isStunned; }
+		bool isRooted() const { return m_isRooted; }
+		bool canMove() const { return isAlive() && !isStunned() && !isRooted(); }
+		void notifyStunChanged();
+		void notifyRootChanged();
+
 		void addMechanicImmunity(UInt32 mechanic);
 		void removeMechanicImmunity(UInt32 mechanic);
 		bool isImmuneAgainstMechanic(UInt32 mechanic) const;
@@ -595,6 +605,8 @@ namespace wowpp
 		AttackSwingCallback m_swingCallback;
 		AttackingUnitSet m_attackingUnits;
 		MechanicImmunitySet m_mechanicImmunity;
+		bool m_isStunned;
+		bool m_isRooted;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameUnit const& object);

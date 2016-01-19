@@ -980,14 +980,18 @@ namespace wowpp
 					universe.post(work);
 				}, [](Aura &self)
 				{
+					// Prevent aura from being deleted before being removed from the list
+					auto strong = self.shared_from_this();
+					
+					// Remove aura from the list
 					auto &auras = self.getTarget().getAuras();
-
 					const auto position = findAuraInstanceIndex(auras, self);
-					//assert(position.is_initialized());
 					if (position.is_initialized())
 					{
 						auras.removeAura(*position);
 					}
+
+					strong->misapplyAura();
 				});
 
 				// TODO: Dimishing return and custom durations
@@ -999,7 +1003,7 @@ namespace wowpp
 				const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
 				if (!noThreat)
 				{
-					targetUnit->threatened(caster, 0.00001f);
+					targetUnit->threatened(caster, 0.0f);
 				}
 
 				// TODO: Add aura to unit target
@@ -1236,12 +1240,13 @@ namespace wowpp
 		std::vector<float> resists;
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);		//Buff, HoT
 		
+		Int32 powerType = effect.miscvaluea();
+		if (powerType < 0 || powerType > 5)
+			return;
+
 		for (int i=0; i<targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
-			Int32 powerType = effect.miscvaluea();
-			if (powerType < 0 || powerType > 5)
-				return;
 
 			UInt32 power = calculateEffectBasePoints(effect);
 			if (victimStates[i] == game::victim_state::IsImmune)

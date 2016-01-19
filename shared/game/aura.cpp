@@ -64,18 +64,6 @@ namespace wowpp
 
 	Aura::~Aura()
 	{
-		// Cancel countdowns (if running)
-		m_tickCountdown.cancel();
-		m_expireCountdown.cancel();
-
-		// Remove aura slot
-		if (m_slot != 0xFF)
-		{
-			m_target.setUInt32Value(unit_fields::Aura + m_slot, 0);
-		}
-
-		// Remove aura modifier from target
-		handleModifier(false);
 	}
 	
 	void Aura::setBasePoints(Int32 basePoints) {
@@ -125,6 +113,9 @@ namespace wowpp
 			break;
 		case aura::ModStun:
 			handleModStun(apply);
+			break;
+		case aura::ModRoot:
+			handleModRoot(apply);
 			break;
 		case aura::ModResistance:
 			handleModResistance(apply);
@@ -307,7 +298,7 @@ namespace wowpp
 			return;
 		}
 		
-		// TODO: prevent movment, attacks and spells
+		m_target.notifyStunChanged();
 	}
 	
 	void Aura::handleModDamageDone(bool apply)
@@ -398,6 +389,17 @@ namespace wowpp
 			// Start timer
 			startPeriodicTimer();
 		}
+	}
+
+	void Aura::handleModRoot(bool apply)
+	{
+		if (m_effect.targeta() != game::targets::UnitTargetEnemy)
+		{
+			WLOG("AURA_TYPE_MOD_ROOT: Target of type " << m_effect.targeta() << " is not allowed!");
+			return;
+		}
+
+		m_target.notifyRootChanged();
 	}
 
 	void Aura::handleModStat(bool apply)
@@ -1069,6 +1071,21 @@ namespace wowpp
 
 		// Apply modifiers now
 		handleModifier(true);
+	}
+
+	void Aura::misapplyAura()
+	{
+		// Cancel countdowns (if running)
+		m_tickCountdown.cancel();
+		m_expireCountdown.cancel();
+
+		// Remove aura slot
+		if (m_slot != 0xFF)
+		{
+			m_target.setUInt32Value(unit_fields::Aura + m_slot, 0);
+		}
+
+		handleModifier(false);
 	}
 
 	void Aura::startPeriodicTimer()

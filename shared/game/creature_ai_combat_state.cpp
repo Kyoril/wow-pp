@@ -34,95 +34,16 @@
 #include "each_tile_in_sight.h"
 #include "common/constants.h"
 #include "log/default_log_levels.h"
+#include "unit_mover.h"
 
 namespace wowpp
 {
 	CreatureAICombatState::CreatureAICombatState(CreatureAI &ai, GameUnit &victim)
 		: CreatureAIState(ai)
-		, m_moveReached(ai.getControlled().getTimers())
-		, m_moveUpdated(ai.getControlled().getTimers())
-		, m_moveStart(0)
-		, m_moveEnd(0)
 		, m_lastThreatTime(0)
 	{
 		// Add initial threat
 		addThreat(victim, 0.0f);
-		m_moveReached.ended.connect([this]()
-		{
-			m_moveUpdated.cancel();
-
-			float angle = 0.0f;
-			auto *victim = getControlled().getVictim();
-			if (victim)
-			{
-				angle = getControlled().getAngle(*victim);
-			}
-
-			math::Vector3 target(m_target);
-
-			// Update creatures position
-			auto strongUnit = getControlled().shared_from_this();
-			std::weak_ptr<GameObject> weakUnit(strongUnit);
-			getControlled().getWorldInstance()->getUniverse().post([weakUnit, target, angle]()
-			{
-				auto strongUnit = weakUnit.lock();
-				if (strongUnit)
-				{
-					strongUnit->relocate(target, angle);
-				}
-			});
-
-			auto &homePos = getAI().getHome().position;
-			if (getCurrentTime() >= (m_lastThreatTime + constants::OneSecond * 10) &&
-				getControlled().getDistanceTo(homePos, false) >= 60.0f)
-			{
-				getAI().reset();
-			}
-		});
-
-		m_moveUpdated.ended.connect([this]()
-		{
-			GameTime time = getCurrentTime();
-			if (time >= m_moveEnd)
-				return;
-
-			// Calculate new position
-			float o = getControlled().getOrientation();
-			math::Vector3 oldPosition(getControlled().getLocation()), oldTarget(m_target);
-			if (m_moveStart != 0 && m_moveEnd > m_moveStart)
-			{
-				// Interpolate positions
-				const float t = static_cast<float>(static_cast<double>(time - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));
-				oldPosition = oldPosition.lerp(oldTarget, t);
-			}
-
-			m_moveStart = time;
-
-			const GameTime duration = constants::OneSecond / 4;
-			if (time < m_moveEnd - duration)
-			{
-				m_moveUpdated.setEnd(time + duration);
-			}
-
-			// Update creatures position
-			auto strongUnit = getControlled().shared_from_this();
-			std::weak_ptr<GameObject> weakUnit(strongUnit);
-			getControlled().getWorldInstance()->getUniverse().post([weakUnit, oldPosition, o]()
-			{
-				auto strongUnit = weakUnit.lock();
-				if (strongUnit)
-				{
-					strongUnit->relocate(oldPosition, o);
-				}
-			});
-
-			auto &homePos = getAI().getHome().position;
-			if (getCurrentTime() >= (m_lastThreatTime + constants::OneSecond * 10) &&
-				getControlled().getDistanceTo(homePos, false) >= 60.0f)
-			{
-				getAI().reset();
-			}
-		});
 	}
 
 	CreatureAICombatState::~CreatureAICombatState()
@@ -141,6 +62,39 @@ namespace wowpp
 		m_onThreatened = controlled.threatened.connect([this](GameUnit &threatener, float amount)
 		{
 			addThreat(threatener, amount);
+		});
+
+		// Reset AI eventually
+		m_onMoveTargetChanged = getControlled().getMover().targetChanged.connect([this]
+		{
+			auto &homePos = getAI().getHome().position;
+			if (getCurrentTime() >= (m_lastThreatTime + constants::OneSecond * 10) &&
+				getControlled().getDistanceTo(homePos, false) >= 60.0f)
+			{
+				getAI().reset();
+			}
+		});
+
+		m_onStunChanged = getControlled().stunStateChanged.connect([this](bool stunned)
+		{
+			// If we are no longer stunned, update victim again
+			if (!stunned)
+			{
+				updateVictim();
+			}
+			else
+			{
+				// Do not watch for unit motion
+				m_onVictimMoved.disconnect();
+
+				// No longer attack unit if stunned
+				getControlled().cancelCast();
+				getControlled().stopAttack();
+			}
+		});
+		m_onRootChanged = getControlled().rootStateChanged.connect([this](bool rooted)
+		{
+			updateVictim();
 		});
 
 		// Process aggro event
@@ -173,45 +127,8 @@ namespace wowpp
 		auto &controlled = getControlled();
 		auto id = controlled.getEntry().id();
 
-		// Calculate new position
-		float o = getControlled().getOrientation();
-		math::Vector3 oldPosition(getControlled().getLocation()), oldTarget(m_target);
-		if (m_moveStart != 0 && m_moveEnd > m_moveStart)
-		{
-			// Interpolate positions
-			const float t = static_cast<float>(static_cast<double>(getCurrentTime() - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));
-			oldPosition = oldPosition.lerp(oldTarget, t);
-		}
-
-		// Update creatures position
-		auto strongUnit = getControlled().shared_from_this();
-		std::weak_ptr<GameObject> weakUnit(strongUnit);
-		getControlled().getWorldInstance()->getUniverse().post([weakUnit, oldPosition, o]()
-		{
-			auto strongUnit = weakUnit.lock();
-			if (strongUnit)
-			{
-				strongUnit->relocate(oldPosition, o);
-			}
-		});
-
-		// Send move packet
-		TileIndex2D tile;
-		if (getControlled().getTileIndex(tile))
-		{
-			std::vector<char> buffer;
-			io::VectorSink sink(buffer);
-			game::Protocol::OutgoingPacket packet(sink);
-			game::server_write::monsterMove(packet, getControlled().getGuid(), oldPosition, oldPosition, 0);
-
-			forEachSubscriberInSight(
-				getControlled().getWorldInstance()->getGrid(),
-				tile,
-				[&packet, &buffer](ITileSubscriber &subscriber)
-			{
-				subscriber.sendPacket(packet, buffer);
-			});
-		}
+		// Stop movement!
+		controlled.getMover().stopMovement();
 
 		// All remaining threateners are no longer in combat with this unit
 		for (auto &pair : m_threat)
@@ -309,12 +226,23 @@ namespace wowpp
 		auto &controlled = getControlled();
 		auto *victim = controlled.getVictim();
 
+		bool rooted = controlled.isRooted();
+
 		// Now, determine the victim with the highest threat value
 		float highestThreat = -1.0f;
 		GameUnit *newVictim = nullptr;
 		for (auto &entry : m_threat)
 		{
-			if (entry.second.amount > highestThreat)
+			bool isInRange = true;
+
+			// If we are rooted, we need to check for nearby targets to start attacking them
+			if (rooted)
+			{
+				isInRange = 
+					(controlled.getDistanceTo(*entry.second.threatener, true) <= entry.second.threatener->getMeleeReach() + controlled.getMeleeReach());
+			}
+
+			if (entry.second.amount > highestThreat && isInRange)
 			{
 				newVictim = entry.second.threatener;
 				highestThreat = entry.second.amount;
@@ -336,66 +264,33 @@ namespace wowpp
 		}
 		else if (!newVictim)
 		{
-			// No victim found (threat list probably empty?). Warning: this will destroy
-			// the current state.
-			getAI().reset();
+			m_onVictimMoved.disconnect();
+			controlled.stopAttack();
+
+			if (m_threat.empty())
+			{
+				// No victim found (threat list probably empty?). Warning: this will destroy
+				// the current state.
+				getAI().reset();
+			}
 		}
 	}
 
 	void CreatureAICombatState::chaseTarget(GameUnit &target)
 	{
-		float o = getControlled().getOrientation(), o2 = target.getOrientation();
-		math::Vector3 oldPosition(getControlled().getLocation()), oldTarget(m_target), newTarget(target.getLocation());
-		if (m_moveStart != 0 && m_moveEnd > m_moveStart)
-		{
-			// Interpolate positions
-			const float t = static_cast<float>(static_cast<double>(getCurrentTime() - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));
-			oldPosition = oldPosition.lerp(oldTarget, t);
-		}
+		auto currentLocation = getControlled().getMover().getCurrentLocation();
+		const auto &newTargetLocation = target.getLocation();
 
-		o = getControlled().getAngle(newTarget.x, newTarget.z);
 		const float distance =
-			sqrtf(
-				((oldPosition.x - newTarget.x) * (oldPosition.x - newTarget.x)) + 
-				((oldPosition.y - newTarget.y) * (oldPosition.y - newTarget.y)) + 
-				((oldPosition.z - newTarget.z) * (oldPosition.z - newTarget.z)));
+			(newTargetLocation - currentLocation).length();
 
 		// Check distance and whether we need to move
 		// TODO: If this creature is a ranged one or casts spells, it need special treatment
 		const float combatRange = getControlled().getMeleeReach() + target.getMeleeReach();
 		if (distance > combatRange)
 		{
-			GameTime moveTime = (distance / 7.5f) * constants::OneSecond;
-			m_moveStart = getCurrentTime();
-			m_moveEnd = m_moveStart + moveTime;
-
-			// Relocate unit without firing a signal
-			getControlled().relocate(oldPosition, o, false);
-
-			// Move
-			m_target = newTarget;
-
-			// Send move packet
-			TileIndex2D tile;
-			if (getControlled().getTileIndex(tile))
-			{
-				std::vector<char> buffer;
-				io::VectorSink sink(buffer);
-				game::Protocol::OutgoingPacket packet(sink);
-				game::server_write::monsterMove(packet, getControlled().getGuid(), oldPosition, newTarget, moveTime);
-
-				forEachSubscriberInSight(
-					getControlled().getWorldInstance()->getGrid(),
-					tile,
-					[&packet, &buffer](ITileSubscriber &subscriber)
-				{
-					subscriber.sendPacket(packet, buffer);
-				});
-			}
-
-			m_moveReached.setEnd(m_moveEnd);
-			if (!m_moveUpdated.running)
-				m_moveUpdated.setEnd(m_moveStart + constants::OneSecond / 4);
+			// Chase the target
+			getControlled().getMover().moveTo(newTargetLocation);
 		}
 	}
 
