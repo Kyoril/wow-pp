@@ -961,10 +961,12 @@ namespace wowpp
 					universe.post(work);
 				}, [](Aura &self)
 				{
-					auto &auras = self.getTarget().getAuras();
+					// Prevent aura from being deleted before being removed from the list
+					auto strong = self.shared_from_this();
 
+					// Remove aura from the list
+					auto &auras = self.getTarget().getAuras();
 					const auto position = findAuraInstanceIndex(auras, self);
-					//assert(position.is_initialized());
 					if (position.is_initialized())
 					{
 						auras.removeAura(*position);

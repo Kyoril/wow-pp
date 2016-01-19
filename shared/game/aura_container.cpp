@@ -118,11 +118,13 @@ namespace wowpp
 			}
 		}
 
-		// Add aura to the list of auras of this unit and apply it's effects
-		aura->applyAura();
-
 		// Store aura instance
+		auto *auraPtr = aura.get();
 		m_auras.push_back(std::move(aura));
+
+		// Add aura to the list of auras of this unit and apply it's effects
+		// Note: We use auraPtr here, since std::move will make aura invalid
+		auraPtr->applyAura();
 
 		return true;
 	}

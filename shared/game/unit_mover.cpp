@@ -192,23 +192,26 @@ namespace wowpp
 
 	void UnitMover::stopMovement()
 	{
-		// Cancel timers
-		m_moveReached.cancel();
-		m_moveUpdated.cancel();
+		if (isMoving())
+		{
+			// Cancel timers
+			m_moveReached.cancel();
+			m_moveUpdated.cancel();
 
-		// Update current location
-		auto currentLoc = getCurrentLocation();
-		const float dx = m_target.x - currentLoc.x;
-		const float dy = m_target.y - currentLoc.y;
-		float o = ::atan2(dy, dx);
-		o = (o >= 0) ? o : 2 * 3.1415927f + o;
+			// Update current location
+			auto currentLoc = getCurrentLocation();
+			const float dx = m_target.x - currentLoc.x;
+			const float dy = m_target.y - currentLoc.y;
+			float o = ::atan2(dy, dx);
+			o = (o >= 0) ? o : 2 * 3.1415927f + o;
 
-		// Update with grid notification
-		getMoved().relocate(currentLoc, o);
+			// Update with grid notification
+			getMoved().relocate(currentLoc, o);
 
-		// Fire this trigger only here, not when movement was updated,
-		// since only then we are really stopping
-		movementStopped();
+			// Fire this trigger only here, not when movement was updated,
+			// since only then we are really stopping
+			movementStopped();
+		}
 	}
 
 	math::Vector3 UnitMover::getCurrentLocation() const

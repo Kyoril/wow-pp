@@ -1576,12 +1576,12 @@ namespace wowpp
 		if (wasStunned && !m_isStunned)
 		{
 			// We are no longer stunned
-			ILOG("NO LONGER STUNNED!");
+			stunStateChanged(false);
 		}
 		else if(!wasStunned && m_isStunned)
 		{
 			// We are now stunned
-			ILOG("STUNNED!");
+			stunStateChanged(true);
 		}
 	}
 
@@ -1591,11 +1591,11 @@ namespace wowpp
 		m_isRooted = m_auras.hasAura(game::aura_type::ModRoot);
 		if (wasRooted && !m_isRooted)
 		{
-			ILOG("NO LONGER ROOTED!");
+			rootStateChanged(false);
 		}
 		else if (!wasRooted && m_isRooted)
 		{
-			ILOG("ROOTED!");
+			rootStateChanged(true);
 		}
 	}
 
