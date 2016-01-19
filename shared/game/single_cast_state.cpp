@@ -990,8 +990,6 @@ namespace wowpp
 					{
 						auras.removeAura(*position);
 					}
-
-					strong->misapplyAura();
 				});
 
 				// TODO: Dimishing return and custom durations
