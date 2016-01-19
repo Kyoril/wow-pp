@@ -174,6 +174,58 @@ namespace wowpp
 		resists = m_resists[targetA][targetB];
 	}
 	
+	void AttackTable::checkSpecialMeleeAttackNoGlanceCritCrush(GameUnit* attacker, SpellTargetMap &targetMap, UInt8 school, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
+	{
+		UInt32 targetA = game::targets::UnitTargetEnemy;
+		UInt32 targetB = game::targets::None;
+		if (!checkIndex(targetA, targetB))
+		{
+			refreshTargets(*attacker, targetMap, targetA, targetB, 0.0f, 0.0f);
+			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
+
+			for (GameUnit* targetUnit : m_targets[targetA][targetB])
+			{
+				const bool targetLookingAtUs = targetUnit->isInArc(2.0f * 3.1415927f / 3.0f, attacker->getLocation().x, attacker->getLocation().y);
+				game::HitInfo hitInfo = game::hit_info::NormalSwing;
+				game::VictimState victimState = game::victim_state::Normal;
+				float attackTableRoll = hitTableDistribution(randomGenerator);
+				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school, false)) < 0.0f)
+				{
+					hitInfo = game::hit_info::Miss;
+				}
+				else if (targetUnit->isImmune(school))
+				{
+					victimState = game::victim_state::IsImmune;
+				}
+				else if ((targetLookingAtUs || targetUnit->getTypeId() != object_type::Character) && (attackTableRoll -= targetUnit->getDodgeChance(*attacker)) < 0.0f)
+				{
+					victimState = game::victim_state::Dodge;
+				}
+				else if (targetLookingAtUs && targetUnit->canParry() && (attackTableRoll -= targetUnit->getParryChance(*attacker)) < 0.0f)
+				{
+					victimState = game::victim_state::Parry;
+				}
+				else if (targetLookingAtUs && targetUnit->canBlock() && (attackTableRoll -= targetUnit->getBlockChance()) < 0.0f)
+				{
+					victimState = game::victim_state::Blocks;
+				}
+
+//				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(effect, *attacker));
+				m_resists[targetA][targetB].push_back(0.0f);
+				m_hitInfos[targetA][targetB].push_back(hitInfo);
+				m_victimStates[targetA][targetB].push_back(victimState);
+		
+				attacker->doneMeleeAttack(targetUnit, victimState);
+				targetUnit->takenMeleeAttack(attacker, victimState);
+			}
+		}
+		
+		targets = m_targets[targetA][targetB];
+		victimStates = m_victimStates[targetA][targetB];
+		hitInfos = m_hitInfos[targetA][targetB];
+		resists = m_resists[targetA][targetB];
+	}
+	
 	void AttackTable::checkRangedAttack(GameUnit* attacker, SpellTargetMap &targetMap, UInt8 school, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
 	{
 		
@@ -243,7 +295,7 @@ namespace wowpp
 		resists = m_resists[targetA][targetB];
 	}
 	
-	void AttackTable::checkNonBinarySpell(GameUnit* attacker, SpellTargetMap &targetMap, const proto::SpellEntry &spell, const proto::SpellEffect &effect, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
+	void AttackTable::checkSpell(GameUnit* attacker, SpellTargetMap &targetMap, const proto::SpellEntry &spell, const proto::SpellEffect &effect, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
 	{
 		UInt32 targetA = effect.targeta();
 		UInt32 targetB = effect.targetb();
@@ -283,7 +335,7 @@ namespace wowpp
 		resists = m_resists[targetA][targetB];
 	}
 	
-	void AttackTable::checkNonBinarySpellNoCrit(GameUnit* attacker, SpellTargetMap &targetMap, const proto::SpellEntry &spell, const proto::SpellEffect &effect, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
+	void AttackTable::checkSpellNoCrit(GameUnit* attacker, SpellTargetMap &targetMap, const proto::SpellEntry &spell, const proto::SpellEffect &effect, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
 	{
 		UInt32 targetA = effect.targeta();
 		UInt32 targetB = effect.targetb();

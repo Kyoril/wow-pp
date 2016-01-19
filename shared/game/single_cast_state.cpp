@@ -529,7 +529,7 @@ namespace wowpp
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
-		m_attackTable.checkNonBinarySpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+		m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 		
 		for (int i=0; i<targets.size(); i++)
 		{
@@ -927,7 +927,7 @@ namespace wowpp
 		bool isNegative = false;	//TODO check it
 		
 		if (isNegative) {
-			m_attackTable.checkNonBinarySpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//DoT
+			m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//DoT
 		}
 		else
 		{
@@ -1233,16 +1233,16 @@ namespace wowpp
 
 	void SingleCastState::spellEffectEnergize(const proto::SpellEffect &effect)
 	{
+		Int32 powerType = effect.miscvaluea();
+		if (powerType < 0 || powerType > 5)
+			return;
+		
 		GameUnit &caster = m_cast.getExecuter();
 		std::vector<GameUnit*> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);		//Buff, HoT
-		
-		Int32 powerType = effect.miscvaluea();
-		if (powerType < 0 || powerType > 5)
-			return;
 
 		for (int i=0; i<targets.size(); i++)
 		{
@@ -1278,7 +1278,7 @@ namespace wowpp
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
-		m_attackTable.checkNonBinarySpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+		m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 		
 		for (int i=0; i<targets.size(); i++)
 		{
