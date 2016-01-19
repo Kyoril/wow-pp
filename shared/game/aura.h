@@ -50,6 +50,10 @@ namespace wowpp
 		GameUnit *getCaster() { return m_caster; }
 		/// Applies this aura and initializes everything.
 		void applyAura();
+		/// This method is the counterpart of applyAura(). It exists so that
+		/// handleModifier(false) is not called in the destructor of the aura, since this causes crashes if
+		/// somehow the AuraContainer is accessed.
+		void misapplyAura();
 		/// Executes the aura modifier and applies or removes the aura effects to/from the target.
 		void handleModifier(bool apply);
 		/// 

@@ -963,6 +963,7 @@ namespace wowpp
 				{
 					// Prevent aura from being deleted before being removed from the list
 					auto strong = self.shared_from_this();
+					strong->misapplyAura();
 
 					// Remove aura from the list
 					auto &auras = self.getTarget().getAuras();

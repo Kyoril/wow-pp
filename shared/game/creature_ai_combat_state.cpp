@@ -94,11 +94,7 @@ namespace wowpp
 		});
 		m_onRootChanged = getControlled().rootStateChanged.connect([this](bool rooted)
 		{
-			// If we are no longer rooted, update victim again
-			if (!rooted)
-			{
-				updateVictim();
-			}
+			updateVictim();
 		});
 
 		// Process aggro event
@@ -230,12 +226,23 @@ namespace wowpp
 		auto &controlled = getControlled();
 		auto *victim = controlled.getVictim();
 
+		bool rooted = controlled.isRooted();
+
 		// Now, determine the victim with the highest threat value
 		float highestThreat = -1.0f;
 		GameUnit *newVictim = nullptr;
 		for (auto &entry : m_threat)
 		{
-			if (entry.second.amount > highestThreat)
+			bool isInRange = true;
+
+			// If we are rooted, we need to check for nearby targets to start attacking them
+			if (rooted)
+			{
+				isInRange = 
+					(controlled.getDistanceTo(*entry.second.threatener, true) <= entry.second.threatener->getMeleeReach() + controlled.getMeleeReach());
+			}
+
+			if (entry.second.amount > highestThreat && isInRange)
 			{
 				newVictim = entry.second.threatener;
 				highestThreat = entry.second.amount;
@@ -257,9 +264,15 @@ namespace wowpp
 		}
 		else if (!newVictim)
 		{
-			// No victim found (threat list probably empty?). Warning: this will destroy
-			// the current state.
-			getAI().reset();
+			m_onVictimMoved.disconnect();
+			controlled.stopAttack();
+
+			if (m_threat.empty())
+			{
+				// No victim found (threat list probably empty?). Warning: this will destroy
+				// the current state.
+				getAI().reset();
+			}
 		}
 	}
 

@@ -64,18 +64,6 @@ namespace wowpp
 
 	Aura::~Aura()
 	{
-		// Cancel countdowns (if running)
-		m_tickCountdown.cancel();
-		m_expireCountdown.cancel();
-
-		// Remove aura slot
-		if (m_slot != 0xFF)
-		{
-			m_target.setUInt32Value(unit_fields::Aura + m_slot, 0);
-		}
-
-		// Remove aura modifier from target
-		handleModifier(false);
 	}
 	
 	void Aura::setBasePoints(Int32 basePoints) {
@@ -1083,6 +1071,21 @@ namespace wowpp
 
 		// Apply modifiers now
 		handleModifier(true);
+	}
+
+	void Aura::misapplyAura()
+	{
+		// Cancel countdowns (if running)
+		m_tickCountdown.cancel();
+		m_expireCountdown.cancel();
+
+		// Remove aura slot
+		if (m_slot != 0xFF)
+		{
+			m_target.setUInt32Value(unit_fields::Aura + m_slot, 0);
+		}
+
+		handleModifier(false);
 	}
 
 	void Aura::startPeriodicTimer()
