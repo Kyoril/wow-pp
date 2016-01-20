@@ -1064,6 +1064,27 @@ namespace wowpp
 		}
 	}
 
+	void SingleCastState::spellEffectBind(const proto::SpellEffect &effect)
+	{
+		GameUnit &caster = m_cast.getExecuter();
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		
+		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+		
+		for (int i=0; i<targets.size(); i++)
+		{
+			GameUnit* targetUnit = targets[i];
+			if (targetUnit->getTypeId() == object_type::Character)
+			{
+				GameCharacter *character = dynamic_cast<GameCharacter*>(targetUnit);
+				character->setHome(caster.getMapId(), caster.getLocation(), caster.getOrientation());
+			}
+		}
+	}
+
 	void SingleCastState::applyAllEffects()
 	{
 		// Make sure that this isn't destroyed during the effects
@@ -1087,6 +1108,9 @@ namespace wowpp
 				break;
 			case se::Heal:
 				spellEffectHeal(effect);
+				break;
+			case se::Bind:
+				spellEffectBind(effect);
 				break;
 			case se::Proficiency:
 				spellEffectProficiency(effect);

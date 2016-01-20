@@ -1279,7 +1279,7 @@ namespace wowpp
 				InstantKill				= 1,
 				SchoolDamage			= 2,
 				Dummy					= 3,
-				PortalTeleport			= 4,
+				PortalTeleport			= 4,	// not used
 				TeleportUnits			= 5,
 				ApplyAura				= 6,
 				EnvironmentalDamage		= 7,

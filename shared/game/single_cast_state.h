@@ -68,6 +68,7 @@ namespace wowpp
 		void spellEffectApplyAura(const proto::SpellEffect &effect);
 		void spellEffectDrainPower(const proto::SpellEffect &effect);
 		void spellEffectHeal(const proto::SpellEffect &effect);
+		void spellEffectBind(const proto::SpellEffect &effect);
 		void spellEffectWeaponDamageNoSchool(const proto::SpellEffect &effect);
 		void spellEffectCreateItem(const proto::SpellEffect &effect);
 		void spellEffectEnergize(const proto::SpellEffect &effect);
