@@ -136,7 +136,11 @@ namespace wowpp
 		using std::swap;
 
 		swap(m_auras.back(), m_auras[index]);
+		
+		auto strongAura = m_auras.back();
 		m_auras.pop_back();
+
+		strongAura->misapplyAura();
 	}
 
 	size_t AuraContainer::findAura(Aura &aura, size_t begin)
@@ -182,7 +186,7 @@ namespace wowpp
 			(*i)->onForceRemoval();
 		}
 
-		m_auras.erase(newEnd, std::end(m_auras));
+		//m_auras.erase(newEnd, std::end(m_auras));
 	}
 
 	bool AuraContainer::hasAura(game::AuraType type) const

@@ -990,8 +990,6 @@ namespace wowpp
 					{
 						auras.removeAura(*position);
 					}
-
-					strong->misapplyAura();
 				});
 
 				// TODO: Dimishing return and custom durations
@@ -1189,7 +1187,8 @@ namespace wowpp
 		}
 		else if (m_spell.costpct() > 0)
 		{
-			switch (m_spell.powertype())
+            auto powerType = static_cast<game::PowerType>(m_spell.powertype());
+			switch (powerType)
 			{
 				case game::power_type::Health:
 					totalCost = m_cast.getExecuter().getUInt32Value(unit_fields::BaseHealth) * m_spell.costpct() / 100;

@@ -1022,7 +1022,6 @@ namespace wowpp
 
 		// Get the cast time of this spell
 		Int64 castTime = spell->casttime();
-		DLOG("Player casts spell " << spellId << ": " << spell->name());
 
 		// Spell cast logic
 		sender.getCharacter()->castSpell(
@@ -1184,12 +1183,14 @@ namespace wowpp
 		const auto *spell = m_project.spells.getById(spellId);
 		if (!spell)
 		{
+			WLOG("Unknown spell - can't cancel aura");
 			return;
 		}
 
 		// Check if that spell aura can be cancelled
 		if ((spell->attributes(0) & game::spell_attributes::CantCancel) != 0)
 		{
+			WLOG("Aura of spell " << spell->id() << " - " << spell->name() << " can't be canceled!");
 			return;
 		}
 

@@ -507,7 +507,6 @@ namespace wowpp
 		{
 			m_target.setUInt32Value(unit_fields::DisplayId, m_target.getUInt32Value(unit_fields::NativeDisplayId));
 			m_target.setByteValue(unit_fields::Bytes0, 3, m_target.getClassEntry()->powertype());
-
 			m_target.setByteValue(unit_fields::Bytes2, 3, 0);
 		}
 
@@ -537,34 +536,19 @@ namespace wowpp
 			return;
 
 		auto strongUnit = m_target.shared_from_this();
-		std::weak_ptr<GameObject> weakUnit(strongUnit);
-
-		if (spell1 != 0 || spell2 != 0)
+		if (apply)
 		{
-			world->getUniverse().post([apply, spell1, spell2, weakUnit]()
-			{
-				if (auto ptr = weakUnit.lock())
-				{
-					GameUnit *unit = dynamic_cast<GameUnit*>(ptr.get());
-					if (unit)
-					{
-						if (apply)
-						{
-							SpellTargetMap targetMap;
-							targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
-							targetMap.m_unitTarget = unit->getGuid();
+			SpellTargetMap targetMap;
+			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+			targetMap.m_unitTarget = m_target.getGuid();
 
-							if (spell1 != 0) unit->castSpell(targetMap, spell1, -1, 0, true);
-							if (spell2 != 0) unit->castSpell(targetMap, spell2, -1, 0, true);
-						}
-						else
-						{
-							if (spell1 != 0) unit->getAuras().removeAllAurasDueToSpell(spell1);
-							if (spell2 != 0) unit->getAuras().removeAllAurasDueToSpell(spell2);
-						}
-					}
-				}
-			});
+			if (spell1 != 0) m_target.castSpell(targetMap, spell1, -1, 0, true);
+			if (spell2 != 0) m_target.castSpell(targetMap, spell2, -1, 0, true);
+		}
+		else
+		{
+			if (spell1 != 0) m_target.getAuras().removeAllAurasDueToSpell(spell1);
+			if (spell2 != 0) m_target.getAuras().removeAllAurasDueToSpell(spell2);
 		}
 	}
 	
