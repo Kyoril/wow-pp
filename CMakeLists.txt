@@ -69,10 +69,12 @@ project(WoW)
 	include_directories(${PROJECT_BINARY_DIR})
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.h.in ${PROJECT_BINARY_DIR}/version.h @ONLY)
 	
+	include_directories (${CMAKE_BINARY_DIR})
+
 	# Enable C++14 if needed
 	if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 		list(APPEND CMAKE_CXX_FLAGS "-std=c++11 -stdlib=libc++")
-		list(APPEND CMAKE_C_FLAGS "-std=c++11 -stdlib=libc++")
+		#list(APPEND CMAKE_C_FLAGS "-std=c++11 -stdlib=libc++")
 		if(APPLE)
 			set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++11")
 			set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")

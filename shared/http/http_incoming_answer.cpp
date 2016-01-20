@@ -151,7 +151,7 @@ namespace wowpp
 					return receive_state::Incomplete;
 				}
 
-				const auto iCodeNumber = std::atoi(code.c_str());
+				const auto iCodeNumber = atoi(code.c_str());
 				switch (iCodeNumber)
 				{
 				case 200:
