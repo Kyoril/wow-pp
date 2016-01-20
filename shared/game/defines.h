@@ -33,7 +33,6 @@ namespace wowpp
 	{
 		typedef float Distance;
 		typedef Vector<Distance, 2> Point;
-		typedef Vector<Distance, 3> Position;
 
 		inline Vector<Distance, 2> planar(const math::Vector3 &point)
 		{

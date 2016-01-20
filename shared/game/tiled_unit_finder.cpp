@@ -84,8 +84,7 @@ namespace wowpp
 		m_units.erase(i);
 	}
 
-	void TiledUnitFinder::updatePosition(GameUnit &updated,
-	                                        const game::Position &previousPos)
+	void TiledUnitFinder::updatePosition(GameUnit &updated, const math::Vector3 &previousPos)
 	{
 	}
 

@@ -58,7 +58,7 @@ namespace wowpp
 		/// 
 		/// @param updated
 		/// @param previousPos 
-		virtual void updatePosition(GameUnit &updated, const game::Position &previousPos) = 0;
+		virtual void updatePosition(GameUnit &updated, const math::Vector3 &previousPos) = 0;
 		/// 
 		/// @param shape 
 		/// @param resultHandler
