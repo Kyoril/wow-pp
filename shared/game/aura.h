@@ -106,6 +106,12 @@ namespace wowpp
 		void handleModRoot(bool apply);
 		/// 29
 		void handleModStat(bool apply);
+		/// 31, 33, 129, 171
+		void handleRunSpeedModifier(bool apply);
+		/// 33, 58, 171
+		void handleSwimSpeedModifier(bool apply);
+		/// 33, 171, 206, 208, 210
+		void handleFlySpeedModifier(bool apply);
 		/// 36
 		void handleModShapeShift(bool apply);
 		/// 69

@@ -394,16 +394,16 @@ namespace wowpp
 				writer
 					<< io::write<NetUInt32>(0);
 
-				// Speeds8
+				// Speeds
 				writer
-					<< io::write<float>(2.5f)				// Walk
-					<< io::write<float>(7.0f)				// Run
-					<< io::write<float>(4.5f)				// Backwards
-					<< io::write<NetUInt32>(0x40971c71)		// Swim
-					<< io::write<NetUInt32>(0x40200000)		// Swim Backwards
-					<< io::write<float>(7.0f)				// Fly
-					<< io::write<float>(4.5f)				// Fly Backwards
-					<< io::write<float>(3.1415927);			// Turn (radians / sec: PI)
+					<< io::write<float>(m_character->getSpeed(movement_type::Walk))					// Walk
+					<< io::write<float>(m_character->getSpeed(movement_type::Run))					// Run
+					<< io::write<float>(m_character->getSpeed(movement_type::Backwards))			// Backwards
+					<< io::write<NetUInt32>(m_character->getSpeed(movement_type::Swim))				// Swim
+					<< io::write<NetUInt32>(m_character->getSpeed(movement_type::SwimBackwards))	// Swim Backwards
+					<< io::write<float>(m_character->getSpeed(movement_type::Flight))				// Fly
+					<< io::write<float>(m_character->getSpeed(movement_type::FlightBackwards))		// Fly Backwards
+					<< io::write<float>(m_character->getSpeed(movement_type::Turn));				// Turn (radians / sec: PI)
 			}
 
 			// Lower-GUID update?

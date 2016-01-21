@@ -105,6 +105,25 @@ namespace wowpp
 		case aura::ModStat:
 			handleModStat(apply);
 			break;
+		case aura::ModIncreaseSpeed:
+		case aura::ModSpeedAlways:
+			handleRunSpeedModifier(apply);
+			break;
+		case aura::ModFlightSpeed:
+		case aura::ModFlightSpeedStacking:
+		case aura::ModFlightSpeedNotStacking:
+			handleFlySpeedModifier(apply);
+			break;
+		case aura::ModIncreaseSwimSpeed:
+			handleSwimSpeedModifier(apply);
+			break;
+		case aura::ModDecreaseSpeed:
+		case aura::ModSpeedNotStack:
+			handleRunSpeedModifier(apply);
+			handleSwimSpeedModifier(apply);
+			handleFlySpeedModifier(apply);
+			break;
+
 		case aura::MechanicImmunity:
 			handleMechanicImmunity(apply);
 			break;
@@ -419,6 +438,21 @@ namespace wowpp
 				m_target.updateModifierValue(GameUnit::getUnitModByStat(i), unit_mod_type::TotalValue, m_basePoints, apply);
 			}
 		}
+	}
+
+	void Aura::handleRunSpeedModifier(bool apply)
+	{
+		m_target.notifySpeedChanged(movement_type::Run);
+	}
+
+	void Aura::handleSwimSpeedModifier(bool apply)
+	{
+		m_target.notifySpeedChanged(movement_type::Swim);
+	}
+
+	void Aura::handleFlySpeedModifier(bool apply)
+	{
+		m_target.notifySpeedChanged(movement_type::Flight);
 	}
 
 	void Aura::handleModShapeShift(bool apply)

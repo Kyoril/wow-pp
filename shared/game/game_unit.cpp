@@ -56,6 +56,9 @@ namespace wowpp
 		m_values.resize(unit_fields::UnitFieldCount);
 		m_valueBitset.resize((unit_fields::UnitFieldCount + 31) / 32);
 
+		// Reset unit speed
+		m_speedBonus.fill(1.0f);
+
 		// Setup unit mover
 		m_mover = make_unique<UnitMover>(*this);
 
@@ -1640,6 +1643,114 @@ namespace wowpp
 		{
 			m_mover->stopMovement();
 			rootStateChanged(true);
+		}
+	}
+
+	void GameUnit::notifySpeedChanged(MovementType type)
+	{
+		const float oldBonus = m_speedBonus[type];
+
+		float speed = 1.0f;
+
+		// Apply speed buffs
+		{
+			Int32 mainSpeedMod = 0;
+			float stackBonus = 1.0f, nonStackBonus = 1.0f;
+			switch (type)
+			{
+				case movement_type::Run:
+					mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModIncreaseSpeed);
+					stackBonus = m_auras.getTotalMultiplier(game::aura_type::ModSpeedAlways);
+					nonStackBonus = (100.0f + static_cast<float>(m_auras.getMaximumBasePoints(game::aura_type::ModSpeedNotStack))) / 100.0f;
+					break;
+				case movement_type::Swim:
+					mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModIncreaseSwimSpeed);
+					break;
+				case movement_type::Flight:
+					mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModFlightSpeed);
+					stackBonus = m_auras.getTotalMultiplier(game::aura_type::ModFlightSpeedStacking);
+					nonStackBonus = (100.0f + static_cast<float>(m_auras.getMaximumBasePoints(game::aura_type::ModFlightSpeedNotStacking))) / 100.0f;
+					break;
+			}
+
+			float bonus = nonStackBonus > stackBonus ? nonStackBonus : stackBonus;
+			speed = mainSpeedMod ? bonus * (100.0f + static_cast<float>(mainSpeedMod)) / 100.0f : bonus;
+		}
+
+		// Apply slow buffs
+		{
+			Int32 slow = m_auras.getMinimumBasePoints(game::aura_type::ModDecreaseSpeed);
+			Int32 slowNonStack = m_auras.getMinimumBasePoints(game::aura_type::ModSpeedNotStack);
+			slow = slow < slowNonStack ? slow : slowNonStack;
+
+			// Slow has to be <= 0
+			assert(slow <= 0);
+			if (slow)
+			{
+				speed += (speed * static_cast<float>(slow) / 100.0f);
+			}
+		}
+
+		if (oldBonus != speed)
+		{
+			// Now store the speed bonus value
+			m_speedBonus[type] = speed;
+
+			// Send packets to all listeners around
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket packet(sink);
+			game::server_write::changeSpeed(packet, type, getGuid(), speed);
+
+			// Notify all tile subscribers about this event
+			TileIndex2D tileIndex;
+			if (getTileIndex(tileIndex))
+			{
+				forEachSubscriberInSight(
+					m_worldInstance->getGrid(),
+					tileIndex,
+					[&packet, &buffer](ITileSubscriber &subscriber)
+				{
+					subscriber.sendPacket(packet, buffer);
+				});
+			}
+
+			// Notify the unit mover about this change
+			m_mover->onMoveSpeedChanged(type);
+
+			// Raise signal
+			speedChanged(type);
+		}
+	}
+
+	float GameUnit::getSpeed(MovementType type) const
+	{
+		const float baseSpeed = getBaseSpeed(type);
+		return baseSpeed * m_speedBonus[type];
+	}
+
+	float GameUnit::getBaseSpeed(MovementType type) const
+	{
+		switch (type)
+		{
+			case movement_type::Walk:
+				return 2.5f;
+			case movement_type::Run:
+				return 7.0f;
+			case movement_type::Backwards:
+				return 4.5f;
+			case movement_type::Swim:
+				return 4.75f;
+			case movement_type::SwimBackwards:
+				return 2.5f;
+			case movement_type::Turn:
+				return 3.1415927f;
+			case movement_type::Flight:
+				return 7.0f;
+			case movement_type::FlightBackwards:
+				return 4.5f;
+			default:
+				return 0.0f;
 		}
 	}
 

@@ -25,6 +25,7 @@
 #include "common/timer_queue.h"
 #include "common/countdown.h"
 #include "math/vector3.h"
+#include "movement_info.h"
 #include <boost/signals2.hpp>
 
 namespace wowpp
@@ -53,9 +54,14 @@ namespace wowpp
 		/// 
 		virtual ~UnitMover();
 
+		/// Called when the units movement speed changed.
+		void onMoveSpeedChanged(MovementType moveType);
 		/// Moves this unit to a specific location if possible. This does not teleport
 		/// the unit, but makes it walk / fly / swim to the target.
 		bool moveTo(const math::Vector3 &target);
+		/// Moves this unit to a specific location if possible. This does not teleport
+		/// the unit, but makes it walk / fly / swim to the target.
+		bool moveTo(const math::Vector3 &target, float customSpeed);
 		/// Stops the current movement if any.
 		void stopMovement();
 		/// Gets the new movement target.
@@ -73,5 +79,6 @@ namespace wowpp
 		Countdown m_moveReached, m_moveUpdated;
 		math::Vector3 m_start, m_target;
 		GameTime m_moveStart, m_moveEnd;
+		bool m_customSpeed;
 	};
 }

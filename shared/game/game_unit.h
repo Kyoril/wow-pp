@@ -25,6 +25,7 @@
 #include "game/defines.h"
 #include "common/timer_queue.h"
 #include "common/countdown.h"
+#include "movement_info.h"
 #include "spell_cast.h"
 #include "spell_target_map.h"
 #include "aura.h"
@@ -371,6 +372,8 @@ namespace wowpp
 		boost::signals2::signal<void(bool)> rootStateChanged;
 		/// Fired when this unit gets stunned or unstunned.
 		boost::signals2::signal<void(bool)> stunStateChanged;
+		/// Fired when the movement speed of this unit changes.
+		boost::signals2::signal<void(MovementType)> speedChanged;
 
 	public:
 
@@ -508,6 +511,9 @@ namespace wowpp
 		bool canMove() const { return isAlive() && !isStunned() && !isRooted(); }
 		void notifyStunChanged();
 		void notifyRootChanged();
+		void notifySpeedChanged(MovementType type);
+		float getSpeed(MovementType type) const;
+		float getBaseSpeed(MovementType type) const;
 
 		void addMechanicImmunity(UInt32 mechanic);
 		void removeMechanicImmunity(UInt32 mechanic);
@@ -576,7 +582,6 @@ namespace wowpp
 		void onRegeneration();
 		virtual void regenerateHealth() = 0;
 		void regeneratePower(game::PowerType power);
-//		void onAuraExpired(Aura &aura);
 		void onSpellCastEnded(bool succeeded);
 
 	private:
@@ -607,6 +612,7 @@ namespace wowpp
 		MechanicImmunitySet m_mechanicImmunity;
 		bool m_isStunned;
 		bool m_isRooted;
+		std::array<float, movement_type::Count> m_speedBonus;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameUnit const& object);

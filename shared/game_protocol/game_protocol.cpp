@@ -2716,6 +2716,55 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void changeSpeed(game::OutgoingPacket & out_packet, MovementType moveType, UInt64 guid, float speed)
+			{
+				switch (moveType)
+				{
+					case movement_type::Walk: out_packet.start(game::server_packet::WalkSpeedChange); break;
+					case movement_type::Run: out_packet.start(game::server_packet::RunSpeedChange); break;
+					case movement_type::Swim: out_packet.start(game::server_packet::SwimSpeedChange); break;
+					case movement_type::Flight: out_packet.start(game::server_packet::FlightSpeedChange); break;
+					case movement_type::Turn: out_packet.start(game::server_packet::TurnRateChange); break;
+					case movement_type::Backwards: out_packet.start(game::server_packet::RunBackSpeedChange); break;
+					case movement_type::SwimBackwards: out_packet.start(game::server_packet::SwimBackSpeedChange); break;
+					case movement_type::FlightBackwards: out_packet.start(game::server_packet::FlightBackSpeedChange); break;
+					default:
+						return;
+				}
+
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; guid != 0; ++i)
+					{
+						if (guid & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(guid & 0xFF);
+							++size;
+						}
+
+						guid >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+
+				out_packet 
+					<< io::write<NetUInt32>(0);
+				if (moveType == movement_type::Run)
+				{
+					out_packet
+						<< io::write<NetUInt8>(0);
+				}
+				out_packet
+					<< float(speed);
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read
