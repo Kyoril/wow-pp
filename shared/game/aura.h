@@ -128,6 +128,8 @@ namespace wowpp
 		void handleModTotalStatPercentage(bool apply);
 		/// 142
 		void handleModBaseResistancePct(bool apply);
+		/// 143
+		void handleModResistanceExclusive(bool apply);
 
 	protected:
 

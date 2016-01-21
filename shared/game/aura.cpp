@@ -120,9 +120,6 @@ namespace wowpp
 		case aura::ModResistance:
 			handleModResistance(apply);
 			break;
-		case aura::ModBaseResistancePct:
-			handleModBaseResistancePct(apply);
-			break;
 		case aura::PeriodicDamage:
 			handlePeriodicDamage(apply);
 			break;
@@ -161,6 +158,12 @@ namespace wowpp
 			break;
 		case aura::AddTargetTrigger:
 			//are added in applyAura
+			break;
+		case aura::ModBaseResistancePct:
+			handleModBaseResistancePct(apply);
+			break;
+		case aura::ModResistanceExclusive:
+			handleModResistanceExclusive(apply);
 			break;
 		default:
 //			WLOG("Unhandled aura type: " << m_effect.aura());
@@ -596,6 +599,11 @@ namespace wowpp
 		}
 	}
 	
+	void Aura::handleModResistanceExclusive(bool apply)
+	{
+		handleModResistance(apply);
+	}
+	
 	void Aura::handleTakenDamage(GameUnit * attacker)
 	{
 		
@@ -799,7 +807,7 @@ namespace wowpp
 			{
 				UInt32 school = m_spell.schoolmask();
 				Int32 damage = m_basePoints;
-				UInt32 resisted = damage * (m_target.getResiPercentage(m_effect, *m_caster) / 100.0f);
+				UInt32 resisted = damage * (m_target.getResiPercentage(school, *m_caster, false) / 100.0f);
 				UInt32 absorbed = m_target.consumeAbsorb(damage - resisted, m_spell.schoolmask());
 
 				// Reduce by armor if physical

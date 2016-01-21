@@ -1417,9 +1417,29 @@ namespace wowpp
 		}
 	}
 	
-	float GameUnit::getResiPercentage(const proto::SpellEffect &effect, GameUnit &attacker)
+	float GameUnit::getResiPercentage(UInt8 school, GameUnit &attacker, bool isBinary)
 	{
-		return 0.0f;
+		std::uniform_real_distribution<float> resiDistribution(0.0f, 99.9f);
+		UInt32 spellPen = 0;
+		UInt32 baseResi = getModifierValue(UnitMods(unit_mods::ResistanceStart + log2(school)), unit_mod_type::TotalValue);
+		UInt32 casterLevel = attacker.getLevel();
+		float effectiveResistance = baseResi + std::max((getLevel() - casterLevel) * 5.0f, 0.0f) - std::min(spellPen, baseResi);
+		if (isBinary)
+		{
+			float reductionPct = (effectiveResistance / (casterLevel * 5.0f)) * 75.0f;
+			if (resiDistribution(randomGenerator) > reductionPct)
+			{
+				return 0.0f;
+			}
+			else
+			{
+				return 100.0f;
+			}
+		}
+		else
+		{
+			return 0.0f;
+		}
 	}
 	
 	float GameUnit::getCritChance(GameUnit &attacker, UInt8 school)
@@ -1432,7 +1452,7 @@ namespace wowpp
 		UInt32 bonus = 0;
 		if (getTypeId() == object_type::Character)
 		{
-			bonus = getUInt32Value(character_fields::ModDamageDonePos + sqrt(school));
+			bonus = getUInt32Value(character_fields::ModDamageDonePos + log2(school));
 		}
 		return bonus;
 	}

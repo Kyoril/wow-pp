@@ -315,7 +315,7 @@ namespace wowpp
 					hitInfo = game::hit_info::CriticalHit;
 				}
 
-				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(effect, *attacker));
+				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(school, *attacker, false));
 				m_hitInfos[targetA][targetB].push_back(hitInfo);
 				m_victimStates[targetA][targetB].push_back(victimState);
 			}
@@ -351,7 +351,7 @@ namespace wowpp
 					victimState = game::victim_state::IsImmune;
 				}
 
-				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(effect, *attacker));
+				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(school, *attacker, true));
 				m_hitInfos[targetA][targetB].push_back(hitInfo);
 				m_victimStates[targetA][targetB].push_back(victimState);
 			}
