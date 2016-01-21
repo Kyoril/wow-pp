@@ -577,36 +577,7 @@ namespace wowpp
 						
 						if (hitInfos[i] == game::hit_info::Glancing)
 						{
-							bool attackerIsCaster = false;	//TODO check it
-							float attackerRating = getLevel() * 5.0f;	//TODO get real rating
-							float victimRating = targetUnit->getLevel() * 5.0f;
-							float ratingDiff = victimRating - attackerRating;
-							
-							float minFactor = 1.3f - (0.05f * ratingDiff);
-							if (attackerIsCaster)
-							{
-								minFactor -= 0.7f;
-								if (minFactor > 0.6f)
-									minFactor = 0.6f;
-							}
-							else
-							{
-								if (minFactor > 0.91f)
-									minFactor = 0.91f;
-							}
-							if (minFactor < 0.01f)
-								minFactor = 0.01f;
-							
-							float maxFactor = 1.2f - (0.03f * ratingDiff);
-							if (attackerIsCaster)
-								maxFactor -= 0.3f;
-							if (maxFactor < 0.2f)
-								maxFactor = 0.2f;
-							if (maxFactor > 0.99f)
-								maxFactor = 0.99f;
-							
-							std::uniform_real_distribution<float> glanceDice(minFactor, maxFactor);
-							totalDamage *= glanceDice(randomGenerator);
+							totalDamage *= 0.75f;	//TODO more detail
 						}
 						else if (victimStates[i] == game::victim_state::Blocks)
 						{
@@ -1377,13 +1348,9 @@ namespace wowpp
 	
 	float GameUnit::getGlancingChance(GameUnit &attacker)
 	{
-		UInt32 attackerLevel = attacker.getLevel();
-		UInt32 victimLevel = getLevel();
-		if (attacker.getTypeId() == wowpp::object_type::Character && this->getTypeId() == wowpp::object_type::Unit && attackerLevel <= victimLevel)
+		if (attacker.getTypeId() == wowpp::object_type::Character && this->getTypeId() == wowpp::object_type::Unit)
 		{
-			float attackerRating = attackerLevel * 5.0f;	//TODO get real rating
-			float victimRating = victimLevel * 5.0f;
-			return 10.0f + victimRating - attackerRating;
+			return 10.0f;
 		}
 		else
 		{
@@ -1393,26 +1360,15 @@ namespace wowpp
 	
 	float GameUnit::getBlockChance()
 	{
-		if (canBlock())
-		{
-			return 5.0f;
-		}
-		else
-		{
-			return 0.0f;
-		}
+		return 5.0f;
 	}
 	
 	float GameUnit::getCrushChance(GameUnit &attacker)
 	{
 		if (attacker.getTypeId() == wowpp::object_type::Unit)
 		{
-			float attackerRating = attacker.getLevel() * 5.0f;	//TODO get real rating
-			float victimRating = getLevel() * 5.0f;
-			float crushChance = (2.0f * std::abs(attackerRating - victimRating)) - 15.0f;
-			if (crushChance < 0.0f)
-				crushChance = 0.0f;
-			return crushChance;
+			//TODO only some boss mobs can crush
+			return 5.0f;
 		}
 		else
 		{
@@ -1700,7 +1656,7 @@ namespace wowpp
 			std::vector<char> buffer;
 			io::VectorSink sink(buffer);
 			game::Protocol::OutgoingPacket packet(sink);
-			game::server_write::changeSpeed(packet, type, getGuid(), speed);
+			game::server_write::changeSpeed(packet, type, getGuid(), speed * getBaseSpeed(type));
 
 			// Notify all tile subscribers about this event
 			TileIndex2D tileIndex;
