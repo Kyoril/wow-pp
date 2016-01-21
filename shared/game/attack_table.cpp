@@ -127,10 +127,6 @@ namespace wowpp
 				{
 					victimState = game::victim_state::Parry;
 				}
-				else if ((attackTableRoll -= targetUnit->getGlancingChance(*attacker)) < 0.0f)
-				{
-					hitInfo = game::hit_info::Glancing;
-				}
 				else if (targetLookingAtUs && targetUnit->canBlock() && (attackTableRoll -= targetUnit->getBlockChance()) < 0.0f)
 				{
 					victimState = game::victim_state::Blocks;

@@ -637,11 +637,7 @@ namespace wowpp
 				if (totalDamage < 0)	//avoid negative damage when blockValue is high
 					totalDamage = 0;
 
-				if (hitInfos[i] == game::hit_info::Glancing)
-				{
-					totalDamage *= 0.75f;	//TODO more detail
-				}
-				else if (victimStates[i] == game::victim_state::Blocks)
+				if (victimStates[i] == game::victim_state::Blocks)
 				{
 					UInt32 blockValue = 50;	//TODO get from m_victim
 					if (blockValue >= totalDamage)	//avoid negative damage when blockValue is high
@@ -1082,6 +1078,28 @@ namespace wowpp
 			}
 		}
 	}
+	
+	void SingleCastState::spellEffectQuestComplete(const proto::SpellEffect &effect)
+	{
+		GameUnit &caster = m_cast.getExecuter();
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		
+		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+		
+		UInt32 questId = effect.miscvaluea();
+		for (int i=0; i<targets.size(); i++)
+		{
+			GameUnit* targetUnit = targets[i];
+			if (targetUnit->getTypeId() == object_type::Character)
+			{
+				GameCharacter *character = dynamic_cast<GameCharacter*>(targetUnit);
+				// TODO complete quest with questId to character
+			}
+		}
+	}
 
 	void SingleCastState::applyAllEffects()
 	{
@@ -1109,6 +1127,9 @@ namespace wowpp
 				break;
 			case se::Bind:
 				spellEffectBind(effect);
+				break;
+			case se::QuestComplete:
+				spellEffectQuestComplete(effect);
 				break;
 			case se::Proficiency:
 				spellEffectProficiency(effect);
