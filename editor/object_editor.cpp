@@ -213,6 +213,11 @@ namespace wowpp
 				break;
 			}
 			item->setTextColor(0, textColor);
+
+			if (def.conditiontype())
+			{
+				item->setText(3, QString("COND %1: VAL1=%2 VAL2=%3").arg(def.conditiontype()).arg(def.conditionvala()).arg(def.conditionvalb()));
+			}
 		}
 
 		void ObjectEditor::onUnitSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
@@ -596,8 +601,8 @@ namespace wowpp
 
 			// Prepare the import task
 			ImportTask task;
-			task.countQuery = "SELECT COUNT(*) FROM `wowpp_creature_loot_template` WHERE `lootcondition` = 0 AND `active` != 0;";
-			task.selectQuery = "SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount` FROM `wowpp_creature_loot_template` WHERE `lootcondition` = 0  AND `active` != 0 ORDER BY `entry`, `groupid`;";
+			task.countQuery = "SELECT COUNT(*) FROM `wowpp_creature_loot_template` WHERE `active` != 0;";
+			task.selectQuery = "SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount`,`lootcondition`,`condition_value1`,`condition_value2` FROM `wowpp_creature_loot_template` WHERE `active` != 0 ORDER BY `entry`, `groupid`;";
 			task.beforeImport = [this]() {
 				// Remove old unit loot
 				for (int i = 0; i < m_application.getProject().units.getTemplates().entry_size(); ++i)
@@ -608,7 +613,7 @@ namespace wowpp
 				m_application.getProject().unitLoot.clear();
 			};
 			task.onImport = [this, &lastEntry, &lastGroup, &groupIndex](wowpp::MySQL::Row &row) -> bool {
-				UInt32 entry = 0, itemId = 0, groupId = 0, minCount = 0, maxCount = 0;
+				UInt32 entry = 0, itemId = 0, groupId = 0, minCount = 0, maxCount = 0, cond = 0, conda = 0, condb = 0;
 				float dropChance = 0.0f;
 				row.getField(0, entry);
 				row.getField(1, itemId);
@@ -616,6 +621,9 @@ namespace wowpp
 				row.getField(3, groupId);
 				row.getField(4, minCount);
 				row.getField(5, maxCount);
+				row.getField(6, cond);
+				row.getField(7, conda);
+				row.getField(8, condb);
 
 				// Find referenced item
 				const auto *itemEntry = m_application.getProject().items.getById(itemId);
@@ -682,6 +690,9 @@ namespace wowpp
 				def->set_maxcount(maxCount);
 				def->set_dropchance(dropChance);
 				def->set_isactive(true);
+				def->set_conditiontype(cond);
+				def->set_conditionvala(conda);
+				def->set_conditionvalb(condb);
 
 				return true;
 			};
