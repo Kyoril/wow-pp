@@ -39,6 +39,7 @@ namespace wowpp
 		, m_moveUpdated(unit.getTimers())
 		, m_moveStart(0)
 		, m_moveEnd(0)
+		, m_customSpeed(false)
 	{
 		m_moveUpdated.ended.connect([this]()
 		{
@@ -100,9 +101,28 @@ namespace wowpp
 	{
 	}
 
+	void UnitMover::onMoveSpeedChanged(MovementType moveType)
+	{
+		if (!m_customSpeed && 
+			moveType == movement_type::Run &&
+			m_moveReached.running)
+		{
+			// Restart move command
+			moveTo(m_target);
+		}
+	}
+
 	bool UnitMover::moveTo(const math::Vector3 & target)
 	{
+		bool result = moveTo(target, m_unit.getSpeed(movement_type::Run));
+		m_customSpeed = false;
+		return result;
+	}
+
+	bool UnitMover::moveTo(const math::Vector3 & target, float customSpeed)
+	{
 		// Get current location
+		m_customSpeed = true;
 		auto currentLoc = getCurrentLocation();
 
 		// Do we really need to move?
@@ -145,7 +165,7 @@ namespace wowpp
 
 		// Calculate time of arrival
 		// TODO: take movement speed into account
-		GameTime moveTime = (distance / 7.5f) * constants::OneSecond;
+		GameTime moveTime = (distance / customSpeed) * constants::OneSecond;
 		m_moveEnd = m_moveStart + moveTime;
 
 		// Send movement packet

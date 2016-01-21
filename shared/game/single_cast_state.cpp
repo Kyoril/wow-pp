@@ -41,6 +41,7 @@
 #include "universe.h"
 #include "aura.h"
 #include "proto_data/faction_helper.h"
+#include "unit_mover.h"
 #include <random>
 
 namespace wowpp
@@ -1499,7 +1500,20 @@ namespace wowpp
 	void wowpp::SingleCastState::spellEffectCharge(const proto::SpellEffect & effect)
 	{
 		Int32 basePoints = calculateEffectBasePoints(effect);
-		DLOG("CHARGE (POINTS: " << basePoints << ")");
+
+		GameUnit &caster = m_cast.getExecuter();
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+
+		if (!targets.empty())
+		{
+			GameUnit &firstTarget = *targets[0];
+			auto &mover = caster.getMover();
+			mover.moveTo(firstTarget.getLocation(), 25.0f);
+		}
 	}
 
 	void wowpp::SingleCastState::spellEffectScript(const proto::SpellEffect & effect)

@@ -268,6 +268,66 @@ namespace wowpp
 		return absorbed;
 	}
 
+	Int32 AuraContainer::getMaximumBasePoints(game::AuraType type) const
+	{
+		Int32 treshold = 0;
+
+		for (auto &it : m_auras)
+		{
+			if (it->getEffect().aura() == type &&
+				it->getBasePoints() > treshold)
+			{
+				treshold = it->getBasePoints();
+			}
+		}
+
+		return treshold;
+	}
+
+	Int32 AuraContainer::getMinimumBasePoints(game::AuraType type) const
+	{
+		Int32 treshold = 0;
+
+		for (auto &it : m_auras)
+		{
+			if (it->getEffect().aura() == type &&
+				it->getBasePoints() < treshold)
+			{
+				treshold = it->getBasePoints();
+			}
+		}
+
+		return treshold;
+	}
+
+	Int32 AuraContainer::getTotalBasePoints(game::AuraType type) const
+	{
+		Int32 treshold = 0;
+		for (auto &it : m_auras)
+		{
+			if (it->getEffect().aura() == type)
+			{
+				treshold += it->getBasePoints();
+			}
+		}
+
+		return treshold;
+	}
+
+	float AuraContainer::getTotalMultiplier(game::AuraType type) const
+	{
+		float multiplier = 1.0f;
+		for (auto &it : m_auras)
+		{
+			if (it->getEffect().aura() == type)
+			{
+				multiplier *= (100.0f + static_cast<float>(it->getBasePoints())) / 100.0f;
+			}
+		}
+
+		return multiplier;
+	}
+
 	void AuraContainer::removeAllAurasDueToSpell(UInt32 spellId)
 	{
 		size_t index = 0;

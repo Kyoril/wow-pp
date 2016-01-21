@@ -47,6 +47,10 @@ namespace wowpp
 		size_t getSize() const { return m_auras.size(); }
 		bool hasAura(game::AuraType type) const;
 		UInt32 consumeAbsorb(UInt32 damage, UInt8 school);
+		Int32 getMaximumBasePoints(game::AuraType type) const;
+		Int32 getMinimumBasePoints(game::AuraType type) const;
+		Int32 getTotalBasePoints(game::AuraType type) const;
+		float getTotalMultiplier(game::AuraType type) const;
 
 	private:
 

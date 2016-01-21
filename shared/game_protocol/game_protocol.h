@@ -261,7 +261,15 @@ namespace wowpp
 				UpdateObject				= 0x0A9,
 				DestroyObject				= 0x0AA,
 				MoveTeleportAck				= 0x0C7,
+				SetRunSpeed					= 0x0CD,
+				SetRunBackSpeed				= 0x0CF,
+				SetWalkSpeed				= 0x0D1,
+				SetSwimSpeed				= 0x0D3,
+				SetSwimBackSpeed			= 0x0D5,
 				MonsterMove					= 0x0DD,
+				RunSpeedChange				= 0x0E2,
+				RunBackSpeedChange			= 0x0E4,
+				SwimSpeedChange				= 0x0E6,
 				ForceMoveRoot				= 0x0E8,
 				ForceMoveUnroot				= 0x0EA,
 				MoveRoot					= 0x0EC,
@@ -331,12 +339,19 @@ namespace wowpp
 				InitWorldStates				= 0x2C2,
 				CharRename					= 0x2C8,
 				PlaySound					= 0x2D2,
+				WalkSpeedChange				= 0x2DA,
+				SwimBackSpeedChange			= 0x2DC,
+				TurnRateChange				= 0x2DE,
 				AddonInfo					= 0x2EF,
 				PartyMemberStatsFull		= 0x2F2,
 				RaidTargetUpdate			= 0x321,
 				RaidReadyCheck				= 0x322,
 				SetDungeonDifficulty		= 0x329,
 				Motd						= 0x33D,
+				SetFlightSpeed				= 0x37E,
+				SetFlightBackSpeed			= 0x380,
+				FlightSpeedChange			= 0x381,
+				FlightBackSpeedChange		= 0x383,
 				TimeSyncReq					= 0x390,
 				UpdateComboPoints			= 0x39D,
 				SetExtraAuraInfo			= 0x3A4,
@@ -344,7 +359,7 @@ namespace wowpp
 				RaidReadyCheckConfirm		= 0x3AE,
 				RaidReadyCheckFinished		= 0x3C5,
 				FeatureSystemStatus			= 0x3C8,
-				UnlearnSpells				= 0x41D,	
+				UnlearnSpells				= 0x41D
 			};
 		}
 
@@ -1794,6 +1809,13 @@ namespace wowpp
 				game::ResponseCode response,
 				UInt64 unitGuid,
 				const String &newName
+				);
+
+			void changeSpeed(
+				game::OutgoingPacket &out_packet,
+				MovementType moveType,
+				UInt64 guid,
+				float speed
 				);
 		};
 	}

@@ -85,6 +85,25 @@ namespace wowpp
 		m_onTeleport = m_character->teleport.connect(
 			std::bind(&Player::onTeleport, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
+		auto onRootOrStunUpdate = [this](bool flag) {
+			if (flag || m_character->isRooted() || m_character->isStunned())
+			{
+				// Root the character
+				m_character->addFlag(unit_fields::UnitFlags, 0x00040000);
+				sendProxyPacket(
+					std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));
+			}
+			else
+			{
+				m_character->removeFlag(unit_fields::UnitFlags, 0x00040000);
+				sendProxyPacket(
+					std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));
+			}
+		};
+
+		m_onRootUpdate = m_character->rootStateChanged.connect(onRootOrStunUpdate);
+		m_onStunUpdate = m_character->stunStateChanged.connect(onRootOrStunUpdate);
+
 		m_groupUpdate.ended.connect([this]()
 		{
 			math::Vector3 location(m_character->getLocation());
@@ -131,8 +150,7 @@ namespace wowpp
 			std::bind(game::server_write::standStateUpdate, std::placeholders::_1, standState));
 
 		// Root our character
-		auto flags = m_character->getUInt32Value(unit_fields::UnitFlags);
-		m_character->setUInt32Value(unit_fields::UnitFlags, flags | 0x00040000);
+		m_character->addFlag(unit_fields::UnitFlags, 0x00040000);
 		sendProxyPacket(
 			std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));
 
@@ -144,8 +162,7 @@ namespace wowpp
 	void Player::cancelLogoutRequest()
 	{
 		// Unroot
-		auto flags = m_character->getUInt32Value(unit_fields::UnitFlags);
-		m_character->setUInt32Value(unit_fields::UnitFlags, flags & ~0x00040000);
+		m_character->removeFlag(unit_fields::UnitFlags, 0x00040000);
 		sendProxyPacket(
 			std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));
 
@@ -394,16 +411,16 @@ namespace wowpp
 				writer
 					<< io::write<NetUInt32>(0);
 
-				// Speeds8
+				// Speeds
 				writer
-					<< io::write<float>(2.5f)				// Walk
-					<< io::write<float>(7.0f)				// Run
-					<< io::write<float>(4.5f)				// Backwards
-					<< io::write<NetUInt32>(0x40971c71)		// Swim
-					<< io::write<NetUInt32>(0x40200000)		// Swim Backwards
-					<< io::write<float>(7.0f)				// Fly
-					<< io::write<float>(4.5f)				// Fly Backwards
-					<< io::write<float>(3.1415927);			// Turn (radians / sec: PI)
+					<< io::write<float>(m_character->getSpeed(movement_type::Walk))					// Walk
+					<< io::write<float>(m_character->getSpeed(movement_type::Run))					// Run
+					<< io::write<float>(m_character->getSpeed(movement_type::Backwards))			// Backwards
+					<< io::write<NetUInt32>(m_character->getSpeed(movement_type::Swim))				// Swim
+					<< io::write<NetUInt32>(m_character->getSpeed(movement_type::SwimBackwards))	// Swim Backwards
+					<< io::write<float>(m_character->getSpeed(movement_type::Flight))				// Fly
+					<< io::write<float>(m_character->getSpeed(movement_type::FlightBackwards))		// Fly Backwards
+					<< io::write<float>(m_character->getSpeed(movement_type::Turn));				// Turn (radians / sec: PI)
 			}
 
 			// Lower-GUID update?
