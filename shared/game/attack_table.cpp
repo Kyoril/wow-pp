@@ -385,6 +385,7 @@ namespace wowpp
 		case game::targets::UnitTargetEnemy:	//6
 		case game::targets::UnitTargetAlly:		//21
 		case game::targets::UnitTargetAny:		//25
+		case game::targets::UnitRaidTargetRaid:	//57
 			if (unitTarget) targets.push_back(unitTarget);
 			break;
 		case game::targets::UnitPartyCaster:

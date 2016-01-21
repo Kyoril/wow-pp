@@ -538,7 +538,7 @@ namespace wowpp
 				std::vector<game::HitInfo> hitInfos;
 				std::vector<float> resists;
 				AttackTable attackTable;
-				UInt8 school = game::spell_school::Normal;	// may vary
+				UInt8 school = game::spell_school_mask::Normal;	// may vary
 				attackTable.checkMeleeAutoAttack(this, victim, school, targets, victimStates, hitInfos, resists);
 				
 				for (int i=0; i<targets.size(); i++)

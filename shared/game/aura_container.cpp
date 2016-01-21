@@ -209,6 +209,14 @@ namespace wowpp
 		UInt32 manaShielded = 0;
 		for (auto &it : m_auras)
 		{
+			if (it->getEffect().aura() == game::aura_type::SchoolAbsorb)
+			{
+				WLOG("school " << school << " result: " << (it->getEffect().miscvaluea() & school));
+				if ((it->getEffect().miscvaluea() & school) != 0)
+					WLOG("SUCCESS!");
+			}
+			
+			
 			if (it->getEffect().aura() == game::aura_type::SchoolAbsorb
 				&& ((it->getEffect().miscvaluea() & school) != 0))
 			{
