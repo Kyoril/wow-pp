@@ -414,7 +414,7 @@ namespace wowpp
 		}
 
 		// Empty character name?
-		character.name = std::move(trim(character.name));
+		character.name = trim(character.name);
 		if (character.name.empty())
 		{
 			sendPacket(
