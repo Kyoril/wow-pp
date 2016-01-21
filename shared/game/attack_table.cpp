@@ -147,10 +147,6 @@ namespace wowpp
 						{
 							hitInfo = game::hit_info::CriticalHit;
 						}
-						else if ((attackTableRoll -= targetUnit->getCrushChance(*attacker)) < 0.0f)
-						{
-							hitInfo = game::hit_info::Crushing;
-						}
 					}
 				}
 
@@ -170,7 +166,7 @@ namespace wowpp
 		resists = m_resists[targetA][targetB];
 	}
 	
-	void AttackTable::checkSpecialMeleeAttackNoGlanceCritCrush(GameUnit* attacker, SpellTargetMap &targetMap, UInt8 school, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
+	void AttackTable::checkSpecialMeleeAttackNoCrit(GameUnit* attacker, SpellTargetMap &targetMap, UInt8 school, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
 	{
 		UInt32 targetA = game::targets::UnitTargetEnemy;
 		UInt32 targetB = game::targets::None;

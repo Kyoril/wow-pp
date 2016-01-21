@@ -1404,8 +1404,12 @@ namespace wowpp
 	{
 		if (attacker.getTypeId() == wowpp::object_type::Unit)
 		{
-			//TODO only some boss mobs can crush
-			return 5.0f;
+			float attackerRating = attacker.getLevel() * 5.0f;	//TODO get real rating
+			float victimRating = getLevel() * 5.0f;
+			float crushChance = (2.0f * std::abs(attackerRating - victimRating)) - 15.0f;
+			if (crushChance < 0.0f)
+				crushChance = 0.0f;
+			return crushChance;
 		}
 		else
 		{
