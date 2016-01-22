@@ -1603,6 +1603,8 @@ namespace wowpp
 		}
 		else if(!wasStunned && m_isStunned)
 		{
+			cancelCast();
+			stopAttack();
 			m_mover->stopMovement();
 			stunStateChanged(true);
 		}

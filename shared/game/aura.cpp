@@ -314,12 +314,6 @@ namespace wowpp
 
 	void Aura::handleModStun(bool apply)
 	{
-		if (m_effect.targeta() != game::targets::UnitTargetEnemy)
-		{
-			WLOG("AURA_TYPE_MOD_STUN: Target of type " << m_effect.targeta() << " is not allowed!");
-			return;
-		}
-		
 		m_target.notifyStunChanged();
 	}
 	
@@ -415,12 +409,6 @@ namespace wowpp
 
 	void Aura::handleModRoot(bool apply)
 	{
-		if (m_effect.targeta() != game::targets::UnitTargetEnemy)
-		{
-			WLOG("AURA_TYPE_MOD_ROOT: Target of type " << m_effect.targeta() << " is not allowed!");
-			return;
-		}
-
 		m_target.notifyRootChanged();
 	}
 

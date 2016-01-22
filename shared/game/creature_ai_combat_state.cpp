@@ -90,6 +90,7 @@ namespace wowpp
 				// No longer attack unit if stunned
 				getControlled().cancelCast();
 				getControlled().stopAttack();
+				getControlled().setUInt64Value(unit_fields::Target, 0);
 			}
 		});
 		m_onRootChanged = getControlled().rootStateChanged.connect([this](bool rooted)
