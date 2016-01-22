@@ -20,9 +20,9 @@
 // 
 
 #include "editor_application.h"
-#include "main_window.h"
-#include "object_editor.h"
-#include "trigger_editor.h"
+#include "windows/main_window.h"
+#include "windows/object_editor.h"
+#include "windows/trigger_editor.h"
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QMessageBox>

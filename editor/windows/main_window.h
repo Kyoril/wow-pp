@@ -22,7 +22,7 @@
 #pragma once
 
 #include <QMainWindow>
-#include "qt_ogre_window.h"
+#include "ogre_wrappers/qt_ogre_window.h"
 #include <memory>
 
 // Forwards

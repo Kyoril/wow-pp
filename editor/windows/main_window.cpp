@@ -24,9 +24,9 @@
 #include "object_editor.h"
 #include "load_map_dialog.h"
 #include "ui_main_window.h"
-#include "ogre_blp_codec.h"
-#include "ogre_mpq_archive.h"
-#include "world_editor.h"
+#include "ogre_wrappers/ogre_blp_codec.h"
+#include "ogre_wrappers/ogre_mpq_archive.h"
+#include "world/world_editor.h"
 #include <QCloseEvent>
 #include <QVBoxLayout>
 #include <QSettings>

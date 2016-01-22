@@ -6,7 +6,7 @@
 #include "OgreCamera.h"
 #include "OgreTextureManager.h"
 #include "log/default_log_levels.h"
-#include "ogre_m2_loader.h"
+#include "ogre_wrappers/ogre_m2_loader.h"
 #include <OgreMeshManager.h>
 #include <OgreEntity.h>
 #include <OgreSceneNode.h>

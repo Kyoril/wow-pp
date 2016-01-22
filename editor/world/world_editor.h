@@ -9,11 +9,11 @@
 #include "page_pov_partitioner.h"
 #include "world_page_loader.h"
 #include "world_renderer.h"
-#include "scene_node_ptr.h"
+#include "ogre_wrappers/scene_node_ptr.h"
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 #include <QMouseEvent>
-#include "qt_ogre_window.h"
+#include "ogre_wrappers/qt_ogre_window.h"
 
 namespace Ogre
 {

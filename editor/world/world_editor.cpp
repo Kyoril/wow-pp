@@ -10,7 +10,7 @@
 #include "OgreLight.h"
 #include "OgreSceneManager.h"
 #include "OgreSceneNode.h"
-#include "ogre_m2_loader.h"
+#include "ogre_wrappers/ogre_m2_loader.h"
 
 namespace wowpp
 {

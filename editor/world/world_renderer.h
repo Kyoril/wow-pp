@@ -5,8 +5,8 @@
 #include "common/vector.h"
 #include "terrain_editing.h"
 #include "terrain_page.h"
-#include "entity_ptr.h"
-#include "scene_node_ptr.h"
+#include "ogre_wrappers/entity_ptr.h"
+#include "ogre_wrappers/scene_node_ptr.h"
 #include <boost/noncopyable.hpp>
 
 namespace wowpp

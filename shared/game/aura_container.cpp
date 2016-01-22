@@ -41,7 +41,7 @@ namespace wowpp
 		for (auto it = m_auras.begin(); it != m_auras.end(); ++it)
 		{
 			// Same spell, same caster and same effect index - don't stack!
-			auto &a = *it;
+			auto a = *it;
 			if (a->getCaster() == aura->getCaster() &&
 				a->getSpell().id() == aura->getSpell().id())
 			{
@@ -54,6 +54,7 @@ namespace wowpp
 				{
 					// Remove aura - new aura will be added
 					it = m_auras.erase(it);
+					a->misapplyAura();
 				}
 				break;
 			}

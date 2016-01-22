@@ -10,6 +10,7 @@
 #include "OgreHardwarePixelBuffer.h"
 #include "OgreImage.h"
 #include "OgrePixelFormat.h"
+#include "OgreCamera.h"
 #include "game/constants.h"
 #include "log/default_log_levels.h"
 #include "common/clock.h"
@@ -66,12 +67,47 @@ namespace wowpp
 			if (m_tilesLoaded >= constants::TilesPerPage * constants::TilesPerPage)
 				return;
 
-			const UInt32 tilesToLoad = constants::TilesPerPage / 2;
+			const float scale = (constants::MapWidth / static_cast<float>(constants::TilesPerPage));
+			const auto &camPos = m_camera.getDerivedPosition();
+
+			std::vector<float> tileDistanceToCamera(constants::TilesPerPage * constants::TilesPerPage, -1.0f);
+			for (UInt32 t = 0; t < tileDistanceToCamera.size(); ++t)
+			{
+				unsigned int j = t / constants::TilesPerPage;
+				unsigned int i = t % constants::TilesPerPage;
+				if (m_tiles(i, j))
+				{
+					// Tile is already loaded
+					continue;
+				}
+
+				Ogre::Vector3 nodePosition(scale * (16 - j), scale * (16 - i), camPos.z);
+				tileDistanceToCamera[t] = (camPos - nodePosition).length();
+			}
+
+			const UInt32 tilesToLoad = constants::TilesPerPage / 4;
 			for (UInt32 t = 0; t < tilesToLoad; ++t)
 			{
+				float minDistance = 99999.0f;
+				Int32 tileIndexToLoad = -1;
+				for (UInt32 x = 0; x < tileDistanceToCamera.size(); ++x)
+				{
+					if (tileDistanceToCamera[x] == -1.0f)
+						continue;
+
+					if (tileDistanceToCamera[x] < minDistance)
+					{
+						minDistance = tileDistanceToCamera[x];
+						tileIndexToLoad = x;
+					}
+				}
+
+				assert(tileIndexToLoad >= 0);
+				tileDistanceToCamera[tileIndexToLoad] = -1.0f;
+
 				// Load the next tile
-				unsigned int j = m_tilesLoaded / constants::TilesPerPage;
-				unsigned int i = m_tilesLoaded % constants::TilesPerPage;
+				unsigned int j = tileIndexToLoad / constants::TilesPerPage;
+				unsigned int i = tileIndexToLoad % constants::TilesPerPage;
 				m_tilesLoaded++;
 
 				Ogre::String tileName = m_sceneNode->getName() + "_Tile_" + Ogre::StringConverter::toString(i) + "_" + Ogre::StringConverter::toString(j);
@@ -145,7 +181,6 @@ namespace wowpp
 					}
 				}
 
-				const float scale = (constants::MapWidth / static_cast<float>(constants::TilesPerPage));
 				Ogre::SceneNode *tileNode = m_sceneNode->createChildSceneNode(
 					Ogre::Vector3(scale * (16 - j), scale * (16 - i), 0.0f));
 

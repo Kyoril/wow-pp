@@ -20,7 +20,7 @@
 // 
 
 #include "trigger_editor.h"
-#include "main_window.h"	// Needed because of forward declaration with unique_ptr in EditorApplication
+#include "windows/main_window.h"
 #include "editor_application.h"
 #include "ui_trigger_editor.h"
 #include "event_dialog.h"

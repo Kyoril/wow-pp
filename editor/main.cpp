@@ -27,11 +27,11 @@
 #include "log/log_entry.h"
 #include "log/default_log_levels.h"
 #include "editor_application.h"
-#include "main_window.h"
+#include "windows/main_window.h"
 #include "ui_main_window.h"
-#include "object_editor.h"
+#include "windows/object_editor.h"
 #include "ui_object_editor.h"
-#include "trigger_editor.h"
+#include "windows/trigger_editor.h"
 #include "ui_trigger_editor.h"
 
 using namespace wowpp::editor;
