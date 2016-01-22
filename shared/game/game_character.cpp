@@ -1228,7 +1228,7 @@ namespace wowpp
 
 	bool GameCharacter::canDualWield() const
 	{
-		return false;
+		return m_canDualWield;
 	}
 
 	void GameCharacter::regenerateHealth()
