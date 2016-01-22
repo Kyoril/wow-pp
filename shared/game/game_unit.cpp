@@ -1380,7 +1380,8 @@ namespace wowpp
 	{
 		std::uniform_real_distribution<float> resiDistribution(0.0f, 99.9f);
 		UInt32 spellPen = 0;
-		UInt32 baseResi = getModifierValue(UnitMods(unit_mods::ResistanceStart + log2(school)), unit_mod_type::TotalValue);
+		UInt32 baseResi = getModifierValue(
+			UnitMods(unit_mods::ResistanceStart + static_cast<UInt32>(log2(school))), unit_mod_type::TotalValue);
 		UInt32 casterLevel = attacker.getLevel();
 		float effectiveResistance = baseResi + std::max((getLevel() - casterLevel) * 5.0f, 0.0f) - std::min(spellPen, baseResi);
 		if (isBinary)
