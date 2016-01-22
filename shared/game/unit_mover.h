@@ -69,7 +69,7 @@ namespace wowpp
 		/// 
 		GameUnit &getMoved() const { return m_unit; }
 		/// 
-		bool isMoving() const { return m_moveUpdated.running; };
+		bool isMoving() const { return m_moveReached.running; };
 		/// 
 		math::Vector3 getCurrentLocation() const;
 

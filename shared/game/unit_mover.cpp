@@ -52,6 +52,7 @@ namespace wowpp
 			o = getMoved().getAngle(m_target.x, m_target.y);
 
 			math::Vector3 oldPosition = getCurrentLocation();
+			getMoved().relocate(oldPosition, o);
 
 			// Trigger next update if needed
 			if (time < m_moveEnd - UnitMover::UpdateFrequency)
@@ -59,6 +60,7 @@ namespace wowpp
 				m_moveUpdated.setEnd(time + UnitMover::UpdateFrequency);
 			}
 
+			/*
 			// Update creatures position in the next update frame
 			auto strongUnit = getMoved().shared_from_this();
 			std::weak_ptr<GameObject> weakUnit(strongUnit);
@@ -69,7 +71,7 @@ namespace wowpp
 				{
 					strongUnit->relocate(oldPosition, o);
 				}
-			});
+			});*/
 		});
 
 		m_moveReached.ended.connect([this]()
@@ -164,7 +166,6 @@ namespace wowpp
 		m_moveStart = getCurrentTime();
 
 		// Calculate time of arrival
-		// TODO: take movement speed into account
 		GameTime moveTime = (distance / customSpeed) * constants::OneSecond;
 		m_moveEnd = m_moveStart + moveTime;
 
