@@ -40,7 +40,7 @@ namespace wowpp
 			}
 
 			Ogre::String realFileName = "CREATURE\\Furbolg\\Furbolg.m2";
-
+			/*
 			// Spawn all entities
 			UInt32 i = 0;
 			for (const auto &spawn : m_map.unitspawns())
@@ -64,7 +64,7 @@ namespace wowpp
 			}
 
 			Ogre::String objectFileName = "WORLD\\GENERIC\\HUMAN\\ACTIVEDOODADS\\DOORS\\DEADMINEDOOR01.M2";
-
+			
 			i = 0;
 			for (const auto &spawn : m_map.objectspawns())
 			{
@@ -85,7 +85,7 @@ namespace wowpp
 				node->setPosition(spawn.positionx(), spawn.positiony(), spawn.positionz());
 				node->setOrientation(Ogre::Quaternion(spawn.rotationz(), spawn.rotationw(), spawn.rotationx(), spawn.rotationy()));
 			}
-
+			*/
 			const Ogre::Vector3 &camPos = m_camera.getDerivedPosition();
 			float convertedX = (constants::MapWidth * 32.0f) + camPos.x;
 			float convertedY = (constants::MapWidth * 32.0f) + camPos.y;

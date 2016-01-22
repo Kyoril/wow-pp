@@ -284,8 +284,8 @@ namespace wowpp
 			if (minHeight == maxHeight) maxHeight = minHeight + 0.1f;
 
 			m_bounds.setExtents(
-				scale * startX, scale * startY, minHeight,
-				scale * endX, scale * endY, maxHeight
+				scale * endX, scale * endY, minHeight,
+				scale * startX, scale * startY, maxHeight
 				);
 
 			m_center = m_bounds.getCenter();

@@ -40,13 +40,7 @@ QtOgreWindow::QtOgreWindow(QWindow *parent /*= nullptr*/)
 
 QtOgreWindow::~QtOgreWindow()
 {
-	auto list = Ogre::ResourceGroupManager::getSingleton().getResourceGroups();
-	for (auto &group : list)
-	{
-		// Destroy resource groups
-		Ogre::ResourceGroupManager::getSingleton().unloadResourceGroup(group, false);
-		Ogre::ResourceGroupManager::getSingleton().destroyResourceGroup(group);
-	}
+	m_scene.reset();
 
 	delete m_ogreRoot;
 }
@@ -186,7 +180,6 @@ void QtOgreWindow::initialize()
 	m_ogreCamera->lookAt(Ogre::Vector3(0.0f, 0.0f, -300.0f));
 	m_ogreCamera->setNearClipDistance(0.1f);
 	m_ogreCamera->setFarClipDistance(200.0f);
-	//m_cameraMan = new OgreQtBites::SdkQtCameraMan(m_ogreCamera);   // create a default camera controller
 
 	Ogre::Viewport* pViewPort = m_ogreWindow->addViewport(m_ogreCamera);
 	pViewPort->setBackgroundColour(m_ogreBackground);

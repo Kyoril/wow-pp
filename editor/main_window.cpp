@@ -125,7 +125,7 @@ namespace wowpp
 				std::unique_ptr<WorldEditor> scene(
 					new WorldEditor(*sceneMgr, *camera, *entry, m_application.getProject()));
 				m_ogreWindow->setScene(std::move(scene));
-
+				/*
 				std::unique_ptr<Map> mapInst(new Map(
 					*entry, m_application.getConfiguration().dataPath));
 				auto *tile = mapInst->getTile(TileIndex2D(32, 32));
@@ -186,40 +186,30 @@ namespace wowpp
 				}
 				obj->end();
 
-				obj->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_TRIANGLE_LIST);
-				auto &tri = tile->collision.triangles[collisionTriIndex];
-				auto &vA = tile->collision.vertices[tri.indexA];
-				auto &vB = tile->collision.vertices[tri.indexB];
-				auto &vC = tile->collision.vertices[tri.indexC];
-				obj->position(vA.x, vA.y, vA.z);
-				obj->colour(Ogre::ColourValue::Red);
-				obj->position(vB.x, vB.y, vB.z);
-				obj->colour(Ogre::ColourValue::Red);
-				obj->position(vC.x, vC.y, vC.z);
-				obj->colour(Ogre::ColourValue::Red);
-				obj->triangle(0, 1, 2);
-				obj->end();
-
-				math::Vector3 vStart(-11039.700195f, 1459.349976f, 47.321106f);
-				math::Vector3 vEnd(-11015.700195f, 1475.300049f, 45.880798f);
-
-				obj->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_LINE_STRIP);
-				obj->position(vStart.x, vStart.y, vStart.z);
-				obj->colour(Ogre::ColourValue::Green);
-				obj->position(vEnd.x, vEnd.y, vEnd.z);
-				obj->colour(Ogre::ColourValue::Green);
-				obj->index(0); obj->index(1);
-				obj->end();
-
-				auto &firstVert = tile->collision.vertices[0];
-				camera->setPosition(vA.x, vA.y, vA.z);
+				if (tile->collision.triangles.size() > triIndex)
+				{
+					obj->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_TRIANGLE_LIST);
+					auto &tri = tile->collision.triangles[collisionTriIndex];
+					auto &vA = tile->collision.vertices[tri.indexA];
+					auto &vB = tile->collision.vertices[tri.indexB];
+					auto &vC = tile->collision.vertices[tri.indexC];
+					obj->position(vA.x, vA.y, vA.z);
+					obj->colour(Ogre::ColourValue::Red);
+					obj->position(vB.x, vB.y, vB.z);
+					obj->colour(Ogre::ColourValue::Red);
+					obj->position(vC.x, vC.y, vC.z);
+					obj->colour(Ogre::ColourValue::Red);
+					obj->triangle(0, 1, 2);
+					obj->end();
+				}
+				
+				//camera->setPosition(vA.x, vA.y, vA.z);
 				camera->setFarClipDistance(1000.0f);
-
-				obj->setBoundingBox(Ogre::AxisAlignedBox(vMin, vMax));
 
 				Ogre::SceneNode *child = sceneMgr->getRootSceneNode()->createChildSceneNode();
 				child->attachObject(obj);
 				child->showBoundingBox(true);
+				*/
 			}
 		}
 
