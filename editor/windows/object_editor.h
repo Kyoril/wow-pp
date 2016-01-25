@@ -54,6 +54,7 @@ namespace wowpp
 		private:
 
 			void addLootItem(const proto::LootDefinition &def, QTreeWidgetItem *parent);
+			void addSpellEntry(const proto::UnitSpellEntry &creatureSpell);
 
 		private slots:
 

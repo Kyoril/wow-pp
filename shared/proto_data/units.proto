@@ -22,6 +22,17 @@
 syntax = "proto2";
 package wowpp.proto;
 
+message UnitSpellEntry {
+	required uint32 spellid = 1;
+	optional uint32 priority = 2 [default = 100];
+	optional uint32 mininitialcooldown = 3;
+	optional uint32 maxinitialcooldown = 4;
+	optional int32 mincooldown = 5 [default = -1];
+	optional int32 maxcooldown = 6 [default = -1];
+	optional uint32 target = 7;
+	optional bool repeated = 8;
+}
+
 message UnitEntry {
 	required uint32 id = 1;
 	required string name = 2;
@@ -71,6 +82,7 @@ message UnitEntry {
 	optional uint32 unitlootentry = 46;
 	optional uint32 vendorentry = 47;
 	optional uint32 trainerentry = 48;
+	repeated UnitSpellEntry creaturespells = 49;
 }
 
 message Units {

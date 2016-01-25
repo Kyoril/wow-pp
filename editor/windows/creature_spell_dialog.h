@@ -48,6 +48,15 @@ namespace wowpp
 			/// 
 			explicit CreatureSpellDialog(EditorApplication &app);
 
+			const proto::SpellEntry *getSelectedSpell() const { return m_selectedSpell; }
+			UInt32 getPriority() const;
+			bool getRepeated() const;
+			Int32 getMinCooldown() const;
+			Int32 getMaxCooldown() const;
+			Int32 getMinInitialCooldown() const;
+			Int32 getMaxInitialCooldown() const;
+			UInt32 getTarget() const;
+
 		private slots:
 
 			void on_buttonBox_accepted();
@@ -57,6 +66,7 @@ namespace wowpp
 
 			Ui::CreatureSpellDialog *m_ui;
 			EditorApplication &m_app;
+			const proto::SpellEntry *m_selectedSpell;
 		};
 	}
 }

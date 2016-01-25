@@ -222,6 +222,34 @@ namespace wowpp
 			}
 		}
 
+		void ObjectEditor::addSpellEntry(const wowpp::proto::UnitSpellEntry &creatureSpell)
+		{
+			const auto *spellEntry = m_application.getProject().spells.getById(creatureSpell.spellid());
+			if (!spellEntry)
+			{
+				return;
+			}
+
+			static QString spellCastTargetNames[] = {
+				"SELF",
+				"CURRENT_TARGET"
+			};
+
+			QTreeWidgetItem *item = new QTreeWidgetItem(m_ui->treeWidget);
+			item->setText(0, spellEntry->name().c_str());
+			item->setText(1, QString("%1").arg(creatureSpell.priority()));
+			item->setText(2, QString("%1").arg(creatureSpell.repeated() ? "Yes" : "No"));
+			item->setText(3, spellCastTargetNames[creatureSpell.target()]);
+			if (creatureSpell.mincooldown() != creatureSpell.maxcooldown())
+			{
+				item->setText(4, QString("%1 - %2").arg(creatureSpell.mincooldown()).arg(creatureSpell.maxcooldown()));
+			}
+			else
+			{
+				item->setText(4, QString("%1").arg(creatureSpell.mincooldown()));
+			}
+		}
+
 		void ObjectEditor::onUnitSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
 		{
 			// Get the selected unit
@@ -361,6 +389,12 @@ namespace wowpp
 					m_ui->unitTriggerWidget->addItem(
 						QString(triggerEntry->name().c_str()));
 				}
+			}
+
+			m_ui->treeWidget->clear();
+			for (const auto &creatureSpell : unit->creaturespells())
+			{
+				addSpellEntry(creatureSpell);
 			}
 		}
 		
@@ -796,7 +830,22 @@ namespace wowpp
 			auto result = dialog.exec();
 			if (result == QDialog::Accepted)
 			{
+				if (!dialog.getSelectedSpell())
+				{
+					return;
+				}
 
+				auto *added = m_selected->add_creaturespells();
+				added->set_spellid(dialog.getSelectedSpell()->id());
+				added->set_priority(dialog.getPriority());
+				added->set_mincooldown(dialog.getMinCooldown());
+				added->set_maxcooldown(dialog.getMaxCooldown());
+				added->set_mininitialcooldown(dialog.getMinInitialCooldown());
+				added->set_maxinitialcooldown(dialog.getMaxInitialCooldown());
+				added->set_target(dialog.getTarget());
+				addSpellEntry(*added);
+
+				m_application.markAsChanged();
 			}
 		}
 		void ObjectEditor::on_removeUnitSpellButton_clicked()

@@ -32,6 +32,7 @@ namespace wowpp
 			: QDialog()
 			, m_ui(new Ui::CreatureSpellDialog)
 			, m_app(app)
+			, m_selectedSpell(nullptr)
 		{
 			// Setup auto generated ui
 			m_ui->setupUi(this);
@@ -40,6 +41,34 @@ namespace wowpp
 		void CreatureSpellDialog::on_buttonBox_accepted()
 		{
 			// TODO
+		}
+		UInt32 CreatureSpellDialog::getPriority() const
+		{
+			return static_cast<UInt32>(m_ui->priorityBox->value());
+		}
+		bool CreatureSpellDialog::getRepeated() const
+		{
+			return m_ui->repeatedBox->checkState() == Qt::Checked;
+		}
+		Int32 CreatureSpellDialog::getMinCooldown() const
+		{
+			return m_ui->cooldownBox->value();
+		}
+		Int32 CreatureSpellDialog::getMaxCooldown() const
+		{
+			return m_ui->cooldownBox_2->value();
+		}
+		Int32 CreatureSpellDialog::getMinInitialCooldown() const
+		{
+			return m_ui->spinBox->value();
+		}
+		Int32 CreatureSpellDialog::getMaxInitialCooldown() const
+		{
+			return m_ui->spinBox_2->value();
+		}
+		UInt32 CreatureSpellDialog::getTarget() const
+		{
+			return static_cast<UInt32>(m_ui->targetBox->currentIndex());
 		}
 		void CreatureSpellDialog::on_spellButton_clicked()
 		{
@@ -50,6 +79,7 @@ namespace wowpp
 				const auto *spell = dialog.getSelectedSpell();
 				if (spell)
 				{
+					m_selectedSpell = spell;
 					m_ui->spellButton->setText(spell->name().c_str());
 				}
 			}
