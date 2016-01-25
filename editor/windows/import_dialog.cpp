@@ -99,9 +99,12 @@ namespace wowpp
 				if (select.success())
 				{
 					wowpp::MySQL::Row row(select);
-					if (row)
+					while (row)
 					{
-						row.getField(0, entryCount);
+						UInt32 count = 0;
+						row.getField(0, count);
+						entryCount += count;
+
 						row = row.next(select);
 					}
 				}

@@ -19,8 +19,8 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-#include "choose_trigger_dialog.h"
-#include "ui_choose_trigger_dialog.h"
+#include "choose_spell_dialog.h"
+#include "ui_choose_spell_dialog.h"
 #include "templates/basic_template.h"
 #include "editor_application.h"
 
@@ -28,45 +28,58 @@ namespace wowpp
 {
 	namespace editor
 	{
-		ChooseTriggerDialog::ChooseTriggerDialog(EditorApplication &app)
+		ChooseSpellDialog::ChooseSpellDialog(EditorApplication &app)
 			: QDialog()
-			, m_ui(new Ui::ChooseTriggerDialog)
+			, m_ui(new Ui::ChooseSpellDialog)
 			, m_app(app)
 			, m_selected(nullptr)
 		{
 			// Setup auto generated ui
 			m_ui->setupUi(this);
-			m_ui->triggerView->setModel(m_app.getTriggerListModel());
 
-			connect(m_ui->triggerView->selectionModel(),
+			// Automatically deleted since it's a QObject
+			m_spellFilter = new QSortFilterProxyModel(this);
+			m_spellFilter->setSourceModel(app.getSpellListModel());
+			m_ui->listView->setModel(m_spellFilter);
+
+			connect(m_ui->listView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
-				this, SLOT(onTriggerSelectionChanged(QItemSelection, QItemSelection)));
+				this, SLOT(onSpellSelectionChanged(QItemSelection, QItemSelection)));
 		}
 
-		void ChooseTriggerDialog::on_buttonBox_accepted()
+		void ChooseSpellDialog::on_buttonBox_accepted()
 		{
 			// TODO
 		}
 
-		void ChooseTriggerDialog::onTriggerSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
+		void ChooseSpellDialog::on_spellFilter_textChanged(QString)
+		{
+			QRegExp::PatternSyntax syntax = QRegExp::RegExp;
+			Qt::CaseSensitivity caseSensitivity = Qt::CaseInsensitive;
+
+			QRegExp regExp(m_ui->spellFilter->text(), caseSensitivity, syntax);
+			m_spellFilter->setFilterRegExp(regExp);
+		}
+
+		void ChooseSpellDialog::onSpellSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
 		{
 			// Get the selected unit
+			m_selected = nullptr;
 			if (selection.isEmpty())
-			{
-				m_selected = nullptr;
 				return;
-			}
 
-			int index = selection.indexes().first().row();
+			QItemSelection source = m_spellFilter->mapSelectionToSource(selection);
+			if (source.isEmpty())
+				return;
+
+			int index = source.indexes().first().row();
 			if (index < 0)
 			{
-				m_selected = nullptr;
 				return;
 			}
 
-			// Get trigger entry
-			const auto &trigger = m_app.getProject().triggers.getTemplates().entry(index);
-			m_selected = &trigger;
+			const auto &spell = m_app.getProject().spells.getTemplates().entry(index);
+			m_selected = &spell;
 		}
 
 	}

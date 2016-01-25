@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1350</width>
-    <height>748</height>
+    <width>1745</width>
+    <height>1079</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -121,7 +121,7 @@
                </size>
               </property>
               <property name="currentIndex">
-               <number>2</number>
+               <number>0</number>
               </property>
               <widget class="QWidget" name="tab_3">
                <attribute name="title">
@@ -214,7 +214,7 @@
                    <number>4</number>
                   </property>
                   <attribute name="headerVisible">
-                   <bool>true</bool>
+                   <bool>false</bool>
                   </attribute>
                   <attribute name="headerCascadingSectionResizes">
                    <bool>true</bool>
@@ -273,6 +273,76 @@
                     </property>
                     <property name="text">
                      <string>Loot Simulator</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+               </layout>
+              </widget>
+              <widget class="QWidget" name="tab_4">
+               <attribute name="title">
+                <string>Spells</string>
+               </attribute>
+               <layout class="QVBoxLayout" name="verticalLayout_16">
+                <item>
+                 <widget class="QTreeWidget" name="treeWidget">
+                  <column>
+                   <property name="text">
+                    <string>Spell</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Priority</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Repeated</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Target</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Cooldown</string>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;A value of &lt;span style=&quot; font-weight:600;&quot;&gt;-1 &lt;/span&gt;indicates that the default spell cooldown should be used. Value is in &lt;span style=&quot; font-weight:600;&quot;&gt;milliseconds&lt;/span&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                  </column>
+                 </widget>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_5">
+                  <item>
+                   <spacer name="horizontalSpacer_2">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="addUnitSpellButton">
+                    <property name="text">
+                     <string>Add Spell</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="removeUnitSpellButton">
+                    <property name="text">
+                     <string>Remove Spell</string>
                     </property>
                    </widget>
                   </item>
@@ -2974,7 +3044,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1350</width>
+     <width>1745</width>
      <height>31</height>
     </rect>
    </property>

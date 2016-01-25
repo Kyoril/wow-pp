@@ -19,55 +19,40 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-#include "choose_trigger_dialog.h"
-#include "ui_choose_trigger_dialog.h"
-#include "templates/basic_template.h"
+#include "creature_spell_dialog.h"
+#include "ui_creature_spell_dialog.h"
+#include "choose_spell_dialog.h"
 #include "editor_application.h"
 
 namespace wowpp
 {
 	namespace editor
 	{
-		ChooseTriggerDialog::ChooseTriggerDialog(EditorApplication &app)
+		CreatureSpellDialog::CreatureSpellDialog(EditorApplication &app)
 			: QDialog()
-			, m_ui(new Ui::ChooseTriggerDialog)
+			, m_ui(new Ui::CreatureSpellDialog)
 			, m_app(app)
-			, m_selected(nullptr)
 		{
 			// Setup auto generated ui
 			m_ui->setupUi(this);
-			m_ui->triggerView->setModel(m_app.getTriggerListModel());
-
-			connect(m_ui->triggerView->selectionModel(),
-				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
-				this, SLOT(onTriggerSelectionChanged(QItemSelection, QItemSelection)));
 		}
 
-		void ChooseTriggerDialog::on_buttonBox_accepted()
+		void CreatureSpellDialog::on_buttonBox_accepted()
 		{
 			// TODO
 		}
-
-		void ChooseTriggerDialog::onTriggerSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
+		void CreatureSpellDialog::on_spellButton_clicked()
 		{
-			// Get the selected unit
-			if (selection.isEmpty())
+			ChooseSpellDialog dialog(m_app);
+			auto result = dialog.exec();
+			if (result == QDialog::Accepted)
 			{
-				m_selected = nullptr;
-				return;
+				const auto *spell = dialog.getSelectedSpell();
+				if (spell)
+				{
+					m_ui->spellButton->setText(spell->name().c_str());
+				}
 			}
-
-			int index = selection.indexes().first().row();
-			if (index < 0)
-			{
-				m_selected = nullptr;
-				return;
-			}
-
-			// Get trigger entry
-			const auto &trigger = m_app.getProject().triggers.getTemplates().entry(index);
-			m_selected = &trigger;
 		}
-
 	}
 }

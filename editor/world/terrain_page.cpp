@@ -56,7 +56,7 @@ namespace wowpp
 				}
 			}
 
-			m_sceneNode->detachAllObjects();
+			m_sceneNode->removeAndDestroyAllChildren();
 			m_sceneNode->getParentSceneNode()->removeAndDestroyChild(m_sceneNode->getName());
 			m_sceneNode = nullptr;
 		}

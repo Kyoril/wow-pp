@@ -28,6 +28,7 @@
 #include "ui_object_editor.h"
 #include "loot_dialog.h"
 #include "choose_trigger_dialog.h"
+#include "creature_spell_dialog.h"
 #include "game/defines.h"
 #include "import_dialog.h"
 #include <QRegExp>
@@ -49,6 +50,7 @@ namespace wowpp
 			// Setup view model
 			m_viewModel = new PropertyViewModel(m_properties, nullptr);
 			m_ui->unitPropertyWidget->setModel(m_viewModel);
+			m_ui->lootView->header()->setVisible(true);
 
 			// Automatically deleted since it's a QObject
 			m_unitFilter = new QSortFilterProxyModel;
@@ -64,7 +66,7 @@ namespace wowpp
 			m_itemFilter = new QSortFilterProxyModel;
 			m_itemFilter->setSourceModel(app.getItemListModel());
 			m_ui->itemsListView->setModel(m_itemFilter);
-			
+
 			connect(m_ui->unitsListView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
 				this, SLOT(onUnitSelectionChanged(QItemSelection, QItemSelection)));
@@ -601,8 +603,11 @@ namespace wowpp
 
 			// Prepare the import task
 			ImportTask task;
-			task.countQuery = "SELECT COUNT(*) FROM `wowpp_creature_loot_template` WHERE `active` != 0;";
-			task.selectQuery = "SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount`,`lootcondition`,`condition_value1`,`condition_value2` FROM `wowpp_creature_loot_template` WHERE `active` != 0 ORDER BY `entry`, `groupid`;";
+			task.countQuery = "(SELECT COUNT(*) FROM `wowpp_creature_loot_template` WHERE `active` != 0) UNION (SELECT COUNT(*) FROM `wowpp_creatureloot` WHERE `active` != 0);";
+			task.selectQuery = "(SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount`,`lootcondition`,`condition_value1`,`condition_value2` FROM `wowpp_creature_loot_template` WHERE `active` != 0)"
+				" UNION "
+				" (SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount`,`lootcondition`,`condition_value1`,`condition_value2` FROM `wowpp_creatureloot` WHERE `active` != 0) "
+				" ORDER BY `entry`, `groupid`;";
 			task.beforeImport = [this]() {
 				// Remove old unit loot
 				for (int i = 0; i < m_application.getProject().units.getTemplates().entry_size(); ++i)
@@ -779,6 +784,22 @@ namespace wowpp
 			auto result = dialog.exec();
 		}
 		void ObjectEditor::on_actionImport_Trainers_triggered()
+		{
+
+		}
+		void ObjectEditor::on_addUnitSpellButton_clicked()
+		{
+			if (!m_selected)
+				return;
+
+			CreatureSpellDialog dialog(m_application);
+			auto result = dialog.exec();
+			if (result == QDialog::Accepted)
+			{
+
+			}
+		}
+		void ObjectEditor::on_removeUnitSpellButton_clicked()
 		{
 
 		}
