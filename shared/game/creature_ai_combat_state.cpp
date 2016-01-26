@@ -59,13 +59,11 @@ namespace wowpp
 		controlled.addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 
 		// Watch for threat events
-	/*	m_onThreatened = controlled.threatened.connect([this](GameUnit &threatener, float amount)
+		m_onThreatened = controlled.threatened.connect([this](GameUnit &threatener, float amount)
 		{
 			addThreat(threatener, amount);
 		});
-	*/
 
-		
 		// Reset AI eventually
 		m_onMoveTargetChanged = getControlled().getMover().targetChanged.connect([this]
 		{
@@ -300,7 +298,7 @@ namespace wowpp
 
 	void CreatureAICombatState::chooseNextAction()
 	{
-		updateVictim();
+		/*updateVictim();
 
 		auto &controlled = getControlled();
 		if (controlled.getEntry().creaturespells().empty())
@@ -325,7 +323,7 @@ namespace wowpp
 				controlled.castSpell(targetMap, spell->id(), -1, spell->casttime(), false);
 				ILOG("DID SPELL CAST OF " << spell->name());
 			}
-		}
+		}*/
 	}
 
 	void CreatureAICombatState::onDamage(GameUnit &attacker)
