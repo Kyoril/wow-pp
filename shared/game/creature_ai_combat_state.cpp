@@ -59,11 +59,13 @@ namespace wowpp
 		controlled.addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 
 		// Watch for threat events
-		m_onThreatened = controlled.threatened.connect([this](GameUnit &threatener, float amount)
+	/*	m_onThreatened = controlled.threatened.connect([this](GameUnit &threatener, float amount)
 		{
 			addThreat(threatener, amount);
 		});
+	*/
 
+		
 		// Reset AI eventually
 		m_onMoveTargetChanged = getControlled().getMover().targetChanged.connect([this]
 		{
@@ -74,7 +76,6 @@ namespace wowpp
 				getAI().reset();
 			}
 		});
-
 		m_onStunChanged = getControlled().stunStateChanged.connect([this](bool stunned)
 		{
 			// If we are no longer stunned, update victim again
@@ -121,6 +122,8 @@ namespace wowpp
 
 		// Raise OnAggro triggers
 		controlled.raiseTrigger(trigger_event::OnAggro);
+		
+		chooseNextAction();
 	}
 
 	void CreatureAICombatState::onLeave()
@@ -295,6 +298,36 @@ namespace wowpp
 		}
 	}
 
+	void CreatureAICombatState::chooseNextAction()
+	{
+		updateVictim();
+
+		auto &controlled = getControlled();
+		if (controlled.getEntry().creaturespells().empty())
+		{
+			WLOG("NOTHING TO DO...");
+		}
+		else
+		{
+			auto *victim = controlled.getVictim();
+			if (!victim)
+			{
+				WLOG("NO VICTIM FOUND");
+				return;
+			}
+
+			const auto *spell = controlled.getProject().spells.getById(controlled.getEntry().creaturespells(0).spellid());
+			if (spell)
+			{
+				SpellTargetMap targetMap;
+				targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+				targetMap.m_unitTarget = victim->getGuid();
+				controlled.castSpell(targetMap, spell->id(), -1, spell->casttime(), false);
+				ILOG("DID SPELL CAST OF " << spell->name());
+			}
+		}
+	}
+
 	void CreatureAICombatState::onDamage(GameUnit &attacker)
 	{
 		auto &controlled = getControlled();
@@ -339,5 +372,4 @@ namespace wowpp
 			getControlled().addFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::OtherTagger);
 		}
 	}
-
 }

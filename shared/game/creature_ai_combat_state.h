@@ -73,6 +73,7 @@ namespace wowpp
 		void removeThreat(GameUnit &threatener);
 		void updateVictim();
 		void chaseTarget(GameUnit &target);
+		void chooseNextAction();
 
 	private:
 

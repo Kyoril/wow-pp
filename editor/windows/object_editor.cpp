@@ -61,11 +61,14 @@ namespace wowpp
 			m_spellFilter = new QSortFilterProxyModel;
 			m_spellFilter->setSourceModel(app.getSpellListModel());
 			m_ui->spellsListView->setModel(m_spellFilter);
-
+			
 			// Automatically deleted since it's a QObject
 			m_itemFilter = new QSortFilterProxyModel;
 			m_itemFilter->setSourceModel(app.getItemListModel());
 			m_ui->itemsListView->setModel(m_itemFilter);
+
+			// Map selection box
+			m_ui->spellTeleportMapBox->setModel(app.getMapListModel());
 
 			connect(m_ui->unitsListView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
@@ -502,6 +505,33 @@ namespace wowpp
 				}
 			}
 
+			UInt32 mapIndex = 0;
+			for (const auto &map : m_application.getProject().maps.getTemplates().entry())
+			{
+				if (map.id() == spell->targetmap())
+				{
+					break;
+				}
+
+				mapIndex++;
+			}
+
+			m_ui->spellTeleportMapBox->setCurrentIndex(mapIndex);
+			m_ui->spellTeleportXBox->setValue(spell->targetx());
+			m_ui->spellTeleportYBox->setValue(spell->targety());
+			m_ui->spellTeleportZBox->setValue(spell->targetz());
+			m_ui->spellTeleportOBox->setValue(spell->targeto());
+
+			m_ui->spellLinkedSpellList->clear();
+			for (const auto &spellId : spell->additionalspells())
+			{
+				const auto *linkedSpell = m_application.getProject().spells.getById(spellId);
+				if (linkedSpell)
+				{
+					m_ui->spellLinkedSpellList->addItem(QString("%1 - %2").arg(spellId).arg(linkedSpell->name().c_str()));
+				}
+			}
+
 			// Check all spell buttons
 			for (size_t i = 0; i < 3; ++i)
 			{
@@ -525,8 +555,48 @@ namespace wowpp
 					QString effectName = QString("NONE");
 					if (i < spell->effects_size())
 					{
-						effectName = QString("%1 (%2)").arg(game::constant_literal::spellEffectNames.getName(
-							static_cast<game::SpellEffect>(spell->effects(i).type())).c_str()).arg(spell->effects(i).basepoints());
+						button->setEnabled(true);
+						const Int32 comboPoints = 0;
+
+						Int32 level = 1;
+						if (level > spell->maxlevel() && spell->maxlevel() > 0)
+						{
+							level = spell->maxlevel();
+						}
+						else if (level < spell->baselevel())
+						{
+							level = spell->baselevel();
+						}
+						level -= spell->spelllevel();
+
+						QString baseName = game::constant_literal::spellEffectNames.getName(
+							static_cast<game::SpellEffect>(spell->effects(i).type())).c_str();
+						if (spell->effects(i).aura() != 0)
+						{
+							baseName = QString("%1: %2").arg(baseName).arg(
+								game::constant_literal::auraTypeNames.getName(
+									static_cast<game::AuraType>(spell->effects(i).aura())).c_str());
+						}
+
+						// Calculate the damage done
+						const float basePointsPerLevel = spell->effects(i).pointsperlevel();
+						const float randomPointsPerLevel = spell->effects(i).diceperlevel();
+						const Int32 basePoints = spell->effects(i).basepoints() + level * basePointsPerLevel;
+						const Int32 randomPoints = spell->effects(i).diesides() + level * randomPointsPerLevel;
+						const Int32 comboDamage = spell->effects(i).pointspercombopoint() * comboPoints;
+						if (spell->effects(i).basedice() >= randomPoints)
+						{
+							effectName = QString("%1 (%2)").arg(baseName).arg(basePoints + spell->effects(i).basedice() + comboDamage);
+						}
+						else
+						{
+							effectName = QString("%1 (%2 - %3)").arg(baseName).arg(
+									basePoints + spell->effects(i).basedice() + comboDamage).arg(basePoints + randomPoints + comboDamage);
+						}
+					}
+					else
+					{
+						button->setEnabled(false);
 					}
 
 					button->setText(effectName);
