@@ -29,6 +29,7 @@
 #include "loot_dialog.h"
 #include "choose_trigger_dialog.h"
 #include "creature_spell_dialog.h"
+#include "spell_effect_dialog.h"
 #include "game/defines.h"
 #include "import_dialog.h"
 #include <QRegExp>
@@ -43,7 +44,8 @@ namespace wowpp
 			: QMainWindow()
 			, m_application(app)
 			, m_ui(new Ui::ObjectEditor())
-			, m_selected(nullptr)
+			, m_selectedUnit(nullptr)
+			, m_selectedSpell(nullptr)
 		{
 			m_ui->setupUi(this);
 
@@ -253,26 +255,32 @@ namespace wowpp
 			}
 		}
 
+		void ObjectEditor::showEffectDialog(const proto::SpellEffect & effect)
+		{
+			SpellEffectDialog dialog(m_application, effect);
+			dialog.exec();
+		}
+
 		void ObjectEditor::onUnitSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
 		{
 			// Get the selected unit
 			if (selection.isEmpty())
 			{
-				m_selected = nullptr;
+				m_selectedUnit = nullptr;
 				return;
 			}
 
 			QItemSelection source = m_unitFilter->mapSelectionToSource(selection);
 			if (source.isEmpty())
 			{
-				m_selected = nullptr;
+				m_selectedUnit = nullptr;
 				return;
 			}
 
 			int index = source.indexes().first().row();
 			if (index < 0)
 			{
-				m_selected = nullptr;
+				m_selectedUnit = nullptr;
 				return;
 			}
 
@@ -281,7 +289,7 @@ namespace wowpp
 
 			// Get unit entry
 			auto *unit = m_application.getProject().units.getTemplates().mutable_entry(index);
-			m_selected = unit;
+			m_selectedUnit = unit;
 			if (!unit)
 				return;
 
@@ -451,6 +459,7 @@ namespace wowpp
 		void ObjectEditor::onSpellSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
 		{
 			// Get the selected unit
+			m_selectedSpell = nullptr;
 			if (selection.isEmpty())
 				return;
 
@@ -468,6 +477,8 @@ namespace wowpp
 			auto *spell = m_application.getProject().spells.getTemplates().mutable_entry(index);
 			if (!spell)
 				return;
+
+			m_selectedSpell = spell;
 
 			m_ui->spellIdField->setText(QString::number(spell->id()));
 			m_ui->spellNameField->setText(spell->name().c_str());
@@ -628,7 +639,7 @@ namespace wowpp
 
 		void ObjectEditor::on_unitAddTriggerBtn_clicked()
 		{
-			if (!m_selected)
+			if (!m_selectedUnit)
 				return;
 
 			ChooseTriggerDialog dialog(m_application);
@@ -638,14 +649,14 @@ namespace wowpp
 				const auto *newTrigger = dialog.getSelectedTrigger();
 				if (newTrigger)
 				{
-					auto it = std::find_if(m_selected->triggers().begin(), m_selected->triggers().end(), [&newTrigger](const UInt32 &trigger) -> bool
+					auto it = std::find_if(m_selectedUnit->triggers().begin(), m_selectedUnit->triggers().end(), [&newTrigger](const UInt32 &trigger) -> bool
 					{
 						return (trigger == newTrigger->id());
 					});
 
-					if (it == m_selected->triggers().end())
+					if (it == m_selectedUnit->triggers().end())
 					{
-						m_selected->mutable_triggers()->Add(newTrigger->id());
+						m_selectedUnit->mutable_triggers()->Add(newTrigger->id());
 						m_ui->unitTriggerWidget->addItem(
 							QString(newTrigger->name().c_str()));
 
@@ -657,7 +668,7 @@ namespace wowpp
 
 		void ObjectEditor::on_unitRemoveTriggerBtn_clicked()
 		{
-			if (!m_selected)
+			if (!m_selectedUnit)
 				return;
 
 			// Find selected trigger
@@ -665,15 +676,15 @@ namespace wowpp
 			if (index.isValid())
 			{
 				int row = index.row();
-				if (row < 0 || row >= m_selected->triggers_size())
+				if (row < 0 || row >= m_selectedUnit->triggers_size())
 					return;
 
-				if (m_selected->triggers_size() > 1 &&
-					row != m_selected->triggers_size() - 1)
+				if (m_selectedUnit->triggers_size() > 1 &&
+					row != m_selectedUnit->triggers_size() - 1)
 				{
-					m_selected->mutable_triggers()->SwapElements(row, m_selected->triggers_size() - 1);
+					m_selectedUnit->mutable_triggers()->SwapElements(row, m_selectedUnit->triggers_size() - 1);
 				}
-				m_selected->mutable_triggers()->RemoveLast();
+				m_selectedUnit->mutable_triggers()->RemoveLast();
 
 				auto *taken = m_ui->unitTriggerWidget->takeItem(row);
 				delete taken;
@@ -684,13 +695,13 @@ namespace wowpp
 
 		void ObjectEditor::on_lootSimulatorButton_clicked()
 		{
-			if (!m_selected)
+			if (!m_selectedUnit)
 				return;
 
-			if (!m_selected->unitlootentry())
+			if (!m_selectedUnit->unitlootentry())
 				return;
 
-			const auto *loot = m_application.getProject().unitLoot.getById(m_selected->unitlootentry());
+			const auto *loot = m_application.getProject().unitLoot.getById(m_selectedUnit->unitlootentry());
 			if (!loot)
 				return;
 
@@ -893,7 +904,7 @@ namespace wowpp
 		}
 		void ObjectEditor::on_addUnitSpellButton_clicked()
 		{
-			if (!m_selected)
+			if (!m_selectedUnit)
 				return;
 
 			CreatureSpellDialog dialog(m_application);
@@ -905,7 +916,7 @@ namespace wowpp
 					return;
 				}
 
-				auto *added = m_selected->add_creaturespells();
+				auto *added = m_selectedUnit->add_creaturespells();
 				added->set_spellid(dialog.getSelectedSpell()->id());
 				added->set_priority(dialog.getPriority());
 				added->set_mincooldown(dialog.getMinCooldown());
@@ -921,6 +932,30 @@ namespace wowpp
 		void ObjectEditor::on_removeUnitSpellButton_clicked()
 		{
 
+		}
+		void ObjectEditor::on_effectButton1_clicked()
+		{
+			if (!m_selectedSpell)
+				return;
+
+			if (m_selectedSpell->effects_size() > 0)
+				showEffectDialog(m_selectedSpell->effects(0));
+		}
+		void ObjectEditor::on_effectButton2_clicked()
+		{
+			if (!m_selectedSpell)
+				return;
+
+			if (m_selectedSpell->effects_size() > 1)
+				showEffectDialog(m_selectedSpell->effects(1));
+		}
+		void ObjectEditor::on_effectButton3_clicked()
+		{
+			if (!m_selectedSpell)
+				return;
+
+			if (m_selectedSpell->effects_size() > 2)
+				showEffectDialog(m_selectedSpell->effects(2));
 		}
 	}
 }

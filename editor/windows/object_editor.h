@@ -55,6 +55,7 @@ namespace wowpp
 
 			void addLootItem(const proto::LootDefinition &def, QTreeWidgetItem *parent);
 			void addSpellEntry(const proto::UnitSpellEntry &creatureSpell);
+			void showEffectDialog(const proto::SpellEffect &effect);
 
 		private slots:
 
@@ -74,6 +75,10 @@ namespace wowpp
 			void on_addUnitSpellButton_clicked();
 			void on_removeUnitSpellButton_clicked();
 
+			void on_effectButton1_clicked();
+			void on_effectButton2_clicked();
+			void on_effectButton3_clicked();
+
 		private:
 				
 			EditorApplication &m_application;
@@ -83,7 +88,8 @@ namespace wowpp
 			QSortFilterProxyModel *m_itemFilter;
 			Properties m_properties;
 			PropertyViewModel *m_viewModel;
-			proto::UnitEntry *m_selected;
+			proto::UnitEntry *m_selectedUnit;
+			proto::SpellEntry *m_selectedSpell;
 		};
 	}
 }

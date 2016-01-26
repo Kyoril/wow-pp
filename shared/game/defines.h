@@ -1533,11 +1533,21 @@ namespace wowpp
 				DestDynObjNone			= 88,
 				DestTraj				= 89,
 				UnitTargetMinipet		= 90,
-				CorpseAreaEnemyPlayer	= 93
+				CorpseAreaEnemyPlayer	= 93,
+
+				Count_					= 94,
+				Invalid_				= 255
 			};
 		}
 
 		typedef targets::Type Targets;
+
+		namespace constant_literal
+		{
+			typedef EnumStrings < Targets, targets::Count_,
+				targets::Invalid_ > TargetStrings;
+			extern const TargetStrings targetNames;
+		}
 
 		namespace spell_cast_target_flags
 		{
