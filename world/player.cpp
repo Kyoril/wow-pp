@@ -1988,6 +1988,12 @@ namespace wowpp
 
 		UInt32 stack = item->getUInt32Value(item_fields::StackCount);
 		UInt32 money = stack * item->getEntry().sellprice();
+		if (money == 0)
+		{
+			WLOG("TODO: Can't sell that item");
+			return;
+		}
+
 		m_character->removeItem(bag, slot, stack);
 		m_character->setUInt32Value(character_fields::Coinage, m_character->getUInt32Value(character_fields::Coinage) + money);
 	}
