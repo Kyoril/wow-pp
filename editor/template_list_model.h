@@ -61,7 +61,7 @@ namespace wowpp
 				if (role == Qt::DisplayRole)
 				{
 					const auto &templates = m_entries.getTemplates();
-					const T::EntryType &tpl = templates.entry(index.row());
+					const typename T::EntryType &tpl = templates.entry(index.row());
 
 					if (index.column() == 0)
 					{
