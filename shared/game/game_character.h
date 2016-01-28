@@ -568,6 +568,9 @@ namespace wowpp
 		/// Gets an item by it's guid.
 		GameItem *getItemByGUID(UInt64 guid, UInt8 &out_bag, UInt8 &out_slot);
 
+		bool hasMainHandWeapon() const override;
+		bool hasOffHandWeapon() const override;
+
 		GroupUpdateFlags getGroupUpdateFlags() const { return m_groupUpdateFlags; }
 		void modifyGroupUpdateFlags(GroupUpdateFlags flags, bool apply);
 		void clearGroupUpdateFlags() { m_groupUpdateFlags = group_update_flags::None; }

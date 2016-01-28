@@ -511,6 +511,9 @@ namespace wowpp
 		virtual bool canDodge() const = 0;
 		virtual bool canDualWield() const = 0;
 
+		virtual bool hasMainHandWeapon() const = 0;
+		virtual bool hasOffHandWeapon() const = 0;
+
 		bool isStunned() const { return m_isStunned; }
 		bool isRooted() const { return m_isRooted; }
 		bool canMove() const { return isAlive() && !isStunned() && !isRooted(); }

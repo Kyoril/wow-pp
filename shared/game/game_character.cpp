@@ -1412,6 +1412,18 @@ namespace wowpp
 		return nullptr;
 	}
 
+	bool GameCharacter::hasMainHandWeapon() const
+	{
+		auto *item = getItemByPos(0xFF, player_equipment_slots::Mainhand);
+		return (item != nullptr);
+	}
+
+	bool GameCharacter::hasOffHandWeapon() const
+	{
+		auto *item = getItemByPos(0xFF, player_equipment_slots::Offhand);
+		return (item && item->getEntry().inventorytype() != game::inventory_type::Shield);
+	}
+
 	io::Writer & operator<<(io::Writer &w, GameCharacter const& object)
 	{
 		w

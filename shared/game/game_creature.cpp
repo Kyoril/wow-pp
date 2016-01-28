@@ -288,6 +288,22 @@ namespace wowpp
 		}
 	}
 
+	bool GameCreature::hasMainHandWeapon() const
+	{
+		const UInt32 slot = 0;
+		const auto invType = getByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0);
+		return (invType != game::inventory_type::NonEquip);
+	}
+
+	bool GameCreature::hasOffHandWeapon() const
+	{
+		const UInt32 slot = 1;
+		const auto invType = getByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0);
+
+		// Creatures can only block if they NOT wield a shield
+		return (invType && invType != game::inventory_type::Shield);
+	}
+
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)
 	{
 		if (killerLevel < 8)

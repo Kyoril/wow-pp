@@ -98,6 +98,10 @@ namespace wowpp
 		UInt32 getLootRecipientCount() const { return m_lootRecipients.size(); }
 		/// 
 		void raiseTrigger(trigger_event::Type e);
+
+		bool hasMainHandWeapon() const override;
+		bool hasOffHandWeapon() const override;
+
 		/// Executes a callback function for every valid loot recipient.
 		template<typename OnRecipient>
 		void forEachLootRecipient(OnRecipient callback)
