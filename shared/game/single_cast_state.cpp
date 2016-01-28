@@ -1107,93 +1107,55 @@ namespace wowpp
 	{
 		// Make sure that this isn't destroyed during the effects
 		auto strong = shared_from_this();
+		
+		std::vector<wowpp::proto::SpellEffect> effects;
+		for (int i = 0; i < m_spell.effects_size(); ++i)
+		{
+			effects.push_back(wowpp::proto::SpellEffect(m_spell.effects(i)));
+		}
 
 		// Execute spell immediatly
 		namespace se = game::spell_effects;
-		for (int i = 0; i < m_spell.effects_size(); ++i)
+		std::vector<std::pair<UInt32,EffectHandler>> effectMap {	//ordered pairs to avoid 25% resists for binary spells like frostnova
+			{se::InstantKill, std::bind(&SingleCastState::spellEffectInstantKill, this, std::placeholders::_1)},
+			{se::PowerDrain, std::bind(&SingleCastState::spellEffectDrainPower, this, std::placeholders::_1)},
+			{se::Heal, std::bind(&SingleCastState::spellEffectHeal, this, std::placeholders::_1)},
+			{se::Bind, std::bind(&SingleCastState::spellEffectBind, this, std::placeholders::_1)},
+			{se::QuestComplete, std::bind(&SingleCastState::spellEffectQuestComplete, this, std::placeholders::_1)},
+			{se::Proficiency, std::bind(&SingleCastState::spellEffectProficiency, this, std::placeholders::_1)},
+			{se::AddComboPoints, std::bind(&SingleCastState::spellEffectAddComboPoints, this, std::placeholders::_1)},
+			{se::Duel, std::bind(&SingleCastState::spellEffectDuel, this, std::placeholders::_1)},
+			{se::WeaponDamageNoSchool, std::bind(&SingleCastState::spellEffectWeaponDamageNoSchool, this, std::placeholders::_1)},
+			{se::CreateItem, std::bind(&SingleCastState::spellEffectCreateItem, this, std::placeholders::_1)},
+			{se::WeaponDamage, std::bind(&SingleCastState::spellEffectWeaponDamage, this, std::placeholders::_1)},
+			{se::NormalizedWeaponDmg, std::bind(&SingleCastState::spellEffectNormalizedWeaponDamage, this, std::placeholders::_1)},
+			{se::TeleportUnits, std::bind(&SingleCastState::spellEffectTeleportUnits, this, std::placeholders::_1)},
+			{se::TriggerSpell, std::bind(&SingleCastState::spellEffectTriggerSpell, this, std::placeholders::_1)},
+			{se::Energize, std::bind(&SingleCastState::spellEffectEnergize, this, std::placeholders::_1)},
+			{se::PowerBurn, std::bind(&SingleCastState::spellEffectPowerBurn, this, std::placeholders::_1)},
+			{se::Charge, std::bind(&SingleCastState::spellEffectCharge, this, std::placeholders::_1)},
+			{se::OpenLock, std::bind(&SingleCastState::spellEffectOpenLock, this, std::placeholders::_1)},
+			{se::ApplyAreaAuraParty, std::bind(&SingleCastState::spellEffectApplyAreaAuraParty, this, std::placeholders::_1)},
+			{se::Summon, std::bind(&SingleCastState::spellEffectSummon, this, std::placeholders::_1)},
+			{se::ScriptEffect, std::bind(&SingleCastState::spellEffectScript, this, std::placeholders::_1)},
+			// Add all effects above here
+			{se::ApplyAura, std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
+			{se::SchoolDamage, std::bind(&SingleCastState::spellEffectSchoolDamage, this, std::placeholders::_1)}
+		};
+		
+		for (std::vector<std::pair<UInt32,EffectHandler>>::iterator it = effectMap.begin(); it != effectMap.end(); ++it)
 		{
-			const auto &effect = m_spell.effects(i);
-			switch (effect.type())
+			for (int k = 0; k < effects.size(); ++k)
 			{
-			case se::InstantKill:
-				spellEffectInstantKill(effect);
-				break;
-			case se::SchoolDamage:
-				spellEffectSchoolDamage(effect);
-				break;
-			case se::PowerDrain:
-				spellEffectDrainPower(effect);
-				break;
-			case se::Heal:
-				spellEffectHeal(effect);
-				break;
-			case se::Bind:
-				spellEffectBind(effect);
-				break;
-			case se::QuestComplete:
-				spellEffectQuestComplete(effect);
-				break;
-			case se::Proficiency:
-				spellEffectProficiency(effect);
-				break;
-			case se::AddComboPoints:
-				spellEffectAddComboPoints(effect);
-				break;
-			case se::Duel:
-				spellEffectDuel(effect);
-				break;
-			case se::WeaponDamageNoSchool:
-				spellEffectWeaponDamageNoSchool(effect);
-			case se::CreateItem:
-				spellEffectCreateItem(effect);
-				break;
-			case se::ApplyAura:
-				spellEffectApplyAura(effect);
-				break;
-			case se::WeaponDamage:
-				spellEffectWeaponDamage(effect);
-				break;
-			case se::NormalizedWeaponDmg:
-				spellEffectNormalizedWeaponDamage(effect);
-				break;
-			case se::TeleportUnits:
-				spellEffectTeleportUnits(effect);
-				break;
-			case se::Weapon:
-			case se::Language:
-				// Nothing to do here, since the skills for these spells will be applied as soon as the player
-				// learns this spell.
-				break;
-			case se::TriggerSpell:
-				spellEffectTriggerSpell(effect);
-				break;
-			case se::Energize:
-				spellEffectEnergize(effect);
-				break;
-			case se::PowerBurn:
-				spellEffectPowerBurn(effect);
-				break;
-			case se::Charge:
-				spellEffectCharge(effect);
-				break;
-			case se::OpenLock:
-				spellEffectOpenLock(effect);
-				break;
-			case se::ApplyAreaAuraParty:
-				spellEffectApplyAreaAuraParty(effect);
-				break;
-			case se::Summon:
-				spellEffectSummon(effect);
-				break;
-			case se::ScriptEffect:
-				spellEffectScript(effect);
-				break;
-			default:
-				WLOG("Spell effect " << game::constant_literal::spellEffectNames.getName(static_cast<game::SpellEffect>(effect.type())) << " (" << effect.type() << ") not yet implemented");
-				break;
+				if (it->first == effects[k].type())
+				{
+					assert(it->second);
+					it->second(effects[k]);
+					effects.erase(effects.begin() + k);	//remove effect for future checks
+				}
 			}
-		}
-
+		}		
+		
 		// Cast all additional spells if available
 		for (const auto &spell : m_spell.additionalspells())
 		{
