@@ -225,7 +225,6 @@ namespace wowpp
 		// First, determine the current victim
 		auto &controlled = getControlled();
 		auto *victim = controlled.getVictim();
-
 		bool rooted = controlled.isRooted();
 
 		// Now, determine the victim with the highest threat value
@@ -253,7 +252,8 @@ namespace wowpp
 			newVictim != victim)
 		{
 			// Start attacking the new target
-			controlled.startAttack(*newVictim);
+			controlled.setVictim(newVictim);
+			controlled.startAttack();
 			chaseTarget(*newVictim); 
 
 			// Watch for victim move signal

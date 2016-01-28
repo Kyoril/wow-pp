@@ -1081,7 +1081,8 @@ namespace wowpp
 		}
 
 		// Start attacking the given target
-		sender.getCharacter()->startAttack(*target);
+		sender.getCharacter()->setVictim(target);
+		sender.getCharacter()->startAttack();
 	}
 
 	void RealmConnector::handleAttackStop(Player &sender, game::Protocol::IncomingPacket &packet)

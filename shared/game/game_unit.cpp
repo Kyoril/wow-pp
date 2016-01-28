@@ -331,6 +331,32 @@ namespace wowpp
 		}
 	}
 
+	void GameUnit::setVictim(GameUnit * victim)
+	{
+		if (m_victim && !victim)
+		{
+			m_victimDied.disconnect();
+			m_victimDespawned.disconnect();
+
+			// Stop auto attack
+			stopAttack();
+		}
+
+		const bool needReconnect = (victim && !m_victim);
+		m_victim = victim;
+
+		// Update target value
+		setUInt64Value(unit_fields::Target, m_victim ? m_victim->getGuid() : 0);
+		if (needReconnect)
+		{
+			m_victimDied = m_victim->killed.connect(
+				std::bind(&GameUnit::onVictimKilled, this, std::placeholders::_1));
+			m_victimDespawned = m_victim->despawned.connect(
+				std::bind(&GameUnit::onVictimDespawned, this));
+		}
+
+	}
+
 	void GameUnit::triggerDespawnTimer(GameTime despawnDelay)
 	{
 		// Start despawn countdown (may override previous countdown)
@@ -345,23 +371,18 @@ namespace wowpp
 		m_spellCast->stopCast();
 	}
 
-	void GameUnit::startAttack(GameUnit &target)
+	void GameUnit::startAttack()
 	{
-		// Check if we already are attacking that unit...
-		if (m_victim && m_victim == &target)
-		{
+		// No victim?
+		if (!m_victim)
 			return;
-		}
 
 		// Check if the target is alive
-		if (!target.isAlive())
+		if (!m_victim->isAlive())
 		{
 			autoAttackError(attack_swing_error::TargetDead);
 			return;
 		}
-
-		// Target victim
-		setUInt64Value(unit_fields::Target, target.getGuid());
 
 		TileIndex2D tileIndex;
 		if (!getTileIndex(tileIndex))
@@ -373,7 +394,7 @@ namespace wowpp
 		std::vector<char> buffer;
 		io::VectorSink sink(buffer);
 		game::Protocol::OutgoingPacket packet(sink);
-		game::server_write::attackStart(packet, getGuid(), target.getGuid());
+		game::server_write::attackStart(packet, getGuid(), m_victim->getGuid());
 
 		// Notify all tile subscribers about this event
 		forEachSubscriberInSight(
@@ -383,13 +404,6 @@ namespace wowpp
 		{
 			subscriber.sendPacket(packet, buffer);
 		});
-
-		// Update victim
-		m_victim = &target;
-		m_victimDied = target.killed.connect(
-			std::bind(&GameUnit::onVictimKilled, this, std::placeholders::_1));
-		m_victimDespawned = target.despawned.connect(
-			std::bind(&GameUnit::onVictimDespawned, this));
 
 		// Start auto attack timer (immediatly start to attack our target)
 		GameTime nextAttackSwing = getCurrentTime();
@@ -402,33 +416,12 @@ namespace wowpp
 
 	void GameUnit::stopAttack()
 	{
-		// Check if we are attacking any victim right now
-		if (!m_victim)
-		{
+		// Are we attacking?
+		if (!m_attackSwingCountdown.running)
 			return;
-		}
-
-		// Untarget victim
-		setUInt64Value(unit_fields::Target, 0);
-
-		// Get victim guid
-		UInt64 victimGUID = m_victim->getGuid();
 
 		// Stop auto attack countdown
 		m_attackSwingCountdown.cancel();
-
-		// No longer listen to these events
-		m_victimDespawned.disconnect();
-		m_victimDied.disconnect();
-
-		// Reset victim
-		m_victim = nullptr;
-
-		TileIndex2D tileIndex;
-		if (!getTileIndex(tileIndex))
-		{
-			return;
-		}
 
 		// Reset onSwing callback
 		if (m_swingCallback)
@@ -436,11 +429,21 @@ namespace wowpp
 			m_swingCallback = AttackSwingCallback();
 		}
 
+		// We need to have a valid victim
+		if (!m_victim)
+			return;
+
+		TileIndex2D tileIndex;
+		if (!getTileIndex(tileIndex))
+		{
+			return;
+		}
+
 		// Notify all subscribers
 		std::vector<char> buffer;
 		io::VectorSink sink(buffer);
 		game::Protocol::OutgoingPacket packet(sink);
-		game::server_write::attackStop(packet, getGuid(), victimGUID);
+		game::server_write::attackStop(packet, getGuid(), m_victim->getGuid());
 
 		// Notify all tile subscribers about this event
 		forEachSubscriberInSight(
@@ -701,14 +704,12 @@ namespace wowpp
 
 	void GameUnit::onVictimKilled(GameUnit *killer)
 	{
-		// Stop attacking our target
-		stopAttack();
+		setVictim(nullptr);
 	}
 
 	void GameUnit::onVictimDespawned()
 	{
-		// Stop attacking our target
-		stopAttack();
+		setVictim(nullptr);
 	}
 
 	void GameUnit::startRegeneration()

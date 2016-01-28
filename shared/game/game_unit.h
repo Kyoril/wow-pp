@@ -424,12 +424,17 @@ namespace wowpp
 		void cancelCast();
 		/// Starts auto attack on the given target.
 		/// @param target The unit to attack.
-		void startAttack(GameUnit &target);
+		void startAttack();
 		/// Stops auto attacking the given target. Does nothing if auto attack mode
 		/// isn't active right now.
 		void stopAttack();
+		/// Determines whether this unit is in auto attack mode right now.
+		bool isAutoAttacking() const { return m_attackSwingCountdown.running; }
 		/// Gets the current auto attack victim of this unit (if any).
 		GameUnit *getVictim() { return m_victim; }
+		/// Updates the unit's victim. Will stop auto attack if no victim is provided, otherwise,
+		/// an ongoing auto attack will simply switch targets.
+		void setVictim(GameUnit *victim);
 		/// TODO: Move the logic of this method somewhere else.
 		void triggerDespawnTimer(GameTime despawnDelay);
 		/// Starts the regeneration countdown.

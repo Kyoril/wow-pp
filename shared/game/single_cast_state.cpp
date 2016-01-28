@@ -401,7 +401,8 @@ namespace wowpp
 
 			if (attackTarget)
 			{
-				m_cast.getExecuter().startAttack(*attackTarget);
+				m_cast.getExecuter().setVictim(attackTarget);
+				m_cast.getExecuter().startAttack();
 			}
 			else
 			{
