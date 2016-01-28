@@ -111,7 +111,7 @@ namespace wowpp
 			QRegExp regExp(m_ui->itemFilter->text(), caseSensitivity, syntax);
 			m_itemFilter->setFilterRegExp(regExp);
 		}
-
+#if 0
 		namespace
 		{
 			static QVariant ArmorMiscValue(const proto::UnitEntry &unit)
@@ -175,7 +175,7 @@ namespace wowpp
 				return buffer;
 			}
 		}
-
+#endif
 		void ObjectEditor::addLootItem(const proto::LootDefinition &def, QTreeWidgetItem *parent)
 		{
 			const auto *itemEntry = m_application.getProject().items.getById(def.item());
@@ -706,7 +706,7 @@ namespace wowpp
 				return;
 
 			LootDialog dialog(m_application.getProject(), *loot);
-			auto result = dialog.exec();
+			dialog.exec();
 		}
 
 		void ObjectEditor::on_actionImport_triggered()
@@ -757,7 +757,7 @@ namespace wowpp
 				bool created = false;
 				if (entry > lastEntry)
 				{
-					auto *added = m_application.getProject().unitLoot.add(entry);
+					m_application.getProject().unitLoot.add(entry);
 
 					lastEntry = entry;
 					lastGroup = groupId;
@@ -789,7 +789,7 @@ namespace wowpp
 				// If there are no loot groups yet, create a new one
 				if (lootEntry->groups().empty() || groupId > lastGroup)
 				{
-					auto *addedGroup = lootEntry->add_groups();
+					lootEntry->add_groups();
 					if (groupId > lastGroup)
 					{
 						lastGroup = groupId;
@@ -819,7 +819,7 @@ namespace wowpp
 			
 			// Do import job
 			ImportDialog dialog(m_application, std::move(task));
-			auto result = dialog.exec();
+			dialog.exec();
 		}
 		void ObjectEditor::on_actionImport_Vendors_triggered()
 		{
@@ -856,7 +856,7 @@ namespace wowpp
 				bool created = false;
 				if (entry > lastEntry)
 				{
-					auto *added = m_application.getProject().vendors.add(entry);
+					m_application.getProject().vendors.add(entry);
 
 					lastEntry = entry;
 					created = true;
@@ -896,7 +896,7 @@ namespace wowpp
 
 			// Do import job
 			ImportDialog dialog(m_application, std::move(task));
-			auto result = dialog.exec();
+			dialog.exec();
 		}
 		void ObjectEditor::on_actionImport_Trainers_triggered()
 		{

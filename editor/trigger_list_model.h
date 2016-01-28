@@ -45,7 +45,7 @@ namespace wowpp
 				return m_entries.getTemplates().entry_size();
 			}
 			
-			QVariant data(const QModelIndex &index, int role) const
+			QVariant data(const QModelIndex &index, int role) const override
 			{
 				if (!index.isValid())
 					return QVariant();
@@ -71,7 +71,7 @@ namespace wowpp
 				return QVariant();
 			}
 
-			QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const
+			QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override
 			{
 				if (role != Qt::DisplayRole)
 					return QVariant();
@@ -86,7 +86,7 @@ namespace wowpp
 				}
 			}
 
-			Qt::ItemFlags flags(const QModelIndex &index) const
+			Qt::ItemFlags flags(const QModelIndex &index) const override
 			{
 				if (!index.isValid())
 					return Qt::ItemIsEnabled;
@@ -94,19 +94,19 @@ namespace wowpp
 				return QAbstractItemModel::flags(index) & ~Qt::ItemIsEditable;
 			}
 
-			bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole)
+			bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override
 			{
 				// Not supported
 				return false;
 			}
 
-			bool insertRows(int position, int rows, const QModelIndex &index = QModelIndex())
+			bool insertRows(int position, int rows, const QModelIndex &index = QModelIndex()) override
 			{
 				// Not supported
 				return false;
 			}
 
-			bool removeRows(int position, int rows, const QModelIndex &index = QModelIndex())
+			bool removeRows(int position, int rows, const QModelIndex &index = QModelIndex()) override
 			{
 				// Not supported
 				return false;

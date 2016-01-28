@@ -53,8 +53,7 @@ namespace wowpp
 	void CreatureAICombatState::onEnter()
 	{
 		auto &controlled = getControlled();
-		auto id = controlled.getEntry().id();
-
+        
 		// Flag controlled unit for combat
 		controlled.addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 
@@ -127,8 +126,7 @@ namespace wowpp
 	void CreatureAICombatState::onLeave()
 	{
 		auto &controlled = getControlled();
-		auto id = controlled.getEntry().id();
-
+        
 		// Stop movement!
 		controlled.getMover().stopMovement();
 

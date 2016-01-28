@@ -625,8 +625,6 @@ namespace wowpp
 					wowpp::MySQL::Row itemRow(itemSelect);
 					while (itemRow)
 					{
-						UInt16 tmp = 0;
-
 						// Read item data
 						pp::world_realm::ItemData data;
 						itemRow.getField(2, data.entry);

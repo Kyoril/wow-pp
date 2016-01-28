@@ -30,8 +30,8 @@ QtOgreWindow::QtOgreWindow(QWindow *parent /*= nullptr*/)
 	, m_ogreWindow(nullptr)
 	, m_ogreCamera(nullptr)
 	, m_updatePending(false)
-	, m_animating(false)
 	, m_mpqArchives(nullptr)
+    , m_animating(false)
 {
 	setAnimating(true);
 	installEventFilter(this);

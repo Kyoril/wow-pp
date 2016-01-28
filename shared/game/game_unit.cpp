@@ -46,9 +46,9 @@ namespace wowpp
 		, m_attackSwingCountdown(timers)
 		, m_lastAttackSwing(0)
 		, m_regenCountdown(timers)
-		, m_lastManaUse(0)
-		, m_auras(*this)
 		, m_factionTemplate(nullptr)
+        , m_lastManaUse(0)
+        , m_auras(*this)
 		, m_isStunned(false)
 		, m_isRooted(false)
 	{
@@ -572,9 +572,7 @@ namespace wowpp
 						// Calculate damage between minimum and maximum damage
 						std::uniform_real_distribution<float> distribution(getFloatValue(unit_fields::MinDamage), getFloatValue(unit_fields::MaxDamage) + 1.0f);
 						totalDamage = victim->calculateArmorReducedDamage(getLevel(), UInt32(distribution(randomGenerator)));
-						if (totalDamage < 0)	//avoid negative damage when blockValue is high
-							totalDamage = 0;
-						
+
 						if (hitInfos[i] == game::hit_info::Glancing)
 						{
 							totalDamage *= 0.75f;	//TODO more detail
@@ -1650,6 +1648,8 @@ namespace wowpp
 					stackBonus = m_auras.getTotalMultiplier(game::aura_type::ModFlightSpeedStacking);
 					nonStackBonus = (100.0f + static_cast<float>(m_auras.getMaximumBasePoints(game::aura_type::ModFlightSpeedNotStacking))) / 100.0f;
 					break;
+                default:
+                    break;
 			}
 
 			float bonus = nonStackBonus > stackBonus ? nonStackBonus : stackBonus;

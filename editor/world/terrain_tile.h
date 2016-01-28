@@ -55,8 +55,8 @@ namespace wowpp
 		private:
 
 			Ogre::SceneManager &m_sceneMgr;
-			Ogre::Camera &m_camera;
-			TerrainPage &m_page;
+			//Ogre::Camera &m_camera;
+			//TerrainPage &m_page;
 			Ogre::MaterialPtr m_material;
 			const UInt32 m_tileX;
 			const UInt32 m_tileY;

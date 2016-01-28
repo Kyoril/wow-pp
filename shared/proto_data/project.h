@@ -169,8 +169,6 @@ namespace wowpp
 				ILOG("Saving data...");
 				auto saveStart = getCurrentTime();
 
-				size_t errorCount = 0;
-
 				const boost::filesystem::path dataPath = directory;
 				const auto realmDataPath = (dataPath / "wowpp");
 
