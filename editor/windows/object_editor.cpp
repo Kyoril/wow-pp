@@ -336,18 +336,18 @@ namespace wowpp
 			
 			// Add unit properties
 #define WOWPP_NUM_PROPERTY(name, type, ref, prop, readonly) { \
-			auto getBinder = [unit]() -> type { return unit-> ## prop ## (); }; \
-			auto setBinder = [unit](type value) { unit->set_ ## prop ## (value); }; \
+			auto getBinder = [unit]() -> type { return unit->prop(); }; \
+			auto setBinder = [unit](type value) { unit->set_##prop(value); }; \
 			m_properties.push_back(PropertyPtr(new NumericProperty(name, ref(getBinder, setBinder), readonly))); }
 #define WOWPP_STR_PROPERTY(name, prop, readonly) { \
-			auto getBinder = [unit]() -> String { return unit-> ## prop ## (); }; \
-			auto setBinder = [unit](const String &value) { unit->set_ ## prop ## (value.c_str()); }; \
+			auto getBinder = [unit]() -> String { return unit->prop(); }; \
+			auto setBinder = [unit](const String &value) { unit->set_##prop(value.c_str()); }; \
 			m_properties.push_back(PropertyPtr(new StringProperty(name, getBinder, setBinder, readonly))); }
 #define WOWPP_MIN_MAX_PROPERTY(name, type, ref, prop, readonly) { \
-			auto getMinBinder = [unit]() -> type { return unit->min ## prop ## (); }; \
-			auto setMinBinder = [unit](type value) { unit->set_min ## prop ## (value); }; \
-			auto getMaxBinder = [unit]() -> type { return unit->max ## prop ## (); }; \
-			auto setMaxBinder = [unit](type value) { unit->set_max ## prop ## (value); }; \
+			auto getMinBinder = [unit]() -> type { return unit->min##prop(); }; \
+			auto setMinBinder = [unit](type value) { unit->set_min##prop(value); }; \
+			auto getMaxBinder = [unit]() -> type { return unit->max##prop(); }; \
+			auto setMaxBinder = [unit](type value) { unit->set_max##prop(value); }; \
 			m_properties.push_back(PropertyPtr(new MinMaxProperty(name, ref(getMinBinder, setMinBinder), ref(getMaxBinder, setMaxBinder), readonly))); }
 
 			WOWPP_NUM_PROPERTY("Entry", UInt32, UInt32Ref, id, true);
