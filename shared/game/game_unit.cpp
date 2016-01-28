@@ -416,10 +416,6 @@ namespace wowpp
 
 	void GameUnit::stopAttack()
 	{
-		// Are we attacking?
-		if (!m_attackSwingCountdown.running)
-			return;
-
 		// Stop auto attack countdown
 		m_attackSwingCountdown.cancel();
 
@@ -431,7 +427,9 @@ namespace wowpp
 
 		// We need to have a valid victim
 		if (!m_victim)
+		{
 			return;
+		}
 
 		TileIndex2D tileIndex;
 		if (!getTileIndex(tileIndex))
@@ -1509,6 +1507,7 @@ namespace wowpp
 	{
 		// Stop auto attack
 		stopAttack();
+		setVictim(nullptr);
 		stopRegeneration();
 
 		m_auras.handleTargetDeath();

@@ -922,7 +922,30 @@ namespace wowpp
 			return;
 		}
 
-		// Get the player character
+		// Try to find that target
+		auto *world = sender.getCharacter()->getWorldInstance();
+		if (!world)
+			return;
+
+		// Find object by GUID
+		auto *targetObj =
+			world->findObjectByGUID(targetGUID);
+
+		// Object found or no object provided
+		if (targetObj || (!targetObj && targetGUID == 0))
+		{
+			GameUnit *unitTarget = nullptr;
+			if (targetObj &&
+				(targetObj->getTypeId() == object_type::Character ||
+				targetObj->getTypeId() == object_type::Unit))
+			{
+				unitTarget = reinterpret_cast<GameUnit*>(targetObj);
+			}
+
+			sender.getCharacter()->setVictim(unitTarget);
+			return;
+		}
+		
 		sender.getCharacter()->setUInt64Value(unit_fields::Target, targetGUID);
 	}
 
