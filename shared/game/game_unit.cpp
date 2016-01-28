@@ -1308,9 +1308,9 @@ namespace wowpp
 		{
 			float attackerRating = attacker.getLevel() * 5;	//TODO get real rating
 			float victimRating = getLevel() * 5;
-			if (isWhiteDamage && false)	//TODO if(dualwield)
+			if (isWhiteDamage && attacker.hasOffHandWeapon())
 			{
-				chance = 19.0f;
+				chance = 24.0f;
 			}
 			else
 			{
