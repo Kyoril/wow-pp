@@ -108,5 +108,7 @@ namespace wowpp
 		void onCastFinished();
 		void onTargetRemovedOrDead();
 		void onUserDamaged();
+		
+		typedef std::function<void(const wowpp::proto::SpellEffect&)> EffectHandler;
 	};
 }

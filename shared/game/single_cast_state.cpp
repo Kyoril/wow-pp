@@ -1115,32 +1115,31 @@ namespace wowpp
 
 		// Execute spell immediatly
 		namespace se = game::spell_effects;
-		typedef void (wowpp::SingleCastState::*EffectHandler)(const wowpp::proto::SpellEffect&);
-		std::vector<std::pair<UInt32,EffectHandler>> effectMap {
-			{se::InstantKill, &SingleCastState::spellEffectInstantKill},
-			{se::PowerDrain, &SingleCastState::spellEffectDrainPower},
-			{se::Heal, &SingleCastState::spellEffectHeal},
-			{se::Bind, &SingleCastState::spellEffectBind},
-			{se::QuestComplete, &SingleCastState::spellEffectQuestComplete},
-			{se::Proficiency, &SingleCastState::spellEffectProficiency},
-			{se::AddComboPoints, &SingleCastState::spellEffectAddComboPoints},
-			{se::Duel, &SingleCastState::spellEffectDuel},
-			{se::WeaponDamageNoSchool, &SingleCastState::spellEffectWeaponDamageNoSchool},
-			{se::CreateItem, &SingleCastState::spellEffectCreateItem},
-			{se::WeaponDamage, &SingleCastState::spellEffectWeaponDamage},
-			{se::NormalizedWeaponDmg, &SingleCastState::spellEffectNormalizedWeaponDamage},
-			{se::TeleportUnits, &SingleCastState::spellEffectTeleportUnits},
-			{se::TriggerSpell, &SingleCastState::spellEffectTriggerSpell},
-			{se::Energize, &SingleCastState::spellEffectEnergize},
-			{se::PowerBurn, &SingleCastState::spellEffectPowerBurn},
-			{se::Charge, &SingleCastState::spellEffectCharge},
-			{se::OpenLock, &SingleCastState::spellEffectOpenLock},
-			{se::ApplyAreaAuraParty, &SingleCastState::spellEffectApplyAreaAuraParty},
-			{se::Summon, &SingleCastState::spellEffectSummon},
-			{se::ScriptEffect, &SingleCastState::spellEffectScript},
+		std::vector<std::pair<UInt32,EffectHandler>> effectMap {	//ordered pairs to avoid 25% resists for binary spells like frostnova
+			{se::InstantKill, std::bind(&SingleCastState::spellEffectInstantKill, this, std::placeholders::_1)},
+			{se::PowerDrain, std::bind(&SingleCastState::spellEffectDrainPower, this, std::placeholders::_1)},
+			{se::Heal, std::bind(&SingleCastState::spellEffectHeal, this, std::placeholders::_1)},
+			{se::Bind, std::bind(&SingleCastState::spellEffectBind, this, std::placeholders::_1)},
+			{se::QuestComplete, std::bind(&SingleCastState::spellEffectQuestComplete, this, std::placeholders::_1)},
+			{se::Proficiency, std::bind(&SingleCastState::spellEffectProficiency, this, std::placeholders::_1)},
+			{se::AddComboPoints, std::bind(&SingleCastState::spellEffectAddComboPoints, this, std::placeholders::_1)},
+			{se::Duel, std::bind(&SingleCastState::spellEffectDuel, this, std::placeholders::_1)},
+			{se::WeaponDamageNoSchool, std::bind(&SingleCastState::spellEffectWeaponDamageNoSchool, this, std::placeholders::_1)},
+			{se::CreateItem, std::bind(&SingleCastState::spellEffectCreateItem, this, std::placeholders::_1)},
+			{se::WeaponDamage, std::bind(&SingleCastState::spellEffectWeaponDamage, this, std::placeholders::_1)},
+			{se::NormalizedWeaponDmg, std::bind(&SingleCastState::spellEffectNormalizedWeaponDamage, this, std::placeholders::_1)},
+			{se::TeleportUnits, std::bind(&SingleCastState::spellEffectTeleportUnits, this, std::placeholders::_1)},
+			{se::TriggerSpell, std::bind(&SingleCastState::spellEffectTriggerSpell, this, std::placeholders::_1)},
+			{se::Energize, std::bind(&SingleCastState::spellEffectEnergize, this, std::placeholders::_1)},
+			{se::PowerBurn, std::bind(&SingleCastState::spellEffectPowerBurn, this, std::placeholders::_1)},
+			{se::Charge, std::bind(&SingleCastState::spellEffectCharge, this, std::placeholders::_1)},
+			{se::OpenLock, std::bind(&SingleCastState::spellEffectOpenLock, this, std::placeholders::_1)},
+			{se::ApplyAreaAuraParty, std::bind(&SingleCastState::spellEffectApplyAreaAuraParty, this, std::placeholders::_1)},
+			{se::Summon, std::bind(&SingleCastState::spellEffectSummon, this, std::placeholders::_1)},
+			{se::ScriptEffect, std::bind(&SingleCastState::spellEffectScript, this, std::placeholders::_1)},
 			// Add all effects above here
-			{se::ApplyAura, &SingleCastState::spellEffectApplyAura},
-			{se::SchoolDamage, &SingleCastState::spellEffectSchoolDamage}
+			{se::ApplyAura, std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
+			{se::SchoolDamage, std::bind(&SingleCastState::spellEffectSchoolDamage, this, std::placeholders::_1)}
 		};
 		
 		for (std::vector<std::pair<UInt32,EffectHandler>>::iterator it = effectMap.begin(); it != effectMap.end(); ++it)
@@ -1149,7 +1148,9 @@ namespace wowpp
 			{
 				if (it->first == effects[k].type())
 				{
-					(this->*it->second)(effects[k]);
+					assert(it->second);
+					it->second(effects[k]);
+					effects.erase(effects.begin() + k);	//remove effect for future checks
 				}
 			}
 		}		
