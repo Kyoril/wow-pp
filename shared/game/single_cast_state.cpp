@@ -922,14 +922,14 @@ namespace wowpp
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
-		bool isNegative = false;	//TODO check it
+		bool isPositive = Aura::isPositive(m_spell, effect);	//TODO check it
 		
-		if (isNegative) {
-			m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//DoT
+		if (isPositive) {
+			m_attackTable.checkPositiveSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//Buff, HoT
 		}
 		else
 		{
-			m_attackTable.checkPositiveSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);		//Buff, HoT
+			m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//DoT
 		}
 		
 		// Determine aura type
@@ -971,7 +971,7 @@ namespace wowpp
 				totalPoints = calculateEffectBasePoints(effect);
 			}
 			
-			if (targetUnit->isAlive() && (isNegative == false || totalPoints > 0))
+			if (targetUnit->isAlive() && (isPositive == true || totalPoints > 0))
 			{
 				std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *targetUnit, [&universe](std::function<void()> work)
 				{

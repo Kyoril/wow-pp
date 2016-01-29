@@ -286,6 +286,10 @@ namespace wowpp
 					case 45438:
 						it->add_additionalspells(41425);
 						break;
+					// Arcane blast
+					case 36032:
+						it->add_additionalspells(36032);
+						break;
 					//////////////////////////////////////////////////////////////////////////
 					// Bandages
 					case 746:

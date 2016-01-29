@@ -2144,9 +2144,9 @@ namespace wowpp
 				ProcTriggerDamage					= 43,
 				TrackCreatures						= 44,
 				TrackResources						= 45,
-				ModParrySkill						= 46,
+				ModParrySkill						= 46,	// not used
 				ModParryPercent						= 47,
-				ModDodgeSkill						= 48,
+				ModDodgeSkill						= 48,	// not used
 				ModDodgePercent						= 49,
 				ModBlockSkill						= 50,
 				ModBlockPercent						= 51,
@@ -2161,7 +2161,7 @@ namespace wowpp
 				ModPacifySilence					= 60,
 				ModScale							= 61,
 				PeriodicHealthFunnel				= 62,
-				PeriodicManaFunnel					= 63,
+				PeriodicManaFunnel					= 63,	// not used
 				PeriodicManaLeech					= 64,
 				ModCastingSpeed						= 65,
 				FeignDeath							= 66,
@@ -2188,7 +2188,7 @@ namespace wowpp
 				ModDamagePercentTaken				= 87,
 				ModHealthRegenPercent				= 88,
 				PeriodicDamagePercent				= 89,
-				ModResistChance						= 90,
+				ModResistChance						= 90,	// not used
 				ModDetectRange						= 91,
 				PreventsFleeing						= 92,
 				ModUnattackable						= 93,
@@ -2212,12 +2212,12 @@ namespace wowpp
 				AddCasterHitTrigger					= 111,
 				OverrideClassScripts				= 112,
 				ModRangedDamageTaken				= 113,
-				ModRangedDamageTakenPct				= 114,
+				ModRangedDamageTakenPct				= 114,	// not used
 				ModHealing							= 115,
 				ModRegenDurationCombat				= 116,
 				ModMechanicResistance				= 117,
 				ModHealingPct						= 118,
-				SharePetTracking					= 119,
+				SharePetTracking					= 119,	// not used
 				Untrackable							= 120,
 				Empathy								= 121,
 				ModOffhandDamagePct					= 122,

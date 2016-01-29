@@ -60,8 +60,11 @@ namespace wowpp
 		void handleProcModifier(game::spell_proc_flags::Type procType, GameUnit *attacker = nullptr);
 		/// Determines whether this is a passive spell aura.
 		bool isPassive() const { return (m_spell.attributes(0) & game::spell_attributes::Passive) != 0; }
+		/// Determines whether the target may be positive
+		static bool hasPositiveTarget(const proto::SpellEffect &effect);
 		/// Determines whether this is a positive spell aura.
 		bool isPositive() const;
+		static bool isPositive(const proto::SpellEntry &spell, const proto::SpellEffect &effect);
 		/// Gets the current aura slot.
 		UInt8 getSlot() const { return m_slot; }
 		/// Sets the new aura slot to be used.

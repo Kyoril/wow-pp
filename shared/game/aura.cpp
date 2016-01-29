@@ -771,16 +771,165 @@ namespace wowpp
 	{
 		//ToDo: Add talent modifiers
 	}
+	
+	bool Aura::hasPositiveTarget(const proto::SpellEffect &effect)
+	{
+		if (effect.targetb() == game::targets::UnitAreaEnemySrc)
+			return false;
+		
+		switch (effect.targeta())
+		{
+			case game::targets::UnitTargetEnemy:
+			case game::targets::UnitTargetAny:
+			case game::targets::UnitAreaEnemyDst:
+				return false;
+			default:
+				return true;
+		}
+	}
 
 	bool Aura::isPositive() const
 	{
+		return isPositive(m_spell, m_effect);
+	}
+	
+	bool Aura::isPositive(const proto::SpellEntry &spell, const proto::SpellEffect &effect)
+	{
 		// Negative attribute
-		if (m_spell.attributes(0) & 0x04000000)
+		if (spell.attributes(0) & 0x04000000)
 			return false;
 
-		// TODO
-
-		return true;
+		switch(effect.aura())
+		{
+		//always positive
+		case game::aura_type::PeriodicHeal:
+		case game::aura_type::ModThreat:
+		case game::aura_type::DamageShield:
+		case game::aura_type::ModStealth:
+		case game::aura_type::ModStealthDetect:
+		case game::aura_type::ModInvisibility:
+		case game::aura_type::ModInvisibilityDetection:
+		case game::aura_type::ObsModHealth:
+		case game::aura_type::ObsModMana:
+		case game::aura_type::ReflectSpells:
+		case game::aura_type::ProcTriggerDamage:
+		case game::aura_type::TrackCreatures:
+		case game::aura_type::TrackResources:
+		case game::aura_type::ModBlockSkill:
+		case game::aura_type::ModDamageDoneCreature:
+		case game::aura_type::PeriodicHealthFunnel:
+		case game::aura_type::FeignDeath:
+		case game::aura_type::SchoolAbsorb:
+		case game::aura_type::ExtraAttacks:
+		case game::aura_type::ModSpellCritChanceSchool:
+		case game::aura_type::ModPowerCostSchool:
+		case game::aura_type::ReflectSpellsSchool:
+		case game::aura_type::FarSight:
+		case game::aura_type::Mounted:
+		case game::aura_type::SplitDamagePct:
+		case game::aura_type::WaterBreathing:
+		case game::aura_type::ModBaseResistance:
+		case game::aura_type::ModRegen:
+		case game::aura_type::ModPowerRegen:
+		case game::aura_type::InterruptRegen:
+		case game::aura_type::SpellMagnet:
+		case game::aura_type::ManaShield:
+		case game::aura_type::ModSkillTalent:
+		case game::aura_type::ModMeleeAttackPowerVersus:
+		case game::aura_type::ModTotalThreat:
+		case game::aura_type::WaterWalk:
+		case game::aura_type::FeatherFall:
+		case game::aura_type::Hover:
+		case game::aura_type::AddTargetTrigger:
+		case game::aura_type::AddCasterHitTrigger:
+		case game::aura_type::ModRangedDamageTaken:
+		case game::aura_type::ModRegenDurationCombat:
+		case game::aura_type::Untrackable:
+		case game::aura_type::ModOffhandDamagePct:
+			return true;
+		//always negative
+		case game::aura_type::BindSight:
+		case game::aura_type::ModPossess:
+		case game::aura_type::ModConfuse:
+		case game::aura_type::ModCharm:
+		case game::aura_type::ModFear:
+		case game::aura_type::ModTaunt:
+		case game::aura_type::ModStun:
+		case game::aura_type::ModRoot:
+		case game::aura_type::ModSilence:
+		case game::aura_type::ModDecreaseSpeed:
+		case game::aura_type::PeriodicLeech:
+		case game::aura_type::ModPacifySilence:
+		case game::aura_type::PeriodicManaLeech:
+		case game::aura_type::ModDisarm:
+		case game::aura_type::ModStalked:
+		case game::aura_type::ChannelDeathItem:
+		case game::aura_type::ModDetectRange:
+		case game::aura_type::Ghost:
+		case game::aura_type::AurasVisible:
+		case game::aura_type::Empathy:
+		case game::aura_type::ModTargetResistance:
+			return false;
+		//depends
+		case game::aura_type::PeriodicDamage:
+		case game::aura_type::Dummy:
+		case game::aura_type::ModAttackSpeed:
+		case game::aura_type::ModDamageDone:
+		case game::aura_type::ModDamageTaken:
+		case game::aura_type::ModResistance:
+		case game::aura_type::PeriodicTriggerSpell:
+		case game::aura_type::PeriodicEnergize:
+		case game::aura_type::ModPacify:
+		case game::aura_type::ModStat:
+		case game::aura_type::ModSkill:
+		case game::aura_type::ModIncreaseSpeed:
+		case game::aura_type::ModIncreaseMountedSpeed:
+		case game::aura_type::ModIncreaseHealth:
+		case game::aura_type::ModIncreaseEnergy:
+		case game::aura_type::ModShapeShift:
+		case game::aura_type::EffectImmunity:
+		case game::aura_type::StateImmunity:
+		case game::aura_type::SchoolImmunity:
+		case game::aura_type::DamageImmunity:
+		case game::aura_type::DispelImmunity:
+		case game::aura_type::ProcTriggerSpell:
+		case game::aura_type::ModParryPercent:
+		case game::aura_type::ModDodgePercent:
+		case game::aura_type::ModBlockPercent:
+		case game::aura_type::ModCritPercent:
+		case game::aura_type::ModHitChance:
+		case game::aura_type::ModSpellHitChance:
+		case game::aura_type::Transform:
+		case game::aura_type::ModSpellCritChance:
+		case game::aura_type::ModIncreaseSwimSpeed:
+		case game::aura_type::ModScale:
+		case game::aura_type::ModCastingSpeed:
+		case game::aura_type::ModPowerCostSchoolPct:
+		case game::aura_type::ModLanguage:
+		case game::aura_type::MechanicImmunity:
+		case game::aura_type::ModDamagePercentDone:
+		case game::aura_type::ModPercentStat:
+		case game::aura_type::ModDamagePercentTaken:
+		case game::aura_type::ModHealthRegenPercent:
+		case game::aura_type::PeriodicDamagePercent:
+		case game::aura_type::PreventsFleeing:
+		case game::aura_type::ModUnattackable:
+		case game::aura_type::ModAttackPower:
+		case game::aura_type::ModResistancePct:
+		case game::aura_type::AddFlatModifier:
+		case game::aura_type::AddPctModifier:
+		case game::aura_type::ModPowerRegenPercent:
+		case game::aura_type::OverrideClassScripts:
+		case game::aura_type::ModHealing:
+		case game::aura_type::ModMechanicResistance:
+		case game::aura_type::ModHealingPct:
+		case game::aura_type::ModRangedAttackPower:
+		default:
+			if (hasPositiveTarget(effect))
+				return true;
+			else
+				return false;
+		}
 	}
 
 	void Aura::onCasterDespawned(GameObject &object)
