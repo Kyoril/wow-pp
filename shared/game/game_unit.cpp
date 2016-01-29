@@ -917,6 +917,34 @@ namespace wowpp
 		}
 	}
 
+	bool GameUnit::hasCooldown(UInt32 spellId) const
+	{
+		auto it = m_spellCooldowns.find(spellId);
+		if (it == m_spellCooldowns.end())
+		{
+			return false;
+		}
+
+		return it->second > getCurrentTime();
+	}
+
+	UInt32 GameUnit::getCooldown(UInt32 spellId) const
+	{
+		auto it = m_spellCooldowns.find(spellId);
+		if (it == m_spellCooldowns.end()) return 0;
+
+		GameTime currentTime = getCurrentTime();
+		return (it->second > currentTime ? it->second - currentTime : 0);
+	}
+
+	void GameUnit::setCooldown(UInt32 spellId, UInt32 timeInMs)
+	{
+		if (timeInMs == 0)
+			m_spellCooldowns.erase(spellId);
+		else
+			m_spellCooldowns[spellId] = getCurrentTime() + timeInMs;
+	}
+
 	float GameUnit::getHealthBonusFromStamina() const
 	{
 		float stamina = float(getUInt32Value(unit_fields::Stat2));
@@ -1616,7 +1644,33 @@ namespace wowpp
 
 	io::Writer & operator<<(io::Writer &w, GameUnit const& object)
 	{
-		w << reinterpret_cast<GameObject const&>(object);
+		w 
+			<< reinterpret_cast<GameObject const&>(object);
+
+		// Write spell cooldowns
+		{
+			// Counter placeholder (active cooldown count will be determined)
+			const size_t cooldownCountPos = w.sink().position();
+			w
+				<< io::write<NetUInt32>(0);
+
+			// Write cooldown data of active cooldowns and count
+			UInt32 activeCooldownCount = 0;
+			auto t = getCurrentTime();
+			for (const auto &cooldown : object.m_spellCooldowns)
+			{
+				if (cooldown.second > t)
+				{
+					activeCooldownCount++;
+					w
+						<< io::write<NetUInt32>(cooldown.first)
+						<< io::write<NetUInt32>(cooldown.second);
+				}
+			}
+
+			// Overwrite active cooldown count
+			w.sink().overwrite(cooldownCountPos, reinterpret_cast<const char*>(&activeCooldownCount), sizeof(UInt32));
+		}
 
 		return w;
 	}
@@ -1627,6 +1681,21 @@ namespace wowpp
 		r
 			>> reinterpret_cast<GameObject &>(object);
 
+		// Read spell cooldowns
+		{
+			UInt32 cooldownCount = 0;
+			r >> io::read<NetUInt32>(cooldownCount);
+
+			for (UInt32 i = 0; i < cooldownCount; ++i)
+			{
+				UInt32 spellId = 0, endTime = 0;
+				r
+					>> io::read<NetUInt32>(spellId)
+					>> io::read<NetUInt32>(endTime);
+				object.m_spellCooldowns[spellId] = endTime;
+			}
+		}
+		
 		// Update internals based on received values
 		object.raceUpdated();
 		object.classUpdated();

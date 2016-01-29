@@ -699,6 +699,76 @@ namespace wowpp
 
 		return true;
 	}
+
+	static bool importCategories(proto::Project &project, MySQL::Connection &conn)
+	{
+		project.spellCategories.clear();
+
+		{
+			wowpp::MySQL::Select select(conn, "SELECT DISTINCT `Category` FROM `dbc_spell`;");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					UInt32 category = 0;
+					row.getField(0, category);
+
+					// Add category
+					if (category != 0)
+					{
+						project.spellCategories.add(category);
+					}
+
+					row = row.next(select);
+				}
+			}
+		}
+
+		wowpp::MySQL::Select select(conn, "SELECT `Id`, `Category`, `CategoryRecoveryTime` FROM `dbc_spell`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 id = 0, category = 0, recoveryTime = 0;
+				row.getField(0, id);
+				row.getField(1, category);
+				row.getField(2, recoveryTime);
+
+				auto * spell = project.spells.getById(id);
+				if (!spell)
+				{
+					WLOG("Unable to find spell by id: " << id);
+					row = row.next(select);
+					continue;
+				}
+
+				if (category != 0)
+				{
+					spell->set_category(category);
+
+					// Add spells to category
+					auto *cat = project.spellCategories.getById(category);
+					if (!cat)
+					{
+						WLOG("Could not find category by id: " << category);
+					}
+					else
+					{
+						cat->add_spells(spell->id());
+					}
+				}
+				if (recoveryTime != 0) spell->set_categorycooldown(recoveryTime);
+
+				// Next row
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
 }
 
 /// Procedural entry point of the application.
@@ -770,6 +840,12 @@ int main(int argc, char* argv[])
 	if (!importSpellMechanics(protoProject, connection))
 	{
 		ELOG("Failed to import spell mechanics");
+		return 1;
+	}
+
+	if (!importCategories(protoProject, connection))
+	{
+		ELOG("Failed to import spell categories");
 		return 1;
 	}
 

@@ -317,6 +317,7 @@ namespace wowpp
 				TrainerBuyFailed			= 0x1B4,
 				LogXPGain					= 0x1D0,
 				Pong						= 0x1DD,
+				ClearCooldown				= 0x1DE,
 				LevelUpInfo					= 0x1D4,
 				AuthChallenge				= 0x1EC,
 				AuthResponse				= 0x1EE,
@@ -1165,14 +1166,16 @@ namespace wowpp
 
 			void initialSpells(
 				game::OutgoingPacket &out_packet,
-				const std::vector<const proto::SpellEntry*> &spells
+				const proto::Project &project,
+				const std::vector<const proto::SpellEntry*> &spells,
+				const GameUnit::CooldownMap &cooldowns
 				);
 
 			void bindPointUpdate(
 				game::OutgoingPacket &out_packet,
 				UInt32 mapId,
 				UInt32 areaId,
-				math::Vector3 location
+				const math::Vector3 &location
 				);
 
 			void pong(
@@ -1346,13 +1349,22 @@ namespace wowpp
 				);
 
 			void spellCooldown(
-				game::OutgoingPacket &out_packet
-				//TODO
+				game::OutgoingPacket &out_packet,
+				UInt64 targetGUID,
+				UInt8 flags,
+				const std::map<UInt32, UInt32> &spellCooldownTimesMS
 				);
 
 			void cooldownEvent(
-				game::OutgoingPacket &out_packet
-				//TODO
+				game::OutgoingPacket &out_packet,
+				UInt32 spellID,
+				UInt64 objectGUID
+				);
+
+			void clearCooldown(
+				game::OutgoingPacket &out_packet,
+				UInt32 spellID,
+				UInt64 targetGUID
 				);
 
 			void spellNonMeleeDamageLog(

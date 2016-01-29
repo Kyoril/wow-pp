@@ -808,20 +808,25 @@ namespace wowpp
 		//m_gameCharacter->setGuid(createGUID(worldObjectGuid, 0, high_guid::Player));
 		m_gameCharacter->relocate(location, o);
 		m_gameCharacter->setMapId(mapId);
+		
+		UInt32 homeMap = 0;
+		math::Vector3 homePos;
+		float homeOri = 0;
+		m_gameCharacter->getHome(homeMap, homePos, homeOri);
 
 		// Clear mask
 		m_gameCharacter->clearUpdateMask();
 
+		sendPacket(
+			std::bind(game::server_write::setDungeonDifficulty, std::placeholders::_1));
+
+		// Send world verification packet to the client to proof world coordinates from
+		// the character list
+		sendPacket(
+			std::bind(game::server_write::loginVerifyWorld, std::placeholders::_1, mapId, location, o));
+
 		if (isLoginEnter)
 		{
-			sendPacket(
-				std::bind(game::server_write::setDungeonDifficulty, std::placeholders::_1));
-
-			// Send world verification packet to the client to proof world coordinates from
-			// the character list
-			sendPacket(
-				std::bind(game::server_write::loginVerifyWorld, std::placeholders::_1, mapId, location, o));
-
 			// Send account data times (TODO: Find out what this does)
 			std::array<UInt32, 32> times;
 			times.fill(0);
@@ -835,23 +840,26 @@ namespace wowpp
 			// SMSG_MOTD 
 			sendPacket(
 				std::bind(game::server_write::motd, std::placeholders::_1, m_config.messageOfTheDay));
+		}
 
-			// Don't know what this packet does
-			sendPacket(
-				std::bind(game::server_write::setRestStart, std::placeholders::_1));
+		// Don't know what this packet does
+		sendPacket(
+			std::bind(game::server_write::setRestStart, std::placeholders::_1));
 
-			// Notify about bind point for hearthstone (also used in case of corrupted location data)
-			sendPacket(
-				std::bind(game::server_write::bindPointUpdate, std::placeholders::_1, mapId, zoneId, location));
+		// Notify about bind point for hearthstone (also used in case of corrupted location data)
+		sendPacket(
+			std::bind(game::server_write::bindPointUpdate, std::placeholders::_1, homeMap, zoneId, std::cref(homePos)));
 
+		// Send spells
+		const auto &spells = m_gameCharacter->getSpells();
+		sendPacket(
+			std::bind(game::server_write::initialSpells, std::placeholders::_1, std::cref(m_project), std::cref(spells), std::cref(m_gameCharacter->getCooldowns())));
+
+		if (isLoginEnter)
+		{
 			// Send tutorial flags (which tutorials have been viewed etc.)
 			sendPacket(
 				std::bind(game::server_write::tutorialFlags, std::placeholders::_1, std::cref(m_tutorialData)));
-
-			// Send spells
-			const auto &spells = m_gameCharacter->getSpells();
-			sendPacket(
-				std::bind(game::server_write::initialSpells, std::placeholders::_1, std::cref(spells)));
 
 			sendPacket(
 				std::bind(game::server_write::unlearnSpells, std::placeholders::_1));

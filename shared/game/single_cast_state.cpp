@@ -321,8 +321,6 @@ namespace wowpp
 			}
 		}
 		
-		// TODO: Apply cooldown
-		
 		m_hasFinished = true;
 
 		const std::weak_ptr<SingleCastState> weakThis = strongThis;
@@ -1105,6 +1103,31 @@ namespace wowpp
 
 	void SingleCastState::applyAllEffects()
 	{
+		// Add spell cooldown if any
+		{
+			UInt64 spellCatCD = m_spell.categorycooldown();
+			UInt64 spellCD = m_spell.cooldown();
+
+			UInt64 finalCD = spellCD;
+			if (!finalCD) finalCD = spellCatCD;
+			if (finalCD)
+			{
+				m_cast.getExecuter().setCooldown(m_spell.id(), static_cast<UInt32>(finalCD));
+				if (m_spell.category() && spellCatCD)
+				{
+					auto *cat = m_cast.getExecuter().getProject().spellCategories.getById(m_spell.category());
+					if (cat)
+					{
+						for (const auto &spellId : cat->spells())
+						{
+							if (spellId != m_spell.id())
+								m_cast.getExecuter().setCooldown(spellId, static_cast<UInt32>(spellCatCD));
+						}
+					}
+				}
+			}
+		}
+
 		// Make sure that this isn't destroyed during the effects
 		auto strong = shared_from_this();
 		

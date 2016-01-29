@@ -47,6 +47,7 @@
 #include "shared/proto_data/factions.pb.h"
 #include "shared/proto_data/faction_templates.pb.h"
 #include "shared/proto_data/area_triggers.pb.h"
+#include "shared/proto_data/spell_categories.pb.h"
 
 namespace wowpp
 {
@@ -72,6 +73,7 @@ namespace wowpp
 		typedef TemplateManager<wowpp::proto::Factions, wowpp::proto::FactionEntry> FactionManager;
 		typedef TemplateManager<wowpp::proto::FactionTemplates, wowpp::proto::FactionTemplateEntry> FactionTemplateManager;
 		typedef TemplateManager<wowpp::proto::AreaTriggers, wowpp::proto::AreaTriggerEntry> AreaTriggerManager;
+		typedef TemplateManager<wowpp::proto::SpellCategories, wowpp::proto::SpellCategoryEntry> SpellCategoryManager;
 
 		class Project : public boost::noncopyable
 		{
@@ -97,6 +99,7 @@ namespace wowpp
 			FactionManager factions;
 			FactionTemplateManager factionTemplates;
 			AreaTriggerManager areaTriggers;
+			SpellCategoryManager spellCategories;
 
 		public:
 
@@ -146,6 +149,7 @@ namespace wowpp
 				managers.push_back(ManagerEntry("factions", factions));
 				managers.push_back(ManagerEntry("faction_templates", factionTemplates));
 				managers.push_back(ManagerEntry("area_triggers", areaTriggers));
+				managers.push_back(ManagerEntry("spell_categories", spellCategories));
 
 				virtual_dir::FileSystemReader virtualDirectory(realmDataPath);
 				if (!RealmProjectLoader::load(
@@ -196,6 +200,7 @@ namespace wowpp
 				managers.push_back(ManagerEntry("factions", "factions", factions));
 				managers.push_back(ManagerEntry("faction_templates", "faction_templates", factionTemplates));
 				managers.push_back(ManagerEntry("area_triggers", "area_triggers", areaTriggers));
+				managers.push_back(ManagerEntry("spell_categories", "spell_categories", spellCategories));
 
 				if (!RealmProjectSaver::save(realmDataPath, managers))
 				{
