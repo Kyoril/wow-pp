@@ -142,6 +142,16 @@ CREATE TABLE `group_members` (
   CONSTRAINT `group_members_ibfk_2` FOREIGN KEY (`guid`) REFERENCES `character` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
 
+DROP TABLE IF EXISTS `character_cooldowns`;
+
+CREATE TABLE `character_cooldowns` (
+  `id` int(10) unsigned NOT NULL,
+  `spell` int(10) unsigned NOT NULL,
+  `end` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`,`spell`),
+  CONSTRAINT `character_cooldowns_ibfk_1` FOREIGN KEY (`id`) REFERENCES `character` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
+
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;

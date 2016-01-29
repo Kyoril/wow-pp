@@ -33,6 +33,12 @@ namespace wowpp
 			}
 		}
 
+		// Check for cooldown
+		if (m_executer.hasCooldown(spell.id()))
+		{
+			return std::make_pair(game::spell_cast_result::FailedNotReady, nullptr);
+		}
+
 		auto *instance = m_executer.getWorldInstance();
 		if (!instance)
 		{

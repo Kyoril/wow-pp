@@ -34,6 +34,7 @@
 #include "common/linear_set.h"
 #include "attack_table.h"
 #include "proto_data/trigger_helper.h"
+#include <unordered_map>
 #include <boost/signals2.hpp>
 
 namespace wowpp
@@ -325,8 +326,8 @@ namespace wowpp
 	public:
 
 		typedef std::function<void(game::SpellCastResult)> SpellSuccessCallback;
-
 		typedef std::function<bool()> AttackSwingCallback;
+		typedef std::unordered_map<UInt32, GameTime> CooldownMap;
 
 		/// Fired when this unit was killed. Parameter: GameUnit* killer (may be nullptr if killer 
 		/// information is not available (for example due to environmental damage))
@@ -374,6 +375,8 @@ namespace wowpp
 		boost::signals2::signal<void(bool)> stunStateChanged;
 		/// Fired when the movement speed of this unit changes.
 		boost::signals2::signal<void(MovementType)> speedChanged;
+		/// Fired when a custom cooldown event was rised (for example, "Stealth" cooldown is only fired when stealth ends).
+		boost::signals2::signal<void(UInt32)> cooldownEvent;
 
 	public:
 
@@ -568,6 +571,21 @@ namespace wowpp
 		/// Gets the current unit mover.
 		UnitMover &getMover() {	return *m_mover; }
 
+		/// Determines whether the unit has a cooldown on a specific spell.
+		/// @param spellId The ID of the spell to check.
+		/// @returns true, if there is a remaining cooldown.
+		bool hasCooldown(UInt32 spellId) const;
+		/// Gets the remaining cooldown time in milliseconds for a specific spell.
+		/// @param spellId The ID of the spell to check.
+		/// @returns 0 if there is no active cooldown for that spell.
+		UInt32 getCooldown(UInt32 spellId) const;
+		/// Sets the cooldown time in milliseconds for a specific spell.
+		/// @param spellId The spell to set the cooldown time for.
+		/// @param timeInMs Cooldown time in milliseconds. Use 0 to clear the cooldown.
+		void setCooldown(UInt32 spellId, UInt32 timeInMs);
+		/// Gets a constant map of all cooldown entries.
+		const CooldownMap &getCooldowns() const { return m_spellCooldowns; }
+
 	public:
 
 		virtual void levelChanged(const proto::LevelEntry &levelInfo);
@@ -621,6 +639,7 @@ namespace wowpp
 		bool m_isStunned;
 		bool m_isRooted;
 		std::array<float, movement_type::Count> m_speedBonus;
+		CooldownMap m_spellCooldowns;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameUnit const& object);

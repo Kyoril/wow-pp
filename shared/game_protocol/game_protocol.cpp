@@ -314,7 +314,7 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void bindPointUpdate(game::OutgoingPacket &out_packet, UInt32 mapId, UInt32 areaId, math::Vector3 location)
+			void bindPointUpdate(game::OutgoingPacket &out_packet, UInt32 mapId, UInt32 areaId, const math::Vector3& location)
 			{
 				out_packet.start(game::server_packet::BindPointUpdate);
 				out_packet
@@ -351,7 +351,7 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void initialSpells(game::OutgoingPacket &out_packet, const std::vector<const proto::SpellEntry*> &spells)
+			void initialSpells(game::OutgoingPacket &out_packet, const proto::Project &project, const std::vector<const proto::SpellEntry*> &spells, const GameUnit::CooldownMap &cooldowns)
 			{
 				out_packet.start(game::server_packet::InitialSpells);
 				
@@ -369,10 +369,45 @@ namespace wowpp
 						<< io::write<NetUInt16>(0x00);				// On Cooldown?
 				}
 
-				//TODO
-				const UInt16 spellCooldowns = 0;
+				const UInt16 spellCooldowns = cooldowns.size();
 				out_packet
 					<< io::write<NetUInt16>(spellCooldowns);
+				for (const auto &cooldown : cooldowns)
+				{
+					out_packet
+						<< io::write<NetUInt16>(cooldown.first);
+
+					const auto *spell = project.spells.getById(cooldown.first);
+					if (!spell)
+					{
+						out_packet
+							<< io::write<NetUInt32>(0)
+							<< io::write<NetUInt32>(0)
+							<< io::write<NetUInt32>(0);
+					}
+					else
+					{
+						out_packet
+							<< io::write<NetUInt16>(0)
+							<< io::write<NetUInt16>(spell->category());
+
+						const GameTime time = getCurrentTime();
+						const UInt32 remaining = (cooldown.second > time ? cooldown.second - time : 0);
+
+						if (spell->category())
+						{
+							out_packet
+								<< io::write<NetUInt32>(0)
+								<< io::write<NetUInt32>(remaining);
+						}
+						else
+						{
+							out_packet
+								<< io::write<NetUInt32>(remaining)
+								<< io::write<NetUInt32>(0);
+						}
+					}
+				}
 
 				out_packet.finish();
 			}
@@ -1079,15 +1114,36 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void spellCooldown(game::OutgoingPacket &out_packet /*TODO */)
+			void spellCooldown(game::OutgoingPacket &out_packet, UInt64 targetGUID, UInt8 flags, const std::map<UInt32, UInt32> &spellCooldownTimesMS)
 			{
 				out_packet.start(game::server_packet::SpellCooldown);
+				out_packet
+					<< io::write<NetUInt64>(targetGUID)
+					<< io::write<NetUInt8>(flags);
+				for (const auto &pair : spellCooldownTimesMS)
+				{
+					out_packet
+						<< io::write<NetUInt32>(pair.first)			// Spell ID
+						<< io::write<NetUInt32>(pair.second);		// Cooldown time in milliseconds where 0 is equal to now (no cooldown)
+				}
 				out_packet.finish();
 			}
 
-			void cooldownEvent(game::OutgoingPacket &out_packet /*TODO */)
+			void cooldownEvent(game::OutgoingPacket &out_packet, UInt32 spellID, UInt64 objectGUID)
 			{
 				out_packet.start(game::server_packet::CooldownEvent);
+				out_packet
+					<< io::write<NetUInt32>(spellID)
+					<< io::write<NetUInt64>(objectGUID);
+				out_packet.finish();
+			}
+
+			void clearCooldown(game::OutgoingPacket & out_packet, UInt32 spellID, UInt64 targetGUID)
+			{
+				out_packet.start(game::server_packet::ClearCooldown);
+				out_packet
+					<< io::write<NetUInt32>(spellID)
+					<< io::write<NetUInt64>(targetGUID);
 				out_packet.finish();
 			}
 

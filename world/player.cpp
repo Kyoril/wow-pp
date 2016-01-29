@@ -84,6 +84,10 @@ namespace wowpp
 			std::bind(&Player::onTargetAuraUpdated, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 		m_onTeleport = m_character->teleport.connect(
 			std::bind(&Player::onTeleport, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+		m_onCooldownEvent = m_character->cooldownEvent.connect(
+			[this](UInt32 spellId) {
+			sendProxyPacket(std::bind(game::server_write::cooldownEvent, std::placeholders::_1, spellId, m_character->getGuid()));
+		});
 
 		auto onRootOrStunUpdate = [this](bool flag) {
 			if (flag || m_character->isRooted() || m_character->isStunned())
@@ -364,7 +368,7 @@ namespace wowpp
 
 			// Header with object guid and type
 			writer
-				<< io::write<NetUInt8>(updateType);
+			<< io::write<NetUInt8>(updateType);
 
 			UInt64 guidCopy = guid;
 			UInt8 packGUID[8 + 1];
@@ -383,10 +387,10 @@ namespace wowpp
 			}
 			writer.sink().write((const char*)&packGUID[0], size);
 			writer
-				<< io::write<NetUInt8>(objectTypeId);
+			<< io::write<NetUInt8>(objectTypeId);
 
 			writer
-				<< io::write<NetUInt8>(updateFlags);
+			<< io::write<NetUInt8>(updateFlags);
 
 			// Write movement update
 			{
@@ -399,7 +403,7 @@ namespace wowpp
 				// Position & Rotation
 				float o = m_character->getOrientation();
 				math::Vector3 location(m_character->getLocation());
-				
+
 
 				writer
 					<< io::write<float>(location.x)
@@ -435,18 +439,18 @@ namespace wowpp
 			{
 				switch (objectTypeId)
 				{
-				case object_type::Object:
-				case object_type::Item:
-				case object_type::Container:
-				case object_type::GameObject:
-				case object_type::DynamicObject:
-				case object_type::Corpse:
-					writer
-						<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
-					break;
-				default:
-					writer
-						<< io::write<NetUInt32>(0);
+					case object_type::Object:
+					case object_type::Item:
+					case object_type::Container:
+					case object_type::GameObject:
+					case object_type::DynamicObject:
+					case object_type::Corpse:
+						writer
+							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
+						break;
+					default:
+						writer
+							<< io::write<NetUInt32>(0);
 				}
 			}
 

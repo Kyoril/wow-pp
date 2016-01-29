@@ -34,7 +34,7 @@ namespace wowpp
 	{
 		namespace world_realm
 		{
-			static const UInt32 ProtocolVersion = 0x0E;
+			static const UInt32 ProtocolVersion = 0x0F;
 
 			namespace world_instance_error
 			{

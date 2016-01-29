@@ -1100,6 +1100,13 @@ namespace wowpp
 		}
 
 		handleModifier(false);
+
+		if ((m_spell.attributes(0) & game::spell_attributes::DisabledWhileActive) != 0)
+		{
+			// Raise cooldown event
+			m_caster->setCooldown(m_spell.id(), m_spell.cooldown() ? m_spell.cooldown() : m_spell.categorycooldown());
+			m_caster->cooldownEvent(m_spell.id());
+		}
 	}
 
 	void Aura::startPeriodicTimer()
