@@ -147,7 +147,7 @@ namespace wowpp
 
 	private:
 
-		void onObjectMoved(GameObject &object, math::Vector3 oldPosition, float oldO);
+		void onObjectMoved(GameObject &object, const math::Vector3 &oldPosition, float oldO);
 
 	private:
 

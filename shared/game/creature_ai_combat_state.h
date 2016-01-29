@@ -24,6 +24,10 @@
 #include "common/typedefs.h"
 #include "creature_ai_state.h"
 #include "math/vector3.h"
+#include "common/countdown.h"
+#include "shared/proto_data/spells.pb.h"
+#include "shared/proto_data/units.pb.h"
+#include "defines.h"
 #include <boost/signals2.hpp>
 #include <memory>
 #include <map>
@@ -74,6 +78,7 @@ namespace wowpp
 		void updateVictim();
 		void chaseTarget(GameUnit &target);
 		void chooseNextAction();
+		void onSpellCast(game::SpellCastResult result);
 
 	private:
 
@@ -82,6 +87,14 @@ namespace wowpp
 		UnitSignals m_despawnedSignals;
 		boost::signals2::scoped_connection m_onThreatened, m_onVictimMoved, m_onMoveTargetChanged;
 		boost::signals2::scoped_connection m_onStunChanged, m_onRootChanged;
+		boost::signals2::scoped_connection m_onAutoAttackDone, m_onControlledMoved;
 		GameTime m_lastThreatTime;
+		Countdown m_nextActionCountdown;
+
+		const proto::UnitSpellEntry *m_lastSpellEntry;
+		const proto::SpellEntry *m_lastSpell;
+		GameTime m_lastCastTime;
+		UInt32 m_customCooldown;
+		game::SpellCastResult m_lastCastResult;
 	};
 }

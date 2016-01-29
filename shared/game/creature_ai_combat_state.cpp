@@ -27,7 +27,6 @@
 #include "game_character.h"
 #include "world_instance.h"
 #include "proto_data/faction_helper.h"
-#include "shared/proto_data/units.pb.h"
 #include "proto_data/trigger_helper.h"
 #include "binary_io/vector_sink.h"
 #include "game_protocol/game_protocol.h"
@@ -41,19 +40,31 @@ namespace wowpp
 	CreatureAICombatState::CreatureAICombatState(CreatureAI &ai, GameUnit &victim)
 		: CreatureAIState(ai)
 		, m_lastThreatTime(0)
+		, m_nextActionCountdown(ai.getControlled().getTimers())
 	{
+		// Setup
+		m_lastSpellEntry = nullptr;
+		m_lastSpell = nullptr;
+		m_customCooldown = 0;
+		m_lastCastTime = 0;
+		m_lastCastResult = game::spell_cast_result::CastOkay;
+
 		// Add initial threat
 		addThreat(victim, 0.0f);
+		m_nextActionCountdown.ended.connect(
+			std::bind(&CreatureAICombatState::chooseNextAction, this));
 	}
 
 	CreatureAICombatState::~CreatureAICombatState()
 	{
+		// Disconnect all connected slots
+		m_nextActionCountdown.ended.disconnect_all_slots();
 	}
 
 	void CreatureAICombatState::onEnter()
 	{
 		auto &controlled = getControlled();
-        
+
 		// Flag controlled unit for combat
 		controlled.addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 
@@ -61,6 +72,45 @@ namespace wowpp
 		m_onThreatened = controlled.threatened.connect([this](GameUnit &threatener, float amount)
 		{
 			addThreat(threatener, amount);
+		});
+		m_onControlledMoved = controlled.moved.connect([this](GameObject &, const math::Vector3 &position, float rotation)
+		{
+			if (m_lastSpellEntry != nullptr && m_lastSpell != nullptr)
+			{
+				// Check if we are able to cast that spell now, and if so: Do it!
+				GameUnit *victim = getControlled().getVictim();
+				if (!victim)
+					return;
+
+				// Check power requirement
+
+				// Check distance and line of sight
+				if (m_lastSpell->minrange() != 0.0f || m_lastSpell->maxrange() != 0.0f)
+				{
+					const float combatReach = victim->getFloatValue(unit_fields::CombatReach) + getControlled().getFloatValue(unit_fields::CombatReach);
+					const float distance = getControlled().getDistanceTo(*victim);
+					if ((m_lastSpell->minrange() > 0.0f && distance < m_lastSpell->minrange()) ||
+						(m_lastSpell->maxrange() > 0.0f && distance > m_lastSpell->maxrange() + combatReach))
+					{
+						// Still out of range, do nothing
+						return;
+					}
+				}
+
+				// Check for line of sight
+				if (!getControlled().isInLineOfSight(*victim))
+				{
+					// Still not in line of sight
+					return;
+				}
+
+				// Reset variables and choose next action (should automatically be old action in most cases)
+				m_customCooldown = 0;
+				m_lastSpellEntry = nullptr;
+				m_lastSpell = nullptr;
+				m_lastCastTime = 0;
+				chooseNextAction();
+			}
 		});
 
 		// Reset AI eventually
@@ -88,7 +138,7 @@ namespace wowpp
 				// No longer attack unit if stunned
 				getControlled().cancelCast();
 				getControlled().stopAttack();
-				getControlled().setUInt64Value(unit_fields::Target, 0);
+				getControlled().setVictim(nullptr);
 			}
 		});
 		m_onRootChanged = getControlled().rootStateChanged.connect([this](bool rooted)
@@ -120,6 +170,29 @@ namespace wowpp
 		// Raise OnAggro triggers
 		controlled.raiseTrigger(trigger_event::OnAggro);
 		
+		// Apply initial spell cooldowns
+		for (const auto &entry : controlled.getEntry().creaturespells())
+		{
+			if (entry.mininitialcooldown() > 0)
+			{
+				UInt32 initialCooldown = 0;
+				if (entry.maxinitialcooldown() > entry.mininitialcooldown())
+				{
+					auto initialCdDist =
+						std::uniform_int_distribution<UInt32>(entry.mininitialcooldown(), entry.maxinitialcooldown());
+					initialCooldown = initialCdDist(randomGenerator);
+				}
+				else
+				{
+					initialCooldown = entry.mininitialcooldown();
+				}
+
+				// Apply cooldown
+				controlled.setCooldown(entry.spellid(), initialCooldown);
+			}
+		}
+
+		// Choose next action
 		chooseNextAction();
 	}
 
@@ -141,7 +214,7 @@ namespace wowpp
 
 		// Stop auto attack
 		controlled.stopAttack();
-
+		controlled.setVictim(nullptr);
 	}
 
 	void CreatureAICombatState::addThreat(GameUnit &threatener, float amount)
@@ -188,7 +261,6 @@ namespace wowpp
 		threatEntry.amount += amount;
 
 		m_lastThreatTime = getCurrentTime();
-		updateVictim();
 	}
 
 	void CreatureAICombatState::removeThreat(GameUnit &threatener)
@@ -213,11 +285,13 @@ namespace wowpp
 		}
 
 		threatener.removeAttackingUnit(getControlled());
+/*
 		if (getControlled().getVictim() == &threatener ||
 			m_threat.empty())
 		{
 			updateVictim();
 		}
+*/
 	}
 
 	void CreatureAICombatState::updateVictim()
@@ -251,28 +325,12 @@ namespace wowpp
 		if (newVictim &&
 			newVictim != victim)
 		{
-			// Start attacking the new target
 			controlled.setVictim(newVictim);
-			controlled.startAttack();
-			chaseTarget(*newVictim); 
-
-			// Watch for victim move signal
-			m_onVictimMoved = newVictim->moved.connect([this](GameObject &moved, math::Vector3 oldPosition, float oldO)
-			{
-				chaseTarget(static_cast<GameUnit&>(moved));
-			});
 		}
 		else if (!newVictim)
 		{
-			m_onVictimMoved.disconnect();
-			controlled.stopAttack();
-
-			if (m_threat.empty())
-			{
-				// No victim found (threat list probably empty?). Warning: this will destroy
-				// the current state.
-				getAI().reset();
-			}
+//			m_onVictimMoved.disconnect();
+			controlled.setVictim(nullptr);
 		}
 	}
 
@@ -285,7 +343,6 @@ namespace wowpp
 			(newTargetLocation - currentLocation).length();
 
 		// Check distance and whether we need to move
-		// TODO: If this creature is a ranged one or casts spells, it need special treatment
 		const float combatRange = getControlled().getMeleeReach() + target.getMeleeReach();
 		if (distance > combatRange)
 		{
@@ -296,32 +353,174 @@ namespace wowpp
 
 	void CreatureAICombatState::chooseNextAction()
 	{
-		/*updateVictim();
-
 		auto &controlled = getControlled();
-		if (controlled.getEntry().creaturespells().empty())
+		m_onVictimMoved.disconnect();
+
+		// First, determine our current victim
+		updateVictim();
+
+		// We should have a valid victim here, otherwise there is nothing to do but to reset
+		GameUnit *victim = controlled.getVictim();
+		if (!victim)
 		{
-			WLOG("NOTHING TO DO...");
+			// No victim found (threat list probably empty?). Warning: this will destroy
+			// the current AI state.
+			getAI().reset();
+			return;
+		}
+
+		// So now we choose from the creature spells, ordered by priority
+		auto &entry = controlled.getEntry();
+
+		// Did we try to cast a spell last time?
+		if (m_lastSpellEntry == nullptr)
+		{
+			UInt32 highestPriority = 0;
+			const proto::UnitSpellEntry *validSpellEntry = nullptr;
+			for (const auto &spelldef : entry.creaturespells())
+			{
+				// Skip this spell as we already found a spell with higher priority value
+				if (spelldef.priority() < highestPriority)
+					continue;
+
+				if (spelldef.priority() > highestPriority)
+				{
+					// Check for cooldown and only if valid, use it
+					if (!controlled.hasCooldown(spelldef.spellid()))
+					{
+						highestPriority = spelldef.priority();
+						validSpellEntry = &spelldef;
+					}
+				}
+				else	// Equal priority
+				{
+					// We already have a valid spell at that priority level
+					if (validSpellEntry)
+						continue;
+
+					// Check if that spell is on cooldown
+					if (!controlled.hasCooldown(spelldef.spellid()))
+					{
+						validSpellEntry = &spelldef;
+					}
+				}
+			}
+
+			// We parsed all spells, now check if there is a spell that isn't on cooldown
+			if (validSpellEntry)
+			{
+				const auto *spellEntry = controlled.getProject().spells.getById(validSpellEntry->spellid());
+				if (spellEntry)
+				{
+					// Stop auto attack
+					controlled.stopAttack();
+
+					// If spell can not be casted while moving, stop movement if any
+					if (spellEntry->interruptflags() & game::spell_interrupt_flags::Movement)
+					{
+						controlled.getMover().stopMovement();
+					}
+
+					// Look at the target
+					controlled.setOrientation(controlled.getAngle(*victim));
+
+					// Save some variables which are needed in CreatureAICombatState::onSpellCast method
+					m_lastCastTime = spellEntry->casttime();
+					m_lastSpellEntry = validSpellEntry;
+					m_lastSpell = spellEntry;
+					m_customCooldown = 0;
+					if (validSpellEntry->mincooldown() > 0)
+					{
+						if (validSpellEntry->maxcooldown() > validSpellEntry->mincooldown())
+						{
+							std::uniform_int_distribution<UInt32> cooldownDist(validSpellEntry->mincooldown(), validSpellEntry->maxcooldown());
+							m_customCooldown = cooldownDist(randomGenerator);
+						}
+						else
+						{
+							m_customCooldown = validSpellEntry->mincooldown();
+						}
+					}
+
+					// Cast that spell
+					SpellTargetMap targetMap;
+					targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+					targetMap.m_unitTarget = victim->getGuid();
+					controlled.castSpell(std::move(targetMap), validSpellEntry->spellid(), -1, m_lastCastTime, false, std::bind(&CreatureAICombatState::onSpellCast, this, std::placeholders::_1));
+					return;
+				}
+			}
 		}
 		else
 		{
-			auto *victim = controlled.getVictim();
-			if (!victim)
+			// We did: Let's try to chase the target and cast again
+			chaseTarget(*victim);
+			return;
+		}
+
+		// Watch for next auto attack
+		m_onAutoAttackDone = controlled.doneMeleeAttack.connect([this](GameUnit *victim, game::VictimState state)
+		{
+			m_nextActionCountdown.setEnd(getCurrentTime() + 1);
+		});
+
+		// Watch for victim move signal
+		m_onVictimMoved = victim->moved.connect([this](GameObject &moved, math::Vector3 oldPosition, float oldO)
+		{
+			chaseTarget(static_cast<GameUnit&>(moved));
+		});
+
+		// No spell cast - start auto attack
+		controlled.startAttack();
+		chaseTarget(*victim);
+	}
+
+	void CreatureAICombatState::onSpellCast(game::SpellCastResult result)
+	{
+		m_lastCastResult = result;
+		if (result == game::spell_cast_result::CastOkay)
+		{
+			// Apply custom cooldown if needed
+			if (m_customCooldown > 0 &&
+				m_lastSpell)
 			{
-				WLOG("NO VICTIM FOUND");
-				return;
+				getControlled().setCooldown(m_lastSpell->id(), m_customCooldown);
 			}
 
-			const auto *spell = controlled.getProject().spells.getById(controlled.getEntry().creaturespells(0).spellid());
-			if (spell)
+			// Cast succeeded: If that spell has a cast time, choose next action after that amount of time
+			if (m_lastCastTime > 0)
 			{
-				SpellTargetMap targetMap;
-				targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
-				targetMap.m_unitTarget = victim->getGuid();
-				controlled.castSpell(targetMap, spell->id(), -1, spell->casttime(), false);
-				ILOG("DID SPELL CAST OF " << spell->name());
+				// Add a little delay so that this event occurs AFTER the spell cast succeeded
+				m_nextActionCountdown.setEnd(getCurrentTime() + m_lastCastTime + 10);
 			}
-		}*/
+			else
+			{
+				// Instant spell cast, so choose the next action
+				m_nextActionCountdown.setEnd(getCurrentTime() + 1);
+			}
+		}
+		else
+		{
+			// There was an error, now take action based on the error
+			switch (result)
+			{
+				case game::spell_cast_result::FailedOutOfRange:
+				case game::spell_cast_result::FailedLineOfSight:
+				case game::spell_cast_result::FailedNoPower:
+					m_nextActionCountdown.setEnd(getCurrentTime() + 1);
+					return;
+				default:
+					// Choose the next action
+					m_nextActionCountdown.setEnd(getCurrentTime() + 1);
+					break;
+			}
+		}
+
+		// Reset variables
+		m_customCooldown = 0;
+		m_lastSpellEntry = nullptr;
+		m_lastSpell = nullptr;
+		m_lastCastTime = 0;
 	}
 
 	void CreatureAICombatState::onDamage(GameUnit &attacker)

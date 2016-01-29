@@ -376,7 +376,6 @@ namespace wowpp
 				{
 					out_packet
 						<< io::write<NetUInt16>(cooldown.first);
-
 					const auto *spell = project.spells.getById(cooldown.first);
 					if (!spell)
 					{
@@ -393,7 +392,6 @@ namespace wowpp
 
 						const GameTime time = getCurrentTime();
 						const UInt32 remaining = (cooldown.second > time ? cooldown.second - time : 0);
-
 						if (spell->category())
 						{
 							out_packet

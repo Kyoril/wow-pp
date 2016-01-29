@@ -150,14 +150,6 @@ namespace wowpp
 		{
 			// Check for line of sight
 			{
-				float tmp = 0.0f;
-				math::Vector3 posA = m_executer.getLocation();
-				math::Vector3 posB;
-				if (unitTarget)
-				{
-					posB = unitTarget->getLocation();
-				}
-
 				if (unitTarget && unitTarget != &m_executer)
 				{
 					if (!m_executer.isInLineOfSight(*unitTarget))

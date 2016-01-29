@@ -439,7 +439,7 @@ namespace wowpp
 		return it->second;
 	}
 
-	void WorldInstance::onObjectMoved(GameObject &object, math::Vector3 oldPosition, float oldO)
+	void WorldInstance::onObjectMoved(GameObject &object, const math::Vector3 &oldPosition, float oldO)
 	{
 		// Calculate old tile index
 		TileIndex2D oldIndex;

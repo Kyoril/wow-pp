@@ -294,11 +294,7 @@ namespace wowpp
 		}
 
 		auto result = m_spellCast->startCast(*spell, std::move(target), basePoints, castTime, isProc);
-		if (callback)
-		{
-			callback(result.first);
-		}
-
+		
 		// Reset auto attack timer if requested
 		if (result.first == game::spell_cast_result::CastOkay &&
 			m_attackSwingCountdown.running && 
@@ -320,6 +316,11 @@ namespace wowpp
 					onSpellCastEnded(true);
 				}
 			}
+		}
+
+		if (callback)
+		{
+			callback(result.first);
 		}
 	}
 
@@ -383,6 +384,10 @@ namespace wowpp
 			autoAttackError(attack_swing_error::TargetDead);
 			return;
 		}
+
+		// Already attacking?
+		if (m_attackSwingCountdown.running)
+			return;
 
 		TileIndex2D tileIndex;
 		if (!getTileIndex(tileIndex))
