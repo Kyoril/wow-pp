@@ -290,6 +290,17 @@ namespace wowpp
 
 						return;
 					}
+
+					// Line of sight check
+					if (!m_cast.getExecuter().isInLineOfSight(*unitTarget))
+					{
+						m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedLineOfSight);
+
+						sendEndCast(false);
+						m_hasFinished = true;
+
+						return;
+					}
 				}
 			}
 

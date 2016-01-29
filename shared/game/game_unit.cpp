@@ -1543,6 +1543,8 @@ namespace wowpp
 
 	void GameUnit::onKilled(GameUnit *killer)
 	{
+		cancelCast();
+
 		// Stop auto attack
 		stopAttack();
 		setVictim(nullptr);
