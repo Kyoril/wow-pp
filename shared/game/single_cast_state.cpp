@@ -920,14 +920,14 @@ namespace wowpp
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
-		bool isPositive = Aura::isPositive(m_spell, effect);	//TODO check it
+		bool isPositive = Aura::isPositive(m_spell, effect);
 		
 		if (isPositive) {
 			m_attackTable.checkPositiveSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//Buff, HoT
 		}
 		else
 		{
-			m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//DoT
+			m_attackTable.checkSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//DoT
 		}
 		
 		// Determine aura type
@@ -1131,10 +1131,10 @@ namespace wowpp
 		// Make sure that this isn't destroyed during the effects
 		auto strong = shared_from_this();
 		
-		std::vector<wowpp::proto::SpellEffect> effects;
+		std::vector<UInt32> effects;
 		for (int i = 0; i < m_spell.effects_size(); ++i)
 		{
-			effects.push_back(wowpp::proto::SpellEffect(m_spell.effects(i)));
+			effects.push_back(m_spell.effects(i).type());
 		}
 
 		// Execute spell immediatly
@@ -1170,11 +1170,11 @@ namespace wowpp
 		{
 			for (int k = 0; k < effects.size(); ++k)
 			{
-				if (it->first == effects[k].type())
+				if (it->first == effects[k])
 				{
 					assert(it->second);
-					it->second(effects[k]);
-					effects.erase(effects.begin() + k);	//remove effect for future checks
+					it->second(m_spell.effects(k));
+//					effects.erase(effects.begin() + k);	//remove effect for future checks
 				}
 			}
 		}		
