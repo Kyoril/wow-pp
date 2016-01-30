@@ -31,6 +31,7 @@
 #include "proto_data/trigger_helper.h"
 #include "log/default_log_levels.h"
 #include "unit_mover.h"
+#include "universe.h"
 
 namespace wowpp
 {
@@ -39,7 +40,13 @@ namespace wowpp
 	{
 		// Enter idle mode when home point was reached
 		m_onHomeReached = getControlled().getMover().targetReached.connect([this]() {
-			getAI().idle();
+			auto &ai = getAI();
+			auto *world = ai.getControlled().getWorldInstance();
+			if (world)
+			{
+				auto &universe = world->getUniverse();
+				universe.post([&ai]() { ai.idle(); });
+			}
 		});
 	}
 

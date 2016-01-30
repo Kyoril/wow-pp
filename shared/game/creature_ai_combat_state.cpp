@@ -192,6 +192,14 @@ namespace wowpp
 			}
 		}
 
+		if (!controlled.getEntry().creaturespells().empty())
+		{
+			m_onAutoAttackDone = controlled.doneMeleeAttack.connect([this](GameUnit *victim, game::VictimState state)
+			{
+				m_nextActionCountdown.setEnd(getCurrentTime() + 1);
+			});
+		}
+
 		// Choose next action
 		chooseNextAction();
 	}
@@ -284,14 +292,17 @@ namespace wowpp
 			m_despawnedSignals.erase(despawnedIt);
 		}
 
-		threatener.removeAttackingUnit(getControlled());
-/*
-		if (getControlled().getVictim() == &threatener ||
+		auto &controlled = getControlled();
+		threatener.removeAttackingUnit(controlled);
+
+		if (controlled.getVictim() == &threatener ||
 			m_threat.empty())
 		{
-			updateVictim();
+			controlled.stopAttack();
+			controlled.cancelCast();
+
+			chooseNextAction();
 		}
-*/
 	}
 
 	void CreatureAICombatState::updateVictim()
@@ -329,7 +340,6 @@ namespace wowpp
 		}
 		else if (!newVictim)
 		{
-//			m_onVictimMoved.disconnect();
 			controlled.setVictim(nullptr);
 		}
 	}
@@ -412,9 +422,6 @@ namespace wowpp
 				const auto *spellEntry = controlled.getProject().spells.getById(validSpellEntry->spellid());
 				if (spellEntry)
 				{
-					// Stop auto attack
-					controlled.stopAttack();
-
 					// If spell can not be casted while moving, stop movement if any
 					if (spellEntry->interruptflags() & game::spell_interrupt_flags::Movement)
 					{
@@ -451,24 +458,6 @@ namespace wowpp
 				}
 			}
 		}
-		else
-		{
-			// Watch for victim move signal
-			m_onVictimMoved = victim->moved.connect([this](GameObject &moved, math::Vector3 oldPosition, float oldO)
-			{
-				chaseTarget(static_cast<GameUnit&>(moved));
-			});
-
-			// We did: Let's try to chase the target and cast again
-			chaseTarget(*victim);
-			return;
-		}
-
-		// Watch for next auto attack
-		m_onAutoAttackDone = controlled.doneMeleeAttack.connect([this](GameUnit *victim, game::VictimState state)
-		{
-			m_nextActionCountdown.setEnd(getCurrentTime() + 1);
-		});
 
 		// Watch for victim move signal
 		m_onVictimMoved = victim->moved.connect([this](GameObject &moved, math::Vector3 oldPosition, float oldO)
@@ -477,7 +466,14 @@ namespace wowpp
 		});
 
 		// No spell cast - start auto attack
-		controlled.startAttack();
+		if (m_lastCastResult != game::spell_cast_result::FailedLineOfSight &&
+			m_lastCastResult != game::spell_cast_result::FailedOutOfRange)
+		{
+			// In all these cases, simply start auto attacking our target
+			controlled.startAttack();
+		}
+
+		// Run towards our target
 		chaseTarget(*victim);
 	}
 
@@ -496,6 +492,9 @@ namespace wowpp
 			// Cast succeeded: If that spell has a cast time, choose next action after that amount of time
 			if (m_lastCastTime > 0)
 			{
+				// Stop auto attack
+				getControlled().stopAttack();
+
 				// Add a little delay so that this event occurs AFTER the spell cast succeeded
 				m_nextActionCountdown.setEnd(getCurrentTime() + m_lastCastTime + 10);
 			}

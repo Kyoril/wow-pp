@@ -131,6 +131,10 @@ namespace wowpp
 		if (target == currentLoc)
 		{
 			stopMovement();
+
+			// Fire signal since we reached our target
+			targetReached();
+
 			return true;
 		}
 

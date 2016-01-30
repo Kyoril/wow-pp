@@ -931,7 +931,24 @@ namespace wowpp
 		}
 		void ObjectEditor::on_removeUnitSpellButton_clicked()
 		{
+			if (!m_selectedUnit)
+				return;
 
+			auto rows = m_ui->treeWidget->selectionModel()->selectedRows(0);
+			if (!rows.empty())
+			{
+				for (auto &index : rows)
+				{
+					// Erase spell entry
+					m_selectedUnit->mutable_creaturespells()->erase(
+						m_selectedUnit->mutable_creaturespells()->begin() + index.row());
+				}
+			}
+
+			for (auto &item : m_ui->treeWidget->selectedItems())
+			{
+				delete item;
+			}
 		}
 		void ObjectEditor::on_effectButton1_clicked()
 		{

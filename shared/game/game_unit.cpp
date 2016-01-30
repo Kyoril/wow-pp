@@ -732,7 +732,7 @@ namespace wowpp
 	void GameUnit::onRegeneration()
 	{
 		// Dead units don't regenerate
-		if (getUInt32Value(unit_fields::Health) == 0)
+		if (!isAlive())
 		{
 			return;
 		}
@@ -778,6 +778,7 @@ namespace wowpp
 				else
 				{
 					// TODO: Unit mana reg
+					addPower = 2.0f * getLevel();
 				}
 				break;
 			}
@@ -1642,10 +1643,13 @@ namespace wowpp
 		assert(m_attackingUnits.contains(&removed));
 		m_attackingUnits.remove(&removed);
 
-		// Remove combat flag
-		if (m_attackingUnits.empty())
+		// Remove combat flag for player characters if no attacking unit is left
+		if (getTypeId() == object_type::Character)
 		{
-			removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
+			if (m_attackingUnits.empty())
+			{
+				removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
+			}
 		}
 	}
 

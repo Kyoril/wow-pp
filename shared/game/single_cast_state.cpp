@@ -131,6 +131,17 @@ namespace wowpp
 		{
 			m_countdown.setEnd(getCurrentTime() + m_castTime);
 
+			WorldInstance *world = m_cast.getExecuter().getWorldInstance();
+			assert(world);
+
+			GameUnit *unitTarget = nullptr;
+			m_target.resolvePointers(*world, &unitTarget, nullptr, nullptr, nullptr);
+			if (unitTarget)
+			{
+				m_onTargetDied = unitTarget->killed.connect(std::bind(&SingleCastState::onTargetRemovedOrDead, this));
+				m_onTargetRemoved = unitTarget->despawned.connect(std::bind(&SingleCastState::onTargetRemovedOrDead, this));
+			}
+
 			// Subscribe to damage events if the spell is cancelled on damage
 			m_onUserMoved = m_cast.getExecuter().moved.connect(
 				std::bind(&SingleCastState::onUserStartsMoving, this));
