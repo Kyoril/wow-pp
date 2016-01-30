@@ -92,8 +92,6 @@ namespace wowpp
 		if (!lootItem)
 			return;
 
-		DLOG("New loot item: " << lootItem->id() << " - " << lootItem->name() << " [" << def.mincount() << " - " << def.maxcount() << "]");
-
 		UInt32 dropCount = def.mincount();
 		if (def.maxcount() > def.mincount())
 		{
@@ -101,7 +99,6 @@ namespace wowpp
 			dropCount = dropDistribution(randomGenerator);
 		}
 
-		DLOG("Drop count: " << dropCount);
 		if (dropCount > lootItem->maxstack())
 		{
 			WLOG("Item drop count was " << dropCount << " but max item stack count is " << lootItem->maxstack());
