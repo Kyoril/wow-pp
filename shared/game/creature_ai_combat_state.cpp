@@ -453,6 +453,12 @@ namespace wowpp
 		}
 		else
 		{
+			// Watch for victim move signal
+			m_onVictimMoved = victim->moved.connect([this](GameObject &moved, math::Vector3 oldPosition, float oldO)
+			{
+				chaseTarget(static_cast<GameUnit&>(moved));
+			});
+
 			// We did: Let's try to chase the target and cast again
 			chaseTarget(*victim);
 			return;
