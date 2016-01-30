@@ -945,6 +945,34 @@ namespace wowpp
 		{
 
 		}
+		void ObjectEditor::on_actionImport_Quests_triggered()
+		{
+			ImportTask task;
+			task.countQuery = "SELECT COUNT(*) FROM `quest_template`;";
+			task.selectQuery = "SELECT `entry`, `Title` FROM `quest_template` ORDER BY `entry`;";
+			task.beforeImport = [this]() {
+				m_application.getProject().quests.clear();
+			};
+			task.onImport = [this](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0;
+				String title;
+				row.getField(0, entry);
+				row.getField(1, title);
+
+				auto *added = m_application.getProject().quests.add(entry);
+				added->set_name(title.c_str());
+
+				return true;
+			};
+			task.afterImport = [this]()
+			{
+
+			};
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
+			dialog.exec();
+		}
 		void ObjectEditor::on_addUnitSpellButton_clicked()
 		{
 			if (!m_selectedUnit)

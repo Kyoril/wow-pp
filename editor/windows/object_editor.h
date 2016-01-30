@@ -74,6 +74,7 @@ namespace wowpp
 			void on_actionImport_triggered();
 			void on_actionImport_Vendors_triggered();
 			void on_actionImport_Trainers_triggered();
+			void on_actionImport_Quests_triggered();
 			void on_addUnitSpellButton_clicked();
 			void on_removeUnitSpellButton_clicked();
 

@@ -3425,6 +3425,7 @@ QGroupBox::indicator:unchecked:disabled
     <addaction name="actionImport"/>
     <addaction name="actionImport_Vendors"/>
     <addaction name="actionImport_Trainers"/>
+    <addaction name="actionImport_Quests"/>
    </widget>
    <addaction name="menu_Project"/>
    <addaction name="menu_Edit"/>
@@ -3505,6 +3506,11 @@ QGroupBox::indicator:unchecked:disabled
   <action name="actionImport_Trainers">
    <property name="text">
     <string>Import Trainers</string>
+   </property>
+  </action>
+  <action name="actionImport_Quests">
+   <property name="text">
+    <string>Import Quests</string>
    </property>
   </action>
  </widget>
