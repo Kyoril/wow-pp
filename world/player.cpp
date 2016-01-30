@@ -2339,4 +2339,28 @@ namespace wowpp
 			std::bind(game::server_write::trainerBuySucceeded, std::placeholders::_1, npcGuid, spellId));
 	}
 
+	void Player::handleQuestgiverStatusQuery(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid = 0;
+		if (!(game::client_read::questgiverStatusQuery(packet, guid)))
+		{
+			return;
+		}
+
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+		{
+			return;
+		}
+
+		GameObject *questgiver = world->findObjectByGUID(guid);
+		if (!questgiver)
+		{
+			return;
+		}
+
+		// TODO
+
+	}
+
 }

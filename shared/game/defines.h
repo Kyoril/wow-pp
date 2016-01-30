@@ -55,6 +55,43 @@ namespace wowpp
 
 		typedef sell_error::Type SellError;
 
+		namespace quest_status
+		{
+			enum Type
+			{
+				None		= 0,
+				Complete	= 1,
+				Unavailable	= 2,
+				Incomplete	= 3,
+				Available	= 4,
+				Failed		= 5,
+
+				Count_		= 6
+			};
+		}
+
+		typedef quest_status::Type QuestStatus;
+
+		namespace questgiver_status
+		{
+			enum Type
+			{
+				None			= 0,
+				Unavailable		= 1,
+				Chat			= 2,
+				Incomplete		= 3,
+				RewardRep		= 4,
+				AvailableRep	= 5,	// Got dayly quest
+				Available		= 6,	// Got quest
+				RewardNoDot		= 7,	// No minimap mark
+				Reward			= 8,	// Same as NoDot, but with minimap mark
+
+				Count_			= 9
+			};
+		}
+		
+		typedef questgiver_status::Type QuestgiverStatus;
+
 		namespace item_class
 		{
 			enum Type

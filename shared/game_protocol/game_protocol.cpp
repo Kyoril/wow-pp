@@ -3666,6 +3666,12 @@ namespace wowpp
 				return packet;
 			}
 
+			bool questgiverStatusQuery(io::Reader & packet, UInt64 & out_guid)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_guid);
+			}
+
 		}
 	}
 }

@@ -136,6 +136,7 @@ namespace wowpp
 				LootMoney				= 0x15E,
 				LootRelease				= 0x15F,
 				GossipHello				= 0x17B,
+				QuestgiverStatusQuery	= 0x182,
 				ListInventory			= 0x19E,
 				SellItem				= 0x1A0,
 				BuyItem					= 0x1A2,
@@ -311,6 +312,7 @@ namespace wowpp
 				LootClearMoney				= 0x165,
 				ItemPushResult				= 0x166,
 				GossipMessage				= 0x17D,
+				QuestgiverStatus			= 0x183,
 				ListInventory				= 0x19F,
 				TrainerList					= 0x1B1,
 				TrainerBuySucceeded			= 0x1B3,
@@ -1065,6 +1067,11 @@ namespace wowpp
 				io::Reader &packet,
 				UInt64 &out_guid,
 				String &out_name
+				);
+
+			bool questgiverStatusQuery(
+				io::Reader &packet,
+				UInt64 &out_guid
 				);
 		};
 
