@@ -594,6 +594,7 @@ namespace wowpp
 
 	private:
 
+		void classUpdated() override;
 		void updateTalentPoints();
 		void initClassEffects();	// init class specific effects
 

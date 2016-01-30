@@ -1836,6 +1836,12 @@ namespace wowpp
 				UInt64 guid,
 				float speed
 				);
+
+			void questgiverStatus(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				game::QuestgiverStatus status
+				);
 		};
 	}
 }

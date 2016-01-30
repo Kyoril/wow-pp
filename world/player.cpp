@@ -2347,20 +2347,45 @@ namespace wowpp
 			return;
 		}
 
+		// Can't find world instance
 		auto *world = m_character->getWorldInstance();
 		if (!world)
 		{
 			return;
 		}
 
+		// Can't find questgiver
 		GameObject *questgiver = world->findObjectByGUID(guid);
 		if (!questgiver)
 		{
 			return;
 		}
 
-		// TODO
+		// Default status: None
+		game::QuestgiverStatus status = game::questgiver_status::None;
+		switch (questgiver->getTypeId())
+		{
+			case object_type::Unit:
+			{
+				// TODO: Check unit quests
+				status = game::questgiver_status::Available;
+				break;
+			}
+			case object_type::GameObject:
+			{
+				// TODO
+				break;
+			}
+			default:
+			{
+				// Unexpected object type!
+				break;
+			}
+		}
 
+		// Send answer
+		sendProxyPacket(
+			std::bind(game::server_write::questgiverStatus, std::placeholders::_1, guid, status));
 	}
 
 }

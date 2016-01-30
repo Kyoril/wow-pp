@@ -2819,6 +2819,15 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void questgiverStatus(game::OutgoingPacket & out_packet, UInt64 guid, game::QuestgiverStatus status)
+			{
+				out_packet.start(game::server_packet::QuestgiverStatus);
+				out_packet
+					<< io::write<NetUInt64>(guid)
+					<< io::write<NetUInt8>(status);
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read

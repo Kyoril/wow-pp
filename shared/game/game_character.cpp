@@ -122,8 +122,6 @@ namespace wowpp
 
 		// Dodge percentage
 		setFloatValue(character_fields::DodgePercentage, 0.0f);
-		
-		initClassEffects();
 	}
 
 	void GameCharacter::levelChanged(const proto::LevelEntry &levelInfo)
@@ -1263,6 +1261,15 @@ namespace wowpp
 		heal(static_cast<UInt32>(addHealth), nullptr, true);
 	}
 
+	void GameCharacter::classUpdated()
+	{
+		// Super class
+		GameUnit::classUpdated();
+
+		// Update class-based effects
+		initClassEffects();
+	}
+
 	void GameCharacter::updateTalentPoints()
 	{
 		auto level = getLevel();
@@ -1285,6 +1292,8 @@ namespace wowpp
 	
 	void GameCharacter::initClassEffects()
 	{
+		m_doneMeleeAttack.disconnect();
+
 		switch(getClass())
 		{
 			case game::char_class::Warrior:

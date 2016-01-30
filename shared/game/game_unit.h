@@ -595,10 +595,13 @@ namespace wowpp
 		float getManaBonusFromIntellect() const;
 		float getMeleeReach() const;
 
+	protected:
+
+		virtual void raceUpdated();
+		virtual void classUpdated();
+
 	private:
 
-		void raceUpdated();
-		void classUpdated();
 		void updateDisplayIds();
 		void onDespawnTimer();
 		
