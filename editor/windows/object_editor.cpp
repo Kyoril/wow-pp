@@ -678,6 +678,19 @@ namespace wowpp
 				return;
 
 			m_selectedQuest = quest;
+
+			m_ui->questIdField->setText(QString("%1").arg(m_selectedQuest->id()));
+			m_ui->questNameField->setText(m_selectedQuest->name().c_str());
+			m_ui->questMethodField->setText(QString("%1").arg(m_selectedQuest->method()));
+			m_ui->questMinLevelField->setText(QString("%1").arg(m_selectedQuest->minlevel()));
+			m_ui->questLevelField->setText(QString("%1").arg(m_selectedQuest->questlevel()));
+
+			m_ui->questDetailsTextField->setText(m_selectedQuest->detailstext().c_str());
+			m_ui->questObjectivesTextField->setText(m_selectedQuest->objectivestext().c_str());
+			m_ui->questOfferRewardTextField->setText(m_selectedQuest->offerrewardtext().c_str());
+			m_ui->questRequestItemsTextField->setText(m_selectedQuest->requestitemstext().c_str());
+			m_ui->questEndTextField->setText(m_selectedQuest->endtext().c_str());
+
 		}
 
 		void ObjectEditor::on_unitAddTriggerBtn_clicked()
@@ -949,18 +962,38 @@ namespace wowpp
 		{
 			ImportTask task;
 			task.countQuery = "SELECT COUNT(*) FROM `quest_template`;";
-			task.selectQuery = "SELECT `entry`, `Title` FROM `quest_template` ORDER BY `entry`;";
+			task.selectQuery = "SELECT `entry`, `Title`, `Method`, `MinLevel`, `QuestLevel`, `Details`, `Objectives`,`OfferRewardText`,`RequestItemsText`,`EndText` FROM `quest_template` ORDER BY `entry`;";
 			task.beforeImport = [this]() {
 				m_application.getProject().quests.clear();
 			};
 			task.onImport = [this](wowpp::MySQL::Row &row) -> bool {
-				UInt32 entry = 0;
-				String title;
-				row.getField(0, entry);
-				row.getField(1, title);
+				UInt32 entry = 0, method = 0, minlevel = 0, questlevel = 0;
+				String title, details, objectives, offerreward, requestitems, end;
+				UInt32 index = 0;
+				row.getField(index++, entry);
+				row.getField(index++, title);
+				row.getField(index++, method);
+
+				row.getField(index++, minlevel);
+				row.getField(index++, questlevel);
+
+				row.getField(index++, details);
+				row.getField(index++, objectives);
+				row.getField(index++, offerreward);
+				row.getField(index++, requestitems);
+				row.getField(index++, end);
 
 				auto *added = m_application.getProject().quests.add(entry);
 				added->set_name(title.c_str());
+				added->set_method(method);
+				added->set_minlevel(minlevel);
+				added->set_questlevel(questlevel);
+
+				if (!details.empty()) added->set_detailstext(details);
+				if (!objectives.empty()) added->set_objectivestext(objectives);
+				if (!offerreward.empty()) added->set_offerrewardtext(offerreward);
+				if (!requestitems.empty()) added->set_requestitemstext(requestitems);
+				if (!end.empty()) added->set_endtext(end);
 
 				return true;
 			};

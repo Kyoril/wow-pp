@@ -25,6 +25,14 @@ package wowpp.proto;
 message QuestEntry {
 	required uint32 id = 1;
 	required string name = 2;
+	optional uint32 method = 3 [default = 2];
+	optional uint32 minlevel = 4 [default = 1];
+	optional uint32 questlevel = 5;
+	optional string detailstext = 6;
+	optional string objectivestext = 7;
+	optional string offerrewardtext = 8;
+	optional string requestitemstext = 9;
+	optional string endtext = 10;
 }
 
 message Quests {
