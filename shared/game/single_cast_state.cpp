@@ -945,18 +945,28 @@ namespace wowpp
 		bool isPositive = Aura::isPositive(m_spell, effect);
 		
 		if (isPositive) {
-			m_attackTable.checkPositiveSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//Buff, HoT
+			m_attackTable.checkPositiveSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//Buff
 		}
 		else
 		{
-			m_attackTable.checkSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//DoT
+			m_attackTable.checkSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//Debuff
 		}
 		
+		UInt32 aura = effect.aura();
+		bool modifiedByBonus;
+		switch (aura)
+		{
+			case game::aura_type::PeriodicDamage:
+			case game::aura_type::PeriodicLeech:
+				modifiedByBonus = true;
+			default:
+				modifiedByBonus = false;
+		}
 		// Determine aura type
-		game::AuraType auraType = static_cast<game::AuraType>(effect.aura());
+//		game::AuraType auraType = static_cast<game::AuraType>(effect.aura());
 //		const String auraTypeName = game::constant_literal::auraTypeNames.getName(auraType);
 //		DLOG("Spell: Aura is: " << auraTypeName);
-
+		
 		// World was already checked. If world would be nullptr, unitTarget would be null as well
 		auto *world = m_cast.getExecuter().getWorldInstance();
 		auto &universe = world->getUniverse();
@@ -964,34 +974,44 @@ namespace wowpp
 		{
 			GameUnit* targetUnit = targets[i];
 			UInt8 school = m_spell.schoolmask();
-			UInt32 totalPoints;
-			bool resisted = false;
+			UInt32 totalPoints = 0;
+			bool spellFailed = false;
 			
 			if (hitInfos[i] == game::hit_info::Miss)
 			{
-				totalPoints = 0;
+				spellFailed = true;
 			}
 			else if (victimStates[i] == game::victim_state::IsImmune)
 			{
-				totalPoints = 0;
+				spellFailed = true;
 			}
 			else if (victimStates[i] == game::victim_state::Normal)
 			{
-				UInt32 spellPower = caster.getBonus(school);
-				UInt32 spellBonusPct = caster.getBonusPct(school);
-				totalPoints = getSpellPointsTotal(effect, spellPower, spellBonusPct);
 				if (resists[i] == 100.0f)
 				{
-					resisted = true;
-					totalPoints = 0;
+					spellFailed = true;
+				}
+				else
+				{
+					if (modifiedByBonus)
+					{
+						UInt32 spellPower = caster.getBonus(school);
+						UInt32 spellBonusPct = caster.getBonusPct(school);
+						totalPoints = getSpellPointsTotal(effect, spellPower, spellBonusPct);
+						totalPoints -= totalPoints * (resists[i] / 100.0f);
+					}
+					else
+					{
+						totalPoints = calculateEffectBasePoints(effect);
+					}
 				}
 			}
-			else
-			{
-				totalPoints = calculateEffectBasePoints(effect);
-			}
 			
-			if (targetUnit->isAlive() && (isPositive == true || totalPoints > 0))
+			if (spellFailed)
+			{
+				// TODO send fail packet
+			}
+			else if (targetUnit->isAlive())
 			{
 				std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *targetUnit, [&universe](std::function<void()> work)
 				{

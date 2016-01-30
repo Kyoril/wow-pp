@@ -270,7 +270,7 @@ namespace wowpp
 			for (GameUnit* targetUnit : m_targets[targetA][targetB])
 			{
 				game::HitInfo hitInfo = game::hit_info::NoAction;
-				game::VictimState victimState = game::victim_state::Unknown1;
+				game::VictimState victimState = game::victim_state::Normal;
 				if (targetUnit->isImmune(school))
 				{
 					victimState = game::victim_state::IsImmune;
@@ -333,6 +333,13 @@ namespace wowpp
 		UInt32 targetB = effect.targetb();
 		if (!checkIndex(targetA, targetB))
 		{
+			bool isBinary = true;
+			UInt32 aura = effect.aura();
+			if (aura == game::aura_type::PeriodicDamage || aura == game::aura_type::PeriodicDamagePercent)
+			{
+				isBinary = false;
+			}
+			
 			UInt8 school = spell.schoolmask();
 			refreshTargets(*attacker, targetMap, targetA, targetB, effect.radius(), spell.maxtargets());
 			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
@@ -351,7 +358,7 @@ namespace wowpp
 					victimState = game::victim_state::IsImmune;
 				}
 
-				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(school, *attacker, true));
+				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(school, *attacker, isBinary));
 				m_hitInfos[targetA][targetB].push_back(hitInfo);
 				m_victimStates[targetA][targetB].push_back(victimState);
 			}
