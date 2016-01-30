@@ -47,6 +47,7 @@ namespace wowpp
 			typedef TemplateListModel<proto::SpellManager> SpellListModel;
 			typedef TemplateListModel<proto::MapManager> MapListModel;
 			typedef TemplateListModel<proto::UnitManager> UnitListModel;
+			typedef TemplateListModel<proto::QuestManager> QuestListModel;
 
 		public:
 
@@ -65,6 +66,7 @@ namespace wowpp
 			MapListModel *getMapListModel() { return m_mapListModel.get(); }
 			UnitListModel *getUnitListModel() { return m_unitListModel.get(); }
 			TriggerListModel *getTriggerListModel() { return m_triggerListModel.get(); }
+			QuestListModel *getQuestListModel() { return m_questListModel.get(); }
 			proto::Project &getProject() { return m_project; }
 			Configuration &getConfiguration() { return m_configuration; }
 
@@ -97,6 +99,7 @@ namespace wowpp
 			std::unique_ptr<MapListModel> m_mapListModel;
 			std::unique_ptr<UnitListModel> m_unitListModel;
 			std::unique_ptr<TriggerListModel> m_triggerListModel;
+			std::unique_ptr<QuestListModel> m_questListModel;
 			bool m_changed;
 		};
 	}

@@ -151,8 +151,6 @@ namespace wowpp
 				return false;
 			}
 
-			// TODO: Create log file
-
 			// Show the main window
 			m_mainWindow.reset(new MainWindow(*this));
 
@@ -184,6 +182,7 @@ namespace wowpp
 			m_spellListModel.reset(new SpellListModel(m_project.spells));
 			m_itemListModel.reset(new ItemListModel(m_project.items));
 			m_triggerListModel.reset(new TriggerListModel(m_project.triggers));
+			m_questListModel.reset(new QuestListModel(m_project.quests));
 
 			// Setup the object editor
 			m_objectEditor.reset(new ObjectEditor(*this));

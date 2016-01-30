@@ -46,6 +46,7 @@ namespace wowpp
 			, m_ui(new Ui::ObjectEditor())
 			, m_selectedUnit(nullptr)
 			, m_selectedSpell(nullptr)
+			, m_selectedQuest(nullptr)
 		{
 			m_ui->setupUi(this);
 
@@ -69,6 +70,11 @@ namespace wowpp
 			m_itemFilter->setSourceModel(app.getItemListModel());
 			m_ui->itemsListView->setModel(m_itemFilter);
 
+			// Automatically deleted since it's a QObject
+			m_questFilter = new QSortFilterProxyModel;
+			m_questFilter->setSourceModel(app.getQuestListModel());
+			m_ui->questsListView->setModel(m_questFilter);
+
 			// Map selection box
 			m_ui->spellTeleportMapBox->setModel(app.getMapListModel());
 
@@ -81,6 +87,9 @@ namespace wowpp
 			connect(m_ui->itemsListView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
 				this, SLOT(onItemSelectionChanged(QItemSelection, QItemSelection)));
+			connect(m_ui->questsListView->selectionModel(),
+				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+				this, SLOT(onQuestSelectionChanged(QItemSelection, QItemSelection)));
 
 			connect(m_ui->actionSave, SIGNAL(triggered()), &m_application, SLOT(saveUnsavedChanges()));
 		}
@@ -110,6 +119,14 @@ namespace wowpp
 
 			QRegExp regExp(m_ui->itemFilter->text(), caseSensitivity, syntax);
 			m_itemFilter->setFilterRegExp(regExp);
+		}
+		void ObjectEditor::on_questFilter_editingFinished()
+		{
+			QRegExp::PatternSyntax syntax = QRegExp::RegExp;
+			Qt::CaseSensitivity caseSensitivity = Qt::CaseInsensitive;
+
+			QRegExp regExp(m_ui->questFilter->text(), caseSensitivity, syntax);
+			m_questFilter->setFilterRegExp(regExp);
 		}
 #if 0
 		namespace
@@ -635,6 +652,32 @@ namespace wowpp
 			auto *item = m_application.getProject().items.getTemplates().mutable_entry(index);
 			if (!item)
 				return;
+		}
+
+		void ObjectEditor::onQuestSelectionChanged(const QItemSelection & selection, const QItemSelection & old)
+		{
+			m_selectedQuest = nullptr;
+
+			// Get the selected unit
+			if (selection.isEmpty())
+				return;
+
+			QItemSelection source = m_questFilter->mapSelectionToSource(selection);
+			if (source.isEmpty())
+				return;
+
+			int index = source.indexes().first().row();
+			if (index < 0)
+			{
+				return;
+			}
+
+			// Get quest entry
+			auto *quest = m_application.getProject().quests.getTemplates().mutable_entry(index);
+			if (!quest)
+				return;
+
+			m_selectedQuest = quest;
 		}
 
 		void ObjectEditor::on_unitAddTriggerBtn_clicked()
