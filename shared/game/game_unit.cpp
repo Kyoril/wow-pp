@@ -1757,6 +1757,7 @@ namespace wowpp
 		const float oldBonus = m_speedBonus[type];
 
 		float speed = 1.0f;
+		bool mounted = getUInt32Value(unit_fields::MountDisplayId) != 0;
 
 		// Apply speed buffs
 		{
@@ -1765,7 +1766,10 @@ namespace wowpp
 			switch (type)
 			{
 				case movement_type::Run:
-					mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModIncreaseSpeed);
+					if (mounted)
+						mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModIncreaseMountedSpeed);
+					else
+						mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModIncreaseSpeed);
 					stackBonus = m_auras.getTotalMultiplier(game::aura_type::ModSpeedAlways);
 					nonStackBonus = (100.0f + static_cast<float>(m_auras.getMaximumBasePoints(game::aura_type::ModSpeedNotStack))) / 100.0f;
 					break;

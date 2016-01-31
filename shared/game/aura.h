@@ -121,6 +121,8 @@ namespace wowpp
 		void handleSchoolAbsorb(bool apply);
 		/// 77
 		void handleMechanicImmunity(bool apply);
+		/// 78
+		void handleMounted(bool apply);
 		/// 97
 		void handleManaShield(bool apply);
 		/// 99

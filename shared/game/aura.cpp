@@ -107,6 +107,8 @@ namespace wowpp
 			break;
 		case aura::ModIncreaseSpeed:
 		case aura::ModSpeedAlways:
+		//mounted speed
+		case aura::ModIncreaseMountedSpeed:
 			handleRunSpeedModifier(apply);
 			break;
 		case aura::ModFlightSpeed:
@@ -123,9 +125,11 @@ namespace wowpp
 			handleSwimSpeedModifier(apply);
 			handleFlySpeedModifier(apply);
 			break;
-
 		case aura::MechanicImmunity:
 			handleMechanicImmunity(apply);
+			break;
+		case aura::Mounted:
+			handleMounted(apply);
 			break;
 		case aura::ModTotalStatPercentage:
 			handleModTotalStatPercentage(apply);
@@ -764,6 +768,19 @@ namespace wowpp
 			// TODO: We need to check if there are still other auras which provide the same immunity
 			WLOG("TODO");
 			m_target.removeMechanicImmunity(m_spell.mechanic());
+		}
+	}
+	
+	void Aura::handleMounted(bool apply)
+	{
+		if (apply)
+		{
+			const auto *unitEntry = m_caster->getProject().units.getById(m_effect.miscvaluea());
+			m_target.setUInt32Value(unit_fields::MountDisplayId, unitEntry->malemodel());
+		}
+		else
+		{
+			m_target.setUInt32Value(unit_fields::MountDisplayId, 0);
 		}
 	}
 	
