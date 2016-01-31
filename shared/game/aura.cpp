@@ -865,7 +865,6 @@ namespace wowpp
 		case game::aura_type::RetainComboPoints:
 		case game::aura_type::SpiritOfRedemption:
 		case game::aura_type::ModResistanceOfStatPercent:
-		case game::aura_type::ModFlightSpeedMountedNotStacking:
 		case game::aura_type::AuraType_222:
 		case game::aura_type::PrayerOfMending:
 		case game::aura_type::DetectStealth:
@@ -1045,7 +1044,7 @@ namespace wowpp
 		case game::aura_type::DetectAmore:
 		case game::aura_type::Fly:
 		case game::aura_type::PeriodicDummy:
-		case game::aura_type::PeriodicTriggerSpell:
+		case game::aura_type::PeriodicTriggerSpellWithValue:
 		case game::aura_type::ProcTriggerSpellWithValue:
 		case game::aura_type::AuraType_247:
 		default:
