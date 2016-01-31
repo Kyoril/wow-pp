@@ -64,8 +64,9 @@ namespace wowpp
 		{
 			if (!isReplacement)
 			{
-				if (aura->isPositive())
+				if (aura->isPositive(true))
 				{
+					DLOG("AURA " << aura->getEffect().aura() << " IS POSITIVE: " << aura->getSpell().name())
 					for (UInt8 i = 0; i < 40; ++i)
 					{
 						if (m_owner.getUInt32Value(unit_fields::Aura + i) == 0)
@@ -77,6 +78,7 @@ namespace wowpp
 				}
 				else
 				{
+					WLOG("AURA " << aura->getEffect().aura() << " IS NEGATIVE: " << aura->getSpell().name())
 					for (UInt8 i = 40; i < 56; ++i)
 					{
 						if (m_owner.getUInt32Value(unit_fields::Aura + i) == 0)
