@@ -788,9 +788,18 @@ namespace wowpp
 		}
 	}
 
-	bool Aura::isPositive() const
+	bool Aura::isPositive(bool checkAllEffects/* = false*/) const
 	{
-		return isPositive(m_spell, m_effect);
+		if (!checkAllEffects)
+			return isPositive(m_spell, m_effect);
+
+		for (const auto &effect : m_spell.effects())
+		{
+			if (!isPositive(m_spell, effect))
+				return false;
+		}
+
+		return true;
 	}
 	
 	bool Aura::isPositive(const proto::SpellEntry &spell, const proto::SpellEffect &effect)
