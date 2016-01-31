@@ -639,6 +639,16 @@ namespace wowpp
 						it->mutable_effects(0)->set_triggerspell(39373);
 						break;
 						
+					///////////////////////// Fix Item Stats Effects /////////////////////////
+						
+					case 41684:	// fix for scarlet crusade set bonus
+						auto effect = it->mutable_effects(1);
+						effect->set_basepoints(14);
+						effect->set_basedice(1);
+						effect->set_diesides(1);
+						effect->set_targeta(1);
+						break;
+						
 					// PROBLEM: 28764 mage T3 set effect trigger: 28765 | 28766 | 28768 | 28769 | 28770	
 					// PROBLEM: 27539 Obsidian Armor effect trigger: 27533 | 27534 | 27535 | 27536 | 27538 | 27540
 					// PROBLEM: 39446 Aura of Madness (Darkmoon Card: Madness trinket)

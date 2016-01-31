@@ -395,7 +395,7 @@ namespace wowpp
 		case game::targets::UnitRaidTargetRaid:	//57
 			if (unitTarget) targets.push_back(unitTarget);
 			break;
-		case game::targets::UnitPartyCaster:
+		case game::targets::UnitPartyCaster:	//20
 			{
 				math::Vector3 location = attacker.getLocation();
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
