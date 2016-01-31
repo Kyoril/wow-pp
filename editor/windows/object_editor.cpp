@@ -965,7 +965,7 @@ namespace wowpp
 			task.selectQuery = "SELECT `entry`, `Title`, `Method`, `MinLevel`, `QuestLevel`, `Details`, `Objectives`,`OfferRewardText`,`RequestItemsText`,`EndText`, "
 				"`RewChoiceItemId1`, `RewChoiceItemCount1`, `RewChoiceItemId2`, `RewChoiceItemCount2`,`RewChoiceItemId3`, `RewChoiceItemCount3`,`RewChoiceItemId4`, `RewChoiceItemCount4`, `RewChoiceItemId5`, `RewChoiceItemCount5`, `RewChoiceItemId6`, `RewChoiceItemCount6`,"
 				"`RewItemId1`, `RewItemCount1`, `RewItemId2`, `RewItemCount2`,`RewItemId3`, `RewItemCount3`,`RewItemId4`, `RewItemCount4`,"
-				"`RewRepFaction1`, `RewardRepValue1`, `RewRepFaction2`, `RewardRepValue2`,`RewRepFaction3`, `RewardRepValue3`,`RewRepFaction4`, `RewardRepValue4`,`RewRepFaction5`, `RewardRepValue5`,"
+				"`RewRepFaction1`, `RewRepValue1`, `RewRepFaction2`, `RewRepValue2`,`RewRepFaction3`, `RewRepValue3`,`RewRepFaction4`, `RewRepValue4`,`RewRepFaction5`, `RewRepValue5`,"
 				"`RewHonorableKills`, `RewOrReqMoney`, `RewMoneyMaxLevel`, `RewSpell`,`RewSpellCast`, `RewMailTemplateId`,`RewMailDelaySecs`"
 				" FROM `quest_template` ORDER BY `entry`;";
 			task.beforeImport = [this]() {
