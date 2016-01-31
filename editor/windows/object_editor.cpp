@@ -193,6 +193,40 @@ namespace wowpp
 			}
 		}
 #endif
+
+		namespace
+		{
+			static void applyItemColorToWidget(QTreeWidgetItem *item, UInt32 column, UInt32 itemQuality)
+			{
+				QColor textColor = QColor(Qt::white);
+				switch (itemQuality)
+				{
+					case 0:
+						textColor = QColor(Qt::gray);
+						break;
+					case 1:
+						textColor = QColor(Qt::white);
+						break;
+					case 2:
+						textColor = QColor(Qt::green);
+						break;
+					case 3:
+						textColor = QColor(0, 114, 198);
+						break;
+					case 4:
+						textColor = QColor(Qt::magenta);
+						break;
+					case 5:
+						textColor = QColor(Qt::yellow);
+						break;
+					default:
+						textColor = QColor(Qt::red);
+						break;
+				}
+				item->setTextColor(column, textColor);
+			}
+		}
+
 		void ObjectEditor::addLootItem(const proto::LootDefinition &def, QTreeWidgetItem *parent)
 		{
 			const auto *itemEntry = m_application.getProject().items.getById(def.item());
@@ -211,33 +245,7 @@ namespace wowpp
 				item->setText(2, QString("%1x").arg(def.mincount()));
 			}
 
-			QColor textColor = QColor(Qt::white);
-			switch (itemEntry->quality())
-			{
-			case 0:
-				textColor = QColor(Qt::gray);
-				break;
-			case 1:
-				textColor = QColor(Qt::white);
-				break;
-			case 2:
-				textColor = QColor(Qt::green);
-				break;
-			case 3:
-				textColor = QColor(0, 114, 198);
-				break;
-			case 4:
-				textColor = QColor(Qt::magenta);
-				break;
-			case 5:
-				textColor = QColor(Qt::yellow);
-				break;
-			default:
-				textColor = QColor(Qt::red);
-				break;
-			}
-			item->setTextColor(0, textColor);
-
+			applyItemColorToWidget(item, 0, itemEntry->quality());
 			if (def.conditiontype())
 			{
 				item->setText(3, QString("COND %1: VAL1=%2 VAL2=%3").arg(def.conditiontype()).arg(def.conditionvala()).arg(def.conditionvalb()));
@@ -691,6 +699,44 @@ namespace wowpp
 			m_ui->questRequestItemsTextField->setText(m_selectedQuest->requestitemstext().c_str());
 			m_ui->questEndTextField->setText(m_selectedQuest->endtext().c_str());
 
+			m_ui->questChoosableItemWidget->clear();
+			for (const auto &entry : quest->rewarditemschoice())
+			{
+				const auto *item = m_application.getProject().items.getById(entry.itemid());
+				if (item)
+				{
+					QTreeWidgetItem *treeitem = new QTreeWidgetItem();
+					treeitem->setText(0, QString("%1 %2").arg(entry.itemid(), 5, 10, QLatin1Char('0')).arg(item->name().c_str()));
+					treeitem->setText(1, QString("%1x").arg(entry.count()));
+					applyItemColorToWidget(treeitem, 0, item->quality());
+					m_ui->questChoosableItemWidget->addTopLevelItem(treeitem);
+				}
+			}
+			m_ui->questAdditionalItemWidget->clear();
+			for (const auto &entry : quest->rewarditems())
+			{
+				const auto *item = m_application.getProject().items.getById(entry.itemid());
+				if (item)
+				{
+					QTreeWidgetItem *treeitem = new QTreeWidgetItem();
+					treeitem->setText(0, QString("%1 %2").arg(entry.itemid(), 5, 10, QLatin1Char('0')).arg(item->name().c_str()));
+					treeitem->setText(1, QString("%1x").arg(entry.count()));
+					applyItemColorToWidget(treeitem, 0, item->quality());
+					m_ui->questAdditionalItemWidget->addTopLevelItem(treeitem);
+				}
+			}
+			m_ui->questReputationWidget->clear();
+			for (const auto &entry : quest->rewardreputations())
+			{
+				const auto *faction = m_application.getProject().factions.getById(entry.factionid());
+				if (faction)
+				{
+					QTreeWidgetItem *treeitem = new QTreeWidgetItem();
+					treeitem->setText(0, QString("%1 %2").arg(entry.factionid(), 4, 10, QLatin1Char('0')).arg(faction->name().c_str()));
+					treeitem->setText(1, QString("%1").arg(entry.value()));
+					m_ui->questReputationWidget->addTopLevelItem(treeitem);
+				}
+			}
 		}
 
 		void ObjectEditor::on_unitAddTriggerBtn_clicked()
