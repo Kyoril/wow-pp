@@ -755,6 +755,7 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(GossipHello)
 			WOWPP_HANDLE_PLAYER_PACKET(TrainerBuySpell)
 			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverStatusQuery)
+			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverHello)
 #undef WOWPP_HANDLE_PLAYER_PACKET
 
 			// Movement packets get special treatment

@@ -350,6 +350,20 @@
                 </item>
                </layout>
               </widget>
+              <widget class="QWidget" name="tab_15">
+               <attribute name="title">
+                <string>Quests</string>
+               </attribute>
+               <layout class="QVBoxLayout" name="verticalLayout_32">
+                <item>
+                 <widget class="QListWidget" name="unitQuestWidget">
+                  <property name="alternatingRowColors">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
              </widget>
             </item>
            </layout>
@@ -3705,6 +3719,61 @@ QGroupBox::indicator:unchecked:disabled
              </widget>
             </item>
             <item>
+             <widget class="QGroupBox" name="groupBox_6">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="title">
+               <string>Requirements</string>
+              </property>
+              <property name="flat">
+               <bool>true</bool>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_31">
+               <item>
+                <widget class="QTreeWidget" name="questRequirementWidget">
+                 <property name="alternatingRowColors">
+                  <bool>true</bool>
+                 </property>
+                 <column>
+                  <property name="text">
+                   <string>Item</string>
+                  </property>
+                 </column>
+                 <column>
+                  <property name="text">
+                   <string>Source</string>
+                  </property>
+                 </column>
+                 <column>
+                  <property name="text">
+                   <string>Creature</string>
+                  </property>
+                 </column>
+                 <column>
+                  <property name="text">
+                   <string>Object</string>
+                  </property>
+                 </column>
+                 <column>
+                  <property name="text">
+                   <string>Spellcast</string>
+                  </property>
+                 </column>
+                 <column>
+                  <property name="text">
+                   <string>Text</string>
+                  </property>
+                 </column>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
              <widget class="QGroupBox" name="groupBox_5">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -3737,6 +3806,9 @@ QGroupBox::indicator:unchecked:disabled
                   <layout class="QVBoxLayout" name="verticalLayout_27">
                    <item>
                     <widget class="QTreeWidget" name="questChoosableItemWidget">
+                     <property name="alternatingRowColors">
+                      <bool>true</bool>
+                     </property>
                      <column>
                       <property name="text">
                        <string>Item</string>
@@ -3758,6 +3830,9 @@ QGroupBox::indicator:unchecked:disabled
                   <layout class="QVBoxLayout" name="verticalLayout_28">
                    <item>
                     <widget class="QTreeWidget" name="questAdditionalItemWidget">
+                     <property name="alternatingRowColors">
+                      <bool>true</bool>
+                     </property>
                      <column>
                       <property name="text">
                        <string>Item</string>
@@ -3779,6 +3854,9 @@ QGroupBox::indicator:unchecked:disabled
                   <layout class="QVBoxLayout" name="verticalLayout_29">
                    <item>
                     <widget class="QTreeWidget" name="questReputationWidget">
+                     <property name="alternatingRowColors">
+                      <bool>true</bool>
+                     </property>
                      <column>
                       <property name="text">
                        <string>Faction</string>

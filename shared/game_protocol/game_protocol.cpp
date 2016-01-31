@@ -2828,6 +2828,26 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void questgiverQuestList(game::OutgoingPacket & out_packet, UInt64 guid, const String & title, UInt32 emoteDelay, UInt32 emote, const std::vector<QuestMenuItem>& menu)
+			{
+				out_packet.start(game::server_packet::QuestgiverQuestList);
+				out_packet
+					<< io::write<NetUInt64>(guid)
+					<< io::write_range(title) << io::write<NetUInt8>(0)
+					<< io::write<NetUInt32>(emoteDelay)
+					<< io::write<NetUInt32>(emote)
+					<< io::write<NetUInt8>(menu.size());
+				for (const auto &menuitem : menu)
+				{
+					out_packet
+						<< io::write<NetUInt32>(menuitem.questId)
+						<< io::write<NetUInt8>(menuitem.menuIcon)
+						<< io::write<NetUInt32>(menuitem.questLevel)
+						<< io::write_range(menuitem.title) << io::write<NetUInt8>(0);
+				}
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read
@@ -3676,6 +3696,12 @@ namespace wowpp
 			}
 
 			bool questgiverStatusQuery(io::Reader & packet, UInt64 & out_guid)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_guid);
+			}
+
+			bool questgiverHello(io::Reader & packet, UInt64 & out_guid)
 			{
 				return packet
 					>> io::read<NetUInt64>(out_guid);

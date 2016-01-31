@@ -137,6 +137,7 @@ namespace wowpp
 				LootRelease				= 0x15F,
 				GossipHello				= 0x17B,
 				QuestgiverStatusQuery	= 0x182,
+				QuestgiverHello			= 0x184,
 				ListInventory			= 0x19E,
 				SellItem				= 0x1A0,
 				BuyItem					= 0x1A2,
@@ -313,6 +314,7 @@ namespace wowpp
 				ItemPushResult				= 0x166,
 				GossipMessage				= 0x17D,
 				QuestgiverStatus			= 0x183,
+				QuestgiverQuestList			= 0x185,
 				ListInventory				= 0x19F,
 				TrainerList					= 0x1B1,
 				TrainerBuySucceeded			= 0x1B3,
@@ -374,6 +376,14 @@ namespace wowpp
 		};
 
 		typedef std::vector<AddonEntry> AddonEntries;
+
+		struct QuestMenuItem
+		{
+			UInt32 questId;
+			UInt8 menuIcon;
+			Int32 questLevel;
+			String title;
+		};
 
 		namespace atlogin_flags
 		{
@@ -1070,6 +1080,11 @@ namespace wowpp
 				);
 
 			bool questgiverStatusQuery(
+				io::Reader &packet,
+				UInt64 &out_guid
+				);
+
+			bool questgiverHello(
 				io::Reader &packet,
 				UInt64 &out_guid
 				);
@@ -1841,6 +1856,15 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt64 guid,
 				game::QuestgiverStatus status
+				);
+
+			void questgiverQuestList(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				const String &title,
+				UInt32 emoteDelay,
+				UInt32 emote,
+				const std::vector<QuestMenuItem> &menu
 				);
 		};
 	}
