@@ -63,7 +63,7 @@ namespace wowpp
 		/// Determines whether the target may be positive
 		static bool hasPositiveTarget(const proto::SpellEffect &effect);
 		/// Determines whether this is a positive spell aura.
-		bool isPositive() const;
+		bool isPositive(bool checkAllEffects = false) const;
 		static bool isPositive(const proto::SpellEntry &spell, const proto::SpellEffect &effect);
 		/// Gets the current aura slot.
 		UInt8 getSlot() const { return m_slot; }

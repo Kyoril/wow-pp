@@ -193,6 +193,40 @@ namespace wowpp
 			}
 		}
 #endif
+
+		namespace
+		{
+			static void applyItemColorToWidget(QTreeWidgetItem *item, UInt32 column, UInt32 itemQuality)
+			{
+				QColor textColor = QColor(Qt::white);
+				switch (itemQuality)
+				{
+					case 0:
+						textColor = QColor(Qt::gray);
+						break;
+					case 1:
+						textColor = QColor(Qt::white);
+						break;
+					case 2:
+						textColor = QColor(Qt::green);
+						break;
+					case 3:
+						textColor = QColor(0, 114, 198);
+						break;
+					case 4:
+						textColor = QColor(Qt::magenta);
+						break;
+					case 5:
+						textColor = QColor(Qt::yellow);
+						break;
+					default:
+						textColor = QColor(Qt::red);
+						break;
+				}
+				item->setTextColor(column, textColor);
+			}
+		}
+
 		void ObjectEditor::addLootItem(const proto::LootDefinition &def, QTreeWidgetItem *parent)
 		{
 			const auto *itemEntry = m_application.getProject().items.getById(def.item());
@@ -211,33 +245,7 @@ namespace wowpp
 				item->setText(2, QString("%1x").arg(def.mincount()));
 			}
 
-			QColor textColor = QColor(Qt::white);
-			switch (itemEntry->quality())
-			{
-			case 0:
-				textColor = QColor(Qt::gray);
-				break;
-			case 1:
-				textColor = QColor(Qt::white);
-				break;
-			case 2:
-				textColor = QColor(Qt::green);
-				break;
-			case 3:
-				textColor = QColor(0, 114, 198);
-				break;
-			case 4:
-				textColor = QColor(Qt::magenta);
-				break;
-			case 5:
-				textColor = QColor(Qt::yellow);
-				break;
-			default:
-				textColor = QColor(Qt::red);
-				break;
-			}
-			item->setTextColor(0, textColor);
-
+			applyItemColorToWidget(item, 0, itemEntry->quality());
 			if (def.conditiontype())
 			{
 				item->setText(3, QString("COND %1: VAL1=%2 VAL2=%3").arg(def.conditiontype()).arg(def.conditionvala()).arg(def.conditionvalb()));
@@ -691,6 +699,44 @@ namespace wowpp
 			m_ui->questRequestItemsTextField->setText(m_selectedQuest->requestitemstext().c_str());
 			m_ui->questEndTextField->setText(m_selectedQuest->endtext().c_str());
 
+			m_ui->questChoosableItemWidget->clear();
+			for (const auto &entry : quest->rewarditemschoice())
+			{
+				const auto *item = m_application.getProject().items.getById(entry.itemid());
+				if (item)
+				{
+					QTreeWidgetItem *treeitem = new QTreeWidgetItem();
+					treeitem->setText(0, QString("%1 %2").arg(entry.itemid(), 5, 10, QLatin1Char('0')).arg(item->name().c_str()));
+					treeitem->setText(1, QString("%1x").arg(entry.count()));
+					applyItemColorToWidget(treeitem, 0, item->quality());
+					m_ui->questChoosableItemWidget->addTopLevelItem(treeitem);
+				}
+			}
+			m_ui->questAdditionalItemWidget->clear();
+			for (const auto &entry : quest->rewarditems())
+			{
+				const auto *item = m_application.getProject().items.getById(entry.itemid());
+				if (item)
+				{
+					QTreeWidgetItem *treeitem = new QTreeWidgetItem();
+					treeitem->setText(0, QString("%1 %2").arg(entry.itemid(), 5, 10, QLatin1Char('0')).arg(item->name().c_str()));
+					treeitem->setText(1, QString("%1x").arg(entry.count()));
+					applyItemColorToWidget(treeitem, 0, item->quality());
+					m_ui->questAdditionalItemWidget->addTopLevelItem(treeitem);
+				}
+			}
+			m_ui->questReputationWidget->clear();
+			for (const auto &entry : quest->rewardreputations())
+			{
+				const auto *faction = m_application.getProject().factions.getById(entry.factionid());
+				if (faction)
+				{
+					QTreeWidgetItem *treeitem = new QTreeWidgetItem();
+					treeitem->setText(0, QString("%1 %2").arg(entry.factionid(), 4, 10, QLatin1Char('0')).arg(faction->name().c_str()));
+					treeitem->setText(1, QString("%1").arg(entry.value()));
+					m_ui->questReputationWidget->addTopLevelItem(treeitem);
+				}
+			}
 		}
 
 		void ObjectEditor::on_unitAddTriggerBtn_clicked()
@@ -962,7 +1008,12 @@ namespace wowpp
 		{
 			ImportTask task;
 			task.countQuery = "SELECT COUNT(*) FROM `quest_template`;";
-			task.selectQuery = "SELECT `entry`, `Title`, `Method`, `MinLevel`, `QuestLevel`, `Details`, `Objectives`,`OfferRewardText`,`RequestItemsText`,`EndText` FROM `quest_template` ORDER BY `entry`;";
+			task.selectQuery = "SELECT `entry`, `Title`, `Method`, `MinLevel`, `QuestLevel`, `Details`, `Objectives`,`OfferRewardText`,`RequestItemsText`,`EndText`, "
+				"`RewChoiceItemId1`, `RewChoiceItemCount1`, `RewChoiceItemId2`, `RewChoiceItemCount2`,`RewChoiceItemId3`, `RewChoiceItemCount3`,`RewChoiceItemId4`, `RewChoiceItemCount4`, `RewChoiceItemId5`, `RewChoiceItemCount5`, `RewChoiceItemId6`, `RewChoiceItemCount6`,"
+				"`RewItemId1`, `RewItemCount1`, `RewItemId2`, `RewItemCount2`,`RewItemId3`, `RewItemCount3`,`RewItemId4`, `RewItemCount4`,"
+				"`RewRepFaction1`, `RewRepValue1`, `RewRepFaction2`, `RewRepValue2`,`RewRepFaction3`, `RewRepValue3`,`RewRepFaction4`, `RewRepValue4`,`RewRepFaction5`, `RewRepValue5`,"
+				"`RewHonorableKills`, `RewOrReqMoney`, `RewMoneyMaxLevel`, `RewSpell`,`RewSpellCast`, `RewMailTemplateId`,`RewMailDelaySecs`"
+				" FROM `quest_template` ORDER BY `entry`;";
 			task.beforeImport = [this]() {
 				m_application.getProject().quests.clear();
 			};
@@ -994,6 +1045,74 @@ namespace wowpp
 				if (!offerreward.empty()) added->set_offerrewardtext(offerreward);
 				if (!requestitems.empty()) added->set_requestitemstext(requestitems);
 				if (!end.empty()) added->set_endtext(end);
+
+				for (UInt32 i = 0; i < 6; ++i)
+				{
+					UInt32 choiceItemId = 0, choiceItemCount = 0;
+					row.getField(index++, choiceItemId);
+					row.getField(index++, choiceItemCount);
+					if (choiceItemId > 0)
+					{
+						// Check if item exists
+						if (m_application.getProject().items.getById(choiceItemId))
+						{
+							auto *addedChoice = added->add_rewarditemschoice();
+							addedChoice->set_itemid(choiceItemId);
+							addedChoice->set_count(choiceItemCount);
+						}
+					}
+				}
+
+				for (UInt32 i = 0; i < 4; ++i)
+				{
+					UInt32 itemId = 0, itemCount = 0;
+					row.getField(index++, itemId);
+					row.getField(index++, itemCount);
+					if (itemId > 0)
+					{
+						// Check if item exists
+						if (m_application.getProject().items.getById(itemId))
+						{
+							auto *addedItem = added->add_rewarditems();
+							addedItem->set_itemid(itemId);
+							addedItem->set_count(itemCount);
+						}
+					}
+				}
+
+				for (UInt32 i = 0; i < 5; ++i)
+				{
+					UInt32 factionId = 0;
+					Int32 repValue = 0;
+					row.getField(index++, factionId);
+					row.getField(index++, repValue);
+					if (factionId > 0)
+					{
+						// Check if faction exists
+						if (m_application.getProject().factions.getById(factionId))
+						{
+							auto *addedRep = added->add_rewardreputations();
+							addedRep->set_factionid(factionId);
+							addedRep->set_value(repValue);
+						}
+					}
+				}
+
+				UInt32 rewHonorKills = 0, rewMoneyMaxLevel = 0, rewSpell = 0, rewSpellCast = 0, rewMailTemplate = 0, rewMailDelaySecs = 0;
+				Int32 rewOrReqMoney = 0;
+				row.getField(index++, rewHonorKills);
+				row.getField(index++, rewOrReqMoney);
+				row.getField(index++, rewMoneyMaxLevel);
+				row.getField(index++, rewSpell);
+				row.getField(index++, rewSpellCast);
+				row.getField(index++, rewMailTemplate);
+				row.getField(index++, rewMailDelaySecs);
+				added->set_rewardhonorkills(rewHonorKills);
+				if (rewOrReqMoney > 0) added->set_rewardmoney(rewOrReqMoney);
+				if (rewSpell && m_application.getProject().spells.getById(rewSpell)) added->set_rewardspell(rewSpell);
+				if (rewSpellCast && m_application.getProject().spells.getById(rewSpellCast)) added->set_rewardspellcast(rewSpellCast);
+				added->set_rewardmailtemplate(rewMailTemplate);
+				added->set_rewardmaildelaysecs(rewMailDelaySecs);
 
 				return true;
 			};

@@ -144,6 +144,11 @@ namespace wowpp
 						row = row.next(select);
 					}
 				}
+				else
+				{
+					emit progressTextChanged(QString("Error: %1").arg(connection.getErrorMessage()));
+					return;
+				}
 			}
 
 			// Execute procedure after import

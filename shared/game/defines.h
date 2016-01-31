@@ -92,6 +92,21 @@ namespace wowpp
 		
 		typedef questgiver_status::Type QuestgiverStatus;
 
+		namespace quest_method
+		{
+			enum Type
+			{
+				/// Used for some quests to indicate that these quests have no objectives (?). Not 100% clear.
+				AutoComplete	= 0,
+				/// Simply unknown...
+				Unknown_1		= 1,
+				/// Used for most quests. Used in client.
+				Unknown_2		= 2,
+			};
+		}
+
+
+
 		namespace item_class
 		{
 			enum Type

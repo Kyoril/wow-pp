@@ -64,7 +64,7 @@ namespace wowpp
 		{
 			if (!isReplacement)
 			{
-				if (aura->isPositive())
+				if (aura->isPositive(true))
 				{
 					for (UInt8 i = 0; i < 40; ++i)
 					{
