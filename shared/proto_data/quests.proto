@@ -22,6 +22,17 @@
 syntax = "proto2";
 package wowpp.proto;
 
+message QuestItemReward {
+	required uint32 itemid = 1;
+	optional uint32 count = 2 [default = 1];
+}
+
+message QuestRepReward {
+	// Faction, not faction template this time
+	required uint32 factionid = 1;
+	required int32 value = 2;
+}
+
 message QuestEntry {
 	required uint32 id = 1;
 	required string name = 2;
@@ -33,6 +44,19 @@ message QuestEntry {
 	optional string offerrewardtext = 8;
 	optional string requestitemstext = 9;
 	optional string endtext = 10;
+	// Only one of these can be chosen. Limited to 6 items by client
+	repeated QuestItemReward rewarditemschoice = 11;
+	// All of these items will be rewarded. Limited to 4 items by client.
+	repeated QuestItemReward rewarditems = 12;
+	optional uint32 rewardhonorkills = 13;
+	optional uint32 rewardmoney = 14;
+	optional uint32 rewardmoneymaxlevel = 15;
+	optional uint32 rewardspell = 16;
+	optional uint32 rewardspellcast = 17;
+	optional uint32 rewardmailtemplate = 18;
+	optional uint32 rewardmaildelaysecs = 19;
+	// Limited to 5 entries by client.
+	repeated QuestRepReward rewardreputations = 20;
 }
 
 message Quests {
