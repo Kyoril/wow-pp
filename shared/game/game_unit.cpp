@@ -294,7 +294,7 @@ namespace wowpp
 		}
 
 		if (!isProc)
-			startedCasting();
+			startedCasting(*spell);
 		
 		auto result = m_spellCast->startCast(*spell, std::move(target), basePoints, castTime, isProc);
 		

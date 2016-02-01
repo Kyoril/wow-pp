@@ -452,6 +452,8 @@ namespace wowpp
 
 	void Aura::handleModShapeShift(bool apply)
 	{
+		m_target.getAuras().removeAurasByType(game::aura_type::ModShapeShift);
+		
 		UInt8 form = m_effect.miscvaluea();
 		if (apply)
 		{
@@ -465,6 +467,11 @@ namespace wowpp
 				{
 					modelId = (isAlliance ? 892 : 8571);
 					powerType = game::power_type::Energy;
+					break;
+				}
+				case 2:			// Tree
+				{
+					modelId = 864;
 					break;
 				}
 				case 3:			// Travel
@@ -499,6 +506,14 @@ namespace wowpp
 					modelId = 4613;
 					break;
 				}
+//				case 17:		// Battle Stance
+//				case 18:		// Defensive Stance
+//				case 19:		// Berserker Stance
+				case 27:		// Epic flight form
+				{
+					modelId = (isAlliance ? 21243 : 21244);
+					break;
+				}
 				case 29:		// Flight form
 				{
 					modelId = (isAlliance ? 20857 : 20872);
@@ -507,11 +522,6 @@ namespace wowpp
 				case 31:		// Moonkin
 				{
 					modelId = (isAlliance ? 15374 : 15375);
-					break;
-				}
-				case 27:		// Epic flight form
-				{
-					modelId = (isAlliance ? 21243 : 21244);
 					break;
 				}
 			}
@@ -546,6 +556,12 @@ namespace wowpp
 		UInt32 spell1 = 0, spell2 = 0;
 		switch (form)
 		{
+			case 2:
+			{
+				spell1 = 5420;
+				spell2 = 34123;
+				break;
+			}
 			case 5:
 			{
 				spell1 = 1178;
@@ -558,6 +574,16 @@ namespace wowpp
 				spell2 = 21178;
 				break;
 			}
+//			case 18:
+//			{
+//				spell1 = 7376;
+//				break;
+//			}
+//			case 19:
+//			{
+//				spell1 = 7381;
+//				break;
+//			}
 		}
 
 		auto *world = m_target.getWorldInstance();
@@ -1327,7 +1353,7 @@ namespace wowpp
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Cast) != 0)
 		{
 			m_targetStartedCasting = m_target.startedCasting.connect(
-				[&]() {
+				[&](const proto::SpellEntry &spell) {
 				m_destroy(*this);
 			});
 		}
@@ -1339,8 +1365,9 @@ namespace wowpp
 				m_destroy(*this);
 			});
 			m_targetStartedCasting = m_target.startedCasting.connect(
-				[&]() {
-				m_destroy(*this);
+				[&](const proto::SpellEntry &spell) {
+				if ((spell.attributes(0) & game::spell_attributes::CastableWhileMounted) == 0)
+					m_destroy(*this);
 			});
 		}
 

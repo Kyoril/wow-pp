@@ -31,6 +31,10 @@ namespace wowpp
 	/// Holds and manages instances of auras for one unit.
 	class AuraContainer final
 	{
+	private:
+
+		typedef std::vector<std::shared_ptr<Aura>> AuraVector;
+		
 	public:
 
 		explicit AuraContainer(GameUnit &owner);
@@ -38,10 +42,12 @@ namespace wowpp
 		bool addAura(std::shared_ptr<Aura> aura);
 		size_t findAura(Aura &aura, size_t begin);
 		void removeAura(size_t index);
+		void removeAura(AuraVector::iterator it);
 		Aura &get(size_t index);
 		const Aura &get(size_t index) const;
 		void handleTargetDeath();
 		void removeAllAurasDueToSpell(UInt32 spellId);
+		void removeAurasByType(UInt32 auraType);
 
 		GameUnit &getOwner() { return m_owner; }
 		size_t getSize() const { return m_auras.size(); }
@@ -53,8 +59,6 @@ namespace wowpp
 		float getTotalMultiplier(game::AuraType type) const;
 
 	private:
-
-		typedef std::vector<std::shared_ptr<Aura>> AuraVector;
 
 		GameUnit &m_owner;
 		AuraVector m_auras;

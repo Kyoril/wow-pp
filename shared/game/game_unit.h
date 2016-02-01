@@ -376,7 +376,7 @@ namespace wowpp
 		/// Fired when unit started attacking
 		boost::signals2::signal<void()> startedAttacking;
 		/// Fired when unit started active casting (excluding proc)
-		boost::signals2::signal<void()> startedCasting;
+		boost::signals2::signal<void(const proto::SpellEntry &)> startedCasting;
 		/// Fired when a unit trigger should be executed.
 		boost::signals2::signal<void(const proto::TriggerEntry &, GameUnit &)> unitTrigger;
 		/// Fired when a target was killed by this unit, which could trigger Kill-Procs. Only fired when XP or honor is rewarded.

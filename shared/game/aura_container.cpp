@@ -143,6 +143,14 @@ namespace wowpp
 
 		strongAura->misapplyAura();
 	}
+	
+	void AuraContainer::removeAura(AuraVector::iterator it)
+	{
+		auto strongAura = m_auras.back();
+		m_auras.erase(it);
+
+		strongAura->misapplyAura();
+	}
 
 	size_t AuraContainer::findAura(Aura &aura, size_t begin)
 	{
@@ -350,6 +358,22 @@ namespace wowpp
 			else
 			{
 				++index; ++it;
+			}
+		}
+	}
+	
+	void AuraContainer::removeAurasByType(UInt32 auraType)
+	{
+		auto it = m_auras.begin();
+		while (it != m_auras.end())
+		{
+			if ((*it)->getEffect().aura() == auraType)
+			{
+				removeAura(it);
+			}
+			else
+			{
+				it++;
 			}
 		}
 	}
