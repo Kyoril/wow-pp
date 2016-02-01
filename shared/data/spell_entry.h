@@ -104,74 +104,247 @@ namespace wowpp
 	{
 		enum Type
 		{
-			/// 
-			DismissPet = 0x00000001,
-			/// 
-			DrainAllPower = 0x00000002,
-			/// 
-			Channeled_1 = 0x00000004,
-			/// 
-			CantBeRedirected = 0x00000008,
-			/// 
-			Unknown_1 = 0x00000010,
-			/// 
-			NotBreakStealth = 0x00000020,
-			/// 
-			Channeled_2 = 0x00000040,
-			/// 
-			CantBeReflected = 0x00000080,
-			/// 
-			TargetNotInCombat = 0x00000100,
-			/// 
-			MeleeCombatStart = 0x00000200,
-			/// 
-			NoThreat = 0x00000400,
-			/// 
-			Unknown_3 = 0x00000800,
-			/// 
-			PickPocket = 0x00001000,
-			/// 
-			FarSight = 0x00002000,
-			/// 
-			ChannelTrackTarget = 0x00004000,
-			/// 
-			DispelAurasOnImmunity = 0x00008000,
-			/// 
-			UnaffectedByImmunity = 0x00010000,
-			/// 
-			NoPetAutoCast = 0x00020000,
-			/// 
-			Unknown_5 = 0x00040000,
-			/// 
-			CantTargetSelf = 0x00080000,
-			/// 
-			ReqComboPoints_1 = 0x00100000,
-			/// 
-			Unknown_7 = 0x00200000,
-			/// 
-			ReqComboPoints_2 = 0x00400000,
-			/// 
-			Unknown_8 = 0x00800000,
-			/// 
-			IsFishing = 0x01000000,
-			/// 
-			Unknown_10 = 0x02000000,
-			/// 
-			Unknown_11 = 0x04000000,
-			/// 
-			NotResetSwingTimer = 0x08000000,
-			/// 
-			DontDisplayInAuraBar = 0x10000000,
-			/// 
+			DismissPet				= 0x00000001,
+			DrainAllPower			= 0x00000002,
+			Channeled_1				= 0x00000004,
+			CantBeRedirected		= 0x00000008,
+			Unknown_1				= 0x00000010,
+			NotBreakStealth			= 0x00000020,
+			Channeled_2				= 0x00000040,
+			CantBeReflected			= 0x00000080,
+			TargetNotInCombat		= 0x00000100,
+			MeleeCombatStart		= 0x00000200,
+			NoThreat				= 0x00000400,
+			Unknown_3				= 0x00000800,
+			PickPocket				= 0x00001000,
+			FarSight				= 0x00002000,
+			ChannelTrackTarget		= 0x00004000,
+			DispelAurasOnImmunity	= 0x00008000,
+			UnaffectedByImmunity	= 0x00010000,
+			NoPetAutoCast			= 0x00020000,
+			Unknown_5				= 0x00040000,
+			CantTargetSelf			= 0x00080000,
+			ReqComboPoints_1		= 0x00100000,
+			Unknown_7				= 0x00200000,
+			ReqComboPoints_2		= 0x00400000,
+			Unknown_8				= 0x00800000,
+			IsFishing				= 0x01000000,
+			Unknown_10				= 0x02000000,
+			Unknown_11				= 0x04000000,
+			NotResetSwingTimer		= 0x08000000,
+			DontDisplayInAuraBar	= 0x10000000,
 			ChannelDisplaySpellName = 0x20000000,
-			/// 
-			EnableAtDodge = 0x40000000,
-			/// 
-			Unknown_16 = 0x80000000
+			EnableAtDodge			= 0x40000000,
+			Unknown_16				= 0x80000000
 		};
 	}
 
 	typedef spell_attributes_ex_a::Type SpellAttributesExA;
+
+	namespace spell_attributes_ex_b
+	{
+		enum Type
+		{
+			Unknown_1				= 0x00000001,
+			Unknown_2				= 0x00000002,
+			CantReflect				= 0x00000004,
+			Unknown_3				= 0x00000008,
+			Unknown_4				= 0x00000010,
+			AuroRepeat				= 0x00000020,
+			Unknown_5				= 0x00000040,
+			Unknown_6				= 0x00000080,
+			Unknown_7				= 0x00000100,
+			Unknown_8				= 0x00000200,
+			Unknown_9				= 0x00000400,
+			HealthFunnel			= 0x00000800,
+			Unknown_10				= 0x00001000,
+			Unknown_11				= 0x00002000,
+			Unknown_12				= 0x00004000,
+			Unknown_13				= 0x00008000,
+			Unknown_14				= 0x00010000,
+			Unknown_15				= 0x00020000,
+			Unknown_16				= 0x00040000,
+			NotNeedShapeshift		= 0x00080000,
+			Unknown_17				= 0x00100000,
+			DamageReducedShield		= 0x00200000,
+			Unknown_18				= 0x00400000,
+			Unknown_19				= 0x00800000,
+			Unknown_20				= 0x01000000,
+			Unknown_21				= 0x02000000,
+			Unknown_22				= 0x04000000,
+			Unknown_23				= 0x08000000,
+			Unknown_24				= 0x10000000,
+			CantCrit				= 0x20000000,
+			Unknown_25				= 0x40000000,
+			FoodBuff				= 0x80000000
+		};
+	}
+
+	typedef spell_attributes_ex_a::Type SpellAttributesExB;
+
+	namespace spell_attributes_ex_c
+	{
+		enum Type
+		{
+			Unknown_1				= 0x00000001,
+			Unknown_2				= 0x00000002,
+			Unknown_3				= 0x00000004,
+			Unknown_4				= 0x00000008,
+			Unknown_5				= 0x00000010,
+			Unknown_6				= 0x00000020,
+			Unknown_7				= 0x00000040,
+			Unknown_8				= 0x00000080,
+			TargetOnlyPlayer		= 0x00000100,
+			Unknown_9				= 0x00000200,
+			MainHand				= 0x00000400,
+			Battleground			= 0x00000800,
+			CastOnDead				= 0x00001000,
+			Unknown_10				= 0x00002000,
+			Unknown_11				= 0x00004000,
+			Unknown_12				= 0x00008000,
+			Unknown_13				= 0x00010000,
+			NoInitialAggro			= 0x00020000,
+			CantMiss				= 0x00040000,
+			Unknown_14				= 0x00080000,
+			DeathPersistent			= 0x00100000,
+			Unknown_15				= 0x00200000,
+			ReqWand					= 0x00400000,
+			Unknown_16				= 0x00800000,
+			ReqOffhand				= 0x01000000,
+			Unknown_17				= 0x02000000,
+			Unknown_18				= 0x04000000,
+			Unknown_19				= 0x08000000,
+			Unknown_20				= 0x10000000,
+			Unknown_21				= 0x20000000,
+			Unknown_22				= 0x40000000,
+			Unknown_23				= 0x80000000
+		};
+	}
+
+	typedef spell_attributes_ex_a::Type SpellAttributesExC;
+
+	namespace spell_attributes_ex_d
+	{
+		enum Type
+		{
+			Unknown_1				= 0x00000001,
+			Unknown_2				= 0x00000002,
+			Unknown_3				= 0x00000004,
+			Unknown_4				= 0x00000008,
+			Unknown_5				= 0x00000010,
+			Unknown_6				= 0x00000020,
+			NotStealable			= 0x00000040,
+			Unknown_7				= 0x00000080,
+			StackDotModifier		= 0x00000100,
+			Unknown_8				= 0x00000200,
+			SpellVsExtendCost		= 0x00000400,
+			Unknown_9				= 0x00000800,
+			Unknown_10				= 0x00001000,
+			Unknown_11				= 0x00002000,
+			Unknown_12				= 0x00004000,
+			Unknown_13				= 0x00008000,
+			NotUsableInArena		= 0x00010000,
+			UsableInArena			= 0x00020000,
+			Unknown_14				= 0x00040000,
+			Unknown_15				= 0x00080000,
+			Unknown_16				= 0x00100000,
+			Unknown_17				= 0x00200000,
+			Unknown_18				= 0x00400000,
+			Unknown_19				= 0x00800000,
+			Unknown_20				= 0x01000000,
+			Unknown_21				= 0x02000000,
+			CastOnlyInOutland		= 0x04000000,
+			Unknown_22				= 0x08000000,
+			Unknown_23				= 0x10000000,
+			Unknown_24				= 0x20000000,
+			Unknown_25				= 0x40000000,
+			Unknown_26				= 0x80000000
+		};
+	}
+
+	typedef spell_attributes_ex_a::Type SpellAttributesExD;
+
+	namespace spell_attributes_ex_e
+	{
+		enum Type
+		{
+			CanChannelWhenMoving	= 0x00000001,
+			NoReagentWhilePrep		= 0x00000002,
+			Unknown_1				= 0x00000004,
+			UsableWhileStunned		= 0x00000008,
+			Unknown_2				= 0x00000010,
+			SingleTargetSpell		= 0x00000020,
+			Unknown_3				= 0x00000040,
+			Unknown_4				= 0x00000080,
+			Unknown_5				= 0x00000100,
+			StartPeriodicAtApply	= 0x00000200,
+			Unknown_6				= 0x00000400,
+			Unknown_7				= 0x00000800,
+			Unknown_8				= 0x00001000,
+			Unknown_9				= 0x00002000,
+			Unknown_10				= 0x00004000,
+			Unknown_11				= 0x00008000,
+			Unknown_12				= 0x00010000,
+			UsableWhileFeared		= 0x00020000,
+			UsableWhileConfused		= 0x00040000,
+			Unknown_13				= 0x00080000,
+			Unknown_14				= 0x00100000,
+			Unknown_15				= 0x00200000,
+			Unknown_16				= 0x00400000,
+			Unknown_17				= 0x00800000,
+			Unknown_18				= 0x01000000,
+			Unknown_19				= 0x02000000,
+			Unknown_20				= 0x04000000,
+			Unknown_21				= 0x08000000,
+			Unknown_22				= 0x10000000,
+			Unknown_23				= 0x20000000,
+			Unknown_24				= 0x40000000,
+			Unknown_25				= 0x80000000
+		};
+	}
+
+	typedef spell_attributes_ex_a::Type SpellAttributesExE;
+
+	namespace spell_attributes_ex_f
+	{
+		enum Type
+		{
+			Unknown_1				= 0x00000001,
+			OnlyInArena				= 0x00000002,
+			Unknown_2				= 0x00000004,
+			Unknown_3				= 0x00000008,
+			Unknown_4				= 0x00000010,
+			Unknown_5				= 0x00000020,
+			Unknown_6				= 0x00000040,
+			Unknown_7				= 0x00000080,
+			Unknown_8				= 0x00000100,
+			Unknown_9				= 0x00000200,
+			Unknown_10				= 0x00000400,
+			NotInRaidInstance		= 0x00000800,
+			Unknown_11				= 0x00001000,
+			Unknown_12				= 0x00002000,
+			Unknown_13				= 0x00004000,
+			Unknown_14				= 0x00008000,
+			Unknown_15				= 0x00010000,
+			Unknown_16				= 0x00020000,
+			Unknown_17				= 0x00040000,
+			Unknown_18				= 0x00080000,
+			Unknown_19				= 0x00100000,
+			Unknown_20				= 0x00200000,
+			Unknown_21				= 0x00400000,
+			Unknown_22				= 0x00800000,
+			Unknown_23				= 0x01000000,
+			Unknown_24				= 0x02000000,
+			Unknown_25				= 0x04000000,
+			Unknown_26				= 0x08000000,
+			Unknown_27				= 0x10000000,
+			Unknown_28				= 0x20000000,
+			Unknown_29				= 0x40000000,
+			Unknown_30				= 0x80000000
+		};
+	}
+
+	typedef spell_attributes_ex_a::Type SpellAttributesExF;
 
 	namespace spell_interrupt_flags
 	{
