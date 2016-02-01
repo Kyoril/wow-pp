@@ -2388,4 +2388,39 @@ namespace wowpp
 			std::bind(game::server_write::questgiverStatus, std::placeholders::_1, guid, status));
 	}
 
+	void Player::handleQuestgiverHello(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid = 0;
+		if (!(game::client_read::questgiverStatusQuery(packet, guid)))
+		{
+			return;
+		}
+
+		// Can't find world instance
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+		{
+			return;
+		}
+
+		// Can't find questgiver
+		GameObject *questgiver = world->findObjectByGUID(guid);
+		if (!questgiver)
+		{
+			return;
+		}
+
+		std::vector<game::QuestMenuItem> menu;
+		game::QuestMenuItem item;
+		item.questId = 458;
+		item.menuIcon = 0;
+		item.questLevel = 1;
+		item.title = "The Balance of Nature";
+		menu.emplace_back(std::move(item));
+
+		// Send answer
+		sendProxyPacket(
+			std::bind(game::server_write::questgiverQuestList, std::placeholders::_1, guid, "", 0, 0, std::cref(menu)));
+	}
+
 }

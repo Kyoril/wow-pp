@@ -1,9 +1,3 @@
-/*
-SQLyog Community v12.12 (64 bit)
-MySQL - 5.6.26 : Database - wowpp_realm_01
-*********************************************************************
-*/
-
 /*!40101 SET NAMES utf8 */;
 
 /*!40101 SET SQL_MODE=''*/;

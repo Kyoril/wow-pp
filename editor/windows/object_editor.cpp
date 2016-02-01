@@ -318,6 +318,17 @@ namespace wowpp
 			if (!unit)
 				return;
 
+			m_ui->unitQuestWidget->clear();
+			for (const auto &questid : unit->quests())
+			{
+				const auto *quest = m_application.getProject().quests.getById(questid);
+				if (quest)
+				{
+					m_ui->unitQuestWidget->addItem(
+						QString("%1 %2 [%3]").arg(questid, 5, 10, QLatin1Char('0')).arg(quest->name().c_str()).arg(static_cast<Int32>(quest->questlevel())));
+				}
+			}
+
 			m_ui->lootView->clear();
 			if (!unit->unitlootentry())
 			{
@@ -699,6 +710,16 @@ namespace wowpp
 			m_ui->questRequestItemsTextField->setText(m_selectedQuest->requestitemstext().c_str());
 			m_ui->questEndTextField->setText(m_selectedQuest->endtext().c_str());
 
+			const auto *rewardSpell = m_selectedQuest->rewardspell() ? m_application.getProject().spells.getById(m_selectedQuest->rewardspell()) : nullptr;
+			const auto *rewardCast = m_selectedQuest->rewardspellcast() ? m_application.getProject().spells.getById(m_selectedQuest->rewardspellcast()) : nullptr;
+			m_ui->pushButton->setText(QString("%1").arg(rewardSpell ? QString("%1 %2").arg(rewardSpell->id()).arg(rewardSpell->name().c_str()) : "NONE"));
+			m_ui->pushButton_2->setText(QString("%1").arg(rewardCast ? QString("%1 %2").arg(rewardCast->id()).arg(rewardCast->name().c_str()) : "NONE"));
+
+			m_ui->lineEdit->setText(QString("%1").arg(m_selectedQuest->rewardmoney()));
+			m_ui->lineEdit_2->setText(QString("%1").arg(m_selectedQuest->rewardmoneymaxlevel()));
+			m_ui->lineEdit_3->setText(QString("%1").arg(m_selectedQuest->rewardmailtemplate()));
+			m_ui->lineEdit_4->setText(QString("%1 sec.").arg(m_selectedQuest->rewardmaildelaysecs()));
+
 			m_ui->questChoosableItemWidget->clear();
 			for (const auto &entry : quest->rewarditemschoice())
 			{
@@ -736,6 +757,44 @@ namespace wowpp
 					treeitem->setText(1, QString("%1").arg(entry.value()));
 					m_ui->questReputationWidget->addTopLevelItem(treeitem);
 				}
+			}
+
+			m_ui->questRequirementWidget->clear();
+			for (const auto &entry : quest->requirements())
+			{
+				const auto *item = entry.itemid() ? m_application.getProject().items.getById(entry.itemid()) : nullptr;
+				const auto *source = entry.sourceid() ? m_application.getProject().items.getById(entry.sourceid()) : nullptr;
+				const auto *spellcast = entry.spellcast() ? m_application.getProject().spells.getById(entry.spellcast()) : nullptr;
+				const auto *creature = entry.creatureid() ? m_application.getProject().units.getById(entry.creatureid()) : nullptr;
+				const auto *object = entry.objectid() ? m_application.getProject().objects.getById(entry.objectid()) : nullptr;
+
+				QTreeWidgetItem *treeitem = new QTreeWidgetItem();
+				
+				if (item)
+				{
+					treeitem->setText(0, QString("%1x %2 (%3)").arg(entry.itemcount()).arg(item->name().c_str()).arg(item->id()));
+					applyItemColorToWidget(treeitem, 0, item->quality());
+				}
+				if (source)
+				{
+					treeitem->setText(1, QString("%1x %2 (%3)").arg(entry.sourcecount()).arg(source->name().c_str()).arg(source->id()));
+					applyItemColorToWidget(treeitem, 1, source->quality());
+				}
+				if (creature)
+				{
+					treeitem->setText(2, QString("%1x %2 (%3)").arg(entry.creaturecount()).arg(creature->name().c_str()).arg(creature->id()));
+				}
+				if (object)
+				{
+					treeitem->setText(3, QString("%1x %2 (%3)").arg(entry.objectcount()).arg(object->name().c_str()).arg(object->id()));
+				}
+				if (spellcast)
+				{
+					treeitem->setText(3, QString("%1 (%2)").arg(spellcast->name().c_str()).arg(spellcast->id()));
+				}
+				treeitem->setText(5, entry.text().c_str());
+
+				m_ui->questRequirementWidget->addTopLevelItem(treeitem);
 			}
 		}
 
@@ -1012,7 +1071,11 @@ namespace wowpp
 				"`RewChoiceItemId1`, `RewChoiceItemCount1`, `RewChoiceItemId2`, `RewChoiceItemCount2`,`RewChoiceItemId3`, `RewChoiceItemCount3`,`RewChoiceItemId4`, `RewChoiceItemCount4`, `RewChoiceItemId5`, `RewChoiceItemCount5`, `RewChoiceItemId6`, `RewChoiceItemCount6`,"
 				"`RewItemId1`, `RewItemCount1`, `RewItemId2`, `RewItemCount2`,`RewItemId3`, `RewItemCount3`,`RewItemId4`, `RewItemCount4`,"
 				"`RewRepFaction1`, `RewRepValue1`, `RewRepFaction2`, `RewRepValue2`,`RewRepFaction3`, `RewRepValue3`,`RewRepFaction4`, `RewRepValue4`,`RewRepFaction5`, `RewRepValue5`,"
-				"`RewHonorableKills`, `RewOrReqMoney`, `RewMoneyMaxLevel`, `RewSpell`,`RewSpellCast`, `RewMailTemplateId`,`RewMailDelaySecs`"
+				"`RewHonorableKills`, `RewOrReqMoney`, `RewMoneyMaxLevel`, `RewSpell`,`RewSpellCast`, `RewMailTemplateId`,`RewMailDelaySecs`,"
+				"`ObjectiveText1`, `ReqItemId1`, `ReqItemCount1`, `ReqSourceId1`,`ReqSourceCount1`, `ReqCreatureOrGOId1`,`ReqCreatureOrGOCount1`,`ReqSpellCast1`,"
+				"`ObjectiveText2`, `ReqItemId2`, `ReqItemCount2`, `ReqSourceId2`,`ReqSourceCount2`, `ReqCreatureOrGOId2`,`ReqCreatureOrGOCount2`,`ReqSpellCast2`,"
+				"`ObjectiveText3`, `ReqItemId3`, `ReqItemCount3`, `ReqSourceId3`,`ReqSourceCount3`, `ReqCreatureOrGOId3`,`ReqCreatureOrGOCount3`,`ReqSpellCast3`,"
+				"`ObjectiveText4`, `ReqItemId4`, `ReqItemCount4`, `ReqSourceId4`,`ReqSourceCount4`, `ReqCreatureOrGOId4`,`ReqCreatureOrGOCount4`,`ReqSpellCast4`"
 				" FROM `quest_template` ORDER BY `entry`;";
 			task.beforeImport = [this]() {
 				m_application.getProject().quests.clear();
@@ -1113,6 +1176,59 @@ namespace wowpp
 				if (rewSpellCast && m_application.getProject().spells.getById(rewSpellCast)) added->set_rewardspellcast(rewSpellCast);
 				added->set_rewardmailtemplate(rewMailTemplate);
 				added->set_rewardmaildelaysecs(rewMailDelaySecs);
+
+				for (UInt32 i = 0; i < 4; ++i)
+				{
+					//"`ObjectiveText1`, `ReqItemId1`, `ReqItemCount1`, `ReqSourceId1`,`ReqSourceCount1`, `ReqCreatureOrGOId1`,`ReqCreatureOrGOCount1`,`ReqSpellCast1`,"
+
+					std::string text;
+					UInt32 itemId = 0, itemCount = 0, sourceId = 0, sourceCount = 0, creatureGoCount = 0, spellCast = 0;
+					Int32 creatureGo = 0;
+
+					row.getField(index++, text);
+					row.getField(index++, itemId);
+					row.getField(index++, itemCount);
+					row.getField(index++, sourceId);
+					row.getField(index++, sourceCount);
+					row.getField(index++, creatureGo);
+					row.getField(index++, creatureGoCount);
+					row.getField(index++, spellCast);
+					if (!text.empty() ||
+						itemId != 0 ||
+						itemCount != 0 ||
+						sourceId != 0 ||
+						sourceCount != 0 ||
+						creatureGo != 0 ||
+						creatureGoCount != 0 ||
+						spellCast != 0)
+					{
+						if (itemId && !m_application.getProject().items.getById(itemId)) itemId = 0;
+						if (sourceId && !m_application.getProject().items.getById(sourceId)) sourceId = 0;
+						if (creatureGo > 0 && !m_application.getProject().units.getById(creatureGo))
+						{
+							creatureGo = 0;
+							creatureGoCount = 0;
+						}
+						if (creatureGo < 0 && !m_application.getProject().objects.getById(-creatureGo))
+						{
+							creatureGo = 0;
+							creatureGoCount = 0;
+						}
+						if (spellCast && !m_application.getProject().spells.getById(spellCast)) spellCast = 0;
+
+						auto *addedReq = added->add_requirements();
+						addedReq->set_itemid(itemId);
+						addedReq->set_itemcount(itemCount);
+						addedReq->set_sourceid(sourceId);
+						addedReq->set_sourcecount(sourceCount);
+						addedReq->set_creatureid(creatureGo > 0 ? creatureGo : 0);
+						addedReq->set_creaturecount(creatureGo > 0 ? creatureGoCount : 0);
+						addedReq->set_objectid(creatureGo < 0 ? -creatureGo : 0);
+						addedReq->set_objectcount(creatureGo < 0 ? creatureGoCount : 0);
+						addedReq->set_spellcast(spellCast);
+						addedReq->set_text(text);
+					}
+				}
 
 				return true;
 			};
