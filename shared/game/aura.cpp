@@ -1307,6 +1307,30 @@ namespace wowpp
 				setRemoved(victim);
 			});
 		}
+		
+		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::NotAboveWater) != 0)
+		{
+			m_targetEnteredWater = m_target.enteredWater.connect(
+				[&]() {
+				m_destroy(*this);
+			});
+		}
+		
+		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Cast) != 0)
+		{
+			m_targetStartedCasting = m_target.startedCasting.connect(
+				[&]() {
+				m_destroy(*this);
+			});
+		}
+		
+		if ((m_spell.attributes(6) & game::spell_attributes_ex_f::IsMountSpell) != 0)
+		{
+			m_dismountOnCast = m_target.startedCasting.connect(
+				[&]() {
+				m_destroy(*this);
+			});
+		}
 
 		if (m_spell.procflags() != game::spell_proc_flags::None)
 		{

@@ -371,6 +371,10 @@ namespace wowpp
 		boost::signals2::signal<void(GameUnit *, UInt32)> doneSpellMagicDmgClassNeg;
 		/// Fired when hit by any damage.
 		boost::signals2::signal<void(GameUnit *)> takenDamage;
+		/// Fired when unit enters water
+		boost::signals2::signal<void()> enteredWater;
+		/// Fired when unit started active casting (excluding proc)
+		boost::signals2::signal<void()> startedCasting;
 		/// Fired when a unit trigger should be executed.
 		boost::signals2::signal<void(const proto::TriggerEntry &, GameUnit &)> unitTrigger;
 		/// Fired when a target was killed by this unit, which could trigger Kill-Procs. Only fired when XP or honor is rewarded.
