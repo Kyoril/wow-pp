@@ -366,7 +366,7 @@ namespace wowpp
 
 		// Add to unit finder if it is a unit
 		if (added.getTypeId() == object_type::Unit ||
-			added.getTypeId() == object_type::Character)
+			added.isGameCharacter())
 		{
 			GameUnit *unit = dynamic_cast<GameUnit*>(&added);
 			if (unit) m_unitFinder->addUnit(*unit);
@@ -383,7 +383,7 @@ namespace wowpp
 
 		// Remove from unit finder if it is a unit
 		if (remove.getTypeId() == object_type::Unit ||
-			remove.getTypeId() == object_type::Character)
+			remove.isGameCharacter())
 		{
 			GameUnit *unit = dynamic_cast<GameUnit*>(&remove);
 			if (unit) m_unitFinder->removeUnit(*unit);

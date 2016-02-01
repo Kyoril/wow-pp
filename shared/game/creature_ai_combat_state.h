@@ -75,6 +75,9 @@ namespace wowpp
 
 		void addThreat(GameUnit &threatener, float amount);
 		void removeThreat(GameUnit &threatener);
+		float getThreat(GameUnit &threatener);
+		void setThreat(GameUnit &threatener, float amount);
+		GameUnit *getTopThreatener();
 		void updateVictim();
 		void chaseTarget(GameUnit &target);
 		void chooseNextAction();
@@ -86,6 +89,7 @@ namespace wowpp
 		UnitSignals m_killedSignals;
 		UnitSignals m_despawnedSignals;
 		boost::signals2::scoped_connection m_onThreatened, m_onVictimMoved, m_onMoveTargetChanged;
+		boost::signals2::scoped_connection m_getThreat, m_setThreat, m_getTopThreatener;
 		boost::signals2::scoped_connection m_onStunChanged, m_onRootChanged;
 		boost::signals2::scoped_connection m_onAutoAttackDone, m_onControlledMoved;
 		GameTime m_lastThreatTime;

@@ -73,6 +73,18 @@ namespace wowpp
 		{
 			addThreat(threatener, amount);
 		});
+		m_getThreat = controlled.getThreat.connect([this](GameUnit &threatener)
+		{
+			return getThreat(threatener);
+		});
+		m_setThreat = controlled.setThreat.connect([this](GameUnit &threatener, float amount)
+		{
+			setThreat(threatener, amount);
+		});
+		m_getTopThreatener = controlled.getTopThreatener.connect([this]()
+		{
+			return getTopThreatener();
+		});
 		m_onControlledMoved = controlled.moved.connect([this](GameObject &, const math::Vector3 &position, float rotation)
 		{
 			if (m_lastSpellEntry != nullptr && m_lastSpell != nullptr)
@@ -304,12 +316,51 @@ namespace wowpp
 			chooseNextAction();
 		}
 	}
+	
+	float CreatureAICombatState::getThreat(GameUnit &threatener)
+	{
+		UInt64 guid = threatener.getGuid();
+		auto it = m_threat.find(guid);
+		if (it == m_threat.end())
+		{
+			return 0.0f;
+		}
+		else
+		{
+			return it->second.amount;
+		}
+	}
+	
+	void CreatureAICombatState::setThreat(GameUnit &threatener, float amount)
+	{
+		UInt64 guid = threatener.getGuid();
+		auto it = m_threat.find(guid);
+		if (it != m_threat.end())
+		{
+			it->second.amount = amount;
+		}
+	}
+	
+	GameUnit *CreatureAICombatState::getTopThreatener()
+	{
+		float highestThreat = -1.0f;
+		GameUnit *topThreatener = nullptr;
+		for (auto &entry : m_threat)
+		{
+			if (entry.second.amount > highestThreat)
+			{
+				topThreatener = entry.second.threatener;
+				highestThreat = entry.second.amount;
+			}
+		}
+		return topThreatener;
+	}
 
 	void CreatureAICombatState::updateVictim()
 	{
 		// First, determine the current victim
-		auto &controlled = getControlled();
-		auto *victim = controlled.getVictim();
+		GameCreature &controlled = getControlled();
+		GameUnit *victim = controlled.getVictim();
 		bool rooted = controlled.isRooted();
 
 		// Now, determine the victim with the highest threat value
@@ -346,8 +397,8 @@ namespace wowpp
 
 	void CreatureAICombatState::chaseTarget(GameUnit &target)
 	{
-		auto currentLocation = getControlled().getMover().getCurrentLocation();
-		const auto &newTargetLocation = target.getLocation();
+		math::Vector3 currentLocation = getControlled().getMover().getCurrentLocation();
+		const math::Vector3 &newTargetLocation = target.getLocation();
 
 		const float distance =
 			(newTargetLocation - currentLocation).length();
@@ -363,7 +414,7 @@ namespace wowpp
 
 	void CreatureAICombatState::chooseNextAction()
 	{
-		auto &controlled = getControlled();
+		GameCreature &controlled = getControlled();
 		m_onVictimMoved.disconnect();
 
 		// First, determine our current victim

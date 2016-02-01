@@ -937,7 +937,7 @@ namespace wowpp
 		{
 			GameUnit *unitTarget = nullptr;
 			if (targetObj &&
-				(targetObj->getTypeId() == object_type::Character ||
+				(targetObj->isGameCharacter() ||
 				targetObj->getTypeId() == object_type::Unit))
 			{
 				unitTarget = reinterpret_cast<GameUnit*>(targetObj);

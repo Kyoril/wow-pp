@@ -353,6 +353,12 @@ namespace wowpp
 		boost::signals2::signal<void(GameUnit &)> factionChanged;
 		/// 
 		boost::signals2::signal<void(GameUnit &, float)> threatened;
+		/// 
+		boost::signals2::signal<float(GameUnit &threatener)> getThreat;
+		/// 
+		boost::signals2::signal<void(GameUnit &threatener, float amount)> setThreat;
+		/// 
+		boost::signals2::signal<GameUnit *()> getTopThreatener;
 		/// Fired when an auto attack hit.
 		boost::signals2::signal<void(GameUnit *)> doneMeleeAutoAttack;
 		/// Fired when done an melee attack hit  (include miss/dodge...)
@@ -495,6 +501,8 @@ namespace wowpp
 		bool isInLineOfSight(GameObject &other);
 		/// Determines whether a position is in line of sight.
 		bool isInLineOfSight(const math::Vector3 &position);
+		/// 
+		bool isMounted() const { return getUInt32Value(unit_fields::MountDisplayId) != 0; }
 
 		float getMissChance(GameUnit &attacker, UInt8 school, bool isWhiteDamage);
 		bool isImmune(UInt8 school);

@@ -342,7 +342,7 @@ namespace wowpp
 				break;
 			}
 		}
-		else if (getTypeId() == object_type::Character)
+		else if (isGameCharacter())
 		{
 			const auto *character = reinterpret_cast<const GameCharacter*>(this);
 			const bool isHealthVisible = (character == &receiver || (character->getGroupId() != 0 && character->getGroupId() == receiver.getGroupId()));
@@ -586,7 +586,7 @@ namespace wowpp
 		io::Writer writer(sink);
 		{
 			UInt8 updateType = 0x02;						// Update type (0x02 = CREATE_OBJECT)
-			if (object.getTypeId() == object_type::Character ||
+			if (object.isGameCharacter() ||
 				object.getTypeId() == object_type::Corpse ||
 				object.getTypeId() == object_type::DynamicObject ||
 				object.getTypeId() == object_type::Container)
@@ -674,7 +674,7 @@ namespace wowpp
 				// Pitch info
 				if (moveFlags & (game::movement_flags::Swimming | game::movement_flags::Flying2))
 				{
-					if (object.getTypeId() == object_type::Character)
+					if (object.isGameCharacter())
 					{
 						writer
 							<< io::write<float>(movement.pitch);
@@ -687,7 +687,7 @@ namespace wowpp
 				}
 
 				// Fall time
-				if (object.getTypeId() == object_type::Character)
+				if (object.isGameCharacter())
 				{
 					writer
 						<< io::write<NetUInt32>(movement.fallTime);
@@ -701,7 +701,7 @@ namespace wowpp
 				// Fall information
 				if (moveFlags & game::movement_flags::Falling)
 				{
-					if (object.getTypeId() == object_type::Character)
+					if (object.isGameCharacter())
 					{
 						writer
 							<< io::write<float>(movement.jumpVelocity)
@@ -722,7 +722,7 @@ namespace wowpp
 				// Elevation information
 				if (moveFlags & game::movement_flags::SplineElevation)
 				{
-					if (object.getTypeId() == object_type::Character)
+					if (object.isGameCharacter())
 					{
 						writer
 							<< io::write<float>(movement.unknown1);
@@ -736,7 +736,7 @@ namespace wowpp
 
 				GameUnit *unitObject = nullptr;
 				if (object.getTypeId() == object_type::Unit ||
-					object.getTypeId() == object_type::Character)
+					object.isGameCharacter())
 				{
 					unitObject = reinterpret_cast<GameUnit*>(&object);
 				}

@@ -323,7 +323,7 @@ namespace wowpp
 	
 	void Aura::handleModDamageDone(bool apply)
 	{
-		if (m_target.getTypeId() == object_type::Character)
+		if (m_target.isGameCharacter())
 		{
 			UInt8 schoolMask = m_effect.miscvaluea();
 			for (UInt8 i = 1; i < 7; i++)
@@ -358,7 +358,7 @@ namespace wowpp
 		if (apply)
 		{
 			m_target.setByteValue(unit_fields::Bytes1, 2, 0x02);
-			if (m_target.getTypeId() == object_type::Character)
+			if (m_target.isGameCharacter())
 			{
 				UInt32 val = m_target.getUInt32Value(character_fields::CharacterBytes2);
 				m_target.setUInt32Value(character_fields::CharacterBytes2, val | 0x20);
@@ -369,7 +369,7 @@ namespace wowpp
 		else
 		{
 			m_target.setByteValue(unit_fields::Bytes1, 2, 0x00);
-			if (m_target.getTypeId() == object_type::Character)
+			if (m_target.isGameCharacter())
 			{
 				UInt32 val = m_target.getUInt32Value(character_fields::CharacterBytes2);
 				m_target.setUInt32Value(character_fields::CharacterBytes2, val & ~0x20);
@@ -588,7 +588,7 @@ namespace wowpp
 	
 	void Aura::handleModManaRegenInterrupt(bool apply)
 	{
-		if (m_target.getTypeId() == object_type::Character)
+		if (m_target.isGameCharacter())
 		{
 			m_target.updateManaRegen();
 		}
@@ -661,7 +661,7 @@ namespace wowpp
 			float maxWeaponDmg = 0.0f;
 			float minWeaponDmg = 0.0f;
 			float scaleFactor = 0.85f;
-			if (m_caster->getTypeId() == object_type::Character)
+			if (m_caster->isGameCharacter())
 			{
 				GameCharacter *character = reinterpret_cast<GameCharacter*>(m_caster);
 				auto *weapon = character->getItemByPos(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand);

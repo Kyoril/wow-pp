@@ -764,7 +764,7 @@ namespace wowpp
 		{
 			case game::power_type::Mana:
 			{
-				if (getTypeId() == object_type::Character)
+				if (isGameCharacter())
 				{
 					if ((m_lastManaUse + constants::OneSecond * 5) < getCurrentTime())
 					{
@@ -1490,7 +1490,7 @@ namespace wowpp
 	UInt32 GameUnit::getBonus(UInt8 school)
 	{
 		UInt32 bonus = 0;
-		if (getTypeId() == object_type::Character)
+		if (isGameCharacter())
 		{
 			bonus = getUInt32Value(character_fields::ModDamageDonePos + log2(school));
 		}
@@ -1644,7 +1644,7 @@ namespace wowpp
 		m_attackingUnits.remove(&removed);
 
 		// Remove combat flag for player characters if no attacking unit is left
-		if (getTypeId() == object_type::Character)
+		if (isGameCharacter())
 		{
 			if (m_attackingUnits.empty())
 			{
@@ -1757,7 +1757,7 @@ namespace wowpp
 		const float oldBonus = m_speedBonus[type];
 
 		float speed = 1.0f;
-		bool mounted = getUInt32Value(unit_fields::MountDisplayId) != 0;
+		bool mounted = isMounted();
 
 		// Apply speed buffs
 		{

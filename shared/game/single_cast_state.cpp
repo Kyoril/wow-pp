@@ -466,24 +466,13 @@ namespace wowpp
 
 	void SingleCastState::spellEffectTeleportUnits(const proto::SpellEffect &effect)
 	{
-		// Resolve GUIDs
-		GameUnit *unitTarget = nullptr;
 		GameUnit &caster = m_cast.getExecuter();
-		auto *world = caster.getWorldInstance();
-
-		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
-			unitTarget = &caster;
-		else if (world && m_target.hasUnitTarget())
-		{
-			unitTarget = dynamic_cast<GameUnit*>(world->findObjectByGUID(m_target.getUnitTarget()));
-		}
-
-		if (!unitTarget)
-		{
-			WLOG("SPELL_EFFECT_TELEPORT_UNITS: No unit target to teleport!");
-			return;
-		}
-
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+		
 		UInt32 targetMap = 0;
 		math::Vector3 targetPos(0.0f, 0.0f, 0.0f);
 		float targetO = 0.0f;
@@ -491,13 +480,16 @@ namespace wowpp
 		{
 			case game::targets::DstHome:
 			{
-				GameCharacter *character = dynamic_cast<GameCharacter*>(&caster);
-				if (!character)
+				if (caster.isGameCharacter())
+				{
+					GameCharacter *character = dynamic_cast<GameCharacter*>(&caster);
+					character->getHome(targetMap, targetPos, targetO);
+				}
+				else
 				{
 					WLOG("Only characters do have a home point");
 					return;
 				}
-				character->getHome(targetMap, targetPos, targetO);
 				break;
 			}
 			case game::targets::DstDB:
@@ -509,36 +501,27 @@ namespace wowpp
 				targetO = m_spell.targeto();
 				break;
 			}
+			case game::targets::DstCaster:
+				targetMap = caster.getMapId();
+				targetPos = caster.getLocation();
+				targetO = caster.getOrientation();
+				break;
 			default:
 				WLOG("Unhandled destination type " << effect.targetb() << " - not teleporting!");
 				return;
 		}
-
-		// Check whether it is the same map
-		if (unitTarget->getMapId() != targetMap)
+		
+		for (int i=0; i<targets.size(); i++)
 		{
-			// Only players can change maps
-			if (unitTarget->getTypeId() != object_type::Character)
+			GameUnit* targetUnit = targets[i];
+			if (targetUnit->isGameCharacter())
 			{
-				WLOG("SPELL_EFFECT_TELEPORT_UNITS: Only players can be teleported to another map!");
-				return;
+				targetUnit->teleport(targetMap, targetPos, targetO);
 			}
-
-			// Log destination
-			unitTarget->teleport(targetMap, targetPos, targetO);
-		}
-		else
-		{
-			// Same map, just move the unit
-			if (unitTarget->getTypeId() == object_type::Character)
-			{
-				// Send teleport signal for player characters
-				unitTarget->teleport(targetMap, targetPos, targetO);
-			}
-			else
+			else if (targetUnit->getMapId() == targetMap)
 			{
 				// Simply relocate creatures and other stuff
-				unitTarget->relocate(targetPos, targetO);
+				targetUnit->relocate(targetPos, targetO);
 			}
 		}
 	}
@@ -1113,7 +1096,7 @@ namespace wowpp
 		for (int i=0; i<targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
-			if (targetUnit->getTypeId() == object_type::Character)
+			if (targetUnit->isGameCharacter())
 			{
 				GameCharacter *character = dynamic_cast<GameCharacter*>(targetUnit);
 				character->setHome(caster.getMapId(), caster.getLocation(), caster.getOrientation());
@@ -1135,7 +1118,7 @@ namespace wowpp
 		for (int i=0; i<targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
-			if (targetUnit->getTypeId() == object_type::Character)
+			if (targetUnit->isGameCharacter())
 			{
 				GameCharacter *character = dynamic_cast<GameCharacter*>(targetUnit);
 				// TODO complete quest with questId to character
@@ -1193,7 +1176,6 @@ namespace wowpp
 			{se::WeaponDamageNoSchool, std::bind(&SingleCastState::spellEffectWeaponDamageNoSchool, this, std::placeholders::_1)},
 			{se::CreateItem, std::bind(&SingleCastState::spellEffectCreateItem, this, std::placeholders::_1)},
 			{se::WeaponDamage, std::bind(&SingleCastState::spellEffectWeaponDamage, this, std::placeholders::_1)},
-			{se::NormalizedWeaponDmg, std::bind(&SingleCastState::spellEffectNormalizedWeaponDamage, this, std::placeholders::_1)},
 			{se::TeleportUnits, std::bind(&SingleCastState::spellEffectTeleportUnits, this, std::placeholders::_1)},
 			{se::TriggerSpell, std::bind(&SingleCastState::spellEffectTriggerSpell, this, std::placeholders::_1)},
 			{se::Energize, std::bind(&SingleCastState::spellEffectEnergize, this, std::placeholders::_1)},
@@ -1203,6 +1185,8 @@ namespace wowpp
 			{se::ApplyAreaAuraParty, std::bind(&SingleCastState::spellEffectApplyAreaAuraParty, this, std::placeholders::_1)},
 			{se::Summon, std::bind(&SingleCastState::spellEffectSummon, this, std::placeholders::_1)},
 			{se::ScriptEffect, std::bind(&SingleCastState::spellEffectScript, this, std::placeholders::_1)},
+			{se::AttackMe, std::bind(&SingleCastState::spellEffectAttackMe, this, std::placeholders::_1)},
+			{se::NormalizedWeaponDmg, std::bind(&SingleCastState::spellEffectNormalizedWeaponDamage, this, std::placeholders::_1)},
 			// Add all effects above here
 			{se::ApplyAura, std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
 			{se::SchoolDamage, std::bind(&SingleCastState::spellEffectSchoolDamage, this, std::placeholders::_1)}
@@ -1525,7 +1509,7 @@ namespace wowpp
 		}
 	}
 
-	void wowpp::SingleCastState::spellEffectCharge(const proto::SpellEffect & effect)
+	void SingleCastState::spellEffectCharge(const proto::SpellEffect & effect)
 	{
 		Int32 basePoints = calculateEffectBasePoints(effect);
 
@@ -1543,8 +1527,31 @@ namespace wowpp
 			mover.moveTo(firstTarget.getLocation(), 25.0f);
 		}
 	}
+	
+	void SingleCastState::spellEffectAttackMe(const proto::SpellEffect &effect)
+	{
+		GameUnit &caster = m_cast.getExecuter();
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+		
+		for (int i=0; i<targets.size(); i++)
+		{
+			GameUnit *targetUnit = targets[i];
+			GameUnit *topThreatener = targetUnit->getTopThreatener().get();
+			if (topThreatener)
+			{
+				float addThread = targetUnit->getThreat(*topThreatener).get();
+				addThread -= targetUnit->getThreat(caster).get();
+				if (addThread > 0.0f)
+					targetUnit->threatened(caster, addThread);
+			}
+		}
+	}
 
-	void wowpp::SingleCastState::spellEffectScript(const proto::SpellEffect & effect)
+	void SingleCastState::spellEffectScript(const proto::SpellEffect & effect)
 	{
 		switch (m_spell.id())
 		{

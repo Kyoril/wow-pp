@@ -234,6 +234,8 @@ namespace wowpp
 
 		void setGuid(UInt64 guid) { setUInt64Value(object_fields::Guid, guid); }
 		UInt64 getGuid() const { return getUInt64Value(object_fields::Guid); }
+		
+		bool isGameCharacter() const { return getTypeId() == object_type::Character; }
 
 		/// Writes creation blocks for this object.
 		/// 
