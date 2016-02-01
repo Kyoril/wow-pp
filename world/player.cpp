@@ -2183,6 +2183,141 @@ namespace wowpp
 		}
 	}
 
+	void Player::sendGossipMenu(UInt64 guid)
+	{
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+		{
+			WLOG("No world found");
+			return;
+		}
+
+		GameObject *target = world->findObjectByGUID(guid);
+		if (!target)
+		{
+			return;
+		}
+
+		GameCreature *creature = (target->getTypeId() == object_type::Unit ? reinterpret_cast<GameCreature*>(target) : nullptr);
+		WorldObject *object = (target->getTypeId() == object_type::GameObject ? reinterpret_cast<WorldObject*>(target) : nullptr);
+
+		// TODO: Build gossip menu, but for now, we check in the following order:
+		// Quest giver
+		// Trainer
+		// Vendor
+		std::vector<game::QuestMenuItem> questMenu;
+		if (creature)
+		{
+			for (const auto &questid : creature->getEntry().quests())
+			{
+				auto questStatus = m_character->getQuestStatus(questid);
+				if (questStatus == game::quest_status::Available)
+				{
+					const auto *quest = m_project.quests.getById(questid);
+					assert(quest);
+
+					game::QuestMenuItem item;
+					item.questId = questid;
+					item.menuIcon = 0;
+					item.questLevel = quest->questlevel();
+					item.title = quest->name();
+					questMenu.emplace_back(std::move(item));
+				}
+			}
+		}
+		if (object)
+		{
+			for (const auto &questid : object->getEntry().quests())
+			{
+				auto questStatus = m_character->getQuestStatus(questid);
+				if (questStatus == game::quest_status::Available)
+				{
+					const auto *quest = m_project.quests.getById(questid);
+					assert(quest);
+
+					game::QuestMenuItem item;
+					item.questId = questid;
+					item.menuIcon = 0;
+					item.questLevel = quest->questlevel();
+					item.title = quest->name();
+					questMenu.emplace_back(std::move(item));
+				}
+			}
+		}
+
+		// Quests available?
+		if (!questMenu.empty())
+		{
+			// Check if only one quest available
+			if (questMenu.size() == 1)
+			{
+				// Immediatly send quest details
+				sendProxyPacket(
+					std::bind(game::server_write::questgiverQuestList, std::placeholders::_1, guid, "", 0, 0, std::cref(questMenu)));
+			}
+			else
+			{
+				// Send quest menu
+				sendProxyPacket(
+					std::bind(game::server_write::questgiverQuestList, std::placeholders::_1, guid, "", 0, 0, std::cref(questMenu)));
+			}
+		}
+		else if(creature)
+		{
+			const auto *trainerEntry = m_project.trainers.getById(creature->getEntry().trainerentry());
+			if (trainerEntry)
+			{
+				UInt32 titleId = 0;
+				if (trainerEntry->type() == proto::TrainerEntry_TrainerType_CLASS_TRAINER)
+				{
+					if (trainerEntry->classid() != m_character->getClass())
+					{
+						// Not your class!
+						return;
+					}
+
+					switch (m_character->getClass())
+					{
+						case game::char_class::Druid:
+							titleId = 4913;
+							break;
+						case game::char_class::Hunter:
+							titleId = 10090;
+							break;
+						case game::char_class::Mage:
+							titleId = 328;
+							break;
+						case game::char_class::Paladin:
+							titleId = 1635;
+							break;
+						case game::char_class::Priest:
+							titleId = 4436;
+							break;
+						case game::char_class::Rogue:
+							titleId = 4797;
+							break;
+						case game::char_class::Shaman:
+							titleId = 5003;
+							break;
+						case game::char_class::Warlock:
+							titleId = 5836;
+							break;
+						case game::char_class::Warrior:
+							titleId = 4985;
+							break;
+					}
+				}
+
+				sendProxyPacket(
+					std::bind(game::server_write::gossipMessage, std::placeholders::_1, guid, titleId));
+				sendProxyPacket(
+					std::bind(game::server_write::trainerList, std::placeholders::_1, std::cref(*m_character), guid, std::cref(*trainerEntry)));
+
+				return;
+			}
+		}
+	}
+
 	void Player::handleGossipHello(game::Protocol::IncomingPacket &packet)
 	{
 		UInt64 npcGuid = 0;
@@ -2191,73 +2326,7 @@ namespace wowpp
 			return;
 		}
 
-		// TODO: Proper gossip menu handling
-
-		auto *world = m_character->getWorldInstance();
-		if (!world)
-		{
-			WLOG("No world found");
-			return;
-		}
-
-		GameCreature *creature = dynamic_cast<GameCreature*>(world->findObjectByGUID(npcGuid));
-		if (!creature)
-		{
-			WLOG("Could not find creature by guid");
-			return;
-		}
-
-		const auto *trainerEntry = m_project.trainers.getById(creature->getEntry().trainerentry());
-		if (trainerEntry)
-		{
-			UInt32 titleId = 0;
-			if (trainerEntry->type() == proto::TrainerEntry_TrainerType_CLASS_TRAINER)
-			{
-				if (trainerEntry->classid() != m_character->getClass())
-				{
-					// Not your class!
-					return;
-				}
-
-				switch (m_character->getClass())
-				{
-				case game::char_class::Druid:
-					titleId = 4913;
-					break;
-				case game::char_class::Hunter:
-					titleId = 10090;
-					break;
-				case game::char_class::Mage:
-					titleId = 328;
-					break;
-				case game::char_class::Paladin:
-					titleId = 1635;
-					break;
-				case game::char_class::Priest:
-					titleId = 4436;
-					break;
-				case game::char_class::Rogue:
-					titleId = 4797;
-					break;
-				case game::char_class::Shaman:
-					titleId = 5003;
-					break;
-				case game::char_class::Warlock:
-					titleId = 5836;
-					break;
-				case game::char_class::Warrior:
-					titleId = 4985;
-					break;
-				}
-			}
-
-			sendProxyPacket(
-				std::bind(game::server_write::gossipMessage, std::placeholders::_1, npcGuid, titleId));
-			sendProxyPacket(
-				std::bind(game::server_write::trainerList, std::placeholders::_1, std::cref(*m_character), npcGuid, std::cref(*trainerEntry)));
-
-			return;
-		}
+		sendGossipMenu(npcGuid);
 	}
 
 	void Player::handleTrainerBuySpell(game::Protocol::IncomingPacket &packet)
@@ -2412,34 +2481,7 @@ namespace wowpp
 			return;
 		}
 
-		// Can't find world instance
-		auto *world = m_character->getWorldInstance();
-		if (!world)
-		{
-			return;
-		}
-
-		// Can't find questgiver
-		GameObject *questgiver = world->findObjectByGUID(guid);
-		if (!questgiver)
-		{
-			return;
-		}
-
-		std::vector<game::QuestMenuItem> menu;
-		game::QuestMenuItem item;
-		item.questId = 458;
-		item.menuIcon = 0;
-		item.questLevel = 1;
-		item.title = "The Balance of Nature";
-		menu.emplace_back(std::move(item));
-
-		// Send answer
-		sendProxyPacket(
-			std::bind(game::server_write::questgiverQuestList, std::placeholders::_1, guid, "", 0, 0, std::cref(menu)));
-
-		// Accept that quest
-		m_character->acceptQuest(458);
+		sendGossipMenu(guid);
 	}
 
 }

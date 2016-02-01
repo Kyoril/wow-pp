@@ -57,7 +57,7 @@ message QuestEntry {
 	required string name = 2;
 	optional uint32 method = 3 [default = 2];
 	optional uint32 minlevel = 4 [default = 1];
-	optional uint32 questlevel = 5;
+	optional int32 questlevel = 5;
 	optional string detailstext = 6;
 	optional string objectivestext = 7;
 	optional string offerrewardtext = 8;
@@ -82,6 +82,24 @@ message QuestEntry {
 	optional int32 nextquestid = 23;
 	optional int32 exclusivegroup = 24;
 	optional int32 nextchainquestid = 25;
+	optional uint32 flags = 26;
+	optional uint32 extraflags = 27;
+	optional uint32 type = 28;
+	optional int32 zone = 29;
+	optional uint32 suggestedplayers = 30;
+	optional uint32 timelimit = 31;
+	optional uint32 srcitemid = 32;
+	optional uint32 srcitemcount = 33 [default = 1];
+	optional uint32 srcspell = 34;
+	optional uint32 rewtitleid = 35;
+	optional uint32 pointmapid = 36;
+	optional float pointx = 37;
+	optional float pointy = 38;
+	optional uint32 pointopt = 39;
+	optional uint32 requiredraces = 40;
+	optional uint32 requiredclasses = 41;
+	optional uint32 requiredskill = 42;
+	optional uint32 requiredskillval = 43;
 }
 
 message Quests {

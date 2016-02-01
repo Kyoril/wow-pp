@@ -145,7 +145,19 @@ namespace wowpp
 			return game::quest_status::Unavailable;
 		}
 		
-		// TODO: Race/Class check
+		// Race/Class check
+		const UInt32 charRaceBit = 1 << (getRace() - 1);
+		const UInt32 charClassBit = 1 << (getClass() - 1);
+		if (entry->requiredraces() &&
+			(entry->requiredraces() & charRaceBit) == 0)
+		{
+			return game::quest_status::Unavailable;
+		}
+		if (entry->requiredclasses() &&
+			(entry->requiredclasses() & charClassBit) == 0)
+		{
+			return game::quest_status::Unavailable;
+		}
 
 		// Quest chain checks
 		if (entry->prevquestid())

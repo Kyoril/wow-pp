@@ -123,6 +123,8 @@ namespace wowpp
 
 		void buyItemFromVendor(UInt64 vendorGuid, UInt32 itemEntry, UInt64 bagGuid, UInt8 slot, UInt8 count);
 		
+		void sendGossipMenu(UInt64 guid);
+
 		/// Sends an proxy packet to the realm which will then be redirected to the game client.
 		/// @param generator The packet writer function.
 		template<class F>

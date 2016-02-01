@@ -1076,7 +1076,10 @@ namespace wowpp
 				"`ObjectiveText2`, `ReqItemId2`, `ReqItemCount2`, `ReqSourceId2`,`ReqSourceCount2`, `ReqCreatureOrGOId2`,`ReqCreatureOrGOCount2`,`ReqSpellCast2`,"
 				"`ObjectiveText3`, `ReqItemId3`, `ReqItemCount3`, `ReqSourceId3`,`ReqSourceCount3`, `ReqCreatureOrGOId3`,`ReqCreatureOrGOCount3`,`ReqSpellCast3`,"
 				"`ObjectiveText4`, `ReqItemId4`, `ReqItemCount4`, `ReqSourceId4`,`ReqSourceCount4`, `ReqCreatureOrGOId4`,`ReqCreatureOrGOCount4`,`ReqSpellCast4`,"
-				"`PrevQuestId`, `NextQuestId`, `ExclusiveGroup`, `NextQuestInChain`"
+				"`PrevQuestId`, `NextQuestId`, `ExclusiveGroup`, `NextQuestInChain`,"
+
+				"`QuestFlags`, `SpecialFlags`, `Type`, `ZoneOrSort`, `SuggestedPlayers`, `LimitTime`, `SrcItemId`, `SrcItemCount`, `SrcSpell`, `CharTitleId`,"
+				"`PointMapId`, `PointX`, `PointY`, `PointOpt`, `RequiredRaces`, `RequiredClasses`, `RequiredSkill`, `RequiredSkillValue`"
 				" FROM `quest_template` ORDER BY `entry`;";
 			task.beforeImport = [this]() {
 				m_application.getProject().quests.clear();
@@ -1243,6 +1246,47 @@ namespace wowpp
 				added->set_nextquestid(nextQuestId);
 				added->set_exclusivegroup(exclusiveGroup);
 				added->set_nextchainquestid(nextQuestInChain);
+
+				UInt32 flags = 0, specialFlags = 0, type = 0, suggestedPlayers = 0, limitTime = 0, srcItemId = 0;
+				UInt32 srcItemCount = 0, srcSpell = 0, charTitleId = 0, pointMapId = 0, pointOpt = 0, races = 0, classes = 0, skill = 0, skillval = 0;
+				Int32 zoneOrSort = 0;
+				float pointX = 0.0f, pointY = 0.0f;
+				row.getField(index++, flags);
+				row.getField(index++, specialFlags);
+				row.getField(index++, type);
+				row.getField(index++, zoneOrSort);
+				row.getField(index++, suggestedPlayers);
+				row.getField(index++, limitTime);
+				row.getField(index++, srcItemId);
+				row.getField(index++, srcItemCount);
+				row.getField(index++, srcSpell);
+				row.getField(index++, charTitleId);
+				row.getField(index++, pointMapId);
+				row.getField(index++, pointX);
+				row.getField(index++, pointY);
+				row.getField(index++, pointOpt);
+				row.getField(index++, races);
+				row.getField(index++, classes);
+				row.getField(index++, skill);
+				row.getField(index++, skillval);
+				added->set_flags(flags);
+				added->set_extraflags(specialFlags);
+				added->set_type(type);
+				added->set_zone(zoneOrSort);
+				added->set_suggestedplayers(suggestedPlayers);
+				added->set_timelimit(limitTime);
+				added->set_srcitemid(srcItemId);
+				added->set_srcitemcount(srcItemCount);
+				added->set_srcspell(srcSpell);
+				added->set_rewtitleid(charTitleId);
+				added->set_pointmapid(pointMapId);
+				added->set_pointx(pointX);
+				added->set_pointy(pointY);
+				added->set_pointopt(pointOpt);
+				added->set_requiredraces(races);
+				added->set_requiredclasses(classes);
+				added->set_requiredskill(skill);
+				added->set_requiredskillval(skillval);
 
 				return true;
 			};
