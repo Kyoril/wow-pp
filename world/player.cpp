@@ -29,6 +29,7 @@
 #include "proto_data/project.h"
 #include "proto_data/faction_helper.h"
 #include "game/game_creature.h"
+#include "game/game_world_object.h"
 #include <iomanip>
 #include <cassert>
 #include <limits>
@@ -2367,13 +2368,28 @@ namespace wowpp
 		{
 			case object_type::Unit:
 			{
-				// TODO: Check unit quests
-				status = game::questgiver_status::Available;
+				GameCreature *creature = reinterpret_cast<GameCreature*>(questgiver);
+				for (const auto &quest : creature->getEntry().quests())
+				{
+					if (m_character->getQuestStatus(quest) == game::quest_status::Available)
+					{
+						status = game::questgiver_status::Available;
+						break;
+					}
+				}
 				break;
 			}
 			case object_type::GameObject:
 			{
-				// TODO
+				WorldObject *object = reinterpret_cast<WorldObject*>(questgiver);
+				for (const auto &quest : object->getEntry().quests())
+				{
+					if (m_character->getQuestStatus(quest) == game::quest_status::Available)
+					{
+						status = game::questgiver_status::Available;
+						break;
+					}
+				}
 				break;
 			}
 			default:
@@ -2421,6 +2437,9 @@ namespace wowpp
 		// Send answer
 		sendProxyPacket(
 			std::bind(game::server_write::questgiverQuestList, std::placeholders::_1, guid, "", 0, 0, std::cref(menu)));
+
+		// Accept that quest
+		m_character->acceptQuest(458);
 	}
 
 }

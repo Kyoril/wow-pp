@@ -124,6 +124,67 @@ namespace wowpp
 		setFloatValue(character_fields::DodgePercentage, 0.0f);
 	}
 
+	game::QuestStatus GameCharacter::getQuestStatus(UInt32 quest) const
+	{
+		// Check if we have a cached quest state
+		auto it = m_quests.find(quest);
+		if (it != m_quests.end())
+			return it->second.status;
+
+		// We don't have that quest cached, make a lookup
+		const auto *entry = getProject().quests.getById(quest);
+		if (!entry)
+		{
+			WLOG("Could not find quest " << quest);
+			return game::quest_status::None;
+		}
+
+		// Check if the quest is available for us
+		if (getLevel() < entry->minlevel())
+		{
+			return game::quest_status::Unavailable;
+		}
+		
+		// TODO: Race/Class check
+
+		// Quest chain checks
+		if (entry->prevquestid())
+		{
+			if (getQuestStatus(entry->prevquestid()) != game::quest_status::Complete)
+			{
+				return game::quest_status::Unavailable;
+			}
+		}
+
+		return game::quest_status::Available;
+	}
+
+	bool GameCharacter::acceptQuest(UInt32 quest)
+	{
+		auto status = getQuestStatus(quest);
+		if (status != game::quest_status::Available)
+		{
+			// We can't take that quest, maybe because we already completed it or already have it
+			return false;
+		}
+
+		// Take that quest
+		m_quests[quest].status = game::quest_status::Incomplete;
+
+		// Set quest log
+		setUInt32Value(character_fields::QuestLog1_1 + 0 * 25 + 0, quest);
+		setUInt32Value(character_fields::QuestLog1_1 + 0 * 25 + 1, 0);
+		setUInt32Value(character_fields::QuestLog1_1 + 0 * 25 + 2, 0);
+		setUInt32Value(character_fields::QuestLog1_1 + 0 * 25 + 2, static_cast<UInt32>(getCurrentTime() / constants::OneSecond));
+
+		return true;
+	}
+
+	bool GameCharacter::abandonQuest(UInt32 quest)
+	{
+		return false;
+	}
+
 	void GameCharacter::levelChanged(const proto::LevelEntry &levelInfo)
 	{
 		// Superclass

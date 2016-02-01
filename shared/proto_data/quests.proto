@@ -78,7 +78,10 @@ message QuestEntry {
 	repeated QuestRepReward rewardreputations = 20;
 	// Limited to 4 entries by client.
 	repeated QuestRequirement requirements = 21;
-	
+	optional int32 prevquestid = 22;
+	optional int32 nextquestid = 23;
+	optional int32 exclusivegroup = 24;
+	optional int32 nextchainquestid = 25;
 }
 
 message Quests {

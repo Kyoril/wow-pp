@@ -1075,7 +1075,8 @@ namespace wowpp
 				"`ObjectiveText1`, `ReqItemId1`, `ReqItemCount1`, `ReqSourceId1`,`ReqSourceCount1`, `ReqCreatureOrGOId1`,`ReqCreatureOrGOCount1`,`ReqSpellCast1`,"
 				"`ObjectiveText2`, `ReqItemId2`, `ReqItemCount2`, `ReqSourceId2`,`ReqSourceCount2`, `ReqCreatureOrGOId2`,`ReqCreatureOrGOCount2`,`ReqSpellCast2`,"
 				"`ObjectiveText3`, `ReqItemId3`, `ReqItemCount3`, `ReqSourceId3`,`ReqSourceCount3`, `ReqCreatureOrGOId3`,`ReqCreatureOrGOCount3`,`ReqSpellCast3`,"
-				"`ObjectiveText4`, `ReqItemId4`, `ReqItemCount4`, `ReqSourceId4`,`ReqSourceCount4`, `ReqCreatureOrGOId4`,`ReqCreatureOrGOCount4`,`ReqSpellCast4`"
+				"`ObjectiveText4`, `ReqItemId4`, `ReqItemCount4`, `ReqSourceId4`,`ReqSourceCount4`, `ReqCreatureOrGOId4`,`ReqCreatureOrGOCount4`,`ReqSpellCast4`,"
+				"`PrevQuestId`, `NextQuestId`, `ExclusiveGroup`, `NextQuestInChain`"
 				" FROM `quest_template` ORDER BY `entry`;";
 			task.beforeImport = [this]() {
 				m_application.getProject().quests.clear();
@@ -1229,6 +1230,19 @@ namespace wowpp
 						addedReq->set_text(text);
 					}
 				}
+
+				Int32 prevQuestId = 0, nextQuestId = 0, exclusiveGroup = 0, nextQuestInChain = 0;
+				row.getField(index++, prevQuestId);
+				row.getField(index++, nextQuestId);
+				row.getField(index++, exclusiveGroup);
+				row.getField(index++, nextQuestInChain);
+				if (prevQuestId == entry) prevQuestId = 0;
+				if (nextQuestId == entry) nextQuestId = 0;
+				if (nextQuestInChain == entry) nextQuestInChain = 0;
+				added->set_prevquestid(prevQuestId);
+				added->set_nextquestid(nextQuestId);
+				added->set_exclusivegroup(exclusiveGroup);
+				added->set_nextchainquestid(nextQuestInChain);
 
 				return true;
 			};

@@ -468,6 +468,26 @@ namespace wowpp
 
 	typedef std::vector<ItemPosCount> ItemPosCountVector;
 
+	struct QuestStatusData
+	{
+		game::QuestStatus status;
+		// May be 0 if completed.
+		GameTime expiration;
+		// What is this for?
+		bool explored;
+		std::array<UInt16, 4> creatures;
+		std::array<UInt16, 4> objects;
+		// Recomputed on inventory changes.
+		std::array<UInt16, 4> items;
+
+		QuestStatusData()
+			: status(game::QuestStatus::None)
+			, expiration(0)
+			, explored(false)
+		{
+		}
+	};
+
 	/// 
 	class GameCharacter : public GameUnit
 	{
@@ -481,6 +501,8 @@ namespace wowpp
 		boost::signals2::signal<void()> comboPointsChanged;
 		boost::signals2::signal<void(UInt64, UInt32, UInt32)> experienceGained;
 		boost::signals2::signal<void()> homeChanged;
+		/// Parameters: Quest-ID, Old Status, New Status
+		boost::signals2::signal<void(UInt32, game::QuestStatus, game::QuestStatus)> questStatusChanged;
 
 	public:
 
@@ -584,6 +606,13 @@ namespace wowpp
 		/// Sets the characters group id.
 		void setGroupId(UInt64 groupId) { m_groupId = groupId; }
 
+		/// 
+		game::QuestStatus getQuestStatus(UInt32 quest) const;
+		/// 
+		bool acceptQuest(UInt32 quest);
+		/// 
+		bool abandonQuest(UInt32 quest);
+
 	protected:
 
 		virtual void levelChanged(const proto::LevelEntry &levelInfo) override;
@@ -621,6 +650,7 @@ namespace wowpp
 		math::Vector3 m_homePos;
 		float m_homeRotation;
 		boost::signals2::scoped_connection m_doneMeleeAttack;
+		std::map<UInt32, QuestStatusData> m_quests;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameCharacter const& object);
