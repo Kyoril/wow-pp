@@ -420,6 +420,8 @@ namespace wowpp
 
 		// Trigger next auto attack
 		m_attackSwingCountdown.setEnd(nextAttackSwing);
+		
+		startedAttacking();
 	}
 
 	void GameUnit::stopAttack()

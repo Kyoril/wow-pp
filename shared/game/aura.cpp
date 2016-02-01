@@ -1316,6 +1316,14 @@ namespace wowpp
 			});
 		}
 		
+		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Attack) != 0)
+		{
+			m_targetStartedAttacking = m_target.startedAttacking.connect(
+				[&]() {
+				m_destroy(*this);
+			});
+		}
+		
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Cast) != 0)
 		{
 			m_targetStartedCasting = m_target.startedCasting.connect(
@@ -1326,7 +1334,11 @@ namespace wowpp
 		
 		if ((m_spell.attributes(6) & game::spell_attributes_ex_f::IsMountSpell) != 0)
 		{
-			m_dismountOnCast = m_target.startedCasting.connect(
+			m_targetStartedAttacking = m_target.startedAttacking.connect(
+				[&]() {
+				m_destroy(*this);
+			});
+			m_targetStartedCasting = m_target.startedCasting.connect(
 				[&]() {
 				m_destroy(*this);
 			});

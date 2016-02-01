@@ -373,6 +373,8 @@ namespace wowpp
 		boost::signals2::signal<void(GameUnit *)> takenDamage;
 		/// Fired when unit enters water
 		boost::signals2::signal<void()> enteredWater;
+		/// Fired when unit started attacking
+		boost::signals2::signal<void()> startedAttacking;
 		/// Fired when unit started active casting (excluding proc)
 		boost::signals2::signal<void()> startedCasting;
 		/// Fired when a unit trigger should be executed.
