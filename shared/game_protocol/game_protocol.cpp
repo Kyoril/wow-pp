@@ -3031,6 +3031,26 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void gossipComplete(game::OutgoingPacket & out_packet)
+			{
+				out_packet.start(game::server_packet::GossipComplete);
+				out_packet.finish();
+			}
+
+			void questgiverStatusMultiple(game::OutgoingPacket & out_packet, const std::map<UInt64, game::QuestgiverStatus>& status)
+			{
+				out_packet.start(game::server_packet::QuestgiverStatusMultiple);
+				out_packet
+					<< io::write<NetUInt32>(status.size());
+				for (const auto &pair : status)
+				{
+					out_packet
+						<< io::write<NetUInt64>(pair.first)
+						<< io::write<NetUInt8>(pair.second);
+				}
+				out_packet.finish();
+			}
+
 		}
 
 		namespace client_read
@@ -3940,6 +3960,11 @@ namespace wowpp
 			{
 				return packet
 					>> io::read<NetUInt32>(out_questId);
+			}
+
+			bool questgiverStatusMultiple(io::Reader & packet)
+			{
+				return packet;
 			}
 
 		}

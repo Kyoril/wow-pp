@@ -100,6 +100,9 @@ namespace wowpp
 		void raiseTrigger(trigger_event::Type e);
 		/// @copydoc GameObject::providesQuest()
 		bool providesQuest(UInt32 questId) const override;
+		/// @copydoc GameObject::endsQuest()
+		bool endsQuest(UInt32 questId) const override;
+		game::QuestgiverStatus getQuestgiverStatus(const GameCharacter &character) const;
 
 		bool hasMainHandWeapon() const override;
 		bool hasOffHandWeapon() const override;

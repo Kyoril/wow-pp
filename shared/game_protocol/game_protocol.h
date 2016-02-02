@@ -172,7 +172,8 @@ namespace wowpp
 				TimeSyncResponse		= 0x391,
 				MoveStartDescend		= 0x3A7,
 				VoiceSessionEnable		= 0x3AF,
-				RaidReadyCheckFinished	= 0x3C5
+				RaidReadyCheckFinished	= 0x3C5,
+				QuestgiverStatusMultipleQuery = 0x416
 			};
 		}
 
@@ -322,6 +323,7 @@ namespace wowpp
 				LootClearMoney				= 0x165,
 				ItemPushResult				= 0x166,
 				GossipMessage				= 0x17D,
+				GossipComplete				= 0x17E,
 				QuestgiverStatus			= 0x183,
 				QuestgiverQuestList			= 0x185,
 				QuestgiverQuestDetails		= 0x188,
@@ -374,6 +376,7 @@ namespace wowpp
 				RaidReadyCheckConfirm		= 0x3AE,
 				RaidReadyCheckFinished		= 0x3C5,
 				FeatureSystemStatus			= 0x3C8,
+				QuestgiverStatusMultiple	= 0x417,
 				UnlearnSpells				= 0x41D
 			};
 		}
@@ -1143,6 +1146,10 @@ namespace wowpp
 			bool questQuery(
 				io::Reader &packet,
 				UInt32 &out_questId
+				);
+
+			bool questgiverStatusMultiple(
+				io::Reader &packet
 				);
 		};
 
@@ -1933,6 +1940,15 @@ namespace wowpp
 			void questQueryResponse(
 				game::OutgoingPacket &out_packet,
 				const proto::QuestEntry &quest
+				);
+
+			void gossipComplete(
+				game::OutgoingPacket &out_packet
+				);
+
+			void questgiverStatusMultiple(
+				game::OutgoingPacket &out_packet,
+				const std::map<UInt64, game::QuestgiverStatus> &status
 				);
 		};
 	}

@@ -2437,37 +2437,13 @@ namespace wowpp
 			case object_type::Unit:
 			{
 				GameCreature *creature = reinterpret_cast<GameCreature*>(questgiver);
-				for (const auto &quest : creature->getEntry().quests())
-				{
-					auto questStatus = m_character->getQuestStatus(quest);
-					if (questStatus == game::quest_status::Complete)
-					{
-						status = game::questgiver_status::Reward;
-						break;
-					}
-					else if (questStatus == game::quest_status::Available)
-					{
-						status = game::questgiver_status::Available;
-					}
-					else if (questStatus == game::quest_status::Incomplete &&
-						status == game::questgiver_status::None)
-					{
-						status = game::questgiver_status::Incomplete;
-					}
-				}
+				status = creature->getQuestgiverStatus(*m_character);
 				break;
 			}
 			case object_type::GameObject:
 			{
 				WorldObject *object = reinterpret_cast<WorldObject*>(questgiver);
-				for (const auto &quest : object->getEntry().quests())
-				{
-					if (m_character->getQuestStatus(quest) == game::quest_status::Available)
-					{
-						status = game::questgiver_status::Available;
-						break;
-					}
-				}
+				status = object->getQuestgiverStatus(*m_character);
 				break;
 			}
 			default:
@@ -2480,6 +2456,57 @@ namespace wowpp
 		// Send answer
 		sendProxyPacket(
 			std::bind(game::server_write::questgiverStatus, std::placeholders::_1, guid, status));
+	}
+
+	void Player::handleQuestgiverStatusMultipleQuery(game::Protocol::IncomingPacket & packet)
+	{
+		std::map<UInt64, game::QuestgiverStatus> statusMap;
+
+		// Find all potential quest givers near our character
+		TileIndex2D tile;
+		if (m_character->getTileIndex(tile))
+		{
+			forEachTileInSight(
+				m_character->getWorldInstance()->getGrid(),
+				tile,
+				[&statusMap, this](VisibilityTile & tile) {
+				for (auto *object : tile.getGameObjects())
+				{
+					switch (object->getTypeId())
+					{
+						case object_type::Unit:
+						{
+							GameCreature *creature = reinterpret_cast<GameCreature*>(object);
+							if (creature->getEntry().quests_size() ||
+								creature->getEntry().end_quests_size())
+							{
+								statusMap[object->getGuid()] = creature->getQuestgiverStatus(*m_character);
+							}
+							break;
+						}
+						case object_type::GameObject:
+						{
+							WorldObject *worldObject = reinterpret_cast<WorldObject*>(object);
+							if (worldObject->getEntry().quests_size() ||
+								worldObject->getEntry().end_quests_size())
+							{
+								statusMap[object->getGuid()] = worldObject->getQuestgiverStatus(*m_character);
+							}
+							break;
+						}
+						default:	// Make the compiler happy
+							break;
+					}
+				}
+			});
+		}
+
+		// Send questgiver status map
+		if (!statusMap.empty())
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::questgiverStatusMultiple, std::placeholders::_1, std::cref(statusMap)));
+		}
 	}
 
 	void Player::handleQuestgiverHello(game::Protocol::IncomingPacket & packet)
@@ -2534,7 +2561,8 @@ namespace wowpp
 
 		// Accept that quest
 		m_character->acceptQuest(questId);
-		//DLOG("CMSG_QUESTGIVER_ACCEPT_QUEST: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
+		sendProxyPacket(
+			std::bind(game::server_write::gossipComplete, std::placeholders::_1));
 	}
 
 	void Player::handleQuestgiverCompleteQuest(game::Protocol::IncomingPacket & packet)
