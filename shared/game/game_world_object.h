@@ -178,6 +178,10 @@ namespace wowpp
 		const proto::ObjectEntry &getEntry() const { return m_entry; }
 		/// @copydoc GameObject::providesQuest()
 		bool providesQuest(UInt32 questId) const override;
+		/// @copydoc GameObject::endsQuest()
+		bool endsQuest(UInt32 questId) const override;
+		/// 
+		game::QuestgiverStatus getQuestgiverStatus(const GameCharacter &character) const;
 
 		/// Gets the object type id value.
 		ObjectType getTypeId() const override { return object_type::GameObject; }

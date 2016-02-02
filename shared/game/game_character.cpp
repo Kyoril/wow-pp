@@ -188,7 +188,6 @@ namespace wowpp
 		setUInt32Value(character_fields::QuestLog1_1 + 0 * 25 + 1, 0);
 		setUInt32Value(character_fields::QuestLog1_1 + 0 * 25 + 2, 0);
 		setUInt32Value(character_fields::QuestLog1_1 + 0 * 25 + 3, 0);
-
 		return true;
 	}
 

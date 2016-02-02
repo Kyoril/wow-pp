@@ -238,6 +238,8 @@ namespace wowpp
 		/// Determines whether players can accept a specific quest from this object.
 		/// This method mainly exists so that lesser casts have to be done.
 		virtual bool providesQuest(UInt32 questId) const { return false; }
+		/// Determines whether this object rewards players for completing a specific quest.
+		virtual bool endsQuest(UInt32 questId) const { return false; }
 		
 		bool isGameCharacter() const { return getTypeId() == object_type::Character; }
 

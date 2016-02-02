@@ -763,6 +763,7 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverRequestReward)
 			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverChooseReward)
 			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverCancel)
+			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverStatusMultipleQuery)
 #undef WOWPP_HANDLE_PLAYER_PACKET
 
 			// Movement packets get special treatment

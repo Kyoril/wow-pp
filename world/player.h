@@ -197,6 +197,7 @@ namespace wowpp
 		void handleGossipHello(game::Protocol::IncomingPacket &packet);
 		void handleTrainerBuySpell(game::Protocol::IncomingPacket &packet);
 		void handleQuestgiverStatusQuery(game::Protocol::IncomingPacket &packet);
+		void handleQuestgiverStatusMultipleQuery(game::Protocol::IncomingPacket &packet);
 		void handleQuestgiverHello(game::Protocol::IncomingPacket &packet);
 		void handleQuestgiverQueryQuest(game::Protocol::IncomingPacket &packet);
 		void handleQuestgiverQuestAutolaunch(game::Protocol::IncomingPacket &packet);

@@ -299,6 +299,40 @@ namespace wowpp
 		return false;
 	}
 
+	bool GameCreature::endsQuest(UInt32 questId) const
+	{
+		auto &entry = getEntry();
+		for (const auto &id : entry.end_quests())
+		{
+			if (id == questId) return true;
+		}
+
+		return false;
+	}
+
+	game::QuestgiverStatus GameCreature::getQuestgiverStatus(const GameCharacter & character) const
+	{
+		game::QuestgiverStatus result = game::questgiver_status::None;
+		for (const auto &quest : getEntry().quests())
+		{
+			auto questStatus = character.getQuestStatus(quest);
+			if (questStatus == game::quest_status::Complete)
+			{
+				return game::questgiver_status::Reward;
+			}
+			else if (questStatus == game::quest_status::Available)
+			{
+				result = game::questgiver_status::Available;
+			}
+			else if (questStatus == game::quest_status::Incomplete &&
+				result == game::questgiver_status::None)
+			{
+				result = game::questgiver_status::Incomplete;
+			}
+		}
+		return result;
+	}
+
 	bool GameCreature::hasMainHandWeapon() const
 	{
 		const UInt32 slot = 0;
