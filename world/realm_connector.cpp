@@ -756,6 +756,13 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(TrainerBuySpell)
 			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverStatusQuery)
 			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverHello)
+			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverQueryQuest)
+			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverQuestAutolaunch)
+			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverAcceptQuest)
+			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverCompleteQuest)
+			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverRequestReward)
+			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverChooseReward)
+			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverCancel)
 #undef WOWPP_HANDLE_PLAYER_PACKET
 
 			// Movement packets get special treatment

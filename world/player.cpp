@@ -2218,7 +2218,7 @@ namespace wowpp
 
 					game::QuestMenuItem item;
 					item.questId = questid;
-					item.menuIcon = 0;
+					item.menuIcon = game::questgiver_status::Chat;
 					item.questLevel = quest->questlevel();
 					item.title = quest->name();
 					questMenu.emplace_back(std::move(item));
@@ -2237,7 +2237,7 @@ namespace wowpp
 
 					game::QuestMenuItem item;
 					item.questId = questid;
-					item.menuIcon = 0;
+					item.menuIcon = game::questgiver_status::Chat;
 					item.questLevel = quest->questlevel();
 					item.title = quest->name();
 					questMenu.emplace_back(std::move(item));
@@ -2482,6 +2482,86 @@ namespace wowpp
 		}
 
 		sendGossipMenu(guid);
+	}
+
+	void Player::handleQuestgiverQueryQuest(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid = 0;
+		UInt32 questId = 0;
+		if (!(game::client_read::questgiverQueryQuest(packet, guid, questId)))
+		{
+			return;
+		}
+
+		DLOG("CMSG_QUESTGIVER_QUERY_QUEST: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
+	}
+
+	void Player::handleQuestgiverQuestAutolaunch(game::Protocol::IncomingPacket & packet)
+	{
+		if (!(game::client_read::questgiverQuestAutolaunch(packet)))
+		{
+			return;
+		}
+
+		DLOG("CMSG_QUESTGIVER_QUEST_AUTO_LAUNCH");
+	}
+
+	void Player::handleQuestgiverAcceptQuest(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid = 0;
+		UInt32 questId = 0;
+		if (!(game::client_read::questgiverAcceptQuest(packet, guid, questId)))
+		{
+			return;
+		}
+
+		DLOG("CMSG_QUESTGIVER_ACCEPT_QUEST: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
+	}
+
+	void Player::handleQuestgiverCompleteQuest(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid = 0;
+		UInt32 questId = 0;
+		if (!(game::client_read::questgiverCompleteQuest(packet, guid, questId)))
+		{
+			return;
+		}
+
+		DLOG("CMSG_QUESTGIVER_COMPLETE_QUEST: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
+	}
+
+	void Player::handleQuestgiverRequestReward(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid = 0;
+		UInt32 questId = 0;
+		if (!(game::client_read::questgiverRequestReward(packet, guid, questId)))
+		{
+			return;
+		}
+
+		DLOG("CMSG_QUESTGIVER_REQUEST_REWARD: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
+	}
+
+	void Player::handleQuestgiverChooseReward(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid = 0;
+		UInt32 questId = 0, reward = 0;
+		if (!(game::client_read::questgiverChooseReward(packet, guid, questId, reward)))
+		{
+			return;
+		}
+
+		DLOG("CMSG_QUESTGIVER_CHOOSE_REWARD: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
+	}
+
+	void Player::handleQuestgiverCancel(game::Protocol::IncomingPacket & packet)
+	{
+		if (!(game::client_read::questgiverCancel(packet)))
+		{
+			return;
+		}
+
+		DLOG("CMSG_QUESTGIVER_CANCEL");
 	}
 
 }

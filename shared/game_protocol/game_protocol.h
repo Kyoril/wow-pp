@@ -138,6 +138,13 @@ namespace wowpp
 				GossipHello				= 0x17B,
 				QuestgiverStatusQuery	= 0x182,
 				QuestgiverHello			= 0x184,
+				QuestgiverQueryQuest	= 0x186,
+				QuestgiverQuestAutolaunch = 0x187,
+				QuestgiverAcceptQuest	= 0x189,
+				QuestgiverCompleteQuest	= 0x18A,
+				QuestgiverRequestReward	= 0x18C,
+				QuestgiverChooseReward	= 0x18E,
+				QuestgiverCancel		= 0x190,
 				ListInventory			= 0x19E,
 				SellItem				= 0x1A0,
 				BuyItem					= 0x1A2,
@@ -1087,6 +1094,47 @@ namespace wowpp
 			bool questgiverHello(
 				io::Reader &packet,
 				UInt64 &out_guid
+				);
+
+			bool questgiverQueryQuest(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				UInt32 &out_questId
+				);
+
+			bool questgiverQuestAutolaunch(
+				io::Reader &packet
+				// Empty?
+				);
+
+			bool questgiverAcceptQuest(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				UInt32 &out_questId
+				);
+
+			bool questgiverCompleteQuest(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				UInt32 &out_questId
+				);
+
+			bool questgiverRequestReward(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				UInt32 &out_questId
+				);
+
+			bool questgiverChooseReward(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				UInt32 &out_questId,
+				UInt32 &out_reward
+				);
+
+			bool questgiverCancel(
+				io::Reader &packet
+				// Empty
 				);
 		};
 

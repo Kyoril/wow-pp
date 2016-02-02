@@ -198,6 +198,13 @@ namespace wowpp
 		void handleTrainerBuySpell(game::Protocol::IncomingPacket &packet);
 		void handleQuestgiverStatusQuery(game::Protocol::IncomingPacket &packet);
 		void handleQuestgiverHello(game::Protocol::IncomingPacket &packet);
+		void handleQuestgiverQueryQuest(game::Protocol::IncomingPacket &packet);
+		void handleQuestgiverQuestAutolaunch(game::Protocol::IncomingPacket &packet);
+		void handleQuestgiverAcceptQuest(game::Protocol::IncomingPacket &packet);
+		void handleQuestgiverCompleteQuest(game::Protocol::IncomingPacket &packet);
+		void handleQuestgiverRequestReward(game::Protocol::IncomingPacket &packet);
+		void handleQuestgiverChooseReward(game::Protocol::IncomingPacket &packet);
+		void handleQuestgiverCancel(game::Protocol::IncomingPacket &packet);
 
 	private:
 

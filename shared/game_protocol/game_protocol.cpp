@@ -2841,8 +2841,8 @@ namespace wowpp
 				{
 					out_packet
 						<< io::write<NetUInt32>(menuitem.questId)
-						<< io::write<NetUInt8>(menuitem.menuIcon)
-						<< io::write<NetUInt32>(menuitem.questLevel)
+						<< io::write<NetUInt32>(menuitem.menuIcon)
+						<< io::write<NetInt32>(menuitem.questLevel)
 						<< io::write_range(menuitem.title) << io::write<NetUInt8>(0);
 				}
 				out_packet.finish();
@@ -3705,6 +3705,52 @@ namespace wowpp
 			{
 				return packet
 					>> io::read<NetUInt64>(out_guid);
+			}
+
+			bool questgiverQueryQuest(io::Reader & packet, UInt64 & out_guid, UInt32 & out_questId)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_guid)
+					>> io::read<NetUInt32>(out_questId);
+			}
+
+			bool questgiverQuestAutolaunch(io::Reader & packet)
+			{
+				return packet;
+			}
+
+			bool questgiverAcceptQuest(io::Reader & packet, UInt64 & out_guid, UInt32 & out_questId)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_guid)
+					>> io::read<NetUInt32>(out_questId);
+			}
+
+			bool questgiverCompleteQuest(io::Reader & packet, UInt64 & out_guid, UInt32 & out_questId)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_guid)
+					>> io::read<NetUInt32>(out_questId);
+			}
+
+			bool questgiverRequestReward(io::Reader & packet, UInt64 & out_guid, UInt32 & out_questId)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_guid)
+					>> io::read<NetUInt32>(out_questId);
+			}
+
+			bool questgiverChooseReward(io::Reader & packet, UInt64 & out_guid, UInt32 & out_questId, UInt32 & out_reward)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_guid)
+					>> io::read<NetUInt32>(out_questId)
+					>> io::read<NetUInt32>(out_reward);
+			}
+
+			bool questgiverCancel(io::Reader & packet)
+			{
+				return packet;
 			}
 
 		}
