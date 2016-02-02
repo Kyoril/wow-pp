@@ -898,6 +898,7 @@ namespace wowpp
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
 		bool isPositive = Aura::isPositive(m_spell, effect);
+		UInt8 school = m_spell.schoolmask();
 		
 		if (isPositive) {
 			m_attackTable.checkPositiveSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//Buff
@@ -928,7 +929,6 @@ namespace wowpp
 		for (int i=0; i<targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
-			UInt8 school = m_spell.schoolmask();
 			UInt32 totalPoints = 0;
 			bool spellFailed = false;
 			
@@ -965,6 +965,18 @@ namespace wowpp
 			if (spellFailed)
 			{
 				// TODO send fail packet
+				sendPacketFromCaster(caster,
+					std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+					targetUnit->getGuid(),
+					caster.getGuid(),
+					m_spell.id(),
+					1,
+					school,
+					0,
+					1,	//resisted
+					false,
+					0,
+					false));
 			}
 			else if (targetUnit->isAlive())
 			{
@@ -1156,6 +1168,7 @@ namespace wowpp
 			{se::Charge, std::bind(&SingleCastState::spellEffectCharge, this, std::placeholders::_1)},
 			{se::OpenLock, std::bind(&SingleCastState::spellEffectOpenLock, this, std::placeholders::_1)},
 			{se::ApplyAreaAuraParty, std::bind(&SingleCastState::spellEffectApplyAreaAuraParty, this, std::placeholders::_1)},
+			{se::Dispel, std::bind(&SingleCastState::spellEffectDispel, this, std::placeholders::_1)},
 			{se::Summon, std::bind(&SingleCastState::spellEffectSummon, this, std::placeholders::_1)},
 			{se::ScriptEffect, std::bind(&SingleCastState::spellEffectScript, this, std::placeholders::_1)},
 			{se::AttackMe, std::bind(&SingleCastState::spellEffectAttackMe, this, std::placeholders::_1)},
@@ -1445,6 +1458,65 @@ namespace wowpp
 	void SingleCastState::spellEffectApplyAreaAuraParty(const proto::SpellEffect &effect)
 	{
 		
+	}
+	
+	void SingleCastState::spellEffectDispel(const proto::SpellEffect &effect)
+	{
+		GameUnit &caster = m_cast.getExecuter();
+		UInt8 school = m_spell.schoolmask();
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+		
+		for (int i=0; i<targets.size(); i++)
+		{
+			GameUnit* targetUnit = targets[i];
+			UInt32 totalPoints = 0;
+			bool spellFailed = false;
+			
+			if (hitInfos[i] == game::hit_info::Miss)
+			{
+				spellFailed = true;
+			}
+			else if (victimStates[i] == game::victim_state::IsImmune)
+			{
+				spellFailed = true;
+			}
+			else if (victimStates[i] == game::victim_state::Normal)
+			{
+				if (resists[i] == 100.0f)
+				{
+					spellFailed = true;
+				}
+				else
+				{
+					totalPoints = calculateEffectBasePoints(effect);
+				}
+			}
+			
+			if (spellFailed)
+			{
+				// TODO send fail packet
+				sendPacketFromCaster(caster,
+					std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+					targetUnit->getGuid(),
+					caster.getGuid(),
+					m_spell.id(),
+					1,
+					school,
+					0,
+					1,	//resisted
+					false,
+					0,
+					false));
+			}
+			else if (targetUnit->isAlive())
+			{
+//				targetUnit->getAuras().popBack();
+			}
+		}
 	}
 
 	void SingleCastState::spellEffectSummon(const proto::SpellEffect &effect)

@@ -76,6 +76,7 @@ namespace wowpp
 		void spellEffectWeaponPercentDamage(const proto::SpellEffect &effect);
 		void spellEffectOpenLock(const proto::SpellEffect &effect);
 		void spellEffectApplyAreaAuraParty(const proto::SpellEffect &effect);
+		void spellEffectDispel(const proto::SpellEffect &effect);
 		void spellEffectSummon(const proto::SpellEffect &effect);
 		void spellEffectWeaponDamage(const proto::SpellEffect &effect);
 		void spellEffectProficiency(const proto::SpellEffect &effect);
