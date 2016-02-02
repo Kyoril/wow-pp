@@ -77,6 +77,17 @@ namespace wowpp
 		// TODO
 	}
 
+	bool WorldObject::providesQuest(UInt32 questId) const
+	{
+		auto &entry = getEntry();
+		for (const auto &id : entry.quests())
+		{
+			if (id == questId) return true;
+		}
+
+		return false;
+	}
+
 	void WorldObject::relocate(math::Vector3 position, float o, bool fire/* = false*/)
 	{
 		setFloatValue(world_object_fields::PosX, position.x);

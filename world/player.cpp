@@ -2217,7 +2217,7 @@ namespace wowpp
 					assert(quest);
 
 					game::QuestMenuItem item;
-					item.questId = questid;
+					item.quest = quest;
 					item.menuIcon = game::questgiver_status::Chat;
 					item.questLevel = quest->questlevel();
 					item.title = quest->name();
@@ -2236,7 +2236,7 @@ namespace wowpp
 					assert(quest);
 
 					game::QuestMenuItem item;
-					item.questId = questid;
+					item.quest = quest;
 					item.menuIcon = game::questgiver_status::Chat;
 					item.questLevel = quest->questlevel();
 					item.title = quest->name();
@@ -2248,12 +2248,11 @@ namespace wowpp
 		// Quests available?
 		if (!questMenu.empty())
 		{
-			// Check if only one quest available
+			// Check if only one quest available and immediatly send quest details if so
 			if (questMenu.size() == 1)
 			{
-				// Immediatly send quest details
 				sendProxyPacket(
-					std::bind(game::server_write::questgiverQuestList, std::placeholders::_1, guid, "", 0, 0, std::cref(questMenu)));
+					std::bind(game::server_write::questgiverQuestDetails, std::placeholders::_1, guid, std::cref(m_project.items), std::cref(*questMenu[0].quest)));
 			}
 			else
 			{
@@ -2440,10 +2439,20 @@ namespace wowpp
 				GameCreature *creature = reinterpret_cast<GameCreature*>(questgiver);
 				for (const auto &quest : creature->getEntry().quests())
 				{
-					if (m_character->getQuestStatus(quest) == game::quest_status::Available)
+					auto questStatus = m_character->getQuestStatus(quest);
+					if (questStatus == game::quest_status::Complete)
+					{
+						status = game::questgiver_status::Reward;
+						break;
+					}
+					else if (questStatus == game::quest_status::Available)
 					{
 						status = game::questgiver_status::Available;
-						break;
+					}
+					else if (questStatus == game::quest_status::Incomplete &&
+						status == game::questgiver_status::None)
+					{
+						status = game::questgiver_status::Incomplete;
 					}
 				}
 				break;
@@ -2515,7 +2524,17 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_QUESTGIVER_ACCEPT_QUEST: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
+		// Check if that object exists and provides the requested quest
+		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
+		if (!object ||
+			!object->providesQuest(questId))
+		{
+			return;
+		}
+
+		// Accept that quest
+		m_character->acceptQuest(questId);
+		//DLOG("CMSG_QUESTGIVER_ACCEPT_QUEST: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
 	}
 
 	void Player::handleQuestgiverCompleteQuest(game::Protocol::IncomingPacket & packet)

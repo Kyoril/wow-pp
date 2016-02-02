@@ -66,6 +66,7 @@ namespace wowpp
 				NameQuery				= 0x050,
 				ItemQuerySingle			= 0x056,
 				ItemQueryMultiple		= 0x057,
+				QuestQuery				= 0x05C,
 				GameObjectQuery			= 0x05E,
 				CreatureQuery			= 0x060,
 				ContactList				= 0x066,
@@ -253,6 +254,7 @@ namespace wowpp
 				NameQueryResponse			= 0x051,
 				ItemQuerySingleResponse		= 0x058,
 				ItemQueryMultipleResponse	= 0x059,
+				QuestQueryResponse			= 0x05D,
 				GameObjectQueryResponse		= 0x05F,
 				CreatureQueryResponse		= 0x061,
 				ContactList					= 0x067,
@@ -322,6 +324,7 @@ namespace wowpp
 				GossipMessage				= 0x17D,
 				QuestgiverStatus			= 0x183,
 				QuestgiverQuestList			= 0x185,
+				QuestgiverQuestDetails		= 0x188,
 				ListInventory				= 0x19F,
 				TrainerList					= 0x1B1,
 				TrainerBuySucceeded			= 0x1B3,
@@ -386,7 +389,7 @@ namespace wowpp
 
 		struct QuestMenuItem
 		{
-			UInt32 questId;
+			const proto::QuestEntry *quest;
 			UInt8 menuIcon;
 			Int32 questLevel;
 			String title;
@@ -1135,6 +1138,11 @@ namespace wowpp
 			bool questgiverCancel(
 				io::Reader &packet
 				// Empty
+				);
+
+			bool questQuery(
+				io::Reader &packet,
+				UInt32 &out_questId
 				);
 		};
 
@@ -1913,6 +1921,18 @@ namespace wowpp
 				UInt32 emoteDelay,
 				UInt32 emote,
 				const std::vector<QuestMenuItem> &menu
+				);
+
+			void questgiverQuestDetails(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				const proto::ItemManager &items,
+				const proto::QuestEntry &quest
+				);
+
+			void questQueryResponse(
+				game::OutgoingPacket &out_packet,
+				const proto::QuestEntry &quest
 				);
 		};
 	}

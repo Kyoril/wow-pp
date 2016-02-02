@@ -176,6 +176,8 @@ namespace wowpp
 		void writeCreateObjectBlocks(std::vector<std::vector<char>> &out_blocks, bool creation = true) const override;
 
 		const proto::ObjectEntry &getEntry() const { return m_entry; }
+		/// @copydoc GameObject::providesQuest()
+		bool providesQuest(UInt32 questId) const override;
 
 		/// Gets the object type id value.
 		ObjectType getTypeId() const override { return object_type::GameObject; }

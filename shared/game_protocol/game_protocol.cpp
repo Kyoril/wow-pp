@@ -2839,11 +2839,194 @@ namespace wowpp
 					<< io::write<NetUInt8>(menu.size());
 				for (const auto &menuitem : menu)
 				{
+					assert(menuItem.quest);
 					out_packet
-						<< io::write<NetUInt32>(menuitem.questId)
+						<< io::write<NetUInt32>(menuitem.quest->id())
 						<< io::write<NetUInt32>(menuitem.menuIcon)
 						<< io::write<NetInt32>(menuitem.questLevel)
 						<< io::write_range(menuitem.title) << io::write<NetUInt8>(0);
+				}
+				out_packet.finish();
+			}
+
+			void questgiverQuestDetails(game::OutgoingPacket & out_packet, UInt64 guid, const proto::ItemManager &items, const proto::QuestEntry & quest)
+			{
+				out_packet.start(game::server_packet::QuestgiverQuestDetails);
+				out_packet
+					<< io::write<NetUInt64>(guid)
+					<< io::write<NetUInt32>(quest.id())
+					<< io::write_range(quest.name()) << io::write<NetUInt8>(0)
+					<< io::write_range(quest.detailstext()) << io::write<NetUInt8>(0)
+					<< io::write_range(quest.objectivestext()) << io::write<NetUInt8>(0)
+					<< io::write<NetUInt32>(1)		// Activate accept button? (true)
+					<< io::write<NetUInt32>(quest.suggestedplayers());
+
+				if (quest.flags() & game::quest_flags::HiddenRewards)
+				{
+					out_packet
+						<< io::write<NetUInt32>(0)		// Rewarded chosen items
+						<< io::write<NetUInt32>(0)		// Rewarded additional items
+						<< io::write<NetUInt32>(0);		// Rewarded money
+				}
+				else
+				{
+					// Choice item count
+					out_packet
+						<< io::write<NetUInt32>(quest.rewarditemschoice_size());
+					for (const auto &reward : quest.rewarditemschoice())
+					{
+						out_packet
+							<< io::write<NetUInt32>(reward.itemid())
+							<< io::write<NetUInt32>(reward.count());
+						const auto *item = items.getById(reward.itemid());
+						out_packet
+							<< io::write<NetUInt32>(item ? item->displayid() : 0);
+					}
+
+					// Additional item count
+					out_packet
+						<< io::write<NetUInt32>(quest.rewarditems_size());
+					for (const auto &reward : quest.rewarditems())
+					{
+						out_packet
+							<< io::write<NetUInt32>(reward.itemid())
+							<< io::write<NetUInt32>(reward.count());
+						const auto *item = items.getById(reward.itemid());
+						out_packet
+							<< io::write<NetUInt32>(item ? item->displayid() : 0);
+					}
+
+					// Money
+					out_packet
+						<< io::write<NetUInt32>(quest.rewardmoney());
+				}
+
+				// Additional data
+				out_packet
+					<< io::write<NetUInt32>(quest.rewardhonorkills())
+					<< io::write<NetUInt32>(quest.rewardspell())
+					<< io::write<NetUInt32>(quest.rewardspellcast())
+					<< io::write<NetUInt32>(quest.rewtitleid());
+
+				// Emote count?
+				out_packet
+					<< io::write<NetUInt32>(4);
+				for (UInt32 i = 0; i < 4; ++i)
+				{
+					out_packet
+						<< io::write<NetUInt32>(0)		// Emote
+						<< io::write<NetUInt32>(0);		// Delay
+				}
+				out_packet.finish();
+			}
+
+			void questQueryResponse(game::OutgoingPacket & out_packet, const proto::QuestEntry & quest)
+			{
+				out_packet.start(game::server_packet::QuestQueryResponse);
+				out_packet
+					<< io::write<NetUInt32>(quest.id())
+					<< io::write<NetUInt32>(quest.method())
+					<< io::write<NetInt32>(quest.questlevel())
+					<< io::write<NetUInt32>(quest.zone())
+					<< io::write<NetUInt32>(quest.type())
+					<< io::write<NetUInt32>(quest.suggestedplayers())
+					<< io::write<NetUInt32>(0)	// TODO: RepObjectiveFaction
+					<< io::write<NetUInt32>(0)	// TODO: RepObjectiveValue
+					<< io::write<NetUInt32>(0)	// TODO
+					<< io::write<NetUInt32>(0)	// TODO
+					<< io::write<NetUInt32>(quest.nextchainquestid());
+				if (quest.flags() & game::quest_flags::HiddenRewards)
+				{
+					out_packet
+						<< io::write<NetUInt32>(0);	// Money reward hidden
+				}
+				else
+				{
+					out_packet
+						<< io::write<NetUInt32>(quest.rewardmoney());
+				}
+				out_packet
+					<< io::write<NetUInt32>(quest.rewardmoneymaxlevel())
+					<< io::write<NetUInt32>(quest.rewardspell())
+					<< io::write<NetUInt32>(quest.rewardspellcast())
+					<< io::write<NetUInt32>(quest.rewardhonorkills())
+					<< io::write<NetUInt32>(quest.srcitemid())
+					<< io::write<NetUInt32>(quest.flags() & 0xFFFF)
+					<< io::write<NetUInt32>(quest.rewtitleid());
+				if (quest.flags() & game::quest_flags::HiddenRewards)
+				{
+					for (int i = 0; i < 4; ++i)
+					{
+						out_packet
+							<< io::write<NetUInt32>(0)
+							<< io::write<NetUInt32>(0);
+					}
+					for (int i = 0; i < 6; ++i)
+					{
+						out_packet
+							<< io::write<NetUInt32>(0)
+							<< io::write<NetUInt32>(0);
+					}
+				}
+				else
+				{
+					for (int i = 0; i < 4; ++i)
+					{
+						out_packet
+							<< io::write<NetUInt32>(i < quest.rewarditems_size() ? quest.rewarditems(i).itemid() : 0)
+							<< io::write<NetUInt32>(i < quest.rewarditems_size() ? quest.rewarditems(i).count() : 0);
+					}
+					for (int i = 0; i < 6; ++i)
+					{
+						out_packet
+							<< io::write<NetUInt32>(i < quest.rewarditemschoice_size() ? quest.rewarditemschoice(i).itemid() : 0)
+							<< io::write<NetUInt32>(i < quest.rewarditemschoice_size() ? quest.rewarditemschoice(i).count() : 0);
+					}
+				}
+
+				out_packet
+					<< io::write<NetUInt32>(quest.pointmapid())
+					<< io::write<float>(quest.pointx())
+					<< io::write<float>(quest.pointy())
+					<< io::write<NetUInt32>(quest.pointopt())
+					<< io::write_range(quest.name()) << io::write<NetUInt8>(0)
+					<< io::write_range(quest.detailstext()) << io::write<NetUInt8>(0)
+					<< io::write_range(quest.objectivestext()) << io::write<NetUInt8>(0)
+					<< io::write_range(quest.endtext()) << io::write<NetUInt8>(0);
+				for (int i = 0; i < 4; ++i)
+				{
+					if (i < quest.requirements_size())
+					{
+						const auto &req = quest.requirements(i);
+						if (req.objectid() != 0)
+						{
+							out_packet
+								<< io::write<NetUInt32>(req.objectid() | 0x80000000)
+								<< io::write<NetUInt32>(req.objectcount());
+						}
+						else
+						{
+							out_packet
+								<< io::write<NetUInt32>(req.creatureid())
+								<< io::write<NetUInt32>(req.creaturecount());
+						}
+						out_packet
+							<< io::write<NetUInt32>(req.itemid())
+							<< io::write<NetUInt32>(req.itemcount());
+					}
+					else
+					{
+						out_packet
+							<< io::write<NetUInt32>(0)
+							<< io::write<NetUInt32>(0)
+							<< io::write<NetUInt32>(0)
+							<< io::write<NetUInt32>(0);
+					}
+				}
+				for (int i = 0; i < 4; ++i)
+				{
+					if (i < quest.requirements_size()) out_packet << io::write_range(quest.requirements(i).text());
+					out_packet << io::write<NetUInt8>(0);
 				}
 				out_packet.finish();
 			}
@@ -3751,6 +3934,12 @@ namespace wowpp
 			bool questgiverCancel(io::Reader & packet)
 			{
 				return packet;
+			}
+
+			bool questQuery(io::Reader & packet, UInt32 & out_questId)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_questId);
 			}
 
 		}

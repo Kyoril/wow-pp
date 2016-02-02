@@ -326,6 +326,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(RealmSplit, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(VoiceSessionEnable, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(CharRename, game::session_status::Authentificated)
+			WOWPP_HANDLE_PACKET(QuestQuery, game::session_status::LoggedIn)
 #undef WOWPP_HANDLE_PACKET
 
 			default:
@@ -2384,6 +2385,25 @@ namespace wowpp
 		// Send response
 		sendPacket(
 			std::bind(game::server_write::charRename, std::placeholders::_1, response, characterId, std::cref(newName)));
+	}
+
+	void Player::handleQuestQuery(game::IncomingPacket & packet)
+	{
+		UInt32 questId = 0;
+		if (!(game::client_read::questQuery(packet, questId)))
+		{
+			return;
+		}
+
+		const auto *quest = m_project.quests.getById(questId);
+		if (!quest)
+		{
+			return;
+		}
+
+		// Send response
+		sendPacket(
+			std::bind(game::server_write::questQueryResponse, std::placeholders::_1, std::cref(*quest)));
 	}
 
 }

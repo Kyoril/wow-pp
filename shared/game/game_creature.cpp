@@ -288,6 +288,17 @@ namespace wowpp
 		}
 	}
 
+	bool GameCreature::providesQuest(UInt32 questId) const
+	{
+		auto &entry = getEntry();
+		for (const auto &id : entry.quests())
+		{
+			if (id == questId) return true;
+		}
+
+		return false;
+	}
+
 	bool GameCreature::hasMainHandWeapon() const
 	{
 		const UInt32 slot = 0;

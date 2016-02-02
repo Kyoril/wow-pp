@@ -234,6 +234,10 @@ namespace wowpp
 
 		void setGuid(UInt64 guid) { setUInt64Value(object_fields::Guid, guid); }
 		UInt64 getGuid() const { return getUInt64Value(object_fields::Guid); }
+
+		/// Determines whether players can accept a specific quest from this object.
+		/// This method mainly exists so that lesser casts have to be done.
+		virtual bool providesQuest(UInt32 questId) const { return false; }
 		
 		bool isGameCharacter() const { return getTypeId() == object_type::Character; }
 

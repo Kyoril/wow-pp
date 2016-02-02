@@ -288,5 +288,6 @@ namespace wowpp
 		void handleRealmSplit(game::IncomingPacket &packet);
 		void handleVoiceSessionEnable(game::IncomingPacket &packet);
 		void handleCharRename(game::IncomingPacket &packet);
+		void handleQuestQuery(game::IncomingPacket &packet);
 	};
 }

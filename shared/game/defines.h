@@ -92,6 +92,39 @@ namespace wowpp
 		
 		typedef questgiver_status::Type QuestgiverStatus;
 
+		namespace quest_flags
+		{
+			enum Type
+			{
+				/// Player has to stay alive.
+				StayAlive		= 0x0001,
+				/// All party members will be offered to accept this quest.
+				PartyAccept		= 0x0002,
+				/// ?
+				Exploration		= 0x0004,
+				/// Indicates that a player can share this quest.
+				Sharable		= 0x0008,
+
+				/// ?
+				Epic			= 0x0020,
+				/// Raid quest.
+				Raid			= 0x0040,
+				/// Only acceptable if the players account has the TBC expansion enabled.
+				TBC				= 0x0080,
+				Unknown			= 0x0100,
+				/// Quest rewards are hidden unti the quest is completed and never appear in the clients quest log.
+				HiddenRewards	= 0x0200,
+				/// Quest will be automatically rewarded on quest completition.
+				AutoRewarded	= 0x0400,
+				/// Used for quests in the Blood Elf / Draenei starting zones...
+				TBCRaces		= 0x0800,
+				/// This quest is repeatable once per day.
+				Daily			= 0x1000
+			};
+		}
+
+		typedef quest_flags::Type QuestFlags;
+
 		namespace quest_method
 		{
 			enum Type

@@ -98,6 +98,8 @@ namespace wowpp
 		UInt32 getLootRecipientCount() const { return m_lootRecipients.size(); }
 		/// 
 		void raiseTrigger(trigger_event::Type e);
+		/// @copydoc GameObject::providesQuest()
+		bool providesQuest(UInt32 questId) const override;
 
 		bool hasMainHandWeapon() const override;
 		bool hasOffHandWeapon() const override;
