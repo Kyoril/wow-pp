@@ -1554,10 +1554,6 @@ namespace wowpp
 		{
 			GameUnit* targetUnit = targets[i];
 			UInt32 totalDamage;
-			UInt32 blocked = 0;
-			bool crit = false;
-			UInt32 resisted = 0;
-			UInt32 absorbed = 0;
 			if (victimStates[i] == game::victim_state::IsImmune)
 			{
 				totalDamage = 0;

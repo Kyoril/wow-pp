@@ -2592,6 +2592,26 @@ namespace wowpp
 		}
 
 		typedef aura_type::Type AuraType;
+		
+		namespace aura_dispel_type
+		{
+			enum Type
+			{
+				None			= 0,
+				Magic			= 1,
+				Curse			= 2,
+				Disease			= 3,
+				Poison			= 4,
+				Stealth			= 5,
+				Invisibility	= 6,
+				All				= 7,
+				SpeNpcOnly		= 8,
+				Enrage			= 9,
+				ZgTicket		= 10
+			};
+		}
+
+		typedef area_aura_type::Type AreaAuraType;
 
 		namespace constant_literal
 		{
