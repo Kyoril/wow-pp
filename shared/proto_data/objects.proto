@@ -35,6 +35,7 @@ message ObjectEntry {
 	optional uint32 flags = 10;
 	repeated uint32 data = 11;
 	repeated uint32 quests = 12;
+	repeated uint32 end_quests = 13;
 }
 
 message Objects {

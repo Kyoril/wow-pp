@@ -2644,8 +2644,6 @@ namespace wowpp
 			};
 		}
 
-		typedef area_aura_type::Type AreaAuraType;
-
 		namespace constant_literal
 		{
 			typedef EnumStrings < AuraType, aura_type::Count_,

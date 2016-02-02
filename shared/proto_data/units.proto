@@ -84,6 +84,7 @@ message UnitEntry {
 	optional uint32 trainerentry = 48;
 	repeated UnitSpellEntry creaturespells = 49;
 	repeated uint32 quests = 50;
+	repeated uint32 end_quests = 51;
 }
 
 message Units {

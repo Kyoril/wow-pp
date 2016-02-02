@@ -786,10 +786,12 @@ namespace wowpp
 		for (auto &creature : *project.units.getTemplates().mutable_entry())
 		{
 			creature.clear_quests();
+			creature.clear_end_quests();
 		}
 		for (auto &object : *project.objects.getTemplates().mutable_entry())
 		{
 			object.clear_quests();
+			object.clear_end_quests();
 		}
 
 		// Get creature quest relation
@@ -823,6 +825,37 @@ namespace wowpp
 				}
 			}
 		}
+		// Get creature end quest relation
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `id`,`quest` FROM `tbcdb`.`creature_involvedrelation`;");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					UInt32 creatureId = 0, questId = 0;
+					row.getField(0, creatureId);
+					row.getField(1, questId);
+
+					// Find quest
+					if (!project.quests.getById(questId))
+					{
+						row = row.next(select);
+						continue;
+					}
+
+					// Find creature
+					auto *creature = project.units.getById(creatureId);
+					if (creature)
+					{
+						creature->add_end_quests(questId);
+					}
+
+					// Next row
+					row = row.next(select);
+				}
+			}
+		}
 
 		// And one more time for objects
 		{
@@ -848,6 +881,37 @@ namespace wowpp
 					if (object)
 					{
 						object->add_quests(questId);
+					}
+
+					// Next row
+					row = row.next(select);
+				}
+			}
+		}
+		// And one more time for objects
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `id`,`quest` FROM `tbcdb`.`gameobject_involvedrelation`;");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					UInt32 objectId = 0, questId = 0;
+					row.getField(0, objectId);
+					row.getField(1, questId);
+
+					// Find quest
+					if (!project.quests.getById(questId))
+					{
+						row = row.next(select);
+						continue;
+					}
+
+					// Find object
+					auto *object = project.units.getById(objectId);
+					if (object)
+					{
+						object->add_end_quests(questId);
 					}
 
 					// Next row
