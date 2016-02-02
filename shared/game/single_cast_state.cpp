@@ -346,7 +346,8 @@ namespace wowpp
 		m_hasFinished = true;
 
 		const std::weak_ptr<SingleCastState> weakThis = strongThis;
-		if (m_spell.attributes(0) & game::spell_attributes::OnNextSwing)
+		const UInt32 spellAttributes = m_spell.attributes(0);
+		if (spellAttributes & game::spell_attributes::OnNextSwing || spellAttributes & game::spell_attributes::OnNextSwing_2)
 		{
 			// Execute on next weapon swing
 			m_cast.getExecuter().setAttackSwingCallback([strongThis, this]() -> bool
@@ -403,15 +404,16 @@ namespace wowpp
 			}
 		}
 
+		const UInt32 spellAttributesA = m_spell.attributes(1);
 		// Consume combo points if required
-		if ((m_spell.attributes(1) & game::spell_attributes_ex_a::ReqComboPoints_1) && character)
+		if ((spellAttributesA & game::spell_attributes_ex_a::ReqComboPoints_1) && character)
 		{
 			// 0 will reset combo points
 			character->addComboPoints(0, 0);
 		}
 
 		// Start auto attack if required
-		if (m_spell.attributes(1) & game::spell_attributes_ex_a::MeleeCombatStart)
+		if (spellAttributesA & game::spell_attributes_ex_a::MeleeCombatStart)
 		{
 			GameUnit *attackTarget = nullptr;
 			if (m_target.hasUnitTarget())
@@ -446,6 +448,78 @@ namespace wowpp
 	{
 		// This is only triggerd if the spell has the attribute
 		stopCast();
+	}
+	
+	void SingleCastState::executeMeleeAttack()
+	{
+		GameUnit &attacker = m_cast.getExecuter();
+		UInt8 school = m_spell.schoolmask();
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkSpecialMeleeAttack(&attacker, m_target, school, targets, victimStates, hitInfos, resists);
+		
+		for (int i=0; i<targets.size(); i++)
+		{
+			GameUnit* targetUnit = targets[i];
+			UInt32 totalDamage = m_meleeDamage[i];
+			UInt32 blocked = 0;
+			bool crit = false;
+			UInt32 resisted = 0;
+			UInt32 absorbed = 0;
+			
+			if (victimStates[i] == game::victim_state::Blocks)
+			{
+				UInt32 blockValue = 50;	//TODO get from m_victim
+				if (blockValue >= totalDamage)	//avoid negative damage when blockValue is high
+				{
+					totalDamage = 0;
+					blocked = totalDamage;
+				}
+				else
+				{
+					totalDamage -= blockValue;
+					blocked = blockValue;
+				}
+			}
+			else if (hitInfos[i] == game::hit_info::CriticalHit)
+			{
+				crit = true;
+				totalDamage *= 2.0f;
+			}
+			else if (hitInfos[i] == game::hit_info::Crushing)
+			{
+				totalDamage *= 1.5f;
+			}
+			resisted = totalDamage * (resists[i] / 100.0f);
+			absorbed = targetUnit->consumeAbsorb(totalDamage - resisted, school);
+			if (absorbed > 0 && absorbed == totalDamage)
+			{
+				hitInfos[i] = static_cast<game::HitInfo>(hitInfos[i] | game::hit_info::Absorb);
+			}
+			
+			// Update health value
+			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
+			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, &attacker, noThreat))
+			{
+				// Send spell damage packet
+				sendPacketFromCaster(attacker,
+					std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+					targetUnit->getGuid(),
+					attacker.getGuid(),
+					m_spell.id(),
+					totalDamage,
+					school,
+					absorbed,
+					0,
+					false,
+					0,
+					crit));
+				
+				targetUnit->takenDamage(&attacker);
+			}
+		}
 	}
 	
 	void SingleCastState::spellEffectInstantKill(const proto::SpellEffect &effect)
@@ -591,109 +665,7 @@ namespace wowpp
 
 	void SingleCastState::spellEffectNormalizedWeaponDamage(const proto::SpellEffect &effect)
 	{
-		GameUnit &attacker = m_cast.getExecuter();
-		UInt8 school = m_spell.schoolmask();
-		std::vector<GameUnit*> targets;
-		std::vector<game::VictimState> victimStates;
-		std::vector<game::HitInfo> hitInfos;
-		std::vector<float> resists;
-		m_attackTable.checkSpecialMeleeAttack(&attacker, m_target, school, targets, victimStates, hitInfos, resists);
-		
-		for (int i=0; i<targets.size(); i++)
-		{
-			GameUnit* targetUnit = targets[i];
-			UInt32 totalDamage;
-			UInt32 blocked = 0;
-			bool crit = false;
-			UInt32 resisted = 0;
-			UInt32 absorbed = 0;
-			if (victimStates[i] == game::victim_state::IsImmune)
-			{
-				totalDamage = 0;
-			}
-			else if (hitInfos[i] == game::hit_info::Miss)
-			{
-				totalDamage = 0;
-			}
-			else if (victimStates[i] == game::victim_state::Dodge)
-			{
-				totalDamage = 0;
-			}
-			else if (victimStates[i] == game::victim_state::Parry)
-			{
-				totalDamage = 0;
-				//TODO accelerate next m_victim autohit
-			}
-			else 
-			{
-				// Calculate damage based on base points
-				totalDamage = calculateEffectBasePoints(effect);
-
-				// Add weapon damage
-				const float weaponMin = attacker.getFloatValue(unit_fields::MinDamage);
-				const float weaponMax = attacker.getFloatValue(unit_fields::MaxDamage);
-
-				// Randomize weapon damage
-				std::uniform_real_distribution<float> distribution(weaponMin, weaponMax);
-				totalDamage += UInt32(distribution(randomGenerator));
-				
-				// Armor reduction
-				totalDamage = targetUnit->calculateArmorReducedDamage(attacker.getLevel(), totalDamage);
-				if (totalDamage < 0)	//avoid negative damage when blockValue is high
-					totalDamage = 0;
-
-				if (victimStates[i] == game::victim_state::Blocks)
-				{
-					UInt32 blockValue = 50;	//TODO get from m_victim
-					if (blockValue >= totalDamage)	//avoid negative damage when blockValue is high
-					{
-						totalDamage = 0;
-						blocked = totalDamage;
-					}
-					else
-					{
-						totalDamage -= blockValue;
-						blocked = blockValue;
-					}
-				}
-				else if (hitInfos[i] == game::hit_info::CriticalHit)
-				{
-					crit = true;
-					totalDamage *= 2.0f;
-				}
-				else if (hitInfos[i] == game::hit_info::Crushing)
-				{
-					totalDamage *= 1.5f;
-				}
-				resisted = totalDamage * (resists[i] / 100.0f);
-				absorbed = targetUnit->consumeAbsorb(totalDamage - resisted, school);
-				if (absorbed > 0 && absorbed == totalDamage)
-				{
-					hitInfos[i] = static_cast<game::HitInfo>(hitInfos[i] | game::hit_info::Absorb);
-				}
-			}
-			
-			// Update health value
-			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
-			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, &attacker, noThreat))
-			{
-				// Send spell damage packet
-				sendPacketFromCaster(attacker,
-					std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-					targetUnit->getGuid(),
-					attacker.getGuid(),
-					m_spell.id(),
-					totalDamage,
-					school,
-					absorbed,
-					0,
-					false,
-					0,
-					crit));
-				
-				targetUnit->takenDamage(&attacker);
-			}
-		}
+		meleeSpecialAttack(effect, false);
 	}
 
 	void SingleCastState::spellEffectDrainPower(const proto::SpellEffect &effect)
@@ -892,7 +864,7 @@ namespace wowpp
 	void SingleCastState::spellEffectWeaponDamageNoSchool(const proto::SpellEffect &effect)
 	{
 		//TODO: Implement
-		spellEffectNormalizedWeaponDamage(effect);
+		meleeSpecialAttack(effect, false);
 	}
 	
 	void SingleCastState::spellEffectCreateItem(const proto::SpellEffect &effect)
@@ -915,7 +887,7 @@ namespace wowpp
 	void SingleCastState::spellEffectWeaponDamage(const proto::SpellEffect &effect)
 	{
 		//TODO: Implement
-		spellEffectNormalizedWeaponDamage(effect);
+		meleeSpecialAttack(effect, false);
 	}
 
 	void SingleCastState::spellEffectApplyAura(const proto::SpellEffect &effect)
@@ -1179,6 +1151,7 @@ namespace wowpp
 			{se::TeleportUnits, std::bind(&SingleCastState::spellEffectTeleportUnits, this, std::placeholders::_1)},
 			{se::TriggerSpell, std::bind(&SingleCastState::spellEffectTriggerSpell, this, std::placeholders::_1)},
 			{se::Energize, std::bind(&SingleCastState::spellEffectEnergize, this, std::placeholders::_1)},
+			{se::WeaponPercentDamage, std::bind(&SingleCastState::spellEffectWeaponPercentDamage, this, std::placeholders::_1)},
 			{se::PowerBurn, std::bind(&SingleCastState::spellEffectPowerBurn, this, std::placeholders::_1)},
 			{se::Charge, std::bind(&SingleCastState::spellEffectCharge, this, std::placeholders::_1)},
 			{se::OpenLock, std::bind(&SingleCastState::spellEffectOpenLock, this, std::placeholders::_1)},
@@ -1203,7 +1176,9 @@ namespace wowpp
 //					effects.erase(effects.begin() + k);	//remove effect for future checks
 				}
 			}
-		}		
+		}
+		
+		completedEffects();
 		
 		// Cast all additional spells if available
 		for (const auto &spell : m_spell.additionalspells())
@@ -1425,6 +1400,7 @@ namespace wowpp
 	void SingleCastState::spellEffectWeaponPercentDamage(const proto::SpellEffect &effect)
 	{
 		
+		meleeSpecialAttack(effect, true);
 	}
 
 	void SingleCastState::spellEffectOpenLock(const proto::SpellEffect &effect)
@@ -1561,6 +1537,84 @@ namespace wowpp
 				break;
 			default:
 				break;
+		}
+	}
+	
+	void SingleCastState::meleeSpecialAttack(const proto::SpellEffect &effect, bool basepointsArePct)
+	{
+		GameUnit &attacker = m_cast.getExecuter();
+		UInt8 school = m_spell.schoolmask();
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkSpecialMeleeAttack(&attacker, m_target, school, targets, victimStates, hitInfos, resists);
+		
+		for (int i=0; i<targets.size(); i++)
+		{
+			GameUnit* targetUnit = targets[i];
+			UInt32 totalDamage;
+			UInt32 blocked = 0;
+			bool crit = false;
+			UInt32 resisted = 0;
+			UInt32 absorbed = 0;
+			if (victimStates[i] == game::victim_state::IsImmune)
+			{
+				totalDamage = 0;
+			}
+			else if (hitInfos[i] == game::hit_info::Miss)
+			{
+				totalDamage = 0;
+			}
+			else if (victimStates[i] == game::victim_state::Dodge)
+			{
+				totalDamage = 0;
+			}
+			else if (victimStates[i] == game::victim_state::Parry)
+			{
+				totalDamage = 0;
+				//TODO accelerate next m_victim autohit
+			}
+			else 
+			{
+				if (basepointsArePct)
+				{
+					totalDamage = 0;
+				}
+				else
+				{
+					totalDamage = calculateEffectBasePoints(effect);
+				}
+
+				// Add weapon damage
+				const float weaponMin = attacker.getFloatValue(unit_fields::MinDamage);
+				const float weaponMax = attacker.getFloatValue(unit_fields::MaxDamage);
+
+				// Randomize weapon damage
+				std::uniform_real_distribution<float> distribution(weaponMin, weaponMax);
+				totalDamage += UInt32(distribution(randomGenerator));
+				
+				// Armor reduction
+				totalDamage = targetUnit->calculateArmorReducedDamage(attacker.getLevel(), totalDamage);
+				if (totalDamage < 0)	//avoid negative damage when blockValue is high
+					totalDamage = 0;
+				
+				if (basepointsArePct)
+				{
+					totalDamage *= (calculateEffectBasePoints(effect) / 100.0);
+				}
+
+				if (i < m_meleeDamage.size())
+				{
+					m_meleeDamage[i] = m_meleeDamage[i] + totalDamage;
+				}
+				else
+				{
+					m_meleeDamage.push_back(totalDamage);
+				}
+			}
+			if (!m_meleeDamageEffectsExecution.connected())
+				m_meleeDamageEffectsExecution = completedEffects.connect(std::bind(&SingleCastState::executeMeleeAttack, this));
 		}
 	}
 }

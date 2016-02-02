@@ -87,6 +87,8 @@ namespace wowpp
 		void spellEffectCharge(const proto::SpellEffect &effect);
 		void spellEffectAttackMe(const proto::SpellEffect &effect);
 		void spellEffectNormalizedWeaponDamage(const proto::SpellEffect &effect);
+		
+		void meleeSpecialAttack(const proto::SpellEffect &effect, bool basepointsArePct);
 
 	private:
 
@@ -95,9 +97,12 @@ namespace wowpp
 		SpellTargetMap m_target;
 		SpellCasting m_casting;
 		AttackTable m_attackTable;
+		std::vector<UInt32> m_meleeDamage;	// store damage results of melee effects
 		bool m_hasFinished;
 		Countdown m_countdown;
 		Countdown m_impactCountdown;
+		boost::signals2::signal<void()> completedEffects;
+		boost::signals2::scoped_connection m_meleeDamageEffectsExecution;
 		boost::signals2::scoped_connection m_onTargetDied, m_onTargetRemoved;
 		boost::signals2::scoped_connection m_onUserDamaged, m_onUserMoved;
 		float m_x, m_y, m_z;
@@ -109,6 +114,7 @@ namespace wowpp
 		void onCastFinished();
 		void onTargetRemovedOrDead();
 		void onUserDamaged();
+		void executeMeleeAttack();	// deal damage stored in m_meleeDamage
 		
 		typedef std::function<void(const wowpp::proto::SpellEffect&)> EffectHandler;
 	};
