@@ -356,7 +356,28 @@
                </attribute>
                <layout class="QVBoxLayout" name="verticalLayout_32">
                 <item>
+                 <widget class="QLabel" name="label_24">
+                  <property name="text">
+                   <string>Starts quests:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
                  <widget class="QListWidget" name="unitQuestWidget">
+                  <property name="alternatingRowColors">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="label_25">
+                  <property name="text">
+                   <string>Ends quests:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QListWidget" name="unitEndQuestWidget">
                   <property name="alternatingRowColors">
                    <bool>true</bool>
                   </property>

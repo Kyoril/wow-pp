@@ -329,6 +329,17 @@ namespace wowpp
 				}
 			}
 
+			m_ui->unitEndQuestWidget->clear();
+			for (const auto &questid : unit->end_quests())
+			{
+				const auto *quest = m_application.getProject().quests.getById(questid);
+				if (quest)
+				{
+					m_ui->unitEndQuestWidget->addItem(
+						QString("%1 %2 [%3]").arg(questid, 5, 10, QLatin1Char('0')).arg(quest->name().c_str()).arg(static_cast<Int32>(quest->questlevel())));
+				}
+			}
+
 			m_ui->lootView->clear();
 			if (!unit->unitlootentry())
 			{
