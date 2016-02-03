@@ -1187,6 +1187,7 @@ namespace wowpp
 				row.getField(index++, rewMailDelaySecs);
 				added->set_rewardhonorkills(rewHonorKills);
 				if (rewOrReqMoney > 0) added->set_rewardmoney(rewOrReqMoney);
+				if (rewMoneyMaxLevel > 0) added->set_rewardmoneymaxlevel(rewMoneyMaxLevel);
 				if (rewSpell && m_application.getProject().spells.getById(rewSpell)) added->set_rewardspell(rewSpell);
 				if (rewSpellCast && m_application.getProject().spells.getById(rewSpellCast)) added->set_rewardspellcast(rewSpellCast);
 				added->set_rewardmailtemplate(rewMailTemplate);

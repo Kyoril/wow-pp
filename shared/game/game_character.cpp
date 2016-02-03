@@ -221,6 +221,99 @@ namespace wowpp
 		return false;
 	}
 
+	namespace
+	{
+		static UInt32 getQuestXP(UInt32 playerLevel, const proto::QuestEntry &quest)
+		{
+			if (quest.rewardmoneymaxlevel())
+			{
+				UInt32 qLevel = quest.questlevel() > 0 ? static_cast<UInt32>(quest.questlevel()) : 0;
+				float fullxp = 0;
+				if (qLevel >= 65)
+					fullxp = quest.rewardmoneymaxlevel() / 6.0f;
+				else if (qLevel == 64)
+					fullxp = quest.rewardmoneymaxlevel() / 4.8f;
+				else if (qLevel == 63)
+					fullxp = quest.rewardmoneymaxlevel() / 3.6f;
+				else if (qLevel == 62)
+					fullxp = quest.rewardmoneymaxlevel() / 2.4f;
+				else if (qLevel == 61)
+					fullxp = quest.rewardmoneymaxlevel() / 1.2f;
+				else if (qLevel > 0 && qLevel <= 60)
+					fullxp = quest.rewardmoneymaxlevel() / 0.6f;
+
+				if (playerLevel <= qLevel + 5)
+					return UInt32(ceilf(fullxp));
+				else if (playerLevel == qLevel + 6)
+					return UInt32(ceilf(fullxp * 0.8f));
+				else if (playerLevel == qLevel + 7)
+					return UInt32(ceilf(fullxp * 0.6f));
+				else if (playerLevel == qLevel + 8)
+					return UInt32(ceilf(fullxp * 0.4f));
+				else if (playerLevel == qLevel + 9)
+					return UInt32(ceilf(fullxp * 0.2f));
+				else
+					return UInt32(ceilf(fullxp * 0.1f));
+			}
+
+			return 0;
+		}
+	}
+
+	bool GameCharacter::rewardQuest(UInt32 quest, std::function<void(UInt32)> callback)
+	{
+		// Reward experience
+		const auto *entry = m_project.quests.getById(quest);
+		if (!entry)
+			return false;
+
+		auto it = m_quests.find(quest);
+		if (it == m_quests.end())
+		{
+			return false;
+		}
+		if (it->second.status != game::quest_status::Complete)
+		{
+			return false;
+		}
+
+		UInt32 xp = getQuestXP(getLevel(), *entry);
+		if (xp > 0)
+		{
+			rewardExperience(nullptr, xp);
+		}
+
+		UInt32 money = entry->rewardmoney() +
+			(getLevel() >= 70 ? entry->rewardmoneymaxlevel() : 0);
+		if (money > 0)
+		{
+			setUInt32Value(character_fields::Coinage,
+				getUInt32Value(character_fields::Coinage + money));
+		}
+
+		for (UInt32 i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == quest)
+			{
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
+				break;
+			}
+		}
+
+		// Quest was rewarded
+		it->second.status = game::quest_status::Rewarded;
+		questDataChanged(quest, it->second);
+
+		// Call callback function
+		if (callback) callback(xp);
+
+		return true;
+	}
+
 	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData & data)
 	{
 		m_quests[quest] = data;

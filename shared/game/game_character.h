@@ -612,6 +612,8 @@ namespace wowpp
 		bool acceptQuest(UInt32 quest);
 		/// 
 		bool abandonQuest(UInt32 quest);
+		/// 
+		bool rewardQuest(UInt32 quest, std::function<void(UInt32)> callback);
 
 	public:
 

@@ -86,7 +86,7 @@ namespace wowpp
 			std::bind(&Player::onTeleport, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 		m_onCooldownEvent = m_character->cooldownEvent.connect(
 			[this](UInt32 spellId) {
-			sendProxyPacket(std::bind(game::server_write::cooldownEvent, std::placeholders::_1, spellId, m_character->getGuid()));
+				sendProxyPacket(std::bind(game::server_write::cooldownEvent, std::placeholders::_1, spellId, m_character->getGuid()));
 		});
 		m_questChanged = m_character->questDataChanged.connect([this](UInt32 questId, const QuestStatusData &data) {
 			m_realmConnector.sendQuestData(m_character->getGuid(), questId, data);
@@ -2321,7 +2321,6 @@ namespace wowpp
 		}
 		else if(creature)
 		{
-			WLOG("QUEST MENU EMPTY");
 			const auto *trainerEntry = m_project.trainers.getById(creature->getEntry().trainerentry());
 			if (trainerEntry)
 			{
@@ -2384,7 +2383,6 @@ namespace wowpp
 			return;
 		}
 
-		ILOG("CMSG_QOSSIP_HELLO");
 		sendGossipMenu(npcGuid);
 	}
 
@@ -2577,7 +2575,6 @@ namespace wowpp
 			return;
 		}
 
-		ILOG("CMSG_QUESTGIVER_HELLO");
 		sendGossipMenu(guid);
 	}
 
@@ -2590,7 +2587,26 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_QUESTGIVER_QUERY_QUEST: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
+		const auto *quest = m_project.quests.getById(questId);
+		if (!quest)
+		{
+			return;
+		}
+
+		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
+		if (!object)
+		{
+			return;
+		}
+
+		if (!object->providesQuest(questId))
+		{
+			return;
+		}
+
+		sendProxyPacket(
+			std::bind(game::server_write::questgiverQuestDetails, std::placeholders::_1, guid, std::cref(m_project.items), std::cref(*quest)));
+		//DLOG("CMSG_QUESTGIVER_QUERY_QUEST: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
 	}
 
 	void Player::handleQuestgiverQuestAutolaunch(game::Protocol::IncomingPacket & packet)
@@ -2659,7 +2675,51 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_QUESTGIVER_CHOOSE_REWARD: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
+		const auto *quest = m_project.quests.getById(questId);
+		if (!quest)
+		{
+			return;
+		}
+
+		// Validate data
+		if (reward > 0 &&
+			reward >= static_cast<UInt32>(quest->rewarditemschoice_size()))
+		{
+			return;
+		}
+
+		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
+		if (!object)
+		{
+			return;
+		}
+
+		if (!object->endsQuest(questId))
+		{
+			return;
+		}
+
+		// Reward this quest
+		bool result = m_character->rewardQuest(questId, [this, quest](UInt32 xp) {
+			sendProxyPacket(
+				std::bind(game::server_write::questgiverQuestComplete, std::placeholders::_1, m_character->getLevel() >= 70, xp, std::cref(*quest)));
+		});
+		if (result)
+		{
+			// Try to find next quest and if there is one, send quest details
+			UInt32 nextQuestId = quest->nextchainquestid();
+			if (nextQuestId &&
+				object->providesQuest(nextQuestId))
+			{
+				const auto *nextQuestEntry = m_project.quests.getById(nextQuestId);
+				if (nextQuestEntry)
+				{
+					sendProxyPacket(
+						std::bind(game::server_write::questgiverQuestDetails, std::placeholders::_1, guid, std::cref(m_project.items), std::cref(*nextQuestEntry)));
+				}
+			}
+		}
+		//DLOG("CMSG_QUESTGIVER_CHOOSE_REWARD: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
 	}
 
 	void Player::handleQuestgiverCancel(game::Protocol::IncomingPacket & packet)

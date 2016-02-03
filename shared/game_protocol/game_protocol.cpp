@@ -3134,6 +3134,35 @@ namespace wowpp
 					;
 				out_packet.finish();
 			}
+			void questgiverQuestComplete(game::OutgoingPacket & out_packet, bool isMaxLevel, UInt32 xp, const proto::QuestEntry & quest)
+			{
+				out_packet.start(game::server_packet::QuestgiverQuestComplete);
+				out_packet
+					<< io::write<NetUInt32>(quest.id())
+					<< io::write<NetUInt32>(0x03);
+				if (!isMaxLevel)
+				{
+					out_packet
+						<< io::write<NetUInt32>(xp)
+						<< io::write<NetUInt32>(quest.rewardmoney());
+				}
+				else
+				{
+					out_packet
+						<< io::write<NetUInt32>(0)
+						<< io::write<NetUInt32>(quest.rewardmoney() + quest.rewardmoneymaxlevel());
+				}
+				out_packet
+					<< io::write<NetUInt32>(0)				// Unknown
+					<< io::write<NetUInt32>(quest.rewarditems_size());
+				for (const auto &rew : quest.rewarditems())
+				{
+					out_packet
+						<< io::write<NetUInt32>(rew.itemid())
+						<< io::write<NetUInt32>(rew.count());
+				}
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
