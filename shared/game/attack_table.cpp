@@ -236,7 +236,7 @@ namespace wowpp
 			for (GameUnit* targetUnit : m_targets[targetA][targetB])
 			{
 				game::HitInfo hitInfo = game::hit_info::NoAction;
-				game::VictimState victimState = game::victim_state::Unknown1;
+				game::VictimState victimState = game::victim_state::Normal;
 				float attackTableRoll = hitTableDistribution(randomGenerator);
 				if (targetUnit->isImmune(school))
 				{

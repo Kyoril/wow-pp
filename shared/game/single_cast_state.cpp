@@ -1006,6 +1006,7 @@ namespace wowpp
 		switch (aura)
 		{
 			case game::aura_type::PeriodicDamage:
+			case game::aura_type::PeriodicHeal:
 			case game::aura_type::PeriodicLeech:
 				modifiedByBonus = true;
 			default:
@@ -1019,7 +1020,7 @@ namespace wowpp
 		// World was already checked. If world would be nullptr, unitTarget would be null as well
 		auto *world = m_cast.getExecuter().getWorldInstance();
 		auto &universe = world->getUniverse();
-		for (int i=0; i<targets.size(); i++)
+		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
 			UInt32 totalPoints = 0;
