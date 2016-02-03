@@ -180,15 +180,26 @@ namespace wowpp
 			return false;
 		}
 
-		// Take that quest
-		m_quests[quest].status = game::quest_status::Incomplete;
+		// Find next free quest log
+		for (UInt32 i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == 0 || logId == quest)
+			{
+				// Take that quest
+				m_quests[quest].status = game::quest_status::Incomplete;
 
-		// Set quest log
-		setUInt32Value(character_fields::QuestLog1_1 + 0 * 25 + 0, quest);
-		setUInt32Value(character_fields::QuestLog1_1 + 0 * 25 + 1, 0);
-		setUInt32Value(character_fields::QuestLog1_1 + 0 * 25 + 2, 0);
-		setUInt32Value(character_fields::QuestLog1_1 + 0 * 25 + 3, 0);
-		return true;
+				// Set quest log
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, quest);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
+				return true;
+			}
+		}
+
+		// No free quest slot found
+		return false;
 	}
 
 	bool GameCharacter::abandonQuest(UInt32 quest)
@@ -1518,7 +1529,20 @@ namespace wowpp
 			<< io::write<float>(object.m_homePos[0])
 			<< io::write<float>(object.m_homePos[1])
 			<< io::write<float>(object.m_homePos[2])
-			<< io::write<float>(object.m_homeRotation);
+			<< io::write<float>(object.m_homeRotation)
+			<< io::write<NetUInt16>(object.m_quests.size());
+		for (const auto &pair : object.m_quests)
+		{
+			w
+				<< io::write<NetUInt32>(pair.first)
+				<< io::write<NetUInt8>(pair.second.status)
+				<< io::write<NetUInt64>(pair.second.expiration)
+				<< io::write<NetUInt8>(pair.second.explored)
+				<< io::write_range(pair.second.creatures)
+				<< io::write_range(pair.second.objects)
+				<< io::write_range(pair.second.items);
+		}
+
 		return w;
 	}
 
@@ -1537,6 +1561,24 @@ namespace wowpp
 			>> io::read<float>(object.m_homePos[1])
 			>> io::read<float>(object.m_homePos[2])
 			>> io::read<float>(object.m_homeRotation);
+		UInt16 questCount = 0;
+		r
+			>> io::read<NetUInt16>(questCount);
+		object.m_quests.clear();
+		for (UInt16 i = 0; i < questCount; ++i)
+		{
+			UInt32 questId = 0;
+			r
+				>> io::read<NetUInt32>(questId);
+			auto questData = object.m_quests[questId];
+			r
+				>> io::read<NetUInt8>(questData.status)
+				>> io::read<NetUInt64>(questData.expiration)
+				>> io::read<NetUInt8>(questData.explored)
+				>> io::read_range(questData.creatures)
+				>> io::read_range(questData.objects)
+				>> io::read_range(questData.items);
+		}
 
 		// Reset all auras
 		for (UInt32 i = 0; i < 56; ++i)
