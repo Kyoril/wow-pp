@@ -380,20 +380,24 @@ namespace wowpp
 	
 	Aura *AuraContainer::popBack(UInt8 dispelType, bool positive)
 	{
-		auto it = m_auras.end() - 1;
-		while (it != m_auras.begin() - 1)
+		auto it = m_auras.rbegin();
+		while (it != m_auras.rend())
 		{
 			if ((*it)->isPositive() == positive && (*it)->getSpell().dispel() == dispelType)
 			{
 				std::shared_ptr<Aura> aura = *it;
-				m_auras.erase(it);
+				m_auras.erase(std::next(it).base());
+				aura->misapplyAura();
+
 				return aura.get();
 			}
 			else
 			{
-				it--;
+				it++;
 			}
 		}
+
+		return nullptr;
 	}
 
 	boost::optional<std::size_t> findAuraInstanceIndex(AuraContainer &instances, Aura &instance)

@@ -722,7 +722,7 @@ namespace wowpp
 			else if (targetUnit->isAlive())
 			{
 				UInt32 auraDispelType = effect.miscvaluea();
-				for (int i=0; i<totalPoints; i++)
+				for (UInt32 i = 0; i<totalPoints; i++)
 				{
 					Aura *stolenAura = targetUnit->getAuras().popBack(auraDispelType, true);
 					if (stolenAura)
@@ -730,7 +730,7 @@ namespace wowpp
 						proto::SpellEntry spell(stolenAura->getSpell());
 						proto::SpellEffect effect(stolenAura->getEffect());
 						UInt32 basepoints(stolenAura->getBasePoints());
-						stolenAura->misapplyAura();
+						//stolenAura->misapplyAura();
 						
 						auto *world = caster.getWorldInstance();
 						auto &universe = world->getUniverse();
@@ -1609,7 +1609,7 @@ namespace wowpp
 			else if (targetUnit->isAlive())
 			{
 				UInt32 auraDispelType = effect.miscvaluea();
-				for (int i=0; i<totalPoints; i++)
+				for (UInt32 i = 0; i < totalPoints; i++)
 				{
 					bool positive = caster.isHostileTo(*targetUnit);
 					Aura *aura = targetUnit->getAuras().popBack(auraDispelType, positive);
