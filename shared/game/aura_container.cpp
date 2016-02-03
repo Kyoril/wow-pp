@@ -144,10 +144,10 @@ namespace wowpp
 		strongAura->misapplyAura();
 	}
 	
-	void AuraContainer::removeAura(AuraVector::iterator it)
+	void AuraContainer::removeAura(AuraVector::iterator &it)
 	{
 		auto strongAura = m_auras.back();
-		m_auras.erase(it);
+		it = m_auras.erase(it);
 
 		strongAura->misapplyAura();
 	}

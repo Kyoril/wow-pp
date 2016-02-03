@@ -42,7 +42,7 @@ namespace wowpp
 		bool addAura(std::shared_ptr<Aura> aura);
 		size_t findAura(Aura &aura, size_t begin);
 		void removeAura(size_t index);
-		void removeAura(AuraVector::iterator it);
+		void removeAura(AuraVector::iterator &it);
 		Aura &get(size_t index);
 		const Aura &get(size_t index) const;
 		void handleTargetDeath();
