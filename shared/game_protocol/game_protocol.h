@@ -327,6 +327,8 @@ namespace wowpp
 				QuestgiverStatus			= 0x183,
 				QuestgiverQuestList			= 0x185,
 				QuestgiverQuestDetails		= 0x188,
+				QuestgiverRequestItems		= 0x18B,
+				QuestgiverOfferReward		= 0x18D,
 				ListInventory				= 0x19F,
 				TrainerList					= 0x1B1,
 				TrainerBuySucceeded			= 0x1B3,
@@ -1949,6 +1951,23 @@ namespace wowpp
 			void questgiverStatusMultiple(
 				game::OutgoingPacket &out_packet,
 				const std::map<UInt64, game::QuestgiverStatus> &status
+				);
+
+			void questgiverRequestItems(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				bool closeOnCancel,
+				bool enableNext,
+				const proto::ItemManager &items,
+				const proto::QuestEntry &quest
+				);
+
+			void questgiverOfferReward(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				bool enableNext,
+				const proto::ItemManager &items,
+				const proto::QuestEntry &quest
 				);
 		};
 	}

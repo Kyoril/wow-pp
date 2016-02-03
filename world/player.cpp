@@ -2209,6 +2209,24 @@ namespace wowpp
 		std::vector<game::QuestMenuItem> questMenu;
 		if (creature)
 		{
+			for (const auto &questid : creature->getEntry().end_quests())
+			{
+				auto questStatus = m_character->getQuestStatus(questid);
+				if (questStatus == game::quest_status::Incomplete ||
+					questStatus == game::quest_status::Complete)
+				{
+					const auto *quest = m_project.quests.getById(questid);
+					assert(quest);
+
+					game::QuestMenuItem item;
+					item.quest = quest;
+					item.menuIcon = questStatus == game::quest_status::Incomplete ?
+						game::questgiver_status::Incomplete : game::questgiver_status::Reward;
+					item.questLevel = quest->questlevel();
+					item.title = quest->name();
+					questMenu.emplace_back(std::move(item));
+				}
+			}
 			for (const auto &questid : creature->getEntry().quests())
 			{
 				auto questStatus = m_character->getQuestStatus(questid);
@@ -2226,8 +2244,26 @@ namespace wowpp
 				}
 			}
 		}
-		if (object)
+		else if (object)
 		{
+			for (const auto &questid : object->getEntry().end_quests())
+			{
+				auto questStatus = m_character->getQuestStatus(questid);
+				if (questStatus == game::quest_status::Incomplete ||
+					questStatus == game::quest_status::Complete)
+				{
+					const auto *quest = m_project.quests.getById(questid);
+					assert(quest);
+
+					game::QuestMenuItem item;
+					item.quest = quest;
+					item.menuIcon = questStatus == game::quest_status::Incomplete ?
+						game::questgiver_status::Incomplete : game::questgiver_status::Reward;
+					item.questLevel = quest->questlevel();
+					item.title = quest->name();
+					questMenu.emplace_back(std::move(item));
+				}
+			}
 			for (const auto &questid : object->getEntry().quests())
 			{
 				auto questStatus = m_character->getQuestStatus(questid);
@@ -2252,8 +2288,29 @@ namespace wowpp
 			// Check if only one quest available and immediatly send quest details if so
 			if (questMenu.size() == 1)
 			{
-				sendProxyPacket(
-					std::bind(game::server_write::questgiverQuestDetails, std::placeholders::_1, guid, std::cref(m_project.items), std::cref(*questMenu[0].quest)));
+				// Determine what packet to send based on quest status
+				auto &menuItem = questMenu[0];
+				switch(menuItem.menuIcon)
+				{
+				case game::questgiver_status::Chat:
+				case game::questgiver_status::Available:
+					sendProxyPacket(
+						std::bind(game::server_write::questgiverQuestDetails, std::placeholders::_1, guid, std::cref(m_project.items), std::cref(*menuItem.quest)));
+					break;
+				case game::questgiver_status::Incomplete:
+					if (!menuItem.quest->requestitemstext().empty())
+						sendProxyPacket(std::bind(game::server_write::questgiverRequestItems, std::placeholders::_1, guid, true, false, std::cref(m_project.items), std::cref(*menuItem.quest)));
+					else
+						sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, guid, false, std::cref(m_project.items), std::cref(*menuItem.quest)));
+					break;
+				case game::questgiver_status::Reward:
+					if (!menuItem.quest->requestitemstext().empty())
+						sendProxyPacket(std::bind(game::server_write::questgiverRequestItems, std::placeholders::_1, guid, true, true, std::cref(m_project.items), std::cref(*menuItem.quest)));
+					else
+						sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, guid, true, std::cref(m_project.items), std::cref(*menuItem.quest)));
+					break;
+				}
+				
 			}
 			else
 			{
@@ -2264,6 +2321,7 @@ namespace wowpp
 		}
 		else if(creature)
 		{
+			WLOG("QUEST MENU EMPTY");
 			const auto *trainerEntry = m_project.trainers.getById(creature->getEntry().trainerentry());
 			if (trainerEntry)
 			{
@@ -2326,6 +2384,7 @@ namespace wowpp
 			return;
 		}
 
+		ILOG("CMSG_QOSSIP_HELLO");
 		sendGossipMenu(npcGuid);
 	}
 
@@ -2518,6 +2577,7 @@ namespace wowpp
 			return;
 		}
 
+		ILOG("CMSG_QUESTGIVER_HELLO");
 		sendGossipMenu(guid);
 	}
 

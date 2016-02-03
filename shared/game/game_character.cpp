@@ -196,6 +196,17 @@ namespace wowpp
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
 
+				// Complete if no requirements
+				const auto *questEntry = getProject().quests.getById(quest);
+				if (questEntry)
+				{
+					if (questEntry->requirements_size() == 0)
+					{
+						data.status = game::quest_status::Complete;
+						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+					}
+				}
+
 				questDataChanged(quest, data);
 				return true;
 			}
@@ -227,6 +238,10 @@ namespace wowpp
 					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
 					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);	// TODO
 					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
+					if (data.status == game::quest_status::Complete)
+					{
+						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+					}
 					break;
 				}
 			}
