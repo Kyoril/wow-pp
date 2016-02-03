@@ -383,7 +383,7 @@ namespace wowpp
 		auto it = m_auras.end() - 1;
 		while (it != m_auras.begin() - 1)
 		{
-			if ((*it)->isPositive() == positive)
+			if ((*it)->isPositive() == positive && (*it)->getSpell().dispel() == dispelType)
 			{
 				std::shared_ptr<Aura> aura = *it;
 				m_auras.erase(it);

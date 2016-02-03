@@ -641,6 +641,7 @@ namespace wowpp
 						
 					///////////////////////// Fix Item Stats Effects /////////////////////////
 						
+					case 20606:
 					case 41684:	// fix for scarlet crusade set bonus
 						auto effect = it->mutable_effects(1);
 						effect->set_basepoints(14);
