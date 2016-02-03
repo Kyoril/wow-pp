@@ -27,7 +27,6 @@
 #include "game/each_tile_in_sight.h"
 #include "game/universe.h"
 #include "proto_data/project.h"
-#include "proto_data/faction_helper.h"
 #include "game/game_creature.h"
 #include "game/game_world_object.h"
 #include <iomanip>
@@ -1913,8 +1912,7 @@ namespace wowpp
 			return;
 
 		// Check if vendor is not hostile against players
-		const auto &vendorFaction = m_character->getFactionTemplate();
-		if (isHostileToPlayers(vendorFaction))
+		if (m_character->isHostileToPlayers())
 			return;
 
 		// Check if that vendor has the vendor flag

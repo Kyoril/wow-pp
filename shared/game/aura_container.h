@@ -48,7 +48,7 @@ namespace wowpp
 		void handleTargetDeath();
 		void removeAllAurasDueToSpell(UInt32 spellId);
 		void removeAurasByType(UInt32 auraType);
-//		Aura *popBack() { return m_auras.pop_back(); }
+		Aura *popBack(UInt8 dispelType, bool positive);
 
 		GameUnit &getOwner() { return m_owner; }
 		size_t getSize() const { return m_auras.size(); }

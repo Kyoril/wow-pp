@@ -429,9 +429,8 @@ namespace wowpp
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
 				finder.findUnits(Circle(x, y, radius), [this, &attacker, &targets, maxtargets](GameUnit &unit) -> bool
 				{
-					const auto &factionA = unit.getFactionTemplate();
-					const auto &factionB = attacker.getFactionTemplate();
-					if (!isFriendlyTo(factionA, factionB) && unit.isAlive())
+					const auto &faction = attacker.getFactionTemplate();
+					if (!unit.isFriendlyTo(faction) && unit.isAlive())
 					{
 						targets.push_back(&unit);
 						if (maxtargets > 0 &&
@@ -489,9 +488,8 @@ namespace wowpp
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
 				finder.findUnits(Circle(location.x, location.y, radius), [this, &attacker, &targets, maxtargets](GameUnit &unit) -> bool
 				{
-					const auto &factionA = unit.getFactionTemplate();
-					const auto &factionB = attacker.getFactionTemplate();
-					if (!isFriendlyTo(factionA, factionB) && unit.isAlive())
+					const auto &faction = attacker.getFactionTemplate();
+					if (!unit.isFriendlyTo(faction) && unit.isAlive())
 					{
 						targets.push_back(&unit);
 						if (maxtargets > 0 &&

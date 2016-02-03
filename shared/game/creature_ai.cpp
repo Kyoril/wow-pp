@@ -31,7 +31,6 @@
 #include "universe.h"
 #include "unit_finder.h"
 #include "unit_watcher.h"
-#include "proto_data/faction_helper.h"
 #include "common/make_unique.h"
 
 namespace wowpp
@@ -116,7 +115,7 @@ namespace wowpp
 
 	void CreatureAI::onThreatened(GameUnit &threat, float amount)
 	{
-		auto &controlled = getControlled();
+		GameCreature &controlled = getControlled();
 		if (threat.getGuid() == controlled.getGuid())
 		{
 			return;
@@ -126,16 +125,15 @@ namespace wowpp
 		assert(worldInstance);
 
 		// Check if we are hostile against this unit
-		const auto &ourFaction = getControlled().getFactionTemplate();
 		const auto &unitFaction = threat.getFactionTemplate();
-		if (!isFriendlyTo(ourFaction, unitFaction))
+		if (!controlled.isFriendlyTo(unitFaction))
 		{
 			math::Vector3 location(controlled.getLocation());
 
 			// Call for assistance
-			if (!isNeutralToAll(ourFaction))
+			if (!controlled.isNeutralToAll())
 			{
-				worldInstance->getUnitFinder().findUnits(Circle(location.x, location.y, 8.0f), [&ourFaction, &threat, &worldInstance](GameUnit &unit) -> bool
+				worldInstance->getUnitFinder().findUnits(Circle(location.x, location.y, 8.0f), [&controlled, &threat, &worldInstance](GameUnit &unit) -> bool
 				{
 					if (unit.getTypeId() != object_type::Unit)
 						return true;
@@ -148,8 +146,8 @@ namespace wowpp
 
 					const auto &threatFaction = threat.getFactionTemplate();
 					const auto &unitFaction = unit.getFactionTemplate();
-					if (isFriendlyTo(unitFaction, ourFaction) &&
-						isHostileTo(unitFaction, threatFaction))
+					if (controlled.isFriendlyTo(unitFaction) &&
+						unit.isHostileTo(threatFaction))
 					{
 						worldInstance->getUniverse().post([&unit, &threat]()
 						{

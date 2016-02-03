@@ -64,7 +64,7 @@ namespace wowpp
 		{
 			if (!isReplacement)
 			{
-				if (aura->isPositive(true))
+				if (aura->isPositive())
 				{
 					for (UInt8 i = 0; i < 40; ++i)
 					{
@@ -374,6 +374,24 @@ namespace wowpp
 			else
 			{
 				it++;
+			}
+		}
+	}
+	
+	Aura *AuraContainer::popBack(UInt8 dispelType, bool positive)
+	{
+		auto it = m_auras.end() - 1;
+		while (it != m_auras.begin() - 1)
+		{
+			if ((*it)->isPositive() == positive)
+			{
+				std::shared_ptr<Aura> aura = *it;
+				m_auras.erase(it);
+				return aura.get();
+			}
+			else
+			{
+				it--;
 			}
 		}
 	}

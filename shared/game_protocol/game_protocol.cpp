@@ -2837,14 +2837,14 @@ namespace wowpp
 					<< io::write<NetUInt32>(emoteDelay)
 					<< io::write<NetUInt32>(emote)
 					<< io::write<NetUInt8>(menu.size());
-				for (const auto &menuitem : menu)
+				for (const auto &menuItem : menu)
 				{
 					assert(menuItem.quest);
 					out_packet
-						<< io::write<NetUInt32>(menuitem.quest->id())
-						<< io::write<NetUInt32>(menuitem.menuIcon)
-						<< io::write<NetInt32>(menuitem.questLevel)
-						<< io::write_range(menuitem.title) << io::write<NetUInt8>(0);
+						<< io::write<NetUInt32>(menuItem.quest->id())
+						<< io::write<NetUInt32>(menuItem.menuIcon)
+						<< io::write<NetInt32>(menuItem.questLevel)
+						<< io::write_range(menuItem.title) << io::write<NetUInt8>(0);
 				}
 				out_packet.finish();
 			}

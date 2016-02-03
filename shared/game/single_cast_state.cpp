@@ -40,7 +40,6 @@
 #include "game_creature.h"
 #include "universe.h"
 #include "aura.h"
-#include "proto_data/faction_helper.h"
 #include "unit_mover.h"
 #include <random>
 
@@ -667,6 +666,100 @@ namespace wowpp
 	{
 		meleeSpecialAttack(effect, false);
 	}
+	
+	void SingleCastState::spellEffectStealBeneficialBuff(const proto::SpellEffect &effect)
+	{
+		GameUnit &caster = m_cast.getExecuter();
+		UInt8 school = m_spell.schoolmask();
+		std::vector<GameUnit*> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+		
+		for (int i=0; i<targets.size(); i++)
+		{
+			GameUnit* targetUnit = targets[i];
+			UInt32 totalPoints = 0;
+			bool spellFailed = false;
+			
+			if (hitInfos[i] == game::hit_info::Miss)
+			{
+				spellFailed = true;
+			}
+			else if (victimStates[i] == game::victim_state::IsImmune)
+			{
+				spellFailed = true;
+			}
+			else if (victimStates[i] == game::victim_state::Normal)
+			{
+				if (resists[i] == 100.0f)
+				{
+					spellFailed = true;
+				}
+				else
+				{
+					totalPoints = calculateEffectBasePoints(effect);
+				}
+			}
+			
+			if (spellFailed)
+			{
+				// TODO send fail packet
+				sendPacketFromCaster(caster,
+					std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+					targetUnit->getGuid(),
+					caster.getGuid(),
+					m_spell.id(),
+					1,
+					school,
+					0,
+					1,	//resisted
+					false,
+					0,
+					false));
+			}
+			else if (targetUnit->isAlive())
+			{
+				UInt32 auraDispelType = effect.miscvaluea();
+				for (int i=0; i<totalPoints; i++)
+				{
+					Aura *stolenAura = targetUnit->getAuras().popBack(auraDispelType, true);
+					if (stolenAura)
+					{
+						proto::SpellEntry spell(stolenAura->getSpell());
+						proto::SpellEffect effect(stolenAura->getEffect());
+						UInt32 basepoints(stolenAura->getBasePoints());
+						stolenAura->misapplyAura();
+						
+						auto *world = caster.getWorldInstance();
+						auto &universe = world->getUniverse();
+						std::shared_ptr<Aura> aura = std::make_shared<Aura>(spell, effect, basepoints, caster, caster, [&universe](std::function<void()> work)
+						{
+							universe.post(work);
+						}, [](Aura &self)
+						{
+							// Prevent aura from being deleted before being removed from the list
+							auto strong = self.shared_from_this();
+
+							// Remove aura from the list
+							auto &auras = self.getTarget().getAuras();
+							const auto position = findAuraInstanceIndex(auras, self);
+							if (position.is_initialized())
+							{
+								auras.removeAura(*position);
+							}
+						});
+						caster.getAuras().addAura(std::move(aura));
+					}
+					else
+					{
+						break;
+					}
+				}
+			}
+		}
+	}
 
 	void SingleCastState::spellEffectDrainPower(const proto::SpellEffect &effect)
 	{
@@ -1173,6 +1266,7 @@ namespace wowpp
 			{se::ScriptEffect, std::bind(&SingleCastState::spellEffectScript, this, std::placeholders::_1)},
 			{se::AttackMe, std::bind(&SingleCastState::spellEffectAttackMe, this, std::placeholders::_1)},
 			{se::NormalizedWeaponDmg, std::bind(&SingleCastState::spellEffectNormalizedWeaponDamage, this, std::placeholders::_1)},
+			{se::StealBeneficialBuff, std::bind(&SingleCastState::spellEffectStealBeneficialBuff, this, std::placeholders::_1)},
 			// Add all effects above here
 			{se::ApplyAura, std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
 			{se::SchoolDamage, std::bind(&SingleCastState::spellEffectSchoolDamage, this, std::placeholders::_1)}
@@ -1514,7 +1608,20 @@ namespace wowpp
 			}
 			else if (targetUnit->isAlive())
 			{
-//				targetUnit->getAuras().popBack();
+				UInt32 auraDispelType = effect.miscvaluea();
+				for (int i=0; i<totalPoints; i++)
+				{
+					bool positive = caster.isHostileTo(*targetUnit);
+					Aura *aura = targetUnit->getAuras().popBack(auraDispelType, positive);
+					if (aura)
+					{
+						aura->misapplyAura();
+					}
+					else
+					{
+						break;
+					}
+				}
 			}
 		}
 	}

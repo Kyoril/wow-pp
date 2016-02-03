@@ -26,7 +26,6 @@
 #include "tiled_unit_watcher.h"
 #include "unit_finder.h"
 #include "universe.h"
-#include "proto_data/faction_helper.h"
 #include "log/default_log_levels.h"
 
 namespace wowpp
@@ -74,17 +73,16 @@ namespace wowpp
 			}
 
 			// Check if we are hostile against this unit
-			const auto &ourFaction = controlled.getFactionTemplate();
 			const auto &unitFaction = unit.getFactionTemplate();
-			if (isNeutralToAll(ourFaction))
+			if (controlled.isNeutralToAll())
 			{
 				return false;
 			}
 
 			const float dist = controlled.getDistanceTo(unit, false);
 
-			const bool isHostile = isHostileTo(ourFaction, unitFaction);
-			const bool isFriendly = isFriendlyTo(ourFaction, unitFaction);
+			const bool isHostile = controlled.isHostileTo(unitFaction);
+			const bool isFriendly = controlled.isFriendlyTo(unitFaction);
 			if (isHostile && !isFriendly)
 			{
 				if (isVisible)
@@ -130,7 +128,7 @@ namespace wowpp
 						auto *victim = unit.getVictim();
 						if (unit.isInCombat() && victim != nullptr)
 						{
-							if (!isHostileTo(unitFaction, victim->getFactionTemplate()))
+							if (!victim->isHostileTo(unitFaction))
 								return false;
 
 							if (!controlled.isInLineOfSight(unit))

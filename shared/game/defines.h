@@ -2644,6 +2644,8 @@ namespace wowpp
 			};
 		}
 
+		typedef aura_dispel_type::Type AuraDispelType;
+
 		namespace constant_literal
 		{
 			typedef EnumStrings < AuraType, aura_type::Count_,

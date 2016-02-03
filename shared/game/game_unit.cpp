@@ -1610,6 +1610,83 @@ namespace wowpp
 
 		factionChanged(*this);
 	}
+	
+	bool GameUnit::isHostileToPlayers()
+	{
+		const UInt32 factionMaskPlayer = 1;
+		return (m_factionTemplate->enemymask() & factionMaskPlayer) != 0;
+	}
+
+	bool GameUnit::isNeutralToAll()
+	{
+		return (m_factionTemplate->enemymask() == 0 && m_factionTemplate->friendmask() == 0 && m_factionTemplate->enemies().empty());
+	}
+
+	bool GameUnit::isFriendlyTo(const proto::FactionTemplateEntry & faction)
+	{
+		if (m_factionTemplate->id() == faction.id())
+		{
+			return true;
+		}
+
+		for (int i = 0; i < m_factionTemplate->enemies_size(); ++i)
+		{
+			const auto &enemy = m_factionTemplate->enemies(i);
+			if (enemy && enemy == faction.faction())
+			{
+				return false;
+			}
+		}
+
+		for (int i = 0; i < m_factionTemplate->friends_size(); ++i)
+		{
+			const auto &friendly = m_factionTemplate->friends(i);
+			if (friendly && friendly == faction.faction())
+			{
+				return true;
+			}
+		}
+
+		return ((m_factionTemplate->friendmask() & faction.selfmask()) != 0) || ((m_factionTemplate->selfmask() & faction.friendmask()) != 0);
+	}
+	
+	bool GameUnit::isFriendlyTo(GameUnit &unit)
+	{
+		return isFriendlyTo(unit.getFactionTemplate());
+	}
+
+	bool GameUnit::isHostileTo(const proto::FactionTemplateEntry & faction)
+	{
+		if (m_factionTemplate->id() == faction.id())
+		{
+			return false;
+		}
+
+		for (int i = 0; i < m_factionTemplate->enemies_size(); ++i)
+		{
+			const auto &enemy = m_factionTemplate->enemies(i);
+			if (enemy && enemy == faction.faction())
+			{
+				return true;
+			}
+		}
+
+		for (int i = 0; i < m_factionTemplate->friends_size(); ++i)
+		{
+			const auto &friendly = m_factionTemplate->friends(i);
+			if (friendly && friendly == faction.faction())
+			{
+				return false;
+			}
+		}
+
+		return ((m_factionTemplate->enemymask() & faction.selfmask()) != 0) || ((m_factionTemplate->selfmask() & faction.enemymask()) != 0);
+	}
+	
+	bool GameUnit::isHostileTo(GameUnit &unit)
+	{
+		return isHostileTo(unit.getFactionTemplate());
+	}
 
 	bool GameUnit::isInCombat() const
 	{

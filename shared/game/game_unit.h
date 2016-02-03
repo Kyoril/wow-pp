@@ -423,6 +423,13 @@ namespace wowpp
 		const proto::FactionTemplateEntry &getFactionTemplate() const;
 		/// 
 		void setFactionTemplate(const proto::FactionTemplateEntry &faction);
+		
+		bool isHostileToPlayers();
+		bool isNeutralToAll();
+		bool isFriendlyTo(const proto::FactionTemplateEntry &faction);
+		bool isFriendlyTo(GameUnit &unit);
+		bool isHostileTo(const proto::FactionTemplateEntry &faction);
+		bool isHostileTo(GameUnit &unit);
 
 		/// Gets the timer queue object needed for countdown events.
 		TimerQueue &getTimers() { return m_timers; }

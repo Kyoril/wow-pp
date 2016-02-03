@@ -26,7 +26,6 @@
 #include "game_creature.h"
 #include "game_character.h"
 #include "world_instance.h"
-#include "proto_data/faction_helper.h"
 #include "proto_data/trigger_helper.h"
 #include "binary_io/vector_sink.h"
 #include "game_protocol/game_protocol.h"
@@ -247,9 +246,8 @@ namespace wowpp
 			return;
 
 		// No aggro on friendly units
-		const auto &factionB = threatener.getFactionTemplate();
-		const auto &factionA = getControlled().getFactionTemplate();
-		if (isFriendlyTo(factionA, factionB))
+		const auto &faction = getControlled().getFactionTemplate();
+		if (threatener.isFriendlyTo(faction))
 			return;
 
 		// Add threat amount (Note: A value of 0 is fine here, as it will still add an
