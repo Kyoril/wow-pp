@@ -187,13 +187,16 @@ namespace wowpp
 			if (logId == 0 || logId == quest)
 			{
 				// Take that quest
-				m_quests[quest].status = game::quest_status::Incomplete;
+				auto &data = m_quests[quest];
+				data.status = game::quest_status::Incomplete;
 
 				// Set quest log
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, quest);
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
+
+				questDataChanged(quest, data);
 				return true;
 			}
 		}

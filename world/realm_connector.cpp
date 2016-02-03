@@ -1389,4 +1389,10 @@ namespace wowpp
 		m_connection->flush();
 	}
 
+	void RealmConnector::sendQuestData(DatabaseId characterId, UInt32 quest, const QuestStatusData & data)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::world_write::questUpdate, std::placeholders::_1, characterId, quest, std::cref(data)));
+	}
+
 }

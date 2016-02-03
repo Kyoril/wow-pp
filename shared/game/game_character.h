@@ -502,7 +502,7 @@ namespace wowpp
 		boost::signals2::signal<void(UInt64, UInt32, UInt32)> experienceGained;
 		boost::signals2::signal<void()> homeChanged;
 		/// Parameters: Quest-ID, Old Status, New Status
-		boost::signals2::signal<void(UInt32, game::QuestStatus, game::QuestStatus)> questStatusChanged;
+		boost::signals2::signal<void(UInt32, const QuestStatusData&)> questDataChanged;
 
 	public:
 

@@ -14,7 +14,6 @@ CREATE TABLE `character_quests` (
   `guid` int(11) unsigned NOT NULL DEFAULT '0',
   `quest` int(11) unsigned NOT NULL DEFAULT '0',
   `status` int(11) unsigned NOT NULL DEFAULT '0',
-  `rewarded` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `explored` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `timer` bigint(20) unsigned NOT NULL DEFAULT '0',
   `unitcount1` int(11) unsigned NOT NULL DEFAULT '0',

@@ -164,17 +164,18 @@ namespace wowpp
 						<< io::write_dynamic_range<UInt8>(auras);
 					out_packet.finish();
 				}
-				void questUpdate(pp::OutgoingPacket & out_packet, UInt64 characterId, UInt32 questId, GameTime expiration, bool explored, const std::array<UInt16, 4>& creatures, const std::array<UInt16, 4>& objects, const std::array<UInt16, 4>& items)
+				void questUpdate(pp::OutgoingPacket & out_packet, UInt64 characterId, UInt32 questId, const QuestStatusData &data)
 				{
 					out_packet.start(world_packet::QuestUpdate);
 					out_packet
 						<< io::write<NetUInt64>(characterId)
 						<< io::write<NetUInt32>(questId)
-						<< io::write<NetUInt64>(expiration)
-						<< io::write<NetUInt8>(explored)
-						<< io::write_range(creatures)
-						<< io::write_range(objects)
-						<< io::write_range(items);
+						<< io::write<NetUInt32>(data.status)
+						<< io::write<NetUInt64>(data.expiration)
+						<< io::write<NetUInt8>(data.explored)
+						<< io::write_range(data.creatures)
+						<< io::write_range(data.objects)
+						<< io::write_range(data.items);
 					out_packet.finish();
 				}
 			}
@@ -398,16 +399,17 @@ namespace wowpp
 						;
 				}
 
-				bool questUpdate(io::Reader & packet, UInt64 & out_characterId, UInt32 & out_questId, GameTime & out_expiration, bool & out_explored, std::array<UInt16, 4>& out_creatures, std::array<UInt16, 4>& out_objects, std::array<UInt16, 4>& out_items)
+				bool questUpdate(io::Reader & packet, UInt64 & out_characterId, UInt32 & out_questId, QuestStatusData &out_data)
 				{
 					return packet
 						>> io::read<NetUInt64>(out_characterId)
 						>> io::read<NetUInt32>(out_questId)
-						>> io::read<NetUInt64>(out_expiration)
-						>> io::read<NetUInt8>(out_explored)
-						>> io::read_range(out_creatures)
-						>> io::read_range(out_objects)
-						>> io::read_range(out_items);
+						>> io::read<NetUInt32>(out_data.status)
+						>> io::read<NetUInt64>(out_data.expiration)
+						>> io::read<NetUInt8>(out_data.explored)
+						>> io::read_range(out_data.creatures)
+						>> io::read_range(out_data.objects)
+						>> io::read_range(out_data.items);
 				}
 
 			}

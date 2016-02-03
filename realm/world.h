@@ -92,7 +92,6 @@ namespace wowpp
 		/// Returns an array of opened instance id's of this world node.
 		const InstanceList &getInstanceList() const { return m_instances; }
 		
-
 		// Called by player
 		void enterWorldInstance(UInt64 characterDbId, UInt32 instanceId, const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &out_items);
 		void leaveWorldInstance(UInt64 characterDbId, pp::world_realm::WorldLeftReason reason);
@@ -139,5 +138,6 @@ namespace wowpp
 		void handleCharacterData(pp::IncomingPacket &packet);
 		void handleTeleportRequest(pp::IncomingPacket &packet);
 		void handleCharacterGroupUpdate(pp::IncomingPacket &packet);
+		void handleQuestUpdate(pp::IncomingPacket &packet);
 	};
 }

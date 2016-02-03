@@ -110,6 +110,9 @@ namespace wowpp
 			case world_packet::CharacterGroupUpdate:
 				handleCharacterGroupUpdate(packet);
 				break;
+			case world_packet::QuestUpdate:
+				handleQuestUpdate(packet);
+				break;
 			default:
 			{
 				WLOG("Unknown packet received from world " << m_address
@@ -486,6 +489,23 @@ namespace wowpp
 			// TODO: Do some heavy optimization here
 			group->broadcastPacket(
 				std::bind(game::server_write::partyMemberStats, std::placeholders::_1, std::cref(*character)), &nearbyMembers);
+		}
+	}
+
+	void World::handleQuestUpdate(pp::IncomingPacket & packet)
+	{
+		UInt64 characterId;
+		UInt32 questId;
+		QuestStatusData data;
+		if (!(pp::world_realm::world_read::questUpdate(packet, characterId, questId, data)))
+		{
+			return;
+		}
+
+		// Update quest data
+		if (!m_database.setQuestData(characterId, questId, data))
+		{
+			ELOG("Could not set character quest data!");
 		}
 	}
 

@@ -926,8 +926,6 @@ namespace wowpp
 
 	static bool importDispelData(proto::Project &project, MySQL::Connection &conn)
 	{
-		project.spellCategories.clear();
-
 		{
 			wowpp::MySQL::Select select(conn, "SELECT `Id`,`Dispel`,`SpellFamilyName`,`SpellFamilyFlags` FROM `dbc_spell`;");
 			if (select.success())
@@ -1036,13 +1034,13 @@ int main(int argc, char* argv[])
 		ELOG("Failed to import spell mechanics");
 		return 1;
 	}
-
+	*/
 	if (!importCategories(protoProject, connection))
 	{
 		ELOG("Failed to import spell categories");
 		return 1;
 	}
-
+	/*
 	if (!importQuestRelations(protoProject, connection))
 	{
 		ELOG("Failed to import quest relations");

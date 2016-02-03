@@ -88,6 +88,9 @@ namespace wowpp
 			[this](UInt32 spellId) {
 			sendProxyPacket(std::bind(game::server_write::cooldownEvent, std::placeholders::_1, spellId, m_character->getGuid()));
 		});
+		m_questChanged = m_character->questDataChanged.connect([this](UInt32 questId, const QuestStatusData &data) {
+			m_realmConnector.sendQuestData(m_character->getGuid(), questId, data);
+		});
 
 		auto onRootOrStunUpdate = [this](bool flag) {
 			if (flag || m_character->isRooted() || m_character->isStunned())

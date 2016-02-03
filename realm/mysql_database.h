@@ -72,12 +72,14 @@ namespace wowpp
 		bool updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) override;
 		/// @copydoc wowpp::IDatabase::removeCharacterSocialContact
 		bool removeCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid) override;
-		/// 
+		/// @copydoc wowpp::IDatabase::removeCharacterSocialContact
 		bool getCharacterActionButtons(DatabaseId characterId, ActionButtons &out_buttons) override;
-		/// 
+		/// @copydoc wowpp::IDatabase::setCharacterActionButtons
 		bool setCharacterActionButtons(DatabaseId characterId, const ActionButtons &buttons) override;
-		/// 
+		/// @copydoc wowpp::IDatabase::setCinematicState
 		bool setCinematicState(DatabaseId characterId, bool state) override;
+		/// @copydoc wowpp::IDatabase::setQuestData
+		bool setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData &data) override;
 
 	private:
 

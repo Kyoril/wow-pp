@@ -1187,4 +1187,43 @@ namespace wowpp
 		}
 	}
 
+	bool MySQLDatabase::setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData & data)
+	{
+		const UInt32 lowerPart = guidLowerPart(characterId);
+
+		if (m_connection.execute((boost::format(
+			"INSERT INTO `character_quests` (`guid`, `quest`, `status`, `explored`, `timer`, `unitcount1`, `unitcount2`, `unitcount3`, `unitcount4`, `objectcount1`, `objectcount2`, `objectcount3`, `objectcount4`, `itemcount1`, `itemcount2`, `itemcount3`, `itemcount4`) VALUES "
+			"(%1%, %2%, %3%, %4%, %5%, %6%, %7%, %8%, %9%, %10%, %11%, %12%, %13%, %14%, %15%, %16%, %17%) "
+			"ON DUPLICATE KEY UPDATE `status`=%3%, `explored`=%4%, `timer`=%5%, `unitcount1`=%6%, `unitcount2`=%7%, `unitcount3`=%8%, `unitcount4`=%9%, `objectcount1`=%10%, `objectcount2`=%11%, `objectcount3`=%12%, `objectcount4`=%13%, `itemcount1`=%14%, `itemcount2`=%15%, `itemcount3`=%16%, `itemcount4`=%17%")
+			% lowerPart
+			% questId
+			% static_cast<UInt32>(data.status)
+			% (data.explored ? 1 : 0)
+			% data.expiration
+			% data.creatures[0]
+			% data.creatures[1]
+			% data.creatures[2]
+			% data.creatures[3]
+			% data.objects[0]
+			% data.objects[1]
+			% data.objects[2]
+			% data.objects[3]
+			% data.items[0]
+			% data.items[1]
+			% data.items[2]
+			% data.items[3]
+			).str()))
+		{
+			return true;
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+
+		return false;
+	}
+
 }

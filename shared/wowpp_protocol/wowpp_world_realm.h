@@ -280,11 +280,7 @@ namespace wowpp
 					pp::OutgoingPacket &out_packet,
 					UInt64 characterId,
 					UInt32 questId,
-					GameTime expiration,
-					bool explored,
-					const std::array<UInt16, 4> &creatures,
-					const std::array<UInt16, 4> &objects,
-					const std::array<UInt16, 4> &items
+					const QuestStatusData &data
 					);
 			}
 
@@ -470,11 +466,7 @@ namespace wowpp
 					io::Reader &packet,
 					UInt64 &out_characterId,
 					UInt32 &out_questId,
-					GameTime &out_expiration,
-					bool &out_explored,
-					std::array<UInt16, 4> &out_creatures,
-					std::array<UInt16, 4> &out_objects,
-					std::array<UInt16, 4> &out_items
+					QuestStatusData &out_data
 					);
 			}
 

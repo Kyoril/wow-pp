@@ -30,6 +30,7 @@
 #include "game/game_character.h"
 #include "common/timer_queue.h"
 #include <boost/signals2.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace wowpp
 {
@@ -45,7 +46,7 @@ namespace wowpp
 	}
 
 	/// This class manages the connection to the realm server.
-	class RealmConnector : public pp::IConnectorListener
+	class RealmConnector : public pp::IConnectorListener, boost::noncopyable
 	{
 	public:
 
@@ -94,6 +95,8 @@ namespace wowpp
 		void sendCharacterData(GameCharacter &character);
 		/// Sends a group update to the realm.
 		void sendCharacterGroupUpdate(GameCharacter &character, const std::vector<UInt64> &nearbyMembers);
+		/// 
+		void sendQuestData(DatabaseId characterId, UInt32 quest, const QuestStatusData &data);
 
 	private:
 
