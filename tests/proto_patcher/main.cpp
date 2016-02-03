@@ -922,6 +922,45 @@ namespace wowpp
 
 		return true;
 	}
+
+	static bool importDispelData(proto::Project &project, MySQL::Connection &conn)
+	{
+		project.spellCategories.clear();
+
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `Id`,`Dispel`,`SpellFamilyName`,`SpellFamilyFlags` FROM `dbc_spell`;");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					// Get row data
+					UInt32 id = 0, dispel = 0, family = 0, familyFlags = 0;
+					row.getField(0, id);
+					row.getField(1, dispel);
+					row.getField(2, family);
+					row.getField(3, familyFlags);
+
+					auto * spell = project.spells.getById(id);
+					if (!spell)
+					{
+						WLOG("Unable to find spell by id: " << id);
+						row = row.next(select);
+						continue;
+					}
+
+					spell->set_dispel(dispel);
+					spell->set_family(family);
+					spell->set_familyflags(familyFlags);
+
+					row = row.next(select);
+				}
+			}
+		}
+
+		return true;
+	}
+
 }
 
 /// Procedural entry point of the application.
@@ -990,6 +1029,7 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 
+	/*
 	if (!importSpellMechanics(protoProject, connection))
 	{
 		ELOG("Failed to import spell mechanics");
@@ -1007,10 +1047,16 @@ int main(int argc, char* argv[])
 		ELOG("Failed to import quest relations");
 		return 1;
 	}
-
+	*/
 	if (!addSpellLinks(protoProject))
 	{
 		ELOG("Failed to add spell links");
+		return 1;
+	}
+
+	if (!importDispelData(protoProject, connection))
+	{
+		ELOG("Failed to import spell dispel data");
 		return 1;
 	}
 

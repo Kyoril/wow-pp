@@ -87,6 +87,9 @@ message SpellEntry {
 	repeated uint32 additionalspells = 38;
 	optional uint32 category = 39;
 	optional uint64 categorycooldown = 40;
+	optional uint32 dispel = 41;
+	optional uint32 family = 42;
+	optional uint32 familyflags = 43;
 }
 
 message Spells {

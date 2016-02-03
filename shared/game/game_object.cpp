@@ -748,8 +748,8 @@ namespace wowpp
 					<< io::write<float>(unitObject->getSpeed(movement_type::Walk))					// Walk
 					<< io::write<float>(unitObject->getSpeed(movement_type::Run))					// Run
 					<< io::write<float>(unitObject->getSpeed(movement_type::Backwards))				// Backwards
-					<< io::write<NetUInt32>(unitObject->getSpeed(movement_type::Swim))				// Swim
-					<< io::write<NetUInt32>(unitObject->getSpeed(movement_type::SwimBackwards))		// Swim Backwards
+					<< io::write<float>(unitObject->getSpeed(movement_type::Swim))				// Swim
+					<< io::write<float>(unitObject->getSpeed(movement_type::SwimBackwards))		// Swim Backwards
 					<< io::write<float>(unitObject->getSpeed(movement_type::Flight))				// Fly
 					<< io::write<float>(unitObject->getSpeed(movement_type::FlightBackwards))		// Fly Backwards
 					<< io::write<float>(unitObject->getSpeed(movement_type::Turn));					// Turn (radians / sec: PI)
