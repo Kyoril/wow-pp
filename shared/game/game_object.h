@@ -241,6 +241,8 @@ namespace wowpp
 		/// Determines whether this object rewards players for completing a specific quest.
 		virtual bool endsQuest(UInt32 questId) const { return false; }
 		
+		bool isCreature() const { return getTypeId() == object_type::Unit; }
+		bool isWorldObject() const { return getTypeId() == object_type::GameObject; }
 		bool isGameCharacter() const { return getTypeId() == object_type::Character; }
 
 		/// Writes creation blocks for this object.

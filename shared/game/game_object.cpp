@@ -22,6 +22,7 @@
 #include "game_object.h"
 #include "game_character.h"
 #include "game_creature.h"
+#include "game_world_object.h"
 #include "log/default_log_levels.h"
 #include "binary_io/vector_sink.h"
 #include "common/clock.h"
@@ -287,7 +288,7 @@ namespace wowpp
 
 	void GameObject::writeUpdateValue(io::Writer &writer, GameCharacter &receiver, UInt16 index) const
 	{
-		if (getTypeId() == object_type::Unit)
+		if (isCreature())
 		{
 			switch (index)
 			{
@@ -381,6 +382,33 @@ namespace wowpp
 			default:
 				writer << io::write<NetUInt32>(m_values[index]);
 				break;
+			}
+		}
+		else if (isWorldObject())
+		{
+			switch (index)
+			{
+				case world_object_fields::DynFlags:
+				{
+					// Determine whether this object is active as a quest object
+					const WorldObject *worldObject = reinterpret_cast<const WorldObject*>(this);
+					if (worldObject->isQuestObject(receiver))
+					{
+						writer 
+							<< io::write<NetUInt16>(1 | 8)
+							<< io::write<NetUInt16>(-1);
+					}
+					else
+					{
+						writer << io::write<NetUInt32>(m_values[index]);
+					}
+					break;
+				}
+				default:
+				{
+					writer << io::write<NetUInt32>(m_values[index]);
+					break;
+				}
 			}
 		}
 		else

@@ -182,6 +182,8 @@ namespace wowpp
 		bool endsQuest(UInt32 questId) const override;
 		/// 
 		game::QuestgiverStatus getQuestgiverStatus(const GameCharacter &character) const;
+		/// Determines whether this object is needed by a quest.
+		bool isQuestObject(const GameCharacter &character) const;
 
 		/// Gets the object type id value.
 		ObjectType getTypeId() const override { return object_type::GameObject; }

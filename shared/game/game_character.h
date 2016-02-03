@@ -481,7 +481,7 @@ namespace wowpp
 		std::array<UInt16, 4> items;
 
 		QuestStatusData()
-			: status(game::QuestStatus::None)
+			: status(game::QuestStatus::Available)
 			, expiration(0)
 			, explored(false)
 		{
@@ -612,6 +612,14 @@ namespace wowpp
 		bool acceptQuest(UInt32 quest);
 		/// 
 		bool abandonQuest(UInt32 quest);
+
+	public:
+
+		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT
+		// BE CALLED ANYWHERE ELSE!
+
+		/// Manually sets data for a specified quest id.
+		void setQuestData(UInt32 quest, const QuestStatusData &data);
 
 	protected:
 

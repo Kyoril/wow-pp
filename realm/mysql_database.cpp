@@ -617,8 +617,8 @@ namespace wowpp
 
 				// Load items
 				wowpp::MySQL::Select itemSelect(m_connection, (boost::format(
-					//       0      1         2        3        4         5          6
-					"SELECT `id`, `owner`, `entry`, `slot`, `creator`, `count`, `durability` FROM `character_items` WHERE `owner`=%1%")
+					//         0		1		2			3		4
+					"SELECT `entry`, `slot`, `creator`, `count`, `durability` FROM `character_items` WHERE `owner`=%1%")
 					% characterId).str());
 				if (itemSelect.success())
 				{
@@ -627,15 +627,60 @@ namespace wowpp
 					{
 						// Read item data
 						pp::world_realm::ItemData data;
-						itemRow.getField(2, data.entry);
-						itemRow.getField(3, data.slot);
-						itemRow.getField(4, data.creator);
-						itemRow.getField<UInt8, UInt16>(5, data.stackCount);
-						itemRow.getField(6, data.durability);
+						itemRow.getField(0, data.entry);
+						itemRow.getField(1, data.slot);
+						itemRow.getField(2, data.creator);
+						itemRow.getField<UInt8, UInt16>(3, data.stackCount);
+						itemRow.getField(4, data.durability);
 						out_items.emplace_back(std::move(data));
 
 						// Next row
 						itemRow = itemRow.next(itemSelect);
+					}
+				}
+
+				// Load quest data
+				wowpp::MySQL::Select questSelect(m_connection, (boost::format(
+					//         0		1			2		
+					"SELECT `quest`, `status`, `explored`, "
+					//		3			4			5				6
+					"`unitcount1`, `unitcount2`, `unitcount3`, `unitcount4`, "
+					//		7				8				9			10
+					"`objectcount1`, `objectcount2`, `objectcount3`, `objectcount4`, "
+					//		11			12			13				14
+					"`itemcount1`, `itemcount2`, `itemcount3`, `itemcount4` "
+					"FROM `character_quests` WHERE `guid`=%1%")
+					% characterId).str());
+				if (questSelect.success())
+				{
+					wowpp::MySQL::Row questRow(questSelect);
+					while (questRow)
+					{
+						UInt32 questId = 0, index = 0;
+						QuestStatusData data;
+						questRow.getField(index++, questId);
+						
+						UInt32 status = 0;
+						questRow.getField(index++, status);
+						data.status = static_cast<game::QuestStatus>(status);
+
+						questRow.getField(index++, data.explored);
+						questRow.getField(index++, data.creatures[0]);
+						questRow.getField(index++, data.creatures[1]);
+						questRow.getField(index++, data.creatures[2]);
+						questRow.getField(index++, data.creatures[3]);
+						questRow.getField(index++, data.objects[0]);
+						questRow.getField(index++, data.objects[1]);
+						questRow.getField(index++, data.objects[2]);
+						questRow.getField(index++, data.objects[3]);
+						questRow.getField(index++, data.items[0]);
+						questRow.getField(index++, data.items[1]);
+						questRow.getField(index++, data.items[2]);
+						questRow.getField(index++, data.items[3]);
+						out_character.setQuestData(questId, data);
+
+						// Next row
+						questRow = questRow.next(questSelect);
 					}
 				}
 

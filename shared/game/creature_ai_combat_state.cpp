@@ -139,7 +139,7 @@ namespace wowpp
 			// If we are no longer stunned, update victim again
 			if (!stunned)
 			{
-				updateVictim();
+				chooseNextAction();
 			}
 			else
 			{
@@ -154,7 +154,7 @@ namespace wowpp
 		});
 		m_onRootChanged = getControlled().rootStateChanged.connect([this](bool rooted)
 		{
-			updateVictim();
+			chooseNextAction();
 		});
 
 		// Process aggro event

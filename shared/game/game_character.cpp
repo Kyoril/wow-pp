@@ -136,7 +136,7 @@ namespace wowpp
 		if (!entry)
 		{
 			WLOG("Could not find quest " << quest);
-			return game::quest_status::None;
+			return game::quest_status::Unavailable;
 		}
 
 		// Check if the quest is available for us
@@ -162,7 +162,7 @@ namespace wowpp
 		// Quest chain checks
 		if (entry->prevquestid())
 		{
-			if (getQuestStatus(entry->prevquestid()) != game::quest_status::Complete)
+			if (getQuestStatus(entry->prevquestid()) != game::quest_status::Rewarded)
 			{
 				return game::quest_status::Unavailable;
 			}
@@ -205,6 +205,29 @@ namespace wowpp
 	bool GameCharacter::abandonQuest(UInt32 quest)
 	{
 		return false;
+	}
+
+	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData & data)
+	{
+		m_quests[quest] = data;
+
+		if (data.status == game::quest_status::Incomplete ||
+			data.status == game::quest_status::Complete ||
+			data.status == game::quest_status::Failed)
+		{
+			for (UInt32 i = 0; i < 25; ++i)
+			{
+				auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+				if (logId == 0 || logId == quest)
+				{
+					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, quest);
+					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
+					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);	// TODO
+					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
+					break;
+				}
+			}
+		}
 	}
 
 	void GameCharacter::levelChanged(const proto::LevelEntry &levelInfo)
@@ -1570,7 +1593,7 @@ namespace wowpp
 			UInt32 questId = 0;
 			r
 				>> io::read<NetUInt32>(questId);
-			auto questData = object.m_quests[questId];
+			auto &questData = object.m_quests[questId];
 			r
 				>> io::read<NetUInt8>(questData.status)
 				>> io::read<NetUInt64>(questData.expiration)

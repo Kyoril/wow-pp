@@ -34,7 +34,7 @@ namespace wowpp
 	{
 		namespace world_realm
 		{
-			static const UInt32 ProtocolVersion = 0x0F;
+			static const UInt32 ProtocolVersion = 0x10;
 
 			namespace world_instance_error
 			{
@@ -86,6 +86,8 @@ namespace wowpp
 					TeleportRequest,
 					/// Update packet for a character who is a group member.
 					CharacterGroupUpdate,
+					/// Update packet for characters quest data.
+					QuestUpdate
 				};
 			}
 
@@ -273,6 +275,17 @@ namespace wowpp
 					math::Vector3 location,
 					const std::vector<UInt32> &auras
 					);
+
+				void questUpdate(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					UInt32 questId,
+					GameTime expiration,
+					bool explored,
+					const std::array<UInt16, 4> &creatures,
+					const std::array<UInt16, 4> &objects,
+					const std::array<UInt16, 4> &items
+					);
 			}
 
 			/// Contains methods for writing packets from the realm server.
@@ -451,6 +464,17 @@ namespace wowpp
 					UInt32 &out_zone,
 					math::Vector3 &out,
 					std::vector<UInt32> &out_auras
+					);
+
+				bool questUpdate(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					UInt32 &out_questId,
+					GameTime &out_expiration,
+					bool &out_explored,
+					std::array<UInt16, 4> &out_creatures,
+					std::array<UInt16, 4> &out_objects,
+					std::array<UInt16, 4> &out_items
 					);
 			}
 

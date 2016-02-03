@@ -123,6 +123,24 @@ namespace wowpp
 		return result;
 	}
 
+	bool WorldObject::isQuestObject(const GameCharacter & character) const
+	{
+		switch (m_entry.type())
+		{
+			case world_object_type::Chest:
+			{
+				// TODO: Check if chest loot contains quest item
+				return false;
+			}
+			case world_object_type::Goober:
+			{
+				return character.getQuestStatus(m_entry.data(1)) == game::QuestStatus::Incomplete;
+			}
+		}
+
+		return false;
+	}
+
 	void WorldObject::relocate(math::Vector3 position, float o, bool fire/* = false*/)
 	{
 		setFloatValue(world_object_fields::PosX, position.x);
