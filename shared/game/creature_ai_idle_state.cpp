@@ -107,6 +107,13 @@ namespace wowpp
 						return false;
 					}
 
+					// Check stealth
+					if (unit.isStealthed())
+					{
+						if (!controlled.canDetectStealth(unit))
+							return false;
+					}
+
 					if (!controlled.isInLineOfSight(unit))
 					{
 						return false;

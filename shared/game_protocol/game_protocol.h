@@ -146,6 +146,7 @@ namespace wowpp
 				QuestgiverRequestReward	= 0x18C,
 				QuestgiverChooseReward	= 0x18E,
 				QuestgiverCancel		= 0x190,
+				QuestlogRemoveQuest		= 0x194,
 				ListInventory			= 0x19E,
 				SellItem				= 0x1A0,
 				BuyItem					= 0x1A2,
@@ -330,6 +331,9 @@ namespace wowpp
 				QuestgiverRequestItems		= 0x18B,
 				QuestgiverOfferReward		= 0x18D,
 				QuestgiverQuestComplete		= 0x191,
+				QuestlogFull				= 0x195,
+				QuestupdateAddKill			= 0x199,
+				QuestupdateAddItem			= 0x19A,		// Unused?
 				ListInventory				= 0x19F,
 				TrainerList					= 0x1B1,
 				TrainerBuySucceeded			= 0x1B3,
@@ -1154,6 +1158,11 @@ namespace wowpp
 			bool questgiverStatusMultiple(
 				io::Reader &packet
 				);
+
+			bool questlogRemoveQuest(
+				io::Reader &packet,
+				UInt8 &out_questIndex
+				);
 		};
 
 		namespace server_write
@@ -1976,6 +1985,19 @@ namespace wowpp
 				bool isMaxLevel,
 				UInt32 xp,
 				const proto::QuestEntry &quest
+				);
+
+			void questlogFull(
+				game::OutgoingPacket &out_packet
+				);
+
+			void questupdateAddKill(
+				game::OutgoingPacket &out_packet,
+				UInt32 questId,
+				UInt32 entry,
+				UInt32 totalCount,
+				UInt32 maxCount,
+				UInt64 guid
 				);
 		};
 	}

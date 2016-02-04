@@ -3061,7 +3061,6 @@ namespace wowpp
 					<< io::write_range(quest.requestitemstext()) << io::write<NetUInt8>(0)
 					<< io::write<NetUInt32>(0)		// Unknown
 					<< io::write<NetUInt32>(0)		// Emote
-					<< io::write<NetUInt32>(0)		// Unknown
 					<< io::write<NetUInt32>(closeOnCancel ? 1 : 0)
 					<< io::write<NetUInt32>(0)		// Unknown
 					<< io::write<NetUInt32>(0);		// Required money
@@ -3079,7 +3078,7 @@ namespace wowpp
 
 					const auto *item = items.getById(req.itemid());
 					out_packet
-						<< io::write<NetUInt64>(req.itemid())
+						<< io::write<NetUInt32>(req.itemid())
 						<< io::write<NetUInt32>(req.itemcount())
 						<< io::write<NetUInt32>(item ? item->displayid() : 0);
 				}
@@ -3110,17 +3109,17 @@ namespace wowpp
 				{
 					const auto *item = items.getById(rew.itemid());
 					out_packet
-						<< io::write<NetUInt64>(rew.itemid())
+						<< io::write<NetUInt32>(rew.itemid())
 						<< io::write<NetUInt32>(rew.count())
 						<< io::write<NetUInt32>(item ? item->displayid() : 0);
 				}
 				out_packet
 					<< io::write<NetUInt32>(quest.rewarditems_size());
-				for (const auto &rew : quest.rewarditemschoice())
+				for (const auto &rew : quest.rewarditems())
 				{
 					const auto *item = items.getById(rew.itemid());
 					out_packet
-						<< io::write<NetUInt64>(rew.itemid())
+						<< io::write<NetUInt32>(rew.itemid())
 						<< io::write<NetUInt32>(rew.count())
 						<< io::write<NetUInt32>(item ? item->displayid() : 0);
 				}
@@ -3161,6 +3160,23 @@ namespace wowpp
 						<< io::write<NetUInt32>(rew.itemid())
 						<< io::write<NetUInt32>(rew.count());
 				}
+				out_packet.finish();
+			}
+			void questlogFull(game::OutgoingPacket & out_packet)
+			{
+				out_packet.start(game::server_packet::QuestlogFull);
+				out_packet.finish();
+			}
+			void questupdateAddKill(game::OutgoingPacket & out_packet, UInt32 questId, UInt32 entry, UInt32 totalCount, UInt32 maxCount, UInt64 guid)
+			{
+				out_packet.start(game::server_packet::QuestupdateAddKill);
+				out_packet
+					<< io::write<NetUInt32>(questId)
+					<< io::write<NetUInt32>(entry)
+					<< io::write<NetUInt32>(totalCount)
+					<< io::write<NetUInt32>(maxCount)
+					<< io::write<NetUInt64>(guid)
+					;
 				out_packet.finish();
 			}
 		}
@@ -4077,6 +4093,12 @@ namespace wowpp
 			bool questgiverStatusMultiple(io::Reader & packet)
 			{
 				return packet;
+			}
+
+			bool questlogRemoveQuest(io::Reader & packet, UInt8 &out_questIndex)
+			{
+				return packet
+					>> io::read<NetUInt8>(out_questIndex);
 			}
 
 		}

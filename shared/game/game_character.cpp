@@ -24,6 +24,7 @@
 #include "proto_data/project.h"
 #include "game_item.h"
 #include "common/utilities.h"
+#include "game_creature.h"
 #include "defines.h"
 
 namespace wowpp
@@ -129,7 +130,11 @@ namespace wowpp
 		// Check if we have a cached quest state
 		auto it = m_quests.find(quest);
 		if (it != m_quests.end())
-			return it->second.status;
+		{
+			if (it->second.status != game::quest_status::Available &&
+				it->second.status != game::quest_status::Unavailable)
+				return it->second.status;
+		}
 
 		// We don't have that quest cached, make a lookup
 		const auto *entry = getProject().quests.getById(quest);
@@ -200,7 +205,7 @@ namespace wowpp
 				const auto *questEntry = getProject().quests.getById(quest);
 				if (questEntry)
 				{
-					if (questEntry->requirements_size() == 0)
+					if (fulfillsQuestRequirements(*questEntry))
 					{
 						data.status = game::quest_status::Complete;
 						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
@@ -218,6 +223,30 @@ namespace wowpp
 
 	bool GameCharacter::abandonQuest(UInt32 quest)
 	{
+		// Find next free quest log
+		for (UInt32 i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == quest)
+			{
+				// Take that quest
+				auto &data = m_quests[quest];
+				data.status = game::quest_status::Available;
+				data.creatures.fill(0);
+				data.objects.fill(0);
+				data.items.fill(0);
+
+				// Reset quest log
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
+
+				questDataChanged(quest, data);
+				return true;
+			}
+		}
+
 		return false;
 	}
 
@@ -288,7 +317,7 @@ namespace wowpp
 		if (money > 0)
 		{
 			setUInt32Value(character_fields::Coinage,
-				getUInt32Value(character_fields::Coinage + money));
+				getUInt32Value(character_fields::Coinage) + money);
 		}
 
 		for (UInt32 i = 0; i < 25; ++i)
@@ -314,9 +343,124 @@ namespace wowpp
 		return true;
 	}
 
+	void GameCharacter::onQuestKillCredit(GameCreature & killed)
+	{
+		// Check all quests in the quest log
+		for (UInt32 i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == 0)
+				continue;
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end())
+				continue;
+
+			if (it->second.status != game::quest_status::Incomplete)
+				continue;
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest)
+				continue;
+
+			// Counter needed so that the right field is used
+			UInt8 reqIndex = 0;
+			for (const auto &req : quest->requirements())
+			{
+				if (req.creatureid() == killed.getEntry().id())
+				{
+					// Get current counter
+					UInt8 counter = getByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex);
+					if (counter < req.creaturecount())
+					{
+						// Increment and update counter
+						setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex, ++counter);
+						it->second.creatures[reqIndex]++;
+
+						// Fire signal to update UI
+						questKillCredit(*quest, killed.getGuid(), killed.getEntry().id(), counter, req.creaturecount());
+
+						// Check if this completed the quest
+						if (fulfillsQuestRequirements(*quest))
+						{
+							// Complete quest
+							it->second.status = game::quest_status::Complete;
+							addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+						}
+
+						// Save quest progress
+						questDataChanged(logId, it->second);
+					}
+
+					// We can stop here
+					break;
+				}
+
+				reqIndex++;
+			}
+		}
+	}
+
+	bool GameCharacter::fulfillsQuestRequirements(const proto::QuestEntry & entry) const
+	{
+		if (entry.requirements_size() == 0)
+			return true;
+
+		auto it = m_quests.find(entry.id());
+		if (it == m_quests.end())
+			return false;
+
+		UInt32 counter = 0;
+		for (const auto &req : entry.requirements())
+		{
+			if (req.creatureid() != 0)
+			{
+				if (it->second.creatures[counter] < req.creaturecount())
+					return false;
+			}
+			else if (req.objectid() != 0)
+			{
+				if (it->second.objects[counter] < req.objectcount())
+					return false;
+			}
+			else if (req.itemid() != 0)
+			{
+				// Not enough items?
+				auto it = m_itemCount.find(req.itemid());
+				if (it == m_itemCount.end())
+					return false;
+
+				if (it->second < req.itemcount())
+					return false;
+			}
+
+			// Increase counter
+			counter++;
+		}
+
+		return true;
+	}
+
+	bool GameCharacter::isQuestlogFull() const
+	{
+		for (int i = 0; i < 25; ++i)
+		{
+			if (getUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0) == 0)
+				return false;
+		}
+
+		return true;
+	}
+
 	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData & data)
 	{
 		m_quests[quest] = data;
+
+		const auto *entry = getProject().quests.getById(quest);
+		if (!entry)
+			return;
 
 		if (data.status == game::quest_status::Incomplete ||
 			data.status == game::quest_status::Complete ||
@@ -329,7 +473,22 @@ namespace wowpp
 				{
 					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, quest);
 					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
-					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);	// TODO
+					if (data.status == game::quest_status::Complete) addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);
+					UInt8 offset = 0;
+					for (auto &req : entry->requirements())
+					{
+						if (req.creatureid())
+						{
+							setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, offset, data.creatures[offset]);
+						}
+						else if (req.objectid())
+						{
+							setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, offset, data.objects[offset]);
+						}
+
+						offset++;
+					}
 					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
 					if (data.status == game::quest_status::Complete)
 					{
@@ -407,6 +566,60 @@ namespace wowpp
 		if (slot < player_equipment_slots::End)
 		{
 			applyItemStats(*item, true);
+		}
+
+		// Quest check
+		UInt32 entry = item->getEntry().id();
+		UInt32 addCount = item->getUInt32Value(item_fields::StackCount);
+
+		// Update count value
+		{
+			auto it = m_itemCount.find(entry);
+			if (it == m_itemCount.end())
+			{
+				m_itemCount[entry] = addCount;
+			}
+			else
+			{
+				m_itemCount[entry] += addCount;
+			}
+		}
+
+		for (int i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == 0)
+				continue;
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end())
+				continue;
+
+			if (it->second.status != game::quest_status::Incomplete)
+				continue;
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest)
+				continue;
+
+			// Counter needed so that the correct field is used
+			UInt8 reqIndex = 0;
+			for (const auto &req : quest->requirements())
+			{
+				if (req.itemid() == entry)
+				{
+					// Found it: Complete quest if completable
+					if (fulfillsQuestRequirements(*quest))
+					{
+						it->second.status = game::quest_status::Complete;
+						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+						questDataChanged(logId, it->second);
+					}
+					break;
+				}
+			}
 		}
 
 		// Check if that item already exists
@@ -1590,6 +1803,9 @@ namespace wowpp
 					stackCount -= count;
 					it->second->setUInt32Value(item_fields::StackCount, stackCount);
 
+					// Reduce count cache
+					m_itemCount[it->second->getEntry().id()] -= count;
+
 					// TODO: Update item instance
 
 					return;
@@ -1597,6 +1813,9 @@ namespace wowpp
 
 				setUInt64Value(character_fields::InvSlotHead + (slot * 2), 0);
 				m_itemSlots.erase(it);
+
+				// Reduce count cache
+				m_itemCount[it->second->getEntry().id()] -= stackCount;
 
 				if (slot < player_equipment_slots::End)
 				{

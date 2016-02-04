@@ -658,7 +658,7 @@ namespace wowpp
 
 				player->sendProxyPacket(
 					std::bind(game::server_write::itemPushResult, std::placeholders::_1,
-						character->getGuid(), std::cref(*itemInstance), true, false, 0xFF, it.first, it.second.stackCount, it.second.stackCount));
+						character->getGuid(), std::cref(*itemInstance), true, false, 0xFF, it.first, it.second.stackCount, character->getItemCount(entry->id())));
 			}
 
 			// Send packet
@@ -764,6 +764,7 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverChooseReward)
 			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverCancel)
 			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverStatusMultipleQuery)
+			WOWPP_HANDLE_PLAYER_PACKET(QuestlogRemoveQuest)
 #undef WOWPP_HANDLE_PLAYER_PACKET
 
 			// Movement packets get special treatment

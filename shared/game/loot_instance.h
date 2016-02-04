@@ -32,6 +32,8 @@
 
 namespace wowpp
 {
+	class GameCharacter;
+
 	struct LootItem final
 	{
 		bool isLooted;
@@ -60,7 +62,7 @@ namespace wowpp
 
 		/// Initializes a new instance of the loot instance.
 		explicit LootInstance(proto::ItemManager &items, UInt64 lootGuid);
-		explicit LootInstance(proto::ItemManager &items, UInt64 lootGuid, const proto::LootEntry *entry, UInt32 minGold, UInt32 maxGold);
+		explicit LootInstance(proto::ItemManager &items, UInt64 lootGuid, const proto::LootEntry *entry, UInt32 minGold, UInt32 maxGold, const std::vector<GameCharacter*> &lootRecipients);
 
 		/// 
 		UInt64 getLootGuid() const { return m_lootGuid; }

@@ -91,6 +91,9 @@ namespace wowpp
 		m_questChanged = m_character->questDataChanged.connect([this](UInt32 questId, const QuestStatusData &data) {
 			m_realmConnector.sendQuestData(m_character->getGuid(), questId, data);
 		});
+		m_questKill = m_character->questKillCredit.connect([this](const proto::QuestEntry &quest, UInt64 guid, UInt32 entry, UInt32 count, UInt32 total) {
+			sendProxyPacket(std::bind(game::server_write::questupdateAddKill, std::placeholders::_1, quest.id(), entry, count, total, guid));
+		});
 
 		auto onRootOrStunUpdate = [this](bool flag) {
 			if (flag || m_character->isRooted() || m_character->isStunned())
@@ -956,7 +959,7 @@ namespace wowpp
 			
 			sendProxyPacket(
 				std::bind(game::server_write::itemPushResult, std::placeholders::_1, 
-					m_character->getGuid(), std::cref(*inst), true, false, 0xFF, pos.position, pos.count, pos.count));
+					m_character->getGuid(), std::cref(*inst), true, false, 0xFF, pos.position, pos.count, m_character->getItemCount(item->id())));
 
 			// Group broadcasting
 			if (m_character->getGroupId() != 0)
@@ -968,7 +971,7 @@ namespace wowpp
 					std::vector<char> buffer;
 					io::VectorSink sink(buffer);
 					game::Protocol::OutgoingPacket itemPacket(sink);
-					game::server_write::itemPushResult(itemPacket, m_character->getGuid(), *inst, true, false, 0xFF, pos.position, pos.count, pos.count);
+					game::server_write::itemPushResult(itemPacket, m_character->getGuid(), *inst, true, false, 0xFF, pos.position, pos.count, m_character->getItemCount(item->id()));
 
 					forEachSubscriberInSight(
 						m_character->getWorldInstance()->getGrid(),
@@ -988,7 +991,6 @@ namespace wowpp
 			}
 		}
 
-		DLOG("CMSG_AUTO_STORE_LOOT_ITEM(loot slot: " << UInt32(lootSlot) << ")");
 		m_loot->takeItem(lootSlot);
 	}
 
@@ -2637,7 +2639,13 @@ namespace wowpp
 		}
 
 		// Accept that quest
-		m_character->acceptQuest(questId);
+		if (!m_character->acceptQuest(questId))
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::questlogFull, std::placeholders::_1));
+			return;
+		}
+
 		sendProxyPacket(
 			std::bind(game::server_write::gossipComplete, std::placeholders::_1));
 	}
@@ -2663,7 +2671,24 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_QUESTGIVER_REQUEST_REWARD: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
+		const auto *quest = m_project.quests.getById(questId);
+		if (!quest)
+		{
+			return;
+		}
+
+		// Check if that object exists and provides the requested quest
+		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
+		if (!object ||
+			!object->endsQuest(questId))
+		{
+			return;
+		}
+
+		// Check quest state
+		auto state = m_character->getQuestStatus(questId);
+		sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, guid, 
+			(state == game::quest_status::Complete), std::cref(m_project.items), std::cref(*quest)));
 	}
 
 	void Player::handleQuestgiverChooseReward(game::Protocol::IncomingPacket & packet)
@@ -2719,7 +2744,6 @@ namespace wowpp
 				}
 			}
 		}
-		//DLOG("CMSG_QUESTGIVER_CHOOSE_REWARD: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
 	}
 
 	void Player::handleQuestgiverCancel(game::Protocol::IncomingPacket & packet)
@@ -2730,6 +2754,24 @@ namespace wowpp
 		}
 
 		DLOG("CMSG_QUESTGIVER_CANCEL");
+	}
+
+	void Player::handleQuestlogRemoveQuest(game::Protocol::IncomingPacket & packet)
+	{
+		UInt8 index = 0;
+		if (!(game::client_read::questlogRemoveQuest(packet, index)))
+		{
+			return;
+		}
+
+		if (index < 25)
+		{
+			UInt32 quest = m_character->getUInt32Value(character_fields::QuestLog1_1 + index * 4);
+			if (quest)
+			{
+				m_character->abandonQuest(quest);
+			}
+		}
 	}
 
 }

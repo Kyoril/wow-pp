@@ -365,8 +365,6 @@ namespace wowpp
 				UInt32 val = m_target.getUInt32Value(character_fields::CharacterBytes2);
 				m_target.setUInt32Value(character_fields::CharacterBytes2, val | 0x20);
 			}
-
-			// TODO: Update visibility mode of unit
 		}
 		else
 		{
@@ -376,9 +374,9 @@ namespace wowpp
 				UInt32 val = m_target.getUInt32Value(character_fields::CharacterBytes2);
 				m_target.setUInt32Value(character_fields::CharacterBytes2, val & ~0x20);
 			}
-
-			// TODO: Update visibility mode of unit
 		}
+
+		m_target.notifyStealthChanged();
 	}
 
 	void Aura::handleModResistance(bool apply)
