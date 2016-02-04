@@ -1769,15 +1769,14 @@ namespace wowpp
 				{
 					totalDamage *= (calculateEffectBasePoints(effect) / 100.0);
 				}
-
-				if (i < m_meleeDamage.size())
-				{
-					m_meleeDamage[i] = m_meleeDamage[i] + totalDamage;
-				}
-				else
-				{
-					m_meleeDamage.push_back(totalDamage);
-				}
+			}
+			if (i < m_meleeDamage.size())
+			{
+				m_meleeDamage[i] = m_meleeDamage[i] + totalDamage;
+			}
+			else
+			{
+				m_meleeDamage.push_back(totalDamage);
 			}
 			if (!m_meleeDamageEffectsExecution.connected())
 				m_meleeDamageEffectsExecution = completedEffects.connect(std::bind(&SingleCastState::executeMeleeAttack, this));
