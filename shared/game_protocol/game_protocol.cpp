@@ -3167,6 +3167,18 @@ namespace wowpp
 				out_packet.start(game::server_packet::QuestlogFull);
 				out_packet.finish();
 			}
+			void questupdateAddKill(game::OutgoingPacket & out_packet, UInt32 questId, UInt32 entry, UInt32 totalCount, UInt32 maxCount, UInt64 guid)
+			{
+				out_packet.start(game::server_packet::QuestupdateAddKill);
+				out_packet
+					<< io::write<NetUInt32>(questId)
+					<< io::write<NetUInt32>(entry)
+					<< io::write<NetUInt32>(totalCount)
+					<< io::write<NetUInt32>(maxCount)
+					<< io::write<NetUInt64>(guid)
+					;
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

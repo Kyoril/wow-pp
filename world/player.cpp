@@ -91,6 +91,9 @@ namespace wowpp
 		m_questChanged = m_character->questDataChanged.connect([this](UInt32 questId, const QuestStatusData &data) {
 			m_realmConnector.sendQuestData(m_character->getGuid(), questId, data);
 		});
+		m_questKill = m_character->questKillCredit.connect([this](const proto::QuestEntry &quest, UInt64 guid, UInt32 entry, UInt32 count, UInt32 total) {
+			sendProxyPacket(std::bind(game::server_write::questupdateAddKill, std::placeholders::_1, quest.id(), entry, count, total, guid));
+		});
 
 		auto onRootOrStunUpdate = [this](bool flag) {
 			if (flag || m_character->isRooted() || m_character->isStunned())

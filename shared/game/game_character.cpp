@@ -365,19 +365,28 @@ namespace wowpp
 			if (!quest)
 				continue;
 
+			ILOG("KILL_CREDIT FOR CREATURE " << killed.getName());
+
 			// Counter needed so that the right field is used
 			UInt8 reqIndex = 0;
 			for (const auto &req : quest->requirements())
 			{
 				if (req.creatureid() == killed.getEntry().id())
 				{
+					ILOG("FOUND CREATURE QUEST AT INDEX " << UInt32(reqIndex));
+
 					// Get current counter
 					UInt8 counter = getByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex);
 					if (counter < req.creaturecount())
 					{
+						ILOG("COUNTER NOT FULL");
+
 						// Increment and update counter
 						setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex, ++counter);
 						it->second.creatures[reqIndex]++;
+
+						// Fire signal to update UI
+						questKillCredit(*quest, killed.getGuid(), killed.getEntry().id(), counter, req.creaturecount());
 
 						// Check if this completed the quest
 						if (fulfillsQuestRequirements(*quest))
@@ -427,6 +436,8 @@ namespace wowpp
 				// TODO
 				return false;
 			}
+
+			counter++;
 		}
 
 		return true;

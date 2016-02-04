@@ -332,6 +332,8 @@ namespace wowpp
 				QuestgiverOfferReward		= 0x18D,
 				QuestgiverQuestComplete		= 0x191,
 				QuestlogFull				= 0x195,
+				QuestupdateAddKill			= 0x199,
+				QuestupdateAddItem			= 0x19A,		// Unused?
 				ListInventory				= 0x19F,
 				TrainerList					= 0x1B1,
 				TrainerBuySucceeded			= 0x1B3,
@@ -1987,6 +1989,15 @@ namespace wowpp
 
 			void questlogFull(
 				game::OutgoingPacket &out_packet
+				);
+
+			void questupdateAddKill(
+				game::OutgoingPacket &out_packet,
+				UInt32 questId,
+				UInt32 entry,
+				UInt32 totalCount,
+				UInt32 maxCount,
+				UInt64 guid
 				);
 		};
 	}

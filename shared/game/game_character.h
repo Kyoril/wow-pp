@@ -507,6 +507,7 @@ namespace wowpp
 		boost::signals2::signal<void()> homeChanged;
 		/// Parameters: Quest-ID, Old Status, New Status
 		boost::signals2::signal<void(UInt32, const QuestStatusData&)> questDataChanged;
+		boost::signals2::signal<void(const proto::QuestEntry&, UInt64 guid, UInt32 entry, UInt32 count, UInt32 total)> questKillCredit;
 
 	public:
 
