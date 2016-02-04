@@ -331,6 +331,7 @@ namespace wowpp
 				QuestgiverRequestItems		= 0x18B,
 				QuestgiverOfferReward		= 0x18D,
 				QuestgiverQuestComplete		= 0x191,
+				QuestlogFull				= 0x195,
 				ListInventory				= 0x19F,
 				TrainerList					= 0x1B1,
 				TrainerBuySucceeded			= 0x1B3,
@@ -1982,6 +1983,10 @@ namespace wowpp
 				bool isMaxLevel,
 				UInt32 xp,
 				const proto::QuestEntry &quest
+				);
+
+			void questlogFull(
+				game::OutgoingPacket &out_packet
 				);
 		};
 	}

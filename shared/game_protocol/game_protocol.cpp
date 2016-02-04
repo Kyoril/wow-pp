@@ -3162,6 +3162,11 @@ namespace wowpp
 				}
 				out_packet.finish();
 			}
+			void questlogFull(game::OutgoingPacket & out_packet)
+			{
+				out_packet.start(game::server_packet::QuestlogFull);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

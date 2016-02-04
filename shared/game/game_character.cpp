@@ -432,6 +432,17 @@ namespace wowpp
 		return true;
 	}
 
+	bool GameCharacter::isQuestlogFull() const
+	{
+		for (int i = 0; i < 25; ++i)
+		{
+			if (getUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0) == 0)
+				return false;
+		}
+
+		return true;
+	}
+
 	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData & data)
 	{
 		m_quests[quest] = data;

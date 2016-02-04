@@ -2637,7 +2637,13 @@ namespace wowpp
 		}
 
 		// Accept that quest
-		m_character->acceptQuest(questId);
+		if (!m_character->acceptQuest(questId))
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::questlogFull, std::placeholders::_1));
+			return;
+		}
+
 		sendProxyPacket(
 			std::bind(game::server_write::gossipComplete, std::placeholders::_1));
 	}

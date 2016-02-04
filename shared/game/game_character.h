@@ -623,6 +623,8 @@ namespace wowpp
 
 		bool fulfillsQuestRequirements(const proto::QuestEntry &entry) const;
 
+		bool isQuestlogFull() const;
+
 	public:
 
 		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT
