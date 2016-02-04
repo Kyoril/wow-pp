@@ -452,6 +452,7 @@ namespace wowpp
 		class SpellEntry;
 		class ItemEntry;
 		class SkillEntry;
+		class QuestEntry;
 	}
 
 	struct ItemPosCount final
@@ -485,6 +486,9 @@ namespace wowpp
 			, expiration(0)
 			, explored(false)
 		{
+			creatures.fill(0);
+			objects.fill(0);
+			items.fill(0);
 		}
 	};
 
@@ -614,6 +618,10 @@ namespace wowpp
 		bool abandonQuest(UInt32 quest);
 		/// 
 		bool rewardQuest(UInt32 quest, std::function<void(UInt32)> callback);
+		/// 
+		void onQuestKillCredit(GameCreature &killed);
+
+		bool fulfillsQuestRequirements(const proto::QuestEntry &entry) const;
 
 	public:
 

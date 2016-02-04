@@ -24,6 +24,7 @@
 #include "proto_data/project.h"
 #include "game_item.h"
 #include "common/utilities.h"
+#include "game_creature.h"
 #include "defines.h"
 
 namespace wowpp
@@ -318,9 +319,102 @@ namespace wowpp
 		return true;
 	}
 
+	void GameCharacter::onQuestKillCredit(GameCreature & killed)
+	{
+		// Check all quests in the quest log
+		for (UInt32 i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == 0)
+				continue;
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end())
+				continue;
+
+			if (it->second.status != game::quest_status::Incomplete)
+				continue;
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest)
+				continue;
+
+			// Counter needed so that the right field is used
+			UInt8 reqIndex = 0;
+			for (const auto &req : quest->requirements())
+			{
+				if (req.creatureid() == killed.getEntry().id())
+				{
+					// Get current counter
+					UInt8 counter = getByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex);
+					if (counter < req.creaturecount())
+					{
+						// Increment and update counter
+						setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex, ++counter);
+						it->second.creatures[reqIndex]++;
+
+						// Check if this completed the quest
+						if (fulfillsQuestRequirements(*quest))
+						{
+							// Complete quest
+							it->second.status = game::quest_status::Complete;
+							addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+						}
+
+						// Save quest progress
+						questDataChanged(logId, it->second);
+					}
+
+					// We can stop here
+					break;
+				}
+
+				reqIndex++;
+			}
+		}
+	}
+
+	bool GameCharacter::fulfillsQuestRequirements(const proto::QuestEntry & entry) const
+	{
+		if (entry.requirements_size() == 0)
+			return true;
+
+		auto it = m_quests.find(entry.id());
+		if (it == m_quests.end())
+			return false;
+
+		UInt32 counter = 0;
+		for (const auto &req : entry.requirements())
+		{
+			if (req.creatureid() != 0)
+			{
+				if (it->second.creatures[counter] < req.creaturecount())
+					return false;
+			}
+			else if (req.objectid() != 0)
+			{
+				if (it->second.objects[counter] < req.objectcount())
+					return false;
+			}
+			else if (req.itemid() != 0)
+			{
+				// TODO
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData & data)
 	{
 		m_quests[quest] = data;
+
+		const auto *entry = getProject().quests.getById(quest);
+		if (!entry)
+			return;
 
 		if (data.status == game::quest_status::Incomplete ||
 			data.status == game::quest_status::Complete ||
@@ -333,7 +427,22 @@ namespace wowpp
 				{
 					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, quest);
 					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
-					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);	// TODO
+					if (data.status == game::quest_status::Complete) addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);
+					UInt8 offset = 0;
+					for (auto &req : entry->requirements())
+					{
+						if (req.creatureid())
+						{
+							setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, offset, data.creatures[offset]);
+						}
+						else if (req.objectid())
+						{
+							setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, offset, data.objects[offset]);
+						}
+
+						offset++;
+					}
 					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
 					if (data.status == game::quest_status::Complete)
 					{

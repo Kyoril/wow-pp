@@ -79,6 +79,12 @@ namespace wowpp
 				lootRecipients.push_back(&character);
 			});
 
+			// Reward all recipients
+			for (auto *recipient : lootRecipients)
+			{
+				recipient->onQuestKillCredit(controlled);
+			}
+
 			// Reward the killer with experience points
 			const float t =
 				(controlled.getEntry().maxlevel() != controlled.getEntry().minlevel()) ?

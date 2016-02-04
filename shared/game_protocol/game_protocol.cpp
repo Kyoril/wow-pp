@@ -3061,7 +3061,6 @@ namespace wowpp
 					<< io::write_range(quest.requestitemstext()) << io::write<NetUInt8>(0)
 					<< io::write<NetUInt32>(0)		// Unknown
 					<< io::write<NetUInt32>(0)		// Emote
-					<< io::write<NetUInt32>(0)		// Unknown
 					<< io::write<NetUInt32>(closeOnCancel ? 1 : 0)
 					<< io::write<NetUInt32>(0)		// Unknown
 					<< io::write<NetUInt32>(0);		// Required money
