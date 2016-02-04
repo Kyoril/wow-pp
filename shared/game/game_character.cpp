@@ -205,7 +205,7 @@ namespace wowpp
 				const auto *questEntry = getProject().quests.getById(quest);
 				if (questEntry)
 				{
-					if (questEntry->requirements_size() == 0)
+					if (fulfillsQuestRequirements(*questEntry))
 					{
 						data.status = game::quest_status::Complete;
 						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
@@ -427,10 +427,26 @@ namespace wowpp
 			}
 			else if (req.itemid() != 0)
 			{
-				// TODO
-				return false;
+				UInt32 count = 0;
+				for (auto &item : m_itemSlots)
+				{
+					if (item.second->getEntry().id() == req.itemid())
+					{
+						count += item.second->getUInt32Value(item_fields::StackCount);
+						if (count >= req.itemcount())
+						{
+							// We can stop now
+							break;
+						}
+					}
+				}
+
+				// Not enough items
+				if (count < req.itemcount())
+					return false;
 			}
 
+			// Increase counter
 			counter++;
 		}
 
@@ -560,6 +576,46 @@ namespace wowpp
 		if (slot < player_equipment_slots::End)
 		{
 			applyItemStats(*item, true);
+		}
+
+		// Quest check
+		UInt32 entry = item->getEntry().id();
+		UInt32 addCount = item->getUInt32Value(item_fields::StackCount);
+		for (int i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == 0)
+				continue;
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end())
+				continue;
+
+			if (it->second.status != game::quest_status::Incomplete)
+				continue;
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest)
+				continue;
+
+			// Counter needed so that the correct field is used
+			UInt8 reqIndex = 0;
+			for (const auto &req : quest->requirements())
+			{
+				if (req.itemid() == entry)
+				{
+					// Found it: Complete quest if completable
+					if (fulfillsQuestRequirements(*quest))
+					{
+						it->second.status = game::quest_status::Complete;
+						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+						questDataChanged(logId, it->second);
+					}
+					break;
+				}
+			}
 		}
 
 		// Check if that item already exists

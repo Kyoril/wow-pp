@@ -3078,7 +3078,7 @@ namespace wowpp
 
 					const auto *item = items.getById(req.itemid());
 					out_packet
-						<< io::write<NetUInt64>(req.itemid())
+						<< io::write<NetUInt32>(req.itemid())
 						<< io::write<NetUInt32>(req.itemcount())
 						<< io::write<NetUInt32>(item ? item->displayid() : 0);
 				}
