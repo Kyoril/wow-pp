@@ -131,6 +131,8 @@ namespace wowpp
 		case aura::Mounted:
 			handleMounted(apply);
 			break;
+		case aura::ModRegen:
+			break;
 		case aura::ModTotalStatPercentage:
 			handleModTotalStatPercentage(apply);
 			break;

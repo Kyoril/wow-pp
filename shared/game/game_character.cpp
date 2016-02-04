@@ -1462,15 +1462,18 @@ namespace wowpp
 		if (baseSpirit > 50.0f) baseSpirit = 50.0f;
 		float moreSpirit = spirit - baseSpirit;
 		float spiritRegen = baseSpirit * m_healthRegBase + moreSpirit * m_healthRegBase;
-
 		float addHealth = spiritRegen * healthRegRate;
+
 		UInt8 standState = getByteValue(unit_fields::Bytes1, 0);
 		if (standState != unit_stand_state::Stand &&
 			standState != unit_stand_state::Dead)
 		{
-			// 50% more regeneration when not standing
-			addHealth *= 1.5f;
+			// 33% more regeneration when not standing
+			addHealth *= 1.33f;
 		}
+		
+		float auraRegen = getAuras().getTotalPoints(game::aura_type::ModRegen);
+		addHealth += auraRegen * 0.4f;
 
 		if (addHealth < 0.0f) 
 			return;
