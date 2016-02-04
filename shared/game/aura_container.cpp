@@ -129,54 +129,31 @@ namespace wowpp
 
 		return true;
 	}
-
-	void AuraContainer::removeAura(size_t index)
+	
+	AuraContainer::AuraList::iterator AuraContainer::findAura(Aura &aura)
 	{
-		assert(index < getSize());
-
-		using std::swap;
-
-		swap(m_auras.back(), m_auras[index]);
-		
-		auto strongAura = m_auras.back();
-		m_auras.pop_back();
-
-		strongAura->misapplyAura();
+		auto it = m_auras.begin();
+		while (it != m_auras.end())
+		{
+			if (it->get() == &aura)
+			{
+				return it;
+			}
+			it++;
+		}
+		return it;
 	}
 	
-	void AuraContainer::removeAura(AuraVector::iterator &it)
+	void AuraContainer::removeAura(AuraList::iterator &it)
 	{
-		auto strongAura = m_auras.back();
+		it->get()->misapplyAura();
 		it = m_auras.erase(it);
-
-		strongAura->misapplyAura();
 	}
-
-	size_t AuraContainer::findAura(Aura &aura, size_t begin)
+	
+	void AuraContainer::removeAura(Aura &aura)
 	{
-		assert(begin <= getSize());
-
-		const auto i = std::find_if(std::begin(m_auras) + begin,
-			std::end(m_auras),
-			[&aura](const std::shared_ptr<Aura> &instance) -> bool
-		{
-			assert(instance);
-			return instance.get() == &aura;
-		});
-
-		return static_cast<size_t>(std::distance(std::begin(m_auras), i));
-	}
-
-	Aura & AuraContainer::get(size_t index)
-	{
-		assert(index < getSize());
-		return *m_auras[index];
-	}
-
-	const Aura & AuraContainer::get(size_t index) const
-	{
-		assert(index < getSize());
-		return *m_auras[index];
+		AuraList::iterator it = findAura(aura);
+		removeAura(it);
 	}
 
 	void AuraContainer::handleTargetDeath()
@@ -218,14 +195,6 @@ namespace wowpp
 		UInt32 manaShielded = 0;
 		for (auto &it : m_auras)
 		{
-			if (it->getEffect().aura() == game::aura_type::SchoolAbsorb)
-			{
-				WLOG("school " << school << " result: " << (it->getEffect().miscvaluea() & school));
-				if ((it->getEffect().miscvaluea() & school) != 0)
-					WLOG("SUCCESS!");
-			}
-			
-			
 			if (it->getEffect().aura() == game::aura_type::SchoolAbsorb
 				&& ((it->getEffect().miscvaluea() & school) != 0))
 			{
@@ -279,7 +248,6 @@ namespace wowpp
 		
 		if (manaShielded > 0)
 		{
-			DLOG("Mana shielded: " << manaShielded);
 			m_owner.setUInt32Value(unit_fields::Power1, ownerMana);
 		}
 		return absorbed;
@@ -347,17 +315,16 @@ namespace wowpp
 
 	void AuraContainer::removeAllAurasDueToSpell(UInt32 spellId)
 	{
-		size_t index = 0;
 		auto it = m_auras.begin();
 		while (it != m_auras.end())
 		{
 			if ((*it)->getSpell().id() == spellId)
 			{
-				removeAura(index);
+				removeAura(it);
 			}
 			else
 			{
-				++index; ++it;
+				it++;
 			}
 		}
 	}
@@ -399,17 +366,5 @@ namespace wowpp
 
 		return nullptr;
 	}
-
-	boost::optional<std::size_t> findAuraInstanceIndex(AuraContainer &instances, Aura &instance)
-	{
-		for (size_t i = 0, c = instances.getSize(); i < c; ++i)
-		{
-			if (&instance == &instances.get(i))
-			{
-				return i;
-			}
-		}
-		return boost::optional<std::size_t>();
-	}
-
+	
 }

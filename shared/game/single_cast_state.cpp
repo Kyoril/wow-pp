@@ -459,7 +459,7 @@ namespace wowpp
 		std::vector<float> resists;
 		m_attackTable.checkSpecialMeleeAttack(&attacker, m_target, school, targets, victimStates, hitInfos, resists);
 		
-		for (int i=0; i<targets.size(); i++)
+		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
 			UInt32 totalDamage = m_meleeDamage[i];
@@ -530,7 +530,7 @@ namespace wowpp
 		std::vector<float> resists;
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 		
-		for (int i=0; i<targets.size(); i++)
+		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
 			targetUnit->dealDamage(targetUnit->getUInt32Value(unit_fields::Health), m_spell.schoolmask(), &caster, true);
@@ -584,7 +584,7 @@ namespace wowpp
 				return;
 		}
 		
-		for (int i=0; i<targets.size(); i++)
+		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
 			if (targetUnit->isGameCharacter())
@@ -609,7 +609,7 @@ namespace wowpp
 		std::vector<float> resists;
 		m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 		
-		for (int i=0; i<targets.size(); i++)
+		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
 			UInt32 totalDamage;
@@ -677,7 +677,7 @@ namespace wowpp
 		std::vector<float> resists;
 		m_attackTable.checkSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 		
-		for (int i=0; i<targets.size(); i++)
+		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
 			UInt32 totalPoints = 0;
@@ -743,12 +743,7 @@ namespace wowpp
 							auto strong = self.shared_from_this();
 
 							// Remove aura from the list
-							auto &auras = self.getTarget().getAuras();
-							const auto position = findAuraInstanceIndex(auras, self);
-							if (position.is_initialized())
-							{
-								auras.removeAura(*position);
-							}
+							self.getTarget().getAuras().removeAura(self);
 						});
 						caster.getAuras().addAura(std::move(aura));
 					}
@@ -944,7 +939,7 @@ namespace wowpp
 		std::vector<float> resists;
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 		
-		for (int i=0; i<targets.size(); i++)
+		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
 			
@@ -970,7 +965,7 @@ namespace wowpp
 		
 		m_attackTable.checkPositiveSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 		
-		for (int i=0; i<targets.size(); i++)
+		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
 			
@@ -1083,12 +1078,7 @@ namespace wowpp
 					auto strong = self.shared_from_this();
 					
 					// Remove aura from the list
-					auto &auras = self.getTarget().getAuras();
-					const auto position = findAuraInstanceIndex(auras, self);
-					if (position.is_initialized())
-					{
-						auras.removeAura(*position);
-					}
+					self.getTarget().getAuras().removeAura(self);
 				});
 
 				// TODO: Dimishing return and custom durations
@@ -1123,7 +1113,7 @@ namespace wowpp
 		std::vector<float> resists;
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);		//Buff, HoT
 		
-		for (int i=0; i<targets.size(); i++)
+		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
 			UInt8 school = m_spell.schoolmask();
@@ -1171,7 +1161,7 @@ namespace wowpp
 		
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 		
-		for (int i=0; i<targets.size(); i++)
+		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
 			if (targetUnit->isGameCharacter())
@@ -1193,7 +1183,7 @@ namespace wowpp
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 		
 		UInt32 questId = effect.miscvaluea();
-		for (int i=0; i<targets.size(); i++)
+		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
 			if (targetUnit->isGameCharacter())
@@ -1235,7 +1225,7 @@ namespace wowpp
 		auto strong = shared_from_this();
 		
 		std::vector<UInt32> effects;
-		for (int i = 0; i < m_spell.effects_size(); ++i)
+		for (UInt32 i = 0; i < m_spell.effects_size(); ++i)
 		{
 			effects.push_back(m_spell.effects(i).type());
 		}
@@ -1384,7 +1374,7 @@ namespace wowpp
 		std::vector<float> resists;
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);		//Buff, HoT
 
-		for (int i=0; i<targets.size(); i++)
+		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
 
@@ -1420,7 +1410,7 @@ namespace wowpp
 		std::vector<float> resists;
 		m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 		
-		for (int i=0; i<targets.size(); i++)
+		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
 			UInt8 school = m_spell.schoolmask();
@@ -1565,7 +1555,7 @@ namespace wowpp
 		std::vector<float> resists;
 		m_attackTable.checkSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 		
-		for (int i=0; i<targets.size(); i++)
+		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
 			UInt32 totalPoints = 0;
@@ -1693,7 +1683,7 @@ namespace wowpp
 		std::vector<float> resists;
 		m_attackTable.checkSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 		
-		for (int i=0; i<targets.size(); i++)
+		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
 			GameUnit *topThreatener = targetUnit->getTopThreatener().get();
@@ -1730,7 +1720,7 @@ namespace wowpp
 		std::vector<float> resists;
 		m_attackTable.checkSpecialMeleeAttack(&attacker, m_target, school, targets, victimStates, hitInfos, resists);
 		
-		for (int i=0; i<targets.size(); i++)
+		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
 			UInt32 totalDamage;

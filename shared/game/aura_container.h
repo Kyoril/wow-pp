@@ -33,18 +33,15 @@ namespace wowpp
 	{
 	private:
 
-		typedef std::vector<std::shared_ptr<Aura>> AuraVector;
+		typedef std::list<std::shared_ptr<Aura>> AuraList;
 		
 	public:
 
 		explicit AuraContainer(GameUnit &owner);
 
 		bool addAura(std::shared_ptr<Aura> aura);
-		size_t findAura(Aura &aura, size_t begin);
-		void removeAura(size_t index);
-		void removeAura(AuraVector::iterator &it);
-		Aura &get(size_t index);
-		const Aura &get(size_t index) const;
+		void removeAura(AuraList::iterator &it);
+		void removeAura(Aura &aura);
 		void handleTargetDeath();
 		void removeAllAurasDueToSpell(UInt32 spellId);
 		void removeAurasByType(UInt32 auraType);
@@ -62,11 +59,10 @@ namespace wowpp
 	private:
 
 		GameUnit &m_owner;
-		AuraVector m_auras;
+		AuraList m_auras;
+		
+		AuraList::iterator findAura(Aura &aura);
 		
 	};
 
-	boost::optional<std::size_t> findAuraInstanceIndex(
-		AuraContainer &instances,
-		Aura &instance);
 }
