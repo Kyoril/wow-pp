@@ -4078,6 +4078,12 @@ namespace wowpp
 				return packet;
 			}
 
+			bool questlogRemoveQuest(io::Reader & packet, UInt8 &out_questIndex)
+			{
+				return packet
+					>> io::read<NetUInt8>(out_questIndex);
+			}
+
 		}
 	}
 }

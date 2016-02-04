@@ -2748,4 +2748,22 @@ namespace wowpp
 		DLOG("CMSG_QUESTGIVER_CANCEL");
 	}
 
+	void Player::handleQuestlogRemoveQuest(game::Protocol::IncomingPacket & packet)
+	{
+		UInt8 index = 0;
+		if (!(game::client_read::questlogRemoveQuest(packet, index)))
+		{
+			return;
+		}
+
+		if (index < 25)
+		{
+			UInt32 quest = m_character->getUInt32Value(character_fields::QuestLog1_1 + index * 4);
+			if (quest)
+			{
+				m_character->abandonQuest(quest);
+			}
+		}
+	}
+
 }

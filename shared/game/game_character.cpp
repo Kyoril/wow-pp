@@ -223,6 +223,30 @@ namespace wowpp
 
 	bool GameCharacter::abandonQuest(UInt32 quest)
 	{
+		// Find next free quest log
+		for (UInt32 i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == quest)
+			{
+				// Take that quest
+				auto &data = m_quests[quest];
+				data.status = game::quest_status::Available;
+				data.creatures.fill(0);
+				data.objects.fill(0);
+				data.items.fill(0);
+
+				// Reset quest log
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
+
+				questDataChanged(quest, data);
+				return true;
+			}
+		}
+
 		return false;
 	}
 

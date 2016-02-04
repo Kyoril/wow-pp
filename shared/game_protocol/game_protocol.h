@@ -146,6 +146,7 @@ namespace wowpp
 				QuestgiverRequestReward	= 0x18C,
 				QuestgiverChooseReward	= 0x18E,
 				QuestgiverCancel		= 0x190,
+				QuestlogRemoveQuest		= 0x194,
 				ListInventory			= 0x19E,
 				SellItem				= 0x1A0,
 				BuyItem					= 0x1A2,
@@ -1153,6 +1154,11 @@ namespace wowpp
 
 			bool questgiverStatusMultiple(
 				io::Reader &packet
+				);
+
+			bool questlogRemoveQuest(
+				io::Reader &packet,
+				UInt8 &out_questIndex
 				);
 		};
 
