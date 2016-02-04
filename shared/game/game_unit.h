@@ -520,6 +520,7 @@ namespace wowpp
 		bool isMounted() const { return getUInt32Value(unit_fields::MountDisplayId) != 0; }
 		bool isStealthed() const { return m_isStealthed; }
 		void notifyStealthChanged();
+		virtual bool canDetectStealth(GameUnit &target);
 
 		float getMissChance(GameUnit &attacker, UInt8 school, bool isWhiteDamage);
 		bool isImmune(UInt8 school);

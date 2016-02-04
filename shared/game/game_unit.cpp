@@ -1341,6 +1341,7 @@ namespace wowpp
 	
 	void GameUnit::notifyStealthChanged()
 	{
+		ILOG("STEALTH CHANGED");
 		const bool wasStealthed = m_isStealthed;
 		m_isStealthed = m_auras.hasAura(game::aura_type::ModStealth);
 		if (wasStealthed && !m_isStealthed)
@@ -1351,6 +1352,48 @@ namespace wowpp
 		{
 			stealthStateChanged(true);
 		}
+	}
+
+	bool GameUnit::canDetectStealth(GameUnit & target)
+	{
+		// Can't detect anything if stunned
+		if (m_isStunned)
+			return false;
+		
+		// Determine distance and check cap
+		const float dist = getDistanceTo(target);
+		if (dist < 0.24f)
+			return true;
+
+		// Target has to be in front of us
+		auto targetPos = target.getLocation();
+		if (!isInArc(3.1415927f, targetPos.x, targetPos.y))
+			return false;
+
+		float angleModifier = 1.0f;
+		if (!isInArc(3.1415927f * 0.5f, targetPos.x, targetPos.y))
+		{
+			angleModifier = 0.5f;
+		}
+
+		// Always visible
+		if (m_auras.hasAura(game::aura_type::DetectStealth))
+			return true;
+
+		// TODO: Check if target has aura "ModStalked" with us as caster (Hunter mark for example)
+
+		// Base distance
+		float visibleDistance = 7.5f * angleModifier;
+
+		const float MaxPlayerStealthDetectRange = 45.0f;
+		// Visible distance is modified by -Level Diff (every level diff = 1.0f in visible distance)
+		visibleDistance += float(getLevel()) - target.getAuras().getTotalBasePoints(game::aura_type::ModStealth) / 5.0f;
+		// -Stealth Mod(positive like Master of Deception) and Stealth Detection(negative like paranoia)
+		// based on wowwiki every 5 mod we have 1 more level diff in calculation
+		// TODO: Cache these stealth values maybe
+		visibleDistance += (float)(m_auras.getTotalBasePoints(game::aura_type::ModStealthDetect) - target.getAuras().getTotalBasePoints(game::aura_type::ModStealthLevel)) / 5.0f;
+		visibleDistance = visibleDistance > MaxPlayerStealthDetectRange ? MaxPlayerStealthDetectRange : visibleDistance;
+		return dist < visibleDistance;
 	}
 
 	float GameUnit::getMissChance(GameUnit &attacker, UInt8 school, bool isWhiteDamage)

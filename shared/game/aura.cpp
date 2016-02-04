@@ -374,7 +374,7 @@ namespace wowpp
 			}
 		}
 
-		m_target.notifyStunChanged();
+		m_target.notifyStealthChanged();
 	}
 
 	void Aura::handleModResistance(bool apply)
