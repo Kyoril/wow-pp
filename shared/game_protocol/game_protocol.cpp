@@ -3109,7 +3109,7 @@ namespace wowpp
 				{
 					const auto *item = items.getById(rew.itemid());
 					out_packet
-						<< io::write<NetUInt64>(rew.itemid())
+						<< io::write<NetUInt32>(rew.itemid())
 						<< io::write<NetUInt32>(rew.count())
 						<< io::write<NetUInt32>(item ? item->displayid() : 0);
 				}
@@ -3119,7 +3119,7 @@ namespace wowpp
 				{
 					const auto *item = items.getById(rew.itemid());
 					out_packet
-						<< io::write<NetUInt64>(rew.itemid())
+						<< io::write<NetUInt32>(rew.itemid())
 						<< io::write<NetUInt32>(rew.count())
 						<< io::write<NetUInt32>(item ? item->displayid() : 0);
 				}

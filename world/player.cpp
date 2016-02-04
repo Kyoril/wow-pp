@@ -2304,7 +2304,6 @@ namespace wowpp
 						sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, guid, false, std::cref(m_project.items), std::cref(*menuItem.quest)));
 					break;
 				case game::questgiver_status::Reward:
-					ILOG("REWARD!");
 					if (!menuItem.quest->requestitemstext().empty())
 						sendProxyPacket(std::bind(game::server_write::questgiverRequestItems, std::placeholders::_1, guid, true, true, std::cref(m_project.items), std::cref(*menuItem.quest)));
 					else
@@ -2664,7 +2663,24 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_QUESTGIVER_REQUEST_REWARD: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
+		const auto *quest = m_project.quests.getById(questId);
+		if (!quest)
+		{
+			return;
+		}
+
+		// Check if that object exists and provides the requested quest
+		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
+		if (!object ||
+			!object->endsQuest(questId))
+		{
+			return;
+		}
+
+		// Check quest state
+		auto state = m_character->getQuestStatus(questId);
+		sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, guid, 
+			(state == game::quest_status::Complete), std::cref(m_project.items), std::cref(*quest)));
 	}
 
 	void Player::handleQuestgiverChooseReward(game::Protocol::IncomingPacket & packet)
@@ -2720,7 +2736,6 @@ namespace wowpp
 				}
 			}
 		}
-		//DLOG("CMSG_QUESTGIVER_CHOOSE_REWARD: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
 	}
 
 	void Player::handleQuestgiverCancel(game::Protocol::IncomingPacket & packet)
