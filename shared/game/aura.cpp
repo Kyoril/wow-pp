@@ -452,8 +452,6 @@ namespace wowpp
 
 	void Aura::handleModShapeShift(bool apply)
 	{
-		m_target.getAuras().removeAurasByType(game::aura_type::ModShapeShift);
-		
 		UInt8 form = m_effect.miscvaluea();
 		if (apply)
 		{

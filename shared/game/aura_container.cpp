@@ -23,6 +23,7 @@
 #include "game_unit.h"
 #include "log/default_log_levels.h"
 #include "data/spell_entry.h"
+#include "common/linear_set.h"
 #include <algorithm>
 #include <cassert>
 
@@ -119,6 +120,12 @@ namespace wowpp
 			}
 		}
 
+		// Remove shapeshifting auras in case of shapeshift aura
+		if (aura->getEffect().aura() == game::aura_type::ModShapeShift)
+		{
+			removeAurasByType(game::aura_type::ModShapeShift);
+		}
+
 		// Store aura instance
 		auto *auraPtr = aura.get();
 		m_auras.push_back(std::move(aura));
@@ -146,8 +153,19 @@ namespace wowpp
 	
 	void AuraContainer::removeAura(AuraList::iterator &it)
 	{
-		it->get()->misapplyAura();
+		// Make sure that the aura is not destroy when releasing
+		assert(it != m_auras.end());
+		auto strong = *it;
+
+		// Remove the aura from the list of auras
 		it = m_auras.erase(it);
+
+		// NOW misapply the aura. It is important to call this method AFTER the aura has been
+		// removed from the list of auras. First: To prevent a stack overflow when removing
+		// an aura causes the remove of the same aura types like in ModShapeShift. Second:
+		// Stun effects need to check whether there are still ModStun auras on the target, AFTER
+		// the aura has been removed (or else it would count itself)!!
+		strong->misapplyAura();
 	}
 	
 	void AuraContainer::removeAura(Aura &aura)
@@ -331,17 +349,19 @@ namespace wowpp
 	
 	void AuraContainer::removeAurasByType(UInt32 auraType)
 	{
-		auto it = m_auras.begin();
-		while (it != m_auras.end())
+		// We need to remove all auras by their spell
+		LinearSet<UInt32> spells;
+		for (auto &aura : m_auras)
 		{
-			if ((*it)->getEffect().aura() == auraType)
+			if (aura->getEffect().aura() == auraType)
 			{
-				removeAura(it);
+				spells.optionalAdd(aura->getSpell().id());
 			}
-			else
-			{
-				it++;
-			}
+		}
+
+		for (auto &spellid : spells)
+		{
+			removeAllAurasDueToSpell(spellid);
 		}
 	}
 	

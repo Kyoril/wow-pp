@@ -1225,7 +1225,7 @@ namespace wowpp
 		auto strong = shared_from_this();
 		
 		std::vector<UInt32> effects;
-		for (UInt32 i = 0; i < m_spell.effects_size(); ++i)
+		for (int i = 0; i < m_spell.effects_size(); ++i)
 		{
 			effects.push_back(m_spell.effects(i).type());
 		}
