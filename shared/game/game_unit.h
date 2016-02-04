@@ -385,6 +385,8 @@ namespace wowpp
 		boost::signals2::signal<void(bool)> rootStateChanged;
 		/// Fired when this unit gets stunned or unstunned.
 		boost::signals2::signal<void(bool)> stunStateChanged;
+		/// Fired when this unit enters or leaves stealth mode.
+		boost::signals2::signal<void(bool)> stealthStateChanged;
 		/// Fired when the movement speed of this unit changes.
 		boost::signals2::signal<void(MovementType)> speedChanged;
 		/// Fired when a custom cooldown event was rised (for example, "Stealth" cooldown is only fired when stealth ends).
@@ -516,6 +518,8 @@ namespace wowpp
 		bool isInLineOfSight(const math::Vector3 &position);
 		/// 
 		bool isMounted() const { return getUInt32Value(unit_fields::MountDisplayId) != 0; }
+		bool isStealthed() const { return m_isStealthed; }
+		void notifyStealthChanged();
 
 		float getMissChance(GameUnit &attacker, UInt8 school, bool isWhiteDamage);
 		bool isImmune(UInt8 school);
@@ -662,6 +666,7 @@ namespace wowpp
 		MechanicImmunitySet m_mechanicImmunity;
 		bool m_isStunned;
 		bool m_isRooted;
+		bool m_isStealthed;
 		std::array<float, movement_type::Count> m_speedBonus;
 		CooldownMap m_spellCooldowns;
 	};

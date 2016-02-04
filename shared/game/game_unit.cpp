@@ -51,6 +51,7 @@ namespace wowpp
         , m_auras(*this)
 		, m_isStunned(false)
 		, m_isRooted(false)
+		, m_isStealthed(false)
 	{
 		// Resize values field
 		m_values.resize(unit_fields::UnitFieldCount);
@@ -1338,6 +1339,20 @@ namespace wowpp
 		return false;
 	}
 	
+	void GameUnit::notifyStealthChanged()
+	{
+		const bool wasStealthed = m_isStealthed;
+		m_isStealthed = m_auras.hasAura(game::aura_type::ModStealth);
+		if (wasStealthed && !m_isStealthed)
+		{
+			stealthStateChanged(false);
+		}
+		else if (!wasStealthed && m_isStealthed)
+		{
+			stealthStateChanged(true);
+		}
+	}
+
 	float GameUnit::getMissChance(GameUnit &attacker, UInt8 school, bool isWhiteDamage)
 	{
 		float chance;
