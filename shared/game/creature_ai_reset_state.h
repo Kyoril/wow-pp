@@ -22,6 +22,7 @@
 #pragma once
 
 #include "creature_ai_state.h"
+#include <boost/signals2.hpp>
 
 namespace wowpp
 {
@@ -45,5 +46,6 @@ namespace wowpp
 
 	private:
 
+		boost::signals2::scoped_connection m_onHomeReached;
 	};
 }

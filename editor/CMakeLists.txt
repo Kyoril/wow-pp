@@ -38,6 +38,7 @@ cmake_minimum_required(VERSION 2.8.11)
 	find_package(Qt5Core REQUIRED)
 	find_package(Qt5Gui REQUIRED)
 	find_package(Qt5OpenGL REQUIRED)
+	find_package(Qt5Concurrent REQUIRED)
 	find_package(OpenGL REQUIRED)
 	if(UNIX AND NOT APPLE)
 		find_package(Qt5X11Extras REQUIRED)
@@ -48,6 +49,9 @@ cmake_minimum_required(VERSION 2.8.11)
 	include_directories(${OPENGL_INCLUDE_DIR})
 
 	file(GLOB srcFiles "*.cpp" "*.h")
+	file(GLOB wndSrcFiles "windows/*.cpp" "windows/*.h")
+	file(GLOB worldSrcFiles "world/*.cpp" "world/*.h")
+	file(GLOB ogreSrcFiles "ogre_wrappers/*.cpp" "ogre_wrappers/*.h")
 	
 	# Include ui files
 	file(GLOB uiFiles "ui/*.ui")
@@ -68,8 +72,13 @@ cmake_minimum_required(VERSION 2.8.11)
 	source_group(ui FILES ${uiFiles})						# *.ui files (xml)
 	source_group(qrc FILES ${resources})					# *.qrc files (xml)
 	
+	file(GLOB windowSources "*_dialog.cpp" "*_dialog.h" "*_window.cpp" "*_window.h")
+	
 	# Group editor source files
 	source_group(src FILES ${srcFiles})
+	source_group(src\\windows FILES ${wndSrcFiles})
+	source_group(src\\world FILES ${worldSrcFiles})
+	source_group(src\\ogre_wrappers FILES ${ogreSrcFiles})
 	
 	if(APPLE)
 		set(apple_bundle_sources "ico101.icns")
@@ -83,21 +92,21 @@ cmake_minimum_required(VERSION 2.8.11)
 	
 	# Create the application
 	if(WIN32)
-		add_executable(editor WIN32 editor.rc ${srcFiles} ${UIS_HDRS} ${resourceSources})
+		add_executable(editor WIN32 editor.rc ${srcFiles} ${UIS_HDRS} ${resourceSources} ${wndSrcFiles} ${worldSrcFiles} ${ogreSrcFiles})
 	elseif(APPLE)
-		add_executable(editor MACOSX_BUNDLE ${srcFiles} ${UIS_HDRS} ${resourceSources} ${apple_bundle_sources})
+		add_executable(editor MACOSX_BUNDLE ${srcFiles} ${UIS_HDRS} ${resourceSources} ${apple_bundle_sources} ${wndSrcFiles} ${worldSrcFiles} ${ogreSrcFiles})
 	else()
-		add_executable(editor ${srcFiles} ${UIS_HDRS} ${resourceSources})
+		add_executable(editor ${srcFiles} ${UIS_HDRS} ${resourceSources} ${wndSrcFiles} ${worldSrcFiles} ${ogreSrcFiles})
 	endif()
 	
 	# Link standard libraries
-	target_link_libraries(editor common templates virtual_directory log data stormlib recast detour detour_crowd detour_tile_cache debug_utils game)
+	target_link_libraries(editor common templates virtual_directory log proto_data stormlib recast detour detour_crowd detour_tile_cache debug_utils game sql_wrapper mysql_wrapper math)
 	
 	# Link dependency libraries
-	target_link_libraries(editor ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${OPENSSL_LIBRARIES} ${OGRE_LIBRARIES})
+	target_link_libraries(editor ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${OPENSSL_LIBRARIES} ${OGRE_LIBRARIES} ${PROTOBUF_LIBRARIES} ${MYSQL_LIBRARY})
 	
 	# Link Qt5 Libraries
-	qt5_use_modules(editor Widgets OpenGL)
+	qt5_use_modules(editor Widgets OpenGL Concurrent)
 	if(UNIX AND NOT APPLE)
 		qt5_use_modules(editor X11Extras)
 	elseif(APPLE)

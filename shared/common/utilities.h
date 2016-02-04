@@ -31,15 +31,33 @@
 #include <string>
 #include <vector>
 #include "random.h"
+#include "typedefs.h"
 
 namespace wowpp
 {
-	static RandomnessGenerator randomGenerator;
+	static RandomnessGenerator randomGenerator(time(nullptr));
 
 	template <class T>
 	T limit(T value, T min, T max)
 	{
 		return std::min(max, std::max(value, min));
+	}
+
+	static inline std::string randomText(UInt32 length)
+	{
+		std::ostringstream strm;
+		const std::string chars(
+			"abcdefghijklmnopqrstuvwxyz"
+			"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+			"1234567890");
+		
+		std::uniform_int_distribution<> index_dist(0, chars.size() - 1);
+		for (UInt32 i = 0; i < length; ++i)
+		{
+			strm << chars[index_dist(randomGenerator)];
+		}
+
+		return strm.str();
 	}
 
 	static inline std::string &ltrim(std::string &s)

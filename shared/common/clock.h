@@ -33,6 +33,8 @@ namespace wowpp
 		static const GameTime OneDay = OneHour * 24;
 	}
 
+	UInt32 TimeStamp();
+	UInt32 mTimeStamp();
 
 	template <class T>
 	T gameTimeToSeconds(GameTime time)

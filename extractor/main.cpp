@@ -25,10 +25,13 @@
 #include "boost/filesystem.hpp"
 #include "boost/program_options.hpp"
 #include "boost/format.hpp"
+#include "boost/asio.hpp"
+#include "boost/thread.hpp"
 #include "mpq_file.h"
 #include "dbc_file.h"
 #include "wdt_file.h"
 #include "adt_file.h"
+#include "wmo_file.h"
 #include "binary_io/writer.h"
 #include "binary_io/stream_sink.h"
 #include "common/make_unique.h"
@@ -37,6 +40,8 @@
 #include <memory>
 #include <map>
 #include "game/map.h"
+#include "math/matrix4.h"
+#include "math/vector3.h"
 using namespace std;
 using namespace wowpp;
 
@@ -95,22 +100,39 @@ namespace
 			return false;
 		}
 
+		// Now load all required WMO files
+		std::vector<std::unique_ptr<WMOFile>> wmos;
+		for (UInt32 i = 0; i < adt.getWMOCount(); ++i)
+		{
+			// Retrieve WMO file name
+			const String filename = adt.getWMO(i);
+			auto wmoFile = make_unique<WMOFile>(filename);
+			if (!wmoFile->load())
+			{
+				ELOG("Error loading WMO: " << filename);
+				return false;
+			}
+
+			// Push back to the list of WMO files
+			wmos.emplace_back(std::move(wmoFile));
+		}
+
 		// Create files (TODO)
 		std::ofstream fileStrm(mapFile, std::ios::out | std::ios::binary);
 		io::StreamSink sink(fileStrm);
 		io::Writer writer(sink);
 		
-        // Create map header
+        // Create map header chunk
         MapHeaderChunk header;
         header.fourCC = 0x50414D57;				// WMAP		- WoW Map
         header.size = sizeof(MapHeaderChunk) - 8;
-        header.version = 0x100;
+        header.version = 0x110;
         header.offsAreaTable = sizeof(MapHeaderChunk);
         header.areaTableSize = sizeof(MapAreaChunk);
-        header.offsHeight = header.offsAreaTable + header.areaTableSize;
-		header.heightSize = sizeof(MapHeightChunk);
-        
-        // Area header
+		header.offsCollision = header.offsAreaTable + header.areaTableSize;
+		header.collisionSize = 0;	// TODO
+		
+        // Area header chunk
         MapAreaChunk areaHeader;
         areaHeader.fourCC = 0x52414D57;			// WMAR		- WoW Map Areas
         areaHeader.size = sizeof(MapAreaChunk) - 8;
@@ -127,8 +149,100 @@ namespace
             areaHeader.cellAreas[i].areaId = areaId;
             areaHeader.cellAreas[i].flags = flags;
         }
-		
-		// Map size header
+
+		/*
+		std::ostringstream outStrm;
+		outStrm << "obj/" << cellX << "_" << cellY << ".obj";
+		FILE *file = fopen(outStrm.str().c_str(), "w");
+		*/
+
+		// Collision chunk
+		MapCollisionChunk collisionChunk;
+		collisionChunk.fourCC = 0x4C434D57;
+		collisionChunk.size = sizeof(UInt32) * 4;
+		collisionChunk.vertexCount = 0;
+		collisionChunk.triangleCount = 0;
+
+		UInt32 groupCount = 0;
+		for (const auto &entry : adt.getMODFChunk().entries)
+		{
+			//fprintf(file, "\n\no Group %d\n", groupCount++);
+
+			// Entry placement
+			auto &wmo = wmos[entry.mwidEntry];
+			if (!wmo->isRootWMO())
+			{
+				WLOG("Group wmo placed, but root wmo expected");
+				continue;
+			}
+
+			math::Matrix4 mat;
+
+#define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * x / -180.0)
+			math::Matrix4 rotMat = math::Matrix4::fromEulerAnglesXYZ(
+				WOWPP_DEG_TO_RAD(entry.rotation[2]), WOWPP_DEG_TO_RAD(entry.rotation[0]), WOWPP_DEG_TO_RAD(-entry.rotation[1]));
+
+			math::Vector3 position(entry.position.z, entry.position.x, entry.position.y);
+			position.x -= 32 * 533.3333f;
+			position.y -= 32 * 533.3333f;
+#undef WOWPP_DEG_TO_RAD
+
+			// Transform vertices
+			for (auto &group : wmo->getGroups())
+			{
+				UInt32 groupStartIndex = collisionChunk.vertexCount;
+
+				const auto &verts = group->getVertices();
+				const auto &inds = group->getIndices();
+
+				collisionChunk.vertexCount += verts.size();
+				UInt32 groupTris = inds.size() / 3;
+				for (auto &vert : verts)
+				{
+					// Transform vertex and push it to the list
+					math::Vector3 transformed = (rotMat * vert) + position;
+					transformed.x *= -1.f;
+					transformed.y *= -1.f;
+					collisionChunk.vertices.push_back(transformed);
+
+					//fprintf(file, "v %f %f %f\n", transformed.x, transformed.y, transformed.z);
+				}
+				for (UInt32 i = 0; i < inds.size(); i += 3)
+				{
+					if (!group->isCollisionTriangle(i / 3))
+					{
+						// Skip this triangle
+						groupTris--;
+						continue;
+					}
+
+					//fprintf(file, "f %d %d %d\n", inds[i] + groupStartIndex + 1, inds[i + 1] + groupStartIndex + 1, inds[i + 2] + groupStartIndex + 1);
+
+					Triangle tri;
+					tri.indexA = inds[i] + groupStartIndex;
+					tri.indexB = inds[i+1] + groupStartIndex;
+					tri.indexC = inds[i+2] + groupStartIndex;
+					collisionChunk.triangles.emplace_back(std::move(tri));
+				}
+
+				collisionChunk.triangleCount += groupTris;
+			}
+
+		}
+		collisionChunk.size += sizeof(math::Vector3) * collisionChunk.vertexCount;
+		collisionChunk.size += sizeof(UInt32) * 3 * collisionChunk.triangleCount;
+		header.collisionSize = collisionChunk.size;
+		if (collisionChunk.vertexCount == 0)
+		{
+			header.offsCollision = 0;
+			header.collisionSize = 0;
+		}
+
+		//fprintf(file, "\n\n# TRIANGLE COUNT IN TOTAL: %d\n", collisionChunk.triangleCount);
+		//fprintf(file, "# VERTEX COUNT IN TOTAL: %d\n", collisionChunk.vertexCount);
+
+#if 0
+		// Map height header
 		MapHeightChunk heightChunk;
 		heightChunk.fourCC = 0x54484D57;		// WMHT		- WoW Map Height
 		heightChunk.size = sizeof(MapHeightChunk) - 8;
@@ -143,11 +257,35 @@ namespace
 				heightChunk.heights[i][index++] = mcnk.zpos + height;
 			}
 		}
-        
+#endif
+
+		//fclose(file);
+
 		// Write map header
         writer.writePOD(header);
         writer.writePOD(areaHeader);
-		writer.writePOD(heightChunk);
+		if (header.offsCollision)
+		{
+			writer << io::write<UInt32>(collisionChunk.fourCC);
+			writer << io::write<UInt32>(collisionChunk.size);
+			writer << io::write<UInt32>(collisionChunk.vertexCount);
+			writer << io::write<UInt32>(collisionChunk.triangleCount);
+
+			for (auto &vert : collisionChunk.vertices)
+			{
+				writer
+					<< io::write<float>(vert.x)
+					<< io::write<float>(vert.y)
+					<< io::write<float>(vert.z);
+			}
+			for (auto &triangle : collisionChunk.triangles)
+			{
+				writer
+					<< io::write<UInt32>(triangle.indexA)
+					<< io::write<UInt32>(triangle.indexB)
+					<< io::write<UInt32>(triangle.indexC);
+			}
+		}
         
 		return true;
 	}
@@ -204,6 +342,9 @@ namespace
 				succeeded = false;
 			}
 		}
+
+		// Get wmo information
+
 
 		return true;
 	}
@@ -306,10 +447,13 @@ namespace
 /// Procedural entry point of the application.
 int main(int argc, char* argv[])
 {
-	// Add cout to the list of log output streams
-	wowpp::g_DefaultLog.signal().connect(std::bind(
-		wowpp::printLogEntry,
-		std::ref(std::cout), std::placeholders::_1, wowpp::g_DefaultConsoleLogOptions));
+	// Multithreaded log support
+	boost::mutex logMutex;
+	wowpp::g_DefaultLog.signal().connect([&logMutex](const wowpp::LogEntry &entry)
+	{
+		boost::mutex::scoped_lock lock(logMutex);
+		wowpp::printLogEntry(std::cout, entry, wowpp::g_DefaultConsoleLogOptions);
+	});
 
 	// Try to create output path
 	if (!fs::is_directory(outputPath))
@@ -346,10 +490,32 @@ int main(int argc, char* argv[])
 	ILOG("Found " << dbcAreaTable->getRecordCount() << " areas");
 	ILOG("Found " << dbcLiquidType->getRecordCount() << " liquid types");
 
-	// Iterate through all maps and build all tiles
+	boost::asio::io_service dispatcher;
 	for (UInt32 i = 0; i < dbcMap->getRecordCount(); ++i)
 	{
-		convertMap(i);
+		dispatcher.post(
+			std::bind(convertMap, i));
+	}
+
+	std::size_t concurrency = boost::thread::hardware_concurrency();
+	concurrency = std::max<size_t>(1, concurrency);
+	ILOG("Using " << concurrency << " threads");
+
+	std::vector<std::unique_ptr<boost::thread>> workers;
+	for (size_t i = 1, c = concurrency; i < c; ++i)
+	{
+		workers.push_back(make_unique<boost::thread>(
+			[&dispatcher]()
+		{
+			dispatcher.run();
+		}));
+	}
+
+	dispatcher.run();
+
+	for(auto &worker : workers)
+	{
+		worker->join();
 	}
 
 	return 0;

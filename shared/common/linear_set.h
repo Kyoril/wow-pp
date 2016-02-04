@@ -31,6 +31,7 @@ namespace wowpp
 	{
 	public:
 
+		typedef T value_type;
 		typedef std::vector<T> Elements;
 		typedef typename Elements::const_iterator const_iterator;
 

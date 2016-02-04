@@ -21,6 +21,7 @@
 
 #include "adt_file.h"
 #include "log/default_log_levels.h"
+#include "math/matrix4.h"
 #include <iomanip>
 
 namespace wowpp
@@ -29,6 +30,7 @@ namespace wowpp
 		: MPQFile(std::move(fileName))
 		, m_isValid(false)
 		, m_offsetBase(0)
+		, m_wmoFilenames(nullptr)
 	{
 	}
 
@@ -53,6 +55,84 @@ namespace wowpp
 		if (m_headerChunk.fourcc != 0x4d484452)
 		{
 			return false;
+		}
+
+		// MWMO informations
+		if (m_headerChunk.offsMapObejcts)
+		{
+			const size_t mwmoOffset = m_offsetBase + m_headerChunk.offsMapObejcts;
+
+			// We have an MWMO chunk, read it
+			m_source->seek(mwmoOffset);
+
+			UInt32 cc = 0, size = 0;
+			m_reader >> io::read<UInt32>(cc) >> io::read<UInt32>(size);
+			if (cc == 0x4d574d4f)
+			{
+				m_wmoFilenames = m_buffer.data() + m_source->position();
+			}
+			else
+			{
+				WLOG("Invalid MWMO chunk in ADT (cc mismatch)");
+			}
+		}
+
+		// MWID chunk
+		if (m_headerChunk.offsMapObejctsIds)
+		{
+			const size_t mwidOffset = m_offsetBase + m_headerChunk.offsMapObejctsIds;
+			m_source->seek(mwidOffset);
+
+			UInt32 cc = 0, size = 0;
+			m_reader >> io::read<UInt32>(cc) >> io::read<UInt32>(size);
+			if (cc == 0x4d574944)
+			{
+				if (size % sizeof(UInt32) == 0)
+				{
+					if (m_wmoFilenames != nullptr)
+					{
+						m_wmoIndex.resize(size / sizeof(UInt32), 0);
+						m_reader >> io::read_range(m_wmoIndex);
+					}
+					else
+					{
+						WLOG("Found MWID chunk but didn't find valid MWMO chunk in ADT!");
+					}
+				}
+				else
+				{
+					WLOG("Invalid number of WMO indices in MWID chunk of ADT");
+				}
+			}
+			else
+			{
+				WLOG("Invalid MWID chunk in ADT (cc mismatch)");
+			}
+		}
+
+		// WMO definitions
+		if (m_headerChunk.offsObjectsDef)
+		{
+			const size_t modfOffset = m_offsetBase + m_headerChunk.offsObjectsDef;
+			m_source->seek(modfOffset);
+
+			// Read as many MODF chunks as available
+			m_reader >> io::read<UInt32>(m_modfChunk.fourcc) >> io::read<UInt32>(m_modfChunk.size);
+			if (m_modfChunk.fourcc == 0x4d4f4446)
+			{
+				if (m_modfChunk.size % sizeof(MODFChunk::Entry) == 0)
+				{
+					m_modfChunk.entries.resize(m_modfChunk.size / sizeof(MODFChunk::Entry));
+					for (size_t i = 0; i < m_modfChunk.entries.size(); ++i)
+					{
+						m_reader.readPOD(m_modfChunk.entries[i]);
+					}
+				}
+				else
+				{
+					WLOG("Number of MODF entries mismatch!");
+				}
+			}
 		}
 
 		// Next one will be MCIN chunk
@@ -100,6 +180,15 @@ namespace wowpp
 
 		m_isValid = true;
 		return true;
+	}
+
+	const String ADTFile::getWMO(UInt32 index) const
+	{
+		if (index > getWMOCount())
+			return String();
+
+		const char *filename = m_wmoFilenames + (m_wmoIndex[index]);
+		return String(filename);
 	}
 
 }

@@ -32,6 +32,7 @@
 #include "player.h"
 #include "realm_manager.h"
 #include "realm.h"
+#include "web_service.h"
 #include <iostream>
 #include <memory>
 #include <fstream>
@@ -194,6 +195,15 @@ namespace wowpp
 
 		const boost::signals2::scoped_connection playerConnected(playerServer->connected().connect(createPlayer));
 		playerServer->startAccept();
+
+		std::unique_ptr<WebService> webService;
+		webService.reset(new WebService(
+			m_ioService,
+			m_configuration.webPort,
+			m_configuration.webPassword,
+			*PlayerManager,
+			Database
+			));
 
 		// Log start
 		ILOG("Login server is ready and waiting for connections!");

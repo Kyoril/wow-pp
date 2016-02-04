@@ -21,6 +21,11 @@
 
 #pragma once
 
+#include <cassert>
+#include <cmath>
+#include <cstddef>
+#include <ostream>
+
 namespace wowpp
 {
 	namespace math
@@ -47,6 +52,11 @@ namespace wowpp
 				, y(other.y)
 				, z(other.z)
 			{
+			}
+			/// Calculates the dot-product of this vector and another vector.
+			float dot(const Vector3 &other) const
+			{
+				return x * other.x + y * other.y + z * other.z;
 			}
 			/// Calculates the cross-product of this vector and another vector.
 			/// Results in a new vector from this x other.
@@ -78,7 +88,28 @@ namespace wowpp
 
 				return len;
 			}
+			
+			Vector3 lerp(const Vector3 &target, float t) const
+			{
+				if (t <= 0.0f)
+					return *this;
+				else if (t >= 1.0f)
+					return target;
 
+				return *this + (target - *this) * t;
+			}
+
+			inline float operator [] (const std::size_t i) const
+			{
+				assert(i < 3);
+				return *(&x + i);
+			}
+
+			inline float& operator [] (const std::size_t i)
+			{
+				assert(i < 3);
+				return *(&x + i);
+			}
 			inline Vector3 operator +(const Vector3 &v) const
 			{
 				return Vector3(x + v.x, y + v.y, z + v.z);
@@ -95,6 +126,38 @@ namespace wowpp
 			{
 				return Vector3(x / value, y / value, z / value);
 			}
+			inline bool operator ==(const Vector3 &other) const
+			{
+				return (x == other.x && y == other.y && z == other.z);
+			}
+			inline bool operator !=(const Vector3 &other) const
+			{
+				return (x != other.x || y != other.y || z != other.z);
+			}
+			inline bool operator < (const Vector3& other) const
+			{
+				return (x < other.x && y < other.y && z < other.z);
+			}
+			inline bool operator > (const Vector3& other) const
+			{
+				return (x > other.x && y > other.y && z > other.z);
+			}
+			inline Vector3& operator = (const Vector3& other)
+			{
+				x = other.x;
+				y = other.y;
+				z = other.z;
+				return *this;
+			}
+			inline Vector3& operator = (const float scalar)
+			{
+				x = scalar;
+				y = scalar;
+				z = scalar;
+				return *this;
+			}
 		};
+
+		std::ostream &operator << (std::ostream &os, const Vector3 &right);
 	}
 }

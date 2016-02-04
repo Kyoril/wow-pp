@@ -20,9 +20,8 @@
 // 
 
 #include "game_creature.h"
-#include "data/trigger_entry.h"
-#include "data/item_entry.h"
-#include "data/faction_template_entry.h"
+#include "game_character.h"
+#include "proto_data/project.h"
 #include "world_instance.h"
 #include "tiled_unit_watcher.h"
 #include "unit_finder.h"
@@ -35,13 +34,10 @@
 namespace wowpp
 {
 	GameCreature::GameCreature(
+		proto::Project &project,
 		TimerQueue &timers, 
-		DataLoadContext::GetRace getRace, 
-		DataLoadContext::GetClass getClass, 
-		DataLoadContext::GetLevel getLevel, 
-		DataLoadContext::GetSpell getSpell,
-		const UnitEntry &entry)
-		: GameUnit(timers, getRace, getClass, getLevel, getSpell)
+		const proto::UnitEntry &entry)
+		: GameUnit(project, timers)
 		, m_originalEntry(entry)
 		, m_entry(nullptr)
 	{
@@ -59,31 +55,35 @@ namespace wowpp
 
 		// Setup AI
 		m_ai = make_unique<CreatureAI>(
-			*this, CreatureAI::Home(makeVector(0.0f, 0.0f, 0.0f)));
+			*this, CreatureAI::Home(math::Vector3(0.0f, 0.0f, 0.0f)));
 
 		// Start regeneration
 		m_onSpawned = spawned.connect([this]()
 		{
+			math::Vector3 location(getLocation());
+			CreatureAI::Home home(location);
+
+			m_ai->setHome(std::move(home));
 			startRegeneration();
 		});
 	}
 
-	void GameCreature::setEntry(const UnitEntry &entry)
+	void GameCreature::setEntry(const proto::UnitEntry &entry)
 	{
 		const bool isInitialize = (m_entry == nullptr);
-		
+
 		// Choose a level
-		UInt8 creatureLevel = entry.minLevel;
-		if (entry.maxLevel != entry.minLevel)
+		UInt8 creatureLevel = entry.minlevel();
+		if (entry.maxlevel() != entry.minlevel())
 		{
-			std::uniform_int_distribution<int> levelDistribution(entry.minLevel, entry.maxLevel);
+			std::uniform_int_distribution<int> levelDistribution(entry.minlevel(), entry.maxlevel());
 			creatureLevel = levelDistribution(randomGenerator);
 		}
 
 		// calculate interpolation factor
 		const float t =
-			(entry.maxLevel != entry.minLevel) ?
-			(creatureLevel - entry.minLevel) / (entry.maxLevel - entry.minLevel) :
+			(entry.maxlevel() != entry.minlevel()) ?
+			(creatureLevel - entry.minlevel()) / (entry.maxlevel() - entry.minlevel()) :
 			0.0f;
 
 		// Randomize gender
@@ -91,47 +91,50 @@ namespace wowpp
 		int gender = genderDistribution(randomGenerator);
 
 		// TODO
-		assert(entry.allianceFaction);
-		setFactionTemplate(*entry.allianceFaction);
+		const auto *faction = getProject().factionTemplates.getById(entry.alliancefaction());
+		assert(faction);
+		setFactionTemplate(*faction);
 
 		setLevel(creatureLevel);
-		setClass(entry.unitClass);
-		setUInt32Value(object_fields::Entry, entry.id);
-		setFloatValue(object_fields::ScaleX, entry.scale);
-		setUInt32Value(unit_fields::FactionTemplate, entry.hordeFaction->id);
+		setClass(entry.unitclass());
+		setUInt32Value(object_fields::Entry, entry.id());
+		setFloatValue(object_fields::ScaleX, entry.scale());
+		setUInt32Value(unit_fields::FactionTemplate, faction->id());
 		setGender(static_cast<game::Gender>(gender));
-		setUInt32Value(unit_fields::DisplayId, (gender == game::gender::Male ? entry.maleModel : entry.femaleModel));
-		setUInt32Value(unit_fields::NativeDisplayId, (gender == game::gender::Male ? entry.maleModel : entry.femaleModel));
-		setUInt32Value(unit_fields::BaseHealth, interpolate(entry.minLevelHealth, entry.maxLevelHealth, t));
+		setUInt32Value(unit_fields::DisplayId, (gender == game::gender::Male ? entry.malemodel() : entry.femalemodel()));
+		setUInt32Value(unit_fields::NativeDisplayId, (gender == game::gender::Male ? entry.malemodel() : entry.femalemodel()));
+		setUInt32Value(unit_fields::BaseHealth, interpolate(entry.minlevelhealth(), entry.maxlevelhealth(), t));
 		setUInt32Value(unit_fields::MaxHealth, getUInt32Value(unit_fields::BaseHealth));
 		setUInt32Value(unit_fields::Health, getUInt32Value(unit_fields::BaseHealth));
-		setUInt32Value(unit_fields::MaxPower1, interpolate(entry.minLevelMana, entry.maxLevelMana, t));
+		setUInt32Value(unit_fields::MaxPower1, interpolate(entry.minlevelmana(), entry.maxlevelmana(), t));
 		setUInt32Value(unit_fields::Power1, getUInt32Value(unit_fields::MaxPower1));
-		setUInt32Value(unit_fields::UnitFlags, entry.unitFlags);
-		setUInt32Value(unit_fields::DynamicFlags, entry.dynamicFlags);
-		setUInt32Value(unit_fields::NpcFlags, entry.npcFlags);
+		setUInt32Value(unit_fields::UnitFlags, entry.unitflags());
+		setUInt32Value(unit_fields::DynamicFlags, entry.dynamicflags());
+		setUInt32Value(unit_fields::NpcFlags, entry.npcflags());
 		setByteValue(unit_fields::Bytes2, 1, 16);
 		setByteValue(unit_fields::Bytes2, 0, 1);		// Sheath State: Melee weapon
-		setUInt32Value(unit_fields::AttackPower, entry.attackPower);
-		setUInt32Value(unit_fields::RangedAttackPower, entry.rangedAttackPower);
-		setFloatValue(unit_fields::MinDamage, entry.minMeleeDamage);
-		setFloatValue(unit_fields::MaxDamage, entry.maxMeleeDamage);
-		setUInt32Value(unit_fields::BaseAttackTime, entry.meleeBaseAttackTime);
+		setUInt32Value(unit_fields::AttackPower, entry.attackpower());
+		setUInt32Value(unit_fields::RangedAttackPower, entry.rangedattackpower());
+		setFloatValue(unit_fields::MinDamage, entry.minmeleedmg());
+		setFloatValue(unit_fields::MaxDamage, entry.maxmeleedmg());
+		setUInt32Value(unit_fields::BaseAttackTime, entry.meleeattacktime());
 
 		// Update power type
-		setByteValue(unit_fields::Bytes0, 3, power_type::Mana);
-		if (entry.maxLevelMana > 0)
-		{
-			setByteValue(unit_fields::Bytes1, 1, 0xEE);
-		}
-		else
-		{
-			setByteValue(unit_fields::Bytes1, 1, 0x00);
-		}
+		setByteValue(unit_fields::Bytes0, 3, game::power_type::Mana);
+		setUInt32Value(unit_fields::BaseMana, getUInt32Value(unit_fields::MaxPower1));
+		setUInt32Value(unit_fields::Bytes0, 0x00020200);
+// 		if (entry.maxLevelMana > 0)
+// 		{
+// 			setByteValue(unit_fields::Bytes1, 1, 0xEE);
+// 		}
+// 		else
+// 		{
+// 			setByteValue(unit_fields::Bytes1, 1, 0x00);
+// 		}
 
-		setVirtualItem(0, entry.mainHand);
-		setVirtualItem(1, entry.offHand);
-		setVirtualItem(2, entry.ranged);
+		setVirtualItem(0, getProject().items.getById(entry.mainhandweapon()));
+		setVirtualItem(1, getProject().items.getById(entry.offhandweapon()));
+		setVirtualItem(2, getProject().items.getById(entry.rangedweapon()));
 
 		// Unit Mods
 		for (UInt32 i = unit_mods::StatStart; i < unit_mods::StatEnd; ++i)
@@ -141,7 +144,7 @@ namespace wowpp
 			setModifierValue(static_cast<UnitMods>(i), unit_mod_type::BasePct, 1.0f);
 			setModifierValue(static_cast<UnitMods>(i), unit_mod_type::TotalPct, 1.0f);
 		}
-		setModifierValue(unit_mods::Armor, unit_mod_type::BaseValue, entry.armor);
+		setModifierValue(unit_mods::Armor, unit_mod_type::BaseValue, entry.armor());
 
 		// Setup new entry
 		m_entry = &entry;
@@ -153,51 +156,6 @@ namespace wowpp
 		}
 
 		updateAllStats();
-	}
-
-	void GameCreature::onKilled(GameUnit *killer)
-	{
-		GameUnit::onKilled(killer);
-
-		auto it = m_entry->triggersByEvent.find(trigger_event::OnKilled);
-		if (it != m_entry->triggersByEvent.end())
-		{
-			for (const auto *trigger : it->second)
-			{
-				trigger->execute(*trigger, this);
-			}
-		}
-
-		if (killer)
-		{
-			// Reward the killer with experience points
-			const float t =
-				(m_entry->maxLevel != m_entry->minLevel) ?
-				(getLevel() - m_entry->minLevel) / (m_entry->maxLevel - m_entry->minLevel) :
-				0.0f;
-
-			// Base XP for equal level
-			UInt32 xp = interpolate(m_entry->xpMin, m_entry->xpMax, t);
-
-			// Level adjustment factor
-			const float levelXPMod = calcXpModifier(killer->getLevel());
-			xp *= levelXPMod;
-			if (xp > 0)
-			{
-				killer->rewardExperience(this, xp);
-			}
-		}
-
-		// Decide whether to despawn based on unit type
-		const bool isElite = (m_entry->rank > 0 && m_entry->rank < 4);
-		const bool isRare = (m_entry->rank == 4);
-
-		// Calculate despawn delay for rare mobs and elite mobs
-		GameTime despawnDelay = constants::OneSecond * 30;
-		if (isElite || isRare) despawnDelay = constants::OneMinute * 3;
-
-		// Despawn in 30 seconds
-		triggerDespawnTimer(despawnDelay);
 	}
 
 	float GameCreature::calcXpModifier(UInt32 attackerLevel) const
@@ -222,13 +180,13 @@ namespace wowpp
 	{
 		if (!m_entry)
 		{
-			return m_originalEntry.name;
+			return m_originalEntry.name();
 		}
 		
-		return m_entry->name;
+		return m_entry->name();
 	}
 
-	void GameCreature::setVirtualItem(UInt32 slot, const ItemEntry *item)
+	void GameCreature::setVirtualItem(UInt32 slot, const proto::ItemEntry *item)
 	{
 		if (!item)
 		{
@@ -238,107 +196,14 @@ namespace wowpp
 			return;
 		}
 
-		setUInt32Value(unit_fields::VirtualItemSlotDisplay + slot, item->displayId);
-		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 0, item->itemClass);
-		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 1, item->subClass);
+		setUInt32Value(unit_fields::VirtualItemSlotDisplay + slot, item->displayid());
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 0, item->itemclass());
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 1, item->subclass());
 		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 2, 0xFF);
-		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 3, item->material);
-		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0, item->inventoryType);
-		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 1, item->sheath);
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 0, 3, item->material());
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0, item->inventorytype());
+		setByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 1, item->sheath());
 	}
-
-// 	void GameCreature::updateVictim()
-// 	{
-// 		if (!isAlive())
-// 			return;
-// 
-// 		GameUnit *newVictim = nullptr;
-// 		float maxThreat = -1.0;
-// 
-// 		for (auto it : m_threat)
-// 		{
-// 			if (it.second > maxThreat)
-// 			{
-// 				// Try to find unit
-// 				newVictim = dynamic_cast<GameUnit*>(m_worldInstance->findObjectByGUID(it.first));
-// 				if (newVictim)
-// 				{
-// 					maxThreat = it.first;
-// 				}
-// 			}
-// 		}
-// 
-// 		if (newVictim &&
-// 			newVictim != getVictim())
-// 		{
-// 			if (!getVictim())
-// 			{
-// 				// Aggro event
-// 				auto it = m_entry->triggersByEvent.find(trigger_event::OnAggro);
-// 				if (it != m_entry->triggersByEvent.end())
-// 				{
-// 					for (const auto *trigger : it->second)
-// 					{
-// 						trigger->execute(*trigger, this);
-// 					}
-// 				}
-// 
-// 				// Send aggro message to all clients nearby (this will play the creatures aggro sound)
-// 				TileIndex2D tile;
-// 				if (getTileIndex(tile))
-// 				{
-// 					std::vector<char> buffer;
-// 					io::VectorSink sink(buffer);
-// 					game::Protocol::OutgoingPacket packet(sink);
-// 					game::server_write::aiReaction(packet, getGuid(), 2);
-// 
-// 					forEachSubscriberInSight(
-// 						m_worldInstance->getGrid(), 
-// 						tile,
-// 						[&packet, &buffer](ITileSubscriber &subscriber)
-// 					{
-// 						subscriber.sendPacket(packet, buffer);
-// 					});
-// 				}
-// 			}
-// 
-// 			/* THIS WORKS! (kind of) */
-// 			TileIndex2D tile;
-// 			if (getTileIndex(tile))
-// 			{
-// 				float o;
-// 				Vector<float, 3> oldPosition;
-// 				getLocation(oldPosition[0], oldPosition[1], oldPosition[2], o);
-// 
-// 				Vector<float, 3> newPosition;
-// 				newVictim->getLocation(newPosition[0], newPosition[1], newPosition[2], o);
-// 
-// 				const float dist = getDistanceTo(*newVictim);
-// 				const float speed = 7.5f;
-// 
-// 				std::vector<char> buffer;
-// 				io::VectorSink sink(buffer);
-// 				game::Protocol::OutgoingPacket packet(sink);
-// 				game::server_write::monsterMove(packet, getGuid(), oldPosition, newPosition, (dist / speed) * 1000);
-// 
-// 				forEachSubscriberInSight(
-// 					m_worldInstance->getGrid(),
-// 					tile,
-// 					[&packet, &buffer](ITileSubscriber &subscriber)
-// 				{
-// 					subscriber.sendPacket(packet, buffer);
-// 				});
-// 			}
-// 
-// 			// New target to attack
-// 			startAttack(*newVictim);
-// 		}
-// 		else if (!newVictim)
-// 		{
-// 			// No target any more
-// 			stopAttack();
-// 		}
-// 	}
 
 	bool GameCreature::canBlock() const
 	{
@@ -346,7 +211,7 @@ namespace wowpp
 		const auto invType = getByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0);
 
 		// Creatures can only block if they wield a shield
-		return (invType == inventory_type::Shield);
+		return (invType == game::inventory_type::Shield);
 	}
 
 	bool GameCreature::canParry() const
@@ -362,14 +227,19 @@ namespace wowpp
 		return true;
 	}
 
+	bool GameCreature::canDualWield() const
+	{
+		return true;
+	}
+
 	void GameCreature::updateDamage()
 	{
 		const float att_speed = static_cast<float>(getUInt32Value(unit_fields::BaseAttackTime)) / 1000.0f;
 		const float base_value = static_cast<float>(getUInt32Value(unit_fields::AttackPower)) / 14.0f * att_speed;
 
-		const UnitEntry *entry = (m_entry ? m_entry : &m_originalEntry);
-		setFloatValue(unit_fields::MinDamage, base_value + entry->minMeleeDamage);
-		setFloatValue(unit_fields::MaxDamage, base_value + entry->maxMeleeDamage);
+		const auto *entry = (m_entry ? m_entry : &m_originalEntry);
+		setFloatValue(unit_fields::MinDamage, base_value + entry->minmeleedmg());
+		setFloatValue(unit_fields::MaxDamage, base_value + entry->maxmeleedmg());
 	}
 
 	void GameCreature::regenerateHealth()
@@ -377,6 +247,110 @@ namespace wowpp
 		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
 		const UInt32 addHealth = maxHealth / 3;
 		heal(addHealth, nullptr, false);
+	}
+
+	void GameCreature::addLootRecipient(UInt64 guid)
+	{
+		m_lootRecipients.add(guid);
+	}
+
+	bool GameCreature::isLootRecipient(GameCharacter &character) const
+	{
+		return m_lootRecipients.contains(character.getGuid());
+	}
+
+	void GameCreature::removeLootRecipients()
+	{
+		m_lootRecipients.clear();
+	}
+
+	void GameCreature::setUnitLoot(std::unique_ptr<LootInstance> unitLoot)
+	{
+		m_unitLoot = std::move(unitLoot);
+	}
+
+	void GameCreature::raiseTrigger(trigger_event::Type e)
+	{
+		for (const auto &triggerId : getEntry().triggers())
+		{
+			const auto *triggerEntry = getProject().triggers.getById(triggerId);
+			if (triggerEntry)
+			{
+				for (const auto &triggerEvent : triggerEntry->events())
+				{
+					if (triggerEvent == e)
+					{
+						unitTrigger(std::cref(*triggerEntry), std::ref(*this));
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	bool GameCreature::providesQuest(UInt32 questId) const
+	{
+		auto &entry = getEntry();
+		for (const auto &id : entry.quests())
+		{
+			if (id == questId) return true;
+		}
+
+		return false;
+	}
+
+	bool GameCreature::endsQuest(UInt32 questId) const
+	{
+		auto &entry = getEntry();
+		for (const auto &id : entry.end_quests())
+		{
+			if (id == questId) return true;
+		}
+
+		return false;
+	}
+
+	game::QuestgiverStatus GameCreature::getQuestgiverStatus(const GameCharacter & character) const
+	{
+		game::QuestgiverStatus result = game::questgiver_status::None;
+		for (const auto &quest : getEntry().end_quests())
+		{
+			auto questStatus = character.getQuestStatus(quest);
+			if (questStatus == game::quest_status::Complete)
+			{
+				return game::questgiver_status::Reward;
+			}
+			else if (questStatus == game::quest_status::Incomplete)
+			{
+				result = game::questgiver_status::Incomplete;
+			}
+		}
+
+		for (const auto &quest : getEntry().quests())
+		{
+			auto questStatus = character.getQuestStatus(quest);
+			if (questStatus == game::quest_status::Available)
+			{
+				return game::questgiver_status::Available;
+			}
+		}
+		return result;
+	}
+
+	bool GameCreature::hasMainHandWeapon() const
+	{
+		const UInt32 slot = 0;
+		const auto invType = getByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0);
+		return (invType != game::inventory_type::NonEquip);
+	}
+
+	bool GameCreature::hasOffHandWeapon() const
+	{
+		const UInt32 slot = 1;
+		const auto invType = getByteValue(unit_fields::VirtualItemInfo + (slot * 2) + 1, 0);
+
+		// Creatures can only block if they NOT wield a shield
+		return (invType && invType != game::inventory_type::Shield);
 	}
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)

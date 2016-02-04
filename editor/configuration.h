@@ -39,6 +39,17 @@ namespace wowpp
 			/// Path to WoW
 			String wowGamePath;
 
+			/// The port to be used for a mysql connection.
+			NetPort mysqlPort;
+			/// The mysql server host address (ip or dns).
+			String mysqlHost;
+			/// The mysql user to be used.
+			String mysqlUser;
+			/// The mysql user password to be used.
+			String mysqlPassword;
+			/// The mysql database to be used.
+			String mysqlDatabase;
+
 			/// Indicates whether or not file logging is enabled.
 			bool isLogActive;
 			/// File name of the log file.

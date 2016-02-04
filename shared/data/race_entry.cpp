@@ -26,6 +26,7 @@
 #include "spell_entry.h"
 #include "faction_template_entry.h"
 #include "log/default_log_levels.h"
+#include "common/make_unique.h"
 
 namespace wowpp
 {
@@ -287,33 +288,33 @@ namespace wowpp
 		context.table.addKey("rotation", startRotation);
 
 		// Write stats
-		sff::write::Array<char> initialSpellArray(context.table, "initial_spells", sff::write::MultiLine);
+		auto initialSpellArray = make_unique<sff::write::Array<char>>(context.table, "initial_spells", sff::write::MultiLine);
 		{
 			for (const auto &entry : initialSpells)
 			{
 				UInt32 classId = entry.first;
 
 				// New stat table
-				sff::write::Table<char> classTable(initialSpellArray, sff::write::Comma);
+				auto classTable = make_unique<sff::write::Table<char>>(*initialSpellArray, sff::write::Comma);
 				{
-					classTable.addKey("class", classId);
+					classTable->addKey("class", classId);
 
-					sff::write::Array<char> spellArray(classTable, "spells", sff::write::Comma);
+					auto spellArray = make_unique<sff::write::Array<char>>(*classTable, "spells", sff::write::Comma);
 					{
 						for (const auto *spell : entry.second)
 						{
-							spellArray.addElement(spell->id);
+							spellArray->addElement(spell->id);
 						}
 					}
-					spellArray.finish();
+					spellArray->finish();
 				}
-				classTable.finish();
+				classTable->finish();
 			}
 		}
-		initialSpellArray.finish();
+		initialSpellArray->finish();
 
-		// Write initial items
-		sff::write::Array<char> initialItemsArray(context.table, "initial_items", sff::write::MultiLine);
+		// Write initial 
+		auto initialItemsArray = make_unique<sff::write::Array<char>>(context.table, "initial_items", sff::write::MultiLine);
 		{
 			for (const auto &entry : initialItems)
 			{
@@ -323,56 +324,56 @@ namespace wowpp
 					UInt32 genderId = entry2.first;
 					auto &items = entry2.second;
 
-					sff::write::Table<char> classTable(initialItemsArray, sff::write::Comma);
+					auto classTable = make_unique<sff::write::Table<char>>(*initialItemsArray, sff::write::Comma);
 					{
-						classTable.addKey("class", classId);
-						classTable.addKey("gender", genderId);
+						classTable->addKey("class", classId);
+						classTable->addKey("gender", genderId);
 
-						sff::write::Array<char> itemArray(classTable, "items", sff::write::Comma);
+						auto itemArray = make_unique<sff::write::Array<char>>(*classTable, "items", sff::write::Comma);
 						{
 							for (const auto *item : items)
 							{
-								itemArray.addElement(item->id);
+								itemArray->addElement(item->id);
 							}
 						}
-						itemArray.finish();
+						itemArray->finish();
 					}
-					classTable.finish();
+					classTable->finish();
 				}
 			}
 		}
-		initialItemsArray.finish();
+		initialItemsArray->finish();
 
 		// Write action buttons
-		sff::write::Array<char> initialActionsArray(context.table, "initial_actions", sff::write::MultiLine);
+		auto initialActionsArray = make_unique<sff::write::Array<char>>(context.table, "initial_actions", sff::write::MultiLine);
 		{
 			for (const auto &entry : initialActionButtons)
 			{
 				UInt32 classId = entry.first;
 
 				// New stat table
-				sff::write::Table<char> classTable(initialSpellArray, sff::write::Comma);
+				auto classTable = make_unique<sff::write::Table<char>>(*initialActionsArray, sff::write::Comma);
 				{
-					classTable.addKey("class", classId);
+					classTable->addKey("class", classId);
 
-					sff::write::Array<char> buttonsArray(classTable, "buttons", sff::write::MultiLine);
+					auto buttonsArray = make_unique<sff::write::Array<char>>(*classTable, "buttons", sff::write::MultiLine);
 					{
 						for (const auto &button : entry.second)
 						{
-							sff::write::Table<char> buttonTable(buttonsArray, sff::write::Comma);
+							auto buttonTable = make_unique<sff::write::Table<char>>(*buttonsArray, sff::write::Comma);
 							{
-								buttonTable.addKey("button", static_cast<UInt32>(button.first));
-								buttonTable.addKey("action", button.second.action);
-								buttonTable.addKey("type", static_cast<UInt32>(button.second.type));
+								buttonTable->addKey("button", static_cast<UInt32>(button.first));
+								buttonTable->addKey("action", button.second.action);
+								buttonTable->addKey("type", static_cast<UInt32>(button.second.type));
 							}
-							buttonTable.finish();
+							buttonTable->finish();
 						}
 					}
-					buttonsArray.finish();
+					buttonsArray->finish();
 				}
-				classTable.finish();
+				classTable->finish();
 			}
 		}
-		initialActionsArray.finish();
+		initialActionsArray->finish();
 	}
 }

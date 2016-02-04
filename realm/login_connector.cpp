@@ -120,7 +120,7 @@ namespace wowpp
 		}
 		else
 		{
-			WLOG("Could not connect to the login server at " << m_host << ":" << m_port);
+			//WLOG("Could not connect to the login server at " << m_host << ":" << m_port);
 			scheduleConnect();
 		}
 
@@ -146,7 +146,6 @@ namespace wowpp
 			}
 		}
 
-		DLOG("Sending player login request to login server...");
 		m_loginRequests.push_back(PlayerLoginRequest(accountName));
 
 		m_connection->sendSinglePacket(
@@ -174,8 +173,6 @@ namespace wowpp
 
 	void LoginConnector::tryConnect()
 	{
-		ILOG("Trying to connect to the login server..");
-
 		m_connection = pp::Connector::create(m_ioService);
 		m_connection->connect(m_host, m_port, *this, m_ioService);
 	}

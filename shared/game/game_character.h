@@ -447,9 +447,46 @@ namespace wowpp
 
 	typedef group_update_flags::Type GroupUpdateFlags;
 
-	struct SpellEntry;
-	struct ItemEntry;
-	struct SkillEntry;
+	namespace proto
+	{
+		class SpellEntry;
+		class ItemEntry;
+		class SkillEntry;
+	}
+
+	struct ItemPosCount final
+	{
+		UInt16 position;
+		UInt8 count;
+
+		explicit ItemPosCount(UInt16 position, UInt8 count)
+			: position(position)
+			, count(count)
+		{
+		}
+	};
+
+	typedef std::vector<ItemPosCount> ItemPosCountVector;
+
+	struct QuestStatusData
+	{
+		game::QuestStatus status;
+		// May be 0 if completed.
+		GameTime expiration;
+		// What is this for?
+		bool explored;
+		std::array<UInt16, 4> creatures;
+		std::array<UInt16, 4> objects;
+		// Recomputed on inventory changes.
+		std::array<UInt16, 4> items;
+
+		QuestStatusData()
+			: status(game::QuestStatus::Available)
+			, expiration(0)
+			, explored(false)
+		{
+		}
+	};
 
 	/// 
 	class GameCharacter : public GameUnit
@@ -463,16 +500,16 @@ namespace wowpp
 		boost::signals2::signal<void(game::InventoryChangeFailure, GameItem*, GameItem*)> inventoryChangeFailure;
 		boost::signals2::signal<void()> comboPointsChanged;
 		boost::signals2::signal<void(UInt64, UInt32, UInt32)> experienceGained;
+		boost::signals2::signal<void()> homeChanged;
+		/// Parameters: Quest-ID, Old Status, New Status
+		boost::signals2::signal<void(UInt32, const QuestStatusData&)> questDataChanged;
 
 	public:
 
 		/// 
 		explicit GameCharacter(
-			TimerQueue &timers,
-			DataLoadContext::GetRace getRace,
-			DataLoadContext::GetClass getClass,
-			DataLoadContext::GetLevel getLevel,
-			DataLoadContext::GetSpell getSpell);
+			proto::Project &project,
+			TimerQueue &timers);
 		~GameCharacter();
 
 		/// @copydoc GameObject::initialize()
@@ -484,9 +521,11 @@ namespace wowpp
 		void addItem(std::shared_ptr<GameItem> item, UInt16 slot);
 		/// Adds a spell to the list of known spells of this character.
 		/// Note that passive spells will also be cast after they are added.
-		void addSpell(const SpellEntry &spell);
+		void addSpell(const proto::SpellEntry &spell);
 		/// Returns true, if the characters knows the specific spell.
 		bool hasSpell(UInt32 spellId) const;
+		/// Returns a spell from the list of known spells.
+		bool removeSpell(const proto::SpellEntry &spell);
 		/// Sets the name of this character.
 		void setName(const String &name);
 		/// Gets the name of this character.
@@ -497,7 +536,7 @@ namespace wowpp
 		/// Gets the zone index where this character is.
 		UInt32 getZone() const { return m_zoneIndex; }
 		/// Gets a list of all known spells of this character.
-		const std::vector<const SpellEntry*> &getSpells() const { return m_spells; }
+		const std::vector<const proto::SpellEntry*> &getSpells() const { return m_spells; }
 		/// Gets a list of all items of this character.
 		const std::map<UInt16, std::shared_ptr<GameItem>> &getItems() const { return m_itemSlots; }
 		/// Gets the weapon proficiency mask of this character (which weapons can be
@@ -515,7 +554,7 @@ namespace wowpp
 		/// Removes an armor proficiency from the mask.
 		void removeArmorProficiency(UInt32 mask) { m_armorProficiency &= ~mask; proficiencyChanged(4, m_armorProficiency); }
 		/// Adds a new skill to the list of known skills of this character.
-		void addSkill(const SkillEntry &skill);
+		void addSkill(const proto::SkillEntry &skill);
 		/// 
 		void removeSkill(UInt32 skillId);
 		/// 
@@ -530,6 +569,8 @@ namespace wowpp
 		/// if target is a new target combo target. If a value of 0 is specified, the combo
 		/// points will be reset to zero.
 		void addComboPoints(UInt64 target, UInt8 points);
+		/// Applies or removes item stats for this character.
+		void applyItemStats(GameItem &item, bool apply);
 		/// Determines whether the given slot is a valid slot in the specified bag.
 		bool isValidItemPos(UInt8 bag, UInt8 slot) const;
 		/// Swaps the items of two given slots.
@@ -538,16 +579,53 @@ namespace wowpp
 		GameItem *getItemByPos(UInt8 bag, UInt8 slot) const;
 		/// @copydoc GameUnit::rewardExperience()
 		void rewardExperience(GameUnit *victim, UInt32 experience) override;
+		/// Determines, whether a specific amount of items can be stored.
+		game::InventoryChangeFailure canStoreItem(UInt8 bag, UInt8 slot, ItemPosCountVector &dest, const proto::ItemEntry &item, UInt32 count, bool swap, UInt32 *noSpaceCount = nullptr) const;
+		/// Removes an amount of items from the player.
+		void removeItem(UInt8 bag, UInt8 slot, UInt8 count);
+		/// Gets the characters home location.
+		void getHome(UInt32 &out_map, math::Vector3 &out_pos, float &out_rot) const;
+		/// Updates the characters home location.
+		void setHome(UInt32 map, const math::Vector3 &pos, float rot);
+		/// Gets an item by it's guid.
+		GameItem *getItemByGUID(UInt64 guid, UInt8 &out_bag, UInt8 &out_slot);
+
+		bool hasMainHandWeapon() const override;
+		bool hasOffHandWeapon() const override;
+
 		GroupUpdateFlags getGroupUpdateFlags() const { return m_groupUpdateFlags; }
 		void modifyGroupUpdateFlags(GroupUpdateFlags flags, bool apply);
 		void clearGroupUpdateFlags() { m_groupUpdateFlags = group_update_flags::None; }
 		bool canBlock() const override;
 		bool canParry() const override;
 		bool canDodge() const override;
+		bool canDualWield() const override;
+
+		/// Gets the characters group id.
+		UInt64 getGroupId() const { return m_groupId; }
+		/// Sets the characters group id.
+		void setGroupId(UInt64 groupId) { m_groupId = groupId; }
+
+		/// 
+		game::QuestStatus getQuestStatus(UInt32 quest) const;
+		/// 
+		bool acceptQuest(UInt32 quest);
+		/// 
+		bool abandonQuest(UInt32 quest);
+		/// 
+		bool rewardQuest(UInt32 quest, std::function<void(UInt32)> callback);
+
+	public:
+
+		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT
+		// BE CALLED ANYWHERE ELSE!
+
+		/// Manually sets data for a specified quest id.
+		void setQuestData(UInt32 quest, const QuestStatusData &data);
 
 	protected:
 
-		virtual void levelChanged(const LevelEntry &levelInfo) override;
+		virtual void levelChanged(const proto::LevelEntry &levelInfo) override;
 		virtual void updateArmor() override;
 		virtual void updateDamage() override;
 		virtual void updateManaRegen() override;
@@ -555,12 +633,18 @@ namespace wowpp
 
 	private:
 
+		void classUpdated() override;
+		void updateTalentPoints();
+		void initClassEffects();	// init class specific effects
+
+	private:
+
 		String m_name;
 		UInt32 m_zoneIndex;
 		UInt32 m_weaponProficiency;
 		UInt32 m_armorProficiency;
-		std::vector<const SkillEntry*> m_skills;
-		std::vector<const SpellEntry*> m_spells;
+		std::vector<const proto::SkillEntry*> m_skills;
+		std::vector<const proto::SpellEntry*> m_spells;
 		std::map<UInt16, std::shared_ptr<GameItem>> m_itemSlots;
 		UInt64 m_comboTarget;
 		UInt8 m_comboPoints;
@@ -568,8 +652,15 @@ namespace wowpp
 		GroupUpdateFlags m_groupUpdateFlags;
 		bool m_canBlock;	// Set by spell
 		bool m_canParry;	// Set by spell
+		bool m_canDualWield;// Set by spell
 		FactionStateList m_factions;
 		ForcedReactions m_forcedReactions;
+		UInt64 m_groupId;
+		UInt32 m_homeMap;
+		math::Vector3 m_homePos;
+		float m_homeRotation;
+		boost::signals2::scoped_connection m_doneMeleeAttack;
+		std::map<UInt32, QuestStatusData> m_quests;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameCharacter const& object);

@@ -25,7 +25,8 @@
 #include "binary_io/reader.h"
 #include "binary_io/container_source.h"
 #include "stormlib/src/StormLib.h"
-#include "boost/noncopyable.hpp"
+#include <boost/noncopyable.hpp>
+#include <boost/thread.hpp>
 #include <memory>
 #include <vector>
 
@@ -41,6 +42,10 @@ namespace wowpp
 	{
 	public:
 
+		static boost::mutex MPQMutex;
+		
+	public:
+
 		/// Initializes the file and loads it's content from the loaded MPQ archive.
 		explicit MPQFile(String fileName);
 		virtual ~MPQFile();
@@ -48,15 +53,17 @@ namespace wowpp
 		/// Called to load the file.
 		/// @returns False, if any errors occurred during the loading process.
 		virtual bool load() = 0;
+		/// Returns the file name of this MPQ file inside the archive.
+		const String &getFileName() const { return m_fileName; }
 
 	protected:
 
 		std::unique_ptr<io::ISource> m_source;
 		io::Reader m_reader;
+		std::vector<char> m_buffer;
 
 	private:
 
 		String m_fileName;
-		std::vector<char> m_buffer;
 	};
 }

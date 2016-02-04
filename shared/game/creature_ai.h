@@ -22,6 +22,7 @@
 #pragma once
 
 #include "defines.h"
+#include "math/vector3.h"
 #include <memory>
 #include <boost/signals2.hpp>
 
@@ -40,7 +41,7 @@ namespace wowpp
 		/// Defines the home of a creature.
 		struct Home final
 		{
-			game::Position position;
+			math::Vector3 position;
 			float orientation;
 			float radius;
 
@@ -48,7 +49,7 @@ namespace wowpp
 			/// @param pos The position of this home point in world units.
 			/// @param o The orientation of this home point in radians.
 			/// @param radius The tolerance radius of this home point in world units.
-			explicit Home(const game::Position &pos, float o = 0.0f, float radius = 0.0f)
+			explicit Home(const math::Vector3 &pos, float o = 0.0f, float radius = 0.0f)
 				: position(pos)
 				, orientation(o)
 				, radius(radius)
@@ -75,6 +76,8 @@ namespace wowpp
 		GameCreature &getControlled() const;
 		/// Gets a reference of the controlled units home.
 		const Home &getHome() const;
+		/// Sets a new home position
+		void setHome(Home home);
 		/// Enters the idle state.
 		void idle();
 		/// Enters the combat state. This is usually called from the creatures idle state.
@@ -82,6 +85,11 @@ namespace wowpp
 		/// Makes the creature reset, leaving the combat state, reviving itself and run back
 		/// to it's home position.
 		void reset();
+
+	public:
+
+		// These methods are meant to be called by the AI states on specific events.
+		void onThreatened(GameUnit &threat, float amount);
 
 	protected:
 
@@ -93,6 +101,6 @@ namespace wowpp
 		GameCreature &m_controlled;
 		std::unique_ptr<CreatureAIState> m_state;
 		Home m_home;
-		boost::signals2::scoped_connection m_onSpawned, m_onKilled;
+		boost::signals2::scoped_connection m_onSpawned, m_onKilled, m_onDamaged;
 	};
 }

@@ -23,6 +23,7 @@
 
 #include "common/typedefs.h"
 #include "tile_area.h"
+#include "math/vector3.h"
 
 namespace wowpp
 {
@@ -36,7 +37,7 @@ namespace wowpp
 		explicit VisibilityGrid();
 		virtual ~VisibilityGrid();
 
-		bool getTilePosition(float x, float y, float z, Int32 &outX, Int32 &outY) const;
+		bool getTilePosition(math::Vector3 position, Int32 &outX, Int32 &outY) const;
 		virtual VisibilityTile *getTile(const TileIndex2D &position) = 0;
 		virtual VisibilityTile &requireTile(const TileIndex2D &position) = 0;
 	};

@@ -28,12 +28,13 @@ namespace wowpp
 
 	}
 
-	std::pair<game::SpellCastResult, SpellCasting*> NoCastState::startCast(SpellCast &cast, const SpellEntry &spell, SpellTargetMap target, GameTime castTime, bool doReplacePreviousCast)
+	std::pair<game::SpellCastResult, SpellCasting*> NoCastState::startCast(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool doReplacePreviousCast)
 	{
 		SpellCasting &casting = castSpell(
 			cast,
 			spell,
 			std::move(target),
+			basePoints,
 			castTime
 			);
 

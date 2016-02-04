@@ -1,0 +1,50 @@
+//
+// This file is part of the WoW++ project.
+// 
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software 
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+//
+// World of Warcraft, and all World of Warcraft or Warcraft art, images,
+// and lore are copyrighted by Blizzard Entertainment, Inc.
+// 
+
+syntax = "proto2";
+package wowpp.proto;
+
+message ClassBaseValues {
+	required uint32 health = 1;
+	required uint32 mana = 2;
+}
+
+message ClassEntry {
+	required uint32 id = 1;
+	required string name = 2;
+	required string internalName = 3;
+	enum PowerType {
+		HEALTH = -2;
+		MANA = 0;
+		RAGE = 1;
+		FOCUS = 2;
+		ENERGY = 3;
+		HAPPINESS = 4;
+	}
+	required PowerType powertype = 4;
+	required uint32 spellfamily = 5;
+	optional uint32 flags = 6;
+	repeated ClassBaseValues levelbasevalues = 7;
+}
+
+message Classes {
+	repeated ClassEntry entry = 1;
+}

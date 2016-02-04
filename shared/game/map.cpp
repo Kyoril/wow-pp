@@ -20,15 +20,16 @@
 // 
 
 #include "map.h"
-#include "data/map_entry.h"
+#include "shared/proto_data/maps.pb.h"
 #include "detour_world_navigation.h"
 #include "log/default_log_levels.h"
 #include "common/make_unique.h"
 #include "math/vector3.h"
+#include "common/clock.h"
 
 namespace wowpp
 {
-	Map::Map(const MapEntry &entry, boost::filesystem::path dataPath)
+	Map::Map(const proto::MapEntry &entry, boost::filesystem::path dataPath)
 		: m_entry(entry)
 		, m_dataPath(std::move(dataPath))
 		, m_tiles(64, 64)
@@ -46,7 +47,7 @@ namespace wowpp
 			if (!tile)
 			{
 				std::ostringstream strm;
-				strm << m_dataPath.string() << "/maps/" << m_entry.id << "/" << position[0] << "_" << position[1] << ".map";
+				strm << m_dataPath.string() << "/maps/" << m_entry.id() << "/" << position[0] << "_" << position[1] << ".map";
 
 				const String file = strm.str();
 				if (!boost::filesystem::exists(file))
@@ -57,7 +58,7 @@ namespace wowpp
 				}
 
 				// Open file for reading
-				std::ifstream mapFile(file.c_str(), std::ios::in);
+				std::ifstream mapFile(file.c_str(), std::ios::in | std::ios::binary);
 				if (!mapFile)
 				{
 					return nullptr;
@@ -68,7 +69,7 @@ namespace wowpp
 				mapFile.read(reinterpret_cast<char*>(&mapHeaderChunk), sizeof(MapHeaderChunk));
 				if (mapHeaderChunk.fourCC != 0x50414D57)
 				{
-					ELOG("Could not load map file " << file << ": Invalid four-cc code!");
+					//ELOG("Could not load map file " << file << ": Invalid four-cc code!");
 					return nullptr;
 				}
 				if (mapHeaderChunk.size != sizeof(MapHeaderChunk) - 8)
@@ -76,7 +77,7 @@ namespace wowpp
 					ELOG("Could not load map file " << file << ": Unexpected header chunk size (" << (sizeof(MapHeaderChunk) - 8) << " expected)!");
 					return nullptr;
 				}
-				if (mapHeaderChunk.version != 0x100)
+				if (mapHeaderChunk.version != 0x110)
 				{
 					ELOG("Could not load map file " << file << ": Unsupported file format version!");
 					return nullptr;
@@ -91,10 +92,37 @@ namespace wowpp
 				mapFile.read(reinterpret_cast<char*>(&tile->areas), sizeof(MapAreaChunk));
 				if (tile->areas.fourCC != 0x52414D57 || tile->areas.size != sizeof(MapAreaChunk) - 8)
 				{
-					WLOG("Map file " << file << " might be corrupted and may contain corrupt data");
+					WLOG("Map file " << file << " seems to be corrupted: Wrong area chunk");
 					//TODO: Should we cancel the loading process?
 				}
+			
+				// Read collision data
+				if (mapHeaderChunk.offsCollision)
+				{
+					mapFile.seekg(mapHeaderChunk.offsCollision, std::ios::beg);
 
+					// Read collision header
+					mapFile.read(reinterpret_cast<char*>(&tile->collision.fourCC), sizeof(UInt32));
+					mapFile.read(reinterpret_cast<char*>(&tile->collision.size), sizeof(UInt32));
+					mapFile.read(reinterpret_cast<char*>(&tile->collision.vertexCount), sizeof(UInt32));
+					mapFile.read(reinterpret_cast<char*>(&tile->collision.triangleCount), sizeof(UInt32));
+					if (tile->collision.fourCC != 0x4C434D57 || tile->collision.size < sizeof(UInt32) * 4)
+					{
+						WLOG("Map file " << file << " seems to be corrupted: Wrong collision chunk (Size: " << tile->collision.size);
+						//TODO: Should we cancel the loading process?
+					}
+
+					// Read all vertices
+					tile->collision.vertices.resize(tile->collision.vertexCount);
+					size_t numBytes = sizeof(float) * 3 * tile->collision.vertexCount;
+					mapFile.read(reinterpret_cast<char*>(tile->collision.vertices.data()), numBytes);
+
+					// Read all indices
+					tile->collision.triangles.resize(tile->collision.triangleCount);
+					mapFile.read(reinterpret_cast<char*>(tile->collision.triangles.data()), sizeof(Triangle) * tile->collision.triangleCount);
+				}
+
+				/*
 				// Read height data
 				mapFile.seekg(mapHeaderChunk.offsHeight, std::ios::beg);
 
@@ -105,6 +133,7 @@ namespace wowpp
 					WLOG("Map file " << file << " might be corrupted and may contain corrupt data");
 					//TODO: Should we cancel the loading process?
 				}
+				*/
 			}
 
 			return tile.get();
@@ -115,54 +144,53 @@ namespace wowpp
 
 	float Map::getHeightAt(float x, float y)
 	{
+		return 0.0f;
+	}
+
+	bool Map::isInLineOfSight(const math::Vector3 & posA, const math::Vector3 & posB)
+	{
+		if (posA == posB)
+			return true;
+
 		// Calculate grid x coordinates
-		Int32 tileX = static_cast<Int32>(floor((512.0 - (static_cast<double>(x) / 33.3333))));
-		Int32 tileY = static_cast<Int32>(floor((512.0 - (static_cast<double>(y) / 33.3333))));
-		
-		// Convert to adt tile
-		TileIndex2D adtIndex(tileX / 16, tileY / 16);
-		auto *tile = getTile(adtIndex);
-		if (!tile)
-			return 0.0f;
+		TileIndex2D startTileIdx;
+		startTileIdx[0] = static_cast<Int32>(floor((32.0 - (static_cast<double>(posA.x) / 533.3333333))));
+		startTileIdx[1] = static_cast<Int32>(floor((32.0 - (static_cast<double>(posA.y) / 533.3333333))));
 
-		// We are looking for p.z
-		math::Vector3 p(x, y, 0.0f);
+		auto *startTile = getTile(startTileIdx);
+		if (!startTile)
+		{
+			// Unable to get / load tile - always in line of sight
+			return true;
+		}
 
-		// Determine chunk index
-		const UInt32 chunkIndex = (tileY % 16) + (tileX % 16) * 16;
-		if (chunkIndex >= 16 * 16)
-			return 0.0f;
+		if (startTile->collision.triangleCount == 0)
+		{
+			return true;
+		}
 
-		// Get height map values
-		auto &heights = tile->heights.heights[chunkIndex];
-		DLOG("Chunk index: " << chunkIndex << " (ADT: " << adtIndex[0] << "x" << adtIndex[1] << ")");
-		return heights[0];
+		// Create a ray
+		math::Ray ray(posA, posB);
 
-		// Determine the V8 index and the two V9 indices
-		UInt32 v8Index = 0;
-		UInt32 v9Index1 = 0;
-		UInt32 v9Index2 = 0;
+		const float dist = (posB - posA).length();
 
-		const float offsX = tileX * 33.3333f;
-		const float offsY = tileY * 33.3333f;
+		// Test: Check every triangle (TODO: Use octree nodes)
+		UInt32 triangleIndex = 0;
+		for (const auto &triangle : startTile->collision.triangles)
+		{
+			auto &vA = startTile->collision.vertices[triangle.indexA];
+			auto &vB = startTile->collision.vertices[triangle.indexB];
+			auto &vC = startTile->collision.vertices[triangle.indexC];
+			auto result = ray.intersectsTriangle(vA, vB, vC);
+			if (result.first && result.second <= dist)
+			{
+				return false;
+			}
 
-		// Determine vertices based on position
-		const math::Vector3 v1(offsX, offsY, 0.0f);	float h1 = 0.0f;
-		const math::Vector3 v2(offsX, offsY, 0.0f);	float h2 = 0.0f;
-		const math::Vector3 v3(offsX, offsY, 0.0f);	float h3 = 0.0f;
+			triangleIndex++;
+		}
 
-		// Calculate vectors from point p to v1, v2 and v3
-		const math::Vector3 f1 = v1 - p;
-		const math::Vector3 f2 = v2 - p;
-		const math::Vector3 f3 = v3 - p;
-
-		// Calculate the areas and factors
-		const float a = (v1 - v2).cross(v1 - v3).length();
-		const float a1 = f2.cross(f3).length() / a;
-		const float a2 = f3.cross(f1).length() / a;
-		const float a3 = f1.cross(f2).length() / a;
-
-		// Update height value
-		return h1 * a1 + h2 * a2 + h3 * a3;
+		// Target is in line of sight
+		return true;
 	}
 }

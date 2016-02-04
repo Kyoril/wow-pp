@@ -34,11 +34,11 @@ namespace wowpp
 	{
 	public:
 
-		explicit TiledUnitFinder(const MapEntry &map, game::Distance tileWidth);
+		explicit TiledUnitFinder(const proto::MapEntry &map, game::Distance tileWidth);
 		virtual void addUnit(GameUnit &findable) override;
 		virtual void removeUnit(GameUnit &findable) override;
 		virtual void updatePosition(GameUnit &updated,
-			const game::Position &previousPos) override;
+			const math::Vector3 &previousPos) override;
 		virtual void findUnits(const Circle &shape,
 			const std::function<bool(GameUnit &)> &resultHandler) override;
 		virtual std::unique_ptr<UnitWatcher> watchUnits(const Circle &shape) override;

@@ -32,6 +32,9 @@ namespace wowpp
 	{
 		virtual ~IDatabase();
 
+		virtual bool createAccount(UInt64 accountId, const String &accountName, const String &passwordHash) = 0;
+		virtual bool setPlayerPassword(UInt64 accountId, const String &passwordHash) = 0;
+		virtual bool getAccountInfos(UInt64 accountId, String &out_name, String &out_passwordHash) = 0;
 		/// Gets a players password hash from the database.
 		/// @param userName User name of the player in uppercase letters.
 		/// @param out_passwordHash Reference to a string where the password hash will be stored.

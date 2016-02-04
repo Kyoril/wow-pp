@@ -24,10 +24,12 @@ cmake_minimum_required(VERSION 2.8)
 
 # Include subdirectories
 add_subdirectory(common)
+add_subdirectory(math)
 add_subdirectory(log)
 add_subdirectory(templates)
 add_subdirectory(virtual_directory)
 add_subdirectory(data)
+add_subdirectory(proto_data)
 add_subdirectory(base64)
 add_subdirectory(http)
 add_subdirectory(web_services)

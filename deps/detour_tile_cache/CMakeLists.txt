@@ -30,5 +30,5 @@ add_library(detour_tile_cache ${SRC_FILES})
 
 # Solution folder
 if(MSVC)
-	set_property(TARGET detour_tile_cache PROPERTY FOLDER "deps/detour_tile_cache")
+	set_property(TARGET detour_tile_cache PROPERTY FOLDER "deps")
 endif(MSVC)

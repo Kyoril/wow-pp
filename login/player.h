@@ -124,6 +124,12 @@ namespace wowpp
 		/// Handles an incoming packet with packet id LogonProof.
 		/// @param packet The packet data.
 		void handleLogonProof(auth::IncomingPacket &packet);
+		/// Handles an incoming packet with packet id LogonChallenge.
+		/// @param packet The packet data.
+		void handleReconnectChallenge(auth::IncomingPacket &packet);
+		/// Handles an incoming packet with packet id LogonProof.
+		/// @param packet The packet data.
+		void handleReconnectProof(auth::IncomingPacket &packet);
 		/// Handles an incoming packet with packet id RealmList.
 		/// @param packet The packet data.
 		void handleRealmList(auth::IncomingPacket &packet);

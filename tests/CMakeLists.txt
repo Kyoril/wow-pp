@@ -19,5 +19,4 @@
 # and lore are copyrighted by Blizzard Entertainment, Inc.
 # 
 
-add_subdirectory(sff_test)
-add_subdirectory(loot_extractor)
+add_subdirectory(proto_patcher)

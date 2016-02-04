@@ -21,17 +21,20 @@
 
 #include "player_group.h"
 #include "game/game_character.h"
+#include "world.h"
 
 namespace wowpp
 {
-	PlayerGroup::PlayerGroup(PlayerManager &playerManager)
-		: m_playerManager(playerManager)
+	PlayerGroup::PlayerGroup(UInt64 id, PlayerManager &playerManager)
+		: m_id(id)
+		, m_playerManager(playerManager)
 		, m_leaderGUID(0)
 		, m_type(group_type::Normal)
 		, m_lootMethod(loot_method::GroupLoot)
 		, m_lootTreshold(2)
 		, m_lootMaster(0)
 	{
+		m_targetIcons.fill(0);
 	}
 
 	void PlayerGroup::create(GameCharacter &leader)
@@ -103,9 +106,7 @@ namespace wowpp
 		newMember.name = member.getName();
 		newMember.group = 0;
 		newMember.assistant = false;
-		
 		member.modifyGroupUpdateFlags(group_update_flags::Full, true);
-		auto *memberPlayer = m_playerManager.getPlayerByCharacterGuid(guid);
 
 		// Update group list
 		sendUpdate();
@@ -170,10 +171,16 @@ namespace wowpp
 				auto *player = m_playerManager.getPlayerByCharacterGuid(guid);
 				if (player)
 				{
+					auto *node = player->getWorldNode();
+					if (node)
+					{
+						node->characterGroupChanged(guid, 0);
+					}
+
 					// Send packet
-					player->setGroup(std::shared_ptr<PlayerGroup>());
 					player->sendPacket(
 						std::bind(game::server_write::groupListRemoved, std::placeholders::_1));
+					player->setGroup(std::shared_ptr<PlayerGroup>());
 				}
 
 				m_members.erase(it);
@@ -184,10 +191,6 @@ namespace wowpp
 					if (firstMember != m_members.end())
 					{
 						setLeader(firstMember->first);
-					}
-					else
-					{
-						WLOG("PlayerGroup::removeMember(): Group seems to be empty now...");
 					}
 				}
 
@@ -265,12 +268,17 @@ namespace wowpp
 				std::bind(game::server_write::groupDestroyed, std::placeholders::_1));
 		}
 
-		for (auto & it : m_members)
+		auto memberList = m_members;
+		for (auto & it : memberList)
 		{
 			auto *player = m_playerManager.getPlayerByCharacterGuid(it.first);
 			if (player)
 			{
-				// Send packet
+				auto *node = player->getWorldNode();
+				if (node)
+				{
+					node->characterGroupChanged(it.first, 0);
+				}
 
 				// If the group is reset for every player, the group will be deleted!
 				player->sendPacket(
@@ -314,6 +322,72 @@ namespace wowpp
 
 		m_instances[map] = instance;
 		return true;
+	}
+
+	void PlayerGroup::setTargetIcon(UInt8 target, UInt64 guid)
+	{
+		if (target >= m_targetIcons.size())
+		{
+			WLOG("Invalid target icon slot");
+			return;
+		}
+
+		// Clean other target icons
+		if (guid != 0)
+		{
+			UInt8 slot = 0;
+			for (auto &targetGuid : m_targetIcons)
+			{
+				if (targetGuid == guid)
+				{
+					setTargetIcon(slot, 0);
+				}
+
+				slot++;
+			}
+		}
+
+		m_targetIcons[target] = guid;
+		broadcastPacket(
+			std::bind(game::server_write::raidTargetUpdate, std::placeholders::_1, target, guid));
+	}
+
+	void PlayerGroup::sendTargetList(Player &player)
+	{
+		player.sendPacket(
+			std::bind(game::server_write::raidTargetUpdateList, std::placeholders::_1, std::cref(m_targetIcons)));
+	}
+
+	void PlayerGroup::convertToRaidGroup()
+	{
+		if (m_type == group_type::Raid)
+		{
+			return;
+		}
+
+		m_type = group_type::Raid;
+		sendUpdate();
+	}
+
+	void PlayerGroup::setAssistant(UInt64 guid, UInt8 flags)
+	{
+		auto it = m_members.find(guid);
+		if (it != m_members.end())
+		{
+			it->second.assistant = (flags != 0);
+			sendUpdate();
+		}
+	}
+
+	bool PlayerGroup::isLeaderOrAssistant(UInt64 guid) const
+	{
+		auto it = m_members.find(guid);
+		if (it != m_members.end())
+		{
+			return (it->first == m_leaderGUID || it->second.assistant);
+		}
+
+		return false;
 	}
 
 }

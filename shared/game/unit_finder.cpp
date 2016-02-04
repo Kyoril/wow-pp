@@ -23,7 +23,7 @@
 
 namespace wowpp
 {
-	UnitFinder::UnitFinder(const MapEntry &map)
+	UnitFinder::UnitFinder(const proto::MapEntry &map)
 		: m_map(map)
 	{
 	}

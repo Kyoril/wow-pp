@@ -26,6 +26,12 @@
 namespace wowpp
 {
 	class PlayerManager;
+	class WorldManager;
+	struct IDatabase;
+	namespace proto
+	{
+		class Project;
+	}
 
 	class WebService : public web::WebService
 	{
@@ -35,18 +41,27 @@ namespace wowpp
 		    boost::asio::io_service &service,
 		    UInt16 port,
 		    String password,
-		    PlayerManager &playerManager
+		    PlayerManager &playerManager,
+			WorldManager &worldManager,
+			IDatabase &database,
+			proto::Project &project
 		);
 
-		PlayerManager &getPlayerManager() const;
-		GameTime getStartTime() const;
-		const String &getPassword() const;
+		PlayerManager &getPlayerManager() const { return m_playerManager; }
+		WorldManager &getWorldManager() const { return m_worldManager; }
+		IDatabase &getDatabase() const { return m_database; }
+		proto::Project &getProject() const { return m_project; }
+		GameTime getStartTime() const { return m_startTime; }
+		const String &getPassword() const { return m_password; }
 
 		virtual std::unique_ptr<web::WebClient> createClient(std::shared_ptr<Client> connection) override;
 
 	private:
 
 		PlayerManager &m_playerManager;
+		WorldManager &m_worldManager;
+		IDatabase &m_database;
+		proto::Project &m_project;
 		const GameTime m_startTime;
 		const String m_password;
 	};

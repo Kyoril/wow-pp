@@ -26,6 +26,7 @@
 #include "common/erase_by_move.h"
 #include "log/default_log_levels.h"
 #include "common/utilities.h"
+#include "shared/proto_data/objects.pb.h"
 #include "universe.h"
 #include <memory>
 #include <cassert>
@@ -34,12 +35,10 @@ namespace wowpp
 {
 	WorldObjectSpawner::WorldObjectSpawner(
 		WorldInstance &world,
-		const ObjectEntry &entry,
+		const proto::ObjectEntry &entry,
 		size_t maxCount,
 		GameTime respawnDelay,
-		float centerX,
-		float centerY,
-		float centerZ,
+		math::Vector3 center,
 		boost::optional<float> orientation,
 		const std::array<float, 4> &rotation,
 		float radius,
@@ -49,9 +48,7 @@ namespace wowpp
 		, m_entry(entry)
 		, m_maxCount(maxCount)
 		, m_respawnDelay(respawnDelay)
-		, m_centerX(centerX)
-		, m_centerY(centerY)
-		, m_centerZ(centerZ)
+		, m_center(center)
 		, m_orientation(orientation)
 		, m_rotation(rotation)
 		, m_radius(radius)
@@ -79,16 +76,12 @@ namespace wowpp
 		assert(m_currentlySpawned < m_maxCount);
 
 		// TODO: Generate random point and if needed, random rotation
-		const float x = m_centerX, y = m_centerY, z = m_centerZ;
+		const math::Vector3 position(m_center);
 		const float o = m_orientation ? *m_orientation : 0.0f;
 
 		// Spawn a new creature
-		auto spawned = m_world.spawnWorldObject(
-			m_entry,
-			x, y, z, o,
-			m_radius
-			);
-		spawned->setFloatValue(object_fields::ScaleX, m_entry.scale);
+		auto spawned = m_world.spawnWorldObject(m_entry, position, o, m_radius);
+		spawned->setFloatValue(object_fields::ScaleX, m_entry.scale());
 		for (size_t i = 0; i < 4; ++i)
 		{
 			spawned->setFloatValue(world_object_fields::Rotation + i, m_rotation[i]);

@@ -22,7 +22,11 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include "defines.h"
+#include "common/timer_queue.h"
+#include "common/countdown.h"
+#include "math/vector3.h"
+#include "movement_info.h"
+#include <boost/signals2.hpp>
 
 namespace wowpp
 {
@@ -34,27 +38,47 @@ namespace wowpp
 	class UnitMover
 	{
 	public:
+
+		static const GameTime UpdateFrequency;
+
+	public:
+
+		boost::signals2::signal<void()> targetReached;
+		boost::signals2::signal<void()> movementStopped;
+		boost::signals2::signal<void()> targetChanged;
+
+	public:
 		
 		/// 
 		explicit UnitMover(GameUnit &unit);
 		/// 
 		virtual ~UnitMover();
 
+		/// Called when the units movement speed changed.
+		void onMoveSpeedChanged(MovementType moveType);
+		/// Moves this unit to a specific location if possible. This does not teleport
+		/// the unit, but makes it walk / fly / swim to the target.
+		bool moveTo(const math::Vector3 &target);
+		/// Moves this unit to a specific location if possible. This does not teleport
+		/// the unit, but makes it walk / fly / swim to the target.
+		bool moveTo(const math::Vector3 &target, float customSpeed);
+		/// Stops the current movement if any.
+		void stopMovement();
+		/// Gets the new movement target.
+		const math::Vector3 &getTarget() const { return m_target; }
 		/// 
 		GameUnit &getMoved() const { return m_unit; }
 		/// 
-		virtual void update() = 0;
+		bool isMoving() const { return m_moveReached.running; };
 		/// 
-		virtual bool isCurrentlyMoving() const = 0;
-		/// 
-		virtual void onBeforeLeave();
-		/// Interpolates the controlled units position to get the position at 
-		/// a specified time.
-		/// @param when The time value.
-		virtual game::Position getPositionAtTime(GameTime when) = 0;
+		math::Vector3 getCurrentLocation() const;
 
 	private:
 
 		GameUnit &m_unit;
+		Countdown m_moveReached, m_moveUpdated;
+		math::Vector3 m_start, m_target;
+		GameTime m_moveStart, m_moveEnd;
+		bool m_customSpeed;
 	};
 }

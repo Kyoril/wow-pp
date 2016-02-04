@@ -22,6 +22,7 @@
 #pragma once
 
 #include "mpq_file.h"
+#include "math/vector3.h"
 #include <array>
 
 namespace wowpp
@@ -257,6 +258,45 @@ namespace wowpp
 			}
 		};
 
+		/// 
+		struct MODFChunk final
+		{
+			UInt32 fourcc;
+			UInt32 size;
+
+			struct Entry final
+			{
+				UInt32 mwidEntry;
+				UInt32 uniqueId;
+				math::Vector3 position;
+				math::Vector3 rotation;
+				math::Vector3 lowerBounds;
+				math::Vector3 upperBounds;
+				UInt16 flags;
+				UInt16 doodadSet;
+				UInt16 nameSet;
+				UInt16 unk;
+
+				Entry()
+					: mwidEntry(0)
+					, uniqueId(0)
+					, flags(0)
+					, doodadSet(0)
+					, nameSet(0)
+					, unk(0)
+				{
+				}
+			};
+			
+			std::vector<Entry> entries;
+
+			MODFChunk()
+				: fourcc(0)
+				, size(0)
+			{
+			}
+		};
+
 	public:
 
 		/// @copydoc MPQFile::MPQFile()
@@ -265,16 +305,32 @@ namespace wowpp
 		/// @copydoc MPQFile::load
 		bool load() override;
 
-		/// 
+		/// Gets a constant reference to the MVER chunk data of this ADT file.
+		/// This chunk only contains version information.
 		const MVERChunk &getMVERChunk() const { return m_versionChunk; }
-		/// 
+		/// Gets a constant reference to the MHDR chunk data of this ADT file.
+		/// This chunk contains offsets to all other chunks and thus whether these 
+		/// other chunks exist in this ADT or not.
 		const MHDRChunk &getMHDRChunk() const { return m_headerChunk; }
-		/// 
+		/// Gets a constant reference to the MCIN chunk data of this ADT file.
 		const MCINChunk &getMCINChunk() const { return m_mcinChunk; }
-		/// 
+		/// Gets a constant reference to a MCNK sub chunk of this ADT file.
+		/// The MCNK chunk represents a height map cell.
+		/// @param index Index of the MCNK chunk.
 		const MCNKChunk &getMCNKChunk(UInt32 index) const { return m_mcnkChunks[index]; }
+		/// 
+		/// @param index 
 		const MCVTChunk &getMCVTChunk(UInt32 index) const { return m_heightChunks[index]; }
+		/// 
+		/// @param index 
 		const MCLQChunk &getMCLQChunk(UInt32 index) const { return m_liquidChunks[index]; }
+		/// 
+		const MODFChunk &getMODFChunk() const { return m_modfChunk; }
+		/// Gets the number of WMO files used in this ADT.
+		const UInt32 getWMOCount() const { return m_wmoIndex.size(); }
+		/// Gets the file name of a WMO file used in this ADT by it's index.
+		/// @param index The index to look for, where 0 <= index < getWMOCount()
+		const String getWMO(UInt32 index) const;
 
 	private:
 
@@ -286,5 +342,8 @@ namespace wowpp
 		std::array<MCNKChunk, 16 * 16> m_mcnkChunks;
 		std::array<MCVTChunk, 16 * 16> m_heightChunks;
 		std::array<MCLQChunk, 16 * 16> m_liquidChunks;
+		const char *m_wmoFilenames;
+		std::vector<UInt32> m_wmoIndex;
+		MODFChunk m_modfChunk;
 	};
 }

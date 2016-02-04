@@ -115,6 +115,16 @@
        <string>Unit - On Attack Swing</string>
       </property>
      </item>
+     <item>
+      <property name="text">
+       <string>Unit - On Reset</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Unit - On Reached Home</string>
+      </property>
+     </item>
     </widget>
    </item>
    <item>

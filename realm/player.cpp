@@ -33,7 +33,7 @@
 #include "common/big_number.h"
 #include "binary_io/vector_sink.h"
 #include "binary_io/writer.h"
-#include "data/project.h"
+#include "proto_data/project.h"
 #include "common/utilities.h"
 #include "game/game_item.h"
 #include "boost/algorithm/string.hpp"
@@ -47,8 +47,9 @@ using namespace wowpp::game;
 
 namespace wowpp
 {
-	Player::Player(Configuration &config, PlayerManager &manager, LoginConnector &loginConnector, WorldManager &worldManager, IDatabase &database, Project &project, std::shared_ptr<Client> connection, const String &address)
+	Player::Player(Configuration &config, IdGenerator<UInt64> &groupIdGenerator, PlayerManager &manager, LoginConnector &loginConnector, WorldManager &worldManager, IDatabase &database, proto::Project &project, std::shared_ptr<Client> connection, const String &address)
 		: m_config(config)
+		, m_groupIdGenerator(groupIdGenerator)
 		, m_manager(manager)
 		, m_loginConnector(loginConnector)
 		, m_worldManager(worldManager)
@@ -56,21 +57,18 @@ namespace wowpp
 		, m_project(project)
 		, m_connection(std::move(connection))
 		, m_address(address)
-		, m_seed(0x3a6833cd)	//TODO: Randomize
         , m_authed(false)
 		, m_characterId(std::numeric_limits<DatabaseId>::max())
 		, m_instanceId(std::numeric_limits<UInt32>::max())
-		, m_getRace(std::bind(&RaceEntryManager::getById, &project.races, std::placeholders::_1))
-		, m_getClass(std::bind(&ClassEntryManager::getById, &project.classes, std::placeholders::_1))
-		, m_getLevel(std::bind(&LevelEntryManager::getById, &project.levels, std::placeholders::_1))
-		, m_getSpell(std::bind(&SpellEntryManager::getById, &project.spells, std::placeholders::_1))
 		, m_worldNode(nullptr)
 		, m_transferMap(0)
-		, m_transferX(0.0f)
-		, m_transferY(0.0f)
-		, m_transferZ(0.0f)
+		, m_transfer(math::Vector3(0.0f, 0.0f, 0.0f))
 		, m_transferO(0.0f)
 	{
+		// Randomize seed
+		std::uniform_int_distribution<UInt32> dist;
+		m_seed = dist(randomGenerator);
+
 		assert(m_connection);
 
 		m_connection->setListener(*this);
@@ -183,11 +181,12 @@ namespace wowpp
 
 	void Player::connectionLost()
 	{
-		ILOG("Client " << m_address << " disconnected");
-
 		// If we are logged in, notify the world node about this
 		if (m_gameCharacter)
 		{
+			// Decline pending group invite
+			declineGroupInvite();
+
 			// Send notification to friends
 			game::SocialInfo info;
 			info.flags = game::social_flag::Friend;
@@ -200,9 +199,6 @@ namespace wowpp
 			if (world)
 			{
 				world->leaveWorldInstance(m_characterId, pp::world_realm::world_left_reason::Disconnect);
-
-				ILOG("Sent notification about this to the world node.");
-
 				// We don't destroy this player instance yet, as we are still connected to a world node: This world node needs to
 				// send the character's new data back to us, so that we can save it.
 				return;
@@ -211,6 +207,12 @@ namespace wowpp
 			{
 				WLOG("Failed to find the world node - can't send disconnect notification.");
 			}
+		}
+
+		if (m_authed)
+		{
+			// Notify login server about disconnection so that the session can be closed
+
 		}
 
 		destroy();
@@ -316,6 +318,15 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(TutorialClear, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(TutorialReset, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(CompleteCinematic, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(RaidTargetUpdate, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(GroupRaidConvert, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(GroupAssistentLeader, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(RaidReadyCheck, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(RaidReadyCheckFinished, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(RealmSplit, game::session_status::Authentificated)
+			WOWPP_HANDLE_PACKET(VoiceSessionEnable, game::session_status::Authentificated)
+			WOWPP_HANDLE_PACKET(CharRename, game::session_status::Authentificated)
+			WOWPP_HANDLE_PACKET(QuestQuery, game::session_status::LoggedIn)
 #undef WOWPP_HANDLE_PACKET
 
 			default:
@@ -392,23 +403,7 @@ namespace wowpp
 
 		// TODO: Flood protection
 
-		// Load characters
-		m_characters.clear();
-		if (!m_database.getCharacters(m_accountId, m_characters))
-		{
-			// Disconnect
-			destroy();
-			return;
-		}
-
-		for (auto &c : m_characters)
-		{
-			c.id = createRealmGUID(guidLowerPart(c.id), m_loginConnector.getRealmID(), guid_type::Player);
-		}
-
-		// Send character list
-		sendPacket(
-			std::bind(game::server_write::charEnum, std::placeholders::_1, std::cref(m_characters)));
+		reloadCharacters();
 	}
 
 	void Player::handleCharCreate(game::IncomingPacket &packet)
@@ -420,7 +415,7 @@ namespace wowpp
 		}
 
 		// Empty character name?
-		character.name = std::move(trim(character.name));
+		character.name = trim(character.name);
 		if (character.name.empty())
 		{
 			sendPacket(
@@ -445,7 +440,7 @@ namespace wowpp
 		}
 
 		// Get the racial informations
-		const auto *race = m_getRace(character.race);
+		const auto *race = m_project.races.getById(character.race);
 		if (!race)
 		{
 			ELOG("Unable to find informations of race " << character.race);
@@ -455,10 +450,10 @@ namespace wowpp
 		}
 
 		// Add initial spells
-		const auto &initialSpellsEntry = race->initialSpells.find(character.class_);
-		if (initialSpellsEntry == race->initialSpells.end())
+		const auto &initialSpellsEntry = race->initialspells().find(character.class_);
+		if (initialSpellsEntry == race->initialspells().end())
 		{
-			ELOG("No initial spells set up for race " << race->name << " and class " << character.class_);
+			ELOG("No initial spells set up for race " << race->name() << " and class " << character.class_);
 			sendPacket(
 				std::bind(game::server_write::charCreate, std::placeholders::_1, game::response_code::CharCreateError));
 			return;
@@ -469,155 +464,176 @@ namespace wowpp
 		std::vector<pp::world_realm::ItemData> items;
 
 		// Add initial items
-		auto it1 = race->initialItems.find(character.class_);
-		if (it1 != race->initialItems.end())
+		auto it1 = race->initialitems().find(character.class_);
+		if (it1 != race->initialitems().end())
 		{
-			auto it2 = it1->second.find(character.gender);
-			if (it2 != it1->second.end())
+			for (int i = 0; i < it1->second.items_size(); ++i)
 			{
-				for (const auto *item : it2->second)
+				const auto *item = m_project.items.getById(it1->second.items(i));
+				if (!item)
+					continue;
+
+				// Get slot for this item
+				UInt16 slot = 0xffff;
+				switch (item->inventorytype())
 				{
-					// Get slot for this item
-					UInt16 slot = 0xffff;
-					switch (item->inventoryType)
+					case game::inventory_type::Head:
 					{
-						case inventory_type::Head:
-						{
-							slot = player_equipment_slots::Head;
-							break;
-						}
-						case inventory_type::Neck:
-						{
-							slot = player_equipment_slots::Neck;
-							break;
-						}
-						case inventory_type::Shoulders:
-						{
-							slot = player_equipment_slots::Shoulders;
-							break;
-						}
-						case inventory_type::Body:
-						{
-							slot = player_equipment_slots::Body;
-							break;
-						}
-						case inventory_type::Chest:
-						case inventory_type::Robe:
-						{
-							slot = player_equipment_slots::Chest;
-							break;
-						}
-						case inventory_type::Waist:
-						{
-							slot = player_equipment_slots::Waist;
-							break;
-						}
-						case inventory_type::Legs:
-						{
-							slot = player_equipment_slots::Legs;
-							break;
-						}
-						case inventory_type::Feet:
-						{
-							slot = player_equipment_slots::Feet;
-							break;
-						}
-						case inventory_type::Wrists:
-						{
-							slot = player_equipment_slots::Wrists;
-							break;
-						}
-						case inventory_type::Hands:
-						{
-							slot = player_equipment_slots::Hands;
-							break;
-						}
-						case inventory_type::Finger:
-						{
-							//TODO: Finger1/2
-							slot = player_equipment_slots::Finger1;
-							break;
-						}
-						case inventory_type::Trinket:
-						{
-							//TODO: Trinket1/2
-							slot = player_equipment_slots::Trinket1;
-							break;
-						}
-						case inventory_type::Weapon:
-						case inventory_type::TwoHandWeapon:
-						case inventory_type::WeaponMainHand:
-						{
-							slot = player_equipment_slots::Mainhand;
-							break;
-						}
-						case inventory_type::Shield:
-						case inventory_type::WeaponOffHand:
-						case inventory_type::Holdable:
-						{
-							slot = player_equipment_slots::Offhand;
-							break;
-						}
-						case inventory_type::Ranged:
-						case inventory_type::Thrown:
-						{
-							slot = player_equipment_slots::Ranged;
-							break;
-						}
-						case inventory_type::Cloak:
-						{
-							slot = player_equipment_slots::Back;
-							break;
-						}
-						case inventory_type::Tabard:
-						{
-							slot = player_equipment_slots::Tabard;
-							break;
-						}
-
-						default:
-						{
-							if (bagSlot < player_inventory_pack_slots::Count_)
-							{
-								slot = player_inventory_pack_slots::Start + (bagSlot++);
-							}
-							break;
-						}
+						slot = player_equipment_slots::Head;
+						break;
+					}
+					case game::inventory_type::Neck:
+					{
+						slot = player_equipment_slots::Neck;
+						break;
+					}
+					case game::inventory_type::Shoulders:
+					{
+						slot = player_equipment_slots::Shoulders;
+						break;
+					}
+					case game::inventory_type::Body:
+					{
+						slot = player_equipment_slots::Body;
+						break;
+					}
+					case game::inventory_type::Chest:
+					case game::inventory_type::Robe:
+					{
+						slot = player_equipment_slots::Chest;
+						break;
+					}
+					case game::inventory_type::Waist:
+					{
+						slot = player_equipment_slots::Waist;
+						break;
+					}
+					case game::inventory_type::Legs:
+					{
+						slot = player_equipment_slots::Legs;
+						break;
+					}
+					case game::inventory_type::Feet:
+					{
+						slot = player_equipment_slots::Feet;
+						break;
+					}
+					case game::inventory_type::Wrists:
+					{
+						slot = player_equipment_slots::Wrists;
+						break;
+					}
+					case game::inventory_type::Hands:
+					{
+						slot = player_equipment_slots::Hands;
+						break;
+					}
+					case game::inventory_type::Finger:
+					{
+						//TODO: Finger1/2
+						slot = player_equipment_slots::Finger1;
+						break;
+					}
+					case game::inventory_type::Trinket:
+					{
+						//TODO: Trinket1/2
+						slot = player_equipment_slots::Trinket1;
+						break;
+					}
+					case game::inventory_type::Weapon:
+					case game::inventory_type::TwoHandedWeapon:
+					case game::inventory_type::MainHandWeapon:
+					{
+						slot = player_equipment_slots::Mainhand;
+						break;
+					}
+					case game::inventory_type::Shield:
+					case game::inventory_type::OffHandWeapon:
+					case game::inventory_type::Holdable:
+					{
+						slot = player_equipment_slots::Offhand;
+						break;
+					}
+					case game::inventory_type::Ranged:
+					case game::inventory_type::Thrown:
+					{
+						slot = player_equipment_slots::Ranged;
+						break;
+					}
+					case game::inventory_type::Cloak:
+					{
+						slot = player_equipment_slots::Back;
+						break;
+					}
+					case game::inventory_type::Tabard:
+					{
+						slot = player_equipment_slots::Tabard;
+						break;
 					}
 
-					if (slot != 0xffff)
+					default:
 					{
-						pp::world_realm::ItemData itemData;
-						itemData.entry = item->id;
-						itemData.durability = item->durability;
-						itemData.slot = slot;
-						itemData.stackCount = 1;
-						items.emplace_back(std::move(itemData));
+						if (bagSlot < player_inventory_pack_slots::Count_)
+						{
+							slot = player_inventory_pack_slots::Start + (bagSlot++);
+						}
+						break;
 					}
+				}
+
+				if (slot != 0xffff)
+				{
+					pp::world_realm::ItemData itemData;
+					itemData.entry = item->id();
+					itemData.durability = item->durability();
+					itemData.slot = slot;
+					itemData.stackCount = 1;
+					items.emplace_back(std::move(itemData));
 				}
 			}
 		}
 
 		// Update character location
-		character.mapId = race->startMap;
-		character.zoneId = race->startZone;
-		character.x = race->startPosition[0];
-		character.y = race->startPosition[1];
-		character.z = race->startPosition[2];
-		character.o = race->startRotation;
+		character.mapId = race->startmap();
+		character.zoneId = race->startzone();
+		character.location.x = race->startposx();
+		character.location.y = race->startposy();
+		character.location.z = race->startposz();
+		character.o = race->startrotation();
+
+		std::vector<const proto::SpellEntry*> initialSpells;
+		for (int i = 0; i < initialSpellsEntry->second.spells_size(); ++i)
+		{
+			const auto &spellid = initialSpellsEntry->second.spells(i);
+			const auto *spell = m_project.spells.getById(spellid);
+			if (spell)
+			{
+				initialSpells.push_back(spell);
+			}
+		}
 
 		// Create character
-		game::ResponseCode result = m_database.createCharacter(m_accountId, initialSpellsEntry->second, items, character);
+		game::ResponseCode result = m_database.createCharacter(m_accountId, initialSpells, items, character);
 		if (result == game::response_code::CharCreateSuccess)
 		{
 			// Cache the character data
 			m_characters.push_back(character);
 
 			// Add initial action buttons
-			const auto classBtns = race->initialActionButtons.find(character.class_);
-			if (classBtns != race->initialActionButtons.end())
+			const auto classBtns = race->initialactionbuttons().find(character.class_);
+			if (classBtns != race->initialactionbuttons().end())
 			{
-				m_database.setCharacterActionButtons(character.id, classBtns->second);
+				wowpp::ActionButtons buttons;
+				for (const auto &btn : classBtns->second.actionbuttons())
+				{
+					auto &entry = buttons[btn.first];
+					entry.action = btn.second.action();
+					entry.misc = btn.second.misc();
+					entry.state = static_cast<ActionButtonUpdateState>(btn.second.state());
+					entry.type = btn.second.type();
+				}
+
+				m_database.setCharacterActionButtons(character.id, buttons);
 			}
 		}
 
@@ -702,6 +718,12 @@ namespace wowpp
 			return;
 		}
 
+		// Make sure that a character, who is flagged for rename, is renamed first!
+		if (charEntry->atLogin & game::atlogin_flags::Rename)
+		{
+			return;
+		}
+
 		// Store character id
 		m_characterId = characterId;
 		m_itemData.clear();
@@ -710,7 +732,7 @@ namespace wowpp
 		ILOG("Player " << m_accountName << " tries to enter the world with character 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << m_characterId);
 
 		// Load the player character data from the database
-		std::shared_ptr<GameCharacter> character(new GameCharacter(m_manager.getTimers(), m_getRace, m_getClass, m_getLevel, m_getSpell));
+		std::shared_ptr<GameCharacter> character(new GameCharacter(m_project, m_manager.getTimers()));
 		character->initialize();
 		character->setGuid(createRealmGUID(characterId, m_loginConnector.getRealmID(), guid_type::Player));
 		if (!m_database.getGameCharacter(guidLowerPart(characterId), *character, m_itemData))
@@ -761,7 +783,7 @@ namespace wowpp
 		worldNode->enterWorldInstance(charEntry->id, std::numeric_limits<UInt32>::max(), *m_gameCharacter, m_itemData);
 	}
 
-	void Player::worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, float x, float y, float z, float o)
+	void Player::worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, math::Vector3 location, float o)
 	{
 		assert(m_gameCharacter);
 
@@ -769,6 +791,8 @@ namespace wowpp
 		m_worldNode = &world;
 		m_worldDisconnected = world.onConnectionLost.connect(
 			std::bind(&Player::worldNodeDisconnected, this));
+
+		ILOG("Player " << m_gameCharacter->getName() << " entered world instance 0x" << std::hex << std::uppercase << instanceId);
 
 		// If instance id is zero, this is the first time we enter a world since the login
 		const bool isLoginEnter = (m_instanceId == std::numeric_limits<UInt32>::max());
@@ -783,22 +807,27 @@ namespace wowpp
 
 		// Update character on the realm side with data received from the world server
 		//m_gameCharacter->setGuid(createGUID(worldObjectGuid, 0, high_guid::Player));
-		m_gameCharacter->relocate(x, y, z, o);
+		m_gameCharacter->relocate(location, o);
 		m_gameCharacter->setMapId(mapId);
+		
+		UInt32 homeMap = 0;
+		math::Vector3 homePos;
+		float homeOri = 0;
+		m_gameCharacter->getHome(homeMap, homePos, homeOri);
 
 		// Clear mask
 		m_gameCharacter->clearUpdateMask();
 
+		sendPacket(
+			std::bind(game::server_write::setDungeonDifficulty, std::placeholders::_1));
+
+		// Send world verification packet to the client to proof world coordinates from
+		// the character list
+		sendPacket(
+			std::bind(game::server_write::loginVerifyWorld, std::placeholders::_1, mapId, location, o));
+
 		if (isLoginEnter)
 		{
-			sendPacket(
-				std::bind(game::server_write::setDungeonDifficulty, std::placeholders::_1));
-
-			// Send world verification packet to the client to proof world coordinates from
-			// the character list
-			sendPacket(
-				std::bind(game::server_write::loginVerifyWorld, std::placeholders::_1, mapId, x, y, z, o));
-
 			// Send account data times (TODO: Find out what this does)
 			std::array<UInt32, 32> times;
 			times.fill(0);
@@ -812,23 +841,26 @@ namespace wowpp
 			// SMSG_MOTD 
 			sendPacket(
 				std::bind(game::server_write::motd, std::placeholders::_1, m_config.messageOfTheDay));
+		}
 
-			// Don't know what this packet does
-			sendPacket(
-				std::bind(game::server_write::setRestStart, std::placeholders::_1));
+		// Don't know what this packet does
+		sendPacket(
+			std::bind(game::server_write::setRestStart, std::placeholders::_1));
 
-			// Notify about bind point for hearthstone (also used in case of corrupted location data)
-			sendPacket(
-				std::bind(game::server_write::bindPointUpdate, std::placeholders::_1, mapId, zoneId, x, y, z));
+		// Notify about bind point for hearthstone (also used in case of corrupted location data)
+		sendPacket(
+			std::bind(game::server_write::bindPointUpdate, std::placeholders::_1, homeMap, zoneId, std::cref(homePos)));
 
+		// Send spells
+		const auto &spells = m_gameCharacter->getSpells();
+		sendPacket(
+			std::bind(game::server_write::initialSpells, std::placeholders::_1, std::cref(m_project), std::cref(spells), std::cref(m_gameCharacter->getCooldowns())));
+
+		if (isLoginEnter)
+		{
 			// Send tutorial flags (which tutorials have been viewed etc.)
 			sendPacket(
 				std::bind(game::server_write::tutorialFlags, std::placeholders::_1, std::cref(m_tutorialData)));
-
-			// Send spells
-			const auto &spells = m_gameCharacter->getSpells();
-			sendPacket(
-				std::bind(game::server_write::initialSpells, std::placeholders::_1, std::cref(spells)));
 
 			sendPacket(
 				std::bind(game::server_write::unlearnSpells, std::placeholders::_1));
@@ -848,7 +880,7 @@ namespace wowpp
 				(charEntry && charEntry->cinematic))
 			{
 				sendPacket(
-					std::bind(game::server_write::triggerCinematic, std::placeholders::_1, raceEntry->cinematic));
+					std::bind(game::server_write::triggerCinematic, std::placeholders::_1, raceEntry->cinematic()));
 			}
 
 			// Send notification to friends
@@ -861,6 +893,11 @@ namespace wowpp
 			m_social->sendToFriends(
 				std::bind(game::server_write::friendStatus, std::placeholders::_1, m_gameCharacter->getGuid(), game::friend_result::Online, std::cref(info)));
 		}
+		
+		// Retrieve ignore list and send it to the new world node
+		std::vector<UInt64> ignoreList;
+		m_social->getIgnoreList(ignoreList);
+		m_worldNode->characterIgnoreList(m_gameCharacter->getGuid(), ignoreList);
 	}
 
 	void Player::worldInstanceLeft(World &world, UInt32 instanceId, pp::world_realm::WorldLeftReason reason)
@@ -900,10 +937,19 @@ namespace wowpp
 		m_worldDisconnected.disconnect();
 		m_worldNode = nullptr;
 
+		// Save action buttons
+		if (m_gameCharacter)
+		{
+			m_database.setCharacterActionButtons(m_gameCharacter->getGuid(), m_actionButtons);
+		}
+
 		switch (reason)
 		{
 			case pp::world_realm::world_left_reason::Logout:
 			{
+				// Decline pending group invite
+				declineGroupInvite();
+
 				auto guid = m_gameCharacter->getGuid();
 
 				// Send notification to friends
@@ -928,8 +974,11 @@ namespace wowpp
 				// If we are in a group, notify others
 				if (m_group)
 				{
+					std::vector<UInt64> exclude;
+					exclude.push_back(guid);
+
 					m_group->broadcastPacket(
-						std::bind(game::server_write::partyMemberStatsFullOffline, std::placeholders::_1, guid), guid);
+						std::bind(game::server_write::partyMemberStatsFullOffline, std::placeholders::_1, guid), &exclude);
 					m_group.reset();
 				}
 
@@ -984,6 +1033,76 @@ namespace wowpp
 
 		// Flush buffers
 		m_connection->flush();
+	}
+
+	AddItemResult Player::addItem(UInt32 itemId, UInt32 amount)
+	{
+		const auto *itemEntry = m_project.items.getById(itemId);
+		if (!itemEntry)
+		{
+			return add_item_result::ItemNotFound;
+		}
+
+		if (!m_worldNode)
+		{
+			// Player is not in a world right now (maybe loading screen)
+			return add_item_result::Unknown;
+		}
+
+		if (amount > itemEntry->maxstack()) amount = itemEntry->maxstack();
+
+		// 
+		std::map<UInt16, pp::world_realm::ItemData> modifiedItems;
+
+		// Iterate all available items
+		LinearSet<UInt16> usedSlots;
+		for (auto &item : m_itemData)
+		{
+			if (item.slot >= player_inventory_pack_slots::Start &&
+				item.slot < player_inventory_pack_slots::End)
+			{
+				usedSlots.add(item.slot);
+				if (item.entry == itemId &&
+					itemEntry->maxstack() > 1 &&
+					item.stackCount <= itemEntry->maxstack() - amount)
+				{
+					item.stackCount += amount;
+					amount = 0;
+
+					modifiedItems[item.slot] = item;
+					break;
+				}
+			}
+		}
+
+		if (amount > 0)
+		{
+			for (UInt16 i = player_inventory_pack_slots::Start; i < player_inventory_pack_slots::End; ++i)
+			{
+				if (!usedSlots.contains(i))
+				{
+					pp::world_realm::ItemData data;
+					data.contained = 0;
+					data.creator = 0;
+					data.durability = itemEntry->durability();
+					data.entry = itemId;
+					data.randomPropertyIndex = 0;
+					data.randomSuffixIndex = 0;
+					data.slot = i;
+					data.stackCount = amount;
+					modifiedItems[i] = data;
+					m_itemData.emplace_back(std::move(data));
+					amount = 0;
+					break;
+				}
+			}
+		}
+
+		// Notify world node about this
+		m_worldNode->itemData(m_gameCharacter->getGuid(), std::cref(modifiedItems));
+	
+		// Save items
+		return add_item_result::Success;
 	}
 
 	void Player::handleNameQuery(game::IncomingPacket &packet)
@@ -1092,7 +1211,6 @@ namespace wowpp
 					if (targetRealm != realmName)
 					{
 						// It is another realm - redirect to the world node
-						WLOG("TODO: Redirect whisper message to the world node");
 						m_worldNode->sendChatMessage(
 							m_gameCharacter->getGuid(),
 							type,
@@ -1140,6 +1258,12 @@ namespace wowpp
 					break;
 				}
 
+				if (other->getSocial().isIgnored(m_gameCharacter->getGuid()))
+				{
+					DLOG("TODO: Other player ignores us - notify our client about this...");
+					break;
+				}
+
 				// TODO: Check if that player is a GM and if he accepts whispers from us, eventually block
 
 				// Change language if needed so that whispers are always readable
@@ -1158,13 +1282,49 @@ namespace wowpp
 
 				break;
 			}
+			case chat_msg::Raid:
 			case chat_msg::Party:
+			case chat_msg::RaidLeader:
+			case chat_msg::RaidWarning:
 			{
 				// Get the players group
 				if (!m_group)
 				{
 					WLOG("Player is not in group");
 					return;
+				}
+
+				auto groupType = m_group->getType();
+				if (groupType == group_type::Raid)
+				{
+					if (type == chat_msg::Party)
+					{
+						// Only affect players subgroup
+						DLOG("TODO: Player subgroup");
+					}
+
+					const bool isRaidLead = m_group->getLeader() == m_gameCharacter->getGuid();
+					const bool isAssistant = m_group->isLeaderOrAssistant(m_gameCharacter->getGuid());
+					if (type == chat_msg::RaidLeader &&
+						!isRaidLead)
+					{
+						type = chat_msg::Raid;
+					}
+					else if (type == chat_msg::RaidWarning &&
+						!isRaidLead && 
+						!isAssistant)
+					{
+						WLOG("Raid warning can only be done by raid leader or assistants");
+						return;
+					}
+				}
+				else
+				{
+					if (type == chat_msg::Raid)
+					{
+						DLOG("Not a raid group!");
+						return;
+					}
 				}
 
 				// Maybe we were just invited, but are not yet a member of that group
@@ -1176,7 +1336,7 @@ namespace wowpp
 
 				// Broadcast chat packet
 				m_group->broadcastPacket(
-					std::bind(game::server_write::messageChat, std::placeholders::_1, chat_msg::Party, lang, std::cref(channel), m_characterId, std::cref(message), m_gameCharacter.get()));
+					std::bind(game::server_write::messageChat, std::placeholders::_1, type, lang, std::cref(channel), m_characterId, std::cref(message), m_gameCharacter.get()), nullptr, m_gameCharacter->getGuid());
 
 				break;
 			}
@@ -1270,9 +1430,19 @@ namespace wowpp
 			{
 				// Add to database
 				const bool shouldUpdate = m_social->isIgnored(characterGUID);
-				if (!m_database.addCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(info.flags), info.note))
+				if (!shouldUpdate)
 				{
-					result = game::friend_result::DatabaseError;
+					if (!m_database.addCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(info.flags), info.note))
+					{
+						result = game::friend_result::DatabaseError;
+					}
+				}
+				else
+				{
+					if (!m_database.updateCharacterSocialContact(m_characterId, characterGUID, static_cast<SocialFlag>(game::social_flag::Friend | game::social_flag::Ignored)))
+					{
+						result = game::friend_result::DatabaseError;
+					}
 				}
 			}
 		}
@@ -1303,9 +1473,21 @@ namespace wowpp
 		auto result = m_social->removeFromSocialList(guid, false);
 		if (result == game::friend_result::Removed)
 		{
-			if (!m_database.removeCharacterSocialContact(m_characterId, guid))
+			if (m_social->isIgnored(guid))
 			{
-				result = game::friend_result::DatabaseError;
+				// Old friend is still ignored - update flags
+				if (!m_database.updateCharacterSocialContact(m_characterId, guid, game::social_flag::Ignored, ""))
+				{
+					result = game::friend_result::DatabaseError;
+				}
+			}
+			else
+			{
+				// Completely remove contact, as he is neither ignored nor a friend
+				if (!m_database.removeCharacterSocialContact(m_characterId, guid))
+				{
+					result = game::friend_result::DatabaseError;
+				}
 			}
 		}
 
@@ -1333,8 +1515,6 @@ namespace wowpp
 		if (!name.empty())
 			capitalize(name);
 
-        //DLOG("TODO: Player " << m_accountName << " wants to add " << name << " to his ignore list");
-
         // Find the character details
         game::CharEntry ignoredChar;
         if (!m_database.getCharacterByName(name, ignoredChar))
@@ -1355,18 +1535,26 @@ namespace wowpp
 
         //result
         game::FriendResult result = m_social->addToSocialList(characterGUID, true);
+		if (result == game::friend_result::IgnoreAdded)
+		{
+			const bool shouldUpdate = m_social->isFriend(characterGUID);
+			if (!shouldUpdate)
+			{
+				if (!m_database.addCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(info.flags), ""))
+				{
+					result = game::friend_result::DatabaseError;
+				}
+			}
+			else
+			{
+				if (!m_database.updateCharacterSocialContact(m_characterId, characterGUID, static_cast<SocialFlag>(game::social_flag::Friend | game::social_flag::Ignored)))
+				{
+					result = game::friend_result::DatabaseError;
+				}
+			}
 
-        if(m_characterId != characterGUID)
-        {
-            if (!m_database.addCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(info.flags), ""))
-            {
-                result = game::friend_result::DatabaseError;
-            }
-        }
-        else
-        {
-            result = game::friend_result::IgnoreSelf;
-        }
+			m_worldNode->characterAddIgnore(m_characterId, characterGUID);
+		}
 
         sendPacket(
             std::bind(game::server_write::friendStatus, std::placeholders::_1, characterGUID, result, std::cref(info)));
@@ -1381,7 +1569,40 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("TODO: Player " << m_accountName << " wants to delete " << guid << " from his ignore list");
+		// Find the character details
+		game::CharEntry ignoredChar;
+
+		// Fill ignored info
+		game::SocialInfo info;
+
+		//result
+		auto result = m_social->removeFromSocialList(guid, true);
+		if (result == game::friend_result::IgnoreRemoved)
+		{
+			if (m_social->isFriend(guid))
+			{
+				if (!m_database.updateCharacterSocialContact(m_characterId, guid, game::social_flag::Friend))
+				{
+					result = game::friend_result::DatabaseError;
+				}
+			}
+			else
+			{
+				if (!m_database.removeCharacterSocialContact(m_characterId, guid))
+				{
+					result = game::friend_result::DatabaseError;
+				}
+			}
+
+			m_worldNode->characterRemoveIgnore(m_characterId, guid);
+		}
+		else
+		{
+			WLOG("handleDeleteIgnore: result " << result);
+		}
+
+		sendPacket(
+			std::bind(game::server_write::friendStatus, std::placeholders::_1, guid, result, std::cref(info)));
 	}
 
 	void Player::handleItemQuerySingle(game::IncomingPacket &packet)
@@ -1395,38 +1616,26 @@ namespace wowpp
 		}
 
 		// Find item
-		const ItemEntry *item = m_project.items.getById(itemID);
+		const auto *item = m_project.items.getById(itemID);
 		if (item)
 		{
-			// Write answer
-			ILOG("WORLD: CMSG_ITEM_QUERY_SINGLE '" << item->name << "' - Entry: " << itemID << ".");
-
 			// TODO: Cache multiple query requests and send one, bigger response with multiple items
 
 			// Write answer packet
 			sendPacket(
 				std::bind(game::server_write::itemQuerySingleResponse, std::placeholders::_1, std::cref(*item)));
 		}
-		else
-		{
-			WLOG("WORLD: CMSG_ITEM_QUERY_SINGLE - Entry: " << itemID << " NO ITEM INFO!");
-		}
 	}
-
+	/*
 	void Player::saveCharacter()
 	{
 		if (m_gameCharacter)
 		{
-			DLOG("Saving player character...");
-
-			float x, y, z, o;
-			m_gameCharacter->getLocation(x, y, z, o);
-
-			m_database.saveGameCharacter(*m_gameCharacter);
+			//m_database.saveGameCharacter(*m_gameCharacter, m_itemData);
 			m_database.setCharacterActionButtons(m_gameCharacter->getGuid(), m_actionButtons);
 		}
 	}
-
+	*/
 	void Player::handleGroupInvite(game::IncomingPacket &packet)
 	{
 		String playerName;
@@ -1475,18 +1684,26 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_GROUP_INVITE: Player " << m_gameCharacter->getName() << " invites player " << playerName);
+		if (player->getSocial().isIgnored(m_gameCharacter->getGuid()))
+		{
+			sendPacket(
+				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, party_operation::Invite, std::cref(playerName), party_result::TargetIgnoreYou));
+			return;
+		}
 
 		// Get players group or create a new one
 		if (!m_group)
 		{
 			// Create the group
-			m_group = std::make_shared<PlayerGroup>(m_manager);
+			m_group = std::make_shared<PlayerGroup>(m_groupIdGenerator.generateId(), m_manager);
 			m_group->create(*m_gameCharacter);
+
+			// Send to world node
+			m_worldNode->characterGroupChanged(m_gameCharacter->getGuid(), m_group->getId());
 		}
 
 		// Check if we are the leader of that group
-		if (m_group->getLeader() != m_gameCharacter->getGuid())
+		if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, party_operation::Invite, "", party_result::YouNotLeader));
@@ -1532,6 +1749,9 @@ namespace wowpp
 			// TODO...
 			return;
 		}
+
+		// Send to world node
+		m_worldNode->characterGroupChanged(m_gameCharacter->getGuid(), m_group->getId());
 	}
 	
 	void Player::handleGroupDecline(game::IncomingPacket &packet)
@@ -1542,31 +1762,7 @@ namespace wowpp
 			return;
 		}
 
-		if (!m_group)
-		{
-			WLOG("Player declined group invitation, but is not in a group");
-			return;
-		}
-
-		// Find the group leader
-		UInt64 leader = m_group->getLeader();
-		if (!m_group->removeInvite(m_gameCharacter->getGuid()))
-		{
-			return;
-		}
-
-		// We are no longer a member of this group
-		m_group.reset();
-
-		if (leader != 0)
-		{
-			auto *player = m_manager.getPlayerByCharacterGuid(leader);
-			if (player)
-			{
-				player->sendPacket(
-					std::bind(game::server_write::groupDecline, std::placeholders::_1, std::cref(m_gameCharacter->getName())));
-			}
-		}
+		declineGroupInvite();
 	}
 
 	void Player::handleGroupUninvite(game::IncomingPacket &packet)
@@ -1588,7 +1784,7 @@ namespace wowpp
 			return;
 		}
 
-		if (m_group->getLeader() != m_gameCharacter->getGuid())
+		if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::YouNotLeader));
@@ -1600,6 +1796,15 @@ namespace wowpp
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, std::cref(memberName), game::party_result::NotInYourParty));
+			return;
+		}
+
+		// Raid assistants may not kick the leader
+		if (m_gameCharacter->getGuid() != m_group->getLeader() &&
+			m_group->getLeader() == guid)
+		{
+			sendPacket(
+				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::YouNotLeader));
 			return;
 		}
 
@@ -1622,7 +1827,7 @@ namespace wowpp
 			return;
 		}
 
-		if (m_group->getLeader() != m_gameCharacter->getGuid())
+		if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::YouNotLeader));
@@ -1644,7 +1849,6 @@ namespace wowpp
 		UInt64 leaderGUID;
 		if (!game::client_read::groupSetLeader(packet, leaderGUID))
 		{
-			// Could not read packet
 			return;
 		}
 
@@ -1677,32 +1881,23 @@ namespace wowpp
 
 		if (!m_group)
 		{
-			WLOG("Player is not a member of a group!");
 			return;
 		}
-
 		if (m_group->getLeader() != m_gameCharacter->getGuid())
 		{
-			WLOG("Player is not the group leader");
 			return;
 		}
-
 		if (lootMethod > loot_method::NeedBeforeGreed)
 		{
-			WLOG("Invalid loot method");
 			return;
 		}
-
 		if (lootTreshold < 2 || lootTreshold > 6)
 		{
-			WLOG("Invalid loot treshold");
 			return;
 		}
-
 		if (lootMethod == loot_method::MasterLoot &&
 			!m_group->isMember(lootMasterGUID))
 		{
-			WLOG("Invalid loot master guid");
 			return;
 		}
 
@@ -1718,18 +1913,68 @@ namespace wowpp
 			return;
 		}
 
-		if (m_group)
+		if (!m_group)
 		{
-			if (m_group->getLeader() == m_gameCharacter->getGuid())
-			{
-				m_group->disband(false);
-			}
+			return;
 		}
+
+		// Remove this group member
+		// Note: This will make m_group invalid
+		m_group->removeMember(m_gameCharacter->getGuid());
 	}
 
 	void Player::setGroup(std::shared_ptr<PlayerGroup> group)
 	{
 		m_group = group;
+	}
+
+	void Player::declineGroupInvite()
+	{
+		if (!m_group || !m_gameCharacter)
+		{
+			return;
+		}
+
+		// Find the group leader
+		UInt64 leader = m_group->getLeader();
+		if (!m_group->removeInvite(m_gameCharacter->getGuid()))
+		{
+			return;
+		}
+
+		// We are no longer a member of this group
+		m_group.reset();
+
+		if (leader != 0)
+		{
+			auto *player = m_manager.getPlayerByCharacterGuid(leader);
+			if (player)
+			{
+				player->sendPacket(
+					std::bind(game::server_write::groupDecline, std::placeholders::_1, std::cref(m_gameCharacter->getName())));
+			}
+		}
+	}
+
+	void Player::reloadCharacters()
+	{
+		// Load characters
+		m_characters.clear();
+		if (!m_database.getCharacters(m_accountId, m_characters))
+		{
+			// Disconnect
+			destroy();
+			return;
+		}
+
+		for (auto &c : m_characters)
+		{
+			c.id = createRealmGUID(guidLowerPart(c.id), m_loginConnector.getRealmID(), guid_type::Player);
+		}
+
+		// Send character list
+		sendPacket(
+			std::bind(game::server_write::charEnum, std::placeholders::_1, std::cref(m_characters)));
 	}
 
 	void Player::handleRequestPartyMemberStats(game::IncomingPacket &packet)
@@ -1741,9 +1986,6 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_REQUEST_PARTY_MEMBER_STATS: Player " << m_gameCharacter->getName() << " requests party member stats of 0x" 
-			<< std::hex << std::uppercase << std::setw(16) << std::setfill('0') << guid);
-		
 		// Try to find that player
 		auto *player = m_manager.getPlayerByCharacterGuid(guid);
 		if (!player)
@@ -1759,18 +2001,16 @@ namespace wowpp
 			std::bind(game::server_write::partyMemberStatsFull, std::placeholders::_1, std::cref(*m_gameCharacter)));
 	}
 
-	void Player::initializeTransfer(UInt32 map, float x, float y, float z, float o)
+	void Player::initializeTransfer(UInt32 map, math::Vector3 location, float o)
 	{
 		m_transferMap = map;
-		m_transferX = x;
-		m_transferY = y;
-		m_transferZ = z;
+		m_transfer = location;
 		m_transferO = o;
 	}
 
 	void Player::commitTransfer()
 	{
-		if (m_transferMap == 0 && m_transferX == 0.0f && m_transferY == 0.0f && m_transferZ == 0.0f && m_transferO == 0.0f)
+		if (m_transferMap == 0 && m_transfer.x == 0.0f && m_transfer.y == 0.0f && m_transfer.z == 0.0f && m_transferO == 0.0f)
 		{
 			WLOG("No transfer pending - commit will be ignored.");
 			return;
@@ -1778,12 +2018,12 @@ namespace wowpp
 
 		// Load new world
 		sendPacket(
-			std::bind(game::server_write::newWorld, std::placeholders::_1, m_transferMap, m_transferX, m_transferY, m_transferZ, m_transferO));
+			std::bind(game::server_write::newWorld, std::placeholders::_1, m_transferMap, m_transfer, m_transferO));
 	}
 
 	void Player::handleMoveWorldPortAck(game::IncomingPacket &packet)
 	{
-		if (m_transferMap == 0 && m_transferX == 0.0f && m_transferY == 0.0f && m_transferZ == 0.0f && m_transferO == 0.0f)
+		if (m_transferMap == 0 && m_transfer.x == 0.0f && m_transfer.y == 0.0f && m_transfer.z == 0.0f && m_transferO == 0.0f)
 		{
 			WLOG("No transfer pending - commit will be ignored.");
 			return;
@@ -1791,7 +2031,7 @@ namespace wowpp
 
 		// Update character location
 		m_gameCharacter->setMapId(m_transferMap);
-		m_gameCharacter->relocate(m_transferX, m_transferY, m_transferZ, m_transferO);
+		m_gameCharacter->relocate(m_transfer, m_transferO);
 		
 		// We found the character - now we need to look for a world node
 		// which is hosting a fitting world instance or is able to create
@@ -1829,9 +2069,7 @@ namespace wowpp
 
 		// Reset transfer data
 		m_transferMap = 0;
-		m_transferX = 0.0f;
-		m_transferY = 0.0f;
-		m_transferZ = 0.0f;
+		m_transfer = math::Vector3(0.0f, 0.0f, 0.0f);
 		m_transferO = 0.0f;
 	}
 
@@ -1952,6 +2190,220 @@ namespace wowpp
 		}
 
 		m_database.setCinematicState(m_characterId, false);
+	}
+
+	void Player::handleRaidTargetUpdate(game::IncomingPacket &packet)
+	{
+		UInt8 mode = 0;
+		UInt64 guid = 0;
+		if (!(game::client_read::raidTargetUpdate(packet, mode, guid)))
+		{
+			return;
+		}
+
+		if (!m_group)
+		{
+			return;
+		}
+		if (!m_group->isMember(m_gameCharacter->getGuid()))
+		{
+			return;
+		}
+
+		if (mode == 0xFF)
+		{
+			m_group->sendTargetList(*this);
+		}
+		else
+		{
+			if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
+			{
+				WLOG("Only the group leader is allowed to update raid target icons!");
+				return;
+			}
+
+			m_group->setTargetIcon(mode, guid);
+		}
+	}
+
+	void Player::handleGroupRaidConvert(game::IncomingPacket &packet)
+	{
+		if (!(game::client_read::groupRaidConvert(packet)))
+		{
+			return;
+		}
+
+		const bool isLeader = (m_group && (m_group->getLeader() == m_gameCharacter->getGuid()));
+		if (!isLeader)
+		{
+			return;
+		}
+
+		sendPacket(
+			std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Invite, "", game::party_result::Ok));
+		m_group->convertToRaidGroup();
+	}
+
+	void Player::handleGroupAssistentLeader(game::IncomingPacket &packet)
+	{
+		UInt64 guid;
+		UInt8 flags;
+		if (!(game::client_read::groupAssistentLeader(packet, guid, flags)))
+		{
+			return;
+		}
+
+		if (!m_group)
+		{
+			return;
+		}
+		if (m_group->getType() != group_type::Raid)
+		{
+			return;
+		}
+		if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
+		{
+			return;
+		}
+
+		m_group->setAssistant(guid, flags);
+	}
+
+	void Player::handleRaidReadyCheck(game::IncomingPacket &packet)
+	{
+		bool hasState = false;
+		UInt8 state = 0;
+		if (!(game::client_read::raidReadyCheck(packet, hasState, state)))
+		{
+			return;
+		}
+
+		if (!m_group)
+		{
+			return;
+		}
+		if (!m_group->isMember(m_gameCharacter->getGuid()))
+		{
+			return;
+		}
+
+		if (!hasState)
+		{
+			if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
+			{
+				return;
+			}
+
+			// Ready check request
+			m_group->broadcastPacket(
+				std::bind(game::server_write::raidReadyCheck, std::placeholders::_1, m_gameCharacter->getGuid()));
+		}
+		else
+		{
+			// Ready check request
+			m_group->broadcastPacket(
+				std::bind(game::server_write::raidReadyCheckConfirm, std::placeholders::_1, m_gameCharacter->getGuid(), state));
+		}
+	}
+
+	void Player::handleRaidReadyCheckFinished(game::IncomingPacket &packet)
+	{
+		if (!m_group)
+		{
+			return;
+		}
+		if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
+		{
+			return;
+		}
+
+		// Ready check request
+		m_group->broadcastPacket(
+			std::bind(game::server_write::raidReadyCheckFinished, std::placeholders::_1));
+	}
+
+	void Player::handleRealmSplit(game::IncomingPacket & packet)
+	{
+		UInt32 preferred = 0;
+		if (!(game::client_read::realmSplit(packet, preferred)))
+		{
+			return;
+		}
+
+		if (preferred == 0xFFFFFFFF)
+		{
+			// The player requests his preferred realm id from the server
+			// TODO: Determine if a realm split is happening and if so, send SMSG_REALM_SPLIT message
+		}
+		else
+		{
+			DLOG("TODO...");
+		}
+	}
+
+	void Player::handleVoiceSessionEnable(game::IncomingPacket & packet)
+	{
+		UInt16 unknown = 0;
+		if (!(game::client_read::voiceSessionEnable(packet, unknown)))
+		{
+			return;
+		}
+
+		// TODO
+	}
+
+	void Player::handleCharRename(game::IncomingPacket & packet)
+	{
+		UInt64 characterId = 0;
+		String newName;
+		if (!(game::client_read::charRename(packet, characterId, newName)))
+		{
+			return;
+		}
+
+		// Rename character
+		game::ResponseCode response = game::response_code::CharCreateError;
+		for (auto &entry : m_characters)
+		{
+			if (entry.id == characterId)
+			{
+				// Capitalize the characters name
+				capitalize(newName);
+
+				response = m_database.renameCharacter(characterId, newName);
+				if (response == game::response_code::Success)
+				{
+					// Fix entry
+					entry.name = newName;
+					entry.atLogin = static_cast<game::AtLoginFlags>(entry.atLogin & ~game::atlogin_flags::Rename);
+				}
+
+				break;
+			}
+		}
+
+		// Send response
+		sendPacket(
+			std::bind(game::server_write::charRename, std::placeholders::_1, response, characterId, std::cref(newName)));
+	}
+
+	void Player::handleQuestQuery(game::IncomingPacket & packet)
+	{
+		UInt32 questId = 0;
+		if (!(game::client_read::questQuery(packet, questId)))
+		{
+			return;
+		}
+
+		const auto *quest = m_project.quests.getById(questId);
+		if (!quest)
+		{
+			return;
+		}
+
+		// Send response
+		sendPacket(
+			std::bind(game::server_write::questQueryResponse, std::placeholders::_1, std::cref(*quest)));
 	}
 
 }

@@ -26,7 +26,10 @@
 #include "game/world_instance.h"
 #include "game/each_tile_in_sight.h"
 #include "game/universe.h"
-#include "data/project.h"
+#include "proto_data/project.h"
+#include "game/game_creature.h"
+#include "game/game_world_object.h"
+#include <iomanip>
 #include <cassert>
 #include <limits>
 
@@ -34,7 +37,7 @@ using namespace std;
 
 namespace wowpp
 {
-	Player::Player(PlayerManager &manager, RealmConnector &realmConnector, WorldInstanceManager &worldInstanceManager, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance, Project &project)
+	Player::Player(PlayerManager &manager, RealmConnector &realmConnector, WorldInstanceManager &worldInstanceManager, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance, proto::Project &project)
 		: m_manager(manager)
 		, m_realmConnector(realmConnector)
 		, m_worldInstanceManager(worldInstanceManager)
@@ -46,6 +49,11 @@ namespace wowpp
 		, m_lastFallTime(0)
 		, m_lastFallZ(0.0f)
 		, m_project(project)
+		, m_loot(nullptr)
+		, m_clientDelayMs(0)
+		, m_nextDelayReset(0)
+		, m_clientTicks(0)
+		, m_groupUpdate(instance.getUniverse().getTimers())
 	{
 		m_logoutCountdown.ended.connect(
 			std::bind(&Player::onLogout, this));
@@ -75,7 +83,66 @@ namespace wowpp
 		m_onTargetAuraUpdate = m_character->targetAuraUpdated.connect(
 			std::bind(&Player::onTargetAuraUpdated, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 		m_onTeleport = m_character->teleport.connect(
-			std::bind(&Player::onTeleport, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+			std::bind(&Player::onTeleport, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+		m_onCooldownEvent = m_character->cooldownEvent.connect(
+			[this](UInt32 spellId) {
+				sendProxyPacket(std::bind(game::server_write::cooldownEvent, std::placeholders::_1, spellId, m_character->getGuid()));
+		});
+		m_questChanged = m_character->questDataChanged.connect([this](UInt32 questId, const QuestStatusData &data) {
+			m_realmConnector.sendQuestData(m_character->getGuid(), questId, data);
+		});
+
+		auto onRootOrStunUpdate = [this](bool flag) {
+			if (flag || m_character->isRooted() || m_character->isStunned())
+			{
+				// Root the character
+				m_character->addFlag(unit_fields::UnitFlags, 0x00040000);
+				sendProxyPacket(
+					std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));
+			}
+			else
+			{
+				m_character->removeFlag(unit_fields::UnitFlags, 0x00040000);
+				sendProxyPacket(
+					std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));
+			}
+		};
+
+		m_onRootUpdate = m_character->rootStateChanged.connect(onRootOrStunUpdate);
+		m_onStunUpdate = m_character->stunStateChanged.connect(onRootOrStunUpdate);
+
+		m_groupUpdate.ended.connect([this]()
+		{
+			math::Vector3 location(m_character->getLocation());
+
+			// Get group id
+			auto groupId = m_character->getGroupId();
+			std::vector<UInt64> nearbyMembers;
+
+			// Determine nearby party members
+			m_instance.getUnitFinder().findUnits(Circle(location.x, location.y, 100.0f), [this, groupId, &nearbyMembers](GameUnit &unit) -> bool
+			{
+				// Only characters
+				if (unit.getTypeId() != object_type::Character)
+				{
+					return true;
+				}
+
+				// Check characters group
+				GameCharacter *character = static_cast<GameCharacter*>(&unit);
+				if (character->getGroupId() == groupId &&
+					character->getGuid() != getCharacterGuid())
+				{
+					nearbyMembers.push_back(character->getGuid());
+				}
+
+				return true;
+			});
+
+			// Send packet to world node
+			m_realmConnector.sendCharacterGroupUpdate(*m_character, nearbyMembers);
+			m_groupUpdate.setEnd(getCurrentTime() + constants::OneSecond * 3);
+		});
 
 		// Trigger regeneration for our character
 		m_character->startRegeneration();
@@ -90,8 +157,7 @@ namespace wowpp
 			std::bind(game::server_write::standStateUpdate, std::placeholders::_1, standState));
 
 		// Root our character
-		auto flags = m_character->getUInt32Value(unit_fields::UnitFlags);
-		m_character->setUInt32Value(unit_fields::UnitFlags, flags | 0x00040000);
+		m_character->addFlag(unit_fields::UnitFlags, 0x00040000);
 		sendProxyPacket(
 			std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));
 
@@ -103,8 +169,7 @@ namespace wowpp
 	void Player::cancelLogoutRequest()
 	{
 		// Unroot
-		auto flags = m_character->getUInt32Value(unit_fields::UnitFlags);
-		m_character->setUInt32Value(unit_fields::UnitFlags, flags & ~0x00040000);
+		m_character->removeFlag(unit_fields::UnitFlags, 0x00040000);
 		sendProxyPacket(
 			std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));
 
@@ -135,12 +200,11 @@ namespace wowpp
 	{
 		TileIndex2D tile;
 		
-		float x, y, z, o;
-		m_character->getLocation(x, y, z, o);
+		math::Vector3 location(m_character->getLocation());
 
 		// Get a list of potential watchers
 		auto &grid = m_instance.getGrid();
-		grid.getTilePosition(x, y, z, tile[0], tile[1]);
+		grid.getTilePosition(location, tile[0], tile[1]);
 		
 		return tile;
 	}
@@ -197,6 +261,12 @@ namespace wowpp
 						return;
 					}
 
+					if (player->isIgnored(getCharacterGuid()))
+					{
+						WLOG("TODO: Target player ignores us.");
+						return;
+					}
+
 					// Send whisper message
 					player->sendProxyPacket(
 						std::bind(game::server_write::messageChat, std::placeholders::_1, game::chat_msg::Whisper, lang, std::cref(channel), m_characterId, std::cref(message), m_character.get()));
@@ -217,26 +287,25 @@ namespace wowpp
 		}
 		else
 		{
-			float x, y, z, o;
-			m_character->getLocation(x, y, z, o);
+			math::Vector3 location(m_character->getLocation());
 
 			// Get a list of potential watchers
 			auto &grid = m_instance.getGrid();
 
 			// Get tile index
 			TileIndex2D tile;
-			grid.getTilePosition(x, y, z, tile[0], tile[1]);
+			grid.getTilePosition(location, tile[0], tile[1]);
 
 			// Get all potential characters
 			std::vector<ITileSubscriber*> subscribers;
 			forEachTileInSight(
 				grid,
 				tile,
-				[&subscribers](VisibilityTile &tile)
+				[this, &subscribers](VisibilityTile &tile)
 			{
 				for (auto * const subscriber : tile.getWatchers().getElements())
 				{
-					subscribers.push_back(subscriber);
+					if(!isIgnored(subscriber->getControlledObject()->getGuid())) subscribers.push_back(subscriber);
 				}
 			});
 
@@ -288,6 +357,112 @@ namespace wowpp
 
 		// Blocks
 		std::vector<std::vector<char>> blocks;
+
+		// Write create object packet
+		std::vector<char> createBlock;
+		io::VectorSink sink(createBlock);
+		io::Writer writer(sink);
+		{
+			UInt8 updateType = 0x03;						// Player
+			UInt8 updateFlags = 0x01 | 0x10 | 0x20 | 0x40;	// UPDATEFLAG_SELF | UPDATEFLAG_ALL | UPDATEFLAG_LIVING | UPDATEFLAG_HAS_POSITION
+			UInt8 objectTypeId = 0x04;						// Player
+
+			UInt64 guid = m_character->getGuid();
+
+			// Header with object guid and type
+			writer
+			<< io::write<NetUInt8>(updateType);
+
+			UInt64 guidCopy = guid;
+			UInt8 packGUID[8 + 1];
+			packGUID[0] = 0;
+			size_t size = 1;
+			for (UInt8 i = 0; guidCopy != 0; ++i)
+			{
+				if (guidCopy & 0xFF)
+				{
+					packGUID[0] |= UInt8(1 << i);
+					packGUID[size] = UInt8(guidCopy & 0xFF);
+					++size;
+				}
+
+				guidCopy >>= 8;
+			}
+			writer.sink().write((const char*)&packGUID[0], size);
+			writer
+			<< io::write<NetUInt8>(objectTypeId);
+
+			writer
+			<< io::write<NetUInt8>(updateFlags);
+
+			// Write movement update
+			{
+				UInt32 moveFlags = 0x00;
+				writer
+					<< io::write<NetUInt32>(moveFlags)
+					<< io::write<NetUInt8>(0x00)
+					<< io::write<NetUInt32>(mTimeStamp());	//TODO: Time
+
+				// Position & Rotation
+				float o = m_character->getOrientation();
+				math::Vector3 location(m_character->getLocation());
+
+
+				writer
+					<< io::write<float>(location.x)
+					<< io::write<float>(location.y)
+					<< io::write<float>(location.z)
+					<< io::write<float>(o);
+
+				// Fall time
+				writer
+					<< io::write<NetUInt32>(0);
+
+				// Speeds
+				writer
+					<< io::write<float>(m_character->getSpeed(movement_type::Walk))					// Walk
+					<< io::write<float>(m_character->getSpeed(movement_type::Run))					// Run
+					<< io::write<float>(m_character->getSpeed(movement_type::Backwards))			// Backwards
+					<< io::write<float>(m_character->getSpeed(movement_type::Swim))				// Swim
+					<< io::write<float>(m_character->getSpeed(movement_type::SwimBackwards))	// Swim Backwards
+					<< io::write<float>(m_character->getSpeed(movement_type::Flight))				// Fly
+					<< io::write<float>(m_character->getSpeed(movement_type::FlightBackwards))		// Fly Backwards
+					<< io::write<float>(m_character->getSpeed(movement_type::Turn));				// Turn (radians / sec: PI)
+			}
+
+			// Lower-GUID update?
+			if (updateFlags & 0x08)
+			{
+				writer
+					<< io::write<NetUInt32>(guidLowerPart(guid));
+			}
+
+			// High-GUID update?
+			if (updateFlags & 0x10)
+			{
+				switch (objectTypeId)
+				{
+					case object_type::Object:
+					case object_type::Item:
+					case object_type::Container:
+					case object_type::GameObject:
+					case object_type::DynamicObject:
+					case object_type::Corpse:
+						writer
+							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
+						break;
+					default:
+						writer
+							<< io::write<NetUInt32>(0);
+				}
+			}
+
+			// Write values update
+			m_character->writeValueUpdateBlock(writer, *m_character, true);
+
+			// Add block
+			blocks.emplace_back(std::move(createBlock));
+		}
 
 		// Create item spawn packets
 		for (auto &item : m_character->getItems())
@@ -351,115 +526,10 @@ namespace wowpp
 					}
 
 					// Write values update
-					instance->writeValueUpdateBlock(createItemWriter, true);
+					instance->writeValueUpdateBlock(createItemWriter, *m_character, true);
 				}
 				blocks.emplace_back(std::move(createItemBlock));
 			}
-		}
-
-		// Write create object packet
-		std::vector<char> createBlock;
-		io::VectorSink sink(createBlock);
-		io::Writer writer(sink);
-		{
-			UInt8 updateType = 0x03;						// Player
-			UInt8 updateFlags = 0x01 | 0x10 | 0x20 | 0x40;	// UPDATEFLAG_SELF | UPDATEFLAG_ALL | UPDATEFLAG_LIVING | UPDATEFLAG_HAS_POSITION
-			UInt8 objectTypeId = 0x04;						// Player
-
-			UInt64 guid = m_character->getGuid();
-
-			// Header with object guid and type
-			writer
-				<< io::write<NetUInt8>(updateType);
-
-			UInt64 guidCopy = guid;
-			UInt8 packGUID[8 + 1];
-			packGUID[0] = 0;
-			size_t size = 1;
-			for (UInt8 i = 0; guidCopy != 0; ++i)
-			{
-				if (guidCopy & 0xFF)
-				{
-					packGUID[0] |= UInt8(1 << i);
-					packGUID[size] = UInt8(guidCopy & 0xFF);
-					++size;
-				}
-
-				guidCopy >>= 8;
-			}
-			writer.sink().write((const char*)&packGUID[0], size);
-			writer
-				<< io::write<NetUInt8>(objectTypeId);
-
-			writer
-				<< io::write<NetUInt8>(updateFlags);
-
-			// Write movement update
-			{
-				UInt32 moveFlags = 0x00;
-				writer
-					<< io::write<NetUInt32>(moveFlags)
-					<< io::write<NetUInt8>(0x00)
-					<< io::write<NetUInt32>(static_cast<UInt32>(getCurrentTime()));	//TODO: Time
-
-				// Position & Rotation
-				float x, y, z, o;
-				m_character->getLocation(x, y, z, o);
-
-				writer
-					<< io::write<float>(x)
-					<< io::write<float>(y)
-					<< io::write<float>(z)
-					<< io::write<float>(o);
-
-				// Fall time
-				writer
-					<< io::write<NetUInt32>(0);
-
-				// Speeds8
-				writer
-					<< io::write<float>(2.5f)				// Walk
-					<< io::write<float>(7.0f)				// Run
-					<< io::write<float>(4.5f)				// Backwards
-					<< io::write<NetUInt32>(0x40971c71)		// Swim
-					<< io::write<NetUInt32>(0x40200000)		// Swim Backwards
-					<< io::write<float>(7.0f)				// Fly
-					<< io::write<float>(4.5f)				// Fly Backwards
-					<< io::write<float>(3.1415927);			// Turn (radians / sec: PI)
-			}
-
-			// Lower-GUID update?
-			if (updateFlags & 0x08)
-			{
-				writer
-					<< io::write<NetUInt32>(guidLowerPart(guid));
-			}
-
-			// High-GUID update?
-			if (updateFlags & 0x10)
-			{
-				switch (objectTypeId)
-				{
-				case object_type::Object:
-				case object_type::Item:
-				case object_type::Container:
-				case object_type::GameObject:
-				case object_type::DynamicObject:
-				case object_type::Corpse:
-					writer
-						<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
-					break;
-				default:
-					writer
-						<< io::write<NetUInt32>(0);
-				}
-			}
-
-			// Write values update
-			m_character->writeValueUpdateBlock(writer, true);
-
-			// Add block
-			blocks.emplace_back(std::move(createBlock));
 		}
 
 		// Send packet
@@ -492,10 +562,6 @@ namespace wowpp
 		// We no longer watch for changes on our old tile
 		oldTile.getWatchers().remove(this);
 
-		// Create spawn message blocks
-		std::vector<std::vector<char>> spawnBlocks;
-		createUpdateBlocks(*m_character, spawnBlocks);
-
 		// Convert position to ADT position, and to ADT cell position
 		auto newPos = newTile.getPosition();
 		auto adtPos = makeVector<TileIndex>(newPos[0] / 16, newPos[1] / 16);
@@ -505,32 +571,26 @@ namespace wowpp
 		auto *map = m_instance.getMapData();
 		if (map)
 		{
-			// Lets check our Z coordinate
-			float x, y, z, o;
-			m_character->getLocation(x, y, z, o);
-			float terrainHeight = map->getHeightAt(x, y);
-			//DLOG("Z Comparison for " << x << " " << y << ": " << z << " (Terrain: " << terrainHeight << ")");
-
 			// Get or load map tile
 			auto *tile = map->getTile(adtPos);
 			if (tile)
 			{
 				// Find local tile
 				auto &area = tile->areas.cellAreas[localPos[1] + localPos[0] * 16];
-				auto *areaZone = m_project.zones.getById(area.areaId);
+				const auto *areaZone = m_project.zones.getById(area.areaId);
 				if (areaZone)
 				{
 					// Update players zone field
-					auto *topLevelZone = areaZone;
-					while (topLevelZone->parent != nullptr)
+					const auto *topLevelZone = areaZone;
+					while (topLevelZone->parentzone())
 					{
-						topLevelZone = topLevelZone->parent;
+						topLevelZone = m_project.zones.getById(topLevelZone->parentzone());
 					}
 
-					m_character->setZone(topLevelZone->id);
+					m_character->setZone(topLevelZone->id());
 
 					// Exploration
-					UInt32 exploration = areaZone->explore;
+					UInt32 exploration = areaZone->explore();
 					int offset = exploration / 32;
 
 					UInt32 val = (UInt32)(1 << (exploration % 32));
@@ -543,17 +603,17 @@ namespace wowpp
 						if (m_character->getLevel() >= 70)
 						{
 							sendProxyPacket(
-								std::bind(game::server_write::explorationExperience, std::placeholders::_1, areaZone->id, 0));
+								std::bind(game::server_write::explorationExperience, std::placeholders::_1, areaZone->id(), 0));
 						}
 						else
 						{
-							const Int32 diff = static_cast<Int32>(m_character->getLevel()) - static_cast<Int32>(areaZone->level);
+							const Int32 diff = static_cast<Int32>(m_character->getLevel()) - static_cast<Int32>(areaZone->level());
 							UInt32 xp = 0;
 
 							if (diff < -5)
 							{
 								const auto *levelEntry = m_project.levels.getById(m_character->getLevel() + 5);
-								xp = (levelEntry ? levelEntry->explorationBaseXP : 0);
+								xp = (levelEntry ? levelEntry->explorationbasexp() : 0);
 							}
 							else if (diff > 5)
 							{
@@ -567,19 +627,19 @@ namespace wowpp
 									xpPct = 0;
 								}
 
-								const auto *levelEntry = m_project.levels.getById(areaZone->level);
-								xp = (levelEntry ? levelEntry->explorationBaseXP : 0) * xpPct / 100;
+								const auto *levelEntry = m_project.levels.getById(areaZone->level());
+								xp = (levelEntry ? levelEntry->explorationbasexp() : 0) * xpPct / 100;
 							}
 							else
 							{
-								const auto *levelEntry = m_project.levels.getById(areaZone->level);
-								xp = (levelEntry ? levelEntry->explorationBaseXP : 0);
+								const auto *levelEntry = m_project.levels.getById(areaZone->level());
+								xp = (levelEntry ? levelEntry->explorationbasexp() : 0);
 							}
 
 							// Calculate experience points
 							if (xp > 0) m_character->rewardExperience(nullptr, xp);
 							sendProxyPacket(
-								std::bind(game::server_write::explorationExperience, std::placeholders::_1, areaZone->id, xp));
+								std::bind(game::server_write::explorationExperience, std::placeholders::_1, areaZone->id(), xp));
 						}
 					}
 				}
@@ -593,15 +653,23 @@ namespace wowpp
 			grid,
 			newTile.getPosition(),
 			oldTile.getPosition(),
-			[&spawnBlocks, this](VisibilityTile &tile)
+			[this](VisibilityTile &tile)
 		{
-			std::vector<char> buffer;
-			io::VectorSink sink(buffer);
-			game::Protocol::OutgoingPacket packet(sink);
-			game::server_write::compressedUpdateObject(packet, spawnBlocks);
-
 			for(auto * subscriber : tile.getWatchers().getElements())
 			{
+				auto *character = subscriber->getControlledObject();
+				if (!character)
+					continue;
+
+				// Create spawn message blocks
+				std::vector<std::vector<char>> spawnBlocks;
+				createUpdateBlocks(*m_character, *character, spawnBlocks);
+
+				std::vector<char> buffer;
+				io::VectorSink sink(buffer);
+				game::Protocol::OutgoingPacket packet(sink);
+				game::server_write::compressedUpdateObject(packet, spawnBlocks);
+
 				assert(subscriber != this);
 				subscriber->sendPacket(packet, buffer);
 			}
@@ -609,7 +677,7 @@ namespace wowpp
 			for (auto *object : tile.getGameObjects().getElements())
 			{
 				std::vector<std::vector<char>> createBlock;
-				createUpdateBlocks(*object, createBlock);
+				createUpdateBlocks(*object, *m_character, createBlock);
 
 				this->sendProxyPacket(
 					std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(createBlock)));
@@ -726,11 +794,202 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_AUTO_STORE_LOOT_ITEM(loot slot: " << UInt32(lootSlot) << ")");
+		// Check if the player is looting
+		if (!m_loot)
+		{
+			WLOG("Player isn't looting anything");
+			return;
+		}
 
-		// TODO
-		sendProxyPacket(
-			std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::InternalBagError, nullptr, nullptr));
+		// Try to get loot at slot
+		auto *lootItem = m_loot->getLootDefinition(lootSlot);
+		if (!lootItem)
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::SlotIsEmpty, nullptr, nullptr));
+			return;
+		}
+
+		// Already looted?
+		if (lootItem->isLooted)
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::AlreadyLooted, nullptr, nullptr));
+			return;
+		}
+
+		const auto *item = m_project.items.getById(lootItem->definition.item());
+		if (!item)
+		{
+			WLOG("Can't find item!");
+			return;
+		}
+
+		// Check if we can store that item
+		ItemPosCountVector slots;
+		auto result = m_character->canStoreItem(0xFF, 0xFF, slots, *item, lootItem->count, false, nullptr);
+		if (result != game::inventory_change_failure::Okay)
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, result, nullptr, nullptr));
+			return;
+		}
+
+		if (slots.empty())
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::BagFull, nullptr, nullptr));
+			return;
+		}
+
+		static UInt64 lootCounter = 0x800000;
+
+		for (auto &pos : slots)
+		{
+			auto *itemAtSlot= m_character->getItemByPos(0xFF, pos.position);
+
+			// Loot items and add them
+			const auto *item = m_project.items.getById(lootItem->definition.item());
+			assert(item);
+
+			auto inst = std::make_shared<GameItem>(m_project, *item);
+			inst->initialize();
+			inst->setUInt64Value(object_fields::Guid, createEntryGUID(lootCounter++, lootItem->definition.item(), guid_type::Item));
+			inst->setUInt32Value(item_fields::StackCount, pos.count);
+			m_character->addItem(inst, pos.position);
+
+			// Spawn this item
+			std::vector<std::vector<char>> blocks;
+			std::vector<char> createItemBlock;
+			if (itemAtSlot == nullptr)
+			{
+				io::VectorSink createItemSink(createItemBlock);
+				io::Writer createItemWriter(createItemSink);
+				{
+					UInt8 updateType = 0x02;						// Item
+					UInt8 updateFlags = 0x08 | 0x10;				// 
+					UInt8 objectTypeId = 0x01;						// Item
+
+					UInt64 guid = inst->getGuid();
+
+					// Header with object guid and type
+					createItemWriter
+						<< io::write<NetUInt8>(updateType);
+					UInt64 guidCopy = guid;
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+					for (UInt8 i = 0; guidCopy != 0; ++i)
+					{
+						if (guidCopy & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(guidCopy & 0xFF);
+							++size;
+						}
+
+						guidCopy >>= 8;
+					}
+					createItemWriter.sink().write((const char*)&packGUID[0], size);
+					createItemWriter
+						<< io::write<NetUInt8>(objectTypeId)
+						<< io::write<NetUInt8>(updateFlags);
+
+					// Lower-GUID update?
+					if (updateFlags & 0x08)
+					{
+						createItemWriter
+							<< io::write<NetUInt32>(guidLowerPart(guid));
+					}
+
+					// High-GUID update?
+					if (updateFlags & 0x10)
+					{
+						createItemWriter
+							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
+					}
+
+					// Write values update
+					inst->writeValueUpdateBlock(createItemWriter, *m_character, true);
+				}
+			}
+			else
+			{
+				io::VectorSink sink(createItemBlock);
+				io::Writer writer(sink);
+				{
+					UInt8 updateType = 0x00;						// Update type (0x00 = UPDATE_VALUES)
+
+					// Header with object guid and type
+					UInt64 guid = itemAtSlot->getGuid();
+					writer
+						<< io::write<NetUInt8>(updateType);
+
+					UInt64 guidCopy = guid;
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+					for (UInt8 i = 0; guidCopy != 0; ++i)
+					{
+						if (guidCopy & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(guidCopy & 0xFF);
+							++size;
+						}
+
+						guidCopy >>= 8;
+					}
+					writer.sink().write((const char*)&packGUID[0], size);
+
+					// Write values update
+					itemAtSlot->writeValueUpdateBlock(writer, *m_character, false);
+				}
+
+				itemAtSlot->clearUpdateMask();
+			}
+
+			// Send packet
+			blocks.emplace_back(std::move(createItemBlock));
+			sendProxyPacket(
+				std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
+			
+			sendProxyPacket(
+				std::bind(game::server_write::itemPushResult, std::placeholders::_1, 
+					m_character->getGuid(), std::cref(*inst), true, false, 0xFF, pos.position, pos.count, pos.count));
+
+			// Group broadcasting
+			if (m_character->getGroupId() != 0)
+			{
+				TileIndex2D tile;
+				if (m_character->getTileIndex(tile))
+				{
+					// Create the packet
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+					game::Protocol::OutgoingPacket itemPacket(sink);
+					game::server_write::itemPushResult(itemPacket, m_character->getGuid(), *inst, true, false, 0xFF, pos.position, pos.count, pos.count);
+
+					forEachSubscriberInSight(
+						m_character->getWorldInstance()->getGrid(),
+						tile,
+						[&](ITileSubscriber &subscriber)
+					{
+						if (subscriber.getControlledObject()->getGuid() != m_character->getGuid())
+						{
+							auto subscriberGroup = subscriber.getControlledObject()->getGroupId();
+							if (subscriberGroup != 0 && subscriberGroup == m_character->getGroupId())
+							{
+								subscriber.sendPacket(itemPacket, buffer);
+							}
+						}
+					});
+				}
+			}
+		}
+
+		DLOG("CMSG_AUTO_STORE_LOOT_ITEM(loot slot: " << UInt32(lootSlot) << ")");
+		m_loot->takeItem(lootSlot);
 	}
 
 	void Player::handleAutoEquipItem(game::Protocol::IncomingPacket &packet)
@@ -742,11 +1001,103 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_AUTO_EQUIP_ITEM(bag: " << UInt32(srcBag) << ", slot: " << UInt32(srcSlot) << ")");
+		// Get item
+		auto *item = m_character->getItemByPos(srcBag, srcSlot);
+		if (!item)
+		{
+			return;
+		}
 
-		// TODO
-		sendProxyPacket(
-			std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::InternalBagError, nullptr, nullptr));
+		if (item->getEntry().requiredlevel() > 0 &&
+			item->getEntry().requiredlevel() > m_character->getLevel())
+		{
+			m_character->inventoryChangeFailure(game::inventory_change_failure::CantEquipLevel, nullptr, nullptr);
+			return;
+		}
+
+		if (item->getEntry().requiredskill() != 0 &&
+			!m_character->hasSkill(item->getEntry().requiredskill()))
+		{
+			m_character->inventoryChangeFailure(game::inventory_change_failure::CantEquipSkill, nullptr, nullptr);
+			return;
+		}
+
+		UInt8 targetSlot = 0xFF;
+
+		// Check if item is equippable
+		const auto &entry = item->getEntry();
+		switch (entry.inventorytype())
+		{
+		case game::inventory_type::Ammo:
+			// TODO
+			break;
+		case game::inventory_type::Head :
+			targetSlot = player_equipment_slots::Head;
+			break;
+		case game::inventory_type::Cloak:
+			targetSlot = player_equipment_slots::Back;
+			break;
+		case game::inventory_type::Neck:
+			targetSlot = player_equipment_slots::Neck;
+			break;
+		case game::inventory_type::Feet:
+			targetSlot = player_equipment_slots::Feet;
+			break;
+		case game::inventory_type::Body:
+			targetSlot = player_equipment_slots::Body;
+			break;
+		case game::inventory_type::Chest:
+		case game::inventory_type::Robe:
+			targetSlot = player_equipment_slots::Chest;
+			break;
+		case game::inventory_type::Legs:
+			targetSlot = player_equipment_slots::Legs;
+			break;
+		case game::inventory_type::Shoulders:
+			targetSlot = player_equipment_slots::Shoulders;
+			break;
+		case game::inventory_type::TwoHandedWeapon:
+		case game::inventory_type::MainHandWeapon:
+			targetSlot = player_equipment_slots::Mainhand;
+			break;
+		case game::inventory_type::OffHandWeapon:
+		case game::inventory_type::Shield:
+			targetSlot = player_equipment_slots::Offhand;
+			break;
+		case game::inventory_type::Weapon:
+			targetSlot = player_equipment_slots::Mainhand;	// TODO
+			break;
+		case game::inventory_type::Finger:
+			targetSlot = player_equipment_slots::Finger1;
+			break;
+		case game::inventory_type::Trinket:
+			targetSlot = player_equipment_slots::Trinket1;
+			break;
+		case game::inventory_type::Wrists:
+			targetSlot = player_equipment_slots::Wrists;
+			break;
+		case game::inventory_type::Tabard:
+			targetSlot = player_equipment_slots::Tabard;
+			break;
+		case game::inventory_type::Hands:
+			targetSlot = player_equipment_slots::Hands;
+			break;
+		case game::inventory_type::Waist:
+			targetSlot = player_equipment_slots::Waist;
+			break;
+		default:
+			m_character->inventoryChangeFailure(game::inventory_change_failure::ItemCantBeEquipped, nullptr, nullptr);
+			break;
+		}
+
+		if (targetSlot >= player_equipment_slots::End)
+		{
+			// Not equippable
+			return;
+		}
+
+		// Get item at target slot
+		m_character->swapItem(srcSlot | 0xFF00, targetSlot | 0xFF00);
 	}
 
 	void Player::handleAutoStoreBagItem(game::Protocol::IncomingPacket &packet)
@@ -789,6 +1140,8 @@ namespace wowpp
 			WLOG("Could not read packet data");
 			return;
 		}
+
+		DLOG("CMSG_SWAP_INV_ITEM from " << UInt32(srcSlot) << " to " << UInt32(dstSlot));
 
 		// We don't need to do anything
 		if (srcSlot == dstSlot)
@@ -852,15 +1205,186 @@ namespace wowpp
 		UInt8 bag, slot, count, data1, data2, data3;
 		if (!game::client_read::destroyItem(packet, bag, slot, count, data1, data2, data3))
 		{
+			return;
+		}
+
+		auto *item = m_character->getItemByPos(bag, slot);
+		if (!item)
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::ItemNotFound, nullptr, nullptr));
+			return;
+		}
+
+		m_character->removeItem(bag, slot, count);
+	}
+
+	void Player::handleLoot(game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 objectGuid;
+		if (!game::client_read::loot(packet, objectGuid))
+		{
+			return;
+		}
+		if (!m_character->isAlive())
+		{
+			return;
+		}
+
+		// Find game object
+		GameObject *lootObject = m_character->getWorldInstance()->findObjectByGUID(objectGuid);
+		if (!lootObject)
+		{
+			return;
+		}
+
+		// Is it a creature?
+		if (lootObject->getTypeId() == object_type::Unit)
+		{
+			GameCreature *creature = reinterpret_cast<GameCreature*>(lootObject);
+			if (creature->isAlive())
+			{
+				WLOG("Target creature is not dead and thus has no loot");
+				return;
+			}
+
+			// Get loot from creature
+			auto *loot = creature->getUnitLoot();
+			if (loot && !loot->isEmpty())
+			{
+				m_loot = loot;
+				m_onLootInvalidate = creature->despawned.connect([this](GameObject &despawned)
+				{
+					releaseLoot();
+				});
+				m_onLootCleared = m_loot->cleared.connect([this]()
+				{
+					releaseLoot();
+				});
+
+				sendProxyPacket(
+					std::bind(game::server_write::lootResponse, std::placeholders::_1, objectGuid, game::loot_type::Corpse, std::cref(*loot)));
+
+				m_character->addFlag(unit_fields::UnitFlags, game::unit_flags::Looting);
+			}
+			else
+			{
+				sendProxyPacket(
+					std::bind(game::server_write::lootResponseError, std::placeholders::_1, objectGuid, game::loot_type::None, game::loot_error::Locked));
+			}
+		}
+		else
+		{
+			// TODO
+			WLOG("Only creatures are lootable at the moment.");
+			sendProxyPacket(
+				std::bind(game::server_write::lootResponseError, std::placeholders::_1, objectGuid, game::loot_type::None, game::loot_error::Locked));
+		}
+	}
+
+	void Player::handleLootMoney(game::Protocol::IncomingPacket &packet)
+	{
+		if (!game::client_read::lootMoney(packet))
+		{
+			return;
+		}
+		if (!m_loot)
+		{
+			return;
+		}
+
+		// Find loot recipients
+		auto lootGuid = m_loot->getLootGuid();
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+		{
+			return;
+		}
+
+		// Get loot object
+		GameObject *object = world->findObjectByGUID(lootGuid);
+		if (!object)
+		{
+			return;
+		}
+
+		// Warning: takeGold may make m_loot invalid, because the loot will be reset if it is empty.
+		UInt32 lootGold = m_loot->getGold();
+		if (lootGold == 0)
+		{
+			return;
+		}
+
+		// Check if it's a creature
+		std::vector<GameCharacter*> recipients;
+		if (object->getTypeId() == object_type::Unit)
+		{
+			GameCreature *creature = reinterpret_cast<GameCreature*>(object);
+			creature->forEachLootRecipient([&recipients](GameCharacter &recipient)
+			{
+				recipients.push_back(&recipient);
+			});
+
+			// Share gold
+			lootGold /= recipients.size();
+			if (lootGold == 0)
+			{
+				lootGold = 1;
+			}
+		}
+		else
+		{
+			WLOG("Unsupported loot object");
+			return;
+		}
+
+		// Reward with gold
+		for (auto *recipient : recipients)
+		{
+			UInt32 coinage = recipient->getUInt32Value(character_fields::Coinage);
+			if (coinage >= std::numeric_limits<UInt32>::max() - lootGold)
+			{
+				coinage = std::numeric_limits<UInt32>::max();
+			}
+			else
+			{
+				coinage += lootGold;
+			}
+			recipient->setUInt32Value(character_fields::Coinage, coinage);
+
+			// Notify players
+			auto *player = m_manager.getPlayerByCharacterGuid(recipient->getGuid());
+			if (player)
+			{
+				if (recipients.size() > 1)
+				{
+					player->sendProxyPacket(
+						std::bind(game::server_write::lootMoneyNotify, std::placeholders::_1, lootGold));
+				}
+
+				// TODO: Put this packet into the LootInstance class or in an event callback maybe
+				if (player->isLooting(lootGuid))
+				{
+					player->sendProxyPacket(
+						std::bind(game::server_write::lootClearMoney, std::placeholders::_1));
+				}
+			}
+		}
+
+		// Take gold (WARNING: May reset m_loot as loot may become empty after this)
+		m_loot->takeGold();
+	}
+
+	void Player::handleLootRelease(game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 creatureId;
+		if (!game::client_read::lootRelease(packet, creatureId))
+		{
 			WLOG("Could not read packet data");
 			return;
 		}
 
-		DLOG("CMSG_DESTROY_ITEM(bag: " << UInt32(bag) << ", slot: " << UInt32(slot) << ", count: " << UInt32(count) << ", data1: " << UInt32(data1) << ", data2: " << UInt32(data2) << ", data3: " << UInt32(data3) << ")");
-
-		// TODO
-		sendProxyPacket(
-			std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::InternalBagError, nullptr, nullptr));
+		releaseLoot();
 	}
 
 	void Player::onInventoryChangeFailure(game::InventoryChangeFailure failure, GameItem *itemA, GameItem *itemB)
@@ -882,7 +1406,7 @@ namespace wowpp
 			std::bind(game::server_write::logXPGain, std::placeholders::_1, victimGUID, baseXP, restXP, false));	// TODO: Refer a friend support
 	}
 
-	void Player::onSpellCastError(const SpellEntry &spell, game::SpellCastResult result)
+	void Player::onSpellCastError(const proto::SpellEntry &spell, game::SpellCastResult result)
 	{
 		sendProxyPacket(
 			std::bind(game::server_write::castFailed, std::placeholders::_1, result, std::cref(spell), 0));
@@ -920,20 +1444,20 @@ namespace wowpp
 			std::bind(game::server_write::setExtraAuraInfoNeedUpdate, std::placeholders::_1, target, slot, spellId, maxDuration, duration));
 	}
 
-	void Player::onTeleport(UInt16 map, float x, float y, float z, float o)
+	void Player::onTeleport(UInt16 map, math::Vector3 location, float o)
 	{
 		// If it's the same map, just send success notification
 		if (m_character->getMapId() == map)
 		{
 			// Apply character position
-			m_character->relocate(x, y, z, o);
+			m_character->relocate(location, o);
 
 			// Reset movement info
 			MovementInfo info = m_character->getMovementInfo();
 			info.moveFlags = game::movement_flags::None;
-			info.x = x;
-			info.y = y;
-			info.z = z;
+			info.x = location.x;
+			info.y = location.y;
+			info.z = location.z;
 			info.o = o;
 			sendProxyPacket(
 				std::bind(game::server_write::moveTeleportAck, std::placeholders::_1, m_character->getGuid(), std::cref(info)));
@@ -947,7 +1471,7 @@ namespace wowpp
 			// tell the realm where our character should be sent to
 			sendProxyPacket(
 				std::bind(game::server_write::transferPending, std::placeholders::_1, map, 0, 0));
-			m_realmConnector.sendTeleportRequest(m_characterId, map, x, y, z, o);
+			m_realmConnector.sendTeleportRequest(m_characterId, map, location, o);
 
 			// Remove the character from the world
 			m_instance.removeGameObject(*m_character);
@@ -981,6 +1505,1231 @@ namespace wowpp
 	{
 		m_lastFallTime = time;
 		m_lastFallZ = z;
+	}
+
+	void Player::releaseLoot()
+	{
+		if (m_loot)
+		{
+			m_onLootCleared.disconnect();
+			m_onLootInvalidate.disconnect();
+
+			sendProxyPacket(
+				std::bind(game::server_write::lootReleaseResponse, std::placeholders::_1, m_loot->getLootGuid()));
+			m_loot = nullptr;
+
+			m_character->removeFlag(unit_fields::UnitFlags, game::unit_flags::Looting);
+		}
+	}
+
+	bool Player::isIgnored(UInt64 guid) const
+	{
+		return guid == 504403158265495562;
+	}
+
+	void Player::handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode)
+	{
+		MovementInfo info;
+		if (!game::client_read::moveHeartBeat(packet, info))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		UInt64 currentTime = getCurrentTime();
+		if (m_nextDelayReset <= currentTime)
+		{
+			m_clientDelayMs = 0;
+			m_nextDelayReset = currentTime + constants::OneSecond * 30;
+		}
+
+		if (opCode != game::client_packet::MoveStop)
+		{
+			auto flags = m_character->getUInt32Value(unit_fields::UnitFlags);
+			if ((flags & 0x00040000) != 0 ||
+				(flags & 0x00000004) != 0)
+			{
+				WLOG("Character is unable to move, ignoring move packet");
+				return;
+			}
+		}
+
+		// Sender guid
+		auto guid = m_character->getGuid();
+
+		// Get object location
+		math::Vector3 location(m_character->getLocation());
+
+		// Store movement information
+		m_character->setMovementInfo(info);
+
+		// Transform into grid location
+		TileIndex2D gridIndex;
+		auto &grid = getWorldInstance().getGrid();
+		if (!grid.getTilePosition(location, gridIndex[0], gridIndex[1]))
+		{
+			// TODO: Error?
+			ELOG("Could not resolve grid location!");
+			return;
+		}
+
+		UInt32 msTime = mTimeStamp();
+		if (m_clientDelayMs == 0)
+		{
+			m_clientDelayMs = msTime - info.time;
+		}
+		UInt32 move_time = (info.time - (msTime - m_clientDelayMs)) + 500 + msTime;
+
+		// Get grid tile
+		auto &tile = grid.requireTile(gridIndex);
+		info.time = move_time;
+
+		// Notify all watchers about the new object
+		forEachTileInSight(
+			getWorldInstance().getGrid(),
+			gridIndex,
+			[this, &info, opCode, guid, move_time](VisibilityTile &tile)
+		{
+			for (auto &watcher : tile.getWatchers())
+			{
+				if (watcher != this)
+				{
+					// Convert timestamps
+					//info.time = watcher->convertTimestamp(move_time, m_clientTicks) + 500;
+					//info.fallTime = watcher->convertTimestamp(info.fallTime, m_clientTicks) + 500;
+
+					// Create the chat packet
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+					game::Protocol::OutgoingPacket movePacket(sink);
+					game::server_write::movePacket(movePacket, opCode, guid, info);
+
+					watcher->sendPacket(movePacket, buffer);
+				}
+			}
+		});
+
+		//TODO: Verify new location
+
+		UInt32 lastFallTime = 0;
+		float lastFallZ = 0.0f;
+		getFallInfo(lastFallTime, lastFallZ);
+
+		// Fall damage
+		if (opCode == game::client_packet::MoveFallLand)
+		{
+			if (info.fallTime >= 1100)
+			{
+				float deltaZ = lastFallZ - info.z;
+				if (m_character->isAlive())
+				{
+					float damageperc = 0.018f * deltaZ - 0.2426f;
+					if (damageperc > 0)
+					{
+						const UInt32 maxHealth = m_character->getUInt32Value(unit_fields::MaxHealth);
+						UInt32 damage = (UInt32)(damageperc * maxHealth);
+						float height = info.z;
+
+						if (damage > 0)
+						{
+							//Prevent fall damage from being more than the player maximum health
+							if (damage > maxHealth) damage = maxHealth;
+
+							std::vector<char> dmgBuffer;
+							io::VectorSink dmgSink(dmgBuffer);
+							game::Protocol::OutgoingPacket dmgPacket(dmgSink);
+							game::server_write::environmentalDamageLog(dmgPacket, getCharacterGuid(), 2, damage, 0, 0);
+
+							// Deal damage
+							forEachTileInSight(
+								getWorldInstance().getGrid(),
+								gridIndex,
+								[&dmgPacket, &dmgBuffer](VisibilityTile &tile)
+							{
+								for (auto &watcher : tile.getWatchers())
+								{
+									watcher->sendPacket(dmgPacket, dmgBuffer);
+								}
+							});
+
+							m_character->dealDamage(damage, 0, nullptr, true);
+							if (!m_character->isAlive())
+							{
+								WLOG("TODO: Durability damage!");
+								sendProxyPacket(
+									std::bind(game::server_write::durabilityDamageDeath, std::placeholders::_1));
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (opCode == game::client_packet::MoveFallLand ||
+			lastFallTime > info.fallTime/* ||
+										info.z < lastFallZ*/)
+		{
+			setFallInfo(info.fallTime, info.z);
+		}
+
+		// Update position
+		m_character->relocate(math::Vector3(info.x, info.y, info.z), info.o);
+	}
+
+	void Player::handleTimeSyncResponse(game::Protocol::IncomingPacket &packet)
+	{
+		UInt32 counter, ticks;
+		if (!game::client_read::timeSyncResponse(packet, counter, ticks))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		DLOG("TIME SYNC RESPONSE " << m_character->getName() << ": Counter " << counter << "; Ticks: " << ticks);
+		m_clientTicks = ticks;
+	}
+
+	UInt32 Player::convertTimestamp(UInt32 otherTimestamp, UInt32 otherTick) const
+	{
+		UInt32 otherDiff = otherTimestamp - otherTick;
+		return m_clientTicks + otherDiff;
+	}
+
+	void Player::addIgnore(UInt64 guid)
+	{
+		if (!m_ignoredGUIDs.contains(guid)) m_ignoredGUIDs.add(guid);
+	}
+
+	void Player::removeIgnore(UInt64 guid)
+	{
+		if (m_ignoredGUIDs.contains(guid)) m_ignoredGUIDs.remove(guid);
+	}
+
+	void Player::updateCharacterGroup(UInt64 group)
+	{
+		if (m_character)
+		{
+			UInt64 oldGroup = m_character->getGroupId();
+			m_character->setGroupId(group);
+
+			m_character->forceFieldUpdate(unit_fields::Health);
+			m_character->forceFieldUpdate(unit_fields::MaxHealth);
+
+			// For every group member in range, also update health fields
+			TileIndex2D tileIndex;
+			m_character->getTileIndex(tileIndex);
+			forEachSubscriberInSight(
+				m_character->getWorldInstance()->getGrid(),
+				tileIndex,
+				[oldGroup, group](ITileSubscriber &subscriber)
+			{
+				auto *character = subscriber.getControlledObject();
+				if (character)
+				{
+					if ((oldGroup != 0 && character->getGroupId() == oldGroup) ||
+						(group != 0 && character->getGroupId() == group))
+					{
+						character->forceFieldUpdate(unit_fields::Health);
+						character->forceFieldUpdate(unit_fields::MaxHealth);
+					}
+				}
+			});
+		}
+
+		if (group != 0)
+		{
+			// Trigger next group member update
+			m_groupUpdate.setEnd(getCurrentTime() + (constants::OneSecond * 3));
+		}
+		else
+		{
+			// Stop group member update
+			m_groupUpdate.cancel();
+		}
+	}
+
+	void Player::handleLearnTalent(game::Protocol::IncomingPacket &packet)
+	{
+		UInt32 talentId = 0, rank = 0;
+		if (!game::client_read::learnTalent(packet, talentId, rank))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		// Try to find talent
+		auto *talent = m_project.talents.getById(talentId);
+		if (!talent)
+		{
+			WLOG("Could not find requested talent id " << talentId);
+			return;
+		}
+
+		// Check rank
+		if (talent->ranks_size() < static_cast<int>(rank))
+		{
+			WLOG("Talent " << talentId << " does offer " << talent->ranks_size() << " ranks, but rank " << rank << " is requested!");
+			return;
+		}
+
+		// TODO: Check whether the player is allowed to learn that talent, based on his class
+
+		// Check if another talent is required
+		if (talent->dependson())
+		{
+			const auto *dependson = m_project.talents.getById(talentId);
+			assert(dependson);
+
+			// Check if we have learned the requested talent rank
+			auto dependantRank = dependson->ranks(talent->dependsonrank());
+			if (!m_character->hasSpell(dependantRank))
+			{
+				WLOG("Dependent talent not learned!");
+				return;
+			}
+		}
+
+		// Check if another spell is required
+		if (talent->dependsonspell())
+		{
+			if (!m_character->hasSpell(talent->dependsonspell()))
+			{
+				WLOG("Dependent spell not learned!");
+				return;
+			}
+		}
+
+		// Check if we have enough talent points
+		UInt32 freeTalentPoints = m_character->getUInt32Value(character_fields::CharacterPoints_1);
+		if (freeTalentPoints == 0)
+		{
+			WLOG("Not enough talent points available");
+			return;
+		}
+
+		// Remove all previous learnt ranks, learn the highest one
+		for (UInt32 i = 0; i < rank; ++i)
+		{
+			const auto *spell = m_project.spells.getById(talent->ranks(i));
+			if (m_character->removeSpell(*spell))
+			{
+				// TODO: Send packet maybe?
+			}
+		}
+
+		const auto *spell = m_project.spells.getById(talent->ranks(rank));
+
+		// Add new spell, and maybe remove old spells
+		m_character->addSpell(*spell);
+		if ((spell->attributes(0) & game::spell_attributes::Passive) != 0)
+		{
+			SpellTargetMap targets;
+			targets.m_targetMap = game::spell_cast_target_flags::Unit;
+			targets.m_unitTarget = m_character->getGuid();
+			m_character->castSpell(std::move(targets), spell->id());
+		}
+
+		sendProxyPacket(
+			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spell->id()));
+	}
+
+	void Player::handleUseItem(game::Protocol::IncomingPacket &packet)
+	{
+		UInt8 bagId = 0, slotId = 0, spellCount = 0, castCount = 0;
+		UInt64 itemGuid = 0;
+		SpellTargetMap targetMap;
+		if (!game::client_read::useItem(packet, bagId, slotId, spellCount, castCount, itemGuid, targetMap))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		// Get item
+		auto *item = m_character->getItemByPos(bagId, slotId);
+		if (!item)
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::ItemNotFound, nullptr, nullptr));
+			return;
+		}
+
+		if (item->getGuid() != itemGuid)
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::ItemNotFound, nullptr, nullptr));
+			return;
+		}
+
+		auto &entry = item->getEntry();
+		for (int i = 0; i < entry.spells_size(); ++i)
+		{
+			const auto &spell = entry.spells(i);
+			if (!spell.spell())
+			{
+				continue;
+			}
+
+			// Spell effect has to be triggered "on use", not "on equip" etc.
+			if (spell.trigger() != 0 && spell.trigger() != 5)
+			{
+				continue;
+			}
+
+			const auto *spellEntry = m_project.spells.getById(spell.spell());
+			if (!spellEntry)
+			{
+				continue;
+			}
+
+			UInt64 time = spellEntry->casttime();
+			m_character->castSpell(std::move(targetMap), spell.spell(), -1, time);
+		}
+	}
+
+	void Player::handleListInventory(game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 vendorGuid = 0;
+		if (!game::client_read::listInventory(packet, vendorGuid))
+		{
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		if (!m_character->isAlive())
+			return;
+
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+			return;
+
+		// Try to find that vendor
+		GameCreature *vendor = dynamic_cast<GameCreature*>(m_character->getWorldInstance()->findObjectByGUID(vendorGuid));
+		if (!vendor)
+		{
+			// Could not find vendor by GUID or vendor is not a creature
+			return;
+		}
+
+		// Check if vendor is alive and not in fight
+		if (!vendor->isAlive() || vendor->isInCombat())
+			return;
+
+		// Check if vendor is not hostile against players
+		if (m_character->isHostileToPlayers())
+			return;
+
+		// Check if that vendor has the vendor flag
+		if ((vendor->getUInt32Value(unit_fields::NpcFlags) & game::unit_npc_flags::Vendor) == 0)
+			return;
+
+		// Check if the vendor DO sell items
+		const auto *vendorEntry = m_project.vendors.getById(vendor->getEntry().vendorentry());
+		if (!vendorEntry)
+		{
+			std::vector<proto::VendorItemEntry> emptyList;
+			sendProxyPacket(
+				std::bind(game::server_write::listInventory, std::placeholders::_1, vendor->getGuid(), std::cref(m_project.items), std::cref(emptyList)));
+			return;
+		}
+
+		// TODO
+		std::vector<proto::VendorItemEntry> list;
+		for (const auto &entry : vendorEntry->items())
+		{
+			list.push_back(entry);
+		}
+
+		sendProxyPacket(
+			std::bind(game::server_write::listInventory, std::placeholders::_1, vendor->getGuid(), std::cref(m_project.items), std::cref(list)));
+	}
+
+	void Player::handleBuyItem(game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 vendorGuid = 0;
+		UInt32 item = 0;
+		UInt8 count = 0;
+		if (!(game::client_read::buyItem(packet, vendorGuid, item, count)))
+		{
+			WLOG("Coult not read CMSG_BUY_ITEM packet");
+			return;
+		}
+
+		buyItemFromVendor(vendorGuid, item, 0, 0xFF, count);
+	}
+
+	void Player::handleBuyItemInSlot(game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 vendorGuid = 0, bagGuid = 0;
+		UInt32 item = 0;
+		UInt8 slot = 0, count = 0;
+		if (!(game::client_read::buyItemInSlot(packet, vendorGuid, item, bagGuid, slot, count)))
+		{
+			WLOG("Coult not read CMSG_BUY_ITEM_IN_SLOT packet");
+			return;
+		}
+
+		buyItemFromVendor(vendorGuid, item, bagGuid, slot, count);
+	}
+
+	void Player::handleSellItem(game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 vendorGuid = 0, itemGuid = 0;
+		UInt8 count = 0;
+		if (!(game::client_read::sellItem(packet, vendorGuid, itemGuid, count)))
+		{
+			WLOG("Coult not read CMSG_SELL_ITEM packet");
+			return;
+		}
+
+		// Find the item by it's guid
+		UInt8 bag = 0xFF, slot = 0xFF;
+		auto *item = m_character->getItemByGUID(itemGuid, bag, slot);
+		if (!item)
+		{
+			return;
+		}
+
+		// Check the amount
+		DLOG("Received CMSG_SELL_ITEM... (Count: " << UInt16(count) << ")");
+
+		UInt32 stack = item->getUInt32Value(item_fields::StackCount);
+		UInt32 money = stack * item->getEntry().sellprice();
+		if (money == 0)
+		{
+			WLOG("TODO: Can't sell that item");
+			return;
+		}
+
+		m_character->removeItem(bag, slot, stack);
+		m_character->setUInt32Value(character_fields::Coinage, m_character->getUInt32Value(character_fields::Coinage) + money);
+	}
+
+	void Player::buyItemFromVendor(UInt64 vendorGuid, UInt32 itemEntry, UInt64 bagGuid, UInt8 slot, UInt8 count)
+	{
+		if (count < 1) count = 1;
+
+		const UInt8 MaxBagSlots = 36;
+		if (slot != 0xFF && slot >= MaxBagSlots)
+			return;
+
+		if (!m_character->isAlive())
+			return;
+
+		const auto *item = m_project.items.getById(itemEntry);
+		if (!item)
+			return;
+
+		// Multiply item count
+		UInt8 totalCount = count * item->buycount();
+
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+			return;
+
+		GameCreature *creature = dynamic_cast<GameCreature*>(world->findObjectByGUID(vendorGuid));
+		if (!creature)
+			return;
+
+		const auto *vendorEntry = m_project.vendors.getById(creature->getEntry().vendorentry());
+		if (!vendorEntry || vendorEntry->items().empty())
+			return;
+
+		bool validEntry = false;
+		for (auto &entry : vendorEntry->items())
+		{
+			if (entry.item() == item->id())
+			{
+				validEntry = true;
+				break;
+			}
+		}
+
+		if (!validEntry)
+			return;
+
+		// TODO: Check item amount
+
+		// Check if item is storable
+		ItemPosCountVector slots;
+		auto result = m_character->canStoreItem(0xFF, slot, slots, *item, totalCount, false);
+		if (result != game::inventory_change_failure::Okay)
+		{
+			// TODO: Send error
+			WLOG("Can't store item");
+			return;
+		}
+
+		// Take money
+		UInt32 price = item->buyprice() * count;
+		UInt32 money = m_character->getUInt32Value(character_fields::Coinage);
+		if (money < price)
+		{
+			// TODO: Send error message
+			WLOG("Not enough money");
+			return;
+		}
+
+		m_character->setUInt32Value(character_fields::Coinage, money - price);
+
+		static UInt64 vendorCounter = 0x100000;
+		for (auto &pos : slots)
+		{
+			auto *itemAtSlot = m_character->getItemByPos(0xFF, pos.position);
+
+			// Loot items and add them
+			auto inst = std::make_shared<GameItem>(m_project, *item);
+			inst->initialize();
+			inst->setUInt64Value(object_fields::Guid, createEntryGUID(vendorCounter++, item->id(), guid_type::Item));
+			inst->setUInt32Value(item_fields::StackCount, pos.count);
+			m_character->addItem(inst, pos.position);
+
+			// Spawn this item
+			std::vector<std::vector<char>> blocks;
+			std::vector<char> createItemBlock;
+			if (itemAtSlot == nullptr)
+			{
+				io::VectorSink createItemSink(createItemBlock);
+				io::Writer createItemWriter(createItemSink);
+				{
+					UInt8 updateType = 0x02;						// Item
+					UInt8 updateFlags = 0x08 | 0x10;				// 
+					UInt8 objectTypeId = 0x01;						// Item
+
+					UInt64 guid = inst->getGuid();
+
+					// Header with object guid and type
+					createItemWriter
+						<< io::write<NetUInt8>(updateType);
+					UInt64 guidCopy = guid;
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+					for (UInt8 i = 0; guidCopy != 0; ++i)
+					{
+						if (guidCopy & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(guidCopy & 0xFF);
+							++size;
+						}
+
+						guidCopy >>= 8;
+					}
+					createItemWriter.sink().write((const char*)&packGUID[0], size);
+					createItemWriter
+						<< io::write<NetUInt8>(objectTypeId)
+						<< io::write<NetUInt8>(updateFlags);
+
+					// Lower-GUID update?
+					if (updateFlags & 0x08)
+					{
+						createItemWriter
+							<< io::write<NetUInt32>(guidLowerPart(guid));
+					}
+
+					// High-GUID update?
+					if (updateFlags & 0x10)
+					{
+						createItemWriter
+							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
+					}
+
+					// Write values update
+					inst->writeValueUpdateBlock(createItemWriter, *m_character, true);
+				}
+			}
+			else
+			{
+				io::VectorSink sink(createItemBlock);
+				io::Writer writer(sink);
+				{
+					UInt8 updateType = 0x00;						// Update type (0x00 = UPDATE_VALUES)
+
+					// Header with object guid and type
+					UInt64 guid = itemAtSlot->getGuid();
+					writer
+						<< io::write<NetUInt8>(updateType);
+
+					UInt64 guidCopy = guid;
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+					for (UInt8 i = 0; guidCopy != 0; ++i)
+					{
+						if (guidCopy & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(guidCopy & 0xFF);
+							++size;
+						}
+
+						guidCopy >>= 8;
+					}
+					writer.sink().write((const char*)&packGUID[0], size);
+
+					// Write values update
+					itemAtSlot->writeValueUpdateBlock(writer, *m_character, false);
+				}
+
+				itemAtSlot->clearUpdateMask();
+			}
+
+			// Send packet
+			blocks.emplace_back(std::move(createItemBlock));
+			sendProxyPacket(
+				std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
+			sendProxyPacket(
+				std::bind(game::server_write::itemPushResult, std::placeholders::_1,
+				m_character->getGuid(), std::cref(*inst), false, false, 0xFF, pos.position, pos.count, pos.count));
+		}
+	}
+
+	void Player::sendGossipMenu(UInt64 guid)
+	{
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+		{
+			WLOG("No world found");
+			return;
+		}
+
+		GameObject *target = world->findObjectByGUID(guid);
+		if (!target)
+		{
+			return;
+		}
+
+		GameCreature *creature = (target->getTypeId() == object_type::Unit ? reinterpret_cast<GameCreature*>(target) : nullptr);
+		WorldObject *object = (target->getTypeId() == object_type::GameObject ? reinterpret_cast<WorldObject*>(target) : nullptr);
+
+		// TODO: Build gossip menu, but for now, we check in the following order:
+		// Quest giver
+		// Trainer
+		// Vendor
+		std::vector<game::QuestMenuItem> questMenu;
+		if (creature)
+		{
+			for (const auto &questid : creature->getEntry().end_quests())
+			{
+				auto questStatus = m_character->getQuestStatus(questid);
+				if (questStatus == game::quest_status::Incomplete ||
+					questStatus == game::quest_status::Complete)
+				{
+					const auto *quest = m_project.quests.getById(questid);
+					assert(quest);
+
+					game::QuestMenuItem item;
+					item.quest = quest;
+					item.menuIcon = questStatus == game::quest_status::Incomplete ?
+						game::questgiver_status::Incomplete : game::questgiver_status::Reward;
+					item.questLevel = quest->questlevel();
+					item.title = quest->name();
+					questMenu.emplace_back(std::move(item));
+				}
+			}
+			for (const auto &questid : creature->getEntry().quests())
+			{
+				auto questStatus = m_character->getQuestStatus(questid);
+				if (questStatus == game::quest_status::Available)
+				{
+					const auto *quest = m_project.quests.getById(questid);
+					assert(quest);
+
+					game::QuestMenuItem item;
+					item.quest = quest;
+					item.menuIcon = game::questgiver_status::Chat;
+					item.questLevel = quest->questlevel();
+					item.title = quest->name();
+					questMenu.emplace_back(std::move(item));
+				}
+			}
+		}
+		else if (object)
+		{
+			for (const auto &questid : object->getEntry().end_quests())
+			{
+				auto questStatus = m_character->getQuestStatus(questid);
+				if (questStatus == game::quest_status::Incomplete ||
+					questStatus == game::quest_status::Complete)
+				{
+					const auto *quest = m_project.quests.getById(questid);
+					assert(quest);
+
+					game::QuestMenuItem item;
+					item.quest = quest;
+					item.menuIcon = questStatus == game::quest_status::Incomplete ?
+						game::questgiver_status::Incomplete : game::questgiver_status::Reward;
+					item.questLevel = quest->questlevel();
+					item.title = quest->name();
+					questMenu.emplace_back(std::move(item));
+				}
+			}
+			for (const auto &questid : object->getEntry().quests())
+			{
+				auto questStatus = m_character->getQuestStatus(questid);
+				if (questStatus == game::quest_status::Available)
+				{
+					const auto *quest = m_project.quests.getById(questid);
+					assert(quest);
+
+					game::QuestMenuItem item;
+					item.quest = quest;
+					item.menuIcon = game::questgiver_status::Chat;
+					item.questLevel = quest->questlevel();
+					item.title = quest->name();
+					questMenu.emplace_back(std::move(item));
+				}
+			}
+		}
+
+		// Quests available?
+		if (!questMenu.empty())
+		{
+			// Check if only one quest available and immediatly send quest details if so
+			if (questMenu.size() == 1)
+			{
+				// Determine what packet to send based on quest status
+				auto &menuItem = questMenu[0];
+				switch(menuItem.menuIcon)
+				{
+				case game::questgiver_status::Chat:
+				case game::questgiver_status::Available:
+					sendProxyPacket(
+						std::bind(game::server_write::questgiverQuestDetails, std::placeholders::_1, guid, std::cref(m_project.items), std::cref(*menuItem.quest)));
+					break;
+				case game::questgiver_status::Incomplete:
+					if (!menuItem.quest->requestitemstext().empty())
+						sendProxyPacket(std::bind(game::server_write::questgiverRequestItems, std::placeholders::_1, guid, true, false, std::cref(m_project.items), std::cref(*menuItem.quest)));
+					else
+						sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, guid, false, std::cref(m_project.items), std::cref(*menuItem.quest)));
+					break;
+				case game::questgiver_status::Reward:
+					if (!menuItem.quest->requestitemstext().empty())
+						sendProxyPacket(std::bind(game::server_write::questgiverRequestItems, std::placeholders::_1, guid, true, true, std::cref(m_project.items), std::cref(*menuItem.quest)));
+					else
+						sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, guid, true, std::cref(m_project.items), std::cref(*menuItem.quest)));
+					break;
+				}
+				
+			}
+			else
+			{
+				// Send quest menu
+				sendProxyPacket(
+					std::bind(game::server_write::questgiverQuestList, std::placeholders::_1, guid, "", 0, 0, std::cref(questMenu)));
+			}
+		}
+		else if(creature)
+		{
+			const auto *trainerEntry = m_project.trainers.getById(creature->getEntry().trainerentry());
+			if (trainerEntry)
+			{
+				UInt32 titleId = 0;
+				if (trainerEntry->type() == proto::TrainerEntry_TrainerType_CLASS_TRAINER)
+				{
+					if (trainerEntry->classid() != m_character->getClass())
+					{
+						// Not your class!
+						return;
+					}
+
+					switch (m_character->getClass())
+					{
+						case game::char_class::Druid:
+							titleId = 4913;
+							break;
+						case game::char_class::Hunter:
+							titleId = 10090;
+							break;
+						case game::char_class::Mage:
+							titleId = 328;
+							break;
+						case game::char_class::Paladin:
+							titleId = 1635;
+							break;
+						case game::char_class::Priest:
+							titleId = 4436;
+							break;
+						case game::char_class::Rogue:
+							titleId = 4797;
+							break;
+						case game::char_class::Shaman:
+							titleId = 5003;
+							break;
+						case game::char_class::Warlock:
+							titleId = 5836;
+							break;
+						case game::char_class::Warrior:
+							titleId = 4985;
+							break;
+					}
+				}
+
+				sendProxyPacket(
+					std::bind(game::server_write::gossipMessage, std::placeholders::_1, guid, titleId));
+				sendProxyPacket(
+					std::bind(game::server_write::trainerList, std::placeholders::_1, std::cref(*m_character), guid, std::cref(*trainerEntry)));
+
+				return;
+			}
+		}
+	}
+
+	void Player::handleGossipHello(game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 npcGuid = 0;
+		if (!(game::client_read::gossipHello(packet, npcGuid)))
+		{
+			return;
+		}
+
+		sendGossipMenu(npcGuid);
+	}
+
+	void Player::handleTrainerBuySpell(game::Protocol::IncomingPacket &packet)
+	{
+		UInt64 npcGuid = 0;
+		UInt32 spellId = 0;
+		if (!(game::client_read::trainerBuySpell(packet, npcGuid, spellId)))
+		{
+			return;
+		}
+
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+		{
+			return;
+		}
+
+		GameCreature *creature = dynamic_cast<GameCreature*>(world->findObjectByGUID(npcGuid));
+		if (!creature)
+		{
+			return;
+		}
+
+		const auto *trainerEntry = m_project.trainers.getById(creature->getEntry().trainerentry());
+		if (!trainerEntry)
+		{
+			return;
+		}
+
+		if (trainerEntry->type() == proto::TrainerEntry_TrainerType_CLASS_TRAINER &&
+			m_character->getClass() != trainerEntry->classid())
+		{
+			return;
+		}
+
+		UInt32 cost = 0;
+		const proto::SpellEntry *entry = nullptr;
+		for (const auto &spell : trainerEntry->spells())
+		{
+			if (spell.spell() == spellId)
+			{
+				entry = m_project.spells.getById(spell.spell());
+				cost = spell.spellcost();
+				break;
+			}
+		}
+
+		if (!entry)
+		{
+			return;
+		}
+
+		if (m_character->hasSpell(spellId))
+		{
+			return;
+		}
+
+		sendProxyPacket(
+			std::bind(game::server_write::playSpellVisual, std::placeholders::_1, npcGuid, 0xB3));
+		sendProxyPacket(
+			std::bind(game::server_write::playSpellImpact, std::placeholders::_1, m_character->getGuid(), 0x016A));
+
+		UInt32 money = m_character->getUInt32Value(character_fields::Coinage);
+		if (money < cost)
+			return;
+		m_character->setUInt32Value(character_fields::Coinage, money - cost);
+
+		m_character->addSpell(*entry);
+		if ((entry->attributes(0) & game::spell_attributes::Passive) != 0)
+		{
+			SpellTargetMap targetMap;
+			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+			targetMap.m_unitTarget = m_character->getGuid();
+			m_character->castSpell(std::move(targetMap), spellId);
+		}
+
+		sendProxyPacket(
+			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spellId));
+		sendProxyPacket(
+			std::bind(game::server_write::trainerBuySucceeded, std::placeholders::_1, npcGuid, spellId));
+	}
+
+	void Player::handleQuestgiverStatusQuery(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid = 0;
+		if (!(game::client_read::questgiverStatusQuery(packet, guid)))
+		{
+			return;
+		}
+
+		// Can't find world instance
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+		{
+			return;
+		}
+
+		// Can't find questgiver
+		GameObject *questgiver = world->findObjectByGUID(guid);
+		if (!questgiver)
+		{
+			return;
+		}
+
+		// Default status: None
+		game::QuestgiverStatus status = game::questgiver_status::None;
+		switch (questgiver->getTypeId())
+		{
+			case object_type::Unit:
+			{
+				GameCreature *creature = reinterpret_cast<GameCreature*>(questgiver);
+				status = creature->getQuestgiverStatus(*m_character);
+				break;
+			}
+			case object_type::GameObject:
+			{
+				WorldObject *object = reinterpret_cast<WorldObject*>(questgiver);
+				status = object->getQuestgiverStatus(*m_character);
+				break;
+			}
+			default:
+			{
+				// Unexpected object type!
+				break;
+			}
+		}
+
+		// Send answer
+		sendProxyPacket(
+			std::bind(game::server_write::questgiverStatus, std::placeholders::_1, guid, status));
+	}
+
+	void Player::handleQuestgiverStatusMultipleQuery(game::Protocol::IncomingPacket & packet)
+	{
+		std::map<UInt64, game::QuestgiverStatus> statusMap;
+
+		// Find all potential quest givers near our character
+		TileIndex2D tile;
+		if (m_character->getTileIndex(tile))
+		{
+			forEachTileInSight(
+				m_character->getWorldInstance()->getGrid(),
+				tile,
+				[&statusMap, this](VisibilityTile & tile) {
+				for (auto *object : tile.getGameObjects())
+				{
+					switch (object->getTypeId())
+					{
+						case object_type::Unit:
+						{
+							GameCreature *creature = reinterpret_cast<GameCreature*>(object);
+							if (creature->getEntry().quests_size() ||
+								creature->getEntry().end_quests_size())
+							{
+								statusMap[object->getGuid()] = creature->getQuestgiverStatus(*m_character);
+							}
+							break;
+						}
+						case object_type::GameObject:
+						{
+							WorldObject *worldObject = reinterpret_cast<WorldObject*>(object);
+							if (worldObject->getEntry().quests_size() ||
+								worldObject->getEntry().end_quests_size())
+							{
+								statusMap[object->getGuid()] = worldObject->getQuestgiverStatus(*m_character);
+							}
+							break;
+						}
+						default:	// Make the compiler happy
+							break;
+					}
+				}
+			});
+		}
+
+		// Send questgiver status map
+		if (!statusMap.empty())
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::questgiverStatusMultiple, std::placeholders::_1, std::cref(statusMap)));
+		}
+	}
+
+	void Player::handleQuestgiverHello(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid = 0;
+		if (!(game::client_read::questgiverStatusQuery(packet, guid)))
+		{
+			return;
+		}
+
+		sendGossipMenu(guid);
+	}
+
+	void Player::handleQuestgiverQueryQuest(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid = 0;
+		UInt32 questId = 0;
+		if (!(game::client_read::questgiverQueryQuest(packet, guid, questId)))
+		{
+			return;
+		}
+
+		const auto *quest = m_project.quests.getById(questId);
+		if (!quest)
+		{
+			return;
+		}
+
+		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
+		if (!object)
+		{
+			return;
+		}
+
+		if (!object->providesQuest(questId))
+		{
+			return;
+		}
+
+		sendProxyPacket(
+			std::bind(game::server_write::questgiverQuestDetails, std::placeholders::_1, guid, std::cref(m_project.items), std::cref(*quest)));
+		//DLOG("CMSG_QUESTGIVER_QUERY_QUEST: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
+	}
+
+	void Player::handleQuestgiverQuestAutolaunch(game::Protocol::IncomingPacket & packet)
+	{
+		if (!(game::client_read::questgiverQuestAutolaunch(packet)))
+		{
+			return;
+		}
+
+		DLOG("CMSG_QUESTGIVER_QUEST_AUTO_LAUNCH");
+	}
+
+	void Player::handleQuestgiverAcceptQuest(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid = 0;
+		UInt32 questId = 0;
+		if (!(game::client_read::questgiverAcceptQuest(packet, guid, questId)))
+		{
+			return;
+		}
+
+		// Check if that object exists and provides the requested quest
+		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
+		if (!object ||
+			!object->providesQuest(questId))
+		{
+			return;
+		}
+
+		// Accept that quest
+		m_character->acceptQuest(questId);
+		sendProxyPacket(
+			std::bind(game::server_write::gossipComplete, std::placeholders::_1));
+	}
+
+	void Player::handleQuestgiverCompleteQuest(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid = 0;
+		UInt32 questId = 0;
+		if (!(game::client_read::questgiverCompleteQuest(packet, guid, questId)))
+		{
+			return;
+		}
+
+		DLOG("CMSG_QUESTGIVER_COMPLETE_QUEST: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
+	}
+
+	void Player::handleQuestgiverRequestReward(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid = 0;
+		UInt32 questId = 0;
+		if (!(game::client_read::questgiverRequestReward(packet, guid, questId)))
+		{
+			return;
+		}
+
+		DLOG("CMSG_QUESTGIVER_REQUEST_REWARD: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
+	}
+
+	void Player::handleQuestgiverChooseReward(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid = 0;
+		UInt32 questId = 0, reward = 0;
+		if (!(game::client_read::questgiverChooseReward(packet, guid, questId, reward)))
+		{
+			return;
+		}
+
+		const auto *quest = m_project.quests.getById(questId);
+		if (!quest)
+		{
+			return;
+		}
+
+		// Validate data
+		if (reward > 0 &&
+			reward >= static_cast<UInt32>(quest->rewarditemschoice_size()))
+		{
+			return;
+		}
+
+		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
+		if (!object)
+		{
+			return;
+		}
+
+		if (!object->endsQuest(questId))
+		{
+			return;
+		}
+
+		// Reward this quest
+		bool result = m_character->rewardQuest(questId, [this, quest](UInt32 xp) {
+			sendProxyPacket(
+				std::bind(game::server_write::questgiverQuestComplete, std::placeholders::_1, m_character->getLevel() >= 70, xp, std::cref(*quest)));
+		});
+		if (result)
+		{
+			// Try to find next quest and if there is one, send quest details
+			UInt32 nextQuestId = quest->nextchainquestid();
+			if (nextQuestId &&
+				object->providesQuest(nextQuestId))
+			{
+				const auto *nextQuestEntry = m_project.quests.getById(nextQuestId);
+				if (nextQuestEntry)
+				{
+					sendProxyPacket(
+						std::bind(game::server_write::questgiverQuestDetails, std::placeholders::_1, guid, std::cref(m_project.items), std::cref(*nextQuestEntry)));
+				}
+			}
+		}
+		//DLOG("CMSG_QUESTGIVER_CHOOSE_REWARD: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
+	}
+
+	void Player::handleQuestgiverCancel(game::Protocol::IncomingPacket & packet)
+	{
+		if (!(game::client_read::questgiverCancel(packet)))
+		{
+			return;
+		}
+
+		DLOG("CMSG_QUESTGIVER_CANCEL");
 	}
 
 }

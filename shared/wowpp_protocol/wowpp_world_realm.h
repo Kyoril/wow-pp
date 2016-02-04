@@ -34,7 +34,7 @@ namespace wowpp
 	{
 		namespace world_realm
 		{
-			static const UInt32 ProtocolVersion = 0x08;
+			static const UInt32 ProtocolVersion = 0x10;
 
 			namespace world_instance_error
 			{
@@ -84,6 +84,10 @@ namespace wowpp
 					CharacterData,
 					/// A character should be teleported to another world.
 					TeleportRequest,
+					/// Update packet for a character who is a group member.
+					CharacterGroupUpdate,
+					/// Update packet for characters quest data.
+					QuestUpdate
 				};
 			}
 
@@ -103,7 +107,19 @@ namespace wowpp
 					/// Chat message of a player which needs to be handled by the world server (yell-msg for example).
 					ChatMessage,
 					/// Notifies the world node that a player should leave the world node (for example on disconnect)
-					LeaveWorldInstance
+					LeaveWorldInstance,
+					/// Notifies the world node about a group change of a character.
+					CharacterGroupChanged,
+					/// Send complete Ignorelist
+					IgnoreList,
+					/// Add entry to Ignorelist
+					AddIgnore,
+					/// Remove entry to Ignorelist
+					RemoveIgnore,
+					/// Received one or more item data entries for creation and/or updates. Maybe this packet becomes obsoelete.
+					ItemData,
+					/// One or more items have been deleted. Only slots are specified here.
+					ItemsRemoved,
 				};
 			}
 
@@ -200,9 +216,7 @@ namespace wowpp
 					UInt32 instanceId,
 					UInt32 mapId,
 					UInt32 zoneId,
-					float x, 
-					float y, 
-					float z, 
+					math::Vector3 location,
 					float o
 					);
 
@@ -241,10 +255,32 @@ namespace wowpp
 					pp::OutgoingPacket &out_packet,
 					UInt64 characterId,
 					UInt32 map,
-					float x,
-					float y,
-					float z,
+					math::Vector3 location,
 					float o
+					);
+
+				/// 
+				void characterGroupUpdate(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					const std::vector<UInt64> &nearbyMembers,
+					UInt32 health,
+					UInt32 maxHealth,
+					UInt8 powerType,
+					UInt32 power,
+					UInt32 maxPower,
+					UInt8 level,
+					UInt32 map,
+					UInt32 zone,
+					math::Vector3 location,
+					const std::vector<UInt32> &auras
+					);
+
+				void questUpdate(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					UInt32 questId,
+					const QuestStatusData &data
 					);
 			}
 
@@ -296,6 +332,39 @@ namespace wowpp
 					DatabaseId characterRealmId,
 					WorldLeftReason reason
 					);
+
+				/// 
+				void characterGroupChanged(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					UInt64 groupId
+					);
+
+				void ignoreList(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					const std::vector<UInt64> &list
+					);
+				void addIgnore(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					UInt64 ignoreGuid
+					);
+				void removeIgnore(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					UInt64 removeGuid
+					);
+				void itemData(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					const std::map<UInt16, ItemData> &data
+					);
+				void itemsRemoved(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					const std::vector<UInt16> &data
+					);
 			}
 
 			/// Contains methods for reading packets coming from the world server. 
@@ -331,9 +400,7 @@ namespace wowpp
 					UInt32 &out_instanceId,
 					UInt32 &out_mapId,
 					UInt32 &out_zoneId,
-					float &out_x,
-					float &out_y,
-					float &out_z,
+					math::Vector3 &out,
 					float &out_o
 					);
 
@@ -364,7 +431,9 @@ namespace wowpp
 				bool characterData(
 					io::Reader &packet,
 					UInt64 &out_characterId,
-					GameCharacter &out_character
+					GameCharacter &out_character,
+					std::vector<UInt32> &out_spellIds,
+					std::vector<ItemData> &out_items
 					);
 
 				/// 
@@ -372,10 +441,32 @@ namespace wowpp
 					io::Reader &packet,
 					UInt64 &out_characterId,
 					UInt32 &out_map,
-					float &out_x,
-					float &out_y,
-					float &out_z,
+					math::Vector3 &out,
 					float &out_o
+					);
+
+				/// 
+				bool characterGroupUpdate(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					std::vector<UInt64> &out_nearbyMembers,
+					UInt32 &out_health,
+					UInt32 &out_maxHealth,
+					UInt8 &out_powerType,
+					UInt32 &out_power,
+					UInt32 &out_maxPower,
+					UInt8 &out_level,
+					UInt32 &out_map,
+					UInt32 &out_zone,
+					math::Vector3 &out,
+					std::vector<UInt32> &out_auras
+					);
+
+				bool questUpdate(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					UInt32 &out_questId,
+					QuestStatusData &out_data
 					);
 			}
 
@@ -430,6 +521,39 @@ namespace wowpp
 					io::Reader &packet,
 					DatabaseId &out_characterRealmId,
 					WorldLeftReason &out_reason
+					);
+
+				/// 
+				bool characterGroupChanged(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					UInt64 &out_groupId
+					);
+
+				bool ignoreList(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					std::vector<UInt64> &out_list
+					);
+				bool addIgnore(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					UInt64 &out_ignoreGuid
+					);
+				bool removeIgnore(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					UInt64 &out_removeGuid
+					);
+				bool itemData(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					std::map<UInt16, ItemData> &out_data
+					);
+				bool itemsRemoved(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					std::vector<UInt16> &out_slots
 					);
 			}
 		}

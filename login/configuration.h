@@ -60,6 +60,15 @@ namespace wowpp
 		/// the file, which could be more efficient..
 		bool isLogFileBuffering;
 
+		/// The port to be used for a web connection.
+		NetPort webPort;
+		/// The port to be used for an ssl web connection.
+		NetPort webSSLPort;
+		/// The user name of the web user.
+		String webUser;
+		/// The password for the web user.
+		String webPassword;
+
 
 		explicit Configuration();
 		bool load(const String &fileName);

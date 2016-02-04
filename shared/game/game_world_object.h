@@ -22,12 +22,16 @@
 #pragma once
 
 #include "game_object.h"
-#include "data/object_entry.h"
 #include "common/timer_queue.h"
 #include "common/countdown.h"
 
 namespace wowpp
 {
+	namespace proto
+	{
+		class ObjectEntry;
+	}
+
 	namespace world_object_fields
 	{
 		enum Enum
@@ -159,18 +163,27 @@ namespace wowpp
 
 		/// 
 		explicit WorldObject(
+			proto::Project &project,
 			TimerQueue &timers,
-			const ObjectEntry &entry);
+			const proto::ObjectEntry &entry);
 		virtual ~WorldObject();
 
 		/// 
 		void initialize() override;
 		/// 
-		void relocate(float x, float y, float z, float o) override;
+		void relocate(math::Vector3 position, float o, bool fire = true) override;
 		/// 
 		void writeCreateObjectBlocks(std::vector<std::vector<char>> &out_blocks, bool creation = true) const override;
 
-		const ObjectEntry &getEntry() const { return m_entry; }
+		const proto::ObjectEntry &getEntry() const { return m_entry; }
+		/// @copydoc GameObject::providesQuest()
+		bool providesQuest(UInt32 questId) const override;
+		/// @copydoc GameObject::endsQuest()
+		bool endsQuest(UInt32 questId) const override;
+		/// 
+		game::QuestgiverStatus getQuestgiverStatus(const GameCharacter &character) const;
+		/// Determines whether this object is needed by a quest.
+		bool isQuestObject(const GameCharacter &character) const;
 
 		/// Gets the object type id value.
 		ObjectType getTypeId() const override { return object_type::GameObject; }
@@ -178,7 +191,7 @@ namespace wowpp
 	protected:
 
 		TimerQueue &m_timers;
-		const ObjectEntry &m_entry;
+		const proto::ObjectEntry &m_entry;
 	};
 
 	io::Writer &operator << (io::Writer &w, WorldObject const& object);

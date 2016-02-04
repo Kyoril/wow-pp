@@ -110,6 +110,11 @@
        <string>Unit - Cast Spell</string>
       </property>
      </item>
+     <item>
+      <property name="text">
+       <string>Common - Delay</string>
+      </property>
+     </item>
     </widget>
    </item>
    <item>

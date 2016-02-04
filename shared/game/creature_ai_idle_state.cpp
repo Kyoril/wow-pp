@@ -25,7 +25,7 @@
 #include "world_instance.h"
 #include "tiled_unit_watcher.h"
 #include "unit_finder.h"
-#include "data/faction_template_entry.h"
+#include "universe.h"
 #include "log/default_log_levels.h"
 
 namespace wowpp
@@ -43,29 +43,21 @@ namespace wowpp
 	{
 		auto &controlled = getControlled();
 
-		// Watch for threat events to enter combat
-		m_onThreatened = controlled.threatened.connect([this](GameUnit &threat, float amount)
-		{
-			// Warning: This may destroy the idle state as it enters the combat state
-			getAI().enterCombat(threat);
-		});
+		// Handle incoming threat
+		auto &ai = getAI();
+		m_onThreatened = controlled.threatened.connect(std::bind(&CreatureAI::onThreatened, &ai, std::placeholders::_1, std::placeholders::_2));
 
 		auto *worldInstance = controlled.getWorldInstance();
-		if (!worldInstance)
-		{
-			ELOG("Creature entered Idle State but is not in a world instance");
-			return;
-		}
+		assert(worldInstance);
 
-		float x, y, z, o;
-		controlled.getLocation(x, y, z, o);
+		math::Vector3 location(controlled.getLocation());
 
-		Circle circle(x, y, 20.0f);
+		Circle circle(location.x, location.y, 40.0f);
 		m_aggroWatcher = worldInstance->getUnitFinder().watchUnits(circle);
 		m_aggroWatcher->visibilityChanged.connect([this](GameUnit& unit, bool isVisible) -> bool
 		{
 			auto &controlled = getControlled();
-			if (&unit == &controlled)
+			if (unit.getGuid() == controlled.getGuid())
 			{
 				return false;
 			}
@@ -75,24 +67,47 @@ namespace wowpp
 				return false;
 			}
 
-			// Check if we are hostile against this unit
-			const auto &ourFaction = controlled.getFactionTemplate();
-			const auto &unitFaction = unit.getFactionTemplate();
-			if (ourFaction.isNeutralToAll())
+			if (!unit.isAlive())
 			{
 				return false;
 			}
 
-			if (ourFaction.isHostileTo(unitFaction) && 
-				!ourFaction.isFriendlyTo(unitFaction))
+			// Check if we are hostile against this unit
+			const auto &unitFaction = unit.getFactionTemplate();
+			if (controlled.isNeutralToAll())
+			{
+				return false;
+			}
+
+			const float dist = controlled.getDistanceTo(unit, false);
+
+			const bool isHostile = controlled.isHostileTo(unitFaction);
+			const bool isFriendly = controlled.isFriendlyTo(unitFaction);
+			if (isHostile && !isFriendly)
 			{
 				if (isVisible)
 				{
-					// Little hack since LoS is not working
-					float tmp = 0.0f, z2 = 0.0f, z = 0.0f;
-					controlled.getLocation(tmp, tmp, z, tmp);
-					unit.getLocation(tmp, tmp, z2, tmp);
-					if (::abs(z - z2) > 3.0f)
+					const Int32 ourLevel = static_cast<Int32>(controlled.getLevel());
+					const Int32 otherLevel = static_cast<Int32>(unit.getLevel());
+					const Int32 diff = ::abs(ourLevel - otherLevel);
+
+					// Check distance
+					float reqDist = 20.0f;
+					if (ourLevel < otherLevel)
+					{
+						reqDist = limit<float>(reqDist - diff, 5.0f, 40.0f);
+					}
+					else if (otherLevel < ourLevel)
+					{
+						reqDist = limit<float>(reqDist + diff, 5.0f, 40.0f);
+					}
+
+					if (dist > reqDist)
+					{
+						return false;
+					}
+
+					if (!controlled.isInLineOfSight(unit))
 					{
 						return false;
 					}
@@ -103,6 +118,29 @@ namespace wowpp
 
 				// We don't care
 				return false;
+			}
+			else if (isFriendly)
+			{
+				if (isVisible)
+				{
+					if (dist < 8.0f)
+					{
+						auto *victim = unit.getVictim();
+						if (unit.isInCombat() && victim != nullptr)
+						{
+							if (!victim->isHostileTo(unitFaction))
+								return false;
+
+							if (!controlled.isInLineOfSight(unit))
+							{
+								return false;
+							}
+
+							getAI().enterCombat(*victim);
+							return true;
+						}
+					}
+				}
 			}
 
 			return false;

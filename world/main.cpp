@@ -23,6 +23,7 @@
 #include "log/default_log_levels.h"
 #include "log/log_std_stream.h"
 #include "common/crash_handler.h"
+#include "common/service.h"
 #include <boost/program_options.hpp>
 
 using namespace std;
@@ -32,30 +33,16 @@ int main(int argc, char* argv[])
 {
 	namespace po = boost::program_options;
 
-	// Add cout to the list of log output streams
-	wowpp::g_DefaultLog.signal().connect(std::bind(
-		wowpp::printLogEntry,
-		std::ref(std::cout), std::placeholders::_1, wowpp::g_DefaultConsoleLogOptions));
-
-	//constructor enables error handling
-	wowpp::CrashHandler::get().enableDumpFile("WorldCrash.dmp");
-
-	//when the application terminates unexpectedly
-	const auto crashFlushConnection =
-		wowpp::CrashHandler::get().onCrash.connect(
-		[]()
-	{
-		ELOG("Application crashed...");
-	});
-
 	const std::string WorldServerDefaultConfig = "wowpp_world.cfg";
 	std::string configFileName = WorldServerDefaultConfig;
 
-	po::options_description desc("WoW++ world node, available options");
+	po::options_description desc("WoW++ World Node, available options");
 	desc.add_options()
 		("help,h", "produce help message")
-		("config,c", po::value<std::string>(&configFileName),
-		("configuration file name, default: " + WorldServerDefaultConfig).c_str())
+		("config,c", po::value<std::string>(&configFileName), ("configuration file name, default: " + WorldServerDefaultConfig).c_str())
+#ifdef __linux__
+		("service,s", "run the world node as a background process")
+#endif
 		;
 
 	po::variables_map vm;
@@ -78,9 +65,55 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
+	// Running as a service only works on linux
+	const bool startAsService =
+#ifdef __linux__
+		(vm.count("service") > 0);
+#else
+		false;
+#endif
+
+	auto openStdLog = []() {
+		// Add cout to the list of log output streams
+		wowpp::g_DefaultLog.signal().connect(std::bind(
+			wowpp::printLogEntry,
+			std::ref(std::cout), std::placeholders::_1, wowpp::g_DefaultConsoleLogOptions));
+	};
+
+	if (startAsService)
+	{
+		switch (wowpp::createService())
+		{
+			case wowpp::create_service_result::IsObsoleteProcess:
+				std::cout << "World node service is now running." << '\n';
+				return 0;
+
+			case wowpp::create_service_result::IsServiceProcess:
+			{
+				openStdLog();
+				ILOG("Successfully running as a service");
+			} break;
+		}
+	}
+	else
+	{
+		openStdLog();
+	}
+
+	//constructor enables error handling
+	wowpp::CrashHandler::get().enableDumpFile("WorldCrash.dmp");
+
+	//when the application terminates unexpectedly
+	const auto crashFlushConnection =
+		wowpp::CrashHandler::get().onCrash.connect(
+			[]()
+	{
+		ELOG("Application crashed...");
+	});
+
+
 	// Triggers if the program should be restarted
 	bool shouldRestartProgram = false;
-
 	do
 	{
 		// Run the main program

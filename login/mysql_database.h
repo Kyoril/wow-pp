@@ -36,6 +36,12 @@ namespace wowpp
 		/// Tries to establish a connection to the MySQL server.
 		bool load();
 
+		/// @copydoc wow::IDatabase::createAccount
+		virtual bool createAccount(UInt64 accountId, const String &accountName, const String &passwordHash) override;
+		/// @copydoc wow::IDatabase::setPlayerPassword
+		bool setPlayerPassword(UInt64 accountId, const String &passwordHash) override;
+		/// @copydoc wow::IDatabase::getAccountInfos
+		bool getAccountInfos(UInt64 accountId, String &out_name, String &out_passwordHash) override;
 		/// @copydoc wow::IDatabase::getPlayerPassword
 		bool getPlayerPassword(const String &userName, UInt32 &out_id, String &out_passwordHash) override;
 		/// @copydoc wow::IDatabase::getSVFields

@@ -24,6 +24,7 @@
 #include "common/typedefs.h"
 #include "templates/basic_template.h"
 #include <array>
+#include <map>
 
 namespace wowpp
 {
@@ -32,6 +33,8 @@ namespace wowpp
 	struct ItemEntry;
 	struct FactionTemplateEntry;
 	struct LootEntry;
+	struct VendorEntry;
+	struct TrainerEntry;
 
 	/// Stores creature related data.
 	struct UnitEntry : BasicTemplate<UInt32>
@@ -107,12 +110,16 @@ namespace wowpp
 		std::map<UInt32, std::vector<const TriggerEntry*>> triggersByEvent;
 		/// Equipment entries of this creature. Only has optical effect right now, maybe should also modify damage, attack speed and amor?
 		const ItemEntry *mainHand, *offHand, *ranged;
-		/// 
+		/// Melee attack power of this creature.
 		UInt32 attackPower;
-		/// 
+		/// Ranged attack power of this creature.
 		UInt32 rangedAttackPower;
-		/// 
+		/// NPC loot template entry.
 		const LootEntry *unitLootEntry;
+		/// NPC vendor template entry.
+		const VendorEntry *vendorEntry;
+		/// NPC trainer entry.
+		const TrainerEntry *trainerEntry;
 
 		/// Default constructor.
 		UnitEntry();
@@ -123,5 +130,8 @@ namespace wowpp
 		/// Saves this unit entry into a data file.
 		/// @param context Context which stores some objects and provides more information needed for saving.
 		void save(BasicTemplateSaveContext &context) const;
+
+		/// Removes a given trigger if attached.
+		void unlinkTrigger(UInt32 id);
 	};
 }

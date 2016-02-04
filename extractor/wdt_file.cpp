@@ -45,8 +45,13 @@ namespace wowpp
 		// Read the MAIN chunk
 		m_reader.readPOD(m_mainChunk);
 
-		// Read the MWMO chunk
-		m_reader.readPOD(m_wmoChunk);
+		// If not end of file?
+		if (m_reader.getSource()->position() < m_reader.getSource()->size())
+		{
+			// Read the MWMO chunk
+			m_reader.readPOD(m_wmoChunk);
+			
+		}
 
 		m_isValid = true;
 		return true;

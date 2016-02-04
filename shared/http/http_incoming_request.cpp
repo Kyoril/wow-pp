@@ -1,3 +1,4 @@
+#include "http_incoming_request.h"
 //
 // This file is part of the WoW++ project.
 // 
@@ -49,6 +50,11 @@ namespace wowpp
 			const String &IncomingRequest::getHost() const
 			{
 				return m_host;
+			}
+
+			const String & IncomingRequest::getPostData() const
+			{
+				return m_postData;
 			}
 
 			const IncomingRequest::Headers &IncomingRequest::getHeaders() const
@@ -180,18 +186,18 @@ namespace wowpp
 
 				if (!skipEndOfLine(pos, end))
 				{
-					DLOG("Malformed skipEndOfLine: " << pos);
 					return receive_state::Malformed;
 				}
 
 				// We need at least another end of line
 				if (pos == end)
 				{
-					DLOG("Incomplete");
 					return receive_state::Incomplete;
 				}
 
 				//headers
+				packet.m_headers.clear();
+				size_t estimatedContentLength = 0;
 				while (!skipEndOfLine(pos, end))
 				{
 					String name;
@@ -219,10 +225,31 @@ namespace wowpp
 						return receive_state::Malformed;
 					}
 
+					if (name == "Content-Length")
+					{
+						estimatedContentLength = atoi(value.c_str());
+					}
+
 					packet.m_headers.insert(std::make_pair(name, value));
 				}
 
+				if (estimatedContentLength > 0)
+				{
+					if (end <= pos ||
+						(end - pos) < estimatedContentLength)
+					{
+						return receive_state::Incomplete;
+					}
+				}
+				else if (estimatedContentLength == 0)
+				{
+					source.skip(pos - begin);
+					return receive_state::Complete;
+				}
+
+				parseThing(pos, end, packet.m_postData);
 				source.skip(pos - begin);
+
 				return receive_state::Complete;
 			}
 

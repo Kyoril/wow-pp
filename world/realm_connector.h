@@ -27,10 +27,10 @@
 #include "game_protocol/game_incoming_packet.h"
 #include "wowpp_protocol/wowpp_connector.h"
 #include "wowpp_protocol/wowpp_world_realm.h"
-#include "data/data_load_context.h"
 #include "game/game_character.h"
 #include "common/timer_queue.h"
 #include <boost/signals2.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace wowpp
 {
@@ -39,11 +39,14 @@ namespace wowpp
 	class WorldInstance;
 	class PlayerManager;
 	struct Configuration;
-	class Project;
 	class Player;
+	namespace proto
+	{
+		class Project;
+	}
 
 	/// This class manages the connection to the realm server.
-	class RealmConnector : public pp::IConnectorListener
+	class RealmConnector : public pp::IConnectorListener, boost::noncopyable
 	{
 	public:
 
@@ -63,7 +66,7 @@ namespace wowpp
 			PlayerManager &playerManager,
 			const Configuration &config,
 			UInt32 realmEntryIndex,
-			Project &project,
+			proto::Project &project,
 			TimerQueue &timer);
 		~RealmConnector();
 
@@ -83,13 +86,17 @@ namespace wowpp
 		/// @param buffer
 		void sendProxyPacket(DatabaseId senderId, UInt16 opCode, UInt32 size, const std::vector<char> &buffer);
 		/// 
-		void sendTeleportRequest(DatabaseId characterId, UInt32 map, float x, float y, float z, float o);
+		void sendTeleportRequest(DatabaseId characterId, UInt32 map, math::Vector3 location, float o);
 		/// 
 		void notifyWorldInstanceLeft(DatabaseId characterId, pp::world_realm::WorldLeftReason reason);
 		/// 
 		const String &getRealmName() const { return m_realmName; }
 		/// Sends data of one character to the realm.
 		void sendCharacterData(GameCharacter &character);
+		/// Sends a group update to the realm.
+		void sendCharacterGroupUpdate(GameCharacter &character, const std::vector<UInt64> &nearbyMembers);
+		/// 
+		void sendQuestData(DatabaseId characterId, UInt32 quest, const QuestStatusData &data);
 
 	private:
 
@@ -108,6 +115,11 @@ namespace wowpp
 		void handleProxyPacket(pp::Protocol::IncomingPacket &packet);
 		void handleChatMessage(pp::Protocol::IncomingPacket &packet);
 		void handleLeaveWorldInstance(pp::Protocol::IncomingPacket &packet);
+		void handleCharacterGroupChanged(pp::Protocol::IncomingPacket &packet);
+		void handleIgnoreList(pp::Protocol::IncomingPacket &packet);
+		void handleAddIgnore(pp::Protocol::IncomingPacket &packet);
+		void handleRemoveIgnore(pp::Protocol::IncomingPacket &packet);
+		void handleItemData(pp::Protocol::IncomingPacket &packet);
 
 	private:
 
@@ -121,7 +133,6 @@ namespace wowpp
 		void handleMoveStop(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleSetSelection(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleStandStateChange(Player &sender, game::Protocol::IncomingPacket &packet);
-		void handleMovementPacket(Player &sender, UInt16 opCode, game::Protocol::IncomingPacket &packet);
 		void handleCastSpell(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleCancelCast(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleAttackSwing(Player &sender, game::Protocol::IncomingPacket &packet);
@@ -139,7 +150,7 @@ namespace wowpp
 		WorldInstanceManager &m_worldInstanceManager;
 		PlayerManager &m_playerManager;
 		const Configuration &m_config;
-		Project &m_project;
+		proto::Project &m_project;
 		TimerQueue &m_timer;
 		std::shared_ptr<pp::Connector> m_connection;
 		UInt32 m_realmEntryIndex;

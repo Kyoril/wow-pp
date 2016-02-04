@@ -22,6 +22,8 @@
 #include "clock.h"
 #if defined(WIN32) || defined(_WIN32)
 #	include <Windows.h>
+#	include <mmsystem.h>
+#	pragma comment(lib, "winmm.lib")
 #else
 #	include <sys/time.h>
 #	include <unistd.h>
@@ -34,6 +36,37 @@
 
 namespace wowpp
 {
+	UInt32 TimeStamp()
+	{
+#ifdef _WIN32
+		FILETIME ft;
+		UInt64 t;
+		GetSystemTimeAsFileTime(&ft);
+
+		const UInt64 deltaEpichInUSec = 11644473600000000ULL;
+		t = (UInt64)ft.dwHighDateTime << 32;
+		t |= ft.dwLowDateTime;
+		t /= 10;
+		t -= deltaEpichInUSec;
+
+		return UInt32(((t / 1000000L) * 1000) + ((t % 1000000L) / 1000));
+#else
+		struct timeval tp;
+		gettimeofday(&tp, nullptr);
+		return (tp.tv_sec * 1000) + (tp.tv_usec / 1000);
+#endif
+	}
+	UInt32 mTimeStamp()
+	{
+#ifdef _WIN32
+		return timeGetTime();
+#else
+		struct timeval tp;
+		gettimeofday(&tp, nullptr);
+		return (tp.tv_sec * 1000) + (tp.tv_usec / 1000);
+#endif
+	}
+
 	GameTime getCurrentTime()
 	{
 #if defined(WIN32) || defined(_WIN32)

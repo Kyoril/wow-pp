@@ -23,6 +23,11 @@
 
 #include "common/typedefs.h"
 #include "creature_ai_state.h"
+#include "math/vector3.h"
+#include "common/countdown.h"
+#include "shared/proto_data/spells.pb.h"
+#include "shared/proto_data/units.pb.h"
+#include "defines.h"
 #include <boost/signals2.hpp>
 #include <memory>
 #include <map>
@@ -63,18 +68,37 @@ namespace wowpp
 		virtual void onEnter() override;
 		/// 
 		virtual void onLeave() override;
+		/// 
+		virtual void onDamage(GameUnit &attacker) override;
 
 	private:
 
 		void addThreat(GameUnit &threatener, float amount);
 		void removeThreat(GameUnit &threatener);
+		float getThreat(GameUnit &threatener);
+		void setThreat(GameUnit &threatener, float amount);
+		GameUnit *getTopThreatener();
 		void updateVictim();
+		void chaseTarget(GameUnit &target);
+		void chooseNextAction();
+		void onSpellCast(game::SpellCastResult result);
 
 	private:
 
 		ThreatList m_threat;
 		UnitSignals m_killedSignals;
 		UnitSignals m_despawnedSignals;
-		boost::signals2::scoped_connection m_onThreatened;
+		boost::signals2::scoped_connection m_onThreatened, m_onVictimMoved, m_onMoveTargetChanged;
+		boost::signals2::scoped_connection m_getThreat, m_setThreat, m_getTopThreatener;
+		boost::signals2::scoped_connection m_onStunChanged, m_onRootChanged;
+		boost::signals2::scoped_connection m_onAutoAttackDone, m_onControlledMoved;
+		GameTime m_lastThreatTime;
+		Countdown m_nextActionCountdown;
+
+		const proto::UnitSpellEntry *m_lastSpellEntry;
+		const proto::SpellEntry *m_lastSpell;
+		GameTime m_lastCastTime;
+		UInt32 m_customCooldown;
+		game::SpellCastResult m_lastCastResult;
 	};
 }

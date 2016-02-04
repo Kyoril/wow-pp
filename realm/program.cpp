@@ -39,7 +39,8 @@
 #include "mysql_database.h"
 #include "web_service.h"
 #include "common/timer_queue.h"
-#include "data/project.h"
+#include "common/id_generator.h"
+#include "proto_data/project.h"
 #include <iostream>
 #include <memory>
 #include <fstream>
@@ -47,20 +48,26 @@
 
 namespace wowpp
 {
-	Program::Program()
-		: m_shouldRestart(false)
+	Program::Program(bool asService)
+		: m_isService(asService)
+		, m_shouldRestart(false)
 	{
 	}
 
 	bool Program::run()
 	{
+		auto start = getCurrentTime();
+
 		// Header
 		ILOG("Starting WoW++ Realm");
 		ILOG("Version " << Major << "." << Minor << "." << Build << "." << Revisision << " (Commit: " << GitCommit << ")");
 		ILOG("Last Change: " << GitLastChange);
 
+#ifdef WOWPP_WITH_DEV_COMMANDS
+		ILOG("[Developer Commands Enabled]");
+#endif
 #if defined(DEBUG) || defined(_DEBUG)
-		ILOG("Debug build enabled");
+		DLOG("[Debug build enabled]");
 #endif
 
 		// Load the configuration
@@ -103,7 +110,7 @@ namespace wowpp
 		}
 
 		// Load project
-		Project project;
+		proto::Project project;
 		if (!project.load(m_configuration.dataPath))
 		{
 			ELOG("Could not load data project!");
@@ -130,6 +137,25 @@ namespace wowpp
 
 		// Set database instance
 		m_database = std::move(db);
+
+		// Setup async database requester
+		boost::asio::io_service databaseWorkQueue;
+		boost::asio::io_service::work databaseWork(databaseWorkQueue);
+		(void)databaseWork;
+		const auto async = [&databaseWorkQueue](Action action)
+		{
+			databaseWorkQueue.post(std::move(action));
+		};
+		const auto sync = [this](Action action)
+		{
+			m_ioService.post(std::move(action));
+		};
+		AsyncDatabase asyncDatabase(*m_database, async, sync);
+		
+		auto end = getCurrentTime();
+		DLOG("Realm started in " << (end - start) << " ms");
+
+		// TODO: Use async database requests so no blocking occurs
 
 		// Create the player manager
 		std::unique_ptr<wowpp::PlayerManager> PlayerManager(new wowpp::PlayerManager(timer, m_configuration.maxPlayers));
@@ -196,12 +222,17 @@ namespace wowpp
 			m_ioService,
 			m_configuration.webPort,
 			m_configuration.webPassword,
-			*PlayerManager
+			*PlayerManager,
+			*WorldManager,
+			*m_database,
+			project
 			));
+
+		IdGenerator<UInt64> groupIdGenerator(0x01);
 
 		IDatabase &database = *m_database;
 		Configuration &config = m_configuration;
-		auto const createPlayer = [&PlayerManager, &loginConnector, &WorldManager, &database, &project, &config](std::shared_ptr<wowpp::Player::Client> connection)
+		auto const createPlayer = [&PlayerManager, &loginConnector, &WorldManager, &database, &project, &config, &groupIdGenerator](std::shared_ptr<wowpp::Player::Client> connection)
 		{
 			connection->startReceiving();
 			boost::asio::ip::address address;
@@ -217,7 +248,7 @@ namespace wowpp
 				return;
 			}
 
-			std::unique_ptr<wowpp::Player> player(new wowpp::Player(config, *PlayerManager, *loginConnector, *WorldManager, database, project, std::move(connection), address.to_string()));
+			std::unique_ptr<wowpp::Player> player(new wowpp::Player(config, groupIdGenerator, *PlayerManager, *loginConnector, *WorldManager, database, project, std::move(connection), address.to_string()));
 
 			DLOG("Incoming player connection from " << address);
 			PlayerManager->addPlayer(std::move(player));

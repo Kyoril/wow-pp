@@ -20,12 +20,12 @@
 // 
 
 #include "game_item.h"
-#include "data/item_entry.h"
+#include "proto_data/project.h"
 
 namespace wowpp
 {
-	GameItem::GameItem(const ItemEntry &entry)
-		: GameObject()
+	GameItem::GameItem(proto::Project &project, const proto::ItemEntry &entry)
+		: GameObject(project)
 		, m_entry(entry)
 	{
 		// Resize values field
@@ -44,18 +44,21 @@ namespace wowpp
 	{
 		GameObject::initialize();
 
-		setUInt32Value(object_fields::Entry, m_entry.id);
+		setUInt32Value(object_fields::Entry, m_entry.id());
 		setFloatValue(object_fields::ScaleX, 1.0f);
 
-		setUInt32Value(item_fields::MaxDurability, m_entry.durability);
-		setUInt32Value(item_fields::Durability, m_entry.durability);
+		setUInt32Value(item_fields::MaxDurability, m_entry.durability());
+		setUInt32Value(item_fields::Durability, m_entry.durability());
 		setUInt32Value(item_fields::StackCount, 1);
-		setUInt32Value(item_fields::Flags, m_entry.flags);
+		setUInt32Value(item_fields::Flags, m_entry.flags());
 
 		// Spell charges
 		for (size_t i = 0; i < 5; ++i)
 		{
-			setUInt32Value(item_fields::SpellCharges + i, m_entry.itemSpells[i].charges);
+			if (i >= m_entry.spells_size())
+				break;
+
+			setUInt32Value(item_fields::SpellCharges + i, m_entry.spells(i).charges());
 		}
 	}
 

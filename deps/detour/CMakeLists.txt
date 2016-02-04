@@ -30,5 +30,5 @@ add_library(detour ${SRC_FILES})
 
 # Solution folder
 if(MSVC)
-	set_property(TARGET detour PROPERTY FOLDER "deps/detour")
+	set_property(TARGET detour PROPERTY FOLDER "deps")
 endif(MSVC)

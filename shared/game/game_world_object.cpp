@@ -25,14 +25,17 @@
 #include "common/clock.h"
 #include "visibility_tile.h"
 #include "world_instance.h"
+#include "proto_data/project.h"
+#include "game_character.h"
 #include <cassert>
 
 namespace wowpp
 {
 	WorldObject::WorldObject(
+		proto::Project &project,
 		TimerQueue &timers,
-		const ObjectEntry &entry)
-		: GameObject()
+		const proto::ObjectEntry &entry)
+		: GameObject(project)
 		, m_timers(timers)
 		, m_entry(entry)
 	{
@@ -49,21 +52,21 @@ namespace wowpp
 		GameObject::initialize();
 
 		setUInt32Value(object_fields::Type, 33);
-		setUInt32Value(object_fields::Entry, m_entry.id);
+		setUInt32Value(object_fields::Entry, m_entry.id());
 
-		setUInt32Value(world_object_fields::TypeID, m_entry.type);
-		setUInt32Value(world_object_fields::DisplayId, m_entry.displayID);
+		setUInt32Value(world_object_fields::TypeID, m_entry.type());
+		setUInt32Value(world_object_fields::DisplayId, m_entry.displayid());
 		setUInt32Value(world_object_fields::AnimProgress, 100);
 		setUInt32Value(world_object_fields::State, 1);
-		setUInt32Value(world_object_fields::Faction, m_entry.factionID);
-		setUInt32Value(world_object_fields::Flags, m_entry.flags);
+		setUInt32Value(world_object_fields::Faction, m_entry.factionid());
+		setUInt32Value(world_object_fields::Flags, m_entry.flags());
 
-		float x, y, z, o;
-		getLocation(x, y, z, o);
+		float o = getOrientation();
+		math::Vector3 location(getLocation());
 
-		setFloatValue(world_object_fields::PosX, x);
-		setFloatValue(world_object_fields::PosY, y);
-		setFloatValue(world_object_fields::PosZ, z);
+		setFloatValue(world_object_fields::PosX, location.x);
+		setFloatValue(world_object_fields::PosY, location.y);
+		setFloatValue(world_object_fields::PosZ, location.z);
 		setFloatValue(world_object_fields::Facing, o);
 		setFloatValue(world_object_fields::Rotation + 2, sin(o / 2.0f));
 		setFloatValue(world_object_fields::Rotation + 3, cos(o / 2.0f));
@@ -75,16 +78,79 @@ namespace wowpp
 		// TODO
 	}
 
-	void WorldObject::relocate(float x, float y, float z, float o)
+	bool WorldObject::providesQuest(UInt32 questId) const
 	{
-		setFloatValue(world_object_fields::PosX, x);
-		setFloatValue(world_object_fields::PosY, y);
-		setFloatValue(world_object_fields::PosZ, z);
+		auto &entry = getEntry();
+		for (const auto &id : entry.quests())
+		{
+			if (id == questId) return true;
+		}
+
+		return false;
+	}
+
+	bool WorldObject::endsQuest(UInt32 questId) const
+	{
+		auto &entry = getEntry();
+		for (const auto &id : entry.end_quests())
+		{
+			if (id == questId) return true;
+		}
+
+		return false;
+	}
+
+	game::QuestgiverStatus WorldObject::getQuestgiverStatus(const GameCharacter & character) const
+	{
+		game::QuestgiverStatus result = game::questgiver_status::None;
+		for (const auto &quest : getEntry().quests())
+		{
+			auto questStatus = character.getQuestStatus(quest);
+			if (questStatus == game::quest_status::Complete)
+			{
+				return game::questgiver_status::Reward;
+			}
+			else if (questStatus == game::quest_status::Available)
+			{
+				result = game::questgiver_status::Available;
+			}
+			else if (questStatus == game::quest_status::Incomplete &&
+				result == game::questgiver_status::None)
+			{
+				result = game::questgiver_status::Incomplete;
+			}
+		}
+		return result;
+	}
+
+	bool WorldObject::isQuestObject(const GameCharacter & character) const
+	{
+		switch (m_entry.type())
+		{
+			case world_object_type::Chest:
+			{
+				// TODO: Check if chest loot contains quest item
+				return false;
+			}
+			case world_object_type::Goober:
+			{
+				return character.getQuestStatus(m_entry.data(1)) == game::QuestStatus::Incomplete;
+			}
+		}
+
+		return false;
+	}
+
+	void WorldObject::relocate(math::Vector3 position, float o, bool fire/* = false*/)
+	{
+		setFloatValue(world_object_fields::PosX, position.x);
+		setFloatValue(world_object_fields::PosY, position.y);
+		setFloatValue(world_object_fields::PosZ, position.z);
 		setFloatValue(world_object_fields::Facing, o);
 		setFloatValue(world_object_fields::Rotation + 2, sin(o / 2.0f));
 		setFloatValue(world_object_fields::Rotation + 3, cos(o / 2.0f));
 
-		GameObject::relocate(x, y, z, o);
+		GameObject::relocate(position, o, fire);
 	}
 
 

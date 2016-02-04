@@ -60,14 +60,19 @@ namespace wowpp
 		context.getCreatureType = std::bind(&CreatureTypeEntryManager::getById, &creaturetypes, std::placeholders::_1);
 		context.getUnit = std::bind(&UnitEntryManager::getById, &units, std::placeholders::_1);
 		context.getSpell = std::bind(&SpellEntryManager::getById, &spells, std::placeholders::_1);
+		context.getEditableSpell = std::bind(&SpellEntryManager::getEditableById, &spells, std::placeholders::_1);
 		context.getItem = std::bind(&ItemEntryManager::getById, &items, std::placeholders::_1);
 		context.getSkill = std::bind(&SkillEntryManager::getById, &skills, std::placeholders::_1);
 		context.getObject = std::bind(&ObjectEntryManager::getById, &objects, std::placeholders::_1);
 		context.getTrigger = std::bind(&TriggerEntryManager::getById, &triggers, std::placeholders::_1);
+		context.getEditableTrigger = std::bind(&TriggerEntryManager::getEditableById, &triggers, std::placeholders::_1);
 		context.getZone = std::bind(&ZoneEntryManager::getById, &zones, std::placeholders::_1);
 		context.getFaction = std::bind(&FactionEntryManager::getById, &factions, std::placeholders::_1);
 		context.getFactionTemplate = std::bind(&FactionTemplateEntryManager::getById, &factionTemplates, std::placeholders::_1);
 		context.getUnitLoot = std::bind(&LootEntryManager::getById, &unitLoot, std::placeholders::_1);
+		context.getTalent = std::bind(&TalentEntryManager::getById, &talents, std::placeholders::_1);
+		context.getVendor = std::bind(&VendorEntryManager::getById, &vendors, std::placeholders::_1);
+		context.getTrainer = std::bind(&TrainerEntryManager::getById, &trainers, std::placeholders::_1);
 
 		typedef ProjectLoader<DataLoadContext> RealmProjectLoader;
 		typedef RealmProjectLoader::ManagerEntry ManagerEntry;
@@ -93,6 +98,10 @@ namespace wowpp
 		managers.push_back(ManagerEntry("emotes", emotes, std::bind(&EmoteEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("zones", zones, std::bind(&ZoneEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 		managers.push_back(ManagerEntry("unit_loot", unitLoot, std::bind(&LootEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+		managers.push_back(ManagerEntry("talents", talents, std::bind(&TalentEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+		managers.push_back(ManagerEntry("unit_vendor", vendors, std::bind(&VendorEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+		managers.push_back(ManagerEntry("trainers", trainers, std::bind(&TrainerEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+		managers.push_back(ManagerEntry("quests", quests, std::bind(&QuestEntry::load, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 
 		virtual_dir::FileSystemReader virtualDirectory(context.dataPath);
 		if (!RealmProjectLoader::load(
@@ -139,6 +148,10 @@ namespace wowpp
 		managers.push_back(ManagerEntry("emotes", "emotes", emotes, &EmoteEntry::save));
 		managers.push_back(ManagerEntry("zones", "zones", zones, &ZoneEntry::save));
 		managers.push_back(ManagerEntry("unit_loot", "unit_loot", unitLoot, &LootEntry::save));
+		managers.push_back(ManagerEntry("talents", "talents", talents, &TalentEntry::save));
+		managers.push_back(ManagerEntry("unit_vendor", "unit_vendor", vendors, &VendorEntry::save));
+		managers.push_back(ManagerEntry("trainers", "trainers", trainers, &TrainerEntry::save));
+		managers.push_back(ManagerEntry("quests", "quests", quests, &QuestEntry::save));
 
 		if (!RealmProjectSaver::save(realmDataPath, managers))
 		{

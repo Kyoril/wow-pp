@@ -44,6 +44,9 @@ namespace wowpp
 	struct FactionEntry;
 	struct FactionTemplateEntry;
 	struct LootEntry;
+	struct TalentEntry;
+	struct VendorEntry;
+	struct TrainerEntry;
 
 	struct DataLoadContext : BasicTemplateLoadContext
 	{
@@ -55,14 +58,19 @@ namespace wowpp
 		typedef std::function<const CreatureTypeEntry * (UInt32)> GetCreatureType;
 		typedef std::function<const UnitEntry * (UInt32)> GetUnit;
 		typedef std::function<const SpellEntry * (UInt32)> GetSpell;
+		typedef std::function<SpellEntry * (UInt32)> GetEditableSpell;
 		typedef std::function<const ItemEntry * (UInt32)> GetItem;
 		typedef std::function<const SkillEntry * (UInt32)> GetSkill;
 		typedef std::function<const ObjectEntry * (UInt32)> GetObject;
 		typedef std::function<const TriggerEntry * (UInt32)> GetTrigger;
+		typedef std::function<TriggerEntry * (UInt32)> GetEditableTrigger;
 		typedef std::function<const ZoneEntry * (UInt32)> GetZone;
 		typedef std::function<const FactionEntry * (UInt32)> GetFaction;
 		typedef std::function<const FactionTemplateEntry * (UInt32)> GetFactionTemplate;
 		typedef std::function<const LootEntry * (UInt32)> GetLoot;
+		typedef std::function<const TalentEntry * (UInt32)> GetTalent;
+		typedef std::function<const VendorEntry * (UInt32)> GetVendor;
+		typedef std::function<const TrainerEntry * (UInt32)> GetTrainer;
 
 		GetMap getMap;
 		GetRace getRace;
@@ -70,14 +78,19 @@ namespace wowpp
 		GetCreatureType getCreatureType;
 		GetUnit getUnit;
 		GetSpell getSpell;
+		GetEditableSpell getEditableSpell;
 		GetItem getItem;
 		GetSkill getSkill;
 		GetObject getObject;
 		GetTrigger getTrigger;
+		GetEditableTrigger getEditableTrigger;
 		GetZone getZone;
 		GetFaction getFaction;
 		GetFactionTemplate getFactionTemplate;
 		GetLoot getUnitLoot;
+		GetTalent getTalent;
+		GetVendor getVendor;
+		GetTrainer getTrainer;
 
 		explicit DataLoadContext(
 		    boost::filesystem::path realmDataPath

@@ -29,5 +29,5 @@ add_library(recast ${SRC_FILES})
 
 # Solution folder
 if(MSVC)
-	set_property(TARGET recast PROPERTY FOLDER "deps/recast")
+	set_property(TARGET recast PROPERTY FOLDER "deps")
 endif(MSVC)
