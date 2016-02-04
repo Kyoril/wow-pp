@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -22,7 +22,7 @@
 #pragma once
 
 #include "game/defines.h"
-#include "data/spell_entry.h"
+#include "shared/proto_data/spells.pb.h"
 #include "spell_target_map.h"
 #include "common/timer_queue.h"
 #include <boost/signals2.hpp>
@@ -58,10 +58,11 @@ namespace wowpp
 		TimerQueue &getTimers() const { return m_timers; }
 
 		std::pair<game::SpellCastResult, SpellCasting*> startCast(
-			const SpellEntry &spell,
+			const proto::SpellEntry &spell,
 			SpellTargetMap target,
+			Int32 basePoints,
 			GameTime castTime,
-			bool doReplacePreviousCast);
+			bool isProc);
 		void stopCast();
 		void onUserStartsMoving();
 		void setState(std::shared_ptr<CastState> castState);
@@ -83,8 +84,9 @@ namespace wowpp
 		virtual void activate() = 0;
 		virtual std::pair<game::SpellCastResult, SpellCasting*> startCast(
 			SpellCast &cast,
-			const SpellEntry &spell,
+			const proto::SpellEntry &spell,
 			SpellTargetMap target,
+			Int32 basePoints,
 			GameTime castTime,
 			bool doReplacePreviousCast
 			) = 0;
@@ -94,13 +96,14 @@ namespace wowpp
 
 	SpellCasting &castSpell(
 		SpellCast &cast,
-		const SpellEntry &spell,
+		const proto::SpellEntry &spell,
 		SpellTargetMap target,
+		Int32 basePoints,
 		GameTime castTime
 		);
 
 	bool isInSkillRange(
-		const SpellEntry &spell,
+		const proto::SpellEntry &spell,
 		GameUnit &user,
 		SpellTargetMap &target);
 }

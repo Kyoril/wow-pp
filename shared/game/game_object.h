@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include "defines.h"
 #include "common/typedefs.h"
 #include "binary_io/writer.h"
 #include "binary_io/reader.h"
@@ -28,10 +29,17 @@
 #include <boost/signals2/signal.hpp>
 #include "common/timer_queue.h"
 #include "tile_index.h"
+#include "math/vector3.h"
+#include "common/macros.h"
 #include <vector>
 
 namespace wowpp
 {
+	namespace proto
+	{
+		class Project;
+	}
+
 	namespace type_id
 	{
 		enum Enum
@@ -172,7 +180,7 @@ namespace wowpp
 
 	class VisibilityTile;
 	class WorldInstance;
-	class GameObject;
+	class GameCharacter;
 
 	/// 
 	class GameObject : public std::enable_shared_from_this<GameObject>
@@ -190,7 +198,7 @@ namespace wowpp
 		/// Fired when the object should be destroyed. The object should be destroyed after this call.
 		std::function<void(GameObject&)> destroy;
 		/// Fired when the object moved, but before it's tile changed. Note that this will trigger a tile change.
-		boost::signals2::signal<void(GameObject &, float, float, float, float)> moved;
+		boost::signals2::signal<void(GameObject &, const math::Vector3&, float)> moved;
 		/// Fired when a tile change is pending for this object, after it has been moved. Note that at this time,
 		/// the object does not belong to any tile and it's position already points to the new tile.
 		/// First parameter is a reference of the old tile, second references the new tile.
@@ -199,7 +207,7 @@ namespace wowpp
 	public:
 
 		/// 
-		explicit GameObject();
+		explicit GameObject(proto::Project &project);
 		virtual ~GameObject();
 
 		virtual void initialize();
@@ -220,9 +228,22 @@ namespace wowpp
 		void setInt32Value(UInt16 index, Int32 value);
 		void setUInt64Value(UInt16 index, UInt64 value);
 		void setFloatValue(UInt16 index, float value);
+		void addFlag(UInt16 index, UInt32 flag);
+		void removeFlag(UInt16 index, UInt32 flag);
+		void forceFieldUpdate(UInt16 index);
 
 		void setGuid(UInt64 guid) { setUInt64Value(object_fields::Guid, guid); }
 		UInt64 getGuid() const { return getUInt64Value(object_fields::Guid); }
+
+		/// Determines whether players can accept a specific quest from this object.
+		/// This method mainly exists so that lesser casts have to be done.
+		virtual bool providesQuest(UInt32 questId) const { return false; }
+		/// Determines whether this object rewards players for completing a specific quest.
+		virtual bool endsQuest(UInt32 questId) const { return false; }
+		
+		bool isCreature() const { return getTypeId() == object_type::Unit; }
+		bool isWorldObject() const { return getTypeId() == object_type::GameObject; }
+		bool isGameCharacter() const { return getTypeId() == object_type::Character; }
 
 		/// Writes creation blocks for this object.
 		/// 
@@ -232,17 +253,22 @@ namespace wowpp
 		/// @param creation Set to true if this is the value update packet used at object creation.
 		///	       At object creation, all values which aren't equal to zero will be written, not just the
 		///	       updated ones.
-		virtual void writeValueUpdateBlock(io::Writer &writer, bool creation = true) const;
+		virtual void writeValueUpdateBlock(io::Writer &writer, GameCharacter &receiver, bool creation = true) const;
+		void writeUpdateValue(io::Writer &writer, GameCharacter &receiver, UInt16 index) const;
 
+		/// Gets the targets location.
+		const math::Vector3 &getLocation() const { return m_position; }
 		/// Gets the location of this object.
-		void getLocation(float &out_x, float &out_y, float &out_z, float &out_o) const { out_x = m_x; out_y = m_y; out_z = m_z; out_o = m_o; }
+		void WOWPP_DEPRECATED getLocation(float &out_x, float &out_y, float &out_z, float &out_o) const { out_x = m_position.x; out_y = m_position.y; out_z = m_position.z; out_o = m_o; }
+		/// Gets the targets orientation (yaw value in radians).
+		float getOrientation() const { return m_o; }
 		/// Gets the map id of this object.
 		UInt32 getMapId() const { return m_mapId; }
 		/// Gets the unit's tile index in the world grid.
 		bool getTileIndex(TileIndex2D &out_index) const;
 
 		/// Moves the object to the given position on it's map id.
-		virtual void relocate(float x, float y, float z, float o);
+		virtual void relocate(math::Vector3 position, float o, bool fire = true);
 		void setOrientation(float o);
 		/// Updates the map id of this object.
 		void setMapId(UInt32 mapId);
@@ -257,6 +283,7 @@ namespace wowpp
 		/// @param use3D If true, the distance will be calculated using 3d coordinates, otherwise,
 		///              only 2d coordinates are used.
 		float getDistanceTo(GameObject &other, bool use3D = true) const;
+		float getDistanceTo(const math::Vector3 &position, bool use3D = true) const;
 
 		float getAngle(GameObject &other) const;
 		float getAngle(float x, float y) const;
@@ -273,6 +300,8 @@ namespace wowpp
 
 		/// 
 		bool isInArc(float arcRadian, float x, float y) const;
+		/// Gets the data project.
+		proto::Project &getProject() const { return m_project; }
 
 	protected:
 
@@ -280,10 +309,12 @@ namespace wowpp
 
 	protected:
 
+		proto::Project &m_project;		// TODO: Maybe move this, but right now, it's comfortable to use this
 		std::vector<UInt32> m_values;
 		std::vector<UInt32> m_valueBitset;
 		UInt32 m_mapId;
-		float m_x, m_y, m_z;
+		math::Vector3 m_position;
+		math::Vector3 m_lastFiredPosition;	// This is needed for move signal
 		float m_o;
 		UInt32 m_objectType;
 		UInt32 m_objectTypeId;
@@ -296,5 +327,5 @@ namespace wowpp
 	io::Writer &operator << (io::Writer &w, GameObject const& object);
 	io::Reader &operator >> (io::Reader &r, GameObject& object);
 
-	void createUpdateBlocks(GameObject &object, std::vector<std::vector<char>> &out_blocks);
+	void createUpdateBlocks(GameObject &object, GameCharacter &receiver, std::vector<std::vector<char>> &out_blocks);
 }

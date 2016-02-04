@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -27,6 +27,7 @@
 #include "common/erase_by_move.h"
 #include "log/default_log_levels.h"
 #include "common/utilities.h"
+#include "shared/proto_data/units.pb.h"
 #include "universe.h"
 #include <memory>
 #include <cassert>
@@ -35,12 +36,10 @@ namespace wowpp
 {
 	CreatureSpawner::CreatureSpawner(
 		WorldInstance &world,
-		const UnitEntry &entry,
+		const proto::UnitEntry &entry,
 		size_t maxCount,
 		GameTime respawnDelay,
-		float centerX,
-		float centerY,
-		float centerZ,
+		math::Vector3 center,
 		boost::optional<float> rotation,
 		UInt32 emote,
 		float radius,
@@ -50,9 +49,7 @@ namespace wowpp
 		, m_entry(entry)
 		, m_maxCount(maxCount)
 		, m_respawnDelay(respawnDelay)
-		, m_centerX(centerX)
-		, m_centerY(centerY)
-		, m_centerZ(centerZ)
+		, m_center(center)
 		, m_rotation(rotation)
 		, m_radius(radius)
 		, m_emote(emote)
@@ -82,16 +79,12 @@ namespace wowpp
 		assert(m_currentlySpawned < m_maxCount);
 
 		// TODO: Generate random point and if needed, random rotation
-		const float x = m_centerX, y = m_centerY, z = m_centerZ;
+		const math::Vector3 location(m_center);
 		const float o = m_rotation ? *m_rotation : 0.0f;
 
 		// Spawn a new creature
-		auto spawned = m_world.spawnCreature(
-			m_entry,
-			x, y, z, o,
-			m_radius
-			);
-		spawned->setFloatValue(object_fields::ScaleX, m_entry.scale);
+		auto spawned = m_world.spawnCreature(m_entry, location, o, m_radius);
+		spawned->setFloatValue(object_fields::ScaleX, m_entry.scale());
 		if (m_emote != 0)
 		{
 			spawned->setUInt32Value(unit_fields::NpcEmoteState, m_emote);

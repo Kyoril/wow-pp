@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -38,6 +38,13 @@
 #include "emote_entry.h"
 #include "trigger_entry.h"
 #include "zone_entry.h"
+#include "faction_entry.h"
+#include "faction_template_entry.h"
+#include "loot_entry.h"
+#include "talent_entry.h"
+#include "vendor_entry.h"
+#include "trainer_entry.h"
+#include "quest_entry.h"
 #include <boost/noncopyable.hpp>
 #include <memory>
 
@@ -65,7 +72,13 @@ namespace wowpp
 	typedef MakeTemplateManager<EmoteEntry>::type EmoteEntryManager;
 	typedef MakeTemplateManager<TriggerEntry>::type TriggerEntryManager;
 	typedef MakeTemplateManager<ZoneEntry>::type ZoneEntryManager;
-
+	typedef MakeTemplateManager<FactionEntry>::type FactionEntryManager;
+	typedef MakeTemplateManager<FactionTemplateEntry>::type FactionTemplateEntryManager;
+	typedef MakeTemplateManager<LootEntry>::type LootEntryManager;
+	typedef MakeTemplateManager<TalentEntry>::type TalentEntryManager;
+	typedef MakeTemplateManager<VendorEntry>::type VendorEntryManager;
+	typedef MakeTemplateManager<TrainerEntry>::type TrainerEntryManager;
+	typedef MakeTemplateManager<QuestEntry>::type QuestEntryManager;
 
 	class Project : private boost::noncopyable
 	{
@@ -77,6 +90,8 @@ namespace wowpp
 		LevelEntryManager levels;
 		ClassEntryManager classes;
 		RaceEntryManager races;
+		FactionEntryManager factions;
+		FactionTemplateEntryManager factionTemplates;
 		CreatureTypeEntryManager creaturetypes;
 		UnitEntryManager units;
 		ItemEntryManager items;
@@ -86,6 +101,11 @@ namespace wowpp
 		EmoteEntryManager emotes;
 		TriggerEntryManager triggers;
 		ZoneEntryManager zones;
+		LootEntryManager unitLoot;
+		TalentEntryManager talents;
+		VendorEntryManager vendors;
+		TrainerEntryManager trainers;
+		QuestEntryManager quests;
 
 	public:
 

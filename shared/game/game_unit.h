@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -22,18 +22,19 @@
 #pragma once
 
 #include "game_object.h"
-#include "data/race_entry.h"
-#include "data/class_entry.h"
-#include "data/level_entry.h"
-#include "data/spell_entry.h"
 #include "game/defines.h"
-#include "data/data_load_context.h"
 #include "common/timer_queue.h"
 #include "common/countdown.h"
+#include "movement_info.h"
 #include "spell_cast.h"
 #include "spell_target_map.h"
 #include "aura.h"
 #include "aura_container.h"
+#include "common/macros.h"
+#include "common/linear_set.h"
+#include "attack_table.h"
+#include "proto_data/trigger_helper.h"
+#include <unordered_map>
 #include <boost/signals2.hpp>
 
 namespace wowpp
@@ -301,6 +302,17 @@ namespace wowpp
 
 	typedef base_mod_type::Type BaseModType;
 
+	namespace proto
+	{
+		class ClassEntry;
+		class RaceEntry;
+		class LevelEntry;
+		class FactionTemplateEntry;
+		class TriggerEntry;
+	}
+
+	class UnitMover;
+
 	/// Base class for all units in the world. A unit is an object with health, which can
 	/// be controlled, fight etc. This class will be inherited by the GameCreature and the
 	/// GameCharacter classes.
@@ -314,8 +326,8 @@ namespace wowpp
 	public:
 
 		typedef std::function<void(game::SpellCastResult)> SpellSuccessCallback;
-
 		typedef std::function<bool()> AttackSwingCallback;
+		typedef std::unordered_map<UInt32, GameTime> CooldownMap;
 
 		/// Fired when this unit was killed. Parameter: GameUnit* killer (may be nullptr if killer 
 		/// information is not available (for example due to environmental damage))
@@ -324,26 +336,66 @@ namespace wowpp
 		/// send network packets based on the error code.
 		boost::signals2::signal<void(AttackSwingError)> autoAttackError;
 		/// Fired when a spell cast error occurred.
-		boost::signals2::signal<void(const SpellEntry &, game::SpellCastResult)> spellCastError;
+		boost::signals2::signal<void(const proto::SpellEntry &, game::SpellCastResult)> spellCastError;
 		/// Fired when the unit level changed.
 		/// Parameters: Previous Level, Health gained, Mana gained, Stats gained (all 5 stats)
 		boost::signals2::signal<void(UInt32, Int32, Int32, Int32, Int32, Int32, Int32, Int32)> levelGained;
 		/// Fired when some aura information was updated.
 		/// Parameters: Slot, Spell-ID, Duration (ms), Max Duration (ms)
 		boost::signals2::signal<void(UInt8, UInt32, Int32, Int32)> auraUpdated;
+		/// Fired when some aura information was updated on a target.
+		/// Parameters: Slot, Spell-ID, Duration (ms), Max Duration (ms)
+		boost::signals2::signal<void(UInt64, UInt8, UInt32, Int32, Int32)> targetAuraUpdated;
 		/// Fired when the unit should be teleported. This event is only fired when the unit changes world.
 		/// Parameters: Target Map, X, Y, Z, O
-		boost::signals2::signal<void(UInt16, float, float, float, float)> teleport;
+		boost::signals2::signal<void(UInt16, math::Vector3, float)> teleport;
+		/// Fired when the units faction changed. This might cause the unit to become friendly to attackers.
+		boost::signals2::signal<void(GameUnit &)> factionChanged;
+		/// 
+		boost::signals2::signal<void(GameUnit &, float)> threatened;
+		/// 
+		boost::signals2::signal<float(GameUnit &threatener)> getThreat;
+		/// 
+		boost::signals2::signal<void(GameUnit &threatener, float amount)> setThreat;
+		/// 
+		boost::signals2::signal<GameUnit *()> getTopThreatener;
+		/// Fired when an auto attack hit.
+		boost::signals2::signal<void(GameUnit *)> doneMeleeAutoAttack;
+		/// Fired when done an melee attack hit  (include miss/dodge...)
+		boost::signals2::signal<void(GameUnit *, game::VictimState)> doneMeleeAttack;
+		/// Fired when hit by a melee attack (include miss/dodge...)
+		boost::signals2::signal<void(GameUnit *, game::VictimState)> takenMeleeAttack;
+		/// Fired when hit by an auto attack.
+		boost::signals2::signal<void(GameUnit *)> takenMeleeAutoAttack;
+		/// Fired when done any magic damage
+		boost::signals2::signal<void(GameUnit *, UInt32)> doneSpellMagicDmgClassNeg;
+		/// Fired when hit by any damage.
+		boost::signals2::signal<void(GameUnit *)> takenDamage;
+		/// Fired when unit enters water
+		boost::signals2::signal<void()> enteredWater;
+		/// Fired when unit started attacking
+		boost::signals2::signal<void()> startedAttacking;
+		/// Fired when unit started active casting (excluding proc)
+		boost::signals2::signal<void(const proto::SpellEntry &)> startedCasting;
+		/// Fired when a unit trigger should be executed.
+		boost::signals2::signal<void(const proto::TriggerEntry &, GameUnit &)> unitTrigger;
+		/// Fired when a target was killed by this unit, which could trigger Kill-Procs. Only fired when XP or honor is rewarded.
+		boost::signals2::signal<void(GameUnit &)> procKilledTarget;
+		/// Fired when this unit gets rooted or unrooted.
+		boost::signals2::signal<void(bool)> rootStateChanged;
+		/// Fired when this unit gets stunned or unstunned.
+		boost::signals2::signal<void(bool)> stunStateChanged;
+		/// Fired when the movement speed of this unit changes.
+		boost::signals2::signal<void(MovementType)> speedChanged;
+		/// Fired when a custom cooldown event was rised (for example, "Stealth" cooldown is only fired when stealth ends).
+		boost::signals2::signal<void(UInt32)> cooldownEvent;
 
 	public:
 
 		/// Creates a new instance of the GameUnit object, which will still be uninitialized.
 		explicit GameUnit(
-			TimerQueue &timers,
-			DataLoadContext::GetRace getRace, 
-			DataLoadContext::GetClass getClass,
-			DataLoadContext::GetLevel getLevel,
-			DataLoadContext::GetSpell getSpell);
+			proto::Project &project,
+			TimerQueue &timers);
 		~GameUnit();
 
 		/// @copydoc GameObject::initialize()
@@ -367,28 +419,44 @@ namespace wowpp
 		UInt8 getGender() const { return getByteValue(unit_fields::Bytes0, 2); }
 		/// Gets the current level.
 		UInt32 getLevel() const { return getUInt32Value(unit_fields::Level); }
+		/// Gets this units faction template.
+		const proto::FactionTemplateEntry &getFactionTemplate() const;
+		/// 
+		void setFactionTemplate(const proto::FactionTemplateEntry &faction);
+		
+		bool isHostileToPlayers();
+		bool isNeutralToAll();
+		bool isFriendlyTo(const proto::FactionTemplateEntry &faction);
+		bool isFriendlyTo(GameUnit &unit);
+		bool isHostileTo(const proto::FactionTemplateEntry &faction);
+		bool isHostileTo(GameUnit &unit);
 
 		/// Gets the timer queue object needed for countdown events.
 		TimerQueue &getTimers() { return m_timers; }
 		/// Get the current race entry information.
-		const RaceEntry *getRaceEntry() const {  return m_raceEntry; }
+		const proto::RaceEntry *getRaceEntry() const {  return m_raceEntry; }
 		/// Get the current class entry information.
-		const ClassEntry *getClassEntry() const { return m_classEntry; }
-
+		const proto::ClassEntry *getClassEntry() const { return m_classEntry; }
+		/// 
 		virtual const String &getName() const;
 
 		/// Starts to cast a spell using the given target map.
-		void castSpell(SpellTargetMap target, UInt32 spell, GameTime castTime, const SpellSuccessCallback &callback);
+		void castSpell(SpellTargetMap target, UInt32 spell, Int32 basePoints = -1, GameTime castTime = 0, bool isProc = false, SpellSuccessCallback callback = SpellSuccessCallback());
 		/// Stops the current cast (if any).
 		void cancelCast();
 		/// Starts auto attack on the given target.
 		/// @param target The unit to attack.
-		void startAttack(GameUnit &target);
+		void startAttack();
 		/// Stops auto attacking the given target. Does nothing if auto attack mode
 		/// isn't active right now.
 		void stopAttack();
+		/// Determines whether this unit is in auto attack mode right now.
+		bool isAutoAttacking() const { return m_attackSwingCountdown.running; }
 		/// Gets the current auto attack victim of this unit (if any).
 		GameUnit *getVictim() { return m_victim; }
+		/// Updates the unit's victim. Will stop auto attack if no victim is provided, otherwise,
+		/// an ongoing auto attack will simply switch targets.
+		void setVictim(GameUnit *victim);
 		/// TODO: Move the logic of this method somewhere else.
 		void triggerDespawnTimer(GameTime despawnDelay);
 		/// Starts the regeneration countdown.
@@ -414,11 +482,25 @@ namespace wowpp
 		/// @param amount The value amount.
 		/// @param apply Whether to apply or remove the provided amount.
 		void updateModifierValue(UnitMods mod, UnitModType type, float amount, bool apply);
-		/// Deals damage to this unit.
+		/// Deals damage to this unit. Does not work on dead units!
 		/// @param damage The damage value to deal.
 		/// @param school The damage school mask.
-		/// @param attacker The attacking unit.
-		void dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker);
+		/// @param attacker The attacking unit or nullptr, if unknown. If nullptr, no threat will be generated.
+		/// @param noThreat If set to true, no threat will be generated from this damage.
+		bool dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, bool noThreat = false);
+		/// Heals this unit. Does not work on dead units! Use the revive method for this one.
+		/// @param amount The amount of damage to heal.
+		/// @param healer The healing unit or nullptr, if unknown. If nullptr, no threat will be generated.
+		/// @param noThreat If set to true, no threat will be generated.
+		bool heal(UInt32 amount, GameUnit *healer, bool noThreat = false);
+		/// Remove mana of this unit. Does not work on dead, oom or non-mana units!
+		/// @param amount The amount of mana to remove.
+		UInt32 removeMana(UInt32 amount);
+		/// Revives this unit with the given amount of health and mana. Does nothing if the unit is alive.
+		/// @param health The new health value of this unit.
+		/// @param mana The new mana value of this unit. If set to 0, mana won't be changed. If unit does not use
+		///             mana as it's resource, this value is ignored.
+		void revive(UInt32 health, UInt32 mana);
 		/// Rewards experience points to this unit.
 		/// @param experience The amount of experience points to be added.
 		virtual void rewardExperience(GameUnit *victim, UInt32 experience);
@@ -426,19 +508,72 @@ namespace wowpp
 		AuraContainer &getAuras() { return m_auras; }
 		/// 
 		bool isAlive() const { return (getUInt32Value(unit_fields::Health) != 0); }
+		/// Determines whether this unit is actually in combat with at least one other unit.
+		bool isInCombat() const;
+		/// Determines whether another game object is in line of sight.
+		bool isInLineOfSight(GameObject &other);
+		/// Determines whether a position is in line of sight.
+		bool isInLineOfSight(const math::Vector3 &position);
+		/// 
+		bool isMounted() const { return getUInt32Value(unit_fields::MountDisplayId) != 0; }
 
-		virtual void addThreat(GameUnit &threatening, float threat);
+		float getMissChance(GameUnit &attacker, UInt8 school, bool isWhiteDamage);
+		bool isImmune(UInt8 school);
+		float getDodgeChance(GameUnit &attacker);
+		float getParryChance(GameUnit &attacker);
+		float getGlancingChance(GameUnit &attacker);
+		float getBlockChance();
+		float getCrushChance(GameUnit &attacker);
+		float getResiPercentage(UInt8 school, GameUnit &attacker, bool isBinary);
+		float getCritChance(GameUnit &attacker, UInt8 school);
+		UInt32 getBonus(UInt8 school);
+		UInt32 getBonusPct(UInt8 school);
+		UInt32 consumeAbsorb(UInt32 damage, UInt8 school);
+		UInt32 calculateArmorReducedDamage(UInt32 attackerLevel, UInt32 damage);
+		virtual bool canBlock() const = 0;
+		virtual bool canParry() const = 0;
+		virtual bool canDodge() const = 0;
+		virtual bool canDualWield() const = 0;
+
+		virtual bool hasMainHandWeapon() const = 0;
+		virtual bool hasOffHandWeapon() const = 0;
+
+		bool isStunned() const { return m_isStunned; }
+		bool isRooted() const { return m_isRooted; }
+		bool canMove() const { return isAlive() && !isStunned() && !isRooted(); }
+		void notifyStunChanged();
+		void notifyRootChanged();
+		void notifySpeedChanged(MovementType type);
+		float getSpeed(MovementType type) const;
+		float getBaseSpeed(MovementType type) const;
+
+		void addMechanicImmunity(UInt32 mechanic);
+		void removeMechanicImmunity(UInt32 mechanic);
+		bool isImmuneAgainstMechanic(UInt32 mechanic) const;
+
+		/// Adds a unit to the list of attacking units. This list is used to generate threat
+		/// if this unit is healed by another unit, and to determine, whether a player should
+		/// stay in combat. This method adds may add game::unit_flags::InCombat
+		/// @param attacker The attacking unit.
+		void addAttackingUnit(GameUnit &attacker);
+		/// Forces an attacking unit to be removed from the list of attackers. Note that attacking
+		/// units are removed automatically on despawn and/or death, so this is more useful in PvP
+		/// scenarios. This method may remove game::unit_flags::InCombat
+		/// @param removed The attacking unit to be removed from the list of attackers.
+		void removeAttackingUnit(GameUnit &removed);
+		/// Determines whether this unit is attacked by other units.
+		bool hasAttackingUnits() const;
 
 		/// Calculates the stat based on the specified modifier.
 		static UInt8 getStatByUnitMod(UnitMods mod);
 		/// Calculates the resistance based on the specified modifier.
 		static UInt8 getResistanceByUnitMod(UnitMods mod);
 		/// Calculates the power based on the specified unit modifier.
-		static PowerType getPowerTypeByUnitMod(UnitMods mod);
+		static game::PowerType getPowerTypeByUnitMod(UnitMods mod);
 		/// 
 		static UnitMods getUnitModByStat(UInt8 stat);
 		/// 
-		static UnitMods getUnitModByPower(PowerType power);
+		static UnitMods getUnitModByPower(game::PowerType power);
 		/// 
 		static UnitMods getUnitModByResistance(UInt8 res);
 
@@ -447,26 +582,47 @@ namespace wowpp
 
 		virtual void updateAllStats();
 		virtual void updateMaxHealth();
-		virtual void updateMaxPower(PowerType power);
+		virtual void updateMaxPower(game::PowerType power);
 		virtual void updateArmor();
 		virtual void updateDamage();
 		virtual void updateManaRegen();
 		virtual void updateStats(UInt8 stat);
 		virtual void updateResistance(UInt8 resistance);
 
+		/// Gets the current unit mover.
+		UnitMover &getMover() {	return *m_mover; }
+
+		/// Determines whether the unit has a cooldown on a specific spell.
+		/// @param spellId The ID of the spell to check.
+		/// @returns true, if there is a remaining cooldown.
+		bool hasCooldown(UInt32 spellId) const;
+		/// Gets the remaining cooldown time in milliseconds for a specific spell.
+		/// @param spellId The ID of the spell to check.
+		/// @returns 0 if there is no active cooldown for that spell.
+		UInt32 getCooldown(UInt32 spellId) const;
+		/// Sets the cooldown time in milliseconds for a specific spell.
+		/// @param spellId The spell to set the cooldown time for.
+		/// @param timeInMs Cooldown time in milliseconds. Use 0 to clear the cooldown.
+		void setCooldown(UInt32 spellId, UInt32 timeInMs);
+		/// Gets a constant map of all cooldown entries.
+		const CooldownMap &getCooldowns() const { return m_spellCooldowns; }
+
 	public:
 
-		virtual void levelChanged(const LevelEntry &levelInfo);
+		virtual void levelChanged(const proto::LevelEntry &levelInfo);
 		virtual void onKilled(GameUnit *killer);
 
 		float getHealthBonusFromStamina() const;
 		float getManaBonusFromIntellect() const;
 		float getMeleeReach() const;
 
+	protected:
+
+		virtual void raceUpdated();
+		virtual void classUpdated();
+
 	private:
 
-		void raceUpdated();
-		void classUpdated();
 		void updateDisplayIds();
 		void onDespawnTimer();
 		
@@ -474,9 +630,8 @@ namespace wowpp
 		void onVictimDespawned();
 		void onAttackSwing();
 		void onRegeneration();
-		void regenerateHealth();
-		void regeneratePower(PowerType power);
-		void onAuraExpired(Aura &aura);
+		virtual void regenerateHealth() = 0;
+		void regeneratePower(game::PowerType power);
 		void onSpellCastEnded(bool succeeded);
 
 	private:
@@ -484,14 +639,14 @@ namespace wowpp
 		typedef std::array<float, unit_mod_type::End> UnitModTypeArray;
 		typedef std::array<UnitModTypeArray, unit_mods::End> UnitModArray;
 		typedef std::vector<std::shared_ptr<Aura>> AuraVector;
+		typedef LinearSet<GameUnit*> AttackingUnitSet;
+		typedef LinearSet<UInt32> MechanicImmunitySet;
 
 		TimerQueue &m_timers;
-		DataLoadContext::GetRace m_getRace;
-		DataLoadContext::GetClass m_getClass;
-		DataLoadContext::GetLevel m_getLevel;
-		DataLoadContext::GetSpell m_getSpell;
-		const RaceEntry *m_raceEntry;
-		const ClassEntry *m_classEntry;
+		std::unique_ptr<UnitMover> m_mover;
+		const proto::RaceEntry *m_raceEntry;
+		const proto::ClassEntry *m_classEntry;
+		const proto::FactionTemplateEntry *m_factionTemplate;
 		std::unique_ptr<SpellCast> m_spellCast;
 		Countdown m_despawnCountdown;
 		boost::signals2::scoped_connection m_victimDespawned, m_victimDied;
@@ -503,9 +658,13 @@ namespace wowpp
 		UnitModArray m_unitMods;
 		AuraContainer m_auras;
 		AttackSwingCallback m_swingCallback;
+		AttackingUnitSet m_attackingUnits;
+		MechanicImmunitySet m_mechanicImmunity;
+		bool m_isStunned;
+		bool m_isRooted;
+		std::array<float, movement_type::Count> m_speedBonus;
+		CooldownMap m_spellCooldowns;
 	};
-
-	UInt32 calculateArmorReducedDamage(UInt32 attackerLevel, const GameUnit &victim, UInt32 damage);
 
 	io::Writer &operator << (io::Writer &w, GameUnit const& object);
 	io::Reader &operator >> (io::Reader &r, GameUnit& object);

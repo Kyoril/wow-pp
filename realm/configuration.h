@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -80,6 +80,14 @@ namespace wowpp
 		/// Message of the day which will be displayed to all players which enter the world.
 		String messageOfTheDay;
 
+		/// The port to be used for a web connection.
+		NetPort webPort;
+		/// The port to be used for an ssl web connection.
+		NetPort webSSLPort;
+		/// The user name of the web user.
+		String webUser;
+		/// The password for the web user.
+		String webPassword;
 
 		/// Initializes a new instance of the Configuration class using the default
 		/// values.

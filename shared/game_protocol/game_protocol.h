@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -28,14 +28,11 @@
 #include "common/sha1.h"
 #include "common/vector.h"
 #include "game/defines.h"
-#include "data/unit_entry.h"
 #include "game/action_button.h"
 #include "game/game_unit.h"
 #include "game/movement_info.h"
 #include "game/spell_target_map.h"
-#include "data/spell_entry.h"
-#include "data/item_entry.h"
-#include "data/object_entry.h"
+#include "proto_data/project.h"
 #include <array>
 #include <vector>
 #include <functional>
@@ -44,6 +41,7 @@ namespace wowpp
 {
 	class GameItem;
 	class GameCharacter;
+	class LootInstance;
 
 	namespace game
 	{
@@ -68,6 +66,7 @@ namespace wowpp
 				NameQuery				= 0x050,
 				ItemQuerySingle			= 0x056,
 				ItemQueryMultiple		= 0x057,
+				QuestQuery				= 0x05C,
 				GameObjectQuery			= 0x05E,
 				CreatureQuery			= 0x060,
 				ContactList				= 0x066,
@@ -85,6 +84,7 @@ namespace wowpp
 				LootMethod				= 0x07A,
 				GroupDisband			= 0x07B,
 				MessageChat				= 0x095,
+				UseItem					= 0x0AB,
 				AreaTrigger				= 0x0B4,
 				MoveStartForward		= 0x0B5,
 				MoveStartBackward		= 0x0B6,
@@ -133,18 +133,47 @@ namespace wowpp
 				AttackSwing				= 0x141,
 				AttackStop				= 0x142,
 				RepopRequest			= 0x15A,
+				Loot					= 0x15D,
+				LootMoney				= 0x15E,
+				LootRelease				= 0x15F,
+				GossipHello				= 0x17B,
+				QuestgiverStatusQuery	= 0x182,
+				QuestgiverHello			= 0x184,
+				QuestgiverQueryQuest	= 0x186,
+				QuestgiverQuestAutolaunch = 0x187,
+				QuestgiverAcceptQuest	= 0x189,
+				QuestgiverCompleteQuest	= 0x18A,
+				QuestgiverRequestReward	= 0x18C,
+				QuestgiverChooseReward	= 0x18E,
+				QuestgiverCancel		= 0x190,
+				ListInventory			= 0x19E,
+				SellItem				= 0x1A0,
+				BuyItem					= 0x1A2,
+				BuyItemInSlot			= 0x1A3,
+				TrainerBuySpell			= 0x1B2,
 				Ping					= 0x1DC,
 				SetSheathed				= 0x1E0,
 				AuthSession				= 0x1ED,
+				LearnTalent				= 0x251,
 				TogglePvP				= 0x253,
 				RequestPartyMemberStats	= 0x27F,
+				GroupRaidConvert		= 0x28E,
+				GroupAssistentLeader	= 0x28F,
 				MoveFallReset			= 0x2CA,
+				CharRename				= 0x2C7,
+				RaidTargetUpdate		= 0x321,
+				RaidReadyCheck			= 0x322,
 				SetDungeonDifficulty	= 0x329,
 				MoveSetFly				= 0x346,
 				MoveStartAscend			= 0x359,
 				MoveStopAscend			= 0x35A,
+				RealmSplit				= 0x38C,
 				MoveChangeTransport		= 0x38D,
-				MoveStartDescend		= 0x3A7
+				TimeSyncResponse		= 0x391,
+				MoveStartDescend		= 0x3A7,
+				VoiceSessionEnable		= 0x3AF,
+				RaidReadyCheckFinished	= 0x3C5,
+				QuestgiverStatusMultipleQuery = 0x416
 			};
 		}
 
@@ -226,6 +255,7 @@ namespace wowpp
 				NameQueryResponse			= 0x051,
 				ItemQuerySingleResponse		= 0x058,
 				ItemQueryMultipleResponse	= 0x059,
+				QuestQueryResponse			= 0x05D,
 				GameObjectQueryResponse		= 0x05F,
 				CreatureQueryResponse		= 0x061,
 				ContactList					= 0x067,
@@ -243,7 +273,15 @@ namespace wowpp
 				UpdateObject				= 0x0A9,
 				DestroyObject				= 0x0AA,
 				MoveTeleportAck				= 0x0C7,
+				SetRunSpeed					= 0x0CD,
+				SetRunBackSpeed				= 0x0CF,
+				SetWalkSpeed				= 0x0D1,
+				SetSwimSpeed				= 0x0D3,
+				SetSwimBackSpeed			= 0x0D5,
 				MonsterMove					= 0x0DD,
+				RunSpeedChange				= 0x0E2,
+				RunBackSpeedChange			= 0x0E4,
+				SwimSpeedChange				= 0x0E6,
 				ForceMoveRoot				= 0x0E8,
 				ForceMoveUnroot				= 0x0EA,
 				MoveRoot					= 0x0EC,
@@ -257,6 +295,7 @@ namespace wowpp
 				SetProficiency				= 0x127,
 				ActionButtons				= 0x129,
 				InitialSpells				= 0x12A,
+				LearnedSpell				= 0x12B,
 				CastFailed					= 0x130,
 				SpellStart					= 0x131,
 				SpellGo						= 0x132,
@@ -264,6 +303,7 @@ namespace wowpp
 				SpellCooldown				= 0x134,
 				CooldownEvent				= 0x135,
 				UpdateAuraDuration			= 0x137,
+				AiReaction					= 0x13C,
 				AttackStart					= 0x143,
 				AttackStop					= 0x144,
 				AttackSwingNotInRange		= 0x145,
@@ -271,16 +311,38 @@ namespace wowpp
 				AttackSwingNotStanding		= 0x147,
 				AttackSwingDeadTarget		= 0x148,
 				AttackSwingCantAttack		= 0x149,
-				SpellHealLog				= 0x150,
 				AttackerStateUpdate			= 0x14A,
+				SpellHealLog				= 0x150,
 				SpellEnergizeLog			= 0x151,
 				BindPointUpdate				= 0x155,
+				LootResponse				= 0x160,
+				LootReleaseResponse			= 0x161,
+				LootRemoved					= 0x162,
+				LootMoneyNotify				= 0x163,
+				LootItemNotify				= 0x164,
+				LootClearMoney				= 0x165,
+				ItemPushResult				= 0x166,
+				GossipMessage				= 0x17D,
+				GossipComplete				= 0x17E,
+				QuestgiverStatus			= 0x183,
+				QuestgiverQuestList			= 0x185,
+				QuestgiverQuestDetails		= 0x188,
+				QuestgiverRequestItems		= 0x18B,
+				QuestgiverOfferReward		= 0x18D,
+				QuestgiverQuestComplete		= 0x191,
+				ListInventory				= 0x19F,
+				TrainerList					= 0x1B1,
+				TrainerBuySucceeded			= 0x1B3,
+				TrainerBuyFailed			= 0x1B4,
 				LogXPGain					= 0x1D0,
 				Pong						= 0x1DD,
+				ClearCooldown				= 0x1DE,
 				LevelUpInfo					= 0x1D4,
 				AuthChallenge				= 0x1EC,
 				AuthResponse				= 0x1EE,
+				PlaySpellVisual				= 0x1F3,
 				CompressedUpdateObject		= 0x1F6,
+				PlaySpellImpact				= 0x1F7,
 				ExplorationExperience		= 0x1F8,
 				EnvironmentalDamageLog		= 0x1FC,
 				AccountDataTimes			= 0x209,
@@ -288,23 +350,37 @@ namespace wowpp
 				SetRestStart				= 0x21E,
 				LoginVerifyWorld			= 0x236,
 				PeriodicAuraLog				= 0x24E,
+				SpellDamageShield			= 0x24F,
 				SpellNonMeleeDamageLog		= 0x250,
 				StandStateUpdate			= 0x29D,
 				SpellFailedOther			= 0x2A6,
 				ChatPlayerNotFound			= 0x2A9,
 				DurabilityDamageDeath		= 0x2BD,
 				InitWorldStates				= 0x2C2,
+				CharRename					= 0x2C8,
 				PlaySound					= 0x2D2,
+				WalkSpeedChange				= 0x2DA,
+				SwimBackSpeedChange			= 0x2DC,
+				TurnRateChange				= 0x2DE,
 				AddonInfo					= 0x2EF,
 				PartyMemberStatsFull		= 0x2F2,
+				RaidTargetUpdate			= 0x321,
+				RaidReadyCheck				= 0x322,
 				SetDungeonDifficulty		= 0x329,
 				Motd						= 0x33D,
+				SetFlightSpeed				= 0x37E,
+				SetFlightBackSpeed			= 0x380,
+				FlightSpeedChange			= 0x381,
+				FlightBackSpeedChange		= 0x383,
 				TimeSyncReq					= 0x390,
 				UpdateComboPoints			= 0x39D,
 				SetExtraAuraInfo			= 0x3A4,
 				SetExtraAuraInfoNeedUpdate	= 0x3A5,
+				RaidReadyCheckConfirm		= 0x3AE,
+				RaidReadyCheckFinished		= 0x3C5,
 				FeatureSystemStatus			= 0x3C8,
-				UnlearnSpells				= 0x41D,	
+				QuestgiverStatusMultiple	= 0x417,
+				UnlearnSpells				= 0x41D
 			};
 		}
 
@@ -316,6 +392,50 @@ namespace wowpp
 		};
 
 		typedef std::vector<AddonEntry> AddonEntries;
+
+		struct QuestMenuItem
+		{
+			const proto::QuestEntry *quest;
+			UInt8 menuIcon;
+			Int32 questLevel;
+			String title;
+		};
+
+		namespace atlogin_flags
+		{
+			enum Type
+			{
+				/// Nothing special happens at login.
+				None = 0x00,
+				/// Player will be forced to rename his character before entering the world.
+				Rename = 0x01,
+				/// Character spellbook will be reset (unlearn all learned spells).
+				ResetSpells = 0x02,
+				/// Character talents will be reset.
+				ResetTalents = 0x04,
+				/// Indicates that this character never logged in before.
+				FirstLogin = 0x20,
+			};
+		}
+
+		typedef atlogin_flags::Type AtLoginFlags;
+
+		namespace character_flags
+		{
+			enum Type
+			{
+				None = 0x00000000,
+				LockedForTransfer = 0x00000004,
+				HideHelm = 0x00000400,
+				HideCloak = 0x00000800,
+				Ghost = 0x00002000,
+				Rename = 0x00004000,
+				LockedByBilling = 0x01000000,
+				Declined = 0x02000000
+			};
+		}
+
+		typedef character_flags::Type CharacterFlags;
 
 		struct CharEntry
 		{
@@ -333,10 +453,11 @@ namespace wowpp
 			UInt8 outfitId;
 			UInt32 mapId;
 			UInt32 zoneId;
-			float x, y, z;
+			math::Vector3 location;
 			float o;
 			bool cinematic;
-			std::map<UInt8, const ItemEntry*> equipment;
+			std::map<UInt8, const proto::ItemEntry*> equipment;
+			AtLoginFlags atLogin;
 
 			explicit CharEntry()
 				: id(0)
@@ -352,11 +473,10 @@ namespace wowpp
 				, outfitId(0)
 				, mapId(0)
 				, zoneId(0)
-				, x(0.0f)
-				, y(0.0f)
-				, z(0.0f)
+				, location(0.0f, 0.0f, 0.0f)
 				, o(0.0f)
-				, cinematic(false)
+				, cinematic(true)
+				, atLogin(atlogin_flags::None)
 			{
 			}
 		};
@@ -427,30 +547,29 @@ namespace wowpp
 				CharLoginDisabled				= 0x05,
 				CharLoginNoCharacter			= 0x06,
 				CharLoginLockedForTransfer		= 0x07,
-				CharLoginLockedByBilling		= 0x08
+				CharLoginLockedByBilling		= 0x08,
+
+				CharNameSuccess					= 0x4A,
+				CharNameFailure					= 0x4B,
+				CharNameNoName					= 0x4C,
+				CharNameTooShort				= 0x4D,
+				CharNameTooLong					= 0x4E,
+				CharNameInvalidCharacters		= 0x4F,
+				CharNameMixedLanguages			= 0x50,
+				CharNameProfane					= 0x51,
+				CharNameReserved				= 0x52,
+				CharNameInvalidApostrophe		= 0x53,
+				CharNameMultipleApostrophes		= 0x54,
+				CharNameThreeConsecutive		= 0x55,
+				CharNameInvalidSpace			= 0x56,
+				CharNameConsecutiveSpaces		= 0x57,
+				CharNameRussianConsecutiveSilentCharacters	= 0x58,
+				CharNameRussianSilentCharacterAtBeginningOrEnd	= 0x59,
+				CharNameDeclensionDoesntMatchBaseName	= 0x5A,
 			};
 		}
 
 		typedef response_code::Type ResponseCode;
-
-		namespace atlogin_flags
-		{
-			enum Type
-			{
-				/// Nothing special happens at login.
-				None			= 0x00,
-				/// Player will be forced to rename his character before entering the world.
-				Rename			= 0x01,
-				/// Character spellbook will be reset (unlearn all learned spells).
-				ResetSpells		= 0x02,
-				/// Character talents will be reset.
-				ResetTalents	= 0x04,
-				/// Indicates that this character never logged in before.
-				FirstLogin		= 0x20,
-			};
-		}
-
-		typedef atlogin_flags::Type AtLoginFlags;
 
 		namespace expansions
 		{
@@ -863,6 +982,178 @@ namespace wowpp
 			bool repopRequest(
 				io::Reader &packet
 				);
+
+			bool loot(
+				io::Reader &packet,
+				UInt64 &out_targetGuid
+				);
+
+			bool lootMoney(
+				io::Reader &packet
+				//TODO
+				);
+
+			bool lootRelease(
+				io::Reader &packet,
+				UInt64 &out_targetGuid
+				);
+
+			bool timeSyncResponse(
+				io::Reader &packet,
+				UInt32 &out_counter,
+				UInt32 &out_ticks
+				);
+
+			bool raidTargetUpdate(
+				io::Reader &packet,
+				UInt8 &out_mode,
+				UInt64 &out_guidOptional
+				);
+
+			bool groupRaidConvert(
+				io::Reader &packet
+				);
+
+			bool groupAssistentLeader(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				UInt8 &out_flag
+				);
+
+			bool raidReadyCheck(
+				io::Reader &packet,
+				bool &out_hasState,
+				UInt8 &out_state
+				);
+
+			bool learnTalent(
+				io::Reader &packet,
+				UInt32 &out_talentId,
+				UInt32 &out_rank
+				);
+
+			bool useItem(
+				io::Reader &packet,
+				UInt8 &out_bag,
+				UInt8 &out_slot,
+				UInt8 &out_spellCount,
+				UInt8 &out_castCount,
+				UInt64 &out_itemGuid,
+				SpellTargetMap &out_targetMap
+				);
+
+			bool listInventory(
+				io::Reader &packet,
+				UInt64 &out_guid
+				);
+
+			bool sellItem(
+				io::Reader &packet,
+				UInt64 &out_vendorGuid,
+				UInt64 &out_itemGuid,
+				UInt8 &out_count
+				);
+			bool buyItem(
+				io::Reader &packet,
+				UInt64 &out_vendorGuid,
+				UInt32 &out_item,
+				UInt8 &out_count
+				);
+			bool buyItemInSlot(
+				io::Reader &packet,
+				UInt64 &out_vendorGuid,
+				UInt32 &out_item,
+				UInt64 &out_bagGuid,
+				UInt8 &out_slot,
+				UInt8 &out_count
+				);
+
+			bool gossipHello(
+				io::Reader &packet,
+				UInt64 &out_npcGuid
+				);
+
+			bool trainerBuySpell(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				UInt32 &out_spell
+				);
+
+			bool realmSplit(
+				io::Reader &packet,
+				UInt32 &out_preferredRealm
+				);
+
+			bool voiceSessionEnable(
+				io::Reader &packet,
+				UInt16 &out_unknown
+				);
+
+			bool charRename(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				String &out_name
+				);
+
+			bool questgiverStatusQuery(
+				io::Reader &packet,
+				UInt64 &out_guid
+				);
+
+			bool questgiverHello(
+				io::Reader &packet,
+				UInt64 &out_guid
+				);
+
+			bool questgiverQueryQuest(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				UInt32 &out_questId
+				);
+
+			bool questgiverQuestAutolaunch(
+				io::Reader &packet
+				// Empty?
+				);
+
+			bool questgiverAcceptQuest(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				UInt32 &out_questId
+				);
+
+			bool questgiverCompleteQuest(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				UInt32 &out_questId
+				);
+
+			bool questgiverRequestReward(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				UInt32 &out_questId
+				);
+
+			bool questgiverChooseReward(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				UInt32 &out_questId,
+				UInt32 &out_reward
+				);
+
+			bool questgiverCancel(
+				io::Reader &packet
+				// Empty
+				);
+
+			bool questQuery(
+				io::Reader &packet,
+				UInt32 &out_questId
+				);
+
+			bool questgiverStatusMultiple(
+				io::Reader &packet
+				);
 		};
 
 		namespace server_write
@@ -909,7 +1200,7 @@ namespace wowpp
 
 			void itemQuerySingleResponse(
 				game::OutgoingPacket &out_packet,
-				const ItemEntry &item
+				const proto::ItemEntry &item
 				);
 
 			void contactList(
@@ -963,16 +1254,16 @@ namespace wowpp
 
 			void initialSpells(
 				game::OutgoingPacket &out_packet,
-				const std::vector<const SpellEntry*> &spells
+				const proto::Project &project,
+				const std::vector<const proto::SpellEntry*> &spells,
+				const GameUnit::CooldownMap &cooldowns
 				);
 
 			void bindPointUpdate(
 				game::OutgoingPacket &out_packet,
 				UInt32 mapId,
 				UInt32 areaId,
-				float x,
-				float y,
-				float z
+				const math::Vector3 &location
 				);
 
 			void pong(
@@ -1008,9 +1299,7 @@ namespace wowpp
 			void loginVerifyWorld(
 				game::OutgoingPacket &out_packet,
 				UInt32 mapId,
-				float x,
-				float y,
-				float z,
+				math::Vector3 location,
 				float o
 				);
 
@@ -1043,7 +1332,7 @@ namespace wowpp
 
 			void creatureQueryResponse(
 				game::OutgoingPacket &out_packet,
-				const UnitEntry &unit
+				const proto::UnitEntry &unit
 				);
 
 			void setDungeonDifficulty(
@@ -1059,8 +1348,8 @@ namespace wowpp
 			void monsterMove(
 				game::OutgoingPacket &out_packet,
 				UInt64 guid,
-				const Vector<float, 3> &oldPosition,
-				const Vector<float, 3> &position,
+				const math::Vector3 &oldPosition,
+				const math::Vector3 &position,
 				UInt32 time
 				);
 
@@ -1108,7 +1397,7 @@ namespace wowpp
 			void castFailed(
 				game::OutgoingPacket &out_packet,
 				game::SpellCastResult result,
-				const SpellEntry &spell,
+				const proto::SpellEntry &spell,
 				UInt8 castCount
 				);
 
@@ -1116,7 +1405,7 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt64 casterGUID,
 				UInt64 casterItemGUID,
-				const SpellEntry &spell,
+				const proto::SpellEntry &spell,
 				const SpellTargetMap &targets,
 				game::SpellCastFlags castFlags,
 				Int32 castTime,
@@ -1127,7 +1416,7 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt64 casterGUID,
 				UInt64 casterItemGUID,
-				const SpellEntry &spell,
+				const proto::SpellEntry &spell,
 				const SpellTargetMap &targets,
 				game::SpellCastFlags castFlags
 				//TODO: HitInformation
@@ -1148,13 +1437,22 @@ namespace wowpp
 				);
 
 			void spellCooldown(
-				game::OutgoingPacket &out_packet
-				//TODO
+				game::OutgoingPacket &out_packet,
+				UInt64 targetGUID,
+				UInt8 flags,
+				const std::map<UInt32, UInt32> &spellCooldownTimesMS
 				);
 
 			void cooldownEvent(
-				game::OutgoingPacket &out_packet
-				//TODO
+				game::OutgoingPacket &out_packet,
+				UInt32 spellID,
+				UInt64 objectGUID
+				);
+
+			void clearCooldown(
+				game::OutgoingPacket &out_packet,
+				UInt32 spellID,
+				UInt64 targetGUID
 				);
 
 			void spellNonMeleeDamageLog(
@@ -1246,6 +1544,15 @@ namespace wowpp
 				UInt32 spellId,
 				UInt32 amount,
 				bool critical
+				);
+
+			void spellDamageShield(
+				game::OutgoingPacket &out_packet,
+				UInt64 targetGuid,
+				UInt64 casterGuid,
+				UInt32 spellId,
+				UInt32 damage,
+				UInt32 dmgSchool
 				);
 
 			void periodicAuraLog(
@@ -1391,9 +1698,7 @@ namespace wowpp
 			void newWorld(
 				game::OutgoingPacket &out_packet,
 				UInt32 newMap,
-				float x,
-				float y,
-				float z,
+				math::Vector3 location,
 				float o
 				);
 
@@ -1416,7 +1721,7 @@ namespace wowpp
 
 			void gameObjectQueryResponse(
 				game::OutgoingPacket &out_packet,
-				const ObjectEntry &entry
+				const proto::ObjectEntry &entry
 				);
 
 			void gameObjectQueryResponseEmpty(
@@ -1472,6 +1777,205 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt32 areaId,
 				UInt32 experience
+				);
+
+			void aiReaction(
+				game::OutgoingPacket &out_packet,
+				UInt64 creatureGUID,
+				UInt32 reaction
+				);
+
+			void lootResponseError(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				loot_type::Type type,
+				loot_error::Type error
+				);
+
+			void lootResponse(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				loot_type::Type type,
+				const LootInstance &loot
+				);
+
+			void lootReleaseResponse(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid
+				);
+
+			void lootRemoved(
+				game::OutgoingPacket &out_packet,
+				UInt8 slot
+				);
+
+			void lootMoneyNotify(
+				game::OutgoingPacket &out_packet,
+				UInt32 moneyPerPlayer
+				);
+
+			void lootItemNotify(
+				game::OutgoingPacket &out_packet
+				// TODO
+				);
+
+			void lootClearMoney(
+				game::OutgoingPacket &out_packet
+				);
+
+			void raidTargetUpdateList(
+				game::OutgoingPacket &out_packet,
+				const std::array<UInt64, 8> &list
+				);
+
+			void raidTargetUpdate(
+				game::OutgoingPacket &out_packet,
+				UInt8 slot,
+				UInt64 guid
+				);
+
+			void raidReadyCheck(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid
+				);
+
+			void raidReadyCheckConfirm(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				UInt8 state
+				);
+
+			void raidReadyCheckFinished(
+				game::OutgoingPacket &out_packet
+				);
+
+			void learnedSpell(
+				game::OutgoingPacket &out_packet,
+				UInt32 spellId
+				);
+
+			void itemPushResult(
+				game::OutgoingPacket &out_packet,
+				UInt64 playerGuid,
+				const GameItem &item,
+				bool wasLooted,
+				bool wasCreated,
+				UInt8 bagSlot,
+				UInt8 slot,
+				UInt32 addedCount,
+				UInt32 totalCount
+				);
+
+			void listInventory(
+				game::OutgoingPacket &out_packet,
+				UInt64 vendorGuid,
+				const proto::ItemManager &itemManager,
+				const std::vector<proto::VendorItemEntry> &itemList
+				);
+
+			void trainerList(
+				game::OutgoingPacket &out_packet,
+				const GameCharacter &character,
+				UInt64 trainerGuid,
+				const proto::TrainerEntry &trainerEntry
+				);
+
+			void gossipMessage(
+				game::OutgoingPacket &out_packet,
+				UInt64 objectGuid,
+				UInt32 titleTextId
+				);
+
+			void trainerBuySucceeded(
+				game::OutgoingPacket &out_packet,
+				UInt64 trainerGuid,
+				UInt32 spellId
+				);
+
+			void playSpellVisual(
+				game::OutgoingPacket &out_packet,
+				UInt64 unitGuid,
+				UInt32 visualId
+				);
+
+			void playSpellImpact(
+				game::OutgoingPacket &out_packet,
+				UInt64 unitGuid,
+				UInt32 spellId
+				);
+
+			void charRename(
+				game::OutgoingPacket &out_packet,
+				game::ResponseCode response,
+				UInt64 unitGuid,
+				const String &newName
+				);
+
+			void changeSpeed(
+				game::OutgoingPacket &out_packet,
+				MovementType moveType,
+				UInt64 guid,
+				float speed
+				);
+
+			void questgiverStatus(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				game::QuestgiverStatus status
+				);
+
+			void questgiverQuestList(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				const String &title,
+				UInt32 emoteDelay,
+				UInt32 emote,
+				const std::vector<QuestMenuItem> &menu
+				);
+
+			void questgiverQuestDetails(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				const proto::ItemManager &items,
+				const proto::QuestEntry &quest
+				);
+
+			void questQueryResponse(
+				game::OutgoingPacket &out_packet,
+				const proto::QuestEntry &quest
+				);
+
+			void gossipComplete(
+				game::OutgoingPacket &out_packet
+				);
+
+			void questgiverStatusMultiple(
+				game::OutgoingPacket &out_packet,
+				const std::map<UInt64, game::QuestgiverStatus> &status
+				);
+
+			void questgiverRequestItems(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				bool closeOnCancel,
+				bool enableNext,
+				const proto::ItemManager &items,
+				const proto::QuestEntry &quest
+				);
+
+			void questgiverOfferReward(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				bool enableNext,
+				const proto::ItemManager &items,
+				const proto::QuestEntry &quest
+				);
+
+			void questgiverQuestComplete(
+				game::OutgoingPacket &out_packet,
+				bool isMaxLevel,
+				UInt32 xp,
+				const proto::QuestEntry &quest
 				);
 		};
 	}

@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -184,6 +184,154 @@ namespace wowpp
 			return packet;
 		}
 
+		bool client_read::reconnectChallenge(io::Reader & packet, UInt8 & out_version1, UInt8 & out_version2, UInt8 & out_version3, UInt16 & out_build, AuthPlatform & out_platform, AuthSystem & out_system, AuthLocale & out_locale, String & out_userName)
+		{
+			// Temporary storage
+			UInt8 error = 0;
+			UInt16 size = 0;
+			UInt32 gameName = 0, platform = 0, os = 0, locale = 0, timezone = 0, ip = 0;
+
+			// Read packet data
+			packet
+				>> io::read<NetUInt8>(error)
+				>> io::read<NetUInt16>(size)
+				>> io::read<NetUInt32>(gameName)
+				>> io::read<NetUInt8>(out_version1)
+				>> io::read<NetUInt8>(out_version2)
+				>> io::read<NetUInt8>(out_version3)
+				>> io::read<NetUInt16>(out_build)
+				>> io::read<NetUInt32>(platform)
+				>> io::read<NetUInt32>(os)
+				>> io::read<NetUInt32>(locale)
+				>> io::read<NetUInt32>(timezone)
+				>> io::read<NetUInt32>(ip)
+				>> io::read_container<NetUInt8>(out_userName);
+			if (packet)
+			{
+				// Convert platform
+				switch (platform)
+				{
+					case 0x00783836:	// " x86"
+					{
+						out_platform = auth_platform::x86;
+						break;
+					}
+
+					default:
+					{
+						out_platform = auth_platform::Unknown;
+						break;
+					}
+				}
+
+				// Convert os
+				switch (os)
+				{
+					case 0x0057696e:	// " Win"
+					{
+						out_system = auth_system::Windows;
+						break;
+					}
+
+					case 0x004f5358:	// " OSX"
+					{
+						out_system = auth_system::MacOS;
+						break;
+					}
+
+					default:
+					{
+						out_system = auth_system::Unknown;
+						break;
+					}
+				}
+
+				// Convert locale
+				switch (locale)
+				{
+					case 0x66724652:	// "frFR"
+					{
+						out_locale = auth_locale::frFR;
+						break;
+					}
+
+					case 0x64654445:	// "deDE"
+					{
+						out_locale = auth_locale::deDE;
+						break;
+					}
+
+					case 0x656e4742:	// "enGB"
+					{
+						out_locale = auth_locale::enGB;
+						break;
+					}
+
+					case 0x656e5553:	// "enUS"
+					{
+						out_locale = auth_locale::enUS;
+						break;
+					}
+
+					case 0x69744954:	// "itIT"
+					{
+						out_locale = auth_locale::itIT;
+						break;
+					}
+
+					case 0x6b6f4b52:	// "koKR"
+					{
+						out_locale = auth_locale::koKR;
+						break;
+					}
+
+					case 0x7a68434e:	// "zhCN"
+					{
+						out_locale = auth_locale::zhCN;
+						break;
+					}
+
+					case 0x7a685457:	// "zhTW"
+					{
+						out_locale = auth_locale::zhTW;
+						break;
+					}
+
+					case 0x72755255:	// "ruRU"
+					{
+						out_locale = auth_locale::ruRU;
+						break;
+					}
+
+					case 0x65734553:	// "esES"
+					{
+						out_locale = auth_locale::esES;
+						break;
+					}
+
+					case 0x65734d58:	// "esMX"
+					{
+						out_locale = auth_locale::esMX;
+						break;
+					}
+
+					case 0x70744252:	// "ptBR"
+					{
+						out_locale = auth_locale::ptBR;
+						break;
+					}
+
+					default:
+					{
+						out_locale = auth_locale::Unknown;
+						break;
+					}
+				}
+			}
+
+			return packet;
+		}
+
 		bool client_read::logonProof(io::Reader &packet, std::array<UInt8, 32> &out_A, std::array<UInt8, 20> &out_M1, std::array<UInt8, 20> &out_crc_hash, UInt8 &out_number_of_keys, UInt8 &out_securityFlags)
 		{
 			return packet
@@ -192,6 +340,15 @@ namespace wowpp
 				>> io::read_range(out_crc_hash.begin(), out_crc_hash.end())
 				>> io::read<NetUInt8>(out_number_of_keys)
 				>> io::read<NetUInt8>(out_securityFlags);
+		}
+
+		bool client_read::reconnectProof(io::Reader & packet, std::array<UInt8, 16>& out_R1, std::array<UInt8, 20>& out_R2, std::array<UInt8, 20>& out_R3, UInt8 & out_number_of_keys)
+		{
+			return packet
+				>> io::read_range(out_R1.begin(), out_R1.end())
+				>> io::read_range(out_R2.begin(), out_R2.end())
+				>> io::read_range(out_R3.begin(), out_R3.end())
+				>> io::read<NetUInt8>(out_number_of_keys);
 		}
 
 		bool client_read::realmList(io::Reader &packet)
@@ -286,9 +443,13 @@ namespace wowpp
 			{
 				out_packet
 					<< io::write_range(hash.begin(), hash.end())
+#if SUPPORTED_CLIENT_BUILD >= 8606
 					<< io::write<NetUInt32>(0x00800000)
+#endif
 					<< io::write<NetUInt32>(0x00)
+#if SUPPORTED_CLIENT_BUILD >= 6546
 					<< io::write<NetUInt16>(0x00)
+#endif
 					;
 			}
 
@@ -338,19 +499,28 @@ namespace wowpp
 					<< io::write<NetUInt8>(0)									// C-Style string terminator
 					<< io::write<float>(0.0f)
 					<< io::write<NetUInt8>(AmountOfCharacters)
-					<< io::write<NetUInt8>(9)									// Timezone (Cfg_Categories.dbc)
-					<< io::write<NetUInt8>(0x2C)								// Build 8606+
+					<< io::write<NetUInt8>(1)									// Timezone (Cfg_Categories.dbc)
+#if SUPPORTED_CLIENT_BUILD >= 6546
+					<< io::write<NetUInt8>(0x2C)
+#endif
 					;
 
 				// Build 8606+
 				if (realm.flags & realm_flags::SpecifyBuild)
 				{
-					//TODO
 					out_packet
+#if SUPPORTED_CLIENT_BUILD == 6546
+						<< io::write<NetUInt8>(2)
+						<< io::write<NetUInt8>(0)
+						<< io::write<NetUInt8>(12)
+						<< io::write<NetUInt16>(6546)
+#else
 						<< io::write<NetUInt8>(2)
 						<< io::write<NetUInt8>(4)
 						<< io::write<NetUInt8>(3)
-						<< io::write<NetUInt16>(8606);
+						<< io::write<NetUInt16>(8606)
+#endif
+						;
 				}
 			}
 

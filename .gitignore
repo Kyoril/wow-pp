@@ -1,5 +1,6 @@
 /data/dbc
 /data/maps
+/data/wowpp
 *.DS_Store
 /login/*.cfg
 /login/*.log
@@ -13,6 +14,10 @@
 /world/*.log
 /world/world
 /world/world.exe
+/editor/plugins/
+/editor/*.cfg
+/editor/editor
+/editor/editor.exe
 /version.h
 /compile_commands.json
 

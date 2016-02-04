@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -42,7 +42,7 @@ namespace wowpp
 
 			int rowCount(const QModelIndex &parent = QModelIndex()) const
 			{
-				return m_entries.getTemplates().size();
+				return m_entries.getTemplates().entry_size();
 			}
 
 			int columnCount(const QModelIndex &parent) const
@@ -55,17 +55,17 @@ namespace wowpp
 				if (!index.isValid())
 					return QVariant();
 
-				if (index.row() >= m_entries.getTemplates().size())
+				if (index.row() >= m_entries.getTemplates().entry_size())
 					return QVariant();
 
 				if (role == Qt::DisplayRole)
 				{
 					const auto &templates = m_entries.getTemplates();
-					const typename T::TemplatePtr &tpl = templates[index.row()];
+					const typename T::EntryType &tpl = templates.entry(index.row());
 
 					if (index.column() == 0)
 					{
-						return QString("%1 %2").arg(QString::number(tpl->id), 6, QLatin1Char('0')).arg(tpl->name.c_str());
+						return QString("%1 %2").arg(QString::number(tpl.id()), 6, QLatin1Char('0')).arg(tpl.name().c_str());
 					}
 				}
 
@@ -117,64 +117,5 @@ namespace wowpp
 
 			const T &m_entries;
 		};
-
-		//////////////////////////////////////////////////////////////////////////
-		// MapEntryManager overloads
-/*
-		template<>
-		QVariant TemplateListModel<MapEntryManager>::data(const QModelIndex &index, int role) const
-		{
-			if (!index.isValid())
-				return QVariant();
-
-			if (index.row() >= m_entries.getTemplates().size())
-				return QVariant();
-
-			if (role == Qt::DisplayRole)
-			{
-				const auto &templates = m_entries.getTemplates();
-				const auto &tpl = templates[index.row()];
-
-				if (index.column() == 0)
-				{
-					return QString("%1 %2").arg(QString::number(tpl->id), 3, QLatin1Char('0')).arg(tpl->name.c_str());
-				}
-				else
-				{
-					return QString(constant_literal::mapInstanceType.getName(tpl->instanceType).c_str());
-				}
-			}
-
-			return QVariant();
-		}
-
-		template<>
-		int TemplateListModel<MapEntryManager>::columnCount(const QModelIndex &parent) const
-		{
-			return 2;
-		}
-
-		template<>
-		QVariant TemplateListModel<MapEntryManager>::headerData(int section, Qt::Orientation orientation, int role) const
-		{
-			if (role != Qt::DisplayRole)
-				return QVariant();
-
-			if (orientation == Qt::Horizontal)
-			{
-				switch (section)
-				{
-				case 0:
-					return QString("Name");
-				default:
-					return QString("Type");
-				}
-			}
-			else
-			{
-				return QString("Row %1").arg(section);
-			}
-		}
- */
 	}
 }

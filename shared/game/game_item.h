@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -25,7 +25,10 @@
 
 namespace wowpp
 {
-	struct ItemEntry;
+	namespace proto
+	{
+		class ItemEntry;
+	}
 
 	namespace item_fields
 	{
@@ -52,28 +55,30 @@ namespace wowpp
 
 	typedef item_fields::Enum ItemFields;
 
-
 	/// 
 	class GameItem : public GameObject
 	{
 		friend io::Writer &operator << (io::Writer &w, GameItem const& object);
 		friend io::Reader &operator >> (io::Reader &r, GameItem& object);
 
+		boost::signals2::signal<void()> equipped;
+	
 	public:
 
 		/// 
-		explicit GameItem(const ItemEntry &entry);
+		explicit GameItem(proto::Project &project, const proto::ItemEntry &entry);
 		~GameItem();
 
 		virtual void initialize() override;
 
 		virtual ObjectType getTypeId() const override { return object_type::Item; }
 
-		const ItemEntry &getEntry() const { return m_entry; }
+		const proto::ItemEntry &getEntry() const { return m_entry; }
+		void notifyEquipped();
 
 	private:
 
-		const ItemEntry &m_entry;
+		const proto::ItemEntry &m_entry;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameItem const& object);

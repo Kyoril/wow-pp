@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -27,6 +27,7 @@
 #include "unit_entry.h"
 #include "data_load_context.h"
 #include "log/default_log_levels.h"
+#include "common/make_unique.h"
 
 namespace wowpp
 {
@@ -59,6 +60,11 @@ namespace wowpp
 		, targetY(0.0f)
 		, targetZ(0.0f)
 		, targetO(0.0f)
+		, maxTargets(0)
+		, talentCost(0)
+		, procFlags(0)
+		, procChance(101)
+		, procCharges(0)
 	{
 		attributesEx.fill(0);
 	}
@@ -112,6 +118,10 @@ namespace wowpp
 		wrapper.table.tryGetInteger("min_range", minRange);
 		wrapper.table.tryGetInteger("max_range", maxRange);
 		wrapper.table.tryGetInteger("range_type", rangeType);
+		wrapper.table.tryGetInteger("max_targets", maxTargets);
+		wrapper.table.tryGetInteger("proc_flags", procFlags);
+		wrapper.table.tryGetInteger("proc_chance", procChance);
+		wrapper.table.tryGetInteger("proc_charges", procCharges);
 
 		const sff::read::tree::Array<DataFileIterator> *skillsArray = wrapper.table.getArray("skills");
 		if (skillsArray)
@@ -172,6 +182,7 @@ namespace wowpp
 				}
 
 				Effect &effect = effects[j];
+				effect.index = static_cast<UInt8>(j);
 				effect.type = static_cast<game::SpellEffect>(effectIndex);
 				effectTable->tryGetInteger("base_points", effect.basePoints);
 				effectTable->tryGetInteger("base_dice", effect.baseDice);
@@ -183,7 +194,7 @@ namespace wowpp
 				effectTable->tryGetInteger("aura_name", effect.auraName);
 				effectTable->tryGetInteger("dice_per_level", effect.dicePerLevel);
 				effectTable->tryGetInteger("points_per_level", effect.pointsPerLevel);
-				effectTable->tryGetInteger("radius_index", effect.radiusIndex);
+				effectTable->tryGetInteger("radius", effect.radius);
 				effectTable->tryGetInteger("amplitude", effect.amplitude);
 				effectTable->tryGetInteger("multiple_val", effect.multipleValue);
 				effectTable->tryGetInteger("chain_target", effect.chainTarget);
@@ -271,53 +282,57 @@ namespace wowpp
 		if (minRange != 0.0f) context.table.addKey("min_range", minRange);
 		if (maxRange != 0.0f) context.table.addKey("max_range", maxRange);
 		if (rangeType != 0) context.table.addKey("range_type", rangeType);
+		if (maxTargets != 0) context.table.addKey("max_targets", maxTargets);
+		if (procFlags != 0) context.table.addKey("proc_flags", procFlags);
+		if (procChance != 101) context.table.addKey("proc_chance", procChance);
+		if (procCharges != 0) context.table.addKey("proc_charges", procCharges);
 
 		// Write skills
 		if (!skillsOnLearnSpell.empty())
 		{
-			sff::write::Array<char> skillsArray(context.table, "skills", sff::write::Comma);
+			auto skillsArray = make_unique<sff::write::Array<char>>(context.table, "skills", sff::write::Comma);
 			{
 				for (auto &skill : skillsOnLearnSpell)
 				{
-					skillsArray.addElement(skill->id);
+					skillsArray->addElement(skill->id);
 				}
 			}
-			skillsArray.finish();
+			skillsArray->finish();
 		}
 
 		// Write spell effects
 		if (!effects.empty())
 		{
-			sff::write::Array<char> effectsArray(context.table, "effects", sff::write::MultiLine);
+			auto effectsArray = make_unique<sff::write::Array<char>>(context.table, "effects", sff::write::MultiLine);
 			{
 				for (auto &effect : effects)
 				{
-					sff::write::Table<char> effectTable(effectsArray, sff::write::Comma);
+					auto effectTable = make_unique<sff::write::Table<char>>(*effectsArray, sff::write::Comma);
 					{
-						effectTable.addKey("type", static_cast<UInt32>(effect.type));
-						if (effect.basePoints != 0) effectTable.addKey("base_points", effect.basePoints);
-						if (effect.baseDice != 0) effectTable.addKey("base_dice", effect.baseDice);
-						if (effect.dieSides != 0) effectTable.addKey("die_sides", effect.dieSides);
-						if (effect.mechanic != 0) effectTable.addKey("mechanic", effect.mechanic);
-						if (effect.targetA != 0) effectTable.addKey("target_a", effect.targetA);
-						if (effect.targetB != 0) effectTable.addKey("target_b", effect.targetB);
-						if (effect.pointsPerComboPoint != 0) effectTable.addKey("per_combo_point", effect.pointsPerComboPoint);
-						if (effect.auraName != 0) effectTable.addKey("aura_name", effect.auraName);
-						if (effect.dicePerLevel != 0.0f) effectTable.addKey("dice_per_level", effect.dicePerLevel);
-						if (effect.pointsPerLevel != 0.0f) effectTable.addKey("points_per_level", effect.pointsPerLevel);
-						if (effect.radiusIndex != 0) effectTable.addKey("radius_index", effect.radiusIndex);
-						if (effect.amplitude != 0) effectTable.addKey("amplitude", effect.amplitude);
-						if (effect.multipleValue != 0.0f) effectTable.addKey("multiple_val", effect.multipleValue);
-						if (effect.chainTarget != 0) effectTable.addKey("chain_target", effect.chainTarget);
-						if (effect.itemType != 0) effectTable.addKey("item_type", effect.itemType);
-						if (effect.miscValueA != 0) effectTable.addKey("misc_val_a", effect.miscValueA);
-						if (effect.miscValueB != 0) effectTable.addKey("misc_val_b", effect.miscValueB);
-						if (effect.triggerSpell != nullptr) effectTable.addKey("trigger_spell", effect.triggerSpell->id);
+						effectTable->addKey("type", static_cast<UInt32>(effect.type));
+						if (effect.basePoints != 0) effectTable->addKey("base_points", effect.basePoints);
+						if (effect.baseDice != 0) effectTable->addKey("base_dice", effect.baseDice);
+						if (effect.dieSides != 0) effectTable->addKey("die_sides", effect.dieSides);
+						if (effect.mechanic != 0) effectTable->addKey("mechanic", effect.mechanic);
+						if (effect.targetA != 0) effectTable->addKey("target_a", effect.targetA);
+						if (effect.targetB != 0) effectTable->addKey("target_b", effect.targetB);
+						if (effect.pointsPerComboPoint != 0) effectTable->addKey("per_combo_point", effect.pointsPerComboPoint);
+						if (effect.auraName != 0) effectTable->addKey("aura_name", effect.auraName);
+						if (effect.dicePerLevel != 0.0f) effectTable->addKey("dice_per_level", effect.dicePerLevel);
+						if (effect.pointsPerLevel != 0.0f) effectTable->addKey("points_per_level", effect.pointsPerLevel);
+						if (effect.radius != 0.0f) effectTable->addKey("radius", effect.radius);
+						if (effect.amplitude != 0) effectTable->addKey("amplitude", effect.amplitude);
+						if (effect.multipleValue != 0.0f) effectTable->addKey("multiple_val", effect.multipleValue);
+						if (effect.chainTarget != 0) effectTable->addKey("chain_target", effect.chainTarget);
+						if (effect.itemType != 0) effectTable->addKey("item_type", effect.itemType);
+						if (effect.miscValueA != 0) effectTable->addKey("misc_val_a", effect.miscValueA);
+						if (effect.miscValueB != 0) effectTable->addKey("misc_val_b", effect.miscValueB);
+						if (effect.triggerSpell != nullptr) effectTable->addKey("trigger_spell", effect.triggerSpell->id);
 					}
-					effectTable.finish();
+					effectTable->finish();
 				}
 			}
-			effectsArray.finish();
+			effectsArray->finish();
 		}
 	}
 }

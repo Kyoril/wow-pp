@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -21,6 +21,9 @@
 
 #include "aura_container.h"
 #include "game_unit.h"
+#include "log/default_log_levels.h"
+#include "data/spell_entry.h"
+#include "common/linear_set.h"
 #include <algorithm>
 #include <cassert>
 
@@ -38,25 +41,27 @@ namespace wowpp
 		bool isReplacement = false;
 		for (auto it = m_auras.begin(); it != m_auras.end(); ++it)
 		{
-			// Same spell and same caster - don't stack!
-			auto &a = *it;
+			// Same spell, same caster and same effect index - don't stack!
+			auto a = *it;
 			if (a->getCaster() == aura->getCaster() &&
-				a->getSpell().id == aura->getSpell().id)
+				a->getSpell().id() == aura->getSpell().id())
 			{
 				newSlot = a->getSlot();
 				isReplacement = true;
 
 				// Replace old aura instance
-				if (a->getEffect().auraName == aura->getEffect().auraName)
+				if (a->getEffect().aura() == aura->getEffect().aura() &&
+					a->getEffect().index() == aura->getEffect().index())
 				{
 					// Remove aura - new aura will be added
 					it = m_auras.erase(it);
+					a->misapplyAura();
 				}
 				break;
 			}
 		}
 
-		if (!aura->isPassive() || (aura->getSpell().attributesEx[2] & 0x10000000))
+		if (!aura->isPassive() || (aura->getSpell().attributes(3) & 0x10000000))
 		{
 			if (!isReplacement)
 			{
@@ -87,7 +92,7 @@ namespace wowpp
 			if (newSlot != 0xFF)
 			{
 				aura->setSlot(newSlot);
-				m_owner.setUInt32Value(unit_fields::Aura + newSlot, aura->getSpell().id);
+				m_owner.setUInt32Value(unit_fields::Aura + newSlot, aura->getSpell().id());
 
 				UInt32 index = newSlot / 4;
 				UInt32 byte = (newSlot % 4) * 8;
@@ -105,53 +110,68 @@ namespace wowpp
 				m_owner.setUInt32Value(unit_fields::AuraFlags + index, val);
 
 				// Notify caster
-				m_owner.auraUpdated(newSlot, aura->getSpell().id, aura->getSpell().duration, aura->getSpell().maxDuration);
+				m_owner.auraUpdated(newSlot, aura->getSpell().id(), aura->getSpell().duration(), aura->getSpell().maxduration());
+
+				if (aura->getCaster())
+				{
+					aura->getCaster()->targetAuraUpdated(m_owner.getGuid(), newSlot,
+						aura->getSpell().id(), aura->getSpell().duration(), aura->getSpell().maxduration());
+				}
 			}
 		}
 
-		// Add aura to the list of auras of this unit and apply it's effects
-		aura->applyAura();
+		// Remove shapeshifting auras in case of shapeshift aura
+		if (aura->getEffect().aura() == game::aura_type::ModShapeShift)
+		{
+			removeAurasByType(game::aura_type::ModShapeShift);
+		}
 
 		// Store aura instance
+		auto *auraPtr = aura.get();
 		m_auras.push_back(std::move(aura));
+
+		// Add aura to the list of auras of this unit and apply it's effects
+		// Note: We use auraPtr here, since std::move will make aura invalid
+		auraPtr->applyAura();
+
 		return true;
 	}
-
-	void AuraContainer::removeAura(size_t index)
+	
+	AuraContainer::AuraList::iterator AuraContainer::findAura(Aura &aura)
 	{
-		assert(index < getSize());
-
-		using std::swap;
-
-		swap(m_auras.back(), m_auras[index]);
-		m_auras.pop_back();
-	}
-
-	size_t AuraContainer::findAura(Aura &aura, size_t begin)
-	{
-		assert(begin <= getSize());
-
-		const auto i = std::find_if(std::begin(m_auras) + begin,
-			std::end(m_auras),
-			[&aura](const std::shared_ptr<Aura> &instance) -> bool
+		auto it = m_auras.begin();
+		while (it != m_auras.end())
 		{
-			assert(instance);
-			return instance.get() == &aura;
-		});
-
-		return static_cast<size_t>(std::distance(std::begin(m_auras), i));
+			if (it->get() == &aura)
+			{
+				return it;
+			}
+			it++;
+		}
+		return it;
 	}
-
-	Aura & AuraContainer::get(size_t index)
+	
+	void AuraContainer::removeAura(AuraList::iterator &it)
 	{
-		assert(index < getSize());
-		return *m_auras[index];
+		// Make sure that the aura is not destroy when releasing
+		assert(it != m_auras.end());
+		auto strong = *it;
+
+		// Remove the aura from the list of auras
+		it = m_auras.erase(it);
+
+		// NOW misapply the aura. It is important to call this method AFTER the aura has been
+		// removed from the list of auras. First: To prevent a stack overflow when removing
+		// an aura causes the remove of the same aura types like in ModShapeShift. Second:
+		// Stun effects need to check whether there are still ModStun auras on the target, AFTER
+		// the aura has been removed (or else it would count itself)!!
+		strong->misapplyAura();
 	}
-
-	const Aura & AuraContainer::get(size_t index) const
+	
+	void AuraContainer::removeAura(Aura &aura)
 	{
-		assert(index < getSize());
-		return *m_auras[index];
+		AuraList::iterator it = findAura(aura);
+		removeAura(it);
 	}
 
 	void AuraContainer::handleTargetDeath()
@@ -161,7 +181,7 @@ namespace wowpp
 			std::end(m_auras),
 			[](const std::shared_ptr<Aura> &instance)
 		{
-			return (instance->getSpell().attributesEx[2] & 0x00100000) != 0;
+			return (instance->getSpell().attributes(3) & 0x00100000) != 0;
 		});
 
 		for (auto i = newEnd; i != std::end(m_auras); ++i)
@@ -170,14 +190,14 @@ namespace wowpp
 			(*i)->onForceRemoval();
 		}
 
-		m_auras.erase(newEnd, std::end(m_auras));
+		//m_auras.erase(newEnd, std::end(m_auras));
 	}
 
 	bool AuraContainer::hasAura(game::AuraType type) const
 	{
 		for (auto &it : m_auras)
 		{
-			if (it->getEffect().auraName == type)
+			if (it->getEffect().aura() == type)
 			{
 				return true;
 			}
@@ -185,34 +205,186 @@ namespace wowpp
 
 		return false;
 	}
+	
+	UInt32 AuraContainer::consumeAbsorb(UInt32 damage, UInt8 school)
+	{
+		UInt32 absorbed = 0;
+		UInt32 ownerMana = m_owner.getUInt32Value(unit_fields::Power1);
+		UInt32 manaShielded = 0;
+		for (auto &it : m_auras)
+		{
+			if (it->getEffect().aura() == game::aura_type::SchoolAbsorb
+				&& ((it->getEffect().miscvaluea() & school) != 0))
+			{
+				UInt32 toConsume = static_cast<UInt32>(it->getBasePoints());
+				if (toConsume >= damage)
+				{
+					absorbed += damage;
+					it->setBasePoints(toConsume - damage);
+					break;
+				}
+				else
+				{
+					absorbed += toConsume;
+					it->setBasePoints(0);
+				}
+			}
+			else if (it->getEffect().aura() == game::aura_type::ManaShield
+				&& ((it->getEffect().miscvaluea() & school) != 0))
+			{
+				UInt32 toConsume = static_cast<UInt32>(it->getBasePoints());
+				UInt32 toConsumeByMana = (float) ownerMana / it->getEffect().multiplevalue();
+				if (toConsume >= damage && toConsumeByMana >= damage)
+				{
+					absorbed += damage;
+					manaShielded += damage;
+					const Int32 manaToConsume = (damage * it->getEffect().multiplevalue());
+					ownerMana -= manaToConsume;
+					it->setBasePoints(toConsume - damage);
+					break;
+				}
+				else
+				{
+					if (toConsume < toConsumeByMana)
+					{
+						absorbed += toConsume;
+						manaShielded += toConsume;
+						const Int32 manaToConsume = (toConsume * it->getEffect().multiplevalue());
+						ownerMana -= manaToConsume;
+						it->setBasePoints(0);
+					}
+					else
+					{
+						absorbed += toConsumeByMana;
+						manaShielded += toConsumeByMana;
+						ownerMana -= toConsumeByMana * 2;
+						it->setBasePoints(toConsume - toConsumeByMana);
+					}
+				}
+			}
+		}
+		
+		if (manaShielded > 0)
+		{
+			m_owner.setUInt32Value(unit_fields::Power1, ownerMana);
+		}
+		return absorbed;
+	}
+
+	Int32 AuraContainer::getMaximumBasePoints(game::AuraType type) const
+	{
+		Int32 treshold = 0;
+
+		for (auto &it : m_auras)
+		{
+			if (it->getEffect().aura() == type &&
+				it->getBasePoints() > treshold)
+			{
+				treshold = it->getBasePoints();
+			}
+		}
+
+		return treshold;
+	}
+
+	Int32 AuraContainer::getMinimumBasePoints(game::AuraType type) const
+	{
+		Int32 treshold = 0;
+
+		for (auto &it : m_auras)
+		{
+			if (it->getEffect().aura() == type &&
+				it->getBasePoints() < treshold)
+			{
+				treshold = it->getBasePoints();
+			}
+		}
+
+		return treshold;
+	}
+
+	Int32 AuraContainer::getTotalBasePoints(game::AuraType type) const
+	{
+		Int32 treshold = 0;
+		for (auto &it : m_auras)
+		{
+			if (it->getEffect().aura() == type)
+			{
+				treshold += it->getBasePoints();
+			}
+		}
+
+		return treshold;
+	}
+
+	float AuraContainer::getTotalMultiplier(game::AuraType type) const
+	{
+		float multiplier = 1.0f;
+		for (auto &it : m_auras)
+		{
+			if (it->getEffect().aura() == type)
+			{
+				multiplier *= (100.0f + static_cast<float>(it->getBasePoints())) / 100.0f;
+			}
+		}
+
+		return multiplier;
+	}
 
 	void AuraContainer::removeAllAurasDueToSpell(UInt32 spellId)
 	{
-		size_t index = 0;
 		auto it = m_auras.begin();
-		do 
+		while (it != m_auras.end())
 		{
-			if ((*it)->getSpell().id == spellId)
+			if ((*it)->getSpell().id() == spellId)
 			{
-				removeAura(index);
+				removeAura(it);
 			}
 			else
 			{
-				++index; ++it;
-			}
-		} while (it != m_auras.end());
-	}
-
-	boost::optional<std::size_t> findAuraInstanceIndex(AuraContainer &instances, Aura &instance)
-	{
-		for (size_t i = 0, c = instances.getSize(); i < c; ++i)
-		{
-			if (&instance == &instances.get(i))
-			{
-				return i;
+				it++;
 			}
 		}
-		return boost::optional<std::size_t>();
 	}
+	
+	void AuraContainer::removeAurasByType(UInt32 auraType)
+	{
+		// We need to remove all auras by their spell
+		LinearSet<UInt32> spells;
+		for (auto &aura : m_auras)
+		{
+			if (aura->getEffect().aura() == auraType)
+			{
+				spells.optionalAdd(aura->getSpell().id());
+			}
+		}
 
+		for (auto &spellid : spells)
+		{
+			removeAllAurasDueToSpell(spellid);
+		}
+	}
+	
+	Aura *AuraContainer::popBack(UInt8 dispelType, bool positive)
+	{
+		auto it = m_auras.rbegin();
+		while (it != m_auras.rend())
+		{
+			if ((*it)->isPositive() == positive && (*it)->getSpell().dispel() == dispelType)
+			{
+				std::shared_ptr<Aura> aura = *it;
+				m_auras.erase(std::next(it).base());
+				aura->misapplyAura();
+
+				return aura.get();
+			}
+			else
+			{
+				it++;
+			}
+		}
+
+		return nullptr;
+	}
+	
 }

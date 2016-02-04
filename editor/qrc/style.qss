@@ -359,6 +359,12 @@ QGroupBox {
     margin-top: 20px;
 }
 
+QGroupBox::flat {
+	border-bottom: none;
+	border-left: none;
+	border-right: none;
+}
+
 QGroupBox::title {
     subcontrol-origin: margin;
     subcontrol-position: top center;

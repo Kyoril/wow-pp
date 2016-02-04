@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -268,6 +268,18 @@ namespace wowpp
 				String &out_userName
 				);
 
+			static bool reconnectChallenge(
+				io::Reader &packet,
+				UInt8 &out_version1,
+				UInt8 &out_version2,
+				UInt8 &out_version3,
+				UInt16 &out_build,
+				AuthPlatform &out_platform,
+				AuthSystem &out_system,
+				AuthLocale &out_locale,
+				String &out_userName
+				);
+
 			static bool logonProof(
 				io::Reader &packet,
 				std::array<UInt8, 32> &out_A,
@@ -275,6 +287,14 @@ namespace wowpp
 				std::array<UInt8, 20> &out_crc_hash,
 				UInt8 &out_number_of_keys,
 				UInt8 &out_securityFlags
+				);
+
+			static bool reconnectProof(
+				io::Reader &packet,
+				std::array<UInt8, 16> &out_R1,
+				std::array<UInt8, 20> &out_R2,
+				std::array<UInt8, 20> &out_R3,
+				UInt8 &out_number_of_keys
 				);
 
 			static bool realmList(

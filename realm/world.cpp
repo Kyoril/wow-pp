@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -28,9 +28,10 @@
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "binary_io/vector_sink.h"
 #include "binary_io/writer.h"
-#include "data/project.h"
+#include "proto_data/project.h"
 #include "player_manager.h"
 #include "player.h"
+#include "player_group.h"
 #include <algorithm>
 #include <cassert>
 #include <limits>
@@ -39,7 +40,7 @@ using namespace std;
 
 namespace wowpp
 {
-	World::World(WorldManager &manager, PlayerManager &playerManager, Project &project, IDatabase &database, std::shared_ptr<Client> connection, String address, String realmName)
+	World::World(WorldManager &manager, PlayerManager &playerManager, proto::Project &project, IDatabase &database, std::shared_ptr<Client> connection, String address, String realmName)
 		: m_manager(manager)
 		, m_playerManager(playerManager)
 		, m_project(project)
@@ -86,47 +87,32 @@ namespace wowpp
 		switch (packetId)
 		{
 			case world_packet::Login:
-			{
 				handleLogin(packet);
 				break;
-			}
-
 			case world_packet::WorldInstanceEntered:
-			{
 				handleWorldInstanceEntered(packet);
 				break;
-			}
-
 			case world_packet::WorldInstanceLeft:
-			{
 				handleWorldInstanceLeft(packet);
 				break;
-			}
-
 			case world_packet::WorldInstanceError:
-			{
 				handleWorldInstanceError(packet);
 				break;
-			}
-
 			case world_packet::ClientProxyPacket:
-			{
 				handleClientProxyPacket(packet);
 				break;
-			}
-
 			case world_packet::CharacterData:
-			{
 				handleCharacterData(packet);
 				break;
-			}
-
 			case world_packet::TeleportRequest:
-			{
 				handleTeleportRequest(packet);
 				break;
-			}
-
+			case world_packet::CharacterGroupUpdate:
+				handleCharacterGroupUpdate(packet);
+				break;
+			case world_packet::QuestUpdate:
+				handleQuestUpdate(packet);
+				break;
 			default:
 			{
 				WLOG("Unknown packet received from world " << m_address
@@ -143,14 +129,18 @@ namespace wowpp
 
 		// Read login packet
 		UInt32 protocolVersion;
-		std::vector<UInt32> mapIds;
-		if (!world_read::login(packet, protocolVersion, mapIds, m_instances))
+		MapList mapIds;
+		std::vector<UInt32> instances;
+		if (!world_read::login(packet, protocolVersion, mapIds, instances))
 		{
 			return;
 		}
 
-		// Notify
-		ILOG("World node announcement: " << mapIds.size() << " maps and " << m_instances.size() << " instances");
+		// Apply instances
+		for (auto &instance : instances)
+		{
+			m_instances.add(instance);
+		}
 
 		// Check all maps
 		for (auto &mapId : mapIds)
@@ -190,29 +180,29 @@ namespace wowpp
 			std::bind(realm_write::loginAnswer, std::placeholders::_1, login_result::Success, std::cref(m_realmName)));
 	}
 
-	void World::enterWorldInstance(DatabaseId characterDbId, UInt32 instanceId, const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &out_items)
+	void World::enterWorldInstance(UInt64 characterGuid, UInt32 instanceId, const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &out_items)
 	{
 		// Get a list of spells
 		std::vector<UInt32> spellIds;
 		for (const auto *spell : character.getSpells())
 		{
-			spellIds.push_back(spell->id);
+			spellIds.push_back(spell->id());
 		}
 
 		m_connection->sendSinglePacket(
-			std::bind(pp::world_realm::realm_write::characterLogIn, std::placeholders::_1, characterDbId, instanceId, std::cref(character), std::cref(spellIds), std::cref(out_items)));
+			std::bind(pp::world_realm::realm_write::characterLogIn, std::placeholders::_1, characterGuid, instanceId, std::cref(character), std::cref(spellIds), std::cref(out_items)));
 	}
 
-	void World::leaveWorldInstance(DatabaseId characterDbId, pp::world_realm::WorldLeftReason reason)
+	void World::leaveWorldInstance(UInt64 characterGuid, pp::world_realm::WorldLeftReason reason)
 	{
 		m_connection->sendSinglePacket(
-			std::bind(pp::world_realm::realm_write::leaveWorldInstance, std::placeholders::_1, characterDbId, reason));
+			std::bind(pp::world_realm::realm_write::leaveWorldInstance, std::placeholders::_1, characterGuid, reason));
 	}
 
-	void World::sendProxyPacket(DatabaseId characterId, UInt16 opCode, UInt32 size, const std::vector<char> &buffer)
+	void World::sendProxyPacket(UInt64 characterGuid, UInt16 opCode, UInt32 size, const std::vector<char> &buffer)
 	{
 		m_connection->sendSinglePacket(
-			std::bind(pp::world_realm::realm_write::clientProxyPacket, std::placeholders::_1, characterId, opCode, size, std::cref(buffer)));
+			std::bind(pp::world_realm::realm_write::clientProxyPacket, std::placeholders::_1, characterGuid, opCode, size, std::cref(buffer)));
 	}
 
 	void World::handleWorldInstanceEntered(pp::IncomingPacket &packet)
@@ -224,17 +214,18 @@ namespace wowpp
 		DatabaseId characterDbId;
 		UInt64 worldObjectGuid;
 		UInt32 mapId, zoneId;
-		float x, y, z, o;
-		if (!world_read::worldInstanceEntered(packet, characterDbId, worldObjectGuid, instanceId, mapId, zoneId, x, y, z, o))
+		math::Vector3 location;
+		float o;
+		if (!world_read::worldInstanceEntered(packet, characterDbId, worldObjectGuid, instanceId, mapId, zoneId, location, o))
 		{
 			return;
 		}
 
-		ILOG("World instance ready for character " << characterDbId << ": " << instanceId);
-
 		// Store instance id if not already available
-		m_instances.push_back(instanceId);
-		std::unique(m_instances.begin(), m_instances.end());
+		if (!m_instances.contains(instanceId))
+		{
+			m_instances.add(instanceId);
+		}
 
 		// Notify player about this
 		auto player = m_playerManager.getPlayerByCharacterId(characterDbId);
@@ -245,7 +236,7 @@ namespace wowpp
 		}
 
 		// Send world instance data
-		player->worldInstanceEntered(*this, instanceId, worldObjectGuid, mapId, zoneId, x, y, z, o);
+		player->worldInstanceEntered(*this, instanceId, worldObjectGuid, mapId, zoneId, location, o);
 	}
 
 	void World::handleWorldInstanceError(pp::IncomingPacket &packet)
@@ -361,7 +352,7 @@ namespace wowpp
 		player->sendProxyPacket(opCode, outBuffer);
 	}
 
-	void World::sendChatMessage(NetUInt64 characterGuid, game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message)
+	void World::sendChatMessage(UInt64 characterGuid, game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message)
 	{
 		m_connection->sendSinglePacket(
 			std::bind(pp::world_realm::realm_write::chatMessage, std::placeholders::_1, characterGuid, type, lang, std::cref(receiver), std::cref(channel), std::cref(message)));
@@ -369,6 +360,8 @@ namespace wowpp
 
 	void World::handleCharacterData(pp::IncomingPacket &packet)
 	{
+		const size_t packetStart = packet.getSource()->position();
+
 		// Read the character ID first
 		UInt64 characterId;
 		if (!(packet >> io::read<NetUInt64>(characterId)))
@@ -376,42 +369,45 @@ namespace wowpp
 			return;
 		}
 
+		packet.getSource()->seek(packetStart);
+
 		// Find the player using this character
 		auto *player = m_playerManager.getPlayerByCharacterId(characterId);
 		if (!player)
 		{
 			// Maybe the player disconnected already - create a temporary character copy and save this copy
 			std::shared_ptr<GameCharacter> character(new GameCharacter(
-				m_playerManager.getTimers(),
-				std::bind(&RaceEntryManager::getById, &m_project.races, std::placeholders::_1),
-				std::bind(&ClassEntryManager::getById, &m_project.classes, std::placeholders::_1),
-				std::bind(&LevelEntryManager::getById, &m_project.levels, std::placeholders::_1),
-				std::bind(&SpellEntryManager::getById, &m_project.spells, std::placeholders::_1)));
+				m_project,
+				m_playerManager.getTimers()));
 			character->initialize();
 
-			if (!(packet >> *character))
+			std::vector<UInt32> spellIds;
+			std::vector<pp::world_realm::ItemData> items;
+			if (!(pp::world_realm::world_read::characterData(packet, characterId, *character, spellIds, items)))
 			{
-				// Error
 				ELOG("Error reading character data");
 				return;
 			}
 
 			// Save the character data
-			m_database.saveGameCharacter(*character);
+			m_database.saveGameCharacter(*character, items, spellIds);
 			return;
 		}
 		else
 		{
-			// Update character data
-			if (!(packet >> *player->getGameCharacter()))
+			std::vector<UInt32> spellIds;
+
+			auto &items = player->getItemData();
+			items.clear();
+
+			if (!(pp::world_realm::world_read::characterData(packet, characterId, *player->getGameCharacter(), spellIds, items)))
 			{
-				// Error
 				ELOG("Error reading character data");
 				return;
 			}
 
 			// Save character
-			player->saveCharacter();
+			m_database.saveGameCharacter(*player->getGameCharacter(), items, spellIds);
 		}
 	}
 
@@ -420,8 +416,9 @@ namespace wowpp
 		// Read the character ID first
 		UInt64 characterId;
 		UInt32 map;
-		float x, y, z, o;
-		if (!(pp::world_realm::world_read::teleportRequest(packet, characterId, map, x, y, z, o)))
+		math::Vector3 location;
+		float o;
+		if (!(pp::world_realm::world_read::teleportRequest(packet, characterId, map, location, o)))
 		{
 			return;
 		}
@@ -434,9 +431,110 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("INITIALIZING TRANSFER TO: " << map << " - " << x << " / " << y << " / " << z << " / " << o);
+		DLOG("INITIALIZING TRANSFER TO: " << map << " - " << location.x << " / " << location.y << " / " << location.z << " / " << o);
 
 		// Initialize transfer
-		player->initializeTransfer(map, x, y, z, o);
+		player->initializeTransfer(map, location, o);
 	}
+
+	void World::handleCharacterGroupUpdate(pp::IncomingPacket &packet)
+	{
+		UInt64 characterId;
+		std::vector<UInt64> nearbyMembers;
+		UInt32 map, zone, health, maxHealth, power, maxPower;
+		UInt8 powerType, level;
+		math::Vector3 location;
+		std::vector<UInt32> auras;
+		if (!(pp::world_realm::world_read::characterGroupUpdate(packet, characterId, nearbyMembers, health, maxHealth, powerType, power, maxPower, level, map, zone, location, auras)))
+		{
+			return;
+		}
+
+		auto *player = m_playerManager.getPlayerByCharacterGuid(characterId);
+		if (!player)
+		{
+			WLOG("Couldn't find player by character id for group update");
+			return;
+		}
+
+		auto *group = player->getGroup();
+		if (!group)
+		{
+			return;
+		}
+
+		// Optimization (if all members are nearby, no update is needed
+		if (nearbyMembers.size() >= group->getMemberCount())
+		{
+			return;
+		}
+
+		// We don't want to be notified either
+		nearbyMembers.push_back(characterId);
+
+		auto *character = player->getGameCharacter();
+		if (character)
+		{
+			character->setUInt32Value(unit_fields::Level, level);
+			character->setUInt32Value(unit_fields::Health, health);
+			character->setUInt32Value(unit_fields::MaxHealth, maxHealth);
+			character->setByteValue(unit_fields::Bytes0, 3, powerType);
+			character->setUInt32Value(unit_fields::Power1 + powerType, power);
+			character->setUInt32Value(unit_fields::MaxPower1 + powerType, maxPower);
+			character->setMapId(map);
+			character->setZone(zone);
+			character->relocate(location, 0.0f);
+			// TODO: Auras
+
+			// TODO: Do some heavy optimization here
+			group->broadcastPacket(
+				std::bind(game::server_write::partyMemberStats, std::placeholders::_1, std::cref(*character)), &nearbyMembers);
+		}
+	}
+
+	void World::handleQuestUpdate(pp::IncomingPacket & packet)
+	{
+		UInt64 characterId;
+		UInt32 questId;
+		QuestStatusData data;
+		if (!(pp::world_realm::world_read::questUpdate(packet, characterId, questId, data)))
+		{
+			return;
+		}
+
+		// Update quest data
+		if (!m_database.setQuestData(characterId, questId, data))
+		{
+			ELOG("Could not set character quest data!");
+		}
+	}
+
+	void World::characterGroupChanged(UInt64 characterGuid, UInt64 groupId)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::realm_write::characterGroupChanged, std::placeholders::_1, characterGuid, groupId));
+	}
+
+	void World::characterIgnoreList(UInt64 characterGuid, const std::vector<UInt64> &list)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::realm_write::ignoreList, std::placeholders::_1, characterGuid, std::cref(list)));
+	}
+	void World::characterAddIgnore(UInt64 characterGuid, UInt64 ignoreGuid)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::realm_write::addIgnore, std::placeholders::_1, characterGuid, ignoreGuid));
+	}
+	void World::characterRemoveIgnore(UInt64 characterGuid, UInt64 removeGuid)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::realm_write::removeIgnore, std::placeholders::_1, characterGuid, removeGuid));
+	}
+
+	void World::itemData(UInt64 characterGuid, const std::map<UInt16, pp::world_realm::ItemData>& items)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::realm_write::itemData, std::placeholders::_1, characterGuid, std::cref(items)));
+	}
+
 }

@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -24,16 +24,17 @@
 #include "mysql_wrapper/mysql_select.h"
 #include "mysql_wrapper/mysql_statement.h"
 #include "common/constants.h"
+#include "game_protocol/game_protocol.h"
 #include "player_social.h"
 #include "player.h"
 #include "player_manager.h"
 #include <boost/format.hpp>
 #include "log/default_log_levels.h"
-#include "data/project.h"
+#include "proto_data/project.h"
 
 namespace wowpp
 {
-	MySQLDatabase::MySQLDatabase(Project &project, const MySQL::DatabaseInfo &connectionInfo)
+	MySQLDatabase::MySQLDatabase(proto::Project &project, const MySQL::DatabaseInfo &connectionInfo)
 		: m_project(project)
 		, m_connectionInfo(connectionInfo)
 	{
@@ -53,6 +54,46 @@ namespace wowpp
 			m_connectionInfo.port);
 
 		return true;
+	}
+
+	game::ResponseCode MySQLDatabase::renameCharacter(DatabaseId id, const String & newName)
+	{
+		const String safeName = m_connection.escapeString(newName);
+
+		// Check if name is already in use
+		wowpp::MySQL::Select select(m_connection,
+			(boost::format("SELECT `id` FROM `character` WHERE `name`='%1%' LIMIT 1")
+				% safeName).str());
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			if (row)
+			{
+				return game::response_code::CharCreateNameInUse;
+			}
+		}
+		else
+		{
+			printDatabaseError();
+			return game::response_code::CharNameFailure;
+		}
+
+		const UInt32 lowerGuid = guidLowerPart(id);
+
+		if (m_connection.execute((boost::format(
+			"UPDATE `character` SET `name`='%1%', `at_login`=`at_login` & ~%2% WHERE `id`=%3%")
+			% safeName
+			% game::atlogin_flags::Rename
+			% lowerGuid).str()))
+		{
+			return game::response_code::Success;
+		}
+		else
+		{
+			printDatabaseError();
+		}
+
+		return game::response_code::CharNameFailure;
 	}
 
 	wowpp::UInt32 MySQLDatabase::getCharacterCount(UInt32 accountId)
@@ -86,7 +127,11 @@ namespace wowpp
 		return retCount;
 	}
 
-	game::ResponseCode MySQLDatabase::createCharacter(UInt32 accountId, const std::vector<const SpellEntry*> &spells, const std::vector<pp::world_realm::ItemData> &items, game::CharEntry &character)
+	game::ResponseCode MySQLDatabase::createCharacter(
+		UInt32 accountId, 
+		const std::vector<const proto::SpellEntry*> &spells, 
+		const std::vector<pp::world_realm::ItemData> &items, 
+		game::CharEntry &character)
 	{
 		// See if the character name is already in use
 		const String safeName = m_connection.escapeString(character.name);
@@ -173,22 +218,33 @@ namespace wowpp
 		bytes2 |= static_cast<UInt32>(static_cast<UInt32>(character.facialHair) << (0 * 8));
 
 		if (m_connection.execute((boost::format(
-			//                           0        1      2      3        4        5       6       7    8        9          10            11            12			13
-			"INSERT INTO `character` (`account`,`name`,`race`,`class`,`gender`,`bytes`,`bytes2`,`map`,`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic`) VALUES (%1%, '%2%', %3%, %4%, %5%, %6%, %7%, %8%, %9%, %10%, %11%, %12%, %13%, %14%)")
-			% accountId
-			% safeName
-			% static_cast<UInt32>(character.race)
-			% static_cast<UInt32>(character.class_)
-			% static_cast<UInt32>(character.gender)
-			% bytes
-			% bytes2
-			% character.mapId
-			% character.zoneId
-			% character.x
-			% character.y
-			% character.z
-			% character.o
-			% 1).str()))
+			//                        0         1      2      3       4        5       6        7     8      9            10           11           12			  13		  
+			"INSERT INTO `character` (`account`,`name`,`race`,`class`,`gender`,`bytes`,`bytes2`,`map`,`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic`,"
+			//						  14		 15		  16	   17		18		  19	  20
+									 "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`,`level`, `at_login`) "
+			"VALUES (%1%, '%2%', %3%, %4%, %5%, %6%, %7%, %8%, %9%, %10%, %11%, %12%, %13%, %14%, %15%, %16%, %17%, %18%, %19%, %20%, %21%)")
+			% accountId										// 0
+			% safeName										// 1
+			% static_cast<UInt32>(character.race)			// 2
+			% static_cast<UInt32>(character.class_)			// 3
+			% static_cast<UInt32>(character.gender)			// 4
+			% bytes											// 5
+			% bytes2										// 6
+			% character.mapId	// Location					// 7
+			% character.zoneId								// 8
+			% character.location.x							// 9
+			% character.location.y							// 10
+			% character.location.z							// 11
+			% character.o									// 12 
+			% static_cast<UInt32>(character.cinematic)		// 13
+			% character.mapId	// Home point				// 14
+			% character.location.x							// 15
+			% character.location.y							// 16
+			% character.location.z							// 17
+			% character.o									// 18
+			% static_cast<UInt32>(character.level)			// 19
+			% static_cast<UInt32>(character.atLogin)		// 20
+			).str()))
 		{
 			// Retrieve id of the newly created character
 			wowpp::MySQL::Select select(m_connection,
@@ -219,7 +275,7 @@ namespace wowpp
 								fmtStrm << ",";
 							}
 
-							fmtStrm << "(" << character.id << "," << spell->id << ")";
+							fmtStrm << "(" << character.id << "," << spell->id() << ")";
 						}
 
 						// Now, learn all initial spells
@@ -236,7 +292,7 @@ namespace wowpp
 					if (!items.empty())
 					{
 						std::ostringstream fmtStrm;
-						fmtStrm << "INSERT INTO `character_items` (`owner`, `entry`, `slot`, `creator`, `count`, `durability`) VALUES ";
+						fmtStrm << "INSERT INTO `character_items` (`owner`, `entry`, `slot`, `count`, `durability`) VALUES ";
 
 						// Add items
 						bool isFirstEntry = true;
@@ -254,7 +310,7 @@ namespace wowpp
 								fmtStrm << ",";
 							}
 
-							fmtStrm << "(" << character.id << "," << item.entry << "," << item.slot << "," << item.creator << "," << UInt16(item.stackCount) << "," << item.durability << ")";
+							fmtStrm << "(" << character.id << "," << item.entry << "," << item.slot << "," << UInt16(item.stackCount) << "," << item.durability << ")";
 						}
 
 						// Now, learn all initial spells
@@ -294,8 +350,8 @@ namespace wowpp
 		wowpp::MySQL::Select select(m_connection,
 							//      0     1       2       3        4        5       6        7       8    
 			(boost::format("SELECT `id`, `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`map`,"
-							//		 9       10            11            12           13		  14            
-								 "`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic` FROM `character` WHERE `account`=%1% ORDER BY `id`")
+							//		 9       10            11            12           13		  14		15   
+								 "`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic`, `at_login` FROM `character` WHERE `account`=%1% ORDER BY `id`")
 			% accountId).str());
 		if (select.success())
 		{
@@ -326,14 +382,17 @@ namespace wowpp
 				// Placement
 				row.getField(8, entry.mapId);
 				row.getField(9, entry.zoneId);
-				row.getField(10, entry.x);
-				row.getField(11, entry.y);
-				row.getField(12, entry.z);
+				row.getField(10, entry.location.x);
+				row.getField(11, entry.location.y);
+				row.getField(12, entry.location.z);
 				row.getField(13, entry.o);
 				
 				Int32 cinematic = 0;
 				row.getField(14, cinematic);
 				entry.cinematic = (cinematic != 0);
+
+				row.getField(15, tmp);
+				entry.atLogin = static_cast<game::AtLoginFlags>(tmp);
 
 				// Reinterpret bytes
 				entry.skin = static_cast<UInt8>(bytes);
@@ -412,33 +471,6 @@ namespace wowpp
 				printDatabaseError();
 				return game::response_code::CharDeleteFailed;
 			}
-
-			if (!m_connection.execute((boost::format(
-				"DELETE FROM `character_spells` WHERE `guid`=%1%")
-				% lowerPart).str()))
-			{
-				// There was an error
-				printDatabaseError();
-				return game::response_code::CharDeleteFailed;
-			}
-
-			if (!m_connection.execute((boost::format(
-				"DELETE FROM `character_actions` WHERE `guid`=%1%")
-				% lowerPart).str()))
-			{
-				// There was an error
-				printDatabaseError();
-				return game::response_code::CharDeleteFailed;
-			}
-
-			if (!m_connection.execute((boost::format(
-				"DELETE FROM `character_items` WHERE `owner`=%1%")
-				% lowerPart).str()))
-			{
-				// There was an error
-				printDatabaseError();
-				return game::response_code::CharDeleteFailed;
-			}
 		}
 		transation.commit();
 
@@ -451,7 +483,9 @@ namespace wowpp
 			//       0       1       2        3        4       5        6       7     8       9     
 			"SELECT `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`xp`, `gold`, `map`,"
 			//       10     11           12           13           14
-				   "`zone`,`position_x`,`position_y`,`position_z`,`orientation` FROM `character` WHERE `id`=%1% LIMIT 1")
+				   "`zone`,`position_x`,`position_y`,`position_z`,`orientation`,"
+            //       15        16       17       18       19	   20
+				   "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`,`explored_zones` FROM `character` WHERE `id`=%1% LIMIT 1")
 			% characterId).str());
 		if (select.success())
 		{
@@ -526,8 +560,29 @@ namespace wowpp
 				row.getField(12, y);
 				row.getField(13, z);
 				row.getField(14, o);
-				out_character.relocate(x, y, z, o);
+				out_character.relocate(math::Vector3(x, y, z), o);
 				out_character.setMapId(mapId);
+
+				// Home point
+				row.getField(15, mapId);
+				row.getField(16, x);
+				row.getField(17, y);
+				row.getField(18, z);
+				row.getField(19, o);
+				out_character.setHome(mapId, math::Vector3(x, y, z), o);
+
+				String zoneBuffer;
+				row.getField(20, zoneBuffer);
+				if (!zoneBuffer.empty())
+				{
+					std::stringstream strm(zoneBuffer);
+					for (size_t i = 0; i < 64; ++i)
+					{
+						UInt32 zone = 0;
+						strm >> zone;
+						out_character.setUInt32Value(character_fields::ExploredZones_1 + i, zone);
+					}
+				}
 
 				// Load character spells
 				wowpp::MySQL::Select spellSelect(m_connection, (boost::format(
@@ -562,27 +617,70 @@ namespace wowpp
 
 				// Load items
 				wowpp::MySQL::Select itemSelect(m_connection, (boost::format(
-					//       0      1         2        3        4         5          6
-					"SELECT `id`, `owner`, `entry`, `slot`, `creator`, `count`, `durability` FROM `character_items` WHERE `owner`=%1%")
+					//         0		1		2			3		4
+					"SELECT `entry`, `slot`, `creator`, `count`, `durability` FROM `character_items` WHERE `owner`=%1%")
 					% characterId).str());
 				if (itemSelect.success())
 				{
 					wowpp::MySQL::Row itemRow(itemSelect);
 					while (itemRow)
 					{
-						UInt16 tmp = 0;
-
 						// Read item data
 						pp::world_realm::ItemData data;
-						itemRow.getField(2, data.entry);
-						itemRow.getField(3, data.slot);
-						itemRow.getField(4, data.creator);
-						itemRow.getField<UInt8, UInt16>(5, data.stackCount);
-						itemRow.getField(6, data.durability);
+						itemRow.getField(0, data.entry);
+						itemRow.getField(1, data.slot);
+						itemRow.getField(2, data.creator);
+						itemRow.getField<UInt8, UInt16>(3, data.stackCount);
+						itemRow.getField(4, data.durability);
 						out_items.emplace_back(std::move(data));
 
 						// Next row
 						itemRow = itemRow.next(itemSelect);
+					}
+				}
+
+				// Load quest data
+				wowpp::MySQL::Select questSelect(m_connection, (boost::format(
+					//         0		1			2		
+					"SELECT `quest`, `status`, `explored`, "
+					//		3			4			5				6
+					"`unitcount1`, `unitcount2`, `unitcount3`, `unitcount4`, "
+					//		7				8				9			10
+					"`objectcount1`, `objectcount2`, `objectcount3`, `objectcount4`, "
+					//		11			12			13				14
+					"`itemcount1`, `itemcount2`, `itemcount3`, `itemcount4` "
+					"FROM `character_quests` WHERE `guid`=%1%")
+					% characterId).str());
+				if (questSelect.success())
+				{
+					wowpp::MySQL::Row questRow(questSelect);
+					while (questRow)
+					{
+						UInt32 questId = 0, index = 0;
+						QuestStatusData data;
+						questRow.getField(index++, questId);
+						
+						UInt32 status = 0;
+						questRow.getField(index++, status);
+						data.status = static_cast<game::QuestStatus>(status);
+
+						questRow.getField(index++, data.explored);
+						questRow.getField(index++, data.creatures[0]);
+						questRow.getField(index++, data.creatures[1]);
+						questRow.getField(index++, data.creatures[2]);
+						questRow.getField(index++, data.creatures[3]);
+						questRow.getField(index++, data.objects[0]);
+						questRow.getField(index++, data.objects[1]);
+						questRow.getField(index++, data.objects[2]);
+						questRow.getField(index++, data.objects[3]);
+						questRow.getField(index++, data.items[0]);
+						questRow.getField(index++, data.items[1]);
+						questRow.getField(index++, data.items[2]);
+						questRow.getField(index++, data.items[3]);
+						out_character.setQuestData(questId, data);
+
+						// Next row
+						questRow = questRow.next(questSelect);
 					}
 				}
 
@@ -602,35 +700,136 @@ namespace wowpp
 		}
 	}
 
-	bool MySQLDatabase::saveGameCharacter(const GameCharacter &character)
+	bool MySQLDatabase::saveGameCharacter(const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &items, const std::vector<UInt32> &spells)
 	{
-		float x, y, z, o;
-		character.getLocation(x, y, z, o);
+		GameTime start = getCurrentTime();
+		MySQL::Transaction transaction(m_connection);
 
-		if (m_connection.execute((boost::format(
-			"UPDATE `character` SET `map`=%2%, `zone`=%3%, `position_x`=%4%, `position_y`=%5%, `position_z`=%6%, `orientation`=%7%, `level`=%8%, `xp`=%9%, `gold`=%10% WHERE `id`=%1%")
-			% guidLowerPart(character.getGuid())					// 1
+		float o = character.getOrientation();
+		math::Vector3 location(character.getLocation());
+
+		UInt32 homeMap;
+		math::Vector3 homePos;
+		float homeO;
+		character.getHome(homeMap, homePos, homeO);
+
+		std::ostringstream strm;
+		for (UInt32 i = 0; i < 64; ++i)
+		{
+			strm << character.getUInt32Value(character_fields::ExploredZones_1 + i) << " ";
+		}
+
+		const UInt32 lowerGuid = guidLowerPart(character.getGuid());
+
+		if (!m_connection.execute((boost::format(
+			"UPDATE `character` SET `map`=%2%, `zone`=%3%, `position_x`=%4%, `position_y`=%5%, `position_z`=%6%, `orientation`=%7%, `level`=%8%, `xp`=%9%, `gold`=%10%, "
+			"`home_map`=%11%, `home_x`=%12%, `home_y`=%13%, `home_z`=%14%, `home_o`=%15%, `explored_zones`='%16%' WHERE `id`=%1%;")
+			% lowerGuid												// 1
 			% character.getMapId()									// 2
 			% character.getZone()									// 3
-			% x % y % z % o											// 4, 5, 6, 7
+			% location.x % location.y % location.z % o											// 4, 5, 6, 7
 			% character.getLevel()									// 8
 			% character.getUInt32Value(character_fields::Xp)		// 9
 			% character.getUInt32Value(character_fields::Coinage)	// 10
+			% homeMap												// 11
+			% homePos.x % homePos.y % homePos.z % homeO			// 12, 13, 14, 15
+			% strm.str()											// 16
 			).str()))
-		{
-			return true;
-		}
-		else
 		{
 			// There was an error
 			printDatabaseError();
 			return false;
 		}
+
+		if (!m_connection.execute((boost::format(
+			"DELETE FROM `character_items` WHERE `owner`=%1%;")
+			% lowerGuid					// 1
+			).str()))
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+
+		if (!m_connection.execute((boost::format(
+			"DELETE FROM `character_spells` WHERE `guid`=%1%;")
+			% lowerGuid					// 1
+			).str()))
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+
+		if (!items.empty())
+		{
+			std::ostringstream strm;
+			strm << "INSERT INTO `character_items` (`owner`, `entry`, `slot`, `creator`, `count`, `durability`) VALUES ";
+			bool isFirstItem = true;
+			for (auto &item : items)
+			{
+				if (!isFirstItem) strm << ",";
+				else
+				{
+					isFirstItem = false;
+				}
+
+				strm << "(" << lowerGuid << "," << item.entry << "," << item.slot << ",";
+				if (item.creator == 0)
+				{
+					strm << "NULL";
+				}
+				else
+				{
+					strm << item.creator;
+				}
+				strm << "," << UInt16(item.stackCount) << "," << item.durability << ")";
+			}
+			strm << ";";
+
+			if (!m_connection.execute(strm.str()))
+			{
+				// There was an error
+				printDatabaseError();
+				return false;
+			}
+		}
+
+		if (!spells.empty())
+		{
+			std::ostringstream strm;
+			strm << "INSERT INTO `character_spells` (`guid`, `spell`) VALUES ";
+			bool isFirstItem = true;
+			for (auto &spell : spells)
+			{
+				if (!isFirstItem) strm << ",";
+				else
+				{
+					isFirstItem = false;
+				}
+
+				strm << "(" << lowerGuid << "," << spell << ")";
+			}
+			strm << ";";
+
+			if (!m_connection.execute(strm.str()))
+			{
+				// There was an error
+				printDatabaseError();
+				return false;
+			}
+		}
+		
+		transaction.commit();
+		GameTime end = getCurrentTime();
+		DLOG("Saved character data in " << (end - start) << " ms");
+		return true;
 	}
 
 	void MySQLDatabase::printDatabaseError()
 	{
 		ELOG("Realm database error: " << m_connection.getErrorMessage());
+		assert(false);
 	}
 
 	bool MySQLDatabase::getCharacterById(DatabaseId id, game::CharEntry &out_character)
@@ -668,9 +867,9 @@ namespace wowpp
 				// Placement
 				row.getField(8, out_character.mapId);
 				row.getField(9, out_character.zoneId);
-				row.getField(10, out_character.x);
-				row.getField(11, out_character.y);
-				row.getField(12, out_character.z);
+				row.getField(10, out_character.location.x);
+				row.getField(11, out_character.location.y);
+				row.getField(12, out_character.location.z);
 				row.getField(13, out_character.o);
 
 				Int32 cinematic = 0;
@@ -734,9 +933,9 @@ namespace wowpp
 				// Placement
 				row.getField(8, out_character.mapId);
 				row.getField(9, out_character.zoneId);
-				row.getField(10, out_character.x);
-				row.getField(11, out_character.y);
-				row.getField(12, out_character.z);
+				row.getField(10, out_character.location.x);
+				row.getField(11, out_character.location.y);
+				row.getField(12, out_character.location.z);
 				row.getField(13, out_character.o);
 
 				Int32 cinematic = 0;
@@ -814,6 +1013,24 @@ namespace wowpp
 			% socialGuid
 			% flags
 			% m_connection.escapeString(note)).str()))
+		{
+			return true;
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+	}
+
+	bool MySQLDatabase::updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags)
+	{
+		if (m_connection.execute((boost::format(
+			"UPDATE `character_social` SET `flags`=%1% WHERE `guid_1`=%2% AND `guid_2`=%3%")
+			% flags
+			% characterId
+			% socialGuid).str()))
 		{
 			return true;
 		}
@@ -913,6 +1130,7 @@ namespace wowpp
 				return false;
 			}
 
+			if (!buttons.empty())
 			{
 				std::ostringstream fmtStrm;
 				fmtStrm << "INSERT INTO `character_actions` (`guid`, `button`, `action`, `type`) VALUES ";
@@ -967,6 +1185,45 @@ namespace wowpp
 			printDatabaseError();
 			return false;
 		}
+	}
+
+	bool MySQLDatabase::setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData & data)
+	{
+		const UInt32 lowerPart = guidLowerPart(characterId);
+
+		if (m_connection.execute((boost::format(
+			"INSERT INTO `character_quests` (`guid`, `quest`, `status`, `explored`, `timer`, `unitcount1`, `unitcount2`, `unitcount3`, `unitcount4`, `objectcount1`, `objectcount2`, `objectcount3`, `objectcount4`, `itemcount1`, `itemcount2`, `itemcount3`, `itemcount4`) VALUES "
+			"(%1%, %2%, %3%, %4%, %5%, %6%, %7%, %8%, %9%, %10%, %11%, %12%, %13%, %14%, %15%, %16%, %17%) "
+			"ON DUPLICATE KEY UPDATE `status`=%3%, `explored`=%4%, `timer`=%5%, `unitcount1`=%6%, `unitcount2`=%7%, `unitcount3`=%8%, `unitcount4`=%9%, `objectcount1`=%10%, `objectcount2`=%11%, `objectcount3`=%12%, `objectcount4`=%13%, `itemcount1`=%14%, `itemcount2`=%15%, `itemcount3`=%16%, `itemcount4`=%17%")
+			% lowerPart
+			% questId
+			% static_cast<UInt32>(data.status)
+			% (data.explored ? 1 : 0)
+			% data.expiration
+			% data.creatures[0]
+			% data.creatures[1]
+			% data.creatures[2]
+			% data.creatures[3]
+			% data.objects[0]
+			% data.objects[1]
+			% data.objects[2]
+			% data.objects[3]
+			% data.items[0]
+			% data.items[1]
+			% data.items[2]
+			% data.items[3]
+			).str()))
+		{
+			return true;
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+
+		return false;
 	}
 
 }

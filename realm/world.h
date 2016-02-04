@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -27,6 +27,7 @@
 #include "game/game_character.h"
 #include <boost/noncopyable.hpp>
 #include <boost/signals2.hpp>
+#include "common/linear_set.h"
 #include <algorithm>
 #include <utility>
 #include <cassert>
@@ -36,8 +37,11 @@ namespace wowpp
 	// Forwards
 	class WorldManager;
 	class PlayerManager;
-	class Project;
 	struct IDatabase;
+	namespace proto
+	{
+		class Project;
+	}
 
 	/// World connection class.
 	class World final
@@ -48,6 +52,9 @@ namespace wowpp
 
 		typedef AbstractConnection<pp::Protocol> Client;
 		typedef boost::signals2::signal<void()> DisconnectedSignal;
+
+		typedef std::vector<UInt32> MapList;
+		typedef LinearSet<UInt32> InstanceList;
 
 	public:
 
@@ -64,7 +71,7 @@ namespace wowpp
 		/// @param address
 		explicit World(WorldManager &manager,
 						PlayerManager &playerManager,
-						Project &project,
+						proto::Project &project,
 						IDatabase &database,
 						std::shared_ptr<Client> connection,
 						String address,
@@ -80,25 +87,34 @@ namespace wowpp
 		bool hasInstance(UInt32 instanceId) const { return std::find(m_instances.begin(), m_instances.end(), instanceId) != m_instances.end(); }
 		/// Determines whether there are instances running on this world server.
 		bool hasInstances() const { return !m_instances.empty(); }
-
+		/// Returns an array of supported map id's of this world node.
+		const MapList &getMapList() const { return m_mapIds; }
+		/// Returns an array of opened instance id's of this world node.
+		const InstanceList &getInstanceList() const { return m_instances; }
+		
 		// Called by player
-		void enterWorldInstance(DatabaseId characterDbId, UInt32 instanceId, const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &out_items);
-		void leaveWorldInstance(DatabaseId characterDbId, pp::world_realm::WorldLeftReason reason);
-		void sendProxyPacket(DatabaseId characterId, UInt16 opCode, UInt32 size, const std::vector<char> &buffer);
-		void sendChatMessage(NetUInt64 characterGuid, game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message);
+		void enterWorldInstance(UInt64 characterDbId, UInt32 instanceId, const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &out_items);
+		void leaveWorldInstance(UInt64 characterDbId, pp::world_realm::WorldLeftReason reason);
+		void sendProxyPacket(UInt64 characterGuid, UInt16 opCode, UInt32 size, const std::vector<char> &buffer);
+		void sendChatMessage(UInt64 characterGuid, game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message);
+		void characterGroupChanged(UInt64 characterGuid, UInt64 groupId);
+		void characterIgnoreList(UInt64 characterGuid, const std::vector<UInt64> &list);
+		void characterAddIgnore(UInt64 characterGuid, UInt64 ignoreGuid);
+		void characterRemoveIgnore(UInt64 characterGuid, UInt64 removeGuid);
+		void itemData(UInt64 characterGuid, const std::map<UInt16, pp::world_realm::ItemData> &items);
 
 	private:
 
 		// Variables
 		WorldManager &m_manager;
 		PlayerManager &m_playerManager;
-		Project &m_project;
+		proto::Project &m_project;
 		IDatabase &m_database;
 		std::shared_ptr<Client> m_connection;
 		String m_address;						// IP address in string format
 		bool m_authed;							// True if the user has been successfully authentificated.
-		std::vector<UInt32> m_mapIds;			// A vector of map id's which this node does support
-		std::vector<UInt32> m_instances;		// A vector of running instances on this server
+		MapList m_mapIds;			// A vector of map id's which this node does support
+		InstanceList m_instances;		// A vector of running instances on this server
 		String m_realmName;
 
 	private:
@@ -121,5 +137,7 @@ namespace wowpp
 		void handleClientProxyPacket(pp::IncomingPacket &packet);
 		void handleCharacterData(pp::IncomingPacket &packet);
 		void handleTeleportRequest(pp::IncomingPacket &packet);
+		void handleCharacterGroupUpdate(pp::IncomingPacket &packet);
+		void handleQuestUpdate(pp::IncomingPacket &packet);
 	};
 }

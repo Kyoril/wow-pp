@@ -2,8 +2,8 @@
 # This file is part of the WoW++ project.
 # 
 # This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU Genral Public License as published by
-# the Free Software Foudnation; either version 2 of the Licanse, or
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -31,7 +31,7 @@ source_group(src FILES ${srcFiles})
 # Add library project
 add_library(game ${srcFiles})
 
-target_link_libraries(game ${OPENSSL_LIBRARIES})
+target_link_libraries(game math ${OPENSSL_LIBRARIES})
 
 # Solution folder
 if(MSVC)

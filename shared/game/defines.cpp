@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -27,7 +27,26 @@ namespace wowpp
 	{
 		namespace constant_literal
 		{
-			const SpellEffectStrings::StringArray strings =
+			const PowerTypeStrings::StringArray powerStrings =
+			{ {
+					"mana",
+					"rage",
+				"focus",
+				"energy",
+				"happiness"
+				}
+			};
+
+			static_assert(power_type::Mana == 0, "");
+			static_assert(power_type::Rage == 1, "");
+			static_assert(power_type::Focus == 2, "");
+			static_assert(power_type::Energy == 3, "");
+			static_assert(power_type::Happiness == 4, "");
+			static_assert(power_type::Count_ == 6, "");
+
+			const PowerTypeStrings powerType(powerStrings);
+
+			const SpellEffectStrings::StringArray spellEffectStrings =
 			{
 				"<INVALID>",
 				"INSTANT_KILL",
@@ -185,7 +204,7 @@ namespace wowpp
 				"EFFECT_153"
 			};
 
-			const SpellEffectStrings spellEffectNames(strings);
+			const SpellEffectStrings spellEffectNames(spellEffectStrings);
 
 			const AuraTypeStrings::StringArray auraStrings =
 			{
@@ -319,7 +338,7 @@ namespace wowpp
 				"RangedAttackPowerAttackerBonus",
 				"ModPossessPet",
 				"ModSpeedAlways",
-				"ModMOuntedSpeedAlways",
+				"ModMountedSpeedAlways",
 				"ModRangedAttackPowerVersus",
 				"ModIncreaseEnergyPercent",
 				"ModIncreaseHealthPercent",
@@ -355,7 +374,7 @@ namespace wowpp
 				"ModCritDamageBonusMelee",
 				"AuraType_164",
 				"MeleeAttackPowerAttackerBonus",
-				"ModattackPowerPct",
+				"ModAttackPowerPct",
 				"ModRangedAttackPowerPct",
 				"ModDamageDoneVersus",
 				"ModCritPercentVersus",
@@ -364,7 +383,7 @@ namespace wowpp
 				"ModMountedSpeedNotStack",
 				"AllowChampionSpells",
 				"ModSpellDamageOfStatPercent",
-				"ModSpellhealingOfStatPercent",
+				"ModSpellHealingOfStatPercent",
 				"SpiritOfRedemption",
 				"AOECharm",
 				"ModDebuffResistance",
@@ -410,7 +429,7 @@ namespace wowpp
 				"HasteRanged",
 				"ModManaRegenFromStat",
 				"ModRatingFromStat",
-				"AuraType_221",
+				"ModDetaunt",
 				"AuraType_222",
 				"AuraType_223",
 				"AuraType_224",
@@ -419,7 +438,7 @@ namespace wowpp
 				"PeriodicTriggerSpellWithValue",
 				"DetectStealth",
 				"ModAOEDamageAvoidance",
-				"AuraType_230",
+				"ModIncreaseHealth_3",
 				"ProcTriggerSpellWithValue",
 				"MechanicDurationMod",
 				"AuraType_233",
@@ -454,6 +473,106 @@ namespace wowpp
 			};
 
 			const AuraTypeStrings auraTypeNames(auraStrings);
+
+			const TargetStrings::StringArray targetStrings =
+			{
+				"None",
+				"UnitCaster",
+				"UnitNearbyEnemy",
+				"UnitNearbyParty",
+				"UnitNearbyAlly",
+				"UnitPet",
+				"UnitTargetEnemy",
+				"UnitAreaEntrySrc",
+				"UnitAreaEntryDst",
+				"DstHome",
+				"UNUSED_10",
+				"UnitTargetDestCaster",
+				"UNUSED_12",
+				"UNUSED_13",
+				"UNUSED_14",
+				"UnitAreaEnemySrc",
+				"UnitAreaEnemyDst",
+				"DstDB",
+				"DstCaster",
+				"UNUSED_19",
+				"UnitPartyCaster",
+				"UnitTargetAlly",
+				"SrcCaster",
+				"GameObject",
+				"UnitConeEnemy",
+				"UnitTargetAny",
+				"GameObjectItem",
+				"UnitMaster",
+				"DestDynObjEnemy",
+				"DestDynObjAlly",
+				"UnitAreaAllySrc",
+				"UnitAreaAllyDst",
+				"Minion",
+				"AreaPartySrc",
+				"AreaPartyDst",
+				"UnitTargetParty",
+				"DestCasterRandomUnknown",
+				"UnitPartyTarget",
+				"UnitNearbyEntry",
+				"UnitCasterFishing",
+				"ObjectUse",
+				"DestCasterFrontLeft",
+				"DestCasterBackLeft",
+				"DestCasterBackRight",
+				"DestCasterFrontRight",
+				"UnitChainHeal",
+				"DstNearbyEntry",
+				"DestCasterFront",
+				"DestCasterBack",
+				"DestCasterRight",
+				"DestCasterLeft",
+				"ObjectAreaSrc",
+				"ObjectAreaDst",
+				"DstTargetEnemy",
+				"UnitConeEnemyUnknown",
+				"DestCasterFrontLeap",
+				"UnitRaidCaster",
+				"UnitRaidTargetRaid",
+				"UnitNearbyRaid",
+				"UnitConeAlly",
+				"UnitConeEntry",
+				"UnitClassTarget",
+				"Test",
+				"DestTargetAny",
+				"DestTargetFront",
+				"DestTargetBack",
+				"DestTargetRight",
+				"DestTargetLeft",
+				"DestTargetFrontLeft",
+				"DestTargetBackLeft",
+				"DestTargetBackRight",
+				"DestTargetFrontRight",
+				"DestCasterRandom",
+				"DestCasterRadius",
+				"DestTargetRandom",
+				"DestTargetRadius",
+				"DestChannel",
+				"UnitChannel",
+				"DestDestFront",
+				"DestDestBack",
+				"DestDestRight",
+				"DestDestLeft",
+				"DestDestFrontLeft",
+				"DestDestBackLeft",
+				"DestDestBackRight",
+				"DestDestFrontRight",
+				"DestDestRandom",
+				"DestDest",
+				"DestDynObjNone",
+				"DestTraj",
+				"UnitTargetMinipet",
+				"UNUSED_91",
+				"UNUSED_92",
+				"CorpseAreaEnemyPlayer"
+			};
+
+			const TargetStrings targetNames(targetStrings);
 		}
 	}
 }

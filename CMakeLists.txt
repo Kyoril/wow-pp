@@ -2,8 +2,8 @@
 # This file is part of the WoW++ project.
 # 
 # This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU Genral Public License as published by
-# the Free Software Foudnation; either version 2 of the Licanse, or
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -28,8 +28,13 @@ project(WoW)
 	# Enable solution folders in msvc
 	if(MSVC)
 		set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-		add_definitions("-D_ITERATOR_DEBUG_LEVEL=0")
 	endif(MSVC)
+	
+	set(WOWPP_SUPPORTED_CLIENT "8606" CACHE STRING "This sets the supported client build. Currently, WoW++ supports build (2.0.12.)6546 and (2.4.3.)8606")
+	if (NOT WOWPP_SUPPORTED_CLIENT MATCHES "6546" AND NOT WOWPP_SUPPORTED_CLIENT MATCHES "8606")
+		message(FATAL_ERROR "Unsupported client build! WoW++ only supports build 6546 and 8606!")
+	endif()
+	add_definitions("-DSUPPORTED_CLIENT_BUILD=${WOWPP_SUPPORTED_CLIENT}")
 	
 	# Version header
 	if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
@@ -64,9 +69,12 @@ project(WoW)
 	include_directories(${PROJECT_BINARY_DIR})
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.h.in ${PROJECT_BINARY_DIR}/version.h @ONLY)
 	
-	# Enable C++11 if needed
+	include_directories (${CMAKE_BINARY_DIR})
+
+	# Enable C++14 if needed
 	if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-		list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
+		list(APPEND CMAKE_CXX_FLAGS "-std=c++11 -stdlib=libc++")
+		#list(APPEND CMAKE_C_FLAGS "-std=c++11 -stdlib=libc++")
 		if(APPLE)
 			set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++11")
 			set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
@@ -74,11 +82,11 @@ project(WoW)
 	elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 		execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
                 OUTPUT_VARIABLE GCC_VERSION)
-		if (NOT (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6))
-			message(FATAL_ERROR "GCC 4.7 or newer is required in order to build WoW++. Please consider an update or switch over to clang.")
+		if (NOT (GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8))
+			message(FATAL_ERROR "GCC 4.8 or newer is required in order to build WoW++. Please consider an update or switch over to clang.")
 		endif()
 	
-		list(APPEND CMAKE_CXX_FLAGS "-std=c++0x -pthread")
+		list(APPEND CMAKE_CXX_FLAGS "-std=c++11 -pthread")
 	endif()
 
 	# Include additional cmake modules
@@ -88,10 +96,9 @@ project(WoW)
 	set(Boost_USE_STATIC_LIBS ON)
 	find_package(Boost 1.54.0 REQUIRED COMPONENTS system date_time thread iostreams filesystem regex chrono program_options)
 	
-	# Boost 1.58.0 has an error in signals2 which will lead to a server crash on creature despawn if a player disconnected
-	if (${Boost_VERSION} STREQUAL "105800")
-		message(FATAL_ERROR "Boost 1.58.0 detected - this version has a bug that will lead to a server crash! Please consider using a different version, 1.56.0 for example.")
-	endif()
+	# Find protobuf
+	find_package(Protobuf REQUIRED)
+	include_directories(${PROTOBUF_INCLUDE_DIRS})
 	
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 	
@@ -115,6 +122,12 @@ project(WoW)
 	# Add mysql include directories
 	include_directories(${MYSQL_INCLUDE_DIR})
 	
+	# Build with developer commands
+	option(WOWPP_WITH_DEV_COMMANDS "If checked, developer commands will be available." OFF)
+	if(WOWPP_WITH_DEV_COMMANDS)
+		add_definitions("-DWOWPP_WITH_DEV_COMMANDS")
+	endif(WOWPP_WITH_DEV_COMMANDS)
+	
 	# We want to use Vista or later API since we need this for
 	# GetTickCount64 which is not available on XP and prior
 	if(WIN32)
@@ -122,7 +135,7 @@ project(WoW)
 	endif(WIN32)
 	
 	if(MSVC)
-		add_definitions("/D_CRT_SECURE_NO_WARNINGS /D_SCL_SECURE_NO_WARNINGS /wd4267 /wd4244 /MP /D_WINSOCK_DEPRECATED_NO_WARNINGS")
+		add_definitions("/D_CRT_SECURE_NO_WARNINGS /D_SCL_SECURE_NO_WARNINGS /wd4267 /wd4244 /wd4800 /MP /D_WINSOCK_DEPRECATED_NO_WARNINGS /bigobj")
 	endif(MSVC)
 	
 	# Editor option

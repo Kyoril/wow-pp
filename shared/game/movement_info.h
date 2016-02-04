@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -28,6 +28,25 @@
 
 namespace wowpp
 {
+	namespace movement_type
+	{
+		enum Type
+		{
+			Walk			= 0,
+			Run				= 1,
+			Backwards		= 2,
+			Swim			= 3,
+			SwimBackwards	= 4,
+			Turn			= 5,
+			Flight			= 6,
+			FlightBackwards	= 7,
+
+			Count			= 8
+		};
+	}
+
+	typedef movement_type::Type MovementType;
+
 	/// 
 	class MovementInfo final
 	{

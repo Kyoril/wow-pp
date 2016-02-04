@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -26,14 +26,20 @@
 #include "world_instance.h"
 #include "common/id_generator.h"
 #include "common/timer_queue.h"
-#include "data/data_load_context.h"
-#include "data/map_entry.h"
 #include <vector>
 #include <memory>
 
 namespace wowpp
 {
-	class Project;
+	namespace proto
+	{
+		class MapEntry;
+		class Project;
+	}
+	namespace game
+	{
+		struct ITriggerHandler;
+	}
 	class PlayerManager;
 	class Universe;
 
@@ -46,16 +52,17 @@ namespace wowpp
 
 	public:
 
-		explicit WorldInstanceManager(boost::asio::io_service &ioService, 
+		explicit WorldInstanceManager(boost::asio::io_service &ioService,
 			Universe &universe,
+			game::ITriggerHandler &triggerHandler,
 			IdGenerator<UInt32> &idGenerator,
 			IdGenerator<UInt64> &objectIdGenerator,
-			Project &project,
+			proto::Project &project,
 			UInt32 worldNodeId,
 			const String &dataPath);
 
 		/// Creates a new world instance of a specific map id.
-		WorldInstance *createInstance(const MapEntry &map);
+		WorldInstance *createInstance(const proto::MapEntry &map);
 		/// Called once per frame to update all worlds.
 		void update(const boost::system::error_code &error);
 		/// 
@@ -72,11 +79,12 @@ namespace wowpp
 
 		boost::asio::io_service &m_ioService;
 		Universe &m_universe;
+		game::ITriggerHandler &m_triggerHandler;
 		IdGenerator<UInt32> &m_idGenerator;
 		IdGenerator<UInt64> &m_objectIdGenerator;
 		boost::asio::deadline_timer m_updateTimer;
 		Instances m_instances;
-		Project &m_project;
+		proto::Project &m_project;
 		UInt32 m_worldNodeId;
 		const String &m_dataPath;
 	};

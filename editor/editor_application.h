@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -22,7 +22,7 @@
 #pragma once
 
 #include <QObject>
-#include "data/project.h"
+#include "proto_data/project.h"
 #include "template_list_model.h"
 #include "trigger_list_model.h"
 #include "configuration.h"
@@ -43,10 +43,11 @@ namespace wowpp
 
 		public:
 
-			typedef TemplateListModel<ItemEntryManager> ItemListModel;
-			typedef TemplateListModel<SpellEntryManager> SpellListModel;
-			typedef TemplateListModel<MapEntryManager> MapListModel;
-			typedef TemplateListModel<UnitEntryManager> UnitListModel;
+			typedef TemplateListModel<proto::ItemManager> ItemListModel;
+			typedef TemplateListModel<proto::SpellManager> SpellListModel;
+			typedef TemplateListModel<proto::MapManager> MapListModel;
+			typedef TemplateListModel<proto::UnitManager> UnitListModel;
+			typedef TemplateListModel<proto::QuestManager> QuestListModel;
 
 		public:
 
@@ -65,7 +66,9 @@ namespace wowpp
 			MapListModel *getMapListModel() { return m_mapListModel.get(); }
 			UnitListModel *getUnitListModel() { return m_unitListModel.get(); }
 			TriggerListModel *getTriggerListModel() { return m_triggerListModel.get(); }
-			Project &getProject() { return m_project; }
+			QuestListModel *getQuestListModel() { return m_questListModel.get(); }
+			proto::Project &getProject() { return m_project; }
+			Configuration &getConfiguration() { return m_configuration; }
 
 		public slots:
 
@@ -90,12 +93,13 @@ namespace wowpp
 			std::unique_ptr<MainWindow> m_mainWindow;
 			std::unique_ptr<ObjectEditor> m_objectEditor;
 			std::unique_ptr<TriggerEditor> m_triggerEditor;
-			Project m_project;
+			proto::Project m_project;
 			std::unique_ptr<ItemListModel> m_itemListModel;
 			std::unique_ptr<SpellListModel> m_spellListModel;
 			std::unique_ptr<MapListModel> m_mapListModel;
 			std::unique_ptr<UnitListModel> m_unitListModel;
 			std::unique_ptr<TriggerListModel> m_triggerListModel;
+			std::unique_ptr<QuestListModel> m_questListModel;
 			bool m_changed;
 		};
 	}

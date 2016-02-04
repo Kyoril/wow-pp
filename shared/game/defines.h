@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -23,12 +23,1029 @@
 
 #include "common/typedefs.h"
 #include "common/enum_strings.h"
+#include "common/vector.h"
+#include "math/vector3.h"
 #include <map>
 
 namespace wowpp
 {
 	namespace game
 	{
+		typedef float Distance;
+		typedef Vector<Distance, 2> Point;
+
+		inline Vector<Distance, 2> planar(const math::Vector3 &point)
+		{
+			return Vector<Distance, 2>(
+				point[0],
+				point[1]);
+		}
+
+		namespace sell_error
+		{
+			enum Type
+			{
+				CantFindItem		= 1,
+				CantSellItem		= 2,
+				CantFindVendor		= 3,
+				YouDontOwnThatItem	= 4,
+				OnlyEmptyBag		= 5
+			};
+		}
+
+		typedef sell_error::Type SellError;
+
+		namespace quest_status
+		{
+			enum Type
+			{
+				/// Used if the player has been rewarded for completing the quest. This means,
+				/// that this quest is no longer available (does not appear in quest log) and that
+				/// the next quest in the quest chain is available (if any, and all other requirements
+				/// are fulfilled).
+				Rewarded	= 0,
+				/// The quest is completed, but is still in the players quest log (has not yet been
+				/// rewarded).
+				Complete	= 1,
+				/// This quest is unavailable, because some requirements do not match.
+				Unavailable	= 2,
+				/// This quest is in in the players quest log, but has not yet been completed.
+				Incomplete	= 3,
+				/// This quest is available, but the player has not yet accepted it.
+				Available	= 4,
+				/// This quest is in the players quest log, but the player failed, which prevents this quest
+				/// from being completed (possible on time out or special requirements like "may not die").
+				Failed		= 5,
+
+				/// Maximum number of quest status flags
+				Count_		= 6
+			};
+		}
+
+		typedef quest_status::Type QuestStatus;
+
+		namespace questgiver_status
+		{
+			enum Type
+			{
+				/// No status
+				None			= 0,
+				/// NPC does not talk currently
+				Unavailable		= 1,
+				/// Chat bubble: NPC wants to talk and has a custom menu.
+				Chat			= 2,
+				/// Grey "?" above the head
+				Incomplete		= 3,
+				/// Blue "?" above the head
+				RewardRep		= 4,
+				/// Blue "!" above the head
+				AvailableRep	= 5,
+				/// Yellow "!" above the head
+				Available		= 6,
+				/// Yellow "?" above the head, but does not appear on mini map.
+				RewardNoDot		= 7,
+				/// Yellow "?" above the head
+				Reward			= 8,
+
+				Count_			= 9
+			};
+		}
+		
+		typedef questgiver_status::Type QuestgiverStatus;
+
+		namespace quest_flags
+		{
+			enum Type
+			{
+				/// Player has to stay alive.
+				StayAlive		= 0x0001,
+				/// All party members will be offered to accept this quest.
+				PartyAccept		= 0x0002,
+				/// ?
+				Exploration		= 0x0004,
+				/// Indicates that a player can share this quest.
+				Sharable		= 0x0008,
+
+				/// ?
+				Epic			= 0x0020,
+				/// Raid quest.
+				Raid			= 0x0040,
+				/// Only acceptable if the players account has the TBC expansion enabled.
+				TBC				= 0x0080,
+				Unknown			= 0x0100,
+				/// Quest rewards are hidden unti the quest is completed and never appear in the clients quest log.
+				HiddenRewards	= 0x0200,
+				/// Quest will be automatically rewarded on quest completition.
+				AutoRewarded	= 0x0400,
+				/// Used for quests in the Blood Elf / Draenei starting zones...
+				TBCRaces		= 0x0800,
+				/// This quest is repeatable once per day.
+				Daily			= 0x1000
+			};
+		}
+
+		typedef quest_flags::Type QuestFlags;
+
+		namespace quest_method
+		{
+			enum Type
+			{
+				/// Used for some quests to indicate that these quests have no objectives (?). Not 100% clear.
+				AutoComplete	= 0,
+				/// Simply unknown...
+				Unknown_1		= 1,
+				/// Used for most quests. Used in client.
+				Unknown_2		= 2,
+			};
+		}
+
+
+
+		namespace item_class
+		{
+			enum Type
+			{
+				Consumable = 0,
+				Container = 1,
+				Weapon = 2,
+				Gem = 3,
+				Armor = 4,
+				Reagent = 5,
+				Projectile = 6,
+				TradeGoods = 7,
+				Generic = 8,
+				Recipe = 9,
+				Money = 10,
+				Quiver = 11,
+				Quest = 12,
+				Key = 13,
+				Permanent = 14,
+				Junk = 15,
+
+				Count_ = 16,
+			};
+		}
+
+		typedef item_class::Type ItemClass;
+
+		namespace item_subclass_consumable
+		{
+			enum Type
+			{
+				Consumable = 0,
+				Potion = 1,
+				Elixir = 2,
+				Flask = 3,
+				Scroll = 4,
+				Food = 5,
+				ItemEnhancement = 6,
+				Bandage = 7,
+				ConsumableOther = 8,
+
+				Count_ = 9
+			};
+		}
+
+		typedef item_subclass_consumable::Type ItemSubclassConsumable;
+
+		namespace item_subclass_container
+		{
+			enum Type
+			{
+				Container = 0,
+				SoulContainer = 1,
+				HerbContainer = 2,
+				EnchantingContainer = 3,
+				EngineeringContainer = 4,
+				GemContainer = 5,
+				MiningContainer = 6,
+				LeatherworkingContainer = 7,
+
+				Count_ = 8
+			};
+		}
+
+		typedef item_subclass_container::Type ItemSubclassContainer;
+
+		namespace item_subclass_weapon
+		{
+			enum Type
+			{
+				Axe = 0,
+				Axe2 = 1,
+				Bow = 2,
+				Gun = 3,
+				Mace = 4,
+				Mace2 = 5,
+				Polearm = 6,
+				Sword = 7,
+				Sword2 = 8,
+				Staff = 10,
+				Exotic = 11,
+				Ecotic2 = 12,
+				Fist = 13,
+				Misc = 14,
+				Dagger = 15,
+				Thrown = 16,
+				Spear = 17,
+				CrossBow = 18,
+				Wand = 19,
+				FishingPole = 20
+			};
+		}
+
+		typedef item_subclass_weapon::Type ItemSubclassWeapon;
+
+		namespace item_subclass_gem
+		{
+			enum Type
+			{
+				Red = 0,
+				Blue = 1,
+				Yellow = 2,
+				Purple = 3,
+				Green = 4,
+				Orange = 5,
+				Meta = 6,
+				Simple = 7,
+				Prismatic = 8,
+
+				Count_ = 9
+			};
+		}
+
+		typedef item_subclass_gem::Type ItemSubclassGem;
+
+		namespace item_subclass_armor
+		{
+			enum Type
+			{
+				Misc = 0,
+				Cloth = 1,
+				Leather = 2,
+				Mail = 3,
+				Plate = 4,
+				Buckler = 5,
+				Shield = 6,
+				Libram = 7,
+				Idol = 8,
+				Totem = 9,
+
+				Count_ = 10
+			};
+		}
+
+		typedef item_subclass_armor::Type ItemSubclassArmor;
+
+		namespace item_subclass_projectile
+		{
+			enum Type
+			{
+				Wand = 0,
+				Bolt = 1,
+				Arrow = 2,
+				Bullet = 3,
+				Thrown = 4,
+
+				Count_ = 5
+			};
+		}
+
+		typedef item_subclass_projectile::Type ItemSubclassProjectile;
+
+		namespace item_subclass_trade_goods
+		{
+			enum Type
+			{
+				TradeGoods = 0,
+				Parts = 1,
+				Eplosives = 2,
+				Devices = 3,
+				Jewelcrafting = 4,
+				Cloth = 5,
+				Leather = 6,
+				MetalStone = 7,
+				Meat = 8,
+				Herb = 9,
+				Elemental = 10,
+				TradeGoodsOther = 11,
+				Enchanting = 12,
+				Material = 13,
+
+				Count_ = 14
+			};
+		}
+
+		typedef item_subclass_trade_goods::Type ItemSubclassTradeGoods;
+
+		namespace weapon_prof
+		{
+			enum Type
+			{
+				None			= 0x00000,
+				OneHandAxe		= 0x00001,
+				TwoHandAxe		= 0x00002,
+				Bow				= 0x00004,
+				Gun				= 0x00008,
+				OneHandMace		= 0x00010,
+				TwoHandMace		= 0x00020,
+				Polearm			= 0x00040,
+				OneHandSword	= 0x00080,
+				TwoHandSword	= 0x00100,
+				Staff			= 0x00400,
+				Fist			= 0x02000,
+				Dagger			= 0x08000,
+				Throw			= 0x10000,
+				Crossbow		= 0x40000,
+				Wand			= 0x80000
+			};
+		}
+
+		namespace armor_prof
+		{
+			enum Type
+			{
+				None			= 0x00000,
+				Common			= 0x00001,
+				Cloth			= 0x00002,
+				Leather			= 0x00004,
+				Mail			= 0x00008,
+				Plate			= 0x00010,
+				Shield			= 0x00040,
+				Libram			= 0x00080,
+				Fetish			= 0x00100,
+				Totem			= 0x00200
+			};
+		}
+
+		namespace power_type
+		{
+			enum Type
+			{
+				/// The most common one, mobs actually have this or rage.
+				Mana = 0x00,
+				/// This is what warriors use to cast their spells.
+				Rage = 0x01,
+				/// Unused in classic?
+				Focus = 0x02,
+				/// Used by rogues to do their spells.
+				Energy = 0x03,
+				/// Used by hunter pet's - more happiness increases pet damage.
+				Happiness = 0x04,
+				/// 
+				Health = 0xFFFFFFFE,
+
+				Count_ = 0x06,
+				Invalid_ = Count_
+			};
+		}
+
+		typedef power_type::Type PowerType;
+
+		namespace class_flags
+		{
+			enum Type
+			{
+				/// Nothing special about the character class.
+				None = 0x00,
+				/// This class has a relic slot (used by druids and paladins).
+				HasRelocSlot = 0x01,
+
+				Count_,
+				Invalid_ = Count_
+			};
+		}
+
+		typedef class_flags::Type ClassFlags;
+
+		namespace constant_literal
+		{
+			typedef EnumStrings<PowerType, power_type::Count_,
+				power_type::Invalid_> PowerTypeStrings;
+			extern const PowerTypeStrings powerType;
+		}
+
+		namespace spell_attributes
+		{
+			enum Type
+			{
+				/// Unknown currently
+				Unknown_0 = 0x00000001,
+				/// Spell requires ammo.
+				Ranged = 0x00000002,
+				/// Spell is executed on next weapon swing.
+				OnNextSwing = 0x00000004,
+				/// 
+				IsReplenishment = 0x00000008,
+				/// Spell is a player ability.
+				Ability = 0x00000010,
+				/// 
+				TradeSpell = 0x00000020,
+				/// Spell is a passive spell-
+				Passive = 0x00000040,
+				/// Spell does not appear in the players spell book.
+				HiddenClientSide = 0x00000080,
+				/// Spell won't display cast time.
+				HiddenCastTime = 0x00000100,
+				/// Client will automatically target the mainhand item.
+				TargetMainhandItem = 0x00000200,
+				/// 
+				OnNextSwing_2 = 0x00000400,
+				/// 
+				Unknown_4 = 0x00000800,
+				/// Spell is only executable at day.
+				DaytimeOnly = 0x00001000,
+				/// Spell is only executable at night
+				NightOnly = 0x00002000,
+				/// Spell is only executable while indoor.
+				IndoorOnly = 0x00004000,
+				/// Spell is only executable while outdoor.
+				OutdoorOnly = 0x00008000,
+				/// Spell is only executable while not shape shifted.
+				NotShapeshifted = 0x00010000,
+				/// Spell is only executable while in stealth mode.
+				OnlyStealthed = 0x00020000,
+				/// Spell does not change the players sheath state.
+				DontAffectSheathState = 0x00040000,
+				/// 
+				LevelDamageCalc = 0x00080000,
+				/// Spell will stop auto attack.
+				StopAttackTarget = 0x00100000,
+				/// Spell can't be blocked / dodged / parried
+				NoDefense = 0x00200000,
+				/// Executer will always look at target while casting this spell.
+				CastTrackTarget = 0x00400000,
+				/// Spell is usable while caster is dead.
+				CastableWhileDead = 0x00800000,
+				/// Spell is usable while caster is mounted.
+				CastableWhileMounted = 0x01000000,
+				/// 
+				DisabledWhileActive = 0x02000000,
+				/// 
+				Negative = 0x04000000,
+				/// Cast is usable while caster is sitting.
+				CastableWhileSitting = 0x08000000,
+				/// Cast is not usable while caster is in combat.
+				NotInCombat = 0x10000000,
+				/// Spell is usable even on invulnerable targets.
+				IgnoreInvulnerability = 0x20000000,
+				/// Aura of this spell will break on damage.
+				BreakableByDamage = 0x40000000,
+				/// Aura can't be cancelled by player.
+				CantCancel = 0x80000000
+			};
+		}
+
+		typedef spell_attributes::Type SpellAttributes;
+
+		namespace spell_attributes_ex_a
+		{
+			enum Type
+			{
+				DismissPet				= 0x00000001,
+				DrainAllPower			= 0x00000002,
+				Channeled_1				= 0x00000004,
+				CantBeRedirected		= 0x00000008,
+				Unknown_1				= 0x00000010,
+				NotBreakStealth			= 0x00000020,
+				Channeled_2				= 0x00000040,
+				CantBeReflected			= 0x00000080,
+				TargetNotInCombat		= 0x00000100,
+				MeleeCombatStart		= 0x00000200,
+				NoThreat				= 0x00000400,
+				Unknown_3				= 0x00000800,
+				PickPocket				= 0x00001000,
+				FarSight				= 0x00002000,
+				ChannelTrackTarget		= 0x00004000,
+				DispelAurasOnImmunity	= 0x00008000,
+				UnaffectedByImmunity	= 0x00010000,
+				NoPetAutoCast			= 0x00020000,
+				Unknown_5				= 0x00040000,
+				CantTargetSelf			= 0x00080000,
+				ReqComboPoints_1		= 0x00100000,
+				Unknown_7				= 0x00200000,
+				ReqComboPoints_2		= 0x00400000,
+				Unknown_8				= 0x00800000,
+				IsFishing				= 0x01000000,
+				Unknown_10				= 0x02000000,
+				Unknown_11				= 0x04000000,
+				NotResetSwingTimer		= 0x08000000,
+				DontDisplayInAuraBar	= 0x10000000,
+				ChannelDisplaySpellName = 0x20000000,
+				EnableAtDodge			= 0x40000000,
+				Unknown_16				= 0x80000000
+			};
+		}
+
+		typedef spell_attributes_ex_a::Type SpellAttributesExA;
+
+		namespace spell_attributes_ex_b
+		{
+			enum Type
+			{
+				Unknown_1				= 0x00000001,
+				Unknown_2				= 0x00000002,
+				CantReflect				= 0x00000004,
+				Unknown_3				= 0x00000008,
+				Unknown_4				= 0x00000010,
+				AuroRepeat				= 0x00000020,
+				Unknown_5				= 0x00000040,
+				Unknown_6				= 0x00000080,
+				Unknown_7				= 0x00000100,
+				Unknown_8				= 0x00000200,
+				Unknown_9				= 0x00000400,
+				HealthFunnel			= 0x00000800,
+				Unknown_10				= 0x00001000,
+				Unknown_11				= 0x00002000,
+				Unknown_12				= 0x00004000,
+				Unknown_13				= 0x00008000,
+				Unknown_14				= 0x00010000,
+				Unknown_15				= 0x00020000,
+				Unknown_16				= 0x00040000,
+				NotNeedShapeshift		= 0x00080000,
+				Unknown_17				= 0x00100000,
+				DamageReducedShield		= 0x00200000,
+				Unknown_18				= 0x00400000,
+				Unknown_19				= 0x00800000,
+				Unknown_20				= 0x01000000,
+				Unknown_21				= 0x02000000,
+				Unknown_22				= 0x04000000,
+				Unknown_23				= 0x08000000,
+				Unknown_24				= 0x10000000,
+				CantCrit				= 0x20000000,
+				Unknown_25				= 0x40000000,
+				FoodBuff				= 0x80000000
+			};
+		}
+
+		typedef spell_attributes_ex_b::Type SpellAttributesExB;
+
+		namespace spell_attributes_ex_c
+		{
+			enum Type
+			{
+				Unknown_1				= 0x00000001,
+				Unknown_2				= 0x00000002,
+				Unknown_3				= 0x00000004,
+				Unknown_4				= 0x00000008,
+				Unknown_5				= 0x00000010,
+				Unknown_6				= 0x00000020,
+				Unknown_7				= 0x00000040,
+				Unknown_8				= 0x00000080,
+				TargetOnlyPlayer		= 0x00000100,
+				Unknown_9				= 0x00000200,
+				MainHand				= 0x00000400,
+				Battleground			= 0x00000800,
+				CastOnDead				= 0x00001000,
+				Unknown_10				= 0x00002000,
+				Unknown_11				= 0x00004000,
+				Unknown_12				= 0x00008000,
+				Unknown_13				= 0x00010000,
+				NoInitialAggro			= 0x00020000,
+				CantMiss				= 0x00040000,
+				Unknown_14				= 0x00080000,
+				DeathPersistent			= 0x00100000,
+				Unknown_15				= 0x00200000,
+				ReqWand					= 0x00400000,
+				Unknown_16				= 0x00800000,
+				ReqOffhand				= 0x01000000,
+				Unknown_17				= 0x02000000,
+				Unknown_18				= 0x04000000,
+				Unknown_19				= 0x08000000,
+				Unknown_20				= 0x10000000,
+				Unknown_21				= 0x20000000,
+				Unknown_22				= 0x40000000,
+				Unknown_23				= 0x80000000
+			};
+		}
+
+		typedef spell_attributes_ex_c::Type SpellAttributesExC;
+
+		namespace spell_attributes_ex_d
+		{
+			enum Type
+			{
+				Unknown_1				= 0x00000001,
+				Unknown_2				= 0x00000002,
+				Unknown_3				= 0x00000004,
+				Unknown_4				= 0x00000008,
+				Unknown_5				= 0x00000010,
+				Unknown_6				= 0x00000020,
+				NotStealable			= 0x00000040,
+				Unknown_7				= 0x00000080,
+				StackDotModifier		= 0x00000100,
+				Unknown_8				= 0x00000200,
+				SpellVsExtendCost		= 0x00000400,
+				Unknown_9				= 0x00000800,
+				Unknown_10				= 0x00001000,
+				Unknown_11				= 0x00002000,
+				Unknown_12				= 0x00004000,
+				Unknown_13				= 0x00008000,
+				NotUsableInArena		= 0x00010000,
+				UsableInArena			= 0x00020000,
+				Unknown_14				= 0x00040000,
+				Unknown_15				= 0x00080000,
+				Unknown_16				= 0x00100000,
+				Unknown_17				= 0x00200000,
+				Unknown_18				= 0x00400000,
+				Unknown_19				= 0x00800000,
+				Unknown_20				= 0x01000000,
+				Unknown_21				= 0x02000000,
+				CastOnlyInOutland		= 0x04000000,
+				Unknown_22				= 0x08000000,
+				Unknown_23				= 0x10000000,
+				Unknown_24				= 0x20000000,
+				Unknown_25				= 0x40000000,
+				Unknown_26				= 0x80000000
+			};
+		}
+
+		typedef spell_attributes_ex_d::Type SpellAttributesExD;
+
+		namespace spell_attributes_ex_e
+		{
+			enum Type
+			{
+				CanChannelWhenMoving	= 0x00000001,
+				NoReagentWhilePrep		= 0x00000002,
+				Unknown_1				= 0x00000004,
+				UsableWhileStunned		= 0x00000008,
+				Unknown_2				= 0x00000010,
+				SingleTargetSpell		= 0x00000020,
+				Unknown_3				= 0x00000040,
+				Unknown_4				= 0x00000080,
+				Unknown_5				= 0x00000100,
+				StartPeriodicAtApply	= 0x00000200,
+				Unknown_6				= 0x00000400,
+				Unknown_7				= 0x00000800,
+				Unknown_8				= 0x00001000,
+				Unknown_9				= 0x00002000,
+				Unknown_10				= 0x00004000,
+				Unknown_11				= 0x00008000,
+				Unknown_12				= 0x00010000,
+				UsableWhileFeared		= 0x00020000,
+				UsableWhileConfused		= 0x00040000,
+				Unknown_13				= 0x00080000,
+				Unknown_14				= 0x00100000,
+				Unknown_15				= 0x00200000,
+				Unknown_16				= 0x00400000,
+				Unknown_17				= 0x00800000,
+				Unknown_18				= 0x01000000,
+				Unknown_19				= 0x02000000,
+				Unknown_20				= 0x04000000,
+				Unknown_21				= 0x08000000,
+				Unknown_22				= 0x10000000,
+				Unknown_23				= 0x20000000,
+				Unknown_24				= 0x40000000,
+				Unknown_25				= 0x80000000
+			};
+		}
+
+		typedef spell_attributes_ex_e::Type SpellAttributesExE;
+
+		namespace spell_attributes_ex_f
+		{
+			enum Type
+			{
+				Unknown_1				= 0x00000001,
+				OnlyInArena				= 0x00000002,
+				Unknown_2				= 0x00000004,
+				Unknown_3				= 0x00000008,
+				Unknown_4				= 0x00000010,
+				Unknown_5				= 0x00000020,
+				Unknown_6				= 0x00000040,
+				Unknown_7				= 0x00000080,
+				Unknown_8				= 0x00000100,
+				Unknown_9				= 0x00000200,
+				Unknown_10				= 0x00000400,
+				NotInRaidInstance		= 0x00000800,
+				Unknown_11				= 0x00001000,
+				Unknown_12				= 0x00002000,
+				Unknown_13				= 0x00004000,
+				Unknown_14				= 0x00008000,
+				Unknown_15				= 0x00010000,
+				IsMountSpell			= 0x00020000,
+				Unknown_17				= 0x00040000,
+				Unknown_18				= 0x00080000,
+				Unknown_19				= 0x00100000,
+				Unknown_20				= 0x00200000,
+				Unknown_21				= 0x00400000,
+				Unknown_22				= 0x00800000,
+				Unknown_23				= 0x01000000,
+				Unknown_24				= 0x02000000,
+				Unknown_25				= 0x04000000,
+				Unknown_26				= 0x08000000,
+				Unknown_27				= 0x10000000,
+				Unknown_28				= 0x20000000,
+				Unknown_29				= 0x40000000,
+				Unknown_30				= 0x80000000
+			};
+		}
+
+		typedef spell_attributes_ex_f::Type SpellAttributesExF;
+
+		namespace spell_interrupt_flags
+		{
+			enum Type
+			{
+				None = 0x00,
+				Movement = 0x01,
+				PushBack = 0x02,
+				Interrupt = 0x04,
+				AutoAttack = 0x08,
+				Damage = 0x10
+			};
+		}
+
+		typedef spell_interrupt_flags::Type SpellInterruptFlags;
+
+		namespace spell_channel_interrupt_flags
+		{
+			enum Type
+			{
+				None = 0x0000,
+				Damage = 0x0002,
+				Movement = 0x0008,
+				Turning = 0x0010,
+				Damage2 = 0x0080,
+				Delay = 0x4000
+			};
+		};
+
+		typedef spell_channel_interrupt_flags::Type SpellChannelInterruptFlags;
+
+		namespace spell_aura_interrupt_flags
+		{
+			enum Type
+			{
+				None = 0x0000000,
+				/// Removed when getting hit by a negative spell.
+				HitBySpell = 0x00000001,
+				/// Removed by any damage.
+				Damage = 0x00000002,
+				/// Removed on crowd control effect.
+				CrowdControl = 0x00000004,
+				/// Removed by any movement.
+				Move = 0x00000008,
+				/// Removed by any turning.
+				Turning = 0x00000010,
+				/// Removed by entering combat.
+				EnterCombat = 0x00000020,
+				/// Removed by unmounting.
+				NotMounted = 0x00000040,
+				/// Removed by entering water (start swimming).
+				NotAboveWater = 0x00000080,
+				/// Removed by leaving water.
+				NotUnderWater = 0x00000100,
+				/// Removed by unsheathing.
+				NotSheathed = 0x00000200,
+				/// Removed when talking to an npc or loot a creature.
+				Talk = 0x00000400,
+				/// Removed when mining/using/opening/interact with game object.
+				Use = 0x00000800,
+				/// Removed by attacking.
+				Attack = 0x00001000,
+				/// TODO
+				Cast = 0x00002000,
+				/// TODO
+				Unknown_14 = 0x00004000,
+				/// Removed on transformation.
+				Transform = 0x00008000,
+				/// TODO
+				Unknown_16 = 0x00010000,
+				/// Removed when mounting.
+				Mount = 0x00020000,
+				/// Removed when standing up.
+				NotSeated = 0x00040000,
+				/// Removed when leaving the map.
+				ChangeMap = 0x00080000,
+				/// TODO
+				Unattackable = 0x00100000,
+				/// TODO
+				Unknown_21 = 0x00200000,
+				/// Removed when teleported.
+				Teleported = 0x00400000,
+				/// Removed by entering pvp combat.
+				EnterPvPCombat = 0x00800000,
+				/// Removed by any direct damage.
+				DirectDamage = 0x01000000,
+				/// TODO
+				NotVictim = (HitBySpell | Damage | DirectDamage)
+			};
+		}
+
+		typedef spell_aura_interrupt_flags::Type SpellAuraInterruptFlags;
+
+
+		namespace spell_proc_flags
+		{
+			enum Type
+			{
+				/// No proc.
+				None						= 0x00000000,
+				/// Killed by aggressor.	
+				Killed						= 0x00000001,
+				/// Killed a target.
+				Kill						= 0x00000002,
+				/// Done melee attack.
+				DoneMeleeAutoAttack			= 0x00000004,
+				/// Taken melee attack.
+				TakenMeleeAutoAttack		= 0x00000008,
+				/// 
+				DoneSpellMeleeDmgClass		= 0x00000010,
+				/// 
+				TakenSpellMeleeDmgClass		= 0x00000020,
+				/// Done ranged auto attack.
+				DoneRangedAutoAttack		= 0x00000040,
+				/// Taken ranged auto attack.
+				TakenRangedAutoAttack		= 0x00000080,
+				/// 
+				DoneSpellRangedDmgClass		= 0x00000100,
+				/// 
+				TakenSpellRangedDmgClass	= 0x00000200,
+				/// 
+				DoneSpellNoneDmgClassPos	= 0x00000400,
+				/// 
+				TakenSpellNoneDmgClassPos	= 0x00000800,
+				/// 
+				DoneSpellNoneDmgClassNeg	= 0x00001000,
+				/// 
+				TakenSpellNoneDmgClassNeg	= 0x00002000,
+				/// 
+				DoneSpellMagicDmgClassPos	= 0x00004000,
+				/// 
+				TakenSpellMagicDmgClassPos	= 0x00008000,
+				/// 
+				DoneSpellMagicDmgClassNeg	= 0x00010000,
+				/// 
+				TakenSpellMagicDmgClassNeg	= 0x00020000,
+				/// On periodic tick done.
+				DonePeriodic				= 0x00040000,
+				/// On periodic tick received.
+				TakenPeriodic				= 0x00080000,
+				/// On any damage taken.
+				TakenDamage					= 0x00100000,
+				/// On trap activation.
+				DoneTrapActivation			= 0x00200000,
+				/// Done main hand attack.
+				DoneMainhandAttack			= 0x00400000,
+				/// Done off hand attack.
+				DoneOffhandAttack			= 0x00800000,
+				/// Died in any way.
+				Death						= 0x01000000
+			};
+		}
+
+		namespace loot_type
+		{
+			enum Type
+			{
+				/// No loot type
+				None			= 0,
+				/// Corpse loot (dead creatures).
+				Corpse			= 1,
+				/// 
+				Skinning		= 2,
+				/// 
+				Fishing			= 3,
+
+				/// Unsupported by client - sending Skinning instead
+				Pickpocketing	= 4,
+				/// Unsupported by client - sending Skinning instead
+				Disenchanting	= 5,
+				/// Unsupported by client - sending Skinning instead
+				Prospecting		= 6,
+				/// Unsupported by client - sending Skinning instead
+				Insignia		= 7,
+				/// Unsupported by client - sending Fishing instead
+				FishingHole		= 8
+			};
+		}
+
+		namespace loot_error
+		{
+			enum Type
+			{
+				/// You don't have permission to loot that corpse.
+				DidntKill				= 0,
+				/// You are too far away to loot that corpse.
+				TooFar					= 4,
+				/// You must be facing the corpse to loot it.
+				BadFacing				= 5,
+				/// Someone is already looting that corpse.
+				Locked					= 6,
+				/// You need to be standing up to loot something!
+				NotStanding				= 8,
+				/// You can't loot anything while stunned!
+				Stunned					= 9,
+				/// Player not found.
+				PlayerNotFound			= 10,
+				/// Maximum play time exceeded (China WoW only?)
+				PlayTimeExceeded		= 11,
+				/// That player's inventory is full.
+				MasterInvFull			= 12,
+				/// Player has too many of that item already.
+				MasterUniqueItem		= 13,
+				/// Can't assign item to that player.
+				MasterOther				= 14,
+				/// Your target has already hat it's pockets picked.
+				AlreadyPickpocketed		= 15,
+				/// You can't do that while shapeshifted.
+				NotWhileShapeshifted	= 16
+			};
+		}
+
+		namespace loot_slot_type
+		{
+			enum Type
+			{
+				/// Player can loot the item.
+				AllowLoot	= 0,
+				/// Roll is ongoing. Player cannot loot.
+				RollOngoing	= 1,
+				/// Item can only be distributed by group loot master.
+				Master		= 2,
+				/// Item is shown in red. Player cannot loot.
+				Locked		= 3,
+				/// Ignore binding confirmation and etc., for single player looting.
+				Owner		= 4
+			};			
+		}
+
+		namespace unit_stand_state
+		{
+			enum Type
+			{
+				Stand			= 0,
+				Sit				= 1,
+				SitChair		= 2,
+				Sleep			= 3,
+				SitLowChair		= 4,
+				SitMediumChair	= 5,
+				SitHighChair	= 6,
+				Dead			= 7,
+				Kneel			= 8
+			};
+		}
+
+		namespace unit_dynamic_flags
+		{
+			enum Type
+			{
+				/// No flags set.
+				None = 0x0000,
+				/// Creature appears to be lootable. Should only be set when loot is available.
+				Lootable = 0x0001,
+				/// TODO
+				TrackUnit = 0x0002,
+				/// Creature name appears gray, indicating that the player will not receieve any rewards from this creature.
+				OtherTagger = 0x0004,
+				/// TODO
+				Rooted = 0x0008,
+				/// TODO Hunter spell?
+				SpecialInfo = 0x0010,
+				/// TODO Fake death?
+				Dead = 0x0020,
+				/// Marks this player character as a referred friend.
+				ReferAFriend = 0x0040
+			};
+		}
+
+		namespace unit_npc_flags
+		{
+			enum Type
+			{
+				None					= 0x00000000,
+				Gossip					= 0x00000001,	   // 100%
+				QuestGiver				= 0x00000002,	   // guessed, probably ok
+				Unknown1				= 0x00000004,
+				Unknown2				= 0x00000008,
+				Trainer					= 0x00000010,	   // 100%
+				TrainerClass			= 0x00000020,	   // 100%
+				TrainerProfession		= 0x00000040,	   // 100%
+				Vendor					= 0x00000080,	   // 100%
+				VendorAmmo				= 0x00000100,	   // 100%, general goods vendor
+				VendorFood				= 0x00000200,	   // 100%
+				VendorPoison			= 0x00000400,	   // guessed
+				VendorReagents			= 0x00000800,	   // 100%
+				Repair					= 0x00001000,	   // 100%
+				FlightMaster			= 0x00002000,	   // 100%
+				SpiritHealer			= 0x00004000,	   // guessed
+				SpiritGuide				= 0x00008000,	   // guessed
+				InnKeeper				= 0x00010000,	   // 100%
+				Banker					= 0x00020000,	   // 100%
+				Petitioner				= 0x00040000,	   // 100% 0xC0000 = guild petitions, 0x40000 = arena team petitions
+				TabardDesigner			= 0x00080000,	   // 100%
+				Battlemaster			= 0x00100000,	   // 100%
+				Auctioneer				= 0x00200000,	   // 100%
+				Stablemaster			= 0x00400000,	   // 100%
+				GuildBanker				= 0x00800000,	   // cause client to send 997 opcode
+				SpellClick				= 0x01000000,	   // cause client to send 1015 opcode (spell click)
+				Guard					= 0x10000000,	   // custom flag for guards
+				OutdoorPvP				= 0x20000000,	   // custom flag for outdoor pvp creatures
+			};
+		}
+
 		namespace gender
 		{
 			enum Type
@@ -554,7 +1571,7 @@ namespace wowpp
 				InstantKill				= 1,
 				SchoolDamage			= 2,
 				Dummy					= 3,
-				PortalTeleport			= 4,
+				PortalTeleport			= 4,	// not used
 				TeleportUnits			= 5,
 				ApplyAura				= 6,
 				EnvironmentalDamage		= 7,
@@ -734,11 +1751,11 @@ namespace wowpp
 				UnitAreaEntryDst		= 8,
 				DstHome					= 9,
 				UnitTargetDestCaster	= 11,
-				UnitAreaEnemySrc		= 15,
-				UnitAreaEnemyDst		= 16,
+				UnitAreaEnemySrc		= 15,	// Arcane Explosion
+				UnitAreaEnemyDst		= 16,	// Dynamite / Shadowfury
 				DstDB					= 17,
 				DstCaster				= 18,
-				UnitPartyCaster			= 20,
+				UnitPartyCaster			= 20,	// Prayer of Healing
 				UnitTargetAlly			= 21,
 				SrcCaster				= 22,
 				GameObject				= 23,
@@ -755,7 +1772,7 @@ namespace wowpp
 				AreaPartyDst			= 34,
 				UnitTargetParty			= 35,
 				DestCasterRandomUnknown	= 36,
-				UnitPartyTarget			= 37,
+				UnitPartyTarget			= 37,	// Circle of Healing
 				UnitNearbyEntry			= 38,
 				UnitCasterFishing		= 39,
 				ObjectUse				= 40,
@@ -809,11 +1826,21 @@ namespace wowpp
 				DestDynObjNone			= 88,
 				DestTraj				= 89,
 				UnitTargetMinipet		= 90,
-				CorpseAreaEnemyPlayer	= 93
+				CorpseAreaEnemyPlayer	= 93,
+
+				Count_					= 94,
+				Invalid_				= 255
 			};
 		}
 
 		typedef targets::Type Targets;
+
+		namespace constant_literal
+		{
+			typedef EnumStrings < Targets, targets::Count_,
+				targets::Invalid_ > TargetStrings;
+			extern const TargetStrings targetNames;
+		}
 
 		namespace spell_cast_target_flags
 		{
@@ -857,6 +1884,42 @@ namespace wowpp
 		}
 
 		typedef spell_miss_info::Type SpellMissInfo;
+		
+		namespace spell_modifier
+		{
+			enum Type
+			{
+				Damage				= 0,
+				Duration			= 1,
+				Threat				= 2,
+				Effect1				= 3,
+				Charges				= 4,
+				Range				= 5,
+				Radius				= 6,
+				CriticalChance		= 7,
+				AllEffects			= 8,
+				NotLoseCastingTtime	= 9,
+				CastingTime			= 10,
+				Cooldown			= 11,
+				Effect2				= 12,
+				Cost				= 14,
+				CritDamageBonus		= 15,
+				ResistMissChance	= 16,
+				JumpTargets			= 17,
+				ChanceOfSuccess		= 18,
+				ActivationTime		= 19,
+				EffectPastFirst		= 20,
+				CastingTimeOld		= 21,
+				Dot					= 22,
+				Effect3				= 23,
+				SpellBonusDamage	= 24,
+				FrequencyOfSuccess	= 26,
+				MultipleValue		= 27,
+				ResistDispelChance	= 28
+			};
+		}
+		
+		typedef spell_modifier::Type SpellModifier;
 
 		namespace spell_hit_type
 		{
@@ -884,6 +1947,42 @@ namespace wowpp
 		}
 
 		typedef spell_dmg_class::Type SpellDmgClass;
+
+		namespace spell_school
+		{
+			enum Type
+			{
+				Normal		= 0,
+				Holy		= 1,
+				Fire		= 2,
+				Nature		= 3,
+				Frost		= 4,
+				Shadow		= 5,
+				Arcane		= 6
+			};
+		}
+
+		typedef spell_school::Type SpellSchool;
+
+		namespace spell_school_mask
+		{
+			enum Type
+			{
+				None		= 0x00,
+				Normal		= (1 << spell_school::Normal),
+				Holy		= (1 << spell_school::Holy),
+				Fire		= (1 << spell_school::Fire),
+				Nature		= (1 << spell_school::Nature),
+				Frost		= (1 << spell_school::Frost),
+				Shadow		= (1 << spell_school::Shadow),
+				Arcane		= (1 << spell_school::Arcane),
+				Spell		= (Fire | Nature | Frost | Shadow | Arcane),
+				Magic		= (Holy | Spell),
+				All			= (Normal | Magic)
+			};
+		}
+
+		typedef spell_school_mask::Type SpellSchoolMask;
 
 		namespace spell_prevention_type
 		{
@@ -1324,9 +2423,9 @@ namespace wowpp
 				ProcTriggerDamage					= 43,
 				TrackCreatures						= 44,
 				TrackResources						= 45,
-				ModParrySkill						= 46,
+				ModParrySkill						= 46,	// not used
 				ModParryPercent						= 47,
-				ModDodgeSkill						= 48,
+				ModDodgeSkill						= 48,	// not used
 				ModDodgePercent						= 49,
 				ModBlockSkill						= 50,
 				ModBlockPercent						= 51,
@@ -1341,7 +2440,7 @@ namespace wowpp
 				ModPacifySilence					= 60,
 				ModScale							= 61,
 				PeriodicHealthFunnel				= 62,
-				PeriodicManaFunnel					= 63,
+				PeriodicManaFunnel					= 63,	// not used
 				PeriodicManaLeech					= 64,
 				ModCastingSpeed						= 65,
 				FeignDeath							= 66,
@@ -1368,7 +2467,7 @@ namespace wowpp
 				ModDamagePercentTaken				= 87,
 				ModHealthRegenPercent				= 88,
 				PeriodicDamagePercent				= 89,
-				ModResistChance						= 90,
+				ModResistChance						= 90,	// not used
 				ModDetectRange						= 91,
 				PreventsFleeing						= 92,
 				ModUnattackable						= 93,
@@ -1392,12 +2491,12 @@ namespace wowpp
 				AddCasterHitTrigger					= 111,
 				OverrideClassScripts				= 112,
 				ModRangedDamageTaken				= 113,
-				ModRangedDamageTakenPct				= 114,
+				ModRangedDamageTakenPct				= 114,	// not used
 				ModHealing							= 115,
 				ModRegenDurationCombat				= 116,
 				ModMechanicResistance				= 117,
 				ModHealingPct						= 118,
-				SharePetTracking					= 119,
+				SharePetTracking					= 119,	// not used
 				Untrackable							= 120,
 				Empathy								= 121,
 				ModOffhandDamagePct					= 122,
@@ -1408,7 +2507,7 @@ namespace wowpp
 				RangedAttackPowerAttackerBonus		= 127,
 				ModPossessPet						= 128,
 				ModSpeedAlways						= 129,
-				ModMOuntedSpeedAlways				= 130,
+				ModMountedSpeedAlways				= 130,
 				ModRangedAttackPowerVersus			= 131,
 				ModIncreaseEnergyPercent			= 132,
 				ModIncreaseHealthPercent			= 133,
@@ -1423,8 +2522,8 @@ namespace wowpp
 				ModBaseResistancePct				= 142,
 				ModResistanceExclusive				= 143,
 				SafeFall							= 144,
-				Charisma							= 145,
-				Persuaded							= 146,
+				Charisma							= 145,	// not used
+				Persuaded							= 146,	// not used
 				MechanicImmunityMask				= 147,
 				RetainComboPoints					= 148,
 				ResistPushback						= 149,
@@ -1444,22 +2543,22 @@ namespace wowpp
 				ModCritDamageBonusMelee				= 163,
 				AuraType_164						= 164,
 				MeleeAttackPowerAttackerBonus		= 165,
-				ModattackPowerPct					= 166,
+				ModAttackPowerPct					= 166,
 				ModRangedAttackPowerPct				= 167,
 				ModDamageDoneVersus					= 168,
 				ModCritPercentVersus				= 169,
 				DetectAmore							= 170,
 				ModSpeedNotStack					= 171,
 				ModMountedSpeedNotStack				= 172,
-				AllowChampionSpells					= 173,
+				AllowChampionSpells					= 173,	// not used
 				ModSpellDamageOfStatPercent			= 174,
-				ModSpellhealingOfStatPercent		= 175,
+				ModSpellHealingOfStatPercent		= 175,
 				SpiritOfRedemption					= 176,
 				AOECharm							= 177,
 				ModDebuffResistance					= 178,
 				ModAttackerSpellCritChance			= 179,
 				ModFlatSpellDamageVersus			= 180,
-				ModFlatSpellCritDamageVersus		= 181,
+				ModFlatSpellCritDamageVersus		= 181,	// not used
 				ModResistanceOfStatPercent			= 182,
 				ModCriticalThreat					= 183,
 				ModAttackerMeleeHitChance			= 184,
@@ -1472,18 +2571,18 @@ namespace wowpp
 				UseNormalMovementSpeed				= 191,
 				HasteMelee							= 192,
 				MeleeSlow							= 193,
-				ModDeprecated_194					= 194,
-				ModDeprecated_195					= 195,
+				ModDeprecated_194					= 194,	// not used
+				ModDeprecated_195					= 195,	// not used
 				ModCooldown							= 196,
 				ModAttackerSpellAndWeaponCritChance	= 197,
-				ModAllWeaponSkills					= 198,
+				ModAllWeaponSkills					= 198,	// not used
 				ModIncreaseSpellPctToHit			= 199,
 				ModXpPct							= 200,
 				Fly									= 201,
 				IgnoreCombatResult					= 202,
 				ModAttackerMeleeCritDamage			= 203,
 				ModAttackerRangedCritDamage			= 204,
-				AuraType_205						= 205,
+				ModAttackerSpellCritDamage			= 205,
 				ModFlightSpeed						= 206,
 				ModFlightSpeedMounted				= 207,
 				ModFlightSpeedStacking				= 208,
@@ -1495,26 +2594,26 @@ namespace wowpp
 				AuraType_214						= 214,
 				ArenaPreparation					= 215,
 				HasteSpells							= 216,
-				AuraType_217						= 217,
+				AuraType_217						= 217,	// not used
 				HasteRanged							= 218,
 				ModManaRegenFromStat				= 219,
-				ModRatingFromStat					= 220,
-				AuraType_221						= 221,
+				ModRatingFromStat					= 220,	// not used
+				ModDetaunt							= 221,
 				AuraType_222						= 222,
 				AuraType_223						= 223,
-				AuraType_224						= 224,
+				AuraType_224						= 224,	// not used
 				PrayerOfMending						= 225,
 				PeriodicDummy						= 226,
 				PeriodicTriggerSpellWithValue		= 227,
 				DetectStealth						= 228,
 				ModAOEDamageAvoidance				= 229,
-				AuraType_230						= 230,
+				ModIncreaseHealth_3					= 230,
 				ProcTriggerSpellWithValue			= 231,
 				MechanicDurationMod					= 232,
 				AuraType_233						= 233,
 				MechanicDurationModNotStack			= 234,
 				ModDispelResist						= 235,
-				AuraType_236						= 236,
+				AuraType_236						= 236,	// not used
 				ModSpellDamageOfAttackPower			= 237,
 				ModSpellHealingOfAttackPower		= 238,
 				ModScale_2							= 239,
@@ -1524,21 +2623,21 @@ namespace wowpp
 				AuraType_243						= 243,
 				ComprehendLanguage					= 244,
 				ModDurationOfMagicEffects			= 245,
-				AuraType_246						= 246,
+				AuraType_246						= 246,	// not used
 				AuraType_247						= 247,
 				ModCombatResultChance				= 248,
-				AuraType_249						= 249,
+				AuraType_249						= 249,	// not used
 				ModIncreaseHealth_2					= 250,
 				ModEnemyDodge						= 251,
-				ReusedBlessedLife					= 252,
-				ReusedIncreasePetOutdoorSpeed		= 253,
-				AuraType_254						= 254,
-				AuraType_255						= 255,
-				AuraType_256						= 256,
-				AuraType_257						= 257,
-				AuraType_258						= 258,
-				AuraType_259						= 259,
-				AuraType_260						= 260,
+				ReusedBlessedLife					= 252,	// not used
+				ReusedIncreasePetOutdoorSpeed		= 253,	// not used
+				AuraType_254						= 254,	// not used
+				AuraType_255						= 255,	// not used
+				AuraType_256						= 256,	// not used
+				AuraType_257						= 257,	// not used
+				AuraType_258						= 258,	// not used
+				AuraType_259						= 259,	// not used
+				AuraType_260						= 260,	// not used
 				AuraType_261						= 261,
 
 				Count_								= 262,
@@ -1547,6 +2646,26 @@ namespace wowpp
 		}
 
 		typedef aura_type::Type AuraType;
+		
+		namespace aura_dispel_type
+		{
+			enum Type
+			{
+				None			= 0,
+				Magic			= 1,
+				Curse			= 2,
+				Disease			= 3,
+				Poison			= 4,
+				Stealth			= 5,
+				Invisibility	= 6,
+				All				= 7,
+				SpeNpcOnly		= 8,
+				Enrage			= 9,
+				ZgTicket		= 10
+			};
+		}
+
+		typedef aura_dispel_type::Type AuraDispelType;
 
 		namespace constant_literal
 		{
@@ -1626,5 +2745,147 @@ namespace wowpp
 				Fishing					= 19
 			};
 		}
+
+		namespace inventory_type
+		{
+			enum Type
+			{
+				NonEquip		= 0,
+				Head			= 1,
+				Neck			= 2,
+				Shoulders		= 3,
+				Body			= 4,
+				Chest			= 5,
+				Waist			= 6,
+				Legs			= 7,
+				Feet			= 8,
+				Wrists			= 9,
+				Hands			= 10,
+				Finger			= 11,
+				Trinket			= 12,
+				Weapon			= 13,
+				Shield			= 14,
+				Ranged			= 15,
+				Cloak			= 16,
+				TwoHandedWeapon	= 17,
+				Bag				= 18,
+				Tabard			= 19,
+				Robe			= 20,
+				MainHandWeapon	= 21,
+				OffHandWeapon	= 22,
+				Holdable		= 23,
+				Ammo			= 24,
+				Thrown			= 25,
+				RangedRight		= 26,
+				Quiver			= 27,
+				Relic			= 28
+			};
+		}
+
+		namespace unit_flags
+		{
+			enum Type
+			{
+				/// 
+				Unknown_0			= 0x00000001,
+				/// Unit can't be attackaed.
+				NotAttackable		= 0x00000002,
+				/// 
+				DisableMovement		= 0x00000004,
+				/// Unit has pvp mode enabled, which will flag players for pvp if they attack or support this unit, too.
+				PvPMode				= 0x00000008,
+				/// 
+				Rename				= 0x00000010,
+				/// Doesn't take reagents for spells with attribute ex 5 "NoReatentWhileRep"
+				Preparation			= 0x00000020,
+				/// 
+				Unknown_1			= 0x00000040,
+				/// Must be compined with PvPMode flags. Makes this unit unattackable from pvp targets.
+				NotAttackablePvP	= 0x00000080,
+				/// Unit is not attackable while it is not in combat.
+				OOCNotAttackable	= 0x00000100,
+				/// Makes the unit non-aggressive, even when hostile to other units - until it's attackaed directly.
+				Passive				= 0x00000200,
+				/// Shows the looting animation.
+				Looting				= 0x00000400,
+				/// 
+				PetInCombat			= 0x00000800,
+				/// 
+				PvP					= 0x00001000,
+				/// 
+				Silenced			= 0x00002000,
+				/// 
+				Unknown_2			= 0x00004000,
+				/// 
+				Unknown_3			= 0x00008000,
+				/// Can't be targeted by a spell cast directly.
+				NoSpellTarget		= 0x00010000,
+				/// 
+				Pacified			= 0x00020000,
+				/// 
+				Stunned				= 0x00040000,
+				///
+				InCombat			= 0x00080000,
+				/// Disables casting at client side for spells which aren't allowed during flight.
+				TaxiFlight			= 0x00100000,
+				/// Disables melee spell casting.
+				Disarmed			= 0x00200000,
+				/// 
+				Confused			= 0x00400000,
+				/// 
+				Fleeing				= 0x00800000,
+				/// Used in spell Eye of the Beast for pets.
+				PlayerControlled	= 0x01000000,
+				/// 
+				NotSelectable		= 0x02000000,
+				/// 
+				Skinnable			= 0x04000000,
+				/// 
+				Mount				= 0x08000000,
+				/// 
+				Unknown_4			= 0x10000000,
+				Unknown_5			= 0x20000000,
+				Unknown_6			= 0x40000000,
+				Sheathe				= 0x80000000,
+			};
+		}
+	
+		namespace faction_flags
+		{
+			enum Type
+			{
+				/// Makes visible in client (set or can be set at interaction with target of this faction)
+				Visible			= 0x01,
+				/// Enable AtWar button in client. Player controlled (except opposition team always war state). Flag only set on initial creation.
+				AtWar			= 0x02,
+				/// Hidden faction from reputation pane in client (Player can gain reputation, but this update is not sent to the client)
+				Hidden			= 0x04,
+				/// Used to hide opposite team factions.
+				InvisibleForced	= 0x08,
+				/// Used to prevent war with own team factions.
+				PeaceForced		= 0x10,
+				/// Player controlled
+				Inactive		= 0x20,
+				/// Flag for the two competing Outland factions
+				Rival			= 0x40
+			};
+		}
+
+		namespace reputation_rank
+		{
+			enum Type
+			{
+				Hated			= 0,
+				Hostile			= 1,
+				Unfriendly		= 2,
+				Neutral			= 3,
+				Friendly		= 4,
+				Honored			= 5,
+				Revered			= 6,
+				Exalted			= 7
+			};
+		}
+
+		typedef reputation_rank::Type ReputationRank;
 	}
 }

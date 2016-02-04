@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -23,7 +23,6 @@
 #include "player.h"
 #include <algorithm>
 
-
 namespace wowpp
 {
 	PlayerSocial::PlayerSocial(PlayerManager &manager, Player &player)
@@ -38,6 +37,12 @@ namespace wowpp
 
 	game::FriendResult PlayerSocial::addToSocialList(UInt64 guid, bool ignore)
 	{
+		auto characterId = m_player.getCharacterId();
+		if (guid == characterId)
+		{
+			return (ignore ? game::friend_result::IgnoreSelf : game::friend_result::Self);
+		}
+
 		// Build flags
 		UInt32 flag = (ignore ? game::social_flag::Ignored : game::social_flag::Friend);
 
@@ -153,7 +158,7 @@ namespace wowpp
 		}
 
 		// Check the flags
-		return (it->second.flags == game::social_flag::Friend);
+		return (it->second.flags & game::social_flag::Friend) != 0;
 	}
 
 	bool PlayerSocial::isIgnored(UInt64 guid) const
@@ -166,6 +171,22 @@ namespace wowpp
 		}
 
 		// Check the flags
-		return (it->second.flags != game::social_flag::Friend);
+		return (it->second.flags & game::social_flag::Ignored) != 0;
+	}
+
+	bool PlayerSocial::getIgnoreList(std::vector<UInt64> &out_list)
+	{
+		// Iterate through all social contacts
+		for (auto &contact : m_contacts)
+		{
+			// Check if this contact is ignored
+			if ((contact.second.flags & game::social_flag::Ignored) != 0)
+			{
+				// Add the contacts GUID to the output list
+				out_list.push_back(contact.first);
+			}
+		}
+		
+		return true;
 	}
 }

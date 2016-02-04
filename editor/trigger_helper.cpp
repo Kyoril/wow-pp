@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -20,6 +20,7 @@
 // 
 
 #include "trigger_helper.h"
+#include "proto_data/trigger_helper.h"
 
 namespace wowpp
 {
@@ -45,17 +46,20 @@ namespace wowpp
 				return "Triggering unit was killed";
 			case trigger_event::OnSpawn:
 				return "Triggering object spawned";
-				break;
+			case trigger_event::OnReset:
+				return "Triggering unit resets";
+			case trigger_event::OnReachedHome:
+				return "Triggering unit reached home after reset";
 			default:
 				return "(INVALID EVENT)";
 			}
 		}
 
-		QString getTriggerTargetName(const TriggerEntry::TriggerAction &action, bool link/* = false*/)
+		QString getTriggerTargetName(const proto::TriggerAction &action, bool link/* = false*/)
 		{
 			QString temp = (link ? "<a href=\"target\" style=\"color: #ffae00;\">%1</a>" : "%1");
 
-			switch (action.target)
+			switch (action.target())
 			{
 			case trigger_action_target::None:
 				return temp.arg("(NONE)");
@@ -66,27 +70,27 @@ namespace wowpp
 			case trigger_action_target::RandomUnit:
 				return temp.arg("(Random Nearby Unit)");
 			case trigger_action_target::NamedCreature:
-				return temp.arg(QString("(Creature Named '%1')").arg(action.targetName.c_str()));
+				return temp.arg(QString("(Creature Named '%1')").arg(action.targetname().c_str()));
 			case trigger_action_target::NamedWorldObject:
-				return temp.arg(QString("(Object Named '%1')").arg(action.targetName.c_str()));
+				return temp.arg(QString("(Object Named '%1')").arg(action.targetname().c_str()));
 			default:
 				return temp.arg("(INVALID)");
 			}
 		}
 
-		QString getTriggerActionString(const TriggerEntry::TriggerAction &action, UInt32 i, bool link/* = false*/)
+		QString getTriggerActionString(const proto::TriggerAction &action, UInt32 i, bool link/* = false*/)
 		{
 			QString temp = (link ? "<a href=\"text-%2\" style=\"color: #ffae00;\">%1</a>" : "%1");
 
-			if (i >= action.texts.size())
+			if (static_cast<int>(i) >= action.texts_size())
 				return temp.arg("(INVALID TEXT)").arg(i);
 
-			return temp.arg(action.texts[i].c_str()).arg(i);
+			return temp.arg(action.texts(i).c_str()).arg(i);
 		}
 
-		QString getTriggerActionText(const Project &project, const TriggerEntry::TriggerAction &action, bool withLinks/* = false*/)
+		QString getTriggerActionText(const proto::Project &project, const proto::TriggerAction &action, bool withLinks/* = false*/)
 		{
-			switch (action.action)
+			switch (action.action())
 			{
 			case trigger_actions::Say:
 				return QString("Unit - Make %1 say %2 and play sound %3")
@@ -95,8 +99,8 @@ namespace wowpp
 				return QString("Unit - Make %1 yell %2 and play sound %3")
 					.arg(getTriggerTargetName(action, withLinks)).arg(getTriggerActionString(action, 0, withLinks)).arg(getTriggerActionData(action, 0, withLinks));
 			case trigger_actions::CastSpell:
-				return QString("Unit - Make %1 cast spell %2")
-					.arg(getTriggerTargetName(action, withLinks)).arg(actionDataEntry(project.spells, action, 0, withLinks));
+				return QString("Unit - Make %1 cast spell %2 on %3")
+					.arg(getTriggerTargetName(action, withLinks)).arg(actionDataEntry(project.spells, action, 0, withLinks).arg(getTriggerTargetName(action, withLinks)));
 			case trigger_actions::SetSpawnState:
 				return QString("Unit - Set spawn state of %1 to %2")
 					.arg(getTriggerTargetName(action, withLinks)).arg(getTriggerActionData(action, 0, withLinks));
@@ -109,19 +113,22 @@ namespace wowpp
 			case trigger_actions::Trigger:
 				return QString("Common - Execute trigger %1")
 					.arg(actionDataEntry(project.triggers, action, 0, withLinks));
+			case trigger_actions::Delay:
+				return QString("Common - Delay execution for %1 ms")
+					.arg(getTriggerActionData(action, 0, withLinks));
 			default:
 				return QString("UNKNOWN TRIGGER ACTION");
 			}
 		}
 
-		QString getTriggerActionData(const TriggerEntry::TriggerAction &action, UInt32 i, bool link/* = false*/)
+		QString getTriggerActionData(const proto::TriggerAction &action, UInt32 i, bool link/* = false*/)
 		{
 			QString temp = (link ? "<a href=\"data-%2\" style=\"color: #ffae00;\">%1</a>" : "%1");
 
-			if (i >= action.data.size())
+			if (static_cast<int>(i) >= action.data_size())
 				return temp.arg(0).arg(i);
 
-			return temp.arg(action.data[i]).arg(i);
+			return temp.arg(action.data(i)).arg(i);
 		}
 	}
 }

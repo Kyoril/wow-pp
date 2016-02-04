@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -20,12 +20,12 @@
 // 
 
 #include "game_item.h"
-#include "data/item_entry.h"
+#include "proto_data/project.h"
 
 namespace wowpp
 {
-	GameItem::GameItem(const ItemEntry &entry)
-		: GameObject()
+	GameItem::GameItem(proto::Project &project, const proto::ItemEntry &entry)
+		: GameObject(project)
 		, m_entry(entry)
 	{
 		// Resize values field
@@ -44,19 +44,28 @@ namespace wowpp
 	{
 		GameObject::initialize();
 
-		setUInt32Value(object_fields::Entry, m_entry.id);
+		setUInt32Value(object_fields::Entry, m_entry.id());
 		setFloatValue(object_fields::ScaleX, 1.0f);
 
-		setUInt32Value(item_fields::MaxDurability, m_entry.durability);
-		setUInt32Value(item_fields::Durability, m_entry.durability);
+		setUInt32Value(item_fields::MaxDurability, m_entry.durability());
+		setUInt32Value(item_fields::Durability, m_entry.durability());
 		setUInt32Value(item_fields::StackCount, 1);
-		setUInt32Value(item_fields::Flags, m_entry.flags);
+		setUInt32Value(item_fields::Flags, m_entry.flags());
 
 		// Spell charges
 		for (size_t i = 0; i < 5; ++i)
 		{
-			setUInt32Value(item_fields::SpellCharges + i, m_entry.itemSpells[i].charges);
+			if (i >= m_entry.spells_size())
+				break;
+
+			setUInt32Value(item_fields::SpellCharges + i, m_entry.spells(i).charges());
 		}
+	}
+
+	void GameItem::notifyEquipped()
+	{
+		// Emit signal
+		equipped();
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameItem const& object)

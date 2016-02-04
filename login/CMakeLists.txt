@@ -2,8 +2,8 @@
 # This file is part of the WoW++ project.
 # 
 # This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU Genral Public License as published by
-# the Free Software Foudnation; either version 2 of the Licanse, or
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -34,7 +34,7 @@ cmake_minimum_required(VERSION 2.8)
 	add_executable(login ${srcFiles} ${sffFiles})
 	
 	# Link required shared libs
-	target_link_libraries(login common log auth_protocol wowpp_protocol sql_wrapper mysql_wrapper)
+	target_link_libraries(login common log auth_protocol wowpp_protocol sql_wrapper mysql_wrapper base64 http web_services)
 	
 	# Link dependency libraries
 	target_link_libraries(login ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY})

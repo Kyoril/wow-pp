@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -23,7 +23,7 @@
 
 #include <QAbstractListModel>
 #include <QObject>
-#include "data/project.h"
+#include "proto_data/project.h"
 #include "qfilesystemmodel.h"
 
 namespace wowpp
@@ -34,7 +34,7 @@ namespace wowpp
 		{
 		public:
 
-			explicit TriggerListModel(TriggerEntryManager &entries, QObject *parent = nullptr)
+			explicit TriggerListModel(proto::TriggerManager &entries, QObject *parent = nullptr)
 				: QAbstractListModel(parent)
 				, m_entries(entries)
 			{
@@ -42,15 +42,15 @@ namespace wowpp
 
 			virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override
 			{
-				return m_entries.getTemplates().size();
+				return m_entries.getTemplates().entry_size();
 			}
 			
-			QVariant data(const QModelIndex &index, int role) const
+			QVariant data(const QModelIndex &index, int role) const override
 			{
 				if (!index.isValid())
 					return QVariant();
 
-				if (index.row() >= m_entries.getTemplates().size())
+				if (index.row() >= m_entries.getTemplates().entry_size())
 					return QVariant();
 
 				static QImage fileImage(":/File.png");
@@ -59,9 +59,9 @@ namespace wowpp
 				if (role == Qt::DisplayRole)
 				{
 					const auto &templates = m_entries.getTemplates();
-					const auto &tpl = templates[index.row()];
+					const auto &tpl = templates.entry(index.row());
 
-					return QString("%1").arg(tpl->name.c_str());
+					return QString("%1 %2").arg(QString::number(tpl.id()), 6, QLatin1Char('0')).arg(tpl.name().c_str());
 				}
 				else if (role == Qt::DecorationRole)
 				{
@@ -71,7 +71,7 @@ namespace wowpp
 				return QVariant();
 			}
 
-			QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const
+			QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override
 			{
 				if (role != Qt::DisplayRole)
 					return QVariant();
@@ -86,7 +86,7 @@ namespace wowpp
 				}
 			}
 
-			Qt::ItemFlags flags(const QModelIndex &index) const
+			Qt::ItemFlags flags(const QModelIndex &index) const override
 			{
 				if (!index.isValid())
 					return Qt::ItemIsEnabled;
@@ -94,19 +94,19 @@ namespace wowpp
 				return QAbstractItemModel::flags(index) & ~Qt::ItemIsEditable;
 			}
 
-			bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole)
+			bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override
 			{
 				// Not supported
 				return false;
 			}
 
-			bool insertRows(int position, int rows, const QModelIndex &index = QModelIndex())
+			bool insertRows(int position, int rows, const QModelIndex &index = QModelIndex()) override
 			{
 				// Not supported
 				return false;
 			}
 
-			bool removeRows(int position, int rows, const QModelIndex &index = QModelIndex())
+			bool removeRows(int position, int rows, const QModelIndex &index = QModelIndex()) override
 			{
 				// Not supported
 				return false;
@@ -114,7 +114,7 @@ namespace wowpp
 
 		private:
 
-			TriggerEntryManager &m_entries;
+			proto::TriggerManager &m_entries;
 		};
 	}
 }

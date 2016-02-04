@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -59,6 +59,8 @@ namespace wowpp
 		/// Determines if the specified guid is ignored by us.
 		/// @param guid The contact's guid.
 		bool isIgnored(UInt64 guid) const;
+		/// Retrieves a list of ignored character GUIDs of this client.
+		bool getIgnoreList(std::vector<UInt64> &out_list);
 
 		/// Sends a packet to all friends of this player who are online right now.
 		template<class F>

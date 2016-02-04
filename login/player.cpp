@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -122,6 +122,17 @@ namespace wowpp
 				break;
 			}
 
+			case auth::client_packet::ReconnectChallenge:
+			{
+				handleReconnectChallenge(packet);
+				break;
+			}
+			case auth::client_packet::ReconnectProof:
+			{
+				handleReconnectProof(packet);
+				break;
+			}
+
 			case auth::client_packet::RealmList:
 			{
 				handleRealmList(packet);
@@ -151,37 +162,42 @@ namespace wowpp
 		// The temporary result
 		auth::AuthResult result = auth::auth_result::FailUnknownAccount;
 
+		m_accountId = 0;
+
 		// Try to get user settings
 		String dbPassword;
 		if (m_database.getPlayerPassword(m_userName, m_accountId, dbPassword))
 		{
-			// TODO: Check if the account is banned / suspended etc.
-			BigNumber tmpS, tmpV;
-			m_database.getSVFields(m_accountId, tmpS, tmpV);
-
-			if (tmpS.getNumBytes() != ByteCountS || tmpV.getNumBytes() != ByteCountS)
+			if (m_accountId != 0)
 			{
+				// TODO: Check if the account is banned / suspended etc.
+				BigNumber tmpS, tmpV;
+				m_database.getSVFields(m_accountId, tmpS, tmpV);
+
+				if (tmpS.getNumBytes() != ByteCountS || tmpV.getNumBytes() != ByteCountS)
+				{
+					setVSFields(dbPassword);
+				}
+				else
+				{
+					m_s = tmpS;
+					m_v = tmpV;
+				}
+
+				// We are NOT banned so continue
+				result = auth::auth_result::Success;
+
+				// TODO: Try to get V and S from the database instead of calculating them everytime
 				setVSFields(dbPassword);
+
+				m_b.setRand(19 * 8);
+				BigNumber gmod = constants::srp::g.modExp(m_b, constants::srp::N);
+				m_B = ((m_v * 3) + gmod) % constants::srp::N;
+
+				assert(gmod.getNumBytes() <= 32);
+
+				m_unk3.setRand(16 * 8);
 			}
-			else
-			{
-				m_s = tmpS;
-				m_v = tmpV;
-			}
-
-			// We are NOT banned so continue
-			result = auth::auth_result::Success;
-
-			// TODO: Try to get V and S from the database instead of calculating them everytime
-			setVSFields(dbPassword);
-
-			m_b.setRand(19 * 8);
-			BigNumber gmod = constants::srp::g.modExp(m_b, constants::srp::N);
-			m_B = ((m_v * 3) + gmod) % constants::srp::N;
-
-			assert(gmod.getNumBytes() <= 32);
-
-			m_unk3.setRand(16 * 8);
 		}
 
 		// Send packet
@@ -215,10 +231,8 @@ namespace wowpp
 
 		SHA1Hash hash;
 
-		// Check if the client version is valid: At the moment, we only support
-		// vanilla wow (1.12.X)
-		//if (m_build != 5595 && m_build != 5875 && m_build != 6005)
-		if (m_build != 8606)
+		// Check if the client version is valid (SUPPORTED_CLIENT_BUILD is set in CMake)
+		if (m_build != SUPPORTED_CLIENT_BUILD)
 		{
 			// Send failure and stop here
 			WLOG("Player " << m_address << " tried to login with unsupported client build (" << m_build << ")");
@@ -366,6 +380,25 @@ namespace wowpp
 				std::placeholders::_1,
 				proofResult,
 				std::cref(hash)));
+	}
+
+	void Player::handleReconnectChallenge(auth::IncomingPacket & packet)
+	{
+		// Read packet data and save it
+		if (!auth::client_read::reconnectChallenge(packet, m_version1, m_version2, m_version3, m_build, m_platform, m_system, m_locale, m_userName))
+		{
+			ELOG("Could not read packet CMD_AUTH_RECONNECT_CHALLENGE");
+			return;
+		}
+
+		WLOG("TODO: Reconnect challenge");
+		DLOG("Account-ID: " << m_accountId);
+		DLOG("Is authentificated: " << isAuthentificated());
+	}
+
+	void Player::handleReconnectProof(auth::IncomingPacket & packet)
+	{
+		WLOG("TODO: Reconnect proof");
 	}
 
 	void Player::handleRealmList(auth::IncomingPacket &packet)

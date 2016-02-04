@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -29,6 +29,7 @@
 #include "binary_io/vector_sink.h"
 #include "common/linear_set.h"
 #include "log/default_log_levels.h"
+#include "player_social.h"
 #include "player.h"
 #include <vector>
 
@@ -93,12 +94,13 @@ namespace wowpp
 		typedef std::map<UInt64, game::GroupMemberSlot> MembersByGUID;
 		typedef LinearSet<UInt64> InvitedMembers;
 		typedef std::map<UInt32, UInt32> InstancesByMap;
+		typedef std::array<UInt64, 8> TargetIcons;
 
 	public:
 
 		/// Creates a new instance of a player group. Note that a group has to be
 		/// created using the create method before it will be valid.
-		explicit PlayerGroup(PlayerManager &playerManager);
+		explicit PlayerGroup(UInt64 id, PlayerManager &playerManager);
 
 		/// Creates the group and setup a leader.
 		void create(GameCharacter &leader);
@@ -106,6 +108,8 @@ namespace wowpp
 		void setLootMethod(LootMethod method, UInt64 lootMaster, UInt32 lootTreshold);
 		/// Sets a new group leader. The new leader has to be a member of this group.
 		void setLeader(UInt64 guid);
+		/// Sets a new group assistant.
+		void setAssistant(UInt64 guid, UInt8 flags);
 		/// Adds a guid to the list of pending invites.
 		game::PartyResult addInvite(UInt64 inviteGuid);
 		/// Adds a new member to the group. The group member has to be invited first.
@@ -124,9 +128,22 @@ namespace wowpp
 		UInt32 instanceBindingForMap(UInt32 map);
 		/// 
 		bool addInstanceBinding(UInt32 instance, UInt32 map);
+		/// Sends the groups target list to a specific player instance.
+		/// @param player 
+		void sendTargetList(Player &player);
+		/// Updates a group target icon.
+		/// @param target 
+		/// @param guid 
+		void setTargetIcon(UInt8 target, UInt64 guid);
+		/// Converts the group into a raid group.
+		void convertToRaidGroup();
 
+		/// Returns the current group type (normal, raid).
+		GroupType getType() const { return m_type; }
 		/// Checks if the specified game character is a member of this group.
 		bool isMember(UInt64 guid) const;
+		/// Checks whether the specified guid is the group leader or an assistant.
+		bool isLeaderOrAssistant(UInt64 guid) const;
 		/// Returns the number of group members.
 		size_t getMemberCount() const { return m_members.size(); }
 		/// Determines whether this group has been created.
@@ -137,18 +154,42 @@ namespace wowpp
 		LootMethod getLootMethod() const { return m_lootMethod; }
 		/// Gets the group leaders GUID.
 		UInt64 getLeader() const { return m_leaderGUID; }
+		/// Gets the group id.
+		UInt64 getId() const { return m_id; }
 
 		template<class F>
-		void broadcastPacket(F creator, UInt64 except = 0)
+		void broadcastPacket(F creator, std::vector<UInt64> *except = nullptr, UInt64 causer = 0)
 		{
 			for (auto &member : m_members)
 			{
-				if (member.first == except)
-					continue;
+				if (except)
+				{
+					bool exclude = false;
+					for (const auto &exceptGuid : *except)
+					{
+						if (member.first == exceptGuid)
+						{
+							exclude = true;
+							break;
+						}
+					}
 
+					if (exclude)
+						continue;
+				}
+				
 				auto *player = m_playerManager.getPlayerByCharacterGuid(member.first);
 				if (player)
 				{
+					if (causer != 0)
+					{
+						// Ignored
+						if (player->getSocial().isIgnored(causer))
+						{
+							continue;
+						}
+					}
+
 					player->sendPacket(creator);
 				}
 			}
@@ -156,6 +197,7 @@ namespace wowpp
 
 	private:
 
+		UInt64 m_id;
 		PlayerManager &m_playerManager;
 		UInt64 m_leaderGUID;
 		String m_leaderName;
@@ -166,5 +208,6 @@ namespace wowpp
 		UInt32 m_lootTreshold;
 		UInt64 m_lootMaster;
 		InstancesByMap m_instances;
+		TargetIcons m_targetIcons;
 	};
 }

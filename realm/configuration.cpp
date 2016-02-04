@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -33,7 +33,7 @@
 
 namespace wowpp
 {
-	const UInt32 Configuration::RealmConfigVersion = 0x04;
+	const UInt32 Configuration::RealmConfigVersion = 0x05;
 
 
 	Configuration::Configuration()
@@ -61,6 +61,10 @@ namespace wowpp
 		, logFileName("wowpp_realm.log")
 		, isLogFileBuffering(false)
 		, messageOfTheDay("Welcome to the WoW++ Realm!\\nCore Version: $version\\nLast Change: $lastchange")
+		, webPort(8088)
+		, webSSLPort(8089)
+		, webUser("wowpp-web")
+		, webPassword("test")
 	{
 	}
 
@@ -119,6 +123,14 @@ namespace wowpp
 				mysqlDatabase = mysqlDatabaseTable->getString("database", mysqlDatabase);
 			}
 
+			if (const Table *const mysqlDatabaseTable = global.getTable("webServer"))
+			{
+				webPort = mysqlDatabaseTable->getInteger("port", webPort);
+				webSSLPort = mysqlDatabaseTable->getInteger("ssl_port", webSSLPort);
+				webUser = mysqlDatabaseTable->getString("user", webUser);
+				webPassword = mysqlDatabaseTable->getString("password", webPassword);
+			}
+
 			if (const Table *const worldManager = global.getTable("worldManager"))
 			{
 				worldPort = worldManager->getInteger("port", worldPort);
@@ -139,7 +151,6 @@ namespace wowpp
 				loginPort = realmManager->getInteger("port", loginPort);
 				internalName = realmManager->getString("internalName", internalName);
 				password = realmManager->getString("password", password);
-				
 			}
 
 			if (const Table *const log = global.getTable("log"))
@@ -229,6 +240,17 @@ namespace wowpp
 			mysqlDatabaseTable.addKey("user", mysqlUser);
 			mysqlDatabaseTable.addKey("password", mysqlPassword);
 			mysqlDatabaseTable.addKey("database", mysqlDatabase);
+			mysqlDatabaseTable.finish();
+		}
+
+		global.writer.newLine();
+
+		{
+			sff::write::Table<Char> mysqlDatabaseTable(global, "webServer", sff::write::MultiLine);
+			mysqlDatabaseTable.addKey("port", webPort);
+			mysqlDatabaseTable.addKey("ssl_port", webSSLPort);
+			mysqlDatabaseTable.addKey("user", webUser);
+			mysqlDatabaseTable.addKey("password", webPassword);
 			mysqlDatabaseTable.finish();
 		}
 

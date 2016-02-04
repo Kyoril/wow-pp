@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -45,6 +45,10 @@ namespace wowpp
 		, isLogActive(true)
 		, logFileName("wowpp_login.log")
 		, isLogFileBuffering(false)
+		, webPort(8090)
+		, webSSLPort(8091)
+		, webUser("wowpp-web")
+		, webPassword("test")
 	{
 	}
 
@@ -103,6 +107,14 @@ namespace wowpp
 				mysqlDatabase = mysqlDatabaseTable->getString("database", mysqlDatabase);
 			}
 
+			if (const Table *const mysqlDatabaseTable = global.getTable("webServer"))
+			{
+				webPort = mysqlDatabaseTable->getInteger("port", webPort);
+				webSSLPort = mysqlDatabaseTable->getInteger("ssl_port", webSSLPort);
+				webUser = mysqlDatabaseTable->getString("user", webUser);
+				webPassword = mysqlDatabaseTable->getString("password", webPassword);
+			}
+
 			if (const Table *const playerManager = global.getTable("playerManager"))
 			{
 				playerPort = playerManager->getInteger("port", playerPort);
@@ -156,6 +168,17 @@ namespace wowpp
 			mysqlDatabaseTable.addKey("user", mysqlUser);
 			mysqlDatabaseTable.addKey("password", mysqlPassword);
 			mysqlDatabaseTable.addKey("database", mysqlDatabase);
+			mysqlDatabaseTable.finish();
+		}
+
+		global.writer.newLine();
+
+		{
+			sff::write::Table<Char> mysqlDatabaseTable(global, "webServer", sff::write::MultiLine);
+			mysqlDatabaseTable.addKey("port", webPort);
+			mysqlDatabaseTable.addKey("ssl_port", webSSLPort);
+			mysqlDatabaseTable.addKey("user", webUser);
+			mysqlDatabaseTable.addKey("password", webPassword);
 			mysqlDatabaseTable.finish();
 		}
 

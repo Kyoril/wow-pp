@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -37,6 +37,11 @@ namespace wowpp
 		Configuration::Configuration()
 			: dataPath("")
 			, wowGamePath("C:\\Program Files (x86)\\World of Warcraft\\")
+			, mysqlPort(wowpp::constants::DefaultMySQLPort)
+			, mysqlHost("127.0.0.1")
+			, mysqlUser("username")
+			, mysqlPassword("password")
+			, mysqlDatabase("database")
 			, isLogActive(true)
 			, logFileName("wowpp_editor.log")
 			, isLogFileBuffering(false)
@@ -96,6 +101,15 @@ namespace wowpp
 					isLogFileBuffering = log->getInteger("buffering", static_cast<unsigned>(isLogFileBuffering)) != 0;
 				}
 
+				if (const Table *const mysqlDatabaseTable = global.getTable("mysqlDatabase"))
+				{
+					mysqlPort = mysqlDatabaseTable->getInteger("port", mysqlPort);
+					mysqlHost = mysqlDatabaseTable->getString("host", mysqlHost);
+					mysqlUser = mysqlDatabaseTable->getString("user", mysqlUser);
+					mysqlPassword = mysqlDatabaseTable->getString("password", mysqlPassword);
+					mysqlDatabase = mysqlDatabaseTable->getString("database", mysqlDatabase);
+				}
+
 				if (const Table *const game = global.getTable("game"))
 				{
 					dataPath = game->getString("dataPath", dataPath);
@@ -126,6 +140,18 @@ namespace wowpp
 
 			// Save file version
 			global.addKey("version", EditorConfigVersion);
+			global.writer.newLine();
+
+			{
+				sff::write::Table<Char> mysqlDatabaseTable(global, "mysqlDatabase", sff::write::MultiLine);
+				mysqlDatabaseTable.addKey("port", mysqlPort);
+				mysqlDatabaseTable.addKey("host", mysqlHost);
+				mysqlDatabaseTable.addKey("user", mysqlUser);
+				mysqlDatabaseTable.addKey("password", mysqlPassword);
+				mysqlDatabaseTable.addKey("database", mysqlDatabase);
+				mysqlDatabaseTable.finish();
+			}
+
 			global.writer.newLine();
 
 			{

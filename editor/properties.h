@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -24,10 +24,13 @@
 #include "common/typedefs.h"
 #include <boost/variant.hpp>
 #include <QMessageBox>
+#include <QVariant>
 #include "log/default_log_levels.h"
+#include <functional>
 #include <sstream>
 #include <memory>
 #include <vector>
+#include <google/protobuf/stubs/common.h>
 
 namespace wowpp
 {
@@ -38,9 +41,15 @@ namespace wowpp
 		{
 		public:
 
-			Property(const String &name, bool readOnly = false)
+			typedef std::function<QVariant()> MiscValueCallback;
+
+		public:
+
+			Property(const String &name, bool readOnly = false, 
+				MiscValueCallback miscCallback = MiscValueCallback())
 				: m_name(name)
 				, m_readOnly(readOnly)
+				, m_callback(miscCallback)
 			{
 			}
 			virtual ~Property()
@@ -50,32 +59,39 @@ namespace wowpp
 			virtual const String &getName() const { return m_name; }
 			virtual bool isReadOnly() const { return m_readOnly; }
 			virtual String getDisplayString() const = 0;
+			QVariant getMiscVale() const { return (m_callback ? m_callback() : QVariant()); }
 
 		private:
 
 			String m_name;
 			bool m_readOnly;
+			MiscValueCallback m_callback;
 		};
 
 		template<typename T>
 		class NumericRef final
 		{
+			typedef std::function<T()> GetValueFunc;
+			typedef std::function<void(T)> SetValueFunc;
+
 		public:
 
-			NumericRef(T &value)
-				: m_value(value)
+			NumericRef(GetValueFunc getter, SetValueFunc setter)
+				: m_getter(std::move(getter))
+				, m_setter(std::move(setter))
 			{
 			}
 
-			T &getValue() { return m_value; }
-			const T &getValue() const { return m_value; }
+			T getValue() const { return m_getter(); }
+			void setValue(T value) { m_setter(value); }
 
 		private:
 
-			T &m_value;
+			GetValueFunc m_getter;
+			SetValueFunc m_setter;
 		};
 
-		typedef NumericRef<UInt32> UInt32Ref;
+		typedef NumericRef<google::protobuf::uint32> UInt32Ref;
 		typedef NumericRef<float> FloatRef;
 
 		typedef boost::variant<UInt32Ref, FloatRef> NumericValue;
@@ -85,8 +101,14 @@ namespace wowpp
 		{
 		public:
 
-			MinMaxProperty(const String &name, const NumericValue &minValue, const NumericValue &maxValue, bool readOnly = false)
-				: Property(name, readOnly)
+			MinMaxProperty(
+				const String &name, 
+				const NumericValue &minValue, 
+				const NumericValue &maxValue, 
+				bool readOnly = false, 
+				Property::MiscValueCallback miscCallback = Property::MiscValueCallback()
+				)
+				: Property(name, readOnly, miscCallback)
 				, m_minValue(minValue)
 				, m_maxValue(maxValue)
 			{
@@ -99,22 +121,27 @@ namespace wowpp
 				{
 					const UInt32Ref &ref = boost::get<UInt32Ref>(m_minValue);
 					const UInt32Ref &maxRef = boost::get<UInt32Ref>(m_maxValue);
-					strm << ref.getValue();
 
-					if (maxRef.getValue() != ref.getValue())
+					auto refValue = ref.getValue();
+					strm << refValue;
+
+					auto maxRefValue = maxRef.getValue();
+					if (maxRefValue != refValue)
 					{
-						strm << " - " << maxRef.getValue();
+						strm << " - " << maxRefValue;
 					}
 				}
 				else if (m_minValue.type() == typeid(FloatRef))
 				{
 					const FloatRef &ref = boost::get<FloatRef>(m_minValue);
 					const FloatRef &maxRef = boost::get<FloatRef>(m_maxValue);
-					strm << ref.getValue();
+					auto refValue = ref.getValue();
+					strm << refValue;
 
-					if (maxRef.getValue() != ref.getValue())
+					auto maxRefValue = maxRef.getValue();
+					if (maxRefValue != refValue)
 					{
-						strm << " - " << maxRef.getValue();
+						strm << " - " << maxRefValue;
 					}
 				}
 
@@ -132,32 +159,48 @@ namespace wowpp
 		
 		class StringProperty : public Property
 		{
+			typedef std::function<String()> GetterFunc;
+			typedef std::function<void(const String&)> SetterFunc;
+
 		public:
 
-			StringProperty(const String &name, String &value, bool readOnly = false)
-				: Property(name, readOnly)
-				, m_value(value)
+			StringProperty(
+				const String &name, 
+				GetterFunc getter,
+				SetterFunc setter,
+				bool readOnly = false, 
+				Property::MiscValueCallback miscCallback = Property::MiscValueCallback())
+				: Property(name, readOnly, miscCallback)
+				, m_getter(std::move(getter))
+				, m_setter(std::move(setter))
 			{
 			}
 
 			virtual String getDisplayString() const override
 			{
-				return m_value;
+				return getValue();
 			}
 
-			String &getValue() { return m_value; }
+			String getValue() const { return m_getter(); }
+			void setValue(const String &string) { m_setter(string); }
 
 		private:
 
-			String &m_value;
+			GetterFunc m_getter;
+			SetterFunc m_setter;
 		};
 		
 		class NumericProperty : public Property
 		{
 		public:
 
-			NumericProperty(const String &name, const NumericValue &value, bool readOnly = false)
-				: Property(name, readOnly)
+			NumericProperty(
+				const String &name, 
+				const NumericValue &value, 
+				bool readOnly = false, 
+				Property::MiscValueCallback miscCallback = Property::MiscValueCallback()
+				)
+				: Property(name, readOnly, miscCallback)
 				, m_value(value)
 			{
 			}

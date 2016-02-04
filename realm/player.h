@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -25,8 +25,8 @@
 #include "game_protocol/game_connection.h"
 #include "game_protocol/game_crypted_connection.h"
 #include "wowpp_protocol/wowpp_world_realm.h"
-#include "data/data_load_context.h"
 #include "common/big_number.h"
+#include "common/id_generator.h"
 #include "game/game_character.h"
 #include <boost/noncopyable.hpp>
 #include <boost/signals2.hpp>
@@ -43,11 +43,33 @@ namespace wowpp
 	class LoginConnector;
 	class WorldManager;
 	struct IDatabase;
-	class Project;
 	class World;
 	struct Configuration;
 	class PlayerSocial;
 	class PlayerGroup;
+	namespace proto
+	{
+		class Project;
+	}
+
+	namespace add_item_result
+	{
+		enum Type
+		{
+			/// Successfully added item.
+			Success,
+			/// Item could not be found.
+			ItemNotFound,
+			/// Players bag is full.
+			BagIsFull,
+			/// Player has too many instances of that item.
+			TooManyItems,
+			/// Unkwown error.
+			Unknown
+		};
+	}
+
+	typedef add_item_result::Type AddItemResult;
 
 	/// Player connection class.
 	class Player final
@@ -70,11 +92,12 @@ namespace wowpp
 		/// @param connection The connection instance as a shared pointer.
 		/// @param address The remote address of the player (ip address) as string.
 		explicit Player(Configuration &config,
+						IdGenerator<UInt64> &groupIdGenerator,
 						PlayerManager &manager,
 						LoginConnector &loginConnector,
 						WorldManager &worldManager,
 						IDatabase &database,
-						Project &project,
+						proto::Project &project,
 		                std::shared_ptr<Client> connection,
 						const String &address);
 
@@ -96,13 +119,13 @@ namespace wowpp
 		void loginFailed();
 		/// A world server notified us that our character instance was successfully spawned in the
 		/// world and will now be visible to other players.
-		void worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, float x, float y, float z, float o);
+		void worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, math::Vector3 location, float o);
 		/// 
 		void worldInstanceLeft(World &world, UInt32 instanceId, pp::world_realm::WorldLeftReason reason);
 		/// Saves the current character (if any).
-		void saveCharacter();
+		//void saveCharacter();
 		/// Inititalizes a character transfer to a new map.
-		void initializeTransfer(UInt32 map, float x, float y, float z, float o);
+		void initializeTransfer(UInt32 map, math::Vector3 location, float o);
 		/// Commits an initialized transfer (if any).
 		void commitTransfer();
 
@@ -126,6 +149,14 @@ namespace wowpp
 		void setGroup(std::shared_ptr<PlayerGroup> group);
 		/// 
 		UInt32 getWorldInstanceId() const { return m_instanceId; }
+		/// Gets the connected world node
+		World *getWorldNode() { return m_worldNode; }
+		/// 
+		std::vector<pp::world_realm::ItemData> &getItemData() { return m_itemData; }
+		/// Declines a pending group invite (if available).
+		void declineGroupInvite();
+		/// 
+		void reloadCharacters();
 
 		/// Sends an encrypted packet to the game client
 		/// @param generator Packet writer function pointer.
@@ -157,14 +188,20 @@ namespace wowpp
 		/// @param buffer The packet content buffer which also includes the op code and the packet size.
 		void sendProxyPacket(UInt16 opCode, const std::vector<char> &buffer);
 
+	public:
+
+		/// Adds a new item to the players inventory if logged in.
+		AddItemResult addItem(UInt32 itemId, UInt32 amount);
+
 	private:
 
 		Configuration &m_config;
+		IdGenerator<UInt64> &m_groupIdGenerator;
 		PlayerManager &m_manager;
 		LoginConnector &m_loginConnector;
 		WorldManager &m_worldManager;
 		IDatabase &m_database;
-		Project &m_project;
+		proto::Project &m_project;
 		std::shared_ptr<Client> m_connection;
 		String m_address;								// IP address in string format
 		String m_accountName;
@@ -181,17 +218,14 @@ namespace wowpp
 		DatabaseId m_characterId;
 		std::shared_ptr<GameCharacter> m_gameCharacter;
 		UInt32 m_instanceId;
-		DataLoadContext::GetRace m_getRace;
-		DataLoadContext::GetClass m_getClass;
-		DataLoadContext::GetLevel m_getLevel;
-		DataLoadContext::GetSpell m_getSpell;
 		boost::signals2::scoped_connection m_worldDisconnected;
 		UInt32 m_timeSyncCounter;
 		World *m_worldNode;
 		std::unique_ptr<PlayerSocial> m_social;
 		std::shared_ptr<PlayerGroup> m_group;
 		UInt32 m_transferMap;
-		float m_transferX, m_transferY, m_transferZ, m_transferO;
+		math::Vector3 m_transfer;
+		float m_transferO;
 		ActionButtons m_actionButtons;
 		std::array<UInt32, 8> m_tutorialData;
 		std::vector<pp::world_realm::ItemData> m_itemData;
@@ -246,5 +280,14 @@ namespace wowpp
 		void handleTutorialClear(game::IncomingPacket &packet);
 		void handleTutorialReset(game::IncomingPacket &packet);
 		void handleCompleteCinematic(game::IncomingPacket &packet);
+		void handleRaidTargetUpdate(game::IncomingPacket &packet);
+		void handleGroupRaidConvert(game::IncomingPacket &packet);
+		void handleGroupAssistentLeader(game::IncomingPacket &packet);
+		void handleRaidReadyCheck(game::IncomingPacket &packet);
+		void handleRaidReadyCheckFinished(game::IncomingPacket &packet);
+		void handleRealmSplit(game::IncomingPacket &packet);
+		void handleVoiceSessionEnable(game::IncomingPacket &packet);
+		void handleCharRename(game::IncomingPacket &packet);
+		void handleQuestQuery(game::IncomingPacket &packet);
 	};
 }

@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -24,12 +24,17 @@
 #include "common/typedefs.h"
 #include "templates/basic_template.h"
 #include <array>
+#include <map>
 
 namespace wowpp
 {
 	struct DataLoadContext;
 	struct TriggerEntry;
 	struct ItemEntry;
+	struct FactionTemplateEntry;
+	struct LootEntry;
+	struct VendorEntry;
+	struct TrainerEntry;
 
 	/// Stores creature related data.
 	struct UnitEntry : BasicTemplate<UInt32>
@@ -43,16 +48,18 @@ namespace wowpp
 		/// Minimum level and maximum level. If different, the level will be randomized for each spawn.
 		UInt32 minLevel, maxLevel;
 		/// Faction for alliance units.
-		UInt32 allianceFactionID;
+		const FactionTemplateEntry *allianceFaction;
 		/// Faction for horde units.
-		UInt32 hordeFactionID;
+		const FactionTemplateEntry *hordeFaction;
 		/// Display id of this unit if male unit.
 		UInt32 maleModel;
 		/// Display id of this unit if female unit.
 		UInt32 femaleModel;
 		/// Unit scale factor. A value of 1.0 means 100%.
 		float scale;
-		/// Unit family type, like "Humanoid", "Animal" etc.
+		/// Unit type like "Humanoid" etc.
+		UInt32 type;
+		/// Unit family type
 		UInt32 family;
 		/// If true, this unit will regenerate health. Some units should not regenerate health, since it is
 		/// required to heal them as a quest target for example.
@@ -103,6 +110,16 @@ namespace wowpp
 		std::map<UInt32, std::vector<const TriggerEntry*>> triggersByEvent;
 		/// Equipment entries of this creature. Only has optical effect right now, maybe should also modify damage, attack speed and amor?
 		const ItemEntry *mainHand, *offHand, *ranged;
+		/// Melee attack power of this creature.
+		UInt32 attackPower;
+		/// Ranged attack power of this creature.
+		UInt32 rangedAttackPower;
+		/// NPC loot template entry.
+		const LootEntry *unitLootEntry;
+		/// NPC vendor template entry.
+		const VendorEntry *vendorEntry;
+		/// NPC trainer entry.
+		const TrainerEntry *trainerEntry;
 
 		/// Default constructor.
 		UnitEntry();
@@ -113,5 +130,8 @@ namespace wowpp
 		/// Saves this unit entry into a data file.
 		/// @param context Context which stores some objects and provides more information needed for saving.
 		void save(BasicTemplateSaveContext &context) const;
+
+		/// Removes a given trigger if attached.
+		void unlinkTrigger(UInt32 id);
 	};
 }

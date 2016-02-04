@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -25,6 +25,14 @@
 #include "data_load_context.h"
 #include "trigger_entry.h"
 #include "item_entry.h"
+#include "loot_entry.h"
+#include "vendor_entry.h"
+#include "trainer_entry.h"
+#include "common/make_unique.h"
+#include "faction_template_entry.h"
+#include "log/default_log_levels.h"
+#include <boost/signals2.hpp>
+#include <memory>
 
 namespace wowpp
 {
@@ -42,8 +50,9 @@ namespace wowpp
 		, minRangedDamage(0)
 		, maxRangedDamage(0)
 		, scale(1.0f)
-		, allianceFactionID(0)
-		, hordeFactionID(0)
+		, allianceFaction(nullptr)
+		, hordeFaction(nullptr)
+		, type(0)
 		, family(0)
 		, regeneratesHealth(true)
 		, npcFlags(0)
@@ -66,6 +75,11 @@ namespace wowpp
 		, mainHand(nullptr)
 		, offHand(nullptr)
 		, ranged(nullptr)
+		, attackPower(0)
+		, rangedAttackPower(0)
+		, unitLootEntry(nullptr)
+		, vendorEntry(nullptr)
+		, trainerEntry(nullptr)
 	{
 		resistances.fill(0);
 	}
@@ -98,7 +112,7 @@ namespace wowpp
 					context.onWarning("Could not find trigger - skipping");
 					continue;
 				}
-
+				
 				triggers.push_back(trigger);
 				for (auto &e : trigger->events)
 				{
@@ -133,19 +147,37 @@ namespace wowpp
 		wrapper.table.tryGetInteger("armor", armor);
 		wrapper.table.tryGetInteger("melee_attack_time", meleeBaseAttackTime);
 		wrapper.table.tryGetInteger("ranged_attack_time", rangedBaseAttackTime);
+		UInt32 allianceFactionID = 0;
 		wrapper.table.tryGetInteger("a_faction", allianceFactionID);
+		allianceFaction = context.getFactionTemplate(allianceFactionID);
+		if (!allianceFaction)
+		{
+			std::ostringstream strm;
+			strm << "Invalid alliance faction id " << allianceFactionID << " for unit " << id;
+			context.onError(strm.str());
+			return false;
+		}
+		UInt32 hordeFactionID = 0;
 		wrapper.table.tryGetInteger("h_faction", hordeFactionID);
+		hordeFaction = context.getFactionTemplate(hordeFactionID);
+		if (!hordeFaction)
+		{
+			std::ostringstream strm;
+			strm << "Invalid alliance faction id " << hordeFactionID << " for unit " << id;
+			context.onError(strm.str());
+			return false;
+		}
 		wrapper.table.tryGetInteger("unit_flags", unitFlags);
 		wrapper.table.tryGetInteger("npc_flags", npcFlags);
 		wrapper.table.tryGetInteger("unit_class", unitClass);
 		wrapper.table.tryGetInteger("min_loot_gold", minLootGold);
 		wrapper.table.tryGetInteger("max_loot_gold", maxLootGold);
 		MIN_MAX_CHECK(minLootGold, maxLootGold);
+		wrapper.table.tryGetInteger("type", type);
 		wrapper.table.tryGetInteger("family", family);
 		wrapper.table.tryGetInteger("min_xp", xpMin);
 		wrapper.table.tryGetInteger("max_xp", xpMax);
 		MIN_MAX_CHECK(xpMin, xpMax);
-
 		UInt32 eqMain = 0, eqOff = 0, eqRange = 0;
 		wrapper.table.tryGetInteger("eq_main_hand", eqMain);
 		wrapper.table.tryGetInteger("eq_off_hand", eqOff);
@@ -155,13 +187,53 @@ namespace wowpp
 			context.loadLater.push_back([eqMain, eqOff, eqRange, &context, this]() -> bool
 			{
 				if (eqMain != 0) this->mainHand = context.getItem(eqMain);
-				if (eqOff != 0) this->mainHand = context.getItem(eqOff);
-				if (eqRange != 0) this->mainHand = context.getItem(eqRange);
+				if (eqOff != 0) this->offHand = context.getItem(eqOff);
+				if (eqRange != 0) this->ranged = context.getItem(eqRange);
 
 				return true;
 			});
 		}
+		wrapper.table.tryGetInteger("atk_power", attackPower);
+		wrapper.table.tryGetInteger("rng_atk_power", rangedAttackPower);
+		UInt32 lootId = 0;
+		wrapper.table.tryGetInteger("unit_loot", lootId);
+		UInt32 vendorId = 0;
+		wrapper.table.tryGetInteger("unit_vendor", vendorId);
+		UInt32 trainerId = 0;
+		wrapper.table.tryGetInteger("trainer", trainerId);
 
+		if (lootId != 0 || vendorId != 0 || trainerId != 0)
+		{
+			context.loadLater.push_back([lootId, vendorId, trainerId, &context, this]() -> bool
+			{
+				if (lootId != 0)
+				{
+					unitLootEntry = context.getUnitLoot(lootId);
+					if (unitLootEntry == nullptr)
+					{
+						WLOG("Unit " << id << " has unknown unit loot entry " << lootId << " - creature will have no unit loot!");
+					}
+				}
+				if (vendorId != 0)
+				{
+					vendorEntry = context.getVendor(vendorId);
+					if (vendorEntry == nullptr)
+					{
+						WLOG("Unit " << id << " has unknown unit vendor entry " << vendorId << " - creature will have no vendor data!");
+					}
+				}
+				if (trainerId != 0)
+				{
+					trainerEntry = context.getTrainer(trainerId);
+					if (trainerEntry == nullptr)
+					{
+						WLOG("Unit " << id << " has unknown trainer entry " << trainerId << " - creature will have no trainer data!");
+					}
+				}
+				
+				return true;
+			});
+		}
 #undef MIN_MAX_CHECK
 
 		return true;
@@ -190,30 +262,66 @@ namespace wowpp
 		if (armor != 0) context.table.addKey("armor", armor);
 		if (meleeBaseAttackTime != 0) context.table.addKey("melee_attack_time", meleeBaseAttackTime);
 		if (rangedBaseAttackTime != 0) context.table.addKey("ranged_attack_time", rangedBaseAttackTime);
-		if (allianceFactionID != 0) context.table.addKey("a_faction", allianceFactionID);
-		if (hordeFactionID != 0) context.table.addKey("h_faction", hordeFactionID);
-		if (hordeFactionID != 0) context.table.addKey("unit_flags", unitFlags);
-		if (hordeFactionID != 0) context.table.addKey("npc_flags", npcFlags);
+		if (allianceFaction != 0) context.table.addKey("a_faction", allianceFaction->id);
+		if (hordeFaction != 0) context.table.addKey("h_faction", hordeFaction->id);
+		if (unitFlags != 0) context.table.addKey("unit_flags", unitFlags);
+		if (npcFlags != 0) context.table.addKey("npc_flags", npcFlags);
 		if (unitClass != 0) context.table.addKey("unit_class", unitClass);
 		if (minLootGold != 0) context.table.addKey("min_loot_gold", minLootGold);
 		if (maxLootGold != 0) context.table.addKey("max_loot_gold", maxLootGold);
+		if (type != 0) context.table.addKey("type", type);
 		if (family != 0) context.table.addKey("family", family);
 		if (xpMin != 0) context.table.addKey("min_xp", xpMin);
 		if (xpMax != 0) context.table.addKey("max_xp", xpMax);
 		if (mainHand != 0) context.table.addKey("eq_main_hand", mainHand->id);
 		if (offHand != 0) context.table.addKey("eq_off_hand", offHand->id);
 		if (ranged != 0) context.table.addKey("eq_ranged", ranged->id);
+		if (attackPower != 0) context.table.addKey("atk_power", attackPower);
+		if (rangedAttackPower != 0) context.table.addKey("rng_atk_power", rangedAttackPower);
+		if (unitLootEntry != nullptr) context.table.addKey("unit_loot", unitLootEntry->id);
+		if (vendorEntry != nullptr) context.table.addKey("unit_vendor", vendorEntry->id);
+		if (trainerEntry != nullptr) context.table.addKey("trainer", trainerEntry->id);
 
 		if (!triggers.empty())
 		{
-			sff::write::Array<char> triggerArray(context.table, "triggers", sff::write::Comma);
+			auto triggerArray = make_unique<sff::write::Array<char>>(context.table, "triggers", sff::write::Comma);
 			{
 				for (const auto *t : triggers)
 				{
-					triggerArray.addElement(t->id);
+					triggerArray->addElement(t->id);
 				}
 			}
-			triggerArray.finish();
+			triggerArray->finish();
+		}
+	}
+	void UnitEntry::unlinkTrigger(UInt32 id)
+	{
+		// Remove trigger from the list of triggers
+		for (auto it = triggers.begin(); it != triggers.end();)
+		{
+			if ((*it)->id == id)
+			{
+				for (auto &e : (*it)->events)
+				{
+					for (auto it2 = triggersByEvent[e].begin(); it2 != triggersByEvent[e].end();)
+					{
+						if ((*it2)->id == id)
+						{
+							it2 = triggersByEvent[e].erase(it2);
+						}
+						else
+						{
+							it2++;
+						}
+					}
+				}
+
+				it = triggers.erase(it);
+			}
+			else
+			{
+				it++;
+			}
 		}
 	}
 }

@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -45,10 +45,88 @@ namespace wowpp
 
 		// Mark all realms as offline
 		setAllRealmsOffline();
-
 		ILOG("Connected to MySQL at " <<
 			m_connectionInfo.host << ":" <<
 			m_connectionInfo.port);
+
+		return true;
+	}
+
+	bool MySQLDatabase::createAccount(UInt64 accountId, const String & accountName, const String & passwordHash)
+	{
+		const String safeName = m_connection.escapeString(accountName);
+		const String safeHash = m_connection.escapeString(passwordHash);
+
+		bool result = false;
+		if (accountId != 0)
+		{
+			result = m_connection.execute((boost::format(
+				"INSERT INTO account (`id`,`username`,`password`) VALUES (%1%, '%2%', '%3%');")
+				% accountId
+				% safeName
+				% safeHash).str());
+		}
+		else
+		{
+			result = m_connection.execute((boost::format(
+				"INSERT INTO account (`username`,`password`) VALUES ('%1%', '%2%');")
+				% safeName
+				% safeHash).str());
+		}
+
+		if (!result)
+		{
+			printDatabaseError();
+		}
+
+		return result;
+	}
+
+	bool MySQLDatabase::setPlayerPassword(UInt64 accountId, const String & passwordHash)
+	{
+		const String safeHash = m_connection.escapeString(passwordHash);
+
+		if (m_connection.execute((boost::format(
+			"UPDATE account SET password='%1%' WHERE id=%2%")
+			% safeHash
+			% accountId).str()))
+		{
+			return true;
+		}
+		else
+		{
+			printDatabaseError();
+		}
+
+		return false;
+	}
+
+	bool MySQLDatabase::getAccountInfos(UInt64 accountId, String & out_name, String & out_passwordHash)
+	{
+		wowpp::MySQL::Select select(m_connection,
+			(boost::format("SELECT username,password FROM account WHERE id=%1% LIMIT 1")
+				% accountId).str());
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			if (row)
+			{
+				// Account exists: Get name and password
+				row.getField(0, out_name);
+				row.getField(1, out_passwordHash);
+			}
+			else
+			{
+				// No row found: Account does not exist
+				return true;
+			}
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
 
 		return true;
 	}
@@ -61,7 +139,6 @@ namespace wowpp
 		wowpp::MySQL::Select select(m_connection,
 			(boost::format("SELECT id,password FROM account WHERE username='%1%' LIMIT 1")
 			% safeName).str());
-
 		if (select.success())
 		{
 			wowpp::MySQL::Row row(select);
@@ -74,7 +151,7 @@ namespace wowpp
 			else
 			{
 				// No row found: Account does not exist
-				return false;
+				return true;
 			}
 		}
 		else
@@ -298,7 +375,8 @@ namespace wowpp
 	bool MySQLDatabase::setTutorialData(UInt32 id, const std::array<UInt32, 8> data)
 	{
 		if (!m_connection.execute((boost::format(
-			"UPDATE account_tutorials SET tutorial_0 = %2%, tutorial_1 = %3%, tutorial_2 = %4%, tutorial_3 = %5%, tutorial_4 = %6%, tutorial_5 = %7%, tutorial_6 = %8%, tutorial_7 = %9% WHERE account = %1%")
+			"INSERT INTO account_tutorials SET account = %1%, tutorial_0 = %2%, tutorial_1 = %3%, tutorial_2 = %4%, tutorial_3 = %5%, tutorial_4 = %6%, tutorial_5 = %7%, tutorial_6 = %8%, tutorial_7 = %9% ON DUPLICATE KEY UPDATE "
+				"tutorial_0 = %2%, tutorial_1 = %3%, tutorial_2 = %4%, tutorial_3 = %5%, tutorial_4 = %6%, tutorial_5 = %7%, tutorial_6 = %8%, tutorial_7 = %9%")
 			% id
 			% data[0]
 			% data[1]

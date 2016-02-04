@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -20,10 +20,12 @@
 // 
 
 #include "world_instance_manager.h"
-#include "data/project.h"
+#include "proto_data/project.h"
 #include "common/vector.h"
 #include "solid_visibility_grid.h"
 #include "log/default_log_levels.h"
+#include "tiled_unit_finder.h"
+#include "trigger_handler.h"
 #include "universe.h"
 #include <cassert>
 
@@ -32,13 +34,15 @@ namespace wowpp
 	WorldInstanceManager::WorldInstanceManager(
 		boost::asio::io_service &ioService,
 		Universe &universe,
+		game::ITriggerHandler &triggerHandler,
 		IdGenerator<UInt32> &idGenerator, 
 		IdGenerator<UInt64> &objectIdGenerator,
-		Project &project,
+		proto::Project &project,
 		UInt32 worldNodeId,
 		const String &dataPath)
 		: m_ioService(ioService)
 		, m_universe(universe)
+		, m_triggerHandler(triggerHandler)
 		, m_idGenerator(idGenerator)
 		, m_objectIdGenerator(objectIdGenerator)
 		, m_updateTimer(ioService)
@@ -50,22 +54,21 @@ namespace wowpp
 		triggerUpdate();
 	}
 
-	WorldInstance * WorldInstanceManager::createInstance(const MapEntry &map)
+	WorldInstance * WorldInstanceManager::createInstance(const proto::MapEntry &map)
 	{
-		UInt32 instanceId = createMapGUID(m_idGenerator.generateId(), map.id);
+		UInt32 instanceId = createMapGUID(m_idGenerator.generateId(), map.id());
 
 		// Create world instance
 		std::unique_ptr<WorldInstance> instance(new WorldInstance(
 			*this,
 			m_universe,
-			map, 
-			instanceId, 
+			m_triggerHandler,
+			m_project,
+			map,
+			instanceId,
+			std::unique_ptr<UnitFinder>(new TiledUnitFinder(map, 33.3333f)),
 			std::unique_ptr<VisibilityGrid>(new SolidVisibilityGrid(TileIndex2D(64, 64))),
 			m_objectIdGenerator,
-			std::bind(&RaceEntryManager::getById, &m_project.races, std::placeholders::_1),
-			std::bind(&ClassEntryManager::getById, &m_project.classes, std::placeholders::_1),
-			std::bind(&LevelEntryManager::getById, &m_project.levels, std::placeholders::_1),
-			std::bind(&SpellEntryManager::getById, &m_project.spells, std::placeholders::_1),
 			m_dataPath));
 		m_instances.push_back(std::move(instance));
 

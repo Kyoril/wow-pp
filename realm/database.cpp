@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -26,4 +26,12 @@ namespace wowpp
 	IDatabase::~IDatabase()
 	{
 	}
+
+	AsyncDatabase::AsyncDatabase(IDatabase &database, ActionDispatcher asyncWorker, ActionDispatcher resultDispatcher)
+		: m_database(database)
+		, m_asyncWorker(std::move(asyncWorker))
+		, m_resultDispatcher(std::move(resultDispatcher))
+	{
+	}
+
 }

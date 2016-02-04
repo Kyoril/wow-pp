@@ -2,8 +2,8 @@
 # This file is part of the WoW++ project.
 # 
 # This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU Genral Public License as published by
-# the Free Software Foudnation; either version 2 of the Licanse, or
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -34,10 +34,10 @@ cmake_minimum_required(VERSION 2.8)
 	add_executable(realm ${srcFiles} ${sffFiles})
 	
 	# Link required shared libs
-	target_link_libraries(realm common log game_protocol wowpp_protocol sql_wrapper mysql_wrapper virtual_directory templates data game)
+	target_link_libraries(realm common log game_protocol wowpp_protocol sql_wrapper mysql_wrapper virtual_directory templates game base64 http web_services proto_data math)
 	
 	# Link dependency libraries
-	target_link_libraries(realm ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY})
+	target_link_libraries(realm ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY} ${PROTOBUF_LIBRARIES})
 	if(UNIX AND NOT APPLE)
 		target_link_libraries(realm z)
 	endif(UNIX AND NOT APPLE)

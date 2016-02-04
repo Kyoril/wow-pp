@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -29,6 +29,7 @@ namespace wowpp
 {
 	struct ItemEntry;
 	struct SpellEntry;
+	struct FactionTemplateEntry;
 
 	struct RaceEntry : BasicTemplate<UInt32>
 	{
@@ -43,7 +44,7 @@ namespace wowpp
 		typedef std::map<UInt32, ActionButtons> InitialActionButtonsMap;
 
 		String name;
-		UInt32 factionID;
+		const FactionTemplateEntry *factionTemplate;
 		UInt32 maleModel;
 		UInt32 femaleModel;
 		UInt32 baseLanguage;		//7 = Alliance	1 = Horde

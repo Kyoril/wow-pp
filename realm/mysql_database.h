@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -26,7 +26,10 @@
 
 namespace wowpp
 {
-	class Project;
+	namespace proto
+	{
+		class Project;
+	}
 
 	/// MySQL implementation of the realm server database system.
 	class MySQLDatabase final : public IDatabase
@@ -36,15 +39,17 @@ namespace wowpp
 		/// Initializes a new instance of the MySQLDatabase class. Does not try to connect
 		/// with the server, since the connection attempt could fail. Use load method to connect.
 		/// @param connectionInfo Describes how to connect (server address, port etc.).
-		explicit MySQLDatabase(Project& project, const MySQL::DatabaseInfo &connectionInfo);
+		explicit MySQLDatabase(proto::Project& project, const MySQL::DatabaseInfo &connectionInfo);
 
 		/// Tries to establish a connection to the MySQL server.
 		bool load();
 
+		/// @copydoc wowpp::IDatabase::renameCharacter
+		game::ResponseCode renameCharacter(DatabaseId id, const String &newName) override;
 		/// @copydoc wowpp::IDatabase::getCharacterCount
 		UInt32 getCharacterCount(UInt32 accountId) override;
 		/// @copydoc wowpp::IDatabase::createCharacter
-		game::ResponseCode createCharacter(UInt32 accountId, const std::vector<const SpellEntry*> &spells, const std::vector<pp::world_realm::ItemData> &items, game::CharEntry &character) override;
+		game::ResponseCode createCharacter(UInt32 accountId, const std::vector<const proto::SpellEntry*> &spells, const std::vector<pp::world_realm::ItemData> &items, game::CharEntry &character) override;
 		/// @copydoc wowpp::IDatabase::createCharacterById
 		bool getCharacterById(DatabaseId id, game::CharEntry &out_character) override;
 		/// @copydoc wowpp::IDatabase::createCharacterByName
@@ -56,21 +61,25 @@ namespace wowpp
 		/// @copydoc wowpp::IDatabase::getGameCharacter
 		bool getGameCharacter(DatabaseId characterId, GameCharacter &out_character, std::vector<pp::world_realm::ItemData> &out_items) override;
 		/// @copydoc wowpp::IDatabase::saveGamecharacter
-		bool saveGameCharacter(const GameCharacter &character) override;
+		bool saveGameCharacter(const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &items, const std::vector<UInt32> &spells) override;
 		/// @copydoc wowpp::IDatabase::getCharacterSocialList
 		bool getCharacterSocialList(DatabaseId characterId, PlayerSocial &out_social) override;
 		/// @copydoc wowpp::IDatabase::addCharacterSocialContact
 		bool addCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) override;
-		/// @copydoc wowpp::IDatabase::addCharacterSocialContact
+		/// @copydoc wowpp::IDatabase::updateCharacterSocialContact
+		bool updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags) override;
+		/// @copydoc wowpp::IDatabase::updateCharacterSocialContact
 		bool updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) override;
 		/// @copydoc wowpp::IDatabase::removeCharacterSocialContact
 		bool removeCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid) override;
-		/// 
+		/// @copydoc wowpp::IDatabase::removeCharacterSocialContact
 		bool getCharacterActionButtons(DatabaseId characterId, ActionButtons &out_buttons) override;
-		/// 
+		/// @copydoc wowpp::IDatabase::setCharacterActionButtons
 		bool setCharacterActionButtons(DatabaseId characterId, const ActionButtons &buttons) override;
-		/// 
+		/// @copydoc wowpp::IDatabase::setCinematicState
 		bool setCinematicState(DatabaseId characterId, bool state) override;
+		/// @copydoc wowpp::IDatabase::setQuestData
+		bool setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData &data) override;
 
 	private:
 
@@ -79,7 +88,7 @@ namespace wowpp
 
 	private:
 
-		Project &m_project;
+		proto::Project &m_project;
 		MySQL::DatabaseInfo m_connectionInfo;
 		MySQL::Connection m_connection;
 	};

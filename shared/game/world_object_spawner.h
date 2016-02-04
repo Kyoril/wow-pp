@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -23,7 +23,7 @@
 
 #include "common/typedefs.h"
 #include "common/countdown.h"
-#include "data/object_entry.h"
+#include "math/vector3.h"
 #include <boost/optional.hpp>
 
 namespace wowpp
@@ -32,6 +32,10 @@ namespace wowpp
 	class GameObject;
 	class GameUnit;
 	class WorldObject;
+	namespace proto
+	{
+		class ObjectEntry;
+	}
 
 	/// 
 	class WorldObjectSpawner final
@@ -42,12 +46,10 @@ namespace wowpp
 		/// 
 		explicit WorldObjectSpawner(
 			WorldInstance &world,
-			const ObjectEntry &entry,
+			const proto::ObjectEntry &entry,
 			size_t maxCount,
 			GameTime respawnDelay,
-			float centerX,
-			float centerY,
-			float centerZ,
+			math::Vector3 center,
 			boost::optional<float> orientation,
 			const std::array<float, 4> &rotation,
 			float radius,
@@ -73,10 +75,10 @@ namespace wowpp
 	private:
 
 		WorldInstance &m_world;
-		const ObjectEntry &m_entry;
+		const proto::ObjectEntry &m_entry;
 		const size_t m_maxCount;
 		const GameTime m_respawnDelay;
-		const float m_centerX, m_centerY, m_centerZ;
+		const math::Vector3 m_center;
 		const boost::optional<float> m_orientation;
 		const std::array<float, 4> &m_rotation;
 		const float m_radius;

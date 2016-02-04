@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -22,8 +22,7 @@
 #include "world_instance.h"
 #include "world_instance_manager.h"
 #include "log/default_log_levels.h"
-#include "data/unit_entry.h"
-#include "data/object_entry.h"
+#include "proto_data/project.h"
 #include "game_unit.h"
 #include "game_creature.h"
 #include "game_world_object.h"
@@ -35,6 +34,8 @@
 #include <boost/bind/bind.hpp>
 #include "each_tile_in_sight.h"
 #include "common/utilities.h"
+#include "trigger_handler.h"
+#include "creature_ai.h"
 #include "universe.h"
 #include <algorithm>
 #include <array>
@@ -47,16 +48,15 @@ namespace wowpp
 	{
 		static TileIndex2D getObjectTile(GameObject &object, VisibilityGrid &grid)
 		{
-			float x, y, z, o;
-			object.getLocation(x, y, z, o);
+			math::Vector3 location(object.getLocation());
 
 			TileIndex2D gridIndex;
-			grid.getTilePosition(x, y, z, gridIndex[0], gridIndex[1]);
+			grid.getTilePosition(location, gridIndex[0], gridIndex[1]);
 
 			return gridIndex;
 		}
 
-		static void createValueUpdateBlock(GameObject &object, std::vector<std::vector<char>> &out_blocks)
+		static void createValueUpdateBlock(GameObject &object, GameCharacter &receiver, std::vector<std::vector<char>> &out_blocks)
 		{
 			// Write create object packet
 			std::vector<char> createBlock;
@@ -88,7 +88,7 @@ namespace wowpp
 				writer.sink().write((const char*)&packGUID[0], size);
 
 				// Write values update
-				object.writeValueUpdateBlock(writer, false);
+				object.writeValueUpdateBlock(writer, receiver, false);
 			}
 
 			// Add block
@@ -98,124 +98,131 @@ namespace wowpp
 
 	std::map<UInt32, Map> WorldInstance::MapData;
 
-	WorldInstance::WorldInstance(WorldInstanceManager &manager, 
+	WorldInstance::WorldInstance(
+		WorldInstanceManager &manager, 
 		Universe &universe,
-		const MapEntry &mapEntry,
+		game::ITriggerHandler &triggerHandler,
+		proto::Project &project,
+		const proto::MapEntry &mapEntry,
 		UInt32 id, 
+		std::unique_ptr<UnitFinder> unitFinder,
 		std::unique_ptr<VisibilityGrid> visibilityGrid,
 		IdGenerator<UInt64> &objectIdGenerator,
-		DataLoadContext::GetRace getRace,
-		DataLoadContext::GetClass getClass,
-		DataLoadContext::GetLevel getLevel,
-		DataLoadContext::GetSpell getSpell,
 		const String &dataPath
 		)
 		: m_manager(manager)
 		, m_universe(universe)
+		, m_triggerHandler(triggerHandler)
+		, m_unitFinder(std::move(unitFinder))
 		, m_visibilityGrid(std::move(visibilityGrid))
 		, m_objectIdGenerator(objectIdGenerator)
+		, m_project(project)
 		, m_mapEntry(mapEntry)
 		, m_id(id)
-		, m_getRace(getRace)
-		, m_getClass(getClass)
-		, m_getLevel(getLevel)
-		, m_getSpell(getSpell)
 		, m_map(nullptr)
 	{
 		// Create map instance if needed
-		auto mapIt = MapData.find(m_mapEntry.id);
+		auto mapIt = MapData.find(m_mapEntry.id());
 		if (mapIt == MapData.end())
 		{
 			// Load map
-			MapData.insert(std::make_pair(m_mapEntry.id, Map(m_mapEntry, dataPath)));
-			mapIt = MapData.find(m_mapEntry.id);
+			MapData.insert(std::make_pair(m_mapEntry.id(), Map(m_mapEntry, dataPath)));
+			mapIt = MapData.find(m_mapEntry.id());
 			if (mapIt != MapData.end()) m_map = &mapIt->second;
+		}
+		else
+		{
+			m_map = &mapIt->second;
 		}
 
 		// Add object spawners
-		for (auto &spawn : m_mapEntry.objectSpawns)
+		for (int i = 0; i < m_mapEntry.objectspawns_size(); ++i)
 		{
 			// Create a new spawner
+			const auto &spawn = m_mapEntry.objectspawns(i);
+
+			const auto *objectEntry = m_project.objects.getById(spawn.objectentry());
+			assert(objectEntry);
+
 			std::unique_ptr<WorldObjectSpawner> spawner(new WorldObjectSpawner(
 				*this,
-				*spawn.object,
-				spawn.maxCount,
-				spawn.respawnDelay,
-				spawn.position[0], spawn.position[1], spawn.position[2],
-				spawn.orientation,
-				spawn.rotation,
-				spawn.radius,
-				spawn.animProgress,
-				spawn.state));
+				*objectEntry,
+				spawn.maxcount(),
+				spawn.respawndelay(),
+				math::Vector3(spawn.positionx(), spawn.positiony(), spawn.positionz()),
+				0.0f, //TODO spawn.orientation,
+				{ spawn.rotationw(), spawn.rotationx(), spawn.rotationy(), spawn.rotationz() },
+				spawn.radius(),
+				spawn.animprogress(),
+				spawn.state()));
 			m_objectSpawners.push_back(std::move(spawner));
-
-			if (!spawn.name.empty())
+			if (!spawn.name().empty())
 			{
-				m_objectSpawnsByName[spawn.name] = m_objectSpawners.back().get();
+				m_objectSpawnsByName[spawn.name()] = m_objectSpawners.back().get();
 			}
 		}
 
 		// Add creature spawners
-		for (auto &spawn : m_mapEntry.spawns)
+		for (int i = 0; i < m_mapEntry.unitspawns_size(); ++i)
 		{
 			// Create a new spawner
+			const auto &spawn = m_mapEntry.unitspawns(i);
+
+			const auto *unitEntry = m_project.units.getById(spawn.unitentry());
+			assert(unitEntry);
+
 			std::unique_ptr<CreatureSpawner> spawner(new CreatureSpawner(
 				*this,
-				*spawn.unit,
-				spawn.maxCount,
-				spawn.respawnDelay,
-				spawn.position[0], spawn.position[1], spawn.position[2],
-				spawn.rotation,
-				spawn.emote,
-				spawn.radius,
-				spawn.active,
-				spawn.respawn));
+				*unitEntry,
+				spawn.maxcount(),
+				spawn.respawndelay(),
+				math::Vector3(spawn.positionx(), spawn.positiony(), spawn.positionz()),
+				spawn.rotation(),
+				spawn.defaultemote(),
+				spawn.radius(),
+				spawn.isactive(),
+				spawn.respawn()));
 			m_creatureSpawners.push_back(std::move(spawner));
 
-			if (!spawn.name.empty())
+			if (!spawn.name().empty())
 			{
-				m_creatureSpawnsByName[spawn.name] = m_creatureSpawners.back().get();
+				m_creatureSpawnsByName[spawn.name()] = m_creatureSpawners.back().get();
 			}
 		}
 
-		ILOG("Created instance of map " << m_mapEntry.id);
+		ILOG("Created instance of map " << m_mapEntry.id());
 	}
 
 	std::shared_ptr<GameCreature> WorldInstance::spawnCreature(
-		const UnitEntry &entry,
-		float x, float y, float z, float o,
+		const proto::UnitEntry &entry,
+		math::Vector3 position,
+		float o,
 		float randomWalkRadius)
 	{
 		// Create the unit
 		auto spawned = std::make_shared<GameCreature>(
+			m_project,
 			m_universe.getTimers(),
-			m_getRace,
-			m_getClass,
-			m_getLevel,
-			m_getSpell,
 			entry);
 		spawned->initialize();
-		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id, guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
-		spawned->setMapId(m_mapEntry.id);
-		spawned->relocate(x, y, z, o);
+		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id(), guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
+		spawned->setMapId(m_mapEntry.id());
+		spawned->relocate(position, o);
 
 		return spawned;
 	}
 
-	std::shared_ptr<GameCreature> WorldInstance::spawnSummonedCreature(const UnitEntry &entry, float x, float y, float z, float o)
+	std::shared_ptr<GameCreature> WorldInstance::spawnSummonedCreature(const proto::UnitEntry &entry, math::Vector3 position, float o)
 	{
 		// Create the unit
 		auto spawned = std::make_shared<GameCreature>(
+			m_project,
 			m_universe.getTimers(),
-			m_getRace,
-			m_getClass,
-			m_getLevel,
-			m_getSpell,
 			entry);
 		spawned->initialize();
-		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id, guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
-		spawned->setMapId(m_mapEntry.id);
-		spawned->relocate(x, y, z, o);
+		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id(), guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
+		spawned->setMapId(m_mapEntry.id());
+		spawned->relocate(position, o);
 
 		m_creatureSummons.insert(std::make_pair(spawned->getGuid(), spawned));
 		spawned->despawned.connect(
@@ -231,16 +238,17 @@ namespace wowpp
 		return spawned;
 	}
 
-	std::shared_ptr<WorldObject> WorldInstance::spawnWorldObject(const ObjectEntry &entry, float x, float y, float z, float o, float radius)
+	std::shared_ptr<WorldObject> WorldInstance::spawnWorldObject(const proto::ObjectEntry &entry, math::Vector3 position, float o, float radius)
 	{
 		// Create the unit
 		auto spawned = std::make_shared<WorldObject>(
+			m_project,
 			m_universe.getTimers(),
 			entry);
 		spawned->initialize();
-		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id, guid_type::GameObject));	// RealmID (TODO: these spawns don't need to have a specific realm id)
-		spawned->setMapId(m_mapEntry.id);
-		spawned->relocate(x, y, z, o);
+		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id(), guid_type::GameObject));	// RealmID (TODO: these spawns don't need to have a specific realm id)
+		spawned->setMapId(m_mapEntry.id());
+		spawned->relocate(position, o);
 
 		return spawned;
 	}
@@ -261,9 +269,13 @@ namespace wowpp
 					center,
 					[&object](ITileSubscriber &subscriber)
 				{
+					auto *character = subscriber.getControlledObject();
+					if (!character)
+						return;
+
 					// Create update blocks
 					std::vector<std::vector<char>> blocks;
-					createValueUpdateBlock(*object, blocks);
+					createValueUpdateBlock(*object, *character, blocks);
 
 					std::vector<char> buffer;
 					io::VectorSink sink(buffer);
@@ -295,13 +307,21 @@ namespace wowpp
 		m_objectsById.insert(
 			std::make_pair(guid, &added));
 
+		// Enable trigger execution
+		if (added.getTypeId() == object_type::Unit)
+		{
+			GameUnit *unitObj = reinterpret_cast<GameUnit*>(&added);
+			unitObj->unitTrigger.connect([this](const proto::TriggerEntry &trigger, GameUnit &owner) {
+				m_triggerHandler.executeTrigger(trigger, 0, &owner);
+			});
+		}
+
 		// Get object location
-		float x, y, z, o;
-		added.getLocation(x, y, z, o);
+		math::Vector3 location(added.getLocation());
 		
 		// Transform into grid location
 		TileIndex2D gridIndex;
-		if (!m_visibilityGrid->getTilePosition(x, y, z, gridIndex[0], gridIndex[1]))
+		if (!m_visibilityGrid->getTilePosition(location, gridIndex[0], gridIndex[1]))
 		{
 			// TODO: Error?
 			ELOG("Could not resolve grid location!");
@@ -323,9 +343,13 @@ namespace wowpp
 		{
 			for (auto * subscriber : tile.getWatchers().getElements())
 			{
+				auto *character = subscriber->getControlledObject();
+				if (!character)
+					continue;
+
 				// Create update packet
 				std::vector<std::vector<char>> blocks;
-				createUpdateBlocks(added, blocks);
+				createUpdateBlocks(added, *character, blocks);
 
 				// Create the packet
 				std::vector<char> buffer;
@@ -340,14 +364,30 @@ namespace wowpp
 		// Notify about being spawned
 		added.spawned();
 
+		// Add to unit finder if it is a unit
+		if (added.getTypeId() == object_type::Unit ||
+			added.isGameCharacter())
+		{
+			GameUnit *unit = dynamic_cast<GameUnit*>(&added);
+			if (unit) m_unitFinder->addUnit(*unit);
+		}
+
 		// Watch for object location changes
 		added.moved.connect(
-			boost::bind(&WorldInstance::onObjectMoved, this, _1, _2, _3, _4, _5));
+			boost::bind(&WorldInstance::onObjectMoved, this, _1, _2, _3));
 	}
 
 	void WorldInstance::removeGameObject(GameObject &remove)
 	{
 		auto guid = remove.getGuid();
+
+		// Remove from unit finder if it is a unit
+		if (remove.getTypeId() == object_type::Unit ||
+			remove.isGameCharacter())
+		{
+			GameUnit *unit = dynamic_cast<GameUnit*>(&remove);
+			if (unit) m_unitFinder->removeUnit(*unit);
+		}
 
 		// Transform into grid location
 		TileIndex2D gridIndex = getObjectTile(remove, *m_visibilityGrid);
@@ -399,11 +439,11 @@ namespace wowpp
 		return it->second;
 	}
 
-	void WorldInstance::onObjectMoved(GameObject &object, float oldX, float oldY, float oldZ, float oldO)
+	void WorldInstance::onObjectMoved(GameObject &object, const math::Vector3 &oldPosition, float oldO)
 	{
 		// Calculate old tile index
 		TileIndex2D oldIndex;
-		m_visibilityGrid->getTilePosition(oldX, oldY, oldZ, oldIndex[0], oldIndex[1]);
+		m_visibilityGrid->getTilePosition(oldPosition, oldIndex[0], oldIndex[1]);
 
 		// Calculate new tile index
 		TileIndex2D newIndex = getObjectTile(object, *m_visibilityGrid);

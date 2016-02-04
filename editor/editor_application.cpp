@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -20,9 +20,9 @@
 // 
 
 #include "editor_application.h"
-#include "main_window.h"
-#include "object_editor.h"
-#include "trigger_editor.h"
+#include "windows/main_window.h"
+#include "windows/object_editor.h"
+#include "windows/trigger_editor.h"
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QMessageBox>
@@ -33,26 +33,42 @@ namespace wowpp
 	namespace editor
 	{
 		template<>
-		QVariant TemplateListModel<MapEntryManager>::data(const QModelIndex &index, int role) const
+		QVariant TemplateListModel<proto::ItemManager>::data(const QModelIndex &index, int role) const
 		{
 			if (!index.isValid())
 				return QVariant();
 
-			if (index.row() >= m_entries.getTemplates().size())
+			if (index.row() >= m_entries.getTemplates().entry_size())
 				return QVariant();
+
+			const auto &templates = m_entries.getTemplates();
+			const auto &tpl = templates.entry(index.row());
 
 			if (role == Qt::DisplayRole)
 			{
-				const auto &templates = m_entries.getTemplates();
-				const auto &tpl = templates[index.row()];
-
 				if (index.column() == 0)
 				{
-					return QString("%1 %2").arg(QString::number(tpl->id), 3, QLatin1Char('0')).arg(tpl->name.c_str());
+					return QString("%1 %2").arg(QString::number(tpl.id()), 5, QLatin1Char('0')).arg(tpl.name().c_str());
 				}
-				else
+			}
+			else if (role == Qt::ForegroundRole)
+			{
+				switch (tpl.quality())
 				{
-					return QString(constant_literal::mapInstanceType.getName(tpl->instanceType).c_str());
+					case 0:
+						return QColor(Qt::gray);
+					case 1:
+						return QColor(Qt::white);
+					case 2:
+						return QColor(Qt::green);
+					case 3:
+						return QColor(0, 114, 198);
+					case 4:
+						return QColor(Qt::magenta);
+					case 5:
+						return QColor(Qt::yellow);
+					default:
+						return QColor(Qt::red);
 				}
 			}
 
@@ -60,13 +76,40 @@ namespace wowpp
 		}
 
 		template<>
-		int TemplateListModel<MapEntryManager>::columnCount(const QModelIndex &parent) const
+		QVariant TemplateListModel<proto::MapManager>::data(const QModelIndex &index, int role) const
+		{
+			if (!index.isValid())
+				return QVariant();
+
+			if (index.row() >= m_entries.getTemplates().entry_size())
+				return QVariant();
+
+			if (role == Qt::DisplayRole)
+			{
+				const auto &templates = m_entries.getTemplates();
+				const proto::MapManager::EntryType &tpl = templates.entry(index.row());
+
+				if (index.column() == 0)
+				{
+					return QString("%1 %2").arg(QString::number(tpl.id()), 3, QLatin1Char('0')).arg(tpl.name().c_str());
+				}
+				else
+				{
+					return QString("TODO"); //constant_literal::mapInstanceType.getName(static_cast<MapInstanceType>(tpl.instancetype())).c_str());
+				}
+			}
+
+			return QVariant();
+		}
+
+		template<>
+		int TemplateListModel<proto::MapManager>::columnCount(const QModelIndex &parent) const
 		{
 			return 2;
 		}
 
 		template<>
-		QVariant TemplateListModel<MapEntryManager>::headerData(int section, Qt::Orientation orientation, int role) const
+		QVariant TemplateListModel<proto::MapManager>::headerData(int section, Qt::Orientation orientation, int role) const
 		{
 			if (role != Qt::DisplayRole)
 				return QVariant();
@@ -108,8 +151,6 @@ namespace wowpp
 				return false;
 			}
 
-			// TODO: Create log file
-
 			// Show the main window
 			m_mainWindow.reset(new MainWindow(*this));
 
@@ -141,6 +182,7 @@ namespace wowpp
 			m_spellListModel.reset(new SpellListModel(m_project.spells));
 			m_itemListModel.reset(new ItemListModel(m_project.items));
 			m_triggerListModel.reset(new TriggerListModel(m_project.triggers));
+			m_questListModel.reset(new QuestListModel(m_project.quests));
 
 			// Setup the object editor
 			m_objectEditor.reset(new ObjectEditor(*this));

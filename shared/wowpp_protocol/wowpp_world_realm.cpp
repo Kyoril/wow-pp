@@ -2,8 +2,8 @@
 // This file is part of the WoW++ project.
 // 
 // This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Genral Public License as published by
-// the Free Software Foudnation; either version 2 of the Licanse, or
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -21,6 +21,8 @@
 
 #include <iostream>
 #include "wowpp_world_realm.h"
+#include "game/game_item.h"
+#include "shared/proto_data/items.pb.h"
 #include <cassert>
 
 namespace wowpp
@@ -48,7 +50,7 @@ namespace wowpp
 				}
 
 
-				void worldInstanceEntered(pp::OutgoingPacket &out_packet, DatabaseId requesterDbId, UInt64 worldObjectGuid, UInt32 instanceId, UInt32 mapId, UInt32 zoneId, float x, float y, float z, float o)
+				void worldInstanceEntered(pp::OutgoingPacket &out_packet, DatabaseId requesterDbId, UInt64 worldObjectGuid, UInt32 instanceId, UInt32 mapId, UInt32 zoneId, math::Vector3 location, float o)
 				{
 					out_packet.start(world_packet::WorldInstanceEntered);
 					out_packet
@@ -57,9 +59,9 @@ namespace wowpp
 						<< io::write<NetUInt32>(instanceId)
 						<< io::write<NetUInt32>(mapId)
 						<< io::write<NetUInt32>(zoneId)
-						<< io::write<float>(x)
-						<< io::write<float>(y)
-						<< io::write<float>(z)
+						<< io::write<float>(location.x)
+						<< io::write<float>(location.y)
+						<< io::write<float>(location.z)
 						<< io::write<float>(o);
 					out_packet.finish();
 				}
@@ -102,23 +104,80 @@ namespace wowpp
 					out_packet.start(world_packet::CharacterData);
 					out_packet
 						<< io::write<NetUInt64>(characterId)
-						<< character;
+						<< character
+						<< io::write<NetUInt32>(character.getSpells().size());
+					for (const auto &spell : character.getSpells())
+					{
+						out_packet
+							<< io::write<NetUInt32>(spell->id());
+					}
+
+					std::vector<ItemData> items;
+					for (const auto &item : character.getItems())
+					{
+						ItemData data;
+						data.entry = item.second->getEntry().id();
+						data.contained = item.second->getUInt64Value(item_fields::Contained);
+						data.creator = item.second->getUInt64Value(item_fields::Creator);
+						data.durability = item.second->getUInt32Value(item_fields::Durability);
+						data.randomPropertyIndex = item.second->getUInt32Value(item_fields::RandomPropertiesID);
+						data.randomSuffixIndex = 0;
+						data.slot = item.first;
+						data.stackCount = item.second->getUInt32Value(item_fields::StackCount);
+						items.emplace_back(data);
+					}
+					out_packet
+						<< io::write_dynamic_range<NetUInt32>(items);
 					out_packet.finish();
 				}
 
-				void teleportRequest(pp::OutgoingPacket &out_packet, UInt64 characterId, UInt32 map, float x, float y, float z, float o)
+				void teleportRequest(pp::OutgoingPacket &out_packet, UInt64 characterId, UInt32 map, math::Vector3 location, float o)
 				{
 					out_packet.start(world_packet::TeleportRequest);
 					out_packet
 						<< io::write<NetUInt64>(characterId)
 						<< io::write<NetUInt32>(map)
-						<< io::write<float>(x)
-						<< io::write<float>(y)
-						<< io::write<float>(z)
+						<< io::write<float>(location.x)
+						<< io::write<float>(location.y)
+						<< io::write<float>(location.z)
 						<< io::write<float>(o);
 					out_packet.finish();
 				}
 
+				void characterGroupUpdate(pp::OutgoingPacket &out_packet, UInt64 characterId, const std::vector<UInt64> &nearbyMembers, UInt32 health, UInt32 maxHealth, UInt8 powerType, UInt32 power, UInt32 maxPower, UInt8 level, UInt32 map, UInt32 zone, math::Vector3 location, const std::vector<UInt32> &auras)
+				{
+					out_packet.start(world_packet::CharacterGroupUpdate);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write_dynamic_range<UInt8>(nearbyMembers)
+						<< io::write<NetUInt32>(health)
+						<< io::write<NetUInt32>(maxHealth)
+						<< io::write<NetUInt8>(powerType)
+						<< io::write<NetUInt32>(power)
+						<< io::write<NetUInt32>(maxPower)
+						<< io::write<NetUInt8>(level)
+						<< io::write<NetUInt32>(map)
+						<< io::write<NetUInt32>(zone)
+						<< io::write<float>(location.x)
+						<< io::write<float>(location.y)
+						<< io::write<float>(location.z)
+						<< io::write_dynamic_range<UInt8>(auras);
+					out_packet.finish();
+				}
+				void questUpdate(pp::OutgoingPacket & out_packet, UInt64 characterId, UInt32 questId, const QuestStatusData &data)
+				{
+					out_packet.start(world_packet::QuestUpdate);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write<NetUInt32>(questId)
+						<< io::write<NetUInt32>(data.status)
+						<< io::write<NetUInt64>(data.expiration)
+						<< io::write<NetUInt8>(data.explored)
+						<< io::write_range(data.creatures)
+						<< io::write_range(data.objects)
+						<< io::write_range(data.items);
+					out_packet.finish();
+				}
 			}
 
 			namespace realm_write
@@ -183,6 +242,63 @@ namespace wowpp
 						<< io::write<NetUInt32>(reason);
 					out_packet.finish();
 				}
+
+				void characterGroupChanged(pp::OutgoingPacket &out_packet, UInt64 characterId, UInt64 groupId)
+				{
+					out_packet.start(realm_packet::CharacterGroupChanged);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write<NetUInt64>(groupId);
+					out_packet.finish();
+				}
+
+				void ignoreList(pp::OutgoingPacket &out_packet, UInt64 characterId, const std::vector<UInt64> &list)
+				{
+					out_packet.start(realm_packet::IgnoreList);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write_dynamic_range<NetUInt8>(list);
+					out_packet.finish();
+				}
+				void addIgnore(pp::OutgoingPacket &out_packet, UInt64 characterId, UInt64 ignoreGuid)
+				{
+					out_packet.start(realm_packet::AddIgnore);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write<NetUInt64>(ignoreGuid);
+					out_packet.finish();
+				}
+				void removeIgnore(pp::OutgoingPacket &out_packet, UInt64 characterId, UInt64 removeGuid)
+				{
+					out_packet.start(realm_packet::RemoveIgnore);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write<NetUInt64>(removeGuid);
+					out_packet.finish();
+				}
+				void itemData(pp::OutgoingPacket & out_packet, UInt64 characterId, const std::map<UInt16, ItemData>& data)
+				{
+					out_packet.start(realm_packet::ItemData);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write<NetUInt32>(data.size());
+
+					for (const auto &it : data)
+					{
+						out_packet
+							<< io::write<NetUInt16>(it.first)
+							<< it.second;
+					}
+					out_packet.finish();
+				}
+				void itemsRemoved(pp::OutgoingPacket & out_packet, UInt64 characterId, const std::vector<UInt16>& data)
+				{
+					out_packet.start(realm_packet::ItemsRemoved);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write_dynamic_range<NetUInt32>(data);
+					out_packet.finish();
+				}
 			}
 
 			namespace world_read
@@ -200,7 +316,7 @@ namespace wowpp
 					return packet;
 				}
 				
-				bool worldInstanceEntered(io::Reader &packet, DatabaseId &out_requesterDbId, UInt64 &out_worldObjectGuid, UInt32 &out_instanceId, UInt32 &out_mapId, UInt32 &out_zoneId, float &out_x, float &out_y, float &out_z, float &out_o)
+				bool worldInstanceEntered(io::Reader &packet, DatabaseId &out_requesterDbId, UInt64 &out_worldObjectGuid, UInt32 &out_instanceId, UInt32 &out_mapId, UInt32 &out_zoneId, math::Vector3 &out, float &out_o)
 				{
 					return packet
 						>> io::read<NetDatabaseId>(out_requesterDbId)
@@ -208,9 +324,9 @@ namespace wowpp
 						>> io::read<NetUInt32>(out_instanceId)
 						>> io::read<NetUInt32>(out_mapId)
 						>> io::read<NetUInt32>(out_zoneId)
-						>> io::read<float>(out_x)
-						>> io::read<float>(out_y)
-						>> io::read<float>(out_z)
+						>> io::read<float>(out.x)
+						>> io::read<float>(out.y)
+						>> io::read<float>(out.z)
 						>> io::read<float>(out_o);
 				}
 
@@ -241,24 +357,61 @@ namespace wowpp
 						>> io::read_container<NetUInt32>(out_packetBuffer);
 				}
 
-				bool characterData(io::Reader &packet, UInt64 characterId, GameCharacter &out_character)
+				bool characterData(io::Reader &packet, UInt64 &out_characterId, GameCharacter &out_character, std::vector<UInt32> &out_spellIds, std::vector<ItemData> &out_items)
 				{
 					return packet
-						>> io::read<NetUInt64>(characterId)
-						>> out_character;
+						>> io::read<NetUInt64>(out_characterId)
+						>> out_character
+						>> io::read_container<NetUInt32>(out_spellIds)
+						>> io::read_container<NetUInt32>(out_items)
+						;
 				}
 
-				bool teleportRequest(io::Reader &packet, UInt64 &out_characterId, UInt32 &out_map, float &out_x, float &out_y, float &out_z, float &out_o)
+				bool teleportRequest(io::Reader &packet, UInt64 &out_characterId, UInt32 &out_map, math::Vector3 &out, float &out_o)
 				{
 					return packet
 						>> io::read<NetUInt64>(out_characterId)
 						>> io::read<NetUInt32>(out_map)
-						>> io::read<float>(out_x)
-						>> io::read<float>(out_y)
-						>> io::read<float>(out_z)
+						>> io::read<float>(out.x)
+						>> io::read<float>(out.y)
+						>> io::read<float>(out.z)
 						>> io::read<float>(out_o)
 						;
 				}
+
+				bool characterGroupUpdate(io::Reader &packet, UInt64 &out_characterId, std::vector<UInt64> &out_nearbyMembers, UInt32 &out_health, UInt32 &out_maxHealth, UInt8 &out_powerType, UInt32 &out_power, UInt32 &out_maxPower, UInt8 &out_level, UInt32 &out_map, UInt32 &out_zone, math::Vector3 &out, std::vector<UInt32> &out_auras)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read_container<NetUInt8>(out_nearbyMembers)
+						>> io::read<NetUInt32>(out_health)
+						>> io::read<NetUInt32>(out_maxHealth)
+						>> io::read<NetUInt8>(out_powerType)
+						>> io::read<NetUInt32>(out_power)
+						>> io::read<NetUInt32>(out_maxPower)
+						>> io::read<NetUInt8>(out_level)
+						>> io::read<NetUInt32>(out_map)
+						>> io::read<NetUInt32>(out_zone)
+						>> io::read<float>(out.x)
+						>> io::read<float>(out.y)
+						>> io::read<float>(out.z)
+						>> io::read_container<NetUInt8>(out_auras)
+						;
+				}
+
+				bool questUpdate(io::Reader & packet, UInt64 & out_characterId, UInt32 & out_questId, QuestStatusData &out_data)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read<NetUInt32>(out_questId)
+						>> io::read<NetUInt32>(out_data.status)
+						>> io::read<NetUInt64>(out_data.expiration)
+						>> io::read<NetUInt8>(out_data.explored)
+						>> io::read_range(out_data.creatures)
+						>> io::read_range(out_data.objects)
+						>> io::read_range(out_data.items);
+				}
+
 			}
 
 			namespace realm_read
@@ -318,6 +471,66 @@ namespace wowpp
 					return packet
 						>> io::read<NetUInt64>(out_characterRealmId)
 						>> io::read<NetUInt32>(out_reason);
+				}
+
+				bool characterGroupChanged(io::Reader &packet, UInt64 &out_characterId, UInt64 &out_groupId)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read<NetUInt64>(out_groupId);
+				}
+
+				bool ignoreList(io::Reader &packet, UInt64 &out_characterId, std::vector<UInt64> &out_list)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read_container<NetUInt8>(out_list);
+				}
+				bool addIgnore(io::Reader &packet, UInt64 &out_characterId, UInt64 &out_ignoreGuid)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read<NetUInt64>(out_ignoreGuid);
+				}
+				bool removeIgnore(io::Reader &packet, UInt64 &out_characterId, UInt64 &out_removeGuid)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read<NetUInt64>(out_removeGuid);
+				}
+
+				bool itemData(io::Reader & packet, UInt64 & out_characterId, std::map<UInt16, ItemData>& out_data)
+				{
+					UInt32 count = 0;
+					if (!(packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read<NetUInt32>(count)))
+					{
+						return false;
+					}
+
+					for (UInt32 i = 0; i < count; ++i)
+					{
+						UInt16 slot = 0;
+						ItemData data;
+						if (!(packet
+							>> io::read<NetUInt16>(slot)
+							>> data))
+						{
+							return false;
+						}
+
+						out_data.insert(std::make_pair(slot, std::move(data)));
+					}
+
+					return packet;
+				}
+
+				bool itemsRemoved(io::Reader & packet, UInt64 & out_characterId, std::vector<UInt16>& out_slots)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read_container<NetUInt32>(out_slots);
 				}
 
 			}
