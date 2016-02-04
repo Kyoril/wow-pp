@@ -1564,10 +1564,12 @@ namespace wowpp
 		const float intellect = getUInt32Value(unit_fields::Stat3);
 		const float spirit = getUInt32Value(unit_fields::Stat4) * m_manaRegBase;
 		const float regen = sqrtf(intellect) * spirit;
+		
+		const float mp5Reg = getAuras().getTotalBasePoints(game::aura_type::ModPowerRegen) * 0.2f;
 
-		float modManaRegenInterrupt = 0.0f;	//TODO
-		setFloatValue(character_fields::ModManaRegenInterrupt, regen * modManaRegenInterrupt);
-		setFloatValue(character_fields::ModManaRegen, regen);
+		const float modManaRegenInterrupt = getAuras().getTotalBasePoints(game::aura_type::ModManaRegenInterrupt) / 100.0f;
+		setFloatValue(character_fields::ModManaRegenInterrupt, regen * modManaRegenInterrupt + mp5Reg);
+		setFloatValue(character_fields::ModManaRegen, regen + mp5Reg);
 	}
 
 	void GameCharacter::rewardExperience(GameUnit *victim, UInt32 experience)
@@ -1685,7 +1687,7 @@ namespace wowpp
 			addHealth *= 1.33f;
 		}
 		
-		float auraRegen = getAuras().getTotalPoints(game::aura_type::ModRegen);
+		float auraRegen = getAuras().getTotalBasePoints(game::aura_type::ModRegen);
 		addHealth += auraRegen * 0.4f;
 
 		if (addHealth < 0.0f) 

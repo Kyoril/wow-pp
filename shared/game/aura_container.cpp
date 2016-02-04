@@ -303,7 +303,7 @@ namespace wowpp
 		return treshold;
 	}
 
-	Int32 AuraContainer::getTotalPoints(game::AuraType type) const
+	Int32 AuraContainer::getTotalBasePoints(game::AuraType type) const
 	{
 		Int32 treshold = 0;
 		for (auto &it : m_auras)

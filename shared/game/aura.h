@@ -123,6 +123,8 @@ namespace wowpp
 		void handleMechanicImmunity(bool apply);
 		/// 78
 		void handleMounted(bool apply);
+		/// 85
+		void handleModPowerRegen(bool apply);
 		/// 97
 		void handleManaShield(bool apply);
 		/// 99

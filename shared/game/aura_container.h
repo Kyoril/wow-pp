@@ -53,7 +53,7 @@ namespace wowpp
 		UInt32 consumeAbsorb(UInt32 damage, UInt8 school);
 		Int32 getMaximumBasePoints(game::AuraType type) const;
 		Int32 getMinimumBasePoints(game::AuraType type) const;
-		Int32 getTotalPoints(game::AuraType type) const;
+		Int32 getTotalBasePoints(game::AuraType type) const;
 		float getTotalMultiplier(game::AuraType type) const;
 
 	private:

@@ -131,6 +131,9 @@ namespace wowpp
 		case aura::Mounted:
 			handleMounted(apply);
 			break;
+		case aura::ModPowerRegen:
+			handleModPowerRegen(apply);
+			break;
 		case aura::ModRegen:
 			break;
 		case aura::ModTotalStatPercentage:
@@ -805,6 +808,14 @@ namespace wowpp
 		else
 		{
 			m_target.setUInt32Value(unit_fields::MountDisplayId, 0);
+		}
+	}
+	
+	void Aura::handleModPowerRegen(bool apply)
+	{
+		if (m_target.isGameCharacter())
+		{
+			m_target.updateManaRegen();
 		}
 	}
 	
