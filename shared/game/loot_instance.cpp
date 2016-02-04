@@ -22,6 +22,7 @@
 #include "loot_instance.h"
 #include "proto_data/project.h"
 #include "defines.h"
+#include "game_character.h"
 #include "common/utilities.h"
 
 namespace wowpp
@@ -33,7 +34,7 @@ namespace wowpp
 	{
 	}
 
-	LootInstance::LootInstance(proto::ItemManager &items, UInt64 lootGuid, const proto::LootEntry *entry, UInt32 minGold, UInt32 maxGold)
+	LootInstance::LootInstance(proto::ItemManager &items, UInt64 lootGuid, const proto::LootEntry *entry, UInt32 minGold, UInt32 maxGold, const std::vector<GameCharacter*> &lootRecipients)
 		: m_itemManager(items)
 		, m_lootGuid(lootGuid)
 		, m_gold(0)
@@ -55,9 +56,31 @@ namespace wowpp
 				for (int i = 0; i < group.definitions_size(); ++i)
 				{
 					const auto &def = group.definitions(i);
+
+					// Is quest item?
+					if (def.conditiontype() == 9)
+					{
+						UInt32 questItemCount = 0;
+						UInt32 questId = def.conditionvala();
+						for (const auto *recipient : lootRecipients)
+						{
+							if (recipient &&
+								recipient->getQuestStatus(questId) == game::quest_status::Incomplete)
+							{
+								questItemCount++;
+								break;		// Later...
+							}
+						}
+
+						// Skip this quest item
+						if (questItemCount == 0)
+							continue;
+					}
+
 					if (def.dropchance() == 0.0f)
 					{
 						equalChanced.push_back(&def);
+						continue;
 					}
 
 					if (def.dropchance() > 0.0f &&

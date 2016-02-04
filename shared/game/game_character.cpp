@@ -129,7 +129,11 @@ namespace wowpp
 		// Check if we have a cached quest state
 		auto it = m_quests.find(quest);
 		if (it != m_quests.end())
-			return it->second.status;
+		{
+			if (it->second.status != game::quest_status::Available &&
+				it->second.status != game::quest_status::Unavailable)
+				return it->second.status;
+		}
 
 		// We don't have that quest cached, make a lookup
 		const auto *entry = getProject().quests.getById(quest);

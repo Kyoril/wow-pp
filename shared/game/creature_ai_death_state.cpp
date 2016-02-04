@@ -136,7 +136,7 @@ namespace wowpp
 			const auto *lootEntry = controlled.getProject().unitLoot.getById(entry.unitlootentry());
 
 			// Generate loot
-			auto loot = make_unique<LootInstance>(controlled.getProject().items, controlled.getGuid(), lootEntry, entry.minlootgold(), entry.maxlootgold());
+			auto loot = make_unique<LootInstance>(controlled.getProject().items, controlled.getGuid(), lootEntry, entry.minlootgold(), entry.maxlootgold(), lootRecipients);
 			if (!loot->isEmpty())
 			{
 				// 3 Minutes of despawn delay if creature still has loot
