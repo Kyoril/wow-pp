@@ -658,7 +658,7 @@ namespace wowpp
 
 				player->sendProxyPacket(
 					std::bind(game::server_write::itemPushResult, std::placeholders::_1,
-						character->getGuid(), std::cref(*itemInstance), true, false, 0xFF, it.first, it.second.stackCount, it.second.stackCount));
+						character->getGuid(), std::cref(*itemInstance), true, false, 0xFF, it.first, it.second.stackCount, character->getItemCount(entry->id())));
 			}
 
 			// Send packet

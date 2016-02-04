@@ -427,22 +427,12 @@ namespace wowpp
 			}
 			else if (req.itemid() != 0)
 			{
-				UInt32 count = 0;
-				for (auto &item : m_itemSlots)
-				{
-					if (item.second->getEntry().id() == req.itemid())
-					{
-						count += item.second->getUInt32Value(item_fields::StackCount);
-						if (count >= req.itemcount())
-						{
-							// We can stop now
-							break;
-						}
-					}
-				}
+				// Not enough items?
+				auto it = m_itemCount.find(req.itemid());
+				if (it == m_itemCount.end())
+					return false;
 
-				// Not enough items
-				if (count < req.itemcount())
+				if (it->second < req.itemcount())
 					return false;
 			}
 
@@ -581,6 +571,20 @@ namespace wowpp
 		// Quest check
 		UInt32 entry = item->getEntry().id();
 		UInt32 addCount = item->getUInt32Value(item_fields::StackCount);
+
+		// Update count value
+		{
+			auto it = m_itemCount.find(entry);
+			if (it == m_itemCount.end())
+			{
+				m_itemCount[entry] = addCount;
+			}
+			else
+			{
+				m_itemCount[entry] += addCount;
+			}
+		}
+
 		for (int i = 0; i < 25; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
@@ -1796,6 +1800,9 @@ namespace wowpp
 					stackCount -= count;
 					it->second->setUInt32Value(item_fields::StackCount, stackCount);
 
+					// Reduce count cache
+					m_itemCount[it->second->getEntry().id()] -= count;
+
 					// TODO: Update item instance
 
 					return;
@@ -1803,6 +1810,9 @@ namespace wowpp
 
 				setUInt64Value(character_fields::InvSlotHead + (slot * 2), 0);
 				m_itemSlots.erase(it);
+
+				// Reduce count cache
+				m_itemCount[it->second->getEntry().id()] -= stackCount;
 
 				if (slot < player_equipment_slots::End)
 				{

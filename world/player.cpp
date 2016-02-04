@@ -959,7 +959,7 @@ namespace wowpp
 			
 			sendProxyPacket(
 				std::bind(game::server_write::itemPushResult, std::placeholders::_1, 
-					m_character->getGuid(), std::cref(*inst), true, false, 0xFF, pos.position, pos.count, pos.count));
+					m_character->getGuid(), std::cref(*inst), true, false, 0xFF, pos.position, pos.count, m_character->getItemCount(item->id())));
 
 			// Group broadcasting
 			if (m_character->getGroupId() != 0)
@@ -971,7 +971,7 @@ namespace wowpp
 					std::vector<char> buffer;
 					io::VectorSink sink(buffer);
 					game::Protocol::OutgoingPacket itemPacket(sink);
-					game::server_write::itemPushResult(itemPacket, m_character->getGuid(), *inst, true, false, 0xFF, pos.position, pos.count, pos.count);
+					game::server_write::itemPushResult(itemPacket, m_character->getGuid(), *inst, true, false, 0xFF, pos.position, pos.count, m_character->getItemCount(item->id()));
 
 					forEachSubscriberInSight(
 						m_character->getWorldInstance()->getGrid(),
@@ -991,7 +991,6 @@ namespace wowpp
 			}
 		}
 
-		DLOG("CMSG_AUTO_STORE_LOOT_ITEM(loot slot: " << UInt32(lootSlot) << ")");
 		m_loot->takeItem(lootSlot);
 	}
 

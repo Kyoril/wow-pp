@@ -626,6 +626,8 @@ namespace wowpp
 
 		bool isQuestlogFull() const;
 
+		UInt32 getItemCount(UInt32 itemEntry) const { auto it = m_itemCount.find(itemEntry); return (it == m_itemCount.end() ? 0 : it->second); }
+
 	public:
 
 		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT
@@ -672,6 +674,7 @@ namespace wowpp
 		float m_homeRotation;
 		boost::signals2::scoped_connection m_doneMeleeAttack;
 		std::map<UInt32, QuestStatusData> m_quests;
+		std::map<UInt32, UInt32> m_itemCount;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameCharacter const& object);
