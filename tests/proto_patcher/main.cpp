@@ -353,6 +353,16 @@ namespace wowpp
 							}
 						}
 						break;
+					// Devastate
+					case 20243:	// Rank 1
+						it->add_additionalspells(11596);
+						break;
+					case 30016:	// Rank 2
+						it->add_additionalspells(11597);
+						break;
+					case 30022:	// Rank 3
+						it->add_additionalspells(25225);
+						break;
 
 					//////////////////////////////////////////////////////////////////////////
 					/////////////////////// AURA TRIGGER SPELLS //////////////////////////////
