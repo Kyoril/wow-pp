@@ -3115,7 +3115,7 @@ namespace wowpp
 				}
 				out_packet
 					<< io::write<NetUInt32>(quest.rewarditems_size());
-				for (const auto &rew : quest.rewarditemschoice())
+				for (const auto &rew : quest.rewarditems())
 				{
 					const auto *item = items.getById(rew.itemid());
 					out_packet
