@@ -293,7 +293,7 @@ namespace wowpp
 		if (money > 0)
 		{
 			setUInt32Value(character_fields::Coinage,
-				getUInt32Value(character_fields::Coinage + money));
+				getUInt32Value(character_fields::Coinage) + money);
 		}
 
 		for (UInt32 i = 0; i < 25; ++i)
