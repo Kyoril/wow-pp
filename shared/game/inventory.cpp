@@ -24,6 +24,7 @@
 #include "game_item.h"
 #include "proto_data/project.h"
 #include "common/linear_set.h"
+#include "binary_io/vector_sink.h"
 
 namespace wowpp
 {
@@ -327,5 +328,56 @@ namespace wowpp
 		out_bag = static_cast<UInt8>(absoluteSlot >> 8);
 		out_slot = static_cast<UInt8>(absoluteSlot & 0xFF);
 		return true;
+	}
+	void Inventory::addSpawnBlocks(std::vector<std::vector<char>>& out_blocks)
+	{
+		for (auto &pair : m_itemsBySlot)
+		{
+			std::vector<char> createItemBlock;
+			io::VectorSink createItemSink(createItemBlock);
+			io::Writer createItemWriter(createItemSink);
+			{
+				UInt8 updateType = 0x02;						// Item
+				UInt8 updateFlags = 0x08 | 0x10;				// 
+				UInt8 objectTypeId = 0x01;						// Item
+				UInt64 guid = pair.second->getGuid();
+
+				// Header with object guid and type
+				createItemWriter
+					<< io::write<NetUInt8>(updateType);
+				UInt64 guidCopy = guid;
+				UInt8 packGUID[8 + 1];
+				packGUID[0] = 0;
+				size_t size = 1;
+				for (UInt8 i = 0; guidCopy != 0; ++i)
+				{
+					if (guidCopy & 0xFF)
+					{
+						packGUID[0] |= UInt8(1 << i);
+						packGUID[size] = UInt8(guidCopy & 0xFF);
+						++size;
+					}
+
+					guidCopy >>= 8;
+				}
+				createItemWriter.sink().write((const char*)&packGUID[0], size);
+				createItemWriter
+					<< io::write<NetUInt8>(objectTypeId)
+					<< io::write<NetUInt8>(updateFlags);
+				if (updateFlags & 0x08)
+				{
+					createItemWriter
+						<< io::write<NetUInt32>(guidLowerPart(guid));
+				}
+				if (updateFlags & 0x10)
+				{
+					createItemWriter
+						<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
+				}
+
+				pair.second->writeValueUpdateBlock(createItemWriter, m_owner, true);
+			}
+			out_blocks.emplace_back(std::move(createItemBlock));
+		}
 	}
 }

@@ -104,6 +104,14 @@ namespace wowpp
 		/// Gets the amount of free inventory slots.
 		UInt16 getFreeSlotCount() const { return m_freeSlots; }
 
+	public:
+
+		/// Adds spawn blocks for every item in the inventory. These blocks will be included in
+		/// the players spawn packet, so that all items that are available to the player will be sent
+		/// at once.
+		/// @param out_blocks A reference to the array of update blocks to send.
+		void addSpawnBlocks(std::vector<std::vector<char>> &out_blocks);
+
 	private:
 
 		GameCharacter &m_owner;
