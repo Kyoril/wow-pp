@@ -328,7 +328,7 @@ namespace wowpp
 	{
 		enum Enum
 		{
-			Bag_0			= 0,
+			Bag_0			= 255,
 			Start			= 19,
 			End				= 23,
 

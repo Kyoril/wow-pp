@@ -2218,15 +2218,16 @@ namespace wowpp
 					questStatus == game::quest_status::Complete)
 				{
 					const auto *quest = m_project.quests.getById(questid);
-					assert(quest);
-
-					game::QuestMenuItem item;
-					item.quest = quest;
-					item.menuIcon = questStatus == game::quest_status::Incomplete ?
-						game::questgiver_status::Incomplete : game::questgiver_status::Reward;
-					item.questLevel = quest->questlevel();
-					item.title = quest->name();
-					questMenu.emplace_back(std::move(item));
+					if (quest)
+					{
+						game::QuestMenuItem item;
+						item.quest = quest;
+						item.menuIcon = (questStatus == game::quest_status::Incomplete ?
+							game::questgiver_status::Incomplete : game::questgiver_status::RewardRep);
+						item.questLevel = quest->questlevel();
+						item.title = quest->name();
+						questMenu.emplace_back(std::move(item));
+					}
 				}
 			}
 			for (const auto &questid : creature->getEntry().quests())
@@ -2235,14 +2236,15 @@ namespace wowpp
 				if (questStatus == game::quest_status::Available)
 				{
 					const auto *quest = m_project.quests.getById(questid);
-					assert(quest);
-
-					game::QuestMenuItem item;
-					item.quest = quest;
-					item.menuIcon = game::questgiver_status::Chat;
-					item.questLevel = quest->questlevel();
-					item.title = quest->name();
-					questMenu.emplace_back(std::move(item));
+					if (quest)
+					{
+						game::QuestMenuItem item;
+						item.quest = quest;
+						item.menuIcon = game::questgiver_status::Chat;
+						item.questLevel = quest->questlevel();
+						item.title = quest->name();
+						questMenu.emplace_back(std::move(item));
+					}
 				}
 			}
 		}
@@ -2659,7 +2661,28 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_QUESTGIVER_COMPLETE_QUEST: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
+		const auto *quest = m_project.quests.getById(questId);
+		if (!quest)
+		{
+			return;
+		}
+
+		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
+		if (!object)
+		{
+			return;
+		}
+
+		if (!object->endsQuest(questId))
+		{
+			return;
+		}
+
+		const bool hasCompleted = (m_character->getQuestStatus(questId) == game::quest_status::Complete);
+		if (!quest->requestitemstext().empty())
+			sendProxyPacket(std::bind(game::server_write::questgiverRequestItems, std::placeholders::_1, guid, true, hasCompleted, std::cref(m_project.items), std::cref(*quest)));
+		else
+			sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, guid, hasCompleted, std::cref(m_project.items), std::cref(*quest)));
 	}
 
 	void Player::handleQuestgiverRequestReward(game::Protocol::IncomingPacket & packet)
