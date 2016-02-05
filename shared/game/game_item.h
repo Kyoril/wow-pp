@@ -72,8 +72,12 @@ namespace wowpp
 		virtual void initialize() override;
 
 		virtual ObjectType getTypeId() const override { return object_type::Item; }
-
 		const proto::ItemEntry &getEntry() const { return m_entry; }
+		UInt32 getStackCount() const { return getUInt32Value(item_fields::StackCount); }
+		/// Adds more stacks to this item instance. This also checks for stack limit.
+		/// @param amount The amount to increase the stack for.
+		/// @returns The amount of stacks that could be added.
+		UInt16 addStacks(UInt16 amount);
 		void notifyEquipped();
 
 	private:
