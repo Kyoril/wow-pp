@@ -643,18 +643,20 @@ namespace wowpp
 			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, &caster, noThreat))
 			{
 				// Send spell damage packet
-				sendPacketFromCaster(caster,
-					std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-					targetUnit->getGuid(),
-					caster.getGuid(),
-					m_spell.id(),
-					totalDamage,
-					school,
-					absorbed,
-					resisted,	//resisted
-					false,
-					0,
-					crit));
+				m_completedEffectsExecution = completedEffects.connect([this, &caster, targetUnit, totalDamage, school, absorbed, resisted, crit](){
+					wowpp::sendPacketFromCaster(caster,
+						std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+						targetUnit->getGuid(),
+						caster.getGuid(),
+						m_spell.id(),
+						totalDamage,
+						school,
+						absorbed,
+						resisted,	//resisted
+						false,
+						0,
+						crit));
+				});
 				
 				caster.doneSpellMagicDmgClassNeg(targetUnit, school);
 				targetUnit->takenDamage(&caster);
@@ -675,7 +677,7 @@ namespace wowpp
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
-		m_attackTable.checkSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+		m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 		
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
@@ -993,7 +995,7 @@ namespace wowpp
 		}
 		else
 		{
-			m_attackTable.checkSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//Debuff
+			m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//Debuff
 		}
 		
 		UInt32 aura = effect.aura();
@@ -1053,19 +1055,23 @@ namespace wowpp
 			
 			if (spellFailed)
 			{
-				// TODO send fail packet
-				sendPacketFromCaster(caster,
-					std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-					targetUnit->getGuid(),
-					caster.getGuid(),
-					m_spell.id(),
-					1,
-					school,
-					0,
-					1,	//resisted
-					false,
-					0,
-					false));
+				if (log2(school) != game::spell_school::Normal)	//melee auras doesn't send a "resisted" packet as they can miss or be dodged...
+				{
+					m_completedEffectsExecution = completedEffects.connect([this, &caster, targetUnit, school](){
+						wowpp::sendPacketFromCaster(caster,
+							std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+							targetUnit->getGuid(),
+							caster.getGuid(),
+							m_spell.id(),
+							1,
+							school,
+							0,
+							1,	//resisted
+							false,
+							0,
+							false));
+					});
+				}
 			}
 			else if (targetUnit->isAlive())
 			{
@@ -1553,7 +1559,7 @@ namespace wowpp
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
-		m_attackTable.checkSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+		m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 		
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
@@ -1681,7 +1687,7 @@ namespace wowpp
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
-		m_attackTable.checkSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+		m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 		
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
@@ -1778,8 +1784,8 @@ namespace wowpp
 			{
 				m_meleeDamage.push_back(totalDamage);
 			}
-			if (!m_meleeDamageEffectsExecution.connected())
-				m_meleeDamageEffectsExecution = completedEffects.connect(std::bind(&SingleCastState::executeMeleeAttack, this));
+			if (!m_completedEffectsExecution.connected())
+				m_completedEffectsExecution = completedEffects.connect(std::bind(&SingleCastState::executeMeleeAttack, this));
 		}
 	}
 }

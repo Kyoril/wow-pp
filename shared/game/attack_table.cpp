@@ -293,49 +293,13 @@ namespace wowpp
 		UInt32 targetB = effect.targetb();
 		if (!checkIndex(targetA, targetB))
 		{
-			UInt8 school = spell.schoolmask();
-			refreshTargets(*attacker, targetMap, targetA, targetB, effect.radius(), spell.maxtargets());
-			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
-
-			for (GameUnit* targetUnit : m_targets[targetA][targetB])
-			{
-				game::HitInfo hitInfo = game::hit_info::NoAction;
-				game::VictimState victimState = game::victim_state::Normal;
-				float attackTableRoll = hitTableDistribution(randomGenerator);
-				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school, false)) < 0.0f)
-				{
-					hitInfo = game::hit_info::Miss;
-				}
-				else if (targetUnit->isImmune(school))
-				{
-					victimState = game::victim_state::IsImmune;
-				}
-				else if ((attackTableRoll -= targetUnit->getCritChance(*attacker, school)) < 0.0f)
-				{
-					hitInfo = game::hit_info::CriticalHit;
-				}
-
-				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(school, *attacker, false));
-				m_hitInfos[targetA][targetB].push_back(hitInfo);
-				m_victimStates[targetA][targetB].push_back(victimState);
-			}
-		}
-		
-		targets = m_targets[targetA][targetB];
-		victimStates = m_victimStates[targetA][targetB];
-		hitInfos = m_hitInfos[targetA][targetB];
-		resists = m_resists[targetA][targetB];
-	}
-	
-	void AttackTable::checkSpellNoCrit(GameUnit* attacker, SpellTargetMap &targetMap, const proto::SpellEntry &spell, const proto::SpellEffect &effect, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
-	{
-		UInt32 targetA = effect.targeta();
-		UInt32 targetB = effect.targetb();
-		if (!checkIndex(targetA, targetB))
-		{
 			bool isBinary = true;
+			UInt32 effectType = effect.type();
 			UInt32 aura = effect.aura();
-			if (aura == game::aura_type::PeriodicDamage || aura == game::aura_type::PeriodicDamagePercent)
+			if (effectType == game::spell_effects::SchoolDamage ||
+				effectType == game::spell_effects::PowerBurn ||
+				aura == game::aura_type::PeriodicDamage ||
+				aura == game::aura_type::PeriodicDamagePercent)
 			{
 				isBinary = false;
 			}
@@ -356,6 +320,10 @@ namespace wowpp
 				else if (targetUnit->isImmune(school))
 				{
 					victimState = game::victim_state::IsImmune;
+				}
+				else if ((attackTableRoll -= targetUnit->getCritChance(*attacker, school)) < 0.0f)
+				{
+					hitInfo = game::hit_info::CriticalHit;
 				}
 
 				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(school, *attacker, isBinary));
