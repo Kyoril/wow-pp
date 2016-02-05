@@ -276,7 +276,7 @@ namespace wowpp
 
 		return game::inventory_change_failure::Okay;
 	}
-	game::InventoryChangeFailure Inventory::removeItem(UInt16 absoluteSlot)
+	game::InventoryChangeFailure Inventory::removeItem(UInt16 absoluteSlot, UInt16 stacks/* = 0*/)
 	{
 		// Try to find item
 		auto it = m_itemsBySlot.find(absoluteSlot);
@@ -287,15 +287,25 @@ namespace wowpp
 
 		// Updated cached item counter
 		const UInt32 stackCount = it->second->getStackCount();
-		m_itemCounter[it->second->getEntry().id()] -= stackCount;
+		if (stacks == 0 || stacks > stackCount) stacks = stackCount;
+		m_itemCounter[it->second->getEntry().id()] -= stacks;
 
-		// Remove item from slot
-		auto item = it->second;
-		m_itemsBySlot.erase(it);
-		m_freeSlots++;
+		if (stackCount == stacks)
+		{
+			// Remove item from slot
+			auto item = it->second;
+			m_itemsBySlot.erase(it);
+			m_freeSlots++;
 
-		// Notify about destruction
-		itemInstanceDestroyed(item, absoluteSlot);
+			// Notify about destruction
+			itemInstanceDestroyed(item, absoluteSlot);
+		}
+		else
+		{
+			it->second->setUInt32Value(item_fields::StackCount, stackCount - stacks);
+			itemInstanceUpdated(it->second, absoluteSlot);
+		}
+
 		return game::inventory_change_failure::Okay;
 	}
 	game::InventoryChangeFailure Inventory::swapItems(UInt16 slotA, UInt16 slotB)

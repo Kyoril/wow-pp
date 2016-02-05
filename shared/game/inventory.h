@@ -73,8 +73,10 @@ namespace wowpp
 		game::InventoryChangeFailure removeItems(const proto::ItemEntry &entry, UInt16 amount = 1);
 		/// Tries to remove an item at a specified slot.
 		/// @param absoluteSlot The item slot to delete from.
+		/// @param stacks The number of stacks to remove. If 0, ALL stacks will be removed. Stacks are capped automatically,
+		///               so that if stacks >= actual item stacks, simply all stacks will be removed as well.
 		/// @returns game::inventory_change_failure::Okay if succeeded.
-		game::InventoryChangeFailure removeItem(UInt16 absoluteSlot);
+		game::InventoryChangeFailure removeItem(UInt16 absoluteSlot, UInt16 stacks = 0);
 		/// Tries to swap two slots. Can also be used to move items, if one of the slots is
 		/// empty.
 		/// @param slotA The first (source) slot.
