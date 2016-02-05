@@ -143,6 +143,8 @@ namespace wowpp
 		void handleModBaseResistancePct(bool apply);
 		/// 143
 		void handleModResistanceExclusive(bool apply);
+		/// 226
+		void handlePeriodicDummy(bool apply);
 
 	protected:
 

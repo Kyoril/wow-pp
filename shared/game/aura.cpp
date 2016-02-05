@@ -193,6 +193,9 @@ namespace wowpp
 		case aura::ModResistanceExclusive:
 			handleModResistanceExclusive(apply);
 			break;
+		case aura::PeriodicDummy:
+			handlePeriodicDummy(apply);
+			break;
 		default:
 //			WLOG("Unhandled aura type: " << m_effect.aura());
 			break;
@@ -824,6 +827,31 @@ namespace wowpp
 		//ToDo: Add talent modifiers
 	}
 	
+	void Aura::handlePeriodicDummy(bool apply)
+	{
+		// if drinking
+		for (int i = 0; i < m_spell.effects_size(); ++i)
+		{
+			auto effect = m_spell.effects(i);
+			if (effect.type() == game::spell_effects::ApplyAura && effect.aura() == game::aura_type::ModPowerRegen)
+			{
+				float amplitude = m_effect.amplitude() / 1000.0f;
+				m_onTick = m_tickCountdown.ended.connect([this, amplitude]()
+				{
+					Int32 reg = m_basePoints * (amplitude / 5.0f);
+					m_target.addPower(game::power_type::Mana, reg);
+					
+					if (!m_expired)
+					{
+						startPeriodicTimer();
+					}
+				});
+				startPeriodicTimer();
+				break;
+			}
+		}
+	}
+	
 	bool Aura::hasPositiveTarget(const proto::SpellEffect &effect)
 	{
 		if (effect.targetb() == game::targets::UnitAreaEnemySrc)
@@ -1190,11 +1218,6 @@ namespace wowpp
 				break;
 			}
 			case aura::PeriodicDamagePercent:
-			{
-				DLOG("TODO");
-				break;
-			}
-			case aura::PeriodicDummy:
 			{
 				DLOG("TODO");
 				break;

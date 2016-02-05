@@ -762,10 +762,7 @@ namespace wowpp
 
 	void GameUnit::regeneratePower(game::PowerType power)
 	{
-		UInt32 current = getUInt32Value(unit_fields::Power1 + static_cast<Int8>(power));
-		UInt32 max = getUInt32Value(unit_fields::MaxPower1 + static_cast<Int8>(power));
-
-		float addPower = 0.0f;
+		float modPower = 0.0f;
 		switch (power)
 		{
 			case game::power_type::Mana:
@@ -774,17 +771,17 @@ namespace wowpp
 				{
 					if ((m_lastManaUse + constants::OneSecond * 5) < getCurrentTime())
 					{
-						addPower = getFloatValue(character_fields::ModManaRegen) * 2.0f;
+						modPower = getFloatValue(character_fields::ModManaRegen) * 2.0f;
 					}
 					else
 					{
-						addPower = getFloatValue(character_fields::ModManaRegenInterrupt) * 2.0f;
+						modPower = getFloatValue(character_fields::ModManaRegenInterrupt) * 2.0f;
 					}
 				}
 				else
 				{
 					// TODO: Unit mana reg
-					addPower = 2.0f * getLevel();
+					modPower = 2.0f * getLevel();
 				}
 				break;
 			}
@@ -792,39 +789,21 @@ namespace wowpp
 			case game::power_type::Energy:
 			{
 				// 20 energy per tick
-				addPower = 20.0f;
+				modPower = 20.0f;
 				break;
 			}
 
 			case game::power_type::Rage:
 			{
 				// Take 3 rage per tick
-				addPower = 30.0f;
+				modPower = -30.0f;
 				break;
 			}
 
 			default:
 				break;
 		}
-
-		if (power != game::power_type::Rage)
-		{
-			current += UInt32(addPower);
-			if (current > max) current = max;
-		}
-		else
-		{
-			if (current <= UInt32(addPower))
-			{
-				current = 0;
-			}
-			else
-			{
-				current -= UInt32(addPower);
-			}
-		}
-
-		setUInt32Value(unit_fields::Power1 + static_cast<Int8>(power), current);
+		addPower(power, modPower);
 	}
 
 	void GameUnit::notifyManaUse()
@@ -1282,24 +1261,23 @@ namespace wowpp
 		return true;
 	}
 	
-	UInt32 GameUnit::removeMana(UInt32 amount)
+	Int32 GameUnit::addPower(game::PowerType power, Int32 amount)
 	{
-		if (getByteValue(unit_fields::Bytes0, 3) == game::power_type::Mana)
+		Int32 current = getUInt32Value(unit_fields::Power1 + static_cast<Int8>(power));
+		Int32 max = getUInt32Value(unit_fields::MaxPower1 + static_cast<Int8>(power));
+
+		Int32 addPower = amount;
+		if (addPower + current < 0)
 		{
-			UInt32 mana = getUInt32Value(unit_fields::Power1);
-			UInt32 removed = amount;
-			if (mana < removed)
-			{
-				removed = mana;
-			}
-			mana -= removed;
-			setUInt32Value(unit_fields::Power1, mana);
-			return removed;
+			addPower = 0 - current;
 		}
-		else
+		else if (addPower + current > max)
 		{
-			return 0;
+			addPower = max - current;
 		}
+
+		setUInt32Value(unit_fields::Power1 + static_cast<Int8>(power), current + addPower);
+		return addPower;
 	}
 
 	void GameUnit::revive(UInt32 health, UInt32 mana)

@@ -1431,7 +1431,7 @@ namespace wowpp
 				burn = calculateEffectBasePoints(effect);
 				resisted = burn * (resists[i] / 100.0f);
 				burn -= resisted;
-				burn = targetUnit->removeMana(burn);
+				burn = 0 - targetUnit->addPower(game::power_type::Mana, 0 - burn);
 				damage = burn * effect.multiplevalue();
 				absorbed = targetUnit->consumeAbsorb(damage, school);
 			}

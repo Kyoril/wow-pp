@@ -495,9 +495,9 @@ namespace wowpp
 		/// @param healer The healing unit or nullptr, if unknown. If nullptr, no threat will be generated.
 		/// @param noThreat If set to true, no threat will be generated.
 		bool heal(UInt32 amount, GameUnit *healer, bool noThreat = false);
-		/// Remove mana of this unit. Does not work on dead, oom or non-mana units!
-		/// @param amount The amount of mana to remove.
-		UInt32 removeMana(UInt32 amount);
+		/// Add or Remove mana to unit. Does not work on dead units!
+		/// @param amount The amount of power. Negative values will remove power
+		Int32 addPower(game::PowerType power, Int32 amount);
 		/// Revives this unit with the given amount of health and mana. Does nothing if the unit is alive.
 		/// @param health The new health value of this unit.
 		/// @param mana The new mana value of this unit. If set to 0, mana won't be changed. If unit does not use
