@@ -32,6 +32,7 @@ namespace wowpp
 		: m_owner(owner)
 		, m_freeSlots(player_inventory_pack_slots::End - player_inventory_pack_slots::Start)	// Default slot count with only a backpack
 	{
+		// Warning: m_owner might not be completely constructed at this point
 	}
 	game::InventoryChangeFailure Inventory::createItems(const proto::ItemEntry & entry, UInt16 amount/* = 1*/)
 	{

@@ -2308,6 +2308,7 @@ namespace wowpp
 						sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, guid, false, std::cref(m_project.items), std::cref(*menuItem.quest)));
 					break;
 				case game::questgiver_status::Reward:
+				case game::questgiver_status::RewardRep:
 					if (!menuItem.quest->requestitemstext().empty())
 						sendProxyPacket(std::bind(game::server_write::questgiverRequestItems, std::placeholders::_1, guid, true, true, std::cref(m_project.items), std::cref(*menuItem.quest)));
 					else
