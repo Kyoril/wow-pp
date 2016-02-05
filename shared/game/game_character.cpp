@@ -25,6 +25,7 @@
 #include "game_item.h"
 #include "common/utilities.h"
 #include "game_creature.h"
+#include "inventory.h"
 #include "defines.h"
 
 namespace wowpp
@@ -45,6 +46,7 @@ namespace wowpp
 		, m_canBlock(false)
 		, m_canParry(false)
 		, m_canDualWield(false)
+		, m_inventory(*this)
 	{
 		// Resize values field
 		m_values.resize(character_fields::CharacterFieldCount);

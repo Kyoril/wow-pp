@@ -62,6 +62,22 @@ namespace wowpp
 		}
 	}
 
+	UInt16 GameItem::addStacks(UInt16 amount)
+	{
+		const UInt32 stackCount = getStackCount();
+
+		const UInt32 availableStacks = m_entry.maxstack() - stackCount;
+		if (amount <= availableStacks)
+		{
+			setUInt32Value(item_fields::StackCount, stackCount + amount);
+			return 0;
+		}
+
+		// Max out the stack count and return the added stacks
+		setUInt32Value(item_fields::StackCount, m_entry.maxstack());
+		return static_cast<UInt16>(availableStacks);
+	}
+
 	void GameItem::notifyEquipped()
 	{
 		// Emit signal

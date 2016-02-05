@@ -23,6 +23,7 @@
 
 #include "game_unit.h"
 #include "game_item.h"
+#include "inventory.h"
 #include "defines.h"
 
 namespace wowpp
@@ -611,6 +612,9 @@ namespace wowpp
 		/// Sets the characters group id.
 		void setGroupId(UInt64 groupId) { m_groupId = groupId; }
 
+		/// Gets a reference to the characters inventory component.
+		Inventory &getInventory() { return m_inventory; }
+
 		/// 
 		game::QuestStatus getQuestStatus(UInt32 quest) const;
 		/// 
@@ -675,6 +679,7 @@ namespace wowpp
 		boost::signals2::scoped_connection m_doneMeleeAttack;
 		std::map<UInt32, QuestStatusData> m_quests;
 		std::map<UInt32, UInt32> m_itemCount;
+		Inventory m_inventory;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameCharacter const& object);
