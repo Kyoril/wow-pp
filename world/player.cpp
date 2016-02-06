@@ -2342,8 +2342,8 @@ namespace wowpp
 						case object_type::Unit:
 						{
 							GameCreature *creature = reinterpret_cast<GameCreature*>(object);
-							if (creature->getEntry().quests_size() ||
-								creature->getEntry().end_quests_size())
+							if ((creature->getEntry().quests_size() || creature->getEntry().end_quests_size()) &&
+								!creature->isHostileTo(*m_character))
 							{
 								statusMap[object->getGuid()] = creature->getQuestgiverStatus(*m_character);
 							}
@@ -2367,11 +2367,8 @@ namespace wowpp
 		}
 
 		// Send questgiver status map
-		if (!statusMap.empty())
-		{
-			sendProxyPacket(
-				std::bind(game::server_write::questgiverStatusMultiple, std::placeholders::_1, std::cref(statusMap)));
-		}
+		sendProxyPacket(
+			std::bind(game::server_write::questgiverStatusMultiple, std::placeholders::_1, std::cref(statusMap)));
 	}
 
 	void Player::handleQuestgiverHello(game::Protocol::IncomingPacket & packet)
