@@ -59,7 +59,7 @@ namespace wowpp
 		// Limit the total amount of items
 		const UInt16 itemCount = getItemCount(entry.id());
 		if (entry.maxcount() > 0 &&
-			itemCount + amount >= entry.maxcount())
+			itemCount + amount > entry.maxcount())
 		{
 			return game::inventory_change_failure::CantCarryMoreOfThis;
 		}
@@ -671,7 +671,7 @@ namespace wowpp
 		// Limit the total amount of items
 		const UInt16 itemCount = getItemCount(entry.id());
 		if (entry.maxcount() > 0 &&
-			itemCount + amount >= entry.maxcount())
+			itemCount + amount > entry.maxcount())
 		{
 			return game::inventory_change_failure::CantCarryMoreOfThis;
 		}

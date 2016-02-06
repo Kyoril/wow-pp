@@ -187,12 +187,35 @@ namespace wowpp
 			return false;
 		}
 
+		const auto *questEntry = getProject().quests.getById(quest);
+		if (!questEntry)
+		{
+			return false;
+		}
+
+		const auto *srcItem = getProject().items.getById(questEntry->srcitemid());
+		if (questEntry->srcitemid() && !srcItem)
+		{
+			return false;
+		}
+
 		// Find next free quest log
 		for (UInt32 i = 0; i < 25; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
 			if (logId == 0 || logId == quest)
 			{
+				// Grant quest source item if possible
+				if (srcItem)
+				{
+					auto result = m_inventory.createItems(*srcItem, questEntry->srcitemcount());
+					if (result != game::inventory_change_failure::Okay)
+					{
+						inventoryChangeFailure(result, nullptr, nullptr);
+						return false;
+					}
+				}
+
 				// Take that quest
 				auto &data = m_quests[quest];
 				data.status = game::quest_status::Incomplete;
@@ -204,14 +227,10 @@ namespace wowpp
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
 
 				// Complete if no requirements
-				const auto *questEntry = getProject().quests.getById(quest);
-				if (questEntry)
+				if (fulfillsQuestRequirements(*questEntry))
 				{
-					if (fulfillsQuestRequirements(*questEntry))
-					{
-						data.status = game::quest_status::Complete;
-						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
-					}
+					data.status = game::quest_status::Complete;
+					addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
 				}
 
 				questDataChanged(quest, data);
