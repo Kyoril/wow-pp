@@ -2446,8 +2446,9 @@ namespace wowpp
 		// Accept that quest
 		if (!m_character->acceptQuest(questId))
 		{
-			sendProxyPacket(
-				std::bind(game::server_write::questlogFull, std::placeholders::_1));
+			// We need this check since the quest can fail for various other reasons
+			if (m_character->isQuestlogFull())
+				sendProxyPacket(std::bind(game::server_write::questlogFull, std::placeholders::_1));
 			return;
 		}
 
