@@ -2552,7 +2552,7 @@ namespace wowpp
 		}
 
 		// Reward this quest
-		bool result = m_character->rewardQuest(questId, [this, quest](UInt32 xp) {
+		bool result = m_character->rewardQuest(questId, reward, [this, quest](UInt32 xp) {
 			sendProxyPacket(
 				std::bind(game::server_write::questgiverQuestComplete, std::placeholders::_1, m_character->getLevel() >= 70, xp, std::cref(*quest)));
 		});

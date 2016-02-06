@@ -606,7 +606,7 @@ namespace wowpp
 		/// 
 		bool abandonQuest(UInt32 quest);
 		/// 
-		bool rewardQuest(UInt32 quest, std::function<void(UInt32)> callback);
+		bool rewardQuest(UInt32 quest, UInt8 rewardChoice, std::function<void(UInt32)> callback);
 		/// 
 		void onQuestKillCredit(GameCreature &killed);
 

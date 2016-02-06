@@ -310,7 +310,7 @@ namespace wowpp
 		}
 	}
 
-	bool GameCharacter::rewardQuest(UInt32 quest, std::function<void(UInt32)> callback)
+	bool GameCharacter::rewardQuest(UInt32 quest, UInt8 rewardChoice, std::function<void(UInt32)> callback)
 	{
 		// Reward experience
 		const auto *entry = m_project.quests.getById(quest);
@@ -325,6 +325,50 @@ namespace wowpp
 		if (it->second.status != game::quest_status::Complete)
 		{
 			return false;
+		}
+
+		// Gather all rewarded items
+		std::map<const proto::ItemEntry*, UInt16> rewardedItems;
+		{
+			if (entry->rewarditemschoice_size() > 0)
+			{
+				// Validate reward index
+				if (rewardChoice >= entry->rewarditemschoice_size())
+				{
+					return false;
+				}
+
+				const auto *item = getProject().items.getById(
+					entry->rewarditemschoice(rewardChoice).itemid());
+				if (!item)
+				{
+					return false;
+				}
+
+				// Check if the player can store the item
+				rewardedItems[item] += entry->rewarditemschoice(rewardChoice).count();
+			}
+			for (auto &rew : entry->rewarditems())
+			{
+				const auto *item = getProject().items.getById(rew.itemid());
+				if (!item)
+				{
+					return false;
+				}
+
+				rewardedItems[item] += rew.count();
+			}
+		}
+
+		// First loop to check if the items can be stored
+		for (auto &pair : rewardedItems)
+		{
+			auto result = m_inventory.canStoreItems(*pair.first, pair.second);
+			if (result != game::inventory_change_failure::Okay)
+			{
+				inventoryChangeFailure(result, nullptr, nullptr);
+				return false;
+			}
 		}
 
 		// Try to remove all required quest items
@@ -344,6 +388,17 @@ namespace wowpp
 					inventoryChangeFailure(result, nullptr, nullptr);
 					return false;
 				}
+			}
+		}
+
+		// Second loop needed to actually create the items
+		for (auto &pair : rewardedItems)
+		{
+			auto result = m_inventory.createItems(*pair.first, pair.second);
+			if (result != game::inventory_change_failure::Okay)
+			{
+				inventoryChangeFailure(result, nullptr, nullptr);
+				return false;
 			}
 		}
 
