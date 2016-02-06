@@ -461,7 +461,7 @@ namespace wowpp
 
 		// Item data
 		UInt8 bagSlot = 0;
-		std::vector<pp::world_realm::ItemData> items;
+		std::vector<ItemData> items;
 
 		// Add initial items
 		auto it1 = race->initialitems().find(character.class_);
@@ -583,7 +583,7 @@ namespace wowpp
 
 				if (slot != 0xffff)
 				{
-					pp::world_realm::ItemData itemData;
+					ItemData itemData;
 					itemData.entry = item->id();
 					itemData.durability = item->durability();
 					itemData.slot = slot;
@@ -726,7 +726,6 @@ namespace wowpp
 
 		// Store character id
 		m_characterId = characterId;
-		m_itemData.clear();
 
 		// Write something to the log just for informations
 		ILOG("Player " << m_accountName << " tries to enter the world with character 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << m_characterId);
@@ -735,7 +734,7 @@ namespace wowpp
 		std::shared_ptr<GameCharacter> character(new GameCharacter(m_project, m_manager.getTimers()));
 		character->initialize();
 		character->setGuid(createRealmGUID(characterId, m_loginConnector.getRealmID(), guid_type::Player));
-		if (!m_database.getGameCharacter(guidLowerPart(characterId), *character, m_itemData))
+		if (!m_database.getGameCharacter(guidLowerPart(characterId), *character))
 		{
 			// Send error packet
 			WLOG("Player login failed: Could not load character " << characterId);
@@ -1052,7 +1051,7 @@ namespace wowpp
 		if (amount > itemEntry->maxstack()) amount = itemEntry->maxstack();
 
 		// 
-		std::map<UInt16, pp::world_realm::ItemData> modifiedItems;
+		std::map<UInt16, ItemData> modifiedItems;
 
 		// Iterate all available items
 		LinearSet<UInt16> usedSlots;
@@ -1081,7 +1080,7 @@ namespace wowpp
 			{
 				if (!usedSlots.contains(i))
 				{
-					pp::world_realm::ItemData data;
+					ItemData data;
 					data.contained = 0;
 					data.creator = 0;
 					data.durability = itemEntry->durability();

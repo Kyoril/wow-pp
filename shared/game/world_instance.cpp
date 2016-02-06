@@ -116,6 +116,7 @@ namespace wowpp
 		, m_unitFinder(std::move(unitFinder))
 		, m_visibilityGrid(std::move(visibilityGrid))
 		, m_objectIdGenerator(objectIdGenerator)
+		, m_itemIdGenerator(1)		// Start at an id of 1 as 0 is invalid
 		, m_project(project)
 		, m_mapEntry(mapEntry)
 		, m_id(id)
@@ -260,42 +261,16 @@ namespace wowpp
 		{
 			// Update values changed...
 			auto *object = gameObject.second;
-			if (object->wasUpdated())
-			{
-				// Send updates to all subscribers in sight
-				TileIndex2D center = getObjectTile(*object, *m_visibilityGrid);
-				forEachSubscriberInSight(
-					*m_visibilityGrid,
-					center,
-					[&object](ITileSubscriber &subscriber)
-				{
-					auto *character = subscriber.getControlledObject();
-					if (!character)
-						return;
+			updateObject(*object);
+		}
+	}
 
-					// Create update blocks
-					std::vector<std::vector<char>> blocks;
-					createValueUpdateBlock(*object, *character, blocks);
-
-					std::vector<char> buffer;
-					io::VectorSink sink(buffer);
-					game::Protocol::OutgoingPacket packet(sink);
-
-					if (!blocks.empty() && blocks[0].size() > 50)
-					{
-						game::server_write::compressedUpdateObject(packet, blocks);
-					}
-					else if (!blocks.empty())
-					{
-						game::server_write::updateObject(packet, blocks);
-					}
-
-					subscriber.sendPacket(packet, buffer);
-				});
-
-				// We updated the object
-				object->clearUpdateMask();
-			}
+	void WorldInstance::flushObjectUpdate(UInt64 guid)
+	{
+		auto *object = findObjectByGUID(guid);
+		if (object)
+		{
+			updateObject(*object);
 		}
 	}
 
@@ -465,6 +440,46 @@ namespace wowpp
 
 			// Add the object
 			newTile->getGameObjects().add(&object);
+		}
+	}
+
+	void WorldInstance::updateObject(GameObject & object)
+	{
+		if (object.wasUpdated())
+		{
+			// Send updates to all subscribers in sight
+			TileIndex2D center = getObjectTile(object, *m_visibilityGrid);
+			forEachSubscriberInSight(
+				*m_visibilityGrid,
+				center,
+				[&object](ITileSubscriber &subscriber)
+			{
+				auto *character = subscriber.getControlledObject();
+				if (!character)
+					return;
+
+				// Create update blocks
+				std::vector<std::vector<char>> blocks;
+				createValueUpdateBlock(object, *character, blocks);
+
+				std::vector<char> buffer;
+				io::VectorSink sink(buffer);
+				game::Protocol::OutgoingPacket packet(sink);
+
+				if (!blocks.empty() && blocks[0].size() > 50)
+				{
+					game::server_write::compressedUpdateObject(packet, blocks);
+				}
+				else if (!blocks.empty())
+				{
+					game::server_write::updateObject(packet, blocks);
+				}
+
+				subscriber.sendPacket(packet, buffer);
+			});
+
+			// We updated the object
+			object.clearUpdateMask();
 		}
 	}
 

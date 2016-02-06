@@ -126,6 +126,8 @@ namespace wowpp
 		GameObject *findObjectByGUID(UInt64 guid);
 		/// Updates this world instance. Should be called once per tick.
 		void update();
+		/// Flushes an object update.
+		void flushObjectUpdate(UInt64 guid);
 		/// Gets the map data of this instance. Note that instances share the same map data to save
 		/// memory.
 		Map *getMapData() { return m_map; }
@@ -133,6 +135,8 @@ namespace wowpp
 		CreatureSpawner *findCreatureSpawner(const String &name);
 		/// 
 		WorldObjectSpawner *findObjectSpawner(const String &name);
+		/// Gets a reference of this world instances item id generator.
+		IdGenerator<UInt64> &getItemIdGenerator() { return m_itemIdGenerator; }
 
 		/// Calls a specific callback method for every game object added to the world.
 		/// An object can be everything, from a player over a creature to a chest.
@@ -148,6 +152,7 @@ namespace wowpp
 	private:
 
 		void onObjectMoved(GameObject &object, const math::Vector3 &oldPosition, float oldO);
+		void updateObject(GameObject &object);
 
 	private:
 
@@ -157,6 +162,7 @@ namespace wowpp
 		std::unique_ptr<UnitFinder> m_unitFinder;
 		std::unique_ptr<VisibilityGrid> m_visibilityGrid;
 		IdGenerator<UInt64> &m_objectIdGenerator;
+		IdGenerator<UInt64> m_itemIdGenerator;
 		GameObjectsById m_objectsById;
 		proto::Project &m_project;
 		const proto::MapEntry &m_mapEntry;

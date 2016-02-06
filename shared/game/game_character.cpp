@@ -430,11 +430,8 @@ namespace wowpp
 			else if (req.itemid() != 0)
 			{
 				// Not enough items?
-				auto it = m_itemCount.find(req.itemid());
-				if (it == m_itemCount.end())
-					return false;
-
-				if (it->second < req.itemcount())
+				auto itemCount = m_inventory.getItemCount(req.itemid());
+				if (itemCount < req.itemcount())
 					return false;
 			}
 
@@ -561,111 +558,6 @@ namespace wowpp
 	void GameCharacter::setName(const String &name)
 	{
 		m_name = name;
-	}
-
-	void GameCharacter::addItem(std::shared_ptr<GameItem> item, UInt16 slot)
-	{
-		if (slot < player_equipment_slots::End)
-		{
-			applyItemStats(*item, true);
-		}
-
-		// Quest check
-		UInt32 entry = item->getEntry().id();
-		UInt32 addCount = item->getUInt32Value(item_fields::StackCount);
-
-		// Update count value
-		{
-			auto it = m_itemCount.find(entry);
-			if (it == m_itemCount.end())
-			{
-				m_itemCount[entry] = addCount;
-			}
-			else
-			{
-				m_itemCount[entry] += addCount;
-			}
-		}
-
-		for (int i = 0; i < 25; ++i)
-		{
-			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
-			if (logId == 0)
-				continue;
-
-			// Verify quest state
-			auto it = m_quests.find(logId);
-			if (it == m_quests.end())
-				continue;
-
-			if (it->second.status != game::quest_status::Incomplete)
-				continue;
-
-			// Find quest
-			const auto *quest = getProject().quests.getById(logId);
-			if (!quest)
-				continue;
-
-			// Counter needed so that the correct field is used
-			UInt8 reqIndex = 0;
-			for (const auto &req : quest->requirements())
-			{
-				if (req.itemid() == entry)
-				{
-					// Found it: Complete quest if completable
-					if (fulfillsQuestRequirements(*quest))
-					{
-						it->second.status = game::quest_status::Complete;
-						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
-						questDataChanged(logId, it->second);
-					}
-					break;
-				}
-			}
-		}
-
-		// Check if that item already exists
-		auto it = m_itemSlots.find(slot);
-		if (it == m_itemSlots.end())
-		{
-			// Set new item guid
-			setUInt64Value(character_fields::InvSlotHead + (slot * 2), item->getGuid());
-			item->setUInt64Value(item_fields::Contained, getGuid());
-			item->setUInt64Value(item_fields::Owner, getGuid());
-			
-			// If this item was equipped, make it visible for other players
-			if (slot < player_equipment_slots::End)
-			{
-				setUInt32Value(character_fields::VisibleItem1_0 + (slot * 16), item->getEntry().id());
-				setUInt64Value(character_fields::VisibleItem1_CREATOR + (slot * 16), item->getUInt64Value(item_fields::Creator));
-
-				// TODO: Apply Enchantment Slots
-
-				// TODO: Apply random property settings
-
-			}
-
-			// Store new item
-			m_itemSlots[slot] = std::move(item);
-		}
-		else
-		{
-			// Item already exists, increase the stack number, old item will be deleted
-			auto &playerItem = it->second;
-
-			// Increase stack
-			const UInt32 existingStackCount = playerItem->getUInt32Value(item_fields::StackCount);
-			const UInt32 additionalStackCount = item->getUInt32Value(item_fields::StackCount);
-
-			// Apply stack count
-			playerItem->setUInt32Value(item_fields::StackCount, existingStackCount + additionalStackCount);
-		}
-
-		// Equipment changed
-		if (slot < player_equipment_slots::End)
-		{
-			updateAllStats();
-		}
 	}
 
 	void GameCharacter::addSpell(const proto::SpellEntry &spell)
@@ -917,138 +809,7 @@ namespace wowpp
 		}
 	}
 
-	bool GameCharacter::isValidItemPos(UInt8 bag, UInt8 slot) const
-	{
-		// Has a bag been specified?
-		if (bag == 0)
-			return true;
-
-		// Any bag
-		if (bag == 255)
-		{
-			if (slot == 255)
-				return true;
-
-			// equipment
-			if (slot < player_equipment_slots::End)
-				return true;
-
-			// bag equip slots
-			if (slot >= player_inventory_slots::Start && slot < player_inventory_slots::End)
-				return true;
-
-			// backpack slots
-			if (slot >= player_item_slots::Start && slot < player_item_slots::End)
-				return true;
-
-			// keyring slots
-			if (slot >= player_key_ring_slots::Start && slot < player_key_ring_slots::End)
-				return true;
-
-			// bank main slots
-			if (slot >= player_bank_item_slots::Start && slot < player_bank_item_slots::End)
-				return true;
-
-			// bank bag slots
-			if (slot >= player_bank_bag_slots::Start && slot < player_bank_bag_slots::End)
-				return true;
-
-			// Invalid
-			return false;
-		}
-
-		// bag content slots
-		if (bag >= player_inventory_slots::Start && bag < player_inventory_slots::End)
-		{
-			// TODO: Get bag at the specified position
-
-			// Any slot
-			if (slot == 255)
-				return true;
-
-			//return slot < pBag->GetBagSize();
-			return false;
-		}
-
-		// bank bag content slots
-		if (bag >= player_bank_bag_slots::Start && bag < player_bank_bag_slots::End)
-		{
-			// TODO: Get bag at the specified position
-
-			// Any slot
-			if (slot == 255)
-				return true;
-
-			//return slot < pBag->GetBagSize();
-			return false;
-		}
-
-		return false;
-	}
-
-	namespace
-	{
-		game::weapon_prof::Type weaponProficiency(UInt32 subclass)
-		{
-			switch (subclass)
-			{
-				case game::item_subclass_weapon::Axe:
-					return game::weapon_prof::OneHandAxe;
-				case game::item_subclass_weapon::Axe2:
-					return game::weapon_prof::TwoHandAxe;
-				case game::item_subclass_weapon::Bow:
-					return game::weapon_prof::Bow;
-				case game::item_subclass_weapon::CrossBow:
-					return game::weapon_prof::Crossbow;
-				case game::item_subclass_weapon::Dagger:
-					return game::weapon_prof::Dagger;
-				case game::item_subclass_weapon::Fist:
-					return game::weapon_prof::Fist;
-				case game::item_subclass_weapon::Gun:
-					return game::weapon_prof::Gun;
-				case game::item_subclass_weapon::Mace:
-					return game::weapon_prof::OneHandMace;
-				case game::item_subclass_weapon::Mace2:
-					return game::weapon_prof::TwoHandMace;
-				case game::item_subclass_weapon::Polearm:
-					return game::weapon_prof::Polearm;
-				case game::item_subclass_weapon::Staff:
-					return game::weapon_prof::Staff;
-				case game::item_subclass_weapon::Sword:
-					return game::weapon_prof::OneHandSword;
-				case game::item_subclass_weapon::Sword2:
-					return game::weapon_prof::TwoHandSword;
-				case game::item_subclass_weapon::Thrown:
-					return game::weapon_prof::Throw;
-				case game::item_subclass_weapon::Wand:
-					return game::weapon_prof::Wand;
-			}
-
-			return game::weapon_prof::None;
-		}
-		game::armor_prof::Type armorProficiency(UInt32 subclass)
-		{
-			switch (subclass)
-			{
-				case game::item_subclass_armor::Misc:
-					return game::armor_prof::Common;
-				case game::item_subclass_armor::Buckler:
-				case game::item_subclass_armor::Shield:
-					return game::armor_prof::Shield;
-				case game::item_subclass_armor::Cloth:
-					return game::armor_prof::Cloth;
-				case game::item_subclass_armor::Leather:
-					return game::armor_prof::Leather;
-				case game::item_subclass_armor::Mail:
-					return game::armor_prof::Mail;
-				case game::item_subclass_armor::Plate:
-					return game::armor_prof::Plate;
-			}
-
-			return game::armor_prof::None;
-		}
-	}
-
+#if 0
 	void GameCharacter::swapItem(UInt16 src, UInt16 dst)
 	{
 		UInt8 srcBag = src >> 8;
@@ -1296,36 +1057,7 @@ namespace wowpp
 		if (updateStats)
 			updateAllStats();
 	}
-
-	GameItem * GameCharacter::getItemByPos(UInt8 bag, UInt8 slot) const
-	{
-		if (bag == player_inventory_slots::Bag_0)
-		{
-			if (slot < player_bank_item_slots::End || (slot >= player_key_ring_slots::Start && slot < player_key_ring_slots::End))
-			{
-				auto it = m_itemSlots.find(slot);
-				if (it != m_itemSlots.end())
-				{
-					return it->second.get();
-				}
-			}
-		}
-		else
-		{
-			// Is this a valid bag slot?
-			const bool isBagSlot = (
-				(bag >= player_inventory_slots::Start && bag < player_inventory_slots::End) ||
-				(bag >= player_bank_bag_slots::Start && bag < player_bank_bag_slots::End)
-				);
-
-			if (isBagSlot)
-			{
-				// TODO: Get item from bag
-			}
-		}
-
-		return nullptr;
-	}
+#endif
 
 	void GameCharacter::updateArmor()
 	{
@@ -1334,11 +1066,11 @@ namespace wowpp
 		// Apply equipment
 		for (UInt8 i = player_equipment_slots::Start; i < player_equipment_slots::End; ++i)
 		{
-			auto it = m_itemSlots.find(i);
-			if (it != m_itemSlots.end())
+			auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, i));
+			if (item)
 			{
 				// Add armor value from item
-				baseArmor += it->second->getEntry().armor();
+				baseArmor += item->getEntry().armor();
 			}
 		}
 
@@ -1453,11 +1185,11 @@ namespace wowpp
 		else
 		{
 			// Check if we are wearing a weapon in our main hand
-			auto it = m_itemSlots.find(player_equipment_slots::Mainhand);
-			if (it != m_itemSlots.end())
+			auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
+			if (item)
 			{
 				// Get weapon damage values
-				const auto &entry = it->second->getEntry();
+				const auto &entry = item->getEntry();
 				if (entry.damage(0).mindmg() != 0.0f) minDamage = entry.damage(0).mindmg();
 				if (entry.damage(0).maxdmg() != 0.0f) maxDamage = entry.damage(0).maxdmg();
 				if (entry.delay() != 0) attackTime = entry.delay();
@@ -1620,14 +1352,8 @@ namespace wowpp
 			return false;
 		}
 
-		const UInt16 slot = static_cast<UInt16>(player_equipment_slots::Offhand);
-		auto it = m_itemSlots.find(slot);
-		if (it == m_itemSlots.end())
-		{
-			return false;
-		}
-
-		auto item = it->second;
+		const UInt16 slot = Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand);
+		auto item = m_inventory.getItemAtSlot(slot);
 		if (!item)
 		{
 			return false;
@@ -1648,9 +1374,7 @@ namespace wowpp
 			return false;
 		}
 
-		const UInt16 slot = static_cast<UInt16>(player_equipment_slots::Mainhand);
-		auto it = m_itemSlots.find(slot);
-		return (it != m_itemSlots.end());
+		return hasMainHandWeapon();
 	}
 
 	bool GameCharacter::canDodge() const
@@ -1752,85 +1476,6 @@ namespace wowpp
 		}
 	}
 
-	game::InventoryChangeFailure GameCharacter::canStoreItem(UInt8 bag, UInt8 slot, ItemPosCountVector &dest, const proto::ItemEntry &item, UInt32 count, bool swap, UInt32 *noSpaceCount /*= nullptr*/) const
-	{
-		// No specific bag, find first free slot
-		if (bag == 0xFF && slot == 0xFF)
-		{
-			// Find items
-			for (auto &itemInst : m_itemSlots)
-			{
-				if (itemInst.second->getEntry().id() == item.id())
-				{
-					// Check item stack
-					UInt32 stackCount = itemInst.second->getUInt32Value(item_fields::StackCount);
-					if (stackCount < item.maxstack())
-					{
-						UInt32 delta = limit<UInt32>(item.maxstack() - stackCount, 0, count);
-						count -= delta;
-						dest.emplace_back(ItemPosCount(itemInst.first, delta));
-						
-						if (count == 0)
-							return game::inventory_change_failure::Okay;
-					}
-				}
-			}
-
-			// Iterate through items by slot
-			for (UInt8 i = player_inventory_pack_slots::Start; i < player_inventory_pack_slots::End; ++i)
-			{
-				auto it = m_itemSlots.find(i);
-				if (it == m_itemSlots.end())
-				{
-					// Found an empty slot!
-					dest.emplace_back(ItemPosCount(i, count));
-					return game::inventory_change_failure::Okay;
-				}
-			}
-
-			return game::inventory_change_failure::InventoryFull;
-		}
-
-		return game::inventory_change_failure::InternalBagError;
-	}
-
-	void GameCharacter::removeItem(UInt8 bag, UInt8 slot, UInt8 count)
-	{
-		if (bag == 0xFF)
-		{
-			auto it = m_itemSlots.find(slot);
-			if (it != m_itemSlots.end())
-			{
-				UInt32 stackCount = it->second->getUInt32Value(item_fields::StackCount);
-				if (stackCount > count && count > 0)
-				{
-					stackCount -= count;
-					it->second->setUInt32Value(item_fields::StackCount, stackCount);
-
-					// Reduce count cache
-					m_itemCount[it->second->getEntry().id()] -= count;
-
-					// TODO: Update item instance
-
-					return;
-				}
-
-				setUInt64Value(character_fields::InvSlotHead + (slot * 2), 0);
-				m_itemSlots.erase(it);
-
-				// Reduce count cache
-				m_itemCount[it->second->getEntry().id()] -= stackCount;
-
-				if (slot < player_equipment_slots::End)
-				{
-					setUInt32Value(character_fields::VisibleItem1_0 + (slot * 16), 0);
-					setUInt64Value(character_fields::VisibleItem1_CREATOR + (slot * 16), 0);
-					updateAllStats();
-				}
-			}
-		}
-	}
-
 	void GameCharacter::getHome(UInt32 &out_map, math::Vector3 &out_pos, float &out_rot) const
 	{
 		out_map = m_homeMap;
@@ -1849,30 +1494,15 @@ namespace wowpp
 		homeChanged();
 	}
 
-	GameItem * GameCharacter::getItemByGUID(UInt64 guid, UInt8 &out_bag, UInt8 &out_slot)
-	{
-		for (auto &item : m_itemSlots)
-		{
-			if (item.second->getGuid() == guid)
-			{
-				out_bag = 0xFF;
-				out_slot = static_cast<UInt8>(item.first);
-				return item.second.get();
-			}
-		}
-
-		return nullptr;
-	}
-
 	bool GameCharacter::hasMainHandWeapon() const
 	{
-		auto *item = getItemByPos(0xFF, player_equipment_slots::Mainhand);
-		return (item != nullptr);
+		auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
+		return item != nullptr;
 	}
 
 	bool GameCharacter::hasOffHandWeapon() const
 	{
-		auto *item = getItemByPos(0xFF, player_equipment_slots::Offhand);
+		auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
 		return (item && item->getEntry().inventorytype() != game::inventory_type::Shield);
 	}
 
@@ -1890,6 +1520,7 @@ namespace wowpp
 			<< io::write<float>(object.m_homePos[1])
 			<< io::write<float>(object.m_homePos[2])
 			<< io::write<float>(object.m_homeRotation)
+			<< object.m_inventory
 			<< io::write<NetUInt16>(object.m_quests.size());
 		for (const auto &pair : object.m_quests)
 		{
@@ -1920,7 +1551,8 @@ namespace wowpp
 			>> io::read<float>(object.m_homePos[0])
 			>> io::read<float>(object.m_homePos[1])
 			>> io::read<float>(object.m_homePos[2])
-			>> io::read<float>(object.m_homeRotation);
+			>> io::read<float>(object.m_homeRotation)
+			>> object.m_inventory;
 		UInt16 questCount = 0;
 		r
 			>> io::read<NetUInt16>(questCount);

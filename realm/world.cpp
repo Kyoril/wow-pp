@@ -180,7 +180,7 @@ namespace wowpp
 			std::bind(realm_write::loginAnswer, std::placeholders::_1, login_result::Success, std::cref(m_realmName)));
 	}
 
-	void World::enterWorldInstance(UInt64 characterGuid, UInt32 instanceId, const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &out_items)
+	void World::enterWorldInstance(UInt64 characterGuid, UInt32 instanceId, const GameCharacter &character, const std::vector<ItemData> &out_items)
 	{
 		// Get a list of spells
 		std::vector<UInt32> spellIds;
@@ -382,32 +382,27 @@ namespace wowpp
 			character->initialize();
 
 			std::vector<UInt32> spellIds;
-			std::vector<pp::world_realm::ItemData> items;
-			if (!(pp::world_realm::world_read::characterData(packet, characterId, *character, spellIds, items)))
+			if (!(pp::world_realm::world_read::characterData(packet, characterId, *character, spellIds)))
 			{
 				ELOG("Error reading character data");
 				return;
 			}
 
 			// Save the character data
-			m_database.saveGameCharacter(*character, items, spellIds);
+			m_database.saveGameCharacter(*character, character->getInventory().getItemData(), spellIds);
 			return;
 		}
 		else
 		{
 			std::vector<UInt32> spellIds;
-
-			auto &items = player->getItemData();
-			items.clear();
-
-			if (!(pp::world_realm::world_read::characterData(packet, characterId, *player->getGameCharacter(), spellIds, items)))
+			if (!(pp::world_realm::world_read::characterData(packet, characterId, *player->getGameCharacter(), spellIds)))
 			{
 				ELOG("Error reading character data");
 				return;
 			}
 
 			// Save character
-			m_database.saveGameCharacter(*player->getGameCharacter(), items, spellIds);
+			m_database.saveGameCharacter(*player->getGameCharacter(), player->getGameCharacter()->getInventory().getItemData(), spellIds);
 		}
 	}
 
@@ -531,7 +526,7 @@ namespace wowpp
 			std::bind(pp::world_realm::realm_write::removeIgnore, std::placeholders::_1, characterGuid, removeGuid));
 	}
 
-	void World::itemData(UInt64 characterGuid, const std::map<UInt16, pp::world_realm::ItemData>& items)
+	void World::itemData(UInt64 characterGuid, const std::map<UInt16, ItemData>& items)
 	{
 		m_connection->sendSinglePacket(
 			std::bind(pp::world_realm::realm_write::itemData, std::placeholders::_1, characterGuid, std::cref(items)));

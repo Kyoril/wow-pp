@@ -130,7 +130,7 @@ namespace wowpp
 	game::ResponseCode MySQLDatabase::createCharacter(
 		UInt32 accountId, 
 		const std::vector<const proto::SpellEntry*> &spells, 
-		const std::vector<pp::world_realm::ItemData> &items, 
+		const std::vector<ItemData> &items, 
 		game::CharEntry &character)
 	{
 		// See if the character name is already in use
@@ -418,7 +418,7 @@ namespace wowpp
 		for (auto &entry : out_characters)
 		{
 			std::ostringstream strm;
-			strm << "SELECT `entry`, `slot` FROM `character_items` WHERE (`slot` BETWEEN 0 AND 19) AND (`owner` = " << entry.id << ") LIMIT 19;";
+			strm << "SELECT `entry`, `slot` FROM `character_items` WHERE (`slot` BETWEEN 65280 AND 65299) AND (`owner` = " << entry.id << ") LIMIT 19;";
 
 			wowpp::MySQL::Select select(m_connection, strm.str());
 			if (select.success())
@@ -435,7 +435,7 @@ namespace wowpp
 					const auto *item = m_project.items.getById(itemEntry);
 					if (item)
 					{
-						entry.equipment[slot] = item;
+						entry.equipment[slot & 0xFF] = item;
 					}
 					
 					row = row.next(select);
@@ -477,7 +477,7 @@ namespace wowpp
 		return game::response_code::CharDeleteSuccess;
 	}
 
-	bool MySQLDatabase::getGameCharacter(DatabaseId characterId, GameCharacter &out_character, std::vector<pp::world_realm::ItemData> &out_items)
+	bool MySQLDatabase::getGameCharacter(DatabaseId characterId, GameCharacter &out_character)
 	{
 		wowpp::MySQL::Select select(m_connection, (boost::format(
 			//       0       1       2        3        4       5        6       7     8       9     
@@ -626,13 +626,13 @@ namespace wowpp
 					while (itemRow)
 					{
 						// Read item data
-						pp::world_realm::ItemData data;
+						ItemData data;
 						itemRow.getField(0, data.entry);
 						itemRow.getField(1, data.slot);
 						itemRow.getField(2, data.creator);
 						itemRow.getField<UInt8, UInt16>(3, data.stackCount);
 						itemRow.getField(4, data.durability);
-						out_items.emplace_back(std::move(data));
+						out_character.getInventory().addRealmData(data);
 
 						// Next row
 						itemRow = itemRow.next(itemSelect);
@@ -700,7 +700,7 @@ namespace wowpp
 		}
 	}
 
-	bool MySQLDatabase::saveGameCharacter(const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &items, const std::vector<UInt32> &spells)
+	bool MySQLDatabase::saveGameCharacter(const GameCharacter &character, const std::vector<ItemData> &items, const std::vector<UInt32> &spells)
 	{
 		GameTime start = getCurrentTime();
 		MySQL::Transaction transaction(m_connection);

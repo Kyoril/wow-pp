@@ -84,8 +84,7 @@ namespace wowpp
 			std::bind(&Player::onTargetAuraUpdated, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 		m_onTeleport = m_character->teleport.connect(
 			std::bind(&Player::onTeleport, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-		m_onCooldownEvent = m_character->cooldownEvent.connect(
-			[this](UInt32 spellId) {
+		m_onCooldownEvent = m_character->cooldownEvent.connect([this](UInt32 spellId) {
 				sendProxyPacket(std::bind(game::server_write::cooldownEvent, std::placeholders::_1, spellId, m_character->getGuid()));
 		});
 		m_questChanged = m_character->questDataChanged.connect([this](UInt32 questId, const QuestStatusData &data) {
@@ -95,6 +94,13 @@ namespace wowpp
 			sendProxyPacket(std::bind(game::server_write::questupdateAddKill, std::placeholders::_1, quest.id(), entry, count, total, guid));
 		});
 
+		// Inventory change signals
+		auto &inventory = m_character->getInventory();
+		m_itemCreated = inventory.itemInstanceCreated.connect(std::bind(&Player::onItemCreated, this, std::placeholders::_1, std::placeholders::_2));
+		m_itemUpdated = inventory.itemInstanceUpdated.connect(std::bind(&Player::onItemUpdated, this, std::placeholders::_1, std::placeholders::_2));
+		m_itemDestroyed = inventory.itemInstanceDestroyed.connect(std::bind(&Player::onItemDestroyed, this, std::placeholders::_1, std::placeholders::_2));
+
+		// Root / stun change signals
 		auto onRootOrStunUpdate = [this](bool flag) {
 			if (flag || m_character->isRooted() || m_character->isStunned())
 			{
@@ -110,10 +116,10 @@ namespace wowpp
 					std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));
 			}
 		};
-
 		m_onRootUpdate = m_character->rootStateChanged.connect(onRootOrStunUpdate);
 		m_onStunUpdate = m_character->stunStateChanged.connect(onRootOrStunUpdate);
 
+		// Group update signal
 		m_groupUpdate.ended.connect([this]()
 		{
 			math::Vector3 location(m_character->getLocation());
@@ -358,10 +364,17 @@ namespace wowpp
 		sendProxyPacket(
 			std::bind(game::server_write::loginSetTimeSpeed, std::placeholders::_1, 0));
 
-		// Blocks
+		// Create object blocks used in spawn packet
 		std::vector<std::vector<char>> blocks;
 
-		// Write create object packet
+		// Create item spawn packets - this actually creates the item instances
+		// Note: We create these blocks first, so that the character item fields can be set properly
+		// since we want the right values in the spawn packet and we don't want to send another update 
+		// packet for this right away
+		m_character->getInventory().addSpawnBlocks(blocks);
+
+		// Write create object block (This block will be made the first block even though it is created
+		// as the last block)
 		std::vector<char> createBlock;
 		io::VectorSink sink(createBlock);
 		io::Writer writer(sink);
@@ -374,7 +387,7 @@ namespace wowpp
 
 			// Header with object guid and type
 			writer
-			<< io::write<NetUInt8>(updateType);
+				<< io::write<NetUInt8>(updateType);
 
 			UInt64 guidCopy = guid;
 			UInt8 packGUID[8 + 1];
@@ -393,10 +406,10 @@ namespace wowpp
 			}
 			writer.sink().write((const char*)&packGUID[0], size);
 			writer
-			<< io::write<NetUInt8>(objectTypeId);
+				<< io::write<NetUInt8>(objectTypeId);
 
 			writer
-			<< io::write<NetUInt8>(updateFlags);
+				<< io::write<NetUInt8>(updateFlags);
 
 			// Write movement update
 			{
@@ -406,7 +419,7 @@ namespace wowpp
 					<< io::write<NetUInt8>(0x00)
 					<< io::write<NetUInt32>(mTimeStamp());	//TODO: Time
 
-				// Position & Rotation
+															// Position & Rotation
 				float o = m_character->getOrientation();
 				math::Vector3 location(m_character->getLocation());
 
@@ -464,88 +477,19 @@ namespace wowpp
 			m_character->writeValueUpdateBlock(writer, *m_character, true);
 
 			// Add block
-			blocks.emplace_back(std::move(createBlock));
+			blocks.emplace(blocks.begin(), std::move(createBlock));
 		}
 
-		// Create item spawn packets
-		for (auto &item : m_character->getItems())
-		{
-			const UInt16 &slot = item.first;
-			const auto &instance = item.second;
-
-			// Check if we need to send that item
-			const bool sendItemToPlayer = (
-				slot < player_bank_bag_slots::End ||
-				(slot >= player_key_ring_slots::Start && slot < player_key_ring_slots::End)
-				);
-			if (sendItemToPlayer)
-			{
-				// Spawn this item
-				std::vector<char> createItemBlock;
-				io::VectorSink createItemSink(createItemBlock);
-				io::Writer createItemWriter(createItemSink);
-				{
-					UInt8 updateType = 0x02;						// Item
-					UInt8 updateFlags = 0x08 | 0x10;				// 
-					UInt8 objectTypeId = 0x01;						// Item
-
-					UInt64 guid = instance->getGuid();
-
-					// Header with object guid and type
-					createItemWriter
-						<< io::write<NetUInt8>(updateType);
-					UInt64 guidCopy = guid;
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-					for (UInt8 i = 0; guidCopy != 0; ++i)
-					{
-						if (guidCopy & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guidCopy & 0xFF);
-							++size;
-						}
-
-						guidCopy >>= 8;
-					}
-					createItemWriter.sink().write((const char*)&packGUID[0], size);
-					createItemWriter
-						<< io::write<NetUInt8>(objectTypeId)
-						<< io::write<NetUInt8>(updateFlags);
-
-					// Lower-GUID update?
-					if (updateFlags & 0x08)
-					{
-						createItemWriter
-							<< io::write<NetUInt32>(guidLowerPart(guid));
-					}
-
-					// High-GUID update?
-					if (updateFlags & 0x10)
-					{
-						createItemWriter
-							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
-					}
-
-					// Write values update
-					instance->writeValueUpdateBlock(createItemWriter, *m_character, true);
-				}
-				blocks.emplace_back(std::move(createItemBlock));
-			}
-		}
-
-		// Send packet
+		// Send the actual spawn packet packet
 		sendProxyPacket(
 			std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
 
-		// Send time sync request packet
+		// Send time sync request packet (this will also enable character movement at the client)
 		sendProxyPacket(
 			std::bind(game::server_write::timeSyncReq, std::placeholders::_1, 0));
 
 		// Find our tile
-		TileIndex2D tileIndex = getTileIndex();
-		VisibilityTile &tile = m_instance.getGrid().requireTile(tileIndex);
+		VisibilityTile &tile = m_instance.getGrid().requireTile(getTileIndex());
 		tile.getWatchers().add(this);
 	}
 
@@ -828,139 +772,17 @@ namespace wowpp
 			return;
 		}
 
-		// Check if we can store that item
-		ItemPosCountVector slots;
-		auto result = m_character->canStoreItem(0xFF, 0xFF, slots, *item, lootItem->count, false, nullptr);
+		auto result = m_character->getInventory().createItems(*item, lootItem->count);
 		if (result != game::inventory_change_failure::Okay)
 		{
-			sendProxyPacket(
-				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, result, nullptr, nullptr));
+			// Error
 			return;
 		}
-
-		if (slots.empty())
-		{
-			sendProxyPacket(
-				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::BagFull, nullptr, nullptr));
-			return;
-		}
-
-		static UInt64 lootCounter = 0x800000;
-
-		for (auto &pos : slots)
-		{
-			auto *itemAtSlot= m_character->getItemByPos(0xFF, pos.position);
-
-			// Loot items and add them
-			const auto *item = m_project.items.getById(lootItem->definition.item());
-			assert(item);
-
-			auto inst = std::make_shared<GameItem>(m_project, *item);
-			inst->initialize();
-			inst->setUInt64Value(object_fields::Guid, createEntryGUID(lootCounter++, lootItem->definition.item(), guid_type::Item));
-			inst->setUInt32Value(item_fields::StackCount, pos.count);
-			m_character->addItem(inst, pos.position);
-
-			// Spawn this item
-			std::vector<std::vector<char>> blocks;
-			std::vector<char> createItemBlock;
-			if (itemAtSlot == nullptr)
-			{
-				io::VectorSink createItemSink(createItemBlock);
-				io::Writer createItemWriter(createItemSink);
-				{
-					UInt8 updateType = 0x02;						// Item
-					UInt8 updateFlags = 0x08 | 0x10;				// 
-					UInt8 objectTypeId = 0x01;						// Item
-
-					UInt64 guid = inst->getGuid();
-
-					// Header with object guid and type
-					createItemWriter
-						<< io::write<NetUInt8>(updateType);
-					UInt64 guidCopy = guid;
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-					for (UInt8 i = 0; guidCopy != 0; ++i)
-					{
-						if (guidCopy & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guidCopy & 0xFF);
-							++size;
-						}
-
-						guidCopy >>= 8;
-					}
-					createItemWriter.sink().write((const char*)&packGUID[0], size);
-					createItemWriter
-						<< io::write<NetUInt8>(objectTypeId)
-						<< io::write<NetUInt8>(updateFlags);
-
-					// Lower-GUID update?
-					if (updateFlags & 0x08)
-					{
-						createItemWriter
-							<< io::write<NetUInt32>(guidLowerPart(guid));
-					}
-
-					// High-GUID update?
-					if (updateFlags & 0x10)
-					{
-						createItemWriter
-							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
-					}
-
-					// Write values update
-					inst->writeValueUpdateBlock(createItemWriter, *m_character, true);
-				}
-			}
-			else
-			{
-				io::VectorSink sink(createItemBlock);
-				io::Writer writer(sink);
-				{
-					UInt8 updateType = 0x00;						// Update type (0x00 = UPDATE_VALUES)
-
-					// Header with object guid and type
-					UInt64 guid = itemAtSlot->getGuid();
-					writer
-						<< io::write<NetUInt8>(updateType);
-
-					UInt64 guidCopy = guid;
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-					for (UInt8 i = 0; guidCopy != 0; ++i)
-					{
-						if (guidCopy & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guidCopy & 0xFF);
-							++size;
-						}
-
-						guidCopy >>= 8;
-					}
-					writer.sink().write((const char*)&packGUID[0], size);
-
-					// Write values update
-					itemAtSlot->writeValueUpdateBlock(writer, *m_character, false);
-				}
-
-				itemAtSlot->clearUpdateMask();
-			}
-
-			// Send packet
-			blocks.emplace_back(std::move(createItemBlock));
-			sendProxyPacket(
-				std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
-			
-			sendProxyPacket(
-				std::bind(game::server_write::itemPushResult, std::placeholders::_1, 
-					m_character->getGuid(), std::cref(*inst), true, false, 0xFF, pos.position, pos.count, m_character->getItemCount(item->id())));
-
+		/*
+		sendProxyPacket(
+			std::bind(game::server_write::itemPushResult, std::placeholders::_1, 
+				m_character->getGuid(), std::cref(*inst), true, false, 0xFF, pos.position, pos.count, m_character->getItemCount(item->id())));
+		
 			// Group broadcasting
 			if (m_character->getGroupId() != 0)
 			{
@@ -989,7 +811,7 @@ namespace wowpp
 					});
 				}
 			}
-		}
+		*/
 
 		m_loot->takeItem(lootSlot);
 	}
@@ -1003,24 +825,12 @@ namespace wowpp
 			return;
 		}
 
-		// Get item
-		auto *item = m_character->getItemByPos(srcBag, srcSlot);
+		auto &inv = m_character->getInventory();
+		auto absSrcSlot = Inventory::getAbsoluteSlot(srcBag, srcSlot);
+		auto item = inv.getItemAtSlot(absSrcSlot);
 		if (!item)
 		{
-			return;
-		}
-
-		if (item->getEntry().requiredlevel() > 0 &&
-			item->getEntry().requiredlevel() > m_character->getLevel())
-		{
-			m_character->inventoryChangeFailure(game::inventory_change_failure::CantEquipLevel, nullptr, nullptr);
-			return;
-		}
-
-		if (item->getEntry().requiredskill() != 0 &&
-			!m_character->hasSkill(item->getEntry().requiredskill()))
-		{
-			m_character->inventoryChangeFailure(game::inventory_change_failure::CantEquipSkill, nullptr, nullptr);
+			ELOG("Item not found");
 			return;
 		}
 
@@ -1067,7 +877,7 @@ namespace wowpp
 			targetSlot = player_equipment_slots::Offhand;
 			break;
 		case game::inventory_type::Weapon:
-			targetSlot = player_equipment_slots::Mainhand;	// TODO
+			targetSlot = player_equipment_slots::Mainhand;
 			break;
 		case game::inventory_type::Finger:
 			targetSlot = player_equipment_slots::Finger1;
@@ -1088,18 +898,25 @@ namespace wowpp
 			targetSlot = player_equipment_slots::Waist;
 			break;
 		default:
-			m_character->inventoryChangeFailure(game::inventory_change_failure::ItemCantBeEquipped, nullptr, nullptr);
 			break;
 		}
 
-		if (targetSlot >= player_equipment_slots::End)
+		// Check if valid slot found
+		auto absDstSlot = Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, targetSlot);
+		if (!Inventory::isEquipmentSlot(absDstSlot))
 		{
-			// Not equippable
+			ELOG("Invalid target slot")
+			m_character->inventoryChangeFailure(game::inventory_change_failure::ItemCantBeEquipped, item.get(), nullptr);
 			return;
 		}
 
 		// Get item at target slot
-		m_character->swapItem(srcSlot | 0xFF00, targetSlot | 0xFF00);
+		auto result = inv.swapItems(absSrcSlot, absDstSlot);
+		if (result != game::inventory_change_failure::Okay)
+		{
+			// Something went wrong
+			ELOG("ERROR: " << result);
+		}
 	}
 
 	void Player::handleAutoStoreBagItem(game::Protocol::IncomingPacket &packet)
@@ -1128,8 +945,6 @@ namespace wowpp
 		}
 
 		DLOG("CMSG_SWAP_ITEM(src bag: " << UInt32(srcBag) << ", src slot: " << UInt32(srcSlot) << ", dst bag: " << UInt32(dstBag) << ", dst slot: " << UInt32(dstSlot) << ")");
-
-		// TODO
 		sendProxyPacket(
 			std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::InternalBagError, nullptr, nullptr));
 	}
@@ -1143,30 +958,14 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_SWAP_INV_ITEM from " << UInt32(srcSlot) << " to " << UInt32(dstSlot));
-
-		// We don't need to do anything
-		if (srcSlot == dstSlot)
-			return;
-
-		// Validate source and dest slot
-		if (!m_character->isValidItemPos(player_inventory_slots::Bag_0, srcSlot))
+		auto &inv = m_character->getInventory();
+		auto result = inv.swapItems(
+			Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, srcSlot),
+			Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, dstSlot));
+		if (!result)
 		{
-			sendProxyPacket(
-				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::ItemNotFound, nullptr, nullptr));
-			return;
+			// An error happened
 		}
-
-		if (!m_character->isValidItemPos(player_inventory_slots::Bag_0, dstSlot))
-		{
-			sendProxyPacket(
-				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::ItemDoesNotGoToSlot, nullptr, nullptr));
-			return;
-		}
-
-		UInt16 src = ((player_inventory_slots::Bag_0 << 8) | srcSlot);
-		UInt16 dst = ((player_inventory_slots::Bag_0 << 8) | dstSlot);
-		m_character->swapItem(src, dst);
 	}
 
 	void Player::handleSplitItem(game::Protocol::IncomingPacket &packet)
@@ -1179,8 +978,6 @@ namespace wowpp
 		}
 
 		DLOG("CMSG_SPLIT_ITEM(src bag: " << UInt32(srcBag) << ", src slot: " << UInt32(srcSlot) << ", dst bag: " << UInt32(dstBag) << ", dst slot: " << UInt32(dstSlot) << ", count: " << UInt32(count) << ")");
-
-		// TODO
 		sendProxyPacket(
 			std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::InternalBagError, nullptr, nullptr));
 	}
@@ -1196,8 +993,6 @@ namespace wowpp
 		}
 
 		DLOG("CMSG_AUTO_EQUIP_ITEM_SLOT(item: 0x" << std::hex << std::uppercase << std::setw(16) << std::setfill('0') << itemGUID << std::dec << ", dst slot: " << UInt32(dstSlot) << ")");
-
-		// TODO
 		sendProxyPacket(
 			std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::InternalBagError, nullptr, nullptr));
 	}
@@ -1209,16 +1004,13 @@ namespace wowpp
 		{
 			return;
 		}
-
-		auto *item = m_character->getItemByPos(bag, slot);
-		if (!item)
+		
+		auto result = m_character->getInventory().removeItem(Inventory::getAbsoluteSlot(bag, slot), count);
+		if (!result)
 		{
 			sendProxyPacket(
-				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::ItemNotFound, nullptr, nullptr));
-			return;
+				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, result, nullptr, nullptr));
 		}
-
-		m_character->removeItem(bag, slot, count);
 	}
 
 	void Player::handleLoot(game::Protocol::IncomingPacket &packet)
@@ -1485,6 +1277,107 @@ namespace wowpp
 			// Destroy player instance
 			m_manager.playerDisconnected(*this);
 		}
+	}
+
+	void Player::onItemCreated(std::shared_ptr<GameItem> item, UInt16 slot)
+	{
+		// Now we can send the actual packet
+		std::vector<std::vector<char>> blocks;
+		std::vector<char> createItemBlock;
+		io::VectorSink createItemSink(createItemBlock);
+		io::Writer createItemWriter(createItemSink);
+		{
+			UInt8 updateType = 0x02;						// Item
+			UInt8 updateFlags = 0x08 | 0x10;				// 
+			UInt8 objectTypeId = 0x01;						// Item
+
+			UInt64 guid = item->getGuid();
+
+			// Header with object guid and type
+			createItemWriter
+				<< io::write<NetUInt8>(updateType);
+			UInt64 guidCopy = guid;
+			UInt8 packGUID[8 + 1];
+			packGUID[0] = 0;
+			size_t size = 1;
+			for (UInt8 i = 0; guidCopy != 0; ++i)
+			{
+				if (guidCopy & 0xFF)
+				{
+					packGUID[0] |= UInt8(1 << i);
+					packGUID[size] = UInt8(guidCopy & 0xFF);
+					++size;
+				}
+				guidCopy >>= 8;
+			}
+			createItemWriter.sink().write((const char*)&packGUID[0], size);
+			createItemWriter
+				<< io::write<NetUInt8>(objectTypeId)
+				<< io::write<NetUInt8>(updateFlags);
+			if (updateFlags & 0x08)
+			{
+				createItemWriter
+					<< io::write<NetUInt32>(guidLowerPart(guid));
+			}
+			if (updateFlags & 0x10)
+			{
+				createItemWriter
+					<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
+			}
+			item->writeValueUpdateBlock(createItemWriter, *m_character, true);
+		}
+
+		// Send packet
+		blocks.push_back(std::move(createItemBlock));
+		sendProxyPacket(
+			std::bind(game::server_write::updateObject, std::placeholders::_1, std::cref(blocks)));
+	}
+
+	void Player::onItemUpdated(std::shared_ptr<GameItem> item, UInt16 slot)
+	{
+		std::vector<std::vector<char>> blocks;
+		std::vector<char> createItemBlock;
+		io::VectorSink createItemSink(createItemBlock);
+		io::Writer createItemWriter(createItemSink);
+		io::VectorSink sink(createItemBlock);
+		io::Writer writer(sink);
+		{
+			UInt8 updateType = 0x00;						// Update type (0x00 = UPDATE_VALUES)
+			UInt64 guid = item->getGuid();
+			writer
+				<< io::write<NetUInt8>(updateType);
+
+			UInt64 guidCopy = guid;
+			UInt8 packGUID[8 + 1];
+			packGUID[0] = 0;
+			size_t size = 1;
+			for (UInt8 i = 0; guidCopy != 0; ++i)
+			{
+				if (guidCopy & 0xFF)
+				{
+					packGUID[0] |= UInt8(1 << i);
+					packGUID[size] = UInt8(guidCopy & 0xFF);
+					++size;
+				}
+
+				guidCopy >>= 8;
+			}
+			writer.sink().write((const char*)&packGUID[0], size);
+			item->writeValueUpdateBlock(writer, *m_character, false);
+		}
+
+		item->clearUpdateMask();
+
+		// Send packet
+		blocks.emplace_back(std::move(createItemBlock));
+		sendProxyPacket(
+			std::bind(game::server_write::updateObject, std::placeholders::_1, std::cref(blocks)));
+	}
+
+	void Player::onItemDestroyed(std::shared_ptr<GameItem> item, UInt16 slot)
+	{
+		sendProxyPacket(
+			std::bind(game::server_write::destroyObject, std::placeholders::_1, item->getGuid(), false));
 	}
 
 	void Player::handleRepopRequest(game::Protocol::IncomingPacket &packet)
@@ -1842,14 +1735,14 @@ namespace wowpp
 		SpellTargetMap targetMap;
 		if (!game::client_read::useItem(packet, bagId, slotId, spellCount, castCount, itemGuid, targetMap))
 		{
-			WLOG("Could not read packet data");
 			return;
 		}
 
 		// Get item
-		auto *item = m_character->getItemByPos(bagId, slotId);
+		auto item = m_character->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(bagId, slotId));
 		if (!item)
 		{
+			WLOG("Item not found! Bag: " << UInt16(bagId) << "; Slot: " << UInt16(slotId));
 			sendProxyPacket(
 				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::ItemNotFound, nullptr, nullptr));
 			return;
@@ -1857,6 +1750,7 @@ namespace wowpp
 
 		if (item->getGuid() != itemGuid)
 		{
+			WLOG("Item GUID does not match. We look for 0x" << std::hex << itemGuid << " but found 0x" << std::hex << item->getGuid());
 			sendProxyPacket(
 				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::ItemNotFound, nullptr, nullptr));
 			return;
@@ -1983,18 +1877,21 @@ namespace wowpp
 			return;
 		}
 
+		UInt16 itemSlot = 0;
+		if (!m_character->getInventory().findItemByGUID(itemGuid, itemSlot))
+		{
+			// Item not found
+			return;
+		}
+
 		// Find the item by it's guid
-		UInt8 bag = 0xFF, slot = 0xFF;
-		auto *item = m_character->getItemByGUID(itemGuid, bag, slot);
+		auto item = m_character->getInventory().getItemAtSlot(itemSlot);
 		if (!item)
 		{
 			return;
 		}
 
-		// Check the amount
-		DLOG("Received CMSG_SELL_ITEM... (Count: " << UInt16(count) << ")");
-
-		UInt32 stack = item->getUInt32Value(item_fields::StackCount);
+		UInt32 stack = item->getStackCount();
 		UInt32 money = stack * item->getEntry().sellprice();
 		if (money == 0)
 		{
@@ -2002,7 +1899,7 @@ namespace wowpp
 			return;
 		}
 
-		m_character->removeItem(bag, slot, stack);
+		m_character->getInventory().removeItem(itemSlot, stack);
 		m_character->setUInt32Value(character_fields::Coinage, m_character->getUInt32Value(character_fields::Coinage) + money);
 	}
 
@@ -2023,7 +1920,6 @@ namespace wowpp
 
 		// Multiply item count
 		UInt8 totalCount = count * item->buycount();
-
 		auto *world = m_character->getWorldInstance();
 		if (!world)
 			return;
@@ -2049,140 +1945,35 @@ namespace wowpp
 		if (!validEntry)
 			return;
 
-		// TODO: Check item amount
-
-		// Check if item is storable
-		ItemPosCountVector slots;
-		auto result = m_character->canStoreItem(0xFF, slot, slots, *item, totalCount, false);
-		if (result != game::inventory_change_failure::Okay)
-		{
-			// TODO: Send error
-			WLOG("Can't store item");
-			return;
-		}
-
 		// Take money
 		UInt32 price = item->buyprice() * count;
 		UInt32 money = m_character->getUInt32Value(character_fields::Coinage);
 		if (money < price)
 		{
-			// TODO: Send error message
 			WLOG("Not enough money");
 			return;
 		}
 
+		std::map<UInt16, UInt16> addedBySlot;
+		auto result = m_character->getInventory().createItems(*item, totalCount, &addedBySlot);
+		if (result != game::inventory_change_failure::Okay)
+		{
+			return;
+		}
+
+		// Take money
 		m_character->setUInt32Value(character_fields::Coinage, money - price);
 
-		static UInt64 vendorCounter = 0x100000;
-		for (auto &pos : slots)
+		// Send push notifications
+		for (auto &slot : addedBySlot)
 		{
-			auto *itemAtSlot = m_character->getItemByPos(0xFF, pos.position);
-
-			// Loot items and add them
-			auto inst = std::make_shared<GameItem>(m_project, *item);
-			inst->initialize();
-			inst->setUInt64Value(object_fields::Guid, createEntryGUID(vendorCounter++, item->id(), guid_type::Item));
-			inst->setUInt32Value(item_fields::StackCount, pos.count);
-			m_character->addItem(inst, pos.position);
-
-			// Spawn this item
-			std::vector<std::vector<char>> blocks;
-			std::vector<char> createItemBlock;
-			if (itemAtSlot == nullptr)
+			auto item = m_character->getInventory().getItemAtSlot(slot.first);
+			if (item)
 			{
-				io::VectorSink createItemSink(createItemBlock);
-				io::Writer createItemWriter(createItemSink);
-				{
-					UInt8 updateType = 0x02;						// Item
-					UInt8 updateFlags = 0x08 | 0x10;				// 
-					UInt8 objectTypeId = 0x01;						// Item
-
-					UInt64 guid = inst->getGuid();
-
-					// Header with object guid and type
-					createItemWriter
-						<< io::write<NetUInt8>(updateType);
-					UInt64 guidCopy = guid;
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-					for (UInt8 i = 0; guidCopy != 0; ++i)
-					{
-						if (guidCopy & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guidCopy & 0xFF);
-							++size;
-						}
-
-						guidCopy >>= 8;
-					}
-					createItemWriter.sink().write((const char*)&packGUID[0], size);
-					createItemWriter
-						<< io::write<NetUInt8>(objectTypeId)
-						<< io::write<NetUInt8>(updateFlags);
-
-					// Lower-GUID update?
-					if (updateFlags & 0x08)
-					{
-						createItemWriter
-							<< io::write<NetUInt32>(guidLowerPart(guid));
-					}
-
-					// High-GUID update?
-					if (updateFlags & 0x10)
-					{
-						createItemWriter
-							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
-					}
-
-					// Write values update
-					inst->writeValueUpdateBlock(createItemWriter, *m_character, true);
-				}
+				sendProxyPacket(
+					std::bind(game::server_write::itemPushResult, std::placeholders::_1,
+						m_character->getGuid(), std::cref(*item), false, false, slot.first >> 8, slot.first & 0xFF, slot.second, m_character->getInventory().getItemCount(itemEntry)));
 			}
-			else
-			{
-				io::VectorSink sink(createItemBlock);
-				io::Writer writer(sink);
-				{
-					UInt8 updateType = 0x00;						// Update type (0x00 = UPDATE_VALUES)
-
-					// Header with object guid and type
-					UInt64 guid = itemAtSlot->getGuid();
-					writer
-						<< io::write<NetUInt8>(updateType);
-
-					UInt64 guidCopy = guid;
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-					for (UInt8 i = 0; guidCopy != 0; ++i)
-					{
-						if (guidCopy & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guidCopy & 0xFF);
-							++size;
-						}
-
-						guidCopy >>= 8;
-					}
-					writer.sink().write((const char*)&packGUID[0], size);
-
-					// Write values update
-					itemAtSlot->writeValueUpdateBlock(writer, *m_character, false);
-				}
-
-				itemAtSlot->clearUpdateMask();
-			}
-
-			// Send packet
-			blocks.emplace_back(std::move(createItemBlock));
-			sendProxyPacket(
-				std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
-			sendProxyPacket(
-				std::bind(game::server_write::itemPushResult, std::placeholders::_1,
-				m_character->getGuid(), std::cref(*inst), false, false, 0xFF, pos.position, pos.count, pos.count));
 		}
 	}
 
@@ -2191,7 +1982,6 @@ namespace wowpp
 		auto *world = m_character->getWorldInstance();
 		if (!world)
 		{
-			WLOG("No world found");
 			return;
 		}
 

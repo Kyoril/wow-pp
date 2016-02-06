@@ -28,6 +28,12 @@
 #include <memory>
 #include <map>
 
+namespace io
+{
+	class Writer;
+	class Reader;
+}
+
 namespace wowpp
 {
 	// Class forwarding to reduce number of included files
@@ -37,11 +43,42 @@ namespace wowpp
 	{
 		class ItemEntry;
 	}
+	
+	/// Contains item data.
+	struct ItemData
+	{
+		UInt32 entry;
+		UInt16 slot;
+		UInt8 stackCount;
+		UInt64 creator;
+		UInt64 contained;
+		UInt16 durability;
+		UInt16 randomPropertyIndex;
+		UInt16 randomSuffixIndex;
+
+		ItemData()
+			: entry(0)
+			, slot(0)
+			, stackCount(0)
+			, creator(0)
+			, contained(0)
+			, durability(0)
+			, randomPropertyIndex(0)
+			, randomSuffixIndex(0)
+		{
+		}
+	};
+
+	io::Writer &operator << (io::Writer &w, ItemData const& object);
+	io::Reader &operator >> (io::Reader &r, ItemData& object);
 
 	/// Represents a characters inventory and provides functionalities like
 	/// adding and organizing items.
 	class Inventory : public boost::noncopyable
 	{
+		friend io::Writer &operator << (io::Writer &w, Inventory const& object);
+		friend io::Reader &operator >> (io::Reader &r, Inventory& object);
+
 	public:
 
 		// NOTE: We provide shared_ptr<> because these signals could be used to collect changed items
@@ -64,8 +101,9 @@ namespace wowpp
 		/// Tries to add multiple items of the same entry to the inventory.
 		/// @param entry The item template to be used for creating new items.
 		/// @param amount The amount of items to create, has to be greater than 0.
+		/// @param out_slots If not nullptr, a map, containing all slots and counters will be filled.
 		/// @returns game::inventory_change_failure::Okay if succeeded.
-		game::InventoryChangeFailure createItems(const proto::ItemEntry &entry, UInt16 amount = 1);
+		game::InventoryChangeFailure createItems(const proto::ItemEntry &entry, UInt16 amount = 1, std::map<UInt16, UInt16> *out_addedBySlot = nullptr);
 		/// Tries to remove multiple items of the same entry.
 		/// @param entry The item template to delete.
 		/// @param amount The amount of items to delete. If 0, ALL items of that entry are deleted.
@@ -83,6 +121,14 @@ namespace wowpp
 		/// @param slotB The second (destination) slot.
 		/// @returns game::inventory_change_failure::Okay if succeeded.
 		game::InventoryChangeFailure swapItems(UInt16 slotA, UInt16 slotB);
+		/// Determines whether a slot is valid for the given item entry and this character.
+		/// This also validates equipment slots and bags.
+		/// @param slot The absolute slot index to check.
+		/// @param entry The item prototype to check.
+		/// @return game::inventory_change_failure::Okay if the slot is valid.
+		game::InventoryChangeFailure isValidSlot(UInt16 slot, const proto::ItemEntry &entry) const;
+		/// Determines whether the specified items can be stored.
+		game::InventoryChangeFailure canStoreItems(const proto::ItemEntry &entry, UInt16 amount = 1) const;
 		// TODO: Add item split functionality
 
 		/// Gets a reference of the owner of this inventory.
@@ -98,13 +144,36 @@ namespace wowpp
 		/// @returns true if the player has the item.
 		bool hasItem(UInt32 itemId) const { return getItemCount(itemId) > 0; }
 		/// Gets an absolute slot position from a bag index and a bag slot.
-		UInt16 getAbsoluteSlot(UInt8 bag, UInt8 slot) const;
+		static UInt16 getAbsoluteSlot(UInt8 bag, UInt8 slot);
 		/// Splits an absolute slot into a bag index and a bag slot.
-		bool getRelativeSlots(UInt16 absoluteSlot, UInt8 &out_bag, UInt8 &out_slot) const;
+		static bool getRelativeSlots(UInt16 absoluteSlot, UInt8 &out_bag, UInt8 &out_slot);
 		/// Gets the amount of free inventory slots.
 		UInt16 getFreeSlotCount() const { return m_freeSlots; }
+		/// Returns an item at a specified absolute slot.
+		std::shared_ptr<GameItem> getItemAtSlot(UInt16 absoluteSlot) const;
+		/// Finds an item by it's guid.
+		/// @param guid The GUID of the searched item.
+		/// @param out_slot The absolute item slot will be stored there.
+		/// @returns false if the item could not be found.
+		bool findItemByGUID(UInt64 guid, UInt16 &out_slot) const;
+
+		/// Determines whether the given slot is an equipment slot.
+		static bool isEquipmentSlot(UInt16 absoluteSlot);
+		/// Determines whether the given slot is a custom bag slot.
+		static bool isBagPackSlot(UInt16 absoluteSlot);
+		/// Determines whether the given slot is an item slot in the default bag.
+		static bool isInventorySlot(UInt16 absoluteSlot);
+		/// Determines whether the given slot is an item slot in a bag (not the default bag).
+		static bool isBagSlot(UInt16 absoluteSlot);
 
 	public:
+
+		/// Adds a new realm data entry to the inventory. Note that this method should only be called
+		/// on the realm, when the inventory is loaded from the database.
+		void addRealmData(const ItemData &data);
+		/// Gets the inventory's realm data, if any. Should only be used on the realm when saving the
+		/// inventory into the database.
+		const std::vector<ItemData> getItemData() const { return m_realmData; }
 
 		/// Adds spawn blocks for every item in the inventory. These blocks will be included in
 		/// the players spawn packet, so that all items that are available to the player will be sent
@@ -122,5 +191,14 @@ namespace wowpp
 		std::map<UInt32, UInt16> m_itemCounter;
 		/// Cached amount of free slots. Used for performance
 		UInt16 m_freeSlots;
+		/// This is needed for serialization/deserialization, as item instances are generated only
+		/// on the world node. If m_realmData is not empty on initialization time, the item instances
+		/// will be created and this map will be cleared.
+		std::vector<ItemData> m_realmData;
 	};
+
+	/// Serializes this inventory.
+	io::Writer &operator << (io::Writer &w, Inventory const& object);
+	/// Deserializes this inventory.
+	io::Reader &operator >> (io::Reader &r, Inventory& object);
 }

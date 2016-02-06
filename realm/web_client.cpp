@@ -151,7 +151,7 @@ namespace wowpp
 					float x = 0.0f, y = 0.0f, z = 0.0f, o = 0.0f;
 					UInt32 accountId = 0, charRace = 0, charClass = 0, charLvl = 0;
 					std::vector<const proto::SpellEntry*> spells;
-					std::vector<pp::world_realm::ItemData> items;
+					std::vector<ItemData> items;
 					UInt32 itemIndex = 0, spellIndex = 0;
 
 					UInt8 bagSlot = player_inventory_pack_slots::Start;
@@ -338,7 +338,7 @@ namespace wowpp
 									}
 
 									// Create a new stack
-									pp::world_realm::ItemData data;
+									ItemData data;
 									data.entry = item->id();
 									data.durability = item->durability();
 									data.randomPropertyIndex = 0;

@@ -238,6 +238,12 @@ namespace wowpp
 		void onTargetAuraUpdated(UInt64 target, UInt8 slot, UInt32 spellId, Int32 duration, Int32 maxDuration);
 		/// Executed when the character should be teleported.
 		void onTeleport(UInt16 map, math::Vector3 location, float o);
+		/// Executed when an item instance was created.
+		void onItemCreated(std::shared_ptr<GameItem> item, UInt16 slot);
+		/// Executed when an item instance was udpated.
+		void onItemUpdated(std::shared_ptr<GameItem> item, UInt16 slot);
+		/// Executed when an item instance was destroyed.
+		void onItemDestroyed(std::shared_ptr<GameItem> item, UInt16 slot);
 
 	private:
 
@@ -252,6 +258,7 @@ namespace wowpp
 		boost::signals2::scoped_connection m_onTileChange, m_onComboPoints, m_onXP, m_onCastError, m_onGainLevel;
 		boost::signals2::scoped_connection m_onAuraUpdate, m_onTargetAuraUpdate, m_onTeleport, m_onLootCleared, m_onLootInvalidate;
 		boost::signals2::scoped_connection m_onRootUpdate, m_onStunUpdate, m_onCooldownEvent, m_questChanged, m_questKill;
+		boost::signals2::scoped_connection m_itemCreated, m_itemUpdated, m_itemDestroyed;
 		AttackSwingError m_lastError;
 		UInt32 m_lastFallTime;
 		float m_lastFallZ;

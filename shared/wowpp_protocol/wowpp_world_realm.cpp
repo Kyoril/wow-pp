@@ -111,23 +111,6 @@ namespace wowpp
 						out_packet
 							<< io::write<NetUInt32>(spell->id());
 					}
-
-					std::vector<ItemData> items;
-					for (const auto &item : character.getItems())
-					{
-						ItemData data;
-						data.entry = item.second->getEntry().id();
-						data.contained = item.second->getUInt64Value(item_fields::Contained);
-						data.creator = item.second->getUInt64Value(item_fields::Creator);
-						data.durability = item.second->getUInt32Value(item_fields::Durability);
-						data.randomPropertyIndex = item.second->getUInt32Value(item_fields::RandomPropertiesID);
-						data.randomSuffixIndex = 0;
-						data.slot = item.first;
-						data.stackCount = item.second->getUInt32Value(item_fields::StackCount);
-						items.emplace_back(data);
-					}
-					out_packet
-						<< io::write_dynamic_range<NetUInt32>(items);
 					out_packet.finish();
 				}
 
@@ -357,13 +340,12 @@ namespace wowpp
 						>> io::read_container<NetUInt32>(out_packetBuffer);
 				}
 
-				bool characterData(io::Reader &packet, UInt64 &out_characterId, GameCharacter &out_character, std::vector<UInt32> &out_spellIds, std::vector<ItemData> &out_items)
+				bool characterData(io::Reader &packet, UInt64 &out_characterId, GameCharacter &out_character, std::vector<UInt32> &out_spellIds)
 				{
 					return packet
 						>> io::read<NetUInt64>(out_characterId)
 						>> out_character
 						>> io::read_container<NetUInt32>(out_spellIds)
-						>> io::read_container<NetUInt32>(out_items)
 						;
 				}
 
@@ -533,18 +515,6 @@ namespace wowpp
 						>> io::read_container<NetUInt32>(out_slots);
 				}
 
-			}
-
-			io::Writer & operator<<(io::Writer &w, ItemData const& object)
-			{
-				w.writePOD(object);
-				return w;
-			}
-
-			io::Reader & operator>>(io::Reader &r, ItemData& object)
-			{
-				r.readPOD(object);
-				return r;
 			}
 		}
 	}

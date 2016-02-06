@@ -49,7 +49,7 @@ namespace wowpp
 		/// @copydoc wowpp::IDatabase::getCharacterCount
 		UInt32 getCharacterCount(UInt32 accountId) override;
 		/// @copydoc wowpp::IDatabase::createCharacter
-		game::ResponseCode createCharacter(UInt32 accountId, const std::vector<const proto::SpellEntry*> &spells, const std::vector<pp::world_realm::ItemData> &items, game::CharEntry &character) override;
+		game::ResponseCode createCharacter(UInt32 accountId, const std::vector<const proto::SpellEntry*> &spells, const std::vector<ItemData> &items, game::CharEntry &character) override;
 		/// @copydoc wowpp::IDatabase::createCharacterById
 		bool getCharacterById(DatabaseId id, game::CharEntry &out_character) override;
 		/// @copydoc wowpp::IDatabase::createCharacterByName
@@ -59,9 +59,9 @@ namespace wowpp
 		/// @copydoc wowpp::IDatabase::deleteCharacter
 		game::ResponseCode deleteCharacter(UInt32 accountId, UInt64 characterGuid) override;
 		/// @copydoc wowpp::IDatabase::getGameCharacter
-		bool getGameCharacter(DatabaseId characterId, GameCharacter &out_character, std::vector<pp::world_realm::ItemData> &out_items) override;
+		bool getGameCharacter(DatabaseId characterId, GameCharacter &out_character) override;
 		/// @copydoc wowpp::IDatabase::saveGamecharacter
-		bool saveGameCharacter(const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &items, const std::vector<UInt32> &spells) override;
+		bool saveGameCharacter(const GameCharacter &character, const std::vector<ItemData> &items, const std::vector<UInt32> &spells) override;
 		/// @copydoc wowpp::IDatabase::getCharacterSocialList
 		bool getCharacterSocialList(DatabaseId characterId, PlayerSocial &out_social) override;
 		/// @copydoc wowpp::IDatabase::addCharacterSocialContact

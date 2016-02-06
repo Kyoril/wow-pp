@@ -523,8 +523,6 @@ namespace wowpp
 		/// @copydoc GameObject::getTypeId()
 		virtual ObjectType getTypeId() const override { return object_type::Character; }
 
-		/// Adds an item to a given slot.
-		void addItem(std::shared_ptr<GameItem> item, UInt16 slot);
 		/// Adds a spell to the list of known spells of this character.
 		/// Note that passive spells will also be cast after they are added.
 		void addSpell(const proto::SpellEntry &spell);
@@ -543,8 +541,6 @@ namespace wowpp
 		UInt32 getZone() const { return m_zoneIndex; }
 		/// Gets a list of all known spells of this character.
 		const std::vector<const proto::SpellEntry*> &getSpells() const { return m_spells; }
-		/// Gets a list of all items of this character.
-		const std::map<UInt16, std::shared_ptr<GameItem>> &getItems() const { return m_itemSlots; }
 		/// Gets the weapon proficiency mask of this character (which weapons can be
 		/// wielded)
 		UInt32 getWeaponProficiency() const { return m_weaponProficiency; }
@@ -577,24 +573,12 @@ namespace wowpp
 		void addComboPoints(UInt64 target, UInt8 points);
 		/// Applies or removes item stats for this character.
 		void applyItemStats(GameItem &item, bool apply);
-		/// Determines whether the given slot is a valid slot in the specified bag.
-		bool isValidItemPos(UInt8 bag, UInt8 slot) const;
-		/// Swaps the items of two given slots.
-		void swapItem(UInt16 src, UInt16 dst);
-		/// Tries to get the item object at the given slot. May return nullptr!
-		GameItem *getItemByPos(UInt8 bag, UInt8 slot) const;
 		/// @copydoc GameUnit::rewardExperience()
 		void rewardExperience(GameUnit *victim, UInt32 experience) override;
-		/// Determines, whether a specific amount of items can be stored.
-		game::InventoryChangeFailure canStoreItem(UInt8 bag, UInt8 slot, ItemPosCountVector &dest, const proto::ItemEntry &item, UInt32 count, bool swap, UInt32 *noSpaceCount = nullptr) const;
-		/// Removes an amount of items from the player.
-		void removeItem(UInt8 bag, UInt8 slot, UInt8 count);
 		/// Gets the characters home location.
 		void getHome(UInt32 &out_map, math::Vector3 &out_pos, float &out_rot) const;
 		/// Updates the characters home location.
 		void setHome(UInt32 map, const math::Vector3 &pos, float rot);
-		/// Gets an item by it's guid.
-		GameItem *getItemByGUID(UInt64 guid, UInt8 &out_bag, UInt8 &out_slot);
 
 		bool hasMainHandWeapon() const override;
 		bool hasOffHandWeapon() const override;
@@ -630,8 +614,6 @@ namespace wowpp
 
 		bool isQuestlogFull() const;
 
-		UInt32 getItemCount(UInt32 itemEntry) const { auto it = m_itemCount.find(itemEntry); return (it == m_itemCount.end() ? 0 : it->second); }
-
 	public:
 
 		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT
@@ -662,7 +644,6 @@ namespace wowpp
 		UInt32 m_armorProficiency;
 		std::vector<const proto::SkillEntry*> m_skills;
 		std::vector<const proto::SpellEntry*> m_spells;
-		std::map<UInt16, std::shared_ptr<GameItem>> m_itemSlots;
 		UInt64 m_comboTarget;
 		UInt8 m_comboPoints;
 		float m_healthRegBase, m_manaRegBase;
@@ -678,7 +659,6 @@ namespace wowpp
 		float m_homeRotation;
 		boost::signals2::scoped_connection m_doneMeleeAttack;
 		std::map<UInt32, QuestStatusData> m_quests;
-		std::map<UInt32, UInt32> m_itemCount;
 		Inventory m_inventory;
 	};
 

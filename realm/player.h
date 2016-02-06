@@ -152,7 +152,7 @@ namespace wowpp
 		/// Gets the connected world node
 		World *getWorldNode() { return m_worldNode; }
 		/// 
-		std::vector<pp::world_realm::ItemData> &getItemData() { return m_itemData; }
+		std::vector<ItemData> &getItemData() { return m_itemData; }
 		/// Declines a pending group invite (if available).
 		void declineGroupInvite();
 		/// 
@@ -228,7 +228,7 @@ namespace wowpp
 		float m_transferO;
 		ActionButtons m_actionButtons;
 		std::array<UInt32, 8> m_tutorialData;
-		std::vector<pp::world_realm::ItemData> m_itemData;
+		std::vector<ItemData> m_itemData;
 
 	private:
 

@@ -714,7 +714,8 @@ namespace wowpp
 			if (m_caster->isGameCharacter())
 			{
 				GameCharacter *character = reinterpret_cast<GameCharacter*>(m_caster);
-				auto *weapon = character->getItemByPos(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand);
+				auto weapon = character->getInventory().getItemAtSlot(
+					Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
 				if (weapon)
 				{
 					scaleFactor = 1.2f;

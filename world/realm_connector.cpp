@@ -242,7 +242,7 @@ namespace wowpp
 		DatabaseId requesterDbId;
 		UInt32 instanceId;
 		std::vector<UInt32> spellIds;
-		std::vector<pp::world_realm::ItemData> items;
+		std::vector<ItemData> items;
 		std::shared_ptr<GameCharacter> character(new GameCharacter(
 			m_project,
 			m_worldInstanceManager.getUniverse().getTimers()));
@@ -345,30 +345,6 @@ namespace wowpp
 				// Create target map
 				character->castSpell(target, spell->id(), -1, 0, true);
 			}
-		}
-
-		static UInt32 itemCounter = 0;
-
-		// Create items
-		for (auto &item : items)
-		{
-			// Skip items that are not available
-			const auto *entry = m_project.items.getById(item.entry);
-			if (!entry)
-			{
-				WLOG("Unknown item entry: " << item.entry << " - item will be skipped!");
-				continue;
-			}
-
-			// Create item instance
-			std::shared_ptr<GameItem> itemInstance(new GameItem(m_project, *entry));
-			itemInstance->initialize();
-			itemInstance->setUInt64Value(object_fields::Guid, createEntryGUID(itemCounter++, entry->id(), guid_type::Item));
-			itemInstance->setUInt32Value(item_fields::Durability, item.durability);
-			itemInstance->setUInt64Value(item_fields::Contained, item.contained);
-			itemInstance->setUInt64Value(item_fields::Creator, item.creator);
-			itemInstance->setUInt32Value(item_fields::StackCount, item.stackCount);
-			character->addItem(std::move(itemInstance), item.slot);
 		}
 
 		// Get character location
@@ -503,7 +479,7 @@ namespace wowpp
 	void RealmConnector::handleItemData(pp::Protocol::IncomingPacket & packet)
 	{
 		UInt64 characterId;
-		std::map<UInt16, pp::world_realm::ItemData> data;
+		std::map<UInt16, ItemData> data;
 		if (!(pp::world_realm::realm_read::itemData(packet, characterId, data)))
 		{
 			return;
@@ -534,8 +510,6 @@ namespace wowpp
 		// Create items
 		for (auto &it : data)
 		{
-			std::vector<char> createItemBlock;
-
 			// Skip items that are not available
 			const auto *entry = m_project.items.getById(it.second.entry);
 			if (!entry)
@@ -544,6 +518,8 @@ namespace wowpp
 				continue;
 			}
 
+			character->getInventory().createItems(*entry, it.second.stackCount);
+#if 0
 			if (auto *item = character->getItemByPos(0xFF, static_cast<UInt8>(it.first)))
 			{
 				UInt32 oldStackCount = item->getUInt32Value(item_fields::StackCount);
@@ -663,10 +639,13 @@ namespace wowpp
 
 			// Send packet
 			blocks.emplace_back(std::move(createItemBlock));
+#endif
 		}
 
+#if 0
 		player->sendProxyPacket(
 			std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
+#endif
 	}
 
 	void RealmConnector::handleProxyPacket(pp::Protocol::IncomingPacket &packet)

@@ -52,7 +52,7 @@ namespace wowpp
 		/// @param accountId Account identifier.
 		/// @param character Data of the character to create.
 		/// @returns false if the creation process failed.
-		virtual game::ResponseCode createCharacter(UInt32 accountId, const std::vector<const proto::SpellEntry*> &spells, const std::vector<pp::world_realm::ItemData> &items, game::CharEntry &character) = 0;
+		virtual game::ResponseCode createCharacter(UInt32 accountId, const std::vector<const proto::SpellEntry*> &spells, const std::vector<ItemData> &items, game::CharEntry &character) = 0;
 
 		virtual game::ResponseCode renameCharacter(DatabaseId id, const String &newName) = 0;
 
@@ -63,8 +63,8 @@ namespace wowpp
 
 		virtual game::ResponseCode deleteCharacter(UInt32 accountId, UInt64 characterGuid) = 0;
 
-		virtual bool getGameCharacter(DatabaseId characterId, GameCharacter &out_character, std::vector<pp::world_realm::ItemData> &out_items) = 0;
-		virtual bool saveGameCharacter(const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &items, const std::vector<UInt32> &spells) = 0;
+		virtual bool getGameCharacter(DatabaseId characterId, GameCharacter &out_character) = 0;
+		virtual bool saveGameCharacter(const GameCharacter &character, const std::vector<ItemData> &items, const std::vector<UInt32> &spells) = 0;
 
 		virtual bool getCharacterSocialList(DatabaseId characterId, PlayerSocial &out_social) = 0;
 		virtual bool addCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) = 0;
