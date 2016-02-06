@@ -43,7 +43,8 @@ namespace wowpp
 			SpellTargetMap target,
 			Int32 basePoints,
 			GameTime castTime,
-			bool isProc = false);
+			bool isProc = false,
+			UInt64 itemGuid = 0);
 		void activate() override;
 		std::pair<game::SpellCastResult, SpellCasting *> startCast(
 			SpellCast &cast,
@@ -51,7 +52,8 @@ namespace wowpp
 			SpellTargetMap target,
 			Int32 basePoints,
 			GameTime castTime,
-			bool doReplacePreviousCast) override;
+			bool doReplacePreviousCast,
+			UInt64 itemGuid) override;
 		void stopCast() override;
 		void onUserStartsMoving() override;
 		SpellCasting &getCasting() { return m_casting; }
@@ -111,6 +113,7 @@ namespace wowpp
 		GameTime m_castTime;
 		Int32 m_basePoints;
 		bool m_isProc;
+		UInt64 m_itemGuid;
 
 		void sendEndCast(bool success);
 		void onCastFinished();

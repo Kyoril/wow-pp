@@ -284,7 +284,7 @@ namespace wowpp
 		}
 	}
 
-	void GameUnit::castSpell(SpellTargetMap target, UInt32 spellId, Int32 basePoints, GameTime castTime, bool isProc, SpellSuccessCallback callback)
+	void GameUnit::castSpell(SpellTargetMap target, UInt32 spellId, Int32 basePoints, GameTime castTime, bool isProc, UInt64 itemGuid, SpellSuccessCallback callback)
 	{
 		// Resolve spell
 		const auto *spell = getProject().spells.getById(spellId);
@@ -297,7 +297,7 @@ namespace wowpp
 		if (!isProc)
 			startedCasting(*spell);
 		
-		auto result = m_spellCast->startCast(*spell, std::move(target), basePoints, castTime, isProc);
+		auto result = m_spellCast->startCast(*spell, std::move(target), basePoints, castTime, isProc, itemGuid);
 		
 		// Reset auto attack timer if requested
 		if (result.first == game::spell_cast_result::CastOkay &&

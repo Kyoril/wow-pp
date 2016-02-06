@@ -17,7 +17,7 @@ namespace wowpp
 	{
 	}
 
-	std::pair<game::SpellCastResult, SpellCasting*> SpellCast::startCast(const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool isProc)
+	std::pair<game::SpellCastResult, SpellCasting*> SpellCast::startCast(const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool isProc, UInt64 itemGuid)
 	{
 		assert(m_castState);
 
@@ -165,7 +165,8 @@ namespace wowpp
 					std::move(target),
 					basePoints,
 					castTime,
-					false);
+					false,
+					itemGuid);
 		}
 	}
 
@@ -190,21 +191,14 @@ namespace wowpp
 		m_castState->activate();
 	}
 
-	SpellCasting & castSpell(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime)
+	SpellCasting & castSpell(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, UInt64 itemGuid)
 	{
 		std::shared_ptr<SingleCastState> newState(
-			new SingleCastState(cast, spell, std::move(target), basePoints, castTime)
+			new SingleCastState(cast, spell, std::move(target), basePoints, castTime, itemGuid)
 			);
 
 		auto &casting = newState->getCasting();
 		cast.setState(std::move(newState));
 		return casting;
 	}
-
-	bool isInSkillRange(const proto::SpellEntry &spell, GameUnit &user, SpellTargetMap &target)
-	{
-		//TODO
-		return true;
-	}
-
 }

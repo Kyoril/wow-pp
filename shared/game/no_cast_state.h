@@ -37,7 +37,8 @@ namespace wowpp
 			SpellTargetMap target,
 			Int32 basePoints,
 			GameTime castTime,
-			bool doReplacePreviousCast
+			bool doReplacePreviousCast,
+			UInt64 itemGuid
 			) override;
 		void stopCast() override;
 		void onUserStartsMoving() override;

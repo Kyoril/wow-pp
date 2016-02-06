@@ -586,9 +586,9 @@ namespace wowpp
 					ItemData itemData;
 					itemData.entry = item->id();
 					itemData.durability = item->durability();
-					itemData.slot = slot;
+					itemData.slot = slot | 0xFF00;
 					itemData.stackCount = 1;
-					items.emplace_back(std::move(itemData));
+					items.push_back(std::move(itemData));
 				}
 			}
 		}

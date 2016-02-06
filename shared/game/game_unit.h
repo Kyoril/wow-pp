@@ -443,7 +443,7 @@ namespace wowpp
 		virtual const String &getName() const;
 
 		/// Starts to cast a spell using the given target map.
-		void castSpell(SpellTargetMap target, UInt32 spell, Int32 basePoints = -1, GameTime castTime = 0, bool isProc = false, SpellSuccessCallback callback = SpellSuccessCallback());
+		void castSpell(SpellTargetMap target, UInt32 spell, Int32 basePoints = -1, GameTime castTime = 0, bool isProc = false, UInt64 itemGuid = 0, SpellSuccessCallback callback = SpellSuccessCallback());
 		/// Stops the current cast (if any).
 		void cancelCast();
 		/// Starts auto attack on the given target.

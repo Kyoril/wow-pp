@@ -62,7 +62,8 @@ namespace wowpp
 			SpellTargetMap target,
 			Int32 basePoints,
 			GameTime castTime,
-			bool isProc);
+			bool isProc,
+			UInt64 itemGuid);
 		void stopCast();
 		void onUserStartsMoving();
 		void setState(std::shared_ptr<CastState> castState);
@@ -88,7 +89,8 @@ namespace wowpp
 			SpellTargetMap target,
 			Int32 basePoints,
 			GameTime castTime,
-			bool doReplacePreviousCast
+			bool doReplacePreviousCast,
+			UInt64 itemGuid
 			) = 0;
 		virtual void stopCast() = 0;
 		virtual void onUserStartsMoving() = 0;
@@ -99,11 +101,7 @@ namespace wowpp
 		const proto::SpellEntry &spell,
 		SpellTargetMap target,
 		Int32 basePoints,
-		GameTime castTime
+		GameTime castTime,
+		UInt64 itemGuid
 		);
-
-	bool isInSkillRange(
-		const proto::SpellEntry &spell,
-		GameUnit &user,
-		SpellTargetMap &target);
 }

@@ -1043,6 +1043,7 @@ namespace wowpp
 			-1,
 			castTime,
 			false,
+			0,
 			[&spell, castCount, &sender](game::SpellCastResult result)
 			{
 				if (result != game::spell_cast_result::CastOkay)

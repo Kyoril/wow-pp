@@ -79,7 +79,7 @@ namespace wowpp
 		}
 	}
 	
-	SingleCastState::SingleCastState(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool isProc/* = false*/)
+	SingleCastState::SingleCastState(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool isProc/* = false*/, UInt64 itemGuid/* = 0*/)
 		: m_cast(cast)
 		, m_spell(spell)
 		, m_target(std::move(target))
@@ -90,6 +90,7 @@ namespace wowpp
 		, m_basePoints(basePoints)
 		, m_isProc(isProc)
 		, m_attackTable()
+		, m_itemGuid(itemGuid)
 	{
 		// Check if the executer is in the world
 		auto &executer = m_cast.getExecuter();
@@ -153,7 +154,7 @@ namespace wowpp
 		}
 	}
 
-	std::pair<game::SpellCastResult, SpellCasting *> SingleCastState::startCast(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool doReplacePreviousCast)
+	std::pair<game::SpellCastResult, SpellCasting *> SingleCastState::startCast(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool doReplacePreviousCast, UInt64 itemGuid)
 	{
 		if (!m_hasFinished &&
 			!doReplacePreviousCast)
@@ -166,7 +167,8 @@ namespace wowpp
 			spell,
 			std::move(target),
 			basePoints,
-			castTime);
+			castTime,
+			itemGuid);
 
 		return std::make_pair(game::spell_cast_result::CastOkay, &casting);
 	}
