@@ -416,6 +416,16 @@ namespace wowpp
 		{
 			// Remove new item in SlotA
 			m_itemsBySlot.erase(slotA);
+
+			// No item in slot A, and slot A was an inventory slot, so this gives us another free slot
+			if (isInventorySlot(slotA))
+				m_freeSlots++;
+			// No item in slot A, and slot B is an inventory slot, so this will use another free slot
+			else if (isInventorySlot(slotB))
+			{
+				assert(m_freeSlots >= 1);
+				m_freeSlots--;
+			}
 		}
 
 		// Update visuals
@@ -796,7 +806,10 @@ namespace wowpp
 
 				// Add this item to the inventory slot and reduce our free slot cache
 				m_itemsBySlot[data.slot] = std::move(item);
-				m_freeSlots--;
+				
+				// Inventory slot used
+				if (isInventorySlot(data.slot))
+					m_freeSlots--;
 			}
 
 			// Clear realm data since we don't need it any more

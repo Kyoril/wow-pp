@@ -772,46 +772,57 @@ namespace wowpp
 			return;
 		}
 
-		auto result = m_character->getInventory().createItems(*item, lootItem->count);
+		auto &inv = m_character->getInventory();
+
+		std::map<UInt16, UInt16> addedBySlot;
+		auto result = inv.createItems(*item, lootItem->count, &addedBySlot);
 		if (result != game::inventory_change_failure::Okay)
 		{
 			// Error
 			return;
 		}
-		/*
-		sendProxyPacket(
-			std::bind(game::server_write::itemPushResult, std::placeholders::_1, 
-				m_character->getGuid(), std::cref(*inst), true, false, 0xFF, pos.position, pos.count, m_character->getItemCount(item->id())));
-		
-			// Group broadcasting
-			if (m_character->getGroupId() != 0)
-			{
-				TileIndex2D tile;
-				if (m_character->getTileIndex(tile))
-				{
-					// Create the packet
-					std::vector<char> buffer;
-					io::VectorSink sink(buffer);
-					game::Protocol::OutgoingPacket itemPacket(sink);
-					game::server_write::itemPushResult(itemPacket, m_character->getGuid(), *inst, true, false, 0xFF, pos.position, pos.count, m_character->getItemCount(item->id()));
 
-					forEachSubscriberInSight(
-						m_character->getWorldInstance()->getGrid(),
-						tile,
-						[&](ITileSubscriber &subscriber)
+		for (auto &slot : addedBySlot)
+		{
+			auto inst = inv.getItemAtSlot(slot.first);
+			if (inst)
+			{
+				UInt8 bag = 0, subslot = 0;
+				Inventory::getRelativeSlots(slot.first, bag, subslot);
+				const auto totalCount = inv.getItemCount(item->id());
+
+				sendProxyPacket(
+					std::bind(game::server_write::itemPushResult, std::placeholders::_1,
+						m_character->getGuid(), std::cref(*inst), true, false, bag, subslot, slot.second, totalCount));
+
+				// Group broadcasting
+				if (m_character->getGroupId() != 0)
+				{
+					TileIndex2D tile;
+					if (m_character->getTileIndex(tile))
 					{
-						if (subscriber.getControlledObject()->getGuid() != m_character->getGuid())
+						std::vector<char> buffer;
+						io::VectorSink sink(buffer);
+						game::Protocol::OutgoingPacket itemPacket(sink);
+						game::server_write::itemPushResult(itemPacket, m_character->getGuid(), std::cref(*inst), true, false, bag, subslot, slot.second, totalCount);
+						forEachSubscriberInSight(
+							m_character->getWorldInstance()->getGrid(),
+							tile,
+							[&](ITileSubscriber &subscriber)
 						{
-							auto subscriberGroup = subscriber.getControlledObject()->getGroupId();
-							if (subscriberGroup != 0 && subscriberGroup == m_character->getGroupId())
+							if (subscriber.getControlledObject()->getGuid() != m_character->getGuid())
 							{
-								subscriber.sendPacket(itemPacket, buffer);
+								auto subscriberGroup = subscriber.getControlledObject()->getGroupId();
+								if (subscriberGroup != 0 && subscriberGroup == m_character->getGroupId())
+								{
+									subscriber.sendPacket(itemPacket, buffer);
+								}
 							}
-						}
-					});
+						});
+					}
 				}
 			}
-		*/
+		}
 
 		m_loot->takeItem(lootSlot);
 	}
@@ -1958,6 +1969,7 @@ namespace wowpp
 		auto result = m_character->getInventory().createItems(*item, totalCount, &addedBySlot);
 		if (result != game::inventory_change_failure::Okay)
 		{
+			m_character->inventoryChangeFailure(result, nullptr, nullptr);
 			return;
 		}
 
