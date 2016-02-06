@@ -962,6 +962,14 @@ namespace wowpp
 	
 	void SingleCastState::spellEffectCreateItem(const proto::SpellEffect &effect)
 	{
+		// Get item entry
+		const auto *item = m_cast.getExecuter().getProject().items.getById(effect.itemtype());
+		if (!item)
+		{
+			ELOG("SPELL_EFFECT_CREATE_ITEM: Could not find item by id " << effect.itemtype());
+			return;
+		}
+
 		GameUnit &caster = m_cast.getExecuter();
 		std::vector<GameUnit*> targets;
 		std::vector<game::VictimState> victimStates;
@@ -969,11 +977,58 @@ namespace wowpp
 		std::vector<float> resists;
 		
 		m_attackTable.checkPositiveSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
-		
+		const auto itemCount = calculateEffectBasePoints(effect);
+
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit* targetUnit = targets[i];
-			
+			if (targetUnit->isGameCharacter())
+			{
+				auto *charUnit = reinterpret_cast<GameCharacter*>(targetUnit);
+				auto &inv = charUnit->getInventory();
+
+				std::map<UInt16, UInt16> addedBySlot;
+				auto result = inv.createItems(*item, itemCount, &addedBySlot);
+				if (result != game::inventory_change_failure::Okay)
+				{
+					charUnit->inventoryChangeFailure(result, nullptr, nullptr);
+					continue;
+				}
+
+				// Send item notification
+				for (auto &slot : addedBySlot)
+				{
+					auto inst = inv.getItemAtSlot(slot.first);
+					if (inst)
+					{
+						UInt8 bag = 0, subslot = 0;
+						Inventory::getRelativeSlots(slot.first, bag, subslot);
+						const auto totalCount = inv.getItemCount(item->id());
+
+						TileIndex2D tile;
+						if (charUnit->getTileIndex(tile))
+						{
+							std::vector<char> buffer;
+							io::VectorSink sink(buffer);
+							game::Protocol::OutgoingPacket itemPacket(sink);
+							game::server_write::itemPushResult(itemPacket, charUnit->getGuid(), std::cref(*inst), false, true, bag, subslot, slot.second, totalCount);
+							forEachSubscriberInSight(
+								charUnit->getWorldInstance()->getGrid(),
+								tile,
+								[&](ITileSubscriber &subscriber)
+							{
+								auto subscriberGroup = subscriber.getControlledObject()->getGroupId();
+								if ((charUnit->getGroupId() == 0 && subscriber.getControlledObject()->getGuid() == charUnit->getGuid()) ||
+									(charUnit->getGroupId() != 0 && subscriberGroup == charUnit->getGroupId())
+									)
+								{
+									subscriber.sendPacket(itemPacket, buffer);
+								}
+							});
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -993,7 +1048,8 @@ namespace wowpp
 		bool isPositive = Aura::isPositive(m_spell, effect);
 		UInt8 school = m_spell.schoolmask();
 		
-		if (isPositive) {
+		if (isPositive) 
+		{
 			m_attackTable.checkPositiveSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//Buff
 		}
 		else
@@ -1012,11 +1068,7 @@ namespace wowpp
 			default:
 				modifiedByBonus = false;
 		}
-		// Determine aura type
-//		game::AuraType auraType = static_cast<game::AuraType>(effect.aura());
-//		const String auraTypeName = game::constant_literal::auraTypeNames.getName(auraType);
-//		DLOG("Spell: Aura is: " << auraTypeName);
-		
+
 		// World was already checked. If world would be nullptr, unitTarget would be null as well
 		auto *world = m_cast.getExecuter().getWorldInstance();
 		auto &universe = world->getUniverse();

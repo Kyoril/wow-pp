@@ -221,6 +221,7 @@ namespace wowpp
 					{
 						m_owner.setUInt32Value(character_fields::VisibleItem1_0 + (subslot * 16), item->getEntry().id());
 						m_owner.setUInt64Value(character_fields::VisibleItem1_CREATOR + (subslot * 16), item->getUInt64Value(item_fields::Creator));
+						m_owner.applyItemStats(*item, true);
 					}
 				}
 
@@ -354,6 +355,7 @@ namespace wowpp
 				{
 					m_owner.setUInt32Value(character_fields::VisibleItem1_0 + (subslot * 16), item->getEntry().id());
 					m_owner.setUInt64Value(character_fields::VisibleItem1_CREATOR + (subslot * 16), item->getUInt64Value(item_fields::Creator));
+					m_owner.applyItemStats(*item, false);
 				}
 			}
 
@@ -433,11 +435,14 @@ namespace wowpp
 		{
 			m_owner.setUInt32Value(character_fields::VisibleItem1_0 + ((slotA & 0xFF) * 16), (dstItem ? dstItem->getEntry().id() : 0));
 			m_owner.setUInt64Value(character_fields::VisibleItem1_CREATOR + ((slotA & 0xFF) * 16), (dstItem ? dstItem->getUInt64Value(item_fields::Creator) : 0));
+			m_owner.applyItemStats(*srcItem, false);
+			if (dstItem) m_owner.applyItemStats(*dstItem, true);
 		}
 		if (isEquipmentSlot(slotB))
 		{
 			m_owner.setUInt32Value(character_fields::VisibleItem1_0 + ((slotB & 0xFF) * 16), srcItem->getEntry().id());
 			m_owner.setUInt64Value(character_fields::VisibleItem1_CREATOR + ((slotB & 0xFF) * 16), srcItem->getUInt64Value(item_fields::Creator));
+			m_owner.applyItemStats(*srcItem, true);
 		}
 
 		return game::inventory_change_failure::Okay;
@@ -797,6 +802,7 @@ namespace wowpp
 					{
 						m_owner.setUInt32Value(character_fields::VisibleItem1_0 + (subslot * 16), item->getEntry().id());
 						m_owner.setUInt64Value(character_fields::VisibleItem1_CREATOR + (subslot * 16), item->getUInt64Value(item_fields::Creator));
+						m_owner.applyItemStats(*item, true);
 					}
 				}
 

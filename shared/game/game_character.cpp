@@ -1215,6 +1215,8 @@ namespace wowpp
 				}
 			}
 		}
+
+		updateArmor();
 	}
 
 	void GameCharacter::updateManaRegen()
