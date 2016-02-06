@@ -453,6 +453,86 @@ namespace wowpp
 		return true;
 	}
 
+	void GameCharacter::onQuestItemAddedCredit(const proto::ItemEntry & entry, UInt32 amount)
+	{
+		for (int i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == 0)
+				continue;
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end())
+				continue;
+
+			if (it->second.status != game::quest_status::Incomplete)
+				continue;
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest)
+				continue;
+
+			// Counter needed so that the correct field is used
+			UInt8 reqIndex = 0;
+			for (const auto &req : quest->requirements())
+			{
+				if (req.itemid() == entry.id())
+				{
+					// Found it: Complete quest if completable
+					if (fulfillsQuestRequirements(*quest))
+					{
+						it->second.status = game::quest_status::Complete;
+						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+						questDataChanged(logId, it->second);
+					}
+					break;
+				}
+			}
+		}
+	}
+
+	void GameCharacter::onQuestItemRemovedCredit(const proto::ItemEntry & entry, UInt32 amount)
+	{
+		for (int i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == 0)
+				continue;
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end())
+				continue;
+
+			if (it->second.status != game::quest_status::Complete)
+				continue;
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest)
+				continue;
+
+			// Counter needed so that the correct field is used
+			UInt8 reqIndex = 0;
+			for (const auto &req : quest->requirements())
+			{
+				if (req.itemid() == entry.id())
+				{
+					// Found it: Complete quest if completable
+					if (!fulfillsQuestRequirements(*quest))
+					{
+						it->second.status = game::quest_status::Incomplete;
+						removeFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+						questDataChanged(logId, it->second);
+					}
+					break;
+				}
+			}
+		}
+	}
+
 	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData & data)
 	{
 		m_quests[quest] = data;
@@ -808,256 +888,6 @@ namespace wowpp
 			}
 		}
 	}
-
-#if 0
-	void GameCharacter::swapItem(UInt16 src, UInt16 dst)
-	{
-		UInt8 srcBag = src >> 8;
-		UInt8 srcSlot = src & 0xFF;
-
-		UInt8 dstBag = dst >> 8;
-		UInt8 dstSlot = dst & 0xFF;
-
-		GameItem *srcItem = getItemByPos(srcBag, srcSlot);
-		GameItem *dstItem = getItemByPos(dstBag, dstSlot);
-
-		// Check if we have a valid source item
-		if (!srcItem)
-		{
-			inventoryChangeFailure(game::inventory_change_failure::ItemNotFound, srcItem, dstItem);
-			return;
-		}
-
-		// Check if we are alive
-		if (!isAlive())
-		{
-			inventoryChangeFailure(game::inventory_change_failure::YouAreDead, srcItem, dstItem);
-			return;
-		}
-
-		// Check equipment
-		if (dstSlot < player_inventory_slots::End)
-		{
-			auto armorProf = getArmorProficiency();
-			auto weaponProf = getWeaponProficiency();
-
-			if (srcItem->getEntry().itemclass() == game::item_class::Weapon)
-			{
-				if ((weaponProf & weaponProficiency(srcItem->getEntry().subclass())) == 0)
-				{
-					WLOG("CAN'T EQUIP: Armor prof mask = 0x" << std::hex << std::uppercase << weaponProf << "; Required: 0x" << std::hex << std::uppercase << weaponProficiency(srcItem->getEntry().subclass()));
-					inventoryChangeFailure(game::inventory_change_failure::NoRequiredProficiency, srcItem, dstItem);
-					return;
-				}
-			}
-			else if (srcItem->getEntry().itemclass() == game::item_class::Armor)
-			{
-				if ((armorProf & armorProficiency(srcItem->getEntry().subclass())) == 0)
-				{
-					WLOG("CAN'T EQUIP: Armor prof mask = 0x" << std::hex << std::uppercase << armorProf << "; Required: 0x" << std::hex << std::uppercase << armorProficiency(srcItem->getEntry().subclass()));
-					inventoryChangeFailure(game::inventory_change_failure::NoRequiredProficiency, srcItem, dstItem);
-					return;
-				}
-			}
-
-			auto srcInvType = srcItem->getEntry().inventorytype();
-			auto result = game::inventory_change_failure::None;
-			switch (dstSlot)
-			{
-				case player_equipment_slots::Head:
-					if (srcInvType != game::inventory_type::Head)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Body:
-					if (srcInvType != game::inventory_type::Body)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Chest:
-					if (srcInvType != game::inventory_type::Chest && 
-						srcInvType != game::inventory_type::Robe)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Feet:
-					if (srcInvType != game::inventory_type::Feet)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Finger1:
-				case player_equipment_slots::Finger2:
-					if (srcInvType != game::inventory_type::Finger)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Trinket1:
-				case player_equipment_slots::Trinket2:
-					if (srcInvType != game::inventory_type::Trinket)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Hands:
-					if (srcInvType != game::inventory_type::Hands)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Legs:
-					if (srcInvType != game::inventory_type::Legs)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Mainhand:
-					if (srcInvType != game::inventory_type::MainHandWeapon &&
-						srcInvType != game::inventory_type::TwoHandedWeapon &&
-						srcInvType != game::inventory_type::Weapon)
-					{
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					}
-					else if(srcInvType == game::inventory_type::TwoHandedWeapon)
-					{
-						auto *offhand = getItemByPos(0xFF, player_equipment_slots::Offhand);
-						if (offhand)
-						{
-							bool foundFreeSlot = false;
-
-							// Check for free inventory slot to unequip shield
-							for (UInt8 slot = player_inventory_pack_slots::Start; slot < player_inventory_pack_slots::End; ++slot)
-							{
-								auto *test = getItemByPos(0xFF, slot);
-								if (!test)
-								{
-									// Swap shield
-									swapItem(player_equipment_slots::Offhand | 0xFF00, slot | 0xFF00);
-									if (getItemByPos(0xFF, player_equipment_slots::Offhand))
-									{
-										// Stop, something went wrong!
-										return;
-									}
-
-									foundFreeSlot = true;
-									break;
-								}
-							}
-
-							if (!foundFreeSlot)
-							{
-								result = game::inventory_change_failure::InventoryFull;
-							}
-						}
-					}
-					break;
-				case player_equipment_slots::Offhand:
-					if (srcInvType != game::inventory_type::OffHandWeapon &&
-						srcInvType != game::inventory_type::Shield &&
-						srcInvType != game::inventory_type::Weapon)
-					{
-						WLOG("Invalid item for offhand slot");
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					}
-					else
-					{
-						if (srcInvType != game::inventory_type::Shield &&
-							!canDualWield())
-						{
-							WLOG("Can't dual-wield yet");
-							result = game::inventory_change_failure::CantDualWield;
-							break;
-						}
-
-						auto *item = getItemByPos(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand);
-						if (item &&
-							item->getEntry().inventorytype() == game::inventory_type::TwoHandedWeapon)
-						{
-							// Can't equip offhand weapon when 2H weapon is equipped
-							result = game::inventory_change_failure::CantEquipWithTwoHanded;
-							break;
-						}
-					}
-					break;
-				case player_equipment_slots::Ranged:
-					if (srcInvType != game::inventory_type::Ranged)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Shoulders:
-					if (srcInvType != game::inventory_type::Shoulders)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Tabard:
-					if (srcInvType != game::inventory_type::Tabard)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Waist:
-					if (srcInvType != game::inventory_type::Waist)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Wrists:
-					if (srcInvType != game::inventory_type::Wrists)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-			}
-
-			if (result != game::inventory_change_failure::None)
-			{
-				inventoryChangeFailure(result, srcItem, dstItem);
-				return;
-			}
-		}
-
-		// TODO: Check if source item is in still consisted as loot
-
-		// TODO: Validate source item
-
-		// TODO: Validate dest item
-
-		bool updateStats = false;
-
-		// Detect case
-		if (!dstItem)
-		{
-			// Move items (little test)
-			setUInt64Value(character_fields::InvSlotHead + (srcSlot * 2), 0);
-			setUInt64Value(character_fields::InvSlotHead + (dstSlot * 2), srcItem->getGuid());
-
-			if (srcSlot < player_equipment_slots::End)
-			{
-				setUInt32Value(character_fields::VisibleItem1_0 + (srcSlot * 16), 0);
-				setUInt64Value(character_fields::VisibleItem1_CREATOR + (srcSlot * 16), 0);
-				applyItemStats(*srcItem, false);
-				updateStats = true;
-			}
-			if (dstSlot < player_equipment_slots::End)
-			{
-				setUInt32Value(character_fields::VisibleItem1_0 + (dstSlot * 16), srcItem->getEntry().id());
-				setUInt64Value(character_fields::VisibleItem1_CREATOR + (dstSlot * 16), srcItem->getUInt64Value(item_fields::Creator));
-				applyItemStats(*srcItem, true);
-				updateStats = true;
-			}
-
-			auto srcIt = m_itemSlots.find(srcSlot);
-			std::swap(m_itemSlots[dstSlot], srcIt->second);
-			m_itemSlots.erase(srcIt);
-		}
-		else
-		{
-			setUInt64Value(character_fields::InvSlotHead + (srcSlot * 2), dstItem->getGuid());
-			setUInt64Value(character_fields::InvSlotHead + (dstSlot * 2), srcItem->getGuid());
-
-			if (srcSlot < player_equipment_slots::End)
-			{
-				setUInt32Value(character_fields::VisibleItem1_0 + (srcSlot * 16), dstItem->getEntry().id());
-				setUInt64Value(character_fields::VisibleItem1_CREATOR + (srcSlot * 16), dstItem->getUInt64Value(item_fields::Creator));
-				applyItemStats(*srcItem, false);
-				updateStats = true;
-			}
-			if (dstSlot < player_equipment_slots::End)
-			{
-				setUInt32Value(character_fields::VisibleItem1_0 + (dstSlot * 16), srcItem->getEntry().id());
-				setUInt64Value(character_fields::VisibleItem1_CREATOR + (dstSlot * 16), srcItem->getUInt64Value(item_fields::Creator));
-				applyItemStats(*dstItem, false);
-				applyItemStats(*srcItem, true);
-				updateStats = true;
-			}
-
-			std::swap(m_itemSlots[srcSlot], m_itemSlots[dstSlot]);
-		}
-
-		if (updateStats)
-			updateAllStats();
-	}
-#endif
 
 	void GameCharacter::updateArmor()
 	{

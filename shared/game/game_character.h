@@ -614,6 +614,10 @@ namespace wowpp
 
 		bool isQuestlogFull() const;
 
+		void onQuestItemAddedCredit(const proto::ItemEntry &entry, UInt32 amount);
+
+		void onQuestItemRemovedCredit(const proto::ItemEntry &entry, UInt32 amount);
+
 	public:
 
 		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT

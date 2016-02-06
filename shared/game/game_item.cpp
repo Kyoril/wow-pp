@@ -70,7 +70,7 @@ namespace wowpp
 		if (amount <= availableStacks)
 		{
 			setUInt32Value(item_fields::StackCount, stackCount + amount);
-			return 0;
+			return amount;
 		}
 
 		// Max out the stack count and return the added stacks

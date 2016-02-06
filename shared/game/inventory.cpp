@@ -240,6 +240,9 @@ namespace wowpp
 			return game::inventory_change_failure::InventoryFull;
 		}
 
+		// Quest check
+		m_owner.onQuestItemAddedCredit(entry, amount);
+
 		// Everything okay
 		return game::inventory_change_failure::Okay;
 	}
@@ -362,6 +365,9 @@ namespace wowpp
 			it->second->setUInt32Value(item_fields::StackCount, stackCount - stacks);
 			itemInstanceUpdated(it->second, absoluteSlot);
 		}
+
+		// Quest check
+		m_owner.onQuestItemRemovedCredit(it->second->getEntry(), stacks);
 
 		return game::inventory_change_failure::Okay;
 	}
