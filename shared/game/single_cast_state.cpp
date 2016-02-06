@@ -642,6 +642,9 @@ namespace wowpp
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
 			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, &caster, noThreat))
 			{
+				if (totalDamage == 0 && resisted == 0)
+					totalDamage = resisted = 1;
+				
 				// Send spell damage packet
 				m_completedEffectsExecution = completedEffects.connect([this, &caster, targetUnit, totalDamage, school, absorbed, resisted, crit](){
 					wowpp::sendPacketFromCaster(caster,
