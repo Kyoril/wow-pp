@@ -391,7 +391,7 @@ namespace wowpp
 				});
 			}
 			break;
-		case game::targets::UnitAreaEnemyDst:
+		case game::targets::UnitAreaEnemyDst:	//16
 			{
 				targetMap.getDestLocation(x, y, tmp);
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
@@ -413,7 +413,7 @@ namespace wowpp
 				});
 			}
 			break;
-		case game::targets::UnitPartyTarget:
+		case game::targets::UnitPartyTarget:	//37
 			{
 				if (unitTarget)
 				{
@@ -445,6 +445,7 @@ namespace wowpp
 			}
 			break;
 		default:
+			//22
 			break;
 		}
 		
