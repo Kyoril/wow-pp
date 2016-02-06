@@ -327,6 +327,26 @@ namespace wowpp
 			return false;
 		}
 
+		// Try to remove all required quest items
+		for (const auto &req : entry->requirements())
+		{
+			if (req.itemid())
+			{
+				const auto *itemEntry = m_project.items.getById(req.itemid());
+				if (!itemEntry)
+				{
+					return false;
+				}
+
+				auto result = m_inventory.removeItems(*itemEntry, req.itemcount());
+				if (result != game::inventory_change_failure::Okay)
+				{
+					inventoryChangeFailure(result, nullptr, nullptr);
+					return false;
+				}
+			}
+		}
+
 		UInt32 xp = getQuestXP(getLevel(), *entry);
 		if (xp > 0)
 		{
