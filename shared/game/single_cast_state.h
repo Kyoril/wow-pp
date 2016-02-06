@@ -60,6 +60,7 @@ namespace wowpp
 
 	private:
 
+		bool consumeItem();
 		bool consumePower();
 		void applyAllEffects();
 		Int32 calculateEffectBasePoints(const proto::SpellEffect &effect);

@@ -1789,7 +1789,7 @@ namespace wowpp
 			}
 
 			UInt64 time = spellEntry->casttime();
-			m_character->castSpell(std::move(targetMap), spell.spell(), -1, time);
+			m_character->castSpell(std::move(targetMap), spell.spell(), -1, time, itemGuid);
 		}
 	}
 

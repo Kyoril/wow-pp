@@ -353,23 +353,29 @@ namespace wowpp
 			// Execute on next weapon swing
 			m_cast.getExecuter().setAttackSwingCallback([strongThis, this]() -> bool
 			{
-				if (strongThis->consumePower())
-				{
-					strongThis->sendEndCast(true);
-					strongThis->applyAllEffects();
-				}
-				else
+				if (!strongThis->consumePower())
 				{
 					m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedNoPower);
 					return false;
 				}
-				
+
+				if (!strongThis->consumeItem())
+				{
+					m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedItemNotFound);
+					return false;
+				}
+
+				strongThis->sendEndCast(true);
+				strongThis->applyAllEffects();
 				return true;
 			});
 		}
 		else
 		{
 			if (!consumePower())
+				return;
+
+			if (!consumeItem())
 				return;
 
 			sendEndCast(true);
@@ -1346,6 +1352,40 @@ namespace wowpp
 		{
 			m_cast.getExecuter().castSpell(m_target, spell, -1, 0, true);
 		}
+	}
+
+	bool SingleCastState::consumeItem()
+	{
+		if (m_itemGuid == 0)
+		{
+			return true;
+		}
+
+		if (m_cast.getExecuter().isGameCharacter())
+		{
+			auto *character = reinterpret_cast<GameCharacter*>(&m_cast.getExecuter());
+			auto &inv = character->getInventory();
+
+			UInt16 itemSlot = 0;
+			if (!inv.findItemByGUID(m_itemGuid, itemSlot))
+			{
+				// Could not find item, seems not to exist
+				return false;
+			}
+
+			auto result = inv.removeItem(itemSlot, 1);
+			if (result != game::inventory_change_failure::Okay)
+			{
+				auto item = inv.getItemAtSlot(itemSlot);
+				if (item)
+				{
+					character->inventoryChangeFailure(result, item.get(), nullptr);
+					return false;
+				}
+			}
+		}
+
+		return true;
 	}
 
 	bool SingleCastState::consumePower()
