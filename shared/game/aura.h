@@ -103,6 +103,8 @@ namespace wowpp
 		void handleModStealth(bool apply);
 		/// 22
 		void handleModResistance(bool apply);
+		/// 23
+		void handlePeriodicTriggerSpell(bool apply);
 		/// 24
 		void handlePeriodicEnergize(bool apply);
 		/// 26

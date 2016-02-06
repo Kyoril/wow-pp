@@ -148,6 +148,9 @@ namespace wowpp
 		case aura::ModResistance:
 			handleModResistance(apply);
 			break;
+		case aura::PeriodicTriggerSpell:
+			handlePeriodicTriggerSpell(apply);
+			break;
 		case aura::PeriodicDamage:
 			handlePeriodicDamage(apply);
 			break;
@@ -395,6 +398,23 @@ namespace wowpp
 				m_target.updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), unit_mod_type::TotalValue, m_basePoints, apply);
 			}
 		}
+	}
+	
+	void Aura::handlePeriodicTriggerSpell(bool apply)
+	{
+		float amplitude = m_effect.amplitude() / 1000.0f;
+		UInt32 triggerSpell = m_effect.triggerspell();
+		SpellTargetMap targetMap;
+		m_onTick = m_tickCountdown.ended.connect([this, amplitude, triggerSpell, targetMap]()
+		{
+			m_target.castSpell(targetMap, triggerSpell, -1, 0, true);
+
+			if (!m_expired)
+			{
+				startPeriodicTimer();
+			}
+		});
+		startPeriodicTimer();
 	}
 
 	void Aura::handlePeriodicEnergize(bool apply)
