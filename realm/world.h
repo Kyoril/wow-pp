@@ -101,7 +101,7 @@ namespace wowpp
 		void characterIgnoreList(UInt64 characterGuid, const std::vector<UInt64> &list);
 		void characterAddIgnore(UInt64 characterGuid, UInt64 ignoreGuid);
 		void characterRemoveIgnore(UInt64 characterGuid, UInt64 removeGuid);
-		void itemData(UInt64 characterGuid, const std::map<UInt16, ItemData> &items);
+		void itemData(UInt64 characterGuid, const std::vector<ItemData> &items);
 
 	private:
 

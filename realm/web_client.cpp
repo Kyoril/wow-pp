@@ -343,7 +343,7 @@ namespace wowpp
 									data.durability = item->durability();
 									data.randomPropertyIndex = 0;
 									data.randomSuffixIndex = 0;
-									data.slot = preferredSlot;
+									data.slot = preferredSlot | 0xFF00;
 									data.stackCount = 1;
 									items.emplace_back(std::move(data));
 								}

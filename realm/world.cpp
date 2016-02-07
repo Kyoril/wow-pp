@@ -526,7 +526,7 @@ namespace wowpp
 			std::bind(pp::world_realm::realm_write::removeIgnore, std::placeholders::_1, characterGuid, removeGuid));
 	}
 
-	void World::itemData(UInt64 characterGuid, const std::map<UInt16, ItemData>& items)
+	void World::itemData(UInt64 characterGuid, const std::vector<ItemData>& items)
 	{
 		m_connection->sendSinglePacket(
 			std::bind(pp::world_realm::realm_write::itemData, std::placeholders::_1, characterGuid, std::cref(items)));

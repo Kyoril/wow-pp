@@ -260,7 +260,7 @@ namespace wowpp
 					if (!spells.empty())
 					{
 						std::ostringstream fmtStrm;
-						fmtStrm << "INSERT INTO `character_spells` (`guid`,`spell`) VALUES ";
+						fmtStrm << "INSERT IGNORE INTO `character_spells` (`guid`,`spell`) VALUES ";
 
 						// Add spells
 						bool isFirstEntry = true;
@@ -288,7 +288,6 @@ namespace wowpp
 					}
 					
 					// TODO: Initialize action bars
-
 					if (!items.empty())
 					{
 						std::ostringstream fmtStrm;

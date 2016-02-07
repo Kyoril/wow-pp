@@ -259,18 +259,17 @@ namespace wowpp
 						<< io::write<NetUInt64>(removeGuid);
 					out_packet.finish();
 				}
-				void itemData(pp::OutgoingPacket & out_packet, UInt64 characterId, const std::map<UInt16, ItemData>& data)
+				void itemData(pp::OutgoingPacket & out_packet, UInt64 characterId, const std::vector<ItemData>& data)
 				{
 					out_packet.start(realm_packet::ItemData);
 					out_packet
 						<< io::write<NetUInt64>(characterId)
 						<< io::write<NetUInt32>(data.size());
 
-					for (const auto &it : data)
+					for (const auto &item : data)
 					{
 						out_packet
-							<< io::write<NetUInt16>(it.first)
-							<< it.second;
+							<< item;
 					}
 					out_packet.finish();
 				}
@@ -481,7 +480,7 @@ namespace wowpp
 						>> io::read<NetUInt64>(out_removeGuid);
 				}
 
-				bool itemData(io::Reader & packet, UInt64 & out_characterId, std::map<UInt16, ItemData>& out_data)
+				bool itemData(io::Reader & packet, UInt64 & out_characterId, std::vector<ItemData>& out_data)
 				{
 					UInt32 count = 0;
 					if (!(packet
@@ -491,18 +490,15 @@ namespace wowpp
 						return false;
 					}
 
+					out_data.resize(count);
 					for (UInt32 i = 0; i < count; ++i)
 					{
-						UInt16 slot = 0;
-						ItemData data;
+						ItemData &data = out_data[i];
 						if (!(packet
-							>> io::read<NetUInt16>(slot)
 							>> data))
 						{
 							return false;
 						}
-
-						out_data.insert(std::make_pair(slot, std::move(data)));
 					}
 
 					return packet;

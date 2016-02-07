@@ -1048,57 +1048,21 @@ namespace wowpp
 			return add_item_result::Unknown;
 		}
 
-		if (amount > itemEntry->maxstack()) amount = itemEntry->maxstack();
+		std::vector<ItemData> modifiedItems;
 
-		// 
-		std::map<UInt16, ItemData> modifiedItems;
-
-		// Iterate all available items
-		LinearSet<UInt16> usedSlots;
-		for (auto &item : m_itemData)
-		{
-			if (item.slot >= player_inventory_pack_slots::Start &&
-				item.slot < player_inventory_pack_slots::End)
-			{
-				usedSlots.add(item.slot);
-				if (item.entry == itemId &&
-					itemEntry->maxstack() > 1 &&
-					item.stackCount <= itemEntry->maxstack() - amount)
-				{
-					item.stackCount += amount;
-					amount = 0;
-
-					modifiedItems[item.slot] = item;
-					break;
-				}
-			}
-		}
-
-		if (amount > 0)
-		{
-			for (UInt16 i = player_inventory_pack_slots::Start; i < player_inventory_pack_slots::End; ++i)
-			{
-				if (!usedSlots.contains(i))
-				{
-					ItemData data;
-					data.contained = 0;
-					data.creator = 0;
-					data.durability = itemEntry->durability();
-					data.entry = itemId;
-					data.randomPropertyIndex = 0;
-					data.randomSuffixIndex = 0;
-					data.slot = i;
-					data.stackCount = amount;
-					modifiedItems[i] = data;
-					m_itemData.emplace_back(std::move(data));
-					amount = 0;
-					break;
-				}
-			}
-		}
+		ItemData data;
+		data.contained = m_gameCharacter->getGuid();
+		data.creator = 0;
+		data.durability = itemEntry->durability();
+		data.entry = itemId;
+		data.randomPropertyIndex = 0;
+		data.randomSuffixIndex = 0;
+		data.slot = 0;
+		data.stackCount = amount;
+		modifiedItems.push_back(std::move(data));
 
 		// Notify world node about this
-		m_worldNode->itemData(m_gameCharacter->getGuid(), std::cref(modifiedItems));
+		m_worldNode->itemData(m_gameCharacter->getGuid(), modifiedItems);
 	
 		// Save items
 		return add_item_result::Success;

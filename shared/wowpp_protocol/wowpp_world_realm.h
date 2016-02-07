@@ -34,7 +34,7 @@ namespace wowpp
 	{
 		namespace world_realm
 		{
-			static const UInt32 ProtocolVersion = 0x11;
+			static const UInt32 ProtocolVersion = 0x12;
 
 			namespace world_instance_error
 			{
@@ -329,7 +329,7 @@ namespace wowpp
 				void itemData(
 					pp::OutgoingPacket &out_packet,
 					UInt64 characterId,
-					const std::map<UInt16, ItemData> &data
+					const std::vector<ItemData> &data
 					);
 				void itemsRemoved(
 					pp::OutgoingPacket &out_packet,
@@ -518,7 +518,7 @@ namespace wowpp
 				bool itemData(
 					io::Reader &packet,
 					UInt64 &out_characterId,
-					std::map<UInt16, ItemData> &out_data
+					std::vector<ItemData> &out_data
 					);
 				bool itemsRemoved(
 					io::Reader &packet,
