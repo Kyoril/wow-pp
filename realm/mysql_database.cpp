@@ -483,8 +483,8 @@ namespace wowpp
 			"SELECT `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`xp`, `gold`, `map`,"
 			//       10     11           12           13           14
 				   "`zone`,`position_x`,`position_y`,`position_z`,`orientation`,"
-            //       15        16       17       18       19	   20
-				   "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`,`explored_zones` FROM `character` WHERE `id`=%1% LIMIT 1")
+            //       15        16       17       18       19	   20					21
+				   "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`,`explored_zones`, `last_save` FROM `character` WHERE `id`=%1% LIMIT 1")
 			% characterId).str());
 		if (select.success())
 		{
@@ -583,6 +583,16 @@ namespace wowpp
 					}
 				}
 
+				size_t lastSave = 0;
+				row.getField(21, lastSave);
+				if (lastSave == 0)
+				{
+					lastSave = time(nullptr);
+				}
+
+				size_t now = time(nullptr);
+				const bool removeConjuredItems = (now >= lastSave) && ((now - lastSave) > 60 * 15);
+
 				// Load character spells
 				wowpp::MySQL::Select spellSelect(m_connection, (boost::format(
 					//       0     
@@ -631,7 +641,20 @@ namespace wowpp
 						itemRow.getField(2, data.creator);
 						itemRow.getField<UInt8, UInt16>(3, data.stackCount);
 						itemRow.getField(4, data.durability);
-						out_character.getInventory().addRealmData(data);
+						const auto *itemEntry = m_project.items.getById(data.entry);
+						if (itemEntry)
+						{
+							// More than 15 minutes passed since last save?
+							const bool isConjured = (itemEntry->flags() & 0x02) != 0;
+							if (!isConjured || !removeConjuredItems)
+							{
+								out_character.getInventory().addRealmData(data);
+							}
+						}
+						else
+						{
+							WLOG("Unknown item in character database: " << data.entry);
+						}
 
 						// Next row
 						itemRow = itemRow.next(itemSelect);
@@ -722,7 +745,7 @@ namespace wowpp
 
 		if (!m_connection.execute((boost::format(
 			"UPDATE `character` SET `map`=%2%, `zone`=%3%, `position_x`=%4%, `position_y`=%5%, `position_z`=%6%, `orientation`=%7%, `level`=%8%, `xp`=%9%, `gold`=%10%, "
-			"`home_map`=%11%, `home_x`=%12%, `home_y`=%13%, `home_z`=%14%, `home_o`=%15%, `explored_zones`='%16%' WHERE `id`=%1%;")
+			"`home_map`=%11%, `home_x`=%12%, `home_y`=%13%, `home_z`=%14%, `home_o`=%15%, `explored_zones`='%16%', `last_save`=%17% WHERE `id`=%1%;")
 			% lowerGuid												// 1
 			% character.getMapId()									// 2
 			% character.getZone()									// 3
@@ -731,8 +754,9 @@ namespace wowpp
 			% character.getUInt32Value(character_fields::Xp)		// 9
 			% character.getUInt32Value(character_fields::Coinage)	// 10
 			% homeMap												// 11
-			% homePos.x % homePos.y % homePos.z % homeO			// 12, 13, 14, 15
+			% homePos.x % homePos.y % homePos.z % homeO				// 12, 13, 14, 15
 			% strm.str()											// 16
+			% time(nullptr)											// 17
 			).str()))
 		{
 			// There was an error
