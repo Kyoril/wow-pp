@@ -139,16 +139,15 @@ namespace wowpp
 	
 	AuraContainer::AuraList::iterator AuraContainer::findAura(Aura &aura)
 	{
-		auto it = m_auras.begin();
-		while (it != m_auras.end())
+		for (auto it = m_auras.begin(); it != m_auras.end(); ++it)
 		{
 			if (it->get() == &aura)
 			{
 				return it;
 			}
-			it++;
 		}
-		return it;
+
+		return m_auras.end();
 	}
 	
 	void AuraContainer::removeAura(AuraList::iterator &it)
@@ -170,8 +169,11 @@ namespace wowpp
 	
 	void AuraContainer::removeAura(Aura &aura)
 	{
-		AuraList::iterator it = findAura(aura);
-		removeAura(it);
+		auto it = findAura(aura);
+		if (it != m_auras.end())
+		{
+			removeAura(it);
+		}
 	}
 
 	void AuraContainer::handleTargetDeath()
