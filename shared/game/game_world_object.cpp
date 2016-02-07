@@ -27,6 +27,7 @@
 #include "world_instance.h"
 #include "proto_data/project.h"
 #include "game_character.h"
+#include "common/make_unique.h"
 #include <cassert>
 
 namespace wowpp
@@ -71,6 +72,8 @@ namespace wowpp
 		setFloatValue(world_object_fields::Rotation + 2, sin(o / 2.0f));
 		setFloatValue(world_object_fields::Rotation + 3, cos(o / 2.0f));
 
+		// Generate object loot
+		generateObjectLoot();
 	}
 
 	void WorldObject::writeCreateObjectBlocks(std::vector<std::vector<char>> &out_blocks, bool creation /*= true*/) const
@@ -129,7 +132,24 @@ namespace wowpp
 		{
 			case world_object_type::Chest:
 			{
-				// TODO: Check if chest loot contains quest item
+				if (!m_objectLoot)
+				{
+					return false;
+				}
+
+				for (UInt32 i = 0; i < m_objectLoot->getItemCount(); ++i)
+				{
+					auto* item = m_objectLoot->getLootDefinition(i);
+					if (item &&
+						!item->isLooted)
+					{
+						if (character.needsQuestItem(item->definition.item()))
+						{
+							return true;
+						}
+					}
+				}
+
 				return false;
 			}
 			case world_object_type::Goober:
@@ -139,6 +159,37 @@ namespace wowpp
 		}
 
 		return false;
+	}
+
+	void WorldObject::generateObjectLoot()
+	{
+		auto lootEntryId = m_entry.objectlootentry();
+		if (lootEntryId)
+		{
+			const auto *lootEntry = getProject().objectLoot.getById(lootEntryId);
+			if (lootEntry)
+			{
+				// TODO: make a way so we don't need loot recipients for game objects as this is completely crap
+				std::vector<GameCharacter*> lootRecipients;
+				m_objectLoot = make_unique<LootInstance>(
+					getProject().items, getGuid(), lootEntry, 0, 0, std::cref(lootRecipients));
+
+				if (m_objectLoot)
+				{
+					m_onLootCleared = m_objectLoot->cleared.connect([this]()
+					{
+						// Remove this object from the world (despawn it)
+						// REMEMBER: THIS WILL MOST LIKELY DESTROY THIS INSTANCE
+						auto *world = getWorldInstance();
+						if (world)
+						{
+							// Despawn this object
+							world->removeGameObject(*this);
+						}
+					});
+				}
+			}
+		}
 	}
 
 	void WorldObject::relocate(math::Vector3 position, float o, bool fire/* = false*/)

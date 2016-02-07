@@ -426,13 +426,16 @@ namespace wowpp
 
 		if (creation)
 		{
+			const bool isWorldGO = isWorldObject();
+
 			// Create a new bitset which has set all bits to one where the field value
 			// isn't equal to 0, since this will be for a CREATE_OBJECT block (spawn) and not
 			// for an UPDATE_OBJECT block
 			std::vector<UInt32> creationBits(m_valueBitset.size(), 0);
 			for (size_t i = 0; i < m_values.size(); ++i)
-			{
-				if (m_values[i])
+			{	
+				if (m_values[i] ||
+					(isWorldGO && i == world_object_fields::DynFlags))
 				{
 					// Calculate bit index
 					UInt16 bitIndex = i >> 3;
@@ -450,7 +453,8 @@ namespace wowpp
 			// Write all values != zero
 			for (size_t i = 0; i < m_values.size(); ++i)
 			{
-				if (m_values[i] != 0)
+				if (m_values[i] != 0 ||
+					(isWorldGO && i == world_object_fields::DynFlags))
 				{
 					writeUpdateValue(writer, receiver, i);
 				}

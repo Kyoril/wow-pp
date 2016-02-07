@@ -25,6 +25,7 @@
 #include "game_item.h"
 #include "inventory.h"
 #include "defines.h"
+#include "loot_instance.h"
 
 namespace wowpp
 {
@@ -509,6 +510,7 @@ namespace wowpp
 		/// Parameters: Quest-ID, Old Status, New Status
 		boost::signals2::signal<void(UInt32, const QuestStatusData&)> questDataChanged;
 		boost::signals2::signal<void(const proto::QuestEntry&, UInt64 guid, UInt32 entry, UInt32 count, UInt32 total)> questKillCredit;
+		boost::signals2::signal<void(LootInstance&)> lootinspect;
 
 	public:
 
@@ -618,6 +620,8 @@ namespace wowpp
 
 		void onQuestItemRemovedCredit(const proto::ItemEntry &entry, UInt32 amount);
 
+		bool needsQuestItem(UInt32 itemId) const;
+
 	public:
 
 		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT
@@ -664,6 +668,10 @@ namespace wowpp
 		boost::signals2::scoped_connection m_doneMeleeAttack;
 		std::map<UInt32, QuestStatusData> m_quests;
 		Inventory m_inventory;
+		/// We use a map here since multiple quests could require the same item and thus,
+		/// if one quest gets rewarded/abandoned, and the other quest is still incomplete,
+		/// we would have no performant way to check this.
+		std::map<UInt32, Int8> m_requiredQuestItems;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameCharacter const& object);

@@ -22,8 +22,11 @@
 #pragma once
 
 #include "game_object.h"
+#include "loot_instance.h"
 #include "common/timer_queue.h"
 #include "common/countdown.h"
+#include <boost/signals2.hpp>
+#include <memory>
 
 namespace wowpp
 {
@@ -184,14 +187,22 @@ namespace wowpp
 		game::QuestgiverStatus getQuestgiverStatus(const GameCharacter &character) const;
 		/// Determines whether this object is needed by a quest.
 		bool isQuestObject(const GameCharacter &character) const;
+		/// 
+		LootInstance *getObjectLoot() { return m_objectLoot.get(); }
 
 		/// Gets the object type id value.
 		ObjectType getTypeId() const override { return object_type::GameObject; }
+
+	private:
+
+		void generateObjectLoot();
 
 	protected:
 
 		TimerQueue &m_timers;
 		const proto::ObjectEntry &m_entry;
+		std::unique_ptr<LootInstance> m_objectLoot;
+		boost::signals2::scoped_connection m_onLootCleared;
 	};
 
 	io::Writer &operator << (io::Writer &w, WorldObject const& object);

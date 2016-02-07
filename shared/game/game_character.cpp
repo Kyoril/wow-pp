@@ -232,6 +232,14 @@ namespace wowpp
 					data.status = game::quest_status::Complete;
 					addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
 				}
+				else
+				{
+					// Mark all related quest items as needed
+					for (auto &req : questEntry->requirements())
+					{
+						if (req.itemid()) m_requiredQuestItems[req.itemid()]++;
+					}
+				}
 
 				questDataChanged(quest, data);
 				return true;
@@ -250,12 +258,18 @@ namespace wowpp
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
 			if (logId == quest)
 			{
-				// Take that quest
 				auto &data = m_quests[quest];
 				data.status = game::quest_status::Available;
 				data.creatures.fill(0);
 				data.objects.fill(0);
 				data.items.fill(0);
+
+				// Mark all related quest items as needed
+				const auto *entry = getProject().quests.getById(quest);
+				for (auto &req : entry->requirements())
+				{
+					if (req.itemid()) m_requiredQuestItems[req.itemid()]--;
+				}
 
 				// Reset quest log
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, 0);
@@ -416,6 +430,11 @@ namespace wowpp
 				getUInt32Value(character_fields::Coinage) + money);
 		}
 
+		for (const auto &req : entry->requirements())
+		{
+			if (req.itemid()) m_requiredQuestItems[req.itemid()]--;
+		}
+
 		for (UInt32 i = 0; i < 25; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
@@ -481,6 +500,11 @@ namespace wowpp
 						// Check if this completed the quest
 						if (fulfillsQuestRequirements(*quest))
 						{
+							for (const auto &req : quest->requirements())
+							{
+								if (req.itemid()) m_requiredQuestItems[req.itemid()]--;
+							}
+
 							// Complete quest
 							it->second.status = game::quest_status::Complete;
 							addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
@@ -577,6 +601,11 @@ namespace wowpp
 					// Found it: Complete quest if completable
 					if (fulfillsQuestRequirements(*quest))
 					{
+						for (const auto &req : quest->requirements())
+						{
+							if (req.itemid()) m_requiredQuestItems[req.itemid()]--;
+						}
+
 						it->second.status = game::quest_status::Complete;
 						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
 						questDataChanged(logId, it->second);
@@ -617,6 +646,11 @@ namespace wowpp
 					// Found it: Complete quest if completable
 					if (!fulfillsQuestRequirements(*quest))
 					{
+						for (const auto &req : quest->requirements())
+						{
+							if (req.itemid()) m_requiredQuestItems[req.itemid()]++;
+						}
+
 						it->second.status = game::quest_status::Incomplete;
 						removeFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
 						questDataChanged(logId, it->second);
@@ -625,6 +659,12 @@ namespace wowpp
 				}
 			}
 		}
+	}
+
+	bool GameCharacter::needsQuestItem(UInt32 itemId) const
+	{
+		auto it = m_requiredQuestItems.find(itemId);
+		return (it != m_requiredQuestItems.end() ? it->second > 0 : false);
 	}
 
 	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData & data)
@@ -1496,6 +1536,19 @@ namespace wowpp
 				>> io::read_range(questData.creatures)
 				>> io::read_range(questData.objects)
 				>> io::read_range(questData.items);
+
+			// Quest item cache update
+			if (questData.status == game::quest_status::Incomplete)
+			{
+				const auto *quest = object.getProject().quests.getById(questId);
+				if (quest)
+				{
+					for (const auto &req : quest->requirements())
+					{
+						if (req.itemid()) object.m_requiredQuestItems[req.itemid()]++;
+					}
+				}
+			}
 		}
 
 		// Reset all auras

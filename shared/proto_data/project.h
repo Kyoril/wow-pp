@@ -30,6 +30,7 @@
 #include "shared/proto_data/units.pb.h"
 #include "shared/proto_data/spells.pb.h"
 #include "shared/proto_data/unit_loot.pb.h"
+#include "shared/proto_data/object_loot.pb.h"
 #include "shared/proto_data/maps.pb.h"
 #include "shared/proto_data/emotes.pb.h"
 #include "shared/proto_data/objects.pb.h"
@@ -58,6 +59,7 @@ namespace wowpp
 		typedef TemplateManager<wowpp::proto::Maps, wowpp::proto::MapEntry> MapManager;
 		typedef TemplateManager<wowpp::proto::Emotes, wowpp::proto::EmoteEntry> EmoteManager;
 		typedef TemplateManager<wowpp::proto::UnitLoot, wowpp::proto::LootEntry> UnitLootManager;
+		typedef TemplateManager<wowpp::proto::ObjectLoot, wowpp::proto::LootEntry> ObjectLootManager;
 		typedef TemplateManager<wowpp::proto::Spells, wowpp::proto::SpellEntry> SpellManager;
 		typedef TemplateManager<wowpp::proto::Skills, wowpp::proto::SkillEntry> SkillManager;
 		typedef TemplateManager<wowpp::proto::Trainers, wowpp::proto::TrainerEntry> TrainerManager;
@@ -84,6 +86,7 @@ namespace wowpp
 			MapManager maps;
 			EmoteManager emotes;
 			UnitLootManager unitLoot;
+			ObjectLootManager objectLoot;
 			SpellManager spells;
 			SkillManager skills;
 			TrainerManager trainers;
@@ -135,6 +138,7 @@ namespace wowpp
 				managers.push_back(ManagerEntry("maps", maps));
 				managers.push_back(ManagerEntry("emotes", emotes));
 				managers.push_back(ManagerEntry("unit_loot", unitLoot));
+				managers.push_back(ManagerEntry("object_loot", objectLoot));
 				managers.push_back(ManagerEntry("skills", skills));
 				managers.push_back(ManagerEntry("trainers", trainers));
 				managers.push_back(ManagerEntry("vendors", vendors));
@@ -186,6 +190,7 @@ namespace wowpp
 				managers.push_back(ManagerEntry("maps", "maps", maps));
 				managers.push_back(ManagerEntry("emotes", "emotes", emotes));
 				managers.push_back(ManagerEntry("unit_loot", "unit_loot", unitLoot));
+				managers.push_back(ManagerEntry("object_loot", "object_loot", objectLoot));
 				managers.push_back(ManagerEntry("skills", "skills", skills));
 				managers.push_back(ManagerEntry("trainers", "trainers", trainers));
 				managers.push_back(ManagerEntry("vendors", "vendors", vendors));

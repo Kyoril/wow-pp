@@ -4060,8 +4060,11 @@ QGroupBox::indicator:unchecked:disabled
      <string>&amp;Tools</string>
     </property>
     <addaction name="actionImport"/>
+    <addaction name="actionImport_Object_Loot"/>
+    <addaction name="separator"/>
     <addaction name="actionImport_Vendors"/>
     <addaction name="actionImport_Trainers"/>
+    <addaction name="separator"/>
     <addaction name="actionImport_Quests"/>
    </widget>
    <addaction name="menu_Project"/>
@@ -4148,6 +4151,11 @@ QGroupBox::indicator:unchecked:disabled
   <action name="actionImport_Quests">
    <property name="text">
     <string>Import Quests</string>
+   </property>
+  </action>
+  <action name="actionImport_Object_Loot">
+   <property name="text">
+    <string>Import Object Loot</string>
    </property>
   </action>
  </widget>

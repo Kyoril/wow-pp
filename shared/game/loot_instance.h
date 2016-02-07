@@ -76,6 +76,8 @@ namespace wowpp
 		const LootItem *getLootDefinition(UInt8 slot) const;
 		/// 
 		void takeItem(UInt8 slot);
+		/// Gets the number of items.
+		UInt32 getItemCount() const { return m_items.size(); }
 
 	private:
 

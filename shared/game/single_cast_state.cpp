@@ -1142,13 +1142,14 @@ namespace wowpp
 				std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *targetUnit, [&universe](std::function<void()> work)
 				{
 					universe.post(work);
-				}, [](Aura &self)
+				}, [&universe](Aura &self)
 				{
 					// Prevent aura from being deleted before being removed from the list
 					auto strong = self.shared_from_this();
-					
-					// Remove aura from the list
-					self.getTarget().getAuras().removeAura(self);
+					universe.post([strong]()
+					{
+						strong->getTarget().getAuras().removeAura(*strong);
+					});
 				});
 
 				// TODO: Dimishing return and custom durations
@@ -1655,10 +1656,24 @@ namespace wowpp
 		// TODO: Get lock info
 
 		// If it is a door, try to open it
-		if (entry.type() == 0)
+		if (entry.type() == world_object_type::Door)
 		{
 			obj->setUInt32Value(world_object_fields::State, (currentState == 1 ? 0 : 1));
 			return;
+		}
+		else if (entry.type() == world_object_type::Chest)
+		{
+			// Open chest loot window
+			auto *loot = obj->getObjectLoot();
+			if (loot &&
+				!loot->isEmpty())
+			{
+				// Start inspecting the loot
+				if (m_cast.getExecuter().isGameCharacter())
+				{
+					reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).lootinspect(*loot);
+				}
+			}
 		}
 	}
 	
