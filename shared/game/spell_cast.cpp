@@ -140,7 +140,7 @@ namespace wowpp
 		if (isProc)
 		{
 			std::shared_ptr<SingleCastState> newState(
-				new SingleCastState(*this, spell, std::move(target), basePoints, castTime, true)
+				new SingleCastState(*this, spell, std::move(target), basePoints, castTime, true, itemGuid)
 				);
 			newState->activate();
 
@@ -194,7 +194,7 @@ namespace wowpp
 	SpellCasting & castSpell(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, UInt64 itemGuid)
 	{
 		std::shared_ptr<SingleCastState> newState(
-			new SingleCastState(cast, spell, std::move(target), basePoints, castTime, itemGuid)
+			new SingleCastState(cast, spell, std::move(target), basePoints, castTime, false, itemGuid)
 			);
 
 		auto &casting = newState->getCasting();

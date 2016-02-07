@@ -653,6 +653,10 @@ namespace wowpp
 					if (srcInvType != game::inventory_type::Wrists)
 						return game::inventory_change_failure::ItemDoesNotGoToSlot;
 					break;
+				case player_equipment_slots::Back:
+					if (srcInvType != game::inventory_type::Cloak)
+						return game::inventory_change_failure::ItemDoesNotGoToSlot;
+					break;
 				default:
 					return game::inventory_change_failure::ItemDoesNotGoToSlot;
 			}
@@ -782,19 +786,17 @@ namespace wowpp
 
 				// Create a new item instance
 				auto item = std::make_shared<GameItem>(m_owner.getProject(), *entry);
+				auto newItemId = world->getItemIdGenerator().generateId();
+				item->setGuid(createEntryGUID(newItemId, entry->id(), wowpp::guid_type::Item));
 				item->initialize();
 				item->setUInt64Value(item_fields::Owner, m_owner.getGuid());
-				item->setUInt64Value(item_fields::Creator, data.creator);
-				item->setUInt64Value(item_fields::Contained, data.contained);
+				//item->setUInt64Value(item_fields::Creator, data.creator);
+				item->setUInt64Value(item_fields::Contained, m_owner.getGuid());
 				item->setUInt32Value(item_fields::Durability, data.durability);
 				
 				// Determine slot
 				UInt8 bag = 0, subslot = 0;
 				getRelativeSlots(data.slot, bag, subslot);
-
-				// Generate a new id for this item based on the characters world instance
-				auto newItemId = world->getItemIdGenerator().generateId();
-				item->setGuid(createEntryGUID(newItemId, entry->id(), wowpp::guid_type::Item));
 				if (bag == player_inventory_slots::Bag_0)
 				{
 					m_owner.setUInt64Value(character_fields::InvSlotHead + (subslot * 2), item->getGuid());
@@ -807,7 +809,7 @@ namespace wowpp
 				}
 
 				// Modify stack count
-				item->addStacks(data.stackCount - 1);
+				auto added = item->addStacks(data.stackCount - 1);
 				m_itemCounter[data.entry] += data.stackCount;
 
 				// Add this item to the inventory slot and reduce our free slot cache
@@ -868,7 +870,7 @@ namespace wowpp
 
 				pair.second->writeValueUpdateBlock(createItemWriter, m_owner, true);
 			}
-			out_blocks.emplace_back(std::move(createItemBlock));
+			out_blocks.push_back(std::move(createItemBlock));
 		}
 	}
 

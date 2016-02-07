@@ -609,6 +609,7 @@ namespace wowpp
 
 	void SingleCastState::spellEffectSchoolDamage(const proto::SpellEffect &effect)
 	{
+		
 		GameUnit &caster = m_cast.getExecuter();
 		UInt8 school = m_spell.schoolmask();
 		std::vector<GameUnit*> targets;
@@ -1370,17 +1371,35 @@ namespace wowpp
 			if (!inv.findItemByGUID(m_itemGuid, itemSlot))
 			{
 				// Could not find item, seems not to exist
+				WLOG("Item does not exist");
 				return false;
 			}
 
-			auto result = inv.removeItem(itemSlot, 1);
-			if (result != game::inventory_change_failure::Okay)
+			auto item = inv.getItemAtSlot(itemSlot);
+			if (!item)
 			{
-				auto item = inv.getItemAtSlot(itemSlot);
-				if (item)
+				WLOG("Item not found");
+				return false;
+			}
+
+			for (auto &spell : item->getEntry().spells())
+			{
+				// OnUse spell cast
+				if (spell.spell() == m_spell.id() &&
+					(spell.trigger() == 0 || spell.trigger() == 5))
 				{
-					character->inventoryChangeFailure(result, item.get(), nullptr);
-					return false;
+					// Item is removed on use
+					if (spell.charges() == UInt32(-1))
+					{
+						auto result = inv.removeItem(itemSlot, 1);
+						if (result != game::inventory_change_failure::Okay)
+						{
+							WLOG("Could not remove one stack");
+							character->inventoryChangeFailure(result, item.get(), nullptr);
+							return false;
+						}
+					}
+					break;
 				}
 			}
 		}

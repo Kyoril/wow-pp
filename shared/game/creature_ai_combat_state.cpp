@@ -502,6 +502,11 @@ namespace wowpp
 					SpellTargetMap targetMap;
 					targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
 					targetMap.m_unitTarget = victim->getGuid();
+					if (validSpellEntry->target() == 0)
+					{
+						targetMap.m_unitTarget = controlled.getGuid();
+					}
+
 					controlled.castSpell(std::move(targetMap), validSpellEntry->spellid(), -1, m_lastCastTime, false, 0, std::bind(&CreatureAICombatState::onSpellCast, this, std::placeholders::_1));
 					return;
 				}

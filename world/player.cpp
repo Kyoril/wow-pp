@@ -477,7 +477,7 @@ namespace wowpp
 			m_character->writeValueUpdateBlock(writer, *m_character, true);
 
 			// Add block
-			blocks.emplace(blocks.begin(), std::move(createBlock));
+			blocks.push_back(std::move(createBlock));
 		}
 
 		// Send the actual spawn packet packet
@@ -1746,6 +1746,7 @@ namespace wowpp
 		SpellTargetMap targetMap;
 		if (!game::client_read::useItem(packet, bagId, slotId, spellCount, castCount, itemGuid, targetMap))
 		{
+			ELOG("Could not read packet");
 			return;
 		}
 
@@ -1773,23 +1774,26 @@ namespace wowpp
 			const auto &spell = entry.spells(i);
 			if (!spell.spell())
 			{
+				WLOG("No spell entry");
 				continue;
 			}
 
 			// Spell effect has to be triggered "on use", not "on equip" etc.
 			if (spell.trigger() != 0 && spell.trigger() != 5)
 			{
+				WLOG("No onUse entry");
 				continue;
 			}
 
 			const auto *spellEntry = m_project.spells.getById(spell.spell());
 			if (!spellEntry)
 			{
+				WLOG("Could not find spell by id " << spell.spell());
 				continue;
 			}
 
 			UInt64 time = spellEntry->casttime();
-			m_character->castSpell(std::move(targetMap), spell.spell(), -1, time, itemGuid);
+			m_character->castSpell(std::move(targetMap), spell.spell(), -1, time, false, itemGuid);
 		}
 	}
 
