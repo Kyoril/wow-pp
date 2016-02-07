@@ -422,9 +422,12 @@ namespace wowpp
 		GameUnit *victim = controlled.getVictim();
 		if (!victim)
 		{
-			// No victim found (threat list probably empty?). Warning: this will destroy
-			// the current AI state.
-			getAI().reset();
+			// No victim found (threat list probably empty or rooted)
+			if (!controlled.isRooted())
+			{
+				// Warning: this will destroy the current AI state.
+				getAI().reset();
+			}
 			return;
 		}
 
