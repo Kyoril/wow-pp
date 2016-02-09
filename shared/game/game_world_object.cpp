@@ -173,7 +173,6 @@ namespace wowpp
 				std::vector<GameCharacter*> lootRecipients;
 				m_objectLoot = make_unique<LootInstance>(
 					getProject().items, getGuid(), lootEntry, 0, 0, std::cref(lootRecipients));
-
 				if (m_objectLoot)
 				{
 					m_onLootCleared = m_objectLoot->cleared.connect([this]()

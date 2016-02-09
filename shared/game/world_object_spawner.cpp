@@ -88,7 +88,6 @@ namespace wowpp
 		}
 		spawned->setUInt32Value(world_object_fields::AnimProgress, m_animProgress);
 		spawned->setUInt32Value(world_object_fields::State, m_state);
-		spawned->clearUpdateMask();
 
 		// watch for destruction
 		spawned->destroy = std::bind(&WorldObjectSpawner::onRemoval, this, std::placeholders::_1);

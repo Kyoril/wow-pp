@@ -643,6 +643,7 @@ namespace wowpp
 		void classUpdated() override;
 		void updateTalentPoints();
 		void initClassEffects();	// init class specific effects
+		void updateNearbyQuestObjects();
 
 	private:
 

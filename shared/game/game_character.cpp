@@ -27,6 +27,10 @@
 #include "game_creature.h"
 #include "inventory.h"
 #include "defines.h"
+#include "each_tile_in_sight.h"
+#include "each_tile_in_region.h"
+#include "game_world_object.h"
+#include "binary_io/vector_sink.h"
 
 namespace wowpp
 {
@@ -226,6 +230,8 @@ namespace wowpp
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
 
+				bool updateQuestObjects = false;
+
 				// Complete if no requirements
 				if (fulfillsQuestRequirements(*questEntry))
 				{
@@ -237,11 +243,20 @@ namespace wowpp
 					// Mark all related quest items as needed
 					for (auto &req : questEntry->requirements())
 					{
-						if (req.itemid()) m_requiredQuestItems[req.itemid()]++;
+						if (req.itemid())
+						{
+							m_requiredQuestItems[req.itemid()]++;
+							updateQuestObjects = true;
+						}
 					}
 				}
 
 				questDataChanged(quest, data);
+				if (updateQuestObjects)
+				{
+					updateNearbyQuestObjects();
+				}
+
 				return true;
 			}
 		}
@@ -264,11 +279,17 @@ namespace wowpp
 				data.objects.fill(0);
 				data.items.fill(0);
 
+				bool updateQuestObjects = false;
+
 				// Mark all related quest items as needed
 				const auto *entry = getProject().quests.getById(quest);
 				for (auto &req : entry->requirements())
 				{
-					if (req.itemid()) m_requiredQuestItems[req.itemid()]--;
+					if (req.itemid())
+					{
+						m_requiredQuestItems[req.itemid()]--;
+						updateQuestObjects = true;
+					}
 				}
 
 				// Reset quest log
@@ -278,6 +299,11 @@ namespace wowpp
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
 
 				questDataChanged(quest, data);
+				if (updateQuestObjects)
+				{
+					updateNearbyQuestObjects();
+				}
+
 				return true;
 			}
 		}
@@ -461,6 +487,7 @@ namespace wowpp
 	void GameCharacter::onQuestKillCredit(GameCreature & killed)
 	{
 		// Check all quests in the quest log
+		bool updateQuestObjects = false;
 		for (UInt32 i = 0; i < 25; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
@@ -502,7 +529,11 @@ namespace wowpp
 						{
 							for (const auto &req : quest->requirements())
 							{
-								if (req.itemid()) m_requiredQuestItems[req.itemid()]--;
+								if (req.itemid())
+								{
+									m_requiredQuestItems[req.itemid()]--;
+									updateQuestObjects = true;
+								}
 							}
 
 							// Complete quest
@@ -514,12 +545,18 @@ namespace wowpp
 						questDataChanged(logId, it->second);
 					}
 
-					// We can stop here
-					break;
+					// Continue with next quest, as multiple quests could require the same
+					// creature kill credit
+					continue;
 				}
 
 				reqIndex++;
 			}
+		}
+
+		if (updateQuestObjects)
+		{
+			updateNearbyQuestObjects();
 		}
 	}
 
@@ -573,6 +610,7 @@ namespace wowpp
 
 	void GameCharacter::onQuestItemAddedCredit(const proto::ItemEntry & entry, UInt32 amount)
 	{
+		bool updateNearbyObjects = false;
 		for (int i = 0; i < 25; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
@@ -601,6 +639,8 @@ namespace wowpp
 					// Found it: Complete quest if completable
 					if (fulfillsQuestRequirements(*quest))
 					{
+						updateNearbyObjects = true;
+
 						for (const auto &req : quest->requirements())
 						{
 							if (req.itemid()) m_requiredQuestItems[req.itemid()]--;
@@ -610,14 +650,20 @@ namespace wowpp
 						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
 						questDataChanged(logId, it->second);
 					}
-					break;
+					continue;
 				}
 			}
+		}
+
+		if (updateNearbyObjects)
+		{
+			updateNearbyQuestObjects();
 		}
 	}
 
 	void GameCharacter::onQuestItemRemovedCredit(const proto::ItemEntry & entry, UInt32 amount)
 	{
+		bool updateNearbyObjects = false;
 		for (int i = 0; i < 25; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
@@ -646,6 +692,7 @@ namespace wowpp
 					// Found it: Complete quest if completable
 					if (!fulfillsQuestRequirements(*quest))
 					{
+						updateNearbyObjects = true;
 						for (const auto &req : quest->requirements())
 						{
 							if (req.itemid()) m_requiredQuestItems[req.itemid()]++;
@@ -655,9 +702,14 @@ namespace wowpp
 						removeFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
 						questDataChanged(logId, it->second);
 					}
-					break;
+					continue;
 				}
 			}
+		}
+
+		if (updateNearbyObjects)
+		{
+			updateNearbyQuestObjects();
 		}
 	}
 
@@ -1440,6 +1492,43 @@ namespace wowpp
 			default:
 				break;
 		}
+	}
+
+	void GameCharacter::updateNearbyQuestObjects()
+	{
+		ILOG("Updating nearby quest objects...");
+
+		TileIndex2D tile;
+		if (!getTileIndex(tile))
+		{
+			// Not in a world instance
+			WLOG("Character is not in a world instance");
+			return;
+		}
+
+		// m_worldInstance is valid because we got a tile index
+		std::vector<std::vector<char>> objectUpdateBlocks;
+		forEachTileInSight(
+			m_worldInstance->getGrid(),
+			tile,
+			[this, &objectUpdateBlocks](const VisibilityTile &tile)
+		{
+			for (auto &object : tile.getGameObjects())
+			{
+				if (object->isWorldObject())
+				{
+					// We only need to check objects that have potential quest loot
+					auto *loot = reinterpret_cast<WorldObject*>(object)->getObjectLoot();
+					if (loot &&
+						!loot->isEmpty())
+					{
+						// Force update of DynamicFlags field (TODO: This update only needs to be sent to OUR client, 
+						// as every client will have a different DynamicFlags field)
+						object->forceFieldUpdate(world_object_fields::DynFlags);
+					}
+				}
+			}
+		});
 	}
 
 	void GameCharacter::getHome(UInt32 &out_map, math::Vector3 &out_pos, float &out_rot) const

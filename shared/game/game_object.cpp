@@ -400,7 +400,7 @@ namespace wowpp
 					}
 					else
 					{
-						writer << io::write<NetUInt32>(m_values[index]);
+						writer << io::write<NetUInt32>(0);
 					}
 					break;
 				}
@@ -790,14 +790,31 @@ namespace wowpp
 			// Lower-GUID update?
 			if (updateFlags & 0x08)
 			{
-				writer
-					<< io::write<NetUInt32>(0x00);// guidLowerPart(guid));
+				switch (objectTypeId)
+				{
+					case object_type::Unit:
+						writer << io::write<NetUInt32>(0x0B);
+						break;
+					case object_type::Character:
+						if (updateFlags & 0x01)
+						{
+							writer << io::write<NetUInt32>(0x15);
+						}
+						else
+						{
+							writer << io::write<NetUInt32>(0x08);
+						}
+						break;
+					default:
+						writer << io::write<NetUInt32>(guidLowerPart(guid));
+						break;
+				}
 			}
 
 			// High-GUID update?
 			if (updateFlags & 0x10)
 			{
-				/*switch (objectTypeId)
+				switch (objectTypeId)
 				{
 				case object_type::Object:
 				case object_type::Item:
@@ -808,10 +825,10 @@ namespace wowpp
 					writer
 						<< io::write<NetUInt32>((guid >> 48) & 0x0000FFFF);
 					break;
-				default:*/
+				default:
 					writer
 						<< io::write<NetUInt32>(0);
-				//}
+				}
 			}
 
 			// Write values update

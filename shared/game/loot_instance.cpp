@@ -196,7 +196,7 @@ namespace wowpp
 		const size_t itemCountpos = w.sink().position();
 		w
 			<< io::write<NetUInt8>(loot.m_items.size());
-
+		
 		// Iterate through all loot items...
 		UInt8 realCount = 0;
 		UInt8 slot = 0;

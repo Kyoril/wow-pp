@@ -100,6 +100,18 @@ namespace wowpp
 		m_itemUpdated = inventory.itemInstanceUpdated.connect(std::bind(&Player::onItemUpdated, this, std::placeholders::_1, std::placeholders::_2));
 		m_itemDestroyed = inventory.itemInstanceDestroyed.connect(std::bind(&Player::onItemDestroyed, this, std::placeholders::_1, std::placeholders::_2));
 
+		// Loot signal
+		m_onLootInspect = m_character->lootinspect.connect([this](LootInstance &instance) {
+			auto *object = m_instance.findObjectByGUID(instance.getLootGuid());
+			if (!object)
+			{
+				WLOG("Could not find loot source object: 0x" << std::hex << instance.getLootGuid());
+				return;
+			}
+			m_instance.flushObjectUpdate(instance.getLootGuid());
+			openLootDialog(instance, *object);
+		});
+
 		// Root / stun change signals
 		auto onRootOrStunUpdate = [this](bool flag) {
 			if (flag || m_character->isRooted() || m_character->isStunned())
@@ -1049,6 +1061,7 @@ namespace wowpp
 			GameCreature *creature = reinterpret_cast<GameCreature*>(lootObject);
 			if (creature->isAlive())
 			{
+				// TODO: Handle pickpocket case?
 				WLOG("Target creature is not dead and thus has no loot");
 				return;
 			}
@@ -1057,20 +1070,7 @@ namespace wowpp
 			auto *loot = creature->getUnitLoot();
 			if (loot && !loot->isEmpty())
 			{
-				m_loot = loot;
-				m_onLootInvalidate = creature->despawned.connect([this](GameObject &despawned)
-				{
-					releaseLoot();
-				});
-				m_onLootCleared = m_loot->cleared.connect([this]()
-				{
-					releaseLoot();
-				});
-
-				sendProxyPacket(
-					std::bind(game::server_write::lootResponse, std::placeholders::_1, objectGuid, game::loot_type::Corpse, std::cref(*loot)));
-
-				m_character->addFlag(unit_fields::UnitFlags, game::unit_flags::Looting);
+				openLootDialog(*loot, *creature);
 			}
 			else
 			{
@@ -1093,6 +1093,7 @@ namespace wowpp
 		{
 			return;
 		}
+
 		if (!m_loot)
 		{
 			return;
@@ -1106,13 +1107,6 @@ namespace wowpp
 			return;
 		}
 
-		// Get loot object
-		GameObject *object = world->findObjectByGUID(lootGuid);
-		if (!object)
-		{
-			return;
-		}
-
 		// Warning: takeGold may make m_loot invalid, because the loot will be reset if it is empty.
 		UInt32 lootGold = m_loot->getGold();
 		if (lootGold == 0)
@@ -1122,9 +1116,9 @@ namespace wowpp
 
 		// Check if it's a creature
 		std::vector<GameCharacter*> recipients;
-		if (object->getTypeId() == object_type::Unit)
+		if (m_lootSource->getTypeId() == object_type::Unit)
 		{
-			GameCreature *creature = reinterpret_cast<GameCreature*>(object);
+			GameCreature *creature = reinterpret_cast<GameCreature*>(m_lootSource);
 			creature->forEachLootRecipient([&recipients](GameCharacter &recipient)
 			{
 				recipients.push_back(&recipient);
@@ -1139,7 +1133,7 @@ namespace wowpp
 		}
 		else
 		{
-			WLOG("Unsupported loot object");
+			WLOG("Unsupported loot object for gold loot");
 			return;
 		}
 
@@ -1168,7 +1162,8 @@ namespace wowpp
 				}
 
 				// TODO: Put this packet into the LootInstance class or in an event callback maybe
-				if (player->isLooting(lootGuid))
+				if (m_lootSource &&
+					m_lootSource->getGuid() == lootGuid)
 				{
 					player->sendProxyPacket(
 						std::bind(game::server_write::lootClearMoney, std::placeholders::_1));
@@ -1189,7 +1184,14 @@ namespace wowpp
 			return;
 		}
 
-		releaseLoot();
+		if (m_lootSource &&
+			m_lootSource->getGuid() != creatureId)
+		{
+			WLOG("Loot source mismatch!");
+			return;
+		}
+
+		closeLootDialog();
 	}
 
 	void Player::onInventoryChangeFailure(game::InventoryChangeFailure failure, GameItem *itemA, GameItem *itemB)
@@ -1411,21 +1413,6 @@ namespace wowpp
 	{
 		m_lastFallTime = time;
 		m_lastFallZ = z;
-	}
-
-	void Player::releaseLoot()
-	{
-		if (m_loot)
-		{
-			m_onLootCleared.disconnect();
-			m_onLootInvalidate.disconnect();
-
-			sendProxyPacket(
-				std::bind(game::server_write::lootReleaseResponse, std::placeholders::_1, m_loot->getLootGuid()));
-			m_loot = nullptr;
-
-			m_character->removeFlag(unit_fields::UnitFlags, game::unit_flags::Looting);
-		}
 	}
 
 	bool Player::isIgnored(UInt64 guid) const
@@ -2183,6 +2170,63 @@ namespace wowpp
 
 				return;
 			}
+		}
+	}
+
+	void Player::openLootDialog(LootInstance & loot, GameObject & source)
+	{
+		// Close old dialog if any
+		closeLootDialog();
+
+		// Remember those parameters
+		m_loot = &loot;
+		m_lootSource = &source;
+
+		// Add the looting flag to our character
+		m_character->addFlag(unit_fields::UnitFlags, game::unit_flags::Looting);
+
+		// If the source despawns, we will close the loot window
+		m_onLootInvalidate = source.despawned.connect([this](GameObject &despawned)
+		{
+			closeLootDialog();
+		});
+
+		// If the loot is cleared, we will also close the loot window
+		m_onLootCleared = m_loot->cleared.connect([this]()
+		{
+			closeLootDialog();
+		});
+
+		// Send the actual loot data (TODO: Determine loot type)
+		auto guid = source.getGuid();
+		auto lootType = game::loot_type::Corpse;
+		if (isGameObjectGUID(guid)) 
+			lootType = game::loot_type::Skinning;	// This is not 100% right, but client rejects corpse loot for game objects somehow
+
+		sendProxyPacket(
+			std::bind(game::server_write::lootResponse, std::placeholders::_1, source.getGuid(), lootType, std::cref(loot)));
+	}
+
+	void Player::closeLootDialog()
+	{
+		if (m_loot)
+		{
+			ILOG("Closing loot dialog");
+
+			// Notify the client
+			sendProxyPacket(
+				std::bind(game::server_write::lootReleaseResponse, std::placeholders::_1, m_loot->getLootGuid()));
+
+			// Character is no longer looting
+			m_character->removeFlag(unit_fields::UnitFlags, game::unit_flags::Looting);
+
+			// Reset variables
+			m_loot = nullptr;
+			m_lootSource = nullptr;
+
+			// Disconnect all loot related signals
+			m_onLootCleared.disconnect();
+			m_onLootInvalidate.disconnect();
 		}
 	}
 

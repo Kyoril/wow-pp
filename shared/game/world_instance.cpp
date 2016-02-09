@@ -220,8 +220,8 @@ namespace wowpp
 			m_project,
 			m_universe.getTimers(),
 			entry);
-		spawned->initialize();
 		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id(), guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
+		spawned->initialize();
 		spawned->setMapId(m_mapEntry.id());
 		spawned->relocate(position, o);
 
@@ -246,8 +246,8 @@ namespace wowpp
 			m_project,
 			m_universe.getTimers(),
 			entry);
-		spawned->initialize();
 		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id(), guid_type::GameObject));	// RealmID (TODO: these spawns don't need to have a specific realm id)
+		spawned->initialize();
 		spawned->setMapId(m_mapEntry.id());
 		spawned->relocate(position, o);
 

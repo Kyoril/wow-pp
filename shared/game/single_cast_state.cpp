@@ -235,7 +235,7 @@ namespace wowpp
 			sendPacketFromCaster(executer,
 				std::bind(game::server_write::spellGo, std::placeholders::_1,
 				executer.getGuid(),
-				executer.getGuid(),
+				m_itemGuid ? m_itemGuid : executer.getGuid(),
 				std::cref(m_spell),
 				std::cref(targetMap),
 				static_cast<game::SpellCastFlags>(flags)));
@@ -1671,7 +1671,8 @@ namespace wowpp
 				// Start inspecting the loot
 				if (m_cast.getExecuter().isGameCharacter())
 				{
-					reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).lootinspect(*loot);
+					GameCharacter *character = reinterpret_cast<GameCharacter*>(&m_cast.getExecuter());
+					character->lootinspect(*loot);
 				}
 			}
 		}
