@@ -164,6 +164,11 @@ namespace wowpp
 
 	public:
 
+		/// Fired when a world object trigger should be executed.
+		boost::signals2::signal<void(const proto::TriggerEntry &, WorldObject &)> objectTrigger;
+
+	public:
+
 		/// 
 		explicit WorldObject(
 			proto::Project &project,

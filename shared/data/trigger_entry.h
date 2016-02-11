@@ -99,7 +99,7 @@ namespace wowpp
 			/// No target. May be invalid for some actions.
 			None				= 0,
 			/// Unit which owns this trigger. May be invalid for some triggers.
-			OwningUnit			= 1,
+			OwningObject			= 1,
 			/// Current victim of the unit which owns this trigger. May be invalid.
 			OwningUnitVictim	= 2,
 			/// Random unit in the map instance.

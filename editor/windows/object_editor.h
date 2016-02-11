@@ -63,14 +63,19 @@ namespace wowpp
 			void on_spellFilter_editingFinished();
 			void on_itemFilter_editingFinished();
 			void on_questFilter_editingFinished();
+			void on_objectFilter_editingFinished();
 			void on_unitAddTriggerBtn_clicked();
 			void on_unitRemoveTriggerBtn_clicked();
+			void on_objectAddTriggerBtn_clicked();
+			void on_objectRemoveTriggerBtn_clicked();
 			void onUnitSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void on_unitPropertyWidget_doubleClicked(QModelIndex index);
 			void onSpellSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void onItemSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void onQuestSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
+			void onObjectSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void on_lootSimulatorButton_clicked();
+			void on_objectLootSimulatorButton_clicked();
 			void on_actionImport_triggered();
 			void on_actionImport_Vendors_triggered();
 			void on_actionImport_Trainers_triggered();
@@ -91,11 +96,13 @@ namespace wowpp
 			QSortFilterProxyModel *m_spellFilter;
 			QSortFilterProxyModel *m_itemFilter;
 			QSortFilterProxyModel *m_questFilter;
+			QSortFilterProxyModel *m_objectFilter;
 			Properties m_properties;
 			PropertyViewModel *m_viewModel;
 			proto::UnitEntry *m_selectedUnit;
 			proto::SpellEntry *m_selectedSpell;
 			proto::QuestEntry *m_selectedQuest;
+			proto::ObjectEntry *m_selectedObject;
 		};
 	}
 }

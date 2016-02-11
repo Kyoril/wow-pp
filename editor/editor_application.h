@@ -48,6 +48,7 @@ namespace wowpp
 			typedef TemplateListModel<proto::MapManager> MapListModel;
 			typedef TemplateListModel<proto::UnitManager> UnitListModel;
 			typedef TemplateListModel<proto::QuestManager> QuestListModel;
+			typedef TemplateListModel<proto::ObjectManager> ObjectListModel;
 
 		public:
 
@@ -67,6 +68,7 @@ namespace wowpp
 			UnitListModel *getUnitListModel() { return m_unitListModel.get(); }
 			TriggerListModel *getTriggerListModel() { return m_triggerListModel.get(); }
 			QuestListModel *getQuestListModel() { return m_questListModel.get(); }
+			ObjectListModel *getObjectListModel() { return m_objectListModel.get(); }
 			proto::Project &getProject() { return m_project; }
 			Configuration &getConfiguration() { return m_configuration; }
 
@@ -100,6 +102,7 @@ namespace wowpp
 			std::unique_ptr<UnitListModel> m_unitListModel;
 			std::unique_ptr<TriggerListModel> m_triggerListModel;
 			std::unique_ptr<QuestListModel> m_questListModel;
+			std::unique_ptr<ObjectListModel> m_objectListModel;
 			bool m_changed;
 		};
 	}

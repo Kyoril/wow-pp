@@ -31,25 +31,27 @@ namespace wowpp
 			switch (e)
 			{
 			case trigger_event::OnAggro:
-				return "Triggering unit enters combat";
+				return "Owning unit enters combat";
 			case trigger_event::OnAttackSwing:
-				return "Triggering unit executes auto attack swing";
+				return "Owning unit executes auto attack swing";
 			case trigger_event::OnDamaged:
-				return "Triggering unit received damage";
+				return "Owning unit received damage";
 			case trigger_event::OnDespawn:
-				return "Triggering object despawned";
+				return "Owner despawned";
 			case trigger_event::OnHealed:
-				return "Triggering unit received heal";
+				return "Owning unit received heal";
 			case trigger_event::OnKill:
-				return "Triggering unit killed someone";
+				return "Owning unit killed someone";
 			case trigger_event::OnKilled:
-				return "Triggering unit was killed";
+				return "Owning unit was killed";
 			case trigger_event::OnSpawn:
-				return "Triggering object spawned";
+				return "Owner spawned";
 			case trigger_event::OnReset:
-				return "Triggering unit resets";
+				return "Owning Unit resets";
 			case trigger_event::OnReachedHome:
-				return "Triggering unit reached home after reset";
+				return "Owning unit reached home after reset";
+			case trigger_event::OnInteraction:
+				return "Player interacted with owner";
 			default:
 				return "(INVALID EVENT)";
 			}
@@ -63,16 +65,16 @@ namespace wowpp
 			{
 			case trigger_action_target::None:
 				return temp.arg("(NONE)");
-			case trigger_action_target::OwningUnit:
-				return temp.arg("(Triggering Unit)");
+			case trigger_action_target::OwningObject:
+				return temp.arg("(Owner)");
 			case trigger_action_target::OwningUnitVictim:
-				return temp.arg("(Triggering Unit's Target)");
+				return temp.arg("(Owning Unit's Target)");
 			case trigger_action_target::RandomUnit:
 				return temp.arg("(Random Nearby Unit)");
 			case trigger_action_target::NamedCreature:
-				return temp.arg(QString("(Creature Named '%1')").arg(action.targetname().c_str()));
+				return temp.arg(QString("(Creature: '%1')").arg(action.targetname().c_str()));
 			case trigger_action_target::NamedWorldObject:
-				return temp.arg(QString("(Object Named '%1')").arg(action.targetname().c_str()));
+				return temp.arg(QString("(World Object: '%1')").arg(action.targetname().c_str()));
 			default:
 				return temp.arg("(INVALID)");
 			}

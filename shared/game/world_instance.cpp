@@ -283,10 +283,17 @@ namespace wowpp
 			std::make_pair(guid, &added));
 
 		// Enable trigger execution
-		if (added.getTypeId() == object_type::Unit)
+		if (added.isCreature())
 		{
 			GameUnit *unitObj = reinterpret_cast<GameUnit*>(&added);
 			unitObj->unitTrigger.connect([this](const proto::TriggerEntry &trigger, GameUnit &owner) {
+				m_triggerHandler.executeTrigger(trigger, 0, &owner);
+			});
+		}
+		else if (added.isWorldObject())
+		{
+			WorldObject *worldObj = reinterpret_cast<WorldObject*>(&added);
+			worldObj->objectTrigger.connect([this](const proto::TriggerEntry &trigger, WorldObject &owner) {
 				m_triggerHandler.executeTrigger(trigger, 0, &owner);
 			});
 		}

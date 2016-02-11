@@ -47,6 +47,9 @@ namespace wowpp
 			OnReset = 8,
 			/// Executed when the unit reached it's home point after reset.
 			OnReachedHome = 9,
+			/// Executed when a player is interacting with this object. Only works on GameObjects right now, but could also be used 
+			/// for npc interaction.
+			OnInteraction = 10,
 
 			Invalid,
 			Count_ = Invalid
@@ -94,7 +97,7 @@ namespace wowpp
 			/// No target. May be invalid for some actions.
 			None = 0,
 			/// Unit which owns this trigger. May be invalid for some triggers.
-			OwningUnit = 1,
+			OwningObject = 1,
 			/// Current victim of the unit which owns this trigger. May be invalid.
 			OwningUnitVictim = 2,
 			/// Random unit in the map instance.

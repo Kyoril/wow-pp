@@ -183,6 +183,7 @@ namespace wowpp
 			m_itemListModel.reset(new ItemListModel(m_project.items));
 			m_triggerListModel.reset(new TriggerListModel(m_project.triggers));
 			m_questListModel.reset(new QuestListModel(m_project.quests));
+			m_objectListModel.reset(new ObjectListModel(m_project.objects));
 
 			// Setup the object editor
 			m_objectEditor.reset(new ObjectEditor(*this));

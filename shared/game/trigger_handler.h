@@ -26,7 +26,7 @@
 
 namespace wowpp
 {
-	class GameUnit;
+	class GameObject;
 	namespace proto
 	{
 		class TriggerEntry;
@@ -41,8 +41,8 @@ namespace wowpp
 			/// Executes a unit trigger.
 			/// @param entry The trigger to execute.
 			/// @param actionOffset The action to execute.
-			/// @param owner The executing unit. TODO: Replace by context object
-			virtual void executeTrigger(const proto::TriggerEntry &entry, UInt32 actionOffset = 0, GameUnit *owner = nullptr) = 0;
+			/// @param owner The executing owner. TODO: Replace by context object
+			virtual void executeTrigger(const proto::TriggerEntry &entry, UInt32 actionOffset = 0, GameObject *owner = nullptr) = 0;
 		};
 	}
 }

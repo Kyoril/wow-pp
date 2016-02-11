@@ -47,6 +47,7 @@ namespace wowpp
 			, m_selectedUnit(nullptr)
 			, m_selectedSpell(nullptr)
 			, m_selectedQuest(nullptr)
+			, m_selectedObject(nullptr)
 		{
 			m_ui->setupUi(this);
 
@@ -75,6 +76,11 @@ namespace wowpp
 			m_questFilter->setSourceModel(app.getQuestListModel());
 			m_ui->questsListView->setModel(m_questFilter);
 
+			// Automatically deleted since it's a QObject
+			m_objectFilter = new QSortFilterProxyModel;
+			m_objectFilter->setSourceModel(app.getObjectListModel());
+			m_ui->objectsListView->setModel(m_objectFilter);
+
 			// Map selection box
 			m_ui->spellTeleportMapBox->setModel(app.getMapListModel());
 
@@ -90,6 +96,9 @@ namespace wowpp
 			connect(m_ui->questsListView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
 				this, SLOT(onQuestSelectionChanged(QItemSelection, QItemSelection)));
+			connect(m_ui->objectsListView->selectionModel(),
+				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+				this, SLOT(onObjectSelectionChanged(QItemSelection, QItemSelection)));
 
 			connect(m_ui->actionSave, SIGNAL(triggered()), &m_application, SLOT(saveUnsavedChanges()));
 		}
@@ -127,6 +136,14 @@ namespace wowpp
 
 			QRegExp regExp(m_ui->questFilter->text(), caseSensitivity, syntax);
 			m_questFilter->setFilterRegExp(regExp);
+		}
+		void ObjectEditor::on_objectFilter_editingFinished()
+		{
+			QRegExp::PatternSyntax syntax = QRegExp::RegExp;
+			Qt::CaseSensitivity caseSensitivity = Qt::CaseInsensitive;
+
+			QRegExp regExp(m_ui->objectFilter->text(), caseSensitivity, syntax);
+			m_objectFilter->setFilterRegExp(regExp);
 		}
 #if 0
 		namespace
@@ -809,6 +826,108 @@ namespace wowpp
 			}
 		}
 
+		void ObjectEditor::onObjectSelectionChanged(const QItemSelection & selection, const QItemSelection & old)
+		{
+			// Get the selected unit
+			m_selectedObject = nullptr;
+			if (selection.isEmpty())
+			{
+				return;
+			}
+
+			QItemSelection source = m_objectFilter->mapSelectionToSource(selection);
+			if (source.isEmpty())
+			{
+				return;
+			}
+
+			int index = source.indexes().first().row();
+			if (index < 0)
+			{
+				return;
+			}
+
+			// Get object entry
+			auto *object = m_application.getProject().objects.getTemplates().mutable_entry(index);
+			m_selectedObject = object;
+			if (!object)
+				return;
+
+			m_ui->objectQuestWidget->clear();
+			for (const auto &questid : object->quests())
+			{
+				const auto *quest = m_application.getProject().quests.getById(questid);
+				if (quest)
+				{
+					m_ui->objectQuestWidget->addItem(
+						QString("%1 %2 [%3]").arg(questid, 5, 10, QLatin1Char('0')).arg(quest->name().c_str()).arg(static_cast<Int32>(quest->questlevel())));
+				}
+			}
+
+			m_ui->objectEndQuestWidget->clear();
+			for (const auto &questid : object->end_quests())
+			{
+				const auto *quest = m_application.getProject().quests.getById(questid);
+				if (quest)
+				{
+					m_ui->objectEndQuestWidget->addItem(
+						QString("%1 %2 [%3]").arg(questid, 5, 10, QLatin1Char('0')).arg(quest->name().c_str()).arg(static_cast<Int32>(quest->questlevel())));
+				}
+			}
+
+			m_ui->objectLootView->clear();
+			if (!object->objectlootentry())
+			{
+				m_ui->objectLootLine->setText("- NO LOOT -");
+				m_ui->objectLootToolButton->setDisabled(true);
+				m_ui->objectLootSimulatorButton->setDisabled(true);
+			}
+			else
+			{
+				QIcon groupIcon;
+				groupIcon.addFile(QStringLiteral(":/Items.png"), QSize(), QIcon::Normal, QIcon::Off);
+
+				size_t groupIndex = 0;
+				const auto *lootEntry = m_application.getProject().objectLoot.getById(object->objectlootentry());
+				if (lootEntry)
+				{
+					for (const auto &group : lootEntry->groups())
+					{
+						// Add group
+						QTreeWidgetItem *groupItem = new QTreeWidgetItem();
+						groupItem->setIcon(0, groupIcon);
+						m_ui->objectLootView->addTopLevelItem(groupItem);
+
+						float totalDropChance = 0.0f;
+						for (const auto &def : group.definitions())
+						{
+							totalDropChance += def.dropchance();
+							addLootItem(def, groupItem);
+						}
+
+						groupItem->setText(0, QString("Group %1").arg(groupIndex++));
+						groupItem->setText(1, QString("%1% Total").arg(totalDropChance));
+						groupItem->setText(2, QString("%1 Items").arg(group.definitions_size()));
+					}
+				}
+
+				m_ui->objectLootLine->setText(QString("Loot Entry %1").arg(object->objectlootentry()));
+				m_ui->objectLootToolButton->setDisabled(false);
+				m_ui->objectLootSimulatorButton->setDisabled(false);
+			}
+
+			m_ui->objectTriggerWidget->clear();
+			for (const auto &triggerId : object->triggers())
+			{
+				const auto *triggerEntry = m_application.getProject().triggers.getById(triggerId);
+				if (triggerEntry)
+				{
+					m_ui->objectTriggerWidget->addItem(
+						QString(triggerEntry->name().c_str()));
+				}
+			}
+		}
+
 		void ObjectEditor::on_unitAddTriggerBtn_clicked()
 		{
 			if (!m_selectedUnit)
@@ -865,6 +984,63 @@ namespace wowpp
 			}
 		}
 
+		void ObjectEditor::on_objectAddTriggerBtn_clicked()
+		{
+			if (!m_selectedObject)
+				return;
+
+			ChooseTriggerDialog dialog(m_application);
+			auto result = dialog.exec();
+			if (result == QDialog::Accepted)
+			{
+				const auto *newTrigger = dialog.getSelectedTrigger();
+				if (newTrigger)
+				{
+					auto it = std::find_if(m_selectedObject->triggers().begin(), m_selectedObject->triggers().end(), [&newTrigger](const UInt32 &trigger) -> bool
+					{
+						return (trigger == newTrigger->id());
+					});
+
+					if (it == m_selectedObject->triggers().end())
+					{
+						m_selectedObject->mutable_triggers()->Add(newTrigger->id());
+						m_ui->objectTriggerWidget->addItem(
+							QString(newTrigger->name().c_str()));
+
+						m_application.markAsChanged();
+					}
+				}
+			}
+		}
+
+		void ObjectEditor::on_objectRemoveTriggerBtn_clicked()
+		{
+			if (!m_selectedObject)
+				return;
+
+			// Find selected trigger
+			auto index = m_ui->objectTriggerWidget->currentIndex();
+			if (index.isValid())
+			{
+				int row = index.row();
+				if (row < 0 || row >= m_selectedObject->triggers_size())
+					return;
+
+				if (m_selectedObject->triggers_size() > 1 &&
+					row != m_selectedObject->triggers_size() - 1)
+				{
+					m_selectedObject->mutable_triggers()->SwapElements(row, m_selectedObject->triggers_size() - 1);
+				}
+				m_selectedObject->mutable_triggers()->RemoveLast();
+
+				auto *taken = m_ui->objectTriggerWidget->takeItem(row);
+				delete taken;
+
+				m_application.markAsChanged();
+			}
+		}
+
+
 		void ObjectEditor::on_lootSimulatorButton_clicked()
 		{
 			if (!m_selectedUnit)
@@ -874,6 +1050,22 @@ namespace wowpp
 				return;
 
 			const auto *loot = m_application.getProject().unitLoot.getById(m_selectedUnit->unitlootentry());
+			if (!loot)
+				return;
+
+			LootDialog dialog(m_application.getProject(), *loot);
+			dialog.exec();
+		}
+
+		void ObjectEditor::on_objectLootSimulatorButton_clicked()
+		{
+			if (!m_selectedObject)
+				return;
+
+			if (!m_selectedObject->objectlootentry())
+				return;
+
+			const auto *loot = m_application.getProject().objectLoot.getById(m_selectedObject->objectlootentry());
 			if (!loot)
 				return;
 
