@@ -161,6 +161,24 @@ namespace wowpp
 		return false;
 	}
 
+	void WorldObject::raiseTrigger(trigger_event::Type e)
+	{
+		for (const auto &triggerId : m_entry.triggers())
+		{
+			const auto *triggerEntry = getProject().triggers.getById(triggerId);
+			if (triggerEntry)
+			{
+				for (const auto &triggerEvent : triggerEntry->events())
+				{
+					if (triggerEvent == e)
+					{
+						objectTrigger(std::cref(*triggerEntry), std::ref(*this));
+					}
+				}
+			}
+		}
+	}
+
 	void WorldObject::generateObjectLoot()
 	{
 		auto lootEntryId = m_entry.objectlootentry();

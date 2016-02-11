@@ -541,18 +541,20 @@ bool WINAPI SFileFlushArchive(HANDLE hMpq)
 bool WINAPI SFileCloseArchive(HANDLE hMpq)
 {
     TMPQArchive * ha = (TMPQArchive *)hMpq;
-    bool bResult;
+    bool bResult = true;
+	if (ha)
+	{
+		// Invalidate the add file callback so it won't be called
+		// when saving (listfile) and (attributes)
+		ha->pfnAddFileCB = NULL;
+		ha->pvAddFileUserData = NULL;
 
-    // Invalidate the add file callback so it won't be called
-    // when saving (listfile) and (attributes)
-    ha->pfnAddFileCB = NULL;
-    ha->pvAddFileUserData = NULL;
+		// Flush all unsaved data to the storage
+		bResult = SFileFlushArchive(hMpq);
 
-    // Flush all unsaved data to the storage
-    bResult = SFileFlushArchive(hMpq);
-
-    // Free all memory used by MPQ archive
-    FreeArchiveHandle(ha);
+		// Free all memory used by MPQ archive
+		FreeArchiveHandle(ha);
+	}
     return bResult;
 }
 

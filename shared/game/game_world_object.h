@@ -25,6 +25,7 @@
 #include "loot_instance.h"
 #include "common/timer_queue.h"
 #include "common/countdown.h"
+#include "proto_data/trigger_helper.h"
 #include <boost/signals2.hpp>
 #include <memory>
 
@@ -194,6 +195,8 @@ namespace wowpp
 		bool isQuestObject(const GameCharacter &character) const;
 		/// 
 		LootInstance *getObjectLoot() { return m_objectLoot.get(); }
+
+		void raiseTrigger(trigger_event::Type e);
 
 		/// Gets the object type id value.
 		ObjectType getTypeId() const override { return object_type::GameObject; }

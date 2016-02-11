@@ -1361,6 +1361,7 @@ namespace wowpp
 			{se::PowerBurn,				std::bind(&SingleCastState::spellEffectPowerBurn, this, std::placeholders::_1)},
 			{se::Charge,				std::bind(&SingleCastState::spellEffectCharge, this, std::placeholders::_1)},
 			{se::OpenLock,				std::bind(&SingleCastState::spellEffectOpenLock, this, std::placeholders::_1)},
+			{se::OpenLockItem,			std::bind(&SingleCastState::spellEffectOpenLock, this, std::placeholders::_1) },
 			{se::ApplyAreaAuraParty,	std::bind(&SingleCastState::spellEffectApplyAreaAuraParty, this, std::placeholders::_1)},
 			{se::Dispel,				std::bind(&SingleCastState::spellEffectDispel, this, std::placeholders::_1)},
 			{se::Summon,				std::bind(&SingleCastState::spellEffectSummon, this, std::placeholders::_1)},
@@ -1694,26 +1695,34 @@ namespace wowpp
 		// TODO: Get lock info
 
 		// If it is a door, try to open it
-		if (entry.type() == world_object_type::Door)
+		switch (entry.type())
 		{
-			obj->setUInt32Value(world_object_fields::State, (currentState == 1 ? 0 : 1));
-			return;
-		}
-		else if (entry.type() == world_object_type::Chest)
-		{
-			// Open chest loot window
-			auto *loot = obj->getObjectLoot();
-			if (loot &&
-				!loot->isEmpty())
+			case world_object_type::Door:
+			case world_object_type::Button:
+				obj->setUInt32Value(world_object_fields::State, (currentState == 1 ? 0 : 1));
+				break;
+			case world_object_type::Chest:
 			{
-				// Start inspecting the loot
-				if (m_cast.getExecuter().isGameCharacter())
+				// Open chest loot window
+				auto *loot = obj->getObjectLoot();
+				if (loot &&
+					!loot->isEmpty())
 				{
-					GameCharacter *character = reinterpret_cast<GameCharacter*>(&m_cast.getExecuter());
-					character->lootinspect(*loot);
+					// Start inspecting the loot
+					if (m_cast.getExecuter().isGameCharacter())
+					{
+						GameCharacter *character = reinterpret_cast<GameCharacter*>(&m_cast.getExecuter());
+						character->lootinspect(*loot);
+					}
 				}
+				break;
 			}
+			default:	// Make the compiler happy
+				break;
 		}
+
+		// Raise interaction triggers
+		obj->raiseTrigger(trigger_event::OnInteraction);
 	}
 	
 	void SingleCastState::spellEffectApplyAreaAuraParty(const proto::SpellEffect &effect)

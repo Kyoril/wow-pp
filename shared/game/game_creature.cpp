@@ -281,7 +281,6 @@ namespace wowpp
 					if (triggerEvent == e)
 					{
 						unitTrigger(std::cref(*triggerEntry), std::ref(*this));
-						return;
 					}
 				}
 			}
