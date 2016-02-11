@@ -1272,6 +1272,37 @@ namespace wowpp
 			UInt64 spellCatCD = m_spell.categorycooldown();
 			UInt64 spellCD = m_spell.cooldown();
 
+			// If cast by an item, the item cooldown is used instead of the spell cooldown
+			if (m_itemGuid && m_cast.getExecuter().isGameCharacter())
+			{
+				auto *character = reinterpret_cast<GameCharacter*>(&m_cast.getExecuter());
+				auto &inv = character->getInventory();
+
+				UInt16 itemSlot = 0;
+				if (inv.findItemByGUID(m_itemGuid, itemSlot))
+				{
+					auto item = inv.getItemAtSlot(itemSlot);
+					if (item)
+					{
+						for (auto &spell : item->getEntry().spells())
+						{
+							if (spell.spell() == m_spell.id() &&
+								(spell.trigger() == 0 || spell.trigger() == 5))
+							{
+								if (spell.categorycooldown() > 0 ||
+									spell.cooldown() > 0)
+								{
+									// Use item cooldown instead of spell cooldown
+									spellCatCD = spell.categorycooldown();
+									spellCD = spell.cooldown();
+								}
+								break;
+							}
+						}
+					}
+				}
+			}
+
 			UInt64 finalCD = spellCD;
 			if (!finalCD) finalCD = spellCatCD;
 			if (finalCD)
