@@ -970,6 +970,37 @@ namespace wowpp
 		return true;
 	}
 
+	static bool fixDeadminesObjects(proto::Project &project)
+	{
+		// First lets find the deadmines map
+		auto *map = project.maps.getById(36);
+		if (!map)
+		{
+			WLOG("Could not find deadmines map");
+			return false;
+		}
+
+		// Now lets iterate through all object spawns and see if we find some which we know
+		for (auto &spawn : *map->mutable_objectspawns())
+		{
+			switch (spawn.objectentry())
+			{
+				case 16399:	// Foundry Door
+					spawn.set_name("Gilnid - Door");
+					break;
+				case 16397:	// Iron Clad Door
+					spawn.set_name("Defias Cannon - Door");
+					break;
+				case 16398:	// Defias Cannon
+					spawn.set_name("Defias Cannon");
+					break;
+				default:	// We don't care
+					break;
+			}
+		}
+
+		return true;
+	}
 }
 
 /// Procedural entry point of the application.
@@ -1044,13 +1075,13 @@ int main(int argc, char* argv[])
 		ELOG("Failed to import spell mechanics");
 		return 1;
 	}
-	*/
+
 	if (!importCategories(protoProject, connection))
 	{
 		ELOG("Failed to import spell categories");
 		return 1;
 	}
-	/*
+
 	if (!importQuestRelations(protoProject, connection))
 	{
 		ELOG("Failed to import quest relations");
@@ -1062,10 +1093,16 @@ int main(int argc, char* argv[])
 		ELOG("Failed to add spell links");
 		return 1;
 	}
-
+	/*
 	if (!importDispelData(protoProject, connection))
 	{
 		ELOG("Failed to import spell dispel data");
+		return 1;
+	}
+	*/
+	if (!fixDeadminesObjects(protoProject))
+	{
+		ELOG("Failed to fix deadmines data");
 		return 1;
 	}
 
