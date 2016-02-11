@@ -1303,35 +1303,36 @@ namespace wowpp
 
 		// Execute spell immediatly
 		namespace se = game::spell_effects;
-		std::vector<std::pair<UInt32,EffectHandler>> effectMap {	//ordered pairs to avoid 25% resists for binary spells like frostnova
-			{se::InstantKill, std::bind(&SingleCastState::spellEffectInstantKill, this, std::placeholders::_1)},
-			{se::PowerDrain, std::bind(&SingleCastState::spellEffectDrainPower, this, std::placeholders::_1)},
-			{se::Heal, std::bind(&SingleCastState::spellEffectHeal, this, std::placeholders::_1)},
-			{se::Bind, std::bind(&SingleCastState::spellEffectBind, this, std::placeholders::_1)},
-			{se::QuestComplete, std::bind(&SingleCastState::spellEffectQuestComplete, this, std::placeholders::_1)},
-			{se::Proficiency, std::bind(&SingleCastState::spellEffectProficiency, this, std::placeholders::_1)},
-			{se::AddComboPoints, std::bind(&SingleCastState::spellEffectAddComboPoints, this, std::placeholders::_1)},
-			{se::Duel, std::bind(&SingleCastState::spellEffectDuel, this, std::placeholders::_1)},
-			{se::WeaponDamageNoSchool, std::bind(&SingleCastState::spellEffectWeaponDamageNoSchool, this, std::placeholders::_1)},
-			{se::CreateItem, std::bind(&SingleCastState::spellEffectCreateItem, this, std::placeholders::_1)},
-			{se::WeaponDamage, std::bind(&SingleCastState::spellEffectWeaponDamage, this, std::placeholders::_1)},
-			{se::TeleportUnits, std::bind(&SingleCastState::spellEffectTeleportUnits, this, std::placeholders::_1)},
-			{se::TriggerSpell, std::bind(&SingleCastState::spellEffectTriggerSpell, this, std::placeholders::_1)},
-			{se::Energize, std::bind(&SingleCastState::spellEffectEnergize, this, std::placeholders::_1)},
-			{se::WeaponPercentDamage, std::bind(&SingleCastState::spellEffectWeaponPercentDamage, this, std::placeholders::_1)},
-			{se::PowerBurn, std::bind(&SingleCastState::spellEffectPowerBurn, this, std::placeholders::_1)},
-			{se::Charge, std::bind(&SingleCastState::spellEffectCharge, this, std::placeholders::_1)},
-			{se::OpenLock, std::bind(&SingleCastState::spellEffectOpenLock, this, std::placeholders::_1)},
-			{se::ApplyAreaAuraParty, std::bind(&SingleCastState::spellEffectApplyAreaAuraParty, this, std::placeholders::_1)},
-			{se::Dispel, std::bind(&SingleCastState::spellEffectDispel, this, std::placeholders::_1)},
-			{se::Summon, std::bind(&SingleCastState::spellEffectSummon, this, std::placeholders::_1)},
-			{se::ScriptEffect, std::bind(&SingleCastState::spellEffectScript, this, std::placeholders::_1)},
-			{se::AttackMe, std::bind(&SingleCastState::spellEffectAttackMe, this, std::placeholders::_1)},
-			{se::NormalizedWeaponDmg, std::bind(&SingleCastState::spellEffectNormalizedWeaponDamage, this, std::placeholders::_1)},
-			{se::StealBeneficialBuff, std::bind(&SingleCastState::spellEffectStealBeneficialBuff, this, std::placeholders::_1)},
+		static std::vector<std::pair<UInt32,EffectHandler>> effectMap {	
+			//ordered pairs to avoid 25% resists for binary spells like frostnova
+			{se::InstantKill,			std::bind(&SingleCastState::spellEffectInstantKill, this, std::placeholders::_1)},
+			{se::PowerDrain,			std::bind(&SingleCastState::spellEffectDrainPower, this, std::placeholders::_1)},
+			{se::Heal,					std::bind(&SingleCastState::spellEffectHeal, this, std::placeholders::_1)},
+			{se::Bind,					std::bind(&SingleCastState::spellEffectBind, this, std::placeholders::_1)},
+			{se::QuestComplete,			std::bind(&SingleCastState::spellEffectQuestComplete, this, std::placeholders::_1)},
+			{se::Proficiency,			std::bind(&SingleCastState::spellEffectProficiency, this, std::placeholders::_1)},
+			{se::AddComboPoints,		std::bind(&SingleCastState::spellEffectAddComboPoints, this, std::placeholders::_1)},
+			{se::Duel,					std::bind(&SingleCastState::spellEffectDuel, this, std::placeholders::_1)},
+			{se::WeaponDamageNoSchool,	std::bind(&SingleCastState::spellEffectWeaponDamageNoSchool, this, std::placeholders::_1)},
+			{se::CreateItem,			std::bind(&SingleCastState::spellEffectCreateItem, this, std::placeholders::_1)},
+			{se::WeaponDamage,			std::bind(&SingleCastState::spellEffectWeaponDamage, this, std::placeholders::_1)},
+			{se::TeleportUnits,			std::bind(&SingleCastState::spellEffectTeleportUnits, this, std::placeholders::_1)},
+			{se::TriggerSpell,			std::bind(&SingleCastState::spellEffectTriggerSpell, this, std::placeholders::_1)},
+			{se::Energize,				std::bind(&SingleCastState::spellEffectEnergize, this, std::placeholders::_1)},
+			{se::WeaponPercentDamage,	std::bind(&SingleCastState::spellEffectWeaponPercentDamage, this, std::placeholders::_1)},
+			{se::PowerBurn,				std::bind(&SingleCastState::spellEffectPowerBurn, this, std::placeholders::_1)},
+			{se::Charge,				std::bind(&SingleCastState::spellEffectCharge, this, std::placeholders::_1)},
+			{se::OpenLock,				std::bind(&SingleCastState::spellEffectOpenLock, this, std::placeholders::_1)},
+			{se::ApplyAreaAuraParty,	std::bind(&SingleCastState::spellEffectApplyAreaAuraParty, this, std::placeholders::_1)},
+			{se::Dispel,				std::bind(&SingleCastState::spellEffectDispel, this, std::placeholders::_1)},
+			{se::Summon,				std::bind(&SingleCastState::spellEffectSummon, this, std::placeholders::_1)},
+			{se::ScriptEffect,			std::bind(&SingleCastState::spellEffectScript, this, std::placeholders::_1)},
+			{se::AttackMe,				std::bind(&SingleCastState::spellEffectAttackMe, this, std::placeholders::_1)},
+			{se::NormalizedWeaponDmg,	std::bind(&SingleCastState::spellEffectNormalizedWeaponDamage, this, std::placeholders::_1)},
+			{se::StealBeneficialBuff,	std::bind(&SingleCastState::spellEffectStealBeneficialBuff, this, std::placeholders::_1)},
 			// Add all effects above here
-			{se::ApplyAura, std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
-			{se::SchoolDamage, std::bind(&SingleCastState::spellEffectSchoolDamage, this, std::placeholders::_1)}
+			{se::ApplyAura,				std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
+			{se::SchoolDamage,			std::bind(&SingleCastState::spellEffectSchoolDamage, this, std::placeholders::_1)}
 		};
 		
 		for (std::vector<std::pair<UInt32,EffectHandler>>::iterator it = effectMap.begin(); it != effectMap.end(); ++it)
@@ -1342,7 +1343,6 @@ namespace wowpp
 				{
 					assert(it->second);
 					it->second(m_spell.effects(k));
-//					effects.erase(effects.begin() + k);	//remove effect for future checks
 				}
 			}
 		}
