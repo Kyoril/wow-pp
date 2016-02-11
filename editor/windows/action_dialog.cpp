@@ -94,7 +94,7 @@ namespace wowpp
 					else
 					{
 						// Add as many new data elements as needed
-						for (int i = m_action.texts_size(); i < index + 1; ++i)
+						for (int i = m_action.data_size(); i < index + 1; ++i)
 						{
 							m_action.add_data((i == index ? dialog.getData() : 0));
 						}
