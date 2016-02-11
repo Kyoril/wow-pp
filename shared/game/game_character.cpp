@@ -1496,8 +1496,6 @@ namespace wowpp
 
 	void GameCharacter::updateNearbyQuestObjects()
 	{
-		ILOG("Updating nearby quest objects...");
-
 		TileIndex2D tile;
 		if (!getTileIndex(tile))
 		{
