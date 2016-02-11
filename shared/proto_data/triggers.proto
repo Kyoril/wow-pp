@@ -23,9 +23,9 @@ syntax = "proto2";
 package wowpp.proto;
 
 message TriggerAction {
-	required uint32 action = 1;
-	required uint32 target = 2;
-	required string targetname = 3;
+	optional uint32 action = 1;
+	optional uint32 target = 2;
+	optional string targetname = 3;
 	repeated string texts = 4;
 	repeated int32 data = 5;
 }
