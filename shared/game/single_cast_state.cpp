@@ -1303,7 +1303,7 @@ namespace wowpp
 
 		// Execute spell immediatly
 		namespace se = game::spell_effects;
-		static std::vector<std::pair<UInt32,EffectHandler>> effectMap {	
+		std::vector<std::pair<UInt32,EffectHandler>> effectMap {	
 			//ordered pairs to avoid 25% resists for binary spells like frostnova
 			{se::InstantKill,			std::bind(&SingleCastState::spellEffectInstantKill, this, std::placeholders::_1)},
 			{se::PowerDrain,			std::bind(&SingleCastState::spellEffectDrainPower, this, std::placeholders::_1)},
