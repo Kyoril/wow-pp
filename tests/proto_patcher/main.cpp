@@ -999,6 +999,18 @@ namespace wowpp
 			}
 		}
 
+		for (auto &spawn : *map->mutable_unitspawns())
+		{
+			switch (spawn.unitentry())
+			{
+				case 646:	// Mr. Smite
+					spawn.set_name("Mr. Smite");
+					break;
+				default:	// We don't care
+					break;
+			}
+		}
+
 		return true;
 	}
 }
