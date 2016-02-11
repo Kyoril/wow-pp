@@ -93,6 +93,9 @@ namespace wowpp
 		m_questKill = m_character->questKillCredit.connect([this](const proto::QuestEntry &quest, UInt64 guid, UInt32 entry, UInt32 count, UInt32 total) {
 			sendProxyPacket(std::bind(game::server_write::questupdateAddKill, std::placeholders::_1, quest.id(), entry, count, total, guid));
 		});
+		m_standStateChanged = m_character->standStateChanged.connect([this](UnitStandState state) {
+			sendProxyPacket(std::bind(game::server_write::standStateUpdate, std::placeholders::_1, state));
+		});
 
 		// Inventory change signals
 		auto &inventory = m_character->getInventory();
@@ -172,10 +175,7 @@ namespace wowpp
 	void Player::logoutRequest()
 	{
 		// Make our character sit down
-		auto standState = unit_stand_state::Sit;
-		m_character->setByteValue(unit_fields::Bytes1, 0, standState);
-		sendProxyPacket(
-			std::bind(game::server_write::standStateUpdate, std::placeholders::_1, standState));
+		m_character->setStandState(unit_stand_state::Sit);
 
 		// Root our character
 		m_character->addFlag(unit_fields::UnitFlags, 0x00040000);
@@ -196,9 +196,7 @@ namespace wowpp
 
 		// Stand up again
 		auto standState = unit_stand_state::Stand;
-		m_character->setByteValue(unit_fields::Bytes1, 0, standState);
-		sendProxyPacket(
-			std::bind(game::server_write::standStateUpdate, std::placeholders::_1, standState));
+		m_character->setStandState(unit_stand_state::Stand);
 
 		// Cancel the countdown
 		m_logoutCountdown.cancel();

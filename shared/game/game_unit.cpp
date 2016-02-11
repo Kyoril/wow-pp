@@ -1205,6 +1205,32 @@ namespace wowpp
 
 		return unit_mods::Armor;
 	}
+
+	bool GameUnit::isSitting() const
+	{
+		return (m_standState == unit_stand_state::Sit ||
+			m_standState == unit_stand_state::SitChair ||
+			m_standState == unit_stand_state::SitHighChair ||
+			m_standState == unit_stand_state::SitMediumChais);
+	}
+
+	void GameUnit::setStandState(UnitStandState state)
+	{
+		if (m_standState != state)
+		{
+			const bool wasSitting = isSitting();
+
+			m_standState = state;
+			setByteValue(unit_fields::Bytes1, 0, m_standState);
+			standStateChanged(m_standState);
+
+			// Not sitting any more, remove auras that require the unit to be sitting
+			if (wasSitting && !isSitting())
+			{
+				m_auras.removeAllAurasDueToInterrupt(game::spell_aura_interrupt_flags::NotSeated);
+			}
+		}
+	}
 	
 	bool GameUnit::dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, bool noThreat/* = false*/)
 	{
@@ -1319,7 +1345,6 @@ namespace wowpp
 	
 	void GameUnit::notifyStealthChanged()
 	{
-		ILOG("STEALTH CHANGED");
 		const bool wasStealthed = m_isStealthed;
 		m_isStealthed = m_auras.hasAura(game::aura_type::ModStealth);
 		if (wasStealthed && !m_isStealthed)
@@ -1543,9 +1568,6 @@ namespace wowpp
 		return 0;
 	}
 	
-	/**
-     * @return absorbed damage
-     */
 	UInt32 GameUnit::consumeAbsorb(UInt32 damage, UInt8 school)
 	{
 		return m_auras.consumeAbsorb(damage, school);
@@ -1750,6 +1772,12 @@ namespace wowpp
 		// Add attacking unit to the list of attackers
 		assert(!m_attackingUnits.contains(&attacker));
 		m_attackingUnits.add(&attacker);
+
+		// If wasn't in combat, remove auras which should be removed when entering combat
+		if (!isInCombat())
+		{
+			m_auras.removeAllAurasDueToInterrupt(game::spell_aura_interrupt_flags::EnterCombat);
+		}
 
 		// Flag us for combat
 		addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);

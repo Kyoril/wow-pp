@@ -388,5 +388,23 @@ namespace wowpp
 
 		return nullptr;
 	}
+
+	void AuraContainer::removeAllAurasDueToInterrupt(game::SpellAuraInterruptFlags flags)
+	{
+		// We need to remove all auras by their spell
+		LinearSet<UInt32> spells;
+		for (auto &aura : m_auras)
+		{
+			if ((aura->getSpell().aurainterruptflags() & flags) != 0)
+			{
+				spells.optionalAdd(aura->getSpell().id());
+			}
+		}
+
+		for (auto &spellid : spells)
+		{
+			removeAllAurasDueToSpell(spellid);
+		}
+	}
 	
 }

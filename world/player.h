@@ -260,7 +260,7 @@ namespace wowpp
 		WorldInstance &m_instance;
 		boost::signals2::scoped_connection m_onSpawn, m_onDespawn, m_onAtkSwingErr, m_onProfChanged, m_onInvFailure;
 		boost::signals2::scoped_connection m_onTileChange, m_onComboPoints, m_onXP, m_onCastError, m_onGainLevel;
-		boost::signals2::scoped_connection m_onAuraUpdate, m_onTargetAuraUpdate, m_onTeleport;
+		boost::signals2::scoped_connection m_onAuraUpdate, m_onTargetAuraUpdate, m_onTeleport, m_standStateChanged;
 		boost::signals2::scoped_connection m_onRootUpdate, m_onStunUpdate, m_onCooldownEvent, m_questChanged, m_questKill;
 		boost::signals2::scoped_connection m_itemCreated, m_itemUpdated, m_itemDestroyed;
 		boost::signals2::scoped_connection m_onLootCleared, m_onLootInvalidate, m_onLootInspect;

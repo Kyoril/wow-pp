@@ -391,6 +391,8 @@ namespace wowpp
 		boost::signals2::signal<void(MovementType)> speedChanged;
 		/// Fired when a custom cooldown event was rised (for example, "Stealth" cooldown is only fired when stealth ends).
 		boost::signals2::signal<void(UInt32)> cooldownEvent;
+		/// Fired when the units stand state changed.
+		boost::signals2::signal<void(UnitStandState)> standStateChanged;
 
 	public:
 
@@ -582,6 +584,11 @@ namespace wowpp
 		/// 
 		static UnitMods getUnitModByResistance(UInt8 res);
 
+		/// Determines whether the unit is sitting.
+		bool isSitting() const;
+		/// Changes the units stand state. This might also remove auras.
+		void setStandState(UnitStandState state);
+
 		/// 
 		void setAttackSwingCallback(AttackSwingCallback callback);
 
@@ -670,6 +677,7 @@ namespace wowpp
 		bool m_isStealthed;
 		std::array<float, movement_type::Count> m_speedBonus;
 		CooldownMap m_spellCooldowns;
+		UnitStandState m_standState;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameUnit const& object);

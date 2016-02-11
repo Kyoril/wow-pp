@@ -836,9 +836,7 @@ namespace wowpp
 			return;
 		}
 
-		sender.getCharacter()->setByteValue(unit_fields::Bytes1, 0, static_cast<UInt8>(standState));
-		sender.sendProxyPacket(
-			std::bind(game::server_write::standStateUpdate, std::placeholders::_1, standState));
+		sender.getCharacter()->setStandState(standState);
 	}
 
 	void RealmConnector::handleChatMessage(pp::Protocol::IncomingPacket &packet)

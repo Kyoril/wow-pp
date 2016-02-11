@@ -1171,6 +1171,13 @@ namespace wowpp
 					// TODO: What should we do here? Just ignore?
 					WLOG("Aura could not be added to unit target!");
 				}
+
+				// We need to be sitting for this aura to work
+				if (m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::NotSeated)
+				{
+					// Sit down
+					caster.setStandState(unit_stand_state::Sit);
+				}
 			}
 		}
 	}

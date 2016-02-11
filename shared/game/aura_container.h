@@ -46,6 +46,7 @@ namespace wowpp
 		void removeAllAurasDueToSpell(UInt32 spellId);
 		void removeAurasByType(UInt32 auraType);
 		Aura *popBack(UInt8 dispelType, bool positive);
+		void removeAllAurasDueToInterrupt(game::SpellAuraInterruptFlags flags);
 
 		GameUnit &getOwner() { return m_owner; }
 		size_t getSize() const { return m_auras.size(); }
