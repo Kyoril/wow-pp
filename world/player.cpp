@@ -35,48 +35,13 @@
 
 using namespace std;
 
-
-#define MOVEMENT_PACKET_TIME_DELAY 500
-
-#ifdef WIN32
-#include <mmsystem.h>
-#pragma comment(lib, "winmm.lib")
-#define DELTA_EPOCH_IN_USEC  11644473600000000ULL
-wowpp::UInt32 TimeStamp()
-{
-	FILETIME ft;
-	wowpp::UInt64 t;
-	GetSystemTimeAsFileTime(&ft);
-
-	t = (wowpp::UInt64)ft.dwHighDateTime << 32;
-	t |= ft.dwLowDateTime;
-	t /= 10;
-	t -= DELTA_EPOCH_IN_USEC;
-
-	return wowpp::UInt32(((t / 1000000L) * 1000) + ((t % 1000000L) / 1000));
-}
-wowpp::UInt32 mTimeStamp()
-{
-	return timeGetTime();
-}
-#else
-wowpp::UInt32 TimeStamp()
-{
-	struct timeval tp;
-	gettimeofday(&tp, NULL);
-	return (tp.tv_sec * 1000) + (tp.tv_usec / 1000);
-}
-wowpp::UInt32 mTimeStamp()
-{
-	struct timeval tp;
-	gettimeofday(&tp, NULL);
-	return (tp.tv_sec * 1000) + (tp.tv_usec / 1000);
-}
-#endif
-
-
 namespace wowpp
 {
+	/// The time in milliseconds to delay a movement packet so that the client
+	/// won't lag too hard when receiving movement packets with timestamps that
+	/// are in the past.
+	static const UInt64 MovementPacketTimeDelay = 500;
+
 	Player::Player(PlayerManager &manager, RealmConnector &realmConnector, WorldInstanceManager &worldInstanceManager, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance, proto::Project &project)
 		: m_manager(manager)
 		, m_realmConnector(realmConnector)
@@ -1509,8 +1474,10 @@ namespace wowpp
 		{
 			m_clientDelayMs = msTime - info.time;
 		}
+
+		// Convert movement time packet
 		Int32 move_time = 
-			(info.time - (msTime - m_clientDelayMs)) + MOVEMENT_PACKET_TIME_DELAY + msTime;
+			(info.time - (msTime - m_clientDelayMs)) + MovementPacketTimeDelay + msTime;
 
 		// Get grid tile
 		auto &tile = grid.requireTile(gridIndex);
@@ -1526,10 +1493,6 @@ namespace wowpp
 			{
 				if (watcher != this)
 				{
-					// Convert timestamps
-					//info.time = watcher->convertTimestamp(move_time, m_clientTicks) + 500;
-					//info.fallTime = watcher->convertTimestamp(info.fallTime, m_clientTicks) + 500;
-
 					// Create the chat packet
 					std::vector<char> buffer;
 					io::VectorSink sink(buffer);
