@@ -385,6 +385,48 @@
                 </item>
                </layout>
               </widget>
+              <widget class="QWidget" name="tab_17">
+               <attribute name="title">
+                <string>Trainer</string>
+               </attribute>
+               <layout class="QVBoxLayout" name="verticalLayout_36">
+                <item>
+                 <widget class="QTreeWidget" name="trainerWidget">
+                  <property name="alternatingRowColors">
+                   <bool>true</bool>
+                  </property>
+                  <column>
+                   <property name="text">
+                    <string>Spell</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Cost</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Skill</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Skill Value</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Level</string>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;A value of &lt;span style=&quot; font-weight:600;&quot;&gt;-1 &lt;/span&gt;indicates that the default spell cooldown should be used. Value is in &lt;span style=&quot; font-weight:600;&quot;&gt;milliseconds&lt;/span&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                  </column>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
              </widget>
             </item>
            </layout>

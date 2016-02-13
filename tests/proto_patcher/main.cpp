@@ -970,6 +970,53 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importTrainerLinks(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `entry`,`trainer_id`, `trainer_type`,`trainer_class` FROM `tbcdb`.`creature_template` WHERE `trainer_id` != 0;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 entry = 0, trainerid = 0, trainertype = 0, trainerclass = 0;
+				row.getField(0, entry);
+				row.getField(1, trainerid);
+				row.getField(2, trainertype);
+				row.getField(3, trainerclass);
+				
+				auto * trainer = project.trainers.getById(trainerid);
+				if (!trainer)
+				{
+					WLOG("Unable to find trainer by id: " << trainer);
+					row = row.next(select);
+					continue;
+				}
+
+				trainer->set_type(static_cast<proto::TrainerEntry_TrainerType>(trainertype));
+				trainer->set_classid(trainerclass);
+				trainer->set_title("");
+
+				auto *unit = project.units.getById(entry);
+				if (!unit)
+				{
+					WLOG("Unable to find unit by id: " << entry);
+					row = row.next(select);
+					continue;
+				}
+
+				unit->set_trainerentry(trainerid);
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			ELOG("Error: " << conn.getErrorMessage());
+		}
+
+		return true;
+	}
+
 	static bool fixDeadminesObjects(proto::Project &project)
 	{
 		// First lets find the deadmines map
@@ -1115,6 +1162,11 @@ int main(int argc, char* argv[])
 	if (!fixDeadminesObjects(protoProject))
 	{
 		ELOG("Failed to fix deadmines data");
+		return 1;
+	}
+	if (!importTrainerLinks(protoProject, connection))
+	{
+		ELOG("Failed to import trainer links");
 		return 1;
 	}
 

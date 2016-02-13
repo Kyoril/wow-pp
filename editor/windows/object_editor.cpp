@@ -346,6 +346,32 @@ namespace wowpp
 				}
 			}
 
+			m_ui->trainerWidget->clear();
+			if (unit->trainerentry())
+			{
+				const auto *trainer = m_application.getProject().trainers.getById(unit->trainerentry());
+				if (trainer)
+				{
+					for (auto &entry : trainer->spells())
+					{
+						const auto *spell = m_application.getProject().spells.getById(entry.spell());
+						if (!spell)
+						{
+							continue;
+						}
+
+						const auto *skill = (entry.reqskill() ? m_application.getProject().skills.getById(entry.reqskill()) : nullptr);
+
+						auto *item = new QTreeWidgetItem(m_ui->trainerWidget);
+						item->setText(0, QString("%1 %2").arg(spell->id(), 5, 10, QLatin1Char('0')).arg(spell->name().c_str()));
+						item->setText(1, QString("%1").arg(entry.spellcost()));
+						item->setText(2, QString("%1").arg(skill ? skill->name().c_str() : "-"));
+						item->setText(3, QString("%1").arg(entry.reqskillval()));
+						item->setText(4, QString("%1").arg(entry.reqlevel()));
+					}
+				}
+			}
+
 			m_ui->unitEndQuestWidget->clear();
 			for (const auto &questid : unit->end_quests())
 			{
@@ -1264,7 +1290,67 @@ namespace wowpp
 		}
 		void ObjectEditor::on_actionImport_Trainers_triggered()
 		{
+			UInt32 lastEntry = 0;
 
+			ImportTask task;
+			task.countQuery = "SELECT COUNT(*) FROM `npc_trainer_template`;";
+			task.selectQuery = "SELECT `entry`, `spell`, `spellcost`, `reqskill`, `reqskillvalue`,`reqlevel` FROM `npc_trainer_template` ORDER BY `entry`;";
+			task.beforeImport = [this]() {
+				for (int i = 0; i < m_application.getProject().units.getTemplates().entry_size(); ++i)
+				{
+					auto *unit = m_application.getProject().units.getTemplates().mutable_entry(i);
+					unit->set_trainerentry(0);
+				}
+				m_application.getProject().trainers.clear();
+			};
+			task.onImport = [this, &lastEntry](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0, spellId = 0, spellcost = 0, reqskill = 0, reqskillvalue = 0, reqlevel = 1;
+				row.getField(0, entry);
+				row.getField(1, spellId);
+				row.getField(2, spellcost);
+				row.getField(3, reqskill);
+				row.getField(4, reqskillvalue);
+				row.getField(5, reqlevel);
+
+				// Find referenced spell
+				const auto *spellEntry = m_application.getProject().spells.getById(spellId);
+				if (!spellEntry)
+				{
+					ELOG("Could not find referenced spell " << spellId << " (referenced in trainer entry " << entry << ")");
+					return false;
+				}
+
+				// Create a new trainer entry
+				bool created = false;
+				if (entry > lastEntry)
+				{
+					m_application.getProject().trainers.add(entry);
+
+					lastEntry = entry;
+					created = true;
+				}
+
+				auto *trainerEntry = m_application.getProject().trainers.getById(entry);
+				if (!trainerEntry)
+				{
+					ELOG("Trainer entry " << entry << " not found!");
+					return false;
+				}
+
+				// Add spells
+				auto *addedSpell = trainerEntry->add_spells();
+				addedSpell->set_spell(spellId);
+				addedSpell->set_spellcost(spellcost);
+				addedSpell->set_reqskill(reqskill);
+				addedSpell->set_reqskillval(reqskillvalue);
+				addedSpell->set_reqlevel(reqlevel);
+
+				return true;
+			};
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
+			dialog.exec();
 		}
 		void ObjectEditor::on_actionImport_Quests_triggered()
 		{
