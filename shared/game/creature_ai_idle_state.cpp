@@ -79,7 +79,7 @@ namespace wowpp
 				return false;
 			}
 
-			const float dist = controlled.getDistanceTo(unit, false);
+			const float dist = controlled.getDistanceTo(unit, true);
 
 			const bool isHostile = controlled.isHostileTo(unitFaction);
 			const bool isFriendly = controlled.isFriendlyTo(unitFaction);

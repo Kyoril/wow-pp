@@ -473,6 +473,33 @@ namespace wowpp
 				});
 			}
 			break;
+		case game::targets::UnitAreaEnemyDst:	//16
+		{
+			auto location = unitTarget ? unitTarget->getLocation() : math::Vector3();
+			if (!unitTarget)
+			{
+				targetMap.getDestLocation(location.x, location.y, location.z);
+			}
+
+			auto &finder = attacker.getWorldInstance()->getUnitFinder();
+			finder.findUnits(Circle(location.x, location.y, radius), [this, &attacker, &targets, maxtargets](GameUnit &unit) -> bool
+			{
+				const auto &faction = attacker.getFactionTemplate();
+				if (!unit.isFriendlyTo(faction) && unit.isAlive())
+				{
+					targets.push_back(&unit);
+					if (maxtargets > 0 &&
+						targets.size() >= maxtargets)
+					{
+						// No more units
+						return false;
+					}
+				}
+
+				return true;
+			});
+		}
+		break;
 		default:
 			break;
 		}
