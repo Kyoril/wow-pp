@@ -636,15 +636,16 @@ namespace wowpp
 			{
 				if (req.itemid() == entry.id())
 				{
+					// We no longer need this item
+					if (m_inventory.getItemCount(entry.id()) >= req.itemcount())
+					{
+						m_requiredQuestItems[req.itemid()]--;
+					}
+
 					// Found it: Complete quest if completable
 					if (fulfillsQuestRequirements(*quest))
 					{
 						updateNearbyObjects = true;
-
-						for (const auto &req : quest->requirements())
-						{
-							if (req.itemid()) m_requiredQuestItems[req.itemid()]--;
-						}
 
 						it->second.status = game::quest_status::Complete;
 						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
@@ -689,14 +690,16 @@ namespace wowpp
 			{
 				if (req.itemid() == entry.id())
 				{
+					// We need this item again
+					if (m_inventory.getItemCount(entry.id()) < req.itemcount())
+					{
+						m_requiredQuestItems[req.itemid()]++;
+					}
+
 					// Found it: Complete quest if completable
 					if (!fulfillsQuestRequirements(*quest))
 					{
 						updateNearbyObjects = true;
-						for (const auto &req : quest->requirements())
-						{
-							if (req.itemid()) m_requiredQuestItems[req.itemid()]++;
-						}
 
 						it->second.status = game::quest_status::Incomplete;
 						removeFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);

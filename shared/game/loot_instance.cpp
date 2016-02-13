@@ -65,7 +65,7 @@ namespace wowpp
 						for (const auto *recipient : lootRecipients)
 						{
 							if (recipient &&
-								recipient->getQuestStatus(questId) == game::quest_status::Incomplete)
+								recipient->needsQuestItem(def.item()))
 							{
 								questItemCount++;
 								break;		// Later...
