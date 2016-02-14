@@ -22,6 +22,7 @@
 #include "inventory.h"
 #include "game_character.h"
 #include "game_item.h"
+#include "game_bag.h"
 #include "proto_data/project.h"
 #include "common/linear_set.h"
 #include "binary_io/vector_sink.h"
@@ -180,8 +181,16 @@ namespace wowpp
 			// Now iterate through all empty slots
 			for (auto &slot : emptySlots)
 			{
-				// Create a new item instance
-				auto item = std::make_shared<GameItem>(m_owner.getProject(), entry);
+				// Create a new item instance (or maybe a bag if it is a bag)
+				std::shared_ptr<GameItem> item;
+				if (entry.itemclass() == game::item_class::Container)
+				{
+					item = std::make_shared<GameBag>(m_owner.getProject(), entry);
+				}
+				else
+				{
+					item = std::make_shared<GameItem>(m_owner.getProject(), entry);
+				}
 				item->initialize();
 
 				// We need a valid world instance for this
@@ -785,7 +794,17 @@ namespace wowpp
 				}
 
 				// Create a new item instance
-				auto item = std::make_shared<GameItem>(m_owner.getProject(), *entry);
+				std::shared_ptr<GameItem> item; 
+				if (entry->itemclass() == game::item_class::Container)
+				{
+					ILOG("Creating bag");
+					item = std::make_shared<GameBag>(m_owner.getProject(), *entry);
+				}
+				else
+				{
+					ILOG("Creating regular item");
+					item = std::make_shared<GameItem>(m_owner.getProject(), *entry);
+				}
 				auto newItemId = world->getItemIdGenerator().generateId();
 				item->setGuid(createEntryGUID(newItemId, entry->id(), wowpp::guid_type::Item));
 				item->initialize();
@@ -832,8 +851,9 @@ namespace wowpp
 			{
 				UInt8 updateType = 0x02;						// Item
 				UInt8 updateFlags = 0x08 | 0x10;				// 
-				UInt8 objectTypeId = 0x01;						// Item
 				UInt64 guid = pair.second->getGuid();
+
+				UInt8 objectTypeId = pair.second->getTypeId();	// Item
 
 				// Header with object guid and type
 				createItemWriter

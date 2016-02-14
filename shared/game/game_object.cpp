@@ -620,8 +620,7 @@ namespace wowpp
 			UInt8 updateType = 0x02;						// Update type (0x02 = CREATE_OBJECT)
 			if (object.isGameCharacter() ||
 				object.getTypeId() == object_type::Corpse ||
-				object.getTypeId() == object_type::DynamicObject ||
-				object.getTypeId() == object_type::Container)
+				object.getTypeId() == object_type::DynamicObject)
 			{
 				updateType = 0x03;		// CREATE_OBJECT_2
 			}
@@ -644,7 +643,13 @@ namespace wowpp
 			UInt8 objectTypeId = object.getTypeId();		// 
 			if (objectTypeId == object_type::GameObject)
 			{
-				updateFlags = 8 | 16 | 64;
+				updateFlags = 0x08 | 0x10 | 0x40;	// Low-GUID, High-GUID & HasPosition
+			}
+			else if (
+				objectTypeId == object_type::Item ||
+				objectTypeId == object_type::Container)
+			{
+				updateFlags = 0x08 | 0x10;			// Low-GUID & High-GUID
 			}
 
 			// Header with object guid and type

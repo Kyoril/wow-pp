@@ -492,7 +492,7 @@ namespace wowpp
 			m_character->writeValueUpdateBlock(writer, *m_character, true);
 
 			// Add block
-			blocks.push_back(std::move(createBlock));
+			blocks.insert(blocks.begin(), std::move(createBlock));
 		}
 
 		// Send the actual spawn packet packet
