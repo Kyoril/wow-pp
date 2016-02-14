@@ -1305,7 +1305,7 @@ namespace wowpp
 		{
 			UInt8 updateType = 0x02;						// Item
 			UInt8 updateFlags = 0x08 | 0x10;				// 
-			UInt8 objectTypeId = 0x01;						// Item
+			UInt8 objectTypeId = item->getTypeId();
 
 			UInt64 guid = item->getGuid();
 

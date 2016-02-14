@@ -84,6 +84,61 @@ namespace wowpp
 
 		typedef quest_status::Type QuestStatus;
 
+		namespace item_binding
+		{
+			enum Type
+			{
+				/// No binding at all
+				NoBinding			= 0,
+				/// Bound when picked up
+				BindWhenPickedUp	= 1,
+				/// Bound when equipped
+				BindWhenEquipped	= 2,
+				/// Bound when used
+				BindWhenUsed		= 3,
+				/// Unknown
+				BindQuestItem		= 4
+			};
+		}
+
+		typedef item_binding::Type ItemBinding;
+
+		namespace item_flags
+		{
+			enum Type
+			{
+				/// The item is bound to a player character.
+				Bound			= 0x00000001,
+				/// This is a conjured item, which means that it will be destroyed after being logged
+				/// out more than 15 minutes.
+				Conjured		= 0x00000002,
+				/// This item contains items (not a bag!)
+				Openable		= 0x00000004,
+				/// The item is wrapped(?)
+				Wrapped			= 0x00000008,
+				/// ?
+				Wrapper			= 0x00000200,
+				/// Indicates that this item is lootable by the whole party (one drop for every valid member)
+				PartyLoot		= 0x00000800,
+				/// Arena / guild charter
+				Charter			= 0x00002000,
+				/// Item can only be equipped once (weapons / rings)
+				UniqueEquipped	= 0x00080000,
+				/// This item can be used in arenas.
+				UsableInArena	= 0x00200000,
+				/// Only used for item tooltip at the client
+				Thorwable		= 0x00400000,
+				/// Last used flag in 2.3.0
+				SpecialUse		= 0x00800000,
+				/// These items will be bound to the players account.
+				BindOnAccount	= 0x08000000,
+				/// ?
+				Millable		= 0x20000000
+			};
+		}
+
+		typedef item_flags::Type ItemFlags;
+
 		namespace questgiver_status
 		{
 			enum Type

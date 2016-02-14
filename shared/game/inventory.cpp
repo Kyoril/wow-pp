@@ -72,7 +72,7 @@ namespace wowpp
 		{
 			return game::inventory_change_failure::InventoryFull;
 		}
-
+		
 		// We need to remember free slots, since we first want to stack items up as best as possible
 		LinearSet<UInt16> emptySlots;
 		// We also need to remember all valid slots, that contain an item of that entry but are not 
@@ -206,6 +206,12 @@ namespace wowpp
 				item->setGuid(createEntryGUID(newItemId, entry.id(), wowpp::guid_type::Item));
 				item->setUInt64Value(item_fields::Contained, m_owner.getGuid());
 				item->setUInt64Value(item_fields::Owner, m_owner.getGuid());
+				
+				// Bind this item
+				if (entry.bonding() == game::item_binding::BindWhenPickedUp)
+				{
+					item->addFlag(item_fields::Flags, game::item_flags::Bound);
+				}
 				
 				// One stack has been created by initializing the item
 				amountLeft--;
@@ -452,6 +458,13 @@ namespace wowpp
 			m_owner.setUInt32Value(character_fields::VisibleItem1_0 + ((slotB & 0xFF) * 16), srcItem->getEntry().id());
 			m_owner.setUInt64Value(character_fields::VisibleItem1_CREATOR + ((slotB & 0xFF) * 16), srcItem->getUInt64Value(item_fields::Creator));
 			m_owner.applyItemStats(*srcItem, true);
+
+			// Bind this item
+			if (srcItem->getEntry().bonding() == game::item_binding::BindWhenEquipped)
+			{
+				srcItem->addFlag(item_fields::Flags, game::item_flags::Bound);
+				itemInstanceUpdated(srcItem, slotB);
+			}
 		}
 
 		return game::inventory_change_failure::Okay;
@@ -812,7 +825,11 @@ namespace wowpp
 				//item->setUInt64Value(item_fields::Creator, data.creator);
 				item->setUInt64Value(item_fields::Contained, m_owner.getGuid());
 				item->setUInt32Value(item_fields::Durability, data.durability);
-				
+				if (entry->bonding() == game::item_binding::BindWhenPickedUp)
+				{
+					item->addFlag(item_fields::Flags, game::item_flags::Bound);
+				}
+
 				// Determine slot
 				UInt8 bag = 0, subslot = 0;
 				getRelativeSlots(data.slot, bag, subslot);
@@ -824,6 +841,11 @@ namespace wowpp
 						m_owner.setUInt32Value(character_fields::VisibleItem1_0 + (subslot * 16), item->getEntry().id());
 						m_owner.setUInt64Value(character_fields::VisibleItem1_CREATOR + (subslot * 16), item->getUInt64Value(item_fields::Creator));
 						m_owner.applyItemStats(*item, true);
+
+						if (entry->bonding() == game::item_binding::BindWhenEquipped)
+						{
+							item->addFlag(item_fields::Flags, game::item_flags::Bound);
+						}
 					}
 				}
 
