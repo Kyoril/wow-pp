@@ -466,6 +466,13 @@ namespace wowpp
 				itemInstanceUpdated(srcItem, slotB);
 			}
 		}
+		else if (isBagPackSlot(slotB))
+		{
+			if (srcItem->getEntry().bonding() == game::item_binding::BindWhenEquipped)
+			{
+				srcItem->addFlag(item_fields::Flags, game::item_flags::Bound);
+			}
+		}
 
 		return game::inventory_change_failure::Okay;
 	}
@@ -764,8 +771,9 @@ namespace wowpp
 	bool Inventory::isBagPackSlot(UInt16 absoluteSlot)
 	{
 		return (
-			absoluteSlot >> 8 >= player_inventory_slots::Start &&
-			absoluteSlot >> 8 < player_inventory_slots::End
+			absoluteSlot >> 8 == player_inventory_slots::Bag_0 &&
+			(absoluteSlot & 0xFF) >= player_inventory_slots::Start &&
+			(absoluteSlot & 0xFF) < player_inventory_slots::End
 			);
 	}
 	bool Inventory::isInventorySlot(UInt16 absoluteSlot)
@@ -842,6 +850,13 @@ namespace wowpp
 						m_owner.setUInt64Value(character_fields::VisibleItem1_CREATOR + (subslot * 16), item->getUInt64Value(item_fields::Creator));
 						m_owner.applyItemStats(*item, true);
 
+						if (entry->bonding() == game::item_binding::BindWhenEquipped)
+						{
+							item->addFlag(item_fields::Flags, game::item_flags::Bound);
+						}
+					}
+					else if (isBagPackSlot(data.slot))
+					{
 						if (entry->bonding() == game::item_binding::BindWhenEquipped)
 						{
 							item->addFlag(item_fields::Flags, game::item_flags::Bound);
