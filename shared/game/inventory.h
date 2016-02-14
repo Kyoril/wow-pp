@@ -39,6 +39,7 @@ namespace wowpp
 	// Class forwarding to reduce number of included files
 	class GameCharacter;
 	class GameItem;
+	class GameBag;
 	namespace proto
 	{
 		class ItemEntry;
@@ -151,6 +152,8 @@ namespace wowpp
 		UInt16 getFreeSlotCount() const { return m_freeSlots; }
 		/// Returns an item at a specified absolute slot.
 		std::shared_ptr<GameItem> getItemAtSlot(UInt16 absoluteSlot) const;
+		/// Returns a bag at a specified absolute slot.
+		std::shared_ptr<GameBag> getBagAtSlot(UInt16 absoluteSlot) const;
 		/// Finds an item by it's guid.
 		/// @param guid The GUID of the searched item.
 		/// @param out_slot The absolute item slot will be stored there.
@@ -159,11 +162,11 @@ namespace wowpp
 
 		/// Determines whether the given slot is an equipment slot.
 		static bool isEquipmentSlot(UInt16 absoluteSlot);
-		/// Determines whether the given slot is a custom bag slot.
+		/// Determines whether the given slot is a custom bag slot (not in a bag, but a bag equipment slot).
 		static bool isBagPackSlot(UInt16 absoluteSlot);
-		/// Determines whether the given slot is an item slot in the default bag.
+		/// Determines whether the given slot is a slot in the default bag.
 		static bool isInventorySlot(UInt16 absoluteSlot);
-		/// Determines whether the given slot is an item slot in a bag (not the default bag).
+		/// Determines whether the given slot is a slot in a bag (not the default bag).
 		static bool isBagSlot(UInt16 absoluteSlot);
 
 	public:

@@ -970,6 +970,9 @@ namespace wowpp
 			return;
 		}
 
+		DLOG("SRC BAG: " << UInt16(srcBag));
+		DLOG("DST BAG: " << UInt16(dstBag));
+
 		auto &inv = m_character->getInventory();
 		auto result = inv.swapItems(
 			Inventory::getAbsoluteSlot(srcBag, srcSlot),

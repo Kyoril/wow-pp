@@ -725,17 +725,49 @@ namespace wowpp
 				default:
 					return game::inventory_change_failure::ItemDoesNotGoToSlot;
 			}
+
+			return game::inventory_change_failure::Okay;
 		}
 		else if (isInventorySlot(slot))
 		{
-			// TODO: Inventory slot check
+			// TODO: Inventory slot validation? However, isInventorySlot already
+			// performs some checks
+			return game::inventory_change_failure::Okay;
 		}
 		else if (isBagSlot(slot))
 		{
-			// TODO: Validate bag
+			// Validate bag
+			auto bag = getBagAtSlot(slot);
+			if (!bag)
+			{
+				return game::inventory_change_failure::ItemDoesNotGoToSlot;
+			}
+
+			if (subslot >= bag->getSlotCount())
+			{
+				return game::inventory_change_failure::ItemDoesNotGoToSlot;
+			}
+
+			return game::inventory_change_failure::Okay;
+		}
+		else if (isBagPackSlot(slot))
+		{
+			if (entry.itemclass() != game::item_class::Container)
+			{
+				return game::inventory_change_failure::NotABag;
+			}
+
+			auto bagItem = getItemAtSlot(slot);
+			if (bagItem)
+			{
+				// TODO: Check if destination bag is not empty
+				return game::inventory_change_failure::CanOnlyDoWithEmptyBags;
+			}
+
+			return game::inventory_change_failure::Okay;
 		}
 
-		return game::inventory_change_failure::Okay;
+		return game::inventory_change_failure::InternalBagError;
 	}
 	game::InventoryChangeFailure Inventory::canStoreItems(const proto::ItemEntry & entry, UInt16 amount) const
 	{
@@ -784,6 +816,21 @@ namespace wowpp
 
 		return std::shared_ptr<GameItem>();
 	}
+	std::shared_ptr<GameBag> Inventory::getBagAtSlot(UInt16 absoluteSlot) const
+	{
+		if (!isBagPackSlot(absoluteSlot))
+		{
+			return std::shared_ptr<GameBag>();
+		}
+
+		auto it = m_itemsBySlot.find(absoluteSlot);
+		if (it != m_itemsBySlot.end() && it->second->getTypeId() == object_type::Container)
+		{
+			return std::dynamic_pointer_cast<GameBag>(it->second);
+		}
+
+		return std::shared_ptr<GameBag>();
+	}
 	bool Inventory::findItemByGUID(UInt64 guid, UInt16 & out_slot) const
 	{
 		for (auto &item : m_itemsBySlot)
@@ -822,7 +869,9 @@ namespace wowpp
 	}
 	bool Inventory::isBagSlot(UInt16 absoluteSlot)
 	{
-		return (absoluteSlot >> 8 != player_inventory_slots::Bag_0);
+		return (
+			absoluteSlot >> 8 >= player_inventory_slots::Start &&
+			absoluteSlot >> 8 < player_inventory_slots::End);
 	}
 	void Inventory::addRealmData(const ItemData & data)
 	{
@@ -854,12 +903,10 @@ namespace wowpp
 				std::shared_ptr<GameItem> item; 
 				if (entry->itemclass() == game::item_class::Container)
 				{
-					ILOG("Creating bag");
 					item = std::make_shared<GameBag>(m_owner.getProject(), *entry);
 				}
 				else
 				{
-					ILOG("Creating regular item");
 					item = std::make_shared<GameItem>(m_owner.getProject(), *entry);
 				}
 				auto newItemId = world->getItemIdGenerator().generateId();
@@ -886,13 +933,18 @@ namespace wowpp
 						m_owner.setUInt64Value(character_fields::VisibleItem1_CREATOR + (subslot * 16), item->getUInt64Value(item_fields::Creator));
 						m_owner.applyItemStats(*item, true);
 
+						// Apply bonding
 						if (entry->bonding() == game::item_binding::BindWhenEquipped)
 						{
 							item->addFlag(item_fields::Flags, game::item_flags::Bound);
 						}
 					}
-					else if (isBagPackSlot(data.slot))
+					else if (isBagPackSlot(data.slot) && item->getTypeId() == object_type::Container)
 					{
+						// Increase slot count since this is an equipped bag
+						m_freeSlots += reinterpret_cast<GameBag*>(item.get())->getSlotCount();
+
+						// Apply bonding
 						if (entry->bonding() == game::item_binding::BindWhenEquipped)
 						{
 							item->addFlag(item_fields::Flags, game::item_flags::Bound);
