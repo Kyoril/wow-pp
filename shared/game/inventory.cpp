@@ -423,6 +423,42 @@ namespace wowpp
 				m_owner.inventoryChangeFailure(result, srcItem.get(), dstItem.get());
 				return result;
 			}
+
+			// Check if both items share the same entry
+			if (srcItem->getEntry().id() == dstItem->getEntry().id())
+			{
+				const UInt32 maxStack = srcItem->getEntry().maxstack();
+				if (maxStack > 1 && maxStack > dstItem->getStackCount())
+				{
+					// Check if we can just add stacks to the destination item
+					const UInt32 availableDstStacks = maxStack - dstItem->getStackCount();
+					if (availableDstStacks > 0)
+					{
+						if (availableDstStacks < srcItem->getStackCount())
+						{
+							// Everything swapped
+							dstItem->addStacks(availableDstStacks);
+							srcItem->setUInt32Value(item_fields::StackCount, srcItem->getStackCount() - availableDstStacks);
+							itemInstanceUpdated(dstItem, slotB);
+							itemInstanceUpdated(srcItem, slotA);
+							return game::inventory_change_failure::Okay;
+						}
+						else	// Available Stacks >= srcItem stack count
+						{
+							dstItem->addStacks(availableDstStacks);
+							itemInstanceUpdated(dstItem, slotB);
+
+							// Remove source item
+							m_owner.setUInt64Value(character_fields::InvSlotHead + (slotA & 0xFF) * 2, 0);
+							itemInstanceDestroyed(srcItem, slotA);
+							m_itemsBySlot.erase(slotA);
+							m_freeSlots++;
+
+							return game::inventory_change_failure::Okay;
+						}
+					}
+				}
+			}
 		}
 
 		// Everything seems to be okay, swap items

@@ -970,9 +970,14 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_SWAP_ITEM(src bag: " << UInt32(srcBag) << ", src slot: " << UInt32(srcSlot) << ", dst bag: " << UInt32(dstBag) << ", dst slot: " << UInt32(dstSlot) << ")");
-		sendProxyPacket(
-			std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::InternalBagError, nullptr, nullptr));
+		auto &inv = m_character->getInventory();
+		auto result = inv.swapItems(
+			Inventory::getAbsoluteSlot(srcBag, srcSlot),
+			Inventory::getAbsoluteSlot(dstBag, dstSlot));
+		if (!result)
+		{
+			// An error happened
+		}
 	}
 
 	void Player::handleSwapInvItem(game::Protocol::IncomingPacket &packet)
