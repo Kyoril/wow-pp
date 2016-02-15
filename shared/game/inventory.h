@@ -186,6 +186,14 @@ namespace wowpp
 
 	private:
 
+		/// Parameters: Bag-ID, Start-Slot, End-Slot
+		typedef std::function<bool(UInt8, UInt8, UInt8)> BagCallbackFunc;
+
+		/// Executes a callback function for every bag the player has (including the default bag).
+		void forEachBag(BagCallbackFunc callback);
+
+	private:
+
 		GameCharacter &m_owner;
 		/// Stores the actual item instances by slot.
 		std::map<UInt16, std::shared_ptr<GameItem>> m_itemsBySlot;

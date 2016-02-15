@@ -85,42 +85,8 @@ namespace wowpp
 		// this item entry in the inventory, we can determine whether we have found all items
 		UInt16 itemsProcessed = 0;
 
-		// Enumerates all possible bags
-		static std::array<UInt8, 5> bags = 
+		forEachBag([this, &itemsProcessed, &availableStacks, &usedCapableSlots, &emptySlots, &requiredSlots, &itemCount, &entry](UInt8 bag, UInt8 slotStart, UInt8 slotEnd) -> bool
 		{
-			player_inventory_slots::Bag_0,
-			player_inventory_slots::Start + 0,
-			player_inventory_slots::Start + 1,
-			player_inventory_slots::Start + 2,
-			player_inventory_slots::Start + 3
-		};
-
-		for (auto &bag : bags)
-		{
-			UInt8 slotStart = 0, slotEnd = 0;
-			if (bag == player_inventory_slots::Bag_0)
-			{
-				slotStart = player_inventory_pack_slots::Start;
-				slotEnd = player_inventory_pack_slots::End;
-			}
-			else
-			{
-				auto bagInst = getBagAtSlot(getAbsoluteSlot(player_inventory_slots::Bag_0, bag));
-				if (!bagInst)
-				{
-					// Skip this bag
-					continue;
-				}
-
-				slotStart = 0;
-				slotEnd = bagInst->getSlotCount();
-			}
-
-			if (slotEnd <= slotStart)
-			{
-				continue;
-			}
-
 			for (UInt8 slot = slotStart; slot < slotEnd; ++slot)
 			{
 				const UInt16 absoluteSlot = getAbsoluteSlot(bag, slot);
@@ -177,9 +143,11 @@ namespace wowpp
 			if (itemsProcessed >= itemCount &&
 				emptySlots.size() >= requiredSlots)
 			{
-				break;
+				return false;
 			}
-		}
+
+			return true;
+		});
 
 		// Now we can determine if there is enough space
 		if (amount > availableStacks)
@@ -344,58 +312,61 @@ namespace wowpp
 		// Counter used to know when to stop iteration
 		UInt16 itemsToDelete = amount;
 
-		// Now do the iteration. First check the main bag
-		// TODO: Check bags, too
-		for (UInt8 slot = player_inventory_pack_slots::Start; slot < player_inventory_pack_slots::End; ++slot)
+		forEachBag([this, &itemCount, &entry, &itemsToDelete](UInt8 bag, UInt8 slotStart, UInt8 slotEnd) -> bool
 		{
-			const UInt16 absoluteSlot = getAbsoluteSlot(player_inventory_slots::Bag_0, slot);
-
-			// Check if this slot is empty
-			auto it = m_itemsBySlot.find(absoluteSlot);
-			if (it == m_itemsBySlot.end())
+			for (UInt8 slot = slotStart; slot < slotEnd; ++slot)
 			{
-				// Empty slot
-				continue;
-			}
+				const UInt16 absoluteSlot = getAbsoluteSlot(bag, slot);
 
-			// It is not empty, so check if the item is of the same entry
-			if (it->second->getEntry().id() != entry.id())
-			{
-				// Different item
-				continue;
-			}
-
-			// Get the items stack count
-			const UInt32 stackCount = it->second->getStackCount();
-			if (stackCount <= itemsToDelete)
-			{
-				// Remove item at this slot
-				auto result = removeItem(absoluteSlot);
-				if (result != game::inventory_change_failure::Okay)
+				// Check if this slot is empty
+				auto it = m_itemsBySlot.find(absoluteSlot);
+				if (it == m_itemsBySlot.end())
 				{
-					ELOG("Could not remove item at slot " << absoluteSlot);
+					// Empty slot
+					continue;
+				}
+
+				// It is not empty, so check if the item is of the same entry
+				if (it->second->getEntry().id() != entry.id())
+				{
+					// Different item
+					continue;
+				}
+
+				// Get the items stack count
+				const UInt32 stackCount = it->second->getStackCount();
+				if (stackCount <= itemsToDelete)
+				{
+					// Remove item at this slot
+					auto result = removeItem(absoluteSlot);
+					if (result != game::inventory_change_failure::Okay)
+					{
+						ELOG("Could not remove item at slot " << absoluteSlot);
+					}
+					else
+					{
+						// Reduce counter
+						itemsToDelete -= stackCount;
+					}
 				}
 				else
 				{
-					// Reduce counter
-					itemsToDelete -= stackCount;
+					// Reduce stack count
+					it->second->setUInt32Value(item_fields::StackCount, stackCount - itemsToDelete);
+					m_itemCounter[entry.id()] -= (stackCount - itemsToDelete);
+					itemsToDelete = 0;
+
+					// Notify client about this update
+					itemInstanceUpdated(it->second, slot);
 				}
-			}
-			else
-			{
-				// Reduce stack count
-				it->second->setUInt32Value(item_fields::StackCount, stackCount - itemsToDelete);
-				m_itemCounter[entry.id()] -= (stackCount - itemsToDelete);
-				itemsToDelete = 0;
 
-				// Notify client about this update
-				itemInstanceUpdated(it->second, slot);
+				// All items processed, we can stop here
+				if (itemsToDelete == 0)
+					return false;
 			}
 
-			// All items processed, we can stop here
-			if (itemsToDelete == 0)
-				break;
-		}
+			return true;
+		});
 
 		// WARNING: There should never be any items left here!
 		assert(itemsToDelete == 0);
@@ -1206,6 +1177,51 @@ namespace wowpp
 				pair.second->writeValueUpdateBlock(createItemWriter, m_owner, true);
 			}
 			out_blocks.push_back(std::move(createItemBlock));
+		}
+	}
+
+	void Inventory::forEachBag(BagCallbackFunc callback)
+	{
+		// Enumerates all possible bags
+		static std::array<UInt8, 5> bags =
+		{
+			player_inventory_slots::Bag_0,
+			player_inventory_slots::Start + 0,
+			player_inventory_slots::Start + 1,
+			player_inventory_slots::Start + 2,
+			player_inventory_slots::Start + 3
+		};
+
+		for (const auto &bag : bags)
+		{
+			UInt8 slotStart = 0, slotEnd = 0;
+			if (bag == player_inventory_slots::Bag_0)
+			{
+				slotStart = player_inventory_pack_slots::Start;
+				slotEnd = player_inventory_pack_slots::End;
+			}
+			else
+			{
+				auto bagInst = getBagAtSlot(getAbsoluteSlot(player_inventory_slots::Bag_0, bag));
+				if (!bagInst)
+				{
+					// Skip this bag
+					continue;
+				}
+
+				slotStart = 0;
+				slotEnd = bagInst->getSlotCount();
+			}
+
+			if (slotEnd <= slotStart)
+			{
+				continue;
+			}
+
+			if (!callback(bag, slotStart, slotEnd))
+			{
+				break;
+			}
 		}
 	}
 
