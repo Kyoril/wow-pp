@@ -496,6 +496,42 @@ namespace wowpp
 			itemInstanceUpdated(bag, getAbsoluteSlot(player_inventory_slots::Bag_0, slotA >> 8));
 		}
 
+		// Adjust bag slots
+		const bool isBagPackA = isBagPackSlot(slotA);
+		const bool isBagBackB = isBagPackSlot(slotB);
+		if (isBagPackA && !isBagBackB)
+		{
+			if (!dstItem && 
+				srcItem->getTypeId() == object_type::Container)
+			{
+				m_freeSlots -= srcItem->getUInt32Value(bag_fields::NumSlots);
+			}
+			else if (
+				dstItem && 
+				dstItem->getTypeId() == object_type::Container &&
+				srcItem->getTypeId() == object_type::Container)
+			{
+				m_freeSlots -= srcItem->getUInt32Value(bag_fields::NumSlots);
+				m_freeSlots += dstItem->getUInt32Value(bag_fields::NumSlots);
+			}
+		}
+		else if (isBagBackB && !isBagPackA)
+		{
+			if (!dstItem &&
+				srcItem->getTypeId() == object_type::Container)
+			{
+				m_freeSlots += srcItem->getUInt32Value(bag_fields::NumSlots);
+			}
+			else if (
+				dstItem &&
+				dstItem->getTypeId() == object_type::Container &&
+				srcItem->getTypeId() == object_type::Container)
+			{
+				m_freeSlots -= dstItem->getUInt32Value(bag_fields::NumSlots);
+				m_freeSlots += srcItem->getUInt32Value(bag_fields::NumSlots);
+			}
+		}
+
 		std::swap(m_itemsBySlot[slotA], m_itemsBySlot[slotB]);
 		if (!dstItem)
 		{
