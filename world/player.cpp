@@ -924,12 +924,30 @@ namespace wowpp
 			targetSlot = player_equipment_slots::Waist;
 			break;
 		default:
+			if (entry.itemclass() == game::item_class::Container)
+			{
+				for (UInt16 slot = player_inventory_slots::Start; slot < player_inventory_slots::End; ++slot)
+				{
+					auto bag = inv.getBagAtSlot(slot | 0xFF00);
+					if (!bag)
+					{
+						targetSlot = slot;
+						break;
+					}
+				}
+
+				if (targetSlot == 0xFF)
+				{
+					m_character->inventoryChangeFailure(game::inventory_change_failure::NoEquipmentSlotAvailable, item.get(), nullptr);
+					return;
+				}
+			}
 			break;
 		}
 
 		// Check if valid slot found
 		auto absDstSlot = Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, targetSlot);
-		if (!Inventory::isEquipmentSlot(absDstSlot))
+		if (!Inventory::isEquipmentSlot(absDstSlot) && !Inventory::isBagPackSlot(absDstSlot))
 		{
 			ELOG("Invalid target slot")
 			m_character->inventoryChangeFailure(game::inventory_change_failure::ItemCantBeEquipped, item.get(), nullptr);
