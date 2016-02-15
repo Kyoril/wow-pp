@@ -1254,7 +1254,7 @@ namespace wowpp
 		const UInt32 lowerPart = guidLowerPart(characterId);
 
 		if (m_connection.execute((boost::format(
-			"UPDATE `character` SET `map`=%1%, `x`=%2%, `y`=%3%, `z`=%4%, `o`=%5% WHERE `id`=%6%")
+			"UPDATE `character` SET `map`=%1%, `position_x`=%2%, `position_y`=%3%, `position_z`=%4%, `orientation`=%5% WHERE `id`=%6%")
 			% mapId
 			% x
 			% y
