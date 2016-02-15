@@ -439,6 +439,16 @@ namespace wowpp
 					m_owner.applyItemStats(*item, false);
 				}
 			}
+			else if (isBagSlot(absoluteSlot))
+			{
+				auto packSlot = getAbsoluteSlot(player_inventory_slots::Bag_0, bag);
+				auto bagInst = getBagAtSlot(packSlot);
+				if (bagInst)
+				{
+					bagInst->setUInt64Value(bag_fields::Slot_1 + (subslot * 2), 0);
+					itemInstanceUpdated(bagInst, packSlot);
+				}
+			}
 
 			// Notify about destruction
 			itemInstanceDestroyed(item, absoluteSlot);
