@@ -1372,7 +1372,7 @@ namespace wowpp
 			std::bind(game::server_write::updateObject, std::placeholders::_1, std::cref(blocks)));
 	}
 
-	void Player::onItemUpdated(std::shared_ptr<GameItem> item, UInt16 slot)
+	void Player::onItemUpdated(std::shared_ptr<GameItem> item, UInt16)
 	{
 		std::vector<std::vector<char>> blocks;
 		std::vector<char> createItemBlock;

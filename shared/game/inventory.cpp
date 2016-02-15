@@ -85,58 +85,100 @@ namespace wowpp
 		// this item entry in the inventory, we can determine whether we have found all items
 		UInt16 itemsProcessed = 0;
 
-		// Now do the iteration. First check the main bag
-		// TODO: Check bags, too
-		for (UInt8 slot = player_inventory_pack_slots::Start; slot < player_inventory_pack_slots::End; ++slot)
+		// Enumerates all possible bags
+		static std::array<UInt8, 5> bags = 
 		{
-			const UInt16 absoluteSlot = getAbsoluteSlot(player_inventory_slots::Bag_0, slot);
-			
-			// Check if this slot is empty
-			auto it = m_itemsBySlot.find(absoluteSlot);
-			if (it == m_itemsBySlot.end())
-			{
-				// Increase counter
-				availableStacks += entry.maxstack();
+			player_inventory_slots::Bag_0,
+			player_inventory_slots::Start + 0,
+			player_inventory_slots::Start + 1,
+			player_inventory_slots::Start + 2,
+			player_inventory_slots::Start + 3
+		};
 
-				// Remember this slot for later and skip it for now
-				emptySlots.add(absoluteSlot);
-				if (itemsProcessed >= itemCount &&
-					emptySlots.size() >= requiredSlots)
+		for (auto &bag : bags)
+		{
+			UInt8 slotStart = 0, slotEnd = 0;
+			if (bag == player_inventory_slots::Bag_0)
+			{
+				slotStart = player_inventory_pack_slots::Start;
+				slotEnd = player_inventory_pack_slots::End;
+			}
+			else
+			{
+				auto bagInst = getBagAtSlot(getAbsoluteSlot(player_inventory_slots::Bag_0, bag));
+				if (!bagInst)
 				{
-					break;
+					// Skip this bag
+					continue;
 				}
 
-				// If we processed all items, we want to make sure, that we found enough free slots as well
+				slotStart = 0;
+				slotEnd = bagInst->getSlotCount();
+			}
+
+			if (slotEnd <= slotStart)
+			{
 				continue;
 			}
 
-			// It is not empty, so check if the item is of the same entry
-			if (it->second->getEntry().id() != entry.id())
+			for (UInt8 slot = slotStart; slot < slotEnd; ++slot)
 			{
-				// Different item
-				continue;
-			}
+				const UInt16 absoluteSlot = getAbsoluteSlot(bag, slot);
 
-			// Get the items stack count
-			const UInt32 stackCount = it->second->getStackCount();
-			itemsProcessed += stackCount;
-			
-			// Check if the item's stack limit is reached
-			if (stackCount >= entry.maxstack())
-			{
-				if (itemsProcessed >= itemCount &&
-					emptySlots.size() >= requiredSlots)
+				// Check if this slot is empty
+				auto it = m_itemsBySlot.find(absoluteSlot);
+				if (it == m_itemsBySlot.end())
 				{
-					break;
+					// Increase counter
+					availableStacks += entry.maxstack();
+
+					// Remember this slot for later and skip it for now
+					emptySlots.add(absoluteSlot);
+					if (itemsProcessed >= itemCount &&
+						emptySlots.size() >= requiredSlots)
+					{
+						break;
+					}
+
+					// If we processed all items, we want to make sure, that we found enough free slots as well
+					continue;
 				}
 
-				// If we processed all items, we want to make sure, that we found enough free slots as well
-				continue;
+				// It is not empty, so check if the item is of the same entry
+				if (it->second->getEntry().id() != entry.id())
+				{
+					// Different item
+					continue;
+				}
+
+				// Get the items stack count
+				const UInt32 stackCount = it->second->getStackCount();
+				itemsProcessed += stackCount;
+
+				// Check if the item's stack limit is reached
+				if (stackCount >= entry.maxstack())
+				{
+					if (itemsProcessed >= itemCount &&
+						emptySlots.size() >= requiredSlots)
+					{
+						break;
+					}
+
+					// If we processed all items, we want to make sure, that we found enough free slots as well
+					continue;
+				}
+
+				// Stack limit not reached, remember this slot
+				availableStacks += (entry.maxstack() - stackCount);
+				usedCapableSlots.add(absoluteSlot);
 			}
 
-			// Stack limit not reached, remember this slot
-			availableStacks += (entry.maxstack() - stackCount);
-			usedCapableSlots.add(absoluteSlot);
+			// We can stop now
+			if (itemsProcessed >= itemCount &&
+				emptySlots.size() >= requiredSlots)
+			{
+				break;
+			}
 		}
 
 		// Now we can determine if there is enough space
@@ -166,8 +208,21 @@ namespace wowpp
 
 				// Notify update
 				itemInstanceUpdated(item, slot);
-				m_owner.forceFieldUpdate(character_fields::InvSlotHead + ((slot & 0xFF) * 2));
-				m_owner.forceFieldUpdate(character_fields::InvSlotHead + ((slot & 0xFF) * 2) + 1);
+				if (isInventorySlot(slot) || isEquipmentSlot(slot) || isBagPackSlot(slot))
+				{
+					m_owner.forceFieldUpdate(character_fields::InvSlotHead + ((slot & 0xFF) * 2));
+					m_owner.forceFieldUpdate(character_fields::InvSlotHead + ((slot & 0xFF) * 2) + 1);
+				}
+				else if (isBagSlot(slot))
+				{
+					auto bag = getBagAtSlot(slot);
+					if (bag)
+					{
+						bag->forceFieldUpdate(bag_fields::Slot_1 + (slot * 2));
+						bag->forceFieldUpdate(bag_fields::Slot_1 + (slot * 2) + 1);
+						itemInstanceUpdated(bag, slot);
+					}
+				}
 			}
 
 			// Everything added
@@ -228,7 +283,10 @@ namespace wowpp
 				m_itemsBySlot[slot] = item;
 				m_freeSlots--;
 
-				// Notify creation
+				// Create the item instance
+				itemInstanceCreated(item, slot);
+
+				// Update player fields
 				if (bag == player_inventory_slots::Bag_0)
 				{
 					m_owner.setUInt64Value(character_fields::InvSlotHead + (subslot * 2), item->getGuid());
@@ -239,8 +297,16 @@ namespace wowpp
 						m_owner.applyItemStats(*item, true);
 					}
 				}
-
-				itemInstanceCreated(item, slot);
+				else if (isBagSlot(slot))
+				{
+					auto packSlot = getAbsoluteSlot(player_inventory_slots::Bag_0, bag);
+					auto bagInst = getBagAtSlot(packSlot);
+					if (bagInst)
+					{
+						bagInst->setUInt64Value(bag_fields::Slot_1 + (subslot * 2), item->getGuid());
+						itemInstanceUpdated(bagInst, packSlot);
+					}
+				}
 
 				// All done
 				if (amountLeft == 0)
