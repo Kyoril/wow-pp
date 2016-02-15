@@ -48,8 +48,20 @@ namespace wowpp
 		for (UInt32 slot = 0; slot < 36; slot++)
 		{
 			// Initialize bag slots to 0
-			setUInt64Value(bag_fields::Slot_1 + slot, 0);
+			setUInt64Value(bag_fields::Slot_1 + slot * 2, 0);
 		}
+	}
+
+	bool GameBag::isEmpty() const
+	{
+		for (UInt32 slot = 0; slot < 36; slot++)
+		{
+			if (getUInt64Value(bag_fields::Slot_1 + slot * 2))
+			{
+				return false;
+			}
+		}
+		return true;
 	}
 
 	io::Writer & operator<<(io::Writer &w, GameBag const& object)

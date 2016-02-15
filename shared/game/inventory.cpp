@@ -461,6 +461,16 @@ namespace wowpp
 			}
 		}
 
+		if (srcItem->getTypeId() == object_type::Container &&
+			!isBagPackSlot(slotB))
+		{
+			if (!std::dynamic_pointer_cast<GameBag>(srcItem)->isEmpty())
+			{
+				m_owner.inventoryChangeFailure(game::inventory_change_failure::CanOnlyDoWithEmptyBags, srcItem.get(), dstItem.get());
+				return game::inventory_change_failure::CanOnlyDoWithEmptyBags;
+			}
+		}
+
 		// Everything seems to be okay, swap items
 		if (isEquipmentSlot(slotA) || isInventorySlot(slotA) || isBagPackSlot(slotA))
 		{

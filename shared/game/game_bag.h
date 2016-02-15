@@ -57,6 +57,8 @@ namespace wowpp
 
 		/// Gets the amount of total slots in this bag.
 		UInt32 getSlotCount() const { return getUInt32Value(bag_fields::NumSlots); }
+		/// Determines whether this bag is empty.
+		bool isEmpty() const;
 
 	private:
 
