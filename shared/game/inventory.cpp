@@ -462,19 +462,56 @@ namespace wowpp
 		}
 
 		// Everything seems to be okay, swap items
-		m_owner.setUInt64Value(character_fields::InvSlotHead + (slotA & 0xFF) * 2, (dstItem ? dstItem->getGuid() : 0));
-		m_owner.setUInt64Value(character_fields::InvSlotHead + (slotB & 0xFF) * 2, srcItem->getGuid());
+		if (isEquipmentSlot(slotA) || isInventorySlot(slotA) || isBagPackSlot(slotA))
+		{
+			m_owner.setUInt64Value(character_fields::InvSlotHead + (slotA & 0xFF) * 2, (dstItem ? dstItem->getGuid() : 0));
+		}
+		else if (isBagSlot(slotA))
+		{
+			auto bag = getBagAtSlot(slotA);
+			if (!bag)
+			{
+				m_owner.inventoryChangeFailure(game::inventory_change_failure::InternalBagError, srcItem.get(), dstItem.get());
+				return game::inventory_change_failure::InternalBagError;
+			}
+
+			bag->setUInt64Value(bag_fields::Slot_1 + (slotA & 0xFF) * 2, (dstItem ? dstItem->getGuid() : 0));
+			itemInstanceUpdated(bag, getAbsoluteSlot(player_inventory_slots::Bag_0, slotA >> 8));
+		}
+
+		if (isEquipmentSlot(slotB) || isInventorySlot(slotB) || isBagPackSlot(slotB))
+		{
+			m_owner.setUInt64Value(character_fields::InvSlotHead + (slotB & 0xFF) * 2, srcItem->getGuid());
+		}
+		else if(isBagSlot(slotB))
+		{
+			auto bag = getBagAtSlot(slotB);
+			if (!bag)
+			{
+				m_owner.inventoryChangeFailure(game::inventory_change_failure::InternalBagError, srcItem.get(), dstItem.get());
+				return game::inventory_change_failure::InternalBagError;
+			}
+
+			bag->setUInt64Value(bag_fields::Slot_1 + (slotB & 0xFF) * 2, srcItem->getGuid());
+			itemInstanceUpdated(bag, getAbsoluteSlot(player_inventory_slots::Bag_0, slotA >> 8));
+		}
+
 		std::swap(m_itemsBySlot[slotA], m_itemsBySlot[slotB]);
 		if (!dstItem)
 		{
 			// Remove new item in SlotA
 			m_itemsBySlot.erase(slotA);
 
-			// No item in slot A, and slot A was an inventory slot, so this gives us another free slot
-			if (isInventorySlot(slotA))
+			// No item in slot B, and slot A was an inventory slot, so this gives us another free slot
+			// if slot B is not an inventory/bag slot, too
+			if ((isInventorySlot(slotA) || isBagSlot(slotA)) && 
+				!(isInventorySlot(slotB) || isBagSlot(slotB)))
+			{
 				m_freeSlots++;
+			}
 			// No item in slot A, and slot B is an inventory slot, so this will use another free slot
-			else if (isInventorySlot(slotB))
+			else if ((isInventorySlot(slotB) || isBagSlot(slotB)) &&
+				!(isInventorySlot(slotA) || isBagSlot(slotA)))
 			{
 				assert(m_freeSlots >= 1);
 				m_freeSlots--;
@@ -510,6 +547,7 @@ namespace wowpp
 			}
 		}
 
+		ILOG("Free slots after swap: " << m_freeSlots);
 		return game::inventory_change_failure::Okay;
 	}
 	namespace
@@ -820,7 +858,8 @@ namespace wowpp
 	{
 		if (!isBagPackSlot(absoluteSlot))
 		{
-			return std::shared_ptr<GameBag>();
+			// Convert bag slot to bag pack slot which is 0xFFXX where XX is the bag slot id
+			absoluteSlot = getAbsoluteSlot(player_inventory_slots::Bag_0, UInt8(absoluteSlot >> 8));
 		}
 
 		auto it = m_itemsBySlot.find(absoluteSlot);
@@ -889,6 +928,9 @@ namespace wowpp
 				return;
 			}
 
+			// We need to store bag items for later, since we first need to create all bags
+			std::map<UInt16, std::shared_ptr<GameItem>> bagItems;
+
 			// Iterate through all entries
 			for (auto &data : m_realmData)
 			{
@@ -926,9 +968,9 @@ namespace wowpp
 				getRelativeSlots(data.slot, bag, subslot);
 				if (bag == player_inventory_slots::Bag_0)
 				{
-					m_owner.setUInt64Value(character_fields::InvSlotHead + (subslot * 2), item->getGuid());
 					if (isEquipmentSlot(data.slot))
 					{
+						m_owner.setUInt64Value(character_fields::InvSlotHead + (subslot * 2), item->getGuid());
 						m_owner.setUInt32Value(character_fields::VisibleItem1_0 + (subslot * 16), item->getEntry().id());
 						m_owner.setUInt64Value(character_fields::VisibleItem1_CREATOR + (subslot * 16), item->getUInt64Value(item_fields::Creator));
 						m_owner.applyItemStats(*item, true);
@@ -939,8 +981,14 @@ namespace wowpp
 							item->addFlag(item_fields::Flags, game::item_flags::Bound);
 						}
 					}
+					else if (isInventorySlot(data.slot))
+					{
+						m_owner.setUInt64Value(character_fields::InvSlotHead + (subslot * 2), item->getGuid());
+					}
 					else if (isBagPackSlot(data.slot) && item->getTypeId() == object_type::Container)
 					{
+						m_owner.setUInt64Value(character_fields::InvSlotHead + (subslot * 2), item->getGuid());
+
 						// Increase slot count since this is an equipped bag
 						m_freeSlots += reinterpret_cast<GameBag*>(item.get())->getSlotCount();
 
@@ -951,6 +999,10 @@ namespace wowpp
 						}
 					}
 				}
+				else if (isBagSlot(data.slot))
+				{
+					bagItems[data.slot] = item;
+				}
 
 				// Modify stack count
 				auto added = item->addStacks(data.stackCount - 1);
@@ -960,12 +1012,28 @@ namespace wowpp
 				m_itemsBySlot[data.slot] = std::move(item);
 				
 				// Inventory slot used
-				if (isInventorySlot(data.slot))
+				if (isInventorySlot(data.slot) || isBagSlot(data.slot))
 					m_freeSlots--;
 			}
 
 			// Clear realm data since we don't need it any more
 			m_realmData.clear();
+
+			// Store items in bags
+			for (auto &pair : bagItems)
+			{
+				auto bag = getBagAtSlot(getAbsoluteSlot(player_inventory_slots::Bag_0, pair.first >> 8));
+				if (!bag)
+				{
+					ELOG("Could not find bag at slot " << pair.first << ": Maybe this bag is sent after the item");
+				}
+				else
+				{
+					bag->setUInt64Value(bag_fields::Slot_1 + ((pair.first & 0xFF) * 2), pair.second->getGuid());
+				}
+			}
+
+			ILOG("Free item slots: " << m_freeSlots);
 		}
 
 		for (auto &pair : m_itemsBySlot)

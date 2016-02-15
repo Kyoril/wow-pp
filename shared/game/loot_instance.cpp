@@ -67,8 +67,11 @@ namespace wowpp
 							if (recipient &&
 								recipient->needsQuestItem(def.item()))
 							{
-								questItemCount++;
-								break;		// Later...
+								if (recipient->getQuestStatus(questId) == game::quest_status::Incomplete)
+								{
+									questItemCount++;
+									break;		// Later...
+								}
 							}
 						}
 
