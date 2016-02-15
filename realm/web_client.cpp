@@ -529,6 +529,96 @@ namespace wowpp
 							return;
 					}
 				}
+				else if (url == "/teleport")
+				{
+					// Handle required data
+					String characterName;
+					UInt32 mapId = 0xffffffff;
+					float x = 0.0f, y = 0.0f, z = 0.0f, o = 0.0f;
+
+					for (auto &arg : arguments)
+					{
+						auto delimiterPos = arg.find('=');
+						String argName = arg.substr(0, delimiterPos);
+						String argValue = arg.substr(delimiterPos + 1);
+
+						if (argName == "character")
+						{
+							characterName = argValue;
+						}
+						else if (argName == "map")
+						{
+							mapId = atoi(argValue.c_str());
+						}
+						else if (argName == "x")
+						{
+							x = atof(argValue.c_str());
+						}
+						else if (argName == "y")
+						{
+							y = atof(argValue.c_str());
+						}
+						else if (argName == "z")
+						{
+							z = atof(argValue.c_str());
+						}
+						else if (argName == "o")
+						{
+							o = atof(argValue.c_str());
+						}
+					}
+
+					if (mapId == 0xffffffff || characterName.empty())
+					{
+						sendXmlAnswer(response, "<status>MISSING_DATA</status>");
+						break;
+					}
+
+					auto &project = static_cast<WebService &>(this->getService()).getProject();
+					const auto *mapInst = project.maps.getById(mapId);
+					if (!mapInst)
+					{
+						sendXmlAnswer(response, "<status>INVALID_MAP</status>");
+						break;
+					}
+
+					auto &playerMgr = static_cast<WebService &>(this->getService()).getPlayerManager();
+					auto *player = playerMgr.getPlayerByCharacterName(characterName);
+					if (!player)
+					{
+						// Player is offline, so just change database coordinates
+						auto &db = static_cast<WebService &>(this->getService()).getDatabase();
+						
+						// Does the character exist?
+						game::CharEntry entry;
+						if (!db.getCharacterByName(characterName, entry))
+						{
+							sendXmlAnswer(response, "<status>CHARACTER_NOT_FOUND</status>");
+							break;
+						}
+
+						// Character exists - teleport him
+						if (!db.teleportCharacter(entry.id, mapId, x, y, z, o))
+						{
+							sendXmlAnswer(response, "<status>DATABASE_ERROR</status>");
+							break;
+						}
+
+						sendXmlAnswer(response, "<status>SUCCESS</status>");
+						break;
+					}
+					else
+					{
+						if (!player->initializeTransfer(mapId, math::Vector3(x, y, z), o, true))
+						{
+							sendXmlAnswer(response, "<status>PLAYER_NOT_IN_WORLD</status>");
+							break;
+						}
+
+						sendXmlAnswer(response, "<status>SUCCESS</status>");
+						break;
+					}
+				}
 #endif
 				else
 				{

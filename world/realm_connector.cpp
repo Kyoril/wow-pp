@@ -873,7 +873,8 @@ namespace wowpp
 			return;
 		}
 
-		if (reason == pp::world_realm::world_left_reason::Disconnect)
+		if (reason == pp::world_realm::world_left_reason::Disconnect ||
+			reason == pp::world_realm::world_left_reason::Teleport)
 		{
 			// Find the character and remove it from the world instance
 			auto *player = m_playerManager.getPlayerByCharacterGuid(characterGuid);
@@ -887,16 +888,10 @@ namespace wowpp
 			player->getWorldInstance().removeGameObject(*player->getCharacter());
 
 			// Notify the realm
-			notifyWorldInstanceLeft(characterGuid, pp::world_realm::world_left_reason::Disconnect);
+			notifyWorldInstanceLeft(characterGuid, reason);
 
 			// Remove the player instance
 			m_playerManager.playerDisconnected(*player);
-
-			ILOG("Player removed from world instance due to disconnect on realm.");
-		}
-		else
-		{
-			WLOG("Unsupported reason - request ignored");
 		}
 	}
 

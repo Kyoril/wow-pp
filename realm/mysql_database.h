@@ -80,6 +80,8 @@ namespace wowpp
 		bool setCinematicState(DatabaseId characterId, bool state) override;
 		/// @copydoc wowpp::IDatabase::setQuestData
 		bool setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData &data) override;
+		/// @copydoc wowpp::IDatabase::teleportCharacter
+		bool teleportCharacter(DatabaseId characterId, UInt32 mapId, float x, float y, float z, float o, bool changeHome = false) override;
 
 	private:
 

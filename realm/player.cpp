@@ -901,37 +901,6 @@ namespace wowpp
 
 	void Player::worldInstanceLeft(World &world, UInt32 instanceId, pp::world_realm::WorldLeftReason reason)
 	{
-		// Display world instance left reason
-		String reasonString = "UNKNOWN";
-		switch (reason)
-		{
-			case pp::world_realm::world_left_reason::Logout:
-			{
-				reasonString = "LOGOUT";
-				break;
-			}
-
-			case pp::world_realm::world_left_reason::Teleport:
-			{
-				reasonString = "TELEPORT";
-				break;
-			}
-
-			case pp::world_realm::world_left_reason::Disconnect:
-			{
-				reasonString = "DISCONNECT";
-				break;
-			}
-
-			default:
-			{
-				break;
-			}
-		}
-
-		// Write something to the log just for informations
-		ILOG("Player " << m_accountName << " left world instance " << m_instanceId << " - reason: " << reasonString);
-
 		// We no longer care about the world node
 		m_worldDisconnected.disconnect();
 		m_worldNode = nullptr;
@@ -1964,11 +1933,27 @@ namespace wowpp
 			std::bind(game::server_write::partyMemberStatsFull, std::placeholders::_1, std::cref(*m_gameCharacter)));
 	}
 
-	void Player::initializeTransfer(UInt32 map, math::Vector3 location, float o)
+	bool Player::initializeTransfer(UInt32 map, math::Vector3 location, float o, bool shouldLeaveNode/* = false*/)
 	{
+		auto *world = m_worldManager.getWorldByInstanceId(m_instanceId);
+		if (shouldLeaveNode && !world)
+		{
+			return false;
+		}
+
 		m_transferMap = map;
 		m_transfer = location;
 		m_transferO = o;
+
+		if (shouldLeaveNode)
+		{
+			// Send transfer pending state. This will show up the loading screen at the client side
+			sendPacket(
+				std::bind(game::server_write::transferPending, std::placeholders::_1, map, 0, 0));
+			world->leaveWorldInstance(m_characterId, pp::world_realm::world_left_reason::Teleport);
+		}
+
+		return true;
 	}
 
 	void Player::commitTransfer()
@@ -1983,7 +1968,7 @@ namespace wowpp
 		sendPacket(
 			std::bind(game::server_write::newWorld, std::placeholders::_1, m_transferMap, m_transfer, m_transferO));
 	}
-
+	
 	void Player::handleMoveWorldPortAck(game::IncomingPacket &packet)
 	{
 		if (m_transferMap == 0 && m_transfer.x == 0.0f && m_transfer.y == 0.0f && m_transfer.z == 0.0f && m_transferO == 0.0f)

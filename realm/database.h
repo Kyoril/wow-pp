@@ -53,33 +53,24 @@ namespace wowpp
 		/// @param character Data of the character to create.
 		/// @returns false if the creation process failed.
 		virtual game::ResponseCode createCharacter(UInt32 accountId, const std::vector<const proto::SpellEntry*> &spells, const std::vector<ItemData> &items, game::CharEntry &character) = 0;
-
 		virtual game::ResponseCode renameCharacter(DatabaseId id, const String &newName) = 0;
-
 		virtual bool getCharacterById(DatabaseId id, game::CharEntry &out_character) = 0;
 		virtual bool getCharacterByName(const String &name, game::CharEntry &out_character) = 0;
-
 		virtual bool getCharacters(UInt32 accountId, game::CharEntries &out_characters) = 0;
-
 		virtual game::ResponseCode deleteCharacter(UInt32 accountId, UInt64 characterGuid) = 0;
-
 		virtual bool getGameCharacter(DatabaseId characterId, GameCharacter &out_character) = 0;
 		virtual bool saveGameCharacter(const GameCharacter &character, const std::vector<ItemData> &items, const std::vector<UInt32> &spells) = 0;
-
 		virtual bool getCharacterSocialList(DatabaseId characterId, PlayerSocial &out_social) = 0;
 		virtual bool addCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) = 0;
 		virtual bool updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags) = 0;
 		virtual bool updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) = 0;
 		virtual bool removeCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid) = 0;
-
 		virtual bool getCharacterActionButtons(DatabaseId characterId, ActionButtons &out_buttons) = 0;
 		virtual bool setCharacterActionButtons(DatabaseId characterId, const ActionButtons &buttons) = 0;
-
 		virtual bool setCinematicState(DatabaseId characterId, bool state) = 0;
-
 		virtual bool setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData &data) = 0;
+		virtual bool teleportCharacter(DatabaseId characterId, UInt32 mapId, float x, float y, float z, float o, bool changeHome = false) = 0;
 	};
-
 
 	enum RequestStatus
 	{

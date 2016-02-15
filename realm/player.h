@@ -125,7 +125,7 @@ namespace wowpp
 		/// Saves the current character (if any).
 		//void saveCharacter();
 		/// Inititalizes a character transfer to a new map.
-		void initializeTransfer(UInt32 map, math::Vector3 location, float o);
+		bool initializeTransfer(UInt32 map, math::Vector3 location, float o, bool shouldLeaveNode = false);
 		/// Commits an initialized transfer (if any).
 		void commitTransfer();
 

@@ -1249,4 +1249,30 @@ namespace wowpp
 		return false;
 	}
 
+	bool MySQLDatabase::teleportCharacter(DatabaseId characterId, UInt32 mapId, float x, float y, float z, float o, bool changeHome)
+	{
+		const UInt32 lowerPart = guidLowerPart(characterId);
+
+		if (m_connection.execute((boost::format(
+			"UPDATE `character` SET `map`=%1%, `x`=%2%, `y`=%3%, `z`=%4%, `o`=%5% WHERE `id`=%6%")
+			% mapId
+			% x
+			% y
+			% z
+			% o
+			% lowerPart
+			).str()))
+		{
+			return true;
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+
+		return false;
+	}
+
 }
