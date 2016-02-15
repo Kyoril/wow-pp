@@ -110,11 +110,14 @@ namespace wowpp
 		boost::signals2::scoped_connection m_completedEffectsExecution;
 		boost::signals2::scoped_connection m_onTargetDied, m_onTargetRemoved;
 		boost::signals2::scoped_connection m_onUserDamaged, m_onUserMoved;
+		boost::signals2::scoped_connection m_onTargetMoved;
 		float m_x, m_y, m_z;
 		GameTime m_castTime;
 		Int32 m_basePoints;
 		bool m_isProc;
 		UInt64 m_itemGuid;
+		GameTime m_projectileStart, m_projectileEnd;
+		math::Vector3 m_projectileOrigin;
 
 		void sendEndCast(bool success);
 		void onCastFinished();

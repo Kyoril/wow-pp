@@ -255,7 +255,6 @@ namespace wowpp
 	void GameObject::relocate(math::Vector3 position, float o, bool fire/* = true*/)
 	{
 		float oldO = m_o;
-		math::Vector3 oldPosition(m_position);
 
 		m_position = position;
 		m_o = o;

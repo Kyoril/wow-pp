@@ -91,6 +91,8 @@ namespace wowpp
 		, m_isProc(isProc)
 		, m_attackTable()
 		, m_itemGuid(itemGuid)
+		, m_projectileStart(0)
+		, m_projectileEnd(0)
 	{
 		// Check if the executer is in the world
 		auto &executer = m_cast.getExecuter();
@@ -392,16 +394,54 @@ namespace wowpp
 					{
 						// Calculate distance to the target
 						const float dist = m_cast.getExecuter().getDistanceTo(*unitTarget);
-						const float timeMS = (dist / m_spell.speed()) * 1000.0f;
-						
-						// This will be executed on the impact
-						m_impactCountdown.ended.connect(
-							[strongThis]() mutable {
-							strongThis->applyAllEffects();
-							strongThis.reset();
-						});
+						const GameTime timeMS = (dist / m_spell.speed()) * 1000;
+						if (timeMS >= 50)
+						{
+							// This will be executed on the impact
+							m_impactCountdown.ended.connect(
+								[strongThis]() mutable
+							{
+								strongThis->applyAllEffects();
+								strongThis.reset();
+							});
 
-						m_impactCountdown.setEnd(getCurrentTime() + timeMS);
+							m_projectileStart = getCurrentTime();
+							m_projectileEnd = m_projectileStart + timeMS;
+							m_projectileOrigin = m_cast.getExecuter().getLocation();
+
+							m_onTargetMoved = unitTarget->moved.connect([this](GameObject &target, const math::Vector3 &oldPosition, float oldO) {
+								if (m_impactCountdown.running)
+								{
+									const auto currentTime = getCurrentTime();
+									auto targetLoc = target.getLocation();
+
+									float percentage = static_cast<float>(currentTime - m_projectileStart) / static_cast<float>(m_projectileEnd - m_projectileStart);
+									math::Vector3 projectilePos = m_projectileOrigin.lerp(oldPosition, percentage);
+									const float dist = (targetLoc - projectilePos).length();
+									const GameTime timeMS = (dist / m_spell.speed()) * 1000;
+
+									m_projectileOrigin = projectilePos;
+									m_projectileStart = currentTime;
+									m_projectileEnd = currentTime + timeMS;
+
+									if (timeMS >= 50)
+									{
+										m_impactCountdown.setEnd(currentTime + timeMS);
+									}
+									else
+									{
+										m_impactCountdown.cancel();
+										applyAllEffects();
+									}
+								}
+							});
+
+							m_impactCountdown.setEnd(m_projectileEnd);
+						}
+						else
+						{
+							applyAllEffects();
+						}
 					}
 				}
 			}
@@ -449,11 +489,13 @@ namespace wowpp
 	void SingleCastState::onTargetRemovedOrDead()
 	{
 		stopCast();
+
+		m_onTargetMoved.disconnect();
 	}
 
 	void SingleCastState::onUserDamaged()
 	{
-		// This is only triggerd if the spell has the attribute
+		// This is only triggered if the spell has the attribute
 		stopCast();
 	}
 	
