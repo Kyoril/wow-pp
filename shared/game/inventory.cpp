@@ -1102,8 +1102,12 @@ namespace wowpp
 				m_itemCounter[data.entry] += data.stackCount;
 
 				// Add this item to the inventory slot and reduce our free slot cache
-				m_itemsBySlot[data.slot] = std::move(item);
-				
+				m_itemsBySlot[data.slot] = item;
+				if (isEquipmentSlot(data.slot))
+				{
+					m_owner.applyItemStats(*item, true);
+				}
+
 				// Inventory slot used
 				if (isInventorySlot(data.slot) || isBagSlot(data.slot))
 					m_freeSlots--;
@@ -1125,8 +1129,6 @@ namespace wowpp
 					bag->setUInt64Value(bag_fields::Slot_1 + ((pair.first & 0xFF) * 2), pair.second->getGuid());
 				}
 			}
-
-			ILOG("Free item slots: " << m_freeSlots);
 		}
 
 		for (auto &pair : m_itemsBySlot)
