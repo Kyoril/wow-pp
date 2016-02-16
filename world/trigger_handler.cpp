@@ -46,11 +46,11 @@ namespace wowpp
 	{
 	}
 
-	void TriggerHandler::executeTrigger(const proto::TriggerEntry &entry, UInt32 actionOffset, GameObject *owner)
+	void TriggerHandler::executeTrigger(const proto::TriggerEntry &entry, game::TriggerContext context, UInt32 actionOffset)
 	{
 		// Keep owner alive if provided
 		std::shared_ptr<GameObject> strongOwner;
-		if (owner) strongOwner = owner->shared_from_this();
+		if (context.owner) strongOwner = context.owner->shared_from_this();
 		auto weakOwner = std::weak_ptr<GameObject>(strongOwner);
 
 		// TODO: Find a better way to do this...
@@ -80,8 +80,8 @@ namespace wowpp
 			{
 #define WOWPP_HANDLE_TRIGGER_ACTION(name) \
 			case trigger_actions::name: \
-					handle##name(action, owner); \
-					break;
+				handle##name(action, context); \
+				break;
 
 			WOWPP_HANDLE_TRIGGER_ACTION(Trigger)
 			WOWPP_HANDLE_TRIGGER_ACTION(Say)
@@ -109,18 +109,18 @@ namespace wowpp
 
 					// Save delay
 					auto delayCountdown = make_unique<Countdown>(m_timers);
-					delayCountdown->ended.connect([&entry, i, this, owner, weakOwner]()
+					delayCountdown->ended.connect([&entry, i, this, context, weakOwner]()
 					{
-						GameObject *oldOwner = owner;
+						GameObject *oldOwner = context.owner;
 
 						auto strongOwner = weakOwner.lock();
-						if (owner != nullptr && strongOwner == nullptr)
+						if (context.owner != nullptr && strongOwner == nullptr)
 						{
 							WLOG("Owner no longer exists, so the executing trigger might fail.");
 							oldOwner = nullptr;
 						}
 
-						executeTrigger(entry, i + 1, oldOwner);
+						executeTrigger(entry, context, i + 1);
 					});
 					delayCountdown->setEnd(getCurrentTime() + timeMS);
 					m_delays.emplace_back(std::move(delayCountdown));
@@ -138,7 +138,7 @@ namespace wowpp
 		}
 	}
 
-	void TriggerHandler::handleTrigger(const proto::TriggerAction &action, GameObject *owner)
+	void TriggerHandler::handleTrigger(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
 		if (action.target() != trigger_action_target::None)
 		{
@@ -156,12 +156,12 @@ namespace wowpp
 		}
 
 		// Execute another trigger
-		executeTrigger(*trigger, 0, owner);
+		executeTrigger(*trigger, context, 0);
 	}
 
-	void TriggerHandler::handleSay(const proto::TriggerAction &action, GameObject *owner)
+	void TriggerHandler::handleSay(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
-		GameObject *target = getActionTarget(action, owner);
+		GameObject *target = getActionTarget(action, context.owner);
 		if (target == nullptr)
 		{
 			WLOG("TRIGGER_ACTION_SAY: No target found, action will be ignored");
@@ -217,9 +217,9 @@ namespace wowpp
 		}
 	}
 
-	void TriggerHandler::handleYell(const proto::TriggerAction &action, GameObject *owner)
+	void TriggerHandler::handleYell(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
-		GameObject *target = getActionTarget(action, owner);
+		GameObject *target = getActionTarget(action, context.owner);
 		if (!target)
 		{
 			WLOG("TRIGGER_ACTION_YELL: No target found, action will be ignored");
@@ -275,9 +275,9 @@ namespace wowpp
 		}
 	}
 
-	void TriggerHandler::handleSetWorldObjectState(const proto::TriggerAction &action, GameObject *owner)
+	void TriggerHandler::handleSetWorldObjectState(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
-		GameObject * target = getActionTarget(action, owner);
+		GameObject * target = getActionTarget(action, context.owner);
 		if (!target ||
 			!target->isWorldObject())
 		{
@@ -289,9 +289,9 @@ namespace wowpp
 		target->setUInt32Value(world_object_fields::State, getActionData(action, 0));
 	}
 
-	void TriggerHandler::handleSetSpawnState(const proto::TriggerAction &action, GameObject *owner)
+	void TriggerHandler::handleSetSpawnState(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
-		auto world = getWorldInstance(owner);
+		auto world = getWorldInstance(context.owner);
 		if (!world)
 		{
 			return;
@@ -330,9 +330,9 @@ namespace wowpp
 		}
 	}
 
-	void TriggerHandler::handleSetRespawnState(const proto::TriggerAction &action, GameObject *owner)
+	void TriggerHandler::handleSetRespawnState(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
-		auto world = getWorldInstance(owner);
+		auto world = getWorldInstance(context.owner);
 		if (!world)
 		{
 			return;
@@ -363,15 +363,15 @@ namespace wowpp
 		}
 	}
 
-	void TriggerHandler::handleCastSpell(const proto::TriggerAction &action, GameObject *owner)
+	void TriggerHandler::handleCastSpell(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
-		if (!owner->isCreature())
+		if (!context.owner->isCreature())
 		{
 			ELOG("TRIGGER_ACTION_CAST_SPELL: Invalid owner - only units can cast spells");
 			return;
 		}
 
-		GameObject *target = getActionTarget(action, owner);
+		GameObject *target = getActionTarget(action, context.owner);
 		if (!target)
 		{
 			ELOG("TRIGGER_ACTION_CAST_SPELL: No valid target found");
@@ -396,7 +396,7 @@ namespace wowpp
 			targetMap.m_targetMap = game::spell_cast_target_flags::Object;
 			targetMap.m_goTarget = target->getGuid();
 		}
-		reinterpret_cast<GameUnit*>(owner)->castSpell(std::move(targetMap), spell->id());
+		reinterpret_cast<GameUnit*>(context.owner)->castSpell(std::move(targetMap), spell->id());
 	}
 
 	UInt32 TriggerHandler::getActionData(const proto::TriggerAction &action, UInt32 index) const

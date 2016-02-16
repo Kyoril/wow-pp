@@ -46,7 +46,7 @@ namespace wowpp
 		explicit TriggerHandler(proto::Project &project, PlayerManager &playerManager, TimerQueue &timers);
 
 		/// Fires a trigger event.
-		virtual void executeTrigger(const proto::TriggerEntry &entry, UInt32 actionOffset = 0, GameObject *owner = nullptr) override;
+		virtual void executeTrigger(const proto::TriggerEntry &entry, game::TriggerContext context, UInt32 actionOffset = 0) override;
 
 	private:
 
@@ -56,14 +56,13 @@ namespace wowpp
 		GameObject *getActionTarget(const proto::TriggerAction &action, GameObject *owner);
 		bool playSoundEntry(UInt32 sound, GameObject *source);
 
-		void handleTrigger(const proto::TriggerAction &action, GameObject *owner);
-		void handleSay(const proto::TriggerAction &action, GameObject *owner);
-		void handleYell(const proto::TriggerAction &action, GameObject *owner);
-		void handleSetWorldObjectState(const proto::TriggerAction &action, GameObject *owner);
-		void handleSetSpawnState(const proto::TriggerAction &action, GameObject *owner);
-		void handleSetRespawnState(const proto::TriggerAction &action, GameObject *owner);
-		void handleCastSpell(const proto::TriggerAction &action, GameObject *owner);
-
+		void handleTrigger(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSay(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleYell(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetWorldObjectState(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetSpawnState(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetRespawnState(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleCastSpell(const proto::TriggerAction &action, game::TriggerContext &context);
 
 	private:
 

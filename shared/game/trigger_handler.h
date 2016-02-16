@@ -34,6 +34,20 @@ namespace wowpp
 
 	namespace game
 	{
+		struct TriggerContext
+		{
+			/// Owner of the trigger or nullptr if none.
+			GameObject *owner;
+			/// Id of the spell that triggered this trigger with it's hit.
+			UInt32 spellHitId;
+
+			TriggerContext(GameObject* owner_)
+				: owner(owner_)
+				, spellHitId(0)
+			{
+			}
+		};
+
 		struct ITriggerHandler : boost::noncopyable
 		{
 			virtual ~ITriggerHandler() {};
@@ -42,7 +56,7 @@ namespace wowpp
 			/// @param entry The trigger to execute.
 			/// @param actionOffset The action to execute.
 			/// @param owner The executing owner. TODO: Replace by context object
-			virtual void executeTrigger(const proto::TriggerEntry &entry, UInt32 actionOffset = 0, GameObject *owner = nullptr) = 0;
+			virtual void executeTrigger(const proto::TriggerEntry &entry, TriggerContext context, UInt32 actionOffset = 0) = 0;
 		};
 	}
 }

@@ -22,6 +22,12 @@
 syntax = "proto2";
 package wowpp.proto;
 
+message TriggerCondition {
+	required uint32 type = 1;
+	optional uint32 value_1 = 2;
+	optional uint32 value_2 = 3;
+}
+
 message TriggerAction {
 	optional uint32 action = 1;
 	optional uint32 target = 2;
