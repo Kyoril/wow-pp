@@ -227,7 +227,15 @@ namespace wowpp
 				// Generate a new id for this item based on the characters world instance
 				auto newItemId = world->getItemIdGenerator().generateId();
 				item->setGuid(createEntryGUID(newItemId, entry.id(), wowpp::guid_type::Item));
-				item->setUInt64Value(item_fields::Contained, m_owner.getGuid());
+				if (isBagSlot(slot))
+				{
+					auto bagInst = getBagAtSlot(slot);
+					item->setUInt64Value(item_fields::Contained, bagInst ? bagInst->getGuid(): m_owner.getGuid());
+				}
+				else
+				{
+					item->setUInt64Value(item_fields::Contained, m_owner.getGuid());
+				}
 				item->setUInt64Value(item_fields::Owner, m_owner.getGuid());
 				
 				// Bind this item
@@ -522,6 +530,13 @@ namespace wowpp
 		if (isEquipmentSlot(slotA) || isInventorySlot(slotA) || isBagPackSlot(slotA))
 		{
 			m_owner.setUInt64Value(character_fields::InvSlotHead + (slotA & 0xFF) * 2, (dstItem ? dstItem->getGuid() : 0));
+
+			if (dstItem &&
+				dstItem->getUInt64Value(item_fields::Contained) != m_owner.getGuid())
+			{
+				dstItem->setUInt64Value(item_fields::Contained, m_owner.getGuid());
+				itemInstanceUpdated(dstItem, slotA);
+			}
 		}
 		else if (isBagSlot(slotA))
 		{
@@ -534,11 +549,24 @@ namespace wowpp
 
 			bag->setUInt64Value(bag_fields::Slot_1 + (slotA & 0xFF) * 2, (dstItem ? dstItem->getGuid() : 0));
 			itemInstanceUpdated(bag, getAbsoluteSlot(player_inventory_slots::Bag_0, slotA >> 8));
+
+			if (dstItem &&
+				dstItem->getUInt64Value(item_fields::Contained) != bag->getGuid())
+			{
+				dstItem->setUInt64Value(item_fields::Contained, bag->getGuid());
+				itemInstanceUpdated(dstItem, slotA);
+			}
 		}
 
 		if (isEquipmentSlot(slotB) || isInventorySlot(slotB) || isBagPackSlot(slotB))
 		{
 			m_owner.setUInt64Value(character_fields::InvSlotHead + (slotB & 0xFF) * 2, srcItem->getGuid());
+
+			if (srcItem->getUInt64Value(item_fields::Contained) != m_owner.getGuid())
+			{
+				srcItem->setUInt64Value(item_fields::Contained, m_owner.getGuid());
+				itemInstanceUpdated(srcItem, slotB);
+			}
 		}
 		else if(isBagSlot(slotB))
 		{
@@ -551,6 +579,12 @@ namespace wowpp
 
 			bag->setUInt64Value(bag_fields::Slot_1 + (slotB & 0xFF) * 2, srcItem->getGuid());
 			itemInstanceUpdated(bag, getAbsoluteSlot(player_inventory_slots::Bag_0, slotA >> 8));
+
+			if (srcItem->getUInt64Value(item_fields::Contained) != bag->getGuid())
+			{
+				srcItem->setUInt64Value(item_fields::Contained, bag->getGuid());
+				itemInstanceUpdated(srcItem, slotB);
+			}
 		}
 
 		// Adjust bag slots
@@ -640,7 +674,6 @@ namespace wowpp
 			}
 		}
 
-		ILOG("Free slots after swap: " << m_freeSlots);
 		return game::inventory_change_failure::Okay;
 	}
 	namespace
@@ -1126,6 +1159,7 @@ namespace wowpp
 				}
 				else
 				{
+					pair.second->setUInt64Value(item_fields::Contained, bag->getGuid());
 					bag->setUInt64Value(bag_fields::Slot_1 + ((pair.first & 0xFF) * 2), pair.second->getGuid());
 				}
 			}

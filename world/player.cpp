@@ -2236,8 +2236,6 @@ namespace wowpp
 	{
 		if (m_loot)
 		{
-			ILOG("Closing loot dialog");
-
 			// Notify the client
 			sendProxyPacket(
 				std::bind(game::server_write::lootReleaseResponse, std::placeholders::_1, m_loot->getLootGuid()));
