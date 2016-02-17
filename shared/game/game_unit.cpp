@@ -689,11 +689,11 @@ namespace wowpp
 					// Deal damage (Note: m_victim can become nullptr, if the target dies)
 					if (totalDamage > 0)
 					{
-						m_victim->takenMeleeAutoAttack(this);
+						victim->takenMeleeAutoAttack(this);
 						victim->dealDamage(totalDamage - resisted - absorbed, 0, this);
 
 						// Trigger auto attack procs
-						doneMeleeAutoAttack(m_victim);
+						doneMeleeAutoAttack(victim);
 					}
 				}
 			}
