@@ -203,6 +203,11 @@ namespace wowpp
 						}
 					}
 
+					if (header.nVertices == 0 || header.nViews == 0)
+					{
+						OGRE_EXCEPT(Ogre::Exception::ERR_INVALID_STATE, "M2MeshLoader: No mesh data found", "M2MeshLoader::loadResource");
+					}
+
 					// Setup vertex attribute declaration
 					Ogre::VertexDeclaration* decl = vertData->vertexDeclaration;
 					size_t offset = decl->addElement(0, 0, Ogre::VET_FLOAT3, Ogre::VES_POSITION).getSize();
@@ -249,7 +254,7 @@ namespace wowpp
 
 						// Read uv data and invert v
 						ptr->read(base, sizeof(float) * 2);
-						*(base + 1) = 1.0f - *(base + 1);
+						//*(base + 1) = 1.0f - *(base + 1);
 						base += 2;
 
 						// Skip unknown data
@@ -313,7 +318,7 @@ namespace wowpp
 							pass->removeAllTextureUnitStates();
 							pass->setSceneBlending(Ogre::SBF_ONE, Ogre::SBF_ONE_MINUS_DEST_ALPHA);
 
-							String textureToUse = "CREATURE\\Kobold\\koboldskinNormal.blp";
+							String textureToUse;
 							for (const auto &str : textureNames)
 							{
 								if (!str.empty())
@@ -323,8 +328,15 @@ namespace wowpp
 								}
 							}
 
-							auto *texUnit = pass->createTextureUnitState();
-							texUnit->setTextureName(textureToUse);
+							if (!textureToUse.empty())
+							{
+								auto *texUnit = pass->createTextureUnitState();
+								texUnit->setTextureName(textureToUse);
+							}
+							else
+							{
+								pass->setDiffuse(0.0f, 1.0f, 0.0f, 1.0f);
+							}
 
 							// Create a new submesh
 							Ogre::SubMesh *subMesh = mesh->createSubMesh();

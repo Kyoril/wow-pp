@@ -123,95 +123,9 @@ namespace wowpp
 				camera->pitch(Ogre::Degree(-45.0f));
 
 				std::unique_ptr<WorldEditor> scene(
-					new WorldEditor(*sceneMgr, *camera, *entry, m_application.getProject()));
+					new WorldEditor(m_application, *sceneMgr, *camera, *entry, m_application.getProject()));
 				m_ogreWindow->setScene(std::move(scene));
-				/*
-				std::unique_ptr<Map> mapInst(new Map(
-					*entry, m_application.getConfiguration().dataPath));
-				auto *tile = mapInst->getTile(TileIndex2D(32, 32));
-				if (!tile)
-				{
-					return;
-				}
-
-				auto material = Ogre::MaterialManager::getSingleton().createOrRetrieve("LineOfSightBlock", "General", true);
-				Ogre::MaterialPtr matPtr = material.first.dynamicCast<Ogre::Material>();
-				matPtr->removeAllTechniques();
-				auto *teq = matPtr->createTechnique();
-				teq->removeAllPasses();
-				teq->setCullingMode(Ogre::CULL_NONE);
-				teq->setManualCullingMode(Ogre::ManualCullingMode::MANUAL_CULL_NONE);
-				auto *pass = teq->createPass();
-				pass->setPolygonMode(Ogre::PM_SOLID);
-				pass->setVertexColourTracking(Ogre::TVC_DIFFUSE);
-				pass = teq->createPass();
-				pass->setPolygonMode(Ogre::PM_WIREFRAME);
-				pass->setSceneBlending(Ogre::SceneBlendType::SBT_MODULATE);
-				pass->setDiffuse(0.0f, 0.0f, 0.0f, 1.0f);
-				pass->setAmbient(0.0f, 0.0f, 0.0f);
-
-				const UInt32 collisionTriIndex = 0;
-
-				Ogre::Vector3 vMin = Ogre::Vector3(99999.0f, 99999.0f, 99999.0f);
-				Ogre::Vector3 vMax = Ogre::Vector3(-99999.0f, -99999.0f, -99999.0f);
-
-				// Create collision for this map
-				Ogre::ManualObject *obj = sceneMgr->createManualObject();
-				obj->begin("LineOfSightBlock", Ogre::RenderOperation::OT_TRIANGLE_LIST);
-				obj->estimateVertexCount(tile->collision.vertexCount);
-				obj->estimateIndexCount(tile->collision.triangleCount * 3);
-				for (auto &vert : tile->collision.vertices)
-				{
-					if (vert.x < vMin.x) vMin.x = vert.x;
-					if (vert.y < vMin.y) vMin.y = vert.y;
-					if (vert.z < vMin.z) vMin.z = vert.z;
-
-					if (vert.x > vMax.x) vMax.x = vert.x;
-					if (vert.y > vMax.y) vMax.y = vert.y;
-					if (vert.z > vMax.z) vMax.z = vert.z;
-
-					obj->position(vert.x, vert.y, vert.z);
-					obj->colour(Ogre::ColourValue(0.5f, 0.5f, 0.5f));
-				}
-				UInt32 triIndex = 0;
-				for (auto &tri : tile->collision.triangles)
-				{
-					if (triIndex != collisionTriIndex)
-					{
-						obj->index(tri.indexA);
-						obj->index(tri.indexB);
-						obj->index(tri.indexC);
-					}
-					triIndex++;
-				}
-				obj->end();
-
-				if (tile->collision.triangles.size() > triIndex)
-				{
-					obj->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_TRIANGLE_LIST);
-					auto &tri = tile->collision.triangles[collisionTriIndex];
-					auto &vA = tile->collision.vertices[tri.indexA];
-					auto &vB = tile->collision.vertices[tri.indexB];
-					auto &vC = tile->collision.vertices[tri.indexC];
-					obj->position(vA.x, vA.y, vA.z);
-					obj->colour(Ogre::ColourValue::Red);
-					obj->position(vB.x, vB.y, vB.z);
-					obj->colour(Ogre::ColourValue::Red);
-					obj->position(vC.x, vC.y, vC.z);
-					obj->colour(Ogre::ColourValue::Red);
-					obj->triangle(0, 1, 2);
-					obj->end();
-				}
-				
-				//camera->setPosition(vA.x, vA.y, vA.z);
-				camera->setFarClipDistance(1000.0f);
-
-				Ogre::SceneNode *child = sceneMgr->getRootSceneNode()->createChildSceneNode();
-				child->attachObject(obj);
-				child->showBoundingBox(true);
-				*/
 			}
 		}
-
 	}
 }

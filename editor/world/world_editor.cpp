@@ -11,13 +11,17 @@
 #include "OgreSceneManager.h"
 #include "OgreSceneNode.h"
 #include "ogre_wrappers/ogre_m2_loader.h"
+#include "ogre_wrappers/ogre_dbc_file_manager.h"
+#include "game/map.h"
+#include "editor_application.h"
 
 namespace wowpp
 {
 	namespace editor
 	{
-		WorldEditor::WorldEditor(Ogre::SceneManager &sceneMgr, Ogre::Camera &camera, proto::MapEntry &map, proto::Project &project)
-			: m_sceneMgr(sceneMgr)
+		WorldEditor::WorldEditor(EditorApplication &app, Ogre::SceneManager &sceneMgr, Ogre::Camera &camera, proto::MapEntry &map, proto::Project &project)
+			: m_app(app)
+			, m_sceneMgr(sceneMgr)
 			, m_camera(camera)
 			, m_map(map)
 			, m_work(new boost::asio::io_service::work(m_workQueue))
@@ -39,53 +43,169 @@ namespace wowpp
 				m_camera.setPosition(spawn->positionx(), spawn->positiony(), spawn->positionz() + 5.0f);
 			}
 
-			Ogre::String realFileName = "CREATURE\\Furbolg\\Furbolg.m2";
-			/*
 			// Spawn all entities
 			UInt32 i = 0;
 			for (const auto &spawn : m_map.unitspawns())
 			{
+				const auto *unit = m_project.units.getById(spawn.unitentry());
+				assert(unit);
+
+				OgreDBCFilePtr displayDbc = OgreDBCFileManager::getSingleton().load("DBFilesClient\\CreatureDisplayInfo.dbc", "WoW");
+				UInt32 row = displayDbc->getRowByIndex(unit->malemodel());
+				if (row == UInt32(-1))
+				{
+					WLOG("Could not find creature display id " << unit->malemodel());
+					continue;
+				}
+
+				UInt32 modelId = displayDbc->getField<UInt32>(row, 1);
+				UInt32 textureId = displayDbc->getField<UInt32>(row, 3);
+
+				OgreDBCFilePtr modelDbc = OgreDBCFileManager::getSingleton().load("DBFilesClient\\CreatureModelData.dbc", "WoW");
+				UInt32 modelRow = modelDbc->getRowByIndex(modelId);
+				if (modelRow == UInt32(-1))
+				{
+					WLOG("Could not find model id");
+					continue;
+				}
+
+				String base, ext, path;
+				String text = modelDbc->getField(modelRow, 2);
+				Ogre::StringUtil::splitFullFilename(text, base, ext, path);
+				std::replace(path.begin(), path.end(), '/', '\\');
+				String dbcSkin = displayDbc->getField(row, 6);
+				String skin;
+				if (!dbcSkin.empty())
+				{
+					skin = path + dbcSkin + ".blp";
+				}
+
+				Ogre::String realFileName = path + base + ".m2";
+
 				Ogre::MeshPtr mesh;
 				if (!Ogre::MeshManager::getSingleton().resourceExists(realFileName))
 				{
-					mesh = Ogre::MeshManager::getSingleton().createManual(realFileName, "WoW", new editor::M2MeshLoader(realFileName));
-					mesh->load();
+					try
+					{
+						mesh = Ogre::MeshManager::getSingleton().createManual(realFileName, "WoW", new editor::M2MeshLoader(realFileName));
+						mesh->load();
+					}
+					catch (const Ogre::Exception &)
+					{
+						// Next!
+						continue;
+					}
 				}
 				else
 				{
 					mesh = Ogre::MeshManager::getSingleton().getByName(realFileName, "WoW");
 				}
 
-				Ogre::Entity *ent = m_sceneMgr.createEntity("Spawn_" + Ogre::StringConverter::toString(i++), mesh);
-				Ogre::SceneNode *node = m_sceneMgr.getRootSceneNode()->createChildSceneNode();
-				node->attachObject(ent);
-				node->setPosition(spawn.positionx(), spawn.positiony(), spawn.positionz());
-				node->setOrientation(Ogre::Quaternion(Ogre::Radian(spawn.rotation()), Ogre::Vector3::UNIT_Z));
+				try
+				{
+					Ogre::Entity *ent = m_sceneMgr.createEntity("Spawn_" + Ogre::StringConverter::toString(i++), mesh);
+					if (textureId != 0)
+					{
+						OgreDBCFilePtr textureDbc = OgreDBCFileManager::getSingleton().load("DBFilesClient\\CreatureDisplayInfoExtra.dbc", "WoW");
+						UInt32 textureRow = textureDbc->getRowByIndex(textureId);
+						if (textureRow == UInt32(-1))
+						{
+							WLOG("Could not find texture id " << textureId);
+						}
+						else
+						{
+							skin = "textures\\BakedNpcTextures\\" + textureDbc->getField(textureRow, 20);
+						}
+					}
+
+					if (!skin.empty())
+					{
+						for (UInt32 i = 0; i < ent->getNumSubEntities(); ++i)
+						{
+							auto *subEnt = ent->getSubEntity(i);
+							auto *pass = subEnt->getMaterial()->getTechnique(0)->getPass(0);
+							pass->setDiffuse(1.0f, 1.0f, 1.0f, 1.0f);
+							if (pass->getNumTextureUnitStates() == 0)
+							{
+								pass->createTextureUnitState();
+							}
+
+							auto *texState = pass->getTextureUnitState(0);
+							texState->setTextureName(skin);
+						}
+					}
+
+					Ogre::SceneNode *node = m_sceneMgr.getRootSceneNode()->createChildSceneNode();
+					node->attachObject(ent);
+					node->setPosition(spawn.positionx(), spawn.positiony(), spawn.positionz());
+					node->setOrientation(Ogre::Quaternion(Ogre::Radian(spawn.rotation()), Ogre::Vector3::UNIT_Z));
+					
+				}
+				catch (const Ogre::Exception &)
+				{
+					continue;
+				}
 			}
 
-			Ogre::String objectFileName = "WORLD\\GENERIC\\HUMAN\\ACTIVEDOODADS\\DOORS\\DEADMINEDOOR01.M2";
-			
 			i = 0;
 			for (const auto &spawn : m_map.objectspawns())
 			{
+				const auto *object = m_project.objects.getById(spawn.objectentry());
+				assert(unit);
+
+				OgreDBCFilePtr displayDbc = OgreDBCFileManager::getSingleton().load("DBFilesClient\\GameObjectDisplayInfo.dbc", "WoW");
+				UInt32 row = displayDbc->getRowByIndex(object->displayid());
+				if (row == UInt32(-1))
+				{
+					WLOG("Could not find object display id " << object->displayid());
+					continue;
+				}
+
+				String objectFileName = displayDbc->getField(row, 1);
+				if (objectFileName.empty())
+				{
+					WLOG("Could not find object display ID file!");
+					continue;
+				}
+
+				std::replace(objectFileName.begin(), objectFileName.end(), '/', '\\');
+
+				String base, ext;
+				Ogre::StringUtil::splitBaseFilename(objectFileName, base, ext);
+				objectFileName = base + ".m2";
+
 				Ogre::MeshPtr mesh;
 				if (!Ogre::MeshManager::getSingleton().resourceExists(objectFileName))
 				{
-					mesh = Ogre::MeshManager::getSingleton().createManual(objectFileName, "WoW", new editor::M2MeshLoader(objectFileName));
-					mesh->load();
+					try
+					{
+						mesh = Ogre::MeshManager::getSingleton().createManual(objectFileName, "WoW", new editor::M2MeshLoader(objectFileName));
+						mesh->load();
+					}
+					catch (const Ogre::Exception &)
+					{
+						continue;
+					}
 				}
 				else
 				{
 					mesh = Ogre::MeshManager::getSingleton().getByName(objectFileName, "WoW");
 				}
 
-				Ogre::Entity *ent = m_sceneMgr.createEntity("ObjSpawn_" + Ogre::StringConverter::toString(i++), mesh);
-				Ogre::SceneNode *node = m_sceneMgr.getRootSceneNode()->createChildSceneNode();
-				node->attachObject(ent);
-				node->setPosition(spawn.positionx(), spawn.positiony(), spawn.positionz());
-				node->setOrientation(Ogre::Quaternion(spawn.rotationz(), spawn.rotationw(), spawn.rotationx(), spawn.rotationy()));
+				try
+				{
+					Ogre::Entity *ent = m_sceneMgr.createEntity("ObjSpawn_" + Ogre::StringConverter::toString(i++), mesh);
+					Ogre::SceneNode *node = m_sceneMgr.getRootSceneNode()->createChildSceneNode();
+					node->attachObject(ent);
+					node->setPosition(spawn.positionx(), spawn.positiony(), spawn.positionz());
+					node->setOrientation(Ogre::Quaternion(spawn.rotationz(), spawn.rotationw(), spawn.rotationx(), spawn.rotationy()));
+				}
+				catch (const Ogre::Exception &)
+				{
+					continue;
+				}
 			}
-			*/
+
 			const Ogre::Vector3 &camPos = m_camera.getDerivedPosition();
 			float convertedX = (constants::MapWidth * 32.0f) + camPos.x;
 			float convertedY = (constants::MapWidth * 32.0f) + camPos.y;
@@ -194,6 +314,9 @@ namespace wowpp
 			auto &mainPage = pages.getMainPage();
 			const auto &pos = mainPage.getPosition();
 
+			std::ostringstream objName;
+			objName << "TILE_" << pos;
+
 			if (isAvailable)
 			{
 				// Add the page if needed
@@ -205,6 +328,57 @@ namespace wowpp
 					add.added.page = &m_pages[pos];
 					add.added.position = pos;
 					m_worldRenderer->handleEvent(terrain::editing::TerrainChangeEvent(add));
+
+					ILOG("Loading tile " << pos);
+					std::unique_ptr<Map> mapInst(new Map(
+						m_map, m_app.getConfiguration().dataPath));
+					auto *tile = mapInst->getTile(TileIndex2D(pos[0], pos[1]));
+					if (!tile)
+					{
+						WLOG("Could not load tile!");
+						return;
+					}
+
+					if (tile->collision.triangleCount == 0)
+					{
+						WLOG("No collision triangles");
+						return;
+					}
+
+					Ogre::Vector3 vMin = Ogre::Vector3(99999.0f, 99999.0f, 99999.0f);
+					Ogre::Vector3 vMax = Ogre::Vector3(-99999.0f, -99999.0f, -99999.0f);
+
+					// Create collision for this map
+					Ogre::ManualObject *obj = m_sceneMgr.createManualObject(objName.str());
+					obj->begin("LineOfSightBlock", Ogre::RenderOperation::OT_TRIANGLE_LIST);
+					obj->estimateVertexCount(tile->collision.vertexCount);
+					obj->estimateIndexCount(tile->collision.triangleCount * 3);
+					for (auto &vert : tile->collision.vertices)
+					{
+						if (vert.x < vMin.x) vMin.x = vert.x;
+						if (vert.y < vMin.y) vMin.y = vert.y;
+						if (vert.z < vMin.z) vMin.z = vert.z;
+
+						if (vert.x > vMax.x) vMax.x = vert.x;
+						if (vert.y > vMax.y) vMax.y = vert.y;
+						if (vert.z > vMax.z) vMax.z = vert.z;
+
+						obj->position(vert.x, vert.y, vert.z);
+						obj->colour(Ogre::ColourValue(0.5f, 0.5f, 0.5f));
+					}
+
+					UInt32 triIndex = 0;
+					for (auto &tri : tile->collision.triangles)
+					{
+						obj->index(tri.indexA);
+						obj->index(tri.indexB);
+						obj->index(tri.indexC);
+						triIndex++;
+					}
+					obj->end();
+
+					Ogre::SceneNode *child = m_sceneMgr.getRootSceneNode()->createChildSceneNode(objName.str());
+					child->attachObject(obj);
 				}
 			}
 			else
@@ -220,6 +394,21 @@ namespace wowpp
 
 					// Remove page from list
 					m_pages.erase(it);
+
+					if (m_sceneMgr.hasSceneNode(objName.str()))
+					{
+						auto *node = m_sceneMgr.getSceneNode(objName.str());
+						if (node)
+						{
+							node->removeAndDestroyAllChildren();
+							m_sceneMgr.destroySceneNode(node);
+						}
+					}
+
+					if (m_sceneMgr.hasManualObject(objName.str()))
+					{
+						m_sceneMgr.destroyManualObject(objName.str());
+					}
 				}
 			}
 		}

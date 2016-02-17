@@ -22,7 +22,10 @@
 #include "qt_ogre_window.h"
 #include "ogre_blp_codec.h"
 #include "ogre_mpq_archive.h"
+#include "ogre_dbc_file_manager.h"
+#include "common/make_unique.h"
 #include <QPainter>
+#include "log/default_log_levels.h"
 
 QtOgreWindow::QtOgreWindow(QWindow *parent /*= nullptr*/)
 	: QWindow(parent)
@@ -188,6 +191,9 @@ void QtOgreWindow::initialize()
 		Ogre::Real(m_ogreWindow->getWidth()) / Ogre::Real(m_ogreWindow->getHeight()));
 	m_ogreCamera->setAutoAspectRatio(true);
 
+	// Initialize dbc file manager
+	OGRE_NEW wowpp::OgreDBCFileManager();
+
 	Ogre::TextureManager::getSingleton().setDefaultNumMipmaps(5);
 	Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
 
@@ -196,6 +202,22 @@ void QtOgreWindow::initialize()
 	createScene();
 
 	m_ogreRoot->addFrameListener(this);
+
+	auto material = Ogre::MaterialManager::getSingleton().createOrRetrieve("LineOfSightBlock", "General", true);
+	Ogre::MaterialPtr matPtr = material.first.dynamicCast<Ogre::Material>();
+	matPtr->removeAllTechniques();
+	auto *teq = matPtr->createTechnique();
+	teq->removeAllPasses();
+	teq->setCullingMode(Ogre::CULL_NONE);
+	teq->setManualCullingMode(Ogre::ManualCullingMode::MANUAL_CULL_NONE);
+	auto *pass = teq->createPass();
+	pass->setPolygonMode(Ogre::PM_SOLID);
+	pass->setVertexColourTracking(Ogre::TVC_DIFFUSE);
+	pass = teq->createPass();
+	pass->setPolygonMode(Ogre::PM_WIREFRAME);
+	pass->setSceneBlending(Ogre::SceneBlendType::SBT_MODULATE);
+	pass->setDiffuse(0.0f, 0.0f, 0.0f, 1.0f);
+	pass->setAmbient(0.0f, 0.0f, 0.0f);
 }
 
 void QtOgreWindow::createScene()
@@ -263,7 +285,14 @@ void QtOgreWindow::renderNow()
 		initialize();
 	}
 
-	render();
+	try
+	{
+		render();
+	}
+	catch (const Ogre::Exception &)
+	{
+
+	}
 
 	if (m_animating)
 		renderLater();
@@ -299,6 +328,41 @@ void QtOgreWindow::keyReleaseEvent(QKeyEvent *e)
 
 void QtOgreWindow::mouseMoveEvent(QMouseEvent *e)
 {
+	if (e->buttons() & Qt::LeftButton)
+	{
+		QPointF delta = e->localPos() - m_clickPos;
+		if (!delta.isNull())
+		{
+			Ogre::Rect r;
+
+			if (std::signbit(delta.x()))
+			{
+				r.left = static_cast<long>(m_clickPos.x());
+				r.right = static_cast<long>(e->localPos().x());
+			}
+			else
+			{
+				r.left = static_cast<long>(e->localPos().x());
+				r.right = static_cast<long>(m_clickPos.x());
+			}
+
+			if (std::signbit(delta.y()))
+			{
+				r.top = static_cast<long>(m_clickPos.y());
+				r.bottom = static_cast<long>(e->localPos().y());
+			}
+			else
+			{
+				r.top = static_cast<long>(e->localPos().y());
+				r.bottom = static_cast<long>(m_clickPos.y());
+			}
+
+			m_selectionBox->setRectangle(r);
+		}
+
+		return;
+	}
+
 	static int lastX = e->x();
 	static int lastY = e->y();
 	int relX = e->x() - lastX;
@@ -306,7 +370,7 @@ void QtOgreWindow::mouseMoveEvent(QMouseEvent *e)
 	lastX = e->x();
 	lastY = e->y();
 
-	if (m_cameraMan && (e->buttons() & Qt::LeftButton))
+	if (m_cameraMan && (e->buttons() & Qt::RightButton))
 		m_cameraMan->injectMouseMove(relX, relY);
 }
 
@@ -318,12 +382,28 @@ void QtOgreWindow::wheelEvent(QWheelEvent *e)
 
 void QtOgreWindow::mousePressEvent(QMouseEvent *e)
 {
+	if (e->button() == Qt::LeftButton)
+	{
+		m_clickPos = e->localPos();
+
+		// Create selection box
+		m_selectionBox = wowpp::make_unique<wowpp::editor::SelectionBox>(
+			*m_ogreSceneMgr, *m_ogreCamera
+			);
+	}
+
 	if (m_cameraMan)
 		m_cameraMan->injectMouseDown(*e);
 }
 
 void QtOgreWindow::mouseReleaseEvent(QMouseEvent *e)
 {
+	if (e->button() == Qt::LeftButton)
+	{
+		// Clear selection rect
+		m_selectionBox.reset();
+	}
+
 	if (m_cameraMan)
 		m_cameraMan->injectMouseUp(*e);
 

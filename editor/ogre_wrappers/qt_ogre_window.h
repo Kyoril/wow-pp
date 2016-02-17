@@ -28,6 +28,7 @@
 #include <memory>
 #include <utility>
 #include "camera_manager.h"
+#include "selection_box.h"
 
 namespace wowpp
 {
@@ -87,6 +88,8 @@ protected:
 	wowpp::editor::MPQArchiveFactory *m_mpqArchives;
 	bool m_updatePending;
 	bool m_animating;
+	std::unique_ptr<wowpp::editor::SelectionBox> m_selectionBox;
+	QPointF m_clickPos;
 
 	virtual void keyPressEvent(QKeyEvent *e);
 	virtual void keyReleaseEvent(QKeyEvent *e);

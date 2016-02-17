@@ -31,11 +31,13 @@ namespace wowpp
 
 	namespace editor
 	{
+		class EditorApplication;
+
 		class WorldEditor final : public paging::IPageLoaderListener, public IScene
 		{
 		public:
 
-			explicit WorldEditor(Ogre::SceneManager &sceneMgr, Ogre::Camera &camera, proto::MapEntry &map, proto::Project &project);
+			explicit WorldEditor(EditorApplication &app, Ogre::SceneManager &sceneMgr, Ogre::Camera &camera, proto::MapEntry &map, proto::Project &project);
 			~WorldEditor();
 
 			void update(float delta) override;
@@ -54,6 +56,7 @@ namespace wowpp
 
 		private:
 
+			EditorApplication &m_app;
 			Ogre::SceneManager &m_sceneMgr;
 			Ogre::Camera &m_camera;
 			proto::MapEntry &m_map;
