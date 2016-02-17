@@ -7,6 +7,7 @@ struct SOut
 	float3 out_Normal	: TEXCOORD2;
 	float4 out_LightPos	: TEXCOORD3;
 	float3 out_EyePos	: TEXCOORD4;
+	float out_Fog		: FOG;
 };
 
 SOut main(	float4 position : POSITION,
@@ -16,7 +17,8 @@ SOut main(	float4 position : POSITION,
 			uniform float3		g_eyePosition,
 			uniform float4		g_lightPosition,
 			uniform float4x4	g_WorldViewprojMatrix,
-			uniform float4x4	g_TexMatrix
+			uniform float4x4	g_TexMatrix,
+			uniform float4      g_fogSettings
 			)
 {
 	SOut output;
@@ -28,6 +30,10 @@ SOut main(	float4 position : POSITION,
 	output.out_Normal = normal;
 	output.out_LightPos = g_lightPosition;
 	output.out_EyePos = g_eyePosition;
+	
+	float dist = length(output.out_Pos - output.out_EyePos);
+    float fog = clamp((dist - g_fogSettings.y) * g_fogSettings.w, 0.0, 1.0);
+    output.out_Fog = fog;
 	
 	return output;
 }

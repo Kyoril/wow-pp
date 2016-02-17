@@ -104,6 +104,7 @@ namespace wowpp
 				try
 				{
 					Ogre::Entity *ent = m_sceneMgr.createEntity("Spawn_" + Ogre::StringConverter::toString(i++), mesh);
+					m_spawnEntities.push_back(ogre_utils::EntityPtr(ent));
 					if (textureId != 0)
 					{
 						OgreDBCFilePtr textureDbc = OgreDBCFileManager::getSingleton().load("DBFilesClient\\CreatureDisplayInfoExtra.dbc", "WoW");
@@ -139,7 +140,7 @@ namespace wowpp
 					node->attachObject(ent);
 					node->setPosition(spawn.positionx(), spawn.positiony(), spawn.positionz());
 					node->setOrientation(Ogre::Quaternion(Ogre::Radian(spawn.rotation()), Ogre::Vector3::UNIT_Z));
-					
+					m_spawnNodes.push_back(ogre_utils::SceneNodePtr(node));
 				}
 				catch (const Ogre::Exception &)
 				{
@@ -195,10 +196,12 @@ namespace wowpp
 				try
 				{
 					Ogre::Entity *ent = m_sceneMgr.createEntity("ObjSpawn_" + Ogre::StringConverter::toString(i++), mesh);
+					m_spawnEntities.push_back(ogre_utils::EntityPtr(ent));
 					Ogre::SceneNode *node = m_sceneMgr.getRootSceneNode()->createChildSceneNode();
 					node->attachObject(ent);
 					node->setPosition(spawn.positionx(), spawn.positiony(), spawn.positionz());
 					node->setOrientation(Ogre::Quaternion(spawn.rotationz(), spawn.rotationw(), spawn.rotationx(), spawn.rotationy()));
+					m_spawnNodes.push_back(ogre_utils::SceneNodePtr(node));
 				}
 				catch (const Ogre::Exception &)
 				{
@@ -244,6 +247,9 @@ namespace wowpp
             m_light->setType(Ogre::Light::LT_DIRECTIONAL);
             m_light->setDirection(Ogre::Vector3(0.0f, 0.5f, -0.5f).normalisedCopy());
 			m_sceneMgr.getRootSceneNode()->attachObject(m_light);
+			m_camera.setFarClipDistance(533.3333f);
+			m_sceneMgr.setFog(Ogre::FOG_LINEAR, m_camera.getViewport()->getBackgroundColour(),
+				0.001f, 450.0f, 512.0f);
 		}
 
 		WorldEditor::~WorldEditor()

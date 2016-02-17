@@ -218,6 +218,7 @@ void QtOgreWindow::initialize()
 	pass->setSceneBlending(Ogre::SceneBlendType::SBT_MODULATE);
 	pass->setDiffuse(0.0f, 0.0f, 0.0f, 1.0f);
 	pass->setAmbient(0.0f, 0.0f, 0.0f);
+	pass->setFog(false);
 }
 
 void QtOgreWindow::createScene()

@@ -14,6 +14,7 @@
 #include <boost/thread.hpp>
 #include <QMouseEvent>
 #include "ogre_wrappers/qt_ogre_window.h"
+#include "ogre_wrappers/entity_ptr.h"
 
 namespace Ogre
 {
@@ -71,6 +72,8 @@ namespace wowpp
 			std::map<paging::PagePosition, terrain::model::Page> m_pages;
             Ogre::Light *m_light;
 			proto::Project &m_project;
+			std::vector<wowpp::ogre_utils::SceneNodePtr> m_spawnNodes;
+			std::vector<wowpp::ogre_utils::EntityPtr> m_spawnEntities;
 		};
 	}
 }
