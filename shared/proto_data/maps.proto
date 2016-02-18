@@ -54,6 +54,7 @@ message ObjectSpawnEntry {
 	optional uint32 maxcount = 14 [default = 1];
 	required uint32 objectentry = 15;
 	optional bool isactive = 16 [default = true];
+	optional float orientation = 17;
 }
 
 message MapEntry {

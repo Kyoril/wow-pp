@@ -151,7 +151,7 @@ namespace wowpp
 				spawn.maxcount(),
 				spawn.respawndelay(),
 				math::Vector3(spawn.positionx(), spawn.positiony(), spawn.positionz()),
-				0.0f, //TODO spawn.orientation,
+				spawn.orientation(),
 				{ spawn.rotationw(), spawn.rotationx(), spawn.rotationy(), spawn.rotationz() },
 				spawn.radius(),
 				spawn.animprogress(),

@@ -69,6 +69,7 @@ namespace wowpp
 		setFloatValue(world_object_fields::PosY, location.y);
 		setFloatValue(world_object_fields::PosZ, location.z);
 		setFloatValue(world_object_fields::Facing, o);
+		if (m_entry.id() == 161557) DLOG("INITIALIZE: SET FACING TO " << o);
 		setFloatValue(world_object_fields::Rotation + 2, sin(o / 2.0f));
 		setFloatValue(world_object_fields::Rotation + 3, cos(o / 2.0f));
 

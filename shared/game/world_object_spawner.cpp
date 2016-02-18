@@ -87,8 +87,14 @@ namespace wowpp
 		spawned->setFloatValue(object_fields::ScaleX, m_entry.scale());
 		spawned->setFloatValue(world_object_fields::Rotation + 0, m_rotation[0]);
 		spawned->setFloatValue(world_object_fields::Rotation + 1, m_rotation[1]);
-		spawned->setFloatValue(world_object_fields::Rotation + 2, sinf(o / 2.0f));
-		spawned->setFloatValue(world_object_fields::Rotation + 3, cosf(o / 2.0f));
+		float rot2 = m_rotation[2], rot3 = m_rotation[3];
+		if (rot2 == 0.0f && rot3 == 0.0f)
+		{
+			rot2 = sin(o / 2);
+			rot3 = cos(o / 2);
+		}
+		spawned->setFloatValue(world_object_fields::Rotation + 2, rot2);
+		spawned->setFloatValue(world_object_fields::Rotation + 3, rot3);
 		spawned->setFloatValue(world_object_fields::Facing, o);
 		spawned->setUInt32Value(world_object_fields::AnimProgress, m_animProgress);
 		spawned->setUInt32Value(world_object_fields::State, m_state);

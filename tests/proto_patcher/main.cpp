@@ -1017,6 +1017,23 @@ namespace wowpp
 		return true;
 	}
 
+	static bool fixObjectOrientation(proto::Project &project)
+	{
+		// First lets find the deadmines map
+		auto *map = project.maps.getById(36);
+		if (!map)
+		{
+			WLOG("Could not find deadmines map");
+			return false;
+		}
+
+		// Now lets iterate through all object spawns and see if we find some which we know
+		for (auto &spawn : *map->mutable_objectspawns())
+		{
+			spawn.set_orientation(asin(spawn.rotationy()));
+		}
+	}
+
 	static bool fixDeadminesObjects(proto::Project &project)
 	{
 		// First lets find the deadmines map
@@ -1167,6 +1184,10 @@ int main(int argc, char* argv[])
 	if (!importTrainerLinks(protoProject, connection))
 	{
 		ELOG("Failed to import trainer links");
+		return 1;
+	}
+	if (!fixObjectOrientation(protoProject))
+	{
 		return 1;
 	}
 

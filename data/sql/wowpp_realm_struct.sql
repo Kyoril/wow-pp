@@ -44,7 +44,7 @@ CREATE TABLE `character` (
   `home_z` double NOT NULL,
   `home_o` double NOT NULL,
   `explored_zones` longtext COLLATE latin1_german1_ci,
-  `last_save` bigint(20)
+  `last_save` bigint(20),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
 

@@ -396,18 +396,18 @@ namespace wowpp
 						writer 
 							<< io::write<NetUInt16>(1 | 8)
 							<< io::write<NetUInt16>(-1);
-						//ILOG("\tWORLD OBJECT FIELD " << index << ": 0x" << std::hex << std::uppercase << UInt32(UInt32(1 | 8) | UInt32(UInt16(-1) << 16)));
+//						ILOG("\tWORLD OBJECT FIELD " << index << ": 0x" << std::hex << std::uppercase << UInt32(UInt32(1 | 8) | UInt32(UInt16(-1) << 16)));
 					}
 					else
 					{
-						//ILOG("\tWORLD OBJECT FIELD " << index << ": 0x" << std::hex << std::uppercase << 0);
+//						ILOG("\tWORLD OBJECT FIELD " << index << ": 0x" << std::hex << std::uppercase << 0);
 						writer << io::write<NetUInt32>(0);
 					}
 					break;
 				}
 				default:
 				{
-					//ILOG("\tWORLD OBJECT FIELD " << index << ": 0x" << std::hex << std::uppercase << m_values[index]);
+//					ILOG("\tWORLD OBJECT FIELD " << index << ": 0x" << std::hex << std::uppercase << m_values[index]);
 					writer << io::write<NetUInt32>(m_values[index]);
 					break;
 				}
@@ -429,6 +429,10 @@ namespace wowpp
 		if (creation)
 		{
 			const bool isWorldGO = isWorldObject();
+//			if (isWorldGO)
+//			{
+//				ILOG("CREATE_OBJECT_VALUES");
+//			}
 
 			// Create a new bitset which has set all bits to one where the field value
 			// isn't equal to 0, since this will be for a CREATE_OBJECT block (spawn) and not
