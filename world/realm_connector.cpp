@@ -571,6 +571,7 @@ namespace wowpp
 #define WOWPP_HANDLE_PACKET(name) \
 			case wowpp::game::client_packet::name: \
 			{ \
+				ILOG("CLIENT PACKET " #name " (0x" << std::hex << wowpp::game::client_packet::name << ")"); \
 				handle##name(*sender, clientPacket); \
 				break; \
 			}
@@ -596,6 +597,7 @@ namespace wowpp
 #define WOWPP_HANDLE_PLAYER_PACKET(name) \
 			case wowpp::game::client_packet::name: \
 			{ \
+				ILOG("CLIENT PACKET " #name " (0x" << std::hex << wowpp::game::client_packet::name << ")"); \
 				sender->handle##name(clientPacket); \
 				break; \
 			}

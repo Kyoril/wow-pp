@@ -28,8 +28,8 @@ namespace wowpp
 		: GameItem(project, entry)
 	{
 		// Resize values field
-		m_values.resize(bag_fields::BagFieldCount);
-		m_valueBitset.resize((bag_fields::BagFieldCount + 31) / 32);
+		m_values.resize(bag_fields::BagFieldCount, 0);
+		m_valueBitset.resize((bag_fields::BagFieldCount + 31) / 32, 0);
 
 		// 2.3.2 - 0x18
 		m_objectType |= type_mask::Container;

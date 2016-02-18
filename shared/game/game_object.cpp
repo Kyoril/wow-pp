@@ -396,15 +396,18 @@ namespace wowpp
 						writer 
 							<< io::write<NetUInt16>(1 | 8)
 							<< io::write<NetUInt16>(-1);
+						//ILOG("\tWORLD OBJECT FIELD " << index << ": 0x" << std::hex << std::uppercase << UInt32(UInt32(1 | 8) | UInt32(UInt16(-1) << 16)));
 					}
 					else
 					{
+						//ILOG("\tWORLD OBJECT FIELD " << index << ": 0x" << std::hex << std::uppercase << 0);
 						writer << io::write<NetUInt32>(0);
 					}
 					break;
 				}
 				default:
 				{
+					//ILOG("\tWORLD OBJECT FIELD " << index << ": 0x" << std::hex << std::uppercase << m_values[index]);
 					writer << io::write<NetUInt32>(m_values[index]);
 					break;
 				}
@@ -625,7 +628,7 @@ namespace wowpp
 			}
 			if (object.getTypeId() == object_type::GameObject)
 			{
-				UInt32 objType = object.getUInt32Value(object_fields::ObjectFieldCount + 0x0F);
+				UInt32 objType = object.getUInt32Value(world_object_fields::TypeID);
 				switch (objType)
 				{
 				case 6:

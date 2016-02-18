@@ -29,8 +29,8 @@ namespace wowpp
 		, m_entry(entry)
 	{
 		// Resize values field
-		m_values.resize(item_fields::ItemFieldCount);
-		m_valueBitset.resize((item_fields::ItemFieldCount + 31) / 32);
+		m_values.resize(item_fields::ItemFieldCount, 0);
+		m_valueBitset.resize((item_fields::ItemFieldCount + 31) / 32, 0);
 
 		// 2.3.2 - 0x18
 		m_objectType |= type_mask::Item;

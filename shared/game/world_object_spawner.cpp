@@ -57,6 +57,9 @@ namespace wowpp
 		, m_animProgress(animProgress)
 		, m_state(state)
 	{
+		// Cap AnimProgress to 100, because higher value causes troubles at the client somehow when respawning
+		if (m_animProgress > 100) m_animProgress = 100;
+
 		// Immediatly spawn all objects
 		for (size_t i = 0; i < m_maxCount; ++i)
 		{
@@ -82,10 +85,11 @@ namespace wowpp
 		// Spawn a new creature
 		auto spawned = m_world.spawnWorldObject(m_entry, position, o, m_radius);
 		spawned->setFloatValue(object_fields::ScaleX, m_entry.scale());
-		for (size_t i = 0; i < 4; ++i)
-		{
-			spawned->setFloatValue(world_object_fields::Rotation + i, m_rotation[i]);
-		}
+		spawned->setFloatValue(world_object_fields::Rotation + 0, m_rotation[0]);
+		spawned->setFloatValue(world_object_fields::Rotation + 1, m_rotation[1]);
+		spawned->setFloatValue(world_object_fields::Rotation + 2, sinf(o / 2.0f));
+		spawned->setFloatValue(world_object_fields::Rotation + 3, cosf(o / 2.0f));
+		spawned->setFloatValue(world_object_fields::Facing, o);
 		spawned->setUInt32Value(world_object_fields::AnimProgress, m_animProgress);
 		spawned->setUInt32Value(world_object_fields::State, m_state);
 

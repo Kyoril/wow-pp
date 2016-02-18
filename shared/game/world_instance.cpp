@@ -282,22 +282,6 @@ namespace wowpp
 		m_objectsById.insert(
 			std::make_pair(guid, &added));
 
-		// Enable trigger execution
-		if (added.isCreature())
-		{
-			GameUnit *unitObj = reinterpret_cast<GameUnit*>(&added);
-			unitObj->unitTrigger.connect([this](const proto::TriggerEntry &trigger, GameUnit &owner) {
-				m_triggerHandler.executeTrigger(trigger, game::TriggerContext(&owner), 0);
-			});
-		}
-		else if (added.isWorldObject())
-		{
-			WorldObject *worldObj = reinterpret_cast<WorldObject*>(&added);
-			worldObj->objectTrigger.connect([this](const proto::TriggerEntry &trigger, WorldObject &owner) {
-				m_triggerHandler.executeTrigger(trigger, game::TriggerContext(&owner), 0);
-			});
-		}
-
 		// Get object location
 		math::Vector3 location(added.getLocation());
 		
@@ -343,11 +327,28 @@ namespace wowpp
 			}
 		});
 
-		// Notify about being spawned
-		added.spawned();
+		// Enable trigger execution
+		if (added.isCreature())
+		{
+			GameUnit *unitObj = reinterpret_cast<GameUnit*>(&added);
+			unitObj->unitTrigger.connect([this](const proto::TriggerEntry &trigger, GameUnit &owner) {
+				m_triggerHandler.executeTrigger(trigger, game::TriggerContext(&owner), 0);
+			});
+		}
+		else if (added.isWorldObject())
+		{
+			WorldObject *worldObj = reinterpret_cast<WorldObject*>(&added);
+			worldObj->objectTrigger.connect([this](const proto::TriggerEntry &trigger, WorldObject &owner) {
+				m_triggerHandler.executeTrigger(trigger, game::TriggerContext(&owner), 0);
+			});
+		}
 
+		// Notify about being spawned
+		added.clearUpdateMask();
+		added.spawned();
+		
 		// Add to unit finder if it is a unit
-		if (added.getTypeId() == object_type::Unit ||
+		if (added.isCreature() ||
 			added.isGameCharacter())
 		{
 			GameUnit *unit = dynamic_cast<GameUnit*>(&added);

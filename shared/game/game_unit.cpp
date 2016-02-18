@@ -54,8 +54,8 @@ namespace wowpp
 		, m_isStealthed(false)
 	{
 		// Resize values field
-		m_values.resize(unit_fields::UnitFieldCount);
-		m_valueBitset.resize((unit_fields::UnitFieldCount + 31) / 32);
+		m_values.resize(unit_fields::UnitFieldCount, 0);
+		m_valueBitset.resize((unit_fields::UnitFieldCount + 31) / 32, 0);
 
 		// Reset unit speed
 		m_speedBonus.fill(1.0f);
