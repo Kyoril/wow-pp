@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "creature_spawner.h"
 #include "world_instance.h"
 #include "world_instance_manager.h"
@@ -29,8 +30,6 @@
 #include "common/utilities.h"
 #include "shared/proto_data/units.pb.h"
 #include "universe.h"
-#include <memory>
-#include <cassert>
 
 namespace wowpp
 {

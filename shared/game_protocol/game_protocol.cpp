@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "common/endian_convert.h"
 #include "common/clock.h"
 #include "game_protocol.h"
@@ -29,14 +30,6 @@
 #include "binary_io/stream_sink.h"
 #include "binary_io/reader.h"
 #include "binary_io/writer.h"
-#include "data/skill_entry.h"
-#include <iostream>
-#include <sstream>
-#include <ostream>
-#include <fstream>
-#include <boost/iostreams/filtering_streambuf.hpp>
-#include <boost/iostreams/copy.hpp>
-#include <boost/iostreams/filter/zlib.hpp>
 #include "binary_io/vector_sink.h"
 #include "game/game_character.h"
 

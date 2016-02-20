@@ -24,9 +24,6 @@
 #include "common/typedefs.h"
 #include "game/defines.h"
 #include "binary_io/writer.h"
-#include "data/loot_entry.h"
-#include <map>
-#include <boost/signals2.hpp>
 #include "shared/proto_data/loot_entry.pb.h"
 #include "proto_data/project.h"
 

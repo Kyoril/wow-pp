@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "single_cast_state.h"
 #include "game_unit.h"
 #include "game_character.h"
@@ -35,13 +36,11 @@
 #include "each_tile_in_sight.h"
 #include "binary_io/vector_sink.h"
 #include "game_protocol/game_protocol.h"
-#include <boost/iterator/indirect_iterator.hpp>
 #include "common/make_unique.h"
 #include "game_creature.h"
 #include "universe.h"
 #include "aura.h"
 #include "unit_mover.h"
-#include <random>
 
 namespace wowpp
 {

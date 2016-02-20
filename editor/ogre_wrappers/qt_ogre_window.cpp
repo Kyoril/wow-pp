@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "qt_ogre_window.h"
 #include "ogre_blp_codec.h"
 #include "ogre_mpq_archive.h"

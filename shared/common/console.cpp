@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "console.h"
 #if defined(WIN32) || defined(_WIN32)
 #	include <windows.h>

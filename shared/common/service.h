@@ -21,8 +21,6 @@
 
 #pragma once
 
-#include <functional>
-
 namespace wowpp
 {
 	namespace create_service_result

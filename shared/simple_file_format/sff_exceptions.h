@@ -21,7 +21,6 @@
 
 #pragma once
 
-#include <exception>
 #include "sff_read_token.h"
 #include "sff_datatypes.h"
 

@@ -21,13 +21,6 @@
 
 #pragma once
 
-#include <string>
-#include <array>
-#include <sstream>
-#include <ostream>
-#include <algorithm>
-#include <boost/type_traits/is_float.hpp>
-
 namespace sff
 {
 	namespace write

@@ -23,10 +23,6 @@
 
 #include "common/typedefs.h"
 #include "include_mysql.h"
-#include <boost/variant.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/optional.hpp>
-#include <vector>
 
 namespace wowpp
 {

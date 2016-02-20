@@ -22,8 +22,6 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include <boost/noncopyable.hpp>
-#include <boost/signals2.hpp>
 #include "player_manager.h"
 #include "game_protocol/game_protocol.h"
 #include "binary_io/vector_sink.h"
@@ -31,7 +29,6 @@
 #include "log/default_log_levels.h"
 #include "player_social.h"
 #include "player.h"
-#include <vector>
 
 namespace wowpp
 {

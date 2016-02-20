@@ -19,12 +19,12 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "mysql_database.h"
 #include "mysql_wrapper/mysql_row.h"
 #include "mysql_wrapper/mysql_select.h"
 #include "mysql_wrapper/mysql_statement.h"
 #include "common/constants.h"
-#include <boost/format.hpp>
 #include "log/default_log_levels.h"
 
 namespace wowpp

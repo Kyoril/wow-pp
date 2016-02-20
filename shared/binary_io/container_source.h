@@ -23,8 +23,6 @@
 #pragma once
 
 #include "source.h"
-#include <algorithm>
-#include <cstring>
 
 namespace io
 {

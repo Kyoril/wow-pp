@@ -19,10 +19,9 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "mpq_file.h"
 #include "common/make_unique.h"
-#include <memory>
-#include <deque>
 #include "log/default_log_levels.h"
 
 // Define MPQ lock mutex

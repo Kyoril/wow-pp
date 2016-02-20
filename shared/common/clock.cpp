@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "clock.h"
 #if defined(WIN32) || defined(_WIN32)
 #	include <Windows.h>
@@ -32,7 +33,6 @@
 #		include <mach/mach.h>
 #	endif
 #endif
-#include <cassert>
 
 namespace wowpp
 {

@@ -22,7 +22,6 @@
 #pragma once
 
 #include "circle.h"
-#include <boost/signals2.hpp>
 
 namespace wowpp
 {

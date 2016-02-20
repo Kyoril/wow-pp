@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "unit_mover.h"
 #include "game_unit.h"
 #include "world_instance.h"
@@ -27,7 +28,6 @@
 #include "game_protocol/game_protocol.h"
 #include "each_tile_in_sight.h"
 #include "common/constants.h"
-#include <memory>
 
 namespace wowpp
 {

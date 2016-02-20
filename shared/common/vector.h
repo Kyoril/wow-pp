@@ -22,8 +22,6 @@
 #pragma once
 
 #include "utilities.h"
-#include <array>
-#include <cassert>
 
 namespace wowpp
 {

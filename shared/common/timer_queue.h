@@ -22,10 +22,6 @@
 #pragma once
 
 #include "typedefs.h"
-#include <boost/asio.hpp>
-#include <boost/optional.hpp>
-#include <functional>
-#include <queue>
 
 namespace wowpp
 {

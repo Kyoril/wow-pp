@@ -19,14 +19,13 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "configuration.h"
 #include "simple_file_format/sff_write.h"
 #include "simple_file_format/sff_read_tree.h"
 #include "simple_file_format/sff_load_file.h"
 #include "common/constants.h"
 #include "log/default_log_levels.h"
-#include <fstream>
-#include <limits>
 
 namespace wowpp
 {

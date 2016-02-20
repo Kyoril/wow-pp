@@ -21,8 +21,6 @@
 
 #pragma once
 
-#include <vector>
-
 namespace wowpp
 {
 	template <class T>

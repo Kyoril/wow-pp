@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "game_world_object.h"
 #include "log/default_log_levels.h"
 #include "binary_io/vector_sink.h"
@@ -28,7 +29,6 @@
 #include "proto_data/project.h"
 #include "game_character.h"
 #include "common/make_unique.h"
-#include <cassert>
 
 namespace wowpp
 {

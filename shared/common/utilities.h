@@ -22,14 +22,6 @@
 #pragma once
 
 #include "constants.h"
-#include <algorithm>
-#include <functional>
-#include <cctype>
-#include <locale>
-#include <random>
-#include <sstream>
-#include <string>
-#include <vector>
 #include "random.h"
 #include "typedefs.h"
 

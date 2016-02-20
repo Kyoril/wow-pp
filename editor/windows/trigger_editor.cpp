@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "trigger_editor.h"
 #include "windows/main_window.h"
 #include "editor_application.h"

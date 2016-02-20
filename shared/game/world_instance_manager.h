@@ -21,13 +21,9 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
-#include <boost/asio.hpp>
 #include "world_instance.h"
 #include "common/id_generator.h"
 #include "common/timer_queue.h"
-#include <vector>
-#include <memory>
 
 namespace wowpp
 {

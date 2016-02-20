@@ -22,8 +22,6 @@
 #pragma once
 
 #include "http/http_server.h"
-#include <boost/asio.hpp>
-#include <memory>
 
 namespace wowpp
 {

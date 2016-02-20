@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "numeric_editor.h"
 #include "ui_numeric_editor.h"
 

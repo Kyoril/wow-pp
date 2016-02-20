@@ -19,6 +19,14 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+// Content from PCH since we can't use them here
+#include <functional>
+#include <fstream>
+#include <vector>
+#include <boost/filesystem.hpp>
+#include <boost/signals2.hpp>
+#include <boost/date_time.hpp>
+
 #include "project_saver.h"
 #include "simple_file_format/sff_write.h"
 #include "simple_file_format/sff_save_file.h"

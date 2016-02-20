@@ -19,8 +19,8 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "ogre_dbc_file.h"
-#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -77,8 +77,6 @@ namespace wowpp
 		// Calculate data offsets
 		m_recordOffset = stream->tell();
 		m_stringOffset = m_recordOffset + (m_recordCount * m_recordSize);
-
-		ILOG("Loaded " << m_recordCount << " entries in dbc file");
 
 		// Read data columns
 		m_data.resize(m_recordCount);

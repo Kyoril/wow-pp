@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "world_instance.h"
 #include "world_instance_manager.h"
 #include "log/default_log_levels.h"
@@ -31,16 +32,11 @@
 #include "visibility_tile.h"
 #include "each_tile_in_region.h"
 #include "binary_io/vector_sink.h"
-#include <boost/bind/bind.hpp>
 #include "each_tile_in_sight.h"
 #include "common/utilities.h"
 #include "trigger_handler.h"
 #include "creature_ai.h"
 #include "universe.h"
-#include <algorithm>
-#include <array>
-#include <memory>
-#include <cassert>
 
 namespace wowpp
 {
@@ -362,7 +358,7 @@ namespace wowpp
 
 		// Watch for object location changes
 		added.moved.connect(
-		    boost::bind(&WorldInstance::onObjectMoved, this, _1, _2, _3));
+		    std::bind(&WorldInstance::onObjectMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	}
 
 	void WorldInstance::removeGameObject(GameObject &remove)

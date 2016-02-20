@@ -23,7 +23,6 @@
 
 #include "common/typedefs.h"
 #include "world_navigation.h"
-#include <memory>
 
 namespace wowpp
 {

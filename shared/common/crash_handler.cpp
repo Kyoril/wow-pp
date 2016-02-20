@@ -19,10 +19,10 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "crash_handler.h"
 #include "version.h"
 #include "log/default_log_levels.h"
-#include <memory>
 
 #ifdef _MSC_VER
 #	include <windows.h>

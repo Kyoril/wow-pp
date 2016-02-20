@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "realm.h"
 #include "realm_manager.h"
 #include "player_manager.h"
@@ -27,9 +28,6 @@
 #include "common/sha1.h"
 #include "log/default_log_levels.h"
 #include "database.h"
-#include <iostream>
-#include <cassert>
-#include <limits>
 
 using namespace std;
 

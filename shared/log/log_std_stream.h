@@ -23,8 +23,6 @@
 
 #include "common/typedefs.h"
 #include "log_stream_options.h"
-#include <string>
-#include <ostream>
 
 namespace wowpp
 {

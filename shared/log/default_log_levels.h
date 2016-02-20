@@ -24,7 +24,6 @@
 #include "log_level.h"
 #include "default_log.h"
 
-
 namespace wowpp
 {
 	//für Einträge, die für Entwickler hilfreich sind

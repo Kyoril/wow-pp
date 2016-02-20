@@ -27,8 +27,6 @@
 #include "tile_visibility.h"
 #include "tile_visibility_change.h"
 #include "game_object.h"
-#include <boost/iterator/indirect_iterator.hpp>
-#include <vector>
 
 namespace wowpp
 {

@@ -24,7 +24,6 @@
 #include "unit_watcher.h"
 #include "tile_area.h"
 #include "tiled_unit_finder.h"
-#include <unordered_map>
 
 namespace wowpp
 {

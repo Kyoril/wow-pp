@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "aura.h"
 #include "common/clock.h"
 #include "game_unit.h"

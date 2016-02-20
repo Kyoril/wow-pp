@@ -22,9 +22,7 @@
 #pragma once
 
 #include "common/timer_queue.h"
-#include <boost/asio.hpp>
-#include <boost/noncopyable.hpp>
-#include <utility>
+
 
 namespace wowpp
 {

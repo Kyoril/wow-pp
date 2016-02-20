@@ -23,7 +23,6 @@
 
 #include "typedefs.h"
 #include "vector.h"
-#include <memory>
 
 namespace wowpp
 {

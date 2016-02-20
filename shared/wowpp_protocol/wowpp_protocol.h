@@ -25,7 +25,6 @@
 #include "wowpp_incoming_packet.h"
 #include "wowpp_outgoing_packet.h"
 #include "binary_io/reader.h"
-#include <array>
 
 namespace wowpp
 {

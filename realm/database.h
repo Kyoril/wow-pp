@@ -26,10 +26,6 @@
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "game/game_character.h"
 #include "log/log_exception.h"
-#include <boost/noncopyable.hpp>
-#include <boost/optional.hpp>
-#include <functional>
-#include <vector>
 
 namespace wowpp
 {
@@ -97,7 +93,7 @@ namespace wowpp
 				{
 					defaultLogException(ex);
 				}
-				dispatcher(boost::bind<void>(handler, std::move(result)));
+				dispatcher(std::bind<void>(handler, std::move(result)));
 			}
 		};
 
@@ -119,7 +115,7 @@ namespace wowpp
 				{
 					defaultLogException(ex);
 				}
-				dispatcher(boost::bind<void>(handler, status));
+				dispatcher(std::bind<void>(handler, status));
 			}
 		};
 	}

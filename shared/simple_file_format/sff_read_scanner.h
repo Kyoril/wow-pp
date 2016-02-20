@@ -21,8 +21,6 @@
 
 #pragma once
 
-#include <algorithm>
-#include <vector>
 #include "sff_read_token.h"
 #include "sff_chartraits.h"
 

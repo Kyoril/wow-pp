@@ -24,7 +24,6 @@
 #include "auth_outgoing_packet.h"
 #include "binary_io/vector_sink.h"
 #include "binary_io/writer.h"
-#include <cassert>
 
 namespace wowpp
 {

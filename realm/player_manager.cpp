@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "player_manager.h"
 #include "player.h"
 #include "player_social.h"
@@ -26,8 +27,6 @@
 #include "binary_io/string_sink.h"
 #include "log/default_log_levels.h"
 #include "common/timer_queue.h"
-#include <algorithm>
-#include <cassert>
 
 namespace wowpp
 {

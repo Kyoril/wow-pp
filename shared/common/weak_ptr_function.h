@@ -21,8 +21,6 @@
 
 #pragma once
 
-#include <memory>
-
 namespace wowpp
 {
 	namespace detail

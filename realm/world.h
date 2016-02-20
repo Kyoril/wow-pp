@@ -25,12 +25,7 @@
 #include "wowpp_protocol/wowpp_connection.h"
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "game/game_character.h"
-#include <boost/noncopyable.hpp>
-#include <boost/signals2.hpp>
 #include "common/linear_set.h"
-#include <algorithm>
-#include <utility>
-#include <cassert>
 
 namespace wowpp
 {

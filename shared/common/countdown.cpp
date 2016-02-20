@@ -19,11 +19,9 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "countdown.h"
 #include "timer_queue.h"
-#include <functional>
-#include <memory>
-#include <cassert>
 
 namespace wowpp
 {

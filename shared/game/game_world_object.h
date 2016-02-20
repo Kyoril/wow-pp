@@ -26,8 +26,6 @@
 #include "common/timer_queue.h"
 #include "common/countdown.h"
 #include "proto_data/trigger_helper.h"
-#include <boost/signals2.hpp>
-#include <memory>
 
 namespace wowpp
 {

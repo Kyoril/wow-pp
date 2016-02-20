@@ -19,13 +19,11 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "aura_container.h"
 #include "game_unit.h"
 #include "log/default_log_levels.h"
-#include "data/spell_entry.h"
 #include "common/linear_set.h"
-#include <algorithm>
-#include <cassert>
 
 namespace wowpp
 {

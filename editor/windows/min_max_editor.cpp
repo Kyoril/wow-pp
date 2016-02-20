@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "min_max_editor.h"
 #include "ui_min_max_editor.h"
 

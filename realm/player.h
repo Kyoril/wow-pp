@@ -28,13 +28,7 @@
 #include "common/big_number.h"
 #include "common/id_generator.h"
 #include "game/game_character.h"
-#include <boost/noncopyable.hpp>
-#include <boost/signals2.hpp>
-#include <log/default_log_levels.h>
-#include <algorithm>
-#include <utility>
-#include <cassert>
-#include <limits>
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {

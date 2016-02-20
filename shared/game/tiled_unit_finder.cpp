@@ -19,13 +19,12 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "tiled_unit_finder.h"
 #include "tiled_unit_watcher.h"
 #include "tiled_unit_finder_tile.h"
-#include "data/map_entry.h"
 #include "game_unit.h"
 #include "common/make_unique.h"
-#include <cassert>
 #include "log/default_log_levels.h"
 
 namespace wowpp

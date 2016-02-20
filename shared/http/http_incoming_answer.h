@@ -6,7 +6,6 @@
 #include "network/receive_state.h"
 #include "binary_io/reader.h"
 #include "binary_io/memory_source.h"
-#include <map>
 
 namespace wowpp
 {

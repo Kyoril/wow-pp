@@ -24,7 +24,6 @@
 #include "game_protocol/game_protocol.h"
 #include "game_protocol/game_connection.h"
 #include "game_protocol/game_crypted_connection.h"
-#include "data/data_load_context.h"
 #include "common/big_number.h"
 #include "common/countdown.h"
 #include "common/linear_set.h"
@@ -35,13 +34,7 @@
 #include "game/world_instance.h"
 #include "game/tile_subscriber.h"
 #include "game/loot_instance.h"
-#include <boost/noncopyable.hpp>
-#include <boost/signals2.hpp>
 #include "common/macros.h"
-#include <algorithm>
-#include <utility>
-#include <cassert>
-#include <limits>
 
 namespace wowpp
 {

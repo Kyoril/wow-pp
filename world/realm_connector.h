@@ -29,8 +29,6 @@
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "game/game_character.h"
 #include "common/timer_queue.h"
-#include <boost/signals2.hpp>
-#include <boost/noncopyable.hpp>
 
 namespace wowpp
 {

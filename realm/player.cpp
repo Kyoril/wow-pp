@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "player.h"
 #include "player_manager.h"
 #include "configuration.h"
@@ -36,11 +37,8 @@
 #include "proto_data/project.h"
 #include "common/utilities.h"
 #include "game/game_item.h"
-#include "boost/algorithm/string.hpp"
 #include "player_group.h"
 #include "game/constants.h"
-#include <cassert>
-#include <limits>
 
 using namespace std;
 using namespace wowpp::game;

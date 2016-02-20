@@ -33,9 +33,6 @@
 #include "game/movement_info.h"
 #include "game/spell_target_map.h"
 #include "proto_data/project.h"
-#include <array>
-#include <vector>
-#include <functional>
 
 namespace wowpp
 {

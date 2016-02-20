@@ -25,10 +25,6 @@
 #include "attack_table.h"
 #include "common/countdown.h"
 #include "shared/proto_data/spells.pb.h"
-#include "boost/signals2.hpp"
-#include <boost/noncopyable.hpp>
-#include <memory>
-#include <unordered_map>
 
 namespace wowpp
 {

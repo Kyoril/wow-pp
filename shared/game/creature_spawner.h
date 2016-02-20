@@ -24,7 +24,6 @@
 #include "common/typedefs.h"
 #include "common/countdown.h"
 #include "math/vector3.h"
-#include <boost/optional.hpp>
 
 namespace wowpp
 {

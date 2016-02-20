@@ -31,8 +31,6 @@
 #include <QItemSelection>
 #include <QFutureWatcher>
 #include <QFuture>
-#include <memory>
-#include <functional>
 
 // Forwards
 namespace Ui

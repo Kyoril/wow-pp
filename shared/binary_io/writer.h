@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
 #include "sink.h"
 
 namespace io

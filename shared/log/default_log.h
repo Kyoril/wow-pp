@@ -23,7 +23,6 @@
 
 #include "log.h"
 #include "log_entry.h"
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace wowpp
 {

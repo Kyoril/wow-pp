@@ -21,8 +21,6 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
-
 namespace wowpp
 {
 	/// This class delays the assignment of a value to the moment

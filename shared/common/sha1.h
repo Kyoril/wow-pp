@@ -21,11 +21,6 @@
 
 #pragma once
 
-#include <boost/iostreams/concepts.hpp>
-#include <boost/uuid/sha1.hpp>
-#include <memory>
-#include <array>
-
 namespace wowpp
 {
 	/// Represents a SHA1 hash in it's binary form

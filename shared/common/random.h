@@ -21,8 +21,6 @@
 
 #pragma once
 
-#include <random>
-
 namespace wowpp
 {
 	typedef std::mt19937 RandomnessGenerator;

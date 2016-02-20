@@ -21,11 +21,6 @@
 
 #pragma once
 
-#include "common/typedefs.h"
-#include <boost/asio.hpp>
-#include <boost/thread.hpp>
-#include <memory>
-
 namespace wowpp
 {
 	class BackgroundWorker

@@ -26,7 +26,6 @@
 #include "template_list_model.h"
 #include "trigger_list_model.h"
 #include "configuration.h"
-#include <memory>
 
 namespace wowpp
 {

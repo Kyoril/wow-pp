@@ -19,9 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
-#include <iostream>
-#include <sstream>
-#include <ostream>
+#include "pch.h"
 #include "auth_protocol.h"
 
 namespace wowpp

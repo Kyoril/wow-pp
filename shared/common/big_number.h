@@ -22,7 +22,6 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include <vector>
 
 struct bignum_st;
 

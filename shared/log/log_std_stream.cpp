@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "log_std_stream.h"
 #include "log_entry.h"
 #include "log_level.h"

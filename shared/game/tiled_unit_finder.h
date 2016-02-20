@@ -25,8 +25,6 @@
 #include "tile_index.h"
 #include "common/grid.h"
 #include "defines.h"
-#include <unordered_map>
-#include <boost/signals2.hpp>
 
 namespace wowpp
 {

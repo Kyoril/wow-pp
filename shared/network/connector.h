@@ -24,9 +24,6 @@
 #include "common/typedefs.h"
 #include "common/weak_ptr_function.h"
 #include "connection.h"
-#include <boost/asio.hpp>
-#include <memory>
-#include <cassert>
 
 namespace wowpp
 {

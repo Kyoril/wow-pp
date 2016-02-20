@@ -19,11 +19,9 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "timer_queue.h"
 #include "clock.h"
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <algorithm>
-#include <cassert>
 
 namespace wowpp
 {

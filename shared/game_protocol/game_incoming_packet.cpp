@@ -19,9 +19,9 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "game_incoming_packet.h"
 #include "common/endian_convert.h"
-#include <limits>
 
 namespace wowpp
 {

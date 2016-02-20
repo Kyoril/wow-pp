@@ -19,12 +19,12 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "loot_dialog.h"
 #include "ui_loot_dialog.h"
 #include "proto_data/project.h"
 #include "common/utilities.h"
 #include <QListWidgetItem>
-#include <unordered_map>
 
 namespace wowpp
 {

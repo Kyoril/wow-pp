@@ -26,7 +26,6 @@
 #include "common/countdown.h"
 #include "math/vector3.h"
 #include "movement_info.h"
-#include <boost/signals2.hpp>
 
 namespace wowpp
 {

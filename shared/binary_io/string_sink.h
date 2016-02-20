@@ -23,8 +23,6 @@
 #pragma once
 
 #include "sink.h"
-#include <cassert>
-#include <cstring>
 
 namespace io
 {

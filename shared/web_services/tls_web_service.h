@@ -23,10 +23,6 @@
 
 #include "http/http_incoming_request.h"
 #include "http/http_outgoing_answer.h"
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
-#include <functional>
-#include <memory>
 
 namespace wowpp
 {

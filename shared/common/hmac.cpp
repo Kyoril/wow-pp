@@ -19,12 +19,8 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "hmac.h"
-#include <boost/iostreams/copy.hpp>
-#include <boost/io/ios_state.hpp>
-#include <locale>
-#include <iomanip>
-#include <cassert>
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
 

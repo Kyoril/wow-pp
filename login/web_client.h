@@ -22,7 +22,6 @@
 #pragma once
 
 #include "web_services/web_client.h"
-#include <memory>
 
 namespace wowpp
 {

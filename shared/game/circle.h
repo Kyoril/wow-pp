@@ -22,7 +22,6 @@
 #pragma once
 
 #include "defines.h"
-#include <array>
 
 namespace wowpp
 {

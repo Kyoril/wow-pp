@@ -25,7 +25,6 @@
 #include "common/enum_strings.h"
 #include "common/vector.h"
 #include "math/vector3.h"
-#include <map>
 
 namespace wowpp
 {

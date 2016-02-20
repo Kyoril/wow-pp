@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "map.h"
 #include "shared/proto_data/maps.pb.h"
 #include "detour_world_navigation.h"

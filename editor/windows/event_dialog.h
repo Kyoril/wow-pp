@@ -22,10 +22,8 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include "data/project.h"
 #include <QDialog>
 #include <QItemSelection>
-#include <memory>
 
 // Forwards
 namespace Ui

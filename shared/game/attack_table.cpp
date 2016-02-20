@@ -19,13 +19,17 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "attack_table.h"
+#include "game_unit.h"
+#include "game_creature.h"
 #include "game_character.h"
-#include "log/default_log_levels.h"
+#include "world_instance.h"
 
 namespace wowpp
 {
-	AttackTable::AttackTable() {
+	AttackTable::AttackTable() 
+	{
 	}
 
 	void AttackTable::checkMeleeAutoAttack(GameUnit *attacker, GameUnit *target, UInt8 school, std::vector<GameUnit *> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)

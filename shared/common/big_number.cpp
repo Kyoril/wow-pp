@@ -19,10 +19,10 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "big_number.h"
 #include <openssl/ssl.h>
 #include <openssl/bn.h>
-#include <algorithm>
 
 namespace wowpp
 {

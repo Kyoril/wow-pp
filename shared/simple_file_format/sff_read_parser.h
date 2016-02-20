@@ -26,7 +26,6 @@
 #include "sff_read_token.h"
 #include "sff_read_scanguard.h"
 #include "sff_datatypes.h"
-#include <limits>
 
 namespace sff
 {

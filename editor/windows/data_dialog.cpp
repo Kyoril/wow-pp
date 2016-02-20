@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "data_dialog.h"
 #include "ui_data_dialog.h"
 #include "proto_data/project.h"

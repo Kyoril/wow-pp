@@ -21,11 +21,8 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
-#include <boost/asio.hpp>
 #include "configuration.h"
 #include "database.h"
-#include <memory>
 
 namespace wowpp
 {

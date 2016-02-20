@@ -23,10 +23,6 @@
 
 #include "sff_read_parser.h"
 #include "sff_read_token.h"
-#include <boost/ptr_container/ptr_vector.hpp>
-#include <boost/ptr_container/ptr_map.hpp>
-#include <boost/optional.hpp>
-#include <limits>
 
 namespace sff
 {

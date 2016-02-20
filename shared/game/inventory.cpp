@@ -19,10 +19,12 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "inventory.h"
 #include "game_character.h"
 #include "game_item.h"
 #include "game_bag.h"
+#include "world_instance.h"
 #include "proto_data/project.h"
 #include "common/linear_set.h"
 #include "binary_io/vector_sink.h"
@@ -62,7 +64,7 @@ namespace wowpp
 		// Limit the total amount of items
 		const UInt16 itemCount = getItemCount(entry.id());
 		if (entry.maxcount() > 0 &&
-		        itemCount + amount > entry.maxcount())
+		        UInt32(itemCount + amount) > entry.maxcount())
 		{
 			return game::inventory_change_failure::CantCarryMoreOfThis;
 		}
@@ -973,7 +975,7 @@ namespace wowpp
 		// Limit the total amount of items
 		const UInt16 itemCount = getItemCount(entry.id());
 		if (entry.maxcount() > 0 &&
-		        itemCount + amount > entry.maxcount())
+		        UInt32(itemCount + amount) > entry.maxcount())
 		{
 			return game::inventory_change_failure::CantCarryMoreOfThis;
 		}

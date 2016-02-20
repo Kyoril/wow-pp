@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "game_unit.h"
 #include "log/default_log_levels.h"
 #include "world_instance.h"
@@ -30,7 +31,6 @@
 #include "experience.h"
 #include "unit_mover.h"
 #include "common/make_unique.h"
-#include <cassert>
 
 namespace wowpp
 {

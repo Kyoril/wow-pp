@@ -24,8 +24,6 @@
 #include "creature_ai_state.h"
 #include "common/timer_queue.h"
 #include "common/countdown.h"
-#include <boost/signals2.hpp>
-#include <memory>
 
 namespace wowpp
 {

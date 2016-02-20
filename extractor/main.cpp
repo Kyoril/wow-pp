@@ -19,14 +19,10 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "common/typedefs.h"
 #include "log/default_log_levels.h"
 #include "log/log_std_stream.h"
-#include "boost/filesystem.hpp"
-#include "boost/program_options.hpp"
-#include "boost/format.hpp"
-#include "boost/asio.hpp"
-#include "boost/thread.hpp"
 #include "mpq_file.h"
 #include "dbc_file.h"
 #include "wdt_file.h"
@@ -35,10 +31,6 @@
 #include "binary_io/writer.h"
 #include "binary_io/stream_sink.h"
 #include "common/make_unique.h"
-#include <fstream>
-#include <limits>
-#include <memory>
-#include <map>
 #include "game/map.h"
 #include "math/matrix4.h"
 #include "math/vector3.h"

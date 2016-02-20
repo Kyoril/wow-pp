@@ -21,8 +21,6 @@
 
 #pragma once
 
-#include <exception>
-
 namespace wowpp
 {
 	void defaultLogException(const std::exception &exception);

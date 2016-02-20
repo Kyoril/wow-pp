@@ -1,10 +1,6 @@
 
 #pragma once
 
-#include <queue>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/condition_variable.hpp>
-
 namespace wowpp
 {
 	template <class TResult, class TWork>

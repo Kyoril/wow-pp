@@ -23,7 +23,6 @@
 
 #include "common/typedefs.h"
 #include "common/hmac.h"
-#include <vector>
 
 namespace wowpp
 {

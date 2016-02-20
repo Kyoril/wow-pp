@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "trigger_handler.h"
 #include "game/game_unit.h"
 #include "proto_data/project.h"

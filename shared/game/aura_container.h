@@ -22,7 +22,6 @@
 #pragma once
 
 #include "aura.h"
-#include <boost/optional.hpp>
 
 namespace wowpp
 {

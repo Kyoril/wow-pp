@@ -19,9 +19,9 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "action_dialog.h"
 #include "ui_action_dialog.h"
-#include "templates/basic_template.h"
 #include "editor_application.h"
 #include "trigger_helper.h"
 #include "text_dialog.h"

@@ -29,11 +29,6 @@
 #include "binary_io/string_sink.h"
 #include "binary_io/memory_source.h"
 #include "game_protocol/game_crypt.h"
-#include <boost/asio.hpp>
-#include <memory>
-#include <algorithm>
-#include <array>
-#include <cassert>
 
 namespace wowpp
 {

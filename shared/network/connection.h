@@ -28,10 +28,6 @@
 #include "common/assign_on_exit.h"
 #include "binary_io/string_sink.h"
 #include "binary_io/memory_source.h"
-#include <boost/asio.hpp>
-#include <memory>
-#include <array>
-#include <cassert>
 
 namespace wowpp
 {

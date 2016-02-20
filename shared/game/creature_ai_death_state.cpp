@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "creature_ai_death_state.h"
 #include "creature_ai.h"
 #include "game_creature.h"

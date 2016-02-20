@@ -21,9 +21,6 @@
 
 #pragma once
 
-#include <cstdint>
-#include <string>
-
 namespace wowpp
 {
 	// Unsigned typedefs

@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "realm_connector.h"
 #include "game/world_instance_manager.h"
 #include "game/world_instance.h"

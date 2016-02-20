@@ -1,4 +1,3 @@
-#include "http_incoming_request.h"
 //
 // This file is part of the WoW++ project.
 //
@@ -20,11 +19,11 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "http_incoming_request.h"
 #include "common/constants.h"
 #include "base64/base64.h"
 #include "log/default_log_levels.h"
-#include <cassert>
 
 namespace wowpp
 {
@@ -236,7 +235,7 @@ namespace wowpp
 				if (estimatedContentLength > 0)
 				{
 					if (end <= pos ||
-					        (end - pos) < estimatedContentLength)
+					        size_t(end - pos) < estimatedContentLength)
 					{
 						return receive_state::Incomplete;
 					}

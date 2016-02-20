@@ -31,9 +31,6 @@
 #include "unit_finder.h"
 #include "boost/signals2.hpp"
 #include "map.h"
-#include <unordered_map>
-#include <memory>
-#include <vector>
 
 namespace wowpp
 {

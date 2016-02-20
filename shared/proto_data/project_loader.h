@@ -27,10 +27,6 @@
 #include "simple_file_format/sff_load_file.h"
 #include "log/default_log_levels.h"
 #include <google/protobuf/io/coded_stream.h>
-#include <functional>
-#include <istream>
-#include <vector>
-#include <boost/noncopyable.hpp>
 
 namespace wowpp
 {

@@ -22,10 +22,6 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include <boost/noncopyable.hpp>
-#include <boost/variant.hpp>
-#include <memory>
-#include <string>
 
 namespace wowpp
 {

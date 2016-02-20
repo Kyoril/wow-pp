@@ -23,7 +23,6 @@
 
 #include "typedefs.h"
 #include "case_insensitive_equal.h"
-#include <array>
 
 namespace wowpp
 {

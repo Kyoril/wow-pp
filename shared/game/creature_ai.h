@@ -23,8 +23,6 @@
 
 #include "defines.h"
 #include "math/vector3.h"
-#include <memory>
-#include <boost/signals2.hpp>
 
 namespace wowpp
 {

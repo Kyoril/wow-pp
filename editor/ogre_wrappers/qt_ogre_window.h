@@ -25,8 +25,6 @@
 #include <QtGui/QKeyEvent>
 #include <QtGui/QWindow>
 #include <Ogre.h>
-#include <memory>
-#include <utility>
 #include "camera_manager.h"
 #include "selection_box.h"
 

@@ -25,7 +25,6 @@
 #include "defines.h"
 #include "shared/proto_data/spells.pb.h"
 #include "common/countdown.h"
-#include "boost/signals2.hpp"
 
 namespace wowpp
 {

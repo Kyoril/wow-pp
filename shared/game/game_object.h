@@ -26,12 +26,10 @@
 #include "binary_io/writer.h"
 #include "binary_io/reader.h"
 #include "movement_info.h"
-#include <boost/signals2/signal.hpp>
 #include "common/timer_queue.h"
 #include "tile_index.h"
 #include "math/vector3.h"
 #include "common/macros.h"
-#include <vector>
 
 namespace wowpp
 {

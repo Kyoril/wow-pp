@@ -92,6 +92,8 @@ project(WoW)
 	# Include additional cmake modules
 	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+	include(Macros)
+	
 	# Find boost
 	set(Boost_USE_STATIC_LIBS ON)
 	find_package(Boost 1.54.0 REQUIRED COMPONENTS system date_time thread iostreams filesystem regex chrono program_options)

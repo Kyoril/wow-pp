@@ -26,7 +26,6 @@
 #include "auth_outgoing_packet.h"
 #include "binary_io/reader.h"
 #include "common/big_number.h"
-#include <array>
 
 namespace wowpp
 {

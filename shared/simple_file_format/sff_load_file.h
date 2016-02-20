@@ -21,8 +21,6 @@
 
 #pragma once
 
-#include <string>
-#include <istream>
 #include "sff_read_tree.h"
 
 namespace sff

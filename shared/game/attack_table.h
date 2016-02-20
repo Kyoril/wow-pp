@@ -22,12 +22,14 @@
 #pragma once
 
 #include "game/defines.h"
-#include "game/game_unit.h"
-#include "game/world_instance.h"
-#include <unordered_map>
+#include "shared/proto_data/spells.pb.h"
 
 namespace wowpp
 {
+	class GameUnit;
+	class WorldInstance;
+	class SpellTargetMap;
+
 	class AttackTable
 	{
 	public:

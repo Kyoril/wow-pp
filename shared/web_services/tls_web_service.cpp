@@ -19,10 +19,10 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "tls_web_service.h"
 #include "common/make_unique.h"
 #include "log/default_log_levels.h"
-#include <cassert>
 
 namespace wowpp
 {

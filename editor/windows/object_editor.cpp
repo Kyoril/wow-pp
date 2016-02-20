@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "object_editor.h"
 #include "main_window.h"
 #include "editor_application.h"
@@ -33,8 +34,6 @@
 #include "game/defines.h"
 #include "import_dialog.h"
 #include <QRegExp>
-#include <utility>
-#include <memory>
 
 namespace wowpp
 {

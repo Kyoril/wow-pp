@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "mysql_database.h"
 #include "mysql_wrapper/mysql_row.h"
 #include "mysql_wrapper/mysql_select.h"
@@ -28,7 +29,6 @@
 #include "player_social.h"
 #include "player.h"
 #include "player_manager.h"
-#include <boost/format.hpp>
 #include "log/default_log_levels.h"
 #include "proto_data/project.h"
 

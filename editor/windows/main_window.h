@@ -23,7 +23,6 @@
 
 #include <QMainWindow>
 #include "ogre_wrappers/qt_ogre_window.h"
-#include <memory>
 
 // Forwards
 namespace Ui

@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "program.h"
 #include "common/constants.h"
 #include "auth_protocol/auth_server.h"
@@ -33,9 +34,6 @@
 #include "realm_manager.h"
 #include "realm.h"
 #include "web_service.h"
-#include <iostream>
-#include <memory>
-#include <fstream>
 #include "version.h"
 
 namespace wowpp

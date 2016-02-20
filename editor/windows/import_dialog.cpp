@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "import_dialog.h"
 #include "ui_import_dialog.h"
 #include "editor_application.h"

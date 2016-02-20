@@ -2,9 +2,6 @@
 #pragma once
 
 #include "typedefs.h"
-#include <algorithm>
-#include <utility>
-#include <cassert>
 
 namespace wowpp
 {

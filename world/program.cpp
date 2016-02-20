@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "program.h"
 #include "common/constants.h"
 #include "wowpp_protocol/wowpp_protocol.h"
@@ -38,9 +39,6 @@
 #include "common/timer_queue.h"
 #include "common/id_generator.h"
 #include "common/make_unique.h"
-#include <iostream>
-#include <memory>
-#include <fstream>
 #include "version.h"
 
 namespace wowpp

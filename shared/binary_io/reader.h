@@ -22,8 +22,6 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
-#include <limits>
 #include "source.h"
 
 namespace io

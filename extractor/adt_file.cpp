@@ -19,10 +19,10 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "adt_file.h"
 #include "log/default_log_levels.h"
 #include "math/matrix4.h"
-#include <iomanip>
 
 namespace wowpp
 {

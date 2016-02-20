@@ -19,10 +19,8 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "visibility_grid.h"
-#include <memory>
-#include <cmath>
-#include <cassert>
 
 namespace wowpp
 {

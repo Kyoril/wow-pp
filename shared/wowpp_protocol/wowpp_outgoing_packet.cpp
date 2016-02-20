@@ -19,10 +19,9 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "wowpp_outgoing_packet.h"
 #include "common/constants.h"
-#include <cassert>
-#include <limits>
 
 namespace wowpp
 {

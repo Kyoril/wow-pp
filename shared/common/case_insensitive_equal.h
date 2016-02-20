@@ -21,10 +21,6 @@
 
 #pragma once
 
-#include <string>
-#include <locale>
-#include <algorithm>
-
 namespace wowpp
 {
 	template <class T>

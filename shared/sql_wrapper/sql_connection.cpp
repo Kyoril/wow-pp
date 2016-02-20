@@ -19,8 +19,14 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
-#include "sql_connection.h"
 #include <cassert>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <boost/noncopyable.hpp>
+#include <boost/variant.hpp>
+
+#include "sql_connection.h"
 
 namespace wowpp
 {

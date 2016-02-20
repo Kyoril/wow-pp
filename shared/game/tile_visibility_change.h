@@ -22,8 +22,6 @@
 #pragma once
 
 #include "tile_visibility.h"
-#include <array>
-#include <boost/range/iterator_range.hpp>
 
 namespace wowpp
 {

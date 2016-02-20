@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "game_crypt.h"
 #include "common/big_number.h"
 #include "common/hmac.h"

@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "ogre_dbc_file_manager.h"
 
 template<> wowpp::OgreDBCFileManager* Ogre::Singleton<wowpp::OgreDBCFileManager>::msSingleton = nullptr;

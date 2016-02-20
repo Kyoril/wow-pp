@@ -23,10 +23,6 @@
 
 #include "common/typedefs.h"
 #include "game/defines.h"
-#include <boost/noncopyable.hpp>
-#include <boost/signals2.hpp>
-#include <memory>
-#include <map>
 
 namespace io
 {

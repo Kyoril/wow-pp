@@ -27,7 +27,6 @@
 #include "game_character.h"
 #include "loot_instance.h"
 #include "common/linear_set.h"
-#include <boost/signals2.hpp>
 
 namespace wowpp
 {

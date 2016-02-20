@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "world.h"
 #include "world_manager.h"
 #include "database.h"
@@ -32,9 +33,6 @@
 #include "player_manager.h"
 #include "player.h"
 #include "player_group.h"
-#include <algorithm>
-#include <cassert>
-#include <limits>
 
 using namespace std;
 

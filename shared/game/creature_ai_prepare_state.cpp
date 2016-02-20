@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "creature_ai_prepare_state.h"
 #include "creature_ai.h"
 #include "game_creature.h"
@@ -26,7 +27,7 @@
 #include "tiled_unit_watcher.h"
 #include "unit_finder.h"
 #include "universe.h"
-#include "data/faction_template_entry.h"
+//#include "data/faction_template_entry.h"
 #include "log/default_log_levels.h"
 #include "proto_data/trigger_helper.h"
 

@@ -1,9 +1,6 @@
 
 #pragma once
 
-#include <utility>
-#include <memory>
-
 namespace wowpp
 {
 	template <class T>

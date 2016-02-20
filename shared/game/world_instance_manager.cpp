@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "world_instance_manager.h"
 #include "proto_data/project.h"
 #include "common/vector.h"
@@ -27,7 +28,6 @@
 #include "tiled_unit_finder.h"
 #include "trigger_handler.h"
 #include "universe.h"
-#include <cassert>
 
 namespace wowpp
 {

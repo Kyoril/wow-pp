@@ -19,9 +19,9 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "http_outgoing_answer.h"
 #include "common/constants.h"
-#include <sstream>
 
 namespace wowpp
 {

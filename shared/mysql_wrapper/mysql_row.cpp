@@ -19,9 +19,9 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "mysql_row.h"
 #include "mysql_select.h"
-#include <cassert>
 
 namespace wowpp
 {

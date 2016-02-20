@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "spell_target_map.h"
 #include "world_instance.h"
 #include "game_object.h"

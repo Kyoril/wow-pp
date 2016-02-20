@@ -24,8 +24,6 @@
 #include "common/typedefs.h"
 #include "game/defines.h"
 #include "circle.h"
-#include <functional>
-#include <memory>
 
 namespace wowpp
 {

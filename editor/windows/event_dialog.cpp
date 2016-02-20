@@ -19,11 +19,9 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "event_dialog.h"
 #include "ui_event_dialog.h"
-#include "data/trigger_entry.h"
-#include "data/project.h"
-#include "templates/basic_template.h"
 #include "editor_application.h"
 #include "trigger_helper.h"
 

@@ -24,7 +24,6 @@
 #include "game/defines.h"
 #include "binary_io/writer.h"
 #include "binary_io/reader.h"
-#include <vector>
 
 namespace wowpp
 {

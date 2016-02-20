@@ -23,9 +23,6 @@
 
 #include "common/typedefs.h"
 #include "log_level.h"
-#include <boost/signals2.hpp>
-#include <sstream>
-
 
 namespace wowpp
 {

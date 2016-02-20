@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "player_group.h"
 #include "game/game_character.h"
 #include "world.h"

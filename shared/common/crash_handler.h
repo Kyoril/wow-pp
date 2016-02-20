@@ -22,8 +22,6 @@
 #pragma once
 
 #include "typedefs.h"
-#include <boost/noncopyable.hpp>
-#include <boost/signals2.hpp>
 
 namespace wowpp
 {

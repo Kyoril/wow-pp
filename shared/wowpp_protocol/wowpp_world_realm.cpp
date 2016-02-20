@@ -19,11 +19,10 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
-#include <iostream>
+#include "pch.h"
 #include "wowpp_world_realm.h"
 #include "game/game_item.h"
 #include "shared/proto_data/items.pb.h"
-#include <cassert>
 
 namespace wowpp
 {

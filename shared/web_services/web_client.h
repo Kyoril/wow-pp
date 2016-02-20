@@ -23,7 +23,6 @@
 
 #include "http/http_client.h"
 #include "http/http_outgoing_answer.h"
-#include <memory>
 
 namespace wowpp
 {

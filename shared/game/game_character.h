@@ -494,6 +494,8 @@ namespace wowpp
 		}
 	};
 
+	class GameCreature;
+
 	///
 	class GameCharacter : public GameUnit
 	{

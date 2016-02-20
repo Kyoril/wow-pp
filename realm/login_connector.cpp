@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "login_connector.h"
 #include "wowpp_protocol/wowpp_realm_login.h"
 #include "configuration.h"

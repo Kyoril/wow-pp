@@ -22,12 +22,10 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include <boost/filesystem.hpp>
 #include "world_navigation.h"
 #include "tile_index.h"
 #include "common/grid.h"
 #include "math/ray.h"
-#include <vector>
 
 namespace wowpp
 {

@@ -22,8 +22,6 @@
 #pragma once
 
 #include "creature_ai_state.h"
-#include <boost/signals2.hpp>
-#include <memory>
 
 namespace wowpp
 {

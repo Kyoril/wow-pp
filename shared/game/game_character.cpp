@@ -19,8 +19,9 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "game_character.h"
-#include <log/default_log_levels.h>
+#include "log/default_log_levels.h"
 #include "proto_data/project.h"
 #include "game_item.h"
 #include "common/utilities.h"

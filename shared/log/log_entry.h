@@ -22,7 +22,6 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include <boost/date_time.hpp>
 
 namespace wowpp
 {

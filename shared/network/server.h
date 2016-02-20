@@ -23,10 +23,6 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include <boost/asio.hpp>
-#include <boost/signals2.hpp>
-#include <memory>
-#include <cassert>
 
 namespace wowpp
 {

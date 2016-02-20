@@ -25,7 +25,6 @@
 #include "common/timer_queue.h"
 #include "common/countdown.h"
 #include "game/trigger_handler.h"
-#include <memory>
 
 namespace wowpp
 {
