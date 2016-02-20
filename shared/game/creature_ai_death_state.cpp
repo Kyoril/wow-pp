@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "creature_ai_death_state.h"
 #include "creature_ai.h"
@@ -53,7 +53,9 @@ namespace wowpp
 
 		// Calculate despawn delay for rare mobs and elite mobs
 		GameTime despawnDelay = constants::OneSecond * 30;
-		if (isElite || isRare) despawnDelay = constants::OneMinute * 3;
+		if (isElite || isRare) {
+			despawnDelay = constants::OneMinute * 3;
+		}
 
 		// Reward all loot recipients
 		if (controlled.isTagged())
@@ -61,11 +63,12 @@ namespace wowpp
 			// Reward all loot recipients if we can still find them (no disconnect etc.)
 			UInt32 sum_lvl = 0;
 			GameCharacter *maxLevelChar = nullptr;
-			std::vector<GameCharacter*> lootRecipients;
-			controlled.forEachLootRecipient([&sum_lvl, &maxLevelChar, &controlled, &lootRecipients](GameCharacter &character)
+			std::vector<GameCharacter *> lootRecipients;
+			controlled.forEachLootRecipient([&sum_lvl, &maxLevelChar, &controlled, &lootRecipients](GameCharacter & character)
 			{
-				if (character.isAlive())
+				if (character.isAlive()) {
 					sum_lvl += character.getLevel();
+				}
 
 				const UInt32 greyLevel = xp::getGrayLevel(character.getLevel());
 				if (controlled.getLevel() > greyLevel)
@@ -87,9 +90,9 @@ namespace wowpp
 
 			// Reward the killer with experience points
 			const float t =
-				(controlled.getEntry().maxlevel() != controlled.getEntry().minlevel()) ?
-				(controlled.getLevel() - controlled.getEntry().minlevel()) / (controlled.getEntry().maxlevel() - controlled.getEntry().minlevel()) :
-				0.0f;
+			    (controlled.getEntry().maxlevel() != controlled.getEntry().minlevel()) ?
+			    (controlled.getLevel() - controlled.getEntry().minlevel()) / (controlled.getEntry().maxlevel() - controlled.getEntry().minlevel()) :
+			    0.0f;
 
 			// Base XP for equal level
 			UInt32 xp = interpolate(controlled.getEntry().minlevelxp(), controlled.getEntry().maxlevelxp(), t);
@@ -102,7 +105,9 @@ namespace wowpp
 				if (controlled.getLevel() >= maxLevelChar->getLevel())
 				{
 					UInt32 levelDiff = controlled.getLevel() - maxLevelChar->getLevel();
-					if (levelDiff > 4) levelDiff = 4;
+					if (levelDiff > 4) {
+						levelDiff = 4;
+					}
 					xp = ((maxLevelChar->getLevel() * 5 + xp) * (20 + levelDiff) / 10 + 1) / 2;
 				}
 				else
@@ -119,14 +124,15 @@ namespace wowpp
 					}
 				}
 			}
-						
+
 			// Group xp modifier
 			float groupModifier = xp::getGroupXpRate(lootRecipients.size(), false);
 			for (auto *character : lootRecipients)
 			{
 				const UInt32 greyLevel = xp::getGrayLevel(character->getLevel());
-				if (controlled.getLevel() <= greyLevel)
+				if (controlled.getLevel() <= greyLevel) {
 					continue;
+				}
 
 				float rate = groupModifier * static_cast<float>(character->getLevel()) / sum_lvl;
 

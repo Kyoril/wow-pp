@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "creature_spawner.h"
 #include "world_instance.h"
@@ -35,16 +35,16 @@
 namespace wowpp
 {
 	CreatureSpawner::CreatureSpawner(
-		WorldInstance &world,
-		const proto::UnitEntry &entry,
-		size_t maxCount,
-		GameTime respawnDelay,
-		math::Vector3 center,
-		boost::optional<float> rotation,
-		UInt32 emote,
-		float radius,
-		bool active,
-		bool respawn)
+	    WorldInstance &world,
+	    const proto::UnitEntry &entry,
+	    size_t maxCount,
+	    GameTime respawnDelay,
+	    math::Vector3 center,
+	    boost::optional<float> rotation,
+	    UInt32 emote,
+	    float radius,
+	    bool active,
+	    bool respawn)
 		: m_world(world)
 		, m_entry(entry)
 		, m_maxCount(maxCount)
@@ -67,7 +67,7 @@ namespace wowpp
 		}
 
 		m_respawnCountdown.ended.connect(
-			std::bind(&CreatureSpawner::onSpawnTime, this));
+		    std::bind(&CreatureSpawner::onSpawnTime, this));
 	}
 
 	CreatureSpawner::~CreatureSpawner()
@@ -111,12 +111,12 @@ namespace wowpp
 		--m_currentlySpawned;
 
 		const auto i = std::find_if(
-			std::begin(m_creatures),
-			std::end(m_creatures),
-			[&removed](const std::shared_ptr<GameUnit> &element)
-			{
-				return (element.get() == &removed);
-			});
+		                   std::begin(m_creatures),
+		                   std::end(m_creatures),
+		                   [&removed](const std::shared_ptr<GameUnit> &element)
+		{
+			return (element.get() == &removed);
+		});
 
 		assert(i != m_creatures.end());
 		eraseByMove(m_creatures, i);
@@ -132,7 +132,7 @@ namespace wowpp
 		}
 
 		m_respawnCountdown.setEnd(
-			getCurrentTime() + m_respawnDelay);
+		    getCurrentTime() + m_respawnDelay);
 	}
 
 	void CreatureSpawner::setState(bool active)

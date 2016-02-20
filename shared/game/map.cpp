@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "map.h"
 #include "shared/proto_data/maps.pb.h"
@@ -36,12 +36,12 @@ namespace wowpp
 	{
 	}
 
-	MapDataTile * Map::getTile(const TileIndex2D &position)
+	MapDataTile *Map::getTile(const TileIndex2D &position)
 	{
 		if ((position[0] >= 0) &&
-			(position[0] < static_cast<TileIndex>(m_tiles.width()) &&
-			(position[1] >= 0) &&
-			(position[1] < static_cast<TileIndex>(m_tiles.height()))))
+		        (position[0] < static_cast<TileIndex>(m_tiles.width()) &&
+		         (position[1] >= 0) &&
+		         (position[1] < static_cast<TileIndex>(m_tiles.height()))))
 		{
 			auto &tile = m_tiles(position[0], position[1]);
 			if (!tile)
@@ -66,7 +66,7 @@ namespace wowpp
 
 				// Read map header
 				MapHeaderChunk mapHeaderChunk;
-				mapFile.read(reinterpret_cast<char*>(&mapHeaderChunk), sizeof(MapHeaderChunk));
+				mapFile.read(reinterpret_cast<char *>(&mapHeaderChunk), sizeof(MapHeaderChunk));
 				if (mapHeaderChunk.fourCC != 0x50414D57)
 				{
 					//ELOG("Could not load map file " << file << ": Invalid four-cc code!");
@@ -89,23 +89,23 @@ namespace wowpp
 				mapFile.seekg(mapHeaderChunk.offsAreaTable, std::ios::beg);
 
 				// Create new tile and read area data
-				mapFile.read(reinterpret_cast<char*>(&tile->areas), sizeof(MapAreaChunk));
+				mapFile.read(reinterpret_cast<char *>(&tile->areas), sizeof(MapAreaChunk));
 				if (tile->areas.fourCC != 0x52414D57 || tile->areas.size != sizeof(MapAreaChunk) - 8)
 				{
 					WLOG("Map file " << file << " seems to be corrupted: Wrong area chunk");
 					//TODO: Should we cancel the loading process?
 				}
-			
+
 				// Read collision data
 				if (mapHeaderChunk.offsCollision)
 				{
 					mapFile.seekg(mapHeaderChunk.offsCollision, std::ios::beg);
 
 					// Read collision header
-					mapFile.read(reinterpret_cast<char*>(&tile->collision.fourCC), sizeof(UInt32));
-					mapFile.read(reinterpret_cast<char*>(&tile->collision.size), sizeof(UInt32));
-					mapFile.read(reinterpret_cast<char*>(&tile->collision.vertexCount), sizeof(UInt32));
-					mapFile.read(reinterpret_cast<char*>(&tile->collision.triangleCount), sizeof(UInt32));
+					mapFile.read(reinterpret_cast<char *>(&tile->collision.fourCC), sizeof(UInt32));
+					mapFile.read(reinterpret_cast<char *>(&tile->collision.size), sizeof(UInt32));
+					mapFile.read(reinterpret_cast<char *>(&tile->collision.vertexCount), sizeof(UInt32));
+					mapFile.read(reinterpret_cast<char *>(&tile->collision.triangleCount), sizeof(UInt32));
 					if (tile->collision.fourCC != 0x4C434D57 || tile->collision.size < sizeof(UInt32) * 4)
 					{
 						WLOG("Map file " << file << " seems to be corrupted: Wrong collision chunk (Size: " << tile->collision.size);
@@ -115,11 +115,11 @@ namespace wowpp
 					// Read all vertices
 					tile->collision.vertices.resize(tile->collision.vertexCount);
 					size_t numBytes = sizeof(float) * 3 * tile->collision.vertexCount;
-					mapFile.read(reinterpret_cast<char*>(tile->collision.vertices.data()), numBytes);
+					mapFile.read(reinterpret_cast<char *>(tile->collision.vertices.data()), numBytes);
 
 					// Read all indices
 					tile->collision.triangles.resize(tile->collision.triangleCount);
-					mapFile.read(reinterpret_cast<char*>(tile->collision.triangles.data()), sizeof(Triangle) * tile->collision.triangleCount);
+					mapFile.read(reinterpret_cast<char *>(tile->collision.triangles.data()), sizeof(Triangle) * tile->collision.triangleCount);
 				}
 
 				/*
@@ -147,10 +147,11 @@ namespace wowpp
 		return 0.0f;
 	}
 
-	bool Map::isInLineOfSight(const math::Vector3 & posA, const math::Vector3 & posB)
+	bool Map::isInLineOfSight(const math::Vector3 &posA, const math::Vector3 &posB)
 	{
-		if (posA == posB)
+		if (posA == posB) {
 			return true;
+		}
 
 		// Calculate grid x coordinates
 		TileIndex2D startTileIdx;

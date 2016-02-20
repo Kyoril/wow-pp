@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "solid_visibility_grid.h"
 #include "game/visibility_tile.h"
@@ -38,7 +38,7 @@ namespace wowpp
 		size_t getGridLength(size_t worldWidth, float tileWidth)
 		{
 			return std::max<size_t>(1,
-				static_cast<size_t>(static_cast<float>(worldWidth)* constants::MapWidth / tileWidth));
+			                        static_cast<size_t>(static_cast<float>(worldWidth) * constants::MapWidth / tileWidth));
 		}
 	}
 
@@ -62,9 +62,9 @@ namespace wowpp
 	VisibilityTile *SolidVisibilityGrid::getTile(const TileIndex2D &position)
 	{
 		if ((position[0] >= 0) &&
-			(position[0] < static_cast<TileIndex>(m_tiles.width()) &&
-			(position[1] >= 0) &&
-			(position[1] < static_cast<TileIndex>(m_tiles.height()))))
+		        (position[0] < static_cast<TileIndex>(m_tiles.width()) &&
+		         (position[1] >= 0) &&
+		         (position[1] < static_cast<TileIndex>(m_tiles.height()))))
 		{
 			auto &tile = m_tiles(position[0], position[1]);
 			if (!tile)

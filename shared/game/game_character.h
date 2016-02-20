@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -97,7 +97,7 @@ namespace wowpp
 			QuestLog14_1				= 0x3E + unit_fields::UnitFieldCount,
 			QuestLog14_2				= 0x3F + unit_fields::UnitFieldCount,
 			QuestLog14_3				= 0x40 + unit_fields::UnitFieldCount,
-			QuestLog14_4				= 0x41+ unit_fields::UnitFieldCount,
+			QuestLog14_4				= 0x41 + unit_fields::UnitFieldCount,
 			QuestLog15_1				= 0x42 + unit_fields::UnitFieldCount,
 			QuestLog15_2				= 0x43 + unit_fields::UnitFieldCount,
 			QuestLog15_3				= 0x44 + unit_fields::UnitFieldCount,
@@ -241,14 +241,14 @@ namespace wowpp
 			ParryPercentage				= 0x43C + unit_fields::UnitFieldCount,
 			Expertise					= 0x43D + unit_fields::UnitFieldCount,
 			OffHandExpertise			= 0x43E + unit_fields::UnitFieldCount,
-			CritPercentage				= 0x43F + unit_fields::UnitFieldCount, 
+			CritPercentage				= 0x43F + unit_fields::UnitFieldCount,
 			RangedCritPercentage		= 0x440 + unit_fields::UnitFieldCount,
 			OffHandCritPercentage		= 0x441 + unit_fields::UnitFieldCount,
 			SpellCritPercentage			= 0x442 + unit_fields::UnitFieldCount,
 			ShieldBlock					= 0x449 + unit_fields::UnitFieldCount,
 			ExploredZones_1				= 0x44A + unit_fields::UnitFieldCount,
 			RestStateExperience			= 0x4CA + unit_fields::UnitFieldCount,
-			Coinage						= 0x4CB + unit_fields::UnitFieldCount, 
+			Coinage						= 0x4CB + unit_fields::UnitFieldCount,
 			ModDamageDonePos			= 0x4CC + unit_fields::UnitFieldCount,
 			ModDamageDoneNeg			= 0x4D3 + unit_fields::UnitFieldCount,
 			ModDamageDonePct			= 0x4DA + unit_fields::UnitFieldCount,
@@ -494,36 +494,38 @@ namespace wowpp
 		}
 	};
 
-	/// 
+	///
 	class GameCharacter : public GameUnit
 	{
-		friend io::Writer &operator << (io::Writer &w, GameCharacter const& object);
-		friend io::Reader &operator >> (io::Reader &r, GameCharacter& object);
+		friend io::Writer &operator << (io::Writer &w, GameCharacter const &object);
+		friend io::Reader &operator >> (io::Reader &r, GameCharacter &object);
 
 	public:
 
 		boost::signals2::signal<void(Int32, UInt32)> proficiencyChanged;
-		boost::signals2::signal<void(game::InventoryChangeFailure, GameItem*, GameItem*)> inventoryChangeFailure;
+		boost::signals2::signal<void(game::InventoryChangeFailure, GameItem *, GameItem *)> inventoryChangeFailure;
 		boost::signals2::signal<void()> comboPointsChanged;
 		boost::signals2::signal<void(UInt64, UInt32, UInt32)> experienceGained;
 		boost::signals2::signal<void()> homeChanged;
 		/// Parameters: Quest-ID, Old Status, New Status
-		boost::signals2::signal<void(UInt32, const QuestStatusData&)> questDataChanged;
-		boost::signals2::signal<void(const proto::QuestEntry&, UInt64 guid, UInt32 entry, UInt32 count, UInt32 total)> questKillCredit;
-		boost::signals2::signal<void(LootInstance&)> lootinspect;
+		boost::signals2::signal<void(UInt32, const QuestStatusData &)> questDataChanged;
+		boost::signals2::signal<void(const proto::QuestEntry &, UInt64 guid, UInt32 entry, UInt32 count, UInt32 total)> questKillCredit;
+		boost::signals2::signal<void(LootInstance &)> lootinspect;
 
 	public:
 
-		/// 
+		///
 		explicit GameCharacter(
-			proto::Project &project,
-			TimerQueue &timers);
+		    proto::Project &project,
+		    TimerQueue &timers);
 		~GameCharacter();
 
 		/// @copydoc GameObject::initialize()
 		virtual void initialize() override;
 		/// @copydoc GameObject::getTypeId()
-		virtual ObjectType getTypeId() const override { return object_type::Character; }
+		virtual ObjectType getTypeId() const override {
+			return object_type::Character;
+		}
 
 		/// Adds a spell to the list of known spells of this character.
 		/// Note that passive spells will also be cast after they are added.
@@ -535,40 +537,68 @@ namespace wowpp
 		/// Sets the name of this character.
 		void setName(const String &name);
 		/// Gets the name of this character.
-		const String &getName() const override { return m_name; }
+		const String &getName() const override {
+			return m_name;
+		}
 		/// Updates the zone where this character is. This variable is used by
 		/// the friend list and the /who list.
-		void setZone(UInt32 zoneIndex) { m_zoneIndex = zoneIndex; }
+		void setZone(UInt32 zoneIndex) {
+			m_zoneIndex = zoneIndex;
+		}
 		/// Gets the zone index where this character is.
-		UInt32 getZone() const { return m_zoneIndex; }
+		UInt32 getZone() const {
+			return m_zoneIndex;
+		}
 		/// Gets a list of all known spells of this character.
-		const std::vector<const proto::SpellEntry*> &getSpells() const { return m_spells; }
+		const std::vector<const proto::SpellEntry *> &getSpells() const {
+			return m_spells;
+		}
 		/// Gets the weapon proficiency mask of this character (which weapons can be
 		/// wielded)
-		UInt32 getWeaponProficiency() const { return m_weaponProficiency; }
+		UInt32 getWeaponProficiency() const {
+			return m_weaponProficiency;
+		}
 		/// Gets the armor proficiency mask of this character (which armor types
 		/// can be wielded: Cloth, Leather, Mail, Plate etc.)
-		UInt32 getArmorProficiency() const { return m_armorProficiency; }
+		UInt32 getArmorProficiency() const {
+			return m_armorProficiency;
+		}
 		/// Adds a new weapon proficiency to the mask.
-		void addWeaponProficiency(UInt32 mask) { m_weaponProficiency |= mask; proficiencyChanged(2, m_weaponProficiency); }
+		void addWeaponProficiency(UInt32 mask) {
+			m_weaponProficiency |= mask;
+			proficiencyChanged(2, m_weaponProficiency);
+		}
 		/// Adds a new armor proficiency to the mask.
-		void addArmorProficiency(UInt32 mask) { m_armorProficiency |= mask; proficiencyChanged(4, m_armorProficiency); }
+		void addArmorProficiency(UInt32 mask) {
+			m_armorProficiency |= mask;
+			proficiencyChanged(4, m_armorProficiency);
+		}
 		/// Removes a weapon proficiency from the mask.
-		void removeWeaponProficiency(UInt32 mask) { m_weaponProficiency &= ~mask; proficiencyChanged(2, m_weaponProficiency); }
+		void removeWeaponProficiency(UInt32 mask) {
+			m_weaponProficiency &= ~mask;
+			proficiencyChanged(2, m_weaponProficiency);
+		}
 		/// Removes an armor proficiency from the mask.
-		void removeArmorProficiency(UInt32 mask) { m_armorProficiency &= ~mask; proficiencyChanged(4, m_armorProficiency); }
+		void removeArmorProficiency(UInt32 mask) {
+			m_armorProficiency &= ~mask;
+			proficiencyChanged(4, m_armorProficiency);
+		}
 		/// Adds a new skill to the list of known skills of this character.
 		void addSkill(const proto::SkillEntry &skill);
-		/// 
+		///
 		void removeSkill(UInt32 skillId);
-		/// 
+		///
 		void setSkillValue(UInt32 skillId, UInt16 current, UInt16 maximum);
 		/// Returns true if the character knows a specific skill.
 		bool hasSkill(UInt32 skillId) const;
 		/// Gets the GUID of the current combo point target.
-		UInt64 getComboTarget() const { return m_comboTarget; }
+		UInt64 getComboTarget() const {
+			return m_comboTarget;
+		}
 		/// Gets the number of combo points of this character.
-		UInt8 getComboPoints() const { return m_comboPoints; }
+		UInt8 getComboPoints() const {
+			return m_comboPoints;
+		}
 		/// Adds combo points to the specified target. This will reset combo points
 		/// if target is a new target combo target. If a value of 0 is specified, the combo
 		/// points will be reset to zero.
@@ -585,31 +615,41 @@ namespace wowpp
 		bool hasMainHandWeapon() const override;
 		bool hasOffHandWeapon() const override;
 
-		GroupUpdateFlags getGroupUpdateFlags() const { return m_groupUpdateFlags; }
+		GroupUpdateFlags getGroupUpdateFlags() const {
+			return m_groupUpdateFlags;
+		}
 		void modifyGroupUpdateFlags(GroupUpdateFlags flags, bool apply);
-		void clearGroupUpdateFlags() { m_groupUpdateFlags = group_update_flags::None; }
+		void clearGroupUpdateFlags() {
+			m_groupUpdateFlags = group_update_flags::None;
+		}
 		bool canBlock() const override;
 		bool canParry() const override;
 		bool canDodge() const override;
 		bool canDualWield() const override;
 
 		/// Gets the characters group id.
-		UInt64 getGroupId() const { return m_groupId; }
+		UInt64 getGroupId() const {
+			return m_groupId;
+		}
 		/// Sets the characters group id.
-		void setGroupId(UInt64 groupId) { m_groupId = groupId; }
+		void setGroupId(UInt64 groupId) {
+			m_groupId = groupId;
+		}
 
 		/// Gets a reference to the characters inventory component.
-		Inventory &getInventory() { return m_inventory; }
+		Inventory &getInventory() {
+			return m_inventory;
+		}
 
-		/// 
+		///
 		game::QuestStatus getQuestStatus(UInt32 quest) const;
-		/// 
+		///
 		bool acceptQuest(UInt32 quest);
-		/// 
+		///
 		bool abandonQuest(UInt32 quest);
-		/// 
+		///
 		bool rewardQuest(UInt32 quest, UInt8 rewardChoice, std::function<void(UInt32)> callback);
-		/// 
+		///
 		void onQuestKillCredit(GameCreature &killed);
 
 		bool fulfillsQuestRequirements(const proto::QuestEntry &entry) const;
@@ -651,8 +691,8 @@ namespace wowpp
 		UInt32 m_zoneIndex;
 		UInt32 m_weaponProficiency;
 		UInt32 m_armorProficiency;
-		std::vector<const proto::SkillEntry*> m_skills;
-		std::vector<const proto::SpellEntry*> m_spells;
+		std::vector<const proto::SkillEntry *> m_skills;
+		std::vector<const proto::SpellEntry *> m_spells;
 		UInt64 m_comboTarget;
 		UInt8 m_comboPoints;
 		float m_healthRegBase, m_manaRegBase;
@@ -675,6 +715,6 @@ namespace wowpp
 		std::map<UInt32, Int8> m_requiredQuestItems;
 	};
 
-	io::Writer &operator << (io::Writer &w, GameCharacter const& object);
-	io::Reader &operator >> (io::Reader &r, GameCharacter& object);
+	io::Writer &operator << (io::Writer &w, GameCharacter const &object);
+	io::Reader &operator >> (io::Reader &r, GameCharacter &object);
 }

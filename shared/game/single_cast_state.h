@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -32,31 +32,33 @@
 
 namespace wowpp
 {
-	/// 
+	///
 	class SingleCastState final : public SpellCast::CastState, public std::enable_shared_from_this<SingleCastState>, public boost::noncopyable
 	{
 	public:
 
 		explicit SingleCastState(
-			SpellCast &cast,
-			const proto::SpellEntry &spell,
-			SpellTargetMap target,
-			Int32 basePoints,
-			GameTime castTime,
-			bool isProc = false,
-			UInt64 itemGuid = 0);
+		    SpellCast &cast,
+		    const proto::SpellEntry &spell,
+		    SpellTargetMap target,
+		    Int32 basePoints,
+		    GameTime castTime,
+		    bool isProc = false,
+		    UInt64 itemGuid = 0);
 		void activate() override;
 		std::pair<game::SpellCastResult, SpellCasting *> startCast(
-			SpellCast &cast,
-			const proto::SpellEntry &spell,
-			SpellTargetMap target,
-			Int32 basePoints,
-			GameTime castTime,
-			bool doReplacePreviousCast,
-			UInt64 itemGuid) override;
+		    SpellCast &cast,
+		    const proto::SpellEntry &spell,
+		    SpellTargetMap target,
+		    Int32 basePoints,
+		    GameTime castTime,
+		    bool doReplacePreviousCast,
+		    UInt64 itemGuid) override;
 		void stopCast() override;
 		void onUserStartsMoving() override;
-		SpellCasting &getCasting() { return m_casting; }
+		SpellCasting &getCasting() {
+			return m_casting;
+		}
 
 	private:
 
@@ -92,7 +94,7 @@ namespace wowpp
 		void spellEffectAttackMe(const proto::SpellEffect &effect);
 		void spellEffectNormalizedWeaponDamage(const proto::SpellEffect &effect);
 		void spellEffectStealBeneficialBuff(const proto::SpellEffect &effect);
-		
+
 		void meleeSpecialAttack(const proto::SpellEffect &effect, bool basepointsArePct);
 
 	private:
@@ -124,7 +126,7 @@ namespace wowpp
 		void onTargetRemovedOrDead();
 		void onUserDamaged();
 		void executeMeleeAttack();	// deal damage stored in m_meleeDamage
-		
-		typedef std::function<void(const wowpp::proto::SpellEffect&)> EffectHandler;
+
+		typedef std::function<void(const wowpp::proto::SpellEffect &)> EffectHandler;
 	};
 }

@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "loot_instance.h"
 #include "proto_data/project.h"
@@ -34,7 +34,7 @@ namespace wowpp
 	{
 	}
 
-	LootInstance::LootInstance(proto::ItemManager &items, UInt64 lootGuid, const proto::LootEntry *entry, UInt32 minGold, UInt32 maxGold, const std::vector<GameCharacter*> &lootRecipients)
+	LootInstance::LootInstance(proto::ItemManager &items, UInt64 lootGuid, const proto::LootEntry *entry, UInt32 minGold, UInt32 maxGold, const std::vector<GameCharacter *> &lootRecipients)
 		: m_itemManager(items)
 		, m_lootGuid(lootGuid)
 		, m_gold(0)
@@ -52,7 +52,7 @@ namespace wowpp
 				//TODO std::shuffle(shuffled.definitions().begin(), shuffled.definitions().end(), randomGenerator);
 
 				bool foundNonEqualChanced = false;
-				std::vector<const proto::LootDefinition*> equalChanced;
+				std::vector<const proto::LootDefinition *> equalChanced;
 				for (int i = 0; i < group.definitions_size(); ++i)
 				{
 					const auto &def = group.definitions(i);
@@ -65,7 +65,7 @@ namespace wowpp
 						for (const auto *recipient : lootRecipients)
 						{
 							if (recipient &&
-								recipient->needsQuestItem(def.item()))
+							        recipient->needsQuestItem(def.item()))
 							{
 								if (recipient->getQuestStatus(questId) == game::quest_status::Incomplete)
 								{
@@ -76,8 +76,9 @@ namespace wowpp
 						}
 
 						// Skip this quest item
-						if (questItemCount == 0)
+						if (questItemCount == 0) {
 							continue;
+						}
 					}
 
 					if (def.dropchance() == 0.0f)
@@ -87,7 +88,7 @@ namespace wowpp
 					}
 
 					if (def.dropchance() > 0.0f &&
-						def.dropchance() >= groupRoll)
+					        def.dropchance() >= groupRoll)
 					{
 						addLootItem(def);
 						foundNonEqualChanced = true;
@@ -98,7 +99,7 @@ namespace wowpp
 				}
 
 				if (!foundNonEqualChanced &&
-					!equalChanced.empty())
+				        !equalChanced.empty())
 				{
 					std::uniform_int_distribution<UInt32> equalDistribution(0, equalChanced.size() - 1);
 					UInt32 index = equalDistribution(randomGenerator);
@@ -115,8 +116,9 @@ namespace wowpp
 	void LootInstance::addLootItem(const proto::LootDefinition &def)
 	{
 		const auto *lootItem = m_itemManager.getById(def.item());
-		if (!lootItem)
+		if (!lootItem) {
 			return;
+		}
 
 		UInt32 dropCount = def.mincount();
 		if (def.maxcount() > def.mincount())
@@ -132,7 +134,9 @@ namespace wowpp
 		}
 
 		// Always at least 1 item
-		if (dropCount == 0) dropCount = 1;
+		if (dropCount == 0) {
+			dropCount = 1;
+		}
 		m_items.emplace_back(LootItem(dropCount, def));
 	}
 
@@ -145,9 +149,11 @@ namespace wowpp
 		}
 	}
 
-	const LootItem * LootInstance::getLootDefinition(UInt8 slot) const
+	const LootItem *LootInstance::getLootDefinition(UInt8 slot) const
 	{
-		if (slot >= m_items.size()) return nullptr;
+		if (slot >= m_items.size()) {
+			return nullptr;
+		}
 		return &m_items[slot];
 	}
 
@@ -162,8 +168,9 @@ namespace wowpp
 		{
 			for (auto &item : m_items)
 			{
-				if (!item.isLooted)
+				if (!item.isLooted) {
 					return false;
+				}
 			}
 
 			return true;
@@ -174,8 +181,9 @@ namespace wowpp
 
 	void LootInstance::takeItem(UInt8 slot)
 	{
-		if (slot >= m_items.size()) 
+		if (slot >= m_items.size()) {
 			return;
+		}
 
 		if (m_items[slot].isLooted)
 		{
@@ -189,17 +197,17 @@ namespace wowpp
 		}
 	}
 
-	io::Writer & operator<<(io::Writer &w, LootInstance const& loot)
+	io::Writer &operator<<(io::Writer &w, LootInstance const &loot)
 	{
 		// Write gold
 		w
-			<< io::write<NetUInt32>(loot.m_gold);
+		        << io::write<NetUInt32>(loot.m_gold);
 
 		// Write placeholder item count (real value will be overwritten later)
 		const size_t itemCountpos = w.sink().position();
 		w
-			<< io::write<NetUInt8>(loot.m_items.size());
-		
+		        << io::write<NetUInt8>(loot.m_items.size());
+
 		// Iterate through all loot items...
 		UInt8 realCount = 0;
 		UInt8 slot = 0;
@@ -212,18 +220,18 @@ namespace wowpp
 				if (itemEntry)
 				{
 					w
-						<< io::write<NetUInt8>(slot)
-						<< io::write<NetUInt32>(def.definition.item())
-						<< io::write<NetUInt32>(def.count)
-						<< io::write<NetUInt32>(itemEntry->displayid())
-						<< io::write<NetUInt32>(0)	// RandomSuffixIndex TODO
-						<< io::write<NetUInt32>(0)	// RandomPropertyId TODO
-						<< io::write<NetUInt8>(game::loot_slot_type::AllowLoot)
-						;
+					        << io::write<NetUInt8>(slot)
+					        << io::write<NetUInt32>(def.definition.item())
+					        << io::write<NetUInt32>(def.count)
+					        << io::write<NetUInt32>(itemEntry->displayid())
+					        << io::write<NetUInt32>(0)	// RandomSuffixIndex TODO
+					        << io::write<NetUInt32>(0)	// RandomPropertyId TODO
+					        << io::write<NetUInt8>(game::loot_slot_type::AllowLoot)
+					        ;
 					realCount++;
 				}
 			}
-			
+
 			slot++;
 		}
 

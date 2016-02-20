@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -247,18 +247,18 @@ namespace wowpp
 
 	typedef item_subclass_trade_goods::Type ItemSubclassTradeGoods;
 
-	/// 
+	///
 	struct ItemEntry : BasicTemplate<UInt32>
 	{
 		typedef BasicTemplate<UInt32> Super;
 
-		/// 
+		///
 		struct ItemStatEntry
 		{
 			UInt8 statType;
 			Int16 statValue;
 
-			/// 
+			///
 			ItemStatEntry()
 				: statType(0)
 				, statValue(0)
@@ -266,14 +266,14 @@ namespace wowpp
 			}
 		};
 
-		/// 
+		///
 		struct ItemDamageEntry
 		{
 			float min;
 			float max;
 			UInt8 type;
 
-			/// 
+			///
 			ItemDamageEntry()
 				: min(0.0f)
 				, max(0.0f)
@@ -282,7 +282,7 @@ namespace wowpp
 			}
 		};
 
-		/// 
+		///
 		struct ItemSpellEntry
 		{
 			const SpellEntry *spell;
@@ -293,7 +293,7 @@ namespace wowpp
 			Int16 category;
 			Int32 categoryCooldown;
 
-			/// 
+			///
 			ItemSpellEntry()
 				: spell(nullptr)
 				, trigger(0)
@@ -306,13 +306,13 @@ namespace wowpp
 			}
 		};
 
-		/// 
+		///
 		struct ItemSocketEntry
 		{
 			Int8 color;
 			Int8 content;
 
-			/// 
+			///
 			ItemSocketEntry()
 				: color(0)
 				, content(0)
@@ -381,7 +381,7 @@ namespace wowpp
 		UInt32 duration;
 		UInt32 extraFlags;
 
-		/// 
+		///
 		ItemEntry();
 
 		bool load(DataLoadContext &context, const ReadTableWrapper &wrapper);

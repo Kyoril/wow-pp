@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "big_number.h"
 #include <openssl/ssl.h>
@@ -65,7 +65,7 @@ namespace wowpp
 		BN_add_word(m_bn, static_cast<UInt32>(value & 0xFFFFFFFF));
 	}
 
-	void BigNumber::setBinary(const UInt8* data, size_t length)
+	void BigNumber::setBinary(const UInt8 *data, size_t length)
 	{
 		std::vector<UInt8> vector(data, data + length);
 		setBinary(vector);
@@ -98,7 +98,7 @@ namespace wowpp
 	{
 		BigNumber ret;
 
-		BN_CTX* bnctx = BN_CTX_new();
+		BN_CTX *bnctx = BN_CTX_new();
 		BN_mod_exp(ret.m_bn, m_bn, bn1.m_bn, bn2.m_bn, bnctx);
 		BN_CTX_free(bnctx);
 
@@ -109,7 +109,7 @@ namespace wowpp
 	{
 		BigNumber ret;
 
-		BN_CTX* bnctx = BN_CTX_new();
+		BN_CTX *bnctx = BN_CTX_new();
 		BN_exp(ret.m_bn, m_bn, Other.m_bn, bnctx);
 		BN_CTX_free(bnctx);
 
@@ -149,7 +149,7 @@ namespace wowpp
 
 	String BigNumber::asHexStr() const
 	{
-		char* buffer = BN_bn2hex(m_bn);
+		char *buffer = BN_bn2hex(m_bn);
 		String ret(buffer);
 
 		// Free this since we copied it to the string already. If we don't do this,
@@ -161,7 +161,7 @@ namespace wowpp
 
 	String BigNumber::asDecStr() const
 	{
-		char* buffer = BN_bn2dec(m_bn);
+		char *buffer = BN_bn2dec(m_bn);
 		String ret(buffer);
 
 		// Free this since we copied it to the string already. If we don't do this,
@@ -191,7 +191,7 @@ namespace wowpp
 
 	BigNumber BigNumber::operator*=(const BigNumber &Other)
 	{
-		BN_CTX* bnctx = BN_CTX_new();
+		BN_CTX *bnctx = BN_CTX_new();
 		BN_mul(m_bn, m_bn, Other.m_bn, bnctx);
 		BN_CTX_free(bnctx);
 
@@ -200,7 +200,7 @@ namespace wowpp
 
 	BigNumber BigNumber::operator/=(const BigNumber &Other)
 	{
-		BN_CTX* bnctx = BN_CTX_new();
+		BN_CTX *bnctx = BN_CTX_new();
 		BN_div(m_bn, nullptr, m_bn, Other.m_bn, bnctx);
 		BN_CTX_free(bnctx);
 
@@ -209,7 +209,7 @@ namespace wowpp
 
 	BigNumber BigNumber::operator%=(const BigNumber &Other)
 	{
-		BN_CTX* bnctx = BN_CTX_new();
+		BN_CTX *bnctx = BN_CTX_new();
 		BN_mod(m_bn, m_bn, Other.m_bn, bnctx);
 		BN_CTX_free(bnctx);
 

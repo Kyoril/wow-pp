@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,15 +10,15 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -83,12 +83,12 @@ namespace wowpp
 	};
 
 
-	/// 
+	///
 	template<class P, class MySocket = boost::asio::ip::tcp::socket>
 	class Connection
-        : public AbstractConnection<P>
-        , public boost::noncopyable
-        , public std::enable_shared_from_this<Connection<P, MySocket> >
+		: public AbstractConnection<P>
+		, public boost::noncopyable
+		, public std::enable_shared_from_this<Connection<P, MySocket> >
 	{
 	public:
 
@@ -109,7 +109,7 @@ namespace wowpp
 		virtual ~Connection()
 		{
 		}
-		
+
 		void setListener(Listener &Listener_) override
 		{
 			m_listener = &Listener_;
@@ -190,11 +190,13 @@ namespace wowpp
 			m_sendBuffer(data.data(), data.size());
 		}
 
-		MySocket &getSocket() { return *m_socket; }
+		MySocket &getSocket() {
+			return *m_socket;
+		}
 
 		static std::shared_ptr<Connection> create(boost::asio::io_service &service, Listener *listener)
 		{
-            return std::make_shared<Connection<P, MySocket> >(std::unique_ptr<MySocket>(new MySocket(service)), listener);
+			return std::make_shared<Connection<P, MySocket> >(std::unique_ptr<MySocket>(new MySocket(service)), listener);
 		}
 
 	private:
@@ -215,9 +217,9 @@ namespace wowpp
 			assert(!m_sending.empty());
 
 			boost::asio::async_write(
-				*m_socket,
-				boost::asio::buffer(m_sending),
-				std::bind(&Connection<P, Socket>::sent, this->shared_from_this(), std::placeholders::_1));
+			    *m_socket,
+			    boost::asio::buffer(m_sending),
+			    std::bind(&Connection<P, Socket>::sent, this->shared_from_this(), std::placeholders::_1));
 		}
 
 		void sent(const boost::system::error_code &error)
@@ -227,7 +229,7 @@ namespace wowpp
 				disconnected();
 				return;
 			}
-			
+
 			m_sending.clear();
 			flush();
 		}
@@ -235,8 +237,8 @@ namespace wowpp
 		void beginReceive()
 		{
 			m_socket->async_read_some(
-				boost::asio::buffer(m_receiving.data(), m_receiving.size()),
-				std::bind(&Connection<P, Socket>::received, this->shared_from_this(), std::placeholders::_2));
+			    boost::asio::buffer(m_receiving.data(), m_receiving.size()),
+			    std::bind(&Connection<P, Socket>::received, this->shared_from_this(), std::placeholders::_2));
 		}
 
 		void received(std::size_t size)
@@ -250,16 +252,16 @@ namespace wowpp
 			}
 
 			m_received.append(
-				m_receiving.begin(),
-				m_receiving.begin() + size);
+			    m_receiving.begin(),
+			    m_receiving.begin() + size);
 
 			m_isParsingIncomingData = true;
 			AssignOnExit<bool> isParsingIncomingDataResetter(
-				m_isParsingIncomingData, false);
+			    m_isParsingIncomingData, false);
 
 			bool nextPacket;
 			std::size_t parsedUntil = 0;
-			do 
+			do
 			{
 				nextPacket = false;
 
@@ -274,12 +276,12 @@ namespace wowpp
 
 				switch (state)
 				{
-					case receive_state::Incomplete:
+				case receive_state::Incomplete:
 					{
 						break;
 					}
 
-					case receive_state::Complete:
+				case receive_state::Complete:
 					{
 						if (m_listener)
 						{
@@ -291,7 +293,7 @@ namespace wowpp
 						break;
 					}
 
-					case receive_state::Malformed:
+				case receive_state::Malformed:
 					{
 						m_socket.reset();
 						if (m_listener)
@@ -309,15 +311,16 @@ namespace wowpp
 					m_socket.reset();
 					return;
 				}
-			} while (nextPacket);
+			}
+			while (nextPacket);
 
 			if (parsedUntil)
 			{
 				assert(parsedUntil <= m_received.size());
 
 				m_received.erase(
-					m_received.begin(),
-					m_received.begin() + static_cast<std::ptrdiff_t>(parsedUntil));
+				    m_received.begin(),
+				    m_received.begin() + static_cast<std::ptrdiff_t>(parsedUntil));
 			}
 
 			beginReceive();

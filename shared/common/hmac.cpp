@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "hmac.h"
 #include <boost/iostreams/copy.hpp>
@@ -34,7 +34,7 @@ namespace wowpp
 	{
 
 	};
-	
+
 	OpenSSL_HMACHashSink::OpenSSL_HMACHashSink()
 	{
 		createContext();
@@ -52,12 +52,12 @@ namespace wowpp
 		}
 
 #ifdef __APPLE__
-        HMAC_Update(m_context.get(), reinterpret_cast<const unsigned char*>(data), static_cast<size_t>(length));
+		HMAC_Update(m_context.get(), reinterpret_cast<const unsigned char *>(data), static_cast<size_t>(length));
 #else
-        if (!HMAC_Update(m_context.get(), reinterpret_cast<const unsigned char*>(data), static_cast<size_t>(length)))
-        {
-            throw std::runtime_error("HMAC_Update failed");
-        }
+		if (!HMAC_Update(m_context.get(), reinterpret_cast<const unsigned char *>(data), static_cast<size_t>(length)))
+		{
+			throw std::runtime_error("HMAC_Update failed");
+		}
 #endif
 
 		return length;
@@ -68,14 +68,14 @@ namespace wowpp
 		HMACHash digest;
 		assert(digest.size() == 20);
 		unsigned int len = 0;
-        
+
 #ifdef __APPLE__
-        HMAC_Final(m_context.get(), digest.data(), &len);
+		HMAC_Final(m_context.get(), digest.data(), &len);
 #else
-        if (!HMAC_Final(m_context.get(), digest.data(), &len))
-        {
-            throw std::runtime_error("HMAC_Final failed");
-        }
+		if (!HMAC_Final(m_context.get(), digest.data(), &len))
+		{
+			throw std::runtime_error("HMAC_Final failed");
+		}
 #endif
 		assert(len == 20);
 
@@ -87,20 +87,32 @@ namespace wowpp
 	{
 		// Setup key
 		size_t i = 0;
-		m_key[i++] = 0x38; m_key[i++] = 0xA7; m_key[i++] = 0x83; m_key[i++] = 0x15;
-		m_key[i++] = 0xF8; m_key[i++] = 0x92; m_key[i++] = 0x25; m_key[i++] = 0x30;
-		m_key[i++] = 0x71; m_key[i++] = 0x98; m_key[i++] = 0x67; m_key[i++] = 0xB1;
-		m_key[i++] = 0x8C; m_key[i++] = 0x04; m_key[i++] = 0xE2; m_key[i++] = 0xAA;
+		m_key[i++] = 0x38;
+		m_key[i++] = 0xA7;
+		m_key[i++] = 0x83;
+		m_key[i++] = 0x15;
+		m_key[i++] = 0xF8;
+		m_key[i++] = 0x92;
+		m_key[i++] = 0x25;
+		m_key[i++] = 0x30;
+		m_key[i++] = 0x71;
+		m_key[i++] = 0x98;
+		m_key[i++] = 0x67;
+		m_key[i++] = 0xB1;
+		m_key[i++] = 0x8C;
+		m_key[i++] = 0x04;
+		m_key[i++] = 0xE2;
+		m_key[i++] = 0xAA;
 
 		m_context = std::make_shared<Context>();
 		HMAC_CTX_init(m_context.get());
 #ifdef __APPLE__
-        HMAC_Init_ex(m_context.get(), m_key.data(), m_key.size(), EVP_sha1(), nullptr);
+		HMAC_Init_ex(m_context.get(), m_key.data(), m_key.size(), EVP_sha1(), nullptr);
 #else
-        if (!HMAC_Init_ex(m_context.get(), m_key.data(), m_key.size(), EVP_sha1(), nullptr))
-        {
-            throw std::runtime_error("HMAC_Init_ex failed");
-        }
+		if (!HMAC_Init_ex(m_context.get(), m_key.data(), m_key.size(), EVP_sha1(), nullptr))
+		{
+			throw std::runtime_error("HMAC_Init_ex failed");
+		}
 #endif
 	}
 
@@ -153,7 +165,7 @@ namespace wowpp
 
 		HMACHash result;
 
-		for (unsigned char & e : result)
+		for (unsigned char &e : result)
 		{
 			char high, low;
 			source >> high >> low;

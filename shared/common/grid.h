@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -62,8 +62,8 @@ namespace wowpp
 
 		template <class Unsigned>
 		explicit Grid(Vector<Unsigned, 2> size)
-		    : m_contents(size[0] * size[1])
-		    , m_width(size[0])
+			: m_contents(size[0] * size[1])
+			, m_width(size[0])
 		{
 		}
 
@@ -174,8 +174,8 @@ namespace wowpp
 			const auto oldSize = getSize();
 			Grid newGrid(size);
 			const Vector<Unsigned, 2> preservedElements(
-			        std::min(oldSize[0], size[0]),
-			        std::min(oldSize[1], size[1]));
+			    std::min(oldSize[0], size[0]),
+			    std::min(oldSize[1], size[1]));
 			for (size_t y = 0; y < preservedElements[1]; ++y)
 			{
 				for (size_t x = 0; x < preservedElements[0]; ++x)

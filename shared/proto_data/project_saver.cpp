@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "project_saver.h"
 #include "simple_file_format/sff_write.h"
@@ -43,11 +43,11 @@ namespace wowpp
 
 			bool success = true;
 
-			for (const ProjectSaver::Manager & manager : managers)
+			for (const ProjectSaver::Manager &manager : managers)
 			{
 				success =
-					saveAndAddManagerToTable(fileTable, directory, manager) &&
-					success;
+				    saveAndAddManagerToTable(fileTable, directory, manager) &&
+				    success;
 			}
 
 			return success;
@@ -58,7 +58,7 @@ namespace wowpp
 			const String projectFileName = (directory / "project.txt").string();
 
 			return
-				sff::save_file(projectFileName, std::bind(saveProjectToTable, std::placeholders::_1, directory, std::cref(managers)));
+			    sff::save_file(projectFileName, std::bind(saveProjectToTable, std::placeholders::_1, directory, std::cref(managers)));
 		}
 	}
 }

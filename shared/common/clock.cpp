@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "clock.h"
 #if defined(WIN32) || defined(_WIN32)
@@ -82,7 +82,7 @@ namespace wowpp
 		    static_cast<GameTime>(ts.tv_nsec) / 1000 / 1000;
 #else
 		struct timespec ts = {0, 0};
-		
+
 		clock_serv_t cclock;
 		mach_timespec_t mts;
 		host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
@@ -90,10 +90,10 @@ namespace wowpp
 		mach_port_deallocate(mach_task_self(), cclock);
 		ts.tv_sec = mts.tv_sec;
 		ts.tv_nsec = mts.tv_nsec;
-		
+
 		return
-			static_cast<GameTime>(ts.tv_sec) * 1000 +
-			static_cast<GameTime>(ts.tv_nsec) / 1000 / 1000;
+		    static_cast<GameTime>(ts.tv_sec) * 1000 +
+		    static_cast<GameTime>(ts.tv_nsec) / 1000 / 1000;
 #endif
 	}
 }

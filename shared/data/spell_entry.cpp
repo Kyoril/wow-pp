@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "spell_entry.h"
 #include "templates/basic_template_load_context.h"
@@ -137,7 +137,7 @@ namespace wowpp
 
 				context.loadLater.push_back([skillId, this, &context]() -> bool
 				{
-					const SkillEntry * skill = context.getSkill(skillId);
+					const SkillEntry *skill = context.getSkill(skillId);
 					if (skill)
 					{
 						this->skillsOnLearnSpell.push_back(skill);
@@ -175,7 +175,7 @@ namespace wowpp
 
 				// Validate effect
 				if (effectIndex == game::spell_effects::Invalid_ ||
-					effectIndex > game::spell_effects::Count_)
+				        effectIndex > game::spell_effects::Count_)
 				{
 					context.onError("Invalid spell effect type");
 					return false;
@@ -237,8 +237,12 @@ namespace wowpp
 	{
 		Super::saveBase(context);
 
-		if (!name.empty()) context.table.addKey("name", name);
-		if (attributes) context.table.addKey("attributes", attributes);
+		if (!name.empty()) {
+			context.table.addKey("name", name);
+		}
+		if (attributes) {
+			context.table.addKey("attributes", attributes);
+		}
 		for (size_t i = 0; i < attributesEx.size(); ++i)
 		{
 			if (attributesEx[i])
@@ -260,32 +264,84 @@ namespace wowpp
 			}
 			targetTable.finish();
 		}
-		if (castTimeIndex != 1) context.table.addKey("cast_time", castTimeIndex);
-		if (cooldown != 0) context.table.addKey("cooldown", cooldown);
-		if (powerType != power_type::Mana) context.table.addKey("power", static_cast<Int32>(powerType));
-		if (cost != 0) context.table.addKey("cost", cost);
-		if (costPct != 0) context.table.addKey("cost_pct", costPct);
-		if (duration != -1) context.table.addKey("duration", duration);
-		if (maxDuration != -1) context.table.addKey("max_duration", maxDuration);
-		if (facing != 0) context.table.addKey("facing", facing);
-		if (maxLevel != 0) context.table.addKey("max_level", maxLevel);
-		if (baseLevel != 0) context.table.addKey("base_level", baseLevel);
-		if (spellLevel != 0) context.table.addKey("spell_level", spellLevel);
-		if (speed != 0.0f) context.table.addKey("speed", speed);
-		if (schoolMask != 0) context.table.addKey("school_mask", schoolMask);
-		if (dmgClass != 0) context.table.addKey("dmg_class", dmgClass);
-		if (itemClass != -1) context.table.addKey("item_class", itemClass);
-		if (itemSubClassMask != 0) context.table.addKey("item_subclass_mask", itemSubClassMask);
-		if (interruptFlags != 0) context.table.addKey("interrupt", interruptFlags);
-		if (channelInterruptFlags != 0) context.table.addKey("channel_interrupt", channelInterruptFlags);
-		if (auraInterruptFlags != 0) context.table.addKey("aura_interrupt", auraInterruptFlags);
-		if (minRange != 0.0f) context.table.addKey("min_range", minRange);
-		if (maxRange != 0.0f) context.table.addKey("max_range", maxRange);
-		if (rangeType != 0) context.table.addKey("range_type", rangeType);
-		if (maxTargets != 0) context.table.addKey("max_targets", maxTargets);
-		if (procFlags != 0) context.table.addKey("proc_flags", procFlags);
-		if (procChance != 101) context.table.addKey("proc_chance", procChance);
-		if (procCharges != 0) context.table.addKey("proc_charges", procCharges);
+		if (castTimeIndex != 1) {
+			context.table.addKey("cast_time", castTimeIndex);
+		}
+		if (cooldown != 0) {
+			context.table.addKey("cooldown", cooldown);
+		}
+		if (powerType != power_type::Mana) {
+			context.table.addKey("power", static_cast<Int32>(powerType));
+		}
+		if (cost != 0) {
+			context.table.addKey("cost", cost);
+		}
+		if (costPct != 0) {
+			context.table.addKey("cost_pct", costPct);
+		}
+		if (duration != -1) {
+			context.table.addKey("duration", duration);
+		}
+		if (maxDuration != -1) {
+			context.table.addKey("max_duration", maxDuration);
+		}
+		if (facing != 0) {
+			context.table.addKey("facing", facing);
+		}
+		if (maxLevel != 0) {
+			context.table.addKey("max_level", maxLevel);
+		}
+		if (baseLevel != 0) {
+			context.table.addKey("base_level", baseLevel);
+		}
+		if (spellLevel != 0) {
+			context.table.addKey("spell_level", spellLevel);
+		}
+		if (speed != 0.0f) {
+			context.table.addKey("speed", speed);
+		}
+		if (schoolMask != 0) {
+			context.table.addKey("school_mask", schoolMask);
+		}
+		if (dmgClass != 0) {
+			context.table.addKey("dmg_class", dmgClass);
+		}
+		if (itemClass != -1) {
+			context.table.addKey("item_class", itemClass);
+		}
+		if (itemSubClassMask != 0) {
+			context.table.addKey("item_subclass_mask", itemSubClassMask);
+		}
+		if (interruptFlags != 0) {
+			context.table.addKey("interrupt", interruptFlags);
+		}
+		if (channelInterruptFlags != 0) {
+			context.table.addKey("channel_interrupt", channelInterruptFlags);
+		}
+		if (auraInterruptFlags != 0) {
+			context.table.addKey("aura_interrupt", auraInterruptFlags);
+		}
+		if (minRange != 0.0f) {
+			context.table.addKey("min_range", minRange);
+		}
+		if (maxRange != 0.0f) {
+			context.table.addKey("max_range", maxRange);
+		}
+		if (rangeType != 0) {
+			context.table.addKey("range_type", rangeType);
+		}
+		if (maxTargets != 0) {
+			context.table.addKey("max_targets", maxTargets);
+		}
+		if (procFlags != 0) {
+			context.table.addKey("proc_flags", procFlags);
+		}
+		if (procChance != 101) {
+			context.table.addKey("proc_chance", procChance);
+		}
+		if (procCharges != 0) {
+			context.table.addKey("proc_charges", procCharges);
+		}
 
 		// Write skills
 		if (!skillsOnLearnSpell.empty())
@@ -310,24 +366,60 @@ namespace wowpp
 					auto effectTable = make_unique<sff::write::Table<char>>(*effectsArray, sff::write::Comma);
 					{
 						effectTable->addKey("type", static_cast<UInt32>(effect.type));
-						if (effect.basePoints != 0) effectTable->addKey("base_points", effect.basePoints);
-						if (effect.baseDice != 0) effectTable->addKey("base_dice", effect.baseDice);
-						if (effect.dieSides != 0) effectTable->addKey("die_sides", effect.dieSides);
-						if (effect.mechanic != 0) effectTable->addKey("mechanic", effect.mechanic);
-						if (effect.targetA != 0) effectTable->addKey("target_a", effect.targetA);
-						if (effect.targetB != 0) effectTable->addKey("target_b", effect.targetB);
-						if (effect.pointsPerComboPoint != 0) effectTable->addKey("per_combo_point", effect.pointsPerComboPoint);
-						if (effect.auraName != 0) effectTable->addKey("aura_name", effect.auraName);
-						if (effect.dicePerLevel != 0.0f) effectTable->addKey("dice_per_level", effect.dicePerLevel);
-						if (effect.pointsPerLevel != 0.0f) effectTable->addKey("points_per_level", effect.pointsPerLevel);
-						if (effect.radius != 0.0f) effectTable->addKey("radius", effect.radius);
-						if (effect.amplitude != 0) effectTable->addKey("amplitude", effect.amplitude);
-						if (effect.multipleValue != 0.0f) effectTable->addKey("multiple_val", effect.multipleValue);
-						if (effect.chainTarget != 0) effectTable->addKey("chain_target", effect.chainTarget);
-						if (effect.itemType != 0) effectTable->addKey("item_type", effect.itemType);
-						if (effect.miscValueA != 0) effectTable->addKey("misc_val_a", effect.miscValueA);
-						if (effect.miscValueB != 0) effectTable->addKey("misc_val_b", effect.miscValueB);
-						if (effect.triggerSpell != nullptr) effectTable->addKey("trigger_spell", effect.triggerSpell->id);
+						if (effect.basePoints != 0) {
+							effectTable->addKey("base_points", effect.basePoints);
+						}
+						if (effect.baseDice != 0) {
+							effectTable->addKey("base_dice", effect.baseDice);
+						}
+						if (effect.dieSides != 0) {
+							effectTable->addKey("die_sides", effect.dieSides);
+						}
+						if (effect.mechanic != 0) {
+							effectTable->addKey("mechanic", effect.mechanic);
+						}
+						if (effect.targetA != 0) {
+							effectTable->addKey("target_a", effect.targetA);
+						}
+						if (effect.targetB != 0) {
+							effectTable->addKey("target_b", effect.targetB);
+						}
+						if (effect.pointsPerComboPoint != 0) {
+							effectTable->addKey("per_combo_point", effect.pointsPerComboPoint);
+						}
+						if (effect.auraName != 0) {
+							effectTable->addKey("aura_name", effect.auraName);
+						}
+						if (effect.dicePerLevel != 0.0f) {
+							effectTable->addKey("dice_per_level", effect.dicePerLevel);
+						}
+						if (effect.pointsPerLevel != 0.0f) {
+							effectTable->addKey("points_per_level", effect.pointsPerLevel);
+						}
+						if (effect.radius != 0.0f) {
+							effectTable->addKey("radius", effect.radius);
+						}
+						if (effect.amplitude != 0) {
+							effectTable->addKey("amplitude", effect.amplitude);
+						}
+						if (effect.multipleValue != 0.0f) {
+							effectTable->addKey("multiple_val", effect.multipleValue);
+						}
+						if (effect.chainTarget != 0) {
+							effectTable->addKey("chain_target", effect.chainTarget);
+						}
+						if (effect.itemType != 0) {
+							effectTable->addKey("item_type", effect.itemType);
+						}
+						if (effect.miscValueA != 0) {
+							effectTable->addKey("misc_val_a", effect.miscValueA);
+						}
+						if (effect.miscValueB != 0) {
+							effectTable->addKey("misc_val_b", effect.miscValueB);
+						}
+						if (effect.triggerSpell != nullptr) {
+							effectTable->addKey("trigger_spell", effect.triggerSpell->id);
+						}
 					}
 					effectTable->finish();
 				}

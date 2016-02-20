@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -460,7 +460,7 @@ namespace wowpp
 			math::Vector3 location;
 			float o;
 			bool cinematic;
-			std::map<UInt8, const proto::ItemEntry*> equipment;
+			std::map<UInt8, const proto::ItemEntry *> equipment;
 			AtLoginFlags atLogin;
 
 			explicit CharEntry()
@@ -644,7 +644,7 @@ namespace wowpp
 			/// Status
 			UInt32 status;
 
-			/// 
+			///
 			GroupMemberSlot()
 				: group(0)
 				, assistant(false)
@@ -656,1349 +656,1349 @@ namespace wowpp
 		namespace client_read
 		{
 			bool ping(
-				io::Reader &packet,
-				UInt32 &out_ping,
-				UInt32 &out_latency
-				);
+			    io::Reader &packet,
+			    UInt32 &out_ping,
+			    UInt32 &out_latency
+			);
 
 			bool authSession(
-				io::Reader &packet,
-				UInt32 &out_clientBuild,
-				String &out_Account,
-				UInt32 &out_clientSeed,
-				SHA1Hash &out_digest,
-				AddonEntries &out_addons
-				);
+			    io::Reader &packet,
+			    UInt32 &out_clientBuild,
+			    String &out_Account,
+			    UInt32 &out_clientSeed,
+			    SHA1Hash &out_digest,
+			    AddonEntries &out_addons
+			);
 
 			bool charEnum(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 
 			bool charCreate(
-				io::Reader &packet,
-				CharEntry &out_entry
-				);
+			    io::Reader &packet,
+			    CharEntry &out_entry
+			);
 
 			bool charDelete(
-				io::Reader &packet,
-				DatabaseId &out_characterId
-				);
+			    io::Reader &packet,
+			    DatabaseId &out_characterId
+			);
 
 			bool nameQuery(
-				io::Reader &packet,
-				NetUInt64 &out_objectId
-				);
+			    io::Reader &packet,
+			    NetUInt64 &out_objectId
+			);
 
 			bool playerLogin(
-				io::Reader &packet,
-				DatabaseId &out_characterId
-				);
+			    io::Reader &packet,
+			    DatabaseId &out_characterId
+			);
 
 			bool creatureQuery(
-				io::Reader &packet,
-				UInt32 &out_entry,
-				UInt64 &out_guid
-				);
+			    io::Reader &packet,
+			    UInt32 &out_entry,
+			    UInt64 &out_guid
+			);
 
 			bool contactList(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 
 			bool addFriend(
-				io::Reader &packet,
-				String &out_name,
-				String &out_note
-				);
+			    io::Reader &packet,
+			    String &out_name,
+			    String &out_note
+			);
 
 			bool deleteFriend(
-				io::Reader &packet,
-				UInt64 &out_guid
-				);
+			    io::Reader &packet,
+			    UInt64 &out_guid
+			);
 
 			bool setContactNotes(
-				io::Reader &packet
-				//TODO
-				);
+			    io::Reader &packet
+			    //TODO
+			);
 
 			bool addIgnore(
-				io::Reader &packet,
-				String &out_name
-				);
+			    io::Reader &packet,
+			    String &out_name
+			);
 
 			bool deleteIgnore(
-				io::Reader &packet,
-				UInt64 &out_guid
-				);
+			    io::Reader &packet,
+			    UInt64 &out_guid
+			);
 
 			bool playerLogout(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 
 			bool messageChat(
-				io::Reader &packet,
-				ChatMsg &out_type,
-				Language &out_lang,
-				String &out_to,
-				String &out_channel,
-				String &out_message
-				);
+			    io::Reader &packet,
+			    ChatMsg &out_type,
+			    Language &out_lang,
+			    String &out_to,
+			    String &out_channel,
+			    String &out_message
+			);
 
 			bool logoutRequest(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 
 			bool logoutCancel(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 
 			bool moveStartForward(
-				io::Reader &packet,
-				MovementInfo &out_info
-				);
+			    io::Reader &packet,
+			    MovementInfo &out_info
+			);
 
 			bool moveStartBackward(
-				io::Reader &packet,
-				MovementInfo &out_info
-				);
+			    io::Reader &packet,
+			    MovementInfo &out_info
+			);
 
 			bool moveStop(
-				io::Reader &packet,
-				MovementInfo &out_info
-				);
+			    io::Reader &packet,
+			    MovementInfo &out_info
+			);
 
 			bool moveHeartBeat(
-				io::Reader &packet,
-				MovementInfo &out_info
-				);
+			    io::Reader &packet,
+			    MovementInfo &out_info
+			);
 
 			bool setSelection(
-				io::Reader &packet,
-				UInt64 &out_targetGUID
-				);
+			    io::Reader &packet,
+			    UInt64 &out_targetGUID
+			);
 
 			bool standStateChange(
-				io::Reader &packet,
-				UnitStandState &out_standState
-				);
+			    io::Reader &packet,
+			    UnitStandState &out_standState
+			);
 
 			bool castSpell(
-				io::Reader &packet,
-				UInt32 &out_spellID,
-				UInt8 &out_castCount,
-				SpellTargetMap &out_targetMap
-				);
+			    io::Reader &packet,
+			    UInt32 &out_spellID,
+			    UInt8 &out_castCount,
+			    SpellTargetMap &out_targetMap
+			);
 
 			bool cancelCast(
-				io::Reader &packet,
-				UInt32 &out_spellID
-				);
+			    io::Reader &packet,
+			    UInt32 &out_spellID
+			);
 
 			bool itemQuerySingle(
-				io::Reader &packet,
-				UInt32 &out_itemID
-				);
+			    io::Reader &packet,
+			    UInt32 &out_itemID
+			);
 
 			bool attackSwing(
-				io::Reader &packet,
-				UInt64 &out_targetGUID
-				);
+			    io::Reader &packet,
+			    UInt64 &out_targetGUID
+			);
 
 			bool attackStop(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 
 			bool setSheathed(
-				io::Reader &packet,
-				UInt32 &out_sheath
-				);
+			    io::Reader &packet,
+			    UInt32 &out_sheath
+			);
 
 			bool togglePvP(
-				io::Reader &packet,
-				UInt8 &out_enabled
-				);
+			    io::Reader &packet,
+			    UInt8 &out_enabled
+			);
 
 			bool autoStoreLootItem(
-				io::Reader &packet,
-				UInt8 &out_lootSlot
-				);
+			    io::Reader &packet,
+			    UInt8 &out_lootSlot
+			);
 
 			bool autoEquipItem(
-				io::Reader &packet,
-				UInt8 &out_srcBag,
-				UInt8 &out_srcSlot
-				);
+			    io::Reader &packet,
+			    UInt8 &out_srcBag,
+			    UInt8 &out_srcSlot
+			);
 
 			bool autoStoreBagItem(
-				io::Reader &packet,
-				UInt8 &out_srcBag,
-				UInt8 &out_srcSlot,
-				UInt8 &out_dstBag
-				);
+			    io::Reader &packet,
+			    UInt8 &out_srcBag,
+			    UInt8 &out_srcSlot,
+			    UInt8 &out_dstBag
+			);
 
 			bool swapItem(
-				io::Reader &packet,
-				UInt8 &out_dstBag,
-				UInt8 &out_dstSlot,
-				UInt8 &out_srcBag,
-				UInt8 &out_srcSlot
-				);
+			    io::Reader &packet,
+			    UInt8 &out_dstBag,
+			    UInt8 &out_dstSlot,
+			    UInt8 &out_srcBag,
+			    UInt8 &out_srcSlot
+			);
 
 			bool swapInvItem(
-				io::Reader &packet,
-				UInt8 &out_srcSlot,
-				UInt8 &out_dstSlot
-				);
+			    io::Reader &packet,
+			    UInt8 &out_srcSlot,
+			    UInt8 &out_dstSlot
+			);
 
 			bool splitItem(
-				io::Reader &packet,
-				UInt8 &out_srcBag, 
-				UInt8 &out_srcSlot,
-				UInt8 &out_dstBag,
-				UInt8 &out_dstSlot,
-				UInt8 &out_count
-				);
+			    io::Reader &packet,
+			    UInt8 &out_srcBag,
+			    UInt8 &out_srcSlot,
+			    UInt8 &out_dstBag,
+			    UInt8 &out_dstSlot,
+			    UInt8 &out_count
+			);
 
 			bool autoEquipItemSlot(
-				io::Reader &packet,
-				UInt64 &out_itemGUID,
-				UInt8 &out_dstSlot
-				);
+			    io::Reader &packet,
+			    UInt64 &out_itemGUID,
+			    UInt8 &out_dstSlot
+			);
 
 			bool destroyItem(
-				io::Reader &packet,
-				UInt8 &out_bag, 
-				UInt8 &out_slot, 
-				UInt8 &out_count, 
-				UInt8 &out_data1, 
-				UInt8 &out_data2, 
-				UInt8 &out_data3
-				);
+			    io::Reader &packet,
+			    UInt8 &out_bag,
+			    UInt8 &out_slot,
+			    UInt8 &out_count,
+			    UInt8 &out_data1,
+			    UInt8 &out_data2,
+			    UInt8 &out_data3
+			);
 
 			bool groupInvite(
-				io::Reader &packet,
-				String &out_memberName
-				);
+			    io::Reader &packet,
+			    String &out_memberName
+			);
 
 			bool groupAccept(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 
 			bool groupDecline(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 
 			bool groupUninvite(
-				io::Reader &packet,
-				String &out_memberName
-				);
+			    io::Reader &packet,
+			    String &out_memberName
+			);
 
 			bool groupUninviteGUID(
-				io::Reader &packet,
-				UInt64 &out_guid
-				);
+			    io::Reader &packet,
+			    UInt64 &out_guid
+			);
 
 			bool groupSetLeader(
-				io::Reader &packet,
-				UInt64 &out_leaderGUID
-				);
+			    io::Reader &packet,
+			    UInt64 &out_leaderGUID
+			);
 
 			bool lootMethod(
-				io::Reader &packet,
-				UInt32 &out_method,
-				UInt64 &out_masterGUID,
-				UInt32 &out_treshold
-				);
+			    io::Reader &packet,
+			    UInt32 &out_method,
+			    UInt64 &out_masterGUID,
+			    UInt32 &out_treshold
+			);
 
 			bool groupDisband(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 
 			bool requestPartyMemberStats(
-				io::Reader &packet,
-				UInt64 &out_GUID
-				);
+			    io::Reader &packet,
+			    UInt64 &out_GUID
+			);
 
 			bool moveWorldPortAck(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 
 			bool areaTrigger(
-				io::Reader &packet,
-				UInt32 &out_triggerId
-				);
+			    io::Reader &packet,
+			    UInt32 &out_triggerId
+			);
 
 			bool setActionButton(
-				io::Reader &packet,
-				UInt8 &out_button,
-				UInt8 &out_misc,
-				UInt8 &out_type,
-				UInt16 &out_action
-				);
+			    io::Reader &packet,
+			    UInt8 &out_button,
+			    UInt8 &out_misc,
+			    UInt8 &out_type,
+			    UInt16 &out_action
+			);
 
 			bool gameObjectQuery(
-				io::Reader &packet,
-				UInt32 &out_entry,
-				UInt64 &out_guid
-				);
+			    io::Reader &packet,
+			    UInt32 &out_entry,
+			    UInt64 &out_guid
+			);
 
 			bool forceMoveRootAck(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 
 			bool forceMoveUnrootAck(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 
 			bool cancelAura(
-				io::Reader &packet,
-				UInt32 &out_spellId
-				);
+			    io::Reader &packet,
+			    UInt32 &out_spellId
+			);
 
 			bool tutorialFlag(
-				io::Reader &packet,
-				UInt32 &out_flag
-				);
+			    io::Reader &packet,
+			    UInt32 &out_flag
+			);
 
 			bool tutorialClear(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 
 			bool tutorialReset(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 
 			bool emote(
-				io::Reader &packet,
-				UInt32 &out_emote
-				);
+			    io::Reader &packet,
+			    UInt32 &out_emote
+			);
 
 			bool textEmote(
-				io::Reader &packet,
-				UInt32 &out_textEmote,
-				UInt32 &out_emoteNum,
-				UInt64 &out_guid
-				);
+			    io::Reader &packet,
+			    UInt32 &out_textEmote,
+			    UInt32 &out_emoteNum,
+			    UInt64 &out_guid
+			);
 
 			bool completeCinematic(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 
 			bool repopRequest(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 
 			bool loot(
-				io::Reader &packet,
-				UInt64 &out_targetGuid
-				);
+			    io::Reader &packet,
+			    UInt64 &out_targetGuid
+			);
 
 			bool lootMoney(
-				io::Reader &packet
-				//TODO
-				);
+			    io::Reader &packet
+			    //TODO
+			);
 
 			bool lootRelease(
-				io::Reader &packet,
-				UInt64 &out_targetGuid
-				);
+			    io::Reader &packet,
+			    UInt64 &out_targetGuid
+			);
 
 			bool timeSyncResponse(
-				io::Reader &packet,
-				UInt32 &out_counter,
-				UInt32 &out_ticks
-				);
+			    io::Reader &packet,
+			    UInt32 &out_counter,
+			    UInt32 &out_ticks
+			);
 
 			bool raidTargetUpdate(
-				io::Reader &packet,
-				UInt8 &out_mode,
-				UInt64 &out_guidOptional
-				);
+			    io::Reader &packet,
+			    UInt8 &out_mode,
+			    UInt64 &out_guidOptional
+			);
 
 			bool groupRaidConvert(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 
 			bool groupAssistentLeader(
-				io::Reader &packet,
-				UInt64 &out_guid,
-				UInt8 &out_flag
-				);
+			    io::Reader &packet,
+			    UInt64 &out_guid,
+			    UInt8 &out_flag
+			);
 
 			bool raidReadyCheck(
-				io::Reader &packet,
-				bool &out_hasState,
-				UInt8 &out_state
-				);
+			    io::Reader &packet,
+			    bool &out_hasState,
+			    UInt8 &out_state
+			);
 
 			bool learnTalent(
-				io::Reader &packet,
-				UInt32 &out_talentId,
-				UInt32 &out_rank
-				);
+			    io::Reader &packet,
+			    UInt32 &out_talentId,
+			    UInt32 &out_rank
+			);
 
 			bool useItem(
-				io::Reader &packet,
-				UInt8 &out_bag,
-				UInt8 &out_slot,
-				UInt8 &out_spellCount,
-				UInt8 &out_castCount,
-				UInt64 &out_itemGuid,
-				SpellTargetMap &out_targetMap
-				);
+			    io::Reader &packet,
+			    UInt8 &out_bag,
+			    UInt8 &out_slot,
+			    UInt8 &out_spellCount,
+			    UInt8 &out_castCount,
+			    UInt64 &out_itemGuid,
+			    SpellTargetMap &out_targetMap
+			);
 
 			bool listInventory(
-				io::Reader &packet,
-				UInt64 &out_guid
-				);
+			    io::Reader &packet,
+			    UInt64 &out_guid
+			);
 
 			bool sellItem(
-				io::Reader &packet,
-				UInt64 &out_vendorGuid,
-				UInt64 &out_itemGuid,
-				UInt8 &out_count
-				);
+			    io::Reader &packet,
+			    UInt64 &out_vendorGuid,
+			    UInt64 &out_itemGuid,
+			    UInt8 &out_count
+			);
 			bool buyItem(
-				io::Reader &packet,
-				UInt64 &out_vendorGuid,
-				UInt32 &out_item,
-				UInt8 &out_count
-				);
+			    io::Reader &packet,
+			    UInt64 &out_vendorGuid,
+			    UInt32 &out_item,
+			    UInt8 &out_count
+			);
 			bool buyItemInSlot(
-				io::Reader &packet,
-				UInt64 &out_vendorGuid,
-				UInt32 &out_item,
-				UInt64 &out_bagGuid,
-				UInt8 &out_slot,
-				UInt8 &out_count
-				);
+			    io::Reader &packet,
+			    UInt64 &out_vendorGuid,
+			    UInt32 &out_item,
+			    UInt64 &out_bagGuid,
+			    UInt8 &out_slot,
+			    UInt8 &out_count
+			);
 
 			bool gossipHello(
-				io::Reader &packet,
-				UInt64 &out_npcGuid
-				);
+			    io::Reader &packet,
+			    UInt64 &out_npcGuid
+			);
 
 			bool trainerBuySpell(
-				io::Reader &packet,
-				UInt64 &out_guid,
-				UInt32 &out_spell
-				);
+			    io::Reader &packet,
+			    UInt64 &out_guid,
+			    UInt32 &out_spell
+			);
 
 			bool realmSplit(
-				io::Reader &packet,
-				UInt32 &out_preferredRealm
-				);
+			    io::Reader &packet,
+			    UInt32 &out_preferredRealm
+			);
 
 			bool voiceSessionEnable(
-				io::Reader &packet,
-				UInt16 &out_unknown
-				);
+			    io::Reader &packet,
+			    UInt16 &out_unknown
+			);
 
 			bool charRename(
-				io::Reader &packet,
-				UInt64 &out_guid,
-				String &out_name
-				);
+			    io::Reader &packet,
+			    UInt64 &out_guid,
+			    String &out_name
+			);
 
 			bool questgiverStatusQuery(
-				io::Reader &packet,
-				UInt64 &out_guid
-				);
+			    io::Reader &packet,
+			    UInt64 &out_guid
+			);
 
 			bool questgiverHello(
-				io::Reader &packet,
-				UInt64 &out_guid
-				);
+			    io::Reader &packet,
+			    UInt64 &out_guid
+			);
 
 			bool questgiverQueryQuest(
-				io::Reader &packet,
-				UInt64 &out_guid,
-				UInt32 &out_questId
-				);
+			    io::Reader &packet,
+			    UInt64 &out_guid,
+			    UInt32 &out_questId
+			);
 
 			bool questgiverQuestAutolaunch(
-				io::Reader &packet
-				// Empty?
-				);
+			    io::Reader &packet
+			    // Empty?
+			);
 
 			bool questgiverAcceptQuest(
-				io::Reader &packet,
-				UInt64 &out_guid,
-				UInt32 &out_questId
-				);
+			    io::Reader &packet,
+			    UInt64 &out_guid,
+			    UInt32 &out_questId
+			);
 
 			bool questgiverCompleteQuest(
-				io::Reader &packet,
-				UInt64 &out_guid,
-				UInt32 &out_questId
-				);
+			    io::Reader &packet,
+			    UInt64 &out_guid,
+			    UInt32 &out_questId
+			);
 
 			bool questgiverRequestReward(
-				io::Reader &packet,
-				UInt64 &out_guid,
-				UInt32 &out_questId
-				);
+			    io::Reader &packet,
+			    UInt64 &out_guid,
+			    UInt32 &out_questId
+			);
 
 			bool questgiverChooseReward(
-				io::Reader &packet,
-				UInt64 &out_guid,
-				UInt32 &out_questId,
-				UInt32 &out_reward
-				);
+			    io::Reader &packet,
+			    UInt64 &out_guid,
+			    UInt32 &out_questId,
+			    UInt32 &out_reward
+			);
 
 			bool questgiverCancel(
-				io::Reader &packet
-				// Empty
-				);
+			    io::Reader &packet
+			    // Empty
+			);
 
 			bool questQuery(
-				io::Reader &packet,
-				UInt32 &out_questId
-				);
+			    io::Reader &packet,
+			    UInt32 &out_questId
+			);
 
 			bool questgiverStatusMultiple(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 
 			bool questlogRemoveQuest(
-				io::Reader &packet,
-				UInt8 &out_questIndex
-				);
+			    io::Reader &packet,
+			    UInt8 &out_questIndex
+			);
 		};
 
 		namespace server_write
 		{
 			void triggerCinematic(
-				game::OutgoingPacket &out_packet,
-				UInt32 cinematicId
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 cinematicId
+			);
 
 			void charCreate(
-				game::OutgoingPacket &out_packet,
-				ResponseCode code
-				);
+			    game::OutgoingPacket &out_packet,
+			    ResponseCode code
+			);
 
 			void charEnum(
-				game::OutgoingPacket &out_packet,
-				const game::CharEntries &characters
-				);
+			    game::OutgoingPacket &out_packet,
+			    const game::CharEntries &characters
+			);
 
 			void charDelete(
-				game::OutgoingPacket &out_packet,
-				ResponseCode code
-				);
+			    game::OutgoingPacket &out_packet,
+			    ResponseCode code
+			);
 
 			void charLoginFailed(
-				game::OutgoingPacket &out_packet,
-				ResponseCode code
-				);
+			    game::OutgoingPacket &out_packet,
+			    ResponseCode code
+			);
 
 			void loginSetTimeSpeed(
-				game::OutgoingPacket &out_packet,
-				GameTime time
-				);
+			    game::OutgoingPacket &out_packet,
+			    GameTime time
+			);
 
 			void nameQueryResponse(
-				game::OutgoingPacket &out_packet,
-				UInt64 objectGuid,
-				const String &name,
-				const String &realmName,
-				UInt32 raceId,
-				UInt32 genderId,
-				UInt32 classId
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 objectGuid,
+			    const String &name,
+			    const String &realmName,
+			    UInt32 raceId,
+			    UInt32 genderId,
+			    UInt32 classId
+			);
 
 			void itemQuerySingleResponse(
-				game::OutgoingPacket &out_packet,
-				const proto::ItemEntry &item
-				);
+			    game::OutgoingPacket &out_packet,
+			    const proto::ItemEntry &item
+			);
 
 			void contactList(
-				game::OutgoingPacket &out_packet,
-				const game::SocialInfoMap &contacts
-				);
+			    game::OutgoingPacket &out_packet,
+			    const game::SocialInfoMap &contacts
+			);
 
 			void friendStatus(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid,
-				game::FriendResult result,
-				const game::SocialInfo &info
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid,
+			    game::FriendResult result,
+			    const game::SocialInfo &info
+			);
 
 			void updateObject(
-				game::OutgoingPacket &out_packet,
-				const std::vector<std::vector<char>> &blocks
-				);
+			    game::OutgoingPacket &out_packet,
+			    const std::vector<std::vector<char>> &blocks
+			);
 
 			void destroyObject(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid,
-				bool death
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid,
+			    bool death
+			);
 
 			void chatPlayerNotFound(
-				game::OutgoingPacket &out_packet,
-				const String &name
-				);
+			    game::OutgoingPacket &out_packet,
+			    const String &name
+			);
 
 			void tutorialFlags(
-				game::OutgoingPacket &out_packet,
-				const std::array<UInt32, 8> &tutorialData
-				);
+			    game::OutgoingPacket &out_packet,
+			    const std::array<UInt32, 8> &tutorialData
+			);
 
 			void initializeFactions(
-				game::OutgoingPacket &out_packet
-				//TODO
-				);
+			    game::OutgoingPacket &out_packet
+			    //TODO
+			);
 
 			void setProficiency(
-				game::OutgoingPacket &out_packet,
-				UInt8 itemClass,
-				UInt32 itemSubclassMask
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt8 itemClass,
+			    UInt32 itemSubclassMask
+			);
 
 			void actionButtons(
-				game::OutgoingPacket &out_packet,
-				const ActionButtons &buttons
-				);
+			    game::OutgoingPacket &out_packet,
+			    const ActionButtons &buttons
+			);
 
 			void initialSpells(
-				game::OutgoingPacket &out_packet,
-				const proto::Project &project,
-				const std::vector<const proto::SpellEntry*> &spells,
-				const GameUnit::CooldownMap &cooldowns
-				);
+			    game::OutgoingPacket &out_packet,
+			    const proto::Project &project,
+			    const std::vector<const proto::SpellEntry *> &spells,
+			    const GameUnit::CooldownMap &cooldowns
+			);
 
 			void bindPointUpdate(
-				game::OutgoingPacket &out_packet,
-				UInt32 mapId,
-				UInt32 areaId,
-				const math::Vector3 &location
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 mapId,
+			    UInt32 areaId,
+			    const math::Vector3 &location
+			);
 
 			void pong(
-				game::OutgoingPacket &out_packet,
-				UInt32 ping
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 ping
+			);
 
 			void authChallenge(
-				game::OutgoingPacket &out_packet,
-				UInt32 seed
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 seed
+			);
 
 			void authResponse(
-				game::OutgoingPacket &out_packet,
-				ResponseCode code,
-				Expansions expansion
-				);
+			    game::OutgoingPacket &out_packet,
+			    ResponseCode code,
+			    Expansions expansion
+			);
 
 			void compressedUpdateObject(
-				game::OutgoingPacket &out_packet,
-				const std::vector<std::vector<char>> &blocks
-				);
+			    game::OutgoingPacket &out_packet,
+			    const std::vector<std::vector<char>> &blocks
+			);
 
 			void accountDataTimes(
-				game::OutgoingPacket &out_packet,
-				const std::array<UInt32, 32> &times
-				);
+			    game::OutgoingPacket &out_packet,
+			    const std::array<UInt32, 32> &times
+			);
 
 			void setRestStart(
-				game::OutgoingPacket &out_packet
-				);
+			    game::OutgoingPacket &out_packet
+			);
 
 			void loginVerifyWorld(
-				game::OutgoingPacket &out_packet,
-				UInt32 mapId,
-				math::Vector3 location,
-				float o
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 mapId,
+			    math::Vector3 location,
+			    float o
+			);
 
 			void initWorldStates(
-				game::OutgoingPacket &out_packet,
-				UInt32 mapId,
-				UInt32 zoneId
-				//TODO
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 mapId,
+			    UInt32 zoneId
+			    //TODO
+			);
 
 			void addonInfo(
-				game::OutgoingPacket &out_packet,
-				const AddonEntries &addons
-				);
+			    game::OutgoingPacket &out_packet,
+			    const AddonEntries &addons
+			);
 
 			void unlearnSpells(
-				game::OutgoingPacket &out_packet
-				//TODO
-				);
+			    game::OutgoingPacket &out_packet
+			    //TODO
+			);
 
 			void motd(
-				game::OutgoingPacket &out_packet,
-				const std::string &motd
-				);
+			    game::OutgoingPacket &out_packet,
+			    const std::string &motd
+			);
 
 			void featureSystemStatus(
-				game::OutgoingPacket &out_packet
-				//TODO
-				); 
+			    game::OutgoingPacket &out_packet
+			    //TODO
+			);
 
 			void creatureQueryResponse(
-				game::OutgoingPacket &out_packet,
-				const proto::UnitEntry &unit
-				);
+			    game::OutgoingPacket &out_packet,
+			    const proto::UnitEntry &unit
+			);
 
 			void setDungeonDifficulty(
-				game::OutgoingPacket &out_packet
-				//TODO
-				);
+			    game::OutgoingPacket &out_packet
+			    //TODO
+			);
 
 			void timeSyncReq(
-				game::OutgoingPacket &out_packet,
-				UInt32 counter
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 counter
+			);
 
 			void monsterMove(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid,
-				const math::Vector3 &oldPosition,
-				const math::Vector3 &position,
-				UInt32 time
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid,
+			    const math::Vector3 &oldPosition,
+			    const math::Vector3 &position,
+			    UInt32 time
+			);
 
 			void logoutResponse(
-				game::OutgoingPacket &out_packet,
-				bool success
-				);
+			    game::OutgoingPacket &out_packet,
+			    bool success
+			);
 
 			void logoutCancelAck(
-				game::OutgoingPacket &out_packet
-				);
+			    game::OutgoingPacket &out_packet
+			);
 
 			void logoutComplete(
-				game::OutgoingPacket &out_packet
-				);
+			    game::OutgoingPacket &out_packet
+			);
 
 			void messageChat(
-				game::OutgoingPacket &out_packet,
-				ChatMsg type,
-				Language language,
-				const String &channelname,
-				UInt64 targetGUID,
-				const String &message,
-				GameUnit *speaker
-				);
+			    game::OutgoingPacket &out_packet,
+			    ChatMsg type,
+			    Language language,
+			    const String &channelname,
+			    UInt64 targetGUID,
+			    const String &message,
+			    GameUnit *speaker
+			);
 
 			void movePacket(
-				game::OutgoingPacket &out_packet,
-				UInt16 opCode,
-				UInt64 guid,
-				const MovementInfo &movement
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt16 opCode,
+			    UInt64 guid,
+			    const MovementInfo &movement
+			);
 
 			void moveTeleportAck(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid,
-				const MovementInfo &movement
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid,
+			    const MovementInfo &movement
+			);
 
 			void standStateUpdate(
-				game::OutgoingPacket &out_packet,
-				UnitStandState standState
-				);
+			    game::OutgoingPacket &out_packet,
+			    UnitStandState standState
+			);
 
 			void castFailed(
-				game::OutgoingPacket &out_packet,
-				game::SpellCastResult result,
-				const proto::SpellEntry &spell,
-				UInt8 castCount
-				);
+			    game::OutgoingPacket &out_packet,
+			    game::SpellCastResult result,
+			    const proto::SpellEntry &spell,
+			    UInt8 castCount
+			);
 
 			void spellStart(
-				game::OutgoingPacket &out_packet,
-				UInt64 casterGUID,
-				UInt64 casterItemGUID,
-				const proto::SpellEntry &spell,
-				const SpellTargetMap &targets,
-				game::SpellCastFlags castFlags,
-				Int32 castTime,
-				UInt8 castCount
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 casterGUID,
+			    UInt64 casterItemGUID,
+			    const proto::SpellEntry &spell,
+			    const SpellTargetMap &targets,
+			    game::SpellCastFlags castFlags,
+			    Int32 castTime,
+			    UInt8 castCount
+			);
 
 			void spellGo(
-				game::OutgoingPacket &out_packet,
-				UInt64 casterGUID,
-				UInt64 casterItemGUID,
-				const proto::SpellEntry &spell,
-				const SpellTargetMap &targets,
-				game::SpellCastFlags castFlags
-				//TODO: HitInformation
-				//TODO: AmmoInformation
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 casterGUID,
+			    UInt64 casterItemGUID,
+			    const proto::SpellEntry &spell,
+			    const SpellTargetMap &targets,
+			    game::SpellCastFlags castFlags
+			    //TODO: HitInformation
+			    //TODO: AmmoInformation
+			);
 
 			void spellFailure(
-				game::OutgoingPacket &out_packet,
-				UInt64 casterGUID,
-				UInt32 spellId,
-				game::SpellCastResult result
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 casterGUID,
+			    UInt32 spellId,
+			    game::SpellCastResult result
+			);
 
 			void spellFailedOther(
-				game::OutgoingPacket &out_packet,
-				UInt64 casterGUID,
-				UInt32 spellId
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 casterGUID,
+			    UInt32 spellId
+			);
 
 			void spellCooldown(
-				game::OutgoingPacket &out_packet,
-				UInt64 targetGUID,
-				UInt8 flags,
-				const std::map<UInt32, UInt32> &spellCooldownTimesMS
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 targetGUID,
+			    UInt8 flags,
+			    const std::map<UInt32, UInt32> &spellCooldownTimesMS
+			);
 
 			void cooldownEvent(
-				game::OutgoingPacket &out_packet,
-				UInt32 spellID,
-				UInt64 objectGUID
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 spellID,
+			    UInt64 objectGUID
+			);
 
 			void clearCooldown(
-				game::OutgoingPacket &out_packet,
-				UInt32 spellID,
-				UInt64 targetGUID
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 spellID,
+			    UInt64 targetGUID
+			);
 
 			void spellNonMeleeDamageLog(
-				game::OutgoingPacket &out_packet,
-				UInt64 targetGuid,
-				UInt64 casterGuid,
-				UInt32 spellID,
-				UInt32 damage,
-				UInt8 damageSchoolMask,
-				UInt32 absorbedDamage,
-				UInt32 resistedDamage,
-				bool PhysicalDamage,
-				UInt32 blockedDamage,
-				bool criticalHit
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 targetGuid,
+			    UInt64 casterGuid,
+			    UInt32 spellID,
+			    UInt32 damage,
+			    UInt8 damageSchoolMask,
+			    UInt32 absorbedDamage,
+			    UInt32 resistedDamage,
+			    bool PhysicalDamage,
+			    UInt32 blockedDamage,
+			    bool criticalHit
+			);
 
 			void spellEnergizeLog(
-				game::OutgoingPacket &out_packet,
-				UInt64 targetGuid,
-				UInt64 casterGuid,
-				UInt32 spellID,
-				UInt8 powerType,
-				UInt32 amount
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 targetGuid,
+			    UInt64 casterGuid,
+			    UInt32 spellID,
+			    UInt8 powerType,
+			    UInt32 amount
+			);
 
 			void attackStart(
-				game::OutgoingPacket &out_packet,
-				UInt64 attackerGUID,
-				UInt64 attackedGUID
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 attackerGUID,
+			    UInt64 attackedGUID
+			);
 
 			void attackStop(
-				game::OutgoingPacket &out_packet,
-				UInt64 attackerGUID,
-				UInt64 attackedGUID
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 attackerGUID,
+			    UInt64 attackedGUID
+			);
 
 			void attackStateUpdate(
-				game::OutgoingPacket &out_packet,
-				UInt64 attackerGUID,
-				UInt64 attackedGUID,
-				HitInfo hitInfo,
-				UInt32 totalDamage,
-				UInt32 absorbedDamage,
-				UInt32 resistedDamage,
-				UInt32 blockedDamage,
-				VictimState targetState,
-				WeaponAttack swingType,
-				UInt32 damageSchool
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 attackerGUID,
+			    UInt64 attackedGUID,
+			    HitInfo hitInfo,
+			    UInt32 totalDamage,
+			    UInt32 absorbedDamage,
+			    UInt32 resistedDamage,
+			    UInt32 blockedDamage,
+			    VictimState targetState,
+			    WeaponAttack swingType,
+			    UInt32 damageSchool
+			);
 
 			void attackSwingBadFacing(
-				game::OutgoingPacket &out_packet
-				);
+			    game::OutgoingPacket &out_packet
+			);
 
 			void attackSwingCantAttack(
-				game::OutgoingPacket &out_packet
-				);
+			    game::OutgoingPacket &out_packet
+			);
 
 			void attackSwingDeadTarget(
-				game::OutgoingPacket &out_packet
-				);
+			    game::OutgoingPacket &out_packet
+			);
 
 			void attackSwingNotStanding(
-				game::OutgoingPacket &out_packet
-				);
+			    game::OutgoingPacket &out_packet
+			);
 
 			void attackSwingNotInRange(
-				game::OutgoingPacket &out_packet
-				);
+			    game::OutgoingPacket &out_packet
+			);
 
 			void inventoryChangeFailure(
-				game::OutgoingPacket &out_packet,
-				InventoryChangeFailure failure,
-				GameItem *itemA,
-				GameItem *itemB
-				);
+			    game::OutgoingPacket &out_packet,
+			    InventoryChangeFailure failure,
+			    GameItem *itemA,
+			    GameItem *itemB
+			);
 
 			void updateComboPoints(
-				game::OutgoingPacket &out_packet,
-				UInt64 targetGuid,
-				UInt8 comboPoints
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 targetGuid,
+			    UInt8 comboPoints
+			);
 
 			void spellHealLog(
-				game::OutgoingPacket &out_packet,
-				UInt64 targetGuid,
-				UInt64 casterGuid,
-				UInt32 spellId,
-				UInt32 amount,
-				bool critical
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 targetGuid,
+			    UInt64 casterGuid,
+			    UInt32 spellId,
+			    UInt32 amount,
+			    bool critical
+			);
 
 			void spellDamageShield(
-				game::OutgoingPacket &out_packet,
-				UInt64 targetGuid,
-				UInt64 casterGuid,
-				UInt32 spellId,
-				UInt32 damage,
-				UInt32 dmgSchool
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 targetGuid,
+			    UInt64 casterGuid,
+			    UInt32 spellId,
+			    UInt32 damage,
+			    UInt32 dmgSchool
+			);
 
 			void periodicAuraLog(
-				game::OutgoingPacket &out_packet,
-				UInt64 targetGuid,
-				UInt64 casterGuid,
-				UInt32 spellId,
-				UInt32 auraType,
-				UInt32 damage,
-				UInt32 dmgSchool,
-				UInt32 absorbed,
-				UInt32 resisted
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 targetGuid,
+			    UInt64 casterGuid,
+			    UInt32 spellId,
+			    UInt32 auraType,
+			    UInt32 damage,
+			    UInt32 dmgSchool,
+			    UInt32 absorbed,
+			    UInt32 resisted
+			);
 
 			void periodicAuraLog(
-				game::OutgoingPacket &out_packet,
-				UInt64 targetGuid,
-				UInt64 casterGuid,
-				UInt32 spellId,
-				UInt32 auraType,
-				UInt32 heal
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 targetGuid,
+			    UInt64 casterGuid,
+			    UInt32 spellId,
+			    UInt32 auraType,
+			    UInt32 heal
+			);
 
 			void periodicAuraLog(
-				game::OutgoingPacket &out_packet,
-				UInt64 targetGuid,
-				UInt64 casterGuid,
-				UInt32 spellId,
-				UInt32 auraType,
-				UInt32 powerType,
-				UInt32 amount
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 targetGuid,
+			    UInt64 casterGuid,
+			    UInt32 spellId,
+			    UInt32 auraType,
+			    UInt32 powerType,
+			    UInt32 amount
+			);
 
 			void updateAuraDuration(
-				game::OutgoingPacket &out_packet,
-				UInt8 slot,
-				UInt32 durationMS
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt8 slot,
+			    UInt32 durationMS
+			);
 
 			void setExtraAuraInfo(
-				game::OutgoingPacket &out_packet,
-				UInt64 targetGuid,
-				UInt8 slot,
-				UInt32 spellId,
-				UInt32 maxDurationMS,
-				UInt32 durationMS
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 targetGuid,
+			    UInt8 slot,
+			    UInt32 spellId,
+			    UInt32 maxDurationMS,
+			    UInt32 durationMS
+			);
 
 			void setExtraAuraInfoNeedUpdate(
-				game::OutgoingPacket &out_packet,
-				UInt64 targetGuid,
-				UInt8 slot,
-				UInt32 spellId,
-				UInt32 maxDurationMS,
-				UInt32 durationMS
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 targetGuid,
+			    UInt8 slot,
+			    UInt32 spellId,
+			    UInt32 maxDurationMS,
+			    UInt32 durationMS
+			);
 
 			void logXPGain(
-				game::OutgoingPacket &out_packet,
-				UInt64 victimGUID,
-				UInt32 givenXP,
-				UInt32 restXP,
-				bool hasReferAFriendBonus
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 victimGUID,
+			    UInt32 givenXP,
+			    UInt32 restXP,
+			    bool hasReferAFriendBonus
+			);
 
 			void levelUpInfo(
-				game::OutgoingPacket &out_packet,
-				UInt32 level,
-				Int32 healthGained,
-				Int32 manaGained,
-				Int32 strengthGained,
-				Int32 agilityGained,
-				Int32 staminaGained,
-				Int32 intellectGained,
-				Int32 spiritGained
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 level,
+			    Int32 healthGained,
+			    Int32 manaGained,
+			    Int32 strengthGained,
+			    Int32 agilityGained,
+			    Int32 staminaGained,
+			    Int32 intellectGained,
+			    Int32 spiritGained
+			);
 
 			void groupInvite(
-				game::OutgoingPacket &out_packet,
-				const String &inviterName
-				);
+			    game::OutgoingPacket &out_packet,
+			    const String &inviterName
+			);
 
 			void groupDecline(
-				game::OutgoingPacket &out_packet,
-				const String &inviterName
-				);
+			    game::OutgoingPacket &out_packet,
+			    const String &inviterName
+			);
 
 			void groupUninvite(
-				game::OutgoingPacket &out_packet
-				);
+			    game::OutgoingPacket &out_packet
+			);
 
 			void groupSetLeader(
-				game::OutgoingPacket &out_packet,
-				const String &slotName
-				);
+			    game::OutgoingPacket &out_packet,
+			    const String &slotName
+			);
 
 			void groupDestroyed(
-				game::OutgoingPacket &out_packet
-				);
+			    game::OutgoingPacket &out_packet
+			);
 
 			void groupList(
-				game::OutgoingPacket &out_packet,
-				UInt64 receiver,
-				UInt8 groupType,
-				bool isBattlegroundGroup,
-				UInt8 groupId,
-				UInt8 assistant,
-				UInt64 data1,
-				const std::map<UInt64, GroupMemberSlot> &groupMembers,
-				UInt64 leaderGuid,
-				UInt8 lootMethod,
-				UInt64 lootMasterGUID,
-				UInt8 lootTreshold,
-				UInt8 difficulty
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 receiver,
+			    UInt8 groupType,
+			    bool isBattlegroundGroup,
+			    UInt8 groupId,
+			    UInt8 assistant,
+			    UInt64 data1,
+			    const std::map<UInt64, GroupMemberSlot> &groupMembers,
+			    UInt64 leaderGuid,
+			    UInt8 lootMethod,
+			    UInt64 lootMasterGUID,
+			    UInt8 lootTreshold,
+			    UInt8 difficulty
+			);
 
 			void groupListRemoved(
-				game::OutgoingPacket &out_packet
-				);
+			    game::OutgoingPacket &out_packet
+			);
 
 			void partyMemberStats(
-				game::OutgoingPacket &out_packet,
-				const GameCharacter &character
-				);
+			    game::OutgoingPacket &out_packet,
+			    const GameCharacter &character
+			);
 
 			void partyMemberStatsFull(
-				game::OutgoingPacket &out_packet,
-				const GameCharacter &character
-				);
+			    game::OutgoingPacket &out_packet,
+			    const GameCharacter &character
+			);
 
 			void partyMemberStatsFullOffline(
-				game::OutgoingPacket &out_packet,
-				UInt64 offlineGUID
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 offlineGUID
+			);
 
 			void partyCommandResult(
-				game::OutgoingPacket &out_packet,
-				PartyOperation operation,
-				const String &member,
-				PartyResult result
-				);
+			    game::OutgoingPacket &out_packet,
+			    PartyOperation operation,
+			    const String &member,
+			    PartyResult result
+			);
 
 			void newWorld(
-				game::OutgoingPacket &out_packet,
-				UInt32 newMap,
-				math::Vector3 location,
-				float o
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 newMap,
+			    math::Vector3 location,
+			    float o
+			);
 
 			void transferPending(
-				game::OutgoingPacket &out_packet,
-				UInt32 newMap,
-				UInt32 transportId,
-				UInt32 oldMap
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 newMap,
+			    UInt32 transportId,
+			    UInt32 oldMap
+			);
 
 			void transferAborted(
-				game::OutgoingPacket &out_packet,
-				UInt32 map,
-				TransferAbortReason reason
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 map,
+			    TransferAbortReason reason
+			);
 
 			void chatWrongFaction(
-				game::OutgoingPacket &out_packet
-				);
+			    game::OutgoingPacket &out_packet
+			);
 
 			void gameObjectQueryResponse(
-				game::OutgoingPacket &out_packet,
-				const proto::ObjectEntry &entry
-				);
+			    game::OutgoingPacket &out_packet,
+			    const proto::ObjectEntry &entry
+			);
 
 			void gameObjectQueryResponseEmpty(
-				game::OutgoingPacket &out_packet,
-				const UInt32 entry
-				);
+			    game::OutgoingPacket &out_packet,
+			    const UInt32 entry
+			);
 
 			void forceMoveRoot(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid,
-				UInt32 unknown
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid,
+			    UInt32 unknown
+			);
 
 			void forceMoveUnroot(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid,
-				UInt32 unknown
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid,
+			    UInt32 unknown
+			);
 
 			void emote(
-				game::OutgoingPacket &out_packet,
-				UInt32 animId,
-				UInt64 guid
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 animId,
+			    UInt64 guid
+			);
 
 			void textEmote(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid,
-				UInt32 textEmote,
-				UInt32 emoteNum,
-				const String &name
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid,
+			    UInt32 textEmote,
+			    UInt32 emoteNum,
+			    const String &name
+			);
 
 			void environmentalDamageLog(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid,
-				UInt8 type,
-				UInt32 damage,
-				UInt32 absorb,
-				UInt32 resist
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid,
+			    UInt8 type,
+			    UInt32 damage,
+			    UInt32 absorb,
+			    UInt32 resist
+			);
 
 			void durabilityDamageDeath(
-				game::OutgoingPacket &out_packet
-				);
+			    game::OutgoingPacket &out_packet
+			);
 
 			void playSound(
-				game::OutgoingPacket &out_packet,
-				UInt32 soundId
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 soundId
+			);
 
 			void explorationExperience(
-				game::OutgoingPacket &out_packet,
-				UInt32 areaId,
-				UInt32 experience
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 areaId,
+			    UInt32 experience
+			);
 
 			void aiReaction(
-				game::OutgoingPacket &out_packet,
-				UInt64 creatureGUID,
-				UInt32 reaction
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 creatureGUID,
+			    UInt32 reaction
+			);
 
 			void lootResponseError(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid,
-				loot_type::Type type,
-				loot_error::Type error
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid,
+			    loot_type::Type type,
+			    loot_error::Type error
+			);
 
 			void lootResponse(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid,
-				loot_type::Type type,
-				const LootInstance &loot
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid,
+			    loot_type::Type type,
+			    const LootInstance &loot
+			);
 
 			void lootReleaseResponse(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid
+			);
 
 			void lootRemoved(
-				game::OutgoingPacket &out_packet,
-				UInt8 slot
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt8 slot
+			);
 
 			void lootMoneyNotify(
-				game::OutgoingPacket &out_packet,
-				UInt32 moneyPerPlayer
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 moneyPerPlayer
+			);
 
 			void lootItemNotify(
-				game::OutgoingPacket &out_packet
-				// TODO
-				);
+			    game::OutgoingPacket &out_packet
+			    // TODO
+			);
 
 			void lootClearMoney(
-				game::OutgoingPacket &out_packet
-				);
+			    game::OutgoingPacket &out_packet
+			);
 
 			void raidTargetUpdateList(
-				game::OutgoingPacket &out_packet,
-				const std::array<UInt64, 8> &list
-				);
+			    game::OutgoingPacket &out_packet,
+			    const std::array<UInt64, 8> &list
+			);
 
 			void raidTargetUpdate(
-				game::OutgoingPacket &out_packet,
-				UInt8 slot,
-				UInt64 guid
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt8 slot,
+			    UInt64 guid
+			);
 
 			void raidReadyCheck(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid
+			);
 
 			void raidReadyCheckConfirm(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid,
-				UInt8 state
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid,
+			    UInt8 state
+			);
 
 			void raidReadyCheckFinished(
-				game::OutgoingPacket &out_packet
-				);
+			    game::OutgoingPacket &out_packet
+			);
 
 			void learnedSpell(
-				game::OutgoingPacket &out_packet,
-				UInt32 spellId
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 spellId
+			);
 
 			void itemPushResult(
-				game::OutgoingPacket &out_packet,
-				UInt64 playerGuid,
-				const GameItem &item,
-				bool wasLooted,
-				bool wasCreated,
-				UInt8 bagSlot,
-				UInt8 slot,
-				UInt32 addedCount,
-				UInt32 totalCount
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 playerGuid,
+			    const GameItem &item,
+			    bool wasLooted,
+			    bool wasCreated,
+			    UInt8 bagSlot,
+			    UInt8 slot,
+			    UInt32 addedCount,
+			    UInt32 totalCount
+			);
 
 			void listInventory(
-				game::OutgoingPacket &out_packet,
-				UInt64 vendorGuid,
-				const proto::ItemManager &itemManager,
-				const std::vector<proto::VendorItemEntry> &itemList
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 vendorGuid,
+			    const proto::ItemManager &itemManager,
+			    const std::vector<proto::VendorItemEntry> &itemList
+			);
 
 			void trainerList(
-				game::OutgoingPacket &out_packet,
-				const GameCharacter &character,
-				UInt64 trainerGuid,
-				const proto::TrainerEntry &trainerEntry
-				);
+			    game::OutgoingPacket &out_packet,
+			    const GameCharacter &character,
+			    UInt64 trainerGuid,
+			    const proto::TrainerEntry &trainerEntry
+			);
 
 			void gossipMessage(
-				game::OutgoingPacket &out_packet,
-				UInt64 objectGuid,
-				UInt32 titleTextId
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 objectGuid,
+			    UInt32 titleTextId
+			);
 
 			void trainerBuySucceeded(
-				game::OutgoingPacket &out_packet,
-				UInt64 trainerGuid,
-				UInt32 spellId
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 trainerGuid,
+			    UInt32 spellId
+			);
 
 			void playSpellVisual(
-				game::OutgoingPacket &out_packet,
-				UInt64 unitGuid,
-				UInt32 visualId
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 unitGuid,
+			    UInt32 visualId
+			);
 
 			void playSpellImpact(
-				game::OutgoingPacket &out_packet,
-				UInt64 unitGuid,
-				UInt32 spellId
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 unitGuid,
+			    UInt32 spellId
+			);
 
 			void charRename(
-				game::OutgoingPacket &out_packet,
-				game::ResponseCode response,
-				UInt64 unitGuid,
-				const String &newName
-				);
+			    game::OutgoingPacket &out_packet,
+			    game::ResponseCode response,
+			    UInt64 unitGuid,
+			    const String &newName
+			);
 
 			void changeSpeed(
-				game::OutgoingPacket &out_packet,
-				MovementType moveType,
-				UInt64 guid,
-				float speed
-				);
+			    game::OutgoingPacket &out_packet,
+			    MovementType moveType,
+			    UInt64 guid,
+			    float speed
+			);
 
 			void questgiverStatus(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid,
-				game::QuestgiverStatus status
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid,
+			    game::QuestgiverStatus status
+			);
 
 			void questgiverQuestList(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid,
-				const String &title,
-				UInt32 emoteDelay,
-				UInt32 emote,
-				const std::vector<QuestMenuItem> &menu
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid,
+			    const String &title,
+			    UInt32 emoteDelay,
+			    UInt32 emote,
+			    const std::vector<QuestMenuItem> &menu
+			);
 
 			void questgiverQuestDetails(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid,
-				const proto::ItemManager &items,
-				const proto::QuestEntry &quest
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid,
+			    const proto::ItemManager &items,
+			    const proto::QuestEntry &quest
+			);
 
 			void questQueryResponse(
-				game::OutgoingPacket &out_packet,
-				const proto::QuestEntry &quest
-				);
+			    game::OutgoingPacket &out_packet,
+			    const proto::QuestEntry &quest
+			);
 
 			void gossipComplete(
-				game::OutgoingPacket &out_packet
-				);
+			    game::OutgoingPacket &out_packet
+			);
 
 			void questgiverStatusMultiple(
-				game::OutgoingPacket &out_packet,
-				const std::map<UInt64, game::QuestgiverStatus> &status
-				);
+			    game::OutgoingPacket &out_packet,
+			    const std::map<UInt64, game::QuestgiverStatus> &status
+			);
 
 			void questgiverRequestItems(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid,
-				bool closeOnCancel,
-				bool enableNext,
-				const proto::ItemManager &items,
-				const proto::QuestEntry &quest
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid,
+			    bool closeOnCancel,
+			    bool enableNext,
+			    const proto::ItemManager &items,
+			    const proto::QuestEntry &quest
+			);
 
 			void questgiverOfferReward(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid,
-				bool enableNext,
-				const proto::ItemManager &items,
-				const proto::QuestEntry &quest
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid,
+			    bool enableNext,
+			    const proto::ItemManager &items,
+			    const proto::QuestEntry &quest
+			);
 
 			void questgiverQuestComplete(
-				game::OutgoingPacket &out_packet,
-				bool isMaxLevel,
-				UInt32 xp,
-				const proto::QuestEntry &quest
-				);
+			    game::OutgoingPacket &out_packet,
+			    bool isMaxLevel,
+			    UInt32 xp,
+			    const proto::QuestEntry &quest
+			);
 
 			void questlogFull(
-				game::OutgoingPacket &out_packet
-				);
+			    game::OutgoingPacket &out_packet
+			);
 
 			void questupdateAddKill(
-				game::OutgoingPacket &out_packet,
-				UInt32 questId,
-				UInt32 entry,
-				UInt32 totalCount,
-				UInt32 maxCount,
-				UInt64 guid
-				);
+			    game::OutgoingPacket &out_packet,
+			    UInt32 questId,
+			    UInt32 entry,
+			    UInt32 totalCount,
+			    UInt32 maxCount,
+			    UInt64 guid
+			);
 		};
 	}
 }

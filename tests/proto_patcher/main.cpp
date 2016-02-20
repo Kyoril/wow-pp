@@ -1032,6 +1032,8 @@ namespace wowpp
 		{
 			spawn.set_orientation(asin(spawn.rotationy()));
 		}
+
+		return true;
 	}
 
 	static bool fixDeadminesObjects(proto::Project &project)

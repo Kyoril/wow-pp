@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "game_object.h"
 #include "game_character.h"
@@ -58,20 +58,20 @@ namespace wowpp
 	{
 		assert(offset < 4);
 		assert(index < m_values.size());
-		return *((reinterpret_cast<const UInt8*>(&m_values[index])) + offset);
+		return *((reinterpret_cast<const UInt8 *>(&m_values[index])) + offset);
 	}
 
 	wowpp::UInt16 GameObject::getUInt16Value(UInt16 index, UInt8 offset) const
 	{
 		assert(offset < 2);
 		assert(index < m_values.size());
-		return *((reinterpret_cast<const UInt16*>(&m_values[index])) + offset);
+		return *((reinterpret_cast<const UInt16 *>(&m_values[index])) + offset);
 	}
 
 	wowpp::Int32 GameObject::getInt32Value(UInt16 index) const
 	{
 		assert(index < m_values.size());
-		return *(reinterpret_cast<const Int32*>(&m_values[index]));
+		return *(reinterpret_cast<const Int32 *>(&m_values[index]));
 	}
 
 	wowpp::UInt32 GameObject::getUInt32Value(UInt16 index) const
@@ -83,13 +83,13 @@ namespace wowpp
 	wowpp::UInt64 GameObject::getUInt64Value(UInt16 index) const
 	{
 		assert(index + 1 < m_values.size());
-		return *(reinterpret_cast<const UInt64*>(&m_values[index]));
+		return *(reinterpret_cast<const UInt64 *>(&m_values[index]));
 	}
 
 	float GameObject::getFloatValue(UInt16 index) const
 	{
 		assert(index < m_values.size());
-		return *(reinterpret_cast<const float*>(&m_values[index]));
+		return *(reinterpret_cast<const float *>(&m_values[index]));
 	}
 
 	void GameObject::setByteValue(UInt16 index, UInt8 offset, UInt8 value)
@@ -105,7 +105,7 @@ namespace wowpp
 			UInt16 bitIndex = index >> 3;
 
 			// Mark bit as changed
-			UInt8 &changed = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[bitIndex];
+			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
 			m_updated = true;
@@ -125,7 +125,7 @@ namespace wowpp
 			UInt16 bitIndex = index >> 3;
 
 			// Mark bit as changed
-			UInt8 &changed = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[bitIndex];
+			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
 			m_updated = true;
@@ -144,7 +144,7 @@ namespace wowpp
 			UInt16 bitIndex = index >> 3;
 
 			// Mark bit as changed
-			UInt8 &changed = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[bitIndex];
+			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
 			m_updated = true;
@@ -157,7 +157,7 @@ namespace wowpp
 		UInt16 bitIndex = index >> 3;
 
 		// Mark bit as changed
-		UInt8 &changed = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[bitIndex];
+		UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 		changed |= 1 << (index & 0x7);
 
 		m_updated = true;
@@ -175,7 +175,7 @@ namespace wowpp
 			UInt16 bitIndex = index >> 3;
 
 			// Mark bit as changed
-			UInt8 &changed = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[bitIndex];
+			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
 			m_updated = true;
@@ -193,7 +193,7 @@ namespace wowpp
 			UInt16 bitIndex = index >> 3;
 
 			// Mark bit as changed
-			UInt8 &changed = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[bitIndex];
+			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
 			m_updated = true;
@@ -203,8 +203,8 @@ namespace wowpp
 	void GameObject::setInt32Value(UInt16 index, Int32 value)
 	{
 		assert(index < m_values.size());
-		
-		Int32* tmp = reinterpret_cast<Int32*>(&m_values[index]);
+
+		Int32 *tmp = reinterpret_cast<Int32 *>(&m_values[index]);
 		if (*tmp != value)
 		{
 			// Update value
@@ -213,7 +213,7 @@ namespace wowpp
 			UInt16 bitIndex = index >> 3;
 
 			// Mark bit as changed
-			UInt8 &changed = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[bitIndex];
+			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
 			m_updated = true;
@@ -224,11 +224,11 @@ namespace wowpp
 	{
 		assert(index + 1 < m_values.size());
 
-		UInt64* tmp = reinterpret_cast<UInt64*>(&m_values[index]);
+		UInt64 *tmp = reinterpret_cast<UInt64 *>(&m_values[index]);
 		if (*tmp != value)
 		{
-			setUInt32Value(index, *(reinterpret_cast<UInt32*>(&value)));
-			setUInt32Value(index + 1, *(reinterpret_cast<UInt32*>(&value) + 1));
+			setUInt32Value(index, *(reinterpret_cast<UInt32 *>(&value)));
+			setUInt32Value(index + 1, *(reinterpret_cast<UInt32 *>(&value) + 1));
 		}
 	}
 
@@ -236,7 +236,7 @@ namespace wowpp
 	{
 		assert(index < m_values.size());
 
-		float* tmp = reinterpret_cast<float*>(&m_values[index]);
+		float *tmp = reinterpret_cast<float *>(&m_values[index]);
 		if (*tmp != value)
 		{
 			// Update value
@@ -245,7 +245,7 @@ namespace wowpp
 			UInt16 bitIndex = index >> 3;
 
 			// Mark bit as changed
-			UInt8 &changed = (reinterpret_cast<UInt8*>(&m_valueBitset[0]))[bitIndex];
+			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
 			m_updated = true;
@@ -292,51 +292,53 @@ namespace wowpp
 			switch (index)
 			{
 			case unit_fields::NpcFlags:
-			{
-				UInt32 value = m_values[index];
-				if ((value & game::unit_npc_flags::Trainer) != 0)
 				{
-					const GameCreature *creature = static_cast<const GameCreature*>(this);
-					const auto *trainerEntry = getProject().trainers.getById(creature->getEntry().trainerentry());
-					if (!trainerEntry ||
-						((trainerEntry->type() == proto::TrainerEntry_TrainerType_CLASS_TRAINER) && trainerEntry->classid() != receiver.getClass()))
+					UInt32 value = m_values[index];
+					if ((value & game::unit_npc_flags::Trainer) != 0)
 					{
-						value &= ~game::unit_npc_flags::Trainer;
-						value &= ~game::unit_npc_flags::TrainerClass;
-						value &= ~game::unit_npc_flags::TrainerProfession;
+						const GameCreature *creature = static_cast<const GameCreature *>(this);
+						const auto *trainerEntry = getProject().trainers.getById(creature->getEntry().trainerentry());
+						if (!trainerEntry ||
+						        ((trainerEntry->type() == proto::TrainerEntry_TrainerType_CLASS_TRAINER) && trainerEntry->classid() != receiver.getClass()))
+						{
+							value &= ~game::unit_npc_flags::Trainer;
+							value &= ~game::unit_npc_flags::TrainerClass;
+							value &= ~game::unit_npc_flags::TrainerProfession;
+						}
 					}
+					writer << io::write<NetUInt32>(value);
+					break;
 				}
-				writer << io::write<NetUInt32>(value);
-				break;
-			}
 			case unit_fields::DynamicFlags:
-			{
-				const GameCreature *creature = static_cast<const GameCreature*>(this);
-				if (!creature->isLootRecipient(receiver))
 				{
-					writer << io::write<NetUInt32>(m_values[index] & ~game::unit_dynamic_flags::Lootable);
+					const GameCreature *creature = static_cast<const GameCreature *>(this);
+					if (!creature->isLootRecipient(receiver))
+					{
+						writer << io::write<NetUInt32>(m_values[index] & ~game::unit_dynamic_flags::Lootable);
+					}
+					else
+					{
+						writer << io::write<NetUInt32>(m_values[index] & ~game::unit_dynamic_flags::OtherTagger);
+					}
+					break;
 				}
-				else
-				{
-					writer << io::write<NetUInt32>(m_values[index] & ~game::unit_dynamic_flags::OtherTagger);
-				}
-				break;
-			}
 			case unit_fields::MaxHealth:
-			{
-				writer << io::write<NetUInt32>(100);
-				break;
-			}
+				{
+					writer << io::write<NetUInt32>(100);
+					break;
+				}
 			case unit_fields::Health:
-			{
-				float maxHealth = static_cast<float>(m_values[unit_fields::MaxHealth]);
-				UInt32 healthPct = static_cast<UInt32>(::ceil(static_cast<float>(m_values[index]) / maxHealth * 100.0f));
+				{
+					float maxHealth = static_cast<float>(m_values[unit_fields::MaxHealth]);
+					UInt32 healthPct = static_cast<UInt32>(::ceil(static_cast<float>(m_values[index]) / maxHealth * 100.0f));
 
-				// Prevent display of 0
-				if (healthPct == 0 && m_values[index] > 0) healthPct = 1;
-				writer << io::write<NetUInt32>(healthPct);
-				break;
-			}
+					// Prevent display of 0
+					if (healthPct == 0 && m_values[index] > 0) {
+						healthPct = 1;
+					}
+					writer << io::write<NetUInt32>(healthPct);
+					break;
+				}
 			default:
 				writer << io::write<NetUInt32>(m_values[index]);
 				break;
@@ -344,40 +346,42 @@ namespace wowpp
 		}
 		else if (isGameCharacter())
 		{
-			const auto *character = reinterpret_cast<const GameCharacter*>(this);
+			const auto *character = reinterpret_cast<const GameCharacter *>(this);
 			const bool isHealthVisible = (character == &receiver || (character->getGroupId() != 0 && character->getGroupId() == receiver.getGroupId()));
 
 			switch (index)
 			{
 			case unit_fields::MaxHealth:
-			{
-				if (!isHealthVisible)
 				{
-					writer << io::write<NetUInt32>(100);
+					if (!isHealthVisible)
+					{
+						writer << io::write<NetUInt32>(100);
+					}
+					else
+					{
+						writer << io::write<NetUInt32>(m_values[index]);
+					}
+					break;
 				}
-				else
-				{
-					writer << io::write<NetUInt32>(m_values[index]);
-				}
-				break;
-			}
 			case unit_fields::Health:
-			{
-				if (!isHealthVisible)
 				{
-					float maxHealth = static_cast<float>(m_values[unit_fields::MaxHealth]);
-					UInt32 healthPct = static_cast<UInt32>(::ceil(static_cast<float>(m_values[index]) / maxHealth * 100.0f));
+					if (!isHealthVisible)
+					{
+						float maxHealth = static_cast<float>(m_values[unit_fields::MaxHealth]);
+						UInt32 healthPct = static_cast<UInt32>(::ceil(static_cast<float>(m_values[index]) / maxHealth * 100.0f));
 
-					// Prevent display of 0
-					if (healthPct == 0 && m_values[index] > 0) healthPct = 1;
-					writer << io::write<NetUInt32>(healthPct);
+						// Prevent display of 0
+						if (healthPct == 0 && m_values[index] > 0) {
+							healthPct = 1;
+						}
+						writer << io::write<NetUInt32>(healthPct);
+					}
+					else
+					{
+						writer << io::write<NetUInt32>(m_values[index]);
+					}
+					break;
 				}
-				else
-				{
-					writer << io::write<NetUInt32>(m_values[index]);
-				}
-				break;
-			}
 			default:
 				writer << io::write<NetUInt32>(m_values[index]);
 				break;
@@ -387,27 +391,27 @@ namespace wowpp
 		{
 			switch (index)
 			{
-				case world_object_fields::DynFlags:
+			case world_object_fields::DynFlags:
 				{
 					// Determine whether this object is active as a quest object
-					const WorldObject *worldObject = reinterpret_cast<const WorldObject*>(this);
+					const WorldObject *worldObject = reinterpret_cast<const WorldObject *>(this);
 					if (worldObject->isQuestObject(receiver))
 					{
-						writer 
-							<< io::write<NetUInt16>(1 | 8)
-							<< io::write<NetUInt16>(-1);
-//						ILOG("\tWORLD OBJECT FIELD " << index << ": 0x" << std::hex << std::uppercase << UInt32(UInt32(1 | 8) | UInt32(UInt16(-1) << 16)));
+						writer
+						        << io::write<NetUInt16>(1 | 8)
+						        << io::write<NetUInt16>(-1);
+						//						ILOG("\tWORLD OBJECT FIELD " << index << ": 0x" << std::hex << std::uppercase << UInt32(UInt32(1 | 8) | UInt32(UInt16(-1) << 16)));
 					}
 					else
 					{
-//						ILOG("\tWORLD OBJECT FIELD " << index << ": 0x" << std::hex << std::uppercase << 0);
+						//						ILOG("\tWORLD OBJECT FIELD " << index << ": 0x" << std::hex << std::uppercase << 0);
 						writer << io::write<NetUInt32>(0);
 					}
 					break;
 				}
-				default:
+			default:
 				{
-//					ILOG("\tWORLD OBJECT FIELD " << index << ": 0x" << std::hex << std::uppercase << m_values[index]);
+					//					ILOG("\tWORLD OBJECT FIELD " << index << ": 0x" << std::hex << std::uppercase << m_values[index]);
 					writer << io::write<NetUInt32>(m_values[index]);
 					break;
 				}
@@ -424,43 +428,43 @@ namespace wowpp
 		// Number of UInt32 blocks used to represent all values as one bit
 		UInt8 blockCount = m_valueBitset.size();
 		writer
-			<< io::write<NetUInt8>(blockCount);
+		        << io::write<NetUInt8>(blockCount);
 
 		if (creation)
 		{
 			const bool isWorldGO = isWorldObject();
-//			if (isWorldGO)
-//			{
-//				ILOG("CREATE_OBJECT_VALUES");
-//			}
+			//			if (isWorldGO)
+			//			{
+			//				ILOG("CREATE_OBJECT_VALUES");
+			//			}
 
 			// Create a new bitset which has set all bits to one where the field value
 			// isn't equal to 0, since this will be for a CREATE_OBJECT block (spawn) and not
 			// for an UPDATE_OBJECT block
 			std::vector<UInt32> creationBits(m_valueBitset.size(), 0);
 			for (size_t i = 0; i < m_values.size(); ++i)
-			{	
+			{
 				if (m_values[i] ||
-					(isWorldGO && i == world_object_fields::DynFlags))
+				        (isWorldGO && i == world_object_fields::DynFlags))
 				{
 					// Calculate bit index
 					UInt16 bitIndex = i >> 3;
 
 					// Mark bit as changed
-					UInt8 &changed = (reinterpret_cast<UInt8*>(&creationBits[0]))[bitIndex];
+					UInt8 &changed = (reinterpret_cast<UInt8 *>(&creationBits[0]))[bitIndex];
 					changed |= 1 << (i & 0x7);
 				}
 			}
 
 			// Write only the changed bits
 			writer
-				<< io::write_range(creationBits);
+			        << io::write_range(creationBits);
 
 			// Write all values != zero
 			for (size_t i = 0; i < m_values.size(); ++i)
 			{
 				if (m_values[i] != 0 ||
-					(isWorldGO && i == world_object_fields::DynFlags))
+				        (isWorldGO && i == world_object_fields::DynFlags))
 				{
 					writeUpdateValue(writer, receiver, i);
 				}
@@ -470,12 +474,12 @@ namespace wowpp
 		{
 			// Write only the changed bits
 			writer
-				<< io::write_range(m_valueBitset);
+			        << io::write_range(m_valueBitset);
 
 			// Write all values marked as changed
 			for (size_t i = 0; i < m_values.size(); ++i)
 			{
-				const UInt8 &changed = (reinterpret_cast<const UInt8*>(&m_valueBitset[0]))[i >> 3];
+				const UInt8 &changed = (reinterpret_cast<const UInt8 *>(&m_valueBitset[0]))[i >> 3];
 				if ((changed & (1 << (i & 0x7))) != 0)
 				{
 					writeUpdateValue(writer, receiver, i);
@@ -492,8 +496,9 @@ namespace wowpp
 
 	float GameObject::getDistanceTo(GameObject &other, bool use3D/* = true*/) const
 	{
-		if (&other == this)
+		if (&other == this) {
 			return 0.0f;
+		}
 
 		math::Vector3 position = other.getLocation();
 
@@ -502,10 +507,12 @@ namespace wowpp
 
 	float GameObject::getDistanceTo(const math::Vector3 &position, bool use3D /*= true*/) const
 	{
-		if (use3D)
+		if (use3D) {
 			return (sqrtf(((position.x - m_position.x) * (position.x - m_position.x)) + ((position.y - m_position.y) * (position.y - m_position.y)) + ((position.z - m_position.z) * (position.z - m_position.z))));
-		else
+		}
+		else {
 			return (sqrtf(((position.x - m_position.x) * (position.x - m_position.x)) + ((position.y - m_position.y) * (position.y - m_position.y))));
+		}
 	}
 
 	void GameObject::onWorldInstanceDestroyed()
@@ -525,7 +532,7 @@ namespace wowpp
 		if (m_worldInstance)
 		{
 			m_worldInstanceDestroyed = m_worldInstance->willBeDestroyed.connect(
-				std::bind(&GameObject::onWorldInstanceDestroyed, this));
+			                               std::bind(&GameObject::onWorldInstanceDestroyed, this));
 		}
 	}
 
@@ -543,26 +550,31 @@ namespace wowpp
 
 	bool GameObject::isInArc(float arcRadian, float x, float y) const
 	{
-		if (x == m_position.x && y == m_position.y)
+		if (x == m_position.x && y == m_position.y) {
 			return true;
+		}
 
 		const float PI = 3.1415927f;
 		float arc = arcRadian;
 
 		// move arc to range 0.. 2*pi
-		while (arc >= 2.0f * PI)
+		while (arc >= 2.0f * PI) {
 			arc -= 2.0f * PI;
-		while (arc < 0)
+		}
+		while (arc < 0) {
 			arc += 2.0f * PI;
+		}
 
 		float angle = getAngle(x, y);
 		angle -= m_o;
 
 		// move angle to range -pi ... +pi
-		while (angle > PI)
+		while (angle > PI) {
 			angle -= 2.0f * PI;
-		while (angle < -PI)
+		}
+		while (angle < -PI) {
 			angle += 2.0f * PI;
+		}
 
 		float lborder = -1 * (arc / 2.0f);                     // in range -pi..0
 		float rborder = (arc / 2.0f);                           // in range 0..pi
@@ -584,30 +596,30 @@ namespace wowpp
 		return ang;
 	}
 
-	io::Writer & operator<<(io::Writer &w, GameObject const& object)
+	io::Writer &operator<<(io::Writer &w, GameObject const &object)
 	{
 		// Write the bitset and values
 		return w
-			<< io::write_dynamic_range<NetUInt8>(object.m_valueBitset)
-			<< io::write_dynamic_range<NetUInt16>(object.m_values)
-			<< io::write<NetUInt32>(object.m_mapId)
-			<< io::write<float>(object.m_position.x)
-			<< io::write<float>(object.m_position.y)
-			<< io::write<float>(object.m_position.z)
-			<< io::write<float>(object.m_o);
+		       << io::write_dynamic_range<NetUInt8>(object.m_valueBitset)
+		       << io::write_dynamic_range<NetUInt16>(object.m_values)
+		       << io::write<NetUInt32>(object.m_mapId)
+		       << io::write<float>(object.m_position.x)
+		       << io::write<float>(object.m_position.y)
+		       << io::write<float>(object.m_position.z)
+		       << io::write<float>(object.m_o);
 	}
 
-	io::Reader & operator>>(io::Reader &r, GameObject& object)
+	io::Reader &operator>>(io::Reader &r, GameObject &object)
 	{
 		// Read the bitset and values
 		r
-			>> io::read_container<NetUInt8>(object.m_valueBitset)
-			>> io::read_container<NetUInt16>(object.m_values)
-			>> io::read<NetUInt32>(object.m_mapId)
-			>> io::read<float>(object.m_position.x)
-			>> io::read<float>(object.m_position.y)
-			>> io::read<float>(object.m_position.z)
-			>> io::read<float>(object.m_o);
+		        >> io::read_container<NetUInt8>(object.m_valueBitset)
+		        >> io::read_container<NetUInt16>(object.m_values)
+		        >> io::read<NetUInt32>(object.m_mapId)
+		        >> io::read<float>(object.m_position.x)
+		        >> io::read<float>(object.m_position.y)
+		        >> io::read<float>(object.m_position.z)
+		        >> io::read<float>(object.m_o);
 
 		object.m_lastFiredPosition = object.m_position;
 		return r;
@@ -625,8 +637,8 @@ namespace wowpp
 		{
 			UInt8 updateType = 0x02;						// Update type (0x02 = CREATE_OBJECT)
 			if (object.isGameCharacter() ||
-				object.getTypeId() == object_type::Corpse ||
-				object.getTypeId() == object_type::DynamicObject)
+			        object.getTypeId() == object_type::Corpse ||
+			        object.getTypeId() == object_type::DynamicObject)
 			{
 				updateType = 0x03;		// CREATE_OBJECT_2
 			}
@@ -646,14 +658,14 @@ namespace wowpp
 				}
 			}
 			UInt8 updateFlags = 0x10 | 0x20 | 0x40;			// UPDATEFLAG_ALL | UPDATEFLAG_LIVING | UPDATEFLAG_HAS_POSITION
-			UInt8 objectTypeId = object.getTypeId();		// 
+			UInt8 objectTypeId = object.getTypeId();		//
 			if (objectTypeId == object_type::GameObject)
 			{
 				updateFlags = 0x08 | 0x10 | 0x40;	// Low-GUID, High-GUID & HasPosition
 			}
 			else if (
-				objectTypeId == object_type::Item ||
-				objectTypeId == object_type::Container)
+			    objectTypeId == object_type::Item ||
+			    objectTypeId == object_type::Container)
 			{
 				updateFlags = 0x08 | 0x10;			// Low-GUID & High-GUID
 			}
@@ -661,7 +673,7 @@ namespace wowpp
 			// Header with object guid and type
 			UInt64 guid = object.getGuid();
 			writer
-				<< io::write<NetUInt8>(updateType);
+			        << io::write<NetUInt8>(updateType);
 
 			UInt64 guidCopy = guid;
 			UInt8 packGUID[8 + 1];
@@ -678,20 +690,20 @@ namespace wowpp
 
 				guidCopy >>= 8;
 			}
-			writer.sink().write((const char*)&packGUID[0], size);
+			writer.sink().write((const char *)&packGUID[0], size);
 			writer
-				<< io::write<NetUInt8>(objectTypeId)
-				<< io::write<NetUInt8>(updateFlags);
-			
+			        << io::write<NetUInt8>(objectTypeId)
+			        << io::write<NetUInt8>(updateFlags);
+
 			// Write movement update
 			auto &movement = object.getMovementInfo();
 			UInt32 moveFlags = movement.moveFlags;
 			if (updateFlags & 0x20)
 			{
 				writer
-					<< io::write<NetUInt32>(moveFlags)
-					<< io::write<NetUInt8>(0x00)
-					<< io::write<NetUInt32>(mTimeStamp());
+				        << io::write<NetUInt32>(moveFlags)
+				        << io::write<NetUInt8>(0x00)
+				        << io::write<NetUInt32>(mTimeStamp());
 			}
 
 			if (updateFlags & 0x40)
@@ -699,10 +711,10 @@ namespace wowpp
 				// Position & Rotation
 				// TODO: Calculate position and rotation from the movement info using interpolation
 				writer
-					<< io::write<float>(location.x)
-					<< io::write<float>(location.y)
-					<< io::write<float>(location.z)
-					<< io::write<float>(o);
+				        << io::write<float>(location.x)
+				        << io::write<float>(location.y)
+				        << io::write<float>(location.z)
+				        << io::write<float>(o);
 			}
 
 			if (updateFlags & 0x20)
@@ -720,12 +732,12 @@ namespace wowpp
 					if (object.isGameCharacter())
 					{
 						writer
-							<< io::write<float>(movement.pitch);
+						        << io::write<float>(movement.pitch);
 					}
 					else
 					{
 						writer
-							<< io::write<float>(0.0f);
+						        << io::write<float>(0.0f);
 					}
 				}
 
@@ -733,12 +745,12 @@ namespace wowpp
 				if (object.isGameCharacter())
 				{
 					writer
-						<< io::write<NetUInt32>(movement.fallTime);
+					        << io::write<NetUInt32>(movement.fallTime);
 				}
 				else
 				{
 					writer
-						<< io::write<NetUInt32>(0);
+					        << io::write<NetUInt32>(0);
 				}
 
 				// Fall information
@@ -747,18 +759,18 @@ namespace wowpp
 					if (object.isGameCharacter())
 					{
 						writer
-							<< io::write<float>(movement.jumpVelocity)
-							<< io::write<float>(movement.jumpSinAngle)
-							<< io::write<float>(movement.jumpCosAngle)
-							<< io::write<float>(movement.jumpXYSpeed);
+						        << io::write<float>(movement.jumpVelocity)
+						        << io::write<float>(movement.jumpSinAngle)
+						        << io::write<float>(movement.jumpCosAngle)
+						        << io::write<float>(movement.jumpXYSpeed);
 					}
 					else
 					{
 						writer
-							<< io::write<float>(0.0f)
-							<< io::write<float>(0.0f)
-							<< io::write<float>(0.0f)
-							<< io::write<float>(0.0f);
+						        << io::write<float>(0.0f)
+						        << io::write<float>(0.0f)
+						        << io::write<float>(0.0f)
+						        << io::write<float>(0.0f);
 					}
 				}
 
@@ -768,34 +780,34 @@ namespace wowpp
 					if (object.isGameCharacter())
 					{
 						writer
-							<< io::write<float>(movement.unknown1);
+						        << io::write<float>(movement.unknown1);
 					}
 					else
 					{
 						writer
-							<< io::write<float>(0.0f);
+						        << io::write<float>(0.0f);
 					}
 				}
 
 				GameUnit *unitObject = nullptr;
 				if (object.getTypeId() == object_type::Unit ||
-					object.isGameCharacter())
+				        object.isGameCharacter())
 				{
-					unitObject = reinterpret_cast<GameUnit*>(&object);
+					unitObject = reinterpret_cast<GameUnit *>(&object);
 				}
 
 				assert(unitObject);
 
 				// TODO: Speed values
 				writer
-					<< io::write<float>(unitObject->getSpeed(movement_type::Walk))					// Walk
-					<< io::write<float>(unitObject->getSpeed(movement_type::Run))					// Run
-					<< io::write<float>(unitObject->getSpeed(movement_type::Backwards))				// Backwards
-					<< io::write<float>(unitObject->getSpeed(movement_type::Swim))				// Swim
-					<< io::write<float>(unitObject->getSpeed(movement_type::SwimBackwards))		// Swim Backwards
-					<< io::write<float>(unitObject->getSpeed(movement_type::Flight))				// Fly
-					<< io::write<float>(unitObject->getSpeed(movement_type::FlightBackwards))		// Fly Backwards
-					<< io::write<float>(unitObject->getSpeed(movement_type::Turn));					// Turn (radians / sec: PI)
+				        << io::write<float>(unitObject->getSpeed(movement_type::Walk))					// Walk
+				        << io::write<float>(unitObject->getSpeed(movement_type::Run))					// Run
+				        << io::write<float>(unitObject->getSpeed(movement_type::Backwards))				// Backwards
+				        << io::write<float>(unitObject->getSpeed(movement_type::Swim))				// Swim
+				        << io::write<float>(unitObject->getSpeed(movement_type::SwimBackwards))		// Swim Backwards
+				        << io::write<float>(unitObject->getSpeed(movement_type::Flight))				// Fly
+				        << io::write<float>(unitObject->getSpeed(movement_type::FlightBackwards))		// Fly Backwards
+				        << io::write<float>(unitObject->getSpeed(movement_type::Turn));					// Turn (radians / sec: PI)
 			}
 
 			// Lower-GUID update?
@@ -803,22 +815,22 @@ namespace wowpp
 			{
 				switch (objectTypeId)
 				{
-					case object_type::Unit:
-						writer << io::write<NetUInt32>(0x0B);
-						break;
-					case object_type::Character:
-						if (updateFlags & 0x01)
-						{
-							writer << io::write<NetUInt32>(0x15);
-						}
-						else
-						{
-							writer << io::write<NetUInt32>(0x08);
-						}
-						break;
-					default:
-						writer << io::write<NetUInt32>(guidLowerPart(guid));
-						break;
+				case object_type::Unit:
+					writer << io::write<NetUInt32>(0x0B);
+					break;
+				case object_type::Character:
+					if (updateFlags & 0x01)
+					{
+						writer << io::write<NetUInt32>(0x15);
+					}
+					else
+					{
+						writer << io::write<NetUInt32>(0x08);
+					}
+					break;
+				default:
+					writer << io::write<NetUInt32>(guidLowerPart(guid));
+					break;
 				}
 			}
 
@@ -834,11 +846,11 @@ namespace wowpp
 				case object_type::DynamicObject:
 				case object_type::Corpse:
 					writer
-						<< io::write<NetUInt32>((guid >> 48) & 0x0000FFFF);
+					        << io::write<NetUInt32>((guid >> 48) & 0x0000FFFF);
 					break;
 				default:
 					writer
-						<< io::write<NetUInt32>(0);
+					        << io::write<NetUInt32>(0);
 				}
 			}
 

@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "game_world_object.h"
 #include "log/default_log_levels.h"
@@ -33,9 +33,9 @@
 namespace wowpp
 {
 	WorldObject::WorldObject(
-		proto::Project &project,
-		TimerQueue &timers,
-		const proto::ObjectEntry &entry)
+	    proto::Project &project,
+	    TimerQueue &timers,
+	    const proto::ObjectEntry &entry)
 		: GameObject(project)
 		, m_timers(timers)
 		, m_entry(entry)
@@ -69,7 +69,9 @@ namespace wowpp
 		setFloatValue(world_object_fields::PosY, location.y);
 		setFloatValue(world_object_fields::PosZ, location.z);
 		setFloatValue(world_object_fields::Facing, o);
-		if (m_entry.id() == 161557) DLOG("INITIALIZE: SET FACING TO " << o);
+		if (m_entry.id() == 161557) {
+			DLOG("INITIALIZE: SET FACING TO " << o);
+		}
 		setFloatValue(world_object_fields::Rotation + 2, sin(o / 2.0f));
 		setFloatValue(world_object_fields::Rotation + 3, cos(o / 2.0f));
 
@@ -87,7 +89,9 @@ namespace wowpp
 		auto &entry = getEntry();
 		for (const auto &id : entry.quests())
 		{
-			if (id == questId) return true;
+			if (id == questId) {
+				return true;
+			}
 		}
 
 		return false;
@@ -98,13 +102,15 @@ namespace wowpp
 		auto &entry = getEntry();
 		for (const auto &id : entry.end_quests())
 		{
-			if (id == questId) return true;
+			if (id == questId) {
+				return true;
+			}
 		}
 
 		return false;
 	}
 
-	game::QuestgiverStatus WorldObject::getQuestgiverStatus(const GameCharacter & character) const
+	game::QuestgiverStatus WorldObject::getQuestgiverStatus(const GameCharacter &character) const
 	{
 		game::QuestgiverStatus result = game::questgiver_status::None;
 		for (const auto &quest : getEntry().quests())
@@ -119,7 +125,7 @@ namespace wowpp
 				result = game::questgiver_status::Available;
 			}
 			else if (questStatus == game::quest_status::Incomplete &&
-				result == game::questgiver_status::None)
+			         result == game::questgiver_status::None)
 			{
 				result = game::questgiver_status::Incomplete;
 			}
@@ -127,11 +133,11 @@ namespace wowpp
 		return result;
 	}
 
-	bool WorldObject::isQuestObject(const GameCharacter & character) const
+	bool WorldObject::isQuestObject(const GameCharacter &character) const
 	{
 		switch (m_entry.type())
 		{
-			case world_object_type::Chest:
+		case world_object_type::Chest:
 			{
 				if (!m_objectLoot)
 				{
@@ -140,9 +146,9 @@ namespace wowpp
 
 				for (UInt32 i = 0; i < m_objectLoot->getItemCount(); ++i)
 				{
-					auto* item = m_objectLoot->getLootDefinition(i);
+					auto *item = m_objectLoot->getLootDefinition(i);
 					if (item &&
-						!item->isLooted)
+					        !item->isLooted)
 					{
 						if (character.needsQuestItem(item->definition.item()))
 						{
@@ -153,7 +159,7 @@ namespace wowpp
 
 				return false;
 			}
-			case world_object_type::Goober:
+		case world_object_type::Goober:
 			{
 				return character.getQuestStatus(m_entry.data(1)) == game::QuestStatus::Incomplete;
 			}
@@ -189,9 +195,9 @@ namespace wowpp
 			if (lootEntry)
 			{
 				// TODO: make a way so we don't need loot recipients for game objects as this is completely crap
-				std::vector<GameCharacter*> lootRecipients;
+				std::vector<GameCharacter *> lootRecipients;
 				m_objectLoot = make_unique<LootInstance>(
-					getProject().items, getGuid(), lootEntry, 0, 0, std::cref(lootRecipients));
+				                   getProject().items, getGuid(), lootEntry, 0, 0, std::cref(lootRecipients));
 				if (m_objectLoot)
 				{
 					m_onLootCleared = m_objectLoot->cleared.connect([this]()
@@ -223,17 +229,17 @@ namespace wowpp
 	}
 
 
-	io::Writer & operator<<(io::Writer &w, WorldObject const& object)
+	io::Writer &operator<<(io::Writer &w, WorldObject const &object)
 	{
 		// Write the bitset and values
 		return w
-			<< reinterpret_cast<GameObject const&>(object);
+		       << reinterpret_cast<GameObject const &>(object);
 	}
 
-	io::Reader & operator>>(io::Reader &r, WorldObject& object)
+	io::Reader &operator>>(io::Reader &r, WorldObject &object)
 	{
 		// Read the bitset and values
 		return r
-			>> reinterpret_cast<GameObject &>(object);
+		       >> reinterpret_cast<GameObject &>(object);
 	}
 }

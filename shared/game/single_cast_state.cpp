@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "single_cast_state.h"
 #include "game_unit.h"
@@ -67,18 +67,18 @@ namespace wowpp
 			generator(packet);
 
 			forEachSubscriberInSight(
-				worldInstance->getGrid(),
-				tileIndex,
-				[&buffer, &packet](ITileSubscriber &subscriber)
+			    worldInstance->getGrid(),
+			    tileIndex,
+			    [&buffer, &packet](ITileSubscriber & subscriber)
 			{
 				subscriber.sendPacket(
-					packet,
-					buffer
-					);
+				    packet,
+				    buffer
+				);
 			});
 		}
 	}
-	
+
 	SingleCastState::SingleCastState(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool isProc/* = false*/, UInt64 itemGuid/* = 0*/)
 		: m_cast(cast)
 		, m_spell(spell)
@@ -105,17 +105,17 @@ namespace wowpp
 		if (worldInstance && !(m_spell.attributes(0) & game::spell_attributes::Passive) && !m_isProc)
 		{
 			sendPacketFromCaster(
-				executer,
-				std::bind(game::server_write::spellStart, 
-					std::placeholders::_1,					// Packet
-					casterId,								// Caster
-					casterId,								// Target
-					std::cref(m_spell),						// Spell cref
-					std::cref(m_target),					// Target map cref
-					game::spell_cast_flags::Unknown1,		// Cast flags
-					static_cast<Int32>(castTime),			// Cast time in ms
-					0)										// Cast count (unknown)
-				);
+			    executer,
+			    std::bind(game::server_write::spellStart,
+			              std::placeholders::_1,					// Packet
+			              casterId,								// Caster
+			              casterId,								// Target
+			              std::cref(m_spell),						// Spell cref
+			              std::cref(m_target),					// Target map cref
+			              game::spell_cast_flags::Unknown1,		// Cast flags
+			              static_cast<Int32>(castTime),			// Cast time in ms
+			              0)										// Cast count (unknown)
+			);
 		}
 
 		math::Vector3 location(m_cast.getExecuter().getLocation());
@@ -146,7 +146,7 @@ namespace wowpp
 
 			// Subscribe to damage events if the spell is cancelled on damage
 			m_onUserMoved = m_cast.getExecuter().moved.connect(
-				std::bind(&SingleCastState::onUserStartsMoving, this));
+			                    std::bind(&SingleCastState::onUserStartsMoving, this));
 
 			// TODO: Subscribe to target removed and died events (in both cases, the cast may be interrupted)
 		}
@@ -159,18 +159,18 @@ namespace wowpp
 	std::pair<game::SpellCastResult, SpellCasting *> SingleCastState::startCast(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool doReplacePreviousCast, UInt64 itemGuid)
 	{
 		if (!m_hasFinished &&
-			!doReplacePreviousCast)
+		        !doReplacePreviousCast)
 		{
 			return std::make_pair(game::spell_cast_result::FailedSpellInProgress, &m_casting);
 		}
 
 		SpellCasting &casting = castSpell(
-			cast,
-			spell,
-			std::move(target),
-			basePoints,
-			castTime,
-			itemGuid);
+		                            cast,
+		                            spell,
+		                            std::move(target),
+		                            basePoints,
+		                            castTime,
+		                            itemGuid);
 
 		return std::make_pair(game::spell_cast_result::CastOkay, &casting);
 	}
@@ -191,8 +191,8 @@ namespace wowpp
 		if (weakThis.lock())
 		{
 			m_cast.setState(std::unique_ptr<SpellCast::CastState>(
-				new NoCastState
-				));
+			                    new NoCastState
+			                ));
 		}
 	}
 
@@ -217,7 +217,7 @@ namespace wowpp
 		{
 			return;
 		}
-		
+
 		if (success)
 		{
 			// Instead of self-targeting, use unit target
@@ -235,25 +235,25 @@ namespace wowpp
 			}
 
 			sendPacketFromCaster(executer,
-				std::bind(game::server_write::spellGo, std::placeholders::_1,
-				executer.getGuid(),
-				m_itemGuid ? m_itemGuid : executer.getGuid(),
-				std::cref(m_spell),
-				std::cref(targetMap),
-				static_cast<game::SpellCastFlags>(flags)));
+			                     std::bind(game::server_write::spellGo, std::placeholders::_1,
+			                               executer.getGuid(),
+			                               m_itemGuid ? m_itemGuid : executer.getGuid(),
+			                               std::cref(m_spell),
+			                               std::cref(targetMap),
+			                               static_cast<game::SpellCastFlags>(flags)));
 		}
 		else
 		{
 			sendPacketFromCaster(executer,
-				std::bind(game::server_write::spellFailure, std::placeholders::_1,
-				executer.getGuid(),
-				m_spell.id(),
-				game::spell_cast_result::FailedNoPower));
+			                     std::bind(game::server_write::spellFailure, std::placeholders::_1,
+			                               executer.getGuid(),
+			                               m_spell.id(),
+			                               game::spell_cast_result::FailedNoPower));
 
 			sendPacketFromCaster(executer,
-				std::bind(game::server_write::spellFailedOther, std::placeholders::_1,
-				executer.getGuid(),
-				m_spell.id()));
+			                     std::bind(game::server_write::spellFailedOther, std::placeholders::_1,
+			                               executer.getGuid(),
+			                               m_spell.id()));
 		}
 	}
 
@@ -264,7 +264,7 @@ namespace wowpp
 		GameCharacter *character = nullptr;
 		if (isPlayerGUID(m_cast.getExecuter().getGuid()))
 		{
-			character = dynamic_cast<GameCharacter*>(&m_cast.getExecuter());
+			character = dynamic_cast<GameCharacter *>(&m_cast.getExecuter());
 		}
 
 		if (m_castTime > 0)
@@ -345,7 +345,7 @@ namespace wowpp
 				}
 			}
 		}
-		
+
 		m_hasFinished = true;
 
 		const std::weak_ptr<SingleCastState> weakThis = strongThis;
@@ -374,11 +374,13 @@ namespace wowpp
 		}
 		else
 		{
-			if (!consumePower())
+			if (!consumePower()) {
 				return;
+			}
 
-			if (!consumeItem())
+			if (!consumeItem()) {
 				return;
+			}
 
 			sendEndCast(true);
 
@@ -399,7 +401,7 @@ namespace wowpp
 						{
 							// This will be executed on the impact
 							m_impactCountdown.ended.connect(
-								[strongThis]() mutable
+							    [strongThis]() mutable
 							{
 								strongThis->applyAllEffects();
 								strongThis.reset();
@@ -409,7 +411,7 @@ namespace wowpp
 							m_projectileEnd = m_projectileStart + timeMS;
 							m_projectileOrigin = m_cast.getExecuter().getLocation();
 
-							m_onTargetMoved = unitTarget->moved.connect([this](GameObject &target, const math::Vector3 &oldPosition, float oldO) {
+							m_onTargetMoved = unitTarget->moved.connect([this](GameObject & target, const math::Vector3 & oldPosition, float oldO) {
 								if (m_impactCountdown.running)
 								{
 									const auto currentTime = getCurrentTime();
@@ -465,7 +467,7 @@ namespace wowpp
 			GameUnit *attackTarget = nullptr;
 			if (m_target.hasUnitTarget())
 			{
-				attackTarget = dynamic_cast<GameUnit*>(m_cast.getExecuter().getWorldInstance()->findObjectByGUID(m_target.getUnitTarget()));
+				attackTarget = dynamic_cast<GameUnit *>(m_cast.getExecuter().getWorldInstance()->findObjectByGUID(m_target.getUnitTarget()));
 			}
 
 			if (attackTarget)
@@ -478,7 +480,7 @@ namespace wowpp
 				WLOG("Unable to find target for auto attack after spell cast!");
 			}
 		}
-		
+
 		if (weakThis.lock())
 		{
 			//may destroy this, too
@@ -498,26 +500,26 @@ namespace wowpp
 		// This is only triggered if the spell has the attribute
 		stopCast();
 	}
-	
+
 	void SingleCastState::executeMeleeAttack()
 	{
 		GameUnit &attacker = m_cast.getExecuter();
 		UInt8 school = m_spell.schoolmask();
-		std::vector<GameUnit*> targets;
+		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
 		m_attackTable.checkSpecialMeleeAttack(&attacker, m_target, school, targets, victimStates, hitInfos, resists);
-		
+
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
-			GameUnit* targetUnit = targets[i];
+			GameUnit *targetUnit = targets[i];
 			UInt32 totalDamage = m_meleeDamage[i];
 			UInt32 blocked = 0;
 			bool crit = false;
 			UInt32 resisted = 0;
 			UInt32 absorbed = 0;
-			
+
 			if (victimStates[i] == game::victim_state::Blocks)
 			{
 				UInt32 blockValue = 50;	//TODO get from m_victim
@@ -547,42 +549,42 @@ namespace wowpp
 			{
 				hitInfos[i] = static_cast<game::HitInfo>(hitInfos[i] | game::hit_info::Absorb);
 			}
-			
+
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
 			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, &attacker, noThreat))
 			{
 				// Send spell damage packet
 				sendPacketFromCaster(attacker,
-					std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-					targetUnit->getGuid(),
-					attacker.getGuid(),
-					m_spell.id(),
-					totalDamage,
-					school,
-					absorbed,
-					0,
-					false,
-					0,
-					crit));
-				
+				                     std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+				                               targetUnit->getGuid(),
+				                               attacker.getGuid(),
+				                               m_spell.id(),
+				                               totalDamage,
+				                               school,
+				                               absorbed,
+				                               0,
+				                               false,
+				                               0,
+				                               crit));
+
 				targetUnit->takenDamage(&attacker);
 			}
 		}
 	}
-	
+
 	void SingleCastState::spellEffectInstantKill(const proto::SpellEffect &effect)
 	{
 		GameUnit &caster = m_cast.getExecuter();
-		std::vector<GameUnit*> targets;
+		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
-		
+
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
-			GameUnit* targetUnit = targets[i];
+			GameUnit *targetUnit = targets[i];
 			targetUnit->dealDamage(targetUnit->getUInt32Value(unit_fields::Health), m_spell.schoolmask(), &caster, true);
 		}
 	}
@@ -590,22 +592,22 @@ namespace wowpp
 	void SingleCastState::spellEffectTeleportUnits(const proto::SpellEffect &effect)
 	{
 		GameUnit &caster = m_cast.getExecuter();
-		std::vector<GameUnit*> targets;
+		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
-		
+
 		UInt32 targetMap = 0;
 		math::Vector3 targetPos(0.0f, 0.0f, 0.0f);
 		float targetO = 0.0f;
 		switch (effect.targetb())
 		{
-			case game::targets::DstHome:
+		case game::targets::DstHome:
 			{
 				if (caster.isGameCharacter())
 				{
-					GameCharacter *character = dynamic_cast<GameCharacter*>(&caster);
+					GameCharacter *character = dynamic_cast<GameCharacter *>(&caster);
 					character->getHome(targetMap, targetPos, targetO);
 				}
 				else
@@ -615,7 +617,7 @@ namespace wowpp
 				}
 				break;
 			}
-			case game::targets::DstDB:
+		case game::targets::DstDB:
 			{
 				targetMap = m_spell.targetmap();
 				targetPos.x = m_spell.targetx();
@@ -624,19 +626,19 @@ namespace wowpp
 				targetO = m_spell.targeto();
 				break;
 			}
-			case game::targets::DstCaster:
-				targetMap = caster.getMapId();
-				targetPos = caster.getLocation();
-				targetO = caster.getOrientation();
-				break;
-			default:
-				WLOG("Unhandled destination type " << effect.targetb() << " - not teleporting!");
-				return;
+		case game::targets::DstCaster:
+			targetMap = caster.getMapId();
+			targetPos = caster.getLocation();
+			targetO = caster.getOrientation();
+			break;
+		default:
+			WLOG("Unhandled destination type " << effect.targetb() << " - not teleporting!");
+			return;
 		}
-		
+
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
-			GameUnit* targetUnit = targets[i];
+			GameUnit *targetUnit = targets[i];
 			if (targetUnit->isGameCharacter())
 			{
 				targetUnit->teleport(targetMap, targetPos, targetO);
@@ -651,18 +653,18 @@ namespace wowpp
 
 	void SingleCastState::spellEffectSchoolDamage(const proto::SpellEffect &effect)
 	{
-		
+
 		GameUnit &caster = m_cast.getExecuter();
 		UInt8 school = m_spell.schoolmask();
-		std::vector<GameUnit*> targets;
+		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
 		m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
-		
+
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
-			GameUnit* targetUnit = targets[i];
+			GameUnit *targetUnit = targets[i];
 			UInt32 totalDamage;
 			bool crit = false;
 			UInt32 resisted = 0;
@@ -688,30 +690,31 @@ namespace wowpp
 				resisted = totalDamage * (resists[i] / 100.0f);
 				absorbed = targetUnit->consumeAbsorb(totalDamage - resisted, school);
 			}
-			
+
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
 			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, &caster, noThreat))
 			{
-				if (totalDamage == 0 && resisted == 0)
+				if (totalDamage == 0 && resisted == 0) {
 					totalDamage = resisted = 1;
-				
+				}
+
 				// Send spell damage packet
-				m_completedEffectsExecution = completedEffects.connect([this, &caster, targetUnit, totalDamage, school, absorbed, resisted, crit](){
+				m_completedEffectsExecution = completedEffects.connect([this, &caster, targetUnit, totalDamage, school, absorbed, resisted, crit]() {
 					wowpp::sendPacketFromCaster(caster,
-						std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-						targetUnit->getGuid(),
-						caster.getGuid(),
-						m_spell.id(),
-						totalDamage,
-						school,
-						absorbed,
-						resisted,	//resisted
-						false,
-						0,
-						crit));
+					                            std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+					                                      targetUnit->getGuid(),
+					                                      caster.getGuid(),
+					                                      m_spell.id(),
+					                                      totalDamage,
+					                                      school,
+					                                      absorbed,
+					                                      resisted,	//resisted
+					                                      false,
+					                                      0,
+					                                      crit));
 				});
-				
+
 				caster.doneSpellMagicDmgClassNeg(targetUnit, school);
 				targetUnit->takenDamage(&caster);
 			}
@@ -722,23 +725,23 @@ namespace wowpp
 	{
 		meleeSpecialAttack(effect, false);
 	}
-	
+
 	void SingleCastState::spellEffectStealBeneficialBuff(const proto::SpellEffect &effect)
 	{
 		GameUnit &caster = m_cast.getExecuter();
 		UInt8 school = m_spell.schoolmask();
-		std::vector<GameUnit*> targets;
+		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
 		m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
-		
+
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
-			GameUnit* targetUnit = targets[i];
+			GameUnit *targetUnit = targets[i];
 			UInt32 totalPoints = 0;
 			bool spellFailed = false;
-			
+
 			if (hitInfos[i] == game::hit_info::Miss)
 			{
 				spellFailed = true;
@@ -758,27 +761,27 @@ namespace wowpp
 					totalPoints = calculateEffectBasePoints(effect);
 				}
 			}
-			
+
 			if (spellFailed)
 			{
 				// TODO send fail packet
 				sendPacketFromCaster(caster,
-					std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-					targetUnit->getGuid(),
-					caster.getGuid(),
-					m_spell.id(),
-					1,
-					school,
-					0,
-					1,	//resisted
-					false,
-					0,
-					false));
+				                     std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+				                               targetUnit->getGuid(),
+				                               caster.getGuid(),
+				                               m_spell.id(),
+				                               1,
+				                               school,
+				                               0,
+				                               1,	//resisted
+				                               false,
+				                               0,
+				                               false));
 			}
 			else if (targetUnit->isAlive())
 			{
 				UInt32 auraDispelType = effect.miscvaluea();
-				for (UInt32 i = 0; i<totalPoints; i++)
+				for (UInt32 i = 0; i < totalPoints; i++)
 				{
 					Aura *stolenAura = targetUnit->getAuras().popBack(auraDispelType, true);
 					if (stolenAura)
@@ -787,13 +790,13 @@ namespace wowpp
 						proto::SpellEffect effect(stolenAura->getEffect());
 						UInt32 basepoints(stolenAura->getBasePoints());
 						//stolenAura->misapplyAura();
-						
+
 						auto *world = caster.getWorldInstance();
 						auto &universe = world->getUniverse();
 						std::shared_ptr<Aura> aura = std::make_shared<Aura>(spell, effect, basepoints, caster, caster, [&universe](std::function<void()> work)
 						{
 							universe.post(work);
-						}, [](Aura &self)
+						}, [](Aura & self)
 						{
 							// Prevent aura from being deleted before being removed from the list
 							auto strong = self.shared_from_this();
@@ -824,23 +827,29 @@ namespace wowpp
 		GameUnit &caster = m_cast.getExecuter();
 		auto *world = caster.getWorldInstance();
 
-		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self)
+		if (m_target.getTargetMap() == game::spell_cast_target_flags::Self) {
 			target = &caster;
+		}
 		else if (world)
 		{
 			UInt64 targetGuid = 0;
-			if (m_target.hasUnitTarget())
+			if (m_target.hasUnitTarget()) {
 				targetGuid = m_target.getUnitTarget();
-			else if (m_target.hasGOTarget())
+			}
+			else if (m_target.hasGOTarget()) {
 				targetGuid = m_target.getGOTarget();
-			else if (m_target.hasItemTarget())
+			}
+			else if (m_target.hasItemTarget()) {
 				targetGuid = m_target.getItemTarget();
+			}
 
-			if (targetGuid != 0)
+			if (targetGuid != 0) {
 				target = world->findObjectByGUID(targetGuid);
+			}
 
-			if (m_target.hasUnitTarget() && isUnitGUID(targetGuid))
-				unitTarget = reinterpret_cast<GameUnit*>(target);
+			if (m_target.hasUnitTarget() && isUnitGUID(targetGuid)) {
+				unitTarget = reinterpret_cast<GameUnit *>(target);
+			}
 		}
 
 		// Check target
@@ -851,18 +860,22 @@ namespace wowpp
 		}
 
 		// Does this have any effect on the target?
-		if (unitTarget->getByteValue(unit_fields::Bytes0, 3) != powerType)
-			return;	// Target does not use this kind of power
-		if (powerToDrain == 0)
-			return;	// Nothing to drain...
+		if (unitTarget->getByteValue(unit_fields::Bytes0, 3) != powerType) {
+			return;    // Target does not use this kind of power
+		}
+		if (powerToDrain == 0) {
+			return;    // Nothing to drain...
+		}
 
 		UInt32 currentPower = unitTarget->getUInt32Value(unit_fields::Power1 + powerType);
-		if (currentPower == 0)
-			return;	// Target doesn't have any power left
+		if (currentPower == 0) {
+			return;    // Target doesn't have any power left
+		}
 
 		// Now drain the power
-		if (powerToDrain > currentPower)
+		if (powerToDrain > currentPower) {
 			powerToDrain = currentPower;
+		}
 
 		// Remove power
 		unitTarget->setUInt32Value(unit_fields::Power1 + powerType, currentPower - powerToDrain);
@@ -881,18 +894,19 @@ namespace wowpp
 
 			// Send spell damage packet
 			sendPacketFromCaster(caster,
-				std::bind(game::server_write::spellEnergizeLog, std::placeholders::_1,
-					caster.getGuid(),
-					caster.getGuid(),
-					m_spell.id(),
-					casterPowerType, 
-					powerToDrain));
+			                     std::bind(game::server_write::spellEnergizeLog, std::placeholders::_1,
+			                               caster.getGuid(),
+			                               caster.getGuid(),
+			                               m_spell.id(),
+			                               casterPowerType,
+			                               powerToDrain));
 
 			// Modify casters power values
 			UInt32 casterPower = caster.getUInt32Value(unit_fields::Power1 + casterPowerType);
 			UInt32 maxCasterPower = caster.getUInt32Value(unit_fields::MaxPower1 + casterPowerType);
-			if (casterPower + powerToDrain > maxCasterPower)
+			if (casterPower + powerToDrain > maxCasterPower) {
 				powerToDrain = maxCasterPower - casterPower;
+			}
 			caster.setUInt32Value(unit_fields::Power1 + casterPowerType, casterPower + powerToDrain);
 		}
 	}
@@ -903,7 +917,7 @@ namespace wowpp
 		GameCharacter *character = nullptr;
 		if (isPlayerGUID(m_cast.getExecuter().getGuid()))
 		{
-			character = dynamic_cast<GameCharacter*>(&m_cast.getExecuter());
+			character = dynamic_cast<GameCharacter *>(&m_cast.getExecuter());
 		}
 
 		if (!character)
@@ -928,7 +942,7 @@ namespace wowpp
 		GameCharacter *character = nullptr;
 		if (isPlayerGUID(m_cast.getExecuter().getGuid()))
 		{
-			character = dynamic_cast<GameCharacter*>(&m_cast.getExecuter());
+			character = dynamic_cast<GameCharacter *>(&m_cast.getExecuter());
 		}
 
 		const Int32 comboPoints = character ? character->getComboPoints() : 0;
@@ -956,24 +970,25 @@ namespace wowpp
 
 		return basePoints + randomValue + comboDamage;
 	}
-	
+
 	UInt32 SingleCastState::getSpellPointsTotal(const proto::SpellEffect &effect, UInt32 spellPower, UInt32 bonusPct)
 	{
 		Int32 basePoints = calculateEffectBasePoints(effect);
 		float castTime = m_castTime;
-		if (castTime < 1500)
+		if (castTime < 1500) {
 			castTime = 1500;
+		}
 		float spellAddCoefficient = (castTime / 3500.0);
 		float bonusModificator = 1 + (bonusPct / 100);
 		return (basePoints + (spellAddCoefficient * spellPower)) *  bonusModificator;
 	}
-	
+
 	void SingleCastState::spellEffectAddComboPoints(const proto::SpellEffect &effect)
 	{
 		GameCharacter *character = nullptr;
 		if (isPlayerGUID(m_cast.getExecuter().getGuid()))
 		{
-			character = dynamic_cast<GameCharacter*>(&m_cast.getExecuter());
+			character = dynamic_cast<GameCharacter *>(&m_cast.getExecuter());
 		}
 
 		if (!character)
@@ -985,20 +1000,20 @@ namespace wowpp
 		UInt64 comboTarget = m_target.getUnitTarget();
 		character->addComboPoints(comboTarget, UInt8(calculateEffectBasePoints(effect)));
 	}
-	
+
 	void SingleCastState::spellEffectDuel(const proto::SpellEffect &effect)
 	{
 		GameUnit &caster = m_cast.getExecuter();
-		std::vector<GameUnit*> targets;
+		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
-		
+
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
-			GameUnit* targetUnit = targets[i];
-			
+			GameUnit *targetUnit = targets[i];
+
 			SpellTargetMap targetMap;
 			targetMap.m_targetMap = game::spell_cast_target_flags::Self;
 			targetUnit->castSpell(targetMap, 7267, -1, 0, true);	// cast beg at loser
@@ -1010,7 +1025,7 @@ namespace wowpp
 		//TODO: Implement
 		meleeSpecialAttack(effect, false);
 	}
-	
+
 	void SingleCastState::spellEffectCreateItem(const proto::SpellEffect &effect)
 	{
 		// Get item entry
@@ -1022,20 +1037,20 @@ namespace wowpp
 		}
 
 		GameUnit &caster = m_cast.getExecuter();
-		std::vector<GameUnit*> targets;
+		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
-		
+
 		m_attackTable.checkPositiveSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 		const auto itemCount = calculateEffectBasePoints(effect);
 
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
-			GameUnit* targetUnit = targets[i];
+			GameUnit *targetUnit = targets[i];
 			if (targetUnit->isGameCharacter())
 			{
-				auto *charUnit = reinterpret_cast<GameCharacter*>(targetUnit);
+				auto *charUnit = reinterpret_cast<GameCharacter *>(targetUnit);
 				auto &inv = charUnit->getInventory();
 
 				std::map<UInt16, UInt16> addedBySlot;
@@ -1064,14 +1079,14 @@ namespace wowpp
 							game::Protocol::OutgoingPacket itemPacket(sink);
 							game::server_write::itemPushResult(itemPacket, charUnit->getGuid(), std::cref(*inst), false, true, bag, subslot, slot.second, totalCount);
 							forEachSubscriberInSight(
-								charUnit->getWorldInstance()->getGrid(),
-								tile,
-								[&](ITileSubscriber &subscriber)
+							    charUnit->getWorldInstance()->getGrid(),
+							    tile,
+							    [&](ITileSubscriber & subscriber)
 							{
 								auto subscriberGroup = subscriber.getControlledObject()->getGroupId();
 								if ((charUnit->getGroupId() == 0 && subscriber.getControlledObject()->getGuid() == charUnit->getGuid()) ||
-									(charUnit->getGroupId() != 0 && subscriberGroup == charUnit->getGroupId())
-									)
+								        (charUnit->getGroupId() != 0 && subscriberGroup == charUnit->getGroupId())
+								   )
 								{
 									subscriber.sendPacket(itemPacket, buffer);
 								}
@@ -1092,14 +1107,14 @@ namespace wowpp
 	void SingleCastState::spellEffectApplyAura(const proto::SpellEffect &effect)
 	{
 		GameUnit &caster = m_cast.getExecuter();
-		std::vector<GameUnit*> targets;
+		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
 		bool isPositive = Aura::isPositive(m_spell, effect);
 		UInt8 school = m_spell.schoolmask();
-		
-		if (isPositive) 
+
+		if (isPositive)
 		{
 			m_attackTable.checkPositiveSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//Buff
 		}
@@ -1107,17 +1122,17 @@ namespace wowpp
 		{
 			m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);	//Debuff
 		}
-		
+
 		UInt32 aura = effect.aura();
 		bool modifiedByBonus;
 		switch (aura)
 		{
-			case game::aura_type::PeriodicDamage:
-			case game::aura_type::PeriodicHeal:
-			case game::aura_type::PeriodicLeech:
-				modifiedByBonus = true;
-			default:
-				modifiedByBonus = false;
+		case game::aura_type::PeriodicDamage:
+		case game::aura_type::PeriodicHeal:
+		case game::aura_type::PeriodicLeech:
+			modifiedByBonus = true;
+		default:
+			modifiedByBonus = false;
 		}
 
 		// World was already checked. If world would be nullptr, unitTarget would be null as well
@@ -1125,10 +1140,10 @@ namespace wowpp
 		auto &universe = world->getUniverse();
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
-			GameUnit* targetUnit = targets[i];
+			GameUnit *targetUnit = targets[i];
 			UInt32 totalPoints = 0;
 			bool spellFailed = false;
-			
+
 			if (hitInfos[i] == game::hit_info::Miss)
 			{
 				spellFailed = true;
@@ -1158,24 +1173,24 @@ namespace wowpp
 					}
 				}
 			}
-			
+
 			if (spellFailed)
 			{
 				if (log2(school) != game::spell_school::Normal)	//melee auras doesn't send a "resisted" packet as they can miss or be dodged...
 				{
-					m_completedEffectsExecution = completedEffects.connect([this, &caster, targetUnit, school](){
+					m_completedEffectsExecution = completedEffects.connect([this, &caster, targetUnit, school]() {
 						wowpp::sendPacketFromCaster(caster,
-							std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-							targetUnit->getGuid(),
-							caster.getGuid(),
-							m_spell.id(),
-							1,
-							school,
-							0,
-							1,	//resisted
-							false,
-							0,
-							false));
+						                            std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+						                                      targetUnit->getGuid(),
+						                                      caster.getGuid(),
+						                                      m_spell.id(),
+						                                      1,
+						                                      school,
+						                                      0,
+						                                      1,	//resisted
+						                                      false,
+						                                      0,
+						                                      false));
 					});
 				}
 			}
@@ -1184,7 +1199,7 @@ namespace wowpp
 				std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *targetUnit, [&universe](std::function<void()> work)
 				{
 					universe.post(work);
-				}, [&universe](Aura &self)
+				}, [&universe](Aura & self)
 				{
 					// Prevent aura from being deleted before being removed from the list
 					auto strong = self.shared_from_this();
@@ -1227,15 +1242,15 @@ namespace wowpp
 	void SingleCastState::spellEffectHeal(const proto::SpellEffect &effect)
 	{
 		GameUnit &caster = m_cast.getExecuter();
-		std::vector<GameUnit*> targets;
+		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);		//Buff, HoT
-		
+
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
-			GameUnit* targetUnit = targets[i];
+			GameUnit *targetUnit = targets[i];
 			UInt8 school = m_spell.schoolmask();
 			UInt32 totalPoints;
 			bool crit = false;
@@ -1254,19 +1269,19 @@ namespace wowpp
 					totalPoints *= 2.0f;
 				}
 			}
-			
+
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
 			if (targetUnit->heal(totalPoints, &caster, noThreat))
 			{
 				// Send spell heal packet
 				sendPacketFromCaster(caster,
-					std::bind(game::server_write::spellHealLog, std::placeholders::_1,
-					targetUnit->getGuid(),
-					caster.getGuid(),
-					m_spell.id(),
-					totalPoints,
-					crit));
+				                     std::bind(game::server_write::spellHealLog, std::placeholders::_1,
+				                               targetUnit->getGuid(),
+				                               caster.getGuid(),
+				                               m_spell.id(),
+				                               totalPoints,
+				                               crit));
 			}
 		}
 	}
@@ -1274,41 +1289,41 @@ namespace wowpp
 	void SingleCastState::spellEffectBind(const proto::SpellEffect &effect)
 	{
 		GameUnit &caster = m_cast.getExecuter();
-		std::vector<GameUnit*> targets;
+		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
-		
+
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
-		
+
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
-			GameUnit* targetUnit = targets[i];
+			GameUnit *targetUnit = targets[i];
 			if (targetUnit->isGameCharacter())
 			{
-				GameCharacter *character = dynamic_cast<GameCharacter*>(targetUnit);
+				GameCharacter *character = dynamic_cast<GameCharacter *>(targetUnit);
 				character->setHome(caster.getMapId(), caster.getLocation(), caster.getOrientation());
 			}
 		}
 	}
-	
+
 	void SingleCastState::spellEffectQuestComplete(const proto::SpellEffect &effect)
 	{
 		GameUnit &caster = m_cast.getExecuter();
-		std::vector<GameUnit*> targets;
+		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
-		
+
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
-		
+
 		UInt32 questId = effect.miscvaluea();
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
-			GameUnit* targetUnit = targets[i];
+			GameUnit *targetUnit = targets[i];
 			if (targetUnit->isGameCharacter())
 			{
-				GameCharacter *character = dynamic_cast<GameCharacter*>(targetUnit);
+				GameCharacter *character = dynamic_cast<GameCharacter *>(targetUnit);
 				// TODO complete quest with questId to character
 			}
 		}
@@ -1324,7 +1339,7 @@ namespace wowpp
 			// If cast by an item, the item cooldown is used instead of the spell cooldown
 			if (m_itemGuid && m_cast.getExecuter().isGameCharacter())
 			{
-				auto *character = reinterpret_cast<GameCharacter*>(&m_cast.getExecuter());
+				auto *character = reinterpret_cast<GameCharacter *>(&m_cast.getExecuter());
 				auto &inv = character->getInventory();
 
 				UInt16 itemSlot = 0;
@@ -1336,10 +1351,10 @@ namespace wowpp
 						for (auto &spell : item->getEntry().spells())
 						{
 							if (spell.spell() == m_spell.id() &&
-								(spell.trigger() == 0 || spell.trigger() == 5))
+							        (spell.trigger() == 0 || spell.trigger() == 5))
 							{
 								if (spell.categorycooldown() > 0 ||
-									spell.cooldown() > 0)
+								        spell.cooldown() > 0)
 								{
 									// Use item cooldown instead of spell cooldown
 									spellCatCD = spell.categorycooldown();
@@ -1353,7 +1368,9 @@ namespace wowpp
 			}
 
 			UInt64 finalCD = spellCD;
-			if (!finalCD) finalCD = spellCatCD;
+			if (!finalCD) {
+				finalCD = spellCatCD;
+			}
 			if (finalCD)
 			{
 				m_cast.getExecuter().setCooldown(m_spell.id(), static_cast<UInt32>(finalCD));
@@ -1364,8 +1381,9 @@ namespace wowpp
 					{
 						for (const auto &spellId : cat->spells())
 						{
-							if (spellId != m_spell.id())
+							if (spellId != m_spell.id()) {
 								m_cast.getExecuter().setCooldown(spellId, static_cast<UInt32>(spellCatCD));
+							}
 						}
 					}
 				}
@@ -1374,7 +1392,7 @@ namespace wowpp
 
 		// Make sure that this isn't destroyed during the effects
 		auto strong = shared_from_this();
-		
+
 		std::vector<UInt32> effects;
 		for (int i = 0; i < m_spell.effects_size(); ++i)
 		{
@@ -1383,7 +1401,7 @@ namespace wowpp
 
 		// Execute spell immediatly
 		namespace se = game::spell_effects;
-		std::vector<std::pair<UInt32,EffectHandler>> effectMap {	
+		std::vector<std::pair<UInt32, EffectHandler>> effectMap {
 			//ordered pairs to avoid 25% resists for binary spells like frostnova
 			{se::InstantKill,			std::bind(&SingleCastState::spellEffectInstantKill, this, std::placeholders::_1)},
 			{se::PowerDrain,			std::bind(&SingleCastState::spellEffectDrainPower, this, std::placeholders::_1)},
@@ -1415,8 +1433,8 @@ namespace wowpp
 			{se::ApplyAura,				std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
 			{se::SchoolDamage,			std::bind(&SingleCastState::spellEffectSchoolDamage, this, std::placeholders::_1)}
 		};
-		
-		for (std::vector<std::pair<UInt32,EffectHandler>>::iterator it = effectMap.begin(); it != effectMap.end(); ++it)
+
+		for (std::vector<std::pair<UInt32, EffectHandler>>::iterator it = effectMap.begin(); it != effectMap.end(); ++it)
 		{
 			for (int k = 0; k < effects.size(); ++k)
 			{
@@ -1427,9 +1445,9 @@ namespace wowpp
 				}
 			}
 		}
-		
+
 		completedEffects();
-		
+
 		// Cast all additional spells if available
 		for (const auto &spell : m_spell.additionalspells())
 		{
@@ -1446,7 +1464,7 @@ namespace wowpp
 
 		if (m_cast.getExecuter().isGameCharacter())
 		{
-			auto *character = reinterpret_cast<GameCharacter*>(&m_cast.getExecuter());
+			auto *character = reinterpret_cast<GameCharacter *>(&m_cast.getExecuter());
 			auto &inv = character->getInventory();
 
 			UInt16 itemSlot = 0;
@@ -1468,7 +1486,7 @@ namespace wowpp
 			{
 				// OnUse spell cast
 				if (spell.spell() == m_spell.id() &&
-					(spell.trigger() == 0 || spell.trigger() == 5))
+				        (spell.trigger() == 0 || spell.trigger() == 5))
 				{
 					// Item is removed on use
 					if (spell.charges() == UInt32(-1))
@@ -1498,17 +1516,17 @@ namespace wowpp
 		}
 		else if (m_spell.costpct() > 0)
 		{
-            auto powerType = static_cast<game::PowerType>(m_spell.powertype());
+			auto powerType = static_cast<game::PowerType>(m_spell.powertype());
 			switch (powerType)
 			{
-				case game::power_type::Health:
-					totalCost = m_cast.getExecuter().getUInt32Value(unit_fields::BaseHealth) * m_spell.costpct() / 100;
-					break;
-				case game::power_type::Mana:
-					totalCost = m_cast.getExecuter().getUInt32Value(unit_fields::BaseMana) * m_spell.costpct() / 100;
-					break;
-				default:
-					break;
+			case game::power_type::Health:
+				totalCost = m_cast.getExecuter().getUInt32Value(unit_fields::BaseHealth) * m_spell.costpct() / 100;
+				break;
+			case game::power_type::Mana:
+				totalCost = m_cast.getExecuter().getUInt32Value(unit_fields::BaseMana) * m_spell.costpct() / 100;
+				break;
+			default:
+				break;
 			}
 		}
 
@@ -1545,8 +1563,9 @@ namespace wowpp
 				currentPower -= totalCost;
 				m_cast.getExecuter().setUInt32Value(unit_fields::Power1 + m_spell.powertype(), currentPower);
 
-				if (m_spell.powertype() == game::power_type::Mana)
+				if (m_spell.powertype() == game::power_type::Mana) {
 					m_cast.getExecuter().notifyManaUse();
+				}
 			}
 		}
 
@@ -1568,11 +1587,12 @@ namespace wowpp
 	void SingleCastState::spellEffectEnergize(const proto::SpellEffect &effect)
 	{
 		Int32 powerType = effect.miscvaluea();
-		if (powerType < 0 || powerType > 5)
+		if (powerType < 0 || powerType > 5) {
 			return;
-		
+		}
+
 		GameUnit &caster = m_cast.getExecuter();
-		std::vector<GameUnit*> targets;
+		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
@@ -1580,7 +1600,7 @@ namespace wowpp
 
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
-			GameUnit* targetUnit = targets[i];
+			GameUnit *targetUnit = targets[i];
 
 			UInt32 power = calculateEffectBasePoints(effect);
 			if (victimStates[i] == game::victim_state::IsImmune)
@@ -1600,23 +1620,23 @@ namespace wowpp
 			}
 			targetUnit->setUInt32Value(unit_fields::Power1 + powerType, curPower);
 			sendPacketFromCaster(m_cast.getExecuter(),
-				std::bind(game::server_write::spellEnergizeLog, std::placeholders::_1, 
-					m_cast.getExecuter().getGuid(), targetUnit->getGuid(), m_spell.id(), static_cast<UInt8>(powerType), power));
+			                     std::bind(game::server_write::spellEnergizeLog, std::placeholders::_1,
+			                               m_cast.getExecuter().getGuid(), targetUnit->getGuid(), m_spell.id(), static_cast<UInt8>(powerType), power));
 		}
 	}
-	
+
 	void SingleCastState::spellEffectPowerBurn(const proto::SpellEffect &effect)
 	{
 		GameUnit &caster = m_cast.getExecuter();
-		std::vector<GameUnit*> targets;
+		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
 		m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
-		
+
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
-			GameUnit* targetUnit = targets[i];
+			GameUnit *targetUnit = targets[i];
 			UInt8 school = m_spell.schoolmask();
 			UInt32 burn;
 			UInt32 damage = 0;
@@ -1639,25 +1659,25 @@ namespace wowpp
 				damage = burn * effect.multiplevalue();
 				absorbed = targetUnit->consumeAbsorb(damage, school);
 			}
-			
+
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
 			if (targetUnit->dealDamage(damage - absorbed, school, &caster, noThreat))
 			{
 				// Send spell damage packet
 				sendPacketFromCaster(caster,
-					std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-					targetUnit->getGuid(),
-					caster.getGuid(),
-					m_spell.id(),
-					damage,
-					school,
-					absorbed,
-					resisted,
-					false,
-					0,
-					false));	//crit
-				
+				                     std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+				                               targetUnit->getGuid(),
+				                               caster.getGuid(),
+				                               m_spell.id(),
+				                               damage,
+				                               school,
+				                               absorbed,
+				                               resisted,
+				                               false,
+				                               0,
+				                               false));	//crit
+
 				if (targetUnit->isAlive())
 				{
 					caster.doneSpellMagicDmgClassNeg(targetUnit, school);
@@ -1676,32 +1696,32 @@ namespace wowpp
 
 			switch (entry.type())
 			{
-				case 0:
-				case 1:
-					lockId = entry.data(1);
-					break;
-				case 2:
-				case 3:
-				case 6:
-				case 10:
-				case 12:
-				case 13:
-				case 24:
-				case 26:
-					lockId = entry.data(0);
-					break;
-				case 25:
-					lockId = entry.data(4);
-					break;
+			case 0:
+			case 1:
+				lockId = entry.data(1);
+				break;
+			case 2:
+			case 3:
+			case 6:
+			case 10:
+			case 12:
+			case 13:
+			case 24:
+			case 26:
+				lockId = entry.data(0);
+				break;
+			case 25:
+				lockId = entry.data(4);
+				break;
 			}
 
 			return lockId;
 		}
 	}
-	
+
 	void SingleCastState::spellEffectWeaponPercentDamage(const proto::SpellEffect &effect)
 	{
-		
+
 		meleeSpecialAttack(effect, true);
 	}
 
@@ -1721,7 +1741,7 @@ namespace wowpp
 			return;
 		}
 
-		obj = dynamic_cast<WorldObject*>(world->findObjectByGUID(m_target.getGOTarget()));
+		obj = dynamic_cast<WorldObject *>(world->findObjectByGUID(m_target.getGOTarget()));
 		if (!obj)
 		{
 			WLOG("SPELL_EFFECT_OPEN_LOCK: Could not find target object");
@@ -1739,55 +1759,55 @@ namespace wowpp
 		// If it is a door, try to open it
 		switch (entry.type())
 		{
-			case world_object_type::Door:
-			case world_object_type::Button:
-				obj->setUInt32Value(world_object_fields::State, (currentState == 1 ? 0 : 1));
-				break;
-			case world_object_type::Chest:
+		case world_object_type::Door:
+		case world_object_type::Button:
+			obj->setUInt32Value(world_object_fields::State, (currentState == 1 ? 0 : 1));
+			break;
+		case world_object_type::Chest:
 			{
 				// Open chest loot window
 				auto *loot = obj->getObjectLoot();
 				if (loot &&
-					!loot->isEmpty())
+				        !loot->isEmpty())
 				{
 					// Start inspecting the loot
 					if (m_cast.getExecuter().isGameCharacter())
 					{
-						GameCharacter *character = reinterpret_cast<GameCharacter*>(&m_cast.getExecuter());
+						GameCharacter *character = reinterpret_cast<GameCharacter *>(&m_cast.getExecuter());
 						character->lootinspect(*loot);
 					}
 				}
 				break;
 			}
-			default:	// Make the compiler happy
-				break;
+		default:	// Make the compiler happy
+			break;
 		}
 
 		// Raise interaction triggers
 		obj->raiseTrigger(trigger_event::OnInteraction);
 	}
-	
+
 	void SingleCastState::spellEffectApplyAreaAuraParty(const proto::SpellEffect &effect)
 	{
-		
+
 	}
-	
+
 	void SingleCastState::spellEffectDispel(const proto::SpellEffect &effect)
 	{
 		GameUnit &caster = m_cast.getExecuter();
 		UInt8 school = m_spell.schoolmask();
-		std::vector<GameUnit*> targets;
+		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
 		m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
-		
+
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
-			GameUnit* targetUnit = targets[i];
+			GameUnit *targetUnit = targets[i];
 			UInt32 totalPoints = 0;
 			bool spellFailed = false;
-			
+
 			if (hitInfos[i] == game::hit_info::Miss)
 			{
 				spellFailed = true;
@@ -1807,22 +1827,22 @@ namespace wowpp
 					totalPoints = calculateEffectBasePoints(effect);
 				}
 			}
-			
+
 			if (spellFailed)
 			{
 				// TODO send fail packet
 				sendPacketFromCaster(caster,
-					std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-					targetUnit->getGuid(),
-					caster.getGuid(),
-					m_spell.id(),
-					1,
-					school,
-					0,
-					1,	//resisted
-					false,
-					0,
-					false));
+				                     std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+				                               targetUnit->getGuid(),
+				                               caster.getGuid(),
+				                               m_spell.id(),
+				                               1,
+				                               school,
+				                               0,
+				                               1,	//resisted
+				                               false,
+				                               0,
+				                               false));
 			}
 			else if (targetUnit->isAlive())
 			{
@@ -1882,12 +1902,12 @@ namespace wowpp
 		}
 	}
 
-	void SingleCastState::spellEffectCharge(const proto::SpellEffect & effect)
+	void SingleCastState::spellEffectCharge(const proto::SpellEffect &effect)
 	{
 		Int32 basePoints = calculateEffectBasePoints(effect);
 
 		GameUnit &caster = m_cast.getExecuter();
-		std::vector<GameUnit*> targets;
+		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
@@ -1900,16 +1920,16 @@ namespace wowpp
 			mover.moveTo(firstTarget.getLocation(), 25.0f);
 		}
 	}
-	
+
 	void SingleCastState::spellEffectAttackMe(const proto::SpellEffect &effect)
 	{
 		GameUnit &caster = m_cast.getExecuter();
-		std::vector<GameUnit*> targets;
+		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
 		m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
-		
+
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
@@ -1918,38 +1938,39 @@ namespace wowpp
 			{
 				float addThread = targetUnit->getThreat(*topThreatener).get();
 				addThread -= targetUnit->getThreat(caster).get();
-				if (addThread > 0.0f)
+				if (addThread > 0.0f) {
 					targetUnit->threatened(caster, addThread);
+				}
 			}
 		}
 	}
 
-	void SingleCastState::spellEffectScript(const proto::SpellEffect & effect)
+	void SingleCastState::spellEffectScript(const proto::SpellEffect &effect)
 	{
 		switch (m_spell.id())
 		{
-			case 20271:	// Judgment
-				// aura = get active seal from aura_container (Dummy-effect)
-				// m_cast.getExecuter().castSpell(target, aura.getBasePoints(), -1, 0, false);
-				break;
-			default:
-				break;
+		case 20271:	// Judgment
+			// aura = get active seal from aura_container (Dummy-effect)
+			// m_cast.getExecuter().castSpell(target, aura.getBasePoints(), -1, 0, false);
+			break;
+		default:
+			break;
 		}
 	}
-	
+
 	void SingleCastState::meleeSpecialAttack(const proto::SpellEffect &effect, bool basepointsArePct)
 	{
 		GameUnit &attacker = m_cast.getExecuter();
 		UInt8 school = m_spell.schoolmask();
-		std::vector<GameUnit*> targets;
+		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
 		m_attackTable.checkSpecialMeleeAttack(&attacker, m_target, school, targets, victimStates, hitInfos, resists);
-		
+
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
-			GameUnit* targetUnit = targets[i];
+			GameUnit *targetUnit = targets[i];
 			UInt32 totalDamage;
 			if (victimStates[i] == game::victim_state::IsImmune)
 			{
@@ -1968,7 +1989,7 @@ namespace wowpp
 				totalDamage = 0;
 				//TODO accelerate next m_victim autohit
 			}
-			else 
+			else
 			{
 				if (basepointsArePct)
 				{
@@ -1986,12 +2007,13 @@ namespace wowpp
 				// Randomize weapon damage
 				std::uniform_real_distribution<float> distribution(weaponMin, weaponMax);
 				totalDamage += UInt32(distribution(randomGenerator));
-				
+
 				// Armor reduction
 				totalDamage = targetUnit->calculateArmorReducedDamage(attacker.getLevel(), totalDamage);
-				if (totalDamage < 0)	//avoid negative damage when blockValue is high
+				if (totalDamage < 0) {	//avoid negative damage when blockValue is high
 					totalDamage = 0;
-				
+				}
+
 				if (basepointsArePct)
 				{
 					totalDamage *= (calculateEffectBasePoints(effect) / 100.0);
@@ -2005,8 +2027,9 @@ namespace wowpp
 			{
 				m_meleeDamage.push_back(totalDamage);
 			}
-			if (!m_completedEffectsExecution.connected())
+			if (!m_completedEffectsExecution.connected()) {
 				m_completedEffectsExecution = completedEffects.connect(std::bind(&SingleCastState::executeMeleeAttack, this));
+			}
 		}
 	}
 }

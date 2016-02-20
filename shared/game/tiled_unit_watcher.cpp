@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "tiled_unit_watcher.h"
 #include "tiled_unit_finder_tile.h"
@@ -28,8 +28,8 @@
 namespace wowpp
 {
 	TiledUnitFinder::TiledUnitWatcher::TiledUnitWatcher(
-	        const Circle &shape,
-			TiledUnitFinder &finder)
+	    const Circle &shape,
+	    TiledUnitFinder &finder)
 		: UnitWatcher(shape)
 		, m_finder(finder)
 	{
@@ -37,7 +37,7 @@ namespace wowpp
 
 	TiledUnitFinder::TiledUnitWatcher::~TiledUnitWatcher()
 	{
-		for (const auto & conn : m_connections)
+		for (const auto &conn : m_connections)
 		{
 			conn.second.disconnect();
 		}
@@ -76,12 +76,12 @@ namespace wowpp
 		assert(m_connections.count(&tile) == 0);
 
 		auto connection = tile.moved->connect(
-			std::bind(&TiledUnitWatcher::onUnitMoved,
-			  this, std::placeholders::_1));
+		                      std::bind(&TiledUnitWatcher::onUnitMoved,
+		                                this, std::placeholders::_1));
 
 		m_connections[&tile] = connection;
 
-		for (GameUnit * const unit : tile.getUnits().getElements())
+		for (GameUnit *const unit : tile.getUnits().getElements())
 		{
 			math::Vector3 location(unit->getLocation());
 
@@ -107,7 +107,7 @@ namespace wowpp
 			m_connections.erase(i);
 		}
 
-		for (GameUnit * const unit : tile.getUnits().getElements())
+		for (GameUnit *const unit : tile.getUnits().getElements())
 		{
 			math::Vector3 location(unit->getLocation());
 
@@ -133,7 +133,7 @@ namespace wowpp
 
 	bool TiledUnitFinder::TiledUnitWatcher::updateTile(Tile &tile)
 	{
-		for (GameUnit * const unit : tile.getUnits().getElements())
+		for (GameUnit *const unit : tile.getUnits().getElements())
 		{
 			math::Vector3 location(unit->getLocation());
 

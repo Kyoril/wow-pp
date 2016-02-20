@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -55,25 +55,31 @@ namespace wowpp
 
 	typedef item_fields::Enum ItemFields;
 
-	/// 
+	///
 	class GameItem : public GameObject
 	{
-		friend io::Writer &operator << (io::Writer &w, GameItem const& object);
-		friend io::Reader &operator >> (io::Reader &r, GameItem& object);
+		friend io::Writer &operator << (io::Writer &w, GameItem const &object);
+		friend io::Reader &operator >> (io::Reader &r, GameItem &object);
 
 		boost::signals2::signal<void()> equipped;
-	
+
 	public:
 
-		/// 
+		///
 		explicit GameItem(proto::Project &project, const proto::ItemEntry &entry);
 		~GameItem();
 
 		virtual void initialize() override;
 
-		virtual ObjectType getTypeId() const override { return object_type::Item; }
-		const proto::ItemEntry &getEntry() const { return m_entry; }
-		UInt32 getStackCount() const { return getUInt32Value(item_fields::StackCount); }
+		virtual ObjectType getTypeId() const override {
+			return object_type::Item;
+		}
+		const proto::ItemEntry &getEntry() const {
+			return m_entry;
+		}
+		UInt32 getStackCount() const {
+			return getUInt32Value(item_fields::StackCount);
+		}
 		/// Adds more stacks to this item instance. This also checks for stack limit.
 		/// @param amount The amount to increase the stack for.
 		/// @returns The amount of stacks that could be added.
@@ -85,6 +91,6 @@ namespace wowpp
 		const proto::ItemEntry &m_entry;
 	};
 
-	io::Writer &operator << (io::Writer &w, GameItem const& object);
-	io::Reader &operator >> (io::Reader &r, GameItem& object);
+	io::Writer &operator << (io::Writer &w, GameItem const &object);
+	io::Reader &operator >> (io::Reader &r, GameItem &object);
 }

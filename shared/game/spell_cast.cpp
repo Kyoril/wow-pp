@@ -17,7 +17,7 @@ namespace wowpp
 	{
 	}
 
-	std::pair<game::SpellCastResult, SpellCasting*> SpellCast::startCast(const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool isProc, UInt64 itemGuid)
+	std::pair<game::SpellCastResult, SpellCasting *> SpellCast::startCast(const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool isProc, UInt64 itemGuid)
 	{
 		assert(m_castState);
 
@@ -70,13 +70,13 @@ namespace wowpp
 			math::Vector3 location(m_executer.getLocation());
 
 			if (spell.attributes(2) == 0x100000 &&
-				(spell.attributes(1) & game::spell_attributes_ex_a::MeleeCombatStart) == game::spell_attributes_ex_a::MeleeCombatStart &&
-				unitTarget->isInArc(3.1415927f, location.x, location.y))
+			        (spell.attributes(1) & game::spell_attributes_ex_a::MeleeCombatStart) == game::spell_attributes_ex_a::MeleeCombatStart &&
+			        unitTarget->isInArc(3.1415927f, location.x, location.y))
 			{
 				return std::make_pair(game::spell_cast_result::FailedNotBehind, nullptr);
 			}
 		}
-		
+
 		// Check power
 		if (spell.cost() > 0)
 		{
@@ -140,8 +140,8 @@ namespace wowpp
 		if (isProc)
 		{
 			std::shared_ptr<SingleCastState> newState(
-				new SingleCastState(*this, spell, std::move(target), basePoints, castTime, true, itemGuid)
-				);
+			    new SingleCastState(*this, spell, std::move(target), basePoints, castTime, true, itemGuid)
+			);
 			newState->activate();
 
 			return std::make_pair(game::spell_cast_result::CastOkay, nullptr);
@@ -160,13 +160,13 @@ namespace wowpp
 			}
 
 			return m_castState->startCast
-				(*this,
-					spell,
-					std::move(target),
-					basePoints,
-					castTime,
-					false,
-					itemGuid);
+			       (*this,
+			        spell,
+			        std::move(target),
+			        basePoints,
+			        castTime,
+			        false,
+			        itemGuid);
 		}
 	}
 
@@ -191,11 +191,11 @@ namespace wowpp
 		m_castState->activate();
 	}
 
-	SpellCasting & castSpell(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, UInt64 itemGuid)
+	SpellCasting &castSpell(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, UInt64 itemGuid)
 	{
 		std::shared_ptr<SingleCastState> newState(
-			new SingleCastState(cast, spell, std::move(target), basePoints, castTime, false, itemGuid)
-			);
+		    new SingleCastState(cast, spell, std::move(target), basePoints, castTime, false, itemGuid)
+		);
 
 		auto &casting = newState->getCasting();
 		cast.setState(std::move(newState));

@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "loot_entry.h"
 #include "item_entry.h"
@@ -100,8 +100,9 @@ namespace wowpp
 			for (const auto &group : lootGroups)
 			{
 				// Skip empty loot groups
-				if (group.empty())
+				if (group.empty()) {
 					continue;
+				}
 
 				sff::write::Array<char> itemsArray(groupArray, sff::write::MultiLine);
 				{
@@ -109,9 +110,15 @@ namespace wowpp
 					{
 						sff::write::Table<char> itemTable(itemsArray, sff::write::Comma);
 						{
-							if (def.item != nullptr) itemTable.addKey("i", def.item->id);
-							if (def.minCount != 1) itemTable.addKey("min", def.minCount);
-							if (def.maxCount != 1) itemTable.addKey("max", def.maxCount);
+							if (def.item != nullptr) {
+								itemTable.addKey("i", def.item->id);
+							}
+							if (def.minCount != 1) {
+								itemTable.addKey("min", def.minCount);
+							}
+							if (def.maxCount != 1) {
+								itemTable.addKey("max", def.maxCount);
+							}
 							itemTable.addKey("r", def.dropChance);
 						}
 						itemTable.finish();

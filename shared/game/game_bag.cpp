@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "game_bag.h"
 #include "proto_data/project.h"
@@ -42,7 +42,7 @@ namespace wowpp
 	void GameBag::initialize()
 	{
 		GameItem::initialize();
-		
+
 		auto &entry = getEntry();
 		setUInt32Value(bag_fields::NumSlots, entry.containerslots());
 		for (UInt32 slot = 0; slot < 36; slot++)
@@ -64,16 +64,16 @@ namespace wowpp
 		return true;
 	}
 
-	io::Writer & operator<<(io::Writer &w, GameBag const& object)
+	io::Writer &operator<<(io::Writer &w, GameBag const &object)
 	{
 		return w
-			<< reinterpret_cast<GameItem const&>(object);
+		       << reinterpret_cast<GameItem const &>(object);
 	}
 
-	io::Reader & operator>>(io::Reader &r, GameBag& object)
+	io::Reader &operator>>(io::Reader &r, GameBag &object)
 	{
 		return r
-			>> reinterpret_cast<GameItem&>(object);
+		       >> reinterpret_cast<GameItem &>(object);
 	}
 
 }

@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -72,7 +72,7 @@ namespace wowpp
 		UInt32 dynamicFlags;
 		/// Core-specific flags (not sent to client).
 		UInt32 extraFlags;
-		/// 
+		///
 		UInt32 creatureTypeFlags;
 		/// Walk speed factor. A value of 1.0 means player walk speed.
 		float walkSpeed;
@@ -105,9 +105,9 @@ namespace wowpp
 		/// Minimum experience reward at equal level. Will be modified depending on group members in range and level difference.
 		UInt32 xpMin, xpMax;
 		/// Triggers to be raised by this unit.
-		std::vector<const TriggerEntry*> triggers;
+		std::vector<const TriggerEntry *> triggers;
 		/// Triggers filtered by events.
-		std::map<UInt32, std::vector<const TriggerEntry*>> triggersByEvent;
+		std::map<UInt32, std::vector<const TriggerEntry *>> triggersByEvent;
 		/// Equipment entries of this creature. Only has optical effect right now, maybe should also modify damage, attack speed and amor?
 		const ItemEntry *mainHand, *offHand, *ranged;
 		/// Melee attack power of this creature.
@@ -125,7 +125,7 @@ namespace wowpp
 		UnitEntry();
 		/// Loads this unit entry from a data file.
 		/// @param context Context which provides access to other data entries and additional functionalities.
-		/// @param wrapper 
+		/// @param wrapper
 		bool load(DataLoadContext &context, const ReadTableWrapper &wrapper);
 		/// Saves this unit entry into a data file.
 		/// @param context Context which stores some objects and provides more information needed for saving.

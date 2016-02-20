@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "race_entry.h"
 #include "templates/basic_template_load_context.h"
@@ -68,7 +68,7 @@ namespace wowpp
 
 		const sff::read::tree::Array<DataFileIterator> *const positionArray = wrapper.table.getArray("position");
 		if (!positionArray ||
-			!loadPosition(startPosition, *positionArray))
+		        !loadPosition(startPosition, *positionArray))
 		{
 			context.onError("Invalid position in a race entry");
 			return false;
@@ -111,7 +111,7 @@ namespace wowpp
 						// Resolve spell ids
 						UInt16 spellId = spellArray->getInteger(x, 0);
 						context.loadLater.push_back(
-							[&spells, spellId, this, &context]() -> bool
+						    [&spells, spellId, this, &context]() -> bool
 						{
 							const SpellEntry *spell = context.getSpell(spellId);
 							if (spell)
@@ -182,9 +182,9 @@ namespace wowpp
 					if (itemId > 0)
 					{
 						context.loadLater.push_back(
-							[classId, genderId, itemId, this, &context]() -> bool
+						    [classId, genderId, itemId, this, &context]() -> bool
 						{
-							const ItemEntry * item = context.getItem(itemId);
+							const ItemEntry *item = context.getItem(itemId);
 							if (item)
 							{
 								this->initialItems[classId][genderId].push_back(item);
@@ -269,8 +269,12 @@ namespace wowpp
 	{
 		Super::saveBase(context);
 
-		if (!name.empty()) context.table.addKey("name", name);
-		if (factionTemplate) context.table.addKey("faction", factionTemplate->id);
+		if (!name.empty()) {
+			context.table.addKey("name", name);
+		}
+		if (factionTemplate) {
+			context.table.addKey("faction", factionTemplate->id);
+		}
 		context.table.addKey("maleModel", maleModel);
 		context.table.addKey("femaleModel", femaleModel);
 		context.table.addKey("language", baseLanguage);
@@ -313,7 +317,7 @@ namespace wowpp
 		}
 		initialSpellArray->finish();
 
-		// Write initial 
+		// Write initial
 		auto initialItemsArray = make_unique<sff::write::Array<char>>(context.table, "initial_items", sff::write::MultiLine);
 		{
 			for (const auto &entry : initialItems)

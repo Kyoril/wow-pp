@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -41,13 +41,17 @@ namespace wowpp
 	public:
 
 		/// Initializes a new instance of the Aura class.
-		explicit Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, PostFunction post, std::function<void(Aura&)> onDestroy);
+		explicit Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, PostFunction post, std::function<void(Aura &)> onDestroy);
 		~Aura();
 
 		/// Gets the unit target.
-		GameUnit &getTarget() { return m_target; }
+		GameUnit &getTarget() {
+			return m_target;
+		}
 		/// Gets the caster of this aura (if exists).
-		GameUnit *getCaster() { return m_caster; }
+		GameUnit *getCaster() {
+			return m_caster;
+		}
 		/// Applies this aura and initializes everything.
 		void applyAura();
 		/// This method is the counterpart of applyAura(). It exists so that
@@ -56,31 +60,41 @@ namespace wowpp
 		void misapplyAura();
 		/// Executes the aura modifier and applies or removes the aura effects to/from the target.
 		void handleModifier(bool apply);
-		/// 
+		///
 		void handleProcModifier(game::spell_proc_flags::Type procType, GameUnit *attacker = nullptr);
 		/// Determines whether this is a passive spell aura.
-		bool isPassive() const { return (m_spell.attributes(0) & game::spell_attributes::Passive) != 0; }
+		bool isPassive() const {
+			return (m_spell.attributes(0) & game::spell_attributes::Passive) != 0;
+		}
 		/// Determines whether the target may be positive
 		static bool hasPositiveTarget(const proto::SpellEffect &effect);
 		/// Determines whether this is a positive spell aura.
 		bool isPositive() const;
 		static bool isPositive(const proto::SpellEntry &spell, const proto::SpellEffect &effect);
 		/// Gets the current aura slot.
-		UInt8 getSlot() const { return m_slot; }
+		UInt8 getSlot() const {
+			return m_slot;
+		}
 		/// Sets the new aura slot to be used.
 		void setSlot(UInt8 newSlot);
 		/// Forced aura remove.
 		void onForceRemoval();
 
 		/// Gets the spell which created this aura and hold's it's values.
-		const proto::SpellEntry &getSpell() const { return m_spell; }
+		const proto::SpellEntry &getSpell() const {
+			return m_spell;
+		}
 		/// Gets the spell effect which created this aura.
-		const proto::SpellEffect &getEffect() const { return m_effect; }
-		
-		Int32 getBasePoints() { return m_basePoints; }
-		
+		const proto::SpellEffect &getEffect() const {
+			return m_effect;
+		}
+
+		Int32 getBasePoints() {
+			return m_basePoints;
+		}
+
 		void setBasePoints(Int32 basePoints);
-		
+
 		UInt32 getEffectSchoolMask();
 
 	protected:
@@ -171,7 +185,7 @@ namespace wowpp
 		void onTick();
 		/// Executed when the target of this aura moved.
 		void onTargetMoved(GameObject &, math::Vector3 oldPosition, float oldO);
-		/// 
+		///
 		void setRemoved(GameUnit *remover);
 
 	private:
@@ -193,7 +207,7 @@ namespace wowpp
 		UInt32 m_attackerLevel;		// Needed for damage calculation
 		UInt8 m_slot;
 		PostFunction m_post;
-		std::function<void(Aura&)> m_destroy;
+		std::function<void(Aura &)> m_destroy;
 		UInt32 m_totalTicks;
 	};
 }

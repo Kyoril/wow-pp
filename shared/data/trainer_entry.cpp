@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "trainer_entry.h"
 #include "spell_entry.h"
@@ -60,7 +60,7 @@ namespace wowpp
 				}
 
 				TrainerSpellEntry &entry = spells[j];
-				
+
 				UInt32 spellId = 0;
 				spellTable->tryGetInteger("entry", spellId);
 				spellTable->tryGetInteger("cost", entry.spellCost);
@@ -96,9 +96,15 @@ namespace wowpp
 	{
 		Super::saveBase(context);
 
-		if (classId != 0) context.table.addKey("class", classId);
-		if (trainerType != 0) context.table.addKey("type", trainerType);
-		if (!title.empty()) context.table.addKey("title", title);
+		if (classId != 0) {
+			context.table.addKey("class", classId);
+		}
+		if (trainerType != 0) {
+			context.table.addKey("type", trainerType);
+		}
+		if (!title.empty()) {
+			context.table.addKey("title", title);
+		}
 
 		sff::write::Array<char> spellArray(context.table, "spells", sff::write::MultiLine);
 		{
@@ -106,11 +112,21 @@ namespace wowpp
 			{
 				sff::write::Table<char> spellTable(spellArray, sff::write::Comma);
 				{
-					if (entry.spell != nullptr) spellTable.addKey("entry", entry.spell->id);
-					if (entry.spellCost != 0) spellTable.addKey("cost", entry.spellCost);
-					if (entry.reqSkill != nullptr) spellTable.addKey("req_skill", entry.reqSkill->id);
-					if (entry.reqSkillValue != 0) spellTable.addKey("req_skill_value", entry.reqSkillValue);
-					if (entry.reqLevel) spellTable.addKey("req_level", entry.reqLevel);
+					if (entry.spell != nullptr) {
+						spellTable.addKey("entry", entry.spell->id);
+					}
+					if (entry.spellCost != 0) {
+						spellTable.addKey("cost", entry.spellCost);
+					}
+					if (entry.reqSkill != nullptr) {
+						spellTable.addKey("req_skill", entry.reqSkill->id);
+					}
+					if (entry.reqSkillValue != 0) {
+						spellTable.addKey("req_skill_value", entry.reqSkillValue);
+					}
+					if (entry.reqLevel) {
+						spellTable.addKey("req_level", entry.reqLevel);
+					}
 				}
 				spellTable.finish();
 			}

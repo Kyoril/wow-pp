@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "spell_target_map.h"
 #include "world_instance.h"
@@ -64,7 +64,7 @@ namespace wowpp
 		out_Z = m_dstZ;
 	}
 
-	SpellTargetMap & SpellTargetMap::operator=(const SpellTargetMap &other)
+	SpellTargetMap &SpellTargetMap::operator=(const SpellTargetMap &other)
 	{
 		m_targetMap = other.m_targetMap;
 		m_unitTarget = other.m_unitTarget;
@@ -85,12 +85,12 @@ namespace wowpp
 	{
 		if (out_unitTarget && m_targetMap & game::spell_cast_target_flags::Unit)
 		{
-			*out_unitTarget = dynamic_cast<GameUnit*>(instance.findObjectByGUID(m_unitTarget));
+			*out_unitTarget = dynamic_cast<GameUnit *>(instance.findObjectByGUID(m_unitTarget));
 		}
 
 		if (out_itemTarget && m_targetMap & game::spell_cast_target_flags::Item)
 		{
-			*out_itemTarget = dynamic_cast<GameItem*>(instance.findObjectByGUID(m_itemTarget));
+			*out_itemTarget = dynamic_cast<GameItem *>(instance.findObjectByGUID(m_itemTarget));
 		}
 
 		if (out_objectTarget && m_targetMap & game::spell_cast_target_flags::Object)
@@ -107,7 +107,7 @@ namespace wowpp
 	}
 
 
-	io::Reader & operator>>(io::Reader &r, SpellTargetMap& targetMap)
+	io::Reader &operator>>(io::Reader &r, SpellTargetMap &targetMap)
 	{
 		if (!(r >> io::read<NetUInt32>(targetMap.m_targetMap)))
 		{
@@ -115,8 +115,9 @@ namespace wowpp
 		}
 
 		// No targets
-		if (targetMap.m_targetMap == game::spell_cast_target_flags::Self)
+		if (targetMap.m_targetMap == game::spell_cast_target_flags::Self) {
 			return r;
+		}
 
 		// Unit target
 		if (targetMap.m_targetMap & (game::spell_cast_target_flags::Unit | game::spell_cast_target_flags::Unk2))
@@ -195,9 +196,9 @@ namespace wowpp
 		if (targetMap.m_targetMap & game::spell_cast_target_flags::SourceLocation)
 		{
 			if (!(r
-				>> io::read<float>(targetMap.m_srcX)
-				>> io::read<float>(targetMap.m_srcY)
-				>> io::read<float>(targetMap.m_srcZ)))
+			        >> io::read<float>(targetMap.m_srcX)
+			        >> io::read<float>(targetMap.m_srcY)
+			        >> io::read<float>(targetMap.m_srcZ)))
 			{
 				return r;
 			}
@@ -207,9 +208,9 @@ namespace wowpp
 		if (targetMap.m_targetMap & game::spell_cast_target_flags::DestLocation)
 		{
 			if (!(r
-				>> io::read<float>(targetMap.m_dstX)
-				>> io::read<float>(targetMap.m_dstY)
-				>> io::read<float>(targetMap.m_dstZ)))
+			        >> io::read<float>(targetMap.m_dstX)
+			        >> io::read<float>(targetMap.m_dstY)
+			        >> io::read<float>(targetMap.m_dstZ)))
 			{
 				return r;
 			}
@@ -229,7 +230,8 @@ namespace wowpp
 				{
 					targetMap.m_stringTarget.push_back(c);
 				}
-			} while (c != 0);
+			}
+			while (c != 0);
 		}
 
 		// Corpse target
@@ -260,7 +262,7 @@ namespace wowpp
 		return r;
 	}
 
-	io::Writer & operator<<(io::Writer &w, SpellTargetMap const& targetMap)
+	io::Writer &operator<<(io::Writer &w, SpellTargetMap const &targetMap)
 	{
 		namespace scf = game::spell_cast_target_flags;
 
@@ -288,7 +290,7 @@ namespace wowpp
 
 					guidCopy >>= 8;
 				}
-				w.sink().write((const char*)&packGUID[0], size);
+				w.sink().write((const char *)&packGUID[0], size);
 			}
 			else if (targetMap.m_targetMap & (scf::Object | scf::ObjectUnknown))
 			{
@@ -308,7 +310,7 @@ namespace wowpp
 
 					guidCopy >>= 8;
 				}
-				w.sink().write((const char*)&packGUID[0], size);
+				w.sink().write((const char *)&packGUID[0], size);
 			}
 			else if (targetMap.m_targetMap & (scf::Corpse | scf::PvPCorpse))
 			{
@@ -328,7 +330,7 @@ namespace wowpp
 
 					guidCopy >>= 8;
 				}
-				w.sink().write((const char*)&packGUID[0], size);
+				w.sink().write((const char *)&packGUID[0], size);
 			}
 			else
 			{
@@ -356,32 +358,32 @@ namespace wowpp
 
 				guidCopy >>= 8;
 			}
-			w.sink().write((const char*)&packGUID[0], size);
+			w.sink().write((const char *)&packGUID[0], size);
 		}
-		
+
 		// Source location
 		if (targetMap.m_targetMap & scf::SourceLocation)
 		{
 			w
-				<< io::write<float>(targetMap.m_srcX)
-				<< io::write<float>(targetMap.m_srcY)
-				<< io::write<float>(targetMap.m_srcZ);
+			        << io::write<float>(targetMap.m_srcX)
+			        << io::write<float>(targetMap.m_srcY)
+			        << io::write<float>(targetMap.m_srcZ);
 		}
 
 		// Dest location
 		if (targetMap.m_targetMap & scf::DestLocation)
 		{
 			w
-				<< io::write<float>(targetMap.m_dstX)
-				<< io::write<float>(targetMap.m_dstY)
-				<< io::write<float>(targetMap.m_dstZ);
+			        << io::write<float>(targetMap.m_dstX)
+			        << io::write<float>(targetMap.m_dstY)
+			        << io::write<float>(targetMap.m_dstZ);
 		}
 
 		// String target
 		if (targetMap.m_targetMap & scf::String)
 		{
 			w
-				<< io::write_range(targetMap.m_stringTarget) << io::write<NetUInt8>(0);
+			        << io::write_range(targetMap.m_stringTarget) << io::write<NetUInt8>(0);
 		}
 
 		return w;

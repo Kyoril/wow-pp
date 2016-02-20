@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "game_character.h"
 #include <log/default_log_levels.h>
@@ -35,8 +35,8 @@
 namespace wowpp
 {
 	GameCharacter::GameCharacter(
-		proto::Project &project,
-		TimerQueue &timers)
+	    proto::Project &project,
+	    TimerQueue &timers)
 		: GameUnit(project, timers)
 		, m_name("UNKNOWN")
 		, m_zoneIndex(0)
@@ -113,8 +113,9 @@ namespace wowpp
 		setFloatValue(character_fields::RangedCritPercentage, 0.0f);
 
 		// Init spell schools (will be recalculated in UpdateAllStats() at loading and in _ApplyAllStatBonuses() at reset
-		for (UInt8 i = 0; i < 7; ++i)
+		for (UInt8 i = 0; i < 7; ++i) {
 			setFloatValue(character_fields::SpellCritPercentage + i, 0.0f);
+		}
 
 		setFloatValue(character_fields::ParryPercentage, 0.0f);
 		setFloatValue(character_fields::BlockPercentage, 0.0f);
@@ -138,8 +139,9 @@ namespace wowpp
 		if (it != m_quests.end())
 		{
 			if (it->second.status != game::quest_status::Available &&
-				it->second.status != game::quest_status::Unavailable)
+			        it->second.status != game::quest_status::Unavailable) {
 				return it->second.status;
+			}
 		}
 
 		// We don't have that quest cached, make a lookup
@@ -155,17 +157,17 @@ namespace wowpp
 		{
 			return game::quest_status::Unavailable;
 		}
-		
+
 		// Race/Class check
 		const UInt32 charRaceBit = 1 << (getRace() - 1);
 		const UInt32 charClassBit = 1 << (getClass() - 1);
 		if (entry->requiredraces() &&
-			(entry->requiredraces() & charRaceBit) == 0)
+		        (entry->requiredraces() & charRaceBit) == 0)
 		{
 			return game::quest_status::Unavailable;
 		}
 		if (entry->requiredclasses() &&
-			(entry->requiredclasses() & charClassBit) == 0)
+		        (entry->requiredclasses() & charClassBit) == 0)
 		{
 			return game::quest_status::Unavailable;
 		}
@@ -319,31 +321,43 @@ namespace wowpp
 			{
 				UInt32 qLevel = quest.questlevel() > 0 ? static_cast<UInt32>(quest.questlevel()) : 0;
 				float fullxp = 0;
-				if (qLevel >= 65)
+				if (qLevel >= 65) {
 					fullxp = quest.rewardmoneymaxlevel() / 6.0f;
-				else if (qLevel == 64)
+				}
+				else if (qLevel == 64) {
 					fullxp = quest.rewardmoneymaxlevel() / 4.8f;
-				else if (qLevel == 63)
+				}
+				else if (qLevel == 63) {
 					fullxp = quest.rewardmoneymaxlevel() / 3.6f;
-				else if (qLevel == 62)
+				}
+				else if (qLevel == 62) {
 					fullxp = quest.rewardmoneymaxlevel() / 2.4f;
-				else if (qLevel == 61)
+				}
+				else if (qLevel == 61) {
 					fullxp = quest.rewardmoneymaxlevel() / 1.2f;
-				else if (qLevel > 0 && qLevel <= 60)
+				}
+				else if (qLevel > 0 && qLevel <= 60) {
 					fullxp = quest.rewardmoneymaxlevel() / 0.6f;
+				}
 
-				if (playerLevel <= qLevel + 5)
+				if (playerLevel <= qLevel + 5) {
 					return UInt32(ceilf(fullxp));
-				else if (playerLevel == qLevel + 6)
+				}
+				else if (playerLevel == qLevel + 6) {
 					return UInt32(ceilf(fullxp * 0.8f));
-				else if (playerLevel == qLevel + 7)
+				}
+				else if (playerLevel == qLevel + 7) {
 					return UInt32(ceilf(fullxp * 0.6f));
-				else if (playerLevel == qLevel + 8)
+				}
+				else if (playerLevel == qLevel + 8) {
 					return UInt32(ceilf(fullxp * 0.4f));
-				else if (playerLevel == qLevel + 9)
+				}
+				else if (playerLevel == qLevel + 9) {
 					return UInt32(ceilf(fullxp * 0.2f));
-				else
+				}
+				else {
 					return UInt32(ceilf(fullxp * 0.1f));
+				}
 			}
 
 			return 0;
@@ -354,8 +368,9 @@ namespace wowpp
 	{
 		// Reward experience
 		const auto *entry = m_project.quests.getById(quest);
-		if (!entry)
+		if (!entry) {
 			return false;
+		}
 
 		auto it = m_quests.find(quest);
 		if (it == m_quests.end())
@@ -368,7 +383,7 @@ namespace wowpp
 		}
 
 		// Gather all rewarded items
-		std::map<const proto::ItemEntry*, UInt16> rewardedItems;
+		std::map<const proto::ItemEntry *, UInt16> rewardedItems;
 		{
 			if (entry->rewarditemschoice_size() > 0)
 			{
@@ -379,7 +394,7 @@ namespace wowpp
 				}
 
 				const auto *item = getProject().items.getById(
-					entry->rewarditemschoice(rewardChoice).itemid());
+				                       entry->rewarditemschoice(rewardChoice).itemid());
 				if (!item)
 				{
 					return false;
@@ -449,16 +464,18 @@ namespace wowpp
 		}
 
 		UInt32 money = entry->rewardmoney() +
-			(getLevel() >= 70 ? entry->rewardmoneymaxlevel() : 0);
+		               (getLevel() >= 70 ? entry->rewardmoneymaxlevel() : 0);
 		if (money > 0)
 		{
 			setUInt32Value(character_fields::Coinage,
-				getUInt32Value(character_fields::Coinage) + money);
+			               getUInt32Value(character_fields::Coinage) + money);
 		}
 
 		for (const auto &req : entry->requirements())
 		{
-			if (req.itemid()) m_requiredQuestItems[req.itemid()]--;
+			if (req.itemid()) {
+				m_requiredQuestItems[req.itemid()]--;
+			}
 		}
 
 		for (UInt32 i = 0; i < 25; ++i)
@@ -479,33 +496,39 @@ namespace wowpp
 		questDataChanged(quest, it->second);
 
 		// Call callback function
-		if (callback) callback(xp);
+		if (callback) {
+			callback(xp);
+		}
 
 		return true;
 	}
 
-	void GameCharacter::onQuestKillCredit(GameCreature & killed)
+	void GameCharacter::onQuestKillCredit(GameCreature &killed)
 	{
 		// Check all quests in the quest log
 		bool updateQuestObjects = false;
 		for (UInt32 i = 0; i < 25; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
-			if (logId == 0)
+			if (logId == 0) {
 				continue;
+			}
 
 			// Verify quest state
 			auto it = m_quests.find(logId);
-			if (it == m_quests.end())
+			if (it == m_quests.end()) {
 				continue;
+			}
 
-			if (it->second.status != game::quest_status::Incomplete)
+			if (it->second.status != game::quest_status::Incomplete) {
 				continue;
+			}
 
 			// Find quest
 			const auto *quest = getProject().quests.getById(logId);
-			if (!quest)
+			if (!quest) {
 				continue;
+			}
 
 			// Counter needed so that the right field is used
 			UInt8 reqIndex = 0;
@@ -560,34 +583,39 @@ namespace wowpp
 		}
 	}
 
-	bool GameCharacter::fulfillsQuestRequirements(const proto::QuestEntry & entry) const
+	bool GameCharacter::fulfillsQuestRequirements(const proto::QuestEntry &entry) const
 	{
-		if (entry.requirements_size() == 0)
+		if (entry.requirements_size() == 0) {
 			return true;
+		}
 
 		auto it = m_quests.find(entry.id());
-		if (it == m_quests.end())
+		if (it == m_quests.end()) {
 			return false;
+		}
 
 		UInt32 counter = 0;
 		for (const auto &req : entry.requirements())
 		{
 			if (req.creatureid() != 0)
 			{
-				if (it->second.creatures[counter] < req.creaturecount())
+				if (it->second.creatures[counter] < req.creaturecount()) {
 					return false;
+				}
 			}
 			else if (req.objectid() != 0)
 			{
-				if (it->second.objects[counter] < req.objectcount())
+				if (it->second.objects[counter] < req.objectcount()) {
 					return false;
+				}
 			}
 			else if (req.itemid() != 0)
 			{
 				// Not enough items?
 				auto itemCount = m_inventory.getItemCount(req.itemid());
-				if (itemCount < req.itemcount())
+				if (itemCount < req.itemcount()) {
 					return false;
+				}
 			}
 
 			// Increase counter
@@ -601,34 +629,39 @@ namespace wowpp
 	{
 		for (int i = 0; i < 25; ++i)
 		{
-			if (getUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0) == 0)
+			if (getUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0) == 0) {
 				return false;
+			}
 		}
 
 		return true;
 	}
 
-	void GameCharacter::onQuestItemAddedCredit(const proto::ItemEntry & entry, UInt32 amount)
+	void GameCharacter::onQuestItemAddedCredit(const proto::ItemEntry &entry, UInt32 amount)
 	{
 		bool updateNearbyObjects = false;
 		for (int i = 0; i < 25; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
-			if (logId == 0)
+			if (logId == 0) {
 				continue;
+			}
 
 			// Verify quest state
 			auto it = m_quests.find(logId);
-			if (it == m_quests.end())
+			if (it == m_quests.end()) {
 				continue;
+			}
 
-			if (it->second.status != game::quest_status::Incomplete)
+			if (it->second.status != game::quest_status::Incomplete) {
 				continue;
+			}
 
 			// Find quest
 			const auto *quest = getProject().quests.getById(logId);
-			if (!quest)
+			if (!quest) {
 				continue;
+			}
 
 			// Counter needed so that the correct field is used
 			UInt8 reqIndex = 0;
@@ -662,27 +695,31 @@ namespace wowpp
 		}
 	}
 
-	void GameCharacter::onQuestItemRemovedCredit(const proto::ItemEntry & entry, UInt32 amount)
+	void GameCharacter::onQuestItemRemovedCredit(const proto::ItemEntry &entry, UInt32 amount)
 	{
 		bool updateNearbyObjects = false;
 		for (int i = 0; i < 25; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
-			if (logId == 0)
+			if (logId == 0) {
 				continue;
+			}
 
 			// Verify quest state
 			auto it = m_quests.find(logId);
-			if (it == m_quests.end())
+			if (it == m_quests.end()) {
 				continue;
+			}
 
-			if (it->second.status != game::quest_status::Complete)
+			if (it->second.status != game::quest_status::Complete) {
 				continue;
+			}
 
 			// Find quest
 			const auto *quest = getProject().quests.getById(logId);
-			if (!quest)
+			if (!quest) {
 				continue;
+			}
 
 			// Counter needed so that the correct field is used
 			UInt8 reqIndex = 0;
@@ -722,17 +759,18 @@ namespace wowpp
 		return (it != m_requiredQuestItems.end() ? it->second > 0 : false);
 	}
 
-	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData & data)
+	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData &data)
 	{
 		m_quests[quest] = data;
 
 		const auto *entry = getProject().quests.getById(quest);
-		if (!entry)
+		if (!entry) {
 			return;
+		}
 
 		if (data.status == game::quest_status::Incomplete ||
-			data.status == game::quest_status::Complete ||
-			data.status == game::quest_status::Failed)
+		        data.status == game::quest_status::Complete ||
+		        data.status == game::quest_status::Failed)
 		{
 			for (UInt32 i = 0; i < 25; ++i)
 			{
@@ -741,7 +779,9 @@ namespace wowpp
 				{
 					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, quest);
 					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
-					if (data.status == game::quest_status::Complete) addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+					if (data.status == game::quest_status::Complete) {
+						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+					}
 					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);
 					UInt8 offset = 0;
 					for (auto &req : entry->requirements())
@@ -778,7 +818,7 @@ namespace wowpp
 
 		// Update xp to next level
 		setUInt32Value(character_fields::NextLevelXp, levelInfo.nextlevelxp());
-		
+
 		// Try to find base values
 		if (getClassEntry())
 		{
@@ -855,13 +895,14 @@ namespace wowpp
 		}
 
 		m_spells.push_back(&spell);
-		
+
 		// Add dependent skills
 		for (int i = 0; i < spell.skillsonlearnspell_size(); ++i)
 		{
 			const auto *skill = m_project.skills.getById(spell.skillsonlearnspell(i));
-			if (!skill)
+			if (!skill) {
 				continue;
+			}
 
 			// Add dependent skill
 			addSkill(*skill);
@@ -946,43 +987,43 @@ namespace wowpp
 
 		switch (skill.category())
 		{
-			case game::skill_category::Languages:
+		case game::skill_category::Languages:
 			{
 				current = 300;
 				max = 300;
 				break;
 			}
 
-			case game::skill_category::Armor:
+		case game::skill_category::Armor:
 			{
 				current = 1;
 				max = 1;
 				break;
 			}
 
-			case game::skill_category::Weapon:
-			case game::skill_category::Class:
+		case game::skill_category::Weapon:
+		case game::skill_category::Class:
 			{
 				max = getLevel() * 5;
 				break;
 			}
 
-			case game::skill_category::Secondary:
-			case game::skill_category::Profession:
+		case game::skill_category::Secondary:
+		case game::skill_category::Profession:
 			{
 				current = 1;
 				max = 1;
 				break;
 			}
 
-			case game::skill_category::NotDisplayed:
-			case game::skill_category::Attributes:
+		case game::skill_category::NotDisplayed:
+		case game::skill_category::Attributes:
 			{
 				// Invisible / Not added
 				return;
 			}
 
-			default:
+		default:
 			{
 				WLOG("Unsupported skill category: " << skill.category());
 				return;
@@ -1164,7 +1205,7 @@ namespace wowpp
 			atkPower = base_attPower + getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue) * getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalPct);
 			setInt32Value(unit_fields::AttackPower, UInt32(atkPower));
 		}
-		
+
 		// Ranged Attack power
 		{
 			switch (getClass())
@@ -1209,9 +1250,15 @@ namespace wowpp
 			{
 				// Get weapon damage values
 				const auto &entry = item->getEntry();
-				if (entry.damage(0).mindmg() != 0.0f) minDamage = entry.damage(0).mindmg();
-				if (entry.damage(0).maxdmg() != 0.0f) maxDamage = entry.damage(0).maxdmg();
-				if (entry.delay() != 0) attackTime = entry.delay();
+				if (entry.damage(0).mindmg() != 0.0f) {
+					minDamage = entry.damage(0).mindmg();
+				}
+				if (entry.damage(0).maxdmg() != 0.0f) {
+					maxDamage = entry.damage(0).maxdmg();
+				}
+				if (entry.delay() != 0) {
+					attackTime = entry.delay();
+				}
 			}
 		}
 
@@ -1220,14 +1267,14 @@ namespace wowpp
 
 		switch (form)
 		{
-			case 1:
-			case 5:
-			case 8:
-				minDamage = (level > 60 ? 60 : level) * 0.85f * att_speed;
-				maxDamage = (level > 60 ? 60 : level) * 1.25f * att_speed;
-				break;
-			default:
-				break;
+		case 1:
+		case 5:
+		case 8:
+			minDamage = (level > 60 ? 60 : level) * 0.85f * att_speed;
+			maxDamage = (level > 60 ? 60 : level) * 1.25f * att_speed;
+			break;
+		default:
+			break;
 		}
 
 		setFloatValue(unit_fields::MinDamage, base_value + minDamage);
@@ -1270,10 +1317,10 @@ namespace wowpp
 		comboPointsChanged();
 	}
 
-	void GameCharacter::applyItemStats(GameItem & item, bool apply)
+	void GameCharacter::applyItemStats(GameItem &item, bool apply)
 	{
 		if (item.getEntry().durability() == 0 ||
-			item.getUInt32Value(item_fields::Durability) > 0)
+		        item.getUInt32Value(item_fields::Durability) > 0)
 		{
 			// Apply values
 			for (int i = 0; i < item.getEntry().stats_size(); ++i)
@@ -1283,29 +1330,29 @@ namespace wowpp
 				{
 					switch (entry.type())
 					{
-						case 0:		// Mana
-							updateModifierValue(unit_mods::Mana, unit_mod_type::TotalValue, entry.value(), apply);
-							break;
-						case 1:		// Health
-							updateModifierValue(unit_mods::Health, unit_mod_type::TotalValue, entry.value(), apply);
-							break;
-						case 3:		// Agility
-							updateModifierValue(unit_mods::StatAgility, unit_mod_type::TotalValue, entry.value(), apply);
-							break;
-						case 4:		// Strength
-							updateModifierValue(unit_mods::StatStrength, unit_mod_type::TotalValue, entry.value(), apply);
-							break;
-						case 5:		// Intellect
-							updateModifierValue(unit_mods::StatIntellect, unit_mod_type::TotalValue, entry.value(), apply);
-							break;
-						case 6:		// Spirit
-							updateModifierValue(unit_mods::StatSpirit, unit_mod_type::TotalValue, entry.value(), apply);
-							break;
-						case 7:		// Stamina
-							updateModifierValue(unit_mods::StatStamina, unit_mod_type::TotalValue, entry.value(), apply);
-							break;
-						default:
-							break;
+					case 0:		// Mana
+						updateModifierValue(unit_mods::Mana, unit_mod_type::TotalValue, entry.value(), apply);
+						break;
+					case 1:		// Health
+						updateModifierValue(unit_mods::Health, unit_mod_type::TotalValue, entry.value(), apply);
+						break;
+					case 3:		// Agility
+						updateModifierValue(unit_mods::StatAgility, unit_mod_type::TotalValue, entry.value(), apply);
+						break;
+					case 4:		// Strength
+						updateModifierValue(unit_mods::StatStrength, unit_mod_type::TotalValue, entry.value(), apply);
+						break;
+					case 5:		// Intellect
+						updateModifierValue(unit_mods::StatIntellect, unit_mod_type::TotalValue, entry.value(), apply);
+						break;
+					case 6:		// Spirit
+						updateModifierValue(unit_mods::StatSpirit, unit_mod_type::TotalValue, entry.value(), apply);
+						break;
+					case 7:		// Stamina
+						updateModifierValue(unit_mods::StatStamina, unit_mod_type::TotalValue, entry.value(), apply);
+						break;
+					default:
+						break;
 					}
 				}
 			}
@@ -1320,7 +1367,7 @@ namespace wowpp
 		const float intellect = getUInt32Value(unit_fields::Stat3);
 		const float spirit = getUInt32Value(unit_fields::Stat4) * m_manaRegBase;
 		const float regen = sqrtf(intellect) * spirit;
-		
+
 		const float mp5Reg = getAuras().getTotalBasePoints(game::aura_type::ModPowerRegen) * 0.2f;
 
 		const float modManaRegenInterrupt = getAuras().getTotalBasePoints(game::aura_type::ModManaRegenInterrupt) / 100.0f;
@@ -1336,15 +1383,16 @@ namespace wowpp
 		UInt32 level = getLevel();
 
 		// Nothing to do here
-		if (nextLevel == 0)
+		if (nextLevel == 0) {
 			return;
+		}
 
 		UInt32 newXP = currentXP + experience;
 		while (newXP >= nextLevel && nextLevel > 0)
 		{
 			// Calculate new XP amount
 			newXP -= nextLevel;
-			
+
 			// Level up!
 			setLevel(level + 1);
 			nextLevel = getUInt32Value(character_fields::NextLevelXp);
@@ -1422,24 +1470,27 @@ namespace wowpp
 		// TODO: One missing value
 		float spirit = static_cast<float>(getUInt32Value(unit_fields::Stat4));
 		float baseSpirit = spirit;
-		if (baseSpirit > 50.0f) baseSpirit = 50.0f;
+		if (baseSpirit > 50.0f) {
+			baseSpirit = 50.0f;
+		}
 		float moreSpirit = spirit - baseSpirit;
 		float spiritRegen = baseSpirit * m_healthRegBase + moreSpirit * m_healthRegBase;
 		float addHealth = spiritRegen * healthRegRate;
 
 		UInt8 standState = getByteValue(unit_fields::Bytes1, 0);
 		if (standState != unit_stand_state::Stand &&
-			standState != unit_stand_state::Dead)
+		        standState != unit_stand_state::Dead)
 		{
 			// 33% more regeneration when not standing
 			addHealth *= 1.33f;
 		}
-		
+
 		float auraRegen = getAuras().getTotalBasePoints(game::aura_type::ModRegen);
 		addHealth += auraRegen * 0.4f;
 
-		if (addHealth < 0.0f) 
+		if (addHealth < 0.0f) {
 			return;
+		}
 
 		heal(static_cast<UInt32>(addHealth), nullptr, true);
 	}
@@ -1472,29 +1523,29 @@ namespace wowpp
 
 		setUInt32Value(character_fields::CharacterPoints_1, talentPoints);
 	}
-	
+
 	void GameCharacter::initClassEffects()
 	{
 		m_doneMeleeAttack.disconnect();
 
-		switch(getClass())
+		switch (getClass())
 		{
-			case game::char_class::Warrior:
-				// Hard coded overpower proc for warrior: Blizzard implemented this with combo points
-				// When the target dodges, the warrior simply gets a combo point.
-				// Since overpower uses all combo points (just like all finishing moves for rogues and ferals),
-				// it doesn't matter if we add more than one combo point to the target.
-				// Hard coded: TODO proper implementation
-				m_doneMeleeAttack = doneMeleeAttack.connect(
-					[this](GameUnit *victim, game::VictimState victimState) {
-						if (victim && victimState == game::victim_state::Dodge)
-						{
-							addComboPoints(victim->getGuid(), 1);
-						}
-					});
-				break;
-			default:
-				break;
+		case game::char_class::Warrior:
+			// Hard coded overpower proc for warrior: Blizzard implemented this with combo points
+			// When the target dodges, the warrior simply gets a combo point.
+			// Since overpower uses all combo points (just like all finishing moves for rogues and ferals),
+			// it doesn't matter if we add more than one combo point to the target.
+			// Hard coded: TODO proper implementation
+			m_doneMeleeAttack = doneMeleeAttack.connect(
+			[this](GameUnit * victim, game::VictimState victimState) {
+				if (victim && victimState == game::victim_state::Dodge)
+				{
+					addComboPoints(victim->getGuid(), 1);
+				}
+			});
+			break;
+		default:
+			break;
 		}
 	}
 
@@ -1511,20 +1562,20 @@ namespace wowpp
 		// m_worldInstance is valid because we got a tile index
 		std::vector<std::vector<char>> objectUpdateBlocks;
 		forEachTileInSight(
-			m_worldInstance->getGrid(),
-			tile,
-			[this, &objectUpdateBlocks](const VisibilityTile &tile)
+		    m_worldInstance->getGrid(),
+		    tile,
+		    [this, &objectUpdateBlocks](const VisibilityTile & tile)
 		{
 			for (auto &object : tile.getGameObjects())
 			{
 				if (object->isWorldObject())
 				{
 					// We only need to check objects that have potential quest loot
-					auto *loot = reinterpret_cast<WorldObject*>(object)->getObjectLoot();
+					auto *loot = reinterpret_cast<WorldObject *>(object)->getObjectLoot();
 					if (loot &&
-						!loot->isEmpty())
+					        !loot->isEmpty())
 					{
-						// Force update of DynamicFlags field (TODO: This update only needs to be sent to OUR client, 
+						// Force update of DynamicFlags field (TODO: This update only needs to be sent to OUR client,
 						// as every client will have a different DynamicFlags field)
 						object->forceFieldUpdate(world_object_fields::DynFlags);
 					}
@@ -1563,70 +1614,70 @@ namespace wowpp
 		return (item && item->getEntry().inventorytype() != game::inventory_type::Shield);
 	}
 
-	io::Writer & operator<<(io::Writer &w, GameCharacter const& object)
+	io::Writer &operator<<(io::Writer &w, GameCharacter const &object)
 	{
 		w
-			<< reinterpret_cast<GameUnit const&>(object)
-			<< io::write_dynamic_range<NetUInt8>(object.m_name)
-			<< io::write<NetUInt32>(object.m_zoneIndex)
-			<< io::write<float>(object.m_healthRegBase)
-			<< io::write<float>(object.m_manaRegBase)
-			<< io::write<NetUInt64>(object.m_groupId)
-			<< io::write<NetUInt32>(object.m_homeMap)
-			<< io::write<float>(object.m_homePos[0])
-			<< io::write<float>(object.m_homePos[1])
-			<< io::write<float>(object.m_homePos[2])
-			<< io::write<float>(object.m_homeRotation)
-			<< object.m_inventory
-			<< io::write<NetUInt16>(object.m_quests.size());
+		        << reinterpret_cast<GameUnit const &>(object)
+		        << io::write_dynamic_range<NetUInt8>(object.m_name)
+		        << io::write<NetUInt32>(object.m_zoneIndex)
+		        << io::write<float>(object.m_healthRegBase)
+		        << io::write<float>(object.m_manaRegBase)
+		        << io::write<NetUInt64>(object.m_groupId)
+		        << io::write<NetUInt32>(object.m_homeMap)
+		        << io::write<float>(object.m_homePos[0])
+		        << io::write<float>(object.m_homePos[1])
+		        << io::write<float>(object.m_homePos[2])
+		        << io::write<float>(object.m_homeRotation)
+		        << object.m_inventory
+		        << io::write<NetUInt16>(object.m_quests.size());
 		for (const auto &pair : object.m_quests)
 		{
 			w
-				<< io::write<NetUInt32>(pair.first)
-				<< io::write<NetUInt8>(pair.second.status)
-				<< io::write<NetUInt64>(pair.second.expiration)
-				<< io::write<NetUInt8>(pair.second.explored)
-				<< io::write_range(pair.second.creatures)
-				<< io::write_range(pair.second.objects)
-				<< io::write_range(pair.second.items);
+			        << io::write<NetUInt32>(pair.first)
+			        << io::write<NetUInt8>(pair.second.status)
+			        << io::write<NetUInt64>(pair.second.expiration)
+			        << io::write<NetUInt8>(pair.second.explored)
+			        << io::write_range(pair.second.creatures)
+			        << io::write_range(pair.second.objects)
+			        << io::write_range(pair.second.items);
 		}
 
 		return w;
 	}
 
-	io::Reader & operator>>(io::Reader &r, GameCharacter& object)
+	io::Reader &operator>>(io::Reader &r, GameCharacter &object)
 	{
 		object.initialize();
 		r
-			>> reinterpret_cast<GameUnit&>(object)
-			>> io::read_container<NetUInt8>(object.m_name)
-			>> io::read<NetUInt32>(object.m_zoneIndex)
-			>> io::read<float>(object.m_healthRegBase)
-			>> io::read<float>(object.m_manaRegBase)
-			>> io::read<NetUInt64>(object.m_groupId)
-			>> io::read<NetUInt32>(object.m_homeMap)
-			>> io::read<float>(object.m_homePos[0])
-			>> io::read<float>(object.m_homePos[1])
-			>> io::read<float>(object.m_homePos[2])
-			>> io::read<float>(object.m_homeRotation)
-			>> object.m_inventory;
+		        >> reinterpret_cast<GameUnit &>(object)
+		        >> io::read_container<NetUInt8>(object.m_name)
+		        >> io::read<NetUInt32>(object.m_zoneIndex)
+		        >> io::read<float>(object.m_healthRegBase)
+		        >> io::read<float>(object.m_manaRegBase)
+		        >> io::read<NetUInt64>(object.m_groupId)
+		        >> io::read<NetUInt32>(object.m_homeMap)
+		        >> io::read<float>(object.m_homePos[0])
+		        >> io::read<float>(object.m_homePos[1])
+		        >> io::read<float>(object.m_homePos[2])
+		        >> io::read<float>(object.m_homeRotation)
+		        >> object.m_inventory;
 		UInt16 questCount = 0;
 		r
-			>> io::read<NetUInt16>(questCount);
+		        >> io::read<NetUInt16>(questCount);
 		object.m_quests.clear();
 		for (UInt16 i = 0; i < questCount; ++i)
 		{
 			UInt32 questId = 0;
 			r
-				>> io::read<NetUInt32>(questId);
+			        >> io::read<NetUInt32>(questId);
 			auto &questData = object.m_quests[questId];
 			r
-				>> io::read<NetUInt8>(questData.status)
-				>> io::read<NetUInt64>(questData.expiration)
-				>> io::read<NetUInt8>(questData.explored)
-				>> io::read_range(questData.creatures)
-				>> io::read_range(questData.objects)
-				>> io::read_range(questData.items);
+			        >> io::read<NetUInt8>(questData.status)
+			        >> io::read<NetUInt64>(questData.expiration)
+			        >> io::read<NetUInt8>(questData.explored)
+			        >> io::read_range(questData.creatures)
+			        >> io::read_range(questData.objects)
+			        >> io::read_range(questData.items);
 
 			// Quest item cache update
 			if (questData.status == game::quest_status::Incomplete)
@@ -1636,7 +1687,9 @@ namespace wowpp
 				{
 					for (const auto &req : quest->requirements())
 					{
-						if (req.itemid()) object.m_requiredQuestItems[req.itemid()]++;
+						if (req.itemid()) {
+							object.m_requiredQuestItems[req.itemid()]++;
+						}
 					}
 				}
 			}

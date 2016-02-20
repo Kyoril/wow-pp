@@ -35,27 +35,31 @@ namespace wowpp
 	namespace byte_converter
 	{
 		template<size_t T>
-		inline void convert(char* val)
+		inline void convert(char *val)
 		{
 			std::swap(*val, *(val + T - 1));
-			convert < T - 2 >(val + 1);
+			convert < T - 2 > (val + 1);
 		}
 
-		template<> inline void convert<0>(char*) {}
-		template<> inline void convert<1>(char*) {}
+		template<> inline void convert<0>(char *) {}
+		template<> inline void convert<1>(char *) {}
 
 		template<typename T>
-		inline void apply(T* val)
+		inline void apply(T *val)
 		{
-			convert<sizeof(T)>((char*)(val));
+			convert<sizeof(T)>((char *)(val));
 		}
 	}
 
 #if (WOWPP_ENDIANESS == WOWPP_BIG_ENDIAN)
-	template<typename T> inline void EndianConvert(T& val) { byte_converter::apply<T>(&val); }
-	template<typename T> inline void EndianConvertReverse(T&) { }
+	template<typename T> inline void EndianConvert(T &val) {
+		byte_converter::apply<T>(&val);
+	}
+	template<typename T> inline void EndianConvertReverse(T &) { }
 #elif (WOWPP_ENDIANESS == WOWPP_LITTLE_ENDIAN)
-	template<typename T> inline void EndianConvert(T&) { }
-	template<typename T> inline void EndianConvertReverse(T& val) { byte_converter::apply<T>(&val); }
+	template<typename T> inline void EndianConvert(T &) { }
+	template<typename T> inline void EndianConvertReverse(T &val) {
+		byte_converter::apply<T>(&val);
+	}
 #endif
 }

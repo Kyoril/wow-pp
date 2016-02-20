@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -53,23 +53,25 @@ namespace wowpp
 	public:
 
 		explicit WorldInstanceManager(boost::asio::io_service &ioService,
-			Universe &universe,
-			game::ITriggerHandler &triggerHandler,
-			IdGenerator<UInt32> &idGenerator,
-			IdGenerator<UInt64> &objectIdGenerator,
-			proto::Project &project,
-			UInt32 worldNodeId,
-			const String &dataPath);
+		                              Universe &universe,
+		                              game::ITriggerHandler &triggerHandler,
+		                              IdGenerator<UInt32> &idGenerator,
+		                              IdGenerator<UInt64> &objectIdGenerator,
+		                              proto::Project &project,
+		                              UInt32 worldNodeId,
+		                              const String &dataPath);
 
 		/// Creates a new world instance of a specific map id.
 		WorldInstance *createInstance(const proto::MapEntry &map);
 		/// Called once per frame to update all worlds.
 		void update(const boost::system::error_code &error);
-		/// 
+		///
 		WorldInstance *getInstanceById(UInt32 instanceId);
-		/// 
+		///
 		WorldInstance *getInstanceByMapId(UInt32 MapId);
-		Universe &getUniverse() { return m_universe;  }
+		Universe &getUniverse() {
+			return m_universe;
+		}
 
 	private:
 

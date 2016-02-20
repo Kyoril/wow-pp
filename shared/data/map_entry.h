@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -39,7 +39,7 @@ namespace wowpp
 			Raid			= 0x02,
 			/// There can be many cross-realm instances with some logic behind (win/loose)
 			Battleground	= 0x03,
-			/// 
+			///
 			Arena			= 0x04,
 
 			Count_,
@@ -52,7 +52,7 @@ namespace wowpp
 	namespace constant_literal
 	{
 		typedef EnumStrings<MapInstanceType, map_instance_type::Count_,
-			map_instance_type::Invalid_> MapInstanceTypeStrings;
+		        map_instance_type::Invalid_> MapInstanceTypeStrings;
 		extern const MapInstanceTypeStrings mapInstanceType;
 	}
 

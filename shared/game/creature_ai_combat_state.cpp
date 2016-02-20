@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "creature_ai_combat_state.h"
 #include "creature_ai.h"
@@ -51,7 +51,7 @@ namespace wowpp
 		// Add initial threat
 		addThreat(victim, 0.0f);
 		m_nextActionCountdown.ended.connect(
-			std::bind(&CreatureAICombatState::chooseNextAction, this));
+		    std::bind(&CreatureAICombatState::chooseNextAction, this));
 	}
 
 	CreatureAICombatState::~CreatureAICombatState()
@@ -68,15 +68,15 @@ namespace wowpp
 		controlled.addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 
 		// Watch for threat events
-		m_onThreatened = controlled.threatened.connect([this](GameUnit &threatener, float amount)
+		m_onThreatened = controlled.threatened.connect([this](GameUnit & threatener, float amount)
 		{
 			addThreat(threatener, amount);
 		});
-		m_getThreat = controlled.getThreat.connect([this](GameUnit &threatener)
+		m_getThreat = controlled.getThreat.connect([this](GameUnit & threatener)
 		{
 			return getThreat(threatener);
 		});
-		m_setThreat = controlled.setThreat.connect([this](GameUnit &threatener, float amount)
+		m_setThreat = controlled.setThreat.connect([this](GameUnit & threatener, float amount)
 		{
 			setThreat(threatener, amount);
 		});
@@ -84,14 +84,15 @@ namespace wowpp
 		{
 			return getTopThreatener();
 		});
-		m_onControlledMoved = controlled.moved.connect([this](GameObject &, const math::Vector3 &position, float rotation)
+		m_onControlledMoved = controlled.moved.connect([this](GameObject &, const math::Vector3 & position, float rotation)
 		{
 			if (m_lastSpellEntry != nullptr && m_lastSpell != nullptr)
 			{
 				// Check if we are able to cast that spell now, and if so: Do it!
 				GameUnit *victim = getControlled().getVictim();
-				if (!victim)
+				if (!victim) {
 					return;
+				}
 
 				// Check power requirement
 
@@ -101,7 +102,7 @@ namespace wowpp
 					const float combatReach = victim->getFloatValue(unit_fields::CombatReach) + getControlled().getFloatValue(unit_fields::CombatReach);
 					const float distance = getControlled().getDistanceTo(*victim);
 					if ((m_lastSpell->minrange() > 0.0f && distance < m_lastSpell->minrange()) ||
-						(m_lastSpell->maxrange() > 0.0f && distance > m_lastSpell->maxrange() + combatReach))
+					        (m_lastSpell->maxrange() > 0.0f && distance > m_lastSpell->maxrange() + combatReach))
 					{
 						// Still out of range, do nothing
 						return;
@@ -129,7 +130,7 @@ namespace wowpp
 		{
 			auto &homePos = getAI().getHome().position;
 			if (getCurrentTime() >= (m_lastThreatTime + constants::OneSecond * 10) &&
-				getControlled().getDistanceTo(homePos, false) >= 60.0f)
+			getControlled().getDistanceTo(homePos, false) >= 60.0f)
 			{
 				getAI().reset();
 			}
@@ -167,9 +168,9 @@ namespace wowpp
 			game::server_write::aiReaction(packet, controlled.getGuid(), 2);
 
 			forEachSubscriberInSight(
-				controlled.getWorldInstance()->getGrid(),
-				tile,
-				[&packet, &buffer](ITileSubscriber &subscriber)
+			    controlled.getWorldInstance()->getGrid(),
+			    tile,
+			    [&packet, &buffer](ITileSubscriber & subscriber)
 			{
 				subscriber.sendPacket(packet, buffer);
 			});
@@ -180,7 +181,7 @@ namespace wowpp
 
 		// Raise OnAggro triggers
 		controlled.raiseTrigger(trigger_event::OnAggro);
-		
+
 		// Apply initial spell cooldowns
 		for (const auto &entry : controlled.getEntry().creaturespells())
 		{
@@ -190,7 +191,7 @@ namespace wowpp
 				if (entry.maxinitialcooldown() > entry.mininitialcooldown())
 				{
 					auto initialCdDist =
-						std::uniform_int_distribution<UInt32>(entry.mininitialcooldown(), entry.maxinitialcooldown());
+					    std::uniform_int_distribution<UInt32>(entry.mininitialcooldown(), entry.maxinitialcooldown());
 					initialCooldown = initialCdDist(randomGenerator);
 				}
 				else
@@ -205,7 +206,7 @@ namespace wowpp
 
 		if (!controlled.getEntry().creaturespells().empty())
 		{
-			m_onAutoAttackDone = controlled.doneMeleeAttack.connect([this](GameUnit *victim, game::VictimState state)
+			m_onAutoAttackDone = controlled.doneMeleeAttack.connect([this](GameUnit * victim, game::VictimState state)
 			{
 				m_nextActionCountdown.setEnd(getCurrentTime() + 1);
 			});
@@ -218,7 +219,7 @@ namespace wowpp
 	void CreatureAICombatState::onLeave()
 	{
 		auto &controlled = getControlled();
-        
+
 		// Stop movement!
 		controlled.getMover().stopMovement();
 
@@ -239,16 +240,20 @@ namespace wowpp
 	void CreatureAICombatState::addThreat(GameUnit &threatener, float amount)
 	{
 		// No negative threat
-		if (amount < 0.0f) amount = 0.0f;
+		if (amount < 0.0f) {
+			amount = 0.0f;
+		}
 
 		// No aggro on dead units
-		if (!threatener.isAlive())
+		if (!threatener.isAlive()) {
 			return;
+		}
 
 		// No aggro on friendly units
 		const auto &faction = getControlled().getFactionTemplate();
-		if (threatener.isFriendlyTo(faction))
+		if (threatener.isFriendlyTo(faction)) {
 			return;
+		}
 
 		// Add threat amount (Note: A value of 0 is fine here, as it will still add an
 		// entry to the threat list)
@@ -260,13 +265,13 @@ namespace wowpp
 			it = m_threat.insert(m_threat.begin(), std::make_pair(guid, ThreatEntry(&threatener, 0.0f)));
 
 			// Watch for unit killed signal
-			m_killedSignals[guid] = threatener.killed.connect([this, guid, &threatener](GameUnit *killer)
+			m_killedSignals[guid] = threatener.killed.connect([this, guid, &threatener](GameUnit * killer)
 			{
 				removeThreat(threatener);
 			});
-			
+
 			// Watch for unit despawned signal
-			m_despawnedSignals[guid] = threatener.despawned.connect([this, &threatener](GameObject &despawned)
+			m_despawnedSignals[guid] = threatener.despawned.connect([this, &threatener](GameObject & despawned)
 			{
 				removeThreat(threatener);
 			});
@@ -306,7 +311,7 @@ namespace wowpp
 		threatener.removeAttackingUnit(controlled);
 
 		if (controlled.getVictim() == &threatener ||
-			m_threat.empty())
+		        m_threat.empty())
 		{
 			controlled.stopAttack();
 			controlled.cancelCast();
@@ -314,7 +319,7 @@ namespace wowpp
 			chooseNextAction();
 		}
 	}
-	
+
 	float CreatureAICombatState::getThreat(GameUnit &threatener)
 	{
 		UInt64 guid = threatener.getGuid();
@@ -328,7 +333,7 @@ namespace wowpp
 			return it->second.amount;
 		}
 	}
-	
+
 	void CreatureAICombatState::setThreat(GameUnit &threatener, float amount)
 	{
 		UInt64 guid = threatener.getGuid();
@@ -338,7 +343,7 @@ namespace wowpp
 			it->second.amount = amount;
 		}
 	}
-	
+
 	GameUnit *CreatureAICombatState::getTopThreatener()
 	{
 		float highestThreat = -1.0f;
@@ -371,8 +376,8 @@ namespace wowpp
 			// If we are rooted, we need to check for nearby targets to start attacking them
 			if (rooted)
 			{
-				isInRange = 
-					(controlled.getDistanceTo(*entry.second.threatener, true) <= entry.second.threatener->getMeleeReach() + controlled.getMeleeReach());
+				isInRange =
+				    (controlled.getDistanceTo(*entry.second.threatener, true) <= entry.second.threatener->getMeleeReach() + controlled.getMeleeReach());
 			}
 
 			if (entry.second.amount > highestThreat && isInRange)
@@ -383,7 +388,7 @@ namespace wowpp
 		}
 
 		if (newVictim &&
-			newVictim != victim)
+		        newVictim != victim)
 		{
 			controlled.setVictim(newVictim);
 		}
@@ -399,7 +404,7 @@ namespace wowpp
 		const math::Vector3 &newTargetLocation = target.getLocation();
 
 		const float distance =
-			(newTargetLocation - currentLocation).length();
+		    (newTargetLocation - currentLocation).length();
 
 		// Check distance and whether we need to move
 		const float combatRange = getControlled().getMeleeReach() + target.getMeleeReach();
@@ -442,8 +447,9 @@ namespace wowpp
 			for (const auto &spelldef : entry.creaturespells())
 			{
 				// Skip this spell as we already found a spell with higher priority value
-				if (spelldef.priority() < highestPriority)
+				if (spelldef.priority() < highestPriority) {
 					continue;
+				}
 
 				if (spelldef.priority() > highestPriority)
 				{
@@ -457,8 +463,9 @@ namespace wowpp
 				else	// Equal priority
 				{
 					// We already have a valid spell at that priority level
-					if (validSpellEntry)
+					if (validSpellEntry) {
 						continue;
+					}
 
 					// Check if that spell is on cooldown
 					if (!controlled.hasCooldown(spelldef.spellid()))
@@ -517,14 +524,14 @@ namespace wowpp
 		}
 
 		// Watch for victim move signal
-		m_onVictimMoved = victim->moved.connect([this](GameObject &moved, math::Vector3 oldPosition, float oldO)
+		m_onVictimMoved = victim->moved.connect([this](GameObject & moved, math::Vector3 oldPosition, float oldO)
 		{
-			chaseTarget(static_cast<GameUnit&>(moved));
+			chaseTarget(static_cast<GameUnit &>(moved));
 		});
 
 		// No spell cast - start auto attack
 		if (m_lastCastResult != game::spell_cast_result::FailedLineOfSight &&
-			m_lastCastResult != game::spell_cast_result::FailedOutOfRange)
+		        m_lastCastResult != game::spell_cast_result::FailedOutOfRange)
 		{
 			// In all these cases, simply start auto attacking our target
 			controlled.startAttack();
@@ -541,7 +548,7 @@ namespace wowpp
 		{
 			// Apply custom cooldown if needed
 			if (m_customCooldown > 0 &&
-				m_lastSpell)
+			        m_lastSpell)
 			{
 				getControlled().setCooldown(m_lastSpell->id(), m_customCooldown);
 			}
@@ -566,15 +573,15 @@ namespace wowpp
 			// There was an error, now take action based on the error
 			switch (result)
 			{
-				case game::spell_cast_result::FailedOutOfRange:
-				case game::spell_cast_result::FailedLineOfSight:
-				case game::spell_cast_result::FailedNoPower:
-					m_nextActionCountdown.setEnd(getCurrentTime() + 1);
-					return;
-				default:
-					// Choose the next action
-					m_nextActionCountdown.setEnd(getCurrentTime() + 1);
-					break;
+			case game::spell_cast_result::FailedOutOfRange:
+			case game::spell_cast_result::FailedLineOfSight:
+			case game::spell_cast_result::FailedNoPower:
+				m_nextActionCountdown.setEnd(getCurrentTime() + 1);
+				return;
+			default:
+				// Choose the next action
+				m_nextActionCountdown.setEnd(getCurrentTime() + 1);
+				break;
 			}
 		}
 
@@ -588,10 +595,11 @@ namespace wowpp
 	void CreatureAICombatState::onDamage(GameUnit &attacker)
 	{
 		auto &controlled = getControlled();
-		
+
 		// Only player characters will tag for loot (no, not even player pets)
-		if (attacker.getTypeId() != object_type::Character)
+		if (attacker.getTypeId() != object_type::Character) {
 			return;
+		}
 
 		if (!controlled.isTagged())
 		{
@@ -599,14 +607,14 @@ namespace wowpp
 			controlled.addLootRecipient(attacker.getGuid());
 
 			// If the attacking player is in a group...
-			GameCharacter *character = static_cast<GameCharacter*>(&attacker);
+			GameCharacter *character = static_cast<GameCharacter *>(&attacker);
 			auto groupId = character->getGroupId();
 			if (groupId != 0)
 			{
 				math::Vector3 location(attacker.getLocation());
 
 				// Find nearby group members and make them loot recipients, too
-				controlled.getWorldInstance()->getUnitFinder().findUnits(Circle(location.x, location.y, 200.0f), [&attacker, &controlled, groupId](GameUnit &unit) -> bool
+				controlled.getWorldInstance()->getUnitFinder().findUnits(Circle(location.x, location.y, 200.0f), [&attacker, &controlled, groupId](GameUnit & unit) -> bool
 				{
 					// Only characters
 					if (unit.getTypeId() != object_type::Character)
@@ -615,9 +623,9 @@ namespace wowpp
 					}
 
 					// Check characters group
-					GameCharacter *character = static_cast<GameCharacter*>(&unit);
+					GameCharacter *character = static_cast<GameCharacter *>(&unit);
 					if (character->getGroupId() == groupId &&
-						character->getGuid() != attacker.getGuid())
+					character->getGuid() != attacker.getGuid())
 					{
 						controlled.addLootRecipient(unit.getGuid());
 					}

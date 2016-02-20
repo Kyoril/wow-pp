@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -44,7 +44,7 @@ namespace wowpp
 	{
 		class ItemEntry;
 	}
-	
+
 	/// Contains item data.
 	struct ItemData
 	{
@@ -70,15 +70,15 @@ namespace wowpp
 		}
 	};
 
-	io::Writer &operator << (io::Writer &w, ItemData const& object);
-	io::Reader &operator >> (io::Reader &r, ItemData& object);
+	io::Writer &operator << (io::Writer &w, ItemData const &object);
+	io::Reader &operator >> (io::Reader &r, ItemData &object);
 
 	/// Represents a characters inventory and provides functionalities like
 	/// adding and organizing items.
 	class Inventory : public boost::noncopyable
 	{
-		friend io::Writer &operator << (io::Writer &w, Inventory const& object);
-		friend io::Reader &operator >> (io::Reader &r, Inventory& object);
+		friend io::Writer &operator << (io::Writer &w, Inventory const &object);
+		friend io::Reader &operator >> (io::Reader &r, Inventory &object);
 
 	public:
 
@@ -133,23 +133,29 @@ namespace wowpp
 		// TODO: Add item split functionality
 
 		/// Gets a reference of the owner of this inventory.
-		GameCharacter &getOwner() { return m_owner; }
+		GameCharacter &getOwner() {
+			return m_owner;
+		}
 		/// Gets the total amount of a specific item in the inventory. This method uses a cache,
 		/// so you don't need to worry about performance too much here.
 		/// @param itemId The entry id of the searched item.
 		/// @returns Number of items that the player has.
 		UInt16 getItemCount(UInt32 itemId) const;
-		/// Determines whether the player has an item in his inventory. This method is merely 
+		/// Determines whether the player has an item in his inventory. This method is merely
 		/// syntactic sugar, it simply checks if getItemCount(itemId) is greater that 0.
 		/// @param itemid The entry id of the searched item.
 		/// @returns true if the player has the item.
-		bool hasItem(UInt32 itemId) const { return getItemCount(itemId) > 0; }
+		bool hasItem(UInt32 itemId) const {
+			return getItemCount(itemId) > 0;
+		}
 		/// Gets an absolute slot position from a bag index and a bag slot.
 		static UInt16 getAbsoluteSlot(UInt8 bag, UInt8 slot);
 		/// Splits an absolute slot into a bag index and a bag slot.
 		static bool getRelativeSlots(UInt16 absoluteSlot, UInt8 &out_bag, UInt8 &out_slot);
 		/// Gets the amount of free inventory slots.
-		UInt16 getFreeSlotCount() const { return m_freeSlots; }
+		UInt16 getFreeSlotCount() const {
+			return m_freeSlots;
+		}
 		/// Returns an item at a specified absolute slot.
 		std::shared_ptr<GameItem> getItemAtSlot(UInt16 absoluteSlot) const;
 		/// Returns a bag at a specified absolute slot.
@@ -176,7 +182,9 @@ namespace wowpp
 		void addRealmData(const ItemData &data);
 		/// Gets the inventory's realm data, if any. Should only be used on the realm when saving the
 		/// inventory into the database.
-		const std::vector<ItemData> getItemData() const { return m_realmData; }
+		const std::vector<ItemData> getItemData() const {
+			return m_realmData;
+		}
 
 		/// Adds spawn blocks for every item in the inventory. These blocks will be included in
 		/// the players spawn packet, so that all items that are available to the player will be sent
@@ -209,7 +217,7 @@ namespace wowpp
 	};
 
 	/// Serializes this inventory.
-	io::Writer &operator << (io::Writer &w, Inventory const& object);
+	io::Writer &operator << (io::Writer &w, Inventory const &object);
 	/// Deserializes this inventory.
-	io::Reader &operator >> (io::Reader &r, Inventory& object);
+	io::Reader &operator >> (io::Reader &r, Inventory &object);
 }

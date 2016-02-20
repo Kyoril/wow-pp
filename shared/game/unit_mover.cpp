@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "unit_mover.h"
 #include "game_unit.h"
@@ -44,8 +44,9 @@ namespace wowpp
 		m_moveUpdated.ended.connect([this]()
 		{
 			GameTime time = getCurrentTime();
-			if (time >= m_moveEnd)
+			if (time >= m_moveEnd) {
 				return;
+			}
 
 			// Calculate new position
 			float o = getMoved().getOrientation();
@@ -105,23 +106,23 @@ namespace wowpp
 
 	void UnitMover::onMoveSpeedChanged(MovementType moveType)
 	{
-		if (!m_customSpeed && 
-			moveType == movement_type::Run &&
-			m_moveReached.running)
+		if (!m_customSpeed &&
+		        moveType == movement_type::Run &&
+		        m_moveReached.running)
 		{
 			// Restart move command
 			moveTo(m_target);
 		}
 	}
 
-	bool UnitMover::moveTo(const math::Vector3 & target)
+	bool UnitMover::moveTo(const math::Vector3 &target)
 	{
 		bool result = moveTo(target, m_unit.getSpeed(movement_type::Run));
 		m_customSpeed = false;
 		return result;
 	}
 
-	bool UnitMover::moveTo(const math::Vector3 & target, float customSpeed)
+	bool UnitMover::moveTo(const math::Vector3 &target, float customSpeed)
 	{
 		// Get current location
 		m_customSpeed = true;
@@ -158,8 +159,9 @@ namespace wowpp
 		}
 
 		// Dead units can't move
-		if (!getMoved().canMove())
+		if (!getMoved().canMove()) {
 			return false;
+		}
 
 		// Use new values
 		m_start = currentLoc;
@@ -184,9 +186,9 @@ namespace wowpp
 			game::server_write::monsterMove(packet, getMoved().getGuid(), currentLoc, target, moveTime);
 
 			forEachSubscriberInSight(
-				getMoved().getWorldInstance()->getGrid(),
-				tile,
-				[&packet, &buffer](ITileSubscriber &subscriber)
+			    getMoved().getWorldInstance()->getGrid(),
+			    tile,
+			    [&packet, &buffer](ITileSubscriber & subscriber)
 			{
 				subscriber.sendPacket(packet, buffer);
 			});
@@ -237,9 +239,9 @@ namespace wowpp
 				game::server_write::monsterMove(packet, getMoved().getGuid(), currentLoc, currentLoc, 0);
 
 				forEachSubscriberInSight(
-					getMoved().getWorldInstance()->getGrid(),
-					tile,
-					[&packet, &buffer](ITileSubscriber &subscriber)
+				    getMoved().getWorldInstance()->getGrid(),
+				    tile,
+				    [&packet, &buffer](ITileSubscriber & subscriber)
 				{
 					subscriber.sendPacket(packet, buffer);
 				});
@@ -254,8 +256,9 @@ namespace wowpp
 	math::Vector3 UnitMover::getCurrentLocation() const
 	{
 		// Unit didn't move yet or isn't moving at all
-		if (m_moveStart == 0 || !isMoving())
+		if (m_moveStart == 0 || !isMoving()) {
 			return getMoved().getLocation();
+		}
 
 		// Linear interpolation
 		const float t = static_cast<float>(static_cast<double>(getCurrentTime() - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));

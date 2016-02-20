@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "aura_container.h"
 #include "game_unit.h"
@@ -44,14 +44,14 @@ namespace wowpp
 			// Same spell, same caster and same effect index - don't stack!
 			auto a = *it;
 			if (a->getCaster() == aura->getCaster() &&
-				a->getSpell().id() == aura->getSpell().id())
+			        a->getSpell().id() == aura->getSpell().id())
 			{
 				newSlot = a->getSlot();
 				isReplacement = true;
 
 				// Replace old aura instance
 				if (a->getEffect().aura() == aura->getEffect().aura() &&
-					a->getEffect().index() == aura->getEffect().index())
+				        a->getEffect().index() == aura->getEffect().index())
 				{
 					// Remove aura - new aura will be added
 					it = m_auras.erase(it);
@@ -103,10 +103,12 @@ namespace wowpp
 
 				val = m_owner.getUInt32Value(unit_fields::AuraFlags + index);
 				val &= ~(0xFF << byte);
-				if (aura->isPositive())
+				if (aura->isPositive()) {
 					val |= (UInt32(31) << byte);
-				else
+				}
+				else {
 					val |= (UInt32(9) << byte);
+				}
 				m_owner.setUInt32Value(unit_fields::AuraFlags + index, val);
 
 				// Notify caster
@@ -115,7 +117,7 @@ namespace wowpp
 				if (aura->getCaster())
 				{
 					aura->getCaster()->targetAuraUpdated(m_owner.getGuid(), newSlot,
-						aura->getSpell().id(), aura->getSpell().duration(), aura->getSpell().maxduration());
+					                                     aura->getSpell().id(), aura->getSpell().duration(), aura->getSpell().maxduration());
 				}
 			}
 		}
@@ -136,7 +138,7 @@ namespace wowpp
 
 		return true;
 	}
-	
+
 	AuraContainer::AuraList::iterator AuraContainer::findAura(Aura &aura)
 	{
 		for (auto it = m_auras.begin(); it != m_auras.end(); ++it)
@@ -149,7 +151,7 @@ namespace wowpp
 
 		return m_auras.end();
 	}
-	
+
 	void AuraContainer::removeAura(AuraList::iterator &it)
 	{
 		// Make sure that the aura is not destroy when releasing
@@ -166,7 +168,7 @@ namespace wowpp
 		// the aura has been removed (or else it would count itself)!!
 		strong->misapplyAura();
 	}
-	
+
 	void AuraContainer::removeAura(Aura &aura)
 	{
 		auto it = findAura(aura);
@@ -179,9 +181,9 @@ namespace wowpp
 	void AuraContainer::handleTargetDeath()
 	{
 		const auto newEnd =
-			std::partition(std::begin(m_auras),
-			std::end(m_auras),
-			[](const std::shared_ptr<Aura> &instance)
+		    std::partition(std::begin(m_auras),
+		                   std::end(m_auras),
+		                   [](const std::shared_ptr<Aura> &instance)
 		{
 			return (instance->getSpell().attributes(3) & 0x00100000) != 0;
 		});
@@ -207,7 +209,7 @@ namespace wowpp
 
 		return false;
 	}
-	
+
 	UInt32 AuraContainer::consumeAbsorb(UInt32 damage, UInt8 school)
 	{
 		UInt32 absorbed = 0;
@@ -216,7 +218,7 @@ namespace wowpp
 		for (auto &it : m_auras)
 		{
 			if (it->getEffect().aura() == game::aura_type::SchoolAbsorb
-				&& ((it->getEffect().miscvaluea() & school) != 0))
+			        && ((it->getEffect().miscvaluea() & school) != 0))
 			{
 				UInt32 toConsume = static_cast<UInt32>(it->getBasePoints());
 				if (toConsume >= damage)
@@ -232,7 +234,7 @@ namespace wowpp
 				}
 			}
 			else if (it->getEffect().aura() == game::aura_type::ManaShield
-				&& ((it->getEffect().miscvaluea() & school) != 0))
+			         && ((it->getEffect().miscvaluea() & school) != 0))
 			{
 				UInt32 toConsume = static_cast<UInt32>(it->getBasePoints());
 				UInt32 toConsumeByMana = (float) ownerMana / it->getEffect().multiplevalue();
@@ -265,7 +267,7 @@ namespace wowpp
 				}
 			}
 		}
-		
+
 		if (manaShielded > 0)
 		{
 			m_owner.setUInt32Value(unit_fields::Power1, ownerMana);
@@ -280,7 +282,7 @@ namespace wowpp
 		for (auto &it : m_auras)
 		{
 			if (it->getEffect().aura() == type &&
-				it->getBasePoints() > treshold)
+			        it->getBasePoints() > treshold)
 			{
 				treshold = it->getBasePoints();
 			}
@@ -296,7 +298,7 @@ namespace wowpp
 		for (auto &it : m_auras)
 		{
 			if (it->getEffect().aura() == type &&
-				it->getBasePoints() < treshold)
+			        it->getBasePoints() < treshold)
 			{
 				treshold = it->getBasePoints();
 			}
@@ -348,7 +350,7 @@ namespace wowpp
 			}
 		}
 	}
-	
+
 	void AuraContainer::removeAurasByType(UInt32 auraType)
 	{
 		// We need to remove all auras by their spell
@@ -366,7 +368,7 @@ namespace wowpp
 			removeAllAurasDueToSpell(spellid);
 		}
 	}
-	
+
 	Aura *AuraContainer::popBack(UInt8 dispelType, bool positive)
 	{
 		auto it = m_auras.rbegin();
@@ -406,5 +408,5 @@ namespace wowpp
 			removeAllAurasDueToSpell(spellid);
 		}
 	}
-	
+
 }

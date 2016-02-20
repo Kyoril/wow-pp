@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "unit_entry.h"
 #include "templates/basic_template_load_context.h"
@@ -112,7 +112,7 @@ namespace wowpp
 					context.onWarning("Could not find trigger - skipping");
 					continue;
 				}
-				
+
 				triggers.push_back(trigger);
 				for (auto &e : trigger->events)
 				{
@@ -230,7 +230,7 @@ namespace wowpp
 						WLOG("Unit " << id << " has unknown trainer entry " << trainerId << " - creature will have no trainer data!");
 					}
 				}
-				
+
 				return true;
 			});
 		}
@@ -243,44 +243,120 @@ namespace wowpp
 	{
 		Super::saveBase(context);
 
-		if (!name.empty()) context.table.addKey("name", name);
-		if (!subname.empty()) context.table.addKey("subname", subname);
-		if (minLevel > 1) context.table.addKey("min_level", minLevel);
-		if (maxLevel != minLevel) context.table.addKey("max_level", maxLevel);
-		if (maleModel != 0) context.table.addKey("model_id_1", maleModel);
-		if (femaleModel != 0) context.table.addKey("model_id_2", femaleModel);
-		if (minLevelHealth != 0) context.table.addKey("min_level_health", minLevelHealth);
-		if (maxLevelHealth != 0) context.table.addKey("max_level_health", maxLevelHealth);
-		if (minLevelMana != 0) context.table.addKey("min_level_mana", minLevelMana);
-		if (maxLevelMana != 0) context.table.addKey("max_level_mana", maxLevelMana);
-		if (minMeleeDamage != 0) context.table.addKey("min_melee_dmg", minMeleeDamage);
-		if (maxMeleeDamage != 0) context.table.addKey("max_melee_dmg", maxMeleeDamage);
-		if (minRangedDamage != 0) context.table.addKey("min_ranged_dmg", minRangedDamage);
-		if (maxRangedDamage != 0) context.table.addKey("max_ranged_dmg", maxRangedDamage);
-		if (scale != 1.0f) context.table.addKey("scale", scale);
-		if (rank != 0) context.table.addKey("rank", rank);
-		if (armor != 0) context.table.addKey("armor", armor);
-		if (meleeBaseAttackTime != 0) context.table.addKey("melee_attack_time", meleeBaseAttackTime);
-		if (rangedBaseAttackTime != 0) context.table.addKey("ranged_attack_time", rangedBaseAttackTime);
-		if (allianceFaction != 0) context.table.addKey("a_faction", allianceFaction->id);
-		if (hordeFaction != 0) context.table.addKey("h_faction", hordeFaction->id);
-		if (unitFlags != 0) context.table.addKey("unit_flags", unitFlags);
-		if (npcFlags != 0) context.table.addKey("npc_flags", npcFlags);
-		if (unitClass != 0) context.table.addKey("unit_class", unitClass);
-		if (minLootGold != 0) context.table.addKey("min_loot_gold", minLootGold);
-		if (maxLootGold != 0) context.table.addKey("max_loot_gold", maxLootGold);
-		if (type != 0) context.table.addKey("type", type);
-		if (family != 0) context.table.addKey("family", family);
-		if (xpMin != 0) context.table.addKey("min_xp", xpMin);
-		if (xpMax != 0) context.table.addKey("max_xp", xpMax);
-		if (mainHand != 0) context.table.addKey("eq_main_hand", mainHand->id);
-		if (offHand != 0) context.table.addKey("eq_off_hand", offHand->id);
-		if (ranged != 0) context.table.addKey("eq_ranged", ranged->id);
-		if (attackPower != 0) context.table.addKey("atk_power", attackPower);
-		if (rangedAttackPower != 0) context.table.addKey("rng_atk_power", rangedAttackPower);
-		if (unitLootEntry != nullptr) context.table.addKey("unit_loot", unitLootEntry->id);
-		if (vendorEntry != nullptr) context.table.addKey("unit_vendor", vendorEntry->id);
-		if (trainerEntry != nullptr) context.table.addKey("trainer", trainerEntry->id);
+		if (!name.empty()) {
+			context.table.addKey("name", name);
+		}
+		if (!subname.empty()) {
+			context.table.addKey("subname", subname);
+		}
+		if (minLevel > 1) {
+			context.table.addKey("min_level", minLevel);
+		}
+		if (maxLevel != minLevel) {
+			context.table.addKey("max_level", maxLevel);
+		}
+		if (maleModel != 0) {
+			context.table.addKey("model_id_1", maleModel);
+		}
+		if (femaleModel != 0) {
+			context.table.addKey("model_id_2", femaleModel);
+		}
+		if (minLevelHealth != 0) {
+			context.table.addKey("min_level_health", minLevelHealth);
+		}
+		if (maxLevelHealth != 0) {
+			context.table.addKey("max_level_health", maxLevelHealth);
+		}
+		if (minLevelMana != 0) {
+			context.table.addKey("min_level_mana", minLevelMana);
+		}
+		if (maxLevelMana != 0) {
+			context.table.addKey("max_level_mana", maxLevelMana);
+		}
+		if (minMeleeDamage != 0) {
+			context.table.addKey("min_melee_dmg", minMeleeDamage);
+		}
+		if (maxMeleeDamage != 0) {
+			context.table.addKey("max_melee_dmg", maxMeleeDamage);
+		}
+		if (minRangedDamage != 0) {
+			context.table.addKey("min_ranged_dmg", minRangedDamage);
+		}
+		if (maxRangedDamage != 0) {
+			context.table.addKey("max_ranged_dmg", maxRangedDamage);
+		}
+		if (scale != 1.0f) {
+			context.table.addKey("scale", scale);
+		}
+		if (rank != 0) {
+			context.table.addKey("rank", rank);
+		}
+		if (armor != 0) {
+			context.table.addKey("armor", armor);
+		}
+		if (meleeBaseAttackTime != 0) {
+			context.table.addKey("melee_attack_time", meleeBaseAttackTime);
+		}
+		if (rangedBaseAttackTime != 0) {
+			context.table.addKey("ranged_attack_time", rangedBaseAttackTime);
+		}
+		if (allianceFaction != 0) {
+			context.table.addKey("a_faction", allianceFaction->id);
+		}
+		if (hordeFaction != 0) {
+			context.table.addKey("h_faction", hordeFaction->id);
+		}
+		if (unitFlags != 0) {
+			context.table.addKey("unit_flags", unitFlags);
+		}
+		if (npcFlags != 0) {
+			context.table.addKey("npc_flags", npcFlags);
+		}
+		if (unitClass != 0) {
+			context.table.addKey("unit_class", unitClass);
+		}
+		if (minLootGold != 0) {
+			context.table.addKey("min_loot_gold", minLootGold);
+		}
+		if (maxLootGold != 0) {
+			context.table.addKey("max_loot_gold", maxLootGold);
+		}
+		if (type != 0) {
+			context.table.addKey("type", type);
+		}
+		if (family != 0) {
+			context.table.addKey("family", family);
+		}
+		if (xpMin != 0) {
+			context.table.addKey("min_xp", xpMin);
+		}
+		if (xpMax != 0) {
+			context.table.addKey("max_xp", xpMax);
+		}
+		if (mainHand != 0) {
+			context.table.addKey("eq_main_hand", mainHand->id);
+		}
+		if (offHand != 0) {
+			context.table.addKey("eq_off_hand", offHand->id);
+		}
+		if (ranged != 0) {
+			context.table.addKey("eq_ranged", ranged->id);
+		}
+		if (attackPower != 0) {
+			context.table.addKey("atk_power", attackPower);
+		}
+		if (rangedAttackPower != 0) {
+			context.table.addKey("rng_atk_power", rangedAttackPower);
+		}
+		if (unitLootEntry != nullptr) {
+			context.table.addKey("unit_loot", unitLootEntry->id);
+		}
+		if (vendorEntry != nullptr) {
+			context.table.addKey("unit_vendor", vendorEntry->id);
+		}
+		if (trainerEntry != nullptr) {
+			context.table.addKey("trainer", trainerEntry->id);
+		}
 
 		if (!triggers.empty())
 		{

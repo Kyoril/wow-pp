@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -39,8 +39,8 @@ namespace wowpp
 		UInt32 version;
 		UInt32 offsAreaTable;
 		UInt32 areaTableSize;
-//		UInt32 offsHeight;
-//		UInt32 heightSize;
+		//		UInt32 offsHeight;
+		//		UInt32 heightSize;
 		UInt32 offsCollision;
 		UInt32 collisionSize;
 
@@ -50,8 +50,8 @@ namespace wowpp
 			, version(0)
 			, offsAreaTable(0)
 			, areaTableSize(0)
-//			, offsHeight(0)
-//			, heightSize(0)
+			  //			, offsHeight(0)
+			  //			, heightSize(0)
 			, offsCollision(0)
 			, collisionSize(0)
 		{
@@ -142,7 +142,9 @@ namespace wowpp
 		/// @entry The base entry of this map.
 		explicit Map(const proto::MapEntry &entry, boost::filesystem::path dataPath);
 		/// Gets the map entry data of this map.
-		const proto::MapEntry &getEntry() const { return m_entry; }
+		const proto::MapEntry &getEntry() const {
+			return m_entry;
+		}
 		/// Tries to get a specific data tile if it's loaded.
 		MapDataTile *getTile(const TileIndex2D &position);
 		/// Determines the height value at a given coordinate.
@@ -160,7 +162,7 @@ namespace wowpp
 
 		const proto::MapEntry &m_entry;
 		const boost::filesystem::path m_dataPath;
-		// Note: We use a pointer here, because we don't need to load ALL height data 
+		// Note: We use a pointer here, because we don't need to load ALL height data
 		// of all tiles, and Grid allocates them immediatly.
 		Grid<std::shared_ptr<MapDataTile>> m_tiles;
 	};

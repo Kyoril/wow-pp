@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -32,19 +32,19 @@ namespace wowpp
 	{
 	public:
 		AttackTable();
-		void checkMeleeAutoAttack(GameUnit* attacker, GameUnit *target, UInt8 school, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists);
-		void checkSpecialMeleeAttack(GameUnit* attacker, SpellTargetMap &targetMap, UInt8 school, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists);
-		void checkSpecialMeleeAttackNoCrit(GameUnit* attacker, SpellTargetMap &targetMap, UInt8 school, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists);
-		void checkRangedAttack(GameUnit* attacker, SpellTargetMap &targetMap, UInt8 school, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists);
-		void checkPositiveSpell(GameUnit* attacker, SpellTargetMap &targetMap, const proto::SpellEntry &spell, const proto::SpellEffect &effect, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists);
-		void checkPositiveSpellNoCrit(GameUnit* attacker, SpellTargetMap &targetMap, const proto::SpellEntry &spell, const proto::SpellEffect &effect, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists);
-		void checkSpell(GameUnit* attacker, SpellTargetMap &targetMap, const proto::SpellEntry &spell, const proto::SpellEffect &effect, std::vector<GameUnit*> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists);
+		void checkMeleeAutoAttack(GameUnit *attacker, GameUnit *target, UInt8 school, std::vector<GameUnit *> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists);
+		void checkSpecialMeleeAttack(GameUnit *attacker, SpellTargetMap &targetMap, UInt8 school, std::vector<GameUnit *> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists);
+		void checkSpecialMeleeAttackNoCrit(GameUnit *attacker, SpellTargetMap &targetMap, UInt8 school, std::vector<GameUnit *> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists);
+		void checkRangedAttack(GameUnit *attacker, SpellTargetMap &targetMap, UInt8 school, std::vector<GameUnit *> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists);
+		void checkPositiveSpell(GameUnit *attacker, SpellTargetMap &targetMap, const proto::SpellEntry &spell, const proto::SpellEffect &effect, std::vector<GameUnit *> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists);
+		void checkPositiveSpellNoCrit(GameUnit *attacker, SpellTargetMap &targetMap, const proto::SpellEntry &spell, const proto::SpellEffect &effect, std::vector<GameUnit *> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists);
+		void checkSpell(GameUnit *attacker, SpellTargetMap &targetMap, const proto::SpellEntry &spell, const proto::SpellEffect &effect, std::vector<GameUnit *> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists);
 	private:
-		std::unordered_map<UInt32,std::unordered_map<UInt32,std::vector<GameUnit*>>> m_targets;
-		std::unordered_map<UInt32,std::unordered_map<UInt32,std::vector<game::VictimState>>> m_victimStates;
-		std::unordered_map<UInt32,std::unordered_map<UInt32,std::vector<game::HitInfo>>> m_hitInfos;
-		std::unordered_map<UInt32,std::unordered_map<UInt32,std::vector<float>>> m_resists;
-		
+		std::unordered_map<UInt32, std::unordered_map<UInt32, std::vector<GameUnit *>>> m_targets;
+		std::unordered_map<UInt32, std::unordered_map<UInt32, std::vector<game::VictimState>>> m_victimStates;
+		std::unordered_map<UInt32, std::unordered_map<UInt32, std::vector<game::HitInfo>>> m_hitInfos;
+		std::unordered_map<UInt32, std::unordered_map<UInt32, std::vector<float>>> m_resists;
+
 		bool checkIndex(UInt32 targetA, UInt32 targetB);
 		void refreshTargets(GameUnit &attacker, SpellTargetMap &targetMap, UInt32 targetA, UInt32 targetB, float radius, UInt32 maxtargets);
 	};

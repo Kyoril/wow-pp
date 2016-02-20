@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "map_entry.h"
 #include "templates/basic_template_save_context.h"
@@ -30,11 +30,11 @@ namespace wowpp
 	{
 		const MapInstanceTypeStrings::StringArray strings =
 		{{
-			"global",
-			"dungeon",
-			"raid",
-			"battleground",
-			"arena"
+				"global",
+				"dungeon",
+				"raid",
+				"battleground",
+				"arena"
 			}
 		};
 
@@ -67,7 +67,7 @@ namespace wowpp
 
 		// Load instance type
 		instanceType =
-			constant_literal::mapInstanceType.getIdentifier(wrapper.table.getString("instanceType"));
+		    constant_literal::mapInstanceType.getIdentifier(wrapper.table.getString("instanceType"));
 		if (instanceType == map_instance_type::Invalid_)
 		{
 			context.onError("Invalid map instance type");
@@ -90,7 +90,7 @@ namespace wowpp
 				{
 					const sff::read::tree::Array<DataFileIterator> *const positionArray = spawnTable->getArray("position");
 					if (!positionArray ||
-						!loadPosition(spawn.position, *positionArray))
+					        !loadPosition(spawn.position, *positionArray))
 					{
 						context.onError("Invalid position in a spawn");
 						return false;
@@ -148,7 +148,7 @@ namespace wowpp
 				{
 					const sff::read::tree::Array<DataFileIterator> *const positionArray = spawnTable->getArray("position");
 					if (!positionArray ||
-						!loadPosition(spawn.position, *positionArray))
+					        !loadPosition(spawn.position, *positionArray))
 					{
 						context.onError("Invalid position in a spawn");
 						return false;
@@ -200,18 +200,24 @@ namespace wowpp
 	{
 		Super::saveBase(context);
 
-		if (!name.empty()) context.table.addKey("name", name);
-		if (!directory.empty()) context.table.addKey("directory", directory);
+		if (!name.empty()) {
+			context.table.addKey("name", name);
+		}
+		if (!directory.empty()) {
+			context.table.addKey("directory", directory);
+		}
 		context.table.addKey("instanceType", constant_literal::mapInstanceType.getName(instanceType));
 
 		{
 			sff::write::Array<char> spawnArray(context.table, "creature_spawns", sff::write::MultiLine);
 
-			for(auto &spawn : spawns)
+			for (auto &spawn : spawns)
 			{
 				sff::write::Table<char> spawnTable(spawnArray, sff::write::Comma);
 
-				if (!name.empty()) spawnTable.addKey("name", spawn.name);
+				if (!name.empty()) {
+					spawnTable.addKey("name", spawn.name);
+				}
 				spawnTable.addKey("unit", spawn.unit->id);
 
 				{
@@ -222,7 +228,9 @@ namespace wowpp
 					positionArray.finish();
 				}
 
-				if (spawn.emote != 0) spawnTable.addKey("emote", spawn.emote);
+				if (spawn.emote != 0) {
+					spawnTable.addKey("emote", spawn.emote);
+				}
 				if (spawn.rotation)
 				{
 					spawnTable.addKey("rotation", spawn.rotation);
@@ -246,7 +254,9 @@ namespace wowpp
 			{
 				sff::write::Table<char> spawnTable(spawnArray, sff::write::Comma);
 
-				if (!spawn.name.empty()) spawnTable.addKey("name", spawn.name);
+				if (!spawn.name.empty()) {
+					spawnTable.addKey("name", spawn.name);
+				}
 				spawnTable.addKey("object", spawn.object->id);
 
 				{

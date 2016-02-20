@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "level_entry.h"
 #include "templates/basic_template_load_context.h"
@@ -57,7 +57,7 @@ namespace wowpp
 				// Get race / class
 				UInt32 raceId, classId;
 				if (!statTable->tryGetInteger("race", raceId) ||
-					!statTable->tryGetInteger("class", classId))
+				        !statTable->tryGetInteger("class", classId))
 				{
 					context.onError("Missing race/class definition for level stats");
 					return false;
@@ -82,7 +82,8 @@ namespace wowpp
 
 				// Regeneratives
 				auto &regArr = regen[classId];
-				regArr[0] = 0.0f; regArr[1] = 0.0f;
+				regArr[0] = 0.0f;
+				regArr[1] = 0.0f;
 				statTable->tryGetInteger("hp_reg_pct", regArr[0]);
 				statTable->tryGetInteger("mp_reg_pct", regArr[1]);
 			}
@@ -128,8 +129,12 @@ namespace wowpp
 						auto regenIt = regen.find(classId);
 						if (regenIt != regen.end())
 						{
-							if (regenIt->second[0] != 0.0f) statTable.addKey("hp_reg_pct", regenIt->second[0]);
-							if (regenIt->second[1] != 0.0f) statTable.addKey("mp_reg_pct", regenIt->second[1]);
+							if (regenIt->second[0] != 0.0f) {
+								statTable.addKey("hp_reg_pct", regenIt->second[0]);
+							}
+							if (regenIt->second[1] != 0.0f) {
+								statTable.addKey("mp_reg_pct", regenIt->second[1]);
+							}
 						}
 					}
 					statTable.finish();

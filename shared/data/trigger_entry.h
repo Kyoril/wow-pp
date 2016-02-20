@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -62,19 +62,19 @@ namespace wowpp
 	{
 		enum Type
 		{
-			/// Execute another trigger. 
+			/// Execute another trigger.
 			/// Targets: NONE; Data: <TRIGGER-ID>; Texts: NONE;
 			Trigger					= 0,
-			/// Makes a unit say a text. 
+			/// Makes a unit say a text.
 			/// Targets: UNIT; Data: <SOUND-ID>,<LANGUAGE>; Texts: <TEXT>;
 			Say						= 1,
-			/// Makes a unit say a text. 
+			/// Makes a unit say a text.
 			/// Targets: UNIT; Data: <SOUND-ID>,<LANGUAGE>; Texts: <TEXT>;
 			Yell					= 2,
-			/// Sets the state of a world object. 
+			/// Sets the state of a world object.
 			/// Targets: NAMED_OBJECT; Data: <NEW-STATE>; Texts: NONE;
 			SetWorldObjectState		= 3,
-			/// Activates or deactivates a creature or object spawner. 
+			/// Activates or deactivates a creature or object spawner.
 			/// Targets: NAMED_CREATURE/NAMED_OBJECT; Data: <0/1>; Texts: NONE;
 			SetSpawnState			= 4,
 			/// Activates or deactivates respawn of a creature or object spawner.

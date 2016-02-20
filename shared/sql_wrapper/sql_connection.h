@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -63,8 +63,8 @@ namespace wowpp
 			/// @return the compiled statement which can be used from now. Never nullptr.
 			/// @throws if the compilation fails. The exception is derived from std::runtime_error.
 			virtual std::unique_ptr<Statement> createStatement(
-			        const char *query,
-			        std::size_t size) = 0;
+			    const char *query,
+			    std::size_t size) = 0;
 
 			/// beginTransaction starts a transaction. A transaction
 			/// combines an arbitrary number of queries into an atomic unit.
@@ -162,7 +162,7 @@ namespace wowpp
 			//this typedef is outside of the lambda because of strange compiler behaviour
 			//(GCC 4.7 wants the typename, VS11 rejects it)
 			typedef typename std::make_signed<Int>::type SignedInt;
-			const Int64 checkedValue = [=]() -> Int64
+			const Int64 checkedValue = [ = ]() -> Int64
 			{
 				if (std::is_unsigned<Int>::value && (fullValue < 0))
 				{

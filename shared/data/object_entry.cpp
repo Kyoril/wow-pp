@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "object_entry.h"
 #include "templates/basic_template_load_context.h"
@@ -52,7 +52,7 @@ namespace wowpp
 		wrapper.table.tryGetInteger("faction", factionID);
 		wrapper.table.tryGetInteger("flags", flags);
 		wrapper.table.tryGetInteger("size", scale);
-		
+
 		// Data
 		data.fill(0);
 		const sff::read::tree::Array<DataFileIterator> *dataArray = wrapper.table.getArray("data");
@@ -82,15 +82,33 @@ namespace wowpp
 	{
 		Super::saveBase(context);
 
-		if (!name.empty()) context.table.addKey("name", name);
-		if (type != 0) context.table.addKey("type", type);
-		if (displayID != 0) context.table.addKey("display", displayID);
-		if (!caption.empty()) context.table.addKey("caption", caption);
-		if (factionID != 0) context.table.addKey("faction", factionID);
-		if (flags != 0) context.table.addKey("flags", flags);
-		if (scale != 1.0f) context.table.addKey("size", scale);
-		if (minGold != 0) context.table.addKey("min_gold", minGold);
-		if (maxGold != 0) context.table.addKey("max_gold", maxGold);
+		if (!name.empty()) {
+			context.table.addKey("name", name);
+		}
+		if (type != 0) {
+			context.table.addKey("type", type);
+		}
+		if (displayID != 0) {
+			context.table.addKey("display", displayID);
+		}
+		if (!caption.empty()) {
+			context.table.addKey("caption", caption);
+		}
+		if (factionID != 0) {
+			context.table.addKey("faction", factionID);
+		}
+		if (flags != 0) {
+			context.table.addKey("flags", flags);
+		}
+		if (scale != 1.0f) {
+			context.table.addKey("size", scale);
+		}
+		if (minGold != 0) {
+			context.table.addKey("min_gold", minGold);
+		}
+		if (maxGold != 0) {
+			context.table.addKey("max_gold", maxGold);
+		}
 
 		// Write data
 		auto dataArray = make_unique<sff::write::Array<char>>(context.table, "data", sff::write::Comma);

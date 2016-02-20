@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -52,7 +52,7 @@ namespace wowpp
 	/// creature death and can be sent to the client.
 	class LootInstance
 	{
-		friend io::Writer &operator << (io::Writer &w, LootInstance const& loot);
+		friend io::Writer &operator << (io::Writer &w, LootInstance const &loot);
 
 	public:
 
@@ -62,22 +62,28 @@ namespace wowpp
 
 		/// Initializes a new instance of the loot instance.
 		explicit LootInstance(proto::ItemManager &items, UInt64 lootGuid);
-		explicit LootInstance(proto::ItemManager &items, UInt64 lootGuid, const proto::LootEntry *entry, UInt32 minGold, UInt32 maxGold, const std::vector<GameCharacter*> &lootRecipients);
+		explicit LootInstance(proto::ItemManager &items, UInt64 lootGuid, const proto::LootEntry *entry, UInt32 minGold, UInt32 maxGold, const std::vector<GameCharacter *> &lootRecipients);
 
-		/// 
-		UInt64 getLootGuid() const { return m_lootGuid; }
+		///
+		UInt64 getLootGuid() const {
+			return m_lootGuid;
+		}
 		/// Determines whether the loot is empty.
 		bool isEmpty() const;
-		/// 
-		UInt32 getGold() const { return m_gold; }
-		/// 
+		///
+		UInt32 getGold() const {
+			return m_gold;
+		}
+		///
 		void takeGold();
 		/// Get loot item definition from the requested slot.
 		const LootItem *getLootDefinition(UInt8 slot) const;
-		/// 
+		///
 		void takeItem(UInt8 slot);
 		/// Gets the number of items.
-		UInt32 getItemCount() const { return m_items.size(); }
+		UInt32 getItemCount() const {
+			return m_items.size();
+		}
 
 	private:
 
@@ -91,5 +97,5 @@ namespace wowpp
 		std::vector<LootItem> m_items;
 	};
 
-	io::Writer &operator << (io::Writer &w, LootInstance const& loot);
+	io::Writer &operator << (io::Writer &w, LootInstance const &loot);
 }

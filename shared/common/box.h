@@ -86,7 +86,7 @@ namespace wowpp
 	bool operator == (const Box<T> &left, const Box<T> &right)
 	{
 		return (left.minimum == right.minimum) &&
-			(left.maximum == right.maximum);
+		       (left.maximum == right.maximum);
 	}
 
 	template <class T>
@@ -94,7 +94,7 @@ namespace wowpp
 	{
 		return !(left == right);
 	}
-	
+
 	template <class T>
 	Box<T> makeBox(const T &minimum, const T &maximum)
 	{

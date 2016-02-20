@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "class_entry.h"
 #include "templates/basic_template_load_context.h"
@@ -30,11 +30,11 @@ namespace wowpp
 	{
 		const PowerTypeStrings::StringArray strings =
 		{{
-			"mana",
-			"rage",
-			"focus",
-			"energy",
-			"happiness"
+				"mana",
+				"rage",
+				"focus",
+				"energy",
+				"happiness"
 			}
 		};
 
@@ -66,7 +66,7 @@ namespace wowpp
 
 		// Load power type
 		powerType =
-			constant_literal::powerType.getIdentifier(wrapper.table.getString("powerType"));
+		    constant_literal::powerType.getIdentifier(wrapper.table.getString("powerType"));
 		if (powerType == power_type::Invalid_)
 		{
 			context.onError("Invalid class power type");
@@ -111,8 +111,12 @@ namespace wowpp
 	{
 		Super::saveBase(context);
 
-		if (!name.empty()) context.table.addKey("name", name);
-		if (!internalName.empty()) context.table.addKey("internalName", internalName);
+		if (!name.empty()) {
+			context.table.addKey("name", name);
+		}
+		if (!internalName.empty()) {
+			context.table.addKey("internalName", internalName);
+		}
 		context.table.addKey("powerType", constant_literal::powerType.getName(powerType));
 		context.table.addKey("flags", flags);
 		context.table.addKey("spellFamily", spellFamily);

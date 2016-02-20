@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "game_item.h"
 #include "proto_data/project.h"
@@ -55,8 +55,9 @@ namespace wowpp
 		// Spell charges
 		for (size_t i = 0; i < 5; ++i)
 		{
-			if (i >= m_entry.spells_size())
+			if (i >= m_entry.spells_size()) {
 				break;
+			}
 
 			setUInt32Value(item_fields::SpellCharges + i, m_entry.spells(i).charges());
 		}
@@ -84,16 +85,16 @@ namespace wowpp
 		equipped();
 	}
 
-	io::Writer & operator<<(io::Writer &w, GameItem const& object)
+	io::Writer &operator<<(io::Writer &w, GameItem const &object)
 	{
 		return w
-			<< reinterpret_cast<GameObject const&>(object);
+		       << reinterpret_cast<GameObject const &>(object);
 	}
 
-	io::Reader & operator>>(io::Reader &r, GameItem& object)
+	io::Reader &operator>>(io::Reader &r, GameItem &object)
 	{
 		return r
-			>> reinterpret_cast<GameObject&>(object);
+		       >> reinterpret_cast<GameObject &>(object);
 	}
 
 }

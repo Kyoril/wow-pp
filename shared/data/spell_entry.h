@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -37,11 +37,11 @@ namespace wowpp
 			Ranged = 0x00000002,
 			/// Spell is executed on next weapon swing.
 			OnNextSwing = 0x00000004,
-			/// 
+			///
 			IsReplenishment = 0x00000008,
 			/// Spell is a player ability.
 			Ability = 0x00000010,
-			/// 
+			///
 			TradeSpell = 0x00000020,
 			/// Spell is a passive spell-
 			Passive = 0x00000040,
@@ -51,9 +51,9 @@ namespace wowpp
 			HiddenCastTime = 0x00000100,
 			/// Client will automatically target the mainhand item.
 			TargetMainhandItem = 0x00000200,
-			/// 
+			///
 			OnNextSwing_2 = 0x00000400,
-			/// 
+			///
 			Unknown_4 = 0x00000800,
 			/// Spell is only executable at day.
 			DaytimeOnly = 0x00001000,
@@ -69,7 +69,7 @@ namespace wowpp
 			OnlyStealthed = 0x00020000,
 			/// Spell does not change the players sheath state.
 			DontAffectSheathState = 0x00040000,
-			/// 
+			///
 			LevelDamageCalc = 0x00080000,
 			/// Spell will stop auto attack.
 			StopAttackTarget = 0x00100000,
@@ -81,9 +81,9 @@ namespace wowpp
 			CastableWhileDead = 0x00800000,
 			/// Spell is usable while caster is mounted.
 			CastableWhileMounted = 0x01000000,
-			/// 
+			///
 			DisabledWhileActive = 0x02000000,
-			/// 
+			///
 			Negative = 0x04000000,
 			/// Cast is usable while caster is sitting.
 			CastableWhileSitting = 0x08000000,
@@ -310,7 +310,7 @@ namespace wowpp
 		UInt32 dmgClass;
 		Int32 itemClass;
 		UInt32 itemSubClassMask;
-		std::vector<const SkillEntry*> skillsOnLearnSpell;
+		std::vector<const SkillEntry *> skillsOnLearnSpell;
 		UInt32 facing;
 		Int32 duration;
 		Int32 maxDuration;

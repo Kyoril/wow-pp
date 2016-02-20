@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -101,21 +101,21 @@ namespace wowpp
 				/// @param host The address of this realm where game clients will try to connect to.
 				/// @param port The port at which this realm is accepting incoming game client connections.
 				void login(
-					pp::OutgoingPacket &out_packet,
-					const String &internalName,
-					const String &password,
-					const String &visibleName,
-					const String &host,
-					NetPort port
-					);
+				    pp::OutgoingPacket &out_packet,
+				    const String &internalName,
+				    const String &password,
+				    const String &visibleName,
+				    const String &host,
+				    NetPort port
+				);
 
 				/// Tells the login server how many players are logged in on the realm.
 				/// @param out_packet Packet buffer where the data will be written to.
 				/// @param playerCount The number of players which are logged in on this realm right now.
 				void updateCurrentPlayers(
-					pp::OutgoingPacket &out_packet,
-					size_t playerCount
-					);
+				    pp::OutgoingPacket &out_packet,
+				    size_t playerCount
+				);
 
 				/// Notifies the login server that a player wants to log in on this realm. After this
 				/// packet is sent, the login server will verify that the player successfully logged
@@ -123,31 +123,31 @@ namespace wowpp
 				/// @param out_packet Packet buffer where the data will be written to.
 				/// @param accountName Account name of the player in uppercase letters.
 				void playerLogin(
-					pp::OutgoingPacket &out_packet,
-					const String &accountName
-					);
+				    pp::OutgoingPacket &out_packet,
+				    const String &accountName
+				);
 
 				/// Notifies the login server that a player is no longer logged in on this realm. This
 				/// is useful for the login server to know if an account is online on a specific realm.
 				/// @param out_packet Packet buffer where the data will be written to.
 				void playerLogout(
-					pp::OutgoingPacket &out_packet
-					//TODO
-					);
+				    pp::OutgoingPacket &out_packet
+				    //TODO
+				);
 
 				/// A simple empty packet which is used to keep the connection between the login server
 				/// and the realm alive.
 				/// @param out_packet Packet buffer where the data will be written to.
 				void keepAlive(
-					pp::OutgoingPacket &out_packet
-					);
+				    pp::OutgoingPacket &out_packet
+				);
 
-				/// 
+				///
 				void tutorialData(
-					pp::OutgoingPacket &out_packet,
-					UInt32 accountId,
-					const std::array<UInt32, 8> &data
-					);
+				    pp::OutgoingPacket &out_packet,
+				    UInt32 accountId,
+				    const std::array<UInt32, 8> &data
+				);
 			}
 
 			/// Contains methods for writing packets from the login server.
@@ -157,10 +157,10 @@ namespace wowpp
 				/// @param out_packet Packet buffer where the data will be written to.
 				/// @param result The result of the login attempt of the realm.
 				void loginResult(
-					pp::OutgoingPacket &out_packet,
-					LoginResult result,
-					UInt32 realmID
-					);
+				    pp::OutgoingPacket &out_packet,
+				    LoginResult result,
+				    UInt32 realmID
+				);
 
 				/// TODO: ADD DESCRIPTION
 				/// @param out_packet Packet buffer where the data will be written to.
@@ -171,31 +171,31 @@ namespace wowpp
 				/// @param v V field of the player.
 				/// @param s S field of the player.
 				void playerLoginSuccess(
-					pp::OutgoingPacket &out_packet,
-					const String &accountName,
-					UInt32 accountId,
-					const BigNumber &sessionKey,
-					const BigNumber &v,
-					const BigNumber &s,
-					const std::array<UInt32, 8> &tutorialData
-					);
+				    pp::OutgoingPacket &out_packet,
+				    const String &accountName,
+				    UInt32 accountId,
+				    const BigNumber &sessionKey,
+				    const BigNumber &v,
+				    const BigNumber &s,
+				    const std::array<UInt32, 8> &tutorialData
+				);
 
 				/// TODO: ADD DESCRIPTION
 				/// @param out_packet Packet buffer where the data will be written to.
 				/// @param accountName Account name whos login attempt failed.
 				void playerLoginFailure(
-					pp::OutgoingPacket &out_packet,
-					const String &accountName
-					);
+				    pp::OutgoingPacket &out_packet,
+				    const String &accountName
+				);
 			}
 
-			/// Contains methods for reading packets coming from the realm server. 
+			/// Contains methods for reading packets coming from the realm server.
 			namespace realm_read
 			{
 				/// TODO: ADD DESCRIPTION
 				/// @param packet Packet buffer where the data will be read from.
-				/// @param out_internalName 
-				/// @param maxInternalNameLength 
+				/// @param out_internalName
+				/// @param maxInternalNameLength
 				/// @param out_password
 				/// @param maxPasswordLength
 				/// @param out_visibleName
@@ -206,17 +206,17 @@ namespace wowpp
 				/// @returns false if the packet has not enough data or if there was an error
 				/// reading the packet's content.
 				bool login(
-					io::Reader &packet,
-					String &out_internalName,
-					size_t maxInternalNameLength,
-					String &out_password,
-					size_t maxPasswordLength,
-					String &out_visibleName,
-					size_t maxVisibleNameLength,
-					String &out_host,
-					size_t maxHostLength,
-					NetPort &out_port
-					);
+				    io::Reader &packet,
+				    String &out_internalName,
+				    size_t maxInternalNameLength,
+				    String &out_password,
+				    size_t maxPasswordLength,
+				    String &out_visibleName,
+				    size_t maxVisibleNameLength,
+				    String &out_host,
+				    size_t maxHostLength,
+				    NetPort &out_port
+				);
 
 				/// TODO: ADD DESCRIPTION
 				/// @param packet Packet buffer where the data will be read from.
@@ -224,9 +224,9 @@ namespace wowpp
 				/// @returns false if the packet has not enough data or if there was an error
 				/// reading the packet's content.
 				bool updateCurrentPlayers(
-					io::Reader &packet,
-					size_t &out_playerCount
-					);
+				    io::Reader &packet,
+				    size_t &out_playerCount
+				);
 
 				/// TODO: ADD DESCRIPTION
 				/// @param packet Packet buffer where the data will be read from.
@@ -234,33 +234,33 @@ namespace wowpp
 				/// @returns false if the packet has not enough data or if there was an error
 				/// reading the packet's content.
 				bool playerLogin(
-					io::Reader &packet,
-					String &out_accountName
-					);
+				    io::Reader &packet,
+				    String &out_accountName
+				);
 
 				/// TODO: ADD DESCRIPTION
 				/// @param packet Packet buffer where the data will be read from.
 				/// @returns false if the packet has not enough data or if there was an error
 				/// reading the packet's content.
 				bool playerLogout(
-					io::Reader &packet
-					//TODO
-					);
+				    io::Reader &packet
+				    //TODO
+				);
 
 				/// TODO: ADD DESCRIPTION
 				/// @param packet Packet buffer where the data will be read from.
 				/// @returns false if the packet has not enough data or if there was an error
 				/// reading the packet's content.
 				bool keepAlive(
-					io::Reader &packet
-					);
+				    io::Reader &packet
+				);
 
-				/// 
+				///
 				bool tutorialData(
-					io::Reader &packet,
-					UInt32 &out_accountId,
-					std::array<UInt32, 8> &out_data
-					);
+				    io::Reader &packet,
+				    UInt32 &out_accountId,
+				    std::array<UInt32, 8> &out_data
+				);
 			}
 
 			/// Contains methods for reading packets coming from the login server.
@@ -273,11 +273,11 @@ namespace wowpp
 				/// @returns false if the packet has not enough data or if there was an error
 				/// reading the packet's content.
 				bool loginResult(
-					io::Reader &packet,
-					LoginResult &out_result,
-					UInt32 &out_serverVersion,
-					UInt32 &out_realmID
-					);
+				    io::Reader &packet,
+				    LoginResult &out_result,
+				    UInt32 &out_serverVersion,
+				    UInt32 &out_realmID
+				);
 
 				/// TODO: ADD DESCRIPTION
 				/// @param packet Packet buffer where the data will be read from.
@@ -290,14 +290,14 @@ namespace wowpp
 				/// @returns false if the packet has not enough data or if there was an error
 				/// reading the packet's content.
 				bool playerLoginSuccess(
-					io::Reader &packet,
-					String &out_accountName,
-					UInt32 &out_accountId,
-					BigNumber &out_sessionKey,
-					BigNumber &out_v,
-					BigNumber &out_s,
-					std::array<UInt32, 8> &out_tutorialData
-					);
+				    io::Reader &packet,
+				    String &out_accountName,
+				    UInt32 &out_accountId,
+				    BigNumber &out_sessionKey,
+				    BigNumber &out_v,
+				    BigNumber &out_s,
+				    std::array<UInt32, 8> &out_tutorialData
+				);
 
 				/// TODO: ADD DESCRIPTION
 				/// @param packet Packet buffer where the data will be read from.
@@ -305,9 +305,9 @@ namespace wowpp
 				/// @returns false if the packet has not enough data or if there was an error
 				/// reading the packet's content.
 				bool playerLoginFailure(
-					io::Reader &packet,
-					String &out_accountName
-					);
+				    io::Reader &packet,
+				    String &out_accountName
+				);
 			}
 		}
 	}

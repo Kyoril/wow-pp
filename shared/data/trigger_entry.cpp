@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "trigger_entry.h"
 #include "templates/basic_template_save_context.h"
@@ -117,8 +117,12 @@ namespace wowpp
 	{
 		Super::saveBase(context);
 
-		if (!name.empty()) context.table.addKey("name", name);
-		if (!path.empty()) context.table.addKey("path", path);
+		if (!name.empty()) {
+			context.table.addKey("name", name);
+		}
+		if (!path.empty()) {
+			context.table.addKey("path", path);
+		}
 
 		if (!events.empty())
 		{
@@ -146,14 +150,18 @@ namespace wowpp
 				for (auto &action : actions)
 				{
 					sff::write::Table<char> actionTable(actionsArray, sff::write::Comma);
-					
+
 					actionTable.addKey("action", action.action);
-					if (action.target != 0) actionTable.addKey("target", action.target);
-					if (!action.targetName.empty()) actionTable.addKey("target_name", action.targetName);
+					if (action.target != 0) {
+						actionTable.addKey("target", action.target);
+					}
+					if (!action.targetName.empty()) {
+						actionTable.addKey("target_name", action.targetName);
+					}
 
 					// NOTE: unique_ptr<sff::write::Arra<char>> is used below, since MSVC++ seems to have a bug
 					// The stack gets corrupted or something, and causes m_hasMembers of the array to be true,
-					// thus leading to wrong formatting. This only happens in release mode, so it seems it has 
+					// thus leading to wrong formatting. This only happens in release mode, so it seems it has
 					// something to do with optimization.
 
 					if (!action.texts.empty())

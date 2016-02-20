@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -37,28 +37,30 @@ namespace wowpp
 		class ObjectEntry;
 	}
 
-	/// 
+	///
 	class WorldObjectSpawner final
 	{
 		typedef std::vector<std::shared_ptr<WorldObject>> OwnedObjects;
 
 	public:
-		/// 
+		///
 		explicit WorldObjectSpawner(
-			WorldInstance &world,
-			const proto::ObjectEntry &entry,
-			size_t maxCount,
-			GameTime respawnDelay,
-			math::Vector3 center,
-			boost::optional<float> orientation,
-			const std::array<float, 4> &rotation,
-			float radius,
-			UInt32 animProgress,
-			UInt32 state);
+		    WorldInstance &world,
+		    const proto::ObjectEntry &entry,
+		    size_t maxCount,
+		    GameTime respawnDelay,
+		    math::Vector3 center,
+		    boost::optional<float> orientation,
+		    const std::array<float, 4> &rotation,
+		    float radius,
+		    UInt32 animProgress,
+		    UInt32 state);
 		virtual ~WorldObjectSpawner();
 
-		/// 
-		const OwnedObjects &getSpawnedObjects() const { return m_objects; }
+		///
+		const OwnedObjects &getSpawnedObjects() const {
+			return m_objects;
+		}
 
 	private:
 

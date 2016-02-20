@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "inventory.h"
 #include "game_character.h"
@@ -33,34 +33,36 @@
 
 namespace wowpp
 {
-	io::Writer & operator<<(io::Writer &w, ItemData const& object)
+	io::Writer &operator<<(io::Writer &w, ItemData const &object)
 	{
 		w.writePOD(object);
 		return w;
 	}
 
-	io::Reader & operator>>(io::Reader &r, ItemData& object)
+	io::Reader &operator>>(io::Reader &r, ItemData &object)
 	{
 		r.readPOD(object);
 		return r;
 	}
 
 
-	Inventory::Inventory(GameCharacter & owner)
+	Inventory::Inventory(GameCharacter &owner)
 		: m_owner(owner)
 		, m_freeSlots(player_inventory_pack_slots::End - player_inventory_pack_slots::Start)	// Default slot count with only a backpack
 	{
 		// Warning: m_owner might not be completely constructed at this point
 	}
-	game::InventoryChangeFailure Inventory::createItems(const proto::ItemEntry & entry, UInt16 amount /* = 1*/, std::map<UInt16, UInt16> *out_addedBySlot /* = nullptr*/)
+	game::InventoryChangeFailure Inventory::createItems(const proto::ItemEntry &entry, UInt16 amount /* = 1*/, std::map<UInt16, UInt16> *out_addedBySlot /* = nullptr*/)
 	{
 		// Incorrect value used, so give at least one item
-		if (amount == 0) amount = 1;
+		if (amount == 0) {
+			amount = 1;
+		}
 
 		// Limit the total amount of items
 		const UInt16 itemCount = getItemCount(entry.id());
 		if (entry.maxcount() > 0 &&
-			itemCount + amount > entry.maxcount())
+		        itemCount + amount > entry.maxcount())
 		{
 			return game::inventory_change_failure::CantCarryMoreOfThis;
 		}
@@ -68,14 +70,14 @@ namespace wowpp
 		// Quick check if there are enough free slots (only works if we don't have an item of this type yet)
 		const UInt16 requiredSlots = (amount - 1) / entry.maxstack() + 1;
 		if ((itemCount == 0 || entry.maxstack() <= 1) &&
-			requiredSlots > m_freeSlots)
+		        requiredSlots > m_freeSlots)
 		{
 			return game::inventory_change_failure::InventoryFull;
 		}
-		
+
 		// We need to remember free slots, since we first want to stack items up as best as possible
 		LinearSet<UInt16> emptySlots;
-		// We also need to remember all valid slots, that contain an item of that entry but are not 
+		// We also need to remember all valid slots, that contain an item of that entry but are not
 		// at the stack limit so we can fill up those stacks.
 		LinearSet<UInt16> usedCapableSlots;
 		// This counter represent the number of available space for this item in total
@@ -101,7 +103,7 @@ namespace wowpp
 					// Remember this slot for later and skip it for now
 					emptySlots.add(absoluteSlot);
 					if (itemsProcessed >= itemCount &&
-						emptySlots.size() >= requiredSlots)
+					emptySlots.size() >= requiredSlots)
 					{
 						break;
 					}
@@ -125,7 +127,7 @@ namespace wowpp
 				if (stackCount >= entry.maxstack())
 				{
 					if (itemsProcessed >= itemCount &&
-						emptySlots.size() >= requiredSlots)
+					        emptySlots.size() >= requiredSlots)
 					{
 						break;
 					}
@@ -141,7 +143,7 @@ namespace wowpp
 
 			// We can stop now
 			if (itemsProcessed >= itemCount &&
-				emptySlots.size() >= requiredSlots)
+			        emptySlots.size() >= requiredSlots)
 			{
 				return false;
 			}
@@ -172,7 +174,9 @@ namespace wowpp
 				// Increase cached counter
 				m_itemCounter[entry.id()] += added;
 
-				if (out_addedBySlot) out_addedBySlot->insert(std::make_pair(slot, added));
+				if (out_addedBySlot) {
+					out_addedBySlot->insert(std::make_pair(slot, added));
+				}
 
 				// Notify update
 				itemInstanceUpdated(item, slot);
@@ -194,8 +198,9 @@ namespace wowpp
 			}
 
 			// Everything added
-			if (amountLeft == 0)
+			if (amountLeft == 0) {
 				break;
+			}
 		}
 
 		// Are there still items left?
@@ -230,20 +235,20 @@ namespace wowpp
 				if (isBagSlot(slot))
 				{
 					auto bagInst = getBagAtSlot(slot);
-					item->setUInt64Value(item_fields::Contained, bagInst ? bagInst->getGuid(): m_owner.getGuid());
+					item->setUInt64Value(item_fields::Contained, bagInst ? bagInst->getGuid() : m_owner.getGuid());
 				}
 				else
 				{
 					item->setUInt64Value(item_fields::Contained, m_owner.getGuid());
 				}
 				item->setUInt64Value(item_fields::Owner, m_owner.getGuid());
-				
+
 				// Bind this item
 				if (entry.bonding() == game::item_binding::BindWhenPickedUp)
 				{
 					item->addFlag(item_fields::Flags, game::item_flags::Bound);
 				}
-				
+
 				// One stack has been created by initializing the item
 				amountLeft--;
 
@@ -253,7 +258,9 @@ namespace wowpp
 
 				// Increase cached counter
 				m_itemCounter[entry.id()] += added + 1;
-				if (out_addedBySlot) out_addedBySlot->insert(std::make_pair(slot, added + 1));
+				if (out_addedBySlot) {
+					out_addedBySlot->insert(std::make_pair(slot, added + 1));
+				}
 
 				// Add this item to the inventory slot and reduce our free slot cache
 				m_itemsBySlot[slot] = item;
@@ -285,8 +292,9 @@ namespace wowpp
 				}
 
 				// All done
-				if (amountLeft == 0)
+				if (amountLeft == 0) {
 					break;
+				}
 			}
 		}
 
@@ -304,11 +312,13 @@ namespace wowpp
 		// Everything okay
 		return game::inventory_change_failure::Okay;
 	}
-	game::InventoryChangeFailure Inventory::removeItems(const proto::ItemEntry & entry, UInt16 amount)
+	game::InventoryChangeFailure Inventory::removeItems(const proto::ItemEntry &entry, UInt16 amount)
 	{
 		// If amount equals 0, remove ALL items of that entry.
 		const UInt16 itemCount = getItemCount(entry.id());
-		if (amount == 0) amount = itemCount;
+		if (amount == 0) {
+			amount = itemCount;
+		}
 
 		// We don't have enough items, so we don't need to bother iterating through
 		if (itemCount < amount)
@@ -369,8 +379,9 @@ namespace wowpp
 				}
 
 				// All items processed, we can stop here
-				if (itemsToDelete == 0)
+				if (itemsToDelete == 0) {
 					return false;
+				}
 			}
 
 			return true;
@@ -396,7 +407,9 @@ namespace wowpp
 
 		// Updated cached item counter
 		const UInt32 stackCount = it->second->getStackCount();
-		if (stacks == 0 || stacks > stackCount) stacks = stackCount;
+		if (stacks == 0 || stacks > stackCount) {
+			stacks = stackCount;
+		}
 		m_itemCounter[it->second->getEntry().id()] -= stacks;
 
 		if (stackCount == stacks)
@@ -517,7 +530,7 @@ namespace wowpp
 		}
 
 		if (srcItem->getTypeId() == object_type::Container &&
-			!isBagPackSlot(slotB))
+		        !isBagPackSlot(slotB))
 		{
 			if (!std::dynamic_pointer_cast<GameBag>(srcItem)->isEmpty())
 			{
@@ -532,7 +545,7 @@ namespace wowpp
 			m_owner.setUInt64Value(character_fields::InvSlotHead + (slotA & 0xFF) * 2, (dstItem ? dstItem->getGuid() : 0));
 
 			if (dstItem &&
-				dstItem->getUInt64Value(item_fields::Contained) != m_owner.getGuid())
+			        dstItem->getUInt64Value(item_fields::Contained) != m_owner.getGuid())
 			{
 				dstItem->setUInt64Value(item_fields::Contained, m_owner.getGuid());
 				itemInstanceUpdated(dstItem, slotA);
@@ -551,7 +564,7 @@ namespace wowpp
 			itemInstanceUpdated(bag, getAbsoluteSlot(player_inventory_slots::Bag_0, slotA >> 8));
 
 			if (dstItem &&
-				dstItem->getUInt64Value(item_fields::Contained) != bag->getGuid())
+			        dstItem->getUInt64Value(item_fields::Contained) != bag->getGuid())
 			{
 				dstItem->setUInt64Value(item_fields::Contained, bag->getGuid());
 				itemInstanceUpdated(dstItem, slotA);
@@ -568,7 +581,7 @@ namespace wowpp
 				itemInstanceUpdated(srcItem, slotB);
 			}
 		}
-		else if(isBagSlot(slotB))
+		else if (isBagSlot(slotB))
 		{
 			auto bag = getBagAtSlot(slotB);
 			if (!bag)
@@ -592,15 +605,15 @@ namespace wowpp
 		const bool isBagBackB = isBagPackSlot(slotB);
 		if (isBagPackA && !isBagBackB)
 		{
-			if (!dstItem && 
-				srcItem->getTypeId() == object_type::Container)
+			if (!dstItem &&
+			        srcItem->getTypeId() == object_type::Container)
 			{
 				m_freeSlots -= srcItem->getUInt32Value(bag_fields::NumSlots);
 			}
 			else if (
-				dstItem && 
-				dstItem->getTypeId() == object_type::Container &&
-				srcItem->getTypeId() == object_type::Container)
+			    dstItem &&
+			    dstItem->getTypeId() == object_type::Container &&
+			    srcItem->getTypeId() == object_type::Container)
 			{
 				m_freeSlots -= srcItem->getUInt32Value(bag_fields::NumSlots);
 				m_freeSlots += dstItem->getUInt32Value(bag_fields::NumSlots);
@@ -609,14 +622,14 @@ namespace wowpp
 		else if (isBagBackB && !isBagPackA)
 		{
 			if (!dstItem &&
-				srcItem->getTypeId() == object_type::Container)
+			        srcItem->getTypeId() == object_type::Container)
 			{
 				m_freeSlots += srcItem->getUInt32Value(bag_fields::NumSlots);
 			}
 			else if (
-				dstItem &&
-				dstItem->getTypeId() == object_type::Container &&
-				srcItem->getTypeId() == object_type::Container)
+			    dstItem &&
+			    dstItem->getTypeId() == object_type::Container &&
+			    srcItem->getTypeId() == object_type::Container)
 			{
 				m_freeSlots -= dstItem->getUInt32Value(bag_fields::NumSlots);
 				m_freeSlots += srcItem->getUInt32Value(bag_fields::NumSlots);
@@ -631,14 +644,14 @@ namespace wowpp
 
 			// No item in slot B, and slot A was an inventory slot, so this gives us another free slot
 			// if slot B is not an inventory/bag slot, too
-			if ((isInventorySlot(slotA) || isBagSlot(slotA)) && 
-				!(isInventorySlot(slotB) || isBagSlot(slotB)))
+			if ((isInventorySlot(slotA) || isBagSlot(slotA)) &&
+			        !(isInventorySlot(slotB) || isBagSlot(slotB)))
 			{
 				m_freeSlots++;
 			}
 			// No item in slot A, and slot B is an inventory slot, so this will use another free slot
 			else if ((isInventorySlot(slotB) || isBagSlot(slotB)) &&
-				!(isInventorySlot(slotA) || isBagSlot(slotA)))
+			         !(isInventorySlot(slotA) || isBagSlot(slotA)))
 			{
 				assert(m_freeSlots >= 1);
 				m_freeSlots--;
@@ -651,7 +664,9 @@ namespace wowpp
 			m_owner.setUInt32Value(character_fields::VisibleItem1_0 + ((slotA & 0xFF) * 16), (dstItem ? dstItem->getEntry().id() : 0));
 			m_owner.setUInt64Value(character_fields::VisibleItem1_CREATOR + ((slotA & 0xFF) * 16), (dstItem ? dstItem->getUInt64Value(item_fields::Creator) : 0));
 			m_owner.applyItemStats(*srcItem, false);
-			if (dstItem) m_owner.applyItemStats(*dstItem, true);
+			if (dstItem) {
+				m_owner.applyItemStats(*dstItem, true);
+			}
 		}
 		if (isEquipmentSlot(slotB))
 		{
@@ -682,36 +697,36 @@ namespace wowpp
 		{
 			switch (subclass)
 			{
-				case game::item_subclass_weapon::Axe:
-					return game::weapon_prof::OneHandAxe;
-				case game::item_subclass_weapon::Axe2:
-					return game::weapon_prof::TwoHandAxe;
-				case game::item_subclass_weapon::Bow:
-					return game::weapon_prof::Bow;
-				case game::item_subclass_weapon::CrossBow:
-					return game::weapon_prof::Crossbow;
-				case game::item_subclass_weapon::Dagger:
-					return game::weapon_prof::Dagger;
-				case game::item_subclass_weapon::Fist:
-					return game::weapon_prof::Fist;
-				case game::item_subclass_weapon::Gun:
-					return game::weapon_prof::Gun;
-				case game::item_subclass_weapon::Mace:
-					return game::weapon_prof::OneHandMace;
-				case game::item_subclass_weapon::Mace2:
-					return game::weapon_prof::TwoHandMace;
-				case game::item_subclass_weapon::Polearm:
-					return game::weapon_prof::Polearm;
-				case game::item_subclass_weapon::Staff:
-					return game::weapon_prof::Staff;
-				case game::item_subclass_weapon::Sword:
-					return game::weapon_prof::OneHandSword;
-				case game::item_subclass_weapon::Sword2:
-					return game::weapon_prof::TwoHandSword;
-				case game::item_subclass_weapon::Thrown:
-					return game::weapon_prof::Throw;
-				case game::item_subclass_weapon::Wand:
-					return game::weapon_prof::Wand;
+			case game::item_subclass_weapon::Axe:
+				return game::weapon_prof::OneHandAxe;
+			case game::item_subclass_weapon::Axe2:
+				return game::weapon_prof::TwoHandAxe;
+			case game::item_subclass_weapon::Bow:
+				return game::weapon_prof::Bow;
+			case game::item_subclass_weapon::CrossBow:
+				return game::weapon_prof::Crossbow;
+			case game::item_subclass_weapon::Dagger:
+				return game::weapon_prof::Dagger;
+			case game::item_subclass_weapon::Fist:
+				return game::weapon_prof::Fist;
+			case game::item_subclass_weapon::Gun:
+				return game::weapon_prof::Gun;
+			case game::item_subclass_weapon::Mace:
+				return game::weapon_prof::OneHandMace;
+			case game::item_subclass_weapon::Mace2:
+				return game::weapon_prof::TwoHandMace;
+			case game::item_subclass_weapon::Polearm:
+				return game::weapon_prof::Polearm;
+			case game::item_subclass_weapon::Staff:
+				return game::weapon_prof::Staff;
+			case game::item_subclass_weapon::Sword:
+				return game::weapon_prof::OneHandSword;
+			case game::item_subclass_weapon::Sword2:
+				return game::weapon_prof::TwoHandSword;
+			case game::item_subclass_weapon::Thrown:
+				return game::weapon_prof::Throw;
+			case game::item_subclass_weapon::Wand:
+				return game::weapon_prof::Wand;
 			}
 
 			return game::weapon_prof::None;
@@ -720,30 +735,31 @@ namespace wowpp
 		{
 			switch (subclass)
 			{
-				case game::item_subclass_armor::Misc:
-					return game::armor_prof::Common;
-				case game::item_subclass_armor::Buckler:
-				case game::item_subclass_armor::Shield:
-					return game::armor_prof::Shield;
-				case game::item_subclass_armor::Cloth:
-					return game::armor_prof::Cloth;
-				case game::item_subclass_armor::Leather:
-					return game::armor_prof::Leather;
-				case game::item_subclass_armor::Mail:
-					return game::armor_prof::Mail;
-				case game::item_subclass_armor::Plate:
-					return game::armor_prof::Plate;
+			case game::item_subclass_armor::Misc:
+				return game::armor_prof::Common;
+			case game::item_subclass_armor::Buckler:
+			case game::item_subclass_armor::Shield:
+				return game::armor_prof::Shield;
+			case game::item_subclass_armor::Cloth:
+				return game::armor_prof::Cloth;
+			case game::item_subclass_armor::Leather:
+				return game::armor_prof::Leather;
+			case game::item_subclass_armor::Mail:
+				return game::armor_prof::Mail;
+			case game::item_subclass_armor::Plate:
+				return game::armor_prof::Plate;
 			}
 
 			return game::armor_prof::None;
 		}
 	}
-	game::InventoryChangeFailure Inventory::isValidSlot(UInt16 slot, const proto::ItemEntry & entry) const
+	game::InventoryChangeFailure Inventory::isValidSlot(UInt16 slot, const proto::ItemEntry &entry) const
 	{
 		// Split the absolute slot
 		UInt8 bag = 0, subslot = 0;
-		if (!getRelativeSlots(slot, bag, subslot))
+		if (!getRelativeSlots(slot, bag, subslot)) {
 			return game::inventory_change_failure::InternalBagError;
+		}
 
 		// Check if it is a special bag....
 		if (isEquipmentSlot(slot))
@@ -768,13 +784,13 @@ namespace wowpp
 			}
 
 			if (entry.requiredlevel() > 0 &&
-				entry.requiredlevel() > m_owner.getLevel())
+			        entry.requiredlevel() > m_owner.getLevel())
 			{
 				return game::inventory_change_failure::CantEquipLevel;
 			}
 
 			if (entry.requiredskill() != 0 &&
-				!m_owner.hasSkill(entry.requiredskill()))
+			        !m_owner.hasSkill(entry.requiredskill()))
 			{
 				return game::inventory_change_failure::CantEquipSkill;
 			}
@@ -783,111 +799,125 @@ namespace wowpp
 			auto srcInvType = entry.inventorytype();
 			switch (subslot)
 			{
-				case player_equipment_slots::Head:
-					if (srcInvType != game::inventory_type::Head)
-						return game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Body:
-					if (srcInvType != game::inventory_type::Body)
-						return game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Chest:
-					if (srcInvType != game::inventory_type::Chest &&
-						srcInvType != game::inventory_type::Robe)
-						return game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Feet:
-					if (srcInvType != game::inventory_type::Feet)
-						return game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Finger1:
-				case player_equipment_slots::Finger2:
-					if (srcInvType != game::inventory_type::Finger)
-						return game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Trinket1:
-				case player_equipment_slots::Trinket2:
-					if (srcInvType != game::inventory_type::Trinket)
-						return game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Hands:
-					if (srcInvType != game::inventory_type::Hands)
-						return game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Legs:
-					if (srcInvType != game::inventory_type::Legs)
-						return game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Mainhand:
-					if (srcInvType != game::inventory_type::MainHandWeapon &&
-						srcInvType != game::inventory_type::TwoHandedWeapon &&
-						srcInvType != game::inventory_type::Weapon)
-					{
-						return game::inventory_change_failure::ItemDoesNotGoToSlot;
-					}
-					else if (srcInvType == game::inventory_type::TwoHandedWeapon)
-					{
-						auto offhand = getItemAtSlot(getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
-						if (offhand)
-						{
-							// We need to be able to store the offhand weapon in the inventory
-							auto result = canStoreItems(offhand->getEntry());
-							if (result != game::inventory_change_failure::Okay)
-							{
-								return result;
-							}
-						}
-					}
-					break;
-				case player_equipment_slots::Offhand:
-					if (srcInvType != game::inventory_type::OffHandWeapon &&
-						srcInvType != game::inventory_type::Shield &&
-						srcInvType != game::inventory_type::Weapon)
-					{
-						return game::inventory_change_failure::ItemDoesNotGoToSlot;
-					}
-					else
-					{
-						if (srcInvType != game::inventory_type::Shield &&
-							!m_owner.canDualWield())
-						{
-							return game::inventory_change_failure::CantDualWield;
-						}
-
-						auto item = getItemAtSlot(getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
-						if (item &&
-							item->getEntry().inventorytype() == game::inventory_type::TwoHandedWeapon)
-						{
-							return game::inventory_change_failure::CantEquipWithTwoHanded;
-						}
-					}
-					break;
-				case player_equipment_slots::Ranged:
-					if (srcInvType != game::inventory_type::Ranged)
-						return game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Shoulders:
-					if (srcInvType != game::inventory_type::Shoulders)
-						return game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Tabard:
-					if (srcInvType != game::inventory_type::Tabard)
-						return game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Waist:
-					if (srcInvType != game::inventory_type::Waist)
-						return game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Wrists:
-					if (srcInvType != game::inventory_type::Wrists)
-						return game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Back:
-					if (srcInvType != game::inventory_type::Cloak)
-						return game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				default:
+			case player_equipment_slots::Head:
+				if (srcInvType != game::inventory_type::Head) {
 					return game::inventory_change_failure::ItemDoesNotGoToSlot;
+				}
+				break;
+			case player_equipment_slots::Body:
+				if (srcInvType != game::inventory_type::Body) {
+					return game::inventory_change_failure::ItemDoesNotGoToSlot;
+				}
+				break;
+			case player_equipment_slots::Chest:
+				if (srcInvType != game::inventory_type::Chest &&
+				        srcInvType != game::inventory_type::Robe) {
+					return game::inventory_change_failure::ItemDoesNotGoToSlot;
+				}
+				break;
+			case player_equipment_slots::Feet:
+				if (srcInvType != game::inventory_type::Feet) {
+					return game::inventory_change_failure::ItemDoesNotGoToSlot;
+				}
+				break;
+			case player_equipment_slots::Finger1:
+			case player_equipment_slots::Finger2:
+				if (srcInvType != game::inventory_type::Finger) {
+					return game::inventory_change_failure::ItemDoesNotGoToSlot;
+				}
+				break;
+			case player_equipment_slots::Trinket1:
+			case player_equipment_slots::Trinket2:
+				if (srcInvType != game::inventory_type::Trinket) {
+					return game::inventory_change_failure::ItemDoesNotGoToSlot;
+				}
+				break;
+			case player_equipment_slots::Hands:
+				if (srcInvType != game::inventory_type::Hands) {
+					return game::inventory_change_failure::ItemDoesNotGoToSlot;
+				}
+				break;
+			case player_equipment_slots::Legs:
+				if (srcInvType != game::inventory_type::Legs) {
+					return game::inventory_change_failure::ItemDoesNotGoToSlot;
+				}
+				break;
+			case player_equipment_slots::Mainhand:
+				if (srcInvType != game::inventory_type::MainHandWeapon &&
+				        srcInvType != game::inventory_type::TwoHandedWeapon &&
+				        srcInvType != game::inventory_type::Weapon)
+				{
+					return game::inventory_change_failure::ItemDoesNotGoToSlot;
+				}
+				else if (srcInvType == game::inventory_type::TwoHandedWeapon)
+				{
+					auto offhand = getItemAtSlot(getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
+					if (offhand)
+					{
+						// We need to be able to store the offhand weapon in the inventory
+						auto result = canStoreItems(offhand->getEntry());
+						if (result != game::inventory_change_failure::Okay)
+						{
+							return result;
+						}
+					}
+				}
+				break;
+			case player_equipment_slots::Offhand:
+				if (srcInvType != game::inventory_type::OffHandWeapon &&
+				        srcInvType != game::inventory_type::Shield &&
+				        srcInvType != game::inventory_type::Weapon)
+				{
+					return game::inventory_change_failure::ItemDoesNotGoToSlot;
+				}
+				else
+				{
+					if (srcInvType != game::inventory_type::Shield &&
+					        !m_owner.canDualWield())
+					{
+						return game::inventory_change_failure::CantDualWield;
+					}
+
+					auto item = getItemAtSlot(getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
+					if (item &&
+					        item->getEntry().inventorytype() == game::inventory_type::TwoHandedWeapon)
+					{
+						return game::inventory_change_failure::CantEquipWithTwoHanded;
+					}
+				}
+				break;
+			case player_equipment_slots::Ranged:
+				if (srcInvType != game::inventory_type::Ranged) {
+					return game::inventory_change_failure::ItemDoesNotGoToSlot;
+				}
+				break;
+			case player_equipment_slots::Shoulders:
+				if (srcInvType != game::inventory_type::Shoulders) {
+					return game::inventory_change_failure::ItemDoesNotGoToSlot;
+				}
+				break;
+			case player_equipment_slots::Tabard:
+				if (srcInvType != game::inventory_type::Tabard) {
+					return game::inventory_change_failure::ItemDoesNotGoToSlot;
+				}
+				break;
+			case player_equipment_slots::Waist:
+				if (srcInvType != game::inventory_type::Waist) {
+					return game::inventory_change_failure::ItemDoesNotGoToSlot;
+				}
+				break;
+			case player_equipment_slots::Wrists:
+				if (srcInvType != game::inventory_type::Wrists) {
+					return game::inventory_change_failure::ItemDoesNotGoToSlot;
+				}
+				break;
+			case player_equipment_slots::Back:
+				if (srcInvType != game::inventory_type::Cloak) {
+					return game::inventory_change_failure::ItemDoesNotGoToSlot;
+				}
+				break;
+			default:
+				return game::inventory_change_failure::ItemDoesNotGoToSlot;
 			}
 
 			return game::inventory_change_failure::Okay;
@@ -933,15 +963,17 @@ namespace wowpp
 
 		return game::inventory_change_failure::InternalBagError;
 	}
-	game::InventoryChangeFailure Inventory::canStoreItems(const proto::ItemEntry & entry, UInt16 amount) const
+	game::InventoryChangeFailure Inventory::canStoreItems(const proto::ItemEntry &entry, UInt16 amount) const
 	{
 		// Incorrect value used, so give at least one item
-		if (amount == 0) amount = 1;
+		if (amount == 0) {
+			amount = 1;
+		}
 
 		// Limit the total amount of items
 		const UInt16 itemCount = getItemCount(entry.id());
 		if (entry.maxcount() > 0 &&
-			itemCount + amount > entry.maxcount())
+		        itemCount + amount > entry.maxcount())
 		{
 			return game::inventory_change_failure::CantCarryMoreOfThis;
 		}
@@ -949,7 +981,7 @@ namespace wowpp
 		// Quick check if there are enough free slots (only works if we don't have an item of this type yet)
 		const UInt16 requiredSlots = (amount - 1) / entry.maxstack() + 1;
 		if ((itemCount == 0 || entry.maxstack() <= 1) &&
-			requiredSlots > m_freeSlots)
+		        requiredSlots > m_freeSlots)
 		{
 			return game::inventory_change_failure::InventoryFull;
 		}
@@ -963,11 +995,11 @@ namespace wowpp
 		auto it = m_itemCounter.find(itemId);
 		return (it != m_itemCounter.end() ? it->second : 0);
 	}
-	UInt16 Inventory::getAbsoluteSlot(UInt8 bag, UInt8 slot) 
+	UInt16 Inventory::getAbsoluteSlot(UInt8 bag, UInt8 slot)
 	{
 		return (bag << 8) | slot;
 	}
-	bool Inventory::getRelativeSlots(UInt16 absoluteSlot, UInt8 & out_bag, UInt8 & out_slot) 
+	bool Inventory::getRelativeSlots(UInt16 absoluteSlot, UInt8 &out_bag, UInt8 &out_slot)
 	{
 		out_bag = static_cast<UInt8>(absoluteSlot >> 8);
 		out_slot = static_cast<UInt8>(absoluteSlot & 0xFF);
@@ -976,7 +1008,9 @@ namespace wowpp
 	std::shared_ptr<GameItem> Inventory::getItemAtSlot(UInt16 absoluteSlot) const
 	{
 		auto it = m_itemsBySlot.find(absoluteSlot);
-		if (it != m_itemsBySlot.end()) return it->second;
+		if (it != m_itemsBySlot.end()) {
+			return it->second;
+		}
 
 		return std::shared_ptr<GameItem>();
 	}
@@ -996,7 +1030,7 @@ namespace wowpp
 
 		return std::shared_ptr<GameBag>();
 	}
-	bool Inventory::findItemByGUID(UInt64 guid, UInt16 & out_slot) const
+	bool Inventory::findItemByGUID(UInt64 guid, UInt16 &out_slot) const
 	{
 		for (auto &item : m_itemsBySlot)
 		{
@@ -1012,37 +1046,37 @@ namespace wowpp
 	bool Inventory::isEquipmentSlot(UInt16 absoluteSlot)
 	{
 		return (
-			absoluteSlot >> 8 == player_inventory_slots::Bag_0 &&
-			(absoluteSlot & 0xFF) < player_equipment_slots::End
-			);
+		           absoluteSlot >> 8 == player_inventory_slots::Bag_0 &&
+		           (absoluteSlot & 0xFF) < player_equipment_slots::End
+		       );
 	}
 	bool Inventory::isBagPackSlot(UInt16 absoluteSlot)
 	{
 		return (
-			absoluteSlot >> 8 == player_inventory_slots::Bag_0 &&
-			(absoluteSlot & 0xFF) >= player_inventory_slots::Start &&
-			(absoluteSlot & 0xFF) < player_inventory_slots::End
-			);
+		           absoluteSlot >> 8 == player_inventory_slots::Bag_0 &&
+		           (absoluteSlot & 0xFF) >= player_inventory_slots::Start &&
+		           (absoluteSlot & 0xFF) < player_inventory_slots::End
+		       );
 	}
 	bool Inventory::isInventorySlot(UInt16 absoluteSlot)
 	{
 		return (
-			absoluteSlot >> 8 == player_inventory_slots::Bag_0 &&
-			(absoluteSlot & 0xFF) >= player_inventory_pack_slots::Start &&
-			(absoluteSlot & 0xFF) < player_inventory_pack_slots::End
-			);
+		           absoluteSlot >> 8 == player_inventory_slots::Bag_0 &&
+		           (absoluteSlot & 0xFF) >= player_inventory_pack_slots::Start &&
+		           (absoluteSlot & 0xFF) < player_inventory_pack_slots::End
+		       );
 	}
 	bool Inventory::isBagSlot(UInt16 absoluteSlot)
 	{
 		return (
-			absoluteSlot >> 8 >= player_inventory_slots::Start &&
-			absoluteSlot >> 8 < player_inventory_slots::End);
+		           absoluteSlot >> 8 >= player_inventory_slots::Start &&
+		           absoluteSlot >> 8 < player_inventory_slots::End);
 	}
-	void Inventory::addRealmData(const ItemData & data)
+	void Inventory::addRealmData(const ItemData &data)
 	{
 		m_realmData.push_back(data);
 	}
-	void Inventory::addSpawnBlocks(std::vector<std::vector<char>>& out_blocks)
+	void Inventory::addSpawnBlocks(std::vector<std::vector<char>> &out_blocks)
 	{
 		// Reconstruct realm data if available
 		if (!m_realmData.empty())
@@ -1068,7 +1102,7 @@ namespace wowpp
 				}
 
 				// Create a new item instance
-				std::shared_ptr<GameItem> item; 
+				std::shared_ptr<GameItem> item;
 				if (entry->itemclass() == game::item_class::Container)
 				{
 					item = std::make_shared<GameBag>(m_owner.getProject(), *entry);
@@ -1116,7 +1150,7 @@ namespace wowpp
 						m_owner.setUInt64Value(character_fields::InvSlotHead + (subslot * 2), item->getGuid());
 
 						// Increase slot count since this is an equipped bag
-						m_freeSlots += reinterpret_cast<GameBag*>(item.get())->getSlotCount();
+						m_freeSlots += reinterpret_cast<GameBag *>(item.get())->getSlotCount();
 
 						// Apply bonding
 						if (entry->bonding() == game::item_binding::BindWhenEquipped)
@@ -1142,8 +1176,9 @@ namespace wowpp
 				}
 
 				// Inventory slot used
-				if (isInventorySlot(data.slot) || isBagSlot(data.slot))
+				if (isInventorySlot(data.slot) || isBagSlot(data.slot)) {
 					m_freeSlots--;
+				}
 			}
 
 			// Clear realm data since we don't need it any more
@@ -1172,14 +1207,14 @@ namespace wowpp
 			io::Writer createItemWriter(createItemSink);
 			{
 				UInt8 updateType = 0x02;						// Item
-				UInt8 updateFlags = 0x08 | 0x10;				// 
+				UInt8 updateFlags = 0x08 | 0x10;				//
 				UInt64 guid = pair.second->getGuid();
 
 				UInt8 objectTypeId = pair.second->getTypeId();	// Item
 
 				// Header with object guid and type
 				createItemWriter
-					<< io::write<NetUInt8>(updateType);
+				        << io::write<NetUInt8>(updateType);
 				UInt64 guidCopy = guid;
 				UInt8 packGUID[8 + 1];
 				packGUID[0] = 0;
@@ -1195,19 +1230,19 @@ namespace wowpp
 
 					guidCopy >>= 8;
 				}
-				createItemWriter.sink().write((const char*)&packGUID[0], size);
+				createItemWriter.sink().write((const char *)&packGUID[0], size);
 				createItemWriter
-					<< io::write<NetUInt8>(objectTypeId)
-					<< io::write<NetUInt8>(updateFlags);
+				        << io::write<NetUInt8>(objectTypeId)
+				        << io::write<NetUInt8>(updateFlags);
 				if (updateFlags & 0x08)
 				{
 					createItemWriter
-						<< io::write<NetUInt32>(guidLowerPart(guid));
+					        << io::write<NetUInt32>(guidLowerPart(guid));
 				}
 				if (updateFlags & 0x10)
 				{
 					createItemWriter
-						<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
+					        << io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
 				}
 
 				pair.second->writeValueUpdateBlock(createItemWriter, m_owner, true);
@@ -1261,13 +1296,13 @@ namespace wowpp
 		}
 	}
 
-	io::Writer &operator << (io::Writer &w, Inventory const& object)
+	io::Writer &operator << (io::Writer &w, Inventory const &object)
 	{
 		if (object.m_realmData.empty())
 		{
 			// Inventory has actual item instances, so we serialize this object for realm usage
 			w
-				<< io::write<NetUInt16>(object.m_itemsBySlot.size());
+			        << io::write<NetUInt16>(object.m_itemsBySlot.size());
 			for (const auto &pair : object.m_itemsBySlot)
 			{
 				ItemData data;
@@ -1280,24 +1315,24 @@ namespace wowpp
 				data.randomPropertyIndex = 0;
 				data.randomSuffixIndex = 0;
 				w
-					<< data;
+				        << data;
 			}
 		}
 		else
 		{
 			// Inventory has realm data left, and no item instances
 			w
-				<< io::write<NetUInt16>(object.m_realmData.size());
+			        << io::write<NetUInt16>(object.m_realmData.size());
 			for (const auto &data : object.m_realmData)
 			{
 				w
-					<< data;
+				        << data;
 			}
 		}
 
 		return w;
 	}
-	io::Reader &operator >> (io::Reader &r, Inventory& object)
+	io::Reader &operator >> (io::Reader &r, Inventory &object)
 	{
 		object.m_itemsBySlot.clear();
 		object.m_freeSlots = player_inventory_pack_slots::End - player_inventory_pack_slots::Start;

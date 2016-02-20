@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "faction_entry.h"
 #include "templates/basic_template_load_context.h"
@@ -40,7 +40,7 @@ namespace wowpp
 
 		wrapper.table.tryGetInteger("rep_list_id", repListId);
 		wrapper.table.tryGetString("name", name);
-		
+
 		// Read base reputation values
 		if (const sff::read::tree::Array<DataFileIterator> *const baseRepArray = wrapper.table.getArray("base_rep"))
 		{
@@ -69,8 +69,12 @@ namespace wowpp
 	{
 		Super::saveBase(context);
 
-		if (repListId != -1) context.table.addKey("rep_list_id", repListId);
-		if (!name.empty()) context.table.addKey("name", name);
+		if (repListId != -1) {
+			context.table.addKey("rep_list_id", repListId);
+		}
+		if (!name.empty()) {
+			context.table.addKey("name", name);
+		}
 
 		// Write base reputation values
 		sff::write::Array<char> baseRepArray(context.table, "base_rep", sff::write::Comma);

@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "world_instance.h"
 #include "world_instance_manager.h"
@@ -68,7 +68,7 @@ namespace wowpp
 				// Header with object guid and type
 				UInt64 guid = object.getGuid();
 				writer
-					<< io::write<NetUInt8>(updateType);
+				        << io::write<NetUInt8>(updateType);
 
 				UInt64 guidCopy = guid;
 				UInt8 packGUID[8 + 1];
@@ -85,7 +85,7 @@ namespace wowpp
 
 					guidCopy >>= 8;
 				}
-				writer.sink().write((const char*)&packGUID[0], size);
+				writer.sink().write((const char *)&packGUID[0], size);
 
 				// Write values update
 				object.writeValueUpdateBlock(writer, receiver, false);
@@ -99,17 +99,17 @@ namespace wowpp
 	std::map<UInt32, Map> WorldInstance::MapData;
 
 	WorldInstance::WorldInstance(
-		WorldInstanceManager &manager, 
-		Universe &universe,
-		game::ITriggerHandler &triggerHandler,
-		proto::Project &project,
-		const proto::MapEntry &mapEntry,
-		UInt32 id, 
-		std::unique_ptr<UnitFinder> unitFinder,
-		std::unique_ptr<VisibilityGrid> visibilityGrid,
-		IdGenerator<UInt64> &objectIdGenerator,
-		const String &dataPath
-		)
+	    WorldInstanceManager &manager,
+	    Universe &universe,
+	    game::ITriggerHandler &triggerHandler,
+	    proto::Project &project,
+	    const proto::MapEntry &mapEntry,
+	    UInt32 id,
+	    std::unique_ptr<UnitFinder> unitFinder,
+	    std::unique_ptr<VisibilityGrid> visibilityGrid,
+	    IdGenerator<UInt64> &objectIdGenerator,
+	    const String &dataPath
+	)
 		: m_manager(manager)
 		, m_universe(universe)
 		, m_triggerHandler(triggerHandler)
@@ -129,7 +129,9 @@ namespace wowpp
 			// Load map
 			MapData.insert(std::make_pair(m_mapEntry.id(), Map(m_mapEntry, dataPath)));
 			mapIt = MapData.find(m_mapEntry.id());
-			if (mapIt != MapData.end()) m_map = &mapIt->second;
+			if (mapIt != MapData.end()) {
+				m_map = &mapIt->second;
+			}
 		}
 		else
 		{
@@ -146,16 +148,16 @@ namespace wowpp
 			assert(objectEntry);
 
 			std::unique_ptr<WorldObjectSpawner> spawner(new WorldObjectSpawner(
-				*this,
-				*objectEntry,
-				spawn.maxcount(),
-				spawn.respawndelay(),
-				math::Vector3(spawn.positionx(), spawn.positiony(), spawn.positionz()),
-				spawn.orientation(),
-				{ spawn.rotationw(), spawn.rotationx(), spawn.rotationy(), spawn.rotationz() },
-				spawn.radius(),
-				spawn.animprogress(),
-				spawn.state()));
+			            *this,
+			            *objectEntry,
+			            spawn.maxcount(),
+			            spawn.respawndelay(),
+			            math::Vector3(spawn.positionx(), spawn.positiony(), spawn.positionz()),
+			            spawn.orientation(),
+			{ spawn.rotationw(), spawn.rotationx(), spawn.rotationy(), spawn.rotationz() },
+			spawn.radius(),
+			spawn.animprogress(),
+			spawn.state()));
 			m_objectSpawners.push_back(std::move(spawner));
 			if (!spawn.name().empty())
 			{
@@ -173,16 +175,16 @@ namespace wowpp
 			assert(unitEntry);
 
 			std::unique_ptr<CreatureSpawner> spawner(new CreatureSpawner(
-				*this,
-				*unitEntry,
-				spawn.maxcount(),
-				spawn.respawndelay(),
-				math::Vector3(spawn.positionx(), spawn.positiony(), spawn.positionz()),
-				spawn.rotation(),
-				spawn.defaultemote(),
-				spawn.radius(),
-				spawn.isactive(),
-				spawn.respawn()));
+			            *this,
+			            *unitEntry,
+			            spawn.maxcount(),
+			            spawn.respawndelay(),
+			            math::Vector3(spawn.positionx(), spawn.positiony(), spawn.positionz()),
+			            spawn.rotation(),
+			            spawn.defaultemote(),
+			            spawn.radius(),
+			            spawn.isactive(),
+			            spawn.respawn()));
 			m_creatureSpawners.push_back(std::move(spawner));
 
 			if (!spawn.name().empty())
@@ -195,16 +197,16 @@ namespace wowpp
 	}
 
 	std::shared_ptr<GameCreature> WorldInstance::spawnCreature(
-		const proto::UnitEntry &entry,
-		math::Vector3 position,
-		float o,
-		float randomWalkRadius)
+	    const proto::UnitEntry &entry,
+	    math::Vector3 position,
+	    float o,
+	    float randomWalkRadius)
 	{
 		// Create the unit
 		auto spawned = std::make_shared<GameCreature>(
-			m_project,
-			m_universe.getTimers(),
-			entry);
+		                   m_project,
+		                   m_universe.getTimers(),
+		                   entry);
 		spawned->initialize();
 		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id(), guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
 		spawned->setMapId(m_mapEntry.id());
@@ -217,9 +219,9 @@ namespace wowpp
 	{
 		// Create the unit
 		auto spawned = std::make_shared<GameCreature>(
-			m_project,
-			m_universe.getTimers(),
-			entry);
+		                   m_project,
+		                   m_universe.getTimers(),
+		                   entry);
 		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id(), guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
 		spawned->initialize();
 		spawned->setMapId(m_mapEntry.id());
@@ -227,7 +229,7 @@ namespace wowpp
 
 		m_creatureSummons.insert(std::make_pair(spawned->getGuid(), spawned));
 		spawned->despawned.connect(
-			[this](GameObject &obj)
+		    [this](GameObject & obj)
 		{
 			auto it = m_creatureSummons.find(obj.getGuid());
 			if (it != m_creatureSummons.end())
@@ -243,9 +245,9 @@ namespace wowpp
 	{
 		// Create the unit
 		auto spawned = std::make_shared<WorldObject>(
-			m_project,
-			m_universe.getTimers(),
-			entry);
+		                   m_project,
+		                   m_universe.getTimers(),
+		                   entry);
 		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id(), guid_type::GameObject));	// RealmID (TODO: these spawns don't need to have a specific realm id)
 		spawned->initialize();
 		spawned->setMapId(m_mapEntry.id());
@@ -274,17 +276,17 @@ namespace wowpp
 		}
 	}
 
-	void WorldInstance::addGameObject(GameObject& added)
+	void WorldInstance::addGameObject(GameObject &added)
 	{
 		auto guid = added.getGuid();
 
 		// Add this game object to the list of objects
 		m_objectsById.insert(
-			std::make_pair(guid, &added));
+		    std::make_pair(guid, &added));
 
 		// Get object location
 		math::Vector3 location(added.getLocation());
-		
+
 		// Transform into grid location
 		TileIndex2D gridIndex;
 		if (!m_visibilityGrid->getTilePosition(location, gridIndex[0], gridIndex[1]))
@@ -303,15 +305,16 @@ namespace wowpp
 
 		// Spawn ourself for new watchers
 		forEachTileInSight(
-			*m_visibilityGrid,
-			tile.getPosition(),
-			[&added](VisibilityTile &tile)
+		    *m_visibilityGrid,
+		    tile.getPosition(),
+		    [&added](VisibilityTile & tile)
 		{
-			for (auto * subscriber : tile.getWatchers().getElements())
+			for (auto *subscriber : tile.getWatchers().getElements())
 			{
 				auto *character = subscriber->getControlledObject();
-				if (!character)
+				if (!character) {
 					continue;
+				}
 
 				// Create update packet
 				std::vector<std::vector<char>> blocks;
@@ -330,15 +333,15 @@ namespace wowpp
 		// Enable trigger execution
 		if (added.isCreature())
 		{
-			GameUnit *unitObj = reinterpret_cast<GameUnit*>(&added);
-			unitObj->unitTrigger.connect([this](const proto::TriggerEntry &trigger, GameUnit &owner) {
+			GameUnit *unitObj = reinterpret_cast<GameUnit *>(&added);
+			unitObj->unitTrigger.connect([this](const proto::TriggerEntry & trigger, GameUnit & owner) {
 				m_triggerHandler.executeTrigger(trigger, game::TriggerContext(&owner), 0);
 			});
 		}
 		else if (added.isWorldObject())
 		{
-			WorldObject *worldObj = reinterpret_cast<WorldObject*>(&added);
-			worldObj->objectTrigger.connect([this](const proto::TriggerEntry &trigger, WorldObject &owner) {
+			WorldObject *worldObj = reinterpret_cast<WorldObject *>(&added);
+			worldObj->objectTrigger.connect([this](const proto::TriggerEntry & trigger, WorldObject & owner) {
 				m_triggerHandler.executeTrigger(trigger, game::TriggerContext(&owner), 0);
 			});
 		}
@@ -346,18 +349,20 @@ namespace wowpp
 		// Notify about being spawned
 		added.clearUpdateMask();
 		added.spawned();
-		
+
 		// Add to unit finder if it is a unit
 		if (added.isCreature() ||
-			added.isGameCharacter())
+		        added.isGameCharacter())
 		{
-			GameUnit *unit = dynamic_cast<GameUnit*>(&added);
-			if (unit) m_unitFinder->addUnit(*unit);
+			GameUnit *unit = dynamic_cast<GameUnit *>(&added);
+			if (unit) {
+				m_unitFinder->addUnit(*unit);
+			}
 		}
 
 		// Watch for object location changes
 		added.moved.connect(
-			boost::bind(&WorldInstance::onObjectMoved, this, _1, _2, _3));
+		    boost::bind(&WorldInstance::onObjectMoved, this, _1, _2, _3));
 	}
 
 	void WorldInstance::removeGameObject(GameObject &remove)
@@ -366,10 +371,12 @@ namespace wowpp
 
 		// Remove from unit finder if it is a unit
 		if (remove.getTypeId() == object_type::Unit ||
-			remove.isGameCharacter())
+		        remove.isGameCharacter())
 		{
-			GameUnit *unit = dynamic_cast<GameUnit*>(&remove);
-			if (unit) m_unitFinder->removeUnit(*unit);
+			GameUnit *unit = dynamic_cast<GameUnit *>(&remove);
+			if (unit) {
+				m_unitFinder->removeUnit(*unit);
+			}
 		}
 
 		// Transform into grid location
@@ -394,11 +401,11 @@ namespace wowpp
 
 		// Despawn for watchers
 		forEachTileInSight(
-			*m_visibilityGrid,
-			tile.getPosition(),
-			[&packet, &buffer](VisibilityTile &tile)
+		    *m_visibilityGrid,
+		    tile.getPosition(),
+		    [&packet, &buffer](VisibilityTile & tile)
 		{
-			for (auto * subscriber : tile.getWatchers().getElements())
+			for (auto *subscriber : tile.getWatchers().getElements())
 			{
 				subscriber->sendPacket(packet, buffer);
 			}
@@ -411,7 +418,7 @@ namespace wowpp
 		}
 	}
 
-	GameObject * WorldInstance::findObjectByGUID(UInt64 guid)
+	GameObject *WorldInstance::findObjectByGUID(UInt64 guid)
 	{
 		auto it = m_objectsById.find(guid);
 		if (it == m_objectsById.end())
@@ -451,20 +458,21 @@ namespace wowpp
 		}
 	}
 
-	void WorldInstance::updateObject(GameObject & object)
+	void WorldInstance::updateObject(GameObject &object)
 	{
 		if (object.wasUpdated())
 		{
 			// Send updates to all subscribers in sight
 			TileIndex2D center = getObjectTile(object, *m_visibilityGrid);
 			forEachSubscriberInSight(
-				*m_visibilityGrid,
-				center,
-				[&object](ITileSubscriber &subscriber)
+			    *m_visibilityGrid,
+			    center,
+			    [&object](ITileSubscriber & subscriber)
 			{
 				auto *character = subscriber.getControlledObject();
-				if (!character)
+				if (!character) {
 					return;
+				}
 
 				// Create update blocks
 				std::vector<std::vector<char>> blocks;
@@ -491,7 +499,7 @@ namespace wowpp
 		}
 	}
 
-	WorldObjectSpawner * WorldInstance::findObjectSpawner(const String &name)
+	WorldObjectSpawner *WorldInstance::findObjectSpawner(const String &name)
 	{
 		auto it = m_objectSpawnsByName.find(name);
 		if (it == m_objectSpawnsByName.end())
@@ -502,7 +510,7 @@ namespace wowpp
 		return it->second;
 	}
 
-	CreatureSpawner * WorldInstance::findCreatureSpawner(const String &name)
+	CreatureSpawner *WorldInstance::findCreatureSpawner(const String &name)
 	{
 		auto it = m_creatureSpawnsByName.find(name);
 		if (it == m_creatureSpawnsByName.end())

@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "common/endian_convert.h"
 #include "common/clock.h"
@@ -50,7 +50,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::TriggerCinematic);
 				out_packet
-					<< io::write<NetUInt32>(cinematicId);
+				        << io::write<NetUInt32>(cinematicId);
 				out_packet.finish();
 			}
 
@@ -58,7 +58,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::AuthChallenge);
 				out_packet
-					<< io::write<NetUInt32>(seed);
+				        << io::write<NetUInt32>(seed);
 				out_packet.finish();
 			}
 
@@ -66,7 +66,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::Pong);
 				out_packet
-					<< io::write<NetUInt32>(ping);
+				        << io::write<NetUInt32>(ping);
 				out_packet.finish();
 			}
 
@@ -98,27 +98,27 @@ namespace wowpp
 				{
 					UInt8 unk1 = 1;
 					out_packet
-						<< io::write<NetUInt8>(0x02)
-						<< io::write<NetUInt8>(unk1);
+					        << io::write<NetUInt8>(0x02)
+					        << io::write<NetUInt8>(unk1);
 
 					if (unk1)
 					{
 						UInt8 unk2 = (addon.crc != 0x1c776d01);		// 0x1c776d01 = crc used by blizzards standard addons
 						out_packet
-							<< io::write<NetUInt8>(unk2);
+						        << io::write<NetUInt8>(unk2);
 						if (unk2)
 						{
 							out_packet
-								<< io::write_range(tdata.begin(), tdata.end());
+							        << io::write_range(tdata.begin(), tdata.end());
 						}
 
 						out_packet
-							<< io::write<NetUInt32>(0x00);
+						        << io::write<NetUInt32>(0x00);
 					}
 
 					UInt8 unk3 = 0;
 					out_packet
-						<< io::write<NetUInt8>(unk3);
+					        << io::write<NetUInt8>(unk3);
 				}
 				out_packet.finish();
 			}
@@ -127,15 +127,15 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::AuthResponse);
 				out_packet
-					<< io::write<NetUInt8>(code);
+				        << io::write<NetUInt8>(code);
 
 				if (code == response_code::AuthOk)
 				{
 					out_packet
-						<< io::write<NetUInt32>(0x00)		// BillingTimeRemaining in seconds
-						<< io::write<NetUInt8>(0x00)		// BillingPlanFlags
-						<< io::write<NetUInt32>(0x00)		// BillingTimeRested in seconds
-						<< io::write<NetUInt8>(expansion);	// 0 = Classic, 1 = TBC
+					        << io::write<NetUInt32>(0x00)		// BillingTimeRemaining in seconds
+					        << io::write<NetUInt8>(0x00)		// BillingPlanFlags
+					        << io::write<NetUInt32>(0x00)		// BillingTimeRested in seconds
+					        << io::write<NetUInt8>(expansion);	// 0 = Classic, 1 = TBC
 				}
 
 				out_packet.finish();
@@ -146,29 +146,29 @@ namespace wowpp
 				out_packet.start(game::server_packet::CharEnum);
 
 				out_packet
-					<< io::write<NetUInt8>(characters.size());
-				
+				        << io::write<NetUInt8>(characters.size());
+
 				for (const game::CharEntry &entry : characters)
 				{
 					out_packet
-						<< io::write<NetUInt64>(entry.id)
-						<< io::write_range(entry.name.begin(), entry.name.end())
-						<< io::write<NetUInt8>(0x00)	// 0-terminated c-style string
-						<< io::write<NetUInt8>(entry.race)
-						<< io::write<NetUInt8>(entry.class_)
-						<< io::write<NetUInt8>(entry.gender)
-						<< io::write<NetUInt8>(entry.skin)
-						<< io::write<NetUInt8>(entry.face)
-						<< io::write<NetUInt8>(entry.hairStyle)
-						<< io::write<NetUInt8>(entry.hairColor)
-						<< io::write<NetUInt8>(entry.facialHair)
-						<< io::write<NetUInt8>(entry.level)
-						<< io::write<NetUInt32>(entry.zoneId)				// zone
-						<< io::write<NetUInt32>(entry.mapId)				// map
-						<< io::write<float>(entry.location.x)				// x
-						<< io::write<float>(entry.location.y)				// y
-						<< io::write<float>(entry.location.z)				// z
-						<< io::write<NetUInt32>(0x00);						// guild guid
+					        << io::write<NetUInt64>(entry.id)
+					        << io::write_range(entry.name.begin(), entry.name.end())
+					        << io::write<NetUInt8>(0x00)	// 0-terminated c-style string
+					        << io::write<NetUInt8>(entry.race)
+					        << io::write<NetUInt8>(entry.class_)
+					        << io::write<NetUInt8>(entry.gender)
+					        << io::write<NetUInt8>(entry.skin)
+					        << io::write<NetUInt8>(entry.face)
+					        << io::write<NetUInt8>(entry.hairStyle)
+					        << io::write<NetUInt8>(entry.hairColor)
+					        << io::write<NetUInt8>(entry.facialHair)
+					        << io::write<NetUInt8>(entry.level)
+					        << io::write<NetUInt32>(entry.zoneId)				// zone
+					        << io::write<NetUInt32>(entry.mapId)				// map
+					        << io::write<float>(entry.location.x)				// x
+					        << io::write<float>(entry.location.y)				// y
+					        << io::write<float>(entry.location.z)				// z
+					        << io::write<NetUInt32>(0x00);						// guild guid
 
 					UInt32 charFlags = character_flags::None;
 					if (entry.atLogin & atlogin_flags::Rename)
@@ -179,8 +179,8 @@ namespace wowpp
 					//UInt32 atLoginFlags = 0x20;
 
 					out_packet
-						<< io::write<NetUInt32>(charFlags)
-						<< io::write<NetUInt8>(1);			// only 1 if atLoginFlags == 0x20
+					        << io::write<NetUInt32>(charFlags)
+					        << io::write<NetUInt8>(1);			// only 1 if atLoginFlags == 0x20
 
 					// Pets info
 					{
@@ -189,9 +189,9 @@ namespace wowpp
 						UInt32 petFamily = 0;
 
 						out_packet
-							<< io::write<NetUInt32>(petDisplayId)
-							<< io::write<NetUInt32>(petLevel)
-							<< io::write<NetUInt32>(petFamily);
+						        << io::write<NetUInt32>(petDisplayId)
+						        << io::write<NetUInt32>(petLevel)
+						        << io::write<NetUInt32>(petFamily);
 					}
 
 					// Equipment
@@ -202,23 +202,23 @@ namespace wowpp
 							if (it == entry.equipment.end())
 							{
 								out_packet
-									<< io::write<NetUInt32>(0)
-									<< io::write<NetUInt8>(0)
-									<< io::write<NetUInt32>(0);
+								        << io::write<NetUInt32>(0)
+								        << io::write<NetUInt8>(0)
+								        << io::write<NetUInt32>(0);
 							}
 							else
 							{
 								out_packet
-									<< io::write<NetUInt32>(it->second->displayid())
-									<< io::write<NetUInt8>(it->second->inventorytype())
-									<< io::write<NetUInt32>(0);
+								        << io::write<NetUInt32>(it->second->displayid())
+								        << io::write<NetUInt8>(it->second->inventorytype())
+								        << io::write<NetUInt32>(0);
 							}
 						}
 
 						out_packet
-							<< io::write<NetUInt32>(0x00)	// first bag display id
-							<< io::write<NetUInt8>(0x00)	// first bag inventory type
-							<< io::write<NetUInt32>(0);		// enchant?
+						        << io::write<NetUInt32>(0x00)	// first bag display id
+						        << io::write<NetUInt8>(0x00)	// first bag inventory type
+						        << io::write<NetUInt32>(0);		// enchant?
 					}
 				}
 
@@ -229,7 +229,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::CharCreate);
 				out_packet
-					<< io::write<NetUInt8>(code);
+				        << io::write<NetUInt8>(code);
 				out_packet.finish();
 			}
 
@@ -237,7 +237,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::CharDelete);
 				out_packet
-					<< io::write<NetUInt8>(code);
+				        << io::write<NetUInt8>(code);
 				out_packet.finish();
 			}
 
@@ -246,7 +246,7 @@ namespace wowpp
 				// Write packet
 				out_packet.start(server_packet::CharacterLoginFailed);
 				out_packet
-					<< io::write<NetUInt8>(code);
+				        << io::write<NetUInt8>(code);
 				out_packet.finish();
 			}
 
@@ -254,7 +254,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::AccountDataTimes);
 				out_packet
-					<< io::write_range(times);
+				        << io::write_range(times);
 				out_packet.finish();
 			}
 
@@ -262,18 +262,18 @@ namespace wowpp
 			{
 				const std::vector<UInt8> data =
 				{
-					0x00, 0x00, 0x00, 0x00, 0x0C, 0x00, 0x00, 0x00, 0x57, 0x00, 0x00, 0x00, 0x06, 0x00, 0xD8, 0x08, 
-					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xD7, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xD6, 0x08, 
-					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xD5, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xD4, 0x08, 
+					0x00, 0x00, 0x00, 0x00, 0x0C, 0x00, 0x00, 0x00, 0x57, 0x00, 0x00, 0x00, 0x06, 0x00, 0xD8, 0x08,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xD7, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xD6, 0x08,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xD5, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xD4, 0x08,
 					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xD3, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 				};
 
 				out_packet.start(game::server_packet::InitWorldStates);
 				out_packet
-					<< io::write_range(data);
-					/*<< io::write<NetUInt32>(mapId)
-					<< io::write<NetUInt32>(zoneId)
-					<< io::write<NetUInt16>(0x00);*/
+				        << io::write_range(data);
+				/*<< io::write<NetUInt32>(mapId)
+				<< io::write<NetUInt32>(zoneId)
+				<< io::write<NetUInt16>(0x00);*/
 				out_packet.finish();
 			}
 
@@ -281,11 +281,11 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::LoginVerifyWorld);
 				out_packet
-					<< io::write<NetUInt32>(mapId)
-					<< io::write<float>(location.x)
-					<< io::write<float>(location.y)
-					<< io::write<float>(location.z)
-					<< io::write<float>(o);
+				        << io::write<NetUInt32>(mapId)
+				        << io::write<float>(location.x)
+				        << io::write<float>(location.y)
+				        << io::write<float>(location.z)
+				        << io::write<float>(o);
 				out_packet.finish();
 			}
 
@@ -293,16 +293,16 @@ namespace wowpp
 			{
 				//TODO
 				time_t secs = ::time(nullptr);
-				tm* lt = localtime(&secs);
+				tm *lt = localtime(&secs);
 
 				// Convert
-				UInt32 convertedTime = 
-					static_cast<UInt32>((lt->tm_year - 100) << 24 | lt->tm_mon << 20 | (lt->tm_mday - 1) << 14 | lt->tm_wday << 11 | lt->tm_hour << 6 | lt->tm_min);
+				UInt32 convertedTime =
+				    static_cast<UInt32>((lt->tm_year - 100) << 24 | lt->tm_mon << 20 | (lt->tm_mday - 1) << 14 | lt->tm_wday << 11 | lt->tm_hour << 6 | lt->tm_min);
 
 				out_packet.start(game::server_packet::LoginSetTimeSpeed);
 				out_packet
-					<< io::write<UInt32>(convertedTime)
-					<< io::write<float>(1.0f / 60.0f);	// Update frequency is at 60 ticks / second
+				        << io::write<UInt32>(convertedTime)
+				        << io::write<float>(1.0f / 60.0f);	// Update frequency is at 60 ticks / second
 				out_packet.finish();
 			}
 
@@ -310,19 +310,19 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::TutorialFlags);
 				out_packet
-					<< io::write_range(tutorialData);
+				        << io::write_range(tutorialData);
 				out_packet.finish();
 			}
 
-			void bindPointUpdate(game::OutgoingPacket &out_packet, UInt32 mapId, UInt32 areaId, const math::Vector3& location)
+			void bindPointUpdate(game::OutgoingPacket &out_packet, UInt32 mapId, UInt32 areaId, const math::Vector3 &location)
 			{
 				out_packet.start(game::server_packet::BindPointUpdate);
 				out_packet
-					<< io::write<float>(location.x)
-					<< io::write<float>(location.y)
-					<< io::write<float>(location.z)
-					<< io::write<UInt32>(mapId)
-					<< io::write<UInt32>(areaId);
+				        << io::write<float>(location.x)
+				        << io::write<float>(location.y)
+				        << io::write<float>(location.z)
+				        << io::write<UInt32>(mapId)
+				        << io::write<UInt32>(areaId);
 				out_packet.finish();
 			}
 
@@ -330,7 +330,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::SetRestStart);
 				out_packet
-					<< io::write<NetUInt32>(0x00);		// Unknown
+				        << io::write<NetUInt32>(0x00);		// Unknown
 				out_packet.finish();
 			}
 
@@ -338,71 +338,71 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::InitializeFactions);
 				out_packet
-					<< io::write<NetUInt32>(0x00000080);
+				        << io::write<NetUInt32>(0x00000080);
 
 				UInt32 factionCount = 0;
 				for (UInt32 a = factionCount; a != 128; ++a)
 				{
-					out_packet 
-						<< io::write<NetUInt8>(0x00)
-						<< io::write<NetUInt32>(0x00000000);
+					out_packet
+					        << io::write<NetUInt8>(0x00)
+					        << io::write<NetUInt32>(0x00000000);
 				}
-				
+
 				out_packet.finish();
 			}
 
-			void initialSpells(game::OutgoingPacket &out_packet, const proto::Project &project, const std::vector<const proto::SpellEntry*> &spells, const GameUnit::CooldownMap &cooldowns)
+			void initialSpells(game::OutgoingPacket &out_packet, const proto::Project &project, const std::vector<const proto::SpellEntry *> &spells, const GameUnit::CooldownMap &cooldowns)
 			{
 				out_packet.start(game::server_packet::InitialSpells);
-				
+
 				out_packet
-					<< io::write<NetUInt8>(0x00);
+				        << io::write<NetUInt8>(0x00);
 
 				const UInt16 spellCount = spells.size();
 				out_packet
-					<< io::write<NetUInt16>(spellCount);
+				        << io::write<NetUInt16>(spellCount);
 
 				for (UInt16 i = 0; i < spellCount; ++i)
 				{
 					out_packet
-						<< io::write<NetUInt16>(spells[i]->id())
-						<< io::write<NetUInt16>(0x00);				// On Cooldown?
+					        << io::write<NetUInt16>(spells[i]->id())
+					        << io::write<NetUInt16>(0x00);				// On Cooldown?
 				}
 
 				const UInt16 spellCooldowns = cooldowns.size();
 				out_packet
-					<< io::write<NetUInt16>(spellCooldowns);
+				        << io::write<NetUInt16>(spellCooldowns);
 				for (const auto &cooldown : cooldowns)
 				{
 					out_packet
-						<< io::write<NetUInt16>(cooldown.first);
+					        << io::write<NetUInt16>(cooldown.first);
 					const auto *spell = project.spells.getById(cooldown.first);
 					if (!spell)
 					{
 						out_packet
-							<< io::write<NetUInt32>(0)
-							<< io::write<NetUInt32>(0)
-							<< io::write<NetUInt32>(0);
+						        << io::write<NetUInt32>(0)
+						        << io::write<NetUInt32>(0)
+						        << io::write<NetUInt32>(0);
 					}
 					else
 					{
 						out_packet
-							<< io::write<NetUInt16>(0)
-							<< io::write<NetUInt16>(spell->category());
+						        << io::write<NetUInt16>(0)
+						        << io::write<NetUInt16>(spell->category());
 
 						const GameTime time = getCurrentTime();
 						const UInt32 remaining = (cooldown.second > time ? cooldown.second - time : 0);
 						if (spell->category())
 						{
 							out_packet
-								<< io::write<NetUInt32>(0)
-								<< io::write<NetUInt32>(remaining);
+							        << io::write<NetUInt32>(0)
+							        << io::write<NetUInt32>(remaining);
 						}
 						else
 						{
 							out_packet
-								<< io::write<NetUInt32>(remaining)
-								<< io::write<NetUInt32>(0);
+							        << io::write<NetUInt32>(remaining)
+							        << io::write<NetUInt32>(0);
 						}
 					}
 				}
@@ -416,14 +416,14 @@ namespace wowpp
 
 				// Write blocks
 				out_packet
-					<< io::write<NetUInt32>(blocks.size())
-					<< io::write<NetUInt8>(0x00);			// hasTransport = false
+				        << io::write<NetUInt32>(blocks.size())
+				        << io::write<NetUInt8>(0x00);			// hasTransport = false
 
 				// Append blocks uncompressed
 				for (auto &block : blocks)
 				{
 					out_packet
-						<< io::write_range(block);
+					        << io::write_range(block);
 				}
 
 				out_packet.finish();
@@ -433,20 +433,20 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::UnlearnSpells);
 				out_packet
-					<< io::write<NetUInt32>(0x00);	// Spell count
+				        << io::write<NetUInt32>(0x00);	// Spell count
 
 				out_packet.finish();
 			}
 
 			void motd(
-				game::OutgoingPacket &out_packet,
-				const std::string &motd
-				)
+			    game::OutgoingPacket &out_packet,
+			    const std::string &motd
+			)
 			{
 				out_packet.start(game::server_packet::Motd);
 				const UInt32 sizePos = out_packet.sink().position();
 				out_packet
-					<< io::write<NetUInt32>(0x00);	// Line count
+				        << io::write<NetUInt32>(0x00);	// Line count
 
 				std::size_t lineCount = 0;
 				std::stringstream strm(motd);
@@ -455,7 +455,7 @@ namespace wowpp
 				while (std::getline(strm, line))
 				{
 					out_packet
-						<< io::write_range(line) << io::write<NetUInt8>(0);
+					        << io::write_range(line) << io::write<NetUInt8>(0);
 					++lineCount;
 				}
 
@@ -465,18 +465,18 @@ namespace wowpp
 			}
 
 			void featureSystemStatus(
-				game::OutgoingPacket &out_packet
-				)
+			    game::OutgoingPacket &out_packet
+			)
 			{
 				out_packet.start(game::server_packet::FeatureSystemStatus);
 				out_packet
-					<< io::write<NetUInt16>(0x02);
+				        << io::write<NetUInt16>(0x02);
 				out_packet.finish();
 			}
 
 			void setDungeonDifficulty(
-				game::OutgoingPacket &out_packet
-				)
+			    game::OutgoingPacket &out_packet
+			)
 			{
 				out_packet.start(game::server_packet::SetDungeonDifficulty);
 				const std::vector<UInt8> data =
@@ -485,7 +485,7 @@ namespace wowpp
 				};
 
 				out_packet
-					<< io::write_range(data);
+				        << io::write_range(data);
 				out_packet.finish();
 			}
 
@@ -498,14 +498,14 @@ namespace wowpp
 
 				// Write blocks
 				writer
-					<< io::write<NetUInt32>(blocks.size())
-					<< io::write<NetUInt8>(0x00);			// hasTransport = false
+				        << io::write<NetUInt32>(blocks.size())
+				        << io::write<NetUInt8>(0x00);			// hasTransport = false
 
 				// Append blocks uncompressed
 				for (auto &block : blocks)
 				{
 					writer
-						<< io::write_range(block);
+					        << io::write_range(block);
 				}
 
 				// Get original size
@@ -526,8 +526,8 @@ namespace wowpp
 				// Write packet
 				out_packet.start(server_packet::CompressedUpdateObject);
 				out_packet
-					<< io::write<NetUInt32>(origSize)
-					<< io::write_range(buffer);
+				        << io::write<NetUInt32>(origSize)
+				        << io::write_range(buffer);
 				out_packet.finish();
 			}
 
@@ -535,13 +535,13 @@ namespace wowpp
 			{
 				out_packet.start(server_packet::NameQueryResponse);
 				out_packet
-					<< io::write<NetUInt64>(objectGuid)
-					<< io::write_range(name) << io::write<NetUInt8>(0x00)	// Terminator
-					<< io::write_range(realmName) << io::write<NetUInt8>(0x00)	// Terminator realm name
-					<< io::write<NetUInt32>(raceId)
-					<< io::write<NetUInt32>(genderId)
-					<< io::write<NetUInt32>(classId)
-					<< io::write<NetUInt8>(0x00);
+				        << io::write<NetUInt64>(objectGuid)
+				        << io::write_range(name) << io::write<NetUInt8>(0x00)	// Terminator
+				        << io::write_range(realmName) << io::write<NetUInt8>(0x00)	// Terminator realm name
+				        << io::write<NetUInt32>(raceId)
+				        << io::write<NetUInt32>(genderId)
+				        << io::write<NetUInt32>(classId)
+				        << io::write<NetUInt8>(0x00);
 				out_packet.finish();
 			}
 
@@ -549,8 +549,8 @@ namespace wowpp
 			{
 				out_packet.start(server_packet::SetProficiency);
 				out_packet
-					<< io::write<NetUInt8>(itemClass)
-					<< io::write<NetUInt32>(itemSubclassMask);
+				        << io::write<NetUInt8>(itemClass)
+				        << io::write<NetUInt32>(itemSubclassMask);
 				out_packet.finish();
 			}
 
@@ -567,14 +567,14 @@ namespace wowpp
 					if (btn != buttons.end())
 					{
 						out_packet
-							<< io::write<NetUInt16>(btn->second.action)
-							<< io::write<NetUInt8>(btn->second.misc)
-							<< io::write<NetUInt8>(btn->second.type);
+						        << io::write<NetUInt16>(btn->second.action)
+						        << io::write<NetUInt8>(btn->second.misc)
+						        << io::write<NetUInt8>(btn->second.type);
 					}
 					else
 					{
 						out_packet
-							<< io::write<NetUInt32>(0);
+						        << io::write<NetUInt32>(0);
 					}
 				}
 
@@ -585,26 +585,26 @@ namespace wowpp
 			{
 				out_packet.start(server_packet::ContactList);
 				out_packet
-					<< io::write<NetUInt32>(game::social_flag::Friend | game::social_flag::Ignored | game::social_flag::Muted)
-					<< io::write<NetUInt32>(contacts.size());
+				        << io::write<NetUInt32>(game::social_flag::Friend | game::social_flag::Ignored | game::social_flag::Muted)
+				        << io::write<NetUInt32>(contacts.size());
 
 				for (const auto &contact : contacts)
 				{
 					out_packet
-						<< io::write<NetUInt64>(contact.first)
-						<< io::write<NetUInt32>(contact.second.flags)
-						<< io::write_range(contact.second.note) << io::write<NetUInt8>(0);
+					        << io::write<NetUInt64>(contact.first)
+					        << io::write<NetUInt32>(contact.second.flags)
+					        << io::write_range(contact.second.note) << io::write<NetUInt8>(0);
 
 					if (contact.second.flags & game::social_flag::Friend)
 					{
 						out_packet
-							<< io::write<NetUInt8>(contact.second.status);
+						        << io::write<NetUInt8>(contact.second.status);
 						if (contact.second.status)
 						{
 							out_packet
-								<< io::write<NetUInt32>(contact.second.area)
-								<< io::write<NetUInt32>(contact.second.level)
-								<< io::write<NetUInt32>(contact.second.class_);
+							        << io::write<NetUInt32>(contact.second.area)
+							        << io::write<NetUInt32>(contact.second.level)
+							        << io::write<NetUInt32>(contact.second.class_);
 						}
 					}
 				}
@@ -616,49 +616,49 @@ namespace wowpp
 				out_packet.start(server_packet::CreatureQueryResponse);
 
 				out_packet
-					<< io::write<NetUInt32>(unit.id())
-					<< io::write_range(unit.name()) << io::write<NetUInt8>(0x00)	// Terminator: name
-					<< io::write<NetUInt8>(0x00)	// Terminator: name2 (always empty)
-					<< io::write<NetUInt8>(0x00)	// Terminator: name3 (always empty)
-					<< io::write<NetUInt8>(0x00)	// Terminator: name4 (always empty)
-					<< io::write_range(unit.subname()) << io::write<NetUInt8>(0x00)	// Terminator: name4 (always empty)
-					<< io::write<NetUInt8>(0x00)
-					<< io::write<NetUInt32>(unit.creaturetypeflags())
-					<< io::write<NetUInt32>(unit.type())
-					<< io::write<NetUInt32>(unit.family())
-					<< io::write<NetUInt32>(unit.rank())
-					<< io::write<NetUInt32>(0x00)	// Unknown
-					<< io::write<NetUInt32>(0x00)	//TODO: CreatureSpellData
-					<< io::write<NetUInt32>(unit.malemodel())	//TODO
-					<< io::write<NetUInt32>(unit.malemodel())	//TODO
-					<< io::write<NetUInt32>(unit.malemodel())	//TODO
-					<< io::write<NetUInt32>(unit.malemodel())	//TODO
-					<< io::write<float>(1.0f)	//TODO
-					<< io::write<float>(1.0f)	//TODO
-					<< io::write<NetUInt8>(0x00)	//TODO Is Racial Leader
-					;
+				        << io::write<NetUInt32>(unit.id())
+				        << io::write_range(unit.name()) << io::write<NetUInt8>(0x00)	// Terminator: name
+				        << io::write<NetUInt8>(0x00)	// Terminator: name2 (always empty)
+				        << io::write<NetUInt8>(0x00)	// Terminator: name3 (always empty)
+				        << io::write<NetUInt8>(0x00)	// Terminator: name4 (always empty)
+				        << io::write_range(unit.subname()) << io::write<NetUInt8>(0x00)	// Terminator: name4 (always empty)
+				        << io::write<NetUInt8>(0x00)
+				        << io::write<NetUInt32>(unit.creaturetypeflags())
+				        << io::write<NetUInt32>(unit.type())
+				        << io::write<NetUInt32>(unit.family())
+				        << io::write<NetUInt32>(unit.rank())
+				        << io::write<NetUInt32>(0x00)	// Unknown
+				        << io::write<NetUInt32>(0x00)	//TODO: CreatureSpellData
+				        << io::write<NetUInt32>(unit.malemodel())	//TODO
+				        << io::write<NetUInt32>(unit.malemodel())	//TODO
+				        << io::write<NetUInt32>(unit.malemodel())	//TODO
+				        << io::write<NetUInt32>(unit.malemodel())	//TODO
+				        << io::write<float>(1.0f)	//TODO
+				        << io::write<float>(1.0f)	//TODO
+				        << io::write<NetUInt8>(0x00)	//TODO Is Racial Leader
+				        ;
 
 				out_packet.finish();
 			}
 
 			void timeSyncReq(
-				game::OutgoingPacket &out_packet,
-				UInt32 counter
-				)
+			    game::OutgoingPacket &out_packet,
+			    UInt32 counter
+			)
 			{
 				out_packet.start(server_packet::TimeSyncReq);
 				out_packet
-					<< io::write<NetUInt32>(counter);
+				        << io::write<NetUInt32>(counter);
 				out_packet.finish();
 			}
 
 			void monsterMove(
-				game::OutgoingPacket &out_packet,
-				UInt64 guid,
-				const math::Vector3 &oldPosition,
-				const math::Vector3 &position,
-				UInt32 time
-				)
+			    game::OutgoingPacket &out_packet,
+			    UInt64 guid,
+			    const math::Vector3 &oldPosition,
+			    const math::Vector3 &position,
+			    UInt32 time
+			)
 			{
 				out_packet.start(server_packet::MonsterMove);
 
@@ -679,52 +679,52 @@ namespace wowpp
 				}
 
 				out_packet
-					<< io::write_range(&packGUID[0], &packGUID[size])
-					<< io::write<float>(oldPosition.x)
-					<< io::write<float>(oldPosition.y)
-					<< io::write<float>(oldPosition.z)
-					<< io::write<NetUInt32>(mTimeStamp())
-					<< io::write<NetUInt8>(0);
+				        << io::write_range(&packGUID[0], &packGUID[size])
+				        << io::write<float>(oldPosition.x)
+				        << io::write<float>(oldPosition.y)
+				        << io::write<float>(oldPosition.z)
+				        << io::write<NetUInt32>(mTimeStamp())
+				        << io::write<NetUInt8>(0);
 
 				// Movement flags
 				out_packet
-					<< io::write<NetUInt32>(256)
-					<< io::write<NetUInt32>(time)
-					<< io::write<NetUInt32>(1)				// One waypoint
-					<< io::write<float>(position.x)
-					<< io::write<float>(position.y)
-					<< io::write<float>(position.z);
+				        << io::write<NetUInt32>(256)
+				        << io::write<NetUInt32>(time)
+				        << io::write<NetUInt32>(1)				// One waypoint
+				        << io::write<float>(position.x)
+				        << io::write<float>(position.y)
+				        << io::write<float>(position.z);
 				out_packet.finish();
 			}
 
 			void logoutResponse(
-				game::OutgoingPacket &out_packet,
-				bool success
-				)
+			    game::OutgoingPacket &out_packet,
+			    bool success
+			)
 			{
 				out_packet.start(server_packet::LogoutResponse);
 				if (!success)
 				{
 					out_packet
-						<< io::write<NetUInt8>(0x0C);
+					        << io::write<NetUInt8>(0x0C);
 				}
 				out_packet
-					<< io::write<NetUInt32>(0)
-					<< io::write<NetUInt8>(0);
+				        << io::write<NetUInt32>(0)
+				        << io::write<NetUInt8>(0);
 				out_packet.finish();
 			}
 
 			void logoutCancelAck(
-				game::OutgoingPacket &out_packet
-				)
+			    game::OutgoingPacket &out_packet
+			)
 			{
 				out_packet.start(server_packet::LogoutCancelAck);
 				out_packet.finish();
 			}
 
 			void logoutComplete(
-				game::OutgoingPacket &out_packet
-				)
+			    game::OutgoingPacket &out_packet
+			)
 			{
 				out_packet.start(server_packet::LogoutComplete);
 				out_packet.finish();
@@ -734,7 +734,7 @@ namespace wowpp
 			{
 				out_packet.start(server_packet::MessageChat);
 				out_packet
-					<< io::write<NetUInt8>(type);
+				        << io::write<NetUInt8>(type);
 
 				// Language
 				if ((type != chat_msg::Channel && type != chat_msg::Whisper) || language == language::Addon)
@@ -749,49 +749,49 @@ namespace wowpp
 				const String speakerName = (speaker ? speaker->getName() : "UNKNOWN");
 				switch (type)
 				{
-					case chat_msg::MonsterSay:
-					case chat_msg::MonsterParty:
-					case chat_msg::MonsterYell:
-					case chat_msg::MonsterWhisper:
-					case chat_msg::MonsterEmote:
-					case chat_msg::RaidBossWhisper:
-					case chat_msg::RaidBossEmote:
+				case chat_msg::MonsterSay:
+				case chat_msg::MonsterParty:
+				case chat_msg::MonsterYell:
+				case chat_msg::MonsterWhisper:
+				case chat_msg::MonsterEmote:
+				case chat_msg::RaidBossWhisper:
+				case chat_msg::RaidBossEmote:
 					{
 						assert(speaker);
 						out_packet
-							<< io::write<NetUInt64>(speaker->getGuid())
-							<< io::write<NetUInt32>(0x00)
-							<< io::write<NetUInt32>(speakerName.size() + 1)
-							<< io::write_range(speakerName) << io::write<NetUInt8>(0);
+						        << io::write<NetUInt64>(speaker->getGuid())
+						        << io::write<NetUInt32>(0x00)
+						        << io::write<NetUInt32>(speakerName.size() + 1)
+						        << io::write_range(speakerName) << io::write<NetUInt8>(0);
 
 						UInt64 listenerGuid = 0x00;
 						out_packet
-							<< io::write<NetUInt64>(listenerGuid)
-							<< io::write<NetUInt32>(message.size() + 1)
-							<< io::write_range(message) << io::write<NetUInt8>(0)
-							<< io::write<NetUInt8>(0);				// Chat-Tag always 0 since it's a creature which can't be AFK, DND etc.
+						        << io::write<NetUInt64>(listenerGuid)
+						        << io::write<NetUInt32>(message.size() + 1)
+						        << io::write_range(message) << io::write<NetUInt8>(0)
+						        << io::write<NetUInt8>(0);				// Chat-Tag always 0 since it's a creature which can't be AFK, DND etc.
 						out_packet.finish();
 						return;
 					}
-					default:
-						break;
+				default:
+					break;
 				}
 
 				out_packet
-					<< io::write<NetUInt64>(targetGUID)
-					<< io::write<NetUInt32>(0);
+				        << io::write<NetUInt64>(targetGUID)
+				        << io::write<NetUInt32>(0);
 
 				if (type == chat_msg::Channel)
 				{
 					out_packet
-						<< io::write_range(channelname) << io::write<NetUInt8>(0);
+					        << io::write_range(channelname) << io::write<NetUInt8>(0);
 				}
 
 				out_packet
-					<< io::write<NetUInt64>(targetGUID)
-					<< io::write<NetUInt32>(message.size() + 1)
-					<< io::write_range(message) << io::write<NetUInt8>(0)
-					<< io::write<NetUInt8>(0);			// Chat tag: 1: AFK  2: DND  4: GM
+				        << io::write<NetUInt64>(targetGUID)
+				        << io::write<NetUInt32>(message.size() + 1)
+				        << io::write_range(message) << io::write<NetUInt8>(0)
+				        << io::write<NetUInt8>(0);			// Chat tag: 1: AFK  2: DND  4: GM
 				out_packet.finish();
 			}
 
@@ -799,7 +799,7 @@ namespace wowpp
 			{
 				//TODO: Check given op-code
 				out_packet.start(opCode);
-				
+
 				UInt8 packGUID[8 + 1];
 				packGUID[0] = 0;
 				size_t size = 1;
@@ -817,8 +817,8 @@ namespace wowpp
 				}
 
 				out_packet
-					<< io::write_range(&packGUID[0], &packGUID[size])
-					<< movement;
+				        << io::write_range(&packGUID[0], &packGUID[size])
+				        << movement;
 				out_packet.finish();
 			}
 
@@ -844,9 +844,9 @@ namespace wowpp
 				}
 
 				out_packet
-					<< io::write_range(&packGUID[0], &packGUID[size])
-					<< io::write<NetUInt32>(0)
-					<< movement;
+				        << io::write_range(&packGUID[0], &packGUID[size])
+				        << io::write<NetUInt32>(0)
+				        << movement;
 				out_packet.finish();
 			}
 
@@ -854,8 +854,8 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::DestroyObject);
 				out_packet
-					<< io::write<NetUInt64>(guid)
-					<< io::write<NetUInt8>(death ? 1 : 0);
+				        << io::write<NetUInt64>(guid)
+				        << io::write<NetUInt8>(death ? 1 : 0);
 				out_packet.finish();
 			}
 
@@ -863,7 +863,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::StandStateUpdate);
 				out_packet
-					<< io::write<NetUInt8>(standState);
+				        << io::write<NetUInt8>(standState);
 				out_packet.finish();
 			}
 
@@ -871,31 +871,31 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::FriendStatus);
 				out_packet
-					<< io::write<NetUInt8>(result)
-					<< io::write<NetUInt64>(guid);
+				        << io::write<NetUInt8>(result)
+				        << io::write<NetUInt64>(guid);
 
 				switch (result)
 				{
-					case game::friend_result::AddedOffline:
-					case game::friend_result::AddedOnline:
-						out_packet << io::write_range(info.note) << io::write<NetUInt8>(0);
-						break;
-					default:
-						break;
+				case game::friend_result::AddedOffline:
+				case game::friend_result::AddedOnline:
+					out_packet << io::write_range(info.note) << io::write<NetUInt8>(0);
+					break;
+				default:
+					break;
 				}
 
 				switch (result)
 				{
-					case game::friend_result::AddedOnline:
-					case game::friend_result::Online:
-						out_packet
-							<< io::write<NetUInt8>(info.status)
-							<< io::write<NetUInt32>(info.area)
-							<< io::write<NetUInt32>(info.level)
-							<< io::write<NetUInt32>(info.class_);
-						break;
-					default:
-						break;
+				case game::friend_result::AddedOnline:
+				case game::friend_result::Online:
+					out_packet
+					        << io::write<NetUInt8>(info.status)
+					        << io::write<NetUInt32>(info.area)
+					        << io::write<NetUInt32>(info.level)
+					        << io::write<NetUInt32>(info.class_);
+					break;
+				default:
+					break;
 				}
 
 				out_packet.finish();
@@ -905,7 +905,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::ChatPlayerNotFound);
 				out_packet
-					<< io::write_range(name) << io::write<NetUInt8>(0);
+				        << io::write_range(name) << io::write<NetUInt8>(0);
 				out_packet.finish();
 			}
 
@@ -913,14 +913,14 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::CastFailed);
 				out_packet
-					<< io::write<NetUInt32>(spell.id())
-					<< io::write<NetUInt8>(result)
-					<< io::write<NetUInt8>(castCount);
+				        << io::write<NetUInt32>(spell.id())
+				        << io::write<NetUInt8>(result)
+				        << io::write<NetUInt8>(castCount);
 
 				if (result == game::spell_cast_result::FailedPreventedByMechanic)
 				{
 					out_packet
-						<< io::write<NetUInt32>(spell.mechanic());
+					        << io::write<NetUInt32>(spell.mechanic());
 				}
 
 				// TODO: Send more informations based on the cast result code (which area is required etc.)
@@ -950,7 +950,7 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 
 				// Cast GUID
@@ -972,15 +972,15 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 
 				out_packet
-					<< io::write<NetUInt32>(spell.id())
-					<< io::write<NetUInt8>(castCount)
-					<< io::write<NetUInt16>(castFlags)
-					<< io::write<NetInt32>(castTime)
-					<< targets;
+				        << io::write<NetUInt32>(spell.id())
+				        << io::write<NetUInt8>(castCount)
+				        << io::write<NetUInt16>(castFlags)
+				        << io::write<NetInt32>(castTime)
+				        << targets;
 
 				if (castFlags && game::spell_cast_flags::Ammo)
 				{
@@ -1011,7 +1011,7 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 
 				// Cast GUID
@@ -1033,38 +1033,38 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 
 				out_packet
-					<< io::write<NetUInt32>(spell.id())
-					<< io::write<NetUInt16>(castFlags)
-					<< io::write<NetUInt32>(mTimeStamp());
+				        << io::write<NetUInt32>(spell.id())
+				        << io::write<NetUInt16>(castFlags)
+				        << io::write<NetUInt32>(mTimeStamp());
 
 				// TODO: Hit information
 				{
 					UInt8 unitHitCount = (targets.hasUnitTarget() ? 1 : 0);
 					out_packet
-						<< io::write<NetUInt8>(unitHitCount);	// Hit count
+					        << io::write<NetUInt8>(unitHitCount);	// Hit count
 					if (unitHitCount > 0)
 					{
 						out_packet
-							<< io::write<NetUInt64>(targets.getUnitTarget());
+						        << io::write<NetUInt64>(targets.getUnitTarget());
 					}
 
 					UInt8 goHitCount = (targets.hasGOTarget() ? 1 : 0);
 					if (goHitCount > 0)
 					{
 						out_packet
-							<< io::write<NetUInt64>(targets.getGOTarget());
+						        << io::write<NetUInt64>(targets.getGOTarget());
 					}
 
 					out_packet
-						<< io::write<NetUInt8>(0);	// Miss count
+					        << io::write<NetUInt8>(0);	// Miss count
 				}
 
 				out_packet
-					<< targets;
+				        << targets;
 
 				if (castFlags && game::spell_cast_flags::Ammo)
 				{
@@ -1078,9 +1078,9 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::SpellFailure);
 				out_packet
-					<< io::write<NetUInt64>(casterGUID)
-					<< io::write<NetUInt32>(spellId)
-					<< io::write<NetUInt8>(result);
+				        << io::write<NetUInt64>(casterGUID)
+				        << io::write<NetUInt32>(spellId)
+				        << io::write<NetUInt8>(result);
 				out_packet.finish();
 			}
 
@@ -1105,10 +1105,10 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				out_packet
-					<< io::write<NetUInt32>(spellId);
+				        << io::write<NetUInt32>(spellId);
 				out_packet.finish();
 			}
 
@@ -1116,13 +1116,13 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::SpellCooldown);
 				out_packet
-					<< io::write<NetUInt64>(targetGUID)
-					<< io::write<NetUInt8>(flags);
+				        << io::write<NetUInt64>(targetGUID)
+				        << io::write<NetUInt8>(flags);
 				for (const auto &pair : spellCooldownTimesMS)
 				{
 					out_packet
-						<< io::write<NetUInt32>(pair.first)			// Spell ID
-						<< io::write<NetUInt32>(pair.second);		// Cooldown time in milliseconds where 0 is equal to now (no cooldown)
+					        << io::write<NetUInt32>(pair.first)			// Spell ID
+					        << io::write<NetUInt32>(pair.second);		// Cooldown time in milliseconds where 0 is equal to now (no cooldown)
 				}
 				out_packet.finish();
 			}
@@ -1131,17 +1131,17 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::CooldownEvent);
 				out_packet
-					<< io::write<NetUInt32>(spellID)
-					<< io::write<NetUInt64>(objectGUID);
+				        << io::write<NetUInt32>(spellID)
+				        << io::write<NetUInt64>(objectGUID);
 				out_packet.finish();
 			}
 
-			void clearCooldown(game::OutgoingPacket & out_packet, UInt32 spellID, UInt64 targetGUID)
+			void clearCooldown(game::OutgoingPacket &out_packet, UInt32 spellID, UInt64 targetGUID)
 			{
 				out_packet.start(game::server_packet::ClearCooldown);
 				out_packet
-					<< io::write<NetUInt32>(spellID)
-					<< io::write<NetUInt64>(targetGUID);
+				        << io::write<NetUInt32>(spellID)
+				        << io::write<NetUInt64>(targetGUID);
 				out_packet.finish();
 			}
 
@@ -1167,7 +1167,7 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				// Caster GUID
 				{
@@ -1188,19 +1188,19 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				out_packet
-					<< io::write<NetUInt32>(spellID)
-					<< io::write<NetUInt32>(damage - absorbedDamage - resistedDamage - blockedDamage)
-					<< io::write<NetUInt8>(damageSchoolMask)
-					<< io::write<NetUInt32>(absorbedDamage)
-					<< io::write<NetUInt32>(resistedDamage)
-					<< io::write<NetUInt8>(PhysicalDamage)
-					<< io::write<NetUInt8>(0)
-					<< io::write<NetUInt32>(blockedDamage)
-					<< io::write<NetUInt32>(criticalHit ? 0x27 : 0x25)
-					<< io::write<NetUInt8>(0);
+				        << io::write<NetUInt32>(spellID)
+				        << io::write<NetUInt32>(damage - absorbedDamage - resistedDamage - blockedDamage)
+				        << io::write<NetUInt8>(damageSchoolMask)
+				        << io::write<NetUInt32>(absorbedDamage)
+				        << io::write<NetUInt32>(resistedDamage)
+				        << io::write<NetUInt8>(PhysicalDamage)
+				        << io::write<NetUInt8>(0)
+				        << io::write<NetUInt32>(blockedDamage)
+				        << io::write<NetUInt32>(criticalHit ? 0x27 : 0x25)
+				        << io::write<NetUInt8>(0);
 				out_packet.finish();
 			}
 
@@ -1208,47 +1208,47 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::ItemQuerySingleResponse);
 				out_packet
-					<< io::write<NetUInt32>(item.id())
-					<< io::write<NetUInt32>(item.itemclass())
-					<< io::write<NetUInt32>(item.subclass())
-					<< io::write<NetUInt32>(-1)				// SoundClassOverride (TODO)
-					<< io::write_range(item.name()) << io::write<NetUInt8>(0)
-					<< io::write<NetUInt8>(0)				// Second name?
-					<< io::write<NetUInt8>(0)				// Third name?
-					<< io::write<NetUInt8>(0)				// Fourth name?
-					<< io::write<NetUInt32>(item.displayid())
-					<< io::write<NetUInt32>(item.quality())
-					<< io::write<NetUInt32>(item.flags())
-					<< io::write<NetUInt32>(item.buyprice())
-					<< io::write<NetUInt32>(item.sellprice())
-					<< io::write<NetUInt32>(item.inventorytype())
-					<< io::write<NetUInt32>(item.allowedclasses())
-					<< io::write<NetUInt32>(item.allowedraces())
-					<< io::write<NetUInt32>(item.itemlevel())
-					<< io::write<NetUInt32>(item.requiredlevel())
-					<< io::write<NetUInt32>(item.requiredskill())
-					<< io::write<NetUInt32>(item.requiredskillrank())
-					<< io::write<NetUInt32>(item.requiredspell())
-					<< io::write<NetUInt32>(item.requiredhonorrank())
-					<< io::write<NetUInt32>(item.requiredcityrank())
-					<< io::write<NetUInt32>(item.requiredrep())
-					<< io::write<NetUInt32>(item.requiredreprank())
-					<< io::write<NetUInt32>(item.maxcount())
-					<< io::write<NetUInt32>(item.maxstack())
-					<< io::write<NetUInt32>(item.containerslots());
+				        << io::write<NetUInt32>(item.id())
+				        << io::write<NetUInt32>(item.itemclass())
+				        << io::write<NetUInt32>(item.subclass())
+				        << io::write<NetUInt32>(-1)				// SoundClassOverride (TODO)
+				        << io::write_range(item.name()) << io::write<NetUInt8>(0)
+				        << io::write<NetUInt8>(0)				// Second name?
+				        << io::write<NetUInt8>(0)				// Third name?
+				        << io::write<NetUInt8>(0)				// Fourth name?
+				        << io::write<NetUInt32>(item.displayid())
+				        << io::write<NetUInt32>(item.quality())
+				        << io::write<NetUInt32>(item.flags())
+				        << io::write<NetUInt32>(item.buyprice())
+				        << io::write<NetUInt32>(item.sellprice())
+				        << io::write<NetUInt32>(item.inventorytype())
+				        << io::write<NetUInt32>(item.allowedclasses())
+				        << io::write<NetUInt32>(item.allowedraces())
+				        << io::write<NetUInt32>(item.itemlevel())
+				        << io::write<NetUInt32>(item.requiredlevel())
+				        << io::write<NetUInt32>(item.requiredskill())
+				        << io::write<NetUInt32>(item.requiredskillrank())
+				        << io::write<NetUInt32>(item.requiredspell())
+				        << io::write<NetUInt32>(item.requiredhonorrank())
+				        << io::write<NetUInt32>(item.requiredcityrank())
+				        << io::write<NetUInt32>(item.requiredrep())
+				        << io::write<NetUInt32>(item.requiredreprank())
+				        << io::write<NetUInt32>(item.maxcount())
+				        << io::write<NetUInt32>(item.maxstack())
+				        << io::write<NetUInt32>(item.containerslots());
 				for (int i = 0; i < 10; ++i)
 				{
 					if (i < item.stats_size())
 					{
 						out_packet
-							<< io::write<NetUInt32>(item.stats(i).type())
-							<< io::write<NetUInt32>(item.stats(i).value());
+						        << io::write<NetUInt32>(item.stats(i).type())
+						        << io::write<NetUInt32>(item.stats(i).value());
 					}
 					else
 					{
 						out_packet
-							<< io::write<NetUInt32>(0)
-							<< io::write<NetUInt32>(0);
+						        << io::write<NetUInt32>(0)
+						        << io::write<NetUInt32>(0);
 					}
 				}
 				for (int i = 0; i < 5; ++i)
@@ -1256,30 +1256,30 @@ namespace wowpp
 					if (i < item.damage_size())
 					{
 						out_packet
-							<< io::write<float>(item.damage(i).mindmg())
-							<< io::write<float>(item.damage(i).maxdmg())
-							<< io::write<NetUInt32>(item.damage(i).type());
+						        << io::write<float>(item.damage(i).mindmg())
+						        << io::write<float>(item.damage(i).maxdmg())
+						        << io::write<NetUInt32>(item.damage(i).type());
 					}
 					else
 					{
 						out_packet
-							<< io::write<float>(0.0f)
-							<< io::write<float>(0.0f)
-							<< io::write<NetUInt32>(0);
+						        << io::write<float>(0.0f)
+						        << io::write<float>(0.0f)
+						        << io::write<NetUInt32>(0);
 					}
 				}
 				out_packet
-					<< io::write<NetUInt32>(item.armor())
-					<< io::write<NetUInt32>(item.holyres())
-					<< io::write<NetUInt32>(item.fireres())
-					<< io::write<NetUInt32>(item.natureres())
-					<< io::write<NetUInt32>(item.frostres())
-					<< io::write<NetUInt32>(item.shadowres())
-					<< io::write<NetUInt32>(item.arcaneres())
-					<< io::write<NetUInt32>(item.delay())
-					<< io::write<NetUInt32>(item.ammotype())
-					<< io::write<float>(0.0f)		// TODO: RangedModRange (?)
-					;
+				        << io::write<NetUInt32>(item.armor())
+				        << io::write<NetUInt32>(item.holyres())
+				        << io::write<NetUInt32>(item.fireres())
+				        << io::write<NetUInt32>(item.natureres())
+				        << io::write<NetUInt32>(item.frostres())
+				        << io::write<NetUInt32>(item.shadowres())
+				        << io::write<NetUInt32>(item.arcaneres())
+				        << io::write<NetUInt32>(item.delay())
+				        << io::write<NetUInt32>(item.ammotype())
+				        << io::write<float>(0.0f)		// TODO: RangedModRange (?)
+				        ;
 				// TODO: Spells
 				for (int i = 0; i < 5; ++i)
 				{
@@ -1287,72 +1287,72 @@ namespace wowpp
 					{
 						const auto &spell = item.spells(i);
 						out_packet
-							<< io::write<NetUInt32>(spell.spell())
-							<< io::write<NetUInt32>(spell.trigger())
-							<< io::write<NetUInt32>(-::abs((int)spell.charges()))
-							;
+						        << io::write<NetUInt32>(spell.spell())
+						        << io::write<NetUInt32>(spell.trigger())
+						        << io::write<NetUInt32>(-::abs((int)spell.charges()))
+						        ;
 
 						// TODO: Spell cooldowns
 						const bool useDBData = spell.cooldown() >= 0 || spell.categorycooldown() >= 0;
 						if (useDBData)
 						{
 							out_packet
-								<< io::write<NetUInt32>(spell.cooldown())
-								<< io::write<NetUInt32>(spell.category())
-								<< io::write<NetUInt32>(spell.categorycooldown());
+							        << io::write<NetUInt32>(spell.cooldown())
+							        << io::write<NetUInt32>(spell.category())
+							        << io::write<NetUInt32>(spell.categorycooldown());
 						}
 						else
 						{
 							out_packet
-								<< io::write<NetUInt32>(-1)						// TODO
-								<< io::write<NetUInt32>(0)						// TODO
-								<< io::write<NetUInt32>(-1);					// TODO
+							        << io::write<NetUInt32>(-1)						// TODO
+							        << io::write<NetUInt32>(0)						// TODO
+							        << io::write<NetUInt32>(-1);					// TODO
 						}
 					}
 					else
 					{
 						out_packet
-							<< io::write<NetUInt32>(0)
-							<< io::write<NetUInt32>(0)
-							<< io::write<NetUInt32>(0)
-							<< io::write<NetUInt32>(-1)
-							<< io::write<NetUInt32>(0)
-							<< io::write<NetUInt32>(-1);
+						        << io::write<NetUInt32>(0)
+						        << io::write<NetUInt32>(0)
+						        << io::write<NetUInt32>(0)
+						        << io::write<NetUInt32>(-1)
+						        << io::write<NetUInt32>(0)
+						        << io::write<NetUInt32>(-1);
 					}
 				}
 				out_packet
-					<< io::write<NetUInt32>(item.bonding())
-					<< io::write_range(item.description()) << io::write<NetUInt8>(0)
-					<< io::write<NetUInt32>(0)					// TODO: Page Text
-					<< io::write<NetUInt32>(0)					// TODO: Language ID
-					<< io::write<NetUInt32>(0)					// TODO: Page Material
-					<< io::write<NetUInt32>(0)					// TODO: Start Quest
-					<< io::write<NetUInt32>(item.lockid())
-					<< io::write<NetUInt32>(item.material())
-					<< io::write<NetUInt32>(item.sheath())
-					<< io::write<NetUInt32>(item.randomproperty())
-					<< io::write<NetUInt32>(item.randomsuffix())
-					<< io::write<NetUInt32>(item.block())
-					<< io::write<NetUInt32>(item.itemset())
-					<< io::write<NetUInt32>(item.durability())
-					<< io::write<NetUInt32>(item.area())
-					<< io::write<NetUInt32>(item.map())			// Added in 1.12.X
-					<< io::write<NetUInt32>(item.bagfamily())
-					<< io::write<NetUInt32>(item.totemcategory())
-					;
+				        << io::write<NetUInt32>(item.bonding())
+				        << io::write_range(item.description()) << io::write<NetUInt8>(0)
+				        << io::write<NetUInt32>(0)					// TODO: Page Text
+				        << io::write<NetUInt32>(0)					// TODO: Language ID
+				        << io::write<NetUInt32>(0)					// TODO: Page Material
+				        << io::write<NetUInt32>(0)					// TODO: Start Quest
+				        << io::write<NetUInt32>(item.lockid())
+				        << io::write<NetUInt32>(item.material())
+				        << io::write<NetUInt32>(item.sheath())
+				        << io::write<NetUInt32>(item.randomproperty())
+				        << io::write<NetUInt32>(item.randomsuffix())
+				        << io::write<NetUInt32>(item.block())
+				        << io::write<NetUInt32>(item.itemset())
+				        << io::write<NetUInt32>(item.durability())
+				        << io::write<NetUInt32>(item.area())
+				        << io::write<NetUInt32>(item.map())			// Added in 1.12.X
+				        << io::write<NetUInt32>(item.bagfamily())
+				        << io::write<NetUInt32>(item.totemcategory())
+				        ;
 				// TODO: Sockets
 				for (size_t i = 0; i < 3; ++i)
 				{
 					out_packet
-						<< io::write<NetUInt32>(0)
-						<< io::write<NetUInt32>(0);
+					        << io::write<NetUInt32>(0)
+					        << io::write<NetUInt32>(0);
 				}
 				out_packet
-					<< io::write<NetUInt32>(item.socketbonus())
-					<< io::write<NetUInt32>(item.gemproperties())
-					<< io::write<NetUInt32>(item.disenchantskillval())
-					<< io::write<float>(0.0f)					// TODO: Armor Damage Modifier
-					<< io::write<NetUInt32>(0);					// Added in 2.4.2.8209
+				        << io::write<NetUInt32>(item.socketbonus())
+				        << io::write<NetUInt32>(item.gemproperties())
+				        << io::write<NetUInt32>(item.disenchantskillval())
+				        << io::write<float>(0.0f)					// TODO: Armor Damage Modifier
+				        << io::write<NetUInt32>(0);					// Added in 2.4.2.8209
 				out_packet.finish();
 			}
 
@@ -1378,7 +1378,7 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				// Caster GUID
 				{
@@ -1399,12 +1399,12 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				out_packet
-					<< io::write<NetUInt32>(spellID)
-					<< io::write<NetUInt32>(powerType)
-					<< io::write<NetUInt32>(amount);
+				        << io::write<NetUInt32>(spellID)
+				        << io::write<NetUInt32>(powerType)
+				        << io::write<NetUInt32>(amount);
 				out_packet.finish();
 			}
 
@@ -1412,8 +1412,8 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::AttackStart);
 				out_packet
-					<< io::write<NetUInt64>(attackerGUID)
-					<< io::write<NetUInt64>(attackedGUID);
+				        << io::write<NetUInt64>(attackerGUID)
+				        << io::write<NetUInt64>(attackedGUID);
 				out_packet.finish();
 			}
 
@@ -1438,7 +1438,7 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				{
 					UInt8 packGUID[8 + 1];
@@ -1458,10 +1458,10 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				out_packet
-					<< io::write<NetUInt32>(0);		// TODO
+				        << io::write<NetUInt32>(0);		// TODO
 				out_packet.finish();
 			}
 
@@ -1469,7 +1469,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::AttackerStateUpdate);
 				out_packet
-					<< io::write<NetUInt32>(hitInfo);
+				        << io::write<NetUInt32>(hitInfo);
 				{
 					UInt8 packGUID[8 + 1];
 					packGUID[0] = 0;
@@ -1488,7 +1488,7 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				{
 					UInt8 packGUID[8 + 1];
@@ -1508,23 +1508,23 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 
 				const UInt32 realDamage = (totalDamage - absorbedDamage - resistedDamage - blockedDamage);
 
 				out_packet
-					<< io::write<NetUInt32>(realDamage)
-					<< io::write<NetUInt8>(1)
-					<< io::write<NetUInt32>(damageSchool)
-					<< io::write<float>(realDamage)				// WTF?
-					<< io::write<NetUInt32>(realDamage)
-					<< io::write<NetUInt32>(absorbedDamage)
-					<< io::write<NetUInt32>(resistedDamage)
-					<< io::write<NetUInt32>(targetState)
-					<< io::write<NetUInt32>(absorbedDamage == 0 ? 0 : -1)
-					<< io::write<NetUInt32>(0)					// Generated rage?
-					<< io::write<NetUInt32>(blockedDamage);
+				        << io::write<NetUInt32>(realDamage)
+				        << io::write<NetUInt8>(1)
+				        << io::write<NetUInt32>(damageSchool)
+				        << io::write<float>(realDamage)				// WTF?
+				        << io::write<NetUInt32>(realDamage)
+				        << io::write<NetUInt32>(absorbedDamage)
+				        << io::write<NetUInt32>(resistedDamage)
+				        << io::write<NetUInt32>(targetState)
+				        << io::write<NetUInt32>(absorbedDamage == 0 ? 0 : -1)
+				        << io::write<NetUInt32>(0)					// Generated rage?
+				        << io::write<NetUInt32>(blockedDamage);
 				out_packet.finish();
 			}
 
@@ -1558,17 +1558,17 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void inventoryChangeFailure(game::OutgoingPacket &out_packet, InventoryChangeFailure failure, GameItem *itemA, GameItem* itemB)
+			void inventoryChangeFailure(game::OutgoingPacket &out_packet, InventoryChangeFailure failure, GameItem *itemA, GameItem *itemB)
 			{
 				out_packet.start(game::server_packet::InventoryChangeFailure);
 				out_packet << io::write<NetUInt8>(failure);
 
 				if (failure != inventory_change_failure::Okay)
 				{
-					out_packet 
-						<< io::write<NetUInt64>((itemA != nullptr) ? itemA->getGuid() : 0)
-						<< io::write<NetUInt64>((itemB != nullptr) ? itemB->getGuid() : 0)
-						<< io::write<NetUInt8>(0);
+					out_packet
+					        << io::write<NetUInt64>((itemA != nullptr) ? itemA->getGuid() : 0)
+					        << io::write<NetUInt64>((itemB != nullptr) ? itemB->getGuid() : 0)
+					        << io::write<NetUInt8>(0);
 
 					if (failure == inventory_change_failure::CantEquipLevel)
 					{
@@ -1605,10 +1605,10 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				out_packet
-					<< io::write<NetUInt8>(comboPoints);
+				        << io::write<NetUInt8>(comboPoints);
 				out_packet.finish();
 			}
 
@@ -1633,7 +1633,7 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				{
 					UInt8 packGUID[8 + 1];
@@ -1653,13 +1653,13 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				out_packet
-					<< io::write<NetUInt32>(spellId)
-					<< io::write<NetUInt32>(amount)
-					<< io::write<NetUInt8>(critical ? 1 : 0)
-					<< io::write<NetUInt8>(0);
+				        << io::write<NetUInt32>(spellId)
+				        << io::write<NetUInt32>(amount)
+				        << io::write<NetUInt8>(critical ? 1 : 0)
+				        << io::write<NetUInt8>(0);
 				out_packet.finish();
 			}
 
@@ -1684,7 +1684,7 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				{
 					UInt8 packGUID[8 + 1];
@@ -1704,16 +1704,16 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				out_packet
-					<< io::write<NetUInt32>(spellId)
-					<< io::write<NetUInt32>(1)
-					<< io::write<NetUInt32>(auraType)
-					<< io::write<NetUInt32>(damage)
-					<< io::write<NetUInt32>(dmgSchool)
-					<< io::write<NetUInt32>(absorbed)
-					<< io::write<NetUInt32>(resisted);
+				        << io::write<NetUInt32>(spellId)
+				        << io::write<NetUInt32>(1)
+				        << io::write<NetUInt32>(auraType)
+				        << io::write<NetUInt32>(damage)
+				        << io::write<NetUInt32>(dmgSchool)
+				        << io::write<NetUInt32>(absorbed)
+				        << io::write<NetUInt32>(resisted);
 				out_packet.finish();
 			}
 
@@ -1738,7 +1738,7 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				{
 					UInt8 packGUID[8 + 1];
@@ -1758,13 +1758,13 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				out_packet
-					<< io::write<NetUInt32>(spellId)
-					<< io::write<NetUInt32>(1)
-					<< io::write<NetUInt32>(auraType)
-					<< io::write<NetUInt32>(heal);
+				        << io::write<NetUInt32>(spellId)
+				        << io::write<NetUInt32>(1)
+				        << io::write<NetUInt32>(auraType)
+				        << io::write<NetUInt32>(heal);
 				out_packet.finish();
 			}
 
@@ -1789,7 +1789,7 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				{
 					UInt8 packGUID[8 + 1];
@@ -1809,14 +1809,14 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				out_packet
-					<< io::write<NetUInt32>(spellId)
-					<< io::write<NetUInt32>(1)
-					<< io::write<NetUInt32>(auraType)
-					<< io::write<NetUInt32>(powerType)
-					<< io::write<NetUInt32>(amount);
+				        << io::write<NetUInt32>(spellId)
+				        << io::write<NetUInt32>(1)
+				        << io::write<NetUInt32>(auraType)
+				        << io::write<NetUInt32>(powerType)
+				        << io::write<NetUInt32>(amount);
 				out_packet.finish();
 			}
 
@@ -1824,8 +1824,8 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::UpdateAuraDuration);
 				out_packet
-					<< io::write<NetUInt8>(slot)
-					<< io::write<NetUInt32>(durationMS);
+				        << io::write<NetUInt8>(slot)
+				        << io::write<NetUInt32>(durationMS);
 				out_packet.finish();
 			}
 
@@ -1850,13 +1850,13 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				out_packet
-					<< io::write<NetUInt8>(slot)
-					<< io::write<NetUInt32>(spellId)
-					<< io::write<NetUInt32>(maxDurationMS)
-					<< io::write<NetUInt32>(durationMS);
+				        << io::write<NetUInt8>(slot)
+				        << io::write<NetUInt32>(spellId)
+				        << io::write<NetUInt32>(maxDurationMS)
+				        << io::write<NetUInt32>(durationMS);
 				out_packet.finish();
 			}
 
@@ -1881,13 +1881,13 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				out_packet
-					<< io::write<NetUInt8>(slot)
-					<< io::write<NetUInt32>(spellId)
-					<< io::write<NetUInt32>(maxDurationMS)
-					<< io::write<NetUInt32>(durationMS);
+				        << io::write<NetUInt8>(slot)
+				        << io::write<NetUInt32>(spellId)
+				        << io::write<NetUInt32>(maxDurationMS)
+				        << io::write<NetUInt32>(durationMS);
 				out_packet.finish();
 			}
 
@@ -1895,17 +1895,17 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::LogXPGain);
 				out_packet
-					<< io::write<NetUInt64>(victimGUID)
-					<< io::write<NetUInt32>(givenXP + restXP)
-					<< io::write<NetUInt8>(victimGUID != 0 ? 0 : 1);
+				        << io::write<NetUInt64>(victimGUID)
+				        << io::write<NetUInt32>(givenXP + restXP)
+				        << io::write<NetUInt8>(victimGUID != 0 ? 0 : 1);
 				if (victimGUID != 0)
 				{
 					out_packet
-						<< io::write<NetUInt32>(givenXP)
-						<< io::write<float>(1.0f);
+					        << io::write<NetUInt32>(givenXP)
+					        << io::write<float>(1.0f);
 				}
 				out_packet
-					<< io::write<NetUInt8>(0);
+				        << io::write<NetUInt8>(0);
 				out_packet.finish();
 			}
 
@@ -1913,21 +1913,21 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::LevelUpInfo);
 				out_packet
-					<< io::write<NetUInt32>(level)
-					<< io::write<NetInt32>(healthGained)
-					<< io::write<NetInt32>(manaGained)
-					<< io::write<NetUInt32>(0)
-					<< io::write<NetUInt32>(0)
-					<< io::write<NetUInt32>(0)
-					<< io::write<NetUInt32>(0)
-					<< io::write<NetInt32>(strengthGained)
-					<< io::write<NetInt32>(agilityGained)
-					<< io::write<NetInt32>(staminaGained)
-					<< io::write<NetInt32>(intellectGained)
-					<< io::write<NetInt32>(spiritGained);
+				        << io::write<NetUInt32>(level)
+				        << io::write<NetInt32>(healthGained)
+				        << io::write<NetInt32>(manaGained)
+				        << io::write<NetUInt32>(0)
+				        << io::write<NetUInt32>(0)
+				        << io::write<NetUInt32>(0)
+				        << io::write<NetUInt32>(0)
+				        << io::write<NetInt32>(strengthGained)
+				        << io::write<NetInt32>(agilityGained)
+				        << io::write<NetInt32>(staminaGained)
+				        << io::write<NetInt32>(intellectGained)
+				        << io::write<NetInt32>(spiritGained);
 				out_packet.finish();
 			}
-			
+
 			void partyMemberStats(game::OutgoingPacket &out_packet, const GameCharacter &character)
 			{
 				out_packet.start(game::server_packet::PartyMemberStats);
@@ -1951,48 +1951,55 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				auto updateFlags = character.getGroupUpdateFlags();
 				out_packet
-					<< io::write<NetUInt32>(updateFlags);
+				        << io::write<NetUInt32>(updateFlags);
 
 				if (updateFlags & group_update_flags::Status)
 				{
 					UInt16 flags = 0;
 					flags = group_member_status::Online;
 					out_packet
-						<< io::write<NetUInt16>(flags);
+					        << io::write<NetUInt16>(flags);
 				}
 
-				if (updateFlags & group_update_flags::CurrentHP)
+				if (updateFlags & group_update_flags::CurrentHP) {
 					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::Health));
+				}
 
-				if (updateFlags & group_update_flags::MaxHP)
+				if (updateFlags & group_update_flags::MaxHP) {
 					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::MaxHealth));
+				}
 
 				UInt8 powerType = character.getByteValue(unit_fields::Bytes0, 3);
-				if (updateFlags & group_update_flags::PowerType)
+				if (updateFlags & group_update_flags::PowerType) {
 					out_packet << io::write<NetUInt8>(powerType);
+				}
 
-				if (updateFlags & group_update_flags::CurrentPower)
+				if (updateFlags & group_update_flags::CurrentPower) {
 					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::Power1 + powerType));
+				}
 
-				if (updateFlags & group_update_flags::MaxPower)
+				if (updateFlags & group_update_flags::MaxPower) {
 					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::MaxPower1 + powerType));
+				}
 
-				if (updateFlags & group_update_flags::Level)
+				if (updateFlags & group_update_flags::Level) {
 					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::Level));
+				}
 
-				if (updateFlags & group_update_flags::Zone)
+				if (updateFlags & group_update_flags::Zone) {
 					out_packet << io::write<NetUInt16>(character.getZone());
-				
+				}
+
 				if (updateFlags & group_update_flags::Position)
 				{
 					math::Vector3 location(character.getLocation());
 					out_packet << io::write<NetUInt16>(UInt16(location.x)) << io::write<NetUInt16>(UInt16(location.y));
 				}
-				
+
 				if (updateFlags & group_update_flags::Auras)
 				{
 					UInt64 auramask = 0;
@@ -2003,8 +2010,8 @@ namespace wowpp
 							auramask |= (UInt64(1) << i);
 						}
 					}*/
-					out_packet 
-						<< io::write<NetUInt64>(auramask);
+					out_packet
+					        << io::write<NetUInt64>(auramask);
 					/*for (UInt32 i = 0; i < 56; ++i)
 					{
 						UInt32 aura = character.getUInt32Value(unit_fields::Aura + i);
@@ -2016,32 +2023,41 @@ namespace wowpp
 					}*/
 				}
 
-				if (updateFlags & group_update_flags::PetGUID)
+				if (updateFlags & group_update_flags::PetGUID) {
 					out_packet << io::write<NetUInt64>(0);
+				}
 
-				if (updateFlags & group_update_flags::PetName)
+				if (updateFlags & group_update_flags::PetName) {
 					out_packet << io::write<NetUInt8>(0);
+				}
 
-				if (updateFlags & group_update_flags::PetModelID)
+				if (updateFlags & group_update_flags::PetModelID) {
 					out_packet << io::write<NetUInt16>(0);
+				}
 
-				if (updateFlags & group_update_flags::PetCurrentHP)
+				if (updateFlags & group_update_flags::PetCurrentHP) {
 					out_packet << io::write<NetUInt16>(0);
+				}
 
-				if (updateFlags & group_update_flags::PetMaxHP)
+				if (updateFlags & group_update_flags::PetMaxHP) {
 					out_packet << io::write<NetUInt16>(0);
+				}
 
-				if (updateFlags & group_update_flags::PetPowerType)
+				if (updateFlags & group_update_flags::PetPowerType) {
 					out_packet << io::write<NetUInt8>(0);
+				}
 
-				if (updateFlags & group_update_flags::PetCurrentPower)
+				if (updateFlags & group_update_flags::PetCurrentPower) {
 					out_packet << io::write<NetUInt16>(0);
+				}
 
-				if (updateFlags & group_update_flags::PetMaxPower)
+				if (updateFlags & group_update_flags::PetMaxPower) {
 					out_packet << io::write<NetUInt16>(0);
+				}
 
-				if (updateFlags & group_update_flags::PetAuras)
+				if (updateFlags & group_update_flags::PetAuras) {
 					out_packet << io::write<NetUInt64>(0);
+				}
 
 				out_packet.finish();
 			}
@@ -2069,44 +2085,51 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 
 				// Full player update
 				auto updateFlags = group_update_flags::Full;
 				updateFlags = static_cast<GroupUpdateFlags>(updateFlags & ~group_update_flags::Pet);
 				out_packet
-					<< io::write<NetUInt32>(updateFlags);
+				        << io::write<NetUInt32>(updateFlags);
 
 				if (updateFlags & group_update_flags::Status)
 				{
 					UInt16 flags = 0;
 					flags = group_member_status::Online;
 					out_packet
-						<< io::write<NetUInt16>(flags);
+					        << io::write<NetUInt16>(flags);
 				}
 
-				if (updateFlags & group_update_flags::CurrentHP)
+				if (updateFlags & group_update_flags::CurrentHP) {
 					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::Health));
+				}
 
-				if (updateFlags & group_update_flags::MaxHP)
+				if (updateFlags & group_update_flags::MaxHP) {
 					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::MaxHealth));
+				}
 
 				UInt8 powerType = character.getByteValue(unit_fields::Bytes0, 3);
-				if (updateFlags & group_update_flags::PowerType)
+				if (updateFlags & group_update_flags::PowerType) {
 					out_packet << io::write<NetUInt8>(powerType);
+				}
 
-				if (updateFlags & group_update_flags::CurrentPower)
+				if (updateFlags & group_update_flags::CurrentPower) {
 					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::Power1 + powerType));
+				}
 
-				if (updateFlags & group_update_flags::MaxPower)
+				if (updateFlags & group_update_flags::MaxPower) {
 					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::MaxPower1 + powerType));
+				}
 
-				if (updateFlags & group_update_flags::Level)
+				if (updateFlags & group_update_flags::Level) {
 					out_packet << io::write<NetUInt16>(character.getUInt32Value(unit_fields::Level));
+				}
 
-				if (updateFlags & group_update_flags::Zone)
+				if (updateFlags & group_update_flags::Zone) {
 					out_packet << io::write<NetUInt16>(character.getZone());
+				}
 
 				if (updateFlags & group_update_flags::Position)
 				{
@@ -2125,44 +2148,53 @@ namespace wowpp
 						}
 					}
 					out_packet
-						<< io::write<NetUInt64>(auramask);
+					        << io::write<NetUInt64>(auramask);
 					for (UInt32 i = 0; i < 56; ++i)
 					{
 						UInt32 aura = character.getUInt32Value(unit_fields::Aura + i);
 						if (aura != 0)
 						{
 							out_packet
-								<< io::write<NetUInt16>(aura) << io::write<NetUInt8>(1);
+							        << io::write<NetUInt16>(aura) << io::write<NetUInt8>(1);
 						}
 					}
 				}
 
-				if (updateFlags & group_update_flags::PetGUID)
+				if (updateFlags & group_update_flags::PetGUID) {
 					out_packet << io::write<NetUInt64>(0);
+				}
 
-				if (updateFlags & group_update_flags::PetName)
+				if (updateFlags & group_update_flags::PetName) {
 					out_packet << io::write<NetUInt8>(0);
+				}
 
-				if (updateFlags & group_update_flags::PetModelID)
+				if (updateFlags & group_update_flags::PetModelID) {
 					out_packet << io::write<NetUInt16>(0);
+				}
 
-				if (updateFlags & group_update_flags::PetCurrentHP)
+				if (updateFlags & group_update_flags::PetCurrentHP) {
 					out_packet << io::write<NetUInt16>(0);
+				}
 
-				if (updateFlags & group_update_flags::PetMaxHP)
+				if (updateFlags & group_update_flags::PetMaxHP) {
 					out_packet << io::write<NetUInt16>(0);
+				}
 
-				if (updateFlags & group_update_flags::PetPowerType)
+				if (updateFlags & group_update_flags::PetPowerType) {
 					out_packet << io::write<NetUInt8>(0);
+				}
 
-				if (updateFlags & group_update_flags::PetCurrentPower)
+				if (updateFlags & group_update_flags::PetCurrentPower) {
 					out_packet << io::write<NetUInt16>(0);
+				}
 
-				if (updateFlags & group_update_flags::PetMaxPower)
+				if (updateFlags & group_update_flags::PetMaxPower) {
 					out_packet << io::write<NetUInt16>(0);
+				}
 
-				if (updateFlags & group_update_flags::PetAuras)
+				if (updateFlags & group_update_flags::PetAuras) {
 					out_packet << io::write<NetUInt64>(0);
+				}
 
 				out_packet.finish();
 			}
@@ -2188,11 +2220,11 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				out_packet
-					<< io::write<NetUInt32>(group_update_flags::Status)
-					<< io::write<NetUInt16>(group_member_status::Offline);
+				        << io::write<NetUInt32>(group_update_flags::Status)
+				        << io::write<NetUInt16>(group_member_status::Offline);
 				out_packet.finish();
 			}
 
@@ -2200,9 +2232,9 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::PartyCommandResult);
 				out_packet
-					<< io::write<NetUInt32>(operation)
-					<< io::write_range(member) << io::write<NetUInt8>(0)
-					<< io::write<NetInt32>(result);
+				        << io::write<NetUInt32>(operation)
+				        << io::write_range(member) << io::write<NetUInt8>(0)
+				        << io::write<NetInt32>(result);
 				out_packet.finish();
 			}
 
@@ -2210,7 +2242,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::GroupInvite);
 				out_packet
-					<< io::write_range(inviterName) << io::write<NetUInt8>(0);
+				        << io::write_range(inviterName) << io::write<NetUInt8>(0);
 				out_packet.finish();
 			}
 
@@ -2218,7 +2250,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::GroupDecline);
 				out_packet
-					<< io::write_range(inviterName) << io::write<NetUInt8>(0);
+				        << io::write_range(inviterName) << io::write<NetUInt8>(0);
 				out_packet.finish();
 			}
 
@@ -2232,7 +2264,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::GroupSetLeader);
 				out_packet
-					<< io::write_range(slotName) << io::write<NetUInt8>(0);
+				        << io::write_range(slotName) << io::write<NetUInt8>(0);
 				out_packet.finish();
 			}
 
@@ -2246,33 +2278,34 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::GroupList);
 				out_packet
-					<< io::write<NetUInt8>(groupType)
-					<< io::write<NetUInt8>(isBattlegroundGroup ? 1 : 0)
-					<< io::write<NetUInt8>(groupId)
-					<< io::write<NetUInt8>(assistant)
-					<< io::write<NetUInt64>(data1)
-					<< io::write<NetUInt32>(groupMembers.size() - 1);
+				        << io::write<NetUInt8>(groupType)
+				        << io::write<NetUInt8>(isBattlegroundGroup ? 1 : 0)
+				        << io::write<NetUInt8>(groupId)
+				        << io::write<NetUInt8>(assistant)
+				        << io::write<NetUInt64>(data1)
+				        << io::write<NetUInt32>(groupMembers.size() - 1);
 				for (auto &it : groupMembers)
 				{
-					if (it.first == receiver)
+					if (it.first == receiver) {
 						continue;
+					}
 
 					out_packet
-						<< io::write_range(it.second.name) << io::write<NetUInt8>(0)
-						<< io::write<NetUInt64>(it.first)
-						<< io::write<NetUInt8>(it.second.status)
-						<< io::write<NetUInt8>(it.second.group)
-						<< io::write<NetUInt8>(it.second.assistant ? 1 : 0);
+					        << io::write_range(it.second.name) << io::write<NetUInt8>(0)
+					        << io::write<NetUInt64>(it.first)
+					        << io::write<NetUInt8>(it.second.status)
+					        << io::write<NetUInt8>(it.second.group)
+					        << io::write<NetUInt8>(it.second.assistant ? 1 : 0);
 				}
 				out_packet
-					<< io::write<NetUInt64>(leaderGuid);
+				        << io::write<NetUInt64>(leaderGuid);
 				if (groupMembers.size() > 1)
 				{
 					out_packet
-						<< io::write<NetUInt8>(lootMethod)
-						<< io::write<NetUInt64>(lootMasterGUID)
-						<< io::write<NetUInt8>(lootTreshold)
-						<< io::write<NetUInt8>(difficulty);
+					        << io::write<NetUInt8>(lootMethod)
+					        << io::write<NetUInt64>(lootMasterGUID)
+					        << io::write<NetUInt8>(lootTreshold)
+					        << io::write<NetUInt8>(difficulty);
 
 				}
 				out_packet.finish();
@@ -2283,9 +2316,9 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::GroupList);
 				out_packet
-					<< io::write<NetUInt64>(0)
-					<< io::write<NetUInt64>(0)
-					<< io::write<NetUInt64>(0);
+				        << io::write<NetUInt64>(0)
+				        << io::write<NetUInt64>(0)
+				        << io::write<NetUInt64>(0);
 				out_packet.finish();
 			}
 
@@ -2294,11 +2327,11 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::NewWorld);
 				out_packet
-					<< io::write<NetUInt32>(newMap)
-					<< io::write<float>(location.x)
-					<< io::write<float>(location.y)
-					<< io::write<float>(location.z)
-					<< io::write<float>(o);
+				        << io::write<NetUInt32>(newMap)
+				        << io::write<float>(location.x)
+				        << io::write<float>(location.y)
+				        << io::write<float>(location.z)
+				        << io::write<float>(o);
 				out_packet.finish();
 			}
 
@@ -2306,12 +2339,12 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::TransferPending);
 				out_packet
-					<< io::write<NetUInt32>(newMap);
+				        << io::write<NetUInt32>(newMap);
 				if (transportId != 0)
 				{
 					out_packet
-						<< io::write<NetUInt32>(transportId)
-						<< io::write<NetUInt32>(oldMap);
+					        << io::write<NetUInt32>(transportId)
+					        << io::write<NetUInt32>(oldMap);
 				}
 				out_packet.finish();
 			}
@@ -2320,8 +2353,8 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::TransferAborted);
 				out_packet
-					<< io::write<NetUInt32>(map)
-					<< io::write<NetUInt16>(reason);
+				        << io::write<NetUInt32>(map)
+				        << io::write<NetUInt16>(reason);
 				out_packet.finish();
 			}
 
@@ -2335,18 +2368,18 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::GameObjectQueryResponse);
 				out_packet
-					<< io::write<NetUInt32>(entry.id())
-					<< io::write<NetUInt32>(entry.type())
-					<< io::write<NetUInt32>(entry.displayid())
-					<< io::write_range(entry.name()) << io::write<NetUInt8>(0)
-					<< io::write<NetUInt8>(0)
-					<< io::write<NetUInt8>(0)
-					<< io::write<NetUInt8>(0)
-					<< io::write<NetUInt8>(0)
-					<< io::write_range(entry.caption()) << io::write<NetUInt8>(0)
-					<< io::write<NetUInt8>(0)
-					<< io::write_range(entry.data())
-					<< io::write<float>(entry.scale());
+				        << io::write<NetUInt32>(entry.id())
+				        << io::write<NetUInt32>(entry.type())
+				        << io::write<NetUInt32>(entry.displayid())
+				        << io::write_range(entry.name()) << io::write<NetUInt8>(0)
+				        << io::write<NetUInt8>(0)
+				        << io::write<NetUInt8>(0)
+				        << io::write<NetUInt8>(0)
+				        << io::write<NetUInt8>(0)
+				        << io::write_range(entry.caption()) << io::write<NetUInt8>(0)
+				        << io::write<NetUInt8>(0)
+				        << io::write_range(entry.data())
+				        << io::write<float>(entry.scale());
 				out_packet.finish();
 			}
 
@@ -2354,7 +2387,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::GameObjectQueryResponse);
 				out_packet
-					<< io::write<NetUInt32>(entry | 0x80000000);
+				        << io::write<NetUInt32>(entry | 0x80000000);
 				out_packet.finish();
 			}
 
@@ -2379,10 +2412,10 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				out_packet
-					<< io::write<NetUInt32>(unknown);
+				        << io::write<NetUInt32>(unknown);
 				out_packet.finish();
 			}
 
@@ -2407,10 +2440,10 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 				out_packet
-					<< io::write<NetUInt32>(unknown);
+				        << io::write<NetUInt32>(unknown);
 				out_packet.finish();
 			}
 
@@ -2418,8 +2451,8 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::Emote);
 				out_packet
-					<< io::write<NetUInt32>(animId)
-					<< io::write<NetUInt64>(guid);
+				        << io::write<NetUInt32>(animId)
+				        << io::write<NetUInt64>(guid);
 				out_packet.finish();
 			}
 
@@ -2427,19 +2460,19 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::TextEmote);
 				out_packet
-					<< io::write<NetUInt64>(guid)
-					<< io::write<NetUInt32>(textEmote)
-					<< io::write<NetUInt32>(emoteNum)
-					<< io::write<NetUInt32>(name.size() + 1);
+				        << io::write<NetUInt64>(guid)
+				        << io::write<NetUInt32>(textEmote)
+				        << io::write<NetUInt32>(emoteNum)
+				        << io::write<NetUInt32>(name.size() + 1);
 				if (name.size() > 0)
 				{
 					out_packet
-						<< io::write_range(name) << io::write<NetUInt8>(0);
+					        << io::write_range(name) << io::write<NetUInt8>(0);
 				}
 				else
 				{
 					out_packet
-						<< io::write<NetUInt8>(0);
+					        << io::write<NetUInt8>(0);
 				}
 				out_packet.finish();
 			}
@@ -2448,11 +2481,11 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::EnvironmentalDamageLog);
 				out_packet
-					<< io::write<NetUInt64>(guid)
-					<< io::write<NetUInt8>(type)
-					<< io::write<NetUInt32>(damage)
-					<< io::write<NetUInt32>(absorb)
-					<< io::write<NetUInt32>(resist);
+				        << io::write<NetUInt64>(guid)
+				        << io::write<NetUInt8>(type)
+				        << io::write<NetUInt32>(damage)
+				        << io::write<NetUInt32>(absorb)
+				        << io::write<NetUInt32>(resist);
 				out_packet.finish();
 			}
 
@@ -2466,7 +2499,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::PlaySound);
 				out_packet
-					<< io::write<NetUInt32>(soundId);
+				        << io::write<NetUInt32>(soundId);
 				out_packet.finish();
 			}
 
@@ -2474,8 +2507,8 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::ExplorationExperience);
 				out_packet
-					<< io::write<NetUInt32>(areaId)
-					<< io::write<NetUInt32>(experience);
+				        << io::write<NetUInt32>(areaId)
+				        << io::write<NetUInt32>(experience);
 				out_packet.finish();
 			}
 
@@ -2483,8 +2516,8 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::AiReaction);
 				out_packet
-					<< io::write<NetUInt64>(creatureGUID)
-					<< io::write<NetUInt32>(reaction);
+				        << io::write<NetUInt64>(creatureGUID)
+				        << io::write<NetUInt32>(reaction);
 				out_packet.finish();
 			}
 
@@ -2492,11 +2525,11 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::SpellDamageShield);
 				out_packet
-					<< io::write<NetUInt64>(targetGuid)
-					<< io::write<NetUInt64>(casterGuid)
-					<< io::write<NetUInt32>(spellId)
-					<< io::write<NetUInt32>(damage)
-					<< io::write<NetUInt32>(dmgSchool);
+				        << io::write<NetUInt64>(targetGuid)
+				        << io::write<NetUInt64>(casterGuid)
+				        << io::write<NetUInt32>(spellId)
+				        << io::write<NetUInt32>(damage)
+				        << io::write<NetUInt32>(dmgSchool);
 				out_packet.finish();
 			}
 
@@ -2504,9 +2537,9 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::LootResponse);
 				out_packet
-					<< io::write<NetUInt64>(guid)
-					<< io::write<NetUInt8>(type)
-					<< io::write<NetUInt8>(error);
+				        << io::write<NetUInt64>(guid)
+				        << io::write<NetUInt8>(type)
+				        << io::write<NetUInt8>(error);
 				out_packet.finish();
 			}
 
@@ -2514,9 +2547,9 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::LootResponse);
 				out_packet
-					<< io::write<NetUInt64>(guid)
-					<< io::write<NetUInt8>(type)
-					<< loot;
+				        << io::write<NetUInt64>(guid)
+				        << io::write<NetUInt8>(type)
+				        << loot;
 				out_packet.finish();
 			}
 
@@ -2524,8 +2557,8 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::LootReleaseResponse);
 				out_packet
-					<< io::write<NetUInt64>(guid)
-					<< io::write<NetUInt8>(1);
+				        << io::write<NetUInt64>(guid)
+				        << io::write<NetUInt8>(1);
 				out_packet.finish();
 			}
 
@@ -2533,7 +2566,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::LootRemoved);
 				out_packet
-					<< io::write<NetUInt8>(slot);
+				        << io::write<NetUInt8>(slot);
 				out_packet.finish();
 			}
 
@@ -2541,7 +2574,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::LootMoneyNotify);
 				out_packet
-					<< io::write<NetUInt32>(moneyPerPlayer);
+				        << io::write<NetUInt32>(moneyPerPlayer);
 				out_packet.finish();
 			}
 
@@ -2561,15 +2594,15 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::RaidTargetUpdate);
 				out_packet
-					<< io::write<NetUInt8>(0x01);	// List mode
+				        << io::write<NetUInt8>(0x01);	// List mode
 				UInt8 slot = 0;
 				for (auto &guid : list)
 				{
 					if (guid != 0)
 					{
 						out_packet
-							<< io::write<NetUInt8>(slot)
-							<< io::write<NetUInt64>(guid);
+						        << io::write<NetUInt8>(slot)
+						        << io::write<NetUInt64>(guid);
 					}
 
 					slot++;
@@ -2581,10 +2614,10 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::RaidTargetUpdate);
 				out_packet
-					<< io::write<NetUInt8>(0x00)	// No list
-					<< io::write<NetUInt8>(slot)
-					<< io::write<NetUInt64>(guid)
-					;
+				        << io::write<NetUInt8>(0x00)	// No list
+				        << io::write<NetUInt8>(slot)
+				        << io::write<NetUInt64>(guid)
+				        ;
 				out_packet.finish();
 			}
 
@@ -2592,8 +2625,8 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::RaidReadyCheck);
 				out_packet
-					<< io::write<NetUInt64>(guid)
-					;
+				        << io::write<NetUInt64>(guid)
+				        ;
 				out_packet.finish();
 			}
 
@@ -2601,9 +2634,9 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::RaidReadyCheckConfirm);
 				out_packet
-					<< io::write<NetUInt64>(guid)
-					<< io::write<NetUInt8>(state)
-					;
+				        << io::write<NetUInt64>(guid)
+				        << io::write<NetUInt8>(state)
+				        ;
 				out_packet.finish();
 			}
 
@@ -2617,8 +2650,8 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::LearnedSpell);
 				out_packet
-					<< io::write<NetUInt32>(spellId)
-					;
+				        << io::write<NetUInt32>(spellId)
+				        ;
 				out_packet.finish();
 			}
 
@@ -2626,28 +2659,28 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::ItemPushResult);
 				out_packet
-					<< io::write<NetUInt64>(playerGuid)
-					<< io::write<NetUInt32>(wasLooted ? 0 : 1)
-					<< io::write<NetUInt32>(wasCreated ? 1 : 0)
-					<< io::write<NetUInt32>(1)
-					<< io::write<NetUInt8>(bagSlot)
-					<< io::write<NetUInt32>((addedCount == item.getUInt32Value(item_fields::StackCount)) ? slot : -1)
-					<< io::write<NetUInt32>(item.getEntry().id())
-					<< io::write<NetUInt32>(0)
-					<< io::write<NetInt32>(0)
-					<< io::write<NetUInt32>(addedCount)
-					<< io::write<NetUInt32>(totalCount)
-					;
+				        << io::write<NetUInt64>(playerGuid)
+				        << io::write<NetUInt32>(wasLooted ? 0 : 1)
+				        << io::write<NetUInt32>(wasCreated ? 1 : 0)
+				        << io::write<NetUInt32>(1)
+				        << io::write<NetUInt8>(bagSlot)
+				        << io::write<NetUInt32>((addedCount == item.getUInt32Value(item_fields::StackCount)) ? slot : -1)
+				        << io::write<NetUInt32>(item.getEntry().id())
+				        << io::write<NetUInt32>(0)
+				        << io::write<NetInt32>(0)
+				        << io::write<NetUInt32>(addedCount)
+				        << io::write<NetUInt32>(totalCount)
+				        ;
 				out_packet.finish();
 			}
 
-			void listInventory(game::OutgoingPacket &out_packet, UInt64 vendorGuid, 
-				const proto::ItemManager &itemManager, const std::vector<proto::VendorItemEntry> &itemList)
+			void listInventory(game::OutgoingPacket &out_packet, UInt64 vendorGuid,
+			                   const proto::ItemManager &itemManager, const std::vector<proto::VendorItemEntry> &itemList)
 			{
 				out_packet.start(game::server_packet::ListInventory);
 				out_packet
-					<< io::write<NetUInt64>(vendorGuid)
-					<< io::write<NetUInt8>(itemList.size());
+				        << io::write<NetUInt64>(vendorGuid)
+				        << io::write<NetUInt8>(itemList.size());
 				if (itemList.empty())
 				{
 					out_packet << io::write<NetUInt8>(0);		// Error code: 0 (no error, just an empty list)
@@ -2657,19 +2690,20 @@ namespace wowpp
 				for (const auto &entry : itemList)
 				{
 					const auto *item = itemManager.getById(entry.item());
-					if (!item)
+					if (!item) {
 						continue;
+					}
 
 					out_packet
-						<< io::write<NetUInt32>(++index)
-						<< io::write<NetUInt32>(entry.item())
-						<< io::write<NetUInt32>(item->displayid())
-						<< io::write<NetUInt32>(entry.maxcount() <= 0 ? 0xFFFFFFFF : entry.maxcount())		// TODO
-						<< io::write<NetUInt32>(item->buyprice())	// TODO: reputation discount
-						<< io::write<NetUInt32>(item->durability())
-						<< io::write<NetUInt32>(item->buycount())
-						<< io::write<NetUInt32>(entry.extendedcost())
-						;
+					        << io::write<NetUInt32>(++index)
+					        << io::write<NetUInt32>(entry.item())
+					        << io::write<NetUInt32>(item->displayid())
+					        << io::write<NetUInt32>(entry.maxcount() <= 0 ? 0xFFFFFFFF : entry.maxcount())		// TODO
+					        << io::write<NetUInt32>(item->buyprice())	// TODO: reputation discount
+					        << io::write<NetUInt32>(item->durability())
+					        << io::write<NetUInt32>(item->buycount())
+					        << io::write<NetUInt32>(entry.extendedcost())
+					        ;
 				}
 				out_packet.finish();
 			}
@@ -2678,9 +2712,9 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::TrainerList);
 				out_packet
-					<< io::write<NetUInt64>(trainerGuid)
-					<< io::write<NetUInt32>(trainerEntry.type())
-					<< io::write<NetUInt32>(trainerEntry.spells_size());
+				        << io::write<NetUInt64>(trainerGuid)
+				        << io::write<NetUInt32>(trainerEntry.type())
+				        << io::write<NetUInt32>(trainerEntry.spells_size());
 
 				const UInt8 GreenSpell = 0;
 				const UInt8 RedSpell = 1;
@@ -2691,25 +2725,27 @@ namespace wowpp
 				{
 					const auto &spell = trainerEntry.spells(i);
 					UInt8 state = GreenSpell;
-					if (character.hasSpell(spell.spell()))
+					if (character.hasSpell(spell.spell())) {
 						state = GreySpell;
-					else if (character.getLevel() < spell.reqlevel() && spell.reqlevel() > 0)
+					}
+					else if (character.getLevel() < spell.reqlevel() && spell.reqlevel() > 0) {
 						state = RedSpell;
+					}
 					// TODO More checks
 
 					out_packet
-						<< io::write<NetUInt32>(spell.spell())		// Spell ID
-						<< io::write<NetUInt8>(state)					// Spell State
-						<< io::write<NetUInt32>(spell.spellcost())		// Spell cost
-						<< io::write<NetUInt32>(0)		// TODO			// Primary Prof
-						<< io::write<NetUInt32>(0)		// TODO			// Must be equal to previous field
-						<< io::write<NetUInt8>(spell.reqlevel())			// Required character level
-						<< io::write<NetUInt32>(spell.reqskill())	// Required skill id
-						<< io::write<NetUInt32>(spell.reqskillval())	// Required skill value
-						<< io::write<NetUInt32>(0)						// Previous spell
-						<< io::write<NetUInt32>(0)						// Required spell
-						<< io::write<NetUInt32>(0)						// Unknown
-						;
+					        << io::write<NetUInt32>(spell.spell())		// Spell ID
+					        << io::write<NetUInt8>(state)					// Spell State
+					        << io::write<NetUInt32>(spell.spellcost())		// Spell cost
+					        << io::write<NetUInt32>(0)		// TODO			// Primary Prof
+					        << io::write<NetUInt32>(0)		// TODO			// Must be equal to previous field
+					        << io::write<NetUInt8>(spell.reqlevel())			// Required character level
+					        << io::write<NetUInt32>(spell.reqskill())	// Required skill id
+					        << io::write<NetUInt32>(spell.reqskillval())	// Required skill value
+					        << io::write<NetUInt32>(0)						// Previous spell
+					        << io::write<NetUInt32>(0)						// Required spell
+					        << io::write<NetUInt32>(0)						// Unknown
+					        ;
 				}
 
 				out_packet << io::write_range(trainerEntry.title()) << io::write<NetUInt8>(0);
@@ -2720,11 +2756,11 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::GossipMessage);
 				out_packet
-					<< io::write<NetUInt64>(objectGuid)
-					<< io::write<NetUInt32>(0)				// Menu ID
-					<< io::write<NetUInt32>(titleTextId)
-					<< io::write<NetUInt32>(0)				// Menu item count
-					<< io::write<NetUInt32>(0);				// Quest item count
+				        << io::write<NetUInt64>(objectGuid)
+				        << io::write<NetUInt32>(0)				// Menu ID
+				        << io::write<NetUInt32>(titleTextId)
+				        << io::write<NetUInt32>(0)				// Menu item count
+				        << io::write<NetUInt32>(0);				// Quest item count
 				out_packet.finish();
 			}
 
@@ -2732,8 +2768,8 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::TrainerBuySucceeded);
 				out_packet
-					<< io::write<NetUInt64>(trainerGuid)
-					<< io::write<NetUInt32>(spellId);
+				        << io::write<NetUInt64>(trainerGuid)
+				        << io::write<NetUInt32>(spellId);
 				out_packet.finish();
 			}
 
@@ -2741,8 +2777,8 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::PlaySpellVisual);
 				out_packet
-					<< io::write<NetUInt64>(unitGuid)
-					<< io::write<NetUInt32>(visualId);
+				        << io::write<NetUInt64>(unitGuid)
+				        << io::write<NetUInt32>(visualId);
 				out_packet.finish();
 			}
 
@@ -2750,40 +2786,56 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::PlaySpellImpact);
 				out_packet
-					<< io::write<NetUInt64>(unitGuid)
-					<< io::write<NetUInt32>(spellId);
+				        << io::write<NetUInt64>(unitGuid)
+				        << io::write<NetUInt32>(spellId);
 				out_packet.finish();
 			}
 
-			void charRename(game::OutgoingPacket & out_packet, game::ResponseCode response, UInt64 unitGuid, const String & newName)
+			void charRename(game::OutgoingPacket &out_packet, game::ResponseCode response, UInt64 unitGuid, const String &newName)
 			{
 				out_packet.start(game::server_packet::CharRename);
 				out_packet
-					<< io::write<NetUInt8>(response);
+				        << io::write<NetUInt8>(response);
 
 				if (response == game::response_code::Success)
 				{
 					out_packet
-						<< io::write<NetUInt64>(unitGuid)
-						<< io::write_range(newName) << io::write<NetUInt8>(0);
+					        << io::write<NetUInt64>(unitGuid)
+					        << io::write_range(newName) << io::write<NetUInt8>(0);
 				}
 				out_packet.finish();
 			}
 
-			void changeSpeed(game::OutgoingPacket & out_packet, MovementType moveType, UInt64 guid, float speed)
+			void changeSpeed(game::OutgoingPacket &out_packet, MovementType moveType, UInt64 guid, float speed)
 			{
 				switch (moveType)
 				{
-					case movement_type::Walk: out_packet.start(game::server_packet::WalkSpeedChange); break;
-					case movement_type::Run: out_packet.start(game::server_packet::RunSpeedChange); break;
-					case movement_type::Swim: out_packet.start(game::server_packet::SwimSpeedChange); break;
-					case movement_type::Flight: out_packet.start(game::server_packet::FlightSpeedChange); break;
-					case movement_type::Turn: out_packet.start(game::server_packet::TurnRateChange); break;
-					case movement_type::Backwards: out_packet.start(game::server_packet::RunBackSpeedChange); break;
-					case movement_type::SwimBackwards: out_packet.start(game::server_packet::SwimBackSpeedChange); break;
-					case movement_type::FlightBackwards: out_packet.start(game::server_packet::FlightBackSpeedChange); break;
-					default:
-						return;
+				case movement_type::Walk:
+					out_packet.start(game::server_packet::WalkSpeedChange);
+					break;
+				case movement_type::Run:
+					out_packet.start(game::server_packet::RunSpeedChange);
+					break;
+				case movement_type::Swim:
+					out_packet.start(game::server_packet::SwimSpeedChange);
+					break;
+				case movement_type::Flight:
+					out_packet.start(game::server_packet::FlightSpeedChange);
+					break;
+				case movement_type::Turn:
+					out_packet.start(game::server_packet::TurnRateChange);
+					break;
+				case movement_type::Backwards:
+					out_packet.start(game::server_packet::RunBackSpeedChange);
+					break;
+				case movement_type::SwimBackwards:
+					out_packet.start(game::server_packet::SwimBackSpeedChange);
+					break;
+				case movement_type::FlightBackwards:
+					out_packet.start(game::server_packet::FlightBackSpeedChange);
+					break;
+				default:
+					return;
 				}
 
 				{
@@ -2804,168 +2856,168 @@ namespace wowpp
 					}
 
 					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
+					        << io::write_range(&packGUID[0], &packGUID[size]);
 				}
 
-				out_packet 
-					<< io::write<NetUInt32>(0);
+				out_packet
+				        << io::write<NetUInt32>(0);
 				if (moveType == movement_type::Run)
 				{
 					out_packet
-						<< io::write<NetUInt8>(0);
+					        << io::write<NetUInt8>(0);
 				}
 				out_packet
-					<< float(speed);
+				        << float(speed);
 				out_packet.finish();
 			}
 
-			void questgiverStatus(game::OutgoingPacket & out_packet, UInt64 guid, game::QuestgiverStatus status)
+			void questgiverStatus(game::OutgoingPacket &out_packet, UInt64 guid, game::QuestgiverStatus status)
 			{
 				out_packet.start(game::server_packet::QuestgiverStatus);
 				out_packet
-					<< io::write<NetUInt64>(guid)
-					<< io::write<NetUInt8>(status);
+				        << io::write<NetUInt64>(guid)
+				        << io::write<NetUInt8>(status);
 				out_packet.finish();
 			}
 
-			void questgiverQuestList(game::OutgoingPacket & out_packet, UInt64 guid, const String & title, UInt32 emoteDelay, UInt32 emote, const std::vector<QuestMenuItem>& menu)
+			void questgiverQuestList(game::OutgoingPacket &out_packet, UInt64 guid, const String &title, UInt32 emoteDelay, UInt32 emote, const std::vector<QuestMenuItem> &menu)
 			{
 				out_packet.start(game::server_packet::QuestgiverQuestList);
 				out_packet
-					<< io::write<NetUInt64>(guid)
-					<< io::write_range(title) << io::write<NetUInt8>(0)
-					<< io::write<NetUInt32>(emoteDelay)
-					<< io::write<NetUInt32>(emote)
-					<< io::write<NetUInt8>(menu.size());
+				        << io::write<NetUInt64>(guid)
+				        << io::write_range(title) << io::write<NetUInt8>(0)
+				        << io::write<NetUInt32>(emoteDelay)
+				        << io::write<NetUInt32>(emote)
+				        << io::write<NetUInt8>(menu.size());
 				for (const auto &menuItem : menu)
 				{
 					assert(menuItem.quest);
 					out_packet
-						<< io::write<NetUInt32>(menuItem.quest->id())
-						<< io::write<NetUInt32>(menuItem.menuIcon)
-						<< io::write<NetInt32>(menuItem.questLevel)
-						<< io::write_range(menuItem.title) << io::write<NetUInt8>(0);
+					        << io::write<NetUInt32>(menuItem.quest->id())
+					        << io::write<NetUInt32>(menuItem.menuIcon)
+					        << io::write<NetInt32>(menuItem.questLevel)
+					        << io::write_range(menuItem.title) << io::write<NetUInt8>(0);
 				}
 				out_packet.finish();
 			}
 
-			void questgiverQuestDetails(game::OutgoingPacket & out_packet, UInt64 guid, const proto::ItemManager &items, const proto::QuestEntry & quest)
+			void questgiverQuestDetails(game::OutgoingPacket &out_packet, UInt64 guid, const proto::ItemManager &items, const proto::QuestEntry &quest)
 			{
 				out_packet.start(game::server_packet::QuestgiverQuestDetails);
 				out_packet
-					<< io::write<NetUInt64>(guid)
-					<< io::write<NetUInt32>(quest.id())
-					<< io::write_range(quest.name()) << io::write<NetUInt8>(0)
-					<< io::write_range(quest.detailstext()) << io::write<NetUInt8>(0)
-					<< io::write_range(quest.objectivestext()) << io::write<NetUInt8>(0)
-					<< io::write<NetUInt32>(1)		// Activate accept button? (true)
-					<< io::write<NetUInt32>(quest.suggestedplayers());
+				        << io::write<NetUInt64>(guid)
+				        << io::write<NetUInt32>(quest.id())
+				        << io::write_range(quest.name()) << io::write<NetUInt8>(0)
+				        << io::write_range(quest.detailstext()) << io::write<NetUInt8>(0)
+				        << io::write_range(quest.objectivestext()) << io::write<NetUInt8>(0)
+				        << io::write<NetUInt32>(1)		// Activate accept button? (true)
+				        << io::write<NetUInt32>(quest.suggestedplayers());
 
 				if (quest.flags() & game::quest_flags::HiddenRewards)
 				{
 					out_packet
-						<< io::write<NetUInt32>(0)		// Rewarded chosen items
-						<< io::write<NetUInt32>(0)		// Rewarded additional items
-						<< io::write<NetUInt32>(0);		// Rewarded money
+					        << io::write<NetUInt32>(0)		// Rewarded chosen items
+					        << io::write<NetUInt32>(0)		// Rewarded additional items
+					        << io::write<NetUInt32>(0);		// Rewarded money
 				}
 				else
 				{
 					// Choice item count
 					out_packet
-						<< io::write<NetUInt32>(quest.rewarditemschoice_size());
+					        << io::write<NetUInt32>(quest.rewarditemschoice_size());
 					for (const auto &reward : quest.rewarditemschoice())
 					{
 						out_packet
-							<< io::write<NetUInt32>(reward.itemid())
-							<< io::write<NetUInt32>(reward.count());
+						        << io::write<NetUInt32>(reward.itemid())
+						        << io::write<NetUInt32>(reward.count());
 						const auto *item = items.getById(reward.itemid());
 						out_packet
-							<< io::write<NetUInt32>(item ? item->displayid() : 0);
+						        << io::write<NetUInt32>(item ? item->displayid() : 0);
 					}
 
 					// Additional item count
 					out_packet
-						<< io::write<NetUInt32>(quest.rewarditems_size());
+					        << io::write<NetUInt32>(quest.rewarditems_size());
 					for (const auto &reward : quest.rewarditems())
 					{
 						out_packet
-							<< io::write<NetUInt32>(reward.itemid())
-							<< io::write<NetUInt32>(reward.count());
+						        << io::write<NetUInt32>(reward.itemid())
+						        << io::write<NetUInt32>(reward.count());
 						const auto *item = items.getById(reward.itemid());
 						out_packet
-							<< io::write<NetUInt32>(item ? item->displayid() : 0);
+						        << io::write<NetUInt32>(item ? item->displayid() : 0);
 					}
 
 					// Money
 					out_packet
-						<< io::write<NetUInt32>(quest.rewardmoney());
+					        << io::write<NetUInt32>(quest.rewardmoney());
 				}
 
 				// Additional data
 				out_packet
-					<< io::write<NetUInt32>(quest.rewardhonorkills())
-					<< io::write<NetUInt32>(quest.rewardspell())
-					<< io::write<NetUInt32>(quest.rewardspellcast())
-					<< io::write<NetUInt32>(quest.rewtitleid());
+				        << io::write<NetUInt32>(quest.rewardhonorkills())
+				        << io::write<NetUInt32>(quest.rewardspell())
+				        << io::write<NetUInt32>(quest.rewardspellcast())
+				        << io::write<NetUInt32>(quest.rewtitleid());
 
 				// Emote count?
 				out_packet
-					<< io::write<NetUInt32>(4);
+				        << io::write<NetUInt32>(4);
 				for (UInt32 i = 0; i < 4; ++i)
 				{
 					out_packet
-						<< io::write<NetUInt32>(0)		// Emote
-						<< io::write<NetUInt32>(0);		// Delay
+					        << io::write<NetUInt32>(0)		// Emote
+					        << io::write<NetUInt32>(0);		// Delay
 				}
 				out_packet.finish();
 			}
 
-			void questQueryResponse(game::OutgoingPacket & out_packet, const proto::QuestEntry & quest)
+			void questQueryResponse(game::OutgoingPacket &out_packet, const proto::QuestEntry &quest)
 			{
 				out_packet.start(game::server_packet::QuestQueryResponse);
 				out_packet
-					<< io::write<NetUInt32>(quest.id())
-					<< io::write<NetUInt32>(quest.method())
-					<< io::write<NetInt32>(quest.questlevel())
-					<< io::write<NetUInt32>(quest.zone())
-					<< io::write<NetUInt32>(quest.type())
-					<< io::write<NetUInt32>(quest.suggestedplayers())
-					<< io::write<NetUInt32>(0)	// TODO: RepObjectiveFaction
-					<< io::write<NetUInt32>(0)	// TODO: RepObjectiveValue
-					<< io::write<NetUInt32>(0)	// TODO
-					<< io::write<NetUInt32>(0)	// TODO
-					<< io::write<NetUInt32>(quest.nextchainquestid());
+				        << io::write<NetUInt32>(quest.id())
+				        << io::write<NetUInt32>(quest.method())
+				        << io::write<NetInt32>(quest.questlevel())
+				        << io::write<NetUInt32>(quest.zone())
+				        << io::write<NetUInt32>(quest.type())
+				        << io::write<NetUInt32>(quest.suggestedplayers())
+				        << io::write<NetUInt32>(0)	// TODO: RepObjectiveFaction
+				        << io::write<NetUInt32>(0)	// TODO: RepObjectiveValue
+				        << io::write<NetUInt32>(0)	// TODO
+				        << io::write<NetUInt32>(0)	// TODO
+				        << io::write<NetUInt32>(quest.nextchainquestid());
 				if (quest.flags() & game::quest_flags::HiddenRewards)
 				{
 					out_packet
-						<< io::write<NetUInt32>(0);	// Money reward hidden
+					        << io::write<NetUInt32>(0);	// Money reward hidden
 				}
 				else
 				{
 					out_packet
-						<< io::write<NetUInt32>(quest.rewardmoney());
+					        << io::write<NetUInt32>(quest.rewardmoney());
 				}
 				out_packet
-					<< io::write<NetUInt32>(quest.rewardmoneymaxlevel())
-					<< io::write<NetUInt32>(quest.rewardspell())
-					<< io::write<NetUInt32>(quest.rewardspellcast())
-					<< io::write<NetUInt32>(quest.rewardhonorkills())
-					<< io::write<NetUInt32>(quest.srcitemid())
-					<< io::write<NetUInt32>(quest.flags() & 0xFFFF)
-					<< io::write<NetUInt32>(quest.rewtitleid());
+				        << io::write<NetUInt32>(quest.rewardmoneymaxlevel())
+				        << io::write<NetUInt32>(quest.rewardspell())
+				        << io::write<NetUInt32>(quest.rewardspellcast())
+				        << io::write<NetUInt32>(quest.rewardhonorkills())
+				        << io::write<NetUInt32>(quest.srcitemid())
+				        << io::write<NetUInt32>(quest.flags() & 0xFFFF)
+				        << io::write<NetUInt32>(quest.rewtitleid());
 				if (quest.flags() & game::quest_flags::HiddenRewards)
 				{
 					for (int i = 0; i < 4; ++i)
 					{
 						out_packet
-							<< io::write<NetUInt32>(0)
-							<< io::write<NetUInt32>(0);
+						        << io::write<NetUInt32>(0)
+						        << io::write<NetUInt32>(0);
 					}
 					for (int i = 0; i < 6; ++i)
 					{
 						out_packet
-							<< io::write<NetUInt32>(0)
-							<< io::write<NetUInt32>(0);
+						        << io::write<NetUInt32>(0)
+						        << io::write<NetUInt32>(0);
 					}
 				}
 				else
@@ -2973,26 +3025,26 @@ namespace wowpp
 					for (int i = 0; i < 4; ++i)
 					{
 						out_packet
-							<< io::write<NetUInt32>(i < quest.rewarditems_size() ? quest.rewarditems(i).itemid() : 0)
-							<< io::write<NetUInt32>(i < quest.rewarditems_size() ? quest.rewarditems(i).count() : 0);
+						        << io::write<NetUInt32>(i < quest.rewarditems_size() ? quest.rewarditems(i).itemid() : 0)
+						        << io::write<NetUInt32>(i < quest.rewarditems_size() ? quest.rewarditems(i).count() : 0);
 					}
 					for (int i = 0; i < 6; ++i)
 					{
 						out_packet
-							<< io::write<NetUInt32>(i < quest.rewarditemschoice_size() ? quest.rewarditemschoice(i).itemid() : 0)
-							<< io::write<NetUInt32>(i < quest.rewarditemschoice_size() ? quest.rewarditemschoice(i).count() : 0);
+						        << io::write<NetUInt32>(i < quest.rewarditemschoice_size() ? quest.rewarditemschoice(i).itemid() : 0)
+						        << io::write<NetUInt32>(i < quest.rewarditemschoice_size() ? quest.rewarditemschoice(i).count() : 0);
 					}
 				}
 
 				out_packet
-					<< io::write<NetUInt32>(quest.pointmapid())
-					<< io::write<float>(quest.pointx())
-					<< io::write<float>(quest.pointy())
-					<< io::write<NetUInt32>(quest.pointopt())
-					<< io::write_range(quest.name()) << io::write<NetUInt8>(0)
-					<< io::write_range(quest.detailstext()) << io::write<NetUInt8>(0)
-					<< io::write_range(quest.objectivestext()) << io::write<NetUInt8>(0)
-					<< io::write_range(quest.endtext()) << io::write<NetUInt8>(0);
+				        << io::write<NetUInt32>(quest.pointmapid())
+				        << io::write<float>(quest.pointx())
+				        << io::write<float>(quest.pointy())
+				        << io::write<NetUInt32>(quest.pointopt())
+				        << io::write_range(quest.name()) << io::write<NetUInt8>(0)
+				        << io::write_range(quest.detailstext()) << io::write<NetUInt8>(0)
+				        << io::write_range(quest.objectivestext()) << io::write<NetUInt8>(0)
+				        << io::write_range(quest.endtext()) << io::write<NetUInt8>(0);
 				for (int i = 0; i < 4; ++i)
 				{
 					if (i < quest.requirements_size())
@@ -3001,72 +3053,74 @@ namespace wowpp
 						if (req.objectid() != 0)
 						{
 							out_packet
-								<< io::write<NetUInt32>(req.objectid() | 0x80000000)
-								<< io::write<NetUInt32>(req.objectcount());
+							        << io::write<NetUInt32>(req.objectid() | 0x80000000)
+							        << io::write<NetUInt32>(req.objectcount());
 						}
 						else
 						{
 							out_packet
-								<< io::write<NetUInt32>(req.creatureid())
-								<< io::write<NetUInt32>(req.creaturecount());
+							        << io::write<NetUInt32>(req.creatureid())
+							        << io::write<NetUInt32>(req.creaturecount());
 						}
 						out_packet
-							<< io::write<NetUInt32>(req.itemid())
-							<< io::write<NetUInt32>(req.itemcount());
+						        << io::write<NetUInt32>(req.itemid())
+						        << io::write<NetUInt32>(req.itemcount());
 					}
 					else
 					{
 						out_packet
-							<< io::write<NetUInt32>(0)
-							<< io::write<NetUInt32>(0)
-							<< io::write<NetUInt32>(0)
-							<< io::write<NetUInt32>(0);
+						        << io::write<NetUInt32>(0)
+						        << io::write<NetUInt32>(0)
+						        << io::write<NetUInt32>(0)
+						        << io::write<NetUInt32>(0);
 					}
 				}
 				for (int i = 0; i < 4; ++i)
 				{
-					if (i < quest.requirements_size()) out_packet << io::write_range(quest.requirements(i).text());
+					if (i < quest.requirements_size()) {
+						out_packet << io::write_range(quest.requirements(i).text());
+					}
 					out_packet << io::write<NetUInt8>(0);
 				}
 				out_packet.finish();
 			}
 
-			void gossipComplete(game::OutgoingPacket & out_packet)
+			void gossipComplete(game::OutgoingPacket &out_packet)
 			{
 				out_packet.start(game::server_packet::GossipComplete);
 				out_packet.finish();
 			}
 
-			void questgiverStatusMultiple(game::OutgoingPacket & out_packet, const std::map<UInt64, game::QuestgiverStatus>& status)
+			void questgiverStatusMultiple(game::OutgoingPacket &out_packet, const std::map<UInt64, game::QuestgiverStatus> &status)
 			{
 				out_packet.start(game::server_packet::QuestgiverStatusMultiple);
 				out_packet
-					<< io::write<NetUInt32>(status.size());
+				        << io::write<NetUInt32>(status.size());
 				for (const auto &pair : status)
 				{
 					out_packet
-						<< io::write<NetUInt64>(pair.first)
-						<< io::write<NetUInt8>(pair.second);
+					        << io::write<NetUInt64>(pair.first)
+					        << io::write<NetUInt8>(pair.second);
 				}
 				out_packet.finish();
 			}
 
-			void questgiverRequestItems(game::OutgoingPacket & out_packet, UInt64 guid, bool closeOnCancel, bool enableNext, const proto::ItemManager & items, const proto::QuestEntry & quest)
+			void questgiverRequestItems(game::OutgoingPacket &out_packet, UInt64 guid, bool closeOnCancel, bool enableNext, const proto::ItemManager &items, const proto::QuestEntry &quest)
 			{
 				out_packet.start(game::server_packet::QuestgiverRequestItems);
 				out_packet
-					<< io::write<NetUInt64>(guid)
-					<< io::write<NetUInt32>(quest.id())
-					<< io::write_range(quest.name()) << io::write<NetUInt8>(0)
-					<< io::write_range(quest.requestitemstext()) << io::write<NetUInt8>(0)
-					<< io::write<NetUInt32>(0)		// Unknown
-					<< io::write<NetUInt32>(0)		// Emote
-					<< io::write<NetUInt32>(closeOnCancel ? 1 : 0)
-					<< io::write<NetUInt32>(0)		// Unknown
-					<< io::write<NetUInt32>(0);		// Required money
+				        << io::write<NetUInt64>(guid)
+				        << io::write<NetUInt32>(quest.id())
+				        << io::write_range(quest.name()) << io::write<NetUInt8>(0)
+				        << io::write_range(quest.requestitemstext()) << io::write<NetUInt8>(0)
+				        << io::write<NetUInt32>(0)		// Unknown
+				        << io::write<NetUInt32>(0)		// Emote
+				        << io::write<NetUInt32>(closeOnCancel ? 1 : 0)
+				        << io::write<NetUInt32>(0)		// Unknown
+				        << io::write<NetUInt32>(0);		// Required money
 				const size_t itemCountPos = out_packet.sink().position();
 				out_packet
-					<< io::write<NetUInt32>(quest.requirements_size());
+				        << io::write<NetUInt32>(quest.requirements_size());
 				int realCount = quest.requirements_size();
 				for (const auto &req : quest.requirements())
 				{
@@ -3078,105 +3132,106 @@ namespace wowpp
 
 					const auto *item = items.getById(req.itemid());
 					out_packet
-						<< io::write<NetUInt32>(req.itemid())
-						<< io::write<NetUInt32>(req.itemcount())
-						<< io::write<NetUInt32>(item ? item->displayid() : 0);
+					        << io::write<NetUInt32>(req.itemid())
+					        << io::write<NetUInt32>(req.itemcount())
+					        << io::write<NetUInt32>(item ? item->displayid() : 0);
 				}
 				// Overwrite real number of items if not matching
-				if (realCount != quest.requirements_size())
-					out_packet.sink().overwrite(itemCountPos, reinterpret_cast<const char*>(&realCount), sizeof(int));
-				
+				if (realCount != quest.requirements_size()) {
+					out_packet.sink().overwrite(itemCountPos, reinterpret_cast<const char *>(&realCount), sizeof(int));
+				}
+
 				out_packet
-					<< io::write<NetUInt32>(enableNext ? 3 : 0)
-					<< io::write<NetUInt32>(0x04)				// Unknown
-					<< io::write<NetUInt32>(0x08)				// Unknown
-					<< io::write<NetUInt32>(0x10);				// Unknown
+				        << io::write<NetUInt32>(enableNext ? 3 : 0)
+				        << io::write<NetUInt32>(0x04)				// Unknown
+				        << io::write<NetUInt32>(0x08)				// Unknown
+				        << io::write<NetUInt32>(0x10);				// Unknown
 				out_packet.finish();
 			}
-			void questgiverOfferReward(game::OutgoingPacket & out_packet, UInt64 guid, bool enableNext, const proto::ItemManager & items, const proto::QuestEntry & quest)
+			void questgiverOfferReward(game::OutgoingPacket &out_packet, UInt64 guid, bool enableNext, const proto::ItemManager &items, const proto::QuestEntry &quest)
 			{
 				out_packet.start(game::server_packet::QuestgiverOfferReward);
 				out_packet
-					<< io::write<NetUInt64>(guid)
-					<< io::write<NetUInt32>(quest.id())
-					<< io::write_range(quest.name()) << io::write<NetUInt8>(0)
-					<< io::write_range(quest.offerrewardtext()) << io::write<NetUInt8>(0)
-					<< io::write<NetUInt32>(enableNext ? 1 : 0)
-					<< io::write<NetUInt32>(0)		// Unknown
-					<< io::write<NetUInt32>(0)		// Emote count
-					<< io::write<NetUInt32>(quest.rewarditemschoice_size());
+				        << io::write<NetUInt64>(guid)
+				        << io::write<NetUInt32>(quest.id())
+				        << io::write_range(quest.name()) << io::write<NetUInt8>(0)
+				        << io::write_range(quest.offerrewardtext()) << io::write<NetUInt8>(0)
+				        << io::write<NetUInt32>(enableNext ? 1 : 0)
+				        << io::write<NetUInt32>(0)		// Unknown
+				        << io::write<NetUInt32>(0)		// Emote count
+				        << io::write<NetUInt32>(quest.rewarditemschoice_size());
 				for (const auto &rew : quest.rewarditemschoice())
 				{
 					const auto *item = items.getById(rew.itemid());
 					out_packet
-						<< io::write<NetUInt32>(rew.itemid())
-						<< io::write<NetUInt32>(rew.count())
-						<< io::write<NetUInt32>(item ? item->displayid() : 0);
+					        << io::write<NetUInt32>(rew.itemid())
+					        << io::write<NetUInt32>(rew.count())
+					        << io::write<NetUInt32>(item ? item->displayid() : 0);
 				}
 				out_packet
-					<< io::write<NetUInt32>(quest.rewarditems_size());
+				        << io::write<NetUInt32>(quest.rewarditems_size());
 				for (const auto &rew : quest.rewarditems())
 				{
 					const auto *item = items.getById(rew.itemid());
 					out_packet
-						<< io::write<NetUInt32>(rew.itemid())
-						<< io::write<NetUInt32>(rew.count())
-						<< io::write<NetUInt32>(item ? item->displayid() : 0);
+					        << io::write<NetUInt32>(rew.itemid())
+					        << io::write<NetUInt32>(rew.count())
+					        << io::write<NetUInt32>(item ? item->displayid() : 0);
 				}
 				out_packet
-					<< io::write<NetUInt32>(quest.rewardmoney())
-					<< io::write<NetUInt32>(quest.rewardhonorkills())
-					<< io::write<NetUInt32>(0x08)				// Unknown
-					<< io::write<NetUInt32>(quest.rewardspell())
-					<< io::write<NetUInt32>(quest.rewardspellcast())
-					<< io::write<NetUInt32>(0)					// Unknown
-					;
+				        << io::write<NetUInt32>(quest.rewardmoney())
+				        << io::write<NetUInt32>(quest.rewardhonorkills())
+				        << io::write<NetUInt32>(0x08)				// Unknown
+				        << io::write<NetUInt32>(quest.rewardspell())
+				        << io::write<NetUInt32>(quest.rewardspellcast())
+				        << io::write<NetUInt32>(0)					// Unknown
+				        ;
 				out_packet.finish();
 			}
-			void questgiverQuestComplete(game::OutgoingPacket & out_packet, bool isMaxLevel, UInt32 xp, const proto::QuestEntry & quest)
+			void questgiverQuestComplete(game::OutgoingPacket &out_packet, bool isMaxLevel, UInt32 xp, const proto::QuestEntry &quest)
 			{
 				out_packet.start(game::server_packet::QuestgiverQuestComplete);
 				out_packet
-					<< io::write<NetUInt32>(quest.id())
-					<< io::write<NetUInt32>(0x03);
+				        << io::write<NetUInt32>(quest.id())
+				        << io::write<NetUInt32>(0x03);
 				if (!isMaxLevel)
 				{
 					out_packet
-						<< io::write<NetUInt32>(xp)
-						<< io::write<NetUInt32>(quest.rewardmoney());
+					        << io::write<NetUInt32>(xp)
+					        << io::write<NetUInt32>(quest.rewardmoney());
 				}
 				else
 				{
 					out_packet
-						<< io::write<NetUInt32>(0)
-						<< io::write<NetUInt32>(quest.rewardmoney() + quest.rewardmoneymaxlevel());
+					        << io::write<NetUInt32>(0)
+					        << io::write<NetUInt32>(quest.rewardmoney() + quest.rewardmoneymaxlevel());
 				}
 				out_packet
-					<< io::write<NetUInt32>(0)				// Unknown
-					<< io::write<NetUInt32>(quest.rewarditems_size());
+				        << io::write<NetUInt32>(0)				// Unknown
+				        << io::write<NetUInt32>(quest.rewarditems_size());
 				for (const auto &rew : quest.rewarditems())
 				{
 					out_packet
-						<< io::write<NetUInt32>(rew.itemid())
-						<< io::write<NetUInt32>(rew.count());
+					        << io::write<NetUInt32>(rew.itemid())
+					        << io::write<NetUInt32>(rew.count());
 				}
 				out_packet.finish();
 			}
-			void questlogFull(game::OutgoingPacket & out_packet)
+			void questlogFull(game::OutgoingPacket &out_packet)
 			{
 				out_packet.start(game::server_packet::QuestlogFull);
 				out_packet.finish();
 			}
-			void questupdateAddKill(game::OutgoingPacket & out_packet, UInt32 questId, UInt32 entry, UInt32 totalCount, UInt32 maxCount, UInt64 guid)
+			void questupdateAddKill(game::OutgoingPacket &out_packet, UInt32 questId, UInt32 entry, UInt32 totalCount, UInt32 maxCount, UInt64 guid)
 			{
 				out_packet.start(game::server_packet::QuestupdateAddKill);
 				out_packet
-					<< io::write<NetUInt32>(questId)
-					<< io::write<NetUInt32>(entry)
-					<< io::write<NetUInt32>(totalCount)
-					<< io::write<NetUInt32>(maxCount)
-					<< io::write<NetUInt64>(guid)
-					;
+				        << io::write<NetUInt32>(questId)
+				        << io::write<NetUInt32>(entry)
+				        << io::write<NetUInt32>(totalCount)
+				        << io::write<NetUInt32>(maxCount)
+				        << io::write<NetUInt64>(guid)
+				        ;
 				out_packet.finish();
 			}
 		}
@@ -3186,8 +3241,8 @@ namespace wowpp
 			bool ping(io::Reader &packet, UInt32 &out_ping, UInt32 &out_latency)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_ping)
-					>> io::read<NetUInt32>(out_latency);
+				       >> io::read<NetUInt32>(out_ping)
+				       >> io::read<NetUInt32>(out_latency);
 			}
 
 			bool authSession(io::Reader &packet, UInt32 &out_clientBuild, String &out_Account, UInt32 &out_clientSeed, SHA1Hash &out_digest, AddonEntries &out_addons)
@@ -3195,8 +3250,8 @@ namespace wowpp
 				UInt32 unknown;
 
 				if (!(packet
-					>> io::read<NetUInt32>(out_clientBuild)
-					>> io::read<NetUInt32>(unknown)))
+				        >> io::read<NetUInt32>(out_clientBuild)
+				        >> io::read<NetUInt32>(unknown)))
 				{
 					return false;
 				}
@@ -3204,7 +3259,7 @@ namespace wowpp
 				// Read account name
 				out_Account.clear();
 				char c = 0x00;
-				do 
+				do
 				{
 					if (!(packet >> c))
 					{
@@ -3215,13 +3270,14 @@ namespace wowpp
 					{
 						out_Account.push_back(c);
 					}
-				} while (c != 0);
+				}
+				while (c != 0);
 
 				UInt32 addonSize;
 				if (!(packet
-					>> io::read<NetUInt32>(out_clientSeed)
-					>> io::read_range(out_digest.begin(), out_digest.end())
-					>> io::read<NetUInt32>(addonSize)))
+				        >> io::read<NetUInt32>(out_clientSeed)
+				        >> io::read_range(out_digest.begin(), out_digest.end())
+				        >> io::read<NetUInt32>(addonSize)))
 				{
 					return false;
 				}
@@ -3256,10 +3312,10 @@ namespace wowpp
 				while (!source.end())
 				{
 					AddonEntry addon;
-					
+
 					// Read 0-terminated c-style string from stream
 					char c = 0;
-					do 
+					do
 					{
 						if (!(addonReader >> c))
 						{
@@ -3270,13 +3326,14 @@ namespace wowpp
 						{
 							addon.addonNames.push_back(c);
 						}
-					} while (c != 0);
+					}
+					while (c != 0);
 
 					// Read other addon values
 					if (!(addonReader
-						>> io::read<NetUInt32>(addon.crc)
-						>> io::read<NetUInt32>(addon.unk7)
-						>> io::read<NetUInt8>(addon.unk6)))
+					        >> io::read<NetUInt32>(addon.crc)
+					        >> io::read<NetUInt32>(addon.unk7)
+					        >> io::read<NetUInt8>(addon.unk6)))
 					{
 						break;
 					}
@@ -3298,7 +3355,7 @@ namespace wowpp
 				// Read 0-terminated name
 				out_entry.name.clear();
 				char c = 0;
-				do 
+				do
 				{
 					// Can no longer read
 					if (!(packet >> c))
@@ -3310,18 +3367,19 @@ namespace wowpp
 					{
 						out_entry.name.push_back(c);
 					}
-				} while (c != 0);
+				}
+				while (c != 0);
 
 				if (!(packet
-					>> io::read<NetUInt8>(out_entry.race)
-					>> io::read<NetUInt8>(out_entry.class_)
-					>> io::read<NetUInt8>(out_entry.gender)
-					>> io::read<NetUInt8>(out_entry.skin)
-					>> io::read<NetUInt8>(out_entry.face)
-					>> io::read<NetUInt8>(out_entry.hairStyle)
-					>> io::read<NetUInt8>(out_entry.hairColor)
-					>> io::read<NetUInt8>(out_entry.facialHair)
-					>> io::read<NetUInt8>(out_entry.outfitId)))
+				        >> io::read<NetUInt8>(out_entry.race)
+				        >> io::read<NetUInt8>(out_entry.class_)
+				        >> io::read<NetUInt8>(out_entry.gender)
+				        >> io::read<NetUInt8>(out_entry.skin)
+				        >> io::read<NetUInt8>(out_entry.face)
+				        >> io::read<NetUInt8>(out_entry.hairStyle)
+				        >> io::read<NetUInt8>(out_entry.hairColor)
+				        >> io::read<NetUInt8>(out_entry.facialHair)
+				        >> io::read<NetUInt8>(out_entry.outfitId)))
 				{
 					return false;
 				}
@@ -3332,45 +3390,45 @@ namespace wowpp
 			bool charDelete(io::Reader &packet, DatabaseId &out_characterId)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_characterId);
+				       >> io::read<NetUInt64>(out_characterId);
 			}
 
 			bool nameQuery(io::Reader &packet, NetUInt64 &out_objectId)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_objectId);
+				       >> io::read<NetUInt64>(out_objectId);
 			}
 
 			bool playerLogin(io::Reader &packet, DatabaseId &out_characterId)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_characterId);
+				       >> io::read<NetUInt64>(out_characterId);
 			}
 
 			bool creatureQuery(io::Reader &packet, UInt32 &out_entry, UInt64 &out_guid)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_entry)
-					>> io::read<NetUInt64>(out_guid);
+				       >> io::read<NetUInt32>(out_entry)
+				       >> io::read<NetUInt64>(out_guid);
 			}
 
 			bool playerLogout(
-				io::Reader &packet
-				)
+			    io::Reader &packet
+			)
 			{
 				return packet;
 			}
 
 			bool logoutRequest(
-				io::Reader &packet
-				)
+			    io::Reader &packet
+			)
 			{
 				return packet;
 			}
 
 			bool logoutCancel(
-				io::Reader &packet
-				)
+			    io::Reader &packet
+			)
 			{
 				return packet;
 			}
@@ -3378,61 +3436,61 @@ namespace wowpp
 			bool moveStop(io::Reader &packet, MovementInfo &out_info)
 			{
 				return packet
-					>> out_info;
+				       >> out_info;
 			}
 
 			bool moveStartForward(io::Reader &packet, MovementInfo &out_info)
 			{
 				return packet
-					>> out_info;
+				       >> out_info;
 			}
 
 			bool moveStartBackward(io::Reader &packet, MovementInfo &out_info)
 			{
 				return packet
-					>> out_info;
+				       >> out_info;
 			}
 
 			bool moveHeartBeat(io::Reader &packet, MovementInfo &out_info)
 			{
 				return packet
-					>> out_info;
+				       >> out_info;
 			}
 
 			bool setSelection(io::Reader &packet, UInt64 &out_targetGUID)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_targetGUID);
+				       >> io::read<NetUInt64>(out_targetGUID);
 			}
 
 			bool standStateChange(io::Reader &packet, UnitStandState &out_standState)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_standState);
+				       >> io::read<NetUInt32>(out_standState);
 			}
 
 			bool messageChat(io::Reader &packet, ChatMsg &out_type, Language &out_lang, String &out_to, String &out_channel, String &out_message)
 			{
 				packet
-					>> io::read<NetUInt32>(out_type)
-					>> io::read<NetUInt32>(out_lang);
+				        >> io::read<NetUInt32>(out_type)
+				        >> io::read<NetUInt32>(out_lang);
 
 				// TODO: Prevent player to speak in unknown language
 				switch (out_type)
 				{
-					case chat_msg::Say:
-					case chat_msg::Emote:
-					case chat_msg::Yell:
-					case chat_msg::Party:
-					case chat_msg::Guild:
-					case chat_msg::Officer:
-					case chat_msg::Raid:
-					case chat_msg::RaidLeader:
-					case chat_msg::RaidWarning:
-					case chat_msg::Battleground:
-					case chat_msg::BattlegroundLeader:
-					case chat_msg::Afk:
-					case chat_msg::Dnd:
+				case chat_msg::Say:
+				case chat_msg::Emote:
+				case chat_msg::Yell:
+				case chat_msg::Party:
+				case chat_msg::Guild:
+				case chat_msg::Officer:
+				case chat_msg::Raid:
+				case chat_msg::RaidLeader:
+				case chat_msg::RaidWarning:
+				case chat_msg::Battleground:
+				case chat_msg::BattlegroundLeader:
+				case chat_msg::Afk:
+				case chat_msg::Dnd:
 					{
 						char c = 0x00;
 						do
@@ -3445,11 +3503,12 @@ namespace wowpp
 							{
 								out_message.push_back(c);
 							}
-						} while (c != 0);
+						}
+						while (c != 0);
 
 						break;
 					}
-					case chat_msg::Whisper:
+				case chat_msg::Whisper:
 					{
 						char c = 0x00;
 						do
@@ -3462,7 +3521,8 @@ namespace wowpp
 							{
 								out_to.push_back(c);
 							}
-						} while (c != 0);
+						}
+						while (c != 0);
 
 						do
 						{
@@ -3474,11 +3534,12 @@ namespace wowpp
 							{
 								out_message.push_back(c);
 							}
-						} while (c != 0);
+						}
+						while (c != 0);
 
 						break;
 					}
-					case chat_msg::Channel:
+				case chat_msg::Channel:
 					{
 						char c = 0x00;
 						do
@@ -3491,7 +3552,8 @@ namespace wowpp
 							{
 								out_channel.push_back(c);
 							}
-						} while (c != 0);
+						}
+						while (c != 0);
 
 						do
 						{
@@ -3503,13 +3565,14 @@ namespace wowpp
 							{
 								out_message.push_back(c);
 							}
-						} while (c != 0);
+						}
+						while (c != 0);
 
 						break;
 					}
-					default:
-						// Unknown / Unhandled chat type
-						return false;
+				default:
+					// Unknown / Unhandled chat type
+					return false;
 				}
 
 				return packet;
@@ -3535,7 +3598,8 @@ namespace wowpp
 					{
 						out_name.push_back(c);
 					}
-				} while (c != 0);
+				}
+				while (c != 0);
 
 				do
 				{
@@ -3547,7 +3611,8 @@ namespace wowpp
 					{
 						out_note.push_back(c);
 					}
-				} while (c != 0);
+				}
+				while (c != 0);
 
 				return true;
 			}
@@ -3555,7 +3620,7 @@ namespace wowpp
 			bool deleteFriend(io::Reader &packet, UInt64 &out_guid)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_guid);
+				       >> io::read<NetUInt64>(out_guid);
 			}
 
 			bool setContactNotes(io::Reader &packet /*TODO */)
@@ -3577,7 +3642,8 @@ namespace wowpp
 					{
 						out_name.push_back(c);
 					}
-				} while (c != 0);
+				}
+				while (c != 0);
 
 				return true;
 			}
@@ -3585,33 +3651,33 @@ namespace wowpp
 			bool deleteIgnore(io::Reader &packet, UInt64 &out_guid)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_guid);
+				       >> io::read<NetUInt64>(out_guid);
 			}
 
 			bool castSpell(io::Reader &packet, UInt32 &out_spellID, UInt8 &out_castCount, SpellTargetMap &out_targetMap)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_spellID)
-					>> io::read<NetUInt8>(out_castCount)
-					>> out_targetMap;
+				       >> io::read<NetUInt32>(out_spellID)
+				       >> io::read<NetUInt8>(out_castCount)
+				       >> out_targetMap;
 			}
 
 			bool cancelCast(io::Reader &packet, UInt32 &out_spellID)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_spellID);
+				       >> io::read<NetUInt32>(out_spellID);
 			}
 
 			bool itemQuerySingle(io::Reader &packet, UInt32 &out_itemID)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_itemID);
+				       >> io::read<NetUInt32>(out_itemID);
 			}
 
 			bool attackSwing(io::Reader &packet, UInt64 &out_targetGUID)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_targetGUID);
+				       >> io::read<NetUInt64>(out_targetGUID);
 			}
 
 			bool attackStop(io::Reader &packet)
@@ -3622,78 +3688,78 @@ namespace wowpp
 			bool setSheathed(io::Reader &packet, UInt32 &out_sheath)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_sheath);
+				       >> io::read<NetUInt32>(out_sheath);
 			}
 
 			bool togglePvP(io::Reader &packet, UInt8 &out_enabled)
 			{
 				return packet
-					>> io::read<NetUInt8>(out_enabled);
+				       >> io::read<NetUInt8>(out_enabled);
 			}
 
 			bool autoStoreLootItem(io::Reader &packet, UInt8 &out_lootSlot)
 			{
 				return packet
-					>> io::read<NetUInt8>(out_lootSlot);
+				       >> io::read<NetUInt8>(out_lootSlot);
 			}
 
 			bool autoEquipItem(io::Reader &packet, UInt8 &out_srcBag, UInt8 &out_srcSlot)
 			{
 				return packet
-					>> io::read<NetUInt8>(out_srcBag)
-					>> io::read<NetUInt8>(out_srcSlot);
+				       >> io::read<NetUInt8>(out_srcBag)
+				       >> io::read<NetUInt8>(out_srcSlot);
 			}
 
 			bool autoStoreBagItem(io::Reader &packet, UInt8 &out_srcBag, UInt8 &out_srcSlot, UInt8 &out_dstBag)
 			{
 				return packet
-					>> io::read<NetUInt8>(out_srcBag)
-					>> io::read<NetUInt8>(out_srcSlot)
-					>> io::read<NetUInt8>(out_dstBag);
+				       >> io::read<NetUInt8>(out_srcBag)
+				       >> io::read<NetUInt8>(out_srcSlot)
+				       >> io::read<NetUInt8>(out_dstBag);
 			}
 
 			bool swapItem(io::Reader &packet, UInt8 &out_dstBag, UInt8 &out_dstSlot, UInt8 &out_srcBag, UInt8 &out_srcSlot)
 			{
 				return packet
-					>> io::read<NetUInt8>(out_dstBag)
-					>> io::read<NetUInt8>(out_dstSlot)
-					>> io::read<NetUInt8>(out_srcBag)
-					>> io::read<NetUInt8>(out_srcSlot);
+				       >> io::read<NetUInt8>(out_dstBag)
+				       >> io::read<NetUInt8>(out_dstSlot)
+				       >> io::read<NetUInt8>(out_srcBag)
+				       >> io::read<NetUInt8>(out_srcSlot);
 			}
 
 			bool swapInvItem(io::Reader &packet, UInt8 &out_srcSlot, UInt8 &out_dstSlot)
 			{
 				return packet
-					>> io::read<NetUInt8>(out_srcSlot)
-					>> io::read<NetUInt8>(out_dstSlot);
+				       >> io::read<NetUInt8>(out_srcSlot)
+				       >> io::read<NetUInt8>(out_dstSlot);
 			}
 
 			bool splitItem(io::Reader &packet, UInt8 &out_srcBag, UInt8 &out_srcSlot, UInt8 &out_dstBag, UInt8 &out_dstSlot, UInt8 &out_count)
 			{
 				return packet
-					>> io::read<NetUInt8>(out_srcBag)
-					>> io::read<NetUInt8>(out_srcSlot)
-					>> io::read<NetUInt8>(out_dstBag)
-					>> io::read<NetUInt8>(out_dstSlot)
-					>> io::read<NetUInt8>(out_count);
+				       >> io::read<NetUInt8>(out_srcBag)
+				       >> io::read<NetUInt8>(out_srcSlot)
+				       >> io::read<NetUInt8>(out_dstBag)
+				       >> io::read<NetUInt8>(out_dstSlot)
+				       >> io::read<NetUInt8>(out_count);
 			}
 
 			bool autoEquipItemSlot(io::Reader &packet, UInt64 &out_itemGUID, UInt8 &out_dstSlot)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_itemGUID)
-					>> io::read<NetUInt8>(out_dstSlot);
+				       >> io::read<NetUInt64>(out_itemGUID)
+				       >> io::read<NetUInt8>(out_dstSlot);
 			}
 
 			bool destroyItem(io::Reader &packet, UInt8 &out_bag, UInt8 &out_slot, UInt8 &out_count, UInt8 &out_data1, UInt8 &out_data2, UInt8 &out_data3)
 			{
 				return packet
-					>> io::read<NetUInt8>(out_bag)
-					>> io::read<NetUInt8>(out_slot)
-					>> io::read<NetUInt8>(out_count)
-					>> io::read<NetUInt8>(out_data1)
-					>> io::read<NetUInt8>(out_data2)
-					>> io::read<NetUInt8>(out_data3);
+				       >> io::read<NetUInt8>(out_bag)
+				       >> io::read<NetUInt8>(out_slot)
+				       >> io::read<NetUInt8>(out_count)
+				       >> io::read<NetUInt8>(out_data1)
+				       >> io::read<NetUInt8>(out_data2)
+				       >> io::read<NetUInt8>(out_data3);
 			}
 
 			bool groupInvite(io::Reader &packet, String &out_memberName)
@@ -3709,8 +3775,9 @@ namespace wowpp
 					{
 						out_memberName.push_back(c);
 					}
-				} while (c != 0);
-				
+				}
+				while (c != 0);
+
 				return packet;
 			}
 
@@ -3737,7 +3804,8 @@ namespace wowpp
 					{
 						out_memberName.push_back(c);
 					}
-				} while (c != 0);
+				}
+				while (c != 0);
 
 				return packet;
 			}
@@ -3745,21 +3813,21 @@ namespace wowpp
 			bool groupUninviteGUID(io::Reader &packet, UInt64 &out_guid)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_guid);
+				       >> io::read<NetUInt64>(out_guid);
 			}
 
 			bool groupSetLeader(io::Reader &packet, UInt64 &out_leaderGUID)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_leaderGUID);
+				       >> io::read<NetUInt64>(out_leaderGUID);
 			}
 
 			bool lootMethod(io::Reader &packet, UInt32 &out_method, UInt64 &out_masterGUID, UInt32 &out_treshold)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_method)
-					>> io::read<NetUInt64>(out_masterGUID)
-					>> io::read<NetUInt32>(out_treshold);
+				       >> io::read<NetUInt32>(out_method)
+				       >> io::read<NetUInt64>(out_masterGUID)
+				       >> io::read<NetUInt32>(out_treshold);
 			}
 
 			bool groupDisband(io::Reader &packet)
@@ -3770,7 +3838,7 @@ namespace wowpp
 			bool requestPartyMemberStats(io::Reader &packet, UInt64 &out_GUID)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_GUID);
+				       >> io::read<NetUInt64>(out_GUID);
 			}
 
 			bool moveWorldPortAck(io::Reader &packet)
@@ -3781,23 +3849,23 @@ namespace wowpp
 			bool areaTrigger(io::Reader &packet, UInt32 &out_triggerId)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_triggerId);
+				       >> io::read<NetUInt32>(out_triggerId);
 			}
 
 			bool setActionButton(io::Reader &packet, UInt8 &out_button, UInt8 &out_misc, UInt8 &out_type, UInt16 &out_action)
 			{
 				return packet
-					>> io::read<NetUInt8>(out_button)
-					>> io::read<NetUInt16>(out_action)
-					>> io::read<NetUInt8>(out_misc)
-					>> io::read<NetUInt8>(out_type);
+				       >> io::read<NetUInt8>(out_button)
+				       >> io::read<NetUInt16>(out_action)
+				       >> io::read<NetUInt8>(out_misc)
+				       >> io::read<NetUInt8>(out_type);
 			}
 
 			bool gameObjectQuery(io::Reader &packet, UInt32 &out_entry, UInt64 &out_guid)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_entry)
-					>> io::read<NetUInt64>(out_guid);
+				       >> io::read<NetUInt32>(out_entry)
+				       >> io::read<NetUInt64>(out_guid);
 			}
 
 			bool forceMoveRootAck(io::Reader &packet)
@@ -3817,13 +3885,13 @@ namespace wowpp
 			bool cancelAura(io::Reader &packet, UInt32 &out_spellId)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_spellId);
+				       >> io::read<NetUInt32>(out_spellId);
 			}
 
 			bool tutorialFlag(io::Reader &packet, UInt32 &out_flag)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_flag);
+				       >> io::read<NetUInt32>(out_flag);
 			}
 
 			bool tutorialClear(io::Reader &packet)
@@ -3839,15 +3907,15 @@ namespace wowpp
 			bool emote(io::Reader &packet, UInt32 &out_emote)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_emote);
+				       >> io::read<NetUInt32>(out_emote);
 			}
 
 			bool textEmote(io::Reader &packet, UInt32 &out_textEmote, UInt32 &out_emoteNum, UInt64 &out_guid)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_textEmote)
-					>> io::read<NetUInt32>(out_emoteNum)
-					>> io::read<NetUInt64>(out_guid);
+				       >> io::read<NetUInt32>(out_textEmote)
+				       >> io::read<NetUInt32>(out_emoteNum)
+				       >> io::read<NetUInt64>(out_guid);
 			}
 
 			bool completeCinematic(io::Reader &packet)
@@ -3864,7 +3932,7 @@ namespace wowpp
 			bool loot(io::Reader &packet, UInt64 &out_targetGuid)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_targetGuid);
+				       >> io::read<NetUInt64>(out_targetGuid);
 			}
 
 			bool lootMoney(io::Reader &packet /*TODO */)
@@ -3875,20 +3943,20 @@ namespace wowpp
 			bool lootRelease(io::Reader &packet, UInt64 &out_targetGuid)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_targetGuid);
+				       >> io::read<NetUInt64>(out_targetGuid);
 			}
 
 			bool timeSyncResponse(io::Reader &packet, UInt32 &out_counter, UInt32 &out_ticks)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_counter)
-					>> io::read<NetUInt32>(out_ticks);
+				       >> io::read<NetUInt32>(out_counter)
+				       >> io::read<NetUInt32>(out_ticks);
 			}
 
 			bool raidTargetUpdate(io::Reader &packet, UInt8 &out_mode, UInt64 &out_guidOptional)
 			{
 				if (!(packet
-					>> io::read<NetUInt8>(out_mode)))
+				        >> io::read<NetUInt8>(out_mode)))
 				{
 					return false;
 				}
@@ -3896,7 +3964,7 @@ namespace wowpp
 				if (out_mode != 0xFF)
 				{
 					return packet
-						>> io::read<NetUInt64>(out_guidOptional);
+					       >> io::read<NetUInt64>(out_guidOptional);
 				}
 
 				return packet;
@@ -3910,8 +3978,8 @@ namespace wowpp
 			bool groupAssistentLeader(io::Reader &packet, UInt64 &out_guid, UInt8 &out_flag)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_guid)
-					>> io::read<NetUInt8>(out_flag);
+				       >> io::read<NetUInt64>(out_guid)
+				       >> io::read<NetUInt8>(out_flag);
 			}
 
 			bool raidReadyCheck(io::Reader &packet, bool &out_hasState, UInt8 &out_state)
@@ -3924,91 +3992,91 @@ namespace wowpp
 
 				out_hasState = true;
 				return packet
-					>> io::read<NetUInt8>(out_state);
+				       >> io::read<NetUInt8>(out_state);
 			}
 
 			bool learnTalent(io::Reader &packet, UInt32 &out_talentId, UInt32 &out_rank)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_talentId)
-					>> io::read<NetUInt32>(out_rank);
+				       >> io::read<NetUInt32>(out_talentId)
+				       >> io::read<NetUInt32>(out_rank);
 			}
 
 			bool useItem(io::Reader &packet, UInt8 &out_bag, UInt8 &out_slot, UInt8 &out_spellCount, UInt8 &out_castCount, UInt64 &out_itemGuid, SpellTargetMap &out_targetMap)
 			{
 				return packet
-					>> io::read<NetUInt8>(out_bag)
-					>> io::read<NetUInt8>(out_slot)
-					>> io::read<NetUInt8>(out_spellCount)
-					>> io::read<NetUInt8>(out_castCount)
-					>> io::read<NetUInt64>(out_itemGuid)
-					>> out_targetMap
-					;
+				       >> io::read<NetUInt8>(out_bag)
+				       >> io::read<NetUInt8>(out_slot)
+				       >> io::read<NetUInt8>(out_spellCount)
+				       >> io::read<NetUInt8>(out_castCount)
+				       >> io::read<NetUInt64>(out_itemGuid)
+				       >> out_targetMap
+				       ;
 			}
 
 			bool listInventory(io::Reader &packet, UInt64 &out_guid)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_guid);
+				       >> io::read<NetUInt64>(out_guid);
 			}
 
 			bool sellItem(io::Reader &packet, UInt64 &out_vendorGuid, UInt64 &out_itemGuid, UInt8 &out_count)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_vendorGuid)
-					>> io::read<NetUInt64>(out_itemGuid)
-					>> io::read<NetUInt8>(out_count);
+				       >> io::read<NetUInt64>(out_vendorGuid)
+				       >> io::read<NetUInt64>(out_itemGuid)
+				       >> io::read<NetUInt8>(out_count);
 			}
 
 			bool buyItem(io::Reader &packet, UInt64 &out_vendorGuid, UInt32 &out_item, UInt8 &out_count)
 			{
 				UInt8 skipped = 0;
 				return packet
-					>> io::read<NetUInt64>(out_vendorGuid)
-					>> io::read<NetUInt32>(out_item)
-					>> io::read<NetUInt8>(out_count)
-					>> io::read<NetUInt8>(skipped);
+				       >> io::read<NetUInt64>(out_vendorGuid)
+				       >> io::read<NetUInt32>(out_item)
+				       >> io::read<NetUInt8>(out_count)
+				       >> io::read<NetUInt8>(skipped);
 			}
 
 			bool buyItemInSlot(io::Reader &packet, UInt64 &out_vendorGuid, UInt32 &out_item, UInt64 &out_bagGuid, UInt8 &out_slot, UInt8 &out_count)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_vendorGuid)
-					>> io::read<NetUInt32>(out_item)
-					>> io::read<NetUInt64>(out_bagGuid)
-					>> io::read<NetUInt8>(out_slot)
-					>> io::read<NetUInt8>(out_count);
+				       >> io::read<NetUInt64>(out_vendorGuid)
+				       >> io::read<NetUInt32>(out_item)
+				       >> io::read<NetUInt64>(out_bagGuid)
+				       >> io::read<NetUInt8>(out_slot)
+				       >> io::read<NetUInt8>(out_count);
 			}
 
 			bool gossipHello(io::Reader &packet, UInt64 &out_npcGuid)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_npcGuid);
+				       >> io::read<NetUInt64>(out_npcGuid);
 			}
 
 			bool trainerBuySpell(io::Reader &packet, UInt64 &out_guid, UInt32 &out_spell)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_guid)
-					>> io::read<NetUInt32>(out_spell);
+				       >> io::read<NetUInt64>(out_guid)
+				       >> io::read<NetUInt32>(out_spell);
 			}
 
-			bool realmSplit(io::Reader & packet, UInt32 & out_preferredRealm)
+			bool realmSplit(io::Reader &packet, UInt32 &out_preferredRealm)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_preferredRealm);
+				       >> io::read<NetUInt32>(out_preferredRealm);
 			}
 
-			bool voiceSessionEnable(io::Reader & packet, UInt16 & out_unknown)
+			bool voiceSessionEnable(io::Reader &packet, UInt16 &out_unknown)
 			{
 				return packet
-					>> io::read<NetUInt16>(out_unknown);
+				       >> io::read<NetUInt16>(out_unknown);
 			}
 
-			bool charRename(io::Reader & packet, UInt64 & out_guid, String & out_name)
+			bool charRename(io::Reader &packet, UInt64 &out_guid, String &out_name)
 			{
 				packet
-					>> io::read<NetUInt64>(out_guid);
+				        >> io::read<NetUInt64>(out_guid);
 
 				char c = 0x00;
 				do
@@ -4021,84 +4089,85 @@ namespace wowpp
 					{
 						out_name.push_back(c);
 					}
-				} while (c != 0);
+				}
+				while (c != 0);
 
 				return packet;
 			}
 
-			bool questgiverStatusQuery(io::Reader & packet, UInt64 & out_guid)
+			bool questgiverStatusQuery(io::Reader &packet, UInt64 &out_guid)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_guid);
+				       >> io::read<NetUInt64>(out_guid);
 			}
 
-			bool questgiverHello(io::Reader & packet, UInt64 & out_guid)
+			bool questgiverHello(io::Reader &packet, UInt64 &out_guid)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_guid);
+				       >> io::read<NetUInt64>(out_guid);
 			}
 
-			bool questgiverQueryQuest(io::Reader & packet, UInt64 & out_guid, UInt32 & out_questId)
+			bool questgiverQueryQuest(io::Reader &packet, UInt64 &out_guid, UInt32 &out_questId)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_guid)
-					>> io::read<NetUInt32>(out_questId);
+				       >> io::read<NetUInt64>(out_guid)
+				       >> io::read<NetUInt32>(out_questId);
 			}
 
-			bool questgiverQuestAutolaunch(io::Reader & packet)
+			bool questgiverQuestAutolaunch(io::Reader &packet)
 			{
 				return packet;
 			}
 
-			bool questgiverAcceptQuest(io::Reader & packet, UInt64 & out_guid, UInt32 & out_questId)
+			bool questgiverAcceptQuest(io::Reader &packet, UInt64 &out_guid, UInt32 &out_questId)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_guid)
-					>> io::read<NetUInt32>(out_questId);
+				       >> io::read<NetUInt64>(out_guid)
+				       >> io::read<NetUInt32>(out_questId);
 			}
 
-			bool questgiverCompleteQuest(io::Reader & packet, UInt64 & out_guid, UInt32 & out_questId)
+			bool questgiverCompleteQuest(io::Reader &packet, UInt64 &out_guid, UInt32 &out_questId)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_guid)
-					>> io::read<NetUInt32>(out_questId);
+				       >> io::read<NetUInt64>(out_guid)
+				       >> io::read<NetUInt32>(out_questId);
 			}
 
-			bool questgiverRequestReward(io::Reader & packet, UInt64 & out_guid, UInt32 & out_questId)
+			bool questgiverRequestReward(io::Reader &packet, UInt64 &out_guid, UInt32 &out_questId)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_guid)
-					>> io::read<NetUInt32>(out_questId);
+				       >> io::read<NetUInt64>(out_guid)
+				       >> io::read<NetUInt32>(out_questId);
 			}
 
-			bool questgiverChooseReward(io::Reader & packet, UInt64 & out_guid, UInt32 & out_questId, UInt32 & out_reward)
+			bool questgiverChooseReward(io::Reader &packet, UInt64 &out_guid, UInt32 &out_questId, UInt32 &out_reward)
 			{
 				return packet
-					>> io::read<NetUInt64>(out_guid)
-					>> io::read<NetUInt32>(out_questId)
-					>> io::read<NetUInt32>(out_reward);
+				       >> io::read<NetUInt64>(out_guid)
+				       >> io::read<NetUInt32>(out_questId)
+				       >> io::read<NetUInt32>(out_reward);
 			}
 
-			bool questgiverCancel(io::Reader & packet)
+			bool questgiverCancel(io::Reader &packet)
 			{
 				return packet;
 			}
 
-			bool questQuery(io::Reader & packet, UInt32 & out_questId)
+			bool questQuery(io::Reader &packet, UInt32 &out_questId)
 			{
 				return packet
-					>> io::read<NetUInt32>(out_questId);
+				       >> io::read<NetUInt32>(out_questId);
 			}
 
-			bool questgiverStatusMultiple(io::Reader & packet)
+			bool questgiverStatusMultiple(io::Reader &packet)
 			{
 				return packet;
 			}
 
-			bool questlogRemoveQuest(io::Reader & packet, UInt8 &out_questIndex)
+			bool questlogRemoveQuest(io::Reader &packet, UInt8 &out_questIndex)
 			{
 				return packet
-					>> io::read<NetUInt8>(out_questIndex);
+				       >> io::read<NetUInt8>(out_questIndex);
 			}
 
 		}

@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -51,10 +51,10 @@ namespace wowpp
 		inline bool isInside(const TileIndex2D &point) const
 		{
 			return
-				(point.x() >= topLeft.x()) &&
-				(point.y() >= topLeft.y()) &&
-				(point.x() < bottomRight.x()) &&
-				(point.y() < bottomRight.y());
+			    (point.x() >= topLeft.x()) &&
+			    (point.y() >= topLeft.y()) &&
+			    (point.x() < bottomRight.x()) &&
+			    (point.y() < bottomRight.y());
 		}
 	};
 
@@ -62,7 +62,7 @@ namespace wowpp
 	{
 		static const TileIndex2D sight(constants::PlayerZoneSight, constants::PlayerZoneSight);
 		return TileArea(
-			center - sight,
-			center + sight);
+		           center - sight,
+		           center + sight);
 	}
 }

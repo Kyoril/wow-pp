@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #include "zone_entry.h"
 #include "templates/basic_template_save_context.h"
@@ -49,7 +49,7 @@ namespace wowpp
 		// Load the parent zone if any
 		UInt32 parentId = 0;
 		if (wrapper.table.tryGetInteger("parent", parentId) &&
-			parentId != 0)
+		        parentId != 0)
 		{
 			context.loadLater.push_back([parentId, &context, this]() -> bool
 			{
@@ -85,12 +85,26 @@ namespace wowpp
 	{
 		Super::saveBase(context);
 
-		if (!name.empty()) context.table.addKey("name", name);
-		if (parent) context.table.addKey("parent", parent->id);
-		if (map) context.table.addKey("map", map->id);
-		if (explore != 0) context.table.addKey("explore", explore);
-		if (flags != 0) context.table.addKey("flags", flags);
-		if (team != 0) context.table.addKey("team", team);
-		if (level != 0) context.table.addKey("level", level);
+		if (!name.empty()) {
+			context.table.addKey("name", name);
+		}
+		if (parent) {
+			context.table.addKey("parent", parent->id);
+		}
+		if (map) {
+			context.table.addKey("map", map->id);
+		}
+		if (explore != 0) {
+			context.table.addKey("explore", explore);
+		}
+		if (flags != 0) {
+			context.table.addKey("flags", flags);
+		}
+		if (team != 0) {
+			context.table.addKey("team", team);
+		}
+		if (level != 0) {
+			context.table.addKey("level", level);
+		}
 	}
 }

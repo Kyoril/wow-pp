@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU Genral Public License as published by
 // the Free Software Foudnation; either version 2 of the Licanse, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -34,7 +34,7 @@ namespace wowpp
 		/// Represents a 4x4 matrix, which is used to transform positions. Mainly used
 		/// to transform from one of wow's coordinate systems to another coordinate system
 		/// which for some reason is used in wow, too.
-		/// 
+		///
 		///     [ m[0][0]  m[0][1]  m[0][2]  m[0][3] ]   {x}
 		///		| m[1][0]  m[1][1]  m[1][2]  m[1][3] | * {y}
 		///		| m[2][0]  m[2][1]  m[2][2]  m[2][3] |   {z}
@@ -55,10 +55,10 @@ namespace wowpp
 				identity();
 			}
 			inline Matrix4(
-				float m00, float m01, float m02, float m03,
-				float m10, float m11, float m12, float m13,
-				float m20, float m21, float m22, float m23,
-				float m30, float m31, float m32, float m33)
+			    float m00, float m01, float m02, float m03,
+			    float m10, float m11, float m12, float m13,
+			    float m20, float m21, float m22, float m23,
+			    float m30, float m31, float m32, float m33)
 			{
 				m[0][0] = m00;
 				m[0][1] = m01;
@@ -79,12 +79,24 @@ namespace wowpp
 			}
 			void identity()
 			{
-				m[0][0] = 1.0f; m[0][1] = 0.0f; m[0][2] = 0.0f; m[0][3] = 0.0f;
-				m[1][0] = 0.0f; m[1][1] = 1.0f; m[1][2] = 0.0f; m[1][3] = 0.0f;
-				m[2][0] = 0.0f; m[2][1] = 0.0f; m[2][2] = 1.0f; m[2][3] = 0.0f;
-				m[3][0] = 0.0f; m[3][1] = 0.0f; m[3][2] = 0.0f; m[3][3] = 1.0f;
+				m[0][0] = 1.0f;
+				m[0][1] = 0.0f;
+				m[0][2] = 0.0f;
+				m[0][3] = 0.0f;
+				m[1][0] = 0.0f;
+				m[1][1] = 1.0f;
+				m[1][2] = 0.0f;
+				m[1][3] = 0.0f;
+				m[2][0] = 0.0f;
+				m[2][1] = 0.0f;
+				m[2][2] = 1.0f;
+				m[2][3] = 0.0f;
+				m[3][0] = 0.0f;
+				m[3][1] = 0.0f;
+				m[3][2] = 0.0f;
+				m[3][3] = 1.0f;
 			}
-			inline void swap(Matrix4& other)
+			inline void swap(Matrix4 &other)
 			{
 				std::swap(m[0][0], other.m[0][0]);
 				std::swap(m[0][1], other.m[0][1]);
@@ -104,7 +116,7 @@ namespace wowpp
 				std::swap(m[3][3], other.m[3][3]);
 			}
 
-			inline float* operator [] (std::size_t iRow)
+			inline float *operator [] (std::size_t iRow)
 			{
 				assert(iRow < 4);
 				return m[iRow];
@@ -145,12 +157,12 @@ namespace wowpp
 			inline Matrix4 transpose() const
 			{
 				return Matrix4(m[0][0], m[1][0], m[2][0], m[3][0],
-					m[0][1], m[1][1], m[2][1], m[3][1],
-					m[0][2], m[1][2], m[2][2], m[3][2],
-					m[0][3], m[1][3], m[2][3], m[3][3]);
+				               m[0][1], m[1][1], m[2][1], m[3][1],
+				               m[0][2], m[1][2], m[2][2], m[3][2],
+				               m[0][3], m[1][3], m[2][3], m[3][3]);
 			}
 
-			inline void setTranslation(const Vector3& v)
+			inline void setTranslation(const Vector3 &v)
 			{
 				m[0][3] = v.x;
 				m[1][3] = v.y;
@@ -162,30 +174,66 @@ namespace wowpp
 				return Vector3(m[0][3], m[1][3], m[2][3]);
 			}
 
-			inline void makeTranslation(const Vector3& v)
+			inline void makeTranslation(const Vector3 &v)
 			{
-				m[0][0] = 1.0; m[0][1] = 0.0; m[0][2] = 0.0; m[0][3] = v.x;
-				m[1][0] = 0.0; m[1][1] = 1.0; m[1][2] = 0.0; m[1][3] = v.y;
-				m[2][0] = 0.0; m[2][1] = 0.0; m[2][2] = 1.0; m[2][3] = v.z;
-				m[3][0] = 0.0; m[3][1] = 0.0; m[3][2] = 0.0; m[3][3] = 1.0;
+				m[0][0] = 1.0;
+				m[0][1] = 0.0;
+				m[0][2] = 0.0;
+				m[0][3] = v.x;
+				m[1][0] = 0.0;
+				m[1][1] = 1.0;
+				m[1][2] = 0.0;
+				m[1][3] = v.y;
+				m[2][0] = 0.0;
+				m[2][1] = 0.0;
+				m[2][2] = 1.0;
+				m[2][3] = v.z;
+				m[3][0] = 0.0;
+				m[3][1] = 0.0;
+				m[3][2] = 0.0;
+				m[3][3] = 1.0;
 			}
 
 			inline void makeTranslation(float tx, float ty, float tz)
 			{
-				m[0][0] = 1.0; m[0][1] = 0.0; m[0][2] = 0.0; m[0][3] = tx;
-				m[1][0] = 0.0; m[1][1] = 1.0; m[1][2] = 0.0; m[1][3] = ty;
-				m[2][0] = 0.0; m[2][1] = 0.0; m[2][2] = 1.0; m[2][3] = tz;
-				m[3][0] = 0.0; m[3][1] = 0.0; m[3][2] = 0.0; m[3][3] = 1.0;
+				m[0][0] = 1.0;
+				m[0][1] = 0.0;
+				m[0][2] = 0.0;
+				m[0][3] = tx;
+				m[1][0] = 0.0;
+				m[1][1] = 1.0;
+				m[1][2] = 0.0;
+				m[1][3] = ty;
+				m[2][0] = 0.0;
+				m[2][1] = 0.0;
+				m[2][2] = 1.0;
+				m[2][3] = tz;
+				m[3][0] = 0.0;
+				m[3][1] = 0.0;
+				m[3][2] = 0.0;
+				m[3][3] = 1.0;
 			}
 
-			inline static Matrix4 getTranslation(const Vector3& v)
+			inline static Matrix4 getTranslation(const Vector3 &v)
 			{
 				Matrix4 r;
 
-				r.m[0][0] = 1.0; r.m[0][1] = 0.0; r.m[0][2] = 0.0; r.m[0][3] = v.x;
-				r.m[1][0] = 0.0; r.m[1][1] = 1.0; r.m[1][2] = 0.0; r.m[1][3] = v.y;
-				r.m[2][0] = 0.0; r.m[2][1] = 0.0; r.m[2][2] = 1.0; r.m[2][3] = v.z;
-				r.m[3][0] = 0.0; r.m[3][1] = 0.0; r.m[3][2] = 0.0; r.m[3][3] = 1.0;
+				r.m[0][0] = 1.0;
+				r.m[0][1] = 0.0;
+				r.m[0][2] = 0.0;
+				r.m[0][3] = v.x;
+				r.m[1][0] = 0.0;
+				r.m[1][1] = 1.0;
+				r.m[1][2] = 0.0;
+				r.m[1][3] = v.y;
+				r.m[2][0] = 0.0;
+				r.m[2][1] = 0.0;
+				r.m[2][2] = 1.0;
+				r.m[2][3] = v.z;
+				r.m[3][0] = 0.0;
+				r.m[3][1] = 0.0;
+				r.m[3][2] = 0.0;
+				r.m[3][3] = 1.0;
 
 				return r;
 			}
@@ -194,28 +242,52 @@ namespace wowpp
 			{
 				Matrix4 r;
 
-				r.m[0][0] = 1.0; r.m[0][1] = 0.0; r.m[0][2] = 0.0; r.m[0][3] = t_x;
-				r.m[1][0] = 0.0; r.m[1][1] = 1.0; r.m[1][2] = 0.0; r.m[1][3] = t_y;
-				r.m[2][0] = 0.0; r.m[2][1] = 0.0; r.m[2][2] = 1.0; r.m[2][3] = t_z;
-				r.m[3][0] = 0.0; r.m[3][1] = 0.0; r.m[3][2] = 0.0; r.m[3][3] = 1.0;
+				r.m[0][0] = 1.0;
+				r.m[0][1] = 0.0;
+				r.m[0][2] = 0.0;
+				r.m[0][3] = t_x;
+				r.m[1][0] = 0.0;
+				r.m[1][1] = 1.0;
+				r.m[1][2] = 0.0;
+				r.m[1][3] = t_y;
+				r.m[2][0] = 0.0;
+				r.m[2][1] = 0.0;
+				r.m[2][2] = 1.0;
+				r.m[2][3] = t_z;
+				r.m[3][0] = 0.0;
+				r.m[3][1] = 0.0;
+				r.m[3][2] = 0.0;
+				r.m[3][3] = 1.0;
 
 				return r;
 			}
 
-			inline void setScale(const Vector3& v)
+			inline void setScale(const Vector3 &v)
 			{
 				m[0][0] = v.x;
 				m[1][1] = v.y;
 				m[2][2] = v.z;
 			}
 
-			inline static Matrix4 getScale(const Vector3& v)
+			inline static Matrix4 getScale(const Vector3 &v)
 			{
 				Matrix4 r;
-				r.m[0][0] = v.x; r.m[0][1] = 0.0; r.m[0][2] = 0.0; r.m[0][3] = 0.0;
-				r.m[1][0] = 0.0; r.m[1][1] = v.y; r.m[1][2] = 0.0; r.m[1][3] = 0.0;
-				r.m[2][0] = 0.0; r.m[2][1] = 0.0; r.m[2][2] = v.z; r.m[2][3] = 0.0;
-				r.m[3][0] = 0.0; r.m[3][1] = 0.0; r.m[3][2] = 0.0; r.m[3][3] = 1.0;
+				r.m[0][0] = v.x;
+				r.m[0][1] = 0.0;
+				r.m[0][2] = 0.0;
+				r.m[0][3] = 0.0;
+				r.m[1][0] = 0.0;
+				r.m[1][1] = v.y;
+				r.m[1][2] = 0.0;
+				r.m[1][3] = 0.0;
+				r.m[2][0] = 0.0;
+				r.m[2][1] = 0.0;
+				r.m[2][2] = v.z;
+				r.m[2][3] = 0.0;
+				r.m[3][0] = 0.0;
+				r.m[3][1] = 0.0;
+				r.m[3][2] = 0.0;
+				r.m[3][3] = 1.0;
 
 				return r;
 			}
@@ -223,10 +295,22 @@ namespace wowpp
 			inline static Matrix4 getScale(float s_x, float s_y, float s_z)
 			{
 				Matrix4 r;
-				r.m[0][0] = s_x; r.m[0][1] = 0.0; r.m[0][2] = 0.0; r.m[0][3] = 0.0;
-				r.m[1][0] = 0.0; r.m[1][1] = s_y; r.m[1][2] = 0.0; r.m[1][3] = 0.0;
-				r.m[2][0] = 0.0; r.m[2][1] = 0.0; r.m[2][2] = s_z; r.m[2][3] = 0.0;
-				r.m[3][0] = 0.0; r.m[3][1] = 0.0; r.m[3][2] = 0.0; r.m[3][3] = 1.0;
+				r.m[0][0] = s_x;
+				r.m[0][1] = 0.0;
+				r.m[0][2] = 0.0;
+				r.m[0][3] = 0.0;
+				r.m[1][0] = 0.0;
+				r.m[1][1] = s_y;
+				r.m[1][2] = 0.0;
+				r.m[1][3] = 0.0;
+				r.m[2][0] = 0.0;
+				r.m[2][1] = 0.0;
+				r.m[2][2] = s_z;
+				r.m[2][3] = 0.0;
+				r.m[3][0] = 0.0;
+				r.m[3][1] = 0.0;
+				r.m[3][2] = 0.0;
+				r.m[3][3] = 1.0;
 
 				return r;
 			}
@@ -238,23 +322,23 @@ namespace wowpp
 				fCos = cosf(fYAngle);
 				fSin = sinf(fYAngle);
 				Matrix4 kXMat(1.0f, 0.0f, 0.0f, 0.0f,
-					0.0f, fCos, -fSin, 0.0f,
-					0.0, fSin, fCos, 0.0f,
-					0.0f, 0.0f, 0.0f, 1.0f);
+				              0.0f, fCos, -fSin, 0.0f,
+				              0.0, fSin, fCos, 0.0f,
+				              0.0f, 0.0f, 0.0f, 1.0f);
 
 				fCos = cosf(fPAngle);
 				fSin = sinf(fPAngle);
 				Matrix4 kYMat(fCos, 0.0f, fSin, 0.0f,
-					0.0f, 1.0f, 0.0f, 0.0f,
-					-fSin, 0.0f, fCos, 0.0f,
-					0.0f, 0.0f, 0.0f, 1.0f);
+				              0.0f, 1.0f, 0.0f, 0.0f,
+				              -fSin, 0.0f, fCos, 0.0f,
+				              0.0f, 0.0f, 0.0f, 1.0f);
 
 				fCos = cosf(fRAngle);
 				fSin = sinf(fRAngle);
 				Matrix4 kZMat(fCos, -fSin, 0.0f, 0.0f,
-					fSin, fCos, 0.0f, 0.0f,
-					0.0f, 0.0f, 1.0f, 0.0f, 
-					0.0f, 0.0f, 0.0f, 1.0f);
+				              fSin, fCos, 0.0f, 0.0f,
+				              0.0f, 0.0f, 1.0f, 0.0f,
+				              0.0f, 0.0f, 0.0f, 1.0f);
 
 				return kXMat * (kYMat * kZMat);
 			}
@@ -266,54 +350,54 @@ namespace wowpp
 				fCos = cos(fYAngle);
 				fSin = sin(fYAngle);
 				Matrix4 kZMat(
-					fCos, -fSin, 0.0f, 0.0f, 
-					fSin, fCos, 0.0f, 0.0f, 
-					0.0f, 0.0f, 1.0f, 0.0f, 
-					0.0f, 0.0f, 0.0f, 1.0f);
+				    fCos, -fSin, 0.0f, 0.0f,
+				    fSin, fCos, 0.0f, 0.0f,
+				    0.0f, 0.0f, 1.0f, 0.0f,
+				    0.0f, 0.0f, 0.0f, 1.0f);
 
 				fCos = cos(fPAngle);
 				fSin = sin(fPAngle);
 				Matrix4 kYMat(
-					fCos, 0.0f, fSin, 0.0f, 
-					0.0f, 1.0f, 0.0f, 0.0f, 
-					-fSin, 0.0f, fCos, 0.0f, 
-					0.0f, 0.0f, 0.0f, 1.0f);
+				    fCos, 0.0f, fSin, 0.0f,
+				    0.0f, 1.0f, 0.0f, 0.0f,
+				    -fSin, 0.0f, fCos, 0.0f,
+				    0.0f, 0.0f, 0.0f, 1.0f);
 
 				fCos = cos(fRAngle);
 				fSin = sin(fRAngle);
 				Matrix4 kXMat(
-					1.0f, 0.0f, 0.0f, 0.0f,
-					0.0f, fCos, -fSin, 0.0f, 
-					0.0f, fSin, fCos, 0.0f, 
-					0.0f, 0.0f, 0.0f, 1.0f);
+				    1.0f, 0.0f, 0.0f, 0.0f,
+				    0.0f, fCos, -fSin, 0.0f,
+				    0.0f, fSin, fCos, 0.0f,
+				    0.0f, 0.0f, 0.0f, 1.0f);
 
 				return kZMat * (kYMat * kXMat);
 			}
 
-			void fromAngleAxis(const Vector3& rkAxis, float fRadians)
+			void fromAngleAxis(const Vector3 &rkAxis, float fRadians)
 			{
 				float fCos = ::cosf(fRadians);
 				float fSin = ::sinf(fRadians);
 				float fOneMinusCos = 1.0f - fCos;
-				float fX2 = rkAxis.x*rkAxis.x;
-				float fY2 = rkAxis.y*rkAxis.y;
-				float fZ2 = rkAxis.z*rkAxis.z;
-				float fXYM = rkAxis.x*rkAxis.y*fOneMinusCos;
-				float fXZM = rkAxis.x*rkAxis.z*fOneMinusCos;
-				float fYZM = rkAxis.y*rkAxis.z*fOneMinusCos;
-				float fXSin = rkAxis.x*fSin;
-				float fYSin = rkAxis.y*fSin;
-				float fZSin = rkAxis.z*fSin;
+				float fX2 = rkAxis.x * rkAxis.x;
+				float fY2 = rkAxis.y * rkAxis.y;
+				float fZ2 = rkAxis.z * rkAxis.z;
+				float fXYM = rkAxis.x * rkAxis.y * fOneMinusCos;
+				float fXZM = rkAxis.x * rkAxis.z * fOneMinusCos;
+				float fYZM = rkAxis.y * rkAxis.z * fOneMinusCos;
+				float fXSin = rkAxis.x * fSin;
+				float fYSin = rkAxis.y * fSin;
+				float fZSin = rkAxis.z * fSin;
 
-				m[0][0] = fX2*fOneMinusCos + fCos;
+				m[0][0] = fX2 * fOneMinusCos + fCos;
 				m[0][1] = fXYM - fZSin;
 				m[0][2] = fXZM + fYSin;
 				m[1][0] = fXYM + fZSin;
-				m[1][1] = fY2*fOneMinusCos + fCos;
+				m[1][1] = fY2 * fOneMinusCos + fCos;
 				m[1][2] = fYZM - fXSin;
 				m[2][0] = fXZM - fYSin;
 				m[2][1] = fYZM + fXSin;
-				m[2][2] = fZ2*fOneMinusCos + fCos;
+				m[2][2] = fZ2 * fOneMinusCos + fCos;
 				m[3][3] = 1.0f;
 			}
 
@@ -389,22 +473,22 @@ namespace wowpp
 				return r;
 			}
 
-			inline bool operator == (const Matrix4& m2) const
+			inline bool operator == (const Matrix4 &m2) const
 			{
 				return !(
-					m[0][0] != m2.m[0][0] || m[0][1] != m2.m[0][1] || m[0][2] != m2.m[0][2] || m[0][3] != m2.m[0][3] ||
-					m[1][0] != m2.m[1][0] || m[1][1] != m2.m[1][1] || m[1][2] != m2.m[1][2] || m[1][3] != m2.m[1][3] ||
-					m[2][0] != m2.m[2][0] || m[2][1] != m2.m[2][1] || m[2][2] != m2.m[2][2] || m[2][3] != m2.m[2][3] ||
-					m[3][0] != m2.m[3][0] || m[3][1] != m2.m[3][1] || m[3][2] != m2.m[3][2] || m[3][3] != m2.m[3][3]);
+				           m[0][0] != m2.m[0][0] || m[0][1] != m2.m[0][1] || m[0][2] != m2.m[0][2] || m[0][3] != m2.m[0][3] ||
+				           m[1][0] != m2.m[1][0] || m[1][1] != m2.m[1][1] || m[1][2] != m2.m[1][2] || m[1][3] != m2.m[1][3] ||
+				           m[2][0] != m2.m[2][0] || m[2][1] != m2.m[2][1] || m[2][2] != m2.m[2][2] || m[2][3] != m2.m[2][3] ||
+				           m[3][0] != m2.m[3][0] || m[3][1] != m2.m[3][1] || m[3][2] != m2.m[3][2] || m[3][3] != m2.m[3][3]);
 			}
 
-			inline bool operator != (const Matrix4& m2) const
+			inline bool operator != (const Matrix4 &m2) const
 			{
 				return (
-					m[0][0] != m2.m[0][0] || m[0][1] != m2.m[0][1] || m[0][2] != m2.m[0][2] || m[0][3] != m2.m[0][3] ||
-					m[1][0] != m2.m[1][0] || m[1][1] != m2.m[1][1] || m[1][2] != m2.m[1][2] || m[1][3] != m2.m[1][3] ||
-					m[2][0] != m2.m[2][0] || m[2][1] != m2.m[2][1] || m[2][2] != m2.m[2][2] || m[2][3] != m2.m[2][3] ||
-					m[3][0] != m2.m[3][0] || m[3][1] != m2.m[3][1] || m[3][2] != m2.m[3][2] || m[3][3] != m2.m[3][3]);
+				           m[0][0] != m2.m[0][0] || m[0][1] != m2.m[0][1] || m[0][2] != m2.m[0][2] || m[0][3] != m2.m[0][3] ||
+				           m[1][0] != m2.m[1][0] || m[1][1] != m2.m[1][1] || m[1][2] != m2.m[1][2] || m[1][3] != m2.m[1][3] ||
+				           m[2][0] != m2.m[2][0] || m[2][1] != m2.m[2][1] || m[2][2] != m2.m[2][2] || m[2][3] != m2.m[2][3] ||
+				           m[3][0] != m2.m[3][0] || m[3][1] != m2.m[3][1] || m[3][2] != m2.m[3][2] || m[3][3] != m2.m[3][3]);
 			}
 		};
 	}
