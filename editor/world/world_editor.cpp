@@ -152,7 +152,7 @@ namespace wowpp
 			for (const auto &spawn : m_map.objectspawns())
 			{
 				const auto *object = m_project.objects.getById(spawn.objectentry());
-				assert(unit);
+				assert(object);
 
 				OgreDBCFilePtr displayDbc = OgreDBCFileManager::getSingleton().load("DBFilesClient\\GameObjectDisplayInfo.dbc", "WoW");
 				UInt32 row = displayDbc->getRowByIndex(object->displayid());

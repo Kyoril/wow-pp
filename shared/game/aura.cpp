@@ -626,8 +626,14 @@ namespace wowpp
 		}
 		else
 		{
-			if (spell1 != 0) m_target.getAuras().removeAllAurasDueToSpell(spell1);
-			if (spell2 != 0) m_target.getAuras().removeAllAurasDueToSpell(spell2);
+			if (spell1 != 0) world->getUniverse().post([spell1, strongUnit]() 
+			{
+				std::dynamic_pointer_cast<GameUnit>(strongUnit)->getAuras().removeAllAurasDueToSpell(spell1);
+			});
+			if (spell2 != 0) world->getUniverse().post([spell2, strongUnit]()
+			{
+				std::dynamic_pointer_cast<GameUnit>(strongUnit)->getAuras().removeAllAurasDueToSpell(spell2);
+			});
 		}
 	}
 	

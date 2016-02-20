@@ -1293,8 +1293,8 @@ namespace wowpp
 			UInt32 lastEntry = 0;
 
 			ImportTask task;
-			task.countQuery = "SELECT COUNT(*) FROM `npc_trainer_template`;";
-			task.selectQuery = "SELECT `entry`, `spell`, `spellcost`, `reqskill`, `reqskillvalue`,`reqlevel` FROM `npc_trainer_template` ORDER BY `entry`;";
+			task.countQuery = "SELECT COUNT(*) FROM `wowpp_npc_trainer_template`;";
+			task.selectQuery = "SELECT `entry`, `spell`, `spellcost`, `reqskill`, `reqskillvalue`,`reqlevel` FROM `wowpp_npc_trainer_template` ORDER BY `entry`;";
 			task.beforeImport = [this]() {
 				for (int i = 0; i < m_application.getProject().units.getTemplates().entry_size(); ++i)
 				{

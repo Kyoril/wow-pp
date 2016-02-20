@@ -335,7 +335,7 @@ namespace wowpp
 
 	void AuraContainer::removeAllAurasDueToSpell(UInt32 spellId)
 	{
-		auto it = m_auras.begin();
+		AuraList::iterator it = m_auras.begin();
 		while (it != m_auras.end())
 		{
 			if ((*it)->getSpell().id() == spellId)
