@@ -28,3 +28,4 @@ Makefile
 *.a
 
 /nbproject
+*.gch

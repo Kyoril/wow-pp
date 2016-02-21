@@ -39,6 +39,7 @@
 #include <utility>
 #include <random>
 #include <functional>
+#include <fstream>
 
 // Boost Libraies
 #include <boost/signals2.hpp>

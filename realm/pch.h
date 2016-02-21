@@ -43,6 +43,7 @@
 #include <cctype>
 #include <sstream>
 #include <locale>
+#include <fstream>
 
 // Boost Libraies
 #include <boost/signals2.hpp>

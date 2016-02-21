@@ -40,6 +40,7 @@
 #include <functional>
 #include <limits>
 #include <queue>
+#include <fstream>
 
 // Boost Libraies
 #include <boost/signals2.hpp>

@@ -44,6 +44,7 @@
 #include <sstream>
 #include <locale>
 #include <istream>
+#include <fstream>
 
 // Boost Libraies
 #include <boost/signals2.hpp>
