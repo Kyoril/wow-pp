@@ -1373,7 +1373,7 @@ namespace wowpp
 
 			if (m_cast.getExecuter().isGameCharacter())
 			{
-				reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
+				UInt64 diff = reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
 					spell_mod_op::Cooldown, m_spell.id(), finalCD);
 			}
 

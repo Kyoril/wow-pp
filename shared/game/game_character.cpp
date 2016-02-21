@@ -823,10 +823,13 @@ namespace wowpp
 				continue;
 			}
 
-			ILOG("SPELL MOD " << type << " (MASK " << mod.mask << ") CHECK SPELL " << spellId << " (FAMILY " << spell->family());
-			if (spell->family() & mod.mask)
+			UInt64 familyFlags = spell->familyflags();
+			if (!familyFlags)
 			{
-				DLOG("APPLIED " << mod.value);
+				familyFlags = spell->family();
+			}
+			if (familyFlags & mod.mask)
+			{
 				total += mod.value;
 			}
 		}

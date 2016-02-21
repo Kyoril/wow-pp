@@ -841,6 +841,11 @@ namespace wowpp
 		mod.effectId = m_effect.index();
 		mod.charges = 0;
 		mod.mask = m_effect.affectmask();
+		if (mod.mask == 0) mod.mask = m_effect.itemtype();
+		if (mod.mask == 0)
+		{
+			WLOG("INVALID MOD MASK FOR SPELL " << m_spell.id() << " / EFFECT " << m_effect.index());
+		}
 		reinterpret_cast<GameCharacter&>(m_target).modifySpellMod(mod, apply);
 	}
 
