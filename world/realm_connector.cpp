@@ -920,6 +920,9 @@ namespace wowpp
 		// Get the cast time of this spell
 		Int64 castTime = spell->casttime();
 
+		Int64 diff = sender.getCharacter()->applySpellMod(spell_mod_op::CastTime, spellId, castTime);
+		if (castTime < 0) castTime = 0;
+
 		// Spell cast logic
 		sender.getCharacter()->castSpell(
 			std::move(targetMap),

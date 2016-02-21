@@ -1370,6 +1370,13 @@ namespace wowpp
 			if (!finalCD) {
 				finalCD = spellCatCD;
 			}
+
+			if (m_cast.getExecuter().isGameCharacter())
+			{
+				reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
+					spell_mod_op::Cooldown, m_spell.id(), finalCD);
+			}
+
 			if (finalCD)
 			{
 				m_cast.getExecuter().setCooldown(m_spell.id(), static_cast<UInt32>(finalCD));

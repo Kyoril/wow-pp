@@ -200,6 +200,10 @@ namespace wowpp
 		case aura::PeriodicDummy:
 			handlePeriodicDummy(apply);
 			break;
+		case aura::AddFlatModifier:
+		case aura::AddPctModifier:
+			handleAddModifier(apply);
+			break;
 		default:
 			//			WLOG("Unhandled aura type: " << m_effect.aura());
 			break;
@@ -814,15 +818,30 @@ namespace wowpp
 		m_target.updateModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue, m_basePoints, apply);
 	}
 
-	void Aura::handleAddFlatModifier(bool apply)
+	void Aura::handleAddModifier(bool apply)
 	{
-		switch (m_effect.miscvaluea())
+		if (m_effect.miscvaluea() >= spell_mod_op::Max_)
 		{
-		case game::spell_modifier::CastingTime:
-			break;
-		default:
-			break;
+			WLOG("Invalid spell mod operation " << m_effect.miscvaluea());
+			return;
 		}
+
+		if (!m_target.isGameCharacter())
+		{
+			WLOG("AddFlatModifier only works on GameCharacter!");
+			return;
+		}
+
+		// Setup spell mod
+		SpellModifier mod;
+		mod.op = SpellModOp(m_effect.miscvaluea());
+		mod.value = m_basePoints;
+		mod.type = SpellModType(m_effect.aura());
+		mod.spellId = m_spell.id();
+		mod.effectId = m_effect.index();
+		mod.charges = 0;
+		mod.mask = m_effect.affectmask();
+		reinterpret_cast<GameCharacter&>(m_target).modifySpellMod(mod, apply);
 	}
 
 	void Aura::handleSchoolAbsorb(bool apply)

@@ -44,6 +44,7 @@ message SpellEffect {
 	optional uint32 triggerspell = 19;
 	optional uint32 summonunit = 20;
 	optional int32 pointspercombopoint = 21;
+	optional uint64 affectmask = 22;
 }
 
 message SpellEntry {

@@ -760,6 +760,80 @@ namespace wowpp
 		return (it != m_requiredQuestItems.end() ? it->second > 0 : false);
 	}
 
+	void GameCharacter::modifySpellMod(SpellModifier &mod, bool apply)
+	{
+		for (UInt8 eff = 0; eff < 64; ++eff)
+		{
+			UInt64 mask = UInt64(1) << eff;
+			if (mod.mask & mask)
+			{
+				Int32 val = 0;
+				for (auto it = m_spellModsByOp[mod.op].begin(); it != m_spellModsByOp[mod.op].end(); ++it)
+				{
+					if (it->type == mod.type && it->mask & mask)
+					{
+						val += it->value;
+					}
+				}
+
+				val += apply ? mod.value : -(mod.value);
+				spellModChanged(mod.type, eff, mod.op, val);
+			}
+		}
+
+		if (apply)
+		{
+			m_spellModsByOp[mod.op].push_back(mod);
+		}
+		else
+		{
+			for (auto it = m_spellModsByOp[mod.op].begin(); it != m_spellModsByOp[mod.op].end(); ++it)
+			{
+				if (it->mask == mod.mask &&
+					it->value == mod.value &&
+					it->type == mod.type &&
+					it->op == mod.op
+					)
+				{
+					it = m_spellModsByOp[mod.op].erase(it);
+					break;
+				}
+			}
+		}
+	}
+
+	Int32 GameCharacter::getTotalSpellMods(SpellModType type, SpellModOp op, UInt32 spellId) const
+	{
+		const auto *spell = getProject().spells.getById(spellId);
+		if (!spell)
+			return 0;
+
+		// Get spell modifier by op list
+		auto list = m_spellModsByOp.find(op);
+		if (list == m_spellModsByOp.end())
+		{
+			return 0;
+		}
+
+		Int32 total = 0;
+		for (const auto &mod : list->second)
+		{
+			if (mod.type != type)
+			{
+				continue;
+			}
+
+			ILOG("SPELL MOD " << type << " (MASK " << mod.mask << ") CHECK SPELL " << spellId << " (FAMILY " << spell->family());
+			if (spell->family() & mod.mask)
+			{
+				DLOG("APPLIED " << mod.value);
+				total += mod.value;
+			}
+		}
+
+		return total;
+	}
+
 	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData &data)
 	{
 		m_quests[quest] = data;

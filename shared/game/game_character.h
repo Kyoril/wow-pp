@@ -595,6 +595,8 @@ namespace wowpp
 
 	/// Contains a list of spell modifiers of a character.
 	typedef std::list<SpellModifier> SpellModList;
+	/// Stores spell modifiers by it's operation.
+	typedef std::map<SpellModOp, SpellModList> SpellModsByOp;
 
 	/// Represents a players character in the world.
 	class GameCharacter : public GameUnit
@@ -799,6 +801,24 @@ namespace wowpp
 		/// Determines if the player needs a specific item for a quest.
 		bool needsQuestItem(UInt32 itemId) const;
 
+		void modifySpellMod(SpellModifier &mod, bool apply);
+		/// Gets the total amount of spell mods for one type and one spell.
+		Int32 getTotalSpellMods(SpellModType type, SpellModOp op, UInt32 spellId) const;
+		template<class T>
+		T applySpellMod(SpellModOp op, UInt32 spellId, T& ref_value) const
+		{
+			float totalPct = 1.0f;
+			Int32 totalFlat = 0;
+
+			totalFlat += getTotalSpellMods(spell_mod_type::Flat, op, spellId);
+			totalPct += float(getTotalSpellMods(spell_mod_type::Pct, op, spellId)) * 0.01f;
+
+			const float diff = float(ref_value) * (totalPct - 1.0f) + float(totalFlat);
+			ref_value = T(float(ref_value) + diff);
+
+			return T(diff);
+		}
+
 	public:
 
 		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT
@@ -848,7 +868,7 @@ namespace wowpp
 		/// if one quest gets rewarded/abandoned, and the other quest is still incomplete,
 		/// we would have no performant way to check this.
 		std::map<UInt32, Int8> m_requiredQuestItems;
-		SpellModList m_spellMods;
+		SpellModsByOp m_spellModsByOp;
 	};
 
 	/// Serializes a GameCharacter to an io::Writer object for the wow++ protocol.

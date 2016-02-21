@@ -934,34 +934,33 @@ namespace wowpp
 
 	static bool importDispelData(proto::Project &project, MySQL::Connection &conn)
 	{
+		wowpp::MySQL::Select select(conn, "SELECT `Id`,`Dispel`,`SpellFamilyName`,`SpellFamilyFlags` FROM `dbc_spell`;");
+		if (select.success())
 		{
-			wowpp::MySQL::Select select(conn, "SELECT `Id`,`Dispel`,`SpellFamilyName`,`SpellFamilyFlags` FROM `dbc_spell`;");
-			if (select.success())
+			wowpp::MySQL::Row row(select);
+			while (row)
 			{
-				wowpp::MySQL::Row row(select);
-				while (row)
+				// Get row data
+				UInt32 id = 0, dispel = 0;
+				UInt64 family = 0, familyFlags = 0;
+				row.getField(0, id);
+				row.getField(1, dispel);
+				row.getField(2, family);
+				row.getField(3, familyFlags);
+
+				auto * spell = project.spells.getById(id);
+				if (!spell)
 				{
-					// Get row data
-					UInt32 id = 0, dispel = 0, family = 0, familyFlags = 0;
-					row.getField(0, id);
-					row.getField(1, dispel);
-					row.getField(2, family);
-					row.getField(3, familyFlags);
-
-					auto * spell = project.spells.getById(id);
-					if (!spell)
-					{
-						WLOG("Unable to find spell by id: " << id);
-						row = row.next(select);
-						continue;
-					}
-
-					spell->set_dispel(dispel);
-					spell->set_family(family);
-					spell->set_familyflags(familyFlags);
-
+					WLOG("Unable to find spell by id: " << id);
 					row = row.next(select);
+					continue;
 				}
+
+				spell->set_dispel(dispel);
+				spell->set_family(family);
+				spell->set_familyflags(familyFlags);
+
+				row = row.next(select);
 			}
 		}
 
@@ -1077,6 +1076,51 @@ namespace wowpp
 
 		return true;
 	}
+
+	static bool importSpellAffects(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `entry`,`effectId`,`SpellFamilyMask` FROM `tbcdb`.`spell_affect`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 id = 0, effect = 0;
+				UInt64 family = 0;
+				row.getField(0, id);
+				row.getField(1, effect);
+				row.getField(2, family);
+
+				auto * spell = project.spells.getById(id);
+				if (!spell)
+				{
+					WLOG("Unable to find spell by id: " << id);
+					row = row.next(select);
+					continue;
+				}
+
+				if (spell->effects_size() <= effect)
+				{
+					WLOG("Spell " << spell->id() << " has only " << spell->effects_size() << " effects, but effect #" << effect << " was requested");
+					if (spell->effects_size() > 0)
+					{
+						effect = spell->effects_size() - 1;
+					}
+					else
+					{
+						row = row.next(select);
+						continue;
+					}
+				}
+
+				spell->mutable_effects(effect)->set_affectmask(family);
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
 }
 
 /// Procedural entry point of the application.
@@ -1145,6 +1189,11 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 
+	if (!importSpellAffects(protoProject, connection))
+	{
+		ELOG("Could not import spell affect masks");
+		return 0;
+	}
 	/*
 	if (!importSpellMechanics(protoProject, connection))
 	{
@@ -1169,13 +1218,13 @@ int main(int argc, char* argv[])
 		ELOG("Failed to add spell links");
 		return 1;
 	}
-	/*
+
 	if (!importDispelData(protoProject, connection))
 	{
 		ELOG("Failed to import spell dispel data");
 		return 1;
 	}
-	*/
+	/*
 	if (!fixDeadminesObjects(protoProject))
 	{
 		ELOG("Failed to fix deadmines data");
@@ -1189,7 +1238,7 @@ int main(int argc, char* argv[])
 	if (!fixObjectOrientation(protoProject))
 	{
 		return 1;
-	}
+	}*/
 
 	// Save project
 	if (!protoProject.save(configuration.dataPath))
