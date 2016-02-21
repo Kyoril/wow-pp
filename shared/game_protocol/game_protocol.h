@@ -353,6 +353,8 @@ namespace wowpp
 				PeriodicAuraLog				= 0x24E,
 				SpellDamageShield			= 0x24F,
 				SpellNonMeleeDamageLog		= 0x250,
+				SetFlatSpellModifier		= 0x266,
+				SetPctSpellModifier			= 0x267,
 				StandStateUpdate			= 0x29D,
 				SpellFailedOther			= 0x2A6,
 				ChatPlayerNotFound			= 0x2A9,
@@ -1996,6 +1998,20 @@ namespace wowpp
 			    UInt32 maxCount,
 			    UInt64 guid
 			);
+
+			void setFlatSpellModifier(
+				game::OutgoingPacket &out_packet,
+				UInt8 bit,
+				UInt8 modOp,
+				Int32 value
+				);
+
+			void setPctSpellModifier(
+				game::OutgoingPacket &out_packet,
+				UInt8 bit,
+				UInt8 modOp,
+				Int32 value
+				);
 		};
 	}
 }

@@ -496,38 +496,203 @@ namespace wowpp
 
 	class GameCreature;
 
-	///
+	namespace spell_mod_op
+	{
+		enum Type
+		{
+			/// Spell damage modified.
+			Damage				= 0,
+			/// Spell aura duration modified.
+			Duration			= 1,
+			/// Spell threat modified.
+			Threat				= 2,
+			/// Effect1 base points modified.
+			Effect1				= 3,
+			/// Spell charges modified.
+			Charges				= 4,
+			/// Spell range modified.
+			Range				= 5,
+			/// Spell radius modified.
+			Radius				= 6,
+			/// Spell critical hit chance modified.
+			CritChance			= 7,
+			/// All effect base points modified.
+			AllEffects			= 8,
+			/// Amount of spell delay on hit while casting modified.
+			PreventSpellDelay	= 9,
+			/// Spell cast time modified (also cast time for channeled spells)
+			CastTime			= 10,
+			/// Spell cooldown modified.
+			Cooldown			= 11,
+			/// Effect2 base points modified.
+			Effect2				= 12,
+			/// Spell cost modified.
+			Cost				= 14,
+			/// Critical spell damage modified.
+			CritDamageBonus		= 15,
+			/// Chance to miss or resist this spell modified.
+			ResistMissChance	= 16,
+			/// Number of targets to jump to modified (chain heal etc.)
+			JumpTargets			= 17,
+			/// ...
+			ChanceOfSuccess		= 18,
+			/// ...
+			ActivationTime		= 19,
+			/// ...
+			EffectPastFirst		= 20,
+			/// Global cooldown modified.
+			GlobalCooldown		= 21,
+			/// Periodic damage of aura modified.
+			Dot					= 22,
+			/// Effect3 base points modified.
+			Effect3				= 23,
+			/// Bonus damage modified (? we already have Damage...).
+			BonusDamage			= 24,
+			/// Multiple value field modified.
+			MultipleValue		= 27,
+			/// Resist dispel chance modified.
+			ResistDispelChance	= 28,
+
+			/// Since this is a bitmask, this marks the maximum number of spellmods so far
+			Max_				= 32
+		};
+	}
+
+	typedef spell_mod_op::Type SpellModOp;
+
+	namespace spell_mod_type
+	{
+		enum Type
+		{
+			/// Equals aura_type::AddFlatModifier
+			Flat		= 107,
+			/// Equals aura_type::AddPctModifier
+			Pct			= 108
+		};
+	}
+
+	typedef spell_mod_type::Type SpellModType;
+
+	/// Represents a spell modifier which is used to modify spells for a GameCharacter.
+	/// This is only(?) used by talents, and is thus only available for characters.
+	struct SpellModifier final
+	{
+		/// The spell modifier operation (what should be changed?)
+		SpellModOp op;
+		/// The modifier type (flag or percentage)
+		SpellModType type;
+		/// Charge count of this modifier (some are like "Increases damage of the next N casts")
+		Int16 charges;
+		/// The modifier value.
+		Int32 value;
+		/// Mask to determine which spells are modified.
+		UInt64 mask;
+		/// Affected spell index. (?)
+		UInt32 spellId;
+		/// Index of the affected spell index. (?)
+		UInt8 effectId;
+	};
+
+	/// Contains a list of spell modifiers of a character.
+	typedef std::list<SpellModifier> SpellModList;
+
+	/// Represents a players character in the world.
 	class GameCharacter : public GameUnit
 	{
+		// Serialization and deserialization for the wow++ protocol
+
 		friend io::Writer &operator << (io::Writer &w, GameCharacter const &object);
 		friend io::Reader &operator >> (io::Reader &r, GameCharacter &object);
 
 	public:
 
+		// Signals
+
+		/// Fired when a proficiency was changes (weapon & armor prof.)
 		boost::signals2::signal<void(Int32, UInt32)> proficiencyChanged;
+		/// Fired when an inventory error occurred. Used to send a packet to the owning players client.
 		boost::signals2::signal<void(game::InventoryChangeFailure, GameItem *, GameItem *)> inventoryChangeFailure;
+		/// Fired when the characters combo points changes. Used to send a packet to the owning players client.
 		boost::signals2::signal<void()> comboPointsChanged;
+		/// Fired when the character gained some experience points. Used to send a packet to the owning players client.
 		boost::signals2::signal<void(UInt64, UInt32, UInt32)> experienceGained;
+		/// Fired when the characters home changed. Used to send a packet to the owning players client.
 		boost::signals2::signal<void()> homeChanged;
-		/// Parameters: Quest-ID, Old Status, New Status
-		boost::signals2::signal<void(UInt32, const QuestStatusData &)> questDataChanged;
+		/// Fired when a quest status changed. Used to save quest status at the realm.
+		boost::signals2::signal<void(UInt32 questId, const QuestStatusData & data)> questDataChanged;
+		/// Fired when a kill credit for a specific quest was made. Used to send a packet to the owning players client.
 		boost::signals2::signal<void(const proto::QuestEntry &, UInt64 guid, UInt32 entry, UInt32 count, UInt32 total)> questKillCredit;
+		/// Fired when the character want to inspect loot of an object. Used to send packets to the owning players client.
 		boost::signals2::signal<void(LootInstance &)> lootinspect;
+		/// Fired when a spell mod was applied or misapplied on the character. Used to send packets to the owning players client.
+		boost::signals2::signal<void(SpellModType, UInt8, SpellModOp, Int32)> spellModChanged;
 
 	public:
 
-		///
+		/// Creates a new instance of the GameCharacter class. Remember, the GameCharacter will not
+		/// be valid, as you at least need to call GameCharacter::initialize(), GameCharacter::setMapId()
+		/// and GameCharacter::relocate() to have a valid character. You also have to setup a valid GUID.
 		explicit GameCharacter(
 		    proto::Project &project,
 		    TimerQueue &timers);
+		/// Default destructor.
 		~GameCharacter();
+
+	public:
+
+		// GameObject overrides
 
 		/// @copydoc GameObject::initialize()
 		virtual void initialize() override;
 		/// @copydoc GameObject::getTypeId()
-		virtual ObjectType getTypeId() const override {
-			return object_type::Character;
-		}
+		virtual ObjectType getTypeId() const override { return object_type::Character; }
+		/// @copydoc GameObject::getName
+		const String &getName() const override { return m_name; }
+
+	public:
+
+		// GameUnit overrides
+
+		/// @copydoc GameUnit::hasMainHandWeapon
+		bool hasMainHandWeapon() const override;
+		/// @copydoc GameUnit::hasOffHandWeapon
+		bool hasOffHandWeapon() const override;
+		/// @copydoc GameUnit::canBlock
+		bool canBlock() const override;
+		/// @copydoc GameUnit::canParry
+		bool canParry() const override;
+		/// @copydoc GameUnit::canDodge
+		bool canDodge() const override;
+		/// @copydoc GameUnit::canDualWield
+		bool canDualWield() const override;
+		/// @copydoc GameUnit::rewardExperience()
+		void rewardExperience(GameUnit *victim, UInt32 experience) override;
+
+	protected:
+
+		// GameUnit overrides
+
+		/// @copydoc GameUnit::levelChanged
+		virtual void levelChanged(const proto::LevelEntry &levelInfo) override;
+		/// @copydoc GameUnit::updateArmor
+		virtual void updateArmor() override;
+		/// @copydoc GameUnit::updateDamage
+		virtual void updateDamage() override;
+		/// @copydoc GameUnit::updateManaRegen
+		virtual void updateManaRegen() override;
+		/// @copydoc GameUnit::regenerateHealth
+		virtual void regenerateHealth() override;
+
+	private:
+
+		// GameUnit overrides
+
+		/// @copydoc GameUnit::classUpdated
+		void classUpdated() override;
+
+	public:
+
+		// GameCharacter methods
 
 		/// Adds a spell to the list of known spells of this character.
 		/// Note that passive spells will also be cast after they are added.
@@ -538,28 +703,16 @@ namespace wowpp
 		bool removeSpell(const proto::SpellEntry &spell);
 		/// Sets the name of this character.
 		void setName(const String &name);
-		/// Gets the name of this character.
-		const String &getName() const override {
-			return m_name;
-		}
 		/// Updates the zone where this character is. This variable is used by
 		/// the friend list and the /who list.
-		void setZone(UInt32 zoneIndex) {
-			m_zoneIndex = zoneIndex;
-		}
+		void setZone(UInt32 zoneIndex) { m_zoneIndex = zoneIndex; }
 		/// Gets the zone index where this character is.
-		UInt32 getZone() const {
-			return m_zoneIndex;
-		}
+		UInt32 getZone() const { return m_zoneIndex; }
 		/// Gets a list of all known spells of this character.
-		const std::vector<const proto::SpellEntry *> &getSpells() const {
-			return m_spells;
-		}
+		const std::vector<const proto::SpellEntry *> &getSpells() const { return m_spells; }
 		/// Gets the weapon proficiency mask of this character (which weapons can be
 		/// wielded)
-		UInt32 getWeaponProficiency() const {
-			return m_weaponProficiency;
-		}
+		UInt32 getWeaponProficiency() const { return m_weaponProficiency; }
 		/// Gets the armor proficiency mask of this character (which armor types
 		/// can be wielded: Cloth, Leather, Mail, Plate etc.)
 		UInt32 getArmorProficiency() const {
@@ -587,81 +740,63 @@ namespace wowpp
 		}
 		/// Adds a new skill to the list of known skills of this character.
 		void addSkill(const proto::SkillEntry &skill);
-		///
+		/// Removes a skill from the list of known skills.
 		void removeSkill(UInt32 skillId);
-		///
+		/// Updates the skill values for a given skill of this character.
 		void setSkillValue(UInt32 skillId, UInt16 current, UInt16 maximum);
 		/// Returns true if the character knows a specific skill.
 		bool hasSkill(UInt32 skillId) const;
 		/// Gets the GUID of the current combo point target.
-		UInt64 getComboTarget() const {
-			return m_comboTarget;
-		}
+		UInt64 getComboTarget() const { return m_comboTarget; }
 		/// Gets the number of combo points of this character.
-		UInt8 getComboPoints() const {
-			return m_comboPoints;
-		}
+		UInt8 getComboPoints() const { return m_comboPoints; }
 		/// Adds combo points to the specified target. This will reset combo points
 		/// if target is a new target combo target. If a value of 0 is specified, the combo
 		/// points will be reset to zero.
 		void addComboPoints(UInt64 target, UInt8 points);
 		/// Applies or removes item stats for this character.
 		void applyItemStats(GameItem &item, bool apply);
-		/// @copydoc GameUnit::rewardExperience()
-		void rewardExperience(GameUnit *victim, UInt32 experience) override;
 		/// Gets the characters home location.
 		void getHome(UInt32 &out_map, math::Vector3 &out_pos, float &out_rot) const;
 		/// Updates the characters home location.
 		void setHome(UInt32 map, const math::Vector3 &pos, float rot);
-
-		bool hasMainHandWeapon() const override;
-		bool hasOffHandWeapon() const override;
-
-		GroupUpdateFlags getGroupUpdateFlags() const {
-			return m_groupUpdateFlags;
-		}
+		/// Gets the current group update flags of this character.
+		GroupUpdateFlags getGroupUpdateFlags() const { return m_groupUpdateFlags; }
+		/// Modifies the group update flags, marking it as changed or unchaned.
+		/// @param flags The group update flag to set or unset.
+		/// @param apply Whether to set or unset the flag.
 		void modifyGroupUpdateFlags(GroupUpdateFlags flags, bool apply);
-		void clearGroupUpdateFlags() {
-			m_groupUpdateFlags = group_update_flags::None;
-		}
-		bool canBlock() const override;
-		bool canParry() const override;
-		bool canDodge() const override;
-		bool canDualWield() const override;
-
+		/// Resets group update flags so that the server knows that no group update has to be done
+		/// for this character.
+		void clearGroupUpdateFlags() { m_groupUpdateFlags = group_update_flags::None; }
 		/// Gets the characters group id.
-		UInt64 getGroupId() const {
-			return m_groupId;
-		}
+		UInt64 getGroupId() const { return m_groupId; }
 		/// Sets the characters group id.
-		void setGroupId(UInt64 groupId) {
-			m_groupId = groupId;
-		}
-
+		void setGroupId(UInt64 groupId) { m_groupId = groupId; }
 		/// Gets a reference to the characters inventory component.
-		Inventory &getInventory() {
-			return m_inventory;
-		}
-
-		///
+		Inventory &getInventory() { return m_inventory; }
+		/// Gets the current status of a given quest by its id.
+		/// @returns Quest status.
 		game::QuestStatus getQuestStatus(UInt32 quest) const;
-		///
+		/// Accepts a new quest.
+		/// @returns false if this wasn't possible (maybe questlog was full or not all requirements are met).
 		bool acceptQuest(UInt32 quest);
-		///
+		/// Abandons the specified quest.
+		/// @returns false if this wasn't possible (maybe because the quest wasn't in the players quest log).
 		bool abandonQuest(UInt32 quest);
-		///
+		/// Rewards the given quest (gives items, xp and saves quest status).
 		bool rewardQuest(UInt32 quest, UInt8 rewardChoice, std::function<void(UInt32)> callback);
-		///
+		/// Called when a quest-related creature was killed.
 		void onQuestKillCredit(GameCreature &killed);
-
+		/// Determines whether the character fulfulls all requirements of the given quests.
 		bool fulfillsQuestRequirements(const proto::QuestEntry &entry) const;
-
+		/// Determines whether the players questlog is full.
 		bool isQuestlogFull() const;
-
+		/// Called when a quest item was added to the inventory.
 		void onQuestItemAddedCredit(const proto::ItemEntry &entry, UInt32 amount);
-
+		/// Called when a quest item was removed from the inventory.
 		void onQuestItemRemovedCredit(const proto::ItemEntry &entry, UInt32 amount);
-
+		/// Determines if the player needs a specific item for a quest.
 		bool needsQuestItem(UInt32 itemId) const;
 
 	public:
@@ -672,22 +807,20 @@ namespace wowpp
 		/// Manually sets data for a specified quest id.
 		void setQuestData(UInt32 quest, const QuestStatusData &data);
 
-	protected:
-
-		virtual void levelChanged(const proto::LevelEntry &levelInfo) override;
-		virtual void updateArmor() override;
-		virtual void updateDamage() override;
-		virtual void updateManaRegen() override;
-		virtual void regenerateHealth() override;
-
 	private:
 
-		void classUpdated() override;
+		/// Updates the amount of available talent points of this character, by calculating it.
 		void updateTalentPoints();
-		void initClassEffects();	// init class specific effects
+		/// Initializes class-specific mechanics like combo-point generation on enemy dodge for
+		/// warriors (which will enable "Overpower" ability) etc.
+		void initClassEffects();
+		/// Updates nearby game objects after a quest change happened (some game objects are only
+		/// lootable and/or shining when certain quests are incomplete).
 		void updateNearbyQuestObjects();
 
 	private:
+
+		// Variables
 
 		String m_name;
 		UInt32 m_zoneIndex;
@@ -699,12 +832,12 @@ namespace wowpp
 		UInt8 m_comboPoints;
 		float m_healthRegBase, m_manaRegBase;
 		GroupUpdateFlags m_groupUpdateFlags;
-		bool m_canBlock;	// Set by spell
-		bool m_canParry;	// Set by spell
-		bool m_canDualWield;// Set by spell
+		bool m_canBlock;	// Set by spell, do not set manually
+		bool m_canParry;	// Set by spell, do not set manually
+		bool m_canDualWield;// Set by spell, do not set manually
 		FactionStateList m_factions;
 		ForcedReactions m_forcedReactions;
-		UInt64 m_groupId;
+		UInt64 m_groupId;	// Used to determine if in same player group as other characters
 		UInt32 m_homeMap;
 		math::Vector3 m_homePos;
 		float m_homeRotation;
@@ -715,8 +848,15 @@ namespace wowpp
 		/// if one quest gets rewarded/abandoned, and the other quest is still incomplete,
 		/// we would have no performant way to check this.
 		std::map<UInt32, Int8> m_requiredQuestItems;
+		SpellModList m_spellMods;
 	};
 
+	/// Serializes a GameCharacter to an io::Writer object for the wow++ protocol.
+	/// @param w The writer used to write to.
+	/// @param object The GameCharacter object to serialize.
 	io::Writer &operator << (io::Writer &w, GameCharacter const &object);
-	io::Reader &operator >> (io::Reader &r, GameCharacter &object);
+	/// Deserializes a GameCharacter from an io::Reader object for the wow++ protocol.
+	/// @param r The reader used to read from.
+	/// @param out_object A reference of the GameCharacter object whose values will be read.
+	io::Reader &operator >> (io::Reader &r, GameCharacter &out_object);
 }

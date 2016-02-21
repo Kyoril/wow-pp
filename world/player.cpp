@@ -137,6 +137,15 @@ namespace wowpp
 		m_onRootUpdate = m_character->rootStateChanged.connect(onRootOrStunUpdate);
 		m_onStunUpdate = m_character->stunStateChanged.connect(onRootOrStunUpdate);
 
+		// Spell modifier applied or misapplied (changed)
+		m_spellModChanged = m_character->spellModChanged.connect([this](SpellModType type, UInt8 bit, SpellModOp op, Int32 value) {
+			sendProxyPacket(
+				type == spell_mod_type::Flat ?
+					std::bind(game::server_write::setFlatSpellModifier, std::placeholders::_1, bit, op, value) :
+					std::bind(game::server_write::setPctSpellModifier, std::placeholders::_1, bit, op, value)
+				);
+		});
+
 		// Group update signal
 		m_groupUpdate.ended.connect([this]()
 		{

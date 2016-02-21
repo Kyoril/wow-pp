@@ -243,7 +243,6 @@ namespace wowpp
 		}
 		else
 		{
-			ILOG("SENDING CAST FAILURE");
 			sendPacketFromCaster(executer,
 			                     std::bind(game::server_write::spellFailure, std::placeholders::_1,
 			                               executer.getGuid(),

@@ -3227,6 +3227,26 @@ namespace wowpp
 				        ;
 				out_packet.finish();
 			}
+			void setFlatSpellModifier(game::OutgoingPacket & out_packet, UInt8 bit, UInt8 modOp, Int32 value)
+			{
+				out_packet.start(game::server_packet::SetFlatSpellModifier);
+				out_packet
+					<< io::write<NetUInt8>(bit)
+					<< io::write<NetUInt8>(modOp)
+					<< io::write<NetInt32>(value)
+					;
+				out_packet.finish();
+			}
+			void setPctSpellModifier(game::OutgoingPacket & out_packet, UInt8 bit, UInt8 modOp, Int32 value)
+			{
+				out_packet.start(game::server_packet::SetPctSpellModifier);
+				out_packet
+					<< io::write<NetUInt8>(bit)
+					<< io::write<NetUInt8>(modOp)
+					<< io::write<NetInt32>(value)
+					;
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

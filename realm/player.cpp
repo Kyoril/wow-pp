@@ -170,6 +170,7 @@ namespace wowpp
 
 	void Player::destroy()
 	{
+		ILOG("Player::destroy");
 		m_connection->resetListener();
 		m_connection->close();
 		m_connection.reset();
@@ -179,6 +180,8 @@ namespace wowpp
 
 	void Player::connectionLost()
 	{
+		ILOG("Player::connectionLost");
+
 		// If we are logged in, notify the world node about this
 		if (m_gameCharacter)
 		{
@@ -196,6 +199,7 @@ namespace wowpp
 			auto world = m_worldManager.getWorldByInstanceId(m_instanceId);
 			if (world)
 			{
+				ILOG("Sent leave world instance packet");
 				world->leaveWorldInstance(m_characterId, pp::world_realm::world_left_reason::Disconnect);
 				// We don't destroy this player instance yet, as we are still connected to a world node: This world node needs to
 				// send the character's new data back to us, so that we can save it.
@@ -961,6 +965,7 @@ namespace wowpp
 			case pp::world_realm::world_left_reason::Disconnect:
 			{
 				// Finally destroy this instance
+				ILOG("Left world instance because of a disconnect");
 				destroy();
 				break;
 			}
