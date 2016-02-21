@@ -150,6 +150,7 @@ namespace wowpp
 				m_onVictimMoved.disconnect();
 
 				// No longer attack unit if stunned
+				m_isCasting = false;
 				getControlled().cancelCast();
 				getControlled().stopAttack();
 				getControlled().setVictim(nullptr);
