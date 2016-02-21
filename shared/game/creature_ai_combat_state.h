@@ -97,5 +97,6 @@ namespace wowpp
 		GameTime m_lastCastTime;
 		UInt32 m_customCooldown;
 		game::SpellCastResult m_lastCastResult;
+		bool m_isCasting;
 	};
 }

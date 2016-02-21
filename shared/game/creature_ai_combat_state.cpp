@@ -41,6 +41,7 @@ namespace wowpp
 		: CreatureAIState(ai)
 		, m_lastThreatTime(0)
 		, m_nextActionCountdown(ai.getControlled().getTimers())
+		, m_isCasting(false)
 	{
 		// Setup
 		m_lastSpellEntry = nullptr;
@@ -285,6 +286,10 @@ namespace wowpp
 		threatEntry.amount += amount;
 
 		m_lastThreatTime = getCurrentTime();
+
+		// If not casting right now, choose next action
+		if (!m_isCasting)
+			chooseNextAction();
 	}
 
 	void CreatureAICombatState::removeThreat(GameUnit &threatener)
@@ -362,7 +367,6 @@ namespace wowpp
 
 	void CreatureAICombatState::updateVictim()
 	{
-		// First, determine the current victim
 		GameCreature &controlled = getControlled();
 		GameUnit *victim = controlled.getVictim();
 		bool rooted = controlled.isRooted();
@@ -519,6 +523,7 @@ namespace wowpp
 					}
 
 					controlled.castSpell(std::move(targetMap), validSpellEntry->spellid(), -1, m_lastCastTime, false, 0, std::bind(&CreatureAICombatState::onSpellCast, this, std::placeholders::_1));
+					m_isCasting = true;
 					return;
 				}
 			}
@@ -545,6 +550,7 @@ namespace wowpp
 	void CreatureAICombatState::onSpellCast(game::SpellCastResult result)
 	{
 		m_lastCastResult = result;
+		m_isCasting = false;
 		if (result == game::spell_cast_result::CastOkay)
 		{
 			// Apply custom cooldown if needed
