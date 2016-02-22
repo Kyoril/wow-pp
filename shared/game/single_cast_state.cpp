@@ -661,7 +661,6 @@ namespace wowpp
 
 	void SingleCastState::spellEffectSchoolDamage(const proto::SpellEffect &effect)
 	{
-
 		GameUnit &caster = m_cast.getExecuter();
 		UInt8 school = m_spell.schoolmask();
 		std::vector<GameUnit *> targets;
@@ -700,6 +699,12 @@ namespace wowpp
 				{
 					crit = true;
 					totalDamage *= 2.0f;
+
+					if (caster.isGameCharacter())
+					{
+						reinterpret_cast<GameCharacter&>(caster).applySpellMod(
+							spell_mod_op::CritDamageBonus, m_spell.id(), totalDamage);
+					}
 				}
 				resisted = totalDamage * (resists[i] / 100.0f);
 				absorbed = targetUnit->consumeAbsorb(totalDamage - resisted, school);
