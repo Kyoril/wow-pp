@@ -534,7 +534,7 @@ namespace wowpp
 			ResistMissChance	= 16,
 			/// Number of targets to jump to modified (chain heal etc.)
 			JumpTargets			= 17,
-			/// ...
+			/// Increases the proc chance (used in resto druid talent "Improved Nature's Grasp" for example)
 			ChanceOfSuccess		= 18,
 			/// ...
 			ActivationTime		= 19,

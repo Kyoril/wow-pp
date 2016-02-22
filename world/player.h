@@ -204,6 +204,7 @@ namespace wowpp
 		void handleQuestgiverChooseReward(game::Protocol::IncomingPacket &packet);
 		void handleQuestgiverCancel(game::Protocol::IncomingPacket &packet);
 		void handleQuestlogRemoveQuest(game::Protocol::IncomingPacket &packet);
+		void handleGameObjectUse(game::Protocol::IncomingPacket &packet);
 
 	private:
 

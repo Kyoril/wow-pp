@@ -2026,8 +2026,8 @@ namespace wowpp
 			return;
 		}
 
-		GameCreature *creature = (target->getTypeId() == object_type::Unit ? reinterpret_cast<GameCreature*>(target) : nullptr);
-		WorldObject *object = (target->getTypeId() == object_type::GameObject ? reinterpret_cast<WorldObject*>(target) : nullptr);
+		GameCreature *creature = (target->isCreature() ? reinterpret_cast<GameCreature*>(target) : nullptr);
+		WorldObject *object = (target->isWorldObject() ? reinterpret_cast<WorldObject*>(target) : nullptr);
 
 		// TODO: Build gossip menu, but for now, we check in the following order:
 		// Quest giver
@@ -2674,6 +2674,28 @@ namespace wowpp
 				m_character->abandonQuest(quest);
 			}
 		}
+	}
+
+	void Player::handleGameObjectUse(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid = 0;
+		if (!(game::client_read::gameobjectUse(packet, guid)))
+		{
+			return;
+		}
+
+		auto *obj = m_instance.findObjectByGUID(guid);
+		if (!obj)
+		{
+			return;
+		}
+
+		if (!obj->isWorldObject())
+		{
+			return;
+		}
+
+		sendGossipMenu(guid);
 	}
 
 }

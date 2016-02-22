@@ -113,21 +113,25 @@ namespace wowpp
 	game::QuestgiverStatus WorldObject::getQuestgiverStatus(const GameCharacter &character) const
 	{
 		game::QuestgiverStatus result = game::questgiver_status::None;
-		for (const auto &quest : getEntry().quests())
+		for (const auto &quest : getEntry().end_quests())
 		{
 			auto questStatus = character.getQuestStatus(quest);
 			if (questStatus == game::quest_status::Complete)
 			{
 				return game::questgiver_status::Reward;
 			}
-			else if (questStatus == game::quest_status::Available)
-			{
-				result = game::questgiver_status::Available;
-			}
-			else if (questStatus == game::quest_status::Incomplete &&
-			         result == game::questgiver_status::None)
+			else if (questStatus == game::quest_status::Incomplete)
 			{
 				result = game::questgiver_status::Incomplete;
+			}
+		}
+
+		for (const auto &quest : getEntry().quests())
+		{
+			auto questStatus = character.getQuestStatus(quest);
+			if (questStatus == game::quest_status::Available)
+			{
+				return game::questgiver_status::Available;
 			}
 		}
 		return result;

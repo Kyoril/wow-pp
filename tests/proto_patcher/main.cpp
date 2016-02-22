@@ -886,7 +886,7 @@ namespace wowpp
 					}
 
 					// Find object
-					auto *object = project.units.getById(objectId);
+					auto *object = project.objects.getById(objectId);
 					if (object)
 					{
 						object->add_quests(questId);
@@ -917,7 +917,7 @@ namespace wowpp
 					}
 
 					// Find object
-					auto *object = project.units.getById(objectId);
+					auto *object = project.objects.getById(objectId);
 					if (object)
 					{
 						object->add_end_quests(questId);
@@ -1206,13 +1206,13 @@ int main(int argc, char* argv[])
 		ELOG("Failed to import spell categories");
 		return 1;
 	}
-
+	*/
 	if (!importQuestRelations(protoProject, connection))
 	{
 		ELOG("Failed to import quest relations");
 		return 1;
 	}
-	*/
+
 	if (!addSpellLinks(protoProject))
 	{
 		ELOG("Failed to add spell links");

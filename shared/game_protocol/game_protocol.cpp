@@ -4183,6 +4183,11 @@ namespace wowpp
 				       >> io::read<NetUInt8>(out_questIndex);
 			}
 
+			bool gameobjectUse(io::Reader &packet, UInt64 &out_guid)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_guid);
+			}
 		}
 	}
 }

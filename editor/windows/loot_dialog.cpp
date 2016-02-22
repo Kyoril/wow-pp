@@ -54,7 +54,17 @@ namespace wowpp
 			if (!item)
 				return;
 
-			QListWidgetItem *widget = new QListWidgetItem(QString("%1x %2").arg(dropCount).arg(item->name().c_str()), m_ui->listWidget);
+			QString conditionString;
+			if (def.conditiontype())
+			{
+				conditionString =
+					QString(" [C %1: %2, %3]")
+					.arg(def.conditiontype())
+					.arg(def.conditionvala())
+					.arg(def.conditionvalb());
+			}
+
+			QListWidgetItem *widget = new QListWidgetItem(QString("%1x %2 %3").arg(dropCount).arg(item->name().c_str()).arg(conditionString), m_ui->listWidget);
 			QColor textColor = QColor(Qt::white);
 			switch (item->quality())
 			{
@@ -80,7 +90,7 @@ namespace wowpp
 				textColor = QColor(Qt::red);
 				break;
 			}
-			widget->setTextColor(textColor);
+			widget->setTextColor(textColor);	
 		}
 
 		void LootDialog::rerollLoot()

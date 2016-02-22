@@ -635,6 +635,7 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverCancel)
 			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverStatusMultipleQuery)
 			WOWPP_HANDLE_PLAYER_PACKET(QuestlogRemoveQuest)
+			WOWPP_HANDLE_PLAYER_PACKET(GameObjectUse)
 #undef WOWPP_HANDLE_PLAYER_PACKET
 
 			// Movement packets get special treatment
