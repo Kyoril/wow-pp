@@ -967,7 +967,30 @@ namespace wowpp
 		std::uniform_int_distribution<int> distribution(effect.basedice(), randomPoints);
 		const Int32 randomValue = (effect.basedice() >= randomPoints ? effect.basedice() : distribution(randomGenerator));
 
-		return basePoints + randomValue + comboDamage;
+		Int32 outBasePoints = basePoints + randomValue + comboDamage;
+		if (m_cast.getExecuter().isGameCharacter())
+		{
+			switch (effect.index())
+			{
+				case 0:
+					reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
+						spell_mod_op::Effect1, m_spell.id(), outBasePoints);
+					break;
+				case 1:
+					reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
+						spell_mod_op::Effect2, m_spell.id(), outBasePoints);
+					break;
+				case 2:
+					reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
+						spell_mod_op::Effect3, m_spell.id(), outBasePoints);
+					break;
+			}
+			
+			// Apply AllEffects mod
+			reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
+				spell_mod_op::AllEffects, m_spell.id(), outBasePoints);
+		}
+		return outBasePoints;
 	}
 
 	UInt32 SingleCastState::getSpellPointsTotal(const proto::SpellEffect &effect, UInt32 spellPower, UInt32 bonusPct)

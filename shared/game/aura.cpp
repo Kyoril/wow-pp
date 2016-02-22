@@ -52,7 +52,8 @@ namespace wowpp
 		, m_slot(0xFF)
 		, m_post(std::move(post))
 		, m_destroy(std::move(onDestroy))
-		, m_totalTicks(effect.amplitude() == 0 ? 0 : spell.duration() / effect.amplitude())
+		, m_totalTicks(0) //effect.amplitude() == 0 ? 0 : spell.duration() / effect.amplitude())
+		, m_duration(spell.duration())
 	{
 		// Subscribe to caster despawn event so that we don't hold an invalid pointer
 		m_casterDespawned = caster.despawned.connect(
@@ -61,6 +62,16 @@ namespace wowpp
 		                 std::bind(&Aura::onExpired, this));
 		m_onTick = m_tickCountdown.ended.connect(
 		               std::bind(&Aura::onTick, this));
+
+		// Adjust aura duration
+		if (m_caster &&
+			m_caster->isGameCharacter())
+		{
+			reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(spell_mod_op::Duration, m_spell.id(), m_duration);
+		}
+
+		// Adjust amount of total ticks
+		m_totalTicks = (m_effect.amplitude() == 0 ? 0 : m_duration / m_effect.amplitude());
 	}
 
 	Aura::~Aura()
@@ -1413,11 +1424,11 @@ namespace wowpp
 	void Aura::applyAura()
 	{
 		// Check if this aura is permanent (until user cancel's it)
-		if (m_spell.maxduration() > 0)
+		if (m_duration > 0)
 		{
 			// Get spell duration
 			m_expireCountdown.setEnd(
-			    getCurrentTime() + m_spell.duration());
+			    getCurrentTime() + m_duration);
 		}
 
 		// Watch for unit's movement if the aura should interrupt in this case

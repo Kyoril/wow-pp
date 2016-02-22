@@ -110,12 +110,12 @@ namespace wowpp
 				m_owner.setUInt32Value(unit_fields::AuraFlags + index, val);
 
 				// Notify caster
-				m_owner.auraUpdated(newSlot, aura->getSpell().id(), aura->getSpell().duration(), aura->getSpell().maxduration());
+				m_owner.auraUpdated(newSlot, aura->getSpell().id(), aura->getTotalDuration(), aura->getTotalDuration());
 
 				if (aura->getCaster())
 				{
 					aura->getCaster()->targetAuraUpdated(m_owner.getGuid(), newSlot,
-					                                     aura->getSpell().id(), aura->getSpell().duration(), aura->getSpell().maxduration());
+					                                     aura->getSpell().id(), aura->getTotalDuration(), aura->getTotalDuration());
 				}
 			}
 		}

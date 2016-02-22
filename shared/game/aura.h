@@ -96,6 +96,8 @@ namespace wowpp
 
 		UInt32 getEffectSchoolMask();
 
+		Int32 getTotalDuration() const { return m_duration; }
+
 	protected:
 
 		/// 0
@@ -208,5 +210,6 @@ namespace wowpp
 		PostFunction m_post;
 		std::function<void(Aura &)> m_destroy;
 		UInt32 m_totalTicks;
+		Int32 m_duration;
 	};
 }
