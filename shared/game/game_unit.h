@@ -368,7 +368,7 @@ namespace wowpp
 		/// Fired when done any magic damage
 		boost::signals2::signal<void(GameUnit *, UInt32)> doneSpellMagicDmgClassNeg;
 		/// Fired when hit by any damage.
-		boost::signals2::signal<void(GameUnit *)> takenDamage;
+		boost::signals2::signal<void(GameUnit *, UInt32)> takenDamage;
 		/// Fired when unit enters water
 		boost::signals2::signal<void()> enteredWater;
 		/// Fired when unit started attacking

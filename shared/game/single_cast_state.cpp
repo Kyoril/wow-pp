@@ -567,7 +567,8 @@ namespace wowpp
 				                               0,
 				                               crit));
 
-				targetUnit->takenDamage(&attacker);
+				// TODO: Is this really needed? Since this signal is already fired in the dealDamage method
+				//targetUnit->takenDamage(&attacker, totalDamage - resisted - absorbed);
 			}
 		}
 	}
@@ -715,7 +716,8 @@ namespace wowpp
 				});
 
 				caster.doneSpellMagicDmgClassNeg(targetUnit, school);
-				targetUnit->takenDamage(&caster);
+				// TODO: Really needed? Because this signal is already fired in the dealDamage method
+				//targetUnit->takenDamage(&caster);
 			}
 		}
 	}
@@ -1710,7 +1712,8 @@ namespace wowpp
 				if (targetUnit->isAlive())
 				{
 					caster.doneSpellMagicDmgClassNeg(targetUnit, school);
-					targetUnit->takenDamage(&caster);
+					// TODO: Really needed? Because this method is already fired in the dealDamage method
+					// targetUnit->takenDamage(&caster);
 				}
 			}
 		}

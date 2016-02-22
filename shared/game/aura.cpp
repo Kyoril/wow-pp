@@ -1431,6 +1431,25 @@ namespace wowpp
 			    getCurrentTime() + m_duration);
 		}
 
+		if (m_spell.attributes(0) & game::spell_attributes::BreakableByDamage)
+		{
+			m_onDamageBreak = m_target.takenDamage.connect([this](GameUnit *attacker, UInt32 damage)
+			{
+				if (!attacker)
+					return;
+
+				UInt32 maxDmg = m_target.getLevel() > 8 ? 30 * m_target.getLevel() - 100 : 50;
+				float chance = float(damage) / maxDmg * 100.0f;
+
+				std::uniform_real_distribution<float> roll(0.0f, 100.0f);
+				if (chance > roll(randomGenerator))
+				{
+					// Remove aura
+					setRemoved(nullptr);
+				}
+			});
+		}
+
 		// Watch for unit's movement if the aura should interrupt in this case
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Move) != 0 ||
 		        (m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Turning) != 0)
@@ -1442,7 +1461,7 @@ namespace wowpp
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Damage) != 0)
 		{
 			m_takenDamage = m_target.takenDamage.connect(
-			[&](GameUnit * victim) {
+			[&](GameUnit * victim, UInt32 damage) {
 				setRemoved(victim);
 			});
 		}
@@ -1490,7 +1509,7 @@ namespace wowpp
 			if ((m_spell.procflags() & game::spell_proc_flags::TakenDamage) != 0)
 			{
 				m_takenDamage = m_caster->takenDamage.connect(
-				[&](GameUnit * victim) {
+				[&](GameUnit * victim, UInt32 damage) {
 					handleTakenDamage(victim);
 				});
 			}

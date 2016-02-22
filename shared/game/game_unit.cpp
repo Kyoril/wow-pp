@@ -1333,7 +1333,7 @@ namespace wowpp
 			threatened(*attacker, static_cast<float>(damage));
 		}
 
-		takenDamage(attacker);
+		takenDamage(attacker, damage);
 
 		if (health < damage) {
 			health = 0;
