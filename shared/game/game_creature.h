@@ -117,6 +117,8 @@ namespace wowpp
 
 		bool hasMainHandWeapon() const override;
 		bool hasOffHandWeapon() const override;
+		/// @copydoc GameObject::canSpawnForCharacter
+		virtual bool canSpawnForCharacter(GameCharacter &target) override;
 
 		/// Executes a callback function for every valid loot recipient.
 		template<typename OnRecipient>

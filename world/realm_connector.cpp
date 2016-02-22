@@ -378,7 +378,8 @@ namespace wowpp
 			for (auto it = tile.getGameObjects().begin(); it != tile.getGameObjects().end(); ++it)
 			{
 				auto &object = *it;
-				if (object->getGuid() != character->getGuid())
+				if (object->getGuid() != character->getGuid() &&
+					object->canSpawnForCharacter(*character))
 				{
 					// Create update block
 					std::vector<std::vector<char>> blocks;

@@ -550,6 +550,7 @@ namespace wowpp
 			return m_isStealthed;
 		}
 		void notifyStealthChanged();
+		/// 
 		virtual bool canDetectStealth(GameUnit &target);
 
 		float getMissChance(GameUnit &attacker, UInt8 school, bool isWhiteDamage);

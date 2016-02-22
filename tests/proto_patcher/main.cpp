@@ -985,7 +985,7 @@ namespace wowpp
 				auto * trainer = project.trainers.getById(trainerid);
 				if (!trainer)
 				{
-					WLOG("Unable to find trainer by id: " << trainer);
+					WLOG("Unable to find trainer by id: " << trainerid);
 					row = row.next(select);
 					continue;
 				}
@@ -1230,16 +1230,18 @@ int main(int argc, char* argv[])
 		ELOG("Failed to fix deadmines data");
 		return 1;
 	}
+	*/
 	if (!importTrainerLinks(protoProject, connection))
 	{
 		ELOG("Failed to import trainer links");
 		return 1;
 	}
+	/*
 	if (!fixObjectOrientation(protoProject))
 	{
 		return 1;
-	}*/
-
+	}
+	*/
 	// Save project
 	if (!protoProject.save(configuration.dataPath))
 	{

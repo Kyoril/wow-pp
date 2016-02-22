@@ -312,6 +312,11 @@ namespace wowpp
 					continue;
 				}
 
+				if (!added.canSpawnForCharacter(*character))
+				{
+					continue;
+				}
+
 				// Create update packet
 				std::vector<std::vector<char>> blocks;
 				createUpdateBlocks(added, *character, blocks);

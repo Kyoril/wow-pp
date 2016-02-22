@@ -358,6 +358,17 @@ namespace wowpp
 		return (invType && invType != game::inventory_type::Shield);
 	}
 
+	bool GameCreature::canSpawnForCharacter(GameCharacter & target)
+	{
+		// If this is a spirit healer...
+		if (getEntry().npcflags() & 0x00004000)
+		{
+			return (!target.isAlive());
+		}
+
+		return true;
+	}
+
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)
 	{
 		if (killerLevel < 8) {

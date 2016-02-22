@@ -360,6 +360,10 @@ namespace wowpp
 			return m_project;
 		}
 
+		/// Determines whether this object can be seen by a target at all.
+		/// This is used for spirit healers which are only visible to dead units.
+		virtual bool canSpawnForCharacter(GameCharacter &target);
+
 	protected:
 
 		void onWorldInstanceDestroyed();

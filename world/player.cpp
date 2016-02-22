@@ -645,6 +645,11 @@ namespace wowpp
 
 			for (auto *object : tile.getGameObjects().getElements())
 			{
+				if (!object->canSpawnForCharacter(*m_character))
+				{
+					continue;
+				}
+
 				std::vector<std::vector<char>> createBlock;
 				createUpdateBlocks(*object, *m_character, createBlock);
 
@@ -675,6 +680,11 @@ namespace wowpp
 
 			for (auto *object : tile.getGameObjects().getElements())
 			{
+				if (!object->canSpawnForCharacter(*m_character))
+				{
+					continue;
+				}
+
 				this->sendProxyPacket(
 					std::bind(game::server_write::destroyObject, std::placeholders::_1, object->getGuid(), false));
 			}

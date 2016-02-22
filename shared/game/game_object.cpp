@@ -515,6 +515,11 @@ namespace wowpp
 		}
 	}
 
+	bool GameObject::canSpawnForCharacter(GameCharacter & target)
+	{
+		return true;
+	}
+
 	void GameObject::onWorldInstanceDestroyed()
 	{
 		// We are no longer part of the old world instance
