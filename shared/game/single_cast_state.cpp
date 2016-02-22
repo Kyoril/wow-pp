@@ -283,6 +283,14 @@ namespace wowpp
 			{
 				if (unitTarget)
 				{
+					float maxrange = m_spell.maxrange();
+					if (m_cast.getExecuter().isGameCharacter())
+					{
+						reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(spell_mod_op::Range, m_spell.id(), maxrange);
+					}
+
+					if (maxrange < m_spell.minrange()) maxrange = m_spell.minrange();
+
 					const float combatReach = unitTarget->getFloatValue(unit_fields::CombatReach) + m_cast.getExecuter().getFloatValue(unit_fields::CombatReach);
 					const float distance = m_cast.getExecuter().getDistanceTo(*unitTarget);
 					if (m_spell.minrange() > 0.0f && distance < m_spell.minrange())
@@ -294,7 +302,7 @@ namespace wowpp
 
 						return;
 					}
-					else if (m_spell.maxrange() > 0.0f && distance > m_spell.maxrange() + combatReach)
+					else if (maxrange > 0.0f && distance > maxrange + combatReach)
 					{
 						m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedOutOfRange);
 

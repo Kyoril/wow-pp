@@ -22,6 +22,7 @@
 #include "pch.h"
 #include "spell_cast.h"
 #include "game_unit.h"
+#include "game_character.h"
 #include "common/countdown.h"
 #include "no_cast_state.h"
 #include "single_cast_state.h"
@@ -120,13 +121,21 @@ namespace wowpp
 		{
 			if (unitTarget)
 			{
+				float maxrange = spell.maxrange();
+				if (m_executer.isGameCharacter())
+				{
+					reinterpret_cast<GameCharacter&>(m_executer).applySpellMod(spell_mod_op::Range, spell.id(), maxrange);
+				}
+
+				if (maxrange < spell.minrange()) maxrange = spell.minrange();
+
 				const float combatReach = unitTarget->getFloatValue(unit_fields::CombatReach) + m_executer.getFloatValue(unit_fields::CombatReach);
 				const float distance = m_executer.getDistanceTo(*unitTarget);
 				if (spell.minrange() > 0.0f && distance < spell.minrange())
 				{
 					return std::make_pair(game::spell_cast_result::FailedTooClose, nullptr);
 				}
-				else if (spell.maxrange() > 0.0f && distance > spell.maxrange() + combatReach)
+				else if (maxrange > 0.0f && distance > maxrange + combatReach)
 				{
 					return std::make_pair(game::spell_cast_result::FailedOutOfRange, nullptr);
 				}
