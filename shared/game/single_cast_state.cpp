@@ -690,6 +690,12 @@ namespace wowpp
 				UInt32 spellPower = caster.getBonus(school);
 				UInt32 spellBonusPct = caster.getBonusPct(school);
 				totalDamage = getSpellPointsTotal(effect, spellPower, spellBonusPct);
+				if (caster.isGameCharacter())
+				{
+					reinterpret_cast<GameCharacter&>(caster).applySpellMod(
+						spell_mod_op::Damage, m_spell.id(), totalDamage);
+				}
+
 				if (hitInfos[i] == game::hit_info::CriticalHit)
 				{
 					crit = true;
