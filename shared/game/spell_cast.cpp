@@ -101,6 +101,13 @@ namespace wowpp
 		// Check power
 		if (spell.cost() > 0)
 		{
+			UInt32 cost = spell.cost();
+			if (m_executer.isGameCharacter())
+			{
+				reinterpret_cast<GameCharacter&>(m_executer).applySpellMod(
+					spell_mod_op::Cost, spell.id(), cost);
+			}
+
 			if (spell.powertype() == game::power_type::Health)
 			{
 				// Special case
@@ -109,7 +116,7 @@ namespace wowpp
 			else
 			{
 				UInt32 currentPower = m_executer.getUInt32Value(unit_fields::Power1 + spell.powertype());
-				if (currentPower < spell.cost())
+				if (currentPower < cost)
 				{
 					return std::make_pair(game::spell_cast_result::FailedNoPower, nullptr);
 				}

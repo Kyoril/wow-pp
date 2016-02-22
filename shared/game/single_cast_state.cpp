@@ -1569,6 +1569,12 @@ namespace wowpp
 			}
 		}
 
+		if (m_cast.getExecuter().isGameCharacter())
+		{
+			reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
+				spell_mod_op::Cost, m_spell.id(), totalCost);
+		}
+
 		if (totalCost > 0)
 		{
 			if (m_spell.powertype() == game::power_type::Health)
