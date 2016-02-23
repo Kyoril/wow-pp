@@ -50,7 +50,7 @@ namespace wowpp
 		    GameTime castTime,
 		    bool doReplacePreviousCast,
 		    UInt64 itemGuid) override;
-		void stopCast() override;
+		void stopCast(UInt64 interruptCooldown = 0) override;
 		void onUserStartsMoving() override;
 		SpellCasting &getCasting() {
 			return m_casting;
@@ -60,6 +60,7 @@ namespace wowpp
 
 		bool consumeItem();
 		bool consumePower();
+		void applyCooldown(UInt64 cooldownTimeMS, UInt64 catCooldownTimeMS);
 		void applyAllEffects();
 		Int32 calculateEffectBasePoints(const proto::SpellEffect &effect);
 		UInt32 getSpellPointsTotal(const proto::SpellEffect &effect, UInt32 spellPower, UInt32 bonusPct);

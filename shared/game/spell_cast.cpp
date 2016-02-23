@@ -212,10 +212,10 @@ namespace wowpp
 		}
 	}
 
-	void SpellCast::stopCast()
+	void SpellCast::stopCast(UInt64 interruptCooldown/* = 0*/)
 	{
 		assert(m_castState);
-		m_castState->stopCast();
+		m_castState->stopCast(interruptCooldown);
 	}
 
 	void SpellCast::onUserStartsMoving()

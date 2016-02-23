@@ -67,7 +67,7 @@ namespace wowpp
 		    GameTime castTime,
 		    bool isProc,
 		    UInt64 itemGuid);
-		void stopCast();
+		void stopCast(UInt64 interruptCooldown = 0);
 		void onUserStartsMoving();
 		void setState(std::shared_ptr<CastState> castState);
 
@@ -95,7 +95,7 @@ namespace wowpp
 		    bool doReplacePreviousCast,
 		    UInt64 itemGuid
 		) = 0;
-		virtual void stopCast() = 0;
+		virtual void stopCast(UInt64 interruptCooldown = 0) = 0;
 		virtual void onUserStartsMoving() = 0;
 	};
 

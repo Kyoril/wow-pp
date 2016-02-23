@@ -43,7 +43,7 @@ namespace wowpp
 		return std::make_pair(game::spell_cast_result::CastOkay, &casting);
 	}
 
-	void NoCastState::stopCast()
+	void NoCastState::stopCast(UInt64 interruptCooldown/* = 0*/)
 	{
 
 	}

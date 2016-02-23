@@ -40,7 +40,7 @@ namespace wowpp
 		    bool doReplacePreviousCast,
 		    UInt64 itemGuid
 		) override;
-		void stopCast() override;
+		void stopCast(UInt64 interruptCooldown = 0) override;
 		void onUserStartsMoving() override;
 	};
 }

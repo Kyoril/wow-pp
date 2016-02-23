@@ -175,7 +175,7 @@ namespace wowpp
 		return std::make_pair(game::spell_cast_result::CastOkay, &casting);
 	}
 
-	void SingleCastState::stopCast()
+	void SingleCastState::stopCast(UInt64 interruptCooldown/* = 0*/)
 	{
 		m_countdown.cancel();
 
@@ -183,6 +183,11 @@ namespace wowpp
 		{
 			sendEndCast(false);
 			m_hasFinished = true;
+
+			if (interruptCooldown)
+			{
+				applyCooldown(interruptCooldown, interruptCooldown);
+			}
 		}
 
 		const std::weak_ptr<SingleCastState> weakThis = shared_from_this();
@@ -1454,20 +1459,7 @@ namespace wowpp
 
 			if (finalCD)
 			{
-				m_cast.getExecuter().setCooldown(m_spell.id(), static_cast<UInt32>(finalCD));
-				if (m_spell.category() && spellCatCD)
-				{
-					auto *cat = m_cast.getExecuter().getProject().spellCategories.getById(m_spell.category());
-					if (cat)
-					{
-						for (const auto &spellId : cat->spells())
-						{
-							if (spellId != m_spell.id()) {
-								m_cast.getExecuter().setCooldown(spellId, static_cast<UInt32>(spellCatCD));
-							}
-						}
-					}
-				}
+				applyCooldown(finalCD, spellCatCD);
 			}
 		}
 
@@ -1658,6 +1650,24 @@ namespace wowpp
 		}
 
 		return true;
+	}
+
+	void SingleCastState::applyCooldown(UInt64 cooldownTimeMS, UInt64 catCooldownTimeMS)
+	{
+		m_cast.getExecuter().setCooldown(m_spell.id(), static_cast<UInt32>(cooldownTimeMS));
+		if (m_spell.category() && catCooldownTimeMS)
+		{
+			auto *cat = m_cast.getExecuter().getProject().spellCategories.getById(m_spell.category());
+			if (cat)
+			{
+				for (const auto &spellId : cat->spells())
+				{
+					if (spellId != m_spell.id()) {
+						m_cast.getExecuter().setCooldown(spellId, static_cast<UInt32>(catCooldownTimeMS));
+					}
+				}
+			}
+		}
 	}
 
 	void SingleCastState::spellEffectTriggerSpell(const proto::SpellEffect &effect)

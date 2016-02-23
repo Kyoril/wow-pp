@@ -401,8 +401,8 @@ namespace wowpp
 			m_swingCallback = AttackSwingCallback();
 		}
 
-		// TODO: Interrupt cooldown
-		m_spellCast->stopCast();
+		// Interrupt cooldown
+		m_spellCast->stopCast(interruptCooldown);
 	}
 
 	void GameUnit::startAttack()
