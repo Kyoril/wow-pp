@@ -461,7 +461,8 @@ namespace wowpp
 		/// Starts to cast a spell using the given target map.
 		void castSpell(SpellTargetMap target, UInt32 spell, Int32 basePoints = -1, GameTime castTime = 0, bool isProc = false, UInt64 itemGuid = 0, SpellSuccessCallback callback = SpellSuccessCallback());
 		/// Stops the current cast (if any).
-		void cancelCast();
+		/// @param interruptCooldown Interrupt cooldown time in milliseconds (or 0 if no cooldown).
+		void cancelCast(UInt64 interruptCooldown = 0);
 		/// Starts auto attack on the given target.
 		/// @param target The unit to attack.
 		void startAttack();

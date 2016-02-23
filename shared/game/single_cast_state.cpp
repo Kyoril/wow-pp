@@ -847,6 +847,23 @@ namespace wowpp
 		}
 	}
 
+	void SingleCastState::spellEffectInterruptCast(const proto::SpellEffect & effect)
+	{
+		GameUnit &caster = m_cast.getExecuter();
+		UInt8 school = m_spell.schoolmask();
+		std::vector<GameUnit *> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+
+		for (UInt32 i = 0; i < targets.size(); i++)
+		{
+			GameUnit *targetUnit = targets[i];
+			targetUnit->cancelCast(m_spell.duration());
+		}
+	}
+
 	void SingleCastState::spellEffectDrainPower(const proto::SpellEffect &effect)
 	{
 		// Calculate the power to drain
@@ -1493,6 +1510,7 @@ namespace wowpp
 			{se::AttackMe,				std::bind(&SingleCastState::spellEffectAttackMe, this, std::placeholders::_1)},
 			{se::NormalizedWeaponDmg,	std::bind(&SingleCastState::spellEffectNormalizedWeaponDamage, this, std::placeholders::_1)},
 			{se::StealBeneficialBuff,	std::bind(&SingleCastState::spellEffectStealBeneficialBuff, this, std::placeholders::_1)},
+			{se::InterruptCast,			std::bind(&SingleCastState::spellEffectInterruptCast, this, std::placeholders::_1) },
 			// Add all effects above here
 			{se::ApplyAura,				std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
 			{se::SchoolDamage,			std::bind(&SingleCastState::spellEffectSchoolDamage, this, std::placeholders::_1)}

@@ -54,6 +54,12 @@ namespace wowpp
 			}
 		}
 
+		if (m_executer.isStunned() &&
+			(spell.attributes(5) & game::spell_attributes_ex_e::UsableWhileStunned) == 0)
+		{
+			return std::make_pair(game::spell_cast_result::FailedStunned, nullptr);
+		}
+
 		// Check for cooldown
 		if (m_executer.hasCooldown(spell.id()))
 		{

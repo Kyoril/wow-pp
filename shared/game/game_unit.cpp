@@ -394,12 +394,14 @@ namespace wowpp
 		    getCurrentTime() + despawnDelay);
 	}
 
-	void GameUnit::cancelCast()
+	void GameUnit::cancelCast(UInt64 interruptCooldown/* = 0*/)
 	{
 		// Stop attack swing callback in case there is one
 		if (m_swingCallback) {
 			m_swingCallback = AttackSwingCallback();
 		}
+
+		// TODO: Interrupt cooldown
 		m_spellCast->stopCast();
 	}
 

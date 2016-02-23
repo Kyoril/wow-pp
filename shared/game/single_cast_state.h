@@ -90,6 +90,7 @@ namespace wowpp
 		void spellEffectAttackMe(const proto::SpellEffect &effect);
 		void spellEffectNormalizedWeaponDamage(const proto::SpellEffect &effect);
 		void spellEffectStealBeneficialBuff(const proto::SpellEffect &effect);
+		void spellEffectInterruptCast(const proto::SpellEffect &effect);
 
 		void meleeSpecialAttack(const proto::SpellEffect &effect, bool basepointsArePct);
 
