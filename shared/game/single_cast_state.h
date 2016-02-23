@@ -105,7 +105,7 @@ namespace wowpp
 		Countdown m_countdown;
 		Countdown m_impactCountdown;
 		boost::signals2::signal<void()> completedEffects;
-		boost::signals2::scoped_connection m_completedEffectsExecution;
+		std::vector<boost::signals2::scoped_connection> m_completedEffectsExecution;
 		boost::signals2::scoped_connection m_onTargetDied, m_onTargetRemoved;
 		boost::signals2::scoped_connection m_onUserDamaged, m_onUserMoved;
 		boost::signals2::scoped_connection m_onTargetMoved;
@@ -116,6 +116,7 @@ namespace wowpp
 		UInt64 m_itemGuid;
 		GameTime m_projectileStart, m_projectileEnd;
 		math::Vector3 m_projectileOrigin;
+		bool m_connectedMeleeSignal;
 
 		void sendEndCast(bool success);
 		void onCastFinished();

@@ -224,7 +224,6 @@ namespace wowpp
 
 	void AttackTable::checkRangedAttack(GameUnit *attacker, SpellTargetMap &targetMap, UInt8 school, std::vector<GameUnit *> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
 	{
-
 	}
 
 	void AttackTable::checkPositiveSpell(GameUnit *attacker, SpellTargetMap &targetMap, const proto::SpellEntry &spell, const proto::SpellEffect &effect, std::vector<GameUnit *> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
@@ -316,8 +315,17 @@ namespace wowpp
 				isBinary = false;
 			}
 
+			UInt32 maxTargets = spell.maxtargets();
+			if (!maxTargets) maxTargets = effect.chaintarget();
+
+			float radius = effect.radius();
+			if (radius == 0.0f)
+			{
+				radius = spell.maxrange();
+			}
+
 			UInt8 school = spell.schoolmask();
-			refreshTargets(*attacker, targetMap, targetA, targetB, effect.radius(), spell.maxtargets());
+			refreshTargets(*attacker, targetMap, targetA, targetB, radius, maxTargets);
 			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
 
 			for (GameUnit *targetUnit : m_targets[targetA][targetB])
@@ -381,8 +389,34 @@ namespace wowpp
 		case game::targets::UnitTargetAlly:		//21
 		case game::targets::UnitTargetAny:		//25
 		case game::targets::UnitRaidTargetRaid:	//57
-			if (unitTarget) {
+			if (unitTarget) 
+			{
 				targets.push_back(unitTarget);
+
+				// The effects above can be combined with chain-targets, for example spell 779
+				if (maxtargets > 1) 
+				{
+					math::Vector3 location = unitTarget->getLocation();
+					auto &finder = attacker.getWorldInstance()->getUnitFinder();
+					finder.findUnits(Circle(location.x, location.y, radius), [this, &attacker, &unitTarget, &targets, maxtargets](GameUnit & unit) -> bool
+					{
+						if (unit.isAlive() &&
+							&unit != unitTarget &&
+							&unit != &attacker &&
+							!unit.isHostileTo(*unitTarget))
+						{
+							targets.push_back(&unit);
+							if (maxtargets > 0 &&
+								targets.size() >= maxtargets)
+							{
+								// No more units
+								return false;
+							}
+						}
+
+						return true;
+					});
+				}
 			}
 			break;
 		case game::targets::UnitPartyCaster:	//20

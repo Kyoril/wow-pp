@@ -92,6 +92,7 @@ namespace wowpp
 		, m_itemGuid(itemGuid)
 		, m_projectileStart(0)
 		, m_projectileEnd(0)
+		, m_connectedMeleeSignal(false)
 	{
 		// Check if the executer is in the world
 		auto &executer = m_cast.getExecuter();
@@ -725,20 +726,25 @@ namespace wowpp
 				}
 
 				// Send spell damage packet
-				m_completedEffectsExecution = completedEffects.connect([this, &caster, targetUnit, totalDamage, school, absorbed, resisted, crit]() {
-					wowpp::sendPacketFromCaster(caster,
-					                            std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-					                                      targetUnit->getGuid(),
-					                                      caster.getGuid(),
-					                                      m_spell.id(),
-					                                      totalDamage,
-					                                      school,
-					                                      absorbed,
-					                                      resisted,	//resisted
-					                                      false,
-					                                      0,
-					                                      crit));
-				});
+				m_completedEffectsExecution.push_back(
+					// Lambda connection
+					completedEffects.connect([this, &caster, targetUnit, totalDamage, school, absorbed, resisted, crit]()
+					{
+						// Send packet
+						wowpp::sendPacketFromCaster(caster,
+													std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+															  targetUnit->getGuid(),
+															  caster.getGuid(),
+															  m_spell.id(),
+															  totalDamage,
+															  school,
+															  absorbed,
+															  resisted,	//resisted
+															  false,
+															  0,
+															  crit));
+					})	// End connect
+				);	// End push_back
 
 				caster.doneSpellMagicDmgClassNeg(targetUnit, school);
 				// TODO: Really needed? Because this signal is already fired in the dealDamage method
@@ -1227,20 +1233,22 @@ namespace wowpp
 			{
 				if (log2(school) != game::spell_school::Normal)	//melee auras doesn't send a "resisted" packet as they can miss or be dodged...
 				{
-					m_completedEffectsExecution = completedEffects.connect([this, &caster, targetUnit, school]() {
-						wowpp::sendPacketFromCaster(caster,
-						                            std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-						                                      targetUnit->getGuid(),
-						                                      caster.getGuid(),
-						                                      m_spell.id(),
-						                                      1,
-						                                      school,
-						                                      0,
-						                                      1,	//resisted
-						                                      false,
-						                                      0,
-						                                      false));
-					});
+					m_completedEffectsExecution.push_back(
+						completedEffects.connect([this, &caster, targetUnit, school]() {
+							wowpp::sendPacketFromCaster(caster,
+														std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+																  targetUnit->getGuid(),
+																  caster.getGuid(),
+																  m_spell.id(),
+																  1,
+																  school,
+																  0,
+																  1,	//resisted
+																  false,
+																  0,
+																  false));
+						})	// End connect
+					);	// End push_back
 				}
 			}
 			else if (targetUnit->isAlive())
@@ -2095,8 +2103,10 @@ namespace wowpp
 			{
 				m_meleeDamage.push_back(totalDamage);
 			}
-			if (!m_completedEffectsExecution.connected()) {
-				m_completedEffectsExecution = completedEffects.connect(std::bind(&SingleCastState::executeMeleeAttack, this));
+			if (!m_connectedMeleeSignal) 
+			{
+				m_completedEffectsExecution.push_back(
+					completedEffects.connect(std::bind(&SingleCastState::executeMeleeAttack, this)));
 			}
 		}
 	}
