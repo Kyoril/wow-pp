@@ -2133,6 +2133,7 @@ namespace wowpp
 			}
 			if (!m_connectedMeleeSignal) 
 			{
+				m_connectedMeleeSignal = true;
 				m_completedEffectsExecution.push_back(
 					completedEffects.connect(std::bind(&SingleCastState::executeMeleeAttack, this)));
 			}
