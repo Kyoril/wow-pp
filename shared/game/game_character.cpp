@@ -131,6 +131,9 @@ namespace wowpp
 
 		// Dodge percentage
 		setFloatValue(character_fields::DodgePercentage, 0.0f);
+
+		// Reset threat modifiers
+		m_threatModifier.fill(1.0f);
 	}
 
 	game::QuestStatus GameCharacter::getQuestStatus(UInt32 quest) const
@@ -835,6 +838,30 @@ namespace wowpp
 		}
 
 		return total;
+	}
+
+	void GameCharacter::modifyThreatModifier(UInt32 schoolMask, float modifier, bool apply)
+	{
+		for (UInt32 i = 0; i < m_threatModifier.size(); ++i)
+		{
+			if (schoolMask & (1 << i))
+			{
+				m_threatModifier[i] *= (apply ? (1.0f + modifier) : 1.0f / (1.0f + modifier));
+			}
+		}
+	}
+
+	void GameCharacter::applyThreatMod(UInt32 schoolMask, float & ref_threat)
+	{
+		for (UInt32 i = 0; i < m_threatModifier.size(); ++i)
+		{
+			// We only need to find the first valid school in case of multiple schools
+			if (schoolMask & (1 << i))
+			{
+				ref_threat *= m_threatModifier[i];
+				return;
+			}
+		}
 	}
 
 	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData &data)

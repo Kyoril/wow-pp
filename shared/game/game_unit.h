@@ -511,7 +511,7 @@ namespace wowpp
 		/// @param school The damage school mask.
 		/// @param attacker The attacking unit or nullptr, if unknown. If nullptr, no threat will be generated.
 		/// @param noThreat If set to true, no threat will be generated from this damage.
-		bool dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, bool noThreat = false);
+		bool dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, float threat);
 		/// Heals this unit. Does not work on dead units! Use the revive method for this one.
 		/// @param amount The amount of damage to heal.
 		/// @param healer The healing unit or nullptr, if unknown. If nullptr, no threat will be generated.

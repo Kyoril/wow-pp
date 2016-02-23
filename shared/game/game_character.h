@@ -800,10 +800,17 @@ namespace wowpp
 		void onQuestItemRemovedCredit(const proto::ItemEntry &entry, UInt32 amount);
 		/// Determines if the player needs a specific item for a quest.
 		bool needsQuestItem(UInt32 itemId) const;
-
+		/// Modifies the character spell modifiers by applying or misapplying a new mod.
+		/// @param mod The spell modifier to apply or misapply.
+		/// @param apply Whether to apply or misapply the spell mod.
 		void modifySpellMod(SpellModifier &mod, bool apply);
 		/// Gets the total amount of spell mods for one type and one spell.
 		Int32 getTotalSpellMods(SpellModType type, SpellModOp op, UInt32 spellId) const;
+		/// Applys all matching spell mods of this character to a given value.
+		/// @param op The spell modifier operation to apply.
+		/// @param spellId Id of the spell, to know which modifiers do match.
+		/// @param ref_value Reference of the base value, which will be modified by this method.
+		/// @returns Delta value or 0 if ref_value didn't change.
 		template<class T>
 		T applySpellMod(SpellModOp op, UInt32 spellId, T& ref_value) const
 		{
@@ -818,6 +825,15 @@ namespace wowpp
 
 			return T(diff);
 		}
+		/// Modifies the bonus threat modifier for that character.
+		/// @param schoolMask The damage schools which are affected.
+		/// @param modifier The bonus amount where 0.4 equals +40%, -0.1 equals -10%.
+		/// @param apply Whether to apply or misapply the threat bonus.
+		void modifyThreatModifier(UInt32 schoolMask, float modifier, bool apply);
+		/// Applys the characters threat modifiers.
+		/// @param schoolMask The requested damage schools.
+		/// @param ref_threat The current threat value, which can be modified by this method.
+		void applyThreatMod(UInt32 schoolMask, float &ref_threat);
 
 	public:
 
@@ -869,6 +885,7 @@ namespace wowpp
 		/// we would have no performant way to check this.
 		std::map<UInt32, Int8> m_requiredQuestItems;
 		SpellModsByOp m_spellModsByOp;
+		std::array<float, 7> m_threatModifier;
 	};
 
 	/// Serializes a GameCharacter to an io::Writer object for the wow++ protocol.

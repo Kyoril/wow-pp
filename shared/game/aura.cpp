@@ -117,6 +117,9 @@ namespace wowpp
 		case aura::ModStat:
 			handleModStat(apply);
 			break;
+		case aura::ModThreat:
+			handleModThreat(apply);
+			break;
 		case aura::ModIncreaseSpeed:
 		case aura::ModSpeedAlways:
 		//mounted speed
@@ -346,6 +349,17 @@ namespace wowpp
 			// Start timer
 			startPeriodicTimer();
 		}
+	}
+
+	void Aura::handleModThreat(bool apply)
+	{
+		if (!m_target.isGameCharacter())
+		{
+			return;
+		}
+
+		GameCharacter &character = reinterpret_cast<GameCharacter&>(m_target);
+		character.modifyThreatModifier(m_effect.miscvaluea(), static_cast<float>(m_basePoints) / 100.0f, apply);
 	}
 
 	void Aura::handleModStun(bool apply)
@@ -607,33 +621,26 @@ namespace wowpp
 		switch (form)
 		{
 		case 2:
-			{
-				spell1 = 5420;
-				spell2 = 34123;
-				break;
-			}
+			spell1 = 5420;
+			spell2 = 34123;
+			break;
 		case 5:
-			{
-				spell1 = 1178;
-				spell2 = 21178;
-				break;
-			}
+			spell1 = 1178;
+			spell2 = 21178;
+			break;
 		case 8:
-			{
-				spell1 = 9635;
-				spell2 = 21178;
-				break;
-			}
-			//			case 18:
-			//			{
-			//				spell1 = 7376;
-			//				break;
-			//			}
-			//			case 19:
-			//			{
-			//				spell1 = 7381;
-			//				break;
-			//			}
+			spell1 = 9635;
+			spell2 = 21178;
+			break;
+		case 17:		// Battle stance
+			spell1 = 21156;
+			break;
+		case 18:		// Defensive stance
+			spell1 = 7376;
+			break;
+		case 19:		// Berserker stance
+			spell1 = 7381;
+			break;
 		}
 
 		auto *world = m_target.getWorldInstance();
@@ -776,7 +783,7 @@ namespace wowpp
 		std::uniform_int_distribution<int> distribution(m_effect.basedice(), m_effect.diesides());
 		const Int32 randomValue = (m_effect.basedice() >= m_effect.diesides() ? m_effect.basedice() : distribution(randomGenerator));
 		UInt32 damage = m_effect.basepoints() + randomValue;
-		attacker->dealDamage(damage, m_spell.schoolmask(), &m_target);
+		attacker->dealDamage(damage, m_spell.schoolmask(), &m_target, 0.0f);
 
 		auto *world = attacker->getWorldInstance();
 		if (world)
@@ -1292,13 +1299,20 @@ namespace wowpp
 
 				// Update health value
 				const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
+
+				float threat = noThreat ? 0.0f : damage - resisted - absorbed;
+				if (!noThreat && m_caster->isGameCharacter())
+				{
+					reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(spell_mod_op::Threat, m_spell.id(), threat);
+				}
+
 				// If spell is channeled, it can cause procs
 				if (m_caster &&
 				        m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1)
 				{
 					m_caster->doneSpellMagicDmgClassNeg(&m_target, school);
 				}
-				m_target.dealDamage(damage - resisted - absorbed, school, m_caster, noThreat);
+				m_target.dealDamage(damage - resisted - absorbed, school, m_caster, threat);
 				break;
 			}
 		case aura::PeriodicDamagePercent:

@@ -108,6 +108,8 @@ namespace wowpp
 		void handleDummy(bool apply);
 		/// 8
 		void handlePeriodicHeal(bool apply);
+		/// 10
+		void handleModThreat(bool apply);
 		/// 12
 		void handleModStun(bool apply);
 		/// 13

@@ -559,7 +559,8 @@ namespace wowpp
 
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
-			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, &attacker, noThreat))
+			float threat = noThreat ? 0.0f : totalDamage - resisted - absorbed;
+			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, &attacker, threat))
 			{
 				// Send spell damage packet
 				sendPacketFromCaster(attacker,
@@ -593,7 +594,7 @@ namespace wowpp
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
-			targetUnit->dealDamage(targetUnit->getUInt32Value(unit_fields::Health), m_spell.schoolmask(), &caster, true);
+			targetUnit->dealDamage(targetUnit->getUInt32Value(unit_fields::Health), m_spell.schoolmask(), &caster, 0.0f);
 		}
 	}
 
@@ -712,7 +713,12 @@ namespace wowpp
 
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
-			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, &caster, noThreat))
+			float threat = noThreat ? 0.0f : totalDamage - resisted - absorbed;
+			if (!noThreat && m_cast.getExecuter().isGameCharacter())
+			{
+				reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(spell_mod_op::Threat, m_spell.id(), threat);
+			}
+			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, &caster, threat))
 			{
 				if (totalDamage == 0 && resisted == 0) {
 					totalDamage = resisted = 1;
@@ -1718,7 +1724,12 @@ namespace wowpp
 
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
-			if (targetUnit->dealDamage(damage - absorbed, school, &caster, noThreat))
+			float threat = noThreat ? 0.0f : damage - absorbed;
+			if (!noThreat && m_cast.getExecuter().isGameCharacter())
+			{
+				reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(spell_mod_op::Threat, m_spell.id(), threat);
+			}
+			if (targetUnit->dealDamage(damage - absorbed, school, &caster, threat))
 			{
 				// Send spell damage packet
 				sendPacketFromCaster(caster,

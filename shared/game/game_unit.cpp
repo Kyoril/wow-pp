@@ -727,7 +727,7 @@ namespace wowpp
 					if (totalDamage > 0)
 					{
 						victim->takenMeleeAutoAttack(this);
-						victim->dealDamage(totalDamage - resisted - absorbed, 0, this);
+						victim->dealDamage(totalDamage - resisted - absorbed, (1 << 0), this, totalDamage - resisted - absorbed);
 
 						// Trigger auto attack procs
 						doneMeleeAutoAttack(victim);
@@ -1319,7 +1319,7 @@ namespace wowpp
 		}
 	}
 
-	bool GameUnit::dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, bool noThreat/* = false*/)
+	bool GameUnit::dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, float threat)
 	{
 		UInt32 health = getUInt32Value(unit_fields::Health);
 		if (health < 1)
@@ -1328,9 +1328,17 @@ namespace wowpp
 		}
 
 		// Add threat
-		if (attacker && !noThreat)
+		if (attacker)
 		{
-			threatened(*attacker, static_cast<float>(damage));
+			if (attacker->isGameCharacter())
+			{
+				reinterpret_cast<GameCharacter*>(attacker)->applyThreatMod(school, threat);
+			}
+
+			if (threat > 0.0f)
+			{
+				threatened(*attacker, threat);
+			}
 		}
 
 		takenDamage(attacker, damage);
