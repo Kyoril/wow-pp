@@ -414,10 +414,11 @@ namespace wowpp
 		}
 		m_itemCounter[it->second->getEntry().id()] -= stacks;
 
+		// Increase ref count since the item instance might be destroyed below
+		auto item = it->second;
 		if (stackCount == stacks)
 		{
 			// Remove item from slot
-			auto item = it->second;
 			m_itemsBySlot.erase(it);
 			m_freeSlots++;
 
@@ -449,13 +450,12 @@ namespace wowpp
 		}
 		else
 		{
-			it->second->setUInt32Value(item_fields::StackCount, stackCount - stacks);
+			item->setUInt32Value(item_fields::StackCount, stackCount - stacks);
 			itemInstanceUpdated(it->second, absoluteSlot);
 		}
 
 		// Quest check
-		m_owner.onQuestItemRemovedCredit(it->second->getEntry(), stacks);
-
+		m_owner.onQuestItemRemovedCredit(item->getEntry(), stacks);
 		return game::inventory_change_failure::Okay;
 	}
 	game::InventoryChangeFailure Inventory::swapItems(UInt16 slotA, UInt16 slotB)
