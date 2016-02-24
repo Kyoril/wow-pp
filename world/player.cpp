@@ -2212,6 +2212,30 @@ namespace wowpp
 
 				return;
 			}
+
+			// Check if that vendor has the vendor flag
+			if ((creature->getUInt32Value(unit_fields::NpcFlags) & game::unit_npc_flags::Vendor) == 0)
+				return;
+
+			// Check if the vendor DO sell items
+			const auto *vendorEntry = m_project.vendors.getById(creature->getEntry().vendorentry());
+			if (!vendorEntry)
+			{
+				std::vector<proto::VendorItemEntry> emptyList;
+				sendProxyPacket(
+					std::bind(game::server_write::listInventory, std::placeholders::_1, creature->getGuid(), std::cref(m_project.items), std::cref(emptyList)));
+				return;
+			}
+
+			// TODO
+			std::vector<proto::VendorItemEntry> list;
+			for (const auto &entry : vendorEntry->items())
+			{
+				list.push_back(entry);
+			}
+
+			sendProxyPacket(
+				std::bind(game::server_write::listInventory, std::placeholders::_1, creature->getGuid(), std::cref(m_project.items), std::cref(list)));
 		}
 	}
 

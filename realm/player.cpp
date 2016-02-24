@@ -774,6 +774,7 @@ namespace wowpp
 		m_database.getCharacterSocialList(m_characterId, *m_social);
 
 		// Load action buttons
+		DLOG("RELOADING ACTION BUTTONS");
 		m_actionButtons.clear();
 		m_database.getCharacterActionButtons(m_characterId, m_actionButtons);
 
@@ -869,6 +870,7 @@ namespace wowpp
 			auto raceEntry = m_gameCharacter->getRaceEntry();
 			assert(raceEntry);
 
+			DLOG("SENDING ACTION BUTTONS");
 			sendPacket(
 				std::bind(game::server_write::actionButtons, std::placeholders::_1, std::cref(m_actionButtons)));
 		
@@ -910,6 +912,7 @@ namespace wowpp
 		// Save action buttons
 		if (m_gameCharacter)
 		{
+			DLOG("SAVING ACTION BUTTONS");
 			m_database.setCharacterActionButtons(m_gameCharacter->getGuid(), m_actionButtons);
 		}
 
