@@ -188,22 +188,18 @@ namespace wowpp
 						else if (argName == "map")
 						{
 							mapId = atoi(argValue.c_str());
-							ILOG("MAP: " << mapId);
 						}
 						else if (argName == "x")
 						{
 							x = atof(argValue.c_str());
-							ILOG("X: " << x);
 						}
 						else if (argName == "y")
 						{
 							y = atof(argValue.c_str());
-							ILOG("Y: " << y);
 						}
 						else if (argName == "z")
 						{
 							z = atof(argValue.c_str());
-							ILOG("Z: " << z);
 						}
 						else if (argName == "o")
 						{
