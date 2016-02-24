@@ -1447,20 +1447,29 @@ namespace wowpp
 
 		if (m_spell.attributes(0) & game::spell_attributes::BreakableByDamage)
 		{
-			m_onDamageBreak = m_target.takenDamage.connect([this](GameUnit *attacker, UInt32 damage)
-			{
-				if (!attacker)
-					return;
-
-				UInt32 maxDmg = m_target.getLevel() > 8 ? 30 * m_target.getLevel() - 100 : 50;
-				float chance = float(damage) / maxDmg * 100.0f;
-
-				std::uniform_real_distribution<float> roll(0.0f, 100.0f);
-				if (chance > roll(randomGenerator))
+			// Delay the signal connection since spells like frost nova also apply damage. This damage
+			// is applied AFTER the root aura (which can break by damage) and thus leads to frost nova 
+			// breaking it's own root effect immediatly
+			m_post([this]() {
+				m_onDamageBreak = m_target.takenDamage.connect([this](GameUnit *attacker, UInt32 damage)
 				{
+					if (!attacker)
+						return;
+
+					UInt32 maxDmg = m_target.getLevel() > 8 ? 30 * m_target.getLevel() - 100 : 50;
+					float chance = float(damage) / maxDmg * 100.0f;
+					if (chance < 100.0f)
+					{
+						std::uniform_real_distribution<float> roll(0.0f, 99.99f);
+						if (chance <= roll(randomGenerator))
+						{
+							return;
+						}
+					}
+
 					// Remove aura
 					setRemoved(nullptr);
-				}
+				});
 			});
 		}
 
