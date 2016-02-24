@@ -86,6 +86,7 @@ namespace wowpp
 		, m_countdown(cast.getTimers())
 		, m_impactCountdown(cast.getTimers())
 		, m_castTime(castTime)
+		, m_castEnd(0)
 		, m_basePoints(basePoints)
 		, m_isProc(isProc)
 		, m_attackTable()
@@ -93,6 +94,7 @@ namespace wowpp
 		, m_projectileStart(0)
 		, m_projectileEnd(0)
 		, m_connectedMeleeSignal(false)
+		, m_delayCounter(0)
 	{
 		// Check if the executer is in the world
 		auto &executer = m_cast.getExecuter();
@@ -131,7 +133,36 @@ namespace wowpp
 	{
 		if (m_castTime > 0)
 		{
-			m_countdown.setEnd(getCurrentTime() + m_castTime);
+			m_castEnd = getCurrentTime() + m_castTime;
+			m_countdown.setEnd(m_castEnd);
+			m_damaged = m_cast.getExecuter().takenDamage.connect([this](GameUnit *attacker, UInt32 damage) {
+				if (!m_hasFinished && m_countdown.running && m_delayCounter < 2)
+				{
+					Int32 resistChance = 100;
+					if (m_cast.getExecuter().isGameCharacter())
+					{
+						reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
+							spell_mod_op::PreventSpellDelay, m_spell.id(), resistChance);
+					}
+					resistChance += m_cast.getExecuter().getAuras().getTotalBasePoints(game::aura_type::ResistPushback) - 100;
+					if (resistChance >= 100)
+						return;
+
+					std::uniform_int_distribution<Int32> resistRoll(0, 99);
+					if (resistChance > resistRoll(randomGenerator))
+					{
+						return;
+					}
+
+					m_castEnd += 500;
+					m_countdown.setEnd(m_castEnd);
+
+					// Notify about spell delay
+					sendPacketFromCaster(m_cast.getExecuter(), 
+						std::bind(game::server_write::spellDelayed, std::placeholders::_1, m_cast.getExecuter().getGuid(), 500));
+					m_delayCounter++;
+				}
+			});
 
 			WorldInstance *world = m_cast.getExecuter().getWorldInstance();
 			assert(world);

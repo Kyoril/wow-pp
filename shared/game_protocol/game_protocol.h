@@ -340,6 +340,7 @@ namespace wowpp
 				Pong						= 0x1DD,
 				ClearCooldown				= 0x1DE,
 				LevelUpInfo					= 0x1D4,
+				SpellDelayed				= 0x1E2,
 				AuthChallenge				= 0x1EC,
 				AuthResponse				= 0x1EE,
 				PlaySpellVisual				= 0x1F3,
@@ -2017,6 +2018,12 @@ namespace wowpp
 				UInt8 bit,
 				UInt8 modOp,
 				Int32 value
+				);
+
+			void spellDelayed(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				UInt32 delayTimeMS
 				);
 		};
 	}

@@ -3247,6 +3247,31 @@ namespace wowpp
 					;
 				out_packet.finish();
 			}
+
+			void spellDelayed(game::OutgoingPacket &out_packet, UInt64 guid, UInt32 delayTimeMS)
+			{
+				out_packet.start(game::server_packet::SpellDelayed);
+
+				UInt8 packGUID[8 + 1];
+				packGUID[0] = 0;
+				size_t size = 1;
+				for (UInt8 i = 0; guid != 0; ++i)
+				{
+					if (guid & 0xFF)
+					{
+						packGUID[0] |= UInt8(1 << i);
+						packGUID[size] = UInt8(guid & 0xFF);
+						++size;
+					}
+
+					guid >>= 8;
+				}
+				out_packet
+					<< io::write_range(&packGUID[0], &packGUID[size])
+					<< io::write<NetUInt32>(delayTimeMS)
+					;
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
