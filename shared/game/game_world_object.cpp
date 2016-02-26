@@ -162,7 +162,12 @@ namespace wowpp
 			}
 		case world_object_type::Goober:
 			{
-				return character.getQuestStatus(m_entry.data(1)) == game::QuestStatus::Incomplete;
+				if (m_entry.data(1))
+				{
+					return character.getQuestStatus(m_entry.data(1)) == game::QuestStatus::Incomplete;
+				}
+
+				return false;
 			}
 		}
 
