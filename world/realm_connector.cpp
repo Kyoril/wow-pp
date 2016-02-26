@@ -27,6 +27,7 @@
 #include "player.h"
 #include "game/game_creature.h"
 #include "wowpp_protocol/wowpp_world_realm.h"
+#include "game_protocol/game_protocol.h"
 #include "configuration.h"
 #include "common/clock.h"
 #include "proto_data/project.h"
@@ -34,6 +35,7 @@
 #include "game/visibility_tile.h"
 #include "game/each_tile_in_region.h"
 #include "game/universe.h"
+#include "game/each_tile_in_sight.h"
 #include "binary_io/vector_sink.h"
 #include "log/default_log_levels.h"
 
@@ -119,6 +121,9 @@ namespace wowpp
 				break;
 			case pp::world_realm::realm_packet::ItemData:
 				handleItemData(packet);
+				break;
+			case pp::world_realm::realm_packet::SpellLearned:
+				handleSpellLearned(packet);
 				break;
 			default:
 				// Log about unknown or unhandled packet
@@ -536,6 +541,78 @@ namespace wowpp
 						character->getGuid(), std::cref(*itemInstance), false, false, bag, subslot, pair.second, character->getInventory().getItemCount(entry->id())));
 			}
 		}
+	}
+
+	void RealmConnector::handleSpellLearned(pp::Protocol::IncomingPacket & packet)
+	{
+		UInt64 characterId;
+		UInt32 spellId;
+		if (!(pp::world_realm::realm_read::spellLearned(packet, characterId, spellId)))
+		{
+			return;
+		}
+
+		const auto *spell = m_project.spells.getById(spellId);
+		if (!spell)
+		{
+			return;
+		}
+
+		// Find requested character
+		auto *player = m_playerManager.getPlayerByCharacterGuid(characterId);
+		if (!player)
+		{
+			return;
+		}
+		auto character = player->getCharacter();
+		if (!character)
+		{
+			return;
+		}
+
+		// Already learned?
+		if (character->hasSpell(spellId))
+		{
+			return;
+		}
+
+		// World check (just in case)
+		auto *world = character->getWorldInstance();
+		if (!world)
+		{
+			return;
+		}
+
+		TileIndex2D tile;
+		if (!character->getTileIndex(tile))
+		{
+			return;
+		}
+
+		std::vector<char> buffer;
+		io::VectorSink sink(buffer);
+		game::Protocol::OutgoingPacket outPacket(sink);
+		game::server_write::playSpellImpact(outPacket, character->getGuid(), 0x016A);
+		forEachSubscriberInSight(
+			world->getGrid(),
+			tile,
+			[&outPacket, &buffer](ITileSubscriber &subscriber)
+		{
+			subscriber.sendPacket(outPacket, buffer);
+		});
+
+		// Learn the required spell
+		character->addSpell(*spell);
+		if ((spell->attributes(0) & game::spell_attributes::Passive) != 0)
+		{
+			SpellTargetMap targetMap;
+			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+			targetMap.m_unitTarget = character->getGuid();
+			character->castSpell(std::move(targetMap), spellId);
+		}
+
+		player->sendProxyPacket(
+			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spellId));
 	}
 
 	void RealmConnector::handleProxyPacket(pp::Protocol::IncomingPacket &packet)

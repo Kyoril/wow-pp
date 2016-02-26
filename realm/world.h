@@ -97,6 +97,7 @@ namespace wowpp
 		void characterAddIgnore(UInt64 characterGuid, UInt64 ignoreGuid);
 		void characterRemoveIgnore(UInt64 characterGuid, UInt64 removeGuid);
 		void itemData(UInt64 characterGuid, const std::vector<ItemData> &items);
+		void characterLearnedSpell(UInt64 characterGuid, UInt32 spellId);
 
 	private:
 

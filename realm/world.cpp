@@ -530,4 +530,10 @@ namespace wowpp
 			std::bind(pp::world_realm::realm_write::itemData, std::placeholders::_1, characterGuid, std::cref(items)));
 	}
 
+	void World::characterLearnedSpell(UInt64 characterGuid, UInt32 spellId)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::realm_write::spellLearned, std::placeholders::_1, characterGuid, spellId));
+	}
+
 }

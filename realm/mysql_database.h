@@ -82,6 +82,8 @@ namespace wowpp
 		bool setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData &data) override;
 		/// @copydoc wowpp::IDatabase::teleportCharacter
 		bool teleportCharacter(DatabaseId characterId, UInt32 mapId, float x, float y, float z, float o, bool changeHome = false) override;
+		/// @copydoc wowpp::IDatabase::learnSpell
+		bool learnSpell(DatabaseId characterId, UInt32 spellId) override;
 
 	private:
 

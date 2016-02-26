@@ -280,6 +280,14 @@ namespace wowpp
 					        << io::write_dynamic_range<NetUInt32>(data);
 					out_packet.finish();
 				}
+				void spellLearned(pp::OutgoingPacket & out_packet, UInt64 characterId, UInt32 spellId)
+				{
+					out_packet.start(realm_packet::SpellLearned);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write<NetUInt32>(spellId);
+					out_packet.finish();
+				}
 			}
 
 			namespace world_read
@@ -510,6 +518,12 @@ namespace wowpp
 					       >> io::read_container<NetUInt32>(out_slots);
 				}
 
+				bool spellLearned(io::Reader & packet, UInt64 & out_characterId, UInt32 & out_spellId)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read<NetUInt32>(out_spellId);
+				}
 			}
 		}
 	}

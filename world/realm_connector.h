@@ -107,7 +107,7 @@ namespace wowpp
 		/// 
 		void onScheduledKeepAlive();
 
-		// Packet handlers
+		// Realm packet handlers
 		void handleLoginAnswer(pp::Protocol::IncomingPacket &packet);
 		void handleCharacterLogin(pp::Protocol::IncomingPacket &packet);
 		void handleProxyPacket(pp::Protocol::IncomingPacket &packet);
@@ -118,6 +118,7 @@ namespace wowpp
 		void handleAddIgnore(pp::Protocol::IncomingPacket &packet);
 		void handleRemoveIgnore(pp::Protocol::IncomingPacket &packet);
 		void handleItemData(pp::Protocol::IncomingPacket &packet);
+		void handleSpellLearned(pp::Protocol::IncomingPacket &packet);
 
 	private:
 
@@ -126,9 +127,6 @@ namespace wowpp
 		void handleCreatureQuery(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleLogoutRequest(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleLogoutCancel(Player &sender, game::Protocol::IncomingPacket &packet);
-		void handleMoveStartForward(Player &sender, game::Protocol::IncomingPacket &packet);
-		void handleMoveStartBackward(Player &sender, game::Protocol::IncomingPacket &packet);
-		void handleMoveStop(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleSetSelection(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleStandStateChange(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleCastSpell(Player &sender, game::Protocol::IncomingPacket &packet);

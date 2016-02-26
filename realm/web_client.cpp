@@ -525,6 +525,82 @@ namespace wowpp
 							return;
 					}
 				}
+				else if (url == "/learnspell")
+				{
+					String characterName;
+					UInt32 spellId = 0;
+					for (auto &arg : arguments)
+					{
+						auto delimiterPos = arg.find('=');
+						String argName = arg.substr(0, delimiterPos);
+						String argValue = arg.substr(delimiterPos + 1);
+
+						if (argName == "character")
+						{
+							characterName = argValue;
+						}
+						else if (argName == "spell")
+						{
+							spellId = atoi(argValue.c_str());
+						}
+					}
+
+					if (spellId == 0 || characterName.empty())
+					{
+						sendXmlAnswer(response, "<status>MISSING_DATA</status>");
+						break;
+					}
+
+					auto &project = static_cast<WebService &>(this->getService()).getProject();
+					const auto *spellInst = project.spells.getById(spellId);
+					if (!spellInst)
+					{
+						sendXmlAnswer(response, "<status>INVALID_SPELL</status>");
+						break;
+					}
+
+					auto &playerMgr = static_cast<WebService &>(this->getService()).getPlayerManager();
+					auto *player = playerMgr.getPlayerByCharacterName(characterName);
+					if (!player)
+					{
+						auto &db = static_cast<WebService &>(this->getService()).getDatabase();
+
+						// Does the character exist?
+						game::CharEntry entry;
+						if (!db.getCharacterByName(characterName, entry))
+						{
+							sendXmlAnswer(response, "<status>CHARACTER_NOT_FOUND</status>");
+							break;
+						}
+
+						// Character exists - teleport him
+						if (!db.learnSpell(entry.id, spellId))
+						{
+							sendXmlAnswer(response, "<status>DATABASE_ERROR</status>");
+							break;
+						}
+
+						sendXmlAnswer(response, "<status>SUCCESS</status>");
+						break;
+					}
+					else
+					{
+						// Send a learn spell request
+						auto result = player->learnSpell(*spellInst);
+						switch (result)
+						{
+							case learn_spell_result::Success:
+								sendXmlAnswer(response, "<status>SUCCESS</status>");
+								return;
+							case learn_spell_result::AlreadyLearned:
+								sendXmlAnswer(response, "<status>ALREADY_LEARNED</status>");
+								return;
+							default:
+								sendXmlAnswer(response, "<status>UNKNOWN_ERROR</status>");
+								return;
+						}
+					}
+				}
 				else if (url == "/teleport")
 				{
 					// Handle required data

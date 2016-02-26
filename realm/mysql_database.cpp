@@ -1275,4 +1275,25 @@ namespace wowpp
 		return false;
 	}
 
+	bool MySQLDatabase::learnSpell(DatabaseId characterId, UInt32 spellId)
+	{
+		const UInt32 lowerPart = guidLowerPart(characterId);
+
+		if (m_connection.execute((boost::format(
+			"INSERT IGNORE INTO `character_spells` VALUES (%1%, %2%);")
+			% lowerPart
+			% spellId
+			).str()))
+		{
+			return true;
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+
+		return false;
+	}
 }

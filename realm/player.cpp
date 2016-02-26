@@ -1043,6 +1043,27 @@ namespace wowpp
 		return add_item_result::Success;
 	}
 
+	LearnSpellResult Player::learnSpell(const proto::SpellEntry & spell)
+	{
+		if (!m_gameCharacter)
+		{
+			return learn_spell_result::Unknown;
+		}
+
+		if (m_gameCharacter->hasSpell(spell.id()))
+		{
+			return learn_spell_result::AlreadyLearned;
+		}
+
+		if (!m_worldNode)
+		{
+			return learn_spell_result::Unknown;
+		}
+
+		m_worldNode->characterLearnedSpell(m_gameCharacter->getGuid(), spell.id());
+		return learn_spell_result::Success;
+	}
+
 	void Player::handleNameQuery(game::IncomingPacket &packet)
 	{
 		// Object guid

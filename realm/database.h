@@ -66,6 +66,7 @@ namespace wowpp
 		virtual bool setCinematicState(DatabaseId characterId, bool state) = 0;
 		virtual bool setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData &data) = 0;
 		virtual bool teleportCharacter(DatabaseId characterId, UInt32 mapId, float x, float y, float z, float o, bool changeHome = false) = 0;
+		virtual bool learnSpell(DatabaseId characterId, UInt32 spellId) = 0;
 	};
 
 	enum RequestStatus

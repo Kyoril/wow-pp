@@ -34,7 +34,7 @@ namespace wowpp
 	{
 		namespace world_realm
 		{
-			static const UInt32 ProtocolVersion = 0x12;
+			static const UInt32 ProtocolVersion = 0x13;
 
 			namespace world_instance_error
 			{
@@ -120,6 +120,8 @@ namespace wowpp
 					ItemData,
 					/// One or more items have been deleted. Only slots are specified here.
 					ItemsRemoved,
+					/// The player character has learned a new spell. This is currently only sent using the WebAPI.
+					SpellLearned
 				};
 			}
 
@@ -336,6 +338,11 @@ namespace wowpp
 				    UInt64 characterId,
 				    const std::vector<UInt16> &data
 				);
+				void spellLearned(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					UInt32 spellId
+					);
 			}
 
 			/// Contains methods for reading packets coming from the world server.
@@ -525,6 +532,11 @@ namespace wowpp
 				    UInt64 &out_characterId,
 				    std::vector<UInt16> &out_slots
 				);
+				bool spellLearned(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					UInt32 &out_spellId
+					);
 			}
 		}
 	}

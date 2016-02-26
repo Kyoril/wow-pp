@@ -58,12 +58,27 @@ namespace wowpp
 			BagIsFull,
 			/// Player has too many instances of that item.
 			TooManyItems,
-			/// Unkwown error.
+			/// Unknown error.
 			Unknown
 		};
 	}
 
 	typedef add_item_result::Type AddItemResult;
+
+	namespace learn_spell_result
+	{
+		enum Type
+		{
+			/// Successfully added item.
+			Success,
+			/// Player already knows that spell.
+			AlreadyLearned,
+			/// Unknown error.
+			Unknown
+		};
+	}
+
+	typedef learn_spell_result::Type LearnSpellResult;
 
 	/// Player connection class.
 	class Player final
@@ -186,6 +201,8 @@ namespace wowpp
 
 		/// Adds a new item to the players inventory if logged in.
 		AddItemResult addItem(UInt32 itemId, UInt32 amount);
+		/// Learns a new spell and notifies the world node about this.
+		LearnSpellResult learnSpell(const proto::SpellEntry &spell);
 
 	private:
 
