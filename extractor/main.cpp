@@ -34,6 +34,10 @@
 #include "game/map.h"
 #include "math/matrix4.h"
 #include "math/vector3.h"
+#include "detour/DetourCommon.h"
+#include "detour/DetourNavMesh.h"
+#include "detour/DetourNavMeshBuilder.h"
+#include "recast/Recast.h"
 using namespace std;
 using namespace wowpp;
 
@@ -60,8 +64,97 @@ std::map<UInt32, UInt32> areaFlags;
 // Helper functions
 namespace
 {
+	const float GridSize = 533.3333f;
+	const float GridPart = GridSize / 128;
+
+	struct MeshData final
+	{
+		std::vector<float> solidVerts;
+		std::vector<int> solidTris;
+	};
+
+	// this class gathers all debug info holding and output
+	struct IntermediateValues
+	{
+		rcHeightfield* heightfield;
+		rcCompactHeightfield* compactHeightfield;
+		rcContourSet* contours;
+		rcPolyMesh* polyMesh;
+		rcPolyMeshDetail* polyMeshDetail;
+
+		IntermediateValues() 
+			: compactHeightfield(nullptr)
+			, heightfield(nullptr)
+			, contours(nullptr)
+			, polyMesh(nullptr)
+			, polyMeshDetail(nullptr) 
+		{
+		}
+		~IntermediateValues()
+		{
+		}
+		void writeIV(UInt32 mapID, UInt32 tileX, UInt32 tileY)
+		{
+		}
+		void debugWrite(FILE* file, const rcHeightfield* mesh)
+		{
+		}
+		void debugWrite(FILE* file, const rcCompactHeightfield* chf)
+		{
+		}
+		void debugWrite(FILE* file, const rcContourSet* cs)
+		{
+		}
+		void debugWrite(FILE* file, const rcPolyMesh* mesh)
+		{
+		}
+		void debugWrite(FILE* file, const rcPolyMeshDetail* mesh)
+		{
+		}
+		void generateObjFile(UInt32 mapID, UInt32 tileX, UInt32 tileY, MeshData& meshData)
+		{
+		}
+	};
+
+	static bool createNavMesh(UInt32 mapId, dtNavMesh &navMesh)
+	{
+		float bmin[3], bmax[3];
+		bmin[1] = FLT_MIN;
+		bmax[1] = FLT_MAX;
+
+		// this is for width and depth
+		bmax[0] = (32 - int(64)) * GridSize;
+		bmax[2] = (32 - int(64)) * GridSize;
+		bmin[0] = bmax[0] - GridSize;
+		bmin[2] = bmax[2] - GridSize;
+
+		int tileBits = 28;
+		int polyBits = 20;
+		int maxTiles = 64*64;
+		int maxPolysPerTile = 1 << polyBits;
+
+		// Setup navigation mesh creation parameters
+		dtNavMeshParams navMeshParams;
+		memset(&navMeshParams, 0, sizeof(dtNavMeshParams));
+		navMeshParams.tileWidth = GridSize;
+		navMeshParams.tileHeight = GridSize;
+		rcVcopy(navMeshParams.orig, bmin);
+		navMeshParams.maxTiles = maxTiles;
+		navMeshParams.maxPolys = maxPolysPerTile;
+
+		// Allocate our navigation mesh
+		ILOG("[Map " << mapId << "] Creating navigation mesh...");
+		if (!navMesh.init(&navMeshParams))
+		{
+			ELOG("[Map " << mapId << "] Failed to create navigation mesh!")
+			return false;
+		}
+
+		return true;
+	}
+
 	/// Converts an ADT tile of a WDT file.
-	static bool convertADT(UInt32 mapId, const String &mapName, WDTFile &wdt, UInt32 tileIndex)
+	static bool convertADT(UInt32 mapId, const String &mapName, WDTFile &wdt, UInt32 tileIndex, dtNavMesh &navMesh)
 	{
 		// Check tile
 		auto &adtTiles = wdt.getMAINChunk().adt;
@@ -122,7 +215,7 @@ namespace
         header.offsAreaTable = sizeof(MapHeaderChunk);
         header.areaTableSize = sizeof(MapAreaChunk);
 		header.offsCollision = header.offsAreaTable + header.areaTableSize;
-		header.collisionSize = 0;	// TODO
+		header.collisionSize = 0;
 		
         // Area header chunk
         MapAreaChunk areaHeader;
@@ -142,15 +235,9 @@ namespace
             areaHeader.cellAreas[i].flags = flags;
         }
 
-		/*
-		std::ostringstream outStrm;
-		outStrm << "obj/" << cellX << "_" << cellY << ".obj";
-		FILE *file = fopen(outStrm.str().c_str(), "w");
-		*/
-
 		// Collision chunk
 		MapCollisionChunk collisionChunk;
-		collisionChunk.fourCC = 0x4C434D57;
+		collisionChunk.fourCC = 0x4C434D57;			// WMCL		- WoW Map Collision
 		collisionChunk.size = sizeof(UInt32) * 4;
 		collisionChunk.vertexCount = 0;
 		collisionChunk.triangleCount = 0;
@@ -158,8 +245,6 @@ namespace
 		UInt32 groupCount = 0;
 		for (const auto &entry : adt.getMODFChunk().entries)
 		{
-			//fprintf(file, "\n\no Group %d\n", groupCount++);
-
 			// Entry placement
 			auto &wmo = wmos[entry.mwidEntry];
 			if (!wmo->isRootWMO())
@@ -230,10 +315,7 @@ namespace
 			header.collisionSize = 0;
 		}
 
-		//fprintf(file, "\n\n# TRIANGLE COUNT IN TOTAL: %d\n", collisionChunk.triangleCount);
-		//fprintf(file, "# VERTEX COUNT IN TOTAL: %d\n", collisionChunk.vertexCount);
-
-#if 0
+		/*
 		// Map height header
 		MapHeightChunk heightChunk;
 		heightChunk.fourCC = 0x54484D57;		// WMHT		- WoW Map Height
@@ -249,20 +331,55 @@ namespace
 				heightChunk.heights[i][index++] = mcnk.zpos + height;
 			}
 		}
-#endif
+		*/
 
-		//fclose(file);
+		// Build nav mesh
+		MapNavigationChunk navigationChunk;
+		navigationChunk.fourCC = 0x564E4D57;		// WMNV		- WoW Map Navigation
+		navigationChunk.size = 0;
+		{
+			const static float BaseUnitDim = 0.5333333f;
 
-		// Write map header
+			const static int VerticesPerMap = int(GridSize / BaseUnitDim + 0.5f);
+			const static int VerticesPerTile = 40; // must divide VERTEX_PER_MAP
+			const static int TilesPerMap = VerticesPerMap / VerticesPerTile;
+
+			rcConfig config;
+			memset(&config, 0, sizeof(rcConfig));
+			//rcVcopy(config.bmin, bmin);
+			//rcVcopy(config.bmax, bmax);
+			config.maxVertsPerPoly = DT_VERTS_PER_POLYGON;
+			config.cs = BaseUnitDim;
+			config.ch = BaseUnitDim;
+			config.walkableSlopeAngle = 45.0f;
+			config.tileSize = VerticesPerTile;
+			config.walkableRadius = 1;
+			config.borderSize = config.walkableRadius + 3;
+			config.maxEdgeLen = VerticesPerTile + 1;        // anything bigger than tileSize
+			config.walkableHeight = 2;
+			config.walkableClimb = 1;						// keep less than walkableHeight
+			config.minRegionArea = rcSqr(60);
+			config.mergeRegionArea = rcSqr(50);
+			config.maxSimplificationError = 1.8f;           // eliminates most jagged edges (tiny polygons)
+			config.detailSampleDist = config.cs * 64;
+			config.detailSampleMaxError = config.ch * 2;
+			rcCalcGridSize(config.bmin, config.bmax, config.cs, &config.width, &config.height);
+		}
+
+		// Write
+		//header.offsNavigation = header.offsAreaTable + header.areaTableSize + header.collisionSize;
+		//header.navigationSize = sizeof(UInt32) * 2 + navigationChunk.size;
+
+		// Write tile header
         writer.writePOD(header);
         writer.writePOD(areaHeader);
 		if (header.offsCollision)
 		{
-			writer << io::write<UInt32>(collisionChunk.fourCC);
-			writer << io::write<UInt32>(collisionChunk.size);
-			writer << io::write<UInt32>(collisionChunk.vertexCount);
-			writer << io::write<UInt32>(collisionChunk.triangleCount);
-
+			writer 
+				<< io::write<UInt32>(collisionChunk.fourCC)
+				<< io::write<UInt32>(collisionChunk.size)
+				<< io::write<UInt32>(collisionChunk.vertexCount)
+				<< io::write<UInt32>(collisionChunk.triangleCount);
 			for (auto &vert : collisionChunk.vertices)
 			{
 				writer
@@ -278,6 +395,13 @@ namespace
 					<< io::write<UInt32>(triangle.indexC);
 			}
 		}
+		/*if (header.offsNavigation)
+		{
+			writer 
+				<< io::write<UInt32>(navigationChunk.fourCC)
+				<< io::write<UInt32>(navigationChunk.size)
+				<< io::write_range(navigationChunk.data);
+		}*/
         
 		return true;
 	}
@@ -296,6 +420,12 @@ namespace
 		if (!dbcMap->getValue(dbcRow, 1, mapName))
 		{
 			return false;
+		}
+
+		if (mapId != 36)
+		{
+			ILOG("Skipping map " << mapId);
+			return true;
 		}
 
 		// Build map
@@ -324,19 +454,26 @@ namespace
 
 		// Get adt tile information
 		auto &adtTiles = mapWDT.getMAINChunk().adt;
+		
+		// TODO: Filter tiles that aren't needed here
+
+		// Create nav mesh
+		auto freeNavMesh = [](dtNavMesh* ptr) { dtFreeNavMesh(ptr); };
+		std::unique_ptr<dtNavMesh, decltype(freeNavMesh)> navMesh(dtAllocNavMesh(), freeNavMesh);
+		if (!createNavMesh(mapId, *navMesh))
+		{
+			return false;
+		}
 
 		// Iterate through all tiles and create those which are available
 		bool succeeded = true;
 		for (UInt32 tile = 0; tile < adtTiles.size(); ++tile)
 		{
-			if (!convertADT(mapId, mapName, mapWDT, tile))
+			if (!convertADT(mapId, mapName, mapWDT, tile, *navMesh))
 			{
 				succeeded = false;
 			}
 		}
-
-		// Get wmo information
-
 
 		return true;
 	}

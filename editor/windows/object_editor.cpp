@@ -1704,6 +1704,89 @@ namespace wowpp
 			ImportDialog dialog(m_application, std::move(task));
 			dialog.exec();
 		}
+		void ObjectEditor::on_actionImport_Object_Spawns_triggered()
+		{
+			ImportTask task;
+			task.countQuery = "SELECT COUNT(*) FROM `wowpp_gameobject` WHERE `active` != 0;";
+			task.selectQuery = "SELECT `id`, `map`, `position_x`, `position_y`, `position_z`, `orientation`, `rotation0`, `rotation1`, `rotation2`, `rotation3`, `spawntimesecs`, `animprogress`, `state`, `name` FROM `wowpp_gameobject`  WHERE `active` != 0 ORDER BY `id`;";
+			task.beforeImport = [this]() {
+				for (int i = 0; i < m_application.getProject().maps.getTemplates().entry_size(); ++i)
+				{
+					auto *map = m_application.getProject().maps.getTemplates().mutable_entry(i);
+					map->clear_objectspawns();
+				}
+			};
+			task.onImport = [this](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0, map = 0, animprogress = 0, state = 0;
+				UInt64 spawnTime = 0;
+				float x = 0.0f, y = 0.0f, z = 0.0f, o = 0.0f, rot0 = 0.0f, rot1 = 0.0f, rot2 = 0.0f, rot3 = 0.0f;
+				String name;
+
+				UInt32 index = 0;
+				row.getField(index++, entry);
+				row.getField(index++, map);
+				row.getField(index++, x);
+				row.getField(index++, y);
+				row.getField(index++, z);
+				row.getField(index++, o);
+				row.getField(index++, rot0);
+				row.getField(index++, rot1);
+				row.getField(index++, rot2);
+				row.getField(index++, rot3);
+				row.getField(index++, spawnTime);
+				row.getField(index++, animprogress);
+				row.getField(index++, state);
+				row.getField(index++, name);
+				spawnTime *= constants::OneSecond;	// Time in Milliseconds
+
+				// Find referenced map
+				auto *mapEntry = m_application.getProject().maps.getById(map);
+				if (!mapEntry)
+				{
+					ELOG("Could not find referenced map " << map << " (referenced in object spawn entry " << entry << ")");
+					return false;
+				}
+
+				if (!m_application.getProject().objects.getById(entry))
+				{
+					ELOG("Could not find object template by entry: " << entry);
+					return false;
+				}
+
+				// Create new object spawn
+				auto *added = mapEntry->add_objectspawns();
+				if (!added)
+				{
+					ELOG("Could not add object spawn");
+					return false;
+				}
+
+				if (!name.empty()) added->set_name(name.c_str());
+				added->set_objectentry(entry);
+				added->set_isactive(true);
+				added->set_animprogress(animprogress);
+				added->set_respawn(true);
+				added->set_respawndelay(spawnTime);
+				added->set_positionx(x);
+				added->set_positiony(y);
+				added->set_positionz(z);
+				added->set_orientation(o);
+				added->set_rotationw(rot0);
+				added->set_rotationx(rot1);
+				added->set_rotationy(rot2);
+				added->set_rotationz(rot3);
+				added->set_state(state);
+				added->set_maxcount(1);
+				added->set_radius(0.0f);
+
+				return true;
+			};
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
+			dialog.exec();
+		}
+
 		void ObjectEditor::on_addUnitSpellButton_clicked()
 		{
 			if (!m_selectedUnit)

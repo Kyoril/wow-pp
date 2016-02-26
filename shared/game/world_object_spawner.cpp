@@ -56,11 +56,6 @@ namespace wowpp
 		, m_animProgress(animProgress)
 		, m_state(state)
 	{
-		// Cap AnimProgress to 100, because higher value causes troubles at the client somehow when respawning
-		if (m_animProgress > 100) {
-			m_animProgress = 100;
-		}
-
 		// Immediatly spawn all objects
 		for (size_t i = 0; i < m_maxCount; ++i)
 		{
@@ -103,7 +98,7 @@ namespace wowpp
 		// watch for destruction
 		spawned->destroy = std::bind(&WorldObjectSpawner::onRemoval, this, std::placeholders::_1);
 		m_world.addGameObject(*spawned);
-
+		
 		// Remember that creature
 		m_objects.push_back(std::move(spawned));
 		++m_currentlySpawned;

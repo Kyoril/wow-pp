@@ -81,7 +81,7 @@ namespace wowpp
 		const GameTime m_respawnDelay;
 		const math::Vector3 m_center;
 		const boost::optional<float> m_orientation;
-		const std::array<float, 4> &m_rotation;
+		const std::array<float, 4> m_rotation;
 		const float m_radius;
 		size_t m_currentlySpawned;
 		OwnedObjects m_objects;

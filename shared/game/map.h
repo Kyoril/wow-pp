@@ -41,6 +41,8 @@ namespace wowpp
 		//		UInt32 heightSize;
 		UInt32 offsCollision;
 		UInt32 collisionSize;
+		//UInt32 offsNavigation;
+		//UInt32 navigationSize;
 
 		MapHeaderChunk()
 			: fourCC(0)
@@ -52,6 +54,8 @@ namespace wowpp
 			  //			, heightSize(0)
 			, offsCollision(0)
 			, collisionSize(0)
+			//, offsNavigation(0)
+			//, navigationSize(0)
 		{
 		}
 	};
@@ -112,6 +116,19 @@ namespace wowpp
 			, size(0)
 			, vertexCount(0)
 			, triangleCount(0)
+		{
+		}
+	};
+
+	struct MapNavigationChunk
+	{
+		UInt32 fourCC;
+		UInt32 size;
+		std::vector<char> data;
+
+		explicit MapNavigationChunk()
+			: fourCC(0)
+			, size(0)
 		{
 		}
 	};
