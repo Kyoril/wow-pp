@@ -163,6 +163,9 @@ namespace wowpp
 			});
 		}
 
+		/// Saves the characters data.
+		void saveCharacterData() const;
+
 	public:
 
 		/// @copydoc ITileSubscriber::getControlledObject()

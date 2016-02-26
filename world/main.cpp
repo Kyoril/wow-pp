@@ -103,15 +103,6 @@ int main(int argc, char* argv[])
 	//constructor enables error handling
 	wowpp::CrashHandler::get().enableDumpFile("WorldCrash.dmp");
 
-	//when the application terminates unexpectedly
-	const auto crashFlushConnection =
-		wowpp::CrashHandler::get().onCrash.connect(
-			[]()
-	{
-		ELOG("Application crashed...");
-	});
-
-
 	// Triggers if the program should be restarted
 	bool shouldRestartProgram = false;
 	do

@@ -372,6 +372,14 @@ namespace wowpp
 		}
 	}
 
+	void Player::saveCharacterData() const
+	{
+		if (m_character)
+		{
+			m_realmConnector.sendCharacterData(*m_character);
+		}
+	}
+
 	void Player::sendPacket(game::Protocol::OutgoingPacket &packet, const std::vector<char> &buffer)
 	{
 		// Send the proxy packet to the realm server
@@ -517,8 +525,7 @@ namespace wowpp
 
 	void Player::onDespawn()
 	{
-		// Send character data to the realm
-		m_realmConnector.sendCharacterData(*m_character);
+		saveCharacterData();
 
 		// Find our tile
 		TileIndex2D tileIndex = getTileIndex();

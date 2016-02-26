@@ -67,7 +67,6 @@ namespace wowpp
 		record.moved = findable.moved.connect([this, &findable](GameObject & obj, math::Vector3 position, float o)
 		{
 			math::Vector3 location(findable.getLocation());
-
 			if (location.x != position.x || location.y != position.y || location.z != position.z)
 			{
 				this->onUnitMoved(findable);
