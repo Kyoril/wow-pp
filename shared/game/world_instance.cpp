@@ -448,14 +448,6 @@ namespace wowpp
 			VisibilityTile *newTile = m_visibilityGrid->getTile(newIndex);
 			assert(newTile);
             
-            if (object.isCreature())
-            {
-                if (reinterpret_cast<GameCreature&>(object).getEntry().id() == 7235)
-                {
-                    WLOG("LEAVING TILE " << oldIndex << " TO " << newIndex);
-                }
-            }
-
 			// Remove the object
 			oldTile->getGameObjects().remove(&object);
 
