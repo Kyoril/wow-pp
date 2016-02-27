@@ -42,9 +42,13 @@ namespace wowpp
 			// Same spell, same caster and same effect index - don't stack!
 			auto a = *it;
 			const bool isSameCaster = a->getCaster() == aura->getCaster();
+			const bool isSameFamily = 
+				(a->getSpell().family() == aura->getSpell().family() && a->getSpell().familyflags() == aura->getSpell().familyflags());
+			const bool hasFamily =
+				(a->getSpell().family() != 0);
 			const bool isSameSpell = 
 				(a->getSpell().id() == aura->getSpell().id() ||
-				(a->getSpell().family() == aura->getSpell().family() && a->getSpell().familyflags() == aura->getSpell().familyflags()));
+				(hasFamily && isSameFamily));
 			const bool stackForDiffCasters =
 				aura->getSpell().attributes(3) & game::spell_attributes_ex_c::StackForDiffCasters;
 			if (isSameSpell &&
