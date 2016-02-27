@@ -1076,6 +1076,40 @@ namespace wowpp
 			reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
 				spell_mod_op::AllEffects, m_spell.id(), outBasePoints);
 		}
+
+		if (basePointsPerLevel == 0.0f &&
+			m_spell.attributes(0) & game::spell_attributes::LevelDamageCalc)
+		{
+			bool applyLevelDamageCalc = false;
+
+			const auto sl = m_spell.spelllevel();
+			switch (effect.type())
+			{
+				case game::spell_effects::SchoolDamage:
+				case game::spell_effects::WeaponDamage:
+				case game::spell_effects::WeaponDamageNoSchool:
+				case game::spell_effects::EnvironmentalDamage:
+					applyLevelDamageCalc = true;
+					break;
+				case game::spell_effects::ApplyAura:
+					switch (effect.aura())
+					{
+						case game::aura_type::PeriodicDamage:
+							applyLevelDamageCalc = true;
+							break;
+					}
+					break;
+				default:
+					applyLevelDamageCalc = false;
+					break;
+			}
+
+			if (applyLevelDamageCalc)
+			{
+				outBasePoints = Int32(outBasePoints * m_cast.getExecuter().getLevel() / (sl ? sl : 1));
+			}
+		}
+
 		return outBasePoints;
 	}
 
