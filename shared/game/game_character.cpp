@@ -254,6 +254,11 @@ namespace wowpp
 							m_requiredQuestItems[req.itemid()]++;
 							updateQuestObjects = true;
 						}
+						if (req.sourceid())
+						{
+							m_requiredQuestItems[req.sourceid()]++;
+							updateQuestObjects = true;
+						}
 					}
 				}
 
@@ -294,6 +299,11 @@ namespace wowpp
 					if (req.itemid())
 					{
 						m_requiredQuestItems[req.itemid()]--;
+						updateQuestObjects = true;
+					}
+					if (req.sourceid())
+					{
+						m_requiredQuestItems[req.sourceid()]--;
 						updateQuestObjects = true;
 					}
 				}
@@ -677,18 +687,16 @@ namespace wowpp
 					if (m_inventory.getItemCount(entry.id()) >= req.itemcount())
 					{
 						m_requiredQuestItems[req.itemid()]--;
+						updateNearbyObjects = true;
 					}
 
 					// Found it: Complete quest if completable
 					if (fulfillsQuestRequirements(*quest))
 					{
-						updateNearbyObjects = true;
-
 						it->second.status = game::quest_status::Complete;
 						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
 						questDataChanged(logId, it->second);
 					}
-					continue;
 				}
 			}
 		}
@@ -735,18 +743,16 @@ namespace wowpp
 					if (m_inventory.getItemCount(entry.id()) < req.itemcount())
 					{
 						m_requiredQuestItems[req.itemid()]++;
+						updateNearbyObjects = true;
 					}
 
 					// Found it: Complete quest if completable
 					if (!fulfillsQuestRequirements(*quest))
 					{
-						updateNearbyObjects = true;
-
 						it->second.status = game::quest_status::Incomplete;
 						removeFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
 						questDataChanged(logId, it->second);
 					}
-					continue;
 				}
 			}
 		}
