@@ -1030,7 +1030,7 @@ namespace wowpp
 		}
 
 		// Spell cast logic
-		sender.getCharacter()->cancelCast();
+		sender.getCharacter()->cancelCast(game::spell_interrupt_flags::None);
 	}
 
 	void RealmConnector::handleAttackSwing(Player &sender, game::Protocol::IncomingPacket &packet)

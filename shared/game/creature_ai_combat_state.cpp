@@ -151,7 +151,7 @@ namespace wowpp
 
 				// No longer attack unit if stunned
 				m_isCasting = false;
-				getControlled().cancelCast();
+				getControlled().cancelCast(game::spell_interrupt_flags::None);
 				getControlled().stopAttack();
 				getControlled().setVictim(nullptr);
 			}
@@ -321,7 +321,7 @@ namespace wowpp
 		        m_threat.empty())
 		{
 			controlled.stopAttack();
-			controlled.cancelCast();
+			controlled.cancelCast(game::spell_interrupt_flags::None);
 
 			chooseNextAction();
 		}

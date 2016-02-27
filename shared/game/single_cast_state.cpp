@@ -136,31 +136,39 @@ namespace wowpp
 			m_castEnd = getCurrentTime() + m_castTime;
 			m_countdown.setEnd(m_castEnd);
 			m_damaged = m_cast.getExecuter().takenDamage.connect([this](GameUnit *attacker, UInt32 damage) {
-				if (!m_hasFinished && m_countdown.running && m_delayCounter < 2)
+				if (!m_hasFinished && m_countdown.running)
 				{
-					Int32 resistChance = 100;
-					if (m_cast.getExecuter().isGameCharacter())
+					if (m_spell.interruptflags() & game::spell_interrupt_flags::PushBack &&
+						m_delayCounter < 2)
 					{
-						reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
-							spell_mod_op::PreventSpellDelay, m_spell.id(), resistChance);
-					}
-					resistChance += m_cast.getExecuter().getAuras().getTotalBasePoints(game::aura_type::ResistPushback) - 100;
-					if (resistChance >= 100)
-						return;
+						Int32 resistChance = 100;
+						if (m_cast.getExecuter().isGameCharacter())
+						{
+							reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
+								spell_mod_op::PreventSpellDelay, m_spell.id(), resistChance);
+						}
+						resistChance += m_cast.getExecuter().getAuras().getTotalBasePoints(game::aura_type::ResistPushback) - 100;
+						if (resistChance >= 100)
+							return;
 
-					std::uniform_int_distribution<Int32> resistRoll(0, 99);
-					if (resistChance > resistRoll(randomGenerator))
+						std::uniform_int_distribution<Int32> resistRoll(0, 99);
+						if (resistChance > resistRoll(randomGenerator))
+						{
+							return;
+						}
+
+						m_castEnd += 500;
+						m_countdown.setEnd(m_castEnd);
+
+						// Notify about spell delay
+						sendPacketFromCaster(m_cast.getExecuter(),
+							std::bind(game::server_write::spellDelayed, std::placeholders::_1, m_cast.getExecuter().getGuid(), 500));
+						m_delayCounter++;
+					}
+					if (m_spell.interruptflags() & game::spell_interrupt_flags::Damage)
 					{
-						return;
+						stopCast(game::spell_interrupt_flags::Damage);
 					}
-
-					m_castEnd += 500;
-					m_countdown.setEnd(m_castEnd);
-
-					// Notify about spell delay
-					sendPacketFromCaster(m_cast.getExecuter(), 
-						std::bind(game::server_write::spellDelayed, std::placeholders::_1, m_cast.getExecuter().getGuid(), 500));
-					m_delayCounter++;
 				}
 			});
 
@@ -206,19 +214,26 @@ namespace wowpp
 		return std::make_pair(game::spell_cast_result::CastOkay, &casting);
 	}
 
-	void SingleCastState::stopCast(UInt64 interruptCooldown/* = 0*/)
+	void SingleCastState::stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown/* = 0*/)
 	{
-		m_countdown.cancel();
+		// Nothing to cancel
+		if (m_hasFinished)
+			return;
 
-		if (!m_hasFinished)
+		// Flags do not match
+		if (reason != game::spell_interrupt_flags::None &&
+			(m_spell.interruptflags() & reason) == 0)
 		{
-			sendEndCast(false);
-			m_hasFinished = true;
+			return;
+		}
 
-			if (interruptCooldown)
-			{
-				applyCooldown(interruptCooldown, interruptCooldown);
-			}
+		m_countdown.cancel();
+		sendEndCast(false);
+		m_hasFinished = true;
+
+		if (interruptCooldown)
+		{
+			applyCooldown(interruptCooldown, interruptCooldown);
 		}
 
 		const std::weak_ptr<SingleCastState> weakThis = shared_from_this();
@@ -240,7 +255,7 @@ namespace wowpp
 			math::Vector3 location(m_cast.getExecuter().getLocation());
 			if (location.x != m_x || location.y != m_y || location.z != m_z)
 			{
-				stopCast();
+				stopCast(game::spell_interrupt_flags::Movement);
 			}
 		}
 	}
@@ -534,7 +549,7 @@ namespace wowpp
 
 	void SingleCastState::onTargetRemovedOrDead()
 	{
-		stopCast();
+		stopCast(game::spell_interrupt_flags::None);
 
 		m_onTargetMoved.disconnect();
 	}
@@ -542,7 +557,7 @@ namespace wowpp
 	void SingleCastState::onUserDamaged()
 	{
 		// This is only triggered if the spell has the attribute
-		stopCast();
+		stopCast(game::spell_interrupt_flags::Damage);
 	}
 
 	void SingleCastState::executeMeleeAttack()
@@ -896,7 +911,7 @@ namespace wowpp
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
-			targetUnit->cancelCast(m_spell.duration());
+			targetUnit->cancelCast(game::spell_interrupt_flags::Interrupt, m_spell.duration());
 		}
 	}
 
@@ -1649,14 +1664,14 @@ namespace wowpp
 	bool SingleCastState::consumePower()
 	{
 		const Int32 totalCost = m_cast.calculatePowerCost(m_spell);
-		ILOG("TOTAL COST: " << totalCost);
 		if (totalCost > 0)
 		{
 			if (m_spell.powertype() == game::power_type::Health)
 			{
 				// Special case
 				UInt32 currentHealth = m_cast.getExecuter().getUInt32Value(unit_fields::Health);
-				if (currentHealth < totalCost)
+				if (totalCost > 0 &&
+					currentHealth < UInt32(totalCost))
 				{
 					sendEndCast(false);
 					m_hasFinished = true;
@@ -1669,7 +1684,8 @@ namespace wowpp
 			else
 			{
 				UInt32 currentPower = m_cast.getExecuter().getUInt32Value(unit_fields::Power1 + m_spell.powertype());
-				if (currentPower < totalCost)
+				if (totalCost > 0 &&
+					currentPower < UInt32(totalCost))
 				{
 					sendEndCast(false);
 					m_hasFinished = true;

@@ -22,7 +22,6 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include "world_navigation.h"
 #include "tile_index.h"
 #include "common/grid.h"
 #include "math/ray.h"

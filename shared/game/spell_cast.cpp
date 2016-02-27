@@ -111,7 +111,8 @@ namespace wowpp
 			if (spell.powertype() == game::power_type::Health)
 			{
 				UInt32 currentPower = m_executer.getUInt32Value(unit_fields::Health);
-				if (currentPower < powerCost)
+				if (powerCost > 0 &&
+					currentPower < UInt32(powerCost))
 				{
 					return std::make_pair(game::spell_cast_result::FailedNoPower, nullptr);
 				}
@@ -119,7 +120,8 @@ namespace wowpp
 			else
 			{
 				UInt32 currentPower = m_executer.getUInt32Value(unit_fields::Power1 + spell.powertype());
-				if (currentPower < powerCost)
+				if (powerCost > 0 &&
+					currentPower < UInt32(powerCost))
 				{
 					return std::make_pair(game::spell_cast_result::FailedNoPower, nullptr);
 				}
@@ -209,10 +211,10 @@ namespace wowpp
 		}
 	}
 
-	void SpellCast::stopCast(UInt64 interruptCooldown/* = 0*/)
+	void SpellCast::stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown/* = 0*/)
 	{
 		assert(m_castState);
-		m_castState->stopCast(interruptCooldown);
+		m_castState->stopCast(reason, interruptCooldown);
 	}
 
 	void SpellCast::onUserStartsMoving()

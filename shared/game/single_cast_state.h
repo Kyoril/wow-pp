@@ -50,7 +50,7 @@ namespace wowpp
 		    GameTime castTime,
 		    bool doReplacePreviousCast,
 		    UInt64 itemGuid) override;
-		void stopCast(UInt64 interruptCooldown = 0) override;
+		void stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown = 0) override;
 		void onUserStartsMoving() override;
 		SpellCasting &getCasting() {
 			return m_casting;
@@ -109,7 +109,7 @@ namespace wowpp
 		boost::signals2::signal<void()> completedEffects;
 		std::vector<boost::signals2::scoped_connection> m_completedEffectsExecution;
 		boost::signals2::scoped_connection m_onTargetDied, m_onTargetRemoved;
-		boost::signals2::scoped_connection m_onUserDamaged, m_onUserMoved;
+		boost::signals2::scoped_connection m_onUserMoved;
 		boost::signals2::scoped_connection m_onTargetMoved, m_damaged;
 		float m_x, m_y, m_z;
 		GameTime m_castTime;

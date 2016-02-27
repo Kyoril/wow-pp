@@ -394,7 +394,7 @@ namespace wowpp
 		    getCurrentTime() + despawnDelay);
 	}
 
-	void GameUnit::cancelCast(UInt64 interruptCooldown/* = 0*/)
+	void GameUnit::cancelCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown/* = 0*/)
 	{
 		// Stop attack swing callback in case there is one
 		if (m_swingCallback) {
@@ -402,7 +402,7 @@ namespace wowpp
 		}
 
 		// Interrupt cooldown
-		m_spellCast->stopCast(interruptCooldown);
+		m_spellCast->stopCast(reason, interruptCooldown);
 	}
 
 	void GameUnit::startAttack()
@@ -1729,7 +1729,7 @@ namespace wowpp
 
 	void GameUnit::onKilled(GameUnit *killer)
 	{
-		cancelCast();
+		cancelCast(game::spell_interrupt_flags::None);
 
 		// Stop auto attack
 		stopAttack();
@@ -2002,7 +2002,7 @@ namespace wowpp
 		}
 		else if (!wasStunned && m_isStunned)
 		{
-			cancelCast();
+			cancelCast(game::spell_interrupt_flags::None);
 			stopAttack();
 			m_mover->stopMovement();
 			stunStateChanged(true);

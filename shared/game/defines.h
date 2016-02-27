@@ -788,11 +788,17 @@ namespace wowpp
 		{
 			enum Type
 			{
-				None = 0x00,
+				/// Used when cast is cancelled for a different reason (target dies, user cancelled or something else)
+				None	= 0x00,
+				/// Interrupted on movement
 				Movement = 0x01,
+				/// Affected by spell delay?
 				PushBack = 0x02,
+				/// Kick / Counter Spell
 				Interrupt = 0x04,
+				/// Interrupted on auto attack?
 				AutoAttack = 0x08,
+				/// Interrupted on direct damage
 				Damage = 0x10
 			};
 		}

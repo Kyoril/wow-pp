@@ -22,7 +22,6 @@
 #include "pch.h"
 #include "map.h"
 #include "shared/proto_data/maps.pb.h"
-#include "detour_world_navigation.h"
 #include "log/default_log_levels.h"
 #include "common/make_unique.h"
 #include "math/vector3.h"
