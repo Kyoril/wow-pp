@@ -192,8 +192,8 @@ namespace wowpp
 					auto bag = getBagAtSlot(slot);
 					if (bag)
 					{
-						bag->forceFieldUpdate(bag_fields::Slot_1 + (slot * 2));
-						bag->forceFieldUpdate(bag_fields::Slot_1 + (slot * 2) + 1);
+						bag->forceFieldUpdate(bag_fields::Slot_1 + ((slot & 0xFF) * 2));
+						bag->forceFieldUpdate(bag_fields::Slot_1 + ((slot & 0xFF) * 2) + 1);
 						itemInstanceUpdated(bag, slot);
 					}
 				}
