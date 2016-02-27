@@ -41,15 +41,21 @@ namespace wowpp
 		{
 			// Same spell, same caster and same effect index - don't stack!
 			auto a = *it;
-			if (a->getCaster() == aura->getCaster() &&
-			        a->getSpell().id() == aura->getSpell().id())
+			const bool isSameCaster = a->getCaster() == aura->getCaster();
+			const bool isSameSpell = 
+				(a->getSpell().id() == aura->getSpell().id() ||
+				(a->getSpell().family() == aura->getSpell().family() && a->getSpell().familyflags() == aura->getSpell().familyflags()));
+			const bool stackForDiffCasters =
+				aura->getSpell().attributes(3) & game::spell_attributes_ex_c::StackForDiffCasters;
+			if (isSameSpell &&
+				(isSameCaster || !stackForDiffCasters))
 			{
 				newSlot = a->getSlot();
 				isReplacement = true;
 
-				// Replace old aura instance
+				// Replace old aura instance if not higher base points
 				if (a->getEffect().aura() == aura->getEffect().aura() &&
-				        a->getEffect().index() == aura->getEffect().index())
+					a->getEffect().index() == aura->getEffect().index())
 				{
 					// Remove aura - new aura will be added
 					it = m_auras.erase(it);
