@@ -243,17 +243,24 @@ namespace wowpp
 				float attackTableRoll = hitTableDistribution(randomGenerator);
 
 				float critChance = targetUnit->getCritChance(*attacker, school);
-				if (attacker && attacker->isGameCharacter())
+				if (spell.attributes(2) & game::spell_attributes_ex_b::CantCrit)
 				{
-					reinterpret_cast<GameCharacter*>(attacker)->applySpellMod(
-						spell_mod_op::CritChance, spell.id(), critChance);
+					critChance = 0.0f;
+				}
+				else
+				{
+					if (attacker && attacker->isGameCharacter())
+					{
+						reinterpret_cast<GameCharacter*>(attacker)->applySpellMod(
+							spell_mod_op::CritChance, spell.id(), critChance);
+					}
 				}
 
 				if (targetUnit->isImmune(school))
 				{
 					victimState = game::victim_state::IsImmune;
 				}
-				else if ((attackTableRoll -= critChance) < 0.0f)
+				else if (critChance > 0.0f && (attackTableRoll -= critChance) < 0.0f)
 				{
 					hitInfo = game::hit_info::CriticalHit;
 				}
