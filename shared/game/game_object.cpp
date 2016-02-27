@@ -261,9 +261,11 @@ namespace wowpp
 
 		if (fire)
 		{
-			moved(*this, m_lastFiredPosition, oldO);
-			m_lastFiredPosition = m_position;
-		}
+            auto lastFiredPosition = m_lastFiredPosition;
+            m_lastFiredPosition = m_position;
+    
+			moved(*this, lastFiredPosition, oldO);
+        }
 	}
 
 	void GameObject::setOrientation(float o)
