@@ -476,6 +476,28 @@ namespace wowpp
 			return game::inventory_change_failure::YouAreDead;
 		}
 
+		// Can't change equipment while in combat!
+		if (m_owner.isInCombat() && isEquipmentSlot(slotA))
+		{
+			if ((slotA & 0xFF) != player_equipment_slots::Mainhand &&
+				(slotA & 0xFF) != player_equipment_slots::Offhand &&
+				(slotA & 0xFF) != player_equipment_slots::Ranged)
+			{
+				m_owner.inventoryChangeFailure(game::inventory_change_failure::NotInCombat, srcItem.get(), dstItem.get());
+				return game::inventory_change_failure::NotInCombat;
+			}
+		}
+		if (m_owner.isInCombat() && isEquipmentSlot(slotB))
+		{
+			if ((slotB & 0xFF) != player_equipment_slots::Mainhand &&
+				(slotB & 0xFF) != player_equipment_slots::Offhand &&
+				(slotB & 0xFF) != player_equipment_slots::Ranged)
+			{
+				m_owner.inventoryChangeFailure(game::inventory_change_failure::NotInCombat, srcItem.get(), dstItem.get());
+				return game::inventory_change_failure::NotInCombat;
+			}
+		}
+
 		// Verify destination slot for source item
 		auto result = isValidSlot(slotB, srcItem->getEntry());
 		if (result != game::inventory_change_failure::Okay)
@@ -675,6 +697,9 @@ namespace wowpp
 			m_owner.setUInt32Value(character_fields::VisibleItem1_0 + ((slotB & 0xFF) * 16), srcItem->getEntry().id());
 			m_owner.setUInt64Value(character_fields::VisibleItem1_CREATOR + ((slotB & 0xFF) * 16), srcItem->getUInt64Value(item_fields::Creator));
 			m_owner.applyItemStats(*srcItem, true);
+			if (dstItem) {
+				m_owner.applyItemStats(*dstItem, false);
+			}
 
 			// Bind this item
 			if (srcItem->getEntry().bonding() == game::item_binding::BindWhenEquipped)
@@ -1172,10 +1197,6 @@ namespace wowpp
 
 				// Add this item to the inventory slot and reduce our free slot cache
 				m_itemsBySlot[data.slot] = item;
-				if (isEquipmentSlot(data.slot))
-				{
-					m_owner.applyItemStats(*item, true);
-				}
 
 				// Inventory slot used
 				if (isInventorySlot(data.slot) || isBagSlot(data.slot)) {
