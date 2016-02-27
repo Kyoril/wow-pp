@@ -817,7 +817,7 @@ namespace wowpp
 		auto result = inv.createItems(*item, lootItem->count, &addedBySlot);
 		if (result != game::inventory_change_failure::Okay)
 		{
-			// Error
+			onInventoryChangeFailure(result, nullptr, nullptr);
 			return;
 		}
 
