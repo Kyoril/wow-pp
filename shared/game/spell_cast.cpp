@@ -105,15 +105,9 @@ namespace wowpp
 		}
 
 		// Check power
-		if (spell.cost() > 0)
+		Int32 powerCost = calculatePowerCost(spell);
+		if (powerCost > 0)
 		{
-			UInt32 cost = spell.cost();
-			if (m_executer.isGameCharacter())
-			{
-				reinterpret_cast<GameCharacter&>(m_executer).applySpellMod(
-					spell_mod_op::Cost, spell.id(), cost);
-			}
-
 			if (spell.powertype() == game::power_type::Health)
 			{
 				// Special case
@@ -122,7 +116,7 @@ namespace wowpp
 			else
 			{
 				UInt32 currentPower = m_executer.getUInt32Value(unit_fields::Power1 + spell.powertype());
-				if (currentPower < cost)
+				if (currentPower < powerCost)
 				{
 					return std::make_pair(game::spell_cast_result::FailedNoPower, nullptr);
 				}
@@ -231,6 +225,40 @@ namespace wowpp
 
 		m_castState = std::move(castState);
 		m_castState->activate();
+	}
+
+	Int32 SpellCast::calculatePowerCost(const proto::SpellEntry & spell) const
+	{
+		// Adjust power cost per level if needed
+		Int32 cost = spell.cost();
+		if (spell.costpct() > 0)
+		{
+			auto powerType = static_cast<game::PowerType>(spell.powertype());
+			switch (powerType)
+			{
+				case game::power_type::Health:
+					cost += m_executer.getUInt32Value(unit_fields::BaseHealth) * spell.costpct() / 100;
+					break;
+				case game::power_type::Mana:
+					cost += m_executer.getUInt32Value(unit_fields::BaseMana) * spell.costpct() / 100;
+					break;
+				default:
+					break;
+			}
+		}
+
+		if (spell.attributes(0) & game::spell_attributes::LevelDamageCalc)
+		{
+			cost = Int32(cost / (1.117f * spell.spelllevel() / m_executer.getLevel() - 0.1327f));
+		}
+
+		if (m_executer.isGameCharacter())
+		{
+			reinterpret_cast<GameCharacter&>(m_executer).applySpellMod(
+				spell_mod_op::Cost, spell.id(), cost);
+		}
+
+		return cost;
 	}
 
 	SpellCasting &castSpell(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, UInt64 itemGuid)

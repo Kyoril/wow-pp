@@ -820,8 +820,10 @@ namespace wowpp
 				}
 				else
 				{
-					// TODO: Unit mana reg
-					modPower = 2.0f * getLevel();
+					if ((m_lastManaUse + constants::OneSecond * 5) < getCurrentTime())
+					{
+						modPower = 2.0f * getLevel();
+					}
 				}
 				break;
 			}

@@ -71,6 +71,8 @@ namespace wowpp
 		void onUserStartsMoving();
 		void setState(std::shared_ptr<CastState> castState);
 
+		Int32 calculatePowerCost(const proto::SpellEntry &spell) const;
+
 	private:
 
 		TimerQueue &m_timers;

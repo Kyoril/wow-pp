@@ -1614,33 +1614,7 @@ namespace wowpp
 
 	bool SingleCastState::consumePower()
 	{
-		UInt32 totalCost = 0;
-		if (m_spell.cost() > 0)
-		{
-			totalCost = m_spell.cost();
-		}
-		else if (m_spell.costpct() > 0)
-		{
-			auto powerType = static_cast<game::PowerType>(m_spell.powertype());
-			switch (powerType)
-			{
-			case game::power_type::Health:
-				totalCost = m_cast.getExecuter().getUInt32Value(unit_fields::BaseHealth) * m_spell.costpct() / 100;
-				break;
-			case game::power_type::Mana:
-				totalCost = m_cast.getExecuter().getUInt32Value(unit_fields::BaseMana) * m_spell.costpct() / 100;
-				break;
-			default:
-				break;
-			}
-		}
-
-		if (m_cast.getExecuter().isGameCharacter())
-		{
-			reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
-				spell_mod_op::Cost, m_spell.id(), totalCost);
-		}
-
+		const Int32 totalCost = m_cast.calculatePowerCost(m_spell);
 		if (totalCost > 0)
 		{
 			if (m_spell.powertype() == game::power_type::Health)
@@ -1649,8 +1623,6 @@ namespace wowpp
 				UInt32 currentHealth = m_cast.getExecuter().getUInt32Value(unit_fields::Health);
 				if (currentHealth < totalCost)
 				{
-					WLOG("Not enough health to cast spell!");
-
 					sendEndCast(false);
 					m_hasFinished = true;
 					return false;
@@ -1664,8 +1636,6 @@ namespace wowpp
 				UInt32 currentPower = m_cast.getExecuter().getUInt32Value(unit_fields::Power1 + m_spell.powertype());
 				if (currentPower < totalCost)
 				{
-					WLOG("Not enough power to cast spell!");
-
 					sendEndCast(false);
 					m_hasFinished = true;
 					return false;
