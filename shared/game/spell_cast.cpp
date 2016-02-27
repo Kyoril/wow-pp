@@ -229,6 +229,19 @@ namespace wowpp
 
 	Int32 SpellCast::calculatePowerCost(const proto::SpellEntry & spell) const
 	{
+		// DrainAllPower flag handler (used for Lay on Hands)
+		if (spell.attributes(1) & game::spell_attributes_ex_a::DrainAllPower)
+		{
+			auto powerType = static_cast<game::PowerType>(spell.powertype());
+			switch (powerType)
+			{
+				case game::power_type::Health:
+					return m_executer.getUInt32Value(unit_fields::Health);
+				default:
+					return m_executer.getUInt32Value(unit_fields::Power1 + spell.powertype());
+			}
+		}
+
 		// Adjust power cost per level if needed
 		Int32 cost = spell.cost();
 		if (spell.costpct() > 0)
@@ -237,12 +250,10 @@ namespace wowpp
 			switch (powerType)
 			{
 				case game::power_type::Health:
-					cost += m_executer.getUInt32Value(unit_fields::BaseHealth) * spell.costpct() / 100;
-					break;
-				case game::power_type::Mana:
-					cost += m_executer.getUInt32Value(unit_fields::BaseMana) * spell.costpct() / 100;
+					cost += m_executer.getUInt32Value(unit_fields::MaxHealth) * spell.costpct() / 100;
 					break;
 				default:
+					cost += m_executer.getUInt32Value(unit_fields::MaxPower1 + spell.powertype()) * spell.costpct() / 100;
 					break;
 			}
 		}
