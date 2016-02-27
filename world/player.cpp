@@ -1934,7 +1934,7 @@ namespace wowpp
 			!vendor->isCreature())
 		{
 			sendProxyPacket(
-				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindVendor, 0, itemGuid));
+				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindVendor, 0, itemGuid, 0));
 			return;
 		}
 
@@ -1944,7 +1944,7 @@ namespace wowpp
 		if (reinterpret_cast<GameCreature*>(vendor)->isHostileTo(*m_character))
 		{
 			sendProxyPacket(
-				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindVendor, 0, itemGuid));
+				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindVendor, 0, itemGuid, 0));
 			return;
 		}
 
@@ -1952,7 +1952,7 @@ namespace wowpp
 		if (!m_character->getInventory().findItemByGUID(itemGuid, itemSlot))
 		{
 			sendProxyPacket(
-				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindItem, vendorGuid, itemGuid));
+				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindItem, vendorGuid, itemGuid, 0));
 			return;
 		}
 
@@ -1961,7 +1961,7 @@ namespace wowpp
 		if (!item)
 		{
 			sendProxyPacket(
-				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindItem, vendorGuid, itemGuid));
+				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindItem, vendorGuid, itemGuid, 0));
 			return;
 		}
 
@@ -1970,7 +1970,7 @@ namespace wowpp
 		if (money == 0)
 		{
 			sendProxyPacket(
-				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantSellItem, vendorGuid, itemGuid));
+				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantSellItem, vendorGuid, itemGuid, 0));
 			return;
 		}
 
