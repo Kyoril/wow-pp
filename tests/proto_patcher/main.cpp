@@ -241,6 +241,12 @@ namespace wowpp
 				switch (it->id())
 				{
 					//////////////////////////////////////////////////////////////////////////
+					// Blood Rage: Costs Health, not Mana
+					case 2687:
+						it->set_powertype(game::power_type::Health);
+						break;
+
+					//////////////////////////////////////////////////////////////////////////
 					// Power Word: Shield
 					case 17:	// Rank 1
 					case 592:	// Rank 2
@@ -1170,12 +1176,13 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 
+	/*
 	if (!importSpellAffects(protoProject, connection))
 	{
 		ELOG("Could not import spell affect masks");
 		return 0;
 	}
-	/*
+
 	if (!importSpellMechanics(protoProject, connection))
 	{
 		ELOG("Failed to import spell mechanics");
@@ -1187,25 +1194,25 @@ int main(int argc, char* argv[])
 		ELOG("Failed to import spell categories");
 		return 1;
 	}
-	*/
+	
 	if (!importQuestRelations(protoProject, connection))
 	{
 		ELOG("Failed to import quest relations");
 		return 1;
 	}
-
+	*/
 	if (!addSpellLinks(protoProject))
 	{
 		ELOG("Failed to add spell links");
 		return 1;
 	}
-
+	/*
 	if (!importDispelData(protoProject, connection))
 	{
 		ELOG("Failed to import spell dispel data");
 		return 1;
 	}
-
+	*/
 	if (!importTrainerLinks(protoProject, connection))
 	{
 		ELOG("Failed to import trainer links");

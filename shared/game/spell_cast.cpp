@@ -110,8 +110,11 @@ namespace wowpp
 		{
 			if (spell.powertype() == game::power_type::Health)
 			{
-				// Special case
-				DLOG("TODO: Spell cost power type Health");
+				UInt32 currentPower = m_executer.getUInt32Value(unit_fields::Health);
+				if (currentPower < powerCost)
+				{
+					return std::make_pair(game::spell_cast_result::FailedNoPower, nullptr);
+				}
 			}
 			else
 			{
@@ -250,7 +253,10 @@ namespace wowpp
 			switch (powerType)
 			{
 				case game::power_type::Health:
-					cost += m_executer.getUInt32Value(unit_fields::MaxHealth) * spell.costpct() / 100;
+					cost += m_executer.getUInt32Value(unit_fields::BaseHealth) * spell.costpct() / 100;
+					break;
+				case game::power_type::Mana:
+					cost += m_executer.getUInt32Value(unit_fields::BaseMana) * spell.costpct() / 100;
 					break;
 				default:
 					cost += m_executer.getUInt32Value(unit_fields::MaxPower1 + spell.powertype()) * spell.costpct() / 100;

@@ -1649,6 +1649,7 @@ namespace wowpp
 	bool SingleCastState::consumePower()
 	{
 		const Int32 totalCost = m_cast.calculatePowerCost(m_spell);
+		ILOG("TOTAL COST: " << totalCost);
 		if (totalCost > 0)
 		{
 			if (m_spell.powertype() == game::power_type::Health)
