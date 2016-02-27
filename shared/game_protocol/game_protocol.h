@@ -217,6 +217,25 @@ namespace wowpp
 
 		typedef session_status::Type SessionStatus;
 
+		namespace sell_error
+		{
+			enum Type
+			{
+				/// Item not found.
+				CantFindItem = 1,
+				/// Merchant doesn't like that item.
+				CantSellItem = 2,
+				/// Merchant doesn't like you.
+				CantFindVendor = 3,
+				/// You don't own that item.
+				YouDontOwnThatItem = 4,
+				/// Can only do with empty bags.
+				OnlyEmptyBag = 5
+			};
+		}
+
+		typedef sell_error::Type SellError;
+
 		namespace group_member_status
 		{
 			enum Type
@@ -333,6 +352,7 @@ namespace wowpp
 				QuestupdateAddKill			= 0x199,
 				QuestupdateAddItem			= 0x19A,		// Unused?
 				ListInventory				= 0x19F,
+				SellItem					= 0x1A1,
 				TrainerList					= 0x1B1,
 				TrainerBuySucceeded			= 0x1B3,
 				TrainerBuyFailed			= 0x1B4,
@@ -2024,6 +2044,14 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt64 guid,
 				UInt32 delayTimeMS
+				);
+
+			void sellItem(
+				game::OutgoingPacket &out_packet,
+				SellError errorCode,
+				UInt64 vendorGuid,
+				UInt64 itemGuid,
+				UInt32 param
 				);
 		};
 	}

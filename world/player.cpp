@@ -1928,10 +1928,31 @@ namespace wowpp
 			return;
 		}
 
+		// Find vendor
+		GameObject *vendor = m_instance.findObjectByGUID(vendorGuid);
+		if (!vendor ||
+			!vendor->isCreature())
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindVendor, 0, itemGuid));
+			return;
+		}
+
+		// TODO: Check vendor distance
+
+		// Is currently hostile?
+		if (reinterpret_cast<GameCreature*>(vendor)->isHostileTo(*m_character))
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindVendor, 0, itemGuid));
+			return;
+		}
+
 		UInt16 itemSlot = 0;
 		if (!m_character->getInventory().findItemByGUID(itemGuid, itemSlot))
 		{
-			// Item not found
+			sendProxyPacket(
+				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindItem, vendorGuid, itemGuid));
 			return;
 		}
 
@@ -1939,6 +1960,8 @@ namespace wowpp
 		auto item = m_character->getInventory().getItemAtSlot(itemSlot);
 		if (!item)
 		{
+			sendProxyPacket(
+				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindItem, vendorGuid, itemGuid));
 			return;
 		}
 
@@ -1946,7 +1969,8 @@ namespace wowpp
 		UInt32 money = stack * item->getEntry().sellprice();
 		if (money == 0)
 		{
-			WLOG("TODO: Can't sell that item");
+			sendProxyPacket(
+				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantSellItem, vendorGuid, itemGuid));
 			return;
 		}
 

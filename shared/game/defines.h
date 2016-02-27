@@ -40,20 +40,6 @@ namespace wowpp
 			           point[1]);
 		}
 
-		namespace sell_error
-		{
-			enum Type
-			{
-				CantFindItem		= 1,
-				CantSellItem		= 2,
-				CantFindVendor		= 3,
-				YouDontOwnThatItem	= 4,
-				OnlyEmptyBag		= 5
-			};
-		}
-
-		typedef sell_error::Type SellError;
-
 		namespace quest_status
 		{
 			enum Type

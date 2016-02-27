@@ -3272,6 +3272,22 @@ namespace wowpp
 					;
 				out_packet.finish();
 			}
+
+			void sellItem(game::OutgoingPacket & out_packet, SellError errorCode, UInt64 vendorGuid, UInt64 itemGuid, UInt32 param)
+			{
+				out_packet.start(game::server_packet::SpellDelayed);
+				out_packet
+					<< io::write<NetUInt64>(vendorGuid)
+					<< io::write<NetUInt64>(itemGuid);
+				if (param > 0)
+				{
+					out_packet << io::write<NetUInt32>(param);
+				}
+				out_packet
+					<< io::write<NetUInt8>(errorCode)
+					;
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
