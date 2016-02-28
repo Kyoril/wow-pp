@@ -268,6 +268,10 @@ namespace wowpp
 				m_itemsBySlot[slot] = item;
 				m_freeSlots--;
 
+				// Watch for item despawn packet
+				m_itemDespawnSignals[item->getGuid()] 
+					= item->despawned.connect(std::bind(&Inventory::onItemDespawned, this, std::placeholders::_1));
+
 				// Create the item instance
 				itemInstanceCreated(item, slot);
 
@@ -418,6 +422,9 @@ namespace wowpp
 		auto item = it->second;
 		if (stackCount == stacks)
 		{
+			// No longer watch for item despawn
+			m_itemDespawnSignals.erase(item->getGuid());
+
 			// Remove item from slot
 			m_itemsBySlot.erase(it);
 			m_freeSlots++;
@@ -542,6 +549,9 @@ namespace wowpp
 
 							// Remove source item
 							m_owner.setUInt64Value(character_fields::InvSlotHead + (slotA & 0xFF) * 2, 0);
+
+							// No longer watch for item despawn
+							m_itemDespawnSignals.erase(srcItem->getGuid());
 							itemInstanceDestroyed(srcItem, slotA);
 							m_itemsBySlot.erase(slotA);
 							m_freeSlots++;
@@ -1195,11 +1205,15 @@ namespace wowpp
 				auto added = item->addStacks(data.stackCount - 1);
 				m_itemCounter[data.entry] += data.stackCount;
 
-				// Quest check
-				m_owner.onQuestItemAddedCredit(item->getEntry(), data.stackCount);
-
 				// Add this item to the inventory slot and reduce our free slot cache
 				m_itemsBySlot[data.slot] = item;
+
+				// Watch for item despawn packet
+				m_itemDespawnSignals[item->getGuid()]
+					= item->despawned.connect(std::bind(&Inventory::onItemDespawned, this, std::placeholders::_1));
+
+				// Quest check
+				m_owner.onQuestItemAddedCredit(item->getEntry(), data.stackCount);
 
 				// Inventory slot used
 				if (isInventorySlot(data.slot) || isBagSlot(data.slot)) {
@@ -1320,6 +1334,26 @@ namespace wowpp
 				break;
 			}
 		}
+	}
+
+	void Inventory::onItemDespawned(GameObject & object)
+	{
+		if (object.getTypeId() != object_type::Item &&
+			object.getTypeId() != object_type::Container)
+		{
+			return;
+		}
+
+		// Find item slot by guid
+		UInt16 slot = 0;
+		if (!findItemByGUID(object.getGuid(), slot))
+		{
+			WLOG("Could not find item by slot!");
+			return;
+		}
+
+		// Destroy this item
+		removeItem(slot);
 	}
 
 	io::Writer &operator << (io::Writer &w, Inventory const &object)

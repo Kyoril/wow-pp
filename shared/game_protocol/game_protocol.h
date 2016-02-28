@@ -82,6 +82,7 @@ namespace wowpp
 				GroupDisband			= 0x07B,
 				MessageChat				= 0x095,
 				UseItem					= 0x0AB,
+				OpenItem				= 0x0AC,
 				GameObjectUse			= 0x0B1,
 				AreaTrigger				= 0x0B4,
 				MoveStartForward		= 0x0B5,
@@ -1189,6 +1190,12 @@ namespace wowpp
 			bool gameobjectUse(
 				io::Reader &packet,
 				UInt64 &out_guid
+				);
+
+			bool openItem(
+				io::Reader &packet,
+				UInt8 &out_bag,
+				UInt8 &out_slot
 				);
 		};
 

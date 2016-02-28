@@ -22,6 +22,7 @@
 #pragma once
 
 #include "game_object.h"
+#include "loot_instance.h"
 
 namespace wowpp
 {
@@ -86,9 +87,20 @@ namespace wowpp
 		UInt16 addStacks(UInt16 amount);
 		void notifyEquipped();
 
+		///
+		LootInstance *getLoot() {
+			return m_loot.get();
+		}
+
+	private:
+
+		void generateLoot();
+
 	private:
 
 		const proto::ItemEntry &m_entry;
+		std::unique_ptr<LootInstance> m_loot;
+		boost::signals2::scoped_connection m_onLootCleared;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameItem const &object);

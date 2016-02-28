@@ -4235,6 +4235,12 @@ namespace wowpp
 				return packet
 					>> io::read<NetUInt64>(out_guid);
 			}
+			bool openItem(io::Reader & packet, UInt8 & out_bag, UInt8 & out_slot)
+			{
+				return packet
+					>> io::read<NetUInt8>(out_bag)
+					>> io::read<NetUInt8>(out_slot);
+			}
 		}
 	}
 }

@@ -33,6 +33,7 @@ namespace io
 namespace wowpp
 {
 	// Class forwarding to reduce number of included files
+	class GameObject;
 	class GameCharacter;
 	class GameItem;
 	class GameBag;
@@ -195,6 +196,9 @@ namespace wowpp
 
 		/// Executes a callback function for every bag the player has (including the default bag).
 		void forEachBag(BagCallbackFunc callback);
+		/// Fired when an item despawns (this signal is used to force item removal, currently used
+		/// when lootable item no longer has loot).
+		void onItemDespawned(GameObject &object);
 
 	private:
 
@@ -210,6 +214,8 @@ namespace wowpp
 		/// on the world node. If m_realmData is not empty on initialization time, the item instances
 		/// will be created and this map will be cleared.
 		std::vector<ItemData> m_realmData;
+
+		std::map<UInt64, boost::signals2::scoped_connection> m_itemDespawnSignals;
 	};
 
 	/// Serializes this inventory.

@@ -1508,7 +1508,7 @@ namespace wowpp
 			if (targetUnit->isGameCharacter())
 			{
 				GameCharacter *character = dynamic_cast<GameCharacter *>(targetUnit);
-				// TODO complete quest with questId to character
+
 			}
 		}
 	}
@@ -1640,7 +1640,6 @@ namespace wowpp
 				auto strong = target.lock();
 				if (strong)
 				{
-					ILOG("ON_QUEST_SPELL_CAST_CREDIT");
 					reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).onQuestSpellCastCredit(m_spell.id(), *strong);
 				}
 			}

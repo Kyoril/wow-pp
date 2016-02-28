@@ -22,6 +22,7 @@
 #include "pch.h"
 #include "game_item.h"
 #include "proto_data/project.h"
+#include "common/make_unique.h"
 
 namespace wowpp
 {
@@ -62,6 +63,9 @@ namespace wowpp
 
 			setUInt32Value(item_fields::SpellCharges + i, m_entry.spells(i).charges());
 		}
+
+		// Generate loot
+		generateLoot();
 	}
 
 	UInt16 GameItem::addStacks(UInt16 amount)
@@ -84,6 +88,32 @@ namespace wowpp
 	{
 		// Emit signal
 		equipped();
+	}
+
+	void GameItem::generateLoot()
+	{
+		auto lootEntryId = m_entry.lootentry();
+		if (lootEntryId)
+		{
+			const auto *lootEntry = getProject().itemLoot.getById(lootEntryId);
+			if (lootEntry)
+			{
+				// TODO: make a way so we don't need loot recipients for game objects as this is completely crap
+				std::vector<GameCharacter *> lootRecipients;
+				m_loot = make_unique<LootInstance>(
+					getProject().items, getGuid(), lootEntry, m_entry.minlootgold(), m_entry.maxlootgold(), std::cref(lootRecipients));
+				if (m_loot)
+				{
+					m_onLootCleared = m_loot->cleared.connect([this]()
+					{
+						// We use the despawned signal here, even though the item is not physically
+						// spawned in the world. We do so, in order for loot handling to work just fine
+						// with this kind of loot source.
+						despawned(*this);
+					});
+				}
+			}
+		}
 	}
 
 	io::Writer &operator<<(io::Writer &w, GameItem const &object)

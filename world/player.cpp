@@ -2769,4 +2769,32 @@ namespace wowpp
 		sendGossipMenu(guid);
 	}
 
+	void Player::handleOpenItem(game::Protocol::IncomingPacket & packet)
+	{
+		UInt8 bag = 0, slot = 0;
+		if (!(game::client_read::openItem(packet, bag, slot)))
+		{
+			return;
+		}
+
+		auto &inv = m_character->getInventory();
+
+		// Look for the item at the given slot
+		auto item = inv.getItemAtSlot(Inventory::getAbsoluteSlot(bag, slot));
+		if (!item)
+		{
+			m_character->inventoryChangeFailure(game::inventory_change_failure::ItemNotFound, nullptr, nullptr);
+			return;
+		}
+
+		if (item->getLoot())
+		{
+			openLootDialog(*item->getLoot(), *item);
+		}
+		else
+		{
+			m_character->inventoryChangeFailure(game::inventory_change_failure::CantLootThatNow, item.get(), nullptr);
+		}
+	}
+
 }
