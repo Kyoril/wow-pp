@@ -47,6 +47,7 @@ namespace wowpp
 			, m_selectedSpell(nullptr)
 			, m_selectedQuest(nullptr)
 			, m_selectedObject(nullptr)
+			, m_selectedItem(nullptr)
 		{
 			m_ui->setupUi(this);
 
@@ -54,6 +55,8 @@ namespace wowpp
 			m_viewModel = new PropertyViewModel(m_properties, nullptr);
 			m_ui->unitPropertyWidget->setModel(m_viewModel);
 			m_ui->lootView->header()->setVisible(true);
+			m_ui->objectLootView->header()->setVisible(true);
+			m_ui->itemLootView->header()->setVisible(true);
 
 			// Automatically deleted since it's a QObject
 			m_unitFilter = new QSortFilterProxyModel;
@@ -723,6 +726,7 @@ namespace wowpp
 		void ObjectEditor::onItemSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
 		{
 			// Get the selected unit
+			m_selectedItem = nullptr;
 			if (selection.isEmpty())
 				return;
 
@@ -740,6 +744,60 @@ namespace wowpp
 			auto *item = m_application.getProject().items.getTemplates().mutable_entry(index);
 			if (!item)
 				return;
+
+			m_selectedItem = item;
+
+			m_ui->itemQuestWidget->clear();
+			/*for (const auto &questid : item->quests())
+			{
+				const auto *quest = m_application.getProject().quests.getById(questid);
+				if (quest)
+				{
+					m_ui->objectQuestWidget->addItem(
+						QString("%1 %2 [%3]").arg(questid, 5, 10, QLatin1Char('0')).arg(quest->name().c_str()).arg(static_cast<Int32>(quest->questlevel())));
+				}
+			}*/
+
+			m_ui->itemLootView->clear();
+			if (!item->lootentry())
+			{
+				m_ui->itemLootLine->setText("- NO LOOT -");
+				m_ui->itemLootToolButton->setDisabled(true);
+				m_ui->itemLootSimulatorButton->setDisabled(true);
+			}
+			else
+			{
+				QIcon groupIcon;
+				groupIcon.addFile(QStringLiteral(":/Items.png"), QSize(), QIcon::Normal, QIcon::Off);
+
+				size_t groupIndex = 0;
+				const auto *lootEntry = m_application.getProject().itemLoot.getById(item->lootentry());
+				if (lootEntry)
+				{
+					for (const auto &group : lootEntry->groups())
+					{
+						// Add group
+						QTreeWidgetItem *groupItem = new QTreeWidgetItem();
+						groupItem->setIcon(0, groupIcon);
+						m_ui->itemLootView->addTopLevelItem(groupItem);
+
+						float totalDropChance = 0.0f;
+						for (const auto &def : group.definitions())
+						{
+							totalDropChance += def.dropchance();
+							addLootItem(def, groupItem);
+						}
+
+						groupItem->setText(0, QString("Group %1").arg(groupIndex++));
+						groupItem->setText(1, QString("%1% Total").arg(totalDropChance));
+						groupItem->setText(2, QString("%1 Items").arg(group.definitions_size()));
+					}
+				}
+
+				m_ui->itemLootLine->setText(QString("Loot Entry %1").arg(item->lootentry()));
+				m_ui->itemLootToolButton->setDisabled(false);
+				m_ui->itemLootSimulatorButton->setDisabled(false);
+			}
 		}
 
 		void ObjectEditor::onQuestSelectionChanged(const QItemSelection & selection, const QItemSelection & old)
@@ -1107,6 +1165,22 @@ namespace wowpp
 				return;
 
 			const auto *loot = m_application.getProject().objectLoot.getById(m_selectedObject->objectlootentry());
+			if (!loot)
+				return;
+
+			LootDialog dialog(m_application.getProject(), *loot);
+			dialog.exec();
+		}
+
+		void ObjectEditor::on_itemLootSimulatorButton_clicked()
+		{
+			if (!m_selectedItem)
+				return;
+
+			if (!m_selectedItem->lootentry())
+				return;
+
+			const auto *loot = m_application.getProject().itemLoot.getById(m_selectedItem->lootentry());
 			if (!loot)
 				return;
 
