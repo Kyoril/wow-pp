@@ -1087,7 +1087,7 @@ namespace wowpp
 					continue;
 				}
 
-				if (spell->effects_size() <= effect)
+				if (UInt32(spell->effects_size()) <= effect)
 				{
 					WLOG("Spell " << spell->id() << " has only " << spell->effects_size() << " effects, but effect #" << effect << " was requested");
 					if (spell->effects_size() > 0)

@@ -309,10 +309,20 @@
                   </column>
                   <column>
                    <property name="text">
-                    <string>Cooldown</string>
+                    <string>Initial Cooldown</string>
                    </property>
                    <property name="toolTip">
                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;A value of &lt;span style=&quot; font-weight:600;&quot;&gt;-1 &lt;/span&gt;indicates that the default spell cooldown should be used. Value is in &lt;span style=&quot; font-weight:600;&quot;&gt;milliseconds&lt;/span&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Cooldown</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Range</string>
                    </property>
                   </column>
                  </widget>

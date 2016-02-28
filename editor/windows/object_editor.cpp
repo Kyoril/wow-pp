@@ -282,17 +282,33 @@ namespace wowpp
 			};
 
 			QTreeWidgetItem *item = new QTreeWidgetItem(m_ui->treeWidget);
-			item->setText(0, spellEntry->name().c_str());
+			item->setText(0, QString("%1 %2").arg(spellEntry->id()).arg(spellEntry->name().c_str()));
 			item->setText(1, QString("%1").arg(creatureSpell.priority()));
 			item->setText(2, QString("%1").arg(creatureSpell.repeated() ? "Yes" : "No"));
 			item->setText(3, spellCastTargetNames[creatureSpell.target()]);
-			if (creatureSpell.mincooldown() != creatureSpell.maxcooldown())
+			if (creatureSpell.mininitialcooldown() != creatureSpell.maxinitialcooldown())
 			{
-				item->setText(4, QString("%1 - %2").arg(creatureSpell.mincooldown()).arg(creatureSpell.maxcooldown()));
+				item->setText(4, QString("%1 - %2").arg(creatureSpell.mininitialcooldown()).arg(creatureSpell.maxinitialcooldown()));
 			}
 			else
 			{
-				item->setText(4, QString("%1").arg(creatureSpell.mincooldown()));
+				item->setText(4, QString("%1").arg(creatureSpell.mininitialcooldown()));
+			}
+			if (creatureSpell.mincooldown() != creatureSpell.maxcooldown())
+			{
+				item->setText(5, QString("%1 - %2").arg(creatureSpell.mincooldown()).arg(creatureSpell.maxcooldown()));
+			}
+			else
+			{
+				item->setText(5, QString("%1").arg(creatureSpell.mincooldown()));
+			}
+			if (creatureSpell.minrange() != creatureSpell.maxrange())
+			{
+				item->setText(6, QString("%1 - %2").arg(creatureSpell.minrange()).arg(creatureSpell.maxrange()));
+			}
+			else
+			{
+				item->setText(6, QString("%1").arg(creatureSpell.minrange()));
 			}
 		}
 

@@ -154,6 +154,11 @@ namespace wowpp
 				getControlled().cancelCast(game::spell_interrupt_flags::None);
 				getControlled().stopAttack();
 				getControlled().setVictim(nullptr);
+
+				m_customCooldown = 0;
+				m_lastSpellEntry = nullptr;
+				m_lastSpell = nullptr;
+				m_lastCastTime = 0;
 			}
 		});
 		m_onRootChanged = getControlled().rootStateChanged.connect([this](bool rooted)
@@ -448,6 +453,12 @@ namespace wowpp
 		// Did we try to cast a spell last time?
 		if (m_lastSpellEntry == nullptr)
 		{
+			float distance = 0.0f;
+			if (entry.creaturespells_size() > 0)
+			{
+				distance = controlled.getDistanceTo(*victim);
+			}
+
 			UInt32 highestPriority = 0;
 			const proto::UnitSpellEntry *validSpellEntry = nullptr;
 			for (const auto &spelldef : entry.creaturespells())
@@ -457,6 +468,19 @@ namespace wowpp
 					continue;
 				}
 
+				if (spelldef.minrange() > 0.0f &&
+					distance < spelldef.minrange())
+				{
+					// We are too close
+					continue;
+				}
+				else if (spelldef.maxrange() > 0.0f &&
+					distance > spelldef.maxrange())
+				{
+					// Too far away
+					continue;
+				}
+				
 				if (spelldef.priority() > highestPriority)
 				{
 					// Check for cooldown and only if valid, use it

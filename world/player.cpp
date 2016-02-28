@@ -123,13 +123,19 @@ namespace wowpp
 			if (flag || m_character->isRooted() || m_character->isStunned())
 			{
 				// Root the character
-				m_character->addFlag(unit_fields::UnitFlags, 0x00040000);
+				if (m_character->isStunned())
+				{
+					m_character->addFlag(unit_fields::UnitFlags, game::unit_flags::Stunned);
+				}
 				sendProxyPacket(
 					std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));
 			}
 			else
 			{
-				m_character->removeFlag(unit_fields::UnitFlags, 0x00040000);
+				if (!m_character->isStunned())
+				{
+					m_character->removeFlag(unit_fields::UnitFlags, game::unit_flags::Stunned);
+				}
 				sendProxyPacket(
 					std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));
 			}
