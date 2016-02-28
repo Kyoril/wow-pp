@@ -1720,6 +1720,122 @@ namespace wowpp
 			ImportDialog dialog(m_application, std::move(task));
 			dialog.exec();
 		}
+		void ObjectEditor::on_actionImport_Item_Loot_triggered()
+		{
+			// Counter variables used by the import method
+			UInt32 lastEntry = 0;
+			UInt32 lastGroup = 0;
+			UInt32 groupIndex = 0;
+
+			// Prepare the import task
+			ImportTask task;
+			task.countQuery = "SELECT COUNT(*) FROM `wowpp_item_loot_template` WHERE `active` != 0;";
+			task.selectQuery = "SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount`,`lootcondition`,`condition_value1`,`condition_value2` FROM `wowpp_item_loot_template` WHERE `active` != 0"
+				" ORDER BY `entry`, `groupid`;";
+			task.beforeImport = [this]() {
+				// Remove old object loot
+				for (int i = 0; i < m_application.getProject().items.getTemplates().entry_size(); ++i)
+				{
+					auto *object = m_application.getProject().items.getTemplates().mutable_entry(i);
+					object->set_lootentry(0);
+				}
+				m_application.getProject().itemLoot.clear();
+			};
+			task.onImport = [this, &lastEntry, &lastGroup, &groupIndex](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0, itemId = 0, groupId = 0, minCount = 0, maxCount = 0, cond = 0, conda = 0, condb = 0;
+				float dropChance = 0.0f;
+				row.getField(0, entry);
+				row.getField(1, itemId);
+				row.getField(2, dropChance);
+				row.getField(3, groupId);
+				row.getField(4, minCount);
+				row.getField(5, maxCount);
+				row.getField(6, cond);
+				row.getField(7, conda);
+				row.getField(8, condb);
+
+				// Find referenced item
+				const auto *itemEntry = m_application.getProject().items.getById(itemId);
+				if (!itemEntry)
+				{
+					ELOG("Could not find referenced item " << itemId << " (referenced in item loot entry " << entry << " - group " << groupId << ")");
+					return false;
+				}
+
+				// Create a new loot entry
+				bool created = false;
+				if (entry > lastEntry)
+				{
+					m_application.getProject().itemLoot.add(entry);
+
+					lastEntry = entry;
+					lastGroup = groupId;
+					groupIndex = 0;
+					created = true;
+				}
+
+				auto *lootEntry = m_application.getProject().itemLoot.getById(entry);
+				if (!lootEntry)
+				{
+					// Error
+					ELOG("Loot entry " << entry << " found, but no object to assign found");
+					return false;
+				}
+
+				if (created)
+				{
+					auto *objectEntry = m_application.getProject().items.getById(entry);
+					if (!objectEntry)
+					{
+						WLOG("No item with entry " << entry << " found - item loot template will not be assigned!");
+					}
+					else
+					{
+						objectEntry->set_lootentry(lootEntry->id());
+					}
+				}
+
+				// If there are no loot groups yet, create a new one
+				if (lootEntry->groups().empty() || groupId > lastGroup)
+				{
+					lootEntry->add_groups();
+					if (groupId > lastGroup)
+					{
+						lastGroup = groupId;
+						groupIndex++;
+					}
+				}
+
+				if (lootEntry->groups().empty())
+				{
+					ELOG("Error retrieving loot group");
+					return false;
+				}
+
+				auto *group = lootEntry->mutable_groups(groupIndex);
+				auto *def = group->add_definitions();
+				def->set_item(itemEntry->id());
+				def->set_mincount(minCount);
+				def->set_maxcount(maxCount);
+				def->set_dropchance(dropChance);
+				def->set_isactive(true);
+				// We don't need condition value 9 in object loot!
+				if (cond == 9)
+				{
+					cond = 0;
+					conda = 0;
+					condb = 0;
+				}
+				def->set_conditiontype(cond);
+				def->set_conditionvala(conda);
+				def->set_conditionvalb(condb);
+				return true;
+			};
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
+			dialog.exec();
+		}
 		void ObjectEditor::on_actionImport_Object_Spawns_triggered()
 		{
 			ImportTask task;

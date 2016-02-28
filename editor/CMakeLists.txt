@@ -106,11 +106,11 @@ cmake_minimum_required(VERSION 2.8.11)
 	
 	# Create the application
 	if(WIN32)
-		add_executable(editor WIN32 editor.rc ${srcFiles} ${UIS_HDRS} ${resourceSources} ${wndSrcFiles} ${worldSrcFiles} ${ogreSrcFiles} ${MOC_SOURCES})
+		add_executable(editor WIN32 editor.rc ${srcFiles} ${UIS_HDRS} ${mocFiles} ${resourceSources} ${wndSrcFiles} ${worldSrcFiles} ${ogreSrcFiles} ${MOC_SOURCES})
 	elseif(APPLE)
-		add_executable(editor MACOSX_BUNDLE ${srcFiles} ${UIS_HDRS} ${resourceSources} ${apple_bundle_sources} ${wndSrcFiles} ${worldSrcFiles} ${ogreSrcFiles} ${MOC_SOURCES})
+		add_executable(editor MACOSX_BUNDLE ${srcFiles} ${UIS_HDRS} ${mocFiles} ${resourceSources} ${apple_bundle_sources} ${wndSrcFiles} ${worldSrcFiles} ${ogreSrcFiles} ${MOC_SOURCES})
 	else()
-		add_executable(editor ${srcFiles} ${UIS_HDRS} ${resourceSources} ${wndSrcFiles} ${worldSrcFiles} ${ogreSrcFiles} ${MOC_SOURCES})
+		add_executable(editor ${srcFiles} ${UIS_HDRS} ${resourceSources} ${mocFiles} ${wndSrcFiles} ${worldSrcFiles} ${ogreSrcFiles} ${MOC_SOURCES})
 	endif()
 	add_precompiled_header(editor "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
 	

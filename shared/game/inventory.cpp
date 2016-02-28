@@ -1195,6 +1195,9 @@ namespace wowpp
 				auto added = item->addStacks(data.stackCount - 1);
 				m_itemCounter[data.entry] += data.stackCount;
 
+				// Quest check
+				m_owner.onQuestItemAddedCredit(item->getEntry(), data.stackCount);
+
 				// Add this item to the inventory slot and reduce our free slot cache
 				m_itemsBySlot[data.slot] = item;
 

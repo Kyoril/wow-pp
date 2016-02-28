@@ -349,6 +349,7 @@ namespace wowpp
 				QuestgiverOfferReward		= 0x18D,
 				QuestgiverQuestComplete		= 0x191,
 				QuestlogFull				= 0x195,
+				QuestupdateComplete			= 0x198,
 				QuestupdateAddKill			= 0x199,
 				QuestupdateAddItem			= 0x19A,		// Unused?
 				ListInventory				= 0x19F,
@@ -2052,6 +2053,11 @@ namespace wowpp
 				UInt64 vendorGuid,
 				UInt64 itemGuid,
 				UInt32 param
+				);
+
+			void questupdateComplete(
+				game::OutgoingPacket &out_packet,
+				UInt32 questId
 				);
 		};
 	}

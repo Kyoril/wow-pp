@@ -1032,20 +1032,19 @@ namespace wowpp
 				out_packet
 				        << io::write<NetUInt32>(spell.id())
 				        << io::write<NetUInt16>(castFlags)
-				        << io::write<NetUInt32>(mTimeStamp());
+				        << io::write<NetUInt32>(getCurrentTime());
 
 				// TODO: Hit information
 				{
 					UInt8 unitHitCount = (targets.hasUnitTarget() ? 1 : 0);
+					UInt8 goHitCount = (targets.hasGOTarget() ? 1 : 0);
 					out_packet
-					        << io::write<NetUInt8>(unitHitCount);	// Hit count
+					        << io::write<NetUInt8>(unitHitCount + goHitCount);	// Hit count
 					if (unitHitCount > 0)
 					{
 						out_packet
 						        << io::write<NetUInt64>(targets.getUnitTarget());
 					}
-
-					UInt8 goHitCount = (targets.hasGOTarget() ? 1 : 0);
 					if (goHitCount > 0)
 					{
 						out_packet
@@ -3286,6 +3285,13 @@ namespace wowpp
 				out_packet
 					<< io::write<NetUInt8>(errorCode)
 					;
+				out_packet.finish();
+			}
+			void questupdateComplete(game::OutgoingPacket & out_packet, UInt32 questId)
+			{
+				out_packet.start(game::server_packet::QuestupdateComplete);
+				out_packet
+					<< io::write<NetUInt64>(questId);
 				out_packet.finish();
 			}
 		}

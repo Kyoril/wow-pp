@@ -110,6 +110,7 @@ message ItemEntry {
 	optional uint32 maxlootgold = 59;
 	optional uint32 duration = 60;
 	optional uint32 extraflags = 61;
+	optional uint32 lootentry = 62;
 }
 
 message Items {

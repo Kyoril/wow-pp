@@ -677,26 +677,40 @@ namespace wowpp
 				continue;
 			}
 
+			bool validateQuest = false;
+
 			// Counter needed so that the correct field is used
 			UInt8 reqIndex = 0;
 			for (const auto &req : quest->requirements())
 			{
 				if (req.itemid() == entry.id())
 				{
-					// We no longer need this item
 					if (m_inventory.getItemCount(entry.id()) >= req.itemcount())
 					{
 						m_requiredQuestItems[req.itemid()]--;
 						updateNearbyObjects = true;
+						validateQuest = true;
 					}
-
-					// Found it: Complete quest if completable
-					if (fulfillsQuestRequirements(*quest))
+				}
+				else if (req.sourceid() == entry.id())
+				{
+					if (m_inventory.getItemCount(entry.id()) >= req.sourcecount())
 					{
-						it->second.status = game::quest_status::Complete;
-						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
-						questDataChanged(logId, it->second);
+						m_requiredQuestItems[req.sourceid()]--;
+						updateNearbyObjects = true;
+						validateQuest = true;
 					}
+				}
+			}
+
+			if (validateQuest)
+			{
+				// Found it: Complete quest if completable
+				if (fulfillsQuestRequirements(*quest))
+				{
+					it->second.status = game::quest_status::Complete;
+					addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+					questDataChanged(logId, it->second);
 				}
 			}
 		}
@@ -733,27 +747,130 @@ namespace wowpp
 				continue;
 			}
 
+			bool validateQuest = false;
+
 			// Counter needed so that the correct field is used
 			UInt8 reqIndex = 0;
 			for (const auto &req : quest->requirements())
 			{
 				if (req.itemid() == entry.id())
 				{
-					// We need this item again
 					if (m_inventory.getItemCount(entry.id()) < req.itemcount())
 					{
 						m_requiredQuestItems[req.itemid()]++;
 						updateNearbyObjects = true;
-					}
-
-					// Found it: Complete quest if completable
-					if (!fulfillsQuestRequirements(*quest))
-					{
-						it->second.status = game::quest_status::Incomplete;
-						removeFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
-						questDataChanged(logId, it->second);
+						validateQuest = true;
 					}
 				}
+				if (req.sourceid() == entry.id())
+				{
+					if (m_inventory.getItemCount(entry.id()) < req.sourcecount())
+					{
+						m_requiredQuestItems[req.sourceid()]++;
+						updateNearbyObjects = true;
+						validateQuest = true;
+					}
+				}
+			}
+
+			if (validateQuest)
+			{
+				// Found it: Complete quest if completable
+				if (!fulfillsQuestRequirements(*quest))
+				{
+					it->second.status = game::quest_status::Incomplete;
+					removeFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+					questDataChanged(logId, it->second);
+				}
+			}
+		}
+
+		if (updateNearbyObjects)
+		{
+			updateNearbyQuestObjects();
+		}
+	}
+
+	void GameCharacter::onQuestSpellCastCredit(UInt32 spellId, GameObject & target)
+	{
+		bool updateNearbyObjects = false;
+		for (int i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == 0) {
+				continue;
+			}
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end()) {
+				continue;
+			}
+
+			if (it->second.status != game::quest_status::Incomplete) {
+				continue;
+			}
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest) {
+				continue;
+			}
+
+			bool validateQuest = false;
+
+			// Counter needed so that the correct field is used
+			UInt8 reqIndex = 0;
+			for (const auto &req : quest->requirements())
+			{
+				// Get current counter
+				UInt8 counter = getByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex);
+				if (req.spellcast() == spellId)
+				{
+					if (req.creatureid() && counter < req.creaturecount() && target.isCreature())
+					{
+						if (reinterpret_cast<GameCreature&>(target).getEntry().id() == req.creatureid())
+						{
+							// Increment and update counter
+							setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex, ++counter);
+							it->second.creatures[reqIndex]++;
+
+							// Fire signal to update UI
+							questKillCredit(*quest, target.getGuid(), req.creatureid(), counter, req.creaturecount());
+
+							validateQuest = true;
+						}
+					}
+					else if (req.objectid() && counter < req.objectcount() && target.isWorldObject())
+					{
+						if (reinterpret_cast<WorldObject&>(target).getEntry().id() == req.objectid())
+						{
+							// Increment and update counter
+							setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex, ++counter);
+							it->second.objects[reqIndex]++;
+
+							// Fire signal to update UI
+							questKillCredit(*quest, target.getGuid(), req.objectid(), counter, req.objectcount());
+
+							validateQuest = true;
+						}
+					}
+				}
+
+				reqIndex++;
+			}
+
+			if (validateQuest)
+			{
+				// Found it: Complete quest if completable
+				if (fulfillsQuestRequirements(*quest))
+				{
+					it->second.status = game::quest_status::Complete;
+					addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+				}
+
+				// Save quest progress
+				questDataChanged(logId, it->second);
 			}
 		}
 
@@ -1798,8 +1915,13 @@ namespace wowpp
 				{
 					for (const auto &req : quest->requirements())
 					{
-						if (req.itemid()) {
+						if (req.itemid())
+						{
 							object.m_requiredQuestItems[req.itemid()]++;
+						}
+						if (req.sourceid())
+						{
+							object.m_requiredQuestItems[req.sourceid()]++;
 						}
 					}
 				}
@@ -1811,6 +1933,9 @@ namespace wowpp
 		{
 			object.setUInt32Value(unit_fields::Aura + i, 0);
 		}
+
+		// Remove "InCombat" flag
+		object.removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 
 		// Update all stats
 		object.setLevel(object.getLevel());

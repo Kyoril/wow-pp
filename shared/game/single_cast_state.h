@@ -24,6 +24,7 @@
 #include "spell_cast.h"
 #include "attack_table.h"
 #include "common/countdown.h"
+#include "game_object.h"
 #include "shared/proto_data/spells.pb.h"
 
 namespace wowpp
@@ -121,6 +122,7 @@ namespace wowpp
 		math::Vector3 m_projectileOrigin;
 		bool m_connectedMeleeSignal;
 		UInt32 m_delayCounter;
+		std::set<std::weak_ptr<GameObject>, std::owner_less<std::weak_ptr<GameObject>>> m_affectedTargets;
 
 		void sendEndCast(bool success);
 		void onCastFinished();

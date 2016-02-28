@@ -646,6 +646,8 @@ namespace wowpp
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
+			m_affectedTargets.insert(targetUnit->shared_from_this());
+
 			targetUnit->dealDamage(targetUnit->getUInt32Value(unit_fields::Health), m_spell.schoolmask(), &caster, 0.0f);
 		}
 	}
@@ -700,6 +702,8 @@ namespace wowpp
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
+			m_affectedTargets.insert(targetUnit->shared_from_this());
+
 			if (targetUnit->isGameCharacter())
 			{
 				targetUnit->teleport(targetMap, targetPos, targetO);
@@ -725,6 +729,8 @@ namespace wowpp
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
+			m_affectedTargets.insert(targetUnit->shared_from_this());
+
 			UInt32 totalDamage;
 			bool crit = false;
 			UInt32 resisted = 0;
@@ -822,6 +828,8 @@ namespace wowpp
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
+			m_affectedTargets.insert(targetUnit->shared_from_this());
+
 			UInt32 totalPoints = 0;
 			bool spellFailed = false;
 
@@ -911,6 +919,8 @@ namespace wowpp
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
+			m_affectedTargets.insert(targetUnit->shared_from_this());
+
 			targetUnit->cancelCast(game::spell_interrupt_flags::Interrupt, m_spell.duration());
 		}
 	}
@@ -1025,6 +1035,8 @@ namespace wowpp
 			WLOG("SPELL_EFFECT_PROFICIENCY: Requires character unit target!");
 			return;
 		}
+
+		m_affectedTargets.insert(character->shared_from_this());
 
 		const UInt32 mask = m_spell.itemsubclassmask();
 		if (m_spell.itemclass() == 2 && !(character->getWeaponProficiency() & mask))
@@ -1154,6 +1166,8 @@ namespace wowpp
 			return;
 		}
 
+		m_affectedTargets.insert(character->shared_from_this());
+
 		UInt64 comboTarget = m_target.getUnitTarget();
 		character->addComboPoints(comboTarget, UInt8(calculateEffectBasePoints(effect)));
 	}
@@ -1170,6 +1184,7 @@ namespace wowpp
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
+			m_affectedTargets.insert(targetUnit->shared_from_this());
 
 			SpellTargetMap targetMap;
 			targetMap.m_targetMap = game::spell_cast_target_flags::Self;
@@ -1205,6 +1220,8 @@ namespace wowpp
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
+			m_affectedTargets.insert(targetUnit->shared_from_this());
+
 			if (targetUnit->isGameCharacter())
 			{
 				auto *charUnit = reinterpret_cast<GameCharacter *>(targetUnit);
@@ -1298,6 +1315,8 @@ namespace wowpp
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
+			m_affectedTargets.insert(targetUnit->shared_from_this());
+
 			UInt32 totalPoints = 0;
 			bool spellFailed = false;
 
@@ -1410,6 +1429,8 @@ namespace wowpp
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
+			m_affectedTargets.insert(targetUnit->shared_from_this());
+
 			UInt8 school = m_spell.schoolmask();
 			UInt32 totalPoints;
 			bool crit = false;
@@ -1458,6 +1479,8 @@ namespace wowpp
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
+			m_affectedTargets.insert(targetUnit->shared_from_this());
+
 			if (targetUnit->isGameCharacter())
 			{
 				GameCharacter *character = dynamic_cast<GameCharacter *>(targetUnit);
@@ -1480,6 +1503,8 @@ namespace wowpp
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
+			m_affectedTargets.insert(targetUnit->shared_from_this());
+
 			if (targetUnit->isGameCharacter())
 			{
 				GameCharacter *character = dynamic_cast<GameCharacter *>(targetUnit);
@@ -1607,6 +1632,19 @@ namespace wowpp
 		{
 			m_cast.getExecuter().castSpell(m_target, spell, -1, 0, true);
 		}
+
+		if (m_cast.getExecuter().isGameCharacter())
+		{
+			for (const auto &target : m_affectedTargets)
+			{
+				auto strong = target.lock();
+				if (strong)
+				{
+					ILOG("ON_QUEST_SPELL_CAST_CREDIT");
+					reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).onQuestSpellCastCredit(m_spell.id(), *strong);
+				}
+			}
+		}
 	}
 
 	bool SingleCastState::consumeItem()
@@ -1624,15 +1662,12 @@ namespace wowpp
 			UInt16 itemSlot = 0;
 			if (!inv.findItemByGUID(m_itemGuid, itemSlot))
 			{
-				// Could not find item, seems not to exist
-				WLOG("Item does not exist");
 				return false;
 			}
 
 			auto item = inv.getItemAtSlot(itemSlot);
 			if (!item)
 			{
-				WLOG("Item not found");
 				return false;
 			}
 
@@ -1640,18 +1675,18 @@ namespace wowpp
 			{
 				// OnUse spell cast
 				if (spell.spell() == m_spell.id() &&
-				        (spell.trigger() == 0 || spell.trigger() == 5))
+					(spell.trigger() == 0 || spell.trigger() == 5))
 				{
 					// Item is removed on use
 					if (spell.charges() == UInt32(-1))
 					{
-						auto result = inv.removeItem(itemSlot, 1);
-						if (result != game::inventory_change_failure::Okay)
-						{
-							WLOG("Could not remove one stack");
-							character->inventoryChangeFailure(result, item.get(), nullptr);
-							return false;
-						}
+						m_completedEffectsExecution.push_back(completedEffects.connect([this, item, itemSlot, &inv]{
+							auto result = inv.removeItem(itemSlot, 1);
+							if (result != game::inventory_change_failure::Okay)
+							{
+								inv.getOwner().inventoryChangeFailure(result, item.get(), nullptr);
+							}
+						}));
 					}
 					break;
 				}
@@ -1903,6 +1938,8 @@ namespace wowpp
 			WLOG("SPELL_EFFECT_OPEN_LOCK: Could not find target object");
 			return;
 		}
+
+		m_affectedTargets.insert(obj->shared_from_this());
 
 		UInt32 currentState = obj->getUInt32Value(world_object_fields::State);
 

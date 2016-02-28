@@ -371,8 +371,7 @@ namespace wowpp
 		auto guid = remove.getGuid();
 
 		// Remove from unit finder if it is a unit
-		if (remove.getTypeId() == object_type::Unit ||
-		        remove.isGameCharacter())
+		if (remove.isCreature() || remove.isGameCharacter())
 		{
 			GameUnit *unit = dynamic_cast<GameUnit *>(&remove);
 			if (unit) {

@@ -26,6 +26,7 @@
 #include "common/clock.h"
 #include "visibility_tile.h"
 #include "world_instance.h"
+#include "universe.h"
 #include "proto_data/project.h"
 #include "game_character.h"
 #include "common/make_unique.h"

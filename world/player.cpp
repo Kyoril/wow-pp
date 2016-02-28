@@ -92,6 +92,10 @@ namespace wowpp
 		});
 		m_questChanged = m_character->questDataChanged.connect([this](UInt32 questId, const QuestStatusData &data) {
 			m_realmConnector.sendQuestData(m_character->getGuid(), questId, data);
+			if (data.status == game::quest_status::Complete)
+			{
+				sendProxyPacket(std::bind(game::server_write::questupdateComplete, std::placeholders::_1, questId));
+			}
 		});
 		m_questKill = m_character->questKillCredit.connect([this](const proto::QuestEntry &quest, UInt64 guid, UInt32 entry, UInt32 count, UInt32 total) {
 			sendProxyPacket(std::bind(game::server_write::questupdateAddKill, std::placeholders::_1, quest.id(), entry, count, total, guid));
@@ -114,7 +118,6 @@ namespace wowpp
 				WLOG("Could not find loot source object: 0x" << std::hex << instance.getLootGuid());
 				return;
 			}
-			m_instance.flushObjectUpdate(instance.getLootGuid());
 			openLootDialog(instance, *object);
 		});
 
@@ -2303,9 +2306,6 @@ namespace wowpp
 		// Send the actual loot data (TODO: Determine loot type)
 		auto guid = source.getGuid();
 		auto lootType = game::loot_type::Corpse;
-		if (isGameObjectGUID(guid)) 
-			lootType = game::loot_type::Skinning;	// This is not 100% right, but client rejects corpse loot for game objects somehow
-
 		sendProxyPacket(
 			std::bind(game::server_write::lootResponse, std::placeholders::_1, source.getGuid(), lootType, std::cref(loot)));
 	}
