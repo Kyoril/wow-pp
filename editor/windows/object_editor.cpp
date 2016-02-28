@@ -53,7 +53,10 @@ namespace wowpp
 
 			// Setup view model
 			m_viewModel = new PropertyViewModel(m_properties, nullptr);
+			m_objectViewModel = new PropertyViewModel(m_objectProperties, nullptr);
+			m_itemViewModel = new PropertyViewModel(m_itemProperties, nullptr);
 			m_ui->unitPropertyWidget->setModel(m_viewModel);
+			m_ui->objectPropertyWidget->setModel(m_objectViewModel);
 			m_ui->lootView->header()->setVisible(true);
 			m_ui->objectLootView->header()->setVisible(true);
 			m_ui->itemLootView->header()->setVisible(true);
@@ -487,14 +490,18 @@ namespace wowpp
 			WOWPP_NUM_PROPERTY("Unit Class", UInt32, UInt32Ref, unitclass, false);
 			WOWPP_NUM_PROPERTY("Rank", UInt32, UInt32Ref, rank, false);
 			WOWPP_NUM_PROPERTY("Armor", UInt32, UInt32Ref, armor, false);
-			/*WOWPP_NUM_PROPERTY("Holy Resistance", UInt32, UInt32Ref, armor, false);
-			WOWPP_NUM_PROPERTY("Fire Resistance", UInt32, UInt32Ref, armor, false);
-			WOWPP_NUM_PROPERTY("Nature Resistance", UInt32, UInt32Ref, armor, false);
-			WOWPP_NUM_PROPERTY("Frost Resistance", UInt32, UInt32Ref, armor, false);
-			WOWPP_NUM_PROPERTY("Shadow Resistance", UInt32, UInt32Ref, armor, false);
-			WOWPP_NUM_PROPERTY("Arcane Resistance", UInt32, UInt32Ref, armor, false);*/
+//			WOWPP_NUM_PROPERTY("Holy Resistance", UInt32, UInt32Ref, armor, false);
+//			WOWPP_NUM_PROPERTY("Fire Resistance", UInt32, UInt32Ref, armor, false);
+//			WOWPP_NUM_PROPERTY("Nature Resistance", UInt32, UInt32Ref, armor, false);
+//			WOWPP_NUM_PROPERTY("Frost Resistance", UInt32, UInt32Ref, armor, false);
+//			WOWPP_NUM_PROPERTY("Shadow Resistance", UInt32, UInt32Ref, armor, false);
+//			WOWPP_NUM_PROPERTY("Arcane Resistance", UInt32, UInt32Ref, armor, false);
 			WOWPP_MIN_MAX_PROPERTY("Loot Gold", UInt32, UInt32Ref, lootgold, false);
 			WOWPP_MIN_MAX_PROPERTY("Experience", UInt32, UInt32Ref, levelxp, false);
+
+#undef WOWPP_MIN_MAX_PROPERTY
+#undef WOWPP_STR_PROPERTY
+#undef WOWPP_NUM_PROPERTY
 
 			// Update the view 
 			m_viewModel->layoutChanged();
@@ -559,6 +566,53 @@ namespace wowpp
 				{
 					// Value changed
 					m_viewModel->layoutChanged();
+					m_application.markAsChanged();
+				}
+			}
+		}
+
+		void ObjectEditor::on_objectPropertyWidget_doubleClicked(QModelIndex index)
+		{
+			// Get the clicked property
+			int row = index.row();
+			if (row < 0)
+			{
+				// Invalid?
+				return;
+			}
+
+			// Now we want to get the property of this
+			std::unique_ptr<QDialog> dialog;
+
+			// Determine prop type
+			Property &prop = *m_objectProperties.at(row);
+			if (!prop.isReadOnly())
+			{
+				auto &propType = typeid(prop);
+
+				// Create editor
+				if (propType == typeid(StringProperty))
+				{
+					StringProperty &stringProp = reinterpret_cast<StringProperty &>(prop);
+					dialog.reset(new StringEditor(stringProp));
+				}
+				else if (propType == typeid(NumericProperty))
+				{
+					NumericProperty &uintProp = reinterpret_cast<NumericProperty &>(prop);
+					dialog.reset(new NumericEditor(uintProp));
+				}
+				else if (propType == typeid(MinMaxProperty))
+				{
+					MinMaxProperty &minMaxUIntProp = reinterpret_cast<MinMaxProperty &>(prop);
+					dialog.reset(new MinMaxEditor(minMaxUIntProp));
+				}
+
+				// Display dialog
+				if (dialog &&
+					dialog->exec() == QDialog::Accepted)
+				{
+					// Value changed
+					m_objectViewModel->layoutChanged();
 					m_application.markAsChanged();
 				}
 			}
@@ -1025,6 +1079,40 @@ namespace wowpp
 						QString(triggerEntry->name().c_str()));
 				}
 			}
+
+			// Update properties
+			m_objectProperties.clear();
+
+			// Add unit properties
+#define WOWPP_NUM_PROPERTY(name, type, ref, prop, readonly) { \
+			auto getBinder = [object]() -> type { return object->prop(); }; \
+			auto setBinder = [object](type value) { object->set_##prop(value); }; \
+			m_objectProperties.push_back(PropertyPtr(new NumericProperty(name, ref(getBinder, setBinder), readonly))); }
+#define WOWPP_STR_PROPERTY(name, prop, readonly) { \
+			auto getBinder = [object]() -> String { return object->prop(); }; \
+			auto setBinder = [object](const String &value) { object->set_##prop(value.c_str()); }; \
+			m_objectProperties.push_back(PropertyPtr(new StringProperty(name, getBinder, setBinder, readonly))); }
+#define WOWPP_MIN_MAX_PROPERTY(name, type, ref, prop, readonly) { \
+			auto getMinBinder = [object]() -> type { return object->min##prop(); }; \
+			auto setMinBinder = [object](type value) { object->set_min##prop(value); }; \
+			auto getMaxBinder = [object]() -> type { return object->max##prop(); }; \
+			auto setMaxBinder = [object](type value) { object->set_max##prop(value); }; \
+			m_objectProperties.push_back(PropertyPtr(new MinMaxProperty(name, ref(getMinBinder, setMinBinder), ref(getMaxBinder, setMaxBinder), readonly))); }
+
+			WOWPP_NUM_PROPERTY("Entry", UInt32, UInt32Ref, id, true);
+			WOWPP_STR_PROPERTY("Name", name, false);
+			WOWPP_STR_PROPERTY("Caption", caption, false);
+			WOWPP_NUM_PROPERTY("Faction", UInt32, UInt32Ref, factionid, false);
+			WOWPP_NUM_PROPERTY("Type", UInt32, UInt32Ref, type, false);
+			WOWPP_NUM_PROPERTY("Flags", UInt32, UInt32Ref, flags, false);
+			WOWPP_MIN_MAX_PROPERTY("Loot Gold", UInt32, UInt32Ref, gold, false);
+
+#undef WOWPP_MIN_MAX_PROPERTY
+#undef WOWPP_STR_PROPERTY
+#undef WOWPP_NUM_PROPERTY
+
+			// Update the view 
+			m_objectViewModel->layoutChanged();
 		}
 
 		void ObjectEditor::on_unitAddTriggerBtn_clicked()

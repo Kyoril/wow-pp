@@ -69,6 +69,7 @@ namespace wowpp
 			void on_objectRemoveTriggerBtn_clicked();
 			void onUnitSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void on_unitPropertyWidget_doubleClicked(QModelIndex index);
+			void on_objectPropertyWidget_doubleClicked(QModelIndex index);
 			void onSpellSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void onItemSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void onQuestSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
@@ -101,6 +102,10 @@ namespace wowpp
 			QSortFilterProxyModel *m_objectFilter;
 			Properties m_properties;
 			PropertyViewModel *m_viewModel;
+			Properties m_objectProperties;
+			PropertyViewModel *m_objectViewModel;
+			Properties m_itemProperties;
+			PropertyViewModel *m_itemViewModel;
 			proto::UnitEntry *m_selectedUnit;
 			proto::SpellEntry *m_selectedSpell;
 			proto::QuestEntry *m_selectedQuest;
