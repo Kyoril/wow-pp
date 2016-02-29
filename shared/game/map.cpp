@@ -77,7 +77,7 @@ namespace wowpp
 					ELOG("Could not load map file " << file << ": Unexpected header chunk size (" << (sizeof(MapHeaderChunk) - 8) << " expected)!");
 					return nullptr;
 				}
-				if (mapHeaderChunk.version != 0x110)
+				if (mapHeaderChunk.version != 0x120)
 				{
 					ELOG("Could not load map file " << file << ": Unsupported file format version!");
 					return nullptr;

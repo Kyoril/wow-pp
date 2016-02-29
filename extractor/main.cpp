@@ -38,6 +38,7 @@
 #include "detour/DetourNavMesh.h"
 #include "detour/DetourNavMeshBuilder.h"
 #include "recast/Recast.h"
+#include "common/linear_set.h"
 using namespace std;
 using namespace wowpp;
 
@@ -59,17 +60,41 @@ static std::unique_ptr<DBCFile> dbcLiquidType;
 //////////////////////////////////////////////////////////////////////////
 // Caches
 std::map<UInt32, UInt32> areaFlags;
+std::map<UInt32, LinearSet<UInt32>> tilesByMap;
 
 //////////////////////////////////////////////////////////////////////////
 // Helper functions
 namespace
 {
+	/// Converts a tiles x and y coordinate into a single number (tile id).
+	/// @param tileX The x coordinate of the tile.
+	/// @param tileY The y coordinate of the tile.
+	/// @returns The generated tile id.
+	static UInt32 packTileID(UInt32 tileX, UInt32 tileY) 
+	{
+		return tileX << 16 | tileY;
+	}
+	/// Converts a tile id into x and y coordinates.
+	/// @param tile The packed tile id.
+	/// @param out_x Tile x coordinate will be stored here.
+	/// @param out_y Tile y coordinate will be stored here.
+	static void unpackTileID(UInt32 tile, UInt32& out_x, UInt32& out_y)
+	{ 
+		out_x = tile >> 16;
+		out_y = tile & 0xFF;
+	}
+
+	/// This is the length of an edge of a map file in ingame units where one unit 
+	/// represents one meter.
 	const float GridSize = 533.3333f;
 	const float GridPart = GridSize / 128;
 
+	/// Represents mesh data used for navigation mesh generation
 	struct MeshData final
 	{
+		// Three coordinates represent one vertex (x, y, z)
 		std::vector<float> solidVerts;
+		/// Three indices represent one triangle (v1, v2, v3)
 		std::vector<int> solidTris;
 	};
 
@@ -116,6 +141,7 @@ namespace
 		}
 	};
 
+	/// Generates navigation mesh for one map.
 	static bool createNavMesh(UInt32 mapId, dtNavMesh &navMesh)
 	{
 		float bmin[3], bmax[3];
@@ -207,16 +233,25 @@ namespace
 		io::StreamSink sink(fileStrm);
 		io::Writer writer(sink);
 		
+		// Mark header position
+		const size_t headerPos = sink.position();
+
         // Create map header chunk
         MapHeaderChunk header;
         header.fourCC = 0x50414D57;				// WMAP		- WoW Map
         header.size = sizeof(MapHeaderChunk) - 8;
-        header.version = 0x110;
-        header.offsAreaTable = sizeof(MapHeaderChunk);
-        header.areaTableSize = sizeof(MapAreaChunk);
-		header.offsCollision = header.offsAreaTable + header.areaTableSize;
+        header.version = 0x120;
+        header.offsAreaTable = 0;
+        header.areaTableSize = 0;
+		header.offsCollision = 0;
 		header.collisionSize = 0;
-		
+		header.offsNavigation = 0;
+		header.navigationSize = 0;
+		writer.writePOD(header);
+
+		// Mark area header chunk
+		header.offsAreaTable = sink.position();
+
         // Area header chunk
         MapAreaChunk areaHeader;
         areaHeader.fourCC = 0x52414D57;			// WMAR		- WoW Map Areas
@@ -230,10 +265,11 @@ namespace
             {
                 flags = it->second;
             }
-            
             areaHeader.cellAreas[i].areaId = areaId;
             areaHeader.cellAreas[i].flags = flags;
         }
+		writer.writePOD(areaHeader);
+		header.areaTableSize = sink.position() - header.offsAreaTable;
 
 		// Collision chunk
 		MapCollisionChunk collisionChunk;
@@ -241,8 +277,6 @@ namespace
 		collisionChunk.size = sizeof(UInt32) * 4;
 		collisionChunk.vertexCount = 0;
 		collisionChunk.triangleCount = 0;
-
-		UInt32 groupCount = 0;
 		for (const auto &entry : adt.getMODFChunk().entries)
 		{
 			// Entry placement
@@ -254,7 +288,6 @@ namespace
 			}
 
 			math::Matrix4 mat;
-
 #define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * x / -180.0)
 			math::Matrix4 rotMat = math::Matrix4::fromEulerAnglesXYZ(
 				WOWPP_DEG_TO_RAD(entry.rotation[2]), WOWPP_DEG_TO_RAD(entry.rotation[0]), WOWPP_DEG_TO_RAD(-entry.rotation[1]));
@@ -281,8 +314,6 @@ namespace
 					transformed.x *= -1.f;
 					transformed.y *= -1.f;
 					collisionChunk.vertices.push_back(transformed);
-
-					//fprintf(file, "v %f %f %f\n", transformed.x, transformed.y, transformed.z);
 				}
 				for (UInt32 i = 0; i < inds.size(); i += 3)
 				{
@@ -292,8 +323,6 @@ namespace
 						groupTris--;
 						continue;
 					}
-
-					//fprintf(file, "f %d %d %d\n", inds[i] + groupStartIndex + 1, inds[i + 1] + groupStartIndex + 1, inds[i + 2] + groupStartIndex + 1);
 
 					Triangle tri;
 					tri.indexA = inds[i] + groupStartIndex;
@@ -309,13 +338,35 @@ namespace
 		collisionChunk.size += sizeof(math::Vector3) * collisionChunk.vertexCount;
 		collisionChunk.size += sizeof(UInt32) * 3 * collisionChunk.triangleCount;
 		header.collisionSize = collisionChunk.size;
-		if (collisionChunk.vertexCount == 0)
+		if (collisionChunk.vertexCount > 0)
 		{
-			header.offsCollision = 0;
-			header.collisionSize = 0;
+			header.offsCollision = sink.position();
+			if (header.offsCollision)
+			{
+				writer
+					<< io::write<UInt32>(collisionChunk.fourCC)
+					<< io::write<UInt32>(collisionChunk.size)
+					<< io::write<UInt32>(collisionChunk.vertexCount)
+					<< io::write<UInt32>(collisionChunk.triangleCount);
+				for (auto &vert : collisionChunk.vertices)
+				{
+					writer
+						<< io::write<float>(vert.x)
+						<< io::write<float>(vert.y)
+						<< io::write<float>(vert.z);
+				}
+				for (auto &triangle : collisionChunk.triangles)
+				{
+					writer
+						<< io::write<UInt32>(triangle.indexA)
+						<< io::write<UInt32>(triangle.indexB)
+						<< io::write<UInt32>(triangle.indexC);
+				}
+			}
+			header.collisionSize = sink.position() - header.offsCollision;
 		}
 
-		/*
+#if 0
 		// Map height header
 		MapHeightChunk heightChunk;
 		heightChunk.fourCC = 0x54484D57;		// WMHT		- WoW Map Height
@@ -331,78 +382,25 @@ namespace
 				heightChunk.heights[i][index++] = mcnk.zpos + height;
 			}
 		}
-		*/
+#endif
 
+#if 0
 		// Build nav mesh
 		MapNavigationChunk navigationChunk;
 		navigationChunk.fourCC = 0x564E4D57;		// WMNV		- WoW Map Navigation
 		navigationChunk.size = 0;
-		{
-			const static float BaseUnitDim = 0.5333333f;
+		header.offsNavigation = header.offsAreaTable + header.areaTableSize + header.collisionSize;
+		header.navigationSize = sizeof(UInt32) * 4 + navigationChunk.size;
+		writer
+			<< io::write<UInt32>(navigationChunk.fourCC)
+			<< io::write<UInt32>(navigationChunk.size)
+			<< io::write<UInt32>(navigationChunk.tileRef)
+			<< io::write_dynamic_range<NetUInt32>(navigationChunk.data);
+#endif
 
-			const static int VerticesPerMap = int(GridSize / BaseUnitDim + 0.5f);
-			const static int VerticesPerTile = 40; // must divide VERTEX_PER_MAP
-			const static int TilesPerMap = VerticesPerMap / VerticesPerTile;
+		// Overwrite header settings
+		writer.writePOD(headerPos, header);
 
-			rcConfig config;
-			memset(&config, 0, sizeof(rcConfig));
-			//rcVcopy(config.bmin, bmin);
-			//rcVcopy(config.bmax, bmax);
-			config.maxVertsPerPoly = DT_VERTS_PER_POLYGON;
-			config.cs = BaseUnitDim;
-			config.ch = BaseUnitDim;
-			config.walkableSlopeAngle = 45.0f;
-			config.tileSize = VerticesPerTile;
-			config.walkableRadius = 1;
-			config.borderSize = config.walkableRadius + 3;
-			config.maxEdgeLen = VerticesPerTile + 1;        // anything bigger than tileSize
-			config.walkableHeight = 2;
-			config.walkableClimb = 1;						// keep less than walkableHeight
-			config.minRegionArea = rcSqr(60);
-			config.mergeRegionArea = rcSqr(50);
-			config.maxSimplificationError = 1.8f;           // eliminates most jagged edges (tiny polygons)
-			config.detailSampleDist = config.cs * 64;
-			config.detailSampleMaxError = config.ch * 2;
-			rcCalcGridSize(config.bmin, config.bmax, config.cs, &config.width, &config.height);
-		}
-
-		// Write
-		//header.offsNavigation = header.offsAreaTable + header.areaTableSize + header.collisionSize;
-		//header.navigationSize = sizeof(UInt32) * 2 + navigationChunk.size;
-
-		// Write tile header
-        writer.writePOD(header);
-        writer.writePOD(areaHeader);
-		if (header.offsCollision)
-		{
-			writer 
-				<< io::write<UInt32>(collisionChunk.fourCC)
-				<< io::write<UInt32>(collisionChunk.size)
-				<< io::write<UInt32>(collisionChunk.vertexCount)
-				<< io::write<UInt32>(collisionChunk.triangleCount);
-			for (auto &vert : collisionChunk.vertices)
-			{
-				writer
-					<< io::write<float>(vert.x)
-					<< io::write<float>(vert.y)
-					<< io::write<float>(vert.z);
-			}
-			for (auto &triangle : collisionChunk.triangles)
-			{
-				writer
-					<< io::write<UInt32>(triangle.indexA)
-					<< io::write<UInt32>(triangle.indexB)
-					<< io::write<UInt32>(triangle.indexC);
-			}
-		}
-		/*if (header.offsNavigation)
-		{
-			writer 
-				<< io::write<UInt32>(navigationChunk.fourCC)
-				<< io::write<UInt32>(navigationChunk.size)
-				<< io::write_range(navigationChunk.data);
-		}*/
-        
 		return true;
 	}
 
@@ -421,12 +419,13 @@ namespace
 		{
 			return false;
 		}
-
+		/*
 		if (mapId != 36)
 		{
 			ILOG("Skipping map " << mapId);
 			return true;
 		}
+		*/
 
 		// Build map
 		ILOG("Building map " << mapId << " - " << mapName << "...");
@@ -465,6 +464,21 @@ namespace
 			return false;
 		}
 
+		// Write nav mesh parameters
+		const String navParamFile =
+			(outputPath / (boost::format("%1%.map") % mapId).str()).string();
+		std::ofstream outNavFile(navParamFile, std::ios::out | std::ios::binary);
+		if (outNavFile)
+		{
+			// Write parameter settings
+			outNavFile.write(reinterpret_cast<const char*>(navMesh->getParams()), sizeof(dtNavMeshParams));
+		}
+		else
+		{
+			ELOG("Could not create map file " << navParamFile);
+			return false;
+		}
+
 		// Iterate through all tiles and create those which are available
 		bool succeeded = true;
 		for (UInt32 tile = 0; tile < adtTiles.size(); ++tile)
@@ -482,6 +496,9 @@ namespace
 	/// @returns False if the client localization couldn't be detected.
 	static bool detectLocale(String &out_locale)
 	{
+		// Enumerate all possible client locales for the Burning Crusade. Note that
+		// the locales are placed in order, so enGB will always be perferred over deDE
+		// for example.
 		std::array<std::string, 16> locales = {
 			"enGB",
 			"enUS",
@@ -497,6 +514,8 @@ namespace
 			"ruRU"
 		};
 
+		// Iterate through all these locales and check for file existance. If the file exists,
+		// we found the local.
 		for (auto &locale : locales)
 		{
 			if (fs::exists(inputPath / "Data" / locale / (boost::format("locale-%1%.MPQ") % locale).str()))
@@ -513,6 +532,9 @@ namespace
 	/// @param localeString Client locale string like 'enUS'.
 	static void loadMPQFiles(const String &localeString)
 	{
+		// MPQ archives to load. These files need to stay in order, so that patch-2 is the last
+		// loaded archive. Otherwise, wrong files might be extracted since there might be an older
+		// version of a file in common or expansion.
 		const String commonArchives[] = {
 			"common.MPQ",
 			"expansion.MPQ",
@@ -520,12 +542,14 @@ namespace
 			"patch-2.MPQ"
 		};
 
+		// Same as above, but locale dependant. However, order is still important!
 		const String localeArchives[] = {
 			"locale-%1%.MPQ",
 			"patch-%1%.MPQ",
 			"patch-%1%-2.MPQ",
 		};
 
+		// Try to load all common archives
 		for (auto &file : commonArchives)
 		{
 			const String mpqFileName = (inputPath / "Data" / file).string();
@@ -535,11 +559,11 @@ namespace
 			}
 		}
 
+		// Now try to load all locale archives
 		for (auto &file : localeArchives)
 		{
-			String mpqFileName =
+			const String mpqFileName =
 				(inputPath / "Data" / localeString / (boost::format(file) % localeString).str()).string();
-
 			if (!mpq::loadMPQFile(mpqFileName))
 			{
 				WLOG("Could not load MPQ archive " << mpqFileName);
@@ -551,16 +575,21 @@ namespace
 	/// @returns False if an error occurred.
 	static bool loadDBCFiles()
 	{
+		// Needed to determine which maps do exist
 		dbcMap = make_unique<DBCFile>("DBFilesClient\\Map.dbc");
 		if (!dbcMap->load()) return false;
 
+		// Needed to determine which areas exist and which ids represent an area,
+		// and which areas are zones (an area is the parent of one or more zones)
 		dbcAreaTable = make_unique<DBCFile>("DBFilesClient\\AreaTable.dbc");
 		if (!dbcAreaTable->load()) return false;
 
+		// Not used right now, but will be used later to determine different liquid
+		// types, so that lava for example can do fire damage to players in the lava.
 		dbcLiquidType = make_unique<DBCFile>("DBFilesClient\\LiquidType.dbc");
 		if (!dbcLiquidType->load()) return false;
         
-        // Parse area flags
+        // Cache area flags
         for (UInt32 i = 0; i < dbcAreaTable->getRecordCount(); ++i)
         {
             UInt32 areaId = 0, flags = 0;
@@ -619,6 +648,7 @@ int main(int argc, char* argv[])
 	ILOG("Found " << dbcAreaTable->getRecordCount() << " areas");
 	ILOG("Found " << dbcLiquidType->getRecordCount() << " liquid types");
 
+	// Create work jobs for every map that exists
 	boost::asio::io_service dispatcher;
 	for (UInt32 i = 0; i < dbcMap->getRecordCount(); ++i)
 	{
@@ -626,10 +656,14 @@ int main(int argc, char* argv[])
 			std::bind(convertMap, i));
 	}
 
+	// Determine the amount of available cpu cores, and use just as many. However,
+	// right now, this will only convert multiple maps at the same time, not multiple
+	// tiles - but still A LOT faster than single threaded.
 	std::size_t concurrency = boost::thread::hardware_concurrency();
 	concurrency = std::max<size_t>(1, concurrency);
 	ILOG("Using " << concurrency << " threads");
 
+	// Do the work!
 	std::vector<std::unique_ptr<boost::thread>> workers;
 	for (size_t i = 1, c = concurrency; i < c; ++i)
 	{
@@ -642,10 +676,12 @@ int main(int argc, char* argv[])
 
 	dispatcher.run();
 
+	// Wait for all running workers to finish
 	for(auto &worker : workers)
 	{
 		worker->join();
 	}
 
+	// We are done!
 	return 0;
 }

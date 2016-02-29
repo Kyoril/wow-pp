@@ -25,6 +25,7 @@
 #include "tile_index.h"
 #include "common/grid.h"
 #include "math/ray.h"
+#include "detour/DetourNavMesh.h"
 
 namespace wowpp
 {
@@ -40,8 +41,8 @@ namespace wowpp
 		//		UInt32 heightSize;
 		UInt32 offsCollision;
 		UInt32 collisionSize;
-		//UInt32 offsNavigation;
-		//UInt32 navigationSize;
+		UInt32 offsNavigation;
+		UInt32 navigationSize;
 
 		MapHeaderChunk()
 			: fourCC(0)
@@ -53,8 +54,8 @@ namespace wowpp
 			  //			, heightSize(0)
 			, offsCollision(0)
 			, collisionSize(0)
-			//, offsNavigation(0)
-			//, navigationSize(0)
+			, offsNavigation(0)
+			, navigationSize(0)
 		{
 		}
 	};
@@ -123,11 +124,13 @@ namespace wowpp
 	{
 		UInt32 fourCC;
 		UInt32 size;
+		dtTileRef tileRef;
 		std::vector<char> data;
 
 		explicit MapNavigationChunk()
 			: fourCC(0)
 			, size(0)
+			, tileRef(0)
 		{
 		}
 	};
