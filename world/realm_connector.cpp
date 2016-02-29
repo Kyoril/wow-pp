@@ -892,6 +892,23 @@ namespace wowpp
 		// Find object by GUID
 		auto *targetObj =
 			world->findObjectByGUID(targetGUID);
+		if (targetObj)
+		{
+			if (targetObj->isCreature() ||
+				targetObj->isGameCharacter())
+			{
+				// Unit is flagged as "NotSelectable"
+				if ((targetObj->getUInt32Value(unit_fields::UnitFlags) & game::unit_flags::NotSelectable) != 0)
+				{
+					return;
+				}
+			}
+			else
+			{
+				// Unselectable object type
+				return;
+			}
+		}
 
 		// Object found or no object provided
 		if (targetObj || (!targetObj && targetGUID == 0))
