@@ -66,6 +66,11 @@ std::map<UInt32, LinearSet<UInt32>> tilesByMap;
 // Helper functions
 namespace
 {
+	/// This is the length of an edge of a map file in ingame units where one unit 
+	/// represents one meter.
+	const float GridSize = 533.3333f;
+	const float GridPart = GridSize / 128;
+
 	/// Converts a tiles x and y coordinate into a single number (tile id).
 	/// @param tileX The x coordinate of the tile.
 	/// @param tileY The y coordinate of the tile.
@@ -83,11 +88,42 @@ namespace
 		out_x = tile >> 16;
 		out_y = tile & 0xFF;
 	}
+	
+	/// This method calculates the boundaries of a given map.
+	static void calculateMapBounds(UInt32 mapId, UInt32 &out_minX, UInt32 &out_minY, UInt32 &out_maxX, UInt32 &out_maxY)
+	{
+		auto it = tilesByMap.find(mapId);
+		if (it == tilesByMap.end())
+			return;
 
-	/// This is the length of an edge of a map file in ingame units where one unit 
-	/// represents one meter.
-	const float GridSize = 533.3333f;
-	const float GridPart = GridSize / 128;
+		out_minX = std::numeric_limits<UInt32>::max();
+		out_maxX = std::numeric_limits<UInt32>::min();
+		out_minY = std::numeric_limits<UInt32>::max();
+		out_maxY = std::numeric_limits<UInt32>::min();
+
+		for (auto &tile : it->second)
+		{
+			UInt32 tileX = 0, tileY = 0;
+			unpackTileID(tile, tileX, tileY);
+
+			if (tileX < out_minX) out_minX = tileX;
+			if (tileY < out_minY) out_minY = tileY;
+			if (tileX > out_maxX) out_maxX = tileX;
+			if (tileX > out_maxY) out_maxY = tileY;
+		}
+	}
+	/// Calculates tile boundaries in world units, but converted to the recast coordinate
+	/// system.
+	static void calculateTileBounds(UInt32 tileX, UInt32 tileY, float* bmin, float* bmax)
+	{
+		bmax[0] = (32 - int(tileX)) * GridSize;
+		bmax[1] = std::numeric_limits<float>::max();
+		bmax[2] = (32 - int(tileY)) * GridSize;
+
+		bmin[0] = bmax[0] - GridSize;
+		bmin[1] = std::numeric_limits<float>::min();
+		bmin[2] = bmax[2] - GridSize;
+	}
 
 	/// Represents mesh data used for navigation mesh generation
 	struct MeshData final
@@ -141,22 +177,44 @@ namespace
 		}
 	};
 
+	struct NavTile
+	{
+		NavTile() : chf(NULL), solid(NULL), cset(NULL), pmesh(NULL), dmesh(NULL) {}
+		~NavTile()
+		{
+			rcFreeCompactHeightfield(chf);
+			rcFreeContourSet(cset);
+			rcFreeHeightField(solid);
+			rcFreePolyMesh(pmesh);
+			rcFreePolyMeshDetail(dmesh);
+		}
+		rcCompactHeightfield* chf;
+		rcHeightfield* solid;
+		rcContourSet* cset;
+		rcPolyMesh* pmesh;
+		rcPolyMeshDetail* dmesh;
+	};
+
 	/// Generates navigation mesh for one map.
 	static bool createNavMesh(UInt32 mapId, dtNavMesh &navMesh)
 	{
-		float bmin[3], bmax[3];
-		bmin[1] = FLT_MIN;
-		bmax[1] = FLT_MAX;
+		// Look for tiles
+		auto &tiles = tilesByMap[mapId];
+		if (tiles.empty())
+		{
+			ILOG("No tiles found for map " << mapId);
+			return false;
+		}
 
-		// this is for width and depth
-		bmax[0] = (32 - int(64)) * GridSize;
-		bmax[2] = (32 - int(64)) * GridSize;
-		bmin[0] = bmax[0] - GridSize;
-		bmin[2] = bmax[2] - GridSize;
+		UInt32 minX = 0, minY = 0, maxX = 0, maxY = 0;
+		calculateMapBounds(mapId, minX, minY, maxX, maxY);
+
+		float bmin[3], bmax[3];
+		calculateTileBounds(maxX, maxY, bmin, bmax);
 
 		int tileBits = 28;
 		int polyBits = 20;
-		int maxTiles = 64*64;
+		int maxTiles = tiles.size();
 		int maxPolysPerTile = 1 << polyBits;
 
 		// Setup navigation mesh creation parameters
@@ -174,6 +232,147 @@ namespace
 		{
 			ELOG("[Map " << mapId << "] Failed to create navigation mesh!")
 			return false;
+		}
+
+		return true;
+	}
+	/// Generates a navigation tile.
+	static bool creaveNavTile(UInt32 mapId, UInt32 tileX, UInt32 tileY, dtNavMesh &navMesh, const ADTFile &adt)
+	{
+		const static float BaseUnitDim = 0.533333f;
+		// All are in UNIT metrics!
+		const static int VerticesPerMap = int(GridSize / BaseUnitDim + 0.5f);
+		const static int VerticesPerTile = 40;
+		const static int TilesPerMap = VerticesPerMap / VerticesPerTile;
+		const static int TilesPerMapSq = TilesPerMap * TilesPerMap;
+
+		// Calculate tile bounds
+		float bmin[3], bmax[3];
+		calculateTileBounds(tileX, tileY, bmin, bmax);
+
+		rcConfig config;
+		std::memset(&config, 0, sizeof(rcConfig));
+		rcVcopy(config.bmin, bmin);
+		rcVcopy(config.bmax, bmax);
+		config.maxVertsPerPoly = DT_VERTS_PER_POLYGON;
+		config.cs = BaseUnitDim;
+		config.ch = BaseUnitDim;
+		config.walkableSlopeAngle = 60.0f;
+		config.tileSize = VerticesPerTile;
+		config.walkableRadius = 1;
+		config.borderSize = config.walkableRadius + 3;
+		config.maxEdgeLen = VerticesPerTile + 1;        //anything bigger than tileSize
+		config.walkableHeight = 3;
+		config.walkableClimb = 2;   // keep less than walkableHeight
+		config.minRegionArea = rcSqr(60);
+		config.mergeRegionArea = rcSqr(50);
+		config.maxSimplificationError = 2.0f;       // eliminates most jagged edges (tinny polygons)
+		config.detailSampleDist = config.cs * 64;
+		config.detailSampleMaxError = config.ch * 2;
+		rcCalcGridSize(config.bmin, config.bmax, config.cs, &config.width, &config.height);
+
+		// Initialize per tile config.
+		rcConfig tileCfg;
+		memcpy(&tileCfg, &config, sizeof(rcConfig));
+		tileCfg.width = config.tileSize + config.borderSize * 2;
+		tileCfg.height = config.tileSize + config.borderSize * 2;
+
+		// Build all tiles
+		std::vector<NavTile> navTiles(TilesPerMapSq);
+		for (int y = 0; y < TilesPerMap; ++y)
+		{
+			for (int x = 0; x < TilesPerMap; ++x)
+			{
+				auto &tile = navTiles[x + y * TilesPerMap];
+
+				// Calculate the per tile bounding box.
+				tileCfg.bmin[0] = config.bmin[0] + (x * config.tileSize - config.borderSize) * config.cs;
+				tileCfg.bmin[2] = config.bmin[2] + (y * config.tileSize - config.borderSize) * config.cs;
+				tileCfg.bmax[0] = config.bmin[0] + ((x + 1) * config.tileSize + config.borderSize) * config.cs;
+				tileCfg.bmax[2] = config.bmin[2] + ((y + 1) * config.tileSize + config.borderSize) * config.cs;
+
+				float tbmin[2], tbmax[2];
+				tbmin[0] = tileCfg.bmin[0];
+				tbmin[1] = tileCfg.bmin[2];
+				tbmax[0] = tileCfg.bmax[0];
+				tbmax[1] = tileCfg.bmax[2];
+
+				// build heightfield
+				tile.solid = rcAllocHeightfield();
+				if (!tile.solid || !rcCreateHeightfield(nullptr, *tile.solid, tileCfg.width, tileCfg.height, tileCfg.bmin, tileCfg.bmax, tileCfg.cs, tileCfg.ch))
+				{
+					ELOG("Failed building heightfield!");
+					continue;
+				}
+#if 0
+				// Mark all walkable tiles, both liquids and solids
+				unsigned char* triFlags = new unsigned char[tTriCount];
+				memset(triFlags, NAV_GROUND, tTriCount * sizeof(unsigned char));
+				rcClearUnwalkableTriangles(nullptr, tileCfg.walkableSlopeAngle, tVerts, tVertCount, tTris, tTriCount, triFlags);
+				rcRasterizeTriangles(nullptr, tVerts, tVertCount, tTris, triFlags, tTriCount, *tile.solid, config.walkableClimb);
+				delete[] triFlags;
+
+				rcFilterLowHangingWalkableObstacles(nullptr, config.walkableClimb, *tile.solid);
+				rcFilterLedgeSpans(nullptr, tileCfg.walkableHeight, tileCfg.walkableClimb, *tile.solid);
+				rcFilterWalkableLowHeightSpans(nullptr, tileCfg.walkableHeight, *tile.solid);
+
+				rcRasterizeTriangles(nullptr, lVerts, lVertCount, lTris, lTriFlags, lTriCount, *tile.solid, config.walkableClimb);
+
+				// compact heightfield spans
+				tile.chf = rcAllocCompactHeightfield();
+				if (!tile.chf || !rcBuildCompactHeightfield(nullptr, tileCfg.walkableHeight, tileCfg.walkableClimb, *tile.solid, *tile.chf))
+				{
+					ELOG("Failed compacting heightfield!");
+					continue;
+				}
+
+				// build polymesh intermediates
+				if (!rcErodeWalkableArea(nullptr, config.walkableRadius, *tile.chf))
+				{
+					ELOG("Failed eroding area!");
+					continue;
+				}
+				if (!rcBuildDistanceField(nullptr, *tile.chf))
+				{
+					ELOG("Failed building distance field!");
+					continue;
+				}
+				if (!rcBuildRegions(nullptr, *tile.chf, tileCfg.borderSize, tileCfg.minRegionArea, tileCfg.mergeRegionArea))
+				{
+					ELOG("Failed building regions!");
+					continue;
+				}
+				tile.cset = rcAllocContourSet();
+				if (!tile.cset || !rcBuildContours(nullptr, *tile.chf, tileCfg.maxSimplificationError, tileCfg.maxEdgeLen, *tile.cset))
+				{
+					ELOG("Failed building contours!");
+					continue;
+				}
+
+				// build polymesh
+				tile.pmesh = rcAllocPolyMesh();
+				if (!tile.pmesh || !rcBuildPolyMesh(nullptr, *tile.cset, tileCfg.maxVertsPerPoly, *tile.pmesh))
+				{
+					ELOG("Failed building polymesh!");
+					continue;
+				}
+				tile.dmesh = rcAllocPolyMeshDetail();
+				if (!tile.dmesh || !rcBuildPolyMeshDetail(nullptr, *tile.pmesh, *tile.chf, tileCfg.detailSampleDist, tileCfg.detailSampleMaxError, *tile.dmesh))
+				{
+					ELOG("Failed building polymesh detail!");
+					continue;
+				}
+#endif
+				// free those up
+				// we may want to keep them in the future for debug
+				// but right now, we don't have the code to merge them
+				rcFreeHeightField(tile.solid);
+				tile.solid = nullptr;
+				rcFreeCompactHeightfield(tile.chf);
+				tile.chf = nullptr;
+				rcFreeContourSet(tile.cset);
+				tile.cset = nullptr;
+			}
 		}
 
 		return true;
@@ -384,6 +583,10 @@ namespace
 		}
 #endif
 
+		if (creaveNavTile(mapId, cellX, cellY, navMesh, adt))
+		{
+
+		}
 #if 0
 		// Build nav mesh
 		MapNavigationChunk navigationChunk;
@@ -419,13 +622,11 @@ namespace
 		{
 			return false;
 		}
-		/*
+
 		if (mapId != 36)
 		{
-			ILOG("Skipping map " << mapId);
 			return true;
 		}
-		*/
 
 		// Build map
 		ILOG("Building map " << mapId << " - " << mapName << "...");
@@ -452,10 +653,23 @@ namespace
 		}
 
 		// Get adt tile information
+		ILOG("Discovering tiles for map " << mapId << "...");
 		auto &adtTiles = mapWDT.getMAINChunk().adt;
 		
-		// TODO: Filter tiles that aren't needed here
+		// Filter tiles we don't need
+		for (UInt32 tile = 0; tile < adtTiles.size(); ++tile)
+		{
+			if (adtTiles[tile].exist > 0)
+			{
+				// Calcualte cell index
+				const UInt32 cellX = tile / 64;
+				const UInt32 cellY = tile % 64;
+				tilesByMap[mapId].add(packTileID(cellX, cellY));
+			}
+		}
 
+		ILOG("Found " << tilesByMap[mapId].size() << " tiles");
+		
 		// Create nav mesh
 		auto freeNavMesh = [](dtNavMesh* ptr) { dtFreeNavMesh(ptr); };
 		std::unique_ptr<dtNavMesh, decltype(freeNavMesh)> navMesh(dtAllocNavMesh(), freeNavMesh);
