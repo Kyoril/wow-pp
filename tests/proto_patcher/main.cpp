@@ -247,6 +247,25 @@ namespace wowpp
 						break;
 
 					//////////////////////////////////////////////////////////////////////////
+					// Hemorrhage: Add Combo Point (Needed because this spell already has 
+					// 3 / 3 effects, and there is no space left for the AddComboPoint effect)
+					case 16511:	// Rank 1
+					case 17347:	// Rank 2
+					case 17348:	// Rank 3
+					case 26864:	// Rank 4
+						it->add_additionalspells(34071);	// Combo Point
+						break;
+
+					//////////////////////////////////////////////////////////////////////////
+					// Mangle (Cat): Add Combo Point (Needed because this spell already has 
+					// 3 / 3 effects, and there is no space left for the AddComboPoint effect)
+					case 33876:	// Rank 1
+					case 33982:	// Rank 2
+					case 33983:	// Rank 3
+						it->add_additionalspells(34071);	// Combo Point
+						break;
+
+					//////////////////////////////////////////////////////////////////////////
 					// Power Word: Shield
 					case 17:	// Rank 1
 					case 592:	// Rank 2
