@@ -43,6 +43,15 @@ using namespace std;
 using namespace wowpp;
 
 //////////////////////////////////////////////////////////////////////////
+// Calls:
+//	For Each Map... (separate thread for each map, up to #cpu-cores)
+//		convertMap
+//			createNavMesh
+//			For Each Tile...
+//				convertADT
+//					createNavTile
+
+//////////////////////////////////////////////////////////////////////////
 // Shortcuts
 namespace fs = boost::filesystem;
 
@@ -88,7 +97,123 @@ namespace
 		out_x = tile >> 16;
 		out_y = tile & 0xFF;
 	}
+
+	enum Spot
+	{
+		TOP = 1,
+		RIGHT = 2,
+		LEFT = 3,
+		BOTTOM = 4,
+		ENTIRE = 5
+	};
+
+	enum Grid
+	{
+		GRID_V8,
+		GRID_V9
+	};
+
+	enum NavTerrain
+	{
+		NAV_EMPTY = 0x00,
+		NAV_GROUND = 0x01,
+		NAV_MAGMA = 0x02,
+		NAV_SLIME = 0x04,
+		NAV_WATER = 0x08,
+		NAV_UNUSED1 = 0x10,
+		NAV_UNUSED2 = 0x20,
+		NAV_UNUSED3 = 0x40,
+		NAV_UNUSED4 = 0x80
+		// we only have 8 bits
+	};
+
+	static const int V9_SIZE = 129;
+	static const int V9_SIZE_SQ = V9_SIZE * V9_SIZE;
+	static const int V8_SIZE = 128;
+	static const int V8_SIZE_SQ = V8_SIZE * V8_SIZE;
+	static const float GRID_SIZE = 533.33333f;
+	static const float GRID_PART_SIZE = GRID_SIZE / V8_SIZE;
+
+	static void getHeightCoord(UInt32 index, Grid grid, float xOffset, float yOffset, float* coord, float* v)
+	{
+		// wow coords: x, y, height
+		// coord is mirroed about the horizontal axes
+		switch (grid)
+		{
+			case GRID_V9:
+				coord[0] = (xOffset + index % (V9_SIZE)* GRID_PART_SIZE) * -1.f;
+				coord[1] = (yOffset + (int)(index / (V9_SIZE)) * GRID_PART_SIZE) * -1.f;
+				coord[2] = v[index];
+				break;
+			case GRID_V8:
+				coord[0] = (xOffset + index % (V8_SIZE)* GRID_PART_SIZE + GRID_PART_SIZE / 2.f) * -1.f;
+				coord[1] = (yOffset + (int)(index / (V8_SIZE)) * GRID_PART_SIZE + GRID_PART_SIZE / 2.f) * -1.f;
+				coord[2] = v[index];
+				break;
+		}
+	}
+
+	static void getHeightTriangle(UInt32 square, Spot triangle, UInt32* indices)
+	{
+		int rowOffset = square / V8_SIZE;
+		switch (triangle)
+		{
+			case TOP:
+				indices[0] = square + rowOffset;                //           0-----1 .... 128
+				indices[1] = square + 1 + rowOffset;            //           |\ T /|
+				indices[2] = (V9_SIZE_SQ)+square;				//           | \ / |
+				break;                                          //           |L 0 R| .. 127
+			case LEFT:                                          //           | / \ |
+				indices[0] = square + rowOffset;                //           |/ B \|
+				indices[1] = (V9_SIZE_SQ)+square;				//          129---130 ... 386
+				indices[2] = square + V9_SIZE + rowOffset;      //           |\   /|
+				break;                                          //           | \ / |
+			case RIGHT:                                         //           | 128 | .. 255
+				indices[0] = square + 1 + rowOffset;            //           | / \ |
+				indices[1] = square + V9_SIZE + 1 + rowOffset;  //           |/   \|
+				indices[2] = (V9_SIZE_SQ)+square;				//          258---259 ... 515
+				break;
+			case BOTTOM:
+				indices[0] = (V9_SIZE_SQ)+square;
+				indices[1] = square + V9_SIZE + 1 + rowOffset;
+				indices[2] = square + V9_SIZE + rowOffset;
+				break;
+			default: break;
+		}
+	}
 	
+	static void getLoopVars(Spot portion, int& loopStart, int& loopEnd, int& loopInc)
+	{
+		switch (portion)
+		{
+			case ENTIRE:
+				loopStart = 0;
+				loopEnd = V8_SIZE_SQ;
+				loopInc = 1;
+				break;
+			case TOP:
+				loopStart = 0;
+				loopEnd = V8_SIZE;
+				loopInc = 1;
+				break;
+			case LEFT:
+				loopStart = 0;
+				loopEnd = V8_SIZE_SQ - V8_SIZE + 1;
+				loopInc = V8_SIZE;
+				break;
+			case RIGHT:
+				loopStart = V8_SIZE - 1;
+				loopEnd = V8_SIZE_SQ;
+				loopInc = V8_SIZE;
+				break;
+			case BOTTOM:
+				loopStart = V8_SIZE_SQ - V8_SIZE;
+				loopEnd = V8_SIZE_SQ;
+				loopInc = 1;
+				break;
+		}
+	}
+
 	/// This method calculates the boundaries of a given map.
 	static void calculateMapBounds(UInt32 mapId, UInt32 &out_minX, UInt32 &out_minY, UInt32 &out_maxX, UInt32 &out_maxY)
 	{
@@ -131,51 +256,13 @@ namespace
 		// Three coordinates represent one vertex (x, y, z)
 		std::vector<float> solidVerts;
 		/// Three indices represent one triangle (v1, v2, v3)
-		std::vector<int> solidTris;
+		std::vector<UInt32> solidTris;
 	};
 
-	// this class gathers all debug info holding and output
-	struct IntermediateValues
+	static bool loadMap(UInt32 mapID, UInt32 tileX, UInt32 tileY, MeshData& meshData, Spot portion)
 	{
-		rcHeightfield* heightfield;
-		rcCompactHeightfield* compactHeightfield;
-		rcContourSet* contours;
-		rcPolyMesh* polyMesh;
-		rcPolyMeshDetail* polyMeshDetail;
 
-		IntermediateValues() 
-			: compactHeightfield(nullptr)
-			, heightfield(nullptr)
-			, contours(nullptr)
-			, polyMesh(nullptr)
-			, polyMeshDetail(nullptr) 
-		{
-		}
-		~IntermediateValues()
-		{
-		}
-		void writeIV(UInt32 mapID, UInt32 tileX, UInt32 tileY)
-		{
-		}
-		void debugWrite(FILE* file, const rcHeightfield* mesh)
-		{
-		}
-		void debugWrite(FILE* file, const rcCompactHeightfield* chf)
-		{
-		}
-		void debugWrite(FILE* file, const rcContourSet* cs)
-		{
-		}
-		void debugWrite(FILE* file, const rcPolyMesh* mesh)
-		{
-		}
-		void debugWrite(FILE* file, const rcPolyMeshDetail* mesh)
-		{
-		}
-		void generateObjFile(UInt32 mapID, UInt32 tileX, UInt32 tileY, MeshData& meshData)
-		{
-		}
-	};
+	}
 
 	struct NavTile
 	{
@@ -377,7 +464,6 @@ namespace
 
 		return true;
 	}
-
 	/// Converts an ADT tile of a WDT file.
 	static bool convertADT(UInt32 mapId, const String &mapName, WDTFile &wdt, UInt32 tileIndex, dtNavMesh &navMesh)
 	{
@@ -427,7 +513,7 @@ namespace
 			wmos.emplace_back(std::move(wmoFile));
 		}
 
-		// Create files (TODO)
+		// Create files
 		std::ofstream fileStrm(mapFile, std::ios::out | std::ios::binary);
 		io::StreamSink sink(fileStrm);
 		io::Writer writer(sink);
@@ -585,7 +671,7 @@ namespace
 
 		if (creaveNavTile(mapId, cellX, cellY, navMesh, adt))
 		{
-
+			DLOG("\tCreated nav tile");
 		}
 #if 0
 		// Build nav mesh
@@ -606,7 +692,6 @@ namespace
 
 		return true;
 	}
-
 	/// Converts a map.
 	static bool convertMap(UInt32 dbcRow)
 	{
