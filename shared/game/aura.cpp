@@ -389,6 +389,11 @@ namespace wowpp
 			}
 		}
 	}
+	
+	void Aura::handleModDamageTaken(bool apply)
+	{
+		
+	}
 
 	void Aura::handleDamageShield(bool apply)
 	{

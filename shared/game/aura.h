@@ -114,6 +114,8 @@ namespace wowpp
 		void handleModStun(bool apply);
 		/// 13
 		void handleModDamageDone(bool apply);
+		/// 14
+		void handleModDamageTaken(bool apply);
 		/// 15
 		void handleDamageShield(bool apply);
 		/// 16
