@@ -2797,4 +2797,39 @@ namespace wowpp
 		}
 	}
 
+	void Player::handleMoveTimeSkipped(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid;
+		UInt32 timeSkipped;
+		if (!(game::client_read::moveTimeSkipped(packet, guid, timeSkipped)))
+		{
+			return;
+		}
+
+		if (guid != m_character->getGuid())
+		{
+			WLOG("Received CMSG_MOVE_TIME_SKIPPED for different character...");
+			return;
+		}
+
+		// Anti hack check
+		if (Int32(timeSkipped) < 0)
+		{
+			WLOG("PLAYER " << m_character->getName() << " POSSIBLY HACKING");
+
+			// Kick that player!
+			m_instance.removeGameObject(*m_character);
+			m_character.reset();
+
+			// Notify the realm
+			m_realmConnector.notifyWorldInstanceLeft(m_characterId, pp::world_realm::world_left_reason::Disconnect);
+
+			// Destroy player instance
+			m_manager.playerDisconnected(*this);
+			return;
+		}
+
+		// TODO: Do something with the time diff
+	}
+
 }

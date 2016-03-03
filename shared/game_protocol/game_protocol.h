@@ -161,6 +161,7 @@ namespace wowpp
 				GroupAssistentLeader	= 0x28F,
 				MoveFallReset			= 0x2CA,
 				CharRename				= 0x2C7,
+				MoveTimeSkipped			= 0x2CE,
 				RaidTargetUpdate		= 0x321,
 				RaidReadyCheck			= 0x322,
 				SetDungeonDifficulty	= 0x329,
@@ -1196,6 +1197,12 @@ namespace wowpp
 				io::Reader &packet,
 				UInt8 &out_bag,
 				UInt8 &out_slot
+				);
+
+			bool moveTimeSkipped(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				UInt32 &out_timeSkipped
 				);
 		};
 

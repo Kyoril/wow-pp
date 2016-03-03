@@ -4241,6 +4241,12 @@ namespace wowpp
 					>> io::read<NetUInt8>(out_bag)
 					>> io::read<NetUInt8>(out_slot);
 			}
+			bool moveTimeSkipped(io::Reader & packet, UInt64 & out_guid, UInt32 & out_timeSkipped)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_guid)
+					>> io::read<NetUInt32>(out_timeSkipped);
+			}
 		}
 	}
 }

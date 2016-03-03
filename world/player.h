@@ -209,6 +209,7 @@ namespace wowpp
 		void handleQuestlogRemoveQuest(game::Protocol::IncomingPacket &packet);
 		void handleGameObjectUse(game::Protocol::IncomingPacket &packet);
 		void handleOpenItem(game::Protocol::IncomingPacket &packet);
+		void handleMoveTimeSkipped(game::Protocol::IncomingPacket &packet);
 
 	private:
 
