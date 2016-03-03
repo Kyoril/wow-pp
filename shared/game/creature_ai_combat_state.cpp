@@ -227,6 +227,7 @@ namespace wowpp
 	void CreatureAICombatState::onLeave()
 	{
 		// Reset all events here to prevent them being fired in another ai state
+		m_nextActionCountdown.cancel();
 		m_onThreatened.disconnect();
 		m_getThreat.disconnect();
 		m_setThreat.disconnect();
@@ -622,6 +623,9 @@ namespace wowpp
 			case game::spell_cast_result::FailedLineOfSight:
 			case game::spell_cast_result::FailedNoPower:
 				m_nextActionCountdown.setEnd(getCurrentTime() + 1);
+				return;
+			case game::spell_cast_result::FailedCasterDead:
+				// Don't do anything because we are dead by now!
 				return;
 			default:
 				// Choose the next action

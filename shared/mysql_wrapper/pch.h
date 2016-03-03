@@ -41,3 +41,6 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
+#include <boost/spirit/include/classic.hpp>
+
+#include "include_mysql.h"

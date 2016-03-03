@@ -29,7 +29,6 @@
 #include "creature_spawner.h"
 #include "world_object_spawner.h"
 #include "unit_finder.h"
-#include "boost/signals2.hpp"
 #include "map.h"
 
 namespace wowpp

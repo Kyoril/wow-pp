@@ -22,9 +22,7 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include "include_mysql.h"
 #include "mysql_exception.h"
-#include <boost/lexical_cast.hpp>
 
 namespace wowpp
 {

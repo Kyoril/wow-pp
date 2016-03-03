@@ -22,9 +22,6 @@
 #pragma once
 
 #include "reader.h"
-#include <boost/filesystem.hpp>
-#include <set>
-#include <memory>
 
 namespace wowpp
 {

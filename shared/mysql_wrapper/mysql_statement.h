@@ -22,7 +22,6 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include "include_mysql.h"
 
 namespace wowpp
 {

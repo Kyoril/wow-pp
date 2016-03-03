@@ -19,10 +19,10 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "memory_reader.h"
 #include "memory_directory.h"
 #include "memory_file_device.h"
-#include <memory>
 
 namespace wowpp
 {

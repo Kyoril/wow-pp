@@ -21,9 +21,6 @@
 
 #pragma once
 
-#include <memory>
-#include <boost/iostreams/stream.hpp>
-
 namespace wowpp
 {
 	namespace virtual_dir
