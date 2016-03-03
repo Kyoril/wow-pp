@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "memory_writer.h"
 #include "memory_directory.h"
 #include "memory_file_device.h"

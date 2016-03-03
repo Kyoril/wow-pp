@@ -19,9 +19,8 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "memory_directory.h"
-#include <algorithm>
-#include <cassert>
 
 namespace wowpp
 {

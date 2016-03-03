@@ -19,8 +19,8 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "file_system_reader.h"
-#include <fstream>
 
 namespace wowpp
 {

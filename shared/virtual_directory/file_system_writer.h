@@ -22,7 +22,6 @@
 #pragma once
 
 #include "writer.h"
-#include <boost/filesystem.hpp>
 
 namespace wowpp
 {

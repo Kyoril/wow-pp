@@ -68,3 +68,6 @@
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/type_traits/is_float.hpp>
+#include <boost/spirit/include/classic.hpp>
+
+#include "mysql_wrapper/include_mysql.h"

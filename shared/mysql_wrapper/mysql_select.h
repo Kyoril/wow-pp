@@ -22,8 +22,6 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include "include_mysql.h"
-#include <boost/noncopyable.hpp>
 
 namespace wowpp
 {
