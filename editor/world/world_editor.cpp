@@ -356,7 +356,6 @@ namespace wowpp
 					add.added.position = pos;
 					m_worldRenderer->handleEvent(terrain::editing::TerrainChangeEvent(add));
 
-					ILOG("Loading tile " << pos);
 					std::unique_ptr<Map> mapInst(new Map(
 						m_map, m_app.getConfiguration().dataPath));
 					auto *tile = mapInst->getTile(TileIndex2D(pos[0], pos[1]));

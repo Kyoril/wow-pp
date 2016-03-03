@@ -146,8 +146,17 @@ namespace wowpp
 		MapAreaChunk areas;
 		//MapHeightChunk heights;
 		MapCollisionChunk collision;
+		MapNavigationChunk navigation;
 
 		~MapDataTile() {}
+	};
+
+	struct NavMeshDeleter final
+	{
+		virtual void operator()(dtNavMesh *ptr) const
+		{
+			if (ptr) dtFreeNavMesh(ptr);
+		}
 	};
 
 	/// This class represents a map with additional geometry and navigation data.
@@ -182,5 +191,8 @@ namespace wowpp
 		// Note: We use a pointer here, because we don't need to load ALL height data
 		// of all tiles, and Grid allocates them immediatly.
 		Grid<std::shared_ptr<MapDataTile>> m_tiles;
+		
+		// Holds all loaded navigation meshes, keyed by map id.
+		static std::map<UInt32, std::unique_ptr<dtNavMesh, NavMeshDeleter>> navMeshsPerMap;
 	};
 }

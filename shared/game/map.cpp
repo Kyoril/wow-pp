@@ -29,11 +29,72 @@
 
 namespace wowpp
 {
+	std::map<UInt32, std::unique_ptr<dtNavMesh, NavMeshDeleter>> Map::navMeshsPerMap;
+
 	Map::Map(const proto::MapEntry &entry, boost::filesystem::path dataPath)
 		: m_entry(entry)
 		, m_dataPath(std::move(dataPath))
 		, m_tiles(64, 64)
 	{
+		// Allocate navigation mesh
+		auto it = navMeshsPerMap.find(entry.id());
+		if (it == navMeshsPerMap.end())
+		{
+			ILOG("Creating navigation mesh instance");
+
+			// Build file name
+			std::ostringstream strm;
+			strm << (m_dataPath / "maps").string() << "/" << m_entry.id() << ".map";
+
+			const String file = strm.str();
+			if (!boost::filesystem::exists(file))
+			{
+				// File does not exist
+				DLOG("Could not load map file " << file << ": File does not exist");
+				return;
+			}
+
+			// Open file for reading
+			std::ifstream mapFile(file.c_str(), std::ios::in | std::ios::binary);
+			if (!mapFile)
+			{
+				ELOG("Could not load map file " << file);
+				return;
+			}
+
+			dtNavMeshParams params;
+			memset(&params, 0, sizeof(dtNavMeshParams));
+			if (!(mapFile.read(reinterpret_cast<char*>(&params), sizeof(dtNavMeshParams))))
+			{
+				ELOG("Map file " << file << " seems to be corrupted!");
+				return;
+			}
+
+			DLOG("FILE " << file);
+			DLOG("Tile width: " << params.tileWidth << " x " << params.tileHeight);
+			DLOG("Origin: " << params.orig[0] << ", " << params.orig[1] << ", " << params.orig[2]);
+			DLOG("Max tiles: " << params.maxTiles);
+			DLOG("Max polys: " << params.maxPolys);
+
+			auto navMesh = std::unique_ptr<dtNavMesh, NavMeshDeleter>(dtAllocNavMesh());
+			if (!navMesh)
+			{
+				ELOG("Could not allocate navigation mesh!");
+				return;
+			}
+
+			dtStatus result = navMesh->init(&params);
+			if (!dtStatusSucceed(result))
+			{
+				ELOG("Could not initialize navigation mesh: " << result);
+				return;
+			}
+
+			// At this point, it's just an empty mesh without tiles. Tiles will be loaded
+			// when required.
+			navMeshsPerMap[entry.id()] = std::move(navMesh);
+			ILOG("Navigation mesh for map " << m_entry.id() << " initialized");
+		}
 	}
 
 	MapDataTile *Map::getTile(const TileIndex2D &position)
@@ -120,6 +181,25 @@ namespace wowpp
 					// Read all indices
 					tile->collision.triangles.resize(tile->collision.triangleCount);
 					mapFile.read(reinterpret_cast<char *>(tile->collision.triangles.data()), sizeof(Triangle) * tile->collision.triangleCount);
+				}
+
+				// Read navigation data
+				if (mapHeaderChunk.offsNavigation)
+				{
+					mapFile.seekg(mapHeaderChunk.offsNavigation, std::ios::beg);
+
+					// Read collision header
+					mapFile.read(reinterpret_cast<char *>(&tile->navigation.fourCC), sizeof(UInt32));
+					mapFile.read(reinterpret_cast<char *>(&tile->navigation.size), sizeof(UInt32));
+					mapFile.read(reinterpret_cast<char *>(&tile->navigation.tileRef), sizeof(UInt32));
+					
+					// Read navigation mesh data
+					const UInt32 dataSize = tile->navigation.size - sizeof(UInt32);
+					if (dataSize)
+					{
+						tile->navigation.data.resize(dataSize, 0);
+						mapFile.read(tile->navigation.data.data(), dataSize);
+					}
 				}
 
 				/*

@@ -348,8 +348,11 @@ namespace
 		float bmin[3], bmax[3];
 		calculateTileBounds(maxX, maxY, bmin, bmax);
 
-		int tileBits = 28;
-		int polyBits = 20;
+		int tileBits = dtIlog2(dtNextPow2(tiles.size()));
+		if (tileBits < 1) tileBits = 1;                                     // need at least one bit!
+		int polyBits = sizeof(dtPolyRef)*8 - 10 - tileBits;
+
+		//int polyBits = 20;
 		int maxTiles = tiles.size();
 		int maxPolysPerTile = 1 << polyBits;
 
@@ -373,8 +376,13 @@ namespace
 		return true;
 	}
 	/// Generates a navigation tile.
-	static bool creaveNavTile(UInt32 mapId, UInt32 tileX, UInt32 tileY, dtNavMesh &navMesh, const ADTFile &adt)
+	static bool creaveNavTile(UInt32 mapId, UInt32 tileX, UInt32 tileY, dtNavMesh &navMesh, const ADTFile &adt, MapNavigationChunk &out_chunk)
 	{
+		// Reset chunk data
+		out_chunk.data.clear();
+		out_chunk.size = 0;
+		out_chunk.tileRef = 0;
+
 		// Build mesh data
 		MeshData mesh;
 		{
@@ -689,7 +697,6 @@ namespace
 			}
 			if (!params.vertCount || !params.verts)
 			{
-				WLOG("No vertices to process");
 				continue;
 			}
 			if (!params.polyCount || !params.polys ||
@@ -724,22 +731,14 @@ namespace
 			}
 
 			// We have nav data!
+			out_chunk.data.resize(navDataSize);
+			std::memcpy(&out_chunk.data[0], navData, navDataSize);
+			out_chunk.tileRef = tileRef;
 
-
-			// now that tile is written to disk, we can unload it
-			navMesh.removeTile(tileRef, NULL, NULL);
+			// Remove (and unload) tile, since we've copied it's data already
+			navMesh.removeTile(tileRef, &navData, &navDataSize);
 		}
 		while (0);
-
-		// restore padding so that the debug visualization is correct
-		for (int i = 0; i < iv.polyMesh->nverts; ++i)
-		{
-			unsigned short* v = &iv.polyMesh->verts[i * 3];
-			v[0] += (unsigned short)config.borderSize;
-			v[2] += (unsigned short)config.borderSize;
-		}
-
-		iv.generateObjFile(mapId, tileX, tileY, mesh);
 
 		return true;
 	}
@@ -930,42 +929,28 @@ namespace
 			header.collisionSize = sink.position() - header.offsCollision;
 		}
 
-#if 0
-		// Map height header
-		MapHeightChunk heightChunk;
-		heightChunk.fourCC = 0x54484D57;		// WMHT		- WoW Map Height
-		heightChunk.size = sizeof(MapHeightChunk) - 8;
-		for (size_t i = 0; i < 16 * 16; ++i)
-		{
-			const auto &mcnk = adt.getMCNKChunk(i);
-			const auto &mcvt = adt.getMCVTChunk(i);
-
-			size_t index = 0;
-			for (auto &height : mcvt.heights)
-			{
-				heightChunk.heights[i][index++] = mcnk.zpos + height;
-			}
-		}
-#endif
-
-		if (creaveNavTile(mapId, cellX, cellY, navMesh, adt))
-		{
-			DLOG("\tCreated nav tile");
-		}
-#if 0
 		// Build nav mesh
 		MapNavigationChunk navigationChunk;
 		navigationChunk.fourCC = 0x564E4D57;		// WMNV		- WoW Map Navigation
 		navigationChunk.size = 0;
-		header.offsNavigation = header.offsAreaTable + header.areaTableSize + header.collisionSize;
-		header.navigationSize = sizeof(UInt32) * 4 + navigationChunk.size;
-		writer
-			<< io::write<UInt32>(navigationChunk.fourCC)
-			<< io::write<UInt32>(navigationChunk.size)
-			<< io::write<UInt32>(navigationChunk.tileRef)
-			<< io::write_dynamic_range<NetUInt32>(navigationChunk.data);
-#endif
+		if (creaveNavTile(mapId, cellX, cellY, navMesh, adt, navigationChunk))
+		{
+			if (!navigationChunk.data.empty())
+			{
+				// Calculate real chunk size
+				navigationChunk.size = sizeof(dtTileRef) + navigationChunk.data.size();
 
+				// Fix header
+				header.offsNavigation = sink.position();
+				header.navigationSize = sizeof(UInt32) * 2 + navigationChunk.size;
+				writer
+					<< io::write<UInt32>(navigationChunk.fourCC)
+					<< io::write<UInt32>(navigationChunk.size)
+					<< io::write<UInt32>(navigationChunk.tileRef)
+					<< io::write_range(navigationChunk.data);
+			}
+		}
+		
 		// Overwrite header settings
 		writer.writePOD(headerPos, header);
 
@@ -1039,6 +1024,7 @@ namespace
 		std::unique_ptr<dtNavMesh, decltype(freeNavMesh)> navMesh(dtAllocNavMesh(), freeNavMesh);
 		if (!createNavMesh(mapId, *navMesh))
 		{
+			ELOG("Failed creating the navigation mesh!");
 			return false;
 		}
 
