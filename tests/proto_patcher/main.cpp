@@ -129,7 +129,7 @@ namespace wowpp
 
 					if (save(fileName))
 					{
-ILOG("Saved updated settings with default values as " << fileName);
+						ILOG("Saved updated settings with default values as " << fileName);
 					}
 					else
 					{

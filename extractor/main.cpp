@@ -134,7 +134,7 @@ namespace
 	static const float GRID_SIZE = 533.33333f;
 	static const float GRID_PART_SIZE = GRID_SIZE / V8_SIZE;
 
-	static void getHeightCoord(UInt32 index, Grid grid, float xOffset, float yOffset, float* coord, float* v)
+	static void getHeightCoord(UInt32 index, Grid grid, float xOffset, float yOffset, float* coord, const float* v)
 	{
 		// wow coords: x, y, height
 		// coord is mirroed about the horizontal axes
@@ -153,7 +153,7 @@ namespace
 		}
 	}
 
-	static void getHeightTriangle(UInt32 square, Spot triangle, UInt32* indices)
+	static void getHeightTriangle(UInt32 square, Spot triangle, int* indices)
 	{
 		int rowOffset = square / V8_SIZE;
 		switch (triangle)
@@ -253,10 +253,10 @@ namespace
 	/// Represents mesh data used for navigation mesh generation
 	struct MeshData final
 	{
-		// Three coordinates represent one vertex (x, y, z)
+		/// Three coordinates represent one vertex (x, y, z)
 		std::vector<float> solidVerts;
 		/// Three indices represent one triangle (v1, v2, v3)
-		std::vector<UInt32> solidTris;
+		std::vector<int> solidTris;
 	};
 
 	static bool loadMap(UInt32 mapID, UInt32 tileX, UInt32 tileY, MeshData& meshData, Spot portion)
@@ -280,6 +280,55 @@ namespace
 		rcContourSet* cset;
 		rcPolyMesh* pmesh;
 		rcPolyMeshDetail* dmesh;
+	};
+
+	// this class gathers all debug info holding and output
+	struct IntermediateValues
+	{
+		rcHeightfield* heightfield;
+		rcCompactHeightfield* compactHeightfield;
+		rcContourSet* contours;
+		rcPolyMesh* polyMesh;
+		rcPolyMeshDetail* polyMeshDetail;
+
+		IntermediateValues()
+			: compactHeightfield(nullptr)
+			, heightfield(nullptr)
+			, contours(nullptr)
+			, polyMesh(nullptr)
+			, polyMeshDetail(nullptr)
+		{
+		}
+		~IntermediateValues()
+		{
+		}
+		void generateObjFile(UInt32 mapID, UInt32 tileX, UInt32 tileY, MeshData& meshData)
+		{
+			char objFileName[255];
+			sprintf(objFileName, "meshes/map%03u%02u%02u.obj", mapID, tileY, tileX);
+
+			FILE* objFile = fopen(objFileName, "wb");
+			if (!objFile)
+			{
+				char message[1024];
+				sprintf(message, "Failed to open %s for writing!\n", objFileName);
+				perror(message);
+				return;
+			}
+
+			float* verts = &meshData.solidVerts[0];
+			int vertCount = meshData.solidVerts.size() / 3;
+			int* tris = &meshData.solidTris[0];
+			int triCount = meshData.solidTris.size() / 3;
+
+			for (int i = 0; i < meshData.solidVerts.size() / 3; i++)
+				fprintf(objFile, "v %f %f %f\n", verts[i * 3], verts[i * 3 + 1], verts[i * 3 + 2]);
+
+			for (int i = 0; i < meshData.solidTris.size() / 3; i++)
+				fprintf(objFile, "f %i %i %i\n", tris[i * 3] + 1, tris[i * 3 + 1] + 1, tris[i * 3 + 2] + 1);
+
+			fclose(objFile);
+		}
 	};
 
 	/// Generates navigation mesh for one map.
@@ -326,7 +375,85 @@ namespace
 	/// Generates a navigation tile.
 	static bool creaveNavTile(UInt32 mapId, UInt32 tileX, UInt32 tileY, dtNavMesh &navMesh, const ADTFile &adt)
 	{
+		// Build mesh data
+		MeshData mesh;
+		{
+			static_assert(V8_SIZE == 128, "V8_SIZE has to equal 128");
+			std::array<float, 128 * 128> V8;
+			V8.fill(0.0f);
+			static_assert(V9_SIZE == 129, "V9_SIZE has to equal 129");
+			std::array<float, 129 * 129> V9;
+			V9.fill(0.0f);
+
+			UInt32 chunkIndex = 0;
+			for (UInt32 i = 0; i < 16; ++i)
+			{
+				for (UInt32 j = 0; j < 16; ++j)
+				{
+					auto &MCNK = adt.getMCNKChunk(j + i * 16);
+					auto &MCVT = adt.getMCVTChunk(j + i * 16);
+
+					// get V9 height map
+					for (int y = 0; y <= 8; y++)
+					{
+						int cy = i * 8 + y;
+						for (int x = 0; x <= 8; x++)
+						{
+							int cx = j * 8 + x;
+							V9[cy + cx * V9_SIZE] = MCVT.heights[y * (8 * 2 + 1) + x] + MCNK.ypos;
+						}
+					}
+					// get V8 height map
+					for (int y = 0; y < 8; y++)
+					{
+						int cy = i * 8 + y;
+						for (int x = 0; x < 8; x++)
+						{
+							int cx = j * 8 + x;
+							V8[cy + cx * V8_SIZE] = MCVT.heights[y * (8 * 2 + 1) + 8 + 1 + x] + MCNK.ypos;
+						}
+					}
+				}
+			}
+
+			int count = mesh.solidVerts.size() / 3;
+			float xoffset = (float(tileX) - 32) * GridSize;
+			float yoffset = (float(tileY) - 32) * GridSize;
+
+			float coord[3];
+			for (int i = 0; i < V9_SIZE_SQ; ++i)
+			{
+				getHeightCoord(i, GRID_V9, xoffset, yoffset, coord, V9.data());
+				mesh.solidVerts.push_back(coord[0]);
+				mesh.solidVerts.push_back(coord[2]);
+				mesh.solidVerts.push_back(coord[1]);
+			}
+			for (int i = 0; i < V8_SIZE_SQ; ++i)
+			{
+				getHeightCoord(i, GRID_V8, xoffset, yoffset, coord, V8.data());
+				mesh.solidVerts.push_back(coord[0]);
+				mesh.solidVerts.push_back(coord[2]);
+				mesh.solidVerts.push_back(coord[1]);
+			}
+
+			int loopStart, loopEnd, loopInc;
+			int indices[3];
+
+			getLoopVars(ENTIRE, loopStart, loopEnd, loopInc);
+			for (int i = loopStart; i < loopEnd; i += loopInc)
+			{
+				for (int j = TOP; j <= BOTTOM; j += 1)
+				{
+					getHeightTriangle(i, Spot(j), indices);
+					mesh.solidTris.push_back(indices[2] + count);
+					mesh.solidTris.push_back(indices[1] + count);
+					mesh.solidTris.push_back(indices[0] + count);
+				}
+			}
+		}
+
 		const static float BaseUnitDim = 0.533333f;
+
 		// All are in UNIT metrics!
 		const static int VerticesPerMap = int(GridSize / BaseUnitDim + 0.5f);
 		const static int VerticesPerTile = 40;
@@ -364,6 +491,8 @@ namespace
 		tileCfg.width = config.tileSize + config.borderSize * 2;
 		tileCfg.height = config.tileSize + config.borderSize * 2;
 
+		rcContext context(false);
+
 		// Build all tiles
 		std::vector<NavTile> navTiles(TilesPerMapSq);
 		for (int y = 0; y < TilesPerMap; ++y)
@@ -386,51 +515,49 @@ namespace
 
 				// build heightfield
 				tile.solid = rcAllocHeightfield();
-				if (!tile.solid || !rcCreateHeightfield(nullptr, *tile.solid, tileCfg.width, tileCfg.height, tileCfg.bmin, tileCfg.bmax, tileCfg.cs, tileCfg.ch))
+				if (!tile.solid || !rcCreateHeightfield(&context, *tile.solid, tileCfg.width, tileCfg.height, tileCfg.bmin, tileCfg.bmax, tileCfg.cs, tileCfg.ch))
 				{
 					ELOG("Failed building heightfield!");
 					continue;
 				}
-#if 0
+
 				// Mark all walkable tiles, both liquids and solids
-				unsigned char* triFlags = new unsigned char[tTriCount];
-				memset(triFlags, NAV_GROUND, tTriCount * sizeof(unsigned char));
-				rcClearUnwalkableTriangles(nullptr, tileCfg.walkableSlopeAngle, tVerts, tVertCount, tTris, tTriCount, triFlags);
-				rcRasterizeTriangles(nullptr, tVerts, tVertCount, tTris, triFlags, tTriCount, *tile.solid, config.walkableClimb);
+				unsigned char* triFlags = new unsigned char[mesh.solidTris.size() / 3];
+				memset(triFlags, NAV_GROUND, mesh.solidTris.size() / 3 * sizeof(unsigned char));
+				rcClearUnwalkableTriangles(&context, tileCfg.walkableSlopeAngle, &mesh.solidVerts[0], mesh.solidVerts.size() / 3, &mesh.solidTris[0], mesh.solidTris.size() / 3, triFlags);
+				rcRasterizeTriangles(&context, &mesh.solidVerts[0], mesh.solidVerts.size() / 3, &mesh.solidTris[0], triFlags, mesh.solidTris.size() / 3, *tile.solid, config.walkableClimb);
 				delete[] triFlags;
 
-				rcFilterLowHangingWalkableObstacles(nullptr, config.walkableClimb, *tile.solid);
-				rcFilterLedgeSpans(nullptr, tileCfg.walkableHeight, tileCfg.walkableClimb, *tile.solid);
-				rcFilterWalkableLowHeightSpans(nullptr, tileCfg.walkableHeight, *tile.solid);
-
-				rcRasterizeTriangles(nullptr, lVerts, lVertCount, lTris, lTriFlags, lTriCount, *tile.solid, config.walkableClimb);
+				rcFilterLowHangingWalkableObstacles(&context, config.walkableClimb, *tile.solid);
+				rcFilterLedgeSpans(&context, tileCfg.walkableHeight, tileCfg.walkableClimb, *tile.solid);
+				rcFilterWalkableLowHeightSpans(&context, tileCfg.walkableHeight, *tile.solid);
 
 				// compact heightfield spans
 				tile.chf = rcAllocCompactHeightfield();
-				if (!tile.chf || !rcBuildCompactHeightfield(nullptr, tileCfg.walkableHeight, tileCfg.walkableClimb, *tile.solid, *tile.chf))
+				if (!tile.chf || !rcBuildCompactHeightfield(&context, tileCfg.walkableHeight, tileCfg.walkableClimb, *tile.solid, *tile.chf))
 				{
 					ELOG("Failed compacting heightfield!");
 					continue;
 				}
 
 				// build polymesh intermediates
-				if (!rcErodeWalkableArea(nullptr, config.walkableRadius, *tile.chf))
+				if (!rcErodeWalkableArea(&context, config.walkableRadius, *tile.chf))
 				{
 					ELOG("Failed eroding area!");
 					continue;
 				}
-				if (!rcBuildDistanceField(nullptr, *tile.chf))
+				if (!rcBuildDistanceField(&context, *tile.chf))
 				{
 					ELOG("Failed building distance field!");
 					continue;
 				}
-				if (!rcBuildRegions(nullptr, *tile.chf, tileCfg.borderSize, tileCfg.minRegionArea, tileCfg.mergeRegionArea))
+				if (!rcBuildRegions(&context, *tile.chf, tileCfg.borderSize, tileCfg.minRegionArea, tileCfg.mergeRegionArea))
 				{
 					ELOG("Failed building regions!");
 					continue;
 				}
 				tile.cset = rcAllocContourSet();
-				if (!tile.cset || !rcBuildContours(nullptr, *tile.chf, tileCfg.maxSimplificationError, tileCfg.maxEdgeLen, *tile.cset))
+				if (!tile.cset || !rcBuildContours(&context, *tile.chf, tileCfg.maxSimplificationError, tileCfg.maxEdgeLen, *tile.cset))
 				{
 					ELOG("Failed building contours!");
 					continue;
@@ -438,21 +565,19 @@ namespace
 
 				// build polymesh
 				tile.pmesh = rcAllocPolyMesh();
-				if (!tile.pmesh || !rcBuildPolyMesh(nullptr, *tile.cset, tileCfg.maxVertsPerPoly, *tile.pmesh))
+				if (!tile.pmesh || !rcBuildPolyMesh(&context, *tile.cset, tileCfg.maxVertsPerPoly, *tile.pmesh))
 				{
 					ELOG("Failed building polymesh!");
 					continue;
 				}
 				tile.dmesh = rcAllocPolyMeshDetail();
-				if (!tile.dmesh || !rcBuildPolyMeshDetail(nullptr, *tile.pmesh, *tile.chf, tileCfg.detailSampleDist, tileCfg.detailSampleMaxError, *tile.dmesh))
+				if (!tile.dmesh || !rcBuildPolyMeshDetail(&context, *tile.pmesh, *tile.chf, tileCfg.detailSampleDist, tileCfg.detailSampleMaxError, *tile.dmesh))
 				{
 					ELOG("Failed building polymesh detail!");
 					continue;
 				}
-#endif
-				// free those up
-				// we may want to keep them in the future for debug
-				// but right now, we don't have the code to merge them
+
+				// Memory free
 				rcFreeHeightField(tile.solid);
 				tile.solid = nullptr;
 				rcFreeCompactHeightfield(tile.chf);
@@ -461,6 +586,160 @@ namespace
 				tile.cset = nullptr;
 			}
 		}
+
+		IntermediateValues iv;
+
+		// merge per tile poly and detail meshes
+		rcPolyMesh** pmmerge = new rcPolyMesh*[TilesPerMapSq];
+		if (!pmmerge)
+		{
+			ELOG("Allocating pmmerge failed");
+			return false;
+		}
+
+		rcPolyMeshDetail** dmmerge = new rcPolyMeshDetail*[TilesPerMapSq];
+		if (!dmmerge)
+		{
+			ELOG("Allocating dmmerge failed");
+			return false;
+		}
+
+		int nmerge = 0;
+		for (int y = 0; y < TilesPerMap; ++y)
+		{
+			for (int x = 0; x < TilesPerMap; ++x)
+			{
+				NavTile& tile = navTiles[x + y * TilesPerMap];
+				if (tile.pmesh)
+				{
+					pmmerge[nmerge] = tile.pmesh;
+					dmmerge[nmerge] = tile.dmesh;
+					nmerge++;
+				}
+			}
+		}
+
+		iv.polyMesh = rcAllocPolyMesh();
+		if (!iv.polyMesh)
+		{
+			ELOG("alloc iv.polyMesh failed");
+			return false;
+		}
+		rcMergePolyMeshes(&context, pmmerge, nmerge, *iv.polyMesh);
+
+		iv.polyMeshDetail = rcAllocPolyMeshDetail();
+		if (!iv.polyMeshDetail)
+		{
+			ELOG("alloc m_dmesh failed");
+			return false;
+		}
+		rcMergePolyMeshDetails(&context, dmmerge, nmerge, *iv.polyMeshDetail);
+
+		// free things up
+		delete[] pmmerge;
+		delete[] dmmerge;
+
+		for (int i = 0; i < iv.polyMesh->npolys; ++i)
+			if (iv.polyMesh->areas[i] & RC_WALKABLE_AREA)
+				iv.polyMesh->flags[i] = iv.polyMesh->areas[i];
+
+		// setup mesh parameters
+		dtNavMeshCreateParams params;
+		memset(&params, 0, sizeof(params));
+		params.verts = iv.polyMesh->verts;
+		params.vertCount = iv.polyMesh->nverts;
+		params.polys = iv.polyMesh->polys;
+		params.polyAreas = iv.polyMesh->areas;
+		params.polyFlags = iv.polyMesh->flags;
+		params.polyCount = iv.polyMesh->npolys;
+		params.nvp = iv.polyMesh->nvp;
+		params.detailMeshes = iv.polyMeshDetail->meshes;
+		params.detailVerts = iv.polyMeshDetail->verts;
+		params.detailVertsCount = iv.polyMeshDetail->nverts;
+		params.detailTris = iv.polyMeshDetail->tris;
+		params.detailTriCount = iv.polyMeshDetail->ntris;
+		params.walkableHeight = BaseUnitDim * config.walkableHeight;  // agent height
+		params.walkableRadius = BaseUnitDim * config.walkableRadius;  // agent radius
+		params.walkableClimb = BaseUnitDim * config.walkableClimb;    // keep less that walkableHeight (aka agent height)!
+		params.tileX = (((bmin[0] + bmax[0]) / 2) - navMesh.getParams()->orig[0]) / GRID_SIZE;
+		params.tileY = (((bmin[2] + bmax[2]) / 2) - navMesh.getParams()->orig[2]) / GRID_SIZE;
+		rcVcopy(params.bmin, bmin);
+		rcVcopy(params.bmax, bmax);
+		params.cs = config.cs;
+		params.ch = config.ch;
+		params.tileLayer = 0;
+		params.buildBvTree = true;
+
+		// will hold final navmesh
+		unsigned char* navData = NULL;
+		int navDataSize = 0;
+		do
+		{
+			// these values are checked within dtCreateNavMeshData - handle them here
+			// so we have a clear error message
+			if (params.nvp > DT_VERTS_PER_POLYGON)
+			{
+				ELOG("Invalid verts-per-polygon value!");
+				continue;
+			}
+			if (params.vertCount >= 0xffff)
+			{
+				ELOG("Too many vertices!");
+				continue;
+			}
+			if (!params.vertCount || !params.verts)
+			{
+				WLOG("No vertices to process");
+				continue;
+			}
+			if (!params.polyCount || !params.polys ||
+				TilesPerMapSq == params.polyCount)
+			{
+				// we have flat tiles with no actual geometry - don't build those, its useless
+				// keep in mind that we do output those into debug info
+				// drop tiles with only exact count - some tiles may have geometry while having less tiles
+				ELOG("No polygons to build on tile!");
+				continue;
+			}
+			if (!params.detailMeshes || !params.detailVerts || !params.detailTris)
+			{
+				ELOG("No detail mesh to build tile!");
+				continue;
+			}
+
+			if (!dtCreateNavMeshData(&params, &navData, &navDataSize))
+			{
+				ELOG("Failed building navmesh tile!");
+				continue;
+			}
+
+			dtTileRef tileRef = 0;
+			// DT_TILE_FREE_DATA tells detour to unallocate memory when the tile
+			// is removed via removeTile()
+			dtStatus dtResult = navMesh.addTile(navData, navDataSize, DT_TILE_FREE_DATA, 0, &tileRef);
+			if (!tileRef || dtStatusFailed(dtResult))
+			{
+				ELOG("Failed adding tile to navmesh!");
+				continue;
+			}
+
+			// We have nav data!
+
+
+			// now that tile is written to disk, we can unload it
+			navMesh.removeTile(tileRef, NULL, NULL);
+		}
+		while (0);
+
+		// restore padding so that the debug visualization is correct
+		for (int i = 0; i < iv.polyMesh->nverts; ++i)
+		{
+			unsigned short* v = &iv.polyMesh->verts[i * 3];
+			v[0] += (unsigned short)config.borderSize;
+			v[2] += (unsigned short)config.borderSize;
+		}
+
+		iv.generateObjFile(mapId, tileX, tileY, mesh);
 
 		return true;
 	}
@@ -959,7 +1238,7 @@ int main(int argc, char* argv[])
 	// right now, this will only convert multiple maps at the same time, not multiple
 	// tiles - but still A LOT faster than single threaded.
 	std::size_t concurrency = boost::thread::hardware_concurrency();
-	concurrency = std::max<size_t>(1, concurrency);
+	concurrency = 1;	//std::max<size_t>(1, concurrency);
 	ILOG("Using " << concurrency << " threads");
 
 	// Do the work!
