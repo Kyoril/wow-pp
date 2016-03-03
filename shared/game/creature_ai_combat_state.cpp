@@ -226,6 +226,17 @@ namespace wowpp
 
 	void CreatureAICombatState::onLeave()
 	{
+		// Reset all events here to prevent them being fired in another ai state
+		m_onThreatened.disconnect();
+		m_getThreat.disconnect();
+		m_setThreat.disconnect();
+		m_getTopThreatener.disconnect();
+		m_onControlledMoved.disconnect();
+		m_onMoveTargetChanged.disconnect();
+		m_onStunChanged.disconnect();
+		m_onRootChanged.disconnect();
+		m_onVictimMoved.disconnect();
+
 		auto &controlled = getControlled();
 
 		// Stop movement!
@@ -241,6 +252,7 @@ namespace wowpp
 		controlled.removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 
 		// Stop auto attack
+		controlled.cancelCast(game::spell_interrupt_flags::None);
 		controlled.stopAttack();
 		controlled.setVictim(nullptr);
 	}
@@ -547,7 +559,8 @@ namespace wowpp
 						targetMap.m_unitTarget = controlled.getGuid();
 					}
 
-					controlled.castSpell(std::move(targetMap), validSpellEntry->spellid(), -1, m_lastCastTime, false, 0, std::bind(&CreatureAICombatState::onSpellCast, this, std::placeholders::_1));
+					controlled.castSpell(std::move(targetMap), validSpellEntry->spellid(), -1, m_lastCastTime, false, 0, 
+						std::bind(&CreatureAICombatState::onSpellCast, this, std::placeholders::_1));
 					m_isCasting = true;
 					return;
 				}
