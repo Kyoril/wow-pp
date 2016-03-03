@@ -21,11 +21,6 @@
 
 #pragma once
 
-#include <string>
-#include <boost/mpl/if.hpp>
-#include <boost/lexical_cast.hpp>
-#include <cassert>
-
 namespace sff
 {
 	namespace read

@@ -24,12 +24,15 @@ cmake_minimum_required(VERSION 2.8)
 
 	# Collect source and header files
 	file(GLOB srcFiles "./*.cpp" "./*.h" "./*.hpp")
+	remove_pch_cpp(srcFiles "${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp")
 	
 	# Add source groups
 	source_group(src FILES ${srcFiles})
 	
 	# Add library project
 	add_library(virtual_directory ${srcFiles})
+	add_precompiled_header(virtual_directory "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
+	
 	target_link_libraries(virtual_directory ${Boost_LIBRARIES})
 
 	# Solution folder

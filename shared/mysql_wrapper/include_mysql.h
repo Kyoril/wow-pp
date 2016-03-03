@@ -20,11 +20,11 @@
 //
 
 #pragma once
-
+/*
 #if defined(WIN32) || defined(_WIN32)
 #	include <winsock2.h>
 #endif
-
+*/
 #if defined(WIN32) || defined(_WIN32)
 #	include <mysql.h>
 #else

@@ -19,10 +19,9 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include "pch.h"
 #include "memory_file_device.h"
 #include "memory_directory.h"
-#include <boost/iostreams/stream.hpp>
-#include <cassert>
 
 namespace wowpp
 {

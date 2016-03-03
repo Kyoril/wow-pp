@@ -23,9 +23,6 @@
 
 #include "path.h"
 #include "reader.h"
-#include <boost/variant.hpp>
-#include <unordered_map>
-#include <vector>
 
 namespace wowpp
 {
