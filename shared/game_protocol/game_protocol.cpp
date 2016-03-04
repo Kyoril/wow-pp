@@ -649,16 +649,14 @@ namespace wowpp
 			    game::OutgoingPacket &out_packet,
 			    UInt64 guid,
 			    const math::Vector3 &oldPosition,
-			    const math::Vector3 &position,
+			    const std::vector<math::Vector3> &path,
 			    UInt32 time
 			)
 			{
 				out_packet.start(server_packet::MonsterMove);
-
 				UInt8 packGUID[8 + 1];
 				packGUID[0] = 0;
 				size_t size = 1;
-
 				for (UInt8 i = 0; guid != 0; ++i)
 				{
 					if (guid & 0xFF)
@@ -670,7 +668,6 @@ namespace wowpp
 
 					guid >>= 8;
 				}
-
 				out_packet
 				        << io::write_range(&packGUID[0], &packGUID[size])
 				        << io::write<float>(oldPosition.x)
@@ -678,15 +675,41 @@ namespace wowpp
 				        << io::write<float>(oldPosition.z)
 				        << io::write<NetUInt32>(mTimeStamp())
 				        << io::write<NetUInt8>(0);
-
 				// Movement flags
 				out_packet
-				        << io::write<NetUInt32>(256)
-				        << io::write<NetUInt32>(time)
-				        << io::write<NetUInt32>(1)				// One waypoint
-				        << io::write<float>(position.x)
-				        << io::write<float>(position.y)
-				        << io::write<float>(position.z);
+					<< io::write<NetUInt32>(256)
+					<< io::write<NetUInt32>(time)
+					<< io::write<NetUInt32>(path.empty() ? 1 : path.size());
+				if (path.size() > 0)
+				{
+					// Write destination
+					auto &pt = path.back();
+					ILOG("WRITING PATH BACK: " << pt);
+					out_packet
+						<< io::write<float>(pt.x)
+						<< io::write<float>(pt.y)
+						<< io::write<float>(pt.z);
+
+					if (path.size() > 1)
+					{
+						// all other points are relative to the center of the path
+						const math::Vector3 mid = (oldPosition + pt) * 0.5f;
+						for (UInt32 i = 0; i < path.size() - 1; ++i)
+						{
+							auto &p = path[i];
+							UInt32 packed = 0;
+							packed |= ((int)((mid.x - p.x) / 0.25f) & 0x7FF);
+							packed |= ((int)((mid.y - p.y) / 0.25f) & 0x7FF) << 11;
+							packed |= ((int)((mid.z - p.z) / 0.25f) & 0x3FF) << 22;
+							out_packet
+								<< io::write<NetUInt32>(packed);
+						}
+					}
+				}
+				for (const auto &pt : path)
+				{
+					
+				}
 				out_packet.finish();
 			}
 

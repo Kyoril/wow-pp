@@ -258,12 +258,7 @@ namespace
 		/// Three indices represent one triangle (v1, v2, v3)
 		std::vector<int> solidTris;
 	};
-
-	static bool loadMap(UInt32 mapID, UInt32 tileX, UInt32 tileY, MeshData& meshData, Spot portion)
-	{
-
-	}
-
+	/// 
 	struct NavTile
 	{
 		NavTile() : chf(NULL), solid(NULL), cset(NULL), pmesh(NULL), dmesh(NULL) {}
@@ -281,7 +276,6 @@ namespace
 		rcPolyMesh* pmesh;
 		rcPolyMeshDetail* dmesh;
 	};
-
 	// this class gathers all debug info holding and output
 	struct IntermediateValues
 	{
@@ -348,13 +342,9 @@ namespace
 		float bmin[3], bmax[3];
 		calculateTileBounds(maxX, maxY, bmin, bmax);
 
-		int tileBits = dtIlog2(dtNextPow2(tiles.size()));
-		if (tileBits < 1) tileBits = 1;                                     // need at least one bit!
-		int polyBits = sizeof(dtPolyRef)*8 - 10 - tileBits;
-
 		//int polyBits = 20;
 		int maxTiles = tiles.size();
-		int maxPolysPerTile = 1 << polyBits;
+		int maxPolysPerTile = 1 << DT_POLY_BITS;
 
 		// Setup navigation mesh creation parameters
 		dtNavMeshParams navMeshParams;
@@ -376,7 +366,7 @@ namespace
 		return true;
 	}
 	/// Generates a navigation tile.
-	static bool creaveNavTile(UInt32 mapId, UInt32 tileX, UInt32 tileY, dtNavMesh &navMesh, const ADTFile &adt, MapNavigationChunk &out_chunk)
+	static bool creaveNavTile(UInt32 mapId, UInt32 tileX, UInt32 tileY, dtNavMesh &navMesh, const ADTFile &adt, const MapCollisionChunk &collision, MapNavigationChunk &out_chunk)
 	{
 		// Reset chunk data
 		out_chunk.data.clear();
@@ -386,6 +376,19 @@ namespace
 		// Build mesh data
 		MeshData mesh;
 		{
+			for (auto &vert : collision.vertices)
+			{
+				mesh.solidVerts.push_back(vert.x);
+				mesh.solidVerts.push_back(vert.z);
+				mesh.solidVerts.push_back(vert.y);
+			}
+			for (auto &tri : collision.triangles)
+			{
+				mesh.solidTris.push_back(tri.indexC);
+				mesh.solidTris.push_back(tri.indexB);
+				mesh.solidTris.push_back(tri.indexA);
+			}
+
 			static_assert(V8_SIZE == 128, "V8_SIZE has to equal 128");
 			std::array<float, 128 * 128> V8;
 			V8.fill(0.0f);
@@ -460,11 +463,11 @@ namespace
 			}
 		}
 
-		const static float BaseUnitDim = 0.533333f;
+		const static float BaseUnitDim = 0.266666f;
 
 		// All are in UNIT metrics!
 		const static int VerticesPerMap = int(GridSize / BaseUnitDim + 0.5f);
-		const static int VerticesPerTile = 40;
+		const static int VerticesPerTile = 80;
 		const static int TilesPerMap = VerticesPerMap / VerticesPerTile;
 		const static int TilesPerMapSq = TilesPerMap * TilesPerMap;
 
@@ -481,11 +484,11 @@ namespace
 		config.ch = BaseUnitDim;
 		config.walkableSlopeAngle = 60.0f;
 		config.tileSize = VerticesPerTile;
-		config.walkableRadius = 1;
+		config.walkableRadius = 2;
 		config.borderSize = config.walkableRadius + 3;
 		config.maxEdgeLen = VerticesPerTile + 1;        //anything bigger than tileSize
-		config.walkableHeight = 3;
-		config.walkableClimb = 2;   // keep less than walkableHeight
+		config.walkableHeight = 6;
+		config.walkableClimb = 4;   // keep less than walkableHeight
 		config.minRegionArea = rcSqr(60);
 		config.mergeRegionArea = rcSqr(50);
 		config.maxSimplificationError = 2.0f;       // eliminates most jagged edges (tinny polygons)
@@ -735,10 +738,62 @@ namespace
 			std::memcpy(&out_chunk.data[0], navData, navDataSize);
 			out_chunk.tileRef = tileRef;
 
+			const int nvp = iv.polyMesh->nvp;
+			const float cs = iv.polyMesh->cs;
+			const float ch = iv.polyMesh->ch;
+			const float* orig = iv.polyMesh->bmin;
+			int nIndex = 0;
+			
+#if 1
+			if (iv.polyMesh->npolys > 0)
+			{
+				std::ostringstream strm;
+				strm << "meshes/tile_" << tileX << "_" << tileY << ".obj";
+				std::ofstream outFile(strm.str().c_str(), std::ios::out);
+				for (int i = 0; i < iv.polyMesh->npolys; ++i) // go through all polygons
+				{
+					const unsigned short* p = &iv.polyMesh->polys[i*nvp * 2];
+
+					unsigned short vi[3];
+					for (int j = 2; j < nvp; ++j) // go through all verts in the polygon
+					{
+						if (p[j] == RC_MESH_NULL_IDX) break;
+						vi[0] = p[0];
+						vi[1] = p[j - 1];
+						vi[2] = p[j];
+						for (int k = 0; k < 3; ++k) // create a 3-vert triangle for each 3 verts in the polygon.
+						{
+							const unsigned short* v = &iv.polyMesh->verts[vi[k] * 3];
+							const float x = orig[0] + v[0] * cs;
+							const float y = orig[1] + (v[1] + 1)*ch;
+							const float z = orig[2] + v[2] * cs;
+
+							outFile << "v " << x << " " << y << " " << z << std::endl;
+						}
+
+						outFile << "f " << nIndex + 1 << " " << nIndex + 2 << " " << nIndex + 3 << std::endl;
+						nIndex += 3;
+					}
+				}
+			}
+#endif
+
 			// Remove (and unload) tile, since we've copied it's data already
 			navMesh.removeTile(tileRef, &navData, &navDataSize);
 		}
 		while (0);
+
+#if 0
+		// restore padding so that the debug visualization is correct
+		for (int i = 0; i < iv.polyMesh->nverts; ++i)
+		{
+			unsigned short* v = &iv.polyMesh->verts[i * 3];
+			v[0] += (unsigned short)config.borderSize;
+			v[2] += (unsigned short)config.borderSize;
+		}
+
+		iv.generateObjFile(mapId, tileX, tileY, mesh);
+#endif
 
 		return true;
 	}
@@ -933,7 +988,7 @@ namespace
 		MapNavigationChunk navigationChunk;
 		navigationChunk.fourCC = 0x564E4D57;		// WMNV		- WoW Map Navigation
 		navigationChunk.size = 0;
-		if (creaveNavTile(mapId, cellX, cellY, navMesh, adt, navigationChunk))
+		if (creaveNavTile(mapId, cellX, cellY, navMesh, adt, collisionChunk, navigationChunk))
 		{
 			if (!navigationChunk.data.empty())
 			{
@@ -972,10 +1027,12 @@ namespace
 			return false;
 		}
 
+#if 0
 		if (mapId != 36)
 		{
 			return true;
 		}
+#endif
 
 		// Build map
 		ILOG("Building map " << mapId << " - " << mapName << "...");
@@ -1055,7 +1112,6 @@ namespace
 
 		return true;
 	}
-
 	/// Detects the client locale by checking files for existance.
 	/// @returns False if the client localization couldn't be detected.
 	static bool detectLocale(String &out_locale)
@@ -1091,7 +1147,6 @@ namespace
 
 		return false;
 	}
-
 	/// Loads all MPQ files which are available, including localized ones and patch archives.
 	/// @param localeString Client locale string like 'enUS'.
 	static void loadMPQFiles(const String &localeString)
@@ -1134,7 +1189,6 @@ namespace
 			}
 		}
 	}
-
 	/// Loads all required dbc files.
 	/// @returns False if an error occurred.
 	static bool loadDBCFiles()

@@ -26,6 +26,7 @@
 #include "common/grid.h"
 #include "math/ray.h"
 #include "detour/DetourNavMesh.h"
+#include "detour/DetourNavMeshQuery.h"
 
 namespace wowpp
 {
@@ -80,14 +81,6 @@ namespace wowpp
 		std::array<AreaInfo, 16 * 16> cellAreas;
 	};
 
-	/// Map size chunk.
-	/*struct MapHeightChunk
-	{
-		UInt32 fourCC;
-		UInt32 size;
-		std::array<std::array<float, 145>, 16 * 16> heights;
-	};*/
-
 	struct Triangle
 	{
 		UInt32 indexA, indexB, indexC;
@@ -135,6 +128,19 @@ namespace wowpp
 		}
 	};
 
+	enum NavTerrain
+	{
+		NAV_EMPTY = 0x00,
+		NAV_GROUND = 0x01,
+		NAV_MAGMA = 0x02,
+		NAV_SLIME = 0x04,
+		NAV_WATER = 0x08,
+		NAV_UNUSED1 = 0x10,
+		NAV_UNUSED2 = 0x20,
+		NAV_UNUSED3 = 0x40,
+		NAV_UNUSED4 = 0x80
+	};
+
 	namespace proto
 	{
 		class MapEntry;
@@ -156,6 +162,14 @@ namespace wowpp
 		virtual void operator()(dtNavMesh *ptr) const
 		{
 			if (ptr) dtFreeNavMesh(ptr);
+		}
+	};
+
+	struct NavQueryDeleter final
+	{
+		virtual void operator()(dtNavMeshQuery *ptr) const
+		{
+			if (ptr) dtFreeNavMeshQuery(ptr);
 		}
 	};
 
@@ -183,6 +197,10 @@ namespace wowpp
 		/// @param posB The destination position where the raycast is fired to.
 		/// @returns true, if nothing prevents the line of sight, false otherwise.
 		bool isInLineOfSight(const math::Vector3 &posA, const math::Vector3 &posB);
+		/// Calculates a path from start point to the destination point.
+		bool calculatePath(const math::Vector3 &source, math::Vector3 dest, std::vector<math::Vector3> &out_path, float &out_dist);
+		/// 
+		dtPolyRef getPolyByLocation(const math::Vector3 &point, float &out_distance) const;
 
 	private:
 
@@ -191,7 +209,13 @@ namespace wowpp
 		// Note: We use a pointer here, because we don't need to load ALL height data
 		// of all tiles, and Grid allocates them immediatly.
 		Grid<std::shared_ptr<MapDataTile>> m_tiles;
-		
+		/// Navigation mesh of this map. Note that this is shared between all map instanecs with the same map id.
+		dtNavMesh *m_navMesh;
+		/// Navigation mesh query for the current nav mesh (if any).
+		std::unique_ptr<dtNavMeshQuery, NavQueryDeleter> m_navQuery;
+		/// Filter to determine what kind of navigation polygons to use.
+		dtQueryFilter m_filter;
+
 		// Holds all loaded navigation meshes, keyed by map id.
 		static std::map<UInt32, std::unique_ptr<dtNavMesh, NavMeshDeleter>> navMeshsPerMap;
 	};

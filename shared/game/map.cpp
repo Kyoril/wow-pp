@@ -26,6 +26,7 @@
 #include "common/make_unique.h"
 #include "math/vector3.h"
 #include "common/clock.h"
+#include "detour/DetourCommon.h"
 
 namespace wowpp
 {
@@ -35,6 +36,8 @@ namespace wowpp
 		: m_entry(entry)
 		, m_dataPath(std::move(dataPath))
 		, m_tiles(64, 64)
+		, m_navMesh(nullptr)
+		, m_navQuery(nullptr)
 	{
 		// Allocate navigation mesh
 		auto it = navMeshsPerMap.find(entry.id());
@@ -70,12 +73,6 @@ namespace wowpp
 				return;
 			}
 
-			DLOG("FILE " << file);
-			DLOG("Tile width: " << params.tileWidth << " x " << params.tileHeight);
-			DLOG("Origin: " << params.orig[0] << ", " << params.orig[1] << ", " << params.orig[2]);
-			DLOG("Max tiles: " << params.maxTiles);
-			DLOG("Max polys: " << params.maxPolys);
-
 			auto navMesh = std::unique_ptr<dtNavMesh, NavMeshDeleter>(dtAllocNavMesh());
 			if (!navMesh)
 			{
@@ -92,6 +89,21 @@ namespace wowpp
 
 			// At this point, it's just an empty mesh without tiles. Tiles will be loaded
 			// when required.
+			m_navMesh = navMesh.get();
+
+			// allocate mesh query
+			m_navQuery.reset(dtAllocNavMeshQuery());
+			assert(m_navQuery);
+
+			dtStatus dtResult = m_navQuery->init(m_navMesh, 1024);
+			if (dtStatusFailed(dtResult))
+			{
+				m_navQuery.reset();
+			}
+
+			// Setup filter
+			m_filter.setIncludeFlags(NAV_GROUND);
+
 			navMeshsPerMap[entry.id()] = std::move(navMesh);
 			ILOG("Navigation mesh for map " << m_entry.id() << " initialized");
 		}
@@ -184,7 +196,7 @@ namespace wowpp
 				}
 
 				// Read navigation data
-				if (mapHeaderChunk.offsNavigation)
+				if (m_navMesh && mapHeaderChunk.offsNavigation)
 				{
 					mapFile.seekg(mapHeaderChunk.offsNavigation, std::ios::beg);
 
@@ -199,6 +211,22 @@ namespace wowpp
 					{
 						tile->navigation.data.resize(dataSize, 0);
 						mapFile.read(tile->navigation.data.data(), dataSize);
+
+						dtTileRef ref = 0;
+						dtStatus status = m_navMesh->addTile(reinterpret_cast<unsigned char*>(tile->navigation.data.data()),
+							tile->navigation.data.size(), DT_TILE_FREE_DATA, 0, &ref);
+						if (dtStatusFailed(status))
+						{
+							ELOG("Failed adding nav tile!");
+						}
+						else
+						{
+							auto *added = m_navMesh->getTileByRef(ref);
+							if (added)
+							{
+								ILOG("Loaded new nav tile " << added->header->x << "x" << added->header->y);
+							}
+						}
 					}
 				}
 
@@ -273,5 +301,189 @@ namespace wowpp
 
 		// Target is in line of sight
 		return true;
+	}
+	
+	bool Map::calculatePath(const math::Vector3 & source, math::Vector3 dest, std::vector<math::Vector3>& out_path, float &out_dist)
+	{
+		math::Vector3 dtStart(source.x, source.z, source.y);
+		math::Vector3 dtEnd(dest.x, dest.z, dest.y);
+
+		// No nav mesh loaded for this map?
+		if (!m_navMesh || !m_navQuery)
+		{
+			// Build straight line from start to dest
+			out_path.push_back(dest);
+			out_dist = (dest - source).length();
+			return true;
+		}
+
+		int tx, ty;
+		m_navMesh->calcTileLoc(&dtStart.x, &tx, &ty);
+		if (!m_navMesh->getTileAt(tx, ty, 0))
+		{
+			ELOG("COULD NOT FIND START TILE AT " << tx << "x" << ty);
+			return false;
+		}
+		m_navMesh->calcTileLoc(&dtEnd.x, &tx, &ty);
+		if (!m_navMesh->getTileAt(tx, ty, 0))
+		{
+			ELOG("COULD NOT FIND END TILE AT " << tx << "x" << ty);
+			return false;
+		}
+
+		// Load source tile
+		TileIndex2D startIndex(
+			static_cast<Int32>(floor((32.0 - (static_cast<double>(source.x) / 533.3333333)))),
+			static_cast<Int32>(floor((32.0 - (static_cast<double>(source.y) / 533.3333333))))
+			);
+		auto *startTile = getTile(startIndex);
+		if (!startTile)
+		{
+			return false;
+		}
+
+		// Load dest tile
+		TileIndex2D destIntex(
+			static_cast<Int32>(floor((32.0 - (static_cast<double>(dest.x) / 533.3333333)))),
+			static_cast<Int32>(floor((32.0 - (static_cast<double>(dest.y) / 533.3333333))))
+			);
+		auto *dstTile = getTile(destIntex);
+		if (!dstTile)
+		{
+			return false;
+		}
+
+		// Pathfinding
+		float distToStartPoly, distToEndPoly;
+		dtPolyRef startPoly = getPolyByLocation(dtStart, distToStartPoly);
+		dtPolyRef endPoly = getPolyByLocation(dtEnd, distToEndPoly);
+		if (startPoly == 0 || endPoly == 0)
+		{
+			out_path.push_back(dest);
+			out_dist = (dest - source).length();
+			return true;
+		}
+
+		const bool isFarFromPoly = distToStartPoly > 7.0f || distToEndPoly > 7.0f;
+		if (isFarFromPoly)
+		{
+			math::Vector3 closestPoint;
+			if (dtStatusSucceed(m_navQuery->closestPointOnPoly(endPoly, &dtEnd.x, &closestPoint.x, nullptr)))
+			{
+				dtEnd = closestPoint;
+				dest.y = dtEnd.z;
+				dest.z = dtEnd.y;
+			}
+		}
+
+		if (startPoly == endPoly)
+		{
+			WLOG("Start poly == endPoly");
+			out_path.push_back(dest);
+			out_dist = (dest - source).length();
+			return true;
+		}
+
+		const int maxPathLength = 74;
+		std::vector<dtPolyRef> tempPath(maxPathLength);
+		int pathLength;
+		dtStatus dtResult = m_navQuery->findPath(
+			startPoly,          // start polygon
+			endPoly,            // end polygon
+			&source.x,         // start position
+			&dest.x,           // end position
+			&m_filter,           // polygon search filter
+			tempPath.data(),     // [out] path
+			&pathLength,
+			maxPathLength);   // max number of polygons in output path
+		if (!pathLength ||
+			dtStatusFailed(dtResult))
+		{
+			ELOG("findPath failed: no path found");
+			out_path.push_back(dest);
+			out_dist = (dest - source).length();
+			return true;
+		}
+
+		// Resize path
+		tempPath.resize(pathLength);
+
+		std::vector<float> tempPathCoords(maxPathLength * 3);
+		int tempPathCoordsCount = 0;
+
+		// Set to true to generate straight path
+		const bool useStraightPath = true;
+		if (useStraightPath)
+		{
+			dtResult = m_navQuery->findStraightPath(
+				&source.x,
+				&dest.x,
+				tempPath.data(),
+				static_cast<int>(tempPath.size()),
+				tempPathCoords.data(),
+				0,
+				0,
+				&tempPathCoordsCount,
+				maxPathLength
+				);
+		}
+
+		if (tempPathCoordsCount < 1 ||
+			dtStatusFailed(dtResult))
+		{
+			out_path.push_back(dest);
+			out_dist = (dest - source).length();
+			return true;
+		}
+
+		out_dist = 0.0f;
+
+		tempPathCoords.resize(tempPathCoordsCount * 3);
+		for (auto p = tempPathCoords.begin(); p != tempPathCoords.end(); p += 3)
+		{
+			auto v = math::Vector3(p[0], p[2], p[1]);
+			if (out_path.empty())
+			{
+				out_dist += (v - source).length();
+			}
+			else
+			{
+				out_dist += (v - out_path.back()).length();
+			}
+
+			out_path.push_back(v);
+		}
+
+		return true;
+	}
+
+	dtPolyRef Map::getPolyByLocation(const math::Vector3 &point, float &out_distance) const
+	{
+		// TODO: Use cached poly
+		dtPolyRef polyRef = 0;
+
+		// we don't have it in our old path
+		// try to get it by findNearestPoly()
+		// first try with low search box
+		math::Vector3 extents(3.0f, 5.0f, 3.0f);    // bounds of poly search area
+		math::Vector3 closestPoint(0.0f, 0.0f, 0.0f);
+		dtStatus dtResult = m_navQuery->findNearestPoly(&point.x, &extents.x, &m_filter, &polyRef, &closestPoint.x);
+		if (dtStatusSucceed(dtResult) && polyRef != 0)
+		{
+			out_distance = dtVdist(&closestPoint.x, &point.x);
+			return polyRef;
+		}
+
+		// still nothing ..
+		// try with bigger search box
+		extents[1] = 200.0f;
+		dtResult = m_navQuery->findNearestPoly(&point.x, &extents.x, &m_filter, &polyRef, &closestPoint.x);
+		if (dtStatusSucceed(dtResult) && polyRef != 0)
+		{
+			out_distance = dtVdist(&closestPoint.x, &point.x);
+			return polyRef;
+		}
+
+		return 0;
 	}
 }

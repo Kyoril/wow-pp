@@ -35,6 +35,7 @@ project(WoW)
 		message(FATAL_ERROR "Unsupported client build! WoW++ only supports build 6546 and 8606!")
 	endif()
 	add_definitions("-DSUPPORTED_CLIENT_BUILD=${WOWPP_SUPPORTED_CLIENT}")
+	add_definitions("-DDT_POLYREF64")
 	
 	# Version header
 	if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)

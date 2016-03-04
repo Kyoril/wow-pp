@@ -159,14 +159,42 @@ namespace wowpp
 		}
 
 		// Dead units can't move
-		if (!getMoved().canMove()) {
+		if (!getMoved().canMove())
+		{
 			return false;
 		}
+
+		auto *world = getMoved().getWorldInstance();
+		if (!world)
+		{
+			return false;
+		}
+
+		auto *map = world->getMapData();
+		if (!map)
+		{
+			return false;
+		}
+
+		// Calculate path
+		float distance = 0.0f;
+		std::vector<math::Vector3> path;
+		if (!map->calculatePath(currentLoc, target, path, distance))
+		{
+			ELOG("Could not generate path");
+			return false;
+		}
+
+		ILOG(currentLoc << " TO " << target);
+		for (auto &p : path)
+		{
+			ILOG("\t" << p);
+		}
+		ILOG("END");
 
 		// Use new values
 		m_start = currentLoc;
 		m_target = target;
-		float distance = (m_target - m_start).length();
 
 		// Update timing
 		m_moveStart = getCurrentTime();
@@ -179,12 +207,10 @@ namespace wowpp
 		TileIndex2D tile;
 		if (getMoved().getTileIndex(tile))
 		{
-			// TODO: Maybe, player characters need another movement packet for this...
 			std::vector<char> buffer;
 			io::VectorSink sink(buffer);
 			game::Protocol::OutgoingPacket packet(sink);
-			game::server_write::monsterMove(packet, getMoved().getGuid(), currentLoc, target, moveTime);
-
+			game::server_write::monsterMove(packet, getMoved().getGuid(), currentLoc, path, moveTime);
 			forEachSubscriberInSight(
 			    getMoved().getWorldInstance()->getGrid(),
 			    tile,
@@ -236,7 +262,7 @@ namespace wowpp
 				std::vector<char> buffer;
 				io::VectorSink sink(buffer);
 				game::Protocol::OutgoingPacket packet(sink);
-				game::server_write::monsterMove(packet, getMoved().getGuid(), currentLoc, currentLoc, 0);
+				game::server_write::monsterMove(packet, getMoved().getGuid(), currentLoc, { currentLoc }, 0);
 
 				forEachSubscriberInSight(
 				    getMoved().getWorldInstance()->getGrid(),
