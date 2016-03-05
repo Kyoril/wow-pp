@@ -320,13 +320,11 @@ namespace wowpp
 		m_navMesh->calcTileLoc(&dtStart.x, &tx, &ty);
 		if (!m_navMesh->getTileAt(tx, ty, 0))
 		{
-			ELOG("COULD NOT FIND START TILE AT " << tx << "x" << ty);
 			return false;
 		}
 		m_navMesh->calcTileLoc(&dtEnd.x, &tx, &ty);
 		if (!m_navMesh->getTileAt(tx, ty, 0))
 		{
-			ELOG("COULD NOT FIND END TILE AT " << tx << "x" << ty);
 			return false;
 		}
 
@@ -395,7 +393,6 @@ namespace wowpp
 		if (!pathLength ||
 			dtStatusFailed(dtResult))
 		{
-			ELOG("findPath failed: no path found");
 			out_path.push_back(dest);
 			return true;
 		}
