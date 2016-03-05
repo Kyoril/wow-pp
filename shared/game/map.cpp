@@ -381,7 +381,7 @@ namespace wowpp
 		}
 
 		const int maxPathLength = 74;
-		std::vector<dtPolyRef> tempPath(maxPathLength);
+		std::vector<dtPolyRef> tempPath(maxPathLength, 0);
 		int pathLength;
 		dtStatus dtResult = m_navQuery->findPath(
 			startPoly,          // start polygon
@@ -411,8 +411,8 @@ namespace wowpp
 		if (useStraightPath)
 		{
 			dtResult = m_navQuery->findStraightPath(
-				&source.x,
-				&dest.x,
+				&dtStart.x,
+				&dtEnd.x,
 				tempPath.data(),
 				static_cast<int>(tempPath.size()),
 				tempPathCoords.data(),

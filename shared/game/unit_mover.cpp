@@ -186,6 +186,8 @@ namespace wowpp
 			ELOG("Could not generate path");
 			return false;
 		}
+
+		assert(!path.empty());
 		
 		// Update timing
 		m_moveStart = getCurrentTime();
@@ -205,7 +207,7 @@ namespace wowpp
 
 		// Use new values
 		m_start = currentLoc;
-		m_target = target;
+		m_target = path.back();
 
 		// Calculate time of arrival
 		m_moveEnd = moveTime;

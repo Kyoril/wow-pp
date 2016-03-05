@@ -684,12 +684,10 @@ namespace wowpp
 				{
 					// Write destination
 					auto &pt = path.back();
-					ILOG("WRITING PATH BACK: " << pt);
 					out_packet
 						<< io::write<float>(pt.x)
 						<< io::write<float>(pt.y)
 						<< io::write<float>(pt.z);
-
 					if (path.size() > 1)
 					{
 						// all other points are relative to the center of the path
@@ -705,10 +703,6 @@ namespace wowpp
 								<< io::write<NetUInt32>(packed);
 						}
 					}
-				}
-				for (const auto &pt : path)
-				{
-					
 				}
 				out_packet.finish();
 			}
