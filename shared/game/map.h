@@ -198,7 +198,7 @@ namespace wowpp
 		/// @returns true, if nothing prevents the line of sight, false otherwise.
 		bool isInLineOfSight(const math::Vector3 &posA, const math::Vector3 &posB);
 		/// Calculates a path from start point to the destination point.
-		bool calculatePath(const math::Vector3 &source, math::Vector3 dest, std::vector<math::Vector3> &out_path, float &out_dist);
+		bool calculatePath(const math::Vector3 &source, math::Vector3 dest, std::vector<math::Vector3> &out_path);
 		/// 
 		dtPolyRef getPolyByLocation(const math::Vector3 &point, float &out_distance) const;
 

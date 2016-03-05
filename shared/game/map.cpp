@@ -303,7 +303,7 @@ namespace wowpp
 		return true;
 	}
 	
-	bool Map::calculatePath(const math::Vector3 & source, math::Vector3 dest, std::vector<math::Vector3>& out_path, float &out_dist)
+	bool Map::calculatePath(const math::Vector3 & source, math::Vector3 dest, std::vector<math::Vector3>& out_path)
 	{
 		math::Vector3 dtStart(source.x, source.z, source.y);
 		math::Vector3 dtEnd(dest.x, dest.z, dest.y);
@@ -313,7 +313,6 @@ namespace wowpp
 		{
 			// Build straight line from start to dest
 			out_path.push_back(dest);
-			out_dist = (dest - source).length();
 			return true;
 		}
 
@@ -360,7 +359,6 @@ namespace wowpp
 		if (startPoly == 0 || endPoly == 0)
 		{
 			out_path.push_back(dest);
-			out_dist = (dest - source).length();
 			return true;
 		}
 
@@ -378,9 +376,7 @@ namespace wowpp
 
 		if (startPoly == endPoly)
 		{
-			WLOG("Start poly == endPoly");
 			out_path.push_back(dest);
-			out_dist = (dest - source).length();
 			return true;
 		}
 
@@ -401,7 +397,6 @@ namespace wowpp
 		{
 			ELOG("findPath failed: no path found");
 			out_path.push_back(dest);
-			out_dist = (dest - source).length();
 			return true;
 		}
 
@@ -432,25 +427,13 @@ namespace wowpp
 			dtStatusFailed(dtResult))
 		{
 			out_path.push_back(dest);
-			out_dist = (dest - source).length();
 			return true;
 		}
-
-		out_dist = 0.0f;
-
+		
 		tempPathCoords.resize(tempPathCoordsCount * 3);
 		for (auto p = tempPathCoords.begin(); p != tempPathCoords.end(); p += 3)
 		{
 			auto v = math::Vector3(p[0], p[2], p[1]);
-			if (out_path.empty())
-			{
-				out_dist += (v - source).length();
-			}
-			else
-			{
-				out_dist += (v - out_path.back()).length();
-			}
-
 			out_path.push_back(v);
 		}
 
