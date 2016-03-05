@@ -52,6 +52,7 @@ namespace wowpp
 		public:
 
 			explicit EditorApplication();
+            ~EditorApplication();
 
 			/// Initializes our editor application (loads settings and sets everything up properly).
 			/// @returns True if everything went okay, false otherwise.
@@ -91,9 +92,9 @@ namespace wowpp
 		private:
 
 			Configuration m_configuration;
-			std::unique_ptr<MainWindow> m_mainWindow;
-			std::unique_ptr<ObjectEditor> m_objectEditor;
-			std::unique_ptr<TriggerEditor> m_triggerEditor;
+			MainWindow *m_mainWindow;
+			ObjectEditor *m_objectEditor;
+			TriggerEditor *m_triggerEditor;
 			proto::Project m_project;
 			std::unique_ptr<ItemListModel> m_itemListModel;
 			std::unique_ptr<SpellListModel> m_spellListModel;

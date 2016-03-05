@@ -133,10 +133,20 @@ namespace wowpp
 
 		EditorApplication::EditorApplication()
 			: QObject()
+            , m_mainWindow(nullptr)
+            , m_objectEditor(nullptr)
+            , m_triggerEditor(nullptr)
 			, m_changed(false)
 		{
 		}
 
+        EditorApplication::~EditorApplication()
+        {
+            delete m_triggerEditor;
+            delete m_objectEditor;
+            delete m_mainWindow;
+        }
+        
 		bool EditorApplication::initialize()
 		{
 			// Load the configuration
@@ -152,8 +162,8 @@ namespace wowpp
 				return false;
 			}
 
-			// Show the main window
-			m_mainWindow.reset(new MainWindow(*this));
+			// Show the main window (will be deleted when this class is deleted by QT)
+			m_mainWindow = new MainWindow(*this);
 
 			// Move this window to the center of the screen manually, since without this, there seems to be a crash
 			// in QtGui somewhere...
@@ -187,10 +197,10 @@ namespace wowpp
 			m_objectListModel.reset(new ObjectListModel(m_project.objects));
 
 			// Setup the object editor
-			m_objectEditor.reset(new ObjectEditor(*this));
+			m_objectEditor = new ObjectEditor(*this);
 
 			// Setup the trigger editor
-			m_triggerEditor.reset(new TriggerEditor(*this));
+			m_triggerEditor = new TriggerEditor(*this);
 			
 			return true;
 		}
