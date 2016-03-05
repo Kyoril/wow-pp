@@ -217,15 +217,11 @@ namespace wowpp
 							tile->navigation.data.size(), DT_TILE_FREE_DATA, 0, &ref);
 						if (dtStatusFailed(status))
 						{
-							ELOG("Failed adding nav tile!");
+							//ELOG("Failed adding nav tile!");
 						}
 						else
 						{
 							auto *added = m_navMesh->getTileByRef(ref);
-							if (added)
-							{
-								ILOG("Loaded new nav tile " << added->header->x << "x" << added->header->y);
-							}
 						}
 					}
 				}

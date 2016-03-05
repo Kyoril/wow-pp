@@ -183,7 +183,6 @@ namespace wowpp
 		std::vector<math::Vector3> path;
 		if (!map->calculatePath(currentLoc, target, path))
 		{
-			ELOG("Could not generate path");
 			return false;
 		}
 
