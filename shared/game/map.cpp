@@ -316,12 +316,14 @@ namespace wowpp
 		m_navMesh->calcTileLoc(&dtStart.x, &tx, &ty);
 		if (!m_navMesh->getTileAt(tx, ty, 0))
 		{
-			return false;
+			out_path.push_back(dest);
+			return true;
 		}
 		m_navMesh->calcTileLoc(&dtEnd.x, &tx, &ty);
 		if (!m_navMesh->getTileAt(tx, ty, 0))
 		{
-			return false;
+			out_path.push_back(dest);
+			return true;
 		}
 
 		// Load source tile
@@ -332,7 +334,8 @@ namespace wowpp
 		auto *startTile = getTile(startIndex);
 		if (!startTile)
 		{
-			return false;
+			out_path.push_back(dest);
+			return true;
 		}
 
 		// Load dest tile
@@ -343,7 +346,8 @@ namespace wowpp
 		auto *dstTile = getTile(destIntex);
 		if (!dstTile)
 		{
-			return false;
+			out_path.push_back(dest);
+			return true;
 		}
 
 		// Pathfinding

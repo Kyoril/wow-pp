@@ -536,7 +536,7 @@ namespace wowpp
 					if (radius * radius >= (location - unit.getLocation()).squared_length())
 					{
 						const auto &faction = attacker.getFactionTemplate();
-						if (!unit.isFriendlyTo(faction) && unit.isAlive() && attacker.isInLineOfSight(unit.getLocation()))
+						if (!unit.isFriendlyTo(faction) && unit.isAlive() && attacker.isInLineOfSight(unit))
 						{
 							targets.push_back(&unit);
 							if (maxtargets > 0 &&
