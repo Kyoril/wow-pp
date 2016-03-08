@@ -409,7 +409,7 @@ namespace wowpp
 
 		const std::weak_ptr<SingleCastState> weakThis = strongThis;
 		const UInt32 spellAttributes = m_spell.attributes(0);
-		if (spellAttributes & game::spell_attributes::OnNextSwing || spellAttributes & game::spell_attributes::OnNextSwing_2)
+		if (spellAttributes & game::spell_attributes::OnNextSwing/* || spellAttributes & game::spell_attributes::OnNextSwing_2*/)
 		{
 			// Execute on next weapon swing
 			m_cast.getExecuter().setAttackSwingCallback([strongThis, this]() -> bool

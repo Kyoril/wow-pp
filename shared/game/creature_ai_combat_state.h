@@ -98,5 +98,7 @@ namespace wowpp
 		UInt32 m_customCooldown;
 		game::SpellCastResult m_lastCastResult;
 		bool m_isCasting;
+		bool m_entered;
+		bool m_isRanged;
 	};
 }
