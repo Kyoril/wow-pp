@@ -36,6 +36,7 @@ namespace wowpp
 			typedef std::array<float, constants::VertsPerTile> Heightmap;
 			typedef std::array<Heightmap, constants::TilesPerPageSquared> TileHeights;
             typedef std::array<Normalmap, constants::TilesPerPageSquared> TileNormals;
+			typedef std::array<UInt16, constants::TilesPerPageSquared> TileHoles;
 			typedef std::vector<String> Textures;
 			typedef Vector<size_t, 2> PagePosition;
 			typedef Vector<size_t, 2> VertexPosition;
@@ -66,9 +67,10 @@ namespace wowpp
 				TileAlphaMaps alphaMaps;
 				std::vector<String> m2Ids;
 				std::vector<M2Placement> m2Placements;
+				TileHoles holes;
 				
 				explicit Page();
-				explicit Page(const Page &other);
+				//explicit Page(const Page &other);
 			};
 
 			typedef std::function<Page *(PagePosition)> SparseTerrain;

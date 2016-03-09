@@ -214,7 +214,8 @@ namespace wowpp
 					0,
 					0,
 					m_data.page->heights[tileIdx],
-					m_data.page->normals[tileIdx]));
+					m_data.page->normals[tileIdx],
+					m_data.page->holes[tileIdx]));
 
 				tileNode->attachObject(tile.get());
 				//tileNode->showBoundingBox(true);

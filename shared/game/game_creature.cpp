@@ -124,14 +124,14 @@ namespace wowpp
 		setByteValue(unit_fields::Bytes0, 3, game::power_type::Mana);
 		setUInt32Value(unit_fields::BaseMana, getUInt32Value(unit_fields::MaxPower1));
 		setUInt32Value(unit_fields::Bytes0, 0x00020200);
-		// 		if (entry.maxLevelMana > 0)
-		// 		{
-		// 			setByteValue(unit_fields::Bytes1, 1, 0xEE);
-		// 		}
-		// 		else
-		// 		{
-		// 			setByteValue(unit_fields::Bytes1, 1, 0x00);
-		// 		}
+		if (entry.maxlevelmana() > 0)
+		{
+			setByteValue(unit_fields::Bytes1, 1, 0xEE);
+		}
+		else
+		{
+			setByteValue(unit_fields::Bytes1, 1, 0x00);
+		}
 
 		setVirtualItem(0, getProject().items.getById(entry.mainhandweapon()));
 		setVirtualItem(1, getProject().items.getById(entry.offhandweapon()));

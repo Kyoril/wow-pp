@@ -75,7 +75,7 @@ namespace wowpp
 				UInt32 row = displayDbc->getRowByIndex(unit->malemodel());
 				if (row == UInt32(-1))
 				{
-					WLOG("Could not find creature display id " << unit->malemodel());
+					//WLOG("Could not find creature display id " << unit->malemodel());
 					continue;
 				}
 
@@ -179,7 +179,7 @@ namespace wowpp
 				UInt32 row = displayDbc->getRowByIndex(object->displayid());
 				if (row == UInt32(-1))
 				{
-					WLOG("Could not find object display id " << object->displayid());
+					//WLOG("Could not find object display id " << object->displayid());
 					continue;
 				}
 
@@ -367,7 +367,6 @@ namespace wowpp
 
 					if (tile->collision.triangleCount == 0)
 					{
-						WLOG("No collision triangles");
 						return;
 					}
 

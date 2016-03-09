@@ -250,6 +250,22 @@ namespace
 		bmin[2] = bmax[2] - GridSize;
 	}
 
+	static UInt16 holetab_h[4] = { 0x1111, 0x2222, 0x4444, 0x8888 };
+	static UInt16 holetab_v[4] = { 0x000F, 0x00F0, 0x0F00, 0xF000 };
+
+	static bool isHole(int square, const ADTFile& adt)
+	{
+		int row = square / 128;
+		int col = square % 128;
+		int cellRow = row / 8;     // 8 squares per cell
+		int cellCol = col / 8;
+		int holeRow = row % 8 / 2;
+		int holeCol = (square - (row * 128 + cellCol * 8)) / 2;
+
+		const UInt16 &hole = adt.getMCNKChunk(cellRow + cellCol * 16).holes;
+		return (hole & holetab_v[holeCol] & holetab_h[holeRow]) != 0;
+	}
+
 	/// Represents mesh data used for navigation mesh generation
 	struct MeshData final
 	{
@@ -455,10 +471,13 @@ namespace
 			{
 				for (int j = TOP; j <= BOTTOM; j += 1)
 				{
-					getHeightTriangle(i, Spot(j), indices);
-					mesh.solidTris.push_back(indices[2] + count);
-					mesh.solidTris.push_back(indices[1] + count);
-					mesh.solidTris.push_back(indices[0] + count);
+					if (!isHole(i, adt))
+					{
+						getHeightTriangle(i, Spot(j), indices);
+						mesh.solidTris.push_back(indices[2] + count);
+						mesh.solidTris.push_back(indices[1] + count);
+						mesh.solidTris.push_back(indices[0] + count);
+					}
 				}
 			}
 		}
@@ -783,7 +802,7 @@ namespace
 		}
 		while (0);
 
-#if 0
+#if 1
 		// restore padding so that the debug visualization is correct
 		for (int i = 0; i < iv.polyMesh->nverts; ++i)
 		{
@@ -1027,7 +1046,7 @@ namespace
 			return false;
 		}
 
-#if 0
+#if 1
 		if (mapId != 36)
 		{
 			return true;
