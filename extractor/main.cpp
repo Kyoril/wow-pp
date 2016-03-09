@@ -28,6 +28,7 @@
 #include "wdt_file.h"
 #include "adt_file.h"
 #include "wmo_file.h"
+#include "m2_file.h"
 #include "binary_io/writer.h"
 #include "binary_io/stream_sink.h"
 #include "common/make_unique.h"
@@ -392,9 +393,6 @@ namespace
 		// Build mesh data
 		MeshData mesh;
 		{
-			// TODO: Process doodads!
-			DLOG("\tTile has " << adt.getMDDFChunk().entries.size() << " doodads");
-
 			for (auto &vert : collision.vertices)
 			{
 				mesh.solidVerts.push_back(vert.x);
@@ -482,6 +480,53 @@ namespace
 						mesh.solidTris.push_back(indices[0] + count);
 					}
 				}
+			}
+		}
+
+		// Process Doodads
+		{
+			DLOG("\tTile has " << adt.getMDDFChunk().entries.size() << " doodads");
+
+			// Now load all required WMO files
+			std::vector<std::unique_ptr<M2File>> m2s;
+			for (UInt32 i = 0; i < adt.getMDXCount(); ++i)
+			{
+				// Retrieve MDX file name
+				String filename = adt.getMDX(i);
+				if (filename.length() > 4)
+				{
+					filename = filename.substr(0, filename.length() - 3);
+					filename.append("m2");
+				}
+				auto m2File = make_unique<M2File>(filename);
+				if (!m2File->load())
+				{
+					ELOG("Error loading MDX: " << filename);
+					return false;
+				}
+
+				// Push back to the list of MDX files
+				m2s.push_back(std::move(m2File));
+			}
+
+			for (const auto &entry : adt.getMDDFChunk().entries)
+			{
+				// Entry placement
+				auto &m2 = m2s[entry.mmidEntry];
+
+				// TODO: Apply scale
+				math::Matrix4 mat;
+#define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * x / -180.0)
+				math::Matrix4 rotMat = math::Matrix4::fromEulerAnglesXYZ(
+					WOWPP_DEG_TO_RAD(entry.rotation[2]), WOWPP_DEG_TO_RAD(entry.rotation[0]), WOWPP_DEG_TO_RAD(-entry.rotation[1]));
+
+				math::Vector3 position(entry.position.z, entry.position.x, entry.position.y);
+				position.x -= 32 * 533.3333f;
+				position.y -= 32 * 533.3333f;
+#undef WOWPP_DEG_TO_RAD
+
+				// Transform vertices
+
 			}
 		}
 
@@ -865,7 +910,7 @@ namespace
 			}
 
 			// Push back to the list of WMO files
-			wmos.emplace_back(std::move(wmoFile));
+			wmos.push_back(std::move(wmoFile));
 		}
 
 		// Create files

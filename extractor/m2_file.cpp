@@ -37,6 +37,45 @@ namespace wowpp
 		if (!m_source) return false;
 		if (m_isValid) return true;
 
+		// Read model header
+		M2Header header;
+		m_reader.readPOD(header);
+		if (header.magic != 0x3032444D)
+		{
+			ELOG("Invalid m2 mesh header");
+			return false;
+		}
+
+		// Do we have any vertex data?
+		if (header.nVertices > 0 && header.nViews > 0)
+		{
+			// We have vertices and at least one view
+			m_vertices.resize(header.nVertices);
+			m_source->seek(header.ofsVertices);
+			for (auto &v : m_vertices)
+			{
+				// Read position data
+				m_reader.readPOD(v);
+
+				// Skip bone data
+				m_reader.skip(8);
+
+				// Skip normal data
+				m_reader.skip(sizeof(float) * 3);
+
+				// Skip uv data
+				m_reader.skip(sizeof(float) * 4);
+			}
+
+			m_source->seek(header.ofsViews);
+
+			// Read first view
+			M2View view;
+			m_reader.readPOD(view);
+
+			// TODO: Read index data and submesh data
+		}
+
 		// File structure seems to be valid
 		m_isValid = true;
 		return true;

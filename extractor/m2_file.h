@@ -26,6 +26,109 @@
 
 namespace wowpp
 {
+	struct M2Header
+	{
+		UInt32 magic;
+		UInt32 version;
+		UInt32 nameLen;
+		UInt32 nameOffset;
+		UInt32 globalFlags;
+		UInt32 nGlobalSequences;
+		UInt32 ofsGlobalSequences;
+		UInt32 nAnimations;
+		UInt32 ofsAnimations;
+		UInt32 nAnimationLookup;
+		UInt32 ofsAnimationLookup;
+		UInt32 nPlayableAnimationLookup;
+		UInt32 ofsPlayableAnimationLookup;
+		UInt32 nBones;
+		UInt32 ofsBones;
+		UInt32 nSkelBoneLookup;
+		UInt32 ofsSkelBoneLookup;
+		UInt32 nVertices;
+		UInt32 ofsVertices;
+		UInt32 nViews;
+		UInt32 ofsViews;
+		UInt32 nColors;
+		UInt32 ofsColors;
+		UInt32 nTextures;
+		UInt32 ofsTextures;
+		UInt32 nTransparency;
+		UInt32 ofsTransparency;
+		UInt32 nI;
+		UInt32 ofsI;
+		UInt32 nTexAnims;
+		UInt32 ofsTexAnims;
+		UInt32 nTexReplace;
+		UInt32 ofsTexReplace;
+		UInt32 nRenderFlags;
+		UInt32 ofsRenderFlags;
+		UInt32 nBoneLookupTable;
+		UInt32 ofsBoneLookupTable;
+		UInt32 nTexLookup;
+		UInt32 ofsTexLookup;
+		UInt32 nTexUnits;
+		UInt32 ofsTexUnits;
+		UInt32 nTransLookup;
+		UInt32 ofsTransLookup;
+		UInt32 nTexAnimLookup;
+		UInt32 ofsTexAnimLookup;
+		std::array<float, 14> values;
+		UInt32 nBoundingTriangles;
+		UInt32 ofsBoundingTriangles;
+		UInt32 nBoundingVertices;
+		UInt32 ofsBoundingVertices;
+		UInt32 nBoundingNormals;
+		UInt32 ofsBoundingNormals;
+		UInt32 nAttachments;
+		UInt32 ofsAttachments;
+		UInt32 nAttachLookup;
+		UInt32 ofsAttachLookup;
+		UInt32 nAttachments_2;
+		UInt32 ofsAttachments_2;
+		UInt32 nLights;
+		UInt32 ofsLights;
+		UInt32 nCameras;
+		UInt32 ofsCameras;
+		UInt32 nCameraLookup;
+		UInt32 ofsCameraLookup;
+		UInt32 nRibbonEmitters;
+		UInt32 ofsRibbonEmitters;
+		UInt32 nParticleEmitters;
+		UInt32 ofsParticleEmitters;
+	};
+
+	struct M2View
+	{
+		UInt32 nIndices;
+		UInt32 ofsIndices;
+		UInt32 nTriangles;
+		UInt32 ofsTriangles;
+		UInt32 nVertexProperties;
+		UInt32 ofsVertexProperties;
+		UInt32 nSubMeshs;
+		UInt32 ofsSubMeshs;
+		UInt32 nTextures;
+		UInt32 ofsTextures;
+	};
+
+	struct M2SubMesh
+	{
+		UInt32 id;
+		UInt16 startVert;
+		UInt16 nVerts;
+		UInt16 startTri;
+		UInt16 nTris;
+		UInt16 nBones;
+		UInt16 startBone;
+		UInt16 unkBone1;
+		UInt16 rootBone;
+		float vec1[3];
+		float vec2[4];
+	};
+
+	typedef UInt16 M2Index;
+
 	/// This class contains data from a m2 file.
 	class M2File final : public MPQFile
 	{
@@ -37,8 +140,8 @@ namespace wowpp
 		/// @copydoc MPQFile::load()
 		bool load() override;
 
-		/*
 		const std::vector<math::Vector3> &getVertices() const { return m_vertices; }
+		/*
 		const std::vector<UInt16> &getIndices() const { return m_indices; }
 		const std::vector<std::unique_ptr<WMOFile>> &getGroups() const { return m_wmoGroups; }
 		const bool isCollisionTriangle(UInt32 triangleIndex) const;
@@ -46,15 +149,9 @@ namespace wowpp
 
 	private:
 
-		/*
-		MOHDChunk m_rootHeader;
-		MOGPChunk m_groupHeader;
-		*/
 		bool m_isValid;
-		/*bool m_isRoot;
-		std::vector<std::unique_ptr<WMOFile>> m_wmoGroups;
 		std::vector<math::Vector3> m_vertices;
-		std::vector<UInt16> m_indices;
+		/*std::vector<UInt16> m_indices;
 		std::vector<char> m_triangleProps;
 		*/
 	};
