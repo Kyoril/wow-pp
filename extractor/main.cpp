@@ -392,6 +392,9 @@ namespace
 		// Build mesh data
 		MeshData mesh;
 		{
+			// TODO: Process doodads!
+			DLOG("\tTile has " << adt.getMDDFChunk().entries.size() << " doodads");
+
 			for (auto &vert : collision.vertices)
 			{
 				mesh.solidVerts.push_back(vert.x);
