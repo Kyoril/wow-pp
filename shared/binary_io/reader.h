@@ -128,7 +128,6 @@ namespace io
 	//use read<T> instead
 	Reader &operator >> (Reader &r, bool &value);
 
-
 	namespace detail
 	{
 		template <class F, class T>
@@ -397,5 +396,41 @@ namespace io
 	detail::ReadContainerWithLengthAndConversion<L, E, C> read_converted_container(C &container, L maxLength = (std::numeric_limits<L>::max)())
 	{
 		return detail::ReadContainerWithLengthAndConversion<L, E, C>(container, maxLength);
+	}
+
+	namespace detail
+	{
+		struct ReadString
+		{
+			std::string &value;
+
+			ReadString(std::string &value)
+				: value(value)
+			{
+			}
+		};
+
+		inline Reader &operator >> (Reader &r, const ReadString &surr)
+		{
+			char c = 0x00;
+			do
+			{
+				if (!(r >> c))
+				{
+					return r;
+				}
+				if (c != 0)
+				{
+					surr.value.push_back(c);
+				}
+			} while (c != 0);
+
+			return r;
+		}
+	}
+
+	inline detail::ReadString read_string(std::string &value)
+	{
+		return detail::ReadString(value);
 	}
 }

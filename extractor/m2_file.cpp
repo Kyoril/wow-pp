@@ -46,6 +46,29 @@ namespace wowpp
 			return false;
 		}
 
+		// For now, only read bounding vertices if any
+		if (header.nBoundingVertices > 0)
+		{
+			m_vertices.resize(header.nBoundingVertices);
+			m_source->seek(header.ofsBoundingVertices);
+			for (auto &v : m_vertices)
+			{
+				// Read position data
+				math::Vector3 vOrig;
+				m_reader.readPOD(vOrig);
+
+				v = math::Vector3(vOrig.x, vOrig.z, -vOrig.y);
+			}
+
+			m_indices.resize(header.nBoundingTriangles);		// Number of indices, not number of triangles
+			assert(header.nBoundingTriangles % 3 == 0);
+			m_source->seek(header.ofsBoundingTriangles);
+			for (auto &i : m_indices)
+			{
+				m_reader >> io::read<UInt16>(i);
+			}
+		}
+#if 0
 		// Do we have any vertex data?
 		if (header.nVertices > 0 && header.nViews > 0)
 		{
@@ -75,6 +98,7 @@ namespace wowpp
 
 			// TODO: Read index data and submesh data
 		}
+#endif
 
 		// File structure seems to be valid
 		m_isValid = true;

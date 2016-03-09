@@ -515,10 +515,9 @@ namespace
 				auto &m2 = m2s[entry.mmidEntry];
 
 				// TODO: Apply scale
-				math::Matrix4 mat;
 #define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * x / -180.0)
 				math::Matrix4 rotMat = math::Matrix4::fromEulerAnglesXYZ(
-					WOWPP_DEG_TO_RAD(entry.rotation[2]), WOWPP_DEG_TO_RAD(entry.rotation[0]), WOWPP_DEG_TO_RAD(-entry.rotation[1]));
+					WOWPP_DEG_TO_RAD(entry.rotation[1]-270), WOWPP_DEG_TO_RAD(entry.rotation[2]), WOWPP_DEG_TO_RAD(entry.rotation[0]));
 
 				math::Vector3 position(entry.position.z, entry.position.x, entry.position.y);
 				position.x -= 32 * 533.3333f;
@@ -526,7 +525,30 @@ namespace
 #undef WOWPP_DEG_TO_RAD
 
 				// Transform vertices
+				const auto &verts = m2->getVertices();
+				const auto &inds = m2->getIndices();
 
+				UInt32 count = mesh.solidVerts.size() / 3;
+				for (auto &vert : verts)
+				{
+					// Transform vertex and push it to the list
+					math::Vector3 transformed = rotMat * vert * (float(entry.scale) / 1024.0f) + position;
+					transformed.x *= -1.f;
+					transformed.y *= -1.f;
+					mesh.solidVerts.push_back(transformed.x);
+					mesh.solidVerts.push_back(transformed.z);
+					mesh.solidVerts.push_back(transformed.y);
+				}
+				for (UInt32 i = 0; i < inds.size(); i += 3)
+				{
+					Triangle tri;
+					tri.indexA = inds[i] + count;
+					tri.indexB = inds[i + 1] + count;
+					tri.indexC = inds[i + 2] + count;
+					mesh.solidTris.push_back(tri.indexC);
+					mesh.solidTris.push_back(tri.indexB);
+					mesh.solidTris.push_back(tri.indexA);
+				}
 			}
 		}
 
