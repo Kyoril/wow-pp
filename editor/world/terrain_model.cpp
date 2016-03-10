@@ -34,12 +34,13 @@ namespace wowpp
 				{
 					tile.fill(0.0f);
 				}
+				holes.fill(0);
 			}
 
-			Page::Page(const Page &other)
+			/*Page::Page(const Page &other)
 			{
 				heights = other.heights;
-			}
+			}*/
 		}
 	}
 }

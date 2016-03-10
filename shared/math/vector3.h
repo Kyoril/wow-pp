@@ -74,6 +74,11 @@ namespace wowpp
 			{
 				return sqrtf(x * x + y * y + z * z);
 			}
+			/// Calculates the squared length.
+			const float squared_length() const
+			{
+				return x * x + y * y + z * z;
+			}
 			/// Normalizes this vector. Has no effect if the length of this vector
 			/// is equal to zero.
 			/// @returns The magnitude of this vector.

@@ -26,6 +26,7 @@
 #include "common/countdown.h"
 #include "math/vector3.h"
 #include "movement_info.h"
+#include "movement_path.h"
 
 namespace wowpp
 {
@@ -42,15 +43,18 @@ namespace wowpp
 
 	public:
 
+		/// Fired when the unit reached it's target.
 		boost::signals2::signal<void()> targetReached;
+		/// Fired when the movement was stopped.
 		boost::signals2::signal<void()> movementStopped;
+		/// Fired when the target changed.
 		boost::signals2::signal<void()> targetChanged;
 
 	public:
 
-		///
+		/// 
 		explicit UnitMover(GameUnit &unit);
-		///
+		/// 
 		virtual ~UnitMover();
 
 		/// Called when the units movement speed changed.
@@ -64,18 +68,21 @@ namespace wowpp
 		/// Stops the current movement if any.
 		void stopMovement();
 		/// Gets the new movement target.
-		const math::Vector3 &getTarget() const {
+		const math::Vector3 &getTarget() const
+		{
 			return m_target;
 		}
-		///
-		GameUnit &getMoved() const {
+		/// 
+		GameUnit &getMoved() const
+		{
 			return m_unit;
 		}
-		///
-		bool isMoving() const {
+		/// 
+		bool isMoving() const
+		{
 			return m_moveReached.running;
 		};
-		///
+		/// 
 		math::Vector3 getCurrentLocation() const;
 
 	private:
@@ -85,5 +92,6 @@ namespace wowpp
 		math::Vector3 m_start, m_target;
 		GameTime m_moveStart, m_moveEnd;
 		bool m_customSpeed;
+		MovementPath m_path;
 	};
 }

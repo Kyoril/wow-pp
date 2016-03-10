@@ -25,6 +25,8 @@
 #include "tile_index.h"
 #include "common/grid.h"
 #include "math/ray.h"
+#include "detour/DetourNavMesh.h"
+#include "detour/DetourNavMeshQuery.h"
 
 namespace wowpp
 {
@@ -40,8 +42,8 @@ namespace wowpp
 		//		UInt32 heightSize;
 		UInt32 offsCollision;
 		UInt32 collisionSize;
-		//UInt32 offsNavigation;
-		//UInt32 navigationSize;
+		UInt32 offsNavigation;
+		UInt32 navigationSize;
 
 		MapHeaderChunk()
 			: fourCC(0)
@@ -53,8 +55,8 @@ namespace wowpp
 			  //			, heightSize(0)
 			, offsCollision(0)
 			, collisionSize(0)
-			//, offsNavigation(0)
-			//, navigationSize(0)
+			, offsNavigation(0)
+			, navigationSize(0)
 		{
 		}
 	};
@@ -78,14 +80,6 @@ namespace wowpp
 		};
 		std::array<AreaInfo, 16 * 16> cellAreas;
 	};
-
-	/// Map size chunk.
-	/*struct MapHeightChunk
-	{
-		UInt32 fourCC;
-		UInt32 size;
-		std::array<std::array<float, 145>, 16 * 16> heights;
-	};*/
 
 	struct Triangle
 	{
@@ -123,13 +117,28 @@ namespace wowpp
 	{
 		UInt32 fourCC;
 		UInt32 size;
+		dtTileRef tileRef;
 		std::vector<char> data;
 
 		explicit MapNavigationChunk()
 			: fourCC(0)
 			, size(0)
+			, tileRef(0)
 		{
 		}
+	};
+
+	enum NavTerrain
+	{
+		NAV_EMPTY = 0x00,
+		NAV_GROUND = 0x01,
+		NAV_MAGMA = 0x02,
+		NAV_SLIME = 0x04,
+		NAV_WATER = 0x08,
+		NAV_UNUSED1 = 0x10,
+		NAV_UNUSED2 = 0x20,
+		NAV_UNUSED3 = 0x40,
+		NAV_UNUSED4 = 0x80
 	};
 
 	namespace proto
@@ -143,8 +152,25 @@ namespace wowpp
 		MapAreaChunk areas;
 		//MapHeightChunk heights;
 		MapCollisionChunk collision;
+		MapNavigationChunk navigation;
 
 		~MapDataTile() {}
+	};
+
+	struct NavMeshDeleter final
+	{
+		virtual void operator()(dtNavMesh *ptr) const
+		{
+			if (ptr) dtFreeNavMesh(ptr);
+		}
+	};
+
+	struct NavQueryDeleter final
+	{
+		virtual void operator()(dtNavMeshQuery *ptr) const
+		{
+			if (ptr) dtFreeNavMeshQuery(ptr);
+		}
 	};
 
 	/// This class represents a map with additional geometry and navigation data.
@@ -171,6 +197,10 @@ namespace wowpp
 		/// @param posB The destination position where the raycast is fired to.
 		/// @returns true, if nothing prevents the line of sight, false otherwise.
 		bool isInLineOfSight(const math::Vector3 &posA, const math::Vector3 &posB);
+		/// Calculates a path from start point to the destination point.
+		bool calculatePath(const math::Vector3 &source, math::Vector3 dest, std::vector<math::Vector3> &out_path);
+		/// 
+		dtPolyRef getPolyByLocation(const math::Vector3 &point, float &out_distance) const;
 
 	private:
 
@@ -179,5 +209,14 @@ namespace wowpp
 		// Note: We use a pointer here, because we don't need to load ALL height data
 		// of all tiles, and Grid allocates them immediatly.
 		Grid<std::shared_ptr<MapDataTile>> m_tiles;
+		/// Navigation mesh of this map. Note that this is shared between all map instanecs with the same map id.
+		dtNavMesh *m_navMesh;
+		/// Navigation mesh query for the current nav mesh (if any).
+		std::unique_ptr<dtNavMeshQuery, NavQueryDeleter> m_navQuery;
+		/// Filter to determine what kind of navigation polygons to use.
+		dtQueryFilter m_filter;
+
+		// Holds all loaded navigation meshes, keyed by map id.
+		static std::map<UInt32, std::unique_ptr<dtNavMesh, NavMeshDeleter>> navMeshsPerMap;
 	};
 }

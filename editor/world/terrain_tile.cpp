@@ -30,6 +30,7 @@
 #include "OgreHardwareBufferManager.h"
 #include "OgreHardwareBuffer.h"
 #include <OgreNode.h>
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -46,13 +47,12 @@ namespace wowpp
 			UInt32 tileX,
 			UInt32 tileY,
 			terrain::model::Heightmap &tileHeights,
-			terrain::model::Normalmap &tileNormals
+			terrain::model::Normalmap &tileNormals,
+			UInt16 holes
 			)
 			: Ogre::MovableObject(name)
 			, Ogre::Renderable()
 			, m_sceneMgr(sceneMgr)
-			//, m_camera(camera)
-			//, m_page(page)
 			, m_material(material)
 			, m_tileX(tileX)
 			, m_tileY(tileY)
@@ -60,6 +60,7 @@ namespace wowpp
 			, m_lightListDirty(true)
 			, m_tileHeights(tileHeights)
 			, m_tileNormals(tileNormals)
+			, m_holes(holes)
 		{
 			createVertexData();
 			createIndexes();
@@ -312,11 +313,15 @@ namespace wowpp
 			m_boundingRadius = (m_bounds.getMaximum() - m_center).length();
 		}
 
+		static UInt16 holetab_h[4] = { 0x1111, 0x2222, 0x4444, 0x8888 };
+		static UInt16 holetab_v[4] = { 0x000F, 0x00F0, 0x0F00, 0xF000 };
+
 		void TerrainTile::createIndexes()
 		{
+			UInt16 indexCounter = 768;
 			m_indexData = make_unique<Ogre::IndexData>();
 			m_indexData->indexBuffer = Ogre::HardwareBufferManager::getSingleton().createIndexBuffer(
-				Ogre::HardwareIndexBuffer::IT_16BIT, 768, Ogre::HardwareBuffer::HBU_DYNAMIC_WRITE_ONLY
+				Ogre::HardwareIndexBuffer::IT_16BIT, indexCounter, Ogre::HardwareBuffer::HBU_DYNAMIC_WRITE_ONLY
 				);
 
 			UInt16 *indexPtr = static_cast<UInt16*>(m_indexData->indexBuffer->lock(
@@ -339,6 +344,13 @@ namespace wowpp
 					//  .        .
 					//  .        .
 					//  j
+
+					const bool isHole =
+						(m_holes & holetab_h[i / 2] & holetab_v[j / 2]) != 0;
+					if (isHole)
+					{
+						continue;
+					}
 
 					UInt16 topLeftInd = i + j * 9 + j * 8;
 					UInt16 topRightInd = topLeftInd + 1;
