@@ -105,6 +105,14 @@ namespace wowpp
 					return target;
 				}
 
+				// NaN check
+				assert(t == t);
+				assert(x == x);
+				assert(y == y);
+				assert(z == z);
+				assert(target.x == target.x);
+				assert(target.y == target.y);
+				assert(target.z == target.z);
 				return *this + (target - *this) * t;
 			}
 

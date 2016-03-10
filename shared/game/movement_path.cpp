@@ -78,6 +78,7 @@ namespace wowpp
 			// If no end value was found (maybe it is out of space), use the last 
 			// known value as end point
 			if (t2 == map.end()) t2 = map.find(lastTimestamp);
+			assert(t2 == map.end());
 
 			// Normalize end time value (end - start) for a range of 0 to END
 			MovementPath::Timestamp nEnd = static_cast<MovementPath::Timestamp>(t2->first - t1->first);
@@ -85,7 +86,7 @@ namespace wowpp
 
 			// Determine normalized position
 			MovementPath::Timestamp nPos = static_cast<MovementPath::Timestamp>(timestamp - t1->first);
-
+			
 			// Interpolate between the two values
 			return t1->second.lerp(t2->second,
 				static_cast<double>(nPos) / static_cast<double>(nEnd));
