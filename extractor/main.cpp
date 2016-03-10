@@ -385,6 +385,11 @@ namespace
 	/// Generates a navigation tile.
 	static bool creaveNavTile(UInt32 mapId, UInt32 tileX, UInt32 tileY, dtNavMesh &navMesh, const ADTFile &adt, const MapCollisionChunk &collision, MapNavigationChunk &out_chunk)
 	{
+#if 0
+		if (tileY != 33 || (tileX != 31 && tileX != 32))
+			return false;
+#endif
+
 		// Reset chunk data
 		out_chunk.data.clear();
 		out_chunk.size = 0;
@@ -513,17 +518,19 @@ namespace
 			{
 				// Entry placement
 				auto &m2 = m2s[entry.mmidEntry];
-
+				
 				// TODO: Apply scale
-#define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * x / -180.0)
+#define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * (x) / -180.0)
 				math::Matrix4 rotMat = math::Matrix4::fromEulerAnglesXYZ(
-					WOWPP_DEG_TO_RAD(entry.rotation[1]-270), WOWPP_DEG_TO_RAD(entry.rotation[2]), WOWPP_DEG_TO_RAD(entry.rotation[0]));
+					WOWPP_DEG_TO_RAD(entry.rotation.x), -WOWPP_DEG_TO_RAD(180-entry.rotation.y), WOWPP_DEG_TO_RAD(entry.rotation.z));
 
-				math::Vector3 position(entry.position.z, entry.position.x, entry.position.y);
+				math::Vector3 position(entry.position.z, entry.position.y, entry.position.x);
 				position.x -= 32 * 533.3333f;
-				position.y -= 32 * 533.3333f;
+				position.z -= 32 * 533.3333f;
+				position.x *= -1.0f;
+				position.z *= -1.0f;
 #undef WOWPP_DEG_TO_RAD
-
+				
 				// Transform vertices
 				const auto &verts = m2->getVertices();
 				const auto &inds = m2->getIndices();
@@ -532,12 +539,13 @@ namespace
 				for (auto &vert : verts)
 				{
 					// Transform vertex and push it to the list
-					math::Vector3 transformed = rotMat * vert * (float(entry.scale) / 1024.0f) + position;
-					transformed.x *= -1.f;
-					transformed.y *= -1.f;
+					math::Vector3 transformed = (rotMat * (vert * (float(entry.scale) / 1024.0f))) + position;
+					/*transformed.x *= -1.f;
+					transformed.z *= -1.f;*/
+
 					mesh.solidVerts.push_back(transformed.x);
-					mesh.solidVerts.push_back(transformed.z);
 					mesh.solidVerts.push_back(transformed.y);
+					mesh.solidVerts.push_back(transformed.z);
 				}
 				for (UInt32 i = 0; i < inds.size(); i += 3)
 				{
@@ -545,9 +553,9 @@ namespace
 					tri.indexA = inds[i] + count;
 					tri.indexB = inds[i + 1] + count;
 					tri.indexC = inds[i + 2] + count;
-					mesh.solidTris.push_back(tri.indexC);
-					mesh.solidTris.push_back(tri.indexB);
 					mesh.solidTris.push_back(tri.indexA);
+					mesh.solidTris.push_back(tri.indexB);
+					mesh.solidTris.push_back(tri.indexC);
 				}
 			}
 		}
@@ -833,7 +841,7 @@ namespace
 			const float* orig = iv.polyMesh->bmin;
 			int nIndex = 0;
 			
-#if 1
+#if 0
 			if (iv.polyMesh->npolys > 0)
 			{
 				std::ostringstream strm;
@@ -872,7 +880,7 @@ namespace
 		}
 		while (0);
 
-#if 1
+#if 0
 		// restore padding so that the debug visualization is correct
 		for (int i = 0; i < iv.polyMesh->nverts; ++i)
 		{
@@ -995,7 +1003,7 @@ namespace
 			}
 
 			math::Matrix4 mat;
-#define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * x / -180.0)
+#define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * (x) / -180.0)
 			math::Matrix4 rotMat = math::Matrix4::fromEulerAnglesXYZ(
 				WOWPP_DEG_TO_RAD(entry.rotation[2]), WOWPP_DEG_TO_RAD(entry.rotation[0]), WOWPP_DEG_TO_RAD(-entry.rotation[1]));
 
@@ -1116,8 +1124,8 @@ namespace
 			return false;
 		}
 
-#if 1
-		if (mapId != 36)
+#if 0
+		if (mapId != 0)
 		{
 			return true;
 		}
