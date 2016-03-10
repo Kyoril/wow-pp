@@ -295,7 +295,7 @@ namespace wowpp
 		}
 
 		// Determine the current waypoints
-		return std::move(m_path.getPosition(getCurrentTime()));
+		return m_path.getPosition(getCurrentTime());
 
 		/*// Linear interpolation
 		const float t = static_cast<float>(static_cast<double>(getCurrentTime() - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));

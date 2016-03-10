@@ -80,14 +80,15 @@ namespace wowpp
 			if (t2 == map.end()) t2 = map.find(lastTimestamp);
 
 			// Normalize end time value (end - start) for a range of 0 to END
-			float nEnd = static_cast<float>(t2->first - t1->first);
+			MovementPath::Timestamp nEnd = static_cast<MovementPath::Timestamp>(t2->first - t1->first);
 			assert(nEnd != 0);
 
 			// Determine normalized position
-			float nPos = static_cast<float>(timestamp - t1->first);
+			MovementPath::Timestamp nPos = static_cast<MovementPath::Timestamp>(timestamp - t1->first);
 
 			// Interpolate between the two values
-			return t1->second.lerp(t2->second, nPos / nEnd);
+			return t1->second.lerp(t2->second,
+				static_cast<double>(nPos) / static_cast<double>(nEnd));
 		}
 	}
 
