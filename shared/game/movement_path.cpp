@@ -35,10 +35,10 @@ namespace wowpp
 				return math::Vector3();
 
 			// Get start and end iterator
-			T::const_iterator t1 = map.end(), t2 = map.end();
+			typename T::const_iterator t1 = map.end(), t2 = map.end();
 
 			// Get first position
-			T::const_iterator it = map.begin();
+			typename T::const_iterator it = map.begin();
 
 			// Iterate through all saved positions
 			while (it != map.end())
