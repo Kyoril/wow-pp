@@ -77,8 +77,11 @@ namespace wowpp
 
 			// If no end value was found (maybe it is out of space), use the last 
 			// known value as end point
-			if (t2 == map.end()) t2 = map.find(lastTimestamp);
-			assert(t2 == map.end());
+			if (t2 == map.end())
+			{
+				t2 = map.find(lastTimestamp);
+				assert(t2 != map.end());
+			}
 
 			// Normalize end time value (end - start) for a range of 0 to END
 			MovementPath::Timestamp nEnd = static_cast<MovementPath::Timestamp>(t2->first - t1->first);
