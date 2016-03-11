@@ -79,7 +79,7 @@ namespace wowpp
 			// known value as end point
 			if (t2 == map.end())
 			{
-				t2 = map.rbegin();
+				t2 = t1;
 				assert(t2 != map.end());
 			}
 
