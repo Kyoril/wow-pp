@@ -79,8 +79,8 @@ namespace wowpp
 			// known value as end point
 			if (t2 == map.end())
 			{
-				t2 = t1;
-				assert(t2 != map.end());
+				// No end point found, use last point available (source point)
+				return t1->second;
 			}
 
 			// Normalize end time value (end - start) for a range of 0 to END
