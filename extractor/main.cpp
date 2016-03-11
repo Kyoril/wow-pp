@@ -382,8 +382,88 @@ namespace
 
 		return true;
 	}
+	static bool addTerrainMesh(const ADTFile &adt, UInt32 tileX, UInt32 tileY, Spot spot, MeshData &mesh)
+	{
+		static_assert(V8_SIZE == 128, "V8_SIZE has to equal 128");
+		std::array<float, 128 * 128> V8;
+		V8.fill(0.0f);
+		static_assert(V9_SIZE == 129, "V9_SIZE has to equal 129");
+		std::array<float, 129 * 129> V9;
+		V9.fill(0.0f);
+
+		UInt32 chunkIndex = 0;
+		for (UInt32 i = 0; i < 16; ++i)
+		{
+			for (UInt32 j = 0; j < 16; ++j)
+			{
+				auto &MCNK = adt.getMCNKChunk(j + i * 16);
+				auto &MCVT = adt.getMCVTChunk(j + i * 16);
+
+				// get V9 height map
+				for (int y = 0; y <= 8; y++)
+				{
+					int cy = i * 8 + y;
+					for (int x = 0; x <= 8; x++)
+					{
+						int cx = j * 8 + x;
+						V9[cy + cx * V9_SIZE] = MCVT.heights[y * (8 * 2 + 1) + x] + MCNK.ypos;
+					}
+				}
+				// get V8 height map
+				for (int y = 0; y < 8; y++)
+				{
+					int cy = i * 8 + y;
+					for (int x = 0; x < 8; x++)
+					{
+						int cx = j * 8 + x;
+						V8[cy + cx * V8_SIZE] = MCVT.heights[y * (8 * 2 + 1) + 8 + 1 + x] + MCNK.ypos;
+					}
+				}
+			}
+		}
+
+		int count = mesh.solidVerts.size() / 3;
+		float xoffset = (float(tileX) - 32) * GridSize;
+		float yoffset = (float(tileY) - 32) * GridSize;
+
+		float coord[3];
+		for (int i = 0; i < V9_SIZE_SQ; ++i)
+		{
+			getHeightCoord(i, GRID_V9, xoffset, yoffset, coord, V9.data());
+			mesh.solidVerts.push_back(coord[0]);
+			mesh.solidVerts.push_back(coord[2]);
+			mesh.solidVerts.push_back(coord[1]);
+		}
+		for (int i = 0; i < V8_SIZE_SQ; ++i)
+		{
+			getHeightCoord(i, GRID_V8, xoffset, yoffset, coord, V8.data());
+			mesh.solidVerts.push_back(coord[0]);
+			mesh.solidVerts.push_back(coord[2]);
+			mesh.solidVerts.push_back(coord[1]);
+		}
+
+		int loopStart, loopEnd, loopInc;
+		int indices[3];
+
+		getLoopVars(spot, loopStart, loopEnd, loopInc);
+		for (int i = loopStart; i < loopEnd; i += loopInc)
+		{
+			for (int j = TOP; j <= BOTTOM; j += 1)
+			{
+				if (!isHole(i, adt))
+				{
+					getHeightTriangle(i, Spot(j), indices);
+					mesh.solidTris.push_back(indices[2] + count);
+					mesh.solidTris.push_back(indices[1] + count);
+					mesh.solidTris.push_back(indices[0] + count);
+				}
+			}
+		}
+
+		return true;
+	}
 	/// Generates a navigation tile.
-	static bool creaveNavTile(UInt32 mapId, UInt32 tileX, UInt32 tileY, dtNavMesh &navMesh, const ADTFile &adt, const MapCollisionChunk &collision, MapNavigationChunk &out_chunk)
+	static bool creaveNavTile(const String &mapName, UInt32 mapId, UInt32 tileX, UInt32 tileY, dtNavMesh &navMesh, const ADTFile &adt, const MapCollisionChunk &collision, MapNavigationChunk &out_chunk)
 	{
 #if 0
 		if (tileY != 33 || (tileX != 31 && tileX != 32))
@@ -411,80 +491,24 @@ namespace
 				mesh.solidTris.push_back(tri.indexA);
 			}
 
-			static_assert(V8_SIZE == 128, "V8_SIZE has to equal 128");
-			std::array<float, 128 * 128> V8;
-			V8.fill(0.0f);
-			static_assert(V9_SIZE == 129, "V9_SIZE has to equal 129");
-			std::array<float, 129 * 129> V9;
-			V9.fill(0.0f);
-
-			UInt32 chunkIndex = 0;
-			for (UInt32 i = 0; i < 16; ++i)
+			if (addTerrainMesh(adt, tileX, tileY, ENTIRE, mesh))
 			{
-				for (UInt32 j = 0; j < 16; ++j)
-				{
-					auto &MCNK = adt.getMCNKChunk(j + i * 16);
-					auto &MCVT = adt.getMCVTChunk(j + i * 16);
+				String adtFile;
+				std::unique_ptr<ADTFile> adtInst;
 
-					// get V9 height map
-					for (int y = 0; y <= 8; y++)
-					{
-						int cy = i * 8 + y;
-						for (int x = 0; x <= 8; x++)
-						{
-							int cx = j * 8 + x;
-							V9[cy + cx * V9_SIZE] = MCVT.heights[y * (8 * 2 + 1) + x] + MCNK.ypos;
-						}
-					}
-					// get V8 height map
-					for (int y = 0; y < 8; y++)
-					{
-						int cy = i * 8 + y;
-						for (int x = 0; x < 8; x++)
-						{
-							int cx = j * 8 + x;
-							V8[cy + cx * V8_SIZE] = MCVT.heights[y * (8 * 2 + 1) + 8 + 1 + x] + MCNK.ypos;
-						}
-					}
+#define LOAD_TERRAIN(x, y, spot) \
+				adtFile = (boost::format("World\\Maps\\%1%\\%1%_%2%_%3%.adt") % mapName % (y) % (x)).str(); \
+					adtInst = make_unique<ADTFile>(adtFile); \
+				if (adtInst->load()) \
+				{ \
+					addTerrainMesh(*adtInst, (x), (y), spot, mesh); \
 				}
-			}
 
-			int count = mesh.solidVerts.size() / 3;
-			float xoffset = (float(tileX) - 32) * GridSize;
-			float yoffset = (float(tileY) - 32) * GridSize;
-
-			float coord[3];
-			for (int i = 0; i < V9_SIZE_SQ; ++i)
-			{
-				getHeightCoord(i, GRID_V9, xoffset, yoffset, coord, V9.data());
-				mesh.solidVerts.push_back(coord[0]);
-				mesh.solidVerts.push_back(coord[2]);
-				mesh.solidVerts.push_back(coord[1]);
-			}
-			for (int i = 0; i < V8_SIZE_SQ; ++i)
-			{
-				getHeightCoord(i, GRID_V8, xoffset, yoffset, coord, V8.data());
-				mesh.solidVerts.push_back(coord[0]);
-				mesh.solidVerts.push_back(coord[2]);
-				mesh.solidVerts.push_back(coord[1]);
-			}
-
-			int loopStart, loopEnd, loopInc;
-			int indices[3];
-
-			getLoopVars(ENTIRE, loopStart, loopEnd, loopInc);
-			for (int i = loopStart; i < loopEnd; i += loopInc)
-			{
-				for (int j = TOP; j <= BOTTOM; j += 1)
-				{
-					if (!isHole(i, adt))
-					{
-						getHeightTriangle(i, Spot(j), indices);
-						mesh.solidTris.push_back(indices[2] + count);
-						mesh.solidTris.push_back(indices[1] + count);
-						mesh.solidTris.push_back(indices[0] + count);
-					}
-				}
+				LOAD_TERRAIN(tileX + 1, tileY, LEFT);
+				LOAD_TERRAIN(tileX - 1, tileY, RIGHT);
+				LOAD_TERRAIN(tileX, tileY + 1, TOP);
+				LOAD_TERRAIN(tileX, tileY - 1, BOTTOM);
+#undef LOAD_TERRAIN
 			}
 		}
 
@@ -1085,7 +1109,7 @@ namespace
 		MapNavigationChunk navigationChunk;
 		navigationChunk.fourCC = 0x564E4D57;		// WMNV		- WoW Map Navigation
 		navigationChunk.size = 0;
-		if (creaveNavTile(mapId, cellX, cellY, navMesh, adt, collisionChunk, navigationChunk))
+		if (creaveNavTile(mapName, mapId, cellX, cellY, navMesh, adt, collisionChunk, navigationChunk))
 		{
 			if (!navigationChunk.data.empty())
 			{
@@ -1125,7 +1149,7 @@ namespace
 		}
 
 #if 0
-		if (mapId != 0)
+		if (mapId != 36)
 		{
 			return true;
 		}
