@@ -80,7 +80,7 @@ namespace wowpp
 			if (t2 == map.end())
 			{
 				t2 = map.rbegin();
-				assert(t2 != map.end() && t2 >= t1);
+				assert(t2 != map.end());
 			}
 
 			// Normalize end time value (end - start) for a range of 0 to END
