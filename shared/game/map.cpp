@@ -416,7 +416,8 @@ namespace wowpp
 				0,
 				0,
 				&tempPathCoordsCount,
-				maxPathLength
+				maxPathLength,
+				DT_STRAIGHTPATH_ALL_CROSSINGS
 				);
 		}
 

@@ -465,8 +465,8 @@ namespace
 	/// Generates a navigation tile.
 	static bool creaveNavTile(const String &mapName, UInt32 mapId, UInt32 tileX, UInt32 tileY, dtNavMesh &navMesh, const ADTFile &adt, const MapCollisionChunk &collision, MapNavigationChunk &out_chunk)
 	{
-#if 0
-		if (tileY != 33 || (tileX != 31 && tileX != 32))
+#if 1
+		if (tileY != 30 || tileX != 26)
 			return false;
 #endif
 
@@ -865,7 +865,7 @@ namespace
 			const float* orig = iv.polyMesh->bmin;
 			int nIndex = 0;
 			
-#if 0
+#if 1
 			if (iv.polyMesh->npolys > 0)
 			{
 				std::ostringstream strm;
@@ -904,7 +904,7 @@ namespace
 		}
 		while (0);
 
-#if 0
+#if 1
 		// restore padding so that the debug visualization is correct
 		for (int i = 0; i < iv.polyMesh->nverts; ++i)
 		{
@@ -1148,8 +1148,8 @@ namespace
 			return false;
 		}
 
-#if 0
-		if (mapId != 36)
+#if 1
+		if (mapId != 0)
 		{
 			return true;
 		}

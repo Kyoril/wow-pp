@@ -33,7 +33,12 @@ namespace wowpp
 {
 	CreatureAIIdleState::CreatureAIIdleState(CreatureAI &ai)
 		: CreatureAIState(ai)
+		, m_aggroDelay(ai.getControlled().getTimers())
 	{
+		m_aggroDelay.ended.connect([this]()
+		{
+			if (m_aggroWatcher) m_aggroWatcher->start();
+		});
 	}
 
 	CreatureAIIdleState::~CreatureAIIdleState()
@@ -159,13 +164,14 @@ namespace wowpp
 				return false;
 			});
 
-			m_aggroWatcher->start();
+			// Add a little delay
+			m_aggroDelay.setEnd(getCurrentTime() + 1000);
 		}
 	}
 
 	void CreatureAIIdleState::onLeave()
 	{
-
+		m_aggroWatcher.reset();
 	}
 
 }

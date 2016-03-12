@@ -22,6 +22,7 @@
 #pragma once
 
 #include "creature_ai_state.h"
+#include "common/countdown.h"
 
 namespace wowpp
 {
@@ -49,5 +50,6 @@ namespace wowpp
 
 		std::unique_ptr<UnitWatcher> m_aggroWatcher;
 		boost::signals2::scoped_connection m_onThreatened;
+		Countdown m_aggroDelay;
 	};
 }
