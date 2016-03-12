@@ -159,32 +159,66 @@ namespace wowpp
 		}
 
 		// Dead units can't move
-		if (!getMoved().canMove()) {
+		if (!getMoved().canMove())
+		{
 			return false;
 		}
 
-		// Use new values
-		m_start = currentLoc;
-		m_target = target;
-		float distance = (m_target - m_start).length();
+		auto *world = getMoved().getWorldInstance();
+		if (!world)
+		{
+			return false;
+		}
 
+		auto *map = world->getMapData();
+		if (!map)
+		{
+			return false;
+		}
+
+		// Clear the current movement path
+		m_path.clear();
+		
+		// Calculate path
+		std::vector<math::Vector3> path;
+		if (!map->calculatePath(currentLoc, target, path))
+		{
+			return false;
+		}
+
+		assert(!path.empty());
+		
 		// Update timing
 		m_moveStart = getCurrentTime();
+		m_path.addPosition(m_moveStart, currentLoc);
+
+		GameTime moveTime = m_moveStart;
+		for (UInt32 i = 0; i < path.size(); ++i)
+		{
+			const float dist =
+				(i == 0) ? ((path[i] - currentLoc).length()) : (path[i] - path[i - 1]).length();
+			moveTime += (dist / customSpeed) * constants::OneSecond;
+			m_path.addPosition(moveTime, path[i]);
+		}
+
+		// Test
+		//m_path.printDebugInfo();
+
+		// Use new values
+		m_start = currentLoc;
+		m_target = path.back();
 
 		// Calculate time of arrival
-		GameTime moveTime = (distance / customSpeed) * constants::OneSecond;
-		m_moveEnd = m_moveStart + moveTime;
+		m_moveEnd = moveTime;
 
 		// Send movement packet
 		TileIndex2D tile;
 		if (getMoved().getTileIndex(tile))
 		{
-			// TODO: Maybe, player characters need another movement packet for this...
 			std::vector<char> buffer;
 			io::VectorSink sink(buffer);
 			game::Protocol::OutgoingPacket packet(sink);
-			game::server_write::monsterMove(packet, getMoved().getGuid(), currentLoc, target, moveTime);
-
+			game::server_write::monsterMove(packet, getMoved().getGuid(), currentLoc, path, moveTime - m_moveStart);
 			forEachSubscriberInSight(
 			    getMoved().getWorldInstance()->getGrid(),
 			    tile,
@@ -236,7 +270,7 @@ namespace wowpp
 				std::vector<char> buffer;
 				io::VectorSink sink(buffer);
 				game::Protocol::OutgoingPacket packet(sink);
-				game::server_write::monsterMove(packet, getMoved().getGuid(), currentLoc, currentLoc, 0);
+				game::server_write::monsterMove(packet, getMoved().getGuid(), currentLoc, { currentLoc }, 0);
 
 				forEachSubscriberInSight(
 				    getMoved().getWorldInstance()->getGrid(),
@@ -256,12 +290,15 @@ namespace wowpp
 	math::Vector3 UnitMover::getCurrentLocation() const
 	{
 		// Unit didn't move yet or isn't moving at all
-		if (m_moveStart == 0 || !isMoving()) {
+		if (m_moveStart == 0 || !isMoving() || !m_path.hasPositions()) {
 			return getMoved().getLocation();
 		}
 
-		// Linear interpolation
+		// Determine the current waypoints
+		return m_path.getPosition(getCurrentTime());
+
+		/*// Linear interpolation
 		const float t = static_cast<float>(static_cast<double>(getCurrentTime() - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));
-		return m_start.lerp(m_target, t);
+		return m_start.lerp(m_target, t);*/
 	}
 }

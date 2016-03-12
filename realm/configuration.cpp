@@ -181,8 +181,14 @@ namespace wowpp
 					// Version
 					if (token == "$version")
 					{
+						String commit = GitCommit;
+						if (commit.size() > 7)
+						{
+							commit = commit.substr(0, 6);
+						}
+
 						std::stringstream strm;
-						strm << Major << "." << Minor << "." << Build << "." << Revisision << " (" << GitCommit << ")";
+						strm << Major << "." << Minor << "." << Build << "." << Revisision << " (Branch " << GitBranch << ": " << commit << ")";
 						result.append(strm.str());
 					}
 					else if (token == "$lastchange")

@@ -42,6 +42,8 @@ namespace wowpp
 		, m_lastThreatTime(0)
 		, m_nextActionCountdown(ai.getControlled().getTimers())
 		, m_isCasting(false)
+		, m_entered(false)
+		, m_isRanged(false)
 	{
 		// Setup
 		m_lastSpellEntry = nullptr;
@@ -193,6 +195,18 @@ namespace wowpp
 		// Apply initial spell cooldowns
 		for (const auto &entry : controlled.getEntry().creaturespells())
 		{
+			const auto *spell = controlled.getProject().spells.getById(entry.spellid());
+			if (!spell)
+			{
+				continue;
+			}
+
+			// Creature is a ranged one
+			if (spell->attributes(0) & game::spell_attributes::Ranged)
+			{
+				m_isRanged = true;
+			}
+
 			if (entry.mininitialcooldown() > 0)
 			{
 				UInt32 initialCooldown = 0;
@@ -219,6 +233,9 @@ namespace wowpp
 				m_nextActionCountdown.setEnd(getCurrentTime() + 1);
 			});
 		}
+
+		// Entered the combat state
+		m_entered = true;
 
 		// Choose next action
 		chooseNextAction();
@@ -306,8 +323,8 @@ namespace wowpp
 
 		m_lastThreatTime = getCurrentTime();
 
-		// If not casting right now, choose next action
-		if (!m_isCasting)
+		// If not casting right now and already initialized, choose next action
+		if (!m_isCasting && m_entered)
 			chooseNextAction();
 	}
 
@@ -464,18 +481,26 @@ namespace wowpp
 		auto &entry = controlled.getEntry();
 
 		// Did we try to cast a spell last time?
-		if (m_lastSpellEntry == nullptr)
+		if (m_lastSpellEntry == nullptr && 
+			entry.creaturespells_size() > 0)
 		{
-			float distance = 0.0f;
-			if (entry.creaturespells_size() > 0)
-			{
-				distance = controlled.getDistanceTo(*victim);
-			}
+			UInt32 lowestCooldown = 0;
+			float distance = controlled.getDistanceTo(*victim);
 
 			UInt32 highestPriority = 0;
 			const proto::UnitSpellEntry *validSpellEntry = nullptr;
 			for (const auto &spelldef : entry.creaturespells())
 			{
+				UInt32 cd = controlled.getCooldown(spelldef.spellid());
+				if (lowestCooldown == 0 && cd > 0)
+				{
+					lowestCooldown = cd;
+				}
+				else if (lowestCooldown > 0 && cd > 0 && cd < lowestCooldown)
+				{
+					lowestCooldown = cd;
+				}
+
 				// Skip this spell as we already found a spell with higher priority value
 				if (spelldef.priority() < highestPriority) {
 					continue;
@@ -497,7 +522,7 @@ namespace wowpp
 				if (spelldef.priority() > highestPriority)
 				{
 					// Check for cooldown and only if valid, use it
-					if (!controlled.hasCooldown(spelldef.spellid()))
+					if (cd == 0)
 					{
 						highestPriority = spelldef.priority();
 						validSpellEntry = &spelldef;
@@ -511,7 +536,7 @@ namespace wowpp
 					}
 
 					// Check if that spell is on cooldown
-					if (!controlled.hasCooldown(spelldef.spellid()))
+					if (cd == 0)
 					{
 						validSpellEntry = &spelldef;
 					}
@@ -550,6 +575,21 @@ namespace wowpp
 							m_customCooldown = validSpellEntry->mincooldown();
 						}
 					}
+					else if(validSpellEntry->mincooldown() < 0)
+					{
+						if (spellEntry->attributes(0) & game::spell_attributes::Ranged)
+						{
+							m_customCooldown = controlled.getUInt32Value(unit_fields::RangedAttackTime);
+						}
+						else
+						{
+							m_customCooldown = spellEntry->categorycooldown();
+							if (m_customCooldown == 0)
+							{
+								m_customCooldown = spellEntry->cooldown();
+							}
+						}
+					}
 
 					// Cast that spell
 					SpellTargetMap targetMap;
@@ -566,14 +606,21 @@ namespace wowpp
 					return;
 				}
 			}
+			else if (lowestCooldown > 0)
+			{
+				m_nextActionCountdown.setEnd(getCurrentTime() + lowestCooldown + 100);
+			}
 		}
 
 		// Watch for victim move signal
-		m_onVictimMoved = victim->moved.connect([this](GameObject & moved, math::Vector3 oldPosition, float oldO)
+		if (!m_isRanged)
 		{
-			chaseTarget(static_cast<GameUnit &>(moved));
-		});
-
+			m_onVictimMoved = victim->moved.connect([this](GameObject & moved, math::Vector3 oldPosition, float oldO)
+			{
+				chaseTarget(static_cast<GameUnit &>(moved));
+			});
+		}
+		
 		// No spell cast - start auto attack
 		if (m_lastCastResult != game::spell_cast_result::FailedLineOfSight &&
 		        m_lastCastResult != game::spell_cast_result::FailedOutOfRange)
@@ -581,20 +628,27 @@ namespace wowpp
 			// In all these cases, simply start auto attacking our target
 			controlled.startAttack();
 		}
+		else if(m_isRanged)
+		{
+			chaseTarget(*victim);
+		}
 
-		// Run towards our target
-		chaseTarget(*victim);
+		// Run towards our target if we aren't a ranged caster
+		if (!m_isRanged)
+		{
+			chaseTarget(*victim);
+		}
 	}
 
 	void CreatureAICombatState::onSpellCast(game::SpellCastResult result)
 	{
 		m_lastCastResult = result;
 		m_isCasting = false;
+		
 		if (result == game::spell_cast_result::CastOkay)
 		{
 			// Apply custom cooldown if needed
-			if (m_customCooldown > 0 &&
-			        m_lastSpell)
+			if (m_customCooldown > 0 && m_lastSpell)
 			{
 				getControlled().setCooldown(m_lastSpell->id(), m_customCooldown);
 			}
@@ -606,12 +660,13 @@ namespace wowpp
 				getControlled().stopAttack();
 
 				// Add a little delay so that this event occurs AFTER the spell cast succeeded
-				m_nextActionCountdown.setEnd(getCurrentTime() + m_lastCastTime + 10);
+				GameTime delay = getCurrentTime() + m_lastCastTime + 100;
+				m_nextActionCountdown.setEnd(delay);
 			}
 			else
 			{
 				// Instant spell cast, so choose the next action
-				m_nextActionCountdown.setEnd(getCurrentTime() + 1);
+				m_nextActionCountdown.setEnd(getCurrentTime() + 100);
 			}
 		}
 		else

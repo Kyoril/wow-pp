@@ -53,110 +53,114 @@ namespace wowpp
 
 		math::Vector3 location(controlled.getLocation());
 
-		Circle circle(location.x, location.y, 40.0f);
-		m_aggroWatcher = worldInstance->getUnitFinder().watchUnits(circle);
-		m_aggroWatcher->visibilityChanged.connect([this](GameUnit & unit, bool isVisible) -> bool
+		// If the unit is passive, it should not attack by itself
+		if (!(controlled.getUInt32Value(unit_fields::UnitFlags) & game::unit_flags::Passive))
 		{
-			auto &controlled = getControlled();
-			if (unit.getGuid() == controlled.getGuid())
+			Circle circle(location.x, location.y, 40.0f);
+			m_aggroWatcher = worldInstance->getUnitFinder().watchUnits(circle);
+			m_aggroWatcher->visibilityChanged.connect([this](GameUnit & unit, bool isVisible) -> bool
 			{
-				return false;
-			}
-
-			if (!controlled.isAlive())
-			{
-				return false;
-			}
-
-			if (!unit.isAlive())
-			{
-				return false;
-			}
-
-			// Check if we are hostile against this unit
-			const auto &unitFaction = unit.getFactionTemplate();
-			if (controlled.isNeutralToAll())
-			{
-				return false;
-			}
-
-			const float dist = controlled.getDistanceTo(unit, true);
-
-			const bool isHostile = controlled.isHostileTo(unitFaction);
-			const bool isFriendly = controlled.isFriendlyTo(unitFaction);
-			if (isHostile && !isFriendly)
-			{
-				if (isVisible)
+				auto &controlled = getControlled();
+				if (unit.getGuid() == controlled.getGuid())
 				{
-					const Int32 ourLevel = static_cast<Int32>(controlled.getLevel());
-					const Int32 otherLevel = static_cast<Int32>(unit.getLevel());
-					const Int32 diff = ::abs(ourLevel - otherLevel);
+					return false;
+				}
 
-					// Check distance
-					float reqDist = 20.0f;
-					if (ourLevel < otherLevel)
-					{
-						reqDist = limit<float>(reqDist - diff, 5.0f, 40.0f);
-					}
-					else if (otherLevel < ourLevel)
-					{
-						reqDist = limit<float>(reqDist + diff, 5.0f, 40.0f);
-					}
+				if (!controlled.isAlive())
+				{
+					return false;
+				}
 
-					if (dist > reqDist)
-					{
-						return false;
-					}
+				if (!unit.isAlive())
+				{
+					return false;
+				}
 
-					// Check stealth
-					if (unit.isStealthed())
+				// Check if we are hostile against this unit
+				const auto &unitFaction = unit.getFactionTemplate();
+				if (controlled.isNeutralToAll())
+				{
+					return false;
+				}
+
+				const float dist = controlled.getDistanceTo(unit, true);
+
+				const bool isHostile = controlled.isHostileTo(unitFaction);
+				const bool isFriendly = controlled.isFriendlyTo(unitFaction);
+				if (isHostile && !isFriendly)
+				{
+					if (isVisible)
 					{
-						if (!controlled.canDetectStealth(unit)) {
+						const Int32 ourLevel = static_cast<Int32>(controlled.getLevel());
+						const Int32 otherLevel = static_cast<Int32>(unit.getLevel());
+						const Int32 diff = ::abs(ourLevel - otherLevel);
+
+						// Check distance
+						float reqDist = 20.0f;
+						if (ourLevel < otherLevel)
+						{
+							reqDist = limit<float>(reqDist - diff, 5.0f, 40.0f);
+						}
+						else if (otherLevel < ourLevel)
+						{
+							reqDist = limit<float>(reqDist + diff, 5.0f, 40.0f);
+						}
+
+						if (dist > reqDist)
+						{
 							return false;
 						}
-					}
 
-					if (!controlled.isInLineOfSight(unit))
-					{
-						return false;
-					}
-
-					getAI().enterCombat(unit);
-					return true;
-				}
-
-				// We don't care
-				return false;
-			}
-			else if (isFriendly)
-			{
-				if (isVisible)
-				{
-					if (dist < 8.0f)
-					{
-						auto *victim = unit.getVictim();
-						if (unit.isInCombat() && victim != nullptr)
+						// Check stealth
+						if (unit.isStealthed())
 						{
-							if (!victim->isHostileTo(unitFaction)) {
+							if (!controlled.canDetectStealth(unit)) {
 								return false;
 							}
+						}
 
-							if (!controlled.isInLineOfSight(unit))
+						if (!controlled.isInLineOfSight(unit))
+						{
+							return false;
+						}
+
+						getAI().enterCombat(unit);
+						return true;
+					}
+
+					// We don't care
+					return false;
+				}
+				else if (isFriendly)
+				{
+					if (isVisible)
+					{
+						if (dist < 8.0f)
+						{
+							auto *victim = unit.getVictim();
+							if (unit.isInCombat() && victim != nullptr)
 							{
-								return false;
-							}
+								if (!victim->isHostileTo(unitFaction)) {
+									return false;
+								}
 
-							getAI().enterCombat(*victim);
-							return true;
+								if (!controlled.isInLineOfSight(unit))
+								{
+									return false;
+								}
+
+								getAI().enterCombat(*victim);
+								return true;
+							}
 						}
 					}
 				}
-			}
 
-			return false;
-		});
+				return false;
+			});
 
-		m_aggroWatcher->start();
+			m_aggroWatcher->start();
+		}
 	}
 
 	void CreatureAIIdleState::onLeave()

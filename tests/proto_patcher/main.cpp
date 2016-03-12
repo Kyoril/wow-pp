@@ -129,7 +129,7 @@ namespace wowpp
 
 					if (save(fileName))
 					{
-ILOG("Saved updated settings with default values as " << fileName);
+						ILOG("Saved updated settings with default values as " << fileName);
 					}
 					else
 					{
@@ -469,6 +469,37 @@ namespace wowpp
 					case 34498:
 					case 34499:
 						it->mutable_effects(0)->set_triggerspell(34720);
+						break;
+
+					////////////////////////////// Shaman ////////////////////////////////////
+
+					// Rockbiter Weapon Enchantment
+					case  8017:	// Rank 1
+						it->add_additionalspells(36494); 
+						break;
+					case  8018:	// Rank 2
+						it->add_additionalspells(36750);
+						break;
+					case  8019:	// Rank 3
+						it->add_additionalspells(36755);
+						break;
+					case 10399:	// Rank 4
+						it->add_additionalspells(36759);
+						break;
+					case 16314:	// Rank 5
+						it->add_additionalspells(36763);
+						break;
+					case 16315:	// Rank 6
+						it->add_additionalspells(36766);
+						break;
+					case 16316:	// Rank 7
+						it->add_additionalspells(36771);
+						break;
+					case 25479:	// Rank 8
+						it->add_additionalspells(36775);
+						break;
+					case 25485:	// Rank 9
+						it->add_additionalspells(36499);
 						break;
 						
 					////////////////////////////// Rogue /////////////////////////////////////

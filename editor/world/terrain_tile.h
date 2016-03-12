@@ -49,7 +49,8 @@ namespace wowpp
 				UInt32 tileX, 
 				UInt32 tileY,
 				terrain::model::Heightmap &tileHeights,
-                terrain::model::Normalmap &tileNormals);
+                terrain::model::Normalmap &tileNormals,
+				UInt16 holes);
 			~TerrainTile();
 
 			Ogre::uint32 getTypeFlags() const override;
@@ -71,12 +72,10 @@ namespace wowpp
 
 			void createVertexData();
 			void createIndexes();
-			
+
 		private:
 
 			Ogre::SceneManager &m_sceneMgr;
-			//Ogre::Camera &m_camera;
-			//TerrainPage &m_page;
 			Ogre::MaterialPtr m_material;
 			const UInt32 m_tileX;
 			const UInt32 m_tileY;
@@ -90,6 +89,7 @@ namespace wowpp
 			std::unique_ptr<Ogre::IndexData> m_indexData;
 			terrain::model::Heightmap &m_tileHeights;
             terrain::model::Normalmap &m_tileNormals;
+			UInt16 m_holes;
 		};
 	}
 }

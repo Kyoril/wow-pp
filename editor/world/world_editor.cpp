@@ -75,7 +75,7 @@ namespace wowpp
 				UInt32 row = displayDbc->getRowByIndex(unit->malemodel());
 				if (row == UInt32(-1))
 				{
-					WLOG("Could not find creature display id " << unit->malemodel());
+					//WLOG("Could not find creature display id " << unit->malemodel());
 					continue;
 				}
 
@@ -179,7 +179,7 @@ namespace wowpp
 				UInt32 row = displayDbc->getRowByIndex(object->displayid());
 				if (row == UInt32(-1))
 				{
-					WLOG("Could not find object display id " << object->displayid());
+					//WLOG("Could not find object display id " << object->displayid());
 					continue;
 				}
 
@@ -356,7 +356,6 @@ namespace wowpp
 					add.added.position = pos;
 					m_worldRenderer->handleEvent(terrain::editing::TerrainChangeEvent(add));
 
-					ILOG("Loading tile " << pos);
 					std::unique_ptr<Map> mapInst(new Map(
 						m_map, m_app.getConfiguration().dataPath));
 					auto *tile = mapInst->getTile(TileIndex2D(pos[0], pos[1]));
@@ -368,7 +367,6 @@ namespace wowpp
 
 					if (tile->collision.triangleCount == 0)
 					{
-						WLOG("No collision triangles");
 						return;
 					}
 

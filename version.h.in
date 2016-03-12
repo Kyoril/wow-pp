@@ -8,6 +8,7 @@
 
 namespace wowpp
 {
+	const char * const GitBranch = "@WOWPP_GIT_BRANCH@";
 	const char * const GitCommit = "@WOWPP_GIT_COMMIT@";
 	const char * const GitLastChange = "@WOWPP_GIT_LASTCHANGE@";
 	const unsigned int Major = 0;

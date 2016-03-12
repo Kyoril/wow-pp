@@ -74,6 +74,11 @@ namespace wowpp
 			{
 				return sqrtf(x * x + y * y + z * z);
 			}
+			/// Calculates the squared length.
+			const float squared_length() const
+			{
+				return x * x + y * y + z * z;
+			}
 			/// Normalizes this vector. Has no effect if the length of this vector
 			/// is equal to zero.
 			/// @returns The magnitude of this vector.
@@ -100,6 +105,14 @@ namespace wowpp
 					return target;
 				}
 
+				// NaN check
+				assert(t == t);
+				assert(x == x);
+				assert(y == y);
+				assert(z == z);
+				assert(target.x == target.x);
+				assert(target.y == target.y);
+				assert(target.z == target.z);
 				return *this + (target - *this) * t;
 			}
 

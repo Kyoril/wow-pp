@@ -649,16 +649,14 @@ namespace wowpp
 			    game::OutgoingPacket &out_packet,
 			    UInt64 guid,
 			    const math::Vector3 &oldPosition,
-			    const math::Vector3 &position,
+			    const std::vector<math::Vector3> &path,
 			    UInt32 time
 			)
 			{
 				out_packet.start(server_packet::MonsterMove);
-
 				UInt8 packGUID[8 + 1];
 				packGUID[0] = 0;
 				size_t size = 1;
-
 				for (UInt8 i = 0; guid != 0; ++i)
 				{
 					if (guid & 0xFF)
@@ -670,7 +668,6 @@ namespace wowpp
 
 					guid >>= 8;
 				}
-
 				out_packet
 				        << io::write_range(&packGUID[0], &packGUID[size])
 				        << io::write<float>(oldPosition.x)
@@ -678,15 +675,35 @@ namespace wowpp
 				        << io::write<float>(oldPosition.z)
 				        << io::write<NetUInt32>(mTimeStamp())
 				        << io::write<NetUInt8>(0);
-
 				// Movement flags
 				out_packet
-				        << io::write<NetUInt32>(256)
-				        << io::write<NetUInt32>(time)
-				        << io::write<NetUInt32>(1)				// One waypoint
-				        << io::write<float>(position.x)
-				        << io::write<float>(position.y)
-				        << io::write<float>(position.z);
+					<< io::write<NetUInt32>(256)
+					<< io::write<NetUInt32>(time)
+					<< io::write<NetUInt32>(path.empty() ? 1 : path.size());
+				if (path.size() > 0)
+				{
+					// Write destination
+					auto &pt = path.back();
+					out_packet
+						<< io::write<float>(pt.x)
+						<< io::write<float>(pt.y)
+						<< io::write<float>(pt.z);
+					if (path.size() > 1)
+					{
+						// all other points are relative to the center of the path
+						const math::Vector3 mid = (oldPosition + pt) * 0.5f;
+						for (UInt32 i = 0; i < path.size() - 1; ++i)
+						{
+							auto &p = path[i];
+							UInt32 packed = 0;
+							packed |= ((int)((mid.x - p.x) / 0.25f) & 0x7FF);
+							packed |= ((int)((mid.y - p.y) / 0.25f) & 0x7FF) << 11;
+							packed |= ((int)((mid.z - p.z) / 0.25f) & 0x3FF) << 22;
+							out_packet
+								<< io::write<NetUInt32>(packed);
+						}
+					}
+				}
 				out_packet.finish();
 			}
 
@@ -3318,20 +3335,11 @@ namespace wowpp
 
 				// Read account name
 				out_Account.clear();
-				char c = 0x00;
-				do
+				if (!(packet
+					>> io::read_string(out_Account)))
 				{
-					if (!(packet >> c))
-					{
-						return false;
-					}
-
-					if (c != 0)
-					{
-						out_Account.push_back(c);
-					}
+					return false;
 				}
-				while (c != 0);
 
 				UInt32 addonSize;
 				if (!(packet
@@ -3373,24 +3381,9 @@ namespace wowpp
 				{
 					AddonEntry addon;
 
-					// Read 0-terminated c-style string from stream
-					char c = 0;
-					do
-					{
-						if (!(addonReader >> c))
-						{
-							break;
-						}
-
-						if (c != 0)
-						{
-							addon.addonNames.push_back(c);
-						}
-					}
-					while (c != 0);
-
 					// Read other addon values
 					if (!(addonReader
+							>> io::read_string(addon.addonNames)
 					        >> io::read<NetUInt32>(addon.crc)
 					        >> io::read<NetUInt32>(addon.unk7)
 					        >> io::read<NetUInt8>(addon.unk6)))
@@ -3414,23 +3407,8 @@ namespace wowpp
 			{
 				// Read 0-terminated name
 				out_entry.name.clear();
-				char c = 0;
-				do
-				{
-					// Can no longer read
-					if (!(packet >> c))
-					{
-						break;
-					}
-
-					if (c != 0)
-					{
-						out_entry.name.push_back(c);
-					}
-				}
-				while (c != 0);
-
 				if (!(packet
+						>> io::read_string(out_entry.name)
 				        >> io::read<NetUInt8>(out_entry.race)
 				        >> io::read<NetUInt8>(out_entry.class_)
 				        >> io::read<NetUInt8>(out_entry.gender)
@@ -3552,82 +3530,30 @@ namespace wowpp
 				case chat_msg::Afk:
 				case chat_msg::Dnd:
 					{
-						char c = 0x00;
-						do
+						if (!(packet >> io::read_string(out_message)))
 						{
-							if (!(packet >> c))
-							{
-								return false;
-							}
-							if (c != 0)
-							{
-								out_message.push_back(c);
-							}
+							return false;
 						}
-						while (c != 0);
-
 						break;
 					}
 				case chat_msg::Whisper:
 					{
-						char c = 0x00;
-						do
+						if (!(packet 
+							>> io::read_string(out_to)
+							>> io::read_string(out_message)))
 						{
-							if (!(packet >> c))
-							{
-								return false;
-							}
-							if (c != 0)
-							{
-								out_to.push_back(c);
-							}
+							return false;
 						}
-						while (c != 0);
-
-						do
-						{
-							if (!(packet >> c))
-							{
-								return false;
-							}
-							if (c != 0)
-							{
-								out_message.push_back(c);
-							}
-						}
-						while (c != 0);
-
 						break;
 					}
 				case chat_msg::Channel:
 					{
-						char c = 0x00;
-						do
+						if (!(packet
+							>> io::read_string(out_channel)
+							>> io::read_string(out_message)))
 						{
-							if (!(packet >> c))
-							{
-								return false;
-							}
-							if (c != 0)
-							{
-								out_channel.push_back(c);
-							}
+							return false;
 						}
-						while (c != 0);
-
-						do
-						{
-							if (!(packet >> c))
-							{
-								return false;
-							}
-							if (c != 0)
-							{
-								out_message.push_back(c);
-							}
-						}
-						while (c != 0);
-
 						break;
 					}
 				default:
@@ -3647,34 +3573,9 @@ namespace wowpp
 
 			bool addFriend(io::Reader &packet, String &out_name, String &out_note)
 			{
-				char c = 0x00;
-				do
-				{
-					if (!(packet >> c))
-					{
-						return false;
-					}
-					if (c != 0)
-					{
-						out_name.push_back(c);
-					}
-				}
-				while (c != 0);
-
-				do
-				{
-					if (!(packet >> c))
-					{
-						return false;
-					}
-					if (c != 0)
-					{
-						out_note.push_back(c);
-					}
-				}
-				while (c != 0);
-
-				return true;
+				return packet
+					>> io::read_string(out_name)
+					>> io::read_string(out_note);
 			}
 
 			bool deleteFriend(io::Reader &packet, UInt64 &out_guid)
@@ -3691,21 +3592,8 @@ namespace wowpp
 
 			bool addIgnore(io::Reader &packet, String &out_name)
 			{
-				char c = 0x00;
-				do
-				{
-					if (!(packet >> c))
-					{
-						return false;
-					}
-					if (c != 0)
-					{
-						out_name.push_back(c);
-					}
-				}
-				while (c != 0);
-
-				return true;
+				return packet
+					>> io::read_string(out_name);
 			}
 
 			bool deleteIgnore(io::Reader &packet, UInt64 &out_guid)
@@ -3824,21 +3712,8 @@ namespace wowpp
 
 			bool groupInvite(io::Reader &packet, String &out_memberName)
 			{
-				char c = 0x00;
-				do
-				{
-					if (!(packet >> c))
-					{
-						return false;
-					}
-					if (c != 0)
-					{
-						out_memberName.push_back(c);
-					}
-				}
-				while (c != 0);
-
-				return packet;
+				return packet
+					>> io::read_string(out_memberName);
 			}
 
 			bool groupAccept(io::Reader &packet)
@@ -3853,21 +3728,8 @@ namespace wowpp
 
 			bool groupUninvite(io::Reader &packet, String &out_memberName)
 			{
-				char c = 0x00;
-				do
-				{
-					if (!(packet >> c))
-					{
-						return false;
-					}
-					if (c != 0)
-					{
-						out_memberName.push_back(c);
-					}
-				}
-				while (c != 0);
-
-				return packet;
+				return packet
+					>> io::read_string(out_memberName);
 			}
 
 			bool groupUninviteGUID(io::Reader &packet, UInt64 &out_guid)
@@ -4136,22 +3998,9 @@ namespace wowpp
 			bool charRename(io::Reader &packet, UInt64 &out_guid, String &out_name)
 			{
 				packet
-				        >> io::read<NetUInt64>(out_guid);
-
-				char c = 0x00;
-				do
-				{
-					if (!(packet >> c))
-					{
-						return false;
-					}
-					if (c != 0)
-					{
-						out_name.push_back(c);
-					}
-				}
-				while (c != 0);
-
+					>> io::read<NetUInt64>(out_guid)
+					>> io::read_string(out_name);
+				
 				return packet;
 			}
 

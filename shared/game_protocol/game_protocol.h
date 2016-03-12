@@ -1399,7 +1399,7 @@ namespace wowpp
 			    game::OutgoingPacket &out_packet,
 			    UInt64 guid,
 			    const math::Vector3 &oldPosition,
-			    const math::Vector3 &position,
+				const std::vector<math::Vector3> &path,
 			    UInt32 time
 			);
 

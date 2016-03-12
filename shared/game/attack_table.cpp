@@ -388,7 +388,6 @@ namespace wowpp
 			unitTarget = dynamic_cast<GameUnit *>(world->findObjectByGUID(targetMap.getUnitTarget()));
 		}
 
-		float x, y, tmp;
 		switch (targetA)
 		{
 		case game::targets::UnitCaster:			//1
@@ -405,19 +404,23 @@ namespace wowpp
 				{
 					math::Vector3 location = unitTarget->getLocation();
 					auto &finder = attacker.getWorldInstance()->getUnitFinder();
-					finder.findUnits(Circle(location.x, location.y, radius), [this, &attacker, &unitTarget, &targets, maxtargets](GameUnit & unit) -> bool
+					finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, &attacker, &unitTarget, &targets, maxtargets](GameUnit & unit) -> bool
 					{
-						if (unit.isAlive() &&
-							&unit != unitTarget &&
-							&unit != &attacker &&
-							!unit.isHostileTo(*unitTarget))
+						// Also check the vertical distance
+						if (radius * radius >= (location - unit.getLocation()).squared_length())
 						{
-							targets.push_back(&unit);
-							if (maxtargets > 0 &&
-								targets.size() >= maxtargets)
+							if (unit.isAlive() &&
+								&unit != unitTarget &&
+								&unit != &attacker &&
+								!unit.isHostileTo(*unitTarget))
 							{
-								// No more units
-								return false;
+								targets.push_back(&unit);
+								if (maxtargets > 0 &&
+									targets.size() >= maxtargets)
+								{
+									// No more units
+									return false;
+								}
 							}
 						}
 
@@ -430,23 +433,26 @@ namespace wowpp
 			{
 				math::Vector3 location = attacker.getLocation();
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
-				finder.findUnits(Circle(location.x, location.y, radius), [this, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
+				finder.findUnits(Circle(location.x, location.y, radius), [this, &attacker, &radius, &location, &targets, maxtargets](GameUnit & unit) -> bool
 				{
 					if (unit.getTypeId() != object_type::Character)
 						return true;
 
-					GameCharacter *unitChar = dynamic_cast<GameCharacter *>(&unit);
-					GameCharacter *attackerChar = dynamic_cast<GameCharacter *>(&attacker);
-					if (unitChar == attackerChar ||
-					(unitChar->getGroupId() != 0 &&
-					unitChar->getGroupId() == attackerChar->getGroupId()))
+					if (radius * radius >= (location - unit.getLocation()).squared_length())
 					{
-						targets.push_back(&unit);
-						if (maxtargets > 0 &&
-						targets.size() >= maxtargets)
+						GameCharacter *unitChar = dynamic_cast<GameCharacter *>(&unit);
+						GameCharacter *attackerChar = dynamic_cast<GameCharacter *>(&attacker);
+						if (unitChar == attackerChar ||
+							(unitChar->getGroupId() != 0 &&
+								unitChar->getGroupId() == attackerChar->getGroupId()))
 						{
-							// No more units
-							return false;
+							targets.push_back(&unit);
+							if (maxtargets > 0 &&
+								targets.size() >= maxtargets)
+							{
+								// No more units
+								return false;
+							}
 						}
 					}
 
@@ -456,19 +462,23 @@ namespace wowpp
 			break;
 		case game::targets::UnitAreaEnemyDst:	//16
 			{
-				targetMap.getDestLocation(x, y, tmp);
+				math::Vector3 location;
+				targetMap.getDestLocation(location.x, location.y, location.z);
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
-				finder.findUnits(Circle(x, y, radius), [this, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
+				finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
-					const auto &faction = attacker.getFactionTemplate();
-					if (!unit.isFriendlyTo(faction) && unit.isAlive())
+					if (radius * radius >= (location - unit.getLocation()).squared_length())
 					{
-						targets.push_back(&unit);
-						if (maxtargets > 0 &&
-						targets.size() >= maxtargets)
+						const auto &faction = attacker.getFactionTemplate();
+						if (!unit.isFriendlyTo(faction) && unit.isAlive() && unit.isInLineOfSight(location))
 						{
-							// No more units
-							return false;
+							targets.push_back(&unit);
+							if (maxtargets > 0 &&
+								targets.size() >= maxtargets)
+							{
+								// No more units
+								return false;
+							}
 						}
 					}
 
@@ -482,23 +492,26 @@ namespace wowpp
 				{
 					math::Vector3 location = attacker.getLocation();
 					auto &finder = attacker.getWorldInstance()->getUnitFinder();
-					finder.findUnits(Circle(location.x, location.y, radius), [this, unitTarget, &targets, maxtargets](GameUnit & unit) -> bool
+					finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, unitTarget, &targets, maxtargets](GameUnit & unit) -> bool
 					{
 						if (unit.getTypeId() != object_type::Character)
 							return true;
 
-						GameCharacter *unitChar = dynamic_cast<GameCharacter *>(&unit);
-						GameCharacter *targetChar = dynamic_cast<GameCharacter *>(unitTarget);
-						if (unitChar == targetChar ||
-						(unitChar->getGroupId() != 0 &&
-						unitChar->getGroupId() == targetChar->getGroupId()))
+						if (radius * radius >= (location - unit.getLocation()).squared_length())
 						{
-							targets.push_back(&unit);
-							if (maxtargets > 0 &&
-							targets.size() >= maxtargets)
+							GameCharacter *unitChar = dynamic_cast<GameCharacter *>(&unit);
+							GameCharacter *targetChar = dynamic_cast<GameCharacter *>(unitTarget);
+							if (unitChar == targetChar ||
+								(unitChar->getGroupId() != 0 &&
+									unitChar->getGroupId() == targetChar->getGroupId()))
 							{
-								// No more units
-								return false;
+								targets.push_back(&unit);
+								if (maxtargets > 0 &&
+									targets.size() >= maxtargets)
+								{
+									// No more units
+									return false;
+								}
 							}
 						}
 
@@ -518,17 +531,20 @@ namespace wowpp
 			{
 				math::Vector3 location = attacker.getLocation();
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
-				finder.findUnits(Circle(location.x, location.y, radius), [this, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
+				finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
-					const auto &faction = attacker.getFactionTemplate();
-					if (!unit.isFriendlyTo(faction) && unit.isAlive())
+					if (radius * radius >= (location - unit.getLocation()).squared_length())
 					{
-						targets.push_back(&unit);
-						if (maxtargets > 0 &&
-						targets.size() >= maxtargets)
+						const auto &faction = attacker.getFactionTemplate();
+						if (!unit.isFriendlyTo(faction) && unit.isAlive() && attacker.isInLineOfSight(unit))
 						{
-							// No more units
-							return false;
+							targets.push_back(&unit);
+							if (maxtargets > 0 &&
+								targets.size() >= maxtargets)
+							{
+								// No more units
+								return false;
+							}
 						}
 					}
 
@@ -545,17 +561,20 @@ namespace wowpp
 				}
 
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
-				finder.findUnits(Circle(location.x, location.y, radius), [this, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
+				finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
-					const auto &faction = attacker.getFactionTemplate();
-					if (!unit.isFriendlyTo(faction) && unit.isAlive())
+					if (radius * radius >= (location - unit.getLocation()).squared_length())
 					{
-						targets.push_back(&unit);
-						if (maxtargets > 0 &&
-						targets.size() >= maxtargets)
+						const auto &faction = attacker.getFactionTemplate();
+						if (!unit.isFriendlyTo(faction) && unit.isAlive() && attacker.isInLineOfSight(unit.getLocation()))
 						{
-							// No more units
-							return false;
+							targets.push_back(&unit);
+							if (maxtargets > 0 &&
+								targets.size() >= maxtargets)
+							{
+								// No more units
+								return false;
+							}
 						}
 					}
 

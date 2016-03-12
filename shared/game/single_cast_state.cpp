@@ -409,7 +409,7 @@ namespace wowpp
 
 		const std::weak_ptr<SingleCastState> weakThis = strongThis;
 		const UInt32 spellAttributes = m_spell.attributes(0);
-		if (spellAttributes & game::spell_attributes::OnNextSwing || spellAttributes & game::spell_attributes::OnNextSwing_2)
+		if (spellAttributes & game::spell_attributes::OnNextSwing/* || spellAttributes & game::spell_attributes::OnNextSwing_2*/)
 		{
 			// Execute on next weapon swing
 			m_cast.getExecuter().setAttackSwingCallback([strongThis, this]() -> bool
@@ -1613,6 +1613,8 @@ namespace wowpp
 			{se::SchoolDamage,			std::bind(&SingleCastState::spellEffectSchoolDamage, this, std::placeholders::_1)}
 		};
 
+		// Make sure that the executer
+		std::weak_ptr<GameObject> weakExecuter(m_cast.getExecuter().shared_from_this());
 		for (std::vector<std::pair<UInt32, EffectHandler>>::iterator it = effectMap.begin(); it != effectMap.end(); ++it)
 		{
 			for (int k = 0; k < effects.size(); ++k)
@@ -1627,20 +1629,32 @@ namespace wowpp
 
 		completedEffects();
 
-		// Cast all additional spells if available
-		for (const auto &spell : m_spell.additionalspells())
+		if (auto strong = weakExecuter.lock())
 		{
-			m_cast.getExecuter().castSpell(m_target, spell, -1, 0, true);
+			// Cast all additional spells if available
+			auto strongUnit = std::dynamic_pointer_cast<GameUnit>(strong);
+			assert(strongUnit);
+
+			for (const auto &spell : m_spell.additionalspells())
+			{
+				strongUnit->castSpell(m_target, spell, -1, 0, true);
+			}
 		}
 
-		if (m_cast.getExecuter().isGameCharacter())
+		if (auto strong = weakExecuter.lock())
 		{
-			for (const auto &target : m_affectedTargets)
+			auto strongUnit = std::dynamic_pointer_cast<GameUnit>(strong);
+			assert(strongUnit);
+
+			if (strongUnit->isGameCharacter())
 			{
-				auto strong = target.lock();
-				if (strong)
+				for (const auto &target : m_affectedTargets)
 				{
-					reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).onQuestSpellCastCredit(m_spell.id(), *strong);
+					auto strongTarget = target.lock();
+					if (strongTarget)
+					{
+						reinterpret_cast<GameCharacter&>(*strongUnit).onQuestSpellCastCredit(m_spell.id(), *strongTarget);
+					}
 				}
 			}
 		}
