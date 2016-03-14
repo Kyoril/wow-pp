@@ -392,6 +392,7 @@ namespace wowpp
 				TurnRateChange				= 0x2DE,
 				AddonInfo					= 0x2EF,
 				PartyMemberStatsFull		= 0x2F2,
+				MoveTimeSkipped				= 0x319,
 				RaidTargetUpdate			= 0x321,
 				RaidReadyCheck				= 0x322,
 				SetDungeonDifficulty		= 0x329,
@@ -2072,6 +2073,12 @@ namespace wowpp
 			void questupdateComplete(
 				game::OutgoingPacket &out_packet,
 				UInt32 questId
+				);
+
+			void moveTimeSkipped(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				UInt32 timeSkipped
 				);
 		};
 	}

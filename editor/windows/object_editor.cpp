@@ -1543,7 +1543,6 @@ namespace wowpp
 				"`ObjectiveText3`, `ReqItemId3`, `ReqItemCount3`, `ReqSourceId3`,`ReqSourceCount3`, `ReqCreatureOrGOId3`,`ReqCreatureOrGOCount3`,`ReqSpellCast3`,"
 				"`ObjectiveText4`, `ReqItemId4`, `ReqItemCount4`, `ReqSourceId4`,`ReqSourceCount4`, `ReqCreatureOrGOId4`,`ReqCreatureOrGOCount4`,`ReqSpellCast4`,"
 				"`PrevQuestId`, `NextQuestId`, `ExclusiveGroup`, `NextQuestInChain`,"
-
 				"`QuestFlags`, `SpecialFlags`, `Type`, `ZoneOrSort`, `SuggestedPlayers`, `LimitTime`, `SrcItemId`, `SrcItemCount`, `SrcSpell`, `CharTitleId`,"
 				"`PointMapId`, `PointX`, `PointY`, `PointOpt`, `RequiredRaces`, `RequiredClasses`, `RequiredSkill`, `RequiredSkillValue`"
 				" FROM `quest_template` ORDER BY `entry`;";

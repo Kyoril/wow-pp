@@ -2122,6 +2122,8 @@ namespace wowpp
 		if (!targets.empty())
 		{
 			GameUnit &firstTarget = *targets[0];
+
+			// TODO: Error checks and limit max path length
 			auto &mover = caster.getMover();
 			mover.moveTo(firstTarget.getLocation(), 25.0f);
 		}

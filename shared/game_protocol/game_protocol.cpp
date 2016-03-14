@@ -444,7 +444,7 @@ namespace wowpp
 				std::size_t lineCount = 0;
 				std::stringstream strm(motd);
 				std::string line;
-
+				
 				while (std::getline(strm, line))
 				{
 					out_packet
@@ -3309,6 +3309,29 @@ namespace wowpp
 				out_packet.start(game::server_packet::QuestupdateComplete);
 				out_packet
 					<< io::write<NetUInt64>(questId);
+				out_packet.finish();
+			}
+			void moveTimeSkipped(game::OutgoingPacket & out_packet, UInt64 guid, UInt32 timeSkipped)
+			{
+				out_packet.start(game::server_packet::MoveTimeSkipped);
+
+				UInt8 packGUID[8 + 1];
+				packGUID[0] = 0;
+				size_t size = 1;
+				for (UInt8 i = 0; guid != 0; ++i)
+				{
+					if (guid & 0xFF)
+					{
+						packGUID[0] |= UInt8(1 << i);
+						packGUID[size] = UInt8(guid & 0xFF);
+						++size;
+					}
+
+					guid >>= 8;
+				}
+				out_packet
+					<< io::write_range(&packGUID[0], &packGUID[size])
+					<< io::write<NetUInt32>(timeSkipped);
 				out_packet.finish();
 			}
 		}
