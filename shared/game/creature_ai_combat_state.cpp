@@ -441,9 +441,15 @@ namespace wowpp
 
 	void CreatureAICombatState::chaseTarget(GameUnit &target)
 	{
-		math::Vector3 currentLocation = getControlled().getMover().getCurrentLocation();
-		const math::Vector3 &newTargetLocation = target.getLocation();
+		math::Vector3 currentLocation;
+		auto &mover = getControlled().getMover();
+		
+		// If we are moving, check if the current TARGET LOCATION is not in range instead of checking
+		// if the current location is not in attack range. Only THEN we need to calculate a new movement
+		// path.
+		currentLocation = (mover.isMoving() ? mover.getTarget() : mover.getCurrentLocation());
 
+		math::Vector3 newTargetLocation = target.getLocation();
 		const float distance =
 		    (newTargetLocation - currentLocation).length();
 
@@ -451,6 +457,14 @@ namespace wowpp
 		const float combatRange = getControlled().getMeleeReach() + target.getMeleeReach();
 		if (distance > combatRange)
 		{
+			math::Vector3 realLocation = (mover.isMoving() ? mover.getCurrentLocation() : currentLocation);
+			math::Vector3 direction = (newTargetLocation - currentLocation);
+			if (direction.normalize() != 0.0f)
+			{
+				// Adjust target location since we don't want to stand IN the target
+				newTargetLocation = newTargetLocation - (direction * target.getMeleeReach());
+			}
+
 			// Chase the target
 			getControlled().getMover().moveTo(newTargetLocation);
 		}
