@@ -23,19 +23,24 @@
 
 namespace wowpp
 {
+	/// This class will execute functions in a separate background thread.
 	class BackgroundWorker
 	{
 	public:
 
+		/// Default constructor.
 		explicit BackgroundWorker();
+		/// Destructor.
 		~BackgroundWorker();
 
+		/// Adds a new job to the work queue.
+		/// @param work The worker function.
 		template <class W>
 		void addWork(W &&work)
 		{
 			m_queue.post(std::forward<W>(work));
 		}
-
+		/// Waits until all pending jobs are finished.
 		void flush();
 
 	private:

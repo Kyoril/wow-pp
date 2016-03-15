@@ -25,16 +25,22 @@
 
 namespace wowpp
 {
+	/// This class is used to generate new ids by using an internal counter.
 	template<typename T>
 	class IdGenerator : private boost::noncopyable
 	{
 	public:
 
+		/// Default constructor.
+		/// @param idOffset The first id to use. This is needed, if sometimes, a value of 0 indicates
+		///                 an invalid value, and thus, the counter should start at 1.
 		IdGenerator(T idOffset = 0)
 			: m_nextId(idOffset)
 		{
 		}
 
+		/// Generates a new id.
+		/// @returns New id.
 		T generateId()
 		{
 			return m_nextId++;

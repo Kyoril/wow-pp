@@ -26,6 +26,7 @@
 
 namespace wowpp
 {
+	/// Represents a two-dimensional grid of elements. This class is used for the visibility grid, for example.
 	template <class T>
 	class Grid
 	{
@@ -38,7 +39,6 @@ namespace wowpp
 		typedef typename Contents::size_type size_type;
 		typedef typename Contents::iterator iterator;
 		typedef typename Contents::const_iterator const_iterator;
-
 
 	public:
 

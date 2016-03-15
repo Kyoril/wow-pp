@@ -68,7 +68,12 @@ namespace wowpp
 		/// Determines whether the target may be positive
 		static bool hasPositiveTarget(const proto::SpellEffect &effect);
 		/// Determines whether this is a positive spell aura.
+		/// @returns true if this is a positive aura, false otherwise.
 		bool isPositive() const;
+		/// Determines whether an aura by a given spell and effect is positive.
+		/// @param spell The spell template to check.
+		/// @param effect The spell effect to check.
+		/// @returns true if an aura of this spell would be a positive aura, false otherwise.
 		static bool isPositive(const proto::SpellEntry &spell, const proto::SpellEffect &effect);
 		/// Gets the current aura slot.
 		UInt8 getSlot() const {
@@ -87,11 +92,13 @@ namespace wowpp
 		const proto::SpellEffect &getEffect() const {
 			return m_effect;
 		}
-
+		/// Gets this auras base points. Note that these points aren't constant, and can change while this
+		/// aura is in use (for example absorb auras).
 		Int32 getBasePoints() {
 			return m_basePoints;
 		}
-
+		/// Updates the auras base points.
+		/// @
 		void setBasePoints(Int32 basePoints);
 
 		UInt32 getEffectSchoolMask();

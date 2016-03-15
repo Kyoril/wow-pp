@@ -23,6 +23,8 @@
 
 namespace wowpp
 {
+	/// Erases an element from a vector by swapping it with the last element
+	/// and then calling pop_back for efficiency.
 	template <class T>
 	void eraseByMove(
 	    std::vector<T> &vector,

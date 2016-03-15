@@ -46,11 +46,16 @@ namespace wowpp
 	/// Defines data of an action button.
 	struct ActionButton final
 	{
+		/// This is the buttons entry (spell or item entry), or 0 if no action.
 		UInt16 action;
+		/// This is the button type (TODO: Enum).
 		UInt8 type;
+		/// Unused right now...
 		UInt8 misc;
+		/// The button state (unused right now).
 		ActionButtonUpdateState state;
 
+		/// Default constructor.
 		ActionButton()
 			: action(0)
 			, type(0)
@@ -58,6 +63,7 @@ namespace wowpp
 			, state(action_button_update_state::New)
 		{
 		}
+		/// Custom constructor.
 		ActionButton(UInt16 action_, UInt8 type_, UInt8 misc_)
 			: action(action_)
 			, type(type_)
@@ -67,5 +73,6 @@ namespace wowpp
 		}
 	};
 
+	/// Maps action buttons by their slots.
 	typedef std::map<UInt8, ActionButton> ActionButtons;
 }

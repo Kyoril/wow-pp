@@ -496,14 +496,13 @@ namespace wowpp
 		m_updated = false;
 	}
 
-	float GameObject::getDistanceTo(GameObject &other, bool use3D/* = true*/) const
+	float GameObject::getDistanceTo(const GameObject &other, bool use3D/* = true*/) const
 	{
 		if (&other == this) {
 			return 0.0f;
 		}
 
 		math::Vector3 position = other.getLocation();
-
 		return getDistanceTo(position, use3D);
 	}
 

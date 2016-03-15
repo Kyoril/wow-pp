@@ -22,6 +22,7 @@
 
 namespace wowpp
 {
+	/// Efficient implementation of a set container.
 	template <class T>
 	class LinearSet
 	{
@@ -33,6 +34,7 @@ namespace wowpp
 
 	public:
 
+		/// Default constructor.
 		LinearSet()
 		{
 		}
@@ -45,27 +47,32 @@ namespace wowpp
 			           element);
 		}
 
-		//O(n)
+		/// Determines whether an element is contained. Linear execution time.
+		/// @param element The searched element.
+		/// @returns true if the element is contained within the set, false otherwise.
 		bool contains(const T &element) const
 		{
+			// O(n)
 			return find(element) != m_elements.end();
 		}
 
-		//Release: O(1), Debug: O(n)
+		/// Adds a new element to the set. Debug assertions included.
+		/// @param element The element to add.
 		template <class U>
 		typename std::enable_if<std::is_convertible<U, T>::value, void>::type
 		add(U &&element)
 		{
+			// Release: O(1), Debug: O(n)
 			assert(!contains(element));
 			optionalAdd(std::forward<U>(element));
 			assert(contains(element));
 		}
 
-		//Release: O(1), Debug: O(n)
 		template <class U>
 		typename std::enable_if<std::is_convertible<U, T>::value, bool>::type
 		optionalAdd(U &&element)
 		{
+			// Release: O(1), Debug: O(n)
 			if (contains(element))
 			{
 				return false;
