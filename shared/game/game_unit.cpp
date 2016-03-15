@@ -1339,10 +1339,7 @@ namespace wowpp
 				reinterpret_cast<GameCharacter*>(attacker)->applyThreatMod(school, threat);
 			}
 
-			if (threat > 0.0f)
-			{
-				threatened(*attacker, threat);
-			}
+			threatened(*attacker, threat);
 		}
 
 		takenDamage(attacker, damage);
