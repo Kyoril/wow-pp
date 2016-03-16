@@ -139,14 +139,15 @@ namespace wowpp
 				if (!m_hasFinished && m_countdown.running)
 				{
 					if (m_spell.interruptflags() & game::spell_interrupt_flags::PushBack &&
-						m_delayCounter < 2)
+						m_delayCounter < 2 &&
+						m_cast.getExecuter().isGameCharacter())	// Pushback only works on characters
 					{
 						Int32 resistChance = 100;
-						if (m_cast.getExecuter().isGameCharacter())
-						{
-							reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
-								spell_mod_op::PreventSpellDelay, m_spell.id(), resistChance);
-						}
+
+						// GameCharacter type already checked above, as the pushback mechanic should only work on
+						// player characters and not on creatures.
+						reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
+							spell_mod_op::PreventSpellDelay, m_spell.id(), resistChance);
 						resistChance += m_cast.getExecuter().getAuras().getTotalBasePoints(game::aura_type::ResistPushback) - 100;
 						if (resistChance >= 100)
 							return;
