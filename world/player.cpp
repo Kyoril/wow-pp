@@ -956,6 +956,11 @@ namespace wowpp
 		case game::inventory_type::Waist:
 			targetSlot = player_equipment_slots::Waist;
 			break;
+		case game::inventory_type::Ranged:
+		case game::inventory_type::RangedRight:
+		case game::inventory_type::Thrown:
+			targetSlot = player_equipment_slots::Ranged;
+			break;
 		default:
 			if (entry.itemclass() == game::item_class::Container)
 			{
@@ -982,7 +987,7 @@ namespace wowpp
 		auto absDstSlot = Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, targetSlot);
 		if (!Inventory::isEquipmentSlot(absDstSlot) && !Inventory::isBagPackSlot(absDstSlot))
 		{
-			ELOG("Invalid target slot")
+			ELOG("Invalid target slot: " << targetSlot);
 			m_character->inventoryChangeFailure(game::inventory_change_failure::ItemCantBeEquipped, item.get(), nullptr);
 			return;
 		}
