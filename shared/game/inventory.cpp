@@ -857,6 +857,18 @@ namespace wowpp
 					return game::inventory_change_failure::ItemDoesNotGoToSlot;
 				}
 				break;
+			case player_equipment_slots::Neck:
+				if (srcInvType != game::inventory_type::Neck) {
+					return game::inventory_change_failure::ItemDoesNotGoToSlot;
+				}
+				break;
+			case player_equipment_slots::Ranged:
+				if (srcInvType != game::inventory_type::Ranged &&
+					srcInvType != game::inventory_type::Thrown &&
+					srcInvType != game::inventory_type::RangedRight) {
+					return game::inventory_change_failure::ItemDoesNotGoToSlot;
+				}
+				break;
 			case player_equipment_slots::Finger1:
 			case player_equipment_slots::Finger2:
 				if (srcInvType != game::inventory_type::Finger) {
@@ -921,11 +933,6 @@ namespace wowpp
 					{
 						return game::inventory_change_failure::CantEquipWithTwoHanded;
 					}
-				}
-				break;
-			case player_equipment_slots::Ranged:
-				if (srcInvType != game::inventory_type::Ranged) {
-					return game::inventory_change_failure::ItemDoesNotGoToSlot;
 				}
 				break;
 			case player_equipment_slots::Shoulders:
