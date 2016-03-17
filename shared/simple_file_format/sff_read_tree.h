@@ -292,7 +292,8 @@ namespace sff
 				typedef typename Super::MyString MyString;
 				typedef typename Super::MyParser MyParser;
 				typedef Object<T> Element;
-				typedef boost::ptr_map<MyString, Element> Members;
+				typedef std::map<MyString, std::shared_ptr<Element>> Members;
+				//typedef boost::ptr_map<MyString, Element> Members;
 
 			public:
 
@@ -306,7 +307,7 @@ namespace sff
 
 					if (i != members.end())
 					{
-						return (i->second);
+						return (i->second.get());
 					}
 
 					return nullptr;
@@ -403,8 +404,8 @@ namespace sff
 					while (parser.parseAssignment(key))
 					{
 						const DataType type = parser.detectDataTypeEx();
-						std::auto_ptr<Object<T> > element(parseObject<T>(parser, type));
-						members.insert(key, element);
+						std::shared_ptr<Object<T> > element(parseObject<T>(parser, type));
+						members[key] = std::move(element);
 						parser.skipOptionalComma();
 					}
 
