@@ -1287,9 +1287,8 @@ namespace wowpp
 				        << io::write<NetUInt32>(item.arcaneres())
 				        << io::write<NetUInt32>(item.delay())
 				        << io::write<NetUInt32>(item.ammotype())
-				        << io::write<float>(0.0f)		// TODO: RangedModRange (?)
+				        << io::write<float>(item.rangedrange())
 				        ;
-				// TODO: Spells
 				for (int i = 0; i < 5; ++i)
 				{
 					if (i < item.spells_size())
@@ -1300,8 +1299,6 @@ namespace wowpp
 						        << io::write<NetUInt32>(spell.trigger())
 						        << io::write<NetUInt32>(-::abs((int)spell.charges()))
 						        ;
-
-						// TODO: Spell cooldowns
 						const bool useDBData = spell.cooldown() >= 0 || spell.categorycooldown() >= 0;
 						if (useDBData)
 						{
@@ -1335,7 +1332,7 @@ namespace wowpp
 				        << io::write<NetUInt32>(0)					// TODO: Page Text
 				        << io::write<NetUInt32>(0)					// TODO: Language ID
 				        << io::write<NetUInt32>(0)					// TODO: Page Material
-				        << io::write<NetUInt32>(0)					// TODO: Start Quest
+				        << io::write<NetUInt32>(item.questentry())
 				        << io::write<NetUInt32>(item.lockid())
 				        << io::write<NetUInt32>(item.material())
 				        << io::write<NetUInt32>(item.sheath())

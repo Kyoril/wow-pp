@@ -1070,6 +1070,91 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importItemQuests(proto::Project &project, MySQL::Connection &conn)
+	{
+		for (auto &item : *project.items.getTemplates().mutable_entry())
+		{
+			item.clear_questentry();
+		}
+
+		wowpp::MySQL::Select select(conn, "SELECT `entry`,`startquest` FROM `tbcdb`.`item_template` WHERE `startquest` != 0;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 entry = 0, questEntry = 0;
+				row.getField(0, entry);
+				row.getField(1, questEntry);
+
+				auto * item = project.items.getById(entry);
+				if (!item)
+				{
+					WLOG("Unable to find item by id: " << entry);
+					row = row.next(select);
+					continue;
+				}
+
+				const auto *quest = project.quests.getById(questEntry);
+				if (!quest)
+				{
+					WLOG("Unable to find quest by id: " << questEntry);
+					row = row.next(select);
+					continue;
+				}
+
+				item->set_questentry(questEntry);
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			ELOG("Error: " << conn.getErrorMessage());
+		}
+
+		return true;
+	}
+
+	static bool importItemRanges(proto::Project &project, MySQL::Connection &conn)
+	{
+		for (auto &item : *project.items.getTemplates().mutable_entry())
+		{
+			item.clear_rangedrange();
+		}
+
+		wowpp::MySQL::Select select(conn, "SELECT `entry`,`RangedModRange` FROM `tbcdb`.`item_template` WHERE `RangedModRange` != 0;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 entry = 0;
+				float range = 0.0f;
+				row.getField(0, entry);
+				row.getField(1, range);
+
+				auto * item = project.items.getById(entry);
+				if (!item)
+				{
+					WLOG("Unable to find item by id: " << entry);
+					row = row.next(select);
+					continue;
+				}
+
+				item->set_rangedrange(range);
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			ELOG("Error: " << conn.getErrorMessage());
+		}
+
+		return true;
+	}
+
 	static bool fixDeadminesObjects(proto::Project &project)
 	{
 		// First lets find the deadmines map
@@ -1226,6 +1311,17 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 
+	if (!importItemQuests(protoProject, connection))
+	{
+		ELOG("Could not import item quests");
+		return 0;
+	}
+
+	if (!importItemRanges(protoProject, connection))
+	{
+		ELOG("Could not import item ranges");
+		return 0;
+	}
 	/*
 	if (!importSpellAffects(protoProject, connection))
 	{

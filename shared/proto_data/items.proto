@@ -111,6 +111,10 @@ message ItemEntry {
 	optional uint32 duration = 60;
 	optional uint32 extraflags = 61;
 	optional uint32 lootentry = 62;
+	// If greater than 0, this item starts a quest
+	optional uint32 questentry = 63;
+	// Percentage of default ranged range (100.0 = 30 yards).
+	optional float rangedrange = 64;
 }
 
 message Items {

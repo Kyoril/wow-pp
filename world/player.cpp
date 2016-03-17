@@ -2563,15 +2563,37 @@ namespace wowpp
 			return;
 		}
 
-		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
-		if (!object)
+		if (isItemGUID(guid))
 		{
-			return;
-		}
+			UInt16 itemSlot = 0;
+			if (!m_character->getInventory().findItemByGUID(guid, itemSlot))
+			{
+				return;
+			}
 
-		if (!object->providesQuest(questId))
+			auto item = m_character->getInventory().getItemAtSlot(itemSlot);
+			if (!item)
+			{
+				return;
+			}
+
+			if (item->getEntry().questentry() != questId)
+			{
+				return;
+			}
+		}
+		else
 		{
-			return;
+			GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
+			if (!object)
+			{
+				return;
+			}
+
+			if (!object->providesQuest(questId))
+			{
+				return;
+			}
 		}
 
 		sendProxyPacket(
@@ -2598,12 +2620,35 @@ namespace wowpp
 			return;
 		}
 
-		// Check if that object exists and provides the requested quest
-		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
-		if (!object ||
-			!object->providesQuest(questId))
+		UInt16 itemSlot = 0;
+		std::shared_ptr<GameItem> itemQuestgiver;
+		if (isItemGUID(guid))
 		{
-			return;
+			if (!m_character->getInventory().findItemByGUID(guid, itemSlot))
+			{
+				return;
+			}
+
+			itemQuestgiver = m_character->getInventory().getItemAtSlot(itemSlot);
+			if (!itemQuestgiver)
+			{
+				return;
+			}
+
+			if (itemQuestgiver->getEntry().questentry() != questId)
+			{
+				return;
+			}
+		}
+		else
+		{
+			// Check if that object exists and provides the requested quest
+			GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
+			if (!object ||
+				!object->providesQuest(questId))
+			{
+				return;
+			}
 		}
 
 		// Accept that quest
@@ -2613,6 +2658,12 @@ namespace wowpp
 			if (m_character->isQuestlogFull())
 				sendProxyPacket(std::bind(game::server_write::questlogFull, std::placeholders::_1));
 			return;
+		}
+
+		// Remove quest item
+		if (itemQuestgiver && itemSlot != 0)
+		{
+			m_character->getInventory().removeItem(itemSlot);
 		}
 
 		sendProxyPacket(
