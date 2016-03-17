@@ -111,6 +111,12 @@ namespace wowpp
 		case aura::None:
 			handleModNull(apply);
 			break;
+		case aura::TrackCreatures:
+			handleTrackCreatures(apply);
+			break;
+		case aura::TrackResources:
+			handleTrackResources(apply);
+			break;
 		case aura::Dummy:
 			handleDummy(apply);
 			break;
@@ -678,6 +684,28 @@ namespace wowpp
 				std::dynamic_pointer_cast<GameUnit>(strongUnit)->getAuras().removeAllAurasDueToSpell(spell2);
 			});
 		}
+	}
+
+	void Aura::handleTrackCreatures(bool apply)
+	{
+		// Only affects player characters
+		if (!m_target.isGameCharacter())
+			return;
+
+		const UInt32 creatureType = UInt32(m_effect.miscvaluea() - 1);
+		m_target.setUInt32Value(character_fields::Track_Creatures, 
+			apply ? UInt32(UInt32(1) << creatureType) : 0);
+	}
+
+	void Aura::handleTrackResources(bool apply)
+	{
+		// Only affects player characters
+		if (!m_target.isGameCharacter())
+			return;
+
+		const UInt32 resourceType = UInt32(m_effect.miscvaluea() - 1);
+		m_target.setUInt32Value(character_fields::Track_Resources,
+			apply ? UInt32(UInt32(1) << resourceType) : 0);
 	}
 
 	void Aura::handleModHealingPct(bool apply)
