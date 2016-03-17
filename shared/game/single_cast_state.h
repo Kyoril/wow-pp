@@ -108,7 +108,7 @@ namespace wowpp
 		Countdown m_countdown;
 		Countdown m_impactCountdown;
 		boost::signals2::signal<void()> completedEffects;
-		std::vector<boost::signals2::scoped_connection> m_completedEffectsExecution;
+		std::unordered_map<UInt64, boost::signals2::scoped_connection> m_completedEffectsExecution;
 		boost::signals2::scoped_connection m_onTargetDied, m_onTargetRemoved;
 		boost::signals2::scoped_connection m_onUserMoved;
 		boost::signals2::scoped_connection m_onTargetMoved, m_damaged;
