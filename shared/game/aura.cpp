@@ -613,9 +613,13 @@ namespace wowpp
 
 			m_target.setByteValue(unit_fields::Bytes2, 3, form);
 
-			// Reset rage and energy
-			m_target.setUInt32Value(unit_fields::Power2, 0);
-			m_target.setUInt32Value(unit_fields::Power4, 0);
+			// Reset rage and energy if not a rogue (TODO: Maybe find a better way to do this, but this is needed because
+			// stealth for rogues is handled as a shape shift in order to get a new action bar)
+			if (m_target.getClass() != game::char_class::Rogue)
+			{
+				m_target.setUInt32Value(unit_fields::Power2, 0);
+				m_target.setUInt32Value(unit_fields::Power4, 0);
+			}
 		}
 		else
 		{
