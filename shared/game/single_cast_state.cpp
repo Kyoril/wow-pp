@@ -784,25 +784,22 @@ namespace wowpp
 				}
 
 				// Send spell damage packet
-				m_completedEffectsExecution.push_back(
-					// Lambda connection
-					completedEffects.connect([this, &caster, targetUnit, totalDamage, school, absorbed, resisted, crit]()
-					{
-						// Send packet
-						wowpp::sendPacketFromCaster(caster,
-													std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-															  targetUnit->getGuid(),
-															  caster.getGuid(),
-															  m_spell.id(),
-															  totalDamage,
-															  school,
-															  absorbed,
-															  resisted,	//resisted
-															  false,
-															  0,
-															  crit));
-					})	// End connect
-				);	// End push_back
+				m_completedEffectsExecution[targetUnit->getGuid()] = completedEffects.connect([this, &caster, targetUnit, totalDamage, school, absorbed, resisted, crit]()
+				{
+					// Send packet
+					wowpp::sendPacketFromCaster(caster,
+												std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+														  targetUnit->getGuid(),
+														  caster.getGuid(),
+														  m_spell.id(),
+														  totalDamage,
+														  school,
+														  absorbed,
+														  resisted,	//resisted
+														  false,
+														  0,
+														  crit));
+				});	// End connect
 
 				caster.doneSpellMagicDmgClassNeg(targetUnit, school);
 				// TODO: Really needed? Because this signal is already fired in the dealDamage method
@@ -1355,22 +1352,21 @@ namespace wowpp
 			{
 				if (log2(school) != game::spell_school::Normal)	//melee auras doesn't send a "resisted" packet as they can miss or be dodged...
 				{
-					m_completedEffectsExecution.push_back(
-						completedEffects.connect([this, &caster, targetUnit, school]() {
-							wowpp::sendPacketFromCaster(caster,
-														std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-																  targetUnit->getGuid(),
-																  caster.getGuid(),
-																  m_spell.id(),
-																  1,
-																  school,
-																  0,
-																  1,	//resisted
-																  false,
-																  0,
-																  false));
-						})	// End connect
-					);	// End push_back
+					m_completedEffectsExecution[targetUnit->getGuid()] = completedEffects.connect([this, &caster, targetUnit, school]()
+					{
+						wowpp::sendPacketFromCaster(caster,
+													std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
+															  targetUnit->getGuid(),
+															  caster.getGuid(),
+															  m_spell.id(),
+															  1,
+															  school,
+															  0,
+															  1,	//resisted
+															  false,
+															  0,
+															  false));
+					});	// End connect
 				}
 			}
 			else if (targetUnit->isAlive())
@@ -1663,12 +1659,7 @@ namespace wowpp
 
 	bool SingleCastState::consumeItem()
 	{
-		if (m_itemGuid == 0)
-		{
-			return true;
-		}
-
-		if (m_cast.getExecuter().isGameCharacter())
+		if (m_itemGuid != 0 && m_cast.getExecuter().isGameCharacter())
 		{
 			auto *character = reinterpret_cast<GameCharacter *>(&m_cast.getExecuter());
 			auto &inv = character->getInventory();
@@ -1694,13 +1685,13 @@ namespace wowpp
 					// Item is removed on use
 					if (spell.charges() == UInt32(-1))
 					{
-						m_completedEffectsExecution.push_back(completedEffects.connect([this, item, itemSlot, &inv]{
+						m_completedEffectsExecution[m_cast.getExecuter().getGuid()] = completedEffects.connect([this, item, itemSlot, &inv]{
 							auto result = inv.removeItem(itemSlot, 1);
 							if (result != game::inventory_change_failure::Okay)
 							{
 								inv.getOwner().inventoryChangeFailure(result, item.get(), nullptr);
 							}
-						}));
+						});
 					}
 					break;
 				}
@@ -2239,8 +2230,7 @@ namespace wowpp
 			if (!m_connectedMeleeSignal) 
 			{
 				m_connectedMeleeSignal = true;
-				m_completedEffectsExecution.push_back(
-					completedEffects.connect(std::bind(&SingleCastState::executeMeleeAttack, this)));
+				m_completedEffectsExecution[targetUnit->getGuid()] = completedEffects.connect(std::bind(&SingleCastState::executeMeleeAttack, this));
 			}
 		}
 	}
