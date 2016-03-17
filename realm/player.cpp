@@ -782,7 +782,7 @@ namespace wowpp
 		// is valid on the world node and if not, transfer player
 
 		// There should be an instance
-		worldNode->enterWorldInstance(charEntry->id, std::numeric_limits<UInt32>::max(), *m_gameCharacter, m_itemData);
+		worldNode->enterWorldInstance(charEntry->id, std::numeric_limits<UInt32>::max(), *m_gameCharacter);
 	}
 
 	void Player::worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, math::Vector3 location, float o)
@@ -2040,7 +2040,7 @@ namespace wowpp
 
 		// There should be an instance
 		m_worldNode = world;
-		m_worldNode->enterWorldInstance(m_characterId, groupInstanceId, *m_gameCharacter, m_itemData);
+		m_worldNode->enterWorldInstance(m_characterId, groupInstanceId, *m_gameCharacter);
 
 		// Reset transfer data
 		m_transferMap = 0;

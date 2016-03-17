@@ -34,7 +34,7 @@ namespace wowpp
 	{
 		namespace world_realm
 		{
-			static const UInt32 ProtocolVersion = 0x13;
+			static const UInt32 ProtocolVersion = 0x14;
 
 			namespace world_instance_error
 			{
@@ -274,9 +274,7 @@ namespace wowpp
 				    pp::OutgoingPacket &out_packet,
 				    DatabaseId characterRealmId,
 				    UInt32 instanceId,
-				    const GameCharacter &character,
-				    const std::vector<UInt32> &spellIds,
-				    const std::vector<ItemData> &items
+				    const GameCharacter &character
 				);
 
 				///
@@ -468,9 +466,7 @@ namespace wowpp
 				    io::Reader &packet,
 				    DatabaseId &out_characterRealmId,
 				    UInt32 &out_instanceId,
-				    GameCharacter *out_character,
-				    std::vector<UInt32> &out_spellIds,
-				    std::vector<ItemData> &out_items
+				    GameCharacter *out_character
 				);
 
 				///
