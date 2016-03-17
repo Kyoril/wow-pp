@@ -2651,19 +2651,38 @@ namespace wowpp
 			}
 		}
 
-		// Accept that quest
-		if (!m_character->acceptQuest(questId))
+		// We need this check since the quest can fail for various other reasons
+		if (m_character->isQuestlogFull())
 		{
-			// We need this check since the quest can fail for various other reasons
-			if (m_character->isQuestlogFull())
-				sendProxyPacket(std::bind(game::server_write::questlogFull, std::placeholders::_1));
+			sendProxyPacket(std::bind(game::server_write::questlogFull, std::placeholders::_1));
 			return;
 		}
 
-		// Remove quest item
+		// Remove quest item now (we need to do this before accepting the quest as some quests re-add the source quest item)
 		if (itemQuestgiver && itemSlot != 0)
 		{
-			m_character->getInventory().removeItem(itemSlot);
+			auto result = m_character->getInventory().removeItem(itemSlot);
+			if (result != game::inventory_change_failure::Okay)
+			{
+				m_character->inventoryChangeFailure(result, itemQuestgiver.get(), nullptr);
+				return;
+			}
+		}
+
+		// Accept that quest
+		if (!m_character->acceptQuest(questId))
+		{
+			// Try to restore previously given quest item (TODO: This is ugly and could be a security issue because, in theory,
+			// this could lead to creating the item twice etc.)
+			auto result = m_character->getInventory().createItems(itemQuestgiver->getEntry(), itemQuestgiver->getStackCount());
+			if (result != game::inventory_change_failure::Okay)
+			{
+				// Worst case! Player has lost the quest item... this may NEVER EVER happen (need for an inventory transaction system)
+				ELOG("PLAYER " << m_character->getGuid() << " ITEM LOSS SINCE QUEST " << questId << " COULD NOT BE ACCEPTED AND QUESTGIVER ITEM " 
+					<< itemQuestgiver->getStackCount() << "x " << itemQuestgiver->getEntry().id() << " COULD NOT BE RECREATED!");
+				assert(false);
+			}
+			return;
 		}
 
 		sendProxyPacket(
