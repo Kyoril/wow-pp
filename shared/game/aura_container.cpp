@@ -52,7 +52,8 @@ namespace wowpp
 			const bool stackForDiffCasters =
 				aura->getSpell().attributes(3) & game::spell_attributes_ex_c::StackForDiffCasters;
 			if (isSameSpell &&
-				(isSameCaster || !stackForDiffCasters))
+				(isSameCaster || !stackForDiffCasters) &&
+				!aura->isPassive())
 			{
 				newSlot = a->getSlot();
 				isReplacement = true;

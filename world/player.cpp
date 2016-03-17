@@ -530,6 +530,18 @@ namespace wowpp
 		// Find our tile
 		VisibilityTile &tile = m_instance.getGrid().requireTile(getTileIndex());
 		tile.getWatchers().add(this);
+
+		// Cast passive spells after spawn, so that SpellMods are sent AFTER the spawn packet
+		SpellTargetMap target;
+		target.m_targetMap = game::spell_cast_target_flags::Self;
+		target.m_unitTarget = m_character->getGuid();
+		for (const auto &spell : m_character->getSpells())
+		{
+			if (spell->attributes(0) & game::spell_attributes::Passive)
+			{
+				m_character->castSpell(target, spell->id(), -1, 0, true);
+			}
+		}
 	}
 
 	void Player::onDespawn()

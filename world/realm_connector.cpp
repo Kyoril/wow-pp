@@ -331,9 +331,6 @@ namespace wowpp
 		worldInstanceEntered(*this, requesterDbId, character, *instance);
 
 		// Resolve spells
-		SpellTargetMap target;
-		target.m_targetMap = game::spell_cast_target_flags::Self;
-		target.m_unitTarget = requesterDbId;
 		for (auto &spellId : spellIds)
 		{
 			const auto *spell = m_project.spells.getById(spellId);
@@ -344,13 +341,6 @@ namespace wowpp
 			}
 
 			character->addSpell(*spell);
-
-			// If this is a passive spell, cast it (TODO: Move this to some other place?)
-			if (spell->attributes(0) & game::spell_attributes::Passive)
-			{
-				// Create target map
-				character->castSpell(target, spell->id(), -1, 0, true);
-			}
 		}
 
 		// Get character location
