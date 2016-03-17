@@ -2201,8 +2201,11 @@ namespace wowpp
 				}
 
 				// Add weapon damage
-				const float weaponMin = attacker.getFloatValue(unit_fields::MinDamage);
-				const float weaponMax = attacker.getFloatValue(unit_fields::MaxDamage);
+				const bool isRanged = (m_spell.attributes(0) & game::spell_attributes::Ranged) != 0;
+				const float weaponMin = 
+					isRanged  ? attacker.getFloatValue(unit_fields::MinRangedDamage) : attacker.getFloatValue(unit_fields::MinDamage);
+				const float weaponMax = 
+					isRanged ? attacker.getFloatValue(unit_fields::MaxRangedDamage) : attacker.getFloatValue(unit_fields::MaxDamage);
 
 				// Randomize weapon damage
 				std::uniform_real_distribution<float> distribution(weaponMin, weaponMax);

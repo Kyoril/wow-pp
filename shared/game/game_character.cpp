@@ -1459,21 +1459,67 @@ namespace wowpp
 			setInt32Value(unit_fields::RangedAttackPower, UInt32(atkPower));
 		}
 
-		float minDamage = 1.0f;
-		float maxDamage = 2.0f;
-		UInt32 attackTime = 2000;
-
-		// TODO: Check druid form etc.
-
-		UInt8 form = getByteValue(unit_fields::Bytes2, 3);
-		if (form == 1 || form == 5 || form == 8)
+		// Melee damage
 		{
-			attackTime = (form == 1 ? 1000 : 2500);
+			float minDamage = 1.0f;
+			float maxDamage = 2.0f;
+			UInt32 attackTime = 2000;
+
+			// TODO: Check druid form etc.
+
+			UInt8 form = getByteValue(unit_fields::Bytes2, 3);
+			if (form == 1 || form == 5 || form == 8)
+			{
+				attackTime = (form == 1 ? 1000 : 2500);
+			}
+			else
+			{
+				// Check if we are wearing a weapon in our main hand
+				auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
+				if (item)
+				{
+					// Get weapon damage values
+					const auto &entry = item->getEntry();
+					if (entry.damage(0).mindmg() != 0.0f) {
+						minDamage = entry.damage(0).mindmg();
+					}
+					if (entry.damage(0).maxdmg() != 0.0f) {
+						maxDamage = entry.damage(0).maxdmg();
+					}
+					if (entry.delay() != 0) {
+						attackTime = entry.delay();
+					}
+				}
+			}
+
+			const float att_speed = attackTime / 1000.0f;
+			const float base_value = getUInt32Value(unit_fields::AttackPower) / 14.0f * att_speed;
+
+			switch (form)
+			{
+				case 1:
+				case 5:
+				case 8:
+					minDamage = (level > 60 ? 60 : level) * 0.85f * att_speed;
+					maxDamage = (level > 60 ? 60 : level) * 1.25f * att_speed;
+					break;
+				default:
+					break;
+			}
+
+			setFloatValue(unit_fields::MinDamage, base_value + minDamage);
+			setFloatValue(unit_fields::MaxDamage, base_value + maxDamage);
+			setUInt32Value(unit_fields::BaseAttackTime, attackTime);
 		}
-		else
+		
+		// Ranged damage
 		{
-			// Check if we are wearing a weapon in our main hand
-			auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
+			float minDamage = 1.0f;
+			float maxDamage = 2.0f;
+			UInt32 attackTime = 2000;
+
+			// Check if we are wearing a weapon in the ranged slot
+			auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Ranged));
 			if (item)
 			{
 				// Get weapon damage values
@@ -1488,26 +1534,11 @@ namespace wowpp
 					attackTime = entry.delay();
 				}
 			}
+
+			setFloatValue(unit_fields::MinRangedDamage, minDamage);
+			setFloatValue(unit_fields::MaxRangedDamage, maxDamage);
+			setUInt32Value(unit_fields::RangedAttackTime, attackTime);
 		}
-
-		const float att_speed = attackTime / 1000.0f;
-		const float base_value = getUInt32Value(unit_fields::AttackPower) / 14.0f * att_speed;
-
-		switch (form)
-		{
-		case 1:
-		case 5:
-		case 8:
-			minDamage = (level > 60 ? 60 : level) * 0.85f * att_speed;
-			maxDamage = (level > 60 ? 60 : level) * 1.25f * att_speed;
-			break;
-		default:
-			break;
-		}
-
-		setFloatValue(unit_fields::MinDamage, base_value + minDamage);
-		setFloatValue(unit_fields::MaxDamage, base_value + maxDamage);
-		setUInt32Value(unit_fields::BaseAttackTime, attackTime);
 	}
 
 	void GameCharacter::addComboPoints(UInt64 target, UInt8 points)
