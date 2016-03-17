@@ -1167,6 +1167,9 @@ namespace wowpp
 					item->addFlag(item_fields::Flags, game::item_flags::Bound);
 				}
 
+				// Add this item to the inventory slot
+				m_itemsBySlot[data.slot] = item;
+
 				// Determine slot
 				UInt8 bag = 0, subslot = 0;
 				getRelativeSlots(data.slot, bag, subslot);
@@ -1211,9 +1214,6 @@ namespace wowpp
 				// Modify stack count
 				auto added = item->addStacks(data.stackCount - 1);
 				m_itemCounter[data.entry] += data.stackCount;
-
-				// Add this item to the inventory slot and reduce our free slot cache
-				m_itemsBySlot[data.slot] = item;
 
 				// Watch for item despawn packet
 				m_itemDespawnSignals[item->getGuid()]
