@@ -178,17 +178,10 @@ namespace wowpp
 			std::bind(realm_write::loginAnswer, std::placeholders::_1, login_result::Success, std::cref(m_realmName)));
 	}
 
-	void World::enterWorldInstance(UInt64 characterGuid, UInt32 instanceId, const GameCharacter &character, const std::vector<ItemData> &out_items)
+	void World::enterWorldInstance(UInt64 characterGuid, UInt32 instanceId, const GameCharacter &character)
 	{
-		// Get a list of spells
-		std::vector<UInt32> spellIds;
-		for (const auto *spell : character.getSpells())
-		{
-			spellIds.push_back(spell->id());
-		}
-
 		m_connection->sendSinglePacket(
-			std::bind(pp::world_realm::realm_write::characterLogIn, std::placeholders::_1, characterGuid, instanceId, std::cref(character), std::cref(spellIds), std::cref(out_items)));
+			std::bind(pp::world_realm::realm_write::characterLogIn, std::placeholders::_1, characterGuid, instanceId, std::cref(character)));
 	}
 
 	void World::leaveWorldInstance(UInt64 characterGuid, pp::world_realm::WorldLeftReason reason)
@@ -387,7 +380,7 @@ namespace wowpp
 			}
 
 			// Save the character data
-			m_database.saveGameCharacter(*character, character->getInventory().getItemData(), spellIds);
+			m_database.saveGameCharacter(*character, character->getInventory().getItemData());
 			return;
 		}
 		else
@@ -400,7 +393,7 @@ namespace wowpp
 			}
 
 			// Save character
-			m_database.saveGameCharacter(*player->getGameCharacter(), player->getGameCharacter()->getInventory().getItemData(), spellIds);
+			m_database.saveGameCharacter(*player->getGameCharacter(), player->getGameCharacter()->getInventory().getItemData());
 		}
 	}
 

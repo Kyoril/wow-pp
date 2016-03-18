@@ -1876,18 +1876,25 @@ namespace wowpp
 	io::Writer &operator<<(io::Writer &w, GameCharacter const &object)
 	{
 		w
-		        << reinterpret_cast<GameUnit const &>(object)
-		        << io::write_dynamic_range<NetUInt8>(object.m_name)
-		        << io::write<NetUInt32>(object.m_zoneIndex)
-		        << io::write<float>(object.m_healthRegBase)
-		        << io::write<float>(object.m_manaRegBase)
-		        << io::write<NetUInt64>(object.m_groupId)
-		        << io::write<NetUInt32>(object.m_homeMap)
-		        << io::write<float>(object.m_homePos[0])
-		        << io::write<float>(object.m_homePos[1])
-		        << io::write<float>(object.m_homePos[2])
-		        << io::write<float>(object.m_homeRotation)
-		        << object.m_inventory
+			<< reinterpret_cast<GameUnit const &>(object)
+			<< io::write_dynamic_range<NetUInt8>(object.m_name)
+			<< io::write<NetUInt32>(object.m_zoneIndex)
+			<< io::write<float>(object.m_healthRegBase)
+			<< io::write<float>(object.m_manaRegBase)
+			<< io::write<NetUInt64>(object.m_groupId)
+			<< io::write<NetUInt32>(object.m_homeMap)
+			<< io::write<float>(object.m_homePos[0])
+			<< io::write<float>(object.m_homePos[1])
+			<< io::write<float>(object.m_homePos[2])
+			<< io::write<float>(object.m_homeRotation)
+			<< object.m_inventory
+			<< io::write<NetUInt16>(object.m_spells.size());
+		for (const auto &spell : object.m_spells)
+		{
+			w
+				<< io::write<NetUInt32>(spell->id());
+		}
+		w
 		        << io::write<NetUInt16>(object.m_quests.size());
 		for (const auto &pair : object.m_quests)
 		{
@@ -1920,6 +1927,23 @@ namespace wowpp
 		        >> io::read<float>(object.m_homePos[2])
 		        >> io::read<float>(object.m_homeRotation)
 		        >> object.m_inventory;
+		UInt16 spellCount = 0;
+		r
+			>> io::read<NetUInt16>(spellCount);
+		object.m_spells.clear();
+		for (UInt16 i = 0; i < spellCount; ++i)
+		{
+			UInt32 spellId = 0;
+			r
+				>> io::read<NetUInt32>(spellId);
+
+			// Add character spell
+			const auto *spell = object.getProject().spells.getById(spellId);
+			if (spell)
+			{
+				object.addSpell(*spell);
+			}
+		}
 		UInt16 questCount = 0;
 		r
 		        >> io::read<NetUInt16>(questCount);

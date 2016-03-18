@@ -111,6 +111,12 @@ namespace wowpp
 		case aura::None:
 			handleModNull(apply);
 			break;
+		case aura::TrackCreatures:
+			handleTrackCreatures(apply);
+			break;
+		case aura::TrackResources:
+			handleTrackResources(apply);
+			break;
 		case aura::Dummy:
 			handleDummy(apply);
 			break;
@@ -607,9 +613,13 @@ namespace wowpp
 
 			m_target.setByteValue(unit_fields::Bytes2, 3, form);
 
-			// Reset rage and energy
-			m_target.setUInt32Value(unit_fields::Power2, 0);
-			m_target.setUInt32Value(unit_fields::Power4, 0);
+			// Reset rage and energy if not a rogue (TODO: Maybe find a better way to do this, but this is needed because
+			// stealth for rogues is handled as a shape shift in order to get a new action bar)
+			if (m_target.getClass() != game::char_class::Rogue)
+			{
+				m_target.setUInt32Value(unit_fields::Power2, 0);
+				m_target.setUInt32Value(unit_fields::Power4, 0);
+			}
 		}
 		else
 		{
@@ -678,6 +688,28 @@ namespace wowpp
 				std::dynamic_pointer_cast<GameUnit>(strongUnit)->getAuras().removeAllAurasDueToSpell(spell2);
 			});
 		}
+	}
+
+	void Aura::handleTrackCreatures(bool apply)
+	{
+		// Only affects player characters
+		if (!m_target.isGameCharacter())
+			return;
+
+		const UInt32 creatureType = UInt32(m_effect.miscvaluea() - 1);
+		m_target.setUInt32Value(character_fields::Track_Creatures, 
+			apply ? UInt32(UInt32(1) << creatureType) : 0);
+	}
+
+	void Aura::handleTrackResources(bool apply)
+	{
+		// Only affects player characters
+		if (!m_target.isGameCharacter())
+			return;
+
+		const UInt32 resourceType = UInt32(m_effect.miscvaluea() - 1);
+		m_target.setUInt32Value(character_fields::Track_Resources,
+			apply ? UInt32(UInt32(1) << resourceType) : 0);
 	}
 
 	void Aura::handleModHealingPct(bool apply)

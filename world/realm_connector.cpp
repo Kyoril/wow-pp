@@ -247,12 +247,10 @@ namespace wowpp
 		// Read packet from the realm
 		DatabaseId requesterDbId;
 		UInt32 instanceId;
-		std::vector<UInt32> spellIds;
-		std::vector<ItemData> items;
 		std::shared_ptr<GameCharacter> character(new GameCharacter(
 			m_project,
 			m_worldInstanceManager.getUniverse().getTimers()));
-		if (!(pp::world_realm::realm_read::characterLogIn(packet, requesterDbId, instanceId, character.get(), spellIds, items)))
+		if (!(pp::world_realm::realm_read::characterLogIn(packet, requesterDbId, instanceId, character.get())))
 		{
 			// Error: could not read packet
 			return;
@@ -329,19 +327,6 @@ namespace wowpp
 		// Fire signal which should create a player instance for us
 		character->setWorldInstance(instance);	// This is required for spell auras
 		worldInstanceEntered(*this, requesterDbId, character, *instance);
-
-		// Resolve spells
-		for (auto &spellId : spellIds)
-		{
-			const auto *spell = m_project.spells.getById(spellId);
-			if (!spell)
-			{
-				WLOG("Received unknown character spell id " << spellId << ": Will be ignored");
-				continue;
-			}
-
-			character->addSpell(*spell);
-		}
 
 		// Get character location
 		UInt32 mapId = map->id();

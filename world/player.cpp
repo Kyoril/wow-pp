@@ -2563,15 +2563,37 @@ namespace wowpp
 			return;
 		}
 
-		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
-		if (!object)
+		if (isItemGUID(guid))
 		{
-			return;
-		}
+			UInt16 itemSlot = 0;
+			if (!m_character->getInventory().findItemByGUID(guid, itemSlot))
+			{
+				return;
+			}
 
-		if (!object->providesQuest(questId))
+			auto item = m_character->getInventory().getItemAtSlot(itemSlot);
+			if (!item)
+			{
+				return;
+			}
+
+			if (item->getEntry().questentry() != questId)
+			{
+				return;
+			}
+		}
+		else
 		{
-			return;
+			GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
+			if (!object)
+			{
+				return;
+			}
+
+			if (!object->providesQuest(questId))
+			{
+				return;
+			}
 		}
 
 		sendProxyPacket(
@@ -2598,20 +2620,68 @@ namespace wowpp
 			return;
 		}
 
-		// Check if that object exists and provides the requested quest
-		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
-		if (!object ||
-			!object->providesQuest(questId))
+		UInt16 itemSlot = 0;
+		std::shared_ptr<GameItem> itemQuestgiver;
+		if (isItemGUID(guid))
 		{
+			if (!m_character->getInventory().findItemByGUID(guid, itemSlot))
+			{
+				return;
+			}
+
+			itemQuestgiver = m_character->getInventory().getItemAtSlot(itemSlot);
+			if (!itemQuestgiver)
+			{
+				return;
+			}
+
+			if (itemQuestgiver->getEntry().questentry() != questId)
+			{
+				return;
+			}
+		}
+		else
+		{
+			// Check if that object exists and provides the requested quest
+			GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
+			if (!object ||
+				!object->providesQuest(questId))
+			{
+				return;
+			}
+		}
+
+		// We need this check since the quest can fail for various other reasons
+		if (m_character->isQuestlogFull())
+		{
+			sendProxyPacket(std::bind(game::server_write::questlogFull, std::placeholders::_1));
 			return;
+		}
+
+		// Remove quest item now (we need to do this before accepting the quest as some quests re-add the source quest item)
+		if (itemQuestgiver && itemSlot != 0)
+		{
+			auto result = m_character->getInventory().removeItem(itemSlot);
+			if (result != game::inventory_change_failure::Okay)
+			{
+				m_character->inventoryChangeFailure(result, itemQuestgiver.get(), nullptr);
+				return;
+			}
 		}
 
 		// Accept that quest
 		if (!m_character->acceptQuest(questId))
 		{
-			// We need this check since the quest can fail for various other reasons
-			if (m_character->isQuestlogFull())
-				sendProxyPacket(std::bind(game::server_write::questlogFull, std::placeholders::_1));
+			// Try to restore previously given quest item (TODO: This is ugly and could be a security issue because, in theory,
+			// this could lead to creating the item twice etc.)
+			auto result = m_character->getInventory().createItems(itemQuestgiver->getEntry(), itemQuestgiver->getStackCount());
+			if (result != game::inventory_change_failure::Okay)
+			{
+				// Worst case! Player has lost the quest item... this may NEVER EVER happen (need for an inventory transaction system)
+				ELOG("PLAYER " << m_character->getGuid() << " ITEM LOSS SINCE QUEST " << questId << " COULD NOT BE ACCEPTED AND QUESTGIVER ITEM " 
+					<< itemQuestgiver->getStackCount() << "x " << itemQuestgiver->getEntry().id() << " COULD NOT BE RECREATED!");
+				assert(false);
+			}
 			return;
 		}
 

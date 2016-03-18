@@ -55,7 +55,7 @@ namespace wowpp
 		virtual bool getCharacters(UInt32 accountId, game::CharEntries &out_characters) = 0;
 		virtual game::ResponseCode deleteCharacter(UInt32 accountId, UInt64 characterGuid) = 0;
 		virtual bool getGameCharacter(DatabaseId characterId, GameCharacter &out_character) = 0;
-		virtual bool saveGameCharacter(const GameCharacter &character, const std::vector<ItemData> &items, const std::vector<UInt32> &spells) = 0;
+		virtual bool saveGameCharacter(const GameCharacter &character, const std::vector<ItemData> &items) = 0;
 		virtual bool getCharacterSocialList(DatabaseId characterId, PlayerSocial &out_social) = 0;
 		virtual bool addCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) = 0;
 		virtual bool updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags) = 0;

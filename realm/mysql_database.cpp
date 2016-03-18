@@ -722,7 +722,7 @@ namespace wowpp
 		}
 	}
 
-	bool MySQLDatabase::saveGameCharacter(const GameCharacter &character, const std::vector<ItemData> &items, const std::vector<UInt32> &spells)
+	bool MySQLDatabase::saveGameCharacter(const GameCharacter &character, const std::vector<ItemData> &items)
 	{
 		GameTime start = getCurrentTime();
 		MySQL::Transaction transaction(m_connection);
@@ -818,12 +818,12 @@ namespace wowpp
 			}
 		}
 
-		if (!spells.empty())
+		if (!character.getSpells().empty())
 		{
 			std::ostringstream strm;
 			strm << "INSERT INTO `character_spells` (`guid`, `spell`) VALUES ";
 			bool isFirstItem = true;
-			for (auto &spell : spells)
+			for (auto &spell : character.getSpells())
 			{
 				if (!isFirstItem) strm << ",";
 				else
@@ -831,7 +831,7 @@ namespace wowpp
 					isFirstItem = false;
 				}
 
-				strm << "(" << lowerGuid << "," << spell << ")";
+				strm << "(" << lowerGuid << "," << spell->id() << ")";
 			}
 			strm << ";";
 

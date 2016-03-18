@@ -145,6 +145,10 @@ namespace wowpp
 		void handleFlySpeedModifier(bool apply);
 		/// 36
 		void handleModShapeShift(bool apply);
+		/// 44
+		void handleTrackCreatures(bool apply);
+		/// 45
+		void handleTrackResources(bool apply);
 		/// 69
 		void handleSchoolAbsorb(bool apply);
 		/// 77
