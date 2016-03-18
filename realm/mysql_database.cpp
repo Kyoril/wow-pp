@@ -863,12 +863,13 @@ namespace wowpp
 
 	bool MySQLDatabase::getCharacterById(DatabaseId id, game::CharEntry &out_character)
 	{
+		UInt32 lowerPart = guidLowerPart(id);
 		wowpp::MySQL::Select select(m_connection,
 			//      0     1       2       3        4        5       6        7       8    
 			(boost::format("SELECT `id`, `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`map`,"
 			//		 9       10            11            12           13		  14
 			"`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic` FROM `character` WHERE `id`=%1% LIMIT 1")
-			% id).str());
+			% lowerPart).str());
 		if (select.success())
 		{
 			wowpp::MySQL::Row row(select);

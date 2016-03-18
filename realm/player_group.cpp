@@ -55,6 +55,7 @@ namespace wowpp
 		if (!m_database.loadGroup(m_id, leader, memberGuids))
 		{
 			// The group will automatically be deleted and not stored when not saved in GroupsById
+			ELOG("Could not load group from database");
 			return false;
 		}
 
@@ -68,6 +69,7 @@ namespace wowpp
 		if (!addOfflineMember(leader))
 		{
 			// Leader no longer exists?
+			ELOG("Could not add group leader");
 			return false;
 		}
 
@@ -465,6 +467,7 @@ namespace wowpp
 		if (!m_database.getCharacterById(guid, charEntry))
 		{
 			// Could not find the group leader - abort
+			ELOG("Could not find character by guid " << guid);
 			return false;
 		}
 
