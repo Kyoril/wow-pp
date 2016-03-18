@@ -150,6 +150,7 @@ namespace wowpp
 				loginPort = realmManager->getInteger("port", loginPort);
 				internalName = realmManager->getString("internalName", internalName);
 				password = realmManager->getString("password", password);
+				realmID = realmManager->getInteger("realmID", realmID);
 			}
 
 			if (const Table *const log = global.getTable("log"))
