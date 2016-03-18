@@ -84,6 +84,20 @@ namespace wowpp
 		bool teleportCharacter(DatabaseId characterId, UInt32 mapId, float x, float y, float z, float o, bool changeHome = false) override;
 		/// @copydoc wowpp::IDatabase::learnSpell
 		bool learnSpell(DatabaseId characterId, UInt32 spellId) override;
+		/// @copydoc wowpp::IDatabase::createGroup
+		bool createGroup(UInt64 groupId, UInt64 leader) override;
+		/// @copydoc wowpp::IDatabase::disbandGroup
+		bool disbandGroup(UInt64 groupId) override;
+		/// @copydoc wowpp::IDatabase::addGroupMember
+		bool addGroupMember(UInt64 groupId, UInt64 member) override;
+		/// @copydoc wowpp::IDatabase::setGroupLeader
+		bool setGroupLeader(UInt64 groupId, UInt64 leaderGuid) override;
+		/// @copydoc wowpp::IDatabase::removeGroupMember
+		bool removeGroupMember(UInt64 groupId, UInt64 member) override;
+		/// @copydoc wowpp::IDatabase::listGroups
+		bool listGroups(std::vector<UInt64> &out_groupIds) override;
+		/// @copydoc wowpp::IDatabase::loadGroup
+		bool loadGroup(UInt64 groupId, UInt64 &out_leader, std::vector<UInt64> &out_member) override;
 
 	private:
 

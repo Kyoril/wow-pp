@@ -23,12 +23,18 @@
 #include "player_group.h"
 #include "game/game_character.h"
 #include "world.h"
+#include "database.h"
 
 namespace wowpp
 {
-	PlayerGroup::PlayerGroup(UInt64 id, PlayerManager &playerManager)
+	// Implementation. Will store all available player group instances by their id.
+	std::map<UInt64, std::shared_ptr<PlayerGroup>> PlayerGroup::GroupsById;
+
+
+	PlayerGroup::PlayerGroup(UInt64 id, PlayerManager &playerManager, IDatabase &database)
 		: m_id(id)
 		, m_playerManager(playerManager)
+		, m_database(database)
 		, m_leaderGUID(0)
 		, m_type(group_type::Normal)
 		, m_lootMethod(loot_method::GroupLoot)
@@ -38,8 +44,51 @@ namespace wowpp
 		m_targetIcons.fill(0);
 	}
 
+	bool PlayerGroup::createFromDatabase()
+	{
+		// Already created once
+		if (m_leaderGUID != 0)
+			return true;
+
+		UInt64 leader = 0;
+		std::vector<UInt64> memberGuids;
+		if (!m_database.loadGroup(m_id, leader, memberGuids))
+		{
+			// The group will automatically be deleted and not stored when not saved in GroupsById
+			return false;
+		}
+
+		// Convert leader id into cross realm compatible guid
+		m_playerManager.getCrossRealmGUID(leader);
+
+		// Save leader information
+		m_leaderGUID = leader;
+
+		// Add the leader first
+		if (!addOfflineMember(leader))
+		{
+			// Leader no longer exists?
+			return false;
+		}
+
+		// Same for members
+		for (auto &memberGuid : memberGuids)
+		{
+			m_playerManager.getCrossRealmGUID(memberGuid);
+			addOfflineMember(memberGuid);
+		}
+
+		// Save group for later user
+		GroupsById[m_id] = shared_from_this();
+		return true;
+	}
+
 	void PlayerGroup::create(GameCharacter &leader)
 	{
+		// Already created once
+		if (m_leaderGUID != 0)
+			return;
+
 		// Save group leader values
 		m_leaderGUID = leader.getGuid();
 		m_leaderName = leader.getName();
@@ -52,11 +101,14 @@ namespace wowpp
 
 		// Other checks have already been done in addInvite method, so we are good to go here
 		leader.modifyGroupUpdateFlags(group_update_flags::Full, true);
+
+		// Save group
+		GroupsById[m_id] = shared_from_this();
+		m_database.createGroup(m_id, m_leaderGUID);
 	}
 
 	void PlayerGroup::setLootMethod(LootMethod method, UInt64 lootMaster, UInt32 lootTreshold)
 	{
-		// TODO: Notify group members about this change
 		m_lootMethod = method;
 		m_lootTreshold = lootTreshold;
 		m_lootMaster = lootMaster;
@@ -82,6 +134,8 @@ namespace wowpp
 
 		broadcastPacket(
 			std::bind(game::server_write::groupSetLeader, std::placeholders::_1, std::cref(m_leaderName)));
+
+		m_database.setGroupLeader(m_id, m_leaderGUID);
 	}
 
 	game::PartyResult PlayerGroup::addMember(GameCharacter &member)
@@ -142,6 +196,8 @@ namespace wowpp
 			}
 		}
 
+		// Update database
+		m_database.addGroupMember(m_id, guid);
 		return game::party_result::Ok;
 	}
 
@@ -175,6 +231,7 @@ namespace wowpp
 					auto *node = player->getWorldNode();
 					if (node)
 					{
+						player->getGameCharacter()->setGroupId(0);
 						node->characterGroupChanged(guid, 0);
 					}
 
@@ -196,6 +253,9 @@ namespace wowpp
 				}
 
 				sendUpdate();
+
+				// Remove from database
+				m_database.removeGroupMember(m_id, guid);
 			}
 		}
 	}
@@ -287,6 +347,13 @@ namespace wowpp
 				player->setGroup(std::shared_ptr<PlayerGroup>());
 			}
 		}
+
+		// Remove from database
+		m_database.disbandGroup(m_id);
+
+		// Erase group from the global list of all groups
+		auto it = GroupsById.find(m_id);
+		if (it != GroupsById.end()) GroupsById.erase(it);
 	}
 
 	UInt64 PlayerGroup::getMemberGuid(const String &name)
@@ -389,6 +456,30 @@ namespace wowpp
 		}
 
 		return false;
+	}
+
+	bool PlayerGroup::addOfflineMember(UInt64 guid)
+	{
+		// Search for the leading character (Note: We use the database to resolve the character name)
+		game::CharEntry charEntry;
+		if (!m_database.getCharacterById(guid, charEntry))
+		{
+			// Could not find the group leader - abort
+			return false;
+		}
+
+		if (guid == m_leaderGUID)
+		{
+			m_leaderName = charEntry.name;
+		}
+
+		// Add group member
+		auto &newMember = m_members[guid];
+		newMember.name = charEntry.name;
+		newMember.group = 0;
+		newMember.assistant = false;
+		newMember.status = game::group_member_status::Offline;
+		return true;
 	}
 
 }

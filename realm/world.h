@@ -135,5 +135,6 @@ namespace wowpp
 		void handleTeleportRequest(pp::IncomingPacket &packet);
 		void handleCharacterGroupUpdate(pp::IncomingPacket &packet);
 		void handleQuestUpdate(pp::IncomingPacket &packet);
+		void handleCharacterSpawned(pp::IncomingPacket &packet);
 	};
 }

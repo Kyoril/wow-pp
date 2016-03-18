@@ -102,6 +102,4 @@ namespace wowpp
 
 		return nullptr;
 	}
-
-
 }

@@ -107,7 +107,6 @@ namespace wowpp
 		// Set database instance
 		m_database = std::move(db);
 		
-
 		// Create the realm server
 		std::unique_ptr<wowpp::pp::Server> realmServer;
 		try

@@ -542,6 +542,9 @@ namespace wowpp
 				m_character->castSpell(target, spell->id(), -1, 0, true);
 			}
 		}
+
+		// Notify realm about this for post-spawn packets
+		m_realmConnector.sendCharacterSpawnNotification(m_character->getGuid());
 	}
 
 	void Player::onDespawn()

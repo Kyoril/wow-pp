@@ -170,7 +170,6 @@ namespace wowpp
 
 	void Player::destroy()
 	{
-		ILOG("Player::destroy");
 		m_connection->resetListener();
 		m_connection->close();
 		m_connection.reset();
@@ -180,8 +179,6 @@ namespace wowpp
 
 	void Player::connectionLost()
 	{
-		ILOG("Player::connectionLost");
-
 		// If we are logged in, notify the world node about this
 		if (m_gameCharacter)
 		{
@@ -745,6 +742,24 @@ namespace wowpp
 			return;
 		}
 
+		// Restore character group if possible
+		UInt32 groupInstanceId = std::numeric_limits<UInt32>::max();
+		if (character->getGroupId() != 0)
+		{
+			auto groupIt = PlayerGroup::GroupsById.find(character->getGroupId());
+			if (groupIt != PlayerGroup::GroupsById.end())
+			{
+				// Apply character group
+				m_group = groupIt->second;
+				groupInstanceId = m_group->instanceBindingForMap(charEntry->mapId);
+			}
+			else
+			{
+				WLOG("Failed to restore character group");
+				character->setGroupId(0);
+			}
+		}
+
 		// We found the character - now we need to look for a world node
 		// which is hosting a fitting world instance or is able to create
 		// a new one
@@ -774,15 +789,11 @@ namespace wowpp
 		m_database.getCharacterSocialList(m_characterId, *m_social);
 
 		// Load action buttons
-		DLOG("RELOADING ACTION BUTTONS");
 		m_actionButtons.clear();
 		m_database.getCharacterActionButtons(m_characterId, m_actionButtons);
 
-		//TODO Map found - check if player is member of a group and if this instance
-		// is valid on the world node and if not, transfer player
-
 		// There should be an instance
-		worldNode->enterWorldInstance(charEntry->id, std::numeric_limits<UInt32>::max(), *m_gameCharacter);
+		worldNode->enterWorldInstance(charEntry->id, groupInstanceId, *m_gameCharacter);
 	}
 
 	void Player::worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, math::Vector3 location, float o)
@@ -870,7 +881,6 @@ namespace wowpp
 			auto raceEntry = m_gameCharacter->getRaceEntry();
 			assert(raceEntry);
 
-			DLOG("SENDING ACTION BUTTONS");
 			sendPacket(
 				std::bind(game::server_write::actionButtons, std::placeholders::_1, std::cref(m_actionButtons)));
 		
@@ -912,7 +922,6 @@ namespace wowpp
 		// Save action buttons
 		if (m_gameCharacter)
 		{
-			DLOG("SAVING ACTION BUTTONS");
 			m_database.setCharacterActionButtons(m_gameCharacter->getGuid(), m_actionButtons);
 		}
 
@@ -967,6 +976,18 @@ namespace wowpp
 
 			case pp::world_realm::world_left_reason::Disconnect:
 			{
+				// If we are in a group, notify others
+				if (m_group && m_gameCharacter)
+				{
+					std::vector<UInt64> exclude;
+					exclude.push_back(m_gameCharacter->getGuid());
+
+					// Broadcast disconnect
+					m_group->broadcastPacket(
+						std::bind(game::server_write::partyMemberStatsFullOffline, std::placeholders::_1, m_gameCharacter->getGuid()), &exclude);
+					m_group.reset();
+				}
+
 				// Finally destroy this instance
 				ILOG("Left world instance because of a disconnect");
 				destroy();
@@ -1654,8 +1675,11 @@ namespace wowpp
 		if (!m_group)
 		{
 			// Create the group
-			m_group = std::make_shared<PlayerGroup>(m_groupIdGenerator.generateId(), m_manager);
+			m_group = std::make_shared<PlayerGroup>(m_groupIdGenerator.generateId(), m_manager, m_database);
 			m_group->create(*m_gameCharacter);
+
+			// Save character group id
+			m_gameCharacter->setGroupId(m_group->getId());
 
 			// Send to world node
 			m_worldNode->characterGroupChanged(m_gameCharacter->getGuid(), m_group->getId());
@@ -1708,6 +1732,8 @@ namespace wowpp
 			// TODO...
 			return;
 		}
+
+		m_gameCharacter->setGroupId(m_group->getId());
 
 		// Send to world node
 		m_worldNode->characterGroupChanged(m_gameCharacter->getGuid(), m_group->getId());
@@ -1797,6 +1823,15 @@ namespace wowpp
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::NotInYourParty));
+			return;
+		}
+
+		// Raid assistants may not kick the leader
+		if (m_gameCharacter->getGuid() != m_group->getLeader() &&
+			m_group->getLeader() == memberGUID)
+		{
+			sendPacket(
+				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::YouNotLeader));
 			return;
 		}
 
@@ -1934,6 +1969,19 @@ namespace wowpp
 		// Send character list
 		sendPacket(
 			std::bind(game::server_write::charEnum, std::placeholders::_1, std::cref(m_characters)));
+	}
+
+	void Player::spawnedNotification()
+	{
+		if (m_group)
+		{
+			m_group->sendUpdate();
+
+			std::vector<UInt64> exclude;
+			exclude.push_back(m_gameCharacter->getGuid());
+			m_group->broadcastPacket(
+				std::bind(game::server_write::partyMemberStatsFull, std::placeholders::_1, std::cref(*m_gameCharacter)), &exclude);
+		}
 	}
 
 	void Player::handleRequestPartyMemberStats(game::IncomingPacket &packet)

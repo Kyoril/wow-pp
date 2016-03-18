@@ -67,6 +67,14 @@ namespace wowpp
 		virtual bool setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData &data) = 0;
 		virtual bool teleportCharacter(DatabaseId characterId, UInt32 mapId, float x, float y, float z, float o, bool changeHome = false) = 0;
 		virtual bool learnSpell(DatabaseId characterId, UInt32 spellId) = 0;
+
+		virtual bool createGroup(UInt64 groupId, UInt64 leader) = 0;
+		virtual bool disbandGroup(UInt64 groupId) = 0;
+		virtual bool addGroupMember(UInt64 groupId, UInt64 member) = 0;
+		virtual bool setGroupLeader(UInt64 groupId, UInt64 leaderGuid) = 0;
+		virtual bool removeGroupMember(UInt64 groupId, UInt64 member) = 0;
+		virtual bool listGroups(std::vector<UInt64> &out_groupIds) = 0;
+		virtual bool loadGroup(UInt64 groupId, UInt64 &out_leader, std::vector<UInt64> &out_member) = 0;
 	};
 
 	enum RequestStatus

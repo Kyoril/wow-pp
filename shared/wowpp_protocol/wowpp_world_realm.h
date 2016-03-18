@@ -34,7 +34,7 @@ namespace wowpp
 	{
 		namespace world_realm
 		{
-			static const UInt32 ProtocolVersion = 0x14;
+			static const UInt32 ProtocolVersion = 0x15;
 
 			namespace world_instance_error
 			{
@@ -87,7 +87,9 @@ namespace wowpp
 					/// Update packet for a character who is a group member.
 					CharacterGroupUpdate,
 					/// Update packet for characters quest data.
-					QuestUpdate
+					QuestUpdate,
+					/// Sent by the world server if a player character successfully spawned in a world instance.
+					CharacterSpawned
 				};
 			}
 
@@ -254,6 +256,11 @@ namespace wowpp
 				    UInt64 characterId,
 				    UInt32 questId,
 				    const QuestStatusData &data
+				);
+
+				void characterSpawned(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId
 				);
 			}
 
@@ -442,6 +449,11 @@ namespace wowpp
 				    UInt64 &out_characterId,
 				    UInt32 &out_questId,
 				    QuestStatusData &out_data
+				);
+
+				bool characterSpawned(
+					io::Reader &packet,
+					UInt64 &out_characterId
 				);
 			}
 

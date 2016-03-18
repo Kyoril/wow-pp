@@ -483,8 +483,8 @@ namespace wowpp
 			"SELECT `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`xp`, `gold`, `map`,"
 			//       10     11           12           13           14
 				   "`zone`,`position_x`,`position_y`,`position_z`,`orientation`,"
-            //       15        16       17       18       19	   20					21
-				   "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`,`explored_zones`, `last_save` FROM `character` WHERE `id`=%1% LIMIT 1")
+            //       15        16       17       18       19	   20					21			  22
+				   "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`,`explored_zones`, `last_save`, `last_group` FROM `character` WHERE `id`=%1% LIMIT 1")
 			% characterId).str());
 		if (select.success())
 		{
@@ -592,6 +592,11 @@ namespace wowpp
 
 				size_t now = time(nullptr);
 				const bool removeConjuredItems = (now >= lastSave) && ((now - lastSave) > 60 * 15);
+
+				// Load character group
+				UInt64 lastGroup = 0;
+				row.getField(22, lastGroup);
+				out_character.setGroupId(lastGroup);
 
 				// Load character spells
 				wowpp::MySQL::Select spellSelect(m_connection, (boost::format(
@@ -745,7 +750,7 @@ namespace wowpp
 
 		if (!m_connection.execute((boost::format(
 			"UPDATE `character` SET `map`=%2%, `zone`=%3%, `position_x`=%4%, `position_y`=%5%, `position_z`=%6%, `orientation`=%7%, `level`=%8%, `xp`=%9%, `gold`=%10%, "
-			"`home_map`=%11%, `home_x`=%12%, `home_y`=%13%, `home_z`=%14%, `home_o`=%15%, `explored_zones`='%16%', `last_save`=%17% WHERE `id`=%1%;")
+			"`home_map`=%11%, `home_x`=%12%, `home_y`=%13%, `home_z`=%14%, `home_o`=%15%, `explored_zones`='%16%', `last_save`=%17%, `last_group`=%18% WHERE `id`=%1%;")
 			% lowerGuid												// 1
 			% character.getMapId()									// 2
 			% character.getZone()									// 3
@@ -757,6 +762,7 @@ namespace wowpp
 			% homePos.x % homePos.y % homePos.z % homeO				// 12, 13, 14, 15
 			% strm.str()											// 16
 			% time(nullptr)											// 17
+			% character.getGroupId()								// 18
 			).str()))
 		{
 			// There was an error
@@ -1295,5 +1301,181 @@ namespace wowpp
 		}
 
 		return false;
+	}
+	bool MySQLDatabase::createGroup(UInt64 groupId, UInt64 leader)
+	{
+		const UInt32 lowerPart = guidLowerPart(leader);
+
+		if (m_connection.execute((boost::format(
+			"INSERT INTO `group` (`id`, `leader`) VALUES (%1%, %2%);")
+			% groupId
+			% lowerPart
+			).str()))
+		{
+			return addGroupMember(groupId, leader);
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+	}
+	bool MySQLDatabase::disbandGroup(UInt64 groupId)
+	{
+		if (m_connection.execute((boost::format(
+			"DELETE FROM `group` WHERE `id` = %1%;")
+			% groupId
+			).str()))
+		{
+			return true;
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+	}
+	bool MySQLDatabase::addGroupMember(UInt64 groupId, UInt64 member)
+	{
+		const UInt32 lowerPart = guidLowerPart(member);
+
+		if (m_connection.execute((boost::format(
+			"INSERT IGNORE INTO `group_members` (`group`, `guid`) VALUES (%1%, %2%);")
+			% groupId
+			% lowerPart
+			).str()))
+		{
+			return true;
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+	}
+	bool MySQLDatabase::setGroupLeader(UInt64 groupId, UInt64 leaderGuid)
+	{
+		const UInt32 lowerPart = guidLowerPart(leaderGuid);
+		if (m_connection.execute((boost::format(
+			"UPDATE `group` SET `leader` = %1% WHERE `id` = %2%;")
+			% lowerPart
+			% groupId
+			).str()))
+		{
+			return true;
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+	}
+	bool MySQLDatabase::removeGroupMember(UInt64 groupId, UInt64 member)
+	{
+		const UInt32 lowerPart = guidLowerPart(member);
+		if (m_connection.execute((boost::format(
+			"DELETE FROM `group_members` WHERE `group` = %1% `guid` = %2%;")
+			% groupId
+			% lowerPart
+			).str()))
+		{
+			return true;
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+	}
+	bool MySQLDatabase::listGroups(std::vector<UInt64>& out_groupIds)
+	{
+		wowpp::MySQL::Select select(m_connection, "SELECT `id` FROM `group`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				UInt64 groupId = 0;
+				row.getField(0, groupId);
+				out_groupIds.push_back(groupId);
+
+				// Next row
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+
+		return true;
+	}
+	bool MySQLDatabase::loadGroup(UInt64 groupId, UInt64 & out_leader, std::vector<UInt64>& out_member)
+	{
+		// Load group data
+		{
+			wowpp::MySQL::Select select(m_connection, (boost::format(
+				"SELECT `leader` FROM `group` WHERE `id` = %1% LIMIT 1;")
+				% groupId
+				).str());
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				if (row)
+				{
+					// Load leader guid
+					row.getField(0, out_leader);
+				}
+				else
+				{
+					// Could not find requested group
+					WLOG("Could not find requested group " << groupId);
+					return false;
+				}
+			}
+			else
+			{
+				// There was an error
+				printDatabaseError();
+				return false;
+			}
+		}
+		
+		// Load members
+		{
+			wowpp::MySQL::Select select(m_connection, (boost::format(
+				"SELECT `guid` FROM `group_members` WHERE `group` = %1% AND `guid` != %2% LIMIT 40;")
+				% groupId
+				% out_leader
+				).str());
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					// Load leader guid
+					UInt64 memberGuid = 0;
+					row.getField(0, memberGuid);
+					out_member.push_back(memberGuid);
+
+					row = row.next(select);
+				}
+			}
+			else
+			{
+				// There was an error
+				printDatabaseError();
+				return false;
+			}
+		}
+
+		return true;
 	}
 }

@@ -39,9 +39,12 @@ namespace wowpp
 	public:
 
 		/// Initializes a new instance of the player manager class.
+		/// @param timers Timer queue to use.
+		/// @param realmID Used to convert player GUIDs for cross realm support.
 		/// @param playerCapacity The maximum number of connections that can be connected at the same time.
 		explicit PlayerManager(
 			TimerQueue &timers,
+			UInt16 realmID,
 		    size_t playerCapacity
 		);
 		~PlayerManager();
@@ -65,7 +68,9 @@ namespace wowpp
 		Player *getPlayerByCharacterName(const String &name);
 		/// 
 		TimerQueue &getTimers() { return m_timers; }
-		
+		/// Converts a given guid to a cross-realm guid.
+		void getCrossRealmGUID(UInt64 &guid);
+
 		/// Executes a function for every connected player.
 		template<class F>
 		void foreachPlayer(F functor)
@@ -80,6 +85,7 @@ namespace wowpp
 
 		TimerQueue &m_timers;
 		Players m_players;
+		UInt16 m_realmID;
 		size_t m_playerCapacity;
 	};
 }

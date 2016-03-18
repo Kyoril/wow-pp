@@ -95,6 +95,9 @@ namespace wowpp
 		void sendCharacterGroupUpdate(GameCharacter &character, const std::vector<UInt64> &nearbyMembers);
 		/// 
 		void sendQuestData(DatabaseId characterId, UInt32 quest, const QuestStatusData &data);
+		/// 
+		void sendCharacterSpawnNotification(UInt64 characterId);
+
 
 	private:
 

@@ -164,6 +164,8 @@ namespace wowpp
 		void declineGroupInvite();
 		/// 
 		void reloadCharacters();
+		/// 
+		void spawnedNotification();
 
 		/// Sends an encrypted packet to the game client
 		/// @param generator Packet writer function pointer.

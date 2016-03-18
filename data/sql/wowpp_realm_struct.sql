@@ -45,6 +45,7 @@ CREATE TABLE `character` (
   `home_o` double NOT NULL,
   `explored_zones` longtext COLLATE latin1_german1_ci,
   `last_save` bigint(20),
+  `last_group` bigint(20) unsigned DEFAULT '0' COMMENT 'Characters last group id.',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
 

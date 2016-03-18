@@ -2009,16 +2009,16 @@ namespace wowpp
 				if (updateFlags & group_update_flags::Auras)
 				{
 					UInt64 auramask = 0;
-					/*for (UInt32 i = 0; i < 56; ++i)
+					for (UInt32 i = 0; i < 56; ++i)
 					{
 						if (character.getUInt32Value(unit_fields::Aura + i) != 0)
 						{
 							auramask |= (UInt64(1) << i);
 						}
-					}*/
+					}
 					out_packet
 					        << io::write<NetUInt64>(auramask);
-					/*for (UInt32 i = 0; i < 56; ++i)
+					for (UInt32 i = 0; i < 56; ++i)
 					{
 						UInt32 aura = character.getUInt32Value(unit_fields::Aura + i);
 						if (aura != 0)
@@ -2026,7 +2026,7 @@ namespace wowpp
 							out_packet
 								<< io::write<NetUInt16>(aura) << io::write<NetUInt8>(1);
 						}
-					}*/
+					}
 				}
 
 				if (updateFlags & group_update_flags::PetGUID) {

@@ -111,6 +111,9 @@ namespace wowpp
 			case world_packet::QuestUpdate:
 				handleQuestUpdate(packet);
 				break;
+			case world_packet::CharacterSpawned:
+				handleCharacterSpawned(packet);
+				break;
 			default:
 			{
 				WLOG("Unknown packet received from world " << m_address
@@ -493,6 +496,24 @@ namespace wowpp
 		{
 			ELOG("Could not set character quest data!");
 		}
+	}
+
+	void World::handleCharacterSpawned(pp::IncomingPacket & packet)
+	{
+		UInt64 characterId;
+		if (!(pp::world_realm::world_read::characterSpawned(packet, characterId)))
+		{
+			return;
+		}
+
+		auto *player = m_playerManager.getPlayerByCharacterGuid(characterId);
+		if (!player)
+		{
+			WLOG("Could not find player connection for spawned character");
+			return;
+		}
+
+		player->spawnedNotification();
 	}
 
 	void World::characterGroupChanged(UInt64 characterGuid, UInt64 groupId)

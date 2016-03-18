@@ -45,6 +45,12 @@ namespace wowpp
 		{
 			return m_nextId++;
 		}
+		/// Notifies the generator about a used id. The generator will then adjust the next generated
+		/// id, so that there will be no overlaps.
+		void notifyId(T id)
+		{
+			if (id >= m_nextId) m_nextId = id + 1;
+		}
 
 	private:
 

@@ -30,7 +30,7 @@ namespace wowpp
 		{
 			namespace realm_write
 			{
-				void login(pp::OutgoingPacket &out_packet, const String &internalName, const String &password, const String &visibleName, const String &host, NetPort port)
+				void login(pp::OutgoingPacket &out_packet, const String &internalName, const String &password, const String &visibleName, const String &host, NetPort port, UInt16 realmID)
 				{
 					out_packet.start(realm_packet::Login);
 					out_packet
@@ -39,7 +39,8 @@ namespace wowpp
 					        << io::write_dynamic_range<NetUInt8>(password)
 					        << io::write_dynamic_range<NetUInt8>(visibleName)
 					        << io::write_dynamic_range<NetUInt8>(host)
-					        << io::write<NetPort>(port);
+					        << io::write<NetPort>(port)
+							<< io::write<NetPort>(realmID);
 					out_packet.finish();
 				}
 
@@ -132,7 +133,7 @@ namespace wowpp
 
 			namespace realm_read
 			{
-				bool login(io::Reader &packet, String &out_internalName, size_t maxInternalNameLength, String &out_password, size_t maxPasswordLength, String &out_visibleName, size_t maxVisibleNameLength, String &out_host, size_t maxHostLength, NetPort &out_port)
+				bool login(io::Reader &packet, String &out_internalName, size_t maxInternalNameLength, String &out_password, size_t maxPasswordLength, String &out_visibleName, size_t maxVisibleNameLength, String &out_host, size_t maxHostLength, NetPort &out_port, UInt16 &out_realmID)
 				{
 					UInt32 realmProtocolVersion = 0xffffffff;
 					packet
@@ -141,7 +142,8 @@ namespace wowpp
 					        >> io::read_container<NetUInt8>(out_password, static_cast<NetUInt8>(maxPasswordLength))
 					        >> io::read_container<NetUInt8>(out_visibleName, static_cast<NetUInt8>(maxVisibleNameLength))
 					        >> io::read_container<NetUInt8>(out_host, static_cast<NetUInt8>(maxHostLength))
-					        >> io::read<NetPort>(out_port);
+					        >> io::read<NetPort>(out_port)
+							>> io::read<NetPort>(out_realmID);
 
 					// Handle realm protocol version based packet changes if needed
 

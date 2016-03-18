@@ -1888,6 +1888,7 @@ namespace wowpp
 			<< io::write<float>(object.m_homePos[2])
 			<< io::write<float>(object.m_homeRotation)
 			<< object.m_inventory
+			<< io::write<NetUInt64>(object.m_groupId)
 			<< io::write<NetUInt16>(object.m_spells.size());
 		for (const auto &spell : object.m_spells)
 		{
@@ -1915,18 +1916,19 @@ namespace wowpp
 	{
 		object.initialize();
 		r
-		        >> reinterpret_cast<GameUnit &>(object)
-		        >> io::read_container<NetUInt8>(object.m_name)
-		        >> io::read<NetUInt32>(object.m_zoneIndex)
-		        >> io::read<float>(object.m_healthRegBase)
-		        >> io::read<float>(object.m_manaRegBase)
-		        >> io::read<NetUInt64>(object.m_groupId)
-		        >> io::read<NetUInt32>(object.m_homeMap)
-		        >> io::read<float>(object.m_homePos[0])
-		        >> io::read<float>(object.m_homePos[1])
-		        >> io::read<float>(object.m_homePos[2])
-		        >> io::read<float>(object.m_homeRotation)
-		        >> object.m_inventory;
+			>> reinterpret_cast<GameUnit &>(object)
+			>> io::read_container<NetUInt8>(object.m_name)
+			>> io::read<NetUInt32>(object.m_zoneIndex)
+			>> io::read<float>(object.m_healthRegBase)
+			>> io::read<float>(object.m_manaRegBase)
+			>> io::read<NetUInt64>(object.m_groupId)
+			>> io::read<NetUInt32>(object.m_homeMap)
+			>> io::read<float>(object.m_homePos[0])
+			>> io::read<float>(object.m_homePos[1])
+			>> io::read<float>(object.m_homePos[2])
+			>> io::read<float>(object.m_homeRotation)
+			>> object.m_inventory
+			>> io::read<NetUInt64>(object.m_groupId);
 		UInt16 spellCount = 0;
 		r
 			>> io::read<NetUInt16>(spellCount);

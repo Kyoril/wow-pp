@@ -160,6 +160,13 @@ namespace wowpp
 					        << io::write_range(data.items);
 					out_packet.finish();
 				}
+				void characterSpawned(pp::OutgoingPacket & out_packet, UInt64 characterId)
+				{
+					out_packet.start(world_packet::CharacterSpawned);
+					out_packet
+						<< io::write<NetUInt64>(characterId);
+					out_packet.finish();
+				}
 			}
 
 			namespace realm_write
@@ -396,6 +403,12 @@ namespace wowpp
 					       >> io::read_range(out_data.creatures)
 					       >> io::read_range(out_data.objects)
 					       >> io::read_range(out_data.items);
+				}
+
+				bool characterSpawned(io::Reader & packet, UInt64 & out_characterId)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterId);
 				}
 
 			}

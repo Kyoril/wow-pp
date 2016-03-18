@@ -353,7 +353,7 @@ namespace wowpp
 		// Spawn objects
 		TileIndex2D tileIndex;
 		instance->getGrid().getTilePosition(location, tileIndex[0], tileIndex[1]);
-		forEachTileInSight(instance->getGrid(), tileIndex, [&character, this](VisibilityTile &tile)
+		forEachTileInSight(instance->getGrid(), tileIndex, [character, this](VisibilityTile &tile)
 		{
 			for (auto it = tile.getGameObjects().begin(); it != tile.getGameObjects().end(); ++it)
 			{
@@ -376,6 +376,16 @@ namespace wowpp
 
 		// Get that tile and make us a subscriber
 		instance->getGrid().requireTile(tileIndex);
+
+		// Group update trigger
+		if (character->getGroupId() != 0)
+		{
+			auto *player = m_playerManager.getPlayerByCharacterGuid(character->getGuid());
+			if (player)
+			{
+				player->updateCharacterGroup(character->getGroupId());
+			}
+		}
 	}
 
 	void RealmConnector::handleCharacterGroupChanged(pp::Protocol::IncomingPacket &packet)
@@ -1335,6 +1345,12 @@ namespace wowpp
 	{
 		m_connection->sendSinglePacket(
 			std::bind(pp::world_realm::world_write::questUpdate, std::placeholders::_1, characterId, quest, std::cref(data)));
+	}
+
+	void RealmConnector::sendCharacterSpawnNotification(UInt64 characterId)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::world_write::characterSpawned, std::placeholders::_1, characterId));
 	}
 
 }

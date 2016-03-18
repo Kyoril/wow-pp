@@ -32,7 +32,7 @@ namespace wowpp
 	{
 		namespace realm_login
 		{
-			static const UInt32 ProtocolVersion = 0x03;
+			static const UInt32 ProtocolVersion = 0x04;
 
 			namespace realm_packet
 			{
@@ -83,7 +83,9 @@ namespace wowpp
 					/// A realm with the same name is already online at the login server.
 					AlreadyLoggedIn,
 					/// Something went wrong at the login server...
-					ServerError
+					ServerError,
+					/// The provided realm id does not match with the login servers database.
+					InvalidRealmID
 				};
 			}
 
@@ -100,13 +102,15 @@ namespace wowpp
 				/// @param visibleName The name which will be visible for players in the realm list.
 				/// @param host The address of this realm where game clients will try to connect to.
 				/// @param port The port at which this realm is accepting incoming game client connections.
+				/// @param realmID The estimated id of the realm. Will be validated by the login server.
 				void login(
 				    pp::OutgoingPacket &out_packet,
 				    const String &internalName,
 				    const String &password,
 				    const String &visibleName,
 				    const String &host,
-				    NetPort port
+				    NetPort port,
+					UInt16 realmID
 				);
 
 				/// Tells the login server how many players are logged in on the realm.
@@ -215,7 +219,8 @@ namespace wowpp
 				    size_t maxVisibleNameLength,
 				    String &out_host,
 				    size_t maxHostLength,
-				    NetPort &out_port
+				    NetPort &out_port,
+					UInt16 &out_realmID
 				);
 
 				/// TODO: ADD DESCRIPTION
