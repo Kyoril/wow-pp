@@ -39,7 +39,7 @@ cmake_minimum_required(VERSION 2.8)
 	target_link_libraries(login common log auth_protocol wowpp_protocol sql_wrapper mysql_wrapper base64 http web_services)
 	
 	# Link dependency libraries
-	target_link_libraries(login ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY})
+	target_link_libraries(login ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY} cppformat)
 
 	# Install target
 	install(TARGETS login
