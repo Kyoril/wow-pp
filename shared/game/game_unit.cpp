@@ -735,6 +735,11 @@ namespace wowpp
 						// Trigger auto attack procs
 						doneMeleeAutoAttack(victim);
 					}
+					else
+					{
+						// Still add threat to enter combat in case of miss etc.
+						victim->threatened(*this, 0.0f);
+					}
 				}
 			}
 		}
