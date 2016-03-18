@@ -31,6 +31,7 @@
 #include "experience.h"
 #include "unit_mover.h"
 #include "common/make_unique.h"
+#include "game_creature.h"
 
 namespace wowpp
 {
@@ -1445,6 +1446,11 @@ namespace wowpp
 	bool GameUnit::isImmune(UInt8 school)
 	{
 		// TODO: check auras and mobtype
+		if (isCreature())
+		{
+			GameCreature& self = reinterpret_cast<GameCreature&>(*this);
+			self.getEntry();	//TODO need creaturetype()
+		}
 		return false;
 	}
 
