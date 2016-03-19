@@ -2726,7 +2726,6 @@ namespace wowpp
 				const UInt8 RedSpell = 1;
 				const UInt8 GreySpell = 2;
 
-				UInt32 index = 0;
 				for (int i = 0; i < trainerEntry.spells_size(); ++i)
 				{
 					const auto &spell = trainerEntry.spells(i);
@@ -2738,7 +2737,6 @@ namespace wowpp
 						state = RedSpell;
 					}
 					// TODO More checks
-
 					out_packet
 					        << io::write<NetUInt32>(spell.spell())		// Spell ID
 					        << io::write<NetUInt8>(state)					// Spell State

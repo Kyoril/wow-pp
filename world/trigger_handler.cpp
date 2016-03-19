@@ -326,7 +326,7 @@ namespace wowpp
 				return;
 			}
 
-			const bool isActive = (getActionData(action, 0) == 0 ? false : true);
+			//const bool isActive = (getActionData(action, 0) == 0 ? false : true);
 			// TODO: De/activate object spawner
 		}
 	}

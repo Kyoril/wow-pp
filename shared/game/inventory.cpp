@@ -1212,7 +1212,7 @@ namespace wowpp
 				}
 
 				// Modify stack count
-				auto added = item->addStacks(data.stackCount - 1);
+				(void)item->addStacks(data.stackCount - 1);
 				m_itemCounter[data.entry] += data.stackCount;
 
 				// Watch for item despawn packet

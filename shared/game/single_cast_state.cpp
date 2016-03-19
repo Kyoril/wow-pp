@@ -101,8 +101,6 @@ namespace wowpp
 		auto *worldInstance = executer.getWorldInstance();
 
 		auto const casterId = executer.getGuid();
-		auto const targetId = target.getUnitTarget();
-		auto const spellId = spell.id();
 
 		if (worldInstance && !(m_spell.attributes(0) & game::spell_attributes::Passive) && !m_isProc)
 		{
@@ -907,7 +905,6 @@ namespace wowpp
 	void SingleCastState::spellEffectInterruptCast(const proto::SpellEffect & effect)
 	{
 		GameUnit &caster = m_cast.getExecuter();
-		UInt8 school = m_spell.schoolmask();
 		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
@@ -1496,7 +1493,7 @@ namespace wowpp
 
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 
-		UInt32 questId = effect.miscvaluea();
+		//UInt32 questId = effect.miscvaluea();
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
@@ -1504,8 +1501,7 @@ namespace wowpp
 
 			if (targetUnit->isGameCharacter())
 			{
-				GameCharacter *character = dynamic_cast<GameCharacter *>(targetUnit);
-
+                // TODO
 			}
 		}
 	}
@@ -1555,7 +1551,7 @@ namespace wowpp
 
 			if (m_cast.getExecuter().isGameCharacter())
 			{
-				UInt64 diff = reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
+				reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
 					spell_mod_op::Cooldown, m_spell.id(), finalCD);
 			}
 
@@ -2102,8 +2098,6 @@ namespace wowpp
 
 	void SingleCastState::spellEffectCharge(const proto::SpellEffect &effect)
 	{
-		Int32 basePoints = calculateEffectBasePoints(effect);
-
 		GameUnit &caster = m_cast.getExecuter();
 		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;

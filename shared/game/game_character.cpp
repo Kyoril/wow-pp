@@ -678,9 +678,7 @@ namespace wowpp
 			}
 
 			bool validateQuest = false;
-
-			// Counter needed so that the correct field is used
-			UInt8 reqIndex = 0;
+            
 			for (const auto &req : quest->requirements())
 			{
 				if (req.itemid() == entry.id())
@@ -749,8 +747,6 @@ namespace wowpp
 
 			bool validateQuest = false;
 
-			// Counter needed so that the correct field is used
-			UInt8 reqIndex = 0;
 			for (const auto &req : quest->requirements())
 			{
 				if (req.itemid() == entry.id())

@@ -457,7 +457,7 @@ namespace wowpp
 		const float combatRange = getControlled().getMeleeReach() + target.getMeleeReach();
 		if (distance > combatRange)
 		{
-			math::Vector3 realLocation = (mover.isMoving() ? mover.getCurrentLocation() : currentLocation);
+			//math::Vector3 realLocation = (mover.isMoving() ? mover.getCurrentLocation() : currentLocation);
 			math::Vector3 direction = (newTargetLocation - currentLocation);
 			if (direction.normalize() != 0.0f)
 			{

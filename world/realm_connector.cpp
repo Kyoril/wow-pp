@@ -44,7 +44,6 @@ namespace wowpp
 	static const auto ReconnectDelay = (constants::OneSecond * 4);
 	static const auto KeepAliveDelay = (constants::OneMinute / 2);
 
-
 	RealmConnector::RealmConnector(
 		boost::asio::io_service &ioService, 
 		WorldInstanceManager &worldInstanceManager, 
@@ -1004,7 +1003,7 @@ namespace wowpp
 		// Get the cast time of this spell
 		Int64 castTime = spell->casttime();
 
-		Int64 diff = sender.getCharacter()->applySpellMod(spell_mod_op::CastTime, spellId, castTime);
+		sender.getCharacter()->applySpellMod(spell_mod_op::CastTime, spellId, castTime);
 		if (castTime < 0) castTime = 0;
 
 		// Spell cast logic

@@ -40,8 +40,7 @@ namespace wowpp
 	    proto::Project &project,
 	    UInt32 worldNodeId,
 	    const String &dataPath)
-		: m_ioService(ioService)
-		, m_universe(universe)
+		: m_universe(universe)
 		, m_triggerHandler(triggerHandler)
 		, m_idGenerator(idGenerator)
 		, m_objectIdGenerator(objectIdGenerator)

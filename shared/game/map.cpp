@@ -219,10 +219,6 @@ namespace wowpp
 						{
 							//ELOG("Failed adding nav tile!");
 						}
-						else
-						{
-							auto *added = m_navMesh->getTileByRef(ref);
-						}
 					}
 				}
 

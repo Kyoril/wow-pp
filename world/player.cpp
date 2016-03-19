@@ -216,7 +216,6 @@ namespace wowpp
 			std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));
 
 		// Stand up again
-		auto standState = unit_stand_state::Stand;
 		m_character->setStandState(unit_stand_state::Stand);
 
 		// Cancel the countdown
@@ -1556,7 +1555,7 @@ namespace wowpp
 			(info.time - (msTime - m_clientDelayMs)) + MovementPacketTimeDelay + msTime;
 
 		// Get grid tile
-		auto &tile = grid.requireTile(gridIndex);
+		(void)grid.requireTile(gridIndex);
 		info.time = move_time;
 
 		// Notify all watchers about the new object
@@ -1599,7 +1598,6 @@ namespace wowpp
 					{
 						const UInt32 maxHealth = m_character->getUInt32Value(unit_fields::MaxHealth);
 						UInt32 damage = (UInt32)(damageperc * maxHealth);
-						float height = info.z;
 
 						if (damage > 0)
 						{
@@ -2327,7 +2325,7 @@ namespace wowpp
 		auto guid = source.getGuid();
 		auto lootType = game::loot_type::Corpse;
 		sendProxyPacket(
-			std::bind(game::server_write::lootResponse, std::placeholders::_1, source.getGuid(), lootType, std::cref(loot)));
+			std::bind(game::server_write::lootResponse, std::placeholders::_1, guid, lootType, std::cref(loot)));
 	}
 
 	void Player::closeLootDialog()

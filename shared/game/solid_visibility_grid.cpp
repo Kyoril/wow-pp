@@ -29,8 +29,6 @@ namespace wowpp
 	{
 		static const float MapWidth = 533.3333f;
 		static const size_t MapZonesInParallel = 16;
-		static const size_t ZonesPerMap = MapZonesInParallel * MapZonesInParallel;
-		static const float ZoneWidth = MapWidth / MapZonesInParallel;
 	}
 
 	namespace
@@ -83,9 +81,6 @@ namespace wowpp
 	{
 		assert(m_tiles.width());
 		assert(m_tiles.height());
-
-		const auto x = limit<TileIndex>(position[0], 0, m_tiles.width() - 1);
-		const auto y = limit<TileIndex>(position[1], 0, m_tiles.height() - 1);
 
 		auto &tile = m_tiles(position[0], position[1]);
 		if (!tile)
