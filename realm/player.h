@@ -299,5 +299,6 @@ namespace wowpp
 		void handleVoiceSessionEnable(game::IncomingPacket &packet);
 		void handleCharRename(game::IncomingPacket &packet);
 		void handleQuestQuery(game::IncomingPacket &packet);
+		void handleWho(game::IncomingPacket &packet);
 	};
 }

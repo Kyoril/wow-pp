@@ -2429,4 +2429,102 @@ namespace wowpp
 			std::bind(game::server_write::questQueryResponse, std::placeholders::_1, std::cref(*quest)));
 	}
 
+
+	void Player::handleWho(game::IncomingPacket & packet)
+	{
+		game::WhoListRequest out_wholist;
+		const auto &players = m_manager.getPlayers();
+		UInt32 matchcount = 0;
+		UInt32 displaycount = 0;
+		game::whoResponse response;
+
+		if (!(game::client_read::who(packet, out_wholist)))
+		{
+			ILOG("Who Request does not match!");
+			return;
+		}
+
+		if (out_wholist.zones_count > 10 || out_wholist.str_count > 4)
+		{
+			//broken
+			return;
+		}
+		for (int i=0; i<10;i++) {
+			for (std::vector<const std::unique_ptr<Player>>::iterator it = players.begin(); it != players.end(); ++it) {
+				if (0 != (*it)->getGameCharacter()) {
+					continue;
+				}
+				UInt32 lvl = (*it)->getGameCharacter()->getLevel();
+				if (lvl < out_wholist.level_min || lvl > out_wholist.level_max) {
+					continue;
+				}
+
+				UInt32 class_ = (*it)->getGameCharacter()->getClass();
+				if (class_ != out_wholist.classmask) {
+					continue;
+				}
+
+				UInt32 race = (*it)->getGameCharacter()->getRace();
+				if (race != out_wholist.racemask) {
+					continue;
+				}
+
+				UInt32 zone = (*it)->getGameCharacter()->getZone();
+				UInt8 gender = (*it)->getGameCharacter()->getGender();
+
+				bool show = true;
+
+				for (UInt32 i = 0; i < out_wholist.zones_count; i++) {
+					if (out_wholist.zoneids[i] == zone) {
+						show = true;
+						break;
+					}
+					show = false;
+				}
+
+				if (!show) {
+					continue;
+				}
+
+				String name = (*it)->getGameCharacter()->getName();
+
+				bool s_show = true;
+
+				if (out_wholist.str_count == 1) {
+					for (UInt32 i = 0; i < out_wholist.str_count; i++) {
+						if (name == out_wholist.player_name) {
+							s_show = true;
+							break;
+						}
+						s_show = false;
+					}
+				}
+				if (!s_show) {
+					continue;
+				}
+
+				matchcount++;
+
+				if (matchcount > 49) {
+					continue;
+				}
+
+				displaycount++;
+				String gname = "test";
+
+
+				response.lvl.push_back(lvl);
+				response.classes.push_back(class_);
+				response.races.push_back(race);
+				response.genders.push_back(gender);
+				response.zones.push_back(zone);
+
+			}
+		}
+		sendPacket(
+				std::bind(game::server_write::WhoRequestResponse, std::placeholders::_1, response, matchcount, displaycount));
+
+	}
+
+
 }
