@@ -222,7 +222,7 @@ namespace wowpp
 		const String safeName = m_connection.escapeString(name);
 
 		MySQL::Select select(m_connection, fmt::format(
-			"SELECT id,password FROM realm WHERE internalName='%1%' LIMIT 1"
+			"SELECT id,password FROM realm WHERE internalName='{0}' LIMIT 1"
 			, safeName));		// 0
 		if (select.success())
 		{
@@ -334,7 +334,7 @@ namespace wowpp
 	bool MySQLDatabase::getTutorialData(UInt32 id, std::array<UInt32, 8> &out_data)
 	{
 		wowpp::MySQL::Select select(m_connection, fmt::format(
-			"SELECT tutorial_0, tutorial_1, tutorial_2, tutorial_3, tutorial_4, tutorial_5, tutorial_6, tutorial_7 FROM account_tutorials WHERE account=%1% LIMIT 1"
+			"SELECT tutorial_0, tutorial_1, tutorial_2, tutorial_3, tutorial_4, tutorial_5, tutorial_6, tutorial_7 FROM account_tutorials WHERE account={0} LIMIT 1"
 			, id));		// 0
 		if (select.success())
 		{

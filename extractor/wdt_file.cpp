@@ -50,7 +50,7 @@ namespace wowpp
 		{
 			// Read the MWMO chunk
 			m_reader.readPOD(m_wmoChunk);
-			
+
 		}
 
 		m_isValid = true;

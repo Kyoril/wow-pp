@@ -119,6 +119,8 @@ namespace wowpp
 			auto &tile = m_tiles(position[0], position[1]);
 			if (!tile)
 			{
+				tile.reset(new MapDataTile);
+
 				std::ostringstream strm;
 				strm << m_dataPath.string() << "/maps/" << m_entry.id() << "/" << position[0] << "_" << position[1] << ".map";
 
@@ -155,8 +157,6 @@ namespace wowpp
 					ELOG("Could not load map file " << file << ": Unsupported file format version!");
 					return nullptr;
 				}
-
-				tile.reset(new MapDataTile);
 
 				// Read area table
 				mapFile.seekg(mapHeaderChunk.offsAreaTable, std::ios::beg);
@@ -221,19 +221,6 @@ namespace wowpp
 						}
 					}
 				}
-
-				/*
-				// Read height data
-				mapFile.seekg(mapHeaderChunk.offsHeight, std::ios::beg);
-
-				// Create new tile and read area data
-				mapFile.read(reinterpret_cast<char*>(&tile->heights), sizeof(MapHeightChunk));
-				if (tile->heights.fourCC != 0x54484D57 || tile->heights.size != sizeof(MapHeightChunk) - 8)
-				{
-					WLOG("Map file " << file << " might be corrupted and may contain corrupt data");
-					//TODO: Should we cancel the loading process?
-				}
-				*/
 			}
 
 			return tile.get();
