@@ -1148,8 +1148,8 @@ namespace
 			return false;
 		}
 
-#if 0
-		if (mapId != 0)
+#if 1
+		if (mapId != 389)
 		{
 			return true;
 		}
@@ -1284,9 +1284,9 @@ namespace
 
 		// Same as above, but locale dependant. However, order is still important!
 		const String localeArchives[] = {
-			"locale-%1%.MPQ",
-			"patch-%1%.MPQ",
-			"patch-%1%-2.MPQ",
+			"locale-{0}.MPQ",
+			"patch-{0}.MPQ",
+			"patch-{0}-2.MPQ",
 		};
 
 		// Try to load all common archives
