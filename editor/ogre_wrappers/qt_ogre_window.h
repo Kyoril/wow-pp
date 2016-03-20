@@ -41,6 +41,12 @@ struct IScene
 	virtual ~IScene() { }
 
 	virtual void update(float delta) = 0;
+	virtual void onSelection(Ogre::Entity &entity) = 0;
+	virtual void onKeyPressed(const QKeyEvent *e) = 0;
+	virtual void onKeyReleased(const QKeyEvent *e) = 0;
+	virtual void onMousePressed(const QMouseEvent *e) = 0;
+	virtual void onMouseReleased(const QMouseEvent *e) = 0;
+	virtual void onMouseMoved(const QMouseEvent *e) = 0;
 };
 
 class QtOgreWindow : public QWindow, public Ogre::FrameListener
@@ -72,7 +78,7 @@ public slots:
 
 signals:
 
-	void entitySelected(Ogre::Entity* entity);
+	void entitySelected(Ogre::Entity &entity);
 
 protected:
 
@@ -95,6 +101,7 @@ protected:
 	virtual void wheelEvent(QWheelEvent *e);
 	virtual void mousePressEvent(QMouseEvent *e);
 	virtual void mouseReleaseEvent(QMouseEvent *e);
+	virtual void mouseDoubleClickEvent(QMouseEvent* e);
 	virtual void exposeEvent(QExposeEvent *e);
 	virtual bool event(QEvent *e);
 

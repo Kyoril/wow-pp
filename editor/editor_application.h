@@ -26,6 +26,7 @@
 #include "template_list_model.h"
 #include "trigger_list_model.h"
 #include "configuration.h"
+#include "selection.h"
 
 namespace wowpp
 {
@@ -71,6 +72,7 @@ namespace wowpp
 			ObjectListModel *getObjectListModel() { return m_objectListModel.get(); }
 			proto::Project &getProject() { return m_project; }
 			Configuration &getConfiguration() { return m_configuration; }
+			Selection &getSelection() { return m_selection; }
 
 		public slots:
 
@@ -91,6 +93,7 @@ namespace wowpp
 
 		private:
 
+			Selection m_selection;
 			Configuration m_configuration;
 			MainWindow *m_mainWindow;
 			ObjectEditor *m_objectEditor;

@@ -33,6 +33,7 @@
 #include <QMouseEvent>
 #include "ogre_wrappers/qt_ogre_window.h"
 #include "ogre_wrappers/entity_ptr.h"
+#include "transform_widget.h"
 
 namespace Ogre
 {
@@ -61,11 +62,12 @@ namespace wowpp
 
 			void update(float delta) override;
 			void save();
-			void onKeyPressed(const QKeyEvent *event);
-			void onKeyReleased(const QKeyEvent *event);
-			void onMousePressed(const QMouseEvent *event);
-			void onMouseReleased(const QMouseEvent *event);
-			void onMouseMoved(const QMouseEvent *event);
+			void onKeyPressed(const QKeyEvent *e) override;
+			void onKeyReleased(const QKeyEvent *e) override;
+			void onMousePressed(const QMouseEvent *e) override;
+			void onMouseReleased(const QMouseEvent *e) override;
+			void onMouseMoved(const QMouseEvent *e) override;
+			void onSelection(Ogre::Entity &entity) override;
 
 		private:
 
@@ -92,6 +94,7 @@ namespace wowpp
 			proto::Project &m_project;
 			std::vector<wowpp::ogre_utils::SceneNodePtr> m_spawnNodes;
 			std::vector<wowpp::ogre_utils::EntityPtr> m_spawnEntities;
+			std::unique_ptr<TransformWidget> m_transformWidget;
 		};
 	}
 }

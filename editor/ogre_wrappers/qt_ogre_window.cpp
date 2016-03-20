@@ -224,32 +224,7 @@ void QtOgreWindow::initialize()
 
 void QtOgreWindow::createScene()
 {
-	/*
-	Example scene
-	Derive this class for your own purpose and overwite this function to have a working Ogre widget with
-	your own content.
-	*/
 	m_ogreSceneMgr->setAmbientLight(Ogre::ColourValue(0.5f, 0.5f, 0.5f));
-
-	Ogre::Entity* sphereMesh = //m_ogreSceneMgr->createEntity("mySphere", "kobold.mesh");
-		m_ogreSceneMgr->createEntity("mySphere", Ogre::SceneManager::PT_SPHERE);
-
-	Ogre::SceneNode* childSceneNode = m_ogreSceneMgr->getRootSceneNode()->createChildSceneNode();
-
-	childSceneNode->attachObject(sphereMesh);
-
-	Ogre::MaterialPtr sphereMaterial = Ogre::MaterialManager::getSingleton().create("SphereMaterial",
-		Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, true);
-
-	sphereMaterial->getTechnique(0)->getPass(0)->setAmbient(0.1f, 0.1f, 0.1f);
-	sphereMaterial->getTechnique(0)->getPass(0)->setDiffuse(0.2f, 0.2f, 0.2f, 1.0f);
-	sphereMaterial->getTechnique(0)->getPass(0)->setSpecular(0.9f, 0.9f, 0.9f, 1.0f);
-	sphereMaterial->setAmbient(0.2f, 0.2f, 0.5f);
-	sphereMaterial->setSelfIllumination(0.2f, 0.2f, 0.1f);
-
-	sphereMesh->setMaterialName("SphereMaterial");
-	childSceneNode->setPosition(Ogre::Vector3(0.0f, 0.0f, 0.0f));
-	childSceneNode->setScale(Ogre::Vector3(0.01f, 0.01f, 0.01f)); // Radius, in theory.
 
 	Ogre::Light* light = m_ogreSceneMgr->createLight("MainLight");
 	light->setPosition(20.0f, 80.0f, 50.0f);
@@ -265,11 +240,6 @@ void QtOgreWindow::setAnimating(bool animating)
 
 void QtOgreWindow::renderLater()
 {
-	/*
-	This function forces QWindow to keep rendering. Omitting this causes the renderNow() function to
-	only get called when the window is resized, moved, etc. as opposed to all of the time; which is
-	generally what we need.
-	*/
 	if (!m_updatePending)
 	{
 		m_updatePending = true;
@@ -320,19 +290,25 @@ void QtOgreWindow::keyPressEvent(QKeyEvent *e)
 {
 	if (m_cameraMan)
 		m_cameraMan->injectKeyDown(*e);
+
+	if (m_scene)
+		m_scene->onKeyPressed(e);
 }
 
 void QtOgreWindow::keyReleaseEvent(QKeyEvent *e)
 {
 	if (m_cameraMan)
 		m_cameraMan->injectKeyUp(*e);
+
+	if (m_scene)
+		m_scene->onKeyReleased(e);
 }
 
 void QtOgreWindow::mouseMoveEvent(QMouseEvent *e)
 {
 	if (e->buttons() & Qt::LeftButton)
 	{
-		QPointF delta = e->localPos() - m_clickPos;
+	/*	QPointF delta = e->localPos() - m_clickPos;
 		if (!delta.isNull())
 		{
 			Ogre::Rect r;
@@ -362,7 +338,7 @@ void QtOgreWindow::mouseMoveEvent(QMouseEvent *e)
 			m_selectionBox->setRectangle(r);
 		}
 
-		return;
+		return;*/
 	}
 
 	static int lastX = e->x();
@@ -374,6 +350,9 @@ void QtOgreWindow::mouseMoveEvent(QMouseEvent *e)
 
 	if (m_cameraMan && (e->buttons() & Qt::RightButton))
 		m_cameraMan->injectMouseMove(relX, relY);
+
+	if (m_scene)
+		m_scene->onMouseMoved(e);
 }
 
 void QtOgreWindow::wheelEvent(QWheelEvent *e)
@@ -389,13 +368,16 @@ void QtOgreWindow::mousePressEvent(QMouseEvent *e)
 		m_clickPos = e->localPos();
 
 		// Create selection box
-		m_selectionBox = wowpp::make_unique<wowpp::editor::SelectionBox>(
+		/*m_selectionBox = wowpp::make_unique<wowpp::editor::SelectionBox>(
 			*m_ogreSceneMgr, *m_ogreCamera
-			);
+			);*/
 	}
 
 	if (m_cameraMan)
 		m_cameraMan->injectMouseDown(*e);
+
+	if (m_scene)
+		m_scene->onMousePressed(e);
 }
 
 void QtOgreWindow::mouseReleaseEvent(QMouseEvent *e)
@@ -403,30 +385,41 @@ void QtOgreWindow::mouseReleaseEvent(QMouseEvent *e)
 	if (e->button() == Qt::LeftButton)
 	{
 		// Clear selection rect
-		m_selectionBox.reset();
+		//m_selectionBox.reset();
 	}
 
 	if (m_cameraMan)
 		m_cameraMan->injectMouseUp(*e);
 
-	QPoint pos = e->pos();
-	Ogre::Ray mouseRay = m_ogreCamera->getCameraToViewportRay(
-		(Ogre::Real)pos.x() / m_ogreWindow->getWidth(),
-		(Ogre::Real)pos.y() / m_ogreWindow->getHeight());
-	Ogre::RaySceneQuery* pSceneQuery = m_ogreSceneMgr->createRayQuery(mouseRay);
-	pSceneQuery->setSortByDistance(true);
-	Ogre::RaySceneQueryResult vResult = pSceneQuery->execute();
-	for (size_t ui = 0; ui < vResult.size(); ui++)
+	if (m_scene) 
+		m_scene->onMouseReleased(e);
+
+	if (e->button() == Qt::LeftButton)
 	{
-		if (vResult[ui].movable)
+		QPoint pos = e->pos();
+		Ogre::Ray mouseRay = m_ogreCamera->getCameraToViewportRay(
+			(Ogre::Real)pos.x() / m_ogreWindow->getWidth(),
+			(Ogre::Real)pos.y() / m_ogreWindow->getHeight());
+		Ogre::RaySceneQuery* pSceneQuery = m_ogreSceneMgr->createRayQuery(mouseRay);
+		pSceneQuery->setSortByDistance(true);
+		Ogre::RaySceneQueryResult vResult = pSceneQuery->execute();
+		for (size_t ui = 0; ui < vResult.size(); ui++)
 		{
-			if (vResult[ui].movable->getMovableType().compare("Entity") == 0)
+			if (vResult[ui].movable)
 			{
-				emit entitySelected((Ogre::Entity*)vResult[ui].movable);
+				if (vResult[ui].movable->getMovableType().compare("Entity") == 0)
+				{
+					m_scene->onSelection(*((Ogre::Entity*)vResult[ui].movable));
+				}
 			}
 		}
+		m_ogreSceneMgr->destroyQuery(pSceneQuery);
 	}
-	m_ogreSceneMgr->destroyQuery(pSceneQuery);
+}
+
+void QtOgreWindow::mouseDoubleClickEvent(QMouseEvent * e)
+{
+
 }
 
 void QtOgreWindow::exposeEvent(QExposeEvent *e)
