@@ -57,6 +57,9 @@ namespace wowpp
 
 			// Raise event
 			positionChanged(*this);
+
+			// Changed
+			m_eventHandler();
 		}
 
 		void SelectedCreatureSpawn::rotate(const Vector<float, 4> &delta)
@@ -74,7 +77,17 @@ namespace wowpp
 
 		void SelectedCreatureSpawn::remove()
 		{
+			// TODO: Remove spawn point from the list of spawns
 
+
+			// Reset user data
+			m_entity.setUserAny(Ogre::Any());
+			
+			// TODO: Manually destroy entity
+			m_entity.setVisible(false);		// This is a hack, find a better way
+
+			// Changed
+			m_eventHandler();
 		}
 
 		void SelectedCreatureSpawn::deselect()

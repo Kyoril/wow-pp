@@ -498,10 +498,11 @@ namespace wowpp
 				auto *spawn = Ogre::any_cast<proto::UnitSpawnEntry*>(any);
 				if (spawn)
 				{
-					ILOG("ADD SELECTED");
 					m_app.getSelection().addSelected(
 						std::unique_ptr<SelectedCreatureSpawn>(new SelectedCreatureSpawn(
-							std::function<void()>(),
+							[this]() {
+								m_app.markAsChanged();
+							},
 							entity,
 							*spawn)));
 
