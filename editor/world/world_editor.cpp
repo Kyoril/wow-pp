@@ -286,6 +286,10 @@ namespace wowpp
 
 		WorldEditor::~WorldEditor()
 		{
+			// All selected objects should be from this editor instance, and we are about to destroy it
+			// So deselect all objects before, to prevent a crash on next selection
+			m_app.getSelection().clear();
+
             if (m_light)
             {
 				m_sceneMgr.destroyLight(m_light);
