@@ -91,6 +91,11 @@ namespace wowpp
 			close();
 		}
 
+		void MainWindow::on_Movement_triggered(QAction * action)
+		{
+			ILOG("Triggered " << action->objectName().toStdString());
+		}
+
 		void MainWindow::on_actionLoadMap_triggered()
 		{
 			LoadMapDialog dialog(m_application);

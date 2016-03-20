@@ -49,6 +49,7 @@ namespace wowpp
 
 			void on_actionLoadMap_triggered();
 			void on_actionExit_triggered();
+			void on_Movement_triggered(QAction *action);
 
 		protected:
 
