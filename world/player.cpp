@@ -104,6 +104,13 @@ namespace wowpp
 			sendProxyPacket(std::bind(game::server_write::standStateUpdate, std::placeholders::_1, state));
 		});
 
+		m_objectInteraction = m_character->objectInteraction.connect([this](WorldObject &object) {
+			if (object.getEntry().type() == world_object_type::QuestGiver)
+			{
+				sendGossipMenu(object.getGuid());
+			}
+		});
+
 		// Inventory change signals
 		auto &inventory = m_character->getInventory();
 		m_itemCreated = inventory.itemInstanceCreated.connect(std::bind(&Player::onItemCreated, this, std::placeholders::_1, std::placeholders::_2));

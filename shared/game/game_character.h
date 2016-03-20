@@ -495,6 +495,7 @@ namespace wowpp
 	};
 
 	class GameCreature;
+	class WorldObject;
 
 	namespace spell_mod_op
 	{
@@ -628,6 +629,8 @@ namespace wowpp
 		boost::signals2::signal<void(LootInstance &)> lootinspect;
 		/// Fired when a spell mod was applied or misapplied on the character. Used to send packets to the owning players client.
 		boost::signals2::signal<void(SpellModType, UInt8, SpellModOp, Int32)> spellModChanged;
+		/// Fired when the character interacts with a game object.
+		boost::signals2::signal<void(WorldObject &)> objectInteraction;
 
 	public:
 

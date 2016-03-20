@@ -1933,13 +1933,20 @@ namespace wowpp
 			return;
 		}
 
-		obj = dynamic_cast<WorldObject *>(world->findObjectByGUID(m_target.getGOTarget()));
-		if (!obj)
+		GameObject *raw = world->findObjectByGUID(m_target.getGOTarget());
+		if (!raw)
 		{
 			WLOG("SPELL_EFFECT_OPEN_LOCK: Could not find target object");
 			return;
 		}
 
+		if (!raw->isWorldObject())
+		{
+			WLOG("SPELL_EFFECT_OPEN_LOCK: Target object is not a world object");
+			return;
+		}
+
+		obj = reinterpret_cast<WorldObject*>(raw);
 		m_affectedTargets.insert(obj->shared_from_this());
 
 		UInt32 currentState = obj->getUInt32Value(world_object_fields::State);
@@ -1975,6 +1982,12 @@ namespace wowpp
 			}
 		default:	// Make the compiler happy
 			break;
+		}
+
+		if (m_cast.getExecuter().isGameCharacter())
+		{
+			GameCharacter *character = reinterpret_cast<GameCharacter *>(&m_cast.getExecuter());
+			character->objectInteraction(*obj);
 		}
 
 		// Raise interaction triggers
