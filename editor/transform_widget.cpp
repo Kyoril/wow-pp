@@ -1318,7 +1318,7 @@ namespace wowpp
 			if (m_isLocal && 
 				!m_selection.empty())
 			{
-				auto &rot = m_selection.getSelectedObjects().back()->getOrientation();
+				auto rot = m_selection.getSelectedObjects().back()->getOrientation();
 				m_widgetNode->setOrientation(Ogre::Quaternion(rot[0], rot[1], rot[2], rot[3]));
 			}
 		}
@@ -1828,7 +1828,7 @@ namespace wowpp
 
 				if (m_isLocal)
 				{
-					auto &rot = m_selection.getSelectedObjects().back()->getOrientation();
+					auto rot = m_selection.getSelectedObjects().back()->getOrientation();
 					m_widgetNode->setOrientation(Ogre::Quaternion(rot[0], rot[1], rot[2], rot[3]));
 				}
 				else
