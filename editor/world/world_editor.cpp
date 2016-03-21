@@ -504,6 +504,7 @@ namespace wowpp
 				{
 					m_app.getSelection().addSelected(
 						std::unique_ptr<SelectedCreatureSpawn>(new SelectedCreatureSpawn(
+							m_map,
 							[this]() {
 								m_app.markAsChanged();
 							},

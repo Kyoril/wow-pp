@@ -26,6 +26,11 @@
 
 namespace wowpp
 {
+	namespace proto
+	{
+		class MapEntry;
+	}
+
 	namespace editor
 	{
 		class SelectedCreatureSpawn final : public Selected
@@ -36,6 +41,7 @@ namespace wowpp
 			typedef std::function<void()> ObjectEventHandler;
 
 			explicit SelectedCreatureSpawn(
+				proto::MapEntry &map,
 				ObjectEventHandler eventHandler,
 				Ogre::Entity &entity,
 				proto::UnitSpawnEntry &entry
@@ -61,6 +67,7 @@ namespace wowpp
 
 		private:
 
+			proto::MapEntry &m_map;
 			ObjectEventHandler m_eventHandler;
 			Ogre::Entity &m_entity;
 			proto::UnitSpawnEntry &m_entry;

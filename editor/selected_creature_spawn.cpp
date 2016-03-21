@@ -22,17 +22,20 @@
 #include "pch.h"
 #include "selected_creature_spawn.h"
 #include "common/make_unique.h"
+#include "proto_data/project.h"
 
 namespace wowpp
 {
 	namespace editor
 	{
 		SelectedCreatureSpawn::SelectedCreatureSpawn(
+			proto::MapEntry &map,
 			ObjectEventHandler eventHandler,
 			Ogre::Entity &entity,
 			proto::UnitSpawnEntry &entry
 			)
 			: Selected()
+			, m_map(map)
 			, m_eventHandler(eventHandler)
 			, m_entity(entity)
 			, m_entry(entry)
@@ -64,30 +67,41 @@ namespace wowpp
 
 		void SelectedCreatureSpawn::rotate(const Vector<float, 4> &delta)
 		{
+			Ogre::Quaternion qOri(delta[0], delta[1], delta[2], delta[3]);
+
+			// TODO: Apply rotation (but only on the z axis, which is the yaw axis!)
+
 			// Raise event
 			rotationChanged(*this);
 		}
 
 		void SelectedCreatureSpawn::scale(const math::Vector3 &delta)
 		{
-
-			// Raise event
-			scaleChanged(*this);
+			// Unit spawns do not support custom scale right now
 		}
 
 		void SelectedCreatureSpawn::remove()
 		{
-			// TODO: Remove spawn point from the list of spawns
+			// Remove spawn point from the list of spawns
+			auto *spawns = m_map.mutable_unitspawns();
+			for (auto it = spawns->begin(); it != spawns->end(); ++it)
+			{
+				auto &entry = *it;
+				if (&entry == &m_entry)
+				{
+					it = spawns->erase(it);
 
+					// Reset user data
+					m_entity.setUserAny(Ogre::Any());
 
-			// Reset user data
-			m_entity.setUserAny(Ogre::Any());
-			
-			// TODO: Manually destroy entity
-			m_entity.setVisible(false);		// This is a hack, find a better way
+					// Manually destroy entity
+					m_entity.setVisible(false);		// This is a hack, find a better way
 
-			// Changed
-			m_eventHandler();
+					// Changed
+					m_eventHandler();
+					return;
+				}
+			}
 		}
 
 		void SelectedCreatureSpawn::deselect()
@@ -102,7 +116,9 @@ namespace wowpp
 
 		Vector<float, 4> SelectedCreatureSpawn::getOrientation() const
 		{
-			return Vector<float, 4>(1.0f, 0.0f, 0.0f, 0.0f);
+			auto *node = m_entity.getParentSceneNode();
+			const auto &ori = node->getOrientation();
+			return Vector<float, 4>(ori.w, ori.x, ori.y, ori.z);
 		}
 
 		math::Vector3 SelectedCreatureSpawn::getScale() const
