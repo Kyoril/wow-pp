@@ -255,12 +255,13 @@ namespace wowpp
 			float o = ::atan2(dy, dx);
 			o = (o >= 0) ? o : 2 * 3.1415927f + o;
 
-			// Update with grid notification
-			getMoved().relocate(currentLoc, o);
-
-			// Cancel timers
+			// Cancel timers before relocate, in order to prevent stack overflow (because isMoving()
+			// simply checks if m_moveReached is running)
 			m_moveReached.cancel();
 			m_moveUpdated.cancel();
+
+			// Update with grid notification
+			getMoved().relocate(currentLoc, o);
 
 			// Send movement packet
 			TileIndex2D tile;
