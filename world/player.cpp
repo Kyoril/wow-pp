@@ -2680,16 +2680,20 @@ namespace wowpp
 		// Accept that quest
 		if (!m_character->acceptQuest(questId))
 		{
-			// Try to restore previously given quest item (TODO: This is ugly and could be a security issue because, in theory,
-			// this could lead to creating the item twice etc.)
-			auto result = m_character->getInventory().createItems(itemQuestgiver->getEntry(), itemQuestgiver->getStackCount());
-			if (result != game::inventory_change_failure::Okay)
+			if (itemQuestgiver && itemSlot != 0)
 			{
-				// Worst case! Player has lost the quest item... this may NEVER EVER happen (need for an inventory transaction system)
-				ELOG("PLAYER " << m_character->getGuid() << " ITEM LOSS SINCE QUEST " << questId << " COULD NOT BE ACCEPTED AND QUESTGIVER ITEM " 
-					<< itemQuestgiver->getStackCount() << "x " << itemQuestgiver->getEntry().id() << " COULD NOT BE RECREATED!");
-				assert(false);
+				// Try to restore previously given quest item (TODO: This is ugly and could be a security issue because, in theory,
+				// this could lead to creating the item twice etc.)
+				auto result = m_character->getInventory().createItems(itemQuestgiver->getEntry(), itemQuestgiver->getStackCount());
+				if (result != game::inventory_change_failure::Okay)
+				{
+					// Worst case! Player has lost the quest item... this may NEVER EVER happen (need for an inventory transaction system)
+					ELOG("PLAYER " << m_character->getGuid() << " ITEM LOSS SINCE QUEST " << questId << " COULD NOT BE ACCEPTED AND QUESTGIVER ITEM "
+						<< itemQuestgiver->getStackCount() << "x " << itemQuestgiver->getEntry().id() << " COULD NOT BE RECREATED!");
+					assert(false);
+				}
 			}
+			
 			return;
 		}
 
@@ -2802,7 +2806,8 @@ namespace wowpp
 			// Try to find next quest and if there is one, send quest details
 			UInt32 nextQuestId = quest->nextchainquestid();
 			if (nextQuestId &&
-				object->providesQuest(nextQuestId))
+				object->providesQuest(nextQuestId) &&
+				m_character->getQuestStatus(nextQuestId) == game::quest_status::Available)
 			{
 				const auto *nextQuestEntry = m_project.quests.getById(nextQuestId);
 				if (nextQuestEntry)
