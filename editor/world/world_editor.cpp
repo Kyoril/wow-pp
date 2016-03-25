@@ -36,6 +36,7 @@
 #include "game/map.h"
 #include "editor_application.h"
 #include "selected_creature_spawn.h"
+#include "windows/spawn_dialog.h"
 
 namespace wowpp
 {
@@ -490,6 +491,40 @@ namespace wowpp
 		void WorldEditor::onMouseMoved(const QMouseEvent *event)
 		{
 			m_transformWidget->onMouseMoved(event);
+		}
+
+		void WorldEditor::onDoubleClick(const QMouseEvent * e)
+		{
+			QPoint pos = e->pos();
+			Ogre::Ray mouseRay = m_camera.getCameraToViewportRay(
+				(Ogre::Real)pos.x() / m_camera.getViewport()->getActualWidth(),
+				(Ogre::Real)pos.y() / m_camera.getViewport()->getActualHeight());
+			Ogre::RaySceneQuery* pSceneQuery = m_sceneMgr.createRayQuery(mouseRay);
+			pSceneQuery->setSortByDistance(true);
+			Ogre::RaySceneQueryResult vResult = pSceneQuery->execute();
+			for (size_t ui = 0; ui < vResult.size(); ui++)
+			{
+				if (vResult[ui].movable)
+				{
+					if (vResult[ui].movable->getMovableType().compare("Entity") == 0)
+					{
+						const auto &any = ((Ogre::Entity*)vResult[ui].movable)->getUserAny();
+						if (!any.isEmpty())
+						{
+							auto *spawn = Ogre::any_cast<proto::UnitSpawnEntry*>(any);
+							if (spawn)
+							{
+								auto dialog = make_unique<SpawnDialog>(m_app, *spawn);
+								if (dialog->exec())
+								{
+									m_app.markAsChanged();
+								}
+							}
+						}
+					}
+				}
+			}
+			m_sceneMgr.destroyQuery(pSceneQuery);
 		}
 
 		void WorldEditor::onSelection(Ogre::Entity & entity)

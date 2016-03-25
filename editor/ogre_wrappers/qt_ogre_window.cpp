@@ -419,7 +419,13 @@ void QtOgreWindow::mouseReleaseEvent(QMouseEvent *e)
 
 void QtOgreWindow::mouseDoubleClickEvent(QMouseEvent * e)
 {
-
+	if (e->button() == Qt::LeftButton)
+	{
+		if (m_scene)
+		{
+			m_scene->onDoubleClick(e);
+		}
+	}
 }
 
 void QtOgreWindow::exposeEvent(QExposeEvent *e)

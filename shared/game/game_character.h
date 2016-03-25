@@ -701,7 +701,7 @@ namespace wowpp
 
 		/// Adds a spell to the list of known spells of this character.
 		/// Note that passive spells will also be cast after they are added.
-		void addSpell(const proto::SpellEntry &spell);
+		bool addSpell(const proto::SpellEntry &spell);
 		/// Returns true, if the characters knows the specific spell.
 		bool hasSpell(UInt32 spellId) const;
 		/// Returns a spell from the list of known spells.

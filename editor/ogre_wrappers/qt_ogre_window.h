@@ -47,6 +47,7 @@ struct IScene
 	virtual void onMousePressed(const QMouseEvent *e) = 0;
 	virtual void onMouseReleased(const QMouseEvent *e) = 0;
 	virtual void onMouseMoved(const QMouseEvent *e) = 0;
+	virtual void onDoubleClick(const QMouseEvent *e) = 0;
 };
 
 class QtOgreWindow : public QWindow, public Ogre::FrameListener

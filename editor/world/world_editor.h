@@ -67,6 +67,7 @@ namespace wowpp
 			void onMousePressed(const QMouseEvent *e) override;
 			void onMouseReleased(const QMouseEvent *e) override;
 			void onMouseMoved(const QMouseEvent *e) override;
+			void onDoubleClick(const QMouseEvent *e) override;
 			void onSelection(Ogre::Entity &entity) override;
 
 		private:

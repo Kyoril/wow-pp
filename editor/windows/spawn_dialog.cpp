@@ -23,23 +23,57 @@
 #include "spawn_dialog.h"
 #include "ui_spawn_dialog.h"
 #include "editor_application.h"
+#include "proto_data/project.h"
 
 namespace wowpp
 {
 	namespace editor
 	{
-		SpawnDialog::SpawnDialog(EditorApplication &app)
+		SpawnDialog::SpawnDialog(EditorApplication &app, proto::UnitSpawnEntry &spawn)
 			: QDialog()
 			, m_ui(new Ui::SpawnDialog)
 			, m_app(app)
+			, m_spawn(spawn)
 		{
 			// Setup auto generated ui
 			m_ui->setupUi(this);
+
+			// Initialize values
+			m_ui->checkBox->setChecked(spawn.isactive());
+			m_ui->spawnNameBox->setChecked(spawn.has_name());
+			m_ui->lineEdit->setText(spawn.name().c_str());
+			m_ui->checkBox_2->setChecked(spawn.respawn());
+			m_ui->spinBox->setValue(spawn.respawndelay());
+			m_ui->spinBox_2->setValue(spawn.respawndelay());
+			m_ui->spinBox_3->setValue(spawn.radius());
+			m_ui->spinBox_4->setValue(spawn.maxcount());
+
+			QTreeWidgetItem *item = new QTreeWidgetItem(m_ui->treeWidget);
+			item->setText(0, QString("%1").arg(spawn.unitentry()));
+			item->setText(1, "TODO");
+			item->setText(2, "100%");
+
+			QTreeWidgetItem *locItem = new QTreeWidgetItem(m_ui->treeWidget_2);
+			locItem->setText(1, QString("%1, %2, %3").arg(spawn.positionx()).arg(spawn.positiony()).arg(spawn.positionz()));
+			locItem->setText(2, "100%");
 		}
 
 		void SpawnDialog::on_buttonBox_accepted()
 		{
-			// TODO
+			m_spawn.set_isactive(m_ui->checkBox->isChecked());
+			if (!m_ui->spawnNameBox->isChecked())
+			{
+				m_spawn.clear_name();
+			}
+			else
+			{
+				m_spawn.set_name(m_ui->lineEdit->text().toStdString());
+			}
+			m_spawn.set_respawn(m_ui->checkBox_2->isChecked());
+			m_spawn.set_respawndelay(m_ui->spinBox->value());
+			m_spawn.set_respawndelay(m_ui->spinBox_2->value());
+			m_spawn.set_radius(m_ui->spinBox_3->value());
+			m_spawn.set_maxcount(m_ui->spinBox_4->value());
 		}
 	}
 }

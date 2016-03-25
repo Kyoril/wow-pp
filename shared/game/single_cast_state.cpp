@@ -920,6 +920,54 @@ namespace wowpp
 		}
 	}
 
+	void SingleCastState::spellEffectLearnSpell(const proto::SpellEffect & effect)
+	{
+		if (!effect.triggerspell())
+		{
+			ELOG("SPELL_EFFECT_LEARN_SPELL: Missing trigger spell entry for effect #" << effect.index());
+			return;
+		}
+
+		// Look for spell
+		const auto *spell = m_cast.getExecuter().getProject().spells.getById(effect.triggerspell());
+		if (!spell)
+		{
+			ELOG("SPELL_EFFECT_LEARN_SPELL: Could not find spell " << effect.triggerspell());
+			return;
+		}
+
+		GameUnit &caster = m_cast.getExecuter();
+		std::vector<GameUnit *> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+
+		for (UInt32 i = 0; i < targets.size(); i++)
+		{
+			GameUnit *targetUnit = targets[i];
+			m_affectedTargets.insert(targetUnit->shared_from_this());
+
+			if (targetUnit->isGameCharacter())
+			{
+				auto *character = reinterpret_cast<GameCharacter*>(targetUnit);
+				if (character->addSpell(*spell))
+				{
+					// Activate passive spell if it is one
+					if (spell->attributes(0) & game::spell_attributes::Passive)
+					{
+						SpellTargetMap targetMap;
+						targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+						targetMap.m_unitTarget = character->getGuid();
+						character->castSpell(std::move(targetMap), effect.triggerspell(), -1, 0, true);
+					}
+
+					// TODO: Send packets
+				}
+			}
+		}
+	}
+
 	void SingleCastState::spellEffectDrainPower(const proto::SpellEffect &effect)
 	{
 		// Calculate the power to drain
@@ -1601,6 +1649,7 @@ namespace wowpp
 			{se::NormalizedWeaponDmg,	std::bind(&SingleCastState::spellEffectNormalizedWeaponDamage, this, std::placeholders::_1)},
 			{se::StealBeneficialBuff,	std::bind(&SingleCastState::spellEffectStealBeneficialBuff, this, std::placeholders::_1)},
 			{se::InterruptCast,			std::bind(&SingleCastState::spellEffectInterruptCast, this, std::placeholders::_1) },
+			{se::LearnSpell,			std::bind(&SingleCastState::spellEffectLearnSpell, this, std::placeholders::_1) },
 			// Add all effects above here
 			{se::ApplyAura,				std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
 			{se::SchoolDamage,			std::bind(&SingleCastState::spellEffectSchoolDamage, this, std::placeholders::_1)}

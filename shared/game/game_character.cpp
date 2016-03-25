@@ -1102,11 +1102,11 @@ namespace wowpp
 		m_name = name;
 	}
 
-	void GameCharacter::addSpell(const proto::SpellEntry &spell)
+	bool GameCharacter::addSpell(const proto::SpellEntry &spell)
 	{
 		if (hasSpell(spell.id()))
 		{
-			return;
+			return false;
 		}
 
 		// Evaluate parry and block spells
@@ -1146,6 +1146,8 @@ namespace wowpp
 		{
 			updateTalentPoints();
 		}
+
+		return true;
 	}
 
 	bool GameCharacter::removeSpell(const proto::SpellEntry &spell)
