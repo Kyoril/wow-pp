@@ -689,8 +689,8 @@ namespace wowpp
 					zones_count,
 					str_count;
 			UInt32 	zoneids[10];
-			String 	player_name;
-			String 	guild_name;
+			std::string 	player_name;
+			std::string 	guild_name;
 		};
 
 		io::Reader &operator>>(io::Reader &r, WhoListRequest &out_whoList);

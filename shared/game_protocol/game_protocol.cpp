@@ -4139,8 +4139,8 @@ namespace wowpp
 			}
 			bool who(io::Reader &packet, game::WhoListRequest &out_wholist)
 			{
-				return packet;
-					//>> out_wholist;
+				return packet
+					>> out_wholist;
 			}
 
 			io::Reader &operator>>(io::Reader &r, game::WhoListRequest &out_whoList)
@@ -4148,8 +4148,8 @@ namespace wowpp
 				r
 				>> io::read<NetUInt32>(out_whoList.level_min)
 				>> io::read<NetUInt32>(out_whoList.level_max)
-				>> io::read_string(out_whoList.player_name)
-				>> io::read_string(out_whoList.guild_name)
+				//>> io::read_string(out_whoList.player_name)
+				//>> io::read_string(out_whoList.guild_name)
 				>> io::read<NetUInt32>(out_whoList.racemask)
 				>> io::read<NetUInt32>(out_whoList.classmask)
 				>> io::read<NetUInt32>(out_whoList.zones_count);
