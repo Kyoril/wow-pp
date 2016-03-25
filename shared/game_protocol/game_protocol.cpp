@@ -3336,7 +3336,7 @@ namespace wowpp
 			{
 				int size = response.names.size();
 				out_packet.start(game::server_packet::WhoResponse);
-				for (int i = size; i >= 0; i--)
+				for (int i = size; i > 0; i--)
 				{
 					out_packet << io::write<NetUInt32>(matchcount);
 					out_packet << io::write<NetUInt32>(displaycount);
@@ -4137,41 +4137,42 @@ namespace wowpp
 					>> io::read<NetUInt64>(out_guid)
 					>> io::read<NetUInt32>(out_timeSkipped);
 			}
-			bool who(io::Reader &packet, game::WhoListRequest &out_wholist)
+
+			bool who(io::Reader &packet, WhoListRequest &out_whoList)
 			{
 				return packet
-					>> out_wholist;
+					   >> out_whoList;
 			}
 
-			io::Reader &operator>>(io::Reader &r, game::WhoListRequest &out_whoList)
+		}
+		io::Reader &operator>>(io::Reader &r, WhoListRequest &out_whoList)
+		{
+			r
+			>> io::read<NetUInt32>(out_whoList.level_min)
+			>> io::read<NetUInt32>(out_whoList.level_max)
+			>> io::read_string(out_whoList.player_name)
+			>> io::read_string(out_whoList.guild_name)
+			>> io::read<NetUInt32>(out_whoList.racemask)
+			>> io::read<NetUInt32>(out_whoList.classmask)
+			>> io::read<NetUInt32>(out_whoList.zones_count);
+
+			for (UInt32 i = 0; i < out_whoList.zones_count; ++i)
 			{
-				r
-				>> io::read<NetUInt32>(out_whoList.level_min)
-				>> io::read<NetUInt32>(out_whoList.level_max)
-				//>> io::read_string(out_whoList.player_name)
-				//>> io::read_string(out_whoList.guild_name)
-				>> io::read<NetUInt32>(out_whoList.racemask)
-				>> io::read<NetUInt32>(out_whoList.classmask)
-				>> io::read<NetUInt32>(out_whoList.zones_count);
-
-				for (UInt32 i = 0; i < out_whoList.zones_count; ++i)
-				{
-					UInt32 temp;
-					r >> temp;
-					out_whoList.zoneids[i] = temp;
-				}
-
-				r
-				>>out_whoList.str_count;
-
-				for (UInt32 i = 0; i < out_whoList.str_count; ++i)
-				{
-					r >> io::read_string(out_whoList.player_name);
-				}
-
-				out_whoList.guild_name = out_whoList.player_name;
-				return r;
+				UInt32 temp;
+				r >> temp;
+				out_whoList.zoneids[i] = temp;
 			}
+
+			r
+			>>out_whoList.str_count;
+
+			for (UInt32 i = 0; i < out_whoList.str_count; ++i)
+			{
+				r >> io::read_string(out_whoList.player_name);
+			}
+
+			out_whoList.guild_name = out_whoList.player_name;
+			return r;
 		}
 	}
 }

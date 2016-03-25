@@ -326,6 +326,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(VoiceSessionEnable, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(CharRename, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(QuestQuery, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(Who, game::session_status::LoggedIn)
 #undef WOWPP_HANDLE_PACKET
 
 			default:
@@ -2432,99 +2433,68 @@ namespace wowpp
 
 	void Player::handleWho(game::IncomingPacket & packet)
 	{
-		game::WhoListRequest out_wholist;
+		game::WhoListRequest out_whoList;
 		const auto &players = m_manager.getPlayers();
 		UInt32 matchcount = 0;
 		UInt32 displaycount = 0;
+		UInt32 lvl, class_, race, zone;
+		UInt8 gender;
 		game::whoResponse response;
+		String name, gname;
 
-		if (!(game::client_read::who(packet, out_wholist)))
+		if (!game::client_read::who(packet, out_whoList))
 		{
 			ILOG("Who Request does not match!");
 			return;
 		}
 
-		if (out_wholist.zones_count > 10 || out_wholist.str_count > 4)
+		if (out_whoList.zones_count > 10 || out_whoList.str_count > 4)
 		{
 			//broken
 			return;
 		}
-		for (int i=0; i<10;i++) {
-			for (std::vector<const std::unique_ptr<Player>>::iterator it = players.begin(); it != players.end(); ++it) {
-				if (0 != (*it)->getGameCharacter()) {
-					continue;
-				}
-				UInt32 lvl = (*it)->getGameCharacter()->getLevel();
-				if (lvl < out_wholist.level_min || lvl > out_wholist.level_max) {
-					continue;
-				}
-
-				UInt32 class_ = (*it)->getGameCharacter()->getClass();
-				if (class_ != out_wholist.classmask) {
-					continue;
-				}
-
-				UInt32 race = (*it)->getGameCharacter()->getRace();
-				if (race != out_wholist.racemask) {
-					continue;
-				}
-
-				UInt32 zone = (*it)->getGameCharacter()->getZone();
-				UInt8 gender = (*it)->getGameCharacter()->getGender();
-
-				bool show = true;
-
-				for (UInt32 i = 0; i < out_wholist.zones_count; i++) {
-					if (out_wholist.zoneids[i] == zone) {
-						show = true;
-						break;
-					}
-					show = false;
-				}
-
-				if (!show) {
-					continue;
-				}
-
-				String name = (*it)->getGameCharacter()->getName();
-
-				bool s_show = true;
-
-				if (out_wholist.str_count == 1) {
-					for (UInt32 i = 0; i < out_wholist.str_count; i++) {
-						if (name == out_wholist.player_name) {
-							s_show = true;
-							break;
-						}
-						s_show = false;
-					}
-				}
-				if (!s_show) {
-					continue;
-				}
-
-				matchcount++;
-
-				if (matchcount > 49) {
-					continue;
-				}
-
-				displaycount++;
-				String gname = "test";
-
-
-				response.lvl.push_back(lvl);
-				response.classes.push_back(class_);
-				response.races.push_back(race);
-				response.genders.push_back(gender);
-				response.zones.push_back(zone);
-
+		for (std::vector<const std::unique_ptr<Player>>::iterator it = players.begin(); it != players.end(); ++it)
+		{
+			if (0 == (*it)->getGameCharacter())
+			{
+				//no game char
+				return;
 			}
+
+
+			if ( (*it) ->getGameCharacter()->getName() == out_whoList.player_name || (*it) ->getGameCharacter()->getLevel() >= out_whoList.level_min || (*it) ->getGameCharacter()->getLevel() <= out_whoList.level_max )
+			{
+				lvl = (*it) ->getGameCharacter()->getLevel();
+				class_ = (*it) ->getGameCharacter()->getClass();
+				race = (*it) ->getGameCharacter()->getRace();
+				gender = (*it) ->getGameCharacter()->getGender();
+				zone = (*it) ->getGameCharacter()->getZone();
+				name = (*it) ->getGameCharacter()->getName();
+			}
+
+
+
+			matchcount++;
+			if (matchcount > 49)
+			{
+				continue;
+			}
+			displaycount++;
+			String gname = "test";
+			response.lvl.push_back(lvl);
+			response.classes.push_back(class_);
+			response.races.push_back(race);
+			response.genders.push_back(gender);
+			response.zones.push_back(zone);
+			response.names.push_back(name);
+			response.g_names.push_back(name);
 		}
+
 		sendPacket(
 				std::bind(game::server_write::WhoRequestResponse, std::placeholders::_1, response, matchcount, displaycount));
 
 	}
+
 
 
 }

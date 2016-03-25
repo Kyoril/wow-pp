@@ -693,7 +693,6 @@ namespace wowpp
 			std::string 	guild_name;
 		};
 
-		io::Reader &operator>>(io::Reader &r, WhoListRequest &out_whoList);
 
 		struct whoResponse final
 		{
@@ -705,6 +704,8 @@ namespace wowpp
 			std::vector<UInt32> zones;
 			std::vector<UInt8> genders;
 		};
+
+		io::Reader &operator>>(io::Reader &r, WhoListRequest &out_whoList);
 
 		namespace client_read
 		{
@@ -1234,10 +1235,9 @@ namespace wowpp
 				UInt32 &out_timeSkipped
 				);
 
-			bool who(
-				io::Reader &packet,
-				WhoListRequest &outwholist
-				);
+			bool who(io::Reader &packet, WhoListRequest &out_whoList);
+
+
 		};
 
 		namespace server_write
