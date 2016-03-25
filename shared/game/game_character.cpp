@@ -505,6 +505,15 @@ namespace wowpp
 			}
 		}
 
+		if (entry->rewardspellcast())
+		{
+			// TODO: Maybe we should make the quest giver cast the spell, if it's a unit
+			SpellTargetMap targetMap;
+			targetMap.m_unitTarget = getGuid();
+			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+			castSpell(std::move(targetMap), entry->rewardspellcast(), -1, 0, true);
+		}
+
 		// Quest was rewarded
 		it->second.status = game::quest_status::Rewarded;
 		questDataChanged(quest, it->second);
