@@ -884,6 +884,45 @@ namespace wowpp
 			m_ui->questMethodField->setText(QString("%1").arg(m_selectedQuest->method()));
 			m_ui->questMinLevelField->setText(QString("%1").arg(m_selectedQuest->minlevel()));
 			m_ui->questLevelField->setText(QString("%1").arg(m_selectedQuest->questlevel()));
+			m_ui->questTimerField->setText(QString("%1 sec.").arg(m_selectedQuest->timelimit()));
+			m_ui->questPlayerField->setText(QString("%1").arg(m_selectedQuest->suggestedplayers()));
+
+			const std::map<UInt32, QString> questTypes = { 
+				{1, "Group"}, 
+				{21, "Life"}, 
+				{41, "PvP"}, 
+				{62, "Raid"}, 
+				{81, "Dungeon"}, 
+				{82, "World Event"}, 
+				{83, "Legendary"}, 
+				{84, "Escort"}, 
+				{85, "Heroic"} 
+			};
+
+			auto typeIt = questTypes.find(m_selectedQuest->type());
+			if (typeIt != questTypes.end())
+			{
+				m_ui->lineEdit_5->setText(typeIt->second);
+			}
+			else 
+			{
+				m_ui->lineEdit_5->setText(m_selectedQuest->type() == 0 ? "None" : "UNKNOWN");
+			}
+
+			for (size_t i = 1; i <= 13; ++i)
+			{
+				QCheckBox *box = m_ui->questFlagsBox->findChild<QCheckBox*>(QString("quest_flag_%1").arg(i));
+				if (box)
+				{
+					const bool hasAttribute = (m_selectedQuest->flags() & (1 << (i - 1))) != 0;
+					box->setChecked(hasAttribute);
+				}
+			}
+			
+			const auto *srcItem = m_selectedQuest->srcitemid() ?
+				m_application.getProject().items.getById(m_selectedQuest->srcitemid()) : nullptr;
+			m_ui->questSourceItemButton->setText(
+				QString("%1").arg(srcItem ? QString("%1x %2 (%3)").arg(m_selectedQuest->srcitemcount()).arg(srcItem->name().c_str()).arg(srcItem->id()) : "NONE"));
 
 			m_ui->questDetailsTextField->setText(m_selectedQuest->detailstext().c_str());
 			m_ui->questObjectivesTextField->setText(m_selectedQuest->objectivestext().c_str());
@@ -971,7 +1010,7 @@ namespace wowpp
 				}
 				if (spellcast)
 				{
-					treeitem->setText(3, QString("%1 (%2)").arg(spellcast->name().c_str()).arg(spellcast->id()));
+					treeitem->setText(4, QString("%1 (%2)").arg(spellcast->name().c_str()).arg(spellcast->id()));
 				}
 				treeitem->setText(5, entry.text().c_str());
 
@@ -1532,7 +1571,7 @@ namespace wowpp
 		void ObjectEditor::on_actionImport_Quests_triggered()
 		{
 			ImportTask task;
-			task.countQuery = "SELECT COUNT(*) FROM `quest_template`;";
+			task.countQuery = "SELECT COUNT(*) FROM `wowpp_quests`;";
 			task.selectQuery = "SELECT `entry`, `Title`, `Method`, `MinLevel`, `QuestLevel`, `Details`, `Objectives`,`OfferRewardText`,`RequestItemsText`,`EndText`, "
 				"`RewChoiceItemId1`, `RewChoiceItemCount1`, `RewChoiceItemId2`, `RewChoiceItemCount2`,`RewChoiceItemId3`, `RewChoiceItemCount3`,`RewChoiceItemId4`, `RewChoiceItemCount4`, `RewChoiceItemId5`, `RewChoiceItemCount5`, `RewChoiceItemId6`, `RewChoiceItemCount6`,"
 				"`RewItemId1`, `RewItemCount1`, `RewItemId2`, `RewItemCount2`,`RewItemId3`, `RewItemCount3`,`RewItemId4`, `RewItemCount4`,"
@@ -1545,7 +1584,7 @@ namespace wowpp
 				"`PrevQuestId`, `NextQuestId`, `ExclusiveGroup`, `NextQuestInChain`,"
 				"`QuestFlags`, `SpecialFlags`, `Type`, `ZoneOrSort`, `SuggestedPlayers`, `LimitTime`, `SrcItemId`, `SrcItemCount`, `SrcSpell`, `CharTitleId`,"
 				"`PointMapId`, `PointX`, `PointY`, `PointOpt`, `RequiredRaces`, `RequiredClasses`, `RequiredSkill`, `RequiredSkillValue`"
-				" FROM `quest_template` ORDER BY `entry`;";
+				" FROM `wowpp_quests` ORDER BY `entry`;";
 			task.beforeImport = [this]() {
 				m_application.getProject().quests.clear();
 			};
