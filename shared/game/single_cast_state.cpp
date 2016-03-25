@@ -936,34 +936,38 @@ namespace wowpp
 			return;
 		}
 
-		GameUnit &caster = m_cast.getExecuter();
-		std::vector<GameUnit *> targets;
-		std::vector<game::VictimState> victimStates;
-		std::vector<game::HitInfo> hitInfos;
-		std::vector<float> resists;
-		m_attackTable.checkSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
-
-		for (UInt32 i = 0; i < targets.size(); i++)
+		GameUnit *unitTarget = nullptr;
+		if (!m_target.resolvePointers(
+			*m_cast.getExecuter().getWorldInstance(),
+			&unitTarget,
+			nullptr,
+			nullptr,
+			nullptr))
 		{
-			GameUnit *targetUnit = targets[i];
-			m_affectedTargets.insert(targetUnit->shared_from_this());
+			return;
+		}
 
-			if (targetUnit->isGameCharacter())
+		if (!unitTarget)
+		{
+			return;
+		}
+
+		m_affectedTargets.insert(unitTarget->shared_from_this());
+		if (unitTarget->isGameCharacter())
+		{
+			auto *character = reinterpret_cast<GameCharacter*>(unitTarget);
+			if (character->addSpell(*spell))
 			{
-				auto *character = reinterpret_cast<GameCharacter*>(targetUnit);
-				if (character->addSpell(*spell))
+				// Activate passive spell if it is one
+				if (spell->attributes(0) & game::spell_attributes::Passive)
 				{
-					// Activate passive spell if it is one
-					if (spell->attributes(0) & game::spell_attributes::Passive)
-					{
-						SpellTargetMap targetMap;
-						targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
-						targetMap.m_unitTarget = character->getGuid();
-						character->castSpell(std::move(targetMap), effect.triggerspell(), -1, 0, true);
-					}
-
-					// TODO: Send packets
+					SpellTargetMap targetMap;
+					targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+					targetMap.m_unitTarget = character->getGuid();
+					character->castSpell(std::move(targetMap), effect.triggerspell(), -1, 0, true);
 				}
+
+				// TODO: Send packets
 			}
 		}
 	}

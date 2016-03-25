@@ -1147,6 +1147,9 @@ namespace wowpp
 			updateTalentPoints();
 		}
 
+		// Fire signal
+		spellLearned(spell);
+
 		return true;
 	}
 

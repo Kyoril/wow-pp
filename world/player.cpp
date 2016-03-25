@@ -551,6 +551,10 @@ namespace wowpp
 
 		// Notify realm about this for post-spawn packets
 		m_realmConnector.sendCharacterSpawnNotification(m_character->getGuid());
+
+		// Subscribe for spell notifications
+		m_onSpellLearned = m_character->spellLearned.connect(
+			std::bind(&Player::onSpellLearned, this, std::placeholders::_1));
 	}
 
 	void Player::onDespawn()
@@ -1476,6 +1480,13 @@ namespace wowpp
 	{
 		sendProxyPacket(
 			std::bind(game::server_write::destroyObject, std::placeholders::_1, item->getGuid(), false));
+	}
+
+	void Player::onSpellLearned(const proto::SpellEntry & spell)
+	{
+		ILOG("SPELL LEARNED: " << spell.name());
+		sendProxyPacket(
+			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spell.id()));
 	}
 
 	void Player::handleRepopRequest(game::Protocol::IncomingPacket &packet)
@@ -2441,8 +2452,6 @@ namespace wowpp
 			m_character->castSpell(std::move(targetMap), spellId);
 		}
 
-		sendProxyPacket(
-			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spellId));
 		sendProxyPacket(
 			std::bind(game::server_write::trainerBuySucceeded, std::placeholders::_1, npcGuid, spellId));
 	}

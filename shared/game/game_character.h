@@ -631,6 +631,8 @@ namespace wowpp
 		boost::signals2::signal<void(SpellModType, UInt8, SpellModOp, Int32)> spellModChanged;
 		/// Fired when the character interacts with a game object.
 		boost::signals2::signal<void(WorldObject &)> objectInteraction;
+		/// Fired when a new spell was learned.
+		boost::signals2::signal<void(const proto::SpellEntry &)> spellLearned;
 
 	public:
 

@@ -247,6 +247,8 @@ namespace wowpp
 		void onItemUpdated(std::shared_ptr<GameItem> item, UInt16 slot);
 		/// Executed when an item instance was destroyed.
 		void onItemDestroyed(std::shared_ptr<GameItem> item, UInt16 slot);
+		/// Executed when a new spell was learned.
+		void onSpellLearned(const proto::SpellEntry &spell);
 
 	private:
 
@@ -263,6 +265,7 @@ namespace wowpp
 		boost::signals2::scoped_connection m_onRootUpdate, m_onStunUpdate, m_onCooldownEvent, m_questChanged, m_questKill;
 		boost::signals2::scoped_connection m_itemCreated, m_itemUpdated, m_itemDestroyed, m_objectInteraction;
 		boost::signals2::scoped_connection m_onLootCleared, m_onLootInvalidate, m_onLootInspect, m_spellModChanged;
+		boost::signals2::scoped_connection m_onSpellLearned;
 		AttackSwingError m_lastError;
 		UInt32 m_lastFallTime;
 		float m_lastFallZ;

@@ -594,9 +594,6 @@ namespace wowpp
 			targetMap.m_unitTarget = character->getGuid();
 			character->castSpell(std::move(targetMap), spellId);
 		}
-
-		player->sendProxyPacket(
-			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spellId));
 	}
 
 	void RealmConnector::handleProxyPacket(pp::Protocol::IncomingPacket &packet)
