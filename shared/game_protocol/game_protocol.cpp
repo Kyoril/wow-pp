@@ -3336,7 +3336,7 @@ namespace wowpp
 			{
 				int size = response.names.size();
 				out_packet.start(game::server_packet::WhoResponse);
-				for (int i = size; i > 0; i--)
+				for (int i = 0; i < size; i++)
 				{
 					out_packet << io::write<NetUInt32>(matchcount);
 					out_packet << io::write<NetUInt32>(displaycount);

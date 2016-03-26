@@ -2458,28 +2458,38 @@ namespace wowpp
 			if (0 == (*it)->getGameCharacter())
 			{
 				//no game char
-				return;
+				continue;
+			}
+
+			String own_name=this->getGameCharacter()->getName();
+			lvl=(*it) ->getGameCharacter()->getLevel();
+			name = (*it) ->getGameCharacter()->getName();
+
+			if (name == own_name)
+			{
+				continue;
 			}
 
 
-			if ( (*it) ->getGameCharacter()->getName() == out_whoList.player_name || (*it) ->getGameCharacter()->getLevel() >= out_whoList.level_min || (*it) ->getGameCharacter()->getLevel() <= out_whoList.level_max )
+			if ( (*it) ->getGameCharacter()->getName() == out_whoList.player_name || (lvl >= out_whoList.level_min && lvl <= out_whoList.level_max ))
 			{
-				lvl = (*it) ->getGameCharacter()->getLevel();
 				class_ = (*it) ->getGameCharacter()->getClass();
 				race = (*it) ->getGameCharacter()->getRace();
 				gender = (*it) ->getGameCharacter()->getGender();
 				zone = (*it) ->getGameCharacter()->getZone();
-				name = (*it) ->getGameCharacter()->getName();
+				
+				matchcount++;
+				displaycount++;
 			}
 
 
 
-			matchcount++;
+
 			if (matchcount > 49)
 			{
 				continue;
 			}
-			displaycount++;
+
 			String gname = "test";
 			response.lvl.push_back(lvl);
 			response.classes.push_back(class_);
