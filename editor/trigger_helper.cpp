@@ -27,9 +27,19 @@ namespace wowpp
 {
 	namespace editor
 	{
-		QString getTriggerEventText(UInt32 e)
+		QString getTriggerEventData(const proto::TriggerEvent &e, UInt32 i, bool link/* = false*/)
 		{
-			switch (e)
+			QString temp = (link ? "<a href=\"event-data-%2\" style=\"color: #ffae00;\">%1</a>" : "%1");
+
+			if (static_cast<int>(i) >= e.data_size())
+				return temp.arg(0).arg(i);
+
+			return temp.arg(e.data(i)).arg(i);
+		}
+
+		QString getTriggerEventText(const proto::TriggerEvent &e, bool withLinks/* = false*/)
+		{
+			switch (e.type())
 			{
 			case trigger_event::OnAggro:
 				return "Owning unit enters combat";
@@ -48,11 +58,14 @@ namespace wowpp
 			case trigger_event::OnSpawn:
 				return "Owner spawned";
 			case trigger_event::OnReset:
-				return "Owning Unit resets";
+				return "Owning unit resets";
 			case trigger_event::OnReachedHome:
 				return "Owning unit reached home after reset";
 			case trigger_event::OnInteraction:
 				return "Player interacted with owner";
+			case trigger_event::OnHealthDroppedBelow:
+				return QString("Owning units health dropped below %1%")
+					.arg(getTriggerEventData(e, 0, withLinks));
 			default:
 				return "(INVALID EVENT)";
 			}

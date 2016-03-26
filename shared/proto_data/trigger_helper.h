@@ -50,6 +50,9 @@ namespace wowpp
 			/// Executed when a player is interacting with this object. Only works on GameObjects right now, but could also be used
 			/// for npc interaction.
 			OnInteraction = 10,
+			/// Executed when a units health drops below a certain percentage.
+			/// Data: <HEALTH_PERCENTAGE:0-100>;
+			OnHealthDroppedBelow = 11,
 
 			Invalid,
 			Count_ = Invalid
@@ -84,6 +87,9 @@ namespace wowpp
 			/// Delays the following actions.
 			/// Targets: NONE; Data: <DELAY-TIME-MS>; Texts: NONE;
 			Delay = 7,
+			/// Makes a unit move towards a specified position.
+			/// Targets: UNIT; Data: <X>, <Y>, <Z>; Texts: NONE;
+			MoveTo = 8,
 
 			Invalid,
 			Count_ = Invalid

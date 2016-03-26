@@ -182,9 +182,9 @@ namespace wowpp
 			const auto *triggerEntry = getProject().triggers.getById(triggerId);
 			if (triggerEntry)
 			{
-				for (const auto &triggerEvent : triggerEntry->events())
+				for (const auto &triggerEvent : triggerEntry->newevents())
 				{
-					if (triggerEvent == e)
+					if (triggerEvent.type() == e)
 					{
 						objectTrigger(std::cref(*triggerEntry), std::ref(*this));
 					}

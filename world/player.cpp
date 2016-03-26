@@ -1484,7 +1484,6 @@ namespace wowpp
 
 	void Player::onSpellLearned(const proto::SpellEntry & spell)
 	{
-		ILOG("SPELL LEARNED: " << spell.name());
 		sendProxyPacket(
 			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spell.id()));
 	}
@@ -1815,9 +1814,6 @@ namespace wowpp
 			targets.m_unitTarget = m_character->getGuid();
 			m_character->castSpell(std::move(targets), spell->id());
 		}
-
-		sendProxyPacket(
-			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spell->id()));
 	}
 
 	void Player::handleUseItem(game::Protocol::IncomingPacket &packet)

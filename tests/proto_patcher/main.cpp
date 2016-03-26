@@ -1116,133 +1116,20 @@ namespace wowpp
 		return true;
 	}
 
-	static bool importItemRanges(proto::Project &project, MySQL::Connection &conn)
+#if 0
+	static void fixTriggerEvents(proto::Project &project)
 	{
-		for (auto &item : *project.items.getTemplates().mutable_entry())
+		for (auto &trigger : *project.triggers.getTemplates().mutable_entry())
 		{
-			item.clear_rangedrange();
-		}
-
-		wowpp::MySQL::Select select(conn, "SELECT `entry`,`RangedModRange` FROM `tbcdb`.`item_template` WHERE `RangedModRange` != 0;");
-		if (select.success())
-		{
-			wowpp::MySQL::Row row(select);
-			while (row)
+			for (auto &e : trigger.events())
 			{
-				// Get row data
-				UInt32 entry = 0;
-				float range = 0.0f;
-				row.getField(0, entry);
-				row.getField(1, range);
-
-				auto * item = project.items.getById(entry);
-				if (!item)
-				{
-					WLOG("Unable to find item by id: " << entry);
-					row = row.next(select);
-					continue;
-				}
-
-				item->set_rangedrange(range);
-				row = row.next(select);
+				auto *added = trigger.add_newevents();
+				added->set_type(e);
+				added->clear_data();
 			}
 		}
-		else
-		{
-			ELOG("Error: " << conn.getErrorMessage());
-		}
-
-		return true;
 	}
-
-	static bool fixDeadminesObjects(proto::Project &project)
-	{
-		// First lets find the deadmines map
-		auto *map = project.maps.getById(36);
-		if (!map)
-		{
-			WLOG("Could not find deadmines map");
-			return false;
-		}
-
-		// Now lets iterate through all object spawns and see if we find some which we know
-		for (auto &spawn : *map->mutable_objectspawns())
-		{
-			switch (spawn.objectentry())
-			{
-				case 16399:	// Foundry Door
-					spawn.set_name("Gilnid - Door");
-					break;
-				case 16397:	// Iron Clad Door
-					spawn.set_name("Defias Cannon - Door");
-					break;
-				case 16398:	// Defias Cannon
-					spawn.set_name("Defias Cannon");
-					break;
-				default:	// We don't care
-					break;
-			}
-		}
-
-		for (auto &spawn : *map->mutable_unitspawns())
-		{
-			switch (spawn.unitentry())
-			{
-				case 646:	// Mr. Smite
-					spawn.set_name("Mr. Smite");
-					break;
-				default:	// We don't care
-					break;
-			}
-		}
-
-		return true;
-	}
-
-	static bool importSpellAffects(proto::Project &project, MySQL::Connection &conn)
-	{
-		wowpp::MySQL::Select select(conn, "SELECT `entry`,`effectId`,`SpellFamilyMask` FROM `tbcdb`.`spell_affect`;");
-		if (select.success())
-		{
-			wowpp::MySQL::Row row(select);
-			while (row)
-			{
-				// Get row data
-				UInt32 id = 0, effect = 0;
-				UInt64 family = 0;
-				row.getField(0, id);
-				row.getField(1, effect);
-				row.getField(2, family);
-
-				auto * spell = project.spells.getById(id);
-				if (!spell)
-				{
-					WLOG("Unable to find spell by id: " << id);
-					row = row.next(select);
-					continue;
-				}
-
-				if (UInt32(spell->effects_size()) <= effect)
-				{
-					WLOG("Spell " << spell->id() << " has only " << spell->effects_size() << " effects, but effect #" << effect << " was requested");
-					if (spell->effects_size() > 0)
-					{
-						effect = spell->effects_size() - 1;
-					}
-					else
-					{
-						row = row.next(select);
-						continue;
-					}
-				}
-
-				spell->mutable_effects(effect)->set_affectmask(family);
-				row = row.next(select);
-			}
-		}
-
-		return true;
-	}
+#endif
 }
 
 /// Procedural entry point of the application.
@@ -1317,53 +1204,19 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	if (!importItemRanges(protoProject, connection))
-	{
-		ELOG("Could not import item ranges");
-		return 0;
-	}
-	/*
-	if (!importSpellAffects(protoProject, connection))
-	{
-		ELOG("Could not import spell affect masks");
-		return 0;
-	}
-
-	if (!importSpellMechanics(protoProject, connection))
-	{
-		ELOG("Failed to import spell mechanics");
-		return 1;
-	}
-
-	if (!importCategories(protoProject, connection))
-	{
-		ELOG("Failed to import spell categories");
-		return 1;
-	}
-	
-	if (!importQuestRelations(protoProject, connection))
-	{
-		ELOG("Failed to import quest relations");
-		return 1;
-	}
-	*/
 	if (!addSpellLinks(protoProject))
 	{
 		ELOG("Failed to add spell links");
 		return 1;
 	}
-	/*
-	if (!importDispelData(protoProject, connection))
-	{
-		ELOG("Failed to import spell dispel data");
-		return 1;
-	}
-	*/
+
 	if (!importTrainerLinks(protoProject, connection))
 	{
 		ELOG("Failed to import trainer links");
 		return 1;
 	}
+
+	//fixTriggerEvents(protoProject);
 
 	// Save project
 	if (!protoProject.save(configuration.dataPath))

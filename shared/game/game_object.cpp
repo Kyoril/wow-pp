@@ -520,7 +520,7 @@ namespace wowpp
 	{
 		return true;
 	}
-
+	
 	void GameObject::onWorldInstanceDestroyed()
 	{
 		// We are no longer part of the old world instance

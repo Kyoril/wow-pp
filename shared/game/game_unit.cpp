@@ -1348,8 +1348,6 @@ namespace wowpp
 			threatened(*attacker, threat);
 		}
 
-		takenDamage(attacker, damage);
-
 		if (health < damage) {
 			health = 0;
 		}
@@ -1358,6 +1356,8 @@ namespace wowpp
 		}
 
 		setUInt32Value(unit_fields::Health, health);
+		takenDamage(attacker, damage);
+
 		if (health < 1)
 		{
 			// Call function and signal
