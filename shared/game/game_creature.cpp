@@ -182,6 +182,12 @@ namespace wowpp
 		}
 		setModifierValue(unit_mods::Armor, unit_mod_type::BaseValue, entry.armor());
 
+		// Apply resistances
+		for (UInt32 i = 0; i < 6; ++i)
+		{
+			setModifierValue(static_cast<UnitMods>(unit_mods::ResistanceStart + i), unit_mod_type::BaseValue, entry.resistances(i));
+		}
+
 		// Setup new entry
 		m_entry = &entry;
 

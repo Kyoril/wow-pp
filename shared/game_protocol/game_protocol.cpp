@@ -3329,6 +3329,22 @@ namespace wowpp
 					<< io::write<NetUInt32>(timeSkipped);
 				out_packet.finish();
 			}
+			void spellLogMiss(game::OutgoingPacket & out_packet, UInt32 spellID, UInt64 caster, UInt8 unknown, const std::map<UInt64, game::SpellMissInfo>& missedTargetGUIDs)
+			{
+				out_packet.start(game::server_packet::SpellLogMiss);
+				out_packet
+					<< io::write<NetUInt32>(spellID)
+					<< io::write<NetUInt64>(caster)
+					<< io::write<NetUInt8>(unknown)
+					<< io::write<NetUInt32>(missedTargetGUIDs.size());
+				for (auto &pair : missedTargetGUIDs)
+				{
+					out_packet
+						<< io::write<NetUInt64>(pair.first)
+						<< io::write<NetUInt8>(pair.second);
+				}
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

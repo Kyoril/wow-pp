@@ -1454,7 +1454,7 @@ namespace wowpp
 		if (isCreature())
 		{
 			GameCreature& self = reinterpret_cast<GameCreature&>(*this);
-			return (self.getEntry().schoolimmunity() & (1 << school)) != 0;
+			return (self.getEntry().schoolimmunity() & school) != 0;
 		}
 		return false;
 	}
