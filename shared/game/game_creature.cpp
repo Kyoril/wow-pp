@@ -103,6 +103,10 @@ namespace wowpp
 	void GameCreature::setEntry(const proto::UnitEntry &entry)
 	{
 		const bool isInitialize = (m_entry == nullptr);
+		if (!isInitialize)
+		{
+			removeMechanicImmunity(m_entry->mechanicimmunity());
+		}
 
 		// Choose a level
 		UInt8 creatureLevel = entry.minlevel();
@@ -188,6 +192,7 @@ namespace wowpp
 		}
 
 		updateAllStats();
+		addMechanicImmunity(m_entry->mechanicimmunity());
 	}
 
 	float GameCreature::calcXpModifier(UInt32 attackerLevel) const

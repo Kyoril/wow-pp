@@ -116,7 +116,9 @@ namespace wowpp
 					.arg(getTriggerTargetName(action, withLinks)).arg(getTriggerActionString(action, 0, withLinks)).arg(getTriggerActionData(action, 0, withLinks));
 			case trigger_actions::CastSpell:
 				return QString("Unit - Make %1 cast spell %2 on %3")
-					.arg(getTriggerTargetName(action, withLinks)).arg(actionDataEntry(project.spells, action, 0, withLinks).arg(getTriggerTargetName(action, withLinks)));
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(actionDataEntry(project.spells, action, 0, withLinks))
+					.arg(getTriggerActionData(action, 1, withLinks));
 			case trigger_actions::SetSpawnState:
 				return QString("Unit - Set spawn state of %1 to %2")
 					.arg(getTriggerTargetName(action, withLinks)).arg(getTriggerActionData(action, 0, withLinks));
@@ -140,6 +142,24 @@ namespace wowpp
 		QString getTriggerActionData(const proto::TriggerAction &action, UInt32 i, bool link/* = false*/)
 		{
 			QString temp = (link ? "<a href=\"data-%2\" style=\"color: #ffae00;\">%1</a>" : "%1");
+
+			if (action.action() == trigger_actions::CastSpell && i == 1)
+			{
+				UInt32 target = (i >= UInt32(action.data_size()) ? 0 : action.data(i));
+				if (target >= trigger_spell_cast_target::Invalid)
+				{
+					return temp.arg("(INVALID TARGET)").arg(i);
+				}
+				else
+				{
+					static std::array<QString, trigger_spell_cast_target::Count_> entries = {
+						QString("(Caster)"),
+						QString("(Casters Target)")
+					};
+
+					return temp.arg(entries[target]).arg(i);
+				}
+			}
 
 			if (static_cast<int>(i) >= action.data_size())
 				return temp.arg(0).arg(i);

@@ -2150,16 +2150,16 @@ namespace wowpp
 
 	void GameUnit::addMechanicImmunity(UInt32 mechanic)
 	{
-		m_mechanicImmunity.optionalAdd(mechanic);
+		m_mechanicImmunity |= mechanic;
 	}
 
 	void GameUnit::removeMechanicImmunity(UInt32 mechanic)
 	{
-		m_mechanicImmunity.optionalRemove(mechanic);
+		m_mechanicImmunity &= ~mechanic;
 	}
 
 	bool GameUnit::isImmuneAgainstMechanic(UInt32 mechanic) const
 	{
-		return m_mechanicImmunity.contains(mechanic);
+		return mechanic != 0 && (m_mechanicImmunity & mechanic) != 0;
 	}
 }

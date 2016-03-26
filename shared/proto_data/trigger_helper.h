@@ -117,4 +117,18 @@ namespace wowpp
 			Count_ = Invalid
 		};
 	}
+
+	namespace trigger_spell_cast_target
+	{
+		enum Type
+		{
+			/// Target is the casting unit.
+			Caster = 0,
+			/// Target is the casting units target. Will fail if the unit does not have a current target.
+			CurrentTarget = 1,
+			
+			Invalid,
+			Count_ = Invalid
+		};
+	}
 }

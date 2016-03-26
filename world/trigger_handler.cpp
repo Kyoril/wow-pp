@@ -366,19 +366,20 @@ namespace wowpp
 
 	void TriggerHandler::handleCastSpell(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
-		if (!context.owner->isCreature())
-		{
-			ELOG("TRIGGER_ACTION_CAST_SPELL: Invalid owner - only units can cast spells");
-			return;
-		}
-
-		GameObject *target = getActionTarget(action, context.owner);
-		if (!target)
+		// Determine caster
+		GameObject *caster = getActionTarget(action, context.owner);
+		if (!caster)
 		{
 			ELOG("TRIGGER_ACTION_CAST_SPELL: No valid target found");
 			return;
 		}
+		if (!caster->isCreature() && !caster->isGameCharacter())
+		{
+			ELOG("TRIGGER_ACTION_CAST_SPELL: Caster has to be a unit");
+			return;
+		}
 
+		// Resolve spell id
 		const auto *spell = m_project.spells.getById(getActionData(action, 0));
 		if (!spell)
 		{
@@ -386,6 +387,31 @@ namespace wowpp
 			return;
 		}
 
+		// Determine spell target
+		GameObject *target = nullptr;
+		switch (getActionData(action, 0))
+		{
+			case trigger_spell_cast_target::Caster:
+				target = caster;
+				break;
+			case trigger_spell_cast_target::CurrentTarget:
+				// Type of caster already checked above
+				target = reinterpret_cast<GameUnit*>(caster)->getVictim();
+				break;
+			default:
+				ELOG("TRIGGER_ACTION_CAST_SPELL: Invalid spell cast target");
+				return;
+		}
+
+		if (!target)
+		{
+			// Do a warning here because this could also happen when the caster simply has no target, which
+			// is not always a bug, but could sometimes be intended behaviour (maybe we want to turn off this warning later).
+			WLOG("TRIGGER_ACTION_CAST_SPELL: Could not find target");
+			return;
+		}
+
+		// Create spell target map and cast that spell
 		SpellTargetMap targetMap;
 		if (target->isCreature() || target->isGameCharacter())
 		{
@@ -397,7 +423,7 @@ namespace wowpp
 			targetMap.m_targetMap = game::spell_cast_target_flags::Object;
 			targetMap.m_goTarget = target->getGuid();
 		}
-		reinterpret_cast<GameUnit*>(context.owner)->castSpell(std::move(targetMap), spell->id());
+		reinterpret_cast<GameUnit*>(caster)->castSpell(std::move(targetMap), spell->id());
 	}
 
 	UInt32 TriggerHandler::getActionData(const proto::TriggerAction &action, UInt32 index) const

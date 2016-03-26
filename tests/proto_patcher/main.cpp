@@ -775,6 +775,41 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importUnitMechanicImmunities(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `entry`,`mechanic_immune_mask` FROM `tbcdb`.`creature_template`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 entry = 0, mask = 0;
+				row.getField(0, entry);
+				row.getField(1, mask);
+
+				if (mask != 0)
+				{
+					// Find unit by id
+					auto * unit = project.units.getById(entry);
+					if (unit)
+					{
+						unit->set_mechanicimmunity(mask);
+					}
+					else
+					{
+						WLOG("Unable to find unit by id: " << entry);
+					}
+				}
+
+				// Next row
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
 	static bool importCategories(proto::Project &project, MySQL::Connection &conn)
 	{
 		project.spellCategories.clear();
@@ -1213,6 +1248,12 @@ int main(int argc, char* argv[])
 	if (!importTrainerLinks(protoProject, connection))
 	{
 		ELOG("Failed to import trainer links");
+		return 1;
+	}
+
+	if (!importUnitMechanicImmunities(protoProject, connection))
+	{
+		ELOG("Failed to import unit mechanic immunities!");
 		return 1;
 	}
 

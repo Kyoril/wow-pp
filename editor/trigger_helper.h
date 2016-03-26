@@ -23,6 +23,7 @@
 
 #include "common/typedefs.h"
 #include "proto_data/project.h"
+#include "proto_data/trigger_helper.h"
 #include <QString>
 
 namespace wowpp

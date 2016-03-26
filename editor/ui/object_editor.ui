@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1745</width>
-    <height>1241</height>
+    <height>1404</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -605,6 +605,20 @@
                      <string>Happiness</string>
                     </property>
                    </item>
+                  </widget>
+                 </item>
+                 <item row="3" column="0">
+                  <widget class="QLabel" name="label_31">
+                   <property name="text">
+                    <string>Mechanic:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="1">
+                  <widget class="QLineEdit" name="spellMechanicField">
+                   <property name="readOnly">
+                    <bool>true</bool>
+                   </property>
                   </widget>
                  </item>
                 </layout>

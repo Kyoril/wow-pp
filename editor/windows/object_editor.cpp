@@ -498,6 +498,7 @@ namespace wowpp
 //			WOWPP_NUM_PROPERTY("Arcane Resistance", UInt32, UInt32Ref, armor, false);
 			WOWPP_MIN_MAX_PROPERTY("Loot Gold", UInt32, UInt32Ref, lootgold, false);
 			WOWPP_MIN_MAX_PROPERTY("Experience", UInt32, UInt32Ref, levelxp, false);
+			WOWPP_NUM_PROPERTY("Mechanic Immunity", UInt32, UInt32Ref, mechanicimmunity, false);
 
 #undef WOWPP_MIN_MAX_PROPERTY
 #undef WOWPP_STR_PROPERTY
@@ -644,6 +645,7 @@ namespace wowpp
 
 			m_ui->spellIdField->setText(QString::number(spell->id()));
 			m_ui->spellNameField->setText(spell->name().c_str());
+			m_ui->spellMechanicField->setText(QString::number(spell->mechanic()));
 
 			// Determine the cast time of this spell
 			Int64 castTime = spell->casttime();

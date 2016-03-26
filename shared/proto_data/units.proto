@@ -87,6 +87,7 @@ message UnitEntry {
 	repeated UnitSpellEntry creaturespells = 49;
 	repeated uint32 quests = 50;
 	repeated uint32 end_quests = 51;
+	optional uint32 mechanicimmunity = 52;
 }
 
 message Units {
