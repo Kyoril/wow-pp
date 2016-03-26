@@ -444,11 +444,15 @@ namespace wowpp
 				m_ui->lootToolButton->setDisabled(false);
 				m_ui->lootSimulatorButton->setDisabled(false);
 			}
-			
+
 			// Add unit properties
 #define WOWPP_NUM_PROPERTY(name, type, ref, prop, readonly) { \
 			auto getBinder = [unit]() -> type { return unit->prop(); }; \
 			auto setBinder = [unit](type value) { unit->set_##prop(value); }; \
+			m_properties.push_back(PropertyPtr(new NumericProperty(name, ref(getBinder, setBinder), readonly))); }
+#define WOWPP_INDEXED_NUM_PROPERTY(name, type, ref, prop, index, readonly) { \
+			auto getBinder = [unit]() -> type { return unit->prop(index); }; \
+			auto setBinder = [unit](type value) { unit->set_##prop(index, value); }; \
 			m_properties.push_back(PropertyPtr(new NumericProperty(name, ref(getBinder, setBinder), readonly))); }
 #define WOWPP_STR_PROPERTY(name, prop, readonly) { \
 			auto getBinder = [unit]() -> String { return unit->prop(); }; \
@@ -460,7 +464,7 @@ namespace wowpp
 			auto getMaxBinder = [unit]() -> type { return unit->max##prop(); }; \
 			auto setMaxBinder = [unit](type value) { unit->set_max##prop(value); }; \
 			m_properties.push_back(PropertyPtr(new MinMaxProperty(name, ref(getMinBinder, setMinBinder), ref(getMaxBinder, setMaxBinder), readonly))); }
-
+			
 			WOWPP_NUM_PROPERTY("Entry", UInt32, UInt32Ref, id, true);
 			WOWPP_STR_PROPERTY("Name", name, false);
 			WOWPP_STR_PROPERTY("Subname", subname, false);
@@ -490,15 +494,16 @@ namespace wowpp
 			WOWPP_NUM_PROPERTY("Unit Class", UInt32, UInt32Ref, unitclass, false);
 			WOWPP_NUM_PROPERTY("Rank", UInt32, UInt32Ref, rank, false);
 			WOWPP_NUM_PROPERTY("Armor", UInt32, UInt32Ref, armor, false);
-//			WOWPP_NUM_PROPERTY("Holy Resistance", UInt32, UInt32Ref, armor, false);
-//			WOWPP_NUM_PROPERTY("Fire Resistance", UInt32, UInt32Ref, armor, false);
-//			WOWPP_NUM_PROPERTY("Nature Resistance", UInt32, UInt32Ref, armor, false);
-//			WOWPP_NUM_PROPERTY("Frost Resistance", UInt32, UInt32Ref, armor, false);
-//			WOWPP_NUM_PROPERTY("Shadow Resistance", UInt32, UInt32Ref, armor, false);
-//			WOWPP_NUM_PROPERTY("Arcane Resistance", UInt32, UInt32Ref, armor, false);
+			WOWPP_INDEXED_NUM_PROPERTY("Holy Resistance", UInt32, UInt32Ref, resistances, 0, false);
+			WOWPP_INDEXED_NUM_PROPERTY("Fire Resistance", UInt32, UInt32Ref, resistances, 1, false);
+			WOWPP_INDEXED_NUM_PROPERTY("Nature Resistance", UInt32, UInt32Ref, resistances, 2, false);
+			WOWPP_INDEXED_NUM_PROPERTY("Frost Resistance", UInt32, UInt32Ref, resistances, 3, false);
+			WOWPP_INDEXED_NUM_PROPERTY("Shadow Resistance", UInt32, UInt32Ref, resistances, 4, false);
+			WOWPP_INDEXED_NUM_PROPERTY("Arcane Resistance", UInt32, UInt32Ref, resistances, 5, false);
 			WOWPP_MIN_MAX_PROPERTY("Loot Gold", UInt32, UInt32Ref, lootgold, false);
 			WOWPP_MIN_MAX_PROPERTY("Experience", UInt32, UInt32Ref, levelxp, false);
 			WOWPP_NUM_PROPERTY("Mechanic Immunity", UInt32, UInt32Ref, mechanicimmunity, false);
+			WOWPP_NUM_PROPERTY("School Immunity", UInt32, UInt32Ref, schoolimmunity, false);
 
 #undef WOWPP_MIN_MAX_PROPERTY
 #undef WOWPP_STR_PROPERTY
@@ -2031,6 +2036,62 @@ namespace wowpp
 				def->set_conditiontype(cond);
 				def->set_conditionvala(conda);
 				def->set_conditionvalb(condb);
+				return true;
+			};
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
+			dialog.exec();
+		}
+		void ObjectEditor::on_actionImport_Units_triggered()
+		{
+			ImportTask task;
+			task.countQuery = "SELECT COUNT(*) FROM `creature_template`;";
+			task.selectQuery = "SELECT `entry`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `mechanic_immune_mask` FROM `creature_template` ORDER BY `entry`;";
+			task.beforeImport = [this]() {
+			};
+			task.onImport = [this](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0;
+
+				UInt32 index = 0;
+				row.getField(index++, entry);
+
+				// Find creature
+				auto *unit = m_application.getProject().units.getById(entry);
+				if (!unit)
+				{
+					ELOG("Skipping unit " << entry << " as it couldn't be found!");
+					return true;
+				}
+
+				UInt32 schoolImmunity = 0;
+
+				// Import all resistances
+				for (int n = 0; n < unit->resistances_size(); ++n)
+				{
+					Int32 res = 0;
+					row.getField(index++, res);
+
+					if (res < 0)
+					{
+						// Immunity against this school
+						schoolImmunity |= (1 << (n+1));
+					}
+					else
+					{
+						// Apply resistance
+						unit->set_resistances(n, UInt32(res));
+					}
+				}
+
+				// Update school immunity
+				unit->set_schoolimmunity(schoolImmunity);
+
+				// Mechanic immunity
+				UInt32 mechanicImmunity = 0;
+				row.getField(index++, mechanicImmunity);
+				unit->set_mechanicimmunity(mechanicImmunity);
+
 				return true;
 			};
 
