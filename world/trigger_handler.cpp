@@ -388,8 +388,9 @@ namespace wowpp
 		}
 
 		// Determine spell target
+		UInt32 dataTarget = getActionData(action, 1);
 		GameObject *target = nullptr;
-		switch (getActionData(action, 0))
+		switch (dataTarget)
 		{
 			case trigger_spell_cast_target::Caster:
 				target = caster;
@@ -399,7 +400,7 @@ namespace wowpp
 				target = reinterpret_cast<GameUnit*>(caster)->getVictim();
 				break;
 			default:
-				ELOG("TRIGGER_ACTION_CAST_SPELL: Invalid spell cast target");
+				ELOG("TRIGGER_ACTION_CAST_SPELL: Invalid spell cast target value of " << dataTarget);
 				return;
 		}
 
