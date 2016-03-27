@@ -23,13 +23,14 @@
 
 #include "common/typedefs.h"
 #include "proto_data/project.h"
+#include "proto_data/trigger_helper.h"
 #include <QString>
 
 namespace wowpp
 {
 	namespace editor
 	{
-		QString getTriggerEventText(UInt32 e);
+		QString getTriggerEventText(const proto::TriggerEvent &e, bool link = false);
 
 		QString getTriggerTargetName(const proto::TriggerAction &action, bool link = false);
 

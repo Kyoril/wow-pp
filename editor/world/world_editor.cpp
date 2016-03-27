@@ -35,6 +35,8 @@
 #include "ogre_wrappers/ogre_dbc_file_manager.h"
 #include "game/map.h"
 #include "editor_application.h"
+#include "selected_creature_spawn.h"
+#include "windows/spawn_dialog.h"
 
 namespace wowpp
 {
@@ -66,7 +68,7 @@ namespace wowpp
 
 			// Spawn all entities
 			UInt32 i = 0;
-			for (const auto &spawn : m_map.unitspawns())
+			for (auto &spawn : *m_map.mutable_unitspawns())
 			{
 				const auto *unit = m_project.units.getById(spawn.unitentry());
 				assert(unit);
@@ -125,6 +127,8 @@ namespace wowpp
 				try
 				{
 					Ogre::Entity *ent = m_sceneMgr.createEntity("Spawn_" + Ogre::StringConverter::toString(i++), mesh);
+					ent->setUserAny(Ogre::Any(&spawn));
+
 					m_spawnEntities.push_back(ogre_utils::EntityPtr(ent));
 					if (textureId != 0)
 					{
@@ -271,10 +275,22 @@ namespace wowpp
 			m_camera.setFarClipDistance(533.3333f);
 			m_sceneMgr.setFog(Ogre::FOG_LINEAR, m_camera.getViewport()->getBackgroundColour(),
 				0.001f, 450.0f, 512.0f);
+
+			// Create transform widget
+			m_transformWidget.reset(new TransformWidget(
+				m_app.getSelection(),
+				m_sceneMgr,
+				m_camera));
+			m_transformWidget->setVisible(true);
+			m_transformWidget->setTransformMode(transform_mode::Translate);
 		}
 
 		WorldEditor::~WorldEditor()
 		{
+			// All selected objects should be from this editor instance, and we are about to destroy it
+			// So deselect all objects before, to prevent a crash on next selection
+			m_app.getSelection().clear();
+
             if (m_light)
             {
 				m_sceneMgr.destroyLight(m_light);
@@ -289,6 +305,8 @@ namespace wowpp
 
 		void WorldEditor::update(float delta)
 		{
+			m_transformWidget->update(&m_camera);
+
 			const Ogre::Vector3 &camPos = m_camera.getDerivedPosition();
 			float convertedX = (constants::MapWidth * 32.0f) + camPos.x;
 			float convertedY = (constants::MapWidth * 32.0f) + camPos.y;
@@ -452,22 +470,84 @@ namespace wowpp
 
 		void WorldEditor::onKeyPressed(const QKeyEvent *event)
 		{
+			m_transformWidget->onKeyPressed(event);
 		}
 
 		void WorldEditor::onKeyReleased(const QKeyEvent *event)
 		{
+			m_transformWidget->onKeyReleased(event);
 		}
 
 		void WorldEditor::onMousePressed(const QMouseEvent *event)
 		{
+			m_transformWidget->onMousePressed(event);
 		}
 
 		void WorldEditor::onMouseReleased(const QMouseEvent *event)
 		{
+			m_transformWidget->onMouseReleased(event);
 		}
 
 		void WorldEditor::onMouseMoved(const QMouseEvent *event)
 		{
+			m_transformWidget->onMouseMoved(event);
+		}
+
+		void WorldEditor::onDoubleClick(const QMouseEvent * e)
+		{
+			QPoint pos = e->pos();
+			Ogre::Ray mouseRay = m_camera.getCameraToViewportRay(
+				(Ogre::Real)pos.x() / m_camera.getViewport()->getActualWidth(),
+				(Ogre::Real)pos.y() / m_camera.getViewport()->getActualHeight());
+			Ogre::RaySceneQuery* pSceneQuery = m_sceneMgr.createRayQuery(mouseRay);
+			pSceneQuery->setSortByDistance(true);
+			Ogre::RaySceneQueryResult vResult = pSceneQuery->execute();
+			for (size_t ui = 0; ui < vResult.size(); ui++)
+			{
+				if (vResult[ui].movable)
+				{
+					if (vResult[ui].movable->getMovableType().compare("Entity") == 0)
+					{
+						const auto &any = ((Ogre::Entity*)vResult[ui].movable)->getUserAny();
+						if (!any.isEmpty())
+						{
+							auto *spawn = Ogre::any_cast<proto::UnitSpawnEntry*>(any);
+							if (spawn)
+							{
+								auto dialog = make_unique<SpawnDialog>(m_app, *spawn);
+								if (dialog->exec())
+								{
+									m_app.markAsChanged();
+								}
+							}
+						}
+					}
+				}
+			}
+			m_sceneMgr.destroyQuery(pSceneQuery);
+		}
+
+		void WorldEditor::onSelection(Ogre::Entity & entity)
+		{
+			m_app.getSelection().clear();
+
+			const auto &any = entity.getUserAny();
+			if (!any.isEmpty())
+			{
+				auto *spawn = Ogre::any_cast<proto::UnitSpawnEntry*>(any);
+				if (spawn)
+				{
+					m_app.getSelection().addSelected(
+						std::unique_ptr<SelectedCreatureSpawn>(new SelectedCreatureSpawn(
+							m_map,
+							[this]() {
+								m_app.markAsChanged();
+							},
+							entity,
+							*spawn)));
+
+				}
+			}
 		}
 	}
 }

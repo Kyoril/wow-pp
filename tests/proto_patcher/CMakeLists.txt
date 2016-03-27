@@ -36,7 +36,7 @@ add_precompiled_header(proto_patcher "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
 target_link_libraries(proto_patcher common log sql_wrapper mysql_wrapper proto_data virtual_directory)
 
 # Link dependency libraries
-target_link_libraries(proto_patcher ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY} ${PROTOBUF_LIBRARIES})
+target_link_libraries(proto_patcher ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY} ${PROTOBUF_LIBRARIES} cppformat)
 
 # Install target
 install(TARGETS proto_patcher

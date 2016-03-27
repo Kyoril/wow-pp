@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1745</width>
-    <height>1151</height>
+    <height>1404</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -121,7 +121,7 @@
                </size>
               </property>
               <property name="currentIndex">
-               <number>2</number>
+               <number>0</number>
               </property>
               <widget class="QWidget" name="tab_3">
                <attribute name="title">
@@ -574,6 +574,12 @@
                    <property name="enabled">
                     <bool>true</bool>
                    </property>
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
                    <item>
                     <property name="text">
                      <string>Mana</string>
@@ -599,6 +605,20 @@
                      <string>Happiness</string>
                     </property>
                    </item>
+                  </widget>
+                 </item>
+                 <item row="3" column="0">
+                  <widget class="QLabel" name="label_31">
+                   <property name="text">
+                    <string>Mechanic:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="1">
+                  <widget class="QLineEdit" name="spellMechanicField">
+                   <property name="readOnly">
+                    <bool>true</bool>
+                   </property>
                   </widget>
                  </item>
                 </layout>
@@ -3933,6 +3953,16 @@ QGroupBox::indicator:unchecked:disabled
                    </property>
                   </widget>
                  </item>
+                 <item row="3" column="0">
+                  <widget class="QLabel" name="label_29">
+                   <property name="text">
+                    <string>Suggested Players:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="1">
+                  <widget class="QLineEdit" name="questPlayerField"/>
+                 </item>
                 </layout>
                </item>
                <item>
@@ -3985,7 +4015,210 @@ QGroupBox::indicator:unchecked:disabled
                    </property>
                   </widget>
                  </item>
+                 <item row="3" column="0">
+                  <widget class="QLabel" name="label_30">
+                   <property name="text">
+                    <string>Timer:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="1">
+                  <widget class="QLineEdit" name="questTimerField"/>
+                 </item>
                 </layout>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="questFlagsBox">
+              <property name="styleSheet">
+               <string notr="true">QCheckBox:disabled
+{
+    color: #bbb;
+}
+
+QCheckBox::indicator:checked:disabled,
+QGroupBox::indicator:checked:disabled
+{
+    image: url(:/qss_icons/rc/checkbox_checked.png);
+}
+
+QCheckBox::indicator:unchecked:disabled,
+QGroupBox::indicator:unchecked:disabled
+{
+    image: url(:/qss_icons/rc/checkbox_unchecked.png);
+}</string>
+              </property>
+              <property name="title">
+               <string>Flags</string>
+              </property>
+              <property name="flat">
+               <bool>true</bool>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_10">
+               <item row="0" column="0">
+                <widget class="QCheckBox" name="quest_flag_1">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QCheckBox:disabled
+{
+    color: #bbb;
+}</string>
+                 </property>
+                 <property name="text">
+                  <string>MUST_STAY_ALIVE</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QCheckBox" name="quest_flag_2">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this is a ranged spell (for hunters for example).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QCheckBox:disabled
+{
+    color: #bbb;
+}</string>
+                 </property>
+                 <property name="text">
+                  <string>RAISE_EVENT</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="QCheckBox" name="quest_flag_3">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that the execution of this spell will be delayed to the next auto attack, and replaces this auto attack.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>EXPLORATION</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="3">
+                <widget class="QCheckBox" name="quest_flag_4">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string>SHARABLE</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QCheckBox" name="quest_flag_5">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>UNKNOWN</string>
+                 </property>
+                 <property name="checkable">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QCheckBox" name="quest_flag_6">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string>EPIC_CLASS_QUEST</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="2">
+                <widget class="QCheckBox" name="quest_flag_7">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this is a passive spell, which will be active permanently.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>COMPLETABLE_IN_RAID</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="3">
+                <widget class="QCheckBox" name="quest_flag_8">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string>THE_BURNING_CRUSADE</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QCheckBox" name="quest_flag_9">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string>REQUIRES_EXTRA_OBJECTIVE</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QCheckBox" name="quest_flag_10">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell requires a main hand weapon.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>HIDDEN_REWARDS</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="2">
+                <widget class="QCheckBox" name="quest_flag_11">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string>UNKNOWN</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="3">
+                <widget class="QCheckBox" name="quest_flag_12">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string>TBC_STARTING_ZONE</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="0">
+                <widget class="QCheckBox" name="quest_flag_13">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is only usable at day time.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>DAILY_REPEATABLE</string>
+                 </property>
+                </widget>
                </item>
               </layout>
              </widget>
@@ -4161,6 +4394,23 @@ QGroupBox::indicator:unchecked:disabled
              </widget>
             </item>
             <item>
+             <widget class="QGroupBox" name="groupBox_7">
+              <property name="title">
+               <string>Provided Item</string>
+              </property>
+              <property name="flat">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="questSourceItemButton">
+              <property name="text">
+               <string>NONE</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QGroupBox" name="groupBox_6">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -4329,6 +4579,12 @@ QGroupBox::indicator:unchecked:disabled
                      </item>
                      <item row="0" column="3">
                       <widget class="QPushButton" name="pushButton_2">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
                        <property name="text">
                         <string>NONE</string>
                        </property>
@@ -4364,6 +4620,12 @@ QGroupBox::indicator:unchecked:disabled
                      </item>
                      <item row="0" column="1">
                       <widget class="QPushButton" name="pushButton">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
                        <property name="text">
                         <string>NONE</string>
                        </property>
@@ -4483,6 +4745,8 @@ QGroupBox::indicator:unchecked:disabled
     <addaction name="actionImport_Quests"/>
     <addaction name="separator"/>
     <addaction name="actionImport_Object_Spawns"/>
+    <addaction name="separator"/>
+    <addaction name="actionImport_Units"/>
    </widget>
    <addaction name="menu_Project"/>
    <addaction name="menu_Edit"/>
@@ -4550,21 +4814,23 @@ QGroupBox::indicator:unchecked:disabled
     <string>Ctrl+S</string>
    </property>
   </action>
-  <action name="actionImport">
-   <property name="text">
-    <string>Import Unit Loot</string>
-   </property>
-  </action>
-  <action name="actionImport_Vendors">
-   <property name="text">
-    <string>Import Vendors</string>
-   </property>
-  </action>
-  <action name="actionImport_Trainers">
-   <property name="text">
-    <string>Import Trainers</string>
-   </property>
-  </action>
+   <actiongroup name="LootImport">
+     <action name="actionImport">
+       <property name="text">
+         <string>Import Unit Loot</string>
+       </property>
+     </action>
+     <action name="actionImport_Vendors">
+       <property name="text">
+         <string>Import Vendors</string>
+       </property>
+     </action>
+     <action name="actionImport_Trainers">
+       <property name="text">
+         <string>Import Trainers</string>
+       </property>
+     </action>
+   </actiongroup>
   <action name="actionImport_Quests">
    <property name="text">
     <string>Import Quests</string>
@@ -4583,6 +4849,11 @@ QGroupBox::indicator:unchecked:disabled
   <action name="actionImport_Item_Loot">
    <property name="text">
     <string>Import Item Loot</string>
+   </property>
+  </action>
+  <action name="actionImport_Units">
+   <property name="text">
+    <string>Import Units</string>
    </property>
   </action>
  </widget>

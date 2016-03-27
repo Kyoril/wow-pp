@@ -92,7 +92,7 @@ namespace wowpp
 			{
 				qDeleteAll(eventItem->takeChildren());
 
-				for (const auto &e : trigger->events())
+				for (const auto &e : trigger->newevents())
 				{
 					QTreeWidgetItem *item = new QTreeWidgetItem();
 
@@ -183,7 +183,8 @@ namespace wowpp
 			auto result = dialog.exec();
 			if (result == QDialog::Accepted)
 			{
-				m_selectedTrigger->mutable_events()->Add(dialog.getEvent());
+				auto *added = m_selectedTrigger->add_newevents();
+				added->CopyFrom(dialog.getEvent());
 
 				auto *rootItem = m_ui->functionView->topLevelItem(0);
 				if (rootItem)
@@ -192,7 +193,7 @@ namespace wowpp
 					if (eventItem)
 					{
 						QTreeWidgetItem *item = new QTreeWidgetItem();
-						item->setData(0, Qt::DisplayRole, getTriggerEventText(dialog.getEvent()));
+						item->setData(0, Qt::DisplayRole, getTriggerEventText(*added));
 						item->setData(0, Qt::DecorationRole, QImage(":/Units.png"));
 						eventItem->addChild(item);
 					}
@@ -309,15 +310,15 @@ namespace wowpp
 			if (parent == rootItem->child(0))
 			{
 				int index = parent->indexOfChild(item);
-				if (index >= m_selectedTrigger->events_size())
+				if (index >= m_selectedTrigger->newevents_size())
 					return;
 
 				// Event clicked
-				EventDialog dialog(m_application, m_selectedTrigger->events(index));
+				EventDialog dialog(m_application, m_selectedTrigger->newevents(index));
 				auto result = dialog.exec();
 				if (result == QDialog::Accepted)
 				{
-					m_selectedTrigger->mutable_events()->Set(index, dialog.getEvent());
+					m_selectedTrigger->mutable_newevents(index)->CopyFrom(dialog.getEvent());
 					item->setData(0, Qt::DisplayRole, getTriggerEventText(dialog.getEvent()));
 					m_application.markAsChanged();
 				}

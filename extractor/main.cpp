@@ -497,7 +497,7 @@ namespace
 				std::unique_ptr<ADTFile> adtInst;
 
 #define LOAD_TERRAIN(x, y, spot) \
-				adtFile = (boost::format("World\\Maps\\%1%\\%1%_%2%_%3%.adt") % mapName % (y) % (x)).str(); \
+				adtFile = fmt::format("World\\Maps\\{0}\\{0}_{1}_{2}.adt", mapName, (y), (x)); \
 					adtInst = make_unique<ADTFile>(adtFile); \
 				if (adtInst->load()) \
 				{ \
@@ -935,9 +935,9 @@ namespace
 
 		// Build file names
 		const String adtFile =
-			(boost::format("World\\Maps\\%1%\\%1%_%2%_%3%.adt") % mapName % cellY % cellX).str();
+			fmt::format("World\\Maps\\{0}\\{0}_{1}_{2}.adt", mapName, cellY, cellX);
 		const String mapFile =
-			(outputPath / (boost::format("%1%") % mapId).str() / (boost::format("%1%_%2%.map") % cellX % cellY).str()).string();
+			((outputPath / (fmt::format("{0}", mapId))) / (fmt::format("{0}_{1}.map", cellX, cellY))).string();
 
 		// Build NavMesh tiles
 		ILOG("\tBuilding tile [" << cellX << "," << cellY << "] ...");
@@ -1148,8 +1148,8 @@ namespace
 			return false;
 		}
 
-#if 0
-		if (mapId != 0)
+#if 1
+		if (mapId != 389)
 		{
 			return true;
 		}
@@ -1159,7 +1159,7 @@ namespace
 		ILOG("Building map " << mapId << " - " << mapName << "...");
 
 		// Create the map directory (if it doesn't exist)
-		const fs::path mapPath = outputPath / (boost::format("%1%") % mapId).str();
+		const fs::path mapPath = outputPath / fmt::format("{0}", mapId);
 		if (!fs::is_directory(mapPath))
 		{
 			if (!fs::create_directory(mapPath))
@@ -1170,7 +1170,7 @@ namespace
 		}
 
 		// Load the WDT file and get infos out of there
-		const String wdtFileName = (boost::format("World\\Maps\\%1%\\%1%.wdt") % mapName).str();
+		const String wdtFileName = fmt::format("World\\Maps\\{0}\\{0}.wdt", mapName);
 		WDTFile mapWDT(wdtFileName);
 		if (!mapWDT.load())
 		{
@@ -1208,7 +1208,7 @@ namespace
 
 		// Write nav mesh parameters
 		const String navParamFile =
-			(outputPath / (boost::format("%1%.map") % mapId).str()).string();
+			(outputPath / fmt::format("{0}.map", mapId)).string();
 		std::ofstream outNavFile(navParamFile, std::ios::out | std::ios::binary);
 		if (outNavFile)
 		{
@@ -1259,7 +1259,7 @@ namespace
 		// we found the local.
 		for (auto &locale : locales)
 		{
-			if (fs::exists(inputPath / "Data" / locale / (boost::format("locale-%1%.MPQ") % locale).str()))
+			if (fs::exists(inputPath / "Data" / locale / fmt::format("locale-{0}.MPQ", locale)))
 			{
 				out_locale = locale;
 				return true;
@@ -1284,9 +1284,9 @@ namespace
 
 		// Same as above, but locale dependant. However, order is still important!
 		const String localeArchives[] = {
-			"locale-%1%.MPQ",
-			"patch-%1%.MPQ",
-			"patch-%1%-2.MPQ",
+			"locale-{0}.MPQ",
+			"patch-{0}.MPQ",
+			"patch-{0}-2.MPQ",
 		};
 
 		// Try to load all common archives
@@ -1303,7 +1303,7 @@ namespace
 		for (auto &file : localeArchives)
 		{
 			const String mpqFileName =
-				(inputPath / "Data" / localeString / (boost::format(file) % localeString).str()).string();
+				(inputPath / "Data" / localeString / fmt::format(file, localeString)).string();
 			if (!mpq::loadMPQFile(mpqFileName))
 			{
 				WLOG("Could not load MPQ archive " << mpqFileName);

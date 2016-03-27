@@ -75,7 +75,6 @@ namespace wowpp
 
 	private:
 
-		boost::asio::io_service &m_ioService;
 		Universe &m_universe;
 		game::ITriggerHandler &m_triggerHandler;
 		IdGenerator<UInt32> &m_idGenerator;

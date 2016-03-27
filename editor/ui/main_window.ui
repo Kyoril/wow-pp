@@ -63,7 +63,7 @@
      <x>0</x>
      <y>0</y>
      <width>1148</width>
-     <height>21</height>
+     <height>31</height>
     </rect>
    </property>
    <property name="styleSheet">
@@ -97,6 +97,7 @@
     <property name="separatorsCollapsible">
      <bool>true</bool>
     </property>
+    <addaction name="actionDelete"/>
    </widget>
    <widget class="QMenu" name="menu_View">
     <property name="tearOffEnabled">
@@ -197,6 +198,10 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionSelect"/>
+   <addaction name="actionTranslate"/>
+   <addaction name="actionRotate"/>
+   <addaction name="actionScale"/>
   </widget>
   <widget class="QToolBar" name="toolBar_3">
    <property name="windowTitle">
@@ -284,6 +289,67 @@
     <string>Trigger Editor</string>
    </property>
   </action>
+  <action name="actionDelete">
+   <property name="text">
+    <string>Remove selected object(s)</string>
+   </property>
+   <property name="shortcut">
+    <string>Del</string>
+   </property>
+  </action>
+  <actiongroup name="Movement">
+   <action name="actionSelect">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+    <property name="icon">
+     <iconset resource="../qrc/editor.qrc">
+      <normaloff>:/Select.png</normaloff>:/Select.png</iconset>
+    </property>
+    <property name="text">
+     <string>Select</string>
+    </property>
+   </action>
+   <action name="actionTranslate">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="icon">
+     <iconset resource="../qrc/editor.qrc">
+      <normaloff>:/transformation.png</normaloff>:/transformation.png</iconset>
+    </property>
+    <property name="text">
+     <string>Translate</string>
+    </property>
+   </action>
+   <action name="actionRotate">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="icon">
+     <iconset resource="../qrc/editor.qrc">
+      <normaloff>:/rotationt.png</normaloff>:/rotationt.png</iconset>
+    </property>
+    <property name="text">
+     <string>Rotate</string>
+    </property>
+   </action>
+   <action name="actionScale">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="icon">
+     <iconset resource="../qrc/editor.qrc">
+      <normaloff>:/Scale.png</normaloff>:/Scale.png</iconset>
+    </property>
+    <property name="text">
+     <string>Scale</string>
+    </property>
+   </action>
+  </actiongroup>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>

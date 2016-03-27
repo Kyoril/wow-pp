@@ -84,7 +84,7 @@ namespace wowpp
 		{
 			if (unitTarget)
 			{
-				if (unitTarget->isImmuneAgainstMechanic(spell.mechanic()))
+				if (unitTarget->isImmuneAgainstMechanic(1 << spell.mechanic()))
 				{
 					return std::make_pair(game::spell_cast_result::FailedPreventedByMechanic, nullptr);
 				}

@@ -6,7 +6,12 @@ MACRO(ADD_PRECOMPILED_HEADER _targetName _input)
 		set_source_files_properties("${_name_no_ext}.cpp" PROPERTIES COMPILE_FLAGS "/Yc${_name}")
 	else()
 		IF(APPLE)
-			# TODO: Apple
+			set_target_properties(
+        		    ${_targetName} 
+        		    PROPERTIES
+        		    XCODE_ATTRIBUTE_GCC_PREFIX_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/${_name_no_ext}.h"
+        		    XCODE_ATTRIBUTE_GCC_PRECOMPILE_PREFIX_HEADER "YES"
+        		)
 		ELSE()
 			if(UNIX)
 				GET_FILENAME_COMPONENT(_path ${_input} PATH)
@@ -38,12 +43,6 @@ MACRO(ADD_PRECOMPILED_HEADER _targetName _input)
 				LIST(APPEND _compile_FLAGS ${CMAKE_CXX_FLAGS})
 
 				SEPARATE_ARGUMENTS(_compile_FLAGS)
-
-	#			ADD_CUSTOM_COMMAND(
-	#				OUTPUT	${CMAKE_CURRENT_BINARY_DIR}/${_name}
-	#				COMMAND ${CMAKE_COMMAND} -E copy ${_input} ${CMAKE_CURRENT_BINARY_DIR}/${_name} # ensure same directory! Required by gcc
-	#			)
-
 				ADD_CUSTOM_COMMAND(
 					OUTPUT ${_output}
 					COMMAND ${CMAKE_CXX_COMPILER}
@@ -58,10 +57,6 @@ MACRO(ADD_PRECOMPILED_HEADER _targetName _input)
 					DEPENDS	${_output}
 				)
 				ADD_DEPENDENCIES(${_targetName} ${_targetName}_gch)
-	#			SET_TARGET_PROPERTIES(${_targetName}
-	#				PROPERTIES
-	#				COMPILE_FLAGS "-I${_outdir} -Winvalid-pch"
-	#			)
 			endif()
 		ENDIF()
 	endif()

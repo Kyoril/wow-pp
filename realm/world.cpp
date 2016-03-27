@@ -473,6 +473,7 @@ namespace wowpp
 			character->setMapId(map);
 			character->setZone(zone);
 			character->relocate(location, 0.0f);
+			character->modifyGroupUpdateFlags(group_update_flags::Full, true);
 			// TODO: Auras
 
 			// TODO: Do some heavy optimization here

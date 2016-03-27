@@ -228,8 +228,8 @@ namespace wowpp
 					auto &maybeParameter = m_parameters[i];
 					if (!maybeParameter)
 					{
-						throw StatementException((boost::format(
-						                              "All parameters must be set before execution (%1% is not set)") % i).str());
+						throw StatementException(
+							fmt::format("All parameters must be set before execution ({0} is not set)", i));
 					}
 
 					m_convertedParameters[i] = convertBind(*maybeParameter);
@@ -390,9 +390,8 @@ namespace wowpp
 
 			if (realLength > maxLengthInBytes)
 			{
-				throw StatementException((boost::format(
-				                              "Maximum string length exceeded (%1% > %2%)")
-				                          % realLength % maxLengthInBytes).str());
+				throw StatementException(
+					fmt::format("Maximum string length exceeded ({0} > {1})", realLength, maxLengthInBytes));
 			}
 
 			std::string result;

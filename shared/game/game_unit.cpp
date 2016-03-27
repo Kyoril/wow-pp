@@ -1348,8 +1348,6 @@ namespace wowpp
 			threatened(*attacker, threat);
 		}
 
-		takenDamage(attacker, damage);
-
 		if (health < damage) {
 			health = 0;
 		}
@@ -1358,6 +1356,8 @@ namespace wowpp
 		}
 
 		setUInt32Value(unit_fields::Health, health);
+		takenDamage(attacker, damage);
+
 		if (health < 1)
 		{
 			// Call function and signal
@@ -1454,7 +1454,7 @@ namespace wowpp
 		if (isCreature())
 		{
 			GameCreature& self = reinterpret_cast<GameCreature&>(*this);
-			self.getEntry();	//TODO need creaturetype()
+			return (self.getEntry().schoolimmunity() & school) != 0;
 		}
 		return false;
 	}
@@ -1645,7 +1645,7 @@ namespace wowpp
 	{
 		std::uniform_real_distribution<float> resiDistribution(0.0f, 99.9f);
 		UInt32 spellPen = 0;
-		UInt32 baseResi = getModifierValue(UnitMods(unit_mods::ResistanceStart + static_cast<UInt32>(log2(school))), unit_mod_type::TotalValue);
+		UInt32 baseResi = getUInt32Value(unit_fields::Resistances + static_cast<UInt32>(log2(school)));
 		UInt32 casterLevel = attacker.getLevel();
 		UInt32 victimLevel = getLevel();
 		float levelBasedResistance = 0.0f;
@@ -2150,16 +2150,16 @@ namespace wowpp
 
 	void GameUnit::addMechanicImmunity(UInt32 mechanic)
 	{
-		m_mechanicImmunity.optionalAdd(mechanic);
+		m_mechanicImmunity |= mechanic;
 	}
 
 	void GameUnit::removeMechanicImmunity(UInt32 mechanic)
 	{
-		m_mechanicImmunity.optionalRemove(mechanic);
+		m_mechanicImmunity &= ~mechanic;
 	}
 
 	bool GameUnit::isImmuneAgainstMechanic(UInt32 mechanic) const
 	{
-		return m_mechanicImmunity.contains(mechanic);
+		return mechanic != 0 && (m_mechanicImmunity & mechanic) != 0;
 	}
 }

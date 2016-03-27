@@ -127,8 +127,24 @@ namespace wowpp
 				m_lastCastTime = 0;
 				chooseNextAction();
 			}
-		});
+			else
+			{
+				GameUnit *victim = getControlled().getVictim();
+				if (victim)
+				{
+					const float distance =
+						(victim->getLocation() - getControlled().getLocation()).squared_length();
+					if (distance <= (getControlled().getMeleeReach() * getControlled().getMeleeReach()))
+					{
+						m_onVictimMoved.disconnect();
+						getControlled().getMover().stopMovement();
 
+						m_nextActionCountdown.setEnd(getCurrentTime() + 500);
+					}
+				}
+			}
+		});
+		
 		// Reset AI eventually
 		m_onMoveTargetChanged = getControlled().getMover().targetChanged.connect([this]
 		{
@@ -441,9 +457,11 @@ namespace wowpp
 
 	void CreatureAICombatState::chaseTarget(GameUnit &target)
 	{
+		const float combatRange = getControlled().getMeleeReach() + target.getMeleeReach();
+
 		math::Vector3 currentLocation;
 		auto &mover = getControlled().getMover();
-		
+
 		// If we are moving, check if the current TARGET LOCATION is not in range instead of checking
 		// if the current location is not in attack range. Only THEN we need to calculate a new movement
 		// path.
@@ -451,13 +469,11 @@ namespace wowpp
 
 		math::Vector3 newTargetLocation = target.getLocation();
 		const float distance =
-		    (newTargetLocation - currentLocation).length();
+		    (newTargetLocation - currentLocation).squared_length();
 
 		// Check distance and whether we need to move
-		const float combatRange = getControlled().getMeleeReach() + target.getMeleeReach();
-		if (distance > combatRange)
+		if (distance > (combatRange * combatRange))
 		{
-			math::Vector3 realLocation = (mover.isMoving() ? mover.getCurrentLocation() : currentLocation);
 			math::Vector3 direction = (newTargetLocation - currentLocation);
 			if (direction.normalize() != 0.0f)
 			{

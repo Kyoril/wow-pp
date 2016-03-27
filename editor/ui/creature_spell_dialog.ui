@@ -264,6 +264,16 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>spellButton</tabstop>
+  <tabstop>priorityBox</tabstop>
+  <tabstop>spinBox</tabstop>
+  <tabstop>spinBox_2</tabstop>
+  <tabstop>cooldownBox</tabstop>
+  <tabstop>cooldownBox_2</tabstop>
+  <tabstop>targetBox</tabstop>
+  <tabstop>repeatedBox</tabstop>
+ </tabstops>
  <resources>
   <include location="../qrc/editor.qrc"/>
  </resources>

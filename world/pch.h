@@ -62,7 +62,6 @@
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
-#include <boost/format.hpp>
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
@@ -71,3 +70,5 @@
 #include <boost/spirit/include/classic.hpp>
 
 #include "mysql_wrapper/include_mysql.h"
+
+#include "cppformat/cppformat/format.h"

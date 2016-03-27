@@ -444,11 +444,15 @@ namespace wowpp
 				m_ui->lootToolButton->setDisabled(false);
 				m_ui->lootSimulatorButton->setDisabled(false);
 			}
-			
+
 			// Add unit properties
 #define WOWPP_NUM_PROPERTY(name, type, ref, prop, readonly) { \
 			auto getBinder = [unit]() -> type { return unit->prop(); }; \
 			auto setBinder = [unit](type value) { unit->set_##prop(value); }; \
+			m_properties.push_back(PropertyPtr(new NumericProperty(name, ref(getBinder, setBinder), readonly))); }
+#define WOWPP_INDEXED_NUM_PROPERTY(name, type, ref, prop, index, readonly) { \
+			auto getBinder = [unit]() -> type { return unit->prop(index); }; \
+			auto setBinder = [unit](type value) { unit->set_##prop(index, value); }; \
 			m_properties.push_back(PropertyPtr(new NumericProperty(name, ref(getBinder, setBinder), readonly))); }
 #define WOWPP_STR_PROPERTY(name, prop, readonly) { \
 			auto getBinder = [unit]() -> String { return unit->prop(); }; \
@@ -460,7 +464,7 @@ namespace wowpp
 			auto getMaxBinder = [unit]() -> type { return unit->max##prop(); }; \
 			auto setMaxBinder = [unit](type value) { unit->set_max##prop(value); }; \
 			m_properties.push_back(PropertyPtr(new MinMaxProperty(name, ref(getMinBinder, setMinBinder), ref(getMaxBinder, setMaxBinder), readonly))); }
-
+			
 			WOWPP_NUM_PROPERTY("Entry", UInt32, UInt32Ref, id, true);
 			WOWPP_STR_PROPERTY("Name", name, false);
 			WOWPP_STR_PROPERTY("Subname", subname, false);
@@ -490,14 +494,16 @@ namespace wowpp
 			WOWPP_NUM_PROPERTY("Unit Class", UInt32, UInt32Ref, unitclass, false);
 			WOWPP_NUM_PROPERTY("Rank", UInt32, UInt32Ref, rank, false);
 			WOWPP_NUM_PROPERTY("Armor", UInt32, UInt32Ref, armor, false);
-//			WOWPP_NUM_PROPERTY("Holy Resistance", UInt32, UInt32Ref, armor, false);
-//			WOWPP_NUM_PROPERTY("Fire Resistance", UInt32, UInt32Ref, armor, false);
-//			WOWPP_NUM_PROPERTY("Nature Resistance", UInt32, UInt32Ref, armor, false);
-//			WOWPP_NUM_PROPERTY("Frost Resistance", UInt32, UInt32Ref, armor, false);
-//			WOWPP_NUM_PROPERTY("Shadow Resistance", UInt32, UInt32Ref, armor, false);
-//			WOWPP_NUM_PROPERTY("Arcane Resistance", UInt32, UInt32Ref, armor, false);
+			WOWPP_INDEXED_NUM_PROPERTY("Holy Resistance", UInt32, UInt32Ref, resistances, 0, false);
+			WOWPP_INDEXED_NUM_PROPERTY("Fire Resistance", UInt32, UInt32Ref, resistances, 1, false);
+			WOWPP_INDEXED_NUM_PROPERTY("Nature Resistance", UInt32, UInt32Ref, resistances, 2, false);
+			WOWPP_INDEXED_NUM_PROPERTY("Frost Resistance", UInt32, UInt32Ref, resistances, 3, false);
+			WOWPP_INDEXED_NUM_PROPERTY("Shadow Resistance", UInt32, UInt32Ref, resistances, 4, false);
+			WOWPP_INDEXED_NUM_PROPERTY("Arcane Resistance", UInt32, UInt32Ref, resistances, 5, false);
 			WOWPP_MIN_MAX_PROPERTY("Loot Gold", UInt32, UInt32Ref, lootgold, false);
 			WOWPP_MIN_MAX_PROPERTY("Experience", UInt32, UInt32Ref, levelxp, false);
+			WOWPP_NUM_PROPERTY("Mechanic Immunity", UInt32, UInt32Ref, mechanicimmunity, false);
+			WOWPP_NUM_PROPERTY("School Immunity", UInt32, UInt32Ref, schoolimmunity, false);
 
 #undef WOWPP_MIN_MAX_PROPERTY
 #undef WOWPP_STR_PROPERTY
@@ -644,6 +650,7 @@ namespace wowpp
 
 			m_ui->spellIdField->setText(QString::number(spell->id()));
 			m_ui->spellNameField->setText(spell->name().c_str());
+			m_ui->spellMechanicField->setText(QString::number(spell->mechanic()));
 
 			// Determine the cast time of this spell
 			Int64 castTime = spell->casttime();
@@ -884,6 +891,45 @@ namespace wowpp
 			m_ui->questMethodField->setText(QString("%1").arg(m_selectedQuest->method()));
 			m_ui->questMinLevelField->setText(QString("%1").arg(m_selectedQuest->minlevel()));
 			m_ui->questLevelField->setText(QString("%1").arg(m_selectedQuest->questlevel()));
+			m_ui->questTimerField->setText(QString("%1 sec.").arg(m_selectedQuest->timelimit()));
+			m_ui->questPlayerField->setText(QString("%1").arg(m_selectedQuest->suggestedplayers()));
+
+			const std::map<UInt32, QString> questTypes = { 
+				{1, "Group"}, 
+				{21, "Life"}, 
+				{41, "PvP"}, 
+				{62, "Raid"}, 
+				{81, "Dungeon"}, 
+				{82, "World Event"}, 
+				{83, "Legendary"}, 
+				{84, "Escort"}, 
+				{85, "Heroic"} 
+			};
+
+			auto typeIt = questTypes.find(m_selectedQuest->type());
+			if (typeIt != questTypes.end())
+			{
+				m_ui->lineEdit_5->setText(typeIt->second);
+			}
+			else 
+			{
+				m_ui->lineEdit_5->setText(m_selectedQuest->type() == 0 ? "None" : "UNKNOWN");
+			}
+
+			for (size_t i = 1; i <= 13; ++i)
+			{
+				QCheckBox *box = m_ui->questFlagsBox->findChild<QCheckBox*>(QString("quest_flag_%1").arg(i));
+				if (box)
+				{
+					const bool hasAttribute = (m_selectedQuest->flags() & (1 << (i - 1))) != 0;
+					box->setChecked(hasAttribute);
+				}
+			}
+			
+			const auto *srcItem = m_selectedQuest->srcitemid() ?
+				m_application.getProject().items.getById(m_selectedQuest->srcitemid()) : nullptr;
+			m_ui->questSourceItemButton->setText(
+				QString("%1").arg(srcItem ? QString("%1x %2 (%3)").arg(m_selectedQuest->srcitemcount()).arg(srcItem->name().c_str()).arg(srcItem->id()) : "NONE"));
 
 			m_ui->questDetailsTextField->setText(m_selectedQuest->detailstext().c_str());
 			m_ui->questObjectivesTextField->setText(m_selectedQuest->objectivestext().c_str());
@@ -971,7 +1017,7 @@ namespace wowpp
 				}
 				if (spellcast)
 				{
-					treeitem->setText(3, QString("%1 (%2)").arg(spellcast->name().c_str()).arg(spellcast->id()));
+					treeitem->setText(4, QString("%1 (%2)").arg(spellcast->name().c_str()).arg(spellcast->id()));
 				}
 				treeitem->setText(5, entry.text().c_str());
 
@@ -1532,7 +1578,7 @@ namespace wowpp
 		void ObjectEditor::on_actionImport_Quests_triggered()
 		{
 			ImportTask task;
-			task.countQuery = "SELECT COUNT(*) FROM `quest_template`;";
+			task.countQuery = "SELECT COUNT(*) FROM `wowpp_quests`;";
 			task.selectQuery = "SELECT `entry`, `Title`, `Method`, `MinLevel`, `QuestLevel`, `Details`, `Objectives`,`OfferRewardText`,`RequestItemsText`,`EndText`, "
 				"`RewChoiceItemId1`, `RewChoiceItemCount1`, `RewChoiceItemId2`, `RewChoiceItemCount2`,`RewChoiceItemId3`, `RewChoiceItemCount3`,`RewChoiceItemId4`, `RewChoiceItemCount4`, `RewChoiceItemId5`, `RewChoiceItemCount5`, `RewChoiceItemId6`, `RewChoiceItemCount6`,"
 				"`RewItemId1`, `RewItemCount1`, `RewItemId2`, `RewItemCount2`,`RewItemId3`, `RewItemCount3`,`RewItemId4`, `RewItemCount4`,"
@@ -1545,7 +1591,7 @@ namespace wowpp
 				"`PrevQuestId`, `NextQuestId`, `ExclusiveGroup`, `NextQuestInChain`,"
 				"`QuestFlags`, `SpecialFlags`, `Type`, `ZoneOrSort`, `SuggestedPlayers`, `LimitTime`, `SrcItemId`, `SrcItemCount`, `SrcSpell`, `CharTitleId`,"
 				"`PointMapId`, `PointX`, `PointY`, `PointOpt`, `RequiredRaces`, `RequiredClasses`, `RequiredSkill`, `RequiredSkillValue`"
-				" FROM `quest_template` ORDER BY `entry`;";
+				" FROM `wowpp_quests` ORDER BY `entry`;";
 			task.beforeImport = [this]() {
 				m_application.getProject().quests.clear();
 			};
@@ -1990,6 +2036,62 @@ namespace wowpp
 				def->set_conditiontype(cond);
 				def->set_conditionvala(conda);
 				def->set_conditionvalb(condb);
+				return true;
+			};
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
+			dialog.exec();
+		}
+		void ObjectEditor::on_actionImport_Units_triggered()
+		{
+			ImportTask task;
+			task.countQuery = "SELECT COUNT(*) FROM `creature_template`;";
+			task.selectQuery = "SELECT `entry`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `mechanic_immune_mask` FROM `creature_template` ORDER BY `entry`;";
+			task.beforeImport = [this]() {
+			};
+			task.onImport = [this](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0;
+
+				UInt32 index = 0;
+				row.getField(index++, entry);
+
+				// Find creature
+				auto *unit = m_application.getProject().units.getById(entry);
+				if (!unit)
+				{
+					ELOG("Skipping unit " << entry << " as it couldn't be found!");
+					return true;
+				}
+
+				UInt32 schoolImmunity = 0;
+
+				// Import all resistances
+				for (int n = 0; n < unit->resistances_size(); ++n)
+				{
+					Int32 res = 0;
+					row.getField(index++, res);
+
+					if (res < 0)
+					{
+						// Immunity against this school
+						schoolImmunity |= (1 << (n+1));
+					}
+					else
+					{
+						// Apply resistance
+						unit->set_resistances(n, UInt32(res));
+					}
+				}
+
+				// Update school immunity
+				unit->set_schoolimmunity(schoolImmunity);
+
+				// Mechanic immunity
+				UInt32 mechanicImmunity = 0;
+				row.getField(index++, mechanicImmunity);
+				unit->set_mechanicimmunity(mechanicImmunity);
+
 				return true;
 			};
 

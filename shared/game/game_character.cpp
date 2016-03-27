@@ -505,6 +505,15 @@ namespace wowpp
 			}
 		}
 
+		if (entry->rewardspellcast())
+		{
+			// TODO: Maybe we should make the quest giver cast the spell, if it's a unit
+			SpellTargetMap targetMap;
+			targetMap.m_unitTarget = getGuid();
+			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+			castSpell(std::move(targetMap), entry->rewardspellcast(), -1, 0, true);
+		}
+
 		// Quest was rewarded
 		it->second.status = game::quest_status::Rewarded;
 		questDataChanged(quest, it->second);
@@ -678,9 +687,7 @@ namespace wowpp
 			}
 
 			bool validateQuest = false;
-
-			// Counter needed so that the correct field is used
-			UInt8 reqIndex = 0;
+            
 			for (const auto &req : quest->requirements())
 			{
 				if (req.itemid() == entry.id())
@@ -749,8 +756,6 @@ namespace wowpp
 
 			bool validateQuest = false;
 
-			// Counter needed so that the correct field is used
-			UInt8 reqIndex = 0;
 			for (const auto &req : quest->requirements())
 			{
 				if (req.itemid() == entry.id())
@@ -1097,11 +1102,11 @@ namespace wowpp
 		m_name = name;
 	}
 
-	void GameCharacter::addSpell(const proto::SpellEntry &spell)
+	bool GameCharacter::addSpell(const proto::SpellEntry &spell)
 	{
 		if (hasSpell(spell.id()))
 		{
-			return;
+			return false;
 		}
 
 		// Evaluate parry and block spells
@@ -1141,6 +1146,11 @@ namespace wowpp
 		{
 			updateTalentPoints();
 		}
+
+		// Fire signal
+		spellLearned(spell);
+
+		return true;
 	}
 
 	bool GameCharacter::removeSpell(const proto::SpellEntry &spell)

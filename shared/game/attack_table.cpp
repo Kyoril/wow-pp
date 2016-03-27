@@ -256,7 +256,7 @@ namespace wowpp
 					}
 				}
 
-				if (targetUnit->isImmune(school))
+				if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(1 << spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(1 << effect.mechanic()))
 				{
 					victimState = game::victim_state::IsImmune;
 				}
@@ -289,7 +289,7 @@ namespace wowpp
 			{
 				game::HitInfo hitInfo = game::hit_info::NoAction;
 				game::VictimState victimState = game::victim_state::Normal;
-				if (targetUnit->isImmune(school))
+				if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(1 << spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(1 << effect.mechanic()))
 				{
 					victimState = game::victim_state::IsImmune;
 				}
@@ -352,7 +352,7 @@ namespace wowpp
 				{
 					hitInfo = game::hit_info::Miss;
 				}
-				else if (targetUnit->isImmune(school))
+				else if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(1 << spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(1 << effect.mechanic()))
 				{
 					victimState = game::victim_state::IsImmune;
 				}

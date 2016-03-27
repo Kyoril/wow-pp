@@ -66,12 +66,47 @@ namespace wowpp
 
 			m_ai->setHome(std::move(home));
 			startRegeneration();
+
+			// Watch for "Health dropped below" trigger events (since we only watch for our own health, signal connections don't need to be
+			// saved / disconnected, as the signal should not be fired any more when this unit stops to exist
+			for (const auto &t : m_originalEntry.triggers())
+			{
+				const auto *trigger = getProject().triggers.getById(t);
+				if (trigger)
+				{
+					for (const auto &e : trigger->newevents())
+					{
+						if (e.type() == trigger_event::OnHealthDroppedBelow)
+						{
+							if (e.data_size() > 0)
+							{
+								takenDamage.connect([this, trigger, &e](GameUnit *, UInt32 damage) {
+									const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
+									const UInt32 health = getUInt32Value(unit_fields::Health);
+									
+									const UInt32 healthPCT = (float(health) / float(maxHealth)) * 100;
+									const UInt32 oldPCT = (float(health + damage) / float(maxHealth)) * 100;
+									if (oldPCT > e.data(0) &&
+										healthPCT <= e.data(0))
+									{
+										unitTrigger(std::cref(*trigger), std::ref(*this));
+									}
+								});
+							}
+						}
+					}
+				}
+			}
 		});
 	}
 
 	void GameCreature::setEntry(const proto::UnitEntry &entry)
 	{
 		const bool isInitialize = (m_entry == nullptr);
+		if (!isInitialize)
+		{
+			removeMechanicImmunity(m_entry->mechanicimmunity());
+		}
 
 		// Choose a level
 		UInt8 creatureLevel = entry.minlevel();
@@ -147,6 +182,12 @@ namespace wowpp
 		}
 		setModifierValue(unit_mods::Armor, unit_mod_type::BaseValue, entry.armor());
 
+		// Apply resistances
+		for (UInt32 i = 0; i < 6; ++i)
+		{
+			setModifierValue(static_cast<UnitMods>(unit_mods::ResistanceStart + i), unit_mod_type::BaseValue, entry.resistances(i));
+		}
+
 		// Setup new entry
 		m_entry = &entry;
 
@@ -157,6 +198,7 @@ namespace wowpp
 		}
 
 		updateAllStats();
+		addMechanicImmunity(m_entry->mechanicimmunity());
 	}
 
 	float GameCreature::calcXpModifier(UInt32 attackerLevel) const
@@ -278,9 +320,9 @@ namespace wowpp
 			const auto *triggerEntry = getProject().triggers.getById(triggerId);
 			if (triggerEntry)
 			{
-				for (const auto &triggerEvent : triggerEntry->events())
+				for (const auto &triggerEvent : triggerEntry->newevents())
 				{
-					if (triggerEvent == e)
+					if (triggerEvent.type() == e)
 					{
 						unitTrigger(std::cref(*triggerEntry), std::ref(*this));
 					}

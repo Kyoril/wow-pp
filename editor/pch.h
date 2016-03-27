@@ -69,3 +69,5 @@
 #include <boost/spirit/include/classic.hpp>
 
 #include "mysql_wrapper/include_mysql.h"
+
+#include <Ogre.h>

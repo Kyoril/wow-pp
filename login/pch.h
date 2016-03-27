@@ -53,7 +53,6 @@
 #include <boost/filesystem.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/asio.hpp>
-#include <boost/format.hpp>
 #include <boost/date_time.hpp>
 #include <boost/iostreams/copy.hpp>
 #include <boost/io/ios_state.hpp>
@@ -68,3 +67,5 @@
 #include <boost/spirit/include/classic.hpp>
 
 #include "mysql_wrapper/include_mysql.h"
+
+#include "cppformat/cppformat/format.h"

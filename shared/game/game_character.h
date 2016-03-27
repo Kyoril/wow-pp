@@ -495,6 +495,7 @@ namespace wowpp
 	};
 
 	class GameCreature;
+	class WorldObject;
 
 	namespace spell_mod_op
 	{
@@ -628,6 +629,10 @@ namespace wowpp
 		boost::signals2::signal<void(LootInstance &)> lootinspect;
 		/// Fired when a spell mod was applied or misapplied on the character. Used to send packets to the owning players client.
 		boost::signals2::signal<void(SpellModType, UInt8, SpellModOp, Int32)> spellModChanged;
+		/// Fired when the character interacts with a game object.
+		boost::signals2::signal<void(WorldObject &)> objectInteraction;
+		/// Fired when a new spell was learned.
+		boost::signals2::signal<void(const proto::SpellEntry &)> spellLearned;
 
 	public:
 
@@ -698,7 +703,7 @@ namespace wowpp
 
 		/// Adds a spell to the list of known spells of this character.
 		/// Note that passive spells will also be cast after they are added.
-		void addSpell(const proto::SpellEntry &spell);
+		bool addSpell(const proto::SpellEntry &spell);
 		/// Returns true, if the characters knows the specific spell.
 		bool hasSpell(UInt32 spellId) const;
 		/// Returns a spell from the list of known spells.

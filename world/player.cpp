@@ -104,6 +104,13 @@ namespace wowpp
 			sendProxyPacket(std::bind(game::server_write::standStateUpdate, std::placeholders::_1, state));
 		});
 
+		m_objectInteraction = m_character->objectInteraction.connect([this](WorldObject &object) {
+			if (object.getEntry().type() == world_object_type::QuestGiver)
+			{
+				sendGossipMenu(object.getGuid());
+			}
+		});
+
 		// Inventory change signals
 		auto &inventory = m_character->getInventory();
 		m_itemCreated = inventory.itemInstanceCreated.connect(std::bind(&Player::onItemCreated, this, std::placeholders::_1, std::placeholders::_2));
@@ -216,7 +223,6 @@ namespace wowpp
 			std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));
 
 		// Stand up again
-		auto standState = unit_stand_state::Stand;
 		m_character->setStandState(unit_stand_state::Stand);
 
 		// Cancel the countdown
@@ -545,6 +551,10 @@ namespace wowpp
 
 		// Notify realm about this for post-spawn packets
 		m_realmConnector.sendCharacterSpawnNotification(m_character->getGuid());
+
+		// Subscribe for spell notifications
+		m_onSpellLearned = m_character->spellLearned.connect(
+			std::bind(&Player::onSpellLearned, this, std::placeholders::_1));
 	}
 
 	void Player::onDespawn()
@@ -1472,6 +1482,12 @@ namespace wowpp
 			std::bind(game::server_write::destroyObject, std::placeholders::_1, item->getGuid(), false));
 	}
 
+	void Player::onSpellLearned(const proto::SpellEntry & spell)
+	{
+		sendProxyPacket(
+			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spell.id()));
+	}
+
 	void Player::handleRepopRequest(game::Protocol::IncomingPacket &packet)
 	{
 		if (!m_character)
@@ -1556,7 +1572,7 @@ namespace wowpp
 			(info.time - (msTime - m_clientDelayMs)) + MovementPacketTimeDelay + msTime;
 
 		// Get grid tile
-		auto &tile = grid.requireTile(gridIndex);
+		(void)grid.requireTile(gridIndex);
 		info.time = move_time;
 
 		// Notify all watchers about the new object
@@ -1599,7 +1615,6 @@ namespace wowpp
 					{
 						const UInt32 maxHealth = m_character->getUInt32Value(unit_fields::MaxHealth);
 						UInt32 damage = (UInt32)(damageperc * maxHealth);
-						float height = info.z;
 
 						if (damage > 0)
 						{
@@ -1799,9 +1814,6 @@ namespace wowpp
 			targets.m_unitTarget = m_character->getGuid();
 			m_character->castSpell(std::move(targets), spell->id());
 		}
-
-		sendProxyPacket(
-			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spell->id()));
 	}
 
 	void Player::handleUseItem(game::Protocol::IncomingPacket &packet)
@@ -2327,7 +2339,7 @@ namespace wowpp
 		auto guid = source.getGuid();
 		auto lootType = game::loot_type::Corpse;
 		sendProxyPacket(
-			std::bind(game::server_write::lootResponse, std::placeholders::_1, source.getGuid(), lootType, std::cref(loot)));
+			std::bind(game::server_write::lootResponse, std::placeholders::_1, guid, lootType, std::cref(loot)));
 	}
 
 	void Player::closeLootDialog()
@@ -2436,8 +2448,6 @@ namespace wowpp
 			m_character->castSpell(std::move(targetMap), spellId);
 		}
 
-		sendProxyPacket(
-			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spellId));
 		sendProxyPacket(
 			std::bind(game::server_write::trainerBuySucceeded, std::placeholders::_1, npcGuid, spellId));
 	}
@@ -2675,16 +2685,20 @@ namespace wowpp
 		// Accept that quest
 		if (!m_character->acceptQuest(questId))
 		{
-			// Try to restore previously given quest item (TODO: This is ugly and could be a security issue because, in theory,
-			// this could lead to creating the item twice etc.)
-			auto result = m_character->getInventory().createItems(itemQuestgiver->getEntry(), itemQuestgiver->getStackCount());
-			if (result != game::inventory_change_failure::Okay)
+			if (itemQuestgiver && itemSlot != 0)
 			{
-				// Worst case! Player has lost the quest item... this may NEVER EVER happen (need for an inventory transaction system)
-				ELOG("PLAYER " << m_character->getGuid() << " ITEM LOSS SINCE QUEST " << questId << " COULD NOT BE ACCEPTED AND QUESTGIVER ITEM " 
-					<< itemQuestgiver->getStackCount() << "x " << itemQuestgiver->getEntry().id() << " COULD NOT BE RECREATED!");
-				assert(false);
+				// Try to restore previously given quest item (TODO: This is ugly and could be a security issue because, in theory,
+				// this could lead to creating the item twice etc.)
+				auto result = m_character->getInventory().createItems(itemQuestgiver->getEntry(), itemQuestgiver->getStackCount());
+				if (result != game::inventory_change_failure::Okay)
+				{
+					// Worst case! Player has lost the quest item... this may NEVER EVER happen (need for an inventory transaction system)
+					ELOG("PLAYER " << m_character->getGuid() << " ITEM LOSS SINCE QUEST " << questId << " COULD NOT BE ACCEPTED AND QUESTGIVER ITEM "
+						<< itemQuestgiver->getStackCount() << "x " << itemQuestgiver->getEntry().id() << " COULD NOT BE RECREATED!");
+					assert(false);
+				}
 			}
+			
 			return;
 		}
 
@@ -2797,7 +2811,8 @@ namespace wowpp
 			// Try to find next quest and if there is one, send quest details
 			UInt32 nextQuestId = quest->nextchainquestid();
 			if (nextQuestId &&
-				object->providesQuest(nextQuestId))
+				object->providesQuest(nextQuestId) &&
+				m_character->getQuestStatus(nextQuestId) == game::quest_status::Available)
 			{
 				const auto *nextQuestEntry = m_project.quests.getById(nextQuestId);
 				if (nextQuestEntry)

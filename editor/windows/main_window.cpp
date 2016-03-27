@@ -91,6 +91,27 @@ namespace wowpp
 			close();
 		}
 
+		void MainWindow::on_Movement_triggered(QAction * action)
+		{
+			ILOG("Triggered " << action->objectName().toStdString());
+		}
+
+		void MainWindow::on_actionDelete_triggered()
+		{
+			// Check if any objects are selected
+			auto &selection = m_application.getSelection();
+			if (selection.empty())
+				return;
+
+			for (auto &selected : selection.getSelectedObjects())
+			{
+				selected->deselect();
+				selected->remove();
+			}
+
+			selection.clear();
+		}
+
 		void MainWindow::on_actionLoadMap_triggered()
 		{
 			LoadMapDialog dialog(m_application);

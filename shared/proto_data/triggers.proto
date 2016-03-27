@@ -36,12 +36,18 @@ message TriggerAction {
 	repeated int32 data = 5;
 }
 
+message TriggerEvent {
+	required uint32 type = 1;
+	repeated uint32 data = 2;
+}
+
 message TriggerEntry {
 	required uint32 id = 1;
 	required string name = 2;
 	optional string category = 3;
-	repeated uint32 events = 4;
+	reserved 4;
 	repeated TriggerAction actions = 5;
+	repeated TriggerEvent newevents = 6;
 }
 
 message Triggers {
