@@ -326,6 +326,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(VoiceSessionEnable, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(CharRename, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(QuestQuery, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(Who, game::session_status::LoggedIn)
 #undef WOWPP_HANDLE_PACKET
 
 			default:
@@ -2428,5 +2429,111 @@ namespace wowpp
 		sendPacket(
 			std::bind(game::server_write::questQueryResponse, std::placeholders::_1, std::cref(*quest)));
 	}
+
+	void Player::handleWho(game::IncomingPacket & packet)
+	{
+		// Read request packet
+		game::WhoListRequest request;
+		if (!game::client_read::who(packet, request))
+		{
+			ILOG("Who Request does not match!");
+			return;
+		}
+
+		// Check if the packet can be valid, as WoW allows a maximum of 10 zones and 4 strings
+		// per request.
+		if (request.zoneids.size() > 10 || request.strings.size() > 4)
+		{
+			return;
+		}
+
+		// Used for response packet
+		game::WhoResponse response;
+		
+		// Should be always valid since only than the packet will be handled, but just in case...
+		assert(m_gameCharacter);
+
+		// Iterate through all connected players
+		for (auto &player : m_manager.getPlayers())
+		{
+			// Maximum of 50 allowed characters
+			if (response.entries.size() >= 50)
+			{
+				// STOP the loop
+				break;
+			}
+
+			// Check if the player has a valid game character
+			auto *character = player->getGameCharacter();
+			if (!character)
+			{
+				continue;
+			}
+
+			// Check if that game character is currently in a world
+			if (!player->getWorldNode())
+			{
+				continue;
+			}
+
+			// Check if levels match, first, as this is the least expensive thing to check
+			const UInt32 level = character->getLevel();
+			if (level < request.level_min || level > request.level_max)
+			{
+				continue;
+			}
+
+			// Convert character name to lower case string
+			String charNameLowered = character->getName();
+			std::transform(charNameLowered.begin(), charNameLowered.end(), charNameLowered.begin(), ::tolower);
+
+			// Validate character name
+			if (!request.player_name.empty())
+			{
+				String searchLowered = request.player_name;
+				std::transform(searchLowered.begin(), searchLowered.end(), searchLowered.begin(), ::tolower);
+
+				// Part not found
+				if (charNameLowered.find(searchLowered) == String::npos)
+				{
+					continue;
+				}
+			}
+
+			// Validate strings
+			bool passedStringTest = request.strings.empty();
+			for (const auto &string : request.strings)
+			{
+				String searchLowered = string;
+				std::transform(searchLowered.begin(), searchLowered.end(), searchLowered.begin(), ::tolower);
+				
+				// TODO: These strings also have to be validated against the guild name (and maybe 
+				// even the zone name? Needs to be validated). Right now we only check these against
+				// the players name
+				if (charNameLowered.find(searchLowered) != String::npos)
+				{
+					passedStringTest = true;
+					break;
+				}
+			}
+
+			// Skip this character if not passed string test
+			if (!passedStringTest)
+			{
+				continue;
+			}
+
+			// Add new response entry, as all checks above were fulfilled
+			WhoResponseEntry entry(*character);
+			response.entries.push_back(std::move(entry));
+		}
+
+		// Match Count is request count right now (TODO)
+		sendPacket(
+			std::bind(game::server_write::whoRequestResponse, std::placeholders::_1, response, response.entries.size()));
+
+	}
+
+
 
 }

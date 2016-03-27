@@ -3329,6 +3329,27 @@ namespace wowpp
 					<< io::write<NetUInt32>(timeSkipped);
 				out_packet.finish();
 			}
+
+			void whoRequestResponse(game::OutgoingPacket &out_packet, const game::WhoResponse &response, UInt32 matchcount)
+			{
+				out_packet.start(game::server_packet::WhoResponse);
+				out_packet
+					<< io::write<NetUInt32>(matchcount)						// Match count
+					<< io::write<NetUInt32>(response.entries.size());		// Display count
+				for (const auto &entry : response.entries)
+				{
+					out_packet
+						<< io::write_range(entry.name) << io::write<NetUInt8>(0)
+						<< io::write_range(entry.guild) << io::write<NetUInt8>(0)
+						<< io::write<NetUInt32>(entry.level)
+						<< io::write<NetUInt32>(entry.class_)
+						<< io::write<NetUInt32>(entry.race)
+						<< io::write<NetUInt8>(entry.gender)
+						<< io::write<NetUInt32>(entry.zone);
+				}
+				out_packet.finish();
+			}
+
 			void spellLogMiss(game::OutgoingPacket & out_packet, UInt32 spellID, UInt64 caster, UInt8 unknown, const std::map<UInt64, game::SpellMissInfo>& missedTargetGUIDs)
 			{
 				out_packet.start(game::server_packet::SpellLogMiss);
@@ -3356,7 +3377,7 @@ namespace wowpp
 				       >> io::read<NetUInt32>(out_latency);
 			}
 
-			bool authSession(io::Reader &packet, UInt32 &out_clientBuild, String &out_Account, UInt32 &out_clientSeed, SHA1Hash &out_digest, AddonEntries &out_addons)
+			bool authSession(io::Reader &packet, UInt32 &out_clientBuild, String &out_Account, UInt32 &out_clientSeed, SHA1Hash &out_digest, game::AddonEntries &out_addons)
 			{
 				UInt32 unknown;
 
@@ -3413,7 +3434,7 @@ namespace wowpp
 
 				while (!source.end())
 				{
-					AddonEntry addon;
+					game::AddonEntry addon;
 
 					// Read other addon values
 					if (!(addonReader
@@ -3437,7 +3458,7 @@ namespace wowpp
 				return packet;
 			}
 
-			bool charCreate(io::Reader &packet, CharEntry &out_entry)
+			bool charCreate(io::Reader &packet, game::CharEntry &out_entry)
 			{
 				// Read 0-terminated name
 				out_entry.name.clear();
@@ -3541,7 +3562,7 @@ namespace wowpp
 				       >> io::read<NetUInt32>(out_standState);
 			}
 
-			bool messageChat(io::Reader &packet, ChatMsg &out_type, Language &out_lang, String &out_to, String &out_channel, String &out_message)
+			bool messageChat(io::Reader &packet, game::ChatMsg &out_type, game::Language &out_lang, String &out_to, String &out_channel, String &out_message)
 			{
 				packet
 				        >> io::read<NetUInt32>(out_type)
@@ -3550,19 +3571,19 @@ namespace wowpp
 				// TODO: Prevent player to speak in unknown language
 				switch (out_type)
 				{
-				case chat_msg::Say:
-				case chat_msg::Emote:
-				case chat_msg::Yell:
-				case chat_msg::Party:
-				case chat_msg::Guild:
-				case chat_msg::Officer:
-				case chat_msg::Raid:
-				case chat_msg::RaidLeader:
-				case chat_msg::RaidWarning:
-				case chat_msg::Battleground:
-				case chat_msg::BattlegroundLeader:
-				case chat_msg::Afk:
-				case chat_msg::Dnd:
+				case game::chat_msg::Say:
+				case game::chat_msg::Emote:
+				case game::chat_msg::Yell:
+				case game::chat_msg::Party:
+				case game::chat_msg::Guild:
+				case game::chat_msg::Officer:
+				case game::chat_msg::Raid:
+				case game::chat_msg::RaidLeader:
+				case game::chat_msg::RaidWarning:
+				case game::chat_msg::Battleground:
+				case game::chat_msg::BattlegroundLeader:
+				case game::chat_msg::Afk:
+				case game::chat_msg::Dnd:
 					{
 						if (!(packet >> io::read_string(out_message)))
 						{
@@ -3570,7 +3591,7 @@ namespace wowpp
 						}
 						break;
 					}
-				case chat_msg::Whisper:
+				case game::chat_msg::Whisper:
 					{
 						if (!(packet 
 							>> io::read_string(out_to)
@@ -3580,7 +3601,7 @@ namespace wowpp
 						}
 						break;
 					}
-				case chat_msg::Channel:
+				case game::chat_msg::Channel:
 					{
 						if (!(packet
 							>> io::read_string(out_channel)
@@ -4130,6 +4151,59 @@ namespace wowpp
 					>> io::read<NetUInt64>(out_guid)
 					>> io::read<NetUInt32>(out_timeSkipped);
 			}
+
+			bool who(io::Reader &packet, WhoListRequest &out_whoList)
+			{
+				return packet
+					   >> out_whoList;
+			}
+
+		}
+
+		wowpp::game::WhoResponseEntry::WhoResponseEntry(const GameCharacter & character)
+			: level(character.getLevel())
+			, class_(character.getClass())
+			, race(character.getRace())
+			, name(character.getName())
+			, zone(character.getZone())
+			, gender(character.getGender())
+		{
+		}
+
+		io::Reader &operator>>(io::Reader &r, WhoListRequest &out_whoList)
+		{
+			r
+				>> io::read<NetUInt32>(out_whoList.level_min)
+				>> io::read<NetUInt32>(out_whoList.level_max)
+				>> io::read_string(out_whoList.player_name)
+				>> io::read_string(out_whoList.guild_name)
+				>> io::read<NetUInt32>(out_whoList.racemask)
+				>> io::read<NetUInt32>(out_whoList.classmask);
+			
+			// Read zones
+			UInt32 zoneCount = 0;
+			r >> io::read<NetUInt32>(zoneCount);
+			if (zoneCount > 0)
+			{
+				out_whoList.zoneids.resize(zoneCount);
+				for (auto &zone : out_whoList.zoneids)
+				{
+					r >> io::read<NetUInt32>(zone);
+				}
+			}
+
+			// Read strings
+			UInt32 stringCount = 0;
+			r >> io::read<NetUInt32>(stringCount);
+			if (stringCount > 0)
+			{
+				out_whoList.strings.resize(stringCount);
+				for (auto &string : out_whoList.strings)
+				{
+					r >> io::read_string(string);
+				}
+			}
+			return r;
 		}
 	}
 }

@@ -407,6 +407,7 @@ namespace wowpp
 				QuestQuery				= 0x05C,
 				GameObjectQuery			= 0x05E,
 				CreatureQuery			= 0x060,
+				Who						= 0x062,
 				ContactList				= 0x066,
 				AddFriend				= 0x069,
 				DeleteFriend			= 0x06A,
@@ -543,6 +544,7 @@ namespace wowpp
 				QuestQueryResponse			= 0x05D,
 				GameObjectQueryResponse		= 0x05F,
 				CreatureQueryResponse		= 0x061,
+				WhoResponse					= 0x063,
 				ContactList					= 0x067,
 				FriendStatus				= 0x068,
 				GroupInvite					= 0x06F,
@@ -679,6 +681,57 @@ namespace wowpp
 			};
 		}
 
+		struct WhoListRequest final
+		{
+			UInt32 level_min;
+			UInt32 level_max;
+			UInt32 racemask;
+			UInt32 classmask;
+			std::vector<UInt32> zoneids;
+			std::vector<String> strings;
+			String player_name;
+			String guild_name;
+
+			WhoListRequest()
+				: level_min(0)
+				, level_max(100)
+				, racemask(0)
+				, classmask(0)
+			{
+			}
+		};
+
+		struct WhoResponseEntry final
+		{
+			UInt32 level;
+			String name;
+			String guild;
+			UInt32 race;
+			UInt32 class_;
+			UInt32 zone;
+			UInt8 gender;
+
+			WhoResponseEntry()
+				: level(1)
+				, race(0)
+				, class_(0)
+				, zone(0)
+				, gender(0)
+			{
+			}
+			WhoResponseEntry(const GameCharacter &character);
+		};
+
+		struct WhoResponse final
+		{
+			std::vector<WhoResponseEntry> entries;
+
+			WhoResponse()
+			{
+			}
+		};
+
+		io::Reader &operator >>(io::Reader &r, WhoListRequest &out_whoList);
 
 		namespace client_read
 		{
@@ -1206,6 +1259,11 @@ namespace wowpp
 				io::Reader &packet,
 				UInt64 &out_guid,
 				UInt32 &out_timeSkipped
+				);
+
+			bool who(
+				io::Reader &packet, 
+				WhoListRequest &out_whoList
 				);
 		};
 
@@ -2081,6 +2139,12 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt64 guid,
 				UInt32 timeSkipped
+				);
+
+			void whoRequestResponse(
+				game::OutgoingPacket &out_packet,
+				const game::WhoResponse &response,
+				UInt32 matchcount
 				);
 
 			void spellLogMiss(
