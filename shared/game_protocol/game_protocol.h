@@ -681,33 +681,57 @@ namespace wowpp
 			};
 		}
 
-
 		struct WhoListRequest final
 		{
-			UInt32 	level_min,
-				   	level_max,
-				   	racemask,
-					classmask,
-					zones_count,
-					str_count;
-			UInt32 	zoneids[10];
-			std::string 	player_name;
-			std::string 	guild_name;
+			UInt32 level_min;
+			UInt32 level_max;
+			UInt32 racemask;
+			UInt32 classmask;
+			std::vector<UInt32> zoneids;
+			std::vector<String> strings;
+			String player_name;
+			String guild_name;
+
+			WhoListRequest()
+				: level_min(0)
+				, level_max(100)
+				, racemask(0)
+				, classmask(0)
+			{
+			}
 		};
 
-
-		struct whoResponse final
+		struct WhoResponseEntry final
 		{
-			std::vector<UInt32> lvl;
-			std::vector<String> names;
-			std::vector<String> g_names;
-			std::vector<UInt32> races;
-			std::vector<UInt32> classes;
-			std::vector<UInt32> zones;
-			std::vector<UInt8> genders;
+			UInt32 level;
+			String name;
+			String guild;
+			UInt32 race;
+			UInt32 class_;
+			UInt32 zone;
+			UInt8 gender;
+
+			WhoResponseEntry()
+				: level(1)
+				, race(0)
+				, class_(0)
+				, zone(0)
+				, gender(0)
+			{
+			}
+			WhoResponseEntry(const GameCharacter &character);
 		};
 
-		io::Reader &operator>>(io::Reader &r, WhoListRequest &out_whoList);
+		struct WhoResponse final
+		{
+			std::vector<WhoResponseEntry> entries;
+
+			WhoResponse()
+			{
+			}
+		};
+
+		io::Reader &operator >>(io::Reader &r, WhoListRequest &out_whoList);
 
 		namespace client_read
 		{
@@ -1237,9 +1261,10 @@ namespace wowpp
 				UInt32 &out_timeSkipped
 				);
 
-			bool who(io::Reader &packet, WhoListRequest &out_whoList);
-
-
+			bool who(
+				io::Reader &packet, 
+				WhoListRequest &out_whoList
+				);
 		};
 
 		namespace server_write
@@ -2116,11 +2141,10 @@ namespace wowpp
 				UInt32 timeSkipped
 				);
 
-			void WhoRequestResponse(
+			void whoRequestResponse(
 				game::OutgoingPacket &out_packet,
-				game::whoResponse &response,
-				UInt32 matchcount,
-				UInt32 displaycount
+				const game::WhoResponse &response,
+				UInt32 matchcount
 				);
 
 			void spellLogMiss(

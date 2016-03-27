@@ -2430,78 +2430,107 @@ namespace wowpp
 			std::bind(game::server_write::questQueryResponse, std::placeholders::_1, std::cref(*quest)));
 	}
 
-
 	void Player::handleWho(game::IncomingPacket & packet)
 	{
-		game::WhoListRequest out_whoList;
-		const auto &players = m_manager.getPlayers();
-		UInt32 matchcount = 0;
-		UInt32 displaycount = 0;
-		UInt32 lvl, class_, race, zone;
-		UInt8 gender;
-		game::whoResponse response;
-		String name, gname;
-
-		if (!game::client_read::who(packet, out_whoList))
+		// Read request packet
+		game::WhoListRequest request;
+		if (!game::client_read::who(packet, request))
 		{
 			ILOG("Who Request does not match!");
 			return;
 		}
 
-		if (out_whoList.zones_count > 10 || out_whoList.str_count > 4)
+		// Check if the packet can be valid, as WoW allows a maximum of 10 zones and 4 strings
+		// per request.
+		if (request.zoneids.size() > 10 || request.strings.size() > 4)
 		{
-			//broken
 			return;
 		}
-		for (std::vector<const std::unique_ptr<Player>>::iterator it = players.begin(); it != players.end(); ++it)
+
+		// Used for response packet
+		game::WhoResponse response;
+		
+		// Should be always valid since only than the packet will be handled, but just in case...
+		assert(m_gameCharacter);
+
+		// Iterate through all connected players
+		for (auto &player : m_manager.getPlayers())
 		{
-			if (0 == (*it)->getGameCharacter())
+			// Maximum of 50 allowed characters
+			if (response.entries.size() >= 50)
 			{
-				//no game char
+				// STOP the loop
+				break;
+			}
+
+			// Check if the player has a valid game character
+			auto *character = player->getGameCharacter();
+			if (!character)
+			{
 				continue;
 			}
 
-			String own_name=this->getGameCharacter()->getName();
-			lvl=(*it) ->getGameCharacter()->getLevel();
-			name = (*it) ->getGameCharacter()->getName();
-
-			if (name == own_name)
+			// Check if that game character is currently in a world
+			if (!player->getWorldNode())
 			{
 				continue;
 			}
 
-
-			if ( (*it) ->getGameCharacter()->getName() == out_whoList.player_name || (lvl >= out_whoList.level_min && lvl <= out_whoList.level_max ))
+			// Check if levels match, first, as this is the least expensive thing to check
+			const UInt32 level = character->getLevel();
+			if (level < request.level_min || level > request.level_max)
 			{
-				class_ = (*it) ->getGameCharacter()->getClass();
-				race = (*it) ->getGameCharacter()->getRace();
-				gender = (*it) ->getGameCharacter()->getGender();
-				zone = (*it) ->getGameCharacter()->getZone();
+				continue;
+			}
+
+			// Convert character name to lower case string
+			String charNameLowered = character->getName();
+			std::transform(charNameLowered.begin(), charNameLowered.end(), charNameLowered.begin(), ::tolower);
+
+			// Validate character name
+			if (!request.player_name.empty())
+			{
+				String searchLowered = request.player_name;
+				std::transform(searchLowered.begin(), searchLowered.end(), searchLowered.begin(), ::tolower);
+
+				// Part not found
+				if (charNameLowered.find(searchLowered) == String::npos)
+				{
+					continue;
+				}
+			}
+
+			// Validate strings
+			bool passedStringTest = request.strings.empty();
+			for (const auto &string : request.strings)
+			{
+				String searchLowered = string;
+				std::transform(searchLowered.begin(), searchLowered.end(), searchLowered.begin(), ::tolower);
 				
-				matchcount++;
-				displaycount++;
+				// TODO: These strings also have to be validated against the guild name (and maybe 
+				// even the zone name? Needs to be validated). Right now we only check these against
+				// the players name
+				if (charNameLowered.find(searchLowered) != String::npos)
+				{
+					passedStringTest = true;
+					break;
+				}
 			}
 
-
-
-
-			if (matchcount > 49)
+			// Skip this character if not passed string test
+			if (!passedStringTest)
 			{
 				continue;
 			}
 
-			String gname = "test";
-			response.lvl.push_back(lvl);
-			response.classes.push_back(class_);
-			response.races.push_back(race);
-			response.genders.push_back(gender);
-			response.zones.push_back(zone);
-			response.names.push_back(name);
-			response.g_names.push_back(name);
+			// Add new response entry, as all checks above were fulfilled
+			WhoResponseEntry entry(*character);
+			response.entries.push_back(std::move(entry));
 		}
 
+		// Match Count is request count right now (TODO)
 		sendPacket(
-				std::bind(game::server_write::WhoRequestResponse, std::placeholders::_1, response, matchcount, displaycount));
+			std::bind(game::server_write::whoRequestResponse, std::placeholders::_1, response, response.entries.size()));
 
 	}
 

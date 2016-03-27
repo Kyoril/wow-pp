@@ -3330,21 +3330,22 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void WhoRequestResponse(game::OutgoingPacket &out_packet, game::whoResponse &response, UInt32 matchcount, UInt32 displaycount)
+			void whoRequestResponse(game::OutgoingPacket &out_packet, const game::WhoResponse &response, UInt32 matchcount)
 			{
-				int size = response.names.size();
 				out_packet.start(game::server_packet::WhoResponse);
-				for (int i = 0; i < size; i++)
+				out_packet
+					<< io::write<NetUInt32>(matchcount)						// Match count
+					<< io::write<NetUInt32>(response.entries.size());		// Display count
+				for (const auto &entry : response.entries)
 				{
-					out_packet << io::write<NetUInt32>(matchcount);
-					out_packet << io::write<NetUInt32>(displaycount);
-					out_packet << io::write_range(response.names[i]) << io::write<NetUInt8>(0);
-					out_packet << io::write_range(response.g_names[i]) << io::write<NetUInt8>(0);
-					out_packet << io::write<NetUInt32>(response.lvl[i]);
-					out_packet << io::write<NetUInt32>(response.classes[i]);
-					out_packet << io::write<NetUInt32>(response.races[i]);
-					out_packet << io::write<NetUInt8>(response.genders[i]);
-					out_packet << io::write<NetUInt32>(response.zones[i]);
+					out_packet
+						<< io::write_range(entry.name) << io::write<NetUInt8>(0)
+						<< io::write_range(entry.guild) << io::write<NetUInt8>(0)
+						<< io::write<NetUInt32>(entry.level)
+						<< io::write<NetUInt32>(entry.class_)
+						<< io::write<NetUInt32>(entry.race)
+						<< io::write<NetUInt8>(entry.gender)
+						<< io::write<NetUInt32>(entry.zone);
 				}
 				out_packet.finish();
 			}
@@ -4158,33 +4159,50 @@ namespace wowpp
 			}
 
 		}
+
+		wowpp::game::WhoResponseEntry::WhoResponseEntry(const GameCharacter & character)
+			: level(character.getLevel())
+			, class_(character.getClass())
+			, race(character.getRace())
+			, name(character.getName())
+			, zone(character.getZone())
+			, gender(character.getGender())
+		{
+		}
+
 		io::Reader &operator>>(io::Reader &r, WhoListRequest &out_whoList)
 		{
 			r
-			>> io::read<NetUInt32>(out_whoList.level_min)
-			>> io::read<NetUInt32>(out_whoList.level_max)
-			>> io::read_string(out_whoList.player_name)
-			>> io::read_string(out_whoList.guild_name)
-			>> io::read<NetUInt32>(out_whoList.racemask)
-			>> io::read<NetUInt32>(out_whoList.classmask)
-			>> io::read<NetUInt32>(out_whoList.zones_count);
-
-			for (UInt32 i = 0; i < out_whoList.zones_count; ++i)
+				>> io::read<NetUInt32>(out_whoList.level_min)
+				>> io::read<NetUInt32>(out_whoList.level_max)
+				>> io::read_string(out_whoList.player_name)
+				>> io::read_string(out_whoList.guild_name)
+				>> io::read<NetUInt32>(out_whoList.racemask)
+				>> io::read<NetUInt32>(out_whoList.classmask);
+			
+			// Read zones
+			UInt32 zoneCount = 0;
+			r >> io::read<NetUInt32>(zoneCount);
+			if (zoneCount > 0)
 			{
-				UInt32 temp;
-				r >> temp;
-				out_whoList.zoneids[i] = temp;
+				out_whoList.zoneids.resize(zoneCount);
+				for (auto &zone : out_whoList.zoneids)
+				{
+					r >> io::read<NetUInt32>(zone);
+				}
 			}
 
-			r
-			>>out_whoList.str_count;
-
-			for (UInt32 i = 0; i < out_whoList.str_count; ++i)
+			// Read strings
+			UInt32 stringCount = 0;
+			r >> io::read<NetUInt32>(stringCount);
+			if (stringCount > 0)
 			{
-				r >> io::read_string(out_whoList.player_name);
+				out_whoList.strings.resize(stringCount);
+				for (auto &string : out_whoList.strings)
+				{
+					r >> io::read_string(string);
+				}
 			}
-
-			out_whoList.guild_name = out_whoList.player_name;
 			return r;
 		}
 	}
