@@ -1587,12 +1587,12 @@ namespace wowpp
 
 	float GameUnit::getDodgeChance(GameUnit &attacker)
 	{
-		return 5.0f;
+		return isStunned() ? 0.0f : 5.0f;
 	}
 
 	float GameUnit::getParryChance(GameUnit &attacker)
 	{
-		return 5.0f;
+		return isStunned() ? 0.0f : 5.0f;
 	}
 
 	float GameUnit::getGlancingChance(GameUnit &attacker)
@@ -1613,7 +1613,7 @@ namespace wowpp
 
 	float GameUnit::getBlockChance()
 	{
-		if (canBlock())
+		if (canBlock() && !isStunned())
 		{
 			return 5.0f;
 		}
