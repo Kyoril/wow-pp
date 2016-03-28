@@ -2160,6 +2160,6 @@ namespace wowpp
 
 	bool GameUnit::isImmuneAgainstMechanic(UInt32 mechanic) const
 	{
-		return mechanic != 0 && (m_mechanicImmunity & mechanic) != 0;
+		return mechanic != 0 && (m_mechanicImmunity & (1 << mechanic)) != 0;
 	}
 }

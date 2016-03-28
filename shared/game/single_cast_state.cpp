@@ -1419,21 +1419,22 @@ namespace wowpp
 			m_affectedTargets.insert(targetUnit->shared_from_this());
 
 			UInt32 totalPoints = 0;
+			game::SpellMissInfo missInfo = game::spell_miss_info::None;
 			bool spellFailed = false;
 
 			if (hitInfos[i] == game::hit_info::Miss)
 			{
-				spellFailed = true;
+				missInfo = game::spell_miss_info::Miss;
 			}
 			else if (victimStates[i] == game::victim_state::IsImmune)
 			{
-				spellFailed = true;
+				missInfo = game::spell_miss_info::Immune;
 			}
 			else if (victimStates[i] == game::victim_state::Normal)
 			{
 				if (resists[i] == 100.0f)
 				{
-					spellFailed = true;
+					missInfo = game::spell_miss_info::Resist;
 				}
 				else
 				{
@@ -1451,26 +1452,20 @@ namespace wowpp
 				}
 			}
 
-			if (spellFailed)
+			if (missInfo != game::spell_miss_info::None)
 			{
-				if (log2(school) != game::spell_school::Normal)	//melee auras doesn't send a "resisted" packet as they can miss or be dodged...
+				m_completedEffectsExecution[targetUnit->getGuid()] = completedEffects.connect([this, &caster, targetUnit, school, missInfo]()
 				{
-					m_completedEffectsExecution[targetUnit->getGuid()] = completedEffects.connect([this, &caster, targetUnit, school]()
-					{
-						wowpp::sendPacketFromCaster(caster,
-													std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-															  targetUnit->getGuid(),
-															  caster.getGuid(),
-															  m_spell.id(),
-															  1,
-															  school,
-															  0,
-															  1,	//resisted
-															  false,
-															  0,
-															  false));
-					});	// End connect
-				}
+					std::map<UInt64, game::SpellMissInfo> missedTargets;
+					missedTargets[targetUnit->getGuid()] = missInfo;
+
+					wowpp::sendPacketFromCaster(caster,
+						std::bind(game::server_write::spellLogMiss, std::placeholders::_1,
+							m_spell.id(),
+							caster.getGuid(),
+							0,
+							std::cref(missedTargets)));
+				});	// End connect
 			}
 			else if (targetUnit->isAlive())
 			{

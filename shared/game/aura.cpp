@@ -1005,10 +1005,13 @@ namespace wowpp
 
 	bool Aura::isPositive(const proto::SpellEntry &spell, const proto::SpellEffect &effect)
 	{
+		// Passive spells are always considered positive
+		if (spell.attributes(0) & game::spell_attributes::Passive)
+			return true;
+
 		// Negative attribute
-		if (spell.attributes(0) & 0x04000000) {
+		if (spell.attributes(0) & game::spell_attributes::Negative)
 			return false;
-		}
 
 		switch (effect.aura())
 		{
