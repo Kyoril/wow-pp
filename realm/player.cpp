@@ -2449,7 +2449,10 @@ namespace wowpp
 
 		// Used for response packet
 		game::WhoResponse response;
-		
+		auto *this_character = this->getGameCharacter(); //this character that is requesting
+		const bool is_this_Alliance = ((game::race::Alliance & (1 << (this_character->getRace() - 1))) == (1 << (this_character->getRace() - 1)));
+
+
 		// Should be always valid since only than the packet will be handled, but just in case...
 		assert(m_gameCharacter);
 
@@ -2465,6 +2468,16 @@ namespace wowpp
 
 			// Check if the player has a valid game character
 			auto *character = player->getGameCharacter();
+
+			//is this player we are looking for alliance??
+			const bool isAlliance = ((game::race::Alliance & (1 << (character->getRace() - 1))) == (1 << (character->getRace() - 1)));
+			if(is_this_Alliance != isAlliance)
+			{
+				//cant find players that are not same faction
+				continue;
+			}
+
+
 			if (!character)
 			{
 				continue;
@@ -2475,6 +2488,7 @@ namespace wowpp
 			{
 				continue;
 			}
+
 
 			// Check if levels match, first, as this is the least expensive thing to check
 			const UInt32 level = character->getLevel();
@@ -2507,14 +2521,21 @@ namespace wowpp
 				String searchLowered = string;
 				std::transform(searchLowered.begin(), searchLowered.end(), searchLowered.begin(), ::tolower);
 				
-				// TODO: These strings also have to be validated against the guild name (and maybe 
-				// even the zone name? Needs to be validated). Right now we only check these against
+				// TODO: These strings also have to be validated against the guild name.
 				// the players name
-				if (charNameLowered.find(searchLowered) != String::npos)
+
+				//get zone name
+				auto zone = m_project.zones.getById(character->getZone());
+				auto zone_name = zone->name();
+				std::transform(zone_name.begin(), zone_name.end(), zone_name.begin(), ::tolower);
+
+				if ((charNameLowered.find(searchLowered) != String::npos) || (zone_name.find(searchLowered) != String::npos))
 				{
 					passedStringTest = true;
 					break;
 				}
+
+
 			}
 
 			// Skip this character if not passed string test
