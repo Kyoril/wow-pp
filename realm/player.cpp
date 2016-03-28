@@ -2497,6 +2497,28 @@ namespace wowpp
 				continue;
 			}
 
+
+			//search by zoneID
+			if(!request.zoneids.empty())
+			{
+				bool found_by_zoneid = false;
+
+				for (auto zone : request.zoneids)
+				{
+					if(zone == character->getZone())
+					{
+						found_by_zoneid = true;
+						break;
+					}
+				}
+
+				if(found_by_zoneid == false)
+				{
+					continue;
+				}
+			}
+
+
 			// Convert character name to lower case string
 			String charNameLowered = character->getName();
 			std::transform(charNameLowered.begin(), charNameLowered.end(), charNameLowered.begin(), ::tolower);
