@@ -137,6 +137,7 @@ namespace wowpp
             , m_objectEditor(nullptr)
             , m_triggerEditor(nullptr)
 			, m_changed(false)
+			, m_transformTool(transform_tool::Select)
 		{
 		}
 
@@ -213,6 +214,12 @@ namespace wowpp
 			m_objectEditor->activateWindow();
 
 			emit objectEditorShown();
+		}
+
+		void EditorApplication::setTransformTool(TransformTool tool)
+		{
+			m_transformTool = tool;
+			transformToolChanged(tool);
 		}
 
 		void EditorApplication::showTriggerEditor()

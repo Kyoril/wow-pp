@@ -284,8 +284,11 @@ namespace wowpp
 				m_app.getSelection(),
 				m_sceneMgr,
 				m_camera));
-			m_transformWidget->setVisible(true);
-			m_transformWidget->setTransformMode(transform_mode::Translate);
+
+			// Watch for transform changes
+			m_onTransformChanged = m_app.transformToolChanged.connect(
+				std::bind(&WorldEditor::onTransformToolChanged, this, std::placeholders::_1));
+			onTransformToolChanged(m_app.getTransformTool());
 		}
 
 		WorldEditor::~WorldEditor()
@@ -469,6 +472,32 @@ namespace wowpp
 			}
 
 			return nullptr;
+		}
+
+		void WorldEditor::onTransformToolChanged(TransformTool tool)
+		{
+			if (tool == transform_tool::Select)
+			{
+				m_transformWidget->setVisible(false);
+			}
+			else
+			{
+				m_transformWidget->setVisible(true);
+				switch (tool)
+				{
+					case transform_tool::Translate:
+						m_transformWidget->setTransformMode(transform_mode::Translate);
+						break;
+					case transform_tool::Rotate:
+						m_transformWidget->setTransformMode(transform_mode::Rotate);
+						break;
+					case transform_tool::Scale:
+						m_transformWidget->setTransformMode(transform_mode::Scale);
+						break;
+					default:
+						break;
+				}
+			}
 		}
 
 		void WorldEditor::onKeyPressed(const QKeyEvent *event)

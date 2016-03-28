@@ -105,7 +105,22 @@ namespace wowpp
 
 		void MainWindow::on_Movement_triggered(QAction * action)
 		{
-			ILOG("Triggered " << action->objectName().toStdString());
+			if (action == m_ui->actionSelect)
+			{
+				m_application.setTransformTool(transform_tool::Select);
+			}
+			else if (action == m_ui->actionTranslate)
+			{
+				m_application.setTransformTool(transform_tool::Translate);
+			}
+			else if (action == m_ui->actionRotate)
+			{
+				m_application.setTransformTool(transform_tool::Rotate);
+			}
+			else if (action == m_ui->actionScale)
+			{
+				m_application.setTransformTool(transform_tool::Scale);
+			}
 		}
 
 		void MainWindow::on_actionDelete_triggered()

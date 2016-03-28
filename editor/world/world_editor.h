@@ -34,6 +34,7 @@
 #include "ogre_wrappers/qt_ogre_window.h"
 #include "ogre_wrappers/entity_ptr.h"
 #include "transform_widget.h"
+#include "editor_application.h"
 
 namespace Ogre
 {
@@ -51,8 +52,6 @@ namespace wowpp
 
 	namespace editor
 	{
-		class EditorApplication;
-
 		class WorldEditor final : public paging::IPageLoaderListener, public IScene
 		{
 		public:
@@ -75,6 +74,7 @@ namespace wowpp
 			void onPageLoad(const paging::Page &page) override;
 			void onPageAvailabilityChanged(const paging::PageNeighborhood &page, bool isAvailable) override;
 			terrain::model::Page *getTerrainPage(terrain::model::PagePosition position);
+			void onTransformToolChanged(TransformTool tool);
 
 		private:
 
@@ -96,6 +96,7 @@ namespace wowpp
 			std::vector<wowpp::ogre_utils::SceneNodePtr> m_spawnNodes;
 			std::vector<wowpp::ogre_utils::EntityPtr> m_spawnEntities;
 			std::unique_ptr<TransformWidget> m_transformWidget;
+			boost::signals2::scoped_connection m_onTransformChanged;
 		};
 	}
 }
