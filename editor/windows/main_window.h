@@ -22,6 +22,7 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QSortFilterProxyModel>
 #include "ogre_wrappers/qt_ogre_window.h"
 
 // Forwards
@@ -51,10 +52,13 @@ namespace wowpp
 			void on_actionExit_triggered();
 			void on_Movement_triggered(QAction *action);
 			void on_actionDelete_triggered();
+			void on_comboBox_currentIndexChanged(int index);
+			void on_actionUnit_Palette_triggered();
 
 		protected:
 
 			void closeEvent(QCloseEvent *qEvent) override;
+			void showEvent(QShowEvent* qEvent) override;
 			void readSettings();
 
 		private:
@@ -62,6 +66,8 @@ namespace wowpp
 			EditorApplication &m_application;
 			Ui::MainWindow *m_ui;
 			QtOgreWindow *m_ogreWindow;
+			QSortFilterProxyModel *m_unitFilter;
+			QSortFilterProxyModel *m_objectFilter;
 		};
 	}
 }

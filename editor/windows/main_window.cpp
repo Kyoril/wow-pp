@@ -79,6 +79,18 @@ namespace wowpp
 			}
 		}
 
+		void MainWindow::showEvent(QShowEvent * qEvent)
+		{
+			QMainWindow::showEvent(qEvent);
+
+			// Automatically deleted since it's a QObject
+			m_unitFilter = new QSortFilterProxyModel;
+			m_unitFilter->setSourceModel(m_application.getUnitListModel());
+
+			m_objectFilter = new QSortFilterProxyModel;
+			m_objectFilter->setSourceModel(m_application.getObjectListModel());
+		}
+
 		void MainWindow::readSettings()
 		{
 			QSettings settings("WoW++", "Wow++ Editor");
@@ -110,6 +122,27 @@ namespace wowpp
 			}
 
 			selection.clear();
+		}
+
+		void MainWindow::on_comboBox_currentIndexChanged(int index)
+		{
+			switch (index)
+			{
+				case 1:
+					m_ui->unitPaletteView->setModel(m_unitFilter);
+					break;
+				case 2:
+					m_ui->unitPaletteView->setModel(m_objectFilter);
+					break;
+				default:
+					m_ui->unitPaletteView->setModel(nullptr);
+					break;
+			}
+		}
+
+		void MainWindow::on_actionUnit_Palette_triggered()
+		{
+			m_ui->unitPalette->show();
 		}
 
 		void MainWindow::on_actionLoadMap_triggered()
