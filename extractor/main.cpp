@@ -1148,7 +1148,7 @@ namespace
 			return false;
 		}
 
-#if 1
+#if 0
 		if (mapId != 389)
 		{
 			return true;
