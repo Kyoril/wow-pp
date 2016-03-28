@@ -528,6 +528,8 @@ namespace wowpp
 								auto *objspawn = Ogre::any_cast<proto::ObjectSpawnEntry*>(any);
 								// TODO
 							}
+
+							break;
 						}
 					}
 				}
