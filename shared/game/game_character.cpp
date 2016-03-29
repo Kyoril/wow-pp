@@ -230,6 +230,15 @@ namespace wowpp
 				auto &data = m_quests[quest];
 				data.status = game::quest_status::Incomplete;
 
+				if (questEntry->srcspell())
+				{
+					// TODO: Maybe we should make the quest giver cast the spell, if it's a unit
+					SpellTargetMap targetMap;
+					targetMap.m_unitTarget = getGuid();
+					targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+					castSpell(std::move(targetMap), questEntry->srcspell(), -1, 0, true);
+				}
+
 				// Set quest log
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, quest);
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
