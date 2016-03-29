@@ -49,7 +49,7 @@ namespace wowpp
 	private:
 
 		std::unique_ptr<UnitWatcher> m_aggroWatcher;
-		boost::signals2::scoped_connection m_onThreatened;
+		boost::signals2::scoped_connection m_onThreatened, m_onOwnerMoved, m_onMoved;
 		Countdown m_aggroDelay;
 	};
 }

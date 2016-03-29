@@ -26,6 +26,7 @@
 #include "world_instance.h"
 #include "tiled_unit_watcher.h"
 #include "unit_finder.h"
+#include "unit_mover.h"
 #include "universe.h"
 #include "log/default_log_levels.h"
 
@@ -57,6 +58,37 @@ namespace wowpp
 		assert(worldInstance);
 
 		math::Vector3 location(controlled.getLocation());
+
+		// Watch for movement
+		m_onMoved = controlled.moved.connect([this](GameObject &obj, const math::Vector3 &oldPosition, float oldRotation) 
+		{
+			const auto &loc = obj.getLocation();
+			if (loc != oldPosition)
+			{
+				getAI().setHome(CreatureAI::Home(loc, 0.0f, 0.0f));
+				// TODO: Update unit watcher
+			}
+		});
+
+		// Check if it is a pet
+		UInt64 ownerGUID = controlled.getUInt64Value(unit_fields::SummonedBy);
+		if (ownerGUID != 0)
+		{
+			// Find owner
+			auto *owner = worldInstance->findObjectByGUID(ownerGUID);
+			if (owner)
+			{
+				m_onOwnerMoved = owner->moved.connect([this](GameObject &obj, const math::Vector3 &oldPosition, float oldRotation)
+				{
+					const auto &loc = obj.getLocation();
+					if (loc != oldPosition)
+					{
+						// Make this unit follow it's owner
+						getControlled().getMover().moveTo(loc);
+					}
+				});
+			}
+		}
 
 		// If the unit is passive, it should not attack by itself
 		if (!(controlled.getUInt32Value(unit_fields::UnitFlags) & game::unit_flags::Passive))
@@ -171,6 +203,8 @@ namespace wowpp
 
 	void CreatureAIIdleState::onLeave()
 	{
+		m_onMoved.disconnect();
+		m_onOwnerMoved.disconnect();
 		m_aggroWatcher.reset();
 	}
 
