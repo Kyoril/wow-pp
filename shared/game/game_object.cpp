@@ -326,19 +326,33 @@ namespace wowpp
 				}
 			case unit_fields::MaxHealth:
 				{
-					writer << io::write<NetUInt32>(100);
+					if (getUInt64Value(unit_fields::SummonedBy) == receiver.getGuid())
+					{
+						writer << io::write<NetUInt32>(m_values[index]);
+					}
+					else
+					{
+						writer << io::write<NetUInt32>(100);
+					}
 					break;
 				}
 			case unit_fields::Health:
 				{
-					float maxHealth = static_cast<float>(m_values[unit_fields::MaxHealth]);
-					UInt32 healthPct = static_cast<UInt32>(::ceil(static_cast<float>(m_values[index]) / maxHealth * 100.0f));
-
-					// Prevent display of 0
-					if (healthPct == 0 && m_values[index] > 0) {
-						healthPct = 1;
+					if (getUInt64Value(unit_fields::SummonedBy) == receiver.getGuid())
+					{
+						writer << io::write<NetUInt32>(m_values[index]);
 					}
-					writer << io::write<NetUInt32>(healthPct);
+					else
+					{
+						float maxHealth = static_cast<float>(m_values[unit_fields::MaxHealth]);
+						UInt32 healthPct = static_cast<UInt32>(::ceil(static_cast<float>(m_values[index]) / maxHealth * 100.0f));
+
+						// Prevent display of 0
+						if (healthPct == 0 && m_values[index] > 0) {
+							healthPct = 1;
+						}
+						writer << io::write<NetUInt32>(healthPct);
+					}
 					break;
 				}
 			default:
