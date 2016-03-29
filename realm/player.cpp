@@ -2432,6 +2432,16 @@ namespace wowpp
 
 	void Player::handleWho(game::IncomingPacket & packet)
 	{
+
+		//every playewr need to wait 5 seconds before new request.
+		const GameTime now = getCurrentTime();
+		if (m_nextWhoRequest > now)
+		{
+			return;
+		}
+		m_nextWhoRequest = now + (constants::OneSecond * 5);
+
+
 		// Read request packet
 		game::WhoListRequest request;
 		if (!game::client_read::who(packet, request))

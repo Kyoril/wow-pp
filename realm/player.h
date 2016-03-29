@@ -239,6 +239,7 @@ namespace wowpp
 		float m_transferO;
 		ActionButtons m_actionButtons;
 		std::array<UInt32, 8> m_tutorialData;
+		GameTime m_nextWhoRequest;
 
 	private:
 
