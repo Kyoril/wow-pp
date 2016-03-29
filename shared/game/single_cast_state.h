@@ -81,6 +81,7 @@ namespace wowpp
 		void spellEffectApplyAreaAuraParty(const proto::SpellEffect &effect);
 		void spellEffectDispel(const proto::SpellEffect &effect);
 		void spellEffectSummon(const proto::SpellEffect &effect);
+		void spellEffectSummonPet(const proto::SpellEffect &effect);
 		void spellEffectWeaponDamage(const proto::SpellEffect &effect);
 		void spellEffectProficiency(const proto::SpellEffect &effect);
 		void spellEffectPowerBurn(const proto::SpellEffect &effect);

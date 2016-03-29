@@ -1697,6 +1697,7 @@ namespace wowpp
 			{se::ApplyAreaAuraParty,	std::bind(&SingleCastState::spellEffectApplyAreaAuraParty, this, std::placeholders::_1)},
 			{se::Dispel,				std::bind(&SingleCastState::spellEffectDispel, this, std::placeholders::_1)},
 			{se::Summon,				std::bind(&SingleCastState::spellEffectSummon, this, std::placeholders::_1)},
+			{se::SummonPet,				std::bind(&SingleCastState::spellEffectSummonPet, this, std::placeholders::_1) },
 			{se::ScriptEffect,			std::bind(&SingleCastState::spellEffectScript, this, std::placeholders::_1)},
 			{se::AttackMe,				std::bind(&SingleCastState::spellEffectAttackMe, this, std::placeholders::_1)},
 			{se::NormalizedWeaponDmg,	std::bind(&SingleCastState::spellEffectNormalizedWeaponDamage, this, std::placeholders::_1)},
@@ -2193,8 +2194,6 @@ namespace wowpp
 		float o = executer.getOrientation();
 		math::Vector3 location(executer.getLocation());
 
-		// TODO: We need to have access to unit entries
-
 		auto spawned = world->spawnSummonedCreature(*entry, location, o);
 		if (!spawned)
 		{
@@ -2209,6 +2208,51 @@ namespace wowpp
 		{
 			spawned->threatened(*executer.getVictim(), 0.0001f);
 		}
+	}
+
+	void SingleCastState::spellEffectSummonPet(const proto::SpellEffect & effect)
+	{
+		GameUnit &executer = m_cast.getExecuter();
+
+		// Check if caster already have a pet
+		UInt64 petGUID = executer.getUInt64Value(unit_fields::Summon);
+		if (petGUID != 0)
+		{
+			// Already have a pet!
+			return;
+		}
+
+		// Get the pet unit entry
+		const auto *entry = executer.getProject().units.getById(effect.miscvaluea());
+		if (!entry)
+		{
+			WLOG("Can't summon pet - missing entry");
+			return;
+		}
+
+		auto *world = executer.getWorldInstance();
+		if (!world)
+		{
+			return;
+		}
+
+		float o = executer.getOrientation();
+		math::Vector3 location(executer.getLocation());
+
+		auto spawned = world->spawnSummonedCreature(*entry, location, o);
+		if (!spawned)
+		{
+			ELOG("Could not spawn creature!");
+			return;
+		}
+
+		spawned->setUInt64Value(unit_fields::SummonedBy, executer.getGuid());
+		spawned->setFactionTemplate(executer.getFactionTemplate());
+		spawned->setLevel(executer.getLevel());		// TODO
+		executer.setUInt64Value(unit_fields::Summon, spawned->getGuid());
+		spawned->setUInt32Value(unit_fields::CreatedBySpell, m_spell.id());
+		spawned->setUInt64Value(unit_fields::CreatedBy, executer.getGuid());
+		world->addGameObject(*spawned);
 	}
 
 	void SingleCastState::spellEffectCharge(const proto::SpellEffect &effect)
