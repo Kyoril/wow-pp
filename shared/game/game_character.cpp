@@ -1138,17 +1138,19 @@ namespace wowpp
 		for (int i = 0; i < spell.effects_size(); ++i)
 		{
 			const auto &effect = spell.effects(i);
-			if (effect.type() == game::spell_effects::Parry)
+			switch (effect.type())
 			{
-				m_canParry = true;
-			}
-			else if (effect.type() == game::spell_effects::Block)
-			{
-				m_canBlock = true;
-			}
-			else if (effect.type() == game::spell_effects::DualWield)
-			{
-				m_canDualWield = true;
+				case game::spell_effects::Parry:
+					m_canParry = true;
+					break;
+				case game::spell_effects::Block:
+					m_canBlock = true;
+					break;
+				case game::spell_effects::DualWield:
+					m_canDualWield = true;
+					break;
+				default:
+					break;
 			}
 		}
 
@@ -1275,7 +1277,7 @@ namespace wowpp
 		case game::skill_category::Profession:
 			{
 				current = 1;
-				max = 1;
+				max = 75;
 				break;
 			}
 

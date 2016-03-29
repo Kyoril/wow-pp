@@ -547,6 +547,20 @@ namespace wowpp
 			{
 				m_character->castSpell(target, spell->id(), -1, 0, true);
 			}
+			else
+			{
+				for (auto &eff : spell->effects())
+				{
+					if (eff.type() == game::spell_effects::Skill)
+					{
+						const auto *skill = m_project.skills.getById(eff.miscvaluea());
+						if (skill)
+						{
+							m_character->addSkill(*skill);
+						}
+					}
+				}
+			}
 		}
 
 		// Notify realm about this for post-spawn packets

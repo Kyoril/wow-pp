@@ -2736,6 +2736,15 @@ namespace wowpp
 					else if (character.getLevel() < spell.reqlevel() && spell.reqlevel() > 0) {
 						state = RedSpell;
 					}
+					if (spell.reqskill() > 0)
+					{
+						UInt16 cur = 0, max = 0;
+						if (!character.getSkillValue(spell.reqskill(), cur, max) ||
+							cur < spell.reqskillval())
+						{
+							state = RedSpell;
+						}
+					}
 					// TODO More checks
 					out_packet
 					        << io::write<NetUInt32>(spell.spell())		// Spell ID
