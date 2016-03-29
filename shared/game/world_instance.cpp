@@ -450,8 +450,74 @@ namespace wowpp
 			// Remove the object
 			oldTile->getGameObjects().remove(&object);
 
+			// Send despawn packets
+			auto guid = object.getGuid();
+			forEachTileInSightWithout(
+				*m_visibilityGrid,
+				oldTile->getPosition(),
+				newTile->getPosition(),
+				[guid](VisibilityTile &tile)
+			{
+				std::vector<char> buffer;
+				io::VectorSink sink(buffer);
+				game::Protocol::OutgoingPacket packet(sink);
+				game::server_write::destroyObject(packet, guid, false);
+
+				// Despawn this object for all subscribers
+				for (auto * subscriber : tile.getWatchers().getElements())
+				{
+					auto *character = subscriber->getControlledObject();
+					if (!character)
+						continue;
+					
+					// This is the subscribers own character - despawn all old objects and skip him
+					if (character->getGuid() == guid)
+					{
+						continue;
+					}
+
+					assert(subscriber != this);
+					subscriber->sendPacket(packet, buffer);
+				}
+			});
+
 			// Notify watchers about the pending tile change
 			object.tileChangePending(*oldTile, *newTile);
+
+			// Send spawn packets
+			forEachTileInSightWithout(
+				*m_visibilityGrid,
+				newTile->getPosition(),
+				oldTile->getPosition(),
+				[&object](VisibilityTile &tile)
+			{
+				// Spawn this new object for all watchers of the new tile
+				for (auto * subscriber : tile.getWatchers().getElements())
+				{
+					auto *character = subscriber->getControlledObject();
+					if (!character)
+						continue;
+
+					// This is the subscribers own character - send all new objects to this subscriber
+					// and then skip him
+					if (character->getGuid() == object.getGuid())
+					{
+						continue;
+					}
+
+					// Create spawn message blocks
+					std::vector<std::vector<char>> spawnBlocks;
+					createUpdateBlocks(object, *character, spawnBlocks);
+
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+					game::Protocol::OutgoingPacket packet(sink);
+					game::server_write::compressedUpdateObject(packet, spawnBlocks);
+
+					assert(subscriber != this);
+					subscriber->sendPacket(packet, buffer);
+				}
+			});
 
 			// Add the object
 			newTile->getGameObjects().add(&object);

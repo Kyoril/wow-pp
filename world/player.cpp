@@ -658,67 +658,14 @@ namespace wowpp
 
 		auto &grid = m_instance.getGrid();
 
-		// Spawn ourself for new watchers
-		forEachTileInSightWithout(
-			grid,
-			newTile.getPosition(),
-			oldTile.getPosition(),
-			[this](VisibilityTile &tile)
-		{
-			for(auto * subscriber : tile.getWatchers().getElements())
-			{
-				auto *character = subscriber->getControlledObject();
-				if (!character)
-					continue;
-
-				// Create spawn message blocks
-				std::vector<std::vector<char>> spawnBlocks;
-				createUpdateBlocks(*m_character, *character, spawnBlocks);
-
-				std::vector<char> buffer;
-				io::VectorSink sink(buffer);
-				game::Protocol::OutgoingPacket packet(sink);
-				game::server_write::compressedUpdateObject(packet, spawnBlocks);
-
-				assert(subscriber != this);
-				subscriber->sendPacket(packet, buffer);
-			}
-
-			for (auto *object : tile.getGameObjects().getElements())
-			{
-				if (!object->canSpawnForCharacter(*m_character))
-				{
-					continue;
-				}
-
-				std::vector<std::vector<char>> createBlock;
-				createUpdateBlocks(*object, *m_character, createBlock);
-
-				this->sendProxyPacket(
-					std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(createBlock)));
-			}
-		});
-
-		// Despawn ourself for old watchers
+		// Despawn old objects
 		auto guid = m_character->getGuid();
 		forEachTileInSightWithout(
 			grid,
 			oldTile.getPosition(),
 			newTile.getPosition(),
-			[guid, this](VisibilityTile &tile)
+			[this](VisibilityTile &tile)
 		{
-			// Create the chat packet
-			std::vector<char> buffer;
-			io::VectorSink sink(buffer);
-			game::Protocol::OutgoingPacket packet(sink);
-			game::server_write::destroyObject(packet, guid, false);
-
-			for (auto * subscriber : tile.getWatchers().getElements())
-			{
-				assert(subscriber != this);
-				subscriber->sendPacket(packet, buffer);
-			}
-
 			for (auto *object : tile.getGameObjects().getElements())
 			{
 				if (!object->canSpawnForCharacter(*m_character))
@@ -728,6 +675,28 @@ namespace wowpp
 
 				this->sendProxyPacket(
 					std::bind(game::server_write::destroyObject, std::placeholders::_1, object->getGuid(), false));
+			}
+		});
+
+		// Spawn new objects
+		forEachTileInSightWithout(
+			grid,
+			newTile.getPosition(),
+			oldTile.getPosition(),
+			[this](VisibilityTile &tile)
+		{
+			for (auto *obj : tile.getGameObjects().getElements())
+			{
+				if (!obj->canSpawnForCharacter(*m_character))
+				{
+					continue;
+				}
+
+				std::vector<std::vector<char>> createBlock;
+				createUpdateBlocks(*obj, *m_character, createBlock);
+
+				this->sendProxyPacket(
+					std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(createBlock)));
 			}
 		});
 
