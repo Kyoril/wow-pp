@@ -751,6 +751,9 @@ namespace wowpp
 		void removeSkill(UInt32 skillId);
 		/// Updates the skill values for a given skill of this character.
 		void setSkillValue(UInt32 skillId, UInt16 current, UInt16 maximum);
+		/// Gets the current skill value and max value of a given spell.
+		/// @returns false if the character doesn't have this skill.
+		bool getSkillValue(UInt32 skillId, UInt16 &out_current, UInt16 &out_max) const;
 		/// Returns true if the character knows a specific skill.
 		bool hasSkill(UInt32 skillId) const;
 		/// Gets the GUID of the current combo point target.

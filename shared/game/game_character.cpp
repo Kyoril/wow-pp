@@ -162,6 +162,22 @@ namespace wowpp
 			return game::quest_status::Unavailable;
 		}
 
+		// Check skill
+		if (entry->requiredskill() != 0)
+		{
+			UInt16 current = 0, max = 0;
+			if (!getSkillValue(entry->requiredskill(), current, max))
+			{
+				return game::quest_status::Unavailable;
+			}
+
+			if (entry->requiredskillval() > 0 &&
+				current < entry->requiredskillval())
+			{
+				return game::quest_status::Unavailable;
+			}
+		}
+
 		// Race/Class check
 		const UInt32 charRaceBit = 1 << (getRace() - 1);
 		const UInt32 charClassBit = 1 << (getClass() - 1);
@@ -1300,6 +1316,27 @@ namespace wowpp
 		}
 
 		ELOG("Maximum number of skill for character reached!");
+	}
+
+	bool GameCharacter::getSkillValue(UInt32 skillId, UInt16 & out_current, UInt16 & out_max) const
+	{
+		const UInt32 maxSkills = 127;
+		for (UInt32 i = 0; i < maxSkills; ++i)
+		{
+			// Unit field values
+			const UInt32 skillIndex = character_fields::SkillInfo1_1 + (i * 3);
+
+			// Get current skill
+			if (getUInt32Value(skillIndex) == skillId)
+			{
+				const UInt32 tmp = getUInt32Value(skillIndex + 1);
+				out_current = UInt16(UInt32(tmp) & 0x0000FFFF);
+				out_max = UInt16((UInt32(tmp) >> 16) & 0x0000FFFF);
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	bool GameCharacter::hasSkill(UInt32 skillId) const
