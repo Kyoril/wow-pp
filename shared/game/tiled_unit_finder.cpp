@@ -154,8 +154,8 @@ namespace wowpp
 		TileIndex2D output;
 
 		// Calculate grid coordinates
-		output[0] = static_cast<TileIndex>(floor((static_cast<double>(m_grid.width()) * 0.5 - (static_cast<double>(point[0]) / m_tileWidth))));
-		output[1] = static_cast<TileIndex>(floor((static_cast<double>(m_grid.height()) * 0.5 - (static_cast<double>(point[1]) / m_tileWidth))));
+		output[0] = static_cast<TileIndex>(floor((static_cast<double>(m_grid.width()) * 0.5 - floor(static_cast<double>(point[0]) / m_tileWidth))));
+		output[1] = static_cast<TileIndex>(floor((static_cast<double>(m_grid.height()) * 0.5 - floor(static_cast<double>(point[1]) / m_tileWidth))));
 
 		return output;
 	}

@@ -367,11 +367,11 @@ namespace wowpp
 	{
 		if (m_victim && !victim)
 		{
-			m_victimDied.disconnect();
-			m_victimDespawned.disconnect();
-
 			// Stop auto attack
 			stopAttack();
+
+			m_victimDied.disconnect();
+			m_victimDespawned.disconnect();
 		}
 
 		const bool needReconnect = (victim && !m_victim);

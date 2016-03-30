@@ -224,15 +224,14 @@ namespace wowpp
 		spawned->relocate(position, o);
 
 		m_creatureSummons.insert(std::make_pair(spawned->getGuid(), spawned));
-		spawned->despawned.connect(
-		    [this](GameObject & obj)
+		spawned->destroy = [this](GameObject &obj) 
 		{
 			auto it = m_creatureSummons.find(obj.getGuid());
 			if (it != m_creatureSummons.end())
 			{
 				m_creatureSummons.erase(it);
 			}
-		});
+		};
 
 		return spawned;
 	}

@@ -60,6 +60,8 @@ namespace wowpp
 				}
 			}
 		}
+
+		m_previousShape = getShape();
 	}
 
 	TileArea TiledUnitFinder::TiledUnitWatcher::getTileIndexArea(const Circle &shape) const
@@ -77,7 +79,7 @@ namespace wowpp
 
 		auto connection = tile.moved->connect(
 		                      std::bind(&TiledUnitWatcher::onUnitMoved,
-		                                this, std::placeholders::_1), boost::signals2::at_front);
+		                                this, std::placeholders::_1));
 
 		m_connections[&tile] = connection;
 

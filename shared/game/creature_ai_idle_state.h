@@ -27,6 +27,12 @@
 namespace wowpp
 {
 	class UnitWatcher;
+	class GameObject;
+
+	namespace math
+	{
+		struct Vector3;
+	}
 
 	/// Handle the idle state of a creature AI. In this state, most units
 	/// watch for hostile units which come close enough, and start attacking these
@@ -45,6 +51,10 @@ namespace wowpp
 		virtual void onEnter() override;
 		///
 		virtual void onLeave() override;
+
+	private:
+
+		void onMoved(GameObject &object, const math::Vector3 &oldLocation, float oldRotation);
 
 	private:
 

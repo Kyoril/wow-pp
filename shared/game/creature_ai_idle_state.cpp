@@ -38,7 +38,18 @@ namespace wowpp
 	{
 		m_aggroDelay.ended.connect([this]()
 		{
-			if (m_aggroWatcher) m_aggroWatcher->start();
+			// Watch for movement
+			UInt64 ownerGUID = getControlled().getUInt64Value(unit_fields::SummonedBy);
+			if (ownerGUID != 0)
+			{
+				m_onMoved = getControlled().moved.connect(
+					std::bind(&CreatureAIIdleState::onMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+			}
+
+			if (m_aggroWatcher)
+			{
+				m_aggroWatcher->start();
+			}
 		});
 	}
 
@@ -58,17 +69,6 @@ namespace wowpp
 		assert(worldInstance);
 
 		math::Vector3 location(controlled.getLocation());
-
-		// Watch for movement
-		m_onMoved = controlled.moved.connect([this](GameObject &obj, const math::Vector3 &oldPosition, float oldRotation) 
-		{
-			const auto &loc = obj.getLocation();
-			if (loc != oldPosition)
-			{
-				getAI().setHome(CreatureAI::Home(loc, 0.0f, 0.0f));
-				// TODO: Update unit watcher
-			}
-		});
 
 		// Check if it is a pet
 		UInt64 ownerGUID = controlled.getUInt64Value(unit_fields::SummonedBy);
@@ -203,9 +203,24 @@ namespace wowpp
 
 	void CreatureAIIdleState::onLeave()
 	{
+		m_aggroDelay.cancel();
+
 		m_onMoved.disconnect();
 		m_onOwnerMoved.disconnect();
 		m_aggroWatcher.reset();
+	}
+
+	void CreatureAIIdleState::onMoved(GameObject & object, const math::Vector3 & oldLocation, float oldRotation)
+	{
+		const auto &loc = object.getLocation();
+		if (loc != oldLocation)
+		{
+			getAI().setHome(CreatureAI::Home(loc, 0.0f, 0.0f));
+			if (m_aggroWatcher)
+			{
+				m_aggroWatcher->setShape(Circle(loc.x, loc.y, 40.0f));
+			}
+		}
 	}
 
 }
