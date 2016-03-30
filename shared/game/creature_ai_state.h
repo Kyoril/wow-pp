@@ -53,6 +53,8 @@ namespace wowpp
 		virtual void onHeal(GameUnit &healer);
 		/// Executed when the controlled unit dies.
 		virtual void onControlledDeath();
+		/// Executed when combat movement for the controlled unit is enabled or disabled.
+		virtual void onCombatMovementChanged();
 
 	private:
 

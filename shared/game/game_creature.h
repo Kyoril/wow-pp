@@ -120,6 +120,11 @@ namespace wowpp
 		/// @copydoc GameObject::canSpawnForCharacter
 		virtual bool canSpawnForCharacter(GameCharacter &target) override;
 
+		/// 
+		bool isCombatMovementEnabled() const { return m_combatMovement; }
+		/// 
+		void setCombatMovement(bool enabled);
+
 		/// Executes a callback function for every valid loot recipient.
 		template<typename OnRecipient>
 		void forEachLootRecipient(OnRecipient callback)
@@ -155,6 +160,7 @@ namespace wowpp
 		boost::signals2::scoped_connection m_onSpawned;
 		LootRecipients m_lootRecipients;
 		std::unique_ptr<LootInstance> m_unitLoot;
+		bool m_combatMovement;
 	};
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel);

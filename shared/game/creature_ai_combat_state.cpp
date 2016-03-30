@@ -90,6 +90,11 @@ namespace wowpp
 		});
 		m_onControlledMoved = controlled.moved.connect([this](GameObject &, const math::Vector3 & position, float rotation)
 		{
+			if (!getControlled().isCombatMovementEnabled())
+			{
+				return;
+			}
+
 			if (m_lastSpellEntry != nullptr && m_lastSpell != nullptr)
 			{
 				// Check if we are able to cast that spell now, and if so: Do it!
@@ -457,6 +462,12 @@ namespace wowpp
 
 	void CreatureAICombatState::chaseTarget(GameUnit &target)
 	{
+		// Skip movement in case of trigger
+		if (!getControlled().isCombatMovementEnabled())
+		{
+			return;
+		}
+
 		const float combatRange = getControlled().getMeleeReach() + target.getMeleeReach();
 
 		math::Vector3 currentLocation;
@@ -770,5 +781,10 @@ namespace wowpp
 
 			getControlled().addFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::OtherTagger);
 		}
+	}
+
+	void CreatureAICombatState::onCombatMovementChanged()
+	{
+		// Maybe react on this state change
 	}
 }

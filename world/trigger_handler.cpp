@@ -37,6 +37,7 @@
 #include "binary_io/writer.h"
 #include "game_protocol/game_protocol.h"
 #include "game/unit_mover.h"
+#include "game/game_creature.h"
 #include "common/make_unique.h"
 
 namespace wowpp
@@ -460,6 +461,30 @@ namespace wowpp
 
 	void TriggerHandler::handleSetCombatMovement(const proto::TriggerAction & action, game::TriggerContext & context)
 	{
+		GameObject *target = getActionTarget(action, context.owner);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_SET_COMBAT_MOVEMENT: No target found, action will be ignored");
+			return;
+		}
+
+		auto *world = getWorldInstance(target);
+		if (!world)
+		{
+			ELOG("TRIGGER_ACTION_SET_COMBAT_MOVEMENT: Target not in world instance");
+			return;
+		}
+
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature())
+		{
+			WLOG("TRIGGER_ACTION_SET_COMBAT_MOVEMENT: Needs a unit target, but target is no creature - action ignored");
+			return;
+		}
+
+		// Update combat movement setting
+		reinterpret_cast<GameCreature*>(target)->setCombatMovement(
+			getActionData(action, 0) != 0);
 	}
 
 	Int32 TriggerHandler::getActionData(const proto::TriggerAction &action, UInt32 index) const

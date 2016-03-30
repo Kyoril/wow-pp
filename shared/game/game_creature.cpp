@@ -41,6 +41,7 @@ namespace wowpp
 		: GameUnit(project, timers)
 		, m_originalEntry(entry)
 		, m_entry(nullptr)
+		, m_combatMovement(true)
 	{
 	}
 
@@ -409,6 +410,15 @@ namespace wowpp
 		}
 
 		return true;
+	}
+
+	void GameCreature::setCombatMovement(bool enabled)
+	{
+		if (enabled == m_combatMovement)
+			return;
+
+		m_combatMovement = enabled;
+		m_ai->onCombatMovementChanged();
 	}
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)

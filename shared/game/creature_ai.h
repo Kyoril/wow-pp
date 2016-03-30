@@ -83,6 +83,8 @@ namespace wowpp
 		/// Makes the creature reset, leaving the combat state, reviving itself and run back
 		/// to it's home position.
 		void reset();
+		/// Executed by the underlying creature when combat movement gets enabled or disabled.
+		void onCombatMovementChanged();
 
 	public:
 
