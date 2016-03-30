@@ -476,7 +476,6 @@ namespace wowpp
 						continue;
 					}
 
-					assert(subscriber != this);
 					subscriber->sendPacket(packet, buffer);
 				}
 			});
@@ -514,7 +513,6 @@ namespace wowpp
 					game::Protocol::OutgoingPacket packet(sink);
 					game::server_write::compressedUpdateObject(packet, spawnBlocks);
 
-					assert(subscriber != this);
 					subscriber->sendPacket(packet, buffer);
 				}
 			});
