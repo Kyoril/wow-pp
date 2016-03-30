@@ -36,6 +36,7 @@
 #include "binary_io/vector_sink.h"
 #include "binary_io/writer.h"
 #include "game_protocol/game_protocol.h"
+#include "game/unit_mover.h"
 #include "common/make_unique.h"
 
 namespace wowpp
@@ -91,6 +92,8 @@ namespace wowpp
 			WOWPP_HANDLE_TRIGGER_ACTION(SetSpawnState)
 			WOWPP_HANDLE_TRIGGER_ACTION(SetRespawnState)
 			WOWPP_HANDLE_TRIGGER_ACTION(CastSpell)
+			WOWPP_HANDLE_TRIGGER_ACTION(MoveTo)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetCombatMovement)
 #undef WOWPP_HANDLE_TRIGGER_ACTION
 
 				case trigger_actions::Delay:
@@ -189,8 +192,8 @@ namespace wowpp
 		game::server_write::messageChat(
 			packet, 
 			game::chat_msg::MonsterSay, 
-			game::language::Universal, 
-			"", 
+			game::language::Common,
+			"",
 			0, 
 			getActionText(action, 0), 
 			reinterpret_cast<GameUnit*>(target)
@@ -427,7 +430,39 @@ namespace wowpp
 		reinterpret_cast<GameUnit*>(caster)->castSpell(std::move(targetMap), spell->id());
 	}
 
-	UInt32 TriggerHandler::getActionData(const proto::TriggerAction &action, UInt32 index) const
+	void TriggerHandler::handleMoveTo(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context.owner);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_MOVE_TO: No target found, action will be ignored");
+			return;
+		}
+
+		auto *world = getWorldInstance(target);
+		if (!world)
+		{
+			ELOG("TRIGGER_ACTION_MOVE_TO: Target not in world instance");
+			return;
+		}
+
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature() && !target->isGameCharacter())
+		{
+			WLOG("TRIGGER_ACTION_MOVE_TO: Needs a unit target, but target is no unit - action ignored");
+			return;
+		}
+
+		auto &mover = reinterpret_cast<GameUnit*>(target)->getMover();
+		mover.moveTo(
+			math::Vector3(static_cast<float>(getActionData(action, 0)), static_cast<float>(getActionData(action, 1)), static_cast<float>(getActionData(action, 2))));
+	}
+
+	void TriggerHandler::handleSetCombatMovement(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+	}
+
+	Int32 TriggerHandler::getActionData(const proto::TriggerAction &action, UInt32 index) const
 	{
 		// Return default value (0) if not enough data provided
 		if (static_cast<int>(index) >= action.data_size())

@@ -115,6 +115,16 @@
        <string>Common - Delay</string>
       </property>
      </item>
+     <item>
+      <property name="text">
+       <string>Unit - Move To</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Unit - Set Combat Movement</string>
+      </property>
+     </item>
     </widget>
    </item>
    <item>

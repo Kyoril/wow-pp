@@ -90,6 +90,9 @@ namespace wowpp
 			/// Makes a unit move towards a specified position.
 			/// Targets: UNIT; Data: <X>, <Y>, <Z>; Texts: NONE;
 			MoveTo = 8,
+			/// Enables or disables a units combat movement.
+			/// Targets: UNIT; Data: <0/1>; Texts: NONE;
+			SetCombatMovement = 9,
 
 			Invalid,
 			Count_ = Invalid

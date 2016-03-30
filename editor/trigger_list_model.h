@@ -44,7 +44,7 @@ namespace wowpp
 			{
 				return m_entries.getTemplates().entry_size();
 			}
-			
+
 			QVariant data(const QModelIndex &index, int role) const override
 			{
 				if (!index.isValid())

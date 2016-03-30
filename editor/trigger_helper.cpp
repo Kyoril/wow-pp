@@ -134,6 +134,17 @@ namespace wowpp
 			case trigger_actions::Delay:
 				return QString("Common - Delay execution for %1 ms")
 					.arg(getTriggerActionData(action, 0, withLinks));
+			case trigger_actions::MoveTo:
+				return QString("Unit - Make %1 move to location (%2, %3, %4)")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(getTriggerActionData(action, 0, withLinks))
+					.arg(getTriggerActionData(action, 1, withLinks))
+					.arg(getTriggerActionData(action, 2, withLinks))
+					;
+			case trigger_actions::SetCombatMovement:
+				return QString("Unit - Set combat movement of %1 to (%2)")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(getTriggerActionData(action, 0, withLinks));
 			default:
 				return QString("UNKNOWN TRIGGER ACTION");
 			}

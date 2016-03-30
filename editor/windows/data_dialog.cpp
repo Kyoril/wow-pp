@@ -37,7 +37,8 @@ namespace wowpp
 			// Setup auto generated ui
 			m_ui->setupUi(this);
 			m_ui->dataField->setText(QString("%1").arg(data));
-			m_ui->dataField->setValidator(new QIntValidator(0, 999999, this));
+			m_ui->dataField->setValidator(new QIntValidator(
+				std::numeric_limits<Int32>::min(), std::numeric_limits<Int32>::max(), this));
 
 			bool mayChoose = false;
 			switch (action)

@@ -772,11 +772,8 @@ namespace wowpp
 						        << io::write<NetUInt64>(speaker->getGuid())
 						        << io::write<NetUInt32>(0x00)
 						        << io::write<NetUInt32>(speakerName.size() + 1)
-						        << io::write_range(speakerName) << io::write<NetUInt8>(0);
-
-						UInt64 listenerGuid = 0x00;
-						out_packet
-						        << io::write<NetUInt64>(listenerGuid)
+						        << io::write_range(speakerName) << io::write<NetUInt8>(0)
+						        << io::write<NetUInt64>(0)				// listener guid
 						        << io::write<NetUInt32>(message.size() + 1)
 						        << io::write_range(message) << io::write<NetUInt8>(0)
 						        << io::write<NetUInt8>(0);				// Chat-Tag always 0 since it's a creature which can't be AFK, DND etc.
@@ -784,25 +781,23 @@ namespace wowpp
 						return;
 					}
 				default:
-					break;
-				}
-
-				out_packet
-				        << io::write<NetUInt64>(targetGUID)
-				        << io::write<NetUInt32>(0);
-
-				if (type == chat_msg::Channel)
-				{
 					out_packet
-					        << io::write_range(channelname) << io::write<NetUInt8>(0);
-				}
+						<< io::write<NetUInt64>(targetGUID)
+						<< io::write<NetUInt32>(0);
 
-				out_packet
-				        << io::write<NetUInt64>(targetGUID)
-				        << io::write<NetUInt32>(message.size() + 1)
-				        << io::write_range(message) << io::write<NetUInt8>(0)
-				        << io::write<NetUInt8>(0);			// Chat tag: 1: AFK  2: DND  4: GM
-				out_packet.finish();
+					if (type == chat_msg::Channel)
+					{
+						out_packet
+							<< io::write_range(channelname) << io::write<NetUInt8>(0);
+					}
+					out_packet
+						<< io::write<NetUInt64>(targetGUID)
+						<< io::write<NetUInt32>(message.size() + 1)
+						<< io::write_range(message) << io::write<NetUInt8>(0)
+						<< io::write<NetUInt8>(0);			// Chat tag: 1: AFK  2: DND  4: GM
+					out_packet.finish();
+					return;
+				}
 			}
 
 			void movePacket(game::OutgoingPacket &out_packet, UInt16 opCode, UInt64 guid, const MovementInfo &movement)
