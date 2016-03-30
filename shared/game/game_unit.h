@@ -711,7 +711,6 @@ namespace wowpp
 		AuraContainer m_auras;
 		AttackSwingCallback m_swingCallback;
 		AttackingUnitSet m_attackingUnits;
-		//MechanicImmunitySet m_mechanicImmunity;
 		UInt32 m_mechanicImmunity;
 		bool m_isStunned;
 		bool m_isRooted;

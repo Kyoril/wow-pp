@@ -50,6 +50,7 @@ namespace wowpp
 		, m_factionTemplate(nullptr)
 		, m_lastManaUse(0)
 		, m_auras(*this)
+		, m_mechanicImmunity(0)
 		, m_isStunned(false)
 		, m_isRooted(false)
 		, m_isStealthed(false)
