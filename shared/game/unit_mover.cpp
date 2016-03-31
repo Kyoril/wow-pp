@@ -27,6 +27,7 @@
 #include "binary_io/vector_sink.h"
 #include "game_protocol/game_protocol.h"
 #include "each_tile_in_sight.h"
+#include "tile_subscriber.h"
 #include "common/constants.h"
 
 namespace wowpp
@@ -298,5 +299,28 @@ namespace wowpp
 		/*// Linear interpolation
 		const float t = static_cast<float>(static_cast<double>(getCurrentTime() - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));
 		return m_start.lerp(m_target, t);*/
+	}
+
+	void UnitMover::sendMovementPackets(ITileSubscriber &subscriber)
+	{
+		if (!isMoving())
+			return;
+
+		GameTime now = getCurrentTime();
+
+		std::vector<math::Vector3> path;
+		for (auto &p : m_path.getPositions())
+		{
+			if (p.first < now)
+				continue;
+
+			path.push_back(p.second);
+		}
+
+		std::vector<char> buffer;
+		io::VectorSink sink(buffer);
+		game::Protocol::OutgoingPacket packet(sink);
+		game::server_write::monsterMove(packet, getMoved().getGuid(), getCurrentLocation(), path, m_moveEnd - m_moveStart);
+		subscriber.sendPacket(packet, buffer);
 	}
 }

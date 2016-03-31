@@ -31,6 +31,7 @@
 namespace wowpp
 {
 	class GameUnit;
+	struct ITileSubscriber;
 
 	/// This class is meant to control a units movement. This class should be
 	/// inherited, so that, for example, a player character will be controlled
@@ -84,6 +85,12 @@ namespace wowpp
 		};
 		/// 
 		math::Vector3 getCurrentLocation() const;
+
+	public:
+
+		/// Writes the current movement packets to a writer object. This is used for moving
+		/// creatures that are spawned for a player.
+		void sendMovementPackets(ITileSubscriber &subscriber);
 
 	private:
 

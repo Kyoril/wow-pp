@@ -30,6 +30,7 @@
 #include "proto_data/project.h"
 #include "game/game_creature.h"
 #include "game/game_world_object.h"
+#include "game/unit_mover.h"
 
 using namespace std;
 
@@ -711,6 +712,12 @@ namespace wowpp
 
 				this->sendProxyPacket(
 					std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(createBlock)));
+
+				// Send movement packets
+				if (obj->isCreature() || obj->isGameCharacter())
+				{
+					reinterpret_cast<GameUnit*>(obj)->getMover().sendMovementPackets(*this);
+				}
 			}
 		});
 

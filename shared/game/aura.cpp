@@ -246,6 +246,12 @@ namespace wowpp
 			procChance = m_spell.procchance();
 		}
 
+		if (m_caster && m_caster->isGameCharacter())
+		{
+			reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(
+				spell_mod_op::ChanceOfSuccess, m_spell.id(), procChance);
+		}
+
 		if (procChance < 100)
 		{
 			std::uniform_int_distribution<UInt32> dist(1, 100);

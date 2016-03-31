@@ -611,6 +611,7 @@ namespace wowpp
 				LootItemNotify				= 0x164,
 				LootClearMoney				= 0x165,
 				ItemPushResult				= 0x166,
+				PetSpells					= 0x179,
 				GossipMessage				= 0x17D,
 				GossipComplete				= 0x17E,
 				QuestgiverStatus			= 0x183,
@@ -2169,6 +2170,10 @@ namespace wowpp
 				const String &petName,
 				UInt32 petNameTimestmap
 				);
+			
+			void petSpells(
+				game::OutgoingPacket &out_packet,
+				UInt64 petGUID);
 		};
 	}
 }

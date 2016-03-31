@@ -37,6 +37,7 @@
 #include "trigger_handler.h"
 #include "creature_ai.h"
 #include "universe.h"
+#include "unit_mover.h"
 
 namespace wowpp
 {
@@ -513,6 +514,12 @@ namespace wowpp
 					game::server_write::compressedUpdateObject(packet, spawnBlocks);
 
 					subscriber->sendPacket(packet, buffer);
+
+					// Send movement packets
+					if (object.isCreature() || object.isGameCharacter())
+					{
+						reinterpret_cast<GameUnit&>(object).getMover().sendMovementPackets(*subscriber);
+					}
 				}
 			});
 
