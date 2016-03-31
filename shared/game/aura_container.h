@@ -60,6 +60,8 @@ namespace wowpp
 		Int32 getTotalBasePoints(game::AuraType type) const;
 		float getTotalMultiplier(game::AuraType type) const;
 
+		void forEachAuraOfType(game::AuraType type, std::function<bool(Aura &)> functor);
+
 	private:
 
 		GameUnit &m_owner;

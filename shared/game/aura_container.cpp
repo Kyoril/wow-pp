@@ -344,6 +344,20 @@ namespace wowpp
 		return multiplier;
 	}
 
+	void AuraContainer::forEachAuraOfType(game::AuraType type, std::function<bool(Aura&)> functor)
+	{
+		for (auto &aura : m_auras)
+		{
+			if (aura->getEffect().aura() == type)
+			{
+				if (!functor(*aura))
+				{
+					return;
+				}
+			}
+		}
+	}
+
 	void AuraContainer::removeAllAurasDueToSpell(UInt32 spellId)
 	{
 		AuraList::iterator it = m_auras.begin();
