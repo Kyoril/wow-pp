@@ -54,6 +54,7 @@ namespace wowpp
 		, m_isStunned(false)
 		, m_isRooted(false)
 		, m_isStealthed(false)
+		, m_standState(unit_stand_state::Stand)
 	{
 		// Resize values field
 		m_values.resize(unit_fields::UnitFieldCount, 0);

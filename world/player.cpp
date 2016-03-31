@@ -1538,6 +1538,18 @@ namespace wowpp
 		// Get object location
 		math::Vector3 location(m_character->getLocation());
 
+		// Player started swimming
+		if ((info.moveFlags & game::movement_flags::Swimming) != 0 &&
+			(m_character->getMovementInfo().moveFlags & game::movement_flags::Swimming) == 0)
+		{
+			m_character->getAuras().removeAllAurasDueToInterrupt(game::spell_aura_interrupt_flags::NotAboveWater);
+		}
+		else if ((info.moveFlags & game::movement_flags::Swimming) == 0 &&
+			(m_character->getMovementInfo().moveFlags & game::movement_flags::Swimming) != 0)
+		{
+			m_character->getAuras().removeAllAurasDueToInterrupt(game::spell_aura_interrupt_flags::NotUnderWater);
+		}
+
 		// Store movement information
 		m_character->setMovementInfo(info);
 
