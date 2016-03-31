@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>445</width>
+    <width>507</width>
     <height>271</height>
    </rect>
   </property>
@@ -123,6 +123,31 @@
      <item>
       <property name="text">
        <string>Unit - Set Combat Movement</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Unit - Stop Auto Attack</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Unit - Cancel Cast</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Unit - Set Stand State</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Unit - Set Virtual Equipment Slot</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Unit - Set Phase</string>
       </property>
      </item>
     </widget>

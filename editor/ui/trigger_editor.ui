@@ -43,6 +43,9 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="focusPolicy">
+        <enum>Qt::ClickFocus</enum>
+       </property>
        <property name="frameShape">
         <enum>QFrame::StyledPanel</enum>
        </property>
@@ -180,6 +183,9 @@
                <verstretch>2</verstretch>
               </sizepolicy>
              </property>
+             <property name="focusPolicy">
+              <enum>Qt::ClickFocus</enum>
+             </property>
              <property name="styleSheet">
               <string notr="true"/>
              </property>
@@ -226,7 +232,7 @@
                </property>
                <property name="icon">
                 <iconset resource="../qrc/editor.qrc">
-                 <normaloff>:/File.png</normaloff>:/File.png</iconset>
+                 <normaloff>:/ActiveQuestIcon.png</normaloff>:/ActiveQuestIcon.png</iconset>
                </property>
                <property name="flags">
                 <set>ItemIsSelectable|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
@@ -296,11 +302,9 @@
    </attribute>
    <addaction name="actionSave"/>
    <addaction name="separator"/>
-   <addaction name="actionObjectEditor"/>
-   <addaction name="actionTriggerEditor"/>
-   <addaction name="separator"/>
    <addaction name="actionNewCategory"/>
    <addaction name="actionNewTrigger"/>
+   <addaction name="separator"/>
    <addaction name="actionAddEvent"/>
    <addaction name="actionAddAction"/>
    <addaction name="actionRemove"/>
@@ -386,11 +390,19 @@
    </property>
   </action>
   <action name="actionAddEvent">
+   <property name="icon">
+    <iconset resource="../qrc/editor.qrc">
+     <normaloff>:/Trigger.png</normaloff>:/Trigger.png</iconset>
+   </property>
    <property name="text">
     <string>Add Event</string>
    </property>
   </action>
   <action name="actionAddAction">
+   <property name="icon">
+    <iconset resource="../qrc/editor.qrc">
+     <normaloff>:/Trade_Engineering.png</normaloff>:/Trade_Engineering.png</iconset>
+   </property>
    <property name="text">
     <string>Add Action</string>
    </property>

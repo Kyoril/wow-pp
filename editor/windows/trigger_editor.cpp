@@ -237,32 +237,96 @@ namespace wowpp
 			if (!m_selectedTrigger)
 				return;
 
-			// Unlink trigger
-			auto &unitEntries = m_application.getProject().units.getTemplates().entry();
-			//for (auto &unit : unitEntries)
-			//{
-				//unit->unlinkTrigger(m_selectedTrigger->id);
-			//}
-			
-			// Remove selected trigger
-			m_application.getProject().triggers.remove(m_selectedTrigger->id());
-			m_selectedTrigger = nullptr;
-
-			// This will update all views
-			emit m_application.getTriggerListModel()->layoutChanged();
-			m_application.markAsChanged();
-
-			// Update UI
-			auto rows = m_ui->triggerView->selectionModel()->selectedRows();
-			auto selection = m_ui->triggerView->selectionModel()->selection();
-			if (rows.empty())
+			if (m_ui->functionView->hasFocus())
 			{
-				selection = QItemSelection();
-			}
+				auto list = m_ui->functionView->selectedItems();
+				if (list.isEmpty())
+				{
+					return;
+				}
 
-			onTriggerSelectionChanged(
-				selection, 
-				selection);
+				auto *item = list.first();
+				if (!item)
+					return;
+
+				auto *rootItem = m_ui->functionView->topLevelItem(0);
+				if (!rootItem)
+					return;
+
+				auto *parent = item->parent();
+				if (!parent)
+					return;
+
+				if (parent == rootItem->child(0))
+				{
+					int index = parent->indexOfChild(item);
+					if (index >= m_selectedTrigger->newevents_size())
+						return;
+
+					// Remove the selected event
+					m_selectedTrigger->mutable_newevents()->erase(
+						m_selectedTrigger->mutable_newevents()->begin() + index);
+				}
+				else if (parent == rootItem->child(2))
+				{
+					int index = parent->indexOfChild(item);
+					if (index >= m_selectedTrigger->actions_size())
+						return;
+
+					// Remove the selected action
+					m_selectedTrigger->mutable_actions()->erase(
+						m_selectedTrigger->mutable_actions()->begin() + index);
+				}
+				else
+				{
+					return;
+				}
+
+				// This will update all views
+				emit m_application.getTriggerListModel()->layoutChanged();
+				m_application.markAsChanged();
+
+				// Update UI
+				auto rows = m_ui->triggerView->selectionModel()->selectedRows();
+				auto selection = m_ui->triggerView->selectionModel()->selection();
+				if (rows.empty())
+				{
+					selection = QItemSelection();
+				}
+
+				onTriggerSelectionChanged(
+					selection,
+					selection);
+			}
+			else if (m_ui->triggerView->hasFocus())
+			{
+				// Unlink trigger
+				auto &unitEntries = m_application.getProject().units.getTemplates().entry();
+				//for (auto &unit : unitEntries)
+				//{
+				//unit->unlinkTrigger(m_selectedTrigger->id);
+				//}
+
+				// Remove selected trigger
+				m_application.getProject().triggers.remove(m_selectedTrigger->id());
+				m_selectedTrigger = nullptr;
+
+				// This will update all views
+				emit m_application.getTriggerListModel()->layoutChanged();
+				m_application.markAsChanged();
+
+				// Update UI
+				auto rows = m_ui->triggerView->selectionModel()->selectedRows();
+				auto selection = m_ui->triggerView->selectionModel()->selection();
+				if (rows.empty())
+				{
+					selection = QItemSelection();
+				}
+
+				onTriggerSelectionChanged(
+					selection,
+					selection);
+			}
 		}
 
 		void TriggerEditor::on_triggerNameBox_editingFinished()

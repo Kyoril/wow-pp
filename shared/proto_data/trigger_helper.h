@@ -93,6 +93,60 @@ namespace wowpp
 			/// Enables or disables a units combat movement.
 			/// Targets: UNIT; Data: <0/1>; Texts: NONE;
 			SetCombatMovement = 9,
+			/// Stops auto attacking the current victim.
+			/// Targets: UNIT; Data: NONE; Texts: NONE;
+			StopAutoAttack = 10,
+			/// Cancels the current cast (if any).
+			/// Targets: UNIT; Data: NONE; Texts: NONE;
+			CancelCast = 11,
+			/// Updates the target units stand state.
+			/// Targets: UNIT; Data: <STAND-STATE>; Texts: NONE;
+			SetStandState = 12,
+			/// Updates the target units virtual equipment slot.
+			/// Targets: UNIT; Data: <SLOT:0-2>, <ITEM-ENTRY>; Texts: NONE;
+			SetVirtualEquipmentSlot = 13,
+			/// Updates the target creatures AI combat phase.
+			/// Targets: UNIT; Data: <PHASE>; Texts: NONE;
+			SetPhase = 14,
+
+			Invalid,
+			Count_ = Invalid
+		};
+	}
+
+	namespace trigger_variables
+	{
+		enum Type
+		{
+			/// Current creature AI phase. Defaults to 0 at combat beginning.
+			/// Will be reset automatically when combat ends.
+			Phase = 0,
+			/// Current health as absolute number.
+			Health = 1,
+			/// Current health as percentage (0-100).
+			HealthPct = 2,
+			/// Current mana as absolute number.
+			Mana = 3,
+			/// Current mana as percentage (0-100).
+			ManaPct = 4,
+			/// Whether the unit is in combat (0-1).
+			IsInCombat = 5,
+
+			Invalid,
+			Count_ = Invalid
+		};
+	}
+
+	namespace trigger_operator
+	{
+		enum Type
+		{
+			Equal = 0,
+			Not = 1,
+			Lesser = 2,
+			Greater = 3,
+			LesserEqual = 4,
+			GreaterEqual = 5,
 
 			Invalid,
 			Count_ = Invalid

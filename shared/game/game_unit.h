@@ -49,7 +49,9 @@ namespace wowpp
 			SitMediumChais	= 0x05,
 			SitHighChair	= 0x06,
 			Dead			= 0x07,
-			Kneel			= 0x08
+			Kneel			= 0x08,
+
+			Count
 		};
 	}
 

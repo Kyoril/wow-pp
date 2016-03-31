@@ -64,6 +64,11 @@ namespace wowpp
 		void handleCastSpell(const proto::TriggerAction &action, game::TriggerContext &context);
 		void handleMoveTo(const proto::TriggerAction &action, game::TriggerContext &context);
 		void handleSetCombatMovement(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleStopAutoAttack(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleCancelCast(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetStandState(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetVirtualEquipmentSlot(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetPhase(const proto::TriggerAction &action, game::TriggerContext &context);
 
 	private:
 

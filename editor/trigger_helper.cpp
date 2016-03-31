@@ -139,10 +139,28 @@ namespace wowpp
 					.arg(getTriggerTargetName(action, withLinks))
 					.arg(getTriggerActionData(action, 0, withLinks))
 					.arg(getTriggerActionData(action, 1, withLinks))
-					.arg(getTriggerActionData(action, 2, withLinks))
-					;
+					.arg(getTriggerActionData(action, 2, withLinks));
 			case trigger_actions::SetCombatMovement:
 				return QString("Unit - Set combat movement of %1 to (%2)")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(getTriggerActionData(action, 0, withLinks));
+			case trigger_actions::StopAutoAttack:
+				return QString("Unit - Make %1 stop auto attacking")
+					.arg(getTriggerTargetName(action, withLinks));
+			case trigger_actions::CancelCast:
+				return QString("Unit - %1 cancel it's current cast")
+					.arg(getTriggerTargetName(action, withLinks));
+			case trigger_actions::SetStandState:
+				return QString("Unit - Set stand state of %1 to %2")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(getTriggerActionData(action, 0, withLinks));
+			case trigger_actions::SetVirtualEquipmentSlot:
+				return QString("Unit - Set virtual equipment slot %2 of %1 to %3")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(getTriggerActionData(action, 0, withLinks))
+					.arg(actionDataEntry(project.items, action, 1, withLinks, true));
+			case trigger_actions::SetPhase:
+				return QString("Unit - Set combat phase of %1 to %2")
 					.arg(getTriggerTargetName(action, withLinks))
 					.arg(getTriggerActionData(action, 0, withLinks));
 			default:

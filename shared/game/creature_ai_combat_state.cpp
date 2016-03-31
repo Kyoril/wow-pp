@@ -165,6 +165,15 @@ namespace wowpp
 			// If we are no longer stunned, update victim again
 			if (!stunned)
 			{
+				if (!getControlled().isCombatMovementEnabled())
+				{
+					// Try to continue last movement if we aren't there already
+					auto &mover = getControlled().getMover();
+					mover.moveTo(mover.getTarget());
+
+					return;
+				}
+
 				chooseNextAction();
 			}
 			else
@@ -186,6 +195,18 @@ namespace wowpp
 		});
 		m_onRootChanged = getControlled().rootStateChanged.connect([this](bool rooted)
 		{
+			if (!rooted)
+			{
+				if (!getControlled().isCombatMovementEnabled())
+				{
+					// Try to continue last movement if we aren't there already
+					auto &mover = getControlled().getMover();
+					mover.moveTo(mover.getTarget());
+
+					return;
+				}
+			}
+
 			chooseNextAction();
 		});
 
@@ -500,6 +521,11 @@ namespace wowpp
 	void CreatureAICombatState::chooseNextAction()
 	{
 		GameCreature &controlled = getControlled();
+		if (!controlled.isCombatMovementEnabled())
+		{
+			return;
+		}
+
 		m_onVictimMoved.disconnect();
 
 		// First, determine our current victim
@@ -786,5 +812,14 @@ namespace wowpp
 	void CreatureAICombatState::onCombatMovementChanged()
 	{
 		// Maybe react on this state change
+		if (getControlled().isCombatMovementEnabled())
+		{
+			chooseNextAction();
+		}
+		else
+		{
+			auto &controlled = getControlled();
+			controlled.setVictim(nullptr);
+		}
 	}
 }

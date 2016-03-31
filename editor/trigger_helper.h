@@ -41,11 +41,14 @@ namespace wowpp
 		QString getTriggerActionText(const proto::Project &project, const proto::TriggerAction &action, bool withLinks = false);
 
 		template<class T>
-		static QString actionDataEntry(const T& manager, const proto::TriggerAction &action, UInt32 i, bool link = false)
+		static QString actionDataEntry(const T& manager, const proto::TriggerAction &action, UInt32 i, bool link = false, bool allowEmpty = false)
 		{
 			QString temp = (link ? "<a href=\"data-%2\" style=\"color: #ffae00;\">%1</a>" : "%1");
 
 			Int32 data = (static_cast<Int32>(i) >= action.data_size() ? 0 : action.data(i));
+			if (data == 0 && allowEmpty)
+				return temp.arg("(None)").arg(i);
+
 			const auto *entry = manager.getById(data);
 			if (!entry)
 				return temp.arg("(INVALID)").arg(i);

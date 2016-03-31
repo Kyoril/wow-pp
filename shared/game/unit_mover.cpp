@@ -201,9 +201,6 @@ namespace wowpp
 			m_path.addPosition(moveTime, path[i]);
 		}
 
-		// Test
-		//m_path.printDebugInfo();
-
 		// Use new values
 		m_start = currentLoc;
 		m_target = path.back();
