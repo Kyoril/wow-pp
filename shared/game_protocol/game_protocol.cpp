@@ -3366,6 +3366,19 @@ namespace wowpp
 				}
 				out_packet.finish();
 			}
+
+			void sendTradeStatus(game::OutgoingPacket &out_packet, UInt64 status)
+			{
+				out_packet.start(game::server_packet::TradeStatus);
+				out_packet << io::write<NetUInt64>(status);
+				out_packet.finish();
+			}
+			void sendTradeStatus(game::OutgoingPacket &out_packet, UInt32 status)
+			{
+				out_packet.start(game::server_packet::TradeStatus);
+				out_packet << io::write<NetUInt32>(status);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
@@ -4158,6 +4171,17 @@ namespace wowpp
 					   >> out_whoList;
 			}
 
+			bool initateTrade(io::Reader &packet, UInt64 &other)
+			{
+				return packet
+					>> io::read<NetUInt64>(other);
+			}
+
+			bool beginTrade(io::Reader &packet)
+			{
+				return packet;
+			}
+
 		}
 
 		wowpp::game::WhoResponseEntry::WhoResponseEntry(const GameCharacter & character)
@@ -4205,5 +4229,8 @@ namespace wowpp
 			}
 			return r;
 		}
+		
+
+
 	}
 }

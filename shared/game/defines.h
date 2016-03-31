@@ -40,6 +40,9 @@ namespace wowpp
 			           point[1]);
 		}
 
+		
+
+
 		namespace quest_status
 		{
 			enum Type

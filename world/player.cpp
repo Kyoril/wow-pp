@@ -2937,4 +2937,135 @@ namespace wowpp
 		// TODO: Do something with the time diff
 	}
 
+
+	void Player::handleInitateTrade(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 other;
+		TradeStatusInfo statusinfo;
+		if (!(game::client_read::initateTrade(packet, other)))
+		{
+			WLOG("no data");
+			return;
+		}
+		auto *worldInstance = m_character->getWorldInstance();
+		if (!worldInstance)
+		{
+			WLOG("no world instance");
+			return;
+		}
+	
+		UInt64 thisguid = this->getCharacterGuid();
+		
+		auto *tradeObj = worldInstance->findObjectByGUID(other);
+		//auto *thistradeObj = worldInstance->findObjectByGUID(thisguid);
+
+
+		auto otherPlayer = reinterpret_cast<GameCharacter*>(tradeObj);    //player that clicked Trade
+		//auto thisPlayer = reinterpret_cast<GameCharacter*>(thistradeObj); //player that is traded
+
+		Tradedata data_this(*m_character, *otherPlayer);
+		Tradedata data_other(*otherPlayer, *m_character);
+
+		
+		m_character->settradedata(data_this);		//give them tradedata
+		otherPlayer->settradedata(data_other);		//give them tradedata
+
+		statusinfo.tradestatus = TRADE_STATUS_BEGIN_TRADE;
+		statusinfo.guid = thisguid;
+
+		sendTradeData(statusinfo);
+		
+		
+
+		WLOG("works");
+	}
+
+	void Player::handleBeginTrade(game::Protocol::IncomingPacket & packet)
+	{
+		Tradedata *data = m_character->getTradedata();
+		if (!data)
+		{
+			return;
+		}
+		
+		TradeStatusInfo info;
+		info.tradestatus = TRADE_STATUS_OPEN_WINDOW;
+		GameCharacter &trader = data->getTrader();
+		auto _trader = reinterpret_cast<Player*>(&trader);
+		_trader->sendTradeData(info);
+		this->sendTradeData(info);
+	}
+
+
+
+	Tradedata::Tradedata(GameCharacter &player, GameCharacter &tradeplayer) :player(player), tradeplayer(tradeplayer) {};
+
+	void Player::sendTradeData(TradeStatusInfo &info)
+	{
+		UInt32 openwindow = 0;
+
+		switch (info.tradestatus)
+		{
+		case wowpp::TRADE_STATUS_BUSY:
+			break;
+		case wowpp::TRADE_STATUS_BEGIN_TRADE:
+			sendProxyPacket(
+				std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, info.guid)); //send UInt64
+			break;
+		case wowpp::TRADE_STATUS_OPEN_WINDOW:
+			//sendProxyPacket(
+			//	std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, openwindow)); //send UInt64
+			break;
+		case wowpp::TRADE_STATUS_TRADE_CANCELED:
+			break;
+		case wowpp::TRADE_STATUS_TRADE_ACCEPT:
+			break;
+		case wowpp::TRADE_STATUS_BUSY_2:
+			break;
+		case wowpp::TRADE_STATUS_NO_TARGET:
+			break;
+		case wowpp::TRADE_STATUS_BACK_TO_TRADE:
+			break;
+		case wowpp::TRADE_STATUS_TRADE_COMPLETE:
+			break;
+		case wowpp::TRADE_STATUS_TRADE_REJECTED:
+			break;
+		case wowpp::TRADE_STATUS_TARGET_TO_FAR:
+			break;
+		case wowpp::TRADE_STATUS_WRONG_FACTION:
+			break;
+		case wowpp::TRADE_STATUS_CLOSE_WINDOW:
+			break;
+		case wowpp::TRADE_STATUS_IGNORE_YOU:
+			break;
+		case wowpp::TRADE_STATUS_YOU_STUNNED:
+			break;
+		case wowpp::TRADE_STATUS_TARGET_STUNNED:
+			break;
+		case wowpp::TRADE_STATUS_YOU_DEAD:
+			break;
+		case wowpp::TRADE_STATUS_TARGET_DEAD:
+			break;
+		case wowpp::TRADE_STATUS_YOU_LOGOUT:
+			break;
+		case wowpp::TRADE_STATUS_TARGET_LOGOUT:
+			break;
+		case wowpp::TRADE_STATUS_TRIAL_ACCOUNT:
+			break;
+		case wowpp::TRADE_STATUS_WRONG_REALM:
+			break;
+		case wowpp::TRADE_STATUS_NOT_ON_TAPLIST:
+			break;
+		default:
+			break;
+		}
+
+		
+	}
+
+	GameCharacter &Tradedata::getTrader()
+	{
+		return tradeplayer;
+	}
+
 }
