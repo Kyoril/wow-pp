@@ -2328,6 +2328,10 @@ namespace wowpp
 		// Send the actual loot data (TODO: Determine loot type)
 		auto guid = source.getGuid();
 		auto lootType = game::loot_type::Corpse;
+		if (!isItemGUID(guid))
+		{
+			m_character->getAuras().removeAurasByType(game::aura_type::Mounted);
+		}
 		sendProxyPacket(
 			std::bind(game::server_write::lootResponse, std::placeholders::_1, guid, lootType, std::cref(loot)));
 	}
