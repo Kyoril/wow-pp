@@ -651,6 +651,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(CancelAura)
 			WOWPP_HANDLE_PACKET(Emote)
 			WOWPP_HANDLE_PACKET(TextEmote)
+			WOWPP_HANDLE_PACKET(PetNameQuery)
 #undef WOWPP_HANDLE_PACKET
 
 			// Client packets handled by player
@@ -1318,6 +1319,31 @@ namespace wowpp
 				watcher->sendPacket(emotePacket, buffer);
 			}
 		});
+	}
+
+	void RealmConnector::handlePetNameQuery(Player & sender, game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 petGUID;
+		UInt32 petNumber;
+		if (!game::client_read::petNameRequest(packet, petNumber, petGUID))
+		{
+			return;
+		}
+
+		GameObject *object = sender.getWorldInstance().findObjectByGUID(petGUID);
+		if (!object)
+		{
+			return;
+		}
+
+		if (!object->isCreature())
+		{
+			return;
+		}
+
+		const String &name = reinterpret_cast<GameUnit*>(object)->getName();
+		sender.sendProxyPacket(
+			std::bind(game::server_write::petNameQueryResponse, std::placeholders::_1, petNumber, std::cref(name), 0));
 	}
 
 	void RealmConnector::sendCharacterGroupUpdate(GameCharacter &character, const std::vector<UInt64> &nearbyMembers)

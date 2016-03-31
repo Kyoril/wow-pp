@@ -22,6 +22,15 @@
 syntax = "proto2";
 package wowpp.proto;
 
+message TriggerExpression {
+	// Type. Can be: VALUE, VARIABLE or FUNCTION.
+	required uint32 type = 1;
+	// Depends on type. If VALUE, this is the value. if VARIABLE, this is the variable id. And if FUNCTION, this is t
+	required uint32 value = 2;
+	// Only used if type is set to FUNCTION. Values depends on used function.
+	repeated uint32 data = 3;
+}
+
 message TriggerCondition {
 	required uint32 type = 1;
 	optional uint32 value_1 = 2;

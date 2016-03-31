@@ -105,7 +105,7 @@ namespace wowpp
 		}
 
 		// Check power
-		Int32 powerCost = calculatePowerCost(spell);
+		Int32 powerCost = itemGuid ? 0 : calculatePowerCost(spell);
 		if (powerCost > 0)
 		{
 			if (spell.powertype() == game::power_type::Health)

@@ -3370,6 +3370,17 @@ namespace wowpp
 				}
 				out_packet.finish();
 			}
+			void petNameQueryResponse(game::OutgoingPacket & out_packet, UInt32 petNumber, const String & petName, UInt32 petNameTimestmap)
+			{
+				out_packet.start(game::server_packet::PetNameQueryResponse);
+				out_packet
+					<< io::write<NetUInt32>(petNumber)
+					<< io::write_range(petName) << io::write<NetUInt8>(0)
+					<< io::write<NetUInt32>(petNameTimestmap)
+					<< io::write<NetUInt8>(0)
+					;
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
@@ -4162,6 +4173,12 @@ namespace wowpp
 					   >> out_whoList;
 			}
 
+			bool petNameRequest(io::Reader & packet, UInt32 & out_petNumber, UInt64 & out_petGUID)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_petNumber)
+					>> io::read<NetUInt64>(out_petGUID);
+			}
 		}
 
 		wowpp::game::WhoResponseEntry::WhoResponseEntry(const GameCharacter & character)

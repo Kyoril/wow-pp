@@ -1804,7 +1804,7 @@ namespace wowpp
 
 	bool SingleCastState::consumePower()
 	{
-		const Int32 totalCost = m_cast.calculatePowerCost(m_spell);
+		const Int32 totalCost = m_itemGuid ? 0 : m_cast.calculatePowerCost(m_spell);
 		if (totalCost > 0)
 		{
 			if (m_spell.powertype() == game::power_type::Health)
@@ -2254,6 +2254,9 @@ namespace wowpp
 		executer.setUInt64Value(unit_fields::Summon, spawned->getGuid());
 		spawned->setUInt32Value(unit_fields::CreatedBySpell, m_spell.id());
 		spawned->setUInt64Value(unit_fields::CreatedBy, executer.getGuid());
+		spawned->setUInt32Value(unit_fields::NpcFlags, 0);
+		spawned->setUInt32Value(unit_fields::Bytes1, 0);
+		spawned->setUInt32Value(unit_fields::PetNumber, guidLowerPart(spawned->getGuid()));
 		world->addGameObject(*spawned);
 	}
 

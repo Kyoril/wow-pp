@@ -402,6 +402,7 @@ namespace wowpp
 				LogoutRequest			= 0x04B,
 				LogoutCancel			= 0x04E,
 				NameQuery				= 0x050,
+				PetNameQuery			= 0x052,
 				ItemQuerySingle			= 0x056,
 				ItemQueryMultiple		= 0x057,
 				QuestQuery				= 0x05C,
@@ -539,6 +540,7 @@ namespace wowpp
 				LogoutComplete				= 0x04D,
 				LogoutCancelAck				= 0x04F,
 				NameQueryResponse			= 0x051,
+				PetNameQueryResponse		= 0x053,
 				ItemQuerySingleResponse		= 0x058,
 				ItemQueryMultipleResponse	= 0x059,
 				QuestQueryResponse			= 0x05D,
@@ -1264,6 +1266,12 @@ namespace wowpp
 			bool who(
 				io::Reader &packet, 
 				WhoListRequest &out_whoList
+				);
+
+			bool petNameRequest(
+				io::Reader &packet,
+				UInt32 &out_petNumber,
+				UInt64 &out_petGUID
 				);
 		};
 
@@ -2153,6 +2161,13 @@ namespace wowpp
 				UInt64 caster,
 				UInt8 unknown,
 				const std::map<UInt64, game::SpellMissInfo> &missedTargetGUIDs
+				);
+
+			void petNameQueryResponse(
+				game::OutgoingPacket &out_packet,
+				UInt32 petNumber,
+				const String &petName,
+				UInt32 petNameTimestmap
 				);
 		};
 	}

@@ -662,6 +662,12 @@ namespace wowpp
 			{
 				updateType = 0x03;		// CREATE_OBJECT_2
 			}
+			if (object.isCreature() && 
+				object.getUInt64Value(unit_fields::CreatedBy) == receiver.getGuid())
+			{
+				updateType = 0x03;		// CREATE_OBJECT_2
+				ILOG("PET CREATE: CREATE_OBJECT_2");
+			}
 			if (object.getTypeId() == object_type::GameObject)
 			{
 				UInt32 objType = object.getUInt32Value(world_object_fields::TypeID);
@@ -677,6 +683,7 @@ namespace wowpp
 					break;
 				}
 			}
+
 			UInt8 updateFlags = 0x10 | 0x20 | 0x40;			// UPDATEFLAG_ALL | UPDATEFLAG_LIVING | UPDATEFLAG_HAS_POSITION
 			UInt8 objectTypeId = object.getTypeId();		//
 			if (objectTypeId == object_type::GameObject)
