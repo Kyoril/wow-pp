@@ -150,6 +150,11 @@
        <string>Unit - Set Phase</string>
       </property>
      </item>
+     <item>
+      <property name="text">
+       <string>Unit - Set Spell Cooldown</string>
+      </property>
+     </item>
     </widget>
    </item>
    <item>

@@ -69,6 +69,7 @@ namespace wowpp
 		void handleSetStandState(const proto::TriggerAction &action, game::TriggerContext &context);
 		void handleSetVirtualEquipmentSlot(const proto::TriggerAction &action, game::TriggerContext &context);
 		void handleSetPhase(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetSpellCooldown(const proto::TriggerAction &action, game::TriggerContext &context);
 
 	private:
 

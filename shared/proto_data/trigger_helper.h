@@ -28,31 +28,45 @@ namespace wowpp
 		enum Type
 		{
 			/// Executed when the unit is spawned.
+			/// Data: NONE;
 			OnSpawn = 0,
 			/// Executed when the unit will despawn.
+			/// Data: NONE;
 			OnDespawn = 1,
 			/// Executed when the unit enters the combat.
+			/// Data: NONE;
 			OnAggro = 2,
 			/// Executed when the unit was killed.
+			/// Data: NONE;
 			OnKilled = 3,
 			/// Executed when the unit killed another unit.
+			/// Data: NONE;
 			OnKill = 4,
 			/// Executed when the unit was damaged.
+			/// Data: NONE;
 			OnDamaged = 5,
 			/// Executed when the unit was healed.
+			/// Data: NONE;
 			OnHealed = 6,
 			/// Executed when the unit made an auto attack swing.
+			/// Data: NONE;
 			OnAttackSwing = 7,
 			/// Executed when the unit resets.
+			/// Data: NONE;
 			OnReset = 8,
 			/// Executed when the unit reached it's home point after reset.
+			/// Data: NONE;
 			OnReachedHome = 9,
 			/// Executed when a player is interacting with this object. Only works on GameObjects right now, but could also be used
 			/// for npc interaction.
+			/// Data: NONE;
 			OnInteraction = 10,
 			/// Executed when a units health drops below a certain percentage.
 			/// Data: <HEALTH_PERCENTAGE:0-100>;
 			OnHealthDroppedBelow = 11,
+			/// Executed when a unit reaches it's target point for a move that was triggered by a trigger.
+			/// Data: NONE;
+			OnReachedTriggeredTarget = 12,
 
 			Invalid,
 			Count_ = Invalid
@@ -108,6 +122,10 @@ namespace wowpp
 			/// Updates the target creatures AI combat phase.
 			/// Targets: UNIT; Data: <PHASE>; Texts: NONE;
 			SetPhase = 14,
+			/// Sets spell cooldown for a unit.
+			/// Targets: UNIT; Data: <SPELL-ID>,<TIME-MS>; Texts: NONE;
+			SetSpellCooldown = 15,
+
 
 			Invalid,
 			Count_ = Invalid

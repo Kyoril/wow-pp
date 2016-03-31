@@ -100,6 +100,7 @@ namespace wowpp
 			WOWPP_HANDLE_TRIGGER_ACTION(SetStandState)
 			WOWPP_HANDLE_TRIGGER_ACTION(SetVirtualEquipmentSlot)
 			WOWPP_HANDLE_TRIGGER_ACTION(SetPhase)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetSpellCooldown)
 #undef WOWPP_HANDLE_TRIGGER_ACTION
 
 				case trigger_actions::Delay:
@@ -446,13 +447,20 @@ namespace wowpp
 		}
 
 		// Verify that "target" extends GameUnit class
-		if (!target->isCreature() && !target->isGameCharacter())
+		if (!target->isCreature())
 		{
-			WLOG("TRIGGER_ACTION_MOVE_TO: Needs a unit target, but target is no unit - action ignored");
+			WLOG("TRIGGER_ACTION_MOVE_TO: Needs a creature target, but target is no unit - action ignored");
 			return;
 		}
 
 		auto &mover = reinterpret_cast<GameUnit*>(target)->getMover();
+		boost::signals2::connection reached = mover.targetReached.connect_extended([target](const boost::signals2::connection &conn) {
+			// Raise reached target trigger
+			reinterpret_cast<GameCreature*>(target)->raiseTrigger(trigger_event::OnReachedTriggeredTarget);
+
+			// This slot shall be executed only once
+			conn.disconnect();
+		});
 		mover.moveTo(
 			math::Vector3(static_cast<float>(getActionData(action, 0)), static_cast<float>(getActionData(action, 1)), static_cast<float>(getActionData(action, 2))));
 	}
@@ -588,6 +596,25 @@ namespace wowpp
 	void TriggerHandler::handleSetPhase(const proto::TriggerAction & action, game::TriggerContext & context)
 	{
 		WLOG("TODO: ACTION_SET_PHASE");
+	}
+
+	void TriggerHandler::handleSetSpellCooldown(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context.owner);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_SET_SPELL_COOLDOWN: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature() && !target->isGameCharacter())
+		{
+			WLOG("TRIGGER_ACTION_SET_SPELL_COOLDOWN: Needs a unit target - action ignored");
+			return;
+		}
+
+		reinterpret_cast<GameUnit*>(target)->setCooldown(getActionData(action, 0), getActionData(action, 1));
 	}
 
 	Int32 TriggerHandler::getActionData(const proto::TriggerAction &action, UInt32 index) const

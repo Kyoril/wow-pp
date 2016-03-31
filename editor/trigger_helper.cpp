@@ -66,6 +66,8 @@ namespace wowpp
 			case trigger_event::OnHealthDroppedBelow:
 				return QString("Owning units health dropped below %1%")
 					.arg(getTriggerEventData(e, 0, withLinks));
+			case trigger_event::OnReachedTriggeredTarget:
+				return "Owning unit reached triggered movement target";
 			default:
 				return "(INVALID EVENT)";
 			}
@@ -163,6 +165,11 @@ namespace wowpp
 				return QString("Unit - Set combat phase of %1 to %2")
 					.arg(getTriggerTargetName(action, withLinks))
 					.arg(getTriggerActionData(action, 0, withLinks));
+			case trigger_actions::SetSpellCooldown:
+				return QString("Unit - Set %1's cooldown of spell %2 to %3 ms")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(actionDataEntry(project.spells, action, 0, withLinks))
+					.arg(getTriggerActionData(action, 1, withLinks));
 			default:
 				return QString("UNKNOWN TRIGGER ACTION");
 			}
