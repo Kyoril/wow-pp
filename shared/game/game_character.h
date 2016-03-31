@@ -26,8 +26,6 @@
 #include "inventory.h"
 #include "defines.h"
 #include "loot_instance.h"
-#include "world/player.h"
-#include "realm_connector.h"
 
 namespace wowpp
 {
@@ -844,8 +842,6 @@ namespace wowpp
 		/// @param ref_threat The current threat value, which can be modified by this method.
 		void applyThreatMod(UInt32 schoolMask, float &ref_threat);
 
-		Tradedata getTradedata();
-
 	public:
 
 		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT
@@ -853,9 +849,6 @@ namespace wowpp
 
 		/// Manually sets data for a specified quest id.
 		void setQuestData(UInt32 quest, const QuestStatusData &data);
-		void settradedata(Tradedata &tradedata);
-		
-		
 
 	private:
 
@@ -867,7 +860,6 @@ namespace wowpp
 		/// Updates nearby game objects after a quest change happened (some game objects are only
 		/// lootable and/or shining when certain quests are incomplete).
 		void updateNearbyQuestObjects();
-		
 
 	private:
 
@@ -901,7 +893,6 @@ namespace wowpp
 		std::map<UInt32, Int8> m_requiredQuestItems;
 		SpellModsByOp m_spellModsByOp;
 		std::array<float, 7> m_threatModifier;
-		Tradedata m_tradedata;
 	};
 
 	/// Serializes a GameCharacter to an io::Writer object for the wow++ protocol.

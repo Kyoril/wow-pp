@@ -32,7 +32,6 @@
 #include "each_tile_in_region.h"
 #include "game_world_object.h"
 #include "binary_io/vector_sink.h"
-#include "world/player.h"
 
 namespace wowpp
 {
@@ -63,11 +62,6 @@ namespace wowpp
 
 	GameCharacter::~GameCharacter()
 	{
-	}
-
-	void GameCharacter::settradedata(Tradedata &tradedata)
-	{
-		m_tradedata : tradedata;
 	}
 
 	void GameCharacter::initialize()
@@ -2015,10 +2009,4 @@ namespace wowpp
 
 		return r;
 	}
-
-	Tradedata GameCharacter::getTradedata()
-	{
-		return m_tradedata;
-	}
-	
 }
