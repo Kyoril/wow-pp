@@ -408,7 +408,7 @@ namespace wowpp
 
 		const std::weak_ptr<SingleCastState> weakThis = strongThis;
 		const UInt32 spellAttributes = m_spell.attributes(0);
-		if (spellAttributes & game::spell_attributes::OnNextSwing/* || spellAttributes & game::spell_attributes::OnNextSwing_2*/)
+		if (spellAttributes & game::spell_attributes::OnNextSwing)
 		{
 			// Execute on next weapon swing
 			m_cast.getExecuter().setAttackSwingCallback([strongThis, this]() -> bool
@@ -416,12 +416,14 @@ namespace wowpp
 				if (!strongThis->consumePower())
 				{
 					m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedNoPower);
+					strongThis->sendEndCast(false);
 					return false;
 				}
 
 				if (!strongThis->consumeItem())
 				{
 					m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedItemNotFound);
+					strongThis->sendEndCast(false);
 					return false;
 				}
 
