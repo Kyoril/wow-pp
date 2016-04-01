@@ -200,6 +200,9 @@ namespace wowpp
 		/// when lootable item no longer has loot).
 		void onItemDespawned(GameObject &object);
 
+		void onSetItemEquipped(UInt32 set);
+		void onSetItemUnequipped(UInt32 set);
+
 	private:
 
 		GameCharacter &m_owner;
@@ -216,6 +219,8 @@ namespace wowpp
 		std::vector<ItemData> m_realmData;
 
 		std::map<UInt64, boost::signals2::scoped_connection> m_itemDespawnSignals;
+
+		std::map<UInt32, UInt8> m_setItems;
 	};
 
 	/// Serializes this inventory.

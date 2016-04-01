@@ -47,13 +47,14 @@ namespace wowpp
 			const bool hasFamily =
 				(a->getSpell().family() != 0);
 			const bool isSameSpell = 
-				(a->getSpell().id() == aura->getSpell().id() ||
-				(hasFamily && isSameFamily));
+				((a->getSpell().id() == aura->getSpell().id() ||
+				(hasFamily && isSameFamily))) && a->isPassive() == aura->isPassive();
 			const bool stackForDiffCasters =
 				aura->getSpell().attributes(3) & game::spell_attributes_ex_c::StackForDiffCasters;
 			if (isSameSpell &&
 				(isSameCaster || !stackForDiffCasters) &&
-				!aura->isPassive())
+				!aura->isPassive() && 
+				!a->isPassive())
 			{
 				newSlot = a->getSlot();
 				isReplacement = true;
@@ -194,7 +195,7 @@ namespace wowpp
 		                   std::end(m_auras),
 		                   [](const std::shared_ptr<Aura> &instance)
 		{
-			return (instance->getSpell().attributes(3) & 0x00100000) != 0;
+			return (instance->getSpell().attributes(3) & 0x00100000) != 0 || instance->isPassive();
 		});
 
 		for (auto i = newEnd; i != std::end(m_auras); ++i)

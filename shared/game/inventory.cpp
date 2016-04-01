@@ -698,8 +698,17 @@ namespace wowpp
 			m_owner.setUInt32Value(character_fields::VisibleItem1_0 + ((slotA & 0xFF) * 16), (dstItem ? dstItem->getEntry().id() : 0));
 			m_owner.setUInt64Value(character_fields::VisibleItem1_CREATOR + ((slotA & 0xFF) * 16), (dstItem ? dstItem->getUInt64Value(item_fields::Creator) : 0));
 			m_owner.applyItemStats(*srcItem, false);
-			if (dstItem) {
+			if (srcItem->getEntry().itemset() != 0)
+			{
+				onSetItemUnequipped(srcItem->getEntry().itemset());
+			}
+			if (dstItem) 
+			{
 				m_owner.applyItemStats(*dstItem, true);
+				if (dstItem->getEntry().itemset() != 0)
+				{
+					onSetItemEquipped(dstItem->getEntry().itemset());
+				}
 			}
 		}
 		if (isEquipmentSlot(slotB))
@@ -707,8 +716,17 @@ namespace wowpp
 			m_owner.setUInt32Value(character_fields::VisibleItem1_0 + ((slotB & 0xFF) * 16), srcItem->getEntry().id());
 			m_owner.setUInt64Value(character_fields::VisibleItem1_CREATOR + ((slotB & 0xFF) * 16), srcItem->getUInt64Value(item_fields::Creator));
 			m_owner.applyItemStats(*srcItem, true);
-			if (dstItem) {
+			if (srcItem->getEntry().itemset() != 0)
+			{
+				onSetItemEquipped(srcItem->getEntry().itemset());
+			}
+			if (dstItem) 
+			{
 				m_owner.applyItemStats(*dstItem, false);
+				if (dstItem->getEntry().itemset() != 0)
+				{
+					onSetItemUnequipped(dstItem->getEntry().itemset());
+				}
 			}
 
 			// Bind this item
@@ -1181,6 +1199,10 @@ namespace wowpp
 						m_owner.setUInt32Value(character_fields::VisibleItem1_0 + (subslot * 16), item->getEntry().id());
 						m_owner.setUInt64Value(character_fields::VisibleItem1_CREATOR + (subslot * 16), item->getUInt64Value(item_fields::Creator));
 						m_owner.applyItemStats(*item, true);
+						if (item->getEntry().itemset() != 0)
+						{
+							onSetItemEquipped(item->getEntry().itemset());
+						}
 
 						// Apply bonding
 						if (entry->bonding() == game::item_binding::BindWhenEquipped)
@@ -1361,6 +1383,54 @@ namespace wowpp
 
 		// Destroy this item
 		removeItem(slot);
+	}
+
+	void Inventory::onSetItemEquipped(UInt32 set)
+	{
+		auto *setEntry = m_owner.getProject().itemSets.getById(set);
+		if (!setEntry)
+		{
+			return;
+		}
+
+		SpellTargetMap targetMap;
+		targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+		targetMap.m_unitTarget = m_owner.getGuid();
+
+		auto &counter = m_setItems[set];
+		for (auto &spell : setEntry->spells())
+		{
+			if (spell.itemcount() == counter + 1)
+			{
+				// Apply spell
+				m_owner.castSpell(targetMap, spell.spell(), -1, 0, true);
+			}
+		}
+
+		// Increment counter
+		counter++;
+	}
+
+	void Inventory::onSetItemUnequipped(UInt32 set)
+	{
+		auto *setEntry = m_owner.getProject().itemSets.getById(set);
+		if (!setEntry)
+		{
+			return;
+		}
+
+		auto &counter = m_setItems[set];
+		for (auto &spell : setEntry->spells())
+		{
+			if (spell.itemcount() == counter)
+			{
+				// Remove spell auras
+				m_owner.getAuras().removeAllAurasDueToSpell(spell.spell());
+			}
+		}
+
+		// Increment counter
+		counter--;
 	}
 
 	io::Writer &operator << (io::Writer &w, Inventory const &object)
