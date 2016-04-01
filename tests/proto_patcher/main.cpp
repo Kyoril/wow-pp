@@ -1151,6 +1151,70 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importItemSets(proto::Project &project, MySQL::Connection &conn)
+	{
+		project.itemSets.clear();
+
+		wowpp::MySQL::Select select(conn, "SELECT `id`,`name4`,`spell1`,`count1`,`spell2`,`count2`,`spell3`,`count3`,`spell4`,`count4`,`spell5`,`count5`,`spell6`,`count6`,`spell7`,`count7`,`spell8`,`count8` FROM `dbc_itemset` ORDER BY `id`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 entry = 0, index = 0;
+				String name;
+				row.getField(index++, entry);
+				row.getField(index++, name);
+
+				auto *added = project.itemSets.add(entry);
+				if (!added)
+				{
+					ELOG("Failed to add item set");
+					return false;
+				}
+
+				added->set_name(name);
+
+				for (UInt32 i = 0; i < 8; ++i)
+				{
+					UInt32 spellId = 0, count = 0;
+					row.getField(index++, spellId);
+					row.getField(index++, count);
+
+					if (spellId == 0 || count == 0)
+					{
+						continue;
+					}
+
+					if (!project.spells.getById(spellId))
+					{
+						WLOG("Could not find spell by id " << spellId << ": Referenced by item set " << entry << " in slot " << i);
+						continue;
+					}
+
+					auto *addedSpell = added->add_spells();
+					if (!addedSpell)
+					{
+						ELOG("Could not add item set spell entry");
+						return false;
+					}
+
+					addedSpell->set_spell(spellId);
+					addedSpell->set_itemcount(count);
+				}
+
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			ELOG("Error: " << conn.getErrorMessage());
+		}
+
+		return true;
+	}
+
 #if 0
 	static void fixTriggerEvents(proto::Project &project)
 	{
@@ -1231,6 +1295,12 @@ int main(int argc, char* argv[])
 	else
 	{
 		ILOG("MySQL connection established!");
+	}
+
+	if (!importItemSets(protoProject, connection))
+	{
+		ELOG("Failed to import item sets");
+		return 0;
 	}
 
 	if (!importItemQuests(protoProject, connection))
