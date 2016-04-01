@@ -155,6 +155,9 @@ namespace wowpp
 					if (unit.isInCombat())
 						return true;
 
+					if (!controlled.isInLineOfSight(unit))
+						return false;
+
 					const auto &threatFaction = threat.getFactionTemplate();
 					const auto &unitFaction = unit.getFactionTemplate();
 					if (controlled.isFriendlyTo(unitFaction) &&
