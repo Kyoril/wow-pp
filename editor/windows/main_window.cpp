@@ -195,11 +195,6 @@ namespace wowpp
 				std::unique_ptr<WorldEditor> scene(
 					new WorldEditor(m_application, *sceneMgr, *camera, *entry, m_application.getProject()));
 				m_ogreWindow->setScene(std::move(scene));
-
-				if (entry->id() == 0)
-				{
-					camera->setPosition(3043.45f, 681.295f, 66.8132f);
-				}
 			}
 		}
 	}

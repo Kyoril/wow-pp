@@ -23,6 +23,7 @@
 
 #include "selected.h"
 #include "shared/proto_data/maps.pb.h"
+#include "ogre_wrappers/billboard_set_ptr.h"
 
 namespace wowpp
 {
@@ -71,6 +72,7 @@ namespace wowpp
 			ObjectEventHandler m_eventHandler;
 			Ogre::Entity &m_entity;
 			proto::UnitSpawnEntry &m_entry;
+			ogre_utils::BillboardSetPtr m_waypoints;
 		};
 
 	}

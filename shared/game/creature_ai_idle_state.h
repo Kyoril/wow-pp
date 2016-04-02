@@ -58,6 +58,10 @@ namespace wowpp
 
 		void onMoved(GameObject &object, const math::Vector3 &oldLocation, float oldRotation);
 
+		void onChooseNextMove();
+
+		void onStartAggroWatcher();
+
 	private:
 
 		std::unique_ptr<UnitWatcher> m_aggroWatcher;

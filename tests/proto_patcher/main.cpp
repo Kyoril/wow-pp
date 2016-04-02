@@ -1256,6 +1256,45 @@ namespace wowpp
 			ELOG("Error: " << conn.getErrorMessage());
 		}
 
+		wowpp::MySQL::Select select2(conn, "SELECT `entry`,`point`,`position_x`,`position_y`,`position_z`,`waittime` FROM `tbcdb`.`creature_movement_template` ORDER BY `entry`, `point`;");
+		if (select2.success())
+		{
+			wowpp::MySQL::Row row(select2);
+			while (row)
+			{
+				// Get row data
+				UInt32 entry = 0, point = 0, index = 0, delay = 0;
+				float x, y, z;
+				row.getField(index++, entry);
+				row.getField(index++, point);
+				row.getField(index++, x);
+				row.getField(index++, y);
+				row.getField(index++, z);
+				row.getField(index++, delay);
+
+				for (auto &map : *project.maps.getTemplates().mutable_entry())
+				{
+					for (auto &spawn : *map.mutable_unitspawns())
+					{
+						if (spawn.unitentry() == entry)
+						{
+							auto *added = spawn.add_waypoints();
+							added->set_positionx(x);
+							added->set_positiony(y);
+							added->set_positionz(z);
+							added->set_waittime(delay);
+						}
+					}
+				}
+
+				row = row.next(select2);
+			}
+		}
+		else
+		{
+			ELOG("Error: " << conn.getErrorMessage());
+		}
+
 		return true;
 	}
 

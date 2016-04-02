@@ -37,38 +37,8 @@ namespace wowpp
 		, m_aggroDelay(ai.getControlled().getTimers())
 		, m_nextMove(ai.getControlled().getTimers())
 	{
-		m_aggroDelay.ended.connect([this]()
-		{
-			// Watch for movement
-			m_onMoved = getControlled().moved.connect(
-				std::bind(&CreatureAIIdleState::onMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-
-			if (m_aggroWatcher)
-			{
-				m_aggroWatcher->start();
-			}
-		});
-
-		m_nextMove.ended.connect([this]()
-		{
-			auto *world = getControlled().getWorldInstance();
-			if (world)
-			{
-				auto *mapData = world->getMapData();
-				if (mapData)
-				{
-					math::Vector3 targetPoint;
-					if (mapData->getRandomPointOnGround(getAI().getHome().position, 8.0f, targetPoint))
-					{
-						getControlled().getMover().moveTo(targetPoint, getControlled().getSpeed(movement_type::Walk));
-						return;
-					}
-				}
-			}
-
-			// Try again in a few seconds
-			m_nextMove.setEnd(getCurrentTime() + (constants::OneSecond * 3));
-		});
+		m_aggroDelay.ended.connect(std::bind(&CreatureAIIdleState::onStartAggroWatcher, this));
+		m_nextMove.ended.connect(std::bind(&CreatureAIIdleState::onChooseNextMove, this));
 	}
 
 	CreatureAIIdleState::~CreatureAIIdleState()
@@ -255,6 +225,38 @@ namespace wowpp
 			{
 				m_aggroWatcher->setShape(Circle(loc.x, loc.y, 40.0f));
 			}
+		}
+	}
+
+	void CreatureAIIdleState::onChooseNextMove()
+	{
+		auto *world = getControlled().getWorldInstance();
+		if (world)
+		{
+			auto *mapData = world->getMapData();
+			if (mapData)
+			{
+				math::Vector3 targetPoint;
+				if (mapData->getRandomPointOnGround(getAI().getHome().position, 8.0f, targetPoint))
+				{
+					getControlled().getMover().moveTo(targetPoint, getControlled().getSpeed(movement_type::Walk));
+					return;
+				}
+			}
+		}
+
+		// Try again in a few seconds
+		m_nextMove.setEnd(getCurrentTime() + (constants::OneSecond * 3));
+	}
+
+	void CreatureAIIdleState::onStartAggroWatcher()
+	{
+		// Watch for movement
+		m_onMoved = getControlled().moved.connect(
+			std::bind(&CreatureAIIdleState::onMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+		if (m_aggroWatcher)
+		{
+			m_aggroWatcher->start();
 		}
 	}
 
