@@ -1596,7 +1596,6 @@ namespace wowpp
 
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 
-		//UInt32 questId = effect.miscvaluea();
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
@@ -1604,7 +1603,7 @@ namespace wowpp
 
 			if (targetUnit->isGameCharacter())
 			{
-                // TODO
+				reinterpret_cast<GameCharacter*>(targetUnit)->completeQuest(effect.miscvaluea());
 			}
 		}
 	}
@@ -1711,7 +1710,7 @@ namespace wowpp
 			{se::SchoolDamage,			std::bind(&SingleCastState::spellEffectSchoolDamage, this, std::placeholders::_1)}
 		};
 
-		// Make sure that the executer
+		// Make sure that the executer exists after all effects have been executed
 		std::weak_ptr<GameObject> weakExecuter(m_cast.getExecuter().shared_from_this());
 		for (std::vector<std::pair<UInt32, EffectHandler>>::iterator it = effectMap.begin(); it != effectMap.end(); ++it)
 		{

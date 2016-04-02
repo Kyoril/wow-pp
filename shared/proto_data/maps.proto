@@ -43,6 +43,7 @@ message UnitSpawnEntry {
 	optional uint32 defaultemote = 11;
 	optional bool isactive = 12 [default = true];
 	repeated Waypoint waypoints = 13;
+	optional uint32 movement = 14;
 }
 
 message ObjectSpawnEntry {

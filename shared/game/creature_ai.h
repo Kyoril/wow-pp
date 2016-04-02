@@ -85,6 +85,8 @@ namespace wowpp
 		void reset();
 		/// Executed by the underlying creature when combat movement gets enabled or disabled.
 		void onCombatMovementChanged();
+		/// 
+		void onCreatureMovementChanged();
 
 	public:
 

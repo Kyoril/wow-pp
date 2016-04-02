@@ -40,6 +40,21 @@ namespace wowpp
 			           point[1]);
 		}
 
+		namespace creature_movement
+		{
+			enum Type
+			{
+				None		= 0,
+				Random		= 1,
+				Waypoints	= 2,
+
+				Invalid,
+				Count_ = Invalid
+			};
+		}
+
+		typedef creature_movement::Type CreatureMovement;
+
 		namespace quest_status
 		{
 			enum Type

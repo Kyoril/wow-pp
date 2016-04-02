@@ -42,6 +42,7 @@ namespace wowpp
 		, m_originalEntry(entry)
 		, m_entry(nullptr)
 		, m_combatMovement(true)
+		, m_movement(game::creature_movement::None)
 	{
 	}
 
@@ -419,6 +420,15 @@ namespace wowpp
 
 		m_combatMovement = enabled;
 		m_ai->onCombatMovementChanged();
+	}
+
+	void GameCreature::setMovementType(game::CreatureMovement movementType)
+	{
+		if (m_movement != movementType)
+		{
+			m_movement = movementType;
+			m_ai->onCreatureMovementChanged();
+		}
 	}
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)

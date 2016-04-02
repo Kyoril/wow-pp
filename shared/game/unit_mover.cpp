@@ -307,6 +307,8 @@ namespace wowpp
 			return;
 
 		GameTime now = getCurrentTime();
+		if (now >= m_moveEnd)
+			return;
 
 		std::vector<math::Vector3> path;
 		for (auto &p : m_path.getPositions())
@@ -320,7 +322,7 @@ namespace wowpp
 		std::vector<char> buffer;
 		io::VectorSink sink(buffer);
 		game::Protocol::OutgoingPacket packet(sink);
-		game::server_write::monsterMove(packet, getMoved().getGuid(), getCurrentLocation(), path, m_moveEnd - m_moveStart);
+		game::server_write::monsterMove(packet, getMoved().getGuid(), getCurrentLocation(), path, m_moveEnd - now);
 		subscriber.sendPacket(packet, buffer);
 	}
 }

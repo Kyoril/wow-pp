@@ -35,21 +35,39 @@ namespace wowpp
 	CreatureAIIdleState::CreatureAIIdleState(CreatureAI &ai)
 		: CreatureAIState(ai)
 		, m_aggroDelay(ai.getControlled().getTimers())
+		, m_nextMove(ai.getControlled().getTimers())
 	{
 		m_aggroDelay.ended.connect([this]()
 		{
 			// Watch for movement
-			UInt64 ownerGUID = getControlled().getUInt64Value(unit_fields::SummonedBy);
-			if (ownerGUID != 0)
-			{
-				m_onMoved = getControlled().moved.connect(
-					std::bind(&CreatureAIIdleState::onMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-			}
+			m_onMoved = getControlled().moved.connect(
+				std::bind(&CreatureAIIdleState::onMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
 			if (m_aggroWatcher)
 			{
 				m_aggroWatcher->start();
 			}
+		});
+
+		m_nextMove.ended.connect([this]()
+		{
+			auto *world = getControlled().getWorldInstance();
+			if (world)
+			{
+				auto *mapData = world->getMapData();
+				if (mapData)
+				{
+					math::Vector3 targetPoint;
+					if (mapData->getRandomPointOnGround(getAI().getHome().position, 8.0f, targetPoint))
+					{
+						getControlled().getMover().moveTo(targetPoint, getControlled().getSpeed(movement_type::Walk));
+						return;
+					}
+				}
+			}
+
+			// Try again in a few seconds
+			m_nextMove.setEnd(getCurrentTime() + (constants::OneSecond * 3));
 		});
 	}
 
@@ -88,6 +106,10 @@ namespace wowpp
 					}
 				});
 			}
+		}
+		else
+		{
+			onCreatureMovementChanged();
 		}
 
 		// If the unit is passive, it should not attack by itself
@@ -204,10 +226,24 @@ namespace wowpp
 	void CreatureAIIdleState::onLeave()
 	{
 		m_aggroDelay.cancel();
+		m_nextMove.cancel();
 
+		onTargetReached.disconnect();
 		m_onMoved.disconnect();
 		m_onOwnerMoved.disconnect();
 		m_aggroWatcher.reset();
+	}
+
+	void CreatureAIIdleState::onCreatureMovementChanged()
+	{
+		if (getControlled().getMovementType() == game::creature_movement::Random)
+		{
+			onTargetReached = getControlled().getMover().targetReached.connect([this]() {
+				m_nextMove.setEnd(getCurrentTime() + (constants::OneSecond * 4));
+			});
+
+			m_nextMove.setEnd(getCurrentTime() + (constants::OneSecond * 2));
+		}
 	}
 
 	void CreatureAIIdleState::onMoved(GameObject & object, const math::Vector3 & oldLocation, float oldRotation)
@@ -215,7 +251,6 @@ namespace wowpp
 		const auto &loc = object.getLocation();
 		if (loc != oldLocation)
 		{
-			getAI().setHome(CreatureAI::Home(loc, 0.0f, 0.0f));
 			if (m_aggroWatcher)
 			{
 				m_aggroWatcher->setShape(Circle(loc.x, loc.y, 40.0f));

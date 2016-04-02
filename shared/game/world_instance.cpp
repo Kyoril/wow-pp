@@ -171,6 +171,16 @@ namespace wowpp
 			const auto *unitEntry = m_project.units.getById(spawn.unitentry());
 			assert(unitEntry);
 
+			game::CreatureMovement movement = game::creature_movement::None;
+			if (spawn.movement() >= game::creature_movement::Invalid)
+			{
+				WLOG("Invalid movement type for creature spawn - spawn ignored");
+			}
+			else
+			{
+				movement = static_cast<game::CreatureMovement>(spawn.movement());
+			}
+
 			std::unique_ptr<CreatureSpawner> spawner(new CreatureSpawner(
 			            *this,
 			            *unitEntry,
@@ -181,7 +191,8 @@ namespace wowpp
 			            spawn.defaultemote(),
 			            spawn.radius(),
 			            spawn.isactive(),
-			            spawn.respawn()));
+			            spawn.respawn(),
+						movement));
 			m_creatureSpawners.push_back(std::move(spawner));
 
 			if (!spawn.name().empty())

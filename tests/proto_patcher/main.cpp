@@ -1215,6 +1215,52 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importSpawnMovement(proto::Project &project, MySQL::Connection &conn)
+	{
+		for (auto &map : *project.maps.getTemplates().mutable_entry())
+		{
+			for (auto &spawn : *map.mutable_unitspawns())
+			{
+				spawn.clear_waypoints();
+				spawn.clear_movement();
+			}
+		}
+
+		wowpp::MySQL::Select select(conn, "SELECT `entry`,`MovementType` FROM `tbcdb`.`creature_template` WHERE `MovementType` != 0 ORDER BY `entry`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 entry = 0, movement = 0, index = 0;
+				row.getField(index++, entry);
+				row.getField(index++, movement);
+
+				for (auto &map : *project.maps.getTemplates().mutable_entry())
+				{
+					for (auto &spawn : *map.mutable_unitspawns())
+					{
+						if (spawn.unitentry() == entry)
+						{
+							spawn.set_movement(movement);
+						}
+					}
+				}
+
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			ELOG("Error: " << conn.getErrorMessage());
+		}
+
+		return true;
+	}
+
+
+
 #if 0
 	static void fixTriggerEvents(proto::Project &project)
 	{
@@ -1324,6 +1370,12 @@ int main(int argc, char* argv[])
 	if (!importUnitMechanicImmunities(protoProject, connection))
 	{
 		ELOG("Failed to import unit mechanic immunities!");
+		return 1;
+	}
+
+	if (!importSpawnMovement(protoProject, connection))
+	{
+		ELOG("Failed to import spawn movement!");
 		return 1;
 	}
 

@@ -124,6 +124,10 @@ namespace wowpp
 		bool isCombatMovementEnabled() const { return m_combatMovement; }
 		/// 
 		void setCombatMovement(bool enabled);
+		/// 
+		game::CreatureMovement getMovementType() const { return m_movement; }
+		/// 
+		void setMovementType(game::CreatureMovement movementType);
 
 		/// Executes a callback function for every valid loot recipient.
 		template<typename OnRecipient>
@@ -161,6 +165,7 @@ namespace wowpp
 		LootRecipients m_lootRecipients;
 		std::unique_ptr<LootInstance> m_unitLoot;
 		bool m_combatMovement;
+		game::CreatureMovement m_movement;
 	};
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel);

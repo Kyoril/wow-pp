@@ -450,4 +450,65 @@ namespace wowpp
 
 		return 0;
 	}
+
+	namespace
+	{
+		static float frand()
+		{
+			return (float)rand() / (float)RAND_MAX;
+		}
+	}
+
+	bool Map::getRandomPointOnGround(const math::Vector3 & center, float radius, math::Vector3 & out_point)
+	{
+		math::Vector3 dtCenter(center.x, center.z, center.y);
+
+		// No nav mesh loaded for this map?
+		if (!m_navMesh || !m_navQuery)
+		{
+			return false;
+		}
+
+		int tx, ty;
+		m_navMesh->calcTileLoc(&dtCenter.x, &tx, &ty);
+		if (!m_navMesh->getTileAt(tx, ty, 0))
+		{
+			return false;
+		}
+
+		// Load source tile
+		TileIndex2D startIndex(
+			static_cast<Int32>(floor((32.0 - (static_cast<double>(center.x) / 533.3333333)))),
+			static_cast<Int32>(floor((32.0 - (static_cast<double>(center.y) / 533.3333333))))
+			);
+		auto *startTile = getTile(startIndex);
+		if (!startTile)
+		{
+			return false;
+		}
+
+		float distToStartPoly = 0.0f;
+		dtPolyRef startPoly = getPolyByLocation(dtCenter, distToStartPoly);
+		dtPolyRef endPoly = 0;
+
+		const bool isFarFromPoly = distToStartPoly > 7.0f;
+		if (isFarFromPoly)
+		{
+			math::Vector3 closestPoint;
+			if (dtStatusSucceed(m_navQuery->closestPointOnPoly(startPoly, &dtCenter.x, &closestPoint.x, nullptr)))
+			{
+				dtCenter = closestPoint;
+			}
+		}
+
+		math::Vector3 out;
+		dtStatus dtResult = m_navQuery->findRandomPointAroundCircle(startPoly, &dtCenter.x, radius, &m_filter, frand, &endPoly, &out.x);
+		if (dtStatusSucceed(dtResult))
+		{
+			out_point = math::Vector3(out.x, out.z, out.y);
+			return true;
+		}
+
+		return false;
+	}
 }

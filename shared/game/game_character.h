@@ -794,6 +794,9 @@ namespace wowpp
 		/// Abandons the specified quest.
 		/// @returns false if this wasn't possible (maybe because the quest wasn't in the players quest log).
 		bool abandonQuest(UInt32 quest);
+		/// Updates the status of a specified quest to "completed". This does not work for quests that require
+		/// a certain item.
+		bool completeQuest(UInt32 quest);
 		/// Rewards the given quest (gives items, xp and saves quest status).
 		bool rewardQuest(UInt32 quest, UInt8 rewardChoice, std::function<void(UInt32)> callback);
 		/// Called when a quest-related creature was killed.

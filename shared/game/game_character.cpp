@@ -403,6 +403,72 @@ namespace wowpp
 		}
 	}
 
+	bool GameCharacter::completeQuest(UInt32 quest)
+	{
+		// Check all quests in the quest log
+		bool updateQuestObjects = false;
+		for (UInt32 i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId != quest)
+				continue;
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end())
+				continue;
+
+			if (it->second.status != game::quest_status::Incomplete)
+				continue;
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest)
+				continue;
+
+			// Counter needed so that the right field is used
+			UInt8 reqIndex = 0;
+			for (const auto &req : quest->requirements())
+			{
+				if (req.creatureid() != 0)
+				{
+					// Get current counter
+					UInt8 counter = getByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex);
+					if (counter < req.creaturecount())
+					{
+						// Increment and update counter
+						setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex, ++counter);
+						it->second.creatures[reqIndex]++;
+					}
+				}
+				else if (req.objectid() != 0)
+				{
+					// Get current counter
+					UInt8 counter = getByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex);
+					if (counter < req.objectcount())
+					{
+						// Increment and update counter
+						setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex, ++counter);
+						it->second.creatures[reqIndex]++;
+					}
+				}
+
+				reqIndex++;
+			}
+
+			// Complete quest
+			it->second.status = game::quest_status::Complete;
+			addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+			
+			// Save quest progress
+			questDataChanged(logId, it->second);
+
+			return true;
+		}
+
+		return false;
+	}
+
 	bool GameCharacter::rewardQuest(UInt32 quest, UInt8 rewardChoice, std::function<void(UInt32)> callback)
 	{
 		// Reward experience
@@ -633,6 +699,12 @@ namespace wowpp
 
 	bool GameCharacter::fulfillsQuestRequirements(const proto::QuestEntry &entry) const
 	{
+		if (entry.flags() & game::quest_flags::PartyAccept ||
+			entry.flags() & game::quest_flags::Exploration)
+		{
+			return false;
+		}
+
 		if (entry.requirements_size() == 0) {
 			return true;
 		}

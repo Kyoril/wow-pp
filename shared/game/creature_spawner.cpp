@@ -43,7 +43,8 @@ namespace wowpp
 	    UInt32 emote,
 	    float radius,
 	    bool active,
-	    bool respawn)
+	    bool respawn,
+		game::CreatureMovement movement)
 		: m_world(world)
 		, m_entry(entry)
 		, m_maxCount(maxCount)
@@ -56,6 +57,7 @@ namespace wowpp
 		, m_respawn(respawn)
 		, m_currentlySpawned(0)
 		, m_respawnCountdown(world.getUniverse().getTimers())
+		, m_movement(movement)
 	{
 		if (m_active)
 		{
@@ -89,6 +91,7 @@ namespace wowpp
 			spawned->setUInt32Value(unit_fields::NpcEmoteState, m_emote);
 		}
 		spawned->clearUpdateMask();
+		spawned->setMovementType(m_movement);
 
 		// watch for destruction
 		spawned->destroy = std::bind(&CreatureSpawner::onRemoval, this, std::placeholders::_1);

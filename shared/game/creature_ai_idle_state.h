@@ -51,6 +51,8 @@ namespace wowpp
 		virtual void onEnter() override;
 		///
 		virtual void onLeave() override;
+		/// 
+		virtual void onCreatureMovementChanged() override;
 
 	private:
 
@@ -59,7 +61,7 @@ namespace wowpp
 	private:
 
 		std::unique_ptr<UnitWatcher> m_aggroWatcher;
-		boost::signals2::scoped_connection m_onThreatened, m_onOwnerMoved, m_onMoved;
-		Countdown m_aggroDelay;
+		boost::signals2::scoped_connection m_onThreatened, m_onOwnerMoved, m_onMoved, onTargetReached;
+		Countdown m_aggroDelay, m_nextMove;
 	};
 }

@@ -55,6 +55,8 @@ namespace wowpp
 		virtual void onControlledDeath();
 		/// Executed when combat movement for the controlled unit is enabled or disabled.
 		virtual void onCombatMovementChanged();
+		/// 
+		virtual void onCreatureMovementChanged();
 
 	private:
 
