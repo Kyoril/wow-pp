@@ -129,6 +129,9 @@ namespace wowpp
 		/// 
 		void setMovementType(game::CreatureMovement movementType);
 
+		void setWaypoints(const std::vector<proto::Waypoint> &waypoints);
+
+
 		/// Executes a callback function for every valid loot recipient.
 		template<typename OnRecipient>
 		void forEachLootRecipient(OnRecipient callback)
@@ -166,6 +169,7 @@ namespace wowpp
 		std::unique_ptr<LootInstance> m_unitLoot;
 		bool m_combatMovement;
 		game::CreatureMovement m_movement;
+		std::vector<proto::Waypoint> m_waypoints;
 	};
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel);

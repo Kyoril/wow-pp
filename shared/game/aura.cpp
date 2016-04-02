@@ -593,6 +593,13 @@ namespace wowpp
 					modelId = 4613;
 					break;
 				}
+			case 17:		// Battle stance
+			case 18:		// Defensive stance
+			case 19:		// Berserker stance
+				{
+					powerType = game::power_type::Rage;
+					break;
+				}
 			case 27:		// Epic flight form
 				{
 					modelId = (isAlliance ? 21243 : 21244);
@@ -626,9 +633,10 @@ namespace wowpp
 				m_target.setUInt32Value(unit_fields::Power4, 0);
 			}
 
-			// Druid "Furor" talent proc
+			// Talent procs
 			switch (form)
 			{
+			// Druid: Furor
 			case 1:			// Cat
 			case 5:			// Bear
 			case 8:
@@ -673,6 +681,12 @@ namespace wowpp
 						}
 					}
 				}
+				break;
+			// TODO: Warrior
+			case 17:		// Battle stance
+			case 18:		// Defensive stance
+			case 19:		// Berserker stance
+				m_target.setUInt32Value(unit_fields::Power2, 0);
 				break;
 			}
 		}

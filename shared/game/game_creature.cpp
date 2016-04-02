@@ -431,6 +431,12 @@ namespace wowpp
 		}
 	}
 
+	void GameCreature::setWaypoints(const std::vector<proto::Waypoint>& waypoints)
+	{
+		// Copy waypoints
+		m_waypoints = waypoints;
+	}
+
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)
 	{
 		if (killerLevel < 8) {
