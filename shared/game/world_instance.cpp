@@ -266,12 +266,15 @@ namespace wowpp
 	void WorldInstance::update()
 	{
 		// Iterate all game objects added to this world which need to be updated
-		for (auto &gameObject : m_objectsById)
+		if (!m_objectUpdates.empty())
 		{
-			// Update values changed...
-			auto *object = gameObject.second;
-			updateObject(*object);
+			for (auto &obj : m_objectUpdates)
+			{
+				updateObject(*obj);
+			}
 		}
+
+		m_objectUpdates.clear();
 	}
 
 	void WorldInstance::flushObjectUpdate(UInt64 guid)
@@ -541,43 +544,40 @@ namespace wowpp
 
 	void WorldInstance::updateObject(GameObject &object)
 	{
-		if (object.wasUpdated())
+		// Send updates to all subscribers in sight
+		TileIndex2D center = getObjectTile(object, *m_visibilityGrid);
+		forEachSubscriberInSight(
+			*m_visibilityGrid,
+			center,
+			[&object](ITileSubscriber & subscriber)
 		{
-			// Send updates to all subscribers in sight
-			TileIndex2D center = getObjectTile(object, *m_visibilityGrid);
-			forEachSubscriberInSight(
-			    *m_visibilityGrid,
-			    center,
-			    [&object](ITileSubscriber & subscriber)
+			auto *character = subscriber.getControlledObject();
+			if (!character) {
+				return;
+			}
+
+			// Create update blocks
+			std::vector<std::vector<char>> blocks;
+			createValueUpdateBlock(object, *character, blocks);
+
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket packet(sink);
+
+			if (!blocks.empty() && blocks[0].size() > 50)
 			{
-				auto *character = subscriber.getControlledObject();
-				if (!character) {
-					return;
-				}
+				game::server_write::compressedUpdateObject(packet, blocks);
+			}
+			else if (!blocks.empty())
+			{
+				game::server_write::updateObject(packet, blocks);
+			}
 
-				// Create update blocks
-				std::vector<std::vector<char>> blocks;
-				createValueUpdateBlock(object, *character, blocks);
+			subscriber.sendPacket(packet, buffer);
+		});
 
-				std::vector<char> buffer;
-				io::VectorSink sink(buffer);
-				game::Protocol::OutgoingPacket packet(sink);
-
-				if (!blocks.empty() && blocks[0].size() > 50)
-				{
-					game::server_write::compressedUpdateObject(packet, blocks);
-				}
-				else if (!blocks.empty())
-				{
-					game::server_write::updateObject(packet, blocks);
-				}
-
-				subscriber.sendPacket(packet, buffer);
-			});
-
-			// We updated the object
-			object.clearUpdateMask();
-		}
+		// We updated the object
+		object.clearUpdateMask();
 	}
 
 	WorldObjectSpawner *WorldInstance::findObjectSpawner(const String &name)
@@ -589,6 +589,16 @@ namespace wowpp
 		}
 
 		return it->second;
+	}
+
+	void WorldInstance::addUpdateObject(GameObject & object)
+	{
+		m_objectUpdates.insert(&object);
+	}
+
+	void WorldInstance::removeUpdateObject(GameObject & object)
+	{
+		m_objectUpdates.erase(&object);
 	}
 
 	CreatureSpawner *WorldInstance::findCreatureSpawner(const String &name)

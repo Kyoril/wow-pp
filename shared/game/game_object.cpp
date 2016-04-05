@@ -108,7 +108,7 @@ namespace wowpp
 			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
-			m_updated = true;
+			markForUpdate();
 		}
 	}
 
@@ -128,7 +128,7 @@ namespace wowpp
 			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
-			m_updated = true;
+			markForUpdate();
 		}
 	}
 
@@ -147,7 +147,7 @@ namespace wowpp
 			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
-			m_updated = true;
+			markForUpdate();
 		}
 	}
 
@@ -160,7 +160,7 @@ namespace wowpp
 		UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 		changed |= 1 << (index & 0x7);
 
-		m_updated = true;
+		markForUpdate();
 	}
 
 	void GameObject::addFlag(UInt16 index, UInt32 flag)
@@ -178,7 +178,7 @@ namespace wowpp
 			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
-			m_updated = true;
+			markForUpdate();
 		}
 	}
 
@@ -196,7 +196,19 @@ namespace wowpp
 			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
-			m_updated = true;
+			markForUpdate();
+		}
+	}
+
+	void GameObject::markForUpdate()
+	{
+		if (!m_updated)
+		{
+			if (m_worldInstance)
+			{
+				m_worldInstance->addUpdateObject(*this);
+				m_updated = true;
+			}
 		}
 	}
 
@@ -216,7 +228,7 @@ namespace wowpp
 			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
-			m_updated = true;
+			markForUpdate();
 		}
 	}
 
@@ -248,7 +260,7 @@ namespace wowpp
 			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
-			m_updated = true;
+			markForUpdate();
 		}
 	}
 

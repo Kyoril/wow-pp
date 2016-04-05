@@ -136,6 +136,7 @@ namespace wowpp
 				std::ifstream mapFile(file.c_str(), std::ios::in | std::ios::binary);
 				if (!mapFile)
 				{
+					ELOG("Could not load map file " << file);
 					return nullptr;
 				}
 
@@ -144,7 +145,7 @@ namespace wowpp
 				mapFile.read(reinterpret_cast<char *>(&mapHeaderChunk), sizeof(MapHeaderChunk));
 				if (mapHeaderChunk.fourCC != 0x50414D57)
 				{
-					//ELOG("Could not load map file " << file << ": Invalid four-cc code!");
+					ELOG("Could not load map file " << file << ": Invalid four-cc code!");
 					return nullptr;
 				}
 				if (mapHeaderChunk.size != sizeof(MapHeaderChunk) - 8)
@@ -217,7 +218,7 @@ namespace wowpp
 							tile->navigation.data.size(), DT_TILE_FREE_DATA, 0, &ref);
 						if (dtStatusFailed(status))
 						{
-							//ELOG("Failed adding nav tile!");
+							ELOG("Failed adding nav tile at " << position << ": 0x" << std::hex << (status & DT_STATUS_DETAIL_MASK));
 						}
 					}
 				}
@@ -295,20 +296,6 @@ namespace wowpp
 			return true;
 		}
 
-		int tx, ty;
-		m_navMesh->calcTileLoc(&dtStart.x, &tx, &ty);
-		if (!m_navMesh->getTileAt(tx, ty, 0))
-		{
-			out_path.push_back(dest);
-			return true;
-		}
-		m_navMesh->calcTileLoc(&dtEnd.x, &tx, &ty);
-		if (!m_navMesh->getTileAt(tx, ty, 0))
-		{
-			out_path.push_back(dest);
-			return true;
-		}
-
 		// Load source tile
 		TileIndex2D startIndex(
 			static_cast<Int32>(floor((32.0 - (static_cast<double>(source.x) / 533.3333333)))),
@@ -328,6 +315,20 @@ namespace wowpp
 			);
 		auto *dstTile = getTile(destIntex);
 		if (!dstTile)
+		{
+			out_path.push_back(dest);
+			return true;
+		}
+
+		int tx, ty;
+		m_navMesh->calcTileLoc(&dtStart.x, &tx, &ty);
+		if (!m_navMesh->getTileAt(tx, ty, 0))
+		{
+			out_path.push_back(dest);
+			return true;
+		}
+		m_navMesh->calcTileLoc(&dtEnd.x, &tx, &ty);
+		if (!m_navMesh->getTileAt(tx, ty, 0))
 		{
 			out_path.push_back(dest);
 			return true;
@@ -469,13 +470,6 @@ namespace wowpp
 			return false;
 		}
 
-		int tx, ty;
-		m_navMesh->calcTileLoc(&dtCenter.x, &tx, &ty);
-		if (!m_navMesh->getTileAt(tx, ty, 0))
-		{
-			return false;
-		}
-
 		// Load source tile
 		TileIndex2D startIndex(
 			static_cast<Int32>(floor((32.0 - (static_cast<double>(center.x) / 533.3333333)))),
@@ -483,6 +477,13 @@ namespace wowpp
 			);
 		auto *startTile = getTile(startIndex);
 		if (!startTile)
+		{
+			return false;
+		}
+
+		int tx, ty;
+		m_navMesh->calcTileLoc(&dtCenter.x, &tx, &ty);
+		if (!m_navMesh->getTileAt(tx, ty, 0))
 		{
 			return false;
 		}

@@ -340,7 +340,7 @@ namespace wowpp
 				              0.0f, 0.0f, 1.0f, 0.0f,
 				              0.0f, 0.0f, 0.0f, 1.0f);
 
-				return kXMat * (kYMat * kZMat);
+				return kZMat * (kYMat * kXMat);
 			}
 
 			static Matrix4 fromEulerAnglesZYX(float fYAngle, float fPAngle, float fRAngle)

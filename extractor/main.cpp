@@ -33,8 +33,9 @@
 #include "binary_io/stream_sink.h"
 #include "common/make_unique.h"
 #include "game/map.h"
-#include "math/matrix4.h"
+#include "math/matrix3.h"
 #include "math/vector3.h"
+#include "math/quaternion.h"
 #include "detour/DetourCommon.h"
 #include "detour/DetourNavMesh.h"
 #include "detour/DetourNavMeshBuilder.h"
@@ -153,7 +154,7 @@ namespace
 				break;
 		}
 	}
-
+	
 	static void getHeightTriangle(UInt32 square, Spot triangle, int* indices)
 	{
 		int rowOffset = square / V8_SIZE;
@@ -235,7 +236,7 @@ namespace
 			if (tileX < out_minX) out_minX = tileX;
 			if (tileY < out_minY) out_minY = tileY;
 			if (tileX > out_maxX) out_maxX = tileX;
-			if (tileX > out_maxY) out_maxY = tileY;
+			if (tileY > out_maxY) out_maxY = tileY;
 		}
 	}
 	/// Calculates tile boundaries in world units, but converted to the recast coordinate
@@ -341,7 +342,6 @@ namespace
 			fclose(objFile);
 		}
 	};
-
 	/// Generates navigation mesh for one map.
 	static bool createNavMesh(UInt32 mapId, dtNavMesh &navMesh)
 	{
@@ -465,11 +465,6 @@ namespace
 	/// Generates a navigation tile.
 	static bool creaveNavTile(const String &mapName, UInt32 mapId, UInt32 tileX, UInt32 tileY, dtNavMesh &navMesh, const ADTFile &adt, const MapCollisionChunk &collision, MapNavigationChunk &out_chunk)
 	{
-#if 0
-		if (tileY != 30 || tileX != 26)
-			return false;
-#endif
-
 		// Reset chunk data
 		out_chunk.data.clear();
 		out_chunk.size = 0;
@@ -545,14 +540,12 @@ namespace
 				
 				// TODO: Apply scale
 #define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * (x) / -180.0)
-				math::Matrix4 rotMat = math::Matrix4::fromEulerAnglesXYZ(
-					WOWPP_DEG_TO_RAD(entry.rotation.x), -WOWPP_DEG_TO_RAD(180-entry.rotation.y), WOWPP_DEG_TO_RAD(entry.rotation.z));
+				math::Matrix3 rotMat = math::Matrix3::fromEulerAnglesXYZ(
+					WOWPP_DEG_TO_RAD(-entry.rotation[2]), WOWPP_DEG_TO_RAD(-entry.rotation[0]), WOWPP_DEG_TO_RAD(-entry.rotation[1] - 180));
 
 				math::Vector3 position(entry.position.z, entry.position.y, entry.position.x);
-				position.x -= 32 * 533.3333f;
-				position.z -= 32 * 533.3333f;
-				position.x *= -1.0f;
-				position.z *= -1.0f;
+				position.x = (32 * 533.3333f) - position.x;
+				position.z = (32 * 533.3333f) - position.z;
 #undef WOWPP_DEG_TO_RAD
 				
 				// Transform vertices
@@ -563,7 +556,7 @@ namespace
 				for (auto &vert : verts)
 				{
 					// Transform vertex and push it to the list
-					math::Vector3 transformed = (rotMat * (vert * (float(entry.scale) / 1024.0f))) + position;
+					math::Vector3 transformed = vert /* (rotMat * (vert * (float(entry.scale) / 1024.0f)))*/ + position;
 					/*transformed.x *= -1.f;
 					transformed.z *= -1.f;*/
 
@@ -588,7 +581,7 @@ namespace
 
 		// All are in UNIT metrics!
 		const static int VerticesPerMap = int(GridSize / BaseUnitDim + 0.5f);
-		const static int VerticesPerTile = 80;
+		const static int VerticesPerTile = 40;
 		const static int TilesPerMap = VerticesPerMap / VerticesPerTile;
 		const static int TilesPerMapSq = TilesPerMap * TilesPerMap;
 
@@ -823,8 +816,8 @@ namespace
 			{
 				continue;
 			}
-			if (!params.polyCount || !params.polys ||
-				TilesPerMapSq == params.polyCount)
+			if (!params.polyCount || !params.polys/* ||
+				TilesPerMapSq == params.polyCount*/)
 			{
 				// we have flat tiles with no actual geometry - don't build those, its useless
 				// keep in mind that we do output those into debug info
@@ -933,9 +926,24 @@ namespace
 		const UInt32 cellX = tileIndex / 64;
 		const UInt32 cellY = tileIndex % 64;
 
+#if 0
+		if (mapId == 1)
+		{
+			if (cellY != 31 || cellX != 19)
+				return false;
+		}
+		else if (mapId == 0)
+		{
+			if (cellY != 36 || cellX != 26)
+				return false;
+		}
+#endif
+
 		// Build file names
+		const String cellName =
+			fmt::format("{0}_{1}_{2}", mapName, cellY, cellX);
 		const String adtFile =
-			fmt::format("World\\Maps\\{0}\\{0}_{1}_{2}.adt", mapName, cellY, cellX);
+			fmt::format("World\\Maps\\{0}\\{1}.adt", mapName, cellName);
 		const String mapFile =
 			((outputPath / (fmt::format("{0}", mapId))) / (fmt::format("{0}_{1}.map", cellX, cellY))).string();
 
@@ -1026,14 +1034,13 @@ namespace
 				continue;
 			}
 
-			math::Matrix4 mat;
 #define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * (x) / -180.0)
-			math::Matrix4 rotMat = math::Matrix4::fromEulerAnglesXYZ(
-				WOWPP_DEG_TO_RAD(entry.rotation[2]), WOWPP_DEG_TO_RAD(entry.rotation[0]), WOWPP_DEG_TO_RAD(-entry.rotation[1]));
-
+			math::Matrix3 rotMat = math::Matrix3::fromEulerAnglesXYZ(
+				WOWPP_DEG_TO_RAD(-entry.rotation[2]), WOWPP_DEG_TO_RAD(-entry.rotation[0]), WOWPP_DEG_TO_RAD(-entry.rotation[1] - 180));
+			
 			math::Vector3 position(entry.position.z, entry.position.x, entry.position.y);
-			position.x -= 32 * 533.3333f;
-			position.y -= 32 * 533.3333f;
+			position.x = (32 * 533.3333f) - position.x;
+			position.y = (32 * 533.3333f) - position.y;
 #undef WOWPP_DEG_TO_RAD
 
 			// Transform vertices
@@ -1050,8 +1057,6 @@ namespace
 				{
 					// Transform vertex and push it to the list
 					math::Vector3 transformed = (rotMat * vert) + position;
-					transformed.x *= -1.f;
-					transformed.y *= -1.f;
 					collisionChunk.vertices.push_back(transformed);
 				}
 				for (UInt32 i = 0; i < inds.size(); i += 3)
@@ -1072,7 +1077,6 @@ namespace
 
 				collisionChunk.triangleCount += groupTris;
 			}
-
 		}
 		collisionChunk.size += sizeof(math::Vector3) * collisionChunk.vertexCount;
 		collisionChunk.size += sizeof(UInt32) * 3 * collisionChunk.triangleCount;
@@ -1149,7 +1153,7 @@ namespace
 		}
 
 #if 0
-		if (mapId != 389)
+		if (mapId != 1)
 		{
 			return true;
 		}
@@ -1399,7 +1403,7 @@ int main(int argc, char* argv[])
 	// right now, this will only convert multiple maps at the same time, not multiple
 	// tiles - but still A LOT faster than single threaded.
 	std::size_t concurrency = boost::thread::hardware_concurrency();
-	concurrency = 1;	//std::max<size_t>(1, concurrency);
+	concurrency = std::max<size_t>(1, concurrency - 1);
 	ILOG("Using " << concurrency << " threads");
 
 	// Do the work!

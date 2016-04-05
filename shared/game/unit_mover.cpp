@@ -32,7 +32,7 @@
 
 namespace wowpp
 {
-	const GameTime UnitMover::UpdateFrequency = constants::OneSecond / 4;
+	const GameTime UnitMover::UpdateFrequency = constants::OneSecond / 2;
 
 	UnitMover::UnitMover(GameUnit &unit)
 		: m_unit(unit)
@@ -61,19 +61,6 @@ namespace wowpp
 			{
 				m_moveUpdated.setEnd(time + UnitMover::UpdateFrequency);
 			}
-
-			/*
-			// Update creatures position in the next update frame
-			auto strongUnit = getMoved().shared_from_this();
-			std::weak_ptr<GameObject> weakUnit(strongUnit);
-			getMoved().getWorldInstance()->getUniverse().post([weakUnit, oldPosition, o]()
-			{
-				auto strongUnit = weakUnit.lock();
-				if (strongUnit)
-				{
-					strongUnit->relocate(oldPosition, o);
-				}
-			});*/
 		});
 
 		m_moveReached.ended.connect([this]()

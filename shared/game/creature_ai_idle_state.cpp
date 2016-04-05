@@ -90,7 +90,7 @@ namespace wowpp
 			m_aggroWatcher->visibilityChanged.connect([this](GameUnit & unit, bool isVisible) -> bool
 			{
 				auto &controlled = getControlled();
-				if (unit.getGuid() == controlled.getGuid())
+				if (&unit == &controlled)
 				{
 					return false;
 				}
