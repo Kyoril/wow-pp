@@ -3366,6 +3366,22 @@ namespace wowpp
 				}
 				out_packet.finish();
 			}
+
+			void sendTradeStatus(game::OutgoingPacket &out_packet, UInt32 status, UInt64 guid)
+			{
+				out_packet.start(game::server_packet::TradeStatus);
+				out_packet << io::write<NetUInt32>(status);
+				out_packet << io::write<NetUInt64>(guid);
+				out_packet.finish();
+			}
+
+			void sendTradeOpenWindow(game::OutgoingPacket &out_packet, UInt32 status, UInt32 open)
+			{
+				out_packet.start(game::server_packet::TradeStatus);
+				out_packet << io::write<NetUInt32>(status);
+				out_packet << io::write<NetUInt32>(open);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
@@ -4157,6 +4173,18 @@ namespace wowpp
 				return packet
 					   >> out_whoList;
 			}
+
+			bool initateTrade(io::Reader &packet, UInt64 &guid)
+			{
+				return packet
+					>> io::read<NetUInt64>(guid);
+			}
+
+			bool beginTrade(io::Reader &packet)
+			{
+				return packet;
+			}
+			
 
 		}
 

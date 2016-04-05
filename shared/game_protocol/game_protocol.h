@@ -1277,6 +1277,15 @@ namespace wowpp
 				io::Reader &packet, 
 				WhoListRequest &out_whoList
 				);
+
+			bool initateTrade(
+				io::Reader &packet,
+				UInt64 &guid
+				);
+
+			bool beginTrade(
+				io::Reader &packet
+				);
 		};
 
 		namespace server_write
@@ -2165,6 +2174,17 @@ namespace wowpp
 				UInt64 caster,
 				UInt8 unknown,
 				const std::map<UInt64, game::SpellMissInfo> &missedTargetGUIDs
+				);
+
+			void sendTradeStatus(
+				game::OutgoingPacket &out_packet,
+				UInt32 status,
+				UInt64 guid
+				);
+			void sendTradeOpenWindow(
+				game::OutgoingPacket &out_packet,
+				UInt32 status,
+				UInt32 open
 				);
 		};
 	}
