@@ -294,8 +294,6 @@ namespace wowpp
 			return;
 
 		GameTime now = getCurrentTime();
-        DLOG("NOW: " << now << "; END: " << m_moveEnd << "; DIFF: " << m_moveEnd - now);
-        
 		if (now >= m_moveEnd)
 			return;
 
