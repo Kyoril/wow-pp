@@ -1044,7 +1044,7 @@ namespace wowpp
 				out_packet
 				        << io::write<NetUInt32>(spell.id())
 				        << io::write<NetUInt16>(castFlags)
-				        << io::write<NetUInt32>(getCurrentTime());
+				        << io::write<NetUInt32>(mTimeStamp());
 
 				// TODO: Hit information
 				{
