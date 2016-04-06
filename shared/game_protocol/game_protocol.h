@@ -468,14 +468,14 @@ namespace wowpp
 				DestroyItem				= 0x111,
 				InitateTrade			= 0x116,//Trade
 				BeginTrade				= 0x117,//Trade
-				BusyTrade				= 0x118,//Trade
-				IgnoreTrade				= 0x119,//Trade
+				BusyTrade				= 0x118,//Trade later
+				IgnoreTrade				= 0x119,//Trade later
 				AccepTrade				= 0x11A,//Trade
 				UnacceptTrade			= 0x11B,//Trade
 				CancelTrade				= 0x11C,//Trade
 				SetTradeItem			= 0x11D,//Trade
 				ClearTradeItem			= 0x11E,//Trade
-				SerTradeGold			= 0x11F,//Trade
+				SetTradeGold			= 0x11F,//Trade
 				SetActionButton			= 0x128,
 				CastSpell				= 0x12E,
 				CancelCast				= 0x12F,
