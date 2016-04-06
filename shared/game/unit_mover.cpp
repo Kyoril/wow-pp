@@ -116,6 +116,8 @@ namespace wowpp
 		m_customSpeed = true;
 		auto currentLoc = getCurrentLocation();
 
+		auto &moved = getMoved();
+
 		// Do we really need to move?
 		if (target == currentLoc)
 		{
@@ -143,16 +145,16 @@ namespace wowpp
 			// Stop, here, but since we are moving to the next point immediatly after this,
 			// we won't notify the grid about this for performance reasons (since the next
 			// movement update tick will do this for us automatically).
-			getMoved().relocate(currentLoc, o, false);
+			moved.relocate(currentLoc, o, false);
 		}
 
 		// Dead units can't move
-		if (!getMoved().canMove())
+		if (!moved.canMove())
 		{
 			return false;
 		}
 
-		auto *world = getMoved().getWorldInstance();
+		auto *world = moved.getWorldInstance();
 		if (!world)
 		{
 			return false;
@@ -198,17 +200,20 @@ namespace wowpp
 
 		// Send movement packet
 		TileIndex2D tile;
-		if (getMoved().getTileIndex(tile))
+		if (moved.getTileIndex(tile))
 		{
 			std::vector<char> buffer;
 			io::VectorSink sink(buffer);
 			game::Protocol::OutgoingPacket packet(sink);
-			game::server_write::monsterMove(packet, getMoved().getGuid(), currentLoc, path, moveTime - m_moveStart);
+			game::server_write::monsterMove(packet, moved.getGuid(), currentLoc, path, moveTime - m_moveStart);
 			forEachSubscriberInSight(
-			    getMoved().getWorldInstance()->getGrid(),
+				moved.getWorldInstance()->getGrid(),
 			    tile,
-			    [&packet, &buffer](ITileSubscriber & subscriber)
+			    [&packet, &buffer, &moved](ITileSubscriber & subscriber)
 			{
+				if (!moved.canSpawnForCharacter(*subscriber.getControlledObject()))
+					return;
+
 				subscriber.sendPacket(packet, buffer);
 			});
 		}
@@ -246,23 +251,27 @@ namespace wowpp
 			m_moveUpdated.cancel();
 
 			// Update with grid notification
-			getMoved().relocate(currentLoc, o);
+			auto &moved = getMoved();
+			moved.relocate(currentLoc, o);
 
 			// Send movement packet
 			TileIndex2D tile;
-			if (getMoved().getTileIndex(tile))
+			if (moved.getTileIndex(tile))
 			{
 				// TODO: Maybe, player characters need another movement packet for this...
 				std::vector<char> buffer;
 				io::VectorSink sink(buffer);
 				game::Protocol::OutgoingPacket packet(sink);
-				game::server_write::monsterMove(packet, getMoved().getGuid(), currentLoc, { currentLoc }, 0);
+				game::server_write::monsterMove(packet, moved.getGuid(), currentLoc, { currentLoc }, 0);
 
 				forEachSubscriberInSight(
-				    getMoved().getWorldInstance()->getGrid(),
+					moved.getWorldInstance()->getGrid(),
 				    tile,
-				    [&packet, &buffer](ITileSubscriber & subscriber)
+				    [&packet, &buffer, &moved](ITileSubscriber & subscriber)
 				{
+					if (!moved.canSpawnForCharacter(*subscriber.getControlledObject()))
+						return;
+
 					subscriber.sendPacket(packet, buffer);
 				});
 			}
@@ -291,6 +300,9 @@ namespace wowpp
 	void UnitMover::sendMovementPackets(ITileSubscriber &subscriber)
 	{
 		if (!isMoving())
+			return;
+
+		if (!getMoved().canSpawnForCharacter(*subscriber.getControlledObject()))
 			return;
 
 		GameTime now = getCurrentTime();

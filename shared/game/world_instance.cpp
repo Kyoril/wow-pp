@@ -465,13 +465,14 @@ namespace wowpp
 			oldTile->getGameObjects().remove(&object);
 
 			// Send despawn packets
-			auto guid = object.getGuid();
 			forEachTileInSightWithout(
 				*m_visibilityGrid,
 				oldTile->getPosition(),
 				newTile->getPosition(),
-				[guid](VisibilityTile &tile)
+				[&object](VisibilityTile &tile)
 			{
+				UInt64 guid = object.getGuid();
+
 				std::vector<char> buffer;
 				io::VectorSink sink(buffer);
 				game::Protocol::OutgoingPacket packet(sink);
@@ -484,6 +485,9 @@ namespace wowpp
 					if (!character)
 						continue;
 					
+					if (!object.canSpawnForCharacter(*character))
+						continue;
+
 					// This is the subscribers own character - despawn all old objects and skip him
 					if (character->getGuid() == guid)
 					{
@@ -509,6 +513,9 @@ namespace wowpp
 				{
 					auto *character = subscriber->getControlledObject();
 					if (!character)
+						continue;
+
+					if (!object.canSpawnForCharacter(*character))
 						continue;
 
 					// This is the subscribers own character - send all new objects to this subscriber
