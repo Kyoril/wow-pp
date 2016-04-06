@@ -1613,8 +1613,8 @@ namespace wowpp
 
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Attack) != 0)
 		{
-			m_targetStartedAttacking = m_target.startedAttacking.connect(
-			[&]() {
+			m_targetStartedAttacking = m_target.doneMeleeAttack.connect(
+			[&](GameUnit*, game::VictimState) {
 				m_destroy(*this);
 			});
 		}

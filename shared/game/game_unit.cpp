@@ -524,7 +524,7 @@ namespace wowpp
 		do
 		{
 			// Get target location
-			math::Vector3 location(victim->getLocation());
+			const math::Vector3 & location = victim->getLocation();
 
 			// Distance check
 			const float distance = getDistanceTo(*victim);
