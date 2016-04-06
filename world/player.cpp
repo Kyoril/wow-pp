@@ -30,7 +30,7 @@
 #include "proto_data/project.h"
 #include "game/game_creature.h"
 #include "game/game_world_object.h"
-#include "tradedata.h"
+#include "trade_data.h"
 
 using namespace std;
 
@@ -2957,14 +2957,16 @@ namespace wowpp
 		UInt64 thisguid = this->getCharacter()->getGuid(); 
 
 		auto otherPlayer = m_manager.getPlayerByCharacterGuid(otherGuid);
-
-		m_TradeStatusInfo.tradestatus = TRADE_STATUS_BEGIN_TRADE;
-		m_TradeStatusInfo.guid = thisguid;
-
-		m_TradeData = std::shared_ptr<TradeData> (new TradeData(this, otherPlayer));
-		otherPlayer->m_TradeData = std::shared_ptr<TradeData> (new TradeData(otherPlayer, this));
-
-		otherPlayer->sendTradeData(m_TradeStatusInfo);
+		if (otherPlayer != nullptr)
+		{
+			m_TradeStatusInfo.tradestatus = trade_status::TRADE_STATUS_BEGIN_TRADE;
+			m_TradeStatusInfo.guid = thisguid;
+			m_TradeData = std::shared_ptr<TradeData>(new TradeData (this, otherPlayer));
+			otherPlayer->m_TradeData = std::shared_ptr<TradeData>(new TradeData (otherPlayer, this));
+			auto temp = m_loot->getGold();
+			WLOG("gold: " << temp);
+			otherPlayer->sendTradeData(m_TradeStatusInfo);
+		}
 	}
 
 	void Player::handleBeginTrade(game::Protocol::IncomingPacket &packet)
@@ -2973,7 +2975,7 @@ namespace wowpp
 		
 		m_TradeData;
 
-		m_TradeStatusInfo.tradestatus = TRADE_STATUS_OPEN_WINDOW;
+		m_TradeStatusInfo.tradestatus = trade_status::TRADE_STATUS_OPEN_WINDOW;
 		
 		my_trade->getPlayer()->sendTradeData(m_TradeStatusInfo);
 		my_trade->getTrader()->sendTradeData(m_TradeStatusInfo);
@@ -2982,61 +2984,72 @@ namespace wowpp
 		WLOG("works");
 	}
 
+	void Player::handleSetTradeGold(game::Protocol::IncomingPacket &packet)
+	{
+		WLOG("gold");
+	}
+
+	void Player::handleAcceptTrade(game::Protocol::IncomingPacket &packet)
+	{
+		WLOG("accept");
+	}
+
+
 
 	void Player::sendTradeData(TradeStatusInfo info)
 	{
 		UInt64 status = 0;
 		switch (info.tradestatus)
 		{
-		case wowpp::TRADE_STATUS_BUSY:
+		case trade_status::TRADE_STATUS_BUSY:
 			break;
-		case wowpp::TRADE_STATUS_BEGIN_TRADE:
+		case trade_status::TRADE_STATUS_BEGIN_TRADE:
 			WLOG("send TRADE_STATUS_BEGIN_TRADE");
 			sendProxyPacket(std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, info.tradestatus, info.guid)); //send UInt64
 			break;
-		case wowpp::TRADE_STATUS_OPEN_WINDOW:
+		case trade_status::TRADE_STATUS_OPEN_WINDOW:
 			WLOG("send TRADE_STATUS_OPEN_WINDOW")
 			sendProxyPacket(std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, info.tradestatus, status));
 			break;
-		case wowpp::TRADE_STATUS_TRADE_CANCELED:
+		case trade_status::TRADE_STATUS_TRADE_CANCELED:
 			break;
-		case wowpp::TRADE_STATUS_TRADE_ACCEPT:
+		case trade_status::TRADE_STATUS_TRADE_ACCEPT:
 			break;
-		case wowpp::TRADE_STATUS_BUSY_2:
+		case trade_status::TRADE_STATUS_BUSY_2:
 			break;
-		case wowpp::TRADE_STATUS_NO_TARGET:
+		case trade_status::TRADE_STATUS_NO_TARGET:
 			break;
-		case wowpp::TRADE_STATUS_BACK_TO_TRADE:
+		case trade_status::TRADE_STATUS_BACK_TO_TRADE:
 			break;
-		case wowpp::TRADE_STATUS_TRADE_COMPLETE:
+		case trade_status::TRADE_STATUS_TRADE_COMPLETE:
 			break;
-		case wowpp::TRADE_STATUS_TRADE_REJECTED:
+		case trade_status::TRADE_STATUS_TRADE_REJECTED:
 			break;
-		case wowpp::TRADE_STATUS_TARGET_TO_FAR:
+		case trade_status::TRADE_STATUS_TARGET_TO_FAR:
 			break;
-		case wowpp::TRADE_STATUS_WRONG_FACTION:
+		case trade_status::TRADE_STATUS_WRONG_FACTION:
 			break;
-		case wowpp::TRADE_STATUS_CLOSE_WINDOW:
+		case trade_status::TRADE_STATUS_CLOSE_WINDOW:
 			break;
-		case wowpp::TRADE_STATUS_IGNORE_YOU:
+		case trade_status::TRADE_STATUS_IGNORE_YOU:
 			break;
-		case wowpp::TRADE_STATUS_YOU_STUNNED:
+		case trade_status::TRADE_STATUS_YOU_STUNNED:
 			break;
-		case wowpp::TRADE_STATUS_TARGET_STUNNED:
+		case trade_status::TRADE_STATUS_TARGET_STUNNED:
 			break;
-		case wowpp::TRADE_STATUS_YOU_DEAD:
+		case trade_status::TRADE_STATUS_YOU_DEAD:
 			break;
-		case wowpp::TRADE_STATUS_TARGET_DEAD:
+		case trade_status::TRADE_STATUS_TARGET_DEAD:
 			break;
-		case wowpp::TRADE_STATUS_YOU_LOGOUT:
+		case trade_status::TRADE_STATUS_YOU_LOGOUT:
 			break;
-		case wowpp::TRADE_STATUS_TARGET_LOGOUT:
+		case trade_status::TRADE_STATUS_TARGET_LOGOUT:
 			break;
-		case wowpp::TRADE_STATUS_TRIAL_ACCOUNT:
+		case trade_status::TRADE_STATUS_TRIAL_ACCOUNT:
 			break;
-		case wowpp::TRADE_STATUS_WRONG_REALM:
+		case trade_status::TRADE_STATUS_WRONG_REALM:
 			break;
-		case wowpp::TRADE_STATUS_NOT_ON_TAPLIST:
+		case trade_status::TRADE_STATUS_NOT_ON_TAPLIST:
 			break;
 		default:
 			break;

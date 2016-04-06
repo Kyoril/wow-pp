@@ -470,7 +470,7 @@ namespace wowpp
 				BeginTrade				= 0x117,//Trade
 				BusyTrade				= 0x118,//Trade later
 				IgnoreTrade				= 0x119,//Trade later
-				AccepTrade				= 0x11A,//Trade
+				AcceptTrade				= 0x11A,//Trade
 				UnacceptTrade			= 0x11B,//Trade
 				CancelTrade				= 0x11C,//Trade
 				SetTradeItem			= 0x11D,//Trade
@@ -1285,6 +1285,13 @@ namespace wowpp
 
 			bool beginTrade(
 				io::Reader &packet
+				);
+			bool acceptTrade(
+				io::Reader &packet
+				);
+			bool setTradeGold(
+				io::Reader &packet,
+				UInt32 &gold
 				);
 		};
 
@@ -2180,11 +2187,6 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt32 status,
 				UInt64 guid
-				);
-			void sendTradeOpenWindow(
-				game::OutgoingPacket &out_packet,
-				UInt32 status,
-				UInt32 open
 				);
 		};
 	}

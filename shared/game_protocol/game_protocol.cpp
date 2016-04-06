@@ -3375,13 +3375,6 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void sendTradeOpenWindow(game::OutgoingPacket &out_packet, UInt32 status, UInt32 open)
-			{
-				out_packet.start(game::server_packet::TradeStatus);
-				out_packet << io::write<NetUInt32>(status);
-				out_packet << io::write<NetUInt32>(open);
-				out_packet.finish();
-			}
 		}
 
 		namespace client_read
@@ -4181,6 +4174,16 @@ namespace wowpp
 			}
 
 			bool beginTrade(io::Reader &packet)
+			{
+				return packet;
+			}
+
+			bool acceptTrade(io::Reader &packet)
+			{
+				return packet;
+			}
+
+			bool setTradeGold(io::Reader &packet)
 			{
 				return packet;
 			}
