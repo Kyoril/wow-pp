@@ -370,17 +370,13 @@ namespace wowpp
 		{
 			// Stop auto attack
 			stopAttack();
-
-			m_victimDied.disconnect();
-			m_victimDespawned.disconnect();
 		}
 
-		const bool needReconnect = (victim && !m_victim);
 		m_victim = victim;
 
 		// Update target value
 		setUInt64Value(unit_fields::Target, m_victim ? m_victim->getGuid() : 0);
-		if (needReconnect)
+		if (m_victim)
 		{
 			m_victimDied = m_victim->killed.connect(
 			                   std::bind(&GameUnit::onVictimKilled, this, std::placeholders::_1));

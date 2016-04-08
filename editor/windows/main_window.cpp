@@ -203,7 +203,10 @@ namespace wowpp
 				else if (entry->id() == 0)
 				{
 					camera->setPosition(1762.19995f, -1244.80005f, 62.2191010f);
-					//camera->setPosition(2762.68f, -2494.09f, 77.8183f);
+				}
+				else if (entry->id() == 530)
+				{
+					camera->setPosition(8719.53f, -6657.67f, 72.7551f);
 				}
 			}
 		}

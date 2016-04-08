@@ -400,6 +400,12 @@ namespace wowpp
 		auto &tile = m_visibilityGrid->requireTile(gridIndex);
 		tile.getGameObjects().remove(&remove);
 
+		// Remove object from the list of updats
+		if (remove.wasUpdated())
+		{
+			m_objectUpdates.erase(&remove);
+		}
+
 		// Create the packet
 		std::vector<char> buffer;
 		io::VectorSink sink(buffer);
