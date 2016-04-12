@@ -982,6 +982,87 @@ namespace wowpp
 		}
 	}
 
+	void GameCharacter::onQuestObjectCredit(UInt32 spellId, WorldObject & target)
+	{
+		// Check all quests in the quest log
+		bool updateQuestObjects = false;
+		for (UInt32 i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == 0) {
+				continue;
+			}
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end()) {
+				continue;
+			}
+
+			if (it->second.status != game::quest_status::Incomplete) {
+				continue;
+			}
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest) {
+				continue;
+			}
+
+			// Counter needed so that the right field is used
+			UInt8 reqIndex = 0;
+			for (const auto &req : quest->requirements())
+			{
+				if (req.objectid() == target.getEntry().id() &&
+					(req.spellcast() == 0 || req.spellcast() == spellId))
+				{
+					// Get current counter
+					UInt8 counter = getByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex);
+					if (counter < req.objectcount())
+					{
+						// Increment and update counter
+						setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex, ++counter);
+						it->second.objects[reqIndex]++;
+
+						// Fire signal to update UI
+						questKillCredit(*quest, target.getGuid(), (target.getEntry().id() | 0x80000000), counter, req.objectcount());
+
+						// Check if this completed the quest
+						if (fulfillsQuestRequirements(*quest))
+						{
+							for (const auto &req : quest->requirements())
+							{
+								if (req.itemid())
+								{
+									m_requiredQuestItems[req.itemid()]--;
+								}
+							}
+
+							// Complete quest
+							it->second.status = game::quest_status::Complete;
+							addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+						}
+
+						// Save quest progress
+						questDataChanged(logId, it->second);
+						updateQuestObjects = true;
+					}
+
+					// Continue with next quest, as multiple quests could require the same
+					// creature kill credit
+					break;
+				}
+
+				reqIndex++;
+			}
+		}
+
+		if (updateQuestObjects)
+		{
+			updateNearbyQuestObjects();
+		}
+	}
+
 	bool GameCharacter::needsQuestItem(UInt32 itemId) const
 	{
 		auto it = m_requiredQuestItems.find(itemId);

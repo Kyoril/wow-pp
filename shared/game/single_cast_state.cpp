@@ -2091,6 +2091,7 @@ namespace wowpp
 		if (m_cast.getExecuter().isGameCharacter())
 		{
 			GameCharacter *character = reinterpret_cast<GameCharacter *>(&m_cast.getExecuter());
+			character->onQuestObjectCredit(m_spell.id(), *obj);
 			character->objectInteraction(*obj);
 		}
 

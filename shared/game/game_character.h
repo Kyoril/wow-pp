@@ -811,6 +811,8 @@ namespace wowpp
 		void onQuestItemRemovedCredit(const proto::ItemEntry &entry, UInt32 amount);
 		/// Called when a quest item was removed from the inventory.
 		void onQuestSpellCastCredit(UInt32 spellId, GameObject &target);
+		/// Called when a character interacted with a quest object.
+		void onQuestObjectCredit(UInt32 spellId, WorldObject &target);
 		/// Determines if the player needs a specific item for a quest.
 		bool needsQuestItem(UInt32 itemId) const;
 		/// Modifies the character spell modifiers by applying or misapplying a new mod.
