@@ -68,6 +68,15 @@ namespace wowpp
 					.arg(getTriggerEventData(e, 0, withLinks));
 			case trigger_event::OnReachedTriggeredTarget:
 				return "Owning unit reached triggered movement target";
+			case trigger_event::OnSpellHit:
+				return QString("Owning unit was hit by spell %1")
+					.arg(getTriggerEventData(e, 0, withLinks));
+			case trigger_event::OnSpellAuraRemoved:
+				return QString("Owning unit lost aura of spell %1")
+					.arg(getTriggerEventData(e, 0, withLinks));
+			case trigger_event::OnEmote:
+				return QString("Owning unit was targeted by emote %1")
+					.arg(getTriggerEventData(e, 0, withLinks));
 			default:
 				return "(INVALID EVENT)";
 			}

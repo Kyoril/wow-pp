@@ -109,6 +109,8 @@ namespace wowpp
 		}
 		///
 		void raiseTrigger(trigger_event::Type e);
+		///
+		void raiseTrigger(trigger_event::Type e, const std::vector<UInt32> &data);
 		/// @copydoc GameObject::providesQuest()
 		bool providesQuest(UInt32 questId) const override;
 		/// @copydoc GameObject::endsQuest()

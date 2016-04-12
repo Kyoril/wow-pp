@@ -67,6 +67,15 @@ namespace wowpp
 			/// Executed when a unit reaches it's target point for a move that was triggered by a trigger.
 			/// Data: NONE;
 			OnReachedTriggeredTarget = 12,
+			/// Executed when a unit was hit by a specific spell.
+			/// Data: <SPELL-ID>;
+			OnSpellHit = 13,
+			/// Executed when a spell aura is removed.
+			/// Data: <SPELL-ID>;
+			OnSpellAuraRemoved = 14,
+			/// Executed when a unit is target of a specific emote.
+			/// Data: <EMOTE-ID>;
+			OnEmote = 15,
 
 			Invalid,
 			Count_ = Invalid

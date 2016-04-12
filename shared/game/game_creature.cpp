@@ -333,6 +333,44 @@ namespace wowpp
 		}
 	}
 
+	void GameCreature::raiseTrigger(trigger_event::Type e, const std::vector<UInt32>& data)
+	{
+		for (const auto &triggerId : getEntry().triggers())
+		{
+			const auto *triggerEntry = getProject().triggers.getById(triggerId);
+			if (!triggerEntry)
+			{
+				continue;
+			}
+
+			for (const auto &triggerEvent : triggerEntry->newevents())
+			{
+				if (triggerEvent.type() != e)
+					continue;
+
+				if (triggerEvent.data_size() > 0)
+				{
+					switch (e)
+					{
+					case trigger_event::OnSpellHit:
+					case trigger_event::OnSpellAuraRemoved:
+					case trigger_event::OnEmote:
+						if (triggerEvent.data(0) != 0)
+						{
+							if (data.empty() || data[0] != triggerEvent.data(0))
+								continue;
+						}
+						break;
+					default:
+						break;
+					}
+				}
+
+				unitTrigger(std::cref(*triggerEntry), std::ref(*this));
+			}
+		}
+	}
+
 	bool GameCreature::providesQuest(UInt32 questId) const
 	{
 		auto &entry = getEntry();

@@ -684,6 +684,24 @@ namespace wowpp
 		}
 	}
 
+	void SingleCastState::spellEffectDummy(const proto::SpellEffect & effect)
+	{
+		if (effect.targeta() == game::targets::UnitTargetAny)
+		{
+			// Get unit target by target map
+			GameUnit *unitTarget = nullptr;
+			if (!m_target.resolvePointers(*m_cast.getExecuter().getWorldInstance(), &unitTarget, nullptr, nullptr, nullptr))
+			{
+				return;
+			}
+
+			if (unitTarget)
+			{
+				m_affectedTargets.insert(unitTarget->shared_from_this());
+			}
+		}
+	}
+
 	void SingleCastState::spellEffectTeleportUnits(const proto::SpellEffect &effect)
 	{
 		GameUnit &caster = m_cast.getExecuter();
@@ -1676,6 +1694,7 @@ namespace wowpp
 		namespace se = game::spell_effects;
 		std::vector<std::pair<UInt32, EffectHandler>> effectMap {
 			//ordered pairs to avoid 25% resists for binary spells like frostnova
+			{se::Dummy,					std::bind(&SingleCastState::spellEffectDummy, this, std::placeholders::_1) },
 			{se::InstantKill,			std::bind(&SingleCastState::spellEffectInstantKill, this, std::placeholders::_1)},
 			{se::PowerDrain,			std::bind(&SingleCastState::spellEffectDrainPower, this, std::placeholders::_1)},
 			{se::Heal,					std::bind(&SingleCastState::spellEffectHeal, this, std::placeholders::_1)},
@@ -1750,6 +1769,12 @@ namespace wowpp
 					auto strongTarget = target.lock();
 					if (strongTarget)
 					{
+						if (strongTarget->isCreature())
+						{
+							std::static_pointer_cast<GameCreature>(strongTarget)->raiseTrigger(
+								trigger_event::OnSpellHit, { m_spell.id() });
+						}
+
 						reinterpret_cast<GameCharacter&>(*strongUnit).onQuestSpellCastCredit(m_spell.id(), *strongTarget);
 					}
 				}
