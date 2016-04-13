@@ -2963,8 +2963,6 @@ namespace wowpp
 			m_TradeStatusInfo.guid = thisguid;
 			m_TradeData = std::shared_ptr<TradeData>(new TradeData (this, otherPlayer));
 			otherPlayer->m_TradeData = std::shared_ptr<TradeData>(new TradeData (otherPlayer, this));
-			auto temp = m_loot->getGold();
-			WLOG("gold: " << temp);
 			otherPlayer->sendTradeData(m_TradeStatusInfo);
 		}
 	}
@@ -2973,8 +2971,6 @@ namespace wowpp
 	{
 		std::shared_ptr<TradeData> my_trade = m_TradeData;
 		
-		m_TradeData;
-
 		m_TradeStatusInfo.tradestatus = trade_status::TRADE_STATUS_OPEN_WINDOW;
 		
 		my_trade->getPlayer()->sendTradeData(m_TradeStatusInfo);
@@ -2986,12 +2982,129 @@ namespace wowpp
 
 	void Player::handleSetTradeGold(game::Protocol::IncomingPacket &packet)
 	{
-		WLOG("gold");
+		UInt32 gold;
+		if (!(game::client_read::setTradeGold(packet, gold)))
+		{
+			return;
+		}
+
+		std::shared_ptr<TradeData> my_trade = m_TradeData;
+		if (!my_trade)
+		{
+			return;
+		}
+
+		my_trade->setGold(gold);
+
+		WLOG("gold set: "<<gold);
 	}
 
 	void Player::handleAcceptTrade(game::Protocol::IncomingPacket &packet)
 	{
-		WLOG("accept");
+		std::shared_ptr<TradeData> my_Trade = m_TradeData;
+		if (nullptr == my_Trade)
+		{
+			return;
+		}
+
+		Player* trader = my_Trade-> getTrader();
+		Player* player = my_Trade->getPlayer();
+		std::shared_ptr<TradeData> his_Trade = trader->m_TradeData;
+		if (nullptr == his_Trade)
+		{
+			return;
+		}
+
+		my_Trade->setacceptTrade(true);
+
+		TradeStatusInfo info;
+
+		if (my_Trade->getGold() > player->getCharacter()->getUInt32Value(character_fields::Coinage))
+		{
+			info.tradestatus = trade_status::TRADE_STATUS_CLOSE_WINDOW;
+			sendTradeData(info);
+			my_Trade->setacceptTrade(false);
+			return;
+		}
+
+		if (his_Trade->getGold() > trader->getCharacter()->getUInt32Value(character_fields::Coinage))
+		{
+			info.tradestatus = trade_status::TRADE_STATUS_CLOSE_WINDOW;
+			sendTradeData(info);
+			his_Trade->setacceptTrade(false);
+			return;
+		}
+
+		for (int i = 0; i < 6; i++)				//6= number of trade slots
+		{
+
+		}
+
+
+
+		his_Trade->setacceptTrade(true);
+		//cheating items
+
+		if (his_Trade->isAccepted())
+		{
+			//check for cheating
+			//inform partner client
+
+			info.tradestatus = trade_status::TRADE_STATUS_TRADE_ACCEPT;
+			trader->sendTradeData(info);
+			//test item << inventory
+
+			//execute Trade
+
+			//update money
+
+			info.tradestatus = trade_status::TRADE_STATUS_TRADE_COMPLETE;
+			trader->sendTradeData(info);
+			sendTradeData(info);
+		}
+		else
+		{
+			info.tradestatus = trade_status::TRADE_STATUS_TRADE_ACCEPT;
+			trader->sendTradeData(info);
+		}
+
+		
+	}
+
+	void Player::handleSetTradeItem(game::Protocol::IncomingPacket &packet)
+	{
+		UInt8 tradeSlot;
+		UInt8 bag;
+		UInt8 slot;
+
+
+		if (!(game::client_read::setTradeItem(packet, tradeSlot, bag, slot)))
+		{
+			return;
+		}
+
+		std::shared_ptr<TradeData> my_Trade = m_TradeData;
+		if (my_Trade == nullptr)
+		{
+			return;
+		}
+
+		TradeStatusInfo info;
+
+		if (tradeSlot >= trade_status::TRADE_SLOT_COUNT)
+		{
+			info.tradestatus = trade_status::TRADE_STATUS_TRADE_CANCELED;
+			sendTradeData(info);
+			return;
+		}
+
+		UInt16 _slot = slot;
+		auto this_player = this->getCharacter();
+		auto &inventory = this_player->getInventory();
+		auto item = inventory.getItemAtSlot(Inventory::getAbsoluteSlot(bag, _slot));
+		UInt64 item_guid = item->getGuid();
+		my_Trade->setItem(item_guid, tradeSlot);
+
 	}
 
 
@@ -3014,6 +3127,7 @@ namespace wowpp
 		case trade_status::TRADE_STATUS_TRADE_CANCELED:
 			break;
 		case trade_status::TRADE_STATUS_TRADE_ACCEPT:
+			sendProxyPacket(std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, info.tradestatus, status));
 			break;
 		case trade_status::TRADE_STATUS_BUSY_2:
 			break;
@@ -3022,6 +3136,7 @@ namespace wowpp
 		case trade_status::TRADE_STATUS_BACK_TO_TRADE:
 			break;
 		case trade_status::TRADE_STATUS_TRADE_COMPLETE:
+			sendProxyPacket(std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, info.tradestatus, status));
 			break;
 		case trade_status::TRADE_STATUS_TRADE_REJECTED:
 			break;

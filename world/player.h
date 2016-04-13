@@ -68,8 +68,16 @@ namespace wowpp
 			TRADE_STATUS_WRONG_REALM = 22,                       // You can only trade conjured items... (cross realm BG related).
 			TRADE_STATUS_NOT_ON_TAPLIST = 23                        // Related to trading soulbound loot items
 		};
+
+		enum Slots
+		{
+			TRADE_SLOT_COUNT = 7,
+			TRADE_SLOT_TRADED_COUNT = 6,
+			TRADE_SLOT_NONTRADED = 6
+		};
 	}
 	typedef trade_status::Type TradeStatus;
+	typedef trade_status::Slots TradeSlots;
 
 	struct TradeStatusInfo
 	{
@@ -259,6 +267,7 @@ namespace wowpp
 		void handleBeginTrade(game::Protocol::IncomingPacket &packet);
 		void handleAcceptTrade(game::Protocol::IncomingPacket &packet);
 		void handleSetTradeGold(game::Protocol::IncomingPacket &packet);
+		void handleSetTradeItem(game::Protocol::IncomingPacket &packet);
 
 	private:
 

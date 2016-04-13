@@ -1293,6 +1293,12 @@ namespace wowpp
 				io::Reader &packet,
 				UInt32 &gold
 				);
+			bool setTradeItem(
+				io::Reader &packet,
+				UInt8 &tradeSlot,
+				UInt8 &bag,
+				UInt8 &slot
+				);
 		};
 
 		namespace server_write

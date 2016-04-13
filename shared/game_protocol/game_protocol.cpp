@@ -3371,7 +3371,10 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::TradeStatus);
 				out_packet << io::write<NetUInt32>(status);
-				out_packet << io::write<NetUInt64>(guid);
+				if (guid > 0)
+				{
+					out_packet << io::write<NetUInt64>(guid);
+				}
 				out_packet.finish();
 			}
 
@@ -4183,9 +4186,18 @@ namespace wowpp
 				return packet;
 			}
 
-			bool setTradeGold(io::Reader &packet)
+			bool setTradeGold(io::Reader &packet, UInt32 &gold)
 			{
-				return packet;
+				return packet
+					>> io::read<NetUInt32>(gold);
+			}
+
+			bool setTradeItem(io::Reader &packet, UInt8 &tradeSlot, UInt8 &bag, UInt8 &slot)
+			{
+				return packet
+					>> io::read<NetUInt8>(tradeSlot)
+					>> io::read<NetUInt8>(bag)
+					>> io::read<NetUInt8>(slot);
 			}
 			
 
