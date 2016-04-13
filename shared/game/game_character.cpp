@@ -426,6 +426,14 @@ namespace wowpp
 			if (!quest)
 				continue;
 
+			if (!it->second.explored)
+			{
+				if (quest->flags() & game::quest_flags::Exploration)
+				{
+					it->second.explored = true;
+				}
+			}
+
 			// Counter needed so that the right field is used
 			UInt8 reqIndex = 0;
 			for (const auto &req : quest->requirements())
@@ -699,41 +707,59 @@ namespace wowpp
 
 	bool GameCharacter::fulfillsQuestRequirements(const proto::QuestEntry &entry) const
 	{
-		if (entry.flags() & game::quest_flags::PartyAccept ||
-			entry.flags() & game::quest_flags::Exploration)
+		// This is an event-driven quest which can not be simply completed. Some of these quests
+		// don't have a requirement and as such can't be completed by such
+		if (entry.flags() & game::quest_flags::PartyAccept)
 		{
 			return false;
 		}
 
-		if (entry.requirements_size() == 0) {
+		// Check if the character has this quest entry
+		auto it = m_quests.find(entry.id());
+		if (it == m_quests.end())
+		{
+			return false;
+		}
+
+		// Check for exploration quests before checking for requirements, as most of these quests
+		// don't have any requirement at all and thus would pass the requirement check.
+		if (entry.flags() & game::quest_flags::Exploration)
+		{
+			// Check if this quest has been explored
+			return it->second.explored;
+		}
+
+		// Now check for quest requirements
+		if (entry.requirements_size() == 0)
+		{
 			return true;
 		}
 
-		auto it = m_quests.find(entry.id());
-		if (it == m_quests.end()) {
-			return false;
-		}
-
+		// Now check all available quest requirements
 		UInt32 counter = 0;
 		for (const auto &req : entry.requirements())
 		{
+			// Creature kill / spell cast required
 			if (req.creatureid() != 0)
 			{
 				if (it->second.creatures[counter] < req.creaturecount()) {
 					return false;
 				}
 			}
+			// Object interaction / spell cast required
 			else if (req.objectid() != 0)
 			{
 				if (it->second.objects[counter] < req.objectcount()) {
 					return false;
 				}
 			}
+			// Item required
 			else if (req.itemid() != 0)
 			{
-				// Not enough items?
+				// Not enough items? (Don't worry, getItemCount is fast as it uses a cached value)
 				auto itemCount = m_inventory.getItemCount(req.itemid());
-				if (itemCount < req.itemcount()) {
+				if (itemCount < req.itemcount())
+				{
 					return false;
 				}
 			}
@@ -749,42 +775,53 @@ namespace wowpp
 	{
 		for (int i = 0; i < 25; ++i)
 		{
-			if (getUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0) == 0) {
+			// If this quest log slot is empty, we can stop as there is at least one
+			// free quest slot available
+			if (getUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0) == 0)
+			{
 				return false;
 			}
 		}
 
+		// No free quest slots found
 		return true;
 	}
 
 	void GameCharacter::onQuestItemAddedCredit(const proto::ItemEntry &entry, UInt32 amount)
 	{
+		// If this is set to true, all nearby objects will be updated
 		bool updateNearbyObjects = false;
 		for (int i = 0; i < 25; ++i)
 		{
+			// Check if there is a quest in that slot
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
 			if (logId == 0) {
 				continue;
 			}
 
-			// Verify quest state
+			// Check if the player really has accepted that quest
 			auto it = m_quests.find(logId);
 			if (it == m_quests.end()) {
 				continue;
 			}
 
+			// Check if the quest was already completed
 			if (it->second.status != game::quest_status::Incomplete) {
 				continue;
 			}
 
-			// Find quest
+			// Get quest template entry
 			const auto *quest = getProject().quests.getById(logId);
 			if (!quest) {
 				continue;
 			}
 
+			// If this is set to true, all requirements of this quest will be reevaluated, which costs
+			// some time. So this variable is only updated, if a quest requirement status changed between
+			// Completed and Uncomplete to save performance.
 			bool validateQuest = false;
-            
+
+			// Check every quest entry requirement
 			for (const auto &req : quest->requirements())
 			{
 				if (req.itemid() == entry.id())
@@ -807,9 +844,10 @@ namespace wowpp
 				}
 			}
 
+			// Check if the quest requirements need to be reevaluated
 			if (validateQuest)
 			{
-				// Found it: Complete quest if completable
+				// Quest is fulfilled now
 				if (fulfillsQuestRequirements(*quest))
 				{
 					it->second.status = game::quest_status::Complete;
@@ -819,6 +857,8 @@ namespace wowpp
 			}
 		}
 
+		// Finally, update all nearby objects if needed to. We do this after we checked all
+		// quests, so that we will update these objects only ONCE
 		if (updateNearbyObjects)
 		{
 			updateNearbyQuestObjects();

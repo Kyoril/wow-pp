@@ -1137,15 +1137,23 @@ namespace wowpp
 		}
 
 		// Check if this is a teleport trigger
+
+		if (trigger->has_questid() && trigger->questid() > 0)
+		{
+			// Handle quest exploration
+			sender.getCharacter()->completeQuest(trigger->questid());
+		}
+
+		if (trigger->has_tavern() && trigger->tavern())
+		{
+			// Handle tavern
+		}
+
 		// TODO: Optimize this, create a trigger type
 		if (trigger->targetmap() != 0 || trigger->target_x() != 0.0f || trigger->target_y() != 0.0f || trigger->target_z() != 0.0f || trigger->target_o() != 0.0f)
 		{
 			// Teleport
 			character->teleport(trigger->targetmap(), math::Vector3(trigger->target_x(), trigger->target_y(), trigger->target_z()), trigger->target_o());
-		}
-		else
-		{
-			DLOG("TODO: Unknown trigger type '" << trigger->name() << "'...");
 		}
 	}
 
