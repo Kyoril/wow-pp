@@ -93,25 +93,22 @@ namespace wowpp
 	void GameItem::generateLoot()
 	{
 		auto lootEntryId = m_entry.lootentry();
-		if (lootEntryId)
+		const auto *lootEntry = lootEntryId ? getProject().itemLoot.getById(lootEntryId) : nullptr;
+		if (lootEntry || m_entry.minlootgold() > 0)
 		{
-			const auto *lootEntry = getProject().itemLoot.getById(lootEntryId);
-			if (lootEntry)
+			// TODO: make a way so we don't need loot recipients for game objects as this is completely crap
+			std::vector<GameCharacter *> lootRecipients;
+			m_loot = make_unique<LootInstance>(
+				getProject().items, getGuid(), lootEntry, m_entry.minlootgold(), m_entry.maxlootgold(), std::cref(lootRecipients));
+			if (m_loot)
 			{
-				// TODO: make a way so we don't need loot recipients for game objects as this is completely crap
-				std::vector<GameCharacter *> lootRecipients;
-				m_loot = make_unique<LootInstance>(
-					getProject().items, getGuid(), lootEntry, m_entry.minlootgold(), m_entry.maxlootgold(), std::cref(lootRecipients));
-				if (m_loot)
+				m_onLootCleared = m_loot->cleared.connect([this]()
 				{
-					m_onLootCleared = m_loot->cleared.connect([this]()
-					{
-						// We use the despawned signal here, even though the item is not physically
-						// spawned in the world. We do so, in order for loot handling to work just fine
-						// with this kind of loot source.
-						despawned(*this);
-					});
-				}
+					// We use the despawned signal here, even though the item is not physically
+					// spawned in the world. We do so, in order for loot handling to work just fine
+					// with this kind of loot source.
+					despawned(*this);
+				});
 			}
 		}
 	}
