@@ -703,6 +703,15 @@ namespace wowpp
 						questRow.getField(index++, data.items[1]);
 						questRow.getField(index++, data.items[2]);
 						questRow.getField(index++, data.items[3]);
+
+						// Let the quest fail if it timed out
+						if (data.status == game::quest_status::Incomplete &&
+							data.expiration > 0 &&
+							data.expiration >= time(nullptr))
+						{
+							data.status = game::quest_status::Failed;
+						}
+
 						out_character.setQuestData(questId, data);
 
 						// Next row

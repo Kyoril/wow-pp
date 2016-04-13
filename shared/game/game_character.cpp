@@ -255,10 +255,18 @@ namespace wowpp
 					castSpell(std::move(targetMap), questEntry->srcspell(), -1, 0, true);
 				}
 
+				// Quest timer
+				UInt32 questTimer = 0;
+				if (questEntry->timelimit() > 0)
+				{
+					questTimer = time(nullptr) + questEntry->timelimit();
+					data.expiration = questTimer;
+				}
+
 				// Set quest log
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, quest);
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
-				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, questTimer);
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
 
 				bool updateQuestObjects = false;
@@ -1220,8 +1228,8 @@ namespace wowpp
 		}
 
 		if (data.status == game::quest_status::Incomplete ||
-		        data.status == game::quest_status::Complete ||
-		        data.status == game::quest_status::Failed)
+		    data.status == game::quest_status::Complete ||
+		    data.status == game::quest_status::Failed)
 		{
 			for (UInt32 i = 0; i < 25; ++i)
 			{
@@ -1233,7 +1241,7 @@ namespace wowpp
 					if (data.status == game::quest_status::Complete) {
 						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
 					}
-					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);
+					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, static_cast<UInt32>(data.expiration));
 					UInt8 offset = 0;
 					for (auto &req : entry->requirements())
 					{
