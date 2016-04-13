@@ -3039,12 +3039,7 @@ namespace wowpp
 		{
 
 		}
-
-
-
-		his_Trade->setacceptTrade(true);
-		//cheating items
-
+					
 		if (his_Trade->isAccepted())
 		{
 			//check for cheating
