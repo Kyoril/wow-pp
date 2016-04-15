@@ -2941,6 +2941,9 @@ namespace wowpp
 
 	void Player::handleInitateTrade(game::Protocol::IncomingPacket & packet)
 	{
+		auto test = this->getCharacter();
+		test->setUInt32Value(character_fields::Coinage, 100);   //just for tests, will be deleted at the end
+
 		UInt64 otherGuid;
 		TradeStatusInfo statusInfo;
 		if (!(game::client_read::initateTrade(packet, otherGuid)))
@@ -2977,7 +2980,6 @@ namespace wowpp
 		my_trade->getTrader()->sendTradeData(m_TradeStatusInfo);
 		
 		//openWindow
-		WLOG("works");
 	}
 
 	void Player::handleSetTradeGold(game::Protocol::IncomingPacket &packet)
@@ -2995,7 +2997,11 @@ namespace wowpp
 		}
 
 		my_trade->setGold(gold);
-
+		my_trade->setacceptTrade(false);
+		my_trade->getTrader()->m_TradeData->setacceptTrade(false);
+		
+		my_trade->getTrader()->sendUpdateTrade(gold);
+		//sendUpdateTrade(gold);
 		WLOG("gold set: "<<gold);
 	}
 
@@ -3034,12 +3040,7 @@ namespace wowpp
 			his_Trade->setacceptTrade(false);
 			return;
 		}
-
-		for (int i = 0; i < 6; i++)				//6= number of trade slots
-		{
-
-		}
-					
+								
 		if (his_Trade->isAccepted())
 		{
 			//check for cheating
@@ -3164,5 +3165,10 @@ namespace wowpp
 		default:
 			break;
 		}
+	}
+	
+	void Player::sendUpdateTrade(UInt32 gold)
+	{
+		sendProxyPacket(std::bind(game::server_write::sendUpdateTrade, std::placeholders::_1, 1, 0, trade_status::TRADE_SLOT_COUNT, trade_status::TRADE_SLOT_COUNT, gold, 0));
 	}
 }

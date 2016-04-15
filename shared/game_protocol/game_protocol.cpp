@@ -3378,6 +3378,26 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void sendUpdateTrade(game::OutgoingPacket &out_packet, UInt8 state, UInt32 tradeID, UInt32 next_slot, UInt32 prev_slot, UInt32 gold, UInt32 spell)
+			{
+				out_packet.start(game::server_packet::TradeStatusExtended);
+				out_packet << io::write<NetUInt8>(state);
+				out_packet << io::write<NetUInt32>(tradeID);
+				out_packet << io::write<NetUInt32>(next_slot);
+				out_packet << io::write<NetUInt32>(prev_slot);
+				out_packet << io::write<NetUInt32>(gold);
+				out_packet << io::write<NetUInt32>(spell);
+				
+				for (UInt8 i = 0; i < 7; ++i)
+				{
+					out_packet << io::write<NetUInt8>(state);  //iterate threw all tradeslots for checking for items
+					for (UInt8 j = 0; j < 18; ++j)
+					{
+						out_packet << io::write<NetUInt32>(0);
+					}
+				}
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

@@ -2194,6 +2194,15 @@ namespace wowpp
 				UInt32 status,
 				UInt64 guid
 				);
+
+			void sendUpdateTrade(
+				game::OutgoingPacket &out_packet, 
+				UInt8 state, 
+				UInt32 tradeID, 
+				UInt32 next_slot, 
+				UInt32 prev_slot, 
+				UInt32 gold, 
+				UInt32 spell);
 		};
 	}
 }

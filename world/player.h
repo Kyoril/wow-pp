@@ -218,6 +218,7 @@ namespace wowpp
 		void saveCharacterData() const;
 
 		void sendTradeData(TradeStatusInfo info);
+		void sendUpdateTrade(UInt32 gold);
 
 	public:
 
