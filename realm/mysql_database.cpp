@@ -482,8 +482,8 @@ namespace wowpp
 			"SELECT `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`xp`, `gold`, `map`,"
 			//       10     11           12           13           14
 				   "`zone`,`position_x`,`position_y`,`position_z`,`orientation`,"
-            //       15        16       17       18       19	   20					21			  22
-				   "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`,`explored_zones`, `last_save`, `last_group` FROM `character` WHERE `id`={0} LIMIT 1"
+            //       15        16       17       18       19	   20					21			  22		 23
+				   "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`,`explored_zones`, `last_save`, `last_group`, `actionbars` FROM `character` WHERE `id`={0} LIMIT 1"
 			, characterId));
 		if (select.success())
 		{
@@ -568,6 +568,11 @@ namespace wowpp
 				row.getField(18, z);
 				row.getField(19, o);
 				out_character.setHome(mapId, math::Vector3(x, y, z), o);
+
+				// Load action bar states
+				UInt32 actionBars = 0;
+				row.getField(23, actionBars);
+				out_character.setByteValue(character_fields::FieldBytes, 2, actionBars);
 
 				String zoneBuffer;
 				row.getField(20, zoneBuffer);
@@ -707,7 +712,7 @@ namespace wowpp
 						// Let the quest fail if it timed out
 						if (data.status == game::quest_status::Incomplete &&
 							data.expiration > 0 &&
-							data.expiration >= time(nullptr))
+							data.expiration >= GameTime(time(nullptr)))
 						{
 							data.status = game::quest_status::Failed;
 						}
@@ -758,19 +763,20 @@ namespace wowpp
 
 		if (!m_connection.execute(fmt::format(
 			"UPDATE `character` SET `map`={1}, `zone`={2}, `position_x`={3}, `position_y`={4}, `position_z`={5}, `orientation`={6}, `level`={7}, `xp`={8}, `gold`={9}, "
-			"`home_map`={10}, `home_x`={11}, `home_y`={12}, `home_z`={13}, `home_o`={14}, `explored_zones`='{15}', `last_save`={16}, `last_group`={17} WHERE `id`={0};"
-			, lowerGuid												// 0
-			, character.getMapId()									// 1
-			, character.getZone()									// 2
-			, location.x, location.y, location.z, o					// 3, 4, 5, 6
-			, character.getLevel()									// 7
-			, character.getUInt32Value(character_fields::Xp)		// 8
-			, character.getUInt32Value(character_fields::Coinage)	// 9
-			, homeMap												// 10
-			, homePos.x, homePos.y, homePos.z, homeO				// 11, 12, 13, 14
-			, strm.str()											// 15
-			, time(nullptr)											// 16
-			, character.getGroupId()								// 17
+			"`home_map`={10}, `home_x`={11}, `home_y`={12}, `home_z`={13}, `home_o`={14}, `explored_zones`='{15}', `last_save`={16}, `last_group`={17}, `actionbars`={18} WHERE `id`={0};"
+			, lowerGuid															// 0
+			, character.getMapId()												// 1
+			, character.getZone()												// 2
+			, location.x, location.y, location.z, o								// 3, 4, 5, 6
+			, character.getLevel()												// 7
+			, character.getUInt32Value(character_fields::Xp)					// 8
+			, character.getUInt32Value(character_fields::Coinage)				// 9
+			, homeMap															// 10
+			, homePos.x, homePos.y, homePos.z, homeO							// 11, 12, 13, 14
+			, strm.str()														// 15
+			, time(nullptr)														// 16
+			, character.getGroupId()											// 17
+			, UInt32(character.getByteValue(character_fields::FieldBytes, 2))	// 18
 			)))
 		{
 			// There was an error

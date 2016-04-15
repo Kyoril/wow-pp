@@ -210,6 +210,7 @@ namespace wowpp
 		void handleGameObjectUse(game::Protocol::IncomingPacket &packet);
 		void handleOpenItem(game::Protocol::IncomingPacket &packet);
 		void handleMoveTimeSkipped(game::Protocol::IncomingPacket &packet);
+		void handleSetActionBarToggles(game::Protocol::IncomingPacket &packet);
 
 	private:
 

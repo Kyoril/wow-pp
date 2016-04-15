@@ -2947,4 +2947,16 @@ namespace wowpp
 		// TODO: Do something with the time diff
 	}
 
+	void Player::handleSetActionBarToggles(game::Protocol::IncomingPacket & packet)
+	{
+		UInt8 actionBars;
+		if (!(game::client_read::setActionBarToggles(packet, actionBars)))
+		{
+			return;
+		}
+
+		// Save action bars
+		m_character->setByteValue(character_fields::FieldBytes, 2, actionBars);
+	}
+
 }

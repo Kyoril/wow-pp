@@ -4196,6 +4196,12 @@ namespace wowpp
 					>> io::read<NetUInt32>(out_petNumber)
 					>> io::read<NetUInt64>(out_petGUID);
 			}
+
+			bool setActionBarToggles(io::Reader & packet, UInt8 & out_actionBars)
+			{
+				return packet
+					>> io::read<NetUInt8>(out_actionBars);
+			}
 		}
 
 		wowpp::game::WhoResponseEntry::WhoResponseEntry(const GameCharacter & character)

@@ -502,6 +502,7 @@ namespace wowpp
 				RequestPartyMemberStats	= 0x27F,
 				GroupRaidConvert		= 0x28E,
 				GroupAssistentLeader	= 0x28F,
+				SetActionBarToggles		= 0x2BF,
 				MoveFallReset			= 0x2CA,
 				CharRename				= 0x2C7,
 				MoveTimeSkipped			= 0x2CE,
@@ -1273,6 +1274,11 @@ namespace wowpp
 				io::Reader &packet,
 				UInt32 &out_petNumber,
 				UInt64 &out_petGUID
+				);
+
+			bool setActionBarToggles(
+				io::Reader &packet,
+				UInt8 &out_actionBars
 				);
 		};
 
