@@ -2959,4 +2959,28 @@ namespace wowpp
 		m_character->setByteValue(character_fields::FieldBytes, 2, actionBars);
 	}
 
+	void Player::handleToggleHelm(game::Protocol::IncomingPacket & packet)
+	{
+		if (m_character->getUInt32Value(character_fields::CharacterFlags) & 1024)
+		{
+			m_character->removeFlag(character_fields::CharacterFlags, 1024);
+		}
+		else
+		{
+			m_character->addFlag(character_fields::CharacterFlags, 1024);
+		}
+	}
+
+	void Player::handleToggleCloak(game::Protocol::IncomingPacket & packet)
+	{
+		if (m_character->getUInt32Value(character_fields::CharacterFlags) & 2048)
+		{
+			m_character->removeFlag(character_fields::CharacterFlags, 2048);
+		}
+		else
+		{
+			m_character->addFlag(character_fields::CharacterFlags, 2048);
+		}
+	}
+
 }

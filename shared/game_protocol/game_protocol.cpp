@@ -163,7 +163,7 @@ namespace wowpp
 					        << io::write<float>(entry.location.z)				// z
 					        << io::write<NetUInt32>(0x00);						// guild guid
 
-					UInt32 charFlags = character_flags::None;
+					UInt32 charFlags = UInt32(entry.flags);
 					if (entry.atLogin & atlogin_flags::Rename)
 					{
 						charFlags |= character_flags::Rename;

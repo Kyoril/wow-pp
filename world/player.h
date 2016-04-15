@@ -211,6 +211,8 @@ namespace wowpp
 		void handleOpenItem(game::Protocol::IncomingPacket &packet);
 		void handleMoveTimeSkipped(game::Protocol::IncomingPacket &packet);
 		void handleSetActionBarToggles(game::Protocol::IncomingPacket &packet);
+		void handleToggleHelm(game::Protocol::IncomingPacket &packet);
+		void handleToggleCloak(game::Protocol::IncomingPacket &packet);
 
 	private:
 

@@ -193,6 +193,7 @@ namespace wowpp
 			UInt8 outfitId;
 			UInt32 mapId;
 			UInt32 zoneId;
+			CharacterFlags flags;
 			math::Vector3 location;
 			float o;
 			bool cinematic;
@@ -213,6 +214,7 @@ namespace wowpp
 				, outfitId(0)
 				, mapId(0)
 				, zoneId(0)
+				, flags(character_flags::None)
 				, location(0.0f, 0.0f, 0.0f)
 				, o(0.0f)
 				, cinematic(true)
@@ -502,6 +504,8 @@ namespace wowpp
 				RequestPartyMemberStats	= 0x27F,
 				GroupRaidConvert		= 0x28E,
 				GroupAssistentLeader	= 0x28F,
+				ToggleHelm				= 0x2B9,
+				ToggleCloak				= 0x2BA,
 				SetActionBarToggles		= 0x2BF,
 				MoveFallReset			= 0x2CA,
 				CharRename				= 0x2C7,
