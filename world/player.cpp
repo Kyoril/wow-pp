@@ -1175,6 +1175,7 @@ namespace wowpp
 
 		if (!m_loot)
 		{
+			WLOG("Player is not looting anything");
 			return;
 		}
 
@@ -1183,6 +1184,7 @@ namespace wowpp
 		auto *world = m_character->getWorldInstance();
 		if (!world)
 		{
+			WLOG("Player not in world");
 			return;
 		}
 
@@ -1190,6 +1192,7 @@ namespace wowpp
 		UInt32 lootGold = m_loot->getGold();
 		if (lootGold == 0)
 		{
+			WLOG("No gold to loot");
 			return;
 		}
 
@@ -1197,6 +1200,7 @@ namespace wowpp
 		std::vector<GameCharacter*> recipients;
 		if (m_lootSource->getTypeId() == object_type::Unit)
 		{
+			// If looting a creature, loot has to be shared between nearby group members
 			GameCreature *creature = reinterpret_cast<GameCreature*>(m_lootSource);
 			creature->forEachLootRecipient([&recipients](GameCharacter &recipient)
 			{
@@ -1212,8 +1216,8 @@ namespace wowpp
 		}
 		else
 		{
-			WLOG("Unsupported loot object for gold loot");
-			return;
+			// We will be the only recipient
+			recipients.push_back(m_character.get());
 		}
 
 		// Reward with gold
