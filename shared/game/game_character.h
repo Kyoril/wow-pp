@@ -797,6 +797,8 @@ namespace wowpp
 		/// Updates the status of a specified quest to "completed". This does not work for quests that require
 		/// a certain item.
 		bool completeQuest(UInt32 quest);
+		/// Makes a certain quest fail.
+		bool failQuest(UInt32 quest);
 		/// Rewards the given quest (gives items, xp and saves quest status).
 		bool rewardQuest(UInt32 quest, UInt8 rewardChoice, std::function<void(UInt32)> callback);
 		/// Called when a quest-related creature was killed.
@@ -901,6 +903,7 @@ namespace wowpp
 		std::map<UInt32, Int8> m_requiredQuestItems;
 		SpellModsByOp m_spellModsByOp;
 		std::array<float, 7> m_threatModifier;
+		std::vector<Countdown> m_questTimeouts;
 	};
 
 	/// Serializes a GameCharacter to an io::Writer object for the wow++ protocol.

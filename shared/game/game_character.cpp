@@ -134,6 +134,34 @@ namespace wowpp
 
 		// Reset threat modifiers
 		m_threatModifier.fill(1.0f);
+
+		// Watch for own death and fail all quests that require the player to stay alive
+		killed.connect([this](GameUnit *killer)
+		{
+			bool updateQuestObjects = false;
+			for (UInt32 i = 0; i < 25; ++i)
+			{
+				auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+
+				// Find quest
+				const auto *quest = getProject().quests.getById(logId);
+				if (!quest)
+					continue;
+
+				if (quest->flags() & game::quest_flags::StayAlive)
+				{
+					if (failQuest(logId))
+					{
+						updateQuestObjects = true;
+					}
+				}
+			}
+
+			if (updateQuestObjects)
+			{
+				updateNearbyQuestObjects();
+			}
+		});
 	}
 
 	game::QuestStatus GameCharacter::getQuestStatus(UInt32 quest) const
@@ -266,8 +294,8 @@ namespace wowpp
 				// Set quest log
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, quest);
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
-				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, questTimer);
-				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, questTimer);
 
 				bool updateQuestObjects = false;
 
@@ -479,6 +507,60 @@ namespace wowpp
 			// Save quest progress
 			questDataChanged(logId, it->second);
 
+			return true;
+		}
+
+		return false;
+	}
+
+	bool GameCharacter::failQuest(UInt32 questId)
+	{
+		for (UInt32 i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId != questId)
+				continue;
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end())
+				continue;
+
+			// Failed already or not acceptable?
+			if (it->second.status == game::quest_status::Failed ||
+				it->second.status == game::quest_status::Unavailable)
+				continue;
+			
+			it->second.status = game::quest_status::Failed;
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest)
+				continue;
+
+			// Update required item cache
+			for (const auto &req : quest->requirements())
+			{
+				if (req.itemid() != 0)
+				{
+					// We needed this quest items and now no longer need them
+					if (m_inventory.getItemCount(req.itemid()) < req.itemcount())
+					{
+						m_requiredQuestItems[req.itemid()]--;
+					}
+				}
+			}
+
+			// Update quest state
+			setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Failed);
+
+			// Reset timer
+			if (getUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1) > 0)
+			{
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 1);
+			}
+
+			questDataChanged(questId, it->second);
 			return true;
 		}
 
@@ -728,6 +810,7 @@ namespace wowpp
 		{
 			return false;
 		}
+
 
 		// Check for exploration quests before checking for requirements, as most of these quests
 		// don't have any requirement at all and thus would pass the requirement check.
@@ -1238,10 +1321,7 @@ namespace wowpp
 				{
 					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, quest);
 					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
-					if (data.status == game::quest_status::Complete) {
-						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
-					}
-					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, static_cast<UInt32>(data.expiration));
+					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, static_cast<UInt32>(data.expiration));
 					UInt8 offset = 0;
 					for (auto &req : entry->requirements())
 					{
@@ -1256,10 +1336,13 @@ namespace wowpp
 
 						offset++;
 					}
-					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
 					if (data.status == game::quest_status::Complete)
 					{
 						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+					}
+					else if (data.status == game::quest_status::Failed)
+					{
+						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Failed);
 					}
 					break;
 				}

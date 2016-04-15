@@ -684,8 +684,8 @@ namespace wowpp
 					"`unitcount1`, `unitcount2`, `unitcount3`, `unitcount4`, "
 					//		7				8				9			10
 					"`objectcount1`, `objectcount2`, `objectcount3`, `objectcount4`, "
-					//		11			12			13				14
-					"`itemcount1`, `itemcount2`, `itemcount3`, `itemcount4` "
+					//		11			12			13				14		  15
+					"`itemcount1`, `itemcount2`, `itemcount3`, `itemcount4`, `timer` "
 					"FROM `character_quests` WHERE `guid`={0}"
 					, characterId));
 				if (questSelect.success())
@@ -714,13 +714,18 @@ namespace wowpp
 						questRow.getField(index++, data.items[1]);
 						questRow.getField(index++, data.items[2]);
 						questRow.getField(index++, data.items[3]);
-
+						questRow.getField(index++, data.expiration);
+						
 						// Let the quest fail if it timed out
-						if (data.status == game::quest_status::Incomplete &&
+						if ((data.status == game::quest_status::Incomplete || data.status == game::quest_status::Complete) &&
 							data.expiration > 0 &&
-							data.expiration >= GameTime(time(nullptr)))
+							data.expiration <= GameTime(time(nullptr)))
 						{
 							data.status = game::quest_status::Failed;
+						}
+						else if (data.status == game::quest_status::Failed)
+						{
+							data.expiration = 1;
 						}
 
 						out_character.setQuestData(questId, data);
