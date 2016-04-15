@@ -2941,8 +2941,8 @@ namespace wowpp
 
 	void Player::handleInitateTrade(game::Protocol::IncomingPacket & packet)
 	{
-		auto test = this->getCharacter();
-		test->setUInt32Value(character_fields::Coinage, 100);   //just for tests, will be deleted at the end
+		//auto test = this->getCharacter();
+		//test->setUInt32Value(character_fields::Coinage, 100);   //just for tests, will be deleted at the end
 
 		UInt64 otherGuid;
 		TradeStatusInfo statusInfo;
@@ -2996,11 +2996,19 @@ namespace wowpp
 			return;
 		}
 
-		my_trade->setGold(gold);
-		my_trade->setacceptTrade(false);
-		my_trade->getTrader()->m_TradeData->setacceptTrade(false);
+		if (gold != my_trade->getGold())
+		{
+			my_trade->setGold(gold);
+			my_trade->setacceptTrade(false);
+			my_trade->getTrader()->m_TradeData->setacceptTrade(false);
+
+			TradeStatusInfo info;
+			info.tradestatus = trade_status::TRADE_STATUS_BACK_TO_TRADE;
+			my_trade->getPlayer()->sendTradeData(info);
+			my_trade->getTrader()->sendUpdateTrade(gold);
+		}
 		
-		my_trade->getTrader()->sendUpdateTrade(gold);
+		
 		//sendUpdateTrade(gold);
 		WLOG("gold set: "<<gold);
 	}
@@ -3053,6 +3061,19 @@ namespace wowpp
 			//execute Trade
 
 			//update money
+
+			UInt32 gold_nowp = player->getCharacter()->getUInt32Value(character_fields::Coinage);
+			UInt32 gold_newp = gold_nowp - my_Trade->getGold();
+
+			gold_newp += trader->m_TradeData->getGold();
+			player->getCharacter()->setUInt32Value(character_fields::Coinage, gold_newp);
+
+			
+			UInt32 gold_nowt = trader->getCharacter()->getUInt32Value(character_fields::Coinage);
+			UInt32 gold_newt = gold_nowt - trader->m_TradeData->getGold();
+
+			gold_newt += my_Trade->getGold();
+			trader->getCharacter()->setUInt32Value(character_fields::Coinage, gold_newt);
 
 			info.tradestatus = trade_status::TRADE_STATUS_TRADE_COMPLETE;
 			trader->sendTradeData(info);
@@ -3130,6 +3151,7 @@ namespace wowpp
 		case trade_status::TRADE_STATUS_NO_TARGET:
 			break;
 		case trade_status::TRADE_STATUS_BACK_TO_TRADE:
+			sendProxyPacket(std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, info.tradestatus, status));
 			break;
 		case trade_status::TRADE_STATUS_TRADE_COMPLETE:
 			sendProxyPacket(std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, info.tradestatus, status));
