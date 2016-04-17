@@ -49,7 +49,7 @@ namespace wowpp
 
 	private:
 
-		UInt32 getActionData(const proto::TriggerAction &action, UInt32 index) const;
+		Int32 getActionData(const proto::TriggerAction &action, UInt32 index) const;
 		const String &getActionText(const proto::TriggerAction &action, UInt32 index) const;
 		WorldInstance *getWorldInstance(GameObject *owner) const;
 		GameObject *getActionTarget(const proto::TriggerAction &action, GameObject *owner);
@@ -62,6 +62,14 @@ namespace wowpp
 		void handleSetSpawnState(const proto::TriggerAction &action, game::TriggerContext &context);
 		void handleSetRespawnState(const proto::TriggerAction &action, game::TriggerContext &context);
 		void handleCastSpell(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleMoveTo(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetCombatMovement(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleStopAutoAttack(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleCancelCast(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetStandState(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetVirtualEquipmentSlot(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetPhase(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetSpellCooldown(const proto::TriggerAction &action, game::TriggerContext &context);
 
 	private:
 

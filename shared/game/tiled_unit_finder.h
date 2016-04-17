@@ -60,7 +60,6 @@ namespace wowpp
 		UnitRecordsByIdentity m_units;
 		const game::Distance m_tileWidth;
 
-
 		Tile &getTile(const TileIndex2D &position);
 		//const Tile &getTile(const TileIndex2D &position) const;
 		TileIndex2D getTilePosition(const Vector<game::Distance, 2> &point) const;

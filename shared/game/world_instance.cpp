@@ -37,6 +37,7 @@
 #include "trigger_handler.h"
 #include "creature_ai.h"
 #include "universe.h"
+#include "unit_mover.h"
 
 namespace wowpp
 {
@@ -170,6 +171,16 @@ namespace wowpp
 			const auto *unitEntry = m_project.units.getById(spawn.unitentry());
 			assert(unitEntry);
 
+			game::CreatureMovement movement = game::creature_movement::None;
+			if (spawn.movement() >= game::creature_movement::Invalid)
+			{
+				WLOG("Invalid movement type for creature spawn - spawn ignored");
+			}
+			else
+			{
+				movement = static_cast<game::CreatureMovement>(spawn.movement());
+			}
+
 			std::unique_ptr<CreatureSpawner> spawner(new CreatureSpawner(
 			            *this,
 			            *unitEntry,
@@ -180,7 +191,8 @@ namespace wowpp
 			            spawn.defaultemote(),
 			            spawn.radius(),
 			            spawn.isactive(),
-			            spawn.respawn()));
+			            spawn.respawn(),
+						movement));
 			m_creatureSpawners.push_back(std::move(spawner));
 
 			if (!spawn.name().empty())
@@ -224,15 +236,14 @@ namespace wowpp
 		spawned->relocate(position, o);
 
 		m_creatureSummons.insert(std::make_pair(spawned->getGuid(), spawned));
-		spawned->despawned.connect(
-		    [this](GameObject & obj)
+		spawned->destroy = [this](GameObject &obj) 
 		{
 			auto it = m_creatureSummons.find(obj.getGuid());
 			if (it != m_creatureSummons.end())
 			{
 				m_creatureSummons.erase(it);
 			}
-		});
+		};
 
 		return spawned;
 	}
@@ -255,12 +266,15 @@ namespace wowpp
 	void WorldInstance::update()
 	{
 		// Iterate all game objects added to this world which need to be updated
-		for (auto &gameObject : m_objectsById)
+		if (!m_objectUpdates.empty())
 		{
-			// Update values changed...
-			auto *object = gameObject.second;
-			updateObject(*object);
+			for (auto &obj : m_objectUpdates)
+			{
+				updateObject(*obj);
+			}
 		}
+
+		m_objectUpdates.clear();
 	}
 
 	void WorldInstance::flushObjectUpdate(UInt64 guid)
@@ -386,6 +400,12 @@ namespace wowpp
 		auto &tile = m_visibilityGrid->requireTile(gridIndex);
 		tile.getGameObjects().remove(&remove);
 
+		// Remove object from the list of updats
+		if (remove.wasUpdated())
+		{
+			m_objectUpdates.erase(&remove);
+		}
+
 		// Create the packet
 		std::vector<char> buffer;
 		io::VectorSink sink(buffer);
@@ -450,8 +470,85 @@ namespace wowpp
 			// Remove the object
 			oldTile->getGameObjects().remove(&object);
 
+			// Send despawn packets
+			forEachTileInSightWithout(
+				*m_visibilityGrid,
+				oldTile->getPosition(),
+				newTile->getPosition(),
+				[&object](VisibilityTile &tile)
+			{
+				UInt64 guid = object.getGuid();
+
+				std::vector<char> buffer;
+				io::VectorSink sink(buffer);
+				game::Protocol::OutgoingPacket packet(sink);
+				game::server_write::destroyObject(packet, guid, false);
+
+				// Despawn this object for all subscribers
+				for (auto * subscriber : tile.getWatchers().getElements())
+				{
+					auto *character = subscriber->getControlledObject();
+					if (!character)
+						continue;
+					
+					if (!object.canSpawnForCharacter(*character))
+						continue;
+
+					// This is the subscribers own character - despawn all old objects and skip him
+					if (character->getGuid() == guid)
+					{
+						continue;
+					}
+
+					subscriber->sendPacket(packet, buffer);
+				}
+			});
+
 			// Notify watchers about the pending tile change
 			object.tileChangePending(*oldTile, *newTile);
+
+			// Send spawn packets
+			forEachTileInSightWithout(
+				*m_visibilityGrid,
+				newTile->getPosition(),
+				oldTile->getPosition(),
+				[&object](VisibilityTile &tile)
+			{
+				// Spawn this new object for all watchers of the new tile
+				for (auto * subscriber : tile.getWatchers().getElements())
+				{
+					auto *character = subscriber->getControlledObject();
+					if (!character)
+						continue;
+
+					if (!object.canSpawnForCharacter(*character))
+						continue;
+
+					// This is the subscribers own character - send all new objects to this subscriber
+					// and then skip him
+					if (character->getGuid() == object.getGuid())
+					{
+						continue;
+					}
+
+					// Create spawn message blocks
+					std::vector<std::vector<char>> spawnBlocks;
+					createUpdateBlocks(object, *character, spawnBlocks);
+
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+					game::Protocol::OutgoingPacket packet(sink);
+					game::server_write::compressedUpdateObject(packet, spawnBlocks);
+
+					subscriber->sendPacket(packet, buffer);
+
+					// Send movement packets
+					if (object.isCreature() || object.isGameCharacter())
+					{
+						reinterpret_cast<GameUnit&>(object).getMover().sendMovementPackets(*subscriber);
+					}
+				}
+			});
 
 			// Add the object
 			newTile->getGameObjects().add(&object);
@@ -460,43 +557,40 @@ namespace wowpp
 
 	void WorldInstance::updateObject(GameObject &object)
 	{
-		if (object.wasUpdated())
+		// Send updates to all subscribers in sight
+		TileIndex2D center = getObjectTile(object, *m_visibilityGrid);
+		forEachSubscriberInSight(
+			*m_visibilityGrid,
+			center,
+			[&object](ITileSubscriber & subscriber)
 		{
-			// Send updates to all subscribers in sight
-			TileIndex2D center = getObjectTile(object, *m_visibilityGrid);
-			forEachSubscriberInSight(
-			    *m_visibilityGrid,
-			    center,
-			    [&object](ITileSubscriber & subscriber)
+			auto *character = subscriber.getControlledObject();
+			if (!character) {
+				return;
+			}
+
+			// Create update blocks
+			std::vector<std::vector<char>> blocks;
+			createValueUpdateBlock(object, *character, blocks);
+
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket packet(sink);
+
+			if (!blocks.empty() && blocks[0].size() > 50)
 			{
-				auto *character = subscriber.getControlledObject();
-				if (!character) {
-					return;
-				}
+				game::server_write::compressedUpdateObject(packet, blocks);
+			}
+			else if (!blocks.empty())
+			{
+				game::server_write::updateObject(packet, blocks);
+			}
 
-				// Create update blocks
-				std::vector<std::vector<char>> blocks;
-				createValueUpdateBlock(object, *character, blocks);
+			subscriber.sendPacket(packet, buffer);
+		});
 
-				std::vector<char> buffer;
-				io::VectorSink sink(buffer);
-				game::Protocol::OutgoingPacket packet(sink);
-
-				if (!blocks.empty() && blocks[0].size() > 50)
-				{
-					game::server_write::compressedUpdateObject(packet, blocks);
-				}
-				else if (!blocks.empty())
-				{
-					game::server_write::updateObject(packet, blocks);
-				}
-
-				subscriber.sendPacket(packet, buffer);
-			});
-
-			// We updated the object
-			object.clearUpdateMask();
-		}
+		// We updated the object
+		object.clearUpdateMask();
 	}
 
 	WorldObjectSpawner *WorldInstance::findObjectSpawner(const String &name)
@@ -508,6 +602,16 @@ namespace wowpp
 		}
 
 		return it->second;
+	}
+
+	void WorldInstance::addUpdateObject(GameObject & object)
+	{
+		m_objectUpdates.insert(&object);
+	}
+
+	void WorldInstance::removeUpdateObject(GameObject & object)
+	{
+		m_objectUpdates.erase(&object);
 	}
 
 	CreatureSpawner *WorldInstance::findCreatureSpawner(const String &name)

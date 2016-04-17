@@ -63,7 +63,8 @@ namespace wowpp
 #else
 		struct timeval tp;
 		gettimeofday(&tp, nullptr);
-		return (tp.tv_sec * 1000) + (tp.tv_usec / 1000);
+		return UInt32(
+            (tp.tv_sec * 1000) + (tp.tv_usec / 1000) % UInt64(0x00000000FFFFFFFF));
 #endif
 	}
 
@@ -72,28 +73,11 @@ namespace wowpp
 #if defined(WIN32) || defined(_WIN32)
 		//::GetTickCount64() is not available on Windows XP and prior systems
 		return ::GetTickCount64();
-#elif !defined(__APPLE__)
-		struct timespec ts = {0, 0};
-		const int rc = clock_gettime(CLOCK_MONOTONIC, &ts);
-		assert(rc == 0);
-
-		return
-		    static_cast<GameTime>(ts.tv_sec) * 1000 +
-		    static_cast<GameTime>(ts.tv_nsec) / 1000 / 1000;
 #else
-		struct timespec ts = {0, 0};
-
-		clock_serv_t cclock;
-		mach_timespec_t mts;
-		host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-		clock_get_time(cclock, &mts);
-		mach_port_deallocate(mach_task_self(), cclock);
-		ts.tv_sec = mts.tv_sec;
-		ts.tv_nsec = mts.tv_nsec;
-
-		return
-		    static_cast<GameTime>(ts.tv_sec) * 1000 +
-		    static_cast<GameTime>(ts.tv_nsec) / 1000 / 1000;
+        struct timeval tp;
+        gettimeofday(&tp, nullptr);
+        return UInt32(
+            (tp.tv_sec * 1000) + (tp.tv_usec / 1000) % UInt64(0x00000000FFFFFFFF));
 #endif
-	}
+    }
 }

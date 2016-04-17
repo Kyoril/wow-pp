@@ -139,6 +139,13 @@ namespace wowpp
 			{
 				return Vector3(x * value, y * value, z * value);
 			}
+			inline Vector3 &operator *=(float value)
+			{
+				x *= value;
+				y *= value;
+				z *= value;
+				return *this;
+			}
 			inline Vector3 operator /(float value) const
 			{
 				return Vector3(x / value, y / value, z / value);

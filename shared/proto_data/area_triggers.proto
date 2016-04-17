@@ -39,6 +39,8 @@ message AreaTriggerEntry {
 	required float target_y = 14;
 	required float target_z = 15;
 	required float target_o = 16;
+	optional uint32 questid = 17;
+	optional bool tavern = 18;
 }
 
 message AreaTriggers {

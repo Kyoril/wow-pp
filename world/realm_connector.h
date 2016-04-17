@@ -141,6 +141,7 @@ namespace wowpp
 		void handleCancelAura(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleEmote(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleTextEmote(Player &sender, game::Protocol::IncomingPacket &packet);
+		void handlePetNameQuery(Player &sender, game::Protocol::IncomingPacket &packet);
 
 	private:
 

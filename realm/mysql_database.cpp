@@ -348,8 +348,8 @@ namespace wowpp
 		wowpp::MySQL::Select select(m_connection,
 							//      0     1       2       3        4        5       6        7       8    
 			fmt::format("SELECT `id`, `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`map`,"
-							//		 9       10            11            12           13		  14		15   
-								 "`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic`, `at_login` FROM `character` WHERE `account`={0} ORDER BY `id`"
+							//		 9       10            11            12           13		  14		15		  16
+								 "`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic`, `at_login`,`flags` FROM `character` WHERE `account`={0} ORDER BY `id`"
 			, accountId));
 		if (select.success())
 		{
@@ -398,6 +398,9 @@ namespace wowpp
 				entry.hairStyle = static_cast<UInt8>(bytes >> 16);
 				entry.hairColor = static_cast<UInt8>(bytes >> 24);
 				entry.facialHair = static_cast<UInt8>(bytes2 & 0xff);
+
+				row.getField(16, tmp);
+				entry.flags = static_cast<game::CharacterFlags>(tmp);
 
 				// Add to vector
 				out_characters.push_back(entry);
@@ -482,8 +485,8 @@ namespace wowpp
 			"SELECT `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`xp`, `gold`, `map`,"
 			//       10     11           12           13           14
 				   "`zone`,`position_x`,`position_y`,`position_z`,`orientation`,"
-            //       15        16       17       18       19	   20					21			  22
-				   "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`,`explored_zones`, `last_save`, `last_group` FROM `character` WHERE `id`={0} LIMIT 1"
+            //       15        16       17       18       19	   20					21			  22		 23				24
+				   "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`,`explored_zones`, `last_save`, `last_group`, `actionbars`, `flags` FROM `character` WHERE `id`={0} LIMIT 1"
 			, characterId));
 		if (select.success())
 		{
@@ -545,7 +548,10 @@ namespace wowpp
 				out_character.setByteValue(character_fields::CharacterBytes3, 0, genderId & 0x01);
 				out_character.setByteValue(character_fields::CharacterBytes3, 3, 0x00);
 
-				//TODO Character flags
+				// Character flags
+				UInt32 flags = 0;
+				row.getField(24, flags);
+				out_character.setUInt32Value(character_fields::CharacterFlags, flags);
 
 				//TODO: Init primary professions
 				out_character.setUInt32Value(character_fields::CharacterPoints_2, 10);		// Why 10?
@@ -568,6 +574,11 @@ namespace wowpp
 				row.getField(18, z);
 				row.getField(19, o);
 				out_character.setHome(mapId, math::Vector3(x, y, z), o);
+
+				// Load action bar states
+				UInt32 actionBars = 0;
+				row.getField(23, actionBars);
+				out_character.setByteValue(character_fields::FieldBytes, 2, actionBars);
 
 				String zoneBuffer;
 				row.getField(20, zoneBuffer);
@@ -673,8 +684,8 @@ namespace wowpp
 					"`unitcount1`, `unitcount2`, `unitcount3`, `unitcount4`, "
 					//		7				8				9			10
 					"`objectcount1`, `objectcount2`, `objectcount3`, `objectcount4`, "
-					//		11			12			13				14
-					"`itemcount1`, `itemcount2`, `itemcount3`, `itemcount4` "
+					//		11			12			13				14		  15
+					"`itemcount1`, `itemcount2`, `itemcount3`, `itemcount4`, `timer` "
 					"FROM `character_quests` WHERE `guid`={0}"
 					, characterId));
 				if (questSelect.success())
@@ -703,6 +714,20 @@ namespace wowpp
 						questRow.getField(index++, data.items[1]);
 						questRow.getField(index++, data.items[2]);
 						questRow.getField(index++, data.items[3]);
+						questRow.getField(index++, data.expiration);
+						
+						// Let the quest fail if it timed out
+						if ((data.status == game::quest_status::Incomplete || data.status == game::quest_status::Complete) &&
+							data.expiration > 0 &&
+							data.expiration <= GameTime(time(nullptr)))
+						{
+							data.status = game::quest_status::Failed;
+						}
+						else if (data.status == game::quest_status::Failed)
+						{
+							data.expiration = 1;
+						}
+
 						out_character.setQuestData(questId, data);
 
 						// Next row
@@ -749,19 +774,21 @@ namespace wowpp
 
 		if (!m_connection.execute(fmt::format(
 			"UPDATE `character` SET `map`={1}, `zone`={2}, `position_x`={3}, `position_y`={4}, `position_z`={5}, `orientation`={6}, `level`={7}, `xp`={8}, `gold`={9}, "
-			"`home_map`={10}, `home_x`={11}, `home_y`={12}, `home_z`={13}, `home_o`={14}, `explored_zones`='{15}', `last_save`={16}, `last_group`={17} WHERE `id`={0};"
-			, lowerGuid												// 0
-			, character.getMapId()									// 1
-			, character.getZone()									// 2
-			, location.x, location.y, location.z, o					// 3, 4, 5, 6
-			, character.getLevel()									// 7
-			, character.getUInt32Value(character_fields::Xp)		// 8
-			, character.getUInt32Value(character_fields::Coinage)	// 9
-			, homeMap												// 10
-			, homePos.x, homePos.y, homePos.z, homeO				// 11, 12, 13, 14
-			, strm.str()											// 15
-			, time(nullptr)											// 16
-			, character.getGroupId()								// 17
+			"`home_map`={10}, `home_x`={11}, `home_y`={12}, `home_z`={13}, `home_o`={14}, `explored_zones`='{15}', `last_save`={16}, `last_group`={17}, `actionbars`={18}, `flags`={19} WHERE `id`={0};"
+			, lowerGuid															// 0
+			, character.getMapId()												// 1
+			, character.getZone()												// 2
+			, location.x, location.y, location.z, o								// 3, 4, 5, 6
+			, character.getLevel()												// 7
+			, character.getUInt32Value(character_fields::Xp)					// 8
+			, character.getUInt32Value(character_fields::Coinage)				// 9
+			, homeMap															// 10
+			, homePos.x, homePos.y, homePos.z, homeO							// 11, 12, 13, 14
+			, strm.str()														// 15
+			, time(nullptr)														// 16
+			, character.getGroupId()											// 17
+			, UInt32(character.getByteValue(character_fields::FieldBytes, 2))	// 18
+			, character.getUInt32Value(character_fields::CharacterFlags)		// 19
 			)))
 		{
 			// There was an error

@@ -1,0 +1,1 @@
+ALTER TABLE `character` ADD COLUMN `actionbars` int(10) unsigned DEFAULT '0' COMMENT 'Characters visible action bars.';

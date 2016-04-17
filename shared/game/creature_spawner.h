@@ -23,6 +23,7 @@
 
 #include "common/typedefs.h"
 #include "common/countdown.h"
+#include "defines.h"
 #include "math/vector3.h"
 
 namespace wowpp
@@ -63,7 +64,8 @@ namespace wowpp
 		    UInt32 emote,
 		    float radius,
 		    bool active,
-		    bool respawn);
+		    bool respawn,
+			game::CreatureMovement movement);
 		virtual ~CreatureSpawner();
 
 		///
@@ -109,5 +111,6 @@ namespace wowpp
 		size_t m_currentlySpawned;
 		OwnedCreatures m_creatures;
 		Countdown m_respawnCountdown;
+		game::CreatureMovement m_movement;
 	};
 }

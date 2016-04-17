@@ -64,4 +64,14 @@ namespace wowpp
 	void CreatureAIState::onControlledDeath()
 	{
 	}
+
+	void CreatureAIState::onCombatMovementChanged()
+	{
+		// Does nothing
+	}
+
+	void CreatureAIState::onCreatureMovementChanged()
+	{
+		// Does nothing
+	}
 }

@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="/">
+    <file>ActiveQuestIcon.png</file>
+    <file>AvailableQuestIcon.png</file>
     <file>rotationt.png</file>
     <file>Scale.png</file>
     <file>Select.png</file>

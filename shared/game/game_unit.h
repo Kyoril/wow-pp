@@ -49,7 +49,9 @@ namespace wowpp
 			SitMediumChais	= 0x05,
 			SitHighChair	= 0x06,
 			Dead			= 0x07,
-			Kneel			= 0x08
+			Kneel			= 0x08,
+
+			Count
 		};
 	}
 
@@ -711,7 +713,6 @@ namespace wowpp
 		AuraContainer m_auras;
 		AttackSwingCallback m_swingCallback;
 		AttackingUnitSet m_attackingUnits;
-		//MechanicImmunitySet m_mechanicImmunity;
 		UInt32 m_mechanicImmunity;
 		bool m_isStunned;
 		bool m_isRooted;

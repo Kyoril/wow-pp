@@ -193,6 +193,7 @@ namespace wowpp
 			UInt8 outfitId;
 			UInt32 mapId;
 			UInt32 zoneId;
+			CharacterFlags flags;
 			math::Vector3 location;
 			float o;
 			bool cinematic;
@@ -213,6 +214,7 @@ namespace wowpp
 				, outfitId(0)
 				, mapId(0)
 				, zoneId(0)
+				, flags(character_flags::None)
 				, location(0.0f, 0.0f, 0.0f)
 				, o(0.0f)
 				, cinematic(true)
@@ -402,6 +404,7 @@ namespace wowpp
 				LogoutRequest			= 0x04B,
 				LogoutCancel			= 0x04E,
 				NameQuery				= 0x050,
+				PetNameQuery			= 0x052,
 				ItemQuerySingle			= 0x056,
 				ItemQueryMultiple		= 0x057,
 				QuestQuery				= 0x05C,
@@ -511,6 +514,9 @@ namespace wowpp
 				RequestPartyMemberStats	= 0x27F,
 				GroupRaidConvert		= 0x28E,
 				GroupAssistentLeader	= 0x28F,
+				ToggleHelm				= 0x2B9,
+				ToggleCloak				= 0x2BA,
+				SetActionBarToggles		= 0x2BF,
 				MoveFallReset			= 0x2CA,
 				CharRename				= 0x2C7,
 				MoveTimeSkipped			= 0x2CE,
@@ -549,6 +555,7 @@ namespace wowpp
 				LogoutComplete				= 0x04D,
 				LogoutCancelAck				= 0x04F,
 				NameQueryResponse			= 0x051,
+				PetNameQueryResponse		= 0x053,
 				ItemQuerySingleResponse		= 0x058,
 				ItemQueryMultipleResponse	= 0x059,
 				QuestQueryResponse			= 0x05D,
@@ -621,6 +628,7 @@ namespace wowpp
 				LootItemNotify				= 0x164,
 				LootClearMoney				= 0x165,
 				ItemPushResult				= 0x166,
+				PetSpells					= 0x179,
 				GossipMessage				= 0x17D,
 				GossipComplete				= 0x17E,
 				QuestgiverStatus			= 0x183,
@@ -1298,6 +1306,17 @@ namespace wowpp
 				UInt8 &tradeSlot,
 				UInt8 &bag,
 				UInt8 &slot
+				);
+
+			bool petNameRequest(
+				io::Reader &packet,
+				UInt32 &out_petNumber,
+				UInt64 &out_petGUID
+				);
+
+			bool setActionBarToggles(
+				io::Reader &packet,
+				UInt8 &out_actionBars
 				);
 		};
 
@@ -2203,6 +2222,16 @@ namespace wowpp
 				UInt32 prev_slot, 
 				UInt32 gold, 
 				UInt32 spell);
+			void petNameQueryResponse(
+				game::OutgoingPacket &out_packet,
+				UInt32 petNumber,
+				const String &petName,
+				UInt32 petNameTimestmap
+				);
+			
+			void petSpells(
+				game::OutgoingPacket &out_packet,
+				UInt64 petGUID);
 		};
 	}
 }

@@ -50,9 +50,11 @@ namespace wowpp
 		, m_factionTemplate(nullptr)
 		, m_lastManaUse(0)
 		, m_auras(*this)
+		, m_mechanicImmunity(0)
 		, m_isStunned(false)
 		, m_isRooted(false)
 		, m_isStealthed(false)
+		, m_standState(unit_stand_state::Stand)
 	{
 		// Resize values field
 		m_values.resize(unit_fields::UnitFieldCount, 0);
@@ -366,19 +368,15 @@ namespace wowpp
 	{
 		if (m_victim && !victim)
 		{
-			m_victimDied.disconnect();
-			m_victimDespawned.disconnect();
-
 			// Stop auto attack
 			stopAttack();
 		}
 
-		const bool needReconnect = (victim && !m_victim);
 		m_victim = victim;
 
 		// Update target value
 		setUInt64Value(unit_fields::Target, m_victim ? m_victim->getGuid() : 0);
-		if (needReconnect)
+		if (m_victim)
 		{
 			m_victimDied = m_victim->killed.connect(
 			                   std::bind(&GameUnit::onVictimKilled, this, std::placeholders::_1));
@@ -522,7 +520,7 @@ namespace wowpp
 		do
 		{
 			// Get target location
-			math::Vector3 location(victim->getLocation());
+			const math::Vector3 & location = victim->getLocation();
 
 			// Distance check
 			const float distance = getDistanceTo(*victim);
@@ -1587,12 +1585,12 @@ namespace wowpp
 
 	float GameUnit::getDodgeChance(GameUnit &attacker)
 	{
-		return 5.0f;
+		return isStunned() ? 0.0f : 5.0f;
 	}
 
 	float GameUnit::getParryChance(GameUnit &attacker)
 	{
-		return 5.0f;
+		return isStunned() ? 0.0f : 5.0f;
 	}
 
 	float GameUnit::getGlancingChance(GameUnit &attacker)
@@ -1613,7 +1611,7 @@ namespace wowpp
 
 	float GameUnit::getBlockChance()
 	{
-		if (canBlock())
+		if (canBlock() && !isStunned())
 		{
 			return 5.0f;
 		}
@@ -2160,6 +2158,12 @@ namespace wowpp
 
 	bool GameUnit::isImmuneAgainstMechanic(UInt32 mechanic) const
 	{
-		return mechanic != 0 && (m_mechanicImmunity & mechanic) != 0;
+		if (mechanic == 0)
+			return false;
+
+		if (m_mechanicImmunity == 0)
+			return false;
+
+		return (m_mechanicImmunity & (1 << mechanic)) != 0;
 	}
 }

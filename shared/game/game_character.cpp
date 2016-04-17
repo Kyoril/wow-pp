@@ -134,6 +134,34 @@ namespace wowpp
 
 		// Reset threat modifiers
 		m_threatModifier.fill(1.0f);
+
+		// Watch for own death and fail all quests that require the player to stay alive
+		killed.connect([this](GameUnit *killer)
+		{
+			bool updateQuestObjects = false;
+			for (UInt32 i = 0; i < 25; ++i)
+			{
+				auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+
+				// Find quest
+				const auto *quest = getProject().quests.getById(logId);
+				if (!quest)
+					continue;
+
+				if (quest->flags() & game::quest_flags::StayAlive)
+				{
+					if (failQuest(logId))
+					{
+						updateQuestObjects = true;
+					}
+				}
+			}
+
+			if (updateQuestObjects)
+			{
+				updateNearbyQuestObjects();
+			}
+		});
 	}
 
 	game::QuestStatus GameCharacter::getQuestStatus(UInt32 quest) const
@@ -160,6 +188,22 @@ namespace wowpp
 		if (getLevel() < entry->minlevel())
 		{
 			return game::quest_status::Unavailable;
+		}
+
+		// Check skill
+		if (entry->requiredskill() != 0)
+		{
+			UInt16 current = 0, max = 0;
+			if (!getSkillValue(entry->requiredskill(), current, max))
+			{
+				return game::quest_status::Unavailable;
+			}
+
+			if (entry->requiredskillval() > 0 &&
+				current < entry->requiredskillval())
+			{
+				return game::quest_status::Unavailable;
+			}
 		}
 
 		// Race/Class check
@@ -230,11 +274,28 @@ namespace wowpp
 				auto &data = m_quests[quest];
 				data.status = game::quest_status::Incomplete;
 
+				if (questEntry->srcspell())
+				{
+					// TODO: Maybe we should make the quest giver cast the spell, if it's a unit
+					SpellTargetMap targetMap;
+					targetMap.m_unitTarget = getGuid();
+					targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+					castSpell(std::move(targetMap), questEntry->srcspell(), -1, 0, true);
+				}
+
+				// Quest timer
+				UInt32 questTimer = 0;
+				if (questEntry->timelimit() > 0)
+				{
+					questTimer = time(nullptr) + questEntry->timelimit();
+					data.expiration = questTimer;
+				}
+
 				// Set quest log
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, quest);
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);
-				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, questTimer);
 
 				bool updateQuestObjects = false;
 
@@ -376,6 +437,134 @@ namespace wowpp
 
 			return 0;
 		}
+	}
+
+	bool GameCharacter::completeQuest(UInt32 quest)
+	{
+		// Check all quests in the quest log
+		bool updateQuestObjects = false;
+		for (UInt32 i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId != quest)
+				continue;
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end())
+				continue;
+
+			if (it->second.status != game::quest_status::Incomplete)
+				continue;
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest)
+				continue;
+
+			if (!it->second.explored)
+			{
+				if (quest->flags() & game::quest_flags::Exploration)
+				{
+					it->second.explored = true;
+				}
+			}
+
+			// Counter needed so that the right field is used
+			UInt8 reqIndex = 0;
+			for (const auto &req : quest->requirements())
+			{
+				if (req.creatureid() != 0)
+				{
+					// Get current counter
+					UInt8 counter = getByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex);
+					if (counter < req.creaturecount())
+					{
+						// Increment and update counter
+						setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex, ++counter);
+						it->second.creatures[reqIndex]++;
+					}
+				}
+				else if (req.objectid() != 0)
+				{
+					// Get current counter
+					UInt8 counter = getByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex);
+					if (counter < req.objectcount())
+					{
+						// Increment and update counter
+						setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex, ++counter);
+						it->second.creatures[reqIndex]++;
+					}
+				}
+
+				reqIndex++;
+			}
+
+			// Complete quest
+			it->second.status = game::quest_status::Complete;
+			addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+			
+			// Save quest progress
+			questDataChanged(logId, it->second);
+
+			return true;
+		}
+
+		return false;
+	}
+
+	bool GameCharacter::failQuest(UInt32 questId)
+	{
+		for (UInt32 i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId != questId)
+				continue;
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end())
+				continue;
+
+			// Failed already or not acceptable?
+			if (it->second.status == game::quest_status::Failed ||
+				it->second.status == game::quest_status::Unavailable)
+				continue;
+			
+			it->second.status = game::quest_status::Failed;
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest)
+				continue;
+
+			// Update required item cache
+			for (const auto &req : quest->requirements())
+			{
+				if (req.itemid() != 0)
+				{
+					// We needed this quest items and now no longer need them
+					if (m_inventory.getItemCount(req.itemid()) < req.itemcount())
+					{
+						m_requiredQuestItems[req.itemid()]--;
+					}
+				}
+			}
+
+			// Update quest state
+			setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Failed);
+
+			// Reset timer
+			if (getUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1) > 0)
+			{
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 1);
+			}
+
+			questDataChanged(questId, it->second);
+			return true;
+		}
+
+		return false;
 	}
 
 	bool GameCharacter::rewardQuest(UInt32 quest, UInt8 rewardChoice, std::function<void(UInt32)> callback)
@@ -608,35 +797,60 @@ namespace wowpp
 
 	bool GameCharacter::fulfillsQuestRequirements(const proto::QuestEntry &entry) const
 	{
-		if (entry.requirements_size() == 0) {
-			return true;
-		}
-
-		auto it = m_quests.find(entry.id());
-		if (it == m_quests.end()) {
+		// This is an event-driven quest which can not be simply completed. Some of these quests
+		// don't have a requirement and as such can't be completed by such
+		if (entry.flags() & game::quest_flags::PartyAccept)
+		{
 			return false;
 		}
 
+		// Check if the character has this quest entry
+		auto it = m_quests.find(entry.id());
+		if (it == m_quests.end())
+		{
+			return false;
+		}
+
+
+		// Check for exploration quests before checking for requirements, as most of these quests
+		// don't have any requirement at all and thus would pass the requirement check.
+		if (entry.flags() & game::quest_flags::Exploration)
+		{
+			// Check if this quest has been explored
+			return it->second.explored;
+		}
+
+		// Now check for quest requirements
+		if (entry.requirements_size() == 0)
+		{
+			return true;
+		}
+
+		// Now check all available quest requirements
 		UInt32 counter = 0;
 		for (const auto &req : entry.requirements())
 		{
+			// Creature kill / spell cast required
 			if (req.creatureid() != 0)
 			{
 				if (it->second.creatures[counter] < req.creaturecount()) {
 					return false;
 				}
 			}
+			// Object interaction / spell cast required
 			else if (req.objectid() != 0)
 			{
 				if (it->second.objects[counter] < req.objectcount()) {
 					return false;
 				}
 			}
+			// Item required
 			else if (req.itemid() != 0)
 			{
-				// Not enough items?
+				// Not enough items? (Don't worry, getItemCount is fast as it uses a cached value)
 				auto itemCount = m_inventory.getItemCount(req.itemid());
-				if (itemCount < req.itemcount()) {
+				if (itemCount < req.itemcount())
+				{
 					return false;
 				}
 			}
@@ -652,42 +866,53 @@ namespace wowpp
 	{
 		for (int i = 0; i < 25; ++i)
 		{
-			if (getUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0) == 0) {
+			// If this quest log slot is empty, we can stop as there is at least one
+			// free quest slot available
+			if (getUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0) == 0)
+			{
 				return false;
 			}
 		}
 
+		// No free quest slots found
 		return true;
 	}
 
 	void GameCharacter::onQuestItemAddedCredit(const proto::ItemEntry &entry, UInt32 amount)
 	{
+		// If this is set to true, all nearby objects will be updated
 		bool updateNearbyObjects = false;
 		for (int i = 0; i < 25; ++i)
 		{
+			// Check if there is a quest in that slot
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
 			if (logId == 0) {
 				continue;
 			}
 
-			// Verify quest state
+			// Check if the player really has accepted that quest
 			auto it = m_quests.find(logId);
 			if (it == m_quests.end()) {
 				continue;
 			}
 
+			// Check if the quest was already completed
 			if (it->second.status != game::quest_status::Incomplete) {
 				continue;
 			}
 
-			// Find quest
+			// Get quest template entry
 			const auto *quest = getProject().quests.getById(logId);
 			if (!quest) {
 				continue;
 			}
 
+			// If this is set to true, all requirements of this quest will be reevaluated, which costs
+			// some time. So this variable is only updated, if a quest requirement status changed between
+			// Completed and Uncomplete to save performance.
 			bool validateQuest = false;
-            
+
+			// Check every quest entry requirement
 			for (const auto &req : quest->requirements())
 			{
 				if (req.itemid() == entry.id())
@@ -710,9 +935,10 @@ namespace wowpp
 				}
 			}
 
+			// Check if the quest requirements need to be reevaluated
 			if (validateQuest)
 			{
-				// Found it: Complete quest if completable
+				// Quest is fulfilled now
 				if (fulfillsQuestRequirements(*quest))
 				{
 					it->second.status = game::quest_status::Complete;
@@ -722,6 +948,8 @@ namespace wowpp
 			}
 		}
 
+		// Finally, update all nearby objects if needed to. We do this after we checked all
+		// quests, so that we will update these objects only ONCE
 		if (updateNearbyObjects)
 		{
 			updateNearbyQuestObjects();
@@ -885,6 +1113,87 @@ namespace wowpp
 		}
 	}
 
+	void GameCharacter::onQuestObjectCredit(UInt32 spellId, WorldObject & target)
+	{
+		// Check all quests in the quest log
+		bool updateQuestObjects = false;
+		for (UInt32 i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == 0) {
+				continue;
+			}
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end()) {
+				continue;
+			}
+
+			if (it->second.status != game::quest_status::Incomplete) {
+				continue;
+			}
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest) {
+				continue;
+			}
+
+			// Counter needed so that the right field is used
+			UInt8 reqIndex = 0;
+			for (const auto &req : quest->requirements())
+			{
+				if (req.objectid() == target.getEntry().id() &&
+					(req.spellcast() == 0 || req.spellcast() == spellId))
+				{
+					// Get current counter
+					UInt8 counter = getByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex);
+					if (counter < req.objectcount())
+					{
+						// Increment and update counter
+						setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex, ++counter);
+						it->second.objects[reqIndex]++;
+
+						// Fire signal to update UI
+						questKillCredit(*quest, target.getGuid(), (target.getEntry().id() | 0x80000000), counter, req.objectcount());
+
+						// Check if this completed the quest
+						if (fulfillsQuestRequirements(*quest))
+						{
+							for (const auto &req : quest->requirements())
+							{
+								if (req.itemid())
+								{
+									m_requiredQuestItems[req.itemid()]--;
+								}
+							}
+
+							// Complete quest
+							it->second.status = game::quest_status::Complete;
+							addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+						}
+
+						// Save quest progress
+						questDataChanged(logId, it->second);
+						updateQuestObjects = true;
+					}
+
+					// Continue with next quest, as multiple quests could require the same
+					// creature kill credit
+					break;
+				}
+
+				reqIndex++;
+			}
+		}
+
+		if (updateQuestObjects)
+		{
+			updateNearbyQuestObjects();
+		}
+	}
+
 	bool GameCharacter::needsQuestItem(UInt32 itemId) const
 	{
 		auto it = m_requiredQuestItems.find(itemId);
@@ -1002,8 +1311,8 @@ namespace wowpp
 		}
 
 		if (data.status == game::quest_status::Incomplete ||
-		        data.status == game::quest_status::Complete ||
-		        data.status == game::quest_status::Failed)
+		    data.status == game::quest_status::Complete ||
+		    data.status == game::quest_status::Failed)
 		{
 			for (UInt32 i = 0; i < 25; ++i)
 			{
@@ -1012,10 +1321,7 @@ namespace wowpp
 				{
 					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, quest);
 					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
-					if (data.status == game::quest_status::Complete) {
-						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
-					}
-					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);
+					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, static_cast<UInt32>(data.expiration));
 					UInt8 offset = 0;
 					for (auto &req : entry->requirements())
 					{
@@ -1030,10 +1336,13 @@ namespace wowpp
 
 						offset++;
 					}
-					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
 					if (data.status == game::quest_status::Complete)
 					{
 						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+					}
+					else if (data.status == game::quest_status::Failed)
+					{
+						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Failed);
 					}
 					break;
 				}
@@ -1113,17 +1422,19 @@ namespace wowpp
 		for (int i = 0; i < spell.effects_size(); ++i)
 		{
 			const auto &effect = spell.effects(i);
-			if (effect.type() == game::spell_effects::Parry)
+			switch (effect.type())
 			{
-				m_canParry = true;
-			}
-			else if (effect.type() == game::spell_effects::Block)
-			{
-				m_canBlock = true;
-			}
-			else if (effect.type() == game::spell_effects::DualWield)
-			{
-				m_canDualWield = true;
+				case game::spell_effects::Parry:
+					m_canParry = true;
+					break;
+				case game::spell_effects::Block:
+					m_canBlock = true;
+					break;
+				case game::spell_effects::DualWield:
+					m_canDualWield = true;
+					break;
+				default:
+					break;
 			}
 		}
 
@@ -1250,7 +1561,7 @@ namespace wowpp
 		case game::skill_category::Profession:
 			{
 				current = 1;
-				max = 1;
+				max = 75;
 				break;
 			}
 
@@ -1291,6 +1602,27 @@ namespace wowpp
 		}
 
 		ELOG("Maximum number of skill for character reached!");
+	}
+
+	bool GameCharacter::getSkillValue(UInt32 skillId, UInt16 & out_current, UInt16 & out_max) const
+	{
+		const UInt32 maxSkills = 127;
+		for (UInt32 i = 0; i < maxSkills; ++i)
+		{
+			// Unit field values
+			const UInt32 skillIndex = character_fields::SkillInfo1_1 + (i * 3);
+
+			// Get current skill
+			if (getUInt32Value(skillIndex) == skillId)
+			{
+				const UInt32 tmp = getUInt32Value(skillIndex + 1);
+				out_current = UInt16(UInt32(tmp) & 0x0000FFFF);
+				out_max = UInt16((UInt32(tmp) >> 16) & 0x0000FFFF);
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	bool GameCharacter::hasSkill(UInt32 skillId) const

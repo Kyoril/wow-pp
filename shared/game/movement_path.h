@@ -31,6 +31,8 @@ namespace wowpp
 	public:
 
 		typedef GameTime Timestamp;
+		/// Maps a position vector to a timestamp.
+		typedef std::map<Timestamp, math::Vector3> PositionMap;
 
 	public:
 
@@ -52,13 +54,12 @@ namespace wowpp
 		/// @returns The position of the unit at the given timestamp or a null vector 
 		///          if this is an empty path.
 		virtual math::Vector3 getPosition(Timestamp timestamp) const;
+		/// 
+		virtual const PositionMap &getPositions() const { return m_position; }
 		/// Prints some debug infos to the log.
 		virtual void printDebugInfo();
 
 	private:
-
-		/// Maps a position vector to a timestamp.
-		typedef std::map<Timestamp, math::Vector3> PositionMap;
 
 		/// Stored position values with timestamp information.
 		PositionMap m_position;

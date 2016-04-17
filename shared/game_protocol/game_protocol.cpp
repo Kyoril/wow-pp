@@ -163,7 +163,7 @@ namespace wowpp
 					        << io::write<float>(entry.location.z)				// z
 					        << io::write<NetUInt32>(0x00);						// guild guid
 
-					UInt32 charFlags = character_flags::None;
+					UInt32 charFlags = UInt32(entry.flags);
 					if (entry.atLogin & atlogin_flags::Rename)
 					{
 						charFlags |= character_flags::Rename;
@@ -772,11 +772,8 @@ namespace wowpp
 						        << io::write<NetUInt64>(speaker->getGuid())
 						        << io::write<NetUInt32>(0x00)
 						        << io::write<NetUInt32>(speakerName.size() + 1)
-						        << io::write_range(speakerName) << io::write<NetUInt8>(0);
-
-						UInt64 listenerGuid = 0x00;
-						out_packet
-						        << io::write<NetUInt64>(listenerGuid)
+						        << io::write_range(speakerName) << io::write<NetUInt8>(0)
+						        << io::write<NetUInt64>(0)				// listener guid
 						        << io::write<NetUInt32>(message.size() + 1)
 						        << io::write_range(message) << io::write<NetUInt8>(0)
 						        << io::write<NetUInt8>(0);				// Chat-Tag always 0 since it's a creature which can't be AFK, DND etc.
@@ -784,25 +781,23 @@ namespace wowpp
 						return;
 					}
 				default:
-					break;
-				}
-
-				out_packet
-				        << io::write<NetUInt64>(targetGUID)
-				        << io::write<NetUInt32>(0);
-
-				if (type == chat_msg::Channel)
-				{
 					out_packet
-					        << io::write_range(channelname) << io::write<NetUInt8>(0);
-				}
+						<< io::write<NetUInt64>(targetGUID)
+						<< io::write<NetUInt32>(0);
 
-				out_packet
-				        << io::write<NetUInt64>(targetGUID)
-				        << io::write<NetUInt32>(message.size() + 1)
-				        << io::write_range(message) << io::write<NetUInt8>(0)
-				        << io::write<NetUInt8>(0);			// Chat tag: 1: AFK  2: DND  4: GM
-				out_packet.finish();
+					if (type == chat_msg::Channel)
+					{
+						out_packet
+							<< io::write_range(channelname) << io::write<NetUInt8>(0);
+					}
+					out_packet
+						<< io::write<NetUInt64>(targetGUID)
+						<< io::write<NetUInt32>(message.size() + 1)
+						<< io::write_range(message) << io::write<NetUInt8>(0)
+						<< io::write<NetUInt8>(0);			// Chat tag: 1: AFK  2: DND  4: GM
+					out_packet.finish();
+					return;
+				}
 			}
 
 			void movePacket(game::OutgoingPacket &out_packet, UInt16 opCode, UInt64 guid, const MovementInfo &movement)
@@ -1049,7 +1044,7 @@ namespace wowpp
 				out_packet
 				        << io::write<NetUInt32>(spell.id())
 				        << io::write<NetUInt16>(castFlags)
-				        << io::write<NetUInt32>(getCurrentTime());
+				        << io::write<NetUInt32>(mTimeStamp());
 
 				// TODO: Hit information
 				{
@@ -2736,6 +2731,15 @@ namespace wowpp
 					else if (character.getLevel() < spell.reqlevel() && spell.reqlevel() > 0) {
 						state = RedSpell;
 					}
+					if (spell.reqskill() > 0)
+					{
+						UInt16 cur = 0, max = 0;
+						if (!character.getSkillValue(spell.reqskill(), cur, max) ||
+							cur < spell.reqskillval())
+						{
+							state = RedSpell;
+						}
+					}
 					// TODO More checks
 					out_packet
 					        << io::write<NetUInt32>(spell.spell())		// Spell ID
@@ -3396,6 +3400,36 @@ namespace wowpp
 						out_packet << io::write<NetUInt32>(0);
 					}
 				}
+
+				out_packet.finish();
+			}
+
+			void petNameQueryResponse(game::OutgoingPacket & out_packet, UInt32 petNumber, const String & petName, UInt32 petNameTimestmap)
+			{
+				out_packet.start(game::server_packet::PetNameQueryResponse);
+				out_packet
+					<< io::write<NetUInt32>(petNumber)
+					<< io::write_range(petName) << io::write<NetUInt8>(0)
+					<< io::write<NetUInt32>(petNameTimestmap)
+					<< io::write<NetUInt8>(0)
+					;
+				out_packet.finish();
+			}
+			void petSpells(game::OutgoingPacket & out_packet, UInt64 petGUID)
+			{
+				out_packet.start(game::server_packet::PetSpells);
+				out_packet
+					<< io::write<NetUInt64>(petGUID);
+				const std::vector<UInt8> data =
+				{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
+					0x02, 0x00, 0x00, 0x07, 0x01, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x07, 0x26, 0x0C, 0x00, 0x81,
+					0x00, 0x00, 0x00, 0x81, 0x00, 0x00, 0x00, 0x81, 0x00, 0x00, 0x00, 0x81, 0x02, 0x00, 0x00, 0x06,
+					0x01, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x06, 0x06, 0x26, 0x0C, 0x00, 0xC1, 0x28, 0x49, 0x00,
+					0x00, 0x31, 0x49, 0x00, 0x00, 0x71, 0x8B, 0x00, 0x00, 0x34, 0x49, 0x00, 0x00, 0x6F, 0x8B, 0x00,
+					0x00, 0x00
+				};
+				out_packet << io::write_range(data);
 				out_packet.finish();
 			}
 		}
@@ -4220,7 +4254,18 @@ namespace wowpp
 					>> io::read<NetUInt8>(slot);
 			}
 			
+			bool petNameRequest(io::Reader & packet, UInt32 & out_petNumber, UInt64 & out_petGUID)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_petNumber)
+					>> io::read<NetUInt64>(out_petGUID);
+			}
 
+			bool setActionBarToggles(io::Reader & packet, UInt8 & out_actionBars)
+			{
+				return packet
+					>> io::read<NetUInt8>(out_actionBars);
+			}
 		}
 
 		wowpp::game::WhoResponseEntry::WhoResponseEntry(const GameCharacter & character)

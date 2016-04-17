@@ -84,7 +84,7 @@ namespace wowpp
 		{
 			if (unitTarget)
 			{
-				if (unitTarget->isImmuneAgainstMechanic(1 << spell.mechanic()))
+				if (unitTarget->isImmuneAgainstMechanic(spell.mechanic()))
 				{
 					return std::make_pair(game::spell_cast_result::FailedPreventedByMechanic, nullptr);
 				}
@@ -105,7 +105,7 @@ namespace wowpp
 		}
 
 		// Check power
-		Int32 powerCost = calculatePowerCost(spell);
+		Int32 powerCost = itemGuid ? 0 : calculatePowerCost(spell);
 		if (powerCost > 0)
 		{
 			if (spell.powertype() == game::power_type::Health)

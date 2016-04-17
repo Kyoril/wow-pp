@@ -67,6 +67,8 @@ namespace wowpp
 		virtual void onLeave() override;
 		///
 		virtual void onDamage(GameUnit &attacker) override;
+		/// 
+		virtual void onCombatMovementChanged() override;
 
 	private:
 

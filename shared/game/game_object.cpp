@@ -108,7 +108,7 @@ namespace wowpp
 			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
-			m_updated = true;
+			markForUpdate();
 		}
 	}
 
@@ -128,7 +128,7 @@ namespace wowpp
 			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
-			m_updated = true;
+			markForUpdate();
 		}
 	}
 
@@ -147,7 +147,7 @@ namespace wowpp
 			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
-			m_updated = true;
+			markForUpdate();
 		}
 	}
 
@@ -160,7 +160,7 @@ namespace wowpp
 		UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 		changed |= 1 << (index & 0x7);
 
-		m_updated = true;
+		markForUpdate();
 	}
 
 	void GameObject::addFlag(UInt16 index, UInt32 flag)
@@ -178,7 +178,7 @@ namespace wowpp
 			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
-			m_updated = true;
+			markForUpdate();
 		}
 	}
 
@@ -196,7 +196,19 @@ namespace wowpp
 			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
-			m_updated = true;
+			markForUpdate();
+		}
+	}
+
+	void GameObject::markForUpdate()
+	{
+		if (!m_updated)
+		{
+			if (m_worldInstance)
+			{
+				m_worldInstance->addUpdateObject(*this);
+				m_updated = true;
+			}
 		}
 	}
 
@@ -216,7 +228,7 @@ namespace wowpp
 			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
-			m_updated = true;
+			markForUpdate();
 		}
 	}
 
@@ -248,7 +260,7 @@ namespace wowpp
 			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
 			changed |= 1 << (index & 0x7);
 
-			m_updated = true;
+			markForUpdate();
 		}
 	}
 
@@ -326,19 +338,33 @@ namespace wowpp
 				}
 			case unit_fields::MaxHealth:
 				{
-					writer << io::write<NetUInt32>(100);
+					if (getUInt64Value(unit_fields::SummonedBy) == receiver.getGuid())
+					{
+						writer << io::write<NetUInt32>(m_values[index]);
+					}
+					else
+					{
+						writer << io::write<NetUInt32>(100);
+					}
 					break;
 				}
 			case unit_fields::Health:
 				{
-					float maxHealth = static_cast<float>(m_values[unit_fields::MaxHealth]);
-					UInt32 healthPct = static_cast<UInt32>(::ceil(static_cast<float>(m_values[index]) / maxHealth * 100.0f));
-
-					// Prevent display of 0
-					if (healthPct == 0 && m_values[index] > 0) {
-						healthPct = 1;
+					if (getUInt64Value(unit_fields::SummonedBy) == receiver.getGuid())
+					{
+						writer << io::write<NetUInt32>(m_values[index]);
 					}
-					writer << io::write<NetUInt32>(healthPct);
+					else
+					{
+						float maxHealth = static_cast<float>(m_values[unit_fields::MaxHealth]);
+						UInt32 healthPct = static_cast<UInt32>(::ceil(static_cast<float>(m_values[index]) / maxHealth * 100.0f));
+
+						// Prevent display of 0
+						if (healthPct == 0 && m_values[index] > 0) {
+							healthPct = 1;
+						}
+						writer << io::write<NetUInt32>(healthPct);
+					}
 					break;
 				}
 			default:
@@ -648,6 +674,12 @@ namespace wowpp
 			{
 				updateType = 0x03;		// CREATE_OBJECT_2
 			}
+			if (object.isCreature() && 
+				object.getUInt64Value(unit_fields::CreatedBy) == receiver.getGuid())
+			{
+				updateType = 0x03;		// CREATE_OBJECT_2
+				ILOG("PET CREATE: CREATE_OBJECT_2");
+			}
 			if (object.getTypeId() == object_type::GameObject)
 			{
 				UInt32 objType = object.getUInt32Value(world_object_fields::TypeID);
@@ -663,6 +695,7 @@ namespace wowpp
 					break;
 				}
 			}
+
 			UInt8 updateFlags = 0x10 | 0x20 | 0x40;			// UPDATEFLAG_ALL | UPDATEFLAG_LIVING | UPDATEFLAG_HAS_POSITION
 			UInt8 objectTypeId = object.getTypeId();		//
 			if (objectTypeId == object_type::GameObject)

@@ -66,6 +66,17 @@ namespace wowpp
 			case trigger_event::OnHealthDroppedBelow:
 				return QString("Owning units health dropped below %1%")
 					.arg(getTriggerEventData(e, 0, withLinks));
+			case trigger_event::OnReachedTriggeredTarget:
+				return "Owning unit reached triggered movement target";
+			case trigger_event::OnSpellHit:
+				return QString("Owning unit was hit by spell %1")
+					.arg(getTriggerEventData(e, 0, withLinks));
+			case trigger_event::OnSpellAuraRemoved:
+				return QString("Owning unit lost aura of spell %1")
+					.arg(getTriggerEventData(e, 0, withLinks));
+			case trigger_event::OnEmote:
+				return QString("Owning unit was targeted by emote %1")
+					.arg(getTriggerEventData(e, 0, withLinks));
 			default:
 				return "(INVALID EVENT)";
 			}
@@ -134,6 +145,40 @@ namespace wowpp
 			case trigger_actions::Delay:
 				return QString("Common - Delay execution for %1 ms")
 					.arg(getTriggerActionData(action, 0, withLinks));
+			case trigger_actions::MoveTo:
+				return QString("Unit - Make %1 move to location (%2, %3, %4)")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(getTriggerActionData(action, 0, withLinks))
+					.arg(getTriggerActionData(action, 1, withLinks))
+					.arg(getTriggerActionData(action, 2, withLinks));
+			case trigger_actions::SetCombatMovement:
+				return QString("Unit - Set combat movement of %1 to (%2)")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(getTriggerActionData(action, 0, withLinks));
+			case trigger_actions::StopAutoAttack:
+				return QString("Unit - Make %1 stop auto attacking")
+					.arg(getTriggerTargetName(action, withLinks));
+			case trigger_actions::CancelCast:
+				return QString("Unit - %1 cancel it's current cast")
+					.arg(getTriggerTargetName(action, withLinks));
+			case trigger_actions::SetStandState:
+				return QString("Unit - Set stand state of %1 to %2")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(getTriggerActionData(action, 0, withLinks));
+			case trigger_actions::SetVirtualEquipmentSlot:
+				return QString("Unit - Set virtual equipment slot %2 of %1 to %3")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(getTriggerActionData(action, 0, withLinks))
+					.arg(actionDataEntry(project.items, action, 1, withLinks, true));
+			case trigger_actions::SetPhase:
+				return QString("Unit - Set combat phase of %1 to %2")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(getTriggerActionData(action, 0, withLinks));
+			case trigger_actions::SetSpellCooldown:
+				return QString("Unit - Set %1's cooldown of spell %2 to %3 ms")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(actionDataEntry(project.spells, action, 0, withLinks))
+					.arg(getTriggerActionData(action, 1, withLinks));
 			default:
 				return QString("UNKNOWN TRIGGER ACTION");
 			}

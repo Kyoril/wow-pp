@@ -651,6 +651,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(CancelAura)
 			WOWPP_HANDLE_PACKET(Emote)
 			WOWPP_HANDLE_PACKET(TextEmote)
+			WOWPP_HANDLE_PACKET(PetNameQuery)
 #undef WOWPP_HANDLE_PACKET
 
 			// Client packets handled by player
@@ -702,6 +703,9 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(AcceptTrade)
 			WOWPP_HANDLE_PLAYER_PACKET(SetTradeGold)
 			WOWPP_HANDLE_PLAYER_PACKET(SetTradeItem)
+			WOWPP_HANDLE_PLAYER_PACKET(SetActionBarToggles)
+			WOWPP_HANDLE_PLAYER_PACKET(ToggleHelm)
+			WOWPP_HANDLE_PLAYER_PACKET(ToggleCloak)
 
 #undef WOWPP_HANDLE_PLAYER_PACKET
 
@@ -1141,15 +1145,23 @@ namespace wowpp
 		}
 
 		// Check if this is a teleport trigger
+
+		if (trigger->has_questid() && trigger->questid() > 0)
+		{
+			// Handle quest exploration
+			sender.getCharacter()->completeQuest(trigger->questid());
+		}
+
+		if (trigger->has_tavern() && trigger->tavern())
+		{
+			// Handle tavern
+		}
+
 		// TODO: Optimize this, create a trigger type
 		if (trigger->targetmap() != 0 || trigger->target_x() != 0.0f || trigger->target_y() != 0.0f || trigger->target_z() != 0.0f || trigger->target_o() != 0.0f)
 		{
 			// Teleport
 			character->teleport(trigger->targetmap(), math::Vector3(trigger->target_x(), trigger->target_y(), trigger->target_z()), trigger->target_o());
-		}
-		else
-		{
-			DLOG("TODO: Unknown trigger type '" << trigger->name() << "'...");
 		}
 	}
 
@@ -1323,6 +1335,31 @@ namespace wowpp
 				watcher->sendPacket(emotePacket, buffer);
 			}
 		});
+	}
+
+	void RealmConnector::handlePetNameQuery(Player & sender, game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 petGUID;
+		UInt32 petNumber;
+		if (!game::client_read::petNameRequest(packet, petNumber, petGUID))
+		{
+			return;
+		}
+
+		GameObject *object = sender.getWorldInstance().findObjectByGUID(petGUID);
+		if (!object)
+		{
+			return;
+		}
+
+		if (!object->isCreature())
+		{
+			return;
+		}
+
+		const String &name = reinterpret_cast<GameUnit*>(object)->getName();
+		sender.sendProxyPacket(
+			std::bind(game::server_write::petNameQueryResponse, std::placeholders::_1, petNumber, std::cref(name), 0));
 	}
 
 	void RealmConnector::sendCharacterGroupUpdate(GameCharacter &character, const std::vector<UInt64> &nearbyMembers)

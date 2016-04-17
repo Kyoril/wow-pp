@@ -32,6 +32,19 @@ namespace wowpp
 {
 	namespace editor
 	{
+		namespace transform_tool
+		{
+			enum Type
+			{
+				Select,
+				Translate,
+				Rotate,
+				Scale
+			};
+		}
+
+		typedef transform_tool::Type TransformTool;
+
 		class MainWindow;		// main_window.h
 		class ObjectEditor;		// object_editor.h
 		class TriggerEditor;	// trigger_editor.h
@@ -49,6 +62,10 @@ namespace wowpp
 			typedef TemplateListModel<proto::UnitManager> UnitListModel;
 			typedef TemplateListModel<proto::QuestManager> QuestListModel;
 			typedef TemplateListModel<proto::ObjectManager> ObjectListModel;
+
+		public:
+
+			boost::signals2::signal<void(TransformTool)> transformToolChanged;
 
 		public:
 
@@ -73,6 +90,8 @@ namespace wowpp
 			proto::Project &getProject() { return m_project; }
 			Configuration &getConfiguration() { return m_configuration; }
 			Selection &getSelection() { return m_selection; }
+			const TransformTool &getTransformTool() const { return m_transformTool; }
+			void setTransformTool(TransformTool tool);
 
 		public slots:
 
@@ -106,6 +125,7 @@ namespace wowpp
 			std::unique_ptr<TriggerListModel> m_triggerListModel;
 			std::unique_ptr<QuestListModel> m_questListModel;
 			std::unique_ptr<ObjectListModel> m_objectListModel;
+			TransformTool m_transformTool;
 			bool m_changed;
 		};
 	}

@@ -26,6 +26,7 @@
 #include "world_instance.h"
 #include "tiled_unit_watcher.h"
 #include "unit_finder.h"
+#include "unit_mover.h"
 #include "universe.h"
 #include "log/default_log_levels.h"
 
@@ -34,11 +35,10 @@ namespace wowpp
 	CreatureAIIdleState::CreatureAIIdleState(CreatureAI &ai)
 		: CreatureAIState(ai)
 		, m_aggroDelay(ai.getControlled().getTimers())
+		, m_nextMove(ai.getControlled().getTimers())
 	{
-		m_aggroDelay.ended.connect([this]()
-		{
-			if (m_aggroWatcher) m_aggroWatcher->start();
-		});
+		m_aggroDelay.ended.connect(std::bind(&CreatureAIIdleState::onStartAggroWatcher, this));
+		m_nextMove.ended.connect(std::bind(&CreatureAIIdleState::onChooseNextMove, this));
 	}
 
 	CreatureAIIdleState::~CreatureAIIdleState()
@@ -58,6 +58,30 @@ namespace wowpp
 
 		math::Vector3 location(controlled.getLocation());
 
+		// Check if it is a pet
+		UInt64 ownerGUID = controlled.getUInt64Value(unit_fields::SummonedBy);
+		if (ownerGUID != 0)
+		{
+			// Find owner
+			auto *owner = worldInstance->findObjectByGUID(ownerGUID);
+			if (owner)
+			{
+				m_onOwnerMoved = owner->moved.connect([this](GameObject &obj, const math::Vector3 &oldPosition, float oldRotation)
+				{
+					const auto &loc = obj.getLocation();
+					if (loc != oldPosition)
+					{
+						// Make this unit follow it's owner
+						getControlled().getMover().moveTo(loc);
+					}
+				});
+			}
+		}
+		else
+		{
+			onCreatureMovementChanged();
+		}
+
 		// If the unit is passive, it should not attack by itself
 		if (!(controlled.getUInt32Value(unit_fields::UnitFlags) & game::unit_flags::Passive))
 		{
@@ -66,7 +90,7 @@ namespace wowpp
 			m_aggroWatcher->visibilityChanged.connect([this](GameUnit & unit, bool isVisible) -> bool
 			{
 				auto &controlled = getControlled();
-				if (unit.getGuid() == controlled.getGuid())
+				if (&unit == &controlled)
 				{
 					return false;
 				}
@@ -171,7 +195,69 @@ namespace wowpp
 
 	void CreatureAIIdleState::onLeave()
 	{
+		m_aggroDelay.cancel();
+		m_nextMove.cancel();
+
+		onTargetReached.disconnect();
+		m_onMoved.disconnect();
+		m_onOwnerMoved.disconnect();
 		m_aggroWatcher.reset();
+	}
+
+	void CreatureAIIdleState::onCreatureMovementChanged()
+	{
+		if (getControlled().getMovementType() == game::creature_movement::Random)
+		{
+			onTargetReached = getControlled().getMover().targetReached.connect([this]() {
+				m_nextMove.setEnd(getCurrentTime() + (constants::OneSecond * 4));
+			});
+
+			m_nextMove.setEnd(getCurrentTime() + (constants::OneSecond * 2));
+		}
+	}
+
+	void CreatureAIIdleState::onMoved(GameObject & object, const math::Vector3 & oldLocation, float oldRotation)
+	{
+		const auto &loc = object.getLocation();
+		if (loc != oldLocation)
+		{
+			if (m_aggroWatcher)
+			{
+				m_aggroWatcher->setShape(Circle(loc.x, loc.y, 40.0f));
+			}
+		}
+	}
+
+	void CreatureAIIdleState::onChooseNextMove()
+	{
+		auto *world = getControlled().getWorldInstance();
+		if (world)
+		{
+			auto *mapData = world->getMapData();
+			if (mapData)
+			{
+				math::Vector3 targetPoint;
+				if (mapData->getRandomPointOnGround(getAI().getHome().position, 8.0f, targetPoint))
+				{
+					getControlled().getMover().moveTo(targetPoint, getControlled().getSpeed(movement_type::Walk));
+					return;
+				}
+			}
+		}
+
+		// Try again in a few seconds
+		m_nextMove.setEnd(getCurrentTime() + (constants::OneSecond * 3));
+	}
+
+	void CreatureAIIdleState::onStartAggroWatcher()
+	{
+		// Watch for movement
+		m_onMoved = getControlled().moved.connect(
+			std::bind(&CreatureAIIdleState::onMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+		if (m_aggroWatcher)
+		{
+			m_aggroWatcher->start();
+		}
 	}
 
 }

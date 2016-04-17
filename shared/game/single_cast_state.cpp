@@ -408,7 +408,7 @@ namespace wowpp
 
 		const std::weak_ptr<SingleCastState> weakThis = strongThis;
 		const UInt32 spellAttributes = m_spell.attributes(0);
-		if (spellAttributes & game::spell_attributes::OnNextSwing/* || spellAttributes & game::spell_attributes::OnNextSwing_2*/)
+		if (spellAttributes & game::spell_attributes::OnNextSwing)
 		{
 			// Execute on next weapon swing
 			m_cast.getExecuter().setAttackSwingCallback([strongThis, this]() -> bool
@@ -416,12 +416,14 @@ namespace wowpp
 				if (!strongThis->consumePower())
 				{
 					m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedNoPower);
+					strongThis->sendEndCast(false);
 					return false;
 				}
 
 				if (!strongThis->consumeItem())
 				{
 					m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedItemNotFound);
+					strongThis->sendEndCast(false);
 					return false;
 				}
 
@@ -679,6 +681,24 @@ namespace wowpp
 			m_affectedTargets.insert(targetUnit->shared_from_this());
 
 			targetUnit->dealDamage(targetUnit->getUInt32Value(unit_fields::Health), m_spell.schoolmask(), &caster, 0.0f);
+		}
+	}
+
+	void SingleCastState::spellEffectDummy(const proto::SpellEffect & effect)
+	{
+		if (effect.targeta() == game::targets::UnitTargetAny)
+		{
+			// Get unit target by target map
+			GameUnit *unitTarget = nullptr;
+			if (!m_target.resolvePointers(*m_cast.getExecuter().getWorldInstance(), &unitTarget, nullptr, nullptr, nullptr))
+			{
+				return;
+			}
+
+			if (unitTarget)
+			{
+				m_affectedTargets.insert(unitTarget->shared_from_this());
+			}
 		}
 	}
 
@@ -1419,21 +1439,22 @@ namespace wowpp
 			m_affectedTargets.insert(targetUnit->shared_from_this());
 
 			UInt32 totalPoints = 0;
+			game::SpellMissInfo missInfo = game::spell_miss_info::None;
 			bool spellFailed = false;
 
 			if (hitInfos[i] == game::hit_info::Miss)
 			{
-				spellFailed = true;
+				missInfo = game::spell_miss_info::Miss;
 			}
 			else if (victimStates[i] == game::victim_state::IsImmune)
 			{
-				spellFailed = true;
+				missInfo = game::spell_miss_info::Immune;
 			}
 			else if (victimStates[i] == game::victim_state::Normal)
 			{
 				if (resists[i] == 100.0f)
 				{
-					spellFailed = true;
+					missInfo = game::spell_miss_info::Resist;
 				}
 				else
 				{
@@ -1451,26 +1472,20 @@ namespace wowpp
 				}
 			}
 
-			if (spellFailed)
+			if (missInfo != game::spell_miss_info::None)
 			{
-				if (log2(school) != game::spell_school::Normal)	//melee auras doesn't send a "resisted" packet as they can miss or be dodged...
+				m_completedEffectsExecution[targetUnit->getGuid()] = completedEffects.connect([this, &caster, targetUnit, school, missInfo]()
 				{
-					m_completedEffectsExecution[targetUnit->getGuid()] = completedEffects.connect([this, &caster, targetUnit, school]()
-					{
-						wowpp::sendPacketFromCaster(caster,
-													std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
-															  targetUnit->getGuid(),
-															  caster.getGuid(),
-															  m_spell.id(),
-															  1,
-															  school,
-															  0,
-															  1,	//resisted
-															  false,
-															  0,
-															  false));
-					});	// End connect
-				}
+					std::map<UInt64, game::SpellMissInfo> missedTargets;
+					missedTargets[targetUnit->getGuid()] = missInfo;
+
+					wowpp::sendPacketFromCaster(caster,
+						std::bind(game::server_write::spellLogMiss, std::placeholders::_1,
+							m_spell.id(),
+							caster.getGuid(),
+							0,
+							std::cref(missedTargets)));
+				});	// End connect
 			}
 			else if (targetUnit->isAlive())
 			{
@@ -1599,7 +1614,6 @@ namespace wowpp
 
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 
-		//UInt32 questId = effect.miscvaluea();
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
@@ -1607,7 +1621,7 @@ namespace wowpp
 
 			if (targetUnit->isGameCharacter())
 			{
-                // TODO
+				reinterpret_cast<GameCharacter*>(targetUnit)->completeQuest(effect.miscvaluea());
 			}
 		}
 	}
@@ -1680,6 +1694,7 @@ namespace wowpp
 		namespace se = game::spell_effects;
 		std::vector<std::pair<UInt32, EffectHandler>> effectMap {
 			//ordered pairs to avoid 25% resists for binary spells like frostnova
+			{se::Dummy,					std::bind(&SingleCastState::spellEffectDummy, this, std::placeholders::_1) },
 			{se::InstantKill,			std::bind(&SingleCastState::spellEffectInstantKill, this, std::placeholders::_1)},
 			{se::PowerDrain,			std::bind(&SingleCastState::spellEffectDrainPower, this, std::placeholders::_1)},
 			{se::Heal,					std::bind(&SingleCastState::spellEffectHeal, this, std::placeholders::_1)},
@@ -1702,6 +1717,7 @@ namespace wowpp
 			{se::ApplyAreaAuraParty,	std::bind(&SingleCastState::spellEffectApplyAreaAuraParty, this, std::placeholders::_1)},
 			{se::Dispel,				std::bind(&SingleCastState::spellEffectDispel, this, std::placeholders::_1)},
 			{se::Summon,				std::bind(&SingleCastState::spellEffectSummon, this, std::placeholders::_1)},
+			{se::SummonPet,				std::bind(&SingleCastState::spellEffectSummonPet, this, std::placeholders::_1) },
 			{se::ScriptEffect,			std::bind(&SingleCastState::spellEffectScript, this, std::placeholders::_1)},
 			{se::AttackMe,				std::bind(&SingleCastState::spellEffectAttackMe, this, std::placeholders::_1)},
 			{se::NormalizedWeaponDmg,	std::bind(&SingleCastState::spellEffectNormalizedWeaponDamage, this, std::placeholders::_1)},
@@ -1713,7 +1729,7 @@ namespace wowpp
 			{se::SchoolDamage,			std::bind(&SingleCastState::spellEffectSchoolDamage, this, std::placeholders::_1)}
 		};
 
-		// Make sure that the executer
+		// Make sure that the executer exists after all effects have been executed
 		std::weak_ptr<GameObject> weakExecuter(m_cast.getExecuter().shared_from_this());
 		for (std::vector<std::pair<UInt32, EffectHandler>>::iterator it = effectMap.begin(); it != effectMap.end(); ++it)
 		{
@@ -1753,6 +1769,12 @@ namespace wowpp
 					auto strongTarget = target.lock();
 					if (strongTarget)
 					{
+						if (strongTarget->isCreature())
+						{
+							std::static_pointer_cast<GameCreature>(strongTarget)->raiseTrigger(
+								trigger_event::OnSpellHit, { m_spell.id() });
+						}
+
 						reinterpret_cast<GameCharacter&>(*strongUnit).onQuestSpellCastCredit(m_spell.id(), *strongTarget);
 					}
 				}
@@ -1806,7 +1828,7 @@ namespace wowpp
 
 	bool SingleCastState::consumePower()
 	{
-		const Int32 totalCost = m_cast.calculatePowerCost(m_spell);
+		const Int32 totalCost = m_itemGuid ? 0 : m_cast.calculatePowerCost(m_spell);
 		if (totalCost > 0)
 		{
 			if (m_spell.powertype() == game::power_type::Health)
@@ -2094,6 +2116,7 @@ namespace wowpp
 		if (m_cast.getExecuter().isGameCharacter())
 		{
 			GameCharacter *character = reinterpret_cast<GameCharacter *>(&m_cast.getExecuter());
+			character->onQuestObjectCredit(m_spell.id(), *obj);
 			character->objectInteraction(*obj);
 		}
 
@@ -2198,8 +2221,6 @@ namespace wowpp
 		float o = executer.getOrientation();
 		math::Vector3 location(executer.getLocation());
 
-		// TODO: We need to have access to unit entries
-
 		auto spawned = world->spawnSummonedCreature(*entry, location, o);
 		if (!spawned)
 		{
@@ -2214,6 +2235,54 @@ namespace wowpp
 		{
 			spawned->threatened(*executer.getVictim(), 0.0001f);
 		}
+	}
+
+	void SingleCastState::spellEffectSummonPet(const proto::SpellEffect & effect)
+	{
+		GameUnit &executer = m_cast.getExecuter();
+
+		// Check if caster already have a pet
+		UInt64 petGUID = executer.getUInt64Value(unit_fields::Summon);
+		if (petGUID != 0)
+		{
+			// Already have a pet!
+			return;
+		}
+
+		// Get the pet unit entry
+		const auto *entry = executer.getProject().units.getById(effect.miscvaluea());
+		if (!entry)
+		{
+			WLOG("Can't summon pet - missing entry");
+			return;
+		}
+
+		auto *world = executer.getWorldInstance();
+		if (!world)
+		{
+			return;
+		}
+
+		float o = executer.getOrientation();
+		math::Vector3 location(executer.getLocation());
+
+		auto spawned = world->spawnSummonedCreature(*entry, location, o);
+		if (!spawned)
+		{
+			ELOG("Could not spawn creature!");
+			return;
+		}
+
+		spawned->setUInt64Value(unit_fields::SummonedBy, executer.getGuid());
+		spawned->setFactionTemplate(executer.getFactionTemplate());
+		spawned->setLevel(executer.getLevel());		// TODO
+		executer.setUInt64Value(unit_fields::Summon, spawned->getGuid());
+		spawned->setUInt32Value(unit_fields::CreatedBySpell, m_spell.id());
+		spawned->setUInt64Value(unit_fields::CreatedBy, executer.getGuid());
+		spawned->setUInt32Value(unit_fields::NpcFlags, 0);
+		spawned->setUInt32Value(unit_fields::Bytes1, 0);
+		spawned->setUInt32Value(unit_fields::PetNumber, guidLowerPart(spawned->getGuid()));
+		world->addGameObject(*spawned);
 	}
 
 	void SingleCastState::spellEffectCharge(const proto::SpellEffect &effect)

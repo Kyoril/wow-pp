@@ -90,6 +90,11 @@ namespace wowpp
 		});
 		m_onControlledMoved = controlled.moved.connect([this](GameObject &, const math::Vector3 & position, float rotation)
 		{
+			if (!getControlled().isCombatMovementEnabled())
+			{
+				return;
+			}
+
 			if (m_lastSpellEntry != nullptr && m_lastSpell != nullptr)
 			{
 				// Check if we are able to cast that spell now, and if so: Do it!
@@ -160,6 +165,15 @@ namespace wowpp
 			// If we are no longer stunned, update victim again
 			if (!stunned)
 			{
+				if (!getControlled().isCombatMovementEnabled())
+				{
+					// Try to continue last movement if we aren't there already
+					auto &mover = getControlled().getMover();
+					mover.moveTo(mover.getTarget());
+
+					return;
+				}
+
 				chooseNextAction();
 			}
 			else
@@ -181,6 +195,18 @@ namespace wowpp
 		});
 		m_onRootChanged = getControlled().rootStateChanged.connect([this](bool rooted)
 		{
+			if (!rooted)
+			{
+				if (!getControlled().isCombatMovementEnabled())
+				{
+					// Try to continue last movement if we aren't there already
+					auto &mover = getControlled().getMover();
+					mover.moveTo(mover.getTarget());
+
+					return;
+				}
+			}
+
 			chooseNextAction();
 		});
 
@@ -457,6 +483,12 @@ namespace wowpp
 
 	void CreatureAICombatState::chaseTarget(GameUnit &target)
 	{
+		// Skip movement in case of trigger
+		if (!getControlled().isCombatMovementEnabled())
+		{
+			return;
+		}
+
 		const float combatRange = getControlled().getMeleeReach() + target.getMeleeReach();
 
 		math::Vector3 currentLocation;
@@ -489,6 +521,11 @@ namespace wowpp
 	void CreatureAICombatState::chooseNextAction()
 	{
 		GameCreature &controlled = getControlled();
+		if (!controlled.isCombatMovementEnabled())
+		{
+			return;
+		}
+
 		m_onVictimMoved.disconnect();
 
 		// First, determine our current victim
@@ -769,6 +806,20 @@ namespace wowpp
 			}
 
 			getControlled().addFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::OtherTagger);
+		}
+	}
+
+	void CreatureAICombatState::onCombatMovementChanged()
+	{
+		// Maybe react on this state change
+		if (getControlled().isCombatMovementEnabled())
+		{
+			chooseNextAction();
+		}
+		else
+		{
+			auto &controlled = getControlled();
+			controlled.setVictim(nullptr);
 		}
 	}
 }

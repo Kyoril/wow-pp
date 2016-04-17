@@ -43,6 +43,7 @@
 #include "shared/proto_data/zones.pb.h"
 #include "shared/proto_data/quests.pb.h"
 #include "shared/proto_data/items.pb.h"
+#include "shared/proto_data/item_sets.pb.h"
 #include "shared/proto_data/races.pb.h"
 #include "shared/proto_data/classes.pb.h"
 #include "shared/proto_data/levels.pb.h"
@@ -68,6 +69,7 @@ namespace wowpp
 		typedef TemplateManager<wowpp::proto::Vendors, wowpp::proto::VendorEntry> VendorManager;
 		typedef TemplateManager<wowpp::proto::Talents, wowpp::proto::TalentEntry> TalentManager;
 		typedef TemplateManager<wowpp::proto::Items, wowpp::proto::ItemEntry> ItemManager;
+		typedef TemplateManager<wowpp::proto::ItemSets, wowpp::proto::ItemSetEntry> ItemSetManager;
 		typedef TemplateManager<wowpp::proto::Classes, wowpp::proto::ClassEntry> ClassManager;
 		typedef TemplateManager<wowpp::proto::Races, wowpp::proto::RaceEntry> RaceManager;
 		typedef TemplateManager<wowpp::proto::Levels, wowpp::proto::LevelEntry> LevelManager;
@@ -96,6 +98,7 @@ namespace wowpp
 			VendorManager vendors;
 			TalentManager talents;
 			ItemManager items;
+			ItemSetManager itemSets;
 			ClassManager classes;
 			RaceManager races;
 			LevelManager levels;
@@ -148,6 +151,7 @@ namespace wowpp
 				managers.push_back(ManagerEntry("vendors", vendors));
 				managers.push_back(ManagerEntry("talents", talents));
 				managers.push_back(ManagerEntry("items", items));
+				managers.push_back(ManagerEntry("item_sets", itemSets));
 				managers.push_back(ManagerEntry("classes", classes));
 				managers.push_back(ManagerEntry("races", races));
 				managers.push_back(ManagerEntry("levels", levels));
@@ -201,6 +205,7 @@ namespace wowpp
 				managers.push_back(ManagerEntry("vendors", "vendors", vendors));
 				managers.push_back(ManagerEntry("talents", "talents", talents));
 				managers.push_back(ManagerEntry("items", "items", items));
+				managers.push_back(ManagerEntry("item_sets", "item_sets", itemSets));
 				managers.push_back(ManagerEntry("classes", "classes", classes));
 				managers.push_back(ManagerEntry("races", "races", races));
 				managers.push_back(ManagerEntry("levels", "levels", levels));

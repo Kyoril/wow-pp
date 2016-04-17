@@ -295,6 +295,9 @@ namespace wowpp
 		void handleAcceptTrade(game::Protocol::IncomingPacket &packet);
 		void handleSetTradeGold(game::Protocol::IncomingPacket &packet);
 		void handleSetTradeItem(game::Protocol::IncomingPacket &packet);
+		void handleSetActionBarToggles(game::Protocol::IncomingPacket &packet);
+		void handleToggleHelm(game::Protocol::IncomingPacket &packet);
+		void handleToggleCloak(game::Protocol::IncomingPacket &packet);
 
 	private:
 

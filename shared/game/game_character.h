@@ -751,6 +751,9 @@ namespace wowpp
 		void removeSkill(UInt32 skillId);
 		/// Updates the skill values for a given skill of this character.
 		void setSkillValue(UInt32 skillId, UInt16 current, UInt16 maximum);
+		/// Gets the current skill value and max value of a given spell.
+		/// @returns false if the character doesn't have this skill.
+		bool getSkillValue(UInt32 skillId, UInt16 &out_current, UInt16 &out_max) const;
 		/// Returns true if the character knows a specific skill.
 		bool hasSkill(UInt32 skillId) const;
 		/// Gets the GUID of the current combo point target.
@@ -791,6 +794,11 @@ namespace wowpp
 		/// Abandons the specified quest.
 		/// @returns false if this wasn't possible (maybe because the quest wasn't in the players quest log).
 		bool abandonQuest(UInt32 quest);
+		/// Updates the status of a specified quest to "completed". This does not work for quests that require
+		/// a certain item.
+		bool completeQuest(UInt32 quest);
+		/// Makes a certain quest fail.
+		bool failQuest(UInt32 quest);
 		/// Rewards the given quest (gives items, xp and saves quest status).
 		bool rewardQuest(UInt32 quest, UInt8 rewardChoice, std::function<void(UInt32)> callback);
 		/// Called when a quest-related creature was killed.
@@ -805,6 +813,8 @@ namespace wowpp
 		void onQuestItemRemovedCredit(const proto::ItemEntry &entry, UInt32 amount);
 		/// Called when a quest item was removed from the inventory.
 		void onQuestSpellCastCredit(UInt32 spellId, GameObject &target);
+		/// Called when a character interacted with a quest object.
+		void onQuestObjectCredit(UInt32 spellId, WorldObject &target);
 		/// Determines if the player needs a specific item for a quest.
 		bool needsQuestItem(UInt32 itemId) const;
 		/// Modifies the character spell modifiers by applying or misapplying a new mod.
@@ -893,6 +903,7 @@ namespace wowpp
 		std::map<UInt32, Int8> m_requiredQuestItems;
 		SpellModsByOp m_spellModsByOp;
 		std::array<float, 7> m_threatModifier;
+		std::vector<Countdown> m_questTimeouts;
 	};
 
 	/// Serializes a GameCharacter to an io::Writer object for the wow++ protocol.

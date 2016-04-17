@@ -60,6 +60,8 @@ namespace wowpp
 				}
 			}
 		}
+
+		m_previousShape = getShape();
 	}
 
 	TileArea TiledUnitFinder::TiledUnitWatcher::getTileIndexArea(const Circle &shape) const
@@ -103,14 +105,15 @@ namespace wowpp
 
 		{
 			const auto i = m_connections.find(&tile);
+			assert(i != m_connections.end());
+
 			i->second.disconnect();
 			m_connections.erase(i);
 		}
 
 		for (GameUnit *const unit : tile.getUnits().getElements())
 		{
-			math::Vector3 location(unit->getLocation());
-
+			const math::Vector3 &location = unit->getLocation();
 			if (getShape().isPointInside(game::Point(location.x, location.y)))
 			{
 				if (visibilityChanged(*unit, false))
@@ -125,7 +128,7 @@ namespace wowpp
 
 	void TiledUnitFinder::TiledUnitWatcher::onUnitMoved(GameUnit &unit)
 	{
-		math::Vector3 location(unit.getLocation());
+		const math::Vector3 &location = unit.getLocation();
 
 		const bool isInside = getShape().isPointInside(game::Point(location.x, location.y));
 		visibilityChanged(unit, isInside);

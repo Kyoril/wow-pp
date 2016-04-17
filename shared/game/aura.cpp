@@ -68,6 +68,13 @@ namespace wowpp
 			m_caster->isGameCharacter())
 		{
 			reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(spell_mod_op::Duration, m_spell.id(), m_duration);
+			if (m_effect.aura() == game::aura_type::PeriodicDamage ||
+				m_effect.aura() == game::aura_type::PeriodicDamagePercent)
+			{
+				float basePoints = m_basePoints;
+				reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(spell_mod_op::Dot, m_spell.id(), basePoints);
+				m_basePoints = static_cast<UInt32>(ceilf(basePoints));
+			}
 		}
 
 		// Adjust amount of total ticks
@@ -239,11 +246,16 @@ namespace wowpp
 		if (m_effect.aura() == aura::AddTargetTrigger)
 		{
 			procChance = m_effect.basepoints();
-			WLOG("triggerProc chance: " << procChance);
 		}
 		else
 		{
 			procChance = m_spell.procchance();
+		}
+
+		if (m_caster && m_caster->isGameCharacter())
+		{
+			reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(
+				spell_mod_op::ChanceOfSuccess, m_spell.id(), procChance);
 		}
 
 		if (procChance < 100)
@@ -581,9 +593,13 @@ namespace wowpp
 					modelId = 4613;
 					break;
 				}
-			//				case 17:		// Battle Stance
-			//				case 18:		// Defensive Stance
-			//				case 19:		// Berserker Stance
+			case 17:		// Battle stance
+			case 18:		// Defensive stance
+			case 19:		// Berserker stance
+				{
+					powerType = game::power_type::Rage;
+					break;
+				}
 			case 27:		// Epic flight form
 				{
 					modelId = (isAlliance ? 21243 : 21244);
@@ -606,25 +622,83 @@ namespace wowpp
 				m_target.setUInt32Value(unit_fields::DisplayId, modelId);
 			}
 
-			if (powerType != game::power_type::Mana)
-			{
-				m_target.setByteValue(unit_fields::Bytes0, 3, powerType);
-			}
-
 			m_target.setByteValue(unit_fields::Bytes2, 3, form);
 
-			// Reset rage and energy if not a rogue (TODO: Maybe find a better way to do this, but this is needed because
-			// stealth for rogues is handled as a shape shift in order to get a new action bar)
-			if (m_target.getClass() != game::char_class::Rogue)
+			// Reset rage and energy if power type changed. This also prevents rogues from loosing their
+			// energy when entering or leaving stealth mode
+			if (m_target.getByteValue(unit_fields::Bytes0, 3) != powerType)
 			{
+				m_target.setByteValue(unit_fields::Bytes0, 3, powerType);
 				m_target.setUInt32Value(unit_fields::Power2, 0);
 				m_target.setUInt32Value(unit_fields::Power4, 0);
+			}
+
+			// Talent procs
+			switch (form)
+			{
+			// Druid: Furor
+			case 1:			// Cat
+			case 5:			// Bear
+			case 8:
+				{
+					UInt32 ProcChance = 0;
+					m_target.getAuras().forEachAuraOfType(game::aura_type::Dummy, [&ProcChance](Aura &aura) -> bool
+					{
+						switch (aura.getSpell().id())
+						{
+							// Furor ranks
+							case 17056:	// Rank 1
+							case 17058:	// Rank 2
+							case 17059:	// Rank 3
+							case 17060:	// Rank 4
+							case 17061:	// Rank 5
+								ProcChance = aura.getBasePoints();
+								return false;
+							default:
+								return true;
+						}
+					});
+
+					if (ProcChance > 0)
+					{
+						std::uniform_int_distribution<UInt32> procDist(1, 100);
+						if (procDist(randomGenerator) <= ProcChance)
+						{
+							if (form == 1)	// Cat
+							{
+								SpellTargetMap targetMap;
+								targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+								targetMap.m_unitTarget = m_target.getGuid();
+								m_target.castSpell(targetMap, 17099, -1, 0, true);
+							}
+							else	// Bears
+							{
+								SpellTargetMap targetMap;
+								targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+								targetMap.m_unitTarget = m_target.getGuid();
+								m_target.castSpell(targetMap, 17057, -1, 0, true);
+							}
+						}
+					}
+				}
+				break;
+			// TODO: Warrior
+			case 17:		// Battle stance
+			case 18:		// Defensive stance
+			case 19:		// Berserker stance
+				m_target.setUInt32Value(unit_fields::Power2, 0);
+				break;
 			}
 		}
 		else
 		{
 			m_target.setUInt32Value(unit_fields::DisplayId, m_target.getUInt32Value(unit_fields::NativeDisplayId));
-			m_target.setByteValue(unit_fields::Bytes0, 3, m_target.getClassEntry()->powertype());
+			if (m_target.getByteValue(unit_fields::Bytes0, 3) != m_target.getClassEntry()->powertype())
+			{
+				m_target.setByteValue(unit_fields::Bytes0, 3, m_target.getClassEntry()->powertype());
+				m_target.setUInt32Value(unit_fields::Power2, 0);
+				m_target.setUInt32Value(unit_fields::Power4, 0);
+			}
 			m_target.setByteValue(unit_fields::Bytes2, 3, 0);
 		}
 
@@ -1005,10 +1079,13 @@ namespace wowpp
 
 	bool Aura::isPositive(const proto::SpellEntry &spell, const proto::SpellEffect &effect)
 	{
+		// Passive spells are always considered positive
+		if (spell.attributes(0) & game::spell_attributes::Passive)
+			return true;
+
 		// Negative attribute
-		if (spell.attributes(0) & 0x04000000) {
+		if (spell.attributes(0) & game::spell_attributes::Negative)
 			return false;
-		}
 
 		switch (effect.aura())
 		{
@@ -1536,8 +1613,8 @@ namespace wowpp
 
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Attack) != 0)
 		{
-			m_targetStartedAttacking = m_target.startedAttacking.connect(
-			[&]() {
+			m_targetStartedAttacking = m_target.doneMeleeAttack.connect(
+			[&](GameUnit*, game::VictimState) {
 				m_destroy(*this);
 			});
 		}

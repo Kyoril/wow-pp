@@ -79,6 +79,18 @@ namespace wowpp
 			}
 		}
 
+		void MainWindow::showEvent(QShowEvent * qEvent)
+		{
+			QMainWindow::showEvent(qEvent);
+
+			// Automatically deleted since it's a QObject
+			m_unitFilter = new QSortFilterProxyModel;
+			m_unitFilter->setSourceModel(m_application.getUnitListModel());
+
+			m_objectFilter = new QSortFilterProxyModel;
+			m_objectFilter->setSourceModel(m_application.getObjectListModel());
+		}
+
 		void MainWindow::readSettings()
 		{
 			QSettings settings("WoW++", "Wow++ Editor");
@@ -93,7 +105,22 @@ namespace wowpp
 
 		void MainWindow::on_Movement_triggered(QAction * action)
 		{
-			ILOG("Triggered " << action->objectName().toStdString());
+			if (action == m_ui->actionSelect)
+			{
+				m_application.setTransformTool(transform_tool::Select);
+			}
+			else if (action == m_ui->actionTranslate)
+			{
+				m_application.setTransformTool(transform_tool::Translate);
+			}
+			else if (action == m_ui->actionRotate)
+			{
+				m_application.setTransformTool(transform_tool::Rotate);
+			}
+			else if (action == m_ui->actionScale)
+			{
+				m_application.setTransformTool(transform_tool::Scale);
+			}
 		}
 
 		void MainWindow::on_actionDelete_triggered()
@@ -110,6 +137,27 @@ namespace wowpp
 			}
 
 			selection.clear();
+		}
+
+		void MainWindow::on_comboBox_currentIndexChanged(int index)
+		{
+			switch (index)
+			{
+				case 1:
+					m_ui->unitPaletteView->setModel(m_unitFilter);
+					break;
+				case 2:
+					m_ui->unitPaletteView->setModel(m_objectFilter);
+					break;
+				default:
+					m_ui->unitPaletteView->setModel(nullptr);
+					break;
+			}
+		}
+
+		void MainWindow::on_actionUnit_Palette_triggered()
+		{
+			m_ui->unitPalette->show();
 		}
 
 		void MainWindow::on_actionLoadMap_triggered()
@@ -148,9 +196,17 @@ namespace wowpp
 					new WorldEditor(m_application, *sceneMgr, *camera, *entry, m_application.getProject()));
 				m_ogreWindow->setScene(std::move(scene));
 
-				if (entry->id() == 0)
+				if (entry->id() == 1)
 				{
-					camera->setPosition(3043.45f, 681.295f, 66.8132f);
+					camera->setPosition(6516.0f, 448.0f, 17.0f);
+				}
+				else if (entry->id() == 0)
+				{
+					camera->setPosition(1762.19995f, -1244.80005f, 62.2191010f);
+				}
+				else if (entry->id() == 530)
+				{
+					camera->setPosition(8719.53f, -6657.67f, 72.7551f);
 				}
 			}
 		}

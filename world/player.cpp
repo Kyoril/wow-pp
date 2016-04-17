@@ -31,6 +31,7 @@
 #include "game/game_creature.h"
 #include "game/game_world_object.h"
 #include "trade_data.h"
+#include "game/unit_mover.h"
 
 using namespace std;
 
@@ -549,6 +550,20 @@ namespace wowpp
 			{
 				m_character->castSpell(target, spell->id(), -1, 0, true);
 			}
+			else
+			{
+				for (auto &eff : spell->effects())
+				{
+					if (eff.type() == game::spell_effects::Skill)
+					{
+						const auto *skill = m_project.skills.getById(eff.miscvaluea());
+						if (skill)
+						{
+							m_character->addSkill(*skill);
+						}
+					}
+				}
+			}
 		}
 
 		// Notify realm about this for post-spawn packets
@@ -660,67 +675,14 @@ namespace wowpp
 
 		auto &grid = m_instance.getGrid();
 
-		// Spawn ourself for new watchers
-		forEachTileInSightWithout(
-			grid,
-			newTile.getPosition(),
-			oldTile.getPosition(),
-			[this](VisibilityTile &tile)
-		{
-			for(auto * subscriber : tile.getWatchers().getElements())
-			{
-				auto *character = subscriber->getControlledObject();
-				if (!character)
-					continue;
-
-				// Create spawn message blocks
-				std::vector<std::vector<char>> spawnBlocks;
-				createUpdateBlocks(*m_character, *character, spawnBlocks);
-
-				std::vector<char> buffer;
-				io::VectorSink sink(buffer);
-				game::Protocol::OutgoingPacket packet(sink);
-				game::server_write::compressedUpdateObject(packet, spawnBlocks);
-
-				assert(subscriber != this);
-				subscriber->sendPacket(packet, buffer);
-			}
-
-			for (auto *object : tile.getGameObjects().getElements())
-			{
-				if (!object->canSpawnForCharacter(*m_character))
-				{
-					continue;
-				}
-
-				std::vector<std::vector<char>> createBlock;
-				createUpdateBlocks(*object, *m_character, createBlock);
-
-				this->sendProxyPacket(
-					std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(createBlock)));
-			}
-		});
-
-		// Despawn ourself for old watchers
+		// Despawn old objects
 		auto guid = m_character->getGuid();
 		forEachTileInSightWithout(
 			grid,
 			oldTile.getPosition(),
 			newTile.getPosition(),
-			[guid, this](VisibilityTile &tile)
+			[this](VisibilityTile &tile)
 		{
-			// Create the chat packet
-			std::vector<char> buffer;
-			io::VectorSink sink(buffer);
-			game::Protocol::OutgoingPacket packet(sink);
-			game::server_write::destroyObject(packet, guid, false);
-
-			for (auto * subscriber : tile.getWatchers().getElements())
-			{
-				assert(subscriber != this);
-				subscriber->sendPacket(packet, buffer);
-			}
-
 			for (auto *object : tile.getGameObjects().getElements())
 			{
 				if (!object->canSpawnForCharacter(*m_character))
@@ -730,6 +692,34 @@ namespace wowpp
 
 				this->sendProxyPacket(
 					std::bind(game::server_write::destroyObject, std::placeholders::_1, object->getGuid(), false));
+			}
+		});
+
+		// Spawn new objects
+		forEachTileInSightWithout(
+			grid,
+			newTile.getPosition(),
+			oldTile.getPosition(),
+			[this](VisibilityTile &tile)
+		{
+			for (auto *obj : tile.getGameObjects().getElements())
+			{
+				if (!obj->canSpawnForCharacter(*m_character))
+				{
+					continue;
+				}
+
+				std::vector<std::vector<char>> createBlock;
+				createUpdateBlocks(*obj, *m_character, createBlock);
+
+				this->sendProxyPacket(
+					std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(createBlock)));
+
+				// Send movement packets
+				if (obj->isCreature() || obj->isGameCharacter())
+				{
+					reinterpret_cast<GameUnit*>(obj)->getMover().sendMovementPackets(*this);
+				}
 			}
 		});
 
@@ -1187,6 +1177,7 @@ namespace wowpp
 
 		if (!m_loot)
 		{
+			WLOG("Player is not looting anything");
 			return;
 		}
 
@@ -1195,6 +1186,7 @@ namespace wowpp
 		auto *world = m_character->getWorldInstance();
 		if (!world)
 		{
+			WLOG("Player not in world");
 			return;
 		}
 
@@ -1202,6 +1194,7 @@ namespace wowpp
 		UInt32 lootGold = m_loot->getGold();
 		if (lootGold == 0)
 		{
+			WLOG("No gold to loot");
 			return;
 		}
 
@@ -1209,6 +1202,7 @@ namespace wowpp
 		std::vector<GameCharacter*> recipients;
 		if (m_lootSource->getTypeId() == object_type::Unit)
 		{
+			// If looting a creature, loot has to be shared between nearby group members
 			GameCreature *creature = reinterpret_cast<GameCreature*>(m_lootSource);
 			creature->forEachLootRecipient([&recipients](GameCharacter &recipient)
 			{
@@ -1224,8 +1218,8 @@ namespace wowpp
 		}
 		else
 		{
-			WLOG("Unsupported loot object for gold loot");
-			return;
+			// We will be the only recipient
+			recipients.push_back(m_character.get());
 		}
 
 		// Reward with gold
@@ -1549,6 +1543,18 @@ namespace wowpp
 
 		// Get object location
 		math::Vector3 location(m_character->getLocation());
+
+		// Player started swimming
+		if ((info.moveFlags & game::movement_flags::Swimming) != 0 &&
+			(m_character->getMovementInfo().moveFlags & game::movement_flags::Swimming) == 0)
+		{
+			m_character->getAuras().removeAllAurasDueToInterrupt(game::spell_aura_interrupt_flags::NotAboveWater);
+		}
+		else if ((info.moveFlags & game::movement_flags::Swimming) == 0 &&
+			(m_character->getMovementInfo().moveFlags & game::movement_flags::Swimming) != 0)
+		{
+			m_character->getAuras().removeAllAurasDueToInterrupt(game::spell_aura_interrupt_flags::NotUnderWater);
+		}
 
 		// Store movement information
 		m_character->setMovementInfo(info);
@@ -2340,6 +2346,10 @@ namespace wowpp
 		// Send the actual loot data (TODO: Determine loot type)
 		auto guid = source.getGuid();
 		auto lootType = game::loot_type::Corpse;
+		if (!isItemGUID(guid))
+		{
+			m_character->getAuras().removeAurasByType(game::aura_type::Mounted);
+		}
 		sendProxyPacket(
 			std::bind(game::server_write::lootResponse, std::placeholders::_1, guid, lootType, std::cref(loot)));
 	}
@@ -2948,6 +2958,11 @@ namespace wowpp
 			return;
 		}
 
+		if (!m_character)
+		{
+			return;
+		}
+
 		auto *worldInstance = m_character->getWorldInstance();
 		if (!worldInstance)
 		{
@@ -3186,5 +3201,41 @@ namespace wowpp
 				gold, 
 				0
 				));
+	}
+
+	void Player::handleSetActionBarToggles(game::Protocol::IncomingPacket & packet)
+	{
+		UInt8 actionBars;
+		if (!(game::client_read::setActionBarToggles(packet, actionBars)))
+		{
+			return;
+		}
+
+		// Save action bars
+		m_character->setByteValue(character_fields::FieldBytes, 2, actionBars);
+	}
+
+	void Player::handleToggleHelm(game::Protocol::IncomingPacket & packet)
+	{
+		if (m_character->getUInt32Value(character_fields::CharacterFlags) & 1024)
+		{
+			m_character->removeFlag(character_fields::CharacterFlags, 1024);
+		}
+		else
+		{
+			m_character->addFlag(character_fields::CharacterFlags, 1024);
+		}
+	}
+
+	void Player::handleToggleCloak(game::Protocol::IncomingPacket & packet)
+	{
+		if (m_character->getUInt32Value(character_fields::CharacterFlags) & 2048)
+		{
+			m_character->removeFlag(character_fields::CharacterFlags, 2048);
+		}
+		else
+		{
+			m_character->addFlag(character_fields::CharacterFlags, 2048);
+		}
 	}
 }

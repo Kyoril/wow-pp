@@ -111,6 +111,22 @@ namespace wowpp
 		setState(std::move(state));
 	}
 
+	void CreatureAI::onCombatMovementChanged()
+	{
+		if (m_state)
+		{
+			m_state->onCombatMovementChanged();
+		}
+	}
+
+	void CreatureAI::onCreatureMovementChanged()
+	{
+		if (m_state)
+		{
+			m_state->onCreatureMovementChanged();
+		}
+	}
+
 	void CreatureAI::setHome(Home home)
 	{
 		m_home = std::move(home);
@@ -146,6 +162,9 @@ namespace wowpp
 
 					if (unit.isInCombat())
 						return true;
+
+					if (!controlled.isInLineOfSight(unit))
+						return false;
 
 					const auto &threatFaction = threat.getFactionTemplate();
 					const auto &unitFaction = unit.getFactionTemplate();

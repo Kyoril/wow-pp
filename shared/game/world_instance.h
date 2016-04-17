@@ -153,6 +153,10 @@ namespace wowpp
 		IdGenerator<UInt64> &getItemIdGenerator() {
 			return m_itemIdGenerator;
 		}
+		/// 
+		void addUpdateObject(GameObject &object);
+		/// 
+		void removeUpdateObject(GameObject &object);
 
 		/// Calls a specific callback method for every game object added to the world.
 		/// An object can be everything, from a player over a creature to a chest.
@@ -189,5 +193,6 @@ namespace wowpp
 		std::map<String, WorldObjectSpawner *> m_objectSpawnsByName;
 		SummonedCreatures m_creatureSummons;
 		Map *m_map;
+		std::set<GameObject*> m_objectUpdates;
 	};
 }

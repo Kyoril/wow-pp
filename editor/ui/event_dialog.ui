@@ -135,6 +135,26 @@
        <string>Unit - On Health Dropped Below</string>
       </property>
      </item>
+     <item>
+      <property name="text">
+       <string>Unit - On Reached Triggered Target</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Unit - On Spell Hit</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Unit - On Spell Aura Removed</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Unit - On Emote</string>
+      </property>
+     </item>
     </widget>
    </item>
    <item>

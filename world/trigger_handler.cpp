@@ -36,6 +36,8 @@
 #include "binary_io/vector_sink.h"
 #include "binary_io/writer.h"
 #include "game_protocol/game_protocol.h"
+#include "game/unit_mover.h"
+#include "game/game_creature.h"
 #include "common/make_unique.h"
 
 namespace wowpp
@@ -91,6 +93,14 @@ namespace wowpp
 			WOWPP_HANDLE_TRIGGER_ACTION(SetSpawnState)
 			WOWPP_HANDLE_TRIGGER_ACTION(SetRespawnState)
 			WOWPP_HANDLE_TRIGGER_ACTION(CastSpell)
+			WOWPP_HANDLE_TRIGGER_ACTION(MoveTo)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetCombatMovement)
+			WOWPP_HANDLE_TRIGGER_ACTION(StopAutoAttack)
+			WOWPP_HANDLE_TRIGGER_ACTION(CancelCast)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetStandState)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetVirtualEquipmentSlot)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetPhase)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetSpellCooldown)
 #undef WOWPP_HANDLE_TRIGGER_ACTION
 
 				case trigger_actions::Delay:
@@ -189,8 +199,8 @@ namespace wowpp
 		game::server_write::messageChat(
 			packet, 
 			game::chat_msg::MonsterSay, 
-			game::language::Universal, 
-			"", 
+			game::language::Common,
+			"",
 			0, 
 			getActionText(action, 0), 
 			reinterpret_cast<GameUnit*>(target)
@@ -427,7 +437,187 @@ namespace wowpp
 		reinterpret_cast<GameUnit*>(caster)->castSpell(std::move(targetMap), spell->id());
 	}
 
-	UInt32 TriggerHandler::getActionData(const proto::TriggerAction &action, UInt32 index) const
+	void TriggerHandler::handleMoveTo(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context.owner);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_MOVE_TO: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature())
+		{
+			WLOG("TRIGGER_ACTION_MOVE_TO: Needs a creature target, but target is no unit - action ignored");
+			return;
+		}
+
+		auto &mover = reinterpret_cast<GameUnit*>(target)->getMover();
+		boost::signals2::connection reached = mover.targetReached.connect_extended([target](const boost::signals2::connection &conn) {
+			// Raise reached target trigger
+			reinterpret_cast<GameCreature*>(target)->raiseTrigger(trigger_event::OnReachedTriggeredTarget);
+
+			// This slot shall be executed only once
+			conn.disconnect();
+		});
+		mover.moveTo(
+			math::Vector3(static_cast<float>(getActionData(action, 0)), static_cast<float>(getActionData(action, 1)), static_cast<float>(getActionData(action, 2))));
+	}
+
+	void TriggerHandler::handleSetCombatMovement(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context.owner);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_SET_COMBAT_MOVEMENT: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature())
+		{
+			WLOG("TRIGGER_ACTION_SET_COMBAT_MOVEMENT: Needs a unit target, but target is no creature - action ignored");
+			return;
+		}
+
+		// Update combat movement setting
+		reinterpret_cast<GameCreature*>(target)->setCombatMovement(
+			getActionData(action, 0) != 0);
+	}
+
+	void TriggerHandler::handleStopAutoAttack(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context.owner);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_STOP_AUTO_ATTACK: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature() && !target->isGameCharacter())
+		{
+			WLOG("TRIGGER_ACTION_STOP_AUTO_ATTACK: Needs a unit target - action ignored");
+			return;
+		}
+
+		// Stop auto attack
+		reinterpret_cast<GameUnit*>(target)->stopAttack();
+	}
+
+	void TriggerHandler::handleCancelCast(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context.owner);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_CANCEL_CAST: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature() && !target->isGameCharacter())
+		{
+			WLOG("TRIGGER_ACTION_CANCEL_CAST: Needs a unit target - action ignored");
+			return;
+		}
+
+		reinterpret_cast<GameUnit*>(target)->cancelCast(game::spell_interrupt_flags::None);
+	}
+
+	void TriggerHandler::handleSetStandState(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context.owner);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_SET_STAND_STATE: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature() && !target->isGameCharacter())
+		{
+			WLOG("TRIGGER_ACTION_SET_STAND_STATE: Needs a unit target - action ignored");
+			return;
+		}
+
+		Int32 data = getActionData(action, 0);
+		if (data < 0 || data >= unit_stand_state::Count)
+		{
+			WLOG("TRIGGER_ACTION_SET_STAND_STATE: Invalid stand state (" << data << ")");
+			return;
+		}
+
+		reinterpret_cast<GameUnit*>(target)->setStandState(static_cast<UnitStandState>(data));
+	}
+
+	void TriggerHandler::handleSetVirtualEquipmentSlot(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context.owner);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_SET_VIRTUAL_EQUIPMENT_SLOT: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature() && !target->isGameCharacter())
+		{
+			WLOG("TRIGGER_ACTION_SET_VIRTUAL_EQUIPMENT_SLOT: Needs a unit target - action ignored");
+			return;
+		}
+
+		Int32 slot = getActionData(action, 0);
+		if (slot < 0 || slot > 2)
+		{
+			ELOG("TRIGGER_ACTION_SET_VIRTUAL_EQUIPMENT_SLOT: Invalid equipment slot (" << slot << ")");
+			return;
+		}
+
+		Int32 item = getActionData(action, 1);
+		if (item > 0)
+		{
+			auto *itemEntry = m_project.items.getById(item);
+			if (itemEntry)
+			{
+				reinterpret_cast<GameCreature*>(target)->setVirtualItem(slot, itemEntry);
+			}
+			else
+			{
+				ELOG("TRIGGER_ACTION_SET_VIRTUAL_EQUIPMENT_SLOT: Could not find item " << item);
+			}
+		}
+		else
+		{
+			reinterpret_cast<GameCreature*>(target)->setVirtualItem(slot, nullptr);
+		}
+	}
+
+	void TriggerHandler::handleSetPhase(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		WLOG("TODO: ACTION_SET_PHASE");
+	}
+
+	void TriggerHandler::handleSetSpellCooldown(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context.owner);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_SET_SPELL_COOLDOWN: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature() && !target->isGameCharacter())
+		{
+			WLOG("TRIGGER_ACTION_SET_SPELL_COOLDOWN: Needs a unit target - action ignored");
+			return;
+		}
+
+		reinterpret_cast<GameUnit*>(target)->setCooldown(getActionData(action, 0), getActionData(action, 1));
+	}
+
+	Int32 TriggerHandler::getActionData(const proto::TriggerAction &action, UInt32 index) const
 	{
 		// Return default value (0) if not enough data provided
 		if (static_cast<int>(index) >= action.data_size())

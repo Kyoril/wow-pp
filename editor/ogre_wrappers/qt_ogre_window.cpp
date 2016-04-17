@@ -409,7 +409,11 @@ void QtOgreWindow::mouseReleaseEvent(QMouseEvent *e)
 			{
 				if (vResult[ui].movable->getMovableType().compare("Entity") == 0)
 				{
-					m_scene->onSelection(*((Ogre::Entity*)vResult[ui].movable));
+					if (!vResult[ui].movable->getUserAny().isEmpty())
+					{
+						m_scene->onSelection(*((Ogre::Entity*)vResult[ui].movable));
+						break;
+					}
 				}
 			}
 		}

@@ -109,6 +109,8 @@ namespace wowpp
 		}
 		///
 		void raiseTrigger(trigger_event::Type e);
+		///
+		void raiseTrigger(trigger_event::Type e, const std::vector<UInt32> &data);
 		/// @copydoc GameObject::providesQuest()
 		bool providesQuest(UInt32 questId) const override;
 		/// @copydoc GameObject::endsQuest()
@@ -119,6 +121,18 @@ namespace wowpp
 		bool hasOffHandWeapon() const override;
 		/// @copydoc GameObject::canSpawnForCharacter
 		virtual bool canSpawnForCharacter(GameCharacter &target) override;
+
+		/// 
+		bool isCombatMovementEnabled() const { return m_combatMovement; }
+		/// 
+		void setCombatMovement(bool enabled);
+		/// 
+		game::CreatureMovement getMovementType() const { return m_movement; }
+		/// 
+		void setMovementType(game::CreatureMovement movementType);
+
+		void setWaypoints(const std::vector<proto::Waypoint> &waypoints);
+
 
 		/// Executes a callback function for every valid loot recipient.
 		template<typename OnRecipient>
@@ -155,6 +169,9 @@ namespace wowpp
 		boost::signals2::scoped_connection m_onSpawned;
 		LootRecipients m_lootRecipients;
 		std::unique_ptr<LootInstance> m_unitLoot;
+		bool m_combatMovement;
+		game::CreatureMovement m_movement;
+		std::vector<proto::Waypoint> m_waypoints;
 	};
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel);

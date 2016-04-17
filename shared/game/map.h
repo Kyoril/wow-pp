@@ -202,6 +202,8 @@ namespace wowpp
 		/// 
 		dtPolyRef getPolyByLocation(const math::Vector3 &point, float &out_distance) const;
 
+		bool getRandomPointOnGround(const math::Vector3 &center, float radius, math::Vector3 &out_point);
+
 	private:
 
 		const proto::MapEntry &m_entry;

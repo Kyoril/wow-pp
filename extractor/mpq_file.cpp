@@ -75,6 +75,7 @@ namespace mpq
 			if (fileSize == 0)
 			{
 				// It seems as if this file does not exist
+				SFileCloseFile(hFile);
 				continue;
 			}
 

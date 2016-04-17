@@ -41,6 +41,19 @@ namespace wowpp
 			, m_entry(entry)
 		{
 			m_entity.getParentSceneNode()->showBoundingBox(true);
+
+			Ogre::SceneManager *manager = m_entity._getManager();
+			m_waypoints.reset(manager->createBillboardSet());
+			m_waypoints->setMaterialName("Editor/Waypoint");
+			m_waypoints->setDefaultDimensions(2.0f, 2.0f);
+			manager->getRootSceneNode()->attachObject(m_waypoints.get());
+
+			// Add all spawn points (if any)
+			for (const auto &p : entry.waypoints())
+			{
+				auto *billboard = m_waypoints->createBillboard(
+					Ogre::Vector3(p.positionx(), p.positiony(), p.positionz() + 1.0f));
+			}
 		}
 
 		SelectedCreatureSpawn::~SelectedCreatureSpawn()
@@ -68,8 +81,14 @@ namespace wowpp
 		void SelectedCreatureSpawn::rotate(const Vector<float, 4> &delta)
 		{
 			Ogre::Quaternion qOri(delta[0], delta[1], delta[2], delta[3]);
+			
+			Ogre::Quaternion diff;
+			diff.FromAngleAxis(qOri.getRoll(), Ogre::Vector3::NEGATIVE_UNIT_Z);
+			m_entity.getParentSceneNode()->rotate(diff);
 
-			// TODO: Apply rotation (but only on the z axis, which is the yaw axis!)
+			// Apply rotation
+			m_entry.set_rotation(
+				m_entity.getParentSceneNode()->getOrientation().getRoll().valueRadians());
 
 			// Raise event
 			rotationChanged(*this);
@@ -107,6 +126,7 @@ namespace wowpp
 		void SelectedCreatureSpawn::deselect()
 		{
 			m_entity.getParentSceneNode()->showBoundingBox(false);
+			m_waypoints.reset();
 		}
 
 		math::Vector3 SelectedCreatureSpawn::getPosition() const

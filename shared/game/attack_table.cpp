@@ -256,7 +256,7 @@ namespace wowpp
 					}
 				}
 
-				if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(1 << spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(1 << effect.mechanic()))
+				if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(effect.mechanic()))
 				{
 					victimState = game::victim_state::IsImmune;
 				}
@@ -289,7 +289,7 @@ namespace wowpp
 			{
 				game::HitInfo hitInfo = game::hit_info::NoAction;
 				game::VictimState victimState = game::victim_state::Normal;
-				if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(1 << spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(1 << effect.mechanic()))
+				if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(effect.mechanic()))
 				{
 					victimState = game::victim_state::IsImmune;
 				}
@@ -348,11 +348,12 @@ namespace wowpp
 						spell_mod_op::CritChance, spell.id(), critChance);
 				}
 
-				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school, false)) < 0.0f)
+				// AE spells should always hit if in radius
+				if (radius <= 0.0f && (attackTableRoll -= targetUnit->getMissChance(*attacker, school, false)) < 0.0f)
 				{
 					hitInfo = game::hit_info::Miss;
 				}
-				else if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(1 << spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(1 << effect.mechanic()))
+				else if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(effect.mechanic()))
 				{
 					victimState = game::victim_state::IsImmune;
 				}

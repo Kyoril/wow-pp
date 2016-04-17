@@ -2458,14 +2458,12 @@ namespace wowpp
 			return;
 		}
 
+		if (!m_gameCharacter)
+			return;
+
 		// Used for response packet
 		game::WhoResponse response;
-		auto *this_character = this->getGameCharacter(); //this character that is requesting
-		const bool is_this_Alliance = ((game::race::Alliance & (1 << (this_character->getRace() - 1))) == (1 << (this_character->getRace() - 1)));
-
-
-		// Should be always valid since only than the packet will be handled, but just in case...
-		assert(m_gameCharacter);
+		const bool is_this_Alliance = ((game::race::Alliance & (1 << (m_gameCharacter->getRace() - 1))) == (1 << (m_gameCharacter->getRace() - 1)));
 
 		// Iterate through all connected players
 		for (auto &player : m_manager.getPlayers())
@@ -2479,17 +2477,16 @@ namespace wowpp
 
 			// Check if the player has a valid game character
 			auto *character = player->getGameCharacter();
+			if (!character)
+			{
+				continue;
+			}
 
 			//is this player we are looking for alliance??
 			const bool isAlliance = ((game::race::Alliance & (1 << (character->getRace() - 1))) == (1 << (character->getRace() - 1)));
 			if(is_this_Alliance != isAlliance)
 			{
 				//cant find players that are not same faction
-				continue;
-			}
-
-			if (!character)
-			{
 				continue;
 			}
 

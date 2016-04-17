@@ -36,6 +36,7 @@
 #include "game/map.h"
 #include "editor_application.h"
 #include "selected_creature_spawn.h"
+#include "selected_object_spawn.h"
 #include "windows/spawn_dialog.h"
 
 namespace wowpp
@@ -174,7 +175,7 @@ namespace wowpp
 			}
 
 			i = 0;
-			for (const auto &spawn : m_map.objectspawns())
+			for (auto &spawn : *m_map.mutable_objectspawns())
 			{
 				const auto *object = m_project.objects.getById(spawn.objectentry());
 				assert(object);
@@ -221,6 +222,8 @@ namespace wowpp
 				try
 				{
 					Ogre::Entity *ent = m_sceneMgr.createEntity("ObjSpawn_" + Ogre::StringConverter::toString(i++), mesh);
+					ent->setUserAny(Ogre::Any(&spawn));
+
 					m_spawnEntities.push_back(ogre_utils::EntityPtr(ent));
 					Ogre::SceneNode *node = m_sceneMgr.getRootSceneNode()->createChildSceneNode();
 					node->attachObject(ent);
@@ -281,8 +284,11 @@ namespace wowpp
 				m_app.getSelection(),
 				m_sceneMgr,
 				m_camera));
-			m_transformWidget->setVisible(true);
-			m_transformWidget->setTransformMode(transform_mode::Translate);
+
+			// Watch for transform changes
+			m_onTransformChanged = m_app.transformToolChanged.connect(
+				std::bind(&WorldEditor::onTransformToolChanged, this, std::placeholders::_1));
+			onTransformToolChanged(m_app.getTransformTool());
 		}
 
 		WorldEditor::~WorldEditor()
@@ -468,6 +474,32 @@ namespace wowpp
 			return nullptr;
 		}
 
+		void WorldEditor::onTransformToolChanged(TransformTool tool)
+		{
+			if (tool == transform_tool::Select)
+			{
+				m_transformWidget->setVisible(false);
+			}
+			else
+			{
+				m_transformWidget->setVisible(true);
+				switch (tool)
+				{
+					case transform_tool::Translate:
+						m_transformWidget->setTransformMode(transform_mode::Translate);
+						break;
+					case transform_tool::Rotate:
+						m_transformWidget->setTransformMode(transform_mode::Rotate);
+						break;
+					case transform_tool::Scale:
+						m_transformWidget->setTransformMode(transform_mode::Scale);
+						break;
+					default:
+						break;
+				}
+			}
+		}
+
 		void WorldEditor::onKeyPressed(const QKeyEvent *event)
 		{
 			m_transformWidget->onKeyPressed(event);
@@ -511,15 +543,22 @@ namespace wowpp
 						const auto &any = ((Ogre::Entity*)vResult[ui].movable)->getUserAny();
 						if (!any.isEmpty())
 						{
-							auto *spawn = Ogre::any_cast<proto::UnitSpawnEntry*>(any);
-							if (spawn)
+							if (any.getType() == typeid(proto::UnitSpawnEntry*))
 							{
+								auto *spawn = Ogre::any_cast<proto::UnitSpawnEntry*>(any);
 								auto dialog = make_unique<SpawnDialog>(m_app, *spawn);
 								if (dialog->exec())
 								{
 									m_app.markAsChanged();
 								}
 							}
+							else if (any.getType() == typeid(proto::ObjectSpawnEntry*)) 
+							{
+								auto *objspawn = Ogre::any_cast<proto::ObjectSpawnEntry*>(any);
+								// TODO
+							}
+
+							break;
 						}
 					}
 				}
@@ -534,9 +573,9 @@ namespace wowpp
 			const auto &any = entity.getUserAny();
 			if (!any.isEmpty())
 			{
-				auto *spawn = Ogre::any_cast<proto::UnitSpawnEntry*>(any);
-				if (spawn)
+				if (any.getType() == typeid(proto::UnitSpawnEntry* const))
 				{
+					auto *spawn = Ogre::any_cast<proto::UnitSpawnEntry*>(any);
 					m_app.getSelection().addSelected(
 						std::unique_ptr<SelectedCreatureSpawn>(new SelectedCreatureSpawn(
 							m_map,
@@ -546,6 +585,25 @@ namespace wowpp
 							entity,
 							*spawn)));
 
+				}
+				else if(any.getType() == typeid(proto::ObjectSpawnEntry* const))
+				{
+					auto *objspawn = Ogre::any_cast<proto::ObjectSpawnEntry*>(any);
+					if (objspawn)
+					{
+						m_app.getSelection().addSelected(
+							std::unique_ptr<SelectedObjectSpawn>(new SelectedObjectSpawn(
+								m_map,
+								[this]() {
+									m_app.markAsChanged();
+								},
+								entity,
+								*objspawn)));
+					}
+				}
+				else
+				{
+					ELOG("TYPE: " << any.getType().name());
 				}
 			}
 		}

@@ -66,6 +66,7 @@ namespace wowpp
 		Int32 calculateEffectBasePoints(const proto::SpellEffect &effect);
 		UInt32 getSpellPointsTotal(const proto::SpellEffect &effect, UInt32 spellPower, UInt32 bonusPct);
 		void spellEffectInstantKill(const proto::SpellEffect &effect);
+		void spellEffectDummy(const proto::SpellEffect &effect);
 		void spellEffectSchoolDamage(const proto::SpellEffect &effect);
 		void spellEffectTeleportUnits(const proto::SpellEffect &effect);
 		void spellEffectApplyAura(const proto::SpellEffect &effect);
@@ -81,6 +82,7 @@ namespace wowpp
 		void spellEffectApplyAreaAuraParty(const proto::SpellEffect &effect);
 		void spellEffectDispel(const proto::SpellEffect &effect);
 		void spellEffectSummon(const proto::SpellEffect &effect);
+		void spellEffectSummonPet(const proto::SpellEffect &effect);
 		void spellEffectWeaponDamage(const proto::SpellEffect &effect);
 		void spellEffectProficiency(const proto::SpellEffect &effect);
 		void spellEffectPowerBurn(const proto::SpellEffect &effect);

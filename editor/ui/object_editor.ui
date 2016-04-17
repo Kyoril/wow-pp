@@ -3826,6 +3826,10 @@ QGroupBox::indicator:unchecked:disabled
        </layout>
       </widget>
       <widget class="QWidget" name="tab_5">
+       <attribute name="icon">
+        <iconset resource="../qrc/editor.qrc">
+         <normaloff>:/AvailableQuestIcon.png</normaloff>:/AvailableQuestIcon.png</iconset>
+       </attribute>
        <attribute name="title">
         <string>Quests</string>
        </attribute>
@@ -4814,23 +4818,6 @@ QGroupBox::indicator:unchecked:disabled
     <string>Ctrl+S</string>
    </property>
   </action>
-   <actiongroup name="LootImport">
-     <action name="actionImport">
-       <property name="text">
-         <string>Import Unit Loot</string>
-       </property>
-     </action>
-     <action name="actionImport_Vendors">
-       <property name="text">
-         <string>Import Vendors</string>
-       </property>
-     </action>
-     <action name="actionImport_Trainers">
-       <property name="text">
-         <string>Import Trainers</string>
-       </property>
-     </action>
-   </actiongroup>
   <action name="actionImport_Quests">
    <property name="text">
     <string>Import Quests</string>
@@ -4856,6 +4843,23 @@ QGroupBox::indicator:unchecked:disabled
     <string>Import Units</string>
    </property>
   </action>
+  <actiongroup name="LootImport">
+   <action name="actionImport">
+    <property name="text">
+     <string>Import Unit Loot</string>
+    </property>
+   </action>
+   <action name="actionImport_Vendors">
+    <property name="text">
+     <string>Import Vendors</string>
+    </property>
+   </action>
+   <action name="actionImport_Trainers">
+    <property name="text">
+     <string>Import Trainers</string>
+    </property>
+   </action>
+  </actiongroup>
  </widget>
  <resources>
   <include location="../qrc/editor.qrc"/>

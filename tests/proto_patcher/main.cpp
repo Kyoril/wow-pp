@@ -1151,6 +1151,287 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importItemSets(proto::Project &project, MySQL::Connection &conn)
+	{
+		project.itemSets.clear();
+
+		wowpp::MySQL::Select select(conn, "SELECT `id`,`name4`,`spell1`,`count1`,`spell2`,`count2`,`spell3`,`count3`,`spell4`,`count4`,`spell5`,`count5`,`spell6`,`count6`,`spell7`,`count7`,`spell8`,`count8` FROM `dbc_itemset` ORDER BY `id`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 entry = 0, index = 0;
+				String name;
+				row.getField(index++, entry);
+				row.getField(index++, name);
+
+				auto *added = project.itemSets.add(entry);
+				if (!added)
+				{
+					ELOG("Failed to add item set");
+					return false;
+				}
+
+				added->set_name(name);
+
+				for (UInt32 i = 0; i < 8; ++i)
+				{
+					UInt32 spellId = 0, count = 0;
+					row.getField(index++, spellId);
+					row.getField(index++, count);
+
+					if (spellId == 0 || count == 0)
+					{
+						continue;
+					}
+
+					if (!project.spells.getById(spellId))
+					{
+						WLOG("Could not find spell by id " << spellId << ": Referenced by item set " << entry << " in slot " << i);
+						continue;
+					}
+
+					auto *addedSpell = added->add_spells();
+					if (!addedSpell)
+					{
+						ELOG("Could not add item set spell entry");
+						return false;
+					}
+
+					addedSpell->set_spell(spellId);
+					addedSpell->set_itemcount(count);
+				}
+
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			ELOG("Error: " << conn.getErrorMessage());
+		}
+
+		return true;
+	}
+
+	static bool importSpawnMovement(proto::Project &project, MySQL::Connection &conn)
+	{
+		for (auto &map : *project.maps.getTemplates().mutable_entry())
+		{
+			for (auto &spawn : *map.mutable_unitspawns())
+			{
+				spawn.clear_waypoints();
+				spawn.clear_movement();
+			}
+		}
+
+		wowpp::MySQL::Select select(conn, "SELECT `entry`,`MovementType` FROM `tbcdb`.`creature_template` WHERE `MovementType` != 0 ORDER BY `entry`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 entry = 0, movement = 0, index = 0;
+				row.getField(index++, entry);
+				row.getField(index++, movement);
+
+				for (auto &map : *project.maps.getTemplates().mutable_entry())
+				{
+					for (auto &spawn : *map.mutable_unitspawns())
+					{
+						if (spawn.unitentry() == entry)
+						{
+							spawn.set_movement(movement);
+						}
+					}
+				}
+
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			ELOG("Error: " << conn.getErrorMessage());
+		}
+
+		wowpp::MySQL::Select select2(conn, "SELECT `entry`,`point`,`position_x`,`position_y`,`position_z`,`waittime` FROM `tbcdb`.`creature_movement_template` ORDER BY `entry`, `point`;");
+		if (select2.success())
+		{
+			wowpp::MySQL::Row row(select2);
+			while (row)
+			{
+				// Get row data
+				UInt32 entry = 0, point = 0, index = 0, delay = 0;
+				float x, y, z;
+				row.getField(index++, entry);
+				row.getField(index++, point);
+				row.getField(index++, x);
+				row.getField(index++, y);
+				row.getField(index++, z);
+				row.getField(index++, delay);
+
+				for (auto &map : *project.maps.getTemplates().mutable_entry())
+				{
+					for (auto &spawn : *map.mutable_unitspawns())
+					{
+						if (spawn.unitentry() == entry)
+						{
+							auto *added = spawn.add_waypoints();
+							added->set_positionx(x);
+							added->set_positiony(y);
+							added->set_positionz(z);
+							added->set_waittime(delay);
+						}
+					}
+				}
+
+				row = row.next(select2);
+			}
+		}
+		else
+		{
+			ELOG("Error: " << conn.getErrorMessage());
+		}
+
+		return true;
+	}
+
+	static bool importAreaTrigger(proto::Project &project, MySQL::Connection &conn)
+	{
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `id`,`map`,`x`,`y`,`z`,`radius`,`box_x`,`box_y`,`box_z`,`box_o` FROM `dbc`.`dbc_areatrigger` ORDER BY `id`;");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					// Get row data
+					UInt32 entry = 0, map = 0, index = 0;
+					float x = 0.0f, y = 0.0f, z = 0.0f, radius = 0.0f, boxx = 0.0f, boxy = 0.0f, boxz = 0.0f, boxo = 0.0f;
+					row.getField(index++, entry);
+					row.getField(index++, map);
+					row.getField(index++, x);
+					row.getField(index++, y);
+					row.getField(index++, z);
+					row.getField(index++, radius);
+					row.getField(index++, boxx);
+					row.getField(index++, boxy);
+					row.getField(index++, boxz);
+					row.getField(index++, boxo);
+					
+					auto *trigger = project.areaTriggers.getById(entry);
+					if (!trigger)
+					{
+						trigger = project.areaTriggers.add(entry);
+						if (!trigger)
+						{
+							WLOG("Could not add area trigger " << entry);
+							row = row.next(select);
+							continue;
+						}
+
+						// New trigger is not a teleport trigger
+						trigger->set_name("Unnamed");
+						trigger->set_targetmap(0);
+						trigger->set_target_x(0.0f);
+						trigger->set_target_y(0.0f);
+						trigger->set_target_z(0.0f);
+						trigger->set_target_o(0.0f);
+					}
+
+					trigger->clear_questid();
+					trigger->clear_tavern();
+					trigger->set_map(map);
+					trigger->set_x(x);
+					trigger->set_y(y);
+					trigger->set_z(z);
+					if (radius != 0.0f) trigger->set_radius(radius);
+					if (boxx != 0.0f) trigger->set_box_x(boxx);
+					if (boxx != 0.0f) trigger->set_box_y(boxy);
+					if (boxx != 0.0f) trigger->set_box_z(boxz);
+					if (boxx != 0.0f) trigger->set_box_o(boxo);
+					row = row.next(select);
+				}
+			}
+			else
+			{
+				ELOG("Error: " << conn.getErrorMessage());
+			}
+		}
+
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `id`,`quest` FROM `tbcdb`.`areatrigger_involvedrelation` ORDER BY `id`;");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					// Get row data
+					UInt32 entry = 0, quest = 0, index = 0;
+					row.getField(index++, entry);
+					row.getField(index++, quest);
+
+					auto *trigger = project.areaTriggers.getById(entry);
+					if (!trigger)
+					{
+						WLOG("Could not find referenced quest trigger " << entry);
+						row = row.next(select);
+						continue;
+					}
+
+					auto *questEntry = project.quests.getById(quest);
+					if (!questEntry)
+					{
+						WLOG("Could not find quest " << quest << " referenced by area trigger " << entry);
+						row = row.next(select);
+						continue;
+					}
+
+					trigger->set_questid(quest);
+					row = row.next(select);
+				}
+			}
+			else
+			{
+				ELOG("Error: " << conn.getErrorMessage());
+			}
+		}
+
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `id` FROM `tbcdb`.`areatrigger_tavern` ORDER BY `id`;");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					// Get row data
+					UInt32 entry = 0, index = 0;
+					row.getField(index++, entry);
+
+					auto *trigger = project.areaTriggers.getById(entry);
+					if (!trigger)
+					{
+						WLOG("Could not find referenced tavern trigger " << entry);
+						row = row.next(select);
+						continue;
+					}
+
+					trigger->set_tavern(true);
+					row = row.next(select);
+				}
+			}
+			else
+			{
+				ELOG("Error: " << conn.getErrorMessage());
+			}
+		}
+
+		return true;
+	}
+
+
 #if 0
 	static void fixTriggerEvents(proto::Project &project)
 	{
@@ -1233,6 +1514,12 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 
+	if (!importItemSets(protoProject, connection))
+	{
+		ELOG("Failed to import item sets");
+		return 0;
+	}
+
 	if (!importItemQuests(protoProject, connection))
 	{
 		ELOG("Could not import item quests");
@@ -1257,6 +1544,17 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
+	if (!importSpawnMovement(protoProject, connection))
+	{
+		ELOG("Failed to import spawn movement!");
+		return 1;
+	}
+
+	if (!importAreaTrigger(protoProject, connection))
+	{
+		ELOG("Failed to import area triggers!");
+		return 1;
+	}
 	//fixTriggerEvents(protoProject);
 
 	// Save project
