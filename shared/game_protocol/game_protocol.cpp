@@ -3390,7 +3390,7 @@ namespace wowpp
 				
 				for (UInt8 i = 0; i < 7; ++i)
 				{
-					out_packet << io::write<NetUInt8>(state);  //iterate threw all tradeslots for checking for items
+					out_packet << io::write<NetUInt8>(state);  //iterate through all tradeslots for checking for items
 					for (UInt8 j = 0; j < 18; ++j)
 					{
 						out_packet << io::write<NetUInt32>(0);
