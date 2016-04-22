@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "editor_application.h"
 #include "windows/main_window.h"
 #include "windows/object_editor.h"
@@ -132,10 +133,21 @@ namespace wowpp
 
 		EditorApplication::EditorApplication()
 			: QObject()
+            , m_mainWindow(nullptr)
+            , m_objectEditor(nullptr)
+            , m_triggerEditor(nullptr)
 			, m_changed(false)
+			, m_transformTool(transform_tool::Select)
 		{
 		}
 
+        EditorApplication::~EditorApplication()
+        {
+            delete m_triggerEditor;
+            delete m_objectEditor;
+            delete m_mainWindow;
+        }
+        
 		bool EditorApplication::initialize()
 		{
 			// Load the configuration
@@ -150,19 +162,6 @@ namespace wowpp
 					"Please check the values in wowpp_editor.cfg and try again.");
 				return false;
 			}
-
-			// Show the main window
-			m_mainWindow.reset(new MainWindow(*this));
-
-			// Move this window to the center of the screen manually, since without this, there seems to be a crash
-			// in QtGui somewhere...
-			QRect screen = QApplication::desktop()->availableGeometry();
-			QRect win = m_mainWindow->geometry();
-			m_mainWindow->setGeometry(QRect(screen.center().x() - win.size().width() / 2, screen.center().y() - win.size().height() / 2,
-				win.size().width(), win.size().height()));
-
-			// Show the window
-			m_mainWindow->show();
 
 			// Load the project
 			if (!m_project.load(m_configuration.dataPath))
@@ -183,12 +182,26 @@ namespace wowpp
 			m_itemListModel.reset(new ItemListModel(m_project.items));
 			m_triggerListModel.reset(new TriggerListModel(m_project.triggers));
 			m_questListModel.reset(new QuestListModel(m_project.quests));
+			m_objectListModel.reset(new ObjectListModel(m_project.objects));
+
+			// Show the main window (will be deleted when this class is deleted by QT)
+			m_mainWindow = new MainWindow(*this);
+
+			// Move this window to the center of the screen manually, since without this, there seems to be a crash
+			// in QtGui somewhere...
+			QRect screen = QApplication::desktop()->availableGeometry();
+			QRect win = m_mainWindow->geometry();
+			m_mainWindow->setGeometry(QRect(screen.center().x() - win.size().width() / 2, screen.center().y() - win.size().height() / 2,
+				win.size().width(), win.size().height()));
+
+			// Show the window
+			m_mainWindow->show();
 
 			// Setup the object editor
-			m_objectEditor.reset(new ObjectEditor(*this));
+			m_objectEditor = new ObjectEditor(*this);
 
 			// Setup the trigger editor
-			m_triggerEditor.reset(new TriggerEditor(*this));
+			m_triggerEditor = new TriggerEditor(*this);
 			
 			return true;
 		}
@@ -201,6 +214,12 @@ namespace wowpp
 			m_objectEditor->activateWindow();
 
 			emit objectEditorShown();
+		}
+
+		void EditorApplication::setTransformTool(TransformTool tool)
+		{
+			m_transformTool = tool;
+			transformToolChanged(tool);
 		}
 
 		void EditorApplication::showTriggerEditor()

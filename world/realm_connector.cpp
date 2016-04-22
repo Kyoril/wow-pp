@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "realm_connector.h"
 #include "game/world_instance_manager.h"
 #include "game/world_instance.h"
@@ -26,6 +27,7 @@
 #include "player.h"
 #include "game/game_creature.h"
 #include "wowpp_protocol/wowpp_world_realm.h"
+#include "game_protocol/game_protocol.h"
 #include "configuration.h"
 #include "common/clock.h"
 #include "proto_data/project.h"
@@ -33,6 +35,7 @@
 #include "game/visibility_tile.h"
 #include "game/each_tile_in_region.h"
 #include "game/universe.h"
+#include "game/each_tile_in_sight.h"
 #include "binary_io/vector_sink.h"
 #include "log/default_log_levels.h"
 
@@ -40,7 +43,6 @@ namespace wowpp
 {
 	static const auto ReconnectDelay = (constants::OneSecond * 4);
 	static const auto KeepAliveDelay = (constants::OneMinute / 2);
-
 
 	RealmConnector::RealmConnector(
 		boost::asio::io_service &ioService, 
@@ -118,6 +120,9 @@ namespace wowpp
 				break;
 			case pp::world_realm::realm_packet::ItemData:
 				handleItemData(packet);
+				break;
+			case pp::world_realm::realm_packet::SpellLearned:
+				handleSpellLearned(packet);
 				break;
 			default:
 				// Log about unknown or unhandled packet
@@ -241,12 +246,10 @@ namespace wowpp
 		// Read packet from the realm
 		DatabaseId requesterDbId;
 		UInt32 instanceId;
-		std::vector<UInt32> spellIds;
-		std::vector<pp::world_realm::ItemData> items;
 		std::shared_ptr<GameCharacter> character(new GameCharacter(
 			m_project,
 			m_worldInstanceManager.getUniverse().getTimers()));
-		if (!(pp::world_realm::realm_read::characterLogIn(packet, requesterDbId, instanceId, character.get(), spellIds, items)))
+		if (!(pp::world_realm::realm_read::characterLogIn(packet, requesterDbId, instanceId, character.get())))
 		{
 			// Error: could not read packet
 			return;
@@ -324,53 +327,6 @@ namespace wowpp
 		character->setWorldInstance(instance);	// This is required for spell auras
 		worldInstanceEntered(*this, requesterDbId, character, *instance);
 
-		// Resolve spells
-		SpellTargetMap target;
-		target.m_targetMap = game::spell_cast_target_flags::Self;
-		target.m_unitTarget = requesterDbId;
-		for (auto &spellId : spellIds)
-		{
-			const auto *spell = m_project.spells.getById(spellId);
-			if (!spell)
-			{
-				WLOG("Received unknown character spell id " << spellId << ": Will be ignored");
-				continue;
-			}
-
-			character->addSpell(*spell);
-
-			// If this is a passive spell, cast it (TODO: Move this to some other place?)
-			if (spell->attributes(0) & game::spell_attributes::Passive)
-			{
-				// Create target map
-				character->castSpell(target, spell->id(), -1, 0, true);
-			}
-		}
-
-		static UInt32 itemCounter = 0;
-
-		// Create items
-		for (auto &item : items)
-		{
-			// Skip items that are not available
-			const auto *entry = m_project.items.getById(item.entry);
-			if (!entry)
-			{
-				WLOG("Unknown item entry: " << item.entry << " - item will be skipped!");
-				continue;
-			}
-
-			// Create item instance
-			std::shared_ptr<GameItem> itemInstance(new GameItem(m_project, *entry));
-			itemInstance->initialize();
-			itemInstance->setUInt64Value(object_fields::Guid, createEntryGUID(itemCounter++, entry->id(), guid_type::Item));
-			itemInstance->setUInt32Value(item_fields::Durability, item.durability);
-			itemInstance->setUInt64Value(item_fields::Contained, item.contained);
-			itemInstance->setUInt64Value(item_fields::Creator, item.creator);
-			itemInstance->setUInt32Value(item_fields::StackCount, item.stackCount);
-			character->addItem(std::move(itemInstance), item.slot);
-		}
-
 		// Get character location
 		UInt32 mapId = map->id();
 		UInt32 zoneId = character->getZone();
@@ -396,12 +352,13 @@ namespace wowpp
 		// Spawn objects
 		TileIndex2D tileIndex;
 		instance->getGrid().getTilePosition(location, tileIndex[0], tileIndex[1]);
-		forEachTileInSight(instance->getGrid(), tileIndex, [&character, this](VisibilityTile &tile)
+		forEachTileInSight(instance->getGrid(), tileIndex, [character, this](VisibilityTile &tile)
 		{
 			for (auto it = tile.getGameObjects().begin(); it != tile.getGameObjects().end(); ++it)
 			{
 				auto &object = *it;
-				if (object->getGuid() != character->getGuid())
+				if (object->getGuid() != character->getGuid() &&
+					object->canSpawnForCharacter(*character))
 				{
 					// Create update block
 					std::vector<std::vector<char>> blocks;
@@ -418,6 +375,16 @@ namespace wowpp
 
 		// Get that tile and make us a subscriber
 		instance->getGrid().requireTile(tileIndex);
+
+		// Group update trigger
+		if (character->getGroupId() != 0)
+		{
+			auto *player = m_playerManager.getPlayerByCharacterGuid(character->getGuid());
+			if (player)
+			{
+				player->updateCharacterGroup(character->getGroupId());
+			}
+		}
 	}
 
 	void RealmConnector::handleCharacterGroupChanged(pp::Protocol::IncomingPacket &packet)
@@ -503,7 +470,7 @@ namespace wowpp
 	void RealmConnector::handleItemData(pp::Protocol::IncomingPacket & packet)
 	{
 		UInt64 characterId;
-		std::map<UInt16, pp::world_realm::ItemData> data;
+		std::vector<ItemData> data;
 		if (!(pp::world_realm::realm_read::itemData(packet, characterId, data)))
 		{
 			return;
@@ -528,145 +495,105 @@ namespace wowpp
 			return;
 		}
 
-		// Spawn this item
-		std::vector<std::vector<char>> blocks;
-		
 		// Create items
 		for (auto &it : data)
 		{
-			std::vector<char> createItemBlock;
-
 			// Skip items that are not available
-			const auto *entry = m_project.items.getById(it.second.entry);
+			const auto *entry = m_project.items.getById(it.entry);
 			if (!entry)
 			{
-				WLOG("Unknown item entry: " << it.second.entry << " - item will be skipped!");
+				WLOG("Unknown item entry: " << it.entry << " - item will be skipped!");
 				continue;
 			}
 
-			if (auto *item = character->getItemByPos(0xFF, static_cast<UInt8>(it.first)))
+			std::map<UInt16, UInt16> addedBySlot;
+			auto result = character->getInventory().createItems(*entry, it.stackCount, &addedBySlot);
+			if (result != game::inventory_change_failure::Okay)
 			{
-				UInt32 oldStackCount = item->getUInt32Value(item_fields::StackCount);
-				item->setUInt32Value(item_fields::StackCount, it.second.stackCount);
-				item->setUInt32Value(item_fields::Durability, it.second.durability);
-				item->setUInt64Value(item_fields::Contained, it.second.contained);
-				item->setUInt64Value(item_fields::Creator, it.second.creator);
-
-				io::VectorSink sink(createItemBlock);
-				io::Writer writer(sink);
-				{
-					UInt8 updateType = 0x00;						// Update type (0x00 = UPDATE_VALUES)
-																	// Header with object guid and type
-					UInt64 guid = item->getGuid();
-					writer
-						<< io::write<NetUInt8>(updateType);
-
-					UInt64 guidCopy = guid;
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-					for (UInt8 i = 0; guidCopy != 0; ++i)
-					{
-						if (guidCopy & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guidCopy & 0xFF);
-							++size;
-						}
-
-						guidCopy >>= 8;
-					}
-					writer.sink().write((const char*)&packGUID[0], size);
-
-					// Write values update
-					item->writeValueUpdateBlock(writer, *character, false);
-				}
-
-				item->clearUpdateMask();
-
-				player->sendProxyPacket(
-					std::bind(game::server_write::itemPushResult, std::placeholders::_1,
-						character->getGuid(), std::cref(*item), true, false, 0xFF, it.first, it.second.stackCount - oldStackCount, it.second.stackCount));
-
-				// Update inventory fields
-				character->forceFieldUpdate(character_fields::InvSlotHead + (it.first * 2));
-				character->forceFieldUpdate(character_fields::InvSlotHead + (it.first * 2) + 1);
-			}
-			else
-			{
-				static UInt32 itemCounter = 0xF0000;
-
-				// Create item instance
-				std::shared_ptr<GameItem> itemInstance(new GameItem(m_project, *entry));
-				itemInstance->initialize();
-				itemInstance->setUInt64Value(object_fields::Guid, createEntryGUID(itemCounter++, entry->id(), guid_type::Item));
-				itemInstance->setUInt32Value(item_fields::Durability, it.second.durability);
-				itemInstance->setUInt64Value(item_fields::Contained, it.second.contained);
-				itemInstance->setUInt64Value(item_fields::Creator, it.second.creator);
-				itemInstance->setUInt32Value(item_fields::StackCount, it.second.stackCount);
-				character->addItem(itemInstance, it.second.slot);
-
-				io::VectorSink createItemSink(createItemBlock);
-				io::Writer createItemWriter(createItemSink);
-				{
-					UInt8 updateType = 0x02;						// Item
-					UInt8 updateFlags = 0x08 | 0x10;				// 
-					UInt8 objectTypeId = 0x01;						// Item
-
-					UInt64 guid = itemInstance->getGuid();
-
-					// Header with object guid and type
-					createItemWriter
-						<< io::write<NetUInt8>(updateType);
-					UInt64 guidCopy = guid;
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-					for (UInt8 i = 0; guidCopy != 0; ++i)
-					{
-						if (guidCopy & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guidCopy & 0xFF);
-							++size;
-						}
-
-						guidCopy >>= 8;
-					}
-					createItemWriter.sink().write((const char*)&packGUID[0], size);
-					createItemWriter
-						<< io::write<NetUInt8>(objectTypeId)
-						<< io::write<NetUInt8>(updateFlags);
-
-					// Lower-GUID update?
-					if (updateFlags & 0x08)
-					{
-						createItemWriter
-							<< io::write<NetUInt32>(guidLowerPart(guid));
-					}
-
-					// High-GUID update?
-					if (updateFlags & 0x10)
-					{
-						createItemWriter
-							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
-					}
-
-					// Write values update
-					itemInstance->writeValueUpdateBlock(createItemWriter, *character, true);
-				}
-
-				player->sendProxyPacket(
-					std::bind(game::server_write::itemPushResult, std::placeholders::_1,
-						character->getGuid(), std::cref(*itemInstance), true, false, 0xFF, it.first, it.second.stackCount, it.second.stackCount));
+				ELOG("Coult not create items: " << result);
+				character->inventoryChangeFailure(result, nullptr, nullptr);
+				continue;
 			}
 
-			// Send packet
-			blocks.emplace_back(std::move(createItemBlock));
+			for (auto &pair : addedBySlot)
+			{
+				auto itemInstance = character->getInventory().getItemAtSlot(pair.first);
+				UInt8 bag = 0, subslot = 0;
+				Inventory::getRelativeSlots(pair.first, bag, subslot);
+				player->sendProxyPacket(
+					std::bind(game::server_write::itemPushResult, std::placeholders::_1,
+						character->getGuid(), std::cref(*itemInstance), false, false, bag, subslot, pair.second, character->getInventory().getItemCount(entry->id())));
+			}
+		}
+	}
+
+	void RealmConnector::handleSpellLearned(pp::Protocol::IncomingPacket & packet)
+	{
+		UInt64 characterId;
+		UInt32 spellId;
+		if (!(pp::world_realm::realm_read::spellLearned(packet, characterId, spellId)))
+		{
+			return;
 		}
 
-		player->sendProxyPacket(
-			std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
+		const auto *spell = m_project.spells.getById(spellId);
+		if (!spell)
+		{
+			return;
+		}
+
+		// Find requested character
+		auto *player = m_playerManager.getPlayerByCharacterGuid(characterId);
+		if (!player)
+		{
+			return;
+		}
+		auto character = player->getCharacter();
+		if (!character)
+		{
+			return;
+		}
+
+		// Already learned?
+		if (character->hasSpell(spellId))
+		{
+			return;
+		}
+
+		// World check (just in case)
+		auto *world = character->getWorldInstance();
+		if (!world)
+		{
+			return;
+		}
+
+		TileIndex2D tile;
+		if (!character->getTileIndex(tile))
+		{
+			return;
+		}
+
+		std::vector<char> buffer;
+		io::VectorSink sink(buffer);
+		game::Protocol::OutgoingPacket outPacket(sink);
+		game::server_write::playSpellImpact(outPacket, character->getGuid(), 0x016A);
+		forEachSubscriberInSight(
+			world->getGrid(),
+			tile,
+			[&outPacket, &buffer](ITileSubscriber &subscriber)
+		{
+			subscriber.sendPacket(outPacket, buffer);
+		});
+
+		// Learn the required spell
+		character->addSpell(*spell);
+		if ((spell->attributes(0) & game::spell_attributes::Passive) != 0)
+		{
+			SpellTargetMap targetMap;
+			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+			targetMap.m_unitTarget = character->getGuid();
+			character->castSpell(std::move(targetMap), spellId);
+		}
 	}
 
 	void RealmConnector::handleProxyPacket(pp::Protocol::IncomingPacket &packet)
@@ -704,6 +631,7 @@ namespace wowpp
 #define WOWPP_HANDLE_PACKET(name) \
 			case wowpp::game::client_packet::name: \
 			{ \
+				/*ILOG("CLIENT PACKET " #name " (0x" << std::hex << wowpp::game::client_packet::name << ")");*/ \
 				handle##name(*sender, clientPacket); \
 				break; \
 			}
@@ -723,12 +651,14 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(CancelAura)
 			WOWPP_HANDLE_PACKET(Emote)
 			WOWPP_HANDLE_PACKET(TextEmote)
+			WOWPP_HANDLE_PACKET(PetNameQuery)
 #undef WOWPP_HANDLE_PACKET
 
 			// Client packets handled by player
 #define WOWPP_HANDLE_PLAYER_PACKET(name) \
 			case wowpp::game::client_packet::name: \
 			{ \
+				/*ILOG("CLIENT PACKET " #name " (0x" << std::hex << wowpp::game::client_packet::name << ")");*/ \
 				sender->handle##name(clientPacket); \
 				break; \
 			}
@@ -764,6 +694,14 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverChooseReward)
 			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverCancel)
 			WOWPP_HANDLE_PLAYER_PACKET(QuestgiverStatusMultipleQuery)
+			WOWPP_HANDLE_PLAYER_PACKET(QuestlogRemoveQuest)
+			WOWPP_HANDLE_PLAYER_PACKET(GameObjectUse)
+			WOWPP_HANDLE_PLAYER_PACKET(OpenItem)
+			WOWPP_HANDLE_PLAYER_PACKET(MoveTimeSkipped)
+			WOWPP_HANDLE_PLAYER_PACKET(SetActionBarToggles)
+			WOWPP_HANDLE_PLAYER_PACKET(ToggleHelm)
+			WOWPP_HANDLE_PLAYER_PACKET(ToggleCloak)
+
 #undef WOWPP_HANDLE_PLAYER_PACKET
 
 			// Movement packets get special treatment
@@ -940,6 +878,23 @@ namespace wowpp
 		// Find object by GUID
 		auto *targetObj =
 			world->findObjectByGUID(targetGUID);
+		if (targetObj)
+		{
+			if (targetObj->isCreature() ||
+				targetObj->isGameCharacter())
+			{
+				// Unit is flagged as "NotSelectable"
+				if ((targetObj->getUInt32Value(unit_fields::UnitFlags) & game::unit_flags::NotSelectable) != 0)
+				{
+					return;
+				}
+			}
+			else
+			{
+				// Unselectable object type
+				return;
+			}
+		}
 
 		// Object found or no object provided
 		if (targetObj || (!targetObj && targetGUID == 0))
@@ -968,9 +923,7 @@ namespace wowpp
 			return;
 		}
 
-		sender.getCharacter()->setByteValue(unit_fields::Bytes1, 0, static_cast<UInt8>(standState));
-		sender.sendProxyPacket(
-			std::bind(game::server_write::standStateUpdate, std::placeholders::_1, standState));
+		sender.getCharacter()->setStandState(standState);
 	}
 
 	void RealmConnector::handleChatMessage(pp::Protocol::IncomingPacket &packet)
@@ -1007,7 +960,8 @@ namespace wowpp
 			return;
 		}
 
-		if (reason == pp::world_realm::world_left_reason::Disconnect)
+		if (reason == pp::world_realm::world_left_reason::Disconnect ||
+			reason == pp::world_realm::world_left_reason::Teleport)
 		{
 			// Find the character and remove it from the world instance
 			auto *player = m_playerManager.getPlayerByCharacterGuid(characterGuid);
@@ -1021,16 +975,10 @@ namespace wowpp
 			player->getWorldInstance().removeGameObject(*player->getCharacter());
 
 			// Notify the realm
-			notifyWorldInstanceLeft(characterGuid, pp::world_realm::world_left_reason::Disconnect);
+			notifyWorldInstanceLeft(characterGuid, reason);
 
 			// Remove the player instance
 			m_playerManager.playerDisconnected(*player);
-
-			ILOG("Player removed from world instance due to disconnect on realm.");
-		}
-		else
-		{
-			WLOG("Unsupported reason - request ignored");
 		}
 	}
 
@@ -1056,6 +1004,9 @@ namespace wowpp
 		// Get the cast time of this spell
 		Int64 castTime = spell->casttime();
 
+		sender.getCharacter()->applySpellMod(spell_mod_op::CastTime, spellId, castTime);
+		if (castTime < 0) castTime = 0;
+
 		// Spell cast logic
 		sender.getCharacter()->castSpell(
 			std::move(targetMap),
@@ -1063,6 +1014,7 @@ namespace wowpp
 			-1,
 			castTime,
 			false,
+			0,
 			[&spell, castCount, &sender](game::SpellCastResult result)
 			{
 				if (result != game::spell_cast_result::CastOkay)
@@ -1083,7 +1035,7 @@ namespace wowpp
 		}
 
 		// Spell cast logic
-		sender.getCharacter()->cancelCast();
+		sender.getCharacter()->cancelCast(game::spell_interrupt_flags::None);
 	}
 
 	void RealmConnector::handleAttackSwing(Player &sender, game::Protocol::IncomingPacket &packet)
@@ -1188,15 +1140,23 @@ namespace wowpp
 		}
 
 		// Check if this is a teleport trigger
+
+		if (trigger->has_questid() && trigger->questid() > 0)
+		{
+			// Handle quest exploration
+			sender.getCharacter()->completeQuest(trigger->questid());
+		}
+
+		if (trigger->has_tavern() && trigger->tavern())
+		{
+			// Handle tavern
+		}
+
 		// TODO: Optimize this, create a trigger type
 		if (trigger->targetmap() != 0 || trigger->target_x() != 0.0f || trigger->target_y() != 0.0f || trigger->target_z() != 0.0f || trigger->target_o() != 0.0f)
 		{
 			// Teleport
 			character->teleport(trigger->targetmap(), math::Vector3(trigger->target_x(), trigger->target_y(), trigger->target_z()), trigger->target_o());
-		}
-		else
-		{
-			DLOG("TODO: Unknown trigger type '" << trigger->name() << "'...");
 		}
 	}
 
@@ -1372,6 +1332,31 @@ namespace wowpp
 		});
 	}
 
+	void RealmConnector::handlePetNameQuery(Player & sender, game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 petGUID;
+		UInt32 petNumber;
+		if (!game::client_read::petNameRequest(packet, petNumber, petGUID))
+		{
+			return;
+		}
+
+		GameObject *object = sender.getWorldInstance().findObjectByGUID(petGUID);
+		if (!object)
+		{
+			return;
+		}
+
+		if (!object->isCreature())
+		{
+			return;
+		}
+
+		const String &name = reinterpret_cast<GameUnit*>(object)->getName();
+		sender.sendProxyPacket(
+			std::bind(game::server_write::petNameQueryResponse, std::placeholders::_1, petNumber, std::cref(name), 0));
+	}
+
 	void RealmConnector::sendCharacterGroupUpdate(GameCharacter &character, const std::vector<UInt64> &nearbyMembers)
 	{
 		math::Vector3 location(character.getLocation());
@@ -1393,6 +1378,12 @@ namespace wowpp
 	{
 		m_connection->sendSinglePacket(
 			std::bind(pp::world_realm::world_write::questUpdate, std::placeholders::_1, characterId, quest, std::cref(data)));
+	}
+
+	void RealmConnector::sendCharacterSpawnNotification(UInt64 characterId)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::world_write::characterSpawned, std::placeholders::_1, characterId));
 	}
 
 }

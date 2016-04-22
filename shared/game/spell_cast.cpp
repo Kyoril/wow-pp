@@ -1,12 +1,33 @@
+//
+// This file is part of the WoW++ project.
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+//
+// World of Warcraft, and all World of Warcraft or Warcraft art, images,
+// and lore are copyrighted by Blizzard Entertainment, Inc.
+//
 
+#include "pch.h"
 #include "spell_cast.h"
 #include "game_unit.h"
+#include "game_character.h"
 #include "common/countdown.h"
 #include "no_cast_state.h"
 #include "single_cast_state.h"
 #include "log/default_log_levels.h"
 #include "world_instance.h"
-#include <cassert>
 
 namespace wowpp
 {
@@ -17,7 +38,7 @@ namespace wowpp
 	{
 	}
 
-	std::pair<game::SpellCastResult, SpellCasting*> SpellCast::startCast(const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool isProc)
+	std::pair<game::SpellCastResult, SpellCasting *> SpellCast::startCast(const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool isProc, UInt64 itemGuid)
 	{
 		assert(m_castState);
 
@@ -31,6 +52,12 @@ namespace wowpp
 			{
 				return std::make_pair(game::spell_cast_result::FailedCasterDead, nullptr);
 			}
+		}
+
+		if (m_executer.isStunned() &&
+			(spell.attributes(5) & game::spell_attributes_ex_e::UsableWhileStunned) == 0)
+		{
+			return std::make_pair(game::spell_cast_result::FailedStunned, nullptr);
 		}
 
 		// Check for cooldown
@@ -70,25 +97,31 @@ namespace wowpp
 			math::Vector3 location(m_executer.getLocation());
 
 			if (spell.attributes(2) == 0x100000 &&
-				(spell.attributes(1) & game::spell_attributes_ex_a::MeleeCombatStart) == game::spell_attributes_ex_a::MeleeCombatStart &&
-				unitTarget->isInArc(3.1415927f, location.x, location.y))
+			        (spell.attributes(1) & game::spell_attributes_ex_a::MeleeCombatStart) == game::spell_attributes_ex_a::MeleeCombatStart &&
+			        unitTarget->isInArc(3.1415927f, location.x, location.y))
 			{
 				return std::make_pair(game::spell_cast_result::FailedNotBehind, nullptr);
 			}
 		}
-		
+
 		// Check power
-		if (spell.cost() > 0)
+		Int32 powerCost = itemGuid ? 0 : calculatePowerCost(spell);
+		if (powerCost > 0)
 		{
 			if (spell.powertype() == game::power_type::Health)
 			{
-				// Special case
-				DLOG("TODO: Spell cost power type Health");
+				UInt32 currentPower = m_executer.getUInt32Value(unit_fields::Health);
+				if (powerCost > 0 &&
+					currentPower < UInt32(powerCost))
+				{
+					return std::make_pair(game::spell_cast_result::FailedNoPower, nullptr);
+				}
 			}
 			else
 			{
 				UInt32 currentPower = m_executer.getUInt32Value(unit_fields::Power1 + spell.powertype());
-				if (currentPower < spell.cost())
+				if (powerCost > 0 &&
+					currentPower < UInt32(powerCost))
 				{
 					return std::make_pair(game::spell_cast_result::FailedNoPower, nullptr);
 				}
@@ -100,13 +133,21 @@ namespace wowpp
 		{
 			if (unitTarget)
 			{
+				float maxrange = spell.maxrange();
+				if (m_executer.isGameCharacter())
+				{
+					reinterpret_cast<GameCharacter&>(m_executer).applySpellMod(spell_mod_op::Range, spell.id(), maxrange);
+				}
+
+				if (maxrange < spell.minrange()) maxrange = spell.minrange();
+
 				const float combatReach = unitTarget->getFloatValue(unit_fields::CombatReach) + m_executer.getFloatValue(unit_fields::CombatReach);
 				const float distance = m_executer.getDistanceTo(*unitTarget);
 				if (spell.minrange() > 0.0f && distance < spell.minrange())
 				{
 					return std::make_pair(game::spell_cast_result::FailedTooClose, nullptr);
 				}
-				else if (spell.maxrange() > 0.0f && distance > spell.maxrange() + combatReach)
+				else if (maxrange > 0.0f && distance > maxrange + combatReach)
 				{
 					return std::make_pair(game::spell_cast_result::FailedOutOfRange, nullptr);
 				}
@@ -140,8 +181,8 @@ namespace wowpp
 		if (isProc)
 		{
 			std::shared_ptr<SingleCastState> newState(
-				new SingleCastState(*this, spell, std::move(target), basePoints, castTime, true)
-				);
+			    new SingleCastState(*this, spell, std::move(target), basePoints, castTime, true, itemGuid)
+			);
 			newState->activate();
 
 			return std::make_pair(game::spell_cast_result::CastOkay, nullptr);
@@ -160,19 +201,20 @@ namespace wowpp
 			}
 
 			return m_castState->startCast
-				(*this,
-					spell,
-					std::move(target),
-					basePoints,
-					castTime,
-					false);
+			       (*this,
+			        spell,
+			        std::move(target),
+			        basePoints,
+			        castTime,
+			        false,
+			        itemGuid);
 		}
 	}
 
-	void SpellCast::stopCast()
+	void SpellCast::stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown/* = 0*/)
 	{
 		assert(m_castState);
-		m_castState->stopCast();
+		m_castState->stopCast(reason, interruptCooldown);
 	}
 
 	void SpellCast::onUserStartsMoving()
@@ -190,21 +232,62 @@ namespace wowpp
 		m_castState->activate();
 	}
 
-	SpellCasting & castSpell(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime)
+	Int32 SpellCast::calculatePowerCost(const proto::SpellEntry & spell) const
+	{
+		// DrainAllPower flag handler (used for Lay on Hands)
+		if (spell.attributes(1) & game::spell_attributes_ex_a::DrainAllPower)
+		{
+			auto powerType = static_cast<game::PowerType>(spell.powertype());
+			switch (powerType)
+			{
+				case game::power_type::Health:
+					return m_executer.getUInt32Value(unit_fields::Health);
+				default:
+					return m_executer.getUInt32Value(unit_fields::Power1 + spell.powertype());
+			}
+		}
+
+		// Adjust power cost per level if needed
+		Int32 cost = spell.cost();
+		if (spell.costpct() > 0)
+		{
+			auto powerType = static_cast<game::PowerType>(spell.powertype());
+			switch (powerType)
+			{
+				case game::power_type::Health:
+					cost += m_executer.getUInt32Value(unit_fields::BaseHealth) * spell.costpct() / 100;
+					break;
+				case game::power_type::Mana:
+					cost += m_executer.getUInt32Value(unit_fields::BaseMana) * spell.costpct() / 100;
+					break;
+				default:
+					cost += m_executer.getUInt32Value(unit_fields::MaxPower1 + spell.powertype()) * spell.costpct() / 100;
+					break;
+			}
+		}
+
+		if (spell.attributes(0) & game::spell_attributes::LevelDamageCalc)
+		{
+			cost = Int32(cost / (1.117f * spell.spelllevel() / m_executer.getLevel() - 0.1327f));
+		}
+
+		if (m_executer.isGameCharacter())
+		{
+			reinterpret_cast<GameCharacter&>(m_executer).applySpellMod(
+				spell_mod_op::Cost, spell.id(), cost);
+		}
+
+		return cost;
+	}
+
+	SpellCasting &castSpell(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, UInt64 itemGuid)
 	{
 		std::shared_ptr<SingleCastState> newState(
-			new SingleCastState(cast, spell, std::move(target), basePoints, castTime)
-			);
+		    new SingleCastState(cast, spell, std::move(target), basePoints, castTime, false, itemGuid)
+		);
 
 		auto &casting = newState->getCasting();
 		cast.setState(std::move(newState));
 		return casting;
 	}
-
-	bool isInSkillRange(const proto::SpellEntry &spell, GameUnit &user, SpellTargetMap &target)
-	{
-		//TODO
-		return true;
-	}
-
 }

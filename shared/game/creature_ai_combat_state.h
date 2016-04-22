@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -28,9 +28,6 @@
 #include "shared/proto_data/spells.pb.h"
 #include "shared/proto_data/units.pb.h"
 #include "defines.h"
-#include <boost/signals2.hpp>
-#include <memory>
-#include <map>
 
 namespace wowpp
 {
@@ -64,12 +61,14 @@ namespace wowpp
 		/// Default destructor.
 		virtual ~CreatureAICombatState();
 
-		/// 
+		///
 		virtual void onEnter() override;
-		/// 
+		///
 		virtual void onLeave() override;
-		/// 
+		///
 		virtual void onDamage(GameUnit &attacker) override;
+		/// 
+		virtual void onCombatMovementChanged() override;
 
 	private:
 
@@ -100,5 +99,8 @@ namespace wowpp
 		GameTime m_lastCastTime;
 		UInt32 m_customCooldown;
 		game::SpellCastResult m_lastCastResult;
+		bool m_isCasting;
+		bool m_entered;
+		bool m_isRanged;
 	};
 }

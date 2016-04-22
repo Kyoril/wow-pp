@@ -19,12 +19,12 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "program.h"
 #include "log/default_log_levels.h"
 #include "log/log_std_stream.h"
 #include "common/crash_handler.h"
 #include "common/service.h"
-#include <boost/program_options.hpp>
 
 using namespace std;
 
@@ -102,15 +102,6 @@ int main(int argc, char* argv[])
 
 	//constructor enables error handling
 	wowpp::CrashHandler::get().enableDumpFile("WorldCrash.dmp");
-
-	//when the application terminates unexpectedly
-	const auto crashFlushConnection =
-		wowpp::CrashHandler::get().onCrash.connect(
-			[]()
-	{
-		ELOG("Application crashed...");
-	});
-
 
 	// Triggers if the program should be restarted
 	bool shouldRestartProgram = false;

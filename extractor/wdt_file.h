@@ -22,7 +22,6 @@
 #pragma once
 
 #include "mpq_file.h"
-#include <array>
 
 namespace wowpp
 {

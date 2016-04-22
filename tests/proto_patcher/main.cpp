@@ -19,9 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-#include <iostream>
-#include <fstream>
-#include <string>
+#include "pch.h"
 #include "common/typedefs.h"
 #include "common/clock.h"
 #include "common/constants.h"
@@ -131,7 +129,7 @@ namespace wowpp
 
 					if (save(fileName))
 					{
-ILOG("Saved updated settings with default values as " << fileName);
+						ILOG("Saved updated settings with default values as " << fileName);
 					}
 					else
 					{
@@ -243,6 +241,31 @@ namespace wowpp
 				switch (it->id())
 				{
 					//////////////////////////////////////////////////////////////////////////
+					// Blood Rage: Costs Health, not Mana
+					case 2687:
+						it->set_powertype(game::power_type::Health);
+						break;
+
+					//////////////////////////////////////////////////////////////////////////
+					// Hemorrhage: Add Combo Point (Needed because this spell already has 
+					// 3 / 3 effects, and there is no space left for the AddComboPoint effect)
+					case 16511:	// Rank 1
+					case 17347:	// Rank 2
+					case 17348:	// Rank 3
+					case 26864:	// Rank 4
+						it->add_additionalspells(34071);	// Combo Point
+						break;
+
+					//////////////////////////////////////////////////////////////////////////
+					// Mangle (Cat): Add Combo Point (Needed because this spell already has 
+					// 3 / 3 effects, and there is no space left for the AddComboPoint effect)
+					case 33876:	// Rank 1
+					case 33982:	// Rank 2
+					case 33983:	// Rank 3
+						it->add_additionalspells(34071);	// Combo Point
+						break;
+
+					//////////////////////////////////////////////////////////////////////////
 					// Power Word: Shield
 					case 17:	// Rank 1
 					case 592:	// Rank 2
@@ -353,6 +376,16 @@ namespace wowpp
 							}
 						}
 						break;
+					// Devastate
+					case 20243:	// Rank 1
+						it->add_additionalspells(11596);
+						break;
+					case 30016:	// Rank 2
+						it->add_additionalspells(11597);
+						break;
+					case 30022:	// Rank 3
+						it->add_additionalspells(25225);
+						break;
 
 					//////////////////////////////////////////////////////////////////////////
 					/////////////////////// AURA TRIGGER SPELLS //////////////////////////////
@@ -436,6 +469,37 @@ namespace wowpp
 					case 34498:
 					case 34499:
 						it->mutable_effects(0)->set_triggerspell(34720);
+						break;
+
+					////////////////////////////// Shaman ////////////////////////////////////
+
+					// Rockbiter Weapon Enchantment
+					case  8017:	// Rank 1
+						it->add_additionalspells(36494); 
+						break;
+					case  8018:	// Rank 2
+						it->add_additionalspells(36750);
+						break;
+					case  8019:	// Rank 3
+						it->add_additionalspells(36755);
+						break;
+					case 10399:	// Rank 4
+						it->add_additionalspells(36759);
+						break;
+					case 16314:	// Rank 5
+						it->add_additionalspells(36763);
+						break;
+					case 16315:	// Rank 6
+						it->add_additionalspells(36766);
+						break;
+					case 16316:	// Rank 7
+						it->add_additionalspells(36771);
+						break;
+					case 25479:	// Rank 8
+						it->add_additionalspells(36775);
+						break;
+					case 25485:	// Rank 9
+						it->add_additionalspells(36499);
 						break;
 						
 					////////////////////////////// Rogue /////////////////////////////////////
@@ -711,6 +775,41 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importUnitMechanicImmunities(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `entry`,`mechanic_immune_mask` FROM `tbcdb`.`creature_template`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 entry = 0, mask = 0;
+				row.getField(0, entry);
+				row.getField(1, mask);
+
+				if (mask != 0)
+				{
+					// Find unit by id
+					auto * unit = project.units.getById(entry);
+					if (unit)
+					{
+						unit->set_mechanicimmunity(mask);
+					}
+					else
+					{
+						WLOG("Unable to find unit by id: " << entry);
+					}
+				}
+
+				// Next row
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
 	static bool importCategories(proto::Project &project, MySQL::Connection &conn)
 	{
 		project.spellCategories.clear();
@@ -878,7 +977,7 @@ namespace wowpp
 					}
 
 					// Find object
-					auto *object = project.units.getById(objectId);
+					auto *object = project.objects.getById(objectId);
 					if (object)
 					{
 						object->add_quests(questId);
@@ -909,7 +1008,7 @@ namespace wowpp
 					}
 
 					// Find object
-					auto *object = project.units.getById(objectId);
+					auto *object = project.objects.getById(objectId);
 					if (object)
 					{
 						object->add_end_quests(questId);
@@ -926,40 +1025,427 @@ namespace wowpp
 
 	static bool importDispelData(proto::Project &project, MySQL::Connection &conn)
 	{
+		wowpp::MySQL::Select select(conn, "SELECT `Id`,`Dispel`,`SpellFamilyName`,`SpellFamilyFlags` FROM `dbc_spell`;");
+		if (select.success())
 		{
-			wowpp::MySQL::Select select(conn, "SELECT `Id`,`Dispel`,`SpellFamilyName`,`SpellFamilyFlags` FROM `dbc_spell`;");
-			if (select.success())
+			wowpp::MySQL::Row row(select);
+			while (row)
 			{
-				wowpp::MySQL::Row row(select);
-				while (row)
+				// Get row data
+				UInt32 id = 0, dispel = 0;
+				UInt64 family = 0, familyFlags = 0;
+				row.getField(0, id);
+				row.getField(1, dispel);
+				row.getField(2, family);
+				row.getField(3, familyFlags);
+
+				auto * spell = project.spells.getById(id);
+				if (!spell)
 				{
-					// Get row data
-					UInt32 id = 0, dispel = 0, family = 0, familyFlags = 0;
-					row.getField(0, id);
-					row.getField(1, dispel);
-					row.getField(2, family);
-					row.getField(3, familyFlags);
-
-					auto * spell = project.spells.getById(id);
-					if (!spell)
-					{
-						WLOG("Unable to find spell by id: " << id);
-						row = row.next(select);
-						continue;
-					}
-
-					spell->set_dispel(dispel);
-					spell->set_family(family);
-					spell->set_familyflags(familyFlags);
-
+					WLOG("Unable to find spell by id: " << id);
 					row = row.next(select);
+					continue;
 				}
+
+				spell->set_dispel(dispel);
+				spell->set_family(family);
+				spell->set_familyflags(familyFlags);
+
+				row = row.next(select);
 			}
 		}
 
 		return true;
 	}
 
+	static bool importTrainerLinks(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `entry`,`trainer_id`, `trainer_type`,`trainer_class` FROM `tbcdb`.`creature_template` WHERE `trainer_id` != 0;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 entry = 0, trainerid = 0, trainertype = 0, trainerclass = 0;
+				row.getField(0, entry);
+				row.getField(1, trainerid);
+				row.getField(2, trainertype);
+				row.getField(3, trainerclass);
+				
+				auto * trainer = project.trainers.getById(trainerid);
+				if (!trainer)
+				{
+					WLOG("Unable to find trainer by id: " << trainerid);
+					row = row.next(select);
+					continue;
+				}
+
+				trainer->set_type(static_cast<proto::TrainerEntry_TrainerType>(trainertype));
+				trainer->set_classid(trainerclass);
+				trainer->set_title("");
+
+				auto *unit = project.units.getById(entry);
+				if (!unit)
+				{
+					WLOG("Unable to find unit by id: " << entry);
+					row = row.next(select);
+					continue;
+				}
+
+				unit->set_trainerentry(trainerid);
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			ELOG("Error: " << conn.getErrorMessage());
+		}
+
+		return true;
+	}
+
+	static bool importItemQuests(proto::Project &project, MySQL::Connection &conn)
+	{
+		for (auto &item : *project.items.getTemplates().mutable_entry())
+		{
+			item.clear_questentry();
+		}
+
+		wowpp::MySQL::Select select(conn, "SELECT `entry`,`startquest` FROM `tbcdb`.`item_template` WHERE `startquest` != 0;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 entry = 0, questEntry = 0;
+				row.getField(0, entry);
+				row.getField(1, questEntry);
+
+				auto * item = project.items.getById(entry);
+				if (!item)
+				{
+					WLOG("Unable to find item by id: " << entry);
+					row = row.next(select);
+					continue;
+				}
+
+				const auto *quest = project.quests.getById(questEntry);
+				if (!quest)
+				{
+					WLOG("Unable to find quest by id: " << questEntry);
+					row = row.next(select);
+					continue;
+				}
+
+				item->set_questentry(questEntry);
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			ELOG("Error: " << conn.getErrorMessage());
+		}
+
+		return true;
+	}
+
+	static bool importItemSets(proto::Project &project, MySQL::Connection &conn)
+	{
+		project.itemSets.clear();
+
+		wowpp::MySQL::Select select(conn, "SELECT `id`,`name4`,`spell1`,`count1`,`spell2`,`count2`,`spell3`,`count3`,`spell4`,`count4`,`spell5`,`count5`,`spell6`,`count6`,`spell7`,`count7`,`spell8`,`count8` FROM `dbc_itemset` ORDER BY `id`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 entry = 0, index = 0;
+				String name;
+				row.getField(index++, entry);
+				row.getField(index++, name);
+
+				auto *added = project.itemSets.add(entry);
+				if (!added)
+				{
+					ELOG("Failed to add item set");
+					return false;
+				}
+
+				added->set_name(name);
+
+				for (UInt32 i = 0; i < 8; ++i)
+				{
+					UInt32 spellId = 0, count = 0;
+					row.getField(index++, spellId);
+					row.getField(index++, count);
+
+					if (spellId == 0 || count == 0)
+					{
+						continue;
+					}
+
+					if (!project.spells.getById(spellId))
+					{
+						WLOG("Could not find spell by id " << spellId << ": Referenced by item set " << entry << " in slot " << i);
+						continue;
+					}
+
+					auto *addedSpell = added->add_spells();
+					if (!addedSpell)
+					{
+						ELOG("Could not add item set spell entry");
+						return false;
+					}
+
+					addedSpell->set_spell(spellId);
+					addedSpell->set_itemcount(count);
+				}
+
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			ELOG("Error: " << conn.getErrorMessage());
+		}
+
+		return true;
+	}
+
+	static bool importSpawnMovement(proto::Project &project, MySQL::Connection &conn)
+	{
+		for (auto &map : *project.maps.getTemplates().mutable_entry())
+		{
+			for (auto &spawn : *map.mutable_unitspawns())
+			{
+				spawn.clear_waypoints();
+				spawn.clear_movement();
+			}
+		}
+
+		wowpp::MySQL::Select select(conn, "SELECT `entry`,`MovementType` FROM `tbcdb`.`creature_template` WHERE `MovementType` != 0 ORDER BY `entry`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 entry = 0, movement = 0, index = 0;
+				row.getField(index++, entry);
+				row.getField(index++, movement);
+
+				for (auto &map : *project.maps.getTemplates().mutable_entry())
+				{
+					for (auto &spawn : *map.mutable_unitspawns())
+					{
+						if (spawn.unitentry() == entry)
+						{
+							spawn.set_movement(movement);
+						}
+					}
+				}
+
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			ELOG("Error: " << conn.getErrorMessage());
+		}
+
+		wowpp::MySQL::Select select2(conn, "SELECT `entry`,`point`,`position_x`,`position_y`,`position_z`,`waittime` FROM `tbcdb`.`creature_movement_template` ORDER BY `entry`, `point`;");
+		if (select2.success())
+		{
+			wowpp::MySQL::Row row(select2);
+			while (row)
+			{
+				// Get row data
+				UInt32 entry = 0, point = 0, index = 0, delay = 0;
+				float x, y, z;
+				row.getField(index++, entry);
+				row.getField(index++, point);
+				row.getField(index++, x);
+				row.getField(index++, y);
+				row.getField(index++, z);
+				row.getField(index++, delay);
+
+				for (auto &map : *project.maps.getTemplates().mutable_entry())
+				{
+					for (auto &spawn : *map.mutable_unitspawns())
+					{
+						if (spawn.unitentry() == entry)
+						{
+							auto *added = spawn.add_waypoints();
+							added->set_positionx(x);
+							added->set_positiony(y);
+							added->set_positionz(z);
+							added->set_waittime(delay);
+						}
+					}
+				}
+
+				row = row.next(select2);
+			}
+		}
+		else
+		{
+			ELOG("Error: " << conn.getErrorMessage());
+		}
+
+		return true;
+	}
+
+	static bool importAreaTrigger(proto::Project &project, MySQL::Connection &conn)
+	{
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `id`,`map`,`x`,`y`,`z`,`radius`,`box_x`,`box_y`,`box_z`,`box_o` FROM `dbc`.`dbc_areatrigger` ORDER BY `id`;");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					// Get row data
+					UInt32 entry = 0, map = 0, index = 0;
+					float x = 0.0f, y = 0.0f, z = 0.0f, radius = 0.0f, boxx = 0.0f, boxy = 0.0f, boxz = 0.0f, boxo = 0.0f;
+					row.getField(index++, entry);
+					row.getField(index++, map);
+					row.getField(index++, x);
+					row.getField(index++, y);
+					row.getField(index++, z);
+					row.getField(index++, radius);
+					row.getField(index++, boxx);
+					row.getField(index++, boxy);
+					row.getField(index++, boxz);
+					row.getField(index++, boxo);
+					
+					auto *trigger = project.areaTriggers.getById(entry);
+					if (!trigger)
+					{
+						trigger = project.areaTriggers.add(entry);
+						if (!trigger)
+						{
+							WLOG("Could not add area trigger " << entry);
+							row = row.next(select);
+							continue;
+						}
+
+						// New trigger is not a teleport trigger
+						trigger->set_name("Unnamed");
+						trigger->set_targetmap(0);
+						trigger->set_target_x(0.0f);
+						trigger->set_target_y(0.0f);
+						trigger->set_target_z(0.0f);
+						trigger->set_target_o(0.0f);
+					}
+
+					trigger->clear_questid();
+					trigger->clear_tavern();
+					trigger->set_map(map);
+					trigger->set_x(x);
+					trigger->set_y(y);
+					trigger->set_z(z);
+					if (radius != 0.0f) trigger->set_radius(radius);
+					if (boxx != 0.0f) trigger->set_box_x(boxx);
+					if (boxx != 0.0f) trigger->set_box_y(boxy);
+					if (boxx != 0.0f) trigger->set_box_z(boxz);
+					if (boxx != 0.0f) trigger->set_box_o(boxo);
+					row = row.next(select);
+				}
+			}
+			else
+			{
+				ELOG("Error: " << conn.getErrorMessage());
+			}
+		}
+
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `id`,`quest` FROM `tbcdb`.`areatrigger_involvedrelation` ORDER BY `id`;");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					// Get row data
+					UInt32 entry = 0, quest = 0, index = 0;
+					row.getField(index++, entry);
+					row.getField(index++, quest);
+
+					auto *trigger = project.areaTriggers.getById(entry);
+					if (!trigger)
+					{
+						WLOG("Could not find referenced quest trigger " << entry);
+						row = row.next(select);
+						continue;
+					}
+
+					auto *questEntry = project.quests.getById(quest);
+					if (!questEntry)
+					{
+						WLOG("Could not find quest " << quest << " referenced by area trigger " << entry);
+						row = row.next(select);
+						continue;
+					}
+
+					trigger->set_questid(quest);
+					row = row.next(select);
+				}
+			}
+			else
+			{
+				ELOG("Error: " << conn.getErrorMessage());
+			}
+		}
+
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `id` FROM `tbcdb`.`areatrigger_tavern` ORDER BY `id`;");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					// Get row data
+					UInt32 entry = 0, index = 0;
+					row.getField(index++, entry);
+
+					auto *trigger = project.areaTriggers.getById(entry);
+					if (!trigger)
+					{
+						WLOG("Could not find referenced tavern trigger " << entry);
+						row = row.next(select);
+						continue;
+					}
+
+					trigger->set_tavern(true);
+					row = row.next(select);
+				}
+			}
+			else
+			{
+				ELOG("Error: " << conn.getErrorMessage());
+			}
+		}
+
+		return true;
+	}
+
+
+#if 0
+	static void fixTriggerEvents(proto::Project &project)
+	{
+		for (auto &trigger : *project.triggers.getTemplates().mutable_entry())
+		{
+			for (auto &e : trigger.events())
+			{
+				auto *added = trigger.add_newevents();
+				added->set_type(e);
+				added->clear_data();
+			}
+		}
+	}
+#endif
 }
 
 /// Procedural entry point of the application.
@@ -1028,36 +1514,48 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 
-	/*
-	if (!importSpellMechanics(protoProject, connection))
+	if (!importItemSets(protoProject, connection))
 	{
-		ELOG("Failed to import spell mechanics");
-		return 1;
+		ELOG("Failed to import item sets");
+		return 0;
 	}
-	*/
-	if (!importCategories(protoProject, connection))
+
+	if (!importItemQuests(protoProject, connection))
 	{
-		ELOG("Failed to import spell categories");
-		return 1;
+		ELOG("Could not import item quests");
+		return 0;
 	}
-	/*
-	if (!importQuestRelations(protoProject, connection))
-	{
-		ELOG("Failed to import quest relations");
-		return 1;
-	}
-	*/
+
 	if (!addSpellLinks(protoProject))
 	{
 		ELOG("Failed to add spell links");
 		return 1;
 	}
 
-	if (!importDispelData(protoProject, connection))
+	if (!importTrainerLinks(protoProject, connection))
 	{
-		ELOG("Failed to import spell dispel data");
+		ELOG("Failed to import trainer links");
 		return 1;
 	}
+
+	if (!importUnitMechanicImmunities(protoProject, connection))
+	{
+		ELOG("Failed to import unit mechanic immunities!");
+		return 1;
+	}
+
+	if (!importSpawnMovement(protoProject, connection))
+	{
+		ELOG("Failed to import spawn movement!");
+		return 1;
+	}
+
+	if (!importAreaTrigger(protoProject, connection))
+	{
+		ELOG("Failed to import area triggers!");
+		return 1;
+	}
+	//fixTriggerEvents(protoProject);
 
 	// Save project
 	if (!protoProject.save(configuration.dataPath))

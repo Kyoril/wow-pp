@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,27 +10,34 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
+#include "pch.h"
 #include "game_character.h"
-#include <log/default_log_levels.h>
+#include "log/default_log_levels.h"
 #include "proto_data/project.h"
 #include "game_item.h"
 #include "common/utilities.h"
+#include "game_creature.h"
+#include "inventory.h"
 #include "defines.h"
+#include "each_tile_in_sight.h"
+#include "each_tile_in_region.h"
+#include "game_world_object.h"
+#include "binary_io/vector_sink.h"
 
 namespace wowpp
 {
 	GameCharacter::GameCharacter(
-		proto::Project &project,
-		TimerQueue &timers)
+	    proto::Project &project,
+	    TimerQueue &timers)
 		: GameUnit(project, timers)
 		, m_name("UNKNOWN")
 		, m_zoneIndex(0)
@@ -44,10 +51,11 @@ namespace wowpp
 		, m_canBlock(false)
 		, m_canParry(false)
 		, m_canDualWield(false)
+		, m_inventory(*this)
 	{
 		// Resize values field
-		m_values.resize(character_fields::CharacterFieldCount);
-		m_valueBitset.resize((character_fields::CharacterFieldCount + 31) / 32);
+		m_values.resize(character_fields::CharacterFieldCount, 0);
+		m_valueBitset.resize((character_fields::CharacterFieldCount + 31) / 32, 0);
 
 		m_objectType |= type_mask::Player;
 	}
@@ -106,8 +114,9 @@ namespace wowpp
 		setFloatValue(character_fields::RangedCritPercentage, 0.0f);
 
 		// Init spell schools (will be recalculated in UpdateAllStats() at loading and in _ApplyAllStatBonuses() at reset
-		for (UInt8 i = 0; i < 7; ++i)
+		for (UInt8 i = 0; i < 7; ++i) {
 			setFloatValue(character_fields::SpellCritPercentage + i, 0.0f);
+		}
 
 		setFloatValue(character_fields::ParryPercentage, 0.0f);
 		setFloatValue(character_fields::BlockPercentage, 0.0f);
@@ -122,6 +131,37 @@ namespace wowpp
 
 		// Dodge percentage
 		setFloatValue(character_fields::DodgePercentage, 0.0f);
+
+		// Reset threat modifiers
+		m_threatModifier.fill(1.0f);
+
+		// Watch for own death and fail all quests that require the player to stay alive
+		killed.connect([this](GameUnit *killer)
+		{
+			bool updateQuestObjects = false;
+			for (UInt32 i = 0; i < 25; ++i)
+			{
+				auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+
+				// Find quest
+				const auto *quest = getProject().quests.getById(logId);
+				if (!quest)
+					continue;
+
+				if (quest->flags() & game::quest_flags::StayAlive)
+				{
+					if (failQuest(logId))
+					{
+						updateQuestObjects = true;
+					}
+				}
+			}
+
+			if (updateQuestObjects)
+			{
+				updateNearbyQuestObjects();
+			}
+		});
 	}
 
 	game::QuestStatus GameCharacter::getQuestStatus(UInt32 quest) const
@@ -129,7 +169,12 @@ namespace wowpp
 		// Check if we have a cached quest state
 		auto it = m_quests.find(quest);
 		if (it != m_quests.end())
-			return it->second.status;
+		{
+			if (it->second.status != game::quest_status::Available &&
+			        it->second.status != game::quest_status::Unavailable) {
+				return it->second.status;
+			}
+		}
 
 		// We don't have that quest cached, make a lookup
 		const auto *entry = getProject().quests.getById(quest);
@@ -144,17 +189,33 @@ namespace wowpp
 		{
 			return game::quest_status::Unavailable;
 		}
-		
+
+		// Check skill
+		if (entry->requiredskill() != 0)
+		{
+			UInt16 current = 0, max = 0;
+			if (!getSkillValue(entry->requiredskill(), current, max))
+			{
+				return game::quest_status::Unavailable;
+			}
+
+			if (entry->requiredskillval() > 0 &&
+				current < entry->requiredskillval())
+			{
+				return game::quest_status::Unavailable;
+			}
+		}
+
 		// Race/Class check
 		const UInt32 charRaceBit = 1 << (getRace() - 1);
 		const UInt32 charClassBit = 1 << (getClass() - 1);
 		if (entry->requiredraces() &&
-			(entry->requiredraces() & charRaceBit) == 0)
+		        (entry->requiredraces() & charRaceBit) == 0)
 		{
 			return game::quest_status::Unavailable;
 		}
 		if (entry->requiredclasses() &&
-			(entry->requiredclasses() & charClassBit) == 0)
+		        (entry->requiredclasses() & charClassBit) == 0)
 		{
 			return game::quest_status::Unavailable;
 		}
@@ -180,34 +241,94 @@ namespace wowpp
 			return false;
 		}
 
+		const auto *questEntry = getProject().quests.getById(quest);
+		if (!questEntry)
+		{
+			return false;
+		}
+
+		const auto *srcItem = getProject().items.getById(questEntry->srcitemid());
+		if (questEntry->srcitemid() && !srcItem)
+		{
+			return false;
+		}
+
 		// Find next free quest log
 		for (UInt32 i = 0; i < 25; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
 			if (logId == 0 || logId == quest)
 			{
+				// Grant quest source item if possible
+				if (srcItem)
+				{
+					auto result = m_inventory.createItems(*srcItem, questEntry->srcitemcount());
+					if (result != game::inventory_change_failure::Okay)
+					{
+						inventoryChangeFailure(result, nullptr, nullptr);
+						return false;
+					}
+				}
+
 				// Take that quest
 				auto &data = m_quests[quest];
 				data.status = game::quest_status::Incomplete;
+
+				if (questEntry->srcspell())
+				{
+					// TODO: Maybe we should make the quest giver cast the spell, if it's a unit
+					SpellTargetMap targetMap;
+					targetMap.m_unitTarget = getGuid();
+					targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+					castSpell(std::move(targetMap), questEntry->srcspell(), -1, 0, true);
+				}
+
+				// Quest timer
+				UInt32 questTimer = 0;
+				if (questEntry->timelimit() > 0)
+				{
+					questTimer = time(nullptr) + questEntry->timelimit();
+					data.expiration = questTimer;
+				}
 
 				// Set quest log
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, quest);
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);
-				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, questTimer);
+
+				bool updateQuestObjects = false;
 
 				// Complete if no requirements
-				const auto *questEntry = getProject().quests.getById(quest);
-				if (questEntry)
+				if (fulfillsQuestRequirements(*questEntry))
 				{
-					if (questEntry->requirements_size() == 0)
+					data.status = game::quest_status::Complete;
+					addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+				}
+				else
+				{
+					// Mark all related quest items as needed
+					for (auto &req : questEntry->requirements())
 					{
-						data.status = game::quest_status::Complete;
-						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+						if (req.itemid())
+						{
+							m_requiredQuestItems[req.itemid()]++;
+							updateQuestObjects = true;
+						}
+						if (req.sourceid())
+						{
+							m_requiredQuestItems[req.sourceid()]++;
+							updateQuestObjects = true;
+						}
 					}
 				}
 
 				questDataChanged(quest, data);
+				if (updateQuestObjects)
+				{
+					updateNearbyQuestObjects();
+				}
+
 				return true;
 			}
 		}
@@ -218,6 +339,52 @@ namespace wowpp
 
 	bool GameCharacter::abandonQuest(UInt32 quest)
 	{
+		// Find next free quest log
+		for (UInt32 i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == quest)
+			{
+				auto &data = m_quests[quest];
+				data.status = game::quest_status::Available;
+				data.creatures.fill(0);
+				data.objects.fill(0);
+				data.items.fill(0);
+
+				bool updateQuestObjects = false;
+
+				// Mark all related quest items as needed
+				const auto *entry = getProject().quests.getById(quest);
+				for (auto &req : entry->requirements())
+				{
+					if (req.itemid())
+					{
+						m_requiredQuestItems[req.itemid()]--;
+						updateQuestObjects = true;
+					}
+					if (req.sourceid())
+					{
+						m_requiredQuestItems[req.sourceid()]--;
+						updateQuestObjects = true;
+					}
+				}
+
+				// Reset quest log
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
+
+				questDataChanged(quest, data);
+				if (updateQuestObjects)
+				{
+					updateNearbyQuestObjects();
+				}
+
+				return true;
+			}
+		}
+
 		return false;
 	}
 
@@ -229,43 +396,184 @@ namespace wowpp
 			{
 				UInt32 qLevel = quest.questlevel() > 0 ? static_cast<UInt32>(quest.questlevel()) : 0;
 				float fullxp = 0;
-				if (qLevel >= 65)
+				if (qLevel >= 65) {
 					fullxp = quest.rewardmoneymaxlevel() / 6.0f;
-				else if (qLevel == 64)
+				}
+				else if (qLevel == 64) {
 					fullxp = quest.rewardmoneymaxlevel() / 4.8f;
-				else if (qLevel == 63)
+				}
+				else if (qLevel == 63) {
 					fullxp = quest.rewardmoneymaxlevel() / 3.6f;
-				else if (qLevel == 62)
+				}
+				else if (qLevel == 62) {
 					fullxp = quest.rewardmoneymaxlevel() / 2.4f;
-				else if (qLevel == 61)
+				}
+				else if (qLevel == 61) {
 					fullxp = quest.rewardmoneymaxlevel() / 1.2f;
-				else if (qLevel > 0 && qLevel <= 60)
+				}
+				else if (qLevel > 0 && qLevel <= 60) {
 					fullxp = quest.rewardmoneymaxlevel() / 0.6f;
+				}
 
-				if (playerLevel <= qLevel + 5)
+				if (playerLevel <= qLevel + 5) {
 					return UInt32(ceilf(fullxp));
-				else if (playerLevel == qLevel + 6)
+				}
+				else if (playerLevel == qLevel + 6) {
 					return UInt32(ceilf(fullxp * 0.8f));
-				else if (playerLevel == qLevel + 7)
+				}
+				else if (playerLevel == qLevel + 7) {
 					return UInt32(ceilf(fullxp * 0.6f));
-				else if (playerLevel == qLevel + 8)
+				}
+				else if (playerLevel == qLevel + 8) {
 					return UInt32(ceilf(fullxp * 0.4f));
-				else if (playerLevel == qLevel + 9)
+				}
+				else if (playerLevel == qLevel + 9) {
 					return UInt32(ceilf(fullxp * 0.2f));
-				else
+				}
+				else {
 					return UInt32(ceilf(fullxp * 0.1f));
+				}
 			}
 
 			return 0;
 		}
 	}
 
-	bool GameCharacter::rewardQuest(UInt32 quest, std::function<void(UInt32)> callback)
+	bool GameCharacter::completeQuest(UInt32 quest)
+	{
+		// Check all quests in the quest log
+		bool updateQuestObjects = false;
+		for (UInt32 i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId != quest)
+				continue;
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end())
+				continue;
+
+			if (it->second.status != game::quest_status::Incomplete)
+				continue;
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest)
+				continue;
+
+			if (!it->second.explored)
+			{
+				if (quest->flags() & game::quest_flags::Exploration)
+				{
+					it->second.explored = true;
+				}
+			}
+
+			// Counter needed so that the right field is used
+			UInt8 reqIndex = 0;
+			for (const auto &req : quest->requirements())
+			{
+				if (req.creatureid() != 0)
+				{
+					// Get current counter
+					UInt8 counter = getByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex);
+					if (counter < req.creaturecount())
+					{
+						// Increment and update counter
+						setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex, ++counter);
+						it->second.creatures[reqIndex]++;
+					}
+				}
+				else if (req.objectid() != 0)
+				{
+					// Get current counter
+					UInt8 counter = getByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex);
+					if (counter < req.objectcount())
+					{
+						// Increment and update counter
+						setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex, ++counter);
+						it->second.creatures[reqIndex]++;
+					}
+				}
+
+				reqIndex++;
+			}
+
+			// Complete quest
+			it->second.status = game::quest_status::Complete;
+			addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+			
+			// Save quest progress
+			questDataChanged(logId, it->second);
+
+			return true;
+		}
+
+		return false;
+	}
+
+	bool GameCharacter::failQuest(UInt32 questId)
+	{
+		for (UInt32 i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId != questId)
+				continue;
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end())
+				continue;
+
+			// Failed already or not acceptable?
+			if (it->second.status == game::quest_status::Failed ||
+				it->second.status == game::quest_status::Unavailable)
+				continue;
+			
+			it->second.status = game::quest_status::Failed;
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest)
+				continue;
+
+			// Update required item cache
+			for (const auto &req : quest->requirements())
+			{
+				if (req.itemid() != 0)
+				{
+					// We needed this quest items and now no longer need them
+					if (m_inventory.getItemCount(req.itemid()) < req.itemcount())
+					{
+						m_requiredQuestItems[req.itemid()]--;
+					}
+				}
+			}
+
+			// Update quest state
+			setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Failed);
+
+			// Reset timer
+			if (getUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1) > 0)
+			{
+				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 1);
+			}
+
+			questDataChanged(questId, it->second);
+			return true;
+		}
+
+		return false;
+	}
+
+	bool GameCharacter::rewardQuest(UInt32 quest, UInt8 rewardChoice, std::function<void(UInt32)> callback)
 	{
 		// Reward experience
 		const auto *entry = m_project.quests.getById(quest);
-		if (!entry)
+		if (!entry) {
 			return false;
+		}
 
 		auto it = m_quests.find(quest);
 		if (it == m_quests.end())
@@ -277,6 +585,81 @@ namespace wowpp
 			return false;
 		}
 
+		// Gather all rewarded items
+		std::map<const proto::ItemEntry *, UInt16> rewardedItems;
+		{
+			if (entry->rewarditemschoice_size() > 0)
+			{
+				// Validate reward index
+				if (rewardChoice >= entry->rewarditemschoice_size())
+				{
+					return false;
+				}
+
+				const auto *item = getProject().items.getById(
+				                       entry->rewarditemschoice(rewardChoice).itemid());
+				if (!item)
+				{
+					return false;
+				}
+
+				// Check if the player can store the item
+				rewardedItems[item] += entry->rewarditemschoice(rewardChoice).count();
+			}
+			for (auto &rew : entry->rewarditems())
+			{
+				const auto *item = getProject().items.getById(rew.itemid());
+				if (!item)
+				{
+					return false;
+				}
+
+				rewardedItems[item] += rew.count();
+			}
+		}
+
+		// First loop to check if the items can be stored
+		for (auto &pair : rewardedItems)
+		{
+			auto result = m_inventory.canStoreItems(*pair.first, pair.second);
+			if (result != game::inventory_change_failure::Okay)
+			{
+				inventoryChangeFailure(result, nullptr, nullptr);
+				return false;
+			}
+		}
+
+		// Try to remove all required quest items
+		for (const auto &req : entry->requirements())
+		{
+			if (req.itemid())
+			{
+				const auto *itemEntry = m_project.items.getById(req.itemid());
+				if (!itemEntry)
+				{
+					return false;
+				}
+
+				auto result = m_inventory.removeItems(*itemEntry, req.itemcount());
+				if (result != game::inventory_change_failure::Okay)
+				{
+					inventoryChangeFailure(result, nullptr, nullptr);
+					return false;
+				}
+			}
+		}
+
+		// Second loop needed to actually create the items
+		for (auto &pair : rewardedItems)
+		{
+			auto result = m_inventory.createItems(*pair.first, pair.second);
+			if (result != game::inventory_change_failure::Okay)
+			{
+				inventoryChangeFailure(result, nullptr, nullptr);
+				return false;
+			}
+		}
+
 		UInt32 xp = getQuestXP(getLevel(), *entry);
 		if (xp > 0)
 		{
@@ -284,11 +667,18 @@ namespace wowpp
 		}
 
 		UInt32 money = entry->rewardmoney() +
-			(getLevel() >= 70 ? entry->rewardmoneymaxlevel() : 0);
+		               (getLevel() >= 70 ? entry->rewardmoneymaxlevel() : 0);
 		if (money > 0)
 		{
 			setUInt32Value(character_fields::Coinage,
-				getUInt32Value(character_fields::Coinage + money));
+			               getUInt32Value(character_fields::Coinage) + money);
+		}
+
+		for (const auto &req : entry->requirements())
+		{
+			if (req.itemid()) {
+				m_requiredQuestItems[req.itemid()]--;
+			}
 		}
 
 		for (UInt32 i = 0; i < 25; ++i)
@@ -304,23 +694,625 @@ namespace wowpp
 			}
 		}
 
+		if (entry->rewardspellcast())
+		{
+			// TODO: Maybe we should make the quest giver cast the spell, if it's a unit
+			SpellTargetMap targetMap;
+			targetMap.m_unitTarget = getGuid();
+			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+			castSpell(std::move(targetMap), entry->rewardspellcast(), -1, 0, true);
+		}
+
 		// Quest was rewarded
 		it->second.status = game::quest_status::Rewarded;
 		questDataChanged(quest, it->second);
 
 		// Call callback function
-		if (callback) callback(xp);
+		if (callback) {
+			callback(xp);
+		}
 
 		return true;
 	}
 
-	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData & data)
+	void GameCharacter::onQuestKillCredit(GameCreature &killed)
+	{
+		// Check all quests in the quest log
+		bool updateQuestObjects = false;
+		for (UInt32 i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == 0) {
+				continue;
+			}
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end()) {
+				continue;
+			}
+
+			if (it->second.status != game::quest_status::Incomplete) {
+				continue;
+			}
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest) {
+				continue;
+			}
+
+			// Counter needed so that the right field is used
+			UInt8 reqIndex = 0;
+			for (const auto &req : quest->requirements())
+			{
+				if (req.creatureid() == killed.getEntry().id())
+				{
+					// Get current counter
+					UInt8 counter = getByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex);
+					if (counter < req.creaturecount())
+					{
+						// Increment and update counter
+						setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex, ++counter);
+						it->second.creatures[reqIndex]++;
+
+						// Fire signal to update UI
+						questKillCredit(*quest, killed.getGuid(), killed.getEntry().id(), counter, req.creaturecount());
+
+						// Check if this completed the quest
+						if (fulfillsQuestRequirements(*quest))
+						{
+							for (const auto &req : quest->requirements())
+							{
+								if (req.itemid())
+								{
+									m_requiredQuestItems[req.itemid()]--;
+									updateQuestObjects = true;
+								}
+							}
+
+							// Complete quest
+							it->second.status = game::quest_status::Complete;
+							addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+						}
+
+						// Save quest progress
+						questDataChanged(logId, it->second);
+					}
+
+					// Continue with next quest, as multiple quests could require the same
+					// creature kill credit
+					continue;
+				}
+
+				reqIndex++;
+			}
+		}
+
+		if (updateQuestObjects)
+		{
+			updateNearbyQuestObjects();
+		}
+	}
+
+	bool GameCharacter::fulfillsQuestRequirements(const proto::QuestEntry &entry) const
+	{
+		// This is an event-driven quest which can not be simply completed. Some of these quests
+		// don't have a requirement and as such can't be completed by such
+		if (entry.flags() & game::quest_flags::PartyAccept)
+		{
+			return false;
+		}
+
+		// Check if the character has this quest entry
+		auto it = m_quests.find(entry.id());
+		if (it == m_quests.end())
+		{
+			return false;
+		}
+
+
+		// Check for exploration quests before checking for requirements, as most of these quests
+		// don't have any requirement at all and thus would pass the requirement check.
+		if (entry.flags() & game::quest_flags::Exploration)
+		{
+			// Check if this quest has been explored
+			return it->second.explored;
+		}
+
+		// Now check for quest requirements
+		if (entry.requirements_size() == 0)
+		{
+			return true;
+		}
+
+		// Now check all available quest requirements
+		UInt32 counter = 0;
+		for (const auto &req : entry.requirements())
+		{
+			// Creature kill / spell cast required
+			if (req.creatureid() != 0)
+			{
+				if (it->second.creatures[counter] < req.creaturecount()) {
+					return false;
+				}
+			}
+			// Object interaction / spell cast required
+			else if (req.objectid() != 0)
+			{
+				if (it->second.objects[counter] < req.objectcount()) {
+					return false;
+				}
+			}
+			// Item required
+			else if (req.itemid() != 0)
+			{
+				// Not enough items? (Don't worry, getItemCount is fast as it uses a cached value)
+				auto itemCount = m_inventory.getItemCount(req.itemid());
+				if (itemCount < req.itemcount())
+				{
+					return false;
+				}
+			}
+
+			// Increase counter
+			counter++;
+		}
+
+		return true;
+	}
+
+	bool GameCharacter::isQuestlogFull() const
+	{
+		for (int i = 0; i < 25; ++i)
+		{
+			// If this quest log slot is empty, we can stop as there is at least one
+			// free quest slot available
+			if (getUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0) == 0)
+			{
+				return false;
+			}
+		}
+
+		// No free quest slots found
+		return true;
+	}
+
+	void GameCharacter::onQuestItemAddedCredit(const proto::ItemEntry &entry, UInt32 amount)
+	{
+		// If this is set to true, all nearby objects will be updated
+		bool updateNearbyObjects = false;
+		for (int i = 0; i < 25; ++i)
+		{
+			// Check if there is a quest in that slot
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == 0) {
+				continue;
+			}
+
+			// Check if the player really has accepted that quest
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end()) {
+				continue;
+			}
+
+			// Check if the quest was already completed
+			if (it->second.status != game::quest_status::Incomplete) {
+				continue;
+			}
+
+			// Get quest template entry
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest) {
+				continue;
+			}
+
+			// If this is set to true, all requirements of this quest will be reevaluated, which costs
+			// some time. So this variable is only updated, if a quest requirement status changed between
+			// Completed and Uncomplete to save performance.
+			bool validateQuest = false;
+
+			// Check every quest entry requirement
+			for (const auto &req : quest->requirements())
+			{
+				if (req.itemid() == entry.id())
+				{
+					if (m_inventory.getItemCount(entry.id()) >= req.itemcount())
+					{
+						m_requiredQuestItems[req.itemid()]--;
+						updateNearbyObjects = true;
+						validateQuest = true;
+					}
+				}
+				else if (req.sourceid() == entry.id())
+				{
+					if (m_inventory.getItemCount(entry.id()) >= req.sourcecount())
+					{
+						m_requiredQuestItems[req.sourceid()]--;
+						updateNearbyObjects = true;
+						validateQuest = true;
+					}
+				}
+			}
+
+			// Check if the quest requirements need to be reevaluated
+			if (validateQuest)
+			{
+				// Quest is fulfilled now
+				if (fulfillsQuestRequirements(*quest))
+				{
+					it->second.status = game::quest_status::Complete;
+					addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+					questDataChanged(logId, it->second);
+				}
+			}
+		}
+
+		// Finally, update all nearby objects if needed to. We do this after we checked all
+		// quests, so that we will update these objects only ONCE
+		if (updateNearbyObjects)
+		{
+			updateNearbyQuestObjects();
+		}
+	}
+
+	void GameCharacter::onQuestItemRemovedCredit(const proto::ItemEntry &entry, UInt32 amount)
+	{
+		bool updateNearbyObjects = false;
+		for (int i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == 0) {
+				continue;
+			}
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end()) {
+				continue;
+			}
+
+			if (it->second.status != game::quest_status::Complete) {
+				continue;
+			}
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest) {
+				continue;
+			}
+
+			bool validateQuest = false;
+
+			for (const auto &req : quest->requirements())
+			{
+				if (req.itemid() == entry.id())
+				{
+					if (m_inventory.getItemCount(entry.id()) < req.itemcount())
+					{
+						m_requiredQuestItems[req.itemid()]++;
+						updateNearbyObjects = true;
+						validateQuest = true;
+					}
+				}
+				if (req.sourceid() == entry.id())
+				{
+					if (m_inventory.getItemCount(entry.id()) < req.sourcecount())
+					{
+						m_requiredQuestItems[req.sourceid()]++;
+						updateNearbyObjects = true;
+						validateQuest = true;
+					}
+				}
+			}
+
+			if (validateQuest)
+			{
+				// Found it: Complete quest if completable
+				if (!fulfillsQuestRequirements(*quest))
+				{
+					it->second.status = game::quest_status::Incomplete;
+					removeFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+					questDataChanged(logId, it->second);
+				}
+			}
+		}
+
+		if (updateNearbyObjects)
+		{
+			updateNearbyQuestObjects();
+		}
+	}
+
+	void GameCharacter::onQuestSpellCastCredit(UInt32 spellId, GameObject & target)
+	{
+		bool updateNearbyObjects = false;
+		for (int i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == 0) {
+				continue;
+			}
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end()) {
+				continue;
+			}
+
+			if (it->second.status != game::quest_status::Incomplete) {
+				continue;
+			}
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest) {
+				continue;
+			}
+
+			bool validateQuest = false;
+
+			// Counter needed so that the correct field is used
+			UInt8 reqIndex = 0;
+			for (const auto &req : quest->requirements())
+			{
+				// Get current counter
+				UInt8 counter = getByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex);
+				if (req.spellcast() == spellId)
+				{
+					if (req.creatureid() && counter < req.creaturecount() && target.isCreature())
+					{
+						if (reinterpret_cast<GameCreature&>(target).getEntry().id() == req.creatureid())
+						{
+							// Increment and update counter
+							setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex, ++counter);
+							it->second.creatures[reqIndex]++;
+
+							// Fire signal to update UI
+							questKillCredit(*quest, target.getGuid(), req.creatureid(), counter, req.creaturecount());
+
+							validateQuest = true;
+						}
+					}
+					else if (req.objectid() && counter < req.objectcount() && target.isWorldObject())
+					{
+						if (reinterpret_cast<WorldObject&>(target).getEntry().id() == req.objectid())
+						{
+							// Increment and update counter
+							setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex, ++counter);
+							it->second.objects[reqIndex]++;
+
+							// Fire signal to update UI
+							questKillCredit(*quest, target.getGuid(), req.objectid(), counter, req.objectcount());
+
+							validateQuest = true;
+						}
+					}
+				}
+
+				reqIndex++;
+			}
+
+			if (validateQuest)
+			{
+				// Found it: Complete quest if completable
+				if (fulfillsQuestRequirements(*quest))
+				{
+					it->second.status = game::quest_status::Complete;
+					addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+				}
+
+				// Save quest progress
+				questDataChanged(logId, it->second);
+			}
+		}
+
+		if (updateNearbyObjects)
+		{
+			updateNearbyQuestObjects();
+		}
+	}
+
+	void GameCharacter::onQuestObjectCredit(UInt32 spellId, WorldObject & target)
+	{
+		// Check all quests in the quest log
+		bool updateQuestObjects = false;
+		for (UInt32 i = 0; i < 25; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == 0) {
+				continue;
+			}
+
+			// Verify quest state
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end()) {
+				continue;
+			}
+
+			if (it->second.status != game::quest_status::Incomplete) {
+				continue;
+			}
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest) {
+				continue;
+			}
+
+			// Counter needed so that the right field is used
+			UInt8 reqIndex = 0;
+			for (const auto &req : quest->requirements())
+			{
+				if (req.objectid() == target.getEntry().id() &&
+					(req.spellcast() == 0 || req.spellcast() == spellId))
+				{
+					// Get current counter
+					UInt8 counter = getByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex);
+					if (counter < req.objectcount())
+					{
+						// Increment and update counter
+						setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex, ++counter);
+						it->second.objects[reqIndex]++;
+
+						// Fire signal to update UI
+						questKillCredit(*quest, target.getGuid(), (target.getEntry().id() | 0x80000000), counter, req.objectcount());
+
+						// Check if this completed the quest
+						if (fulfillsQuestRequirements(*quest))
+						{
+							for (const auto &req : quest->requirements())
+							{
+								if (req.itemid())
+								{
+									m_requiredQuestItems[req.itemid()]--;
+								}
+							}
+
+							// Complete quest
+							it->second.status = game::quest_status::Complete;
+							addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+						}
+
+						// Save quest progress
+						questDataChanged(logId, it->second);
+						updateQuestObjects = true;
+					}
+
+					// Continue with next quest, as multiple quests could require the same
+					// creature kill credit
+					break;
+				}
+
+				reqIndex++;
+			}
+		}
+
+		if (updateQuestObjects)
+		{
+			updateNearbyQuestObjects();
+		}
+	}
+
+	bool GameCharacter::needsQuestItem(UInt32 itemId) const
+	{
+		auto it = m_requiredQuestItems.find(itemId);
+		return (it != m_requiredQuestItems.end() ? it->second > 0 : false);
+	}
+
+	void GameCharacter::modifySpellMod(SpellModifier &mod, bool apply)
+	{
+		for (UInt8 eff = 0; eff < 64; ++eff)
+		{
+			UInt64 mask = UInt64(1) << eff;
+			if (mod.mask & mask)
+			{
+				Int32 val = 0;
+				for (auto it = m_spellModsByOp[mod.op].begin(); it != m_spellModsByOp[mod.op].end(); ++it)
+				{
+					if (it->type == mod.type && it->mask & mask)
+					{
+						val += it->value;
+					}
+				}
+
+				val += apply ? mod.value : -(mod.value);
+				spellModChanged(mod.type, eff, mod.op, val);
+			}
+		}
+
+		if (apply)
+		{
+			m_spellModsByOp[mod.op].push_back(mod);
+		}
+		else
+		{
+			for (auto it = m_spellModsByOp[mod.op].begin(); it != m_spellModsByOp[mod.op].end(); ++it)
+			{
+				if (it->mask == mod.mask &&
+					it->value == mod.value &&
+					it->type == mod.type &&
+					it->op == mod.op
+					)
+				{
+					it = m_spellModsByOp[mod.op].erase(it);
+					break;
+				}
+			}
+		}
+	}
+
+	Int32 GameCharacter::getTotalSpellMods(SpellModType type, SpellModOp op, UInt32 spellId) const
+	{
+		const auto *spell = getProject().spells.getById(spellId);
+		if (!spell)
+			return 0;
+
+		// Get spell modifier by op list
+		auto list = m_spellModsByOp.find(op);
+		if (list == m_spellModsByOp.end())
+		{
+			return 0;
+		}
+
+		Int32 total = 0;
+		for (const auto &mod : list->second)
+		{
+			if (mod.type != type)
+			{
+				continue;
+			}
+
+			UInt64 familyFlags = spell->familyflags();
+			if (!familyFlags)
+			{
+				familyFlags = spell->family();
+			}
+			if (familyFlags & mod.mask)
+			{
+				total += mod.value;
+			}
+		}
+
+		return total;
+	}
+
+	void GameCharacter::modifyThreatModifier(UInt32 schoolMask, float modifier, bool apply)
+	{
+		for (UInt32 i = 0; i < m_threatModifier.size(); ++i)
+		{
+			if (schoolMask & (1 << i))
+			{
+				m_threatModifier[i] *= (apply ? (1.0f + modifier) : 1.0f / (1.0f + modifier));
+			}
+		}
+	}
+
+	void GameCharacter::applyThreatMod(UInt32 schoolMask, float & ref_threat)
+	{
+		for (UInt32 i = 0; i < m_threatModifier.size(); ++i)
+		{
+			// We only need to find the first valid school in case of multiple schools
+			if (schoolMask & (1 << i))
+			{
+				ref_threat *= m_threatModifier[i];
+				return;
+			}
+		}
+	}
+
+	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData &data)
 	{
 		m_quests[quest] = data;
 
+		const auto *entry = getProject().quests.getById(quest);
+		if (!entry) {
+			return;
+		}
+
 		if (data.status == game::quest_status::Incomplete ||
-			data.status == game::quest_status::Complete ||
-			data.status == game::quest_status::Failed)
+		    data.status == game::quest_status::Complete ||
+		    data.status == game::quest_status::Failed)
 		{
 			for (UInt32 i = 0; i < 25; ++i)
 			{
@@ -329,11 +1321,28 @@ namespace wowpp
 				{
 					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, quest);
 					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);
-					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);	// TODO
-					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, 0);
+					setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, static_cast<UInt32>(data.expiration));
+					UInt8 offset = 0;
+					for (auto &req : entry->requirements())
+					{
+						if (req.creatureid())
+						{
+							setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, offset, data.creatures[offset]);
+						}
+						else if (req.objectid())
+						{
+							setByteValue(character_fields::QuestLog1_1 + i * 4 + 2, offset, data.objects[offset]);
+						}
+
+						offset++;
+					}
 					if (data.status == game::quest_status::Complete)
 					{
 						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+					}
+					else if (data.status == game::quest_status::Failed)
+					{
+						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Failed);
 					}
 					break;
 				}
@@ -351,7 +1360,7 @@ namespace wowpp
 
 		// Update xp to next level
 		setUInt32Value(character_fields::NextLevelXp, levelInfo.nextlevelxp());
-		
+
 		// Try to find base values
 		if (getClassEntry())
 		{
@@ -402,90 +1411,42 @@ namespace wowpp
 		m_name = name;
 	}
 
-	void GameCharacter::addItem(std::shared_ptr<GameItem> item, UInt16 slot)
-	{
-		if (slot < player_equipment_slots::End)
-		{
-			applyItemStats(*item, true);
-		}
-
-		// Check if that item already exists
-		auto it = m_itemSlots.find(slot);
-		if (it == m_itemSlots.end())
-		{
-			// Set new item guid
-			setUInt64Value(character_fields::InvSlotHead + (slot * 2), item->getGuid());
-			item->setUInt64Value(item_fields::Contained, getGuid());
-			item->setUInt64Value(item_fields::Owner, getGuid());
-			
-			// If this item was equipped, make it visible for other players
-			if (slot < player_equipment_slots::End)
-			{
-				setUInt32Value(character_fields::VisibleItem1_0 + (slot * 16), item->getEntry().id());
-				setUInt64Value(character_fields::VisibleItem1_CREATOR + (slot * 16), item->getUInt64Value(item_fields::Creator));
-
-				// TODO: Apply Enchantment Slots
-
-				// TODO: Apply random property settings
-
-			}
-
-			// Store new item
-			m_itemSlots[slot] = std::move(item);
-		}
-		else
-		{
-			// Item already exists, increase the stack number, old item will be deleted
-			auto &playerItem = it->second;
-
-			// Increase stack
-			const UInt32 existingStackCount = playerItem->getUInt32Value(item_fields::StackCount);
-			const UInt32 additionalStackCount = item->getUInt32Value(item_fields::StackCount);
-
-			// Apply stack count
-			playerItem->setUInt32Value(item_fields::StackCount, existingStackCount + additionalStackCount);
-		}
-
-		// Equipment changed
-		if (slot < player_equipment_slots::End)
-		{
-			updateAllStats();
-		}
-	}
-
-	void GameCharacter::addSpell(const proto::SpellEntry &spell)
+	bool GameCharacter::addSpell(const proto::SpellEntry &spell)
 	{
 		if (hasSpell(spell.id()))
 		{
-			return;
+			return false;
 		}
 
 		// Evaluate parry and block spells
 		for (int i = 0; i < spell.effects_size(); ++i)
 		{
 			const auto &effect = spell.effects(i);
-			if (effect.type() == game::spell_effects::Parry)
+			switch (effect.type())
 			{
-				m_canParry = true;
-			}
-			else if (effect.type() == game::spell_effects::Block)
-			{
-				m_canBlock = true;
-			}
-			else if (effect.type() == game::spell_effects::DualWield)
-			{
-				m_canDualWield = true;
+				case game::spell_effects::Parry:
+					m_canParry = true;
+					break;
+				case game::spell_effects::Block:
+					m_canBlock = true;
+					break;
+				case game::spell_effects::DualWield:
+					m_canDualWield = true;
+					break;
+				default:
+					break;
 			}
 		}
 
 		m_spells.push_back(&spell);
-		
+
 		// Add dependent skills
 		for (int i = 0; i < spell.skillsonlearnspell_size(); ++i)
 		{
 			const auto *skill = m_project.skills.getById(spell.skillsonlearnspell(i));
-			if (!skill)
+			if (!skill) {
 				continue;
+			}
 
 			// Add dependent skill
 			addSkill(*skill);
@@ -496,6 +1457,11 @@ namespace wowpp
 		{
 			updateTalentPoints();
 		}
+
+		// Fire signal
+		spellLearned(spell);
+
+		return true;
 	}
 
 	bool GameCharacter::removeSpell(const proto::SpellEntry &spell)
@@ -570,43 +1536,43 @@ namespace wowpp
 
 		switch (skill.category())
 		{
-			case game::skill_category::Languages:
+		case game::skill_category::Languages:
 			{
 				current = 300;
 				max = 300;
 				break;
 			}
 
-			case game::skill_category::Armor:
+		case game::skill_category::Armor:
 			{
 				current = 1;
 				max = 1;
 				break;
 			}
 
-			case game::skill_category::Weapon:
-			case game::skill_category::Class:
+		case game::skill_category::Weapon:
+		case game::skill_category::Class:
 			{
 				max = getLevel() * 5;
 				break;
 			}
 
-			case game::skill_category::Secondary:
-			case game::skill_category::Profession:
+		case game::skill_category::Secondary:
+		case game::skill_category::Profession:
 			{
 				current = 1;
-				max = 1;
+				max = 75;
 				break;
 			}
 
-			case game::skill_category::NotDisplayed:
-			case game::skill_category::Attributes:
+		case game::skill_category::NotDisplayed:
+		case game::skill_category::Attributes:
 			{
 				// Invisible / Not added
 				return;
 			}
 
-			default:
+		default:
 			{
 				WLOG("Unsupported skill category: " << skill.category());
 				return;
@@ -636,6 +1602,27 @@ namespace wowpp
 		}
 
 		ELOG("Maximum number of skill for character reached!");
+	}
+
+	bool GameCharacter::getSkillValue(UInt32 skillId, UInt16 & out_current, UInt16 & out_max) const
+	{
+		const UInt32 maxSkills = 127;
+		for (UInt32 i = 0; i < maxSkills; ++i)
+		{
+			// Unit field values
+			const UInt32 skillIndex = character_fields::SkillInfo1_1 + (i * 3);
+
+			// Get current skill
+			if (getUInt32Value(skillIndex) == skillId)
+			{
+				const UInt32 tmp = getUInt32Value(skillIndex + 1);
+				out_current = UInt16(UInt32(tmp) & 0x0000FFFF);
+				out_max = UInt16((UInt32(tmp) >> 16) & 0x0000FFFF);
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	bool GameCharacter::hasSkill(UInt32 skillId) const
@@ -702,416 +1689,6 @@ namespace wowpp
 		}
 	}
 
-	bool GameCharacter::isValidItemPos(UInt8 bag, UInt8 slot) const
-	{
-		// Has a bag been specified?
-		if (bag == 0)
-			return true;
-
-		// Any bag
-		if (bag == 255)
-		{
-			if (slot == 255)
-				return true;
-
-			// equipment
-			if (slot < player_equipment_slots::End)
-				return true;
-
-			// bag equip slots
-			if (slot >= player_inventory_slots::Start && slot < player_inventory_slots::End)
-				return true;
-
-			// backpack slots
-			if (slot >= player_item_slots::Start && slot < player_item_slots::End)
-				return true;
-
-			// keyring slots
-			if (slot >= player_key_ring_slots::Start && slot < player_key_ring_slots::End)
-				return true;
-
-			// bank main slots
-			if (slot >= player_bank_item_slots::Start && slot < player_bank_item_slots::End)
-				return true;
-
-			// bank bag slots
-			if (slot >= player_bank_bag_slots::Start && slot < player_bank_bag_slots::End)
-				return true;
-
-			// Invalid
-			return false;
-		}
-
-		// bag content slots
-		if (bag >= player_inventory_slots::Start && bag < player_inventory_slots::End)
-		{
-			// TODO: Get bag at the specified position
-
-			// Any slot
-			if (slot == 255)
-				return true;
-
-			//return slot < pBag->GetBagSize();
-			return false;
-		}
-
-		// bank bag content slots
-		if (bag >= player_bank_bag_slots::Start && bag < player_bank_bag_slots::End)
-		{
-			// TODO: Get bag at the specified position
-
-			// Any slot
-			if (slot == 255)
-				return true;
-
-			//return slot < pBag->GetBagSize();
-			return false;
-		}
-
-		return false;
-	}
-
-	namespace
-	{
-		game::weapon_prof::Type weaponProficiency(UInt32 subclass)
-		{
-			switch (subclass)
-			{
-				case game::item_subclass_weapon::Axe:
-					return game::weapon_prof::OneHandAxe;
-				case game::item_subclass_weapon::Axe2:
-					return game::weapon_prof::TwoHandAxe;
-				case game::item_subclass_weapon::Bow:
-					return game::weapon_prof::Bow;
-				case game::item_subclass_weapon::CrossBow:
-					return game::weapon_prof::Crossbow;
-				case game::item_subclass_weapon::Dagger:
-					return game::weapon_prof::Dagger;
-				case game::item_subclass_weapon::Fist:
-					return game::weapon_prof::Fist;
-				case game::item_subclass_weapon::Gun:
-					return game::weapon_prof::Gun;
-				case game::item_subclass_weapon::Mace:
-					return game::weapon_prof::OneHandMace;
-				case game::item_subclass_weapon::Mace2:
-					return game::weapon_prof::TwoHandMace;
-				case game::item_subclass_weapon::Polearm:
-					return game::weapon_prof::Polearm;
-				case game::item_subclass_weapon::Staff:
-					return game::weapon_prof::Staff;
-				case game::item_subclass_weapon::Sword:
-					return game::weapon_prof::OneHandSword;
-				case game::item_subclass_weapon::Sword2:
-					return game::weapon_prof::TwoHandSword;
-				case game::item_subclass_weapon::Thrown:
-					return game::weapon_prof::Throw;
-				case game::item_subclass_weapon::Wand:
-					return game::weapon_prof::Wand;
-			}
-
-			return game::weapon_prof::None;
-		}
-		game::armor_prof::Type armorProficiency(UInt32 subclass)
-		{
-			switch (subclass)
-			{
-				case game::item_subclass_armor::Misc:
-					return game::armor_prof::Common;
-				case game::item_subclass_armor::Buckler:
-				case game::item_subclass_armor::Shield:
-					return game::armor_prof::Shield;
-				case game::item_subclass_armor::Cloth:
-					return game::armor_prof::Cloth;
-				case game::item_subclass_armor::Leather:
-					return game::armor_prof::Leather;
-				case game::item_subclass_armor::Mail:
-					return game::armor_prof::Mail;
-				case game::item_subclass_armor::Plate:
-					return game::armor_prof::Plate;
-			}
-
-			return game::armor_prof::None;
-		}
-	}
-
-	void GameCharacter::swapItem(UInt16 src, UInt16 dst)
-	{
-		UInt8 srcBag = src >> 8;
-		UInt8 srcSlot = src & 0xFF;
-
-		UInt8 dstBag = dst >> 8;
-		UInt8 dstSlot = dst & 0xFF;
-
-		GameItem *srcItem = getItemByPos(srcBag, srcSlot);
-		GameItem *dstItem = getItemByPos(dstBag, dstSlot);
-
-		// Check if we have a valid source item
-		if (!srcItem)
-		{
-			inventoryChangeFailure(game::inventory_change_failure::ItemNotFound, srcItem, dstItem);
-			return;
-		}
-
-		// Check if we are alive
-		if (!isAlive())
-		{
-			inventoryChangeFailure(game::inventory_change_failure::YouAreDead, srcItem, dstItem);
-			return;
-		}
-
-		// Check equipment
-		if (dstSlot < player_inventory_slots::End)
-		{
-			auto armorProf = getArmorProficiency();
-			auto weaponProf = getWeaponProficiency();
-
-			if (srcItem->getEntry().itemclass() == game::item_class::Weapon)
-			{
-				if ((weaponProf & weaponProficiency(srcItem->getEntry().subclass())) == 0)
-				{
-					WLOG("CAN'T EQUIP: Armor prof mask = 0x" << std::hex << std::uppercase << weaponProf << "; Required: 0x" << std::hex << std::uppercase << weaponProficiency(srcItem->getEntry().subclass()));
-					inventoryChangeFailure(game::inventory_change_failure::NoRequiredProficiency, srcItem, dstItem);
-					return;
-				}
-			}
-			else if (srcItem->getEntry().itemclass() == game::item_class::Armor)
-			{
-				if ((armorProf & armorProficiency(srcItem->getEntry().subclass())) == 0)
-				{
-					WLOG("CAN'T EQUIP: Armor prof mask = 0x" << std::hex << std::uppercase << armorProf << "; Required: 0x" << std::hex << std::uppercase << armorProficiency(srcItem->getEntry().subclass()));
-					inventoryChangeFailure(game::inventory_change_failure::NoRequiredProficiency, srcItem, dstItem);
-					return;
-				}
-			}
-
-			auto srcInvType = srcItem->getEntry().inventorytype();
-			auto result = game::inventory_change_failure::None;
-			switch (dstSlot)
-			{
-				case player_equipment_slots::Head:
-					if (srcInvType != game::inventory_type::Head)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Body:
-					if (srcInvType != game::inventory_type::Body)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Chest:
-					if (srcInvType != game::inventory_type::Chest && 
-						srcInvType != game::inventory_type::Robe)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Feet:
-					if (srcInvType != game::inventory_type::Feet)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Finger1:
-				case player_equipment_slots::Finger2:
-					if (srcInvType != game::inventory_type::Finger)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Trinket1:
-				case player_equipment_slots::Trinket2:
-					if (srcInvType != game::inventory_type::Trinket)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Hands:
-					if (srcInvType != game::inventory_type::Hands)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Legs:
-					if (srcInvType != game::inventory_type::Legs)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Mainhand:
-					if (srcInvType != game::inventory_type::MainHandWeapon &&
-						srcInvType != game::inventory_type::TwoHandedWeapon &&
-						srcInvType != game::inventory_type::Weapon)
-					{
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					}
-					else if(srcInvType == game::inventory_type::TwoHandedWeapon)
-					{
-						auto *offhand = getItemByPos(0xFF, player_equipment_slots::Offhand);
-						if (offhand)
-						{
-							bool foundFreeSlot = false;
-
-							// Check for free inventory slot to unequip shield
-							for (UInt8 slot = player_inventory_pack_slots::Start; slot < player_inventory_pack_slots::End; ++slot)
-							{
-								auto *test = getItemByPos(0xFF, slot);
-								if (!test)
-								{
-									// Swap shield
-									swapItem(player_equipment_slots::Offhand | 0xFF00, slot | 0xFF00);
-									if (getItemByPos(0xFF, player_equipment_slots::Offhand))
-									{
-										// Stop, something went wrong!
-										return;
-									}
-
-									foundFreeSlot = true;
-									break;
-								}
-							}
-
-							if (!foundFreeSlot)
-							{
-								result = game::inventory_change_failure::InventoryFull;
-							}
-						}
-					}
-					break;
-				case player_equipment_slots::Offhand:
-					if (srcInvType != game::inventory_type::OffHandWeapon &&
-						srcInvType != game::inventory_type::Shield &&
-						srcInvType != game::inventory_type::Weapon)
-					{
-						WLOG("Invalid item for offhand slot");
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					}
-					else
-					{
-						if (srcInvType != game::inventory_type::Shield &&
-							!canDualWield())
-						{
-							WLOG("Can't dual-wield yet");
-							result = game::inventory_change_failure::CantDualWield;
-							break;
-						}
-
-						auto *item = getItemByPos(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand);
-						if (item &&
-							item->getEntry().inventorytype() == game::inventory_type::TwoHandedWeapon)
-						{
-							// Can't equip offhand weapon when 2H weapon is equipped
-							result = game::inventory_change_failure::CantEquipWithTwoHanded;
-							break;
-						}
-					}
-					break;
-				case player_equipment_slots::Ranged:
-					if (srcInvType != game::inventory_type::Ranged)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Shoulders:
-					if (srcInvType != game::inventory_type::Shoulders)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Tabard:
-					if (srcInvType != game::inventory_type::Tabard)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Waist:
-					if (srcInvType != game::inventory_type::Waist)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-				case player_equipment_slots::Wrists:
-					if (srcInvType != game::inventory_type::Wrists)
-						result = game::inventory_change_failure::ItemDoesNotGoToSlot;
-					break;
-			}
-
-			if (result != game::inventory_change_failure::None)
-			{
-				inventoryChangeFailure(result, srcItem, dstItem);
-				return;
-			}
-		}
-
-		// TODO: Check if source item is in still consisted as loot
-
-		// TODO: Validate source item
-
-		// TODO: Validate dest item
-
-		bool updateStats = false;
-
-		// Detect case
-		if (!dstItem)
-		{
-			// Move items (little test)
-			setUInt64Value(character_fields::InvSlotHead + (srcSlot * 2), 0);
-			setUInt64Value(character_fields::InvSlotHead + (dstSlot * 2), srcItem->getGuid());
-
-			if (srcSlot < player_equipment_slots::End)
-			{
-				setUInt32Value(character_fields::VisibleItem1_0 + (srcSlot * 16), 0);
-				setUInt64Value(character_fields::VisibleItem1_CREATOR + (srcSlot * 16), 0);
-				applyItemStats(*srcItem, false);
-				updateStats = true;
-			}
-			if (dstSlot < player_equipment_slots::End)
-			{
-				setUInt32Value(character_fields::VisibleItem1_0 + (dstSlot * 16), srcItem->getEntry().id());
-				setUInt64Value(character_fields::VisibleItem1_CREATOR + (dstSlot * 16), srcItem->getUInt64Value(item_fields::Creator));
-				applyItemStats(*srcItem, true);
-				updateStats = true;
-			}
-
-			auto srcIt = m_itemSlots.find(srcSlot);
-			std::swap(m_itemSlots[dstSlot], srcIt->second);
-			m_itemSlots.erase(srcIt);
-		}
-		else
-		{
-			setUInt64Value(character_fields::InvSlotHead + (srcSlot * 2), dstItem->getGuid());
-			setUInt64Value(character_fields::InvSlotHead + (dstSlot * 2), srcItem->getGuid());
-
-			if (srcSlot < player_equipment_slots::End)
-			{
-				setUInt32Value(character_fields::VisibleItem1_0 + (srcSlot * 16), dstItem->getEntry().id());
-				setUInt64Value(character_fields::VisibleItem1_CREATOR + (srcSlot * 16), dstItem->getUInt64Value(item_fields::Creator));
-				applyItemStats(*srcItem, false);
-				updateStats = true;
-			}
-			if (dstSlot < player_equipment_slots::End)
-			{
-				setUInt32Value(character_fields::VisibleItem1_0 + (dstSlot * 16), srcItem->getEntry().id());
-				setUInt64Value(character_fields::VisibleItem1_CREATOR + (dstSlot * 16), srcItem->getUInt64Value(item_fields::Creator));
-				applyItemStats(*dstItem, false);
-				applyItemStats(*srcItem, true);
-				updateStats = true;
-			}
-
-			std::swap(m_itemSlots[srcSlot], m_itemSlots[dstSlot]);
-		}
-
-		if (updateStats)
-			updateAllStats();
-	}
-
-	GameItem * GameCharacter::getItemByPos(UInt8 bag, UInt8 slot) const
-	{
-		if (bag == player_inventory_slots::Bag_0)
-		{
-			if (slot < player_bank_item_slots::End || (slot >= player_key_ring_slots::Start && slot < player_key_ring_slots::End))
-			{
-				auto it = m_itemSlots.find(slot);
-				if (it != m_itemSlots.end())
-				{
-					return it->second.get();
-				}
-			}
-		}
-		else
-		{
-			// Is this a valid bag slot?
-			const bool isBagSlot = (
-				(bag >= player_inventory_slots::Start && bag < player_inventory_slots::End) ||
-				(bag >= player_bank_bag_slots::Start && bag < player_bank_bag_slots::End)
-				);
-
-			if (isBagSlot)
-			{
-				// TODO: Get item from bag
-			}
-		}
-
-		return nullptr;
-	}
-
 	void GameCharacter::updateArmor()
 	{
 		float baseArmor = getModifierValue(unit_mods::Armor, unit_mod_type::BaseValue);
@@ -1119,11 +1696,11 @@ namespace wowpp
 		// Apply equipment
 		for (UInt8 i = player_equipment_slots::Start; i < player_equipment_slots::End; ++i)
 		{
-			auto it = m_itemSlots.find(i);
-			if (it != m_itemSlots.end())
+			auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, i));
+			if (item)
 			{
 				// Add armor value from item
-				baseArmor += it->second->getEntry().armor();
+				baseArmor += item->getEntry().armor();
 			}
 		}
 
@@ -1198,7 +1775,7 @@ namespace wowpp
 			atkPower = base_attPower + getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue) * getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalPct);
 			setInt32Value(unit_fields::AttackPower, UInt32(atkPower));
 		}
-		
+
 		// Ranged Attack power
 		{
 			switch (getClass())
@@ -1224,49 +1801,86 @@ namespace wowpp
 			setInt32Value(unit_fields::RangedAttackPower, UInt32(atkPower));
 		}
 
-		float minDamage = 1.0f;
-		float maxDamage = 2.0f;
-		UInt32 attackTime = 2000;
-
-		// TODO: Check druid form etc.
-
-		UInt8 form = getByteValue(unit_fields::Bytes2, 3);
-		if (form == 1 || form == 5 || form == 8)
+		// Melee damage
 		{
-			attackTime = (form == 1 ? 1000 : 2500);
+			float minDamage = 1.0f;
+			float maxDamage = 2.0f;
+			UInt32 attackTime = 2000;
+
+			// TODO: Check druid form etc.
+
+			UInt8 form = getByteValue(unit_fields::Bytes2, 3);
+			if (form == 1 || form == 5 || form == 8)
+			{
+				attackTime = (form == 1 ? 1000 : 2500);
+			}
+			else
+			{
+				// Check if we are wearing a weapon in our main hand
+				auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
+				if (item)
+				{
+					// Get weapon damage values
+					const auto &entry = item->getEntry();
+					if (entry.damage(0).mindmg() != 0.0f) {
+						minDamage = entry.damage(0).mindmg();
+					}
+					if (entry.damage(0).maxdmg() != 0.0f) {
+						maxDamage = entry.damage(0).maxdmg();
+					}
+					if (entry.delay() != 0) {
+						attackTime = entry.delay();
+					}
+				}
+			}
+
+			const float att_speed = attackTime / 1000.0f;
+			const float base_value = getUInt32Value(unit_fields::AttackPower) / 14.0f * att_speed;
+
+			switch (form)
+			{
+				case 1:
+				case 5:
+				case 8:
+					minDamage = (level > 60 ? 60 : level) * 0.85f * att_speed;
+					maxDamage = (level > 60 ? 60 : level) * 1.25f * att_speed;
+					break;
+				default:
+					break;
+			}
+
+			setFloatValue(unit_fields::MinDamage, base_value + minDamage);
+			setFloatValue(unit_fields::MaxDamage, base_value + maxDamage);
+			setUInt32Value(unit_fields::BaseAttackTime, attackTime);
 		}
-		else
+		
+		// Ranged damage
 		{
-			// Check if we are wearing a weapon in our main hand
-			auto it = m_itemSlots.find(player_equipment_slots::Mainhand);
-			if (it != m_itemSlots.end())
+			float minDamage = 1.0f;
+			float maxDamage = 2.0f;
+			UInt32 attackTime = 2000;
+
+			// Check if we are wearing a weapon in the ranged slot
+			auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Ranged));
+			if (item)
 			{
 				// Get weapon damage values
-				const auto &entry = it->second->getEntry();
-				if (entry.damage(0).mindmg() != 0.0f) minDamage = entry.damage(0).mindmg();
-				if (entry.damage(0).maxdmg() != 0.0f) maxDamage = entry.damage(0).maxdmg();
-				if (entry.delay() != 0) attackTime = entry.delay();
+				const auto &entry = item->getEntry();
+				if (entry.damage(0).mindmg() != 0.0f) {
+					minDamage = entry.damage(0).mindmg();
+				}
+				if (entry.damage(0).maxdmg() != 0.0f) {
+					maxDamage = entry.damage(0).maxdmg();
+				}
+				if (entry.delay() != 0) {
+					attackTime = entry.delay();
+				}
 			}
+
+			setFloatValue(unit_fields::MinRangedDamage, minDamage);
+			setFloatValue(unit_fields::MaxRangedDamage, maxDamage);
+			setUInt32Value(unit_fields::RangedAttackTime, attackTime);
 		}
-
-		const float att_speed = attackTime / 1000.0f;
-		const float base_value = getUInt32Value(unit_fields::AttackPower) / 14.0f * att_speed;
-
-		switch (form)
-		{
-			case 1:
-			case 5:
-			case 8:
-				minDamage = (level > 60 ? 60 : level) * 0.85f * att_speed;
-				maxDamage = (level > 60 ? 60 : level) * 1.25f * att_speed;
-				break;
-			default:
-				break;
-		}
-
-		setFloatValue(unit_fields::MinDamage, base_value + minDamage);
-		setFloatValue(unit_fields::MaxDamage, base_value + maxDamage);
-		setUInt32Value(unit_fields::BaseAttackTime, attackTime);
 	}
 
 	void GameCharacter::addComboPoints(UInt64 target, UInt8 points)
@@ -1304,10 +1918,10 @@ namespace wowpp
 		comboPointsChanged();
 	}
 
-	void GameCharacter::applyItemStats(GameItem & item, bool apply)
+	void GameCharacter::applyItemStats(GameItem &item, bool apply)
 	{
 		if (item.getEntry().durability() == 0 ||
-			item.getUInt32Value(item_fields::Durability) > 0)
+		        item.getUInt32Value(item_fields::Durability) > 0)
 		{
 			// Apply values
 			for (int i = 0; i < item.getEntry().stats_size(); ++i)
@@ -1317,33 +1931,36 @@ namespace wowpp
 				{
 					switch (entry.type())
 					{
-						case 0:		// Mana
-							updateModifierValue(unit_mods::Mana, unit_mod_type::TotalValue, entry.value(), apply);
-							break;
-						case 1:		// Health
-							updateModifierValue(unit_mods::Health, unit_mod_type::TotalValue, entry.value(), apply);
-							break;
-						case 3:		// Agility
-							updateModifierValue(unit_mods::StatAgility, unit_mod_type::TotalValue, entry.value(), apply);
-							break;
-						case 4:		// Strength
-							updateModifierValue(unit_mods::StatStrength, unit_mod_type::TotalValue, entry.value(), apply);
-							break;
-						case 5:		// Intellect
-							updateModifierValue(unit_mods::StatIntellect, unit_mod_type::TotalValue, entry.value(), apply);
-							break;
-						case 6:		// Spirit
-							updateModifierValue(unit_mods::StatSpirit, unit_mod_type::TotalValue, entry.value(), apply);
-							break;
-						case 7:		// Stamina
-							updateModifierValue(unit_mods::StatStamina, unit_mod_type::TotalValue, entry.value(), apply);
-							break;
-						default:
-							break;
+					case 0:		// Mana
+						updateModifierValue(unit_mods::Mana, unit_mod_type::TotalValue, entry.value(), apply);
+						break;
+					case 1:		// Health
+						updateModifierValue(unit_mods::Health, unit_mod_type::TotalValue, entry.value(), apply);
+						break;
+					case 3:		// Agility
+						updateModifierValue(unit_mods::StatAgility, unit_mod_type::TotalValue, entry.value(), apply);
+						break;
+					case 4:		// Strength
+						updateModifierValue(unit_mods::StatStrength, unit_mod_type::TotalValue, entry.value(), apply);
+						break;
+					case 5:		// Intellect
+						updateModifierValue(unit_mods::StatIntellect, unit_mod_type::TotalValue, entry.value(), apply);
+						break;
+					case 6:		// Spirit
+						updateModifierValue(unit_mods::StatSpirit, unit_mod_type::TotalValue, entry.value(), apply);
+						break;
+					case 7:		// Stamina
+						updateModifierValue(unit_mods::StatStamina, unit_mod_type::TotalValue, entry.value(), apply);
+						break;
+					default:
+						break;
 					}
 				}
 			}
 		}
+
+		updateArmor();
+		updateDamage();
 	}
 
 	void GameCharacter::updateManaRegen()
@@ -1352,9 +1969,11 @@ namespace wowpp
 		const float spirit = getUInt32Value(unit_fields::Stat4) * m_manaRegBase;
 		const float regen = sqrtf(intellect) * spirit;
 
-		float modManaRegenInterrupt = 0.0f;	//TODO
-		setFloatValue(character_fields::ModManaRegenInterrupt, regen * modManaRegenInterrupt);
-		setFloatValue(character_fields::ModManaRegen, regen);
+		const float mp5Reg = getAuras().getTotalBasePoints(game::aura_type::ModPowerRegen) * 0.2f;
+
+		const float modManaRegenInterrupt = getAuras().getTotalBasePoints(game::aura_type::ModManaRegenInterrupt) / 100.0f;
+		setFloatValue(character_fields::ModManaRegenInterrupt, regen * modManaRegenInterrupt + mp5Reg);
+		setFloatValue(character_fields::ModManaRegen, regen + mp5Reg);
 	}
 
 	void GameCharacter::rewardExperience(GameUnit *victim, UInt32 experience)
@@ -1365,15 +1984,16 @@ namespace wowpp
 		UInt32 level = getLevel();
 
 		// Nothing to do here
-		if (nextLevel == 0)
+		if (nextLevel == 0) {
 			return;
+		}
 
 		UInt32 newXP = currentXP + experience;
 		while (newXP >= nextLevel && nextLevel > 0)
 		{
 			// Calculate new XP amount
 			newXP -= nextLevel;
-			
+
 			// Level up!
 			setLevel(level + 1);
 			nextLevel = getUInt32Value(character_fields::NextLevelXp);
@@ -1403,14 +2023,8 @@ namespace wowpp
 			return false;
 		}
 
-		const UInt16 slot = static_cast<UInt16>(player_equipment_slots::Offhand);
-		auto it = m_itemSlots.find(slot);
-		if (it == m_itemSlots.end())
-		{
-			return false;
-		}
-
-		auto item = it->second;
+		const UInt16 slot = Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand);
+		auto item = m_inventory.getItemAtSlot(slot);
 		if (!item)
 		{
 			return false;
@@ -1431,9 +2045,7 @@ namespace wowpp
 			return false;
 		}
 
-		const UInt16 slot = static_cast<UInt16>(player_equipment_slots::Mainhand);
-		auto it = m_itemSlots.find(slot);
-		return (it != m_itemSlots.end());
+		return hasMainHandWeapon();
 	}
 
 	bool GameCharacter::canDodge() const
@@ -1459,21 +2071,27 @@ namespace wowpp
 		// TODO: One missing value
 		float spirit = static_cast<float>(getUInt32Value(unit_fields::Stat4));
 		float baseSpirit = spirit;
-		if (baseSpirit > 50.0f) baseSpirit = 50.0f;
+		if (baseSpirit > 50.0f) {
+			baseSpirit = 50.0f;
+		}
 		float moreSpirit = spirit - baseSpirit;
 		float spiritRegen = baseSpirit * m_healthRegBase + moreSpirit * m_healthRegBase;
-
 		float addHealth = spiritRegen * healthRegRate;
+
 		UInt8 standState = getByteValue(unit_fields::Bytes1, 0);
 		if (standState != unit_stand_state::Stand &&
-			standState != unit_stand_state::Dead)
+		        standState != unit_stand_state::Dead)
 		{
-			// 50% more regeneration when not standing
-			addHealth *= 1.5f;
+			// 33% more regeneration when not standing
+			addHealth *= 1.33f;
 		}
 
-		if (addHealth < 0.0f) 
+		float auraRegen = getAuras().getTotalBasePoints(game::aura_type::ModRegen);
+		addHealth += auraRegen * 0.4f;
+
+		if (addHealth < 0.0f) {
 			return;
+		}
 
 		heal(static_cast<UInt32>(addHealth), nullptr, true);
 	}
@@ -1506,103 +2124,65 @@ namespace wowpp
 
 		setUInt32Value(character_fields::CharacterPoints_1, talentPoints);
 	}
-	
+
 	void GameCharacter::initClassEffects()
 	{
 		m_doneMeleeAttack.disconnect();
 
-		switch(getClass())
+		switch (getClass())
 		{
-			case game::char_class::Warrior:
-				// Hard coded overpower proc for warrior: Blizzard implemented this with combo points
-				// When the target dodges, the warrior simply gets a combo point.
-				// Since overpower uses all combo points (just like all finishing moves for rogues and ferals),
-				// it doesn't matter if we add more than one combo point to the target.
-				// Hard coded: TODO proper implementation
-				m_doneMeleeAttack = doneMeleeAttack.connect(
-					[this](GameUnit *victim, game::VictimState victimState) {
-						if (victim && victimState == game::victim_state::Dodge)
-						{
-							addComboPoints(victim->getGuid(), 1);
-						}
-					});
-				break;
-			default:
-				break;
+		case game::char_class::Warrior:
+			// Hard coded overpower proc for warrior: Blizzard implemented this with combo points
+			// When the target dodges, the warrior simply gets a combo point.
+			// Since overpower uses all combo points (just like all finishing moves for rogues and ferals),
+			// it doesn't matter if we add more than one combo point to the target.
+			// Hard coded: TODO proper implementation
+			m_doneMeleeAttack = doneMeleeAttack.connect(
+			[this](GameUnit * victim, game::VictimState victimState) {
+				if (victim && victimState == game::victim_state::Dodge)
+				{
+					addComboPoints(victim->getGuid(), 1);
+				}
+			});
+			break;
+		default:
+			break;
 		}
 	}
 
-	game::InventoryChangeFailure GameCharacter::canStoreItem(UInt8 bag, UInt8 slot, ItemPosCountVector &dest, const proto::ItemEntry &item, UInt32 count, bool swap, UInt32 *noSpaceCount /*= nullptr*/) const
+	void GameCharacter::updateNearbyQuestObjects()
 	{
-		// No specific bag, find first free slot
-		if (bag == 0xFF && slot == 0xFF)
+		TileIndex2D tile;
+		if (!getTileIndex(tile))
 		{
-			// Find items
-			for (auto &itemInst : m_itemSlots)
+			// Not in a world instance
+			WLOG("Character is not in a world instance");
+			return;
+		}
+
+		// m_worldInstance is valid because we got a tile index
+		std::vector<std::vector<char>> objectUpdateBlocks;
+		forEachTileInSight(
+		    m_worldInstance->getGrid(),
+		    tile,
+		    [this, &objectUpdateBlocks](const VisibilityTile & tile)
+		{
+			for (auto &object : tile.getGameObjects())
 			{
-				if (itemInst.second->getEntry().id() == item.id())
+				if (object->isWorldObject())
 				{
-					// Check item stack
-					UInt32 stackCount = itemInst.second->getUInt32Value(item_fields::StackCount);
-					if (stackCount < item.maxstack())
+					// We only need to check objects that have potential quest loot
+					auto *loot = reinterpret_cast<WorldObject *>(object)->getObjectLoot();
+					if (loot &&
+					        !loot->isEmpty())
 					{
-						UInt32 delta = limit<UInt32>(item.maxstack() - stackCount, 0, count);
-						count -= delta;
-						dest.emplace_back(ItemPosCount(itemInst.first, delta));
-						
-						if (count == 0)
-							return game::inventory_change_failure::Okay;
+						// Force update of DynamicFlags field (TODO: This update only needs to be sent to OUR client,
+						// as every client will have a different DynamicFlags field)
+						object->forceFieldUpdate(world_object_fields::DynFlags);
 					}
 				}
 			}
-
-			// Iterate through items by slot
-			for (UInt8 i = player_inventory_pack_slots::Start; i < player_inventory_pack_slots::End; ++i)
-			{
-				auto it = m_itemSlots.find(i);
-				if (it == m_itemSlots.end())
-				{
-					// Found an empty slot!
-					dest.emplace_back(ItemPosCount(i, count));
-					return game::inventory_change_failure::Okay;
-				}
-			}
-
-			return game::inventory_change_failure::InventoryFull;
-		}
-
-		return game::inventory_change_failure::InternalBagError;
-	}
-
-	void GameCharacter::removeItem(UInt8 bag, UInt8 slot, UInt8 count)
-	{
-		if (bag == 0xFF)
-		{
-			auto it = m_itemSlots.find(slot);
-			if (it != m_itemSlots.end())
-			{
-				UInt32 stackCount = it->second->getUInt32Value(item_fields::StackCount);
-				if (stackCount > count && count > 0)
-				{
-					stackCount -= count;
-					it->second->setUInt32Value(item_fields::StackCount, stackCount);
-
-					// TODO: Update item instance
-
-					return;
-				}
-
-				setUInt64Value(character_fields::InvSlotHead + (slot * 2), 0);
-				m_itemSlots.erase(it);
-
-				if (slot < player_equipment_slots::End)
-				{
-					setUInt32Value(character_fields::VisibleItem1_0 + (slot * 16), 0);
-					setUInt64Value(character_fields::VisibleItem1_CREATOR + (slot * 16), 0);
-					updateAllStats();
-				}
-			}
-		}
+		});
 	}
 
 	void GameCharacter::getHome(UInt32 &out_map, math::Vector3 &out_pos, float &out_rot) const
@@ -1623,37 +2203,22 @@ namespace wowpp
 		homeChanged();
 	}
 
-	GameItem * GameCharacter::getItemByGUID(UInt64 guid, UInt8 &out_bag, UInt8 &out_slot)
-	{
-		for (auto &item : m_itemSlots)
-		{
-			if (item.second->getGuid() == guid)
-			{
-				out_bag = 0xFF;
-				out_slot = static_cast<UInt8>(item.first);
-				return item.second.get();
-			}
-		}
-
-		return nullptr;
-	}
-
 	bool GameCharacter::hasMainHandWeapon() const
 	{
-		auto *item = getItemByPos(0xFF, player_equipment_slots::Mainhand);
-		return (item != nullptr);
+		auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
+		return item != nullptr;
 	}
 
 	bool GameCharacter::hasOffHandWeapon() const
 	{
-		auto *item = getItemByPos(0xFF, player_equipment_slots::Offhand);
+		auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
 		return (item && item->getEntry().inventorytype() != game::inventory_type::Shield);
 	}
 
-	io::Writer & operator<<(io::Writer &w, GameCharacter const& object)
+	io::Writer &operator<<(io::Writer &w, GameCharacter const &object)
 	{
 		w
-			<< reinterpret_cast<GameUnit const&>(object)
+			<< reinterpret_cast<GameUnit const &>(object)
 			<< io::write_dynamic_range<NetUInt8>(object.m_name)
 			<< io::write<NetUInt32>(object.m_zoneIndex)
 			<< io::write<float>(object.m_healthRegBase)
@@ -1664,27 +2229,36 @@ namespace wowpp
 			<< io::write<float>(object.m_homePos[1])
 			<< io::write<float>(object.m_homePos[2])
 			<< io::write<float>(object.m_homeRotation)
-			<< io::write<NetUInt16>(object.m_quests.size());
+			<< object.m_inventory
+			<< io::write<NetUInt64>(object.m_groupId)
+			<< io::write<NetUInt16>(object.m_spells.size());
+		for (const auto &spell : object.m_spells)
+		{
+			w
+				<< io::write<NetUInt32>(spell->id());
+		}
+		w
+		        << io::write<NetUInt16>(object.m_quests.size());
 		for (const auto &pair : object.m_quests)
 		{
 			w
-				<< io::write<NetUInt32>(pair.first)
-				<< io::write<NetUInt8>(pair.second.status)
-				<< io::write<NetUInt64>(pair.second.expiration)
-				<< io::write<NetUInt8>(pair.second.explored)
-				<< io::write_range(pair.second.creatures)
-				<< io::write_range(pair.second.objects)
-				<< io::write_range(pair.second.items);
+			        << io::write<NetUInt32>(pair.first)
+			        << io::write<NetUInt8>(pair.second.status)
+			        << io::write<NetUInt64>(pair.second.expiration)
+			        << io::write<NetUInt8>(pair.second.explored)
+			        << io::write_range(pair.second.creatures)
+			        << io::write_range(pair.second.objects)
+			        << io::write_range(pair.second.items);
 		}
 
 		return w;
 	}
 
-	io::Reader & operator>>(io::Reader &r, GameCharacter& object)
+	io::Reader &operator>>(io::Reader &r, GameCharacter &object)
 	{
 		object.initialize();
 		r
-			>> reinterpret_cast<GameUnit&>(object)
+			>> reinterpret_cast<GameUnit &>(object)
 			>> io::read_container<NetUInt8>(object.m_name)
 			>> io::read<NetUInt32>(object.m_zoneIndex)
 			>> io::read<float>(object.m_healthRegBase)
@@ -1694,24 +2268,63 @@ namespace wowpp
 			>> io::read<float>(object.m_homePos[0])
 			>> io::read<float>(object.m_homePos[1])
 			>> io::read<float>(object.m_homePos[2])
-			>> io::read<float>(object.m_homeRotation);
+			>> io::read<float>(object.m_homeRotation)
+			>> object.m_inventory
+			>> io::read<NetUInt64>(object.m_groupId);
+		UInt16 spellCount = 0;
+		r
+			>> io::read<NetUInt16>(spellCount);
+		object.m_spells.clear();
+		for (UInt16 i = 0; i < spellCount; ++i)
+		{
+			UInt32 spellId = 0;
+			r
+				>> io::read<NetUInt32>(spellId);
+
+			// Add character spell
+			const auto *spell = object.getProject().spells.getById(spellId);
+			if (spell)
+			{
+				object.addSpell(*spell);
+			}
+		}
 		UInt16 questCount = 0;
 		r
-			>> io::read<NetUInt16>(questCount);
+		        >> io::read<NetUInt16>(questCount);
 		object.m_quests.clear();
 		for (UInt16 i = 0; i < questCount; ++i)
 		{
 			UInt32 questId = 0;
 			r
-				>> io::read<NetUInt32>(questId);
+			        >> io::read<NetUInt32>(questId);
 			auto &questData = object.m_quests[questId];
 			r
-				>> io::read<NetUInt8>(questData.status)
-				>> io::read<NetUInt64>(questData.expiration)
-				>> io::read<NetUInt8>(questData.explored)
-				>> io::read_range(questData.creatures)
-				>> io::read_range(questData.objects)
-				>> io::read_range(questData.items);
+			        >> io::read<NetUInt8>(questData.status)
+			        >> io::read<NetUInt64>(questData.expiration)
+			        >> io::read<NetUInt8>(questData.explored)
+			        >> io::read_range(questData.creatures)
+			        >> io::read_range(questData.objects)
+			        >> io::read_range(questData.items);
+
+			// Quest item cache update
+			if (questData.status == game::quest_status::Incomplete)
+			{
+				const auto *quest = object.getProject().quests.getById(questId);
+				if (quest)
+				{
+					for (const auto &req : quest->requirements())
+					{
+						if (req.itemid())
+						{
+							object.m_requiredQuestItems[req.itemid()]++;
+						}
+						if (req.sourceid())
+						{
+							object.m_requiredQuestItems[req.sourceid()]++;
+						}
+					}
+				}
+			}
 		}
 
 		// Reset all auras
@@ -1719,6 +2332,9 @@ namespace wowpp
 		{
 			object.setUInt32Value(unit_fields::Aura + i, 0);
 		}
+
+		// Remove "InCombat" flag
+		object.removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 
 		// Update all stats
 		object.setLevel(object.getLevel());

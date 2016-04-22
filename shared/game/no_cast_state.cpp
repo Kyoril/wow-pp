@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,15 +10,16 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
+#include "pch.h"
 #include "no_cast_state.h"
 
 namespace wowpp
@@ -28,20 +29,21 @@ namespace wowpp
 
 	}
 
-	std::pair<game::SpellCastResult, SpellCasting*> NoCastState::startCast(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool doReplacePreviousCast)
+	std::pair<game::SpellCastResult, SpellCasting *> NoCastState::startCast(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool doReplacePreviousCast, UInt64 itemGuid)
 	{
 		SpellCasting &casting = castSpell(
-			cast,
-			spell,
-			std::move(target),
-			basePoints,
-			castTime
-			);
+		                            cast,
+		                            spell,
+		                            std::move(target),
+		                            basePoints,
+		                            castTime,
+		                            itemGuid
+		                        );
 
 		return std::make_pair(game::spell_cast_result::CastOkay, &casting);
 	}
 
-	void NoCastState::stopCast()
+	void NoCastState::stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown/* = 0*/)
 	{
 
 	}

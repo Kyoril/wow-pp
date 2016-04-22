@@ -30,7 +30,8 @@ cmake_minimum_required(VERSION 2.8.11)
 	include_directories(${OGRE_INCLUDE_DIRS})
 		
 	# Enable CMake automatic moc file generation
-	set(CMAKE_AUTOMOC ON)
+	set(CMAKE_AUTOMOC OFF)
+	set(CMAKE_AUTOMOC_MOC_OPTIONS "-bpch.h")
 	set(CMAKE_INCLUDE_CURRENT_DIR ON)
 	
 	# Find required Qt5 packages
@@ -49,9 +50,12 @@ cmake_minimum_required(VERSION 2.8.11)
 	include_directories(${OPENGL_INCLUDE_DIR})
 
 	file(GLOB srcFiles "*.cpp" "*.h")
-	file(GLOB wndSrcFiles "windows/*.cpp" "windows/*.h")
+	remove_pch_cpp(srcFiles "${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp")
+	file(GLOB mocFiles "windows/*.h" "editor_application.h" "ogre_wrappers/qt_ogre_window.h" "property_view_model.h")
+	file(GLOB wndSrcFiles "windows/*.cpp")
 	file(GLOB worldSrcFiles "world/*.cpp" "world/*.h")
 	file(GLOB ogreSrcFiles "ogre_wrappers/*.cpp" "ogre_wrappers/*.h")
+	QT5_WRAP_CPP(MOC_SOURCES "${mocFiles}" OPTIONS "-bpch.h")
 	
 	# Include ui files
 	file(GLOB uiFiles "ui/*.ui")
@@ -61,6 +65,16 @@ cmake_minimum_required(VERSION 2.8.11)
 	
 	# Create cpp files out of qrc files
     qt5_add_resources(resourceSources ${resources})
+	foreach(qrc_file ${resourceSources})
+		if(WIN32)
+			set_source_files_properties("${qrc_file}" PROPERTIES COMPILE_FLAGS "/Y-")
+		else()
+			if(APPLE)
+			else()
+				
+			endif()
+		endif()
+	endforeach()
 	
 	# Create cpp header files out of ui files
 	QT5_WRAP_UI(UIS_HDRS
@@ -68,7 +82,7 @@ cmake_minimum_required(VERSION 2.8.11)
 	)
 	
 	# Group files to filter automatic generated source and header files
-	source_group(moc FILES ${UIS_HDRS} ${resourceSources})	# Auto-generated files (based on *.ui and *.qrc files)
+	source_group(moc FILES ${UIS_HDRS} ${resourceSources} ${MOC_SOURCES})	# Auto-generated files (based on *.ui and *.qrc files)
 	source_group(ui FILES ${uiFiles})						# *.ui files (xml)
 	source_group(qrc FILES ${resources})					# *.qrc files (xml)
 	
@@ -76,7 +90,7 @@ cmake_minimum_required(VERSION 2.8.11)
 	
 	# Group editor source files
 	source_group(src FILES ${srcFiles})
-	source_group(src\\windows FILES ${wndSrcFiles})
+	source_group(src\\windows FILES ${wndSrcFiles} ${mocFiles})
 	source_group(src\\world FILES ${worldSrcFiles})
 	source_group(src\\ogre_wrappers FILES ${ogreSrcFiles})
 	
@@ -92,15 +106,16 @@ cmake_minimum_required(VERSION 2.8.11)
 	
 	# Create the application
 	if(WIN32)
-		add_executable(editor WIN32 editor.rc ${srcFiles} ${UIS_HDRS} ${resourceSources} ${wndSrcFiles} ${worldSrcFiles} ${ogreSrcFiles})
+		add_executable(editor WIN32 editor.rc ${srcFiles} ${UIS_HDRS} ${mocFiles} ${resourceSources} ${wndSrcFiles} ${worldSrcFiles} ${ogreSrcFiles} ${MOC_SOURCES})
 	elseif(APPLE)
-		add_executable(editor MACOSX_BUNDLE ${srcFiles} ${UIS_HDRS} ${resourceSources} ${apple_bundle_sources} ${wndSrcFiles} ${worldSrcFiles} ${ogreSrcFiles})
+		add_executable(editor MACOSX_BUNDLE ${srcFiles} ${UIS_HDRS} ${mocFiles} ${resourceSources} ${apple_bundle_sources} ${wndSrcFiles} ${worldSrcFiles} ${ogreSrcFiles} ${MOC_SOURCES})
 	else()
-		add_executable(editor ${srcFiles} ${UIS_HDRS} ${resourceSources} ${wndSrcFiles} ${worldSrcFiles} ${ogreSrcFiles})
+		add_executable(editor ${srcFiles} ${UIS_HDRS} ${resourceSources} ${mocFiles} ${wndSrcFiles} ${worldSrcFiles} ${ogreSrcFiles} ${MOC_SOURCES})
 	endif()
+	add_precompiled_header(editor "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
 	
 	# Link standard libraries
-	target_link_libraries(editor common templates virtual_directory log proto_data stormlib recast detour detour_crowd detour_tile_cache debug_utils game sql_wrapper mysql_wrapper math)
+	target_link_libraries(editor common virtual_directory log proto_data stormlib recast detour detour_crowd detour_tile_cache debug_utils game sql_wrapper mysql_wrapper math)
 	
 	# Link dependency libraries
 	target_link_libraries(editor ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${OPENSSL_LIBRARIES} ${OGRE_LIBRARIES} ${PROTOBUF_LIBRARIES} ${MYSQL_LIBRARY})

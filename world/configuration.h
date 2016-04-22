@@ -23,7 +23,6 @@
 
 #include "simple_file_format/sff_write_table.h"
 #include "common/typedefs.h"
-#include <vector>
 
 namespace wowpp
 {

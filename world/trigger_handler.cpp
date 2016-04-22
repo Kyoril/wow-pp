@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "trigger_handler.h"
 #include "game/game_unit.h"
 #include "proto_data/project.h"
@@ -35,6 +36,8 @@
 #include "binary_io/vector_sink.h"
 #include "binary_io/writer.h"
 #include "game_protocol/game_protocol.h"
+#include "game/unit_mover.h"
+#include "game/game_creature.h"
 #include "common/make_unique.h"
 
 namespace wowpp
@@ -46,11 +49,11 @@ namespace wowpp
 	{
 	}
 
-	void TriggerHandler::executeTrigger(const proto::TriggerEntry &entry, UInt32 actionOffset, GameUnit *owner)
+	void TriggerHandler::executeTrigger(const proto::TriggerEntry &entry, game::TriggerContext context, UInt32 actionOffset)
 	{
 		// Keep owner alive if provided
 		std::shared_ptr<GameObject> strongOwner;
-		if (owner) strongOwner = owner->shared_from_this();
+		if (context.owner) strongOwner = context.owner->shared_from_this();
 		auto weakOwner = std::weak_ptr<GameObject>(strongOwner);
 
 		// TODO: Find a better way to do this...
@@ -80,8 +83,8 @@ namespace wowpp
 			{
 #define WOWPP_HANDLE_TRIGGER_ACTION(name) \
 			case trigger_actions::name: \
-					handle##name(action, owner); \
-					break;
+				handle##name(action, context); \
+				break;
 
 			WOWPP_HANDLE_TRIGGER_ACTION(Trigger)
 			WOWPP_HANDLE_TRIGGER_ACTION(Say)
@@ -90,6 +93,14 @@ namespace wowpp
 			WOWPP_HANDLE_TRIGGER_ACTION(SetSpawnState)
 			WOWPP_HANDLE_TRIGGER_ACTION(SetRespawnState)
 			WOWPP_HANDLE_TRIGGER_ACTION(CastSpell)
+			WOWPP_HANDLE_TRIGGER_ACTION(MoveTo)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetCombatMovement)
+			WOWPP_HANDLE_TRIGGER_ACTION(StopAutoAttack)
+			WOWPP_HANDLE_TRIGGER_ACTION(CancelCast)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetStandState)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetVirtualEquipmentSlot)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetPhase)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetSpellCooldown)
 #undef WOWPP_HANDLE_TRIGGER_ACTION
 
 				case trigger_actions::Delay:
@@ -109,18 +120,18 @@ namespace wowpp
 
 					// Save delay
 					auto delayCountdown = make_unique<Countdown>(m_timers);
-					delayCountdown->ended.connect([&entry, i, this, owner, weakOwner]()
+					delayCountdown->ended.connect([&entry, i, this, context, weakOwner]()
 					{
-						GameUnit *triggeringUnit = owner;
+						GameObject *oldOwner = context.owner;
 
 						auto strongOwner = weakOwner.lock();
-						if (owner != nullptr && strongOwner == nullptr)
+						if (context.owner != nullptr && strongOwner == nullptr)
 						{
-							WLOG("Triggering unit no longer exists, so the executing trigger might fail.");
-							triggeringUnit = nullptr;
+							WLOG("Owner no longer exists, so the executing trigger might fail.");
+							oldOwner = nullptr;
 						}
 
-						executeTrigger(entry, i + 1, triggeringUnit);
+						executeTrigger(entry, context, i + 1);
 					});
 					delayCountdown->setEnd(getCurrentTime() + timeMS);
 					m_delays.emplace_back(std::move(delayCountdown));
@@ -138,7 +149,7 @@ namespace wowpp
 		}
 	}
 
-	void TriggerHandler::handleTrigger(const proto::TriggerAction &action, GameUnit *owner)
+	void TriggerHandler::handleTrigger(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
 		if (action.target() != trigger_action_target::None)
 		{
@@ -156,52 +167,48 @@ namespace wowpp
 		}
 
 		// Execute another trigger
-		executeTrigger(*trigger, 0, owner);
+		executeTrigger(*trigger, context, 0);
 	}
 
-	void TriggerHandler::handleSay(const proto::TriggerAction &action, GameUnit *owner)
+	void TriggerHandler::handleSay(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
-		GameUnit *target = nullptr;
-		switch (action.target())
-		{
-			case trigger_action_target::OwningUnit:
-			{
-				target = owner;
-				break;
-			}
-			case trigger_action_target::OwningUnitVictim:
-			{
-				target = owner->getVictim();
-				break;
-			}
-			default:
-			{
-				WLOG("TRIGGER_ACTION_SAY: Invalid target mode");
-				return;
-			}
-		}
-
+		GameObject *target = getActionTarget(action, context.owner);
 		if (target == nullptr)
 		{
 			WLOG("TRIGGER_ACTION_SAY: No target found, action will be ignored");
 			return;
 		}
 
-		auto *world = target->getWorldInstance();
+		auto *world = getWorldInstance(target);
 		if (!world)
 		{
-			WLOG("Target is not in a world instance right now - action will be ignored");
 			return;
 		}
 
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature())
+		{
+			WLOG("TRIGGER_ACTION_SAY: Needs a unit target, but target is no unit - action ignored");
+			return;
+		}
+
+		// Prepare packet data
 		std::vector<char> buffer;
 		io::VectorSink sink(buffer);
 		game::OutgoingPacket packet(sink);
-		game::server_write::messageChat(packet, game::chat_msg::MonsterSay, game::language::Universal, "", 0, getActionText(action, 0), target);
+		game::server_write::messageChat(
+			packet, 
+			game::chat_msg::MonsterSay, 
+			game::language::Common,
+			"",
+			0, 
+			getActionText(action, 0), 
+			reinterpret_cast<GameUnit*>(target)
+			);
 
+		// Send packet to all nearby watchers
 		TileIndex2D tile;
 		target->getTileIndex(tile);
-
 		forEachTileInRange(
 			world->getGrid(),
 			tile,
@@ -213,52 +220,53 @@ namespace wowpp
 				subscriber->sendPacket(packet, buffer);
 			}
 		});
+
+		// Eventually play sound file
+		if (action.data_size() > 0)
+		{
+			playSoundEntry(action.data(0), target);
+		}
 	}
 
-	void TriggerHandler::handleYell(const proto::TriggerAction &action, GameUnit *owner)
+	void TriggerHandler::handleYell(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
-		// TODO: Better way to resolve targets
-		GameUnit *target = nullptr;
-		switch (action.target())
-		{
-			case trigger_action_target::OwningUnit:
-			{
-				target = owner;
-				break;
-			}
-			case trigger_action_target::OwningUnitVictim:
-			{
-				target = owner->getVictim();
-				break;
-			}
-			default:
-			{
-				WLOG("TRIGGER_ACTION_YELL: Invalid target mode");
-				return;
-			}
-		}
-
-		if (target == nullptr)
+		GameObject *target = getActionTarget(action, context.owner);
+		if (!target)
 		{
 			WLOG("TRIGGER_ACTION_YELL: No target found, action will be ignored");
 			return;
 		}
 		
-		auto *world = target->getWorldInstance();
+		auto *world = getWorldInstance(target);
 		if (!world)
 		{
-			WLOG("Target is not in a world instance right now - action will be ignored");
 			return;
 		}
 
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature())
+		{
+			WLOG("TRIGGER_ACTION_YELL: Needs a unit target, but target is no unit - action ignored");
+			return;
+		}
+
+		// Prepare packet
 		std::vector<char> buffer;
 		io::VectorSink sink(buffer);
 		game::OutgoingPacket packet(sink);
-		game::server_write::messageChat(packet, game::chat_msg::MonsterYell, game::language::Universal, "", 0, getActionText(action, 0), target);
+		game::server_write::messageChat(
+			packet, 
+			game::chat_msg::MonsterYell, 
+			game::language::Universal, 
+			"", 
+			0, 
+			getActionText(action, 0), 
+			reinterpret_cast<GameUnit*>(target)
+			);
 
+		// Send packet to all nearby watchers
 		TileIndex2D tile;
 		target->getTileIndex(tile);
-
 		forEachTileInRange(
 			world->getGrid(),
 			tile,
@@ -271,67 +279,30 @@ namespace wowpp
 			}
 		});
 
-		if (action.data_size() > 0 &&
-			action.data(0) > 0)
+		// Eventually play sound file
+		if (action.data_size() > 0)
 		{
-			std::vector<char> soundBuffer;
-			io::VectorSink soundSink(soundBuffer);
-			game::OutgoingPacket soundPacket(soundSink);
-			game::server_write::playSound(soundPacket, action.data(0));
-
-			forEachTileInRange(
-				world->getGrid(),
-				tile,
-				5,
-				[&soundBuffer, &soundPacket](VisibilityTile &tile)
-			{
-				for (auto *subscriber : tile.getWatchers())
-				{
-					subscriber->sendPacket(soundPacket, soundBuffer);
-				}
-			});
+			playSoundEntry(action.data(0), target);
 		}
 	}
 
-	void TriggerHandler::handleSetWorldObjectState(const proto::TriggerAction &action, GameUnit *owner)
+	void TriggerHandler::handleSetWorldObjectState(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
-		auto world = getWorldInstance(owner);
-		if (!world)
-		{
-			return;
-		}
-
-		if (action.target() != trigger_action_target::NamedWorldObject ||
-			action.targetname().empty())
+		GameObject * target = getActionTarget(action, context.owner);
+		if (!target ||
+			!target->isWorldObject())
 		{
 			WLOG("TRIGGER_ACTION_SET_WORLD_OBJECT_STATE: Invalid target");
 			return;
 		}
 
-		// Look for named object
-		auto * spawner = world->findObjectSpawner(action.targetname());
-		if (!spawner)
-		{
-			WLOG("TRIGGER_ACTION_SET_WORLD_OBJECT_STATE: Could not find named world object spawner");
-			return;
-		}
-
-		const auto &spawned = spawner->getSpawnedObjects();
-		if (spawned.empty())
-		{
-			WLOG("TRIGGER_ACTION_SET_WORLD_OBJECT_STATE: No objects spawned");
-			return;
-		}
-
-		for (auto &spawn : spawned)
-		{
-			spawn->setUInt32Value(world_object_fields::State, getActionData(action, 0));
-		}
+		// Target is WorldObject checked already
+		target->setUInt32Value(world_object_fields::State, getActionData(action, 0));
 	}
 
-	void TriggerHandler::handleSetSpawnState(const proto::TriggerAction &action, GameUnit *owner)
+	void TriggerHandler::handleSetSpawnState(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
-		auto world = getWorldInstance(owner);
+		auto world = getWorldInstance(context.owner);
 		if (!world)
 		{
 			return;
@@ -358,13 +329,21 @@ namespace wowpp
 		}
 		else
 		{
-			DLOG("TODO");
+			auto * spawner = world->findObjectSpawner(action.targetname());
+			if (!spawner)
+			{
+				WLOG("TRIGGER_ACTION_SET_SPAWN_STATE: Could not find named object spawner");
+				return;
+			}
+
+			//const bool isActive = (getActionData(action, 0) == 0 ? false : true);
+			// TODO: De/activate object spawner
 		}
 	}
 
-	void TriggerHandler::handleSetRespawnState(const proto::TriggerAction &action, GameUnit *owner)
+	void TriggerHandler::handleSetRespawnState(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
-		auto world = getWorldInstance(owner);
+		auto world = getWorldInstance(context.owner);
 		if (!world)
 		{
 			return;
@@ -395,15 +374,22 @@ namespace wowpp
 		}
 	}
 
-	void TriggerHandler::handleCastSpell(const proto::TriggerAction &action, GameUnit *owner)
+	void TriggerHandler::handleCastSpell(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
-		GameUnit *target = getUnitTarget(action, owner);
-		if (!target)
+		// Determine caster
+		GameObject *caster = getActionTarget(action, context.owner);
+		if (!caster)
 		{
 			ELOG("TRIGGER_ACTION_CAST_SPELL: No valid target found");
 			return;
 		}
+		if (!caster->isCreature() && !caster->isGameCharacter())
+		{
+			ELOG("TRIGGER_ACTION_CAST_SPELL: Caster has to be a unit");
+			return;
+		}
 
+		// Resolve spell id
 		const auto *spell = m_project.spells.getById(getActionData(action, 0));
 		if (!spell)
 		{
@@ -411,13 +397,227 @@ namespace wowpp
 			return;
 		}
 
+		// Determine spell target
+		UInt32 dataTarget = getActionData(action, 1);
+		GameObject *target = nullptr;
+		switch (dataTarget)
+		{
+			case trigger_spell_cast_target::Caster:
+				target = caster;
+				break;
+			case trigger_spell_cast_target::CurrentTarget:
+				// Type of caster already checked above
+				target = reinterpret_cast<GameUnit*>(caster)->getVictim();
+				break;
+			default:
+				ELOG("TRIGGER_ACTION_CAST_SPELL: Invalid spell cast target value of " << dataTarget);
+				return;
+		}
+
+		if (!target)
+		{
+			// Do a warning here because this could also happen when the caster simply has no target, which
+			// is not always a bug, but could sometimes be intended behaviour (maybe we want to turn off this warning later).
+			WLOG("TRIGGER_ACTION_CAST_SPELL: Could not find target");
+			return;
+		}
+
+		// Create spell target map and cast that spell
 		SpellTargetMap targetMap;
-		targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
-		targetMap.m_unitTarget = target->getGuid();
-		owner->castSpell(std::move(targetMap), spell->id());
+		if (target->isCreature() || target->isGameCharacter())
+		{
+			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+			targetMap.m_unitTarget = target->getGuid();
+		}
+		else if (target->isWorldObject())
+		{
+			targetMap.m_targetMap = game::spell_cast_target_flags::Object;
+			targetMap.m_goTarget = target->getGuid();
+		}
+		reinterpret_cast<GameUnit*>(caster)->castSpell(std::move(targetMap), spell->id());
 	}
 
-	UInt32 TriggerHandler::getActionData(const proto::TriggerAction &action, UInt32 index) const
+	void TriggerHandler::handleMoveTo(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context.owner);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_MOVE_TO: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature())
+		{
+			WLOG("TRIGGER_ACTION_MOVE_TO: Needs a creature target, but target is no unit - action ignored");
+			return;
+		}
+
+		auto &mover = reinterpret_cast<GameUnit*>(target)->getMover();
+		boost::signals2::connection reached = mover.targetReached.connect_extended([target](const boost::signals2::connection &conn) {
+			// Raise reached target trigger
+			reinterpret_cast<GameCreature*>(target)->raiseTrigger(trigger_event::OnReachedTriggeredTarget);
+
+			// This slot shall be executed only once
+			conn.disconnect();
+		});
+		mover.moveTo(
+			math::Vector3(static_cast<float>(getActionData(action, 0)), static_cast<float>(getActionData(action, 1)), static_cast<float>(getActionData(action, 2))));
+	}
+
+	void TriggerHandler::handleSetCombatMovement(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context.owner);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_SET_COMBAT_MOVEMENT: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature())
+		{
+			WLOG("TRIGGER_ACTION_SET_COMBAT_MOVEMENT: Needs a unit target, but target is no creature - action ignored");
+			return;
+		}
+
+		// Update combat movement setting
+		reinterpret_cast<GameCreature*>(target)->setCombatMovement(
+			getActionData(action, 0) != 0);
+	}
+
+	void TriggerHandler::handleStopAutoAttack(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context.owner);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_STOP_AUTO_ATTACK: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature() && !target->isGameCharacter())
+		{
+			WLOG("TRIGGER_ACTION_STOP_AUTO_ATTACK: Needs a unit target - action ignored");
+			return;
+		}
+
+		// Stop auto attack
+		reinterpret_cast<GameUnit*>(target)->stopAttack();
+	}
+
+	void TriggerHandler::handleCancelCast(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context.owner);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_CANCEL_CAST: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature() && !target->isGameCharacter())
+		{
+			WLOG("TRIGGER_ACTION_CANCEL_CAST: Needs a unit target - action ignored");
+			return;
+		}
+
+		reinterpret_cast<GameUnit*>(target)->cancelCast(game::spell_interrupt_flags::None);
+	}
+
+	void TriggerHandler::handleSetStandState(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context.owner);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_SET_STAND_STATE: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature() && !target->isGameCharacter())
+		{
+			WLOG("TRIGGER_ACTION_SET_STAND_STATE: Needs a unit target - action ignored");
+			return;
+		}
+
+		Int32 data = getActionData(action, 0);
+		if (data < 0 || data >= unit_stand_state::Count)
+		{
+			WLOG("TRIGGER_ACTION_SET_STAND_STATE: Invalid stand state (" << data << ")");
+			return;
+		}
+
+		reinterpret_cast<GameUnit*>(target)->setStandState(static_cast<UnitStandState>(data));
+	}
+
+	void TriggerHandler::handleSetVirtualEquipmentSlot(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context.owner);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_SET_VIRTUAL_EQUIPMENT_SLOT: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature() && !target->isGameCharacter())
+		{
+			WLOG("TRIGGER_ACTION_SET_VIRTUAL_EQUIPMENT_SLOT: Needs a unit target - action ignored");
+			return;
+		}
+
+		Int32 slot = getActionData(action, 0);
+		if (slot < 0 || slot > 2)
+		{
+			ELOG("TRIGGER_ACTION_SET_VIRTUAL_EQUIPMENT_SLOT: Invalid equipment slot (" << slot << ")");
+			return;
+		}
+
+		Int32 item = getActionData(action, 1);
+		if (item > 0)
+		{
+			auto *itemEntry = m_project.items.getById(item);
+			if (itemEntry)
+			{
+				reinterpret_cast<GameCreature*>(target)->setVirtualItem(slot, itemEntry);
+			}
+			else
+			{
+				ELOG("TRIGGER_ACTION_SET_VIRTUAL_EQUIPMENT_SLOT: Could not find item " << item);
+			}
+		}
+		else
+		{
+			reinterpret_cast<GameCreature*>(target)->setVirtualItem(slot, nullptr);
+		}
+	}
+
+	void TriggerHandler::handleSetPhase(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		WLOG("TODO: ACTION_SET_PHASE");
+	}
+
+	void TriggerHandler::handleSetSpellCooldown(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context.owner);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_SET_SPELL_COOLDOWN: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameUnit class
+		if (!target->isCreature() && !target->isGameCharacter())
+		{
+			WLOG("TRIGGER_ACTION_SET_SPELL_COOLDOWN: Needs a unit target - action ignored");
+			return;
+		}
+
+		reinterpret_cast<GameUnit*>(target)->setCooldown(getActionData(action, 0), getActionData(action, 1));
+	}
+
+	Int32 TriggerHandler::getActionData(const proto::TriggerAction &action, UInt32 index) const
 	{
 		// Return default value (0) if not enough data provided
 		if (static_cast<int>(index) >= action.data_size())
@@ -438,7 +638,7 @@ namespace wowpp
 		return action.texts(index);
 	}
 
-	WorldInstance * TriggerHandler::getWorldInstance(GameUnit *owner) const
+	WorldInstance * TriggerHandler::getWorldInstance(GameObject *owner) const
 	{
 		WorldInstance *world = nullptr;
 		if (owner)
@@ -454,17 +654,81 @@ namespace wowpp
 		return world;
 	}
 
-	GameUnit * TriggerHandler::getUnitTarget(const proto::TriggerAction &action, GameUnit *owner)
+	bool TriggerHandler::playSoundEntry(UInt32 sound, GameObject * source)
+	{
+		if (sound)
+		{
+			auto *world = getWorldInstance(source);
+			if (!world)
+			{
+				return false;
+			}
+
+			TileIndex2D srcTile;
+			source->getTileIndex(srcTile);
+
+			std::vector<char> soundBuffer;
+			io::VectorSink soundSink(soundBuffer);
+			game::OutgoingPacket soundPacket(soundSink);
+			game::server_write::playSound(soundPacket, sound);
+			forEachTileInRange(
+				world->getGrid(),
+				srcTile,
+				5,
+				[&soundBuffer, &soundPacket](VisibilityTile &tile)
+			{
+				for (auto *subscriber : tile.getWatchers())
+				{
+					subscriber->sendPacket(soundPacket, soundBuffer);
+				}
+			});
+		}
+
+		return true;
+	}
+
+	GameObject * TriggerHandler::getActionTarget(const proto::TriggerAction &action, GameObject *owner)
 	{
 		switch (action.target())
 		{
-		case trigger_action_target::OwningUnit:
+		case trigger_action_target::OwningObject:
 			return owner;
 			break;
 		case trigger_action_target::OwningUnitVictim:
-			return (owner ? owner->getVictim() : nullptr);
+			return (owner && owner->isCreature() ? reinterpret_cast<GameUnit*>(owner)->getVictim() : nullptr);
 			break;
+		case trigger_action_target::NamedWorldObject:
+		{
+			auto *world = getWorldInstance(owner);
+			if (!world) return nullptr;
+
+			// Need to provide a name
+			if (action.targetname().empty()) return nullptr;
+
+			// Find it
+			auto *spawner = world->findObjectSpawner(action.targetname());
+			if (!spawner) return nullptr;
+
+			// Return the first spawned game object
+			return (spawner->getSpawnedObjects().empty() ? nullptr : spawner->getSpawnedObjects()[0].get());
+		}
+		case trigger_action_target::NamedCreature:
+		{
+			auto *world = getWorldInstance(owner);
+			if (!world) return nullptr;
+
+			// Need to provide a name
+			if (action.targetname().empty()) return nullptr;
+
+			// Find it
+			auto *spawner = world->findCreatureSpawner(action.targetname());
+			if (!spawner) return nullptr;
+
+			// Return the first spawned game object
+			return (spawner->getCreatures().empty() ? nullptr : reinterpret_cast<GameObject*>(spawner->getCreatures()[0].get()));
+		}
 		default:
+			WLOG("Unhandled action target " << action.target());
 			break;
 		}
 

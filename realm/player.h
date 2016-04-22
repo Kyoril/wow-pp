@@ -28,13 +28,7 @@
 #include "common/big_number.h"
 #include "common/id_generator.h"
 #include "game/game_character.h"
-#include <boost/noncopyable.hpp>
-#include <boost/signals2.hpp>
-#include <log/default_log_levels.h>
-#include <algorithm>
-#include <utility>
-#include <cassert>
-#include <limits>
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -64,12 +58,27 @@ namespace wowpp
 			BagIsFull,
 			/// Player has too many instances of that item.
 			TooManyItems,
-			/// Unkwown error.
+			/// Unknown error.
 			Unknown
 		};
 	}
 
 	typedef add_item_result::Type AddItemResult;
+
+	namespace learn_spell_result
+	{
+		enum Type
+		{
+			/// Successfully added item.
+			Success,
+			/// Player already knows that spell.
+			AlreadyLearned,
+			/// Unknown error.
+			Unknown
+		};
+	}
+
+	typedef learn_spell_result::Type LearnSpellResult;
 
 	/// Player connection class.
 	class Player final
@@ -125,7 +134,7 @@ namespace wowpp
 		/// Saves the current character (if any).
 		//void saveCharacter();
 		/// Inititalizes a character transfer to a new map.
-		void initializeTransfer(UInt32 map, math::Vector3 location, float o);
+		bool initializeTransfer(UInt32 map, math::Vector3 location, float o, bool shouldLeaveNode = false);
 		/// Commits an initialized transfer (if any).
 		void commitTransfer();
 
@@ -151,12 +160,12 @@ namespace wowpp
 		UInt32 getWorldInstanceId() const { return m_instanceId; }
 		/// Gets the connected world node
 		World *getWorldNode() { return m_worldNode; }
-		/// 
-		std::vector<pp::world_realm::ItemData> &getItemData() { return m_itemData; }
 		/// Declines a pending group invite (if available).
 		void declineGroupInvite();
 		/// 
 		void reloadCharacters();
+		/// 
+		void spawnedNotification();
 
 		/// Sends an encrypted packet to the game client
 		/// @param generator Packet writer function pointer.
@@ -192,6 +201,8 @@ namespace wowpp
 
 		/// Adds a new item to the players inventory if logged in.
 		AddItemResult addItem(UInt32 itemId, UInt32 amount);
+		/// Learns a new spell and notifies the world node about this.
+		LearnSpellResult learnSpell(const proto::SpellEntry &spell);
 
 	private:
 
@@ -228,7 +239,6 @@ namespace wowpp
 		float m_transferO;
 		ActionButtons m_actionButtons;
 		std::array<UInt32, 8> m_tutorialData;
-		std::vector<pp::world_realm::ItemData> m_itemData;
 
 	private:
 
@@ -289,5 +299,6 @@ namespace wowpp
 		void handleVoiceSessionEnable(game::IncomingPacket &packet);
 		void handleCharRename(game::IncomingPacket &packet);
 		void handleQuestQuery(game::IncomingPacket &packet);
+		void handleWho(game::IncomingPacket &packet);
 	};
 }

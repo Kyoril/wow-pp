@@ -25,7 +25,6 @@
 #include "common/timer_queue.h"
 #include "common/countdown.h"
 #include "game/trigger_handler.h"
-#include <memory>
 
 namespace wowpp
 {
@@ -46,24 +45,31 @@ namespace wowpp
 		explicit TriggerHandler(proto::Project &project, PlayerManager &playerManager, TimerQueue &timers);
 
 		/// Fires a trigger event.
-		virtual void executeTrigger(const proto::TriggerEntry &entry, UInt32 actionOffset = 0, GameUnit *owner = nullptr) override;
+		virtual void executeTrigger(const proto::TriggerEntry &entry, game::TriggerContext context, UInt32 actionOffset = 0) override;
 
 	private:
 
-	private:
-
-		UInt32 getActionData(const proto::TriggerAction &action, UInt32 index) const;
+		Int32 getActionData(const proto::TriggerAction &action, UInt32 index) const;
 		const String &getActionText(const proto::TriggerAction &action, UInt32 index) const;
-		WorldInstance *getWorldInstance(GameUnit *owner) const;
-		GameUnit *getUnitTarget(const proto::TriggerAction &action, GameUnit *owner);
+		WorldInstance *getWorldInstance(GameObject *owner) const;
+		GameObject *getActionTarget(const proto::TriggerAction &action, GameObject *owner);
+		bool playSoundEntry(UInt32 sound, GameObject *source);
 
-		void handleTrigger(const proto::TriggerAction &action, GameUnit *owner);
-		void handleSay(const proto::TriggerAction &action, GameUnit *owner);
-		void handleYell(const proto::TriggerAction &action, GameUnit *owner);
-		void handleSetWorldObjectState(const proto::TriggerAction &action, GameUnit *owner);
-		void handleSetSpawnState(const proto::TriggerAction &action, GameUnit *owner);
-		void handleSetRespawnState(const proto::TriggerAction &action, GameUnit *owner);
-		void handleCastSpell(const proto::TriggerAction &action, GameUnit *owner);
+		void handleTrigger(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSay(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleYell(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetWorldObjectState(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetSpawnState(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetRespawnState(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleCastSpell(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleMoveTo(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetCombatMovement(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleStopAutoAttack(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleCancelCast(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetStandState(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetVirtualEquipmentSlot(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetPhase(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetSpellCooldown(const proto::TriggerAction &action, game::TriggerContext &context);
 
 	private:
 

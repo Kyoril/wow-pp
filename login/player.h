@@ -21,12 +21,10 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
 #include "auth_protocol/auth_protocol.h"
 #include "auth_protocol/auth_connection.h"
 #include "common/big_number.h"
 #include "session.h"
-#include <cassert>
 
 namespace wowpp
 {

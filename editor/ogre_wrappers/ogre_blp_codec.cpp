@@ -19,14 +19,13 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "ogre_blp_codec.h"
-#include "log/default_log_levels.h"
 #include "OgreLogManager.h"
 #include "OgreException.h"
 #include "OgreRoot.h"
 #include "OgreRenderSystem.h"
 #include "OgreRenderSystemCapabilities.h"
-#include <cassert>
 
 namespace wowpp
 {
@@ -204,8 +203,6 @@ namespace wowpp
 			{
 				// Reinterpret file type
 				UInt32 fileType = *reinterpret_cast<const UInt32*>(magicNumberPtr);
-				ILOG("BLP Magic: " << std::hex << std::uppercase << fileType);
-
 				return Ogre::String("blp");
 			}
 

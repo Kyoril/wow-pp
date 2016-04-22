@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>986</width>
-    <height>640</height>
+    <width>1240</width>
+    <height>852</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,21 +18,21 @@
     <normaloff>:/ico101.ico</normaloff>:/ico101.ico</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_2">
+   <layout class="QVBoxLayout" name="verticalLayout_4">
     <property name="leftMargin">
-     <number>0</number>
+     <number>9</number>
     </property>
     <property name="topMargin">
-     <number>0</number>
+     <number>9</number>
     </property>
     <property name="rightMargin">
-     <number>0</number>
+     <number>9</number>
     </property>
     <property name="bottomMargin">
-     <number>0</number>
+     <number>9</number>
     </property>
     <item>
-     <widget class="QSplitter" name="splitter_2">
+     <widget class="QSplitter" name="splitter">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
@@ -42,6 +42,9 @@
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::ClickFocus</enum>
        </property>
        <property name="frameShape">
         <enum>QFrame::StyledPanel</enum>
@@ -59,171 +62,201 @@
         <bool>false</bool>
        </attribute>
       </widget>
-      <widget class="QSplitter" name="splitter">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
+      <widget class="QWidget" name="widget" native="true">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
          <horstretch>1</horstretch>
-         <verstretch>0</verstretch>
+         <verstretch>1</verstretch>
         </sizepolicy>
        </property>
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-       <widget class="QFrame" name="frame">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-          <horstretch>1</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <property name="leftMargin">
+         <number>0</number>
         </property>
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>0</height>
-         </size>
+        <property name="topMargin">
+         <number>0</number>
         </property>
-        <property name="styleSheet">
-         <string notr="true"/>
+        <property name="rightMargin">
+         <number>0</number>
         </property>
-        <property name="frameShape">
-         <enum>QFrame::StyledPanel</enum>
+        <property name="bottomMargin">
+         <number>0</number>
         </property>
-        <property name="frameShadow">
-         <enum>QFrame::Raised</enum>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout">
-         <property name="topMargin">
-          <number>9</number>
-         </property>
-         <property name="bottomMargin">
-          <number>9</number>
-         </property>
-         <item>
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string>Name:</string>
+        <item>
+         <widget class="QFrame" name="frame">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <horstretch>1</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout">
+           <property name="leftMargin">
+            <number>0</number>
            </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="triggerNameBox"/>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>Category:</string>
+           <property name="topMargin">
+            <number>0</number>
            </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="triggerPathBox"/>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QFrame" name="frame_2">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-          <horstretch>1</horstretch>
-          <verstretch>1</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="frameShape">
-         <enum>QFrame::StyledPanel</enum>
-        </property>
-        <property name="frameShadow">
-         <enum>QFrame::Raised</enum>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_3">
-         <property name="bottomMargin">
-          <number>0</number>
-         </property>
-         <item>
-          <widget class="QLabel" name="label_2">
-           <property name="text">
-            <string>Trigger Functions:</string>
+           <property name="rightMargin">
+            <number>0</number>
            </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QTreeWidget" name="functionView">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-             <horstretch>0</horstretch>
-             <verstretch>2</verstretch>
-            </sizepolicy>
+           <property name="bottomMargin">
+            <number>0</number>
            </property>
-           <property name="styleSheet">
-            <string notr="true"/>
-           </property>
-           <property name="dragEnabled">
-            <bool>true</bool>
-           </property>
-           <property name="alternatingRowColors">
-            <bool>true</bool>
-           </property>
-           <property name="rootIsDecorated">
-            <bool>true</bool>
-           </property>
-           <attribute name="headerVisible">
-            <bool>false</bool>
-           </attribute>
-           <column>
-            <property name="text">
-             <string>1</string>
-            </property>
-           </column>
            <item>
-            <property name="text">
-             <string>(No Trigger Selected)</string>
-            </property>
-            <property name="icon">
-             <iconset resource="../qrc/editor.qrc">
-              <normaloff>:/ico101.ico</normaloff>:/ico101.ico</iconset>
-            </property>
-            <item>
+            <widget class="QLabel" name="label">
              <property name="text">
-              <string>Events</string>
+              <string>Name:</string>
              </property>
-             <property name="icon">
-              <iconset resource="../qrc/editor.qrc">
-               <normaloff>:/Trigger.png</normaloff>:/Trigger.png</iconset>
-             </property>
-             <property name="flags">
-              <set>ItemIsSelectable|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Conditions</string>
-             </property>
-             <property name="icon">
-              <iconset resource="../qrc/editor.qrc">
-               <normaloff>:/File.png</normaloff>:/File.png</iconset>
-             </property>
-             <property name="flags">
-              <set>ItemIsSelectable|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Actions</string>
-             </property>
-             <property name="icon">
-              <iconset resource="../qrc/editor.qrc">
-               <normaloff>:/Trade_Engineering.png</normaloff>:/Trade_Engineering.png</iconset>
-             </property>
-             <property name="flags">
-              <set>ItemIsSelectable|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
-             </property>
-            </item>
+            </widget>
            </item>
-          </widget>
-         </item>
-        </layout>
-       </widget>
+           <item>
+            <widget class="QLineEdit" name="triggerNameBox"/>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>Category:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="triggerPathBox"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QFrame" name="frame_2">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>1</horstretch>
+            <verstretch>1</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_3">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Trigger Functions:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QTreeWidget" name="functionView">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>2</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="focusPolicy">
+              <enum>Qt::ClickFocus</enum>
+             </property>
+             <property name="styleSheet">
+              <string notr="true"/>
+             </property>
+             <property name="dragEnabled">
+              <bool>true</bool>
+             </property>
+             <property name="alternatingRowColors">
+              <bool>true</bool>
+             </property>
+             <property name="rootIsDecorated">
+              <bool>true</bool>
+             </property>
+             <attribute name="headerVisible">
+              <bool>false</bool>
+             </attribute>
+             <column>
+              <property name="text">
+               <string>1</string>
+              </property>
+             </column>
+             <item>
+              <property name="text">
+               <string>(No Trigger Selected)</string>
+              </property>
+              <property name="icon">
+               <iconset resource="../qrc/editor.qrc">
+                <normaloff>:/ico101.ico</normaloff>:/ico101.ico</iconset>
+              </property>
+              <item>
+               <property name="text">
+                <string>Events</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../qrc/editor.qrc">
+                 <normaloff>:/Trigger.png</normaloff>:/Trigger.png</iconset>
+               </property>
+               <property name="flags">
+                <set>ItemIsSelectable|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Conditions</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../qrc/editor.qrc">
+                 <normaloff>:/ActiveQuestIcon.png</normaloff>:/ActiveQuestIcon.png</iconset>
+               </property>
+               <property name="flags">
+                <set>ItemIsSelectable|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Actions</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../qrc/editor.qrc">
+                 <normaloff>:/Trade_Engineering.png</normaloff>:/Trade_Engineering.png</iconset>
+               </property>
+               <property name="flags">
+                <set>ItemIsSelectable|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
+               </property>
+              </item>
+             </item>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </widget>
     </item>
@@ -234,8 +267,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>986</width>
-     <height>21</height>
+     <width>1240</width>
+     <height>31</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Project">
@@ -245,7 +278,6 @@
    </widget>
    <addaction name="menu_Project"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
    <property name="windowTitle">
     <string>toolBar</string>
@@ -270,11 +302,9 @@
    </attribute>
    <addaction name="actionSave"/>
    <addaction name="separator"/>
-   <addaction name="actionObjectEditor"/>
-   <addaction name="actionTriggerEditor"/>
-   <addaction name="separator"/>
    <addaction name="actionNewCategory"/>
    <addaction name="actionNewTrigger"/>
+   <addaction name="separator"/>
    <addaction name="actionAddEvent"/>
    <addaction name="actionAddAction"/>
    <addaction name="actionRemove"/>
@@ -360,11 +390,19 @@
    </property>
   </action>
   <action name="actionAddEvent">
+   <property name="icon">
+    <iconset resource="../qrc/editor.qrc">
+     <normaloff>:/Trigger.png</normaloff>:/Trigger.png</iconset>
+   </property>
    <property name="text">
     <string>Add Event</string>
    </property>
   </action>
   <action name="actionAddAction">
+   <property name="icon">
+    <iconset resource="../qrc/editor.qrc">
+     <normaloff>:/Trade_Engineering.png</normaloff>:/Trade_Engineering.png</iconset>
+   </property>
    <property name="text">
     <string>Add Action</string>
    </property>

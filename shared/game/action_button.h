@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,19 +10,18 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
 #include "common/typedefs.h"
-#include <map>
 
 namespace wowpp
 {
@@ -31,13 +30,13 @@ namespace wowpp
 	{
 		enum Enum
 		{
-			/// 
+			///
 			Unchanged = 0,
-			/// 
+			///
 			Changed = 1,
-			/// 
+			///
 			New = 2,
-			/// 
+			///
 			Deleted = 3
 		};
 	}
@@ -47,11 +46,16 @@ namespace wowpp
 	/// Defines data of an action button.
 	struct ActionButton final
 	{
+		/// This is the buttons entry (spell or item entry), or 0 if no action.
 		UInt16 action;
+		/// This is the button type (TODO: Enum).
 		UInt8 type;
+		/// Unused right now...
 		UInt8 misc;
+		/// The button state (unused right now).
 		ActionButtonUpdateState state;
 
+		/// Default constructor.
 		ActionButton()
 			: action(0)
 			, type(0)
@@ -59,6 +63,7 @@ namespace wowpp
 			, state(action_button_update_state::New)
 		{
 		}
+		/// Custom constructor.
 		ActionButton(UInt16 action_, UInt8 type_, UInt8 misc_)
 			: action(action_)
 			, type(type_)
@@ -68,5 +73,6 @@ namespace wowpp
 		}
 	};
 
+	/// Maps action buttons by their slots.
 	typedef std::map<UInt8, ActionButton> ActionButtons;
 }

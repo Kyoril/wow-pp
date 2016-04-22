@@ -1,10 +1,30 @@
+//
+// This file is part of the WoW++ project.
+// 
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software 
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+//
+// World of Warcraft, and all World of Warcraft or Warcraft art, images,
+// and lore are copyrighted by Blizzard Entertainment, Inc.
+// 
 
+#include "pch.h"
 #include "adt_page.h"
 #include "log/default_log_levels.h"
 #include "OgreMatrix4.h"
 #include "OgreVector3.h"
 #include "OgreQuaternion.h"
-#include <cassert>
 
 namespace wowpp
 {
@@ -152,7 +172,8 @@ namespace wowpp
 				/*0048*/	UInt32 sizeShadow;
 				/*0052*/	UInt32 areaid;
 				/*0056*/	UInt32 nMapObjRefs;
-				/*0060*/	UInt32 holes;
+				/*0060*/	UInt16 holes;
+							UInt16 pad;
 				/*0064*/	UInt32 ReallyLowQualityTextureingMap[4];	// It is used to determine which detail doodads to show. Values are an array of two bit unsigned integers, naming the layer.
 				/*0080*/	UInt32 predTex;				// 03-29-2005 By ObscuR; TODO: Investigate
 				/*0084*/	UInt32 noEffectDoodad;				// 03-29-2005 By ObscuR; TODO: Investigate
@@ -175,6 +196,7 @@ namespace wowpp
 				// Calculate tile index
 				UInt32 tileIndex = header.IndexY + header.IndexX * constants::TilesPerPage;
 				auto &tileHeight = page.terrain.heights[tileIndex];
+				auto &tileHole = page.terrain.holes[tileIndex];
 				if (!ptr->read(&tileHeight[0], sizeof(float) * tileHeight.size()))
 				{
 					ELOG("Could not read MCVT subchunk (eof reached?)");
@@ -187,6 +209,7 @@ namespace wowpp
 					height += header.z;
 				}
 
+				tileHole = header.holes;
 				return true;
 			}
             
@@ -328,7 +351,7 @@ namespace wowpp
 					ELOG("Could not read MCNK chunk header!");
 					return false;
 				}
-                
+
 				// From here on, we will read subchunks
 				const size_t subStart = ptr->tell();
 				while (ptr->tell() < subStart + chunkSize)
@@ -423,86 +446,92 @@ namespace wowpp
 				}
 
 				// Read chunk size
-				file->read(&chunkSize, sizeof(UInt32));
+				if (!(file->read(&chunkSize, sizeof(UInt32))))
+				{
+					break;
+				}
 
 				// Check chunk header
 				bool result = true;
-				switch (chunkHeader)
+				if (chunkSize > 0)
 				{
-					case MVERChunk:
+					switch (chunkHeader)
 					{
-						result = read::readMVERChunk(out_page, file, chunkSize);
-						break;
-					}
+						case MVERChunk:
+						{
+							result = read::readMVERChunk(out_page, file, chunkSize);
+							break;
+						}
 
-					case MHDRChunk:
-					{
-						result = read::readMHDRChunk(out_page, file, chunkSize);
-						break;
-					}
+						case MHDRChunk:
+						{
+							result = read::readMHDRChunk(out_page, file, chunkSize);
+							break;
+						}
 
-					case MCINChunk:
-                    {
-                        if (chunkSize != 4096)
-                            WLOG("MCIN chunk size is not 4096, but " << chunkSize);
-                        if (!file->read(&MCINEntries[0], sizeof(read::MCINEntry) * MCINEntries.size()))
-                        {
-                            result = false;
-                        }
-                        break;
-                    }
-                        
-					case MTEXChunk:
-					{
-						result = read::readMTEXChunk(out_page, file, chunkSize);
-						break;
-					}
+						case MCINChunk:
+						{
+							if (chunkSize != 4096)
+								WLOG("MCIN chunk size is not 4096, but " << chunkSize);
+							if (!file->read(&MCINEntries[0], sizeof(read::MCINEntry) * MCINEntries.size()))
+							{
+								result = false;
+							}
+							break;
+						}
 
-					case MMIDChunk:
-					{
-						result = read::readMMIDChunk(out_page, file, chunkSize);
-						break;
-					}
+						case MTEXChunk:
+						{
+							result = read::readMTEXChunk(out_page, file, chunkSize);
+							break;
+						}
 
-					case MMDXChunk:
-					{
-						result = read::readMMDXChunk(out_page, file, chunkSize);
-						break;
-					}
+						case MMIDChunk:
+						{
+							result = read::readMMIDChunk(out_page, file, chunkSize);
+							break;
+						}
 
-					case MDDFChunk:
-					{
-						result = read::readMDDFChunk(out_page, file, chunkSize);
-						break;
-					}
+						case MMDXChunk:
+						{
+							result = read::readMMDXChunk(out_page, file, chunkSize);
+							break;
+						}
 
-					case MWMOChunk:
-					case MODFChunk:
-					case MH2OChunk:
-					case MFBOChunk:
-					case MTXPChunk:
-					case MTXFChunk:
-					case MWIDChunk:
-                    case MCNKChunk:
-					{
-						// We don't want to handle these, but we don't want warnings either
-						file->skip(chunkSize);
-						break;
-					}
+						case MDDFChunk:
+						{
+							result = read::readMDDFChunk(out_page, file, chunkSize);
+							break;
+						}
 
-					default:
-					{
-						// Skip chunk data
-						//WLOG("Undefined map chunk: " << chunkHeader << " (" << chunkSize << ")");
-						file->skip(chunkSize);
-						break;
+						case MWMOChunk:
+						case MODFChunk:
+						case MH2OChunk:
+						case MFBOChunk:
+						case MTXPChunk:
+						case MTXFChunk:
+						case MWIDChunk:
+						case MCNKChunk:
+						{
+							// We don't want to handle these, but we don't want warnings either
+							file->skip(chunkSize);
+							break;
+						}
+
+						default:
+						{
+							// Skip chunk data
+							//WLOG("Undefined map chunk: " << chunkHeader << " (" << chunkSize << ")");
+							file->skip(chunkSize);
+							break;
+						}
 					}
 				}
                 
 				// Something failed
 				if (!result)
 				{
-					ELOG("Could not load ADT file");
+					ELOG("Could not load ADT file: CHUNK " << chunkHeader << " (SIZE " << chunkSize << ") FAILED");
 					//file->close();
 					break;
 				}

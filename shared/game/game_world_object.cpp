@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,31 +10,33 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
+#include "pch.h"
 #include "game_world_object.h"
 #include "log/default_log_levels.h"
 #include "binary_io/vector_sink.h"
 #include "common/clock.h"
 #include "visibility_tile.h"
 #include "world_instance.h"
+#include "universe.h"
 #include "proto_data/project.h"
 #include "game_character.h"
-#include <cassert>
+#include "common/make_unique.h"
 
 namespace wowpp
 {
 	WorldObject::WorldObject(
-		proto::Project &project,
-		TimerQueue &timers,
-		const proto::ObjectEntry &entry)
+	    proto::Project &project,
+	    TimerQueue &timers,
+	    const proto::ObjectEntry &entry)
 		: GameObject(project)
 		, m_timers(timers)
 		, m_entry(entry)
@@ -71,6 +73,8 @@ namespace wowpp
 		setFloatValue(world_object_fields::Rotation + 2, sin(o / 2.0f));
 		setFloatValue(world_object_fields::Rotation + 3, cos(o / 2.0f));
 
+		// Generate object loot
+		generateObjectLoot();
 	}
 
 	void WorldObject::writeCreateObjectBlocks(std::vector<std::vector<char>> &out_blocks, bool creation /*= true*/) const
@@ -83,7 +87,9 @@ namespace wowpp
 		auto &entry = getEntry();
 		for (const auto &id : entry.quests())
 		{
-			if (id == questId) return true;
+			if (id == questId) {
+				return true;
+			}
 		}
 
 		return false;
@@ -94,51 +100,127 @@ namespace wowpp
 		auto &entry = getEntry();
 		for (const auto &id : entry.end_quests())
 		{
-			if (id == questId) return true;
+			if (id == questId) {
+				return true;
+			}
 		}
 
 		return false;
 	}
 
-	game::QuestgiverStatus WorldObject::getQuestgiverStatus(const GameCharacter & character) const
+	game::QuestgiverStatus WorldObject::getQuestgiverStatus(const GameCharacter &character) const
 	{
 		game::QuestgiverStatus result = game::questgiver_status::None;
-		for (const auto &quest : getEntry().quests())
+		for (const auto &quest : getEntry().end_quests())
 		{
 			auto questStatus = character.getQuestStatus(quest);
 			if (questStatus == game::quest_status::Complete)
 			{
 				return game::questgiver_status::Reward;
 			}
-			else if (questStatus == game::quest_status::Available)
-			{
-				result = game::questgiver_status::Available;
-			}
-			else if (questStatus == game::quest_status::Incomplete &&
-				result == game::questgiver_status::None)
+			else if (questStatus == game::quest_status::Incomplete)
 			{
 				result = game::questgiver_status::Incomplete;
+			}
+		}
+
+		for (const auto &quest : getEntry().quests())
+		{
+			auto questStatus = character.getQuestStatus(quest);
+			if (questStatus == game::quest_status::Available)
+			{
+				return game::questgiver_status::Available;
 			}
 		}
 		return result;
 	}
 
-	bool WorldObject::isQuestObject(const GameCharacter & character) const
+	bool WorldObject::isQuestObject(const GameCharacter &character) const
 	{
 		switch (m_entry.type())
 		{
-			case world_object_type::Chest:
+		case world_object_type::Chest:
 			{
-				// TODO: Check if chest loot contains quest item
+				if (!m_objectLoot)
+				{
+					return false;
+				}
+
+				for (UInt32 i = 0; i < m_objectLoot->getItemCount(); ++i)
+				{
+					auto *item = m_objectLoot->getLootDefinition(i);
+					if (item &&
+					        !item->isLooted)
+					{
+						if (character.needsQuestItem(item->definition.item()))
+						{
+							return true;
+						}
+					}
+				}
+
 				return false;
 			}
-			case world_object_type::Goober:
+		case world_object_type::Goober:
 			{
-				return character.getQuestStatus(m_entry.data(1)) == game::QuestStatus::Incomplete;
+				if (m_entry.data(1))
+				{
+					return character.getQuestStatus(m_entry.data(1)) == game::QuestStatus::Incomplete;
+				}
+
+				return false;
 			}
 		}
 
 		return false;
+	}
+
+	void WorldObject::raiseTrigger(trigger_event::Type e)
+	{
+		for (const auto &triggerId : m_entry.triggers())
+		{
+			const auto *triggerEntry = getProject().triggers.getById(triggerId);
+			if (triggerEntry)
+			{
+				for (const auto &triggerEvent : triggerEntry->newevents())
+				{
+					if (triggerEvent.type() == e)
+					{
+						objectTrigger(std::cref(*triggerEntry), std::ref(*this));
+					}
+				}
+			}
+		}
+	}
+
+	void WorldObject::generateObjectLoot()
+	{
+		auto lootEntryId = m_entry.objectlootentry();
+		if (lootEntryId)
+		{
+			const auto *lootEntry = getProject().objectLoot.getById(lootEntryId);
+			if (lootEntry)
+			{
+				// TODO: make a way so we don't need loot recipients for game objects as this is completely crap
+				std::vector<GameCharacter *> lootRecipients;
+				m_objectLoot = make_unique<LootInstance>(
+				                   getProject().items, getGuid(), lootEntry, 0, 0, std::cref(lootRecipients));
+				if (m_objectLoot)
+				{
+					m_onLootCleared = m_objectLoot->cleared.connect([this]()
+					{
+						// Remove this object from the world (despawn it)
+						// REMEMBER: THIS WILL MOST LIKELY DESTROY THIS INSTANCE
+						auto *world = getWorldInstance();
+						if (world)
+						{
+							// Despawn this object
+							world->removeGameObject(*this);
+						}
+					});
+				}
+			}
+		}
 	}
 
 	void WorldObject::relocate(math::Vector3 position, float o, bool fire/* = false*/)
@@ -154,17 +236,17 @@ namespace wowpp
 	}
 
 
-	io::Writer & operator<<(io::Writer &w, WorldObject const& object)
+	io::Writer &operator<<(io::Writer &w, WorldObject const &object)
 	{
 		// Write the bitset and values
 		return w
-			<< reinterpret_cast<GameObject const&>(object);
+		       << reinterpret_cast<GameObject const &>(object);
 	}
 
-	io::Reader & operator>>(io::Reader &r, WorldObject& object)
+	io::Reader &operator>>(io::Reader &r, WorldObject &object)
 	{
 		// Read the bitset and values
 		return r
-			>> reinterpret_cast<GameObject &>(object);
+		       >> reinterpret_cast<GameObject &>(object);
 	}
 }

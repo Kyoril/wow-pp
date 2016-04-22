@@ -6,7 +6,6 @@
 #include "network/receive_state.h"
 #include "binary_io/reader.h"
 #include "binary_io/memory_source.h"
-#include <map>
 
 namespace wowpp
 {
@@ -18,17 +17,17 @@ namespace wowpp
 			{
 				enum Status
 				{
-				    OK,
+					OK,
 
-				    BadRequest,
-				    Unauthorized,
-				    Forbidden,
-				    NotFound,
+					BadRequest,
+					Unauthorized,
+					Forbidden,
+					NotFound,
 
-				    InternalServerError,
-				    ServiceUnavailable,
+					InternalServerError,
+					ServiceUnavailable,
 
-				    StatusCount_
+					StatusCount_
 				};
 
 				typedef std::map<String, String> Headers;

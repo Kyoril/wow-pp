@@ -21,11 +21,9 @@
 
 #pragma once
 
-#include "common/typedefs.h"
-#include "data/project.h"
+#include "proto_data/project.h"
 #include <QDialog>
 #include <QItemSelection>
-#include <memory>
 
 // Forwards
 namespace Ui
@@ -47,19 +45,21 @@ namespace wowpp
 		public:
 
 			/// 
-			explicit EventDialog(EditorApplication &app, UInt32 e = 0);
+			explicit EventDialog(EditorApplication &app, proto::TriggerEvent e = proto::TriggerEvent());
 
-			UInt32 getEvent() const;
+			const proto::TriggerEvent &getEvent() const { return m_event; }
 
 		private slots:
 
 			void on_buttonBox_accepted();
 			void on_eventBox_currentIndexChanged(int index);
+			void on_eventTextLabel_linkActivated(const QString &link);
 
 		private:
 
 			Ui::EventDialog *m_ui;
 			EditorApplication &m_app;
+			proto::TriggerEvent m_event;
 		};
 	}
 }

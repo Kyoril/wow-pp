@@ -14,27 +14,4 @@ The **[master branch](https://github.com/Kyoril/wow-pp/tree/master)** tracks **[
 Other branches may appear, which will be created by developers for certain features or fixes and should be merged into the branches listed above.
 
 ## Roadmap
-There is still A LOT to do on WoW++. Below is a list of the most important things to do next:
-
-- [x] Grid system development (visibility of objects)
-- [ ] Navigation system for creatures
-- [x] Be able to leave a world through the logout command and go back to the character list
-- [ ] Items
-- [ ] Spell system & Combat
-- [ ] Quests
-- [ ] Groups
-- [ ] Guilds
-- [ ] Professions
-- [ ] Trade
-- [ ] Mail
-- [ ] Auction Houses
-- [ ] Weather
-- [ ] World Events (Darkmoon Faire etc.)
-- [ ] Dungeons and Raids
-- [ ] Battlegrounds
-- [ ] Arenas
-- [ ] Open World PVP and PVP Events (Nagrand, Hellfire etc.)
-- [ ] Friendlist and Ignore List
-- [ ] GM System (Tickets, GM Mode, GM Spells etc.)
-
-Of course there is even more to do, and this roadmap is pretty rough. Also, it isn't complete. But let's take one step after another, shall we?
+There is still A LOT to do on WoW++. You can always find our bugtracker at http://wow-pp.eu/bugtracker.

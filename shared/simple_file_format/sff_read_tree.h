@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,23 +10,19 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
 #include "sff_read_parser.h"
 #include "sff_read_token.h"
-#include <boost/ptr_container/ptr_vector.hpp>
-#include <boost/ptr_container/ptr_map.hpp>
-#include <boost/optional.hpp>
-#include <limits>
 
 namespace sff
 {
@@ -159,7 +155,7 @@ namespace sff
 
 			template <class T, class P>
 			Object<T> *parseObject(P &parser, DataType type);
-			 
+
 			template <class T>
 			class Table;
 
@@ -250,7 +246,7 @@ namespace sff
 					Integer temp;
 					if (findInteger(index, temp))
 					{
-					    return temp;
+						return temp;
 					}
 					return boost::none;
 				}
@@ -296,7 +292,8 @@ namespace sff
 				typedef typename Super::MyString MyString;
 				typedef typename Super::MyParser MyParser;
 				typedef Object<T> Element;
-				typedef boost::ptr_map<MyString, Element> Members;
+				typedef std::map<MyString, std::shared_ptr<Element>> Members;
+				//typedef boost::ptr_map<MyString, Element> Members;
 
 			public:
 
@@ -310,7 +307,7 @@ namespace sff
 
 					if (i != members.end())
 					{
-						return (i->second);
+						return (i->second.get());
 					}
 
 					return nullptr;
@@ -407,8 +404,8 @@ namespace sff
 					while (parser.parseAssignment(key))
 					{
 						const DataType type = parser.detectDataTypeEx();
-						std::auto_ptr<Object<T> > element(parseObject<T>(parser, type));
-						members.insert(key, element);
+						std::shared_ptr<Object<T> > element(parseObject<T>(parser, type));
+						members[key] = std::move(element);
 						parser.skipOptionalComma();
 					}
 

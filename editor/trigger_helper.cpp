@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "trigger_helper.h"
 #include "proto_data/trigger_helper.h"
 
@@ -26,30 +27,56 @@ namespace wowpp
 {
 	namespace editor
 	{
-		QString getTriggerEventText(UInt32 e)
+		QString getTriggerEventData(const proto::TriggerEvent &e, UInt32 i, bool link/* = false*/)
 		{
-			switch (e)
+			QString temp = (link ? "<a href=\"event-data-%2\" style=\"color: #ffae00;\">%1</a>" : "%1");
+
+			if (static_cast<int>(i) >= e.data_size())
+				return temp.arg(0).arg(i);
+
+			return temp.arg(e.data(i)).arg(i);
+		}
+
+		QString getTriggerEventText(const proto::TriggerEvent &e, bool withLinks/* = false*/)
+		{
+			switch (e.type())
 			{
 			case trigger_event::OnAggro:
-				return "Triggering unit enters combat";
+				return "Owning unit enters combat";
 			case trigger_event::OnAttackSwing:
-				return "Triggering unit executes auto attack swing";
+				return "Owning unit executes auto attack swing";
 			case trigger_event::OnDamaged:
-				return "Triggering unit received damage";
+				return "Owning unit received damage";
 			case trigger_event::OnDespawn:
-				return "Triggering object despawned";
+				return "Owner despawned";
 			case trigger_event::OnHealed:
-				return "Triggering unit received heal";
+				return "Owning unit received heal";
 			case trigger_event::OnKill:
-				return "Triggering unit killed someone";
+				return "Owning unit killed someone";
 			case trigger_event::OnKilled:
-				return "Triggering unit was killed";
+				return "Owning unit was killed";
 			case trigger_event::OnSpawn:
-				return "Triggering object spawned";
+				return "Owner spawned";
 			case trigger_event::OnReset:
-				return "Triggering unit resets";
+				return "Owning unit resets";
 			case trigger_event::OnReachedHome:
-				return "Triggering unit reached home after reset";
+				return "Owning unit reached home after reset";
+			case trigger_event::OnInteraction:
+				return "Player interacted with owner";
+			case trigger_event::OnHealthDroppedBelow:
+				return QString("Owning units health dropped below %1%")
+					.arg(getTriggerEventData(e, 0, withLinks));
+			case trigger_event::OnReachedTriggeredTarget:
+				return "Owning unit reached triggered movement target";
+			case trigger_event::OnSpellHit:
+				return QString("Owning unit was hit by spell %1")
+					.arg(getTriggerEventData(e, 0, withLinks));
+			case trigger_event::OnSpellAuraRemoved:
+				return QString("Owning unit lost aura of spell %1")
+					.arg(getTriggerEventData(e, 0, withLinks));
+			case trigger_event::OnEmote:
+				return QString("Owning unit was targeted by emote %1")
+					.arg(getTriggerEventData(e, 0, withLinks));
 			default:
 				return "(INVALID EVENT)";
 			}
@@ -63,16 +90,16 @@ namespace wowpp
 			{
 			case trigger_action_target::None:
 				return temp.arg("(NONE)");
-			case trigger_action_target::OwningUnit:
-				return temp.arg("(Triggering Unit)");
+			case trigger_action_target::OwningObject:
+				return temp.arg("(Owner)");
 			case trigger_action_target::OwningUnitVictim:
-				return temp.arg("(Triggering Unit's Target)");
+				return temp.arg("(Owning Unit's Target)");
 			case trigger_action_target::RandomUnit:
 				return temp.arg("(Random Nearby Unit)");
 			case trigger_action_target::NamedCreature:
-				return temp.arg(QString("(Creature Named '%1')").arg(action.targetname().c_str()));
+				return temp.arg(QString("(Creature: '%1')").arg(action.targetname().c_str()));
 			case trigger_action_target::NamedWorldObject:
-				return temp.arg(QString("(Object Named '%1')").arg(action.targetname().c_str()));
+				return temp.arg(QString("(World Object: '%1')").arg(action.targetname().c_str()));
 			default:
 				return temp.arg("(INVALID)");
 			}
@@ -100,7 +127,9 @@ namespace wowpp
 					.arg(getTriggerTargetName(action, withLinks)).arg(getTriggerActionString(action, 0, withLinks)).arg(getTriggerActionData(action, 0, withLinks));
 			case trigger_actions::CastSpell:
 				return QString("Unit - Make %1 cast spell %2 on %3")
-					.arg(getTriggerTargetName(action, withLinks)).arg(actionDataEntry(project.spells, action, 0, withLinks).arg(getTriggerTargetName(action, withLinks)));
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(actionDataEntry(project.spells, action, 0, withLinks))
+					.arg(getTriggerActionData(action, 1, withLinks));
 			case trigger_actions::SetSpawnState:
 				return QString("Unit - Set spawn state of %1 to %2")
 					.arg(getTriggerTargetName(action, withLinks)).arg(getTriggerActionData(action, 0, withLinks));
@@ -116,6 +145,40 @@ namespace wowpp
 			case trigger_actions::Delay:
 				return QString("Common - Delay execution for %1 ms")
 					.arg(getTriggerActionData(action, 0, withLinks));
+			case trigger_actions::MoveTo:
+				return QString("Unit - Make %1 move to location (%2, %3, %4)")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(getTriggerActionData(action, 0, withLinks))
+					.arg(getTriggerActionData(action, 1, withLinks))
+					.arg(getTriggerActionData(action, 2, withLinks));
+			case trigger_actions::SetCombatMovement:
+				return QString("Unit - Set combat movement of %1 to (%2)")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(getTriggerActionData(action, 0, withLinks));
+			case trigger_actions::StopAutoAttack:
+				return QString("Unit - Make %1 stop auto attacking")
+					.arg(getTriggerTargetName(action, withLinks));
+			case trigger_actions::CancelCast:
+				return QString("Unit - %1 cancel it's current cast")
+					.arg(getTriggerTargetName(action, withLinks));
+			case trigger_actions::SetStandState:
+				return QString("Unit - Set stand state of %1 to %2")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(getTriggerActionData(action, 0, withLinks));
+			case trigger_actions::SetVirtualEquipmentSlot:
+				return QString("Unit - Set virtual equipment slot %2 of %1 to %3")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(getTriggerActionData(action, 0, withLinks))
+					.arg(actionDataEntry(project.items, action, 1, withLinks, true));
+			case trigger_actions::SetPhase:
+				return QString("Unit - Set combat phase of %1 to %2")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(getTriggerActionData(action, 0, withLinks));
+			case trigger_actions::SetSpellCooldown:
+				return QString("Unit - Set %1's cooldown of spell %2 to %3 ms")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(actionDataEntry(project.spells, action, 0, withLinks))
+					.arg(getTriggerActionData(action, 1, withLinks));
 			default:
 				return QString("UNKNOWN TRIGGER ACTION");
 			}
@@ -124,6 +187,24 @@ namespace wowpp
 		QString getTriggerActionData(const proto::TriggerAction &action, UInt32 i, bool link/* = false*/)
 		{
 			QString temp = (link ? "<a href=\"data-%2\" style=\"color: #ffae00;\">%1</a>" : "%1");
+
+			if (action.action() == trigger_actions::CastSpell && i == 1)
+			{
+				UInt32 target = (i >= UInt32(action.data_size()) ? 0 : action.data(i));
+				if (target >= trigger_spell_cast_target::Invalid)
+				{
+					return temp.arg("(INVALID TARGET)").arg(i);
+				}
+				else
+				{
+					static std::array<QString, trigger_spell_cast_target::Count_> entries = {
+						QString("(Caster)"),
+						QString("(Casters Target)")
+					};
+
+					return temp.arg(entries[target]).arg(i);
+				}
+			}
 
 			if (static_cast<int>(i) >= action.data_size())
 				return temp.arg(0).arg(i);

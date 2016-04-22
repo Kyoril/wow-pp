@@ -6,6 +6,7 @@ float4 main(
 	in float3 out_Normal	: TEXCOORD2,
 	in float4 out_LightPos	: TEXCOORD3,
 	in float3 out_EyePos	: TEXCOORD4,
+	in float out_Fog		: FOG,
 
 	uniform sampler2D alpha,
 	uniform sampler2D splat1,
@@ -15,7 +16,8 @@ float4 main(
 	
 	uniform float Scale,				// Splatting scale
 	uniform float3 g_AmbientLight,
-	uniform float3 g_DiffuseLight
+	uniform float3 g_DiffuseLight,
+	uniform float4 g_FogColour
 	) : COLOR0
 {
 	float4 coverage = tex2D(alpha, out_Tex * 0.96875);
@@ -42,5 +44,7 @@ float4 main(
 	float4 Lit = lit(NdotL, NdotH, 128.0);
 	
 	float3 texColor = finalDiffuse.xyz;
-    return float4(g_DiffuseLight * Lit.y * texColor + g_AmbientLight * texColor, 1.0);
+    float4 outColor = float4(g_DiffuseLight * Lit.y * texColor + g_AmbientLight * texColor, 1.0);
+	
+	return lerp(outColor, g_FogColour, out_Fog);
 }

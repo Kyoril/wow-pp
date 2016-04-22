@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,17 +10,19 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
+#include "pch.h"
 #include "game_item.h"
 #include "proto_data/project.h"
+#include "common/make_unique.h"
 
 namespace wowpp
 {
@@ -29,8 +31,8 @@ namespace wowpp
 		, m_entry(entry)
 	{
 		// Resize values field
-		m_values.resize(item_fields::ItemFieldCount);
-		m_valueBitset.resize((item_fields::ItemFieldCount + 31) / 32);
+		m_values.resize(item_fields::ItemFieldCount, 0);
+		m_valueBitset.resize((item_fields::ItemFieldCount + 31) / 32, 0);
 
 		// 2.3.2 - 0x18
 		m_objectType |= type_mask::Item;
@@ -55,11 +57,31 @@ namespace wowpp
 		// Spell charges
 		for (size_t i = 0; i < 5; ++i)
 		{
-			if (i >= m_entry.spells_size())
+			if (i >= m_entry.spells_size()) {
 				break;
+			}
 
 			setUInt32Value(item_fields::SpellCharges + i, m_entry.spells(i).charges());
 		}
+
+		// Generate loot
+		generateLoot();
+	}
+
+	UInt16 GameItem::addStacks(UInt16 amount)
+	{
+		const UInt32 stackCount = getStackCount();
+
+		const UInt32 availableStacks = m_entry.maxstack() - stackCount;
+		if (amount <= availableStacks)
+		{
+			setUInt32Value(item_fields::StackCount, stackCount + amount);
+			return amount;
+		}
+
+		// Max out the stack count and return the added stacks
+		setUInt32Value(item_fields::StackCount, m_entry.maxstack());
+		return static_cast<UInt16>(availableStacks);
 	}
 
 	void GameItem::notifyEquipped()
@@ -68,16 +90,39 @@ namespace wowpp
 		equipped();
 	}
 
-	io::Writer & operator<<(io::Writer &w, GameItem const& object)
+	void GameItem::generateLoot()
 	{
-		return w
-			<< reinterpret_cast<GameObject const&>(object);
+		auto lootEntryId = m_entry.lootentry();
+		const auto *lootEntry = lootEntryId ? getProject().itemLoot.getById(lootEntryId) : nullptr;
+		if (lootEntry || m_entry.minlootgold() > 0)
+		{
+			// TODO: make a way so we don't need loot recipients for game objects as this is completely crap
+			std::vector<GameCharacter *> lootRecipients;
+			m_loot = make_unique<LootInstance>(
+				getProject().items, getGuid(), lootEntry, m_entry.minlootgold(), m_entry.maxlootgold(), std::cref(lootRecipients));
+			if (m_loot)
+			{
+				m_onLootCleared = m_loot->cleared.connect([this]()
+				{
+					// We use the despawned signal here, even though the item is not physically
+					// spawned in the world. We do so, in order for loot handling to work just fine
+					// with this kind of loot source.
+					despawned(*this);
+				});
+			}
+		}
 	}
 
-	io::Reader & operator>>(io::Reader &r, GameItem& object)
+	io::Writer &operator<<(io::Writer &w, GameItem const &object)
+	{
+		return w
+		       << reinterpret_cast<GameObject const &>(object);
+	}
+
+	io::Reader &operator>>(io::Reader &r, GameItem &object)
 	{
 		return r
-			>> reinterpret_cast<GameObject&>(object);
+		       >> reinterpret_cast<GameObject &>(object);
 	}
 
 }

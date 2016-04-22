@@ -1,9 +1,0 @@
-<RCC>
-  <qresource prefix="/">
-    <file>Open.png</file>
-    <file>Save.png</file>
-    <file>ico101.ico</file>
-    <file>Items.png</file>
-    <file>Units.png</file>
-  </qresource>
-</RCC>

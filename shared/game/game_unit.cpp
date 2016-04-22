@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,15 +10,16 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
+#include "pch.h"
 #include "game_unit.h"
 #include "log/default_log_levels.h"
 #include "world_instance.h"
@@ -30,13 +31,13 @@
 #include "experience.h"
 #include "unit_mover.h"
 #include "common/make_unique.h"
-#include <cassert>
+#include "game_creature.h"
 
 namespace wowpp
 {
 	GameUnit::GameUnit(
-		proto::Project &project,
-		TimerQueue &timers)
+	    proto::Project &project,
+	    TimerQueue &timers)
 		: GameObject(project)
 		, m_timers(timers)
 		, m_raceEntry(nullptr)
@@ -47,14 +48,17 @@ namespace wowpp
 		, m_lastAttackSwing(0)
 		, m_regenCountdown(timers)
 		, m_factionTemplate(nullptr)
-        , m_lastManaUse(0)
-        , m_auras(*this)
+		, m_lastManaUse(0)
+		, m_auras(*this)
+		, m_mechanicImmunity(0)
 		, m_isStunned(false)
 		, m_isRooted(false)
+		, m_isStealthed(false)
+		, m_standState(unit_stand_state::Stand)
 	{
 		// Resize values field
-		m_values.resize(unit_fields::UnitFieldCount);
-		m_valueBitset.resize((unit_fields::UnitFieldCount + 31) / 32);
+		m_values.resize(unit_fields::UnitFieldCount, 0);
+		m_valueBitset.resize((unit_fields::UnitFieldCount + 31) / 32, 0);
 
 		// Reset unit speed
 		m_speedBonus.fill(1.0f);
@@ -67,11 +71,11 @@ namespace wowpp
 
 		// Setup despawn countdown
 		m_despawnCountdown.ended.connect(
-			std::bind(&GameUnit::onDespawnTimer, this));
+		    std::bind(&GameUnit::onDespawnTimer, this));
 		m_attackSwingCountdown.ended.connect(
-			std::bind(&GameUnit::onAttackSwing, this));
+		    std::bind(&GameUnit::onAttackSwing, this));
 		m_regenCountdown.ended.connect(
-			std::bind(&GameUnit::onRegeneration, this));
+		    std::bind(&GameUnit::onRegeneration, this));
 	}
 
 	GameUnit::~GameUnit()
@@ -112,11 +116,11 @@ namespace wowpp
 		setUInt32Value(unit_fields::MaxPower5, 100);					//UNIT_FIELD_MAXPOWER4	Happiness
 
 		setUInt32Value(unit_fields::UnitFlags, 0x00001000);				//UNIT_FIELD_FLAGS				(TODO: Flags)	UNIT_FLAG_PVP_ATTACKABLE
-		setUInt32Value(unit_fields::BaseAttackTime, 2000);				//UNIT_FIELD_BASEATTACKTIME		
-		setUInt32Value(unit_fields::BaseAttackTime + 1, 2000);			//UNIT_FIELD_OFFHANDATTACKTIME	
-		setUInt32Value(unit_fields::RangedAttackTime, 2000);			//UNIT_FIELD_RANGEDATTACKTIME	
-		setFloatValue(unit_fields::BoundingRadius, 1.080510020256f);		//UNIT_FIELD_BOUNDINGRADIUS		(TODO: Float)
-		setFloatValue(unit_fields::CombatReach, 0.90042400360107f);			//UNIT_FIELD_COMBATREACH		(TODO: Float)
+		setUInt32Value(unit_fields::BaseAttackTime, 2000);				//UNIT_FIELD_BASEATTACKTIME
+		setUInt32Value(unit_fields::BaseAttackTime + 1, 2000);			//UNIT_FIELD_OFFHANDATTACKTIME
+		setUInt32Value(unit_fields::RangedAttackTime, 2000);			//UNIT_FIELD_RANGEDATTACKTIME
+		setFloatValue(unit_fields::BoundingRadius, 0.388999998569489f);	//UNIT_FIELD_BOUNDINGRADIUS		(TODO: Float)
+		setFloatValue(unit_fields::CombatReach, 1.5f);					//UNIT_FIELD_COMBATREACH		(TODO: Float)
 		//setUInt32Value(unit_fields::Bytes1, 0x00110000);				//UNIT_FIELD_BYTES_1
 
 		setFloatValue(unit_fields::ModCastSpeed, 1.0f);					//UNIT_MOD_CAST_SPEED
@@ -158,8 +162,8 @@ namespace wowpp
 
 		// Unknown what this does...
 		if (m_classEntry->powertype() == static_cast<wowpp::proto::ClassEntry_PowerType>(game::power_type::Rage) ||
-			m_classEntry->powertype() == static_cast<wowpp::proto::ClassEntry_PowerType>(game::power_type::Mana))
-			
+		        m_classEntry->powertype() == static_cast<wowpp::proto::ClassEntry_PowerType>(game::power_type::Mana))
+
 		{
 			setByteValue(unit_fields::Bytes1, 1, 0xEE);
 		}
@@ -209,8 +213,10 @@ namespace wowpp
 
 		// Get level information
 		const auto *levelInfo = getProject().levels.getById(level);
-		if (!levelInfo) return;	// Creatures can have a level higher than 70
-		
+		if (!levelInfo) {
+			return;    // Creatures can have a level higher than 70
+		}
+
 		// Level info changed
 		levelChanged(*levelInfo);
 
@@ -219,14 +225,22 @@ namespace wowpp
 		if (oldLevel)
 		{
 			const auto raceIt = levelInfo->stats().find(getRace());
-			if (raceIt == levelInfo->stats().end()) return;
+			if (raceIt == levelInfo->stats().end()) {
+				return;
+			}
 			const auto classIt = raceIt->second.stats().find(getClass());
-			if (classIt == raceIt->second.stats().end()) return;
+			if (classIt == raceIt->second.stats().end()) {
+				return;
+			}
 
 			const auto raceItOld = oldLevel->stats().find(getRace());
-			if (raceItOld == oldLevel->stats().end()) return;
+			if (raceItOld == oldLevel->stats().end()) {
+				return;
+			}
 			const auto classItOld = raceItOld->second.stats().find(getClass());
-			if (classItOld == raceItOld->second.stats().end()) return;
+			if (classItOld == raceItOld->second.stats().end()) {
+				return;
+			}
 
 			// Calculate difference
 			const auto &oldStats = classItOld->second;
@@ -234,24 +248,24 @@ namespace wowpp
 
 			// Prevent overflow
 			if (static_cast<int>(prevLevel) > getClassEntry()->levelbasevalues_size() ||
-				level > getClassEntry()->levelbasevalues_size())
+			        level > getClassEntry()->levelbasevalues_size())
 			{
 				return;
 			}
 
 			auto oldBase = getClassEntry()->levelbasevalues(prevLevel - 1);
 			auto newBase = getClassEntry()->levelbasevalues(level - 1);
-			
+
 			// Fire signal
 			levelGained(
-				prevLevel,
-				newBase.health() - oldBase.health(),
-				newBase.mana() - oldBase.mana(),
-				newStats.stat1() - oldStats.stat1(),
-				newStats.stat2() - oldStats.stat2(),
-				newStats.stat3() - oldStats.stat3(),
-				newStats.stat4() - oldStats.stat4(),
-				newStats.stat5() - oldStats.stat5());
+			    prevLevel,
+			    newBase.health() - oldBase.health(),
+			    newBase.mana() - oldBase.mana(),
+			    newStats.stat1() - oldStats.stat1(),
+			    newStats.stat2() - oldStats.stat2(),
+			    newStats.stat3() - oldStats.stat3(),
+			    newStats.stat4() - oldStats.stat4(),
+			    newStats.stat5() - oldStats.stat5());
 		}
 	}
 
@@ -262,10 +276,14 @@ namespace wowpp
 		const auto cls = getClass();
 
 		const auto raceIt = levelInfo.stats().find(race);
-		if (raceIt == levelInfo.stats().end()) return;
+		if (raceIt == levelInfo.stats().end()) {
+			return;
+		}
 
 		const auto classIt = raceIt->second.stats().find(cls);
-		if (classIt == raceIt->second.stats().end()) return;
+		if (classIt == raceIt->second.stats().end()) {
+			return;
+		}
 
 		// Update stats based on level information
 		const auto &stats = classIt->second;
@@ -274,16 +292,26 @@ namespace wowpp
 			const UnitMods mod = getUnitModByStat(i);
 			switch (i)
 			{
-				case 0: setModifierValue(mod, unit_mod_type::BaseValue, stats.stat1()); break;
-				case 1: setModifierValue(mod, unit_mod_type::BaseValue, stats.stat2()); break;
-				case 2: setModifierValue(mod, unit_mod_type::BaseValue, stats.stat3()); break;
-				case 3: setModifierValue(mod, unit_mod_type::BaseValue, stats.stat4()); break;
-				case 4: setModifierValue(mod, unit_mod_type::BaseValue, stats.stat5()); break;
+			case 0:
+				setModifierValue(mod, unit_mod_type::BaseValue, stats.stat1());
+				break;
+			case 1:
+				setModifierValue(mod, unit_mod_type::BaseValue, stats.stat2());
+				break;
+			case 2:
+				setModifierValue(mod, unit_mod_type::BaseValue, stats.stat3());
+				break;
+			case 3:
+				setModifierValue(mod, unit_mod_type::BaseValue, stats.stat4());
+				break;
+			case 4:
+				setModifierValue(mod, unit_mod_type::BaseValue, stats.stat5());
+				break;
 			}
 		}
 	}
 
-	void GameUnit::castSpell(SpellTargetMap target, UInt32 spellId, Int32 basePoints, GameTime castTime, bool isProc, SpellSuccessCallback callback)
+	void GameUnit::castSpell(SpellTargetMap target, UInt32 spellId, Int32 basePoints, GameTime castTime, bool isProc, UInt64 itemGuid, SpellSuccessCallback callback)
 	{
 		// Resolve spell
 		const auto *spell = getProject().spells.getById(spellId);
@@ -293,15 +321,16 @@ namespace wowpp
 			return;
 		}
 
-		if (!isProc)
+		if (!isProc) {
 			startedCasting(*spell);
-		
-		auto result = m_spellCast->startCast(*spell, std::move(target), basePoints, castTime, isProc);
-		
+		}
+
+		auto result = m_spellCast->startCast(*spell, std::move(target), basePoints, castTime, isProc, itemGuid);
+
 		// Reset auto attack timer if requested
 		if (result.first == game::spell_cast_result::CastOkay &&
-			m_attackSwingCountdown.running && 
-			result.second)
+		        m_attackSwingCountdown.running &&
+		        result.second)
 		{
 			if (!(spell->attributes(1) & game::spell_attributes_ex_a::NotResetSwingTimer) && !isProc)
 			{
@@ -311,7 +340,7 @@ namespace wowpp
 					// Pause auto attack during spell cast
 					m_attackSwingCountdown.cancel();
 					result.second->ended.connect(
-						std::bind(&GameUnit::onSpellCastEnded, this, std::placeholders::_1));
+					    std::bind(&GameUnit::onSpellCastEnded, this, std::placeholders::_1));
 				}
 				else
 				{
@@ -335,28 +364,24 @@ namespace wowpp
 		}
 	}
 
-	void GameUnit::setVictim(GameUnit * victim)
+	void GameUnit::setVictim(GameUnit *victim)
 	{
 		if (m_victim && !victim)
 		{
-			m_victimDied.disconnect();
-			m_victimDespawned.disconnect();
-
 			// Stop auto attack
 			stopAttack();
 		}
 
-		const bool needReconnect = (victim && !m_victim);
 		m_victim = victim;
 
 		// Update target value
 		setUInt64Value(unit_fields::Target, m_victim ? m_victim->getGuid() : 0);
-		if (needReconnect)
+		if (m_victim)
 		{
 			m_victimDied = m_victim->killed.connect(
-				std::bind(&GameUnit::onVictimKilled, this, std::placeholders::_1));
+			                   std::bind(&GameUnit::onVictimKilled, this, std::placeholders::_1));
 			m_victimDespawned = m_victim->despawned.connect(
-				std::bind(&GameUnit::onVictimDespawned, this));
+			                        std::bind(&GameUnit::onVictimDespawned, this));
 		}
 
 	}
@@ -365,21 +390,26 @@ namespace wowpp
 	{
 		// Start despawn countdown (may override previous countdown)
 		m_despawnCountdown.setEnd(
-			getCurrentTime() + despawnDelay);
+		    getCurrentTime() + despawnDelay);
 	}
 
-	void GameUnit::cancelCast()
+	void GameUnit::cancelCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown/* = 0*/)
 	{
 		// Stop attack swing callback in case there is one
-		if (m_swingCallback) m_swingCallback = AttackSwingCallback();
-		m_spellCast->stopCast();
+		if (m_swingCallback) {
+			m_swingCallback = AttackSwingCallback();
+		}
+
+		// Interrupt cooldown
+		m_spellCast->stopCast(reason, interruptCooldown);
 	}
 
 	void GameUnit::startAttack()
 	{
 		// No victim?
-		if (!m_victim)
+		if (!m_victim) {
 			return;
+		}
 
 		// Check if the target is alive
 		if (!m_victim->isAlive())
@@ -389,8 +419,9 @@ namespace wowpp
 		}
 
 		// Already attacking?
-		if (m_attackSwingCountdown.running)
+		if (m_attackSwingCountdown.running) {
 			return;
+		}
 
 		TileIndex2D tileIndex;
 		if (!getTileIndex(tileIndex))
@@ -398,7 +429,7 @@ namespace wowpp
 			// We can't attack since we do not belong to a world
 			return;
 		}
-		
+
 		std::vector<char> buffer;
 		io::VectorSink sink(buffer);
 		game::Protocol::OutgoingPacket packet(sink);
@@ -406,9 +437,9 @@ namespace wowpp
 
 		// Notify all tile subscribers about this event
 		forEachSubscriberInSight(
-			m_worldInstance->getGrid(),
-			tileIndex,
-			[&packet, &buffer](ITileSubscriber &subscriber)
+		    m_worldInstance->getGrid(),
+		    tileIndex,
+		    [&packet, &buffer](ITileSubscriber & subscriber)
 		{
 			subscriber.sendPacket(packet, buffer);
 		});
@@ -416,11 +447,13 @@ namespace wowpp
 		// Start auto attack timer (immediatly start to attack our target)
 		GameTime nextAttackSwing = getCurrentTime();
 		GameTime attackSwingCooldown = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
-		if (attackSwingCooldown > nextAttackSwing) nextAttackSwing = attackSwingCooldown;
+		if (attackSwingCooldown > nextAttackSwing) {
+			nextAttackSwing = attackSwingCooldown;
+		}
 
 		// Trigger next auto attack
 		m_attackSwingCountdown.setEnd(nextAttackSwing);
-		
+
 		startedAttacking();
 	}
 
@@ -455,9 +488,9 @@ namespace wowpp
 
 		// Notify all tile subscribers about this event
 		forEachSubscriberInSight(
-			m_worldInstance->getGrid(),
-			tileIndex,
-			[&packet, &buffer](ITileSubscriber &subscriber)
+		    m_worldInstance->getGrid(),
+		    tileIndex,
+		    [&packet, &buffer](ITileSubscriber & subscriber)
 		{
 			subscriber.sendPacket(packet, buffer);
 		});
@@ -487,7 +520,7 @@ namespace wowpp
 		do
 		{
 			// Get target location
-			math::Vector3 location(victim->getLocation());
+			const math::Vector3 & location = victim->getLocation();
 
 			// Distance check
 			const float distance = getDistanceTo(*victim);
@@ -512,7 +545,7 @@ namespace wowpp
 			if (!isInArc(2.0f * 3.1415927f / 3.0f, location.x, location.y))
 			{
 				autoAttackError(attack_swing_error::WrongFacing);
-				
+
 				// Reset attack swing callback
 				if (m_swingCallback)
 				{
@@ -528,7 +561,7 @@ namespace wowpp
 			bool result = false;
 			if (m_swingCallback)
 			{
-				// Execute onSwing callback (used by some melee spells which are executed on next attack swing and 
+				// Execute onSwing callback (used by some melee spells which are executed on next attack swing and
 				// replace auto attack)
 				result = m_swingCallback();
 
@@ -543,19 +576,19 @@ namespace wowpp
 				{
 					return;
 				}
-				
-				std::vector<GameUnit*> targets;
+
+				std::vector<GameUnit *> targets;
 				std::vector<game::VictimState> victimStates;
 				std::vector<game::HitInfo> hitInfos;
 				std::vector<float> resists;
 				AttackTable attackTable;
 				UInt8 school = game::spell_school_mask::Normal;	// may vary
 				attackTable.checkMeleeAutoAttack(this, victim, school, targets, victimStates, hitInfos, resists);
-				
-				for (int i=0; i<targets.size(); i++)
+
+				for (int i = 0; i < targets.size(); i++)
 				{
-					GameUnit* targetUnit = targets[i];
-					
+					GameUnit *targetUnit = targets[i];
+
 					UInt32 totalDamage = 0;
 					UInt32 blocked = 0;
 					bool crit = false;
@@ -578,7 +611,7 @@ namespace wowpp
 						totalDamage = 0;
 						//TODO accelerate next m_victim autohit
 					}
-					else 
+					else
 					{
 						// Calculate damage between minimum and maximum damage
 						std::uniform_real_distribution<float> distribution(getFloatValue(unit_fields::MinDamage), getFloatValue(unit_fields::MaxDamage) + 1.0f);
@@ -590,30 +623,36 @@ namespace wowpp
 							float attackerRating = getLevel() * 5.0f;	//TODO get real rating
 							float victimRating = targetUnit->getLevel() * 5.0f;
 							float ratingDiff = victimRating - attackerRating;
-							
+
 							float minFactor = 1.3f - (0.05f * ratingDiff);
 							if (attackerIsCaster)
 							{
 								minFactor -= 0.7f;
-								if (minFactor > 0.6f)
+								if (minFactor > 0.6f) {
 									minFactor = 0.6f;
+								}
 							}
 							else
 							{
-								if (minFactor > 0.91f)
+								if (minFactor > 0.91f) {
 									minFactor = 0.91f;
+								}
 							}
-							if (minFactor < 0.01f)
+							if (minFactor < 0.01f) {
 								minFactor = 0.01f;
-							
+							}
+
 							float maxFactor = 1.2f - (0.03f * ratingDiff);
-							if (attackerIsCaster)
+							if (attackerIsCaster) {
 								maxFactor -= 0.3f;
-							if (maxFactor < 0.2f)
+							}
+							if (maxFactor < 0.2f) {
 								maxFactor = 0.2f;
-							if (maxFactor > 0.99f)
+							}
+							if (maxFactor > 0.99f) {
 								maxFactor = 0.99f;
-							
+							}
+
 							std::uniform_real_distribution<float> glanceDice(minFactor, maxFactor);
 							totalDamage *= glanceDice(randomGenerator);
 						}
@@ -640,7 +679,7 @@ namespace wowpp
 						{
 							totalDamage *= 1.5f;
 						}
-						
+
 						resisted = totalDamage * (resists[i] / 100.0f);
 						absorbed = targetUnit->consumeAbsorb(totalDamage - resisted, school);
 						if (absorbed > 0 && absorbed == totalDamage)
@@ -648,7 +687,7 @@ namespace wowpp
 							hitInfos[i] = static_cast<game::HitInfo>(hitInfos[i] | game::hit_info::Absorb);
 						}
 					}
-					
+
 					// Notify all subscribers
 					std::vector<char> buffer;
 					io::VectorSink sink(buffer);
@@ -657,9 +696,9 @@ namespace wowpp
 
 					// Notify all tile subscribers about this event
 					forEachSubscriberInSight(
-						m_worldInstance->getGrid(),
-						tileIndex,
-						[&packet, &buffer](ITileSubscriber &subscriber)
+					    m_worldInstance->getGrid(),
+					    tileIndex,
+					    [&packet, &buffer](ITileSubscriber & subscriber)
 					{
 						subscriber.sendPacket(packet, buffer);
 					});
@@ -688,16 +727,22 @@ namespace wowpp
 					// Deal damage (Note: m_victim can become nullptr, if the target dies)
 					if (totalDamage > 0)
 					{
-						m_victim->takenMeleeAutoAttack(this);
-						victim->dealDamage(totalDamage - resisted - absorbed, 0, this);
+						victim->takenMeleeAutoAttack(this);
+						victim->dealDamage(totalDamage - resisted - absorbed, (1 << 0), this, totalDamage - resisted - absorbed);
 
 						// Trigger auto attack procs
-						doneMeleeAutoAttack(m_victim);
+						doneMeleeAutoAttack(victim);
+					}
+					else
+					{
+						// Still add threat to enter combat in case of miss etc.
+						victim->threatened(*this, 0.0f);
 					}
 				}
 			}
-		} while (false);
-		
+		}
+		while (false);
+
 		// Do we still have an attack target? If so, trigger the next attack swing
 		if (m_victim)
 		{
@@ -725,7 +770,7 @@ namespace wowpp
 		if (!m_regenCountdown.running)
 		{
 			m_regenCountdown.setEnd(
-				getCurrentTime() + (constants::OneSecond * 2));
+			    getCurrentTime() + (constants::OneSecond * 2));
 		}
 	}
 
@@ -761,69 +806,50 @@ namespace wowpp
 
 	void GameUnit::regeneratePower(game::PowerType power)
 	{
-		UInt32 current = getUInt32Value(unit_fields::Power1 + static_cast<Int8>(power));
-		UInt32 max = getUInt32Value(unit_fields::MaxPower1 + static_cast<Int8>(power));
-
-		float addPower = 0.0f;
+		float modPower = 0.0f;
 		switch (power)
 		{
-			case game::power_type::Mana:
+		case game::power_type::Mana:
 			{
 				if (isGameCharacter())
 				{
 					if ((m_lastManaUse + constants::OneSecond * 5) < getCurrentTime())
 					{
-						addPower = getFloatValue(character_fields::ModManaRegen) * 2.0f;
+						modPower = getFloatValue(character_fields::ModManaRegen) * 2.0f;
 					}
 					else
 					{
-						addPower = getFloatValue(character_fields::ModManaRegenInterrupt) * 2.0f;
+						modPower = getFloatValue(character_fields::ModManaRegenInterrupt) * 2.0f;
 					}
 				}
 				else
 				{
-					// TODO: Unit mana reg
-					addPower = 2.0f * getLevel();
+					if ((m_lastManaUse + constants::OneSecond * 5) < getCurrentTime())
+					{
+						modPower = 2.0f * getLevel();
+					}
 				}
 				break;
 			}
 
-			case game::power_type::Energy:
+		case game::power_type::Energy:
 			{
 				// 20 energy per tick
-				addPower = 20.0f;
+				modPower = 20.0f;
 				break;
 			}
 
-			case game::power_type::Rage:
+		case game::power_type::Rage:
 			{
 				// Take 3 rage per tick
-				addPower = 30.0f;
+				modPower = -30.0f;
 				break;
 			}
 
-			default:
-				break;
+		default:
+			break;
 		}
-
-		if (power != game::power_type::Rage)
-		{
-			current += UInt32(addPower);
-			if (current > max) current = max;
-		}
-		else
-		{
-			if (current <= UInt32(addPower))
-			{
-				current = 0;
-			}
-			else
-			{
-				current -= UInt32(addPower);
-			}
-		}
-
-		setUInt32Value(unit_fields::Power1 + static_cast<Int8>(power), current);
+		addPower(power, modPower);
 	}
 
 	void GameUnit::notifyManaUse()
@@ -866,9 +892,15 @@ namespace wowpp
 		UInt32 createPower = 0;
 		switch (power)
 		{
-		case game::power_type::Mana:		createPower = getUInt32Value(unit_fields::BaseMana); break;
-		case game::power_type::Rage:		createPower = 1000; break;
-		case game::power_type::Energy:    createPower = 100; break;
+		case game::power_type::Mana:
+			createPower = getUInt32Value(unit_fields::BaseMana);
+			break;
+		case game::power_type::Rage:
+			createPower = 1000;
+			break;
+		case game::power_type::Energy:
+			createPower = 100;
+			break;
 		default:	// Make compiler happy
 			break;
 		}
@@ -890,7 +922,9 @@ namespace wowpp
 		baseArmor += getUInt32Value(unit_fields::Stat1) * 2;
 		baseArmor += totalArmor;
 
-		if (baseArmor < 0) baseArmor = 0;
+		if (baseArmor < 0) {
+			baseArmor = 0;
+		}
 
 		setUInt32Value(unit_fields::Resistances, baseArmor);
 		setUInt32Value(unit_fields::ResistancesBuffModsPositive, totalArmor);
@@ -942,7 +976,9 @@ namespace wowpp
 	UInt32 GameUnit::getCooldown(UInt32 spellId) const
 	{
 		auto it = m_spellCooldowns.find(spellId);
-		if (it == m_spellCooldowns.end()) return 0;
+		if (it == m_spellCooldowns.end()) {
+			return 0;
+		}
 
 		GameTime currentTime = getCurrentTime();
 		return (it->second > currentTime ? it->second - currentTime : 0);
@@ -950,10 +986,12 @@ namespace wowpp
 
 	void GameUnit::setCooldown(UInt32 spellId, UInt32 timeInMs)
 	{
-		if (timeInMs == 0)
+		if (timeInMs == 0) {
 			m_spellCooldowns.erase(spellId);
-		else
+		}
+		else {
 			m_spellCooldowns[spellId] = getCurrentTime() + timeInMs;
+		}
 	}
 
 	float GameUnit::getHealthBonusFromStamina() const
@@ -996,92 +1034,94 @@ namespace wowpp
 
 		switch (type)
 		{
-			case unit_mod_type::BaseValue:
-			case unit_mod_type::TotalValue:
+		case unit_mod_type::BaseValue:
+		case unit_mod_type::TotalValue:
 			{
 				m_unitMods[mod][type] += (apply ? amount : -amount);
 				break;
 			}
 
-			case unit_mod_type::BasePct:
-			case unit_mod_type::TotalPct:
+		case unit_mod_type::BasePct:
+		case unit_mod_type::TotalPct:
 			{
-				if (amount == -100.0f)
+				if (amount == -100.0f) {
 					amount = -99.99f;
+				}
 				m_unitMods[mod][type] *= (apply ? (100.0f + amount) / 100.0f : 100.0f / (100.0f + amount));
 				break;
 			}
 
-			default:
-				break;
+		default:
+			break;
 		}
 
 		// Update stats
 		switch (mod)
 		{
-			case unit_mods::StatStrength:
-			case unit_mods::StatAgility:
-			case unit_mods::StatStamina:
-			case unit_mods::StatIntellect:
-			case unit_mods::StatSpirit:
+		case unit_mods::StatStrength:
+		case unit_mods::StatAgility:
+		case unit_mods::StatStamina:
+		case unit_mods::StatIntellect:
+		case unit_mods::StatSpirit:
 			{
 				updateStats(getStatByUnitMod(mod));
 				break;
 			}
 
-			case unit_mods::Armor:
+		case unit_mods::Armor:
 			{
 				updateArmor();
 				break;
 			}
-			
-			case unit_mods::Health:
+
+		case unit_mods::Health:
 			{
 				updateMaxHealth();
 				break;
 			}
 
-			case unit_mods::Mana:
-			case unit_mods::Rage:
-			case unit_mods::Focus:
-			case unit_mods::Energy:
-			case unit_mods::Happiness:
+		case unit_mods::Mana:
+		case unit_mods::Rage:
+		case unit_mods::Focus:
+		case unit_mods::Energy:
+		case unit_mods::Happiness:
 			{
 				updateMaxPower(getPowerTypeByUnitMod(mod));
 				break;
 			}
 
-			case unit_mods::ResistanceHoly:
-			case unit_mods::ResistanceFire:
-			case unit_mods::ResistanceNature:
-			case unit_mods::ResistanceFrost:
-			case unit_mods::ResistanceShadow:
-			case unit_mods::ResistanceArcane:
+		case unit_mods::ResistanceHoly:
+		case unit_mods::ResistanceFire:
+		case unit_mods::ResistanceNature:
+		case unit_mods::ResistanceFrost:
+		case unit_mods::ResistanceShadow:
+		case unit_mods::ResistanceArcane:
 			{
 				updateResistance(getResistanceByUnitMod(mod));
 				break;
 			}
 
-			case unit_mods::AttackPower:
-			case unit_mods::AttackPowerRanged:
-			case unit_mods::DamageMainHand:
-			case unit_mods::DamageOffHand:
-			case unit_mods::DamageRanged:
+		case unit_mods::AttackPower:
+		case unit_mods::AttackPowerRanged:
+		case unit_mods::DamageMainHand:
+		case unit_mods::DamageOffHand:
+		case unit_mods::DamageRanged:
 			{
 				updateDamage();
 				break;
 			}
 
-			default:
-				break;
+		default:
+			break;
 		}
 	}
 
 	void GameUnit::updateStats(UInt8 stat)
 	{
 		// Validate stat
-		if (stat > 4)
+		if (stat > 4) {
 			return;
+		}
 
 		// Determine unit mod
 		const UnitMods mod = getUnitModByStat(stat);
@@ -1128,11 +1168,21 @@ namespace wowpp
 
 		switch (mod)
 		{
-		case unit_mods::StatStrength:	stat = 0;	break;
-		case unit_mods::StatAgility:	stat = 1;	break;
-		case unit_mods::StatStamina:	stat = 2;	break;
-		case unit_mods::StatIntellect:	stat = 3;	break;
-		case unit_mods::StatSpirit:		stat = 4;	break;
+		case unit_mods::StatStrength:
+			stat = 0;
+			break;
+		case unit_mods::StatAgility:
+			stat = 1;
+			break;
+		case unit_mods::StatStamina:
+			stat = 2;
+			break;
+		case unit_mods::StatIntellect:
+			stat = 3;
+			break;
+		case unit_mods::StatSpirit:
+			stat = 4;
+			break;
 
 		default:
 			break;
@@ -1145,10 +1195,14 @@ namespace wowpp
 	{
 		switch (mod)
 		{
-		case unit_mods::Rage:		return game::power_type::Rage;
-		case unit_mods::Focus:		return game::power_type::Focus;
-		case unit_mods::Energy:		return game::power_type::Energy;
-		case unit_mods::Happiness:	return game::power_type::Happiness;
+		case unit_mods::Rage:
+			return game::power_type::Rage;
+		case unit_mods::Focus:
+			return game::power_type::Focus;
+		case unit_mods::Energy:
+			return game::power_type::Energy;
+		case unit_mods::Happiness:
+			return game::power_type::Happiness;
 
 		default:
 			break;
@@ -1161,10 +1215,14 @@ namespace wowpp
 	{
 		switch (stat)
 		{
-		case 1:		return unit_mods::StatAgility;
-		case 2:		return unit_mods::StatStamina;
-		case 3:		return unit_mods::StatIntellect;
-		case 4:		return unit_mods::StatSpirit;
+		case 1:
+			return unit_mods::StatAgility;
+		case 2:
+			return unit_mods::StatStamina;
+		case 3:
+			return unit_mods::StatIntellect;
+		case 4:
+			return unit_mods::StatSpirit;
 
 		default:
 			break;
@@ -1177,11 +1235,15 @@ namespace wowpp
 	{
 		switch (power)
 		{
-		case game::power_type::Rage:		return unit_mods::Rage;
-		case game::power_type::Energy:	return unit_mods::Energy;
-		case game::power_type::Happiness:	return unit_mods::Happiness;
-		case game::power_type::Focus:		return unit_mods::Focus;
-			
+		case game::power_type::Rage:
+			return unit_mods::Rage;
+		case game::power_type::Energy:
+			return unit_mods::Energy;
+		case game::power_type::Happiness:
+			return unit_mods::Happiness;
+		case game::power_type::Focus:
+			return unit_mods::Focus;
+
 		default:
 			break;
 		}
@@ -1193,12 +1255,18 @@ namespace wowpp
 	{
 		switch (mod)
 		{
-		case unit_mods::ResistanceHoly:		return 1;
-		case unit_mods::ResistanceFire:		return 2;
-		case unit_mods::ResistanceNature:	return 3;
-		case unit_mods::ResistanceFrost:	return 4;
-		case unit_mods::ResistanceShadow:	return 5;
-		case unit_mods::ResistanceArcane:	return 6;
+		case unit_mods::ResistanceHoly:
+			return 1;
+		case unit_mods::ResistanceFire:
+			return 2;
+		case unit_mods::ResistanceNature:
+			return 3;
+		case unit_mods::ResistanceFrost:
+			return 4;
+		case unit_mods::ResistanceShadow:
+			return 5;
+		case unit_mods::ResistanceArcane:
+			return 6;
 
 		default:
 			break;
@@ -1211,13 +1279,20 @@ namespace wowpp
 	{
 		switch (res)
 		{
-		case 0:		return unit_mods::Armor;
-		case 1:		return unit_mods::ResistanceHoly;
-		case 2:		return unit_mods::ResistanceFire;
-		case 3:		return unit_mods::ResistanceNature;
-		case 4:		return unit_mods::ResistanceFrost;
-		case 5:		return unit_mods::ResistanceShadow;
-		case 6:		return unit_mods::ResistanceArcane;
+		case 0:
+			return unit_mods::Armor;
+		case 1:
+			return unit_mods::ResistanceHoly;
+		case 2:
+			return unit_mods::ResistanceFire;
+		case 3:
+			return unit_mods::ResistanceNature;
+		case 4:
+			return unit_mods::ResistanceFrost;
+		case 5:
+			return unit_mods::ResistanceShadow;
+		case 6:
+			return unit_mods::ResistanceArcane;
 
 		default:
 			break;
@@ -1225,29 +1300,62 @@ namespace wowpp
 
 		return unit_mods::Armor;
 	}
-	
-	bool GameUnit::dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, bool noThreat/* = false*/)
+
+	bool GameUnit::isSitting() const
+	{
+		return (m_standState == unit_stand_state::Sit ||
+		        m_standState == unit_stand_state::SitChair ||
+		        m_standState == unit_stand_state::SitHighChair ||
+		        m_standState == unit_stand_state::SitMediumChais);
+	}
+
+	void GameUnit::setStandState(UnitStandState state)
+	{
+		if (m_standState != state)
+		{
+			const bool wasSitting = isSitting();
+
+			m_standState = state;
+			setByteValue(unit_fields::Bytes1, 0, m_standState);
+			standStateChanged(m_standState);
+
+			// Not sitting any more, remove auras that require the unit to be sitting
+			if (wasSitting && !isSitting())
+			{
+				m_auras.removeAllAurasDueToInterrupt(game::spell_aura_interrupt_flags::NotSeated);
+			}
+		}
+	}
+
+	bool GameUnit::dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, float threat)
 	{
 		UInt32 health = getUInt32Value(unit_fields::Health);
 		if (health < 1)
 		{
 			return false;
 		}
-		
-		// Add threat
-		if (attacker && !noThreat)
-		{
-			threatened(*attacker, static_cast<float>(damage));
-		}
-		
-		takenDamage(attacker);
 
-		if (health < damage)
+		// Add threat
+		if (attacker)
+		{
+			if (attacker->isGameCharacter())
+			{
+				reinterpret_cast<GameCharacter*>(attacker)->applyThreatMod(school, threat);
+			}
+
+			threatened(*attacker, threat);
+		}
+
+		if (health < damage) {
 			health = 0;
-		else
+		}
+		else {
 			health -= damage;
+		}
 
 		setUInt32Value(unit_fields::Health, health);
+		takenDamage(attacker, damage);
+
 		if (health < 1)
 		{
 			// Call function and signal
@@ -1266,11 +1374,13 @@ namespace wowpp
 		}
 
 		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
-		if (health + amount >= maxHealth)
+		if (health + amount >= maxHealth) {
 			health = maxHealth;
-		else
+		}
+		else {
 			health += amount;
-		
+		}
+
 		setUInt32Value(unit_fields::Health, health);
 
 		if (healer && !noThreat)
@@ -1280,43 +1390,47 @@ namespace wowpp
 		}
 		return true;
 	}
-	
-	UInt32 GameUnit::removeMana(UInt32 amount)
+
+	Int32 GameUnit::addPower(game::PowerType power, Int32 amount)
 	{
-		if (getByteValue(unit_fields::Bytes0, 3) == game::power_type::Mana)
+		Int32 current = getUInt32Value(unit_fields::Power1 + static_cast<Int8>(power));
+		Int32 max = getUInt32Value(unit_fields::MaxPower1 + static_cast<Int8>(power));
+
+		Int32 addPower = amount;
+		if (addPower + current < 0)
 		{
-			UInt32 mana = getUInt32Value(unit_fields::Power1);
-			UInt32 removed = amount;
-			if (mana < removed)
-			{
-				removed = mana;
-			}
-			mana -= removed;
-			setUInt32Value(unit_fields::Power1, mana);
-			return removed;
+			addPower = 0 - current;
 		}
-		else
+		else if (addPower + current > max)
 		{
-			return 0;
+			addPower = max - current;
 		}
+
+		setUInt32Value(unit_fields::Power1 + static_cast<Int8>(power), current + addPower);
+		return addPower;
 	}
 
 	void GameUnit::revive(UInt32 health, UInt32 mana)
 	{
-		if (isAlive())
+		if (isAlive()) {
 			return;
+		}
 
 		float o = getOrientation();
 		math::Vector3 location(getLocation());
 
 		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
-		if (health > maxHealth) health = maxHealth;
+		if (health > maxHealth) {
+			health = maxHealth;
+		}
 		setUInt32Value(unit_fields::Health, health);
 
 		if (mana > 0)
 		{
 			const UInt32 maxMana = getUInt32Value(unit_fields::MaxPower1);
-			if (mana > maxMana) mana = maxMana;
+			if (mana > maxMana) {
+				mana = maxMana;
+			}
 			setUInt32Value(unit_fields::Power1, mana);
 		}
 
@@ -1331,13 +1445,78 @@ namespace wowpp
 	{
 		// Nothing to do here
 	}
-	
+
 	bool GameUnit::isImmune(UInt8 school)
 	{
 		// TODO: check auras and mobtype
+		if (isCreature())
+		{
+			GameCreature& self = reinterpret_cast<GameCreature&>(*this);
+			return (self.getEntry().schoolimmunity() & school) != 0;
+		}
 		return false;
 	}
-	
+
+	void GameUnit::notifyStealthChanged()
+	{
+		const bool wasStealthed = m_isStealthed;
+		m_isStealthed = m_auras.hasAura(game::aura_type::ModStealth);
+		if (wasStealthed && !m_isStealthed)
+		{
+			stealthStateChanged(false);
+		}
+		else if (!wasStealthed && m_isStealthed)
+		{
+			stealthStateChanged(true);
+		}
+	}
+
+	bool GameUnit::canDetectStealth(GameUnit &target)
+	{
+		// Can't detect anything if stunned
+		if (m_isStunned) {
+			return false;
+		}
+
+		// Determine distance and check cap
+		const float dist = getDistanceTo(target);
+		if (dist < 0.24f) {
+			return true;
+		}
+
+		// Target has to be in front of us
+		auto targetPos = target.getLocation();
+		if (!isInArc(3.1415927f, targetPos.x, targetPos.y)) {
+			return false;
+		}
+
+		float angleModifier = 1.0f;
+		if (!isInArc(3.1415927f * 0.5f, targetPos.x, targetPos.y))
+		{
+			angleModifier = 0.5f;
+		}
+
+		// Always visible
+		if (m_auras.hasAura(game::aura_type::DetectStealth)) {
+			return true;
+		}
+
+		// TODO: Check if target has aura "ModStalked" with us as caster (Hunter mark for example)
+
+		// Base distance
+		float visibleDistance = 7.5f * angleModifier;
+
+		const float MaxPlayerStealthDetectRange = 45.0f;
+		// Visible distance is modified by -Level Diff (every level diff = 1.0f in visible distance)
+		visibleDistance += float(getLevel()) - target.getAuras().getTotalBasePoints(game::aura_type::ModStealth) / 5.0f;
+		// -Stealth Mod(positive like Master of Deception) and Stealth Detection(negative like paranoia)
+		// based on wowwiki every 5 mod we have 1 more level diff in calculation
+		// TODO: Cache these stealth values maybe
+		visibleDistance += (float)(m_auras.getTotalBasePoints(game::aura_type::ModStealthDetect) - target.getAuras().getTotalBasePoints(game::aura_type::ModStealthLevel)) / 5.0f;
+		visibleDistance = visibleDistance > MaxPlayerStealthDetectRange ? MaxPlayerStealthDetectRange : visibleDistance;
+		return dist < visibleDistance;
+	}
+
 	float GameUnit::getMissChance(GameUnit &attacker, UInt8 school, bool isWhiteDamage)
 	{
 		float chance;
@@ -1375,8 +1554,9 @@ namespace wowpp
 					chance += (victimRating - attackerRating) * 0.1f;
 				}
 			}
-			if (chance < 0.0f)
+			if (chance < 0.0f) {
 				chance = 0.0f;
+			}
 		}
 		else	// spell
 		{
@@ -1393,24 +1573,26 @@ namespace wowpp
 				}
 			}
 			chance = 4.0f - levelModificator;
-			if (chance < 1.0f)
+			if (chance < 1.0f) {
 				chance = 1.0f;
-			if (chance > 99.0f)
+			}
+			if (chance > 99.0f) {
 				chance = 99.0f;
+			}
 		}
 		return chance;
 	}
-	
+
 	float GameUnit::getDodgeChance(GameUnit &attacker)
 	{
-		return 5.0f;
+		return isStunned() ? 0.0f : 5.0f;
 	}
-	
-    float GameUnit::getParryChance(GameUnit &attacker)
+
+	float GameUnit::getParryChance(GameUnit &attacker)
 	{
-		return 5.0f;
+		return isStunned() ? 0.0f : 5.0f;
 	}
-	
+
 	float GameUnit::getGlancingChance(GameUnit &attacker)
 	{
 		UInt32 attackerLevel = attacker.getLevel();
@@ -1426,10 +1608,10 @@ namespace wowpp
 			return 0.0f;
 		}
 	}
-	
+
 	float GameUnit::getBlockChance()
 	{
-		if (canBlock())
+		if (canBlock() && !isStunned())
 		{
 			return 5.0f;
 		}
@@ -1438,7 +1620,7 @@ namespace wowpp
 			return 0.0f;
 		}
 	}
-	
+
 	float GameUnit::getCrushChance(GameUnit &attacker)
 	{
 		if (attacker.getTypeId() == wowpp::object_type::Unit)
@@ -1446,8 +1628,9 @@ namespace wowpp
 			float attackerRating = attacker.getLevel() * 5.0f;	//TODO get real rating
 			float victimRating = getLevel() * 5.0f;
 			float crushChance = (2.0f * std::abs(attackerRating - victimRating)) - 15.0f;
-			if (crushChance < 0.0f)
+			if (crushChance < 0.0f) {
 				crushChance = 0.0f;
+			}
 			return crushChance;
 		}
 		else
@@ -1455,12 +1638,12 @@ namespace wowpp
 			return 0.0f;
 		}
 	}
-	
+
 	float GameUnit::getResiPercentage(UInt8 school, GameUnit &attacker, bool isBinary)
 	{
 		std::uniform_real_distribution<float> resiDistribution(0.0f, 99.9f);
 		UInt32 spellPen = 0;
-		UInt32 baseResi = getModifierValue(UnitMods(unit_mods::ResistanceStart + static_cast<UInt32>(log2(school))), unit_mod_type::TotalValue);
+		UInt32 baseResi = getUInt32Value(unit_fields::Resistances + static_cast<UInt32>(log2(school)));
 		UInt32 casterLevel = attacker.getLevel();
 		UInt32 victimLevel = getLevel();
 		float levelBasedResistance = 0.0f;
@@ -1486,12 +1669,12 @@ namespace wowpp
 			return 0.0f;
 		}
 	}
-	
+
 	float GameUnit::getCritChance(GameUnit &attacker, UInt8 school)
 	{
 		return 10.0f;
 	}
-	
+
 	UInt32 GameUnit::getBonus(UInt8 school)
 	{
 		UInt32 bonus = 0;
@@ -1501,20 +1684,17 @@ namespace wowpp
 		}
 		return bonus;
 	}
-	
+
 	UInt32 GameUnit::getBonusPct(UInt8 school)
 	{
 		return 0;
 	}
-	
-	/**
-     * @return absorbed damage
-     */
+
 	UInt32 GameUnit::consumeAbsorb(UInt32 damage, UInt8 school)
 	{
 		return m_auras.consumeAbsorb(damage, school);
 	}
-	
+
 	UInt32 GameUnit::calculateArmorReducedDamage(UInt32 attackerLevel, UInt32 damage)
 	{
 		UInt32 newDamage = 0;
@@ -1523,7 +1703,9 @@ namespace wowpp
 		// TODO: Armor reduction mods
 
 		// Cap armor
-		if (armor < 0.0f) armor = 0.0f;
+		if (armor < 0.0f) {
+			armor = 0.0f;
+		}
 
 		float tmp = 0.0f;
 		if (attackerLevel < 60)
@@ -1540,8 +1722,12 @@ namespace wowpp
 		}
 
 		// Hard caps
-		if (tmp < 0.0f) tmp = 0.0f;
-		if (tmp > 0.75f) tmp = 0.75f;
+		if (tmp < 0.0f) {
+			tmp = 0.0f;
+		}
+		if (tmp > 0.75f) {
+			tmp = 0.75f;
+		}
 
 		newDamage = UInt32(damage - (damage * tmp));
 		return (newDamage > 1 ? newDamage : 1);
@@ -1549,7 +1735,7 @@ namespace wowpp
 
 	void GameUnit::onKilled(GameUnit *killer)
 	{
-		cancelCast();
+		cancelCast(game::spell_interrupt_flags::None);
 
 		// Stop auto attack
 		stopAttack();
@@ -1591,13 +1777,13 @@ namespace wowpp
 		m_swingCallback = std::move(callback);
 	}
 
-	const String & GameUnit::getName() const
+	const String &GameUnit::getName() const
 	{
 		static const String name = "UNNAMED";
 		return name;
 	}
 
-	const proto::FactionTemplateEntry & GameUnit::getFactionTemplate() const
+	const proto::FactionTemplateEntry &GameUnit::getFactionTemplate() const
 	{
 		assert(m_factionTemplate);
 		return *m_factionTemplate;
@@ -1610,7 +1796,7 @@ namespace wowpp
 
 		factionChanged(*this);
 	}
-	
+
 	bool GameUnit::isHostileToPlayers()
 	{
 		const UInt32 factionMaskPlayer = 1;
@@ -1622,7 +1808,7 @@ namespace wowpp
 		return (m_factionTemplate->enemymask() == 0 && m_factionTemplate->friendmask() == 0 && m_factionTemplate->enemies().empty());
 	}
 
-	bool GameUnit::isFriendlyTo(const proto::FactionTemplateEntry & faction)
+	bool GameUnit::isFriendlyTo(const proto::FactionTemplateEntry &faction)
 	{
 		if (m_factionTemplate->id() == faction.id())
 		{
@@ -1649,13 +1835,13 @@ namespace wowpp
 
 		return ((m_factionTemplate->friendmask() & faction.selfmask()) != 0) || ((m_factionTemplate->selfmask() & faction.friendmask()) != 0);
 	}
-	
+
 	bool GameUnit::isFriendlyTo(GameUnit &unit)
 	{
 		return isFriendlyTo(unit.getFactionTemplate());
 	}
 
-	bool GameUnit::isHostileTo(const proto::FactionTemplateEntry & faction)
+	bool GameUnit::isHostileTo(const proto::FactionTemplateEntry &faction)
 	{
 		if (m_factionTemplate->id() == faction.id())
 		{
@@ -1682,7 +1868,7 @@ namespace wowpp
 
 		return ((m_factionTemplate->enemymask() & faction.selfmask()) != 0) || ((m_factionTemplate->selfmask() & faction.enemymask()) != 0);
 	}
-	
+
 	bool GameUnit::isHostileTo(GameUnit &unit)
 	{
 		return isHostileTo(unit.getFactionTemplate());
@@ -1693,18 +1879,22 @@ namespace wowpp
 		return ((getUInt32Value(unit_fields::UnitFlags) & game::unit_flags::InCombat) != 0);
 	}
 
-	bool GameUnit::isInLineOfSight(GameObject & other)
+	bool GameUnit::isInLineOfSight(GameObject &other)
 	{
 		// TODO: Determine unit's height based on unit model for correct line of sight calculation
 		return isInLineOfSight(other.getLocation() + math::Vector3(0.0f, 0.0f, 2.0f));
 	}
 
-	bool GameUnit::isInLineOfSight(const math::Vector3 & position)
+	bool GameUnit::isInLineOfSight(const math::Vector3 &position)
 	{
-		if (!m_worldInstance) return false;
+		if (!m_worldInstance) {
+			return false;
+		}
 
 		auto *map = m_worldInstance->getMapData();
-		if (!map) return false;
+		if (!map) {
+			return false;
+		}
 
 		return map->isInLineOfSight(m_position + math::Vector3(0.0f, 0.0f, 2.0f), position);
 	}
@@ -1714,6 +1904,12 @@ namespace wowpp
 		// Add attacking unit to the list of attackers
 		assert(!m_attackingUnits.contains(&attacker));
 		m_attackingUnits.add(&attacker);
+
+		// If wasn't in combat, remove auras which should be removed when entering combat
+		if (!isInCombat())
+		{
+			m_auras.removeAllAurasDueToInterrupt(game::spell_aura_interrupt_flags::EnterCombat);
+		}
 
 		// Flag us for combat
 		addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
@@ -1740,17 +1936,17 @@ namespace wowpp
 		return !m_attackingUnits.empty();
 	}
 
-	io::Writer & operator<<(io::Writer &w, GameUnit const& object)
+	io::Writer &operator<<(io::Writer &w, GameUnit const &object)
 	{
-		w 
-			<< reinterpret_cast<GameObject const&>(object);
+		w
+		        << reinterpret_cast<GameObject const &>(object);
 
 		// Write spell cooldowns
 		{
 			// Counter placeholder (active cooldown count will be determined)
 			const size_t cooldownCountPos = w.sink().position();
 			w
-				<< io::write<NetUInt32>(0);
+			        << io::write<NetUInt32>(0);
 
 			// Write cooldown data of active cooldowns and count
 			UInt32 activeCooldownCount = 0;
@@ -1761,23 +1957,23 @@ namespace wowpp
 				{
 					activeCooldownCount++;
 					w
-						<< io::write<NetUInt32>(cooldown.first)
-						<< io::write<NetUInt32>(cooldown.second);
+					        << io::write<NetUInt32>(cooldown.first)
+					        << io::write<NetUInt32>(cooldown.second);
 				}
 			}
 
 			// Overwrite active cooldown count
-			w.sink().overwrite(cooldownCountPos, reinterpret_cast<const char*>(&activeCooldownCount), sizeof(UInt32));
+			w.sink().overwrite(cooldownCountPos, reinterpret_cast<const char *>(&activeCooldownCount), sizeof(UInt32));
 		}
 
 		return w;
 	}
 
-	io::Reader & operator>>(io::Reader &r, GameUnit& object)
+	io::Reader &operator>>(io::Reader &r, GameUnit &object)
 	{
 		// Read values
 		r
-			>> reinterpret_cast<GameObject &>(object);
+		        >> reinterpret_cast<GameObject &>(object);
 
 		// Read spell cooldowns
 		{
@@ -1788,12 +1984,12 @@ namespace wowpp
 			{
 				UInt32 spellId = 0, endTime = 0;
 				r
-					>> io::read<NetUInt32>(spellId)
-					>> io::read<NetUInt32>(endTime);
+				        >> io::read<NetUInt32>(spellId)
+				        >> io::read<NetUInt32>(endTime);
 				object.m_spellCooldowns[spellId] = endTime;
 			}
 		}
-		
+
 		// Update internals based on received values
 		object.raceUpdated();
 		object.classUpdated();
@@ -1810,9 +2006,9 @@ namespace wowpp
 		{
 			stunStateChanged(false);
 		}
-		else if(!wasStunned && m_isStunned)
+		else if (!wasStunned && m_isStunned)
 		{
-			cancelCast();
+			cancelCast(game::spell_interrupt_flags::None);
 			stopAttack();
 			m_mover->stopMovement();
 			stunStateChanged(true);
@@ -1847,24 +2043,26 @@ namespace wowpp
 			float stackBonus = 1.0f, nonStackBonus = 1.0f;
 			switch (type)
 			{
-				case movement_type::Run:
-					if (mounted)
-						mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModIncreaseMountedSpeed);
-					else
-						mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModIncreaseSpeed);
-					stackBonus = m_auras.getTotalMultiplier(game::aura_type::ModSpeedAlways);
-					nonStackBonus = (100.0f + static_cast<float>(m_auras.getMaximumBasePoints(game::aura_type::ModSpeedNotStack))) / 100.0f;
-					break;
-				case movement_type::Swim:
-					mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModIncreaseSwimSpeed);
-					break;
-				case movement_type::Flight:
-					mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModFlightSpeed);
-					stackBonus = m_auras.getTotalMultiplier(game::aura_type::ModFlightSpeedStacking);
-					nonStackBonus = (100.0f + static_cast<float>(m_auras.getMaximumBasePoints(game::aura_type::ModFlightSpeedNotStacking))) / 100.0f;
-					break;
-                default:
-                    break;
+			case movement_type::Run:
+				if (mounted) {
+					mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModIncreaseMountedSpeed);
+				}
+				else {
+					mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModIncreaseSpeed);
+				}
+				stackBonus = m_auras.getTotalMultiplier(game::aura_type::ModSpeedAlways);
+				nonStackBonus = (100.0f + static_cast<float>(m_auras.getMaximumBasePoints(game::aura_type::ModSpeedNotStack))) / 100.0f;
+				break;
+			case movement_type::Swim:
+				mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModIncreaseSwimSpeed);
+				break;
+			case movement_type::Flight:
+				mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModFlightSpeed);
+				stackBonus = m_auras.getTotalMultiplier(game::aura_type::ModFlightSpeedStacking);
+				nonStackBonus = (100.0f + static_cast<float>(m_auras.getMaximumBasePoints(game::aura_type::ModFlightSpeedNotStacking))) / 100.0f;
+				break;
+			default:
+				break;
 			}
 
 			float bonus = nonStackBonus > stackBonus ? nonStackBonus : stackBonus;
@@ -1901,9 +2099,9 @@ namespace wowpp
 			if (getTileIndex(tileIndex))
 			{
 				forEachSubscriberInSight(
-					m_worldInstance->getGrid(),
-					tileIndex,
-					[&packet, &buffer](ITileSubscriber &subscriber)
+				    m_worldInstance->getGrid(),
+				    tileIndex,
+				    [&packet, &buffer](ITileSubscriber & subscriber)
 				{
 					subscriber.sendPacket(packet, buffer);
 				});
@@ -1927,39 +2125,45 @@ namespace wowpp
 	{
 		switch (type)
 		{
-			case movement_type::Walk:
-				return 2.5f;
-			case movement_type::Run:
-				return 7.0f;
-			case movement_type::Backwards:
-				return 4.5f;
-			case movement_type::Swim:
-				return 4.75f;
-			case movement_type::SwimBackwards:
-				return 2.5f;
-			case movement_type::Turn:
-				return 3.1415927f;
-			case movement_type::Flight:
-				return 7.0f;
-			case movement_type::FlightBackwards:
-				return 4.5f;
-			default:
-				return 0.0f;
+		case movement_type::Walk:
+			return 2.5f;
+		case movement_type::Run:
+			return 7.0f;
+		case movement_type::Backwards:
+			return 4.5f;
+		case movement_type::Swim:
+			return 4.75f;
+		case movement_type::SwimBackwards:
+			return 2.5f;
+		case movement_type::Turn:
+			return 3.1415927f;
+		case movement_type::Flight:
+			return 7.0f;
+		case movement_type::FlightBackwards:
+			return 4.5f;
+		default:
+			return 0.0f;
 		}
 	}
 
 	void GameUnit::addMechanicImmunity(UInt32 mechanic)
 	{
-		m_mechanicImmunity.optionalAdd(mechanic);
+		m_mechanicImmunity |= mechanic;
 	}
 
 	void GameUnit::removeMechanicImmunity(UInt32 mechanic)
 	{
-		m_mechanicImmunity.optionalRemove(mechanic);
+		m_mechanicImmunity &= ~mechanic;
 	}
 
 	bool GameUnit::isImmuneAgainstMechanic(UInt32 mechanic) const
 	{
-		return m_mechanicImmunity.contains(mechanic);
+		if (mechanic == 0)
+			return false;
+
+		if (m_mechanicImmunity == 0)
+			return false;
+
+		return (m_mechanicImmunity & (1 << mechanic)) != 0;
 	}
 }

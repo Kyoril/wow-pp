@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "web_client.h"
 #include "web_service.h"
 #include "common/clock.h"
@@ -31,7 +32,6 @@
 #include "log/default_log_levels.h"
 #include "database.h"
 #include "proto_data/project.h"
-#include <boost/algorithm/string.hpp>
 
 namespace wowpp
 {
@@ -151,7 +151,7 @@ namespace wowpp
 					float x = 0.0f, y = 0.0f, z = 0.0f, o = 0.0f;
 					UInt32 accountId = 0, charRace = 0, charClass = 0, charLvl = 0;
 					std::vector<const proto::SpellEntry*> spells;
-					std::vector<pp::world_realm::ItemData> items;
+					std::vector<ItemData> items;
 					UInt32 itemIndex = 0, spellIndex = 0;
 
 					UInt8 bagSlot = player_inventory_pack_slots::Start;
@@ -338,12 +338,12 @@ namespace wowpp
 									}
 
 									// Create a new stack
-									pp::world_realm::ItemData data;
+									ItemData data;
 									data.entry = item->id();
 									data.durability = item->durability();
 									data.randomPropertyIndex = 0;
 									data.randomSuffixIndex = 0;
-									data.slot = preferredSlot;
+									data.slot = preferredSlot | 0xFF00;
 									data.stackCount = 1;
 									items.emplace_back(std::move(data));
 								}
@@ -523,6 +523,172 @@ namespace wowpp
 						default:
 							sendXmlAnswer(response, "<status>UNKNOWN_ERROR</status>");
 							return;
+					}
+				}
+				else if (url == "/learnspell")
+				{
+					String characterName;
+					UInt32 spellId = 0;
+					for (auto &arg : arguments)
+					{
+						auto delimiterPos = arg.find('=');
+						String argName = arg.substr(0, delimiterPos);
+						String argValue = arg.substr(delimiterPos + 1);
+
+						if (argName == "character")
+						{
+							characterName = argValue;
+						}
+						else if (argName == "spell")
+						{
+							spellId = atoi(argValue.c_str());
+						}
+					}
+
+					if (spellId == 0 || characterName.empty())
+					{
+						sendXmlAnswer(response, "<status>MISSING_DATA</status>");
+						break;
+					}
+
+					auto &project = static_cast<WebService &>(this->getService()).getProject();
+					const auto *spellInst = project.spells.getById(spellId);
+					if (!spellInst)
+					{
+						sendXmlAnswer(response, "<status>INVALID_SPELL</status>");
+						break;
+					}
+
+					auto &playerMgr = static_cast<WebService &>(this->getService()).getPlayerManager();
+					auto *player = playerMgr.getPlayerByCharacterName(characterName);
+					if (!player)
+					{
+						auto &db = static_cast<WebService &>(this->getService()).getDatabase();
+
+						// Does the character exist?
+						game::CharEntry entry;
+						if (!db.getCharacterByName(characterName, entry))
+						{
+							sendXmlAnswer(response, "<status>CHARACTER_NOT_FOUND</status>");
+							break;
+						}
+
+						// Character exists - teleport him
+						if (!db.learnSpell(entry.id, spellId))
+						{
+							sendXmlAnswer(response, "<status>DATABASE_ERROR</status>");
+							break;
+						}
+
+						sendXmlAnswer(response, "<status>SUCCESS</status>");
+						break;
+					}
+					else
+					{
+						// Send a learn spell request
+						auto result = player->learnSpell(*spellInst);
+						switch (result)
+						{
+							case learn_spell_result::Success:
+								sendXmlAnswer(response, "<status>SUCCESS</status>");
+								return;
+							case learn_spell_result::AlreadyLearned:
+								sendXmlAnswer(response, "<status>ALREADY_LEARNED</status>");
+								return;
+							default:
+								sendXmlAnswer(response, "<status>UNKNOWN_ERROR</status>");
+								return;
+						}
+					}
+				}
+				else if (url == "/teleport")
+				{
+					// Handle required data
+					String characterName;
+					UInt32 mapId = 0xffffffff;
+					float x = 0.0f, y = 0.0f, z = 0.0f, o = 0.0f;
+
+					for (auto &arg : arguments)
+					{
+						auto delimiterPos = arg.find('=');
+						String argName = arg.substr(0, delimiterPos);
+						String argValue = arg.substr(delimiterPos + 1);
+
+						if (argName == "character")
+						{
+							characterName = argValue;
+						}
+						else if (argName == "map")
+						{
+							mapId = atoi(argValue.c_str());
+						}
+						else if (argName == "x")
+						{
+							x = atof(argValue.c_str());
+						}
+						else if (argName == "y")
+						{
+							y = atof(argValue.c_str());
+						}
+						else if (argName == "z")
+						{
+							z = atof(argValue.c_str());
+						}
+						else if (argName == "o")
+						{
+							o = atof(argValue.c_str());
+						}
+					}
+
+					if (mapId == 0xffffffff || characterName.empty())
+					{
+						sendXmlAnswer(response, "<status>MISSING_DATA</status>");
+						break;
+					}
+
+					auto &project = static_cast<WebService &>(this->getService()).getProject();
+					const auto *mapInst = project.maps.getById(mapId);
+					if (!mapInst)
+					{
+						sendXmlAnswer(response, "<status>INVALID_MAP</status>");
+						break;
+					}
+
+					auto &playerMgr = static_cast<WebService &>(this->getService()).getPlayerManager();
+					auto *player = playerMgr.getPlayerByCharacterName(characterName);
+					if (!player)
+					{
+						// Player is offline, so just change database coordinates
+						auto &db = static_cast<WebService &>(this->getService()).getDatabase();
+						
+						// Does the character exist?
+						game::CharEntry entry;
+						if (!db.getCharacterByName(characterName, entry))
+						{
+							sendXmlAnswer(response, "<status>CHARACTER_NOT_FOUND</status>");
+							break;
+						}
+
+						// Character exists - teleport him
+						if (!db.teleportCharacter(entry.id, mapId, x, y, z, o))
+						{
+							sendXmlAnswer(response, "<status>DATABASE_ERROR</status>");
+							break;
+						}
+
+						sendXmlAnswer(response, "<status>SUCCESS</status>");
+						break;
+					}
+					else
+					{
+						if (!player->initializeTransfer(mapId, math::Vector3(x, y, z), o, true))
+						{
+							sendXmlAnswer(response, "<status>PLAYER_NOT_IN_WORLD</status>");
+							break;
+						}
+
+						sendXmlAnswer(response, "<status>SUCCESS</status>");
+						break;
 					}
 				}
 #endif

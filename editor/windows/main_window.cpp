@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "main_window.h"
 #include "editor_application.h"
 #include "object_editor.h"
@@ -78,6 +79,18 @@ namespace wowpp
 			}
 		}
 
+		void MainWindow::showEvent(QShowEvent * qEvent)
+		{
+			QMainWindow::showEvent(qEvent);
+
+			// Automatically deleted since it's a QObject
+			m_unitFilter = new QSortFilterProxyModel;
+			m_unitFilter->setSourceModel(m_application.getUnitListModel());
+
+			m_objectFilter = new QSortFilterProxyModel;
+			m_objectFilter->setSourceModel(m_application.getObjectListModel());
+		}
+
 		void MainWindow::readSettings()
 		{
 			QSettings settings("WoW++", "Wow++ Editor");
@@ -88,6 +101,63 @@ namespace wowpp
 		void MainWindow::on_actionExit_triggered()
 		{
 			close();
+		}
+
+		void MainWindow::on_Movement_triggered(QAction * action)
+		{
+			if (action == m_ui->actionSelect)
+			{
+				m_application.setTransformTool(transform_tool::Select);
+			}
+			else if (action == m_ui->actionTranslate)
+			{
+				m_application.setTransformTool(transform_tool::Translate);
+			}
+			else if (action == m_ui->actionRotate)
+			{
+				m_application.setTransformTool(transform_tool::Rotate);
+			}
+			else if (action == m_ui->actionScale)
+			{
+				m_application.setTransformTool(transform_tool::Scale);
+			}
+		}
+
+		void MainWindow::on_actionDelete_triggered()
+		{
+			// Check if any objects are selected
+			auto &selection = m_application.getSelection();
+			if (selection.empty())
+				return;
+
+			for (auto &selected : selection.getSelectedObjects())
+			{
+				selected->deselect();
+				selected->remove();
+			}
+
+			selection.clear();
+		}
+
+		void MainWindow::on_comboBox_currentIndexChanged(int index)
+		{
+			switch (index)
+			{
+				case 1:
+					m_ui->unitPaletteView->setModel(m_unitFilter);
+					break;
+				case 2:
+					m_ui->unitPaletteView->setModel(m_objectFilter);
+					break;
+				default:
+					m_ui->unitPaletteView->setModel(nullptr);
+					break;
+			}
+		}
+
+		void MainWindow::on_actionUnit_Palette_triggered()
+		{
+			m_ui->unitPalette->show();
 		}
 
 		void MainWindow::on_actionLoadMap_triggered()
@@ -123,95 +193,22 @@ namespace wowpp
 				camera->pitch(Ogre::Degree(-45.0f));
 
 				std::unique_ptr<WorldEditor> scene(
-					new WorldEditor(*sceneMgr, *camera, *entry, m_application.getProject()));
+					new WorldEditor(m_application, *sceneMgr, *camera, *entry, m_application.getProject()));
 				m_ogreWindow->setScene(std::move(scene));
-				/*
-				std::unique_ptr<Map> mapInst(new Map(
-					*entry, m_application.getConfiguration().dataPath));
-				auto *tile = mapInst->getTile(TileIndex2D(32, 32));
-				if (!tile)
+
+				if (entry->id() == 1)
 				{
-					return;
+					camera->setPosition(6516.0f, 448.0f, 17.0f);
 				}
-
-				auto material = Ogre::MaterialManager::getSingleton().createOrRetrieve("LineOfSightBlock", "General", true);
-				Ogre::MaterialPtr matPtr = material.first.dynamicCast<Ogre::Material>();
-				matPtr->removeAllTechniques();
-				auto *teq = matPtr->createTechnique();
-				teq->removeAllPasses();
-				teq->setCullingMode(Ogre::CULL_NONE);
-				teq->setManualCullingMode(Ogre::ManualCullingMode::MANUAL_CULL_NONE);
-				auto *pass = teq->createPass();
-				pass->setPolygonMode(Ogre::PM_SOLID);
-				pass->setVertexColourTracking(Ogre::TVC_DIFFUSE);
-				pass = teq->createPass();
-				pass->setPolygonMode(Ogre::PM_WIREFRAME);
-				pass->setSceneBlending(Ogre::SceneBlendType::SBT_MODULATE);
-				pass->setDiffuse(0.0f, 0.0f, 0.0f, 1.0f);
-				pass->setAmbient(0.0f, 0.0f, 0.0f);
-
-				const UInt32 collisionTriIndex = 0;
-
-				Ogre::Vector3 vMin = Ogre::Vector3(99999.0f, 99999.0f, 99999.0f);
-				Ogre::Vector3 vMax = Ogre::Vector3(-99999.0f, -99999.0f, -99999.0f);
-
-				// Create collision for this map
-				Ogre::ManualObject *obj = sceneMgr->createManualObject();
-				obj->begin("LineOfSightBlock", Ogre::RenderOperation::OT_TRIANGLE_LIST);
-				obj->estimateVertexCount(tile->collision.vertexCount);
-				obj->estimateIndexCount(tile->collision.triangleCount * 3);
-				for (auto &vert : tile->collision.vertices)
+				else if (entry->id() == 0)
 				{
-					if (vert.x < vMin.x) vMin.x = vert.x;
-					if (vert.y < vMin.y) vMin.y = vert.y;
-					if (vert.z < vMin.z) vMin.z = vert.z;
-
-					if (vert.x > vMax.x) vMax.x = vert.x;
-					if (vert.y > vMax.y) vMax.y = vert.y;
-					if (vert.z > vMax.z) vMax.z = vert.z;
-
-					obj->position(vert.x, vert.y, vert.z);
-					obj->colour(Ogre::ColourValue(0.5f, 0.5f, 0.5f));
+					camera->setPosition(1762.19995f, -1244.80005f, 62.2191010f);
 				}
-				UInt32 triIndex = 0;
-				for (auto &tri : tile->collision.triangles)
+				else if (entry->id() == 530)
 				{
-					if (triIndex != collisionTriIndex)
-					{
-						obj->index(tri.indexA);
-						obj->index(tri.indexB);
-						obj->index(tri.indexC);
-					}
-					triIndex++;
+					camera->setPosition(8719.53f, -6657.67f, 72.7551f);
 				}
-				obj->end();
-
-				if (tile->collision.triangles.size() > triIndex)
-				{
-					obj->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_TRIANGLE_LIST);
-					auto &tri = tile->collision.triangles[collisionTriIndex];
-					auto &vA = tile->collision.vertices[tri.indexA];
-					auto &vB = tile->collision.vertices[tri.indexB];
-					auto &vC = tile->collision.vertices[tri.indexC];
-					obj->position(vA.x, vA.y, vA.z);
-					obj->colour(Ogre::ColourValue::Red);
-					obj->position(vB.x, vB.y, vB.z);
-					obj->colour(Ogre::ColourValue::Red);
-					obj->position(vC.x, vC.y, vC.z);
-					obj->colour(Ogre::ColourValue::Red);
-					obj->triangle(0, 1, 2);
-					obj->end();
-				}
-				
-				//camera->setPosition(vA.x, vA.y, vA.z);
-				camera->setFarClipDistance(1000.0f);
-
-				Ogre::SceneNode *child = sceneMgr->getRootSceneNode()->createChildSceneNode();
-				child->attachObject(obj);
-				child->showBoundingBox(true);
-				*/
 			}
 		}
-
 	}
 }

@@ -22,14 +22,8 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include <boost/variant.hpp>
 #include <QMessageBox>
 #include <QVariant>
-#include "log/default_log_levels.h"
-#include <functional>
-#include <sstream>
-#include <memory>
-#include <vector>
 #include <google/protobuf/stubs/common.h>
 
 namespace wowpp

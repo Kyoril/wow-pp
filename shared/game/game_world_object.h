@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,20 +10,22 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
 #include "game_object.h"
+#include "loot_instance.h"
 #include "common/timer_queue.h"
 #include "common/countdown.h"
+#include "proto_data/trigger_helper.h"
 
 namespace wowpp
 {
@@ -38,38 +40,38 @@ namespace wowpp
 		{
 			/// 64 bit object GUID
 			Createdby				= object_fields::ObjectFieldCount + 0x00,
-			/// 
-			DisplayId				= object_fields::ObjectFieldCount +0x02,
-			/// 
-			Flags					= object_fields::ObjectFieldCount +0x03,
-			/// 
-			Rotation				= object_fields::ObjectFieldCount +0x04,
-			/// 
-			State					= object_fields::ObjectFieldCount +0x08,
-			/// 
-			PosX					= object_fields::ObjectFieldCount +0x09,
-			/// 
-			PosY					= object_fields::ObjectFieldCount +0x0A,
-			/// 
-			PosZ					= object_fields::ObjectFieldCount +0x0B,
-			/// 
-			Facing					= object_fields::ObjectFieldCount +0x0C,
-			/// 
-			DynFlags				= object_fields::ObjectFieldCount +0x0D,
-			/// 
-			Faction					= object_fields::ObjectFieldCount +0x0E,
-			/// 
-			TypeID					= object_fields::ObjectFieldCount +0x0F,
-			/// 
-			Level					= object_fields::ObjectFieldCount +0x10,
-			/// 
-			ArtKit					= object_fields::ObjectFieldCount +0x11,
-			/// 
-			AnimProgress			= object_fields::ObjectFieldCount +0x12,
-			/// 
-			Padding					= object_fields::ObjectFieldCount +0x13,
-			
-			WorldObjectFieldCount	= object_fields::ObjectFieldCount +0x14
+			///
+			DisplayId				= object_fields::ObjectFieldCount + 0x02,
+			///
+			Flags					= object_fields::ObjectFieldCount + 0x03,
+			///
+			Rotation				= object_fields::ObjectFieldCount + 0x04,
+			///
+			State					= object_fields::ObjectFieldCount + 0x08,
+			///
+			PosX					= object_fields::ObjectFieldCount + 0x09,
+			///
+			PosY					= object_fields::ObjectFieldCount + 0x0A,
+			///
+			PosZ					= object_fields::ObjectFieldCount + 0x0B,
+			///
+			Facing					= object_fields::ObjectFieldCount + 0x0C,
+			///
+			DynFlags				= object_fields::ObjectFieldCount + 0x0D,
+			///
+			Faction					= object_fields::ObjectFieldCount + 0x0E,
+			///
+			TypeID					= object_fields::ObjectFieldCount + 0x0F,
+			///
+			Level					= object_fields::ObjectFieldCount + 0x10,
+			///
+			ArtKit					= object_fields::ObjectFieldCount + 0x11,
+			///
+			AnimProgress			= object_fields::ObjectFieldCount + 0x12,
+			///
+			Padding					= object_fields::ObjectFieldCount + 0x13,
+
+			WorldObjectFieldCount	= object_fields::ObjectFieldCount + 0x14
 		};
 	}
 
@@ -153,47 +155,68 @@ namespace wowpp
 		};
 	}
 
-	/// 
+	///
 	class WorldObject : public GameObject
 	{
-		friend io::Writer &operator << (io::Writer &w, WorldObject const& object);
-		friend io::Reader &operator >> (io::Reader &r, WorldObject& object);
+		friend io::Writer &operator << (io::Writer &w, WorldObject const &object);
+		friend io::Reader &operator >> (io::Reader &r, WorldObject &object);
 
 	public:
 
-		/// 
+		/// Fired when a world object trigger should be executed.
+		boost::signals2::signal<void(const proto::TriggerEntry &, WorldObject &)> objectTrigger;
+
+	public:
+
+		///
 		explicit WorldObject(
-			proto::Project &project,
-			TimerQueue &timers,
-			const proto::ObjectEntry &entry);
+		    proto::Project &project,
+		    TimerQueue &timers,
+		    const proto::ObjectEntry &entry);
 		virtual ~WorldObject();
 
-		/// 
+		///
 		void initialize() override;
-		/// 
+		///
 		void relocate(math::Vector3 position, float o, bool fire = true) override;
-		/// 
+		///
 		void writeCreateObjectBlocks(std::vector<std::vector<char>> &out_blocks, bool creation = true) const override;
 
-		const proto::ObjectEntry &getEntry() const { return m_entry; }
+		const proto::ObjectEntry &getEntry() const {
+			return m_entry;
+		}
 		/// @copydoc GameObject::providesQuest()
 		bool providesQuest(UInt32 questId) const override;
 		/// @copydoc GameObject::endsQuest()
 		bool endsQuest(UInt32 questId) const override;
-		/// 
+		///
 		game::QuestgiverStatus getQuestgiverStatus(const GameCharacter &character) const;
 		/// Determines whether this object is needed by a quest.
 		bool isQuestObject(const GameCharacter &character) const;
+		///
+		LootInstance *getObjectLoot() {
+			return m_objectLoot.get();
+		}
+
+		void raiseTrigger(trigger_event::Type e);
 
 		/// Gets the object type id value.
-		ObjectType getTypeId() const override { return object_type::GameObject; }
+		ObjectType getTypeId() const override {
+			return object_type::GameObject;
+		}
+
+	private:
+
+		void generateObjectLoot();
 
 	protected:
 
 		TimerQueue &m_timers;
 		const proto::ObjectEntry &m_entry;
+		std::unique_ptr<LootInstance> m_objectLoot;
+		boost::signals2::scoped_connection m_onLootCleared;
 	};
 
-	io::Writer &operator << (io::Writer &w, WorldObject const& object);
-	io::Reader &operator >> (io::Reader &r, WorldObject& object);
+	io::Writer &operator << (io::Writer &w, WorldObject const &object);
+	io::Reader &operator >> (io::Reader &r, WorldObject &object);
 }

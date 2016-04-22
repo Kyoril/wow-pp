@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -25,7 +25,6 @@
 #include "defines.h"
 #include "shared/proto_data/spells.pb.h"
 #include "common/countdown.h"
-#include "boost/signals2.hpp"
 
 namespace wowpp
 {
@@ -41,13 +40,17 @@ namespace wowpp
 	public:
 
 		/// Initializes a new instance of the Aura class.
-		explicit Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, PostFunction post, std::function<void(Aura&)> onDestroy);
+		explicit Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, PostFunction post, std::function<void(Aura &)> onDestroy);
 		~Aura();
 
 		/// Gets the unit target.
-		GameUnit &getTarget() { return m_target; }
+		GameUnit &getTarget() {
+			return m_target;
+		}
 		/// Gets the caster of this aura (if exists).
-		GameUnit *getCaster() { return m_caster; }
+		GameUnit *getCaster() {
+			return m_caster;
+		}
 		/// Applies this aura and initializes everything.
 		void applyAura();
 		/// This method is the counterpart of applyAura(). It exists so that
@@ -56,32 +59,51 @@ namespace wowpp
 		void misapplyAura();
 		/// Executes the aura modifier and applies or removes the aura effects to/from the target.
 		void handleModifier(bool apply);
-		/// 
+		///
 		void handleProcModifier(game::spell_proc_flags::Type procType, GameUnit *attacker = nullptr);
 		/// Determines whether this is a passive spell aura.
-		bool isPassive() const { return (m_spell.attributes(0) & game::spell_attributes::Passive) != 0; }
+		bool isPassive() const {
+			return (m_spell.attributes(0) & game::spell_attributes::Passive) != 0;
+		}
 		/// Determines whether the target may be positive
 		static bool hasPositiveTarget(const proto::SpellEffect &effect);
 		/// Determines whether this is a positive spell aura.
+		/// @returns true if this is a positive aura, false otherwise.
 		bool isPositive() const;
+		/// Determines whether an aura by a given spell and effect is positive.
+		/// @param spell The spell template to check.
+		/// @param effect The spell effect to check.
+		/// @returns true if an aura of this spell would be a positive aura, false otherwise.
 		static bool isPositive(const proto::SpellEntry &spell, const proto::SpellEffect &effect);
 		/// Gets the current aura slot.
-		UInt8 getSlot() const { return m_slot; }
+		UInt8 getSlot() const {
+			return m_slot;
+		}
 		/// Sets the new aura slot to be used.
 		void setSlot(UInt8 newSlot);
 		/// Forced aura remove.
 		void onForceRemoval();
 
 		/// Gets the spell which created this aura and hold's it's values.
-		const proto::SpellEntry &getSpell() const { return m_spell; }
+		const proto::SpellEntry &getSpell() const {
+			return m_spell;
+		}
 		/// Gets the spell effect which created this aura.
-		const proto::SpellEffect &getEffect() const { return m_effect; }
-		
-		Int32 getBasePoints() { return m_basePoints; }
-		
+		const proto::SpellEffect &getEffect() const {
+			return m_effect;
+		}
+		/// Gets this auras base points. Note that these points aren't constant, and can change while this
+		/// aura is in use (for example absorb auras).
+		Int32 getBasePoints() {
+			return m_basePoints;
+		}
+		/// Updates the auras base points.
+		/// @
 		void setBasePoints(Int32 basePoints);
-		
+
 		UInt32 getEffectSchoolMask();
+
+		Int32 getTotalDuration() const { return m_duration; }
 
 	protected:
 
@@ -93,16 +115,22 @@ namespace wowpp
 		void handleDummy(bool apply);
 		/// 8
 		void handlePeriodicHeal(bool apply);
+		/// 10
+		void handleModThreat(bool apply);
 		/// 12
 		void handleModStun(bool apply);
 		/// 13
 		void handleModDamageDone(bool apply);
+		/// 14
+		void handleModDamageTaken(bool apply);
 		/// 15
 		void handleDamageShield(bool apply);
 		/// 16
 		void handleModStealth(bool apply);
 		/// 22
 		void handleModResistance(bool apply);
+		/// 23
+		void handlePeriodicTriggerSpell(bool apply);
 		/// 24
 		void handlePeriodicEnergize(bool apply);
 		/// 26
@@ -117,18 +145,24 @@ namespace wowpp
 		void handleFlySpeedModifier(bool apply);
 		/// 36
 		void handleModShapeShift(bool apply);
+		/// 44
+		void handleTrackCreatures(bool apply);
+		/// 45
+		void handleTrackResources(bool apply);
 		/// 69
 		void handleSchoolAbsorb(bool apply);
 		/// 77
 		void handleMechanicImmunity(bool apply);
 		/// 78
 		void handleMounted(bool apply);
+		/// 85
+		void handleModPowerRegen(bool apply);
 		/// 97
 		void handleManaShield(bool apply);
 		/// 99
 		void handleModAttackPower(bool apply);
-		/// 107
-		void handleAddFlatModifier(bool apply);
+		/// 107 & 108
+		void handleAddModifier(bool apply);
 		/// 109
 		void handleAddTargetTrigger(bool apply);
 		/// 118
@@ -141,6 +175,8 @@ namespace wowpp
 		void handleModBaseResistancePct(bool apply);
 		/// 143
 		void handleModResistanceExclusive(bool apply);
+		/// 226
+		void handlePeriodicDummy(bool apply);
 
 	protected:
 
@@ -165,7 +201,7 @@ namespace wowpp
 		void onTick();
 		/// Executed when the target of this aura moved.
 		void onTargetMoved(GameObject &, math::Vector3 oldPosition, float oldO);
-		/// 
+		///
 		void setRemoved(GameUnit *remover);
 
 	private:
@@ -173,7 +209,7 @@ namespace wowpp
 		const proto::SpellEntry &m_spell;
 		const proto::SpellEffect &m_effect;
 		boost::signals2::scoped_connection m_casterDespawned, m_targetMoved, m_targetEnteredWater, m_targetStartedAttacking, m_targetStartedCasting, m_onExpire, m_onTick, m_onTargetKilled;
-		boost::signals2::scoped_connection m_procAutoAttack, m_procTakenAutoAttack, m_doneSpellMagicDmgClassNeg, m_takenDamage, m_procKilled, m_procKill;
+		boost::signals2::scoped_connection m_procAutoAttack, m_procTakenAutoAttack, m_doneSpellMagicDmgClassNeg, m_takenDamage, m_procKilled, m_procKill, m_onDamageBreak;
 		GameUnit *m_caster;
 		GameUnit &m_target;
 		UInt32 m_tickCount;
@@ -187,7 +223,8 @@ namespace wowpp
 		UInt32 m_attackerLevel;		// Needed for damage calculation
 		UInt8 m_slot;
 		PostFunction m_post;
-		std::function<void(Aura&)> m_destroy;
+		std::function<void(Aura &)> m_destroy;
 		UInt32 m_totalTicks;
+		Int32 m_duration;
 	};
 }

@@ -19,9 +19,9 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "player_social.h"
 #include "player.h"
-#include <algorithm>
 
 namespace wowpp
 {

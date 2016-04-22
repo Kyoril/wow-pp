@@ -1,5 +1,5 @@
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -9,23 +9,20 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
-#include <algorithm>
-#include <vector>
-#include <cassert>
-
 namespace wowpp
 {
+	/// Efficient implementation of a set container.
 	template <class T>
 	class LinearSet
 	{
@@ -37,6 +34,7 @@ namespace wowpp
 
 	public:
 
+		/// Default constructor.
 		LinearSet()
 		{
 		}
@@ -49,27 +47,32 @@ namespace wowpp
 			           element);
 		}
 
-		//O(n)
+		/// Determines whether an element is contained. Linear execution time.
+		/// @param element The searched element.
+		/// @returns true if the element is contained within the set, false otherwise.
 		bool contains(const T &element) const
 		{
+			// O(n)
 			return find(element) != m_elements.end();
 		}
 
-		//Release: O(1), Debug: O(n)
+		/// Adds a new element to the set. Debug assertions included.
+		/// @param element The element to add.
 		template <class U>
 		typename std::enable_if<std::is_convertible<U, T>::value, void>::type
 		add(U &&element)
 		{
+			// Release: O(1), Debug: O(n)
 			assert(!contains(element));
 			optionalAdd(std::forward<U>(element));
 			assert(contains(element));
 		}
 
-		//Release: O(1), Debug: O(n)
 		template <class U>
 		typename std::enable_if<std::is_convertible<U, T>::value, bool>::type
 		optionalAdd(U &&element)
 		{
+			// Release: O(1), Debug: O(n)
 			if (contains(element))
 			{
 				return false;

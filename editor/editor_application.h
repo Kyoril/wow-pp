@@ -26,12 +26,25 @@
 #include "template_list_model.h"
 #include "trigger_list_model.h"
 #include "configuration.h"
-#include <memory>
+#include "selection.h"
 
 namespace wowpp
 {
 	namespace editor
 	{
+		namespace transform_tool
+		{
+			enum Type
+			{
+				Select,
+				Translate,
+				Rotate,
+				Scale
+			};
+		}
+
+		typedef transform_tool::Type TransformTool;
+
 		class MainWindow;		// main_window.h
 		class ObjectEditor;		// object_editor.h
 		class TriggerEditor;	// trigger_editor.h
@@ -48,10 +61,16 @@ namespace wowpp
 			typedef TemplateListModel<proto::MapManager> MapListModel;
 			typedef TemplateListModel<proto::UnitManager> UnitListModel;
 			typedef TemplateListModel<proto::QuestManager> QuestListModel;
+			typedef TemplateListModel<proto::ObjectManager> ObjectListModel;
+
+		public:
+
+			boost::signals2::signal<void(TransformTool)> transformToolChanged;
 
 		public:
 
 			explicit EditorApplication();
+            ~EditorApplication();
 
 			/// Initializes our editor application (loads settings and sets everything up properly).
 			/// @returns True if everything went okay, false otherwise.
@@ -67,8 +86,12 @@ namespace wowpp
 			UnitListModel *getUnitListModel() { return m_unitListModel.get(); }
 			TriggerListModel *getTriggerListModel() { return m_triggerListModel.get(); }
 			QuestListModel *getQuestListModel() { return m_questListModel.get(); }
+			ObjectListModel *getObjectListModel() { return m_objectListModel.get(); }
 			proto::Project &getProject() { return m_project; }
 			Configuration &getConfiguration() { return m_configuration; }
+			Selection &getSelection() { return m_selection; }
+			const TransformTool &getTransformTool() const { return m_transformTool; }
+			void setTransformTool(TransformTool tool);
 
 		public slots:
 
@@ -89,10 +112,11 @@ namespace wowpp
 
 		private:
 
+			Selection m_selection;
 			Configuration m_configuration;
-			std::unique_ptr<MainWindow> m_mainWindow;
-			std::unique_ptr<ObjectEditor> m_objectEditor;
-			std::unique_ptr<TriggerEditor> m_triggerEditor;
+			MainWindow *m_mainWindow;
+			ObjectEditor *m_objectEditor;
+			TriggerEditor *m_triggerEditor;
 			proto::Project m_project;
 			std::unique_ptr<ItemListModel> m_itemListModel;
 			std::unique_ptr<SpellListModel> m_spellListModel;
@@ -100,6 +124,8 @@ namespace wowpp
 			std::unique_ptr<UnitListModel> m_unitListModel;
 			std::unique_ptr<TriggerListModel> m_triggerListModel;
 			std::unique_ptr<QuestListModel> m_questListModel;
+			std::unique_ptr<ObjectListModel> m_objectListModel;
+			TransformTool m_transformTool;
 			bool m_changed;
 		};
 	}

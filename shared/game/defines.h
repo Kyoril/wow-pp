@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -25,7 +25,6 @@
 #include "common/enum_strings.h"
 #include "common/vector.h"
 #include "math/vector3.h"
-#include <map>
 
 namespace wowpp
 {
@@ -37,23 +36,24 @@ namespace wowpp
 		inline Vector<Distance, 2> planar(const math::Vector3 &point)
 		{
 			return Vector<Distance, 2>(
-				point[0],
-				point[1]);
+			           point[0],
+			           point[1]);
 		}
 
-		namespace sell_error
+		namespace creature_movement
 		{
 			enum Type
 			{
-				CantFindItem		= 1,
-				CantSellItem		= 2,
-				CantFindVendor		= 3,
-				YouDontOwnThatItem	= 4,
-				OnlyEmptyBag		= 5
+				None		= 0,
+				Random		= 1,
+				Waypoints	= 2,
+
+				Invalid,
+				Count_ = Invalid
 			};
 		}
 
-		typedef sell_error::Type SellError;
+		typedef creature_movement::Type CreatureMovement;
 
 		namespace quest_status
 		{
@@ -84,6 +84,61 @@ namespace wowpp
 
 		typedef quest_status::Type QuestStatus;
 
+		namespace item_binding
+		{
+			enum Type
+			{
+				/// No binding at all
+				NoBinding			= 0,
+				/// Bound when picked up
+				BindWhenPickedUp	= 1,
+				/// Bound when equipped
+				BindWhenEquipped	= 2,
+				/// Bound when used
+				BindWhenUsed		= 3,
+				/// Unknown
+				BindQuestItem		= 4
+			};
+		}
+
+		typedef item_binding::Type ItemBinding;
+
+		namespace item_flags
+		{
+			enum Type
+			{
+				/// The item is bound to a player character.
+				Bound			= 0x00000001,
+				/// This is a conjured item, which means that it will be destroyed after being logged
+				/// out more than 15 minutes.
+				Conjured		= 0x00000002,
+				/// This item contains items (not a bag!)
+				Openable		= 0x00000004,
+				/// The item is wrapped(?)
+				Wrapped			= 0x00000008,
+				/// ?
+				Wrapper			= 0x00000200,
+				/// Indicates that this item is lootable by the whole party (one drop for every valid member)
+				PartyLoot		= 0x00000800,
+				/// Arena / guild charter
+				Charter			= 0x00002000,
+				/// Item can only be equipped once (weapons / rings)
+				UniqueEquipped	= 0x00080000,
+				/// This item can be used in arenas.
+				UsableInArena	= 0x00200000,
+				/// Only used for item tooltip at the client
+				Thorwable		= 0x00400000,
+				/// Last used flag in 2.3.0
+				SpecialUse		= 0x00800000,
+				/// These items will be bound to the players account.
+				BindOnAccount	= 0x08000000,
+				/// ?
+				Millable		= 0x20000000
+			};
+		}
+
+		typedef item_flags::Type ItemFlags;
+
 		namespace questgiver_status
 		{
 			enum Type
@@ -110,7 +165,7 @@ namespace wowpp
 				Count_			= 9
 			};
 		}
-		
+
 		typedef questgiver_status::Type QuestgiverStatus;
 
 		namespace quest_flags
@@ -392,7 +447,7 @@ namespace wowpp
 				Energy = 0x03,
 				/// Used by hunter pet's - more happiness increases pet damage.
 				Happiness = 0x04,
-				/// 
+				///
 				Health = 0xFFFFFFFE,
 
 				Count_ = 0x06,
@@ -417,11 +472,33 @@ namespace wowpp
 		}
 
 		typedef class_flags::Type ClassFlags;
+		
+		namespace creature_type
+		{
+			enum Type
+			{
+				Beast			= 1,
+				Dragonkin		= 2,
+				Demon			= 3,
+				Elemental		= 4,
+				Giant			= 5,
+				Undead			= 6,
+				Humanoid		= 7,
+				Critter			= 8,
+				Mechanical		= 9,
+				NotSpecified	= 10,
+				Totem			= 11,
+				NonCombatPet	= 12,
+				GasCloud		= 13
+			};
+		}
+
+		typedef creature_type::Type CreatureType;
 
 		namespace constant_literal
 		{
 			typedef EnumStrings<PowerType, power_type::Count_,
-				power_type::Invalid_> PowerTypeStrings;
+			        power_type::Invalid_> PowerTypeStrings;
 			extern const PowerTypeStrings powerType;
 		}
 
@@ -435,11 +512,11 @@ namespace wowpp
 				Ranged = 0x00000002,
 				/// Spell is executed on next weapon swing.
 				OnNextSwing = 0x00000004,
-				/// 
+				///
 				IsReplenishment = 0x00000008,
 				/// Spell is a player ability.
 				Ability = 0x00000010,
-				/// 
+				///
 				TradeSpell = 0x00000020,
 				/// Spell is a passive spell-
 				Passive = 0x00000040,
@@ -449,9 +526,9 @@ namespace wowpp
 				HiddenCastTime = 0x00000100,
 				/// Client will automatically target the mainhand item.
 				TargetMainhandItem = 0x00000200,
-				/// 
+				///
 				OnNextSwing_2 = 0x00000400,
-				/// 
+				///
 				Unknown_4 = 0x00000800,
 				/// Spell is only executable at day.
 				DaytimeOnly = 0x00001000,
@@ -467,7 +544,7 @@ namespace wowpp
 				OnlyStealthed = 0x00020000,
 				/// Spell does not change the players sheath state.
 				DontAffectSheathState = 0x00040000,
-				/// 
+				///
 				LevelDamageCalc = 0x00080000,
 				/// Spell will stop auto attack.
 				StopAttackTarget = 0x00100000,
@@ -479,9 +556,9 @@ namespace wowpp
 				CastableWhileDead = 0x00800000,
 				/// Spell is usable while caster is mounted.
 				CastableWhileMounted = 0x01000000,
-				/// 
+				///
 				DisabledWhileActive = 0x02000000,
-				/// 
+				///
 				Negative = 0x04000000,
 				/// Cast is usable while caster is sitting.
 				CastableWhileSitting = 0x08000000,
@@ -587,11 +664,11 @@ namespace wowpp
 				Unknown_1				= 0x00000001,
 				Unknown_2				= 0x00000002,
 				Unknown_3				= 0x00000004,
-				Unknown_4				= 0x00000008,
-				Unknown_5				= 0x00000010,
+				BlockableSpell			= 0x00000008,
+				IgnoreResurrectionTimer	= 0x00000010,
 				Unknown_6				= 0x00000020,
 				Unknown_7				= 0x00000040,
-				Unknown_8				= 0x00000080,
+				StackForDiffCasters		= 0x00000080,
 				TargetOnlyPlayer		= 0x00000100,
 				Unknown_9				= 0x00000200,
 				MainHand				= 0x00000400,
@@ -748,11 +825,17 @@ namespace wowpp
 		{
 			enum Type
 			{
-				None = 0x00,
+				/// Used when cast is cancelled for a different reason (target dies, user cancelled or something else)
+				None	= 0x00,
+				/// Interrupted on movement
 				Movement = 0x01,
+				/// Affected by spell delay?
 				PushBack = 0x02,
+				/// Kick / Counter Spell
 				Interrupt = 0x04,
+				/// Interrupted on auto attack?
 				AutoAttack = 0x08,
+				/// Interrupted on direct damage
 				Damage = 0x10
 			};
 		}
@@ -843,7 +926,7 @@ namespace wowpp
 			{
 				/// No proc.
 				None						= 0x00000000,
-				/// Killed by aggressor.	
+				/// Killed by aggressor.
 				Killed						= 0x00000001,
 				/// Killed a target.
 				Kill						= 0x00000002,
@@ -851,33 +934,33 @@ namespace wowpp
 				DoneMeleeAutoAttack			= 0x00000004,
 				/// Taken melee attack.
 				TakenMeleeAutoAttack		= 0x00000008,
-				/// 
+				///
 				DoneSpellMeleeDmgClass		= 0x00000010,
-				/// 
+				///
 				TakenSpellMeleeDmgClass		= 0x00000020,
 				/// Done ranged auto attack.
 				DoneRangedAutoAttack		= 0x00000040,
 				/// Taken ranged auto attack.
 				TakenRangedAutoAttack		= 0x00000080,
-				/// 
+				///
 				DoneSpellRangedDmgClass		= 0x00000100,
-				/// 
+				///
 				TakenSpellRangedDmgClass	= 0x00000200,
-				/// 
+				///
 				DoneSpellNoneDmgClassPos	= 0x00000400,
-				/// 
+				///
 				TakenSpellNoneDmgClassPos	= 0x00000800,
-				/// 
+				///
 				DoneSpellNoneDmgClassNeg	= 0x00001000,
-				/// 
+				///
 				TakenSpellNoneDmgClassNeg	= 0x00002000,
-				/// 
+				///
 				DoneSpellMagicDmgClassPos	= 0x00004000,
-				/// 
+				///
 				TakenSpellMagicDmgClassPos	= 0x00008000,
-				/// 
+				///
 				DoneSpellMagicDmgClassNeg	= 0x00010000,
-				/// 
+				///
 				TakenSpellMagicDmgClassNeg	= 0x00020000,
 				/// On periodic tick done.
 				DonePeriodic				= 0x00040000,
@@ -904,9 +987,9 @@ namespace wowpp
 				None			= 0,
 				/// Corpse loot (dead creatures).
 				Corpse			= 1,
-				/// 
+				///
 				Skinning		= 2,
-				/// 
+				///
 				Fishing			= 3,
 
 				/// Unsupported by client - sending Skinning instead
@@ -969,7 +1052,7 @@ namespace wowpp
 				Locked		= 3,
 				/// Ignore binding confirmation and etc., for single player looting.
 				Owner		= 4
-			};			
+			};
 		}
 
 		namespace unit_stand_state
@@ -1228,10 +1311,10 @@ namespace wowpp
 				Hover = 0x40000000,
 
 				Moving =
-				Forward | Backward | StrafeLeft | StrafeRight | PitchUp | PitchDown |
-				Falling | FallingFar | Ascending | Flying2 | SplineElevation,
+				    Forward | Backward | StrafeLeft | StrafeRight | PitchUp | PitchDown |
+				    Falling | FallingFar | Ascending | Flying2 | SplineElevation,
 				Turning =
-				TurnLeft | TurnRight,
+				    TurnLeft | TurnRight,
 			};
 		}
 
@@ -1357,7 +1440,7 @@ namespace wowpp
 			UInt32 class_;
 			String note;
 
-			/// 
+			///
 			SocialInfo()
 				: status(friend_status::Offline)
 				, flags(0)
@@ -1367,7 +1450,7 @@ namespace wowpp
 			{
 			}
 
-			/// 
+			///
 			explicit SocialInfo(UInt32 flags_, String note_)
 				: status(friend_status::Offline)
 				, flags(flags_)
@@ -1732,7 +1815,7 @@ namespace wowpp
 		namespace constant_literal
 		{
 			typedef EnumStrings < SpellEffect, spell_effects::Count_,
-				spell_effects::Invalid_ > SpellEffectStrings;
+			        spell_effects::Invalid_ > SpellEffectStrings;
 			extern const SpellEffectStrings spellEffectNames;
 		}
 
@@ -1838,7 +1921,7 @@ namespace wowpp
 		namespace constant_literal
 		{
 			typedef EnumStrings < Targets, targets::Count_,
-				targets::Invalid_ > TargetStrings;
+			        targets::Invalid_ > TargetStrings;
 			extern const TargetStrings targetNames;
 		}
 
@@ -1884,7 +1967,7 @@ namespace wowpp
 		}
 
 		typedef spell_miss_info::Type SpellMissInfo;
-		
+
 		namespace spell_modifier
 		{
 			enum Type
@@ -1918,7 +2001,7 @@ namespace wowpp
 				ResistDispelChance	= 28
 			};
 		}
-		
+
 		typedef spell_modifier::Type SpellModifier;
 
 		namespace spell_hit_type
@@ -2246,7 +2329,7 @@ namespace wowpp
 				Deflects	= 8
 			};
 		}
-		
+
 		typedef victim_state::Type VictimState;
 
 		namespace hit_info
@@ -2646,7 +2729,7 @@ namespace wowpp
 		}
 
 		typedef aura_type::Type AuraType;
-		
+
 		namespace aura_dispel_type
 		{
 			enum Type
@@ -2670,7 +2753,7 @@ namespace wowpp
 		namespace constant_literal
 		{
 			typedef EnumStrings < AuraType, aura_type::Count_,
-				aura_type::Invalid_ > AuraTypeStrings;
+			        aura_type::Invalid_ > AuraTypeStrings;
 			extern const AuraTypeStrings auraTypeNames;
 		}
 
@@ -2705,43 +2788,43 @@ namespace wowpp
 		{
 			enum Type
 			{
-				/// 
+				///
 				Picklock				= 1,
-				/// 
+				///
 				Herbalism				= 2,
-				/// 
+				///
 				Mining					= 3,
-				/// 
+				///
 				DisarmTrap				= 4,
-				/// 
+				///
 				Open					= 5,
-				/// 
+				///
 				Treasure				= 6,
-				/// 
+				///
 				CalcifiedElvenGems		= 7,
-				/// 
+				///
 				Close					= 8,
-				/// 
+				///
 				ArmTrap					= 9,
-				/// 
+				///
 				QuickOpen				= 10,
-				/// 
+				///
 				QuickClose				= 11,
-				/// 
+				///
 				OpenTinkering			= 12,
-				/// 
+				///
 				OpenKneeling			= 13,
-				/// 
+				///
 				OpenAttacking			= 14,
-				/// 
+				///
 				Gahzridian				= 15,
-				/// 
+				///
 				Blasting				= 16,
-				/// 
+				///
 				SlowOpen				= 17,
-				/// 
+				///
 				SlowClose				= 18,
-				/// 
+				///
 				Fishing					= 19
 			};
 		}
@@ -2786,19 +2869,19 @@ namespace wowpp
 		{
 			enum Type
 			{
-				/// 
+				///
 				Unknown_0			= 0x00000001,
 				/// Unit can't be attackaed.
 				NotAttackable		= 0x00000002,
-				/// 
+				///
 				DisableMovement		= 0x00000004,
 				/// Unit has pvp mode enabled, which will flag players for pvp if they attack or support this unit, too.
 				PvPMode				= 0x00000008,
-				/// 
+				///
 				Rename				= 0x00000010,
 				/// Doesn't take reagents for spells with attribute ex 5 "NoReatentWhileRep"
 				Preparation			= 0x00000020,
-				/// 
+				///
 				Unknown_1			= 0x00000040,
 				/// Must be compined with PvPMode flags. Makes this unit unattackable from pvp targets.
 				NotAttackablePvP	= 0x00000080,
@@ -2808,21 +2891,21 @@ namespace wowpp
 				Passive				= 0x00000200,
 				/// Shows the looting animation.
 				Looting				= 0x00000400,
-				/// 
+				///
 				PetInCombat			= 0x00000800,
-				/// 
+				///
 				PvP					= 0x00001000,
-				/// 
+				///
 				Silenced			= 0x00002000,
-				/// 
+				///
 				Unknown_2			= 0x00004000,
-				/// 
+				///
 				Unknown_3			= 0x00008000,
 				/// Can't be targeted by a spell cast directly.
 				NoSpellTarget		= 0x00010000,
-				/// 
+				///
 				Pacified			= 0x00020000,
-				/// 
+				///
 				Stunned				= 0x00040000,
 				///
 				InCombat			= 0x00080000,
@@ -2830,26 +2913,26 @@ namespace wowpp
 				TaxiFlight			= 0x00100000,
 				/// Disables melee spell casting.
 				Disarmed			= 0x00200000,
-				/// 
+				///
 				Confused			= 0x00400000,
-				/// 
+				///
 				Fleeing				= 0x00800000,
 				/// Used in spell Eye of the Beast for pets.
 				PlayerControlled	= 0x01000000,
-				/// 
+				///
 				NotSelectable		= 0x02000000,
-				/// 
+				///
 				Skinnable			= 0x04000000,
-				/// 
+				///
 				Mount				= 0x08000000,
-				/// 
+				///
 				Unknown_4			= 0x10000000,
 				Unknown_5			= 0x20000000,
 				Unknown_6			= 0x40000000,
 				Sheathe				= 0x80000000,
 			};
 		}
-	
+
 		namespace faction_flags
 		{
 			enum Type

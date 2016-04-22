@@ -19,9 +19,9 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "wdt_file.h"
 #include "log/default_log_levels.h"
-#include <iomanip>
 
 namespace wowpp
 {
@@ -50,7 +50,7 @@ namespace wowpp
 		{
 			// Read the MWMO chunk
 			m_reader.readPOD(m_wmoChunk);
-			
+
 		}
 
 		m_isValid = true;

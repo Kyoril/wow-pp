@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>359</width>
-    <height>218</height>
+    <width>465</width>
+    <height>275</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -125,6 +125,36 @@
        <string>Unit - On Reached Home</string>
       </property>
      </item>
+     <item>
+      <property name="text">
+       <string>World Object - On Interaction</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Unit - On Health Dropped Below</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Unit - On Reached Triggered Target</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Unit - On Spell Hit</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Unit - On Spell Aura Removed</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Unit - On Emote</string>
+      </property>
+     </item>
     </widget>
    </item>
    <item>
@@ -154,7 +184,7 @@
          <bool>true</bool>
         </property>
         <property name="openExternalLinks">
-         <bool>true</bool>
+         <bool>false</bool>
         </property>
        </widget>
       </item>

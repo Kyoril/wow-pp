@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -34,8 +34,6 @@
 #include "common/linear_set.h"
 #include "attack_table.h"
 #include "proto_data/trigger_helper.h"
-#include <unordered_map>
-#include <boost/signals2.hpp>
 
 namespace wowpp
 {
@@ -51,7 +49,9 @@ namespace wowpp
 			SitMediumChais	= 0x05,
 			SitHighChair	= 0x06,
 			Dead			= 0x07,
-			Kneel			= 0x08
+			Kneel			= 0x08,
+
+			Count
 		};
 	}
 
@@ -250,7 +250,7 @@ namespace wowpp
 			DamageRanged			= 22,
 
 			End						= 23,
-			
+
 			/// Start of stat value modifiers. Used for iteration.
 			StatStart				= StatStrength,
 			/// End of stat value modifiers. Used for iteration.
@@ -272,15 +272,15 @@ namespace wowpp
 	{
 		enum Type
 		{
-			/// 
+			///
 			CritPercentage			= 0,
-			/// 
+			///
 			RangedCritPercentage	= 1,
-			/// 
+			///
 			OffHandCritPercentage	= 2,
-			/// 
+			///
 			ShieldBlockValue		= 3,
-			
+
 			End						= 4
 		};
 	}
@@ -295,7 +295,7 @@ namespace wowpp
 			Flat		= 0,
 			/// Percentual modifier value type (float, where 1.0 = 100%).
 			Percentage	= 1,
-			
+
 			End			= 2
 		};
 	}
@@ -319,9 +319,9 @@ namespace wowpp
 	class GameUnit : public GameObject
 	{
 		/// Serializes an instance of a GameUnit class (binary)
-		friend io::Writer &operator << (io::Writer &w, GameUnit const& object);
+		friend io::Writer &operator << (io::Writer &w, GameUnit const &object);
 		/// Deserializes an instance of a GameUnit class (binary)
-		friend io::Reader &operator >> (io::Reader &r, GameUnit& object);
+		friend io::Reader &operator >> (io::Reader &r, GameUnit &object);
 
 	public:
 
@@ -329,9 +329,9 @@ namespace wowpp
 		typedef std::function<bool()> AttackSwingCallback;
 		typedef std::unordered_map<UInt32, GameTime> CooldownMap;
 
-		/// Fired when this unit was killed. Parameter: GameUnit* killer (may be nullptr if killer 
+		/// Fired when this unit was killed. Parameter: GameUnit* killer (may be nullptr if killer
 		/// information is not available (for example due to environmental damage))
-		boost::signals2::signal<void(GameUnit*)> killed;
+		boost::signals2::signal<void(GameUnit *)> killed;
 		/// Fired when an auto attack error occurred. Used in World Node by the Player class to
 		/// send network packets based on the error code.
 		boost::signals2::signal<void(AttackSwingError)> autoAttackError;
@@ -351,13 +351,13 @@ namespace wowpp
 		boost::signals2::signal<void(UInt16, math::Vector3, float)> teleport;
 		/// Fired when the units faction changed. This might cause the unit to become friendly to attackers.
 		boost::signals2::signal<void(GameUnit &)> factionChanged;
-		/// 
+		///
 		boost::signals2::signal<void(GameUnit &, float)> threatened;
-		/// 
+		///
 		boost::signals2::signal<float(GameUnit &threatener)> getThreat;
-		/// 
+		///
 		boost::signals2::signal<void(GameUnit &threatener, float amount)> setThreat;
-		/// 
+		///
 		boost::signals2::signal<GameUnit *()> getTopThreatener;
 		/// Fired when an auto attack hit.
 		boost::signals2::signal<void(GameUnit *)> doneMeleeAutoAttack;
@@ -370,7 +370,7 @@ namespace wowpp
 		/// Fired when done any magic damage
 		boost::signals2::signal<void(GameUnit *, UInt32)> doneSpellMagicDmgClassNeg;
 		/// Fired when hit by any damage.
-		boost::signals2::signal<void(GameUnit *)> takenDamage;
+		boost::signals2::signal<void(GameUnit *, UInt32)> takenDamage;
 		/// Fired when unit enters water
 		boost::signals2::signal<void()> enteredWater;
 		/// Fired when unit started attacking
@@ -385,23 +385,29 @@ namespace wowpp
 		boost::signals2::signal<void(bool)> rootStateChanged;
 		/// Fired when this unit gets stunned or unstunned.
 		boost::signals2::signal<void(bool)> stunStateChanged;
+		/// Fired when this unit enters or leaves stealth mode.
+		boost::signals2::signal<void(bool)> stealthStateChanged;
 		/// Fired when the movement speed of this unit changes.
 		boost::signals2::signal<void(MovementType)> speedChanged;
 		/// Fired when a custom cooldown event was rised (for example, "Stealth" cooldown is only fired when stealth ends).
 		boost::signals2::signal<void(UInt32)> cooldownEvent;
+		/// Fired when the units stand state changed.
+		boost::signals2::signal<void(UnitStandState)> standStateChanged;
 
 	public:
 
 		/// Creates a new instance of the GameUnit object, which will still be uninitialized.
 		explicit GameUnit(
-			proto::Project &project,
-			TimerQueue &timers);
+		    proto::Project &project,
+		    TimerQueue &timers);
 		~GameUnit();
 
 		/// @copydoc GameObject::initialize()
 		virtual void initialize() override;
 		/// @copydoc GameObject::getTypeId()
-		virtual ObjectType getTypeId() const override { return object_type::Unit; }
+		virtual ObjectType getTypeId() const override {
+			return object_type::Unit;
+		}
 
 		/// Updates the race index and will also update the race entry object.
 		void setRace(UInt8 raceId);
@@ -412,18 +418,26 @@ namespace wowpp
 		/// Updates the level and will also update all stats based on the new level.
 		void setLevel(UInt8 level);
 		/// Gets the current race index.
-		UInt8 getRace() const { return getByteValue(unit_fields::Bytes0, 0); }
+		UInt8 getRace() const {
+			return getByteValue(unit_fields::Bytes0, 0);
+		}
 		/// Gets the current class index.
-		UInt8 getClass() const { return getByteValue(unit_fields::Bytes0, 1); }
+		UInt8 getClass() const {
+			return getByteValue(unit_fields::Bytes0, 1);
+		}
 		/// Gets the current gender.
-		UInt8 getGender() const { return getByteValue(unit_fields::Bytes0, 2); }
+		UInt8 getGender() const {
+			return getByteValue(unit_fields::Bytes0, 2);
+		}
 		/// Gets the current level.
-		UInt32 getLevel() const { return getUInt32Value(unit_fields::Level); }
+		UInt32 getLevel() const {
+			return getUInt32Value(unit_fields::Level);
+		}
 		/// Gets this units faction template.
 		const proto::FactionTemplateEntry &getFactionTemplate() const;
-		/// 
+		///
 		void setFactionTemplate(const proto::FactionTemplateEntry &faction);
-		
+
 		bool isHostileToPlayers();
 		bool isNeutralToAll();
 		bool isFriendlyTo(const proto::FactionTemplateEntry &faction);
@@ -432,18 +446,25 @@ namespace wowpp
 		bool isHostileTo(GameUnit &unit);
 
 		/// Gets the timer queue object needed for countdown events.
-		TimerQueue &getTimers() { return m_timers; }
+		TimerQueue &getTimers() {
+			return m_timers;
+		}
 		/// Get the current race entry information.
-		const proto::RaceEntry *getRaceEntry() const {  return m_raceEntry; }
+		const proto::RaceEntry *getRaceEntry() const {
+			return m_raceEntry;
+		}
 		/// Get the current class entry information.
-		const proto::ClassEntry *getClassEntry() const { return m_classEntry; }
-		/// 
+		const proto::ClassEntry *getClassEntry() const {
+			return m_classEntry;
+		}
+		///
 		virtual const String &getName() const;
 
 		/// Starts to cast a spell using the given target map.
-		void castSpell(SpellTargetMap target, UInt32 spell, Int32 basePoints = -1, GameTime castTime = 0, bool isProc = false, SpellSuccessCallback callback = SpellSuccessCallback());
+		void castSpell(SpellTargetMap target, UInt32 spell, Int32 basePoints = -1, GameTime castTime = 0, bool isProc = false, UInt64 itemGuid = 0, SpellSuccessCallback callback = SpellSuccessCallback());
 		/// Stops the current cast (if any).
-		void cancelCast();
+		/// @param interruptCooldown Interrupt cooldown time in milliseconds (or 0 if no cooldown).
+		void cancelCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown = 0);
 		/// Starts auto attack on the given target.
 		/// @param target The unit to attack.
 		void startAttack();
@@ -451,9 +472,13 @@ namespace wowpp
 		/// isn't active right now.
 		void stopAttack();
 		/// Determines whether this unit is in auto attack mode right now.
-		bool isAutoAttacking() const { return m_attackSwingCountdown.running; }
+		bool isAutoAttacking() const {
+			return m_attackSwingCountdown.running;
+		}
 		/// Gets the current auto attack victim of this unit (if any).
-		GameUnit *getVictim() { return m_victim; }
+		GameUnit *getVictim() {
+			return m_victim;
+		}
 		/// Updates the unit's victim. Will stop auto attack if no victim is provided, otherwise,
 		/// an ongoing auto attack will simply switch targets.
 		void setVictim(GameUnit *victim);
@@ -464,7 +489,9 @@ namespace wowpp
 		/// Stops the regeneration countdown.
 		void stopRegeneration();
 		/// Gets the last time when mana was used. Used for determining mana regeneration mode.
-		GameTime getLastManaUse() const { return m_lastManaUse; }
+		GameTime getLastManaUse() const {
+			return m_lastManaUse;
+		}
 		/// Updates the time when we last used mana, so that mana regeneration mode will be changed.
 		void notifyManaUse();
 		/// Gets the specified unit modifier value.
@@ -487,15 +514,15 @@ namespace wowpp
 		/// @param school The damage school mask.
 		/// @param attacker The attacking unit or nullptr, if unknown. If nullptr, no threat will be generated.
 		/// @param noThreat If set to true, no threat will be generated from this damage.
-		bool dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, bool noThreat = false);
+		bool dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, float threat);
 		/// Heals this unit. Does not work on dead units! Use the revive method for this one.
 		/// @param amount The amount of damage to heal.
 		/// @param healer The healing unit or nullptr, if unknown. If nullptr, no threat will be generated.
 		/// @param noThreat If set to true, no threat will be generated.
 		bool heal(UInt32 amount, GameUnit *healer, bool noThreat = false);
-		/// Remove mana of this unit. Does not work on dead, oom or non-mana units!
-		/// @param amount The amount of mana to remove.
-		UInt32 removeMana(UInt32 amount);
+		/// Add or Remove mana to unit. Does not work on dead units!
+		/// @param amount The amount of power. Negative values will remove power
+		Int32 addPower(game::PowerType power, Int32 amount);
 		/// Revives this unit with the given amount of health and mana. Does nothing if the unit is alive.
 		/// @param health The new health value of this unit.
 		/// @param mana The new mana value of this unit. If set to 0, mana won't be changed. If unit does not use
@@ -505,17 +532,29 @@ namespace wowpp
 		/// @param experience The amount of experience points to be added.
 		virtual void rewardExperience(GameUnit *victim, UInt32 experience);
 		/// Gets the aura container of this unit.
-		AuraContainer &getAuras() { return m_auras; }
-		/// 
-		bool isAlive() const { return (getUInt32Value(unit_fields::Health) != 0); }
+		AuraContainer &getAuras() {
+			return m_auras;
+		}
+		///
+		bool isAlive() const {
+			return (getUInt32Value(unit_fields::Health) != 0);
+		}
 		/// Determines whether this unit is actually in combat with at least one other unit.
 		bool isInCombat() const;
 		/// Determines whether another game object is in line of sight.
 		bool isInLineOfSight(GameObject &other);
 		/// Determines whether a position is in line of sight.
 		bool isInLineOfSight(const math::Vector3 &position);
+		///
+		bool isMounted() const {
+			return getUInt32Value(unit_fields::MountDisplayId) != 0;
+		}
+		bool isStealthed() const {
+			return m_isStealthed;
+		}
+		void notifyStealthChanged();
 		/// 
-		bool isMounted() const { return getUInt32Value(unit_fields::MountDisplayId) != 0; }
+		virtual bool canDetectStealth(GameUnit &target);
 
 		float getMissChance(GameUnit &attacker, UInt8 school, bool isWhiteDamage);
 		bool isImmune(UInt8 school);
@@ -538,9 +577,15 @@ namespace wowpp
 		virtual bool hasMainHandWeapon() const = 0;
 		virtual bool hasOffHandWeapon() const = 0;
 
-		bool isStunned() const { return m_isStunned; }
-		bool isRooted() const { return m_isRooted; }
-		bool canMove() const { return isAlive() && !isStunned() && !isRooted(); }
+		bool isStunned() const {
+			return m_isStunned;
+		}
+		bool isRooted() const {
+			return m_isRooted;
+		}
+		bool canMove() const {
+			return isAlive() && !isStunned() && !isRooted();
+		}
 		void notifyStunChanged();
 		void notifyRootChanged();
 		void notifySpeedChanged(MovementType type);
@@ -570,14 +615,19 @@ namespace wowpp
 		static UInt8 getResistanceByUnitMod(UnitMods mod);
 		/// Calculates the power based on the specified unit modifier.
 		static game::PowerType getPowerTypeByUnitMod(UnitMods mod);
-		/// 
+		///
 		static UnitMods getUnitModByStat(UInt8 stat);
-		/// 
+		///
 		static UnitMods getUnitModByPower(game::PowerType power);
-		/// 
+		///
 		static UnitMods getUnitModByResistance(UInt8 res);
 
-		/// 
+		/// Determines whether the unit is sitting.
+		bool isSitting() const;
+		/// Changes the units stand state. This might also remove auras.
+		void setStandState(UnitStandState state);
+
+		///
 		void setAttackSwingCallback(AttackSwingCallback callback);
 
 		virtual void updateAllStats();
@@ -590,7 +640,9 @@ namespace wowpp
 		virtual void updateResistance(UInt8 resistance);
 
 		/// Gets the current unit mover.
-		UnitMover &getMover() {	return *m_mover; }
+		UnitMover &getMover() {
+			return *m_mover;
+		}
 
 		/// Determines whether the unit has a cooldown on a specific spell.
 		/// @param spellId The ID of the spell to check.
@@ -605,7 +657,9 @@ namespace wowpp
 		/// @param timeInMs Cooldown time in milliseconds. Use 0 to clear the cooldown.
 		void setCooldown(UInt32 spellId, UInt32 timeInMs);
 		/// Gets a constant map of all cooldown entries.
-		const CooldownMap &getCooldowns() const { return m_spellCooldowns; }
+		const CooldownMap &getCooldowns() const {
+			return m_spellCooldowns;
+		}
 
 	public:
 
@@ -625,7 +679,7 @@ namespace wowpp
 
 		void updateDisplayIds();
 		void onDespawnTimer();
-		
+
 		void onVictimKilled(GameUnit *killer);
 		void onVictimDespawned();
 		void onAttackSwing();
@@ -639,7 +693,7 @@ namespace wowpp
 		typedef std::array<float, unit_mod_type::End> UnitModTypeArray;
 		typedef std::array<UnitModTypeArray, unit_mods::End> UnitModArray;
 		typedef std::vector<std::shared_ptr<Aura>> AuraVector;
-		typedef LinearSet<GameUnit*> AttackingUnitSet;
+		typedef LinearSet<GameUnit *> AttackingUnitSet;
 		typedef LinearSet<UInt32> MechanicImmunitySet;
 
 		TimerQueue &m_timers;
@@ -659,13 +713,15 @@ namespace wowpp
 		AuraContainer m_auras;
 		AttackSwingCallback m_swingCallback;
 		AttackingUnitSet m_attackingUnits;
-		MechanicImmunitySet m_mechanicImmunity;
+		UInt32 m_mechanicImmunity;
 		bool m_isStunned;
 		bool m_isRooted;
+		bool m_isStealthed;
 		std::array<float, movement_type::Count> m_speedBonus;
 		CooldownMap m_spellCooldowns;
+		UnitStandState m_standState;
 	};
 
-	io::Writer &operator << (io::Writer &w, GameUnit const& object);
-	io::Reader &operator >> (io::Reader &r, GameUnit& object);
+	io::Writer &operator << (io::Writer &w, GameUnit const &object);
+	io::Reader &operator >> (io::Reader &r, GameUnit &object);
 }

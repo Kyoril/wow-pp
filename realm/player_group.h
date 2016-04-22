@@ -22,8 +22,6 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include <boost/noncopyable.hpp>
-#include <boost/signals2.hpp>
 #include "player_manager.h"
 #include "game_protocol/game_protocol.h"
 #include "binary_io/vector_sink.h"
@@ -31,10 +29,10 @@
 #include "log/default_log_levels.h"
 #include "player_social.h"
 #include "player.h"
-#include <vector>
 
 namespace wowpp
 {
+	struct IDatabase;
 	class GameCharacter;
 
 	namespace roll_vote
@@ -91,6 +89,11 @@ namespace wowpp
 	{
 	public:
 
+		/// Stores all player groups by their respective group id.
+		static std::map<UInt64, std::shared_ptr<PlayerGroup>> GroupsById;
+
+	public:
+
 		typedef std::map<UInt64, game::GroupMemberSlot> MembersByGUID;
 		typedef LinearSet<UInt64> InvitedMembers;
 		typedef std::map<UInt32, UInt32> InstancesByMap;
@@ -100,8 +103,10 @@ namespace wowpp
 
 		/// Creates a new instance of a player group. Note that a group has to be
 		/// created using the create method before it will be valid.
-		explicit PlayerGroup(UInt64 id, PlayerManager &playerManager);
+		explicit PlayerGroup(UInt64 id, PlayerManager &playerManager, IDatabase &database);
 
+		/// Restores the group from the database.
+		bool createFromDatabase();
 		/// Creates the group and setup a leader.
 		void create(GameCharacter &leader);
 		/// Changes the loot method.
@@ -157,6 +162,11 @@ namespace wowpp
 		/// Gets the group id.
 		UInt64 getId() const { return m_id; }
 
+		/// Broadcasts a network packet to all party mambers.
+		/// @param creator Function pointer to the network packet writer method.
+		/// @param except Optional array of character guids to exclude from the broadcast. May be nullptr.
+		/// @param causer GUID of the character who caused this broadcast (if any). This is used for ignore list check right now.
+		///               If the packet should be sent, even if the causer is ignored, 0 should be provided.
 		template<class F>
 		void broadcastPacket(F creator, std::vector<UInt64> *except = nullptr, UInt64 causer = 0)
 		{
@@ -197,8 +207,13 @@ namespace wowpp
 
 	private:
 
+		bool addOfflineMember(UInt64 guid);
+
+	private:
+
 		UInt64 m_id;
 		PlayerManager &m_playerManager;
+		IDatabase &m_database;
 		UInt64 m_leaderGUID;
 		String m_leaderName;
 		GroupType m_type;

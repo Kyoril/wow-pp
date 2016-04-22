@@ -24,7 +24,6 @@
 #include "game_protocol/game_protocol.h"
 #include "game_protocol/game_connection.h"
 #include "game_protocol/game_crypted_connection.h"
-#include "data/data_load_context.h"
 #include "common/big_number.h"
 #include "common/countdown.h"
 #include "common/linear_set.h"
@@ -35,13 +34,7 @@
 #include "game/world_instance.h"
 #include "game/tile_subscriber.h"
 #include "game/loot_instance.h"
-#include <boost/noncopyable.hpp>
-#include <boost/signals2.hpp>
 #include "common/macros.h"
-#include <algorithm>
-#include <utility>
-#include <cassert>
-#include <limits>
 
 namespace wowpp
 {
@@ -99,11 +92,6 @@ namespace wowpp
 		void getFallInfo(UInt32 &out_time, float &out_z) { out_time = m_lastFallTime; out_z = m_lastFallZ; }
 		/// Updates the player characters fall information.
 		void setFallInfo(UInt32 time, float z);
-		/// Gets the current loot instance. May return nullptr.
-		/// @param lootGuid Guid of the loot object to check.
-		bool isLooting(UInt64 lootGuid) const { return (m_loot ? (m_loot->getLootGuid() == lootGuid) : false); }
-		/// Releases the current loot.
-		void releaseLoot();
 		/// Returns true if a player character's guid is on the ignore list.
 		/// @param guid The character guid to check.
 		bool isIgnored(UInt64 guid) const override;
@@ -124,6 +112,15 @@ namespace wowpp
 		void buyItemFromVendor(UInt64 vendorGuid, UInt32 itemEntry, UInt64 bagGuid, UInt8 slot, UInt8 count);
 		
 		void sendGossipMenu(UInt64 guid);
+		/// Opens a loot window at the client, which will show the provided loot data.
+		/// @param loot The loot instance which holds the actual loot data.
+		/// @param source The game object which was the source of this loot window.
+		void openLootDialog(LootInstance &loot, GameObject &source);
+		/// Called when the opened loot was cleared or the loot source (object, corpse, whatever) despawns or
+		/// no longer provides this loot.
+		void closeLootDialog();
+		/// Determines whether the player is currently looting something.
+		bool isLooting() const { return m_loot != nullptr; }
 
 		/// Sends an proxy packet to the realm which will then be redirected to the game client.
 		/// @param generator The packet writer function.
@@ -166,6 +163,9 @@ namespace wowpp
 			});
 		}
 
+		/// Saves the characters data.
+		void saveCharacterData() const;
+
 	public:
 
 		/// @copydoc ITileSubscriber::getControlledObject()
@@ -206,6 +206,13 @@ namespace wowpp
 		void handleQuestgiverRequestReward(game::Protocol::IncomingPacket &packet);
 		void handleQuestgiverChooseReward(game::Protocol::IncomingPacket &packet);
 		void handleQuestgiverCancel(game::Protocol::IncomingPacket &packet);
+		void handleQuestlogRemoveQuest(game::Protocol::IncomingPacket &packet);
+		void handleGameObjectUse(game::Protocol::IncomingPacket &packet);
+		void handleOpenItem(game::Protocol::IncomingPacket &packet);
+		void handleMoveTimeSkipped(game::Protocol::IncomingPacket &packet);
+		void handleSetActionBarToggles(game::Protocol::IncomingPacket &packet);
+		void handleToggleHelm(game::Protocol::IncomingPacket &packet);
+		void handleToggleCloak(game::Protocol::IncomingPacket &packet);
 
 	private:
 
@@ -237,6 +244,14 @@ namespace wowpp
 		void onTargetAuraUpdated(UInt64 target, UInt8 slot, UInt32 spellId, Int32 duration, Int32 maxDuration);
 		/// Executed when the character should be teleported.
 		void onTeleport(UInt16 map, math::Vector3 location, float o);
+		/// Executed when an item instance was created.
+		void onItemCreated(std::shared_ptr<GameItem> item, UInt16 slot);
+		/// Executed when an item instance was udpated.
+		void onItemUpdated(std::shared_ptr<GameItem> item, UInt16 slot);
+		/// Executed when an item instance was destroyed.
+		void onItemDestroyed(std::shared_ptr<GameItem> item, UInt16 slot);
+		/// Executed when a new spell was learned.
+		void onSpellLearned(const proto::SpellEntry &spell);
 
 	private:
 
@@ -249,13 +264,17 @@ namespace wowpp
 		WorldInstance &m_instance;
 		boost::signals2::scoped_connection m_onSpawn, m_onDespawn, m_onAtkSwingErr, m_onProfChanged, m_onInvFailure;
 		boost::signals2::scoped_connection m_onTileChange, m_onComboPoints, m_onXP, m_onCastError, m_onGainLevel;
-		boost::signals2::scoped_connection m_onAuraUpdate, m_onTargetAuraUpdate, m_onTeleport, m_onLootCleared, m_onLootInvalidate;
-		boost::signals2::scoped_connection m_onRootUpdate, m_onStunUpdate, m_onCooldownEvent, m_questChanged;
+		boost::signals2::scoped_connection m_onAuraUpdate, m_onTargetAuraUpdate, m_onTeleport, m_standStateChanged;
+		boost::signals2::scoped_connection m_onRootUpdate, m_onStunUpdate, m_onCooldownEvent, m_questChanged, m_questKill;
+		boost::signals2::scoped_connection m_itemCreated, m_itemUpdated, m_itemDestroyed, m_objectInteraction;
+		boost::signals2::scoped_connection m_onLootCleared, m_onLootInvalidate, m_onLootInspect, m_spellModChanged;
+		boost::signals2::scoped_connection m_onSpellLearned;
 		AttackSwingError m_lastError;
 		UInt32 m_lastFallTime;
 		float m_lastFallZ;
 		proto::Project &m_project;
 		LootInstance *m_loot;
+		GameObject *m_lootSource;
 		UInt32 m_clientDelayMs;
 		GameTime m_nextDelayReset;
 		UInt32 m_clientTicks;

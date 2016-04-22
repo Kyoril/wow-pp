@@ -28,3 +28,10 @@ Makefile
 *.a
 
 /nbproject
+*.gch
+
+*.xml
+
+.idea/.name
+
+.idea/wow-pp.iml

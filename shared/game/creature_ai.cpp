@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,15 +10,16 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
+#include "pch.h"
 #include "creature_ai.h"
 #include "creature_ai_prepare_state.h"
 #include "creature_ai_idle_state.h"
@@ -45,7 +46,7 @@ namespace wowpp
 	{
 		// Connect to spawn event
 		m_onSpawned = m_controlled.spawned.connect(
-			std::bind(&CreatureAI::onSpawned, this));
+		                  std::bind(&CreatureAI::onSpawned, this));
 	}
 
 	CreatureAI::~CreatureAI()
@@ -54,13 +55,15 @@ namespace wowpp
 
 	void CreatureAI::onSpawned()
 	{
-		m_onKilled = m_controlled.killed.connect([this](GameUnit *killer)
+		m_onKilled = m_controlled.killed.connect([this](GameUnit * killer)
 		{
 			auto state = make_unique<CreatureAIDeathState>(*this);
 			setState(std::move(state));
 		});
-		m_onDamaged = m_controlled.takenDamage.connect([this](GameUnit *attacker) {
-			if (attacker) m_state->onDamage(*attacker);
+		m_onDamaged = m_controlled.takenDamage.connect([this](GameUnit * attacker, UInt32 damage) {
+			if (attacker) {
+				m_state->onDamage(*attacker);
+			}
 		});
 
 		// Enter the preparation state
@@ -86,12 +89,12 @@ namespace wowpp
 		m_state->onEnter();
 	}
 
-	GameCreature & CreatureAI::getControlled() const
+	GameCreature &CreatureAI::getControlled() const
 	{
 		return m_controlled;
 	}
 
-	const CreatureAI::Home & CreatureAI::getHome() const
+	const CreatureAI::Home &CreatureAI::getHome() const
 	{
 		return m_home;
 	}
@@ -106,6 +109,22 @@ namespace wowpp
 	{
 		auto state = make_unique<CreatureAIResetState>(*this);
 		setState(std::move(state));
+	}
+
+	void CreatureAI::onCombatMovementChanged()
+	{
+		if (m_state)
+		{
+			m_state->onCombatMovementChanged();
+		}
+	}
+
+	void CreatureAI::onCreatureMovementChanged()
+	{
+		if (m_state)
+		{
+			m_state->onCreatureMovementChanged();
+		}
 	}
 
 	void CreatureAI::setHome(Home home)
@@ -133,7 +152,7 @@ namespace wowpp
 			// Call for assistance
 			if (!controlled.isNeutralToAll())
 			{
-				worldInstance->getUnitFinder().findUnits(Circle(location.x, location.y, 8.0f), [&controlled, &threat, &worldInstance](GameUnit &unit) -> bool
+				worldInstance->getUnitFinder().findUnits(Circle(location.x, location.y, 8.0f), [&controlled, &threat, &worldInstance](GameUnit & unit) -> bool
 				{
 					if (unit.getTypeId() != object_type::Unit)
 						return true;
@@ -144,10 +163,13 @@ namespace wowpp
 					if (unit.isInCombat())
 						return true;
 
+					if (!controlled.isInLineOfSight(unit))
+						return false;
+
 					const auto &threatFaction = threat.getFactionTemplate();
 					const auto &unitFaction = unit.getFactionTemplate();
 					if (controlled.isFriendlyTo(unitFaction) &&
-						unit.isHostileTo(threatFaction))
+					unit.isHostileTo(threatFaction))
 					{
 						worldInstance->getUniverse().post([&unit, &threat]()
 						{

@@ -31,6 +31,8 @@ message UnitSpellEntry {
 	optional int32 maxcooldown = 6 [default = -1];
 	optional uint32 target = 7;
 	optional bool repeated = 8;
+	optional float minrange = 9 [default = 0.0];
+	optional float maxrange = 10 [default = 0.0];
 }
 
 message UnitEntry {
@@ -85,6 +87,8 @@ message UnitEntry {
 	repeated UnitSpellEntry creaturespells = 49;
 	repeated uint32 quests = 50;
 	repeated uint32 end_quests = 51;
+	optional uint32 mechanicimmunity = 52;
+	optional uint32 schoolimmunity = 53;
 }
 
 message Units {
