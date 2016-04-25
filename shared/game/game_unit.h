@@ -563,7 +563,7 @@ namespace wowpp
 		float getGlancingChance(GameUnit &attacker);
 		float getBlockChance();
 		float getCrushChance(GameUnit &attacker);
-		float getResiPercentage(UInt8 school, GameUnit &attacker, bool isBinary);
+		float getResiPercentage(UInt8 school, UInt32 attackerLevel, bool isBinary);
 		float getCritChance(GameUnit &attacker, UInt8 school);
 		UInt32 getBonus(UInt8 school);
 		UInt32 getBonusPct(UInt8 school);
