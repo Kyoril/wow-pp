@@ -2983,4 +2983,106 @@ namespace wowpp
 		}
 	}
 
+	void Player::handleMailSend(game::Protocol::IncomingPacket & packet)
+	{
+		ObjectGuid currentMailbox;
+		game::MailData mailInfo;
+
+		if (!(game::client_read::mailSend(packet, currentMailbox, mailInfo)))
+		{
+			return;
+		}
+
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+		{
+			return;
+		}
+
+		auto *target = world->findObjectByGUID(currentMailbox);
+		if (!target ||
+			target->getTypeId != 19)
+		{
+			// Checks if object exists and if it's a mailbox
+			return;
+		}
+
+		// TODO distance to mailbox
+		//float distance = m_character->getDistanceTo(target);
+
+		if (mailInfo.receiver.empty())
+		{
+			return;
+		}
+
+		String receiverCap = mailInfo.receiver;
+		capitalize(receiverCap);
+
+		UInt32 cost = mailInfo.itemsCount ? 30 * mailInfo.itemsCount : 30;
+		UInt32 reqMoney = cost + mailInfo.money;
+		UInt32 plMoney = m_character->getUInt32Value(character_fields::Coinage);
+
+		if (plMoney < reqMoney)
+		{
+			// TODO send error
+			return;
+		}
+
+		auto &inventory = m_character->getInventory();
+		UInt16 itemSlot = 0;
+		std::vector<std::shared_ptr<GameItem>> items;
+		for (UInt8 i = 0; i < mailInfo.itemsCount; ++i)
+		{
+			UInt64 guid = mailInfo.itemsGuids[i];
+			if (!isItemGUID(guid))
+			{
+				// TODO send error
+				return;
+			}
+
+			if (!inventory.findItemByGUID(guid, itemSlot))
+			{
+				// Check if item is on player's inventory
+				return;
+			}
+
+			auto item = inventory.getItemAtSlot(itemSlot);
+			// Check if it's a bag with items
+			if (!item)
+			{
+				// TODO send error
+				return;
+			}
+
+			const auto &itemEntry = item->getEntry();
+
+			if ((itemEntry.flags() & game::item_flags::Conjured) ||
+				(item->getUInt32Value(item_fields::Duration)))
+			{
+				// TODO send error
+				return;
+			}
+
+			if ((mailInfo.COD) &&
+				(itemEntry.flags() & game::item_flags::Wrapped))
+			{
+				// TODO send error
+				return;
+			}
+
+			// TODO other checks
+			items.push_back(item);
+		}
+
+		// TODO send mail OK message
+
+		// Modify wallet of sender
+		m_character->setUInt32Value(character_fields::Coinage, plMoney - cost);
+
+
+		//TODO
+
+
+		DLOG("CMSG_MAIL_SEND received from client");
+	}
 }

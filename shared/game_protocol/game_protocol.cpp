@@ -4202,6 +4202,13 @@ namespace wowpp
 				return packet
 					>> io::read<NetUInt8>(out_actionBars);
 			}
+
+			bool mailSend(io::Reader &packet, ObjectGuid &out_mailboxGuid, MailData &out_mail)
+			{
+				return packet
+					>> io::read<NetObjectGuid>(out_mailboxGuid)
+					>> out_mail;
+			}
 		}
 
 		wowpp::game::WhoResponseEntry::WhoResponseEntry(const GameCharacter & character)
@@ -4247,6 +4254,40 @@ namespace wowpp
 					r >> io::read_string(string);
 				}
 			}
+			return r;
+		}
+
+		io::Reader & operator>>(io::Reader & r, MailData & out_mail)
+		{
+			r
+				>> io::read_string(out_mail.receiver)
+				>> io::read_string(out_mail.subject)
+				>> io::read_string(out_mail.body)
+				>> io::read<NetUInt32>(out_mail.unk1)
+				>> io::read<NetUInt32>(out_mail.unk2);
+
+			// Read items on mail list, 12 being the client limit
+			r >> io::read<UInt8>(out_mail.itemsCount);
+			if (out_mail.itemsCount > 12)
+			{
+				// TODO Error message
+				return r;
+			}
+
+			// Read itemsGuid, skipping item slot in mail
+			for (UInt8 i = 0; i < out_mail.itemsCount; ++i)
+			{
+				r
+					>> io::skip(sizeof(UInt8))
+					>> io::read<NetObjectGuid>(out_mail.itemsGuids[i]);
+			}
+
+			r
+				>> io::read<NetUInt32>(out_mail.money)
+				>> io::read<NetUInt32>(out_mail.COD)
+				>> io::skip(sizeof(UInt8))
+				>> io::skip(sizeof(UInt8));
+
 			return r;
 		}
 	}

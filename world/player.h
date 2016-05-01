@@ -213,7 +213,8 @@ namespace wowpp
 		void handleSetActionBarToggles(game::Protocol::IncomingPacket &packet);
 		void handleToggleHelm(game::Protocol::IncomingPacket &packet);
 		void handleToggleCloak(game::Protocol::IncomingPacket &packet);
-
+		void handleMailSend(game::Protocol::IncomingPacket &packet);
+		
 	private:
 
 		/// 
