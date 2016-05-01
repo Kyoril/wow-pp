@@ -3001,7 +3001,7 @@ namespace wowpp
 
 		auto *target = world->findObjectByGUID(currentMailbox);
 		if (!target ||
-			target->getTypeId != 19)
+			target->getTypeId() != 19)
 		{
 			// Checks if object exists and if it's a mailbox
 			return;
