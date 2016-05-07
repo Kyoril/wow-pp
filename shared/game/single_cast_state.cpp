@@ -1295,6 +1295,8 @@ namespace wowpp
 
 	void SingleCastState::spellEffectDuel(const proto::SpellEffect &effect)
 	{
+		ILOG("DUEL!");
+
 		GameUnit &caster = m_cast.getExecuter();
 		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;

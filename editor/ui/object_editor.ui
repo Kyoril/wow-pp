@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1745</width>
-    <height>1404</height>
+    <width>1671</width>
+    <height>1250</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -4720,8 +4720,8 @@ QGroupBox::indicator:unchecked:disabled
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1745</width>
-     <height>31</height>
+     <width>1671</width>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Project">

@@ -521,6 +521,13 @@ namespace wowpp
 				}
 			}
 			break;
+		case game::targets::UnitChainHeal:		//45
+			if (unitTarget)
+			{
+				// TODO
+				targets.push_back(unitTarget);
+			}
+			break;
 		default:
 			//22
 			break;
