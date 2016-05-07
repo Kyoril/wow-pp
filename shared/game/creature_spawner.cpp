@@ -36,32 +36,18 @@ namespace wowpp
 	CreatureSpawner::CreatureSpawner(
 	    WorldInstance &world,
 	    const proto::UnitEntry &entry,
-	    size_t maxCount,
-	    GameTime respawnDelay,
-	    math::Vector3 center,
-	    boost::optional<float> rotation,
-	    UInt32 emote,
-	    float radius,
-	    bool active,
-	    bool respawn,
-		game::CreatureMovement movement)
+		const proto::UnitSpawnEntry &spawnEntry)
 		: m_world(world)
 		, m_entry(entry)
-		, m_maxCount(maxCount)
-		, m_respawnDelay(respawnDelay)
-		, m_center(center)
-		, m_rotation(rotation)
-		, m_radius(radius)
-		, m_emote(emote)
-		, m_active(active)
-		, m_respawn(respawn)
+		, m_spawnEntry(spawnEntry)
+		, m_active(spawnEntry.isactive())
+		, m_respawn(spawnEntry.respawn())
 		, m_currentlySpawned(0)
 		, m_respawnCountdown(world.getUniverse().getTimers())
-		, m_movement(movement)
 	{
 		if (m_active)
 		{
-			for (size_t i = 0; i < m_maxCount; ++i)
+			for (size_t i = 0; i < m_spawnEntry.maxcount(); ++i)
 			{
 				spawnOne();
 			}
@@ -80,18 +66,31 @@ namespace wowpp
 		assert(m_currentlySpawned < m_maxCount);
 
 		// TODO: Generate random point and if needed, random rotation
-		const math::Vector3 location(m_center);
-		const float o = m_rotation ? *m_rotation : 0.0f;
+		const math::Vector3 location(m_spawnEntry.positionx(), m_spawnEntry.positiony(), m_spawnEntry.positionz());
+		const float o = m_spawnEntry.rotation();
 
 		// Spawn a new creature
-		auto spawned = m_world.spawnCreature(m_entry, location, o, m_radius);
+		auto spawned = m_world.spawnCreature(m_entry, location, o, m_spawnEntry.radius());
 		spawned->setFloatValue(object_fields::ScaleX, m_entry.scale());
-		if (m_emote != 0)
+		if (m_spawnEntry.defaultemote() != 0)
 		{
-			spawned->setUInt32Value(unit_fields::NpcEmoteState, m_emote);
+			spawned->setUInt32Value(unit_fields::NpcEmoteState, m_spawnEntry.defaultemote());
 		}
 		spawned->clearUpdateMask();
-		spawned->setMovementType(m_movement);
+
+		game::CreatureMovement movement = game::creature_movement::None;
+		if (m_spawnEntry.movement() >= game::creature_movement::Invalid)
+		{
+			WLOG("Invalid movement type for creature spawn - spawn ignored");
+		}
+		else
+		{
+			movement = static_cast<game::CreatureMovement>(m_spawnEntry.movement());
+		}
+		spawned->setMovementType(movement);
+
+		// Update stand state
+		spawned->setStandState(static_cast<UnitStandState>(m_spawnEntry.standstate()));
 
 		// watch for destruction
 		spawned->destroy = std::bind(&CreatureSpawner::onRemoval, this, std::placeholders::_1);
@@ -128,13 +127,13 @@ namespace wowpp
 
 	void CreatureSpawner::setRespawnTimer()
 	{
-		if (m_currentlySpawned >= m_maxCount)
+		if (m_currentlySpawned >= m_spawnEntry.maxcount())
 		{
 			return;
 		}
 
 		m_respawnCountdown.setEnd(
-		    getCurrentTime() + m_respawnDelay);
+		    getCurrentTime() + m_spawnEntry.respawndelay());
 	}
 
 	void CreatureSpawner::setState(bool active)
@@ -143,7 +142,7 @@ namespace wowpp
 		{
 			if (active && !m_currentlySpawned)
 			{
-				for (size_t i = 0; i < m_maxCount; ++i)
+				for (size_t i = 0; i < m_spawnEntry.maxcount(); ++i)
 				{
 					spawnOne();
 				}

@@ -44,6 +44,7 @@ message UnitSpawnEntry {
 	optional bool isactive = 12 [default = true];
 	repeated Waypoint waypoints = 13;
 	optional uint32 movement = 14;
+	optional uint32 standstate = 15;
 }
 
 message ObjectSpawnEntry {

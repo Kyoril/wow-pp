@@ -35,6 +35,7 @@ namespace wowpp
 	namespace proto
 	{
 		class UnitEntry;
+		class UnitSpawnEntry;
 	}
 
 	/// Manages a spawn point and all creatures which are spawned by this point info.
@@ -55,17 +56,9 @@ namespace wowpp
 		/// @param rotation The rotation of the creatures. If nothing provided, will be randomized.
 		/// @param radius The radius in which creatures will spawn. Also used as the maximum random walk distance.
 		explicit CreatureSpawner(
-		    WorldInstance &world,
-		    const proto::UnitEntry &entry,
-		    size_t maxCount,
-		    GameTime respawnDelay,
-		    math::Vector3 center,
-		    boost::optional<float> rotation,
-		    UInt32 emote,
-		    float radius,
-		    bool active,
-		    bool respawn,
-			game::CreatureMovement movement);
+			WorldInstance &world,
+			const proto::UnitEntry &entry,
+			const proto::UnitSpawnEntry &spawnEntry);
 		virtual ~CreatureSpawner();
 
 		///
@@ -100,17 +93,11 @@ namespace wowpp
 
 		WorldInstance &m_world;
 		const proto::UnitEntry &m_entry;
-		const size_t m_maxCount;
-		const GameTime m_respawnDelay;
-		const math::Vector3 m_center;
-		const boost::optional<float> m_rotation;
-		const float m_radius;
-		UInt32 m_emote;
+		const proto::UnitSpawnEntry &m_spawnEntry;
 		bool m_active;
 		bool m_respawn;
 		size_t m_currentlySpawned;
 		OwnedCreatures m_creatures;
 		Countdown m_respawnCountdown;
-		game::CreatureMovement m_movement;
 	};
 }
