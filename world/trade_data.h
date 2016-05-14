@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/typedefs.h"
+#include "proto_data/project.h"
 
 namespace wowpp
 {
@@ -17,14 +18,14 @@ namespace wowpp
 		UInt32 getGold();
 		void setacceptTrade(bool state);
 		bool isAccepted();
-		void setItem(UInt64 item_guid, int index);
-
+		void setItem(proto::ItemEntry item, UInt16 slot);
+		std::vector<proto::ItemEntry> getItem();
 	
 	private:
 		Player *m_player;
 		Player *m_trader;
 		UInt32 gold;
 		bool acceptTrade;
-		UInt64 m_item_guid[7];
+		std::vector<proto::ItemEntry> items;
 	};
 }

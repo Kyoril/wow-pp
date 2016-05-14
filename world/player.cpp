@@ -2992,35 +2992,6 @@ namespace wowpp
 		//openWindow
 	}
 
-	void Player::handleSetTradeGold(game::Protocol::IncomingPacket &packet)
-	{
-		UInt32 gold;
-		if (!(game::client_read::setTradeGold(packet, gold)))
-		{
-			return;
-		}
-
-		if (!m_tradeData)
-		{
-			return;
-		}
-
-		if (gold != m_tradeData->getGold())
-		{
-			m_tradeData->setGold(gold);
-			m_tradeData->setacceptTrade(false);
-			m_tradeData->getTrader()->m_tradeData->setacceptTrade(false);
-
-			TradeStatusInfo info;
-			info.tradestatus = trade_status::BackToTrade;
-			m_tradeData->getPlayer()->sendTradeData(info);
-			m_tradeData->getTrader()->sendUpdateTrade(gold);
-		}
-		
-		//sendUpdateTrade(gold);
-		WLOG("gold set: "<<gold);
-	}
-
 	void Player::handleAcceptTrade(game::Protocol::IncomingPacket &packet)
 	{
 		std::shared_ptr<TradeData> my_Trade = m_tradeData;
@@ -3094,6 +3065,36 @@ namespace wowpp
 		}
 	}
 
+
+	void Player::handleSetTradeGold(game::Protocol::IncomingPacket &packet)
+	{
+		UInt32 gold;
+		if (!(game::client_read::setTradeGold(packet, gold)))
+		{
+			return;
+		}
+
+		if (!m_tradeData)
+		{
+			return;
+		}
+
+		if (gold != m_tradeData->getGold())
+		{
+			m_tradeData->setGold(gold);
+			m_tradeData->setacceptTrade(false);
+			m_tradeData->getTrader()->m_tradeData->setacceptTrade(false);
+
+			TradeStatusInfo info;
+			info.tradestatus = trade_status::BackToTrade;
+			m_tradeData->getPlayer()->sendTradeData(info);
+			m_tradeData->getTrader()->sendUpdateTrade(gold);
+		}
+
+		//sendUpdateTrade(gold);
+		WLOG("gold set: " << gold);
+	}
+
 	void Player::handleSetTradeItem(game::Protocol::IncomingPacket &packet)
 	{
 		UInt8 tradeSlot;
@@ -3119,12 +3120,32 @@ namespace wowpp
 			return;
 		}
 
+		
+
 		UInt16 _slot = slot;
 		auto this_player = this->getCharacter();
 		auto &inventory = this_player->getInventory();
 		auto item = inventory.getItemAtSlot(Inventory::getAbsoluteSlot(bag, _slot));
 		UInt64 item_guid = item->getGuid();
-		my_Trade->setItem(item_guid, tradeSlot);
+		//TODO: ask if there is an item like that in trade already
+		
+		const auto *_item = m_project.items.getById(item_guid);
+		
+		my_Trade->setItem(*_item, _slot);
+
+		//sendProxyPacket(
+		//		std::bind(game::server_write::sendUpdateTrade, std::placeholders::_1,
+		//			1,
+		//			0,
+		//			trade_slots::Count,
+		//			trade_slots::Count,
+		//			0,
+		//			0,
+		//			my_Trade->getItem()
+		//			));
+
+		
+
 	}
 
 	void Player::sendTradeData(TradeStatusInfo info)
@@ -3192,6 +3213,7 @@ namespace wowpp
 	
 	void Player::sendUpdateTrade(UInt32 gold)
 	{
+		proto::ItemEntry item;
 		sendProxyPacket(
 			std::bind(game::server_write::sendUpdateTrade, std::placeholders::_1, 
 				1, 
@@ -3199,7 +3221,8 @@ namespace wowpp
 				trade_slots::Count, 
 				trade_slots::Count,
 				gold, 
-				0
+				0,
+				item
 				));
 	}
 

@@ -40,8 +40,13 @@ namespace wowpp
 		return acceptTrade;
 	}
 
-	void TradeData::setItem(UInt64 item_guid, int index)
+	void TradeData::setItem(proto::ItemEntry item, UInt16 slot)
 	{
-		m_item_guid[index] = item_guid;
+		int _slot = slot + 1;
+		items.insert(items.begin() + _slot, item);
+	}
+	std::vector<proto::ItemEntry> TradeData::getItem()
+	{
+		return(items);
 	}
 }

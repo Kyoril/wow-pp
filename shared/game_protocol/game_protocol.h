@@ -39,7 +39,6 @@ namespace wowpp
 	class GameItem;
 	class GameCharacter;
 	class LootInstance;
-
 	namespace game
 	{
 		struct Protocol
@@ -2221,7 +2220,9 @@ namespace wowpp
 				UInt32 next_slot, 
 				UInt32 prev_slot, 
 				UInt32 gold, 
-				UInt32 spell);
+				UInt32 spell,
+				const proto::ItemEntry &item);
+
 			void petNameQueryResponse(
 				game::OutgoingPacket &out_packet,
 				UInt32 petNumber,
