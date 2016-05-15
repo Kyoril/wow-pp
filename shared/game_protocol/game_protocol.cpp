@@ -3382,7 +3382,7 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void sendUpdateTrade(game::OutgoingPacket &out_packet, UInt8 state, UInt32 tradeID, UInt32 next_slot, UInt32 prev_slot, UInt32 gold, UInt32 spell, const proto::ItemEntry &item)
+			void sendUpdateTrade(game::OutgoingPacket &out_packet, UInt8 state, UInt32 tradeID, UInt32 next_slot, UInt32 prev_slot, UInt32 gold, UInt32 spell, std::vector<proto::ItemEntry> &item)
 			{
 				out_packet.start(game::server_packet::TradeStatusExtended);
 				out_packet << io::write<NetUInt8>(state);

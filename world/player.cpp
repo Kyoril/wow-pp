@@ -3129,20 +3129,20 @@ namespace wowpp
 		UInt64 item_guid = item->getGuid();
 		//TODO: ask if there is an item like that in trade already
 		
-		const auto *_item = m_project.items.getById(item_guid);
+		auto *_item = m_project.items.getById(item_guid);
 		
 		my_Trade->setItem(*_item, _slot);
 
-		//sendProxyPacket(
-		//		std::bind(game::server_write::sendUpdateTrade, std::placeholders::_1,
-		//			1,
-		//			0,
-		//			trade_slots::Count,
-		//			trade_slots::Count,
-		//			0,
-		//			0,
-		//			my_Trade->getItem()
-		//			));
+		sendProxyPacket(
+			std::bind(game::server_write::sendUpdateTrade, std::placeholders::_1,
+				1,
+				0,
+				trade_slots::Count,
+				trade_slots::Count,
+				my_Trade->getGold(),
+				0,
+				my_Trade->getItem()
+				));
 
 		
 
@@ -3213,7 +3213,7 @@ namespace wowpp
 	
 	void Player::sendUpdateTrade(UInt32 gold)
 	{
-		proto::ItemEntry item;
+		std::vector<proto::ItemEntry> item; //TODO check for an other way to do that
 		sendProxyPacket(
 			std::bind(game::server_write::sendUpdateTrade, std::placeholders::_1, 
 				1, 

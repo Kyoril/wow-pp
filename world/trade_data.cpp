@@ -8,7 +8,7 @@
 namespace wowpp
 {
 	TradeData::TradeData() {}
-	TradeData::TradeData(Player *_player, Player *_trader) : m_player(_player), m_trader(_trader) {}
+	TradeData::TradeData(Player *_player, Player *_trader) : m_player(_player), m_trader(_trader), gold(0) {}
 
 	Player* TradeData::getPlayer()
 	{

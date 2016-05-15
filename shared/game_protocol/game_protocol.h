@@ -2221,7 +2221,7 @@ namespace wowpp
 				UInt32 prev_slot, 
 				UInt32 gold, 
 				UInt32 spell,
-				const proto::ItemEntry &item);
+				std::vector<proto::ItemEntry> &item);
 
 			void petNameQueryResponse(
 				game::OutgoingPacket &out_packet,
