@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1148</width>
-    <height>760</height>
+    <width>1036</width>
+    <height>693</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -62,8 +62,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1148</width>
-     <height>31</height>
+     <width>1036</width>
+     <height>21</height>
     </rect>
    </property>
    <property name="styleSheet">
@@ -145,11 +145,21 @@
     <addaction name="actionObjectEditor"/>
     <addaction name="actionTriggerEditor"/>
    </widget>
+   <widget class="QMenu" name="menuBookmarks">
+    <property name="title">
+     <string>Bookmarks</string>
+    </property>
+    <addaction name="actionNo_bookmarks"/>
+    <addaction name="separator"/>
+    <addaction name="actionAdd_Bookmark"/>
+    <addaction name="actionManage_Bookmarks"/>
+   </widget>
    <addaction name="menu_Project"/>
    <addaction name="menu_Edit"/>
    <addaction name="menu_View"/>
    <addaction name="menu_Tools"/>
    <addaction name="menuModules"/>
+   <addaction name="menuBookmarks"/>
    <addaction name="menu_Window"/>
    <addaction name="menu_Help"/>
   </widget>
@@ -358,6 +368,21 @@
   <action name="actionUnit_Palette">
    <property name="text">
     <string>Unit Palette</string>
+   </property>
+  </action>
+  <action name="actionNo_bookmarks">
+   <property name="text">
+    <string>No bookmarks</string>
+   </property>
+  </action>
+  <action name="actionAdd_Bookmark">
+   <property name="text">
+    <string>Add Current Location to Bookmarks</string>
+   </property>
+  </action>
+  <action name="actionManage_Bookmarks">
+   <property name="text">
+    <string>Manage Bookmarks</string>
    </property>
   </action>
   <actiongroup name="Movement">

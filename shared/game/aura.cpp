@@ -167,6 +167,12 @@ namespace wowpp
 		case aura::ModTotalStatPercentage:
 			handleModTotalStatPercentage(apply);
 			break;
+		case aura::ModIncreaseEnergyPercent:
+			handleModEnergyPercentage(apply);
+			break;
+		case aura::ModIncreaseHealthPercent:
+			handleModHealthPercentage(apply);
+			break;
 		case aura::ModStun:
 			handleModStun(apply);
 			break;
@@ -789,6 +795,26 @@ namespace wowpp
 	void Aura::handleModHealingPct(bool apply)
 	{
 		//TODO
+	}
+
+	void Aura::handleModEnergyPercentage(bool apply)
+	{
+		Int32 powerType = m_effect.miscvaluea();
+		if (powerType < 0 || powerType >= game::power_type::Count_ - 1)
+		{
+			WLOG("AURA_TYPE_MOD_ENERGY_PERCENTAGE: Invalid power type" << stat << " - skipped");
+			return;
+		}
+
+		// Apply energy
+		m_target.updateModifierValue(UnitMods(unit_mods::PowerStart + powerType), unit_mod_type::TotalPct, m_basePoints, apply);
+		m_target.updateMaxPower(game::PowerType(powerType));
+	}
+
+	void Aura::handleModHealthPercentage(bool apply)
+	{
+		m_target.updateModifierValue(UnitMods(unit_mods::Health), unit_mod_type::TotalPct, m_basePoints, apply);
+		m_target.updateMaxHealth();
 	}
 
 	void Aura::handleModManaRegenInterrupt(bool apply)

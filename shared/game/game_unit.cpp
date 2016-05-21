@@ -173,6 +173,17 @@ namespace wowpp
 		}
 	}
 
+	void GameUnit::threaten(GameUnit & threatener, float amount)
+	{
+		onThreat(threatener, amount);
+		threatened(threatener, amount);
+	}
+
+	void GameUnit::onThreat(GameUnit & threatener, float amount)
+	{
+		// Nothing special here
+	}
+
 	void GameUnit::setRace(UInt8 raceId)
 	{
 		setByteValue(unit_fields::Bytes0, 0, raceId);
@@ -736,7 +747,7 @@ namespace wowpp
 					else
 					{
 						// Still add threat to enter combat in case of miss etc.
-						victim->threatened(*this, 0.0f);
+						victim->threaten(*this, 0.0f);
 					}
 				}
 			}
@@ -881,8 +892,15 @@ namespace wowpp
 
 	void GameUnit::updateMaxHealth()
 	{
-		float value = getUInt32Value(unit_fields::BaseHealth);
-		value += getHealthBonusFromStamina();
+		float baseVal = getUInt32Value(unit_fields::BaseHealth);
+		baseVal += getHealthBonusFromStamina();
+
+		const auto mod = unit_mods::Health;
+
+		const float basePct = getModifierValue(mod, unit_mod_type::BasePct);
+		const float totalVal = getModifierValue(mod, unit_mod_type::TotalValue);
+		const float totalPct = getModifierValue(mod, unit_mod_type::TotalPct);
+		float value = ((baseVal * basePct) + totalVal) * totalPct;
 
 		setUInt32Value(unit_fields::MaxHealth, UInt32(value));
 	}
@@ -907,8 +925,14 @@ namespace wowpp
 
 		float powerBonus = (power == game::power_type::Mana && createPower > 0) ? getManaBonusFromIntellect() : 0;
 
-		float value = createPower;
-		value += powerBonus;
+		float baseVal = createPower;
+		baseVal += powerBonus;
+
+		const auto mod = UnitMods(unit_mods::PowerStart + power);
+		const float basePct = getModifierValue(mod, unit_mod_type::BasePct);
+		const float totalVal = getModifierValue(mod, unit_mod_type::TotalValue);
+		const float totalPct = getModifierValue(mod, unit_mod_type::TotalPct);
+		float value = ((baseVal * basePct) + totalVal) * totalPct;
 
 		setUInt32Value(unit_fields::MaxPower1 + static_cast<UInt16>(power), UInt32(value));
 	}
@@ -1343,7 +1367,7 @@ namespace wowpp
 				reinterpret_cast<GameCharacter*>(attacker)->applyThreatMod(school, threat);
 			}
 
-			threatened(*attacker, threat);
+			threaten(*attacker, threat);
 		}
 
 		if (health < damage) {
@@ -1741,6 +1765,9 @@ namespace wowpp
 		stopAttack();
 		setVictim(nullptr);
 		stopRegeneration();
+
+		// No longer in combat
+		removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 
 		m_auras.handleTargetDeath();
 

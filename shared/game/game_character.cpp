@@ -2096,6 +2096,25 @@ namespace wowpp
 		heal(static_cast<UInt32>(addHealth), nullptr, true);
 	}
 
+	void GameCharacter::onThreat(GameUnit & threatener, float amount)
+	{
+		// We don't threat ourself
+		if (&threatener == this)
+			return;
+
+		// PvP combat?
+		if (threatener.isGameCharacter())
+		{
+			// Mark as "in combat" and setup timer
+			addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
+
+			// Threatener will also be marked as "in combat"
+			threatener.addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
+
+			// TODO: Toggle threat reset timer
+		}
+	}
+
 	void GameCharacter::classUpdated()
 	{
 		// Super class

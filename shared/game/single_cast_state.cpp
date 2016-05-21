@@ -1513,7 +1513,7 @@ namespace wowpp
 				const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
 				if (!noThreat)
 				{
-					targetUnit->threatened(caster, 0.0f);
+					targetUnit->threaten(caster, 0.0f);
 				}
 
 				// TODO: Add aura to unit target
@@ -2235,7 +2235,7 @@ namespace wowpp
 
 		if (executer.getVictim())
 		{
-			spawned->threatened(*executer.getVictim(), 0.0001f);
+			spawned->threaten(*executer.getVictim(), 0.0001f);
 		}
 	}
 
@@ -2324,7 +2324,7 @@ namespace wowpp
 				float addThread = targetUnit->getThreat(*topThreatener).get();
 				addThread -= targetUnit->getThreat(caster).get();
 				if (addThread > 0.0f) {
-					targetUnit->threatened(caster, addThread);
+					targetUnit->threaten(caster, addThread);
 				}
 			}
 		}

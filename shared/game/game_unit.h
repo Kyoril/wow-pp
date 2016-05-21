@@ -409,6 +409,9 @@ namespace wowpp
 			return object_type::Unit;
 		}
 
+		/// 
+		void threaten(GameUnit &threatener, float amount);
+		
 		/// Updates the race index and will also update the race entry object.
 		void setRace(UInt8 raceId);
 		/// Updates the class index and will also update the class entry object.
@@ -438,11 +441,17 @@ namespace wowpp
 		///
 		void setFactionTemplate(const proto::FactionTemplateEntry &faction);
 
+		/// 
 		bool isHostileToPlayers();
+		/// 
 		bool isNeutralToAll();
+		/// 
 		bool isFriendlyTo(const proto::FactionTemplateEntry &faction);
+		/// 
 		bool isFriendlyTo(GameUnit &unit);
+		/// 
 		bool isHostileTo(const proto::FactionTemplateEntry &faction);
+		/// 
 		bool isHostileTo(GameUnit &unit);
 
 		/// Gets the timer queue object needed for countdown events.
@@ -549,51 +558,82 @@ namespace wowpp
 		bool isMounted() const {
 			return getUInt32Value(unit_fields::MountDisplayId) != 0;
 		}
+		/// 
 		bool isStealthed() const {
 			return m_isStealthed;
 		}
+		/// 
 		void notifyStealthChanged();
 		/// 
 		virtual bool canDetectStealth(GameUnit &target);
 
+		/// 
 		float getMissChance(GameUnit &attacker, UInt8 school, bool isWhiteDamage);
+		/// 
 		bool isImmune(UInt8 school);
+		/// 
 		float getDodgeChance(GameUnit &attacker);
 		float getParryChance(GameUnit &attacker);
+		/// 
 		float getGlancingChance(GameUnit &attacker);
+		/// 
 		float getBlockChance();
+		/// 
 		float getCrushChance(GameUnit &attacker);
+		/// 
 		float getResiPercentage(UInt8 school, UInt32 attackerLevel, bool isBinary);
+		/// 
 		float getCritChance(GameUnit &attacker, UInt8 school);
+		/// 
 		UInt32 getBonus(UInt8 school);
+		/// 
 		UInt32 getBonusPct(UInt8 school);
+		/// 
 		UInt32 consumeAbsorb(UInt32 damage, UInt8 school);
+		/// 
 		UInt32 calculateArmorReducedDamage(UInt32 attackerLevel, UInt32 damage);
+		/// 
 		virtual bool canBlock() const = 0;
+		/// 
 		virtual bool canParry() const = 0;
+		/// 
 		virtual bool canDodge() const = 0;
+		/// 
 		virtual bool canDualWield() const = 0;
 
+		/// 
 		virtual bool hasMainHandWeapon() const = 0;
+		/// 
 		virtual bool hasOffHandWeapon() const = 0;
 
+		/// 
 		bool isStunned() const {
 			return m_isStunned;
 		}
+		/// 
 		bool isRooted() const {
 			return m_isRooted;
 		}
+		/// 
 		bool canMove() const {
 			return isAlive() && !isStunned() && !isRooted();
 		}
+		/// 
 		void notifyStunChanged();
+		/// 
 		void notifyRootChanged();
+		/// 
 		void notifySpeedChanged(MovementType type);
+		/// 
 		float getSpeed(MovementType type) const;
+		/// 
 		float getBaseSpeed(MovementType type) const;
 
+		/// 
 		void addMechanicImmunity(UInt32 mechanic);
+		/// 
 		void removeMechanicImmunity(UInt32 mechanic);
+		/// 
 		bool isImmuneAgainstMechanic(UInt32 mechanic) const;
 
 		/// Adds a unit to the list of attacking units. This list is used to generate threat
@@ -630,13 +670,21 @@ namespace wowpp
 		///
 		void setAttackSwingCallback(AttackSwingCallback callback);
 
+		/// 
 		virtual void updateAllStats();
+		/// 
 		virtual void updateMaxHealth();
+		/// 
 		virtual void updateMaxPower(game::PowerType power);
+		/// 
 		virtual void updateArmor();
+		/// 
 		virtual void updateDamage();
+		/// 
 		virtual void updateManaRegen();
+		/// 
 		virtual void updateStats(UInt8 stat);
+		/// 
 		virtual void updateResistance(UInt8 resistance);
 
 		/// Gets the current unit mover.
@@ -663,29 +711,47 @@ namespace wowpp
 
 	public:
 
+		/// 
 		virtual void levelChanged(const proto::LevelEntry &levelInfo);
+		/// 
 		virtual void onKilled(GameUnit *killer);
 
+		/// 
 		float getHealthBonusFromStamina() const;
+		/// 
 		float getManaBonusFromIntellect() const;
+		/// 
 		float getMeleeReach() const;
 
 	protected:
 
+		///
 		virtual void raceUpdated();
+		/// 
 		virtual void classUpdated();
+		/// 
+		virtual void onThreat(GameUnit &threatener, float amount);
+
 
 	private:
 
+		/// 
 		void updateDisplayIds();
+		/// 
 		void onDespawnTimer();
-
+		/// 
 		void onVictimKilled(GameUnit *killer);
+		/// 
 		void onVictimDespawned();
+		/// 
 		void onAttackSwing();
+		/// 
 		void onRegeneration();
+		/// 
 		virtual void regenerateHealth() = 0;
+		/// 
 		void regeneratePower(game::PowerType power);
+		/// 
 		void onSpellCastEnded(bool succeeded);
 
 	private:

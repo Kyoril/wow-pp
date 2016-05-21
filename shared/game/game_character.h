@@ -689,6 +689,8 @@ namespace wowpp
 		virtual void updateManaRegen() override;
 		/// @copydoc GameUnit::regenerateHealth
 		virtual void regenerateHealth() override;
+		/// @copydoc GameUnit::onThreaten
+		void onThreat(GameUnit &threatener, float amount) override;
 
 	private:
 
@@ -696,7 +698,7 @@ namespace wowpp
 
 		/// @copydoc GameUnit::classUpdated
 		void classUpdated() override;
-
+		
 	public:
 
 		// GameCharacter methods
