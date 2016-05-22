@@ -28,4 +28,11 @@ namespace wowpp
 		bool acceptTrade;
 		std::vector<proto::ItemEntry> items;
 	};
+
+	struct Item_Data
+	{
+		UInt32 stack_count;
+		UInt64 guid_value;
+
+	};
 }

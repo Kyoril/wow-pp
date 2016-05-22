@@ -3382,7 +3382,7 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void sendUpdateTrade(game::OutgoingPacket &out_packet, UInt8 state, UInt32 tradeID, UInt32 next_slot, UInt32 prev_slot, UInt32 gold, UInt32 spell, std::vector<proto::ItemEntry> &item)
+			void sendUpdateTrade(game::OutgoingPacket &out_packet, UInt8 state, UInt32 tradeID, UInt32 next_slot, UInt32 prev_slot, UInt32 gold, UInt32 spell, std::vector<proto::ItemEntry> item)
 			{
 				out_packet.start(game::server_packet::TradeStatusExtended);
 				out_packet << io::write<NetUInt8>(state);
@@ -3392,18 +3392,35 @@ namespace wowpp
 				out_packet << io::write<NetUInt32>(gold);
 				out_packet << io::write<NetUInt32>(spell);
 				
-				for (UInt8 i = 0; i < 7; ++i)
+				UInt8 count = 0;
+				for (auto this_item : item)
 				{
-					out_packet << io::write<NetUInt8>(i);  //iterate through all tradeslots for checking for items
-					
+					auto game_item = this_item.g
 
-					//   sendPacket(
-					//	std::bind(game::server_write::itemQuerySingleResponse, std::placeholders::_1, std::cref(*item)));
+					out_packet << io::write<NetUInt8>(count); 
+					
+					out_packet << io::write<NetUInt32>(this_item.id());
+					out_packet << io::write<NetUInt32>(this_item.displayid());
+					out_packet << io::write<NetUInt32>(stack);
+					out_packet << io::write<NetUInt32>(0);
+					out_packet << io::write<NetUInt64>(guid_value);
+					
+				
+					out_packet << io::write<NetUInt32>(0);  //TODO Enchantment ID
+					out_packet << io::write<NetUInt32>(0);	//TODO Enchantment ID
+					out_packet << io::write<NetUInt32>(0);	//TODO Enchantment ID
+				
+				
+					out_packet << io::write<NetUInt32>(0);
+															   //   sendPacket(
+															   //	std::bind(game::server_write::itemQuerySingleResponse, std::placeholders::_1, std::cref(*item)));
 					for (UInt8 j = 0; j < 18; ++j)
 					{
 						out_packet << io::write<NetUInt32>(0);
 					}
+					count++;
 				}
+				
 
 				out_packet.finish();
 			}

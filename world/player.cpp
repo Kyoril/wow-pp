@@ -3133,6 +3133,12 @@ namespace wowpp
 		
 		my_Trade->setItem(*_item, _slot);
 
+		Item_Data item_data;
+
+		item_data.guid_value = item->getUInt64Value(ItemFields::GiftCreator);
+		item_data.stack_count = item->getStackCount();
+		
+			
 		sendProxyPacket(
 			std::bind(game::server_write::sendUpdateTrade, std::placeholders::_1,
 				1,
@@ -3143,7 +3149,7 @@ namespace wowpp
 				0,
 				my_Trade->getItem()
 				));
-
+		
 		
 
 	}
@@ -3222,7 +3228,9 @@ namespace wowpp
 				trade_slots::Count,
 				gold, 
 				0,
-				item
+				item,
+				0,
+				0
 				));
 	}
 
