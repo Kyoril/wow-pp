@@ -34,6 +34,7 @@
 #include "common/linear_set.h"
 #include "attack_table.h"
 #include "proto_data/trigger_helper.h"
+#include "game_world_object.h"
 
 namespace wowpp
 {
@@ -709,6 +710,10 @@ namespace wowpp
 			return m_spellCooldowns;
 		}
 
+		/// Adds a new owned world object to this unit. This means, that if this unit despawns,
+		/// all assigned world objects will despawn as well.
+		void addWorldObject(std::shared_ptr<WorldObject> object);
+
 	public:
 
 		/// 
@@ -786,6 +791,7 @@ namespace wowpp
 		std::array<float, movement_type::Count> m_speedBonus;
 		CooldownMap m_spellCooldowns;
 		UnitStandState m_standState;
+		std::vector<std::shared_ptr<WorldObject>> m_worldObjects;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameUnit const &object);

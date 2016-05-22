@@ -265,7 +265,7 @@ namespace wowpp
 		}
 	}
 
-	void GameObject::relocate(math::Vector3 position, float o, bool fire/* = true*/)
+	void GameObject::relocate(const math::Vector3 &position, float o, bool fire/* = true*/)
 	{
 		float oldO = m_o;
 

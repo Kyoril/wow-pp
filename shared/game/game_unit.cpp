@@ -80,6 +80,11 @@ namespace wowpp
 
 	GameUnit::~GameUnit()
 	{
+		// Despawn all assigned world objects
+		for (auto it : m_worldObjects)
+		{
+			it->getWorldInstance()->removeGameObject(*it);
+		}
 	}
 
 	void GameUnit::initialize()
@@ -278,6 +283,12 @@ namespace wowpp
 			    newStats.stat4() - oldStats.stat4(),
 			    newStats.stat5() - oldStats.stat5());
 		}
+	}
+
+	void GameUnit::addWorldObject(std::shared_ptr<WorldObject> object)
+	{
+		// Store a pointer
+		m_worldObjects.push_back(object);
 	}
 
 	void GameUnit::levelChanged(const proto::LevelEntry &levelInfo)
@@ -1951,9 +1962,14 @@ namespace wowpp
 		// Remove combat flag for player characters if no attacking unit is left
 		if (isGameCharacter())
 		{
-			if (m_attackingUnits.empty())
+			// Maybe not the best idea to do a cast here... but works
+			GameCharacter* character = reinterpret_cast<GameCharacter*>(this);
+			if (!character->isInPvPCombat())
 			{
-				removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
+				if (m_attackingUnits.empty())
+				{
+					removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
+				}
 			}
 		}
 	}

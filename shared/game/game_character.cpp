@@ -52,12 +52,22 @@ namespace wowpp
 		, m_canParry(false)
 		, m_canDualWield(false)
 		, m_inventory(*this)
+		, m_pvpCombatTimer(timers)
 	{
 		// Resize values field
 		m_values.resize(character_fields::CharacterFieldCount, 0);
 		m_valueBitset.resize((character_fields::CharacterFieldCount + 31) / 32, 0);
 
 		m_objectType |= type_mask::Player;
+
+		// PvP Combat timer expiration event subscription
+		m_pvpCombatTimeout = m_pvpCombatTimer.ended.connect([this]() {
+			// If not in PvE-Combat, we are no longer in combat at all after this timer expires
+			if (!hasAttackingUnits())
+			{
+				removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
+			}
+		});
 	}
 
 	GameCharacter::~GameCharacter()
@@ -2111,7 +2121,10 @@ namespace wowpp
 			// Threatener will also be marked as "in combat"
 			threatener.addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 
-			// TODO: Toggle threat reset timer
+			// Toggle pvp reset timer in the next 6 seconds
+			GameTime endTime = getCurrentTime() + constants::OneSecond * 6;
+			m_pvpCombatTimer.setEnd(endTime);
+			reinterpret_cast<GameCharacter&>(threatener).m_pvpCombatTimer.setEnd(endTime);
 		}
 	}
 

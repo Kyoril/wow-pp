@@ -1295,23 +1295,87 @@ namespace wowpp
 
 	void SingleCastState::spellEffectDuel(const proto::SpellEffect &effect)
 	{
-		ILOG("DUEL!");
-
 		GameUnit &caster = m_cast.getExecuter();
+		if (!caster.isGameCharacter())
+		{
+			// This spell effect is only usable by player characters right now
+			ELOG("Caster is not a game character!");
+			return;
+		}
+
 		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 
-		for (UInt32 i = 0; i < targets.size(); i++)
+		// Did we find at least one valid target?
+		if (targets.empty())
 		{
-			GameUnit *targetUnit = targets[i];
-			m_affectedTargets.insert(targetUnit->shared_from_this());
+			WLOG("No targets found");
+			return;
+		}
 
-			SpellTargetMap targetMap;
-			targetMap.m_targetMap = game::spell_cast_target_flags::Self;
-			targetUnit->castSpell(targetMap, 7267, -1, 0, true);	// cast beg at loser
+		// Get the first target
+		GameUnit *targetUnit = targets.front();
+		assert(targetUnit);
+
+		// Check if target is a character
+		if (!targetUnit->isGameCharacter())
+		{
+			// Skip this target
+			WLOG("Target is not a character");
+			return;
+		}
+
+		// Check if target is already dueling
+		if (targetUnit->getUInt64Value(character_fields::DuelArbiter))
+		{
+			// Target is already dueling
+			WLOG("Target is already dueling");
+			return;
+		}
+
+		// Target is dead
+		if (!targetUnit->isAlive())
+		{
+			WLOG("Target is dead");
+			return;
+		}
+
+		// We affect this target
+		m_affectedTargets.insert(targetUnit->shared_from_this());
+
+		// Find flag object entry
+		auto &project = targetUnit->getProject();
+		const auto *entry = project.objects.getById(effect.miscvaluea());
+		if (!entry)
+		{
+			ELOG("Could not find duel arbiter object: " << effect.miscvaluea());
+			return;
+		}
+
+		// Spawn new duel arbiter flag
+		if (auto *world = caster.getWorldInstance())
+		{
+			auto flagObject = world->spawnWorldObject(
+				*entry,
+				caster.getLocation(),
+				0.0f,
+				0.0f
+				);
+			flagObject->setUInt32Value(world_object_fields::AnimProgress, 0);
+			flagObject->setUInt32Value(world_object_fields::Level, caster.getLevel());
+			flagObject->setUInt32Value(world_object_fields::Faction, caster.getFactionTemplate().id());
+			world->addGameObject(*flagObject);
+
+			// Save this object to prevent it from being deleted immediatly
+			caster.addWorldObject(flagObject);
+
+			// Save them
+			caster.setUInt64Value(character_fields::DuelArbiter, flagObject->getGuid());
+			targetUnit->setUInt64Value(character_fields::DuelArbiter, flagObject->getGuid());
+			DLOG("Duel arbiter spawned: " << flagObject->getGuid());
 		}
 	}
 

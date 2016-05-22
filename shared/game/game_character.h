@@ -853,7 +853,10 @@ namespace wowpp
 		/// @param schoolMask The requested damage schools.
 		/// @param ref_threat The current threat value, which can be modified by this method.
 		void applyThreatMod(UInt32 schoolMask, float &ref_threat);
-
+		/// Determines whether this character is involved in a pvp combat.
+		bool isInPvPCombat() const {
+			return m_pvpCombatTimer.running;
+		}
 	public:
 
 		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT
@@ -906,6 +909,8 @@ namespace wowpp
 		SpellModsByOp m_spellModsByOp;
 		std::array<float, 7> m_threatModifier;
 		std::vector<Countdown> m_questTimeouts;
+		Countdown m_pvpCombatTimer;
+		boost::signals2::scoped_connection m_pvpCombatTimeout;
 	};
 
 	/// Serializes a GameCharacter to an io::Writer object for the wow++ protocol.

@@ -385,7 +385,7 @@ namespace wowpp
 		/// Gets the unit's tile index in the world grid.
 		bool getTileIndex(TileIndex2D &out_index) const;
 		/// Moves the object to the given position on it's map id.
-		virtual void relocate(math::Vector3 position, float o, bool fire = true);
+		virtual void relocate(const math::Vector3 &position, float o, bool fire = true);
 		/// Updates the orientation of this object.
 		void setOrientation(float o);
 		/// Updates the map id of this object.
@@ -448,6 +448,7 @@ namespace wowpp
 
 	protected:
 
+		/// Executed when this object is destroyed.
 		void onWorldInstanceDestroyed();
 
 	protected:
