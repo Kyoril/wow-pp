@@ -32,6 +32,7 @@
 #include "binary_io/writer.h"
 #include "binary_io/vector_sink.h"
 #include "game/game_character.h"
+#include "world/trade_data.h"
 
 namespace wowpp
 {
@@ -3382,7 +3383,14 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void sendUpdateTrade(game::OutgoingPacket &out_packet, UInt8 state, UInt32 tradeID, UInt32 next_slot, UInt32 prev_slot, UInt32 gold, UInt32 spell, std::vector<proto::ItemEntry> item)
+			void sendUpdateTrade(game::OutgoingPacket &out_packet,
+					     UInt8 state,
+					     UInt32 tradeID,
+					     UInt32 next_slot,
+					     UInt32 prev_slot,
+					     UInt32 gold,
+					     UInt32 spell,
+					     std::vector<Item_Data> item)
 			{
 				out_packet.start(game::server_packet::TradeStatusExtended);
 				out_packet << io::write<NetUInt8>(state);
@@ -3395,15 +3403,15 @@ namespace wowpp
 				UInt8 count = 0;
 				for (auto this_item : item)
 				{
-					auto game_item = this_item.g
+				        auto game_item = this_item.getGameItem();
 
 					out_packet << io::write<NetUInt8>(count); 
 					
-					out_packet << io::write<NetUInt32>(this_item.id());
-					out_packet << io::write<NetUInt32>(this_item.displayid());
-					out_packet << io::write<NetUInt32>(stack);
+					out_packet << io::write<NetUInt32>(this_item.m_item.id());
+					out_packet << io::write<NetUInt32>(this_item.m_item.displayid());
+					out_packet << io::write<NetUInt32>(this_item.m_stack_count);
 					out_packet << io::write<NetUInt32>(0);
-					out_packet << io::write<NetUInt64>(guid_value);
+					out_packet << io::write<NetUInt64>(this_item.m_guid_value);
 					
 				
 					out_packet << io::write<NetUInt32>(0);  //TODO Enchantment ID

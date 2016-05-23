@@ -2963,6 +2963,8 @@ namespace wowpp
 			return;
 		}
 
+		//TODO check if player is alive etc.
+		
 		auto *worldInstance = m_character->getWorldInstance();
 		if (!worldInstance)
 		{
@@ -3088,7 +3090,7 @@ namespace wowpp
 			TradeStatusInfo info;
 			info.tradestatus = trade_status::BackToTrade;
 			m_tradeData->getPlayer()->sendTradeData(info);
-			m_tradeData->getTrader()->sendUpdateTrade(gold);
+			m_tradeData->getTrader()->sendUpdateTrade();
 		}
 
 		//sendUpdateTrade(gold);
@@ -3128,29 +3130,12 @@ namespace wowpp
 		auto item = inventory.getItemAtSlot(Inventory::getAbsoluteSlot(bag, _slot));
 		UInt64 item_guid = item->getGuid();
 		//TODO: ask if there is an item like that in trade already
-		
+						
 		auto *_item = m_project.items.getById(item_guid);
 		
-		my_Trade->setItem(*_item, _slot);
-
-		Item_Data item_data;
-
-		item_data.guid_value = item->getUInt64Value(ItemFields::GiftCreator);
-		item_data.stack_count = item->getStackCount();
-		
+		my_Trade->setItem(*_item, _slot, item->getUInt64Value(ItemFields::GiftCreator), item->getStackCount());
 			
-		sendProxyPacket(
-			std::bind(game::server_write::sendUpdateTrade, std::placeholders::_1,
-				1,
-				0,
-				trade_slots::Count,
-				trade_slots::Count,
-				my_Trade->getGold(),
-				0,
-				my_Trade->getItem()
-				));
-		
-		
+		sendUpdateTrade();
 
 	}
 
@@ -3217,20 +3202,18 @@ namespace wowpp
 		}
 	}
 	
-	void Player::sendUpdateTrade(UInt32 gold)
+	void Player::sendUpdateTrade()
 	{
-		std::vector<proto::ItemEntry> item; //TODO check for an other way to do that
+		//TODO maybe build a struct for all of this informations.
 		sendProxyPacket(
 			std::bind(game::server_write::sendUpdateTrade, std::placeholders::_1, 
 				1, 
 				0, 
 				trade_slots::Count, 
 				trade_slots::Count,
-				gold, 
+				m_tradeData->getGold(), 
 				0,
-				item,
-				0,
-				0
+				m_tradeData->getItem(),
 				));
 	}
 
