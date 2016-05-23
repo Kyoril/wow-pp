@@ -1013,13 +1013,13 @@ namespace wowpp
 	{
 		if (apply)
 		{
-			m_target.addMechanicImmunity(m_spell.mechanic());
+			m_target.addMechanicImmunity(1 << m_spell.mechanic());
 		}
 		else
 		{
 			// TODO: We need to check if there are still other auras which provide the same immunity
 			WLOG("TODO");
-			m_target.removeMechanicImmunity(m_spell.mechanic());
+			m_target.removeMechanicImmunity(1 << m_spell.mechanic());
 		}
 	}
 
