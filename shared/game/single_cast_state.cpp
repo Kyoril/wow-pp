@@ -1090,6 +1090,9 @@ namespace wowpp
 			return;
 		}
 
+		m_affectedTargets.insert(unitTarget->shared_from_this());
+		unitTarget->threaten(caster, 0.0f);
+
 		// Does this have any effect on the target?
 		if (unitTarget->getByteValue(unit_fields::Bytes0, 3) != powerType) {
 			return;    // Target does not use this kind of power
@@ -1110,7 +1113,7 @@ namespace wowpp
 
 		// Remove power
 		unitTarget->setUInt32Value(unit_fields::Power1 + powerType, currentPower - powerToDrain);
-
+		
 		// If mana was drain, give the same amount of mana to the caster (or energy, if the caster does
 		// not use mana)
 		if (powerType == game::power_type::Mana)

@@ -804,7 +804,7 @@ namespace wowpp
 		/// Rewards the given quest (gives items, xp and saves quest status).
 		bool rewardQuest(UInt32 quest, UInt8 rewardChoice, std::function<void(UInt32)> callback);
 		/// Called when a quest-related creature was killed.
-		void onQuestKillCredit(GameCreature &killed);
+		void onQuestKillCredit(UInt64 unitGuid, const proto::UnitEntry &entry);
 		/// Determines whether the character fulfulls all requirements of the given quests.
 		bool fulfillsQuestRequirements(const proto::QuestEntry &entry) const;
 		/// Determines whether the players questlog is full.

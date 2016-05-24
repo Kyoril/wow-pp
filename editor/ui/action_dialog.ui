@@ -155,6 +155,16 @@
        <string>Unit - Set Spell Cooldown</string>
       </property>
      </item>
+     <item>
+      <property name="text">
+       <string>Player - Quest Kill Credit</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Player - Quest Event / Exploration</string>
+      </property>
+     </item>
     </widget>
    </item>
    <item>

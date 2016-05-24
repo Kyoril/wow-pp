@@ -101,6 +101,8 @@ namespace wowpp
 			WOWPP_HANDLE_TRIGGER_ACTION(SetVirtualEquipmentSlot)
 			WOWPP_HANDLE_TRIGGER_ACTION(SetPhase)
 			WOWPP_HANDLE_TRIGGER_ACTION(SetSpellCooldown)
+			WOWPP_HANDLE_TRIGGER_ACTION(QuestKillCredit)
+			WOWPP_HANDLE_TRIGGER_ACTION(QuestEventOrExploration)
 #undef WOWPP_HANDLE_TRIGGER_ACTION
 
 				case trigger_actions::Delay:
@@ -172,7 +174,7 @@ namespace wowpp
 
 	void TriggerHandler::handleSay(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
-		GameObject *target = getActionTarget(action, context.owner);
+		GameObject *target = getActionTarget(action, context);
 		if (target == nullptr)
 		{
 			WLOG("TRIGGER_ACTION_SAY: No target found, action will be ignored");
@@ -230,7 +232,7 @@ namespace wowpp
 
 	void TriggerHandler::handleYell(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
-		GameObject *target = getActionTarget(action, context.owner);
+		GameObject *target = getActionTarget(action, context);
 		if (!target)
 		{
 			WLOG("TRIGGER_ACTION_YELL: No target found, action will be ignored");
@@ -288,7 +290,7 @@ namespace wowpp
 
 	void TriggerHandler::handleSetWorldObjectState(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
-		GameObject * target = getActionTarget(action, context.owner);
+		GameObject * target = getActionTarget(action, context);
 		if (!target ||
 			!target->isWorldObject())
 		{
@@ -377,7 +379,7 @@ namespace wowpp
 	void TriggerHandler::handleCastSpell(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
 		// Determine caster
-		GameObject *caster = getActionTarget(action, context.owner);
+		GameObject *caster = getActionTarget(action, context);
 		if (!caster)
 		{
 			ELOG("TRIGGER_ACTION_CAST_SPELL: No valid target found");
@@ -439,7 +441,7 @@ namespace wowpp
 
 	void TriggerHandler::handleMoveTo(const proto::TriggerAction & action, game::TriggerContext & context)
 	{
-		GameObject *target = getActionTarget(action, context.owner);
+		GameObject *target = getActionTarget(action, context);
 		if (target == nullptr)
 		{
 			ELOG("TRIGGER_ACTION_MOVE_TO: No target found, action will be ignored");
@@ -467,7 +469,7 @@ namespace wowpp
 
 	void TriggerHandler::handleSetCombatMovement(const proto::TriggerAction & action, game::TriggerContext & context)
 	{
-		GameObject *target = getActionTarget(action, context.owner);
+		GameObject *target = getActionTarget(action, context);
 		if (target == nullptr)
 		{
 			ELOG("TRIGGER_ACTION_SET_COMBAT_MOVEMENT: No target found, action will be ignored");
@@ -488,7 +490,7 @@ namespace wowpp
 
 	void TriggerHandler::handleStopAutoAttack(const proto::TriggerAction & action, game::TriggerContext & context)
 	{
-		GameObject *target = getActionTarget(action, context.owner);
+		GameObject *target = getActionTarget(action, context);
 		if (target == nullptr)
 		{
 			ELOG("TRIGGER_ACTION_STOP_AUTO_ATTACK: No target found, action will be ignored");
@@ -508,7 +510,7 @@ namespace wowpp
 
 	void TriggerHandler::handleCancelCast(const proto::TriggerAction & action, game::TriggerContext & context)
 	{
-		GameObject *target = getActionTarget(action, context.owner);
+		GameObject *target = getActionTarget(action, context);
 		if (target == nullptr)
 		{
 			ELOG("TRIGGER_ACTION_CANCEL_CAST: No target found, action will be ignored");
@@ -527,7 +529,7 @@ namespace wowpp
 
 	void TriggerHandler::handleSetStandState(const proto::TriggerAction & action, game::TriggerContext & context)
 	{
-		GameObject *target = getActionTarget(action, context.owner);
+		GameObject *target = getActionTarget(action, context);
 		if (target == nullptr)
 		{
 			ELOG("TRIGGER_ACTION_SET_STAND_STATE: No target found, action will be ignored");
@@ -553,7 +555,7 @@ namespace wowpp
 
 	void TriggerHandler::handleSetVirtualEquipmentSlot(const proto::TriggerAction & action, game::TriggerContext & context)
 	{
-		GameObject *target = getActionTarget(action, context.owner);
+		GameObject *target = getActionTarget(action, context);
 		if (target == nullptr)
 		{
 			ELOG("TRIGGER_ACTION_SET_VIRTUAL_EQUIPMENT_SLOT: No target found, action will be ignored");
@@ -600,7 +602,7 @@ namespace wowpp
 
 	void TriggerHandler::handleSetSpellCooldown(const proto::TriggerAction & action, game::TriggerContext & context)
 	{
-		GameObject *target = getActionTarget(action, context.owner);
+		GameObject *target = getActionTarget(action, context);
 		if (target == nullptr)
 		{
 			ELOG("TRIGGER_ACTION_SET_SPELL_COOLDOWN: No target found, action will be ignored");
@@ -615,6 +617,65 @@ namespace wowpp
 		}
 
 		reinterpret_cast<GameUnit*>(target)->setCooldown(getActionData(action, 0), getActionData(action, 1));
+	}
+
+	void TriggerHandler::handleQuestKillCredit(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_QUEST_KILL_CREDIT: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameCharacter class
+		if (!target->isGameCharacter())
+		{
+			WLOG("TRIGGER_ACTION_QUEST_KILL_CREDIT: Needs a player target - action ignored");
+			return;
+		}
+
+		UInt32 entryId = getActionData(action, 0);
+		if (!entryId)
+		{
+			WLOG("TRIGGER_ACTION_QUEST_KILL_CREDIT: Needs a valid unit entry - action ignored");
+			return;
+		}
+
+		const auto *entry = target->getProject().units.getById(entryId);
+		if (!entry)
+		{
+			WLOG("TRIGGER_ACTION_QUEST_KILL_CREDIT: Unknown unit id " << entryId << " - action ignored");
+			return;
+		}
+
+		if (!context.owner)
+		{
+			WLOG("TRIGGER_ACTION_QUEST_KILL_CREDIT: Unknown trigger owner (this is most likely due to a wrong assigned trigger! Assign it to a unit)");
+			return;
+		}
+
+		reinterpret_cast<GameCharacter*>(target)->onQuestKillCredit(context.owner->getGuid(), *entry);
+	}
+
+	void TriggerHandler::handleQuestEventOrExploration(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_QUEST_EVENT_OR_EXPLORATION: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameCharacter class
+		if (!target->isGameCharacter())
+		{
+			WLOG("TRIGGER_ACTION_QUEST_EVENT_OR_EXPLORATION: Needs a player target - action ignored");
+			return;
+		}
+
+		UInt32 questId = getActionData(action, 0);
+		reinterpret_cast<GameCharacter*>(target)->completeQuest(questId);
 	}
 
 	Int32 TriggerHandler::getActionData(const proto::TriggerAction &action, UInt32 index) const
@@ -687,19 +748,19 @@ namespace wowpp
 		return true;
 	}
 
-	GameObject * TriggerHandler::getActionTarget(const proto::TriggerAction &action, GameObject *owner)
+	GameObject * TriggerHandler::getActionTarget(const proto::TriggerAction &action, game::TriggerContext &context)
 	{
 		switch (action.target())
 		{
 		case trigger_action_target::OwningObject:
-			return owner;
-			break;
+			return context.owner;
+		case trigger_action_target::SpellCaster:
+			return context.spellCaster;
 		case trigger_action_target::OwningUnitVictim:
-			return (owner && owner->isCreature() ? reinterpret_cast<GameUnit*>(owner)->getVictim() : nullptr);
-			break;
+			return (context.owner && context.owner->isCreature() ? reinterpret_cast<GameUnit*>(context.owner)->getVictim() : nullptr);
 		case trigger_action_target::NamedWorldObject:
 		{
-			auto *world = getWorldInstance(owner);
+			auto *world = getWorldInstance(context.owner);
 			if (!world) return nullptr;
 
 			// Need to provide a name
@@ -714,7 +775,7 @@ namespace wowpp
 		}
 		case trigger_action_target::NamedCreature:
 		{
-			auto *world = getWorldInstance(owner);
+			auto *world = getWorldInstance(context.owner);
 			if (!world) return nullptr;
 
 			// Need to provide a name

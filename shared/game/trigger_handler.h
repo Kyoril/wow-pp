@@ -26,6 +26,7 @@
 namespace wowpp
 {
 	class GameObject;
+	class GameUnit;
 	namespace proto
 	{
 		class TriggerEntry;
@@ -39,10 +40,13 @@ namespace wowpp
 			GameObject *owner;
 			/// Id of the spell that triggered this trigger with it's hit.
 			UInt32 spellHitId;
+			/// Caster of the spell that raised this trigger or nullptr if not suitable for this trigger event.
+			GameUnit *spellCaster;
 
 			TriggerContext(GameObject *owner_)
 				: owner(owner_)
 				, spellHitId(0)
+				, spellCaster(nullptr)
 			{
 			}
 		};

@@ -179,6 +179,14 @@ namespace wowpp
 					.arg(getTriggerTargetName(action, withLinks))
 					.arg(actionDataEntry(project.spells, action, 0, withLinks))
 					.arg(getTriggerActionData(action, 1, withLinks));
+			case trigger_actions::QuestKillCredit:
+				return QString("Player - Reward %1 a quest kill credit of creature %2")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(actionDataEntry(project.units, action, 0, withLinks));
+			case trigger_actions::QuestEventOrExploration:
+				return QString("Player - Raise quest event or exploration of quest %2 for %1")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(actionDataEntry(project.quests, action, 0, withLinks));
 			default:
 				return QString("UNKNOWN TRIGGER ACTION");
 			}

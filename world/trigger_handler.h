@@ -52,7 +52,7 @@ namespace wowpp
 		Int32 getActionData(const proto::TriggerAction &action, UInt32 index) const;
 		const String &getActionText(const proto::TriggerAction &action, UInt32 index) const;
 		WorldInstance *getWorldInstance(GameObject *owner) const;
-		GameObject *getActionTarget(const proto::TriggerAction &action, GameObject *owner);
+		GameObject *getActionTarget(const proto::TriggerAction &action, game::TriggerContext &context);
 		bool playSoundEntry(UInt32 sound, GameObject *source);
 
 		void handleTrigger(const proto::TriggerAction &action, game::TriggerContext &context);
@@ -70,6 +70,8 @@ namespace wowpp
 		void handleSetVirtualEquipmentSlot(const proto::TriggerAction &action, game::TriggerContext &context);
 		void handleSetPhase(const proto::TriggerAction &action, game::TriggerContext &context);
 		void handleSetSpellCooldown(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleQuestKillCredit(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleQuestEventOrExploration(const proto::TriggerAction &action, game::TriggerContext &context);
 
 	private:
 
