@@ -245,7 +245,7 @@ namespace wowpp
 					case 2687:
 						it->set_powertype(game::power_type::Health);
 						break;
-
+					
 					//////////////////////////////////////////////////////////////////////////
 					// Hemorrhage: Add Combo Point (Needed because this spell already has 
 					// 3 / 3 effects, and there is no space left for the AddComboPoint effect)

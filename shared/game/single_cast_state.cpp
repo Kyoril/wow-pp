@@ -1046,6 +1046,62 @@ namespace wowpp
 		}
 	}
 
+	void SingleCastState::spellEffectScriptEffect(const proto::SpellEffect & effect)
+	{
+		// TODO: Do something here...
+		UInt32 spellId = 0;
+		switch (m_spell.id())
+		{
+			case 25140:
+				spellId = 32571;
+				break;
+			case 25143:
+				spellId = 32572;
+				break;
+			case 25650:
+				spellId = 30140;
+				break;
+			case 25652:
+				spellId = 30141;
+				break;
+			case 29128:
+				spellId = 32568;
+				break;
+			case 29129:
+				spellId = 32569;
+				break;
+			case 35376:
+				spellId = 25649;
+				break;
+			case 35727:
+				spellId = 35730;
+				break;
+			default:
+				WLOG("Unhandled SPELL_EFFECT_SCRIPT_EFFECT for spell " << m_spell.id());
+				return;
+		}
+
+		if (spellId != 0)
+		{
+			// Look for the spell
+			const auto *entry = m_cast.getExecuter().getProject().spells.getById(spellId);
+			if (!entry)
+			{
+				return;
+			}
+
+			// Get the cast time of this spell
+			Int64 castTime = entry->casttime();
+			if (m_cast.getExecuter().isGameCharacter())
+			{
+				reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(spell_mod_op::CastTime, spellId, castTime);
+			}
+			if (castTime < 0) castTime = 0;
+
+			m_cast.getExecuter().castSpell(m_target, spellId, -1, castTime, false);
+		}
+	}
+
 	void SingleCastState::spellEffectDrainPower(const proto::SpellEffect &effect)
 	{
 		// Calculate the power to drain
@@ -1793,6 +1849,7 @@ namespace wowpp
 			{se::StealBeneficialBuff,	std::bind(&SingleCastState::spellEffectStealBeneficialBuff, this, std::placeholders::_1)},
 			{se::InterruptCast,			std::bind(&SingleCastState::spellEffectInterruptCast, this, std::placeholders::_1) },
 			{se::LearnSpell,			std::bind(&SingleCastState::spellEffectLearnSpell, this, std::placeholders::_1) },
+			{se::ScriptEffect,			std::bind(&SingleCastState::spellEffectScriptEffect, this, std::placeholders::_1) },
 			// Add all effects above here
 			{se::ApplyAura,				std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
 			{se::SchoolDamage,			std::bind(&SingleCastState::spellEffectSchoolDamage, this, std::placeholders::_1)}

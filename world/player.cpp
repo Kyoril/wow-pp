@@ -2883,8 +2883,23 @@ namespace wowpp
 
 		sendGossipMenu(guid);
 
-		// Quest object
-		m_character->onQuestObjectCredit(0, reinterpret_cast<WorldObject&>(*obj));
+		WorldObject &wobj = reinterpret_cast<WorldObject&>(*obj);
+		if (wobj.getEntry().type() == world_object_type::Goober)
+		{
+			// Possibly quest object
+			m_character->onQuestObjectCredit(0, wobj);
+
+			// Check if spell cast is needed
+			UInt32 spellId = wobj.getEntry().data(10);
+			if (spellId)
+			{
+				// Cast spell
+				SpellTargetMap target;
+				target.m_unitTarget = m_character->getGuid();
+				target.m_targetMap = game::spell_cast_target_flags::Unit;
+				m_character->castSpell(std::move(target), spellId);
+			}
+		}
 	}
 
 	void Player::handleOpenItem(game::Protocol::IncomingPacket & packet)
