@@ -2882,6 +2882,9 @@ namespace wowpp
 		}
 
 		sendGossipMenu(guid);
+
+		// Quest object
+		m_character->onQuestObjectCredit(0, reinterpret_cast<WorldObject&>(*obj));
 	}
 
 	void Player::handleOpenItem(game::Protocol::IncomingPacket & packet)
