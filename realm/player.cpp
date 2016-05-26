@@ -62,6 +62,7 @@ namespace wowpp
 		, m_transferMap(0)
 		, m_transfer(math::Vector3(0.0f, 0.0f, 0.0f))
 		, m_transferO(0.0f)
+		, m_nextWhoRequest(0)
 	{
 		// Randomize seed
 		std::uniform_int_distribution<UInt32> dist;
@@ -2432,6 +2433,17 @@ namespace wowpp
 
 	void Player::handleWho(game::IncomingPacket & packet)
 	{
+		// Timer protection
+		GameTime now = getCurrentTime();
+		if (now < m_nextWhoRequest)
+		{
+			// Don't do that yet
+			return;
+		}
+
+		// Allow one request every 6 seconds
+		m_nextWhoRequest = now + constants::OneSecond * 6;
+
 		// Read request packet
 		game::WhoListRequest request;
 		if (!game::client_read::who(packet, request))
@@ -2485,14 +2497,12 @@ namespace wowpp
 				continue;
 			}
 
-
 			// Check if levels match, first, as this is the least expensive thing to check
 			const UInt32 level = character->getLevel();
 			if (level < request.level_min || level > request.level_max)
 			{
 				continue;
 			}
-
 
 			//search by zoneID
 			if(!request.zoneids.empty())
@@ -2513,7 +2523,6 @@ namespace wowpp
 					continue;
 				}
 			}
-
 
 			// Convert character name to lower case string
 			String charNameLowered = character->getName();
