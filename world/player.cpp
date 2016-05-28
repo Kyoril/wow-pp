@@ -30,12 +30,14 @@
 #include "proto_data/project.h"
 #include "game/game_creature.h"
 #include "game/game_world_object.h"
+#include "trade_data.h"
 #include "game/unit_mover.h"
 
 using namespace std;
 
 namespace wowpp
 {
+	TradeStatusInfo::TradeStatusInfo(UInt64 guid = 0) {}
 	/// The time in milliseconds to delay a movement packet so that the client
 	/// won't lag too hard when receiving movement packets with timestamps that
 	/// are in the past.
@@ -2963,6 +2965,274 @@ namespace wowpp
 		}
 
 		// TODO: Do something with the time diff
+	}
+
+	void Player::handleInitateTrade(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 otherGuid;
+		TradeStatusInfo statusInfo;
+		if (!(game::client_read::initateTrade(packet, otherGuid)))
+		{
+			return;
+		}
+
+		if (!m_character)
+		{
+			return;
+		}
+
+		//TODO check if player is alive etc.
+		
+		auto *worldInstance = m_character->getWorldInstance();
+		if (!worldInstance)
+		{
+			WLOG("no world instance");
+			return;
+		}
+		UInt64 thisguid = this->getCharacter()->getGuid(); 
+
+		auto *otherPlayer = m_manager.getPlayerByCharacterGuid(otherGuid);
+		if (otherPlayer != nullptr)
+		{
+			m_tradeStatusInfo.tradestatus = trade_status::BeginTrade;
+			m_tradeStatusInfo.guid = thisguid;
+			m_tradeData = std::shared_ptr<TradeData>(new TradeData (this, otherPlayer));
+			otherPlayer->m_tradeData = std::shared_ptr<TradeData>(new TradeData (otherPlayer, this));
+			otherPlayer->sendTradeData(m_tradeStatusInfo);
+		}
+	}
+
+	void Player::handleBeginTrade(game::Protocol::IncomingPacket &packet)
+	{
+		m_tradeStatusInfo.tradestatus = trade_status::OpenWindow;
+		
+		m_tradeData->getPlayer()->sendTradeData(m_tradeStatusInfo);
+		m_tradeData->getTrader()->sendTradeData(m_tradeStatusInfo);
+		
+		//openWindow
+	}
+
+	void Player::handleAcceptTrade(game::Protocol::IncomingPacket &packet)
+	{
+		std::shared_ptr<TradeData> my_Trade = m_tradeData;
+		if (nullptr == my_Trade)
+		{
+			return;
+		}
+
+		Player* trader = my_Trade-> getTrader();
+		Player* player = my_Trade->getPlayer();
+		std::shared_ptr<TradeData> his_Trade = trader->m_tradeData;
+		if (nullptr == his_Trade)
+		{
+			return;
+		}
+
+		my_Trade->setacceptTrade(true);
+
+		TradeStatusInfo info;
+
+		if (my_Trade->getGold() > player->getCharacter()->getUInt32Value(character_fields::Coinage))
+		{
+			info.tradestatus = trade_status::CloseWindow;
+			sendTradeData(info);
+			my_Trade->setacceptTrade(false);
+			return;
+		}
+
+		if (his_Trade->getGold() > trader->getCharacter()->getUInt32Value(character_fields::Coinage))
+		{
+			info.tradestatus = trade_status::CloseWindow;
+			sendTradeData(info);
+			his_Trade->setacceptTrade(false);
+			return;
+		}
+								
+		if (his_Trade->isAccepted())
+		{
+			//check for cheating
+			//inform partner client
+
+			info.tradestatus = trade_status::TradeAccept;
+			trader->sendTradeData(info);
+			//test item << inventory
+
+			//execute Trade
+
+			//update money
+
+			UInt32 gold_nowp = player->getCharacter()->getUInt32Value(character_fields::Coinage);
+			UInt32 gold_newp = gold_nowp - my_Trade->getGold();
+
+			gold_newp += trader->m_tradeData->getGold();
+			player->getCharacter()->setUInt32Value(character_fields::Coinage, gold_newp);
+
+			
+			UInt32 gold_nowt = trader->getCharacter()->getUInt32Value(character_fields::Coinage);
+			UInt32 gold_newt = gold_nowt - trader->m_tradeData->getGold();
+
+			gold_newt += my_Trade->getGold();
+			trader->getCharacter()->setUInt32Value(character_fields::Coinage, gold_newt);
+
+			info.tradestatus = trade_status::TradeComplete;
+			trader->sendTradeData(info);
+			sendTradeData(info);
+		}
+		else
+		{
+			info.tradestatus = trade_status::TradeAccept;
+			trader->sendTradeData(info);
+		}
+	}
+
+
+	void Player::handleSetTradeGold(game::Protocol::IncomingPacket &packet)
+	{
+		UInt32 gold;
+		if (!(game::client_read::setTradeGold(packet, gold)))
+		{
+			return;
+		}
+
+		if (!m_tradeData)
+		{
+			return;
+		}
+
+		if (gold != m_tradeData->getGold())
+		{
+			m_tradeData->setGold(gold);
+			m_tradeData->setacceptTrade(false);
+			m_tradeData->getTrader()->m_tradeData->setacceptTrade(false);
+
+			TradeStatusInfo info;
+			info.tradestatus = trade_status::BackToTrade;
+			m_tradeData->getPlayer()->sendTradeData(info);
+			m_tradeData->getTrader()->sendUpdateTrade();
+		}
+
+		//sendUpdateTrade(gold);
+		WLOG("gold set: " << gold);
+	}
+
+	void Player::handleSetTradeItem(game::Protocol::IncomingPacket &packet)
+	{
+		UInt8 tradeSlot;
+		UInt8 bag;
+		UInt8 slot;
+		if (!(game::client_read::setTradeItem(packet, tradeSlot, bag, slot)))
+		{
+			return;
+		}
+
+		std::shared_ptr<TradeData> my_Trade = m_tradeData;
+		if (my_Trade == nullptr)
+		{
+			return;
+		}
+
+		TradeStatusInfo info;
+
+		if (tradeSlot >= trade_slots::Count)
+		{
+			info.tradestatus = trade_status::TradeCanceled;
+			sendTradeData(info);
+			return;
+		}
+
+		
+
+		UInt16 _slot = slot;
+		auto this_player = this->getCharacter();
+		auto &inventory = this_player->getInventory();
+		auto item = inventory.getItemAtSlot(Inventory::getAbsoluteSlot(bag, _slot));
+		UInt64 item_guid = item->getGuid();
+		//TODO: ask if there is an item like that in trade already
+						
+		auto *_item = m_project.items.getById(item_guid);
+		
+		my_Trade->setItem(*_item, _slot, item->getUInt64Value(ItemFields::GiftCreator), item->getStackCount());
+			
+		sendUpdateTrade();
+
+	}
+
+	void Player::sendTradeData(TradeStatusInfo info)
+	{
+		UInt64 status = 0;
+		switch (info.tradestatus)
+		{
+		case trade_status::Busy:
+			break;
+		case trade_status::BeginTrade:
+			WLOG("send TRADE_STATUS_BEGIN_TRADE");
+			sendProxyPacket(std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, info.tradestatus, info.guid)); //send UInt64
+			break;
+		case trade_status::OpenWindow:
+			WLOG("send TRADE_STATUS_OPEN_WINDOW")
+			sendProxyPacket(std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, info.tradestatus, status));
+			break;
+		case trade_status::TradeCanceled:
+			break;
+		case trade_status::TradeAccept:
+			sendProxyPacket(std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, info.tradestatus, status));
+			break;
+		case trade_status::Busy2:
+			break;
+		case trade_status::NoTarget:
+			break;
+		case trade_status::BackToTrade:
+			sendProxyPacket(std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, info.tradestatus, status));
+			break;
+		case trade_status::TradeComplete:
+			sendProxyPacket(std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, info.tradestatus, status));
+			break;
+		case trade_status::TradeRejected:
+			break;
+		case trade_status::TargetTooFar:
+			break;
+		case trade_status::WrongFaction:
+			break;
+		case trade_status::CloseWindow:
+			break;
+		case trade_status::IgnoreYou:
+			break;
+		case trade_status::YouStunned:
+			break;
+		case trade_status::TargetStunned:
+			break;
+		case trade_status::YouDead:
+			break;
+		case trade_status::TargetDead:
+			break;
+		case trade_status::YouLogout:
+			break;
+		case trade_status::TargetLogout:
+			break;
+		case trade_status::TrialAccount:
+			break;
+		case trade_status::WrongRealm:
+			break;
+		case trade_status::NotOnTapList:
+			break;
+		default:
+			break;
+		}
+	}
+	
+	void Player::sendUpdateTrade()
+	{
+		//TODO maybe build a struct for all of this informations.
+		sendProxyPacket(
+			std::bind(game::server_write::sendUpdateTrade, std::placeholders::_1, 
+				1, 
+				0, 
+				trade_slots::Count, 
+				trade_slots::Count,
+				m_tradeData->getGold(), 
+				0//,
+				//m_tradeData->getItem(),
+				));
 	}
 
 	void Player::handleSetActionBarToggles(game::Protocol::IncomingPacket & packet)

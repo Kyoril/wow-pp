@@ -39,7 +39,6 @@ namespace wowpp
 	class GameItem;
 	class GameCharacter;
 	class LootInstance;
-
 	namespace game
 	{
 		struct Protocol
@@ -140,7 +139,7 @@ namespace wowpp
 			Int32 questLevel;
 			String title;
 		};
-
+		
 		namespace atlogin_flags
 		{
 			enum Type
@@ -469,6 +468,16 @@ namespace wowpp
 				SplitItem				= 0x10E,
 				AutoEquipItemSlot		= 0x10F,
 				DestroyItem				= 0x111,
+				InitateTrade			= 0x116,//Trade
+				BeginTrade				= 0x117,//Trade
+				BusyTrade				= 0x118,//Trade later
+				IgnoreTrade				= 0x119,//Trade later
+				AcceptTrade				= 0x11A,//Trade
+				UnacceptTrade			= 0x11B,//Trade
+				CancelTrade				= 0x11C,//Trade
+				SetTradeItem			= 0x11D,//Trade
+				ClearTradeItem			= 0x11E,//Trade
+				SetTradeGold			= 0x11F,//Trade
 				SetActionButton			= 0x128,
 				CastSpell				= 0x12E,
 				CancelCast				= 0x12F,
@@ -593,6 +602,8 @@ namespace wowpp
 				Emote						= 0x103,
 				TextEmote					= 0x105,
 				InventoryChangeFailure		= 0x112,
+				TradeStatus					= 0x120,   //Trade
+				TradeStatusExtended			= 0x121,   //Trade
 				InitializeFactions			= 0x122,
 				SetProficiency				= 0x127,
 				ActionButtons				= 0x129,
@@ -1302,6 +1313,28 @@ namespace wowpp
 			bool who(
 				io::Reader &packet, 
 				WhoListRequest &out_whoList
+				);
+
+			bool initateTrade(
+				io::Reader &packet,
+				UInt64 &guid
+				);
+
+			bool beginTrade(
+				io::Reader &packet
+				);
+			bool acceptTrade(
+				io::Reader &packet
+				);
+			bool setTradeGold(
+				io::Reader &packet,
+				UInt32 &gold
+				);
+			bool setTradeItem(
+				io::Reader &packet,
+				UInt8 &tradeSlot,
+				UInt8 &bag,
+				UInt8 &slot
 				);
 
 			bool petNameRequest(
@@ -2208,6 +2241,22 @@ namespace wowpp
 				UInt64 caster,
 				UInt8 unknown,
 				const std::map<UInt64, game::SpellMissInfo> &missedTargetGUIDs
+				);
+
+			void sendTradeStatus(
+				game::OutgoingPacket &out_packet,
+				UInt32 status,
+				UInt64 guid
+				);
+
+			void sendUpdateTrade(
+				game::OutgoingPacket &out_packet, 
+				UInt8 state, 
+				UInt32 tradeID, 
+				UInt32 next_slot, 
+				UInt32 prev_slot, 
+				UInt32 gold, 
+				UInt32 spell
 				);
 
 			void petNameQueryResponse(

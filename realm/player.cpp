@@ -2504,6 +2504,26 @@ namespace wowpp
 				continue;
 			}
 
+			//search by racemask
+			if (0 != request.racemask)
+			{
+				UInt32 race = character->getRace();
+				if (!(request.racemask & (1 << race)))
+				{
+					continue;
+				}
+			}
+
+			//search by classmask
+			if (0 != request.classmask)
+			{
+				UInt32 _class = character->getClass();
+				if (!(request.classmask & (1 << _class)))
+				{
+					continue;
+				}
+			}
+
 			//search by zoneID
 			if(!request.zoneids.empty())
 			{

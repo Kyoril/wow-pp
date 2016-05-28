@@ -35,9 +35,86 @@
 #include "game/tile_subscriber.h"
 #include "game/loot_instance.h"
 #include "common/macros.h"
+#include "trade_data.h"
 
 namespace wowpp
 {
+	namespace trade_status
+	{
+		enum Type
+		{
+			/// The target is busy.
+			Busy = 0,
+			/// 
+			BeginTrade = 1,
+			/// 
+			OpenWindow = 2,
+			/// 
+			TradeCanceled = 3,
+			/// 
+			TradeAccept = 4,
+			/// 
+			Busy2 = 5,
+			/// 
+			NoTarget = 6,
+			/// 
+			BackToTrade = 7,
+			/// 
+			TradeComplete = 8,
+			/// 
+			TradeRejected = 9,
+			/// 
+			TargetTooFar = 10,
+			/// 
+			WrongFaction = 11,
+			///
+			CloseWindow = 12,
+			/// The target ignores you.
+			IgnoreYou = 14,
+			/// You can't trade while being stunned.
+			YouStunned = 15,
+			/// Your target is stunned.
+			TargetStunned = 16,
+			/// You can't trade while being dead.
+			YouDead = 17,
+			/// Your target is dead.
+			TargetDead = 18,
+			/// Logout pending.
+			YouLogout = 19,
+			/// Target logout pending.
+			TargetLogout = 20,
+			/// Trial accounts are permitted to trade.
+			TrialAccount = 21,
+			/// Only conjured items are tradable cross-realm.
+			WrongRealm = 22,
+			/// Related to trading soulbound items in a raid/group.
+			NotOnTapList = 23
+		};
+	}
+
+	namespace trade_slots
+	{
+		enum Type
+		{
+			Count = 7,
+			TradedCount = 6,
+			NonTraded = 6
+		};
+	}
+
+	typedef trade_status::Type TradeStatus;
+	typedef trade_slots::Type TradeSlots;
+
+	struct TradeStatusInfo
+	{
+		TradeStatusInfo(UInt64 guid);
+		TradeStatus tradestatus;
+		UInt64 guid;
+		Player *thisplayer;
+		Player *tradeplayer;
+	};
+
+
 	// Forwards
 	class PlayerManager;
 	class WorldInstanceManager;
@@ -166,6 +243,9 @@ namespace wowpp
 		/// Saves the characters data.
 		void saveCharacterData() const;
 
+		void sendTradeData(TradeStatusInfo info);
+		void sendUpdateTrade();
+
 	public:
 
 		/// @copydoc ITileSubscriber::getControlledObject()
@@ -210,6 +290,11 @@ namespace wowpp
 		void handleGameObjectUse(game::Protocol::IncomingPacket &packet);
 		void handleOpenItem(game::Protocol::IncomingPacket &packet);
 		void handleMoveTimeSkipped(game::Protocol::IncomingPacket &packet);
+		void handleInitateTrade(game::Protocol::IncomingPacket &packet);
+		void handleBeginTrade(game::Protocol::IncomingPacket &packet);
+		void handleAcceptTrade(game::Protocol::IncomingPacket &packet);
+		void handleSetTradeGold(game::Protocol::IncomingPacket &packet);
+		void handleSetTradeItem(game::Protocol::IncomingPacket &packet);
 		void handleSetActionBarToggles(game::Protocol::IncomingPacket &packet);
 		void handleToggleHelm(game::Protocol::IncomingPacket &packet);
 		void handleToggleCloak(game::Protocol::IncomingPacket &packet);
@@ -281,5 +366,12 @@ namespace wowpp
 		UInt32 m_clientTicks;
 		LinearSet<UInt64> m_ignoredGUIDs;
 		Countdown m_groupUpdate;
+		TradeStatusInfo m_tradeStatusInfo;
+		std::shared_ptr<TradeData> m_tradeData;
 	};
+
+
+	
+	
+
 }
