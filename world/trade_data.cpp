@@ -22,7 +22,7 @@
 #include "pch.h"
 #include "trade_data.h"
 #include "game/game_creature.h"
-#include "Player.h"
+#include "player.h"
 #include "game/game_world_object.h"
 
 
