@@ -55,6 +55,59 @@ namespace wowpp
 
 		typedef creature_movement::Type CreatureMovement;
 
+		namespace trade_status
+		{
+			enum Type
+			{
+				/// The target is busy.
+				Busy = 0,
+				/// 
+				BeginTrade = 1,
+				/// 
+				OpenWindow = 2,
+				/// 
+				TradeCanceled = 3,
+				/// 
+				TradeAccept = 4,
+				/// 
+				Busy2 = 5,
+				/// 
+				NoTarget = 6,
+				/// 
+				BackToTrade = 7,
+				/// 
+				TradeComplete = 8,
+				/// 
+				TradeRejected = 9,
+				/// 
+				TargetTooFar = 10,
+				/// 
+				WrongFaction = 11,
+				///
+				CloseWindow = 12,
+				/// The target ignores you.
+				IgnoreYou = 14,
+				/// You can't trade while being stunned.
+				YouStunned = 15,
+				/// Your target is stunned.
+				TargetStunned = 16,
+				/// You can't trade while being dead.
+				YouDead = 17,
+				/// Your target is dead.
+				TargetDead = 18,
+				/// Logout pending.
+				YouLogout = 19,
+				/// Target logout pending.
+				TargetLogout = 20,
+				/// Trial accounts are permitted to trade.
+				TrialAccount = 21,
+				/// Only conjured items are tradable cross-realm.
+				WrongRealm = 22,
+				/// Related to trading soulbound items in a raid/group.
+				NotOnTapList = 23
+			};
+		}
+
 		namespace quest_status
 		{
 			enum Type
