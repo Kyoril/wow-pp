@@ -1676,9 +1676,15 @@ namespace wowpp
 
 	float GameUnit::getResiPercentage(UInt8 school, UInt32 attackerLevel, bool isBinary)
 	{
+		if (school <= 1)
+		{
+			return 0.0f;
+		}
+
 		std::uniform_real_distribution<float> resiDistribution(0.0f, 99.9f);
 		UInt32 spellPen = 0;
-		UInt32 baseResi = getUInt32Value(unit_fields::Resistances + static_cast<UInt32>(log2(school)));
+		UInt32 resiOffset = static_cast<UInt32>(log2(school));
+		UInt32 baseResi = getUInt32Value(unit_fields::Resistances + resiOffset);
 		UInt32 casterLevel = attackerLevel;
 		UInt32 victimLevel = getLevel();
 		float levelBasedResistance = 0.0f;
