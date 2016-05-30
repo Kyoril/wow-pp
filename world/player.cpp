@@ -3076,7 +3076,7 @@ namespace wowpp
 			return;
 		}
 
-		my_Trade->setacceptTrade(true);
+		my_Trade->setTradeAcceptState(true);
 
 		TradeStatusInfo info;
 
@@ -3084,7 +3084,7 @@ namespace wowpp
 		{
 			info.tradestatus = game::trade_status::CloseWindow;
 			sendTradeStatus(info);
-			my_Trade->setacceptTrade(false);
+			my_Trade->setTradeAcceptState(false);
 			return;
 		}
 
@@ -3092,7 +3092,7 @@ namespace wowpp
 		{
 			info.tradestatus = game::trade_status::CloseWindow;
 			sendTradeStatus(info);
-			his_Trade->setacceptTrade(false);
+			his_Trade->setTradeAcceptState(false);
 			return;
 		}
 								
@@ -3155,7 +3155,7 @@ namespace wowpp
 			// Update trade status
 			if (m_tradeData->isAccepted())
 			{
-				m_tradeData->setacceptTrade(false);
+				m_tradeData->setTradeAcceptState(false);
 
 				TradeStatusInfo info;
 				info.tradestatus = game::trade_status::BackToTrade;
@@ -3194,21 +3194,13 @@ namespace wowpp
 			return;
 		}
 
-		
-
-		UInt16 _slot = slot;
 		auto this_player = this->getCharacter();
 		auto &inventory = this_player->getInventory();
-		auto item = inventory.getItemAtSlot(Inventory::getAbsoluteSlot(bag, _slot));
-		UInt64 item_guid = item->getGuid();
+		auto item = inventory.getItemAtSlot(Inventory::getAbsoluteSlot(bag, slot));
 		//TODO: ask if there is an item like that in trade already
-						
-		auto *_item = m_project.items.getById(item_guid);
-		
-		my_Trade->setItem(*_item, _slot, item->getUInt64Value(ItemFields::GiftCreator), item->getStackCount());
-			
-		sendUpdateTrade();
 
+		my_Trade->setItem(item, tradeSlot);
+		sendUpdateTrade();
 	}
 
 	void Player::sendTradeStatus(TradeStatusInfo info)

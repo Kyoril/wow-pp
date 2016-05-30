@@ -27,29 +27,42 @@
 namespace wowpp
 {
 	class Player;
+	class GameItem;
 
+	/// This class manages trade data of a player.
 	class TradeData
 	{
 	public:
-		TradeData();
-		TradeData(Player *_player, Player *_trader); //trader = other, player = this
+
+		/// Initializes the trade data object by providing two player connection instances.
+		/// @param player The owning player whose trade infos are saved in this object.
+		/// @param trader The other player, with which the owner is trading.
+		TradeData(Player *player, Player *trader);
 		
+		/// Gets the initiator instance of this trade.
 		Player* getPlayer();
+		/// Gets the other player instance.
 		Player* getTrader();
+		/// Updates the amount of gold of this players trade.
+		/// @param money The amount of money, where 110 means 1 silver and 10 copper.
 		void setGold(UInt32 money);
+		/// Gets the amount of gold this player wants to trade to the other player.
 		UInt32 getGold();
-		void setacceptTrade(bool state);
+		/// Updates the owners accept state of this trade.
+		/// @param state True if the owner accepts this trade, false otherwise.
+		void setTradeAcceptState(bool state);
+		/// Determines whether this trade is accepted by the owner.
 		bool isAccepted();
-		void setItem(const proto::ItemEntry &item, UInt16 slot, UInt64 guid_value, UInt32 stack_count);
+		/// Sets a new item at a specific trade slot.
+		void setItem(std::shared_ptr<GameItem> item, UInt16 slot);
 		//std::vector<Item_Data> getItem();
 	
 	private:
 		Player *m_player;
 		Player *m_trader;
-		UInt32 gold;
-		bool acceptTrade;
+		UInt32 m_gold;
+		bool m_accepted;
+		std::vector<std::shared_ptr<GameItem>> m_items;
 		//std::vector<Item_Data> m_item_data;
 	};
-
-	
 }
