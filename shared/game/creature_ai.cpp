@@ -173,7 +173,7 @@ namespace wowpp
 					{
 						worldInstance->getUniverse().post([&unit, &threat]()
 						{
-							unit.threatened(threat, 0.0f);
+							unit.threaten(threat, 0.0f);
 						});
 					}
 

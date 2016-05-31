@@ -86,7 +86,7 @@ namespace wowpp
 			// Reward all recipients
 			for (auto *recipient : lootRecipients)
 			{
-				recipient->onQuestKillCredit(controlled);
+				recipient->onQuestKillCredit(controlled.getGuid(), controlled.getEntry());
 			}
 
 			// Reward the killer with experience points

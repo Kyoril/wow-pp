@@ -47,7 +47,7 @@ namespace wowpp
 
 		static bool saveProjectToTable(sff::write::Table<char> &fileTable, const boost::filesystem::path &directory, const ProjectSaver::Managers &managers)
 		{
-			fileTable.addKey("version", 4);
+			fileTable.addKey("version", 5);
 
 			bool success = true;
 

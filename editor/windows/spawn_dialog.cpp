@@ -25,6 +25,7 @@
 #include "editor_application.h"
 #include "proto_data/project.h"
 #include "common/utilities.h"
+#include "game/game_unit.h"
 
 namespace wowpp
 {
@@ -49,6 +50,7 @@ namespace wowpp
 			m_ui->spinBox_3->setValue(spawn.radius());
 			m_ui->spinBox_4->setValue(spawn.maxcount());
 			m_ui->comboBox->setCurrentIndex(limit<UInt32>(spawn.movement(), 0, 2));
+			m_ui->comboBox_2->setCurrentIndex(limit<UInt32>(spawn.standstate(), 0, unit_stand_state::Count - 1));
 
 			QTreeWidgetItem *item = new QTreeWidgetItem(m_ui->treeWidget);
 			item->setText(0, QString("%1").arg(spawn.unitentry()));
@@ -76,7 +78,7 @@ namespace wowpp
 			m_spawn.set_radius(m_ui->spinBox_3->value());
 			m_spawn.set_maxcount(m_ui->spinBox_4->value());
 			m_spawn.set_movement(m_ui->comboBox->currentIndex());
-
+			m_spawn.set_standstate(m_ui->comboBox_2->currentIndex());
 		}
 	}
 }

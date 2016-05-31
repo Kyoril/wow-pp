@@ -52,7 +52,7 @@ namespace wowpp
 		, m_slot(0xFF)
 		, m_post(std::move(post))
 		, m_destroy(std::move(onDestroy))
-		, m_totalTicks(0) //effect.amplitude() == 0 ? 0 : spell.duration() / effect.amplitude())
+		, m_totalTicks(0)
 		, m_duration(spell.duration())
 	{
 		// Subscribe to caster despawn event so that we don't hold an invalid pointer
@@ -166,6 +166,12 @@ namespace wowpp
 			break;
 		case aura::ModTotalStatPercentage:
 			handleModTotalStatPercentage(apply);
+			break;
+		case aura::ModIncreaseEnergyPercent:
+			handleModEnergyPercentage(apply);
+			break;
+		case aura::ModIncreaseHealthPercent:
+			handleModHealthPercentage(apply);
 			break;
 		case aura::ModStun:
 			handleModStun(apply);
@@ -791,6 +797,26 @@ namespace wowpp
 		//TODO
 	}
 
+	void Aura::handleModEnergyPercentage(bool apply)
+	{
+		Int32 powerType = m_effect.miscvaluea();
+		if (powerType < 0 || powerType >= game::power_type::Count_ - 1)
+		{
+			WLOG("AURA_TYPE_MOD_ENERGY_PERCENTAGE: Invalid power type" << stat << " - skipped");
+			return;
+		}
+
+		// Apply energy
+		m_target.updateModifierValue(UnitMods(unit_mods::PowerStart + powerType), unit_mod_type::TotalPct, m_basePoints, apply);
+		m_target.updateMaxPower(game::PowerType(powerType));
+	}
+
+	void Aura::handleModHealthPercentage(bool apply)
+	{
+		m_target.updateModifierValue(UnitMods(unit_mods::Health), unit_mod_type::TotalPct, m_basePoints, apply);
+		m_target.updateMaxHealth();
+	}
+
 	void Aura::handleModManaRegenInterrupt(bool apply)
 	{
 		if (m_target.isGameCharacter())
@@ -987,13 +1013,13 @@ namespace wowpp
 	{
 		if (apply)
 		{
-			m_target.addMechanicImmunity(m_spell.mechanic());
+			m_target.addMechanicImmunity(1 << m_spell.mechanic());
 		}
 		else
 		{
 			// TODO: We need to check if there are still other auras which provide the same immunity
 			WLOG("TODO");
-			m_target.removeMechanicImmunity(m_spell.mechanic());
+			m_target.removeMechanicImmunity(1 << m_spell.mechanic());
 		}
 	}
 
@@ -1381,9 +1407,11 @@ namespace wowpp
 		{
 		case aura::PeriodicDamage:
 			{
+				// HACK: if m_caster is nullptr (because the caster of this aura is longer available in this world instance),
+				// we use m_target (the target itself) as the level calculation. This should be used otherwise however.
 				UInt32 school = m_spell.schoolmask();
 				Int32 damage = m_basePoints;
-				UInt32 resisted = damage * (m_target.getResiPercentage(school, *m_caster, false) / 100.0f);
+				UInt32 resisted = damage * (m_target.getResiPercentage(school, m_attackerLevel, false) / 100.0f);
 				UInt32 absorbed = m_target.consumeAbsorb(damage - resisted, m_spell.schoolmask());
 
 				// Reduce by armor if physical
@@ -1711,6 +1739,13 @@ namespace wowpp
 
 	void Aura::misapplyAura()
 	{
+		// Stop watching for these
+		m_onExpire.disconnect();
+		m_onTick.disconnect();
+
+		// Do this to prevent the aura from starting another tick just in case (shouldn't happen though)
+		m_expired = true;
+
 		// Cancel countdowns (if running)
 		m_tickCountdown.cancel();
 		m_expireCountdown.cancel();

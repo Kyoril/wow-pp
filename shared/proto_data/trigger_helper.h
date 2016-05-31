@@ -134,7 +134,12 @@ namespace wowpp
 			/// Sets spell cooldown for a unit.
 			/// Targets: UNIT; Data: <SPELL-ID>,<TIME-MS>; Texts: NONE;
 			SetSpellCooldown = 15,
-
+			/// Rewards a player character with a kill credit of a certain unit.
+			/// Targets: PLAYER; Data: <CREATURE-ENTRY-ID>; Texts: NONE;
+			QuestKillCredit = 16,
+			/// Sets spell cooldown for a unit.
+			/// Targets: PLAYER; Data: <QUEST-ID>; Texts: NONE;
+			QuestEventOrExploration = 17,
 
 			Invalid,
 			Count_ = Invalid
@@ -196,6 +201,8 @@ namespace wowpp
 			NamedWorldObject = 4,
 			/// Named creature.
 			NamedCreature = 5,
+			/// Unit which raised this trigger by casting a spell.
+			SpellCaster = 6,
 
 			Invalid,
 			Count_ = Invalid

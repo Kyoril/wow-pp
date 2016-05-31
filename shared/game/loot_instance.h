@@ -67,6 +67,9 @@ namespace wowpp
 		}
 		/// Determines whether the loot is empty.
 		bool isEmpty() const;
+		/// Determines whether a certain character can receive any loot from this instance.
+		/// @param receiver The receivers GUID.
+		bool containsLootFor(UInt64 receiver);
 		///
 		UInt32 getGold() const {
 			return m_gold;

@@ -99,7 +99,7 @@ namespace wowpp
 			return !m_lootRecipients.empty();
 		}
 		/// Get unit loot.
-		LootInstance *getUnitLoot() {
+		LootInstance *getUnitLoot() const {
 			return m_unitLoot.get();
 		}
 		void setUnitLoot(std::unique_ptr<LootInstance> unitLoot);

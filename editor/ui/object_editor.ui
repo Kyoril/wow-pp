@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1745</width>
-    <height>1404</height>
+    <width>1133</width>
+    <height>1020</height>
    </rect>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>16777215</width>
+    <height>16777215</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>Object Editor</string>
@@ -280,6 +286,89 @@
                 </item>
                </layout>
               </widget>
+              <widget class="QWidget" name="tab_19">
+               <attribute name="title">
+                <string>Skinning Loot</string>
+               </attribute>
+               <layout class="QVBoxLayout" name="verticalLayout_40">
+                <item>
+                 <widget class="QTreeWidget" name="skinLootView">
+                  <property name="alternatingRowColors">
+                   <bool>true</bool>
+                  </property>
+                  <property name="headerHidden">
+                   <bool>true</bool>
+                  </property>
+                  <property name="columnCount">
+                   <number>4</number>
+                  </property>
+                  <attribute name="headerVisible">
+                   <bool>false</bool>
+                  </attribute>
+                  <attribute name="headerCascadingSectionResizes">
+                   <bool>true</bool>
+                  </attribute>
+                  <attribute name="headerDefaultSectionSize">
+                   <number>400</number>
+                  </attribute>
+                  <attribute name="headerMinimumSectionSize">
+                   <number>250</number>
+                  </attribute>
+                  <column>
+                   <property name="text">
+                    <string>Name</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Group Chance</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Group Items</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Conditions</string>
+                   </property>
+                  </column>
+                 </widget>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_12">
+                  <item>
+                   <widget class="QLineEdit" name="skinLootLine">
+                    <property name="readOnly">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QToolButton" name="skinLootToolButton">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="text">
+                     <string>...</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="skinLootSimulatorButton">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="text">
+                     <string>Loot Simulator</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+               </layout>
+              </widget>
               <widget class="QWidget" name="tab_4">
                <attribute name="title">
                 <string>Spells</string>
@@ -488,7 +577,7 @@
           <widget class="QFrame" name="spellsFrame">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-             <horstretch>1</horstretch>
+             <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
@@ -499,18 +588,6 @@
             <enum>QFrame::Raised</enum>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_6">
-            <property name="leftMargin">
-             <number>0</number>
-            </property>
-            <property name="topMargin">
-             <number>0</number>
-            </property>
-            <property name="rightMargin">
-             <number>0</number>
-            </property>
-            <property name="bottomMargin">
-             <number>0</number>
-            </property>
             <item>
              <widget class="QGroupBox" name="spellBaseBox">
               <property name="sizePolicy">
@@ -863,7 +940,7 @@
             <item>
              <widget class="QGroupBox" name="groupBox_2">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -876,7 +953,14 @@
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_18">
                <item>
-                <widget class="QListWidget" name="spellLinkedSpellList"/>
+                <widget class="QListWidget" name="spellLinkedSpellList">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                </widget>
                </item>
               </layout>
              </widget>
@@ -884,7 +968,7 @@
             <item>
              <widget class="QGroupBox" name="groupBox_3">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -899,7 +983,7 @@
                <item>
                 <widget class="QTabWidget" name="attributeTabs">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -3296,7 +3380,7 @@ QGroupBox::indicator:unchecked:disabled
               <item>
                <widget class="QGroupBox" name="groupBox">
                 <property name="sizePolicy">
-                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                   <horstretch>0</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
@@ -3611,7 +3695,7 @@ QGroupBox::indicator:unchecked:disabled
             <item>
              <widget class="QTabWidget" name="tabWidget_4">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
+               <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -3902,6 +3986,12 @@ QGroupBox::indicator:unchecked:disabled
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>16777215</height>
+               </size>
               </property>
               <property name="title">
                <string>Basic attributes</string>
@@ -4230,7 +4320,7 @@ QGroupBox::indicator:unchecked:disabled
             <item>
              <widget class="QGroupBox" name="groupBox_4">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -4245,7 +4335,7 @@ QGroupBox::indicator:unchecked:disabled
                <item>
                 <widget class="QTabWidget" name="questTextTabWidget">
                  <property name="currentIndex">
-                  <number>0</number>
+                  <number>2</number>
                  </property>
                  <widget class="QWidget" name="tab_6">
                   <attribute name="title">
@@ -4405,19 +4495,21 @@ QGroupBox::indicator:unchecked:disabled
               <property name="flat">
                <bool>true</bool>
               </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="questSourceItemButton">
-              <property name="text">
-               <string>NONE</string>
-              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_39">
+               <item>
+                <widget class="QPushButton" name="questSourceItemButton">
+                 <property name="text">
+                  <string>NONE</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </widget>
             </item>
             <item>
              <widget class="QGroupBox" name="groupBox_6">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -4472,7 +4564,7 @@ QGroupBox::indicator:unchecked:disabled
             <item>
              <widget class="QGroupBox" name="groupBox_5">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -4720,8 +4812,8 @@ QGroupBox::indicator:unchecked:disabled
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1745</width>
-     <height>31</height>
+     <width>1133</width>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Project">
@@ -4742,6 +4834,7 @@ QGroupBox::indicator:unchecked:disabled
     <addaction name="actionImport"/>
     <addaction name="actionImport_Object_Loot"/>
     <addaction name="actionImport_Item_Loot"/>
+    <addaction name="actionImportSkinningLoot"/>
     <addaction name="separator"/>
     <addaction name="actionImport_Vendors"/>
     <addaction name="actionImport_Trainers"/>
@@ -4841,6 +4934,11 @@ QGroupBox::indicator:unchecked:disabled
   <action name="actionImport_Units">
    <property name="text">
     <string>Import Units</string>
+   </property>
+  </action>
+  <action name="actionImportSkinningLoot">
+   <property name="text">
+    <string>Import Skinning Loot</string>
    </property>
   </action>
   <actiongroup name="LootImport">

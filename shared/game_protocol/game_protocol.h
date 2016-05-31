@@ -139,7 +139,7 @@ namespace wowpp
 			Int32 questLevel;
 			String title;
 		};
-
+		
 		namespace atlogin_flags
 		{
 			enum Type
@@ -508,6 +508,14 @@ namespace wowpp
 				Ping					= 0x1DC,
 				SetSheathed				= 0x1E0,
 				AuthSession				= 0x1ED,
+				MailSend				= 0x238,
+				MailGetList				= 0x23A,
+				MailTakeMoney			= 0x245,
+				MailTakeItem			= 0x246,
+				MailMarkAsRead			= 0x247,
+				MailReturnToSender		= 0x248,
+				MailDelete				= 0x249,
+				MailCreateItemText		= 0x24A,
 				LearnTalent				= 0x251,
 				TogglePvP				= 0x253,
 				RequestPartyMemberStats	= 0x27F,
@@ -661,6 +669,8 @@ namespace wowpp
 				ChatWrongFaction			= 0x219,
 				SetRestStart				= 0x21E,
 				LoginVerifyWorld			= 0x236,
+				MailSendResult				= 0x239,
+				MailListResult				= 0x23B,
 				SpellLogMiss				= 0x24B,
 				PeriodicAuraLog				= 0x24E,
 				SpellDamageShield			= 0x24F,
@@ -749,8 +759,28 @@ namespace wowpp
 			{
 			}
 		};
-
+		
 		io::Reader &operator >>(io::Reader &r, WhoListRequest &out_whoList);
+
+		struct MailData final
+		{
+			UInt32 unk1, unk2;
+			String receiver, subject, body;
+			UInt32 money, COD;
+			UInt8 itemsCount;
+			std::array<ObjectGuid, 12> itemsGuids;
+
+			MailData()
+				: unk1(0)
+				, unk2(0)
+				, money(0)
+				, COD(0)
+				, itemsCount(0)
+			{
+			}
+		};
+
+		io::Reader &operator >>(io::Reader &r, MailData &out_mail);
 
 		namespace client_read
 		{
@@ -1316,6 +1346,12 @@ namespace wowpp
 			bool setActionBarToggles(
 				io::Reader &packet,
 				UInt8 &out_actionBars
+				);
+			
+			bool mailSend(
+				io::Reader &packet,
+				ObjectGuid &out_mailboxGuid,
+				MailData &out_mail
 				);
 		};
 
@@ -2220,8 +2256,7 @@ namespace wowpp
 				UInt32 next_slot, 
 				UInt32 prev_slot, 
 				UInt32 gold, 
-				UInt32 spell,
-				std::vector<Item_Data> item
+				UInt32 spell
 				);
 
 			void petNameQueryResponse(
@@ -2233,7 +2268,12 @@ namespace wowpp
 			
 			void petSpells(
 				game::OutgoingPacket &out_packet,
-				UInt64 petGUID);
+				UInt64 petGUID
+				);
+
+			void mailSendResult(
+				game::OutgoingPacket &out_packet
+				);
 		};
 	}
 }

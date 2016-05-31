@@ -362,7 +362,7 @@ namespace wowpp
 					hitInfo = game::hit_info::CriticalHit;
 				}
 
-				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(school, *attacker, isBinary));
+				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(school, attacker->getLevel(), isBinary));
 				m_hitInfos[targetA][targetB].push_back(hitInfo);
 				m_victimStates[targetA][targetB].push_back(victimState);
 			}
@@ -519,6 +519,13 @@ namespace wowpp
 						return true;
 					});
 				}
+			}
+			break;
+		case game::targets::UnitChainHeal:		//45
+			if (unitTarget)
+			{
+				// TODO
+				targets.push_back(unitTarget);
 			}
 			break;
 		default:

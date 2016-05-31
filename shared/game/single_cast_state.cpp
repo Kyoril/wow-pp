@@ -1046,6 +1046,62 @@ namespace wowpp
 		}
 	}
 
+	void SingleCastState::spellEffectScriptEffect(const proto::SpellEffect & effect)
+	{
+		// TODO: Do something here...
+		UInt32 spellId = 0;
+		switch (m_spell.id())
+		{
+			case 25140:
+				spellId = 32571;
+				break;
+			case 25143:
+				spellId = 32572;
+				break;
+			case 25650:
+				spellId = 30140;
+				break;
+			case 25652:
+				spellId = 30141;
+				break;
+			case 29128:
+				spellId = 32568;
+				break;
+			case 29129:
+				spellId = 32569;
+				break;
+			case 35376:
+				spellId = 25649;
+				break;
+			case 35727:
+				spellId = 35730;
+				break;
+			default:
+				WLOG("Unhandled SPELL_EFFECT_SCRIPT_EFFECT for spell " << m_spell.id());
+				return;
+		}
+
+		if (spellId != 0)
+		{
+			// Look for the spell
+			const auto *entry = m_cast.getExecuter().getProject().spells.getById(spellId);
+			if (!entry)
+			{
+				return;
+			}
+
+			// Get the cast time of this spell
+			Int64 castTime = entry->casttime();
+			if (m_cast.getExecuter().isGameCharacter())
+			{
+				reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(spell_mod_op::CastTime, spellId, castTime);
+			}
+			if (castTime < 0) castTime = 0;
+
+			m_cast.getExecuter().castSpell(m_target, spellId, -1, castTime, false);
+		}
+	}
+
 	void SingleCastState::spellEffectDrainPower(const proto::SpellEffect &effect)
 	{
 		// Calculate the power to drain
@@ -1090,6 +1146,9 @@ namespace wowpp
 			return;
 		}
 
+		m_affectedTargets.insert(unitTarget->shared_from_this());
+		unitTarget->threaten(caster, 0.0f);
+
 		// Does this have any effect on the target?
 		if (unitTarget->getByteValue(unit_fields::Bytes0, 3) != powerType) {
 			return;    // Target does not use this kind of power
@@ -1110,7 +1169,7 @@ namespace wowpp
 
 		// Remove power
 		unitTarget->setUInt32Value(unit_fields::Power1 + powerType, currentPower - powerToDrain);
-
+		
 		// If mana was drain, give the same amount of mana to the caster (or energy, if the caster does
 		// not use mana)
 		if (powerType == game::power_type::Mana)
@@ -1296,20 +1355,86 @@ namespace wowpp
 	void SingleCastState::spellEffectDuel(const proto::SpellEffect &effect)
 	{
 		GameUnit &caster = m_cast.getExecuter();
+		if (!caster.isGameCharacter())
+		{
+			// This spell effect is only usable by player characters right now
+			ELOG("Caster is not a game character!");
+			return;
+		}
+
 		std::vector<GameUnit *> targets;
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
 		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 
-		for (UInt32 i = 0; i < targets.size(); i++)
+		// Did we find at least one valid target?
+		if (targets.empty())
 		{
-			GameUnit *targetUnit = targets[i];
-			m_affectedTargets.insert(targetUnit->shared_from_this());
+			WLOG("No targets found");
+			return;
+		}
 
-			SpellTargetMap targetMap;
-			targetMap.m_targetMap = game::spell_cast_target_flags::Self;
-			targetUnit->castSpell(targetMap, 7267, -1, 0, true);	// cast beg at loser
+		// Get the first target
+		GameUnit *targetUnit = targets.front();
+		assert(targetUnit);
+
+		// Check if target is a character
+		if (!targetUnit->isGameCharacter())
+		{
+			// Skip this target
+			WLOG("Target is not a character");
+			return;
+		}
+
+		// Check if target is already dueling
+		if (targetUnit->getUInt64Value(character_fields::DuelArbiter))
+		{
+			// Target is already dueling
+			WLOG("Target is already dueling");
+			return;
+		}
+
+		// Target is dead
+		if (!targetUnit->isAlive())
+		{
+			WLOG("Target is dead");
+			return;
+		}
+
+		// We affect this target
+		m_affectedTargets.insert(targetUnit->shared_from_this());
+
+		// Find flag object entry
+		auto &project = targetUnit->getProject();
+		const auto *entry = project.objects.getById(effect.miscvaluea());
+		if (!entry)
+		{
+			ELOG("Could not find duel arbiter object: " << effect.miscvaluea());
+			return;
+		}
+
+		// Spawn new duel arbiter flag
+		if (auto *world = caster.getWorldInstance())
+		{
+			auto flagObject = world->spawnWorldObject(
+				*entry,
+				caster.getLocation(),
+				0.0f,
+				0.0f
+				);
+			flagObject->setUInt32Value(world_object_fields::AnimProgress, 0);
+			flagObject->setUInt32Value(world_object_fields::Level, caster.getLevel());
+			flagObject->setUInt32Value(world_object_fields::Faction, caster.getFactionTemplate().id());
+			world->addGameObject(*flagObject);
+
+			// Save this object to prevent it from being deleted immediatly
+			caster.addWorldObject(flagObject);
+
+			// Save them
+			caster.setUInt64Value(character_fields::DuelArbiter, flagObject->getGuid());
+			targetUnit->setUInt64Value(character_fields::DuelArbiter, flagObject->getGuid());
+			DLOG("Duel arbiter spawned: " << flagObject->getGuid());
 		}
 	}
 
@@ -1511,7 +1636,7 @@ namespace wowpp
 				const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
 				if (!noThreat)
 				{
-					targetUnit->threatened(caster, 0.0f);
+					targetUnit->threaten(caster, 0.0f);
 				}
 
 				// TODO: Add aura to unit target
@@ -1724,6 +1849,7 @@ namespace wowpp
 			{se::StealBeneficialBuff,	std::bind(&SingleCastState::spellEffectStealBeneficialBuff, this, std::placeholders::_1)},
 			{se::InterruptCast,			std::bind(&SingleCastState::spellEffectInterruptCast, this, std::placeholders::_1) },
 			{se::LearnSpell,			std::bind(&SingleCastState::spellEffectLearnSpell, this, std::placeholders::_1) },
+			{se::ScriptEffect,			std::bind(&SingleCastState::spellEffectScriptEffect, this, std::placeholders::_1) },
 			// Add all effects above here
 			{se::ApplyAura,				std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
 			{se::SchoolDamage,			std::bind(&SingleCastState::spellEffectSchoolDamage, this, std::placeholders::_1)}
@@ -2233,7 +2359,7 @@ namespace wowpp
 
 		if (executer.getVictim())
 		{
-			spawned->threatened(*executer.getVictim(), 0.0001f);
+			spawned->threaten(*executer.getVictim(), 0.0001f);
 		}
 	}
 
@@ -2322,7 +2448,7 @@ namespace wowpp
 				float addThread = targetUnit->getThreat(*topThreatener).get();
 				addThread -= targetUnit->getThreat(caster).get();
 				if (addThread > 0.0f) {
-					targetUnit->threatened(caster, addThread);
+					targetUnit->threaten(caster, addThread);
 				}
 			}
 		}

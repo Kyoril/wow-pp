@@ -445,6 +445,47 @@ namespace wowpp
 				m_ui->lootSimulatorButton->setDisabled(false);
 			}
 
+			m_ui->skinLootView->clear();
+			if (!unit->skinninglootentry())
+			{
+				m_ui->skinLootLine->setText("- NO LOOT -");
+				m_ui->skinLootToolButton->setDisabled(true);
+				m_ui->skinLootSimulatorButton->setDisabled(true);
+			}
+			else
+			{
+				QIcon groupIcon;
+				groupIcon.addFile(QStringLiteral(":/Items.png"), QSize(), QIcon::Normal, QIcon::Off);
+
+				size_t groupIndex = 0;
+				const auto *lootEntry = m_application.getProject().skinningLoot.getById(unit->skinninglootentry());
+				if (lootEntry)
+				{
+					for (const auto &group : lootEntry->groups())
+					{
+						// Add group
+						QTreeWidgetItem *groupItem = new QTreeWidgetItem();
+						groupItem->setIcon(0, groupIcon);
+						m_ui->skinLootView->addTopLevelItem(groupItem);
+
+						float totalDropChance = 0.0f;
+						for (const auto &def : group.definitions())
+						{
+							totalDropChance += def.dropchance();
+							addLootItem(def, groupItem);
+						}
+
+						groupItem->setText(0, QString("Group %1").arg(groupIndex++));
+						groupItem->setText(1, QString("%1% Total").arg(totalDropChance));
+						groupItem->setText(2, QString("%1 Items").arg(group.definitions_size()));
+					}
+				}
+
+				m_ui->skinLootLine->setText(QString("Loot Entry %1").arg(unit->skinninglootentry()));
+				m_ui->skinLootToolButton->setDisabled(false);
+				m_ui->skinLootSimulatorButton->setDisabled(false);
+			}
+
 			// Add unit properties
 #define WOWPP_NUM_PROPERTY(name, type, ref, prop, readonly) { \
 			auto getBinder = [unit]() -> type { return unit->prop(); }; \
@@ -1322,6 +1363,22 @@ namespace wowpp
 			dialog.exec();
 		}
 
+		void ObjectEditor::on_skinLootSimulatorButton_clicked()
+		{
+			if (!m_selectedUnit)
+				return;
+
+			if (!m_selectedUnit->skinninglootentry())
+				return;
+
+			const auto *loot = m_application.getProject().skinningLoot.getById(m_selectedUnit->skinninglootentry());
+			if (!loot)
+				return;
+
+			LootDialog dialog(m_application.getProject(), *loot);
+			dialog.exec();
+		}
+
 		void ObjectEditor::on_actionImport_triggered()
 		{
 			// Counter variables used by the import method
@@ -1920,6 +1977,116 @@ namespace wowpp
 				def->set_conditiontype(cond);
 				def->set_conditionvala(conda);
 				def->set_conditionvalb(condb);
+				return true;
+			};
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
+			dialog.exec();
+		}
+		void ObjectEditor::on_actionImportSkinningLoot_triggered()
+		{
+			// Counter variables used by the import method
+			UInt32 lastEntry = 0;
+			UInt32 lastGroup = 0;
+			UInt32 groupIndex = 0;
+
+			// Prepare the import task
+			ImportTask task;
+			task.countQuery = "(SELECT COUNT(*) FROM `wowpp_skinning_loot_template` WHERE `active` != 0);";
+			task.selectQuery = "SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount`,`lootcondition`,`condition_value1`,`condition_value2` FROM `wowpp_skinning_loot_template` WHERE `active` != 0"
+				" ORDER BY `entry`, `groupid`;";
+			task.beforeImport = [this]() {
+				// Remove old unit loot
+				for (int i = 0; i < m_application.getProject().units.getTemplates().entry_size(); ++i)
+				{
+					auto *unit = m_application.getProject().units.getTemplates().mutable_entry(i);
+					unit->set_skinninglootentry(0);
+				}
+				m_application.getProject().skinningLoot.clear();
+			};
+			task.onImport = [this, &lastEntry, &lastGroup, &groupIndex](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0, itemId = 0, groupId = 0, minCount = 0, maxCount = 0, cond = 0, conda = 0, condb = 0;
+				float dropChance = 0.0f;
+				row.getField(0, entry);
+				row.getField(1, itemId);
+				row.getField(2, dropChance);
+				row.getField(3, groupId);
+				row.getField(4, minCount);
+				row.getField(5, maxCount);
+				row.getField(6, cond);
+				row.getField(7, conda);
+				row.getField(8, condb);
+
+				// Find referenced item
+				const auto *itemEntry = m_application.getProject().items.getById(itemId);
+				if (!itemEntry)
+				{
+					ELOG("Could not find referenced item " << itemId << " (referenced in skinning loot entry " << entry << " - group " << groupId << ")");
+					return false;
+				}
+
+				// Create a new loot entry
+				bool created = false;
+				if (entry > lastEntry)
+				{
+					m_application.getProject().skinningLoot.add(entry);
+
+					lastEntry = entry;
+					lastGroup = groupId;
+					groupIndex = 0;
+					created = true;
+				}
+
+				auto *lootEntry = m_application.getProject().skinningLoot.getById(entry);
+				if (!lootEntry)
+				{
+					// Error
+					ELOG("Loot entry " << entry << " found, but no creature to assign found");
+					return false;
+				}
+
+				if (created)
+				{
+					auto *unitEntry = m_application.getProject().units.getById(entry);
+					if (!unitEntry)
+					{
+						WLOG("No unit with entry " << entry << " found - creature skinning loot template will not be assigned!");
+					}
+					else
+					{
+						unitEntry->set_skinninglootentry(lootEntry->id());
+					}
+				}
+
+				// If there are no loot groups yet, create a new one
+				if (lootEntry->groups().empty() || groupId > lastGroup)
+				{
+					lootEntry->add_groups();
+					if (groupId > lastGroup)
+					{
+						lastGroup = groupId;
+						groupIndex++;
+					}
+				}
+
+				if (lootEntry->groups().empty())
+				{
+					ELOG("Error retrieving loot group");
+					return false;
+				}
+
+				auto *group = lootEntry->mutable_groups(groupIndex);
+				auto *def = group->add_definitions();
+				def->set_item(itemEntry->id());
+				def->set_mincount(minCount);
+				def->set_maxcount(maxCount);
+				def->set_dropchance(dropChance);
+				def->set_isactive(true);
+				def->set_conditiontype(cond);
+				def->set_conditionvala(conda);
+				def->set_conditionvalb(condb);
+
 				return true;
 			};
 

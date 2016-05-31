@@ -2884,6 +2884,24 @@ namespace wowpp
 		}
 
 		sendGossipMenu(guid);
+
+		WorldObject &wobj = reinterpret_cast<WorldObject&>(*obj);
+		if (wobj.getEntry().type() == world_object_type::Goober)
+		{
+			// Possibly quest object
+			m_character->onQuestObjectCredit(0, wobj);
+
+			// Check if spell cast is needed
+			UInt32 spellId = wobj.getEntry().data(10);
+			if (spellId)
+			{
+				// Cast spell
+				SpellTargetMap target;
+				target.m_unitTarget = m_character->getGuid();
+				target.m_targetMap = game::spell_cast_target_flags::Unit;
+				m_character->castSpell(std::move(target), spellId);
+			}
+		}
 	}
 
 	void Player::handleOpenItem(game::Protocol::IncomingPacket & packet)
@@ -2963,33 +2981,81 @@ namespace wowpp
 			return;
 		}
 
-		//TODO check if player is alive etc.
-		
+		// Can't trade while dead
+		if(!m_character->isAlive())
+		{
+			sendTradeStatus(game::trade_status::YouDead);
+			return;
+		}
+
+		if (m_character->isStunned())
+		{
+			sendTradeStatus(game::trade_status::YouStunned);
+			return;
+		}
+
+		if (m_logoutCountdown.running)
+		{
+			sendTradeStatus(game::trade_status::YouLogout);
+			return;
+		}
+
 		auto *worldInstance = m_character->getWorldInstance();
 		if (!worldInstance)
 		{
-			WLOG("no world instance");
 			return;
 		}
-		UInt64 thisguid = this->getCharacter()->getGuid(); 
+
+		UInt64 thisguid = m_character->getGuid(); 
 
 		auto *otherPlayer = m_manager.getPlayerByCharacterGuid(otherGuid);
-		if (otherPlayer != nullptr)
+		if (otherPlayer == nullptr ||
+			!otherPlayer->getCharacter())
 		{
-			m_tradeStatusInfo.tradestatus = trade_status::BeginTrade;
-			m_tradeStatusInfo.guid = thisguid;
-			m_tradeData = std::shared_ptr<TradeData>(new TradeData (this, otherPlayer));
-			otherPlayer->m_tradeData = std::shared_ptr<TradeData>(new TradeData (otherPlayer, this));
-			otherPlayer->sendTradeData(m_tradeStatusInfo);
+			sendTradeStatus(game::trade_status::NoTarget);
+			return;
 		}
+
+		auto otherCharacter = otherPlayer->getCharacter();
+		if (!otherCharacter->isAlive())
+		{
+			sendTradeStatus(game::trade_status::TargetDead);
+			return;
+		}
+
+		if (otherCharacter->isStunned())
+		{
+			sendTradeStatus(game::trade_status::TargetStunned);
+			return;
+		}
+
+		// TODO: Target logout and other checks
+
+		if (otherCharacter->getDistanceTo(*m_character, false) > 10.0f)
+		{
+			sendTradeStatus(game::trade_status::TargetTooFar);
+			return;
+		}
+
+		// Start trade
+		m_tradeStatusInfo.tradestatus = game::trade_status::BeginTrade;
+		m_tradeStatusInfo.guid = thisguid;
+		m_tradeData = std::make_shared<TradeData>(this, otherPlayer);
+		otherPlayer->m_tradeData = std::make_shared<TradeData>(otherPlayer, this);
+		otherPlayer->sendTradeStatus(m_tradeStatusInfo);
 	}
 
 	void Player::handleBeginTrade(game::Protocol::IncomingPacket &packet)
 	{
-		m_tradeStatusInfo.tradestatus = trade_status::OpenWindow;
+		if (!m_tradeData)
+		{
+			return;
+		}
+
+		m_tradeStatusInfo.tradestatus = game::trade_status::OpenWindow;
 		
-		m_tradeData->getPlayer()->sendTradeData(m_tradeStatusInfo);
-		m_tradeData->getTrader()->sendTradeData(m_tradeStatusInfo);
+		m_tradeData->getPlayer()->sendTradeStatus(m_tradeStatusInfo);
+		m_tradeData->getTrader()->sendTradeStatus(m_tradeStatusInfo);
 		
 		//openWindow
 	}
@@ -3010,23 +3076,23 @@ namespace wowpp
 			return;
 		}
 
-		my_Trade->setacceptTrade(true);
+		my_Trade->setTradeAcceptState(true);
 
 		TradeStatusInfo info;
 
 		if (my_Trade->getGold() > player->getCharacter()->getUInt32Value(character_fields::Coinage))
 		{
-			info.tradestatus = trade_status::CloseWindow;
-			sendTradeData(info);
-			my_Trade->setacceptTrade(false);
+			info.tradestatus = game::trade_status::CloseWindow;
+			sendTradeStatus(info);
+			my_Trade->setTradeAcceptState(false);
 			return;
 		}
 
 		if (his_Trade->getGold() > trader->getCharacter()->getUInt32Value(character_fields::Coinage))
 		{
-			info.tradestatus = trade_status::CloseWindow;
-			sendTradeData(info);
-			his_Trade->setacceptTrade(false);
+			info.tradestatus = game::trade_status::CloseWindow;
+			sendTradeStatus(info);
+			his_Trade->setTradeAcceptState(false);
 			return;
 		}
 								
@@ -3035,8 +3101,8 @@ namespace wowpp
 			//check for cheating
 			//inform partner client
 
-			info.tradestatus = trade_status::TradeAccept;
-			trader->sendTradeData(info);
+			info.tradestatus = game::trade_status::TradeAccept;
+			trader->sendTradeStatus(info);
 			//test item << inventory
 
 			//execute Trade
@@ -3056,14 +3122,14 @@ namespace wowpp
 			gold_newt += my_Trade->getGold();
 			trader->getCharacter()->setUInt32Value(character_fields::Coinage, gold_newt);
 
-			info.tradestatus = trade_status::TradeComplete;
-			trader->sendTradeData(info);
-			sendTradeData(info);
+			info.tradestatus = game::trade_status::TradeComplete;
+			trader->sendTradeStatus(info);
+			sendTradeStatus(info);
 		}
 		else
 		{
-			info.tradestatus = trade_status::TradeAccept;
-			trader->sendTradeData(info);
+			info.tradestatus = game::trade_status::TradeAccept;
+			trader->sendTradeStatus(info);
 		}
 	}
 
@@ -3083,18 +3149,24 @@ namespace wowpp
 
 		if (gold != m_tradeData->getGold())
 		{
+			// Update the amount of gold
 			m_tradeData->setGold(gold);
-			m_tradeData->setacceptTrade(false);
-			m_tradeData->getTrader()->m_tradeData->setacceptTrade(false);
 
-			TradeStatusInfo info;
-			info.tradestatus = trade_status::BackToTrade;
-			m_tradeData->getPlayer()->sendTradeData(info);
+			// Update trade status
+			if (m_tradeData->isAccepted())
+			{
+				m_tradeData->setTradeAcceptState(false);
+
+				TradeStatusInfo info;
+				info.tradestatus = game::trade_status::BackToTrade;
+				m_tradeData->getPlayer()->sendTradeStatus(std::move(info));
+			}
+
+			// 
 			m_tradeData->getTrader()->sendUpdateTrade();
 		}
 
 		//sendUpdateTrade(gold);
-		WLOG("gold set: " << gold);
 	}
 
 	void Player::handleSetTradeItem(game::Protocol::IncomingPacket &packet)
@@ -3117,89 +3189,24 @@ namespace wowpp
 
 		if (tradeSlot >= trade_slots::Count)
 		{
-			info.tradestatus = trade_status::TradeCanceled;
-			sendTradeData(info);
+			info.tradestatus = game::trade_status::TradeCanceled;
+			sendTradeStatus(info);
 			return;
 		}
 
-		
-
-		UInt16 _slot = slot;
 		auto this_player = this->getCharacter();
 		auto &inventory = this_player->getInventory();
-		auto item = inventory.getItemAtSlot(Inventory::getAbsoluteSlot(bag, _slot));
-		UInt64 item_guid = item->getGuid();
+		auto item = inventory.getItemAtSlot(Inventory::getAbsoluteSlot(bag, slot));
 		//TODO: ask if there is an item like that in trade already
-						
-		auto *_item = m_project.items.getById(item_guid);
-		
-		my_Trade->setItem(*_item, _slot, item->getUInt64Value(ItemFields::GiftCreator), item->getStackCount());
-			
-		sendUpdateTrade();
 
+		my_Trade->setItem(item, tradeSlot);
+		sendUpdateTrade();
 	}
 
-	void Player::sendTradeData(TradeStatusInfo info)
+	void Player::sendTradeStatus(TradeStatusInfo info)
 	{
-		UInt64 status = 0;
-		switch (info.tradestatus)
-		{
-		case trade_status::Busy:
-			break;
-		case trade_status::BeginTrade:
-			WLOG("send TRADE_STATUS_BEGIN_TRADE");
-			sendProxyPacket(std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, info.tradestatus, info.guid)); //send UInt64
-			break;
-		case trade_status::OpenWindow:
-			WLOG("send TRADE_STATUS_OPEN_WINDOW")
-			sendProxyPacket(std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, info.tradestatus, status));
-			break;
-		case trade_status::TradeCanceled:
-			break;
-		case trade_status::TradeAccept:
-			sendProxyPacket(std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, info.tradestatus, status));
-			break;
-		case trade_status::Busy2:
-			break;
-		case trade_status::NoTarget:
-			break;
-		case trade_status::BackToTrade:
-			sendProxyPacket(std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, info.tradestatus, status));
-			break;
-		case trade_status::TradeComplete:
-			sendProxyPacket(std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, info.tradestatus, status));
-			break;
-		case trade_status::TradeRejected:
-			break;
-		case trade_status::TargetTooFar:
-			break;
-		case trade_status::WrongFaction:
-			break;
-		case trade_status::CloseWindow:
-			break;
-		case trade_status::IgnoreYou:
-			break;
-		case trade_status::YouStunned:
-			break;
-		case trade_status::TargetStunned:
-			break;
-		case trade_status::YouDead:
-			break;
-		case trade_status::TargetDead:
-			break;
-		case trade_status::YouLogout:
-			break;
-		case trade_status::TargetLogout:
-			break;
-		case trade_status::TrialAccount:
-			break;
-		case trade_status::WrongRealm:
-			break;
-		case trade_status::NotOnTapList:
-			break;
-		default:
-			break;
-		}
+		sendProxyPacket(
+			std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, static_cast<UInt32>(info.tradestatus), info.guid));
 	}
 	
 	void Player::sendUpdateTrade()
@@ -3211,9 +3218,8 @@ namespace wowpp
 				0, 
 				trade_slots::Count, 
 				trade_slots::Count,
-				m_tradeData->getGold(), 
-				0,
-				m_tradeData->getItem(),
+				m_tradeData->getTrader()->m_tradeData->getGold(), 
+				0
 				));
 	}
 
@@ -3251,5 +3257,108 @@ namespace wowpp
 		{
 			m_character->addFlag(character_fields::CharacterFlags, 2048);
 		}
+	}
+
+	void Player::handleMailSend(game::Protocol::IncomingPacket & packet)
+	{
+		ObjectGuid currentMailbox;
+		game::MailData mailInfo;
+
+		if (!(game::client_read::mailSend(packet, currentMailbox, mailInfo)))
+		{
+			return;
+		}
+
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+		{
+			return;
+		}
+
+		auto *target = world->findObjectByGUID(currentMailbox);
+		if (!target ||
+			target->getTypeId() != 19)
+		{
+			// Checks if object exists and if it's a mailbox
+			return;
+		}
+
+		// TODO distance to mailbox
+		//float distance = m_character->getDistanceTo(target);
+
+		if (mailInfo.receiver.empty())
+		{
+			return;
+		}
+
+		String receiverCap = mailInfo.receiver;
+		capitalize(receiverCap);
+
+		UInt32 cost = mailInfo.itemsCount ? 30 * mailInfo.itemsCount : 30;
+		UInt32 reqMoney = cost + mailInfo.money;
+		UInt32 plMoney = m_character->getUInt32Value(character_fields::Coinage);
+
+		if (plMoney < reqMoney)
+		{
+			// TODO send error
+			return;
+		}
+
+		auto &inventory = m_character->getInventory();
+		UInt16 itemSlot = 0;
+		std::vector<std::shared_ptr<GameItem>> items;
+		for (UInt8 i = 0; i < mailInfo.itemsCount; ++i)
+		{
+			UInt64 guid = mailInfo.itemsGuids[i];
+			if (!isItemGUID(guid))
+			{
+				// TODO send error
+				return;
+			}
+
+			if (!inventory.findItemByGUID(guid, itemSlot))
+			{
+				// Check if item is on player's inventory
+				return;
+			}
+
+			auto item = inventory.getItemAtSlot(itemSlot);
+			// Check if it's a bag with items
+			if (!item)
+			{
+				// TODO send error
+				return;
+			}
+
+			const auto &itemEntry = item->getEntry();
+
+			if ((itemEntry.flags() & game::item_flags::Conjured) ||
+				(item->getUInt32Value(item_fields::Duration)))
+			{
+				// TODO send error
+				return;
+			}
+
+			if ((mailInfo.COD) &&
+				(itemEntry.flags() & game::item_flags::Wrapped))
+			{
+				// TODO send error
+				return;
+			}
+
+			// TODO other checks
+			items.push_back(item);
+		}
+
+		// TODO send mail OK message
+
+		// Modify wallet of sender
+		m_character->setUInt32Value(character_fields::Coinage, plMoney - cost);
+
+
+		//TODO
+
+
+		DLOG("CMSG_MAIL_SEND received from client");
 	}
 }

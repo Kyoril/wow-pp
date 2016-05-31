@@ -2433,15 +2433,16 @@ namespace wowpp
 
 	void Player::handleWho(game::IncomingPacket & packet)
 	{
-
-		//every playewr need to wait 5 seconds before new request.
-		const GameTime now = getCurrentTime();
-		if (m_nextWhoRequest > now)
+		// Timer protection
+		GameTime now = getCurrentTime();
+		if (now < m_nextWhoRequest)
 		{
+			// Don't do that yet
 			return;
 		}
-		m_nextWhoRequest = now + (constants::OneSecond * 5);
 
+		// Allow one request every 6 seconds
+		m_nextWhoRequest = now + constants::OneSecond * 6;
 
 		// Read request packet
 		game::WhoListRequest request;
@@ -2496,7 +2497,6 @@ namespace wowpp
 				continue;
 			}
 
-
 			// Check if levels match, first, as this is the least expensive thing to check
 			const UInt32 level = character->getLevel();
 			if (level < request.level_min || level > request.level_max)
@@ -2543,7 +2543,6 @@ namespace wowpp
 					continue;
 				}
 			}
-
 
 			// Convert character name to lower case string
 			String charNameLowered = character->getName();

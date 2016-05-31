@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>507</width>
-    <height>511</height>
+    <width>361</width>
+    <height>402</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -234,22 +234,6 @@
           <bool>true</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="1" column="2">
-           <widget class="QSpinBox" name="spinBox_4">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimum">
-             <number>1</number>
-            </property>
-            <property name="maximum">
-             <number>100</number>
-            </property>
-           </widget>
-          </item>
           <item row="0" column="2">
            <layout class="QHBoxLayout" name="horizontalLayout_3">
             <item>
@@ -298,6 +282,22 @@
             </property>
            </widget>
           </item>
+          <item row="1" column="2">
+           <widget class="QSpinBox" name="spinBox_4">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>100</number>
+            </property>
+           </widget>
+          </item>
           <item row="2" column="2">
            <widget class="QComboBox" name="comboBox">
             <property name="sizePolicy">
@@ -319,6 +319,62 @@
             <item>
              <property name="text">
               <string>Waypoints</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string>Stand state:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QComboBox" name="comboBox_2">
+            <item>
+             <property name="text">
+              <string>Stand</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Sit</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>SitChair</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Sleep</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>SitLowChair</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>SitMediumChair</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>SitHighChair</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Dead</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Kneel</string>
              </property>
             </item>
            </widget>

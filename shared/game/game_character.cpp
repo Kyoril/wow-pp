@@ -52,12 +52,22 @@ namespace wowpp
 		, m_canParry(false)
 		, m_canDualWield(false)
 		, m_inventory(*this)
+		, m_pvpCombatTimer(timers)
 	{
 		// Resize values field
 		m_values.resize(character_fields::CharacterFieldCount, 0);
 		m_valueBitset.resize((character_fields::CharacterFieldCount + 31) / 32, 0);
 
 		m_objectType |= type_mask::Player;
+
+		// PvP Combat timer expiration event subscription
+		m_pvpCombatTimeout = m_pvpCombatTimer.ended.connect([this]() {
+			// If not in PvE-Combat, we are no longer in combat at all after this timer expires
+			if (!hasAttackingUnits())
+			{
+				removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
+			}
+		});
 	}
 
 	GameCharacter::~GameCharacter()
@@ -715,7 +725,7 @@ namespace wowpp
 		return true;
 	}
 
-	void GameCharacter::onQuestKillCredit(GameCreature &killed)
+	void GameCharacter::onQuestKillCredit(UInt64 unitGuid, const proto::UnitEntry &entry)
 	{
 		// Check all quests in the quest log
 		bool updateQuestObjects = false;
@@ -746,7 +756,7 @@ namespace wowpp
 			UInt8 reqIndex = 0;
 			for (const auto &req : quest->requirements())
 			{
-				if (req.creatureid() == killed.getEntry().id())
+				if (req.creatureid() == entry.id())
 				{
 					// Get current counter
 					UInt8 counter = getByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex);
@@ -757,7 +767,7 @@ namespace wowpp
 						it->second.creatures[reqIndex]++;
 
 						// Fire signal to update UI
-						questKillCredit(*quest, killed.getGuid(), killed.getEntry().id(), counter, req.creaturecount());
+						questKillCredit(*quest, unitGuid, entry.id(), counter, req.creaturecount());
 
 						// Check if this completed the quest
 						if (fulfillsQuestRequirements(*quest))
@@ -2094,6 +2104,28 @@ namespace wowpp
 		}
 
 		heal(static_cast<UInt32>(addHealth), nullptr, true);
+	}
+
+	void GameCharacter::onThreat(GameUnit & threatener, float amount)
+	{
+		// We don't threat ourself
+		if (&threatener == this)
+			return;
+
+		// PvP combat?
+		if (threatener.isGameCharacter())
+		{
+			// Mark as "in combat" and setup timer
+			addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
+
+			// Threatener will also be marked as "in combat"
+			threatener.addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
+
+			// Toggle pvp reset timer in the next 6 seconds
+			GameTime endTime = getCurrentTime() + constants::OneSecond * 6;
+			m_pvpCombatTimer.setEnd(endTime);
+			reinterpret_cast<GameCharacter&>(threatener).m_pvpCombatTimer.setEnd(endTime);
+		}
 	}
 
 	void GameCharacter::classUpdated()

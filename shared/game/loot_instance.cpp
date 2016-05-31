@@ -180,6 +180,12 @@ namespace wowpp
 		return false;
 	}
 
+	bool LootInstance::containsLootFor(UInt64 receiver)
+	{
+		// TODO
+		return !isEmpty();
+	}
+
 	void LootInstance::takeItem(UInt8 slot)
 	{
 		if (slot >= m_items.size()) {

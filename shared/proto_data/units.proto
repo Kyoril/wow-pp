@@ -89,6 +89,7 @@ message UnitEntry {
 	repeated uint32 end_quests = 51;
 	optional uint32 mechanicimmunity = 52;
 	optional uint32 schoolimmunity = 53;
+	optional uint32 skinninglootentry = 54;
 }
 
 message Units {

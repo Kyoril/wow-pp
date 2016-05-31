@@ -22,22 +22,20 @@
 #include "pch.h"
 #include "trade_data.h"
 #include "game/game_creature.h"
-#include "Player.h"
+#include "player.h"
 #include "game/game_world_object.h"
 
 
 namespace wowpp
-{
-	Item_Data::ItemData() :
-	stack_count(0),
-	guid_value(0)
-	{}
-		
-	TradeData::TradeData() {}
-	TradeData::TradeData(Player *_player, Player *_trader) :
-	m_player(_player),
-	m_trader(_trader),
-	gold(0) {}
+{	
+	TradeData::TradeData(Player *player, Player *trader)
+		: m_player(player)
+		, m_trader(trader)
+		, m_gold(0)
+		, m_accepted(false)
+	{
+		m_items.resize(7);
+	}
 
 	Player* TradeData::getPlayer()
 	{
@@ -51,35 +49,32 @@ namespace wowpp
 
 	void TradeData::setGold(UInt32 money)
 	{
-		gold = money;
+		m_gold = money;
 	}
 
-	void TradeData::setacceptTrade(bool state)
+	void TradeData::setTradeAcceptState(bool state)
 	{
-		acceptTrade = state;
+		m_accepted = state;
 	}
 
 	UInt32 TradeData::getGold()
 	{
-		return gold;
+		return m_gold;
 	}
 
 	bool TradeData::isAccepted()
 	{
-		return acceptTrade;
+		return m_accepted;
 	}
 
-	void TradeData::setItem(proto::ItemEntry item, UInt16 slot, UInt64 guid_value, UInt32 stack_count)
+	void TradeData::setItem(std::shared_ptr<GameItem> item, UInt16 slot)
 	{
-		Item_Data item_data;
-		int _slot = slot + 1;
-		item_data.m_item = item;
-		item_data.m_stack_count = stack_count;
-		item_data.m_guid_value = guid_value;
-		m_item_data.insert(m_item_data.begin() + _slot, item_data);
+		// Replace item at slot
+		m_items[slot] = item;
 	}
-	std::vector<Item_Data> TradeData::getItem()
+
+	/*std::vector<Item_Data> TradeData::getItem()
 	{
 		return(m_item_data);
-	}
+	}*/
 }

@@ -3376,9 +3376,25 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::TradeStatus);
 				out_packet << io::write<NetUInt32>(status);
-				if (guid > 0)
+				switch (status)
 				{
-					out_packet << io::write<NetUInt64>(guid);
+					case game::trade_status::BeginTrade:
+						out_packet << io::write<NetUInt64>(guid);
+						break;
+					case game::trade_status::OpenWindow:
+						out_packet << io::write<NetUInt32>(0);
+						break;
+					case game::trade_status::CloseWindow:
+						out_packet 
+							<< io::write<NetUInt32>(0)
+							<< io::write<NetUInt8>(0)
+							<< io::write<NetUInt32>(0);
+						break;
+					case game::trade_status::WrongRealm:
+						out_packet << io::write<NetUInt8>(0);
+						break;
+					default:
+						break;
 				}
 				out_packet.finish();
 			}
@@ -3389,24 +3405,34 @@ namespace wowpp
 					     UInt32 next_slot,
 					     UInt32 prev_slot,
 					     UInt32 gold,
-					     UInt32 spell,
-					     std::vector<Item_Data> item)
+					     UInt32 spell)
 			{
 				out_packet.start(game::server_packet::TradeStatusExtended);
-				out_packet << io::write<NetUInt8>(state);
-				out_packet << io::write<NetUInt32>(tradeID);
-				out_packet << io::write<NetUInt32>(next_slot);
-				out_packet << io::write<NetUInt32>(prev_slot);
-				out_packet << io::write<NetUInt32>(gold);
-				out_packet << io::write<NetUInt32>(spell);
+				out_packet 
+					<< io::write<NetUInt8>(state)
+					<< io::write<NetUInt32>(tradeID)
+					<< io::write<NetUInt32>(next_slot)
+					<< io::write<NetUInt32>(prev_slot)
+					<< io::write<NetUInt32>(gold)
+					<< io::write<NetUInt32>(spell);
 				
-				UInt8 count = 0;
-				for (auto this_item : item)
+				for (UInt32 i = 0; i < 7; ++i)
+				{
+					// Counter
+					out_packet << io::write<NetUInt8>(i);
+
+					// TODO: Empty item slots
+					for (UInt8 j = 0; j < 18; ++j)
+					{
+						out_packet
+							<< io::write<NetUInt32>(0);
+					}
+				}
+				/*for (auto this_item : item)
 				{
 				        auto game_item = this_item.getGameItem();
 
-					out_packet << io::write<NetUInt8>(count); 
-					
+						out_packet << io::write<NetUInt8>(count);
 					out_packet << io::write<NetUInt32>(this_item.m_item.id());
 					out_packet << io::write<NetUInt32>(this_item.m_item.displayid());
 					out_packet << io::write<NetUInt32>(this_item.m_stack_count);
@@ -3428,8 +3454,7 @@ namespace wowpp
 					}
 					count++;
 				}
-				
-
+				*/
 				out_packet.finish();
 			}
 
@@ -4295,6 +4320,13 @@ namespace wowpp
 				return packet
 					>> io::read<NetUInt8>(out_actionBars);
 			}
+
+			bool mailSend(io::Reader &packet, ObjectGuid &out_mailboxGuid, MailData &out_mail)
+			{
+				return packet
+					>> io::read<NetObjectGuid>(out_mailboxGuid)
+					>> out_mail;
+			}
 		}
 
 		wowpp::game::WhoResponseEntry::WhoResponseEntry(const GameCharacter & character)
@@ -4340,6 +4372,40 @@ namespace wowpp
 					r >> io::read_string(string);
 				}
 			}
+			return r;
+		}
+
+		io::Reader & operator>>(io::Reader & r, MailData & out_mail)
+		{
+			r
+				>> io::read_string(out_mail.receiver)
+				>> io::read_string(out_mail.subject)
+				>> io::read_string(out_mail.body)
+				>> io::read<NetUInt32>(out_mail.unk1)
+				>> io::read<NetUInt32>(out_mail.unk2);
+
+			// Read items on mail list, 12 being the client limit
+			r >> io::read<UInt8>(out_mail.itemsCount);
+			if (out_mail.itemsCount > 12)
+			{
+				// TODO Error message
+				return r;
+			}
+
+			// Read itemsGuid, skipping item slot in mail
+			for (UInt8 i = 0; i < out_mail.itemsCount; ++i)
+			{
+				r
+					>> io::skip(sizeof(UInt8))
+					>> io::read<NetObjectGuid>(out_mail.itemsGuids[i]);
+			}
+
+			r
+				>> io::read<NetUInt32>(out_mail.money)
+				>> io::read<NetUInt32>(out_mail.COD)
+				>> io::skip(sizeof(UInt8))
+				>> io::skip(sizeof(UInt8));
+
 			return r;
 		}
 	}

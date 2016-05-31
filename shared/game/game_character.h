@@ -689,6 +689,8 @@ namespace wowpp
 		virtual void updateManaRegen() override;
 		/// @copydoc GameUnit::regenerateHealth
 		virtual void regenerateHealth() override;
+		/// @copydoc GameUnit::onThreaten
+		void onThreat(GameUnit &threatener, float amount) override;
 
 	private:
 
@@ -696,7 +698,7 @@ namespace wowpp
 
 		/// @copydoc GameUnit::classUpdated
 		void classUpdated() override;
-
+		
 	public:
 
 		// GameCharacter methods
@@ -802,7 +804,7 @@ namespace wowpp
 		/// Rewards the given quest (gives items, xp and saves quest status).
 		bool rewardQuest(UInt32 quest, UInt8 rewardChoice, std::function<void(UInt32)> callback);
 		/// Called when a quest-related creature was killed.
-		void onQuestKillCredit(GameCreature &killed);
+		void onQuestKillCredit(UInt64 unitGuid, const proto::UnitEntry &entry);
 		/// Determines whether the character fulfulls all requirements of the given quests.
 		bool fulfillsQuestRequirements(const proto::QuestEntry &entry) const;
 		/// Determines whether the players questlog is full.
@@ -851,7 +853,10 @@ namespace wowpp
 		/// @param schoolMask The requested damage schools.
 		/// @param ref_threat The current threat value, which can be modified by this method.
 		void applyThreatMod(UInt32 schoolMask, float &ref_threat);
-
+		/// Determines whether this character is involved in a pvp combat.
+		bool isInPvPCombat() const {
+			return m_pvpCombatTimer.running;
+		}
 	public:
 
 		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT
@@ -904,6 +909,8 @@ namespace wowpp
 		SpellModsByOp m_spellModsByOp;
 		std::array<float, 7> m_threatModifier;
 		std::vector<Countdown> m_questTimeouts;
+		Countdown m_pvpCombatTimer;
+		boost::signals2::scoped_connection m_pvpCombatTimeout;
 	};
 
 	/// Serializes a GameCharacter to an io::Writer object for the wow++ protocol.

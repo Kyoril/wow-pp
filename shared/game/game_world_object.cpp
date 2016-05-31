@@ -70,6 +70,8 @@ namespace wowpp
 		setFloatValue(world_object_fields::PosY, location.y);
 		setFloatValue(world_object_fields::PosZ, location.z);
 		setFloatValue(world_object_fields::Facing, o);
+		setFloatValue(world_object_fields::Rotation + 0, 0.0f);
+		setFloatValue(world_object_fields::Rotation + 1, 0.0f);
 		setFloatValue(world_object_fields::Rotation + 2, sin(o / 2.0f));
 		setFloatValue(world_object_fields::Rotation + 3, cos(o / 2.0f));
 
@@ -223,7 +225,7 @@ namespace wowpp
 		}
 	}
 
-	void WorldObject::relocate(math::Vector3 position, float o, bool fire/* = false*/)
+	void WorldObject::relocate(const math::Vector3 &position, float o, bool fire/* = false*/)
 	{
 		setFloatValue(world_object_fields::PosX, position.x);
 		setFloatValue(world_object_fields::PosY, position.y);

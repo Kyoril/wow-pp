@@ -167,6 +167,10 @@ namespace wowpp
 		void handleAddTargetTrigger(bool apply);
 		/// 118
 		void handleModHealingPct(bool apply);
+		/// 132
+		void handleModEnergyPercentage(bool apply);
+		/// 133
+		void handleModHealthPercentage(bool apply);
 		/// 134
 		void handleModManaRegenInterrupt(bool apply);
 		/// 137

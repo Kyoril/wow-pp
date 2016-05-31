@@ -77,11 +77,13 @@ namespace wowpp
 			void on_lootSimulatorButton_clicked();
 			void on_objectLootSimulatorButton_clicked();
 			void on_itemLootSimulatorButton_clicked();
+			void on_skinLootSimulatorButton_clicked();
 			void on_actionImport_triggered();
 			void on_actionImport_Vendors_triggered();
 			void on_actionImport_Trainers_triggered();
 			void on_actionImport_Quests_triggered();
 			void on_actionImport_Object_Loot_triggered();
+			void on_actionImportSkinningLoot_triggered();
 			void on_addUnitSpellButton_clicked();
 			void on_removeUnitSpellButton_clicked();
 			void on_actionImport_Object_Spawns_triggered();

@@ -24,6 +24,7 @@
 #include "game_character.h"
 #include "game_creature.h"
 #include "game_world_object.h"
+#include "loot_instance.h"
 #include "log/default_log_levels.h"
 #include "binary_io/vector_sink.h"
 #include "common/clock.h"
@@ -264,7 +265,7 @@ namespace wowpp
 		}
 	}
 
-	void GameObject::relocate(math::Vector3 position, float o, bool fire/* = true*/)
+	void GameObject::relocate(const math::Vector3 &position, float o, bool fire/* = true*/)
 	{
 		float oldO = m_o;
 
@@ -328,11 +329,24 @@ namespace wowpp
 					const GameCreature *creature = static_cast<const GameCreature *>(this);
 					if (!creature->isLootRecipient(receiver))
 					{
+						// Creature not lootable because we are not a loot recipient
 						writer << io::write<NetUInt32>(m_values[index] & ~game::unit_dynamic_flags::Lootable);
 					}
 					else
 					{
-						writer << io::write<NetUInt32>(m_values[index] & ~game::unit_dynamic_flags::OtherTagger);
+						UInt32 value = m_values[index] & ~game::unit_dynamic_flags::OtherTagger;
+
+						// Creature is lootable, but only as long as the creature has loot for us
+						auto *loot = creature->getUnitLoot();
+						if (!loot ||
+							!loot->containsLootFor(receiver.getGuid()))
+						{
+							// No longer lootable
+							value &= ~game::unit_dynamic_flags::Lootable;
+						}
+
+						// Write the value
+						writer << io::write<NetUInt32>(value);
 					}
 					break;
 				}
