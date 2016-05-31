@@ -126,8 +126,8 @@ namespace wowpp
 				}
 
 				const auto projectVersion =
-				    fileTable.getInteger<unsigned>("version", 4);
-				if (projectVersion != 4)
+				    fileTable.getInteger<unsigned>("version", 5);
+				if (projectVersion != 5)
 				{
 					ELOG("Unsupported project version: " << projectVersion);
 					return false;

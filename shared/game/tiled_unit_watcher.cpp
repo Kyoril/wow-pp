@@ -142,7 +142,7 @@ namespace wowpp
 
 			const auto planarPos = game::Point(location.x, location.y);
 			//const bool wasInside = m_previousShape.isPointInside(planarPos);
-			//const bool isInside = getShape().isPointInside(planarPos);
+			const bool isInside = getShape().isPointInside(planarPos);
 
 			//if (wasInside != isInside)
 			{
