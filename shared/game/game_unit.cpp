@@ -717,6 +717,16 @@ namespace wowpp
 						}
 					}
 
+					// Make the animation look like an off hand attack if off hand weapon is used
+					if (m_weaponAttack == game::weapon_attack::OffhandAttack)
+					{
+						if (hitInfos[i] & game::hit_info::NormalSwing2)
+						{
+							hitInfos[i] = game::HitInfo(hitInfos[i] & ~game::hit_info::NormalSwing2);
+							hitInfos[i] = game::HitInfo(hitInfos[i] | game::hit_info::LeftSwing);
+						}
+					}
+
 					// Notify all subscribers
 					std::vector<char> buffer;
 					io::VectorSink sink(buffer);

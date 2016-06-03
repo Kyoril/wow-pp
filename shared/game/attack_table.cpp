@@ -48,7 +48,7 @@ namespace wowpp
 			{
 				// Check if we are in front of the target for parry
 				const bool targetLookingAtUs = targetUnit->isInArc(2.0f * 3.1415927f / 3.0f, attacker->getLocation().x, attacker->getLocation().y);
-				game::HitInfo hitInfo = game::hit_info::NormalSwing;
+				game::HitInfo hitInfo = game::hit_info::NormalSwing2;
 				game::VictimState victimState = game::victim_state::Normal;
 				float attackTableRoll = hitTableDistribution(randomGenerator);
 				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school, true)) < 0.0f)
@@ -112,7 +112,7 @@ namespace wowpp
 			for (GameUnit *targetUnit : m_targets[targetA][targetB])
 			{
 				const bool targetLookingAtUs = targetUnit->isInArc(2.0f * 3.1415927f / 3.0f, attacker->getLocation().x, attacker->getLocation().y);
-				game::HitInfo hitInfo = game::hit_info::NormalSwing;
+				game::HitInfo hitInfo = game::hit_info::NormalSwing2;
 				game::VictimState victimState = game::victim_state::Normal;
 				float attackTableRoll = hitTableDistribution(randomGenerator);
 				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school, false)) < 0.0f)
