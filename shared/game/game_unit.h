@@ -758,6 +758,8 @@ namespace wowpp
 		void regeneratePower(game::PowerType power);
 		/// 
 		void onSpellCastEnded(bool succeeded);
+		/// 
+		void triggerNextAutoAttack();
 
 	private:
 
@@ -777,7 +779,8 @@ namespace wowpp
 		boost::signals2::scoped_connection m_victimDespawned, m_victimDied;
 		GameUnit *m_victim;
 		Countdown m_attackSwingCountdown;
-		GameTime m_lastAttackSwing;
+		GameTime m_lastMainHand, m_lastOffHand;
+		game::WeaponAttack m_weaponAttack;
 		Countdown m_regenCountdown;
 		GameTime m_lastManaUse;
 		UnitModArray m_unitMods;

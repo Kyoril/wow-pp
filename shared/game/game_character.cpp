@@ -1863,6 +1863,39 @@ namespace wowpp
 			setFloatValue(unit_fields::MaxDamage, base_value + maxDamage);
 			setUInt32Value(unit_fields::BaseAttackTime, attackTime);
 		}
+
+		// Offhand damage
+		{
+			float minDamage = 1.0f;
+			float maxDamage = 2.0f;
+			UInt32 attackTime = 2000;
+
+			// TODO: Check druid form etc.
+
+			// Check if we are wearing a weapon in our main hand
+			auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
+			if (item)
+			{
+				// Get weapon damage values
+				const auto &entry = item->getEntry();
+				if (entry.damage(0).mindmg() != 0.0f) {
+					minDamage = entry.damage(0).mindmg();
+				}
+				if (entry.damage(0).maxdmg() != 0.0f) {
+					maxDamage = entry.damage(0).maxdmg();
+				}
+				if (entry.delay() != 0) {
+					attackTime = entry.delay();
+				}
+			}
+
+			const float att_speed = attackTime / 1000.0f;
+			const float base_value = getUInt32Value(unit_fields::AttackPower) / 14.0f * att_speed;
+
+			setFloatValue(unit_fields::MinOffHandDamage, base_value + minDamage);
+			setFloatValue(unit_fields::MaxOffHandDamage, base_value + maxDamage);
+			setUInt32Value(unit_fields::BaseAttackTime + 1, attackTime);
+		}
 		
 		// Ranged damage
 		{

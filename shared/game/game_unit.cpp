@@ -45,7 +45,9 @@ namespace wowpp
 		, m_despawnCountdown(timers)
 		, m_victim(nullptr)
 		, m_attackSwingCountdown(timers)
-		, m_lastAttackSwing(0)
+		, m_lastMainHand(0)
+		, m_lastOffHand(0)
+		, m_weaponAttack(game::weapon_attack::BaseAttack)
 		, m_regenCountdown(timers)
 		, m_factionTemplate(nullptr)
 		, m_lastManaUse(0)
@@ -466,16 +468,7 @@ namespace wowpp
 			subscriber.sendPacket(packet, buffer);
 		});
 
-		// Start auto attack timer (immediatly start to attack our target)
-		GameTime nextAttackSwing = getCurrentTime();
-		GameTime attackSwingCooldown = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
-		if (attackSwingCooldown > nextAttackSwing) {
-			nextAttackSwing = attackSwingCooldown;
-		}
-
-		// Trigger next auto attack
-		m_attackSwingCountdown.setEnd(nextAttackSwing);
-
+		triggerNextAutoAttack();
 		startedAttacking();
 	}
 
@@ -536,7 +529,18 @@ namespace wowpp
 		}
 
 		// Remember this weapon swing
-		m_lastAttackSwing = getCurrentTime();
+		GameTime now = getCurrentTime();
+		switch (m_weaponAttack)
+		{
+			case game::weapon_attack::BaseAttack:
+				m_lastMainHand = now;
+				break;
+			case game::weapon_attack::OffhandAttack:
+				m_lastOffHand = now;
+				break;
+			default:
+				break;
+		}
 
 		// Used to jump to next weapon swing trigger
 		do
@@ -558,7 +562,7 @@ namespace wowpp
 				}
 
 				// Don't reset auto attack
-				GameTime nextAutoAttack = m_lastAttackSwing + (constants::OneSecond / 2);
+				GameTime nextAutoAttack = now + (constants::OneSecond / 2);
 				m_attackSwingCountdown.setEnd(nextAutoAttack);
 				return;
 			}
@@ -575,7 +579,7 @@ namespace wowpp
 				}
 
 				// Don't reset auto attack
-				GameTime nextAutoAttack = m_lastAttackSwing + (constants::OneSecond / 2);
+				GameTime nextAutoAttack = now + (constants::OneSecond / 2);
 				m_attackSwingCountdown.setEnd(nextAutoAttack);
 				return;
 			}
@@ -635,8 +639,11 @@ namespace wowpp
 					}
 					else
 					{
+						const auto minDmgField = (m_weaponAttack == game::weapon_attack::BaseAttack ? unit_fields::MinDamage : unit_fields::MinOffHandDamage);
+						const auto maxDmgField = (m_weaponAttack == game::weapon_attack::BaseAttack ? unit_fields::MaxDamage : unit_fields::MaxOffHandDamage);
+
 						// Calculate damage between minimum and maximum damage
-						std::uniform_real_distribution<float> distribution(getFloatValue(unit_fields::MinDamage), getFloatValue(unit_fields::MaxDamage) + 1.0f);
+						std::uniform_real_distribution<float> distribution(getFloatValue(minDmgField), getFloatValue(maxDmgField) + 1.0f);
 						totalDamage = victim->calculateArmorReducedDamage(getLevel(), UInt32(distribution(randomGenerator)));
 
 						if (hitInfos[i] == game::hit_info::Glancing)
@@ -714,7 +721,7 @@ namespace wowpp
 					std::vector<char> buffer;
 					io::VectorSink sink(buffer);
 					game::Protocol::OutgoingPacket packet(sink);
-					game::server_write::attackStateUpdate(packet, getGuid(), victim->getGuid(), hitInfos[i], totalDamage, absorbed, resisted, blocked, victimStates[i], game::weapon_attack::BaseAttack, 1);
+					game::server_write::attackStateUpdate(packet, getGuid(), victim->getGuid(), hitInfos[i], totalDamage, absorbed, resisted, blocked, victimStates[i], m_weaponAttack, 1);
 
 					// Notify all tile subscribers about this event
 					forEachSubscriberInSight(
@@ -771,9 +778,7 @@ namespace wowpp
 			// Notify about successful auto attack to reset last error message
 			autoAttackError(attack_swing_error::Success);
 
-			// Trigger next auto attack swing
-			GameTime nextAutoAttack = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
-			m_attackSwingCountdown.setEnd(nextAutoAttack);
+			triggerNextAutoAttack();
 		}
 	}
 
@@ -1810,10 +1815,44 @@ namespace wowpp
 		// Check if we need to trigger auto attack again
 		if (m_victim)
 		{
-			m_lastAttackSwing = getCurrentTime();
-			GameTime nextAttackSwing = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
-			m_attackSwingCountdown.setEnd(nextAttackSwing);
+			m_lastMainHand = m_lastOffHand = getCurrentTime();
+			triggerNextAutoAttack();
 		}
+	}
+
+	void GameUnit::triggerNextAutoAttack()
+	{
+		// Start auto attack timer (immediatly start to attack our target)
+		GameTime now = getCurrentTime();
+		GameTime nextAttackSwing = getCurrentTime();
+		GameTime mainHandCooldown = m_lastMainHand + getUInt32Value(unit_fields::BaseAttackTime);
+		GameTime offHandCooldown = hasOffHandWeapon() ? m_lastOffHand + getUInt32Value(unit_fields::BaseAttackTime + 1) : 0;
+		if (offHandCooldown > 0)
+		{
+			// Choose next attack type
+			m_weaponAttack = mainHandCooldown < offHandCooldown ? game::weapon_attack::BaseAttack : game::weapon_attack::OffhandAttack;
+			GameTime cd = mainHandCooldown < offHandCooldown ? mainHandCooldown : offHandCooldown;
+			if (cd > nextAttackSwing)
+			{
+				nextAttackSwing = cd;
+			}
+		}
+		else
+		{
+			m_weaponAttack = game::weapon_attack::BaseAttack;
+			if (mainHandCooldown > nextAttackSwing)
+			{
+				nextAttackSwing = mainHandCooldown;
+			}
+		}
+
+		if (nextAttackSwing < now + 200)
+		{
+			nextAttackSwing += 200;
+		}
+
+		// Trigger next auto attack
+		m_attackSwingCountdown.setEnd(nextAttackSwing);
 	}
 
 	void GameUnit::setAttackSwingCallback(AttackSwingCallback callback)
