@@ -105,6 +105,8 @@ namespace wowpp
 
 		Int32 getTotalDuration() const { return m_duration; }
 
+		bool isStealthAura() const;
+
 	protected:
 
 		/// 0

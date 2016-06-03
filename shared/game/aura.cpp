@@ -109,6 +109,20 @@ namespace wowpp
 		return effectSchoolMask;
 	}
 
+	bool Aura::isStealthAura() const
+	{
+		for (Int32 i = 0; i < m_spell.effects_size(); ++i)
+		{
+			if (m_spell.effects(i).type() == game::spell_effects::ApplyAura &&
+				m_spell.effects(i).aura() == game::aura_type::ModStealth)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	void Aura::handleModifier(bool apply)
 	{
 		namespace aura = game::aura_type;
@@ -551,7 +565,7 @@ namespace wowpp
 			const bool isAlliance = ((game::race::Alliance & (1 << (m_target.getRace() - 1))) == (1 << (m_target.getRace() - 1)));
 
 			UInt32 modelId = 0;
-			UInt32 powerType = game::power_type::Mana;
+			UInt32 powerType = m_target.getByteValue(unit_fields::Bytes0, 3);
 			switch (form)
 			{
 			case 1:			// Cat
@@ -614,6 +628,11 @@ namespace wowpp
 			case 29:		// Flight form
 				{
 					modelId = (isAlliance ? 20857 : 20872);
+					break;
+				}
+			case 30:		// Rogue stealth
+				{
+					powerType = game::power_type::Energy;
 					break;
 				}
 			case 31:		// Moonkin
@@ -1651,6 +1670,12 @@ namespace wowpp
 		{
 			m_targetStartedCasting = m_target.startedCasting.connect(
 			[&](const proto::SpellEntry & spell) {
+				if (spell.attributes(1) & game::spell_attributes_ex_a::NotBreakStealth &&
+					isStealthAura())
+				{
+					return;
+				}
+
 				m_destroy(*this);
 			});
 		}

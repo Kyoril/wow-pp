@@ -569,7 +569,7 @@ namespace wowpp
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
-		m_attackTable.checkSpecialMeleeAttack(&attacker, m_target, school, targets, victimStates, hitInfos, resists);
+		m_attackTable.checkSpecialMeleeAttack(&attacker, m_spell, m_target, school, targets, victimStates, hitInfos, resists);
 
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
@@ -801,7 +801,7 @@ namespace wowpp
 				totalDamage = getSpellPointsTotal(effect, spellPower, spellBonusPct);
 				if (caster.isGameCharacter())
 				{
-					reinterpret_cast<GameCharacter&>(caster).applySpellMod(
+					auto added = reinterpret_cast<GameCharacter&>(caster).applySpellMod(
 						spell_mod_op::Damage, m_spell.id(), totalDamage);
 				}
 
@@ -2475,7 +2475,7 @@ namespace wowpp
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
-		m_attackTable.checkSpecialMeleeAttack(&attacker, m_target, school, targets, victimStates, hitInfos, resists);
+		m_attackTable.checkSpecialMeleeAttack(&attacker, m_spell, m_target, school, targets, victimStates, hitInfos, resists);
 
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{

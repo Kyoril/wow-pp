@@ -58,7 +58,7 @@ namespace wowpp
 		/// @param victimStates
 		/// @param hitInfos
 		/// @param resists
-		void checkSpecialMeleeAttack(GameUnit *attacker, SpellTargetMap &targetMap, UInt8 school, std::vector<GameUnit *> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists);
+		void checkSpecialMeleeAttack(GameUnit *attacker, const proto::SpellEntry &spell, SpellTargetMap &targetMap, UInt8 school, std::vector<GameUnit *> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists);
 		/// 
 		/// @param attacker
 		/// @param targetMap
