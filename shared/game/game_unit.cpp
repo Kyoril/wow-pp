@@ -1409,6 +1409,17 @@ namespace wowpp
 		setUInt32Value(unit_fields::Health, health);
 		takenDamage(attacker, damage);
 
+		UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
+		float healthPct = float(health) / float(maxHealth);
+		if (healthPct < 0.35)
+		{
+			addFlag(unit_fields::AuraState, game::aura_state::HealthLess35Percent);
+		}
+		if (healthPct < 0.2)
+		{
+			addFlag(unit_fields::AuraState, game::aura_state::HealthLess20Percent);
+		}
+
 		if (health < 1)
 		{
 			// Call function and signal
@@ -1435,6 +1446,16 @@ namespace wowpp
 		}
 
 		setUInt32Value(unit_fields::Health, health);
+
+		float healthPct = float(health) / float(maxHealth);
+		if (healthPct >= 0.35)
+		{
+			removeFlag(unit_fields::AuraState, game::aura_state::HealthLess35Percent);
+		}
+		if (healthPct >= 0.2)
+		{
+			removeFlag(unit_fields::AuraState, game::aura_state::HealthLess20Percent);
+		}
 
 		if (healer && !noThreat)
 		{
