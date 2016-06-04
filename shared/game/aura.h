@@ -115,6 +115,8 @@ namespace wowpp
 		void handlePeriodicDamage(bool apply);
 		/// 4
 		void handleDummy(bool apply);
+		/// 7
+		void handleModFear(bool apply);
 		/// 8
 		void handlePeriodicHeal(bool apply);
 		/// 10

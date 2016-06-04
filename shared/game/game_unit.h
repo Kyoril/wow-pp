@@ -386,6 +386,8 @@ namespace wowpp
 		boost::signals2::signal<void(bool)> rootStateChanged;
 		/// Fired when this unit gets stunned or unstunned.
 		boost::signals2::signal<void(bool)> stunStateChanged;
+		/// Fired when this unit gets feared or unfeared.
+		boost::signals2::signal<void(bool)> fearStateChanged;
 		/// Fired when this unit enters or leaves stealth mode.
 		boost::signals2::signal<void(bool)> stealthStateChanged;
 		/// Fired when the movement speed of this unit changes.
@@ -615,6 +617,10 @@ namespace wowpp
 		bool isRooted() const {
 			return m_isRooted;
 		}
+		/// Determines whether this unit is feared.
+		bool isFeared() const {
+			return m_isFeared;
+		}
 		/// 
 		bool canMove() const {
 			return isAlive() && !isStunned() && !isRooted();
@@ -623,6 +629,8 @@ namespace wowpp
 		void notifyStunChanged();
 		/// 
 		void notifyRootChanged();
+		/// 
+		void notifyFearChanged();
 		/// 
 		void notifySpeedChanged(MovementType type);
 		/// 
@@ -790,6 +798,7 @@ namespace wowpp
 		UInt32 m_mechanicImmunity;
 		bool m_isStunned;
 		bool m_isRooted;
+		bool m_isFeared;
 		bool m_isStealthed;
 		std::array<float, movement_type::Count> m_speedBonus;
 		CooldownMap m_spellCooldowns;

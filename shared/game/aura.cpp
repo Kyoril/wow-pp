@@ -141,6 +141,9 @@ namespace wowpp
 		case aura::Dummy:
 			handleDummy(apply);
 			break;
+		case aura::ModFear:
+			handleModFear(apply);
+			break;
 		case aura::ModStat:
 			handleModStat(apply);
 			break;
@@ -365,6 +368,11 @@ namespace wowpp
 		}
 
 
+	}
+
+	void Aura::handleModFear(bool apply)
+	{
+		m_target.notifyStunChanged();
 	}
 
 	void Aura::handlePeriodicHeal(bool apply)
@@ -1644,10 +1652,23 @@ namespace wowpp
 
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Damage) != 0)
 		{
-			m_takenDamage = m_target.takenDamage.connect(
-			[&](GameUnit * victim, UInt32 damage) {
-				setRemoved(victim);
+			auto strongThis = shared_from_this();
+			std::weak_ptr<Aura> weakThis(strongThis);
+
+			// Subscribe for damage event in next pass, since we don't want to break this aura by it's own damage
+			// (this happens for rogue spell Gouge as it deals damage)
+			m_post([weakThis]() {
+				auto strong = weakThis.lock();
+				if (strong)
+				{
+					strong->m_takenDamage = strong->m_target.takenDamage.connect(
+						[strong](GameUnit * victim, UInt32 damage) {
+							strong->setRemoved(victim);
+						}
+					);
+				}
 			});
+			
 		}
 
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::NotAboveWater) != 0)
@@ -1768,6 +1789,20 @@ namespace wowpp
 		m_onExpire.disconnect();
 		m_onTick.disconnect();
 
+		// Disconnect signals
+		m_doneSpellMagicDmgClassNeg.disconnect();
+		m_procKill.disconnect();
+		m_procKilled.disconnect();
+		m_doneSpellMagicDmgClassNeg.disconnect();
+		m_procTakenAutoAttack.disconnect();
+		m_procAutoAttack.disconnect();
+		m_takenDamage.disconnect();
+		m_targetStartedCasting.disconnect();
+		m_targetStartedAttacking.disconnect();
+		m_targetEnteredWater.disconnect();
+		m_targetMoved.disconnect();
+		m_onDamageBreak.disconnect();
+
 		// Do this to prevent the aura from starting another tick just in case (shouldn't happen though)
 		m_expired = true;
 
@@ -1844,10 +1879,14 @@ namespace wowpp
 	void Aura::setRemoved(GameUnit *remover)
 	{
 		std::shared_ptr<Aura> strongThis = shared_from_this();
-		m_post([strongThis]
+		std::weak_ptr<Aura> weak(strongThis);
+		m_post([weak]
 		{
-			// TODO: Notify about being removed...
-			strongThis->m_destroy(*strongThis);
+			auto strong = weak.lock();
+			if (strong)
+			{
+				strong->m_destroy(*strong);
+			}
 		});
 	}
 

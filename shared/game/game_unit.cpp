@@ -55,6 +55,7 @@ namespace wowpp
 		, m_mechanicImmunity(0)
 		, m_isStunned(false)
 		, m_isRooted(false)
+		, m_isFeared(false)
 		, m_isStealthed(false)
 		, m_standState(unit_stand_state::Stand)
 	{
@@ -1832,6 +1833,10 @@ namespace wowpp
 
 	void GameUnit::triggerNextAutoAttack()
 	{
+		// We can't attack when stunned or feared!
+		if (isStunned() || isFeared())
+			return;
+
 		// Start auto attack timer (immediatly start to attack our target)
 		GameTime now = getCurrentTime();
 		GameTime nextAttackSwing = getCurrentTime();
@@ -2125,6 +2130,21 @@ namespace wowpp
 		{
 			m_mover->stopMovement();
 			rootStateChanged(true);
+		}
+	}
+
+	void GameUnit::notifyFearChanged()
+	{
+		const bool wasFeared = m_isFeared;
+		m_isFeared = m_auras.hasAura(game::aura_type::ModFear);
+		if (wasFeared && !m_isFeared)
+		{
+			fearStateChanged(false);
+		}
+		else if (!wasFeared && m_isFeared)
+		{
+			m_mover->stopMovement();
+			fearStateChanged(true);
 		}
 	}
 

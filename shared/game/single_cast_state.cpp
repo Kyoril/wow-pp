@@ -541,6 +541,12 @@ namespace wowpp
 			}
 		}
 
+		// Stop auto attack if required
+		if (m_spell.attributes(0) & game::spell_attributes::StopAttackTarget)
+		{
+			m_cast.getExecuter().stopAttack();
+		}
+
 		if (weakThis.lock())
 		{
 			//may destroy this, too

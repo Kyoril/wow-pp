@@ -1513,6 +1513,10 @@ namespace wowpp
 
 	void Player::handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode)
 	{
+		// Can't receive player input when in one of these CC states
+		if (m_character->isFeared() || m_character->isStunned() || m_character->isRooted())
+			return;
+
 		MovementInfo info;
 		if (!game::client_read::moveHeartBeat(packet, info))
 		{

@@ -446,6 +446,12 @@ namespace wowpp
 	void CreatureAICombatState::updateVictim()
 	{
 		GameCreature &controlled = getControlled();
+		if (controlled.isStunned())
+		{
+			controlled.setVictim(nullptr);
+			return;
+		}
+
 		GameUnit *victim = controlled.getVictim();
 		bool rooted = controlled.isRooted();
 
@@ -536,7 +542,7 @@ namespace wowpp
 		if (!victim)
 		{
 			// No victim found (threat list probably empty or rooted)
-			if (!controlled.isRooted())
+			if (!controlled.isRooted() && !controlled.isStunned())
 			{
 				// Warning: this will destroy the current AI state.
 				getAI().reset();
