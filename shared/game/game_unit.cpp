@@ -346,11 +346,13 @@ namespace wowpp
 			return;
 		}
 
-		if (!isProc) {
-			startedCasting(*spell);
-		}
-
 		auto result = m_spellCast->startCast(*spell, std::move(target), basePoints, castTime, isProc, itemGuid);
+		if (result.first == game::spell_cast_result::CastOkay)
+		{
+			if (!isProc) {
+				startedCasting(*spell);
+			}
+		}
 
 		// Reset auto attack timer if requested
 		if (result.first == game::spell_cast_result::CastOkay &&

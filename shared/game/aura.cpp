@@ -1668,7 +1668,6 @@ namespace wowpp
 					);
 				}
 			});
-			
 		}
 
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::NotAboveWater) != 0)
@@ -1689,15 +1688,24 @@ namespace wowpp
 
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Cast) != 0)
 		{
-			m_targetStartedCasting = m_target.startedCasting.connect(
-			[&](const proto::SpellEntry & spell) {
-				if (spell.attributes(1) & game::spell_attributes_ex_a::NotBreakStealth &&
-					isStealthAura())
-				{
-					return;
-				}
+			auto strongThis = shared_from_this();
+			std::weak_ptr<Aura> weakThis(strongThis);
 
-				m_destroy(*this);
+			m_post([weakThis]() {
+				auto strong = weakThis.lock();
+				if (strong)
+				{
+					strong->m_targetStartedCasting = strong->m_target.startedCasting.connect(
+						[strong](const proto::SpellEntry & spell) {
+						if (spell.attributes(1) & game::spell_attributes_ex_a::NotBreakStealth &&
+							strong->isStealthAura())
+						{
+							return;
+						}
+
+						strong->m_destroy(*strong);
+					});
+				}
 			});
 		}
 
