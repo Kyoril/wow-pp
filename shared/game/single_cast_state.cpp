@@ -692,18 +692,26 @@ namespace wowpp
 
 	void SingleCastState::spellEffectDummy(const proto::SpellEffect & effect)
 	{
-		if (effect.targeta() == game::targets::UnitTargetAny)
+		// Get unit target by target map
+		GameUnit *unitTarget = nullptr;
+		if (!m_target.resolvePointers(*m_cast.getExecuter().getWorldInstance(), &unitTarget, nullptr, nullptr, nullptr))
 		{
-			// Get unit target by target map
-			GameUnit *unitTarget = nullptr;
-			if (!m_target.resolvePointers(*m_cast.getExecuter().getWorldInstance(), &unitTarget, nullptr, nullptr, nullptr))
-			{
-				return;
-			}
+			return;
+		}
 
-			if (unitTarget)
+		if (unitTarget)
+		{
+			m_affectedTargets.insert(unitTarget->shared_from_this());
+		}
+
+		if (m_spell.family() == 4)	// Warrior
+		{
+			if (m_spell.familyflags() == 0x20000000)		// Execute
 			{
-				m_affectedTargets.insert(unitTarget->shared_from_this());
+				// Rage has already been reduced by executing this spell, though the remaining value is the rest
+				m_cast.getExecuter().castSpell(
+					m_target, 20647, m_basePoints + m_cast.getExecuter().getUInt32Value(unit_fields::Power2) * effect.dmgmultiplier());
+				m_cast.getExecuter().setUInt32Value(unit_fields::Power2, 0);
 			}
 		}
 	}
