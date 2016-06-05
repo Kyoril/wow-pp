@@ -63,8 +63,6 @@ namespace wowpp
 
 	void CreatureSpawner::spawnOne()
 	{
-		assert(m_currentlySpawned < m_maxCount);
-
 		// TODO: Generate random point and if needed, random rotation
 		const math::Vector3 location(m_spawnEntry.positionx(), m_spawnEntry.positiony(), m_spawnEntry.positionz());
 		const float o = m_spawnEntry.rotation();
