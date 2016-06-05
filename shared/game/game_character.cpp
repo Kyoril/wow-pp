@@ -26,6 +26,7 @@
 #include "game_item.h"
 #include "common/utilities.h"
 #include "game_creature.h"
+#include "unit_mover.h"
 #include "inventory.h"
 #include "defines.h"
 #include "each_tile_in_sight.h"
@@ -172,6 +173,7 @@ namespace wowpp
 				updateNearbyQuestObjects();
 			}
 		});
+
 	}
 
 	game::QuestStatus GameCharacter::getQuestStatus(UInt32 quest) const

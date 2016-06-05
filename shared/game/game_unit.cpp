@@ -79,6 +79,28 @@ namespace wowpp
 		    std::bind(&GameUnit::onAttackSwing, this));
 		m_regenCountdown.ended.connect(
 		    std::bind(&GameUnit::onRegeneration, this));
+
+		fearStateChanged.connect([this](bool feared) {
+			// Stop attacking (just in case)
+			if (feared)
+			{
+				stopAttack();
+				setVictim(nullptr);
+			}
+
+			// Stop movement in every case
+			getMover().stopMovement();
+
+			if (!feared)
+			{
+				m_fearMoved.disconnect();
+			}
+			else
+			{
+				m_fearMoved = getMover().targetReached.connect(std::bind(&GameUnit::triggerNextFearMove, this));
+				triggerNextFearMove();
+			}
+		});
 	}
 
 	GameUnit::~GameUnit()
@@ -433,6 +455,9 @@ namespace wowpp
 
 	void GameUnit::startAttack()
 	{
+		if (isFeared() || isStunned())
+			return;
+
 		// No victim?
 		if (!m_victim) {
 			return;
@@ -1891,6 +1916,28 @@ namespace wowpp
 
 		// Trigger next auto attack
 		m_attackSwingCountdown.setEnd(nextAttackSwing);
+	}
+
+	void GameUnit::triggerNextFearMove()
+	{
+		// Stop when not feared
+		if (!isFeared())
+			return;
+
+		auto *world = getWorldInstance();
+		if (world)
+		{
+			auto *mapData = world->getMapData();
+			if (mapData)
+			{
+				math::Vector3 targetPoint;
+				if (mapData->getRandomPointOnGround(getLocation(), 25.0f, targetPoint))
+				{
+					getMover().moveTo(targetPoint);
+					return;
+				}
+			}
+		}
 	}
 
 	void GameUnit::setAttackSwingCallback(AttackSwingCallback callback)

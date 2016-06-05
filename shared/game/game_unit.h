@@ -768,6 +768,8 @@ namespace wowpp
 		void onSpellCastEnded(bool succeeded);
 		/// 
 		void triggerNextAutoAttack();
+		/// 
+		void triggerNextFearMove();
 
 	private:
 
@@ -784,7 +786,7 @@ namespace wowpp
 		const proto::FactionTemplateEntry *m_factionTemplate;
 		std::unique_ptr<SpellCast> m_spellCast;
 		Countdown m_despawnCountdown;
-		boost::signals2::scoped_connection m_victimDespawned, m_victimDied;
+		boost::signals2::scoped_connection m_victimDespawned, m_victimDied, m_fearMoved;
 		GameUnit *m_victim;
 		Countdown m_attackSwingCountdown;
 		GameTime m_lastMainHand, m_lastOffHand;

@@ -372,7 +372,7 @@ namespace wowpp
 
 	void Aura::handleModFear(bool apply)
 	{
-		m_target.notifyStunChanged();
+		m_target.notifyFearChanged();
 	}
 
 	void Aura::handlePeriodicHeal(bool apply)
