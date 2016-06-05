@@ -1782,7 +1782,6 @@ namespace wowpp
 			auto dependantRank = dependson->ranks(talent->dependsonrank());
 			if (!m_character->hasSpell(dependantRank))
 			{
-				WLOG("Dependent talent not learned!");
 				return;
 			}
 		}
@@ -1792,7 +1791,6 @@ namespace wowpp
 		{
 			if (!m_character->hasSpell(talent->dependsonspell()))
 			{
-				WLOG("Dependent spell not learned!");
 				return;
 			}
 		}
@@ -1801,7 +1799,29 @@ namespace wowpp
 		UInt32 freeTalentPoints = m_character->getUInt32Value(character_fields::CharacterPoints_1);
 		if (freeTalentPoints == 0)
 		{
-			WLOG("Not enough talent points available");
+			return;
+		}
+
+		// Check how many points we have spent in this talent tree already
+		UInt32 spentPoints = 0;
+		for (const auto &t : m_project.talents.getTemplates().entry())
+		{
+			// Same tab
+			if (t.tab() == talent->tab())
+			{
+				for (UInt32 i = 0; i < t.ranks_size(); ++i)
+				{
+					if (m_character->hasSpell(t.ranks(i)))
+					{
+						spentPoints += i + 1;
+					}
+				}
+			}
+		}
+
+		if (spentPoints < (talent->row() * 5))
+		{
+			// Not enough points spent in talent tree
 			return;
 		}
 
