@@ -410,9 +410,40 @@ namespace wowpp
 		const UInt32 spellAttributes = m_spell.attributes(0);
 		if (spellAttributes & game::spell_attributes::OnNextSwing)
 		{
+			m_onAttackError = m_cast.getExecuter().autoAttackError.connect_extended([this](boost::signals2::connection c, AttackSwingError error) {
+				if (error != attack_swing_error::Success)
+				{
+					game::SpellCastResult result = game::spell_cast_result::FailedError;
+					switch (error)
+					{
+						case attack_swing_error::CantAttack:
+							result = game::spell_cast_result::FailedBadTargets;
+							break;
+						case attack_swing_error::OutOfRange:
+							result = game::spell_cast_result::FailedOutOfRange;
+							break;
+						case attack_swing_error::TargetDead:
+							result = game::spell_cast_result::FailedTargetsDead;
+							break;
+						case attack_swing_error::WrongFacing:
+							result = game::spell_cast_result::FailedError;
+							break;
+						default:
+							result = game::spell_cast_result::FailedError;
+					}
+
+					m_cast.getExecuter().spellCastError(m_spell, result);
+					sendEndCast(false);
+				}
+
+				c.disconnect();
+			});
+
 			// Execute on next weapon swing
 			m_cast.getExecuter().setAttackSwingCallback([strongThis, this]() -> bool
 			{
+				m_onAttackError.disconnect();
+
 				if (!strongThis->consumePower())
 				{
 					m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedNoPower);
