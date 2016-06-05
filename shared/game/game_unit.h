@@ -722,6 +722,10 @@ namespace wowpp
 		/// all assigned world objects will despawn as well.
 		void addWorldObject(std::shared_ptr<WorldObject> object);
 
+		/// Enables or disables flight mode.
+		/// @param enable Whether flight mode will be enabled.
+		void setFlightMode(bool enable);
+
 	public:
 
 		/// 

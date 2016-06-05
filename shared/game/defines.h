@@ -292,8 +292,6 @@ namespace wowpp
 			};
 		}
 
-
-
 		namespace item_class
 		{
 			enum Type

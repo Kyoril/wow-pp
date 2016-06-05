@@ -254,6 +254,9 @@ namespace wowpp
 		case aura::AddPctModifier:
 			handleAddModifier(apply);
 			break;
+		case aura::Fly:
+			handleFly(apply);
+			break;
 		default:
 			//			WLOG("Unhandled aura type: " << m_effect.aura());
 			break;
@@ -886,6 +889,33 @@ namespace wowpp
 	void Aura::handleModResistanceExclusive(bool apply)
 	{
 		handleModResistance(apply);
+	}
+
+	void Aura::handleFly(bool apply)
+	{
+		// Determined to prevent falling when one aura is still left
+		const bool hasFlyAura = m_target.getAuras().hasAura(game::aura_type::Fly);
+
+		if (m_target.isCreature())
+		{
+			if (!apply && !hasFlyAura)
+			{
+				m_target.setFlightMode(apply);
+			}
+		}
+
+		auto *world = m_target.getWorldInstance();
+		if (world)
+		{
+			if (apply)
+			{
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveSetCanFly, std::placeholders::_1, m_target.getGuid()));
+			}
+			else if (!hasFlyAura)
+			{
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveUnsetCanFly, std::placeholders::_1, m_target.getGuid()));
+			}
+		}
 	}
 
 	void Aura::handleTakenDamage(GameUnit *attacker)

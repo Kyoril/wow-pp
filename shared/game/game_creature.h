@@ -120,7 +120,7 @@ namespace wowpp
 		bool hasMainHandWeapon() const override;
 		bool hasOffHandWeapon() const override;
 		/// @copydoc GameObject::canSpawnForCharacter
-		virtual bool canSpawnForCharacter(GameCharacter &target) override;
+		virtual bool canSpawnForCharacter(GameCharacter &target) const override;
 
 		/// 
 		bool isCombatMovementEnabled() const { return m_combatMovement; }
