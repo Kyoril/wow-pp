@@ -32,6 +32,7 @@
 #include "map.h"
 #include "binary_io/vector_sink.h"
 #include "game_protocol/game_protocol.h"
+#include "tile_subscriber.h"
 
 namespace wowpp
 {
