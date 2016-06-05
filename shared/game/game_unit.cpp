@@ -316,6 +316,20 @@ namespace wowpp
 		m_worldObjects.push_back(object);
 	}
 
+	void GameUnit::setFlightMode(bool enable)
+	{
+		if (enable)
+		{
+			setByteValue(unit_fields::Bytes1, 3, getByteValue(unit_fields::Bytes1, 3) | 2);
+			m_movementInfo.moveFlags = game::MovementFlags(m_movementInfo.moveFlags | game::movement_flags::Flying | game::movement_flags::Flying2);
+		}
+		else
+		{
+			setByteValue(unit_fields::Bytes1, 3, getByteValue(unit_fields::Bytes1, 3) & ~2);
+			m_movementInfo.moveFlags = game::MovementFlags(m_movementInfo.moveFlags & ~(game::movement_flags::Flying | game::movement_flags::Flying2));
+		}
+	}
+
 	void GameUnit::levelChanged(const proto::LevelEntry &levelInfo)
 	{
 		// Get race and class

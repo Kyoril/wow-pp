@@ -556,7 +556,7 @@ namespace wowpp
 		}
 	}
 
-	bool GameObject::canSpawnForCharacter(GameCharacter & target)
+	bool GameObject::canSpawnForCharacter(GameCharacter & target) const
 	{
 		return true;
 	}

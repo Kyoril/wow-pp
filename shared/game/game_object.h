@@ -444,7 +444,7 @@ namespace wowpp
 
 		/// Determines whether this object can be seen by a target at all.
 		/// This is used for spirit healers which are only visible to dead units.
-		virtual bool canSpawnForCharacter(GameCharacter &target);
+		virtual bool canSpawnForCharacter(GameCharacter &target) const;
 
 	protected:
 

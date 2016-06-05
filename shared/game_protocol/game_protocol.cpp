@@ -3486,6 +3486,54 @@ namespace wowpp
 				out_packet << io::write_range(data);
 				out_packet.finish();
 			}
+
+			void moveSetCanFly(game::OutgoingPacket & out_packet, UInt64 guid)
+			{
+				out_packet.start(game::server_packet::MoveSetCanFly);
+
+				UInt8 packGUID[8 + 1];
+				packGUID[0] = 0;
+				size_t size = 1;
+				for (UInt8 i = 0; guid != 0; ++i)
+				{
+					if (guid & 0xFF)
+					{
+						packGUID[0] |= UInt8(1 << i);
+						packGUID[size] = UInt8(guid & 0xFF);
+						++size;
+					}
+
+					guid >>= 8;
+				}
+				out_packet
+					<< io::write_range(&packGUID[0], &packGUID[size])
+					<< io::write<NetUInt32>(0);
+				out_packet.finish();
+			}
+
+			void moveUnsetCanFly(game::OutgoingPacket & out_packet, UInt64 guid)
+			{
+				out_packet.start(game::server_packet::MoveUnsetCanFly);
+
+				UInt8 packGUID[8 + 1];
+				packGUID[0] = 0;
+				size_t size = 1;
+				for (UInt8 i = 0; guid != 0; ++i)
+				{
+					if (guid & 0xFF)
+					{
+						packGUID[0] |= UInt8(1 << i);
+						packGUID[size] = UInt8(guid & 0xFF);
+						++size;
+					}
+
+					guid >>= 8;
+				}
+				out_packet
+					<< io::write_range(&packGUID[0], &packGUID[size])
+					<< io::write<NetUInt32>(0);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

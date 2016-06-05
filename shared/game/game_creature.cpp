@@ -440,7 +440,7 @@ namespace wowpp
 		return (invType && invType != game::inventory_type::Shield);
 	}
 
-	bool GameCreature::canSpawnForCharacter(GameCharacter & target)
+	bool GameCreature::canSpawnForCharacter(GameCharacter & target) const
 	{
 		// If this is a spirit healer...
 		if (getEntry().npcflags() & 0x00004000)

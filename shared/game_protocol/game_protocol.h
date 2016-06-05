@@ -694,6 +694,8 @@ namespace wowpp
 				RaidReadyCheck				= 0x322,
 				SetDungeonDifficulty		= 0x329,
 				Motd						= 0x33D,
+				MoveSetCanFly				= 0x343,
+				MoveUnsetCanFly				= 0x344,
 				SetFlightSpeed				= 0x37E,
 				SetFlightBackSpeed			= 0x380,
 				FlightSpeedChange			= 0x381,
@@ -2274,6 +2276,16 @@ namespace wowpp
 			void mailSendResult(
 				game::OutgoingPacket &out_packet
 				);
+
+			void moveSetCanFly(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid
+			);
+
+			void moveUnsetCanFly(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid
+			);
 		};
 	}
 }
