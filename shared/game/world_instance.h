@@ -30,6 +30,8 @@
 #include "world_object_spawner.h"
 #include "unit_finder.h"
 #include "map.h"
+#include "binary_io/vector_sink.h"
+#include "game_protocol/game_protocol.h"
 
 namespace wowpp
 {
