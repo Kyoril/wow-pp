@@ -360,6 +360,16 @@ namespace wowpp
 				if (object->getGuid() != character->getGuid() &&
 					object->canSpawnForCharacter(*character))
 				{
+					// Dont spawn stealthed targets that we can't see yet
+					if (object->isCreature() || object->isGameCharacter())
+					{
+						GameUnit &unit = reinterpret_cast<GameUnit&>(*object);
+						if (unit.isStealthed() && !character->canDetectStealth(unit))
+						{
+							continue;
+						}
+					}
+
 					// Create update block
 					std::vector<std::vector<char>> blocks;
 					createUpdateBlocks(*object, *character, blocks);

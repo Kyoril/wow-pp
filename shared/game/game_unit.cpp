@@ -1547,6 +1547,10 @@ namespace wowpp
 			setUInt32Value(unit_fields::Power1, mana);
 		}
 
+		// No longer marked for execute and stuff
+		removeFlag(unit_fields::AuraState, game::aura_state::HealthLess35Percent);
+		removeFlag(unit_fields::AuraState, game::aura_state::HealthLess20Percent);
+
 		startRegeneration();
 
 		// Raise moved event for aggro etc.
@@ -1618,7 +1622,6 @@ namespace wowpp
 
 		// Base distance
 		float visibleDistance = 7.5f * angleModifier;
-
 		const float MaxPlayerStealthDetectRange = 45.0f;
 		// Visible distance is modified by -Level Diff (every level diff = 1.0f in visible distance)
 		visibleDistance += float(getLevel()) - target.getAuras().getTotalBasePoints(game::aura_type::ModStealth) / 5.0f;

@@ -173,7 +173,6 @@ namespace wowpp
 				updateNearbyQuestObjects();
 			}
 		});
-
 	}
 
 	game::QuestStatus GameCharacter::getQuestStatus(UInt32 quest) const

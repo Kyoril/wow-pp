@@ -690,6 +690,16 @@ namespace wowpp
 					continue;
 				}
 
+				// Dont spawn stealthed targets that we can't see yet
+				if (object->isCreature() || object->isGameCharacter())
+				{
+					GameUnit &unit = reinterpret_cast<GameUnit&>(*object);
+					if (unit.isStealthed() && !m_character->canDetectStealth(unit))
+					{
+						continue;
+					}
+				}
+
 				this->sendProxyPacket(
 					std::bind(game::server_write::destroyObject, std::placeholders::_1, object->getGuid(), false));
 			}
@@ -707,6 +717,16 @@ namespace wowpp
 				if (!obj->canSpawnForCharacter(*m_character))
 				{
 					continue;
+				}
+
+				// Dont spawn stealthed targets that we can't see yet
+				if (obj->isCreature() || obj->isGameCharacter())
+				{
+					GameUnit &unit = reinterpret_cast<GameUnit&>(*obj);
+					if (unit.isStealthed() && !m_character->canDetectStealth(unit))
+					{
+						continue;
+					}
 				}
 
 				std::vector<std::vector<char>> createBlock;
