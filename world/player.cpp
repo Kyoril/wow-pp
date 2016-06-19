@@ -1829,7 +1829,7 @@ namespace wowpp
 			// Same tab
 			if (t.tab() == talent->tab())
 			{
-				for (UInt32 i = 0; i < t.ranks_size(); ++i)
+				for (Int32 i = 0; i < t.ranks_size(); ++i)
 				{
 					if (m_character->hasSpell(t.ranks(i)))
 					{

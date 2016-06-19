@@ -116,7 +116,7 @@ namespace wowpp
 		boost::signals2::scoped_connection m_onTargetDied, m_onTargetRemoved;
 		boost::signals2::scoped_connection m_onUserMoved;
 		boost::signals2::scoped_connection m_onTargetMoved, m_damaged;
-		boost::signals2::scoped_connection m_onAttackError;
+		boost::signals2::scoped_connection m_onAttackError, m_removeAurasOnImmunity;
 		float m_x, m_y, m_z;
 		GameTime m_castTime;
 		GameTime m_castEnd;

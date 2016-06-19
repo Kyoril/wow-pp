@@ -1700,6 +1700,36 @@ namespace wowpp
 				}
 			}
 		}
+
+		// If auras should be removed on immunity, do so!
+		if (aura == game::aura_type::MechanicImmunity &&
+			(m_spell.attributes(1) & game::spell_attributes_ex_a::DispelAurasOnImmunity) != 0)
+		{
+			if (!m_removeAurasOnImmunity.connected())
+			{
+				m_removeAurasOnImmunity = completedEffects.connect([this] {
+					UInt32 immunityMask = 0;
+					for (Int32 i = 0; i < m_spell.effects_size(); ++i)
+					{
+						if (m_spell.effects(i).type() == game::spell_effects::ApplyAura &&
+							m_spell.effects(i).aura() == game::aura_type::MechanicImmunity)
+						{
+							immunityMask |= (1 << m_spell.effects(i).miscvaluea());
+						}
+					}
+
+					for (auto &target : m_affectedTargets)
+					{
+						auto strong = target.lock();
+						if (strong)
+						{
+							auto unit = std::static_pointer_cast<GameUnit>(strong);
+							unit->getAuras().removeAllAurasDueToMechanic(immunityMask);
+						}
+					}
+				});
+			}
+		}
 	}
 
 	void SingleCastState::spellEffectHeal(const proto::SpellEffect &effect)

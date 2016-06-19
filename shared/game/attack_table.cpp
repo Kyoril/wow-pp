@@ -361,7 +361,7 @@ namespace wowpp
 				{
 					hitInfo = game::hit_info::Miss;
 				}
-				else if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(effect.mechanic()))
+				else if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(1 << spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(1 << effect.mechanic()))
 				{
 					victimState = game::victim_state::IsImmune;
 				}

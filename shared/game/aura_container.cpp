@@ -375,6 +375,25 @@ namespace wowpp
 		}
 	}
 
+	void AuraContainer::removeAllAurasDueToMechanic(UInt32 immunityMask)
+	{
+		// We need to remove all auras by their spell
+		LinearSet<UInt32> spells;
+		for (auto &aura : m_auras)
+		{
+			if ((immunityMask & (1 << aura->getEffect().mechanic())) != 0 ||
+				(immunityMask & (1 << aura->getSpell().mechanic())) != 0)
+			{
+				spells.optionalAdd(aura->getSpell().id());
+			}
+		}
+
+		for (auto &spellid : spells)
+		{
+			removeAllAurasDueToSpell(spellid);
+		}
+	}
+
 	void AuraContainer::removeAurasByType(UInt32 auraType)
 	{
 		// We need to remove all auras by their spell
