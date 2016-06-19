@@ -688,6 +688,10 @@ namespace wowpp
 						std::uniform_real_distribution<float> distribution(getFloatValue(minDmgField), getFloatValue(maxDmgField) + 1.0f);
 						totalDamage = victim->calculateArmorReducedDamage(getLevel(), UInt32(distribution(randomGenerator)));
 
+						// Apply damage bonus
+						applyDamageDoneBonus(school, 1, totalDamage);
+						targetUnit->applyDamageTakenBonus(school, 1, totalDamage);
+
 						if (hitInfos[i] == game::hit_info::Glancing)
 						{
 							bool attackerIsCaster = false;	//TODO check it
@@ -1077,7 +1081,23 @@ namespace wowpp
 			return true;
 		});
 
-		// TODO: Pct
+		getAuras().forEachAuraOfType(game::aura_type::ModDamagePercentDone, [&damage, schoolMask, tickCount](Aura &aura) -> bool {
+			if (aura.getEffect().miscvaluea() & schoolMask)
+			{
+				Int32 bonus = aura.getBasePoints();
+				if (tickCount > 1)
+				{
+					bonus /= tickCount;
+				}
+
+				if (bonus != 0)
+				{
+					damage = UInt32(damage * (float(100.0f + bonus) / 100.0f));
+				}
+			}
+
+			return true;
+		});
 	}
 
 	void GameUnit::applyDamageTakenBonus(UInt32 schoolMask, UInt32 tickCount, UInt32 & damage)
@@ -1103,7 +1123,23 @@ namespace wowpp
 			return true;
 		});
 
-		// TODO: Pct
+		getAuras().forEachAuraOfType(game::aura_type::ModMeleeDamageTakenPct, [&damage, schoolMask, tickCount](Aura &aura) -> bool {
+			if (aura.getEffect().miscvaluea() & schoolMask)
+			{
+				Int32 bonus = aura.getBasePoints();
+				if (tickCount > 1)
+				{
+					bonus /= tickCount;
+				}
+
+				if (bonus != 0)
+				{
+					damage = UInt32(damage * (float(100.0f + bonus) / 100.0f));
+				}
+			}
+
+			return true;
+		});
 	}
 
 	void GameUnit::applyHealingTakenBonus(UInt32 tickCount, UInt32 & healing)
@@ -1122,7 +1158,19 @@ namespace wowpp
 			healing += bonus;
 		}
 
-		// TODO: Pct
+		getAuras().forEachAuraOfType(game::aura_type::ModHealingPct, [&healing, tickCount](Aura &aura) -> bool {
+			Int32 bonus = aura.getBasePoints();
+			if (tickCount > 1)
+			{
+				bonus /= tickCount;
+			}
+
+			if (bonus != 0)
+			{
+				healing = UInt32(healing * (float(100.0f + bonus) / 100.0f));
+			}
+			return true;
+		});
 	}
 
 	void GameUnit::applyHealingDoneBonus(UInt32 tickCount, UInt32 & healing)
@@ -1141,7 +1189,19 @@ namespace wowpp
 			healing += bonus;
 		}
 
-		// TODO: Pct
+		getAuras().forEachAuraOfType(game::aura_type::ModHealingDonePct, [&healing, tickCount](Aura &aura) -> bool {
+			Int32 bonus = aura.getBasePoints();
+			if (tickCount > 1)
+			{
+				bonus /= tickCount;
+			}
+
+			if (bonus != 0)
+			{
+				healing = UInt32(healing * (float(100.0f + bonus) / 100.0f));
+			}
+			return true;
+		});
 	}
 
 	bool GameUnit::hasCooldown(UInt32 spellId) const
