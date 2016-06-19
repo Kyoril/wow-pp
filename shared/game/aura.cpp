@@ -150,6 +150,9 @@ namespace wowpp
 		case aura::ModThreat:
 			handleModThreat(apply);
 			break;
+		case aura::Transform:
+			handleTransform(apply);
+			break;
 		case aura::ModIncreaseSpeed:
 		case aura::ModSpeedAlways:
 		//mounted speed
@@ -822,6 +825,26 @@ namespace wowpp
 			apply ? UInt32(UInt32(1) << resourceType) : 0);
 	}
 
+	void Aura::handleTransform(bool apply)
+	{
+		if (apply)
+		{
+			if (m_effect.miscvaluea() != 0)
+			{
+				const auto *unit = m_target.getProject().units.getById(m_effect.miscvaluea());
+				if (unit)
+				{
+					m_target.setUInt32Value(unit_fields::DisplayId, unit->malemodel());
+				}
+			}
+		}
+		else
+		{
+			m_target.setUInt32Value(unit_fields::DisplayId, 
+				m_target.getUInt32Value(unit_fields::NativeDisplayId));
+		}
+	}
+
 	void Aura::handleModHealingPct(bool apply)
 	{
 		//TODO
@@ -1140,8 +1163,8 @@ namespace wowpp
 		switch (effect.targeta())
 		{
 		case game::targets::UnitTargetEnemy:
-		case game::targets::UnitTargetAny:
 		case game::targets::UnitAreaEnemyDst:
+		//case game::targets::UnitTargetAny:
 			return false;
 		default:
 			return true;

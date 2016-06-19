@@ -153,6 +153,8 @@ namespace wowpp
 		void handleTrackCreatures(bool apply);
 		/// 45
 		void handleTrackResources(bool apply);
+		/// 56
+		void handleTransform(bool apply);
 		/// 69
 		void handleSchoolAbsorb(bool apply);
 		/// 77

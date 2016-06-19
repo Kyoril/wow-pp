@@ -199,9 +199,9 @@ namespace wowpp
 		io::VectorSink sink(buffer);
 		game::OutgoingPacket packet(sink);
 		game::server_write::messageChat(
-			packet, 
-			game::chat_msg::MonsterSay, 
-			game::language::Common,
+			packet,
+			game::chat_msg::MonsterSay,
+			game::language::Universal,
 			"",
 			0, 
 			getActionText(action, 0), 
