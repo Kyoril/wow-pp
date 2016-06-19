@@ -24,6 +24,7 @@
 #include "common/clock.h"
 #include "game_unit.h"
 #include "game_character.h"
+#include "game_creature.h"
 #include "each_tile_in_sight.h"
 #include "world_instance.h"
 #include "binary_io/vector_sink.h"
@@ -835,6 +836,7 @@ namespace wowpp
 				if (unit)
 				{
 					m_target.setUInt32Value(unit_fields::DisplayId, unit->malemodel());
+					m_target.setFloatValue(object_fields::ScaleX, unit->scale());
 				}
 			}
 		}
@@ -842,6 +844,13 @@ namespace wowpp
 		{
 			m_target.setUInt32Value(unit_fields::DisplayId, 
 				m_target.getUInt32Value(unit_fields::NativeDisplayId));
+
+			float defaultScale = 1.0f;
+			if (m_target.isCreature())
+			{
+				defaultScale = reinterpret_cast<GameCreature&>(m_target).getEntry().scale();
+			}
+			m_target.setFloatValue(object_fields::ScaleX, defaultScale);
 		}
 	}
 
