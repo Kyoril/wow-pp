@@ -696,6 +696,15 @@ namespace wowpp
 		/// 
 		virtual void updateResistance(UInt8 resistance);
 
+		virtual void applyDamageDoneBonus(UInt32 schoolMask, UInt32 tickCount, UInt32 &damage);
+
+		virtual void applyDamageTakenBonus(UInt32 schoolMask, UInt32 tickCount, UInt32 &damage);
+
+		virtual void applyHealingTakenBonus(UInt32 tickCount, UInt32 &healing);
+
+		virtual void applyHealingDoneBonus(UInt32 tickCount, UInt32 &healing);
+
+
 		/// Gets the current unit mover.
 		UnitMover &getMover() {
 			return *m_mover;

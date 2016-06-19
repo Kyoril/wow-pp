@@ -154,6 +154,12 @@ namespace wowpp
 		case aura::Transform:
 			handleTransform(apply);
 			break;
+		case aura::ObsModMana:
+			handleObsModMana(apply);
+			break;
+		case aura::ObsModHealth:
+			handleObsModHealth(apply);
+			break;
 		case aura::ModIncreaseSpeed:
 		case aura::ModSpeedAlways:
 		//mounted speed
@@ -490,6 +496,50 @@ namespace wowpp
 		}
 
 		m_target.notifyStealthChanged();
+	}
+
+	void Aura::handleObsModHealth(bool apply)
+	{
+		if (!apply) {
+			return;
+		}
+
+		// Toggle periodic flag
+		m_isPeriodic = true;
+
+		// First tick at apply
+		if (m_spell.attributes(5) & 0x00000200)
+		{
+			// First tick
+			onTick();
+		}
+		else
+		{
+			// Start timer
+			startPeriodicTimer();
+		}
+	}
+
+	void Aura::handleObsModMana(bool apply)
+	{
+		if (!apply) {
+			return;
+		}
+
+		// Toggle periodic flag
+		m_isPeriodic = true;
+
+		// First tick at apply
+		if (m_spell.attributes(5) & 0x00000200)
+		{
+			// First tick
+			onTick();
+		}
+		else
+		{
+			// Start timer
+			startPeriodicTimer();
+		}
 	}
 
 	void Aura::handleModResistance(bool apply)
@@ -1571,6 +1621,8 @@ namespace wowpp
 					m_target.calculateArmorReducedDamage(m_attackerLevel, damage);
 				}
 
+				m_target.applyDamageTakenBonus(school, m_totalTicks, reinterpret_cast<UInt32&>(damage));
+
 				// Send event to all subscribers in sight
 				auto *world = m_target.getWorldInstance();
 				if (world)
@@ -1660,6 +1712,7 @@ namespace wowpp
 		case aura::PeriodicHeal:
 			{
 				UInt32 heal = m_basePoints;
+				m_target.applyHealingTakenBonus(m_totalTicks, heal);
 
 				// Send event to all subscribers in sight
 				auto *world = m_target.getWorldInstance();
@@ -1681,6 +1734,43 @@ namespace wowpp
 
 				// Update health value
 				m_target.heal(heal, m_caster);
+				break;
+			}
+		case aura::ObsModMana:
+			{
+				// ignore non positive values (can be result apply spellmods to aura damage
+				UInt32 amount = getBasePoints() > 0 ? getBasePoints() : 0;
+				UInt32 maxPower = m_target.getUInt32Value(unit_fields::MaxPower1);
+				if (maxPower == 0)
+					break;
+
+				UInt32 value = UInt32(maxPower * amount / 100);
+				
+				// Send event to all subscribers in sight
+				auto *world = m_target.getWorldInstance();
+				if (world)
+				{
+					TileIndex2D tileIndex;
+					m_target.getTileIndex(tileIndex);
+
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+					wowpp::game::OutgoingPacket packet(sink);
+					game::server_write::periodicAuraLog(packet, m_target.getGuid(), (m_caster ? m_caster->getGuid() : 0), m_spell.id(), m_effect.aura(), 0, value);
+
+					forEachSubscriberInSight(world->getGrid(), tileIndex, [&packet, &buffer](ITileSubscriber & subscriber)
+					{
+						subscriber.sendPacket(packet, buffer);
+					});
+				}
+
+				m_target.setUInt32Value(unit_fields::Power1,
+					std::min(maxPower, m_target.getUInt32Value(unit_fields::Power1) + value));
+				break;
+			}
+		case aura::ObsModHealth:
+			{
+
 				break;
 			}
 		case aura::PeriodicHealthFunnel:

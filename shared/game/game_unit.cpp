@@ -1054,6 +1054,96 @@ namespace wowpp
 		}
 	}
 
+	void GameUnit::applyDamageDoneBonus(UInt32 schoolMask, UInt32 tickCount, UInt32 & damage)
+	{
+		getAuras().forEachAuraOfType(game::aura_type::ModDamageDone, [&damage, schoolMask, tickCount](Aura &aura) -> bool {
+			if (aura.getEffect().miscvaluea() & schoolMask)
+			{
+				Int32 bonus = aura.getBasePoints();
+				if (tickCount > 1)
+				{
+					bonus /= tickCount;
+				}
+
+				if (bonus < 0 && -bonus >= damage)
+				{
+				}
+				else
+				{
+					damage += bonus;
+				}
+			}
+
+			return true;
+		});
+
+		// TODO: Pct
+	}
+
+	void GameUnit::applyDamageTakenBonus(UInt32 schoolMask, UInt32 tickCount, UInt32 & damage)
+	{
+		getAuras().forEachAuraOfType(game::aura_type::ModDamageTaken, [&damage, schoolMask, tickCount](Aura &aura) -> bool {
+			if (aura.getEffect().miscvaluea() & schoolMask)
+			{
+				Int32 bonus = aura.getBasePoints();
+				if (tickCount > 1)
+				{
+					bonus /= tickCount;
+				}
+
+				if (bonus < 0 && -bonus >= damage)
+				{
+				}
+				else
+				{
+					damage += bonus;
+				}
+			}
+
+			return true;
+		});
+
+		// TODO: Pct
+	}
+
+	void GameUnit::applyHealingTakenBonus(UInt32 tickCount, UInt32 & healing)
+	{
+		Int32 bonus = getAuras().getTotalBasePoints(game::aura_type::ModHealing);
+		if (tickCount > 1)
+		{
+			bonus /= tickCount;
+		}
+
+		if (bonus < 0 && -bonus >= healing)
+		{
+		}
+		else
+		{
+			healing += bonus;
+		}
+
+		// TODO: Pct
+	}
+
+	void GameUnit::applyHealingDoneBonus(UInt32 tickCount, UInt32 & healing)
+	{
+		Int32 bonus = getAuras().getTotalBasePoints(game::aura_type::ModHealingDone);
+		if (tickCount > 1)
+		{
+			bonus /= tickCount;
+		}
+
+		if (bonus < 0 && -bonus >= healing)
+		{
+		}
+		else
+		{
+			healing += bonus;
+		}
+
+		// TODO: Pct
+	}
+
 	bool GameUnit::hasCooldown(UInt32 spellId) const
 	{
 		auto it = m_spellCooldowns.find(spellId);

@@ -648,6 +648,10 @@ namespace wowpp
 				hitInfos[i] = static_cast<game::HitInfo>(hitInfos[i] | game::hit_info::Absorb);
 			}
 
+			// Apply damage bonus
+			m_cast.getExecuter().applyDamageDoneBonus(school, 1, totalDamage);
+			targetUnit->applyDamageTakenBonus(school, 1, totalDamage);
+
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
 			float threat = noThreat ? 0.0f : totalDamage - resisted - absorbed;
@@ -844,6 +848,11 @@ namespace wowpp
 				UInt32 spellPower = caster.getBonus(school);
 				UInt32 spellBonusPct = caster.getBonusPct(school);
 				totalDamage = getSpellPointsTotal(effect, spellPower, spellBonusPct);
+				
+				// Apply damage bonus
+				caster.applyDamageDoneBonus(school, 1, totalDamage);
+				targetUnit->applyDamageTakenBonus(school, 1, totalDamage);
+
 				if (caster.isGameCharacter())
 				{
 					auto added = reinterpret_cast<GameCharacter&>(caster).applySpellMod(
@@ -1758,6 +1767,10 @@ namespace wowpp
 				UInt32 spellPower = caster.getBonus(school);
 				UInt32 spellBonusPct = caster.getBonusPct(school);
 				totalPoints = getSpellPointsTotal(effect, spellPower, spellBonusPct);
+
+				caster.applyHealingDoneBonus(1, totalPoints);
+				targetUnit->applyHealingTakenBonus(1, totalPoints);
+
 				if (hitInfos[i] == game::hit_info::CriticalHit)
 				{
 					crit = true;

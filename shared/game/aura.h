@@ -131,6 +131,10 @@ namespace wowpp
 		void handleDamageShield(bool apply);
 		/// 16
 		void handleModStealth(bool apply);
+		/// 20
+		void handleObsModHealth(bool apply);
+		/// 21
+		void handleObsModMana(bool apply);
 		/// 22
 		void handleModResistance(bool apply);
 		/// 23
