@@ -404,6 +404,7 @@ namespace wowpp
 		case game::targets::UnitTargetAlly:		//21
 		case game::targets::UnitTargetAny:		//25
 		case game::targets::UnitRaidTargetRaid:	//57
+		case game::targets::UnitChannel:		//77
 			if (unitTarget) 
 			{
 				targets.push_back(unitTarget);

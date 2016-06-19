@@ -497,19 +497,23 @@ namespace wowpp
 
 	void Aura::handlePeriodicTriggerSpell(bool apply)
 	{
-		float amplitude = m_effect.amplitude() / 1000.0f;
-		UInt32 triggerSpell = m_effect.triggerspell();
-		SpellTargetMap targetMap;
-		m_onTick = m_tickCountdown.ended.connect([this, amplitude, triggerSpell, targetMap]()
-		{
-			m_target.castSpell(targetMap, triggerSpell, -1, 0, true);
+		if (!apply) {
+			return;
+		}
 
-			if (!m_expired)
-			{
-				startPeriodicTimer();
-			}
-		});
-		startPeriodicTimer();
+		m_isPeriodic = true;
+
+		// First tick at apply
+		if (m_spell.attributes(5) & 0x00000200)
+		{
+			// First tick
+			onTick();
+		}
+		else
+		{
+			// Start timer
+			startPeriodicTimer();
+		}
 	}
 
 	void Aura::handlePeriodicEnergize(bool apply)
@@ -1644,7 +1648,16 @@ namespace wowpp
 			}
 		case aura::PeriodicTriggerSpell:
 			{
-				DLOG("TODO");
+				SpellTargetMap targetMap;
+				targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+				targetMap.m_unitTarget = m_target.getVictim() ? m_target.getVictim()->getGuid() : 0;
+
+				m_target.castSpell(targetMap, m_effect.triggerspell(), -1, 0, true);
+
+				if (!m_expired)
+				{
+					startPeriodicTimer();
+				}
 				break;
 			}
 		case aura::PeriodicTriggerSpellWithValue:
