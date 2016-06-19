@@ -748,7 +748,8 @@ namespace wowpp
 		virtual void classUpdated();
 		/// 
 		virtual void onThreat(GameUnit &threatener, float amount);
-
+		/// 
+		virtual void onRegeneration();
 
 	private:
 
@@ -762,8 +763,6 @@ namespace wowpp
 		void onVictimDespawned();
 		/// 
 		void onAttackSwing();
-		/// 
-		void onRegeneration();
 		/// 
 		virtual void regenerateHealth() = 0;
 		/// 
