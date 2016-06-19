@@ -261,6 +261,15 @@ namespace wowpp
 		case aura::Fly:
 			handleFly(apply);
 			break;
+		case aura::FeatherFall:
+			handleFeatherFall(apply);
+			break;
+		case aura::Hover:
+			handleHover(apply);
+			break;
+		case aura::WaterWalk:
+			handleWaterWalk(apply);
+			break;
 		default:
 			//			WLOG("Unhandled aura type: " << m_effect.aura());
 			break;
@@ -1064,6 +1073,54 @@ namespace wowpp
 	void Aura::handleModAttackPower(bool apply)
 	{
 		m_target.updateModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue, m_basePoints, apply);
+	}
+
+	void Aura::handleWaterWalk(bool apply)
+	{
+		auto *world = m_target.getWorldInstance();
+		if (world)
+		{
+			if (apply)
+			{
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveWaterWalk, std::placeholders::_1, m_target.getGuid()));
+			}
+			else
+			{
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveLandWalk, std::placeholders::_1, m_target.getGuid()));
+			}
+		}
+	}
+
+	void Aura::handleFeatherFall(bool apply)
+	{
+		auto *world = m_target.getWorldInstance();
+		if (world)
+		{
+			if (apply)
+			{
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveFeatherFall, std::placeholders::_1, m_target.getGuid()));
+			}
+			else
+			{
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveNormalFall, std::placeholders::_1, m_target.getGuid()));
+			}
+		}
+	}
+
+	void Aura::handleHover(bool apply)
+	{
+		auto *world = m_target.getWorldInstance();
+		if (world)
+		{
+			if (apply)
+			{
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveSetHover, std::placeholders::_1, m_target.getGuid()));
+			}
+			else
+			{
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveUnsetHover, std::placeholders::_1, m_target.getGuid()));
+			}
+		}
 	}
 
 	void Aura::handleAddModifier(bool apply)

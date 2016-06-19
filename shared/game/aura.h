@@ -167,6 +167,12 @@ namespace wowpp
 		void handleManaShield(bool apply);
 		/// 99
 		void handleModAttackPower(bool apply);
+		/// 104
+		void handleWaterWalk(bool apply);
+		/// 105
+		void handleFeatherFall(bool apply);
+		/// 106
+		void handleHover(bool apply);
 		/// 107 & 108
 		void handleAddModifier(bool apply);
 		/// 109

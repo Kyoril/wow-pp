@@ -590,6 +590,8 @@ namespace wowpp
 				SetSwimSpeed				= 0x0D3,
 				SetSwimBackSpeed			= 0x0D5,
 				MonsterMove					= 0x0DD,
+				WaterWalk					= 0x0DE,
+				LandWalk					= 0x0DF,
 				RunSpeedChange				= 0x0E2,
 				RunBackSpeedChange			= 0x0E4,
 				SwimSpeedChange				= 0x0E6,
@@ -598,6 +600,10 @@ namespace wowpp
 				MoveRoot					= 0x0EC,
 				MoveUnroot					= 0x0ED,
 				MoveHeartBeat				= 0x0EE,
+				MoveFeatherFall				= 0x0F2,
+				MoveNormalFall				= 0x0F3,
+				MoveSetHover				= 0x0F4,
+				MoveUnsetHover				= 0x0F5,
 				TutorialFlags				= 0x0FD,
 				Emote						= 0x103,
 				TextEmote					= 0x105,
@@ -2283,6 +2289,36 @@ namespace wowpp
 			);
 
 			void moveUnsetCanFly(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid
+			);
+			
+			void moveFeatherFall(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid
+			);
+			
+			void moveNormalFall(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid
+			);
+
+			void moveSetHover(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid
+			);
+
+			void moveUnsetHover(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid
+			);
+
+			void moveWaterWalk(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid
+			);
+
+			void moveLandWalk(
 				game::OutgoingPacket &out_packet,
 				UInt64 guid
 			);
