@@ -24,6 +24,7 @@
 #include "common/clock.h"
 #include "game_unit.h"
 #include "game_character.h"
+#include "game_creature.h"
 #include "each_tile_in_sight.h"
 #include "world_instance.h"
 #include "binary_io/vector_sink.h"
@@ -109,6 +110,20 @@ namespace wowpp
 		return effectSchoolMask;
 	}
 
+	bool Aura::isStealthAura() const
+	{
+		for (Int32 i = 0; i < m_spell.effects_size(); ++i)
+		{
+			if (m_spell.effects(i).type() == game::spell_effects::ApplyAura &&
+				m_spell.effects(i).aura() == game::aura_type::ModStealth)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	void Aura::handleModifier(bool apply)
 	{
 		namespace aura = game::aura_type;
@@ -127,11 +142,23 @@ namespace wowpp
 		case aura::Dummy:
 			handleDummy(apply);
 			break;
+		case aura::ModFear:
+			handleModFear(apply);
+			break;
 		case aura::ModStat:
 			handleModStat(apply);
 			break;
 		case aura::ModThreat:
 			handleModThreat(apply);
+			break;
+		case aura::Transform:
+			handleTransform(apply);
+			break;
+		case aura::ObsModMana:
+			handleObsModMana(apply);
+			break;
+		case aura::ObsModHealth:
+			handleObsModHealth(apply);
 			break;
 		case aura::ModIncreaseSpeed:
 		case aura::ModSpeedAlways:
@@ -236,6 +263,18 @@ namespace wowpp
 		case aura::AddFlatModifier:
 		case aura::AddPctModifier:
 			handleAddModifier(apply);
+			break;
+		case aura::Fly:
+			handleFly(apply);
+			break;
+		case aura::FeatherFall:
+			handleFeatherFall(apply);
+			break;
+		case aura::Hover:
+			handleHover(apply);
+			break;
+		case aura::WaterWalk:
+			handleWaterWalk(apply);
 			break;
 		default:
 			//			WLOG("Unhandled aura type: " << m_effect.aura());
@@ -353,6 +392,11 @@ namespace wowpp
 
 	}
 
+	void Aura::handleModFear(bool apply)
+	{
+		m_target.notifyFearChanged();
+	}
+
 	void Aura::handlePeriodicHeal(bool apply)
 	{
 		if (!apply) {
@@ -454,6 +498,50 @@ namespace wowpp
 		m_target.notifyStealthChanged();
 	}
 
+	void Aura::handleObsModHealth(bool apply)
+	{
+		if (!apply) {
+			return;
+		}
+
+		// Toggle periodic flag
+		m_isPeriodic = true;
+
+		// First tick at apply
+		if (m_spell.attributes(5) & 0x00000200)
+		{
+			// First tick
+			onTick();
+		}
+		else
+		{
+			// Start timer
+			startPeriodicTimer();
+		}
+	}
+
+	void Aura::handleObsModMana(bool apply)
+	{
+		if (!apply) {
+			return;
+		}
+
+		// Toggle periodic flag
+		m_isPeriodic = true;
+
+		// First tick at apply
+		if (m_spell.attributes(5) & 0x00000200)
+		{
+			// First tick
+			onTick();
+		}
+		else
+		{
+			// Start timer
+			startPeriodicTimer();
+		}
+	}
+
 	void Aura::handleModResistance(bool apply)
 	{
 		// Apply all resistances
@@ -468,19 +556,23 @@ namespace wowpp
 
 	void Aura::handlePeriodicTriggerSpell(bool apply)
 	{
-		float amplitude = m_effect.amplitude() / 1000.0f;
-		UInt32 triggerSpell = m_effect.triggerspell();
-		SpellTargetMap targetMap;
-		m_onTick = m_tickCountdown.ended.connect([this, amplitude, triggerSpell, targetMap]()
-		{
-			m_target.castSpell(targetMap, triggerSpell, -1, 0, true);
+		if (!apply) {
+			return;
+		}
 
-			if (!m_expired)
-			{
-				startPeriodicTimer();
-			}
-		});
-		startPeriodicTimer();
+		m_isPeriodic = true;
+
+		// First tick at apply
+		if (m_spell.attributes(5) & 0x00000200)
+		{
+			// First tick
+			onTick();
+		}
+		else
+		{
+			// Start timer
+			startPeriodicTimer();
+		}
 	}
 
 	void Aura::handlePeriodicEnergize(bool apply)
@@ -551,7 +643,7 @@ namespace wowpp
 			const bool isAlliance = ((game::race::Alliance & (1 << (m_target.getRace() - 1))) == (1 << (m_target.getRace() - 1)));
 
 			UInt32 modelId = 0;
-			UInt32 powerType = game::power_type::Mana;
+			UInt32 powerType = m_target.getByteValue(unit_fields::Bytes0, 3);
 			switch (form)
 			{
 			case 1:			// Cat
@@ -614,6 +706,11 @@ namespace wowpp
 			case 29:		// Flight form
 				{
 					modelId = (isAlliance ? 20857 : 20872);
+					break;
+				}
+			case 30:		// Rogue stealth
+				{
+					powerType = game::power_type::Energy;
 					break;
 				}
 			case 31:		// Moonkin
@@ -792,6 +889,34 @@ namespace wowpp
 			apply ? UInt32(UInt32(1) << resourceType) : 0);
 	}
 
+	void Aura::handleTransform(bool apply)
+	{
+		if (apply)
+		{
+			if (m_effect.miscvaluea() != 0)
+			{
+				const auto *unit = m_target.getProject().units.getById(m_effect.miscvaluea());
+				if (unit)
+				{
+					m_target.setUInt32Value(unit_fields::DisplayId, unit->malemodel());
+					m_target.setFloatValue(object_fields::ScaleX, unit->scale());
+				}
+			}
+		}
+		else
+		{
+			m_target.setUInt32Value(unit_fields::DisplayId, 
+				m_target.getUInt32Value(unit_fields::NativeDisplayId));
+
+			float defaultScale = 1.0f;
+			if (m_target.isCreature())
+			{
+				defaultScale = reinterpret_cast<GameCreature&>(m_target).getEntry().scale();
+			}
+			m_target.setFloatValue(object_fields::ScaleX, defaultScale);
+		}
+	}
+
 	void Aura::handleModHealingPct(bool apply)
 	{
 		//TODO
@@ -859,6 +984,33 @@ namespace wowpp
 	void Aura::handleModResistanceExclusive(bool apply)
 	{
 		handleModResistance(apply);
+	}
+
+	void Aura::handleFly(bool apply)
+	{
+		// Determined to prevent falling when one aura is still left
+		const bool hasFlyAura = m_target.getAuras().hasAura(game::aura_type::Fly);
+
+		if (m_target.isCreature())
+		{
+			if (!apply && !hasFlyAura)
+			{
+				m_target.setFlightMode(apply);
+			}
+		}
+
+		auto *world = m_target.getWorldInstance();
+		if (world)
+		{
+			if (apply)
+			{
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveSetCanFly, std::placeholders::_1, m_target.getGuid()));
+			}
+			else if (!hasFlyAura)
+			{
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveUnsetCanFly, std::placeholders::_1, m_target.getGuid()));
+			}
+		}
 	}
 
 	void Aura::handleTakenDamage(GameUnit *attacker)
@@ -973,6 +1125,54 @@ namespace wowpp
 		m_target.updateModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue, m_basePoints, apply);
 	}
 
+	void Aura::handleWaterWalk(bool apply)
+	{
+		auto *world = m_target.getWorldInstance();
+		if (world)
+		{
+			if (apply)
+			{
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveWaterWalk, std::placeholders::_1, m_target.getGuid()));
+			}
+			else
+			{
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveLandWalk, std::placeholders::_1, m_target.getGuid()));
+			}
+		}
+	}
+
+	void Aura::handleFeatherFall(bool apply)
+	{
+		auto *world = m_target.getWorldInstance();
+		if (world)
+		{
+			if (apply)
+			{
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveFeatherFall, std::placeholders::_1, m_target.getGuid()));
+			}
+			else
+			{
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveNormalFall, std::placeholders::_1, m_target.getGuid()));
+			}
+		}
+	}
+
+	void Aura::handleHover(bool apply)
+	{
+		auto *world = m_target.getWorldInstance();
+		if (world)
+		{
+			if (apply)
+			{
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveSetHover, std::placeholders::_1, m_target.getGuid()));
+			}
+			else
+			{
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveUnsetHover, std::placeholders::_1, m_target.getGuid()));
+			}
+		}
+	}
+
 	void Aura::handleAddModifier(bool apply)
 	{
 		if (m_effect.miscvaluea() >= spell_mod_op::Max_)
@@ -1083,8 +1283,8 @@ namespace wowpp
 		switch (effect.targeta())
 		{
 		case game::targets::UnitTargetEnemy:
-		case game::targets::UnitTargetAny:
 		case game::targets::UnitAreaEnemyDst:
+		//case game::targets::UnitTargetAny:
 			return false;
 		default:
 			return true;
@@ -1421,6 +1621,8 @@ namespace wowpp
 					m_target.calculateArmorReducedDamage(m_attackerLevel, damage);
 				}
 
+				m_target.applyDamageTakenBonus(school, m_totalTicks, reinterpret_cast<UInt32&>(damage));
+
 				// Send event to all subscribers in sight
 				auto *world = m_target.getWorldInstance();
 				if (world)
@@ -1510,6 +1712,7 @@ namespace wowpp
 		case aura::PeriodicHeal:
 			{
 				UInt32 heal = m_basePoints;
+				m_target.applyHealingTakenBonus(m_totalTicks, heal);
 
 				// Send event to all subscribers in sight
 				auto *world = m_target.getWorldInstance();
@@ -1531,6 +1734,43 @@ namespace wowpp
 
 				// Update health value
 				m_target.heal(heal, m_caster);
+				break;
+			}
+		case aura::ObsModMana:
+			{
+				// ignore non positive values (can be result apply spellmods to aura damage
+				UInt32 amount = getBasePoints() > 0 ? getBasePoints() : 0;
+				UInt32 maxPower = m_target.getUInt32Value(unit_fields::MaxPower1);
+				if (maxPower == 0)
+					break;
+
+				UInt32 value = UInt32(maxPower * amount / 100);
+				
+				// Send event to all subscribers in sight
+				auto *world = m_target.getWorldInstance();
+				if (world)
+				{
+					TileIndex2D tileIndex;
+					m_target.getTileIndex(tileIndex);
+
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+					wowpp::game::OutgoingPacket packet(sink);
+					game::server_write::periodicAuraLog(packet, m_target.getGuid(), (m_caster ? m_caster->getGuid() : 0), m_spell.id(), m_effect.aura(), 0, value);
+
+					forEachSubscriberInSight(world->getGrid(), tileIndex, [&packet, &buffer](ITileSubscriber & subscriber)
+					{
+						subscriber.sendPacket(packet, buffer);
+					});
+				}
+
+				m_target.setUInt32Value(unit_fields::Power1,
+					std::min(maxPower, m_target.getUInt32Value(unit_fields::Power1) + value));
+				break;
+			}
+		case aura::ObsModHealth:
+			{
+
 				break;
 			}
 		case aura::PeriodicHealthFunnel:
@@ -1555,7 +1795,16 @@ namespace wowpp
 			}
 		case aura::PeriodicTriggerSpell:
 			{
-				DLOG("TODO");
+				SpellTargetMap targetMap;
+				targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+				targetMap.m_unitTarget = m_target.getVictim() ? m_target.getVictim()->getGuid() : 0;
+
+				m_target.castSpell(targetMap, m_effect.triggerspell(), -1, 0, true);
+
+				if (!m_expired)
+				{
+					startPeriodicTimer();
+				}
 				break;
 			}
 		case aura::PeriodicTriggerSpellWithValue:
@@ -1625,9 +1874,21 @@ namespace wowpp
 
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Damage) != 0)
 		{
-			m_takenDamage = m_target.takenDamage.connect(
-			[&](GameUnit * victim, UInt32 damage) {
-				setRemoved(victim);
+			auto strongThis = shared_from_this();
+			std::weak_ptr<Aura> weakThis(strongThis);
+
+			// Subscribe for damage event in next pass, since we don't want to break this aura by it's own damage
+			// (this happens for rogue spell Gouge as it deals damage)
+			m_post([weakThis]() {
+				auto strong = weakThis.lock();
+				if (strong)
+				{
+					strong->m_takenDamage = strong->m_target.takenDamage.connect(
+						[strong](GameUnit * victim, UInt32 damage) {
+							strong->setRemoved(victim);
+						}
+					);
+				}
 			});
 		}
 
@@ -1649,9 +1910,24 @@ namespace wowpp
 
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Cast) != 0)
 		{
-			m_targetStartedCasting = m_target.startedCasting.connect(
-			[&](const proto::SpellEntry & spell) {
-				m_destroy(*this);
+			auto strongThis = shared_from_this();
+			std::weak_ptr<Aura> weakThis(strongThis);
+
+			m_post([weakThis]() {
+				auto strong = weakThis.lock();
+				if (strong)
+				{
+					strong->m_targetStartedCasting = strong->m_target.startedCasting.connect(
+						[strong](const proto::SpellEntry & spell) {
+						if (spell.attributes(1) & game::spell_attributes_ex_a::NotBreakStealth &&
+							strong->isStealthAura())
+						{
+							return;
+						}
+
+						strong->m_destroy(*strong);
+					});
+				}
 			});
 		}
 
@@ -1743,6 +2019,20 @@ namespace wowpp
 		m_onExpire.disconnect();
 		m_onTick.disconnect();
 
+		// Disconnect signals
+		m_doneSpellMagicDmgClassNeg.disconnect();
+		m_procKill.disconnect();
+		m_procKilled.disconnect();
+		m_doneSpellMagicDmgClassNeg.disconnect();
+		m_procTakenAutoAttack.disconnect();
+		m_procAutoAttack.disconnect();
+		m_takenDamage.disconnect();
+		m_targetStartedCasting.disconnect();
+		m_targetStartedAttacking.disconnect();
+		m_targetEnteredWater.disconnect();
+		m_targetMoved.disconnect();
+		m_onDamageBreak.disconnect();
+
 		// Do this to prevent the aura from starting another tick just in case (shouldn't happen though)
 		m_expired = true;
 
@@ -1819,10 +2109,14 @@ namespace wowpp
 	void Aura::setRemoved(GameUnit *remover)
 	{
 		std::shared_ptr<Aura> strongThis = shared_from_this();
-		m_post([strongThis]
+		std::weak_ptr<Aura> weak(strongThis);
+		m_post([weak]
 		{
-			// TODO: Notify about being removed...
-			strongThis->m_destroy(*strongThis);
+			auto strong = weak.lock();
+			if (strong)
+			{
+				strong->m_destroy(*strong);
+			}
 		});
 	}
 

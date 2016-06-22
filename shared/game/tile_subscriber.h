@@ -38,5 +38,7 @@ namespace wowpp
 		virtual GameCharacter *getControlledObject() = 0;
 		/// Sends a packet to the tile subscriber.
 		virtual void sendPacket(game::Protocol::OutgoingPacket &packet, const std::vector<char> &buffer) = 0;
+
+		// TODO: We need to make sure that we know whose objects are spawned
 	};
 }

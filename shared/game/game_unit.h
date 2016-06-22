@@ -386,6 +386,8 @@ namespace wowpp
 		boost::signals2::signal<void(bool)> rootStateChanged;
 		/// Fired when this unit gets stunned or unstunned.
 		boost::signals2::signal<void(bool)> stunStateChanged;
+		/// Fired when this unit gets feared or unfeared.
+		boost::signals2::signal<void(bool)> fearStateChanged;
 		/// Fired when this unit enters or leaves stealth mode.
 		boost::signals2::signal<void(bool)> stealthStateChanged;
 		/// Fired when the movement speed of this unit changes.
@@ -615,6 +617,10 @@ namespace wowpp
 		bool isRooted() const {
 			return m_isRooted;
 		}
+		/// Determines whether this unit is feared.
+		bool isFeared() const {
+			return m_isFeared;
+		}
 		/// 
 		bool canMove() const {
 			return isAlive() && !isStunned() && !isRooted();
@@ -623,6 +629,8 @@ namespace wowpp
 		void notifyStunChanged();
 		/// 
 		void notifyRootChanged();
+		/// 
+		void notifyFearChanged();
 		/// 
 		void notifySpeedChanged(MovementType type);
 		/// 
@@ -688,6 +696,15 @@ namespace wowpp
 		/// 
 		virtual void updateResistance(UInt8 resistance);
 
+		virtual void applyDamageDoneBonus(UInt32 schoolMask, UInt32 tickCount, UInt32 &damage);
+
+		virtual void applyDamageTakenBonus(UInt32 schoolMask, UInt32 tickCount, UInt32 &damage);
+
+		virtual void applyHealingTakenBonus(UInt32 tickCount, UInt32 &healing);
+
+		virtual void applyHealingDoneBonus(UInt32 tickCount, UInt32 &healing);
+
+
 		/// Gets the current unit mover.
 		UnitMover &getMover() {
 			return *m_mover;
@@ -714,6 +731,10 @@ namespace wowpp
 		/// all assigned world objects will despawn as well.
 		void addWorldObject(std::shared_ptr<WorldObject> object);
 
+		/// Enables or disables flight mode.
+		/// @param enable Whether flight mode will be enabled.
+		void setFlightMode(bool enable);
+
 	public:
 
 		/// 
@@ -736,7 +757,8 @@ namespace wowpp
 		virtual void classUpdated();
 		/// 
 		virtual void onThreat(GameUnit &threatener, float amount);
-
+		/// 
+		virtual void onRegeneration();
 
 	private:
 
@@ -751,13 +773,15 @@ namespace wowpp
 		/// 
 		void onAttackSwing();
 		/// 
-		void onRegeneration();
-		/// 
 		virtual void regenerateHealth() = 0;
 		/// 
 		void regeneratePower(game::PowerType power);
 		/// 
 		void onSpellCastEnded(bool succeeded);
+		/// 
+		void triggerNextAutoAttack();
+		/// 
+		void triggerNextFearMove();
 
 	private:
 
@@ -774,10 +798,11 @@ namespace wowpp
 		const proto::FactionTemplateEntry *m_factionTemplate;
 		std::unique_ptr<SpellCast> m_spellCast;
 		Countdown m_despawnCountdown;
-		boost::signals2::scoped_connection m_victimDespawned, m_victimDied;
+		boost::signals2::scoped_connection m_victimDespawned, m_victimDied, m_fearMoved;
 		GameUnit *m_victim;
 		Countdown m_attackSwingCountdown;
-		GameTime m_lastAttackSwing;
+		GameTime m_lastMainHand, m_lastOffHand;
+		game::WeaponAttack m_weaponAttack;
 		Countdown m_regenCountdown;
 		GameTime m_lastManaUse;
 		UnitModArray m_unitMods;
@@ -787,6 +812,7 @@ namespace wowpp
 		UInt32 m_mechanicImmunity;
 		bool m_isStunned;
 		bool m_isRooted;
+		bool m_isFeared;
 		bool m_isStealthed;
 		std::array<float, movement_type::Count> m_speedBonus;
 		CooldownMap m_spellCooldowns;

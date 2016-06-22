@@ -30,6 +30,9 @@
 #include "world_object_spawner.h"
 #include "unit_finder.h"
 #include "map.h"
+#include "binary_io/vector_sink.h"
+#include "game_protocol/game_protocol.h"
+#include "tile_subscriber.h"
 
 namespace wowpp
 {
@@ -167,6 +170,43 @@ namespace wowpp
 			{
 				f(*object.second);
 			}
+		}
+
+		/// Delivers a packet to all receivers near a specific object.
+		/// @param source The objecte whose location will be used to determine all nearby players.
+		/// @param f The packet generator function used to write the packet.
+		template<typename F>
+		void sendPacketToNearbyPlayers(const GameObject &source, F f)
+		{
+			TileIndex2D tile;
+			if (!source.getTileIndex(tile))
+			{
+				return;
+			}
+
+			// Write packet
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket packet(sink);
+			f(packet);
+
+			// Send packet to all players nearby
+			forEachSubscriberInSight(
+				*m_visibilityGrid,
+				tile,
+				[&source, &packet, buffer](ITileSubscriber &subscriber)
+			{
+				auto *character = subscriber.getControlledObject();
+				if (!character) 
+				{
+					return;
+				}
+				if (!source.canSpawnForCharacter(*character))
+				{
+					return;
+				}
+				subscriber.sendPacket(packet, buffer);
+			});
 		}
 
 	private:

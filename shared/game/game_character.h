@@ -691,6 +691,8 @@ namespace wowpp
 		virtual void regenerateHealth() override;
 		/// @copydoc GameUnit::onThreaten
 		void onThreat(GameUnit &threatener, float amount) override;
+		/// @copydoc GameUnit::onRegeneration
+		virtual void onRegeneration() override;
 
 	private:
 
@@ -855,7 +857,7 @@ namespace wowpp
 		void applyThreatMod(UInt32 schoolMask, float &ref_threat);
 		/// Determines whether this character is involved in a pvp combat.
 		bool isInPvPCombat() const {
-			return m_pvpCombatTimer.running;
+			return getCurrentTime() < m_lastPvPCombat + constants::OneSecond * 5;
 		}
 	public:
 
@@ -909,8 +911,7 @@ namespace wowpp
 		SpellModsByOp m_spellModsByOp;
 		std::array<float, 7> m_threatModifier;
 		std::vector<Countdown> m_questTimeouts;
-		Countdown m_pvpCombatTimer;
-		boost::signals2::scoped_connection m_pvpCombatTimeout;
+		GameTime m_lastPvPCombat;
 	};
 
 	/// Serializes a GameCharacter to an io::Writer object for the wow++ protocol.

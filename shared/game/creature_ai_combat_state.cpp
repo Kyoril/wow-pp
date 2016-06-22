@@ -160,6 +160,39 @@ namespace wowpp
 				getAI().reset();
 			}
 		});
+		m_onFearChanged = getControlled().fearStateChanged.connect([this](bool feared)
+		{
+			// If we are no longer feared, update victim again
+			if (!feared)
+			{
+				if (!getControlled().isCombatMovementEnabled())
+				{
+					// Try to continue last movement if we aren't there already
+					auto &mover = getControlled().getMover();
+					mover.moveTo(mover.getTarget());
+
+					return;
+				}
+
+				chooseNextAction();
+			}
+			else
+			{
+				// Do not watch for unit motion
+				m_onVictimMoved.disconnect();
+
+				// No longer attack unit if stunned
+				m_isCasting = false;
+				getControlled().cancelCast(game::spell_interrupt_flags::None);
+				getControlled().stopAttack();
+				getControlled().setVictim(nullptr);
+
+				m_customCooldown = 0;
+				m_lastSpellEntry = nullptr;
+				m_lastSpell = nullptr;
+				m_lastCastTime = 0;
+			}
+		});
 		m_onStunChanged = getControlled().stunStateChanged.connect([this](bool stunned)
 		{
 			// If we are no longer stunned, update victim again
@@ -295,6 +328,7 @@ namespace wowpp
 		m_onMoveTargetChanged.disconnect();
 		m_onStunChanged.disconnect();
 		m_onRootChanged.disconnect();
+		m_onFearChanged.disconnect();
 		m_onVictimMoved.disconnect();
 
 		auto &controlled = getControlled();
@@ -446,6 +480,12 @@ namespace wowpp
 	void CreatureAICombatState::updateVictim()
 	{
 		GameCreature &controlled = getControlled();
+		if (controlled.isStunned() || controlled.isFeared())
+		{
+			controlled.setVictim(nullptr);
+			return;
+		}
+
 		GameUnit *victim = controlled.getVictim();
 		bool rooted = controlled.isRooted();
 
@@ -536,7 +576,7 @@ namespace wowpp
 		if (!victim)
 		{
 			// No victim found (threat list probably empty or rooted)
-			if (!controlled.isRooted())
+			if (!controlled.isRooted() && !controlled.isStunned() && !controlled.isFeared())
 			{
 				// Warning: this will destroy the current AI state.
 				getAI().reset();

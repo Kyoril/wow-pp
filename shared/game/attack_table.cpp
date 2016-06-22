@@ -48,7 +48,7 @@ namespace wowpp
 			{
 				// Check if we are in front of the target for parry
 				const bool targetLookingAtUs = targetUnit->isInArc(2.0f * 3.1415927f / 3.0f, attacker->getLocation().x, attacker->getLocation().y);
-				game::HitInfo hitInfo = game::hit_info::NormalSwing;
+				game::HitInfo hitInfo = game::hit_info::NormalSwing2;
 				game::VictimState victimState = game::victim_state::Normal;
 				float attackTableRoll = hitTableDistribution(randomGenerator);
 				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school, true)) < 0.0f)
@@ -100,7 +100,7 @@ namespace wowpp
 		resists = m_resists[targetA][targetB];
 	}
 
-	void AttackTable::checkSpecialMeleeAttack(GameUnit *attacker, SpellTargetMap &targetMap, UInt8 school, std::vector<GameUnit *> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
+	void AttackTable::checkSpecialMeleeAttack(GameUnit *attacker, const proto::SpellEntry &spell, SpellTargetMap &targetMap, UInt8 school, std::vector<GameUnit *> &targets, std::vector<game::VictimState> &victimStates, std::vector<game::HitInfo> &hitInfos, std::vector<float> &resists)
 	{
 		UInt32 targetA = game::targets::UnitTargetEnemy;
 		UInt32 targetB = game::targets::None;
@@ -112,7 +112,7 @@ namespace wowpp
 			for (GameUnit *targetUnit : m_targets[targetA][targetB])
 			{
 				const bool targetLookingAtUs = targetUnit->isInArc(2.0f * 3.1415927f / 3.0f, attacker->getLocation().x, attacker->getLocation().y);
-				game::HitInfo hitInfo = game::hit_info::NormalSwing;
+				game::HitInfo hitInfo = game::hit_info::NormalSwing2;
 				game::VictimState victimState = game::victim_state::Normal;
 				float attackTableRoll = hitTableDistribution(randomGenerator);
 				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school, false)) < 0.0f)
@@ -123,15 +123,15 @@ namespace wowpp
 				{
 					victimState = game::victim_state::IsImmune;
 				}
-				else if ((targetLookingAtUs || targetUnit->getTypeId() != object_type::Character) && (attackTableRoll -= targetUnit->getDodgeChance(*attacker)) < 0.0f)
+				else if ((targetLookingAtUs || targetUnit->getTypeId() != object_type::Character) && (spell.attributes(0) & game::spell_attributes::NoDefense) == 0 && (attackTableRoll -= targetUnit->getDodgeChance(*attacker)) < 0.0f)
 				{
 					victimState = game::victim_state::Dodge;
 				}
-				else if (targetLookingAtUs && targetUnit->canParry() && (attackTableRoll -= targetUnit->getParryChance(*attacker)) < 0.0f)
+				else if (targetLookingAtUs && targetUnit->canParry() && (spell.attributes(0) & game::spell_attributes::NoDefense) == 0 && (attackTableRoll -= targetUnit->getParryChance(*attacker)) < 0.0f)
 				{
 					victimState = game::victim_state::Parry;
 				}
-				else if (targetLookingAtUs && targetUnit->canBlock() && (attackTableRoll -= targetUnit->getBlockChance()) < 0.0f)
+				else if (targetLookingAtUs && targetUnit->canBlock() && (spell.attributes(0) & game::spell_attributes::NoDefense) == 0 && (attackTableRoll -= targetUnit->getBlockChance()) < 0.0f)
 				{
 					victimState = game::victim_state::Blocks;
 				}
@@ -140,7 +140,15 @@ namespace wowpp
 					if (attacker->getTypeId() == wowpp::object_type::Character)
 					{
 						attackTableRoll = hitTableDistribution(randomGenerator);
-						if ((attackTableRoll -= targetUnit->getCritChance(*attacker, school)) < 0.0f)
+
+						float critChance = targetUnit->getCritChance(*attacker, school);
+						if (attacker)
+						{
+							reinterpret_cast<GameCharacter*>(attacker)->applySpellMod(
+								spell_mod_op::CritChance, spell.id(), critChance);
+						}
+
+						if ((attackTableRoll -= critChance) < 0.0f)
 						{
 							hitInfo = game::hit_info::CriticalHit;
 						}
@@ -353,7 +361,7 @@ namespace wowpp
 				{
 					hitInfo = game::hit_info::Miss;
 				}
-				else if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(effect.mechanic()))
+				else if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(1 << spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(1 << effect.mechanic()))
 				{
 					victimState = game::victim_state::IsImmune;
 				}
@@ -396,6 +404,7 @@ namespace wowpp
 		case game::targets::UnitTargetAlly:		//21
 		case game::targets::UnitTargetAny:		//25
 		case game::targets::UnitRaidTargetRaid:	//57
+		case game::targets::UnitChannel:		//77
 			if (unitTarget) 
 			{
 				targets.push_back(unitTarget);

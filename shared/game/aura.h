@@ -105,6 +105,8 @@ namespace wowpp
 
 		Int32 getTotalDuration() const { return m_duration; }
 
+		bool isStealthAura() const;
+
 	protected:
 
 		/// 0
@@ -113,6 +115,8 @@ namespace wowpp
 		void handlePeriodicDamage(bool apply);
 		/// 4
 		void handleDummy(bool apply);
+		/// 7
+		void handleModFear(bool apply);
 		/// 8
 		void handlePeriodicHeal(bool apply);
 		/// 10
@@ -127,6 +131,10 @@ namespace wowpp
 		void handleDamageShield(bool apply);
 		/// 16
 		void handleModStealth(bool apply);
+		/// 20
+		void handleObsModHealth(bool apply);
+		/// 21
+		void handleObsModMana(bool apply);
 		/// 22
 		void handleModResistance(bool apply);
 		/// 23
@@ -149,6 +157,8 @@ namespace wowpp
 		void handleTrackCreatures(bool apply);
 		/// 45
 		void handleTrackResources(bool apply);
+		/// 56
+		void handleTransform(bool apply);
 		/// 69
 		void handleSchoolAbsorb(bool apply);
 		/// 77
@@ -161,6 +171,12 @@ namespace wowpp
 		void handleManaShield(bool apply);
 		/// 99
 		void handleModAttackPower(bool apply);
+		/// 104
+		void handleWaterWalk(bool apply);
+		/// 105
+		void handleFeatherFall(bool apply);
+		/// 106
+		void handleHover(bool apply);
 		/// 107 & 108
 		void handleAddModifier(bool apply);
 		/// 109
@@ -179,6 +195,8 @@ namespace wowpp
 		void handleModBaseResistancePct(bool apply);
 		/// 143
 		void handleModResistanceExclusive(bool apply);
+		/// 201
+		void handleFly(bool apply);
 		/// 226
 		void handlePeriodicDummy(bool apply);
 

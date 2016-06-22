@@ -487,6 +487,16 @@ namespace wowpp
 					if (!object.canSpawnForCharacter(*character))
 						continue;
 
+					// Don't despawn invisible objects that we can't see
+					if (object.isCreature() || object.isGameCharacter())
+					{
+						GameUnit &unit = reinterpret_cast<GameUnit&>(object);
+						if (unit.isStealthed() && !character->canDetectStealth(unit))
+						{
+							continue;
+						}
+					}
+
 					// This is the subscribers own character - despawn all old objects and skip him
 					if (character->getGuid() == guid)
 					{
@@ -516,6 +526,16 @@ namespace wowpp
 
 					if (!object.canSpawnForCharacter(*character))
 						continue;
+
+					// Dont spawn stealthed targets that we can't see yet
+					if (object.isCreature() || object.isGameCharacter())
+					{
+						GameUnit &unit = reinterpret_cast<GameUnit&>(object);
+						if (unit.isStealthed() && !character->canDetectStealth(unit))
+						{
+							continue;
+						}
+					}
 
 					// This is the subscribers own character - send all new objects to this subscriber
 					// and then skip him

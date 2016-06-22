@@ -145,7 +145,6 @@ namespace wowpp
 		void closeLootDialog();
 		/// Determines whether the player is currently looting something.
 		bool isLooting() const { return m_loot != nullptr; }
-
 		/// Sends an proxy packet to the realm which will then be redirected to the game client.
 		/// @param generator The packet writer function.
 		template<class F>
@@ -186,11 +185,11 @@ namespace wowpp
 				}
 			});
 		}
-
 		/// Saves the characters data.
 		void saveCharacterData() const;
-
+		/// 
 		void sendTradeStatus(TradeStatusInfo info);
+		/// 
 		void sendUpdateTrade();
 
 	public:
@@ -316,9 +315,4 @@ namespace wowpp
 		TradeStatusInfo m_tradeStatusInfo;
 		std::shared_ptr<TradeData> m_tradeData;
 	};
-
-
-	
-	
-
 }

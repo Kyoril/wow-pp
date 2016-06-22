@@ -55,6 +55,31 @@ namespace wowpp
 
 		typedef creature_movement::Type CreatureMovement;
 
+		namespace aura_state
+		{
+			enum Type
+			{
+				Defense					= 1,
+				HealthLess20Percent		= 2,
+				Berserking				= 3,
+				Judgement				= 5,
+				HunterParry				= 7,
+				WarriorVictoryRush		= 10,
+				HunterCritStrike		= 10,
+				Crit					= 11,
+				FaerieFire				= 12,
+				HealthLess35Percent		= 13,
+				Immolate				= 14,
+				Swiftmend				= 15,
+				DeadlyPoison			= 16,
+				Forbearance				= 17,
+				WeakenedSoul			= 18,
+				Hypothermia				= 19
+			};
+		}
+
+		typedef aura_state::Type AuraState;
+
 		namespace trade_status
 		{
 			enum Type
@@ -266,8 +291,6 @@ namespace wowpp
 				Unknown_2		= 2,
 			};
 		}
-
-
 
 		namespace item_class
 		{

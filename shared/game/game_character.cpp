@@ -26,6 +26,7 @@
 #include "game_item.h"
 #include "common/utilities.h"
 #include "game_creature.h"
+#include "unit_mover.h"
 #include "inventory.h"
 #include "defines.h"
 #include "each_tile_in_sight.h"
@@ -52,22 +53,13 @@ namespace wowpp
 		, m_canParry(false)
 		, m_canDualWield(false)
 		, m_inventory(*this)
-		, m_pvpCombatTimer(timers)
+		, m_lastPvPCombat(0)
 	{
 		// Resize values field
 		m_values.resize(character_fields::CharacterFieldCount, 0);
 		m_valueBitset.resize((character_fields::CharacterFieldCount + 31) / 32, 0);
 
 		m_objectType |= type_mask::Player;
-
-		// PvP Combat timer expiration event subscription
-		m_pvpCombatTimeout = m_pvpCombatTimer.ended.connect([this]() {
-			// If not in PvE-Combat, we are no longer in combat at all after this timer expires
-			if (!hasAttackingUnits())
-			{
-				removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
-			}
-		});
 	}
 
 	GameCharacter::~GameCharacter()
@@ -1863,6 +1855,39 @@ namespace wowpp
 			setFloatValue(unit_fields::MaxDamage, base_value + maxDamage);
 			setUInt32Value(unit_fields::BaseAttackTime, attackTime);
 		}
+
+		// Offhand damage
+		{
+			float minDamage = 1.0f;
+			float maxDamage = 2.0f;
+			UInt32 attackTime = 2000;
+
+			// TODO: Check druid form etc.
+
+			// Check if we are wearing a weapon in our main hand
+			auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
+			if (item)
+			{
+				// Get weapon damage values
+				const auto &entry = item->getEntry();
+				if (entry.damage(0).mindmg() != 0.0f) {
+					minDamage = entry.damage(0).mindmg();
+				}
+				if (entry.damage(0).maxdmg() != 0.0f) {
+					maxDamage = entry.damage(0).maxdmg();
+				}
+				if (entry.delay() != 0) {
+					attackTime = entry.delay();
+				}
+			}
+
+			const float att_speed = attackTime / 1000.0f;
+			const float base_value = getUInt32Value(unit_fields::AttackPower) / 14.0f * att_speed;
+
+			setFloatValue(unit_fields::MinOffHandDamage, base_value + minDamage);
+			setFloatValue(unit_fields::MaxOffHandDamage, base_value + maxDamage);
+			setUInt32Value(unit_fields::BaseAttackTime + 1, attackTime);
+		}
 		
 		// Ranged damage
 		{
@@ -2122,9 +2147,23 @@ namespace wowpp
 			threatener.addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 
 			// Toggle pvp reset timer in the next 6 seconds
-			GameTime endTime = getCurrentTime() + constants::OneSecond * 6;
-			m_pvpCombatTimer.setEnd(endTime);
-			reinterpret_cast<GameCharacter&>(threatener).m_pvpCombatTimer.setEnd(endTime);
+			GameTime pvpTime = getCurrentTime();
+			m_lastPvPCombat = pvpTime;
+			reinterpret_cast<GameCharacter&>(threatener).m_lastPvPCombat = pvpTime;
+		}
+	}
+
+	void GameCharacter::onRegeneration()
+	{
+		GameUnit::onRegeneration();
+
+		if (isInCombat() && !isInPvPCombat())
+		{
+			// If not in PvE-Combat, we are no longer in combat at all after this timer expires
+			if (!hasAttackingUnits())
+			{
+				removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
+			}
 		}
 	}
 

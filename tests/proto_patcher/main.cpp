@@ -739,6 +739,43 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importSpellMultipliers(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `Id`, `DmgMultiplier1`, `DmgMultiplier3`, `DmgMultiplier3` FROM `dbc_spell`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 id = 0;
+				float m1, m2, m3;
+				row.getField(0, id);
+				row.getField(1, m1);
+				row.getField(1, m2);
+				row.getField(1, m3);
+
+				// Find spell by id
+				auto * spell = project.spells.getById(id);
+				if (spell)
+				{
+					if (spell->effects_size() >= 1) spell->mutable_effects(0)->set_dmgmultiplier(m1);
+					if (spell->effects_size() >= 2) spell->mutable_effects(1)->set_dmgmultiplier(m2);
+					if (spell->effects_size() >= 3) spell->mutable_effects(2)->set_dmgmultiplier(m3);
+				}
+				else
+				{
+					WLOG("Unable to find spell by id: " << id);
+				}
+
+				// Next row
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
 	static bool importSpellMechanics(proto::Project &project, MySQL::Connection &conn)
 	{
 		wowpp::MySQL::Select select(conn, "SELECT `Id`, `Mechanic` FROM `dbc_spell`;");
@@ -1514,18 +1551,6 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 
-	if (!importItemSets(protoProject, connection))
-	{
-		ELOG("Failed to import item sets");
-		return 0;
-	}
-
-	if (!importItemQuests(protoProject, connection))
-	{
-		ELOG("Could not import item quests");
-		return 0;
-	}
-
 	if (!addSpellLinks(protoProject))
 	{
 		ELOG("Failed to add spell links");
@@ -1538,24 +1563,11 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	if (!importUnitMechanicImmunities(protoProject, connection))
+	if (!importSpellMultipliers(protoProject, connection))
 	{
-		ELOG("Failed to import unit mechanic immunities!");
+		ELOG("Failed to import spell damage multipliers");
 		return 1;
 	}
-
-	if (!importSpawnMovement(protoProject, connection))
-	{
-		ELOG("Failed to import spawn movement!");
-		return 1;
-	}
-
-	if (!importAreaTrigger(protoProject, connection))
-	{
-		ELOG("Failed to import area triggers!");
-		return 1;
-	}
-	//fixTriggerEvents(protoProject);
 
 	// Save project
 	if (!protoProject.save(configuration.dataPath))

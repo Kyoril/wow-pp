@@ -45,6 +45,7 @@ message SpellEffect {
 	optional uint32 summonunit = 20;
 	optional int32 pointspercombopoint = 21;
 	optional uint64 affectmask = 22;
+	optional float dmgmultiplier = 23 [default = 1.0];
 }
 
 message SpellEntry {

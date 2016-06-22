@@ -45,7 +45,9 @@ namespace wowpp
 		, m_despawnCountdown(timers)
 		, m_victim(nullptr)
 		, m_attackSwingCountdown(timers)
-		, m_lastAttackSwing(0)
+		, m_lastMainHand(0)
+		, m_lastOffHand(0)
+		, m_weaponAttack(game::weapon_attack::BaseAttack)
 		, m_regenCountdown(timers)
 		, m_factionTemplate(nullptr)
 		, m_lastManaUse(0)
@@ -53,6 +55,7 @@ namespace wowpp
 		, m_mechanicImmunity(0)
 		, m_isStunned(false)
 		, m_isRooted(false)
+		, m_isFeared(false)
 		, m_isStealthed(false)
 		, m_standState(unit_stand_state::Stand)
 	{
@@ -76,6 +79,28 @@ namespace wowpp
 		    std::bind(&GameUnit::onAttackSwing, this));
 		m_regenCountdown.ended.connect(
 		    std::bind(&GameUnit::onRegeneration, this));
+
+		fearStateChanged.connect([this](bool feared) {
+			// Stop attacking (just in case)
+			if (feared)
+			{
+				stopAttack();
+				setVictim(nullptr);
+			}
+
+			// Stop movement in every case
+			getMover().stopMovement();
+
+			if (!feared)
+			{
+				m_fearMoved.disconnect();
+			}
+			else
+			{
+				m_fearMoved = getMover().targetReached.connect(std::bind(&GameUnit::triggerNextFearMove, this));
+				triggerNextFearMove();
+			}
+		});
 	}
 
 	GameUnit::~GameUnit()
@@ -291,6 +316,20 @@ namespace wowpp
 		m_worldObjects.push_back(object);
 	}
 
+	void GameUnit::setFlightMode(bool enable)
+	{
+		if (enable)
+		{
+			setByteValue(unit_fields::Bytes1, 3, getByteValue(unit_fields::Bytes1, 3) | 2);
+			m_movementInfo.moveFlags = game::MovementFlags(m_movementInfo.moveFlags | game::movement_flags::Flying | game::movement_flags::Flying2);
+		}
+		else
+		{
+			setByteValue(unit_fields::Bytes1, 3, getByteValue(unit_fields::Bytes1, 3) & ~2);
+			m_movementInfo.moveFlags = game::MovementFlags(m_movementInfo.moveFlags & ~(game::movement_flags::Flying | game::movement_flags::Flying2));
+		}
+	}
+
 	void GameUnit::levelChanged(const proto::LevelEntry &levelInfo)
 	{
 		// Get race and class
@@ -343,11 +382,13 @@ namespace wowpp
 			return;
 		}
 
-		if (!isProc) {
-			startedCasting(*spell);
-		}
-
 		auto result = m_spellCast->startCast(*spell, std::move(target), basePoints, castTime, isProc, itemGuid);
+		if (result.first == game::spell_cast_result::CastOkay)
+		{
+			if (!isProc) {
+				startedCasting(*spell);
+			}
+		}
 
 		// Reset auto attack timer if requested
 		if (result.first == game::spell_cast_result::CastOkay &&
@@ -428,6 +469,9 @@ namespace wowpp
 
 	void GameUnit::startAttack()
 	{
+		if (isFeared() || isStunned())
+			return;
+
 		// No victim?
 		if (!m_victim) {
 			return;
@@ -466,16 +510,7 @@ namespace wowpp
 			subscriber.sendPacket(packet, buffer);
 		});
 
-		// Start auto attack timer (immediatly start to attack our target)
-		GameTime nextAttackSwing = getCurrentTime();
-		GameTime attackSwingCooldown = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
-		if (attackSwingCooldown > nextAttackSwing) {
-			nextAttackSwing = attackSwingCooldown;
-		}
-
-		// Trigger next auto attack
-		m_attackSwingCountdown.setEnd(nextAttackSwing);
-
+		triggerNextAutoAttack();
 		startedAttacking();
 	}
 
@@ -536,7 +571,18 @@ namespace wowpp
 		}
 
 		// Remember this weapon swing
-		m_lastAttackSwing = getCurrentTime();
+		GameTime now = getCurrentTime();
+		switch (m_weaponAttack)
+		{
+			case game::weapon_attack::BaseAttack:
+				m_lastMainHand = now;
+				break;
+			case game::weapon_attack::OffhandAttack:
+				m_lastOffHand = now;
+				break;
+			default:
+				break;
+		}
 
 		// Used to jump to next weapon swing trigger
 		do
@@ -558,7 +604,7 @@ namespace wowpp
 				}
 
 				// Don't reset auto attack
-				GameTime nextAutoAttack = m_lastAttackSwing + (constants::OneSecond / 2);
+				GameTime nextAutoAttack = now + (constants::OneSecond / 2);
 				m_attackSwingCountdown.setEnd(nextAutoAttack);
 				return;
 			}
@@ -575,7 +621,7 @@ namespace wowpp
 				}
 
 				// Don't reset auto attack
-				GameTime nextAutoAttack = m_lastAttackSwing + (constants::OneSecond / 2);
+				GameTime nextAutoAttack = now + (constants::OneSecond / 2);
 				m_attackSwingCountdown.setEnd(nextAutoAttack);
 				return;
 			}
@@ -635,9 +681,16 @@ namespace wowpp
 					}
 					else
 					{
+						const auto minDmgField = (m_weaponAttack == game::weapon_attack::BaseAttack ? unit_fields::MinDamage : unit_fields::MinOffHandDamage);
+						const auto maxDmgField = (m_weaponAttack == game::weapon_attack::BaseAttack ? unit_fields::MaxDamage : unit_fields::MaxOffHandDamage);
+
 						// Calculate damage between minimum and maximum damage
-						std::uniform_real_distribution<float> distribution(getFloatValue(unit_fields::MinDamage), getFloatValue(unit_fields::MaxDamage) + 1.0f);
+						std::uniform_real_distribution<float> distribution(getFloatValue(minDmgField), getFloatValue(maxDmgField) + 1.0f);
 						totalDamage = victim->calculateArmorReducedDamage(getLevel(), UInt32(distribution(randomGenerator)));
+
+						// Apply damage bonus
+						applyDamageDoneBonus(school, 1, totalDamage);
+						targetUnit->applyDamageTakenBonus(school, 1, totalDamage);
 
 						if (hitInfos[i] == game::hit_info::Glancing)
 						{
@@ -710,11 +763,21 @@ namespace wowpp
 						}
 					}
 
+					// Make the animation look like an off hand attack if off hand weapon is used
+					if (m_weaponAttack == game::weapon_attack::OffhandAttack)
+					{
+						if (hitInfos[i] & game::hit_info::NormalSwing2)
+						{
+							hitInfos[i] = game::HitInfo(hitInfos[i] & ~game::hit_info::NormalSwing2);
+							hitInfos[i] = game::HitInfo(hitInfos[i] | game::hit_info::LeftSwing);
+						}
+					}
+
 					// Notify all subscribers
 					std::vector<char> buffer;
 					io::VectorSink sink(buffer);
 					game::Protocol::OutgoingPacket packet(sink);
-					game::server_write::attackStateUpdate(packet, getGuid(), victim->getGuid(), hitInfos[i], totalDamage, absorbed, resisted, blocked, victimStates[i], game::weapon_attack::BaseAttack, 1);
+					game::server_write::attackStateUpdate(packet, getGuid(), victim->getGuid(), hitInfos[i], totalDamage, absorbed, resisted, blocked, victimStates[i], m_weaponAttack, 1);
 
 					// Notify all tile subscribers about this event
 					forEachSubscriberInSight(
@@ -771,9 +834,7 @@ namespace wowpp
 			// Notify about successful auto attack to reset last error message
 			autoAttackError(attack_swing_error::Success);
 
-			// Trigger next auto attack swing
-			GameTime nextAutoAttack = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
-			m_attackSwingCountdown.setEnd(nextAutoAttack);
+			triggerNextAutoAttack();
 		}
 	}
 
@@ -995,6 +1056,152 @@ namespace wowpp
 		{
 			updateArmor();
 		}
+	}
+
+	void GameUnit::applyDamageDoneBonus(UInt32 schoolMask, UInt32 tickCount, UInt32 & damage)
+	{
+		getAuras().forEachAuraOfType(game::aura_type::ModDamageDone, [&damage, schoolMask, tickCount](Aura &aura) -> bool {
+			if (aura.getEffect().miscvaluea() & schoolMask)
+			{
+				Int32 bonus = aura.getBasePoints();
+				if (tickCount > 1)
+				{
+					bonus /= tickCount;
+				}
+
+				if (bonus < 0 && -bonus >= damage)
+				{
+				}
+				else
+				{
+					damage += bonus;
+				}
+			}
+
+			return true;
+		});
+
+		getAuras().forEachAuraOfType(game::aura_type::ModDamagePercentDone, [&damage, schoolMask, tickCount](Aura &aura) -> bool {
+			if (aura.getEffect().miscvaluea() & schoolMask)
+			{
+				Int32 bonus = aura.getBasePoints();
+				if (tickCount > 1)
+				{
+					bonus /= tickCount;
+				}
+
+				if (bonus != 0)
+				{
+					damage = UInt32(damage * (float(100.0f + bonus) / 100.0f));
+				}
+			}
+
+			return true;
+		});
+	}
+
+	void GameUnit::applyDamageTakenBonus(UInt32 schoolMask, UInt32 tickCount, UInt32 & damage)
+	{
+		getAuras().forEachAuraOfType(game::aura_type::ModDamageTaken, [&damage, schoolMask, tickCount](Aura &aura) -> bool {
+			if (aura.getEffect().miscvaluea() & schoolMask)
+			{
+				Int32 bonus = aura.getBasePoints();
+				if (tickCount > 1)
+				{
+					bonus /= tickCount;
+				}
+
+				if (bonus < 0 && -bonus >= damage)
+				{
+				}
+				else
+				{
+					damage += bonus;
+				}
+			}
+
+			return true;
+		});
+
+		getAuras().forEachAuraOfType(game::aura_type::ModMeleeDamageTakenPct, [&damage, schoolMask, tickCount](Aura &aura) -> bool {
+			if (aura.getEffect().miscvaluea() & schoolMask)
+			{
+				Int32 bonus = aura.getBasePoints();
+				if (tickCount > 1)
+				{
+					bonus /= tickCount;
+				}
+
+				if (bonus != 0)
+				{
+					damage = UInt32(damage * (float(100.0f + bonus) / 100.0f));
+				}
+			}
+
+			return true;
+		});
+	}
+
+	void GameUnit::applyHealingTakenBonus(UInt32 tickCount, UInt32 & healing)
+	{
+		Int32 bonus = getAuras().getTotalBasePoints(game::aura_type::ModHealing);
+		if (tickCount > 1)
+		{
+			bonus /= tickCount;
+		}
+
+		if (bonus < 0 && -bonus >= healing)
+		{
+		}
+		else
+		{
+			healing += bonus;
+		}
+
+		getAuras().forEachAuraOfType(game::aura_type::ModHealingPct, [&healing, tickCount](Aura &aura) -> bool {
+			Int32 bonus = aura.getBasePoints();
+			if (tickCount > 1)
+			{
+				bonus /= tickCount;
+			}
+
+			if (bonus != 0)
+			{
+				healing = UInt32(healing * (float(100.0f + bonus) / 100.0f));
+			}
+			return true;
+		});
+	}
+
+	void GameUnit::applyHealingDoneBonus(UInt32 tickCount, UInt32 & healing)
+	{
+		Int32 bonus = getAuras().getTotalBasePoints(game::aura_type::ModHealingDone);
+		if (tickCount > 1)
+		{
+			bonus /= tickCount;
+		}
+
+		if (bonus < 0 && -bonus >= healing)
+		{
+		}
+		else
+		{
+			healing += bonus;
+		}
+
+		getAuras().forEachAuraOfType(game::aura_type::ModHealingDonePct, [&healing, tickCount](Aura &aura) -> bool {
+			Int32 bonus = aura.getBasePoints();
+			if (tickCount > 1)
+			{
+				bonus /= tickCount;
+			}
+
+			if (bonus != 0)
+			{
+				healing = UInt32(healing * (float(100.0f + bonus) / 100.0f));
+			}
+			return true;
+		});
 	}
 
 	bool GameUnit::hasCooldown(UInt32 spellId) const
@@ -1391,6 +1598,17 @@ namespace wowpp
 		setUInt32Value(unit_fields::Health, health);
 		takenDamage(attacker, damage);
 
+		UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
+		float healthPct = float(health) / float(maxHealth);
+		if (healthPct < 0.35)
+		{
+			addFlag(unit_fields::AuraState, game::aura_state::HealthLess35Percent);
+		}
+		if (healthPct < 0.2)
+		{
+			addFlag(unit_fields::AuraState, game::aura_state::HealthLess20Percent);
+		}
+
 		if (health < 1)
 		{
 			// Call function and signal
@@ -1417,6 +1635,16 @@ namespace wowpp
 		}
 
 		setUInt32Value(unit_fields::Health, health);
+
+		float healthPct = float(health) / float(maxHealth);
+		if (healthPct >= 0.35)
+		{
+			removeFlag(unit_fields::AuraState, game::aura_state::HealthLess35Percent);
+		}
+		if (healthPct >= 0.2)
+		{
+			removeFlag(unit_fields::AuraState, game::aura_state::HealthLess20Percent);
+		}
 
 		if (healer && !noThreat)
 		{
@@ -1468,6 +1696,10 @@ namespace wowpp
 			}
 			setUInt32Value(unit_fields::Power1, mana);
 		}
+
+		// No longer marked for execute and stuff
+		removeFlag(unit_fields::AuraState, game::aura_state::HealthLess35Percent);
+		removeFlag(unit_fields::AuraState, game::aura_state::HealthLess20Percent);
 
 		startRegeneration();
 
@@ -1540,7 +1772,6 @@ namespace wowpp
 
 		// Base distance
 		float visibleDistance = 7.5f * angleModifier;
-
 		const float MaxPlayerStealthDetectRange = 45.0f;
 		// Visible distance is modified by -Level Diff (every level diff = 1.0f in visible distance)
 		visibleDistance += float(getLevel()) - target.getAuras().getTotalBasePoints(game::aura_type::ModStealth) / 5.0f;
@@ -1810,9 +2041,69 @@ namespace wowpp
 		// Check if we need to trigger auto attack again
 		if (m_victim)
 		{
-			m_lastAttackSwing = getCurrentTime();
-			GameTime nextAttackSwing = m_lastAttackSwing + getUInt32Value(unit_fields::BaseAttackTime);
-			m_attackSwingCountdown.setEnd(nextAttackSwing);
+			m_lastMainHand = m_lastOffHand = getCurrentTime();
+			triggerNextAutoAttack();
+		}
+	}
+
+	void GameUnit::triggerNextAutoAttack()
+	{
+		// We can't attack when stunned or feared!
+		if (isStunned() || isFeared())
+			return;
+
+		// Start auto attack timer (immediatly start to attack our target)
+		GameTime now = getCurrentTime();
+		GameTime nextAttackSwing = getCurrentTime();
+		GameTime mainHandCooldown = m_lastMainHand + getUInt32Value(unit_fields::BaseAttackTime);
+		GameTime offHandCooldown = hasOffHandWeapon() ? m_lastOffHand + getUInt32Value(unit_fields::BaseAttackTime + 1) : 0;
+		if (offHandCooldown > 0)
+		{
+			// Choose next attack type
+			m_weaponAttack = mainHandCooldown < offHandCooldown ? game::weapon_attack::BaseAttack : game::weapon_attack::OffhandAttack;
+			GameTime cd = mainHandCooldown < offHandCooldown ? mainHandCooldown : offHandCooldown;
+			if (cd > nextAttackSwing)
+			{
+				nextAttackSwing = cd;
+			}
+		}
+		else
+		{
+			m_weaponAttack = game::weapon_attack::BaseAttack;
+			if (mainHandCooldown > nextAttackSwing)
+			{
+				nextAttackSwing = mainHandCooldown;
+			}
+		}
+
+		if (nextAttackSwing < now + 200)
+		{
+			nextAttackSwing += 200;
+		}
+
+		// Trigger next auto attack
+		m_attackSwingCountdown.setEnd(nextAttackSwing);
+	}
+
+	void GameUnit::triggerNextFearMove()
+	{
+		// Stop when not feared
+		if (!isFeared())
+			return;
+
+		auto *world = getWorldInstance();
+		if (world)
+		{
+			auto *mapData = world->getMapData();
+			if (mapData)
+			{
+				math::Vector3 targetPoint;
+				if (mapData->getRandomPointOnGround(getLocation(), 25.0f, targetPoint))
+				{
+					getMover().moveTo(targetPoint);
+					return;
+				}
+			}
 		}
 	}
 
@@ -2076,6 +2367,21 @@ namespace wowpp
 		{
 			m_mover->stopMovement();
 			rootStateChanged(true);
+		}
+	}
+
+	void GameUnit::notifyFearChanged()
+	{
+		const bool wasFeared = m_isFeared;
+		m_isFeared = m_auras.hasAura(game::aura_type::ModFear);
+		if (wasFeared && !m_isFeared)
+		{
+			fearStateChanged(false);
+		}
+		else if (!wasFeared && m_isFeared)
+		{
+			m_mover->stopMovement();
+			fearStateChanged(true);
 		}
 	}
 

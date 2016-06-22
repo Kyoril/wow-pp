@@ -690,6 +690,16 @@ namespace wowpp
 					continue;
 				}
 
+				// Dont spawn stealthed targets that we can't see yet
+				if (object->isCreature() || object->isGameCharacter())
+				{
+					GameUnit &unit = reinterpret_cast<GameUnit&>(*object);
+					if (unit.isStealthed() && !m_character->canDetectStealth(unit))
+					{
+						continue;
+					}
+				}
+
 				this->sendProxyPacket(
 					std::bind(game::server_write::destroyObject, std::placeholders::_1, object->getGuid(), false));
 			}
@@ -707,6 +717,16 @@ namespace wowpp
 				if (!obj->canSpawnForCharacter(*m_character))
 				{
 					continue;
+				}
+
+				// Dont spawn stealthed targets that we can't see yet
+				if (obj->isCreature() || obj->isGameCharacter())
+				{
+					GameUnit &unit = reinterpret_cast<GameUnit&>(*obj);
+					if (unit.isStealthed() && !m_character->canDetectStealth(unit))
+					{
+						continue;
+					}
 				}
 
 				std::vector<std::vector<char>> createBlock;
@@ -1513,6 +1533,10 @@ namespace wowpp
 
 	void Player::handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode)
 	{
+		// Can't receive player input when in one of these CC states
+		if (m_character->isFeared() || m_character->isStunned() || m_character->isRooted())
+			return;
+
 		MovementInfo info;
 		if (!game::client_read::moveHeartBeat(packet, info))
 		{
@@ -1778,7 +1802,6 @@ namespace wowpp
 			auto dependantRank = dependson->ranks(talent->dependsonrank());
 			if (!m_character->hasSpell(dependantRank))
 			{
-				WLOG("Dependent talent not learned!");
 				return;
 			}
 		}
@@ -1788,7 +1811,6 @@ namespace wowpp
 		{
 			if (!m_character->hasSpell(talent->dependsonspell()))
 			{
-				WLOG("Dependent spell not learned!");
 				return;
 			}
 		}
@@ -1797,7 +1819,29 @@ namespace wowpp
 		UInt32 freeTalentPoints = m_character->getUInt32Value(character_fields::CharacterPoints_1);
 		if (freeTalentPoints == 0)
 		{
-			WLOG("Not enough talent points available");
+			return;
+		}
+
+		// Check how many points we have spent in this talent tree already
+		UInt32 spentPoints = 0;
+		for (const auto &t : m_project.talents.getTemplates().entry())
+		{
+			// Same tab
+			if (t.tab() == talent->tab())
+			{
+				for (Int32 i = 0; i < t.ranks_size(); ++i)
+				{
+					if (m_character->hasSpell(t.ranks(i)))
+					{
+						spentPoints += i + 1;
+					}
+				}
+			}
+		}
+
+		if (spentPoints < (talent->row() * 5))
+		{
+			// Not enough points spent in talent tree
 			return;
 		}
 

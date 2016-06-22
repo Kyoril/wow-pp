@@ -410,9 +410,40 @@ namespace wowpp
 		const UInt32 spellAttributes = m_spell.attributes(0);
 		if (spellAttributes & game::spell_attributes::OnNextSwing)
 		{
+			m_onAttackError = m_cast.getExecuter().autoAttackError.connect_extended([this](boost::signals2::connection c, AttackSwingError error) {
+				if (error != attack_swing_error::Success)
+				{
+					game::SpellCastResult result = game::spell_cast_result::FailedError;
+					switch (error)
+					{
+						case attack_swing_error::CantAttack:
+							result = game::spell_cast_result::FailedBadTargets;
+							break;
+						case attack_swing_error::OutOfRange:
+							result = game::spell_cast_result::FailedOutOfRange;
+							break;
+						case attack_swing_error::TargetDead:
+							result = game::spell_cast_result::FailedTargetsDead;
+							break;
+						case attack_swing_error::WrongFacing:
+							result = game::spell_cast_result::FailedError;
+							break;
+						default:
+							result = game::spell_cast_result::FailedError;
+					}
+
+					m_cast.getExecuter().spellCastError(m_spell, result);
+					sendEndCast(false);
+				}
+
+				c.disconnect();
+			});
+
 			// Execute on next weapon swing
 			m_cast.getExecuter().setAttackSwingCallback([strongThis, this]() -> bool
 			{
+				m_onAttackError.disconnect();
+
 				if (!strongThis->consumePower())
 				{
 					m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedNoPower);
@@ -541,6 +572,12 @@ namespace wowpp
 			}
 		}
 
+		// Stop auto attack if required
+		if (m_spell.attributes(0) & game::spell_attributes::StopAttackTarget)
+		{
+			m_cast.getExecuter().stopAttack();
+		}
+
 		if (weakThis.lock())
 		{
 			//may destroy this, too
@@ -569,7 +606,7 @@ namespace wowpp
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
-		m_attackTable.checkSpecialMeleeAttack(&attacker, m_target, school, targets, victimStates, hitInfos, resists);
+		m_attackTable.checkSpecialMeleeAttack(&attacker, m_spell, m_target, school, targets, victimStates, hitInfos, resists);
 
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
@@ -610,6 +647,10 @@ namespace wowpp
 			{
 				hitInfos[i] = static_cast<game::HitInfo>(hitInfos[i] | game::hit_info::Absorb);
 			}
+
+			// Apply damage bonus
+			m_cast.getExecuter().applyDamageDoneBonus(school, 1, totalDamage);
+			targetUnit->applyDamageTakenBonus(school, 1, totalDamage);
 
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
@@ -686,18 +727,26 @@ namespace wowpp
 
 	void SingleCastState::spellEffectDummy(const proto::SpellEffect & effect)
 	{
-		if (effect.targeta() == game::targets::UnitTargetAny)
+		// Get unit target by target map
+		GameUnit *unitTarget = nullptr;
+		if (!m_target.resolvePointers(*m_cast.getExecuter().getWorldInstance(), &unitTarget, nullptr, nullptr, nullptr))
 		{
-			// Get unit target by target map
-			GameUnit *unitTarget = nullptr;
-			if (!m_target.resolvePointers(*m_cast.getExecuter().getWorldInstance(), &unitTarget, nullptr, nullptr, nullptr))
-			{
-				return;
-			}
+			return;
+		}
 
-			if (unitTarget)
+		if (unitTarget)
+		{
+			m_affectedTargets.insert(unitTarget->shared_from_this());
+		}
+
+		if (m_spell.family() == 4)	// Warrior
+		{
+			if (m_spell.familyflags() == 0x20000000)		// Execute
 			{
-				m_affectedTargets.insert(unitTarget->shared_from_this());
+				// Rage has already been reduced by executing this spell, though the remaining value is the rest
+				m_cast.getExecuter().castSpell(
+					m_target, 20647, m_basePoints + m_cast.getExecuter().getUInt32Value(unit_fields::Power2) * effect.dmgmultiplier());
+				m_cast.getExecuter().setUInt32Value(unit_fields::Power2, 0);
 			}
 		}
 	}
@@ -799,9 +848,14 @@ namespace wowpp
 				UInt32 spellPower = caster.getBonus(school);
 				UInt32 spellBonusPct = caster.getBonusPct(school);
 				totalDamage = getSpellPointsTotal(effect, spellPower, spellBonusPct);
+				
+				// Apply damage bonus
+				caster.applyDamageDoneBonus(school, 1, totalDamage);
+				targetUnit->applyDamageTakenBonus(school, 1, totalDamage);
+
 				if (caster.isGameCharacter())
 				{
-					reinterpret_cast<GameCharacter&>(caster).applySpellMod(
+					auto added = reinterpret_cast<GameCharacter&>(caster).applySpellMod(
 						spell_mod_op::Damage, m_spell.id(), totalDamage);
 				}
 
@@ -1655,6 +1709,36 @@ namespace wowpp
 				}
 			}
 		}
+
+		// If auras should be removed on immunity, do so!
+		if (aura == game::aura_type::MechanicImmunity &&
+			(m_spell.attributes(1) & game::spell_attributes_ex_a::DispelAurasOnImmunity) != 0)
+		{
+			if (!m_removeAurasOnImmunity.connected())
+			{
+				m_removeAurasOnImmunity = completedEffects.connect([this] {
+					UInt32 immunityMask = 0;
+					for (Int32 i = 0; i < m_spell.effects_size(); ++i)
+					{
+						if (m_spell.effects(i).type() == game::spell_effects::ApplyAura &&
+							m_spell.effects(i).aura() == game::aura_type::MechanicImmunity)
+						{
+							immunityMask |= (1 << m_spell.effects(i).miscvaluea());
+						}
+					}
+
+					for (auto &target : m_affectedTargets)
+					{
+						auto strong = target.lock();
+						if (strong)
+						{
+							auto unit = std::static_pointer_cast<GameUnit>(strong);
+							unit->getAuras().removeAllAurasDueToMechanic(immunityMask);
+						}
+					}
+				});
+			}
+		}
 	}
 
 	void SingleCastState::spellEffectHeal(const proto::SpellEffect &effect)
@@ -1683,6 +1767,10 @@ namespace wowpp
 				UInt32 spellPower = caster.getBonus(school);
 				UInt32 spellBonusPct = caster.getBonusPct(school);
 				totalPoints = getSpellPointsTotal(effect, spellPower, spellBonusPct);
+
+				caster.applyHealingDoneBonus(1, totalPoints);
+				targetUnit->applyHealingTakenBonus(1, totalPoints);
+
 				if (hitInfos[i] == game::hit_info::CriticalHit)
 				{
 					crit = true;
@@ -1852,6 +1940,7 @@ namespace wowpp
 			{se::ScriptEffect,			std::bind(&SingleCastState::spellEffectScriptEffect, this, std::placeholders::_1) },
 			// Add all effects above here
 			{se::ApplyAura,				std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
+			{se::ApplyAreaAuraParty,	std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
 			{se::SchoolDamage,			std::bind(&SingleCastState::spellEffectSchoolDamage, this, std::placeholders::_1)}
 		};
 
@@ -2475,7 +2564,7 @@ namespace wowpp
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
-		m_attackTable.checkSpecialMeleeAttack(&attacker, m_target, school, targets, victimStates, hitInfos, resists);
+		m_attackTable.checkSpecialMeleeAttack(&attacker, m_spell, m_target, school, targets, victimStates, hitInfos, resists);
 
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
