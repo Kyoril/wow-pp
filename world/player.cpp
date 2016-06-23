@@ -1339,6 +1339,9 @@ namespace wowpp
 				statDiff3,
 				statDiff4)
 			);
+
+		// Save character info at realm
+		saveCharacterData();
 	}
 
 	void Player::onAuraUpdated(UInt8 slot, UInt32 spellId, Int32 duration, Int32 maxDuration)
