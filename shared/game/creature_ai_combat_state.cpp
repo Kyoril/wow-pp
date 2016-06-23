@@ -319,6 +319,8 @@ namespace wowpp
 	void CreatureAICombatState::onLeave()
 	{
 		// Reset all events here to prevent them being fired in another ai state
+		m_nextActionCountdown.ended.disconnect_all_slots();
+
 		m_nextActionCountdown.cancel();
 		m_onThreatened.disconnect();
 		m_getThreat.disconnect();
@@ -707,9 +709,9 @@ namespace wowpp
 						targetMap.m_unitTarget = controlled.getGuid();
 					}
 
+					m_isCasting = true;
 					controlled.castSpell(std::move(targetMap), validSpellEntry->spellid(), -1, m_lastCastTime, false, 0, 
 						std::bind(&CreatureAICombatState::onSpellCast, this, std::placeholders::_1));
-					m_isCasting = true;
 					return;
 				}
 			}
@@ -773,7 +775,7 @@ namespace wowpp
 			else
 			{
 				// Instant spell cast, so choose the next action
-				m_nextActionCountdown.setEnd(getCurrentTime() + 100);
+				chooseNextAction();
 			}
 		}
 		else

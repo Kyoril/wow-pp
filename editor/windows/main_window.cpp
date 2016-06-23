@@ -207,13 +207,13 @@ namespace wowpp
 				else if (entry->id() == 530)
 				{
 					// Blood elf starting zone
-					//camera->setPosition(8719.53f, -6657.67f, 72.7551f);
+					camera->setPosition(8719.53f, -6657.67f, 72.7551f);
 
 					// Draenei starting zone
 					//camera->setPosition(-4043.94f, -13782.8f, 75.2519f);
 
 					// The Dark Portal - Hellfire Peninsula
-					camera->setPosition(-327.082f, 1018.85f, 54.2546f);
+					//camera->setPosition(-327.082f, 1018.85f, 54.2546f);
 				}
 			}
 		}
