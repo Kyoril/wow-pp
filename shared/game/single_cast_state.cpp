@@ -1156,6 +1156,24 @@ namespace wowpp
 		}
 	}
 
+	void SingleCastState::spellEffectDispelMechanic(const proto::SpellEffect & effect)
+	{
+		GameUnit &caster = m_cast.getExecuter();
+		std::vector<GameUnit *> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkPositiveSpell(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
+
+		for (UInt32 i = 0; i < targets.size(); i++)
+		{
+			GameUnit *targetUnit = targets[i];
+			m_affectedTargets.insert(targetUnit->shared_from_this());
+
+			targetUnit->getAuras().removeAllAurasDueToMechanic(1 << effect.miscvaluea());
+		}
+	}
+
 	void SingleCastState::spellEffectDrainPower(const proto::SpellEffect &effect)
 	{
 		// Calculate the power to drain
@@ -1938,6 +1956,7 @@ namespace wowpp
 			{se::InterruptCast,			std::bind(&SingleCastState::spellEffectInterruptCast, this, std::placeholders::_1) },
 			{se::LearnSpell,			std::bind(&SingleCastState::spellEffectLearnSpell, this, std::placeholders::_1) },
 			{se::ScriptEffect,			std::bind(&SingleCastState::spellEffectScriptEffect, this, std::placeholders::_1) },
+			{se::DispelMechanic,		std::bind(&SingleCastState::spellEffectDispelMechanic, this, std::placeholders::_1) },
 			// Add all effects above here
 			{se::ApplyAura,				std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
 			{se::ApplyAreaAuraParty,	std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
