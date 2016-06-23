@@ -73,8 +73,8 @@ namespace wowpp
 		m_items[slot] = item;
 	}
 
-	/*std::vector<Item_Data> TradeData::getItem()
+	std::vector<std::shared_ptr<GameItem>> TradeData::getItem()
 	{
-		return(m_item_data);
-	}*/
+		return(m_items);
+	}
 }

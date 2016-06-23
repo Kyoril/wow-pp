@@ -3244,6 +3244,11 @@ namespace wowpp
 		//TODO: ask if there is an item like that in trade already
 
 		my_Trade->setItem(item, tradeSlot);
+		item->getStackCount();
+		item->getUInt64Value(ItemFields::GiftCreator);
+		item->getUInt64Value(ItemFields::Creator);
+		item->getUInt32Value(ItemFields::MaxDurability);
+		item->getUInt32Value(ItemFields::Durability);
 		sendUpdateTrade();
 	}
 
@@ -3257,13 +3262,14 @@ namespace wowpp
 	{
 		//TODO maybe build a struct for all of this informations.
 		sendProxyPacket(
-			std::bind(game::server_write::sendUpdateTrade, std::placeholders::_1, 
-				1, 
-				0, 
-				trade_slots::Count, 
+			std::bind(game::server_write::sendUpdateTrade, std::placeholders::_1,
+				1,
+				0,
 				trade_slots::Count,
-				m_tradeData->getTrader()->m_tradeData->getGold(), 
-				0
+				trade_slots::Count,
+				m_tradeData->getTrader()->m_tradeData->getGold(),
+				0,
+				m_tradeData->getTrader()->m_tradeData->getItem()
 				));
 	}
 
