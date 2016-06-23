@@ -839,15 +839,17 @@ namespace wowpp
 					return false;
 				}
 			}
+
 			// Object interaction / spell cast required
-			else if (req.objectid() != 0)
+			if (req.objectid() != 0)
 			{
 				if (it->second.objects[counter] < req.objectcount()) {
 					return false;
 				}
 			}
+
 			// Item required
-			else if (req.itemid() != 0)
+			if (req.itemid() != 0)
 			{
 				// Not enough items? (Don't worry, getItemCount is fast as it uses a cached value)
 				auto itemCount = m_inventory.getItemCount(req.itemid());

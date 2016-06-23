@@ -684,6 +684,7 @@ namespace wowpp
 				SetFlatSpellModifier		= 0x266,
 				SetPctSpellModifier			= 0x267,
 				StandStateUpdate			= 0x29D,
+				LootStartRoll				= 0x2A1,
 				SpellFailedOther			= 0x2A6,
 				ChatPlayerNotFound			= 0x2A9,
 				DurabilityDamageDeath		= 0x2BD,
@@ -2321,6 +2322,16 @@ namespace wowpp
 			void moveLandWalk(
 				game::OutgoingPacket &out_packet,
 				UInt64 guid
+			);
+
+			void lootStartRoll(
+				game::OutgoingPacket &out_packet,
+				UInt64 itemGuid,
+				UInt32 playerCount,
+				UInt32 itemEntry,
+				UInt32 itemSuffix,
+				UInt32 itemPropId,
+				UInt32 countdown
 			);
 		};
 	}

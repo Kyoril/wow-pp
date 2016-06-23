@@ -3678,6 +3678,19 @@ namespace wowpp
 					<< io::write<NetUInt32>(0);
 				out_packet.finish();
 			}
+
+			void lootStartRoll(game::OutgoingPacket & out_packet, UInt64 itemGuid, UInt32 playerCount, UInt32 itemEntry, UInt32 itemSuffix, UInt32 itemPropId, UInt32 countdown)
+			{
+				out_packet.start(game::server_packet::MoveLandWalk);
+				out_packet
+					<< io::write<NetUInt64>(itemGuid)
+					<< io::write<NetUInt32>(playerCount)
+					<< io::write<NetUInt32>(itemEntry)
+					<< io::write<NetUInt32>(itemSuffix)
+					<< io::write<NetUInt32>(itemPropId)
+					<< io::write<NetUInt32>(countdown);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
