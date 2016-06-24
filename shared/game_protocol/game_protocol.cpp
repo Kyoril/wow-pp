@@ -3420,9 +3420,7 @@ namespace wowpp
 				
 				for (auto this_item : item)
 				{
-					auto &temp = this_item->getProject();
-		
-					auto item_entry = this_item->getEntry();
+					auto const &item_entry = this_item->getEntry();
 					
 					out_packet << io::write<NetUInt32>(item_entry.id());
 					out_packet << io::write<NetUInt32>(item_entry.displayid());
