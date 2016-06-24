@@ -3244,11 +3244,6 @@ namespace wowpp
 		//TODO: ask if there is an item like that in trade already
 
 		my_Trade->setItem(item, tradeSlot);
-		item->getStackCount();
-		item->getUInt64Value(ItemFields::GiftCreator);
-		item->getUInt64Value(ItemFields::Creator);
-		item->getUInt32Value(ItemFields::MaxDurability);
-		item->getUInt32Value(ItemFields::Durability);
 		sendUpdateTrade();
 	}
 
