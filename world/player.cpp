@@ -132,29 +132,31 @@ namespace wowpp
 		});
 
 		// Root / stun change signals
-		auto onRootOrStunUpdate = [this](bool flag) {
-			if (flag || m_character->isRooted() || m_character->isStunned())
+		auto onRootOrStunUpdate = [this](UInt32 state, bool flag) {
+			if (state == unit_state::Rooted || state == unit_state::Stunned)
 			{
-				// Root the character
-				if (m_character->isStunned())
+				if (flag || m_character->isRooted() || m_character->isStunned())
 				{
-					m_character->addFlag(unit_fields::UnitFlags, game::unit_flags::Stunned);
+					// Root the character
+					if (m_character->isStunned())
+					{
+						m_character->addFlag(unit_fields::UnitFlags, game::unit_flags::Stunned);
+					}
+					sendProxyPacket(
+						std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));
 				}
-				sendProxyPacket(
-					std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));
-			}
-			else
-			{
-				if (!m_character->isStunned())
+				else
 				{
-					m_character->removeFlag(unit_fields::UnitFlags, game::unit_flags::Stunned);
+					if (!m_character->isStunned())
+					{
+						m_character->removeFlag(unit_fields::UnitFlags, game::unit_flags::Stunned);
+					}
+					sendProxyPacket(
+						std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));
 				}
-				sendProxyPacket(
-					std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));
 			}
 		};
-		m_onRootUpdate = m_character->rootStateChanged.connect(onRootOrStunUpdate);
-		m_onStunUpdate = m_character->stunStateChanged.connect(onRootOrStunUpdate);
+		m_onUnitStateUpdate = m_character->unitStateChanged.connect(onRootOrStunUpdate);
 
 		// Spell modifier applied or misapplied (changed)
 		m_spellModChanged = m_character->spellModChanged.connect([this](SpellModType type, UInt8 bit, SpellModOp op, Int32 value) {
@@ -1537,7 +1539,7 @@ namespace wowpp
 	void Player::handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode)
 	{
 		// Can't receive player input when in one of these CC states
-		if (m_character->isFeared() || m_character->isStunned() || m_character->isRooted())
+		if (m_character->isFeared() || m_character->isStunned() || m_character->isRooted() || m_character->isConfused())
 			return;
 
 		MovementInfo info;

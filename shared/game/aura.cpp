@@ -145,6 +145,9 @@ namespace wowpp
 		case aura::ModFear:
 			handleModFear(apply);
 			break;
+		case aura::ModConfuse:
+			handleModConfuse(apply);
+			break;
 		case aura::ModStat:
 			handleModStat(apply);
 			break;
@@ -390,6 +393,11 @@ namespace wowpp
 		}
 
 
+	}
+
+	void Aura::handleModConfuse(bool apply)
+	{
+		m_target.notifyConfusedChanged();
 	}
 
 	void Aura::handleModFear(bool apply)

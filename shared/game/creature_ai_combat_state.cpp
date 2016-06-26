@@ -160,87 +160,131 @@ namespace wowpp
 				getAI().reset();
 			}
 		});
-		m_onFearChanged = getControlled().fearStateChanged.connect([this](bool feared)
+		m_onUnitStateChanged = getControlled().unitStateChanged.connect([this](UInt32 state, bool apply)
 		{
-			// If we are no longer feared, update victim again
-			if (!feared)
+			switch (state)
 			{
-				if (!getControlled().isCombatMovementEnabled())
-				{
-					// Try to continue last movement if we aren't there already
-					auto &mover = getControlled().getMover();
-					mover.moveTo(mover.getTarget());
+				case unit_state::Feared:
+					{
+						// If we are no longer feared, update victim again
+						if (!apply)
+						{
+							if (!getControlled().isCombatMovementEnabled())
+							{
+								// Try to continue last movement if we aren't there already
+								auto &mover = getControlled().getMover();
+								mover.moveTo(mover.getTarget());
 
-					return;
-				}
+								return;
+							}
 
-				chooseNextAction();
+							chooseNextAction();
+						}
+						else
+						{
+							// Do not watch for unit motion
+							m_onVictimMoved.disconnect();
+
+							// No longer attack unit if stunned
+							m_isCasting = false;
+							getControlled().cancelCast(game::spell_interrupt_flags::None);
+							getControlled().stopAttack();
+							getControlled().setVictim(nullptr);
+
+							m_customCooldown = 0;
+							m_lastSpellEntry = nullptr;
+							m_lastSpell = nullptr;
+							m_lastCastTime = 0;
+						}
+					}
+					break;
+				case unit_state::Confused:
+					{
+						if (!apply)
+						{
+							if (!getControlled().isCombatMovementEnabled())
+							{
+								// Try to continue last movement if we aren't there already
+								auto &mover = getControlled().getMover();
+								mover.moveTo(mover.getTarget());
+
+								return;
+							}
+
+							chooseNextAction();
+						}
+						else
+						{
+							// Do not watch for unit motion
+							m_onVictimMoved.disconnect();
+
+							// No longer attack unit if stunned
+							m_isCasting = false;
+							getControlled().cancelCast(game::spell_interrupt_flags::None);
+							getControlled().stopAttack();
+							getControlled().setVictim(nullptr);
+
+							m_customCooldown = 0;
+							m_lastSpellEntry = nullptr;
+							m_lastSpell = nullptr;
+							m_lastCastTime = 0;
+						}
+					}
+					break;
+				case unit_state::Stunned:
+					{
+						// If we are no longer stunned, update victim again
+						if (!apply)
+						{
+							if (!getControlled().isCombatMovementEnabled())
+							{
+								// Try to continue last movement if we aren't there already
+								auto &mover = getControlled().getMover();
+								mover.moveTo(mover.getTarget());
+
+								return;
+							}
+
+							chooseNextAction();
+						}
+						else
+						{
+							// Do not watch for unit motion
+							m_onVictimMoved.disconnect();
+
+							// No longer attack unit if stunned
+							m_isCasting = false;
+							getControlled().cancelCast(game::spell_interrupt_flags::None);
+							getControlled().stopAttack();
+							getControlled().setVictim(nullptr);
+
+							m_customCooldown = 0;
+							m_lastSpellEntry = nullptr;
+							m_lastSpell = nullptr;
+							m_lastCastTime = 0;
+						}
+					} 
+					break;
+				case unit_state::Rooted:
+					{
+						if (!apply)
+						{
+							if (!getControlled().isCombatMovementEnabled())
+							{
+								// Try to continue last movement if we aren't there already
+								auto &mover = getControlled().getMover();
+								mover.moveTo(mover.getTarget());
+
+								return;
+							}
+						}
+
+						chooseNextAction();
+					} 
+					break;
+				default:
+					break;
 			}
-			else
-			{
-				// Do not watch for unit motion
-				m_onVictimMoved.disconnect();
-
-				// No longer attack unit if stunned
-				m_isCasting = false;
-				getControlled().cancelCast(game::spell_interrupt_flags::None);
-				getControlled().stopAttack();
-				getControlled().setVictim(nullptr);
-
-				m_customCooldown = 0;
-				m_lastSpellEntry = nullptr;
-				m_lastSpell = nullptr;
-				m_lastCastTime = 0;
-			}
-		});
-		m_onStunChanged = getControlled().stunStateChanged.connect([this](bool stunned)
-		{
-			// If we are no longer stunned, update victim again
-			if (!stunned)
-			{
-				if (!getControlled().isCombatMovementEnabled())
-				{
-					// Try to continue last movement if we aren't there already
-					auto &mover = getControlled().getMover();
-					mover.moveTo(mover.getTarget());
-
-					return;
-				}
-
-				chooseNextAction();
-			}
-			else
-			{
-				// Do not watch for unit motion
-				m_onVictimMoved.disconnect();
-
-				// No longer attack unit if stunned
-				m_isCasting = false;
-				getControlled().cancelCast(game::spell_interrupt_flags::None);
-				getControlled().stopAttack();
-				getControlled().setVictim(nullptr);
-
-				m_customCooldown = 0;
-				m_lastSpellEntry = nullptr;
-				m_lastSpell = nullptr;
-				m_lastCastTime = 0;
-			}
-		});
-		m_onRootChanged = getControlled().rootStateChanged.connect([this](bool rooted)
-		{
-			if (!rooted)
-			{
-				if (!getControlled().isCombatMovementEnabled())
-				{
-					// Try to continue last movement if we aren't there already
-					auto &mover = getControlled().getMover();
-					mover.moveTo(mover.getTarget());
-
-					return;
-				}
-			}
-
-			chooseNextAction();
 		});
 
 		// Process aggro event
@@ -328,9 +372,7 @@ namespace wowpp
 		m_getTopThreatener.disconnect();
 		m_onControlledMoved.disconnect();
 		m_onMoveTargetChanged.disconnect();
-		m_onStunChanged.disconnect();
-		m_onRootChanged.disconnect();
-		m_onFearChanged.disconnect();
+		m_onUnitStateChanged.disconnect();
 		m_onVictimMoved.disconnect();
 
 		auto &controlled = getControlled();
@@ -482,7 +524,7 @@ namespace wowpp
 	void CreatureAICombatState::updateVictim()
 	{
 		GameCreature &controlled = getControlled();
-		if (controlled.isStunned() || controlled.isFeared())
+		if (controlled.isStunned() || controlled.isFeared() || controlled.isConfused())
 		{
 			controlled.setVictim(nullptr);
 			return;
@@ -578,7 +620,7 @@ namespace wowpp
 		if (!victim)
 		{
 			// No victim found (threat list probably empty or rooted)
-			if (!controlled.isRooted() && !controlled.isStunned() && !controlled.isFeared())
+			if (!controlled.isRooted() && !controlled.isStunned() && !controlled.isFeared() && !controlled.isConfused())
 			{
 				// Warning: this will destroy the current AI state.
 				getAI().reset();

@@ -53,10 +53,11 @@ namespace wowpp
 		, m_lastManaUse(0)
 		, m_auras(*this)
 		, m_mechanicImmunity(0)
-		, m_isStunned(false)
-		, m_isRooted(false)
-		, m_isFeared(false)
+		//, m_isStunned(false)
+		//, m_isRooted(false)
+		//, m_isFeared(false)
 		, m_isStealthed(false)
+		, m_state(unit_state::Default)
 		, m_standState(unit_stand_state::Stand)
 	{
 		// Resize values field
@@ -79,28 +80,6 @@ namespace wowpp
 		    std::bind(&GameUnit::onAttackSwing, this));
 		m_regenCountdown.ended.connect(
 		    std::bind(&GameUnit::onRegeneration, this));
-
-		fearStateChanged.connect([this](bool feared) {
-			// Stop attacking (just in case)
-			if (feared)
-			{
-				stopAttack();
-				setVictim(nullptr);
-			}
-
-			// Stop movement in every case
-			getMover().stopMovement();
-
-			if (!feared)
-			{
-				m_fearMoved.disconnect();
-			}
-			else
-			{
-				m_fearMoved = getMover().targetReached.connect(std::bind(&GameUnit::triggerNextFearMove, this));
-				triggerNextFearMove();
-			}
-		});
 	}
 
 	GameUnit::~GameUnit()
@@ -1741,7 +1720,7 @@ namespace wowpp
 	bool GameUnit::canDetectStealth(GameUnit &target)
 	{
 		// Can't detect anything if stunned
-		if (m_isStunned) {
+		if (isStunned() || isConfused() || isFeared()) {
 			return false;
 		}
 
@@ -2088,8 +2067,13 @@ namespace wowpp
 	void GameUnit::triggerNextFearMove()
 	{
 		// Stop when not feared
-		if (!isFeared())
+		if (!isFeared() && !isConfused())
 			return;
+
+		const float dist =
+			isFeared() ? 25.0f : 2.5f;
+		const math::Vector3 loc =
+			isFeared() ? getMover().getCurrentLocation() : m_confusedLoc;
 
 		auto *world = getWorldInstance();
 		if (world)
@@ -2098,7 +2082,7 @@ namespace wowpp
 			if (mapData)
 			{
 				math::Vector3 targetPoint;
-				if (mapData->getRandomPointOnGround(getLocation(), 25.0f, targetPoint))
+				if (mapData->getRandomPointOnGround(loc, dist, targetPoint))
 				{
 					getMover().moveTo(targetPoint);
 					return;
@@ -2340,48 +2324,132 @@ namespace wowpp
 
 	void GameUnit::notifyStunChanged()
 	{
-		const bool wasStunned = m_isStunned;
-		m_isStunned = m_auras.hasAura(game::aura_type::ModStun);
-		if (wasStunned && !m_isStunned)
+		const bool wasStunned = isStunned();
+		const bool isStunned = m_auras.hasAura(game::aura_type::ModStun);
+		if (isStunned)
 		{
-			stunStateChanged(false);
+			m_state |= unit_state::Stunned;
 		}
-		else if (!wasStunned && m_isStunned)
+		else
+		{
+			m_state &= ~unit_state::Stunned;
+		}
+
+		if (wasStunned && !isStunned)
+		{
+			unitStateChanged(unit_state::Stunned, false);
+		}
+		else if (!wasStunned && isStunned)
 		{
 			cancelCast(game::spell_interrupt_flags::None);
 			stopAttack();
 			m_mover->stopMovement();
-			stunStateChanged(true);
+
+			unitStateChanged(unit_state::Stunned, true);
 		}
 	}
 
 	void GameUnit::notifyRootChanged()
 	{
-		const bool wasRooted = m_isRooted;
-		m_isRooted = m_auras.hasAura(game::aura_type::ModRoot);
-		if (wasRooted && !m_isRooted)
+		const bool wasRooted = isRooted();
+		const bool isRooted = m_auras.hasAura(game::aura_type::ModRoot);
+		if (isRooted)
 		{
-			rootStateChanged(false);
+			m_state |= unit_state::Rooted;
 		}
-		else if (!wasRooted && m_isRooted)
+		else
+		{
+			m_state &= ~unit_state::Rooted;
+		}
+
+		if (wasRooted && !isRooted)
+		{
+			unitStateChanged(unit_state::Rooted, false);
+		}
+		else if (!wasRooted && isRooted)
 		{
 			m_mover->stopMovement();
-			rootStateChanged(true);
+			unitStateChanged(unit_state::Rooted, true);
 		}
 	}
 
 	void GameUnit::notifyFearChanged()
 	{
-		const bool wasFeared = m_isFeared;
-		m_isFeared = m_auras.hasAura(game::aura_type::ModFear);
-		if (wasFeared && !m_isFeared)
+		const bool wasFeared = isFeared();
+		const bool isFeared = m_auras.hasAura(game::aura_type::ModFear);
+		if (isFeared)
 		{
-			fearStateChanged(false);
+			m_state |= unit_state::Feared;
 		}
-		else if (!wasFeared && m_isFeared)
+		else
+		{
+			m_state &= ~unit_state::Feared;
+		}
+
+		if (wasFeared && !isFeared)
+		{
+			unitStateChanged(unit_state::Feared, false);
+
+			// Stop movement in every case
+			getMover().stopMovement();
+			m_fearMoved.disconnect();
+
+		}
+		else if (!wasFeared && isFeared)
 		{
 			m_mover->stopMovement();
-			fearStateChanged(true);
+			unitStateChanged(unit_state::Feared, true);
+
+			// Stop attacking (just in case)
+			stopAttack();
+			setVictim(nullptr);
+
+			// Stop movement in every case
+			getMover().stopMovement();
+
+			m_fearMoved = getMover().targetReached.connect(std::bind(&GameUnit::triggerNextFearMove, this));
+			triggerNextFearMove();
+
+		}
+	}
+
+	void GameUnit::notifyConfusedChanged()
+	{
+		const bool wasFeared = isFeared();
+		const bool isFeared = m_auras.hasAura(game::aura_type::ModConfuse);
+		if (isFeared)
+		{
+			m_state |= unit_state::Confused;
+		}
+		else
+		{
+			m_state &= ~unit_state::Confused;
+		}
+
+		if (wasFeared && !isFeared)
+		{
+			unitStateChanged(unit_state::Confused, false);
+
+			// Stop movement in every case
+			getMover().stopMovement();
+			m_fearMoved.disconnect();
+		}
+		else if (!wasFeared && isFeared)
+		{
+			m_confusedLoc = getMover().getCurrentLocation();
+
+			m_mover->stopMovement();
+			unitStateChanged(unit_state::Confused, true);
+
+			// Stop attacking (just in case)
+			stopAttack();
+			setVictim(nullptr);
+
+			// Stop movement in every case
+			getMover().stopMovement();
+
+			m_fearMoved = getMover().targetReached.connect(std::bind(&GameUnit::triggerNextFearMove, this));
+			triggerNextFearMove();
 		}
 	}
 

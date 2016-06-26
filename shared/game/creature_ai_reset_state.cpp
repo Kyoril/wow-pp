@@ -64,18 +64,10 @@ namespace wowpp
 		controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::OtherTagger);
 		controlled.raiseTrigger(trigger_event::OnReset);
 
-		m_onStunChanged = getControlled().stunStateChanged.connect([this](bool stunned)
+		m_onStateChanged = getControlled().unitStateChanged.connect([this](UInt32 state, bool stunned)
 		{
 			auto &controlled = getControlled();
-			if (!controlled.isStunned() && !controlled.isRooted())
-			{
-				controlled.getMover().moveTo(getAI().getHome().position);
-			}
-		});
-		m_onRootChanged = getControlled().rootStateChanged.connect([this](bool rooted)
-		{
-			auto &controlled = getControlled();
-			if (!controlled.isStunned() && !controlled.isRooted())
+			if (!controlled.isStunned() && !controlled.isRooted() && !controlled.isConfused() && !controlled.isFeared())
 			{
 				controlled.getMover().moveTo(getAI().getHome().position);
 			}
@@ -86,8 +78,7 @@ namespace wowpp
 
 	void CreatureAIResetState::onLeave()
 	{
-		m_onStunChanged.disconnect();
-		m_onRootChanged.disconnect();
+		m_onStateChanged.disconnect();
 
 		auto &controlled = getControlled();
 

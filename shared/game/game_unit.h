@@ -303,6 +303,26 @@ namespace wowpp
 
 	typedef base_mod_type::Type BaseModType;
 
+	/// Enumerates crowd control states of a unit, which do affect control over the unit.
+	namespace unit_state
+	{
+		enum Type
+		{
+			/// Default state - no effect applied.
+			Default = 0x00,
+			/// Unit is stunned.
+			Stunned = 0x01,
+			/// Unit is confused.
+			Confused = 0x02,
+			/// Unit is rooted.
+			Rooted = 0x04,
+			/// Unit is charmed by another unit.
+			Charmed = 0x08,
+			/// Unit is feared.
+			Feared = 0x10
+		};
+	}
+
 	namespace proto
 	{
 		class ClassEntry;
@@ -382,12 +402,8 @@ namespace wowpp
 		boost::signals2::signal<void(const proto::TriggerEntry &, GameUnit &)> unitTrigger;
 		/// Fired when a target was killed by this unit, which could trigger Kill-Procs. Only fired when XP or honor is rewarded.
 		boost::signals2::signal<void(GameUnit &)> procKilledTarget;
-		/// Fired when this unit gets rooted or unrooted.
-		boost::signals2::signal<void(bool)> rootStateChanged;
-		/// Fired when this unit gets stunned or unstunned.
-		boost::signals2::signal<void(bool)> stunStateChanged;
-		/// Fired when this unit gets feared or unfeared.
-		boost::signals2::signal<void(bool)> fearStateChanged;
+		/// Fired when a unit state changed.
+		boost::signals2::signal<void(UInt32, bool)> unitStateChanged;
 		/// Fired when this unit enters or leaves stealth mode.
 		boost::signals2::signal<void(bool)> stealthStateChanged;
 		/// Fired when the movement speed of this unit changes.
@@ -611,15 +627,19 @@ namespace wowpp
 
 		/// 
 		bool isStunned() const {
-			return m_isStunned;
+			return (m_state & unit_state::Stunned);
 		}
 		/// 
 		bool isRooted() const {
-			return m_isRooted;
+			return (m_state & unit_state::Rooted);
 		}
 		/// Determines whether this unit is feared.
 		bool isFeared() const {
-			return m_isFeared;
+			return (m_state & unit_state::Feared);
+		}
+		/// Determines whether this unit is confused.
+		bool isConfused() const {
+			return (m_state & unit_state::Confused);
 		}
 		/// 
 		bool canMove() const {
@@ -631,6 +651,8 @@ namespace wowpp
 		void notifyRootChanged();
 		/// 
 		void notifyFearChanged();
+		/// 
+		void notifyConfusedChanged();
 		/// 
 		void notifySpeedChanged(MovementType type);
 		/// 
@@ -810,14 +832,13 @@ namespace wowpp
 		AttackSwingCallback m_swingCallback;
 		AttackingUnitSet m_attackingUnits;
 		UInt32 m_mechanicImmunity;
-		bool m_isStunned;
-		bool m_isRooted;
-		bool m_isFeared;
 		bool m_isStealthed;
+		UInt32 m_state;
 		std::array<float, movement_type::Count> m_speedBonus;
 		CooldownMap m_spellCooldowns;
 		UnitStandState m_standState;
 		std::vector<std::shared_ptr<WorldObject>> m_worldObjects;
+		math::Vector3 m_confusedLoc;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameUnit const &object);
