@@ -361,6 +361,14 @@ namespace wowpp
 				{
 					if (req.itemid())
 					{
+						const auto *itemEntry = getProject().items.getById(req.itemid());
+						if (itemEntry &&
+							itemEntry->itemclass() == game::item_class::Quest)
+						{
+							// 0 means: remove ALL of this item
+							m_inventory.removeItems(*itemEntry, 0);
+						}
+
 						m_requiredQuestItems[req.itemid()]--;
 						updateQuestObjects = true;
 					}
