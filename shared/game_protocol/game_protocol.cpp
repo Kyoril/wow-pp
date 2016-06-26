@@ -3691,6 +3691,15 @@ namespace wowpp
 					<< io::write<NetUInt32>(countdown);
 				out_packet.finish();
 			}
+
+			void playedTime(game::OutgoingPacket & out_packet, UInt32 totalTimeInSecs, UInt32 levelTimeInSecs)
+			{
+				out_packet.start(game::server_packet::PlayedTime);
+				out_packet
+					<< io::write<NetUInt32>(totalTimeInSecs)
+					<< io::write<NetUInt32>(levelTimeInSecs);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

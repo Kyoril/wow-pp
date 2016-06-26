@@ -328,6 +328,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(CharRename, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(QuestQuery, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(Who, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(PlayedTime, game::session_status::LoggedIn)
 #undef WOWPP_HANDLE_PACKET
 
 			default:
@@ -2602,6 +2603,14 @@ namespace wowpp
 
 	}
 
-
-
+	void Player::handlePlayedTime(game::IncomingPacket & packet)
+	{
+		WLOG("TODO: Client requested characters play time");
+		sendPacket(
+			std::bind(game::server_write::playedTime, std::placeholders::_1,
+				0,	// Total time played in seconds
+				0	// Time on characters level in seconds
+			)
+		);
+	}
 }
