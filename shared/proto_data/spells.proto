@@ -92,6 +92,7 @@ message SpellEntry {
 	optional uint32 dispel = 41;
 	optional uint32 family = 42;
 	optional uint32 familyflags = 43;
+	optional uint32 focusobject = 44;
 }
 
 message Spells {

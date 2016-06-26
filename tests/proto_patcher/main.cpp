@@ -1468,6 +1468,42 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importSpellFocus(proto::Project &project, MySQL::Connection &conn)
+	{
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `Id`,`RequiresSpellFocus` FROM `dbc`.`dbc_spell` WHERE `RequiresSpellFocus` != 0 ORDER BY `Id`;");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					// Get row data
+					UInt32 entry = 0, focus = 0, index = 0;
+					row.getField(index++, entry);
+					row.getField(index++, focus);
+
+					auto *spell = project.spells.getById(entry);
+					if (!spell)
+					{
+						WLOG("Could not find spell " << entry);
+						row = row.next(select);
+						continue;
+					}
+
+					spell->set_focusobject(focus);
+					row = row.next(select);
+				}
+			}
+			else
+			{
+				ELOG("Error: " << conn.getErrorMessage());
+			}
+		}
+
+		return true;
+	}
+
+
 
 #if 0
 	static void fixTriggerEvents(proto::Project &project)
@@ -1554,6 +1590,12 @@ int main(int argc, char* argv[])
 	if (!addSpellLinks(protoProject))
 	{
 		ELOG("Failed to add spell links");
+		return 1;
+	}
+
+	if (!importSpellFocus(protoProject, connection))
+	{
+		ELOG("Failed to load spell focus object");
 		return 1;
 	}
 

@@ -922,11 +922,18 @@ namespace wowpp
 				        << io::write<NetUInt32>(spell.id())
 				        << io::write<NetUInt8>(result)
 				        << io::write<NetUInt8>(castCount);
-
-				if (result == game::spell_cast_result::FailedPreventedByMechanic)
+				switch (result)
 				{
-					out_packet
-					        << io::write<NetUInt32>(spell.mechanic());
+					case game::spell_cast_result::FailedPreventedByMechanic:
+						out_packet
+							<< io::write<NetUInt32>(spell.mechanic());
+						break;
+					case game::spell_cast_result::FailedRequiresSpellFocus:
+						out_packet
+							<< io::write<NetUInt32>(spell.focusobject());
+						break;
+					default:
+						break;
 				}
 
 				// TODO: Send more informations based on the cast result code (which area is required etc.)
