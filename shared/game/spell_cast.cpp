@@ -82,12 +82,10 @@ namespace wowpp
 
 		if (spell.mechanic() != 0)
 		{
-			if (unitTarget)
+			if (unitTarget &&
+				unitTarget->isImmuneAgainstMechanic(spell.mechanic()))
 			{
-				if (unitTarget->isImmuneAgainstMechanic(spell.mechanic()))
-				{
-					return std::make_pair(game::spell_cast_result::FailedPreventedByMechanic, nullptr);
-				}
+				return std::make_pair(game::spell_cast_result::FailedPreventedByMechanic, nullptr);
 			}
 		}
 

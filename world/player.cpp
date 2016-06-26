@@ -1927,7 +1927,13 @@ namespace wowpp
 			}
 
 			UInt64 time = spellEntry->casttime();
-			m_character->castSpell(std::move(targetMap), spell.spell(), -1, time, false, itemGuid);
+			m_character->castSpell(std::move(targetMap), spell.spell(), -1, time, false, itemGuid, [this, spellEntry](game::SpellCastResult result) {
+				if (result != game::spell_cast_result::CastOkay)
+				{
+					sendProxyPacket(
+						std::bind(game::server_write::castFailed, std::placeholders::_1, result, std::cref(*spellEntry), 0));
+				}
+			});
 		}
 	}
 

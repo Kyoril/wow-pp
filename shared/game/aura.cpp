@@ -1219,15 +1219,17 @@ namespace wowpp
 
 	void Aura::handleMechanicImmunity(bool apply)
 	{
+		UInt32 mask = m_effect.miscvaluea();
+		//if (mask == 0) mask = m_spell.mechanic();
+
 		if (apply)
 		{
-			m_target.addMechanicImmunity(1 << m_spell.mechanic());
+			m_target.addMechanicImmunity(1 << mask);
 		}
 		else
 		{
 			// TODO: We need to check if there are still other auras which provide the same immunity
-			WLOG("TODO");
-			m_target.removeMechanicImmunity(1 << m_spell.mechanic());
+			m_target.removeMechanicImmunity(1 << mask);
 		}
 	}
 
