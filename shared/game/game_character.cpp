@@ -714,6 +714,17 @@ namespace wowpp
 			}
 		}
 
+		// Remove source items of this quest (if any)
+		if (entry->srcitemid())
+		{
+			const auto *itemEntry = getProject().items.getById(entry->srcitemid());
+			if (itemEntry)
+			{
+				// 0 means: remove ALL of this item
+				m_inventory.removeItems(*itemEntry, 0);
+			}
+		}
+
 		for (UInt32 i = 0; i < 25; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
