@@ -357,25 +357,48 @@ namespace wowpp
 
 				// Mark all related quest items as needed
 				const auto *entry = getProject().quests.getById(quest);
-				for (auto &req : entry->requirements())
+				if (entry)
 				{
-					if (req.itemid())
+					// Remove source items of this quest (if any)
+					if (entry->srcitemid())
 					{
-						const auto *itemEntry = getProject().items.getById(req.itemid());
-						if (itemEntry &&
-							itemEntry->itemclass() == game::item_class::Quest)
+						const auto *itemEntry = getProject().items.getById(entry->srcitemid());
+						if (itemEntry)
 						{
 							// 0 means: remove ALL of this item
 							m_inventory.removeItems(*itemEntry, 0);
 						}
-
-						m_requiredQuestItems[req.itemid()]--;
-						updateQuestObjects = true;
 					}
-					if (req.sourceid())
+
+					// Remove quest requirement items (if any)
+					for (auto &req : entry->requirements())
 					{
-						m_requiredQuestItems[req.sourceid()]--;
-						updateQuestObjects = true;
+						if (req.itemid())
+						{
+							const auto *itemEntry = getProject().items.getById(req.itemid());
+							if (itemEntry &&
+								itemEntry->itemclass() == game::item_class::Quest)
+							{
+								// 0 means: remove ALL of this item
+								m_inventory.removeItems(*itemEntry, 0);
+							}
+
+							m_requiredQuestItems[req.itemid()]--;
+							updateQuestObjects = true;
+						}
+						if (req.sourceid())
+						{
+							const auto *itemEntry = getProject().items.getById(req.sourceid());
+							if (itemEntry &&
+								itemEntry->itemclass() == game::item_class::Quest)
+							{
+								// 0 means: remove ALL of this item
+								m_inventory.removeItems(*itemEntry, 0);
+							}
+
+							m_requiredQuestItems[req.sourceid()]--;
+							updateQuestObjects = true;
+						}
 					}
 				}
 
