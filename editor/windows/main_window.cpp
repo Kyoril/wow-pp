@@ -160,6 +160,16 @@ namespace wowpp
 			m_ui->unitPalette->show();
 		}
 
+		void MainWindow::on_unitPaletteFilter_editingFinished()
+		{
+			QRegExp::PatternSyntax syntax = QRegExp::RegExp;
+			Qt::CaseSensitivity caseSensitivity = Qt::CaseInsensitive;
+
+			QRegExp regExp(m_ui->unitPaletteFilter->text(), caseSensitivity, syntax);
+			m_objectFilter->setFilterRegExp(regExp);
+			m_unitFilter->setFilterRegExp(regExp);
+		}
+
 		void MainWindow::on_actionLoadMap_triggered()
 		{
 			LoadMapDialog dialog(m_application);

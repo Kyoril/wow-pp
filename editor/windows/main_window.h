@@ -54,6 +54,7 @@ namespace wowpp
 			void on_actionDelete_triggered();
 			void on_comboBox_currentIndexChanged(int index);
 			void on_actionUnit_Palette_triggered();
+			void on_unitPaletteFilter_editingFinished();
 
 		protected:
 
