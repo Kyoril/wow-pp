@@ -3418,35 +3418,42 @@ namespace wowpp
 					<< io::write<NetUInt32>(spell);
 				
 				
-				for (auto this_item : item)
+				for (UInt8 i = 0; i < 1; i++)
 				{
-					auto const &item_entry = this_item->getEntry();
+					out_packet << io::write<NetUInt8>(i);
+					if (nullptr != item[i])
+					{
+						auto const &item_entry = item[i]->getEntry();
+
+						out_packet << io::write<NetUInt32>(item_entry.id());
+						out_packet << io::write<NetUInt32>(item_entry.displayid());
+						out_packet << io::write<NetUInt32>(item[i]->getStackCount());
+						out_packet << io::write<NetUInt32>(item[i]->hasFlag(ItemFields::Flags, ItemFlags::Wrapped) ? 1 : 0 );
+						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::GiftCreator)); 
+																											  //enchantment
+						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::Enchantment));
+
+						for (UInt32 enchant_slot = 2; enchant_slot < 2 + 3; ++enchant_slot)
+						{
+							out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemEnchantmentType(enchant_slot))); //TODO
+						}
+
+						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::Creator));
+						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::SpellCharges)); //spell charges
+						out_packet << io::write<NetUInt32>(item_entry.randomsuffix()); //suffix
+						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::RandomPropertiesID));
+						out_packet << io::write<NetUInt32>(item_entry.lockid());
+						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::MaxDurability));
+						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::Durability));
+					}
+					else
+					{
+						for (UInt8 j = 0; j < 18; ++j)
+						{
+							out_packet << io::write<NetUInt32>(0);
+						}
+					}
 					
-					out_packet << io::write<NetUInt32>(item_entry.id());
-					out_packet << io::write<NetUInt32>(item_entry.displayid());
-					out_packet << io::write<NetUInt32>(this_item->getStackCount());
-					out_packet << io::write<NetUInt32>(item_entry.has_flags() ? 1 : 0);
-
-					//enchantment
-					out_packet << io::write<NetUInt32>(this_item->getUInt32Value(ItemFields::Enchantment));
-				
-					for (UInt32 enchant_slot = 2; enchant_slot < 2 + 1; ++enchant_slot)
-					{
-						out_packet << io::write<NetUInt32>(0); //TODO
-					}
-					out_packet << io::write<NetUInt32>(this_item->getUInt32Value(ItemFields::GiftCreator)); //maybe UInt64
-					out_packet << io::write<NetUInt32>(this_item->getUInt32Value(ItemFields::SpellCharges)); //spell charges
-					out_packet << io::write<NetUInt32>(item_entry.randomsuffix()); //suffix
-					out_packet << io::write<NetUInt32>(this_item->getUInt32Value(ItemFields::RandomPropertiesID));
-					out_packet << io::write<NetUInt32>(item_entry.lockid());
-					out_packet << io::write<NetUInt32>(this_item->getUInt32Value(ItemFields::MaxDurability));
-					out_packet << io::write<NetUInt32>(this_item->getUInt32Value(ItemFields::Durability));
-
-															   
-					for (UInt8 j = 0; j < 18; ++j)
-					{
-						out_packet << io::write<NetUInt32>(0);
-					}
 				}
 				
 				out_packet.finish();

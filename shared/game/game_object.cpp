@@ -201,6 +201,12 @@ namespace wowpp
 		}
 	}
 
+	bool GameObject::hasFlag(UInt16 index, UInt32 flag)
+	{
+		assert(index < m_values.size()); //TODO
+		return (m_values[index] & flag) != 0;
+	}
+
 	void GameObject::markForUpdate()
 	{
 		if (!m_updated)

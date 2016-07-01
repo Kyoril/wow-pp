@@ -3102,6 +3102,7 @@ namespace wowpp
 		m_tradeData->getTrader()->sendTradeStatus(m_tradeStatusInfo);
 		
 		//openWindow
+		this->getCharacter()->setUInt32Value(character_fields::Coinage, 2000);
 	}
 
 	void Player::handleAcceptTrade(game::Protocol::IncomingPacket &packet)
@@ -3242,9 +3243,19 @@ namespace wowpp
 		auto &inventory = this_player->getInventory();
 		auto item = inventory.getItemAtSlot(Inventory::getAbsoluteSlot(bag, slot));
 		//TODO: ask if there is an item like that in trade already
+		if (item == nullptr)
+		{
+			DLOG("Item is nullptr");
+		}
+		my_Trade->setTradeAcceptState(false);
+		my_Trade->getTrader()->m_tradeData->setTradeAcceptState(false);
+		
+		
+		info.tradestatus = game::trade_status::BackToTrade;
+		m_tradeData->getPlayer()->sendTradeStatus(std::move(info));
 
 		my_Trade->setItem(item, tradeSlot);
-		sendUpdateTrade();
+		m_tradeData->getTrader()->sendUpdateTrade();
 	}
 
 	void Player::sendTradeStatus(TradeStatusInfo info)
@@ -3403,7 +3414,7 @@ namespace wowpp
 
 		//TODO
 
-
-		DLOG("CMSG_MAIL_SEND received from client");
+DLOG("CMSG_MAIL_SEND received from client");
+		
 	}
 }
