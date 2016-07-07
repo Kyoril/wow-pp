@@ -125,7 +125,7 @@ namespace
 		NAV_UNUSED1 = 0x10,
 		NAV_UNUSED2 = 0x20,
 		NAV_UNUSED3 = 0x40,
-		NAV_UNUSED4 = 0x80
+		NAV_TERRAIN = 0x80
 		// we only have 8 bits
 	};
 
@@ -275,6 +275,8 @@ namespace
 		std::vector<float> solidVerts;
 		/// Three indices represent one triangle (v1, v2, v3)
 		std::vector<int> solidTris;
+		/// Triangle flags
+		std::vector<unsigned char> triangleFlags;
 	};
 	/// 
 	struct NavTile
@@ -456,12 +458,64 @@ namespace
 					mesh.solidTris.push_back(indices[2] + count);
 					mesh.solidTris.push_back(indices[1] + count);
 					mesh.solidTris.push_back(indices[0] + count);
+					mesh.triangleFlags.push_back(NAV_TERRAIN);
 				}
 			}
 		}
 
 		return true;
 	}
+	static void selectivelyEnforceWalkableClimb(rcCompactHeightfield &chf, int walkableClimb)
+	{
+		for (int y = 0; y < chf.height; ++y)
+		{
+			for (int x = 0; x < chf.width; ++x)
+			{
+				auto const &cell = chf.cells[y*chf.width + x];
+
+				// for each span in this cell of the compact heightfield...
+				for (int i = static_cast<int>(cell.index), ni = static_cast<int>(cell.index + cell.count); i < ni; ++i)
+				{
+					auto &span = chf.spans[i];
+					const NavTerrain spanArea = static_cast<NavTerrain>(chf.areas[i]);
+
+					// check all four directions for this span
+					for (int dir = 0; dir < 4; ++dir)
+					{
+						// there will be at most one connection for this span in this direction
+						auto const k = rcGetCon(span, dir);
+
+						// if there is no connection, do nothing
+						if (k == RC_NOT_CONNECTED)
+							continue;
+
+						auto const nx = x + rcGetDirOffsetX(dir);
+						auto const ny = y + rcGetDirOffsetY(dir);
+
+						// this should never happen since we already know there is a connection in this direction
+						assert(nx >= 0 && ny >= 0 && nx < chf.width && ny < chf.height);
+
+						auto const &neighborCell = chf.cells[ny*chf.width + nx];
+						auto const &neighborSpan = chf.spans[k + neighborCell.index];
+
+						// if the span height difference is <= the walkable climb, nothing else matters.  skip it
+						if (rcAbs(static_cast<int>(neighborSpan.y) - static_cast<int>(span.y)) <= walkableClimb)
+							continue;
+
+						const NavTerrain neighborSpanArea = static_cast<NavTerrain>(chf.areas[k + neighborCell.index]);
+
+						// if both the current span and the neighbor span are ADTs, do nothing
+						if ((spanArea & NAV_TERRAIN) != 0 && (neighborSpanArea & NAV_TERRAIN) != 0)
+							continue;
+
+						//std::cout << "Removing connection for span " << i << " dir " << dir << " to " << k << std::endl;
+						rcSetCon(span, dir, RC_NOT_CONNECTED);
+					}
+				}
+			}
+		}
+	}
+
 	/// Generates a navigation tile.
 	static bool creaveNavTile(const String &mapName, UInt32 mapId, UInt32 tileX, UInt32 tileY, dtNavMesh &navMesh, const ADTFile &adt, const MapCollisionChunk &collision, MapNavigationChunk &out_chunk)
 	{
@@ -484,6 +538,7 @@ namespace
 				mesh.solidTris.push_back(tri.indexC);
 				mesh.solidTris.push_back(tri.indexB);
 				mesh.solidTris.push_back(tri.indexA);
+				mesh.triangleFlags.push_back(0);
 			}
 
 			if (addTerrainMesh(adt, tileX, tileY, ENTIRE, mesh))
@@ -573,6 +628,7 @@ namespace
 					mesh.solidTris.push_back(tri.indexA);
 					mesh.solidTris.push_back(tri.indexB);
 					mesh.solidTris.push_back(tri.indexC);
+					mesh.triangleFlags.push_back(0);
 				}
 			}
 		}
@@ -649,6 +705,10 @@ namespace
 				// Mark all walkable tiles, both liquids and solids
 				unsigned char* triFlags = new unsigned char[mesh.solidTris.size() / 3];
 				memset(triFlags, NAV_GROUND, mesh.solidTris.size() / 3 * sizeof(unsigned char));
+				for (unsigned int i = 0; i < mesh.solidTris.size() / 3; ++i)
+				{
+					triFlags[i] |= mesh.triangleFlags[i];
+				}
 				rcClearUnwalkableTriangles(&context, tileCfg.walkableSlopeAngle, &mesh.solidVerts[0], mesh.solidVerts.size() / 3, &mesh.solidTris[0], mesh.solidTris.size() / 3, triFlags);
 				rcRasterizeTriangles(&context, &mesh.solidVerts[0], mesh.solidVerts.size() / 3, &mesh.solidTris[0], triFlags, mesh.solidTris.size() / 3, *tile.solid, config.walkableClimb);
 				delete[] triFlags;
@@ -664,6 +724,8 @@ namespace
 					ELOG("Failed compacting heightfield!");
 					continue;
 				}
+
+				//selectivelyEnforceWalkableClimb(*tile.chf, config.walkableClimb);
 
 				// build polymesh intermediates
 				if (!rcErodeWalkableArea(&context, config.walkableRadius, *tile.chf))

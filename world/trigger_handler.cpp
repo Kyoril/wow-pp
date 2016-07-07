@@ -436,7 +436,7 @@ namespace wowpp
 			targetMap.m_targetMap = game::spell_cast_target_flags::Object;
 			targetMap.m_goTarget = target->getGuid();
 		}
-		reinterpret_cast<GameUnit*>(caster)->castSpell(std::move(targetMap), spell->id());
+		reinterpret_cast<GameUnit*>(caster)->castSpell(std::move(targetMap), spell->id(), -1, spell->casttime());
 	}
 
 	void TriggerHandler::handleMoveTo(const proto::TriggerAction & action, game::TriggerContext & context)
