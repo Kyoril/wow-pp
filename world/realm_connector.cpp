@@ -1402,4 +1402,11 @@ namespace wowpp
 			std::bind(pp::world_realm::world_write::characterSpawned, std::placeholders::_1, characterId));
 	}
 
+	void RealmConnector::sendMailDraft(game::MailData mailDraft, String sender, UInt32 cost, const std::vector<std::shared_ptr<GameItem>>& items)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::world_write::mailDraft, std::placeholders::_1, mailDraft.unk1, mailDraft.unk2, sender,
+				 mailDraft.receiver, mailDraft.subject, mailDraft.body, mailDraft.money, mailDraft.COD, cost, items));
+	}
+
 }

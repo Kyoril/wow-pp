@@ -34,7 +34,7 @@ namespace wowpp
 	{
 		namespace world_realm
 		{
-			static const UInt32 ProtocolVersion = 0x15;
+			static const UInt32 ProtocolVersion = 0x16;
 
 			namespace world_instance_error
 			{
@@ -89,7 +89,9 @@ namespace wowpp
 					/// Update packet for characters quest data.
 					QuestUpdate,
 					/// Sent by the world server if a player character successfully spawned in a world instance.
-					CharacterSpawned
+					CharacterSpawned,
+					/// Sent by the world server when a player sends a mail.
+					MailDraft
 				};
 			}
 
@@ -123,7 +125,9 @@ namespace wowpp
 					/// One or more items have been deleted. Only slots are specified here.
 					ItemsRemoved,
 					/// The player character has learned a new spell. This is currently only sent using the WebAPI.
-					SpellLearned
+					SpellLearned,
+					/// Response to the world server about the mail received
+					MailDraftResult
 				};
 			}
 
@@ -261,6 +265,20 @@ namespace wowpp
 				void characterSpawned(
 					pp::OutgoingPacket &out_packet,
 					UInt64 characterId
+				);
+
+				void mailDraft(
+					pp::OutgoingPacket &out_packet,
+					UInt32 unk1,
+					UInt32 unk2,
+					String sender,
+					String receiver,
+					String subject,
+					String body,
+					UInt32 money,
+					UInt32 COD,
+					UInt32 cost,
+					const std::vector<std::shared_ptr<GameItem>> &items
 				);
 			}
 
@@ -455,6 +473,20 @@ namespace wowpp
 					io::Reader &packet,
 					UInt64 &out_characterId
 				);
+
+				bool mailDraft(
+					io::Reader &packet,
+					UInt32 &out_unk1,
+					UInt32 &out_unk2,
+					String &out_sender,
+					String &out_receiver,
+					String &out_subject,
+					String &out_body,
+					UInt32 &out_money,
+					UInt32 &out_COD,
+					UInt32 &out_cost,
+					const std::vector<std::shared_ptr<GameItem>> &out_items
+				);	
 			}
 
 			/// Contains methods for reading packets coming from the realm server.

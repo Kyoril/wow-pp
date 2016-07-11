@@ -3325,6 +3325,11 @@ namespace wowpp
 			return;
 		}
 
+		if (mailInfo.receiver.empty())
+		{
+			return;
+		}
+
 		auto *world = m_character->getWorldInstance();
 		if (!world)
 		{
@@ -3341,11 +3346,6 @@ namespace wowpp
 
 		// TODO distance to mailbox
 		//float distance = m_character->getDistanceTo(target);
-
-		if (mailInfo.receiver.empty())
-		{
-			return;
-		}
 
 		String receiverCap = mailInfo.receiver;
 		capitalize(receiverCap);
@@ -3379,7 +3379,6 @@ namespace wowpp
 			}
 
 			auto item = inventory.getItemAtSlot(itemSlot);
-			// Check if it's a bag with items
 			if (!item)
 			{
 				// TODO send error
@@ -3387,6 +3386,22 @@ namespace wowpp
 			}
 
 			const auto &itemEntry = item->getEntry();
+
+			if (itemEntry.flags() & game::item_flags::Bound)
+			{
+				// TODO send error
+				return;
+			}
+
+			if (item->getTypeId() == object_type::Container)
+			{
+				auto bagPtr = std::static_pointer_cast<GameBag>(item);
+				if (bagPtr->isEmpty())
+				{
+					// TODO send error
+					return;
+				}
+			}
 
 			if ((itemEntry.flags() & game::item_flags::Conjured) ||
 				(item->getUInt32Value(item_fields::Duration)))
@@ -3413,7 +3428,6 @@ namespace wowpp
 
 
 		//TODO
-
 
 		DLOG("CMSG_MAIL_SEND received from client");
 	}
