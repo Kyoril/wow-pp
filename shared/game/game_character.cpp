@@ -861,7 +861,10 @@ namespace wowpp
 		if (entry.flags() & game::quest_flags::Exploration)
 		{
 			// Check if this quest has been explored
-			return it->second.explored;
+			if (!it->second.explored)
+			{
+				return false;
+			}
 		}
 
 		// Now check for quest requirements
@@ -922,6 +925,62 @@ namespace wowpp
 
 		// No free quest slots found
 		return true;
+	}
+
+	void GameCharacter::onQuestExploration(UInt32 questId)
+	{
+		// If this is set to true, all nearby objects will be updated
+		bool updateNearbyObjects = false;
+		for (int i = 0; i < 25; ++i)
+		{
+			// Check if there is a quest in that slot
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == 0) {
+				continue;
+			}
+
+			// Check if the player really has accepted that quest
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end()) {
+				continue;
+			}
+
+			// Check if the quest was already completed
+			if (it->second.status != game::quest_status::Incomplete) {
+				continue;
+			}
+
+			// Get quest template entry
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest) {
+				continue;
+			}
+
+			if (!it->second.explored)
+			{
+				if (quest->flags() & game::quest_flags::Exploration)
+				{
+					it->second.explored = true;
+					updateNearbyObjects = true;
+
+					// Quest is fulfilled now
+					if (fulfillsQuestRequirements(*quest))
+					{
+						it->second.status = game::quest_status::Complete;
+						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+					}
+
+					questDataChanged(logId, it->second);
+				}
+			}
+		}
+
+		// Finally, update all nearby objects if needed to. We do this after we checked all
+		// quests, so that we will update these objects only ONCE
+		if (updateNearbyObjects)
+		{
+			updateNearbyQuestObjects();
+		}
 	}
 
 	void GameCharacter::onQuestItemAddedCredit(const proto::ItemEntry &entry, UInt32 amount)

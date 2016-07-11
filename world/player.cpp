@@ -95,7 +95,8 @@ namespace wowpp
 		});
 		m_questChanged = m_character->questDataChanged.connect([this](UInt32 questId, const QuestStatusData &data) {
 			m_realmConnector.sendQuestData(m_character->getGuid(), questId, data);
-			if (data.status == game::quest_status::Complete)
+			if (data.status == game::quest_status::Complete ||
+				(data.status == game::quest_status::Incomplete && data.explored == true))
 			{
 				sendProxyPacket(std::bind(game::server_write::questupdateComplete, std::placeholders::_1, questId));
 			}

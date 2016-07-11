@@ -1160,7 +1160,7 @@ namespace wowpp
 		if (trigger->has_questid() && trigger->questid() > 0)
 		{
 			// Handle quest exploration
-			sender.getCharacter()->completeQuest(trigger->questid());
+			sender.getCharacter()->onQuestExploration(trigger->questid());
 		}
 
 		if (trigger->has_tavern() && trigger->tavern())

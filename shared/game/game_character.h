@@ -811,6 +811,8 @@ namespace wowpp
 		bool fulfillsQuestRequirements(const proto::QuestEntry &entry) const;
 		/// Determines whether the players questlog is full.
 		bool isQuestlogFull() const;
+		/// Called when an exploration area trigger was raised.
+		void onQuestExploration(UInt32 questId);
 		/// Called when a quest item was added to the inventory.
 		void onQuestItemAddedCredit(const proto::ItemEntry &entry, UInt32 amount);
 		/// Called when a quest item was removed from the inventory.
