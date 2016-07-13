@@ -163,16 +163,22 @@ namespace wowpp
 		void handleTransform(bool apply);
 		/// 69
 		void handleSchoolAbsorb(bool apply);
+		/// 72
+		void handleModPowerCostSchoolPct(bool apply);
 		/// 77
 		void handleMechanicImmunity(bool apply);
 		/// 78
 		void handleMounted(bool apply);
+		/// 79
+		void handleModDamagePercentDone(bool apply);
 		/// 85
 		void handleModPowerRegen(bool apply);
 		/// 97
 		void handleManaShield(bool apply);
 		/// 99
 		void handleModAttackPower(bool apply);
+		/// 103
+		void handleModTotalThreat(bool apply);
 		/// 104
 		void handleWaterWalk(bool apply);
 		/// 105
@@ -185,6 +191,8 @@ namespace wowpp
 		void handleAddTargetTrigger(bool apply);
 		/// 118
 		void handleModHealingPct(bool apply);
+		/// 123
+		void handleModTargetResistance(bool apply);
 		/// 132
 		void handleModEnergyPercentage(bool apply);
 		/// 133

@@ -316,6 +316,16 @@ namespace wowpp
 		{
 			cost = Int32(cost / (1.117f * spell.spelllevel() / m_executer.getLevel() - 0.1327f));
 		}
+		
+		UInt8 school = 0;
+		for (UInt8 i = 0; i < 7; ++i)
+		{
+			if (spell.schoolmask() & (1 << i)) {
+				school = i;
+			}
+		}
+
+		cost = Int32(cost * (float(m_executer.getFloatValue(unit_fields::PowerCostMultiplier + school) + 100) / 100.0f));
 
 		if (m_executer.isGameCharacter())
 		{

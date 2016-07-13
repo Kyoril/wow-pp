@@ -189,6 +189,9 @@ namespace wowpp
 		case aura::Mounted:
 			handleMounted(apply);
 			break;
+		case aura::ModDamagePercentDone:
+			handleModDamagePercentDone(apply);
+			break;
 		case aura::ModPowerRegen:
 			handleModPowerRegen(apply);
 			break;
@@ -196,6 +199,9 @@ namespace wowpp
 			break;
 		case aura::ModTotalStatPercentage:
 			handleModTotalStatPercentage(apply);
+			break;
+		case aura::ModTargetResistance:
+			handleModTargetResistance(apply);
 			break;
 		case aura::ModIncreaseEnergyPercent:
 			handleModEnergyPercentage(apply);
@@ -242,8 +248,14 @@ namespace wowpp
 		case aura::ModAttackPower:
 			handleModAttackPower(apply);
 			break;
+		case aura::ModTotalThreat:
+			handleModTotalThreat(apply);
+			break;
 		case aura::SchoolAbsorb:
 			handleSchoolAbsorb(apply);
+			break;
+		case aura::ModPowerCostSchoolPct:
+			handleModPowerCostSchoolPct(apply);
 			break;
 		case aura::ManaShield:
 			handleManaShield(apply);
@@ -264,6 +276,8 @@ namespace wowpp
 			handlePeriodicDummy(apply);
 			break;
 		case aura::AddFlatModifier:
+			handleAddModifier(apply);
+			break;
 		case aura::AddPctModifier:
 			handleAddModifier(apply);
 			break;
@@ -930,6 +944,11 @@ namespace wowpp
 		//TODO
 	}
 
+	void Aura::handleModTargetResistance(bool apply)
+	{
+		//TODO
+	}
+
 	void Aura::handleModEnergyPercentage(bool apply)
 	{
 		Int32 powerType = m_effect.miscvaluea();
@@ -1133,6 +1152,11 @@ namespace wowpp
 		m_target.updateModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue, m_basePoints, apply);
 	}
 
+	void Aura::handleModTotalThreat(bool apply)
+	{
+		//TODO
+	}
+
 	void Aura::handleWaterWalk(bool apply)
 	{
 		auto *world = m_target.getWorldInstance();
@@ -1217,6 +1241,17 @@ namespace wowpp
 		//ToDo: Add talent modifiers
 	}
 
+	void Aura::handleModPowerCostSchoolPct(bool apply)
+	{
+		float amount = m_basePoints / 100.0f;
+		for (UInt8 i = 0; i < 7; ++i)
+		{
+			if (m_effect.miscvaluea() & (1 << i)) {
+				m_target.setFloatValue(unit_fields::PowerCostMultiplier + i, amount);
+			}
+		}
+	}
+
 	void Aura::handleMechanicImmunity(bool apply)
 	{
 		UInt32 mask = m_effect.miscvaluea();
@@ -1244,6 +1279,11 @@ namespace wowpp
 		{
 			m_target.setUInt32Value(unit_fields::MountDisplayId, 0);
 		}
+	}
+
+	void Aura::handleModDamagePercentDone(bool apply)
+	{
+		//TODO
 	}
 
 	void Aura::handleModPowerRegen(bool apply)
