@@ -180,7 +180,8 @@ namespace wowpp
 						<< io::write<NetUInt32>(money)
 						<< io::write<NetUInt32>(COD)
 						<< io::write<NetUInt32>(cost)
-						<< io::write_dynamic_range<std::shared_ptr<GameItem>>(items);
+						//<< io::write_dynamic_range<std::shared_ptr<GameItem>>(items)
+						;
 					out_packet.finish();
 				}
 			}
@@ -439,7 +440,8 @@ namespace wowpp
 						>> io::read<NetUInt32>(out_money)
 						>> io::read<NetUInt32>(out_COD)
 						>> io::read<NetUInt32>(out_cost)
-						>> io::read_container<std::shared_ptr<GameItem>>(out_items);
+						//>> io::read_container<std::shared_ptr<GameItem>>(out_items)
+						;
 				}
 			}
 

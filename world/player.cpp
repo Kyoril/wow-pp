@@ -30,6 +30,7 @@
 #include "proto_data/project.h"
 #include "game/game_creature.h"
 #include "game/game_world_object.h"
+#include "game/game_bag.h"
 #include "trade_data.h"
 #include "game/unit_mover.h"
 
