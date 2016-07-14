@@ -536,16 +536,11 @@ namespace wowpp
 		auto receiverPl = m_playerManager.getPlayerByCharacterName(mailDraft.receiver);
 		if (!receiverPl)
 		{
-			DLOG("%s is sending mail to %s (GUID: nonexistent!) with subject %s and body %s includes %u items, %u copper and %u COD copper with unk1 = %u, unk2 = %u",
-				sender.c_str(), mailDraft.receiver.c_str(), mailDraft.subject.c_str(), mailDraft.body.c_str(), items.size(), mailDraft.money, mailDraft.COD, mailDraft.unk1, mailDraft.unk2);
 			// TODO send error
 			return;
 		}
 
-		DLOG("%s is sending mail to %s with subject %s and body %s includes %u items, %u copper and %u COD copper with unk1 = %u, unk2 = %u",
-			sender.c_str(), mailDraft.receiver.c_str(), mailDraft.subject.c_str(), mailDraft.body.c_str(), items.size(), mailDraft.money, mailDraft.COD, mailDraft.unk1, mailDraft.unk2);
-
-		if (senderPl->getCharacterId == receiverPl->getCharacterId)
+		if (senderPl->getCharacterId() == receiverPl->getCharacterId())
 		{
 			// TODO send error
 			return;
