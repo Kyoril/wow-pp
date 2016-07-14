@@ -2097,6 +2097,26 @@ namespace wowpp
 			}
 		}
 
+		if (apply)
+		{
+			SpellTargetMap targetMap;
+			targetMap.m_unitTarget = getGuid();
+			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+
+			for (auto &spell : item.getEntry().spells())
+			{
+				// Trigger == onEquip?
+				if (spell.trigger() == 1)
+				{
+					castSpell(targetMap, spell.spell(), -1, 0, true, item.getGuid());
+				}
+			}
+		}
+		else
+		{
+			getAuras().removeAllAurasDueToItem(item.getGuid());
+		}
+
 		updateArmor();
 		updateDamage();
 	}

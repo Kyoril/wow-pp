@@ -1008,7 +1008,7 @@ namespace wowpp
 
 						auto *world = caster.getWorldInstance();
 						auto &universe = world->getUniverse();
-						std::shared_ptr<Aura> aura = std::make_shared<Aura>(spell, effect, basepoints, caster, caster, [&universe](std::function<void()> work)
+						std::shared_ptr<Aura> aura = std::make_shared<Aura>(spell, effect, basepoints, caster, caster, m_itemGuid, [&universe](std::function<void()> work)
 						{
 							universe.post(work);
 						}, [](Aura & self)
@@ -1686,7 +1686,7 @@ namespace wowpp
 			}
 			else if (targetUnit->isAlive())
 			{
-				std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *targetUnit, [&universe](std::function<void()> work)
+				std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *targetUnit, m_itemGuid, [&universe](std::function<void()> work)
 				{
 					universe.post(work);
 				}, [&universe](Aura & self)

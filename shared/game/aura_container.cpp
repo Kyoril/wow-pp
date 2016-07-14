@@ -375,6 +375,22 @@ namespace wowpp
 		}
 	}
 
+	void AuraContainer::removeAllAurasDueToItem(UInt64 itemGuid)
+	{
+		AuraList::iterator it = m_auras.begin();
+		while (it != m_auras.end())
+		{
+			if ((*it)->getItemGuid() == itemGuid)
+			{
+				removeAura(it);
+			}
+			else
+			{
+				it++;
+			}
+		}
+	}
+
 	void AuraContainer::removeAllAurasDueToMechanic(UInt32 immunityMask)
 	{
 		// We need to remove all auras by their spell

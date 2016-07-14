@@ -36,7 +36,7 @@
 
 namespace wowpp
 {
-	Aura::Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, PostFunction post, std::function<void(Aura &)> onDestroy)
+	Aura::Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, UInt64 itemGuid, PostFunction post, std::function<void(Aura &)> onDestroy)
 		: m_spell(spell)
 		, m_effect(effect)
 		, m_caster(&caster)
@@ -55,6 +55,7 @@ namespace wowpp
 		, m_destroy(std::move(onDestroy))
 		, m_totalTicks(0)
 		, m_duration(spell.duration())
+		, m_itemGuid(itemGuid)
 	{
 		// Subscribe to caster despawn event so that we don't hold an invalid pointer
 		m_casterDespawned = caster.despawned.connect(

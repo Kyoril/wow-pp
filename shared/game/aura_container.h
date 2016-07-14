@@ -43,6 +43,7 @@ namespace wowpp
 		void removeAura(Aura &aura);
 		void handleTargetDeath();
 		void removeAllAurasDueToSpell(UInt32 spellId);
+		void removeAllAurasDueToItem(UInt64 itemGuid);
 		void removeAllAurasDueToMechanic(UInt32 immunityMask);
 		void removeAurasByType(UInt32 auraType);
 		Aura *popBack(UInt8 dispelType, bool positive);
