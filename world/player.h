@@ -300,7 +300,7 @@ namespace wowpp
 		boost::signals2::scoped_connection m_onUnitStateUpdate, m_onCooldownEvent, m_questChanged, m_questKill;
 		boost::signals2::scoped_connection m_itemCreated, m_itemUpdated, m_itemDestroyed, m_objectInteraction;
 		boost::signals2::scoped_connection m_onLootCleared, m_onLootInvalidate, m_onLootInspect, m_spellModChanged;
-		boost::signals2::scoped_connection m_onSpellLearned;
+		boost::signals2::scoped_connection m_onSpellLearned, m_onItemAdded;
 		AttackSwingError m_lastError;
 		UInt32 m_lastFallTime;
 		float m_lastFallZ;

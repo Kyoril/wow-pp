@@ -615,6 +615,8 @@ namespace wowpp
 		boost::signals2::signal<void(Int32, UInt32)> proficiencyChanged;
 		/// Fired when an inventory error occurred. Used to send a packet to the owning players client.
 		boost::signals2::signal<void(game::InventoryChangeFailure, GameItem *, GameItem *)> inventoryChangeFailure;
+		/// Fired when an item was added to the inventory that the players client needs to notified of.
+		boost::signals2::signal<void(UInt16, UInt16, bool, bool)> itemAdded;
 		/// Fired when the characters combo points changes. Used to send a packet to the owning players client.
 		boost::signals2::signal<void()> comboPointsChanged;
 		/// Fired when the character gained some experience points. Used to send a packet to the owning players client.

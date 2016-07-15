@@ -264,11 +264,21 @@ namespace wowpp
 				// Grant quest source item if possible
 				if (srcItem)
 				{
-					auto result = m_inventory.createItems(*srcItem, questEntry->srcitemcount());
+					std::map<UInt16, UInt16> addedBySlot;
+					auto result = m_inventory.createItems(*srcItem, questEntry->srcitemcount(), &addedBySlot);
+
 					if (result != game::inventory_change_failure::Okay)
 					{
 						inventoryChangeFailure(result, nullptr, nullptr);
 						return false;
+					}
+					else
+					{
+						// Notify the player about this
+						for (auto &pair : addedBySlot)
+						{
+							itemAdded(pair.first, pair.second, false, false);
+						}
 					}
 				}
 

@@ -116,6 +116,20 @@ namespace wowpp
 			}
 		});
 
+		m_onItemAdded = m_character->itemAdded.connect([this](UInt16 slot, UInt16 amount, bool looted, bool created) {
+			auto inst = m_character->getInventory().getItemAtSlot(slot);
+			if (inst)
+			{
+				UInt8 bag = 0, subslot = 0;
+				Inventory::getRelativeSlots(slot, bag, subslot);
+				const auto totalCount = m_character->getInventory().getItemCount(inst->getEntry().id());
+
+				sendProxyPacket(
+					std::bind(game::server_write::itemPushResult, std::placeholders::_1,
+						m_character->getGuid(), std::cref(*inst), looted, created, bag, subslot, amount, totalCount));
+			}
+		});
+
 		// Inventory change signals
 		auto &inventory = m_character->getInventory();
 		m_itemCreated = inventory.itemInstanceCreated.connect(std::bind(&Player::onItemCreated, this, std::placeholders::_1, std::placeholders::_2));
