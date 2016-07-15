@@ -1402,9 +1402,6 @@ namespace wowpp
 
 	void Aura::handleModDamagePercentDone(bool apply)
 	{
-<<<<<<< HEAD
-		//TODO
-=======
 		if (m_target.isGameCharacter())
 		{
 			GameCharacter &character = reinterpret_cast<GameCharacter &>(m_target);
@@ -1512,7 +1509,6 @@ namespace wowpp
 				m_target.setFloatValue(character_fields::ModDamageDonePct + i, m_basePoints / 100.0f);
 			}
 		}
->>>>>>> 4bd28e4... test
 	}
 
 	void Aura::handleModPowerRegen(bool apply)
