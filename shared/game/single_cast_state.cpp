@@ -1786,7 +1786,7 @@ namespace wowpp
 				UInt32 spellBonusPct = caster.getBonusPct(school);
 				totalPoints = getSpellPointsTotal(effect, spellPower, spellBonusPct);
 
-				caster.applyHealingDoneBonus(1, totalPoints);
+				caster.applyHealingDoneBonus(m_spell.spelllevel(), caster.getLevel(), 1, totalPoints);
 				targetUnit->applyHealingTakenBonus(1, totalPoints);
 
 				if (hitInfos[i] == game::hit_info::CriticalHit)

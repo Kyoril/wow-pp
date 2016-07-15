@@ -69,13 +69,19 @@ namespace wowpp
 		if (m_caster &&
 			m_caster->isGameCharacter())
 		{
-			reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(spell_mod_op::Duration, m_spell.id(), m_duration);
+			GameCharacter *casterChar = reinterpret_cast<GameCharacter*>(m_caster);
+			casterChar->applySpellMod(spell_mod_op::Duration, m_spell.id(), m_duration);
 			if (m_effect.aura() == game::aura_type::PeriodicDamage ||
 				m_effect.aura() == game::aura_type::PeriodicDamagePercent)
 			{
 				float basePoints = m_basePoints;
 				reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(spell_mod_op::Dot, m_spell.id(), basePoints);
 				m_basePoints = static_cast<UInt32>(ceilf(basePoints));
+			}
+			else if (m_effect.aura() == game::aura_type::PeriodicHeal)
+			{
+				assert(m_basePoints >= 0);
+				casterChar->applyHealingDoneBonus(m_spell.spelllevel(), caster.getLevel(), 1, reinterpret_cast<UInt32&>(m_basePoints));
 			}
 		}
 

@@ -726,6 +726,7 @@ namespace wowpp
 
 		virtual void applyHealingDoneBonus(UInt32 tickCount, UInt32 &healing);
 
+		virtual void applyHealingDoneBonus(UInt32 spellLevel, UInt32 playerLevel, UInt32 tickCount, UInt32 &healing);
 
 		/// Gets the current unit mover.
 		UnitMover &getMover() {

@@ -1180,6 +1180,40 @@ namespace wowpp
 		});
 	}
 
+	void GameUnit::applyHealingDoneBonus(UInt32 spellLevel, UInt32 playerLevel, UInt32 tickCount, UInt32 & healing)
+	{
+		Int32 bonus = getAuras().getTotalBasePoints(game::aura_type::ModHealingDone);
+		if (tickCount > 1)
+		{
+			bonus /= tickCount;
+		}
+
+		// Adjust bonus based on spell level / player level
+		bonus = Int32(float(bonus) * float(spellLevel + 6) / float(playerLevel));
+
+		if (bonus < 0 && -bonus >= healing)
+		{
+		}
+		else
+		{
+			healing += bonus;
+		}
+
+		getAuras().forEachAuraOfType(game::aura_type::ModHealingDonePct, [&healing, tickCount](Aura &aura) -> bool {
+			Int32 bonus = aura.getBasePoints();
+			if (tickCount > 1)
+			{
+				bonus /= tickCount;
+			}
+
+			if (bonus != 0)
+			{
+				healing = UInt32(healing * (float(100.0f + bonus) / 100.0f));
+			}
+			return true;
+		});
+	}
+
 	bool GameUnit::hasCooldown(UInt32 spellId) const
 	{
 		auto it = m_spellCooldowns.find(spellId);
