@@ -1410,7 +1410,7 @@ namespace wowpp
 			// player_equipment_slots
 			for (UInt8 i = 15; i < 18; ++i)
 			{
-				if (auto &item = character.getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(
+				if (auto item = character.getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(
 					player_inventory_slots::Bag_0, i))) {
 					if ((m_effect.miscvaluea() & game::spell_school_mask::Normal) == 0 &&
 						(1 << (m_target.getClass() - 1) & game::char_class::WandUsers) == 0) {
