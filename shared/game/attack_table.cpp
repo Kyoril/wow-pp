@@ -478,8 +478,6 @@ namespace wowpp
 				finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
 					const float realRad = radius + attacker.getMeleeReach() + unit.getMeleeReach();
-					DLOG("Real radius: " << realRad);
-
 					const float distSq = realRad * realRad;
 					if (distSq >= (location - unit.getLocation()).squared_length())
 					{
@@ -555,7 +553,6 @@ namespace wowpp
 				finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
 					const float realRad = radius + attacker.getMeleeReach() + unit.getMeleeReach();
-					DLOG("Real radius: " << realRad);
 
 					const float distSq = realRad * realRad;
 					if (distSq >= (location - unit.getLocation()).squared_length())
@@ -589,8 +586,6 @@ namespace wowpp
 				finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
 					const float realRad = radius + attacker.getMeleeReach() + unit.getMeleeReach();
-					DLOG("Real radius: " << realRad);
-
 					const float distSq = realRad * realRad;
 					if (distSq >= (location - unit.getLocation()).squared_length())
 					{
