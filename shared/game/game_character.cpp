@@ -2140,13 +2140,11 @@ namespace wowpp
 				shouldUpdateResi[5] = true;
 			}
 
-			// ...and so on...
-
-			for (UInt32 i = 1; i <= shouldUpdateResi.size(); ++i)
+			for (UInt32 resistMod = 1; resistMod <= shouldUpdateResi.size(); ++resistMod)
 			{
-				if (shouldUpdateResi[i - 1])
+				if (shouldUpdateResi[resistMod - 1])
 				{
-					updateResistance(i);
+					updateResistance(resistMod);
 				}
 			}
 		}
