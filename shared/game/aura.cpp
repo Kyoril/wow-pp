@@ -81,7 +81,11 @@ namespace wowpp
 			else if (m_effect.aura() == game::aura_type::PeriodicHeal)
 			{
 				assert(m_basePoints >= 0);
-				casterChar->applyHealingDoneBonus(m_spell.spelllevel(), caster.getLevel(), 1, reinterpret_cast<UInt32&>(m_basePoints));
+				casterChar->applyHealingDoneBonus(
+					m_spell.spelllevel(), 
+					caster.getLevel(), 
+					(m_effect.amplitude() == 0 ? 0 : m_duration / m_effect.amplitude()),
+					reinterpret_cast<UInt32&>(m_basePoints));
 			}
 		}
 
