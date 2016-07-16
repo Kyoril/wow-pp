@@ -466,138 +466,57 @@ namespace wowpp
 
 	void Aura::handleModDamageDone(bool apply)
 	{
-		if (m_target.isGameCharacter())
+		//TODO: apply physical dmg (attack power)?
+
+		if (apply)
 		{
-			GameCharacter &character = reinterpret_cast<GameCharacter &>(m_target);
-			// player_equipment_slots
-			for (UInt8 i = 15; i < 18; ++i)
+			if (m_basePoints >= 0)
 			{
-				if (auto item = character.getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, i))) 
+				for (UInt8 school = 1; school < 7; ++school)
 				{
-					if ((m_effect.miscvaluea() & game::spell_school_mask::Normal) == 0 && 
-						(1 << (m_target.getClass() - 1) & game::char_class::WandUsers) == 0) 
+					if ((m_effect.miscvaluea() & (1 << school)) != 0)
 					{
-						return;
-					}
-
-					if (m_spell.itemclass() == -1) 
-					{
-						return;
-					}
-
-					UnitMods unitMod = unit_mods::End;
-					switch (i)
-					{
-						case 15: unitMod = unit_mods::DamageMainHand; break;
-						case 16: unitMod = unit_mods::DamageOffHand; break;
-						case 17: unitMod = unit_mods::DamageRanged; break;
-						default: return;
-					}
-
-					UnitModType unitModType = unit_mod_type::TotalValue;
-					switch (m_effect.aura())
-					{
-						case game::aura_type::ModDamageDone:			unitModType = unit_mod_type::TotalValue; break;
-						case game::aura_type::ModDamagePercentDone:		unitModType = unit_mod_type::TotalPct;   break;
-						default: return;
-					}
-
-					auto &itemEntry = item->getEntry();
-					bool isFitToSpellReq = true;
-					if (m_spell.itemclass() != -1)
-					{
-						if (m_spell.itemclass() != Int32(itemEntry.itemclass()))
-						{
-							isFitToSpellReq = false;
-						}
-
-						if (m_spell.itemsubclassmask() != 0)
-						{
-							if ((m_spell.itemsubclassmask() & (1 << itemEntry.subclass())) == 0)
-							{
-								isFitToSpellReq = false;
-							}
-						}
-					}
-					if (m_effect.itemtype() != 0 && (m_spell.targetmap() & game::spell_cast_target_flags::Item))
-					{
-						if ((m_effect.itemtype()  & (1 << itemEntry.inventorytype())) == 0)
-						{
-							isFitToSpellReq = false;
-						}
-					}
-
-					if (isFitToSpellReq)
-					{
-						m_target.updateModifierValue(unitMod, unitModType, m_basePoints, apply);
-					}
-				}
-			}
-		}
-
-		if ((m_effect.miscvaluea() & game::spell_school_mask::Normal) != 0)
-		{
-			if (m_spell.itemclass() == -1 || !m_target.isGameCharacter())
-			{
-				m_target.updateModifierValue(unit_mods::DamageMainHand, unit_mod_type::TotalValue, m_basePoints, apply);
-				m_target.updateModifierValue(unit_mods::DamageOffHand, unit_mod_type::TotalValue, m_basePoints, apply);
-				m_target.updateModifierValue(unit_mods::DamageRanged, unit_mod_type::TotalValue, m_basePoints, apply);
-			}
-			else
-			{
-				// done in Player::_ApplyWeaponDependentAuraMods
-			}
-
-			if (m_target.isGameCharacter())
-			{
-				if (isPositive())
-				{
-					m_target.setUInt32Value(character_fields::ModDamageDonePos, m_basePoints);
-				}
-				else
-				{
-					m_target.setUInt32Value(character_fields::ModDamageDoneNeg, m_basePoints);
-				}
-			}
-		}
-
-		if (m_effect.miscvaluea() == 0)
-		{
-			return;
-		}
-
-		if (m_spell.itemclass() != -1 || m_effect.itemtype() != 0)
-		{
-			// wand magic case (skip generic to all item spell bonuses)
-			// done in Player::_ApplyWeaponDependentAuraMods
-
-			// Skip item specific requirements for not wand magic damage
-			return;
-		}
-
-		if (m_target.isGameCharacter())
-		{
-			if (isPositive())
-			{
-				for (UInt8 i = 1; i < 7; ++i)
-				{
-					if ((m_effect.miscvaluea() & (1 << i)) != 0)
-					{
-						m_target.setUInt32Value(character_fields::ModDamageDonePos + i, m_basePoints);
+						UInt32 spellDmg = m_target.getUInt32Value(character_fields::ModDamageDonePos + school);
+						m_target.setUInt32Value(character_fields::ModDamageDonePos + school, spellDmg + m_basePoints);
 					}
 				}
 			}
 			else
 			{
-				for (UInt8 i = 1; i < 7; ++i)
+				for (UInt8 school = 1; school < 7; ++school)
 				{
-					if ((m_effect.miscvaluea() & (1 << i)) != 0)
+					if ((m_effect.miscvaluea() & (1 << school)) != 0)
 					{
-						m_target.setUInt32Value(character_fields::ModDamageDoneNeg + i, m_basePoints);
+						UInt32 spellDmg = m_target.getUInt32Value(character_fields::ModDamageDonePos + school);
+						m_target.setUInt32Value(character_fields::ModDamageDoneNeg + school, spellDmg - m_basePoints);
 					}
 				}
 			}
-			// Pet TODO
+		}
+		else
+		{
+			if (m_basePoints >= 0)
+			{
+				for (UInt8 school = 1; school < 7; ++school)
+				{
+					if ((m_effect.miscvaluea() & (1 << school)) != 0)
+					{
+						UInt32 spellDmg = m_target.getUInt32Value(character_fields::ModDamageDonePos + school);
+						m_target.setUInt32Value(character_fields::ModDamageDonePos + school, spellDmg - m_basePoints);
+					}
+				}
+			}
+			else
+			{
+				for (UInt8 school = 1; school < 7; ++school)
+				{
+					if ((m_effect.miscvaluea() & (1 << school)) != 0)
+					{
+						UInt32 spellDmg = m_target.getUInt32Value(character_fields::ModDamageDonePos + school);
+						m_target.setUInt32Value(character_fields::ModDamageDoneNeg + school, spellDmg + m_basePoints);
+					}
+				}
+			}
 		}
 	}
 	
@@ -1410,10 +1329,11 @@ namespace wowpp
 			// player_equipment_slots
 			for (UInt8 i = 15; i < 18; ++i)
 			{
-				if (auto item = character.getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(
-					player_inventory_slots::Bag_0, i))) {
+				if (auto item = character.getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, i))) 
+				{
 					if ((m_effect.miscvaluea() & game::spell_school_mask::Normal) == 0 &&
-						(1 << (m_target.getClass() - 1) & game::char_class::WandUsers) == 0) {
+						(1 << (m_target.getClass() - 1) & game::char_class::WandUsers) == 0) 
+					{
 						return;
 					}
 
