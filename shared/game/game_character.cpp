@@ -2579,6 +2579,15 @@ namespace wowpp
 			object.setUInt32Value(unit_fields::Aura + i, 0);
 		}
 
+		// Reset all buffs
+		object.setUInt32Value(character_fields::ModHealingDonePos, 0);
+		for (UInt8 i = 0; i < 7; ++i)
+		{
+			object.setUInt32Value(character_fields::ModDamageDoneNeg + i, 0);
+			object.setUInt32Value(character_fields::ModDamageDonePos + i, 0);
+			object.setFloatValue(character_fields::ModDamageDonePct + i, 1.00f);
+		}
+
 		// Remove "InCombat" flag
 		object.removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 
