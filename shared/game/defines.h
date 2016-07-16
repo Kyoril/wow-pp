@@ -3046,5 +3046,47 @@ namespace wowpp
 		}
 
 		typedef reputation_rank::Type ReputationRank;
+
+		namespace item_stat
+		{
+			enum Type
+			{
+				Mana = 0,
+				Health = 1,
+				Agility = 3,
+				Strength = 4,
+				Intellect = 5,
+				Spirit = 6,
+				Stamina = 7,
+				DefenseSkillRating = 12,
+				DodgeRating = 13,
+				ParryRating = 14,
+				BlockRating = 15,
+				HitMeleeRating = 16,
+				HitRangedRating = 17,
+				HitSpellRating = 18,
+				CritMeleeRating = 19,
+				CritRangedRating = 20,
+				CritSpellRating = 21,
+				HitTakenMeleeRating = 22,
+				HitTakenRangedRating = 23,
+				HitTakenSpellRating = 24,
+				CritTakenMeleeRating = 25,
+				CritTakenRangedRating = 26,
+				CritTakenSpellRating = 27,
+				HasteMeleeRating = 28,
+				HasteRangedRating = 29,
+				HasteSpellRating = 30,
+				HitRating = 31,
+				CritRating = 32,
+				HitTakenRating = 33,
+				CritTakenRating = 34,
+				ResilienceRating = 35,
+				HasteRating = 36,
+				ExpertiseRating = 37
+			};
+		}
+
+		typedef item_stat::Type ItemStat;
 	}
 }

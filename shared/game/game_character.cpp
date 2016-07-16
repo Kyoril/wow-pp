@@ -2079,30 +2079,74 @@ namespace wowpp
 				{
 					switch (entry.type())
 					{
-					case 0:		// Mana
+					case game::item_stat::Mana:
 						updateModifierValue(unit_mods::Mana, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
-					case 1:		// Health
+					case game::item_stat::Health:
 						updateModifierValue(unit_mods::Health, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
-					case 3:		// Agility
+					case game::item_stat::Agility:
 						updateModifierValue(unit_mods::StatAgility, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
-					case 4:		// Strength
+					case game::item_stat::Strength:
 						updateModifierValue(unit_mods::StatStrength, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
-					case 5:		// Intellect
+					case game::item_stat::Intellect:
 						updateModifierValue(unit_mods::StatIntellect, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
-					case 6:		// Spirit
+					case game::item_stat::Spirit:
 						updateModifierValue(unit_mods::StatSpirit, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
-					case 7:		// Stamina
+					case game::item_stat::Stamina:
 						updateModifierValue(unit_mods::StatStamina, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
 					default:
 						break;
 					}
+				}
+			}
+
+			std::array<bool, 6> shouldUpdateResi;
+			shouldUpdateResi.fill(false);
+
+			if (item.getEntry().holyres() != 0)
+			{
+				updateModifierValue(unit_mods::ResistanceHoly, unit_mod_type::TotalValue, item.getEntry().holyres(), apply);
+				shouldUpdateResi[0] = true;
+			}
+			if (item.getEntry().fireres() != 0)
+			{
+				updateModifierValue(unit_mods::ResistanceFire, unit_mod_type::TotalValue, item.getEntry().fireres(), apply);
+				shouldUpdateResi[1] = true;
+			}
+			if (item.getEntry().natureres() != 0)
+			{
+				updateModifierValue(unit_mods::ResistanceNature, unit_mod_type::TotalValue, item.getEntry().natureres(), apply);
+				shouldUpdateResi[2] = true;
+			}
+			if (item.getEntry().frostres() != 0)
+			{
+				updateModifierValue(unit_mods::ResistanceFrost, unit_mod_type::TotalValue, item.getEntry().frostres(), apply);
+				shouldUpdateResi[3] = true;
+			}
+			if (item.getEntry().shadowres() != 0)
+			{
+				updateModifierValue(unit_mods::ResistanceShadow, unit_mod_type::TotalValue, item.getEntry().shadowres(), apply);
+				shouldUpdateResi[4] = true;
+			}
+			if (item.getEntry().arcaneres() != 0)
+			{
+				updateModifierValue(unit_mods::ResistanceArcane, unit_mod_type::TotalValue, item.getEntry().arcaneres(), apply);
+				shouldUpdateResi[5] = true;
+			}
+
+			// ...and so on...
+
+			for (UInt32 i = 1; i <= shouldUpdateResi.size(); ++i)
+			{
+				if (shouldUpdateResi[i - 1])
+				{
+					updateResistance(i);
 				}
 			}
 		}
