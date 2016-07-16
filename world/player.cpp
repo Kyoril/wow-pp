@@ -988,6 +988,7 @@ namespace wowpp
 			break;
 		case game::inventory_type::OffHandWeapon:
 		case game::inventory_type::Shield:
+		case game::inventory_type::Holdable:
 			targetSlot = player_equipment_slots::Offhand;
 			break;
 		case game::inventory_type::Weapon:
