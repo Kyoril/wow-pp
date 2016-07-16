@@ -941,6 +941,7 @@ namespace wowpp
 				else
 				{
 					if (srcInvType != game::inventory_type::Shield &&
+						srcInvType != game::inventory_type::Holdable &&
 					        !m_owner.canDualWield())
 					{
 						return game::inventory_change_failure::CantDualWield;
