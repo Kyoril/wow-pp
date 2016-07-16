@@ -202,6 +202,8 @@ namespace wowpp
 		void handleModHealthPercentage(bool apply);
 		/// 134
 		void handleModManaRegenInterrupt(bool apply);
+		/// 135
+		void handleModHealingDone(bool apply);
 		/// 137
 		void handleModTotalStatPercentage(bool apply);
 		/// 142

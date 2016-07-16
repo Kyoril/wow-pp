@@ -208,6 +208,9 @@ namespace wowpp
 			break;
 		case aura::ModRegen:
 			break;
+		case aura::ModHealingDone:
+			handleModHealingDone(apply);
+			break;
 		case aura::ModTotalStatPercentage:
 			handleModTotalStatPercentage(apply);
 			break;
@@ -470,7 +473,13 @@ namespace wowpp
 
 	void Aura::handleModDamageDone(bool apply)
 	{
+		if (!m_target.isGameCharacter())
+		{
+			return;
+		}
+
 		//TODO: apply physical dmg (attack power)?
+		
 
 		if (apply)
 		{
@@ -1021,6 +1030,25 @@ namespace wowpp
 		}
 	}
 
+	void Aura::handleModHealingDone(bool apply)
+	{
+		if (!m_target.isGameCharacter())
+		{
+			return;
+		}
+
+		if (apply)
+		{
+			UInt32 spellHeal = m_target.getUInt32Value(character_fields::ModHealingDonePos);
+			m_target.setUInt32Value(character_fields::ModHealingDonePos, spellHeal + m_basePoints);
+		}
+		else
+		{
+			UInt32 spellHeal = m_target.getUInt32Value(character_fields::ModHealingDonePos);
+			m_target.setUInt32Value(character_fields::ModHealingDonePos, spellHeal - m_basePoints);
+		}
+	}
+
 	void Aura::handleModTotalStatPercentage(bool apply)
 	{
 		Int32 stat = m_effect.miscvaluea();
@@ -1327,108 +1355,7 @@ namespace wowpp
 
 	void Aura::handleModDamagePercentDone(bool apply)
 	{
-		if (m_target.isGameCharacter())
-		{
-			GameCharacter &character = reinterpret_cast<GameCharacter &>(m_target);
-			// player_equipment_slots
-			for (UInt8 i = 15; i < 18; ++i)
-			{
-				if (auto item = character.getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, i))) 
-				{
-					if ((m_effect.miscvaluea() & game::spell_school_mask::Normal) == 0 &&
-						(1 << (m_target.getClass() - 1) & game::char_class::WandUsers) == 0) 
-					{
-						return;
-					}
-
-					if (m_spell.itemclass() == -1) {
-						return;
-					}
-
-					UnitMods unitMod = unit_mods::End;
-					switch (i)
-					{
-						case 15: unitMod = unit_mods::DamageMainHand; break;
-						case 16: unitMod = unit_mods::DamageOffHand; break;
-						case 17: unitMod = unit_mods::DamageRanged; break;
-						default: return;
-					}
-
-					UnitModType unitModType = unit_mod_type::TotalValue;
-					switch (m_effect.aura())
-					{
-						case game::aura_type::ModDamageDone:			unitModType = unit_mod_type::TotalValue; break;
-						case game::aura_type::ModDamagePercentDone:		unitModType = unit_mod_type::TotalPct;   break;
-						default: return;
-					}
-
-					auto &itemEntry = item->getEntry();
-					bool isFitToSpellReq = true;
-					if (m_spell.itemclass() != -1)
-					{
-						if (m_spell.itemclass() != Int32(itemEntry.itemclass()))
-						{
-							isFitToSpellReq = false;
-						}
-
-						if (m_spell.itemsubclassmask() != 0)
-						{
-							if ((m_spell.itemsubclassmask() & (1 << itemEntry.subclass())) == 0)
-							{
-								isFitToSpellReq = false;
-							}
-						}
-					}
-					if (m_effect.itemtype() != 0 && (m_spell.targetmap() & game::spell_cast_target_flags::Item))
-					{
-						if ((m_effect.itemtype()  & (1 << itemEntry.inventorytype())) == 0)
-						{
-							isFitToSpellReq = false;
-						}
-					}
-
-					if (isFitToSpellReq)
-					{
-						m_target.updateModifierValue(unitMod, unitModType, m_basePoints, apply);
-					}
-				}
-			}
-		}
-
-		if ((m_effect.miscvaluea() & game::spell_school_mask::Normal) != 0)
-		{
-			if (m_spell.itemclass() == -1 || !m_target.isGameCharacter())
-			{
-				m_target.updateModifierValue(unit_mods::DamageMainHand, unit_mod_type::TotalValue, m_basePoints, apply);
-				m_target.updateModifierValue(unit_mods::DamageOffHand, unit_mod_type::TotalValue, m_basePoints, apply);
-				m_target.updateModifierValue(unit_mods::DamageRanged, unit_mod_type::TotalValue, m_basePoints, apply);
-			}
-			else
-			{
-				// done in Player::_ApplyWeaponDependentAuraMods
-			}
-
-			if (m_target.isGameCharacter())
-			{
-				m_target.setFloatValue(character_fields::ModDamageDonePct, m_basePoints / 100.0f);
-			}
-		}
-
-		if (m_effect.miscvaluea() == 0)
-		{
-			return;
-		}
-
-		if (m_spell.itemclass() != -1 || m_effect.itemtype() != 0)
-		{
-			// wand magic case (skip generic to all item spell bonuses)
-			// done in Player::_ApplyWeaponDependentAuraMods
-
-			// Skip item specific requirements for not wand magic damage
-			return;
-		}
-
-		if (m_target.isGameCharacter())
+		if (apply)
 		{
 			for (UInt8 i = 1; i < 7; ++i) 
 			{
