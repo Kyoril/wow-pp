@@ -1888,7 +1888,7 @@ namespace wowpp
 			setModifierValue(unit_mods::AttackPower, unit_mod_type::BaseValue, atkPower);
 			float base_attPower = atkPower * getModifierValue(unit_mods::AttackPower, unit_mod_type::BasePct);
 			float attPowerMod = getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue);
-			float attPowerMultiplier = getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalPct);
+			float attPowerMultiplier = getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalPct) - 1.0f;
 			setInt32Value(unit_fields::AttackPower, UInt32(base_attPower));
 			setInt32Value(unit_fields::AttackPowerMods, UInt32(attPowerMod));
 			setFloatValue(unit_fields::AttackPowerMultiplier, attPowerMultiplier);
