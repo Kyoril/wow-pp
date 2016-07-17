@@ -1073,8 +1073,8 @@ namespace wowpp
 
 	void Aura::handleModHaste(bool apply)
 	{
-		float baseAttackTime = m_target.getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::BaseAttack);
-		float offHandAttackTime = m_target.getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack);
+		UInt32 baseAttackTime = m_target.getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::BaseAttack);
+		UInt32 offHandAttackTime = m_target.getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack);
 
 		if (apply)
 		{
