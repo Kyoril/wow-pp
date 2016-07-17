@@ -206,6 +206,8 @@ namespace wowpp
 		void handleModHealingDone(bool apply);
 		/// 137
 		void handleModTotalStatPercentage(bool apply);
+		/// 138
+		void handleModHaste(bool apply);
 		/// 142
 		void handleModBaseResistancePct(bool apply);
 		/// 143

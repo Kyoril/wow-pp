@@ -214,6 +214,9 @@ namespace wowpp
 		case aura::ModTotalStatPercentage:
 			handleModTotalStatPercentage(apply);
 			break;
+		case aura::ModHaste:
+			handleModHaste(apply);
+			break;
 		case aura::ModTargetResistance:
 			handleModTargetResistance(apply);
 			break;
@@ -1068,6 +1071,23 @@ namespace wowpp
 		}
 	}
 
+	void Aura::handleModHaste(bool apply)
+	{
+		float baseAttackTime = m_target.getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::BaseAttack);
+		float offHandAttackTime = m_target.getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack);
+
+		if (apply)
+		{
+			m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::BaseAttack, baseAttackTime * (100.0f - m_basePoints) / 100.0f);
+			m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack, offHandAttackTime * (100.0f - m_basePoints) / 100.0f);
+		}
+		else
+		{
+			m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::BaseAttack, baseAttackTime * 100.0f / (100.0f - m_basePoints));
+			m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack, offHandAttackTime * 100.0f / (100.0f - m_basePoints));
+		}
+	}
+
 	void Aura::handleModBaseResistancePct(bool apply)
 	{
 		// Apply all resistances
@@ -1446,7 +1466,6 @@ namespace wowpp
 		//always positive
 		case game::aura_type::PeriodicHeal:
 		case game::aura_type::ModThreat:
-		case game::aura_type::ModDamageDone:
 		case game::aura_type::DamageShield:
 		case game::aura_type::ModStealth:
 		case game::aura_type::ModStealthDetect:
