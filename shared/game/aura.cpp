@@ -1080,8 +1080,8 @@ namespace wowpp
 		m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::BaseAttack, baseAttackTime * amount);
 		m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack, offHandAttackTime * amount);
 
-		m_target.modifyAttackSpeedPctModifier(game::weapon_attack::BaseAttack, -m_basePoints / 100.0f, apply);
-		m_target.modifyAttackSpeedPctModifier(game::weapon_attack::OffhandAttack, -m_basePoints / 100.0f, apply);
+		m_target.modifyAttackSpeedPctModifier(game::weapon_attack::BaseAttack, static_cast<float>(-m_basePoints) / 100.0f, apply);
+		m_target.modifyAttackSpeedPctModifier(game::weapon_attack::OffhandAttack, static_cast<float>(-m_basePoints) / 100.0f, apply);
 	}
 
 	void Aura::handleModBaseResistancePct(bool apply)
