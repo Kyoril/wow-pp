@@ -310,7 +310,6 @@ namespace wowpp
 
 	void GameUnit::modifyAttackSpeedPctModifier(UInt8 attackType, float modifier, bool apply)
 	{
-		DLOG("modifyattacksp... " << m_attackSpeedPctModifier[0]);
 		m_attackSpeedPctModifier[attackType] *= (apply ? (1.0f + modifier) : 1.0f / (1.0f + modifier));
 	}
 
