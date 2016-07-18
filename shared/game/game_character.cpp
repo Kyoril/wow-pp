@@ -1958,6 +1958,7 @@ namespace wowpp
 				}
 			}
 
+			attackTime *= getAttackSpeedPctModifier(game::weapon_attack::BaseAttack);
 			const float att_speed = attackTime / 1000.0f;
 			const float base_value = getUInt32Value(unit_fields::AttackPower) / 14.0f * att_speed;
 
@@ -2003,6 +2004,7 @@ namespace wowpp
 				}
 			}
 
+			attackTime *= getAttackSpeedPctModifier(game::weapon_attack::OffhandAttack);
 			const float att_speed = attackTime / 1000.0f;
 			const float base_value = getUInt32Value(unit_fields::AttackPower) / 14.0f * att_speed;
 

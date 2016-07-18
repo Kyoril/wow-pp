@@ -145,6 +145,8 @@ namespace wowpp
 		// Not in fight
 		removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 		addFlag(unit_fields::UnitFlags, game::unit_flags::PvP);
+
+		m_attackSpeedPctModifier.fill(1.0f);
 	}
 
 	void GameUnit::raceUpdated()
@@ -304,6 +306,12 @@ namespace wowpp
 			setByteValue(unit_fields::Bytes1, 3, getByteValue(unit_fields::Bytes1, 3) & ~2);
 			m_movementInfo.moveFlags = game::MovementFlags(m_movementInfo.moveFlags & ~(game::movement_flags::Flying | game::movement_flags::Flying2));
 		}
+	}
+
+	void GameUnit::modifyAttackSpeedPctModifier(UInt8 attackType, float modifier, bool apply)
+	{
+		DLOG("modifyattacksp... " << m_attackSpeedPctModifier[0]);
+		m_attackSpeedPctModifier[attackType] *= (apply ? (1.0f + modifier) : 1.0f / (1.0f + modifier));
 	}
 
 	void GameUnit::levelChanged(const proto::LevelEntry &levelInfo)

@@ -1075,17 +1075,15 @@ namespace wowpp
 	{
 		UInt32 baseAttackTime = m_target.getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::BaseAttack);
 		UInt32 offHandAttackTime = m_target.getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack);
+		float amount = (apply ? (100.0f - m_basePoints) / 100.0f : 100.0f / (100.0f - m_basePoints));
 
-		if (apply)
-		{
-			m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::BaseAttack, baseAttackTime * (100.0f - m_basePoints) / 100.0f);
-			m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack, offHandAttackTime * (100.0f - m_basePoints) / 100.0f);
-		}
-		else
-		{
-			m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::BaseAttack, baseAttackTime * 100.0f / (100.0f - m_basePoints));
-			m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack, offHandAttackTime * 100.0f / (100.0f - m_basePoints));
-		}
+		m_target.modifyAttackSpeedPctModifier(game::weapon_attack::BaseAttack, -m_basePoints / 100.0f, apply);
+		m_target.modifyAttackSpeedPctModifier(game::weapon_attack::OffhandAttack, -m_basePoints / 100.0f, apply);
+
+		m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::BaseAttack, baseAttackTime * amount);
+		m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack, offHandAttackTime * amount);
+
+		DLOG(m_target.getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::BaseAttack));
 	}
 
 	void Aura::handleModBaseResistancePct(bool apply)

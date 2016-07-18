@@ -323,6 +323,39 @@ namespace wowpp
 		};
 	}
 
+	namespace combat_rating
+	{
+		enum Type
+		{
+			WeaponSkill = 0,
+			DefenseSkill = 1,
+			Dodge = 2,
+			Parry = 3,
+			Block = 4,
+			HitMelee = 5,
+			HitRanged = 6,
+			HitSpell = 7,
+			CritMelee = 8,
+			CritRanged = 9,
+			CritSpell = 10,
+			HitTakenMelee = 11,
+			HitTakenRanged = 12,
+			HitTakenSpell = 13,
+			CritTakenMelee = 14,
+			CritTakenRanged = 15,
+			CritTakenSpell = 16,
+			HasteMelee = 17,
+			HasteRanged = 18,
+			HasteSpell = 19,
+			WeaponSkillMainhand = 20,
+			WeaponSkillOffhand = 21,
+			WeaponSkillRanged = 22,
+			Expertise = 23
+		};
+	}
+
+	typedef combat_rating::Type CombatRating;
+
 	namespace proto
 	{
 		class ClassEntry;
@@ -758,6 +791,16 @@ namespace wowpp
 		/// @param enable Whether flight mode will be enabled.
 		void setFlightMode(bool enable);
 
+		/// Modifies the bonus attack speed percentage for that character.
+		/// @param attackType The weapon attack type affected.
+		/// @param modifier The bonus percentage.
+		/// @param apply Wheter to apply or misapply the bonus.
+		void modifyAttackSpeedPctModifier(UInt8 attackType, float modifier, bool apply);
+
+		float getAttackSpeedPctModifier(UInt8 attackType) {
+			return m_attackSpeedPctModifier[attackType];
+		}
+
 	public:
 
 		/// 
@@ -840,6 +883,7 @@ namespace wowpp
 		UnitStandState m_standState;
 		std::vector<std::shared_ptr<WorldObject>> m_worldObjects;
 		math::Vector3 m_confusedLoc;
+		std::array<float, 3> m_attackSpeedPctModifier;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameUnit const &object);
