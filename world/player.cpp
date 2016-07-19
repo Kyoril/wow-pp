@@ -2313,6 +2313,14 @@ namespace wowpp
 		}
 		else if(creature)
 		{
+			// Is battlemaster?
+			if (creature->getUInt32Value(unit_fields::NpcFlags) & game::unit_npc_flags::Battlemaster)
+			{
+				sendProxyPacket(
+					std::bind(game::server_write::gossipMessage, std::placeholders::_1, creature->getGuid(), 7599));
+				return;
+			}
+
 			const auto *trainerEntry = m_project.trainers.getById(creature->getEntry().trainerentry());
 			if (trainerEntry)
 			{
