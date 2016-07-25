@@ -665,6 +665,74 @@ namespace wowpp
 			}
 		}
 
+		void ObjectEditor::on_treeWidget_doubleClicked(QModelIndex index)
+		{
+			// Find the selected entry
+			if (!index.isValid() || !m_selectedUnit)
+			{
+				return;
+			}
+
+			auto *entry = m_selectedUnit->mutable_creaturespells(index.row());
+
+			CreatureSpellDialog dialog(m_application, entry);
+			auto result = dialog.exec();
+			if (result == QDialog::Accepted)
+			{
+				if (!dialog.getSelectedSpell())
+				{
+					return;
+				}
+
+				entry->set_spellid(dialog.getSelectedSpell()->id());
+				entry->set_priority(dialog.getPriority());
+				entry->set_mincooldown(dialog.getMinCooldown());
+				entry->set_maxcooldown(dialog.getMaxCooldown());
+				entry->set_mininitialcooldown(dialog.getMinInitialCooldown());
+				entry->set_maxinitialcooldown(dialog.getMaxInitialCooldown());
+				entry->set_target(dialog.getTarget());
+				entry->set_repeated(dialog.getRepeated());
+
+				// TODO: Update UI
+				static QString spellCastTargetNames[] = {
+					"SELF",
+					"CURRENT_TARGET"
+				};
+
+				QTreeWidgetItem *item = m_ui->treeWidget->currentItem();
+				item->setText(0, QString("%1 %2").arg(dialog.getSelectedSpell()->id()).arg(dialog.getSelectedSpell()->name().c_str()));
+				item->setText(1, QString("%1").arg(entry->priority()));
+				item->setText(2, QString("%1").arg(entry->repeated() ? "Yes" : "No"));
+				item->setText(3, spellCastTargetNames[entry->target()]);
+				if (entry->mininitialcooldown() != entry->maxinitialcooldown())
+				{
+					item->setText(4, QString("%1 - %2").arg(entry->mininitialcooldown()).arg(entry->maxinitialcooldown()));
+				}
+				else
+				{
+					item->setText(4, QString("%1").arg(entry->mininitialcooldown()));
+				}
+				if (entry->mincooldown() != entry->maxcooldown())
+				{
+					item->setText(5, QString("%1 - %2").arg(entry->mincooldown()).arg(entry->maxcooldown()));
+				}
+				else
+				{
+					item->setText(5, QString("%1").arg(entry->mincooldown()));
+				}
+				if (entry->minrange() != entry->maxrange())
+				{
+					item->setText(6, QString("%1 - %2").arg(entry->minrange()).arg(entry->maxrange()));
+				}
+				else
+				{
+					item->setText(6, QString("%1").arg(entry->minrange()));
+				}
+
+				m_application.markAsChanged();
+			}
+		}
+
 		void ObjectEditor::onSpellSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
 		{
 			// Get the selected unit
@@ -2371,6 +2439,7 @@ namespace wowpp
 				added->set_mininitialcooldown(dialog.getMinInitialCooldown());
 				added->set_maxinitialcooldown(dialog.getMaxInitialCooldown());
 				added->set_target(dialog.getTarget());
+				added->set_repeated(dialog.getRepeated());
 				addSpellEntry(*added);
 
 				m_application.markAsChanged();

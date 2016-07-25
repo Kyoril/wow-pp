@@ -419,7 +419,7 @@
                 <item>
                  <layout class="QHBoxLayout" name="horizontalLayout_5">
                   <item>
-                   <widget class="QPushButton" name="pushButton_3">
+                   <widget class="QPushButton" name="copyUnitSpellsButton">
                     <property name="text">
                      <string>Apply Spells To Other Units</string>
                     </property>

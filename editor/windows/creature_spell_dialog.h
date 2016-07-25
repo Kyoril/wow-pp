@@ -45,7 +45,7 @@ namespace wowpp
 		public:
 
 			/// 
-			explicit CreatureSpellDialog(EditorApplication &app);
+			explicit CreatureSpellDialog(EditorApplication &app, proto::UnitSpellEntry *entry = nullptr);
 
 			const proto::SpellEntry *getSelectedSpell() const { return m_selectedSpell; }
 			UInt32 getPriority() const;
