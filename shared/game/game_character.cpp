@@ -53,7 +53,14 @@ namespace wowpp
 		, m_canParry(false)
 		, m_canDualWield(false)
 		, m_inventory(*this)
-		, m_lastPvPCombat(0)
+		, m_lastPvPCombat(0) 
+		, m_resurrectGuid(0)
+		, m_resurrectMap(0)
+		, m_resurrectX(0.0f)
+		, m_resurrectY(0.0f)
+		, m_resurrectZ(0.0f)
+		, m_resurrectHealth(0)
+		, m_resurrectMana(0)
 	{
 		// Resize values field
 		m_values.resize(character_fields::CharacterFieldCount, 0);
@@ -1414,6 +1421,17 @@ namespace wowpp
 				return;
 			}
 		}
+	}
+
+	void GameCharacter::setResurrectRequestData(UInt64 guid, UInt32 mapId, math::Vector3 position, UInt32 health, UInt32 mana)
+	{
+		m_resurrectGuid = guid;
+		m_resurrectMap = mapId;
+		m_resurrectX = position.x;
+		m_resurrectY = position.y;
+		m_resurrectZ = position.z;
+		m_resurrectHealth = health;
+		m_resurrectMana = mana;
 	}
 
 	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData &data)

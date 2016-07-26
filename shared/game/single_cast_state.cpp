@@ -1174,6 +1174,65 @@ namespace wowpp
 		}
 	}
 
+	void SingleCastState::spellEffectResurrect(const proto::SpellEffect & effect)
+	{
+		if (isPlayerGUID(m_target.getUnitTarget()))
+		{
+			return;
+		}
+
+		auto *world = m_cast.getExecuter().getWorldInstance();
+
+		if (!world)
+		{
+			return;
+		}
+
+		GameUnit &caster = m_cast.getExecuter();
+		GameUnit *targetUnit = nullptr;
+		m_target.resolvePointers(*world, &targetUnit, nullptr, nullptr, nullptr);
+
+		if (!targetUnit || targetUnit->isAlive())
+		{
+			return;
+		} 
+
+		UInt8 typeId = object_type::Object;
+		String name = "";
+
+		
+
+		//auto *casterChar = reinterpret_cast<GameCharacter *>(caster);
+		auto *target = reinterpret_cast<GameCharacter *>(targetUnit);
+
+		// not sure about name, will test
+		if (caster.isGameCharacter())
+		{
+			typeId = object_type::Character;
+		}
+		else
+		{
+			name = caster.getName();
+			typeId = object_type::Unit;
+		}
+		
+		if (target->isRessurectRequested())
+		{
+			return;
+		}
+		// not sure about m_basePoints, will test
+		UInt32 health = target->getUInt32Value(unit_fields::MaxHealth) * m_basePoints / 100;
+		UInt32 mana = target->getUInt32Value(unit_fields::Power1) * m_basePoints / 100;
+
+		target->setResurrectRequestData(caster.getGuid(), caster.getMapId(), caster.getLocation(), health, mana);
+		sendPacketFromCaster(caster,
+							std::bind(game::server_write::resurrectRequest, std::placeholders::_1,
+									  caster.getGuid(),
+									  name,
+									  typeId));
+
+	}
+
 	void SingleCastState::spellEffectDrainPower(const proto::SpellEffect &effect)
 	{
 		// Calculate the power to drain

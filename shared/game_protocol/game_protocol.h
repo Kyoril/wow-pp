@@ -486,6 +486,7 @@ namespace wowpp
 				AttackSwing				= 0x141,
 				AttackStop				= 0x142,
 				RepopRequest			= 0x15A,
+				ResurrectResponse		= 0x15C,
 				Loot					= 0x15D,
 				LootMoney				= 0x15E,
 				LootRelease				= 0x15F,
@@ -635,6 +636,7 @@ namespace wowpp
 				SpellHealLog				= 0x150,
 				SpellEnergizeLog			= 0x151,
 				BindPointUpdate				= 0x155,
+				ResurrectRequest			= 0x15B,
 				LootResponse				= 0x160,
 				LootReleaseResponse			= 0x161,
 				LootRemoved					= 0x162,
@@ -2340,6 +2342,13 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt32 totalTimeInSecs,
 				UInt32 levelTimeInSecs
+			);
+
+			void resurrectRequest(
+				game::OutgoingPacket &out_packet,
+				UInt64 objectGUID,
+				String sentName,
+				UInt8 typeId
 			);
 		};
 	}

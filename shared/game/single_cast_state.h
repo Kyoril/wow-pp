@@ -98,6 +98,7 @@ namespace wowpp
 		void spellEffectLearnSpell(const proto::SpellEffect &effect);
 		void spellEffectScriptEffect(const proto::SpellEffect &effect);
 		void spellEffectDispelMechanic(const proto::SpellEffect &effect);
+		void spellEffectResurrect(const proto::SpellEffect &effect);
 
 		void meleeSpecialAttack(const proto::SpellEffect &effect, bool basepointsArePct);
 

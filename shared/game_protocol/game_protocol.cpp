@@ -3707,6 +3707,18 @@ namespace wowpp
 					<< io::write<NetUInt32>(levelTimeInSecs);
 				out_packet.finish();
 			}
+
+			void resurrectRequest(game::OutgoingPacket & out_packet, UInt64 objectGUID, String sentName, UInt8 typeId)
+			{
+				out_packet.start(game::server_packet::ResurrectRequest);
+				out_packet
+					<< io::write<NetUInt64>(objectGUID)
+					<< io::write<NetUInt32>(static_cast<UInt32>(sentName.length() + 1))
+					<< io::write_range(sentName)
+					<< io::write<NetUInt8>(0)
+					<< io::write<NetUInt8>(typeId == object_type::Character ? 0 : 1);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

@@ -642,8 +642,8 @@ namespace wowpp
 		/// be valid, as you at least need to call GameCharacter::initialize(), GameCharacter::setMapId()
 		/// and GameCharacter::relocate() to have a valid character. You also have to setup a valid GUID.
 		explicit GameCharacter(
-		    proto::Project &project,
-		    TimerQueue &timers);
+			proto::Project &project,
+			TimerQueue &timers);
 		/// Default destructor.
 		~GameCharacter();
 
@@ -702,7 +702,7 @@ namespace wowpp
 
 		/// @copydoc GameUnit::classUpdated
 		void classUpdated() override;
-		
+
 	public:
 
 		// GameCharacter methods
@@ -863,6 +863,10 @@ namespace wowpp
 		bool isInPvPCombat() const {
 			return getCurrentTime() < m_lastPvPCombat + constants::OneSecond * 5;
 		}
+		/// Updates the resurrect target information.
+		void setResurrectRequestData(UInt64 guid, UInt32 mapId, math::Vector3 position, UInt32 health, UInt32 mana);
+
+		bool isRessurectRequested() const { return m_resurrectGuid == 0 ? 0 : 1; }
 	public:
 
 		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT
@@ -916,6 +920,10 @@ namespace wowpp
 		std::array<float, 7> m_threatModifier;
 		std::vector<Countdown> m_questTimeouts;
 		GameTime m_lastPvPCombat;
+		UInt64 m_resurrectGuid;
+		UInt32 m_resurrectMap;
+		float m_resurrectX, m_resurrectY, m_resurrectZ;
+		UInt32 m_resurrectHealth, m_resurrectMana;
 	};
 
 	/// Serializes a GameCharacter to an io::Writer object for the wow++ protocol.
