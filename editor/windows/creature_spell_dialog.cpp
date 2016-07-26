@@ -47,6 +47,7 @@ namespace wowpp
 				m_ui->spinBox_2->setValue(entry->maxinitialcooldown());
 				m_ui->repeatedBox->setChecked(entry->repeated());
 				m_ui->targetBox->setCurrentIndex(entry->target());
+				m_ui->spinBox_3->setValue(entry->probability());
 				if (entry->spellid())
 				{
 					const auto *spell = m_app.getProject().spells.getById(entry->spellid());
@@ -86,6 +87,10 @@ namespace wowpp
 		Int32 CreatureSpellDialog::getMaxInitialCooldown() const
 		{
 			return m_ui->spinBox_2->value();
+		}
+		UInt32 CreatureSpellDialog::getProbability() const
+		{
+			return m_ui->spinBox_3->value();
 		}
 		UInt32 CreatureSpellDialog::getTarget() const
 		{

@@ -312,6 +312,7 @@ namespace wowpp
 				{
 					item.setText(6, QString("%1").arg(entry.minrange()));
 				}
+				item.setText(7, QString("%1%").arg(entry.probability()));
 			}
 		}
 
@@ -701,6 +702,7 @@ namespace wowpp
 				entry->set_maxinitialcooldown(dialog.getMaxInitialCooldown());
 				entry->set_target(dialog.getTarget());
 				entry->set_repeated(dialog.getRepeated());
+				entry->set_probability(dialog.getProbability());
 
 				// Update UI
 				QTreeWidgetItem *item = m_ui->treeWidget->currentItem();
@@ -2416,6 +2418,7 @@ namespace wowpp
 				added->set_maxinitialcooldown(dialog.getMaxInitialCooldown());
 				added->set_target(dialog.getTarget());
 				added->set_repeated(dialog.getRepeated());
+				added->set_probability(dialog.getProbability());
 				addSpellEntry(*added);
 
 				m_application.markAsChanged();

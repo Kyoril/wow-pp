@@ -54,6 +54,7 @@ namespace wowpp
 			Int32 getMaxCooldown() const;
 			Int32 getMinInitialCooldown() const;
 			Int32 getMaxInitialCooldown() const;
+			UInt32 getProbability() const;
 			UInt32 getTarget() const;
 
 		private slots:

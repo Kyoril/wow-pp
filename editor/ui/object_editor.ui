@@ -414,6 +414,11 @@
                     <string>Range</string>
                    </property>
                   </column>
+                  <column>
+                   <property name="text">
+                    <string>Probability</string>
+                   </property>
+                  </column>
                  </widget>
                 </item>
                 <item>
