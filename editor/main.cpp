@@ -34,12 +34,19 @@
 #include "ui_object_editor.h"
 #include "windows/trigger_editor.h"
 #include "ui_trigger_editor.h"
+#include "common/timer_queue.h"
 
 using namespace wowpp::editor;
 
 /// Procedural entry point of the application.
 int main(int argc, char *argv[])
 {
+	// Setup io service object
+	boost::asio::io_service ioService;
+
+	// Setup timer queue
+	wowpp::TimerQueue timers(ioService);
+
 	// Create the qt application instance and set it all up
 	QApplication app(argc, argv);
 	
@@ -75,7 +82,7 @@ int main(int argc, char *argv[])
 
 	// Create and load our own application class, since inheriting QApplication
 	// seems to cause problems.
-	EditorApplication editorAppInstance;
+	EditorApplication editorAppInstance(ioService, timers);
 	if (!editorAppInstance.initialize())
 	{
 		// There was an error during the initialization process

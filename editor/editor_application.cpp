@@ -24,6 +24,9 @@
 #include "windows/main_window.h"
 #include "windows/object_editor.h"
 #include "windows/trigger_editor.h"
+#include "windows/login_dialog.h"
+#include "team_connector.h"
+#include "common/make_unique.h"
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QMessageBox>
@@ -131,14 +134,19 @@ namespace wowpp
 			}
 		}
 
-		EditorApplication::EditorApplication()
+		EditorApplication::EditorApplication(boost::asio::io_service &ioService, TimerQueue &timers)
 			: QObject()
+			, m_ioService(ioService)
+			, m_timers(timers)
             , m_mainWindow(nullptr)
             , m_objectEditor(nullptr)
             , m_triggerEditor(nullptr)
 			, m_changed(false)
 			, m_transformTool(transform_tool::Select)
 		{
+			m_pollTimer = new QTimer(this);
+			connect(m_pollTimer, SIGNAL(timeout()), this, SLOT(onPollTimerTick()));
+			m_pollTimer->start(0);
 		}
 
         EditorApplication::~EditorApplication()
@@ -160,6 +168,17 @@ namespace wowpp
 					"If this is your first time launching the editor, it means that the config "
 					"file simply didn't exist and was created using the default values.\n\n"
 					"Please check the values in wowpp_editor.cfg and try again.");
+				return false;
+			}
+
+			// Setup team connector
+			m_teamConnector = make_unique<TeamConnector>(m_ioService, m_configuration, m_timers);
+			
+			// Load login window
+			LoginDialog loginDialog(*this);
+			if (loginDialog.exec() != QDialog::Accepted)
+			{
+				// Could not login - disconnect
 				return false;
 			}
 
@@ -303,5 +322,10 @@ namespace wowpp
 			// No more unsaved changes
 			m_changed = false;
 		}
-}
+
+		void EditorApplication::onPollTimerTick()
+		{
+			m_ioService.poll_one();
+		}
+	}
 }
