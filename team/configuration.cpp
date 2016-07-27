@@ -33,7 +33,7 @@ namespace wowpp
 
 
 	Configuration::Configuration()
-		: loginPort(wowpp::constants::DefaultLoginRealmPort)
+		: loginPort(wowpp::constants::DefaultLoginTeamPort)
 		, loginAddress("127.0.0.1")
 		, editorPort(constants::DefaultTeamEditorPort)
 #if defined(WIN32) || defined(_WIN32)

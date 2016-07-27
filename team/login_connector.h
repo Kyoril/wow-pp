@@ -58,19 +58,6 @@ namespace wowpp
 		/// @copydoc wowpp::pp::IConnectorListener::connectionEstablished()
 		bool connectionEstablished(bool success) override;
 
-		/// Notifies the login server about a login request of a player on this realm. The
-		/// login server will check if this request is valid. This is done so that no one
-		/// can skip the login server check.
-		/// @param accountName Name of the account which the player wants to login with in
-		///        uppercase letters.
-		bool editorLoginRequest(const String &accountName);
-		/// Notifies the login server about a successful player login on this realm.
-		/// @param accountId Identifier of the account which the player logged in with.
-		void notifyEditorLogin(UInt32 accountId);
-		/// Notifies the login server about the disconnect of a player on this realm.
-		/// @param accountId Identifier of the account which the player was logged in with.
-		void notifyEditorLogout(UInt32 accountId);
-
 	private:
 
 		/// Schedules the next login attempt after a few seconds in case of disconnection
@@ -86,8 +73,6 @@ namespace wowpp
 
 		// Packet handlers
 		void handleLoginResult(pp::Protocol::IncomingPacket &packet);
-		void handleEditorLoginSuccess(pp::Protocol::IncomingPacket &packet);
-		void handleEditorLoginFailure(pp::Protocol::IncomingPacket &packet);
 
 	private:
 

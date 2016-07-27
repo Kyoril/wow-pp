@@ -82,13 +82,14 @@ namespace wowpp
 			{
 				file.close();
 
-				if (save(fileName))
+				if (save(fileName + ".updated"))
 				{
-					ILOG("Saved updated settings with default values as " << fileName);
+					ILOG("Saved updated settings with default values as " << fileName << ".updated");
+					ILOG("Please insert values from the old setting file manually and rename the file.");
 				}
 				else
 				{
-					ELOG("Could not save updated default settings as " << fileName);
+					ELOG("Could not save updated default settings as " << fileName << ".updated");
 				}
 
 				return false;

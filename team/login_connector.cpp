@@ -21,7 +21,7 @@
 
 #include "pch.h"
 #include "login_connector.h"
-#include "wowpp_protocol/wowpp_realm_login.h"
+#include "wowpp_protocol/wowpp_team_login.h"
 #include "configuration.h"
 #include "common/clock.h"
 #include "log/default_log_levels.h"
@@ -30,7 +30,6 @@ namespace wowpp
 {
 	static const auto ReconnectDelay = (constants::OneSecond * 4);
 	static const auto KeepAliveDelay = (constants::OneMinute / 2);
-
 
 	LoginConnector::LoginConnector(boost::asio::io_service &ioService, const Configuration &config, TimerQueue &timer)
 		: m_ioService(ioService)
@@ -67,21 +66,9 @@ namespace wowpp
 
 		switch (packetId)
 		{
-			case pp::realm_login::login_packet::LoginResult:
+			case pp::team_login::login_packet::LoginResult:
 			{
 				handleLoginResult(packet);
-				break;
-			}
-
-			case pp::realm_login::login_packet::PlayerLoginSuccess:
-			{
-				handleEditorLoginSuccess(packet);
-				break;
-			}
-
-			case pp::realm_login::login_packet::PlayerLoginFailure:
-			{
-				handleEditorLoginFailure(packet);
 				break;
 			}
 
@@ -105,48 +92,11 @@ namespace wowpp
 		}
 		else
 		{
-			//WLOG("Could not connect to the login server at " << m_host << ":" << m_port);
+			WLOG("Could not connect to the login server at " << m_host << ":" << m_port);
 			scheduleConnect();
 		}
 
 		return true;
-	}
-
-	bool LoginConnector::editorLoginRequest(const String &accountName)
-	{
-		using namespace pp::realm_login;
-
-		if (!m_connection)
-		{
-			return false;
-		}
-
-		// Check if there is already a pending login request
-		for (auto &request : m_loginRequests)
-		{
-			if (request.accountName == accountName)
-			{
-				WLOG("There is already a pending login request for that account!");
-				return false;
-			}
-		}
-
-		m_loginRequests.push_back(EditorLoginRequest(accountName));
-
-		m_connection->sendSinglePacket(
-			std::bind(realm_write::playerLogin, std::placeholders::_1, std::cref(accountName)));
-
-		return true;
-	}
-
-	void LoginConnector::notifyEditorLogin(UInt32 accountId)
-	{
-		//TODO
-	}
-
-	void LoginConnector::notifyEditorLogout(UInt32 accountId)
-	{
-		//TODO
 	}
 
 	void LoginConnector::scheduleConnect()
@@ -174,19 +124,18 @@ namespace wowpp
 
 	void LoginConnector::handleLoginResult(pp::Protocol::IncomingPacket &packet)
 	{
-		using namespace pp::realm_login;
+		using namespace pp::team_login;
 
 		// Read packet contents
 		LoginResult result;
 		UInt32 loginProtocolVersion = 0xffffffff;
-		UInt32 realmId = 0;
-		if (!login_read::loginResult(packet, result, loginProtocolVersion, realmId))
+		if (!login_read::loginResult(packet, result, loginProtocolVersion))
 		{
 			return;
 		}
 
 		// Compare protocol version
-		if (loginProtocolVersion != pp::realm_login::ProtocolVersion)
+		if (loginProtocolVersion != pp::team_login::ProtocolVersion)
 		{
 			WLOG("Incompatible login server protocol detected! Please update...");
 			return;
@@ -197,13 +146,13 @@ namespace wowpp
 		{
 			case login_result::Success:
 			{
-				ILOG("Successfully logged in at login server - should now appear in realm list");
+				ILOG("Successfully logged in at login server");
 				break;
 			}
 
-			case login_result::UnknownRealm:
+			case login_result::UnknownTeamServer:
 			{
-				ELOG("Login server does not know this realm - invalid name");
+				ELOG("Login server does not know this team server - invalid name");
 				break;
 			}
 
@@ -212,59 +161,6 @@ namespace wowpp
 				ELOG("Unknown login result");
 				break;
 			}
-		}
-	}
-
-	void LoginConnector::handleEditorLoginSuccess(pp::Protocol::IncomingPacket &packet)
-	{
-		// Read packet contents
-		String accountName;
-		BigNumber key, v, s;
-		UInt32 accountId;
-		std::array<UInt32, 8> tutorialData;
-		if (!pp::realm_login::login_read::playerLoginSuccess(packet, accountName, accountId, key, v, s, tutorialData))
-		{
-			ELOG("Could not read packet!");
-			return;
-		}
-
-		// Remove pending session
-		const auto p = std::find_if(
-			m_loginRequests.begin(),
-			m_loginRequests.end(),
-			[&accountName](const EditorLoginRequest &p)
-		{
-			return (accountName == p.accountName);
-		});
-
-		if (p != m_loginRequests.end())
-		{
-			m_loginRequests.erase(p);
-		}
-	}
-
-	void LoginConnector::handleEditorLoginFailure(pp::Protocol::IncomingPacket &packet)
-	{
-		// Read packet contents
-		String accountName;
-		if (!pp::realm_login::login_read::playerLoginFailure(packet, accountName))
-		{
-			//TODO
-			return;
-		}
-
-		// Remove pending session
-		const auto p = std::find_if(
-			m_loginRequests.begin(),
-			m_loginRequests.end(),
-			[&accountName](const EditorLoginRequest &p)
-		{
-			return (accountName == p.accountName);
-		});
-
-		if (p != m_loginRequests.end())
-		{
-			m_loginRequests.erase(p);
 		}
 	}
 }
