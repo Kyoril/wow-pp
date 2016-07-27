@@ -1216,7 +1216,7 @@ namespace wowpp
 			typeId = object_type::Unit;
 		}
 		
-		if (target->isRessurectRequested())
+		if (target->isResurrectRequested())
 		{
 			return;
 		}

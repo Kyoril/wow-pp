@@ -3473,8 +3473,8 @@ namespace wowpp
 
 		if (status == 0)
 		{
-			math::Vector3 position(0.0f, 0.0f, 0.0f);
-			m_character->setResurrectRequestData(0, 0, position, 0, 0);
+			math::Vector3 location;
+			m_character->setResurrectRequestData(0, 0, location, 0, 0);
 			return;
 		}
 
@@ -3483,7 +3483,6 @@ namespace wowpp
 			return;
 		}
 
-		// EXTREMELY temporal!!!! spawnCorpse method not implemented yet, this might not work
-		m_character->revive(10, 10);
+		m_character->resurrectUsingRequestData();
 	}
 }

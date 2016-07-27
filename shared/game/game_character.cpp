@@ -56,9 +56,6 @@ namespace wowpp
 		, m_lastPvPCombat(0) 
 		, m_resurrectGuid(0)
 		, m_resurrectMap(0)
-		, m_resurrectX(0.0f)
-		, m_resurrectY(0.0f)
-		, m_resurrectZ(0.0f)
 		, m_resurrectHealth(0)
 		, m_resurrectMana(0)
 	{
@@ -1423,15 +1420,30 @@ namespace wowpp
 		}
 	}
 
-	void GameCharacter::setResurrectRequestData(UInt64 guid, UInt32 mapId, math::Vector3 position, UInt32 health, UInt32 mana)
+	void GameCharacter::setResurrectRequestData(UInt64 guid, UInt32 mapId, const math::Vector3 location, UInt32 health, UInt32 mana)
 	{
 		m_resurrectGuid = guid;
 		m_resurrectMap = mapId;
-		m_resurrectX = position.x;
-		m_resurrectY = position.y;
-		m_resurrectZ = position.z;
+		m_resurrectLocation = location;
 		m_resurrectHealth = health;
 		m_resurrectMana = mana;
+	}
+
+	void GameCharacter::resurrectUsingRequestData()
+	{
+		if (isPlayerGUID(m_resurrectGuid))
+		{
+			teleport(m_resurrectMap, m_resurrectLocation, getOrientation());
+		}
+
+		// TODO: delay (not implemented yet)
+
+		// TODO: proper resurrect (resurrect on angel not implemented yet)
+		revive(m_resurrectHealth, m_resurrectMana);
+
+		setUInt32Value(unit_fields::Power4, getUInt32Value(unit_fields::MaxPower4));
+
+		// TODO: spawn corpse bones (not implemented yet)
 	}
 
 	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData &data)

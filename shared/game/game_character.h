@@ -864,11 +864,12 @@ namespace wowpp
 			return getCurrentTime() < m_lastPvPCombat + constants::OneSecond * 5;
 		}
 		/// Updates the resurrect target information.
-		void setResurrectRequestData(UInt64 guid, UInt32 mapId, math::Vector3 position, UInt32 health, UInt32 mana);
+		void setResurrectRequestData(UInt64 guid, UInt32 mapId, const math::Vector3 location, UInt32 health, UInt32 mana);
 		/// Checks whether a resurrect has been requested or not.
 		bool isResurrectRequested() const { return m_resurrectGuid == 0 ? 0 : 1; }
 		/// Checks whether a resurrect has been requested by the character guid provided.
 		bool isResurrectRequestedBy(UInt64 guid) const { return m_resurrectGuid == guid; }
+		void resurrectUsingRequestData();
 	public:
 
 		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT
@@ -924,7 +925,7 @@ namespace wowpp
 		GameTime m_lastPvPCombat;
 		UInt64 m_resurrectGuid;
 		UInt32 m_resurrectMap;
-		float m_resurrectX, m_resurrectY, m_resurrectZ;
+		math::Vector3 m_resurrectLocation;
 		UInt32 m_resurrectHealth, m_resurrectMana;
 	};
 
