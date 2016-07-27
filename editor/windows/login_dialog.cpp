@@ -47,6 +47,7 @@ namespace wowpp
 					if (success)
 					{
 						m_ui->statusLabel->setText("Authenticating...");
+						accept();
 					}
 					else
 					{

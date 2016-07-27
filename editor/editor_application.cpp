@@ -146,7 +146,7 @@ namespace wowpp
 		{
 			m_pollTimer = new QTimer(this);
 			connect(m_pollTimer, SIGNAL(timeout()), this, SLOT(onPollTimerTick()));
-			m_pollTimer->start(0);
+			m_pollTimer->start(10);
 		}
 
         EditorApplication::~EditorApplication()

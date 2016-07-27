@@ -41,15 +41,16 @@ using namespace wowpp::editor;
 /// Procedural entry point of the application.
 int main(int argc, char *argv[])
 {
+	// Create the qt application instance and set it all up
+	QApplication app(argc, argv);
+
 	// Setup io service object
 	boost::asio::io_service ioService;
 
 	// Setup timer queue
 	wowpp::TimerQueue timers(ioService);
 
-	// Create the qt application instance and set it all up
-	QApplication app(argc, argv);
-	
+
 	// Load stylesheet
 	QFile f(":qdarkstyle/style.qss");
 	if (f.exists())
