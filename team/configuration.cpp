@@ -47,9 +47,9 @@ namespace wowpp
 		, mysqlHost("127.0.0.1")
 		, mysqlUser("wow-pp")
 		, mysqlPassword("test")
-		, mysqlDatabase("wowpp_realm")
+		, mysqlDatabase("wowpp_team")
 		, isLogActive(true)
-		, logFileName("wowpp_realm.log")
+		, logFileName("wowpp_team.log")
 		, isLogFileBuffering(false)
 	{
 	}
