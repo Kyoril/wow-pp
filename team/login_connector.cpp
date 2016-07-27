@@ -88,6 +88,15 @@ namespace wowpp
 		{
 			ILOG("Connected to the login server");
 
+			io::StringSink sink(m_connection->getSendBuffer());
+			pp::OutgoingPacket packet(sink);
+
+			// Write packet structure
+			pp::team_login::team_write::login(packet,
+				m_config.internalName,
+				m_config.password);
+
+			m_connection->flush();
 			scheduleKeepAlive();
 		}
 		else

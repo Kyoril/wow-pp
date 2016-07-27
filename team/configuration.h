@@ -36,6 +36,10 @@ namespace wowpp
 		NetPort loginPort;
 		/// IP/Domain of the login server.
 		String loginAddress;
+		/// The internal name of this realm used to log in at the login server.
+		String internalName;
+		/// The password to log in at the login server.
+		String password;
 
 		/// The port to be used by the team server for editors to log in.
 		NetPort editorPort;

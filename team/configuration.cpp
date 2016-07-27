@@ -29,12 +29,14 @@
 
 namespace wowpp
 {
-	const UInt32 Configuration::TeamConfigVersion = 0x01;
+	const UInt32 Configuration::TeamConfigVersion = 0x02;
 
 
 	Configuration::Configuration()
 		: loginPort(wowpp::constants::DefaultLoginTeamPort)
 		, loginAddress("127.0.0.1")
+		, internalName("team_server_01")
+		, password("none")
 		, editorPort(constants::DefaultTeamEditorPort)
 #if defined(WIN32) || defined(_WIN32)
 		, dataPath("data")
@@ -112,6 +114,8 @@ namespace wowpp
 			{
 				loginAddress = loginConnector->getString("address", loginAddress);
 				loginPort = loginConnector->getInteger("port", loginPort);
+				internalName = loginConnector->getString("internalName", internalName);
+				password = loginConnector->getString("password", password);
 			}
 
 			if (const Table *const editorManager = global.getTable("editorManager"))
@@ -176,6 +180,8 @@ namespace wowpp
 			sff::write::Table<Char> loginConnector(global, "loginConnector", sff::write::MultiLine);
 			loginConnector.addKey("address", loginAddress);
 			loginConnector.addKey("port", loginPort);
+			loginConnector.addKey("internalName", internalName);
+			loginConnector.addKey("password", password);
 			loginConnector.finish();
 		}
 
