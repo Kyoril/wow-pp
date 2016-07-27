@@ -46,13 +46,6 @@ namespace wowpp
 	void TeamServer::connectionLost()
 	{
 		WLOG("Team server " << (m_authed ? m_name : m_address) << " disconnected");
-
-		// Flag realm as offline
-		if (m_authed)
-		{
-			//m_database.setRealmOffline(m_realmID);
-		}
-
 		destroy();
 	}
 
@@ -110,46 +103,22 @@ namespace wowpp
 
 		// Check for a realm using this name already
 		LoginResult result = login_result::AlreadyLoggedIn;
-		/*if (!m_manager.getRealmByInternalName(internalName))
+		if (!m_manager.getTeamServerByInternalName(internalName))
 		{
 			// Try to log in
-			result = m_database.realmLogIn(m_realmID, internalName, password);
+			UInt32 teamId = 0;
+			result = m_database.teamServerLogIn(teamId, internalName, password);
 			if (result == login_result::Success)
 			{
-				// Validate realm ID
-				if (m_realmID == realmID)
-				{
-					// Mark realm as online
-					if (!m_database.setRealmOnline(m_realmID, visibleName, host, port))
-					{
-						ELOG("Could not update realm in database!");
-						result = login_result::ServerError;
-					}
-					else
-					{
-						// Save internal name
-						m_name = internalName;
+				// Save internal name
+				m_name = internalName;
 
-						ILOG("Realm " << m_name << " successfully authenticated");
+				ILOG("Team server " << m_name << " successfully authenticated");
 
-						// Update entry values
-						m_entry.name = visibleName;
-						m_entry.port = port;
-						m_entry.address = host;
-						m_entry.flags = auth::realm_flags::None;
-						m_entry.icon = 0;
-
-						// Realm is authentificated
-						m_authed = true;
-					}
-				}
-				else
-				{
-					ELOG("Realm uses different realm id than setup. Realm uses " << realmID << ", but " << m_realmID << " is required!");
-					result = login_result::InvalidRealmID;
-				}
+				// Team server is authentificated
+				m_authed = true;
 			}
-		}*/
+		}
 
 		// Send realm answer
 		m_connection->sendSinglePacket(

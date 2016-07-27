@@ -384,4 +384,46 @@ namespace wowpp
 
 		return true;
 	}
+	pp::team_login::LoginResult MySQLDatabase::teamServerLogIn(UInt32 & out_id, const String & name, const String & password)
+	{
+		using namespace pp::team_login;
+
+		const String safeName = m_connection.escapeString(name);
+
+		MySQL::Select select(m_connection, fmt::format(
+			"SELECT id,password FROM team_server WHERE internalName='{0}' LIMIT 1"
+			, safeName));		// 0
+		if (select.success())
+		{
+			UInt32 id = 0xffffffff;
+			String correctPassword;
+
+			MySQL::Row row(select);
+			if (row)
+			{
+				row.getField(0, id);
+				row.getField(1, correctPassword);
+
+				// Wrong password
+				if (correctPassword != password)
+				{
+					WLOG("Team server " << name << " tried to login with a wrong password");
+					return login_result::WrongPassword;
+				}
+
+				out_id = id;
+				return login_result::Success;
+			}
+			else
+			{
+				return login_result::UnknownTeamServer;
+			}
+		}
+		else
+		{
+			printDatabaseError();
+		}
+
+		return login_result::ServerError;
+	}
 }
