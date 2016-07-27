@@ -1366,6 +1366,12 @@ namespace wowpp
 				ObjectGuid &out_mailboxGuid,
 				MailData &out_mail
 				);
+
+			bool resurrectResponse(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				UInt8 &out_status
+				);
 		};
 
 		namespace server_write

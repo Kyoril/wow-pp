@@ -3344,7 +3344,7 @@ namespace wowpp
 		ObjectGuid currentMailbox;
 		game::MailData mailInfo;
 
-		if (!(game::client_read::mailSend(packet, currentMailbox, mailInfo)))
+		if (!game::client_read::mailSend(packet, currentMailbox, mailInfo))
 		{
 			return;
 		}
@@ -3454,5 +3454,36 @@ namespace wowpp
 		//TODO
 
 		DLOG("CMSG_MAIL_SEND received from client");
+	}
+
+	void Player::handleResurrectResponse(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid;
+		UInt8 status;
+
+		if (!game::client_read::resurrectResponse(packet, guid, status))
+		{
+			return;
+		}
+
+		if (m_character->isAlive())
+		{
+			return;
+		}
+
+		if (status == 0)
+		{
+			math::Vector3 position(0.0f, 0.0f, 0.0f);
+			m_character->setResurrectRequestData(0, 0, position, 0, 0);
+			return;
+		}
+
+		if (!m_character->isResurrectRequestedBy(guid))
+		{
+			return;
+		}
+
+		// EXTREMELY temporal!!!! spawnCorpse method not implemented yet, this might not work
+		m_character->revive(10, 10);
 	}
 }

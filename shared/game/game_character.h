@@ -865,8 +865,10 @@ namespace wowpp
 		}
 		/// Updates the resurrect target information.
 		void setResurrectRequestData(UInt64 guid, UInt32 mapId, math::Vector3 position, UInt32 health, UInt32 mana);
-
-		bool isRessurectRequested() const { return m_resurrectGuid == 0 ? 0 : 1; }
+		/// Checks whether a resurrect has been requested or not.
+		bool isResurrectRequested() const { return m_resurrectGuid == 0 ? 0 : 1; }
+		/// Checks whether a resurrect has been requested by the character guid provided.
+		bool isResurrectRequestedBy(UInt64 guid) const { return m_resurrectGuid == guid; }
 	public:
 
 		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT

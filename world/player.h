@@ -245,6 +245,7 @@ namespace wowpp
 		void handleToggleHelm(game::Protocol::IncomingPacket &packet);
 		void handleToggleCloak(game::Protocol::IncomingPacket &packet);
 		void handleMailSend(game::Protocol::IncomingPacket &packet);
+		void handleResurrectResponse(game::Protocol::IncomingPacket &packet);
 		
 	private:
 

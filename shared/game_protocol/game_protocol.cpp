@@ -4560,6 +4560,13 @@ namespace wowpp
 					>> io::read<NetObjectGuid>(out_mailboxGuid)
 					>> out_mail;
 			}
+
+			bool resurrectResponse(io::Reader & packet, UInt64 &out_guid, UInt8 &out_status)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_guid)
+					>> io::read<NetUInt8>(out_status);
+			}
 		}
 
 		wowpp::game::WhoResponseEntry::WhoResponseEntry(const GameCharacter & character)
