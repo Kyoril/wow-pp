@@ -37,6 +37,9 @@ namespace wowpp
 		/// IP/Domain of the login server.
 		String loginAddress;
 
+		/// The port to be used by the team server for editors to log in.
+		NetPort editorPort;
+
 		/// Path to the client data
 		String dataPath;
 

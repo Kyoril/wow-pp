@@ -27,6 +27,8 @@
 #include "game_protocol/game_protocol.h"
 #include "game_protocol/game_server.h"
 #include "login_connector.h"
+#include "editor_manager.h"
+#include "editor.h"
 #include "common/background_worker.h"
 #include "log/log_std_stream.h"
 #include "log/log_entry.h"
@@ -146,29 +148,28 @@ namespace wowpp
 		// TODO: Use async database requests so no blocking occurs
 
 		// Create the editor manager
-		//std::unique_ptr<wowpp::PlayerManager> PlayerManager(new wowpp::PlayerManager(timer, m_configuration.realmID, m_configuration.maxPlayers));
+		std::unique_ptr<wowpp::EditorManager> EditorManager(new wowpp::EditorManager(1000));
 
 		// Create the login connector
 		auto loginConnector = 
 			std::make_shared<wowpp::LoginConnector>(m_ioService, m_configuration, timer);
 		
-		// Create the player server
-		/*std::unique_ptr<wowpp::game::Server> playerServer;
+		// Create the editor server
+		std::unique_ptr<wowpp::pp::Server> editorServer;
 		try
 		{
-			playerServer.reset(new wowpp::game::Server(std::ref(m_ioService), m_configuration.playerPort, std::bind(&wowpp::game::Connection::create, std::ref(m_ioService), nullptr)));
+			editorServer.reset(new wowpp::pp::Server(std::ref(m_ioService), m_configuration.editorPort, std::bind(&wowpp::pp::Connection::create, std::ref(m_ioService), nullptr)));
 		}
 		catch (const wowpp::BindFailedException &)
 		{
-			ELOG("Could not use player port " << m_configuration.playerPort << "! Maybe there is another server instance running on this port?");
+			ELOG("Could not use editor port " << m_configuration.editorPort << "! Maybe there is another server instance running on this port?");
 			return false;
 		}
-		*/
-		/*
+
 		IDatabase &database = *m_database;
 		Configuration &config = m_configuration;
 
-		auto const createPlayer = [&loginConnector, &database, &project, &config](std::shared_ptr<wowpp::Player::Client> connection)
+		auto const createEditor = [&EditorManager](std::shared_ptr<wowpp::Editor::Client> connection)
 		{
 			connection->startReceiving();
 			boost::asio::ip::address address;
@@ -184,15 +185,14 @@ namespace wowpp
 				return;
 			}
 
-			std::unique_ptr<wowpp::Player> player(new wowpp::Player(config, groupIdGenerator, *PlayerManager, *loginConnector, *WorldManager, database, project, std::move(connection), address.to_string()));
+			std::unique_ptr<wowpp::Editor> editor(new wowpp::Editor(*EditorManager.get(), std::move(connection), address.to_string()));
 
 			DLOG("Incoming editor connection from " << address);
-			PlayerManager->addPlayer(std::move(player));
+			EditorManager->addEditor(std::move(editor));
 		};
 		
-		const boost::signals2::scoped_connection playerConnected(playerServer->connected().connect(createPlayer));
-		playerServer->startAccept();
-		*/
+		const boost::signals2::scoped_connection editorConnected(editorServer->connected().connect(createEditor));
+		editorServer->startAccept();
 
 		// Run IO service
 		m_ioService.run();

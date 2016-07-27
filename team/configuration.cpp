@@ -35,6 +35,7 @@ namespace wowpp
 	Configuration::Configuration()
 		: loginPort(wowpp::constants::DefaultLoginRealmPort)
 		, loginAddress("127.0.0.1")
+		, editorPort(constants::DefaultTeamEditorPort)
 #if defined(WIN32) || defined(_WIN32)
 		, dataPath("data")
 #else
@@ -107,10 +108,15 @@ namespace wowpp
 				mysqlDatabase = mysqlDatabaseTable->getString("database", mysqlDatabase);
 			}
 
-			if (const Table *const realmManager = global.getTable("loginConnector"))
+			if (const Table *const loginConnector = global.getTable("loginConnector"))
 			{
-				loginAddress = realmManager->getString("address", loginAddress);
-				loginPort = realmManager->getInteger("port", loginPort);
+				loginAddress = loginConnector->getString("address", loginAddress);
+				loginPort = loginConnector->getInteger("port", loginPort);
+			}
+
+			if (const Table *const editorManager = global.getTable("editorManager"))
+			{
+				editorPort = editorManager->getInteger("port", editorPort);
 			}
 
 			if (const Table *const log = global.getTable("log"))
@@ -166,12 +172,19 @@ namespace wowpp
 
 		global.writer.newLine();
 
-		global.writer.lineComment("This block configures the ");
 		{
 			sff::write::Table<Char> loginConnector(global, "loginConnector", sff::write::MultiLine);
 			loginConnector.addKey("address", loginAddress);
 			loginConnector.addKey("port", loginPort);
 			loginConnector.finish();
+		}
+
+		global.writer.newLine();
+
+		{
+			sff::write::Table<Char> editorManager(global, "editorManager", sff::write::MultiLine);
+			editorManager.addKey("port", editorPort);
+			editorManager.finish();
 		}
 
 		global.writer.newLine();
