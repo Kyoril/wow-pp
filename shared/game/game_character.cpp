@@ -1443,6 +1443,7 @@ namespace wowpp
 
 		setUInt32Value(unit_fields::Power4, getUInt32Value(unit_fields::MaxPower4));
 
+		setResurrectRequestData(0, 0, math::Vector3(), 0, 0);
 		// TODO: spawn corpse bones (not implemented yet)
 	}
 
