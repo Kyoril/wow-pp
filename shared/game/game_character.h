@@ -635,6 +635,8 @@ namespace wowpp
 		boost::signals2::signal<void(WorldObject &)> objectInteraction;
 		/// Fired when a new spell was learned.
 		boost::signals2::signal<void(const proto::SpellEntry &)> spellLearned;
+		/// Fired when resurrection is requested by a spell. Used to send a packet to the owning players client.
+		boost::signals2::signal<void(UInt64, String, UInt8)> resurrectRequested;
 
 	public:
 
@@ -864,11 +866,12 @@ namespace wowpp
 			return getCurrentTime() < m_lastPvPCombat + constants::OneSecond * 5;
 		}
 		/// Updates the resurrect target information.
-		void setResurrectRequestData(UInt64 guid, UInt32 mapId, const math::Vector3 location, UInt32 health, UInt32 mana);
+		void setResurrectRequestData(UInt64 guid, UInt32 mapId, const math::Vector3 &location, UInt32 health, UInt32 mana);
 		/// Checks whether a resurrect has been requested or not.
 		bool isResurrectRequested() const { return m_resurrectGuid == 0 ? 0 : 1; }
 		/// Checks whether a resurrect has been requested by the character guid provided.
 		bool isResurrectRequestedBy(UInt64 guid) const { return m_resurrectGuid == guid; }
+		/// Resurrects the player using resurrect info. (This method might not be needed once proper resurrection is implemented)
 		void resurrectUsingRequestData();
 	public:
 

@@ -1176,7 +1176,7 @@ namespace wowpp
 
 	void SingleCastState::spellEffectResurrect(const proto::SpellEffect & effect)
 	{
-		if (isPlayerGUID(m_target.getUnitTarget()))
+		if (!isPlayerGUID(m_target.getUnitTarget()))
 		{
 			return;
 		}
@@ -1197,39 +1197,55 @@ namespace wowpp
 			return;
 		} 
 
-		UInt8 typeId = object_type::Object;
-		String name = "";
-
-		//auto *casterChar = reinterpret_cast<GameCharacter *>(caster);
 		auto *target = reinterpret_cast<GameCharacter *>(targetUnit);
 
-		// not sure about name, will test
-		if (caster.isGameCharacter())
-		{
-			typeId = object_type::Character;
-		}
-		else
-		{
-			name = caster.getName();
-			typeId = object_type::Unit;
-		}
-		
 		if (target->isResurrectRequested())
 		{
 			return;
 		}
 
-		// not sure about m_basePoints, will test
-		UInt32 health = target->getUInt32Value(unit_fields::MaxHealth) * m_basePoints / 100;
-		UInt32 mana = target->getUInt32Value(unit_fields::Power1) * m_basePoints / 100;
+		UInt32 health = target->getUInt32Value(unit_fields::MaxHealth) * calculateEffectBasePoints(effect) / 100;
+		UInt32 mana = target->getUInt32Value(unit_fields::Power1) * calculateEffectBasePoints(effect) / 100;
 
 		target->setResurrectRequestData(caster.getGuid(), caster.getMapId(), caster.getLocation(), health, mana);
-		sendPacketFromCaster(caster,
-							std::bind(game::server_write::resurrectRequest, std::placeholders::_1,
-									  caster.getGuid(),
-									  name,
-									  typeId));
+		target->resurrectRequested(caster.getGuid(), caster.getName(), caster.isGameCharacter() ? object_type::Character : object_type::Unit);
+	}
 
+	void SingleCastState::spellEffectResurrectNew(const proto::SpellEffect & effect)
+	{
+		if (!isPlayerGUID(m_target.getUnitTarget()))
+		{
+			return;
+		}
+
+		auto *world = m_cast.getExecuter().getWorldInstance();
+
+		if (!world)
+		{
+			return;
+		}
+
+		GameUnit &caster = m_cast.getExecuter();
+		GameUnit *targetUnit = nullptr;
+		m_target.resolvePointers(*world, &targetUnit, nullptr, nullptr, nullptr);
+
+		if (!targetUnit || targetUnit->isAlive())
+		{
+			return;
+		}
+
+		auto *target = reinterpret_cast<GameCharacter *>(targetUnit);
+
+		if (target->isResurrectRequested())
+		{
+			return;
+		}
+
+		UInt32 health = calculateEffectBasePoints(effect);
+		UInt32 mana = effect.miscvaluea();
+
+		target->setResurrectRequestData(caster.getGuid(), caster.getMapId(), caster.getLocation(), health, mana);
+		target->resurrectRequested(caster.getGuid(), caster.getName(), caster.isGameCharacter() ? object_type::Character : object_type::Unit);
 	}
 
 	void SingleCastState::spellEffectDrainPower(const proto::SpellEffect &effect)
@@ -2015,6 +2031,8 @@ namespace wowpp
 			{se::LearnSpell,			std::bind(&SingleCastState::spellEffectLearnSpell, this, std::placeholders::_1) },
 			{se::ScriptEffect,			std::bind(&SingleCastState::spellEffectScriptEffect, this, std::placeholders::_1) },
 			{se::DispelMechanic,		std::bind(&SingleCastState::spellEffectDispelMechanic, this, std::placeholders::_1) },
+			{se::Resurrect,				std::bind(&SingleCastState::spellEffectResurrect, this, std::placeholders::_1) },
+			{se::ResurrectNew,			std::bind(&SingleCastState::spellEffectResurrectNew, this, std::placeholders::_1) },
 			// Add all effects above here
 			{se::ApplyAura,				std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
 			{se::ApplyAreaAuraParty,	std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},

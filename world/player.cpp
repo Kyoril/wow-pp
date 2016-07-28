@@ -91,6 +91,8 @@ namespace wowpp
 			std::bind(&Player::onTargetAuraUpdated, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 		m_onTeleport = m_character->teleport.connect(
 			std::bind(&Player::onTeleport, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+		m_onResurrectRequest = m_character->resurrectRequested.connect(
+			std::bind(&Player::onResurrectRequest, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 		m_onCooldownEvent = m_character->cooldownEvent.connect([this](UInt32 spellId) {
 				sendProxyPacket(std::bind(game::server_write::cooldownEvent, std::placeholders::_1, spellId, m_character->getGuid()));
 		});
@@ -1524,6 +1526,12 @@ namespace wowpp
 	{
 		sendProxyPacket(
 			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spell.id()));
+	}
+
+	void Player::onResurrectRequest(UInt64 objectGUID, String sentName, UInt8 typeId)
+	{
+		sendProxyPacket(
+			std::bind(game::server_write::resurrectRequest, std::placeholders::_1, objectGUID, sentName, typeId));
 	}
 
 	void Player::handleRepopRequest(game::Protocol::IncomingPacket &packet)
@@ -3474,7 +3482,7 @@ namespace wowpp
 		if (status == 0)
 		{
 			math::Vector3 location;
-			m_character->setResurrectRequestData(0, 0, location, 0, 0);
+			m_character->setResurrectRequestData(0, 0, std::move(location), 0, 0);
 			return;
 		}
 

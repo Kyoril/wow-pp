@@ -1420,7 +1420,7 @@ namespace wowpp
 		}
 	}
 
-	void GameCharacter::setResurrectRequestData(UInt64 guid, UInt32 mapId, const math::Vector3 location, UInt32 health, UInt32 mana)
+	void GameCharacter::setResurrectRequestData(UInt64 guid, UInt32 mapId, const math::Vector3 &location, UInt32 health, UInt32 mana)
 	{
 		m_resurrectGuid = guid;
 		m_resurrectMap = mapId;
@@ -1438,7 +1438,7 @@ namespace wowpp
 
 		// TODO: delay (not implemented yet)
 
-		// TODO: proper resurrect (resurrect on angel not implemented yet)
+		// TODO: proper resurrect maybe (resurrect on angel not implemented yet)
 		revive(m_resurrectHealth, m_resurrectMana);
 
 		setUInt32Value(unit_fields::Power4, getUInt32Value(unit_fields::MaxPower4));
