@@ -2353,7 +2353,7 @@ namespace wowpp
 			void resurrectRequest(
 				game::OutgoingPacket &out_packet,
 				UInt64 objectGUID,
-				String sentName,
+				const String &sentName,
 				UInt8 typeId
 			);
 		};

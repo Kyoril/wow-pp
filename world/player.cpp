@@ -1528,10 +1528,10 @@ namespace wowpp
 			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spell.id()));
 	}
 
-	void Player::onResurrectRequest(UInt64 objectGUID, String sentName, UInt8 typeId)
+	void Player::onResurrectRequest(UInt64 objectGUID, const String &sentName, UInt8 typeId)
 	{
 		sendProxyPacket(
-			std::bind(game::server_write::resurrectRequest, std::placeholders::_1, objectGUID, sentName, typeId));
+			std::bind(game::server_write::resurrectRequest, std::placeholders::_1, objectGUID, std::cref(sentName), typeId));
 	}
 
 	void Player::handleRepopRequest(game::Protocol::IncomingPacket &packet)

@@ -636,7 +636,7 @@ namespace wowpp
 		/// Fired when a new spell was learned.
 		boost::signals2::signal<void(const proto::SpellEntry &)> spellLearned;
 		/// Fired when resurrection is requested by a spell. Used to send a packet to the owning players client.
-		boost::signals2::signal<void(UInt64, String, UInt8)> resurrectRequested;
+		boost::signals2::signal<void(UInt64, const String&, UInt8)> resurrectRequested;
 
 	public:
 

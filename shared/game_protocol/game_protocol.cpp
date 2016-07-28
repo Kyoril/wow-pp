@@ -3708,7 +3708,7 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void resurrectRequest(game::OutgoingPacket & out_packet, UInt64 objectGUID, String sentName, UInt8 typeId)
+			void resurrectRequest(game::OutgoingPacket & out_packet, UInt64 objectGUID, const String &sentName, UInt8 typeId)
 			{
 				out_packet.start(game::server_packet::ResurrectRequest);
 				out_packet

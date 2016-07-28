@@ -286,7 +286,7 @@ namespace wowpp
 		/// Executed when a new spell was learned.
 		void onSpellLearned(const proto::SpellEntry &spell);
 		/// Executed when a resurrect is being requested.
-		void onResurrectRequest(UInt64 objectGUID, String sentName, UInt8 typeId);
+		void onResurrectRequest(UInt64 objectGUID, const String &sentName, UInt8 typeId);
 
 	private:
 
