@@ -1200,8 +1200,6 @@ namespace wowpp
 		UInt8 typeId = object_type::Object;
 		String name = "";
 
-		
-
 		//auto *casterChar = reinterpret_cast<GameCharacter *>(caster);
 		auto *target = reinterpret_cast<GameCharacter *>(targetUnit);
 
@@ -1216,10 +1214,11 @@ namespace wowpp
 			typeId = object_type::Unit;
 		}
 		
-		if (target->isRessurectRequested())
+		if (target->isResurrectRequested())
 		{
 			return;
 		}
+
 		// not sure about m_basePoints, will test
 		UInt32 health = target->getUInt32Value(unit_fields::MaxHealth) * m_basePoints / 100;
 		UInt32 mana = target->getUInt32Value(unit_fields::Power1) * m_basePoints / 100;
