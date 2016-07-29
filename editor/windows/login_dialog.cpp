@@ -24,6 +24,7 @@
 #include "ui_login_dialog.h"
 #include "editor_application.h"
 #include "team_connector.h"
+#include "log/default_log_levels.h"
 #include <QDesktopServices>
 #include <QUrl>
 

@@ -26,6 +26,9 @@
 #include <boost/filesystem.hpp>
 #include <boost/signals2.hpp>
 #include <boost/date_time.hpp>
+#include <boost/iostreams/concepts.hpp>
+#include <boost/uuid/sha1.hpp>
+#include "common/sha1.h"
 
 #include "project_saver.h"
 #include "simple_file_format/sff_write.h"
@@ -38,16 +41,30 @@ namespace wowpp
 		static bool saveAndAddManagerToTable(sff::write::Table<char> &fileTable, const boost::filesystem::path &directory, const ProjectSaver::Manager &manager)
 		{
 			const String managerRelativeFileName = (manager.fileName + ".wppdat");
-			fileTable.addKey(manager.name, managerRelativeFileName);
-
 			const String managerAbsoluteFileName = (directory / managerRelativeFileName).string();
 
-			return manager.save(managerAbsoluteFileName);
+			if (!manager.save(managerAbsoluteFileName))
+			{
+				return false;
+			}
+
+			sff::write::Table<char> table(fileTable, manager.name, sff::write::Comma);
+			table.addKey("file", managerRelativeFileName);
+			std::ifstream srcFile(managerAbsoluteFileName, std::ios::in | std::ios::binary);
+			if (srcFile)
+			{
+				std::ostringstream formatter;
+				sha1PrintHex(formatter, sha1(srcFile));
+				table.addKey("sha1", formatter.str());
+			}
+			table.finish();
+
+			return true;
 		}
 
 		static bool saveProjectToTable(sff::write::Table<char> &fileTable, const boost::filesystem::path &directory, const ProjectSaver::Managers &managers)
 		{
-			fileTable.addKey("version", 5);
+			fileTable.addKey("version", 6);
 
 			bool success = true;
 

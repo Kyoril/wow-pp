@@ -37,6 +37,10 @@ namespace wowpp
 
 			typedef T2 EntryType;
 
+		public:
+
+			String hashString;
+
 		private:
 
 			T1 m_data;
@@ -79,7 +83,12 @@ namespace wowpp
 			/// @param stream The stream to write data to.
 			bool save(std::ostream &stream) const
 			{
-				return m_data.SerializeToOstream(&stream);
+				if (!m_data.SerializeToOstream(&stream))
+				{
+					return false;
+				}
+
+				return true;
 			}
 
 			void clear()
