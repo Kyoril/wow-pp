@@ -1991,7 +1991,7 @@ namespace wowpp
 
 			attackTime *= getAttackSpeedPctModifier(game::weapon_attack::BaseAttack);
 			const float att_speed = attackTime / 1000.0f;
-			const float base_value = getUInt32Value(unit_fields::AttackPower) / 14.0f * att_speed;
+			const float base_value = (getUInt32Value(unit_fields::AttackPower) + getUInt32Value(unit_fields::AttackPowerMods)) / 14.0f * att_speed;
 
 			switch (form)
 			{
@@ -2037,7 +2037,7 @@ namespace wowpp
 
 			attackTime *= getAttackSpeedPctModifier(game::weapon_attack::OffhandAttack);
 			const float att_speed = attackTime / 1000.0f;
-			const float base_value = getUInt32Value(unit_fields::AttackPower) / 14.0f * att_speed;
+			const float base_value = (getUInt32Value(unit_fields::AttackPower) + getUInt32Value(unit_fields::AttackPowerMods)) / 14.0f * att_speed;
 
 			setFloatValue(unit_fields::MinOffHandDamage, base_value + minDamage);
 			setFloatValue(unit_fields::MaxOffHandDamage, base_value + maxDamage);
