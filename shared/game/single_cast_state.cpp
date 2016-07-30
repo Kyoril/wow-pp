@@ -95,6 +95,7 @@ namespace wowpp
 		, m_projectileEnd(0)
 		, m_connectedMeleeSignal(false)
 		, m_delayCounter(0)
+		, m_tookCastItem(false)
 	{
 		// Check if the executer is in the world
 		auto &executer = m_cast.getExecuter();
@@ -2092,8 +2093,11 @@ namespace wowpp
 		}
 	}
 
-	bool SingleCastState::consumeItem()
+	bool SingleCastState::consumeItem(bool delayed/* = true*/)
 	{
+		if (m_tookCastItem && delayed)
+			return true;
+
 		if (m_itemGuid != 0 && m_cast.getExecuter().isGameCharacter())
 		{
 			auto *character = reinterpret_cast<GameCharacter *>(&m_cast.getExecuter());
@@ -2111,6 +2115,23 @@ namespace wowpp
 				return false;
 			}
 
+			auto removeItem = [this, item, itemSlot, &inv]() {
+				if (m_tookCastItem)
+				{
+					return;
+				}
+
+				auto result = inv.removeItem(itemSlot, 1);
+				if (result != game::inventory_change_failure::Okay)
+				{
+					inv.getOwner().inventoryChangeFailure(result, item.get(), nullptr);
+				}
+				else
+				{
+					m_tookCastItem = true;
+				}
+			};
+
 			for (auto &spell : item->getEntry().spells())
 			{
 				// OnUse spell cast
@@ -2120,13 +2141,14 @@ namespace wowpp
 					// Item is removed on use
 					if (spell.charges() == UInt32(-1))
 					{
-						m_completedEffectsExecution[m_cast.getExecuter().getGuid()] = completedEffects.connect([this, item, itemSlot, &inv]{
-							auto result = inv.removeItem(itemSlot, 1);
-							if (result != game::inventory_change_failure::Okay)
-							{
-								inv.getOwner().inventoryChangeFailure(result, item.get(), nullptr);
-							}
-						});
+						if (delayed)
+						{
+							m_completedEffectsExecution[m_cast.getExecuter().getGuid()] = completedEffects.connect(removeItem);
+						}
+						else
+						{
+							removeItem();
+						}
 					}
 					break;
 				}
@@ -2396,6 +2418,15 @@ namespace wowpp
 
 		// TODO: Get lock info
 
+		// We need to consume eventual cast items NOW before we send the loot packet to the client
+		// If we remove the item afterwards, the client will reject the loot dialog and request a 
+		// close immediatly. Don't worry, consumeItem may be called multiple times: It will only 
+		// remove the item once
+		if (!consumeItem(false))
+		{
+			return;
+		}
+
 		// If it is a door, try to open it
 		switch (entry.type())
 		{
@@ -2405,6 +2436,8 @@ namespace wowpp
 			break;
 		case world_object_type::Chest:
 			{
+				obj->setUInt32Value(world_object_fields::State, (currentState == 1 ? 0 : 1));
+
 				// Open chest loot window
 				auto *loot = obj->getObjectLoot();
 				if (loot &&

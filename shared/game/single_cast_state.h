@@ -59,7 +59,7 @@ namespace wowpp
 
 	private:
 
-		bool consumeItem();
+		bool consumeItem(bool delayed = true);
 		bool consumePower();
 		void applyCooldown(UInt64 cooldownTimeMS, UInt64 catCooldownTimeMS);
 		void applyAllEffects();
@@ -131,6 +131,7 @@ namespace wowpp
 		bool m_connectedMeleeSignal;
 		UInt32 m_delayCounter;
 		std::set<std::weak_ptr<GameObject>, std::owner_less<std::weak_ptr<GameObject>>> m_affectedTargets;
+		bool m_tookCastItem;
 
 		void sendEndCast(bool success);
 		void onCastFinished();
