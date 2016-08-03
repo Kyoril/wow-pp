@@ -1055,6 +1055,9 @@ namespace wowpp
 			};
 		}
 
+		typedef spell_proc_flags::Type SpellProcFlags;
+
+
 		namespace loot_type
 		{
 			enum Type

@@ -63,7 +63,7 @@ namespace wowpp
 		/// Executes the aura modifier and applies or removes the aura effects to/from the target.
 		void handleModifier(bool apply);
 		///
-		void handleProcModifier(game::spell_proc_flags::Type procType, GameUnit *attacker = nullptr);
+		void handleProcModifier(UInt32 procType, GameUnit *attacker = nullptr);
 		/// Determines whether this is a passive spell aura.
 		bool isPassive() const {
 			return (m_spell.attributes(0) & game::spell_attributes::Passive) != 0;
@@ -248,7 +248,7 @@ namespace wowpp
 		const proto::SpellEntry &m_spell;
 		const proto::SpellEffect &m_effect;
 		boost::signals2::scoped_connection m_casterDespawned, m_targetMoved, m_targetEnteredWater, m_targetStartedAttacking, m_targetStartedCasting, m_onExpire, m_onTick, m_onTargetKilled;
-		boost::signals2::scoped_connection m_procAutoAttack, m_procTakenAutoAttack, m_doneSpellMagicDmgClassNeg, m_takenDamage, m_procKilled, m_procKill, m_onDamageBreak;
+		boost::signals2::scoped_connection m_procAutoAttack, m_procTakenAutoAttack, m_takenDamage, m_procKilled, m_procKill, m_onDamageBreak, m_onProc;
 		GameUnit *m_caster;
 		GameUnit &m_target;
 		UInt32 m_tickCount;

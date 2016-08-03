@@ -318,7 +318,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleProcModifier(game::spell_proc_flags::Type procType, GameUnit *target/* = nullptr*/)
+	void Aura::handleProcModifier(UInt32 procType, GameUnit *target/* = nullptr*/)
 	{
 		namespace aura = game::aura_type;
 
@@ -2092,6 +2092,23 @@ namespace wowpp
 
 		if (m_spell.procflags() != game::spell_proc_flags::None)
 		{
+			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0 ||
+				(m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
+			{
+				m_onProc = m_target.spellProcEvent.connect(
+				[this](UInt32 procFlag) {
+					if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
+					{
+						handleProcModifier(procFlag, &m_target);
+					}
+
+					if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0)
+					{
+						handleProcModifier(procFlag, &m_target);
+					}
+				});
+
+			}
 			if ((m_spell.procflags() & game::spell_proc_flags::TakenDamage) != 0)
 			{
 				m_takenDamage = m_caster->takenDamage.connect(
@@ -2116,17 +2133,6 @@ namespace wowpp
 				});
 			}
 
-			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
-			{
-				m_doneSpellMagicDmgClassNeg = m_caster->doneSpellMagicDmgClassNeg.connect(
-				[&](GameUnit * victim, UInt32 schoolMask) {
-					if ((schoolMask & getEffectSchoolMask()) != 0)
-					{
-						handleProcModifier(game::spell_proc_flags::DoneSpellMagicDmgClassNeg, victim);
-					}
-				});
-			}
-
 			if ((m_spell.procflags() & game::spell_proc_flags::Killed) != 0)
 			{
 				m_procKilled = m_caster->killed.connect(
@@ -2142,16 +2148,26 @@ namespace wowpp
 					handleProcModifier(game::spell_proc_flags::Kill, &killed);
 				});
 			}
+			
 		}
 		else if (m_effect.aura() == game::aura_type::AddTargetTrigger)
 		{
-			m_doneSpellMagicDmgClassNeg = m_caster->doneSpellMagicDmgClassNeg.connect(
-			[&](GameUnit * victim, UInt32 schoolMask) {
-				if ((schoolMask & getEffectSchoolMask()) != 0)
-				{
-					handleProcModifier(game::spell_proc_flags::DoneSpellMagicDmgClassNeg, victim);
-				}
-			});
+			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0 ||
+				(m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
+			{
+				m_onProc = m_target.spellProcEvent.connect(
+				[this](UInt32 procFlag) {
+					if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
+					{
+						handleProcModifier(procFlag, &m_target);
+					}
+
+					if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0)
+					{
+						handleProcModifier(procFlag, &m_target);
+					}
+				});
+			}
 		}
 
 		// Apply modifiers now
@@ -2165,10 +2181,9 @@ namespace wowpp
 		m_onTick.disconnect();
 
 		// Disconnect signals
-		m_doneSpellMagicDmgClassNeg.disconnect();
 		m_procKill.disconnect();
 		m_procKilled.disconnect();
-		m_doneSpellMagicDmgClassNeg.disconnect();
+		m_onProc.disconnect();
 		m_procTakenAutoAttack.disconnect();
 		m_procAutoAttack.disconnect();
 		m_takenDamage.disconnect();
