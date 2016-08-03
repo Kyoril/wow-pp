@@ -166,6 +166,9 @@ namespace wowpp
 		}
 		else
 		{
+			// Uppercase password hash
+			std::transform(hash.begin(), hash.end(), hash.begin(), ::toupper);
+
 			// Found data
 			if (id != 0 && !hash.empty())
 			{

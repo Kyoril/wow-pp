@@ -72,6 +72,12 @@ namespace wowpp
 				break;
 			}
 
+			case pp::team_login::login_packet::EditorLoginResult:
+			{
+				handleEditorLoginResult(packet);
+				break;
+			}
+
 			default:
 			{
 				// Log about unknown or unhandled packet
@@ -191,6 +197,58 @@ namespace wowpp
 			}
 
 			case login_result::ServerError:
+			{
+				ELOG("Internal server error at the login server");
+				break;
+			}
+
+			default:
+			{
+				ELOG("Unknown login result: " << result);
+				break;
+			}
+		}
+	}
+
+	void LoginConnector::handleEditorLoginResult(pp::Protocol::IncomingPacket & packet)
+	{
+		using namespace pp::team_login;
+
+		// Read packet contents
+		EditorLoginResult result;
+		if (!login_read::editorLoginResult(packet, result))
+		{
+			return;
+		}
+
+		// Display result
+		switch (result)
+		{
+			case editor_login_result::Success:
+			{
+				ILOG("AUTH confirmed by login server");
+				break;
+			}
+
+			case editor_login_result::UnknownUserName:
+			{
+				ELOG("Login server does not know this account");
+				break;
+			}
+
+			case editor_login_result::WrongPassword:
+			{
+				ELOG("Invalid password");
+				break;
+			}
+
+			case editor_login_result::AlreadyLoggedIn:
+			{
+				ELOG("A user using this credentials is already logged in");
+				break;
+			}
+
+			case editor_login_result::ServerError:
 			{
 				ELOG("Internal server error at the login server");
 				break;

@@ -78,6 +78,7 @@ namespace wowpp
 
 		// Packet handlers
 		void handleLoginResult(pp::Protocol::IncomingPacket &packet);
+		void handleEditorLoginResult(pp::Protocol::IncomingPacket &packet);
 
 	private:
 
