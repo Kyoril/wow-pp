@@ -1147,7 +1147,7 @@ namespace wowpp
 			return;
 		}
 
-		SpellTargetMap target;
+		/*SpellTargetMap target;
 		target.m_targetMap = game::spell_cast_target_flags::Unit;
 		target.m_unitTarget = victim->getGuid();
 
@@ -1181,7 +1181,7 @@ namespace wowpp
 
 			// Cast the triggered spell with custom damage value
 			m_caster->castSpell(std::move(target), m_effect.triggerspell(), damage, 0, true);
-		}
+		}*/
 	}
 
 	void Aura::handleDamageShieldProc(GameUnit *attacker)
