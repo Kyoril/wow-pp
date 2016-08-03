@@ -25,6 +25,7 @@
 #include "network/connector.h"
 #include "wowpp_protocol/wowpp_connector.h"
 #include "common/timer_queue.h"
+#include "common/sha1.h"
 
 namespace wowpp
 {
@@ -57,6 +58,10 @@ namespace wowpp
 		void connectionPacketReceived(pp::Protocol::IncomingPacket &packet) override;
 		/// @copydoc wowpp::pp::IConnectorListener::connectionEstablished()
 		bool connectionEstablished(bool success) override;
+
+	public:
+
+		void editorLoginRequest(const String &username, const SHA1Hash &password);
 
 	private:
 

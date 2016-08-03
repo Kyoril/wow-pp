@@ -108,6 +108,19 @@ namespace wowpp
 		return true;
 	}
 
+	void LoginConnector::editorLoginRequest(const String & username, const SHA1Hash & password)
+	{
+		io::StringSink sink(m_connection->getSendBuffer());
+		pp::OutgoingPacket packet(sink);
+
+		// Write packet structure
+		pp::team_login::team_write::editorLoginRequest(packet,
+			username,
+			password);
+
+		m_connection->flush();
+	}
+
 	void LoginConnector::scheduleConnect()
 	{
 		const GameTime now = getCurrentTime();
@@ -165,9 +178,27 @@ namespace wowpp
 				break;
 			}
 
+			case login_result::WrongPassword:
+			{
+				ELOG("Invalid password for this team server");
+				break;
+			}
+
+			case login_result::AlreadyLoggedIn:
+			{
+				ELOG("A team server using this credentials is already logged in");
+				break;
+			}
+
+			case login_result::ServerError:
+			{
+				ELOG("Internal server error at the login server");
+				break;
+			}
+
 			default:
 			{
-				ELOG("Unknown login result");
+				ELOG("Unknown login result: " << result);
 				break;
 			}
 		}

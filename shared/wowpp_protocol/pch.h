@@ -50,6 +50,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/iostreams/concepts.hpp>
+#include <boost/uuid/sha1.hpp>
 #include <boost/asio.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/ptr_container/ptr_map.hpp>

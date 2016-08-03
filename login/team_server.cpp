@@ -75,11 +75,17 @@ namespace wowpp
 				break;
 			}
 
+			case pp::team_login::team_packet::EditorLoginRequest:
+			{
+				handleEditorLoginRequest(packet);
+				break;
+			}
+
 			default:
 			{
 				// Log unknown or unhandled packet
 				WLOG("Received unknown packet " << static_cast<UInt32>(packetId) 
-					<< " from realm at " << m_address);
+					<< " from team server at " << m_address);
 				break;
 			}
 		}
@@ -87,6 +93,12 @@ namespace wowpp
 
 	void TeamServer::handleLogin(pp::IncomingPacket &packet)
 	{
+		if (m_authed)
+		{
+			WLOG("Team server is already logged in");
+			return;
+		}
+
 		using namespace pp::team_login;
 
 		String internalName, password;
@@ -124,5 +136,64 @@ namespace wowpp
 		m_connection->sendSinglePacket(
 			std::bind(
 				login_write::loginResult, std::placeholders::_1, result));
+	}
+
+	void TeamServer::handleEditorLoginRequest(pp::IncomingPacket & packet)
+	{
+		if (!m_authed)
+			return;
+
+		using namespace pp::team_login;
+
+		String internalName;
+		SHA1Hash password;
+		if (!team_read::editorLoginRequest(packet,
+			internalName,
+			std::numeric_limits<UInt8>::max(),
+			password))
+		{
+			return;
+		}
+
+		pp::team_login::EditorLoginResult result = pp::team_login::editor_login_result::ServerError;
+
+		// Read account data from the database
+		UInt32 id = 0;
+		String hash;
+		if (!m_database.getPlayerPassword(internalName, id, hash))
+		{
+			result = pp::team_login::editor_login_result::UnknownUserName;
+		}
+		else
+		{
+			// Found data
+			if (id != 0 && !hash.empty())
+			{
+				// Check if the passwords match
+				std::stringstream strm;
+				sha1PrintHex(strm, password);
+
+				String passString = strm.str();
+				std::transform(passString.begin(), passString.end(), passString.begin(), ::toupper);
+
+				if (passString == hash)
+				{
+					result = pp::team_login::editor_login_result::Success;
+				}
+				else
+				{
+					result = pp::team_login::editor_login_result::WrongPassword;
+				}
+			}
+			else
+			{
+				result = pp::team_login::editor_login_result::UnknownUserName;
+			}
+		}
+
+		// Send answer
+		m_connection->sendSinglePacket(
+			std::bind(
+				login_write::editorLoginResult, std::placeholders::_1, result));
 	}
 }

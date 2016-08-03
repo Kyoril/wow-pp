@@ -29,6 +29,7 @@
 namespace wowpp
 {
 	class EditorManager;
+	class LoginConnector;
 
 	/// Editor connection class.
 	class Editor final
@@ -42,6 +43,7 @@ namespace wowpp
 	public:
 
 		explicit Editor(EditorManager &manager,
+			LoginConnector &loginConnector,
 			std::shared_ptr<Client> connection,
 			const String &address);
 
@@ -55,6 +57,7 @@ namespace wowpp
 	private:
 
 		EditorManager &m_manager;
+		LoginConnector &m_loginConnector;
 		std::shared_ptr<Client> m_connection;
 		String m_address;						// IP address in string format
 		String m_name;

@@ -76,6 +76,10 @@ namespace wowpp
 		/// @copydoc wow::auth::IConnectionListener::connectionPacketReceived()
 		void connectionPacketReceived(pp::IncomingPacket &packet) override;
 
+	private:
+
 		void handleLogin(pp::IncomingPacket &packet);
+
+		void handleEditorLoginRequest(pp::IncomingPacket &packet);
 	};
 }

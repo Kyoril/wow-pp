@@ -30,37 +30,35 @@ namespace wowpp
 {
 	namespace pp
 	{
-		namespace team_login
+		namespace editor_team
 		{
 			static const UInt32 ProtocolVersion = 0x01;
+
+			namespace editor_packet
+			{
+				enum Type
+				{
+					/// Sent by the editor to log in at the team server.
+					Login,
+					/// Ping message to keep the connection between the editor and the team server alive.
+					KeepAlive,
+					/// Sent to compare the local editor hashtable with the hashes on the team server to detect file changes.
+					ProjectHashMap,
+				};
+			}
+
+			typedef editor_packet::Type EditorPacket;
 
 			namespace team_packet
 			{
 				enum Type
 				{
-					/// Sent by the team server to log in at the login server.
-					Login,
-					/// Ping message to keep the connection between the team server and the login server alive.
-					KeepAlive,
-					/// 
-					EditorLoginRequest,
+					/// Result of the team login answer.
+					LoginResult
 				};
 			}
 
 			typedef team_packet::Type TeamPacket;
-
-			namespace login_packet
-			{
-				enum Type
-				{
-					/// Result of the team login answer.
-					LoginResult,
-					/// 
-					EditorLoginResult,
-				};
-			}
-
-			typedef login_packet::Type LoginPacket;
 
 			namespace login_result
 			{
@@ -68,12 +66,14 @@ namespace wowpp
 				{
 					/// Team server could successfully log in.
 					Success,
-					/// The login server does not know this team server.
-					UnknownTeamServer,
-					/// The login server does not accept the password of this team server.
+					/// The login server does not know this account.
+					WrongUserName,
+					/// The login server does not accept the password of this account.
 					WrongPassword,
-					/// A team server with the same name is already online at the login server.
+					/// An account with the same name is already online at the login server.
 					AlreadyLoggedIn,
+					/// Connection timeout, maybe between the login server and the team server.
+					TimedOut,
 					/// Something went wrong at the login server...
 					ServerError
 				};
@@ -81,28 +81,9 @@ namespace wowpp
 
 			typedef login_result::Type LoginResult;
 
-			namespace editor_login_result
-			{
-				enum Type
-				{
-					/// Team server could successfully log in.
-					Success,
-					/// The login server does not know this team server.
-					UnknownUserName,
-					/// The login server does not accept the password of this team server.
-					WrongPassword,
-					/// A team server with the same name is already online at the login server.
-					AlreadyLoggedIn,
-					/// Something went wrong at the login server...
-					ServerError
-				};
-			}
-
-			typedef editor_login_result::Type EditorLoginResult;
-
 
 			/// Contains methods for writing packets from the team server.
-			namespace team_write
+			namespace editor_write
 			{
 				/// Packet used to log in at the login server.
 				/// @param out_packet Packet buffer where the data will be written to.
@@ -110,8 +91,8 @@ namespace wowpp
 				/// @param password Password to verify that this team server is valid at the login server.
 				void login(
 				    pp::OutgoingPacket &out_packet,
-				    const String &internalName,
-				    const String &password
+				    const String &username,
+				    const SHA1Hash &password
 				);
 
 				/// A simple empty packet which is used to keep the connection between the login server
@@ -121,19 +102,15 @@ namespace wowpp
 				    pp::OutgoingPacket &out_packet
 				);
 
-				/// Packet used to log in at the login server.
-				/// @param out_packet Packet buffer where the data will be written to.
-				/// @param internalName Internal name of the team server which the login server should know.
-				/// @param password Password to verify that this team server is valid at the login server.
-				void editorLoginRequest(
+				/// 
+				void projectHashMap(
 					pp::OutgoingPacket &out_packet,
-					const String &internalName,
-					const SHA1Hash &password
+					const std::map<String, String> &hashMap
 				);
 			}
 
 			/// Contains methods for writing packets from the login server.
-			namespace login_write
+			namespace team_write
 			{
 				/// TODO: ADD DESCRIPTION
 				/// @param out_packet Packet buffer where the data will be written to.
@@ -142,33 +119,23 @@ namespace wowpp
 				    pp::OutgoingPacket &out_packet,
 				    LoginResult result
 				);
-
-				/// TODO: ADD DESCRIPTION
-				/// @param out_packet Packet buffer where the data will be written to.
-				/// @param result The result of the login attempt of the realm.
-				void editorLoginResult(
-					pp::OutgoingPacket &out_packet,
-					EditorLoginResult result
-				);
 			}
 
 			/// Contains methods for reading packets coming from the team server.
-			namespace team_read
+			namespace editor_read
 			{
 				/// TODO: ADD DESCRIPTION
 				/// @param packet Packet buffer where the data will be read from.
-				/// @param out_internalName
-				/// @param maxInternalNameLength
+				/// @param out_username
+				/// @param maxUsernameLength
 				/// @param out_password
-				/// @param maxPasswordLength
 				/// @returns false if the packet has not enough data or if there was an error
 				/// reading the packet's content.
 				bool login(
 				    io::Reader &packet,
-				    String &out_internalName,
-				    size_t maxInternalNameLength,
-				    String &out_password,
-				    size_t maxPasswordLength
+				    String &out_username,
+				    size_t maxUsernameLength,
+				    SHA1Hash &out_password
 				);
 
 				/// TODO: ADD DESCRIPTION
@@ -178,24 +145,16 @@ namespace wowpp
 				bool keepAlive(
 				    io::Reader &packet
 				);
-
+				
 				/// TODO: ADD DESCRIPTION
-				/// @param packet Packet buffer where the data will be read from.
-				/// @param out_username
-				/// @param maxUsernameLength
-				/// @param out_password
-				/// @returns false if the packet has not enough data or if there was an error
-				/// reading the packet's content.
-				bool editorLoginRequest(
+				bool projectHashMap(
 					io::Reader &packet,
-					String &out_username,
-					size_t maxUsernameLength,
-					SHA1Hash &out_password
+					std::map<String, String> &out_hashMap
 				);
 			}
 
 			/// Contains methods for reading packets coming from the login server.
-			namespace login_read
+			namespace team_read
 			{
 				/// TODO: ADD DESCRIPTION
 				/// @param packet Packet buffer where the data will be read from.
@@ -207,11 +166,6 @@ namespace wowpp
 				    io::Reader &packet,
 				    LoginResult &out_result,
 				    UInt32 &out_serverVersion
-				);
-
-				bool editorLoginResult(
-					io::Reader &packet,
-					EditorLoginResult &out_result
 				);
 			}
 		}

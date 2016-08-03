@@ -21,7 +21,7 @@
 
 #include "pch.h"
 #include "team_connector.h"
-#include "wowpp_protocol/wowpp_realm_login.h"
+#include "wowpp_protocol/wowpp_editor_team.h"
 #include "configuration.h"
 #include "common/clock.h"
 #include "log/default_log_levels.h"
@@ -69,21 +69,9 @@ namespace wowpp
 
 			switch (packetId)
 			{
-				case pp::realm_login::login_packet::LoginResult:
+				case pp::editor_team::team_packet::LoginResult:
 				{
 					handleLoginResult(packet);
-					break;
-				}
-
-				case pp::realm_login::login_packet::PlayerLoginSuccess:
-				{
-					handleEditorLoginSuccess(packet);
-					break;
-				}
-
-				case pp::realm_login::login_packet::PlayerLoginFailure:
-				{
-					handleEditorLoginFailure(packet);
 					break;
 				}
 
@@ -111,9 +99,9 @@ namespace wowpp
 			return true;
 		}
 
-		bool TeamConnector::editorLoginRequest(const String &accountName)
+		bool TeamConnector::editorLoginRequest(const String &accountName, const SHA1Hash &password)
 		{
-			using namespace pp::realm_login;
+			using namespace pp::editor_team;
 
 			if (!m_connection)
 			{
@@ -121,19 +109,9 @@ namespace wowpp
 			}
 
 			m_connection->sendSinglePacket(
-				std::bind(realm_write::playerLogin, std::placeholders::_1, std::cref(accountName)));
+				std::bind(editor_write::login, std::placeholders::_1, std::cref(accountName), std::cref(password)));
 
 			return true;
-		}
-
-		void TeamConnector::notifyEditorLogin(UInt32 accountId)
-		{
-			//TODO
-		}
-
-		void TeamConnector::notifyEditorLogout(UInt32 accountId)
-		{
-			//TODO
 		}
 
 		void TeamConnector::scheduleConnect()
@@ -161,8 +139,14 @@ namespace wowpp
 
 		void TeamConnector::handleLoginResult(pp::Protocol::IncomingPacket &packet)
 		{
-			using namespace pp::realm_login;
+			UInt32 protocolVersion = 0x00;
+			pp::editor_team::LoginResult result;
+			if (!pp::editor_team::team_read::loginResult(packet, result, protocolVersion))
+			{
+				return;
+			}
 
+			loginResult(result, protocolVersion);
 		}
 
 		void TeamConnector::handleEditorLoginSuccess(pp::Protocol::IncomingPacket &packet)

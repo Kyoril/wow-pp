@@ -22,21 +22,23 @@
 #include "pch.h"
 #include "editor.h"
 #include "editor_manager.h"
-#include "wowpp_protocol/wowpp_realm_login.h"
+#include "login_connector.h"
+#include "common/constants.h"
+#include "wowpp_protocol/wowpp_editor_team.h"
 #include "log/default_log_levels.h"
 
 using namespace std;
 
 namespace wowpp
 {
-	Editor::Editor(EditorManager &manager, std::shared_ptr<Client> connection, const String &address)
+	Editor::Editor(EditorManager &manager, LoginConnector &loginConnector, std::shared_ptr<Client> connection, const String &address)
 		: m_manager(manager)
+		, m_loginConnector(loginConnector)
 		, m_connection(std::move(connection))
 		, m_address(address)
 		, m_authed(false)
 	{
 		assert(m_connection);
-
 		m_connection->setListener(*this);
 	}
 
@@ -66,7 +68,7 @@ namespace wowpp
 
 		switch (packetId)
 		{
-			case pp::realm_login::realm_packet::Login:
+			case pp::editor_team::editor_packet::Login:
 			{
 				handleLogin(packet);
 				break;
@@ -84,6 +86,20 @@ namespace wowpp
 
 	void Editor::handleLogin(pp::IncomingPacket &packet)
 	{
-		using namespace pp::realm_login;
+		using namespace pp::editor_team;
+
+		// Read packet
+		String username;
+		SHA1Hash password;
+		if (!pp::editor_team::editor_read::login(packet, username, 16, password))
+		{
+			WLOG("Could not read login packet from editor.");
+			return;
+		}
+
+		DLOG("AUTH REQUEST: " << username);
+
+		// Send authentication request to the login server
+		m_loginConnector.editorLoginRequest(username, password);
 	}
 }

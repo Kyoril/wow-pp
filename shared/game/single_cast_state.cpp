@@ -2097,7 +2097,7 @@ namespace wowpp
 	{
 		if (m_tookCastItem && delayed)
 			return true;
-
+		
 		if (m_itemGuid != 0 && m_cast.getExecuter().isGameCharacter())
 		{
 			auto *character = reinterpret_cast<GameCharacter *>(&m_cast.getExecuter());

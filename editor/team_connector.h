@@ -25,6 +25,7 @@
 #include "network/connector.h"
 #include "wowpp_protocol/wowpp_connector.h"
 #include "common/timer_queue.h"
+#include "common/sha1.h"
 
 namespace wowpp
 {
@@ -42,6 +43,8 @@ namespace wowpp
 			boost::signals2::signal<void(bool)> connected;
 			/// 
 			boost::signals2::signal<void()> disconnected;
+			/// 
+			boost::signals2::signal<void(UInt32, UInt32)> loginResult;
 
 		public:
 
@@ -71,13 +74,7 @@ namespace wowpp
 			/// can skip the login server check.
 			/// @param accountName Name of the account which the player wants to login with in
 			///        uppercase letters.
-			bool editorLoginRequest(const String &accountName);
-			/// Notifies the login server about a successful player login on this realm.
-			/// @param accountId Identifier of the account which the player logged in with.
-			void notifyEditorLogin(UInt32 accountId);
-			/// Notifies the login server about the disconnect of a player on this realm.
-			/// @param accountId Identifier of the account which the player was logged in with.
-			void notifyEditorLogout(UInt32 accountId);
+			bool editorLoginRequest(const String &accountName, const SHA1Hash &password);
 
 			/// Tries to connect with the team server and schedules a new attempt if failed.
 			void tryConnect();

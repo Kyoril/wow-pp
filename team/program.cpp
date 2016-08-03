@@ -169,7 +169,7 @@ namespace wowpp
 		IDatabase &database = *m_database;
 		Configuration &config = m_configuration;
 
-		auto const createEditor = [&EditorManager](std::shared_ptr<wowpp::Editor::Client> connection)
+		auto const createEditor = [&EditorManager, &loginConnector](std::shared_ptr<wowpp::Editor::Client> connection)
 		{
 			connection->startReceiving();
 			boost::asio::ip::address address;
@@ -185,7 +185,7 @@ namespace wowpp
 				return;
 			}
 
-			std::unique_ptr<wowpp::Editor> editor(new wowpp::Editor(*EditorManager.get(), std::move(connection), address.to_string()));
+			std::unique_ptr<wowpp::Editor> editor(new wowpp::Editor(*EditorManager.get(), *loginConnector, std::move(connection), address.to_string()));
 
 			DLOG("Incoming editor connection from " << address);
 			EditorManager->addEditor(std::move(editor));
