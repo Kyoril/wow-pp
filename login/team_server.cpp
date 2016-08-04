@@ -170,7 +170,7 @@ namespace wowpp
 			std::transform(hash.begin(), hash.end(), hash.begin(), ::toupper);
 
 			// Found data
-			if (id != 0 && !hash.empty())
+			if (id != 0)
 			{
 				// Check if the passwords match
 				std::stringstream strm;
@@ -179,6 +179,9 @@ namespace wowpp
 				String passString = strm.str();
 				std::transform(passString.begin(), passString.end(), passString.begin(), ::toupper);
 
+				DLOG("\"" << internalName << "\"");
+				DLOG("\"" << passString << "\"");
+				DLOG("\"" << hash << "\"");
 				if (passString == hash)
 				{
 					result = pp::team_login::editor_login_result::Success;
