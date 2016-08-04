@@ -51,7 +51,7 @@ namespace wowpp
 					out_packet.start(team_packet::EditorLoginRequest);
 					out_packet
 						<< io::write_dynamic_range<NetUInt8>(internalName)
-						<< io::write_dynamic_range<NetUInt8>(password);
+						<< io::write_range(password);
 					out_packet.finish();
 				}
 			}
