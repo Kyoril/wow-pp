@@ -32,7 +32,7 @@ namespace wowpp
 	{
 		namespace editor_team
 		{
-			static const UInt32 ProtocolVersion = 0x01;
+			static const UInt32 ProtocolVersion = 0x02;
 
 			namespace editor_packet
 			{

@@ -42,6 +42,22 @@ namespace wowpp
 		m_connection->setListener(*this);
 	}
 
+	void Editor::authentificated()
+	{
+		if (m_authed)
+		{
+			return;
+		}
+
+		if (m_name.empty())
+		{
+			return;
+		}
+
+		m_authed = true;
+		ILOG("User " << m_name << " successfully signed in");
+	}
+
 	void Editor::connectionLost()
 	{
 		WLOG("Editor " << (m_authed ? m_name : m_address) << " disconnected");
@@ -74,6 +90,12 @@ namespace wowpp
 				break;
 			}
 
+			case pp::editor_team::editor_packet::ProjectHashMap:
+			{
+				handleLogin(packet);
+				break;
+			}
+
 			default:
 			{
 				// Log unknown or unhandled packet
@@ -98,8 +120,16 @@ namespace wowpp
 		}
 
 		DLOG("AUTH REQUEST: " << username);
+		m_name = username;
 
 		// Send authentication request to the login server
 		m_loginConnector.editorLoginRequest(username, password);
+	}
+
+	void Editor::handleProjectHashMap(pp::IncomingPacket & packet)
+	{
+		if (!m_authed)
+			return;
+
 	}
 }

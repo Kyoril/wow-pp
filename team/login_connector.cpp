@@ -215,11 +215,15 @@ namespace wowpp
 		using namespace pp::team_login;
 
 		// Read packet contents
+		String username;
 		EditorLoginResult result;
-		if (!login_read::editorLoginResult(packet, result))
+		if (!login_read::editorLoginResult(packet, username, result))
 		{
 			return;
 		}
+
+		// TODO: Find the editor using this username
+
 
 		// Display result
 		switch (result)

@@ -197,6 +197,6 @@ namespace wowpp
 		// Send answer
 		m_connection->sendSinglePacket(
 			std::bind(
-				login_write::editorLoginResult, std::placeholders::_1, result));
+				login_write::editorLoginResult, std::placeholders::_1, std::cref(internalName), result));
 	}
 }

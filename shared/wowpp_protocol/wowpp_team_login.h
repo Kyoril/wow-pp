@@ -32,7 +32,7 @@ namespace wowpp
 	{
 		namespace team_login
 		{
-			static const UInt32 ProtocolVersion = 0x01;
+			static const UInt32 ProtocolVersion = 0x02;
 
 			namespace team_packet
 			{
@@ -148,6 +148,7 @@ namespace wowpp
 				/// @param result The result of the login attempt of the realm.
 				void editorLoginResult(
 					pp::OutgoingPacket &out_packet,
+					const String &username,
 					EditorLoginResult result
 				);
 			}
@@ -211,6 +212,7 @@ namespace wowpp
 
 				bool editorLoginResult(
 					io::Reader &packet,
+					String &out_username,
 					EditorLoginResult &out_result
 				);
 			}

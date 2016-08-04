@@ -66,10 +66,11 @@ namespace wowpp
 					        << io::write<NetUInt8>(result);
 					out_packet.finish();
 				}
-				void editorLoginResult(pp::OutgoingPacket & out_packet, EditorLoginResult result)
+				void editorLoginResult(pp::OutgoingPacket & out_packet, const String &username, EditorLoginResult result)
 				{
 					out_packet.start(login_packet::EditorLoginResult);
 					out_packet
+						<< io::write_dynamic_range<NetUInt8>(username)
 						<< io::write<NetUInt8>(result);
 					out_packet.finish();
 				}
@@ -120,9 +121,10 @@ namespace wowpp
 
 					return true;
 				}
-				bool editorLoginResult(io::Reader & packet, EditorLoginResult & out_result)
+				bool editorLoginResult(io::Reader & packet, String &out_username, EditorLoginResult & out_result)
 				{
 					if (!(packet
+						>> io::read_container<NetUInt8>(out_username)
 						>> io::read<NetUInt8>(out_result)))
 					{
 						return false;

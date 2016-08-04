@@ -53,6 +53,11 @@ namespace wowpp
 		EditorManager &getManager() const { return m_manager; }
 		/// Determines whether this realm is authentificated.
 		bool isAuthentificated() const { return m_authed; }
+		/// Determines the editors account name which was used to sign in if authentificated.
+		/// This returns an empty string if not yet authentificated.
+		const String &getName() const { return m_name; }
+		/// Called when the authentification request was confirmed by the login server.
+		void authentificated();
 
 	private:
 
@@ -75,6 +80,9 @@ namespace wowpp
 		/// @copydoc wow::auth::IConnectionListener::connectionPacketReceived()
 		void connectionPacketReceived(pp::IncomingPacket &packet) override;
 
+	private:
+
 		void handleLogin(pp::IncomingPacket &packet);
+		void handleProjectHashMap(pp::IncomingPacket &packet);
 	};
 }
