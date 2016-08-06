@@ -446,6 +446,8 @@ namespace wowpp
 		/// Fired when the units stand state changed.
 		boost::signals2::signal<void(UnitStandState)> standStateChanged;
 
+		boost::signals2::signal<void(UInt32, GameUnit *, const proto::SpellEntry *)> spellProcEvent;
+
 	public:
 
 		/// Creates a new instance of the GameUnit object, which will still be uninitialized.

@@ -132,6 +132,8 @@ namespace wowpp
 		UInt32 m_delayCounter;
 		std::set<std::weak_ptr<GameObject>, std::owner_less<std::weak_ptr<GameObject>>> m_affectedTargets;
 		bool m_tookCastItem;
+		UInt32 m_attackerProc;
+		UInt32 m_victimProc;
 
 		void sendEndCast(bool success);
 		void onCastFinished();

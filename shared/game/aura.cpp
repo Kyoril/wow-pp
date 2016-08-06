@@ -318,7 +318,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleProcModifier(game::spell_proc_flags::Type procType, GameUnit *target/* = nullptr*/)
+	void Aura::handleProcModifier(UInt32 procType, GameUnit *target/* = nullptr*/)
 	{
 		namespace aura = game::aura_type;
 
@@ -1147,7 +1147,7 @@ namespace wowpp
 			return;
 		}
 
-		SpellTargetMap target;
+		/*SpellTargetMap target;
 		target.m_targetMap = game::spell_cast_target_flags::Unit;
 		target.m_unitTarget = victim->getGuid();
 
@@ -1181,7 +1181,7 @@ namespace wowpp
 
 			// Cast the triggered spell with custom damage value
 			m_caster->castSpell(std::move(target), m_effect.triggerspell(), damage, 0, true);
-		}
+		}*/
 	}
 
 	void Aura::handleDamageShieldProc(GameUnit *attacker)
@@ -2092,6 +2092,26 @@ namespace wowpp
 
 		if (m_spell.procflags() != game::spell_proc_flags::None)
 		{
+			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0 ||
+				(m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
+			{
+				m_onProc = m_target.spellProcEvent.connect(
+				[this](UInt32 procFlag, GameUnit * victim, const proto::SpellEntry * spell) {
+					if (checkProc(spell))
+					{
+						if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
+						{
+							handleProcModifier(procFlag, victim);
+						}
+
+						if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0)
+						{
+							handleProcModifier(procFlag, victim);
+						}
+					}
+				});
+
+			}
 			if ((m_spell.procflags() & game::spell_proc_flags::TakenDamage) != 0)
 			{
 				m_takenDamage = m_caster->takenDamage.connect(
@@ -2116,17 +2136,6 @@ namespace wowpp
 				});
 			}
 
-			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
-			{
-				m_doneSpellMagicDmgClassNeg = m_caster->doneSpellMagicDmgClassNeg.connect(
-				[&](GameUnit * victim, UInt32 schoolMask) {
-					if ((schoolMask & getEffectSchoolMask()) != 0)
-					{
-						handleProcModifier(game::spell_proc_flags::DoneSpellMagicDmgClassNeg, victim);
-					}
-				});
-			}
-
 			if ((m_spell.procflags() & game::spell_proc_flags::Killed) != 0)
 			{
 				m_procKilled = m_caster->killed.connect(
@@ -2142,16 +2151,29 @@ namespace wowpp
 					handleProcModifier(game::spell_proc_flags::Kill, &killed);
 				});
 			}
+			
 		}
 		else if (m_effect.aura() == game::aura_type::AddTargetTrigger)
 		{
-			m_doneSpellMagicDmgClassNeg = m_caster->doneSpellMagicDmgClassNeg.connect(
-			[&](GameUnit * victim, UInt32 schoolMask) {
-				if ((schoolMask & getEffectSchoolMask()) != 0)
-				{
-					handleProcModifier(game::spell_proc_flags::DoneSpellMagicDmgClassNeg, victim);
-				}
-			});
+			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0 ||
+				(m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
+			{
+				m_onProc = m_target.spellProcEvent.connect(
+				[this](UInt32 procFlag, GameUnit * victim, const proto::SpellEntry * spell) {
+					if (checkProc(spell))
+					{
+						if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
+						{
+							handleProcModifier(procFlag, victim);
+						}
+
+						if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0)
+						{
+							handleProcModifier(procFlag, victim);
+						}
+					}
+				});
+			}
 		}
 
 		// Apply modifiers now
@@ -2165,10 +2187,9 @@ namespace wowpp
 		m_onTick.disconnect();
 
 		// Disconnect signals
-		m_doneSpellMagicDmgClassNeg.disconnect();
 		m_procKill.disconnect();
 		m_procKilled.disconnect();
-		m_doneSpellMagicDmgClassNeg.disconnect();
+		m_onProc.disconnect();
 		m_procTakenAutoAttack.disconnect();
 		m_procAutoAttack.disconnect();
 		m_takenDamage.disconnect();
@@ -2263,6 +2284,23 @@ namespace wowpp
 				strong->m_destroy(*strong);
 			}
 		});
+	}
+
+	bool Aura::checkProc(const proto::SpellEntry *spell)
+	{
+		// proc is not a spell
+		if (spell == nullptr)
+		{
+			return true;
+		}
+
+		if (spell->id() == m_spell.id() ||
+			spell->family() != m_spell.family())
+		{
+			return false;
+		}
+
+		return true;
 	}
 
 }
