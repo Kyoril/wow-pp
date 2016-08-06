@@ -2124,7 +2124,22 @@ namespace wowpp
 					break;
 			}
 
-			m_cast.getExecuter().spellProcEvent(m_attackerProc);
+			GameUnit *target = nullptr;
+
+			if (m_target.hasUnitTarget())
+			{
+				auto *world = m_cast.getExecuter().getWorldInstance();
+				if (!world)
+				{
+					return;
+				}
+
+				GameObject *obj = world->findObjectByGUID(m_target.getUnitTarget());
+				target = reinterpret_cast<GameUnit*>(obj);
+			}
+
+			m_cast.getExecuter().spellProcEvent(m_attackerProc, target, &m_spell);
+			
 		}
 
 		if (auto strong = weakExecuter.lock())

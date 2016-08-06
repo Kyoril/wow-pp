@@ -2096,15 +2096,18 @@ namespace wowpp
 				(m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
 			{
 				m_onProc = m_target.spellProcEvent.connect(
-				[this](UInt32 procFlag) {
-					if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
+				[this](UInt32 procFlag, GameUnit * victim, const proto::SpellEntry * spell) {
+					if (checkProc(spell))
 					{
-						handleProcModifier(procFlag, &m_target);
-					}
+						if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
+						{
+							handleProcModifier(procFlag, victim);
+						}
 
-					if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0)
-					{
-						handleProcModifier(procFlag, &m_target);
+						if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0)
+						{
+							handleProcModifier(procFlag, victim);
+						}
 					}
 				});
 
@@ -2156,15 +2159,18 @@ namespace wowpp
 				(m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
 			{
 				m_onProc = m_target.spellProcEvent.connect(
-				[this](UInt32 procFlag) {
-					if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
+				[this](UInt32 procFlag, GameUnit * victim, const proto::SpellEntry * spell) {
+					if (checkProc(spell))
 					{
-						handleProcModifier(procFlag, &m_target);
-					}
+						if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
+						{
+							handleProcModifier(procFlag, victim);
+						}
 
-					if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0)
-					{
-						handleProcModifier(procFlag, &m_target);
+						if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0)
+						{
+							handleProcModifier(procFlag, victim);
+						}
 					}
 				});
 			}
@@ -2278,6 +2284,23 @@ namespace wowpp
 				strong->m_destroy(*strong);
 			}
 		});
+	}
+
+	bool Aura::checkProc(const proto::SpellEntry *spell)
+	{
+		// proc is not a spell
+		if (spell == nullptr)
+		{
+			return true;
+		}
+
+		if (spell->id() == m_spell.id() ||
+			spell->family() != m_spell.family())
+		{
+			return false;
+		}
+
+		return true;
 	}
 
 }

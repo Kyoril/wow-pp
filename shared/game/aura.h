@@ -242,6 +242,9 @@ namespace wowpp
 		void onTargetMoved(GameObject &, math::Vector3 oldPosition, float oldO);
 		///
 		void setRemoved(GameUnit *remover);
+		/// 
+		bool checkProc(const proto::SpellEntry *spell);
+
 
 	private:
 
