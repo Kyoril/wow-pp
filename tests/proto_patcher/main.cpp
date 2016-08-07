@@ -1539,7 +1539,7 @@ namespace wowpp
 	static bool importSpellProcs(proto::Project &project, MySQL::Connection &conn)
 	{
 		{
-			wowpp::MySQL::Select select(conn, "SELECT `entry`, `SchoolMask`, `SpellFamilyName`, `SpellFamilyMask`, `procEx`, `ppmRate`, `Cooldown` FROM `spell_proc_event`;");
+			wowpp::MySQL::Select select(conn, "SELECT `entry`, `SchoolMask`, `SpellFamilyName`, `SpellFamilyMask0`, `procEx`, `ppmRate`, `Cooldown` FROM `tbcdb`.`spell_proc_event`;");
 			if (select.success())
 			{
 				wowpp::MySQL::Row row(select);
