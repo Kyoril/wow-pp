@@ -637,6 +637,7 @@ namespace wowpp
 			}
 			else if (hitInfos[i] == game::hit_info::CriticalHit)
 			{
+				attacker.spellProcEvent(game::spell_proc_flags_ex::CriticalHit, targetUnit, &m_spell);
 				crit = true;
 				totalDamage *= 2.0f;
 			}
@@ -1870,6 +1871,7 @@ namespace wowpp
 
 				if (hitInfos[i] == game::hit_info::CriticalHit)
 				{
+					caster.spellProcEvent(game::spell_proc_flags_ex::CriticalHit, targetUnit, &m_spell);
 					crit = true;
 					totalPoints *= 2.0f;
 				}
@@ -2003,84 +2005,6 @@ namespace wowpp
 			effects.push_back(m_spell.effects(i).type());
 		}
 
-		if (!(m_spell.attributes(0) & game::spell_attributes::Passive))
-		{
-			switch (m_spell.dmgclass())
-			{
-				case game::spell_dmg_class::Melee:
-					m_attackerProc = game::spell_proc_flags::DoneSpellMeleeDmgClass;
-					m_victimProc = game::spell_proc_flags::TakenSpellMeleeDmgClass;
-
-					if (m_spell.attributes(3) & game::spell_attributes_ex_c::ReqOffhand)
-					{
-						m_attackerProc |= game::spell_proc_flags::DoneOffhandAttack;
-					}
-					break;
-				case game::spell_dmg_class::Ranged:
-					if (m_spell.attributes(2) & game::spell_attributes_ex_b::AuroRepeat)
-					{
-						m_attackerProc = game::spell_proc_flags::DoneRangedAutoAttack;
-						m_victimProc = game::spell_proc_flags::TakenRangedAutoAttack;
-					}
-					else
-					{
-						m_attackerProc = game::spell_proc_flags::DoneSpellRangedDmgClass;
-						m_victimProc = game::spell_proc_flags::TakenSpellRangedDmgClass;
-					}
-					break;
-				default:
-					bool isPositive = false;
-
-					for (const auto &effect : m_spell.effects())
-					{
-						if (Aura::isPositive(m_spell, effect))
-						{
-							isPositive = true;
-						}
-						else
-						{
-							isPositive = false;
-							break;
-						}
-					}
-
-					if (isPositive)
-					{
-						m_attackerProc = game::spell_proc_flags::DoneSpellMagicDmgClassPos;
-						m_victimProc = game::spell_proc_flags::TakenSpellMagicDmgClassPos;
-					}
-					else if (m_spell.attributes(2) & game::spell_attributes_ex_b::AuroRepeat)
-					{
-						m_attackerProc = game::spell_proc_flags::DoneRangedAutoAttack;
-						m_victimProc = game::spell_proc_flags::TakenRangedAutoAttack;
-					}
-					else
-					{
-						m_attackerProc = game::spell_proc_flags::DoneSpellMagicDmgClassNeg;
-						m_victimProc = game::spell_proc_flags::TakenSpellMagicDmgClassNeg;
-					}
-
-					break;
-			}
-
-			GameUnit *target = nullptr;
-
-			if (m_target.hasUnitTarget())
-			{
-				auto *world = m_cast.getExecuter().getWorldInstance();
-				if (!world)
-				{
-					return;
-				}
-
-				GameObject *obj = world->findObjectByGUID(m_target.getUnitTarget());
-				target = reinterpret_cast<GameUnit*>(obj);
-			}
-
-			m_cast.getExecuter().spellProcEvent(m_attackerProc, target, &m_spell);
-			
-		}
-
 		// Execute spell immediatly
 		namespace se = game::spell_effects;
 		std::vector<std::pair<UInt32, EffectHandler>> effectMap {
@@ -2140,6 +2064,88 @@ namespace wowpp
 		}
 
 		completedEffects();
+
+		if (!(m_spell.attributes(0) & game::spell_attributes::Passive))
+		{
+			switch (m_spell.dmgclass())
+			{
+			case game::spell_dmg_class::Melee:
+				m_attackerProc = game::spell_proc_flags::DoneSpellMeleeDmgClass;
+				m_victimProc = game::spell_proc_flags::TakenSpellMeleeDmgClass;
+
+				if (m_spell.attributes(3) & game::spell_attributes_ex_c::ReqOffhand)
+				{
+					m_attackerProc |= game::spell_proc_flags::DoneOffhandAttack;
+				}
+				break;
+			case game::spell_dmg_class::Ranged:
+				if (m_spell.attributes(2) & game::spell_attributes_ex_b::AuroRepeat)
+				{
+					m_attackerProc = game::spell_proc_flags::DoneRangedAutoAttack;
+					m_victimProc = game::spell_proc_flags::TakenRangedAutoAttack;
+				}
+				else
+				{
+					m_attackerProc = game::spell_proc_flags::DoneSpellRangedDmgClass;
+					m_victimProc = game::spell_proc_flags::TakenSpellRangedDmgClass;
+				}
+				break;
+			default:
+				bool isPositive = false;
+
+				for (const auto &effect : m_spell.effects())
+				{
+					if (Aura::isPositive(m_spell, effect))
+					{
+						isPositive = true;
+					}
+					else
+					{
+						isPositive = false;
+						break;
+					}
+				}
+
+				if (isPositive)
+				{
+					m_attackerProc = game::spell_proc_flags::DoneSpellMagicDmgClassPos;
+					m_victimProc = game::spell_proc_flags::TakenSpellMagicDmgClassPos;
+				}
+				else if (m_spell.attributes(2) & game::spell_attributes_ex_b::AuroRepeat)
+				{
+					m_attackerProc = game::spell_proc_flags::DoneRangedAutoAttack;
+					m_victimProc = game::spell_proc_flags::TakenRangedAutoAttack;
+				}
+				else
+				{
+					m_attackerProc = game::spell_proc_flags::DoneSpellMagicDmgClassNeg;
+					m_victimProc = game::spell_proc_flags::TakenSpellMagicDmgClassNeg;
+				}
+
+				break;
+			}
+			
+			if (!m_affectedTargets.empty())
+			{
+				for (const auto &targetObj : m_affectedTargets)
+				{
+					auto strongTarget = targetObj.lock();
+					if (strongTarget)
+					{
+						if (isUnitGUID(strongTarget->getGuid()))
+						{
+							auto target = std::static_pointer_cast<GameUnit>(strongTarget);
+							m_cast.getExecuter().spellProcEvent(m_attackerProc, target.get(), &m_spell);
+							//target.get()->spellProcEvent(m_victimProc, target.get(), &m_spell);
+						}
+					}
+				}
+			}
+			else
+			{
+				m_cast.getExecuter().spellProcEvent(m_attackerProc, nullptr, &m_spell);
+			}
+		}
 
 		if (auto strong = weakExecuter.lock())
 		{

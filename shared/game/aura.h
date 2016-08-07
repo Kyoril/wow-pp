@@ -180,6 +180,8 @@ namespace wowpp
 		void handleManaShield(bool apply);
 		/// 99
 		void handleModAttackPower(bool apply);
+		/// 101
+		void handleModResistancePct(bool apply);
 		/// 103
 		void handleModTotalThreat(bool apply);
 		/// 104
@@ -243,7 +245,7 @@ namespace wowpp
 		///
 		void setRemoved(GameUnit *remover);
 		/// 
-		bool checkProc(const proto::SpellEntry *spell);
+		bool checkProc(UInt32 procFlag, const proto::SpellEntry *spell);
 
 
 	private:

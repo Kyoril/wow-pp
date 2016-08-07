@@ -1057,6 +1057,55 @@ namespace wowpp
 
 		typedef spell_proc_flags::Type SpellProcFlags;
 
+		namespace spell_proc_flags_ex
+		{
+			enum Type
+			{
+				None			= 0x0000000,
+				NormalHit		= 0x0000001,
+				CriticalHit		= 0x0000002,
+				Miss			= 0x0000004,
+				Resist			= 0x0000008,
+				Dodge			= 0x0000010,
+				Parry			= 0x0000020,
+				Block			= 0x0000040,
+				Evade			= 0x0000080,
+				Immune			= 0x0000100,
+				Deflect			= 0x0000200,
+				Absorb			= 0x0000400,
+				Reflect			= 0x0000800,
+				Interrupt		= 0x0001000,
+				Reserved1		= 0x0002000,
+				Reserved2		= 0x0004000,
+				Reserved3		= 0x0008000,
+				TriggerAlways	= 0x0010000,
+				TriggerOnce		= 0x0020000,
+				InternalHot		= 0x1000000,
+				InternalDot		= 0x2000000,
+			};
+		}
+
+		typedef spell_proc_flags_ex::Type SpellProcFlagsEx;
+
+		namespace spell_family
+		{
+			enum Type
+			{
+				Generic		= 0,
+				Unknown1	= 1,
+				Mage		= 3,
+				Warrior		= 4,
+				Warlock		= 5,
+				Priest		= 6,
+				Druid		= 7,
+				Rogue		= 8,
+				Hunter		= 9,
+				Paladin		= 10,
+				Shaman		= 11,
+				Unknown2	= 12,
+				Potion		= 13,
+			};
+		}
 
 		namespace loot_type
 		{
