@@ -730,6 +730,7 @@ namespace wowpp
 						}
 						else if (hitInfos[i] == game::hit_info::CriticalHit)
 						{
+							targetUnit->spellProcEvent(game::spell_proc_flags_ex::CriticalHit, targetUnit, nullptr);
 							crit = true;
 							totalDamage *= 2.0f;
 						}
@@ -795,11 +796,13 @@ namespace wowpp
 					// Deal damage (Note: m_victim can become nullptr, if the target dies)
 					if (totalDamage > 0)
 					{
-						victim->takenMeleeAutoAttack(this);
+						//victim->takenMeleeAutoAttack(this);
+						victim->spellProcEvent(game::spell_proc_flags::TakenMeleeAutoAttack, this, nullptr);
 						victim->dealDamage(totalDamage - resisted - absorbed, (1 << 0), this, totalDamage - resisted - absorbed);
 
 						// Trigger auto attack procs
-						doneMeleeAutoAttack(victim);
+						//doneMeleeAutoAttack(victim);
+						spellProcEvent(game::spell_proc_flags::DoneMeleeAutoAttack, this, nullptr);
 					}
 					else
 					{

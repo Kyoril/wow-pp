@@ -267,6 +267,9 @@ namespace wowpp
 		case aura::ModAttackPower:
 			handleModAttackPower(apply);
 			break;
+		case aura::ModResistancePct:
+			handleModResistancePct(apply);
+			break;
 		case aura::ModTotalThreat:
 			handleModTotalThreat(apply);
 			break;
@@ -547,10 +550,19 @@ namespace wowpp
 	{
 		if (apply)
 		{
+			m_onProc = m_caster->spellProcEvent.connect(
+			[this](UInt32 procFlag, GameUnit * target, const proto::SpellEntry * spell) {
+				if (procFlag == game::spell_proc_flags::TakenMeleeAutoAttack)
+				{
+					handleDamageShieldProc(target);
+				}
+			});
+			/*
 			m_procTakenAutoAttack = m_caster->takenMeleeAutoAttack.connect(
 			[&](GameUnit * victim) {
 				handleDamageShieldProc(victim);
 			});
+			*/
 		}
 	}
 
@@ -1240,6 +1252,18 @@ namespace wowpp
 	void Aura::handleModAttackPower(bool apply)
 	{
 		m_target.updateModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue, m_basePoints, apply);
+	}
+
+	void Aura::handleModResistancePct(bool apply)
+	{
+		// Apply all resistances
+		for (UInt8 i = 0; i < 7; ++i)
+		{
+			if (m_effect.miscvaluea() & Int32(1 << i))
+			{
+				m_target.updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), unit_mod_type::BasePct, m_basePoints, apply);
+			}
+		}
 	}
 
 	void Aura::handleModTotalThreat(bool apply)
@@ -2093,20 +2117,38 @@ namespace wowpp
 		if (m_spell.procflags() != game::spell_proc_flags::None)
 		{
 			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0 ||
-				(m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
+				(m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0 ||
+				(m_spell.procflags() & game::spell_proc_flags::TakenMeleeAutoAttack) != 0 ||
+				(m_spell.procflags() & game::spell_proc_flags::DoneMeleeAutoAttack) != 0 ||
+				(m_spell.procexflags() & game::spell_proc_flags_ex::CriticalHit) != 0)
 			{
 				m_onProc = m_target.spellProcEvent.connect(
-				[this](UInt32 procFlag, GameUnit * victim, const proto::SpellEntry * spell) {
-					if (checkProc(spell))
+				[this](UInt32 procFlag, GameUnit * target, const proto::SpellEntry * spell) {
+					if (checkProc(procFlag, spell))
 					{
 						if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
 						{
-							handleProcModifier(procFlag, victim);
+							handleProcModifier(procFlag, target);
 						}
 
 						if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0)
 						{
-							handleProcModifier(procFlag, victim);
+							handleProcModifier(procFlag, target);
+						}
+
+						if ((procFlag & game::spell_proc_flags::TakenMeleeAutoAttack) != 0)
+						{
+							handleProcModifier(procFlag, target);
+						}
+
+						if ((procFlag & game::spell_proc_flags::DoneMeleeAutoAttack) != 0)
+						{
+							handleProcModifier(procFlag, target);
+						}
+
+						if ((procFlag & game::spell_proc_flags_ex::CriticalHit) != 0)
+						{
+							handleProcModifier(procFlag, target);
 						}
 					}
 				});
@@ -2117,22 +2159,6 @@ namespace wowpp
 				m_takenDamage = m_caster->takenDamage.connect(
 				[&](GameUnit * victim, UInt32 damage) {
 					handleTakenDamage(victim);
-				});
-			}
-
-			if ((m_spell.procflags() & game::spell_proc_flags::DoneMeleeAutoAttack) != 0)
-			{
-				m_procAutoAttack = m_caster->doneMeleeAutoAttack.connect(
-				[&](GameUnit * victim) {
-					handleProcModifier(game::spell_proc_flags::DoneMeleeAutoAttack, victim);
-				});
-			}
-
-			if ((m_spell.procflags() & game::spell_proc_flags::TakenMeleeAutoAttack) != 0)
-			{
-				m_procTakenAutoAttack = m_caster->takenMeleeAutoAttack.connect(
-				[&](GameUnit * attacker) {
-					handleProcModifier(game::spell_proc_flags::TakenMeleeAutoAttack, attacker);
 				});
 			}
 
@@ -2159,17 +2185,17 @@ namespace wowpp
 				(m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
 			{
 				m_onProc = m_target.spellProcEvent.connect(
-				[this](UInt32 procFlag, GameUnit * victim, const proto::SpellEntry * spell) {
-					if (checkProc(spell))
+				[this](UInt32 procFlag, GameUnit * target, const proto::SpellEntry * spell) {
+					if (checkProc(procFlag, spell))
 					{
 						if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
 						{
-							handleProcModifier(procFlag, victim);
+							handleProcModifier(procFlag, target);
 						}
 
 						if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0)
 						{
-							handleProcModifier(procFlag, victim);
+							handleProcModifier(procFlag, target);
 						}
 					}
 				});
@@ -2286,10 +2312,19 @@ namespace wowpp
 		});
 	}
 
-	bool Aura::checkProc(const proto::SpellEntry *spell)
+	bool Aura::checkProc(UInt32 procFlag, const proto::SpellEntry *spell)
 	{
 		// proc is not a spell
-		if (spell == nullptr)
+
+		if (m_spell.procexflags())
+		{
+			if (!(m_spell.procexflags() & procFlag))
+			{
+				return false;
+			}
+		}
+		
+		if (!spell)
 		{
 			return true;
 		}
@@ -2298,6 +2333,36 @@ namespace wowpp
 			spell->family() != m_spell.family())
 		{
 			return false;
+		}
+
+		if (m_spell.procfamilyflags())
+		{
+			if (!(m_spell.procfamilyflags() & spell->familyflags()))
+			{
+				return false;
+			}
+		}
+
+		if ((m_spell.family() == game::spell_family::Mage &&
+			(m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0))
+		{
+			return false;
+		}
+
+		if (m_effect.triggerspell())
+		{
+			if (m_effect.triggerspell() == spell->id())
+			{
+				return false;
+			}
+		}
+
+		if (m_spell.procschool())
+		{
+			if (m_spell.procschool() != spell->schoolmask())
+			{
+				return false;
+			}
 		}
 
 		return true;
