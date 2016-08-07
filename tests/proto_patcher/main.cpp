@@ -1503,7 +1503,38 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importSpellFamilyFlags(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `Id`, `SpellFamilyFlags` FROM `dbc_spell`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 id = 0;
+				UInt64 familyFlags = 0;
+				row.getField(0, id);
+				row.getField(1, familyFlags);
 
+				// Find spell by id
+				auto * spell = project.spells.getById(id);
+				if (spell)
+				{
+					spell->set_familyflags(familyFlags);
+				}
+				else
+				{
+					WLOG("Unable to find spell by id: " << id);
+				}
+
+				// Next row
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
 
 #if 0
 	static void fixTriggerEvents(proto::Project &project)
@@ -1587,6 +1618,7 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 
+#if 0
 	if (!addSpellLinks(protoProject))
 	{
 		ELOG("Failed to add spell links");
@@ -1608,6 +1640,13 @@ int main(int argc, char* argv[])
 	if (!importSpellMultipliers(protoProject, connection))
 	{
 		ELOG("Failed to import spell damage multipliers");
+		return 1;
+	}
+#endif
+
+	if (!importSpellFamilyFlags(protoProject, connection))
+	{
+		ELOG("Failed to import spell family flags multipliers");
 		return 1;
 	}
 

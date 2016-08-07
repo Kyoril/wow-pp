@@ -65,6 +65,8 @@ namespace wowpp
 						m_app.getTeamConnector()->editorLoginRequest(
 							username,
 							sha1(strm));
+
+						accept();
 					}
 					else
 					{

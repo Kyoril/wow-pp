@@ -91,7 +91,7 @@ message SpellEntry {
 	optional uint64 categorycooldown = 40;
 	optional uint32 dispel = 41;
 	optional uint32 family = 42;
-	optional uint32 familyflags = 43;
+	optional uint64 familyflags = 43;
 	optional uint32 focusobject = 44;
 }
 

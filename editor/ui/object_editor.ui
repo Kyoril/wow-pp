@@ -781,6 +781,34 @@
                        </property>
                       </widget>
                      </item>
+                     <item row="3" column="0">
+                      <widget class="QLabel" name="label_32">
+                       <property name="text">
+                        <string>Family:</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="3" column="1">
+                      <widget class="QLineEdit" name="lineEdit_6">
+                       <property name="readOnly">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="4" column="0">
+                      <widget class="QLabel" name="label_33">
+                       <property name="text">
+                        <string>Family Flags:</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="4" column="1">
+                      <widget class="QLineEdit" name="lineEdit_7">
+                       <property name="readOnly">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
                     </layout>
                    </item>
                   </layout>
@@ -4014,7 +4042,7 @@ QGroupBox::indicator:unchecked:disabled
             <item>
              <widget class="QTabWidget" name="tabWidget_6">
               <property name="currentIndex">
-               <number>1</number>
+               <number>0</number>
               </property>
               <widget class="QWidget" name="tab_20">
                <attribute name="title">

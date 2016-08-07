@@ -746,6 +746,8 @@ namespace wowpp
 			m_ui->cooldownField->setText(QString::number(spell->cooldown()));
 			m_ui->resourceField->setCurrentIndex(spell->powertype());
 			m_ui->costField->setText(QString::number(spell->cost()));
+			m_ui->lineEdit_6->setText(QString::number(spell->family()));
+			m_ui->lineEdit_7->setText(QString("0x") + QString::number(spell->familyflags(), 16).toUpper().rightJustified(8, QLatin1Char('0')));
 
 			// Attributes
 			for (size_t i = 1; i <= 32; ++i)
