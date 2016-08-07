@@ -1650,6 +1650,12 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
+	if (!importSpellFocus(protoProject, connection))
+	{
+		ELOG("Failed to import spell focus targets");
+		return 1;
+	}
+
 	// Save project
 	if (!protoProject.save(configuration.dataPath))
 	{
