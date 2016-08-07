@@ -1536,6 +1536,52 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importSpellProcs(proto::Project &project, MySQL::Connection &conn)
+	{
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `entry`, `SchoolMask`, `SpellFamilyName`, `SpellFamilyMask`, `procEx`, `ppmRate`, `Cooldown` FROM `spell_proc_event`;");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					// Get row data
+					UInt64 entry = 0, schoolmask = 0, spellfamilyname = 0, spellfamilymask = 0, procex = 0, ppmrate = 0, cooldown = 0, index = 0;
+					row.getField(index++, entry);
+					row.getField(index++, schoolmask);
+					row.getField(index++, spellfamilyname);
+					row.getField(index++, spellfamilymask);
+					row.getField(index++, procex);
+					row.getField(index++, ppmrate);
+					row.getField(index++, cooldown);
+
+					auto *spell = project.spells.getById(entry);
+					if (!spell)
+					{
+						WLOG("Could not find spell " << entry);
+						row = row.next(select);
+						continue;
+					}
+
+					spell->set_procschool(schoolmask);
+					spell->set_procfamily(spellfamilyname);
+					spell->set_procfamilyflags(spellfamilymask);
+					spell->set_procexflags(procex);
+					spell->set_procpermin(ppmrate);
+					spell->set_proccooldown(cooldown);
+
+					row = row.next(select);
+				}
+			}
+			else
+			{
+				ELOG("Error: " << conn.getErrorMessage());
+			}
+		}
+
+		return true;
+	}
+
 #if 0
 	static void fixTriggerEvents(proto::Project &project)
 	{
@@ -1642,7 +1688,6 @@ int main(int argc, char* argv[])
 		ELOG("Failed to import spell damage multipliers");
 		return 1;
 	}
-#endif
 
 	if (!importSpellFamilyFlags(protoProject, connection))
 	{
@@ -1653,6 +1698,13 @@ int main(int argc, char* argv[])
 	if (!importSpellFocus(protoProject, connection))
 	{
 		ELOG("Failed to import spell focus targets");
+		return 1;
+	}
+
+#endif
+	if (!importSpellProcs(protoProject, connection))
+	{
+		ELOG("Failed to import spell proc events");
 		return 1;
 	}
 
