@@ -99,6 +99,7 @@ message SpellEntry {
 	optional uint32 procexflags = 48;
 	optional float procpermin = 49;
 	optional uint32 proccooldown = 50;
+	optional uint32 proccustomflags = 51;
 }
 
 message Spells {
