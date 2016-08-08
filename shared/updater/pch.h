@@ -43,7 +43,9 @@
 #include <cctype>
 #include <sstream>
 #include <locale>
+#include <istream>
 #include <fstream>
+#include <set>
 
 // Boost Libraies
 #include <boost/signals2.hpp>
@@ -59,4 +61,14 @@
 #include <boost/uuid/sha1.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread.hpp>
-#include <boost/algorithm/string/join.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/ptr_container/ptr_map.hpp>
+#include <boost/type_traits/is_float.hpp>
+
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/any.hpp>
+#include <boost/iostreams/restrict.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/iostreams/filter/zlib.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
