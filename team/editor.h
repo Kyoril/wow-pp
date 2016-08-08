@@ -114,6 +114,12 @@ namespace wowpp
 
 		/// Closes the connection if still connected.
 		void destroy();
+		/// Determines if the connection is in a valid state for a given required state.
+		/// @param name Name of the packet to check. Used for debug output
+		/// @param state The required state (connection needs to be at least in this state).
+		/// @param verbose If true, messages will be logged in case of failure.
+		/// @returns True if the connection is in a valid state and the packet may be handled.
+		bool isInValidState(const String &name, EditorState state, bool verbose = false) const;
 
 		/// @copydoc wow::auth::IConnectionListener::connectionLost()
 		void connectionLost() override;

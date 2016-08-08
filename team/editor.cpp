@@ -83,6 +83,47 @@ namespace wowpp
 		m_manager.editorDisconnected(*this);
 	}
 
+	bool Editor::isInValidState(const String &name, EditorState state, bool verbose /*= false*/) const
+	{
+		switch (state)
+		{
+			case editor_state::Connected:
+			{
+				const bool auth = isAuthentificated();
+				if (auth && verbose)
+				{
+					WLOG("Packet " << name << " is only handled if the editor not yet authentificated!");
+				}
+				return !auth;
+			}
+
+			case editor_state::Authentificated:
+			{
+				const bool auth = isAuthentificated();
+				if (!auth && verbose)
+				{
+					WLOG("Packet " << name << " is only handled if the editor is authenticated!");
+				}
+				return auth;
+			}
+
+			case editor_state::UpToDate:
+			{
+				if ((m_state < editor_state::UpToDate || m_state == editor_state::Unknown) && verbose)
+				{
+					WLOG("Packet " << name << " is only handled if the editor is up to date with the local repository!");
+				}
+				return (m_state >= editor_state::UpToDate && m_state != editor_state::Unknown);
+			}
+
+			default:
+			{
+				// Unknown or unhandled state
+				return false;
+			}
+		}
+	}
+
 	void Editor::connectionMalformedPacket()
 	{
 		WLOG("Editor " << (isAuthentificated() ? m_name : m_address) << " sent malformed packet");
@@ -95,17 +136,21 @@ namespace wowpp
 
 		switch (packetId)
 		{
-			case pp::editor_team::editor_packet::Login:
-			{
-				handleLogin(packet);
-				break;
+#define QUOTE(str) #str
+#define WOWPP_HANDLE_PACKET(name, state) \
+			case pp::editor_team::editor_packet::name: \
+			{ \
+				if (!isInValidState(#name, state, true)) \
+					break; \
+				handle##name(packet); \
+				break; \
 			}
 
-			case pp::editor_team::editor_packet::ProjectHashMap:
-			{
-				handleProjectHashMap(packet);
-				break;
-			}
+			WOWPP_HANDLE_PACKET(Login, editor_state::Connected)
+			WOWPP_HANDLE_PACKET(ProjectHashMap, editor_state::Authentificated)
+
+#undef WOWPP_HANDLE_PACKET
+#undef QUOTE
 
 			default:
 			{
@@ -139,9 +184,6 @@ namespace wowpp
 
 	void Editor::handleProjectHashMap(pp::IncomingPacket & packet)
 	{
-		if (!isAuthentificated())
-			return;
-
 		std::map<String, String> hashs;
 		if (!pp::editor_team::editor_read::projectHashMap(packet, hashs))
 		{

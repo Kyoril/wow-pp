@@ -330,6 +330,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(Who, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(PlayedTime, game::session_status::LoggedIn)
 #undef WOWPP_HANDLE_PACKET
+#undef QUOTE
 
 			default:
 			{
