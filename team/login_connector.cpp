@@ -21,9 +21,12 @@
 
 #include "pch.h"
 #include "login_connector.h"
+#include "editor.h"
 #include "wowpp_protocol/wowpp_team_login.h"
+#include "wowpp_protocol/wowpp_editor_team.h"
 #include "configuration.h"
 #include "common/clock.h"
+#include "common/make_unique.h"
 #include "log/default_log_levels.h"
 
 namespace wowpp
@@ -114,14 +117,40 @@ namespace wowpp
 		return true;
 	}
 
-	void LoginConnector::editorLoginRequest(const String & username, const SHA1Hash & password)
+	void LoginConnector::editorLoginRequest(std::shared_ptr<Editor> connection, const SHA1Hash & password)
 	{
 		io::StringSink sink(m_connection->getSendBuffer());
 		pp::OutgoingPacket packet(sink);
 
+		const String &name = connection->getName();
+
+		// Look for login requests
+		auto it = m_loginRequests.find(name);
+		if (it != m_loginRequests.end())
+		{
+			// Timed out or already disconnected?
+			if (it->second->creationTime < getCurrentTime() - constants::OneSecond * 15 ||
+				!it->second->getConnection())
+			{
+				m_loginRequests.erase(it);
+			}
+			else
+			{
+				WLOG("TODO: Login already pending - ignored");
+
+				// Oops, login already pending
+				return;
+			}
+		}
+
+		// Create a new login request object
+		auto request = make_unique<EditorLoginRequest>(connection);
+		request->creationTime = getCurrentTime();
+		m_loginRequests[name] = std::move(request);
+
 		// Write packet structure
 		pp::team_login::team_write::editorLoginRequest(packet,
-			username,
+			connection->getName(),
 			password);
 
 		m_connection->flush();
@@ -222,8 +251,26 @@ namespace wowpp
 			return;
 		}
 
-		// TODO: Find the editor using this username
+		// Look for login requests
+		auto it = m_loginRequests.find(username);
+		if (it == m_loginRequests.end())
+		{
+			WLOG("Could not find pending login request for account " << username);
+			return;
+		}
 
+		// If the associated connection is no longer available
+		auto connection = it->second->getConnection();
+
+		// Remove login request from the list of requests as we already
+		m_loginRequests.erase(it);
+
+		// Check connection
+		if (!connection)
+		{
+			WLOG("Editor is no longer connected and thus login request can't be processed");
+			return;
+		}
 
 		// Display result
 		switch (result)
@@ -231,36 +278,42 @@ namespace wowpp
 			case editor_login_result::Success:
 			{
 				ILOG("AUTH confirmed by login server");
+				connection->onAuthResult(pp::editor_team::login_result::Success);
 				break;
 			}
 
 			case editor_login_result::UnknownUserName:
 			{
 				ELOG("Login server does not know this account");
+				connection->onAuthResult(pp::editor_team::login_result::WrongUserName);
 				break;
 			}
 
 			case editor_login_result::WrongPassword:
 			{
 				ELOG("Invalid password");
+				connection->onAuthResult(pp::editor_team::login_result::WrongPassword);
 				break;
 			}
 
 			case editor_login_result::AlreadyLoggedIn:
 			{
 				ELOG("A user using this credentials is already logged in");
+				connection->onAuthResult(pp::editor_team::login_result::AlreadyLoggedIn);
 				break;
 			}
 
 			case editor_login_result::ServerError:
 			{
 				ELOG("Internal server error at the login server");
+				connection->onAuthResult(pp::editor_team::login_result::ServerError);
 				break;
 			}
 
 			default:
 			{
 				ELOG("Unknown login result: " << result);
+				connection->onAuthResult(pp::editor_team::login_result::ServerError);
 				break;
 			}
 		}

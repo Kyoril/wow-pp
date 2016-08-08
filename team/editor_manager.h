@@ -32,7 +32,7 @@ namespace wowpp
 	{
 	public:
 
-		typedef std::vector<std::unique_ptr<Editor>> Editors;
+		typedef std::vector<std::shared_ptr<Editor>> Editors;
 
 	public:
 
@@ -51,7 +51,7 @@ namespace wowpp
 		/// Determines whether the editor capacity limit has been reached.
 		bool hasEditorCapacityBeenReached() const;
 		/// Adds a new player instance to the manager.
-		void addEditor(std::unique_ptr<Editor> added);
+		void addEditor(std::shared_ptr<Editor> added);
 
 	private:
 

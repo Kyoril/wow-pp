@@ -54,6 +54,7 @@ namespace wowpp
 		private:
 
 			void setLoginUiState(bool enabled);
+			void checkForUpdates();
 
 		private:
 

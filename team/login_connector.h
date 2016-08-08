@@ -31,6 +31,7 @@ namespace wowpp
 {
 	// Forwards
 	struct Configuration;
+	class Editor;
 
 	/// This class manages the connection to the login server.
 	class LoginConnector final : public pp::IConnectorListener
@@ -61,7 +62,7 @@ namespace wowpp
 
 	public:
 
-		void editorLoginRequest(const String &username, const SHA1Hash &password);
+		void editorLoginRequest(std::shared_ptr<Editor> connection, const SHA1Hash &password);
 
 	private:
 
@@ -85,20 +86,21 @@ namespace wowpp
 		/// Holds data of a pending player login request.
 		struct EditorLoginRequest
 		{
-			String accountName;
-			//TODO: timeout
+			/// Used to determine timeout
+			GameTime creationTime;
+			/// Connection 
+			std::weak_ptr<Editor> connection;
 
 			/// Initializes an empty player login request. Support for 
 			/// default constructor.
-			EditorLoginRequest()
+			EditorLoginRequest(std::weak_ptr<Editor> conn)
+				: connection(std::move(conn))
 			{
 			}
 
-			/// Initializes a login request for a specified player account name.
-			/// @param account Name of the account to login with in uppercase letters.
-			EditorLoginRequest(const String &account)
-				: accountName(account)
+			std::shared_ptr<Editor> getConnection() const
 			{
+				return connection.lock();
 			}
 		};
 
@@ -108,6 +110,6 @@ namespace wowpp
 		std::shared_ptr<pp::Connector> m_connection;
 		String m_host;
 		NetPort m_port;
-		std::vector<EditorLoginRequest> m_loginRequests;
+		std::map<String, std::unique_ptr<EditorLoginRequest>> m_loginRequests;
 	};
 }

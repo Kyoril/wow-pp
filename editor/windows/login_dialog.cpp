@@ -65,8 +65,6 @@ namespace wowpp
 						m_app.getTeamConnector()->editorLoginRequest(
 							username,
 							sha1(strm));
-
-						accept();
 					}
 					else
 					{
@@ -91,6 +89,7 @@ namespace wowpp
 						{
 							case pp::editor_team::login_result::Success:
 								m_ui->statusLabel->setText("Checking for updates...");
+								checkForUpdates();
 								return;
 							case pp::editor_team::login_result::WrongUserName:
 							case pp::editor_team::login_result::WrongPassword:
@@ -115,43 +114,6 @@ namespace wowpp
 				});
 			}
 		}
-
-		/*
-		// Load local project for comparison and send hash values to the server
-		proto::Project project;
-		if (!project.load(m_app.getConfiguration().dataPath))
-		{
-			// Could not load project, so no hashs to find
-		}
-
-		// Setup hash map
-		std::map<String, String> projectHashs;
-		projectHashs["spells"] = project.spells.hashString;
-		projectHashs["units"] = project.units.hashString;
-		projectHashs["objects"] = project.objects.hashString;
-		projectHashs["maps"] = project.maps.hashString;
-		projectHashs["emotes"] = project.emotes.hashString;
-		projectHashs["unit_loot"] = project.unitLoot.hashString;
-		projectHashs["object_loot"] = project.objectLoot.hashString;
-		projectHashs["item_loot"] = project.itemLoot.hashString;
-		projectHashs["skinning_loot"] = project.skinningLoot.hashString;
-		projectHashs["skills"] = project.skills.hashString;
-		projectHashs["trainers"] = project.trainers.hashString;
-		projectHashs["vendors"] = project.vendors.hashString;
-		projectHashs["talents"] = project.talents.hashString;
-		projectHashs["items"] = project.items.hashString;
-		projectHashs["item_sets"] = project.itemSets.hashString;
-		projectHashs["classes"] = project.classes.hashString;
-		projectHashs["races"] = project.races.hashString;
-		projectHashs["levels"] = project.levels.hashString;
-		projectHashs["triggers"] = project.triggers.hashString;
-		projectHashs["zones"] = project.zones.hashString;
-		projectHashs["quests"] = project.quests.hashString;
-		projectHashs["factions"] = project.factions.hashString;
-		projectHashs["faction_templates"] = project.factionTemplates.hashString;
-		projectHashs["area_triggers"] = project.areaTriggers.hashString;
-		projectHashs["spell_categories"] = project.spellCategories.hashString;
-		*/
 
 		void LoginDialog::on_loginBtn_clicked()
 		{
@@ -180,6 +142,46 @@ namespace wowpp
 			m_ui->lineEdit->setEnabled(enabled);
 			m_ui->lineEdit_2->setEnabled(enabled);
 			m_ui->checkBox->setEnabled(enabled);
+		}
+		void LoginDialog::checkForUpdates()
+		{
+			// Load local project for comparison and send hash values to the server
+			proto::Project project;
+			if (!project.load(m_app.getConfiguration().dataPath))
+			{
+				// Could not load project, so no hashs to find
+			}
+
+			// Setup hash map
+			std::map<String, String> projectHashs;
+			projectHashs["spells"] = project.spells.hashString;
+			projectHashs["units"] = project.units.hashString;
+			projectHashs["objects"] = project.objects.hashString;
+			projectHashs["maps"] = project.maps.hashString;
+			projectHashs["emotes"] = project.emotes.hashString;
+			projectHashs["unit_loot"] = project.unitLoot.hashString;
+			projectHashs["object_loot"] = project.objectLoot.hashString;
+			projectHashs["item_loot"] = project.itemLoot.hashString;
+			projectHashs["skinning_loot"] = project.skinningLoot.hashString;
+			projectHashs["skills"] = project.skills.hashString;
+			projectHashs["trainers"] = project.trainers.hashString;
+			projectHashs["vendors"] = project.vendors.hashString;
+			projectHashs["talents"] = project.talents.hashString;
+			projectHashs["items"] = project.items.hashString;
+			projectHashs["item_sets"] = project.itemSets.hashString;
+			projectHashs["classes"] = project.classes.hashString;
+			projectHashs["races"] = project.races.hashString;
+			projectHashs["levels"] = project.levels.hashString;
+			projectHashs["triggers"] = project.triggers.hashString;
+			projectHashs["zones"] = project.zones.hashString;
+			projectHashs["quests"] = project.quests.hashString;
+			projectHashs["factions"] = project.factions.hashString;
+			projectHashs["faction_templates"] = project.factionTemplates.hashString;
+			projectHashs["area_triggers"] = project.areaTriggers.hashString;
+			projectHashs["spell_categories"] = project.spellCategories.hashString;
+
+			// TODO: Send packet
+			accept();
 		}
 	}
 }

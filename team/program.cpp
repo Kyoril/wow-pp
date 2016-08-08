@@ -185,10 +185,14 @@ namespace wowpp
 				return;
 			}
 
-			std::unique_ptr<wowpp::Editor> editor(new wowpp::Editor(*EditorManager.get(), *loginConnector, std::move(connection), address.to_string()));
+			auto editor = std::make_shared<wowpp::Editor>(
+				*EditorManager.get(), 
+				*loginConnector, 
+				std::move(connection), 
+				address.to_string());
 
 			DLOG("Incoming editor connection from " << address);
-			EditorManager->addEditor(std::move(editor));
+			EditorManager->addEditor(editor);
 		};
 		
 		const boost::signals2::scoped_connection editorConnected(editorServer->connected().connect(createEditor));

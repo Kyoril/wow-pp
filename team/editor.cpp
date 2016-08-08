@@ -42,7 +42,7 @@ namespace wowpp
 		m_connection->setListener(*this);
 	}
 
-	void Editor::authentificated()
+	void Editor::onAuthResult(pp::editor_team::LoginResult result)
 	{
 		if (m_authed)
 		{
@@ -54,8 +54,14 @@ namespace wowpp
 			return;
 		}
 
-		m_authed = true;
-		ILOG("User " << m_name << " successfully signed in");
+		if (result == pp::editor_team::login_result::Success)
+		{
+			m_authed = true;
+			ILOG("User " << m_name << " successfully signed in");
+		}
+
+		sendPacket(
+			std::bind(pp::editor_team::team_write::loginResult, std::placeholders::_1, result));
 	}
 
 	void Editor::connectionLost()
@@ -123,7 +129,7 @@ namespace wowpp
 		m_name = username;
 
 		// Send authentication request to the login server
-		m_loginConnector.editorLoginRequest(username, password);
+		m_loginConnector.editorLoginRequest(shared_from_this(), password);
 	}
 
 	void Editor::handleProjectHashMap(pp::IncomingPacket & packet)

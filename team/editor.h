@@ -24,7 +24,7 @@
 #include "common/typedefs.h"
 #include "wowpp_protocol/wowpp_protocol.h"
 #include "wowpp_protocol/wowpp_connection.h"
-#include "auth_protocol/auth_protocol.h"
+#include "wowpp_protocol/wowpp_editor_team.h"
 
 namespace wowpp
 {
@@ -35,6 +35,7 @@ namespace wowpp
 	class Editor final
 		: public pp::IConnectionListener
 		, public boost::noncopyable
+		, public std::enable_shared_from_this<Editor>
 	{
 	public:
 
@@ -57,7 +58,26 @@ namespace wowpp
 		/// This returns an empty string if not yet authentificated.
 		const String &getName() const { return m_name; }
 		/// Called when the authentification request was confirmed by the login server.
-		void authentificated();
+		void onAuthResult(pp::editor_team::LoginResult result);
+
+		/// Sends a packet to the editor.
+		/// @param generator Packet writer function pointer.
+		template<class F>
+		void sendPacket(F generator)
+		{
+			// Write native packet
+			wowpp::Buffer &sendBuffer = m_connection->getSendBuffer();
+			io::StringSink sink(sendBuffer);
+
+			// Get the end of the buffer (needed for encryption)
+			size_t bufferPos = sink.position();
+
+			typename pp::OutgoingPacket packet(sink);
+			generator(packet);
+
+			// Flush buffers
+			m_connection->flush();
+		}
 
 	private:
 

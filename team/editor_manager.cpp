@@ -41,7 +41,7 @@ namespace wowpp
 		const auto p = std::find_if(
 		                   m_editors.begin(),
 						   m_editors.end(),
-		                   [&editor](const std::unique_ptr<Editor> &p)
+		                   [&editor](const std::shared_ptr<Editor> &p)
 		{
 			return (&editor == p.get());
 		});
@@ -59,9 +59,9 @@ namespace wowpp
 		return m_editors.size() >= m_capacity;
 	}
 
-	void EditorManager::addEditor(std::unique_ptr<Editor> added)
+	void EditorManager::addEditor(std::shared_ptr<Editor> added)
 	{
 		assert(added);
-		m_editors.push_back(std::move(added));
+		m_editors.push_back(added);
 	}
 }
