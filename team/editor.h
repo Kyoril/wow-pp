@@ -32,6 +32,25 @@ namespace wowpp
 	class EditorManager;
 	class LoginConnector;
 
+	namespace editor_state
+	{
+		enum Type
+		{
+			/// The editor is simply connected.
+			Connected		= 0x00,
+			/// The editor has successfully signed in using a valid username and password which
+			/// were confirmed by the login server.
+			Authentificated	= 0x01,
+			/// The editor has also passed it's project hashmap and was updated.
+			UpToDate		= 0x02,
+
+			/// Should not be used, but just in case a temporary placeholder is needed...
+			Unknown			= 0xFF
+		};
+	}
+
+	typedef editor_state::Type EditorState;
+
 	/// Editor connection class.
 	class Editor final
 		: public pp::IConnectionListener
@@ -55,7 +74,7 @@ namespace wowpp
 		/// Gets the editor manager which manages all connected editors.
 		EditorManager &getManager() const { return m_manager; }
 		/// Determines whether this realm is authentificated.
-		bool isAuthentificated() const { return m_authed; }
+		bool isAuthentificated() const { return m_state >= editor_state::Authentificated; }
 		/// Determines the editors account name which was used to sign in if authentificated.
 		/// This returns an empty string if not yet authentificated.
 		const String &getName() const { return m_name; }
@@ -89,7 +108,7 @@ namespace wowpp
 		std::shared_ptr<Client> m_connection;
 		String m_address;						// IP address in string format
 		String m_name;
-		bool m_authed;							// True if the user has been successfully authentificated.
+		EditorState m_state;
 
 	private:
 

@@ -37,7 +37,7 @@ namespace wowpp
 		, m_project(project)
 		, m_connection(std::move(connection))
 		, m_address(address)
-		, m_authed(false)
+		, m_state(editor_state::Connected)
 	{
 		assert(m_connection);
 		m_connection->setListener(*this);
@@ -45,29 +45,33 @@ namespace wowpp
 
 	void Editor::onAuthResult(pp::editor_team::LoginResult result)
 	{
-		if (m_authed)
+		// Already authentificated?
+		if (isAuthentificated())
 		{
 			return;
 		}
 
+		// No username set?
 		if (m_name.empty())
 		{
 			return;
 		}
 
+		// Check if result was a success
 		if (result == pp::editor_team::login_result::Success)
 		{
-			m_authed = true;
+			m_state = editor_state::Authentificated;
 			ILOG("User " << m_name << " successfully signed in");
 		}
 
+		// Notify the editor about the results
 		sendPacket(
 			std::bind(pp::editor_team::team_write::loginResult, std::placeholders::_1, result));
 	}
 
 	void Editor::connectionLost()
 	{
-		WLOG("Editor " << (m_authed ? m_name : m_address) << " disconnected");
+		WLOG("Editor " << (isAuthentificated() ? m_name : m_address) << " disconnected");
 		destroy();
 	}
 
@@ -81,7 +85,7 @@ namespace wowpp
 
 	void Editor::connectionMalformedPacket()
 	{
-		WLOG("Editor " << m_address << " sent malformed packet");
+		WLOG("Editor " << (isAuthentificated() ? m_name : m_address) << " sent malformed packet");
 		destroy();
 	}
 
@@ -135,7 +139,7 @@ namespace wowpp
 
 	void Editor::handleProjectHashMap(pp::IncomingPacket & packet)
 	{
-		if (!m_authed)
+		if (!isAuthentificated())
 			return;
 
 		std::map<String, String> hashs;
