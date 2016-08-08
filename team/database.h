@@ -103,7 +103,7 @@ namespace wowpp
 		* The handler is expected to accept exactly one argument whose type
 		* depends on the result of the database method.
 		* @param handler is expected to be a functor taking exactly one
-		* argument. The argument type is {@link faudra::RequestStatus} if the
+		* argument. The argument type is {@link wowpp::RequestStatus} if the
 		* result type of the method is void. The argument type is
 		* {@link boost::optional} of the result type for every result type
 		* other than void. The handler is called at most once and its result

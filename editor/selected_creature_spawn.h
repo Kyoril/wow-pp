@@ -49,21 +49,21 @@ namespace wowpp
 				);
 			~SelectedCreatureSpawn();
 
-			/// @copydoc faudra::Selected::translate()
+			/// @copydoc wowpp::Selected::translate()
 			void translate(const math::Vector3 &delta) override;
-			/// @copydoc faudra::Selected::rotate()
+			/// @copydoc wowpp::Selected::rotate()
 			void rotate(const Vector<float, 4> &delta) override;
-			/// @copydoc faudra::Selected::scale()
+			/// @copydoc wowpp::Selected::scale()
 			void scale(const math::Vector3 &delta) override;
-			/// @copydoc faudra::Selected::remove()
+			/// @copydoc wowpp::Selected::remove()
 			void remove() override;
-			/// @copydoc faudra::Selected::deselect()
+			/// @copydoc wowpp::Selected::deselect()
 			void deselect() override;
-			/// @copydoc faudra::Selected::getPosition()
+			/// @copydoc wowpp::Selected::getPosition()
 			math::Vector3 getPosition() const override;
-			/// @copydoc faudra::Selected::getOrientation()
+			/// @copydoc wowpp::Selected::getOrientation()
 			Vector<float, 4> getOrientation() const override;
-			/// @copydoc faudra::Selected::getScale()
+			/// @copydoc wowpp::Selected::getScale()
 			math::Vector3 getScale() const override;
 
 		private:

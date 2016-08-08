@@ -1,0 +1,14 @@
+version = 1
+root = (type = "fs", name = "data", entries = 
+{
+	(type = "fs", name = "test.txt", compressedName = "test.txt.z", originalSize = 8, sha1 = "7e0e0c4012fca9f0a18c802df01e758713a0751b", compression = "zlib", compressedSize = 16)
+	(type = "fs", name = "recursive", entries = 
+	{
+		(type = "fs", name = "hallo.txt", compressedName = "hallo.txt.z", originalSize = 3, sha1 = "6eae3a5b062c6d0d79f070c26e6d62486b40cb46", compression = "zlib", compressedSize = 11)
+		(type = "fs", name = "sub", entries = 
+		{
+			(type = "fs", name = "123.txt", compressedName = "123.txt.z", originalSize = 3, sha1 = "40bd001563085fc35165329ea1ff5c5ecbdbbeef", compression = "zlib", compressedSize = 11)
+		})
+	})
+	(type = "if", condition = "WINDOWS", value = (type = "fs", name = "windows-only.bat", compressedName = "windows-only.bat.z", originalSize = 9, sha1 = "93bb6b09c9007ac568b39a77f4aa10d5dfc59fb9", compression = "zlib", compressedSize = 17))
+})
