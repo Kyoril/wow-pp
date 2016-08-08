@@ -39,4 +39,5 @@ add_subdirectory(wowpp_protocol)
 add_subdirectory(sql_wrapper)
 add_subdirectory(mysql_wrapper)
 add_subdirectory(updater)
+add_subdirectory(update_compilation)
 	
