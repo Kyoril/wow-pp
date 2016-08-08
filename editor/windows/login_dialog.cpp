@@ -145,42 +145,58 @@ namespace wowpp
 		}
 		void LoginDialog::checkForUpdates()
 		{
-			// Load local project for comparison and send hash values to the server
-			proto::Project project;
-			if (!project.load(m_app.getConfiguration().dataPath))
-			{
-				// Could not load project, so no hashs to find
-			}
-
 			// Setup hash map
 			std::map<String, String> projectHashs;
-			projectHashs["spells"] = project.spells.hashString;
-			projectHashs["units"] = project.units.hashString;
-			projectHashs["objects"] = project.objects.hashString;
-			projectHashs["maps"] = project.maps.hashString;
-			projectHashs["emotes"] = project.emotes.hashString;
-			projectHashs["unit_loot"] = project.unitLoot.hashString;
-			projectHashs["object_loot"] = project.objectLoot.hashString;
-			projectHashs["item_loot"] = project.itemLoot.hashString;
-			projectHashs["skinning_loot"] = project.skinningLoot.hashString;
-			projectHashs["skills"] = project.skills.hashString;
-			projectHashs["trainers"] = project.trainers.hashString;
-			projectHashs["vendors"] = project.vendors.hashString;
-			projectHashs["talents"] = project.talents.hashString;
-			projectHashs["items"] = project.items.hashString;
-			projectHashs["item_sets"] = project.itemSets.hashString;
-			projectHashs["classes"] = project.classes.hashString;
-			projectHashs["races"] = project.races.hashString;
-			projectHashs["levels"] = project.levels.hashString;
-			projectHashs["triggers"] = project.triggers.hashString;
-			projectHashs["zones"] = project.zones.hashString;
-			projectHashs["quests"] = project.quests.hashString;
-			projectHashs["factions"] = project.factions.hashString;
-			projectHashs["faction_templates"] = project.factionTemplates.hashString;
-			projectHashs["area_triggers"] = project.areaTriggers.hashString;
-			projectHashs["spell_categories"] = project.spellCategories.hashString;
 
-			// TODO: Send packet
+			// Temporary load the project but immediatly free the memory again after the hashmap is built
+			{
+				// Load local project for comparison and send hash values to the server
+				proto::Project project;
+				if (!project.load(m_app.getConfiguration().dataPath))
+				{
+					// Could not load project, so no hashs to find
+				}
+				else
+				{
+					projectHashs["spells"] = project.spells.hashString;
+					projectHashs["units"] = project.units.hashString;
+					projectHashs["objects"] = project.objects.hashString;
+					projectHashs["maps"] = project.maps.hashString;
+					projectHashs["emotes"] = project.emotes.hashString;
+					projectHashs["unit_loot"] = project.unitLoot.hashString;
+					projectHashs["object_loot"] = project.objectLoot.hashString;
+					projectHashs["item_loot"] = project.itemLoot.hashString;
+					projectHashs["skinning_loot"] = project.skinningLoot.hashString;
+					projectHashs["skills"] = project.skills.hashString;
+					projectHashs["trainers"] = project.trainers.hashString;
+					projectHashs["vendors"] = project.vendors.hashString;
+					projectHashs["talents"] = project.talents.hashString;
+					projectHashs["items"] = project.items.hashString;
+					projectHashs["item_sets"] = project.itemSets.hashString;
+					projectHashs["classes"] = project.classes.hashString;
+					projectHashs["races"] = project.races.hashString;
+					projectHashs["levels"] = project.levels.hashString;
+					projectHashs["triggers"] = project.triggers.hashString;
+					projectHashs["zones"] = project.zones.hashString;
+					projectHashs["quests"] = project.quests.hashString;
+					projectHashs["factions"] = project.factions.hashString;
+					projectHashs["faction_templates"] = project.factionTemplates.hashString;
+					projectHashs["area_triggers"] = project.areaTriggers.hashString;
+					projectHashs["spell_categories"] = project.spellCategories.hashString;
+				}
+			}
+			
+			// Get team connector
+			auto *connector = m_app.getTeamConnector();
+			if (!connector)
+			{
+				return;
+			}
+
+			// Send hashmap packet
+			connector->projectHashMap(projectHashs);
+
+			// TODO: Wait for response and eventually update local project files. After that, 
 			accept();
 		}
 	}

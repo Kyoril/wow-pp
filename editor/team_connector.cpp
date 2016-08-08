@@ -121,6 +121,14 @@ namespace wowpp
 				std::bind(&TeamConnector::tryConnect, this), now + ReconnectDelay);
 		}
 
+		void TeamConnector::projectHashMap(const std::map<String, String>& hashes)
+		{
+			using namespace pp::editor_team;
+
+			m_connection->sendSinglePacket(
+				std::bind(editor_write::projectHashMap, std::placeholders::_1, std::cref(hashes)));
+		}
+
 		void TeamConnector::tryConnect()
 		{
 			m_connection = pp::Connector::create(m_ioService);
@@ -144,6 +152,14 @@ namespace wowpp
 			if (!pp::editor_team::team_read::loginResult(packet, result, protocolVersion))
 			{
 				return;
+			}
+
+			// Close connection on error
+			if (result != pp::editor_team::login_result::Success)
+			{
+				m_connection->close();
+				m_connection->resetListener();
+				m_connection.reset();
 			}
 
 			loginResult(result, protocolVersion);

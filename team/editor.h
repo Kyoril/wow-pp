@@ -25,6 +25,7 @@
 #include "wowpp_protocol/wowpp_protocol.h"
 #include "wowpp_protocol/wowpp_connection.h"
 #include "wowpp_protocol/wowpp_editor_team.h"
+#include "proto_data/project.h"
 
 namespace wowpp
 {
@@ -45,6 +46,7 @@ namespace wowpp
 
 		explicit Editor(EditorManager &manager,
 			LoginConnector &loginConnector,
+			proto::Project &project,
 			std::shared_ptr<Client> connection,
 			const String &address);
 
@@ -83,6 +85,7 @@ namespace wowpp
 
 		EditorManager &m_manager;
 		LoginConnector &m_loginConnector;
+		proto::Project &m_project;
 		std::shared_ptr<Client> m_connection;
 		String m_address;						// IP address in string format
 		String m_name;

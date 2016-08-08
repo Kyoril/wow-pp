@@ -31,9 +31,10 @@ using namespace std;
 
 namespace wowpp
 {
-	Editor::Editor(EditorManager &manager, LoginConnector &loginConnector, std::shared_ptr<Client> connection, const String &address)
+	Editor::Editor(EditorManager &manager, LoginConnector &loginConnector, proto::Project &project, std::shared_ptr<Client> connection, const String &address)
 		: m_manager(manager)
 		, m_loginConnector(loginConnector)
+		, m_project(project)
 		, m_connection(std::move(connection))
 		, m_address(address)
 		, m_authed(false)
@@ -98,7 +99,7 @@ namespace wowpp
 
 			case pp::editor_team::editor_packet::ProjectHashMap:
 			{
-				handleLogin(packet);
+				handleProjectHashMap(packet);
 				break;
 			}
 
@@ -137,5 +138,66 @@ namespace wowpp
 		if (!m_authed)
 			return;
 
+		std::map<String, String> hashs;
+		if (!pp::editor_team::editor_read::projectHashMap(packet, hashs))
+		{
+			WLOG("Could not read packet from editor.");
+			return;
+		}
+
+		// Contains a list of file names to update
+		std::vector<String> filesToUpdate;
+
+		// Build local hash table
+		std::map<String, String> localHashs;
+		localHashs["spells"] = m_project.spells.hashString;
+		localHashs["units"] = m_project.units.hashString;
+		localHashs["objects"] = m_project.objects.hashString;
+		localHashs["maps"] = m_project.maps.hashString;
+		localHashs["emotes"] = m_project.emotes.hashString;
+		localHashs["unit_loot"] = m_project.unitLoot.hashString;
+		localHashs["object_loot"] = m_project.objectLoot.hashString;
+		localHashs["item_loot"] = m_project.itemLoot.hashString;
+		localHashs["skinning_loot"] = m_project.skinningLoot.hashString;
+		localHashs["skills"] = m_project.skills.hashString;
+		localHashs["trainers"] = m_project.trainers.hashString;
+		localHashs["vendors"] = m_project.vendors.hashString;
+		localHashs["talents"] = m_project.talents.hashString;
+		localHashs["items"] = m_project.items.hashString;
+		localHashs["item_sets"] = m_project.itemSets.hashString;
+		localHashs["classes"] = m_project.classes.hashString;
+		localHashs["races"] = m_project.races.hashString;
+		localHashs["levels"] = m_project.levels.hashString;
+		localHashs["triggers"] = m_project.triggers.hashString;
+		localHashs["zones"] = m_project.zones.hashString;
+		localHashs["quests"] = m_project.quests.hashString;
+		localHashs["factions"] = m_project.factions.hashString;
+		localHashs["faction_templates"] = m_project.factionTemplates.hashString;
+		localHashs["area_triggers"] = m_project.areaTriggers.hashString;
+		localHashs["spell_categories"] = m_project.spellCategories.hashString;
+
+		// Compare both
+		for (const auto &local : localHashs)
+		{
+			auto it = hashs.find(local.first);
+			if (it == hashs.end())
+			{
+				// Could not find the file info at all, so add an update
+				DLOG("\tMissing file: " << local.first);
+				filesToUpdate.push_back(local.first);
+			}
+			else
+			{
+				// Compare the actual hashes
+				if ((*it).second != local.second)
+				{
+					DLOG("\tChanged file: " << local.first);
+					filesToUpdate.push_back(local.first);
+				}
+			}
+		}
+
+		// Result
+		ILOG("Detected " << filesToUpdate.size() << " file changes");
 	}
 }

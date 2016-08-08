@@ -75,6 +75,10 @@ namespace wowpp
 			/// @param accountName Name of the account which the player wants to login with in
 			///        uppercase letters.
 			bool editorLoginRequest(const String &accountName, const SHA1Hash &password);
+			/// Notifies the team server about the sha1 hashes of the local project files in order
+			/// to check for changed files to download from the team server.
+			/// @param hashes The hash map. Key value is the manager name, value is the hash string.
+			void projectHashMap(const std::map<String, String> &hashes);
 
 			/// Tries to connect with the team server and schedules a new attempt if failed.
 			void tryConnect();

@@ -50,7 +50,13 @@ namespace wowpp
 				void projectHashMap(pp::OutgoingPacket &out_packet, const std::map<String, String> &hashMap)
 				{
 					out_packet.start(editor_packet::ProjectHashMap);
-					// This packet is empty
+					out_packet << io::write<NetUInt32>(hashMap.size());
+					for (const auto &pair : hashMap)
+					{
+						out_packet
+							<< io::write_dynamic_range<NetUInt8>(pair.first)
+							<< io::write_dynamic_range<NetUInt8>(pair.second);
+					}
 					out_packet.finish();
 				}
 			}
@@ -90,7 +96,20 @@ namespace wowpp
 
 				bool projectHashMap(io::Reader &packet, std::map<String, String> &out_hashMap)
 				{
-					// TODO
+					UInt32 entries = 0;
+					packet
+						>> io::read<NetUInt32>(entries);
+					
+					out_hashMap.clear();
+					for (UInt32 i = 0; i < entries; ++i)
+					{
+						String key, value;
+						packet
+							>> io::read_container<NetUInt8>(key)
+							>> io::read_container<NetUInt8>(value);
+						out_hashMap[key] = value;
+					}
+
 					return packet;
 				}
 			}
