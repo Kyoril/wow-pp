@@ -550,19 +550,6 @@ namespace wowpp
 	{
 		if (apply)
 		{
-			m_onProc = m_caster->spellProcEvent.connect(
-			[this](UInt32 procFlag, GameUnit * target, const proto::SpellEntry * spell) {
-				if (procFlag == game::spell_proc_flags::TakenMeleeAutoAttack)
-				{
-					handleDamageShieldProc(target);
-				}
-			});
-			/*
-			m_procTakenAutoAttack = m_caster->takenMeleeAutoAttack.connect(
-			[&](GameUnit * victim) {
-				handleDamageShieldProc(victim);
-			});
-			*/
 		}
 	}
 
@@ -2116,43 +2103,19 @@ namespace wowpp
 
 		if (m_spell.procflags() != game::spell_proc_flags::None)
 		{
+			//this if probably not needed
 			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0 ||
 				(m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0 ||
 				(m_spell.procflags() & game::spell_proc_flags::TakenMeleeAutoAttack) != 0 ||
-				(m_spell.procflags() & game::spell_proc_flags::DoneMeleeAutoAttack) != 0 ||
-				(m_spell.procexflags() & game::spell_proc_flags_ex::CriticalHit) != 0)
+				(m_spell.procflags() & game::spell_proc_flags::DoneMeleeAutoAttack) != 0)
 			{
-				m_onProc = m_target.spellProcEvent.connect(
-				[this](UInt32 procFlag, GameUnit * target, const proto::SpellEntry * spell) {
-					if (checkProc(procFlag, spell))
+				m_onProc = m_caster->spellProcEvent.connect(
+				[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell, UInt32 amount) {
+					if (checkProc(amount != 0, target, procFlag, procEx, procSpell))
 					{
-						if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
-						{
-							handleProcModifier(procFlag, target);
-						}
-
-						if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0)
-						{
-							handleProcModifier(procFlag, target);
-						}
-
-						if ((procFlag & game::spell_proc_flags::TakenMeleeAutoAttack) != 0)
-						{
-							handleProcModifier(procFlag, target);
-						}
-
-						if ((procFlag & game::spell_proc_flags::DoneMeleeAutoAttack) != 0)
-						{
-							handleProcModifier(procFlag, target);
-						}
-
-						if ((procFlag & game::spell_proc_flags_ex::CriticalHit) != 0)
-						{
-							handleProcModifier(procFlag, target);
-						}
+						handleProcModifier(procFlag, target);
 					}
 				});
-
 			}
 			if ((m_spell.procflags() & game::spell_proc_flags::TakenDamage) != 0)
 			{
@@ -2184,19 +2147,11 @@ namespace wowpp
 			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0 ||
 				(m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
 			{
-				m_onProc = m_target.spellProcEvent.connect(
-				[this](UInt32 procFlag, GameUnit * target, const proto::SpellEntry * spell) {
-					if (checkProc(procFlag, spell))
+				m_onProc = m_caster->spellProcEvent.connect(
+				[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell, UInt32 amount) {
+					if (checkProc(amount != 0, target, procFlag, procEx, procSpell))
 					{
-						if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
-						{
-							handleProcModifier(procFlag, target);
-						}
-
-						if ((procFlag & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0)
-						{
-							handleProcModifier(procFlag, target);
-						}
+						handleProcModifier(procFlag, target);
 					}
 				});
 			}
@@ -2216,8 +2171,6 @@ namespace wowpp
 		m_procKill.disconnect();
 		m_procKilled.disconnect();
 		m_onProc.disconnect();
-		m_procTakenAutoAttack.disconnect();
-		m_procAutoAttack.disconnect();
 		m_takenDamage.disconnect();
 		m_targetStartedCasting.disconnect();
 		m_targetStartedAttacking.disconnect();
@@ -2312,60 +2265,109 @@ namespace wowpp
 		});
 	}
 
-	bool Aura::checkProc(UInt32 procFlag, const proto::SpellEntry *spell)
+	bool Aura::checkProc(bool active, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell)
 	{
-		// proc is not a spell
-
-		if (m_spell.procexflags())
+		UInt32 eventProcFlag;
+		if (m_spell.proccustomflags())
 		{
-			if (!(m_spell.procexflags() & procFlag))
-			{
-				return false;
-			}
+			eventProcFlag = m_spell.proccustomflags();
 		}
-		
-		if (!spell)
+		else
+		{
+			eventProcFlag = m_spell.procflags();
+		}
+
+		// Shouldn't happen but just in case
+		/*
+		if (!eventProcFlag)
+		{
+			return false;
+		}
+		*/
+
+		if (procSpell && procSpell->id() == m_spell.id() && !(eventProcFlag & game::spell_proc_flags::TakenPeriodic))
+		{
+			return false;
+		}
+
+		if (!(procFlag & eventProcFlag))
+		{
+			return false;
+		}
+
+		/*
+		if (eventProcFlag & (game::spell_proc_flags::Killed | game::spell_proc_flags::Kill | game::spell_proc_flags::DoneTrapActivation))
 		{
 			return true;
 		}
+		*/
 
-		if (spell->id() == m_spell.id() ||
-			spell->family() != m_spell.family())
+		if (!procSpell)
 		{
-			return false;
+			if (m_spell.procschool() && !(m_spell.procschool() & game::spell_school_mask::Normal))
+			{
+				return false;
+			}
+		}
+		else
+		{
+			if (m_spell.procschool() && !(m_spell.procschool() & procSpell->schoolmask()))
+			{
+				return false;
+			}
+
+			if (m_spell.procfamily() && (m_spell.procfamily() != procSpell->family()))
+			{
+				return false;
+			}
+
+			
+			if (m_spell.procfamilyflags () && !(m_spell.procfamilyflags() & procSpell->familyflags()))
+			{
+				return false;
+			}
+			
 		}
 
-		if (m_spell.procfamilyflags())
+		if (m_spell.procexflags() != game::spell_proc_flags_ex::None)
 		{
-			if (!(m_spell.procfamilyflags() & spell->familyflags()))
+			if (!(m_spell.procexflags() & procEx))
 			{
 				return false;
 			}
 		}
 
-		if ((m_spell.family() == game::spell_family::Mage &&
-			(m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0))
+		if (!m_spell.procfamily() && m_effect.affectmask() && !(m_effect.affectmask() & procSpell->familyflags()))
 		{
 			return false;
 		}
-
-		if (m_effect.triggerspell())
+		else
 		{
-			if (m_effect.triggerspell() == spell->id())
+			if (!(m_spell.procexflags() & game::spell_proc_flags_ex::TriggerAlways))
 			{
-				return false;
-			}
-		}
+				if (!target && m_caster->isGameCharacter() &&
+					reinterpret_cast<GameCharacter*>(m_caster)->getTotalSpellMods(SpellModType(m_effect.aura()), SpellModOp(m_effect.miscvaluea()), procSpell->id()))
+				{
+					return true;
+				}
 
-		if (m_spell.procschool())
-		{
-			if (m_spell.procschool() != spell->schoolmask())
-			{
-				return false;
+				if (m_spell.procexflags() == game::spell_proc_flags_ex::None)
+				{
+					if (!((procEx & (game::spell_proc_flags_ex::NormalHit | game::spell_proc_flags_ex::CriticalHit)) && active))
+					{
+						return false;
+					}
+				}
+				else
+				{
+					if ((m_spell.procexflags() & (game::spell_proc_flags_ex::NormalHit | game::spell_proc_flags_ex::CriticalHit) & procEx) && !active)
+					{
+						return false;
+					}
+				}
 			}
 		}
 
 		return true;
 	}
-
 }

@@ -29,6 +29,23 @@
 
 namespace wowpp
 {
+	struct HitResult final
+	{
+		UInt32 procAttacker;
+		UInt32 procVictim;
+		UInt32 procEx;
+		UInt32 amount;
+		
+		explicit HitResult(UInt32 procAttacker = 0, UInt32 procVictim = 0, UInt32 procEx = 0, UInt32 amount = 0)
+			: procAttacker(procAttacker)
+			, procVictim(procVictim)
+			, procEx(procEx)
+			, amount(amount)
+		{
+		}
+	};
+
+	typedef std::map<UInt64, HitResult> HitResultMap;
 	///
 	class SingleCastState final : public SpellCast::CastState, public std::enable_shared_from_this<SingleCastState>, public boost::noncopyable
 	{
@@ -134,6 +151,8 @@ namespace wowpp
 		bool m_tookCastItem;
 		UInt32 m_attackerProc;
 		UInt32 m_victimProc;
+		bool m_canTrigger;
+		HitResultMap m_hitResults;
 
 		void sendEndCast(bool success);
 		void onCastFinished();

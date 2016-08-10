@@ -446,7 +446,7 @@ namespace wowpp
 		/// Fired when the units stand state changed.
 		boost::signals2::signal<void(UnitStandState)> standStateChanged;
 
-		boost::signals2::signal<void(UInt32, GameUnit *, const proto::SpellEntry *)> spellProcEvent;
+		boost::signals2::signal<void(bool, GameUnit *, UInt32, UInt32, proto::SpellEntry const *, UInt32)> spellProcEvent;
 
 	public:
 
@@ -802,6 +802,9 @@ namespace wowpp
 		float getAttackSpeedPctModifier(UInt8 attackType) {
 			return m_attackSpeedPctModifier[attackType];
 		}
+
+		void procEvent(GameUnit *target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount, proto::SpellEntry const *procSpell);
+		void procEventFor(bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, UInt32 amount, proto::SpellEntry const *procSpell);
 
 	public:
 

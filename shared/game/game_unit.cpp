@@ -313,6 +313,24 @@ namespace wowpp
 		m_attackSpeedPctModifier[attackType] *= (apply ? (1.0f + modifier) : 1.0f / (1.0f + modifier));
 	}
 
+	void GameUnit::procEvent(GameUnit * target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount, proto::SpellEntry const * procSpell)
+	{
+		if (procAttacker)
+		{
+			procEventFor(false, target, procAttacker, procEx, amount, procSpell);
+		}
+
+		if (target && target->isAlive() && procVictim)
+		{
+			target->procEventFor(true, this, procVictim, procEx, amount, procSpell);
+		}
+	}
+
+	void GameUnit::procEventFor(bool isVictim, GameUnit * target, UInt32 procFlag, UInt32 procEx, UInt32 amount, proto::SpellEntry const * procSpell)
+	{
+		spellProcEvent(isVictim, target, procFlag, procEx, procSpell, amount);
+	}
+
 	void GameUnit::levelChanged(const proto::LevelEntry &levelInfo)
 	{
 		// Get race and class
@@ -640,6 +658,29 @@ namespace wowpp
 				{
 					GameUnit *targetUnit = targets[i];
 
+					UInt32 procAttacker = game::spell_proc_flags::None;
+					UInt32 procVictim = game::spell_proc_flags::None;
+
+					switch (m_weaponAttack)
+					{
+						case game::weapon_attack::BaseAttack:
+							procAttacker = game::spell_proc_flags::DoneMeleeAutoAttack;
+							procVictim = game::spell_proc_flags::TakenMeleeAutoAttack;
+							break;
+						case game::weapon_attack::OffhandAttack:
+							procAttacker = game::spell_proc_flags::DoneMeleeAutoAttack | game::spell_proc_flags::DoneOffhandAttack;
+							procVictim = game::spell_proc_flags::TakenMeleeAutoAttack;
+							break;
+						case game::weapon_attack::RangedAttack:
+							procAttacker = game::spell_proc_flags::DoneRangedAutoAttack;
+							procVictim = game::spell_proc_flags::TakenRangedAutoAttack;
+							break;
+						default:
+							break;
+					}
+
+					UInt32 procEx = game::spell_proc_flags_ex::None;
+
 					UInt32 totalDamage = 0;
 					UInt32 blocked = 0;
 					bool crit = false;
@@ -647,18 +688,22 @@ namespace wowpp
 					UInt32 absorbed = 0;
 					if (victimStates[i] == game::victim_state::IsImmune)
 					{
+						procEx |= game::spell_proc_flags_ex::Immune;
 						totalDamage = 0;
 					}
 					else if (hitInfos[i] == game::hit_info::Miss)
 					{
+						procEx |= game::spell_proc_flags_ex::Miss;
 						totalDamage = 0;
 					}
 					else if (victimStates[i] == game::victim_state::Dodge)
 					{
+						procEx |= game::spell_proc_flags_ex::Dodge;
 						totalDamage = 0;
 					}
 					else if (victimStates[i] == game::victim_state::Parry)
 					{
+						procEx |= game::spell_proc_flags_ex::Parry;
 						totalDamage = 0;
 						//TODO accelerate next m_victim autohit
 					}
@@ -677,6 +722,8 @@ namespace wowpp
 
 						if (hitInfos[i] == game::hit_info::Glancing)
 						{
+							procEx |= game::spell_proc_flags_ex::NormalHit;
+
 							bool attackerIsCaster = false;	//TODO check it
 							float attackerRating = getLevel() * 5.0f;	//TODO get real rating
 							float victimRating = targetUnit->getLevel() * 5.0f;
@@ -716,6 +763,7 @@ namespace wowpp
 						}
 						else if (victimStates[i] == game::victim_state::Blocks)
 						{
+							procEx |= game::spell_proc_flags_ex::Block;
 							UInt32 blockValue = 50;	//TODO get from m_victim
 							if (blockValue >= totalDamage)	//avoid negative damage when blockValue is high
 							{
@@ -730,13 +778,18 @@ namespace wowpp
 						}
 						else if (hitInfos[i] == game::hit_info::CriticalHit)
 						{
-							targetUnit->spellProcEvent(game::spell_proc_flags_ex::CriticalHit, targetUnit, nullptr);
+							procEx |= game::spell_proc_flags_ex::CriticalHit;
 							crit = true;
 							totalDamage *= 2.0f;
 						}
 						else if (hitInfos[i] == game::hit_info::Crushing)
 						{
+							procEx |= game::spell_proc_flags_ex::NormalHit;
 							totalDamage *= 1.5f;
+						}
+						else
+						{
+							procEx |= game::spell_proc_flags_ex::NormalHit;
 						}
 
 						resisted = totalDamage * (resists[i] / 100.0f);
@@ -744,6 +797,7 @@ namespace wowpp
 						if (absorbed > 0 && absorbed == totalDamage)
 						{
 							hitInfos[i] = static_cast<game::HitInfo>(hitInfos[i] | game::hit_info::Absorb);
+							procEx |= game::spell_proc_flags_ex::Absorb;
 						}
 					}
 
@@ -796,19 +850,17 @@ namespace wowpp
 					// Deal damage (Note: m_victim can become nullptr, if the target dies)
 					if (totalDamage > 0)
 					{
-						//victim->takenMeleeAutoAttack(this);
-						victim->spellProcEvent(game::spell_proc_flags::TakenMeleeAutoAttack, this, nullptr);
-						victim->dealDamage(totalDamage - resisted - absorbed, (1 << 0), this, totalDamage - resisted - absorbed);
+						procVictim |= game::spell_proc_flags::TakenDamage;
 
-						// Trigger auto attack procs
-						//doneMeleeAutoAttack(victim);
-						spellProcEvent(game::spell_proc_flags::DoneMeleeAutoAttack, this, nullptr);
+						victim->dealDamage(totalDamage - resisted - absorbed, (1 << 0), this, totalDamage - resisted - absorbed);
 					}
 					else
 					{
 						// Still add threat to enter combat in case of miss etc.
 						victim->threaten(*this, 0.0f);
 					}
+
+					procEvent(targetUnit, procAttacker, procVictim, procEx, totalDamage - resisted - absorbed, nullptr);
 				}
 			}
 		}
