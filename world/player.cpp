@@ -3102,7 +3102,6 @@ namespace wowpp
 		m_tradeData->getTrader()->sendTradeStatus(m_tradeStatusInfo);
 		
 		//openWindow
-		this->getCharacter()->setUInt32Value(character_fields::Coinage, 2000);
 	}
 
 	void Player::handleAcceptTrade(game::Protocol::IncomingPacket &packet)
@@ -3112,6 +3111,9 @@ namespace wowpp
 		{
 			return;
 		}
+
+		std::shared_ptr<GameItem> playerItems[trade_slots::TradedCount];
+		std::shared_ptr<GameItem> traderItems[trade_slots::TradedCount];
 
 		Player* trader = my_Trade-> getTrader();
 		Player* player = my_Trade->getPlayer();
@@ -3140,6 +3142,10 @@ namespace wowpp
 			his_Trade->setTradeAcceptState(false);
 			return;
 		}
+
+		//anti cheat for items
+
+
 								
 		if (his_Trade->isAccepted())
 		{
@@ -3149,6 +3155,36 @@ namespace wowpp
 			info.tradestatus = game::trade_status::TradeAccept;
 			trader->sendTradeStatus(info);
 			//test item << inventory
+
+			TradeStatusInfo playerCanComplete, traderCanComplete;
+
+			//TODO: checkt if there is enough place i inventory
+
+			
+			std::vector<std::shared_ptr<GameItem>> my_Items;
+			my_Items = my_Trade->getItem();
+			
+			for (int i = 0; TradeSlots::Count < 1; i++)		
+			{
+				if (my_Items[i] != nullptr)
+				{
+					playerItems[i] = my_Items[i];
+				}
+			}
+			std::vector<std::shared_ptr<GameItem>> his_Items;
+			his_Items = his_Trade->getItem();
+
+			for (int i = 0; i < TradeSlots::Count; i++)		
+			{
+				if (his_Items[i] != nullptr)
+				{
+					traderItems[i] = his_Items[i];
+				}
+			}
+
+			moveItems(my_Items, his_Items);
+
+			
 
 			//execute Trade
 
@@ -3211,7 +3247,7 @@ namespace wowpp
 			m_tradeData->getTrader()->sendUpdateTrade();
 		}
 
-		//sendUpdateTrade(gold);
+		
 	}
 
 	void Player::handleSetTradeItem(game::Protocol::IncomingPacket &packet)
@@ -3239,9 +3275,10 @@ namespace wowpp
 			return;
 		}
 
+		UInt16 absSlot = Inventory::getAbsoluteSlot(bag, slot);
 		auto this_player = this->getCharacter();
 		auto &inventory = this_player->getInventory();
-		auto item = inventory.getItemAtSlot(Inventory::getAbsoluteSlot(bag, slot));
+		auto item = inventory.getItemAtSlot(absSlot);
 		//TODO: ask if there is an item like that in trade already
 		if (item == nullptr)
 		{
@@ -3253,9 +3290,48 @@ namespace wowpp
 		
 		info.tradestatus = game::trade_status::BackToTrade;
 		m_tradeData->getPlayer()->sendTradeStatus(std::move(info));
-
+		my_Trade->setAbsSlot(absSlot, tradeSlot);
 		my_Trade->setItem(item, tradeSlot);
 		m_tradeData->getTrader()->sendUpdateTrade();
+	}
+
+
+
+	void Player::moveItems(std::vector<std::shared_ptr<GameItem>> my_Items, std::vector<std::shared_ptr<GameItem>> his_Items)
+	{
+		UInt8 bag, slot;
+		auto trader = m_tradeData->getTrader();
+		if (trader == nullptr)
+		{
+			return;
+		}
+
+		for (int i = 0; i < TradeSlots::TradedCount; i++)
+		{
+			//TODO: check if items exists and can be traded/stored
+			
+			if (my_Items[i])
+			{
+				auto &inventory = this->getCharacter()->getInventory();
+
+				auto &traderInventory = m_tradeData->getTrader()->getCharacter()->getInventory();
+				traderInventory.createItems(my_Items[i]->getEntry(), my_Items[i]->getStackCount());
+				inventory.removeItem(inventory.getAbsoluteSlot(bag, slot));
+
+			}
+
+			if (his_Items[i])
+			{
+				auto &inventory = trader->getCharacter()->getInventory();
+				
+				auto &myInventory = this->getCharacter()->getInventory();
+				myInventory.createItems(his_Items[i]->getEntry(), his_Items[i]->getStackCount());
+				inventory.removeItem(trader->m_tradeData->getAbsSlot(i));
+			}
+		}
+
+
+
 	}
 
 	void Player::sendTradeStatus(TradeStatusInfo info)

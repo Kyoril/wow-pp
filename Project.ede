@@ -1,0 +1,6 @@
+;; Object wowpp
+;; EDE Project Files are auto generated: Do Not Edit
+(ede-proj-project "wowpp"
+  :file "Project.ede"
+  :name "wowpp"
+  :targets nil)
