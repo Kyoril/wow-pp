@@ -313,22 +313,22 @@ namespace wowpp
 		m_attackSpeedPctModifier[attackType] *= (apply ? (1.0f + modifier) : 1.0f / (1.0f + modifier));
 	}
 
-	void GameUnit::procEvent(GameUnit * target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount, proto::SpellEntry const * procSpell)
+	void GameUnit::procEvent(GameUnit * target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount, UInt8 attackType, proto::SpellEntry const * procSpell)
 	{
 		if (procAttacker)
 		{
-			procEventFor(false, target, procAttacker, procEx, amount, procSpell);
+			procEventFor(false, target, procAttacker, procEx, amount, attackType, procSpell);
 		}
 
 		if (target && target->isAlive() && procVictim)
 		{
-			target->procEventFor(true, this, procVictim, procEx, amount, procSpell);
+			target->procEventFor(true, this, procVictim, procEx, amount, attackType, procSpell);
 		}
 	}
 
-	void GameUnit::procEventFor(bool isVictim, GameUnit * target, UInt32 procFlag, UInt32 procEx, UInt32 amount, proto::SpellEntry const * procSpell)
+	void GameUnit::procEventFor(bool isVictim, GameUnit * target, UInt32 procFlag, UInt32 procEx, UInt32 amount, UInt8 attackType, proto::SpellEntry const * procSpell)
 	{
-		spellProcEvent(isVictim, target, procFlag, procEx, procSpell, amount);
+		spellProcEvent(isVictim, target, procFlag, procEx, procSpell, amount, attackType);
 	}
 
 	void GameUnit::levelChanged(const proto::LevelEntry &levelInfo)
@@ -860,7 +860,7 @@ namespace wowpp
 						victim->threaten(*this, 0.0f);
 					}
 
-					procEvent(targetUnit, procAttacker, procVictim, procEx, totalDamage - resisted - absorbed, nullptr);
+					procEvent(targetUnit, procAttacker, procVictim, procEx, totalDamage - resisted - absorbed, static_cast<UInt8>(m_weaponAttack), nullptr);
 				}
 			}
 		}
@@ -2017,6 +2017,11 @@ namespace wowpp
 	float GameUnit::getCritChance(GameUnit &attacker, UInt8 school)
 	{
 		return 10.0f;
+	}
+
+	UInt32 GameUnit::getAttackTime(UInt8 attackType)
+	{
+		return getUInt32Value(unit_fields::BaseAttackTime + attackType) / m_attackSpeedPctModifier[attackType];
 	}
 
 	UInt32 GameUnit::getBonus(UInt8 school)

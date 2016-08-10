@@ -99,6 +99,7 @@ namespace wowpp
 		, m_attackerProc(0)
 		, m_victimProc(0)
 		, m_canTrigger(false)
+		, m_attackType(0)
 	{
 		// Check if the executer is in the world
 		auto &executer = m_cast.getExecuter();
@@ -2237,6 +2238,7 @@ namespace wowpp
 			if (m_spell.attributes(3) & game::spell_attributes_ex_c::ReqOffhand)
 			{
 				m_attackerProc |= game::spell_proc_flags::DoneOffhandAttack;
+				m_attackType = game::weapon_attack::OffhandAttack;
 			}
 			break;
 		case game::spell_dmg_class::Ranged:
@@ -2250,6 +2252,8 @@ namespace wowpp
 				m_attackerProc = game::spell_proc_flags::DoneSpellRangedDmgClass;
 				m_victimProc = game::spell_proc_flags::TakenSpellRangedDmgClass;
 			}
+
+			m_attackType = game::weapon_attack::RangedAttack;
 			break;
 		default:
 			bool isPositive = false;
@@ -2276,6 +2280,7 @@ namespace wowpp
 			{
 				m_attackerProc = game::spell_proc_flags::DoneRangedAutoAttack;
 				m_victimProc = game::spell_proc_flags::TakenRangedAutoAttack;
+				m_attackType = game::weapon_attack::RangedAttack;
 			}
 			else
 			{
@@ -2361,14 +2366,14 @@ namespace wowpp
 							GameObject *targetObj = world->findObjectByGUID(itr.first);
 							auto *target = reinterpret_cast<GameUnit *>(targetObj);
 
-							m_cast.getExecuter().procEvent(target, itr.second.procAttacker, itr.second.procVictim, itr.second.procEx, itr.second.amount, &m_spell);
+							m_cast.getExecuter().procEvent(target, itr.second.procAttacker, itr.second.procVictim, itr.second.procEx, itr.second.amount, m_attackType, &m_spell);
 						}
 					}
 				}
 			}
 			else
 			{
-				m_cast.getExecuter().procEvent(nullptr, m_attackerProc, m_victimProc, 0, 0, &m_spell);
+				m_cast.getExecuter().procEvent(nullptr, m_attackerProc, m_victimProc, 0, 0, m_attackType, &m_spell);
 			}
 		}
 

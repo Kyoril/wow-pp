@@ -153,6 +153,7 @@ namespace wowpp
 		UInt32 m_victimProc;
 		bool m_canTrigger;
 		HitResultMap m_hitResults;
+		UInt8 m_attackType;
 
 		void sendEndCast(bool success);
 		void onCastFinished();

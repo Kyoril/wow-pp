@@ -321,7 +321,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleProcModifier(UInt32 procType, GameUnit *target/* = nullptr*/)
+	void Aura::handleProcModifier(UInt8 attackType, GameUnit *target/* = nullptr*/)
 	{
 		namespace aura = game::aura_type;
 
@@ -334,6 +334,11 @@ namespace wowpp
 		else
 		{
 			procChance = m_spell.procchance();
+		}
+
+		if (m_spell.procpermin())
+		{
+			procChance = m_caster->getAttackTime(attackType) * m_spell.procpermin() / 600.0f;
 		}
 
 		if (m_caster && m_caster->isGameCharacter())
@@ -2110,10 +2115,10 @@ namespace wowpp
 				(m_spell.procflags() & game::spell_proc_flags::DoneMeleeAutoAttack) != 0)
 			{
 				m_onProc = m_caster->spellProcEvent.connect(
-				[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell, UInt32 amount) {
+				[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell, UInt32 amount, UInt8 attackType) {
 					if (checkProc(amount != 0, target, procFlag, procEx, procSpell))
 					{
-						handleProcModifier(procFlag, target);
+						handleProcModifier(attackType, target);
 					}
 				});
 			}
@@ -2129,7 +2134,7 @@ namespace wowpp
 			{
 				m_procKilled = m_caster->killed.connect(
 				[&](GameUnit * killer) {
-					handleProcModifier(game::spell_proc_flags::Killed, killer);
+					handleProcModifier(0, killer);
 				});
 			}
 
@@ -2137,7 +2142,7 @@ namespace wowpp
 			{
 				m_procKill = m_caster->procKilledTarget.connect(
 				[&](GameUnit & killed) {
-					handleProcModifier(game::spell_proc_flags::Kill, &killed);
+					handleProcModifier(0, &killed);
 				});
 			}
 			
@@ -2148,10 +2153,10 @@ namespace wowpp
 				(m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
 			{
 				m_onProc = m_caster->spellProcEvent.connect(
-				[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell, UInt32 amount) {
+				[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell, UInt32 amount, UInt8 attackType) {
 					if (checkProc(amount != 0, target, procFlag, procEx, procSpell))
 					{
-						handleProcModifier(procFlag, target);
+						handleProcModifier(attackType, target);
 					}
 				});
 			}
