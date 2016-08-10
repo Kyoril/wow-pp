@@ -59,7 +59,6 @@ namespace wowpp
 		UInt64 guid;
 		Player *thisplayer;
 		Player *tradeplayer;
-		
 	};
 
 
@@ -72,7 +71,7 @@ namespace wowpp
 	}
 
 	/// Player connection class.
-	class Player final: public boost::noncopyable, public ITileSubscriber
+	class Player final : public boost::noncopyable, public ITileSubscriber
 	{
 	public:
 
@@ -192,8 +191,6 @@ namespace wowpp
 		void sendTradeStatus(TradeStatusInfo info);
 		/// 
 		void sendUpdateTrade();
-		///
-		void moveItems(std::vector<std::shared_ptr<GameItem>> my_Items, std::vector<std::shared_ptr<GameItem>> his_Items);
 
 	public:
 
