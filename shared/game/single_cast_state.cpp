@@ -737,12 +737,11 @@ namespace wowpp
 			}
 			else
 			{
-				HitResult procInfo = m_hitResults[targetUnit->getGuid()];
+				HitResult &procInfo = m_hitResults[targetUnit->getGuid()];
 				procInfo.procAttacker |= procAttacker;
 				procInfo.procVictim |= procVictim;
 				procInfo.procEx |= procEx;
 				procInfo.amount += totalDamage - resisted - absorbed;
-				m_hitResults[targetUnit->getGuid()] = procInfo;
 			}
 
 		}
@@ -1006,12 +1005,11 @@ namespace wowpp
 			}
 			else
 			{
-				HitResult procInfo = m_hitResults[targetUnit->getGuid()];
+				HitResult &procInfo = m_hitResults[targetUnit->getGuid()];
 				procInfo.procAttacker |= procAttacker;
 				procInfo.procVictim |= procVictim;
 				procInfo.procEx |= procEx;
 				procInfo.amount += totalDamage - resisted - absorbed;
-				m_hitResults[targetUnit->getGuid()] = procInfo;
 			}
 		}
 	}
@@ -1124,11 +1122,10 @@ namespace wowpp
 			}
 			else
 			{
-				HitResult procInfo = m_hitResults[targetUnit->getGuid()];
+				HitResult &procInfo = m_hitResults[targetUnit->getGuid()];
 				procInfo.procAttacker |= procAttacker;
 				procInfo.procVictim |= procVictim;
 				procInfo.procEx |= procEx;
-				m_hitResults[targetUnit->getGuid()] = procInfo;
 			}
 		}
 	}
@@ -1982,11 +1979,10 @@ namespace wowpp
 			}
 			else
 			{
-				HitResult procInfo = m_hitResults[targetUnit->getGuid()];
+				HitResult &procInfo = m_hitResults[targetUnit->getGuid()];
 				procInfo.procAttacker |= procAttacker;
 				procInfo.procVictim |= procVictim;
 				procInfo.procEx |= procEx;
-				m_hitResults[targetUnit->getGuid()] = procInfo;
 			}
 		}
 
@@ -2089,12 +2085,11 @@ namespace wowpp
 			}
 			else
 			{
-				HitResult procInfo = m_hitResults[targetUnit->getGuid()];
+				HitResult &procInfo = m_hitResults[targetUnit->getGuid()];
 				procInfo.procAttacker |= procAttacker;
 				procInfo.procVictim |= procVictim;
 				procInfo.procEx |= procEx;
 				procInfo.amount += totalPoints;
-				m_hitResults[targetUnit->getGuid()] = procInfo;
 			}
 		}
 	}
@@ -2604,11 +2599,10 @@ namespace wowpp
 			}
 			else
 			{
-				HitResult procInfo = m_hitResults[targetUnit->getGuid()];
+				HitResult &procInfo = m_hitResults[targetUnit->getGuid()];
 				procInfo.procAttacker |= procAttacker;
 				procInfo.procVictim |= procVictim;
 				procInfo.procEx |= procEx;
-				m_hitResults[targetUnit->getGuid()] = procInfo;
 			}
 		}
 	}
@@ -2694,12 +2688,11 @@ namespace wowpp
 			}
 			else
 			{
-				HitResult procInfo = m_hitResults[targetUnit->getGuid()];
+				HitResult &procInfo = m_hitResults[targetUnit->getGuid()];
 				procInfo.procAttacker |= procAttacker;
 				procInfo.procVictim |= procVictim;
 				procInfo.procEx |= procEx;
 				procInfo.amount += damage - absorbed;
-				m_hitResults[targetUnit->getGuid()] = procInfo;
 			}
 		}
 	}
@@ -2928,11 +2921,10 @@ namespace wowpp
 			}
 			else
 			{
-				HitResult procInfo = m_hitResults[targetUnit->getGuid()];
+				HitResult &procInfo = m_hitResults[targetUnit->getGuid()];
 				procInfo.procAttacker |= procAttacker;
 				procInfo.procVictim |= procVictim;
 				procInfo.procEx |= procEx;
-				m_hitResults[targetUnit->getGuid()] = procInfo;
 			}
 		}
 	}
@@ -3202,12 +3194,11 @@ namespace wowpp
 			}
 			else
 			{
-				HitResult procInfo = m_hitResults[targetUnit->getGuid()];
+				HitResult &procInfo = m_hitResults[targetUnit->getGuid()];
 				procInfo.procAttacker |= procAttacker;
 				procInfo.procVictim |= procVictim;
 				procInfo.procEx |= procEx;
 				procInfo.amount += totalDamage;
-				m_hitResults[targetUnit->getGuid()] = procInfo;
 			}
 		}
 	}
