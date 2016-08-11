@@ -303,6 +303,59 @@ namespace wowpp
 
 	typedef base_mod_type::Type BaseModType;
 
+	/// Enumerates crowd control states of a unit, which do affect control over the unit.
+	namespace unit_state
+	{
+		enum Type
+		{
+			/// Default state - no effect applied.
+			Default = 0x00,
+			/// Unit is stunned.
+			Stunned = 0x01,
+			/// Unit is confused.
+			Confused = 0x02,
+			/// Unit is rooted.
+			Rooted = 0x04,
+			/// Unit is charmed by another unit.
+			Charmed = 0x08,
+			/// Unit is feared.
+			Feared = 0x10
+		};
+	}
+
+	namespace combat_rating
+	{
+		enum Type
+		{
+			WeaponSkill = 0,
+			DefenseSkill = 1,
+			Dodge = 2,
+			Parry = 3,
+			Block = 4,
+			HitMelee = 5,
+			HitRanged = 6,
+			HitSpell = 7,
+			CritMelee = 8,
+			CritRanged = 9,
+			CritSpell = 10,
+			HitTakenMelee = 11,
+			HitTakenRanged = 12,
+			HitTakenSpell = 13,
+			CritTakenMelee = 14,
+			CritTakenRanged = 15,
+			CritTakenSpell = 16,
+			HasteMelee = 17,
+			HasteRanged = 18,
+			HasteSpell = 19,
+			WeaponSkillMainhand = 20,
+			WeaponSkillOffhand = 21,
+			WeaponSkillRanged = 22,
+			Expertise = 23
+		};
+	}
+
+	typedef combat_rating::Type CombatRating;
+
 	namespace proto
 	{
 		class ClassEntry;
@@ -329,6 +382,7 @@ namespace wowpp
 		typedef std::function<void(game::SpellCastResult)> SpellSuccessCallback;
 		typedef std::function<bool()> AttackSwingCallback;
 		typedef std::unordered_map<UInt32, GameTime> CooldownMap;
+		typedef std::unordered_map<UInt32, GameUnit *> TrackAuraTargetsMap;
 
 		/// Fired when this unit was killed. Parameter: GameUnit* killer (may be nullptr if killer
 		/// information is not available (for example due to environmental damage))
@@ -361,13 +415,13 @@ namespace wowpp
 		///
 		boost::signals2::signal<GameUnit *()> getTopThreatener;
 		/// Fired when an auto attack hit.
-		boost::signals2::signal<void(GameUnit *)> doneMeleeAutoAttack;
+		//boost::signals2::signal<void(GameUnit *)> doneMeleeAutoAttack;
 		/// Fired when done an melee attack hit  (include miss/dodge...)
 		boost::signals2::signal<void(GameUnit *, game::VictimState)> doneMeleeAttack;
 		/// Fired when hit by a melee attack (include miss/dodge...)
 		boost::signals2::signal<void(GameUnit *, game::VictimState)> takenMeleeAttack;
 		/// Fired when hit by an auto attack.
-		boost::signals2::signal<void(GameUnit *)> takenMeleeAutoAttack;
+		//boost::signals2::signal<void(GameUnit *)> takenMeleeAutoAttack;
 		/// Fired when done any magic damage
 		boost::signals2::signal<void(GameUnit *, UInt32)> doneSpellMagicDmgClassNeg;
 		/// Fired when hit by any damage.
@@ -382,12 +436,8 @@ namespace wowpp
 		boost::signals2::signal<void(const proto::TriggerEntry &, GameUnit &)> unitTrigger;
 		/// Fired when a target was killed by this unit, which could trigger Kill-Procs. Only fired when XP or honor is rewarded.
 		boost::signals2::signal<void(GameUnit &)> procKilledTarget;
-		/// Fired when this unit gets rooted or unrooted.
-		boost::signals2::signal<void(bool)> rootStateChanged;
-		/// Fired when this unit gets stunned or unstunned.
-		boost::signals2::signal<void(bool)> stunStateChanged;
-		/// Fired when this unit gets feared or unfeared.
-		boost::signals2::signal<void(bool)> fearStateChanged;
+		/// Fired when a unit state changed.
+		boost::signals2::signal<void(UInt32, bool)> unitStateChanged;
 		/// Fired when this unit enters or leaves stealth mode.
 		boost::signals2::signal<void(bool)> stealthStateChanged;
 		/// Fired when the movement speed of this unit changes.
@@ -396,6 +446,8 @@ namespace wowpp
 		boost::signals2::signal<void(UInt32)> cooldownEvent;
 		/// Fired when the units stand state changed.
 		boost::signals2::signal<void(UnitStandState)> standStateChanged;
+
+		boost::signals2::signal<void(bool, GameUnit *, UInt32, UInt32, const proto::SpellEntry *, UInt32, UInt8)> spellProcEvent;
 
 	public:
 
@@ -587,6 +639,8 @@ namespace wowpp
 		float getResiPercentage(UInt8 school, UInt32 attackerLevel, bool isBinary);
 		/// 
 		float getCritChance(GameUnit &attacker, UInt8 school);
+		///
+		UInt32 getAttackTime(UInt8 attackType);
 		/// 
 		UInt32 getBonus(UInt8 school);
 		/// 
@@ -611,15 +665,19 @@ namespace wowpp
 
 		/// 
 		bool isStunned() const {
-			return m_isStunned;
+			return (m_state & unit_state::Stunned);
 		}
 		/// 
 		bool isRooted() const {
-			return m_isRooted;
+			return (m_state & unit_state::Rooted);
 		}
 		/// Determines whether this unit is feared.
 		bool isFeared() const {
-			return m_isFeared;
+			return (m_state & unit_state::Feared);
+		}
+		/// Determines whether this unit is confused.
+		bool isConfused() const {
+			return (m_state & unit_state::Confused);
 		}
 		/// 
 		bool canMove() const {
@@ -631,6 +689,8 @@ namespace wowpp
 		void notifyRootChanged();
 		/// 
 		void notifyFearChanged();
+		/// 
+		void notifyConfusedChanged();
 		/// 
 		void notifySpeedChanged(MovementType type);
 		/// 
@@ -704,6 +764,7 @@ namespace wowpp
 
 		virtual void applyHealingDoneBonus(UInt32 tickCount, UInt32 &healing);
 
+		virtual void applyHealingDoneBonus(UInt32 spellLevel, UInt32 playerLevel, UInt32 tickCount, UInt32 &healing);
 
 		/// Gets the current unit mover.
 		UnitMover &getMover() {
@@ -734,6 +795,26 @@ namespace wowpp
 		/// Enables or disables flight mode.
 		/// @param enable Whether flight mode will be enabled.
 		void setFlightMode(bool enable);
+
+		/// Modifies the bonus attack speed percentage for that character.
+		/// @param attackType The weapon attack type affected.
+		/// @param modifier The bonus percentage.
+		/// @param apply Wheter to apply or misapply the bonus.
+		void modifyAttackSpeedPctModifier(UInt8 attackType, float modifier, bool apply);
+		///
+		float getAttackSpeedPctModifier(UInt8 attackType) {
+			return m_attackSpeedPctModifier[attackType];
+		}
+		
+		///
+		void procEvent(GameUnit *target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount, UInt8 attackType, proto::SpellEntry const *procSpell);
+		///
+		void procEventFor(bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, UInt32 amount, UInt8 attackType, proto::SpellEntry const *procSpell);
+
+		///
+		TrackAuraTargetsMap &getTrackedAuras() {
+			return m_trackAuraTargets;
+		}
 
 	public:
 
@@ -810,14 +891,15 @@ namespace wowpp
 		AttackSwingCallback m_swingCallback;
 		AttackingUnitSet m_attackingUnits;
 		UInt32 m_mechanicImmunity;
-		bool m_isStunned;
-		bool m_isRooted;
-		bool m_isFeared;
 		bool m_isStealthed;
+		UInt32 m_state;
 		std::array<float, movement_type::Count> m_speedBonus;
 		CooldownMap m_spellCooldowns;
 		UnitStandState m_standState;
 		std::vector<std::shared_ptr<WorldObject>> m_worldObjects;
+		math::Vector3 m_confusedLoc;
+		std::array<float, 3> m_attackSpeedPctModifier;
+		TrackAuraTargetsMap m_trackAuraTargets;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameUnit const &object);

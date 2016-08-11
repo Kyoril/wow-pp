@@ -30,6 +30,7 @@
 #include "proto_data/project.h"
 #include "game/game_creature.h"
 #include "game/game_world_object.h"
+#include "game/game_bag.h"
 #include "trade_data.h"
 #include "game/unit_mover.h"
 
@@ -90,12 +91,15 @@ namespace wowpp
 			std::bind(&Player::onTargetAuraUpdated, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 		m_onTeleport = m_character->teleport.connect(
 			std::bind(&Player::onTeleport, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+		m_onResurrectRequest = m_character->resurrectRequested.connect(
+			std::bind(&Player::onResurrectRequest, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 		m_onCooldownEvent = m_character->cooldownEvent.connect([this](UInt32 spellId) {
 				sendProxyPacket(std::bind(game::server_write::cooldownEvent, std::placeholders::_1, spellId, m_character->getGuid()));
 		});
 		m_questChanged = m_character->questDataChanged.connect([this](UInt32 questId, const QuestStatusData &data) {
 			m_realmConnector.sendQuestData(m_character->getGuid(), questId, data);
-			if (data.status == game::quest_status::Complete)
+			if (data.status == game::quest_status::Complete ||
+				(data.status == game::quest_status::Incomplete && data.explored == true))
 			{
 				sendProxyPacket(std::bind(game::server_write::questupdateComplete, std::placeholders::_1, questId));
 			}
@@ -111,6 +115,20 @@ namespace wowpp
 			if (object.getEntry().type() == world_object_type::QuestGiver)
 			{
 				sendGossipMenu(object.getGuid());
+			}
+		});
+
+		m_onItemAdded = m_character->itemAdded.connect([this](UInt16 slot, UInt16 amount, bool looted, bool created) {
+			auto inst = m_character->getInventory().getItemAtSlot(slot);
+			if (inst)
+			{
+				UInt8 bag = 0, subslot = 0;
+				Inventory::getRelativeSlots(slot, bag, subslot);
+				const auto totalCount = m_character->getInventory().getItemCount(inst->getEntry().id());
+
+				sendProxyPacket(
+					std::bind(game::server_write::itemPushResult, std::placeholders::_1,
+						m_character->getGuid(), std::cref(*inst), looted, created, bag, subslot, amount, totalCount));
 			}
 		});
 
@@ -132,29 +150,31 @@ namespace wowpp
 		});
 
 		// Root / stun change signals
-		auto onRootOrStunUpdate = [this](bool flag) {
-			if (flag || m_character->isRooted() || m_character->isStunned())
+		auto onRootOrStunUpdate = [this](UInt32 state, bool flag) {
+			if (state == unit_state::Rooted || state == unit_state::Stunned)
 			{
-				// Root the character
-				if (m_character->isStunned())
+				if (flag || m_character->isRooted() || m_character->isStunned())
 				{
-					m_character->addFlag(unit_fields::UnitFlags, game::unit_flags::Stunned);
+					// Root the character
+					if (m_character->isStunned())
+					{
+						m_character->addFlag(unit_fields::UnitFlags, game::unit_flags::Stunned);
+					}
+					sendProxyPacket(
+						std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));
 				}
-				sendProxyPacket(
-					std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));
-			}
-			else
-			{
-				if (!m_character->isStunned())
+				else
 				{
-					m_character->removeFlag(unit_fields::UnitFlags, game::unit_flags::Stunned);
+					if (!m_character->isStunned())
+					{
+						m_character->removeFlag(unit_fields::UnitFlags, game::unit_flags::Stunned);
+					}
+					sendProxyPacket(
+						std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));
 				}
-				sendProxyPacket(
-					std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));
 			}
 		};
-		m_onRootUpdate = m_character->rootStateChanged.connect(onRootOrStunUpdate);
-		m_onStunUpdate = m_character->stunStateChanged.connect(onRootOrStunUpdate);
+		m_onUnitStateUpdate = m_character->unitStateChanged.connect(onRootOrStunUpdate);
 
 		// Spell modifier applied or misapplied (changed)
 		m_spellModChanged = m_character->spellModChanged.connect([this](SpellModType type, UInt8 bit, SpellModOp op, Int32 value) {
@@ -970,6 +990,7 @@ namespace wowpp
 			break;
 		case game::inventory_type::OffHandWeapon:
 		case game::inventory_type::Shield:
+		case game::inventory_type::Holdable:
 			targetSlot = player_equipment_slots::Offhand;
 			break;
 		case game::inventory_type::Weapon:
@@ -1339,6 +1360,9 @@ namespace wowpp
 				statDiff3,
 				statDiff4)
 			);
+
+		// Save character info at realm
+		saveCharacterData();
 	}
 
 	void Player::onAuraUpdated(UInt8 slot, UInt32 spellId, Int32 duration, Int32 maxDuration)
@@ -1504,6 +1528,12 @@ namespace wowpp
 			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spell.id()));
 	}
 
+	void Player::onResurrectRequest(UInt64 objectGUID, const String &sentName, UInt8 typeId)
+	{
+		sendProxyPacket(
+			std::bind(game::server_write::resurrectRequest, std::placeholders::_1, objectGUID, std::cref(sentName), typeId));
+	}
+
 	void Player::handleRepopRequest(game::Protocol::IncomingPacket &packet)
 	{
 		if (!m_character)
@@ -1534,7 +1564,7 @@ namespace wowpp
 	void Player::handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode)
 	{
 		// Can't receive player input when in one of these CC states
-		if (m_character->isFeared() || m_character->isStunned() || m_character->isRooted())
+		if (m_character->isFeared() || m_character->isStunned() || m_character->isRooted() || m_character->isConfused())
 			return;
 
 		MovementInfo info;
@@ -1922,7 +1952,13 @@ namespace wowpp
 			}
 
 			UInt64 time = spellEntry->casttime();
-			m_character->castSpell(std::move(targetMap), spell.spell(), -1, time, false, itemGuid);
+			m_character->castSpell(std::move(targetMap), spell.spell(), -1, time, false, itemGuid, [this, spellEntry](game::SpellCastResult result) {
+				if (result != game::spell_cast_result::CastOkay)
+				{
+					sendProxyPacket(
+						std::bind(game::server_write::castFailed, std::placeholders::_1, result, std::cref(*spellEntry), 0));
+				}
+			});
 		}
 	}
 
@@ -2285,6 +2321,14 @@ namespace wowpp
 		}
 		else if(creature)
 		{
+			// Is battlemaster?
+			if (creature->getUInt32Value(unit_fields::NpcFlags) & game::unit_npc_flags::Battlemaster)
+			{
+				sendProxyPacket(
+					std::bind(game::server_write::gossipMessage, std::placeholders::_1, creature->getGuid(), 7599));
+				return;
+			}
+
 			const auto *trainerEntry = m_project.trainers.getById(creature->getEntry().trainerentry());
 			if (trainerEntry)
 			{
@@ -3396,7 +3440,12 @@ namespace wowpp
 		ObjectGuid currentMailbox;
 		game::MailData mailInfo;
 
-		if (!(game::client_read::mailSend(packet, currentMailbox, mailInfo)))
+		if (!game::client_read::mailSend(packet, currentMailbox, mailInfo))
+		{
+			return;
+		}
+
+		if (mailInfo.receiver.empty())
 		{
 			return;
 		}
@@ -3417,11 +3466,6 @@ namespace wowpp
 
 		// TODO distance to mailbox
 		//float distance = m_character->getDistanceTo(target);
-
-		if (mailInfo.receiver.empty())
-		{
-			return;
-		}
 
 		String receiverCap = mailInfo.receiver;
 		capitalize(receiverCap);
@@ -3455,7 +3499,6 @@ namespace wowpp
 			}
 
 			auto item = inventory.getItemAtSlot(itemSlot);
-			// Check if it's a bag with items
 			if (!item)
 			{
 				// TODO send error
@@ -3463,6 +3506,22 @@ namespace wowpp
 			}
 
 			const auto &itemEntry = item->getEntry();
+
+			if (itemEntry.flags() & game::item_flags::Bound)
+			{
+				// TODO send error
+				return;
+			}
+
+			if (item->getTypeId() == object_type::Container)
+			{
+				auto bagPtr = std::static_pointer_cast<GameBag>(item);
+				if (bagPtr->isEmpty())
+				{
+					// TODO send error
+					return;
+				}
+			}
 
 			if ((itemEntry.flags() & game::item_flags::Conjured) ||
 				(item->getUInt32Value(item_fields::Duration)))
@@ -3490,7 +3549,37 @@ namespace wowpp
 
 		//TODO
 
-DLOG("CMSG_MAIL_SEND received from client");
-		
+		DLOG("CMSG_MAIL_SEND received from client");
+
+	}
+
+	void Player::handleResurrectResponse(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid;
+		UInt8 status;
+
+		if (!game::client_read::resurrectResponse(packet, guid, status))
+		{
+			return;
+		}
+
+		if (m_character->isAlive())
+		{
+			return;
+		}
+
+		if (status == 0)
+		{
+			math::Vector3 location;
+			m_character->setResurrectRequestData(0, 0, std::move(location), 0, 0);
+			return;
+		}
+
+		if (!m_character->isResurrectRequestedBy(guid))
+		{
+			return;
+		}
+
+		m_character->resurrectUsingRequestData();
 	}
 }

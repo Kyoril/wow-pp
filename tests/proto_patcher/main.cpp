@@ -1468,6 +1468,119 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importSpellFocus(proto::Project &project, MySQL::Connection &conn)
+	{
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `Id`,`RequiresSpellFocus` FROM `dbc`.`dbc_spell` WHERE `RequiresSpellFocus` != 0 ORDER BY `Id`;");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					// Get row data
+					UInt32 entry = 0, focus = 0, index = 0;
+					row.getField(index++, entry);
+					row.getField(index++, focus);
+
+					auto *spell = project.spells.getById(entry);
+					if (!spell)
+					{
+						WLOG("Could not find spell " << entry);
+						row = row.next(select);
+						continue;
+					}
+
+					spell->set_focusobject(focus);
+					row = row.next(select);
+				}
+			}
+			else
+			{
+				ELOG("Error: " << conn.getErrorMessage());
+			}
+		}
+
+		return true;
+	}
+
+	static bool importSpellFamilyFlags(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `Id`, `SpellFamilyFlags` FROM `dbc_spell`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 id = 0;
+				UInt64 familyFlags = 0;
+				row.getField(0, id);
+				row.getField(1, familyFlags);
+
+				// Find spell by id
+				auto * spell = project.spells.getById(id);
+				if (spell)
+				{
+					spell->set_familyflags(familyFlags);
+				}
+				else
+				{
+					WLOG("Unable to find spell by id: " << id);
+				}
+
+				// Next row
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
+	static bool importSpellProcs(proto::Project &project, MySQL::Connection &conn)
+	{
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `entry`, `SchoolMask`, `SpellFamilyName`, `SpellFamilyMask0`, `procEx`, `ppmRate`, `Cooldown` FROM `tbcdb`.`spell_proc_event`;");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					// Get row data
+					UInt64 entry = 0, schoolmask = 0, spellfamilyname = 0, spellfamilymask = 0, procex = 0, ppmrate = 0, cooldown = 0, index = 0;
+					row.getField(index++, entry);
+					row.getField(index++, schoolmask);
+					row.getField(index++, spellfamilyname);
+					row.getField(index++, spellfamilymask);
+					row.getField(index++, procex);
+					row.getField(index++, ppmrate);
+					row.getField(index++, cooldown);
+
+					auto *spell = project.spells.getById(entry);
+					if (!spell)
+					{
+						WLOG("Could not find spell " << entry);
+						row = row.next(select);
+						continue;
+					}
+
+					spell->set_procschool(schoolmask);
+					spell->set_procfamily(spellfamilyname);
+					spell->set_procfamilyflags(spellfamilymask);
+					spell->set_procexflags(procex);
+					spell->set_procpermin(ppmrate);
+					spell->set_proccooldown(cooldown);
+
+					row = row.next(select);
+				}
+			}
+			else
+			{
+				ELOG("Error: " << conn.getErrorMessage());
+			}
+		}
+
+		return true;
+	}
 
 #if 0
 	static void fixTriggerEvents(proto::Project &project)
@@ -1551,9 +1664,16 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 
+#if 0
 	if (!addSpellLinks(protoProject))
 	{
 		ELOG("Failed to add spell links");
+		return 1;
+	}
+
+	if (!importSpellFocus(protoProject, connection))
+	{
+		ELOG("Failed to load spell focus object");
 		return 1;
 	}
 
@@ -1566,6 +1686,25 @@ int main(int argc, char* argv[])
 	if (!importSpellMultipliers(protoProject, connection))
 	{
 		ELOG("Failed to import spell damage multipliers");
+		return 1;
+	}
+
+	if (!importSpellFamilyFlags(protoProject, connection))
+	{
+		ELOG("Failed to import spell family flags multipliers");
+		return 1;
+	}
+
+	if (!importSpellFocus(protoProject, connection))
+	{
+		ELOG("Failed to import spell focus targets");
+		return 1;
+	}
+
+#endif
+	if (!importSpellProcs(protoProject, connection))
+	{
+		ELOG("Failed to import spell proc events");
 		return 1;
 	}
 

@@ -36,6 +36,10 @@ namespace wowpp
 		static const NetPort DefaultLoginRealmPort = 6279;
 		/// This is the default port on which the realm server listens for worlds.
 		static const NetPort DefaultRealmWorldPort = 6280;
+		/// This is the default port on which the team server listens for editors.
+		static const NetPort DefaultTeamEditorPort = 6281;
+		/// This is the default port on which the login server listens for team servers.
+		static const NetPort DefaultLoginTeamPort = 6282;
 		/// This is the default port used by MySQL servers.
 		static const NetPort DefaultMySQLPort = 3306;
 

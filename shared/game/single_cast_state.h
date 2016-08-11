@@ -29,6 +29,23 @@
 
 namespace wowpp
 {
+	struct HitResult final
+	{
+		UInt32 procAttacker;
+		UInt32 procVictim;
+		UInt32 procEx;
+		UInt32 amount;
+		
+		explicit HitResult(UInt32 procAttacker = 0, UInt32 procVictim = 0, UInt32 procEx = 0, UInt32 amount = 0)
+			: procAttacker(procAttacker)
+			, procVictim(procVictim)
+			, procEx(procEx)
+			, amount(amount)
+		{
+		}
+	};
+
+	typedef std::unordered_map<UInt64, HitResult> HitResultMap;
 	///
 	class SingleCastState final : public SpellCast::CastState, public std::enable_shared_from_this<SingleCastState>, public boost::noncopyable
 	{
@@ -59,7 +76,7 @@ namespace wowpp
 
 	private:
 
-		bool consumeItem();
+		bool consumeItem(bool delayed = true);
 		bool consumePower();
 		void applyCooldown(UInt64 cooldownTimeMS, UInt64 catCooldownTimeMS);
 		void applyAllEffects();
@@ -97,6 +114,9 @@ namespace wowpp
 		void spellEffectInterruptCast(const proto::SpellEffect &effect);
 		void spellEffectLearnSpell(const proto::SpellEffect &effect);
 		void spellEffectScriptEffect(const proto::SpellEffect &effect);
+		void spellEffectDispelMechanic(const proto::SpellEffect &effect);
+		void spellEffectResurrect(const proto::SpellEffect &effect);
+		void spellEffectResurrectNew(const proto::SpellEffect &effect);
 
 		void meleeSpecialAttack(const proto::SpellEffect &effect, bool basepointsArePct);
 
@@ -128,6 +148,12 @@ namespace wowpp
 		bool m_connectedMeleeSignal;
 		UInt32 m_delayCounter;
 		std::set<std::weak_ptr<GameObject>, std::owner_less<std::weak_ptr<GameObject>>> m_affectedTargets;
+		bool m_tookCastItem;
+		UInt32 m_attackerProc;
+		UInt32 m_victimProc;
+		bool m_canTrigger;
+		HitResultMap m_hitResults;
+		UInt8 m_attackType;
 
 		void sendEndCast(bool success);
 		void onCastFinished();

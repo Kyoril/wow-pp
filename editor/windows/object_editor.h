@@ -70,6 +70,7 @@ namespace wowpp
 			void onUnitSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void on_unitPropertyWidget_doubleClicked(QModelIndex index);
 			void on_objectPropertyWidget_doubleClicked(QModelIndex index);
+			void on_treeWidget_doubleClicked(QModelIndex index);
 			void onSpellSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void onItemSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void onQuestSelectionChanged(const QItemSelection& selection, const QItemSelection& old);

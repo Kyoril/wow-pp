@@ -40,6 +40,7 @@ cmake_minimum_required(VERSION 2.8.11)
 	find_package(Qt5Gui REQUIRED)
 	find_package(Qt5OpenGL REQUIRED)
 	find_package(Qt5Concurrent REQUIRED)
+	find_package(Qt5Multimedia REQUIRED)
 	find_package(OpenGL REQUIRED)
 	if(UNIX AND NOT APPLE)
 		find_package(Qt5X11Extras REQUIRED)
@@ -115,13 +116,13 @@ cmake_minimum_required(VERSION 2.8.11)
 	add_precompiled_header(editor "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
 	
 	# Link standard libraries
-	target_link_libraries(editor common virtual_directory log proto_data stormlib recast detour detour_crowd detour_tile_cache debug_utils game sql_wrapper mysql_wrapper math)
+	target_link_libraries(editor wowpp_protocol common virtual_directory log proto_data stormlib recast detour detour_crowd detour_tile_cache debug_utils game sql_wrapper mysql_wrapper math)
 	
 	# Link dependency libraries
 	target_link_libraries(editor ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${OPENSSL_LIBRARIES} ${OGRE_LIBRARIES} ${PROTOBUF_LIBRARIES} ${MYSQL_LIBRARY})
 	
 	# Link Qt5 Libraries
-	qt5_use_modules(editor Widgets OpenGL Concurrent)
+	qt5_use_modules(editor Widgets OpenGL Concurrent Multimedia)
 	if(UNIX AND NOT APPLE)
 		qt5_use_modules(editor X11Extras)
 	elseif(APPLE)

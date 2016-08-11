@@ -77,7 +77,8 @@ namespace wowpp
 						}
 
 						// Skip this quest item
-						if (questItemCount == 0) {
+						if (questItemCount == 0) 
+						{
 							continue;
 						}
 					}

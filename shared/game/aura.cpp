@@ -36,7 +36,7 @@
 
 namespace wowpp
 {
-	Aura::Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, PostFunction post, std::function<void(Aura &)> onDestroy)
+	Aura::Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, UInt64 itemGuid, PostFunction post, std::function<void(Aura &)> onDestroy)
 		: m_spell(spell)
 		, m_effect(effect)
 		, m_caster(&caster)
@@ -55,6 +55,7 @@ namespace wowpp
 		, m_destroy(std::move(onDestroy))
 		, m_totalTicks(0)
 		, m_duration(spell.duration())
+		, m_itemGuid(itemGuid)
 	{
 		// Subscribe to caster despawn event so that we don't hold an invalid pointer
 		m_casterDespawned = caster.despawned.connect(
@@ -68,13 +69,25 @@ namespace wowpp
 		if (m_caster &&
 			m_caster->isGameCharacter())
 		{
-			reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(spell_mod_op::Duration, m_spell.id(), m_duration);
+			GameCharacter *casterChar = reinterpret_cast<GameCharacter*>(m_caster);
+			casterChar->applySpellMod(spell_mod_op::Duration, m_spell.id(), m_duration);
 			if (m_effect.aura() == game::aura_type::PeriodicDamage ||
-				m_effect.aura() == game::aura_type::PeriodicDamagePercent)
+				m_effect.aura() == game::aura_type::PeriodicDamagePercent ||
+				m_effect.aura() == game::aura_type::PeriodicHeal)
 			{
 				float basePoints = m_basePoints;
 				reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(spell_mod_op::Dot, m_spell.id(), basePoints);
 				m_basePoints = static_cast<UInt32>(ceilf(basePoints));
+
+				if (m_effect.aura() == game::aura_type::PeriodicHeal)
+				{
+					assert(m_basePoints >= 0);
+					casterChar->applyHealingDoneBonus(
+						m_spell.spelllevel(),
+						caster.getLevel(),
+						(m_effect.amplitude() == 0 ? 0 : m_duration / m_effect.amplitude()),
+						reinterpret_cast<UInt32&>(m_basePoints));
+				}
 			}
 		}
 
@@ -145,6 +158,9 @@ namespace wowpp
 		case aura::ModFear:
 			handleModFear(apply);
 			break;
+		case aura::ModConfuse:
+			handleModConfuse(apply);
+			break;
 		case aura::ModStat:
 			handleModStat(apply);
 			break;
@@ -186,13 +202,25 @@ namespace wowpp
 		case aura::Mounted:
 			handleMounted(apply);
 			break;
+		case aura::ModDamagePercentDone:
+			handleModDamagePercentDone(apply);
+			break;
 		case aura::ModPowerRegen:
 			handleModPowerRegen(apply);
 			break;
 		case aura::ModRegen:
 			break;
+		case aura::ModHealingDone:
+			handleModHealingDone(apply);
+			break;
 		case aura::ModTotalStatPercentage:
 			handleModTotalStatPercentage(apply);
+			break;
+		case aura::ModHaste:
+			handleModHaste(apply);
+			break;
+		case aura::ModTargetResistance:
+			handleModTargetResistance(apply);
 			break;
 		case aura::ModIncreaseEnergyPercent:
 			handleModEnergyPercentage(apply);
@@ -239,8 +267,17 @@ namespace wowpp
 		case aura::ModAttackPower:
 			handleModAttackPower(apply);
 			break;
+		case aura::ModResistancePct:
+			handleModResistancePct(apply);
+			break;
+		case aura::ModTotalThreat:
+			handleModTotalThreat(apply);
+			break;
 		case aura::SchoolAbsorb:
 			handleSchoolAbsorb(apply);
+			break;
+		case aura::ModPowerCostSchoolPct:
+			handleModPowerCostSchoolPct(apply);
 			break;
 		case aura::ManaShield:
 			handleManaShield(apply);
@@ -261,6 +298,8 @@ namespace wowpp
 			handlePeriodicDummy(apply);
 			break;
 		case aura::AddFlatModifier:
+			handleAddModifier(apply);
+			break;
 		case aura::AddPctModifier:
 			handleAddModifier(apply);
 			break;
@@ -282,7 +321,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleProcModifier(game::spell_proc_flags::Type procType, GameUnit *target/* = nullptr*/)
+	void Aura::handleProcModifier(UInt8 attackType, GameUnit *target/* = nullptr*/)
 	{
 		namespace aura = game::aura_type;
 
@@ -295,6 +334,11 @@ namespace wowpp
 		else
 		{
 			procChance = m_spell.procchance();
+		}
+
+		if (m_spell.procpermin())
+		{
+			procChance = m_caster->getAttackTime(attackType) * m_spell.procpermin() / 600.0f;
 		}
 
 		if (m_caster && m_caster->isGameCharacter())
@@ -392,6 +436,11 @@ namespace wowpp
 
 	}
 
+	void Aura::handleModConfuse(bool apply)
+	{
+		m_target.notifyConfusedChanged();
+	}
+
 	void Aura::handleModFear(bool apply)
 	{
 		m_target.notifyFearChanged();
@@ -437,22 +486,61 @@ namespace wowpp
 
 	void Aura::handleModDamageDone(bool apply)
 	{
-		if (m_target.isGameCharacter())
+		if (!m_target.isGameCharacter())
 		{
-			UInt8 schoolMask = m_effect.miscvaluea();
-			for (UInt8 i = 1; i < 7; i++)
-			{
-				if (schoolMask & Int32(1 << i))
-				{
-					UInt32 bonus = m_target.getUInt32Value(character_fields::ModDamageDonePos + i);
-					if (apply) {
-						bonus += m_basePoints;
-					}
-					else {
-						bonus -= m_basePoints;
-					}
+			return;
+		}
 
-					m_target.setUInt32Value(character_fields::ModDamageDonePos + i, bonus);
+		//TODO: apply physical dmg (attack power)?
+		
+
+		if (apply)
+		{
+			if (m_basePoints >= 0)
+			{
+				for (UInt8 school = 1; school < 7; ++school)
+				{
+					if ((m_effect.miscvaluea() & (1 << school)) != 0)
+					{
+						UInt32 spellDmg = m_target.getUInt32Value(character_fields::ModDamageDonePos + school);
+						m_target.setUInt32Value(character_fields::ModDamageDonePos + school, spellDmg + m_basePoints);
+					}
+				}
+			}
+			else
+			{
+				for (UInt8 school = 1; school < 7; ++school)
+				{
+					if ((m_effect.miscvaluea() & (1 << school)) != 0)
+					{
+						UInt32 spellDmg = m_target.getUInt32Value(character_fields::ModDamageDonePos + school);
+						m_target.setUInt32Value(character_fields::ModDamageDoneNeg + school, spellDmg - m_basePoints);
+					}
+				}
+			}
+		}
+		else
+		{
+			if (m_basePoints >= 0)
+			{
+				for (UInt8 school = 1; school < 7; ++school)
+				{
+					if ((m_effect.miscvaluea() & (1 << school)) != 0)
+					{
+						UInt32 spellDmg = m_target.getUInt32Value(character_fields::ModDamageDonePos + school);
+						m_target.setUInt32Value(character_fields::ModDamageDonePos + school, spellDmg - m_basePoints);
+					}
+				}
+			}
+			else
+			{
+				for (UInt8 school = 1; school < 7; ++school)
+				{
+					if ((m_effect.miscvaluea() & (1 << school)) != 0)
+					{
+						UInt32 spellDmg = m_target.getUInt32Value(character_fields::ModDamageDonePos + school);
+						m_target.setUInt32Value(character_fields::ModDamageDoneNeg + school, spellDmg + m_basePoints);
+					}
 				}
 			}
 		}
@@ -460,17 +548,13 @@ namespace wowpp
 	
 	void Aura::handleModDamageTaken(bool apply)
 	{
-		
+		//TODO
 	}
 
 	void Aura::handleDamageShield(bool apply)
 	{
 		if (apply)
 		{
-			m_procTakenAutoAttack = m_caster->takenMeleeAutoAttack.connect(
-			[&](GameUnit * victim) {
-				handleDamageShieldProc(victim);
-			});
 		}
 	}
 
@@ -922,6 +1006,11 @@ namespace wowpp
 		//TODO
 	}
 
+	void Aura::handleModTargetResistance(bool apply)
+	{
+		//TODO
+	}
+
 	void Aura::handleModEnergyPercentage(bool apply)
 	{
 		Int32 powerType = m_effect.miscvaluea();
@@ -950,6 +1039,25 @@ namespace wowpp
 		}
 	}
 
+	void Aura::handleModHealingDone(bool apply)
+	{
+		if (!m_target.isGameCharacter())
+		{
+			return;
+		}
+
+		if (apply)
+		{
+			UInt32 spellHeal = m_target.getUInt32Value(character_fields::ModHealingDonePos);
+			m_target.setUInt32Value(character_fields::ModHealingDonePos, spellHeal + m_basePoints);
+		}
+		else
+		{
+			UInt32 spellHeal = m_target.getUInt32Value(character_fields::ModHealingDonePos);
+			m_target.setUInt32Value(character_fields::ModHealingDonePos, spellHeal - m_basePoints);
+		}
+	}
+
 	void Aura::handleModTotalStatPercentage(bool apply)
 	{
 		Int32 stat = m_effect.miscvaluea();
@@ -967,6 +1075,19 @@ namespace wowpp
 				m_target.updateModifierValue(GameUnit::getUnitModByStat(i), unit_mod_type::TotalPct, m_basePoints, apply);
 			}
 		}
+	}
+
+	void Aura::handleModHaste(bool apply)
+	{
+		UInt32 baseAttackTime = m_target.getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::BaseAttack);
+		UInt32 offHandAttackTime = m_target.getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack);
+		float amount = (apply ? (100.0f - m_basePoints) / 100.0f : 100.0f / (100.0f - m_basePoints));
+
+		m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::BaseAttack, baseAttackTime * amount);
+		m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack, offHandAttackTime * amount);
+
+		m_target.modifyAttackSpeedPctModifier(game::weapon_attack::BaseAttack, static_cast<float>(-m_basePoints) / 100.0f, apply);
+		m_target.modifyAttackSpeedPctModifier(game::weapon_attack::OffhandAttack, static_cast<float>(-m_basePoints) / 100.0f, apply);
 	}
 
 	void Aura::handleModBaseResistancePct(bool apply)
@@ -1030,7 +1151,7 @@ namespace wowpp
 			return;
 		}
 
-		SpellTargetMap target;
+		/*SpellTargetMap target;
 		target.m_targetMap = game::spell_cast_target_flags::Unit;
 		target.m_unitTarget = victim->getGuid();
 
@@ -1064,7 +1185,7 @@ namespace wowpp
 
 			// Cast the triggered spell with custom damage value
 			m_caster->castSpell(std::move(target), m_effect.triggerspell(), damage, 0, true);
-		}
+		}*/
 	}
 
 	void Aura::handleDamageShieldProc(GameUnit *attacker)
@@ -1123,6 +1244,23 @@ namespace wowpp
 	void Aura::handleModAttackPower(bool apply)
 	{
 		m_target.updateModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue, m_basePoints, apply);
+	}
+
+	void Aura::handleModResistancePct(bool apply)
+	{
+		// Apply all resistances
+		for (UInt8 i = 0; i < 7; ++i)
+		{
+			if (m_effect.miscvaluea() & Int32(1 << i))
+			{
+				m_target.updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), unit_mod_type::BasePct, m_basePoints, apply);
+			}
+		}
+	}
+
+	void Aura::handleModTotalThreat(bool apply)
+	{
+		//TODO
 	}
 
 	void Aura::handleWaterWalk(bool apply)
@@ -1209,17 +1347,30 @@ namespace wowpp
 		//ToDo: Add talent modifiers
 	}
 
+	void Aura::handleModPowerCostSchoolPct(bool apply)
+	{
+		float amount = m_basePoints / 100.0f;
+		for (UInt8 i = 0; i < 7; ++i)
+		{
+			if (m_effect.miscvaluea() & (1 << i)) {
+				m_target.setFloatValue(unit_fields::PowerCostMultiplier + i, amount);
+			}
+		}
+	}
+
 	void Aura::handleMechanicImmunity(bool apply)
 	{
+		UInt32 mask = m_effect.miscvaluea();
+		//if (mask == 0) mask = m_spell.mechanic();
+
 		if (apply)
 		{
-			m_target.addMechanicImmunity(1 << m_spell.mechanic());
+			m_target.addMechanicImmunity(1 << mask);
 		}
 		else
 		{
 			// TODO: We need to check if there are still other auras which provide the same immunity
-			WLOG("TODO");
-			m_target.removeMechanicImmunity(1 << m_spell.mechanic());
+			m_target.removeMechanicImmunity(1 << mask);
 		}
 	}
 
@@ -1233,6 +1384,17 @@ namespace wowpp
 		else
 		{
 			m_target.setUInt32Value(unit_fields::MountDisplayId, 0);
+		}
+	}
+
+	void Aura::handleModDamagePercentDone(bool apply)
+	{
+		if (apply)
+		{
+			for (UInt8 i = 1; i < 7; ++i) 
+			{
+				m_target.setFloatValue(character_fields::ModDamageDonePct + i, m_basePoints / 100.0f);
+			}
 		}
 	}
 
@@ -1483,7 +1645,6 @@ namespace wowpp
 		case game::aura_type::PeriodicDamage:
 		case game::aura_type::Dummy:
 		case game::aura_type::ModAttackSpeed:
-		case game::aura_type::ModDamageDone:
 		case game::aura_type::ModDamageTaken:
 		case game::aura_type::ModResistance:
 		case game::aura_type::PeriodicTriggerSpell:
@@ -1947,6 +2108,20 @@ namespace wowpp
 
 		if (m_spell.procflags() != game::spell_proc_flags::None)
 		{
+			//this if probably not needed
+			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0 ||
+				(m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0 ||
+				(m_spell.procflags() & game::spell_proc_flags::TakenMeleeAutoAttack) != 0 ||
+				(m_spell.procflags() & game::spell_proc_flags::DoneMeleeAutoAttack) != 0)
+			{
+				m_onProc = m_caster->spellProcEvent.connect(
+				[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell, UInt32 amount, UInt8 attackType) {
+					if (checkProc(amount != 0, target, procFlag, procEx, procSpell))
+					{
+						handleProcModifier(attackType, target);
+					}
+				});
+			}
 			if ((m_spell.procflags() & game::spell_proc_flags::TakenDamage) != 0)
 			{
 				m_takenDamage = m_caster->takenDamage.connect(
@@ -1955,38 +2130,11 @@ namespace wowpp
 				});
 			}
 
-			if ((m_spell.procflags() & game::spell_proc_flags::DoneMeleeAutoAttack) != 0)
-			{
-				m_procAutoAttack = m_caster->doneMeleeAutoAttack.connect(
-				[&](GameUnit * victim) {
-					handleProcModifier(game::spell_proc_flags::DoneMeleeAutoAttack, victim);
-				});
-			}
-
-			if ((m_spell.procflags() & game::spell_proc_flags::TakenMeleeAutoAttack) != 0)
-			{
-				m_procTakenAutoAttack = m_caster->takenMeleeAutoAttack.connect(
-				[&](GameUnit * attacker) {
-					handleProcModifier(game::spell_proc_flags::TakenMeleeAutoAttack, attacker);
-				});
-			}
-
-			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
-			{
-				m_doneSpellMagicDmgClassNeg = m_caster->doneSpellMagicDmgClassNeg.connect(
-				[&](GameUnit * victim, UInt32 schoolMask) {
-					if ((schoolMask & getEffectSchoolMask()) != 0)
-					{
-						handleProcModifier(game::spell_proc_flags::DoneSpellMagicDmgClassNeg, victim);
-					}
-				});
-			}
-
 			if ((m_spell.procflags() & game::spell_proc_flags::Killed) != 0)
 			{
 				m_procKilled = m_caster->killed.connect(
 				[&](GameUnit * killer) {
-					handleProcModifier(game::spell_proc_flags::Killed, killer);
+					handleProcModifier(0, killer);
 				});
 			}
 
@@ -1994,19 +2142,37 @@ namespace wowpp
 			{
 				m_procKill = m_caster->procKilledTarget.connect(
 				[&](GameUnit & killed) {
-					handleProcModifier(game::spell_proc_flags::Kill, &killed);
+					handleProcModifier(0, &killed);
 				});
 			}
+			
 		}
 		else if (m_effect.aura() == game::aura_type::AddTargetTrigger)
 		{
-			m_doneSpellMagicDmgClassNeg = m_caster->doneSpellMagicDmgClassNeg.connect(
-			[&](GameUnit * victim, UInt32 schoolMask) {
-				if ((schoolMask & getEffectSchoolMask()) != 0)
+			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0 ||
+				(m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
+			{
+				m_onProc = m_caster->spellProcEvent.connect(
+				[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell, UInt32 amount, UInt8 attackType) {
+					if (checkProc(amount != 0, target, procFlag, procEx, procSpell))
+					{
+						handleProcModifier(attackType, target);
+					}
+				});
+			}
+		}
+
+		if (m_spell.attributes(5) & game::spell_attributes_ex_e::SingleTargetSpell)
+		{
+			if (m_caster->getTrackedAuras().find(m_spell.id()) != m_caster->getTrackedAuras().end())
+			{
+				if (m_caster->getTrackedAuras()[m_spell.id()] != &m_target)
 				{
-					handleProcModifier(game::spell_proc_flags::DoneSpellMagicDmgClassNeg, victim);
+					m_caster->getTrackedAuras()[m_spell.id()]->getAuras().removeAllAurasDueToSpell(m_spell.id());
 				}
-			});
+			}
+
+			m_caster->getTrackedAuras()[m_spell.id()] = &m_target;
 		}
 
 		// Apply modifiers now
@@ -2020,12 +2186,9 @@ namespace wowpp
 		m_onTick.disconnect();
 
 		// Disconnect signals
-		m_doneSpellMagicDmgClassNeg.disconnect();
 		m_procKill.disconnect();
 		m_procKilled.disconnect();
-		m_doneSpellMagicDmgClassNeg.disconnect();
-		m_procTakenAutoAttack.disconnect();
-		m_procAutoAttack.disconnect();
+		m_onProc.disconnect();
 		m_takenDamage.disconnect();
 		m_targetStartedCasting.disconnect();
 		m_targetStartedAttacking.disconnect();
@@ -2053,6 +2216,11 @@ namespace wowpp
 			// Raise cooldown event
 			m_caster->setCooldown(m_spell.id(), m_spell.cooldown() ? m_spell.cooldown() : m_spell.categorycooldown());
 			m_caster->cooldownEvent(m_spell.id());
+		}
+
+		if (m_spell.attributes(5) & game::spell_attributes_ex_e::SingleTargetSpell)
+		{
+			m_caster->getTrackedAuras().erase(m_spell.id());
 		}
 	}
 
@@ -2120,4 +2288,109 @@ namespace wowpp
 		});
 	}
 
+	bool Aura::checkProc(bool active, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell)
+	{
+		UInt32 eventProcFlag;
+		if (m_spell.proccustomflags())
+		{
+			eventProcFlag = m_spell.proccustomflags();
+		}
+		else
+		{
+			eventProcFlag = m_spell.procflags();
+		}
+
+		// Shouldn't happen but just in case
+		/*
+		if (!eventProcFlag)
+		{
+			return false;
+		}
+		*/
+
+		if (procSpell && procSpell->id() == m_spell.id() && !(eventProcFlag & game::spell_proc_flags::TakenPeriodic))
+		{
+			return false;
+		}
+
+		if (!(procFlag & eventProcFlag))
+		{
+			return false;
+		}
+
+		/*
+		if (eventProcFlag & (game::spell_proc_flags::Killed | game::spell_proc_flags::Kill | game::spell_proc_flags::DoneTrapActivation))
+		{
+			return true;
+		}
+		*/
+
+		if (!procSpell)
+		{
+			if (m_spell.procschool() && !(m_spell.procschool() & game::spell_school_mask::Normal))
+			{
+				return false;
+			}
+		}
+		else
+		{
+			if (m_spell.procschool() && !(m_spell.procschool() & procSpell->schoolmask()))
+			{
+				return false;
+			}
+
+			if (m_spell.procfamily() && (m_spell.procfamily() != procSpell->family()))
+			{
+				return false;
+			}
+
+			
+			if (m_spell.procfamilyflags () && !(m_spell.procfamilyflags() & procSpell->familyflags()))
+			{
+				return false;
+			}
+			
+		}
+
+		if (m_spell.procexflags() != game::spell_proc_flags_ex::None)
+		{
+			if (!(m_spell.procexflags() & procEx))
+			{
+				return false;
+			}
+		}
+
+		if (!m_spell.procfamily() && m_effect.affectmask() && !(m_effect.affectmask() & procSpell->familyflags()))
+		{
+			return false;
+		}
+		else
+		{
+			if (!(m_spell.procexflags() & game::spell_proc_flags_ex::TriggerAlways))
+			{
+				if (!target && m_caster->isGameCharacter() &&
+					reinterpret_cast<GameCharacter*>(m_caster)->getTotalSpellMods(SpellModType(m_effect.aura()), SpellModOp(m_effect.miscvaluea()), procSpell->id()))
+				{
+					return true;
+				}
+
+				if (m_spell.procexflags() == game::spell_proc_flags_ex::None)
+				{
+					if (!((procEx & (game::spell_proc_flags_ex::NormalHit | game::spell_proc_flags_ex::CriticalHit)) && active))
+					{
+						return false;
+					}
+				}
+				else
+				{
+					if ((m_spell.procexflags() & (game::spell_proc_flags_ex::NormalHit | game::spell_proc_flags_ex::CriticalHit) & procEx) && !active)
+					{
+						return false;
+					}
+				}
+			}
+		}
+
+		return true;
+	}
 }

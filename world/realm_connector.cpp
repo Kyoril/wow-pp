@@ -717,6 +717,7 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(ToggleHelm)
 			WOWPP_HANDLE_PLAYER_PACKET(ToggleCloak)
 			WOWPP_HANDLE_PLAYER_PACKET(MailSend)
+			WOWPP_HANDLE_PLAYER_PACKET(ResurrectResponse)
 
 #undef WOWPP_HANDLE_PLAYER_PACKET
 
@@ -1160,7 +1161,7 @@ namespace wowpp
 		if (trigger->has_questid() && trigger->questid() > 0)
 		{
 			// Handle quest exploration
-			sender.getCharacter()->completeQuest(trigger->questid());
+			sender.getCharacter()->onQuestExploration(trigger->questid());
 		}
 
 		if (trigger->has_tavern() && trigger->tavern())
@@ -1400,6 +1401,13 @@ namespace wowpp
 	{
 		m_connection->sendSinglePacket(
 			std::bind(pp::world_realm::world_write::characterSpawned, std::placeholders::_1, characterId));
+	}
+
+	void RealmConnector::sendMailDraft(game::MailData mailDraft, String sender, UInt32 cost, const std::vector<std::shared_ptr<GameItem>>& items)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::world_write::mailDraft, std::placeholders::_1, mailDraft.unk1, mailDraft.unk2, sender,
+				 mailDraft.receiver, mailDraft.subject, mailDraft.body, mailDraft.money, mailDraft.COD, cost, items));
 	}
 
 }

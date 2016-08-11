@@ -29,7 +29,7 @@ namespace wowpp
 {
 	namespace editor
 	{
-		CreatureSpellDialog::CreatureSpellDialog(EditorApplication &app)
+		CreatureSpellDialog::CreatureSpellDialog(EditorApplication &app, proto::UnitSpellEntry *entry)
 			: QDialog()
 			, m_ui(new Ui::CreatureSpellDialog)
 			, m_app(app)
@@ -37,6 +37,27 @@ namespace wowpp
 		{
 			// Setup auto generated ui
 			m_ui->setupUi(this);
+
+			if (entry)
+			{
+				m_ui->priorityBox->setValue(entry->priority());
+				m_ui->cooldownBox->setValue(entry->mincooldown());
+				m_ui->cooldownBox_2->setValue(entry->maxcooldown());
+				m_ui->spinBox->setValue(entry->mininitialcooldown());
+				m_ui->spinBox_2->setValue(entry->maxinitialcooldown());
+				m_ui->repeatedBox->setChecked(entry->repeated());
+				m_ui->targetBox->setCurrentIndex(entry->target());
+				m_ui->spinBox_3->setValue(entry->probability());
+				if (entry->spellid())
+				{
+					const auto *spell = m_app.getProject().spells.getById(entry->spellid());
+					if (spell)
+					{
+						m_selectedSpell = spell;
+						m_ui->spellButton->setText(spell->name().c_str());
+					}
+				}
+			}
 		}
 
 		void CreatureSpellDialog::on_buttonBox_accepted()
@@ -49,7 +70,7 @@ namespace wowpp
 		}
 		bool CreatureSpellDialog::getRepeated() const
 		{
-			return m_ui->repeatedBox->checkState() == Qt::Checked;
+			return m_ui->repeatedBox->isChecked();
 		}
 		Int32 CreatureSpellDialog::getMinCooldown() const
 		{
@@ -66,6 +87,10 @@ namespace wowpp
 		Int32 CreatureSpellDialog::getMaxInitialCooldown() const
 		{
 			return m_ui->spinBox_2->value();
+		}
+		UInt32 CreatureSpellDialog::getProbability() const
+		{
+			return m_ui->spinBox_3->value();
 		}
 		UInt32 CreatureSpellDialog::getTarget() const
 		{

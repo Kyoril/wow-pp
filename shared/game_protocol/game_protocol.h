@@ -486,6 +486,7 @@ namespace wowpp
 				AttackSwing				= 0x141,
 				AttackStop				= 0x142,
 				RepopRequest			= 0x15A,
+				ResurrectResponse		= 0x15C,
 				Loot					= 0x15D,
 				LootMoney				= 0x15E,
 				LootRelease				= 0x15F,
@@ -505,6 +506,7 @@ namespace wowpp
 				BuyItem					= 0x1A2,
 				BuyItemInSlot			= 0x1A3,
 				TrainerBuySpell			= 0x1B2,
+				PlayedTime				= 0x1CC,
 				Ping					= 0x1DC,
 				SetSheathed				= 0x1E0,
 				AuthSession				= 0x1ED,
@@ -590,8 +592,8 @@ namespace wowpp
 				SetSwimSpeed				= 0x0D3,
 				SetSwimBackSpeed			= 0x0D5,
 				MonsterMove					= 0x0DD,
-				MoveWaterWalk					= 0x0DE,
-				MoveLandWalk					= 0x0DF,
+				MoveWaterWalk				= 0x0DE,
+				MoveLandWalk				= 0x0DF,
 				RunSpeedChange				= 0x0E2,
 				RunBackSpeedChange			= 0x0E4,
 				SwimSpeedChange				= 0x0E6,
@@ -634,6 +636,7 @@ namespace wowpp
 				SpellHealLog				= 0x150,
 				SpellEnergizeLog			= 0x151,
 				BindPointUpdate				= 0x155,
+				ResurrectRequest			= 0x15B,
 				LootResponse				= 0x160,
 				LootReleaseResponse			= 0x161,
 				LootRemoved					= 0x162,
@@ -659,6 +662,7 @@ namespace wowpp
 				TrainerList					= 0x1B1,
 				TrainerBuySucceeded			= 0x1B3,
 				TrainerBuyFailed			= 0x1B4,
+				PlayedTime					= 0x1CD,
 				LogXPGain					= 0x1D0,
 				Pong						= 0x1DD,
 				ClearCooldown				= 0x1DE,
@@ -684,6 +688,7 @@ namespace wowpp
 				SetFlatSpellModifier		= 0x266,
 				SetPctSpellModifier			= 0x267,
 				StandStateUpdate			= 0x29D,
+				LootStartRoll				= 0x2A1,
 				SpellFailedOther			= 0x2A6,
 				ChatPlayerNotFound			= 0x2A9,
 				DurabilityDamageDeath		= 0x2BD,
@@ -1360,6 +1365,12 @@ namespace wowpp
 				io::Reader &packet,
 				ObjectGuid &out_mailboxGuid,
 				MailData &out_mail
+				);
+
+			bool resurrectResponse(
+				io::Reader &packet,
+				UInt64 &out_guid,
+				UInt8 &out_status
 				);
 		};
 
@@ -2322,6 +2333,29 @@ namespace wowpp
 			void moveLandWalk(
 				game::OutgoingPacket &out_packet,
 				UInt64 guid
+			);
+
+			void lootStartRoll(
+				game::OutgoingPacket &out_packet,
+				UInt64 itemGuid,
+				UInt32 playerCount,
+				UInt32 itemEntry,
+				UInt32 itemSuffix,
+				UInt32 itemPropId,
+				UInt32 countdown
+			);
+
+			void playedTime(
+				game::OutgoingPacket &out_packet,
+				UInt32 totalTimeInSecs,
+				UInt32 levelTimeInSecs
+			);
+
+			void resurrectRequest(
+				game::OutgoingPacket &out_packet,
+				UInt64 objectGUID,
+				const String &sentName,
+				UInt8 typeId
 			);
 		};
 	}

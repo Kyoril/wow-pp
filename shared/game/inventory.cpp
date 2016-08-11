@@ -933,13 +933,15 @@ namespace wowpp
 			case player_equipment_slots::Offhand:
 				if (srcInvType != game::inventory_type::OffHandWeapon &&
 				        srcInvType != game::inventory_type::Shield &&
-				        srcInvType != game::inventory_type::Weapon)
+				        srcInvType != game::inventory_type::Weapon &&
+						srcInvType != game::inventory_type::Holdable)
 				{
 					return game::inventory_change_failure::ItemDoesNotGoToSlot;
 				}
 				else
 				{
 					if (srcInvType != game::inventory_type::Shield &&
+						srcInvType != game::inventory_type::Holdable &&
 					        !m_owner.canDualWield())
 					{
 						return game::inventory_change_failure::CantDualWield;

@@ -38,11 +38,13 @@ namespace wowpp
 		void setEnd(GameTime endTime)
 		{
 			++m_delayCount;
-
-			m_countdown->running = true;
-			m_timers.addEvent(
-			    std::bind(&Impl::onPossibleEnd, shared_from_this(), m_delayCount),
-			    endTime);
+			if (m_countdown)
+			{
+				m_countdown->running = true;
+				m_timers.addEvent(
+					std::bind(&Impl::onPossibleEnd, shared_from_this(), m_delayCount),
+					endTime);
+			}
 		}
 
 		void cancel()

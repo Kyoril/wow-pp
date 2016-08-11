@@ -22,11 +22,13 @@
 #pragma once
 
 #include <QObject>
+#include <QTimer>
 #include "proto_data/project.h"
 #include "template_list_model.h"
 #include "trigger_list_model.h"
 #include "configuration.h"
 #include "selection.h"
+#include "common/timer_queue.h"
 
 namespace wowpp
 {
@@ -48,6 +50,7 @@ namespace wowpp
 		class MainWindow;		// main_window.h
 		class ObjectEditor;		// object_editor.h
 		class TriggerEditor;	// trigger_editor.h
+		class TeamConnector;
 
 		/// Manages and contains all major application objects.
 		class EditorApplication final : public QObject
@@ -69,7 +72,7 @@ namespace wowpp
 
 		public:
 
-			explicit EditorApplication();
+			explicit EditorApplication(boost::asio::io_service &ioService, TimerQueue &timers);
             ~EditorApplication();
 
 			/// Initializes our editor application (loads settings and sets everything up properly).
@@ -92,6 +95,7 @@ namespace wowpp
 			Selection &getSelection() { return m_selection; }
 			const TransformTool &getTransformTool() const { return m_transformTool; }
 			void setTransformTool(TransformTool tool);
+			TeamConnector *getTeamConnector() { return m_teamConnector.get(); }
 
 		public slots:
 
@@ -103,6 +107,8 @@ namespace wowpp
 			void markAsChanged();
 			/// 
 			void saveUnsavedChanges();
+			/// 
+			void onPollTimerTick();
 
 		signals:
 
@@ -112,6 +118,9 @@ namespace wowpp
 
 		private:
 
+			boost::asio::io_service &m_ioService;
+			TimerQueue &m_timers;
+			QTimer *m_pollTimer;
 			Selection m_selection;
 			Configuration m_configuration;
 			MainWindow *m_mainWindow;
@@ -127,6 +136,7 @@ namespace wowpp
 			std::unique_ptr<ObjectListModel> m_objectListModel;
 			TransformTool m_transformTool;
 			bool m_changed;
+			std::unique_ptr<TeamConnector> m_teamConnector;
 		};
 	}
 }

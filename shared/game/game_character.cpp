@@ -53,7 +53,11 @@ namespace wowpp
 		, m_canParry(false)
 		, m_canDualWield(false)
 		, m_inventory(*this)
-		, m_lastPvPCombat(0)
+		, m_lastPvPCombat(0) 
+		, m_resurrectGuid(0)
+		, m_resurrectMap(0)
+		, m_resurrectHealth(0)
+		, m_resurrectMana(0)
 	{
 		// Resize values field
 		m_values.resize(character_fields::CharacterFieldCount, 0);
@@ -264,11 +268,21 @@ namespace wowpp
 				// Grant quest source item if possible
 				if (srcItem)
 				{
-					auto result = m_inventory.createItems(*srcItem, questEntry->srcitemcount());
+					std::map<UInt16, UInt16> addedBySlot;
+					auto result = m_inventory.createItems(*srcItem, questEntry->srcitemcount(), &addedBySlot);
+
 					if (result != game::inventory_change_failure::Okay)
 					{
 						inventoryChangeFailure(result, nullptr, nullptr);
 						return false;
+					}
+					else
+					{
+						// Notify the player about this
+						for (auto &pair : addedBySlot)
+						{
+							itemAdded(pair.first, pair.second, false, false);
+						}
 					}
 				}
 
@@ -357,17 +371,48 @@ namespace wowpp
 
 				// Mark all related quest items as needed
 				const auto *entry = getProject().quests.getById(quest);
-				for (auto &req : entry->requirements())
+				if (entry)
 				{
-					if (req.itemid())
+					// Remove source items of this quest (if any)
+					if (entry->srcitemid())
 					{
-						m_requiredQuestItems[req.itemid()]--;
-						updateQuestObjects = true;
+						const auto *itemEntry = getProject().items.getById(entry->srcitemid());
+						if (itemEntry)
+						{
+							// 0 means: remove ALL of this item
+							m_inventory.removeItems(*itemEntry, 0);
+						}
 					}
-					if (req.sourceid())
+
+					// Remove quest requirement items (if any)
+					for (auto &req : entry->requirements())
 					{
-						m_requiredQuestItems[req.sourceid()]--;
-						updateQuestObjects = true;
+						if (req.itemid())
+						{
+							const auto *itemEntry = getProject().items.getById(req.itemid());
+							if (itemEntry &&
+								itemEntry->itemclass() == game::item_class::Quest)
+							{
+								// 0 means: remove ALL of this item
+								m_inventory.removeItems(*itemEntry, 0);
+							}
+
+							m_requiredQuestItems[req.itemid()]--;
+							updateQuestObjects = true;
+						}
+						if (req.sourceid())
+						{
+							const auto *itemEntry = getProject().items.getById(req.sourceid());
+							if (itemEntry &&
+								itemEntry->itemclass() == game::item_class::Quest)
+							{
+								// 0 means: remove ALL of this item
+								m_inventory.removeItems(*itemEntry, 0);
+							}
+
+							m_requiredQuestItems[req.sourceid()]--;
+							updateQuestObjects = true;
+						}
 					}
 				}
 
@@ -683,6 +728,17 @@ namespace wowpp
 			}
 		}
 
+		// Remove source items of this quest (if any)
+		if (entry->srcitemid())
+		{
+			const auto *itemEntry = getProject().items.getById(entry->srcitemid());
+			if (itemEntry)
+			{
+				// 0 means: remove ALL of this item
+				m_inventory.removeItems(*itemEntry, 0);
+			}
+		}
+
 		for (UInt32 i = 0; i < 25; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
@@ -819,7 +875,10 @@ namespace wowpp
 		if (entry.flags() & game::quest_flags::Exploration)
 		{
 			// Check if this quest has been explored
-			return it->second.explored;
+			if (!it->second.explored)
+			{
+				return false;
+			}
 		}
 
 		// Now check for quest requirements
@@ -839,15 +898,17 @@ namespace wowpp
 					return false;
 				}
 			}
+
 			// Object interaction / spell cast required
-			else if (req.objectid() != 0)
+			if (req.objectid() != 0)
 			{
 				if (it->second.objects[counter] < req.objectcount()) {
 					return false;
 				}
 			}
+
 			// Item required
-			else if (req.itemid() != 0)
+			if (req.itemid() != 0)
 			{
 				// Not enough items? (Don't worry, getItemCount is fast as it uses a cached value)
 				auto itemCount = m_inventory.getItemCount(req.itemid());
@@ -878,6 +939,62 @@ namespace wowpp
 
 		// No free quest slots found
 		return true;
+	}
+
+	void GameCharacter::onQuestExploration(UInt32 questId)
+	{
+		// If this is set to true, all nearby objects will be updated
+		bool updateNearbyObjects = false;
+		for (int i = 0; i < 25; ++i)
+		{
+			// Check if there is a quest in that slot
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+			if (logId == 0) {
+				continue;
+			}
+
+			// Check if the player really has accepted that quest
+			auto it = m_quests.find(logId);
+			if (it == m_quests.end()) {
+				continue;
+			}
+
+			// Check if the quest was already completed
+			if (it->second.status != game::quest_status::Incomplete) {
+				continue;
+			}
+
+			// Get quest template entry
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest) {
+				continue;
+			}
+
+			if (!it->second.explored)
+			{
+				if (quest->flags() & game::quest_flags::Exploration)
+				{
+					it->second.explored = true;
+					updateNearbyObjects = true;
+
+					// Quest is fulfilled now
+					if (fulfillsQuestRequirements(*quest))
+					{
+						it->second.status = game::quest_status::Complete;
+						addFlag(character_fields::QuestLog1_1 + i * 4 + 1, game::quest_status::Complete);
+					}
+
+					questDataChanged(logId, it->second);
+				}
+			}
+		}
+
+		// Finally, update all nearby objects if needed to. We do this after we checked all
+		// quests, so that we will update these objects only ONCE
+		if (updateNearbyObjects)
+		{
+			updateNearbyQuestObjects();
+		}
 	}
 
 	void GameCharacter::onQuestItemAddedCredit(const proto::ItemEntry &entry, UInt32 amount)
@@ -1301,6 +1418,33 @@ namespace wowpp
 				return;
 			}
 		}
+	}
+
+	void GameCharacter::setResurrectRequestData(UInt64 guid, UInt32 mapId, const math::Vector3 &location, UInt32 health, UInt32 mana)
+	{
+		m_resurrectGuid = guid;
+		m_resurrectMap = mapId;
+		m_resurrectLocation = location;
+		m_resurrectHealth = health;
+		m_resurrectMana = mana;
+	}
+
+	void GameCharacter::resurrectUsingRequestData()
+	{
+		if (isPlayerGUID(m_resurrectGuid))
+		{
+			teleport(m_resurrectMap, m_resurrectLocation, getOrientation());
+		}
+
+		// TODO: delay (not implemented yet)
+
+		// TODO: proper resurrect maybe (resurrect on angel not implemented yet)
+		revive(m_resurrectHealth, m_resurrectMana);
+
+		setUInt32Value(unit_fields::Power4, getUInt32Value(unit_fields::MaxPower4));
+
+		setResurrectRequestData(0, 0, math::Vector3(), 0, 0);
+		// TODO: spawn corpse bones (not implemented yet)
 	}
 
 	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData &data)
@@ -1774,8 +1918,11 @@ namespace wowpp
 
 			setModifierValue(unit_mods::AttackPower, unit_mod_type::BaseValue, atkPower);
 			float base_attPower = atkPower * getModifierValue(unit_mods::AttackPower, unit_mod_type::BasePct);
-			atkPower = base_attPower + getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue) * getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalPct);
-			setInt32Value(unit_fields::AttackPower, UInt32(atkPower));
+			float attPowerMod = getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue);
+			float attPowerMultiplier = getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalPct) - 1.0f;	// In display, 0.0 = 100% (unmodified)
+			setInt32Value(unit_fields::AttackPower, UInt32(base_attPower));
+			setInt32Value(unit_fields::AttackPowerMods, UInt32(attPowerMod));
+			setFloatValue(unit_fields::AttackPowerMultiplier, attPowerMultiplier);
 		}
 
 		// Ranged Attack power
@@ -1800,7 +1947,13 @@ namespace wowpp
 				break;
 			}
 
-			setInt32Value(unit_fields::RangedAttackPower, UInt32(atkPower));
+			setModifierValue(unit_mods::AttackPowerRanged, unit_mod_type::BaseValue, atkPower);
+			float base_attPower = atkPower * getModifierValue(unit_mods::AttackPowerRanged, unit_mod_type::BasePct);
+			float attPowerMod = getModifierValue(unit_mods::AttackPowerRanged, unit_mod_type::TotalValue);
+			float attPowerMultiplier = getModifierValue(unit_mods::AttackPowerRanged, unit_mod_type::TotalPct) - 1.0f;
+			setInt32Value(unit_fields::RangedAttackPower, UInt32(base_attPower));
+			setInt32Value(unit_fields::RangedAttackPowerMods, UInt32(attPowerMod));
+			setFloatValue(unit_fields::RangedAttackPowerMultiplier, attPowerMultiplier);
 		}
 
 		// Melee damage
@@ -1836,8 +1989,9 @@ namespace wowpp
 				}
 			}
 
+			attackTime *= getAttackSpeedPctModifier(game::weapon_attack::BaseAttack);
 			const float att_speed = attackTime / 1000.0f;
-			const float base_value = getUInt32Value(unit_fields::AttackPower) / 14.0f * att_speed;
+			const float base_value = (getUInt32Value(unit_fields::AttackPower) + getUInt32Value(unit_fields::AttackPowerMods)) / 14.0f * att_speed;
 
 			switch (form)
 			{
@@ -1881,8 +2035,9 @@ namespace wowpp
 				}
 			}
 
+			attackTime *= getAttackSpeedPctModifier(game::weapon_attack::OffhandAttack);
 			const float att_speed = attackTime / 1000.0f;
-			const float base_value = getUInt32Value(unit_fields::AttackPower) / 14.0f * att_speed;
+			const float base_value = (getUInt32Value(unit_fields::AttackPower) + getUInt32Value(unit_fields::AttackPowerMods)) / 14.0f * att_speed;
 
 			setFloatValue(unit_fields::MinOffHandDamage, base_value + minDamage);
 			setFloatValue(unit_fields::MaxOffHandDamage, base_value + maxDamage);
@@ -1966,25 +2121,25 @@ namespace wowpp
 				{
 					switch (entry.type())
 					{
-					case 0:		// Mana
+					case game::item_stat::Mana:
 						updateModifierValue(unit_mods::Mana, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
-					case 1:		// Health
+					case game::item_stat::Health:
 						updateModifierValue(unit_mods::Health, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
-					case 3:		// Agility
+					case game::item_stat::Agility:
 						updateModifierValue(unit_mods::StatAgility, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
-					case 4:		// Strength
+					case game::item_stat::Strength:
 						updateModifierValue(unit_mods::StatStrength, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
-					case 5:		// Intellect
+					case game::item_stat::Intellect:
 						updateModifierValue(unit_mods::StatIntellect, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
-					case 6:		// Spirit
+					case game::item_stat::Spirit:
 						updateModifierValue(unit_mods::StatSpirit, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
-					case 7:		// Stamina
+					case game::item_stat::Stamina:
 						updateModifierValue(unit_mods::StatStamina, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
 					default:
@@ -1992,6 +2147,68 @@ namespace wowpp
 					}
 				}
 			}
+
+			std::array<bool, 6> shouldUpdateResi;
+			shouldUpdateResi.fill(false);
+
+			if (item.getEntry().holyres() != 0)
+			{
+				updateModifierValue(unit_mods::ResistanceHoly, unit_mod_type::BaseValue, item.getEntry().holyres(), apply);
+				shouldUpdateResi[0] = true;
+			}
+			if (item.getEntry().fireres() != 0)
+			{
+				updateModifierValue(unit_mods::ResistanceFire, unit_mod_type::BaseValue, item.getEntry().fireres(), apply);
+				shouldUpdateResi[1] = true;
+			}
+			if (item.getEntry().natureres() != 0)
+			{
+				updateModifierValue(unit_mods::ResistanceNature, unit_mod_type::BaseValue, item.getEntry().natureres(), apply);
+				shouldUpdateResi[2] = true;
+			}
+			if (item.getEntry().frostres() != 0)
+			{
+				updateModifierValue(unit_mods::ResistanceFrost, unit_mod_type::BaseValue, item.getEntry().frostres(), apply);
+				shouldUpdateResi[3] = true;
+			}
+			if (item.getEntry().shadowres() != 0)
+			{
+				updateModifierValue(unit_mods::ResistanceShadow, unit_mod_type::BaseValue, item.getEntry().shadowres(), apply);
+				shouldUpdateResi[4] = true;
+			}
+			if (item.getEntry().arcaneres() != 0)
+			{
+				updateModifierValue(unit_mods::ResistanceArcane, unit_mod_type::BaseValue, item.getEntry().arcaneres(), apply);
+				shouldUpdateResi[5] = true;
+			}
+
+			for (UInt32 resistMod = 1; resistMod <= shouldUpdateResi.size(); ++resistMod)
+			{
+				if (shouldUpdateResi[resistMod - 1])
+				{
+					updateResistance(resistMod);
+				}
+			}
+		}
+
+		if (apply)
+		{
+			SpellTargetMap targetMap;
+			targetMap.m_unitTarget = getGuid();
+			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+
+			for (auto &spell : item.getEntry().spells())
+			{
+				// Trigger == onEquip?
+				if (spell.trigger() == 1)
+				{
+					castSpell(targetMap, spell.spell(), -1, 0, true, item.getGuid());
+				}
+			}
+		}
+		else
+		{
+			getAuras().removeAllAurasDueToItem(item.getGuid());
 		}
 
 		updateArmor();
@@ -2402,6 +2619,15 @@ namespace wowpp
 		for (UInt32 i = 0; i < 56; ++i)
 		{
 			object.setUInt32Value(unit_fields::Aura + i, 0);
+		}
+
+		// Reset all buffs
+		object.setUInt32Value(character_fields::ModHealingDonePos, 0);
+		for (UInt8 i = 0; i < 7; ++i)
+		{
+			object.setUInt32Value(character_fields::ModDamageDoneNeg + i, 0);
+			object.setUInt32Value(character_fields::ModDamageDonePos + i, 0);
+			object.setFloatValue(character_fields::ModDamageDonePct + i, 1.00f);
 		}
 
 		// Remove "InCombat" flag

@@ -28,6 +28,8 @@
 #include "single_cast_state.h"
 #include "log/default_log_levels.h"
 #include "world_instance.h"
+#include "each_tile_in_region.h"
+#include "each_tile_in_sight.h"
 
 namespace wowpp
 {
@@ -80,14 +82,58 @@ namespace wowpp
 			return std::make_pair(game::spell_cast_result::FailedError, nullptr);
 		}
 
+		// Check for focus object
+		if (spell.focusobject() != 0)
+		{
+			TileIndex2D tileIndex;
+			m_executer.getTileIndex(tileIndex);
+
+			bool foundObject = false;
+
+			forEachTileInSight(
+				instance->getGrid(),
+				tileIndex,
+				[this, &foundObject, &spell](VisibilityTile &tile)
+			{
+				for (auto &object : tile.getGameObjects())
+				{
+					if (!object->isWorldObject())
+					{
+						return;
+					}
+
+					WorldObject *worldObject = reinterpret_cast<WorldObject*>(object);
+					if (worldObject->getUInt32Value(world_object_fields::TypeID) != world_object_type::SpellFocus)
+					{
+						return;
+					}
+
+					if (worldObject->getEntry().data(0) != spell.focusobject())
+					{
+						return;
+					}
+
+					float distance = float(worldObject->getEntry().data(1));
+					if (worldObject->getDistanceTo(getExecuter()) <= distance)
+					{
+						foundObject = true;
+						return;
+					}
+				}
+			});
+
+			if (!foundObject)
+			{
+				return std::make_pair(game::spell_cast_result::FailedRequiresSpellFocus, nullptr);
+			}
+		}
+
 		if (spell.mechanic() != 0)
 		{
-			if (unitTarget)
+			if (unitTarget &&
+				unitTarget->isImmuneAgainstMechanic(spell.mechanic()))
 			{
-				if (unitTarget->isImmuneAgainstMechanic(spell.mechanic()))
-				{
-					return std::make_pair(game::spell_cast_result::FailedPreventedByMechanic, nullptr);
-				}
+				return std::make_pair(game::spell_cast_result::FailedPreventedByMechanic, nullptr);
 			}
 		}
 
@@ -270,6 +316,16 @@ namespace wowpp
 		{
 			cost = Int32(cost / (1.117f * spell.spelllevel() / m_executer.getLevel() - 0.1327f));
 		}
+		
+		UInt8 school = 0;
+		for (UInt8 i = 0; i < 7; ++i)
+		{
+			if (spell.schoolmask() & (1 << i)) {
+				school = i;
+			}
+		}
+
+		cost = Int32(cost * (float(m_executer.getFloatValue(unit_fields::PowerCostMultiplier + school) + 100) / 100.0f));
 
 		if (m_executer.isGameCharacter())
 		{

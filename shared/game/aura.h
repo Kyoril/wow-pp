@@ -40,7 +40,7 @@ namespace wowpp
 	public:
 
 		/// Initializes a new instance of the Aura class.
-		explicit Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, PostFunction post, std::function<void(Aura &)> onDestroy);
+		explicit Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, UInt64 itemGuid, PostFunction post, std::function<void(Aura &)> onDestroy);
 		~Aura();
 
 		/// Gets the unit target.
@@ -51,6 +51,9 @@ namespace wowpp
 		GameUnit *getCaster() {
 			return m_caster;
 		}
+		UInt64 getItemGuid() const {
+			return m_itemGuid;
+		}
 		/// Applies this aura and initializes everything.
 		void applyAura();
 		/// This method is the counterpart of applyAura(). It exists so that
@@ -60,7 +63,7 @@ namespace wowpp
 		/// Executes the aura modifier and applies or removes the aura effects to/from the target.
 		void handleModifier(bool apply);
 		///
-		void handleProcModifier(game::spell_proc_flags::Type procType, GameUnit *attacker = nullptr);
+		void handleProcModifier(UInt8 attackType, GameUnit *attacker = nullptr);
 		/// Determines whether this is a passive spell aura.
 		bool isPassive() const {
 			return (m_spell.attributes(0) & game::spell_attributes::Passive) != 0;
@@ -115,6 +118,8 @@ namespace wowpp
 		void handlePeriodicDamage(bool apply);
 		/// 4
 		void handleDummy(bool apply);
+		/// 5
+		void handleModConfuse(bool apply);
 		/// 7
 		void handleModFear(bool apply);
 		/// 8
@@ -161,16 +166,24 @@ namespace wowpp
 		void handleTransform(bool apply);
 		/// 69
 		void handleSchoolAbsorb(bool apply);
+		/// 72
+		void handleModPowerCostSchoolPct(bool apply);
 		/// 77
 		void handleMechanicImmunity(bool apply);
 		/// 78
 		void handleMounted(bool apply);
+		/// 79
+		void handleModDamagePercentDone(bool apply);
 		/// 85
 		void handleModPowerRegen(bool apply);
 		/// 97
 		void handleManaShield(bool apply);
 		/// 99
 		void handleModAttackPower(bool apply);
+		/// 101
+		void handleModResistancePct(bool apply);
+		/// 103
+		void handleModTotalThreat(bool apply);
 		/// 104
 		void handleWaterWalk(bool apply);
 		/// 105
@@ -183,14 +196,20 @@ namespace wowpp
 		void handleAddTargetTrigger(bool apply);
 		/// 118
 		void handleModHealingPct(bool apply);
+		/// 123
+		void handleModTargetResistance(bool apply);
 		/// 132
 		void handleModEnergyPercentage(bool apply);
 		/// 133
 		void handleModHealthPercentage(bool apply);
 		/// 134
 		void handleModManaRegenInterrupt(bool apply);
+		/// 135
+		void handleModHealingDone(bool apply);
 		/// 137
 		void handleModTotalStatPercentage(bool apply);
+		/// 138
+		void handleModHaste(bool apply);
 		/// 142
 		void handleModBaseResistancePct(bool apply);
 		/// 143
@@ -225,13 +244,16 @@ namespace wowpp
 		void onTargetMoved(GameObject &, math::Vector3 oldPosition, float oldO);
 		///
 		void setRemoved(GameUnit *remover);
+		/// 
+		bool checkProc(bool active, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell);
+
 
 	private:
 
 		const proto::SpellEntry &m_spell;
 		const proto::SpellEffect &m_effect;
 		boost::signals2::scoped_connection m_casterDespawned, m_targetMoved, m_targetEnteredWater, m_targetStartedAttacking, m_targetStartedCasting, m_onExpire, m_onTick, m_onTargetKilled;
-		boost::signals2::scoped_connection m_procAutoAttack, m_procTakenAutoAttack, m_doneSpellMagicDmgClassNeg, m_takenDamage, m_procKilled, m_procKill, m_onDamageBreak;
+		boost::signals2::scoped_connection m_takenDamage, m_procKilled, m_procKill, m_onDamageBreak, m_onProc;
 		GameUnit *m_caster;
 		GameUnit &m_target;
 		UInt32 m_tickCount;
@@ -248,5 +270,6 @@ namespace wowpp
 		std::function<void(Aura &)> m_destroy;
 		UInt32 m_totalTicks;
 		Int32 m_duration;
+		UInt64 m_itemGuid;
 	};
 }

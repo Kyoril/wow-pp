@@ -69,7 +69,7 @@ namespace wowpp
 		{
 			struct ManagerEntry
 			{
-				typedef std::function < bool(std::istream &file, const String &fileName, Context &context) > LoadFunction;
+				typedef std::function < bool(std::istream &file, const String &fileName, const String &hash, Context &context) > LoadFunction;
 
 				String name;
 				LoadFunction load;
@@ -83,9 +83,10 @@ namespace wowpp
 					, load([this, name, &manager](
 					           std::istream & file,
 					           const String & fileName,
+								const String & hash,
 					           Context & context) mutable -> bool
 				{
-					return this->loadManagerFromFile(file, fileName, context, manager, name);
+					return this->loadManagerFromFile(file, fileName, hash, context, manager, name);
 				})
 				{
 				}
@@ -96,10 +97,12 @@ namespace wowpp
 				static bool loadManagerFromFile(
 				    std::istream &file,
 				    const String &fileName,
+					const String &hash,
 				    Context &context,
 				    T &manager,
 				    const String &arrayName)
 				{
+					manager.hashString = hash;
 					return manager.load(file);
 				}
 			};
@@ -126,8 +129,8 @@ namespace wowpp
 				}
 
 				const auto projectVersion =
-				    fileTable.getInteger<unsigned>("version", 5);
-				if (projectVersion != 5)
+				    fileTable.getInteger<unsigned>("version", 6);
+				if (projectVersion != 6)
 				{
 					ELOG("Unsupported project version: " << projectVersion);
 					return false;
@@ -138,14 +141,26 @@ namespace wowpp
 				for (const auto &manager : managers)
 				{
 					String relativeFileName;
+					String hashString;
 
-					if (!fileTable.tryGetString(manager.name, relativeFileName))
+					auto *table = fileTable.getTable(manager.name);
+					if (!table)
+					{
+						success = false;
+
+						ELOG("File info of '" << manager.name << "' is missing in the project");
+						continue;
+					}
+
+					if (!table->tryGetString("file", relativeFileName))
 					{
 						success = false;
 
 						ELOG("File name of '" << manager.name << "' is missing in the project");
 						continue;
 					}
+
+					table->tryGetString("sha1", hashString);
 
 					const auto managerFile = directory.readFile(relativeFileName, false);
 					if (!managerFile)
@@ -155,7 +170,7 @@ namespace wowpp
 						ELOG("Could not open file '" << relativeFileName << "'");
 						continue;
 					}
-					if (!manager.load(*managerFile, relativeFileName, context))
+					if (!manager.load(*managerFile, relativeFileName, hashString, context))
 					{
 						ELOG("Could not load '" << manager.name << "'");
 						success = false;

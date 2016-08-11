@@ -33,6 +33,7 @@ message UnitSpellEntry {
 	optional bool repeated = 8;
 	optional float minrange = 9 [default = 0.0];
 	optional float maxrange = 10 [default = 0.0];
+	optional uint32 probability = 11 [default = 100];
 }
 
 message UnitEntry {

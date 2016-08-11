@@ -24,6 +24,7 @@
 #include "common/typedefs.h"
 #include "common/big_number.h"
 #include "wowpp_protocol/wowpp_realm_login.h"
+#include "wowpp_protocol/wowpp_team_login.h"
 
 namespace wowpp
 {
@@ -81,5 +82,7 @@ namespace wowpp
 
 		virtual bool getTutorialData(UInt32 id, std::array<UInt32, 8> &out_data) = 0;
 		virtual bool setTutorialData(UInt32 id, const std::array<UInt32, 8> data) = 0;
+
+		virtual pp::team_login::LoginResult teamServerLogIn(UInt32 &out_id, const String &name, const String &password) = 0;
 	};
 }

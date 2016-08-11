@@ -615,6 +615,8 @@ namespace wowpp
 		boost::signals2::signal<void(Int32, UInt32)> proficiencyChanged;
 		/// Fired when an inventory error occurred. Used to send a packet to the owning players client.
 		boost::signals2::signal<void(game::InventoryChangeFailure, GameItem *, GameItem *)> inventoryChangeFailure;
+		/// Fired when an item was added to the inventory that the players client needs to notified of.
+		boost::signals2::signal<void(UInt16, UInt16, bool, bool)> itemAdded;
 		/// Fired when the characters combo points changes. Used to send a packet to the owning players client.
 		boost::signals2::signal<void()> comboPointsChanged;
 		/// Fired when the character gained some experience points. Used to send a packet to the owning players client.
@@ -633,6 +635,8 @@ namespace wowpp
 		boost::signals2::signal<void(WorldObject &)> objectInteraction;
 		/// Fired when a new spell was learned.
 		boost::signals2::signal<void(const proto::SpellEntry &)> spellLearned;
+		/// Fired when resurrection is requested by a spell. Used to send a packet to the owning players client.
+		boost::signals2::signal<void(UInt64, const String&, UInt8)> resurrectRequested;
 
 	public:
 
@@ -640,8 +644,8 @@ namespace wowpp
 		/// be valid, as you at least need to call GameCharacter::initialize(), GameCharacter::setMapId()
 		/// and GameCharacter::relocate() to have a valid character. You also have to setup a valid GUID.
 		explicit GameCharacter(
-		    proto::Project &project,
-		    TimerQueue &timers);
+			proto::Project &project,
+			TimerQueue &timers);
 		/// Default destructor.
 		~GameCharacter();
 
@@ -700,7 +704,7 @@ namespace wowpp
 
 		/// @copydoc GameUnit::classUpdated
 		void classUpdated() override;
-		
+
 	public:
 
 		// GameCharacter methods
@@ -811,6 +815,8 @@ namespace wowpp
 		bool fulfillsQuestRequirements(const proto::QuestEntry &entry) const;
 		/// Determines whether the players questlog is full.
 		bool isQuestlogFull() const;
+		/// Called when an exploration area trigger was raised.
+		void onQuestExploration(UInt32 questId);
 		/// Called when a quest item was added to the inventory.
 		void onQuestItemAddedCredit(const proto::ItemEntry &entry, UInt32 amount);
 		/// Called when a quest item was removed from the inventory.
@@ -859,6 +865,14 @@ namespace wowpp
 		bool isInPvPCombat() const {
 			return getCurrentTime() < m_lastPvPCombat + constants::OneSecond * 5;
 		}
+		/// Updates the resurrect target information.
+		void setResurrectRequestData(UInt64 guid, UInt32 mapId, const math::Vector3 &location, UInt32 health, UInt32 mana);
+		/// Checks whether a resurrect has been requested or not.
+		bool isResurrectRequested() const { return m_resurrectGuid == 0 ? 0 : 1; }
+		/// Checks whether a resurrect has been requested by the character guid provided.
+		bool isResurrectRequestedBy(UInt64 guid) const { return m_resurrectGuid == guid; }
+		/// Resurrects the player using resurrect info. (This method might not be needed once proper resurrection is implemented)
+		void resurrectUsingRequestData();
 	public:
 
 		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT
@@ -912,6 +926,10 @@ namespace wowpp
 		std::array<float, 7> m_threatModifier;
 		std::vector<Countdown> m_questTimeouts;
 		GameTime m_lastPvPCombat;
+		UInt64 m_resurrectGuid;
+		UInt32 m_resurrectMap;
+		math::Vector3 m_resurrectLocation;
+		UInt32 m_resurrectHealth, m_resurrectMana;
 	};
 
 	/// Serializes a GameCharacter to an io::Writer object for the wow++ protocol.

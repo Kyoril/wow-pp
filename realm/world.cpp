@@ -114,6 +114,9 @@ namespace wowpp
 			case world_packet::CharacterSpawned:
 				handleCharacterSpawned(packet);
 				break;
+			case world_packet::MailDraft:
+				handleMailDraft(packet);
+				break;
 			default:
 			{
 				WLOG("Unknown packet received from world " << m_address
@@ -515,6 +518,35 @@ namespace wowpp
 		}
 
 		player->spawnedNotification();
+	}
+
+	void World::handleMailDraft(pp::IncomingPacket & packet)
+	{
+		game::MailData mailDraft;
+		String sender;
+		UInt32 cost;
+		std::vector<std::shared_ptr<GameItem>> items;
+		if (!(pp::world_realm::world_read::mailDraft(packet, mailDraft.unk1, mailDraft.unk2, sender, mailDraft.receiver,
+			mailDraft.subject, mailDraft.body, mailDraft.money, mailDraft.COD, cost, items)))
+		{
+			return;
+		}
+
+		auto senderPl = m_playerManager.getPlayerByCharacterName(sender);
+		auto receiverPl = m_playerManager.getPlayerByCharacterName(mailDraft.receiver);
+		if (!receiverPl)
+		{
+			// TODO send error
+			return;
+		}
+
+		if (senderPl->getCharacterId() == receiverPl->getCharacterId())
+		{
+			// TODO send error
+			return;
+		}
+
+		auto faction = senderPl->getGameCharacter();
 	}
 
 	void World::characterGroupChanged(UInt64 characterGuid, UInt64 groupId)

@@ -477,7 +477,9 @@ namespace wowpp
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
 				finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
-					if (radius * radius >= (location - unit.getLocation()).squared_length())
+					const float realRad = radius + attacker.getMeleeReach() + unit.getMeleeReach();
+					const float distSq = realRad * realRad;
+					if (distSq >= (location - unit.getLocation()).squared_length())
 					{
 						const auto &faction = attacker.getFactionTemplate();
 						if (!unit.isFriendlyTo(faction) && unit.isAlive() && unit.isInLineOfSight(location))
@@ -550,7 +552,10 @@ namespace wowpp
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
 				finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
-					if (radius * radius >= (location - unit.getLocation()).squared_length())
+					const float realRad = radius + attacker.getMeleeReach() + unit.getMeleeReach();
+
+					const float distSq = realRad * realRad;
+					if (distSq >= (location - unit.getLocation()).squared_length())
 					{
 						const auto &faction = attacker.getFactionTemplate();
 						if (!unit.isFriendlyTo(faction) && unit.isAlive() && attacker.isInLineOfSight(unit))
@@ -580,7 +585,9 @@ namespace wowpp
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
 				finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
-					if (radius * radius >= (location - unit.getLocation()).squared_length())
+					const float realRad = radius + attacker.getMeleeReach() + unit.getMeleeReach();
+					const float distSq = realRad * realRad;
+					if (distSq >= (location - unit.getLocation()).squared_length())
 					{
 						const auto &faction = attacker.getFactionTemplate();
 						if (!unit.isFriendlyTo(faction) && unit.isAlive() && attacker.isInLineOfSight(unit.getLocation()))

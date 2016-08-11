@@ -922,11 +922,18 @@ namespace wowpp
 				        << io::write<NetUInt32>(spell.id())
 				        << io::write<NetUInt8>(result)
 				        << io::write<NetUInt8>(castCount);
-
-				if (result == game::spell_cast_result::FailedPreventedByMechanic)
+				switch (result)
 				{
-					out_packet
-					        << io::write<NetUInt32>(spell.mechanic());
+					case game::spell_cast_result::FailedPreventedByMechanic:
+						out_packet
+							<< io::write<NetUInt32>(spell.mechanic());
+						break;
+					case game::spell_cast_result::FailedRequiresSpellFocus:
+						out_packet
+							<< io::write<NetUInt32>(spell.focusobject());
+						break;
+					default:
+						break;
 				}
 
 				// TODO: Send more informations based on the cast result code (which area is required etc.)
@@ -3679,6 +3686,40 @@ namespace wowpp
 					<< io::write<NetUInt32>(0);
 				out_packet.finish();
 			}
+
+			void lootStartRoll(game::OutgoingPacket & out_packet, UInt64 itemGuid, UInt32 playerCount, UInt32 itemEntry, UInt32 itemSuffix, UInt32 itemPropId, UInt32 countdown)
+			{
+				out_packet.start(game::server_packet::MoveLandWalk);
+				out_packet
+					<< io::write<NetUInt64>(itemGuid)
+					<< io::write<NetUInt32>(playerCount)
+					<< io::write<NetUInt32>(itemEntry)
+					<< io::write<NetUInt32>(itemSuffix)
+					<< io::write<NetUInt32>(itemPropId)
+					<< io::write<NetUInt32>(countdown);
+				out_packet.finish();
+			}
+
+			void playedTime(game::OutgoingPacket & out_packet, UInt32 totalTimeInSecs, UInt32 levelTimeInSecs)
+			{
+				out_packet.start(game::server_packet::PlayedTime);
+				out_packet
+					<< io::write<NetUInt32>(totalTimeInSecs)
+					<< io::write<NetUInt32>(levelTimeInSecs);
+				out_packet.finish();
+			}
+
+			void resurrectRequest(game::OutgoingPacket & out_packet, UInt64 objectGUID, const String &sentName, UInt8 typeId)
+			{
+				out_packet.start(game::server_packet::ResurrectRequest);
+				out_packet
+					<< io::write<NetUInt64>(objectGUID)
+					<< io::write<NetUInt32>(static_cast<UInt32>(sentName.length() + 1))
+					<< io::write_range(sentName)
+					<< io::write<NetUInt8>(0)
+					<< io::write<NetUInt8>(typeId == object_type::Character ? 0 : 1);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
@@ -4519,6 +4560,13 @@ namespace wowpp
 				return packet
 					>> io::read<NetObjectGuid>(out_mailboxGuid)
 					>> out_mail;
+			}
+
+			bool resurrectResponse(io::Reader & packet, UInt64 &out_guid, UInt8 &out_status)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_guid)
+					>> io::read<NetUInt8>(out_status);
 			}
 		}
 

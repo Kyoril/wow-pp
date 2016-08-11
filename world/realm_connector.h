@@ -97,6 +97,8 @@ namespace wowpp
 		void sendQuestData(DatabaseId characterId, UInt32 quest, const QuestStatusData &data);
 		/// 
 		void sendCharacterSpawnNotification(UInt64 characterId);
+		///
+		void sendMailDraft(game::MailData mailDraft, String sender, UInt32 cost, const std::vector<std::shared_ptr<GameItem>> &items);
 
 
 	private:

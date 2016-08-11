@@ -31,12 +31,14 @@ namespace wowpp
 {
 	namespace editor
 	{
-		const UInt32 Configuration::EditorConfigVersion = 0x01;
+		const UInt32 Configuration::EditorConfigVersion = 0x02;
 
 		Configuration::Configuration()
 			: dataPath("")
 			, wowGamePath("C:\\Program Files (x86)\\World of Warcraft\\")
-			, mysqlPort(wowpp::constants::DefaultMySQLPort)
+			, teamAddress("wow-pp.eu")
+			, teamPort(constants::DefaultTeamEditorPort)
+			, mysqlPort(constants::DefaultMySQLPort)
 			, mysqlHost("127.0.0.1")
 			, mysqlUser("username")
 			, mysqlPassword("password")
@@ -81,13 +83,14 @@ namespace wowpp
 				{
 					file.close();
 
-					if (save(fileName))
+					if (save(fileName + ".updated"))
 					{
-						ILOG("Saved updated settings with default values as " << fileName);
+						ILOG("Saved updated settings with default values as " << fileName << ".updated");
+						ILOG("Please insert values from the old setting file manually and rename the file.");
 					}
 					else
 					{
-						ELOG("Could not save updated default settings as " << fileName);
+						ELOG("Could not save updated default settings as " << fileName << ".updated");
 					}
 
 					return false;
@@ -107,6 +110,12 @@ namespace wowpp
 					mysqlUser = mysqlDatabaseTable->getString("user", mysqlUser);
 					mysqlPassword = mysqlDatabaseTable->getString("password", mysqlPassword);
 					mysqlDatabase = mysqlDatabaseTable->getString("database", mysqlDatabase);
+				}
+
+				if (const Table *const teamConnector = global.getTable("teamConnector"))
+				{
+					teamAddress = teamConnector->getString("address", teamAddress);
+					teamPort = teamConnector->getInteger("port", teamPort);
 				}
 
 				if (const Table *const game = global.getTable("game"))
@@ -159,6 +168,15 @@ namespace wowpp
 				log.addKey("fileName", logFileName);
 				log.addKey("buffering", isLogFileBuffering);
 				log.finish();
+			}
+
+			global.writer.newLine();
+
+			{
+				sff::write::Table<Char> teamConnector(global, "teamConnector", sff::write::MultiLine);
+				teamConnector.addKey("address", teamAddress);
+				teamConnector.addKey("port", teamPort);
+				teamConnector.finish();
 			}
 
 			global.writer.newLine();

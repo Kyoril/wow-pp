@@ -301,5 +301,6 @@ namespace wowpp
 		void handleCharRename(game::IncomingPacket &packet);
 		void handleQuestQuery(game::IncomingPacket &packet);
 		void handleWho(game::IncomingPacket &packet);
+		void handlePlayedTime(game::IncomingPacket &packet);
 	};
 }

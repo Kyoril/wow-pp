@@ -274,6 +274,48 @@ namespace wowpp
 			}
 		}
 
+
+		namespace
+		{
+			static void applySpellToTreeItem(QTreeWidgetItem &item, const proto::UnitSpellEntry &entry, const proto::SpellEntry &spell)
+			{
+				static QString spellCastTargetNames[] = {
+					"SELF",
+					"CURRENT_TARGET"
+				};
+
+				item.setText(0, QString("%1 %2").arg(spell.id()).arg(spell.name().c_str()));
+				item.setText(1, QString("%1").arg(entry.priority()));
+				item.setText(2, QString("%1").arg(entry.repeated() ? "Yes" : "No"));
+				item.setText(3, spellCastTargetNames[entry.target()]);
+				if (entry.mininitialcooldown() != entry.maxinitialcooldown())
+				{
+					item.setText(4, QString("%1 - %2").arg(entry.mininitialcooldown()).arg(entry.maxinitialcooldown()));
+				}
+				else
+				{
+					item.setText(4, QString("%1").arg(entry.mininitialcooldown()));
+				}
+				if (entry.mincooldown() != entry.maxcooldown())
+				{
+					item.setText(5, QString("%1 - %2").arg(entry.mincooldown()).arg(entry.maxcooldown()));
+				}
+				else
+				{
+					item.setText(5, QString("%1").arg(entry.mincooldown()));
+				}
+				if (entry.minrange() != entry.maxrange())
+				{
+					item.setText(6, QString("%1 - %2").arg(entry.minrange()).arg(entry.maxrange()));
+				}
+				else
+				{
+					item.setText(6, QString("%1").arg(entry.minrange()));
+				}
+				item.setText(7, QString("%1%").arg(entry.probability()));
+			}
+		}
+
 		void ObjectEditor::addSpellEntry(const wowpp::proto::UnitSpellEntry &creatureSpell)
 		{
 			const auto *spellEntry = m_application.getProject().spells.getById(creatureSpell.spellid());
@@ -282,40 +324,8 @@ namespace wowpp
 				return;
 			}
 
-			static QString spellCastTargetNames[] = {
-				"SELF",
-				"CURRENT_TARGET"
-			};
-
 			QTreeWidgetItem *item = new QTreeWidgetItem(m_ui->treeWidget);
-			item->setText(0, QString("%1 %2").arg(spellEntry->id()).arg(spellEntry->name().c_str()));
-			item->setText(1, QString("%1").arg(creatureSpell.priority()));
-			item->setText(2, QString("%1").arg(creatureSpell.repeated() ? "Yes" : "No"));
-			item->setText(3, spellCastTargetNames[creatureSpell.target()]);
-			if (creatureSpell.mininitialcooldown() != creatureSpell.maxinitialcooldown())
-			{
-				item->setText(4, QString("%1 - %2").arg(creatureSpell.mininitialcooldown()).arg(creatureSpell.maxinitialcooldown()));
-			}
-			else
-			{
-				item->setText(4, QString("%1").arg(creatureSpell.mininitialcooldown()));
-			}
-			if (creatureSpell.mincooldown() != creatureSpell.maxcooldown())
-			{
-				item->setText(5, QString("%1 - %2").arg(creatureSpell.mincooldown()).arg(creatureSpell.maxcooldown()));
-			}
-			else
-			{
-				item->setText(5, QString("%1").arg(creatureSpell.mincooldown()));
-			}
-			if (creatureSpell.minrange() != creatureSpell.maxrange())
-			{
-				item->setText(6, QString("%1 - %2").arg(creatureSpell.minrange()).arg(creatureSpell.maxrange()));
-			}
-			else
-			{
-				item->setText(6, QString("%1").arg(creatureSpell.minrange()));
-			}
+			applySpellToTreeItem(*item, creatureSpell, *spellEntry);
 		}
 
 		void ObjectEditor::showEffectDialog(const proto::SpellEffect & effect)
@@ -665,6 +675,42 @@ namespace wowpp
 			}
 		}
 
+		void ObjectEditor::on_treeWidget_doubleClicked(QModelIndex index)
+		{
+			// Find the selected entry
+			if (!index.isValid() || !m_selectedUnit)
+			{
+				return;
+			}
+
+			auto *entry = m_selectedUnit->mutable_creaturespells(index.row());
+
+			CreatureSpellDialog dialog(m_application, entry);
+			auto result = dialog.exec();
+			if (result == QDialog::Accepted)
+			{
+				if (!dialog.getSelectedSpell())
+				{
+					return;
+				}
+
+				entry->set_spellid(dialog.getSelectedSpell()->id());
+				entry->set_priority(dialog.getPriority());
+				entry->set_mincooldown(dialog.getMinCooldown());
+				entry->set_maxcooldown(dialog.getMaxCooldown());
+				entry->set_mininitialcooldown(dialog.getMinInitialCooldown());
+				entry->set_maxinitialcooldown(dialog.getMaxInitialCooldown());
+				entry->set_target(dialog.getTarget());
+				entry->set_repeated(dialog.getRepeated());
+				entry->set_probability(dialog.getProbability());
+
+				// Update UI
+				QTreeWidgetItem *item = m_ui->treeWidget->currentItem();
+				applySpellToTreeItem(*item, *entry, *dialog.getSelectedSpell());
+				m_application.markAsChanged();
+			}
+		}
+
 		void ObjectEditor::onSpellSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
 		{
 			// Get the selected unit
@@ -700,6 +746,8 @@ namespace wowpp
 			m_ui->cooldownField->setText(QString::number(spell->cooldown()));
 			m_ui->resourceField->setCurrentIndex(spell->powertype());
 			m_ui->costField->setText(QString::number(spell->cost()));
+			m_ui->lineEdit_6->setText(QString::number(spell->family()));
+			m_ui->lineEdit_7->setText(QString("0x") + QString::number(spell->familyflags(), 16).toUpper().rightJustified(16, QLatin1Char('0')));
 
 			// Attributes
 			for (size_t i = 1; i <= 32; ++i)
@@ -2371,6 +2419,8 @@ namespace wowpp
 				added->set_mininitialcooldown(dialog.getMinInitialCooldown());
 				added->set_maxinitialcooldown(dialog.getMaxInitialCooldown());
 				added->set_target(dialog.getTarget());
+				added->set_repeated(dialog.getRepeated());
+				added->set_probability(dialog.getProbability());
 				addSpellEntry(*added);
 
 				m_application.markAsChanged();

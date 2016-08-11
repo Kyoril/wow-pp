@@ -53,10 +53,8 @@ namespace wowpp
 		, m_lastManaUse(0)
 		, m_auras(*this)
 		, m_mechanicImmunity(0)
-		, m_isStunned(false)
-		, m_isRooted(false)
-		, m_isFeared(false)
 		, m_isStealthed(false)
+		, m_state(unit_state::Default)
 		, m_standState(unit_stand_state::Stand)
 	{
 		// Resize values field
@@ -79,28 +77,6 @@ namespace wowpp
 		    std::bind(&GameUnit::onAttackSwing, this));
 		m_regenCountdown.ended.connect(
 		    std::bind(&GameUnit::onRegeneration, this));
-
-		fearStateChanged.connect([this](bool feared) {
-			// Stop attacking (just in case)
-			if (feared)
-			{
-				stopAttack();
-				setVictim(nullptr);
-			}
-
-			// Stop movement in every case
-			getMover().stopMovement();
-
-			if (!feared)
-			{
-				m_fearMoved.disconnect();
-			}
-			else
-			{
-				m_fearMoved = getMover().targetReached.connect(std::bind(&GameUnit::triggerNextFearMove, this));
-				triggerNextFearMove();
-			}
-		});
 	}
 
 	GameUnit::~GameUnit()
@@ -169,6 +145,8 @@ namespace wowpp
 		// Not in fight
 		removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 		addFlag(unit_fields::UnitFlags, game::unit_flags::PvP);
+
+		m_attackSpeedPctModifier.fill(1.0f);
 	}
 
 	void GameUnit::raceUpdated()
@@ -328,6 +306,29 @@ namespace wowpp
 			setByteValue(unit_fields::Bytes1, 3, getByteValue(unit_fields::Bytes1, 3) & ~2);
 			m_movementInfo.moveFlags = game::MovementFlags(m_movementInfo.moveFlags & ~(game::movement_flags::Flying | game::movement_flags::Flying2));
 		}
+	}
+
+	void GameUnit::modifyAttackSpeedPctModifier(UInt8 attackType, float modifier, bool apply)
+	{
+		m_attackSpeedPctModifier[attackType] *= (apply ? (1.0f + modifier) : 1.0f / (1.0f + modifier));
+	}
+
+	void GameUnit::procEvent(GameUnit * target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount, UInt8 attackType, proto::SpellEntry const * procSpell)
+	{
+		if (procAttacker)
+		{
+			procEventFor(false, target, procAttacker, procEx, amount, attackType, procSpell);
+		}
+
+		if (target && target->isAlive() && procVictim)
+		{
+			target->procEventFor(true, this, procVictim, procEx, amount, attackType, procSpell);
+		}
+	}
+
+	void GameUnit::procEventFor(bool isVictim, GameUnit * target, UInt32 procFlag, UInt32 procEx, UInt32 amount, UInt8 attackType, proto::SpellEntry const * procSpell)
+	{
+		spellProcEvent(isVictim, target, procFlag, procEx, procSpell, amount, attackType);
 	}
 
 	void GameUnit::levelChanged(const proto::LevelEntry &levelInfo)
@@ -657,6 +658,29 @@ namespace wowpp
 				{
 					GameUnit *targetUnit = targets[i];
 
+					UInt32 procAttacker = game::spell_proc_flags::None;
+					UInt32 procVictim = game::spell_proc_flags::None;
+
+					switch (m_weaponAttack)
+					{
+						case game::weapon_attack::BaseAttack:
+							procAttacker = game::spell_proc_flags::DoneMeleeAutoAttack;
+							procVictim = game::spell_proc_flags::TakenMeleeAutoAttack;
+							break;
+						case game::weapon_attack::OffhandAttack:
+							procAttacker = game::spell_proc_flags::DoneMeleeAutoAttack | game::spell_proc_flags::DoneOffhandAttack;
+							procVictim = game::spell_proc_flags::TakenMeleeAutoAttack;
+							break;
+						case game::weapon_attack::RangedAttack:
+							procAttacker = game::spell_proc_flags::DoneRangedAutoAttack;
+							procVictim = game::spell_proc_flags::TakenRangedAutoAttack;
+							break;
+						default:
+							break;
+					}
+
+					UInt32 procEx = game::spell_proc_flags_ex::None;
+
 					UInt32 totalDamage = 0;
 					UInt32 blocked = 0;
 					bool crit = false;
@@ -664,18 +688,22 @@ namespace wowpp
 					UInt32 absorbed = 0;
 					if (victimStates[i] == game::victim_state::IsImmune)
 					{
+						procEx |= game::spell_proc_flags_ex::Immune;
 						totalDamage = 0;
 					}
 					else if (hitInfos[i] == game::hit_info::Miss)
 					{
+						procEx |= game::spell_proc_flags_ex::Miss;
 						totalDamage = 0;
 					}
 					else if (victimStates[i] == game::victim_state::Dodge)
 					{
+						procEx |= game::spell_proc_flags_ex::Dodge;
 						totalDamage = 0;
 					}
 					else if (victimStates[i] == game::victim_state::Parry)
 					{
+						procEx |= game::spell_proc_flags_ex::Parry;
 						totalDamage = 0;
 						//TODO accelerate next m_victim autohit
 					}
@@ -694,6 +722,8 @@ namespace wowpp
 
 						if (hitInfos[i] == game::hit_info::Glancing)
 						{
+							procEx |= game::spell_proc_flags_ex::NormalHit;
+
 							bool attackerIsCaster = false;	//TODO check it
 							float attackerRating = getLevel() * 5.0f;	//TODO get real rating
 							float victimRating = targetUnit->getLevel() * 5.0f;
@@ -733,6 +763,7 @@ namespace wowpp
 						}
 						else if (victimStates[i] == game::victim_state::Blocks)
 						{
+							procEx |= game::spell_proc_flags_ex::Block;
 							UInt32 blockValue = 50;	//TODO get from m_victim
 							if (blockValue >= totalDamage)	//avoid negative damage when blockValue is high
 							{
@@ -747,12 +778,18 @@ namespace wowpp
 						}
 						else if (hitInfos[i] == game::hit_info::CriticalHit)
 						{
+							procEx |= game::spell_proc_flags_ex::CriticalHit;
 							crit = true;
 							totalDamage *= 2.0f;
 						}
 						else if (hitInfos[i] == game::hit_info::Crushing)
 						{
+							procEx |= game::spell_proc_flags_ex::NormalHit;
 							totalDamage *= 1.5f;
+						}
+						else
+						{
+							procEx |= game::spell_proc_flags_ex::NormalHit;
 						}
 
 						resisted = totalDamage * (resists[i] / 100.0f);
@@ -760,6 +797,7 @@ namespace wowpp
 						if (absorbed > 0 && absorbed == totalDamage)
 						{
 							hitInfos[i] = static_cast<game::HitInfo>(hitInfos[i] | game::hit_info::Absorb);
+							procEx |= game::spell_proc_flags_ex::Absorb;
 						}
 					}
 
@@ -812,17 +850,17 @@ namespace wowpp
 					// Deal damage (Note: m_victim can become nullptr, if the target dies)
 					if (totalDamage > 0)
 					{
-						victim->takenMeleeAutoAttack(this);
-						victim->dealDamage(totalDamage - resisted - absorbed, (1 << 0), this, totalDamage - resisted - absorbed);
+						procVictim |= game::spell_proc_flags::TakenDamage;
 
-						// Trigger auto attack procs
-						doneMeleeAutoAttack(victim);
+						victim->dealDamage(totalDamage - resisted - absorbed, (1 << 0), this, totalDamage - resisted - absorbed);
 					}
 					else
 					{
 						// Still add threat to enter combat in case of miss etc.
 						victim->threaten(*this, 0.0f);
 					}
+
+					procEvent(targetUnit, procAttacker, procVictim, procEx, totalDamage - resisted - absorbed, static_cast<UInt8>(m_weaponAttack), nullptr);
 				}
 			}
 		}
@@ -1180,6 +1218,40 @@ namespace wowpp
 		{
 			bonus /= tickCount;
 		}
+
+		if (bonus < 0 && -bonus >= healing)
+		{
+		}
+		else
+		{
+			healing += bonus;
+		}
+
+		getAuras().forEachAuraOfType(game::aura_type::ModHealingDonePct, [&healing, tickCount](Aura &aura) -> bool {
+			Int32 bonus = aura.getBasePoints();
+			if (tickCount > 1)
+			{
+				bonus /= tickCount;
+			}
+
+			if (bonus != 0)
+			{
+				healing = UInt32(healing * (float(100.0f + bonus) / 100.0f));
+			}
+			return true;
+		});
+	}
+
+	void GameUnit::applyHealingDoneBonus(UInt32 spellLevel, UInt32 playerLevel, UInt32 tickCount, UInt32 & healing)
+	{
+		Int32 bonus = getAuras().getTotalBasePoints(game::aura_type::ModHealingDone);
+		if (tickCount > 1)
+		{
+			bonus /= tickCount;
+		}
+
+		// Adjust bonus based on spell level / player level
+		bonus = Int32(float(bonus) * float(spellLevel + 6) / float(playerLevel));
 
 		if (bonus < 0 && -bonus >= healing)
 		{
@@ -1741,7 +1813,7 @@ namespace wowpp
 	bool GameUnit::canDetectStealth(GameUnit &target)
 	{
 		// Can't detect anything if stunned
-		if (m_isStunned) {
+		if (isStunned() || isConfused() || isFeared()) {
 			return false;
 		}
 
@@ -1947,6 +2019,11 @@ namespace wowpp
 		return 10.0f;
 	}
 
+	UInt32 GameUnit::getAttackTime(UInt8 attackType)
+	{
+		return getUInt32Value(unit_fields::BaseAttackTime + attackType) / m_attackSpeedPctModifier[attackType];
+	}
+
 	UInt32 GameUnit::getBonus(UInt8 school)
 	{
 		UInt32 bonus = 0;
@@ -2088,8 +2165,13 @@ namespace wowpp
 	void GameUnit::triggerNextFearMove()
 	{
 		// Stop when not feared
-		if (!isFeared())
+		if (!isFeared() && !isConfused())
 			return;
+
+		const float dist =
+			isFeared() ? 25.0f : 2.5f;
+		const math::Vector3 loc =
+			isFeared() ? getMover().getCurrentLocation() : m_confusedLoc;
 
 		auto *world = getWorldInstance();
 		if (world)
@@ -2098,7 +2180,7 @@ namespace wowpp
 			if (mapData)
 			{
 				math::Vector3 targetPoint;
-				if (mapData->getRandomPointOnGround(getLocation(), 25.0f, targetPoint))
+				if (mapData->getRandomPointOnGround(loc, dist, targetPoint))
 				{
 					getMover().moveTo(targetPoint);
 					return;
@@ -2340,48 +2422,132 @@ namespace wowpp
 
 	void GameUnit::notifyStunChanged()
 	{
-		const bool wasStunned = m_isStunned;
-		m_isStunned = m_auras.hasAura(game::aura_type::ModStun);
-		if (wasStunned && !m_isStunned)
+		const bool wasStunned = isStunned();
+		const bool isStunned = m_auras.hasAura(game::aura_type::ModStun);
+		if (isStunned)
 		{
-			stunStateChanged(false);
+			m_state |= unit_state::Stunned;
 		}
-		else if (!wasStunned && m_isStunned)
+		else
+		{
+			m_state &= ~unit_state::Stunned;
+		}
+
+		if (wasStunned && !isStunned)
+		{
+			unitStateChanged(unit_state::Stunned, false);
+		}
+		else if (!wasStunned && isStunned)
 		{
 			cancelCast(game::spell_interrupt_flags::None);
 			stopAttack();
 			m_mover->stopMovement();
-			stunStateChanged(true);
+
+			unitStateChanged(unit_state::Stunned, true);
 		}
 	}
 
 	void GameUnit::notifyRootChanged()
 	{
-		const bool wasRooted = m_isRooted;
-		m_isRooted = m_auras.hasAura(game::aura_type::ModRoot);
-		if (wasRooted && !m_isRooted)
+		const bool wasRooted = isRooted();
+		const bool isRooted = m_auras.hasAura(game::aura_type::ModRoot);
+		if (isRooted)
 		{
-			rootStateChanged(false);
+			m_state |= unit_state::Rooted;
 		}
-		else if (!wasRooted && m_isRooted)
+		else
+		{
+			m_state &= ~unit_state::Rooted;
+		}
+
+		if (wasRooted && !isRooted)
+		{
+			unitStateChanged(unit_state::Rooted, false);
+		}
+		else if (!wasRooted && isRooted)
 		{
 			m_mover->stopMovement();
-			rootStateChanged(true);
+			unitStateChanged(unit_state::Rooted, true);
 		}
 	}
 
 	void GameUnit::notifyFearChanged()
 	{
-		const bool wasFeared = m_isFeared;
-		m_isFeared = m_auras.hasAura(game::aura_type::ModFear);
-		if (wasFeared && !m_isFeared)
+		const bool wasFeared = isFeared();
+		const bool isFeared = m_auras.hasAura(game::aura_type::ModFear);
+		if (isFeared)
 		{
-			fearStateChanged(false);
+			m_state |= unit_state::Feared;
 		}
-		else if (!wasFeared && m_isFeared)
+		else
+		{
+			m_state &= ~unit_state::Feared;
+		}
+
+		if (wasFeared && !isFeared)
+		{
+			unitStateChanged(unit_state::Feared, false);
+
+			// Stop movement in every case
+			getMover().stopMovement();
+			m_fearMoved.disconnect();
+
+		}
+		else if (!wasFeared && isFeared)
 		{
 			m_mover->stopMovement();
-			fearStateChanged(true);
+			unitStateChanged(unit_state::Feared, true);
+
+			// Stop attacking (just in case)
+			stopAttack();
+			setVictim(nullptr);
+
+			// Stop movement in every case
+			getMover().stopMovement();
+
+			m_fearMoved = getMover().targetReached.connect(std::bind(&GameUnit::triggerNextFearMove, this));
+			triggerNextFearMove();
+
+		}
+	}
+
+	void GameUnit::notifyConfusedChanged()
+	{
+		const bool wasFeared = isFeared();
+		const bool isFeared = m_auras.hasAura(game::aura_type::ModConfuse);
+		if (isFeared)
+		{
+			m_state |= unit_state::Confused;
+		}
+		else
+		{
+			m_state &= ~unit_state::Confused;
+		}
+
+		if (wasFeared && !isFeared)
+		{
+			unitStateChanged(unit_state::Confused, false);
+
+			// Stop movement in every case
+			getMover().stopMovement();
+			m_fearMoved.disconnect();
+		}
+		else if (!wasFeared && isFeared)
+		{
+			m_confusedLoc = getMover().getCurrentLocation();
+
+			m_mover->stopMovement();
+			unitStateChanged(unit_state::Confused, true);
+
+			// Stop attacking (just in case)
+			stopAttack();
+			setVictim(nullptr);
+
+			// Stop movement in every case
+			getMover().stopMovement();
+
+			m_fearMoved = getMover().targetReached.connect(std::bind(&GameUnit::triggerNextFearMove, this));
+			triggerNextFearMove();
 		}
 	}
 
