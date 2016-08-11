@@ -382,6 +382,7 @@ namespace wowpp
 		typedef std::function<void(game::SpellCastResult)> SpellSuccessCallback;
 		typedef std::function<bool()> AttackSwingCallback;
 		typedef std::unordered_map<UInt32, GameTime> CooldownMap;
+		typedef std::unordered_map<UInt32, GameUnit *> TrackAuraTargetsMap;
 
 		/// Fired when this unit was killed. Parameter: GameUnit* killer (may be nullptr if killer
 		/// information is not available (for example due to environmental damage))
@@ -446,7 +447,7 @@ namespace wowpp
 		/// Fired when the units stand state changed.
 		boost::signals2::signal<void(UnitStandState)> standStateChanged;
 
-		boost::signals2::signal<void(bool, GameUnit *, UInt32, UInt32, proto::SpellEntry const *, UInt32, UInt8)> spellProcEvent;
+		boost::signals2::signal<void(bool, GameUnit *, UInt32, UInt32, const proto::SpellEntry *, UInt32, UInt8)> spellProcEvent;
 
 	public:
 
@@ -800,13 +801,20 @@ namespace wowpp
 		/// @param modifier The bonus percentage.
 		/// @param apply Wheter to apply or misapply the bonus.
 		void modifyAttackSpeedPctModifier(UInt8 attackType, float modifier, bool apply);
-
+		///
 		float getAttackSpeedPctModifier(UInt8 attackType) {
 			return m_attackSpeedPctModifier[attackType];
 		}
-
+		
+		///
 		void procEvent(GameUnit *target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount, UInt8 attackType, proto::SpellEntry const *procSpell);
+		///
 		void procEventFor(bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, UInt32 amount, UInt8 attackType, proto::SpellEntry const *procSpell);
+
+		///
+		TrackAuraTargetsMap &getTrackedAuras() {
+			return m_trackAuraTargets;
+		}
 
 	public:
 
@@ -891,6 +899,7 @@ namespace wowpp
 		std::vector<std::shared_ptr<WorldObject>> m_worldObjects;
 		math::Vector3 m_confusedLoc;
 		std::array<float, 3> m_attackSpeedPctModifier;
+		TrackAuraTargetsMap m_trackAuraTargets;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameUnit const &object);

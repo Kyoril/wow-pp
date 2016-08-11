@@ -2162,6 +2162,19 @@ namespace wowpp
 			}
 		}
 
+		if (m_spell.attributes(5) & game::spell_attributes_ex_e::SingleTargetSpell)
+		{
+			if (m_caster->getTrackedAuras().find(m_spell.id()) != m_caster->getTrackedAuras().end())
+			{
+				if (m_caster->getTrackedAuras()[m_spell.id()] != &m_target)
+				{
+					m_caster->getTrackedAuras()[m_spell.id()]->getAuras().removeAllAurasDueToSpell(m_spell.id());
+				}
+			}
+
+			m_caster->getTrackedAuras()[m_spell.id()] = &m_target;
+		}
+
 		// Apply modifiers now
 		handleModifier(true);
 	}
@@ -2203,6 +2216,11 @@ namespace wowpp
 			// Raise cooldown event
 			m_caster->setCooldown(m_spell.id(), m_spell.cooldown() ? m_spell.cooldown() : m_spell.categorycooldown());
 			m_caster->cooldownEvent(m_spell.id());
+		}
+
+		if (m_spell.attributes(5) & game::spell_attributes_ex_e::SingleTargetSpell)
+		{
+			m_caster->getTrackedAuras().erase(m_spell.id());
 		}
 	}
 
