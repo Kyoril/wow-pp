@@ -62,6 +62,12 @@ namespace wowpp
 			return std::make_pair(game::spell_cast_result::FailedStunned, nullptr);
 		}
 
+		if (m_executer.isInCombat() &&
+			spell.attributes(0) & game::spell_attributes::NotInCombat)
+		{
+			return std::make_pair(game::spell_cast_result::FailedAffectingCombat, nullptr);
+		}
+
 		// Check for cooldown
 		if (m_executer.hasCooldown(spell.id()))
 		{

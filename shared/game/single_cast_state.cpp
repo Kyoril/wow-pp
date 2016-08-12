@@ -2060,7 +2060,8 @@ namespace wowpp
 				}
 				else
 				{
-					procEx |= game::spell_proc_flags_ex::NormalHit;
+					procEx |= game::spell_proc_flags_ex::CriticalHit;
+					//procEx |= game::spell_proc_flags_ex::NormalHit;
 				}
 			}
 

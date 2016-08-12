@@ -435,7 +435,7 @@ namespace wowpp
 		/// Fired when a unit trigger should be executed.
 		boost::signals2::signal<void(const proto::TriggerEntry &, GameUnit &)> unitTrigger;
 		/// Fired when a target was killed by this unit, which could trigger Kill-Procs. Only fired when XP or honor is rewarded.
-		boost::signals2::signal<void(GameUnit &)> procKilledTarget;
+		//boost::signals2::signal<void(GameUnit &)> procKilledTarget;
 		/// Fired when a unit state changed.
 		boost::signals2::signal<void(UInt32, bool)> unitStateChanged;
 		/// Fired when this unit enters or leaves stealth mode.
@@ -807,7 +807,7 @@ namespace wowpp
 		}
 		
 		///
-		void procEvent(GameUnit *target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount, UInt8 attackType, proto::SpellEntry const *procSpell);
+		void procEvent(GameUnit *target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx = 0, UInt32 amount = 0, UInt8 attackType = 0, const proto::SpellEntry *procSpell = nullptr);
 		///
 		void procEventFor(bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, UInt32 amount, UInt8 attackType, proto::SpellEntry const *procSpell);
 

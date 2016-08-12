@@ -338,7 +338,14 @@ namespace wowpp
 
 		if (m_spell.procpermin())
 		{
-			procChance = m_caster->getAttackTime(attackType) * m_spell.procpermin() / 600.0f;
+			if (m_caster->hasMainHandWeapon() || m_caster->hasOffHandWeapon())
+			{
+				procChance = m_caster->getAttackTime(attackType) * m_spell.procpermin() / 600.0f;
+			}
+			else
+			{
+				procChance = 0;
+			}
 		}
 
 		if (m_caster && m_caster->isGameCharacter())
@@ -555,6 +562,13 @@ namespace wowpp
 	{
 		if (apply)
 		{
+			m_onTakenAutoAttack = m_caster->spellProcEvent.connect(
+			[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType) {
+				if (procFlag & (game::spell_proc_flags::TakenMeleeAutoAttack | game::spell_proc_flags::TakenDamage))
+				{
+					handleDamageShieldProc(target);
+				}
+			});
 		}
 	}
 
@@ -2003,13 +2017,20 @@ namespace wowpp
 			// is applied AFTER the root aura (which can break by damage) and thus leads to frost nova 
 			// breaking it's own root effect immediatly
 			m_post([this]() {
-				m_onDamageBreak = m_target.takenDamage.connect([this](GameUnit *attacker, UInt32 damage)
+				m_onDamageBreak = m_target.spellProcEvent.connect(
+				[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType)
 				{
-					if (!attacker)
+					if (!target)
 						return;
 
+					if (!(procFlag & game::spell_proc_flags::TakenDamage &&
+						procEx & (game::spell_proc_flags_ex::NormalHit | game::spell_proc_flags_ex::CriticalHit)))
+					{
+						return;
+					}
+
 					UInt32 maxDmg = m_target.getLevel() > 8 ? 30 * m_target.getLevel() - 100 : 50;
-					float chance = float(damage) / maxDmg * 100.0f;
+					float chance = float(amount) / maxDmg * 100.0f;
 					if (chance < 100.0f)
 					{
 						std::uniform_real_distribution<float> roll(0.0f, 99.99f);
@@ -2108,71 +2129,53 @@ namespace wowpp
 
 		if (m_spell.procflags() != game::spell_proc_flags::None)
 		{
-			//this if probably not needed
-			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0 ||
-				(m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0 ||
-				(m_spell.procflags() & game::spell_proc_flags::TakenMeleeAutoAttack) != 0 ||
-				(m_spell.procflags() & game::spell_proc_flags::DoneMeleeAutoAttack) != 0)
-			{
-				m_onProc = m_caster->spellProcEvent.connect(
-				[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell, UInt32 amount, UInt8 attackType) {
-					if (checkProc(amount != 0, target, procFlag, procEx, procSpell))
-					{
-						handleProcModifier(attackType, target);
-					}
-				});
-			}
-			if ((m_spell.procflags() & game::spell_proc_flags::TakenDamage) != 0)
+			m_onProc = m_caster->spellProcEvent.connect(
+			[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType) {
+				if (checkProc(amount != 0, target, procFlag, procEx, procSpell))
+				{
+					handleProcModifier(attackType, target);
+				}
+			});
+			/*
+			if ((m_spell.procflags() & game::spell_proc_flags::TakenDamage))
 			{
 				m_takenDamage = m_caster->takenDamage.connect(
 				[&](GameUnit * victim, UInt32 damage) {
 					handleTakenDamage(victim);
 				});
 			}
-
-			if ((m_spell.procflags() & game::spell_proc_flags::Killed) != 0)
+			*/
+			if ((m_spell.procflags() & game::spell_proc_flags::Killed))
 			{
 				m_procKilled = m_caster->killed.connect(
 				[&](GameUnit * killer) {
 					handleProcModifier(0, killer);
 				});
 			}
-
-			if ((m_spell.procflags() & game::spell_proc_flags::Kill) != 0)
-			{
-				m_procKill = m_caster->procKilledTarget.connect(
-				[&](GameUnit & killed) {
-					handleProcModifier(0, &killed);
-				});
-			}
 			
 		}
 		else if (m_effect.aura() == game::aura_type::AddTargetTrigger)
 		{
-			if ((m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassPos) != 0 ||
-				(m_spell.procflags() & game::spell_proc_flags::DoneSpellMagicDmgClassNeg) != 0)
-			{
-				m_onProc = m_caster->spellProcEvent.connect(
-				[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell, UInt32 amount, UInt8 attackType) {
-					if (checkProc(amount != 0, target, procFlag, procEx, procSpell))
-					{
-						handleProcModifier(attackType, target);
-					}
-				});
-			}
+			m_onProc = m_caster->spellProcEvent.connect(
+			[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType) {
+				if (checkProc(amount != 0, target, procFlag, procEx, procSpell))
+				{
+					handleProcModifier(attackType, target);
+				}
+			});
 		}
 
 		if (m_spell.attributes(5) & game::spell_attributes_ex_e::SingleTargetSpell)
 		{
-			if (m_caster->getTrackedAuras().find(m_spell.id()) != m_caster->getTrackedAuras().end())
+			if (m_caster->getTrackedAuras().find(m_spell.baseid()) != m_caster->getTrackedAuras().end())
 			{
-				if (m_caster->getTrackedAuras()[m_spell.id()] != &m_target)
+				if (m_caster->getTrackedAuras()[m_spell.baseid()] != &m_target)
 				{
-					m_caster->getTrackedAuras()[m_spell.id()]->getAuras().removeAllAurasDueToSpell(m_spell.id());
+					m_caster->getTrackedAuras()[m_spell.baseid()]->getAuras().removeAllAurasDueToSpell(m_spell.id());
 				}
 			}
 
-			m_caster->getTrackedAuras()[m_spell.id()] = &m_target;
+			m_caster->getTrackedAuras()[m_spell.baseid()] = &m_target;
 		}
 
 		// Apply modifiers now
@@ -2186,9 +2189,8 @@ namespace wowpp
 		m_onTick.disconnect();
 
 		// Disconnect signals
-		m_procKill.disconnect();
-		m_procKilled.disconnect();
 		m_onProc.disconnect();
+		m_procKilled.disconnect();
 		m_takenDamage.disconnect();
 		m_targetStartedCasting.disconnect();
 		m_targetStartedAttacking.disconnect();
@@ -2220,7 +2222,7 @@ namespace wowpp
 
 		if (m_spell.attributes(5) & game::spell_attributes_ex_e::SingleTargetSpell)
 		{
-			m_caster->getTrackedAuras().erase(m_spell.id());
+			m_caster->getTrackedAuras().erase(m_spell.baseid());
 		}
 	}
 

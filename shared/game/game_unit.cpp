@@ -313,7 +313,7 @@ namespace wowpp
 		m_attackSpeedPctModifier[attackType] *= (apply ? (1.0f + modifier) : 1.0f / (1.0f + modifier));
 	}
 
-	void GameUnit::procEvent(GameUnit * target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount, UInt8 attackType, proto::SpellEntry const * procSpell)
+	void GameUnit::procEvent(GameUnit * target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount /* = 0*/, UInt8 attackType /* = 0*/, proto::SpellEntry const * procSpell /* = nullptr*/)
 	{
 		if (procAttacker)
 		{
@@ -1668,7 +1668,6 @@ namespace wowpp
 		}
 
 		setUInt32Value(unit_fields::Health, health);
-		takenDamage(attacker, damage);
 
 		UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
 		float healthPct = float(health) / float(maxHealth);
@@ -2102,7 +2101,8 @@ namespace wowpp
 			UInt32 killerGreyLevel = xp::getGrayLevel(killer->getLevel());
 			if (getLevel() > killerGreyLevel)
 			{
-				killer->procKilledTarget(*this);
+				// HACKFIX, sent damage = 1 and procEx = NormalHit because of checks, better solution needed
+				killer->spellProcEvent(true, this, game::spell_proc_flags::Kill, game::spell_proc_flags_ex::NormalHit, nullptr, 1, 0);
 			}
 		}
 	}
