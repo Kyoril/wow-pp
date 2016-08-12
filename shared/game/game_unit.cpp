@@ -1104,7 +1104,7 @@ namespace wowpp
 				Int32 bonus = aura.getBasePoints();
 				if (tickCount > 1)
 				{
-					bonus /= tickCount;
+					bonus /= static_cast<Int32>(tickCount);
 				}
 
 				if (bonus < 0 && -bonus >= damage)
@@ -1125,7 +1125,7 @@ namespace wowpp
 				Int32 bonus = aura.getBasePoints();
 				if (tickCount > 1)
 				{
-					bonus /= tickCount;
+					bonus /= static_cast<Int32>(tickCount);
 				}
 
 				if (bonus != 0)
@@ -1167,7 +1167,7 @@ namespace wowpp
 				Int32 bonus = aura.getBasePoints();
 				if (tickCount > 1)
 				{
-					bonus /= tickCount;
+					bonus /= static_cast<Int32>(tickCount);
 				}
 
 				if (bonus != 0)
@@ -1185,7 +1185,7 @@ namespace wowpp
 		Int32 bonus = getAuras().getTotalBasePoints(game::aura_type::ModHealing);
 		if (tickCount > 1)
 		{
-			bonus /= tickCount;
+			bonus /= static_cast<Int32>(tickCount);
 		}
 
 		if (bonus < 0 && -bonus >= healing)
@@ -1200,7 +1200,7 @@ namespace wowpp
 			Int32 bonus = aura.getBasePoints();
 			if (tickCount > 1)
 			{
-				bonus /= tickCount;
+				bonus /= static_cast<Int32>(tickCount);
 			}
 
 			if (bonus != 0)
@@ -1216,7 +1216,7 @@ namespace wowpp
 		Int32 bonus = getAuras().getTotalBasePoints(game::aura_type::ModHealingDone);
 		if (tickCount > 1)
 		{
-			bonus /= tickCount;
+			bonus /= static_cast<Int32>(tickCount);
 		}
 
 		if (bonus < 0 && -bonus >= healing)
@@ -1231,7 +1231,7 @@ namespace wowpp
 			Int32 bonus = aura.getBasePoints();
 			if (tickCount > 1)
 			{
-				bonus /= tickCount;
+				bonus /= static_cast<Int32>(tickCount);
 			}
 
 			if (bonus != 0)
@@ -1247,7 +1247,7 @@ namespace wowpp
 		Int32 bonus = getAuras().getTotalBasePoints(game::aura_type::ModHealingDone);
 		if (tickCount > 1)
 		{
-			bonus /= tickCount;
+			bonus /= static_cast<Int32>(tickCount);
 		}
 
 		// Adjust bonus based on spell level / player level
@@ -1265,7 +1265,7 @@ namespace wowpp
 			Int32 bonus = aura.getBasePoints();
 			if (tickCount > 1)
 			{
-				bonus /= tickCount;
+				bonus /= static_cast<Int32>(tickCount);
 			}
 
 			if (bonus != 0)
