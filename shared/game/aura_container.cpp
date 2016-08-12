@@ -41,21 +41,35 @@ namespace wowpp
 		{
 			// Same spell, same caster and same effect index - don't stack!
 			auto a = *it;
+
+			// Checks if both auras are from the same caster
 			const bool isSameCaster = a->getCaster() == aura->getCaster();
+
+			// Checks if both auras have the same spell family (&flags)
 			const bool isSameFamily = 
 				(a->getSpell().family() == aura->getSpell().family() && a->getSpell().familyflags() == aura->getSpell().familyflags());
+
+			// Check if this spell has a specific family set
 			const bool hasFamily =
 				(a->getSpell().family() != 0);
+
+			// Check if this is the same spell (even if they don't have the same spell id)
 			const bool isSameSpell = 
-				((a->getSpell().id() == aura->getSpell().id() ||
-				(hasFamily && isSameFamily))) && a->isPassive() == aura->isPassive();
+				(a->getSpell().baseid() == aura->getSpell().baseid() &&
+				(hasFamily && isSameFamily)) &&
+				a->isPassive() == aura->isPassive();
+
+			// Checks if the new aura stacks for different casters (can have multiple auras by different casters even though it's the same spell)
 			const bool stackForDiffCasters =
 				aura->getSpell().attributes(3) & game::spell_attributes_ex_c::StackForDiffCasters;
+
+			// Perform checks
 			if (isSameSpell &&
 				(isSameCaster || !stackForDiffCasters) &&
 				!aura->isPassive() && 
 				!a->isPassive())
 			{
+				// Replacement: Use old auras slot for new aura, old aura should be misapplied by this
 				newSlot = a->getSlot();
 				isReplacement = true;
 
