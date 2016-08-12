@@ -1146,7 +1146,7 @@ namespace wowpp
 				Int32 bonus = aura.getBasePoints();
 				if (tickCount > 1)
 				{
-					bonus /= tickCount;
+					bonus /= static_cast<Int32>(tickCount);
 				}
 
 				if (bonus < 0 && -bonus >= damage)

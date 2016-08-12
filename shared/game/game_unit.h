@@ -414,14 +414,10 @@ namespace wowpp
 		boost::signals2::signal<void(GameUnit &threatener, float amount)> setThreat;
 		///
 		boost::signals2::signal<GameUnit *()> getTopThreatener;
-		/// Fired when an auto attack hit.
-		//boost::signals2::signal<void(GameUnit *)> doneMeleeAutoAttack;
 		/// Fired when done an melee attack hit  (include miss/dodge...)
 		boost::signals2::signal<void(GameUnit *, game::VictimState)> doneMeleeAttack;
 		/// Fired when hit by a melee attack (include miss/dodge...)
 		boost::signals2::signal<void(GameUnit *, game::VictimState)> takenMeleeAttack;
-		/// Fired when hit by an auto attack.
-		//boost::signals2::signal<void(GameUnit *)> takenMeleeAutoAttack;
 		/// Fired when done any magic damage
 		boost::signals2::signal<void(GameUnit *, UInt32)> doneSpellMagicDmgClassNeg;
 		/// Fired when hit by any damage.
@@ -434,8 +430,6 @@ namespace wowpp
 		boost::signals2::signal<void(const proto::SpellEntry &)> startedCasting;
 		/// Fired when a unit trigger should be executed.
 		boost::signals2::signal<void(const proto::TriggerEntry &, GameUnit &)> unitTrigger;
-		/// Fired when a target was killed by this unit, which could trigger Kill-Procs. Only fired when XP or honor is rewarded.
-		//boost::signals2::signal<void(GameUnit &)> procKilledTarget;
 		/// Fired when a unit state changed.
 		boost::signals2::signal<void(UInt32, bool)> unitStateChanged;
 		/// Fired when this unit enters or leaves stealth mode.
@@ -446,7 +440,7 @@ namespace wowpp
 		boost::signals2::signal<void(UInt32)> cooldownEvent;
 		/// Fired when the units stand state changed.
 		boost::signals2::signal<void(UnitStandState)> standStateChanged;
-
+		/// Fired on any proc event (damage done, taken, healed, etc).
 		boost::signals2::signal<void(bool, GameUnit *, UInt32, UInt32, const proto::SpellEntry *, UInt32, UInt8)> spellProcEvent;
 
 	public:
