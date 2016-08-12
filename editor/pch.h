@@ -67,6 +67,8 @@
 #include <boost/type_traits/is_float.hpp>
 #include <boost/variant.hpp>
 #include <boost/spirit/include/classic.hpp>
+#include <boost/any.hpp>
+#include <boost/program_options.hpp>
 
 #include "mysql_wrapper/include_mysql.h"
 

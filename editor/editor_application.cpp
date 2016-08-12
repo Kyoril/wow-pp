@@ -25,6 +25,7 @@
 #include "windows/object_editor.h"
 #include "windows/trigger_editor.h"
 #include "windows/login_dialog.h"
+#include "windows/update_dialog.h"
 #include "team_connector.h"
 #include "common/make_unique.h"
 #include <QApplication>
@@ -170,6 +171,16 @@ namespace wowpp
 					"Please check the values in wowpp_editor.cfg and try again.");
 				return false;
 			}
+
+/*
+			// Load update window
+			UpdateDialog updateDialog(*this);
+			if (updateDialog.exec() != QDialog::Accepted)
+			{
+				// TODO
+				return false;
+			}
+*/
 
 			// Setup team connector
 			m_teamConnector = make_unique<TeamConnector>(m_ioService, m_configuration, m_timers);
