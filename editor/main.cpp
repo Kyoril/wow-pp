@@ -35,12 +35,61 @@
 #include "windows/trigger_editor.h"
 #include "ui_trigger_editor.h"
 #include "common/timer_queue.h"
-
+#include <QMessageBox>
 using namespace wowpp::editor;
+
+namespace
+{
+	std::string previousExecutableToBeRemoved;
+	bool doRetryRemovePreviousExecutable = false;
+
+	void removePreviousExecutable()
+	{
+		try
+		{
+			boost::this_thread::sleep_for(boost::chrono::seconds(1));
+			ILOG("REMOVING OLD FILE... " << previousExecutableToBeRemoved);
+			boost::filesystem::remove(previousExecutableToBeRemoved);
+		}
+		catch (const std::exception &e)
+		{
+			WLOG("Could not delete old file: " << e.what());
+
+			//this error is not very important, so we do not exit here
+			doRetryRemovePreviousExecutable = true;
+		}
+	}
+}
 
 /// Procedural entry point of the application.
 int main(int argc, char *argv[])
 {
+	namespace po = boost::program_options;
+
+	po::options_description desc("Available options");
+	desc.add_options()
+		("remove-previous", po::value<std::string>(&previousExecutableToBeRemoved), "Tries to remove a specified file")
+		;
+
+	po::variables_map vm;
+	try
+	{
+		po::store(
+			po::command_line_parser(argc, argv).options(desc).run(),
+			vm
+		);
+		po::notify(vm);
+	}
+	catch (const boost::program_options::error &e)
+	{
+		std::cerr << e.what() << "\n";
+	}
+
+	if (!previousExecutableToBeRemoved.empty())
+	{
+		removePreviousExecutable();
+	}
+
 	// Create the qt application instance and set it all up
 	QApplication app(argc, argv);
 
@@ -49,7 +98,6 @@ int main(int argc, char *argv[])
 
 	// Setup timer queue
 	wowpp::TimerQueue timers(ioService);
-
 
 	// Load stylesheet
 	QFile f(":qdarkstyle/style.qss");

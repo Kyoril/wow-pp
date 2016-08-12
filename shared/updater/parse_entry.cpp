@@ -146,7 +146,7 @@ namespace wowpp
 				           parameters,
 				           entryDescription,
 				           subSource,
-				           subDestination,
+				           subDestination + ".tmp",
 				           newSize,
 				           newSHA1,
 				           compression,
