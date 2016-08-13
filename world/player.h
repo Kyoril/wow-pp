@@ -191,6 +191,8 @@ namespace wowpp
 		void sendTradeStatus(TradeStatusInfo info);
 		/// 
 		void sendUpdateTrade();
+		///
+		void moveItems(std::vector<std::shared_ptr<GameItem>> my_Items, std::vector<std::shared_ptr<GameItem>> his_Items);
 
 	public:
 

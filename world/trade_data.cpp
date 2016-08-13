@@ -35,6 +35,7 @@ namespace wowpp
 		, m_accepted(false)
 	{
 		m_items.resize(7);
+		absSlot.resize(7);
 	}
 
 	Player* TradeData::getPlayer()
@@ -73,8 +74,12 @@ namespace wowpp
 		m_items[slot] = item;
 	}
 
-	/*std::vector<Item_Data> TradeData::getItem()
+	std::vector<std::shared_ptr<GameItem>> TradeData::getItem()
 	{
-		return(m_item_data);
-	}*/
+		return(m_items);
+	}
+	void TradeData::setAbsSlot(UInt16 slot, UInt8 tradeSlot)
+	{
+		absSlot[tradeSlot] = slot;
+	}
 }

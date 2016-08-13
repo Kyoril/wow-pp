@@ -318,6 +318,7 @@ namespace wowpp
 		/// @param flag The flags to add.
 		void removeFlag(UInt16 index, UInt32 flag);
 		/// 
+		bool hasFlag(UInt16 index, UInt32 flag);
 		void markForUpdate();
 		/// Marks a field as changed even if it's value ramains the same. Useful for dynamic fields which have
 		/// values depending on the receiver.

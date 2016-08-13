@@ -2275,7 +2275,8 @@ namespace wowpp
 				UInt32 next_slot, 
 				UInt32 prev_slot, 
 				UInt32 gold, 
-				UInt32 spell
+				UInt32 spell,
+				std::vector<std::shared_ptr<GameItem>> item
 				);
 
 			void petNameQueryResponse(

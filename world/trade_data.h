@@ -55,7 +55,12 @@ namespace wowpp
 		bool isAccepted();
 		/// Sets a new item at a specific trade slot.
 		void setItem(std::shared_ptr<GameItem> item, UInt16 slot);
-		//std::vector<Item_Data> getItem();
+		std::vector<std::shared_ptr<GameItem>> TradeData::getItem();
+
+		///
+		void setAbsSlot(UInt16 slot, UInt8 tradeSlot);
+		///
+		UInt16 getAbsSlot(int i) { return absSlot[i]; };
 	
 	private:
 		Player *m_player;
@@ -63,6 +68,6 @@ namespace wowpp
 		UInt32 m_gold;
 		bool m_accepted;
 		std::vector<std::shared_ptr<GameItem>> m_items;
-		//std::vector<Item_Data> m_item_data;
+		std::vector<UInt16> absSlot;
 	};
 }
