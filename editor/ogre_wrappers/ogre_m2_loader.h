@@ -1,3 +1,23 @@
+//
+// This file is part of the WoW++ project.
+// 
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software 
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+//
+// World of Warcraft, and all World of Warcraft or Warcraft art, images,
+// and lore are copyrighted by Blizzard Entertainment, Inc.
+// 
 
 #pragma once
 
@@ -203,6 +223,11 @@ namespace wowpp
 						}
 					}
 
+					if (header.nVertices == 0 || header.nViews == 0)
+					{
+						OGRE_EXCEPT(Ogre::Exception::ERR_INVALID_STATE, "M2MeshLoader: No mesh data found", "M2MeshLoader::loadResource");
+					}
+
 					// Setup vertex attribute declaration
 					Ogre::VertexDeclaration* decl = vertData->vertexDeclaration;
 					size_t offset = decl->addElement(0, 0, Ogre::VET_FLOAT3, Ogre::VES_POSITION).getSize();
@@ -249,7 +274,7 @@ namespace wowpp
 
 						// Read uv data and invert v
 						ptr->read(base, sizeof(float) * 2);
-						*(base + 1) = 1.0f - *(base + 1);
+						//*(base + 1) = 1.0f - *(base + 1);
 						base += 2;
 
 						// Skip unknown data
@@ -313,7 +338,7 @@ namespace wowpp
 							pass->removeAllTextureUnitStates();
 							pass->setSceneBlending(Ogre::SBF_ONE, Ogre::SBF_ONE_MINUS_DEST_ALPHA);
 
-							String textureToUse = "CREATURE\\Kobold\\koboldskinNormal.blp";
+							String textureToUse;
 							for (const auto &str : textureNames)
 							{
 								if (!str.empty())
@@ -323,8 +348,15 @@ namespace wowpp
 								}
 							}
 
-							auto *texUnit = pass->createTextureUnitState();
-							texUnit->setTextureName(textureToUse);
+							if (!textureToUse.empty())
+							{
+								auto *texUnit = pass->createTextureUnitState();
+								texUnit->setTextureName(textureToUse);
+							}
+							else
+							{
+								pass->setDiffuse(0.0f, 1.0f, 0.0f, 1.0f);
+							}
 
 							// Create a new submesh
 							Ogre::SubMesh *subMesh = mesh->createSubMesh();

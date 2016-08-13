@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,20 +10,19 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
+#include "pch.h"
 #include "mysql_statement.h"
 #include "mysql_exception.h"
 #include "mysql_connection.h"
-#include <boost/lexical_cast.hpp>
-#include <boost/format.hpp>
 
 namespace wowpp
 {
@@ -81,7 +80,7 @@ namespace wowpp
 		Statement::Statement(Connection &mysql, const std::string &query)
 		{
 			{
-				auto * const mysqlHandle = mysql.getHandle();
+				auto *const mysqlHandle = mysql.getHandle();
 				assert(mysqlHandle);
 				allocateHandle(*mysqlHandle);
 			}
@@ -96,7 +95,7 @@ namespace wowpp
 			}
 		}
 
-		Statement &Statement::operator = (Statement && other)
+		Statement &Statement::operator = (Statement &&other)
 		{
 			swap(other);
 			return *this;
@@ -229,15 +228,15 @@ namespace wowpp
 					auto &maybeParameter = m_parameters[i];
 					if (!maybeParameter)
 					{
-						throw StatementException((boost::format(
-						    "All parameters must be set before execution (%1% is not set)") % i).str());
+						throw StatementException(
+							fmt::format("All parameters must be set before execution ({0} is not set)", i));
 					}
 
 					m_convertedParameters[i] = convertBind(*maybeParameter);
 				}
 
 				const int rc = mysql_stmt_bind_param(m_handle,
-				                   m_convertedParameters.data());
+				                                     m_convertedParameters.data());
 				checkResultCode(*m_handle, rc);
 			}
 
@@ -270,18 +269,18 @@ namespace wowpp
 
 
 		StatementResult::StatementResult()
-		    : m_statement(nullptr)
+			: m_statement(nullptr)
 		{
 		}
 
 		StatementResult::StatementResult(StatementResult &&other)
-		    : m_statement(other.m_statement)
+			: m_statement(other.m_statement)
 		{
 			other.m_statement = nullptr;
 		}
 
 		StatementResult::StatementResult(MYSQL_STMT &statementWithResults)
-		    : m_statement(&statementWithResults)
+			: m_statement(&statementWithResults)
 		{
 		}
 
@@ -373,7 +372,7 @@ namespace wowpp
 				bind.length = &realLength;
 				bind.error = &isTruncated;
 				const int rc = mysql_stmt_fetch_column(
-							m_statement, &bind, static_cast<unsigned>(index), 0);
+				                   m_statement, &bind, static_cast<unsigned>(index), 0);
 				checkResultCode(*m_statement, rc);
 				if (!isTruncated)
 				{
@@ -383,7 +382,7 @@ namespace wowpp
 						    "MySQL C API returned an invalid string length");
 					}
 					return std::string(staticResult.data(),
-									   static_cast<std::size_t>(realLength));
+					                   static_cast<std::size_t>(realLength));
 				}
 
 				//TODO: handle isNull
@@ -391,9 +390,8 @@ namespace wowpp
 
 			if (realLength > maxLengthInBytes)
 			{
-				throw StatementException((boost::format(
-				    "Maximum string length exceeded (%1% > %2%)")
-				    % realLength % maxLengthInBytes).str());
+				throw StatementException(
+					fmt::format("Maximum string length exceeded ({0} > {1})", realLength, maxLengthInBytes));
 			}
 
 			std::string result;
@@ -412,7 +410,7 @@ namespace wowpp
 			bind.length = &realLength;
 			bind.error = &isTruncated;
 			const int rc = mysql_stmt_fetch_column(
-						m_statement, &bind, static_cast<unsigned>(index), 0);
+			                   m_statement, &bind, static_cast<unsigned>(index), 0);
 			checkResultCode(*m_statement, rc);
 
 			if (isTruncated)
@@ -442,7 +440,7 @@ namespace wowpp
 			bind.buffer = &result;
 			bind.is_null = &isNull;
 			const int rc = mysql_stmt_fetch_column(
-			            m_statement, &bind, static_cast<unsigned>(index), 0);
+			                   m_statement, &bind, static_cast<unsigned>(index), 0);
 			checkResultCode(*m_statement, rc);
 			if (isNull)
 			{
@@ -460,7 +458,7 @@ namespace wowpp
 			bind.buffer = &result;
 			bind.is_null = &isNull;
 			const int rc = mysql_stmt_fetch_column(
-			            m_statement, &bind, static_cast<unsigned>(index), 0);
+			                   m_statement, &bind, static_cast<unsigned>(index), 0);
 			checkResultCode(*m_statement, rc);
 			if (isNull)
 			{
@@ -478,7 +476,7 @@ namespace wowpp
 			bind.buffer = &result;
 			bind.is_null = &isNull;
 			const int rc = mysql_stmt_fetch_column(
-			            m_statement, &bind, static_cast<unsigned>(index), 0);
+			                   m_statement, &bind, static_cast<unsigned>(index), 0);
 			checkResultCode(*m_statement, rc);
 			if (isNull)
 			{

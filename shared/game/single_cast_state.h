@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,59 +10,80 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
 #include "spell_cast.h"
 #include "attack_table.h"
 #include "common/countdown.h"
+#include "game_object.h"
 #include "shared/proto_data/spells.pb.h"
-#include "boost/signals2.hpp"
-#include <boost/noncopyable.hpp>
-#include <memory>
-#include <unordered_map>
 
 namespace wowpp
 {
-	/// 
+	struct HitResult final
+	{
+		UInt32 procAttacker;
+		UInt32 procVictim;
+		UInt32 procEx;
+		UInt32 amount;
+		
+		explicit HitResult(UInt32 procAttacker = 0, UInt32 procVictim = 0, UInt32 procEx = 0, UInt32 amount = 0)
+			: procAttacker(procAttacker)
+			, procVictim(procVictim)
+			, procEx(procEx)
+			, amount(amount)
+		{
+		}
+	};
+
+	typedef std::map<UInt64, HitResult> HitResultMap;
+	///
 	class SingleCastState final : public SpellCast::CastState, public std::enable_shared_from_this<SingleCastState>, public boost::noncopyable
 	{
 	public:
 
 		explicit SingleCastState(
-			SpellCast &cast,
-			const proto::SpellEntry &spell,
-			SpellTargetMap target,
-			Int32 basePoints,
-			GameTime castTime,
-			bool isProc = false);
+		    SpellCast &cast,
+		    const proto::SpellEntry &spell,
+		    SpellTargetMap target,
+		    Int32 basePoints,
+		    GameTime castTime,
+		    bool isProc = false,
+		    UInt64 itemGuid = 0);
 		void activate() override;
 		std::pair<game::SpellCastResult, SpellCasting *> startCast(
-			SpellCast &cast,
-			const proto::SpellEntry &spell,
-			SpellTargetMap target,
-			Int32 basePoints,
-			GameTime castTime,
-			bool doReplacePreviousCast) override;
-		void stopCast() override;
+		    SpellCast &cast,
+		    const proto::SpellEntry &spell,
+		    SpellTargetMap target,
+		    Int32 basePoints,
+		    GameTime castTime,
+		    bool doReplacePreviousCast,
+		    UInt64 itemGuid) override;
+		void stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown = 0) override;
 		void onUserStartsMoving() override;
-		SpellCasting &getCasting() { return m_casting; }
+		SpellCasting &getCasting() {
+			return m_casting;
+		}
 
 	private:
 
+		bool consumeItem(bool delayed = true);
 		bool consumePower();
+		void applyCooldown(UInt64 cooldownTimeMS, UInt64 catCooldownTimeMS);
 		void applyAllEffects();
 		Int32 calculateEffectBasePoints(const proto::SpellEffect &effect);
 		UInt32 getSpellPointsTotal(const proto::SpellEffect &effect, UInt32 spellPower, UInt32 bonusPct);
 		void spellEffectInstantKill(const proto::SpellEffect &effect);
+		void spellEffectDummy(const proto::SpellEffect &effect);
 		void spellEffectSchoolDamage(const proto::SpellEffect &effect);
 		void spellEffectTeleportUnits(const proto::SpellEffect &effect);
 		void spellEffectApplyAura(const proto::SpellEffect &effect);
@@ -78,6 +99,7 @@ namespace wowpp
 		void spellEffectApplyAreaAuraParty(const proto::SpellEffect &effect);
 		void spellEffectDispel(const proto::SpellEffect &effect);
 		void spellEffectSummon(const proto::SpellEffect &effect);
+		void spellEffectSummonPet(const proto::SpellEffect &effect);
 		void spellEffectWeaponDamage(const proto::SpellEffect &effect);
 		void spellEffectProficiency(const proto::SpellEffect &effect);
 		void spellEffectPowerBurn(const proto::SpellEffect &effect);
@@ -89,7 +111,13 @@ namespace wowpp
 		void spellEffectAttackMe(const proto::SpellEffect &effect);
 		void spellEffectNormalizedWeaponDamage(const proto::SpellEffect &effect);
 		void spellEffectStealBeneficialBuff(const proto::SpellEffect &effect);
-		
+		void spellEffectInterruptCast(const proto::SpellEffect &effect);
+		void spellEffectLearnSpell(const proto::SpellEffect &effect);
+		void spellEffectScriptEffect(const proto::SpellEffect &effect);
+		void spellEffectDispelMechanic(const proto::SpellEffect &effect);
+		void spellEffectResurrect(const proto::SpellEffect &effect);
+		void spellEffectResurrectNew(const proto::SpellEffect &effect);
+
 		void meleeSpecialAttack(const proto::SpellEffect &effect, bool basepointsArePct);
 
 	private:
@@ -104,20 +132,35 @@ namespace wowpp
 		Countdown m_countdown;
 		Countdown m_impactCountdown;
 		boost::signals2::signal<void()> completedEffects;
-		boost::signals2::scoped_connection m_meleeDamageEffectsExecution;
+		std::unordered_map<UInt64, boost::signals2::scoped_connection> m_completedEffectsExecution;
 		boost::signals2::scoped_connection m_onTargetDied, m_onTargetRemoved;
-		boost::signals2::scoped_connection m_onUserDamaged, m_onUserMoved;
+		boost::signals2::scoped_connection m_onUserMoved;
+		boost::signals2::scoped_connection m_onTargetMoved, m_damaged;
+		boost::signals2::scoped_connection m_onAttackError, m_removeAurasOnImmunity;
 		float m_x, m_y, m_z;
 		GameTime m_castTime;
+		GameTime m_castEnd;
 		Int32 m_basePoints;
 		bool m_isProc;
+		UInt64 m_itemGuid;
+		GameTime m_projectileStart, m_projectileEnd;
+		math::Vector3 m_projectileOrigin;
+		bool m_connectedMeleeSignal;
+		UInt32 m_delayCounter;
+		std::set<std::weak_ptr<GameObject>, std::owner_less<std::weak_ptr<GameObject>>> m_affectedTargets;
+		bool m_tookCastItem;
+		UInt32 m_attackerProc;
+		UInt32 m_victimProc;
+		bool m_canTrigger;
+		HitResultMap m_hitResults;
+		UInt8 m_attackType;
 
 		void sendEndCast(bool success);
 		void onCastFinished();
 		void onTargetRemovedOrDead();
 		void onUserDamaged();
 		void executeMeleeAttack();	// deal damage stored in m_meleeDamage
-		
-		typedef std::function<void(const wowpp::proto::SpellEffect&)> EffectHandler;
+
+		typedef std::function<void(const wowpp::proto::SpellEffect &)> EffectHandler;
 	};
 }

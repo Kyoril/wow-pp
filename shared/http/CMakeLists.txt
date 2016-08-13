@@ -21,9 +21,14 @@
 
 # Collect source and header files
 file(GLOB srcFiles "./*.cpp" "./*.h" "./*.hpp")
+remove_pch_cpp(srcFiles "${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp")
 
+# Add source groups
+source_group(src FILES ${srcFiles})
+	
 # Add library project
 add_library(http ${srcFiles})
+add_precompiled_header(http "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
 
 # Link shared libraries
 target_link_libraries(http base64)

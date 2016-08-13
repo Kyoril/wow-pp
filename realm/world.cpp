@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "world.h"
 #include "world_manager.h"
 #include "database.h"
@@ -32,9 +33,6 @@
 #include "player_manager.h"
 #include "player.h"
 #include "player_group.h"
-#include <algorithm>
-#include <cassert>
-#include <limits>
 
 using namespace std;
 
@@ -113,6 +111,12 @@ namespace wowpp
 			case world_packet::QuestUpdate:
 				handleQuestUpdate(packet);
 				break;
+			case world_packet::CharacterSpawned:
+				handleCharacterSpawned(packet);
+				break;
+			case world_packet::MailDraft:
+				handleMailDraft(packet);
+				break;
 			default:
 			{
 				WLOG("Unknown packet received from world " << m_address
@@ -180,17 +184,10 @@ namespace wowpp
 			std::bind(realm_write::loginAnswer, std::placeholders::_1, login_result::Success, std::cref(m_realmName)));
 	}
 
-	void World::enterWorldInstance(UInt64 characterGuid, UInt32 instanceId, const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &out_items)
+	void World::enterWorldInstance(UInt64 characterGuid, UInt32 instanceId, const GameCharacter &character)
 	{
-		// Get a list of spells
-		std::vector<UInt32> spellIds;
-		for (const auto *spell : character.getSpells())
-		{
-			spellIds.push_back(spell->id());
-		}
-
 		m_connection->sendSinglePacket(
-			std::bind(pp::world_realm::realm_write::characterLogIn, std::placeholders::_1, characterGuid, instanceId, std::cref(character), std::cref(spellIds), std::cref(out_items)));
+			std::bind(pp::world_realm::realm_write::characterLogIn, std::placeholders::_1, characterGuid, instanceId, std::cref(character)));
 	}
 
 	void World::leaveWorldInstance(UInt64 characterGuid, pp::world_realm::WorldLeftReason reason)
@@ -382,32 +379,27 @@ namespace wowpp
 			character->initialize();
 
 			std::vector<UInt32> spellIds;
-			std::vector<pp::world_realm::ItemData> items;
-			if (!(pp::world_realm::world_read::characterData(packet, characterId, *character, spellIds, items)))
+			if (!(pp::world_realm::world_read::characterData(packet, characterId, *character, spellIds)))
 			{
 				ELOG("Error reading character data");
 				return;
 			}
 
 			// Save the character data
-			m_database.saveGameCharacter(*character, items, spellIds);
+			m_database.saveGameCharacter(*character, character->getInventory().getItemData());
 			return;
 		}
 		else
 		{
 			std::vector<UInt32> spellIds;
-
-			auto &items = player->getItemData();
-			items.clear();
-
-			if (!(pp::world_realm::world_read::characterData(packet, characterId, *player->getGameCharacter(), spellIds, items)))
+			if (!(pp::world_realm::world_read::characterData(packet, characterId, *player->getGameCharacter(), spellIds)))
 			{
 				ELOG("Error reading character data");
 				return;
 			}
 
 			// Save character
-			m_database.saveGameCharacter(*player->getGameCharacter(), items, spellIds);
+			m_database.saveGameCharacter(*player->getGameCharacter(), player->getGameCharacter()->getInventory().getItemData());
 		}
 	}
 
@@ -484,6 +476,7 @@ namespace wowpp
 			character->setMapId(map);
 			character->setZone(zone);
 			character->relocate(location, 0.0f);
+			character->modifyGroupUpdateFlags(group_update_flags::Full, true);
 			// TODO: Auras
 
 			// TODO: Do some heavy optimization here
@@ -509,6 +502,53 @@ namespace wowpp
 		}
 	}
 
+	void World::handleCharacterSpawned(pp::IncomingPacket & packet)
+	{
+		UInt64 characterId;
+		if (!(pp::world_realm::world_read::characterSpawned(packet, characterId)))
+		{
+			return;
+		}
+
+		auto *player = m_playerManager.getPlayerByCharacterGuid(characterId);
+		if (!player)
+		{
+			WLOG("Could not find player connection for spawned character");
+			return;
+		}
+
+		player->spawnedNotification();
+	}
+
+	void World::handleMailDraft(pp::IncomingPacket & packet)
+	{
+		game::MailData mailDraft;
+		String sender;
+		UInt32 cost;
+		std::vector<std::shared_ptr<GameItem>> items;
+		if (!(pp::world_realm::world_read::mailDraft(packet, mailDraft.unk1, mailDraft.unk2, sender, mailDraft.receiver,
+			mailDraft.subject, mailDraft.body, mailDraft.money, mailDraft.COD, cost, items)))
+		{
+			return;
+		}
+
+		auto senderPl = m_playerManager.getPlayerByCharacterName(sender);
+		auto receiverPl = m_playerManager.getPlayerByCharacterName(mailDraft.receiver);
+		if (!receiverPl)
+		{
+			// TODO send error
+			return;
+		}
+
+		if (senderPl->getCharacterId() == receiverPl->getCharacterId())
+		{
+			// TODO send error
+			return;
+		}
+
+		auto faction = senderPl->getGameCharacter();
+	}
+
 	void World::characterGroupChanged(UInt64 characterGuid, UInt64 groupId)
 	{
 		m_connection->sendSinglePacket(
@@ -531,10 +571,16 @@ namespace wowpp
 			std::bind(pp::world_realm::realm_write::removeIgnore, std::placeholders::_1, characterGuid, removeGuid));
 	}
 
-	void World::itemData(UInt64 characterGuid, const std::map<UInt16, pp::world_realm::ItemData>& items)
+	void World::itemData(UInt64 characterGuid, const std::vector<ItemData>& items)
 	{
 		m_connection->sendSinglePacket(
 			std::bind(pp::world_realm::realm_write::itemData, std::placeholders::_1, characterGuid, std::cref(items)));
+	}
+
+	void World::characterLearnedSpell(UInt64 characterGuid, UInt32 spellId)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::realm_write::spellLearned, std::placeholders::_1, characterGuid, spellId));
 	}
 
 }

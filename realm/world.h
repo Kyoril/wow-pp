@@ -25,12 +25,7 @@
 #include "wowpp_protocol/wowpp_connection.h"
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "game/game_character.h"
-#include <boost/noncopyable.hpp>
-#include <boost/signals2.hpp>
 #include "common/linear_set.h"
-#include <algorithm>
-#include <utility>
-#include <cassert>
 
 namespace wowpp
 {
@@ -93,7 +88,7 @@ namespace wowpp
 		const InstanceList &getInstanceList() const { return m_instances; }
 		
 		// Called by player
-		void enterWorldInstance(UInt64 characterDbId, UInt32 instanceId, const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &out_items);
+		void enterWorldInstance(UInt64 characterDbId, UInt32 instanceId, const GameCharacter &character);
 		void leaveWorldInstance(UInt64 characterDbId, pp::world_realm::WorldLeftReason reason);
 		void sendProxyPacket(UInt64 characterGuid, UInt16 opCode, UInt32 size, const std::vector<char> &buffer);
 		void sendChatMessage(UInt64 characterGuid, game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message);
@@ -101,7 +96,8 @@ namespace wowpp
 		void characterIgnoreList(UInt64 characterGuid, const std::vector<UInt64> &list);
 		void characterAddIgnore(UInt64 characterGuid, UInt64 ignoreGuid);
 		void characterRemoveIgnore(UInt64 characterGuid, UInt64 removeGuid);
-		void itemData(UInt64 characterGuid, const std::map<UInt16, pp::world_realm::ItemData> &items);
+		void itemData(UInt64 characterGuid, const std::vector<ItemData> &items);
+		void characterLearnedSpell(UInt64 characterGuid, UInt32 spellId);
 
 	private:
 
@@ -139,5 +135,7 @@ namespace wowpp
 		void handleTeleportRequest(pp::IncomingPacket &packet);
 		void handleCharacterGroupUpdate(pp::IncomingPacket &packet);
 		void handleQuestUpdate(pp::IncomingPacket &packet);
+		void handleCharacterSpawned(pp::IncomingPacket &packet);
+		void handleMailDraft(pp::IncomingPacket &packet);
 	};
 }

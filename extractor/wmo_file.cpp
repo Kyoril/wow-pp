@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "wmo_file.h"
 #include "common/make_unique.h"
 #include "log/default_log_levels.h"

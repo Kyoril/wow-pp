@@ -1,0 +1,31 @@
+--suffix=none
+
+--indent=tab
+--indent-namespaces
+--indent-preprocessor
+--indent-col1-comments
+--indent-cases
+
+#add empty line before if/for/while
+#--break-blocks
+
+--pad-oper
+--pad-header
+
+#remove unneeded empty lines in functions
+#--delete-empty-lines
+
+#int *ptr
+--align-pointer=name
+#--align-reference=name
+
+# } else --> }\nelse
+--break-closing-brackets
+
+#Add brackets to unbracketed one line conditional statements
+--add-brackets
+
+#enforce C++11 ">>" template syntax
+#--close-templates
+
+#--max-code-length=100

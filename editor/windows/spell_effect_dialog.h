@@ -23,7 +23,6 @@
 
 #include "common/typedefs.h"
 #include <QDialog>
-#include <memory>
 
 // Forwards
 namespace Ui

@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "program.h"
 #include "common/constants.h"
 #include "wowpp_protocol/wowpp_protocol.h"
@@ -41,9 +42,6 @@
 #include "common/timer_queue.h"
 #include "common/id_generator.h"
 #include "proto_data/project.h"
-#include <iostream>
-#include <memory>
-#include <fstream>
 #include "version.h"
 
 namespace wowpp
@@ -158,7 +156,7 @@ namespace wowpp
 		// TODO: Use async database requests so no blocking occurs
 
 		// Create the player manager
-		std::unique_ptr<wowpp::PlayerManager> PlayerManager(new wowpp::PlayerManager(timer, m_configuration.maxPlayers));
+		std::unique_ptr<wowpp::PlayerManager> PlayerManager(new wowpp::PlayerManager(timer, m_configuration.realmID, m_configuration.maxPlayers));
 
 		// Create the world manager
 		std::unique_ptr<wowpp::WorldManager> WorldManager(new wowpp::WorldManager(m_configuration.maxWorlds));
@@ -232,6 +230,29 @@ namespace wowpp
 
 		IDatabase &database = *m_database;
 		Configuration &config = m_configuration;
+
+		// Restore groups
+		std::vector<UInt64> groupIds;
+		if (database.listGroups(groupIds))
+		{
+			for (auto &groupId : groupIds)
+			{
+				// Create a new group
+				auto group = std::make_shared<PlayerGroup>(groupId, *PlayerManager, database);
+				if (!group->createFromDatabase())
+				{
+					ELOG("Could not restore group " << groupId);
+				}
+
+				// Notify the generator about the new group id to avoid overlaps
+				groupIdGenerator.notifyId(groupId);
+			}
+		}
+		else
+		{
+			ELOG("Could not restore groups!");
+		}
+
 		auto const createPlayer = [&PlayerManager, &loginConnector, &WorldManager, &database, &project, &config, &groupIdGenerator](std::shared_ptr<wowpp::Player::Client> connection)
 		{
 			connection->startReceiving();

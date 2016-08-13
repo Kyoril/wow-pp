@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,20 +10,18 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
-#include <limits>
 #include "source.h"
 
 namespace io
@@ -129,7 +127,6 @@ namespace io
 
 	//use read<T> instead
 	Reader &operator >> (Reader &r, bool &value);
-
 
 	namespace detail
 	{
@@ -399,5 +396,41 @@ namespace io
 	detail::ReadContainerWithLengthAndConversion<L, E, C> read_converted_container(C &container, L maxLength = (std::numeric_limits<L>::max)())
 	{
 		return detail::ReadContainerWithLengthAndConversion<L, E, C>(container, maxLength);
+	}
+
+	namespace detail
+	{
+		struct ReadString
+		{
+			std::string &value;
+
+			ReadString(std::string &value)
+				: value(value)
+			{
+			}
+		};
+
+		inline Reader &operator >> (Reader &r, const ReadString &surr)
+		{
+			char c = 0x00;
+			do
+			{
+				if (!(r >> c))
+				{
+					return r;
+				}
+				if (c != 0)
+				{
+					surr.value.push_back(c);
+				}
+			} while (c != 0);
+
+			return r;
+		}
+	}
+
+	inline detail::ReadString read_string(std::string &value)
+	{
+		return detail::ReadString(value);
 	}
 }

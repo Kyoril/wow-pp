@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "player.h"
 #include "player_manager.h"
 #include "log/default_log_levels.h"
@@ -29,14 +30,20 @@
 #include "proto_data/project.h"
 #include "game/game_creature.h"
 #include "game/game_world_object.h"
-#include <iomanip>
-#include <cassert>
-#include <limits>
+#include "game/game_bag.h"
+#include "trade_data.h"
+#include "game/unit_mover.h"
 
 using namespace std;
 
 namespace wowpp
 {
+	TradeStatusInfo::TradeStatusInfo(UInt64 guid = 0) {}
+	/// The time in milliseconds to delay a movement packet so that the client
+	/// won't lag too hard when receiving movement packets with timestamps that
+	/// are in the past.
+	static const UInt64 MovementPacketTimeDelay = 500;
+
 	Player::Player(PlayerManager &manager, RealmConnector &realmConnector, WorldInstanceManager &worldInstanceManager, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance, proto::Project &project)
 		: m_manager(manager)
 		, m_realmConnector(realmConnector)
@@ -84,33 +91,101 @@ namespace wowpp
 			std::bind(&Player::onTargetAuraUpdated, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 		m_onTeleport = m_character->teleport.connect(
 			std::bind(&Player::onTeleport, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-		m_onCooldownEvent = m_character->cooldownEvent.connect(
-			[this](UInt32 spellId) {
+		m_onResurrectRequest = m_character->resurrectRequested.connect(
+			std::bind(&Player::onResurrectRequest, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+		m_onCooldownEvent = m_character->cooldownEvent.connect([this](UInt32 spellId) {
 				sendProxyPacket(std::bind(game::server_write::cooldownEvent, std::placeholders::_1, spellId, m_character->getGuid()));
 		});
 		m_questChanged = m_character->questDataChanged.connect([this](UInt32 questId, const QuestStatusData &data) {
 			m_realmConnector.sendQuestData(m_character->getGuid(), questId, data);
+			if (data.status == game::quest_status::Complete ||
+				(data.status == game::quest_status::Incomplete && data.explored == true))
+			{
+				sendProxyPacket(std::bind(game::server_write::questupdateComplete, std::placeholders::_1, questId));
+			}
+		});
+		m_questKill = m_character->questKillCredit.connect([this](const proto::QuestEntry &quest, UInt64 guid, UInt32 entry, UInt32 count, UInt32 total) {
+			sendProxyPacket(std::bind(game::server_write::questupdateAddKill, std::placeholders::_1, quest.id(), entry, count, total, guid));
+		});
+		m_standStateChanged = m_character->standStateChanged.connect([this](UnitStandState state) {
+			sendProxyPacket(std::bind(game::server_write::standStateUpdate, std::placeholders::_1, state));
 		});
 
-		auto onRootOrStunUpdate = [this](bool flag) {
-			if (flag || m_character->isRooted() || m_character->isStunned())
+		m_objectInteraction = m_character->objectInteraction.connect([this](WorldObject &object) {
+			if (object.getEntry().type() == world_object_type::QuestGiver)
 			{
-				// Root the character
-				m_character->addFlag(unit_fields::UnitFlags, 0x00040000);
-				sendProxyPacket(
-					std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));
+				sendGossipMenu(object.getGuid());
 			}
-			else
+		});
+
+		m_onItemAdded = m_character->itemAdded.connect([this](UInt16 slot, UInt16 amount, bool looted, bool created) {
+			auto inst = m_character->getInventory().getItemAtSlot(slot);
+			if (inst)
 			{
-				m_character->removeFlag(unit_fields::UnitFlags, 0x00040000);
+				UInt8 bag = 0, subslot = 0;
+				Inventory::getRelativeSlots(slot, bag, subslot);
+				const auto totalCount = m_character->getInventory().getItemCount(inst->getEntry().id());
+
 				sendProxyPacket(
-					std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));
+					std::bind(game::server_write::itemPushResult, std::placeholders::_1,
+						m_character->getGuid(), std::cref(*inst), looted, created, bag, subslot, amount, totalCount));
+			}
+		});
+
+		// Inventory change signals
+		auto &inventory = m_character->getInventory();
+		m_itemCreated = inventory.itemInstanceCreated.connect(std::bind(&Player::onItemCreated, this, std::placeholders::_1, std::placeholders::_2));
+		m_itemUpdated = inventory.itemInstanceUpdated.connect(std::bind(&Player::onItemUpdated, this, std::placeholders::_1, std::placeholders::_2));
+		m_itemDestroyed = inventory.itemInstanceDestroyed.connect(std::bind(&Player::onItemDestroyed, this, std::placeholders::_1, std::placeholders::_2));
+
+		// Loot signal
+		m_onLootInspect = m_character->lootinspect.connect([this](LootInstance &instance) {
+			auto *object = m_instance.findObjectByGUID(instance.getLootGuid());
+			if (!object)
+			{
+				WLOG("Could not find loot source object: 0x" << std::hex << instance.getLootGuid());
+				return;
+			}
+			openLootDialog(instance, *object);
+		});
+
+		// Root / stun change signals
+		auto onRootOrStunUpdate = [this](UInt32 state, bool flag) {
+			if (state == unit_state::Rooted || state == unit_state::Stunned)
+			{
+				if (flag || m_character->isRooted() || m_character->isStunned())
+				{
+					// Root the character
+					if (m_character->isStunned())
+					{
+						m_character->addFlag(unit_fields::UnitFlags, game::unit_flags::Stunned);
+					}
+					sendProxyPacket(
+						std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));
+				}
+				else
+				{
+					if (!m_character->isStunned())
+					{
+						m_character->removeFlag(unit_fields::UnitFlags, game::unit_flags::Stunned);
+					}
+					sendProxyPacket(
+						std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));
+				}
 			}
 		};
+		m_onUnitStateUpdate = m_character->unitStateChanged.connect(onRootOrStunUpdate);
 
-		m_onRootUpdate = m_character->rootStateChanged.connect(onRootOrStunUpdate);
-		m_onStunUpdate = m_character->stunStateChanged.connect(onRootOrStunUpdate);
+		// Spell modifier applied or misapplied (changed)
+		m_spellModChanged = m_character->spellModChanged.connect([this](SpellModType type, UInt8 bit, SpellModOp op, Int32 value) {
+			sendProxyPacket(
+				type == spell_mod_type::Flat ?
+					std::bind(game::server_write::setFlatSpellModifier, std::placeholders::_1, bit, op, value) :
+					std::bind(game::server_write::setPctSpellModifier, std::placeholders::_1, bit, op, value)
+				);
+		});
 
+		// Group update signal
 		m_groupUpdate.ended.connect([this]()
 		{
 			math::Vector3 location(m_character->getLocation());
@@ -151,10 +226,7 @@ namespace wowpp
 	void Player::logoutRequest()
 	{
 		// Make our character sit down
-		auto standState = unit_stand_state::Sit;
-		m_character->setByteValue(unit_fields::Bytes1, 0, standState);
-		sendProxyPacket(
-			std::bind(game::server_write::standStateUpdate, std::placeholders::_1, standState));
+		m_character->setStandState(unit_stand_state::Sit);
 
 		// Root our character
 		m_character->addFlag(unit_fields::UnitFlags, 0x00040000);
@@ -174,10 +246,7 @@ namespace wowpp
 			std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));
 
 		// Stand up again
-		auto standState = unit_stand_state::Stand;
-		m_character->setByteValue(unit_fields::Bytes1, 0, standState);
-		sendProxyPacket(
-			std::bind(game::server_write::standStateUpdate, std::placeholders::_1, standState));
+		m_character->setStandState(unit_stand_state::Stand);
 
 		// Cancel the countdown
 		m_logoutCountdown.cancel();
@@ -341,6 +410,14 @@ namespace wowpp
 		}
 	}
 
+	void Player::saveCharacterData() const
+	{
+		if (m_character)
+		{
+			m_realmConnector.sendCharacterData(*m_character);
+		}
+	}
+
 	void Player::sendPacket(game::Protocol::OutgoingPacket &packet, const std::vector<char> &buffer)
 	{
 		// Send the proxy packet to the realm server
@@ -355,10 +432,17 @@ namespace wowpp
 		sendProxyPacket(
 			std::bind(game::server_write::loginSetTimeSpeed, std::placeholders::_1, 0));
 
-		// Blocks
+		// Create object blocks used in spawn packet
 		std::vector<std::vector<char>> blocks;
 
-		// Write create object packet
+		// Create item spawn packets - this actually creates the item instances
+		// Note: We create these blocks first, so that the character item fields can be set properly
+		// since we want the right values in the spawn packet and we don't want to send another update 
+		// packet for this right away
+		m_character->getInventory().addSpawnBlocks(blocks);
+
+		// Write create object block (This block will be made the first block even though it is created
+		// as the last block)
 		std::vector<char> createBlock;
 		io::VectorSink sink(createBlock);
 		io::Writer writer(sink);
@@ -371,7 +455,7 @@ namespace wowpp
 
 			// Header with object guid and type
 			writer
-			<< io::write<NetUInt8>(updateType);
+				<< io::write<NetUInt8>(updateType);
 
 			UInt64 guidCopy = guid;
 			UInt8 packGUID[8 + 1];
@@ -390,10 +474,10 @@ namespace wowpp
 			}
 			writer.sink().write((const char*)&packGUID[0], size);
 			writer
-			<< io::write<NetUInt8>(objectTypeId);
+				<< io::write<NetUInt8>(objectTypeId);
 
 			writer
-			<< io::write<NetUInt8>(updateFlags);
+				<< io::write<NetUInt8>(updateFlags);
 
 			// Write movement update
 			{
@@ -403,7 +487,7 @@ namespace wowpp
 					<< io::write<NetUInt8>(0x00)
 					<< io::write<NetUInt32>(mTimeStamp());	//TODO: Time
 
-				// Position & Rotation
+															// Position & Rotation
 				float o = m_character->getOrientation();
 				math::Vector3 location(m_character->getLocation());
 
@@ -461,95 +545,58 @@ namespace wowpp
 			m_character->writeValueUpdateBlock(writer, *m_character, true);
 
 			// Add block
-			blocks.emplace_back(std::move(createBlock));
+			blocks.insert(blocks.begin(), std::move(createBlock));
 		}
 
-		// Create item spawn packets
-		for (auto &item : m_character->getItems())
-		{
-			const UInt16 &slot = item.first;
-			const auto &instance = item.second;
-
-			// Check if we need to send that item
-			const bool sendItemToPlayer = (
-				slot < player_bank_bag_slots::End ||
-				(slot >= player_key_ring_slots::Start && slot < player_key_ring_slots::End)
-				);
-			if (sendItemToPlayer)
-			{
-				// Spawn this item
-				std::vector<char> createItemBlock;
-				io::VectorSink createItemSink(createItemBlock);
-				io::Writer createItemWriter(createItemSink);
-				{
-					UInt8 updateType = 0x02;						// Item
-					UInt8 updateFlags = 0x08 | 0x10;				// 
-					UInt8 objectTypeId = 0x01;						// Item
-
-					UInt64 guid = instance->getGuid();
-
-					// Header with object guid and type
-					createItemWriter
-						<< io::write<NetUInt8>(updateType);
-					UInt64 guidCopy = guid;
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-					for (UInt8 i = 0; guidCopy != 0; ++i)
-					{
-						if (guidCopy & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guidCopy & 0xFF);
-							++size;
-						}
-
-						guidCopy >>= 8;
-					}
-					createItemWriter.sink().write((const char*)&packGUID[0], size);
-					createItemWriter
-						<< io::write<NetUInt8>(objectTypeId)
-						<< io::write<NetUInt8>(updateFlags);
-
-					// Lower-GUID update?
-					if (updateFlags & 0x08)
-					{
-						createItemWriter
-							<< io::write<NetUInt32>(guidLowerPart(guid));
-					}
-
-					// High-GUID update?
-					if (updateFlags & 0x10)
-					{
-						createItemWriter
-							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
-					}
-
-					// Write values update
-					instance->writeValueUpdateBlock(createItemWriter, *m_character, true);
-				}
-				blocks.emplace_back(std::move(createItemBlock));
-			}
-		}
-
-		// Send packet
+		// Send the actual spawn packet packet
 		sendProxyPacket(
 			std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
 
-		// Send time sync request packet
+		// Send time sync request packet (this will also enable character movement at the client)
 		sendProxyPacket(
 			std::bind(game::server_write::timeSyncReq, std::placeholders::_1, 0));
 
 		// Find our tile
-		TileIndex2D tileIndex = getTileIndex();
-		VisibilityTile &tile = m_instance.getGrid().requireTile(tileIndex);
+		VisibilityTile &tile = m_instance.getGrid().requireTile(getTileIndex());
 		tile.getWatchers().add(this);
+
+		// Cast passive spells after spawn, so that SpellMods are sent AFTER the spawn packet
+		SpellTargetMap target;
+		target.m_targetMap = game::spell_cast_target_flags::Self;
+		target.m_unitTarget = m_character->getGuid();
+		for (const auto &spell : m_character->getSpells())
+		{
+			if (spell->attributes(0) & game::spell_attributes::Passive)
+			{
+				m_character->castSpell(target, spell->id(), -1, 0, true);
+			}
+			else
+			{
+				for (auto &eff : spell->effects())
+				{
+					if (eff.type() == game::spell_effects::Skill)
+					{
+						const auto *skill = m_project.skills.getById(eff.miscvaluea());
+						if (skill)
+						{
+							m_character->addSkill(*skill);
+						}
+					}
+				}
+			}
+		}
+
+		// Notify realm about this for post-spawn packets
+		m_realmConnector.sendCharacterSpawnNotification(m_character->getGuid());
+
+		// Subscribe for spell notifications
+		m_onSpellLearned = m_character->spellLearned.connect(
+			std::bind(&Player::onSpellLearned, this, std::placeholders::_1));
 	}
 
 	void Player::onDespawn()
 	{
-		// Send character data to the realm
-		m_realmConnector.sendCharacterData(*m_character);
+		saveCharacterData();
 
 		// Find our tile
 		TileIndex2D tileIndex = getTileIndex();
@@ -648,66 +695,71 @@ namespace wowpp
 
 		auto &grid = m_instance.getGrid();
 
-		// Spawn ourself for new watchers
+		// Despawn old objects
+		auto guid = m_character->getGuid();
+		forEachTileInSightWithout(
+			grid,
+			oldTile.getPosition(),
+			newTile.getPosition(),
+			[this](VisibilityTile &tile)
+		{
+			for (auto *object : tile.getGameObjects().getElements())
+			{
+				if (!object->canSpawnForCharacter(*m_character))
+				{
+					continue;
+				}
+
+				// Dont spawn stealthed targets that we can't see yet
+				if (object->isCreature() || object->isGameCharacter())
+				{
+					GameUnit &unit = reinterpret_cast<GameUnit&>(*object);
+					if (unit.isStealthed() && !m_character->canDetectStealth(unit))
+					{
+						continue;
+					}
+				}
+
+				this->sendProxyPacket(
+					std::bind(game::server_write::destroyObject, std::placeholders::_1, object->getGuid(), false));
+			}
+		});
+
+		// Spawn new objects
 		forEachTileInSightWithout(
 			grid,
 			newTile.getPosition(),
 			oldTile.getPosition(),
 			[this](VisibilityTile &tile)
 		{
-			for(auto * subscriber : tile.getWatchers().getElements())
+			for (auto *obj : tile.getGameObjects().getElements())
 			{
-				auto *character = subscriber->getControlledObject();
-				if (!character)
+				if (!obj->canSpawnForCharacter(*m_character))
+				{
 					continue;
+				}
 
-				// Create spawn message blocks
-				std::vector<std::vector<char>> spawnBlocks;
-				createUpdateBlocks(*m_character, *character, spawnBlocks);
+				// Dont spawn stealthed targets that we can't see yet
+				if (obj->isCreature() || obj->isGameCharacter())
+				{
+					GameUnit &unit = reinterpret_cast<GameUnit&>(*obj);
+					if (unit.isStealthed() && !m_character->canDetectStealth(unit))
+					{
+						continue;
+					}
+				}
 
-				std::vector<char> buffer;
-				io::VectorSink sink(buffer);
-				game::Protocol::OutgoingPacket packet(sink);
-				game::server_write::compressedUpdateObject(packet, spawnBlocks);
-
-				assert(subscriber != this);
-				subscriber->sendPacket(packet, buffer);
-			}
-
-			for (auto *object : tile.getGameObjects().getElements())
-			{
 				std::vector<std::vector<char>> createBlock;
-				createUpdateBlocks(*object, *m_character, createBlock);
+				createUpdateBlocks(*obj, *m_character, createBlock);
 
 				this->sendProxyPacket(
 					std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(createBlock)));
-			}
-		});
 
-		// Despawn ourself for old watchers
-		auto guid = m_character->getGuid();
-		forEachTileInSightWithout(
-			grid,
-			oldTile.getPosition(),
-			newTile.getPosition(),
-			[guid, this](VisibilityTile &tile)
-		{
-			// Create the chat packet
-			std::vector<char> buffer;
-			io::VectorSink sink(buffer);
-			game::Protocol::OutgoingPacket packet(sink);
-			game::server_write::destroyObject(packet, guid, false);
-
-			for (auto * subscriber : tile.getWatchers().getElements())
-			{
-				assert(subscriber != this);
-				subscriber->sendPacket(packet, buffer);
-			}
-
-			for (auto *object : tile.getGameObjects().getElements())
-			{
-				this->sendProxyPacket(
-					std::bind(game::server_write::destroyObject, std::placeholders::_1, object->getGuid(), false));
+				// Send movement packets
+				if (obj->isCreature() || obj->isGameCharacter())
+				{
+					reinterpret_cast<GameUnit*>(obj)->getMover().sendMovementPackets(*this);
+				}
 			}
 		});
 
@@ -825,170 +877,58 @@ namespace wowpp
 			return;
 		}
 
-		// Check if we can store that item
-		ItemPosCountVector slots;
-		auto result = m_character->canStoreItem(0xFF, 0xFF, slots, *item, lootItem->count, false, nullptr);
+		auto &inv = m_character->getInventory();
+
+		std::map<UInt16, UInt16> addedBySlot;
+		auto result = inv.createItems(*item, lootItem->count, &addedBySlot);
 		if (result != game::inventory_change_failure::Okay)
 		{
-			sendProxyPacket(
-				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, result, nullptr, nullptr));
+			onInventoryChangeFailure(result, nullptr, nullptr);
 			return;
 		}
 
-		if (slots.empty())
+		for (auto &slot : addedBySlot)
 		{
-			sendProxyPacket(
-				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::BagFull, nullptr, nullptr));
-			return;
-		}
-
-		static UInt64 lootCounter = 0x800000;
-
-		for (auto &pos : slots)
-		{
-			auto *itemAtSlot= m_character->getItemByPos(0xFF, pos.position);
-
-			// Loot items and add them
-			const auto *item = m_project.items.getById(lootItem->definition.item());
-			assert(item);
-
-			auto inst = std::make_shared<GameItem>(m_project, *item);
-			inst->initialize();
-			inst->setUInt64Value(object_fields::Guid, createEntryGUID(lootCounter++, lootItem->definition.item(), guid_type::Item));
-			inst->setUInt32Value(item_fields::StackCount, pos.count);
-			m_character->addItem(inst, pos.position);
-
-			// Spawn this item
-			std::vector<std::vector<char>> blocks;
-			std::vector<char> createItemBlock;
-			if (itemAtSlot == nullptr)
+			auto inst = inv.getItemAtSlot(slot.first);
+			if (inst)
 			{
-				io::VectorSink createItemSink(createItemBlock);
-				io::Writer createItemWriter(createItemSink);
+				UInt8 bag = 0, subslot = 0;
+				Inventory::getRelativeSlots(slot.first, bag, subslot);
+				const auto totalCount = inv.getItemCount(item->id());
+
+				sendProxyPacket(
+					std::bind(game::server_write::itemPushResult, std::placeholders::_1,
+						m_character->getGuid(), std::cref(*inst), true, false, bag, subslot, slot.second, totalCount));
+
+				// Group broadcasting
+				if (m_character->getGroupId() != 0)
 				{
-					UInt8 updateType = 0x02;						// Item
-					UInt8 updateFlags = 0x08 | 0x10;				// 
-					UInt8 objectTypeId = 0x01;						// Item
-
-					UInt64 guid = inst->getGuid();
-
-					// Header with object guid and type
-					createItemWriter
-						<< io::write<NetUInt8>(updateType);
-					UInt64 guidCopy = guid;
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-					for (UInt8 i = 0; guidCopy != 0; ++i)
+					TileIndex2D tile;
+					if (m_character->getTileIndex(tile))
 					{
-						if (guidCopy & 0xFF)
+						std::vector<char> buffer;
+						io::VectorSink sink(buffer);
+						game::Protocol::OutgoingPacket itemPacket(sink);
+						game::server_write::itemPushResult(itemPacket, m_character->getGuid(), std::cref(*inst), true, false, bag, subslot, slot.second, totalCount);
+						forEachSubscriberInSight(
+							m_character->getWorldInstance()->getGrid(),
+							tile,
+							[&](ITileSubscriber &subscriber)
 						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guidCopy & 0xFF);
-							++size;
-						}
-
-						guidCopy >>= 8;
-					}
-					createItemWriter.sink().write((const char*)&packGUID[0], size);
-					createItemWriter
-						<< io::write<NetUInt8>(objectTypeId)
-						<< io::write<NetUInt8>(updateFlags);
-
-					// Lower-GUID update?
-					if (updateFlags & 0x08)
-					{
-						createItemWriter
-							<< io::write<NetUInt32>(guidLowerPart(guid));
-					}
-
-					// High-GUID update?
-					if (updateFlags & 0x10)
-					{
-						createItemWriter
-							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
-					}
-
-					// Write values update
-					inst->writeValueUpdateBlock(createItemWriter, *m_character, true);
-				}
-			}
-			else
-			{
-				io::VectorSink sink(createItemBlock);
-				io::Writer writer(sink);
-				{
-					UInt8 updateType = 0x00;						// Update type (0x00 = UPDATE_VALUES)
-
-					// Header with object guid and type
-					UInt64 guid = itemAtSlot->getGuid();
-					writer
-						<< io::write<NetUInt8>(updateType);
-
-					UInt64 guidCopy = guid;
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-					for (UInt8 i = 0; guidCopy != 0; ++i)
-					{
-						if (guidCopy & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guidCopy & 0xFF);
-							++size;
-						}
-
-						guidCopy >>= 8;
-					}
-					writer.sink().write((const char*)&packGUID[0], size);
-
-					// Write values update
-					itemAtSlot->writeValueUpdateBlock(writer, *m_character, false);
-				}
-
-				itemAtSlot->clearUpdateMask();
-			}
-
-			// Send packet
-			blocks.emplace_back(std::move(createItemBlock));
-			sendProxyPacket(
-				std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
-			
-			sendProxyPacket(
-				std::bind(game::server_write::itemPushResult, std::placeholders::_1, 
-					m_character->getGuid(), std::cref(*inst), true, false, 0xFF, pos.position, pos.count, pos.count));
-
-			// Group broadcasting
-			if (m_character->getGroupId() != 0)
-			{
-				TileIndex2D tile;
-				if (m_character->getTileIndex(tile))
-				{
-					// Create the packet
-					std::vector<char> buffer;
-					io::VectorSink sink(buffer);
-					game::Protocol::OutgoingPacket itemPacket(sink);
-					game::server_write::itemPushResult(itemPacket, m_character->getGuid(), *inst, true, false, 0xFF, pos.position, pos.count, pos.count);
-
-					forEachSubscriberInSight(
-						m_character->getWorldInstance()->getGrid(),
-						tile,
-						[&](ITileSubscriber &subscriber)
-					{
-						if (subscriber.getControlledObject()->getGuid() != m_character->getGuid())
-						{
-							auto subscriberGroup = subscriber.getControlledObject()->getGroupId();
-							if (subscriberGroup != 0 && subscriberGroup == m_character->getGroupId())
+							if (subscriber.getControlledObject()->getGuid() != m_character->getGuid())
 							{
-								subscriber.sendPacket(itemPacket, buffer);
+								auto subscriberGroup = subscriber.getControlledObject()->getGroupId();
+								if (subscriberGroup != 0 && subscriberGroup == m_character->getGroupId())
+								{
+									subscriber.sendPacket(itemPacket, buffer);
+								}
 							}
-						}
-					});
+						});
+					}
 				}
 			}
 		}
 
-		DLOG("CMSG_AUTO_STORE_LOOT_ITEM(loot slot: " << UInt32(lootSlot) << ")");
 		m_loot->takeItem(lootSlot);
 	}
 
@@ -1001,24 +941,12 @@ namespace wowpp
 			return;
 		}
 
-		// Get item
-		auto *item = m_character->getItemByPos(srcBag, srcSlot);
+		auto &inv = m_character->getInventory();
+		auto absSrcSlot = Inventory::getAbsoluteSlot(srcBag, srcSlot);
+		auto item = inv.getItemAtSlot(absSrcSlot);
 		if (!item)
 		{
-			return;
-		}
-
-		if (item->getEntry().requiredlevel() > 0 &&
-			item->getEntry().requiredlevel() > m_character->getLevel())
-		{
-			m_character->inventoryChangeFailure(game::inventory_change_failure::CantEquipLevel, nullptr, nullptr);
-			return;
-		}
-
-		if (item->getEntry().requiredskill() != 0 &&
-			!m_character->hasSkill(item->getEntry().requiredskill()))
-		{
-			m_character->inventoryChangeFailure(game::inventory_change_failure::CantEquipSkill, nullptr, nullptr);
+			ELOG("Item not found");
 			return;
 		}
 
@@ -1062,10 +990,11 @@ namespace wowpp
 			break;
 		case game::inventory_type::OffHandWeapon:
 		case game::inventory_type::Shield:
+		case game::inventory_type::Holdable:
 			targetSlot = player_equipment_slots::Offhand;
 			break;
 		case game::inventory_type::Weapon:
-			targetSlot = player_equipment_slots::Mainhand;	// TODO
+			targetSlot = player_equipment_slots::Mainhand;
 			break;
 		case game::inventory_type::Finger:
 			targetSlot = player_equipment_slots::Finger1;
@@ -1085,19 +1014,49 @@ namespace wowpp
 		case game::inventory_type::Waist:
 			targetSlot = player_equipment_slots::Waist;
 			break;
+		case game::inventory_type::Ranged:
+		case game::inventory_type::RangedRight:
+		case game::inventory_type::Thrown:
+			targetSlot = player_equipment_slots::Ranged;
+			break;
 		default:
-			m_character->inventoryChangeFailure(game::inventory_change_failure::ItemCantBeEquipped, nullptr, nullptr);
+			if (entry.itemclass() == game::item_class::Container)
+			{
+				for (UInt16 slot = player_inventory_slots::Start; slot < player_inventory_slots::End; ++slot)
+				{
+					auto bag = inv.getBagAtSlot(slot | 0xFF00);
+					if (!bag)
+					{
+						targetSlot = slot;
+						break;
+					}
+				}
+
+				if (targetSlot == 0xFF)
+				{
+					m_character->inventoryChangeFailure(game::inventory_change_failure::NoEquipmentSlotAvailable, item.get(), nullptr);
+					return;
+				}
+			}
 			break;
 		}
 
-		if (targetSlot >= player_equipment_slots::End)
+		// Check if valid slot found
+		auto absDstSlot = Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, targetSlot);
+		if (!Inventory::isEquipmentSlot(absDstSlot) && !Inventory::isBagPackSlot(absDstSlot))
 		{
-			// Not equippable
+			ELOG("Invalid target slot: " << targetSlot);
+			m_character->inventoryChangeFailure(game::inventory_change_failure::ItemCantBeEquipped, item.get(), nullptr);
 			return;
 		}
 
 		// Get item at target slot
-		m_character->swapItem(srcSlot | 0xFF00, targetSlot | 0xFF00);
+		auto result = inv.swapItems(absSrcSlot, absDstSlot);
+		if (result != game::inventory_change_failure::Okay)
+		{
+			// Something went wrong
+			ELOG("ERROR: " << result);
+		}
 	}
 
 	void Player::handleAutoStoreBagItem(game::Protocol::IncomingPacket &packet)
@@ -1125,11 +1084,14 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_SWAP_ITEM(src bag: " << UInt32(srcBag) << ", src slot: " << UInt32(srcSlot) << ", dst bag: " << UInt32(dstBag) << ", dst slot: " << UInt32(dstSlot) << ")");
-
-		// TODO
-		sendProxyPacket(
-			std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::InternalBagError, nullptr, nullptr));
+		auto &inv = m_character->getInventory();
+		auto result = inv.swapItems(
+			Inventory::getAbsoluteSlot(srcBag, srcSlot),
+			Inventory::getAbsoluteSlot(dstBag, dstSlot));
+		if (!result)
+		{
+			// An error happened
+		}
 	}
 
 	void Player::handleSwapInvItem(game::Protocol::IncomingPacket &packet)
@@ -1141,30 +1103,14 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_SWAP_INV_ITEM from " << UInt32(srcSlot) << " to " << UInt32(dstSlot));
-
-		// We don't need to do anything
-		if (srcSlot == dstSlot)
-			return;
-
-		// Validate source and dest slot
-		if (!m_character->isValidItemPos(player_inventory_slots::Bag_0, srcSlot))
+		auto &inv = m_character->getInventory();
+		auto result = inv.swapItems(
+			Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, srcSlot),
+			Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, dstSlot));
+		if (!result)
 		{
-			sendProxyPacket(
-				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::ItemNotFound, nullptr, nullptr));
-			return;
+			// An error happened
 		}
-
-		if (!m_character->isValidItemPos(player_inventory_slots::Bag_0, dstSlot))
-		{
-			sendProxyPacket(
-				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::ItemDoesNotGoToSlot, nullptr, nullptr));
-			return;
-		}
-
-		UInt16 src = ((player_inventory_slots::Bag_0 << 8) | srcSlot);
-		UInt16 dst = ((player_inventory_slots::Bag_0 << 8) | dstSlot);
-		m_character->swapItem(src, dst);
 	}
 
 	void Player::handleSplitItem(game::Protocol::IncomingPacket &packet)
@@ -1177,8 +1123,6 @@ namespace wowpp
 		}
 
 		DLOG("CMSG_SPLIT_ITEM(src bag: " << UInt32(srcBag) << ", src slot: " << UInt32(srcSlot) << ", dst bag: " << UInt32(dstBag) << ", dst slot: " << UInt32(dstSlot) << ", count: " << UInt32(count) << ")");
-
-		// TODO
 		sendProxyPacket(
 			std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::InternalBagError, nullptr, nullptr));
 	}
@@ -1194,8 +1138,6 @@ namespace wowpp
 		}
 
 		DLOG("CMSG_AUTO_EQUIP_ITEM_SLOT(item: 0x" << std::hex << std::uppercase << std::setw(16) << std::setfill('0') << itemGUID << std::dec << ", dst slot: " << UInt32(dstSlot) << ")");
-
-		// TODO
 		sendProxyPacket(
 			std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::InternalBagError, nullptr, nullptr));
 	}
@@ -1207,16 +1149,13 @@ namespace wowpp
 		{
 			return;
 		}
-
-		auto *item = m_character->getItemByPos(bag, slot);
-		if (!item)
+		
+		auto result = m_character->getInventory().removeItem(Inventory::getAbsoluteSlot(bag, slot), count);
+		if (!result)
 		{
 			sendProxyPacket(
-				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::ItemNotFound, nullptr, nullptr));
-			return;
+				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, result, nullptr, nullptr));
 		}
-
-		m_character->removeItem(bag, slot, count);
 	}
 
 	void Player::handleLoot(game::Protocol::IncomingPacket &packet)
@@ -1244,6 +1183,7 @@ namespace wowpp
 			GameCreature *creature = reinterpret_cast<GameCreature*>(lootObject);
 			if (creature->isAlive())
 			{
+				// TODO: Handle pickpocket case?
 				WLOG("Target creature is not dead and thus has no loot");
 				return;
 			}
@@ -1252,20 +1192,7 @@ namespace wowpp
 			auto *loot = creature->getUnitLoot();
 			if (loot && !loot->isEmpty())
 			{
-				m_loot = loot;
-				m_onLootInvalidate = creature->despawned.connect([this](GameObject &despawned)
-				{
-					releaseLoot();
-				});
-				m_onLootCleared = m_loot->cleared.connect([this]()
-				{
-					releaseLoot();
-				});
-
-				sendProxyPacket(
-					std::bind(game::server_write::lootResponse, std::placeholders::_1, objectGuid, game::loot_type::Corpse, std::cref(*loot)));
-
-				m_character->addFlag(unit_fields::UnitFlags, game::unit_flags::Looting);
+				openLootDialog(*loot, *creature);
 			}
 			else
 			{
@@ -1288,8 +1215,10 @@ namespace wowpp
 		{
 			return;
 		}
+
 		if (!m_loot)
 		{
+			WLOG("Player is not looting anything");
 			return;
 		}
 
@@ -1298,13 +1227,7 @@ namespace wowpp
 		auto *world = m_character->getWorldInstance();
 		if (!world)
 		{
-			return;
-		}
-
-		// Get loot object
-		GameObject *object = world->findObjectByGUID(lootGuid);
-		if (!object)
-		{
+			WLOG("Player not in world");
 			return;
 		}
 
@@ -1312,14 +1235,16 @@ namespace wowpp
 		UInt32 lootGold = m_loot->getGold();
 		if (lootGold == 0)
 		{
+			WLOG("No gold to loot");
 			return;
 		}
 
 		// Check if it's a creature
 		std::vector<GameCharacter*> recipients;
-		if (object->getTypeId() == object_type::Unit)
+		if (m_lootSource->getTypeId() == object_type::Unit)
 		{
-			GameCreature *creature = reinterpret_cast<GameCreature*>(object);
+			// If looting a creature, loot has to be shared between nearby group members
+			GameCreature *creature = reinterpret_cast<GameCreature*>(m_lootSource);
 			creature->forEachLootRecipient([&recipients](GameCharacter &recipient)
 			{
 				recipients.push_back(&recipient);
@@ -1334,8 +1259,8 @@ namespace wowpp
 		}
 		else
 		{
-			WLOG("Unsupported loot object");
-			return;
+			// We will be the only recipient
+			recipients.push_back(m_character.get());
 		}
 
 		// Reward with gold
@@ -1363,7 +1288,8 @@ namespace wowpp
 				}
 
 				// TODO: Put this packet into the LootInstance class or in an event callback maybe
-				if (player->isLooting(lootGuid))
+				if (m_lootSource &&
+					m_lootSource->getGuid() == lootGuid)
 				{
 					player->sendProxyPacket(
 						std::bind(game::server_write::lootClearMoney, std::placeholders::_1));
@@ -1384,7 +1310,14 @@ namespace wowpp
 			return;
 		}
 
-		releaseLoot();
+		if (m_lootSource &&
+			m_lootSource->getGuid() != creatureId)
+		{
+			WLOG("Loot source mismatch!");
+			return;
+		}
+
+		closeLootDialog();
 	}
 
 	void Player::onInventoryChangeFailure(game::InventoryChangeFailure failure, GameItem *itemA, GameItem *itemB)
@@ -1427,6 +1360,9 @@ namespace wowpp
 				statDiff3,
 				statDiff4)
 			);
+
+		// Save character info at realm
+		saveCharacterData();
 	}
 
 	void Player::onAuraUpdated(UInt8 slot, UInt32 spellId, Int32 duration, Int32 maxDuration)
@@ -1485,6 +1421,119 @@ namespace wowpp
 		}
 	}
 
+	void Player::onItemCreated(std::shared_ptr<GameItem> item, UInt16 slot)
+	{
+		// Now we can send the actual packet
+		std::vector<std::vector<char>> blocks;
+		std::vector<char> createItemBlock;
+		io::VectorSink createItemSink(createItemBlock);
+		io::Writer createItemWriter(createItemSink);
+		{
+			UInt8 updateType = 0x02;						// Item
+			UInt8 updateFlags = 0x08 | 0x10;				// 
+			UInt8 objectTypeId = item->getTypeId();
+
+			UInt64 guid = item->getGuid();
+
+			// Header with object guid and type
+			createItemWriter
+				<< io::write<NetUInt8>(updateType);
+			UInt64 guidCopy = guid;
+			UInt8 packGUID[8 + 1];
+			packGUID[0] = 0;
+			size_t size = 1;
+			for (UInt8 i = 0; guidCopy != 0; ++i)
+			{
+				if (guidCopy & 0xFF)
+				{
+					packGUID[0] |= UInt8(1 << i);
+					packGUID[size] = UInt8(guidCopy & 0xFF);
+					++size;
+				}
+				guidCopy >>= 8;
+			}
+			createItemWriter.sink().write((const char*)&packGUID[0], size);
+			createItemWriter
+				<< io::write<NetUInt8>(objectTypeId)
+				<< io::write<NetUInt8>(updateFlags);
+			if (updateFlags & 0x08)
+			{
+				createItemWriter
+					<< io::write<NetUInt32>(guidLowerPart(guid));
+			}
+			if (updateFlags & 0x10)
+			{
+				createItemWriter
+					<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
+			}
+			item->writeValueUpdateBlock(createItemWriter, *m_character, true);
+		}
+
+		// Send packet
+		blocks.push_back(std::move(createItemBlock));
+		sendProxyPacket(
+			std::bind(game::server_write::updateObject, std::placeholders::_1, std::cref(blocks)));
+	}
+
+	void Player::onItemUpdated(std::shared_ptr<GameItem> item, UInt16)
+	{
+		std::vector<std::vector<char>> blocks;
+		std::vector<char> createItemBlock;
+		io::VectorSink createItemSink(createItemBlock);
+		io::Writer createItemWriter(createItemSink);
+		io::VectorSink sink(createItemBlock);
+		io::Writer writer(sink);
+		{
+			UInt8 updateType = 0x00;						// Update type (0x00 = UPDATE_VALUES)
+			UInt64 guid = item->getGuid();
+			writer
+				<< io::write<NetUInt8>(updateType);
+
+			UInt64 guidCopy = guid;
+			UInt8 packGUID[8 + 1];
+			packGUID[0] = 0;
+			size_t size = 1;
+			for (UInt8 i = 0; guidCopy != 0; ++i)
+			{
+				if (guidCopy & 0xFF)
+				{
+					packGUID[0] |= UInt8(1 << i);
+					packGUID[size] = UInt8(guidCopy & 0xFF);
+					++size;
+				}
+
+				guidCopy >>= 8;
+			}
+			writer.sink().write((const char*)&packGUID[0], size);
+			item->writeValueUpdateBlock(writer, *m_character, false);
+		}
+
+		item->clearUpdateMask();
+
+		// Send packet
+		blocks.emplace_back(std::move(createItemBlock));
+		sendProxyPacket(
+			std::bind(game::server_write::updateObject, std::placeholders::_1, std::cref(blocks)));
+	}
+
+	void Player::onItemDestroyed(std::shared_ptr<GameItem> item, UInt16 slot)
+	{
+		sendProxyPacket(
+			std::bind(game::server_write::destroyObject, std::placeholders::_1, item->getGuid(), false));
+	}
+
+	void Player::onSpellLearned(const proto::SpellEntry & spell)
+	{
+		sendProxyPacket(
+			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spell.id()));
+	}
+
+	void Player::onResurrectRequest(UInt64 objectGUID, const String &sentName, UInt8 typeId)
+	{
+		sendProxyPacket(
+			std::bind(game::server_write::resurrectRequest, std::placeholders::_1, objectGUID, std::cref(sentName), typeId));
+	}
+
 	void Player::handleRepopRequest(game::Protocol::IncomingPacket &packet)
 	{
 		if (!m_character)
@@ -1507,21 +1556,6 @@ namespace wowpp
 		m_lastFallZ = z;
 	}
 
-	void Player::releaseLoot()
-	{
-		if (m_loot)
-		{
-			m_onLootCleared.disconnect();
-			m_onLootInvalidate.disconnect();
-
-			sendProxyPacket(
-				std::bind(game::server_write::lootReleaseResponse, std::placeholders::_1, m_loot->getLootGuid()));
-			m_loot = nullptr;
-
-			m_character->removeFlag(unit_fields::UnitFlags, game::unit_flags::Looting);
-		}
-	}
-
 	bool Player::isIgnored(UInt64 guid) const
 	{
 		return guid == 504403158265495562;
@@ -1529,6 +1563,10 @@ namespace wowpp
 
 	void Player::handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode)
 	{
+		// Can't receive player input when in one of these CC states
+		if (m_character->isFeared() || m_character->isStunned() || m_character->isRooted() || m_character->isConfused())
+			return;
+
 		MovementInfo info;
 		if (!game::client_read::moveHeartBeat(packet, info))
 		{
@@ -1560,6 +1598,18 @@ namespace wowpp
 		// Get object location
 		math::Vector3 location(m_character->getLocation());
 
+		// Player started swimming
+		if ((info.moveFlags & game::movement_flags::Swimming) != 0 &&
+			(m_character->getMovementInfo().moveFlags & game::movement_flags::Swimming) == 0)
+		{
+			m_character->getAuras().removeAllAurasDueToInterrupt(game::spell_aura_interrupt_flags::NotAboveWater);
+		}
+		else if ((info.moveFlags & game::movement_flags::Swimming) == 0 &&
+			(m_character->getMovementInfo().moveFlags & game::movement_flags::Swimming) != 0)
+		{
+			m_character->getAuras().removeAllAurasDueToInterrupt(game::spell_aura_interrupt_flags::NotUnderWater);
+		}
+
 		// Store movement information
 		m_character->setMovementInfo(info);
 
@@ -1578,10 +1628,13 @@ namespace wowpp
 		{
 			m_clientDelayMs = msTime - info.time;
 		}
-		UInt32 move_time = (info.time - (msTime - m_clientDelayMs)) + 500 + msTime;
+
+		// Convert movement time packet
+		Int32 move_time = 
+			(info.time - (msTime - m_clientDelayMs)) + MovementPacketTimeDelay + msTime;
 
 		// Get grid tile
-		auto &tile = grid.requireTile(gridIndex);
+		(void)grid.requireTile(gridIndex);
 		info.time = move_time;
 
 		// Notify all watchers about the new object
@@ -1594,10 +1647,6 @@ namespace wowpp
 			{
 				if (watcher != this)
 				{
-					// Convert timestamps
-					//info.time = watcher->convertTimestamp(move_time, m_clientTicks) + 500;
-					//info.fallTime = watcher->convertTimestamp(info.fallTime, m_clientTicks) + 500;
-
 					// Create the chat packet
 					std::vector<char> buffer;
 					io::VectorSink sink(buffer);
@@ -1628,7 +1677,6 @@ namespace wowpp
 					{
 						const UInt32 maxHealth = m_character->getUInt32Value(unit_fields::MaxHealth);
 						UInt32 damage = (UInt32)(damageperc * maxHealth);
-						float height = info.z;
 
 						if (damage > 0)
 						{
@@ -1784,7 +1832,6 @@ namespace wowpp
 			auto dependantRank = dependson->ranks(talent->dependsonrank());
 			if (!m_character->hasSpell(dependantRank))
 			{
-				WLOG("Dependent talent not learned!");
 				return;
 			}
 		}
@@ -1794,7 +1841,6 @@ namespace wowpp
 		{
 			if (!m_character->hasSpell(talent->dependsonspell()))
 			{
-				WLOG("Dependent spell not learned!");
 				return;
 			}
 		}
@@ -1803,7 +1849,29 @@ namespace wowpp
 		UInt32 freeTalentPoints = m_character->getUInt32Value(character_fields::CharacterPoints_1);
 		if (freeTalentPoints == 0)
 		{
-			WLOG("Not enough talent points available");
+			return;
+		}
+
+		// Check how many points we have spent in this talent tree already
+		UInt32 spentPoints = 0;
+		for (const auto &t : m_project.talents.getTemplates().entry())
+		{
+			// Same tab
+			if (t.tab() == talent->tab())
+			{
+				for (Int32 i = 0; i < t.ranks_size(); ++i)
+				{
+					if (m_character->hasSpell(t.ranks(i)))
+					{
+						spentPoints += i + 1;
+					}
+				}
+			}
+		}
+
+		if (spentPoints < (talent->row() * 5))
+		{
+			// Not enough points spent in talent tree
 			return;
 		}
 
@@ -1828,9 +1896,6 @@ namespace wowpp
 			targets.m_unitTarget = m_character->getGuid();
 			m_character->castSpell(std::move(targets), spell->id());
 		}
-
-		sendProxyPacket(
-			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spell->id()));
 	}
 
 	void Player::handleUseItem(game::Protocol::IncomingPacket &packet)
@@ -1840,14 +1905,15 @@ namespace wowpp
 		SpellTargetMap targetMap;
 		if (!game::client_read::useItem(packet, bagId, slotId, spellCount, castCount, itemGuid, targetMap))
 		{
-			WLOG("Could not read packet data");
+			ELOG("Could not read packet");
 			return;
 		}
 
 		// Get item
-		auto *item = m_character->getItemByPos(bagId, slotId);
+		auto item = m_character->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(bagId, slotId));
 		if (!item)
 		{
+			WLOG("Item not found! Bag: " << UInt16(bagId) << "; Slot: " << UInt16(slotId));
 			sendProxyPacket(
 				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::ItemNotFound, nullptr, nullptr));
 			return;
@@ -1855,6 +1921,7 @@ namespace wowpp
 
 		if (item->getGuid() != itemGuid)
 		{
+			WLOG("Item GUID does not match. We look for 0x" << std::hex << itemGuid << " but found 0x" << std::hex << item->getGuid());
 			sendProxyPacket(
 				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::ItemNotFound, nullptr, nullptr));
 			return;
@@ -1866,23 +1933,32 @@ namespace wowpp
 			const auto &spell = entry.spells(i);
 			if (!spell.spell())
 			{
+				WLOG("No spell entry");
 				continue;
 			}
 
 			// Spell effect has to be triggered "on use", not "on equip" etc.
 			if (spell.trigger() != 0 && spell.trigger() != 5)
 			{
+				WLOG("No onUse entry");
 				continue;
 			}
 
 			const auto *spellEntry = m_project.spells.getById(spell.spell());
 			if (!spellEntry)
 			{
+				WLOG("Could not find spell by id " << spell.spell());
 				continue;
 			}
 
 			UInt64 time = spellEntry->casttime();
-			m_character->castSpell(std::move(targetMap), spell.spell(), -1, time);
+			m_character->castSpell(std::move(targetMap), spell.spell(), -1, time, false, itemGuid, [this, spellEntry](game::SpellCastResult result) {
+				if (result != game::spell_cast_result::CastOkay)
+				{
+					sendProxyPacket(
+						std::bind(game::server_write::castFailed, std::placeholders::_1, result, std::cref(*spellEntry), 0));
+				}
+			});
 		}
 	}
 
@@ -1981,26 +2057,53 @@ namespace wowpp
 			return;
 		}
 
-		// Find the item by it's guid
-		UInt8 bag = 0xFF, slot = 0xFF;
-		auto *item = m_character->getItemByGUID(itemGuid, bag, slot);
-		if (!item)
+		// Find vendor
+		GameObject *vendor = m_instance.findObjectByGUID(vendorGuid);
+		if (!vendor ||
+			!vendor->isCreature())
 		{
+			sendProxyPacket(
+				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindVendor, 0, itemGuid, 0));
 			return;
 		}
 
-		// Check the amount
-		DLOG("Received CMSG_SELL_ITEM... (Count: " << UInt16(count) << ")");
+		// TODO: Check vendor distance
 
-		UInt32 stack = item->getUInt32Value(item_fields::StackCount);
+		// Is currently hostile?
+		if (reinterpret_cast<GameCreature*>(vendor)->isHostileTo(*m_character))
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindVendor, 0, itemGuid, 0));
+			return;
+		}
+
+		UInt16 itemSlot = 0;
+		if (!m_character->getInventory().findItemByGUID(itemGuid, itemSlot))
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindItem, vendorGuid, itemGuid, 0));
+			return;
+		}
+
+		// Find the item by it's guid
+		auto item = m_character->getInventory().getItemAtSlot(itemSlot);
+		if (!item)
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindItem, vendorGuid, itemGuid, 0));
+			return;
+		}
+
+		UInt32 stack = item->getStackCount();
 		UInt32 money = stack * item->getEntry().sellprice();
 		if (money == 0)
 		{
-			WLOG("TODO: Can't sell that item");
+			sendProxyPacket(
+				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantSellItem, vendorGuid, itemGuid, 0));
 			return;
 		}
 
-		m_character->removeItem(bag, slot, stack);
+		m_character->getInventory().removeItem(itemSlot, stack);
 		m_character->setUInt32Value(character_fields::Coinage, m_character->getUInt32Value(character_fields::Coinage) + money);
 	}
 
@@ -2021,7 +2124,6 @@ namespace wowpp
 
 		// Multiply item count
 		UInt8 totalCount = count * item->buycount();
-
 		auto *world = m_character->getWorldInstance();
 		if (!world)
 			return;
@@ -2047,140 +2149,36 @@ namespace wowpp
 		if (!validEntry)
 			return;
 
-		// TODO: Check item amount
-
-		// Check if item is storable
-		ItemPosCountVector slots;
-		auto result = m_character->canStoreItem(0xFF, slot, slots, *item, totalCount, false);
-		if (result != game::inventory_change_failure::Okay)
-		{
-			// TODO: Send error
-			WLOG("Can't store item");
-			return;
-		}
-
 		// Take money
 		UInt32 price = item->buyprice() * count;
 		UInt32 money = m_character->getUInt32Value(character_fields::Coinage);
 		if (money < price)
 		{
-			// TODO: Send error message
 			WLOG("Not enough money");
 			return;
 		}
 
+		std::map<UInt16, UInt16> addedBySlot;
+		auto result = m_character->getInventory().createItems(*item, totalCount, &addedBySlot);
+		if (result != game::inventory_change_failure::Okay)
+		{
+			m_character->inventoryChangeFailure(result, nullptr, nullptr);
+			return;
+		}
+
+		// Take money
 		m_character->setUInt32Value(character_fields::Coinage, money - price);
 
-		static UInt64 vendorCounter = 0x100000;
-		for (auto &pos : slots)
+		// Send push notifications
+		for (auto &slot : addedBySlot)
 		{
-			auto *itemAtSlot = m_character->getItemByPos(0xFF, pos.position);
-
-			// Loot items and add them
-			auto inst = std::make_shared<GameItem>(m_project, *item);
-			inst->initialize();
-			inst->setUInt64Value(object_fields::Guid, createEntryGUID(vendorCounter++, item->id(), guid_type::Item));
-			inst->setUInt32Value(item_fields::StackCount, pos.count);
-			m_character->addItem(inst, pos.position);
-
-			// Spawn this item
-			std::vector<std::vector<char>> blocks;
-			std::vector<char> createItemBlock;
-			if (itemAtSlot == nullptr)
+			auto item = m_character->getInventory().getItemAtSlot(slot.first);
+			if (item)
 			{
-				io::VectorSink createItemSink(createItemBlock);
-				io::Writer createItemWriter(createItemSink);
-				{
-					UInt8 updateType = 0x02;						// Item
-					UInt8 updateFlags = 0x08 | 0x10;				// 
-					UInt8 objectTypeId = 0x01;						// Item
-
-					UInt64 guid = inst->getGuid();
-
-					// Header with object guid and type
-					createItemWriter
-						<< io::write<NetUInt8>(updateType);
-					UInt64 guidCopy = guid;
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-					for (UInt8 i = 0; guidCopy != 0; ++i)
-					{
-						if (guidCopy & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guidCopy & 0xFF);
-							++size;
-						}
-
-						guidCopy >>= 8;
-					}
-					createItemWriter.sink().write((const char*)&packGUID[0], size);
-					createItemWriter
-						<< io::write<NetUInt8>(objectTypeId)
-						<< io::write<NetUInt8>(updateFlags);
-
-					// Lower-GUID update?
-					if (updateFlags & 0x08)
-					{
-						createItemWriter
-							<< io::write<NetUInt32>(guidLowerPart(guid));
-					}
-
-					// High-GUID update?
-					if (updateFlags & 0x10)
-					{
-						createItemWriter
-							<< io::write<NetUInt32>((guid << 48) & 0x0000FFFF);
-					}
-
-					// Write values update
-					inst->writeValueUpdateBlock(createItemWriter, *m_character, true);
-				}
+				sendProxyPacket(
+					std::bind(game::server_write::itemPushResult, std::placeholders::_1,
+						m_character->getGuid(), std::cref(*item), false, false, slot.first >> 8, slot.first & 0xFF, slot.second, m_character->getInventory().getItemCount(itemEntry)));
 			}
-			else
-			{
-				io::VectorSink sink(createItemBlock);
-				io::Writer writer(sink);
-				{
-					UInt8 updateType = 0x00;						// Update type (0x00 = UPDATE_VALUES)
-
-					// Header with object guid and type
-					UInt64 guid = itemAtSlot->getGuid();
-					writer
-						<< io::write<NetUInt8>(updateType);
-
-					UInt64 guidCopy = guid;
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-					for (UInt8 i = 0; guidCopy != 0; ++i)
-					{
-						if (guidCopy & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guidCopy & 0xFF);
-							++size;
-						}
-
-						guidCopy >>= 8;
-					}
-					writer.sink().write((const char*)&packGUID[0], size);
-
-					// Write values update
-					itemAtSlot->writeValueUpdateBlock(writer, *m_character, false);
-				}
-
-				itemAtSlot->clearUpdateMask();
-			}
-
-			// Send packet
-			blocks.emplace_back(std::move(createItemBlock));
-			sendProxyPacket(
-				std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
-			sendProxyPacket(
-				std::bind(game::server_write::itemPushResult, std::placeholders::_1,
-				m_character->getGuid(), std::cref(*inst), false, false, 0xFF, pos.position, pos.count, pos.count));
 		}
 	}
 
@@ -2189,7 +2187,6 @@ namespace wowpp
 		auto *world = m_character->getWorldInstance();
 		if (!world)
 		{
-			WLOG("No world found");
 			return;
 		}
 
@@ -2199,8 +2196,8 @@ namespace wowpp
 			return;
 		}
 
-		GameCreature *creature = (target->getTypeId() == object_type::Unit ? reinterpret_cast<GameCreature*>(target) : nullptr);
-		WorldObject *object = (target->getTypeId() == object_type::GameObject ? reinterpret_cast<WorldObject*>(target) : nullptr);
+		GameCreature *creature = (target->isCreature() ? reinterpret_cast<GameCreature*>(target) : nullptr);
+		WorldObject *object = (target->isWorldObject() ? reinterpret_cast<WorldObject*>(target) : nullptr);
 
 		// TODO: Build gossip menu, but for now, we check in the following order:
 		// Quest giver
@@ -2216,15 +2213,16 @@ namespace wowpp
 					questStatus == game::quest_status::Complete)
 				{
 					const auto *quest = m_project.quests.getById(questid);
-					assert(quest);
-
-					game::QuestMenuItem item;
-					item.quest = quest;
-					item.menuIcon = questStatus == game::quest_status::Incomplete ?
-						game::questgiver_status::Incomplete : game::questgiver_status::Reward;
-					item.questLevel = quest->questlevel();
-					item.title = quest->name();
-					questMenu.emplace_back(std::move(item));
+					if (quest)
+					{
+						game::QuestMenuItem item;
+						item.quest = quest;
+						item.menuIcon = (questStatus == game::quest_status::Incomplete ?
+							game::questgiver_status::Incomplete : game::questgiver_status::RewardRep);
+						item.questLevel = quest->questlevel();
+						item.title = quest->name();
+						questMenu.emplace_back(std::move(item));
+					}
 				}
 			}
 			for (const auto &questid : creature->getEntry().quests())
@@ -2233,14 +2231,15 @@ namespace wowpp
 				if (questStatus == game::quest_status::Available)
 				{
 					const auto *quest = m_project.quests.getById(questid);
-					assert(quest);
-
-					game::QuestMenuItem item;
-					item.quest = quest;
-					item.menuIcon = game::questgiver_status::Chat;
-					item.questLevel = quest->questlevel();
-					item.title = quest->name();
-					questMenu.emplace_back(std::move(item));
+					if (quest)
+					{
+						game::QuestMenuItem item;
+						item.quest = quest;
+						item.menuIcon = game::questgiver_status::Chat;
+						item.questLevel = quest->questlevel();
+						item.title = quest->name();
+						questMenu.emplace_back(std::move(item));
+					}
 				}
 			}
 		}
@@ -2304,6 +2303,7 @@ namespace wowpp
 						sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, guid, false, std::cref(m_project.items), std::cref(*menuItem.quest)));
 					break;
 				case game::questgiver_status::Reward:
+				case game::questgiver_status::RewardRep:
 					if (!menuItem.quest->requestitemstext().empty())
 						sendProxyPacket(std::bind(game::server_write::questgiverRequestItems, std::placeholders::_1, guid, true, true, std::cref(m_project.items), std::cref(*menuItem.quest)));
 					else
@@ -2321,6 +2321,14 @@ namespace wowpp
 		}
 		else if(creature)
 		{
+			// Is battlemaster?
+			if (creature->getUInt32Value(unit_fields::NpcFlags) & game::unit_npc_flags::Battlemaster)
+			{
+				sendProxyPacket(
+					std::bind(game::server_write::gossipMessage, std::placeholders::_1, creature->getGuid(), 7599));
+				return;
+			}
+
 			const auto *trainerEntry = m_project.trainers.getById(creature->getEntry().trainerentry());
 			if (trainerEntry)
 			{
@@ -2372,6 +2380,86 @@ namespace wowpp
 
 				return;
 			}
+
+			// Check if that vendor has the vendor flag
+			if ((creature->getUInt32Value(unit_fields::NpcFlags) & game::unit_npc_flags::Vendor) == 0)
+				return;
+
+			// Check if the vendor DO sell items
+			const auto *vendorEntry = m_project.vendors.getById(creature->getEntry().vendorentry());
+			if (!vendorEntry)
+			{
+				std::vector<proto::VendorItemEntry> emptyList;
+				sendProxyPacket(
+					std::bind(game::server_write::listInventory, std::placeholders::_1, creature->getGuid(), std::cref(m_project.items), std::cref(emptyList)));
+				return;
+			}
+
+			// TODO
+			std::vector<proto::VendorItemEntry> list;
+			for (const auto &entry : vendorEntry->items())
+			{
+				list.push_back(entry);
+			}
+
+			sendProxyPacket(
+				std::bind(game::server_write::listInventory, std::placeholders::_1, creature->getGuid(), std::cref(m_project.items), std::cref(list)));
+		}
+	}
+
+	void Player::openLootDialog(LootInstance & loot, GameObject & source)
+	{
+		// Close old dialog if any
+		closeLootDialog();
+
+		// Remember those parameters
+		m_loot = &loot;
+		m_lootSource = &source;
+
+		// Add the looting flag to our character
+		m_character->addFlag(unit_fields::UnitFlags, game::unit_flags::Looting);
+
+		// If the source despawns, we will close the loot window
+		m_onLootInvalidate = source.despawned.connect([this](GameObject &despawned)
+		{
+			closeLootDialog();
+		});
+
+		// If the loot is cleared, we will also close the loot window
+		m_onLootCleared = m_loot->cleared.connect([this]()
+		{
+			closeLootDialog();
+		});
+
+		// Send the actual loot data (TODO: Determine loot type)
+		auto guid = source.getGuid();
+		auto lootType = game::loot_type::Corpse;
+		if (!isItemGUID(guid))
+		{
+			m_character->getAuras().removeAurasByType(game::aura_type::Mounted);
+		}
+		sendProxyPacket(
+			std::bind(game::server_write::lootResponse, std::placeholders::_1, guid, lootType, std::cref(loot)));
+	}
+
+	void Player::closeLootDialog()
+	{
+		if (m_loot)
+		{
+			// Notify the client
+			sendProxyPacket(
+				std::bind(game::server_write::lootReleaseResponse, std::placeholders::_1, m_loot->getLootGuid()));
+
+			// Character is no longer looting
+			m_character->removeFlag(unit_fields::UnitFlags, game::unit_flags::Looting);
+
+			// Reset variables
+			m_loot = nullptr;
+			m_lootSource = nullptr;
+
+			// Disconnect all loot related signals
+			m_onLootCleared.disconnect();
+			m_onLootInvalidate.disconnect();
 		}
 	}
 
@@ -2461,8 +2549,6 @@ namespace wowpp
 		}
 
 		sendProxyPacket(
-			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spellId));
-		sendProxyPacket(
 			std::bind(game::server_write::trainerBuySucceeded, std::placeholders::_1, npcGuid, spellId));
 	}
 
@@ -2535,8 +2621,8 @@ namespace wowpp
 						case object_type::Unit:
 						{
 							GameCreature *creature = reinterpret_cast<GameCreature*>(object);
-							if (creature->getEntry().quests_size() ||
-								creature->getEntry().end_quests_size())
+							if ((creature->getEntry().quests_size() || creature->getEntry().end_quests_size()) &&
+								!creature->isHostileTo(*m_character))
 							{
 								statusMap[object->getGuid()] = creature->getQuestgiverStatus(*m_character);
 							}
@@ -2560,11 +2646,8 @@ namespace wowpp
 		}
 
 		// Send questgiver status map
-		if (!statusMap.empty())
-		{
-			sendProxyPacket(
-				std::bind(game::server_write::questgiverStatusMultiple, std::placeholders::_1, std::cref(statusMap)));
-		}
+		sendProxyPacket(
+			std::bind(game::server_write::questgiverStatusMultiple, std::placeholders::_1, std::cref(statusMap)));
 	}
 
 	void Player::handleQuestgiverHello(game::Protocol::IncomingPacket & packet)
@@ -2593,15 +2676,37 @@ namespace wowpp
 			return;
 		}
 
-		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
-		if (!object)
+		if (isItemGUID(guid))
 		{
-			return;
-		}
+			UInt16 itemSlot = 0;
+			if (!m_character->getInventory().findItemByGUID(guid, itemSlot))
+			{
+				return;
+			}
 
-		if (!object->providesQuest(questId))
+			auto item = m_character->getInventory().getItemAtSlot(itemSlot);
+			if (!item)
+			{
+				return;
+			}
+
+			if (item->getEntry().questentry() != questId)
+			{
+				return;
+			}
+		}
+		else
 		{
-			return;
+			GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
+			if (!object)
+			{
+				return;
+			}
+
+			if (!object->providesQuest(questId))
+			{
+				return;
+			}
 		}
 
 		sendProxyPacket(
@@ -2628,16 +2733,75 @@ namespace wowpp
 			return;
 		}
 
-		// Check if that object exists and provides the requested quest
-		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
-		if (!object ||
-			!object->providesQuest(questId))
+		UInt16 itemSlot = 0;
+		std::shared_ptr<GameItem> itemQuestgiver;
+		if (isItemGUID(guid))
 		{
+			if (!m_character->getInventory().findItemByGUID(guid, itemSlot))
+			{
+				return;
+			}
+
+			itemQuestgiver = m_character->getInventory().getItemAtSlot(itemSlot);
+			if (!itemQuestgiver)
+			{
+				return;
+			}
+
+			if (itemQuestgiver->getEntry().questentry() != questId)
+			{
+				return;
+			}
+		}
+		else
+		{
+			// Check if that object exists and provides the requested quest
+			GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
+			if (!object ||
+				!object->providesQuest(questId))
+			{
+				return;
+			}
+		}
+
+		// We need this check since the quest can fail for various other reasons
+		if (m_character->isQuestlogFull())
+		{
+			sendProxyPacket(std::bind(game::server_write::questlogFull, std::placeholders::_1));
 			return;
 		}
 
+		// Remove quest item now (we need to do this before accepting the quest as some quests re-add the source quest item)
+		if (itemQuestgiver && itemSlot != 0)
+		{
+			auto result = m_character->getInventory().removeItem(itemSlot);
+			if (result != game::inventory_change_failure::Okay)
+			{
+				m_character->inventoryChangeFailure(result, itemQuestgiver.get(), nullptr);
+				return;
+			}
+		}
+
 		// Accept that quest
-		m_character->acceptQuest(questId);
+		if (!m_character->acceptQuest(questId))
+		{
+			if (itemQuestgiver && itemSlot != 0)
+			{
+				// Try to restore previously given quest item (TODO: This is ugly and could be a security issue because, in theory,
+				// this could lead to creating the item twice etc.)
+				auto result = m_character->getInventory().createItems(itemQuestgiver->getEntry(), itemQuestgiver->getStackCount());
+				if (result != game::inventory_change_failure::Okay)
+				{
+					// Worst case! Player has lost the quest item... this may NEVER EVER happen (need for an inventory transaction system)
+					ELOG("PLAYER " << m_character->getGuid() << " ITEM LOSS SINCE QUEST " << questId << " COULD NOT BE ACCEPTED AND QUESTGIVER ITEM "
+						<< itemQuestgiver->getStackCount() << "x " << itemQuestgiver->getEntry().id() << " COULD NOT BE RECREATED!");
+					assert(false);
+				}
+			}
+			
+			return;
+		}
+
 		sendProxyPacket(
 			std::bind(game::server_write::gossipComplete, std::placeholders::_1));
 	}
@@ -2651,7 +2815,28 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_QUESTGIVER_COMPLETE_QUEST: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
+		const auto *quest = m_project.quests.getById(questId);
+		if (!quest)
+		{
+			return;
+		}
+
+		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
+		if (!object)
+		{
+			return;
+		}
+
+		if (!object->endsQuest(questId))
+		{
+			return;
+		}
+
+		const bool hasCompleted = (m_character->getQuestStatus(questId) == game::quest_status::Complete);
+		if (!quest->requestitemstext().empty())
+			sendProxyPacket(std::bind(game::server_write::questgiverRequestItems, std::placeholders::_1, guid, true, hasCompleted, std::cref(m_project.items), std::cref(*quest)));
+		else
+			sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, guid, hasCompleted, std::cref(m_project.items), std::cref(*quest)));
 	}
 
 	void Player::handleQuestgiverRequestReward(game::Protocol::IncomingPacket & packet)
@@ -2663,7 +2848,24 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("CMSG_QUESTGIVER_REQUEST_REWARD: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
+		const auto *quest = m_project.quests.getById(questId);
+		if (!quest)
+		{
+			return;
+		}
+
+		// Check if that object exists and provides the requested quest
+		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
+		if (!object ||
+			!object->endsQuest(questId))
+		{
+			return;
+		}
+
+		// Check quest state
+		auto state = m_character->getQuestStatus(questId);
+		sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, guid, 
+			(state == game::quest_status::Complete), std::cref(m_project.items), std::cref(*quest)));
 	}
 
 	void Player::handleQuestgiverChooseReward(game::Protocol::IncomingPacket & packet)
@@ -2700,7 +2902,7 @@ namespace wowpp
 		}
 
 		// Reward this quest
-		bool result = m_character->rewardQuest(questId, [this, quest](UInt32 xp) {
+		bool result = m_character->rewardQuest(questId, reward, [this, quest](UInt32 xp) {
 			sendProxyPacket(
 				std::bind(game::server_write::questgiverQuestComplete, std::placeholders::_1, m_character->getLevel() >= 70, xp, std::cref(*quest)));
 		});
@@ -2709,7 +2911,8 @@ namespace wowpp
 			// Try to find next quest and if there is one, send quest details
 			UInt32 nextQuestId = quest->nextchainquestid();
 			if (nextQuestId &&
-				object->providesQuest(nextQuestId))
+				object->providesQuest(nextQuestId) &&
+				m_character->getQuestStatus(nextQuestId) == game::quest_status::Available)
 			{
 				const auto *nextQuestEntry = m_project.quests.getById(nextQuestId);
 				if (nextQuestEntry)
@@ -2719,7 +2922,6 @@ namespace wowpp
 				}
 			}
 		}
-		//DLOG("CMSG_QUESTGIVER_CHOOSE_REWARD: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
 	}
 
 	void Player::handleQuestgiverCancel(game::Protocol::IncomingPacket & packet)
@@ -2732,4 +2934,563 @@ namespace wowpp
 		DLOG("CMSG_QUESTGIVER_CANCEL");
 	}
 
+	void Player::handleQuestlogRemoveQuest(game::Protocol::IncomingPacket & packet)
+	{
+		UInt8 index = 0;
+		if (!(game::client_read::questlogRemoveQuest(packet, index)))
+		{
+			return;
+		}
+
+		if (index < 25)
+		{
+			UInt32 quest = m_character->getUInt32Value(character_fields::QuestLog1_1 + index * 4);
+			if (quest)
+			{
+				m_character->abandonQuest(quest);
+			}
+		}
+	}
+
+	void Player::handleGameObjectUse(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid = 0;
+		if (!(game::client_read::gameobjectUse(packet, guid)))
+		{
+			return;
+		}
+
+		auto *obj = m_instance.findObjectByGUID(guid);
+		if (!obj)
+		{
+			return;
+		}
+
+		if (!obj->isWorldObject())
+		{
+			return;
+		}
+
+		sendGossipMenu(guid);
+
+		WorldObject &wobj = reinterpret_cast<WorldObject&>(*obj);
+		if (wobj.getEntry().type() == world_object_type::Goober)
+		{
+			// Possibly quest object
+			m_character->onQuestObjectCredit(0, wobj);
+
+			// Check if spell cast is needed
+			UInt32 spellId = wobj.getEntry().data(10);
+			if (spellId)
+			{
+				// Cast spell
+				SpellTargetMap target;
+				target.m_unitTarget = m_character->getGuid();
+				target.m_targetMap = game::spell_cast_target_flags::Unit;
+				m_character->castSpell(std::move(target), spellId);
+			}
+		}
+	}
+
+	void Player::handleOpenItem(game::Protocol::IncomingPacket & packet)
+	{
+		UInt8 bag = 0, slot = 0;
+		if (!(game::client_read::openItem(packet, bag, slot)))
+		{
+			return;
+		}
+
+		auto &inv = m_character->getInventory();
+
+		// Look for the item at the given slot
+		auto item = inv.getItemAtSlot(Inventory::getAbsoluteSlot(bag, slot));
+		if (!item)
+		{
+			m_character->inventoryChangeFailure(game::inventory_change_failure::ItemNotFound, nullptr, nullptr);
+			return;
+		}
+
+		if (item->getLoot())
+		{
+			openLootDialog(*item->getLoot(), *item);
+		}
+		else
+		{
+			m_character->inventoryChangeFailure(game::inventory_change_failure::CantLootThatNow, item.get(), nullptr);
+		}
+	}
+
+	void Player::handleMoveTimeSkipped(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid;
+		UInt32 timeSkipped;
+		if (!(game::client_read::moveTimeSkipped(packet, guid, timeSkipped)))
+		{
+			return;
+		}
+
+		if (guid != m_character->getGuid())
+		{
+			WLOG("Received CMSG_MOVE_TIME_SKIPPED for different character...");
+			return;
+		}
+
+		// Anti hack check
+		if (Int32(timeSkipped) < 0)
+		{
+			WLOG("PLAYER " << m_character->getName() << " POSSIBLY HACKING");
+
+			// Kick that player!
+			m_instance.removeGameObject(*m_character);
+			m_character.reset();
+
+			// Notify the realm
+			m_realmConnector.notifyWorldInstanceLeft(m_characterId, pp::world_realm::world_left_reason::Disconnect);
+
+			// Destroy player instance
+			m_manager.playerDisconnected(*this);
+			return;
+		}
+
+		// TODO: Do something with the time diff
+	}
+
+	void Player::handleInitateTrade(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 otherGuid;
+		TradeStatusInfo statusInfo;
+		if (!(game::client_read::initateTrade(packet, otherGuid)))
+		{
+			return;
+		}
+
+		if (!m_character)
+		{
+			return;
+		}
+
+		// Can't trade while dead
+		if(!m_character->isAlive())
+		{
+			sendTradeStatus(game::trade_status::YouDead);
+			return;
+		}
+
+		if (m_character->isStunned())
+		{
+			sendTradeStatus(game::trade_status::YouStunned);
+			return;
+		}
+
+		if (m_logoutCountdown.running)
+		{
+			sendTradeStatus(game::trade_status::YouLogout);
+			return;
+		}
+
+		auto *worldInstance = m_character->getWorldInstance();
+		if (!worldInstance)
+		{
+			return;
+		}
+
+		UInt64 thisguid = m_character->getGuid(); 
+
+		auto *otherPlayer = m_manager.getPlayerByCharacterGuid(otherGuid);
+		if (otherPlayer == nullptr ||
+			!otherPlayer->getCharacter())
+		{
+			sendTradeStatus(game::trade_status::NoTarget);
+			return;
+		}
+
+		auto otherCharacter = otherPlayer->getCharacter();
+		if (!otherCharacter->isAlive())
+		{
+			sendTradeStatus(game::trade_status::TargetDead);
+			return;
+		}
+
+		if (otherCharacter->isStunned())
+		{
+			sendTradeStatus(game::trade_status::TargetStunned);
+			return;
+		}
+
+		// TODO: Target logout and other checks
+
+		if (otherCharacter->getDistanceTo(*m_character, false) > 10.0f)
+		{
+			sendTradeStatus(game::trade_status::TargetTooFar);
+			return;
+		}
+
+		// Start trade
+		m_tradeStatusInfo.tradestatus = game::trade_status::BeginTrade;
+		m_tradeStatusInfo.guid = thisguid;
+		m_tradeData = std::make_shared<TradeData>(this, otherPlayer);
+		otherPlayer->m_tradeData = std::make_shared<TradeData>(otherPlayer, this);
+		otherPlayer->sendTradeStatus(m_tradeStatusInfo);
+	}
+
+	void Player::handleBeginTrade(game::Protocol::IncomingPacket &packet)
+	{
+		if (!m_tradeData)
+		{
+			return;
+		}
+
+		m_tradeStatusInfo.tradestatus = game::trade_status::OpenWindow;
+		
+		m_tradeData->getPlayer()->sendTradeStatus(m_tradeStatusInfo);
+		m_tradeData->getTrader()->sendTradeStatus(m_tradeStatusInfo);
+		
+		//openWindow
+	}
+
+	void Player::handleAcceptTrade(game::Protocol::IncomingPacket &packet)
+	{
+		std::shared_ptr<TradeData> my_Trade = m_tradeData;
+		if (nullptr == my_Trade)
+		{
+			return;
+		}
+
+		Player* trader = my_Trade-> getTrader();
+		Player* player = my_Trade->getPlayer();
+		std::shared_ptr<TradeData> his_Trade = trader->m_tradeData;
+		if (nullptr == his_Trade)
+		{
+			return;
+		}
+
+		my_Trade->setTradeAcceptState(true);
+
+		TradeStatusInfo info;
+
+		if (my_Trade->getGold() > player->getCharacter()->getUInt32Value(character_fields::Coinage))
+		{
+			info.tradestatus = game::trade_status::CloseWindow;
+			sendTradeStatus(info);
+			my_Trade->setTradeAcceptState(false);
+			return;
+		}
+
+		if (his_Trade->getGold() > trader->getCharacter()->getUInt32Value(character_fields::Coinage))
+		{
+			info.tradestatus = game::trade_status::CloseWindow;
+			sendTradeStatus(info);
+			his_Trade->setTradeAcceptState(false);
+			return;
+		}
+								
+		if (his_Trade->isAccepted())
+		{
+			//check for cheating
+			//inform partner client
+
+			info.tradestatus = game::trade_status::TradeAccept;
+			trader->sendTradeStatus(info);
+			//test item << inventory
+
+			//execute Trade
+
+			//update money
+
+			UInt32 gold_nowp = player->getCharacter()->getUInt32Value(character_fields::Coinage);
+			UInt32 gold_newp = gold_nowp - my_Trade->getGold();
+
+			gold_newp += trader->m_tradeData->getGold();
+			player->getCharacter()->setUInt32Value(character_fields::Coinage, gold_newp);
+
+			
+			UInt32 gold_nowt = trader->getCharacter()->getUInt32Value(character_fields::Coinage);
+			UInt32 gold_newt = gold_nowt - trader->m_tradeData->getGold();
+
+			gold_newt += my_Trade->getGold();
+			trader->getCharacter()->setUInt32Value(character_fields::Coinage, gold_newt);
+
+			info.tradestatus = game::trade_status::TradeComplete;
+			trader->sendTradeStatus(info);
+			sendTradeStatus(info);
+		}
+		else
+		{
+			info.tradestatus = game::trade_status::TradeAccept;
+			trader->sendTradeStatus(info);
+		}
+	}
+
+
+	void Player::handleSetTradeGold(game::Protocol::IncomingPacket &packet)
+	{
+		UInt32 gold;
+		if (!(game::client_read::setTradeGold(packet, gold)))
+		{
+			return;
+		}
+
+		if (!m_tradeData)
+		{
+			return;
+		}
+
+		if (gold != m_tradeData->getGold())
+		{
+			// Update the amount of gold
+			m_tradeData->setGold(gold);
+
+			// Update trade status
+			if (m_tradeData->isAccepted())
+			{
+				m_tradeData->setTradeAcceptState(false);
+
+				TradeStatusInfo info;
+				info.tradestatus = game::trade_status::BackToTrade;
+				m_tradeData->getPlayer()->sendTradeStatus(std::move(info));
+			}
+
+			// 
+			m_tradeData->getTrader()->sendUpdateTrade();
+		}
+
+		//sendUpdateTrade(gold);
+	}
+
+	void Player::handleSetTradeItem(game::Protocol::IncomingPacket &packet)
+	{
+		UInt8 tradeSlot;
+		UInt8 bag;
+		UInt8 slot;
+		if (!(game::client_read::setTradeItem(packet, tradeSlot, bag, slot)))
+		{
+			return;
+		}
+
+		std::shared_ptr<TradeData> my_Trade = m_tradeData;
+		if (my_Trade == nullptr)
+		{
+			return;
+		}
+
+		TradeStatusInfo info;
+
+		if (tradeSlot >= trade_slots::Count)
+		{
+			info.tradestatus = game::trade_status::TradeCanceled;
+			sendTradeStatus(info);
+			return;
+		}
+
+		auto this_player = this->getCharacter();
+		auto &inventory = this_player->getInventory();
+		auto item = inventory.getItemAtSlot(Inventory::getAbsoluteSlot(bag, slot));
+		//TODO: ask if there is an item like that in trade already
+
+		my_Trade->setItem(item, tradeSlot);
+		sendUpdateTrade();
+	}
+
+	void Player::sendTradeStatus(TradeStatusInfo info)
+	{
+		sendProxyPacket(
+			std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, static_cast<UInt32>(info.tradestatus), info.guid));
+	}
+	
+	void Player::sendUpdateTrade()
+	{
+		//TODO maybe build a struct for all of this informations.
+		sendProxyPacket(
+			std::bind(game::server_write::sendUpdateTrade, std::placeholders::_1, 
+				1, 
+				0, 
+				trade_slots::Count, 
+				trade_slots::Count,
+				m_tradeData->getTrader()->m_tradeData->getGold(), 
+				0
+				));
+	}
+
+	void Player::handleSetActionBarToggles(game::Protocol::IncomingPacket & packet)
+	{
+		UInt8 actionBars;
+		if (!(game::client_read::setActionBarToggles(packet, actionBars)))
+		{
+			return;
+		}
+
+		// Save action bars
+		m_character->setByteValue(character_fields::FieldBytes, 2, actionBars);
+	}
+
+	void Player::handleToggleHelm(game::Protocol::IncomingPacket & packet)
+	{
+		if (m_character->getUInt32Value(character_fields::CharacterFlags) & 1024)
+		{
+			m_character->removeFlag(character_fields::CharacterFlags, 1024);
+		}
+		else
+		{
+			m_character->addFlag(character_fields::CharacterFlags, 1024);
+		}
+	}
+
+	void Player::handleToggleCloak(game::Protocol::IncomingPacket & packet)
+	{
+		if (m_character->getUInt32Value(character_fields::CharacterFlags) & 2048)
+		{
+			m_character->removeFlag(character_fields::CharacterFlags, 2048);
+		}
+		else
+		{
+			m_character->addFlag(character_fields::CharacterFlags, 2048);
+		}
+	}
+
+	void Player::handleMailSend(game::Protocol::IncomingPacket & packet)
+	{
+		ObjectGuid currentMailbox;
+		game::MailData mailInfo;
+
+		if (!game::client_read::mailSend(packet, currentMailbox, mailInfo))
+		{
+			return;
+		}
+
+		if (mailInfo.receiver.empty())
+		{
+			return;
+		}
+
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+		{
+			return;
+		}
+
+		auto *target = world->findObjectByGUID(currentMailbox);
+		if (!target ||
+			target->getTypeId() != 19)
+		{
+			// Checks if object exists and if it's a mailbox
+			return;
+		}
+
+		// TODO distance to mailbox
+		//float distance = m_character->getDistanceTo(target);
+
+		String receiverCap = mailInfo.receiver;
+		capitalize(receiverCap);
+
+		UInt32 cost = mailInfo.itemsCount ? 30 * mailInfo.itemsCount : 30;
+		UInt32 reqMoney = cost + mailInfo.money;
+		UInt32 plMoney = m_character->getUInt32Value(character_fields::Coinage);
+
+		if (plMoney < reqMoney)
+		{
+			// TODO send error
+			return;
+		}
+
+		auto &inventory = m_character->getInventory();
+		UInt16 itemSlot = 0;
+		std::vector<std::shared_ptr<GameItem>> items;
+		for (UInt8 i = 0; i < mailInfo.itemsCount; ++i)
+		{
+			UInt64 guid = mailInfo.itemsGuids[i];
+			if (!isItemGUID(guid))
+			{
+				// TODO send error
+				return;
+			}
+
+			if (!inventory.findItemByGUID(guid, itemSlot))
+			{
+				// Check if item is on player's inventory
+				return;
+			}
+
+			auto item = inventory.getItemAtSlot(itemSlot);
+			if (!item)
+			{
+				// TODO send error
+				return;
+			}
+
+			const auto &itemEntry = item->getEntry();
+
+			if (itemEntry.flags() & game::item_flags::Bound)
+			{
+				// TODO send error
+				return;
+			}
+
+			if (item->getTypeId() == object_type::Container)
+			{
+				auto bagPtr = std::static_pointer_cast<GameBag>(item);
+				if (bagPtr->isEmpty())
+				{
+					// TODO send error
+					return;
+				}
+			}
+
+			if ((itemEntry.flags() & game::item_flags::Conjured) ||
+				(item->getUInt32Value(item_fields::Duration)))
+			{
+				// TODO send error
+				return;
+			}
+
+			if ((mailInfo.COD) &&
+				(itemEntry.flags() & game::item_flags::Wrapped))
+			{
+				// TODO send error
+				return;
+			}
+
+			// TODO other checks
+			items.push_back(item);
+		}
+
+		// TODO send mail OK message
+
+		// Modify wallet of sender
+		m_character->setUInt32Value(character_fields::Coinage, plMoney - cost);
+
+
+		//TODO
+
+		DLOG("CMSG_MAIL_SEND received from client");
+	}
+
+	void Player::handleResurrectResponse(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 guid;
+		UInt8 status;
+
+		if (!game::client_read::resurrectResponse(packet, guid, status))
+		{
+			return;
+		}
+
+		if (m_character->isAlive())
+		{
+			return;
+		}
+
+		if (status == 0)
+		{
+			math::Vector3 location;
+			m_character->setResurrectRequestData(0, 0, std::move(location), 0, 0);
+			return;
+		}
+
+		if (!m_character->isResurrectRequestedBy(guid))
+		{
+			return;
+		}
+
+		m_character->resurrectUsingRequestData();
+	}
 }

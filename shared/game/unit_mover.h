@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -26,11 +26,12 @@
 #include "common/countdown.h"
 #include "math/vector3.h"
 #include "movement_info.h"
-#include <boost/signals2.hpp>
+#include "movement_path.h"
 
 namespace wowpp
 {
 	class GameUnit;
+	struct ITileSubscriber;
 
 	/// This class is meant to control a units movement. This class should be
 	/// inherited, so that, for example, a player character will be controlled
@@ -43,12 +44,15 @@ namespace wowpp
 
 	public:
 
+		/// Fired when the unit reached it's target.
 		boost::signals2::signal<void()> targetReached;
+		/// Fired when the movement was stopped.
 		boost::signals2::signal<void()> movementStopped;
+		/// Fired when the target changed.
 		boost::signals2::signal<void()> targetChanged;
 
 	public:
-		
+
 		/// 
 		explicit UnitMover(GameUnit &unit);
 		/// 
@@ -65,13 +69,28 @@ namespace wowpp
 		/// Stops the current movement if any.
 		void stopMovement();
 		/// Gets the new movement target.
-		const math::Vector3 &getTarget() const { return m_target; }
+		const math::Vector3 &getTarget() const
+		{
+			return m_target;
+		}
 		/// 
-		GameUnit &getMoved() const { return m_unit; }
+		GameUnit &getMoved() const
+		{
+			return m_unit;
+		}
 		/// 
-		bool isMoving() const { return m_moveReached.running; };
+		bool isMoving() const
+		{
+			return m_moveReached.running;
+		};
 		/// 
 		math::Vector3 getCurrentLocation() const;
+
+	public:
+
+		/// Writes the current movement packets to a writer object. This is used for moving
+		/// creatures that are spawned for a player.
+		void sendMovementPackets(ITileSubscriber &subscriber);
 
 	private:
 
@@ -80,5 +99,6 @@ namespace wowpp
 		math::Vector3 m_start, m_target;
 		GameTime m_moveStart, m_moveEnd;
 		bool m_customSpeed;
+		MovementPath m_path;
 	};
 }

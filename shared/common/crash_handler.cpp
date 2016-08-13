@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,19 +10,19 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
+#include "pch.h"
 #include "crash_handler.h"
 #include "version.h"
 #include "log/default_log_levels.h"
-#include <memory>
 
 #ifdef _MSC_VER
 #	include <windows.h>
@@ -48,7 +48,7 @@ namespace wowpp
 	{
 		const auto &fileName = CrashHandler::get().getDumpFilePath();
 		if (!fileName ||
-		    !g_MiniDumpWriteDump)
+		        !g_MiniDumpWriteDump)
 		{
 			return;
 		}
@@ -164,10 +164,10 @@ namespace wowpp
 			{
 				std::ostringstream fileName;
 				fileName.imbue(std::locale(std::cout.getloc(),
-					new boost::posix_time::time_facet("%Y_%m_%d_%H_%M_%S")));
+				                           new boost::posix_time::time_facet("%Y_%m_%d_%H_%M_%S")));
 
 				const boost::posix_time::ptime currentTime =
-					boost::posix_time::second_clock::local_time();
+				    boost::posix_time::second_clock::local_time();
 				fileName << "backtrace_" << currentTime << ".txt";
 
 				std::ofstream backtraceFile(fileName.str());
@@ -202,7 +202,8 @@ namespace wowpp
 			static const std::array<int, 3> HandledSignals =
 			{{
 					SIGSEGV, SIGFPE, SIGILL,
-			}};
+				}
+			};
 
 			for (const int sig : HandledSignals)
 			{
@@ -240,9 +241,9 @@ namespace wowpp
 					}
 
 					const char *const function_end = std::find_if(
-						function_begin,
-						symbol_name_end,
-						[](char c)
+					                                     function_begin,
+					                                     symbol_name_end,
+					                                     [](char c)
 					{
 						return (c == ')') || (c == '+');
 					});
@@ -253,11 +254,11 @@ namespace wowpp
 				size_t size;
 				int status;
 				char *const cpp_name = abi::__cxa_demangle(
-					function_name.c_str(),
-					nullptr,
-					&size,
-					&status
-					);
+				                           function_name.c_str(),
+				                           nullptr,
+				                           &size,
+				                           &status
+				                       );
 
 				const char *const printed_name = (cpp_name ? cpp_name : symbol_name);
 				out << printed_name << "\n";

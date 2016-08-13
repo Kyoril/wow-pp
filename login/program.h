@@ -21,9 +21,6 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
-#include <boost/asio.hpp>
-#include <memory>
 #include "configuration.h"
 #include "database.h"
 

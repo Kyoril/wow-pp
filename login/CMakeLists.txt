@@ -24,6 +24,7 @@ cmake_minimum_required(VERSION 2.8)
 
 	# Collect source and header files
 	file(GLOB srcFiles "./*.cpp" "./*.h" "./*.hpp")
+	remove_pch_cpp(srcFiles "${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp")
 	file(GLOB sffFiles "./../shared/simple_file_format/*.h")
 	
 	# Add source groups
@@ -32,12 +33,13 @@ cmake_minimum_required(VERSION 2.8)
 	
 	# Add library project
 	add_executable(login ${srcFiles} ${sffFiles})
+	add_precompiled_header(login "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
 	
 	# Link required shared libs
 	target_link_libraries(login common log auth_protocol wowpp_protocol sql_wrapper mysql_wrapper base64 http web_services)
 	
 	# Link dependency libraries
-	target_link_libraries(login ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY})
+	target_link_libraries(login ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY} cppformat)
 
 	# Install target
 	install(TARGETS login

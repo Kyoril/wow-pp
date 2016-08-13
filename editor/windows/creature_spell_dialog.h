@@ -24,7 +24,6 @@
 #include "common/typedefs.h"
 #include "proto_data/project.h"
 #include <QDialog>
-#include <memory>
 
 // Forwards
 namespace Ui
@@ -46,7 +45,7 @@ namespace wowpp
 		public:
 
 			/// 
-			explicit CreatureSpellDialog(EditorApplication &app);
+			explicit CreatureSpellDialog(EditorApplication &app, proto::UnitSpellEntry *entry = nullptr);
 
 			const proto::SpellEntry *getSelectedSpell() const { return m_selectedSpell; }
 			UInt32 getPriority() const;
@@ -55,6 +54,7 @@ namespace wowpp
 			Int32 getMaxCooldown() const;
 			Int32 getMinInitialCooldown() const;
 			Int32 getMaxInitialCooldown() const;
+			UInt32 getProbability() const;
 			UInt32 getTarget() const;
 
 		private slots:

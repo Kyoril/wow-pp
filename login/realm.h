@@ -22,11 +22,9 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include <boost/noncopyable.hpp>
 #include "wowpp_protocol/wowpp_protocol.h"
 #include "wowpp_protocol/wowpp_connection.h"
 #include "auth_protocol/auth_protocol.h"
-#include <cassert>
 
 namespace wowpp
 {

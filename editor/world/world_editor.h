@@ -1,3 +1,23 @@
+//
+// This file is part of the WoW++ project.
+// 
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software 
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+//
+// World of Warcraft, and all World of Warcraft or Warcraft art, images,
+// and lore are copyrighted by Blizzard Entertainment, Inc.
+// 
 
 #pragma once
 
@@ -10,10 +30,11 @@
 #include "world_page_loader.h"
 #include "world_renderer.h"
 #include "ogre_wrappers/scene_node_ptr.h"
-#include <boost/asio.hpp>
-#include <boost/thread.hpp>
 #include <QMouseEvent>
 #include "ogre_wrappers/qt_ogre_window.h"
+#include "ogre_wrappers/entity_ptr.h"
+#include "transform_widget.h"
+#include "editor_application.h"
 
 namespace Ogre
 {
@@ -35,25 +56,29 @@ namespace wowpp
 		{
 		public:
 
-			explicit WorldEditor(Ogre::SceneManager &sceneMgr, Ogre::Camera &camera, proto::MapEntry &map, proto::Project &project);
+			explicit WorldEditor(EditorApplication &app, Ogre::SceneManager &sceneMgr, Ogre::Camera &camera, proto::MapEntry &map, proto::Project &project);
 			~WorldEditor();
 
 			void update(float delta) override;
 			void save();
-			void onKeyPressed(const QKeyEvent *event);
-			void onKeyReleased(const QKeyEvent *event);
-			void onMousePressed(const QMouseEvent *event);
-			void onMouseReleased(const QMouseEvent *event);
-			void onMouseMoved(const QMouseEvent *event);
+			void onKeyPressed(const QKeyEvent *e) override;
+			void onKeyReleased(const QKeyEvent *e) override;
+			void onMousePressed(const QMouseEvent *e) override;
+			void onMouseReleased(const QMouseEvent *e) override;
+			void onMouseMoved(const QMouseEvent *e) override;
+			void onDoubleClick(const QMouseEvent *e) override;
+			void onSelection(Ogre::Entity &entity) override;
 
 		private:
 
 			void onPageLoad(const paging::Page &page) override;
 			void onPageAvailabilityChanged(const paging::PageNeighborhood &page, bool isAvailable) override;
 			terrain::model::Page *getTerrainPage(terrain::model::PagePosition position);
+			void onTransformToolChanged(TransformTool tool);
 
 		private:
 
+			EditorApplication &m_app;
 			Ogre::SceneManager &m_sceneMgr;
 			Ogre::Camera &m_camera;
 			proto::MapEntry &m_map;
@@ -68,6 +93,10 @@ namespace wowpp
 			std::map<paging::PagePosition, terrain::model::Page> m_pages;
             Ogre::Light *m_light;
 			proto::Project &m_project;
+			std::vector<wowpp::ogre_utils::SceneNodePtr> m_spawnNodes;
+			std::vector<wowpp::ogre_utils::EntityPtr> m_spawnEntities;
+			std::unique_ptr<TransformWidget> m_transformWidget;
+			boost::signals2::scoped_connection m_onTransformChanged;
 		};
 	}
 }

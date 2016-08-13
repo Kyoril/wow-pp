@@ -1,0 +1,1 @@
+ALTER TABLE `character` ADD COLUMN `last_group` bigint(20) unsigned DEFAULT '0' COMMENT 'Characters last group id.';

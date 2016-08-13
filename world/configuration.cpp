@@ -19,15 +19,13 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "configuration.h"
 #include "simple_file_format/sff_write.h"
 #include "simple_file_format/sff_read_tree.h"
 #include "simple_file_format/sff_load_file.h"
 #include "common/constants.h"
 #include "log/default_log_levels.h"
-#include <algorithm>
-#include <fstream>
-#include <limits>
 
 namespace wowpp
 {
@@ -84,13 +82,14 @@ namespace wowpp
 			{
 				file.close();
 
-				if (save(fileName))
+				if (save(fileName + ".updated"))
 				{
-					ILOG("Saved updated settings with default values as " << fileName);
+					ILOG("Saved updated settings with default values as " << fileName << ".updated");
+					ILOG("Please insert values from the old setting file manually and rename the file.");
 				}
 				else
 				{
-					ELOG("Could not save updated default settings as " << fileName);
+					ELOG("Could not save updated default settings as " << fileName << ".updated");
 				}
 
 				return false;

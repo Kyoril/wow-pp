@@ -23,13 +23,14 @@
 
 #include "common/typedefs.h"
 #include "proto_data/project.h"
+#include "proto_data/trigger_helper.h"
 #include <QString>
 
 namespace wowpp
 {
 	namespace editor
 	{
-		QString getTriggerEventText(UInt32 e);
+		QString getTriggerEventText(const proto::TriggerEvent &e, bool link = false);
 
 		QString getTriggerTargetName(const proto::TriggerAction &action, bool link = false);
 
@@ -40,11 +41,14 @@ namespace wowpp
 		QString getTriggerActionText(const proto::Project &project, const proto::TriggerAction &action, bool withLinks = false);
 
 		template<class T>
-		static QString actionDataEntry(const T& manager, const proto::TriggerAction &action, UInt32 i, bool link = false)
+		static QString actionDataEntry(const T& manager, const proto::TriggerAction &action, UInt32 i, bool link = false, bool allowEmpty = false)
 		{
 			QString temp = (link ? "<a href=\"data-%2\" style=\"color: #ffae00;\">%1</a>" : "%1");
 
 			Int32 data = (static_cast<Int32>(i) >= action.data_size() ? 0 : action.data(i));
+			if (data == 0 && allowEmpty)
+				return temp.arg("(None)").arg(i);
+
 			const auto *entry = manager.getById(data);
 			if (!entry)
 				return temp.arg("(INVALID)").arg(i);

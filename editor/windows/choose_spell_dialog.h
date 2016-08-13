@@ -26,7 +26,6 @@
 #include <QDialog>
 #include <QItemSelection>
 #include <QSortFilterProxyModel>
-#include <memory>
 
 // Forwards
 namespace Ui

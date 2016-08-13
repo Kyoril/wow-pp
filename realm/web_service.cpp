@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "web_service.h"
 #include "web_client.h"
 #include "common/constants.h"

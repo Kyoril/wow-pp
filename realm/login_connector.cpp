@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "login_connector.h"
 #include "wowpp_protocol/wowpp_realm_login.h"
 #include "configuration.h"
@@ -40,7 +41,7 @@ namespace wowpp
 		, m_timer(timer)
 		, m_host(m_config.loginAddress)
 		, m_port(m_config.loginPort)
-		, m_realmID(0)
+		, m_realmID(m_config.realmID)
 	{
 		tryConnect();
 	}
@@ -113,7 +114,8 @@ namespace wowpp
 				m_config.password,
 				m_config.visibleName,
 				m_config.playerHost,
-				m_config.playerPort);
+				m_config.playerPort,
+				m_config.realmID);
 
 			m_connection->flush();
 			scheduleKeepAlive();
@@ -236,6 +238,13 @@ namespace wowpp
 			case login_result::ServerError:
 			{
 				ELOG("Internal server error at the login server");
+				break;
+			}
+
+			case login_result::InvalidRealmID:
+			{
+				ELOG("The realm ID does not match with the login servers database: You tried to use " << 
+					m_config.realmID << " but the login server expected " << m_realmID << " - Please edit your wowpp_realm.cfg!");
 				break;
 			}
 				

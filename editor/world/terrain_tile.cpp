@@ -1,4 +1,25 @@
+//
+// This file is part of the WoW++ project.
+// 
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software 
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+//
+// World of Warcraft, and all World of Warcraft or Warcraft art, images,
+// and lore are copyrighted by Blizzard Entertainment, Inc.
+// 
 
+#include "pch.h"
 #include "terrain_tile.h"
 #include "terrain_page.h"
 #include "common/constants.h"
@@ -9,7 +30,7 @@
 #include "OgreHardwareBufferManager.h"
 #include "OgreHardwareBuffer.h"
 #include <OgreNode.h>
-#include <cassert>
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -26,13 +47,12 @@ namespace wowpp
 			UInt32 tileX,
 			UInt32 tileY,
 			terrain::model::Heightmap &tileHeights,
-			terrain::model::Normalmap &tileNormals
+			terrain::model::Normalmap &tileNormals,
+			UInt16 holes
 			)
 			: Ogre::MovableObject(name)
 			, Ogre::Renderable()
 			, m_sceneMgr(sceneMgr)
-			//, m_camera(camera)
-			//, m_page(page)
 			, m_material(material)
 			, m_tileX(tileX)
 			, m_tileY(tileY)
@@ -40,6 +60,7 @@ namespace wowpp
 			, m_lightListDirty(true)
 			, m_tileHeights(tileHeights)
 			, m_tileNormals(tileNormals)
+			, m_holes(holes)
 		{
 			createVertexData();
 			createIndexes();
@@ -292,11 +313,15 @@ namespace wowpp
 			m_boundingRadius = (m_bounds.getMaximum() - m_center).length();
 		}
 
+		static UInt16 holetab_h[4] = { 0x1111, 0x2222, 0x4444, 0x8888 };
+		static UInt16 holetab_v[4] = { 0x000F, 0x00F0, 0x0F00, 0xF000 };
+
 		void TerrainTile::createIndexes()
 		{
+			UInt16 indexCounter = 768;
 			m_indexData = make_unique<Ogre::IndexData>();
 			m_indexData->indexBuffer = Ogre::HardwareBufferManager::getSingleton().createIndexBuffer(
-				Ogre::HardwareIndexBuffer::IT_16BIT, 768, Ogre::HardwareBuffer::HBU_DYNAMIC_WRITE_ONLY
+				Ogre::HardwareIndexBuffer::IT_16BIT, indexCounter, Ogre::HardwareBuffer::HBU_DYNAMIC_WRITE_ONLY
 				);
 
 			UInt16 *indexPtr = static_cast<UInt16*>(m_indexData->indexBuffer->lock(
@@ -319,6 +344,13 @@ namespace wowpp
 					//  .        .
 					//  .        .
 					//  j
+
+					const bool isHole =
+						(m_holes & holetab_h[i / 2] & holetab_v[j / 2]) != 0;
+					if (isHole)
+					{
+						continue;
+					}
 
 					UInt16 topLeftInd = i + j * 9 + j * 8;
 					UInt16 topRightInd = topLeftInd + 1;

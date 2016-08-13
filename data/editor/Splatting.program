@@ -12,6 +12,7 @@ vertex_program TerrainVP cg
 		
 		param_named_auto g_eyePosition camera_position_object_space
 		param_named_auto g_lightPosition light_position_object_space 0
+		param_named_auto g_fogSettings fog_params
     }
 }
 
@@ -26,5 +27,6 @@ fragment_program TerrainFP cg
 		param_named Scale float 8.0	
 		param_named_auto g_AmbientLight ambient_light_colour
 		param_named_auto g_DiffuseLight light_diffuse_colour 0
+		param_named_auto g_FogColour fog_colour
     }
 }

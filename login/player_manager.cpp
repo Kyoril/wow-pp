@@ -19,11 +19,10 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "player_manager.h"
 #include "player.h"
 #include "binary_io/string_sink.h"
-#include <algorithm>
-#include <cassert>
 
 namespace wowpp
 {
@@ -103,6 +102,4 @@ namespace wowpp
 
 		return nullptr;
 	}
-
-
 }

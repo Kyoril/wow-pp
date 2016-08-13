@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "program.h"
 #include "common/constants.h"
 #include "auth_protocol/auth_server.h"
@@ -32,10 +33,9 @@
 #include "player.h"
 #include "realm_manager.h"
 #include "realm.h"
+#include "team_server_manager.h"
+#include "team_server.h"
 #include "web_service.h"
-#include <iostream>
-#include <memory>
-#include <fstream>
 #include "version.h"
 
 namespace wowpp
@@ -109,7 +109,6 @@ namespace wowpp
 		// Set database instance
 		m_database = std::move(db);
 		
-
 		// Create the realm server
 		std::unique_ptr<wowpp::pp::Server> realmServer;
 		try
@@ -118,7 +117,19 @@ namespace wowpp
 		}
 		catch (const wowpp::BindFailedException &)
 		{
-			ELOG("Could not use player port " << m_configuration.realmPort << "! Maybe there is another server instance running on this port?");
+			ELOG("Could not use realm port " << m_configuration.realmPort << "! Maybe there is another server instance running on this port?");
+			return 1;
+		}
+
+		// Create the team server
+		std::unique_ptr<wowpp::pp::Server> teamServer;
+		try
+		{
+			teamServer.reset(new wowpp::pp::Server(std::ref(m_ioService), m_configuration.teamPort, std::bind(&wowpp::pp::Connection::create, std::ref(m_ioService), nullptr)));
+		}
+		catch (const wowpp::BindFailedException &)
+		{
+			ELOG("Could not use team server port " << m_configuration.teamPort << "! Maybe there is another server instance running on this port?");
 			return 1;
 		}
 
@@ -127,6 +138,7 @@ namespace wowpp
 		// Create the player manager and the realm manager
 		std::unique_ptr<wowpp::RealmManager> RealmManager(new wowpp::RealmManager(m_configuration.maxRealms));
 		std::unique_ptr<wowpp::PlayerManager> PlayerManager(new wowpp::PlayerManager(m_configuration.maxPlayers));
+		std::unique_ptr<wowpp::TeamServerManager> TeamServerManager(new wowpp::TeamServerManager(m_configuration.maxTeamServers));
 
 		auto const createRealm = [&RealmManager, &PlayerManager, &Database](std::shared_ptr<wowpp::Realm::Client> connection)
 		{
@@ -153,6 +165,30 @@ namespace wowpp
 		const boost::signals2::scoped_connection realmConnected(realmServer->connected().connect(createRealm));
 		realmServer->startAccept();
 
+		auto const createTeamServer = [&TeamServerManager, &Database](std::shared_ptr<wowpp::TeamServer::Client> connection)
+		{
+			connection->startReceiving();
+			boost::asio::ip::address address;
+
+			try
+			{
+				address = connection->getRemoteAddress();
+			}
+			catch (const boost::system::system_error &error)
+			{
+				//getRemoteAddress calls remote_endpoint on a socket which can throw if the socket is closed.
+				std::cout << error.what() << std::endl;
+				return;
+			}
+
+			std::unique_ptr<wowpp::TeamServer> teamServer(new wowpp::TeamServer(*TeamServerManager, Database, std::move(connection), address.to_string()));
+
+			DLOG("Incoming team server connection from " << address);
+			TeamServerManager->addTeamServer(std::move(teamServer));
+		};
+
+		const boost::signals2::scoped_connection teamServerConnected(teamServer->connected().connect(createTeamServer));
+		teamServer->startAccept();
 
 		// Create the player server
 		std::unique_ptr<wowpp::auth::Server> playerServer;

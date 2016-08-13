@@ -25,10 +25,6 @@
 #include "binary_io/reader.h"
 #include "binary_io/container_source.h"
 #include "stormlib/src/StormLib.h"
-#include <boost/noncopyable.hpp>
-#include <boost/thread.hpp>
-#include <memory>
-#include <vector>
 
 namespace mpq
 {

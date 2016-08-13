@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,17 +10,23 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
+
+#include <cassert>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <boost/noncopyable.hpp>
+#include <boost/variant.hpp>
 
 #include "sql_connection.h"
-#include <cassert>
 
 namespace wowpp
 {
@@ -38,14 +44,14 @@ namespace wowpp
 		bool Connection::isTableExisting(const std::string &tableName)
 		{
 			const auto select = createStatement(
-			            "SELECT EXISTS(SELECT table_name FROM INFORMATION_SCHEMA.TABLES "
-			            "WHERE table_name LIKE ? AND table_schema=DATABASE())");
+			                        "SELECT EXISTS(SELECT table_name FROM INFORMATION_SCHEMA.TABLES "
+			                        "WHERE table_name LIKE ? AND table_schema=DATABASE())");
 			select->setString(0, tableName);
 			SQL::Result results(*select);
-			SQL::Row * const row = results.getCurrentRow();
+			SQL::Row *const row = results.getCurrentRow();
 			if (!row)
 			{
-				throw("Result row expected");
+				throw ("Result row expected");
 			}
 			const bool doesExist = (row->getInt(0) != 0);
 			return doesExist;
@@ -57,7 +63,7 @@ namespace wowpp
 		}
 
 		std::unique_ptr<Statement> Connection::createStatement(
-		        const std::string &query)
+		    const std::string &query)
 		{
 			return createStatement(query.data(), query.size());
 		}
@@ -181,8 +187,8 @@ namespace wowpp
 
 				explicit ParameterUnpacker(Statement &statement,
 				                           std::size_t column)
-				    : m_statement(statement)
-				    , m_column(column)
+					: m_statement(statement)
+					, m_column(column)
 				{
 				}
 
@@ -223,12 +229,12 @@ namespace wowpp
 
 
 		Row::Row()
-		    : m_reader(nullptr)
+			: m_reader(nullptr)
 		{
 		}
 
 		Row::Row(ResultReader &readerWithRow)
-		    : m_reader(&readerWithRow)
+			: m_reader(&readerWithRow)
 		{
 			assert(m_reader->isRow());
 		}
@@ -250,8 +256,8 @@ namespace wowpp
 
 
 		Result::Result(Statement &statement)
-		    : m_statement(statement)
-		    , m_reader(statement.select())
+			: m_statement(statement)
+			, m_reader(statement.select())
 		{
 		}
 
@@ -278,8 +284,8 @@ namespace wowpp
 
 
 		Transaction::Transaction(Connection &connection)
-		    : m_connection(connection)
-		    , m_isCommit(false)
+			: m_connection(connection)
+			, m_isCommit(false)
 		{
 			m_connection.beginTransaction();
 		}

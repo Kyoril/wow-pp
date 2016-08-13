@@ -33,10 +33,10 @@ source_group(src\\sff FILES ${sffFiles})
 add_executable(extractor ${srcFiles} ${sffFiles})
 
 # Link required shared libs
-target_link_libraries(extractor common log auth_protocol wowpp_protocol sql_wrapper mysql_wrapper stormlib math)
+target_link_libraries(extractor common log auth_protocol wowpp_protocol sql_wrapper mysql_wrapper stormlib math recast detour)
 
 # Link dependency libraries
-target_link_libraries(extractor ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY})
+target_link_libraries(extractor ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY} cppformat)
 
 # Install target
 install(TARGETS extractor

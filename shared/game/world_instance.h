@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -29,11 +29,10 @@
 #include "creature_spawner.h"
 #include "world_object_spawner.h"
 #include "unit_finder.h"
-#include "boost/signals2.hpp"
 #include "map.h"
-#include <unordered_map>
-#include <memory>
-#include <vector>
+#include "binary_io/vector_sink.h"
+#include "game_protocol/game_protocol.h"
+#include "tile_subscriber.h"
 
 namespace wowpp
 {
@@ -53,7 +52,9 @@ namespace wowpp
 		class ObjectEntry;
 	}
 
-	inline UInt32 createMapGUID(UInt32 low, UInt32 map) { return static_cast<UInt32>(low | (map << 16)); }
+	inline UInt32 createMapGUID(UInt32 low, UInt32 map) {
+		return static_cast<UInt32>(low | (map << 16));
+	}
 
 	/// Manages one instance of a game world.
 	class WorldInstance final
@@ -65,11 +66,11 @@ namespace wowpp
 
 	private:
 
-		typedef std::unordered_map<UInt64, GameObject*> GameObjectsById;
+		typedef std::unordered_map<UInt64, GameObject *> GameObjectsById;
 		typedef std::vector<std::unique_ptr<CreatureSpawner>> CreatureSpawners;
 		typedef std::vector<std::unique_ptr<WorldObjectSpawner>> ObjectSpawners;
 		typedef std::map<UInt64, std::shared_ptr<GameCreature>> SummonedCreatures;
-		
+
 	public:
 
 		/// Fired when the world instance is about to be destroyed. TODO: Not fired at the moment.
@@ -86,17 +87,17 @@ namespace wowpp
 		/// @param getClass Callback to obtain informations about a class.
 		/// @param getLevel Callback to obtain informations about a level.
 		explicit WorldInstance(
-			WorldInstanceManager &manager, 
-			Universe &universe,
-			game::ITriggerHandler &triggerHandler,
-			proto::Project &project,
-			const proto::MapEntry &mapEntry,
-			UInt32 id, 
-			std::unique_ptr<UnitFinder> unitFinder,
-			std::unique_ptr<VisibilityGrid> visibilityGrid,
-			IdGenerator<UInt64> &objectIdGenerator,
-			const String &dataPath
-			);
+		    WorldInstanceManager &manager,
+		    Universe &universe,
+		    game::ITriggerHandler &triggerHandler,
+		    proto::Project &project,
+		    const proto::MapEntry &mapEntry,
+		    UInt32 id,
+		    std::unique_ptr<UnitFinder> unitFinder,
+		    std::unique_ptr<VisibilityGrid> visibilityGrid,
+		    IdGenerator<UInt64> &objectIdGenerator,
+		    const String &dataPath
+		);
 
 		/// Creates a new creature which will belong to this world instance. However,
 		/// the creature won't be spawned yet. This method is used by CreatureSpawner.
@@ -105,34 +106,60 @@ namespace wowpp
 		std::shared_ptr<WorldObject> spawnWorldObject(const proto::ObjectEntry &entry, math::Vector3 position, float o, float radius);
 
 		/// Gets the manager of this and all other instances.
-		WorldInstanceManager &getManager() { return m_manager; }
+		WorldInstanceManager &getManager() {
+			return m_manager;
+		}
 		/// Gets the id of this instance.
-		UInt32 getId() const { return m_id; }
+		UInt32 getId() const {
+			return m_id;
+		}
 		/// Gets the map id of this instance.
-		UInt32 getMapId() const { return m_mapEntry.id(); }
-		/// 
-		UnitFinder &getUnitFinder() { return *m_unitFinder; }
-		/// 
-		const VisibilityGrid &getGrid() const { return *m_visibilityGrid; }
-		/// 
-		VisibilityGrid &getGrid() { return *m_visibilityGrid; }
-		/// 
-		Universe &getUniverse() { return m_universe; }
+		UInt32 getMapId() const {
+			return m_mapEntry.id();
+		}
+		///
+		UnitFinder &getUnitFinder() {
+			return *m_unitFinder;
+		}
+		///
+		const VisibilityGrid &getGrid() const {
+			return *m_visibilityGrid;
+		}
+		///
+		VisibilityGrid &getGrid() {
+			return *m_visibilityGrid;
+		}
+		///
+		Universe &getUniverse() {
+			return m_universe;
+		}
 		/// Adds a game object to this world instance.
-		void addGameObject(GameObject& added);
+		void addGameObject(GameObject &added);
 		/// Removes a specific game object from this world.
 		void removeGameObject(GameObject &remove);
 		/// Finds a game object by it's guid.
 		GameObject *findObjectByGUID(UInt64 guid);
 		/// Updates this world instance. Should be called once per tick.
 		void update();
+		/// Flushes an object update.
+		void flushObjectUpdate(UInt64 guid);
 		/// Gets the map data of this instance. Note that instances share the same map data to save
 		/// memory.
-		Map *getMapData() { return m_map; }
-		/// 
+		Map *getMapData() {
+			return m_map;
+		}
+		///
 		CreatureSpawner *findCreatureSpawner(const String &name);
-		/// 
+		///
 		WorldObjectSpawner *findObjectSpawner(const String &name);
+		/// Gets a reference of this world instances item id generator.
+		IdGenerator<UInt64> &getItemIdGenerator() {
+			return m_itemIdGenerator;
+		}
+		/// 
+		void addUpdateObject(GameObject &object);
+		/// 
+		void removeUpdateObject(GameObject &object);
 
 		/// Calls a specific callback method for every game object added to the world.
 		/// An object can be everything, from a player over a creature to a chest.
@@ -145,9 +172,47 @@ namespace wowpp
 			}
 		}
 
+		/// Delivers a packet to all receivers near a specific object.
+		/// @param source The objecte whose location will be used to determine all nearby players.
+		/// @param f The packet generator function used to write the packet.
+		template<typename F>
+		void sendPacketToNearbyPlayers(const GameObject &source, F f)
+		{
+			TileIndex2D tile;
+			if (!source.getTileIndex(tile))
+			{
+				return;
+			}
+
+			// Write packet
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket packet(sink);
+			f(packet);
+
+			// Send packet to all players nearby
+			forEachSubscriberInSight(
+				*m_visibilityGrid,
+				tile,
+				[&source, &packet, buffer](ITileSubscriber &subscriber)
+			{
+				auto *character = subscriber.getControlledObject();
+				if (!character) 
+				{
+					return;
+				}
+				if (!source.canSpawnForCharacter(*character))
+				{
+					return;
+				}
+				subscriber.sendPacket(packet, buffer);
+			});
+		}
+
 	private:
 
 		void onObjectMoved(GameObject &object, const math::Vector3 &oldPosition, float oldO);
+		void updateObject(GameObject &object);
 
 	private:
 
@@ -157,15 +222,17 @@ namespace wowpp
 		std::unique_ptr<UnitFinder> m_unitFinder;
 		std::unique_ptr<VisibilityGrid> m_visibilityGrid;
 		IdGenerator<UInt64> &m_objectIdGenerator;
+		IdGenerator<UInt64> m_itemIdGenerator;
 		GameObjectsById m_objectsById;
 		proto::Project &m_project;
 		const proto::MapEntry &m_mapEntry;
 		UInt32 m_id;
 		CreatureSpawners m_creatureSpawners;
-		std::map<String, CreatureSpawner*> m_creatureSpawnsByName;
+		std::map<String, CreatureSpawner *> m_creatureSpawnsByName;
 		ObjectSpawners m_objectSpawners;
-		std::map<String, WorldObjectSpawner*> m_objectSpawnsByName;
+		std::map<String, WorldObjectSpawner *> m_objectSpawnsByName;
 		SummonedCreatures m_creatureSummons;
 		Map *m_map;
+		std::set<GameObject*> m_objectUpdates;
 	};
 }

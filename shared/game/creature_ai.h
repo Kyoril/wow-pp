@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,21 +10,19 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
 #include "defines.h"
 #include "math/vector3.h"
-#include <memory>
-#include <boost/signals2.hpp>
 
 namespace wowpp
 {
@@ -66,9 +64,9 @@ namespace wowpp
 		/// @param home The home point of the controlled unit. The unit will always return to it's
 		///             home point if it returns to it's idle state.
 		explicit CreatureAI(
-			GameCreature &controlled,
-			const Home &home
-			);
+		    GameCreature &controlled,
+		    const Home &home
+		);
 		/// Default destructor. Overridden in case of inheritance of the CreatureAI class.
 		virtual ~CreatureAI();
 
@@ -85,6 +83,10 @@ namespace wowpp
 		/// Makes the creature reset, leaving the combat state, reviving itself and run back
 		/// to it's home position.
 		void reset();
+		/// Executed by the underlying creature when combat movement gets enabled or disabled.
+		void onCombatMovementChanged();
+		/// 
+		void onCreatureMovementChanged();
 
 	public:
 

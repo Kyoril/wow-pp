@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -26,7 +26,6 @@
 #include "auth_outgoing_packet.h"
 #include "binary_io/reader.h"
 #include "common/big_number.h"
-#include <array>
 
 namespace wowpp
 {
@@ -257,74 +256,74 @@ namespace wowpp
 		struct client_read
 		{
 			static bool logonChallenge(
-				io::Reader &packet,
-				UInt8 &out_version1,
-				UInt8 &out_version2,
-				UInt8 &out_version3,
-				UInt16 &out_build,
-				AuthPlatform &out_platform,
-				AuthSystem &out_system,
-				AuthLocale &out_locale,
-				String &out_userName
-				);
+			    io::Reader &packet,
+			    UInt8 &out_version1,
+			    UInt8 &out_version2,
+			    UInt8 &out_version3,
+			    UInt16 &out_build,
+			    AuthPlatform &out_platform,
+			    AuthSystem &out_system,
+			    AuthLocale &out_locale,
+			    String &out_userName
+			);
 
 			static bool reconnectChallenge(
-				io::Reader &packet,
-				UInt8 &out_version1,
-				UInt8 &out_version2,
-				UInt8 &out_version3,
-				UInt16 &out_build,
-				AuthPlatform &out_platform,
-				AuthSystem &out_system,
-				AuthLocale &out_locale,
-				String &out_userName
-				);
+			    io::Reader &packet,
+			    UInt8 &out_version1,
+			    UInt8 &out_version2,
+			    UInt8 &out_version3,
+			    UInt16 &out_build,
+			    AuthPlatform &out_platform,
+			    AuthSystem &out_system,
+			    AuthLocale &out_locale,
+			    String &out_userName
+			);
 
 			static bool logonProof(
-				io::Reader &packet,
-				std::array<UInt8, 32> &out_A,
-				std::array<UInt8, 20> &out_M1,
-				std::array<UInt8, 20> &out_crc_hash,
-				UInt8 &out_number_of_keys,
-				UInt8 &out_securityFlags
-				);
+			    io::Reader &packet,
+			    std::array<UInt8, 32> &out_A,
+			    std::array<UInt8, 20> &out_M1,
+			    std::array<UInt8, 20> &out_crc_hash,
+			    UInt8 &out_number_of_keys,
+			    UInt8 &out_securityFlags
+			);
 
 			static bool reconnectProof(
-				io::Reader &packet,
-				std::array<UInt8, 16> &out_R1,
-				std::array<UInt8, 20> &out_R2,
-				std::array<UInt8, 20> &out_R3,
-				UInt8 &out_number_of_keys
-				);
+			    io::Reader &packet,
+			    std::array<UInt8, 16> &out_R1,
+			    std::array<UInt8, 20> &out_R2,
+			    std::array<UInt8, 20> &out_R3,
+			    UInt8 &out_number_of_keys
+			);
 
 			static bool realmList(
-				io::Reader &packet
-				);
+			    io::Reader &packet
+			);
 		};
 
 
 		struct server_write
 		{
 			static void logonChallenge(
-				auth::OutgoingPacket &out_packet,
-				auth_result::Type result,
-				const BigNumber &B,
-				const BigNumber &g,
-				const BigNumber &N,
-				const BigNumber &s,
-				const BigNumber &unk3
-				);
+			    auth::OutgoingPacket &out_packet,
+			    auth_result::Type result,
+			    const BigNumber &B,
+			    const BigNumber &g,
+			    const BigNumber &N,
+			    const BigNumber &s,
+			    const BigNumber &unk3
+			);
 
 			static void logonProof(
-				auth::OutgoingPacket &out_packet,
-				auth_result::Type result,
-				const std::array<UInt8, 20> &hash
-				);
+			    auth::OutgoingPacket &out_packet,
+			    auth_result::Type result,
+			    const std::array<UInt8, 20> &hash
+			);
 
 			static void realmList(
-				auth::OutgoingPacket &out_packet,
-				const std::vector<RealmEntry> &realmList
-				);
+			    auth::OutgoingPacket &out_packet,
+			    const std::vector<RealmEntry> &realmList
+			);
 		};
 	}
 }

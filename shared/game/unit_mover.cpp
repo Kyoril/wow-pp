@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,15 +10,16 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
+#include "pch.h"
 #include "unit_mover.h"
 #include "game_unit.h"
 #include "world_instance.h"
@@ -26,12 +27,12 @@
 #include "binary_io/vector_sink.h"
 #include "game_protocol/game_protocol.h"
 #include "each_tile_in_sight.h"
+#include "tile_subscriber.h"
 #include "common/constants.h"
-#include <memory>
 
 namespace wowpp
 {
-	const GameTime UnitMover::UpdateFrequency = constants::OneSecond / 4;
+	const GameTime UnitMover::UpdateFrequency = constants::OneSecond / 2;
 
 	UnitMover::UnitMover(GameUnit &unit)
 		: m_unit(unit)
@@ -44,8 +45,9 @@ namespace wowpp
 		m_moveUpdated.ended.connect([this]()
 		{
 			GameTime time = getCurrentTime();
-			if (time >= m_moveEnd)
+			if (time >= m_moveEnd) {
 				return;
+			}
 
 			// Calculate new position
 			float o = getMoved().getOrientation();
@@ -59,19 +61,6 @@ namespace wowpp
 			{
 				m_moveUpdated.setEnd(time + UnitMover::UpdateFrequency);
 			}
-
-			/*
-			// Update creatures position in the next update frame
-			auto strongUnit = getMoved().shared_from_this();
-			std::weak_ptr<GameObject> weakUnit(strongUnit);
-			getMoved().getWorldInstance()->getUniverse().post([weakUnit, oldPosition, o]()
-			{
-				auto strongUnit = weakUnit.lock();
-				if (strongUnit)
-				{
-					strongUnit->relocate(oldPosition, o);
-				}
-			});*/
 		});
 
 		m_moveReached.ended.connect([this]()
@@ -105,27 +94,29 @@ namespace wowpp
 
 	void UnitMover::onMoveSpeedChanged(MovementType moveType)
 	{
-		if (!m_customSpeed && 
-			moveType == movement_type::Run &&
-			m_moveReached.running)
+		if (!m_customSpeed &&
+		        moveType == movement_type::Run &&
+		        m_moveReached.running)
 		{
 			// Restart move command
 			moveTo(m_target);
 		}
 	}
 
-	bool UnitMover::moveTo(const math::Vector3 & target)
+	bool UnitMover::moveTo(const math::Vector3 &target)
 	{
 		bool result = moveTo(target, m_unit.getSpeed(movement_type::Run));
 		m_customSpeed = false;
 		return result;
 	}
 
-	bool UnitMover::moveTo(const math::Vector3 & target, float customSpeed)
+	bool UnitMover::moveTo(const math::Vector3 &target, float customSpeed)
 	{
 		// Get current location
 		m_customSpeed = true;
 		auto currentLoc = getCurrentLocation();
+
+		auto &moved = getMoved();
 
 		// Do we really need to move?
 		if (target == currentLoc)
@@ -154,40 +145,75 @@ namespace wowpp
 			// Stop, here, but since we are moving to the next point immediatly after this,
 			// we won't notify the grid about this for performance reasons (since the next
 			// movement update tick will do this for us automatically).
-			getMoved().relocate(currentLoc, o, false);
+			moved.relocate(currentLoc, o, false);
 		}
 
 		// Dead units can't move
-		if (!getMoved().canMove())
+		if (!moved.canMove())
+		{
 			return false;
+		}
+
+		auto *world = moved.getWorldInstance();
+		if (!world)
+		{
+			return false;
+		}
+
+		auto *map = world->getMapData();
+		if (!map)
+		{
+			return false;
+		}
+
+		// Clear the current movement path
+		m_path.clear();
+		
+		// Calculate path
+		std::vector<math::Vector3> path;
+		if (!map->calculatePath(currentLoc, target, path))
+		{
+			return false;
+		}
+
+		assert(!path.empty());
+		
+		// Update timing
+		m_moveStart = getCurrentTime();
+		m_path.addPosition(m_moveStart, currentLoc);
+
+		GameTime moveTime = m_moveStart;
+		for (UInt32 i = 0; i < path.size(); ++i)
+		{
+			const float dist =
+				(i == 0) ? ((path[i] - currentLoc).length()) : (path[i] - path[i - 1]).length();
+			moveTime += (dist / customSpeed) * constants::OneSecond;
+			m_path.addPosition(moveTime, path[i]);
+		}
 
 		// Use new values
 		m_start = currentLoc;
-		m_target = target;
-		float distance = (m_target - m_start).length();
-
-		// Update timing
-		m_moveStart = getCurrentTime();
+		m_target = path.back();
 
 		// Calculate time of arrival
-		GameTime moveTime = (distance / customSpeed) * constants::OneSecond;
-		m_moveEnd = m_moveStart + moveTime;
+		m_moveEnd = moveTime;
 
 		// Send movement packet
 		TileIndex2D tile;
-		if (getMoved().getTileIndex(tile))
+		if (moved.getTileIndex(tile))
 		{
-			// TODO: Maybe, player characters need another movement packet for this...
 			std::vector<char> buffer;
 			io::VectorSink sink(buffer);
 			game::Protocol::OutgoingPacket packet(sink);
-			game::server_write::monsterMove(packet, getMoved().getGuid(), currentLoc, target, moveTime);
-
+			game::server_write::monsterMove(packet, moved.getGuid(), currentLoc, path, moveTime - m_moveStart);
 			forEachSubscriberInSight(
-				getMoved().getWorldInstance()->getGrid(),
-				tile,
-				[&packet, &buffer](ITileSubscriber &subscriber)
+				moved.getWorldInstance()->getGrid(),
+			    tile,
+			    [&packet, &buffer, &moved](ITileSubscriber & subscriber)
 			{
+				if (!moved.canSpawnForCharacter(*subscriber.getControlledObject()))
+					return;
+
 				subscriber.sendPacket(packet, buffer);
 			});
 		}
@@ -219,28 +245,33 @@ namespace wowpp
 			float o = ::atan2(dy, dx);
 			o = (o >= 0) ? o : 2 * 3.1415927f + o;
 
-			// Update with grid notification
-			getMoved().relocate(currentLoc, o);
-
-			// Cancel timers
+			// Cancel timers before relocate, in order to prevent stack overflow (because isMoving()
+			// simply checks if m_moveReached is running)
 			m_moveReached.cancel();
 			m_moveUpdated.cancel();
 
+			// Update with grid notification
+			auto &moved = getMoved();
+			moved.relocate(currentLoc, o);
+
 			// Send movement packet
 			TileIndex2D tile;
-			if (getMoved().getTileIndex(tile))
+			if (moved.getTileIndex(tile))
 			{
 				// TODO: Maybe, player characters need another movement packet for this...
 				std::vector<char> buffer;
 				io::VectorSink sink(buffer);
 				game::Protocol::OutgoingPacket packet(sink);
-				game::server_write::monsterMove(packet, getMoved().getGuid(), currentLoc, currentLoc, 0);
+				game::server_write::monsterMove(packet, moved.getGuid(), currentLoc, { currentLoc }, 0);
 
 				forEachSubscriberInSight(
-					getMoved().getWorldInstance()->getGrid(),
-					tile,
-					[&packet, &buffer](ITileSubscriber &subscriber)
+					moved.getWorldInstance()->getGrid(),
+				    tile,
+				    [&packet, &buffer, &moved](ITileSubscriber & subscriber)
 				{
+					if (!moved.canSpawnForCharacter(*subscriber.getControlledObject()))
+						return;
+
 					subscriber.sendPacket(packet, buffer);
 				});
 			}
@@ -254,11 +285,43 @@ namespace wowpp
 	math::Vector3 UnitMover::getCurrentLocation() const
 	{
 		// Unit didn't move yet or isn't moving at all
-		if (m_moveStart == 0 || !isMoving())
+		if (m_moveStart == 0 || !isMoving() || !m_path.hasPositions()) {
 			return getMoved().getLocation();
+		}
 
-		// Linear interpolation
+		// Determine the current waypoints
+		return m_path.getPosition(getCurrentTime());
+
+		/*// Linear interpolation
 		const float t = static_cast<float>(static_cast<double>(getCurrentTime() - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));
-		return m_start.lerp(m_target, t);
+		return m_start.lerp(m_target, t);*/
+	}
+
+	void UnitMover::sendMovementPackets(ITileSubscriber &subscriber)
+	{
+		if (!isMoving())
+			return;
+
+		if (!getMoved().canSpawnForCharacter(*subscriber.getControlledObject()))
+			return;
+
+		GameTime now = getCurrentTime();
+		if (now >= m_moveEnd)
+			return;
+
+		std::vector<math::Vector3> path;
+		for (auto &p : m_path.getPositions())
+		{
+			if (p.first < now)
+				continue;
+
+			path.push_back(p.second);
+		}
+
+		std::vector<char> buffer;
+		io::VectorSink sink(buffer);
+		game::Protocol::OutgoingPacket packet(sink);
+		game::server_write::monsterMove(packet, getMoved().getGuid(), getCurrentLocation(), path, m_moveEnd - now);
+		subscriber.sendPacket(packet, buffer);
 	}
 }

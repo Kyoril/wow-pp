@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,19 +10,19 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
+#include "pch.h"
 #include "wowpp_incoming_packet.h"
 #include "common/constants.h"
 #include "log/default_log_levels.h"
-#include <limits>
 
 namespace wowpp
 {
@@ -41,14 +41,14 @@ namespace wowpp
 		ReceiveState IncomingPacket::start(IncomingPacket &packet, io::MemorySource &source)
 		{
 			io::Reader streamReader(source);
-			
+
 			PacketBegin begin;
 			PacketSize size;
 
 			if (streamReader
-				>> io::read<NetPacketBegin>(begin)
-				>> io::read<NetPacketId>(packet.m_id)
-				>> io::read<NetPacketSize>(size))
+			        >> io::read<NetPacketBegin>(begin)
+			        >> io::read<NetPacketId>(packet.m_id)
+			        >> io::read<NetPacketSize>(size))
 			{
 				if (begin != constants::PacketBegin)
 				{

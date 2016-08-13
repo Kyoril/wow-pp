@@ -24,7 +24,6 @@
 #include <QMainWindow>
 #include <QItemSelection>
 #include <QTreeWidgetItem>
-#include <memory>
 
 // Forwards
 namespace Ui

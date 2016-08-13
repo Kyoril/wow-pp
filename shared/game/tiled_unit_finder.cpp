@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,22 +10,21 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
+#include "pch.h"
 #include "tiled_unit_finder.h"
 #include "tiled_unit_watcher.h"
 #include "tiled_unit_finder_tile.h"
-#include "data/map_entry.h"
 #include "game_unit.h"
 #include "common/make_unique.h"
-#include <cassert>
 #include "log/default_log_levels.h"
 
 namespace wowpp
@@ -40,7 +39,7 @@ namespace wowpp
 		math::Vector3 getUnitPosition(const GameUnit &unit)
 		{
 			math::Vector3 location(unit.getLocation());
-			
+
 			return location;
 		}
 	}
@@ -58,15 +57,16 @@ namespace wowpp
 		const math::Vector3 unitPos = getUnitPosition(findable);
 		const auto position = getTilePosition(game::planar(unitPos));
 		auto &tile = m_grid(position[0], position[1]);
-		
-		if (!tile) tile.reset(new Tile());
+
+		if (!tile) {
+			tile.reset(new Tile());
+		}
 		tile->addUnit(findable);
 
 		UnitRecord &record = *m_units.insert(std::make_pair(&findable, make_unique<UnitRecord>())).first->second;
-		record.moved = findable.moved.connect([this, &findable](GameObject &obj, math::Vector3 position, float o)
+		record.moved = findable.moved.connect([this, &findable](GameObject & obj, math::Vector3 position, float o)
 		{
 			math::Vector3 location(findable.getLocation());
-
 			if (location.x != position.x || location.y != position.y || location.z != position.z)
 			{
 				this->onUnitMoved(findable);
@@ -99,10 +99,18 @@ namespace wowpp
 		Tile::UnitSet iterationCopyTile;
 
 		// Crash protection
-		if (topLeft[0] < 0) topLeft[0] = 0;
-		if (topLeft[1] < 0) topLeft[1] = 0;
-		if (bottomRight[0] >= m_grid.getSize()[0]) bottomRight[0] = m_grid.getSize()[0] - 1;
-		if (bottomRight[1] >= m_grid.getSize()[1]) bottomRight[1] = m_grid.getSize()[1] - 1;
+		if (topLeft[0] < 0) {
+			topLeft[0] = 0;
+		}
+		if (topLeft[1] < 0) {
+			topLeft[1] = 0;
+		}
+		if (bottomRight[0] >= m_grid.getSize()[0]) {
+			bottomRight[0] = m_grid.getSize()[0] - 1;
+		}
+		if (bottomRight[1] >= m_grid.getSize()[1]) {
+			bottomRight[1] = m_grid.getSize()[1] - 1;
+		}
 
 		for (auto x = topLeft[0]; x <= bottomRight[0]; ++x)
 		{
@@ -110,7 +118,7 @@ namespace wowpp
 			{
 				iterationCopyTile = getTile(TileIndex2D(x, y)).getUnits();
 
-				for (GameUnit * const element : iterationCopyTile.getElements())
+				for (GameUnit *const element : iterationCopyTile.getElements())
 				{
 					assert(element);
 					const math::Vector3 elementPos = getUnitPosition(*element);
@@ -134,7 +142,9 @@ namespace wowpp
 	TiledUnitFinder::Tile &TiledUnitFinder::getTile(const TileIndex2D &position)
 	{
 		auto &tile = m_grid(position[0], position[1]);
-		if (!tile) tile.reset(new Tile());
+		if (!tile) {
+			tile.reset(new Tile());
+		}
 
 		return *tile;
 	}
@@ -144,8 +154,8 @@ namespace wowpp
 		TileIndex2D output;
 
 		// Calculate grid coordinates
-		output[0] = static_cast<TileIndex>(floor((static_cast<double>(m_grid.width()) * 0.5 - (static_cast<double>(point[0]) / m_tileWidth))));
-		output[1] = static_cast<TileIndex>(floor((static_cast<double>(m_grid.height()) * 0.5 - (static_cast<double>(point[1]) / m_tileWidth))));
+		output[0] = static_cast<TileIndex>(floor((static_cast<double>(m_grid.width()) * 0.5 - floor(static_cast<double>(point[0]) / m_tileWidth))));
+		output[1] = static_cast<TileIndex>(floor((static_cast<double>(m_grid.height()) * 0.5 - floor(static_cast<double>(point[1]) / m_tileWidth))));
 
 		return output;
 	}

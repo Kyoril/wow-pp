@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,26 +10,26 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
+#include "pch.h"
 #include "tiled_unit_watcher.h"
 #include "tiled_unit_finder_tile.h"
 #include "game_unit.h"
-#include <cassert>
 #include "log/default_log_levels.h"
 
 namespace wowpp
 {
 	TiledUnitFinder::TiledUnitWatcher::TiledUnitWatcher(
-	        const Circle &shape,
-			TiledUnitFinder &finder)
+	    const Circle &shape,
+	    TiledUnitFinder &finder)
 		: UnitWatcher(shape)
 		, m_finder(finder)
 	{
@@ -37,7 +37,7 @@ namespace wowpp
 
 	TiledUnitFinder::TiledUnitWatcher::~TiledUnitWatcher()
 	{
-		for (const auto & conn : m_connections)
+		for (const auto &conn : m_connections)
 		{
 			conn.second.disconnect();
 		}
@@ -60,6 +60,8 @@ namespace wowpp
 				}
 			}
 		}
+
+		m_previousShape = getShape();
 	}
 
 	TileArea TiledUnitFinder::TiledUnitWatcher::getTileIndexArea(const Circle &shape) const
@@ -76,12 +78,12 @@ namespace wowpp
 		assert(m_connections.count(&tile) == 0);
 
 		auto connection = tile.moved->connect(
-			std::bind(&TiledUnitWatcher::onUnitMoved,
-			  this, std::placeholders::_1));
+		                      std::bind(&TiledUnitWatcher::onUnitMoved,
+		                                this, std::placeholders::_1));
 
 		m_connections[&tile] = connection;
 
-		for (GameUnit * const unit : tile.getUnits().getElements())
+		for (GameUnit *const unit : tile.getUnits().getElements())
 		{
 			math::Vector3 location(unit->getLocation());
 
@@ -103,14 +105,15 @@ namespace wowpp
 
 		{
 			const auto i = m_connections.find(&tile);
+			assert(i != m_connections.end());
+
 			i->second.disconnect();
 			m_connections.erase(i);
 		}
 
-		for (GameUnit * const unit : tile.getUnits().getElements())
+		for (GameUnit *const unit : tile.getUnits().getElements())
 		{
-			math::Vector3 location(unit->getLocation());
-
+			const math::Vector3 &location = unit->getLocation();
 			if (getShape().isPointInside(game::Point(location.x, location.y)))
 			{
 				if (visibilityChanged(*unit, false))
@@ -125,7 +128,7 @@ namespace wowpp
 
 	void TiledUnitFinder::TiledUnitWatcher::onUnitMoved(GameUnit &unit)
 	{
-		math::Vector3 location(unit.getLocation());
+		const math::Vector3 &location = unit.getLocation();
 
 		const bool isInside = getShape().isPointInside(game::Point(location.x, location.y));
 		visibilityChanged(unit, isInside);
@@ -133,15 +136,15 @@ namespace wowpp
 
 	bool TiledUnitFinder::TiledUnitWatcher::updateTile(Tile &tile)
 	{
-		for (GameUnit * const unit : tile.getUnits().getElements())
+		for (GameUnit *const unit : tile.getUnits().getElements())
 		{
 			math::Vector3 location(unit->getLocation());
 
 			const auto planarPos = game::Point(location.x, location.y);
-			const bool wasInside = m_previousShape.isPointInside(planarPos);
+			//const bool wasInside = m_previousShape.isPointInside(planarPos);
 			const bool isInside = getShape().isPointInside(planarPos);
 
-			if (wasInside != isInside)
+			//if (wasInside != isInside)
 			{
 				if (visibilityChanged(*unit, isInside))
 				{

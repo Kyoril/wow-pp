@@ -24,7 +24,6 @@
 #include "common/typedefs.h"
 #include "properties.h"
 #include <QDialog>
-#include <memory>
 
 // Forwards
 namespace Ui

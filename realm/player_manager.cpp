@@ -19,22 +19,24 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "player_manager.h"
 #include "player.h"
 #include "player_social.h"
 #include "player_group.h"
+#include "game/game_object.h"
 #include "binary_io/string_sink.h"
 #include "log/default_log_levels.h"
 #include "common/timer_queue.h"
-#include <algorithm>
-#include <cassert>
 
 namespace wowpp
 {
 	PlayerManager::PlayerManager(
 		TimerQueue &timers,
+		UInt16 realmID,
 	    size_t playerCapacity)
 		: m_timers(timers)
+		, m_realmID(realmID)
 		, m_playerCapacity(playerCapacity)
 	{
 	}
@@ -166,6 +168,15 @@ namespace wowpp
 		}
 
 		return nullptr;
+	}
+
+	void PlayerManager::getCrossRealmGUID(UInt64 & guid)
+	{
+		const UInt32 lowerPart = guidLowerPart(guid);
+		guid = createRealmGUID(
+			lowerPart,
+			m_realmID,
+			guid_type::Player);
 	}
 
 }

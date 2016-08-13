@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "realm.h"
 #include "realm_manager.h"
 #include "player_manager.h"
@@ -27,9 +28,6 @@
 #include "common/sha1.h"
 #include "log/default_log_levels.h"
 #include "database.h"
-#include <iostream>
-#include <cassert>
-#include <limits>
 
 using namespace std;
 
@@ -115,6 +113,7 @@ namespace wowpp
 
 		String internalName, password, visibleName, host;
 		NetPort port;
+		UInt16 realmID;
 
 		if (!realm_read::login(packet,
 			internalName,
@@ -125,10 +124,13 @@ namespace wowpp
 			std::numeric_limits<UInt8>::max(),
 			host,
 			std::numeric_limits<UInt8>::max(),
-			port))
+			port,
+			realmID))
 		{
 			return;
 		}
+
+		m_authed = false;
 
 		// Check for a realm using this name already
 		LoginResult result = login_result::AlreadyLoggedIn;
@@ -138,28 +140,37 @@ namespace wowpp
 			result = m_database.realmLogIn(m_realmID, internalName, password);
 			if (result == login_result::Success)
 			{
-				// Mark realm as online
-				if (!m_database.setRealmOnline(m_realmID, visibleName, host, port))
+				// Validate realm ID
+				if (m_realmID == realmID)
 				{
-					ELOG("Could not update realm in database!");
-					result = login_result::ServerError;
+					// Mark realm as online
+					if (!m_database.setRealmOnline(m_realmID, visibleName, host, port))
+					{
+						ELOG("Could not update realm in database!");
+						result = login_result::ServerError;
+					}
+					else
+					{
+						// Save internal name
+						m_name = internalName;
+
+						ILOG("Realm " << m_name << " successfully authenticated");
+
+						// Update entry values
+						m_entry.name = visibleName;
+						m_entry.port = port;
+						m_entry.address = host;
+						m_entry.flags = auth::realm_flags::None;
+						m_entry.icon = 0;
+
+						// Realm is authentificated
+						m_authed = true;
+					}
 				}
 				else
 				{
-					// Save internal name
-					m_name = internalName;
-
-					ILOG("Realm " << m_name << " successfully authenticated");
-
-					// Update entry values
-					m_entry.name = visibleName;
-					m_entry.port = port;
-					m_entry.address = host;
-					m_entry.flags = auth::realm_flags::None;
-					m_entry.icon = 0;
-
-					// Realm is authentificated
-					m_authed = true;
+					ELOG("Realm uses different realm id than setup. Realm uses " << realmID << ", but " << m_realmID << " is required!");
+					result = login_result::InvalidRealmID;
 				}
 			}
 		}

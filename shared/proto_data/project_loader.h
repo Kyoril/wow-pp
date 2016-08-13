@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -27,10 +27,6 @@
 #include "simple_file_format/sff_load_file.h"
 #include "log/default_log_levels.h"
 #include <google/protobuf/io/coded_stream.h>
-#include <functional>
-#include <istream>
-#include <vector>
-#include <boost/noncopyable.hpp>
 
 namespace wowpp
 {
@@ -56,7 +52,7 @@ namespace wowpp
 			{
 				bool success = true;
 
-				for (const LoadLaterFunction & function : loadLater)
+				for (const LoadLaterFunction &function : loadLater)
 				{
 					if (!function())
 					{
@@ -73,23 +69,24 @@ namespace wowpp
 		{
 			struct ManagerEntry
 			{
-				typedef std::function < bool(std::istream &file, const String &fileName, Context &context) > LoadFunction;
+				typedef std::function < bool(std::istream &file, const String &fileName, const String &hash, Context &context) > LoadFunction;
 
 				String name;
 				LoadFunction load;
 
 				template<typename T>
 				ManagerEntry(
-					const String &name,
-					T &manager
-					)
+				    const String &name,
+				    T &manager
+				)
 					: name(name)
 					, load([this, name, &manager](
-						std::istream &file,
-						const String &fileName,
-						Context &context) mutable -> bool
+					           std::istream & file,
+					           const String & fileName,
+								const String & hash,
+					           Context & context) mutable -> bool
 				{
-					return this->loadManagerFromFile(file, fileName, context, manager, name);
+					return this->loadManagerFromFile(file, fileName, hash, context, manager, name);
 				})
 				{
 				}
@@ -98,12 +95,14 @@ namespace wowpp
 
 				template<typename T>
 				static bool loadManagerFromFile(
-					std::istream &file,
-					const String &fileName,
-					Context &context,
-					T &manager,
-					const String &arrayName)
+				    std::istream &file,
+				    const String &fileName,
+					const String &hash,
+				    Context &context,
+				    T &manager,
+				    const String &arrayName)
 				{
+					manager.hashString = hash;
 					return manager.load(file);
 				}
 			};
@@ -130,8 +129,8 @@ namespace wowpp
 				}
 
 				const auto projectVersion =
-					fileTable.getInteger<unsigned>("version", 4);
-				if (projectVersion != 4)
+				    fileTable.getInteger<unsigned>("version", 6);
+				if (projectVersion != 6)
 				{
 					ELOG("Unsupported project version: " << projectVersion);
 					return false;
@@ -139,17 +138,29 @@ namespace wowpp
 
 				bool success = true;
 
-				for (const auto & manager : managers)
+				for (const auto &manager : managers)
 				{
 					String relativeFileName;
+					String hashString;
 
-					if (!fileTable.tryGetString(manager.name, relativeFileName))
+					auto *table = fileTable.getTable(manager.name);
+					if (!table)
+					{
+						success = false;
+
+						ELOG("File info of '" << manager.name << "' is missing in the project");
+						continue;
+					}
+
+					if (!table->tryGetString("file", relativeFileName))
 					{
 						success = false;
 
 						ELOG("File name of '" << manager.name << "' is missing in the project");
 						continue;
 					}
+
+					table->tryGetString("sha1", hashString);
 
 					const auto managerFile = directory.readFile(relativeFileName, false);
 					if (!managerFile)
@@ -159,7 +170,7 @@ namespace wowpp
 						ELOG("Could not open file '" << relativeFileName << "'");
 						continue;
 					}
-					if (!manager.load(*managerFile, relativeFileName, context))
+					if (!manager.load(*managerFile, relativeFileName, hashString, context))
 					{
 						ELOG("Could not load '" << manager.name << "'");
 						success = false;
@@ -167,15 +178,15 @@ namespace wowpp
 				}
 
 				return success &&
-					context.executeLoadLater();
+				       context.executeLoadLater();
 			}
 
 			template <class FileName>
 			static bool loadSffFile(
-				sff::read::tree::Table<StringIterator> &fileTable,
-				std::istream &source,
-				std::string &content,
-				const FileName &fileName)
+			    sff::read::tree::Table<StringIterator> &fileTable,
+			    std::istream &source,
+			    std::string &content,
+			    const FileName &fileName)
 			{
 				try
 				{
@@ -185,13 +196,13 @@ namespace wowpp
 				catch (const sff::read::ParseException<StringIterator> &exception)
 				{
 					const auto line = std::count<StringIterator>(
-						content.begin(),
-						exception.position.begin,
-						'\n');
+					                      content.begin(),
+					                      exception.position.begin,
+					                      '\n');
 
 					const String relevantLine(
-						exception.position.begin,
-						std::find<StringIterator>(exception.position.begin, content.end(), '\n'));
+					    exception.position.begin,
+					    std::find<StringIterator>(exception.position.begin, content.end(), '\n'));
 
 					ELOG("Error in SFF file " << fileName << ":" << (1 + line));
 					ELOG("Parser error: " << exception.what() << " at '" << relevantLine << "'");
