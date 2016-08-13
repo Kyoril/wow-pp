@@ -32,7 +32,7 @@
 #include "binary_io/writer.h"
 #include "binary_io/vector_sink.h"
 #include "game/game_character.h"
-#include "world/trade_data.h"
+//#include "world/trade_data.h"
 
 namespace wowpp
 {
