@@ -23,7 +23,6 @@
 
 #include "mpq_file.h"
 #include "math/vector3.h"
-#include <array>
 
 namespace wowpp
 {

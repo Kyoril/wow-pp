@@ -19,9 +19,9 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "action_dialog.h"
 #include "ui_action_dialog.h"
-#include "templates/basic_template.h"
 #include "editor_application.h"
 #include "trigger_helper.h"
 #include "text_dialog.h"
@@ -83,13 +83,22 @@ namespace wowpp
 				QString numString = link.right(link.size() - 5);
 				int index = numString.toInt();
 
-				if (m_action.data_size() <= index) m_action.mutable_data()->Resize(index + 1, 0);
-				
-				DataDialog dialog(m_app.getProject(), m_action.action(), index, m_action.data(index));
+				UInt32 data = (index < m_action.data_size() ? m_action.data(index) : 0);
+
+				DataDialog dialog(m_app.getProject(), m_action.action(), index, data);
 				auto result = dialog.exec();
 				if (result == QDialog::Accepted)
 				{
-					m_action.mutable_data()->Set(index, dialog.getData());
+					if (index < m_action.data_size())
+						m_action.mutable_data()->Set(index, dialog.getData());
+					else
+					{
+						// Add as many new data elements as needed
+						for (int i = m_action.data_size(); i < index + 1; ++i)
+						{
+							m_action.add_data((i == index ? dialog.getData() : 0));
+						}
+					}
 					m_ui->actionTextLabel->setText(getTriggerActionText(m_app.getProject(), m_action, true));
 				}
 			}
@@ -98,12 +107,27 @@ namespace wowpp
 				QString numString = link.right(link.size() - 5);
 				int index = numString.toInt();
 
-				if (m_action.texts_size() <= index) m_action.mutable_texts()->Reserve(index + 1);
-				TextDialog dialog(m_action.texts(index).c_str());
+				std::string text = (index < m_action.texts_size() ?
+					m_action.texts(index) : "");
+
+				TextDialog dialog(text.c_str());
 				auto result = dialog.exec();
 				if (result == QDialog::Accepted)
 				{
-					*m_action.mutable_texts()->Mutable(index) = dialog.getText().toStdString();
+					if (index < m_action.texts_size())
+						*m_action.mutable_texts()->Mutable(index) = dialog.getText().toStdString();
+					else
+					{
+						// Add as many new text elements as needed
+						for (int i = m_action.texts_size(); i < index + 1; ++i)
+						{
+							auto *added = m_action.add_texts();
+							if (i == index)
+							{
+								*added = dialog.getText().toStdString();
+							}
+						}
+					}
 					m_ui->actionTextLabel->setText(getTriggerActionText(m_app.getProject(), m_action, true));
 				}
 			}

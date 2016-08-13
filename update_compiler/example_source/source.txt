@@ -1,0 +1,9 @@
+version = 0
+root = (type = "fs", from = "data", to = "", entries =
+{
+	(type = "fs", from = "test.txt")
+	(type = "fs", from = "recursive")
+	(type = "if", condition = "WINDOWS", value =
+		(type = "fs", from = "windows-only.bat")
+	)
+})

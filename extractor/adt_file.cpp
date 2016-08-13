@@ -19,10 +19,10 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "adt_file.h"
 #include "log/default_log_levels.h"
 #include "math/matrix4.h"
-#include <iomanip>
 
 namespace wowpp
 {
@@ -31,6 +31,7 @@ namespace wowpp
 		, m_isValid(false)
 		, m_offsetBase(0)
 		, m_wmoFilenames(nullptr)
+		, m_m2Filenames(nullptr)
 	{
 	}
 
@@ -58,9 +59,9 @@ namespace wowpp
 		}
 
 		// MWMO informations
-		if (m_headerChunk.offsMapObejcts)
+		if (m_headerChunk.offsMapObjects)
 		{
-			const size_t mwmoOffset = m_offsetBase + m_headerChunk.offsMapObejcts;
+			const size_t mwmoOffset = m_offsetBase + m_headerChunk.offsMapObjects;
 
 			// We have an MWMO chunk, read it
 			m_source->seek(mwmoOffset);
@@ -78,9 +79,9 @@ namespace wowpp
 		}
 
 		// MWID chunk
-		if (m_headerChunk.offsMapObejctsIds)
+		if (m_headerChunk.offsMapObjectsIds)
 		{
-			const size_t mwidOffset = m_offsetBase + m_headerChunk.offsMapObejctsIds;
+			const size_t mwidOffset = m_offsetBase + m_headerChunk.offsMapObjectsIds;
 			m_source->seek(mwidOffset);
 
 			UInt32 cc = 0, size = 0;
@@ -131,6 +132,84 @@ namespace wowpp
 				else
 				{
 					WLOG("Number of MODF entries mismatch!");
+				}
+			}
+		}
+
+		// MMDX informations
+		if (m_headerChunk.offsModels)
+		{
+			const size_t mmdxOffset = m_offsetBase + m_headerChunk.offsModels;
+
+			// We have an MMDX chunk, read it
+			m_source->seek(mmdxOffset);
+
+			UInt32 cc = 0, size = 0;
+			m_reader >> io::read<UInt32>(cc) >> io::read<UInt32>(size);
+			if (cc == 0x4d4d4458)
+			{
+				m_m2Filenames = m_buffer.data() + m_source->position();
+			}
+			else
+			{
+				WLOG("Invalid MMDX chunk in ADT (cc mismatch)");
+			}
+		}
+		
+		// MMID chunk
+		if (m_headerChunk.offsModelsIds)
+		{
+			const size_t mmidOffset = m_offsetBase + m_headerChunk.offsModelsIds;
+			m_source->seek(mmidOffset);
+
+			UInt32 cc = 0, size = 0;
+			m_reader >> io::read<UInt32>(cc) >> io::read<UInt32>(size);
+			if (cc == 0x4d4d4944)
+			{
+				if (size % sizeof(UInt32) == 0)
+				{
+					if (m_m2Filenames != nullptr)
+					{
+						m_m2Index.resize(size / sizeof(UInt32), 0);
+						m_reader >> io::read_range(m_m2Index);
+					}
+					else
+					{
+						WLOG("Found MMID chunk but didn't find valid MMDX chunk in ADT!");
+					}
+				}
+				else
+				{
+					WLOG("Invalid number of MDX indices in MMID chunk of ADT");
+				}
+			}
+			else
+			{
+				WLOG("Invalid MMID chunk in ADT (cc mismatch)");
+			}
+		}
+
+		// M2 definitions
+		if (m_headerChunk.offsDoodsDef)
+		{
+			const size_t mddfOffset = m_offsetBase + m_headerChunk.offsDoodsDef;
+			m_source->seek(mddfOffset);
+
+			// Read as many MODF chunks as available
+			m_reader >> io::read<UInt32>(m_mddfChunk.fourcc) >> io::read<UInt32>(m_mddfChunk.size);
+			if (m_mddfChunk.fourcc == 0x4d444446)
+			{
+				if (m_mddfChunk.size % sizeof(MDDFChunk::Entry) == 0)
+				{
+					m_mddfChunk.entries.resize(m_mddfChunk.size / sizeof(MDDFChunk::Entry));
+					for (size_t i = 0; i < m_mddfChunk.entries.size(); ++i)
+					{
+						m_reader.readPOD(m_mddfChunk.entries[i]);
+					}
+				}
+				else
+				{
+					WLOG("Number of MDDF entries mismatch!");
 				}
 			}
 		}
@@ -188,6 +267,15 @@ namespace wowpp
 			return String();
 
 		const char *filename = m_wmoFilenames + (m_wmoIndex[index]);
+		return String(filename);
+	}
+
+	const String ADTFile::getMDX(UInt32 index) const
+	{
+		if (index > getMDXCount())
+			return String();
+
+		const char *filename = m_m2Filenames + (m_m2Index[index]);
 		return String(filename);
 	}
 

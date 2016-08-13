@@ -1,5 +1,12 @@
 <RCC>
   <qresource prefix="/">
+    <file>logo.png</file>
+    <file>ActiveQuestIcon.png</file>
+    <file>AvailableQuestIcon.png</file>
+    <file>rotationt.png</file>
+    <file>Scale.png</file>
+    <file>Select.png</file>
+    <file>transformation.png</file>
     <file>Trade_Engineering.png</file>
     <file>UI/branch-closed.png</file>
     <file>UI/branch-end.png</file>

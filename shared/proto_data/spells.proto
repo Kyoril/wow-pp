@@ -44,6 +44,8 @@ message SpellEffect {
 	optional uint32 triggerspell = 19;
 	optional uint32 summonunit = 20;
 	optional int32 pointspercombopoint = 21;
+	optional uint64 affectmask = 22;
+	optional float dmgmultiplier = 23 [default = 1.0];
 }
 
 message SpellEntry {
@@ -89,7 +91,16 @@ message SpellEntry {
 	optional uint64 categorycooldown = 40;
 	optional uint32 dispel = 41;
 	optional uint32 family = 42;
-	optional uint32 familyflags = 43;
+	optional uint64 familyflags = 43;
+	optional uint32 focusobject = 44;
+	optional uint32 procschool = 45;
+	optional uint32 procfamily = 46;
+	optional uint64 procfamilyflags = 47;
+	optional uint32 procexflags = 48;
+	optional float procpermin = 49;
+	optional uint32 proccooldown = 50;
+	optional uint32 proccustomflags = 51;
+	optional uint32 baseid = 52;
 }
 
 message Spells {

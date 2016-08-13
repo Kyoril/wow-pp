@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1148</width>
-    <height>760</height>
+    <width>1036</width>
+    <height>693</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -62,7 +62,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1148</width>
+     <width>1036</width>
      <height>21</height>
     </rect>
    </property>
@@ -97,6 +97,7 @@
     <property name="separatorsCollapsible">
      <bool>true</bool>
     </property>
+    <addaction name="actionDelete"/>
    </widget>
    <widget class="QMenu" name="menu_View">
     <property name="tearOffEnabled">
@@ -105,6 +106,7 @@
     <property name="title">
      <string>&amp;View</string>
     </property>
+    <addaction name="actionUnit_Palette"/>
    </widget>
    <widget class="QMenu" name="menu_Tools">
     <property name="tearOffEnabled">
@@ -143,11 +145,21 @@
     <addaction name="actionObjectEditor"/>
     <addaction name="actionTriggerEditor"/>
    </widget>
+   <widget class="QMenu" name="menuBookmarks">
+    <property name="title">
+     <string>Bookmarks</string>
+    </property>
+    <addaction name="actionNo_bookmarks"/>
+    <addaction name="separator"/>
+    <addaction name="actionAdd_Bookmark"/>
+    <addaction name="actionManage_Bookmarks"/>
+   </widget>
    <addaction name="menu_Project"/>
    <addaction name="menu_Edit"/>
    <addaction name="menu_View"/>
    <addaction name="menu_Tools"/>
    <addaction name="menuModules"/>
+   <addaction name="menuBookmarks"/>
    <addaction name="menu_Window"/>
    <addaction name="menu_Help"/>
   </widget>
@@ -197,6 +209,10 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionSelect"/>
+   <addaction name="actionTranslate"/>
+   <addaction name="actionRotate"/>
+   <addaction name="actionScale"/>
   </widget>
   <widget class="QToolBar" name="toolBar_3">
    <property name="windowTitle">
@@ -216,6 +232,63 @@
    </attribute>
    <addaction name="actionLoadMap"/>
    <addaction name="actionSave"/>
+  </widget>
+  <widget class="QDockWidget" name="unitPalette">
+   <property name="windowTitle">
+    <string>Unit Palette</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents">
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <item>
+      <widget class="QComboBox" name="comboBox">
+       <item>
+        <property name="text">
+         <string>None</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Units</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>World Objects</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="unitPaletteFilter">
+       <property name="placeholderText">
+        <string>Search</string>
+       </property>
+       <property name="clearButtonEnabled">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QTreeView" name="unitPaletteView">
+       <property name="alternatingRowColors">
+        <bool>true</bool>
+       </property>
+       <property name="indentation">
+        <number>0</number>
+       </property>
+       <property name="rootIsDecorated">
+        <bool>false</bool>
+       </property>
+       <attribute name="headerVisible">
+        <bool>false</bool>
+       </attribute>
+      </widget>
+     </item>
+    </layout>
+   </widget>
   </widget>
   <action name="actionText">
    <property name="text">
@@ -284,6 +357,87 @@
     <string>Trigger Editor</string>
    </property>
   </action>
+  <action name="actionDelete">
+   <property name="text">
+    <string>Remove selected object(s)</string>
+   </property>
+   <property name="shortcut">
+    <string>Del</string>
+   </property>
+  </action>
+  <action name="actionUnit_Palette">
+   <property name="text">
+    <string>Unit Palette</string>
+   </property>
+  </action>
+  <action name="actionNo_bookmarks">
+   <property name="text">
+    <string>No bookmarks</string>
+   </property>
+  </action>
+  <action name="actionAdd_Bookmark">
+   <property name="text">
+    <string>Add Current Location to Bookmarks</string>
+   </property>
+  </action>
+  <action name="actionManage_Bookmarks">
+   <property name="text">
+    <string>Manage Bookmarks</string>
+   </property>
+  </action>
+  <actiongroup name="Movement">
+   <action name="actionSelect">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+    <property name="icon">
+     <iconset resource="../qrc/editor.qrc">
+      <normaloff>:/Select.png</normaloff>:/Select.png</iconset>
+    </property>
+    <property name="text">
+     <string>Select</string>
+    </property>
+   </action>
+   <action name="actionTranslate">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="icon">
+     <iconset resource="../qrc/editor.qrc">
+      <normaloff>:/transformation.png</normaloff>:/transformation.png</iconset>
+    </property>
+    <property name="text">
+     <string>Translate</string>
+    </property>
+   </action>
+   <action name="actionRotate">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="icon">
+     <iconset resource="../qrc/editor.qrc">
+      <normaloff>:/rotationt.png</normaloff>:/rotationt.png</iconset>
+    </property>
+    <property name="text">
+     <string>Rotate</string>
+    </property>
+   </action>
+   <action name="actionScale">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="icon">
+     <iconset resource="../qrc/editor.qrc">
+      <normaloff>:/Scale.png</normaloff>:/Scale.png</iconset>
+    </property>
+    <property name="text">
+     <string>Scale</string>
+    </property>
+   </action>
+  </actiongroup>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>

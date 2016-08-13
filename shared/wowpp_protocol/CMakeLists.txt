@@ -24,6 +24,7 @@ cmake_minimum_required(VERSION 2.8)
 
 	# Collect source and header files
 	file(GLOB srcFiles "./*.cpp" "./*.h" "./*.hpp")
+	remove_pch_cpp(srcFiles "${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp")
 	file(GLOB networkFiles "./../network/*.h")
 	file(GLOB binaryIOFiles "./../binary_io/*.h")
 	
@@ -34,6 +35,7 @@ cmake_minimum_required(VERSION 2.8)
 	
 	# Add library project
 	add_library(wowpp_protocol ${srcFiles} ${networkFiles} ${binaryIOFiles})
+	add_precompiled_header(wowpp_protocol "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
 	
 	# Link shared libraries
 	target_link_libraries(wowpp_protocol common)

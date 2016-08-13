@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -30,6 +30,9 @@
 #include "shared/proto_data/units.pb.h"
 #include "shared/proto_data/spells.pb.h"
 #include "shared/proto_data/unit_loot.pb.h"
+#include "shared/proto_data/object_loot.pb.h"
+#include "shared/proto_data/item_loot.pb.h"
+#include "shared/proto_data/skinning_loot.pb.h"
 #include "shared/proto_data/maps.pb.h"
 #include "shared/proto_data/emotes.pb.h"
 #include "shared/proto_data/objects.pb.h"
@@ -41,6 +44,7 @@
 #include "shared/proto_data/zones.pb.h"
 #include "shared/proto_data/quests.pb.h"
 #include "shared/proto_data/items.pb.h"
+#include "shared/proto_data/item_sets.pb.h"
 #include "shared/proto_data/races.pb.h"
 #include "shared/proto_data/classes.pb.h"
 #include "shared/proto_data/levels.pb.h"
@@ -58,12 +62,16 @@ namespace wowpp
 		typedef TemplateManager<wowpp::proto::Maps, wowpp::proto::MapEntry> MapManager;
 		typedef TemplateManager<wowpp::proto::Emotes, wowpp::proto::EmoteEntry> EmoteManager;
 		typedef TemplateManager<wowpp::proto::UnitLoot, wowpp::proto::LootEntry> UnitLootManager;
+		typedef TemplateManager<wowpp::proto::ObjectLoot, wowpp::proto::LootEntry> ObjectLootManager;
+		typedef TemplateManager<wowpp::proto::ItemLoot, wowpp::proto::LootEntry> ItemLootManager;
+		typedef TemplateManager<wowpp::proto::SkinningLoot, wowpp::proto::LootEntry> SkinningLootManager;
 		typedef TemplateManager<wowpp::proto::Spells, wowpp::proto::SpellEntry> SpellManager;
 		typedef TemplateManager<wowpp::proto::Skills, wowpp::proto::SkillEntry> SkillManager;
 		typedef TemplateManager<wowpp::proto::Trainers, wowpp::proto::TrainerEntry> TrainerManager;
 		typedef TemplateManager<wowpp::proto::Vendors, wowpp::proto::VendorEntry> VendorManager;
 		typedef TemplateManager<wowpp::proto::Talents, wowpp::proto::TalentEntry> TalentManager;
 		typedef TemplateManager<wowpp::proto::Items, wowpp::proto::ItemEntry> ItemManager;
+		typedef TemplateManager<wowpp::proto::ItemSets, wowpp::proto::ItemSetEntry> ItemSetManager;
 		typedef TemplateManager<wowpp::proto::Classes, wowpp::proto::ClassEntry> ClassManager;
 		typedef TemplateManager<wowpp::proto::Races, wowpp::proto::RaceEntry> RaceManager;
 		typedef TemplateManager<wowpp::proto::Levels, wowpp::proto::LevelEntry> LevelManager;
@@ -84,12 +92,16 @@ namespace wowpp
 			MapManager maps;
 			EmoteManager emotes;
 			UnitLootManager unitLoot;
+			ObjectLootManager objectLoot;
+			ItemLootManager itemLoot;
+			SkinningLootManager skinningLoot;
 			SpellManager spells;
 			SkillManager skills;
 			TrainerManager trainers;
 			VendorManager vendors;
 			TalentManager talents;
 			ItemManager items;
+			ItemSetManager itemSets;
 			ClassManager classes;
 			RaceManager races;
 			LevelManager levels;
@@ -105,7 +117,7 @@ namespace wowpp
 
 			/// Loads the project.
 			bool load(
-				const String &directory)
+			    const String &directory)
 			{
 				ILOG("Loading data...");
 				auto loadStart = getCurrentTime();
@@ -135,11 +147,15 @@ namespace wowpp
 				managers.push_back(ManagerEntry("maps", maps));
 				managers.push_back(ManagerEntry("emotes", emotes));
 				managers.push_back(ManagerEntry("unit_loot", unitLoot));
+				managers.push_back(ManagerEntry("object_loot", objectLoot));
+				managers.push_back(ManagerEntry("item_loot", itemLoot));
+				managers.push_back(ManagerEntry("skinning_loot", skinningLoot));
 				managers.push_back(ManagerEntry("skills", skills));
 				managers.push_back(ManagerEntry("trainers", trainers));
 				managers.push_back(ManagerEntry("vendors", vendors));
 				managers.push_back(ManagerEntry("talents", talents));
 				managers.push_back(ManagerEntry("items", items));
+				managers.push_back(ManagerEntry("item_sets", itemSets));
 				managers.push_back(ManagerEntry("classes", classes));
 				managers.push_back(ManagerEntry("races", races));
 				managers.push_back(ManagerEntry("levels", levels));
@@ -153,9 +169,9 @@ namespace wowpp
 
 				virtual_dir::FileSystemReader virtualDirectory(realmDataPath);
 				if (!RealmProjectLoader::load(
-					virtualDirectory,
-					managers,
-					context))
+				            virtualDirectory,
+				            managers,
+				            context))
 				{
 					ELOG("Game data error count: " << errorCount << "+");
 					return false;
@@ -168,7 +184,7 @@ namespace wowpp
 			}
 			/// Saves the project.
 			bool save(
-				const String &directory)
+			    const String &directory)
 			{
 				ILOG("Saving data...");
 				auto saveStart = getCurrentTime();
@@ -186,11 +202,15 @@ namespace wowpp
 				managers.push_back(ManagerEntry("maps", "maps", maps));
 				managers.push_back(ManagerEntry("emotes", "emotes", emotes));
 				managers.push_back(ManagerEntry("unit_loot", "unit_loot", unitLoot));
+				managers.push_back(ManagerEntry("object_loot", "object_loot", objectLoot));
+				managers.push_back(ManagerEntry("item_loot", "item_loot", itemLoot));
+				managers.push_back(ManagerEntry("skinning_loot", "skinning_loot", skinningLoot));
 				managers.push_back(ManagerEntry("skills", "skills", skills));
 				managers.push_back(ManagerEntry("trainers", "trainers", trainers));
 				managers.push_back(ManagerEntry("vendors", "vendors", vendors));
 				managers.push_back(ManagerEntry("talents", "talents", talents));
 				managers.push_back(ManagerEntry("items", "items", items));
+				managers.push_back(ManagerEntry("item_sets", "item_sets", itemSets));
 				managers.push_back(ManagerEntry("classes", "classes", classes));
 				managers.push_back(ManagerEntry("races", "races", races));
 				managers.push_back(ManagerEntry("levels", "levels", levels));

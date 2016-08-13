@@ -19,27 +19,25 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "configuration.h"
 #include "simple_file_format/sff_write.h"
 #include "simple_file_format/sff_read_tree.h"
 #include "simple_file_format/sff_load_file.h"
 #include "common/constants.h"
 #include "log/default_log_levels.h"
-#include <fstream>
-#include <limits>
-#include <boost/regex.hpp>
-#include <boost/algorithm/string.hpp>
 #include "version.h"
 
 namespace wowpp
 {
-	const UInt32 Configuration::RealmConfigVersion = 0x05;
+	const UInt32 Configuration::RealmConfigVersion = 0x06;
 
 
 	Configuration::Configuration()
 		: loginPort(wowpp::constants::DefaultLoginRealmPort)
 		, maxPlayers((std::numeric_limits<decltype(maxPlayers)>::max)())
 		, loginAddress("127.0.0.1")
+		, realmID(1)
 		, worldPort(wowpp::constants::DefaultRealmWorldPort)
 		, maxWorlds((std::numeric_limits<decltype(maxPlayers)>::max)())
 		, internalName("realm_01")
@@ -102,13 +100,14 @@ namespace wowpp
 			{
 				file.close();
 
-				if (save(fileName))
+				if (save(fileName + ".updated"))
 				{
-					ILOG("Saved updated settings with default values as " << fileName);
+					ILOG("Saved updated settings with default values as " << fileName << ".updated");
+					ILOG("Please insert values from the old setting file manually and rename the file.");
 				}
 				else
 				{
-					ELOG("Could not save updated default settings as " << fileName);
+					ELOG("Could not save updated default settings as " << fileName << ".updated");
 				}
 
 				return false;
@@ -151,6 +150,7 @@ namespace wowpp
 				loginPort = realmManager->getInteger("port", loginPort);
 				internalName = realmManager->getString("internalName", internalName);
 				password = realmManager->getString("password", password);
+				realmID = realmManager->getInteger("realmID", realmID);
 			}
 
 			if (const Table *const log = global.getTable("log"))
@@ -184,8 +184,14 @@ namespace wowpp
 					// Version
 					if (token == "$version")
 					{
+						String commit = GitCommit;
+						if (commit.size() > 7)
+						{
+							commit = commit.substr(0, 6);
+						}
+
 						std::stringstream strm;
-						strm << Major << "." << Minor << "." << Build << "." << Revisision << " (" << GitCommit << ")";
+						strm << Major << "." << Minor << "." << Build << "." << Revisision << " (Branch " << GitBranch << ": " << commit << ")";
 						result.append(strm.str());
 					}
 					else if (token == "$lastchange")
@@ -233,6 +239,8 @@ namespace wowpp
 		global.addKey("version", RealmConfigVersion);
 		global.writer.newLine();
 
+		global.writer.lineComment("This block configures the MySQL Database connection. The database is used to");
+		global.writer.lineComment("save and load character data and groups.");
 		{
 			sff::write::Table<Char> mysqlDatabaseTable(global, "mysqlDatabase", sff::write::MultiLine);
 			mysqlDatabaseTable.addKey("port", mysqlPort);
@@ -245,6 +253,8 @@ namespace wowpp
 
 		global.writer.newLine();
 
+		global.writer.lineComment("This block is used to configure the realms web interface. The web interface");
+		global.writer.lineComment("can be used to execute admin commands, like teleport.");
 		{
 			sff::write::Table<Char> mysqlDatabaseTable(global, "webServer", sff::write::MultiLine);
 			mysqlDatabaseTable.addKey("port", webPort);
@@ -256,6 +266,8 @@ namespace wowpp
 
 		global.writer.newLine();
 
+		global.writer.lineComment("This block configures the world server. The realm listens to the specified");
+		global.writer.lineComment("port for incoming world node connections.");
 		{
 			sff::write::Table<Char> worldManager(global, "worldManager", sff::write::MultiLine);
 			worldManager.addKey("port", worldPort);
@@ -265,6 +277,9 @@ namespace wowpp
 
 		global.writer.newLine();
 
+		global.writer.lineComment("This block configures the player server. The realm listens to the specified");
+		global.writer.lineComment("port for incoming player connections. host is the ip address where the WoW");
+		global.writer.lineComment("client will connect to (not the bind ip!).");
 		{
 			sff::write::Table<Char> playerManager(global, "playerManager", sff::write::MultiLine);
 			playerManager.addKey("host", playerHost);
@@ -276,12 +291,14 @@ namespace wowpp
 
 		global.writer.newLine();
 
+		global.writer.lineComment("This block configures the ");
 		{
 			sff::write::Table<Char> loginConnector(global, "loginConnector", sff::write::MultiLine);
 			loginConnector.addKey("address", loginAddress);
 			loginConnector.addKey("port", loginPort);
 			loginConnector.addKey("internalName", internalName);
 			loginConnector.addKey("password", password);
+			loginConnector.addKey("realmID", realmID);
 			loginConnector.finish();
 		}
 

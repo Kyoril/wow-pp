@@ -23,7 +23,6 @@
 
 #include "mpq_file.h"
 #include "math/vector3.h"
-#include <array>
 
 namespace wowpp
 {
@@ -58,8 +57,8 @@ namespace wowpp
 			UInt32 offsTex;            // MTEX
 			UInt32 offsModels;         // MMDX
 			UInt32 offsModelsIds;      // MMID
-			UInt32 offsMapObejcts;     // MWMO
-			UInt32 offsMapObejctsIds;  // MWID
+			UInt32 offsMapObjects;     // MWMO
+			UInt32 offsMapObjectsIds;  // MWID
 			UInt32 offsDoodsDef;       // MDDF
 			UInt32 offsObjectsDef;     // MODF
 			UInt32 offsMFBO;           // MFBO
@@ -79,8 +78,8 @@ namespace wowpp
 				, offsTex(0)
 				, offsModels(0)
 				, offsModelsIds(0)
-				, offsMapObejcts(0)
-				, offsMapObejctsIds(0)
+				, offsMapObjects(0)
+				, offsMapObjectsIds(0)
 				, offsDoodsDef(0)
 				, offsObjectsDef(0)
 				, offsMFBO(0)
@@ -297,6 +296,39 @@ namespace wowpp
 			}
 		};
 
+		/// 
+		struct MDDFChunk final
+		{
+			UInt32 fourcc;
+			UInt32 size;
+
+			struct Entry final
+			{
+				UInt32 mmidEntry;
+				UInt32 uniqueId;
+				math::Vector3 position;
+				math::Vector3 rotation;
+				UInt16 scale;				// 1024 = 1.0f
+				UInt16 flags;
+
+				Entry()
+					: mmidEntry(0)
+					, uniqueId(0)
+					, flags(0)
+					, scale(1024)
+				{
+				}
+			};
+
+			std::vector<Entry> entries;
+
+			MDDFChunk()
+				: fourcc(0)
+				, size(0)
+			{
+			}
+		};
+
 	public:
 
 		/// @copydoc MPQFile::MPQFile()
@@ -326,11 +358,18 @@ namespace wowpp
 		const MCLQChunk &getMCLQChunk(UInt32 index) const { return m_liquidChunks[index]; }
 		/// 
 		const MODFChunk &getMODFChunk() const { return m_modfChunk; }
+		/// 
+		const MDDFChunk &getMDDFChunk() const { return m_mddfChunk; }
 		/// Gets the number of WMO files used in this ADT.
 		const UInt32 getWMOCount() const { return m_wmoIndex.size(); }
 		/// Gets the file name of a WMO file used in this ADT by it's index.
 		/// @param index The index to look for, where 0 <= index < getWMOCount()
 		const String getWMO(UInt32 index) const;
+		/// Gets the number of MDX files used in this ADT.
+		const UInt32 getMDXCount() const { return m_m2Index.size(); }
+		/// Gets the file name of a MDX file used in this ADT by it's index.
+		/// @param index The index to look for, where 0 <= index < getMDXCount()
+		const String getMDX(UInt32 index) const;
 
 	private:
 
@@ -344,6 +383,9 @@ namespace wowpp
 		std::array<MCLQChunk, 16 * 16> m_liquidChunks;
 		const char *m_wmoFilenames;
 		std::vector<UInt32> m_wmoIndex;
+		const char *m_m2Filenames;
+		std::vector<UInt32> m_m2Index;
 		MODFChunk m_modfChunk;
+		MDDFChunk m_mddfChunk;
 	};
 }

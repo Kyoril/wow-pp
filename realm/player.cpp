@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "player.h"
 #include "player_manager.h"
 #include "configuration.h"
@@ -36,11 +37,8 @@
 #include "proto_data/project.h"
 #include "common/utilities.h"
 #include "game/game_item.h"
-#include "boost/algorithm/string.hpp"
 #include "player_group.h"
 #include "game/constants.h"
-#include <cassert>
-#include <limits>
 
 using namespace std;
 using namespace wowpp::game;
@@ -64,6 +62,7 @@ namespace wowpp
 		, m_transferMap(0)
 		, m_transfer(math::Vector3(0.0f, 0.0f, 0.0f))
 		, m_transferO(0.0f)
+		, m_nextWhoRequest(0)
 	{
 		// Randomize seed
 		std::uniform_int_distribution<UInt32> dist;
@@ -198,6 +197,7 @@ namespace wowpp
 			auto world = m_worldManager.getWorldByInstanceId(m_instanceId);
 			if (world)
 			{
+				ILOG("Sent leave world instance packet");
 				world->leaveWorldInstance(m_characterId, pp::world_realm::world_left_reason::Disconnect);
 				// We don't destroy this player instance yet, as we are still connected to a world node: This world node needs to
 				// send the character's new data back to us, so that we can save it.
@@ -327,7 +327,10 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(VoiceSessionEnable, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(CharRename, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(QuestQuery, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(Who, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(PlayedTime, game::session_status::LoggedIn)
 #undef WOWPP_HANDLE_PACKET
+#undef QUOTE
 
 			default:
 			{
@@ -461,7 +464,7 @@ namespace wowpp
 
 		// Item data
 		UInt8 bagSlot = 0;
-		std::vector<pp::world_realm::ItemData> items;
+		std::vector<ItemData> items;
 
 		// Add initial items
 		auto it1 = race->initialitems().find(character.class_);
@@ -583,12 +586,12 @@ namespace wowpp
 
 				if (slot != 0xffff)
 				{
-					pp::world_realm::ItemData itemData;
+					ItemData itemData;
 					itemData.entry = item->id();
 					itemData.durability = item->durability();
-					itemData.slot = slot;
+					itemData.slot = slot | 0xFF00;
 					itemData.stackCount = 1;
-					items.emplace_back(std::move(itemData));
+					items.push_back(std::move(itemData));
 				}
 			}
 		}
@@ -726,7 +729,6 @@ namespace wowpp
 
 		// Store character id
 		m_characterId = characterId;
-		m_itemData.clear();
 
 		// Write something to the log just for informations
 		ILOG("Player " << m_accountName << " tries to enter the world with character 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << m_characterId);
@@ -735,13 +737,31 @@ namespace wowpp
 		std::shared_ptr<GameCharacter> character(new GameCharacter(m_project, m_manager.getTimers()));
 		character->initialize();
 		character->setGuid(createRealmGUID(characterId, m_loginConnector.getRealmID(), guid_type::Player));
-		if (!m_database.getGameCharacter(guidLowerPart(characterId), *character, m_itemData))
+		if (!m_database.getGameCharacter(guidLowerPart(characterId), *character))
 		{
 			// Send error packet
 			WLOG("Player login failed: Could not load character " << characterId);
 			sendPacket(
 				std::bind(game::server_write::charLoginFailed, std::placeholders::_1, game::response_code::CharLoginNoCharacter));
 			return;
+		}
+
+		// Restore character group if possible
+		UInt32 groupInstanceId = std::numeric_limits<UInt32>::max();
+		if (character->getGroupId() != 0)
+		{
+			auto groupIt = PlayerGroup::GroupsById.find(character->getGroupId());
+			if (groupIt != PlayerGroup::GroupsById.end())
+			{
+				// Apply character group
+				m_group = groupIt->second;
+				groupInstanceId = m_group->instanceBindingForMap(charEntry->mapId);
+			}
+			else
+			{
+				WLOG("Failed to restore character group");
+				character->setGroupId(0);
+			}
 		}
 
 		// We found the character - now we need to look for a world node
@@ -776,11 +796,8 @@ namespace wowpp
 		m_actionButtons.clear();
 		m_database.getCharacterActionButtons(m_characterId, m_actionButtons);
 
-		//TODO Map found - check if player is member of a group and if this instance
-		// is valid on the world node and if not, transfer player
-
 		// There should be an instance
-		worldNode->enterWorldInstance(charEntry->id, std::numeric_limits<UInt32>::max(), *m_gameCharacter, m_itemData);
+		worldNode->enterWorldInstance(charEntry->id, groupInstanceId, *m_gameCharacter);
 	}
 
 	void Player::worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, math::Vector3 location, float o)
@@ -902,37 +919,6 @@ namespace wowpp
 
 	void Player::worldInstanceLeft(World &world, UInt32 instanceId, pp::world_realm::WorldLeftReason reason)
 	{
-		// Display world instance left reason
-		String reasonString = "UNKNOWN";
-		switch (reason)
-		{
-			case pp::world_realm::world_left_reason::Logout:
-			{
-				reasonString = "LOGOUT";
-				break;
-			}
-
-			case pp::world_realm::world_left_reason::Teleport:
-			{
-				reasonString = "TELEPORT";
-				break;
-			}
-
-			case pp::world_realm::world_left_reason::Disconnect:
-			{
-				reasonString = "DISCONNECT";
-				break;
-			}
-
-			default:
-			{
-				break;
-			}
-		}
-
-		// Write something to the log just for informations
-		ILOG("Player " << m_accountName << " left world instance " << m_instanceId << " - reason: " << reasonString);
-
 		// We no longer care about the world node
 		m_worldDisconnected.disconnect();
 		m_worldNode = nullptr;
@@ -994,7 +980,20 @@ namespace wowpp
 
 			case pp::world_realm::world_left_reason::Disconnect:
 			{
+				// If we are in a group, notify others
+				if (m_group && m_gameCharacter)
+				{
+					std::vector<UInt64> exclude;
+					exclude.push_back(m_gameCharacter->getGuid());
+
+					// Broadcast disconnect
+					m_group->broadcastPacket(
+						std::bind(game::server_write::partyMemberStatsFullOffline, std::placeholders::_1, m_gameCharacter->getGuid()), &exclude);
+					m_group.reset();
+				}
+
 				// Finally destroy this instance
+				ILOG("Left world instance because of a disconnect");
 				destroy();
 				break;
 			}
@@ -1049,60 +1048,45 @@ namespace wowpp
 			return add_item_result::Unknown;
 		}
 
-		if (amount > itemEntry->maxstack()) amount = itemEntry->maxstack();
+		std::vector<ItemData> modifiedItems;
 
-		// 
-		std::map<UInt16, pp::world_realm::ItemData> modifiedItems;
-
-		// Iterate all available items
-		LinearSet<UInt16> usedSlots;
-		for (auto &item : m_itemData)
-		{
-			if (item.slot >= player_inventory_pack_slots::Start &&
-				item.slot < player_inventory_pack_slots::End)
-			{
-				usedSlots.add(item.slot);
-				if (item.entry == itemId &&
-					itemEntry->maxstack() > 1 &&
-					item.stackCount <= itemEntry->maxstack() - amount)
-				{
-					item.stackCount += amount;
-					amount = 0;
-
-					modifiedItems[item.slot] = item;
-					break;
-				}
-			}
-		}
-
-		if (amount > 0)
-		{
-			for (UInt16 i = player_inventory_pack_slots::Start; i < player_inventory_pack_slots::End; ++i)
-			{
-				if (!usedSlots.contains(i))
-				{
-					pp::world_realm::ItemData data;
-					data.contained = 0;
-					data.creator = 0;
-					data.durability = itemEntry->durability();
-					data.entry = itemId;
-					data.randomPropertyIndex = 0;
-					data.randomSuffixIndex = 0;
-					data.slot = i;
-					data.stackCount = amount;
-					modifiedItems[i] = data;
-					m_itemData.emplace_back(std::move(data));
-					amount = 0;
-					break;
-				}
-			}
-		}
+		ItemData data;
+		data.contained = m_gameCharacter->getGuid();
+		data.creator = 0;
+		data.durability = itemEntry->durability();
+		data.entry = itemId;
+		data.randomPropertyIndex = 0;
+		data.randomSuffixIndex = 0;
+		data.slot = 0;
+		data.stackCount = amount;
+		modifiedItems.push_back(std::move(data));
 
 		// Notify world node about this
-		m_worldNode->itemData(m_gameCharacter->getGuid(), std::cref(modifiedItems));
+		m_worldNode->itemData(m_gameCharacter->getGuid(), modifiedItems);
 	
 		// Save items
 		return add_item_result::Success;
+	}
+
+	LearnSpellResult Player::learnSpell(const proto::SpellEntry & spell)
+	{
+		if (!m_gameCharacter)
+		{
+			return learn_spell_result::Unknown;
+		}
+
+		if (m_gameCharacter->hasSpell(spell.id()))
+		{
+			return learn_spell_result::AlreadyLearned;
+		}
+
+		if (!m_worldNode)
+		{
+			return learn_spell_result::Unknown;
+		}
+
+		m_worldNode->characterLearnedSpell(m_gameCharacter->getGuid(), spell.id());
+		return learn_spell_result::Success;
 	}
 
 	void Player::handleNameQuery(game::IncomingPacket &packet)
@@ -1695,8 +1679,11 @@ namespace wowpp
 		if (!m_group)
 		{
 			// Create the group
-			m_group = std::make_shared<PlayerGroup>(m_groupIdGenerator.generateId(), m_manager);
+			m_group = std::make_shared<PlayerGroup>(m_groupIdGenerator.generateId(), m_manager, m_database);
 			m_group->create(*m_gameCharacter);
+
+			// Save character group id
+			m_gameCharacter->setGroupId(m_group->getId());
 
 			// Send to world node
 			m_worldNode->characterGroupChanged(m_gameCharacter->getGuid(), m_group->getId());
@@ -1749,6 +1736,8 @@ namespace wowpp
 			// TODO...
 			return;
 		}
+
+		m_gameCharacter->setGroupId(m_group->getId());
 
 		// Send to world node
 		m_worldNode->characterGroupChanged(m_gameCharacter->getGuid(), m_group->getId());
@@ -1838,6 +1827,15 @@ namespace wowpp
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::NotInYourParty));
+			return;
+		}
+
+		// Raid assistants may not kick the leader
+		if (m_gameCharacter->getGuid() != m_group->getLeader() &&
+			m_group->getLeader() == memberGUID)
+		{
+			sendPacket(
+				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::YouNotLeader));
 			return;
 		}
 
@@ -1977,6 +1975,19 @@ namespace wowpp
 			std::bind(game::server_write::charEnum, std::placeholders::_1, std::cref(m_characters)));
 	}
 
+	void Player::spawnedNotification()
+	{
+		if (m_group)
+		{
+			m_group->sendUpdate();
+
+			std::vector<UInt64> exclude;
+			exclude.push_back(m_gameCharacter->getGuid());
+			m_group->broadcastPacket(
+				std::bind(game::server_write::partyMemberStatsFull, std::placeholders::_1, std::cref(*m_gameCharacter)), &exclude);
+		}
+	}
+
 	void Player::handleRequestPartyMemberStats(game::IncomingPacket &packet)
 	{
 		UInt64 guid = 0;
@@ -2001,11 +2012,27 @@ namespace wowpp
 			std::bind(game::server_write::partyMemberStatsFull, std::placeholders::_1, std::cref(*m_gameCharacter)));
 	}
 
-	void Player::initializeTransfer(UInt32 map, math::Vector3 location, float o)
+	bool Player::initializeTransfer(UInt32 map, math::Vector3 location, float o, bool shouldLeaveNode/* = false*/)
 	{
+		auto *world = m_worldManager.getWorldByInstanceId(m_instanceId);
+		if (shouldLeaveNode && !world)
+		{
+			return false;
+		}
+
 		m_transferMap = map;
 		m_transfer = location;
 		m_transferO = o;
+
+		if (shouldLeaveNode)
+		{
+			// Send transfer pending state. This will show up the loading screen at the client side
+			sendPacket(
+				std::bind(game::server_write::transferPending, std::placeholders::_1, map, 0, 0));
+			world->leaveWorldInstance(m_characterId, pp::world_realm::world_left_reason::Teleport);
+		}
+
+		return true;
 	}
 
 	void Player::commitTransfer()
@@ -2020,7 +2047,7 @@ namespace wowpp
 		sendPacket(
 			std::bind(game::server_write::newWorld, std::placeholders::_1, m_transferMap, m_transfer, m_transferO));
 	}
-
+	
 	void Player::handleMoveWorldPortAck(game::IncomingPacket &packet)
 	{
 		if (m_transferMap == 0 && m_transfer.x == 0.0f && m_transfer.y == 0.0f && m_transfer.z == 0.0f && m_transferO == 0.0f)
@@ -2065,7 +2092,7 @@ namespace wowpp
 
 		// There should be an instance
 		m_worldNode = world;
-		m_worldNode->enterWorldInstance(m_characterId, groupInstanceId, *m_gameCharacter, m_itemData);
+		m_worldNode->enterWorldInstance(m_characterId, groupInstanceId, *m_gameCharacter);
 
 		// Reset transfer data
 		m_transferMap = 0;
@@ -2406,4 +2433,185 @@ namespace wowpp
 			std::bind(game::server_write::questQueryResponse, std::placeholders::_1, std::cref(*quest)));
 	}
 
+	void Player::handleWho(game::IncomingPacket & packet)
+	{
+		// Timer protection
+		GameTime now = getCurrentTime();
+		if (now < m_nextWhoRequest)
+		{
+			// Don't do that yet
+			return;
+		}
+
+		// Allow one request every 6 seconds
+		m_nextWhoRequest = now + constants::OneSecond * 6;
+
+		// Read request packet
+		game::WhoListRequest request;
+		if (!game::client_read::who(packet, request))
+		{
+			ILOG("Who Request does not match!");
+			return;
+		}
+
+		// Check if the packet can be valid, as WoW allows a maximum of 10 zones and 4 strings
+		// per request.
+		if (request.zoneids.size() > 10 || request.strings.size() > 4)
+		{
+			return;
+		}
+
+		if (!m_gameCharacter)
+			return;
+
+		// Used for response packet
+		game::WhoResponse response;
+		const bool is_this_Alliance = ((game::race::Alliance & (1 << (m_gameCharacter->getRace() - 1))) == (1 << (m_gameCharacter->getRace() - 1)));
+
+		// Iterate through all connected players
+		for (auto &player : m_manager.getPlayers())
+		{
+			// Maximum of 50 allowed characters
+			if (response.entries.size() >= 50)
+			{
+				// STOP the loop
+				break;
+			}
+
+			// Check if the player has a valid game character
+			auto *character = player->getGameCharacter();
+			if (!character)
+			{
+				continue;
+			}
+
+			//is this player we are looking for alliance??
+			const bool isAlliance = ((game::race::Alliance & (1 << (character->getRace() - 1))) == (1 << (character->getRace() - 1)));
+			if(is_this_Alliance != isAlliance)
+			{
+				//cant find players that are not same faction
+				continue;
+			}
+
+			// Check if that game character is currently in a world
+			if (!player->getWorldNode())
+			{
+				continue;
+			}
+
+			// Check if levels match, first, as this is the least expensive thing to check
+			const UInt32 level = character->getLevel();
+			if (level < request.level_min || level > request.level_max)
+			{
+				continue;
+			}
+
+			//search by racemask
+			if (0 != request.racemask)
+			{
+				UInt32 race = character->getRace();
+				if (!(request.racemask & (1 << race)))
+				{
+					continue;
+				}
+			}
+
+			//search by classmask
+			if (0 != request.classmask)
+			{
+				UInt32 _class = character->getClass();
+				if (!(request.classmask & (1 << _class)))
+				{
+					continue;
+				}
+			}
+
+			//search by zoneID
+			if(!request.zoneids.empty())
+			{
+				bool found_by_zoneid = false;
+
+				for (auto zone : request.zoneids)
+				{
+					if(zone == character->getZone())
+					{
+						found_by_zoneid = true;
+						break;
+					}
+				}
+
+				if(found_by_zoneid == false)
+				{
+					continue;
+				}
+			}
+
+			// Convert character name to lower case string
+			String charNameLowered = character->getName();
+			std::transform(charNameLowered.begin(), charNameLowered.end(), charNameLowered.begin(), ::tolower);
+
+			// Validate character name
+			if (!request.player_name.empty())
+			{
+				String searchLowered = request.player_name;
+				std::transform(searchLowered.begin(), searchLowered.end(), searchLowered.begin(), ::tolower);
+
+				// Part not found
+				if (charNameLowered.find(searchLowered) == String::npos)
+				{
+					continue;
+				}
+			}
+
+			// Validate strings
+			bool passedStringTest = request.strings.empty();
+			for (const auto &string : request.strings)
+			{
+				String searchLowered = string;
+				std::transform(searchLowered.begin(), searchLowered.end(), searchLowered.begin(), ::tolower);
+				
+				// TODO: These strings also have to be validated against the guild name.
+				// the players name
+
+				//get zone name
+				auto zone = m_project.zones.getById(character->getZone());
+				auto zone_name = zone->name();
+				std::transform(zone_name.begin(), zone_name.end(), zone_name.begin(), ::tolower);
+
+				if ((charNameLowered.find(searchLowered) != String::npos) || (zone_name.find(searchLowered) != String::npos))
+				{
+					passedStringTest = true;
+					break;
+				}
+
+
+			}
+
+			// Skip this character if not passed string test
+			if (!passedStringTest)
+			{
+				continue;
+			}
+
+			// Add new response entry, as all checks above were fulfilled
+			WhoResponseEntry entry(*character);
+			response.entries.push_back(std::move(entry));
+		}
+
+		// Match Count is request count right now (TODO)
+		sendPacket(
+			std::bind(game::server_write::whoRequestResponse, std::placeholders::_1, response, response.entries.size()));
+
+	}
+
+	void Player::handlePlayedTime(game::IncomingPacket & packet)
+	{
+		WLOG("TODO: Client requested characters play time");
+		sendPacket(
+			std::bind(game::server_write::playedTime, std::placeholders::_1,
+				0,	// Total time played in seconds
+				0	// Time on characters level in seconds
+			)
+		);
+	}
 }

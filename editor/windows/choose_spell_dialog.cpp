@@ -19,9 +19,9 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "choose_spell_dialog.h"
 #include "ui_choose_spell_dialog.h"
-#include "templates/basic_template.h"
 #include "editor_application.h"
 
 namespace wowpp

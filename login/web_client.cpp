@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "web_client.h"
 #include "web_service.h"
 #include "common/clock.h"
@@ -28,7 +29,6 @@
 #include "game/game_character.h"
 #include "log/default_log_levels.h"
 #include "database.h"
-#include <boost/algorithm/string.hpp>
 
 namespace wowpp
 {
@@ -195,6 +195,45 @@ namespace wowpp
 							break;
 						}
 					}
+
+					// Succeeded
+					sendXmlAnswer(response, "<status>SUCCESS</status>");
+				}
+				else if (url == "/ban-account")
+				{
+					// Handle required data
+					UInt32 accountId = 0;
+
+					for (auto &arg : arguments)
+					{
+						auto delimiterPos = arg.find('=');
+						String argName = arg.substr(0, delimiterPos);
+						String argValue = arg.substr(delimiterPos + 1);
+
+						if (argName == "id")
+						{
+							accountId = atoi(argValue.c_str());
+						}
+					}
+
+					if (accountId == 0)
+					{
+						sendXmlAnswer(response, "<status>MISSING_DATA</status>");
+						break;
+					}
+
+					auto &playerMgr = static_cast<WebService &>(this->getService()).getPlayerManager();
+					auto *player = playerMgr.getPlayerByAccountID(accountId);
+					if (player)
+					{
+						// Account is currently logged in, so disconnect him
+						playerMgr.playerDisconnected(*player);
+						break;
+					}
+
+					// Check if account exists
+					auto &database = static_cast<WebService &>(this->getService()).getDatabase();
+					// TODO
 
 					// Succeeded
 					sendXmlAnswer(response, "<status>SUCCESS</status>");

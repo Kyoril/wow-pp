@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,15 +10,15 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -29,17 +29,12 @@
 #include "binary_io/string_sink.h"
 #include "binary_io/memory_source.h"
 #include "game_protocol/game_crypt.h"
-#include <boost/asio.hpp>
-#include <memory>
-#include <algorithm>
-#include <array>
-#include <cassert>
 
 namespace wowpp
 {
 	namespace game
 	{
-		/// 
+		///
 		template<class P, class MySocket = boost::asio::ip::tcp::socket>
 		class CryptedConnection
 			: public AbstractConnection<P>
@@ -152,7 +147,9 @@ namespace wowpp
 				m_sendBuffer(data.data(), data.size());
 			}
 
-			MySocket &getSocket() { return *m_socket; }
+			MySocket &getSocket() {
+				return *m_socket;
+			}
 
 			static std::shared_ptr<CryptedConnection> create(boost::asio::io_service &service, Listener *listener)
 			{
@@ -179,9 +176,9 @@ namespace wowpp
 				assert(!m_sending.empty());
 
 				boost::asio::async_write(
-					*m_socket,
-					boost::asio::buffer(m_sending),
-					std::bind(&CryptedConnection<P, Socket>::sent, this->shared_from_this(), std::placeholders::_1));
+				    *m_socket,
+				    boost::asio::buffer(m_sending),
+				    std::bind(&CryptedConnection<P, Socket>::sent, this->shared_from_this(), std::placeholders::_1));
 			}
 
 			void sent(const boost::system::error_code &error)
@@ -199,8 +196,8 @@ namespace wowpp
 			void beginReceive()
 			{
 				m_socket->async_read_some(
-					boost::asio::buffer(m_receiving.data(), m_receiving.size()),
-					std::bind(&CryptedConnection<P, Socket>::received, this->shared_from_this(), std::placeholders::_2));
+				    boost::asio::buffer(m_receiving.data(), m_receiving.size()),
+				    std::bind(&CryptedConnection<P, Socket>::received, this->shared_from_this(), std::placeholders::_2));
 			}
 
 			void received(std::size_t size)
@@ -214,12 +211,12 @@ namespace wowpp
 				}
 
 				m_received.append(
-					m_receiving.begin(),
-					m_receiving.begin() + size);
+				    m_receiving.begin(),
+				    m_receiving.begin() + size);
 
 				m_isParsingIncomingData = true;
 				AssignOnExit<bool> isParsingIncomingDataResetter(
-					m_isParsingIncomingData, false);
+				    m_isParsingIncomingData, false);
 
 				bool nextPacket;
 				std::size_t parsedUntil = 0;
@@ -231,15 +228,15 @@ namespace wowpp
 
 					// Check if we have received a complete header
 					if (m_decryptedUntil <= parsedUntil &&
-						availableSize >= game::Crypt::CryptedReceiveLength)
+					        availableSize >= game::Crypt::CryptedReceiveLength)
 					{
-						m_crypt.decryptReceive(reinterpret_cast<UInt8*>(&m_received[0] + parsedUntil), game::Crypt::CryptedReceiveLength);
+						m_crypt.decryptReceive(reinterpret_cast<UInt8 *>(&m_received[0] + parsedUntil), game::Crypt::CryptedReceiveLength);
 
 						// This will prevent double-decryption of the header (which would produce
 						// invalid packet sizes)
 						m_decryptedUntil = parsedUntil + game::Crypt::CryptedReceiveLength;
 					}
-					
+
 					const char *const packetBegin = &m_received[0] + parsedUntil;
 					const char *const streamEnd = packetBegin + availableSize;
 
@@ -250,12 +247,12 @@ namespace wowpp
 
 					switch (state)
 					{
-						case receive_state::Incomplete:
+					case receive_state::Incomplete:
 						{
 							break;
 						}
 
-						case receive_state::Complete:
+					case receive_state::Complete:
 						{
 							if (m_listener)
 							{
@@ -267,7 +264,7 @@ namespace wowpp
 							break;
 						}
 
-						case receive_state::Malformed:
+					case receive_state::Malformed:
 						{
 							m_socket.reset();
 							if (m_listener)
@@ -285,15 +282,16 @@ namespace wowpp
 						m_socket.reset();
 						return;
 					}
-				} while (nextPacket);
+				}
+				while (nextPacket);
 
 				if (parsedUntil)
 				{
 					assert(parsedUntil <= m_received.size());
 
 					m_received.erase(
-						m_received.begin(),
-						m_received.begin() + static_cast<std::ptrdiff_t>(parsedUntil));
+					    m_received.begin(),
+					    m_received.begin() + static_cast<std::ptrdiff_t>(parsedUntil));
 
 					// Reset
 					m_decryptedUntil = 0;

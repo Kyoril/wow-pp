@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,15 +10,16 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
+#include "pch.h"
 #include "world_instance_manager.h"
 #include "proto_data/project.h"
 #include "common/vector.h"
@@ -27,21 +28,19 @@
 #include "tiled_unit_finder.h"
 #include "trigger_handler.h"
 #include "universe.h"
-#include <cassert>
 
 namespace wowpp
 {
 	WorldInstanceManager::WorldInstanceManager(
-		boost::asio::io_service &ioService,
-		Universe &universe,
-		game::ITriggerHandler &triggerHandler,
-		IdGenerator<UInt32> &idGenerator, 
-		IdGenerator<UInt64> &objectIdGenerator,
-		proto::Project &project,
-		UInt32 worldNodeId,
-		const String &dataPath)
-		: m_ioService(ioService)
-		, m_universe(universe)
+	    boost::asio::io_service &ioService,
+	    Universe &universe,
+	    game::ITriggerHandler &triggerHandler,
+	    IdGenerator<UInt32> &idGenerator,
+	    IdGenerator<UInt64> &objectIdGenerator,
+	    proto::Project &project,
+	    UInt32 worldNodeId,
+	    const String &dataPath)
+		: m_universe(universe)
 		, m_triggerHandler(triggerHandler)
 		, m_idGenerator(idGenerator)
 		, m_objectIdGenerator(objectIdGenerator)
@@ -54,22 +53,22 @@ namespace wowpp
 		triggerUpdate();
 	}
 
-	WorldInstance * WorldInstanceManager::createInstance(const proto::MapEntry &map)
+	WorldInstance *WorldInstanceManager::createInstance(const proto::MapEntry &map)
 	{
 		UInt32 instanceId = createMapGUID(m_idGenerator.generateId(), map.id());
 
 		// Create world instance
 		std::unique_ptr<WorldInstance> instance(new WorldInstance(
-			*this,
-			m_universe,
-			m_triggerHandler,
-			m_project,
-			map,
-			instanceId,
-			std::unique_ptr<UnitFinder>(new TiledUnitFinder(map, 33.3333f)),
-			std::unique_ptr<VisibilityGrid>(new SolidVisibilityGrid(TileIndex2D(64, 64))),
-			m_objectIdGenerator,
-			m_dataPath));
+		        *this,
+		        m_universe,
+		        m_triggerHandler,
+		        m_project,
+		        map,
+		        instanceId,
+		        std::unique_ptr<UnitFinder>(new TiledUnitFinder(map, 33.3333f)),
+		        std::unique_ptr<VisibilityGrid>(new SolidVisibilityGrid(TileIndex2D(64, 64))),
+		        m_objectIdGenerator,
+		        m_dataPath));
 		m_instances.push_back(std::move(instance));
 
 		// Return result
@@ -82,7 +81,7 @@ namespace wowpp
 		// Wait for next update
 		m_updateTimer.expires_from_now(boost::posix_time::milliseconds(static_cast<Int64>(1000.0 / 33.0)));	// Update ~30 times per second
 		m_updateTimer.async_wait(
-			std::bind(&WorldInstanceManager::update, this, std::placeholders::_1));
+		    std::bind(&WorldInstanceManager::update, this, std::placeholders::_1));
 	}
 
 	void WorldInstanceManager::update(const boost::system::error_code &error)
@@ -112,12 +111,12 @@ namespace wowpp
 		}
 	}
 
-	WorldInstance * WorldInstanceManager::getInstanceById(UInt32 instanceId)
+	WorldInstance *WorldInstanceManager::getInstanceById(UInt32 instanceId)
 	{
 		const auto i = std::find_if(
-			m_instances.begin(),
-			m_instances.end(),
-			[instanceId](const std::unique_ptr<WorldInstance> &i)
+		                   m_instances.begin(),
+		                   m_instances.end(),
+		                   [instanceId](const std::unique_ptr<WorldInstance> &i)
 		{
 			return (instanceId == i->getId());
 		});
@@ -130,12 +129,12 @@ namespace wowpp
 		return nullptr;
 	}
 
-	WorldInstance * WorldInstanceManager::getInstanceByMapId(UInt32 MapId)
+	WorldInstance *WorldInstanceManager::getInstanceByMapId(UInt32 MapId)
 	{
 		const auto i = std::find_if(
-			m_instances.begin(),
-			m_instances.end(),
-			[MapId](const std::unique_ptr<WorldInstance> &i)
+		                   m_instances.begin(),
+		                   m_instances.end(),
+		                   [MapId](const std::unique_ptr<WorldInstance> &i)
 		{
 			return (MapId == i->getMapId());
 		});

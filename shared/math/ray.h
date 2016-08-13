@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU Genral Public License as published by
 // the Free Software Foudnation; either version 2 of the Licanse, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -120,14 +120,19 @@ namespace wowpp
 					float n1 = ::fabs(normal.y);
 					float n2 = ::fabs(normal.z);
 
-					i0 = 1; i1 = 2;
+					i0 = 1;
+					i1 = 2;
 					if (n1 > n2)
 					{
-						if (n1 > n0) i0 = 0;
+						if (n1 > n0) {
+							i0 = 0;
+						}
 					}
 					else
 					{
-						if (n2 > n0) i1 = 0;
+						if (n2 > n0) {
+							i1 = 0;
+						}
 					}
 				}
 
@@ -150,13 +155,15 @@ namespace wowpp
 
 					if (area > 0)
 					{
-						if (alpha < tolerance || beta < tolerance || alpha + beta > area - tolerance)
+						if (alpha < tolerance || beta < tolerance || alpha + beta > area - tolerance) {
 							return std::pair<bool, float>(false, 0.0f);
+						}
 					}
 					else
 					{
-						if (alpha > tolerance || beta > tolerance || alpha + beta < area - tolerance)
+						if (alpha > tolerance || beta > tolerance || alpha + beta < area - tolerance) {
 							return std::pair<bool, float>(false, 0.0f);
+						}
 					}
 				}
 
@@ -190,8 +197,8 @@ namespace wowpp
 						// Substitute t back into ray and check bounds and dist
 						hitpoint = origin + direction * t;
 						if (hitpoint.y >= box.min.y && hitpoint.y <= box.max.y &&
-							hitpoint.z >= box.min.z && hitpoint.z <= box.max.z &&
-							(!hit || t < lowt))
+						        hitpoint.z >= box.min.z && hitpoint.z <= box.max.z &&
+						        (!hit || t < lowt))
 						{
 							hit = true;
 							lowt = t;
@@ -207,8 +214,8 @@ namespace wowpp
 						// Substitute t back into ray and check bounds and dist
 						hitpoint = origin + direction * t;
 						if (hitpoint.y >= box.min.y && hitpoint.y <= box.max.y &&
-							hitpoint.z >= box.min.z && hitpoint.z <= box.max.z &&
-							(!hit || t < lowt))
+						        hitpoint.z >= box.min.z && hitpoint.z <= box.max.z &&
+						        (!hit || t < lowt))
 						{
 							hit = true;
 							lowt = t;
@@ -224,8 +231,8 @@ namespace wowpp
 						// Substitute t back into ray and check bounds and dist
 						hitpoint = origin + direction * t;
 						if (hitpoint.x >= box.min.x && hitpoint.x <= box.max.x &&
-							hitpoint.z >= box.min.z && hitpoint.z <= box.max.z &&
-							(!hit || t < lowt))
+						        hitpoint.z >= box.min.z && hitpoint.z <= box.max.z &&
+						        (!hit || t < lowt))
 						{
 							hit = true;
 							lowt = t;
@@ -241,8 +248,8 @@ namespace wowpp
 						// Substitute t back into ray and check bounds and dist
 						hitpoint = origin + direction * t;
 						if (hitpoint.x >= box.min.x && hitpoint.x <= box.max.x &&
-							hitpoint.z >= box.min.z && hitpoint.z <= box.max.z &&
-							(!hit || t < lowt))
+						        hitpoint.z >= box.min.z && hitpoint.z <= box.max.z &&
+						        (!hit || t < lowt))
 						{
 							hit = true;
 							lowt = t;
@@ -258,8 +265,8 @@ namespace wowpp
 						// Substitute t back into ray and check bounds and dist
 						hitpoint = origin + direction * t;
 						if (hitpoint.x >= box.min.x && hitpoint.x <= box.max.x &&
-							hitpoint.y >= box.min.y && hitpoint.y <= box.max.y &&
-							(!hit || t < lowt))
+						        hitpoint.y >= box.min.y && hitpoint.y <= box.max.y &&
+						        (!hit || t < lowt))
 						{
 							hit = true;
 							lowt = t;
@@ -275,8 +282,8 @@ namespace wowpp
 						// Substitute t back into ray and check bounds and dist
 						hitpoint = origin + direction * t;
 						if (hitpoint.x >= box.min.x && hitpoint.x <= box.max.x &&
-							hitpoint.y >= box.min.y && hitpoint.y <= box.max.y &&
-							(!hit || t < lowt))
+						        hitpoint.y >= box.min.y && hitpoint.y <= box.max.y &&
+						        (!hit || t < lowt))
 						{
 							hit = true;
 							lowt = t;

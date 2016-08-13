@@ -38,6 +38,8 @@ namespace wowpp
 		size_t maxPlayers;
 		/// IP/Domain of the login server.
 		String loginAddress;
+		/// The estimated realm id. Has to match with the login servers database entry.
+		UInt32 realmID;
 
 		/// The port to be used by the realm server for worlds to log in.
 		NetPort worldPort;

@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,24 +10,29 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
 #include "creature_ai_state.h"
-#include <boost/signals2.hpp>
-#include <memory>
+#include "common/countdown.h"
 
 namespace wowpp
 {
 	class UnitWatcher;
+	class GameObject;
+
+	namespace math
+	{
+		struct Vector3;
+	}
 
 	/// Handle the idle state of a creature AI. In this state, most units
 	/// watch for hostile units which come close enough, and start attacking these
@@ -42,14 +47,25 @@ namespace wowpp
 		/// Default destructor.
 		virtual ~CreatureAIIdleState();
 
-		/// 
+		///
 		virtual void onEnter() override;
-		/// 
+		///
 		virtual void onLeave() override;
+		/// 
+		virtual void onCreatureMovementChanged() override;
+
+	private:
+
+		void onMoved(GameObject &object, const math::Vector3 &oldLocation, float oldRotation);
+
+		void onChooseNextMove();
+
+		void onStartAggroWatcher();
 
 	private:
 
 		std::unique_ptr<UnitWatcher> m_aggroWatcher;
-		boost::signals2::scoped_connection m_onThreatened;
+		boost::signals2::scoped_connection m_onThreatened, m_onOwnerMoved, m_onMoved, onTargetReached;
+		Countdown m_aggroDelay, m_nextMove;
 	};
 }

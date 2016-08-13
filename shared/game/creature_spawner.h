@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,21 +10,21 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
 #include "common/typedefs.h"
 #include "common/countdown.h"
+#include "defines.h"
 #include "math/vector3.h"
-#include <boost/optional.hpp>
 
 namespace wowpp
 {
@@ -35,6 +35,7 @@ namespace wowpp
 	namespace proto
 	{
 		class UnitEntry;
+		class UnitSpawnEntry;
 	}
 
 	/// Manages a spawn point and all creatures which are spawned by this point info.
@@ -57,25 +58,24 @@ namespace wowpp
 		explicit CreatureSpawner(
 			WorldInstance &world,
 			const proto::UnitEntry &entry,
-			size_t maxCount,
-			GameTime respawnDelay,
-			math::Vector3 center,
-			boost::optional<float> rotation,
-			UInt32 emote,
-			float radius,
-			bool active,
-			bool respawn);
+			const proto::UnitSpawnEntry &spawnEntry);
 		virtual ~CreatureSpawner();
 
-		/// 
-		const OwnedCreatures &getCreatures() const { return m_creatures; }
-		/// 
-		bool isActive() const { return m_active; }
-		/// 
-		bool isRespawnEnabled() const { return m_respawn; }
-		/// 
+		///
+		const OwnedCreatures &getCreatures() const {
+			return m_creatures;
+		}
+		///
+		bool isActive() const {
+			return m_active;
+		}
+		///
+		bool isRespawnEnabled() const {
+			return m_respawn;
+		}
+		///
 		void setState(bool active);
-		/// 
+		///
 		void setRespawn(bool enabled);
 
 	private:
@@ -93,12 +93,7 @@ namespace wowpp
 
 		WorldInstance &m_world;
 		const proto::UnitEntry &m_entry;
-		const size_t m_maxCount;
-		const GameTime m_respawnDelay;
-		const math::Vector3 m_center;
-		const boost::optional<float> m_rotation;
-		const float m_radius;
-		UInt32 m_emote;
+		const proto::UnitSpawnEntry &m_spawnEntry;
 		bool m_active;
 		bool m_respawn;
 		size_t m_currentlySpawned;

@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,14 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
 
@@ -37,10 +37,14 @@ namespace wowpp
 
 			typedef T2 EntryType;
 
+		public:
+
+			String hashString;
+
 		private:
 
 			T1 m_data;
-			std::map<wowpp::UInt32, T2*> m_templatesById;
+			std::map<wowpp::UInt32, T2 *> m_templatesById;
 
 		public:
 
@@ -79,7 +83,12 @@ namespace wowpp
 			/// @param stream The stream to write data to.
 			bool save(std::ostream &stream) const
 			{
-				return m_data.SerializeToOstream(&stream);
+				if (!m_data.SerializeToOstream(&stream))
+				{
+					return false;
+				}
+
+				return true;
 			}
 
 			void clear()
@@ -98,14 +107,15 @@ namespace wowpp
 			}
 
 			/// Adds a new entry using the specified id.
-			T2* add(UInt32 id)
+			T2 *add(UInt32 id)
 			{
 				// Check id for existance
-				if (getById(id) != nullptr)
+				if (getById(id) != nullptr) {
 					return nullptr;
+				}
 
 				// Add new entry
-				auto* added = m_data.add_entry();
+				auto *added = m_data.add_entry();
 				added->set_id(id);
 
 				// Store in array and return
@@ -129,17 +139,21 @@ namespace wowpp
 			}
 
 			/// Retrieves a pointer to an object by its id.
-			const T2* getById(UInt32 id) const
+			const T2 *getById(UInt32 id) const
 			{
 				const auto it = m_templatesById.find(id);
-				if (it == m_templatesById.end()) return nullptr;
+				if (it == m_templatesById.end()) {
+					return nullptr;
+				}
 
 				return it->second;
 			}
-			T2* getById(UInt32 id)
+			T2 *getById(UInt32 id)
 			{
 				const auto it = m_templatesById.find(id);
-				if (it == m_templatesById.end()) return nullptr;
+				if (it == m_templatesById.end()) {
+					return nullptr;
+				}
 
 				return it->second;
 			}

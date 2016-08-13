@@ -19,24 +19,25 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "configuration.h"
 #include "simple_file_format/sff_write.h"
 #include "simple_file_format/sff_read_tree.h"
 #include "simple_file_format/sff_load_file.h"
 #include "common/constants.h"
 #include "log/default_log_levels.h"
-#include <fstream>
-#include <limits>
 
 namespace wowpp
 {
-	const UInt32 Configuration::LoginConfigVersion = 0x01;
+	const UInt32 Configuration::LoginConfigVersion = 0x02;
 
 	Configuration::Configuration()
 		: playerPort(wowpp::constants::DefaultLoginPlayerPort)
         , realmPort(wowpp::constants::DefaultLoginRealmPort)
+		, teamPort(wowpp::constants::DefaultLoginTeamPort)
 		, maxPlayers((std::numeric_limits<decltype(maxPlayers)>::max)())
 		, maxRealms((std::numeric_limits<decltype(maxRealms)>::max)())
+		, maxTeamServers((std::numeric_limits<decltype(maxTeamServers)>::max)())
 		, mysqlPort(wowpp::constants::DefaultMySQLPort)
 		, mysqlHost("127.0.0.1")
 		, mysqlUser("wow-pp")
@@ -86,13 +87,14 @@ namespace wowpp
 			{
 				file.close();
 
-				if (save(fileName))
+				if (save(fileName + ".updated"))
 				{
-					ILOG("Saved updated settings with default values as " << fileName);
+					ILOG("Saved updated settings with default values as " << fileName << ".updated");
+					ILOG("Please insert values from the old setting file manually and rename the file.");
 				}
 				else
 				{
-					ELOG("Could not save updated default settings as " << fileName);
+					ELOG("Could not save updated default settings as " << fileName << ".updated");
 				}
 
 				return false;
@@ -125,6 +127,12 @@ namespace wowpp
 			{
 				realmPort = realmManager->getInteger("port", realmPort);
 				maxRealms = realmManager->getInteger("maxCount", maxRealms);
+			}
+
+			if (const Table *const teamManager = global.getTable("teamManager"))
+			{
+				teamPort = teamManager->getInteger("port", teamPort);
+				maxTeamServers = teamManager->getInteger("maxCount", maxTeamServers);
 			}
 
 			if (const Table *const log = global.getTable("log"))
@@ -198,6 +206,15 @@ namespace wowpp
 			realmManager.addKey("port", realmPort);
 			realmManager.addKey("maxCount", maxRealms);
 			realmManager.finish();
+		}
+
+		global.writer.newLine();
+
+		{
+			sff::write::Table<Char> teamManager(global, "teamManager", sff::write::MultiLine);
+			teamManager.addKey("port", teamPort);
+			teamManager.addKey("maxCount", maxTeamServers);
+			teamManager.finish();
 		}
 
 		global.writer.newLine();

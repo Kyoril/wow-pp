@@ -28,7 +28,6 @@
 #include <QTreeWidgetItem>
 #include "proto_data/project.h"
 #include "property_view_model.h"
-#include <memory>
 
 // Forwards
 namespace Ui
@@ -63,20 +62,34 @@ namespace wowpp
 			void on_spellFilter_editingFinished();
 			void on_itemFilter_editingFinished();
 			void on_questFilter_editingFinished();
+			void on_objectFilter_editingFinished();
 			void on_unitAddTriggerBtn_clicked();
 			void on_unitRemoveTriggerBtn_clicked();
+			void on_objectAddTriggerBtn_clicked();
+			void on_objectRemoveTriggerBtn_clicked();
 			void onUnitSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void on_unitPropertyWidget_doubleClicked(QModelIndex index);
+			void on_objectPropertyWidget_doubleClicked(QModelIndex index);
+			void on_treeWidget_doubleClicked(QModelIndex index);
 			void onSpellSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void onItemSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void onQuestSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
+			void onObjectSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void on_lootSimulatorButton_clicked();
+			void on_objectLootSimulatorButton_clicked();
+			void on_itemLootSimulatorButton_clicked();
+			void on_skinLootSimulatorButton_clicked();
 			void on_actionImport_triggered();
 			void on_actionImport_Vendors_triggered();
 			void on_actionImport_Trainers_triggered();
 			void on_actionImport_Quests_triggered();
+			void on_actionImport_Object_Loot_triggered();
+			void on_actionImportSkinningLoot_triggered();
 			void on_addUnitSpellButton_clicked();
 			void on_removeUnitSpellButton_clicked();
+			void on_actionImport_Object_Spawns_triggered();
+			void on_actionImport_Item_Loot_triggered();
+			void on_actionImport_Units_triggered();
 
 			void on_effectButton1_clicked();
 			void on_effectButton2_clicked();
@@ -90,11 +103,18 @@ namespace wowpp
 			QSortFilterProxyModel *m_spellFilter;
 			QSortFilterProxyModel *m_itemFilter;
 			QSortFilterProxyModel *m_questFilter;
+			QSortFilterProxyModel *m_objectFilter;
 			Properties m_properties;
 			PropertyViewModel *m_viewModel;
+			Properties m_objectProperties;
+			PropertyViewModel *m_objectViewModel;
+			Properties m_itemProperties;
+			PropertyViewModel *m_itemViewModel;
 			proto::UnitEntry *m_selectedUnit;
 			proto::SpellEntry *m_selectedSpell;
 			proto::QuestEntry *m_selectedQuest;
+			proto::ObjectEntry *m_selectedObject;
+			proto::ItemEntry *m_selectedItem;
 		};
 	}
 }

@@ -19,12 +19,12 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "mysql_database.h"
 #include "mysql_wrapper/mysql_row.h"
 #include "mysql_wrapper/mysql_select.h"
 #include "mysql_wrapper/mysql_statement.h"
 #include "common/constants.h"
-#include <boost/format.hpp>
 #include "log/default_log_levels.h"
 
 namespace wowpp
@@ -60,18 +60,18 @@ namespace wowpp
 		bool result = false;
 		if (accountId != 0)
 		{
-			result = m_connection.execute((boost::format(
-				"INSERT INTO account (`id`,`username`,`password`) VALUES (%1%, '%2%', '%3%');")
-				% accountId
-				% safeName
-				% safeHash).str());
+			result = m_connection.execute(fmt::format(
+				"INSERT INTO account (`id`,`username`,`password`) VALUES ({0}, '{1}', '{2}');"
+				, accountId		// 0
+				, safeName		// 1
+				, safeHash));	// 2
 		}
 		else
 		{
-			result = m_connection.execute((boost::format(
-				"INSERT INTO account (`username`,`password`) VALUES ('%1%', '%2%');")
-				% safeName
-				% safeHash).str());
+			result = m_connection.execute(fmt::format(
+				"INSERT INTO account (`username`,`password`) VALUES ('{0}', '{1}');"
+				, safeName		// 0
+				, safeHash));	// 1
 		}
 
 		if (!result)
@@ -86,10 +86,10 @@ namespace wowpp
 	{
 		const String safeHash = m_connection.escapeString(passwordHash);
 
-		if (m_connection.execute((boost::format(
-			"UPDATE account SET password='%1%' WHERE id=%2%")
-			% safeHash
-			% accountId).str()))
+		if (m_connection.execute(fmt::format(
+			"UPDATE account SET password='{0}' WHERE id={1}"
+			, safeHash		// 0
+			, accountId)))	// 1
 		{
 			return true;
 		}
@@ -103,9 +103,8 @@ namespace wowpp
 
 	bool MySQLDatabase::getAccountInfos(UInt64 accountId, String & out_name, String & out_passwordHash)
 	{
-		wowpp::MySQL::Select select(m_connection,
-			(boost::format("SELECT username,password FROM account WHERE id=%1% LIMIT 1")
-				% accountId).str());
+		wowpp::MySQL::Select select(m_connection, fmt::format(
+			"SELECT username,password FROM account WHERE id={0} LIMIT 1", accountId));
 		if (select.success())
 		{
 			wowpp::MySQL::Row row(select);
@@ -136,9 +135,8 @@ namespace wowpp
 		// Escape string to avoid sql injection
 		const wowpp::String safeName = m_connection.escapeString(userName);
 
-		wowpp::MySQL::Select select(m_connection,
-			(boost::format("SELECT id,password FROM account WHERE username='%1%' LIMIT 1")
-			% safeName).str());
+		wowpp::MySQL::Select select(m_connection, fmt::format(
+			"SELECT id,password FROM account WHERE username='{0}' LIMIT 1" , safeName));
 		if (select.success())
 		{
 			wowpp::MySQL::Row row(select);
@@ -166,14 +164,10 @@ namespace wowpp
 
 	bool MySQLDatabase::getSVFields(const UInt32 &userId, BigNumber &out_S, BigNumber &out_V)
 	{
-		wowpp::MySQL::Select select(m_connection,
-			(boost::format("SELECT v,s FROM account WHERE id=%1% LIMIT 1")
-			% userId).str());
-
+		wowpp::MySQL::Select select(m_connection, fmt::format("SELECT v,s FROM account WHERE id={0} LIMIT 1", userId));
 		if (select.success())
 		{
 			wowpp::String S, V;
-
 			wowpp::MySQL::Row row(select);
 			if (row)
 			{
@@ -206,11 +200,10 @@ namespace wowpp
 		const String safeS = m_connection.escapeString(S.asHexStr());
 		const String safeV = m_connection.escapeString(V.asHexStr());
 
-		if (m_connection.execute((boost::format(
-			"UPDATE account SET v='%1%',s='%2%' WHERE id=%3%")
-			% safeV
-			% safeS
-			% userId).str()))
+		if (m_connection.execute(fmt::format("UPDATE account SET v='{0}',s='{1}' WHERE id={2}"
+			, safeV		// 0
+			, safeS		// 1
+			, userId)))	// 2
 		{
 			return true;
 		}
@@ -228,10 +221,9 @@ namespace wowpp
 
 		const String safeName = m_connection.escapeString(name);
 
-		MySQL::Select select(m_connection,
-			(boost::format("SELECT id,password FROM realm WHERE internalName='%1%' LIMIT 1")
-			% safeName).str());
-
+		MySQL::Select select(m_connection, fmt::format(
+			"SELECT id,password FROM realm WHERE internalName='{0}' LIMIT 1"
+			, safeName));		// 0
 		if (select.success())
 		{
 			UInt32 id = 0xffffffff;
@@ -285,12 +277,12 @@ namespace wowpp
 		const String saveName = m_connection.escapeString(visibleName);
 		const String safeHost = m_connection.escapeString(host);
 
-		if (m_connection.execute((boost::format(
-			"UPDATE realm SET online=1,lastVisibleName='%1%',lastHost='%2%',lastPort=%3% WHERE id=%4%")
-			% saveName
-			% safeHost
-			% port
-			% id).str()))
+		if (m_connection.execute(fmt::format(
+			"UPDATE realm SET online=1,lastVisibleName='{0}',lastHost='{1}',lastPort={2} WHERE id={3}"
+			, saveName		// 0
+			, safeHost		// 1
+			, port			// 2
+			, id)))			// 3
 		{
 			return true;
 		}
@@ -304,9 +296,8 @@ namespace wowpp
 
 	bool MySQLDatabase::setRealmOffline(UInt32 id)
 	{
-		if (m_connection.execute((boost::format(
-			"UPDATE realm SET online=0,players=0 WHERE id=%1%")
-			% id).str()))
+		if (m_connection.execute(fmt::format(
+			"UPDATE realm SET online=0,players=0 WHERE id={0}", id)))
 		{
 			return true;
 		}
@@ -320,10 +311,10 @@ namespace wowpp
 
 	bool MySQLDatabase::setRealmCurrentPlayerCount(UInt32 id, size_t players)
 	{
-		if (m_connection.execute((boost::format(
-			"UPDATE realm SET players=%1% WHERE id=%2%")
-			% players
-			% id).str()))
+		if (m_connection.execute(fmt::format(
+			"UPDATE realm SET players={0} WHERE id={1}"
+			, players
+			, id)))
 		{
 			return true;
 		}
@@ -342,9 +333,9 @@ namespace wowpp
 
 	bool MySQLDatabase::getTutorialData(UInt32 id, std::array<UInt32, 8> &out_data)
 	{
-		wowpp::MySQL::Select select(m_connection,
-			(boost::format("SELECT tutorial_0, tutorial_1, tutorial_2, tutorial_3, tutorial_4, tutorial_5, tutorial_6, tutorial_7 FROM account_tutorials WHERE account=%1% LIMIT 1")
-			% id).str());
+		wowpp::MySQL::Select select(m_connection, fmt::format(
+			"SELECT tutorial_0, tutorial_1, tutorial_2, tutorial_3, tutorial_4, tutorial_5, tutorial_6, tutorial_7 FROM account_tutorials WHERE account={0} LIMIT 1"
+			, id));		// 0
 		if (select.success())
 		{
 			wowpp::MySQL::Row row(select);
@@ -374,23 +365,65 @@ namespace wowpp
 
 	bool MySQLDatabase::setTutorialData(UInt32 id, const std::array<UInt32, 8> data)
 	{
-		if (!m_connection.execute((boost::format(
-			"INSERT INTO account_tutorials SET account = %1%, tutorial_0 = %2%, tutorial_1 = %3%, tutorial_2 = %4%, tutorial_3 = %5%, tutorial_4 = %6%, tutorial_5 = %7%, tutorial_6 = %8%, tutorial_7 = %9% ON DUPLICATE KEY UPDATE "
-				"tutorial_0 = %2%, tutorial_1 = %3%, tutorial_2 = %4%, tutorial_3 = %5%, tutorial_4 = %6%, tutorial_5 = %7%, tutorial_6 = %8%, tutorial_7 = %9%")
-			% id
-			% data[0]
-			% data[1]
-			% data[2]
-			% data[3]
-			% data[4]
-			% data[5]
-			% data[6]
-			% data[7]).str()))
+		if (!m_connection.execute(fmt::format(
+			"INSERT INTO account_tutorials SET account = {0}, tutorial_0 = {1}, tutorial_1 = {2}, tutorial_2 = {3}, tutorial_3 = {4}, tutorial_4 = {5}, tutorial_5 = {6}, tutorial_6 = {7}, tutorial_7 = {8} ON DUPLICATE KEY UPDATE "
+				"tutorial_0 = {1}, tutorial_1 = {2}, tutorial_2 = {3}, tutorial_3 = {4}, tutorial_4 = {5}, tutorial_5 = {6}, tutorial_6 = {7}, tutorial_7 = {8}"
+			, id			// 0
+			, data[0]		// 1
+			, data[1]		// 2
+			, data[2]		// 3
+			, data[3]		// 4
+			, data[4]		// 5
+			, data[5]		// 6
+			, data[6]		// 7
+			, data[7])))	// 8
 		{
 			printDatabaseError();
 			return false;
 		}
 
 		return true;
+	}
+	pp::team_login::LoginResult MySQLDatabase::teamServerLogIn(UInt32 & out_id, const String & name, const String & password)
+	{
+		using namespace pp::team_login;
+
+		const String safeName = m_connection.escapeString(name);
+
+		MySQL::Select select(m_connection, fmt::format(
+			"SELECT id,password FROM team_server WHERE internalName='{0}' LIMIT 1"
+			, safeName));		// 0
+		if (select.success())
+		{
+			UInt32 id = 0xffffffff;
+			String correctPassword;
+
+			MySQL::Row row(select);
+			if (row)
+			{
+				row.getField(0, id);
+				row.getField(1, correctPassword);
+
+				// Wrong password
+				if (correctPassword != password)
+				{
+					WLOG("Team server " << name << " tried to login with a wrong password");
+					return login_result::WrongPassword;
+				}
+
+				out_id = id;
+				return login_result::Success;
+			}
+			else
+			{
+				return login_result::UnknownTeamServer;
+			}
+		}
+		else
+		{
+			printDatabaseError();
+		}
+
+		return login_result::ServerError;
 	}
 }

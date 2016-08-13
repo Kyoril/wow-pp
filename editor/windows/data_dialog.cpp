@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "data_dialog.h"
 #include "ui_data_dialog.h"
 #include "proto_data/project.h"
@@ -36,7 +37,8 @@ namespace wowpp
 			// Setup auto generated ui
 			m_ui->setupUi(this);
 			m_ui->dataField->setText(QString("%1").arg(data));
-			m_ui->dataField->setValidator(new QIntValidator(0, 999999, this));
+			m_ui->dataField->setValidator(new QIntValidator(
+				std::numeric_limits<Int32>::min(), std::numeric_limits<Int32>::max(), this));
 
 			bool mayChoose = false;
 			switch (action)

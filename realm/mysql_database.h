@@ -49,7 +49,7 @@ namespace wowpp
 		/// @copydoc wowpp::IDatabase::getCharacterCount
 		UInt32 getCharacterCount(UInt32 accountId) override;
 		/// @copydoc wowpp::IDatabase::createCharacter
-		game::ResponseCode createCharacter(UInt32 accountId, const std::vector<const proto::SpellEntry*> &spells, const std::vector<pp::world_realm::ItemData> &items, game::CharEntry &character) override;
+		game::ResponseCode createCharacter(UInt32 accountId, const std::vector<const proto::SpellEntry*> &spells, const std::vector<ItemData> &items, game::CharEntry &character) override;
 		/// @copydoc wowpp::IDatabase::createCharacterById
 		bool getCharacterById(DatabaseId id, game::CharEntry &out_character) override;
 		/// @copydoc wowpp::IDatabase::createCharacterByName
@@ -59,9 +59,9 @@ namespace wowpp
 		/// @copydoc wowpp::IDatabase::deleteCharacter
 		game::ResponseCode deleteCharacter(UInt32 accountId, UInt64 characterGuid) override;
 		/// @copydoc wowpp::IDatabase::getGameCharacter
-		bool getGameCharacter(DatabaseId characterId, GameCharacter &out_character, std::vector<pp::world_realm::ItemData> &out_items) override;
+		bool getGameCharacter(DatabaseId characterId, GameCharacter &out_character) override;
 		/// @copydoc wowpp::IDatabase::saveGamecharacter
-		bool saveGameCharacter(const GameCharacter &character, const std::vector<pp::world_realm::ItemData> &items, const std::vector<UInt32> &spells) override;
+		bool saveGameCharacter(const GameCharacter &character, const std::vector<ItemData> &items) override;
 		/// @copydoc wowpp::IDatabase::getCharacterSocialList
 		bool getCharacterSocialList(DatabaseId characterId, PlayerSocial &out_social) override;
 		/// @copydoc wowpp::IDatabase::addCharacterSocialContact
@@ -80,6 +80,24 @@ namespace wowpp
 		bool setCinematicState(DatabaseId characterId, bool state) override;
 		/// @copydoc wowpp::IDatabase::setQuestData
 		bool setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData &data) override;
+		/// @copydoc wowpp::IDatabase::teleportCharacter
+		bool teleportCharacter(DatabaseId characterId, UInt32 mapId, float x, float y, float z, float o, bool changeHome = false) override;
+		/// @copydoc wowpp::IDatabase::learnSpell
+		bool learnSpell(DatabaseId characterId, UInt32 spellId) override;
+		/// @copydoc wowpp::IDatabase::createGroup
+		bool createGroup(UInt64 groupId, UInt64 leader) override;
+		/// @copydoc wowpp::IDatabase::disbandGroup
+		bool disbandGroup(UInt64 groupId) override;
+		/// @copydoc wowpp::IDatabase::addGroupMember
+		bool addGroupMember(UInt64 groupId, UInt64 member) override;
+		/// @copydoc wowpp::IDatabase::setGroupLeader
+		bool setGroupLeader(UInt64 groupId, UInt64 leaderGuid) override;
+		/// @copydoc wowpp::IDatabase::removeGroupMember
+		bool removeGroupMember(UInt64 groupId, UInt64 member) override;
+		/// @copydoc wowpp::IDatabase::listGroups
+		bool listGroups(std::vector<UInt64> &out_groupIds) override;
+		/// @copydoc wowpp::IDatabase::loadGroup
+		bool loadGroup(UInt64 groupId, UInt64 &out_leader, std::vector<UInt64> &out_member) override;
 
 	private:
 

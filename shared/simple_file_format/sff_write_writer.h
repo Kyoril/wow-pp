@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,23 +10,16 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
 #pragma once
-
-#include <string>
-#include <array>
-#include <sstream>
-#include <ostream>
-#include <algorithm>
-#include <boost/type_traits/is_float.hpp>
 
 namespace sff
 {
@@ -41,13 +34,14 @@ namespace sff
 
 		static const std::array<EscapeReplacement, 6> QuotedStringReplacements =
 		{{
-			{'\n', "\\n"},
-			{'\r', "\\r"},
-			{'\t', "\\t"},
-			{'\"', "\\\""},
-			{'\'', "\\\'"},
-			{'\\', "\\\\"},
-		}};
+				{'\n', "\\n"},
+				{'\r', "\\r"},
+				{'\t', "\\t"},
+				{'\"', "\\\""},
+				{'\'', "\\\'"},
+				{'\\', "\\\\"},
+			}
+		};
 
 
 		template <class String, class Replacements>
@@ -117,8 +111,8 @@ namespace sff
 					if (std::find(begin(intermediate), end(intermediate), '.') != end(intermediate))
 					{
 						while (
-						   intermediate.size() >= 2 &&
-						   intermediate.back() == '0')
+						    intermediate.size() >= 2 &&
+						    intermediate.back() == '0')
 						{
 							intermediate.resize(intermediate.size() - 1);
 						}

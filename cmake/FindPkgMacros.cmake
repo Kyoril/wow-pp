@@ -14,7 +14,7 @@
 # Begin processing of package
 macro(findpkg_begin PREFIX)
   if (NOT ${PREFIX}_FIND_QUIETLY)
-    message(STATUS "Looking for ${PREFIX}...")
+#    message(STATUS "Looking for ${PREFIX}...")
   endif ()
 endmacro(findpkg_begin)
 
@@ -69,7 +69,7 @@ endmacro(clear_if_changed)
 
 # Try to get some hints from pkg-config, if available
 macro(use_pkgconfig PREFIX PKGNAME)
-  if(NOT ANDROID)
+  if(NOT ANDROID AND NOT WIN32)
     find_package(PkgConfig)
     if (PKG_CONFIG_FOUND)
       pkg_check_modules(${PREFIX} ${PKGNAME})
@@ -112,7 +112,7 @@ macro(findpkg_finish PREFIX)
       set(${PREFIX}_INCLUDE_DIRS ${${PREFIX}_INCLUDE_DIR})
       set(${PREFIX}_LIBRARIES ${${PREFIX}_LIBRARY})
       if (NOT ${PREFIX}_FIND_QUIETLY)
-        message(STATUS "Found ${PREFIX}: ${${PREFIX}_LIBRARIES}")
+#        message(STATUS "Found ${PREFIX}: ${${PREFIX}_LIBRARIES}")
       endif ()
     else ()
       if (NOT ${PREFIX}_FIND_QUIETLY)

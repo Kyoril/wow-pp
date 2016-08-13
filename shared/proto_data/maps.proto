@@ -22,6 +22,13 @@
 syntax = "proto2";
 package wowpp.proto;
 
+message Waypoint {
+	required float positionx = 1;
+	required float positiony = 2;
+	required float positionz = 3;
+	optional uint32 waittime = 4;
+}
+
 message UnitSpawnEntry {
 	optional string name = 1;
 	optional bool respawn = 2 [default = true];
@@ -35,6 +42,9 @@ message UnitSpawnEntry {
 	required uint32 unitentry = 10;
 	optional uint32 defaultemote = 11;
 	optional bool isactive = 12 [default = true];
+	repeated Waypoint waypoints = 13;
+	optional uint32 movement = 14;
+	optional uint32 standstate = 15;
 }
 
 message ObjectSpawnEntry {
@@ -54,6 +64,7 @@ message ObjectSpawnEntry {
 	optional uint32 maxcount = 14 [default = 1];
 	required uint32 objectentry = 15;
 	optional bool isactive = 16 [default = true];
+	optional float orientation = 17;
 }
 
 message MapEntry {

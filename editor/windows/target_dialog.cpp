@@ -19,9 +19,10 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "target_dialog.h"
 #include "ui_target_dialog.h"
-#include "data/trigger_entry.h"
+#include "proto_data/trigger_helper.h"
 
 namespace wowpp
 {

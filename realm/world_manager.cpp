@@ -19,11 +19,10 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "world_manager.h"
 #include "world.h"
 #include "binary_io/string_sink.h"
-#include <algorithm>
-#include <cassert>
 
 namespace wowpp
 {

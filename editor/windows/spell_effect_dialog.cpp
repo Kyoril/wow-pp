@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "spell_effect_dialog.h"
 #include "ui_spell_effect_dialog.h"
 #include "proto_data/project.h"

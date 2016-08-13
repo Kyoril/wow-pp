@@ -28,3 +28,20 @@ Makefile
 *.a
 
 /nbproject
+*.gch
+
+*.xml
+
+.idea/.name
+
+.idea/wow-pp.iml
+shared/game_protocol/game_protocol.cpp~
+*.h~
+world/player.cpp~
+*.cpp~
+*.cpp#
+world/#trade_data.h#
+world/.#player.cpp
+world/.#trade_data.cpp
+world/.#trade_data.h
+shared/game_protocol/.#game_protocol.cpp

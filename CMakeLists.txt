@@ -35,6 +35,7 @@ project(WoW)
 		message(FATAL_ERROR "Unsupported client build! WoW++ only supports build 6546 and 8606!")
 	endif()
 	add_definitions("-DSUPPORTED_CLIENT_BUILD=${WOWPP_SUPPORTED_CLIENT}")
+	add_definitions("-DDT_POLYREF64")
 	
 	# Version header
 	if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
@@ -58,11 +59,20 @@ project(WoW)
 				OUTPUT_VARIABLE "WOWPP_GIT_LASTCHANGE"
 				ERROR_QUIET
 				OUTPUT_STRIP_TRAILING_WHITESPACE)
+			execute_process(
+				COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
+				WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+				OUTPUT_VARIABLE "WOWPP_GIT_BRANCH"
+				ERROR_QUIET
+				OUTPUT_STRIP_TRAILING_WHITESPACE)
+			message(STATUS "Git branch: ${WOWPP_GIT_BRANCH}")
 			message(STATUS "Git commit: ${WOWPP_GIT_COMMIT}")
 			message(STATUS "Last change: ${WOWPP_GIT_LASTCHANGE}")
 		else(GIT_FOUND)
-			set(WOWPP_GIT_COMMIT 0)
+			set(WOWPP_GIT_COMMIT "UNKNOWN")
 			set(WOWPP_GIT_REVISION 0)
+			set(WOWPP_GIT_LASTCHANGE "UNKNOWN")
+			set(WOWPP_GIT_BRANCH "UNKNOWN")
 		endif(GIT_FOUND)
 	endif()
 
@@ -92,6 +102,8 @@ project(WoW)
 	# Include additional cmake modules
 	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+	include(Macros)
+	
 	# Find boost
 	set(Boost_USE_STATIC_LIBS ON)
 	find_package(Boost 1.54.0 REQUIRED COMPONENTS system date_time thread iostreams filesystem regex chrono program_options)
@@ -157,8 +169,10 @@ project(WoW)
 	add_subdirectory(login)
 	add_subdirectory(realm)
 	add_subdirectory(world)
+	add_subdirectory(team)
 	if (WOWPP_BUILD_TOOLS)
 		add_subdirectory(extractor)
+		add_subdirectory(update_compiler)
 	endif()
 	if (WOWPP_BUILD_EDITOR)
 		add_subdirectory(editor)

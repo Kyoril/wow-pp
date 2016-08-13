@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "program.h"
 #include "common/constants.h"
 #include "wowpp_protocol/wowpp_protocol.h"
@@ -38,9 +39,7 @@
 #include "common/timer_queue.h"
 #include "common/id_generator.h"
 #include "common/make_unique.h"
-#include <iostream>
-#include <memory>
-#include <fstream>
+#include "common/crash_handler.h"
 #include "version.h"
 
 namespace wowpp
@@ -187,6 +186,23 @@ namespace wowpp
 		{
 			enterConnections[realm.get()] = realm->worldInstanceEntered.connect(createPlayer);
 		}
+
+		//when the application terminates unexpectedly
+		const auto crashFlushConnection =
+			wowpp::CrashHandler::get().onCrash.connect(
+				[&PlayerManager, &logFile]()
+		{
+			ELOG("Application crashed - saving players");
+			const auto &players = PlayerManager->getPlayers();
+			for (auto &player : players)
+			{
+				player->saveCharacterData();
+			}
+
+			ILOG("Player character saved. Shutting down.");
+			if (logFile) logFile.flush();
+		});
+
 
 		// Run IO service
 		m_ioService.run();

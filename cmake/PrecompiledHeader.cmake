@@ -19,10 +19,7 @@ macro(use_precompiled_header TARGET HEADER_FILE SRC_FILE)
   # Use MSVC_IDE to exclude NMake from using PCHs
   if (MSVC AND NOT NMAKE AND NOT OGRE_UNITY_BUILD AND NOT ${CMAKE_GENERATOR} MATCHES Ninja)
 	add_definitions(/Yu"${HEADER}")
-    set_source_files_properties(${SRC_FILE}
-      PPROPERTIES COMPILE_FLAGS /Yc"${HEADER}"
-	)
-    
+	set_source_files_properties(${SRC_FILE} PPROPERTIES COMPILE_FLAGS /Yc"${HEADER}")
   elseif (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
     # disabled because it seems to increase compile time
     ## this is some serious hack... we definitely need native 

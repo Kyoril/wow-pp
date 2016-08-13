@@ -1,6 +1,6 @@
 //
 // This file is part of the WoW++ project.
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -10,15 +10,16 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software 
+// along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // World of Warcraft, and all World of Warcraft or Warcraft art, images,
 // and lore are copyrighted by Blizzard Entertainment, Inc.
-// 
+//
 
+#include "pch.h"
 #include "game_creature.h"
 #include "game_character.h"
 #include "proto_data/project.h"
@@ -34,12 +35,14 @@
 namespace wowpp
 {
 	GameCreature::GameCreature(
-		proto::Project &project,
-		TimerQueue &timers, 
-		const proto::UnitEntry &entry)
+	    proto::Project &project,
+	    TimerQueue &timers,
+	    const proto::UnitEntry &entry)
 		: GameUnit(project, timers)
 		, m_originalEntry(entry)
 		, m_entry(nullptr)
+		, m_combatMovement(true)
+		, m_movement(game::creature_movement::None)
 	{
 	}
 
@@ -55,7 +58,7 @@ namespace wowpp
 
 		// Setup AI
 		m_ai = make_unique<CreatureAI>(
-			*this, CreatureAI::Home(math::Vector3(0.0f, 0.0f, 0.0f)));
+		           *this, CreatureAI::Home(math::Vector3(0.0f, 0.0f, 0.0f)));
 
 		// Start regeneration
 		m_onSpawned = spawned.connect([this]()
@@ -65,12 +68,47 @@ namespace wowpp
 
 			m_ai->setHome(std::move(home));
 			startRegeneration();
+
+			// Watch for "Health dropped below" trigger events (since we only watch for our own health, signal connections don't need to be
+			// saved / disconnected, as the signal should not be fired any more when this unit stops to exist
+			for (const auto &t : m_originalEntry.triggers())
+			{
+				const auto *trigger = getProject().triggers.getById(t);
+				if (trigger)
+				{
+					for (const auto &e : trigger->newevents())
+					{
+						if (e.type() == trigger_event::OnHealthDroppedBelow)
+						{
+							if (e.data_size() > 0)
+							{
+								takenDamage.connect([this, trigger, &e](GameUnit *, UInt32 damage) {
+									const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
+									const UInt32 health = getUInt32Value(unit_fields::Health);
+									
+									const UInt32 healthPCT = (float(health) / float(maxHealth)) * 100;
+									const UInt32 oldPCT = (float(health + damage) / float(maxHealth)) * 100;
+									if (oldPCT > e.data(0) &&
+										healthPCT <= e.data(0))
+									{
+										unitTrigger(std::cref(*trigger), std::ref(*this));
+									}
+								});
+							}
+						}
+					}
+				}
+			}
 		});
 	}
 
 	void GameCreature::setEntry(const proto::UnitEntry &entry)
 	{
 		const bool isInitialize = (m_entry == nullptr);
+		if (!isInitialize)
+		{
+			removeMechanicImmunity(m_entry->mechanicimmunity());
+		}
 
 		// Choose a level
 		UInt8 creatureLevel = entry.minlevel();
@@ -82,9 +120,9 @@ namespace wowpp
 
 		// calculate interpolation factor
 		const float t =
-			(entry.maxlevel() != entry.minlevel()) ?
-			(creatureLevel - entry.minlevel()) / (entry.maxlevel() - entry.minlevel()) :
-			0.0f;
+		    (entry.maxlevel() != entry.minlevel()) ?
+		    (creatureLevel - entry.minlevel()) / (entry.maxlevel() - entry.minlevel()) :
+		    0.0f;
 
 		// Randomize gender
 		std::uniform_int_distribution<int> genderDistribution(0, 1);
@@ -123,14 +161,14 @@ namespace wowpp
 		setByteValue(unit_fields::Bytes0, 3, game::power_type::Mana);
 		setUInt32Value(unit_fields::BaseMana, getUInt32Value(unit_fields::MaxPower1));
 		setUInt32Value(unit_fields::Bytes0, 0x00020200);
-// 		if (entry.maxLevelMana > 0)
-// 		{
-// 			setByteValue(unit_fields::Bytes1, 1, 0xEE);
-// 		}
-// 		else
-// 		{
-// 			setByteValue(unit_fields::Bytes1, 1, 0x00);
-// 		}
+		if (entry.maxlevelmana() > 0)
+		{
+			setByteValue(unit_fields::Bytes1, 1, 0xEE);
+		}
+		else
+		{
+			setByteValue(unit_fields::Bytes1, 1, 0x00);
+		}
 
 		setVirtualItem(0, getProject().items.getById(entry.mainhandweapon()));
 		setVirtualItem(1, getProject().items.getById(entry.offhandweapon()));
@@ -146,6 +184,12 @@ namespace wowpp
 		}
 		setModifierValue(unit_mods::Armor, unit_mod_type::BaseValue, entry.armor());
 
+		// Apply resistances
+		for (UInt32 i = 0; i < 6; ++i)
+		{
+			setModifierValue(static_cast<UnitMods>(unit_mods::ResistanceStart + i), unit_mod_type::BaseValue, entry.resistances(i));
+		}
+
 		// Setup new entry
 		m_entry = &entry;
 
@@ -156,14 +200,16 @@ namespace wowpp
 		}
 
 		updateAllStats();
+		addMechanicImmunity(m_entry->mechanicimmunity());
 	}
 
 	float GameCreature::calcXpModifier(UInt32 attackerLevel) const
 	{
 		// No experience points
 		const UInt32 level = getLevel();
-		if (level < getGrayLevel(attackerLevel))
+		if (level < getGrayLevel(attackerLevel)) {
 			return 0.0f;
+		}
 
 		const UInt32 ZD = getZeroDiffXPValue(attackerLevel);
 		if (level < attackerLevel)
@@ -176,13 +222,13 @@ namespace wowpp
 		}
 	}
 
-	const String & GameCreature::getName() const
+	const String &GameCreature::getName() const
 	{
 		if (!m_entry)
 		{
 			return m_originalEntry.name();
 		}
-		
+
 		return m_entry->name();
 	}
 
@@ -276,14 +322,51 @@ namespace wowpp
 			const auto *triggerEntry = getProject().triggers.getById(triggerId);
 			if (triggerEntry)
 			{
-				for (const auto &triggerEvent : triggerEntry->events())
+				for (const auto &triggerEvent : triggerEntry->newevents())
 				{
-					if (triggerEvent == e)
+					if (triggerEvent.type() == e)
 					{
 						unitTrigger(std::cref(*triggerEntry), std::ref(*this));
-						return;
 					}
 				}
+			}
+		}
+	}
+
+	void GameCreature::raiseTrigger(trigger_event::Type e, const std::vector<UInt32>& data)
+	{
+		for (const auto &triggerId : getEntry().triggers())
+		{
+			const auto *triggerEntry = getProject().triggers.getById(triggerId);
+			if (!triggerEntry)
+			{
+				continue;
+			}
+
+			for (const auto &triggerEvent : triggerEntry->newevents())
+			{
+				if (triggerEvent.type() != e)
+					continue;
+
+				if (triggerEvent.data_size() > 0)
+				{
+					switch (e)
+					{
+					case trigger_event::OnSpellHit:
+					case trigger_event::OnSpellAuraRemoved:
+					case trigger_event::OnEmote:
+						if (triggerEvent.data(0) != 0)
+						{
+							if (data.empty() || data[0] != triggerEvent.data(0))
+								continue;
+						}
+						break;
+					default:
+						break;
+					}
+				}
+
+				unitTrigger(std::cref(*triggerEntry), std::ref(*this));
 			}
 		}
 	}
@@ -293,7 +376,9 @@ namespace wowpp
 		auto &entry = getEntry();
 		for (const auto &id : entry.quests())
 		{
-			if (id == questId) return true;
+			if (id == questId) {
+				return true;
+			}
 		}
 
 		return false;
@@ -304,13 +389,15 @@ namespace wowpp
 		auto &entry = getEntry();
 		for (const auto &id : entry.end_quests())
 		{
-			if (id == questId) return true;
+			if (id == questId) {
+				return true;
+			}
 		}
 
 		return false;
 	}
 
-	game::QuestgiverStatus GameCreature::getQuestgiverStatus(const GameCharacter & character) const
+	game::QuestgiverStatus GameCreature::getQuestgiverStatus(const GameCharacter &character) const
 	{
 		game::QuestgiverStatus result = game::questgiver_status::None;
 		for (const auto &quest : getEntry().end_quests())
@@ -353,45 +440,95 @@ namespace wowpp
 		return (invType && invType != game::inventory_type::Shield);
 	}
 
+	bool GameCreature::canSpawnForCharacter(GameCharacter & target) const
+	{
+		// If this is a spirit healer...
+		if (getEntry().npcflags() & 0x00004000)
+		{
+			return (!target.isAlive());
+		}
+
+		return true;
+	}
+
+	void GameCreature::setCombatMovement(bool enabled)
+	{
+		if (enabled == m_combatMovement)
+			return;
+
+		m_combatMovement = enabled;
+		m_ai->onCombatMovementChanged();
+	}
+
+	void GameCreature::setMovementType(game::CreatureMovement movementType)
+	{
+		if (m_movement != movementType)
+		{
+			m_movement = movementType;
+			m_ai->onCreatureMovementChanged();
+		}
+	}
+
+	void GameCreature::setWaypoints(const std::vector<proto::Waypoint>& waypoints)
+	{
+		// Copy waypoints
+		m_waypoints = waypoints;
+	}
+
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)
 	{
-		if (killerLevel < 8)
+		if (killerLevel < 8) {
 			return 5;
-		else if (killerLevel < 10)
+		}
+		else if (killerLevel < 10) {
 			return 6;
-		else if (killerLevel < 12)
+		}
+		else if (killerLevel < 12) {
 			return 7;
-		else if (killerLevel < 16)
+		}
+		else if (killerLevel < 16) {
 			return 8;
-		else if (killerLevel < 20)
+		}
+		else if (killerLevel < 20) {
 			return 9;
-		else if (killerLevel < 30)
+		}
+		else if (killerLevel < 30) {
 			return 11;
-		else if (killerLevel < 40)
+		}
+		else if (killerLevel < 40) {
 			return 12;
-		else if (killerLevel < 45)
+		}
+		else if (killerLevel < 45) {
 			return 13;
-		else if (killerLevel < 50)
+		}
+		else if (killerLevel < 50) {
 			return 14;
-		else if (killerLevel < 55)
+		}
+		else if (killerLevel < 55) {
 			return 15;
-		else if (killerLevel < 60)
+		}
+		else if (killerLevel < 60) {
 			return 16;
+		}
 
 		return 17;
 	}
 
 	UInt32 getGrayLevel(UInt32 killerLevel)
 	{
-		if (killerLevel < 6)
+		if (killerLevel < 6) {
 			return 0;
-		else if (killerLevel < 50)
+		}
+		else if (killerLevel < 50) {
 			return killerLevel - ::floor(killerLevel / 10) - 5;
-		else if (killerLevel == 50)
+		}
+		else if (killerLevel == 50) {
 			return killerLevel - 10;
-		else if (killerLevel < 60)
+		}
+		else if (killerLevel < 60) {
 			return killerLevel - ::floor(killerLevel / 5) - 1;
-		
+		}
+
 		return killerLevel - 9;
 	}
 

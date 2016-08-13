@@ -19,6 +19,7 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "object_editor.h"
 #include "main_window.h"
 #include "editor_application.h"
@@ -33,8 +34,6 @@
 #include "game/defines.h"
 #include "import_dialog.h"
 #include <QRegExp>
-#include <utility>
-#include <memory>
 
 namespace wowpp
 {
@@ -47,13 +46,20 @@ namespace wowpp
 			, m_selectedUnit(nullptr)
 			, m_selectedSpell(nullptr)
 			, m_selectedQuest(nullptr)
+			, m_selectedObject(nullptr)
+			, m_selectedItem(nullptr)
 		{
 			m_ui->setupUi(this);
 
 			// Setup view model
 			m_viewModel = new PropertyViewModel(m_properties, nullptr);
+			m_objectViewModel = new PropertyViewModel(m_objectProperties, nullptr);
+			m_itemViewModel = new PropertyViewModel(m_itemProperties, nullptr);
 			m_ui->unitPropertyWidget->setModel(m_viewModel);
+			m_ui->objectPropertyWidget->setModel(m_objectViewModel);
 			m_ui->lootView->header()->setVisible(true);
+			m_ui->objectLootView->header()->setVisible(true);
+			m_ui->itemLootView->header()->setVisible(true);
 
 			// Automatically deleted since it's a QObject
 			m_unitFilter = new QSortFilterProxyModel;
@@ -75,6 +81,11 @@ namespace wowpp
 			m_questFilter->setSourceModel(app.getQuestListModel());
 			m_ui->questsListView->setModel(m_questFilter);
 
+			// Automatically deleted since it's a QObject
+			m_objectFilter = new QSortFilterProxyModel;
+			m_objectFilter->setSourceModel(app.getObjectListModel());
+			m_ui->objectsListView->setModel(m_objectFilter);
+
 			// Map selection box
 			m_ui->spellTeleportMapBox->setModel(app.getMapListModel());
 
@@ -90,6 +101,9 @@ namespace wowpp
 			connect(m_ui->questsListView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
 				this, SLOT(onQuestSelectionChanged(QItemSelection, QItemSelection)));
+			connect(m_ui->objectsListView->selectionModel(),
+				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+				this, SLOT(onObjectSelectionChanged(QItemSelection, QItemSelection)));
 
 			connect(m_ui->actionSave, SIGNAL(triggered()), &m_application, SLOT(saveUnsavedChanges()));
 		}
@@ -127,6 +141,14 @@ namespace wowpp
 
 			QRegExp regExp(m_ui->questFilter->text(), caseSensitivity, syntax);
 			m_questFilter->setFilterRegExp(regExp);
+		}
+		void ObjectEditor::on_objectFilter_editingFinished()
+		{
+			QRegExp::PatternSyntax syntax = QRegExp::RegExp;
+			Qt::CaseSensitivity caseSensitivity = Qt::CaseInsensitive;
+
+			QRegExp regExp(m_ui->objectFilter->text(), caseSensitivity, syntax);
+			m_objectFilter->setFilterRegExp(regExp);
 		}
 #if 0
 		namespace
@@ -252,6 +274,48 @@ namespace wowpp
 			}
 		}
 
+
+		namespace
+		{
+			static void applySpellToTreeItem(QTreeWidgetItem &item, const proto::UnitSpellEntry &entry, const proto::SpellEntry &spell)
+			{
+				static QString spellCastTargetNames[] = {
+					"SELF",
+					"CURRENT_TARGET"
+				};
+
+				item.setText(0, QString("%1 %2").arg(spell.id()).arg(spell.name().c_str()));
+				item.setText(1, QString("%1").arg(entry.priority()));
+				item.setText(2, QString("%1").arg(entry.repeated() ? "Yes" : "No"));
+				item.setText(3, spellCastTargetNames[entry.target()]);
+				if (entry.mininitialcooldown() != entry.maxinitialcooldown())
+				{
+					item.setText(4, QString("%1 - %2").arg(entry.mininitialcooldown()).arg(entry.maxinitialcooldown()));
+				}
+				else
+				{
+					item.setText(4, QString("%1").arg(entry.mininitialcooldown()));
+				}
+				if (entry.mincooldown() != entry.maxcooldown())
+				{
+					item.setText(5, QString("%1 - %2").arg(entry.mincooldown()).arg(entry.maxcooldown()));
+				}
+				else
+				{
+					item.setText(5, QString("%1").arg(entry.mincooldown()));
+				}
+				if (entry.minrange() != entry.maxrange())
+				{
+					item.setText(6, QString("%1 - %2").arg(entry.minrange()).arg(entry.maxrange()));
+				}
+				else
+				{
+					item.setText(6, QString("%1").arg(entry.minrange()));
+				}
+				item.setText(7, QString("%1%").arg(entry.probability()));
+			}
+		}
+
 		void ObjectEditor::addSpellEntry(const wowpp::proto::UnitSpellEntry &creatureSpell)
 		{
 			const auto *spellEntry = m_application.getProject().spells.getById(creatureSpell.spellid());
@@ -260,24 +324,8 @@ namespace wowpp
 				return;
 			}
 
-			static QString spellCastTargetNames[] = {
-				"SELF",
-				"CURRENT_TARGET"
-			};
-
 			QTreeWidgetItem *item = new QTreeWidgetItem(m_ui->treeWidget);
-			item->setText(0, spellEntry->name().c_str());
-			item->setText(1, QString("%1").arg(creatureSpell.priority()));
-			item->setText(2, QString("%1").arg(creatureSpell.repeated() ? "Yes" : "No"));
-			item->setText(3, spellCastTargetNames[creatureSpell.target()]);
-			if (creatureSpell.mincooldown() != creatureSpell.maxcooldown())
-			{
-				item->setText(4, QString("%1 - %2").arg(creatureSpell.mincooldown()).arg(creatureSpell.maxcooldown()));
-			}
-			else
-			{
-				item->setText(4, QString("%1").arg(creatureSpell.mincooldown()));
-			}
+			applySpellToTreeItem(*item, creatureSpell, *spellEntry);
 		}
 
 		void ObjectEditor::showEffectDialog(const proto::SpellEffect & effect)
@@ -326,6 +374,32 @@ namespace wowpp
 				{
 					m_ui->unitQuestWidget->addItem(
 						QString("%1 %2 [%3]").arg(questid, 5, 10, QLatin1Char('0')).arg(quest->name().c_str()).arg(static_cast<Int32>(quest->questlevel())));
+				}
+			}
+
+			m_ui->trainerWidget->clear();
+			if (unit->trainerentry())
+			{
+				const auto *trainer = m_application.getProject().trainers.getById(unit->trainerentry());
+				if (trainer)
+				{
+					for (auto &entry : trainer->spells())
+					{
+						const auto *spell = m_application.getProject().spells.getById(entry.spell());
+						if (!spell)
+						{
+							continue;
+						}
+
+						const auto *skill = (entry.reqskill() ? m_application.getProject().skills.getById(entry.reqskill()) : nullptr);
+
+						auto *item = new QTreeWidgetItem(m_ui->trainerWidget);
+						item->setText(0, QString("%1 %2").arg(spell->id(), 5, 10, QLatin1Char('0')).arg(spell->name().c_str()));
+						item->setText(1, QString("%1").arg(entry.spellcost()));
+						item->setText(2, QString("%1").arg(skill ? skill->name().c_str() : "-"));
+						item->setText(3, QString("%1").arg(entry.reqskillval()));
+						item->setText(4, QString("%1").arg(entry.reqlevel()));
+					}
 				}
 			}
 
@@ -380,11 +454,56 @@ namespace wowpp
 				m_ui->lootToolButton->setDisabled(false);
 				m_ui->lootSimulatorButton->setDisabled(false);
 			}
-			
+
+			m_ui->skinLootView->clear();
+			if (!unit->skinninglootentry())
+			{
+				m_ui->skinLootLine->setText("- NO LOOT -");
+				m_ui->skinLootToolButton->setDisabled(true);
+				m_ui->skinLootSimulatorButton->setDisabled(true);
+			}
+			else
+			{
+				QIcon groupIcon;
+				groupIcon.addFile(QStringLiteral(":/Items.png"), QSize(), QIcon::Normal, QIcon::Off);
+
+				size_t groupIndex = 0;
+				const auto *lootEntry = m_application.getProject().skinningLoot.getById(unit->skinninglootentry());
+				if (lootEntry)
+				{
+					for (const auto &group : lootEntry->groups())
+					{
+						// Add group
+						QTreeWidgetItem *groupItem = new QTreeWidgetItem();
+						groupItem->setIcon(0, groupIcon);
+						m_ui->skinLootView->addTopLevelItem(groupItem);
+
+						float totalDropChance = 0.0f;
+						for (const auto &def : group.definitions())
+						{
+							totalDropChance += def.dropchance();
+							addLootItem(def, groupItem);
+						}
+
+						groupItem->setText(0, QString("Group %1").arg(groupIndex++));
+						groupItem->setText(1, QString("%1% Total").arg(totalDropChance));
+						groupItem->setText(2, QString("%1 Items").arg(group.definitions_size()));
+					}
+				}
+
+				m_ui->skinLootLine->setText(QString("Loot Entry %1").arg(unit->skinninglootentry()));
+				m_ui->skinLootToolButton->setDisabled(false);
+				m_ui->skinLootSimulatorButton->setDisabled(false);
+			}
+
 			// Add unit properties
 #define WOWPP_NUM_PROPERTY(name, type, ref, prop, readonly) { \
 			auto getBinder = [unit]() -> type { return unit->prop(); }; \
 			auto setBinder = [unit](type value) { unit->set_##prop(value); }; \
+			m_properties.push_back(PropertyPtr(new NumericProperty(name, ref(getBinder, setBinder), readonly))); }
+#define WOWPP_INDEXED_NUM_PROPERTY(name, type, ref, prop, index, readonly) { \
+			auto getBinder = [unit]() -> type { return unit->prop(index); }; \
+			auto setBinder = [unit](type value) { unit->set_##prop(index, value); }; \
 			m_properties.push_back(PropertyPtr(new NumericProperty(name, ref(getBinder, setBinder), readonly))); }
 #define WOWPP_STR_PROPERTY(name, prop, readonly) { \
 			auto getBinder = [unit]() -> String { return unit->prop(); }; \
@@ -396,7 +515,7 @@ namespace wowpp
 			auto getMaxBinder = [unit]() -> type { return unit->max##prop(); }; \
 			auto setMaxBinder = [unit](type value) { unit->set_max##prop(value); }; \
 			m_properties.push_back(PropertyPtr(new MinMaxProperty(name, ref(getMinBinder, setMinBinder), ref(getMaxBinder, setMaxBinder), readonly))); }
-
+			
 			WOWPP_NUM_PROPERTY("Entry", UInt32, UInt32Ref, id, true);
 			WOWPP_STR_PROPERTY("Name", name, false);
 			WOWPP_STR_PROPERTY("Subname", subname, false);
@@ -426,14 +545,20 @@ namespace wowpp
 			WOWPP_NUM_PROPERTY("Unit Class", UInt32, UInt32Ref, unitclass, false);
 			WOWPP_NUM_PROPERTY("Rank", UInt32, UInt32Ref, rank, false);
 			WOWPP_NUM_PROPERTY("Armor", UInt32, UInt32Ref, armor, false);
-			/*WOWPP_NUM_PROPERTY("Holy Resistance", UInt32, UInt32Ref, armor, false);
-			WOWPP_NUM_PROPERTY("Fire Resistance", UInt32, UInt32Ref, armor, false);
-			WOWPP_NUM_PROPERTY("Nature Resistance", UInt32, UInt32Ref, armor, false);
-			WOWPP_NUM_PROPERTY("Frost Resistance", UInt32, UInt32Ref, armor, false);
-			WOWPP_NUM_PROPERTY("Shadow Resistance", UInt32, UInt32Ref, armor, false);
-			WOWPP_NUM_PROPERTY("Arcane Resistance", UInt32, UInt32Ref, armor, false);*/
+			WOWPP_INDEXED_NUM_PROPERTY("Holy Resistance", UInt32, UInt32Ref, resistances, 0, false);
+			WOWPP_INDEXED_NUM_PROPERTY("Fire Resistance", UInt32, UInt32Ref, resistances, 1, false);
+			WOWPP_INDEXED_NUM_PROPERTY("Nature Resistance", UInt32, UInt32Ref, resistances, 2, false);
+			WOWPP_INDEXED_NUM_PROPERTY("Frost Resistance", UInt32, UInt32Ref, resistances, 3, false);
+			WOWPP_INDEXED_NUM_PROPERTY("Shadow Resistance", UInt32, UInt32Ref, resistances, 4, false);
+			WOWPP_INDEXED_NUM_PROPERTY("Arcane Resistance", UInt32, UInt32Ref, resistances, 5, false);
 			WOWPP_MIN_MAX_PROPERTY("Loot Gold", UInt32, UInt32Ref, lootgold, false);
 			WOWPP_MIN_MAX_PROPERTY("Experience", UInt32, UInt32Ref, levelxp, false);
+			WOWPP_NUM_PROPERTY("Mechanic Immunity", UInt32, UInt32Ref, mechanicimmunity, false);
+			WOWPP_NUM_PROPERTY("School Immunity", UInt32, UInt32Ref, schoolimmunity, false);
+
+#undef WOWPP_MIN_MAX_PROPERTY
+#undef WOWPP_STR_PROPERTY
+#undef WOWPP_NUM_PROPERTY
 
 			// Update the view 
 			m_viewModel->layoutChanged();
@@ -503,6 +628,89 @@ namespace wowpp
 			}
 		}
 
+		void ObjectEditor::on_objectPropertyWidget_doubleClicked(QModelIndex index)
+		{
+			// Get the clicked property
+			int row = index.row();
+			if (row < 0)
+			{
+				// Invalid?
+				return;
+			}
+
+			// Now we want to get the property of this
+			std::unique_ptr<QDialog> dialog;
+
+			// Determine prop type
+			Property &prop = *m_objectProperties.at(row);
+			if (!prop.isReadOnly())
+			{
+				auto &propType = typeid(prop);
+
+				// Create editor
+				if (propType == typeid(StringProperty))
+				{
+					StringProperty &stringProp = reinterpret_cast<StringProperty &>(prop);
+					dialog.reset(new StringEditor(stringProp));
+				}
+				else if (propType == typeid(NumericProperty))
+				{
+					NumericProperty &uintProp = reinterpret_cast<NumericProperty &>(prop);
+					dialog.reset(new NumericEditor(uintProp));
+				}
+				else if (propType == typeid(MinMaxProperty))
+				{
+					MinMaxProperty &minMaxUIntProp = reinterpret_cast<MinMaxProperty &>(prop);
+					dialog.reset(new MinMaxEditor(minMaxUIntProp));
+				}
+
+				// Display dialog
+				if (dialog &&
+					dialog->exec() == QDialog::Accepted)
+				{
+					// Value changed
+					m_objectViewModel->layoutChanged();
+					m_application.markAsChanged();
+				}
+			}
+		}
+
+		void ObjectEditor::on_treeWidget_doubleClicked(QModelIndex index)
+		{
+			// Find the selected entry
+			if (!index.isValid() || !m_selectedUnit)
+			{
+				return;
+			}
+
+			auto *entry = m_selectedUnit->mutable_creaturespells(index.row());
+
+			CreatureSpellDialog dialog(m_application, entry);
+			auto result = dialog.exec();
+			if (result == QDialog::Accepted)
+			{
+				if (!dialog.getSelectedSpell())
+				{
+					return;
+				}
+
+				entry->set_spellid(dialog.getSelectedSpell()->id());
+				entry->set_priority(dialog.getPriority());
+				entry->set_mincooldown(dialog.getMinCooldown());
+				entry->set_maxcooldown(dialog.getMaxCooldown());
+				entry->set_mininitialcooldown(dialog.getMinInitialCooldown());
+				entry->set_maxinitialcooldown(dialog.getMaxInitialCooldown());
+				entry->set_target(dialog.getTarget());
+				entry->set_repeated(dialog.getRepeated());
+				entry->set_probability(dialog.getProbability());
+
+				// Update UI
+				QTreeWidgetItem *item = m_ui->treeWidget->currentItem();
+				applySpellToTreeItem(*item, *entry, *dialog.getSelectedSpell());
+				m_application.markAsChanged();
+			}
+		}
+
 		void ObjectEditor::onSpellSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
 		{
 			// Get the selected unit
@@ -529,6 +737,7 @@ namespace wowpp
 
 			m_ui->spellIdField->setText(QString::number(spell->id()));
 			m_ui->spellNameField->setText(spell->name().c_str());
+			m_ui->spellMechanicField->setText(QString::number(spell->mechanic()));
 
 			// Determine the cast time of this spell
 			Int64 castTime = spell->casttime();
@@ -537,6 +746,8 @@ namespace wowpp
 			m_ui->cooldownField->setText(QString::number(spell->cooldown()));
 			m_ui->resourceField->setCurrentIndex(spell->powertype());
 			m_ui->costField->setText(QString::number(spell->cost()));
+			m_ui->lineEdit_6->setText(QString::number(spell->family()));
+			m_ui->lineEdit_7->setText(QString("0x") + QString::number(spell->familyflags(), 16).toUpper().rightJustified(16, QLatin1Char('0')));
 
 			// Attributes
 			for (size_t i = 1; i <= 32; ++i)
@@ -665,6 +876,7 @@ namespace wowpp
 		void ObjectEditor::onItemSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
 		{
 			// Get the selected unit
+			m_selectedItem = nullptr;
 			if (selection.isEmpty())
 				return;
 
@@ -682,6 +894,60 @@ namespace wowpp
 			auto *item = m_application.getProject().items.getTemplates().mutable_entry(index);
 			if (!item)
 				return;
+
+			m_selectedItem = item;
+
+			m_ui->itemQuestWidget->clear();
+			/*for (const auto &questid : item->quests())
+			{
+				const auto *quest = m_application.getProject().quests.getById(questid);
+				if (quest)
+				{
+					m_ui->objectQuestWidget->addItem(
+						QString("%1 %2 [%3]").arg(questid, 5, 10, QLatin1Char('0')).arg(quest->name().c_str()).arg(static_cast<Int32>(quest->questlevel())));
+				}
+			}*/
+
+			m_ui->itemLootView->clear();
+			if (!item->lootentry())
+			{
+				m_ui->itemLootLine->setText("- NO LOOT -");
+				m_ui->itemLootToolButton->setDisabled(true);
+				m_ui->itemLootSimulatorButton->setDisabled(true);
+			}
+			else
+			{
+				QIcon groupIcon;
+				groupIcon.addFile(QStringLiteral(":/Items.png"), QSize(), QIcon::Normal, QIcon::Off);
+
+				size_t groupIndex = 0;
+				const auto *lootEntry = m_application.getProject().itemLoot.getById(item->lootentry());
+				if (lootEntry)
+				{
+					for (const auto &group : lootEntry->groups())
+					{
+						// Add group
+						QTreeWidgetItem *groupItem = new QTreeWidgetItem();
+						groupItem->setIcon(0, groupIcon);
+						m_ui->itemLootView->addTopLevelItem(groupItem);
+
+						float totalDropChance = 0.0f;
+						for (const auto &def : group.definitions())
+						{
+							totalDropChance += def.dropchance();
+							addLootItem(def, groupItem);
+						}
+
+						groupItem->setText(0, QString("Group %1").arg(groupIndex++));
+						groupItem->setText(1, QString("%1% Total").arg(totalDropChance));
+						groupItem->setText(2, QString("%1 Items").arg(group.definitions_size()));
+					}
+				}
+
+				m_ui->itemLootLine->setText(QString("Loot Entry %1").arg(item->lootentry()));
+				m_ui->itemLootToolButton->setDisabled(false);
+				m_ui->itemLootSimulatorButton->setDisabled(false);
+			}
 		}
 
 		void ObjectEditor::onQuestSelectionChanged(const QItemSelection & selection, const QItemSelection & old)
@@ -714,6 +980,45 @@ namespace wowpp
 			m_ui->questMethodField->setText(QString("%1").arg(m_selectedQuest->method()));
 			m_ui->questMinLevelField->setText(QString("%1").arg(m_selectedQuest->minlevel()));
 			m_ui->questLevelField->setText(QString("%1").arg(m_selectedQuest->questlevel()));
+			m_ui->questTimerField->setText(QString("%1 sec.").arg(m_selectedQuest->timelimit()));
+			m_ui->questPlayerField->setText(QString("%1").arg(m_selectedQuest->suggestedplayers()));
+
+			const std::map<UInt32, QString> questTypes = { 
+				{1, "Group"}, 
+				{21, "Life"}, 
+				{41, "PvP"}, 
+				{62, "Raid"}, 
+				{81, "Dungeon"}, 
+				{82, "World Event"}, 
+				{83, "Legendary"}, 
+				{84, "Escort"}, 
+				{85, "Heroic"} 
+			};
+
+			auto typeIt = questTypes.find(m_selectedQuest->type());
+			if (typeIt != questTypes.end())
+			{
+				m_ui->lineEdit_5->setText(typeIt->second);
+			}
+			else 
+			{
+				m_ui->lineEdit_5->setText(m_selectedQuest->type() == 0 ? "None" : "UNKNOWN");
+			}
+
+			for (size_t i = 1; i <= 13; ++i)
+			{
+				QCheckBox *box = m_ui->questFlagsBox->findChild<QCheckBox*>(QString("quest_flag_%1").arg(i));
+				if (box)
+				{
+					const bool hasAttribute = (m_selectedQuest->flags() & (1 << (i - 1))) != 0;
+					box->setChecked(hasAttribute);
+				}
+			}
+			
+			const auto *srcItem = m_selectedQuest->srcitemid() ?
+				m_application.getProject().items.getById(m_selectedQuest->srcitemid()) : nullptr;
+			m_ui->questSourceItemButton->setText(
+				QString("%1").arg(srcItem ? QString("%1x %2 (%3)").arg(m_selectedQuest->srcitemcount()).arg(srcItem->name().c_str()).arg(srcItem->id()) : "NONE"));
 
 			m_ui->questDetailsTextField->setText(m_selectedQuest->detailstext().c_str());
 			m_ui->questObjectivesTextField->setText(m_selectedQuest->objectivestext().c_str());
@@ -801,12 +1106,148 @@ namespace wowpp
 				}
 				if (spellcast)
 				{
-					treeitem->setText(3, QString("%1 (%2)").arg(spellcast->name().c_str()).arg(spellcast->id()));
+					treeitem->setText(4, QString("%1 (%2)").arg(spellcast->name().c_str()).arg(spellcast->id()));
 				}
 				treeitem->setText(5, entry.text().c_str());
 
 				m_ui->questRequirementWidget->addTopLevelItem(treeitem);
 			}
+		}
+
+		void ObjectEditor::onObjectSelectionChanged(const QItemSelection & selection, const QItemSelection & old)
+		{
+			// Get the selected unit
+			m_selectedObject = nullptr;
+			if (selection.isEmpty())
+			{
+				return;
+			}
+
+			QItemSelection source = m_objectFilter->mapSelectionToSource(selection);
+			if (source.isEmpty())
+			{
+				return;
+			}
+
+			int index = source.indexes().first().row();
+			if (index < 0)
+			{
+				return;
+			}
+
+			// Get object entry
+			auto *object = m_application.getProject().objects.getTemplates().mutable_entry(index);
+			m_selectedObject = object;
+			if (!object)
+				return;
+
+			m_ui->objectQuestWidget->clear();
+			for (const auto &questid : object->quests())
+			{
+				const auto *quest = m_application.getProject().quests.getById(questid);
+				if (quest)
+				{
+					m_ui->objectQuestWidget->addItem(
+						QString("%1 %2 [%3]").arg(questid, 5, 10, QLatin1Char('0')).arg(quest->name().c_str()).arg(static_cast<Int32>(quest->questlevel())));
+				}
+			}
+
+			m_ui->objectEndQuestWidget->clear();
+			for (const auto &questid : object->end_quests())
+			{
+				const auto *quest = m_application.getProject().quests.getById(questid);
+				if (quest)
+				{
+					m_ui->objectEndQuestWidget->addItem(
+						QString("%1 %2 [%3]").arg(questid, 5, 10, QLatin1Char('0')).arg(quest->name().c_str()).arg(static_cast<Int32>(quest->questlevel())));
+				}
+			}
+
+			m_ui->objectLootView->clear();
+			if (!object->objectlootentry())
+			{
+				m_ui->objectLootLine->setText("- NO LOOT -");
+				m_ui->objectLootToolButton->setDisabled(true);
+				m_ui->objectLootSimulatorButton->setDisabled(true);
+			}
+			else
+			{
+				QIcon groupIcon;
+				groupIcon.addFile(QStringLiteral(":/Items.png"), QSize(), QIcon::Normal, QIcon::Off);
+
+				size_t groupIndex = 0;
+				const auto *lootEntry = m_application.getProject().objectLoot.getById(object->objectlootentry());
+				if (lootEntry)
+				{
+					for (const auto &group : lootEntry->groups())
+					{
+						// Add group
+						QTreeWidgetItem *groupItem = new QTreeWidgetItem();
+						groupItem->setIcon(0, groupIcon);
+						m_ui->objectLootView->addTopLevelItem(groupItem);
+
+						float totalDropChance = 0.0f;
+						for (const auto &def : group.definitions())
+						{
+							totalDropChance += def.dropchance();
+							addLootItem(def, groupItem);
+						}
+
+						groupItem->setText(0, QString("Group %1").arg(groupIndex++));
+						groupItem->setText(1, QString("%1% Total").arg(totalDropChance));
+						groupItem->setText(2, QString("%1 Items").arg(group.definitions_size()));
+					}
+				}
+
+				m_ui->objectLootLine->setText(QString("Loot Entry %1").arg(object->objectlootentry()));
+				m_ui->objectLootToolButton->setDisabled(false);
+				m_ui->objectLootSimulatorButton->setDisabled(false);
+			}
+
+			m_ui->objectTriggerWidget->clear();
+			for (const auto &triggerId : object->triggers())
+			{
+				const auto *triggerEntry = m_application.getProject().triggers.getById(triggerId);
+				if (triggerEntry)
+				{
+					m_ui->objectTriggerWidget->addItem(
+						QString(triggerEntry->name().c_str()));
+				}
+			}
+
+			// Update properties
+			m_objectProperties.clear();
+
+			// Add unit properties
+#define WOWPP_NUM_PROPERTY(name, type, ref, prop, readonly) { \
+			auto getBinder = [object]() -> type { return object->prop(); }; \
+			auto setBinder = [object](type value) { object->set_##prop(value); }; \
+			m_objectProperties.push_back(PropertyPtr(new NumericProperty(name, ref(getBinder, setBinder), readonly))); }
+#define WOWPP_STR_PROPERTY(name, prop, readonly) { \
+			auto getBinder = [object]() -> String { return object->prop(); }; \
+			auto setBinder = [object](const String &value) { object->set_##prop(value.c_str()); }; \
+			m_objectProperties.push_back(PropertyPtr(new StringProperty(name, getBinder, setBinder, readonly))); }
+#define WOWPP_MIN_MAX_PROPERTY(name, type, ref, prop, readonly) { \
+			auto getMinBinder = [object]() -> type { return object->min##prop(); }; \
+			auto setMinBinder = [object](type value) { object->set_min##prop(value); }; \
+			auto getMaxBinder = [object]() -> type { return object->max##prop(); }; \
+			auto setMaxBinder = [object](type value) { object->set_max##prop(value); }; \
+			m_objectProperties.push_back(PropertyPtr(new MinMaxProperty(name, ref(getMinBinder, setMinBinder), ref(getMaxBinder, setMaxBinder), readonly))); }
+
+			WOWPP_NUM_PROPERTY("Entry", UInt32, UInt32Ref, id, true);
+			WOWPP_STR_PROPERTY("Name", name, false);
+			WOWPP_STR_PROPERTY("Caption", caption, false);
+			WOWPP_NUM_PROPERTY("Faction", UInt32, UInt32Ref, factionid, false);
+			WOWPP_NUM_PROPERTY("Type", UInt32, UInt32Ref, type, false);
+			WOWPP_NUM_PROPERTY("Flags", UInt32, UInt32Ref, flags, false);
+			WOWPP_MIN_MAX_PROPERTY("Loot Gold", UInt32, UInt32Ref, gold, false);
+
+#undef WOWPP_MIN_MAX_PROPERTY
+#undef WOWPP_STR_PROPERTY
+#undef WOWPP_NUM_PROPERTY
+
+			// Update the view 
+			m_objectViewModel->layoutChanged();
 		}
 
 		void ObjectEditor::on_unitAddTriggerBtn_clicked()
@@ -865,6 +1306,63 @@ namespace wowpp
 			}
 		}
 
+		void ObjectEditor::on_objectAddTriggerBtn_clicked()
+		{
+			if (!m_selectedObject)
+				return;
+
+			ChooseTriggerDialog dialog(m_application);
+			auto result = dialog.exec();
+			if (result == QDialog::Accepted)
+			{
+				const auto *newTrigger = dialog.getSelectedTrigger();
+				if (newTrigger)
+				{
+					auto it = std::find_if(m_selectedObject->triggers().begin(), m_selectedObject->triggers().end(), [&newTrigger](const UInt32 &trigger) -> bool
+					{
+						return (trigger == newTrigger->id());
+					});
+
+					if (it == m_selectedObject->triggers().end())
+					{
+						m_selectedObject->mutable_triggers()->Add(newTrigger->id());
+						m_ui->objectTriggerWidget->addItem(
+							QString(newTrigger->name().c_str()));
+
+						m_application.markAsChanged();
+					}
+				}
+			}
+		}
+
+		void ObjectEditor::on_objectRemoveTriggerBtn_clicked()
+		{
+			if (!m_selectedObject)
+				return;
+
+			// Find selected trigger
+			auto index = m_ui->objectTriggerWidget->currentIndex();
+			if (index.isValid())
+			{
+				int row = index.row();
+				if (row < 0 || row >= m_selectedObject->triggers_size())
+					return;
+
+				if (m_selectedObject->triggers_size() > 1 &&
+					row != m_selectedObject->triggers_size() - 1)
+				{
+					m_selectedObject->mutable_triggers()->SwapElements(row, m_selectedObject->triggers_size() - 1);
+				}
+				m_selectedObject->mutable_triggers()->RemoveLast();
+
+				auto *taken = m_ui->objectTriggerWidget->takeItem(row);
+				delete taken;
+
+				m_application.markAsChanged();
+			}
+		}
+
+
 		void ObjectEditor::on_lootSimulatorButton_clicked()
 		{
 			if (!m_selectedUnit)
@@ -874,6 +1372,54 @@ namespace wowpp
 				return;
 
 			const auto *loot = m_application.getProject().unitLoot.getById(m_selectedUnit->unitlootentry());
+			if (!loot)
+				return;
+
+			LootDialog dialog(m_application.getProject(), *loot);
+			dialog.exec();
+		}
+
+		void ObjectEditor::on_objectLootSimulatorButton_clicked()
+		{
+			if (!m_selectedObject)
+				return;
+
+			if (!m_selectedObject->objectlootentry())
+				return;
+
+			const auto *loot = m_application.getProject().objectLoot.getById(m_selectedObject->objectlootentry());
+			if (!loot)
+				return;
+
+			LootDialog dialog(m_application.getProject(), *loot);
+			dialog.exec();
+		}
+
+		void ObjectEditor::on_itemLootSimulatorButton_clicked()
+		{
+			if (!m_selectedItem)
+				return;
+
+			if (!m_selectedItem->lootentry())
+				return;
+
+			const auto *loot = m_application.getProject().itemLoot.getById(m_selectedItem->lootentry());
+			if (!loot)
+				return;
+
+			LootDialog dialog(m_application.getProject(), *loot);
+			dialog.exec();
+		}
+
+		void ObjectEditor::on_skinLootSimulatorButton_clicked()
+		{
+			if (!m_selectedUnit)
+				return;
+
+			if (!m_selectedUnit->skinninglootentry())
+				return;
+
+			const auto *loot = m_application.getProject().skinningLoot.getById(m_selectedUnit->skinninglootentry());
 			if (!loot)
 				return;
 
@@ -1072,12 +1618,72 @@ namespace wowpp
 		}
 		void ObjectEditor::on_actionImport_Trainers_triggered()
 		{
+			UInt32 lastEntry = 0;
 
+			ImportTask task;
+			task.countQuery = "SELECT COUNT(*) FROM `wowpp_npc_trainer_template`;";
+			task.selectQuery = "SELECT `entry`, `spell`, `spellcost`, `reqskill`, `reqskillvalue`,`reqlevel` FROM `wowpp_npc_trainer_template` ORDER BY `entry`;";
+			task.beforeImport = [this]() {
+				for (int i = 0; i < m_application.getProject().units.getTemplates().entry_size(); ++i)
+				{
+					auto *unit = m_application.getProject().units.getTemplates().mutable_entry(i);
+					unit->set_trainerentry(0);
+				}
+				m_application.getProject().trainers.clear();
+			};
+			task.onImport = [this, &lastEntry](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0, spellId = 0, spellcost = 0, reqskill = 0, reqskillvalue = 0, reqlevel = 1;
+				row.getField(0, entry);
+				row.getField(1, spellId);
+				row.getField(2, spellcost);
+				row.getField(3, reqskill);
+				row.getField(4, reqskillvalue);
+				row.getField(5, reqlevel);
+
+				// Find referenced spell
+				const auto *spellEntry = m_application.getProject().spells.getById(spellId);
+				if (!spellEntry)
+				{
+					ELOG("Could not find referenced spell " << spellId << " (referenced in trainer entry " << entry << ")");
+					return false;
+				}
+
+				// Create a new trainer entry
+				bool created = false;
+				if (entry > lastEntry)
+				{
+					m_application.getProject().trainers.add(entry);
+
+					lastEntry = entry;
+					created = true;
+				}
+
+				auto *trainerEntry = m_application.getProject().trainers.getById(entry);
+				if (!trainerEntry)
+				{
+					ELOG("Trainer entry " << entry << " not found!");
+					return false;
+				}
+
+				// Add spells
+				auto *addedSpell = trainerEntry->add_spells();
+				addedSpell->set_spell(spellId);
+				addedSpell->set_spellcost(spellcost);
+				addedSpell->set_reqskill(reqskill);
+				addedSpell->set_reqskillval(reqskillvalue);
+				addedSpell->set_reqlevel(reqlevel);
+
+				return true;
+			};
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
+			dialog.exec();
 		}
 		void ObjectEditor::on_actionImport_Quests_triggered()
 		{
 			ImportTask task;
-			task.countQuery = "SELECT COUNT(*) FROM `quest_template`;";
+			task.countQuery = "SELECT COUNT(*) FROM `wowpp_quests`;";
 			task.selectQuery = "SELECT `entry`, `Title`, `Method`, `MinLevel`, `QuestLevel`, `Details`, `Objectives`,`OfferRewardText`,`RequestItemsText`,`EndText`, "
 				"`RewChoiceItemId1`, `RewChoiceItemCount1`, `RewChoiceItemId2`, `RewChoiceItemCount2`,`RewChoiceItemId3`, `RewChoiceItemCount3`,`RewChoiceItemId4`, `RewChoiceItemCount4`, `RewChoiceItemId5`, `RewChoiceItemCount5`, `RewChoiceItemId6`, `RewChoiceItemCount6`,"
 				"`RewItemId1`, `RewItemCount1`, `RewItemId2`, `RewItemCount2`,`RewItemId3`, `RewItemCount3`,`RewItemId4`, `RewItemCount4`,"
@@ -1088,10 +1694,9 @@ namespace wowpp
 				"`ObjectiveText3`, `ReqItemId3`, `ReqItemCount3`, `ReqSourceId3`,`ReqSourceCount3`, `ReqCreatureOrGOId3`,`ReqCreatureOrGOCount3`,`ReqSpellCast3`,"
 				"`ObjectiveText4`, `ReqItemId4`, `ReqItemCount4`, `ReqSourceId4`,`ReqSourceCount4`, `ReqCreatureOrGOId4`,`ReqCreatureOrGOCount4`,`ReqSpellCast4`,"
 				"`PrevQuestId`, `NextQuestId`, `ExclusiveGroup`, `NextQuestInChain`,"
-
 				"`QuestFlags`, `SpecialFlags`, `Type`, `ZoneOrSort`, `SuggestedPlayers`, `LimitTime`, `SrcItemId`, `SrcItemCount`, `SrcSpell`, `CharTitleId`,"
 				"`PointMapId`, `PointX`, `PointY`, `PointOpt`, `RequiredRaces`, `RequiredClasses`, `RequiredSkill`, `RequiredSkillValue`"
-				" FROM `quest_template` ORDER BY `entry`;";
+				" FROM `wowpp_quests` ORDER BY `entry`;";
 			task.beforeImport = [this]() {
 				m_application.getProject().quests.clear();
 			};
@@ -1311,6 +1916,487 @@ namespace wowpp
 			ImportDialog dialog(m_application, std::move(task));
 			dialog.exec();
 		}
+		void ObjectEditor::on_actionImport_Object_Loot_triggered()
+		{
+			// Counter variables used by the import method
+			UInt32 lastEntry = 0;
+			UInt32 lastGroup = 0;
+			UInt32 groupIndex = 0;
+
+			// Prepare the import task
+			ImportTask task;
+			task.countQuery = "SELECT COUNT(*) FROM `wowpp_gameobject_loot_template` WHERE `active` != 0;";
+			task.selectQuery = "SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount`,`lootcondition`,`condition_value1`,`condition_value2` FROM `wowpp_gameobject_loot_template` WHERE `active` != 0"
+				" ORDER BY `entry`, `groupid`;";
+			task.beforeImport = [this]() {
+				// Remove old object loot
+				for (int i = 0; i < m_application.getProject().objects.getTemplates().entry_size(); ++i)
+				{
+					auto *object = m_application.getProject().objects.getTemplates().mutable_entry(i);
+					object->set_objectlootentry(0);
+				}
+				m_application.getProject().objectLoot.clear();
+			};
+			task.onImport = [this, &lastEntry, &lastGroup, &groupIndex](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0, itemId = 0, groupId = 0, minCount = 0, maxCount = 0, cond = 0, conda = 0, condb = 0;
+				float dropChance = 0.0f;
+				row.getField(0, entry);
+				row.getField(1, itemId);
+				row.getField(2, dropChance);
+				row.getField(3, groupId);
+				row.getField(4, minCount);
+				row.getField(5, maxCount);
+				row.getField(6, cond);
+				row.getField(7, conda);
+				row.getField(8, condb);
+
+				// Find referenced item
+				const auto *itemEntry = m_application.getProject().items.getById(itemId);
+				if (!itemEntry)
+				{
+					ELOG("Could not find referenced item " << itemId << " (referenced in object loot entry " << entry << " - group " << groupId << ")");
+					return false;
+				}
+
+				// Create a new loot entry
+				bool created = false;
+				if (entry > lastEntry)
+				{
+					m_application.getProject().objectLoot.add(entry);
+
+					lastEntry = entry;
+					lastGroup = groupId;
+					groupIndex = 0;
+					created = true;
+				}
+
+				auto *lootEntry = m_application.getProject().objectLoot.getById(entry);
+				if (!lootEntry)
+				{
+					// Error
+					ELOG("Loot entry " << entry << " found, but no object to assign found");
+					return false;
+				}
+
+				if (created)
+				{
+					auto *objectEntry = m_application.getProject().objects.getById(entry);
+					if (!objectEntry)
+					{
+						WLOG("No object with entry " << entry << " found - object loot template will not be assigned!");
+					}
+					else
+					{
+						objectEntry->set_objectlootentry(lootEntry->id());
+					}
+				}
+
+				// If there are no loot groups yet, create a new one
+				if (lootEntry->groups().empty() || groupId > lastGroup)
+				{
+					lootEntry->add_groups();
+					if (groupId > lastGroup)
+					{
+						lastGroup = groupId;
+						groupIndex++;
+					}
+				}
+
+				if (lootEntry->groups().empty())
+				{
+					ELOG("Error retrieving loot group");
+					return false;
+				}
+
+				auto *group = lootEntry->mutable_groups(groupIndex);
+				auto *def = group->add_definitions();
+				def->set_item(itemEntry->id());
+				def->set_mincount(minCount);
+				def->set_maxcount(maxCount);
+				def->set_dropchance(dropChance);
+				def->set_isactive(true);
+				// We don't need condition value 9 in object loot!
+				if (cond == 9)
+				{
+					cond = 0;
+					conda = 0;
+					condb = 0;
+				}
+				def->set_conditiontype(cond);
+				def->set_conditionvala(conda);
+				def->set_conditionvalb(condb);
+				return true;
+			};
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
+			dialog.exec();
+		}
+		void ObjectEditor::on_actionImportSkinningLoot_triggered()
+		{
+			// Counter variables used by the import method
+			UInt32 lastEntry = 0;
+			UInt32 lastGroup = 0;
+			UInt32 groupIndex = 0;
+
+			// Prepare the import task
+			ImportTask task;
+			task.countQuery = "(SELECT COUNT(*) FROM `wowpp_skinning_loot_template` WHERE `active` != 0);";
+			task.selectQuery = "SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount`,`lootcondition`,`condition_value1`,`condition_value2` FROM `wowpp_skinning_loot_template` WHERE `active` != 0"
+				" ORDER BY `entry`, `groupid`;";
+			task.beforeImport = [this]() {
+				// Remove old unit loot
+				for (int i = 0; i < m_application.getProject().units.getTemplates().entry_size(); ++i)
+				{
+					auto *unit = m_application.getProject().units.getTemplates().mutable_entry(i);
+					unit->set_skinninglootentry(0);
+				}
+				m_application.getProject().skinningLoot.clear();
+			};
+			task.onImport = [this, &lastEntry, &lastGroup, &groupIndex](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0, itemId = 0, groupId = 0, minCount = 0, maxCount = 0, cond = 0, conda = 0, condb = 0;
+				float dropChance = 0.0f;
+				row.getField(0, entry);
+				row.getField(1, itemId);
+				row.getField(2, dropChance);
+				row.getField(3, groupId);
+				row.getField(4, minCount);
+				row.getField(5, maxCount);
+				row.getField(6, cond);
+				row.getField(7, conda);
+				row.getField(8, condb);
+
+				// Find referenced item
+				const auto *itemEntry = m_application.getProject().items.getById(itemId);
+				if (!itemEntry)
+				{
+					ELOG("Could not find referenced item " << itemId << " (referenced in skinning loot entry " << entry << " - group " << groupId << ")");
+					return false;
+				}
+
+				// Create a new loot entry
+				bool created = false;
+				if (entry > lastEntry)
+				{
+					m_application.getProject().skinningLoot.add(entry);
+
+					lastEntry = entry;
+					lastGroup = groupId;
+					groupIndex = 0;
+					created = true;
+				}
+
+				auto *lootEntry = m_application.getProject().skinningLoot.getById(entry);
+				if (!lootEntry)
+				{
+					// Error
+					ELOG("Loot entry " << entry << " found, but no creature to assign found");
+					return false;
+				}
+
+				if (created)
+				{
+					auto *unitEntry = m_application.getProject().units.getById(entry);
+					if (!unitEntry)
+					{
+						WLOG("No unit with entry " << entry << " found - creature skinning loot template will not be assigned!");
+					}
+					else
+					{
+						unitEntry->set_skinninglootentry(lootEntry->id());
+					}
+				}
+
+				// If there are no loot groups yet, create a new one
+				if (lootEntry->groups().empty() || groupId > lastGroup)
+				{
+					lootEntry->add_groups();
+					if (groupId > lastGroup)
+					{
+						lastGroup = groupId;
+						groupIndex++;
+					}
+				}
+
+				if (lootEntry->groups().empty())
+				{
+					ELOG("Error retrieving loot group");
+					return false;
+				}
+
+				auto *group = lootEntry->mutable_groups(groupIndex);
+				auto *def = group->add_definitions();
+				def->set_item(itemEntry->id());
+				def->set_mincount(minCount);
+				def->set_maxcount(maxCount);
+				def->set_dropchance(dropChance);
+				def->set_isactive(true);
+				def->set_conditiontype(cond);
+				def->set_conditionvala(conda);
+				def->set_conditionvalb(condb);
+
+				return true;
+			};
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
+			dialog.exec();
+		}
+		void ObjectEditor::on_actionImport_Item_Loot_triggered()
+		{
+			// Counter variables used by the import method
+			UInt32 lastEntry = 0;
+			UInt32 lastGroup = 0;
+			UInt32 groupIndex = 0;
+
+			// Prepare the import task
+			ImportTask task;
+			task.countQuery = "SELECT COUNT(*) FROM `wowpp_item_loot_template` WHERE `active` != 0;";
+			task.selectQuery = "SELECT `entry`, `item`, `ChanceOrQuestChance`, `groupid`, `mincountOrRef`, `maxcount`,`lootcondition`,`condition_value1`,`condition_value2` FROM `wowpp_item_loot_template` WHERE `active` != 0"
+				" ORDER BY `entry`, `groupid`;";
+			task.beforeImport = [this]() {
+				// Remove old object loot
+				for (int i = 0; i < m_application.getProject().items.getTemplates().entry_size(); ++i)
+				{
+					auto *object = m_application.getProject().items.getTemplates().mutable_entry(i);
+					object->set_lootentry(0);
+				}
+				m_application.getProject().itemLoot.clear();
+			};
+			task.onImport = [this, &lastEntry, &lastGroup, &groupIndex](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0, itemId = 0, groupId = 0, minCount = 0, maxCount = 0, cond = 0, conda = 0, condb = 0;
+				float dropChance = 0.0f;
+				row.getField(0, entry);
+				row.getField(1, itemId);
+				row.getField(2, dropChance);
+				row.getField(3, groupId);
+				row.getField(4, minCount);
+				row.getField(5, maxCount);
+				row.getField(6, cond);
+				row.getField(7, conda);
+				row.getField(8, condb);
+
+				// Find referenced item
+				const auto *itemEntry = m_application.getProject().items.getById(itemId);
+				if (!itemEntry)
+				{
+					ELOG("Could not find referenced item " << itemId << " (referenced in item loot entry " << entry << " - group " << groupId << ")");
+					return false;
+				}
+
+				// Create a new loot entry
+				bool created = false;
+				if (entry > lastEntry)
+				{
+					m_application.getProject().itemLoot.add(entry);
+
+					lastEntry = entry;
+					lastGroup = groupId;
+					groupIndex = 0;
+					created = true;
+				}
+
+				auto *lootEntry = m_application.getProject().itemLoot.getById(entry);
+				if (!lootEntry)
+				{
+					// Error
+					ELOG("Loot entry " << entry << " found, but no object to assign found");
+					return false;
+				}
+
+				if (created)
+				{
+					auto *objectEntry = m_application.getProject().items.getById(entry);
+					if (!objectEntry)
+					{
+						WLOG("No item with entry " << entry << " found - item loot template will not be assigned!");
+					}
+					else
+					{
+						objectEntry->set_lootentry(lootEntry->id());
+					}
+				}
+
+				// If there are no loot groups yet, create a new one
+				if (lootEntry->groups().empty() || groupId > lastGroup)
+				{
+					lootEntry->add_groups();
+					if (groupId > lastGroup)
+					{
+						lastGroup = groupId;
+						groupIndex++;
+					}
+				}
+
+				if (lootEntry->groups().empty())
+				{
+					ELOG("Error retrieving loot group");
+					return false;
+				}
+
+				auto *group = lootEntry->mutable_groups(groupIndex);
+				auto *def = group->add_definitions();
+				def->set_item(itemEntry->id());
+				def->set_mincount(minCount);
+				def->set_maxcount(maxCount);
+				def->set_dropchance(dropChance);
+				def->set_isactive(true);
+				// We don't need condition value 9 in object loot!
+				if (cond == 9)
+				{
+					cond = 0;
+					conda = 0;
+					condb = 0;
+				}
+				def->set_conditiontype(cond);
+				def->set_conditionvala(conda);
+				def->set_conditionvalb(condb);
+				return true;
+			};
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
+			dialog.exec();
+		}
+		void ObjectEditor::on_actionImport_Units_triggered()
+		{
+			ImportTask task;
+			task.countQuery = "SELECT COUNT(*) FROM `creature_template`;";
+			task.selectQuery = "SELECT `entry`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `mechanic_immune_mask` FROM `creature_template` ORDER BY `entry`;";
+			task.beforeImport = [this]() {
+			};
+			task.onImport = [this](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0;
+
+				UInt32 index = 0;
+				row.getField(index++, entry);
+
+				// Find creature
+				auto *unit = m_application.getProject().units.getById(entry);
+				if (!unit)
+				{
+					ELOG("Skipping unit " << entry << " as it couldn't be found!");
+					return true;
+				}
+
+				UInt32 schoolImmunity = 0;
+
+				// Import all resistances
+				for (int n = 0; n < unit->resistances_size(); ++n)
+				{
+					Int32 res = 0;
+					row.getField(index++, res);
+
+					if (res < 0)
+					{
+						// Immunity against this school
+						schoolImmunity |= (1 << (n+1));
+					}
+					else
+					{
+						// Apply resistance
+						unit->set_resistances(n, UInt32(res));
+					}
+				}
+
+				// Update school immunity
+				unit->set_schoolimmunity(schoolImmunity);
+
+				// Mechanic immunity
+				UInt32 mechanicImmunity = 0;
+				row.getField(index++, mechanicImmunity);
+				unit->set_mechanicimmunity(mechanicImmunity);
+
+				return true;
+			};
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
+			dialog.exec();
+		}
+		void ObjectEditor::on_actionImport_Object_Spawns_triggered()
+		{
+			ImportTask task;
+			task.countQuery = "SELECT COUNT(*) FROM `wowpp_gameobject` WHERE `active` != 0;";
+			task.selectQuery = "SELECT `id`, `map`, `position_x`, `position_y`, `position_z`, `orientation`, `rotation0`, `rotation1`, `rotation2`, `rotation3`, `spawntimesecs`, `animprogress`, `state`, `name` FROM `wowpp_gameobject`  WHERE `active` != 0 ORDER BY `id`;";
+			task.beforeImport = [this]() {
+				for (int i = 0; i < m_application.getProject().maps.getTemplates().entry_size(); ++i)
+				{
+					auto *map = m_application.getProject().maps.getTemplates().mutable_entry(i);
+					map->clear_objectspawns();
+				}
+			};
+			task.onImport = [this](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0, map = 0, animprogress = 0, state = 0;
+				UInt64 spawnTime = 0;
+				float x = 0.0f, y = 0.0f, z = 0.0f, o = 0.0f, rot0 = 0.0f, rot1 = 0.0f, rot2 = 0.0f, rot3 = 0.0f;
+				String name;
+
+				UInt32 index = 0;
+				row.getField(index++, entry);
+				row.getField(index++, map);
+				row.getField(index++, x);
+				row.getField(index++, y);
+				row.getField(index++, z);
+				row.getField(index++, o);
+				row.getField(index++, rot0);
+				row.getField(index++, rot1);
+				row.getField(index++, rot2);
+				row.getField(index++, rot3);
+				row.getField(index++, spawnTime);
+				row.getField(index++, animprogress);
+				row.getField(index++, state);
+				row.getField(index++, name);
+				spawnTime *= constants::OneSecond;	// Time in Milliseconds
+
+				// Find referenced map
+				auto *mapEntry = m_application.getProject().maps.getById(map);
+				if (!mapEntry)
+				{
+					ELOG("Could not find referenced map " << map << " (referenced in object spawn entry " << entry << ")");
+					return false;
+				}
+
+				if (!m_application.getProject().objects.getById(entry))
+				{
+					ELOG("Could not find object template by entry: " << entry);
+					return false;
+				}
+
+				// Create new object spawn
+				auto *added = mapEntry->add_objectspawns();
+				if (!added)
+				{
+					ELOG("Could not add object spawn");
+					return false;
+				}
+
+				if (!name.empty()) added->set_name(name.c_str());
+				added->set_objectentry(entry);
+				added->set_isactive(true);
+				added->set_animprogress(animprogress);
+				added->set_respawn(true);
+				added->set_respawndelay(spawnTime);
+				added->set_positionx(x);
+				added->set_positiony(y);
+				added->set_positionz(z);
+				added->set_orientation(o);
+				added->set_rotationw(rot0);
+				added->set_rotationx(rot1);
+				added->set_rotationy(rot2);
+				added->set_rotationz(rot3);
+				added->set_state(state);
+				added->set_maxcount(1);
+				added->set_radius(0.0f);
+
+				return true;
+			};
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
+			dialog.exec();
+		}
+
 		void ObjectEditor::on_addUnitSpellButton_clicked()
 		{
 			if (!m_selectedUnit)
@@ -1333,6 +2419,8 @@ namespace wowpp
 				added->set_mininitialcooldown(dialog.getMinInitialCooldown());
 				added->set_maxinitialcooldown(dialog.getMaxInitialCooldown());
 				added->set_target(dialog.getTarget());
+				added->set_repeated(dialog.getRepeated());
+				added->set_probability(dialog.getProbability());
 				addSpellEntry(*added);
 
 				m_application.markAsChanged();

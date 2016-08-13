@@ -19,11 +19,9 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
+#include "pch.h"
 #include "load_map_dialog.h"
 #include "ui_load_map_dialog.h"
-#include "data/map_entry.h"
-#include "data/project.h"
-#include "templates/basic_template.h"
 #include "editor_application.h"
 
 namespace wowpp
