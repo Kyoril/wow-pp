@@ -313,22 +313,22 @@ namespace wowpp
 		m_attackSpeedPctModifier[attackType] *= (apply ? (1.0f + modifier) : 1.0f / (1.0f + modifier));
 	}
 
-	void GameUnit::procEvent(GameUnit * target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount /* = 0*/, UInt8 attackType /* = 0*/, proto::SpellEntry const * procSpell /* = nullptr*/)
+	void GameUnit::procEvent(GameUnit * target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount, UInt8 attackType, proto::SpellEntry const * procSpell, bool canRemove)
 	{
 		if (procAttacker)
 		{
-			procEventFor(false, target, procAttacker, procEx, amount, attackType, procSpell);
+			procEventFor(false, target, procAttacker, procEx, amount, attackType, procSpell, canRemove);
 		}
 
 		if (target && target->isAlive() && procVictim)
 		{
-			target->procEventFor(true, this, procVictim, procEx, amount, attackType, procSpell);
+			target->procEventFor(true, this, procVictim, procEx, amount, attackType, procSpell, canRemove);
 		}
 	}
 
-	void GameUnit::procEventFor(bool isVictim, GameUnit * target, UInt32 procFlag, UInt32 procEx, UInt32 amount, UInt8 attackType, proto::SpellEntry const * procSpell)
+	void GameUnit::procEventFor(bool isVictim, GameUnit * target, UInt32 procFlag, UInt32 procEx, UInt32 amount, UInt8 attackType, proto::SpellEntry const * procSpell, bool canRemove)
 	{
-		spellProcEvent(isVictim, target, procFlag, procEx, procSpell, amount, attackType);
+		spellProcEvent(isVictim, target, procFlag, procEx, procSpell, amount, attackType, canRemove);
 	}
 
 	void GameUnit::levelChanged(const proto::LevelEntry &levelInfo)
@@ -860,7 +860,7 @@ namespace wowpp
 						victim->threaten(*this, 0.0f);
 					}
 
-					procEvent(targetUnit, procAttacker, procVictim, procEx, totalDamage - resisted - absorbed, static_cast<UInt8>(m_weaponAttack), nullptr);
+					procEvent(targetUnit, procAttacker, procVictim, procEx, totalDamage - resisted - absorbed, static_cast<UInt8>(m_weaponAttack), nullptr, true);
 				}
 			}
 		}
@@ -2102,7 +2102,7 @@ namespace wowpp
 			if (getLevel() > killerGreyLevel)
 			{
 				// HACKFIX, sent damage = 1 and procEx = NormalHit because of checks, better solution needed
-				killer->spellProcEvent(true, this, game::spell_proc_flags::Kill, game::spell_proc_flags_ex::NormalHit, nullptr, 1, 0);
+				killer->spellProcEvent(true, this, game::spell_proc_flags::Kill, game::spell_proc_flags_ex::NormalHit, nullptr, 1, 0, true);
 			}
 		}
 	}

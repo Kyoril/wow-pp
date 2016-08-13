@@ -321,7 +321,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleProcModifier(UInt8 attackType, GameUnit *target/* = nullptr*/)
+	void Aura::handleProcModifier(UInt8 attackType, bool canRemove, GameUnit *target/* = nullptr*/)
 	{
 		namespace aura = game::aura_type;
 
@@ -353,7 +353,7 @@ namespace wowpp
 			reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(
 				spell_mod_op::ChanceOfSuccess, m_spell.id(), procChance);
 		}
-
+		
 		if (procChance < 100)
 		{
 			std::uniform_int_distribution<UInt32> dist(1, 100);
@@ -362,7 +362,7 @@ namespace wowpp
 				return;
 			}
 		}
-
+		
 		switch (m_effect.aura())
 		{
 		case aura::Dummy:
@@ -397,7 +397,7 @@ namespace wowpp
 			}
 		}
 
-		if (m_procCharges > 0)
+		if (m_procCharges > 0 && canRemove)
 		{
 			m_procCharges--;
 			if (m_procCharges == 0) {
@@ -563,7 +563,7 @@ namespace wowpp
 		if (apply)
 		{
 			m_onTakenAutoAttack = m_caster->spellProcEvent.connect(
-			[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType) {
+			[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType, bool canRemove) {
 				if (procFlag & (game::spell_proc_flags::TakenMeleeAutoAttack | game::spell_proc_flags::TakenDamage))
 				{
 					handleDamageShieldProc(target);
@@ -2018,7 +2018,7 @@ namespace wowpp
 			// breaking it's own root effect immediatly
 			m_post([this]() {
 				m_onDamageBreak = m_target.spellProcEvent.connect(
-				[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType)
+				[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType, bool canRemove)
 				{
 					if (!target)
 						return;
@@ -2130,10 +2130,10 @@ namespace wowpp
 		if (m_spell.procflags() != game::spell_proc_flags::None)
 		{
 			m_onProc = m_caster->spellProcEvent.connect(
-			[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType) {
+			[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType, bool canRemove) {
 				if (checkProc(amount != 0, target, procFlag, procEx, procSpell))
 				{
-					handleProcModifier(attackType, target);
+					handleProcModifier(attackType, canRemove, target);
 				}
 			});
 			/*
@@ -2149,7 +2149,7 @@ namespace wowpp
 			{
 				m_procKilled = m_caster->killed.connect(
 				[&](GameUnit * killer) {
-					handleProcModifier(0, killer);
+					handleProcModifier(0, true, killer);
 				});
 			}
 			
@@ -2157,10 +2157,10 @@ namespace wowpp
 		else if (m_effect.aura() == game::aura_type::AddTargetTrigger)
 		{
 			m_onProc = m_caster->spellProcEvent.connect(
-			[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType) {
+			[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType, bool canRemove) {
 				if (checkProc(amount != 0, target, procFlag, procEx, procSpell))
 				{
-					handleProcModifier(attackType, target);
+					handleProcModifier(attackType, canRemove, target);
 				}
 			});
 		}

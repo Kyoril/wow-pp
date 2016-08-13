@@ -441,7 +441,7 @@ namespace wowpp
 		/// Fired when the units stand state changed.
 		boost::signals2::signal<void(UnitStandState)> standStateChanged;
 		/// Fired on any proc event (damage done, taken, healed, etc).
-		boost::signals2::signal<void(bool, GameUnit *, UInt32, UInt32, const proto::SpellEntry *, UInt32, UInt8)> spellProcEvent;
+		boost::signals2::signal<void(bool, GameUnit *, UInt32, UInt32, const proto::SpellEntry *, UInt32, UInt8, bool)> spellProcEvent;
 
 	public:
 
@@ -801,9 +801,9 @@ namespace wowpp
 		}
 		
 		///
-		void procEvent(GameUnit *target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx = 0, UInt32 amount = 0, UInt8 attackType = 0, const proto::SpellEntry *procSpell = nullptr);
+		void procEvent(GameUnit *target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount, UInt8 attackType, const proto::SpellEntry *procSpell, bool canRemove);
 		///
-		void procEventFor(bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, UInt32 amount, UInt8 attackType, proto::SpellEntry const *procSpell);
+		void procEventFor(bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, UInt32 amount, UInt8 attackType, proto::SpellEntry const *procSpell, bool canRemove);
 
 		///
 		TrackAuraTargetsMap &getTrackedAuras() {

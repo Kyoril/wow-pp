@@ -45,7 +45,7 @@ namespace wowpp
 		}
 	};
 
-	typedef std::unordered_map<UInt64, HitResult> HitResultMap;
+	typedef std::map<UInt64, HitResult> HitResultMap;
 	///
 	class SingleCastState final : public SpellCast::CastState, public std::enable_shared_from_this<SingleCastState>, public boost::noncopyable
 	{

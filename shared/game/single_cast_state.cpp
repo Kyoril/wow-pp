@@ -2354,21 +2354,28 @@ namespace wowpp
 				
 				if (world)
 				{
-					for (const auto &itr : m_hitResults)
+					for (auto itr = m_hitResults.begin(); itr != m_hitResults.end(); ++itr)
 					{
-						if (isUnitGUID(itr.first))
+						if (isUnitGUID(itr->first))
 						{
-							GameObject *targetObj = world->findObjectByGUID(itr.first);
+							GameObject *targetObj = world->findObjectByGUID(itr->first);
 							auto *target = reinterpret_cast<GameUnit *>(targetObj);
 
-							m_cast.getExecuter().procEvent(target, itr.second.procAttacker, itr.second.procVictim, itr.second.procEx, itr.second.amount, m_attackType, &m_spell);
+							if (itr == m_hitResults.begin())
+							{
+								m_cast.getExecuter().procEvent(target, itr->second.procAttacker, itr->second.procVictim, itr->second.procEx, itr->second.amount, m_attackType, &m_spell, true);
+							}
+							else
+							{
+								m_cast.getExecuter().procEvent(target, itr->second.procAttacker, itr->second.procVictim, itr->second.procEx, itr->second.amount, m_attackType, &m_spell, false);
+							}
 						}
 					}
 				}
 			}
 			else
 			{
-				m_cast.getExecuter().procEvent(nullptr, m_attackerProc, m_victimProc, 0, 0, m_attackType, &m_spell);
+				m_cast.getExecuter().procEvent(nullptr, m_attackerProc, m_victimProc, 0, 0, m_attackType, &m_spell, true);
 			}
 		}
 
