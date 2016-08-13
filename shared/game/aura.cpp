@@ -2336,12 +2336,13 @@ namespace wowpp
 					if (isPlayerGUID(m_caster->getGuid()))
 					{
 						auto item = reinterpret_cast<GameCharacter*>(m_caster)->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
-						weaponType = item->getEntry().subclass();
 
 						if (!item)
 						{
 							return false;
 						}
+
+						weaponType = item->getEntry().subclass();
 					}
 					else
 					{
@@ -2353,12 +2354,13 @@ namespace wowpp
 					if (isPlayerGUID(m_caster->getGuid()))
 					{
 						auto item = reinterpret_cast<GameCharacter*>(m_caster)->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Ranged));
-						weaponType = item->getEntry().subclass();
 
 						if (!item)
 						{
 							return false;
 						}
+
+						weaponType = item->getEntry().subclass();
 					}
 					else
 					{
