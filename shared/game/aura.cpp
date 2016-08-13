@@ -1822,7 +1822,8 @@ namespace wowpp
 				if (m_caster &&
 				        m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1)
 				{
-					m_caster->doneSpellMagicDmgClassNeg(&m_target, school);
+					// TODO: Change this to spellProcEvent signal.
+					//m_caster->doneSpellMagicDmgClassNeg(&m_target, school);
 				}
 				m_target.dealDamage(damage - resisted - absorbed, school, m_caster, threat);
 				break;
@@ -2326,7 +2327,7 @@ namespace wowpp
 			{
 				return false;
 			}
-
+			
 			if (m_spell.itemclass() == game::item_class::Weapon)
 			{
 				UInt8 weaponType;

@@ -1668,6 +1668,7 @@ namespace wowpp
 		}
 
 		setUInt32Value(unit_fields::Health, health);
+		takenDamage(attacker, damage);
 
 		UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
 		float healthPct = float(health) / float(maxHealth);

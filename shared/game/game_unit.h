@@ -418,8 +418,6 @@ namespace wowpp
 		boost::signals2::signal<void(GameUnit *, game::VictimState)> doneMeleeAttack;
 		/// Fired when hit by a melee attack (include miss/dodge...)
 		boost::signals2::signal<void(GameUnit *, game::VictimState)> takenMeleeAttack;
-		/// Fired when done any magic damage
-		boost::signals2::signal<void(GameUnit *, UInt32)> doneSpellMagicDmgClassNeg;
 		/// Fired when hit by any damage.
 		boost::signals2::signal<void(GameUnit *, UInt32)> takenDamage;
 		/// Fired when unit enters water
