@@ -338,14 +338,7 @@ namespace wowpp
 
 		if (m_spell.procpermin())
 		{
-			if (m_caster->hasMainHandWeapon() || m_caster->hasOffHandWeapon())
-			{
-				procChance = m_caster->getAttackTime(attackType) * m_spell.procpermin() / 600.0f;
-			}
-			else
-			{
-				procChance = 0;
-			}
+			procChance = m_caster->getAttackTime(attackType) * m_spell.procpermin() / 600.0f;
 		}
 
 		if (m_caster && m_caster->isGameCharacter())
@@ -2332,6 +2325,66 @@ namespace wowpp
 			if (m_spell.procschool() && !(m_spell.procschool() & game::spell_school_mask::Normal))
 			{
 				return false;
+			}
+
+			if (m_spell.itemclass() == game::item_class::Weapon)
+			{
+				UInt8 weaponType;
+
+				if (procFlag & game::spell_proc_flags::DoneOffhandAttack)
+				{
+					if (isPlayerGUID(m_caster->getGuid()))
+					{
+						auto item = reinterpret_cast<GameCharacter*>(m_caster)->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
+						weaponType = item->getEntry().subclass();
+					}
+					else
+					{
+						weaponType = m_caster->getByteValue(unit_fields::VirtualItemInfo + (1 * 2), 1);
+					}
+				}
+				else if (procFlag & game::spell_proc_flags::DoneRangedAutoAttack)
+				{
+					if (isPlayerGUID(m_caster->getGuid()))
+					{
+						auto item = reinterpret_cast<GameCharacter*>(m_caster)->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Ranged));
+						weaponType = item->getEntry().subclass();
+					}
+					else
+					{
+						weaponType = m_caster->getByteValue(unit_fields::VirtualItemInfo + (3 * 2), 1);
+					}
+				}
+				else if (procFlag & game::spell_proc_flags::DoneMeleeAutoAttack)
+				{
+					if (isPlayerGUID(m_caster->getGuid()))
+					{
+						auto item = reinterpret_cast<GameCharacter*>(m_caster)->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
+
+						if (item)
+						{
+							weaponType = item->getEntry().subclass();
+						}
+						else
+						{
+							return false;
+						}
+					}
+					else
+					{
+						weaponType = m_caster->getByteValue(unit_fields::VirtualItemInfo + (0 * 2), 1);
+					}
+				}
+				else
+				{
+					// Shouldn't happen
+					DLOG("Spell " << m_spell.id() << " has unhandled itemclassmask.");
+				}
+
+				if (!(m_spell.itemsubclassmask() & (1 << weaponType)))
+				{
+					return false;
+				}
 			}
 		}
 		else
