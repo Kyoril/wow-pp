@@ -74,9 +74,9 @@ namespace wowpp
 		m_items[slot] = item;
 	}
 
-	std::vector<std::shared_ptr<GameItem>> TradeData::getItem()
+	std::vector<std::shared_ptr<GameItem>> &TradeData::getItem()
 	{
-		return(m_items);
+		return m_items;
 	}
 	void TradeData::setAbsSlot(UInt16 slot, UInt8 tradeSlot)
 	{

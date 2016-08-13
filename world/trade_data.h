@@ -55,7 +55,7 @@ namespace wowpp
 		bool isAccepted();
 		/// Sets a new item at a specific trade slot.
 		void setItem(std::shared_ptr<GameItem> item, UInt16 slot);
-		std::vector<std::shared_ptr<GameItem>> TradeData::getItem();
+		std::vector<std::shared_ptr<GameItem>> &getItem();
 
 		///
 		void setAbsSlot(UInt16 slot, UInt8 tradeSlot);
