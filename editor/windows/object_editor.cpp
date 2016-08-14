@@ -749,6 +749,10 @@ namespace wowpp
 			m_ui->lineEdit_6->setText(QString::number(spell->family()));
 			m_ui->lineEdit_7->setText(QString("0x") + QString::number(spell->familyflags(), 16).toUpper().rightJustified(16, QLatin1Char('0')));
 
+			const bool hasBaseId = (spell->id() != spell->baseid());
+			m_ui->txtBaseSpell->setText(QString("%1").arg(spell->baseid()));
+			m_ui->btnBaseSpell->setEnabled(hasBaseId);
+
 			// Attributes
 			for (size_t i = 1; i <= 32; ++i)
 			{
@@ -2314,6 +2318,7 @@ namespace wowpp
 			ImportDialog dialog(m_application, std::move(task));
 			dialog.exec();
 		}
+
 		void ObjectEditor::on_actionImport_Object_Spawns_triggered()
 		{
 			ImportTask task;
