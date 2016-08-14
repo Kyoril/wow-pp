@@ -43,6 +43,7 @@
 #include "proto_data/project_saver.h"
 #include "proto_data/project.h"
 #include "game/defines.h"
+#include <iomanip>
 using namespace wowpp;
 
 namespace wowpp
@@ -750,6 +751,235 @@ namespace wowpp
 				entry->set_baseid(entry->id());
 			}
 		}
+
+		return true;
+	}
+
+	static UInt32 findMatchingRankOneSpell(const proto::SpellEntry &spell, const std::vector<proto::SpellEntry*> &rankOneSpells)
+	{
+		std::set<UInt32> blacklist;
+
+		// Now check different things
+		for (auto *check : rankOneSpells)
+		{
+			// Family name check
+			if (check->family() != spell.family())
+			{
+				blacklist.insert(check->id());
+				continue;
+			}
+
+			// Family flag check
+			if (check->familyflags() != spell.familyflags())
+			{
+				blacklist.insert(check->id());
+				continue;
+			}
+
+			// Compare number of effects
+			if (check->effects_size() != spell.effects_size())
+			{
+				blacklist.insert(check->id());
+				continue;
+			}
+
+			// Now compare effects details
+			for (int i = 0; i < check->effects_size(); ++i)
+			{
+				auto &eff_a = check->effects(i);
+				auto &eff_b = spell.effects(i);
+
+				// Compare effect type
+				if (eff_a.type() != eff_b.type())
+				{
+					blacklist.insert(check->id());
+					continue;
+				}
+
+				// Compare aura name
+				if (eff_a.aura() != eff_b.aura())
+				{
+					blacklist.insert(check->id());
+					continue;
+				}
+
+				// Some checks left? ...
+			}
+		}
+
+		// Check if all spells are blacklisted
+		if (blacklist.size() >= rankOneSpells.size())
+		{
+			return 0;
+		}
+
+		// Check if we have multiple choices left
+		if (blacklist.size() < rankOneSpells.size() - 1)
+		{
+			return 0;
+		}
+
+		// Check all remaining spells against the blacklist
+		for (auto *check : rankOneSpells)
+		{
+			if (blacklist.find(check->id()) == blacklist.end())
+			{
+				return check->id();
+			}
+		}
+
+		// Huh? Should be unreachable...
+		return 0;
+	}
+
+	static bool importSpellBaseIds(proto::Project &project, MySQL::Connection &conn)
+	{
+		std::map<String, std::map<UInt32, std::vector<proto::SpellEntry*>>> spellRanks;
+
+		wowpp::MySQL::Select select(conn, "SELECT Id AS `id`,SpellName4 AS `name`,CONVERT(RIGHT(Rank4, 2), UNSIGNED INTEGER) AS `rank` FROM dbc_spell WHERE LEFT(Rank4, 5) = \"Rang \" ORDER BY `name`,`rank`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 id = 0, rank = 0;
+				String name;
+				row.getField(0, id);
+				row.getField(1, name);
+				row.getField(2, rank);
+
+				// Find spell by id
+				auto * spell = project.spells.getById(id);
+				if (spell)
+				{
+					spellRanks[name][rank].push_back(spell);
+				}
+				else
+				{
+					WLOG("Unable to find spell by id: " << id);
+				}
+
+				// Next row
+				row = row.next(select);
+			}
+		}
+
+		UInt32 spellCounter = 0;
+		std::set<UInt32> fixedSpells;
+
+		// Now output this (just for testings)
+		std::ofstream strmOut("test.txt", std::ios::out);
+		std::ofstream strmFixed("fixed.txt", std::ios::out);
+		for (const auto &pair : spellRanks)
+		{
+			// Skip spells with only one rank or without rank 1
+			auto rank1 = pair.second.find(1);
+			if (rank1 == pair.second.end())
+			{
+				DLOG("Skipping spell " << pair.first << " because rank 1 is missing");
+				continue;
+			}
+			else if (pair.second.size() == 1)
+			{
+				DLOG("Skipping spell " << pair.first << " because it only has one rank");
+				continue;
+			}
+
+			// Next, fix all spells which do have exactly one spell for every rank
+			// These are most likely perfect
+			{
+				bool hasMultipleSpells = false;
+				for (auto &ranks : pair.second)
+				{
+					if (ranks.second.size() > 1)
+					{
+						hasMultipleSpells = true;
+						break;
+					}
+				}
+
+				if (!hasMultipleSpells)
+				{
+					// Fix all of these
+					strmFixed << "Spell " << std::setw(5) << rank1->second[0]->id() << " Ranks: ";
+					for (auto &ranks : pair.second)
+					{
+						strmFixed << std::setw(5) << ranks.second[0]->id() << ", ";
+						ranks.second[0]->set_baseid(rank1->second[0]->id());
+					}
+					strmFixed << std::endl;
+
+					continue;
+				}
+			}
+
+			// Now, check remaining spells
+			strmOut << "// Spell name: " << pair.first << std::endl;
+			strmFixed << std::endl << "// Uncomplete or potentially wrong spells below! BE EXTREMELY CAUTIOS!" << std::endl;
+			strmFixed << "Spell " << std::setw(5) << rank1->second[0]->id() << " Ranks: ";
+			for (auto &ranks : pair.second)
+			{
+				bool rankWritten = false;
+				// Write spell rank
+				for (auto *spell : ranks.second)
+				{
+					// Check upper rang spells and find a base spell for these
+					bool foundBaseRank = false;
+					if (ranks.first > 1)
+					{
+						// Find rank 1 of this spell
+						UInt32 baseRank = findMatchingRankOneSpell(*spell, rank1->second);
+						if (baseRank != 0)
+						{
+							spell->set_baseid(baseRank);
+							strmFixed << std::setw(5) << spell->id() << ", ";
+							foundBaseRank = true;
+						}
+						else
+						{
+							if (!rankWritten)
+							{
+								strmOut << "\tRank " << ranks.first << std::endl;
+								rankWritten = true;
+							}
+						}
+					}
+					else
+					{
+						strmFixed << std::setw(5) << ranks.second[0]->id() << ", ";
+					}
+
+					if (!foundBaseRank)
+					{
+						if (!rankWritten)
+						{
+							strmOut << "\tRank " << ranks.first << std::endl;
+							rankWritten = true;
+						}
+
+						strmOut << "\t\tSpell " << spell->id() << "\t\t";
+						strmOut << "\t\tFAM " << std::setw(3) << spell->family() << "\t\tFLAG " << std::setw(16) << std::hex << std::uppercase << spell->familyflags() << std::dec << "\t\tEFF ";
+						for (const auto &e : spell->effects())
+						{
+							strmOut << e.type();
+							if (e.type() == game::spell_effects::ApplyAura)
+							{
+								strmOut << "(" << e.aura() << ")";
+							}
+							strmOut << "\t";
+						}
+						strmOut << std::endl;
+					}
+				}
+			}
+			strmOut << std::endl;
+			strmFixed << std::endl;
+
+			spellCounter++;
+		}
+
+		strmOut << spellCounter << " entries";
 
 		return true;
 	}
@@ -1722,11 +1952,16 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-#endif
-
 	if (!addSpellBaseId(protoProject))
 	{
 		WLOG("Could not set base id for spells");
+		return 1;
+	}
+#endif
+
+	if (!importSpellBaseIds(protoProject, connection))
+	{
+		WLOG("Could not import base ids");
 		return 1;
 	}
 
