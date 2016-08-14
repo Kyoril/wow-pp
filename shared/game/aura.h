@@ -108,6 +108,10 @@ namespace wowpp
 
 		Int32 getTotalDuration() const { return m_duration; }
 
+		UInt8 getChannelCount() const {
+			return m_channelCount;
+		}
+
 		bool isStealthAura() const;
 
 	protected:
@@ -271,5 +275,6 @@ namespace wowpp
 		UInt32 m_totalTicks;
 		Int32 m_duration;
 		UInt64 m_itemGuid;
+		UInt8 m_channelCount;
 	};
 }

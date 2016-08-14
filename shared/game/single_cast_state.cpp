@@ -2215,11 +2215,12 @@ namespace wowpp
 			effects.push_back(m_spell.effects(i).type());
 		}
 
-		if (m_itemGuid)
+		if (!m_isProc && !m_itemGuid)
 		{
-			m_canTrigger = false;
+			m_canTrigger = true;
 		}
-		else if (!m_isProc)
+		else if (m_spell.attributes(2) & game::spell_attributes_ex_b::TriggeredCanProc ||
+			m_spell.attributes(3) & game::spell_attributes_ex_c::TriggeredCanProc2)
 		{
 			m_canTrigger = true;
 		}
@@ -2360,15 +2361,30 @@ namespace wowpp
 						{
 							GameObject *targetObj = world->findObjectByGUID(itr->first);
 							auto *target = reinterpret_cast<GameUnit *>(targetObj);
+							bool canRemove = false;
 
 							if (itr == m_hitResults.begin())
 							{
-								m_cast.getExecuter().procEvent(target, itr->second.procAttacker, itr->second.procVictim, itr->second.procEx, itr->second.amount, m_attackType, &m_spell, true);
+								canRemove = true;
 							}
-							else
+
+							if (m_cast.getExecuter().getAuras().hasAura(game::aura_type::PeriodicTriggerSpell))
 							{
-								m_cast.getExecuter().procEvent(target, itr->second.procAttacker, itr->second.procVictim, itr->second.procEx, itr->second.amount, m_attackType, &m_spell, false);
+								UInt32 spellId = m_spell.id();
+								m_cast.getExecuter().getAuras().forEachAuraOfType(game::aura_type::PeriodicTriggerSpell, [&canRemove, spellId](Aura &aura) -> bool {
+									if (aura.getEffect().triggerspell() == spellId)
+									{
+										if (aura.getChannelCount() != 1)
+										{
+											canRemove = false;
+										}
+									}
+
+									return true;
+								});
 							}
+
+							m_cast.getExecuter().procEvent(target, itr->second.procAttacker, itr->second.procVictim, itr->second.procEx, itr->second.amount, m_attackType, &m_spell, canRemove);
 						}
 					}
 				}

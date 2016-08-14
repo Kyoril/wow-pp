@@ -726,7 +726,7 @@ namespace wowpp
 				Unknown_23				= 0x08000000,
 				Unknown_24				= 0x10000000,
 				CantCrit				= 0x20000000,
-				Unknown_25				= 0x40000000,
+				TriggeredCanProc		= 0x40000000,
 				FoodBuff				= 0x80000000
 			};
 		}
@@ -746,7 +746,7 @@ namespace wowpp
 				Unknown_7				= 0x00000040,
 				StackForDiffCasters		= 0x00000080,
 				TargetOnlyPlayer		= 0x00000100,
-				Unknown_9				= 0x00000200,
+				TriggeredCanProc2		= 0x00000200,
 				MainHand				= 0x00000400,
 				Battleground			= 0x00000800,
 				CastOnDead				= 0x00001000,

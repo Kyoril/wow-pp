@@ -56,6 +56,7 @@ namespace wowpp
 		, m_totalTicks(0)
 		, m_duration(spell.duration())
 		, m_itemGuid(itemGuid)
+		, m_channelCount(0)
 	{
 		// Subscribe to caster despawn event so that we don't hold an invalid pointer
 		m_casterDespawned = caster.despawned.connect(
@@ -1972,7 +1973,12 @@ namespace wowpp
 
 				if (!m_expired)
 				{
+					m_channelCount++;
 					startPeriodicTimer();
+				}
+				else
+				{
+					m_channelCount = 0;
 				}
 				break;
 			}
@@ -2130,7 +2136,7 @@ namespace wowpp
 					handleProcModifier(attackType, canRemove, target);
 				}
 			});
-			/*
+			
 			if ((m_spell.procflags() & game::spell_proc_flags::TakenDamage))
 			{
 				m_takenDamage = m_caster->takenDamage.connect(
@@ -2138,7 +2144,7 @@ namespace wowpp
 					handleTakenDamage(victim);
 				});
 			}
-			*/
+			
 			if ((m_spell.procflags() & game::spell_proc_flags::Killed))
 			{
 				m_procKilled = m_caster->killed.connect(
