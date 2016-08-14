@@ -229,7 +229,6 @@ namespace wowpp
 			if (it == hashs.end())
 			{
 				// Could not find the file info at all, so add an update
-				DLOG("\tMissing file: " << local.first);
 				filesToUpdate.push_back(local.first);
 			}
 			else
@@ -237,7 +236,6 @@ namespace wowpp
 				// Compare the actual hashes
 				if ((*it).second != local.second)
 				{
-					DLOG("\tChanged file: " << local.first);
 					filesToUpdate.push_back(local.first);
 				}
 			}

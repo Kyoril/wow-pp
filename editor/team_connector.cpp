@@ -219,7 +219,7 @@ namespace wowpp
 			outFile.close();
 
 			// Not try to delete the remaining old file
-			/*try
+			try
 			{
 				boost::filesystem::remove(p / (filename + ".wppdat"));
 			}
@@ -238,7 +238,7 @@ namespace wowpp
 			{
 				ELOG("Could not rename temporary file: " << e.what());
 				return;
-			}*/
+			}
 		}
 
 		void TeamConnector::handleEditorUpToDate(pp::Protocol::IncomingPacket & packet)

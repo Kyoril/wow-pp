@@ -82,7 +82,7 @@ namespace wowpp
 
 					// Compress using ZLib
 					boost::iostreams::filtering_streambuf<boost::iostreams::input> in;
-					in.push(boost::iostreams::zlib_compressor(boost::iostreams::zlib::best_compression));
+					in.push(boost::iostreams::zlib_compressor(boost::iostreams::zlib::best_speed));
 					in.push(fileStream);
 
 					// Copy to output stream
