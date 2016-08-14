@@ -62,6 +62,6 @@ namespace wowpp
 	typedef NetUInt8 NetPacketBegin;
 	typedef Identifier PacketId;
 	typedef NetUInt8 NetPacketId;
-	typedef UInt16 PacketSize;
-	typedef NetUInt16 NetPacketSize;
+	typedef UInt32 PacketSize;
+	typedef NetUInt32 NetPacketSize;
 }

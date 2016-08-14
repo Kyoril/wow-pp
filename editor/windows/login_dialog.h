@@ -60,7 +60,7 @@ namespace wowpp
 
 			Ui::LoginDialog *m_ui;
 			EditorApplication &m_app;
-			boost::signals2::scoped_connection m_onConnected, m_onDisconnect, m_onLoginResult;
+			boost::signals2::scoped_connection m_onConnected, m_onDisconnect, m_onLoginResult, m_onUpToDate, m_onUpdateFile;
 		};
 	}
 }

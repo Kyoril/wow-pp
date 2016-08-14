@@ -193,11 +193,19 @@ namespace wowpp
 				return;
 			}
 
+			// Close this window when up-to-date
+			m_onUpToDate = connector->editorUpToDate.connect([this]() 
+			{
+				accept();
+			});
+
+			m_onUpdateFile = connector->fileUpdate.connect([this](const String &filename)
+			{
+				m_ui->statusLabel->setText(QString("Updating file %1").arg(filename.c_str()));
+			});
+
 			// Send hashmap packet
 			connector->projectHashMap(projectHashs);
-
-			// TODO: Wait for response and eventually update local project files. After that, 
-			accept();
 		}
 	}
 }

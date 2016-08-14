@@ -245,5 +245,29 @@ namespace wowpp
 
 		// Result
 		ILOG("Detected " << filesToUpdate.size() << " file changes");
+
+		// Build full path
+		boost::filesystem::path p = m_project.getLastPath();
+		p /= "wowpp";
+
+		// Send updated or new files
+		for (auto &file : filesToUpdate)
+		{
+			// Load the respective file
+			std::ifstream inFile((p / (file + ".wppdat")).c_str(), std::ios::in | std::ios::binary);
+			if (!inFile)
+			{
+				ELOG("Could not read file at path: " << p);
+				continue;
+			}
+
+			// Send packet
+			sendPacket(
+				std::bind(pp::editor_team::team_write::compressedFile, std::placeholders::_1, std::cref(file), std::ref(inFile)));
+		}
+
+		// Send packet
+		sendPacket(
+			std::bind(pp::editor_team::team_write::editorUpToDate, std::placeholders::_1));
 	}
 }

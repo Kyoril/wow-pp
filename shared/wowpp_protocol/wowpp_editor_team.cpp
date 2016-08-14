@@ -21,6 +21,7 @@
 
 #include "pch.h"
 #include "wowpp_editor_team.h"
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -69,6 +70,43 @@ namespace wowpp
 					out_packet
 					        << io::write<NetUInt32>(ProtocolVersion)
 					        << io::write<NetUInt8>(result);
+					out_packet.finish();
+				}
+
+				void compressedFile(pp::OutgoingPacket & out_packet, const String &filename, std::istream & fileStream)
+				{
+					// Determine total file size
+					fileStream.seekg(0, std::ios::end);
+					size_t originalSize = fileStream.tellg();
+					fileStream.seekg(0);
+
+					// Compress using ZLib
+					boost::iostreams::filtering_streambuf<boost::iostreams::input> in;
+					in.push(boost::iostreams::zlib_compressor(boost::iostreams::zlib::best_compression));
+					in.push(fileStream);
+
+					// Copy to output stream
+					std::stringstream outStrm;
+					boost::iostreams::copy(in, outStrm);
+					outStrm.seekg(0, std::ios::end);
+					size_t bufferSize = outStrm.tellg();
+					outStrm.seekg(0, std::ios::beg);
+
+					String buffer = outStrm.str();
+
+					// Write packet
+					out_packet.start(team_packet::CompressedFile);
+					out_packet
+						<< io::write_dynamic_range<NetUInt8>(filename)
+						<< io::write<NetUInt32>(originalSize)
+						<< io::write_range(buffer.begin(), buffer.begin() + bufferSize);
+					out_packet.finish();
+				}
+
+				void editorUpToDate(pp::OutgoingPacket & out_packet)
+				{
+					// Write packet
+					out_packet.start(team_packet::EditorUpToDate);
 					out_packet.finish();
 				}
 			}
@@ -125,6 +163,48 @@ namespace wowpp
 						return false;
 					}
 
+					return true;
+				}
+
+				bool compressedFile(io::Reader & packet, String &out_filename, std::ostream & out_stream)
+				{
+					// Read original packet size
+					UInt32 origSize = 0;
+					if (!(packet
+						>> io::read_container<NetUInt8>(out_filename)
+						>> io::read<NetUInt32>(origSize)))
+					{
+						return false;
+					}
+
+					try
+					{
+						// Determine remaining size
+						const size_t remainingSize = packet.getSource()->size() - packet.getSource()->position();
+
+						// Create buffer
+						String buffer;
+						buffer.resize(remainingSize);
+						packet.getSource()->read(&buffer[0], remainingSize);
+						std::istringstream inStrm(buffer);
+
+						// Uncompress using ZLib
+						boost::iostreams::filtering_streambuf<boost::iostreams::input> in;
+						in.push(boost::iostreams::zlib_decompressor());
+						in.push(inStrm);
+
+						boost::iostreams::copy(in, out_stream);
+						return true;
+					}
+					catch (const std::exception &e)
+					{
+						ELOG("Protocol read error: " << e.what());
+						return false;
+					}
+				}
+
+				bool editorUpToDate(io::Reader & packet)
+				{
 					return true;
 				}
 			}

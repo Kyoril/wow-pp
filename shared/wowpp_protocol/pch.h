@@ -56,3 +56,6 @@
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/type_traits/is_float.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/iostreams/copy.hpp>
+#include <boost/iostreams/filtering_streambuf.hpp>
+#include <boost/iostreams/filter/zlib.hpp>

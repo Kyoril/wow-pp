@@ -32,7 +32,7 @@ namespace wowpp
 	{
 		namespace team_login
 		{
-			static const UInt32 ProtocolVersion = 0x02;
+			static const UInt32 ProtocolVersion = 0x03;
 
 			namespace team_packet
 			{

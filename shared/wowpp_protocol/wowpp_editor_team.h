@@ -32,7 +32,7 @@ namespace wowpp
 	{
 		namespace editor_team
 		{
-			static const UInt32 ProtocolVersion = 0x02;
+			static const UInt32 ProtocolVersion = 0x03;
 
 			namespace editor_packet
 			{
@@ -54,7 +54,11 @@ namespace wowpp
 				enum Type
 				{
 					/// Result of the team login answer.
-					LoginResult
+					LoginResult,
+					/// Compressed file content.
+					CompressedFile,
+					/// Notifies the editor that it is up to date now.
+					EditorUpToDate,
 				};
 			}
 
@@ -119,6 +123,16 @@ namespace wowpp
 				    pp::OutgoingPacket &out_packet,
 				    LoginResult result
 				);
+
+				void compressedFile(
+					pp::OutgoingPacket &out_packet,
+					const String &filename,
+					std::istream &fileStream
+				);
+
+				void editorUpToDate(
+					pp::OutgoingPacket &out_packet
+				);
 			}
 
 			/// Contains methods for reading packets coming from the team server.
@@ -166,6 +180,16 @@ namespace wowpp
 				    io::Reader &packet,
 				    LoginResult &out_result,
 				    UInt32 &out_serverVersion
+				);
+
+				bool compressedFile(
+					io::Reader &packet,
+					String &out_filename,
+					std::ostream &out_stream
+				);
+
+				bool editorUpToDate(
+					io::Reader &packet
 				);
 			}
 		}

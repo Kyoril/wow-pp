@@ -113,12 +113,21 @@ namespace wowpp
 			AreaTriggerManager areaTriggers;
 			SpellCategoryManager spellCategories;
 
+		private:
+
+			String m_lastPath;
+
 		public:
+
+			const String &getLastPath() const { return m_lastPath; }
 
 			/// Loads the project.
 			bool load(
 			    const String &directory)
 			{
+				// Remember last used path
+				m_lastPath = directory;
+
 				ILOG("Loading data...");
 				auto loadStart = getCurrentTime();
 
@@ -186,6 +195,9 @@ namespace wowpp
 			bool save(
 			    const String &directory)
 			{
+				// Remember last used path
+				m_lastPath = directory;
+
 				ILOG("Saving data...");
 				auto saveStart = getCurrentTime();
 

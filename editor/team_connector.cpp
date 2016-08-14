@@ -61,6 +61,7 @@ namespace wowpp
 			WLOG("Received malformed packet from the team server");
 			m_connection->resetListener();
 			m_connection.reset();
+			disconnected();
 		}
 
 		void TeamConnector::connectionPacketReceived(pp::Protocol::IncomingPacket &packet)
@@ -72,6 +73,18 @@ namespace wowpp
 				case pp::editor_team::team_packet::LoginResult:
 				{
 					handleLoginResult(packet);
+					break;
+				}
+
+				case pp::editor_team::team_packet::CompressedFile:
+				{
+					handleCompressedFile(packet);
+					break;
+				}
+
+				case pp::editor_team::team_packet::EditorUpToDate:
+				{
+					handleEditorUpToDate(packet);
 					break;
 				}
 
@@ -165,12 +178,74 @@ namespace wowpp
 			loginResult(result, protocolVersion);
 		}
 
-		void TeamConnector::handleEditorLoginSuccess(pp::Protocol::IncomingPacket &packet)
+		void TeamConnector::handleCompressedFile(pp::Protocol::IncomingPacket & packet)
 		{
+			// Determine project data path
+			boost::filesystem::path p(m_config.dataPath);
+			p /= "wowpp";
+
+			// Temporary file path
+			boost::filesystem::path p2 = p / "update.tmp";
+
+			// Create temporary file
+			std::ofstream outFile(p2.c_str(), std::ios::out | std::ios::binary);
+			if (!outFile)
+			{
+				ELOG("Could not create temporary file!");
+				return;
+			}
+
+			// Receive packet data
+			String filename;
+			if (!pp::editor_team::team_read::compressedFile(packet, filename, outFile))
+			{
+				// Close temporary file and try to delete it
+				outFile.close();
+				try
+				{
+					boost::filesystem::remove(p2);
+				}
+				catch (...)
+				{
+					// Ignore any exceptions as deleting this file is not important yet
+				}
+				return;
+			}
+
+			// Notify UI
+			fileUpdate(filename);
+
+			// Close this file anyway to release it
+			outFile.close();
+
+			// Not try to delete the remaining old file
+			/*try
+			{
+				boost::filesystem::remove(p / (filename + ".wppdat"));
+			}
+			catch (const std::exception &e)
+			{
+				ELOG("Could not delete old project file: " << e.what());
+				return;
+			}
+
+			// Rename temporary file to old file
+			try
+			{
+				boost::filesystem::rename(p2, p / (filename + ".wppdat"));
+			}
+			catch (const std::exception &e)
+			{
+				ELOG("Could not rename temporary file: " << e.what());
+				return;
+			}*/
 		}
 
-		void TeamConnector::handleEditorLoginFailure(pp::Protocol::IncomingPacket &packet)
+		void TeamConnector::handleEditorUpToDate(pp::Protocol::IncomingPacket & packet)
 		{
+			// Fire signal to notify UI
+			editorUpToDate();
 		}
+
 	}
 }

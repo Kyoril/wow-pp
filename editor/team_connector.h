@@ -45,6 +45,10 @@ namespace wowpp
 			boost::signals2::signal<void()> disconnected;
 			/// 
 			boost::signals2::signal<void(UInt32, UInt32)> loginResult;
+			/// 
+			boost::signals2::signal<void(const String&)> fileUpdate;
+			/// 
+			boost::signals2::signal<void()> editorUpToDate;
 
 		public:
 
@@ -96,8 +100,8 @@ namespace wowpp
 
 			// Packet handlers
 			void handleLoginResult(pp::Protocol::IncomingPacket &packet);
-			void handleEditorLoginSuccess(pp::Protocol::IncomingPacket &packet);
-			void handleEditorLoginFailure(pp::Protocol::IncomingPacket &packet);
+			void handleCompressedFile(pp::Protocol::IncomingPacket &packet);
+			void handleEditorUpToDate(pp::Protocol::IncomingPacket &packet);
 
 		private:
 
