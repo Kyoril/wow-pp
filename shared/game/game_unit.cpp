@@ -317,7 +317,7 @@ namespace wowpp
 
 		if (target && target->isAlive() && procVictim)
 		{
-			target->procEventFor(true, this, procVictim, procEx, amount, attackType, procSpell, canRemove);
+			target->procEventFor(true, this, procVictim, procEx, amount, attackType, procSpell, true);
 		}
 	}
 
