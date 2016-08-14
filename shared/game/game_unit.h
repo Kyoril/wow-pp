@@ -788,13 +788,8 @@ namespace wowpp
 		/// @param enable Whether flight mode will be enabled.
 		void setFlightMode(bool enable);
 
-		/// Modifies the bonus attack speed percentage for that character.
-		/// @param attackType The weapon attack type affected.
-		/// @param modifier The bonus percentage.
-		/// @param apply Wheter to apply or misapply the bonus.
-		void modifyAttackSpeedPctModifier(UInt8 attackType, float modifier, bool apply);
 		///
-		float getAttackSpeedPctModifier(UInt8 attackType) {
+		float &getAttackSpeedPctModifier(UInt8 attackType) {
 			return m_attackSpeedPctModifier[attackType];
 		}
 		

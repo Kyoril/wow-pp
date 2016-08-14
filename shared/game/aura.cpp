@@ -1093,8 +1093,8 @@ namespace wowpp
 		m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::BaseAttack, baseAttackTime * amount);
 		m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack, offHandAttackTime * amount);
 
-		m_target.modifyAttackSpeedPctModifier(game::weapon_attack::BaseAttack, static_cast<float>(-m_basePoints) / 100.0f, apply);
-		m_target.modifyAttackSpeedPctModifier(game::weapon_attack::OffhandAttack, static_cast<float>(-m_basePoints) / 100.0f, apply);
+		m_target.getAttackSpeedPctModifier(game::weapon_attack::BaseAttack) *= amount;
+		m_target.getAttackSpeedPctModifier(game::weapon_attack::OffhandAttack) *= amount;
 	}
 
 	void Aura::handleModBaseResistancePct(bool apply)
@@ -2152,7 +2152,7 @@ namespace wowpp
 		{
 			m_onProc = m_caster->spellProcEvent.connect(
 			[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType, bool canRemove) {
-				if (checkProc(amount != 0, target, procFlag, procEx, procSpell))
+				if (m_spell.family() == procSpell->family() && m_effect.itemtype() & procSpell->familyflags())
 				{
 					handleProcModifier(attackType, canRemove, target);
 				}
@@ -2161,15 +2161,17 @@ namespace wowpp
 
 		if (m_spell.attributes(5) & game::spell_attributes_ex_e::SingleTargetSpell)
 		{
-			if (m_caster->getTrackedAuras().find(m_spell.baseid()) != m_caster->getTrackedAuras().end())
+			std::unordered_map<UInt32, GameUnit *> & trackedAuras = m_caster->getTrackedAuras();
+
+			if (trackedAuras.find(m_spell.baseid()) != trackedAuras.end())
 			{
-				if (m_caster->getTrackedAuras()[m_spell.baseid()] != &m_target)
+				if (trackedAuras[m_spell.baseid()] != &m_target)
 				{
-					m_caster->getTrackedAuras()[m_spell.baseid()]->getAuras().removeAllAurasDueToSpell(m_spell.id());
+					trackedAuras[m_spell.baseid()]->getAuras().removeAllAurasDueToSpell(m_spell.id());
 				}
 			}
 
-			m_caster->getTrackedAuras()[m_spell.baseid()] = &m_target;
+			trackedAuras[m_spell.baseid()] = &m_target;
 		}
 
 		// Apply modifiers now

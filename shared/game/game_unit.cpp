@@ -308,11 +308,6 @@ namespace wowpp
 		}
 	}
 
-	void GameUnit::modifyAttackSpeedPctModifier(UInt8 attackType, float modifier, bool apply)
-	{
-		m_attackSpeedPctModifier[attackType] *= (apply ? (1.0f + modifier) : 1.0f / (1.0f + modifier));
-	}
-
 	void GameUnit::procEvent(GameUnit * target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount, UInt8 attackType, proto::SpellEntry const * procSpell, bool canRemove)
 	{
 		if (procAttacker)
