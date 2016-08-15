@@ -2008,7 +2008,7 @@ namespace wowpp
 		{
 			// Get spell duration
 			m_expireCountdown.setEnd(
-			    getCurrentTime() + m_duration);
+				getCurrentTime() + m_duration);
 		}
 
 		if (m_spell.attributes(0) & game::spell_attributes::BreakableByDamage)
@@ -2048,10 +2048,10 @@ namespace wowpp
 
 		// Watch for unit's movement if the aura should interrupt in this case
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Move) != 0 ||
-		        (m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Turning) != 0)
+			(m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Turning) != 0)
 		{
 			m_targetMoved = m_target.moved.connect(
-			                    std::bind(&Aura::onTargetMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+				std::bind(&Aura::onTargetMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 		}
 
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Damage) != 0)
@@ -2127,7 +2127,8 @@ namespace wowpp
 			});
 		}
 
-		if (m_spell.procflags() != game::spell_proc_flags::None)
+		if (m_spell.procflags() != game::spell_proc_flags::None ||
+			m_spell.proccustomflags() != game::spell_proc_flags::None)
 		{
 			m_onProc = m_caster->spellProcEvent.connect(
 			[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType, bool canRemove) {
@@ -2158,7 +2159,7 @@ namespace wowpp
 		{
 			m_onProc = m_caster->spellProcEvent.connect(
 			[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType, bool canRemove) {
-				if (m_spell.family() == procSpell->family() && m_effect.itemtype() & procSpell->familyflags())
+				if (procSpell && m_spell.family() == procSpell->family() && m_effect.itemtype() & procSpell->familyflags())
 				{
 					handleProcModifier(attackType, canRemove, target);
 				}
@@ -2304,14 +2305,6 @@ namespace wowpp
 			eventProcFlag = m_spell.procflags();
 		}
 
-		// Shouldn't happen but just in case
-		/*
-		if (!eventProcFlag)
-		{
-			return false;
-		}
-		*/
-
 		if (procSpell && procSpell->id() == m_spell.id() && !(eventProcFlag & game::spell_proc_flags::TakenPeriodic))
 		{
 			return false;
@@ -2426,7 +2419,8 @@ namespace wowpp
 			
 		}
 
-		if (m_spell.procexflags() != game::spell_proc_flags_ex::None)
+		if (m_spell.procexflags() != game::spell_proc_flags_ex::None &&
+			!(m_spell.procexflags() & game::spell_proc_flags_ex::TriggerAlways))
 		{
 			if (!(m_spell.procexflags() & procEx))
 			{
