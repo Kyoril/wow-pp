@@ -2163,6 +2163,10 @@ namespace wowpp
 				{
 					handleProcModifier(attackType, canRemove, target);
 				}
+				else
+				{
+					DLOG("Unhandled AddTargetTrigger aura with id " << m_spell.id());
+				}
 			});
 		}
 
