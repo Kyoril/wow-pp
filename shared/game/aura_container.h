@@ -64,6 +64,9 @@ namespace wowpp
 
 		void forEachAuraOfType(game::AuraType type, std::function<bool(Aura &)> functor);
 
+		/// Used for debugging.
+		void logAuraInfos();
+
 	private:
 
 		GameUnit &m_owner;

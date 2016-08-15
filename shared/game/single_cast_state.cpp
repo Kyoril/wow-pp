@@ -796,6 +796,13 @@ namespace wowpp
 				m_cast.getExecuter().setUInt32Value(unit_fields::Power2, 0);
 			}
 		}
+
+		// Lys test spell
+		if (m_spell.id() == 5581)
+		{
+			// Show targets aura infos
+			m_cast.getExecuter().getAuras().logAuraInfos();
+		}
 	}
 
 	void SingleCastState::spellEffectTeleportUnits(const proto::SpellEffect &effect)

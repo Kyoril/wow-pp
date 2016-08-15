@@ -43,25 +43,26 @@ namespace wowpp
 			auto a = *it;
 
 			// Checks if both auras are from the same caster
-			const bool isSameCaster = a->getCaster() == aura->getCaster();
+			const bool isSameCaster = a->getCaster() == aura->getCaster() && a->getItemGuid() == aura->getItemGuid();
 
 			// Checks if both auras have the same spell family (&flags)
 			const bool isSameFamily = 
 				(a->getSpell().family() == aura->getSpell().family() && a->getSpell().familyflags() == aura->getSpell().familyflags());
 
 			// Check if this spell has a specific family set
-			const bool hasFamily =
-				(a->getSpell().family() != 0);
+			//const bool hasFamily =
+			//	(a->getSpell().family() != 0);
 
 			// Check if this is the same spell (even if they don't have the same spell id)
 			const bool isSameSpell = 
 				(a->getSpell().baseid() == aura->getSpell().baseid() &&
-				(hasFamily && isSameFamily)) &&
+				(/*hasFamily && */isSameFamily)) &&
 				a->isPassive() == aura->isPassive();
 
 			// Checks if the new aura stacks for different casters (can have multiple auras by different casters even though it's the same spell)
 			const bool stackForDiffCasters =
-				aura->getSpell().attributes(3) & game::spell_attributes_ex_c::StackForDiffCasters;
+				aura->getSpell().attributes(3) & game::spell_attributes_ex_c::StackForDiffCasters ||
+				aura->getItemGuid() != 0;
 
 			// Perform checks
 			if (isSameSpell &&
@@ -370,6 +371,15 @@ namespace wowpp
 					return;
 				}
 			}
+		}
+	}
+
+	void AuraContainer::logAuraInfos()
+	{
+		DLOG("AURA LIST OF TARGET 0x" << std::hex << std::setw(16) << std::uppercase << std::setfill('0') << m_owner.getGuid() << " - " << m_owner.getName())
+		for (auto aura : m_auras)
+		{
+			DLOG("\tAURA " << game::constant_literal::auraTypeNames.getName(static_cast<game::AuraType>(aura->getEffect().aura())) << "\tSPELL " << aura->getSpell().id() << "\tITEM 0x" << std::hex << aura->getItemGuid());
 		}
 	}
 
