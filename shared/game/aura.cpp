@@ -347,6 +347,7 @@ namespace wowpp
 				spell_mod_op::ChanceOfSuccess, m_spell.id(), procChance);
 		}
 		
+		procChance = 100;
 		if (procChance < 100)
 		{
 			std::uniform_int_distribution<UInt32> dist(1, 100);

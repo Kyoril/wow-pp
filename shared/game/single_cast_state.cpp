@@ -221,6 +221,7 @@ namespace wowpp
 				m_target.resolvePointers(*world, &unitTarget, nullptr, nullptr, nullptr);
 				if (unitTarget)
 				{
+					// m_onUserMoved handled by the client (packet cancelChanneling), potential cheat here.
 					m_onTargetDied = unitTarget->killed.connect(std::bind(&SingleCastState::onTargetRemovedOrDead, this));
 					m_onTargetRemoved = unitTarget->despawned.connect(std::bind(&SingleCastState::onTargetRemovedOrDead, this));
 					unitTarget->threaten(m_cast.getExecuter(), 0.0f);
