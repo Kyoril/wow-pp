@@ -132,5 +132,6 @@ namespace wowpp
 
 		void handleLogin(pp::IncomingPacket &packet);
 		void handleProjectHashMap(pp::IncomingPacket &packet);
+		void handleEntryUpdate(pp::IncomingPacket &packet);
 	};
 }

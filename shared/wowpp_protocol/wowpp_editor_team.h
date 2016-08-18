@@ -94,6 +94,8 @@ namespace wowpp
 					KeepAlive,
 					/// Sent to compare the local editor hashtable with the hashes on the team server to detect file changes.
 					ProjectHashMap,
+					/// Sent on save by the editor to notify the team server about local changes.
+					EntryUpdate,
 				};
 			}
 
@@ -109,6 +111,10 @@ namespace wowpp
 					CompressedFile,
 					/// Notifies the editor that it is up to date now.
 					EditorUpToDate,
+					/// Sent to connects editors by the team server to notify them about changes made by someone else right now.
+					/// The editors have the opportunity to discard some or all of these changes locally (for example to prevent
+					/// loss of work done locally which simply hasn't been sent yet).
+					EntryUpdate,
 				};
 			}
 
@@ -161,6 +167,12 @@ namespace wowpp
 					pp::OutgoingPacket &out_packet,
 					const std::map<String, String> &hashMap
 				);
+
+				/// 
+				void entryUpdate(
+					pp::OutgoingPacket &out_packet,
+					const std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>> &changes
+				);
 			}
 
 			/// Contains methods for writing packets from the login server.
@@ -182,6 +194,11 @@ namespace wowpp
 
 				void editorUpToDate(
 					pp::OutgoingPacket &out_packet
+				);
+
+				void entryUpdate(
+					pp::OutgoingPacket &out_packet,
+					const std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>> &changes
 				);
 			}
 
@@ -215,6 +232,12 @@ namespace wowpp
 					io::Reader &packet,
 					std::map<String, String> &out_hashMap
 				);
+
+				/// 
+				bool entryUpdate(
+					io::Reader &packet,
+					std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>> &out_changes
+				);
 			}
 
 			/// Contains methods for reading packets coming from the login server.
@@ -232,14 +255,22 @@ namespace wowpp
 				    UInt32 &out_serverVersion
 				);
 
+				/// 
 				bool compressedFile(
 					io::Reader &packet,
 					String &out_filename,
 					std::ostream &out_stream
 				);
 
+				/// 
 				bool editorUpToDate(
 					io::Reader &packet
+				);
+
+				/// 
+				bool entryUpdate(
+					io::Reader &packet,
+					std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>> &out_changes
 				);
 			}
 		}

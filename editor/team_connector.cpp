@@ -21,7 +21,6 @@
 
 #include "pch.h"
 #include "team_connector.h"
-#include "wowpp_protocol/wowpp_editor_team.h"
 #include "configuration.h"
 #include "common/clock.h"
 #include "log/default_log_levels.h"
@@ -140,6 +139,16 @@ namespace wowpp
 
 			m_connection->sendSinglePacket(
 				std::bind(editor_write::projectHashMap, std::placeholders::_1, std::cref(hashes)));
+		}
+
+		void TeamConnector::sendEntryChanges(const std::map<pp::editor_team::DataEntryType, std::map<UInt32, pp::editor_team::DataEntryChangeType>>& changes, const proto::Project & project)
+		{
+			using namespace pp::editor_team;
+
+			// TODO
+
+			m_connection->sendSinglePacket(
+				std::bind(editor_write::entryUpdate, std::placeholders::_1, std::cref(changes)));
 		}
 
 		void TeamConnector::tryConnect()

@@ -60,6 +60,24 @@ namespace wowpp
 					}
 					out_packet.finish();
 				}
+				void entryUpdate(pp::OutgoingPacket & out_packet, const std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>>& changes)
+				{
+					out_packet.start(editor_packet::EntryUpdate);
+					out_packet << io::write<NetUInt32>(changes.size());
+					for (const auto &pair : changes)
+					{
+						out_packet
+							<< io::write<NetUInt32>(pair.first)
+							<< io::write<NetUInt32>(pair.second.size());
+						for (const auto &pair2 : pair.second)
+						{
+							out_packet
+								<< io::write<NetUInt32>(pair2.first)
+								<< io::write<NetUInt32>(pair2.second);
+						}
+					}
+					out_packet.finish();
+				}
 			}
 
 			namespace team_write
@@ -109,6 +127,25 @@ namespace wowpp
 					out_packet.start(team_packet::EditorUpToDate);
 					out_packet.finish();
 				}
+
+				void entryUpdate(pp::OutgoingPacket & out_packet, const std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>>& changes)
+				{
+					out_packet.start(team_packet::EntryUpdate);
+					out_packet << io::write<NetUInt32>(changes.size());
+					for (const auto &pair : changes)
+					{
+						out_packet
+							<< io::write<NetUInt32>(pair.first)
+							<< io::write<NetUInt32>(pair.second.size());
+						for (const auto &pair2 : pair.second)
+						{
+							out_packet
+								<< io::write<NetUInt32>(pair2.first)
+								<< io::write<NetUInt32>(pair2.second);
+						}
+					}
+					out_packet.finish();
+				}
 			}
 
 			namespace editor_read
@@ -146,6 +183,35 @@ namespace wowpp
 							>> io::read_container<NetUInt8>(key)
 							>> io::read_container<NetUInt8>(value);
 						out_hashMap[key] = value;
+					}
+
+					return packet;
+				}
+				bool entryUpdate(io::Reader & packet, std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>>& out_changes)
+				{
+					UInt32 entries = 0;
+					packet
+						>> io::read<NetUInt32>(entries);
+
+					out_changes.clear();
+					for (UInt32 i = 0; i < entries; ++i)
+					{
+						UInt32 entries2 = 0;
+						DataEntryType key1;
+						packet
+							>> io::read<NetUInt32>(key1)
+							>> io::read<NetUInt32>(entries2);
+
+						auto &data = out_changes[key1];
+						for (UInt32 j = 0; j < entries2; ++j)
+						{
+							UInt32 key = 0;
+							DataEntryChangeType value;
+							packet
+								>> io::read<NetUInt32>(key)
+								>> io::read<NetUInt32>(value);
+							data[key] = value;
+						}
 					}
 
 					return packet;
@@ -206,6 +272,35 @@ namespace wowpp
 				bool editorUpToDate(io::Reader & packet)
 				{
 					return true;
+				}
+				bool entryUpdate(io::Reader & packet, std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>>& out_changes)
+				{
+					UInt32 entries = 0;
+					packet
+						>> io::read<NetUInt32>(entries);
+
+					out_changes.clear();
+					for (UInt32 i = 0; i < entries; ++i)
+					{
+						UInt32 entries2 = 0;
+						DataEntryType key1;
+						packet
+							>> io::read<NetUInt32>(key1)
+							>> io::read<NetUInt32>(entries2);
+
+						auto &data = out_changes[key1];
+						for (UInt32 j = 0; j < entries2; ++j)
+						{
+							UInt32 key = 0;
+							DataEntryChangeType value;
+							packet
+								>> io::read<NetUInt32>(key)
+								>> io::read<NetUInt32>(value);
+							data[key] = value;
+						}
+					}
+
+					return packet;
 				}
 			}
 		}

@@ -344,30 +344,26 @@ namespace wowpp
 					"For more details, please open the editor log file (usually wowpp_editor.log).");
 				return;
 			}
-			else
-			{
-				QMessageBox::information(
-					nullptr,
-					"Data project saved",
-					"The data project was successfully saved.");
-			}
 
 			// Eventually send changes to the server
 			if (!m_changes.empty())
 			{
-				// Debug the changed entries
-				DLOG("There are unsaved changes to be sent to the team server:");
-				for (auto &type : m_changes)
+				// Send changes to the team server
+				if (m_teamConnector)
 				{
-					DLOG("\tType " << static_cast<UInt32>(type.first) << ":");
-					for (auto &entry : type.second)
-					{
-						DLOG("\t\tEntry " << std::setw(5) << entry.first << ": " << static_cast<UInt32>(entry.second));
-					}
+					m_teamConnector->sendEntryChanges(m_changes, m_project);
 				}
 
 				// Clear changes
 				m_changes.clear();
+			}
+			else
+			{
+				// Notify
+				QMessageBox::information(
+					nullptr,
+					"Data project saved",
+					"The data project was successfully saved.");
 			}
 		}
 

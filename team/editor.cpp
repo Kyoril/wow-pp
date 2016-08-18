@@ -148,6 +148,7 @@ namespace wowpp
 
 			WOWPP_HANDLE_PACKET(Login, editor_state::Connected)
 			WOWPP_HANDLE_PACKET(ProjectHashMap, editor_state::Authentificated)
+			WOWPP_HANDLE_PACKET(EntryUpdate, editor_state::UpToDate)
 
 #undef WOWPP_HANDLE_PACKET
 #undef QUOTE
@@ -267,5 +268,35 @@ namespace wowpp
 		// Send packet
 		sendPacket(
 			std::bind(pp::editor_team::team_write::editorUpToDate, std::placeholders::_1));
+
+		// We are up-to-date now
+		m_state = editor_state::UpToDate;
+	}
+
+	void Editor::handleEntryUpdate(pp::IncomingPacket & packet)
+	{
+		std::map<pp::editor_team::DataEntryType, std::map<UInt32, pp::editor_team::DataEntryChangeType>> changes;
+		if (!pp::editor_team::editor_read::entryUpdate(packet, changes))
+		{
+			WLOG("Could not read packet from editor.");
+			return;
+		}
+
+		static const String changeTypeStrings[] = {
+			"Added",
+			"Modified",
+			"Removed"
+		};
+
+		// Output changelog for now
+		DLOG("Editor " << getName() << " sent updated entries");
+		for (auto &pair : changes)
+		{
+			DLOG("\tEntry type: " << static_cast<UInt32>(pair.first));
+			for (auto &pair2 : pair.second)
+			{
+				DLOG("\t\tEntry " << pair2.first << ": " << changeTypeStrings[static_cast<UInt32>(pair2.second)]);
+			}
+		}
 	}
 }

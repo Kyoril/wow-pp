@@ -24,6 +24,8 @@
 #include "common/constants.h"
 #include "network/connector.h"
 #include "wowpp_protocol/wowpp_connector.h"
+#include "wowpp_protocol/wowpp_editor_team.h"
+#include "proto_data/project.h"
 #include "common/timer_queue.h"
 #include "common/sha1.h"
 
@@ -33,7 +35,7 @@ namespace wowpp
 	{
 		// Forwards
 		struct Configuration;
-
+		
 		/// This class manages the connection to the login server.
 		class TeamConnector final : public pp::IConnectorListener
 		{
@@ -83,6 +85,8 @@ namespace wowpp
 			/// to check for changed files to download from the team server.
 			/// @param hashes The hash map. Key value is the manager name, value is the hash string.
 			void projectHashMap(const std::map<String, String> &hashes);
+			/// Sends all changed entries to the server.
+			void sendEntryChanges(const std::map<pp::editor_team::DataEntryType, std::map<UInt32, pp::editor_team::DataEntryChangeType>> &changes, const proto::Project &project);
 
 			/// Tries to connect with the team server and schedules a new attempt if failed.
 			void tryConnect();
