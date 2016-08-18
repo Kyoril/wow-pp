@@ -574,39 +574,6 @@ namespace wowpp
 
 	typedef spell_mod_type::Type SpellModType;
 
-	namespace combat_rating
-	{
-		enum Type
-		{
-			WeaponSkill = 0,
-			DefenseSkill = 1,
-			Dodge = 2,
-			Parry = 3,
-			Block = 4,
-			HitMelee = 5,
-			HitRanged = 6,
-			HitSpell = 7,
-			CritMelee = 8,
-			CritRanged = 9,
-			CritSpell = 10,
-			HitTakenMelee = 11,
-			HitTakenRanged = 12,
-			HitTakenSpell = 13,
-			CritTakenMelee = 14,
-			CritTakenRanged = 15,
-			CritTakenSpell = 16,
-			HasteMelee = 17,
-			HasteRanged = 18,
-			HasteSpell = 19,
-			WeaponSkillMainhand = 20,
-			WeaponSkillOffhand = 21,
-			WeaponSkillRanged = 22,
-			Expertise = 23
-		};
-	}
-
-	typedef combat_rating::Type CombatRating;
-
 	/// Represents a spell modifier which is used to modify spells for a GameCharacter.
 	/// This is only(?) used by talents, and is thus only available for characters.
 	struct SpellModifier final
@@ -906,15 +873,6 @@ namespace wowpp
 		bool isResurrectRequestedBy(UInt64 guid) const { return m_resurrectGuid == guid; }
 		/// Resurrects the player using resurrect info. (This method might not be needed once proper resurrection is implemented)
 		void resurrectUsingRequestData();
-		///
-		void updateRatingValue(CombatRating cr, Int32 value, bool apply);
-		///
-		void updateCritChance(game::WeaponAttack attType);
-		///
-		void setBaseModifierValue(BaseModGroup modGroup, BaseModType type, float value);
-		///
-		float getBaseModifierValue(BaseModGroup modGroup, BaseModType type) const;
-
 	public:
 
 		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT
@@ -935,8 +893,6 @@ namespace wowpp
 		void updateNearbyQuestObjects();
 
 	private:
-		typedef std::array<float, base_mod_type::End> BaseModTypeArray;
-		typedef std::array<BaseModTypeArray, base_mod_group::End> BaseModArray;
 
 		// Variables
 
@@ -974,8 +930,6 @@ namespace wowpp
 		UInt32 m_resurrectMap;
 		math::Vector3 m_resurrectLocation;
 		UInt32 m_resurrectHealth, m_resurrectMana;
-		std::array<Int16, 24> m_ratingValues;
-		BaseModArray m_baseMods;
 	};
 
 	/// Serializes a GameCharacter to an io::Writer object for the wow++ protocol.

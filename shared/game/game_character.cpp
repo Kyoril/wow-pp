@@ -1447,83 +1447,6 @@ namespace wowpp
 		// TODO: spawn corpse bones (not implemented yet)
 	}
 
-	void GameCharacter::updateRatingValue(CombatRating cr, Int32 value, bool apply)
-	{
-		/*
-		m_ratingValues[cr] += (apply ? value : -value);
-
-		Int32 amount = m_ratingValues[cr];
-		if (amount < 0)
-		{
-			amount = 0;
-		}
-		setUInt32Value(character_fields::CombatRating_1 + cr, static_cast<UInt32>(amount));
-
-		switch (cr)
-		{
-		case combat_rating::CritMelee:
-			UpdateCritPercentage(BASE_ATTACK);
-			UpdateCritPercentage(OFF_ATTACK);
-			break;
-		case combat_rating::CritRanged:
-			UpdateCritPercentage(RANGED_ATTACK);
-			break;
-		case combat_rating::CritSpell:
-			UpdateAllSpellCritChances();
-			break;
-		default:
-			break;
-		}
-		*/
-	}
-
-	void GameCharacter::updateCritChance(game::WeaponAttack attType)
-	{
-		/*
-		BaseModGroup modGroup;
-		UInt16 index;
-		CombatRating cr;
-
-		switch (attType)
-		{
-		case game::weapon_attack::OffhandAttack:
-			modGroup = base_mod_group::OffHandCritPercentage;
-			index =  character_fields::OffHandCritPercentage;
-			cr = combat_rating::CritMelee;
-			break;
-		case game::weapon_attack::RangedAttack:
-			modGroup = base_mod_group::RangedCritPercentage;
-			index = character_fields::RangedCritPercentage;
-			cr = combat_rating::CritRanged;
-			break;
-		default:
-			modGroup = base_mod_group::CritPercentage;
-			index = character_fields::CritPercentage;
-			cr = combat_rating::CritMelee;
-			break;
-		}
-
-		float baseValue = getBaseModifierValue(modGroup, base_mod_type::Flat) + getBaseModifierValue(modGroup, base_mod_type::Percentage);
-		// TODO: Change 1.0f with rating multiplier based on level
-		float value = baseValue + static_cast<float>(getUInt32Value(character_fields::CombatRating_1 + cr)) * 1.0f;
-
-		// Modify crit from weapon skill and maximized defense skill of same level victim difference
-		value += (int32(GetWeaponSkillValue(attType)) - int32(GetMaxSkillValueForLevel())) * 0.04f;
-		value = value < 0.0f ? 0.0f : value;
-		SetStatFloatValue(index, value);
-		*/
-	}
-
-	void GameCharacter::setBaseModifierValue(BaseModGroup modGroup, BaseModType type, float value)
-	{
-		m_baseMods[modGroup][type] = value;
-	}
-
-	float GameCharacter::getBaseModifierValue(BaseModGroup modGroup, BaseModType type) const
-	{
-		return m_baseMods[modGroup][type];
-	}
-
 	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData &data)
 	{
 		m_quests[quest] = data;
@@ -2219,8 +2142,6 @@ namespace wowpp
 					case game::item_stat::Stamina:
 						updateModifierValue(unit_mods::StatStamina, unit_mod_type::BaseValue, entry.value(), apply);
 						break;
-					case game::item_stat::CritMeleeRating:
-
 					default:
 						break;
 					}
