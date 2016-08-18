@@ -29,6 +29,7 @@
 #include "configuration.h"
 #include "selection.h"
 #include "common/timer_queue.h"
+#include "wowpp_protocol/wowpp_editor_team.h"
 
 namespace wowpp
 {
@@ -104,7 +105,7 @@ namespace wowpp
 			/// 
 			void showTriggerEditor();
 			/// 
-			void markAsChanged();
+			void markAsChanged(UInt32 entry, pp::editor_team::DataEntryType type, pp::editor_team::DataEntryChangeType changeType);
 			/// 
 			void saveUnsavedChanges();
 			/// 
@@ -116,7 +117,11 @@ namespace wowpp
 			void objectEditorShown();
 			void triggerEditorShown();
 
+
 		private:
+
+			typedef std::map<UInt32, pp::editor_team::DataEntryChangeType> EntryChangeMap;
+			typedef std::map<pp::editor_team::DataEntryType, EntryChangeMap> EntryTypeChangeMap;
 
 			boost::asio::io_service &m_ioService;
 			TimerQueue &m_timers;
@@ -135,8 +140,8 @@ namespace wowpp
 			std::unique_ptr<QuestListModel> m_questListModel;
 			std::unique_ptr<ObjectListModel> m_objectListModel;
 			TransformTool m_transformTool;
-			bool m_changed;
 			std::unique_ptr<TeamConnector> m_teamConnector;
+			EntryTypeChangeMap m_changes;
 		};
 	}
 }

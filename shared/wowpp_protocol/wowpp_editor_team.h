@@ -34,6 +34,56 @@ namespace wowpp
 		{
 			static const UInt32 ProtocolVersion = 0x03;
 
+			namespace data_entry_type
+			{
+				enum Type
+				{
+					Spells,
+					Units,
+					Objects,
+					Maps,
+					Emotes,
+					UnitLoot,
+					ObjectLoot,
+					ItemLoot,
+					SkinningLoot,
+					Skills,
+					Trainers,
+					Vendors,
+					Talents,
+					Items,
+					ItemSets,
+					Classes,
+					Races,
+					Levels,
+					Triggers,
+					Zones,
+					Quests,
+					Factions,
+					FactionTemplates,
+					AreaTriggers,
+					SpellCategories,
+				};
+			}
+
+			typedef data_entry_type::Type DataEntryType;
+
+			namespace data_entry_change_type
+			{
+				enum Type
+				{
+					/// New entry was added.
+					Added,
+					/// Existing entry was modified.
+					Modified,
+					/// Existing entry was removed.
+					Removed
+				};
+			}
+
+			typedef data_entry_change_type::Type DataEntryChangeType;
+
+
 			namespace editor_packet
 			{
 				enum Type

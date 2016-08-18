@@ -142,7 +142,6 @@ namespace wowpp
             , m_mainWindow(nullptr)
             , m_objectEditor(nullptr)
             , m_triggerEditor(nullptr)
-			, m_changed(false)
 			, m_transformTool(transform_tool::Select)
 		{
 			m_pollTimer = new QTimer(this);
@@ -265,7 +264,7 @@ namespace wowpp
 		bool EditorApplication::shutdown()
 		{
 			// Check for unsaved changes
-			if (m_changed)
+			if (!m_changes.empty())
 			{
 				int result = QMessageBox::warning(
 					nullptr,
@@ -300,17 +299,40 @@ namespace wowpp
 			return true;
 		}
 
-		void EditorApplication::markAsChanged()
+		void EditorApplication::markAsChanged(UInt32 entry, pp::editor_team::DataEntryType type, pp::editor_team::DataEntryChangeType changeType)
 		{
-			m_changed = true;
+			// First get the changes by type
+			auto &typeMap = m_changes[type];
+
+			// Now check if we already have a change entry in there
+			auto it = typeMap.find(entry);
+			if (it == typeMap.end())
+			{
+				// No - insert a new one
+				typeMap[entry] = changeType;
+			}
+			else
+			{
+				// Remove counters added
+				if (it->second == pp::editor_team::data_entry_change_type::Added)
+				{
+					if (changeType == pp::editor_team::data_entry_change_type::Removed)
+					{
+						typeMap.erase(it);
+					}
+					
+					// Else do nothing, as modify should not override Added!
+				}
+				else
+				{
+					// Entry was either removed or modified. In both cases, we simply override...
+					typeMap[entry] = changeType;
+				}
+			}
 		}
 
 		void EditorApplication::saveUnsavedChanges()
 		{
-			// Optimization
-			/*if (!m_changed)
-				return;*/
-
 			// Save data project
 			if (!m_project.save(m_configuration.dataPath))
 			{
@@ -330,8 +352,23 @@ namespace wowpp
 					"The data project was successfully saved.");
 			}
 
-			// No more unsaved changes
-			m_changed = false;
+			// Eventually send changes to the server
+			if (!m_changes.empty())
+			{
+				// Debug the changed entries
+				DLOG("There are unsaved changes to be sent to the team server:");
+				for (auto &type : m_changes)
+				{
+					DLOG("\tType " << static_cast<UInt32>(type.first) << ":");
+					for (auto &entry : type.second)
+					{
+						DLOG("\t\tEntry " << std::setw(5) << entry.first << ": " << static_cast<UInt32>(entry.second));
+					}
+				}
+
+				// Clear changes
+				m_changes.clear();
+			}
 		}
 
 		void EditorApplication::onPollTimerTick()

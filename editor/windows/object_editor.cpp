@@ -623,7 +623,7 @@ namespace wowpp
 				{
 					// Value changed
 					m_viewModel->layoutChanged();
-					m_application.markAsChanged();
+					m_application.markAsChanged(m_selectedUnit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
 				}
 			}
 		}
@@ -670,7 +670,7 @@ namespace wowpp
 				{
 					// Value changed
 					m_objectViewModel->layoutChanged();
-					m_application.markAsChanged();
+					m_application.markAsChanged(m_selectedObject->id(), pp::editor_team::data_entry_type::Objects, pp::editor_team::data_entry_change_type::Modified);
 				}
 			}
 		}
@@ -707,7 +707,7 @@ namespace wowpp
 				// Update UI
 				QTreeWidgetItem *item = m_ui->treeWidget->currentItem();
 				applySpellToTreeItem(*item, *entry, *dialog.getSelectedSpell());
-				m_application.markAsChanged();
+				m_application.markAsChanged(m_selectedUnit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
 			}
 		}
 
@@ -1277,7 +1277,7 @@ namespace wowpp
 						m_ui->unitTriggerWidget->addItem(
 							QString(newTrigger->name().c_str()));
 
-						m_application.markAsChanged();
+						m_application.markAsChanged(m_selectedUnit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
 					}
 				}
 			}
@@ -1306,7 +1306,7 @@ namespace wowpp
 				auto *taken = m_ui->unitTriggerWidget->takeItem(row);
 				delete taken;
 
-				m_application.markAsChanged();
+				m_application.markAsChanged(m_selectedUnit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
 			}
 		}
 
@@ -1333,7 +1333,7 @@ namespace wowpp
 						m_ui->objectTriggerWidget->addItem(
 							QString(newTrigger->name().c_str()));
 
-						m_application.markAsChanged();
+						m_application.markAsChanged(m_selectedObject->id(), pp::editor_team::data_entry_type::Objects, pp::editor_team::data_entry_change_type::Modified);
 					}
 				}
 			}
@@ -1362,7 +1362,7 @@ namespace wowpp
 				auto *taken = m_ui->objectTriggerWidget->takeItem(row);
 				delete taken;
 
-				m_application.markAsChanged();
+				m_application.markAsChanged(m_selectedObject->id(), pp::editor_team::data_entry_type::Objects, pp::editor_team::data_entry_change_type::Modified);
 			}
 		}
 
@@ -2428,7 +2428,7 @@ namespace wowpp
 				added->set_probability(dialog.getProbability());
 				addSpellEntry(*added);
 
-				m_application.markAsChanged();
+				m_application.markAsChanged(m_selectedUnit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
 			}
 		}
 		void ObjectEditor::on_removeUnitSpellButton_clicked()
