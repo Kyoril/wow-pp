@@ -225,6 +225,9 @@ namespace wowpp
 					m_onTargetRemoved = unitTarget->despawned.connect(std::bind(&SingleCastState::onTargetRemovedOrDead, this));
 					unitTarget->threaten(m_cast.getExecuter(), 0.0f);
 				}
+
+				m_onUserMoved = m_cast.getExecuter().moved.connect(
+					std::bind(&SingleCastState::onUserStartsMoving, this));
 			}
 
 			onCastFinished();
@@ -253,6 +256,8 @@ namespace wowpp
 
 	void SingleCastState::stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown/* = 0*/)
 	{
+		finishChanneling(true);
+
 		// Nothing to cancel
 		if (m_hasFinished)
 			return;
@@ -650,15 +655,7 @@ namespace wowpp
 
 	void SingleCastState::onTargetRemovedOrDead()
 	{
-		if (m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1 ||
-			m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_2)
-		{
-			finishChanneling(true);
-		}
-		else
-		{
-			stopCast(game::spell_interrupt_flags::None);
-		}
+		stopCast(game::spell_interrupt_flags::None);
 
 		m_onTargetMoved.disconnect();
 	}
@@ -1489,7 +1486,7 @@ namespace wowpp
 			return;
 		}
 
-		float angle = targetUnit->getGuid() == caster.getGuid() ? caster.getOrientation(): targetUnit->getAngle(reinterpret_cast<GameObject &>(caster));
+		float angle = targetUnit->getGuid() == caster.getGuid() ? caster.getOrientation() : caster.getAngle(reinterpret_cast<GameObject &>(targetUnit));
 		float vcos = std::cos(angle);
 		float vsin = std::sin(angle);
 
