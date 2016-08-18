@@ -239,6 +239,7 @@ namespace wowpp
 			return std::make_pair(game::spell_cast_result::FailedSpellInProgress, &m_casting);
 		}
 
+		finishChanneling(true);
 		SpellCasting &casting = castSpell(
 		                            cast,
 		                            spell,

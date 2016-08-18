@@ -383,11 +383,6 @@ namespace wowpp
 			return;
 		}
 
-		if (!isProc)
-		{
-			finishChanneling(true);
-		}
-
 		auto result = m_spellCast->startCast(*spell, std::move(target), basePoints, castTime, isProc, itemGuid);
 		if (result.first == game::spell_cast_result::CastOkay)
 		{
