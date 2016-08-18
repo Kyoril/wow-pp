@@ -603,6 +603,7 @@ namespace wowpp
 				MoveRoot					= 0x0EC,
 				MoveUnroot					= 0x0ED,
 				MoveHeartBeat				= 0x0EE,
+				MoveKnockBack				= 0x0EF,
 				MoveFeatherFall				= 0x0F2,
 				MoveNormalFall				= 0x0F3,
 				MoveSetHover				= 0x0F4,
@@ -2376,6 +2377,15 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt64 casterGUID,
 				Int32 castTime
+			);
+
+			void moveKnockBack(
+				game::OutgoingPacket &out_packet,
+				UInt64 targetGUID,
+				float vcos,
+				float vsin,
+				float speedxy,
+				float speedz
 			);
 		};
 	}

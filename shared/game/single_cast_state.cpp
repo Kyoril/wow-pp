@@ -1455,6 +1455,53 @@ namespace wowpp
 		}
 	}
 
+	void SingleCastState::spellEffectKnockBack(const proto::SpellEffect & effect)
+	{
+		if (!isPlayerGUID(m_target.getUnitTarget()))
+		{
+			return;
+		}
+
+		auto *world = m_cast.getExecuter().getWorldInstance();
+
+		if (!world)
+		{
+			return;
+		}
+
+		GameUnit *targetUnit = nullptr;
+		m_target.resolvePointers(*world, &targetUnit, nullptr, nullptr, nullptr);
+
+		if (targetUnit->isRooted() || targetUnit->isStunned())
+		{
+			return;
+		}
+
+		m_affectedTargets.insert(targetUnit->shared_from_this());
+
+		GameUnit &caster = m_cast.getExecuter();
+
+		float speedxy = static_cast<float>(effect.miscvaluea() * 0.1f);
+		float speedz = static_cast<float>(calculateEffectBasePoints(effect) * 0.1f);
+
+		if (speedxy < 0.1f && speedz < 0.1f)
+		{
+			return;
+		}
+
+		float angle = targetUnit->getGuid() == caster.getGuid() ? caster.getOrientation(): targetUnit->getAngle(reinterpret_cast<GameObject &>(caster));
+		float vcos = std::cos(angle);
+		float vsin = std::sin(angle);
+
+		sendPacketFromCaster(caster,
+							 std::bind(game::server_write::moveKnockBack, std::placeholders::_1,
+									   targetUnit->getGuid(),
+									   vcos,
+									   vsin,
+									   speedxy,
+									   speedz));
+	}
+
 	void SingleCastState::spellEffectDrainPower(const proto::SpellEffect &effect)
 	{
 		// Calculate the power to drain
@@ -2399,6 +2446,7 @@ namespace wowpp
 			{se::DispelMechanic,		std::bind(&SingleCastState::spellEffectDispelMechanic, this, std::placeholders::_1) },
 			{se::Resurrect,				std::bind(&SingleCastState::spellEffectResurrect, this, std::placeholders::_1) },
 			{se::ResurrectNew,			std::bind(&SingleCastState::spellEffectResurrectNew, this, std::placeholders::_1) },
+			{se::KnockBack,				std::bind(&SingleCastState::spellEffectKnockBack, this, std::placeholders::_1) },
 			// Add all effects above here
 			{se::ApplyAura,				std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
 			{se::ApplyAreaAuraParty,	std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},

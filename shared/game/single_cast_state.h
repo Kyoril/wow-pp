@@ -118,6 +118,7 @@ namespace wowpp
 		void spellEffectDispelMechanic(const proto::SpellEffect &effect);
 		void spellEffectResurrect(const proto::SpellEffect &effect);
 		void spellEffectResurrectNew(const proto::SpellEffect &effect);
+		void spellEffectKnockBack(const proto::SpellEffect &effect);
 
 		void meleeSpecialAttack(const proto::SpellEffect &effect, bool basepointsArePct);
 

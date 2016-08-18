@@ -3782,6 +3782,41 @@ namespace wowpp
 
 				out_packet.finish();
 			}
+
+			void moveKnockBack(game::OutgoingPacket & out_packet, UInt64 targetGUID, float vcos, float vsin, float speedxy, float speedz)
+			{
+				out_packet.start(game::server_packet::MoveKnockBack);
+
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; targetGUID != 0; ++i)
+					{
+						if (targetGUID & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(targetGUID & 0xFF);
+							++size;
+						}
+
+						targetGUID >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+
+				out_packet
+					<< io::write<NetUInt32>(0)
+					<< io::write<float>(vcos)
+					<< io::write<float>(vsin)
+					<< io::write<float>(speedxy)
+					<< io::write<float>(-speedz);
+
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
