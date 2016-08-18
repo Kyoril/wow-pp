@@ -3582,4 +3582,14 @@ namespace wowpp
 
 		m_character->resurrectUsingRequestData();
 	}
+
+	void Player::handleCancelChanneling(game::Protocol::IncomingPacket & packet)
+	{
+		if (!game::client_read::cancelChanneling(packet))
+		{
+			return;
+		}
+
+		m_character->finishChanneling(true);
+	}
 }

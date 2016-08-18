@@ -99,7 +99,7 @@ namespace wowpp
 		, m_attackerProc(0)
 		, m_victimProc(0)
 		, m_canTrigger(false)
-		, m_attackType(0)
+		, m_attackType(game::weapon_attack::BaseAttack)
 	{
 		// Check if the executer is in the world
 		auto &executer = m_cast.getExecuter();
@@ -121,6 +121,22 @@ namespace wowpp
 			              static_cast<Int32>(castTime),			// Cast time in ms
 			              0)										// Cast count (unknown)
 			);
+		}
+
+		if (worldInstance && (m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1 ||
+			m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_2))
+		{
+			sendPacketFromCaster(
+				executer,
+				std::bind(game::server_write::channelStart,
+						  std::placeholders::_1,
+						  casterId,
+						  m_spell.id(),
+						  m_spell.duration())
+			);
+			
+			executer.setUInt64Value(unit_fields::ChannelObject, m_target.getUnitTarget());
+			executer.setUInt32Value(unit_fields::ChannelSpell, m_spell.id());
 		}
 
 		math::Vector3 location(m_cast.getExecuter().getLocation());
@@ -195,6 +211,22 @@ namespace wowpp
 		}
 		else
 		{
+			if (m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1 ||
+				m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_2)
+			{
+				WorldInstance *world = m_cast.getExecuter().getWorldInstance();
+				assert(world);
+
+				GameUnit *unitTarget = nullptr;
+				m_target.resolvePointers(*world, &unitTarget, nullptr, nullptr, nullptr);
+				if (unitTarget)
+				{
+					m_onTargetDied = unitTarget->killed.connect(std::bind(&SingleCastState::onTargetRemovedOrDead, this));
+					m_onTargetRemoved = unitTarget->despawned.connect(std::bind(&SingleCastState::onTargetRemovedOrDead, this));
+					unitTarget->threaten(m_cast.getExecuter(), 0.0f);
+				}
+			}
+
 			onCastFinished();
 		}
 	}
@@ -261,6 +293,31 @@ namespace wowpp
 			{
 				stopCast(game::spell_interrupt_flags::Movement);
 			}
+		}
+	}
+
+	void SingleCastState::finishChanneling(bool cancel)
+	{
+		if (m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1 ||
+			m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_2)
+		{
+			if (cancel)
+			{
+				m_cast.getExecuter().getAuras().removeAllAurasDueToSpell(m_spell.id());
+				GameUnit *target = reinterpret_cast<GameUnit *>(m_cast.getExecuter().getWorldInstance()->findObjectByGUID(m_target.getUnitTarget()));
+				if (target && target->isAlive())
+				{
+					target->getAuras().removeAllAurasDueToSpell(m_spell.id());
+				}
+			}
+
+			sendPacketFromCaster(m_cast.getExecuter(),
+				std::bind(game::server_write::channelUpdate, std::placeholders::_1,
+					m_cast.getExecuter().getGuid(),
+					0));
+
+			m_cast.getExecuter().setUInt64Value(unit_fields::ChannelObject, 0);
+			m_cast.getExecuter().setUInt32Value(unit_fields::ChannelSpell, 0);
 		}
 	}
 
@@ -592,7 +649,15 @@ namespace wowpp
 
 	void SingleCastState::onTargetRemovedOrDead()
 	{
-		stopCast(game::spell_interrupt_flags::None);
+		if (m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1 ||
+			m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_2)
+		{
+			finishChanneling(true);
+		}
+		else
+		{
+			stopCast(game::spell_interrupt_flags::None);
+		}
 
 		m_onTargetMoved.disconnect();
 	}
@@ -2237,6 +2302,7 @@ namespace wowpp
 		case game::spell_dmg_class::Melee:
 			m_attackerProc = game::spell_proc_flags::DoneSpellMeleeDmgClass;
 			m_victimProc = game::spell_proc_flags::TakenSpellMeleeDmgClass;
+			m_attackType = game::weapon_attack::BaseAttack;
 
 			if (m_spell.attributes(3) & game::spell_attributes_ex_c::ReqOffhand)
 			{
@@ -2375,20 +2441,9 @@ namespace wowpp
 								canRemove = true;
 							}
 
-							if (m_cast.getExecuter().getAuras().hasAura(game::aura_type::PeriodicTriggerSpell))
+							if (m_isProc)
 							{
-								UInt32 spellId = m_spell.id();
-								m_cast.getExecuter().getAuras().forEachAuraOfType(game::aura_type::PeriodicTriggerSpell, [&canRemove, spellId](Aura &aura) -> bool {
-									if (aura.getEffect().triggerspell() == spellId)
-									{
-										if (aura.getChannelCount() != 1)
-										{
-											canRemove = false;
-										}
-									}
-
-									return true;
-								});
+								canRemove = false;
 							}
 
 							m_cast.getExecuter().procEvent(target, itr->second.procAttacker, itr->second.procVictim, itr->second.procEx, itr->second.amount, m_attackType, &m_spell, canRemove);

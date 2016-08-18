@@ -248,7 +248,8 @@ namespace wowpp
 		void handleToggleCloak(game::Protocol::IncomingPacket &packet);
 		void handleMailSend(game::Protocol::IncomingPacket &packet);
 		void handleResurrectResponse(game::Protocol::IncomingPacket &packet);
-		
+		void handleCancelChanneling(game::Protocol::IncomingPacket &packet);
+
 	private:
 
 		/// 

@@ -326,6 +326,11 @@ namespace wowpp
 		spellProcEvent(isVictim, target, procFlag, procEx, procSpell, amount, attackType, canRemove);
 	}
 
+	void GameUnit::finishChanneling(bool cancel)
+	{
+		m_spellCast->finishChanneling(cancel);
+	}
+
 	void GameUnit::levelChanged(const proto::LevelEntry &levelInfo)
 	{
 		// Get race and class
@@ -376,6 +381,11 @@ namespace wowpp
 		{
 			WLOG("Could not find spell " << spellId);
 			return;
+		}
+
+		if (!isProc)
+		{
+			finishChanneling(true);
 		}
 
 		auto result = m_spellCast->startCast(*spell, std::move(target), basePoints, castTime, isProc, itemGuid);

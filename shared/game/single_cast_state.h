@@ -70,6 +70,7 @@ namespace wowpp
 		    UInt64 itemGuid) override;
 		void stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown = 0) override;
 		void onUserStartsMoving() override;
+		void finishChanneling(bool cancel);
 		SpellCasting &getCasting() {
 			return m_casting;
 		}
@@ -153,7 +154,7 @@ namespace wowpp
 		UInt32 m_victimProc;
 		bool m_canTrigger;
 		HitResultMap m_hitResults;
-		UInt8 m_attackType;
+		game::WeaponAttack m_attackType;
 
 		void sendEndCast(bool success);
 		void onCastFinished();

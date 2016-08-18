@@ -108,10 +108,6 @@ namespace wowpp
 
 		Int32 getTotalDuration() const { return m_duration; }
 
-		UInt8 getChannelCount() const {
-			return m_channelCount;
-		}
-
 		bool isStealthAura() const;
 
 	protected:
@@ -249,7 +245,7 @@ namespace wowpp
 		///
 		void setRemoved(GameUnit *remover);
 		/// 
-		bool checkProc(bool active, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell);
+		bool checkProc(bool active, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell, UInt8 attackType, bool isVictim);
 
 
 	private:
@@ -275,6 +271,5 @@ namespace wowpp
 		UInt32 m_totalTicks;
 		Int32 m_duration;
 		UInt64 m_itemGuid;
-		UInt8 m_channelCount;
 	};
 }

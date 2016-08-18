@@ -52,4 +52,8 @@ namespace wowpp
 	{
 
 	}
+	void NoCastState::finishChanneling(bool cancel)
+	{
+
+	}
 }

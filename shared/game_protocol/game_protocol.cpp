@@ -3719,6 +3719,69 @@ namespace wowpp
 					<< io::write<NetUInt8>(typeId == object_type::Character ? 0 : 1);
 				out_packet.finish();
 			}
+
+			void channelStart(game::OutgoingPacket & out_packet, UInt64 casterGUID, UInt32 spellId, Int32 duration)
+			{
+				out_packet.start(game::server_packet::ChannelStart);
+
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; casterGUID != 0; ++i)
+					{
+						if (casterGUID & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(casterGUID & 0xFF);
+							++size;
+						}
+
+						casterGUID >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+
+				out_packet
+					<< io::write<NetUInt32>(spellId)
+					<< io::write<NetInt32>(duration);
+
+				out_packet.finish();
+			}
+
+			void channelUpdate(game::OutgoingPacket & out_packet, UInt64 casterGUID, Int32 castTime)
+			{
+				out_packet.start(game::server_packet::ChannelUpdate);
+				
+				{
+					UInt8 packGUID[8 + 1];
+					packGUID[0] = 0;
+					size_t size = 1;
+
+					for (UInt8 i = 0; casterGUID != 0; ++i)
+					{
+						if (casterGUID & 0xFF)
+						{
+							packGUID[0] |= UInt8(1 << i);
+							packGUID[size] = UInt8(casterGUID & 0xFF);
+							++size;
+						}
+
+						casterGUID >>= 8;
+					}
+
+					out_packet
+						<< io::write_range(&packGUID[0], &packGUID[size]);
+				}
+
+				out_packet
+					<< io::write<NetInt32>(castTime);
+
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
@@ -4566,6 +4629,13 @@ namespace wowpp
 				return packet
 					>> io::read<NetUInt64>(out_guid)
 					>> io::read<NetUInt8>(out_status);
+			}
+
+			bool cancelChanneling(io::Reader & packet)
+			{
+				packet.skip(packet.getSource()->size());
+
+				return true;
 			}
 		}
 

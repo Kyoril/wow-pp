@@ -207,7 +207,8 @@ namespace wowpp
 		}
 
 		// Check facing (Need to have the target in front of us)
-		if (spell.facing() & 0x01)
+		if (spell.facing() & 0x01 &&
+			!(spell.attributes(2) & game::spell_attributes_ex_b::CantReflect))
 		{
 			const auto *world = m_executer.getWorldInstance();
 			if (world)
@@ -284,6 +285,13 @@ namespace wowpp
 		m_castState->activate();
 	}
 
+	void SpellCast::finishChanneling(bool cancel)
+	{
+		assert(m_castState);
+
+		m_castState->finishChanneling(cancel);
+	}
+
 	Int32 SpellCast::calculatePowerCost(const proto::SpellEntry & spell) const
 	{
 		// DrainAllPower flag handler (used for Lay on Hands)
@@ -351,5 +359,8 @@ namespace wowpp
 		auto &casting = newState->getCasting();
 		cast.setState(std::move(newState));
 		return casting;
+	}
+	void SpellCast::CastState::finishChanneling(bool cancel)
+	{
 	}
 }

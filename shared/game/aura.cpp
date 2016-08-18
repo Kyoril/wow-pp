@@ -56,7 +56,6 @@ namespace wowpp
 		, m_totalTicks(0)
 		, m_duration(spell.duration())
 		, m_itemGuid(itemGuid)
-		, m_channelCount(0)
 	{
 		// Subscribe to caster despawn event so that we don't hold an invalid pointer
 		m_casterDespawned = caster.despawned.connect(
@@ -1749,6 +1748,12 @@ namespace wowpp
 			onTick();
 		}
 
+		if (m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1 ||
+			m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_2)
+		{
+			m_caster->finishChanneling(false);
+		}
+
 		// If the target died already, don't destroy this aura (it will be destroyed elsewhere)
 		if (m_target.getUInt32Value(unit_fields::Health) > 0)
 		{
@@ -1967,18 +1972,13 @@ namespace wowpp
 			{
 				SpellTargetMap targetMap;
 				targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
-				targetMap.m_unitTarget = m_target.getVictim() ? m_target.getVictim()->getGuid() : 0;
+				targetMap.m_unitTarget = m_caster->getUInt64Value(unit_fields::ChannelObject);
 
 				m_target.castSpell(targetMap, m_effect.triggerspell(), -1, 0, true);
 
 				if (!m_expired)
 				{
-					m_channelCount++;
 					startPeriodicTimer();
-				}
-				else
-				{
-					m_channelCount = 0;
 				}
 				break;
 			}
@@ -2132,7 +2132,7 @@ namespace wowpp
 		{
 			m_onProc = m_caster->spellProcEvent.connect(
 			[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType, bool canRemove) {
-				if (checkProc(amount != 0, target, procFlag, procEx, procSpell))
+				if (checkProc(amount != 0, target, procFlag, procEx, procSpell, attackType, isVictim))
 				{
 					handleProcModifier(attackType, canRemove, target);
 				}
@@ -2297,7 +2297,7 @@ namespace wowpp
 		});
 	}
 
-	bool Aura::checkProc(bool active, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell)
+	bool Aura::checkProc(bool active, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell, UInt8 attackType, bool isVictim)
 	{
 		UInt32 eventProcFlag;
 		if (m_spell.proccustomflags())
@@ -2333,73 +2333,41 @@ namespace wowpp
 				return false;
 			}
 			
-			if (m_spell.itemclass() == game::item_class::Weapon)
+			if (!isVictim && isPlayerGUID(m_caster->getGuid()))
 			{
-				UInt8 weaponType;
-
-				if (procFlag & game::spell_proc_flags::DoneOffhandAttack)
+				if (m_spell.itemclass() == game::item_class::Weapon)
 				{
-					if (isPlayerGUID(m_caster->getGuid()))
+					std::shared_ptr<GameItem> item;
+
+					if (attackType == game::weapon_attack::OffhandAttack)
 					{
-						auto item = reinterpret_cast<GameCharacter*>(m_caster)->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
-
-						if (!item)
-						{
-							return false;
-						}
-
-						weaponType = item->getEntry().subclass();
+						item = reinterpret_cast<GameCharacter*>(m_caster)->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
 					}
-					else
+					else if (attackType == game::weapon_attack::RangedAttack)
 					{
-						weaponType = m_caster->getByteValue(unit_fields::VirtualItemInfo + (1 * 2), 1);
+						item = reinterpret_cast<GameCharacter*>(m_caster)->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Ranged));
+					}
+					else if (attackType == game::weapon_attack::BaseAttack)
+					{
+						item = reinterpret_cast<GameCharacter*>(m_caster)->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
+					}
+
+					if (!item || item->getEntry().itemclass() != game::item_class::Weapon || !(m_spell.itemsubclassmask() & (1 << item->getEntry().subclass())))
+					{
+						return false;
 					}
 				}
-				else if (procFlag & game::spell_proc_flags::DoneRangedAutoAttack)
+				else if (m_spell.itemclass() == game::item_class::Armor)
 				{
-					if (isPlayerGUID(m_caster->getGuid()))
+					//Shield
+					std::shared_ptr<GameItem> item;
+
+					item = reinterpret_cast<GameCharacter*>(m_caster)->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
+
+					if (!item || item->getEntry().itemclass() != game::item_class::Armor || !(m_spell.itemsubclassmask() & (1 << item->getEntry().subclass())))
 					{
-						auto item = reinterpret_cast<GameCharacter*>(m_caster)->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Ranged));
-
-						if (!item)
-						{
-							return false;
-						}
-
-						weaponType = item->getEntry().subclass();
+						return false;
 					}
-					else
-					{
-						weaponType = m_caster->getByteValue(unit_fields::VirtualItemInfo + (3 * 2), 1);
-					}
-				}
-				else if (procFlag & game::spell_proc_flags::DoneMeleeAutoAttack)
-				{
-					if (isPlayerGUID(m_caster->getGuid()))
-					{
-						auto item = reinterpret_cast<GameCharacter*>(m_caster)->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
-
-						if (!item)
-						{
-							return false;
-						}
-
-						weaponType = item->getEntry().subclass();
-					}
-					else
-					{
-						weaponType = m_caster->getByteValue(unit_fields::VirtualItemInfo + (0 * 2), 1);
-					}
-				}
-				else
-				{
-					// Shouldn't happen
-					DLOG("Spell " << m_spell.id() << " has unhandled itemclassmask.");
-				}
-
-				if (!(m_spell.itemsubclassmask() & (1 << weaponType)))
-				{
-					return false;
 				}
 			}
 		}
@@ -2414,7 +2382,6 @@ namespace wowpp
 			{
 				return false;
 			}
-
 			
 			if (m_spell.procfamilyflags () && !(m_spell.procfamilyflags() & procSpell->familyflags()))
 			{
@@ -2432,20 +2399,10 @@ namespace wowpp
 			}
 		}
 
-		if (!m_spell.procfamily() && m_effect.affectmask() && !(m_effect.affectmask() & procSpell->familyflags()))
-		{
-			return false;
-		}
-		else
+		if (!m_effect.affectmask())
 		{
 			if (!(m_spell.procexflags() & game::spell_proc_flags_ex::TriggerAlways))
 			{
-				if (!target && m_caster->isGameCharacter() &&
-					reinterpret_cast<GameCharacter*>(m_caster)->getTotalSpellMods(SpellModType(m_effect.aura()), SpellModOp(m_effect.miscvaluea()), procSpell->id()))
-				{
-					return true;
-				}
-
 				if (m_spell.procexflags() == game::spell_proc_flags_ex::None)
 				{
 					if (!((procEx & (game::spell_proc_flags_ex::NormalHit | game::spell_proc_flags_ex::CriticalHit)) && active))
@@ -2461,6 +2418,10 @@ namespace wowpp
 					}
 				}
 			}
+		}
+		else if (procSpell && !(m_effect.affectmask() & procSpell->familyflags()))
+		{
+			return false;
 		}
 
 		return true;

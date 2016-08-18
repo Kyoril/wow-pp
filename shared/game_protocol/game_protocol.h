@@ -482,6 +482,7 @@ namespace wowpp
 				CastSpell				= 0x12E,
 				CancelCast				= 0x12F,
 				CancelAura				= 0x136,
+				CancelChanneling		= 0x13B,
 				SetSelection			= 0x13D,
 				AttackSwing				= 0x141,
 				AttackStop				= 0x142,
@@ -624,6 +625,8 @@ namespace wowpp
 				SpellCooldown				= 0x134,
 				CooldownEvent				= 0x135,
 				UpdateAuraDuration			= 0x137,
+				ChannelStart				= 0x139,
+				ChannelUpdate				= 0x13A,
 				AiReaction					= 0x13C,
 				AttackStart					= 0x143,
 				AttackStop					= 0x144,
@@ -1371,6 +1374,10 @@ namespace wowpp
 				io::Reader &packet,
 				UInt64 &out_guid,
 				UInt8 &out_status
+				);
+
+			bool cancelChanneling(
+				io::Reader &packet
 				);
 		};
 
@@ -2356,6 +2363,19 @@ namespace wowpp
 				UInt64 objectGUID,
 				const String &sentName,
 				UInt8 typeId
+			);
+
+			void channelStart(
+				game::OutgoingPacket &out_packet,
+				UInt64 casterGUID,
+				UInt32 spellId,
+				Int32 duration
+			);
+
+			void channelUpdate(
+				game::OutgoingPacket &out_packet,
+				UInt64 casterGUID,
+				Int32 castTime
 			);
 		};
 	}
