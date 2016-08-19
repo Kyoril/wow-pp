@@ -58,6 +58,8 @@ namespace wowpp
 		GameObject::initialize();
 
 		setUInt32Value(object_fields::Type, 65);
+		setUInt32Value(object_fields::Entry, m_entry.id());
+		setFloatValue(object_fields::ScaleX, 1.0f);
 
 		auto &loc = getLocation();
 		setUInt64Value(dyn_object_fields::Caster, m_caster.getGuid());
