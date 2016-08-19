@@ -230,6 +230,18 @@ namespace wowpp
 			}
 		}
 
+		// Can't use while moving (this needs to be researched)
+		if (m_executer.getTypeId() == object_type::Character)
+		{
+			if (m_executer.getMovementInfo().moveFlags)
+			{
+				if (spell.interruptflags() & game::spell_interrupt_flags::Movement)
+				{
+					return std::make_pair(game::spell_cast_result::FailedMoving, nullptr);
+				}
+			}
+		}
+
 		// Check if we have enough resources for that spell
 		if (isProc)
 		{

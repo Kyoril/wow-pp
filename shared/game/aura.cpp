@@ -1748,12 +1748,6 @@ namespace wowpp
 			onTick();
 		}
 
-		if (m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1 ||
-			m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_2)
-		{
-			m_caster->finishChanneling(false);
-		}
-
 		// If the target died already, don't destroy this aura (it will be destroyed elsewhere)
 		if (m_target.getUInt32Value(unit_fields::Health) > 0)
 		{
@@ -2165,7 +2159,7 @@ namespace wowpp
 				}
 				else
 				{
-					DLOG("Unhandled AddTargetTrigger aura with id " << m_spell.id());
+					WLOG("Unhandled AddTargetTrigger aura with id " << m_spell.id());
 				}
 			});
 		}

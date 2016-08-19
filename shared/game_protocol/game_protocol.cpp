@@ -1089,7 +1089,7 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::SpellFailure);
 				out_packet
-				        << io::write<NetUInt64>(casterGUID)
+						<< io::write<NetUInt64>(casterGUID)
 				        << io::write<NetUInt32>(spellId)
 				        << io::write<NetUInt8>(result);
 				out_packet.finish();

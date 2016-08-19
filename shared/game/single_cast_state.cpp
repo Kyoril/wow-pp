@@ -144,7 +144,15 @@ namespace wowpp
 
 		m_countdown.ended.connect([this]()
 		{
-			this->onCastFinished();
+			if (m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1 ||
+				m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_2)
+			{
+				this->finishChanneling(true);
+			}
+			else
+			{
+				this->onCastFinished();
+			}
 		});
 	}
 
@@ -218,6 +226,11 @@ namespace wowpp
 		{
 			if (isChanneled())
 			{
+				m_castEnd = getCurrentTime() + m_spell.duration();
+				m_countdown.setEnd(m_castEnd);
+
+				//m_damaged = m_cast.getExecuter().takenDamage.connect([this](GameUnit *attacker, UInt32 damage) { });
+
 				WorldInstance *world = m_cast.getExecuter().getWorldInstance();
 				assert(world);
 
