@@ -1018,8 +1018,19 @@ namespace wowpp
 			auto bagItem = getItemAtSlot(slot);
 			if (bagItem)
 			{
-				// TODO: Check if destination bag is not empty
-				return game::inventory_change_failure::CanOnlyDoWithEmptyBags;
+				if (bagItem->getTypeId() != type_id::Container)
+				{
+					// Return code valid? ...
+					return game::inventory_change_failure::NotABag;
+				}
+
+				auto castedBag = std::static_pointer_cast<GameBag>(bagItem);
+				assert(castedBag);
+
+				if (!castedBag->isEmpty())
+				{
+					return game::inventory_change_failure::CanOnlyDoWithEmptyBags;
+				}
 			}
 
 			return game::inventory_change_failure::Okay;
