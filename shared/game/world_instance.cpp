@@ -377,12 +377,17 @@ namespace wowpp
 	{
 		auto guid = remove.getGuid();
 
-		// Remove from unit finder if it is a unit
+		// Unit specific despawn logic
 		if (remove.isCreature() || remove.isGameCharacter())
 		{
 			GameUnit *unit = dynamic_cast<GameUnit *>(&remove);
-			if (unit) {
+			if (unit) 
+			{
+				// Remove unit from the unit finder
 				m_unitFinder->removeUnit(*unit);
+
+				// Also remove all dynamic objects
+				unit->removeAllDynamicObjects();
 			}
 		}
 

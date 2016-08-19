@@ -419,6 +419,7 @@ namespace wowpp
 
 		/// @copydoc GameObject::initialize()
 		virtual void initialize() override;
+
 		/// @copydoc GameObject::getTypeId()
 		virtual ObjectType getTypeId() const override {
 			return object_type::Unit;
@@ -824,7 +825,12 @@ namespace wowpp
 
 	public:
 
+		/// Adds a new dynamic object instance and spawns it in the units world (if any).
 		void addDynamicObject(std::shared_ptr<DynObject> object);
+		/// Despawns and probably deletes a dynamic object instance by it's guid.
+		void removeDynamicObject(UInt64 objectGuid);
+		/// Despawns and probably deletes all dynamic object instances.
+		void removeAllDynamicObjects();
 
 	private:
 

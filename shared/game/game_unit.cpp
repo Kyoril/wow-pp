@@ -2192,14 +2192,53 @@ namespace wowpp
 
 	void GameUnit::addDynamicObject(std::shared_ptr<DynObject> object)
 	{
+		// We need a valid object!
 		assert(object);
+
+		// Save this pointer instance in the map (increase ref counter and thus prevent
+		// deletion of this object as long as this unit exists)
 		m_dynamicObjects[object->getGuid()] = object;
 		
+		// Spawn the object in the world instance
 		auto *world = getWorldInstance();
 		if (world)
 		{
 			world->addGameObject(*object);
 		}
+	}
+
+	void GameUnit::removeDynamicObject(UInt64 objectGuid)
+	{
+		// Look for the object based on the given GUID
+		auto it = m_dynamicObjects.find(objectGuid);
+		if (it == m_dynamicObjects.end())
+		{
+			return;
+		}
+
+		// Despawn object from the world if existant
+		auto *world = it->second->getWorldInstance();
+		if (world)
+		{
+			world->removeGameObject(*it->second);
+		}
+
+		// Delete object instance finally
+		m_dynamicObjects.erase(it);
+	}
+
+	void GameUnit::removeAllDynamicObjects()
+	{
+		for (auto &obj : m_dynamicObjects)
+		{
+			auto *world = obj.second->getWorldInstance();
+			if (world)
+			{
+				world->removeGameObject(*obj.second);
+			}
+		}
+
+		m_worldObjects.clear();
 	}
 
 	void GameUnit::setAttackSwingCallback(AttackSwingCallback callback)
