@@ -211,7 +211,7 @@ namespace wowpp
 
 			if (m_spell.attributes(0) & game::spell_attributes::NotInCombat)
 			{
-				m_onEnterCombat = m_cast.getExecuter().enteredCombat.connect(std::bind(&SingleCastState::stopCast, this, game::spell_interrupt_flags::None, 0));
+				m_onThreatened = m_cast.getExecuter().threatened.connect(std::bind(&SingleCastState::stopCast, this, game::spell_interrupt_flags::None, 0));
 			}
 		}
 		else

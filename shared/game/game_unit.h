@@ -407,8 +407,6 @@ namespace wowpp
 		boost::signals2::signal<void(UnitStandState)> standStateChanged;
 		/// Fired on any proc event (damage done, taken, healed, etc).
 		boost::signals2::signal<void(bool, GameUnit *, UInt32, UInt32, const proto::SpellEntry *, UInt32, UInt8, bool)> spellProcEvent;
-		///
-		boost::signals2::signal<void()> enteredCombat;
 
 	public:
 
