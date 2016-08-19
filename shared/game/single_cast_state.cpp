@@ -41,6 +41,7 @@
 #include "universe.h"
 #include "aura.h"
 #include "unit_mover.h"
+#include "game_dyn_object.h"
 
 namespace wowpp
 {
@@ -2143,6 +2144,38 @@ namespace wowpp
 		}
 	}
 
+	void SingleCastState::spellEffectPersistentAreaAura(const proto::SpellEffect & effect)
+	{
+		// Check targets
+		GameUnit &caster = m_cast.getExecuter();
+		if (!m_target.hasDestTarget())
+		{
+			WLOG("SPELL_EFFECT_APPLY_AREA_AURA: No dest target info found!");
+			return;
+		}
+
+		math::Vector3 dstLoc;
+		m_target.getDestLocation(dstLoc.x, dstLoc.y, dstLoc.z);
+
+		static UInt64 lowGuid = 1;
+
+		// Create a new dynamic object
+		auto dynObj = std::make_shared<DynObject>(
+			caster.getProject(),
+			caster.getTimers(),
+			caster,
+			m_spell,
+			effect
+			);
+		// TODO: Add lower guid counter
+		dynObj->setGuid(createEntryGUID(lowGuid++, m_spell.id(), guid_type::Player));
+		dynObj->relocate(dstLoc, 0.0f, false);
+		dynObj->initialize();
+
+		// Add this object to the unit (this will also sawn it)
+		caster.addDynamicObject(dynObj);
+	}
+
 	void SingleCastState::spellEffectHeal(const proto::SpellEffect &effect)
 	{
 		GameUnit &caster = m_cast.getExecuter();
@@ -2455,6 +2488,7 @@ namespace wowpp
 			{se::KnockBack,				std::bind(&SingleCastState::spellEffectKnockBack, this, std::placeholders::_1) },
 			// Add all effects above here
 			{se::ApplyAura,				std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
+			{se::PersistentAreaAura,	std::bind(&SingleCastState::spellEffectPersistentAreaAura, this, std::placeholders::_1) },
 			{se::ApplyAreaAuraParty,	std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
 			{se::SchoolDamage,			std::bind(&SingleCastState::spellEffectSchoolDamage, this, std::placeholders::_1)}
 		};

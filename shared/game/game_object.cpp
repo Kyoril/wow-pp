@@ -718,7 +718,8 @@ namespace wowpp
 
 			UInt8 updateFlags = 0x10 | 0x20 | 0x40;			// UPDATEFLAG_ALL | UPDATEFLAG_LIVING | UPDATEFLAG_HAS_POSITION
 			UInt8 objectTypeId = object.getTypeId();		//
-			if (objectTypeId == object_type::GameObject)
+			if (objectTypeId == object_type::GameObject ||
+				objectTypeId == object_type::DynamicObject)
 			{
 				updateFlags = 0x08 | 0x10 | 0x40;	// Low-GUID, High-GUID & HasPosition
 			}

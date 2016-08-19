@@ -2190,6 +2190,18 @@ namespace wowpp
 		}
 	}
 
+	void GameUnit::addDynamicObject(std::shared_ptr<DynObject> object)
+	{
+		assert(object);
+		m_dynamicObjects[object->getGuid()] = object;
+		
+		auto *world = getWorldInstance();
+		if (world)
+		{
+			world->addGameObject(*object);
+		}
+	}
+
 	void GameUnit::setAttackSwingCallback(AttackSwingCallback callback)
 	{
 		m_swingCallback = std::move(callback);

@@ -35,6 +35,7 @@
 #include "attack_table.h"
 #include "proto_data/trigger_helper.h"
 #include "game_world_object.h"
+#include "game_dyn_object.h"
 
 namespace wowpp
 {
@@ -821,6 +822,10 @@ namespace wowpp
 		/// 
 		void triggerNextFearMove();
 
+	public:
+
+		void addDynamicObject(std::shared_ptr<DynObject> object);
+
 	private:
 
 		typedef std::array<float, unit_mod_type::End> UnitModTypeArray;
@@ -857,6 +862,7 @@ namespace wowpp
 		math::Vector3 m_confusedLoc;
 		std::array<float, 3> m_attackSpeedPctModifier;
 		TrackAuraTargetsMap m_trackAuraTargets;
+		std::map<UInt64, std::shared_ptr<DynObject>> m_dynamicObjects;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameUnit const &object);
