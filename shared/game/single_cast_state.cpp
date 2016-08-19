@@ -2183,6 +2183,11 @@ namespace wowpp
 		{
 			m_dynObjectsToDespawn.push_back(guid);
 		}
+		else
+		{
+			// Timed despawn
+			dynObj->triggerDespawnTimer(m_spell.duration());
+		}
 
 		// Add this object to the unit (this will also sawn it)
 		caster.addDynamicObject(dynObj);

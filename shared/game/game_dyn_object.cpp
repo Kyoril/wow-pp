@@ -44,9 +44,15 @@ namespace wowpp
 		, m_caster(caster)
 		, m_entry(entry)
 		, m_effect(effect)
+		, m_despawnTimer(timers)
 	{
 		m_values.resize(dyn_object_fields::DynObjectFieldCount, 0);
 		m_valueBitset.resize((dyn_object_fields::DynObjectFieldCount + 31) / 32, 0);
+
+		m_onDespawn = m_despawnTimer.ended.connect([this]()
+		{
+			m_caster.removeDynamicObject(getGuid());
+		});
 	}
 
 	DynObject::~DynObject()
@@ -88,6 +94,11 @@ namespace wowpp
 	void DynObject::writeCreateObjectBlocks(std::vector<std::vector<char>> &out_blocks, bool creation /*= true*/) const
 	{
 		// TODO
+	}
+
+	void DynObject::triggerDespawnTimer(UInt64 duration)
+	{
+		m_despawnTimer.setEnd(getCurrentTime() + duration);
 	}
 
 	io::Writer &operator<<(io::Writer &w, DynObject const &object)

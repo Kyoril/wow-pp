@@ -95,6 +95,9 @@ namespace wowpp
 
 	public:
 
+		/// Despawns this object after a duration.
+		/// @param duration The lifetime of this object in milliseconds.
+		void triggerDespawnTimer(UInt64 duration);
 		/// Gets the caster that this dynamic object belongs to. This object will automatically
 		/// be destroyed and despawn once the caster despawns.
 		GameUnit &getCaster() const { return m_caster; }
@@ -109,6 +112,8 @@ namespace wowpp
 		GameUnit &m_caster;
 		const proto::SpellEntry &m_entry;
 		const proto::SpellEffect &m_effect;
+		Countdown m_despawnTimer;
+		boost::signals2::scoped_connection m_onDespawn;
 	};
 
 	io::Writer &operator << (io::Writer &w, DynObject const &object);
