@@ -101,6 +101,7 @@ message SpellEntry {
 	optional uint32 proccooldown = 50;
 	optional uint32 proccustomflags = 51;
 	optional uint32 baseid = 52;
+	optional uint32 channelinterruptflags = 53;
 }
 
 message Spells {

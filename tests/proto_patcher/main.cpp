@@ -1021,6 +1021,38 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importSpellChannelInterrupt(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `Id`, `ChannelInterruptFlags` FROM `dbc_spell`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 id = 0, channelInterruptFlags = 0;
+				row.getField(0, id);
+				row.getField(1, channelInterruptFlags);
+
+				// Find spell by id
+				auto * spell = project.spells.getById(id);
+				if (spell)
+				{
+					spell->set_channelinterruptflags(channelInterruptFlags);
+				}
+				else
+				{
+					WLOG("Unable to find spell by id: " << id);
+				}
+
+				// Next row
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
 	static bool importSpellMechanics(proto::Project &project, MySQL::Connection &conn)
 	{
 		wowpp::MySQL::Select select(conn, "SELECT `Id`, `Mechanic` FROM `dbc_spell`;");
@@ -1959,9 +1991,9 @@ int main(int argc, char* argv[])
 	}
 #endif
 
-	if (!importSpellBaseIds(protoProject, connection))
+	if (!importSpellChannelInterrupt(protoProject, connection))
 	{
-		WLOG("Could not import base ids");
+		WLOG("Could not import channel interrupt flags");
 		return 1;
 	}
 
