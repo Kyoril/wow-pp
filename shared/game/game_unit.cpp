@@ -2331,6 +2331,7 @@ namespace wowpp
 
 		// Flag us for combat
 		addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
+		enteredCombat();
 	}
 
 	void GameUnit::removeAttackingUnit(GameUnit &removed)

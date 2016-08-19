@@ -208,6 +208,11 @@ namespace wowpp
 			                    std::bind(&SingleCastState::onUserStartsMoving, this));
 
 			// TODO: Subscribe to target removed and died events (in both cases, the cast may be interrupted)
+
+			if (m_spell.attributes(0) & game::spell_attributes::NotInCombat)
+			{
+				m_onEnterCombat = m_cast.getExecuter().enteredCombat.connect(std::bind(&SingleCastState::stopCast, this, game::spell_interrupt_flags::None, 0));
+			}
 		}
 		else
 		{
@@ -372,6 +377,8 @@ namespace wowpp
 			                     std::bind(game::server_write::spellFailedOther, std::placeholders::_1,
 			                               executer.getGuid(),
 			                               m_spell.id()));
+
+			m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedInterrupted);
 		}
 	}
 
@@ -1489,6 +1496,8 @@ namespace wowpp
 		float angle = targetUnit->getGuid() == caster.getGuid() ? caster.getOrientation() : caster.getAngle(reinterpret_cast<GameObject &>(targetUnit));
 		float vcos = std::cos(angle);
 		float vsin = std::sin(angle);
+
+		targetUnit->cancelCast(game::spell_interrupt_flags::Movement);
 
 		sendPacketFromCaster(caster,
 							 std::bind(game::server_write::moveKnockBack, std::placeholders::_1,
