@@ -75,6 +75,11 @@ namespace wowpp
 			return m_casting;
 		}
 
+	public:
+
+		/// Determines if this spell is a channeled spell.
+		bool isChanneled() const { return (m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1) || (m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_2); }
+
 	private:
 
 		bool consumeItem(bool delayed = true);
@@ -157,6 +162,7 @@ namespace wowpp
 		bool m_canTrigger;
 		HitResultMap m_hitResults;
 		game::WeaponAttack m_attackType;
+		std::vector<UInt64> m_dynObjectsToDespawn;
 
 		void sendEndCast(bool success);
 		void onCastFinished();

@@ -124,8 +124,7 @@ namespace wowpp
 			);
 		}
 
-		if (worldInstance && (m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1 ||
-			m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_2))
+		if (worldInstance && isChanneled())
 		{
 			sendPacketFromCaster(
 				executer,
@@ -217,8 +216,7 @@ namespace wowpp
 		}
 		else
 		{
-			if (m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1 ||
-				m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_2)
+			if (isChanneled())
 			{
 				WorldInstance *world = m_cast.getExecuter().getWorldInstance();
 				assert(world);
@@ -310,8 +308,7 @@ namespace wowpp
 
 	void SingleCastState::finishChanneling(bool cancel)
 	{
-		if (m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1 ||
-			m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_2)
+		if (isChanneled())
 		{
 			if (cancel)
 			{
@@ -330,6 +327,14 @@ namespace wowpp
 
 			m_cast.getExecuter().setUInt64Value(unit_fields::ChannelObject, 0);
 			m_cast.getExecuter().setUInt32Value(unit_fields::ChannelSpell, 0);
+
+			// Destroy dynamic objects
+			for (auto &obj : m_dynObjectsToDespawn)
+			{
+				m_cast.getExecuter().removeDynamicObject(obj);
+			}
+
+			m_dynObjectsToDespawn.clear();
 		}
 	}
 
@@ -2168,9 +2173,16 @@ namespace wowpp
 			effect
 			);
 		// TODO: Add lower guid counter
-		dynObj->setGuid(createEntryGUID(lowGuid++, m_spell.id(), guid_type::Player));
+		auto guid = createEntryGUID(lowGuid++, m_spell.id(), guid_type::Player);
+		dynObj->setGuid(guid);
 		dynObj->relocate(dstLoc, 0.0f, false);
 		dynObj->initialize();
+
+		// Remember to destroy this object on end of channeling
+		if (isChanneled())
+		{
+			m_dynObjectsToDespawn.push_back(guid);
+		}
 
 		// Add this object to the unit (this will also sawn it)
 		caster.addDynamicObject(dynObj);
