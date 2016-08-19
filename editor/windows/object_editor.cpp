@@ -753,6 +753,45 @@ namespace wowpp
 			m_ui->txtBaseSpell->setText(QString("%1").arg(spell->baseid()));
 			m_ui->btnBaseSpell->setEnabled(hasBaseId);
 
+			// Interrupt flags
+			for (size_t i = 0; i < 6; ++i)
+			{
+				UInt32 flag = 1 << i;
+
+				QCheckBox *box = m_ui->spellBaseBox_2->findChild<QCheckBox*>(QString("int_flag_%1").arg(flag));
+				if (box)
+				{
+					const bool hasAttribute = (spell->interruptflags() & flag) != 0;
+					box->setChecked(hasAttribute);
+				}
+			}
+
+			// Aura interrupt flags
+			for (size_t i = 0; i < 32; ++i)
+			{
+				UInt32 flag = 1 << i;
+
+				QCheckBox *box = m_ui->spellBaseBox_3->findChild<QCheckBox*>(QString("aura_int_flag_%1").arg(flag));
+				if (box)
+				{
+					const bool hasAttribute = (spell->aurainterruptflags() & flag) != 0;
+					box->setChecked(hasAttribute);
+				}
+			}
+
+			// Channel interrupt flags
+			for (size_t i = 0; i < 32; ++i)
+			{
+				UInt32 flag = 1 << i;
+
+				QCheckBox *box = m_ui->spellBaseBox_4->findChild<QCheckBox*>(QString("channel_int_flag_%1").arg(flag));
+				if (box)
+				{
+					const bool hasAttribute = (spell->channelinterruptflags() & flag) != 0;
+					box->setChecked(hasAttribute);
+				}
+			}
+
 			// Attributes
 			for (size_t i = 1; i <= 32; ++i)
 			{

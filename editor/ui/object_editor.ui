@@ -3515,6 +3515,12 @@ QGroupBox::indicator:unchecked:disabled
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                      </property>
+                     <property name="styleSheet">
+                      <string notr="true">QCheckBox:disabled
+{
+    color: #bbb;
+}</string>
+                     </property>
                      <property name="text">
                       <string>MOVEMENT</string>
                      </property>
@@ -3530,6 +3536,12 @@ QGroupBox::indicator:unchecked:disabled
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                     </property>
+                     <property name="styleSheet">
+                      <string notr="true">QCheckBox:disabled
+{
+    color: #bbb;
+}</string>
                      </property>
                      <property name="text">
                       <string>PUSH BACK</string>
@@ -3547,6 +3559,12 @@ QGroupBox::indicator:unchecked:disabled
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                      </property>
+                     <property name="styleSheet">
+                      <string notr="true">QCheckBox:disabled
+{
+    color: #bbb;
+}</string>
+                     </property>
                      <property name="text">
                       <string>INTERRUPT</string>
                      </property>
@@ -3562,6 +3580,12 @@ QGroupBox::indicator:unchecked:disabled
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                     </property>
+                     <property name="styleSheet">
+                      <string notr="true">QCheckBox:disabled
+{
+    color: #bbb;
+}</string>
                      </property>
                      <property name="text">
                       <string>DAMAGE</string>
@@ -3603,6 +3627,12 @@ QGroupBox::indicator:unchecked:disabled
                     <width>0</width>
                     <height>0</height>
                    </size>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">QCheckBox:disabled
+{
+    color: #bbb;
+}</string>
                   </property>
                   <property name="title">
                    <string>Aura</string>
@@ -4021,6 +4051,12 @@ QGroupBox::indicator:unchecked:disabled
                     <horstretch>0</horstretch>
                     <verstretch>0</verstretch>
                    </sizepolicy>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">QCheckBox:disabled
+{
+    color: #bbb;
+}</string>
                   </property>
                   <property name="title">
                    <string>Channel</string>
