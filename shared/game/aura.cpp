@@ -36,7 +36,7 @@
 
 namespace wowpp
 {
-	Aura::Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, UInt64 itemGuid, PostFunction post, std::function<void(Aura &)> onDestroy)
+	Aura::Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, SpellTargetMap targetMap, UInt64 itemGuid, PostFunction post, std::function<void(Aura &)> onDestroy)
 		: m_spell(spell)
 		, m_effect(effect)
 		, m_caster(&caster)
@@ -56,6 +56,7 @@ namespace wowpp
 		, m_totalTicks(0)
 		, m_duration(spell.duration())
 		, m_itemGuid(itemGuid)
+		, m_targetMap(targetMap)
 	{
 		// Subscribe to caster despawn event so that we don't hold an invalid pointer
 		m_casterDespawned = caster.despawned.connect(
@@ -346,7 +347,7 @@ namespace wowpp
 			reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(
 				spell_mod_op::ChanceOfSuccess, m_spell.id(), procChance);
 		}
-		
+
 		if (procChance < 100)
 		{
 			std::uniform_int_distribution<UInt32> dist(1, 100);
@@ -1770,6 +1771,15 @@ namespace wowpp
 		// Increase tick counter
 		m_tickCount++;
 
+		bool isArea = false;
+		for (const auto &effect : m_spell.effects())
+		{
+			if (effect.type() == game::spell_effects::PersistentAreaAura)
+			{
+				isArea = true;
+			}
+		}
+
 		namespace aura = game::aura_type;
 		switch (m_effect.aura())
 		{
@@ -1818,13 +1828,6 @@ namespace wowpp
 					reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(spell_mod_op::Threat, m_spell.id(), threat);
 				}
 
-				// If spell is channeled, it can cause procs
-				if (m_caster &&
-				        m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1)
-				{
-					// TODO: Change this to spellProcEvent signal.
-					//m_caster->doneSpellMagicDmgClassNeg(&m_target, school);
-				}
 				m_target.dealDamage(damage - resisted - absorbed, school, m_caster, threat);
 				break;
 			}
@@ -1965,8 +1968,15 @@ namespace wowpp
 		case aura::PeriodicTriggerSpell:
 			{
 				SpellTargetMap targetMap;
-				targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
-				targetMap.m_unitTarget = m_caster->getUInt64Value(unit_fields::ChannelObject);
+				if (isArea)
+				{
+					targetMap = m_targetMap;
+				}
+				else
+				{
+					targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+					targetMap.m_unitTarget = m_caster->getUInt64Value(unit_fields::ChannelObject);
+				}
 
 				m_target.castSpell(targetMap, m_effect.triggerspell(), -1, 0, true);
 

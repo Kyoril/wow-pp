@@ -25,6 +25,7 @@
 #include "defines.h"
 #include "shared/proto_data/spells.pb.h"
 #include "common/countdown.h"
+#include "spell_target_map.h"
 
 namespace wowpp
 {
@@ -40,7 +41,7 @@ namespace wowpp
 	public:
 
 		/// Initializes a new instance of the Aura class.
-		explicit Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, UInt64 itemGuid, PostFunction post, std::function<void(Aura &)> onDestroy);
+		explicit Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, SpellTargetMap targetMap, UInt64 itemGuid, PostFunction post, std::function<void(Aura &)> onDestroy);
 		~Aura();
 
 		/// Gets the unit target.
@@ -256,6 +257,7 @@ namespace wowpp
 		boost::signals2::scoped_connection m_takenDamage, m_procKilled, m_onDamageBreak, m_onProc, m_onTakenAutoAttack;
 		GameUnit *m_caster;
 		GameUnit &m_target;
+		SpellTargetMap m_targetMap;
 		UInt32 m_tickCount;
 		GameTime m_applyTime;
 		Int32 m_basePoints;

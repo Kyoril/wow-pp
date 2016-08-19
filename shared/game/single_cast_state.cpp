@@ -144,8 +144,7 @@ namespace wowpp
 
 		m_countdown.ended.connect([this]()
 		{
-			if (m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1 ||
-				m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_2)
+			if (isChanneled())
 			{
 				this->finishChanneling(true);
 			}
@@ -1191,7 +1190,7 @@ namespace wowpp
 
 						auto *world = caster.getWorldInstance();
 						auto &universe = world->getUniverse();
-						std::shared_ptr<Aura> aura = std::make_shared<Aura>(spell, effect, basepoints, caster, caster, m_itemGuid, [&universe](std::function<void()> work)
+						std::shared_ptr<Aura> aura = std::make_shared<Aura>(spell, effect, basepoints, caster, caster, m_target, m_itemGuid, [&universe](std::function<void()> work)
 						{
 							universe.post(work);
 						}, [](Aura & self)
@@ -2076,7 +2075,7 @@ namespace wowpp
 			}
 			else if (targetUnit->isAlive())
 			{
-				std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *targetUnit, m_itemGuid, [&universe](std::function<void()> work)
+				std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *targetUnit, m_target, m_itemGuid, [&universe](std::function<void()> work)
 				{
 					universe.post(work);
 				}, [&universe](Aura & self)
@@ -2572,7 +2571,7 @@ namespace wowpp
 			}
 			else
 			{
-				m_cast.getExecuter().procEvent(nullptr, m_attackerProc, m_victimProc, 0, 0, m_attackType, &m_spell, true);
+				m_cast.getExecuter().procEvent(nullptr, m_attackerProc, m_victimProc, 0, 0, m_attackType, &m_spell, m_isProc ? false : true);
 			}
 		}
 
