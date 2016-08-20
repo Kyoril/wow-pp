@@ -340,6 +340,8 @@ namespace wowpp
 			m_cast.getExecuter().setUInt64Value(unit_fields::ChannelObject, 0);
 			m_cast.getExecuter().setUInt32Value(unit_fields::ChannelSpell, 0);
 
+			m_casting.ended(true);
+
 			// Destroy dynamic objects
 			for (auto &obj : m_dynObjectsToDespawn)
 			{
@@ -396,7 +398,7 @@ namespace wowpp
 			                               executer.getGuid(),
 			                               m_spell.id()));
 
-			m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedInterrupted);
+			executer.spellCastError(m_spell, game::spell_cast_result::FailedInterrupted);
 		}
 	}
 
@@ -671,7 +673,7 @@ namespace wowpp
 			m_cast.getExecuter().stopAttack();
 		}
 
-		if (weakThis.lock())
+		if (weakThis.lock() && !isChanneled())
 		{
 			//may destroy this, too
 			m_casting.ended(true);

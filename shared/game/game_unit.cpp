@@ -408,8 +408,17 @@ namespace wowpp
 				}
 				else
 				{
-					// Cast already finished since it was an instant cast
-					onSpellCastEnded(true);
+					if (getUInt32Value(unit_fields::ChannelSpell))
+					{
+						m_attackSwingCountdown.cancel();
+						result.second->ended.connect(
+							std::bind(&GameUnit::onSpellCastEnded, this, std::placeholders::_1));
+					}
+					else
+					{
+						// Cast already finished since it was an instant cast
+						onSpellCastEnded(true);
+					}
 				}
 			}
 		}
@@ -557,7 +566,7 @@ namespace wowpp
 	void GameUnit::onAttackSwing()
 	{
 		// Check if we still have a victim
-		if (!m_victim || !isAlive() || getUInt32Value(unit_fields::ChannelSpell))
+		if (!m_victim || !isAlive())
 		{
 			return;
 		}
