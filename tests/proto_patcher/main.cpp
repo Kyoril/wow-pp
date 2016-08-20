@@ -1859,6 +1859,42 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importSpellNames(proto::Project &project, MySQL::Connection &conn)
+	{
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `Id`, `SpellName1` FROM `dbc_spell`;");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					// Get row data
+					UInt32 entry = 0, index = 0;
+					String name;
+					row.getField(index++, entry);
+					row.getField(index++, name);
+
+					auto *spell = project.spells.getById(entry);
+					if (!spell)
+					{
+						WLOG("Could not find spell " << entry);
+						row = row.next(select);
+						continue;
+					}
+
+					spell->set_name(name);
+					row = row.next(select);
+				}
+			}
+			else
+			{
+				ELOG("Error: " << conn.getErrorMessage());
+			}
+		}
+
+		return true;
+	}
+
 #if 0
 	static void fixTriggerEvents(proto::Project &project)
 	{
@@ -1991,9 +2027,9 @@ int main(int argc, char* argv[])
 	}
 #endif
 
-	if (!importSpellChannelInterrupt(protoProject, connection))
+	if (!importSpellNames(protoProject, connection))
 	{
-		WLOG("Could not import channel interrupt flags");
+		WLOG("Could not import spell names");
 		return 1;
 	}
 
