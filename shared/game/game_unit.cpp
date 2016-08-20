@@ -557,7 +557,7 @@ namespace wowpp
 	void GameUnit::onAttackSwing()
 	{
 		// Check if we still have a victim
-		if (!m_victim || !isAlive())
+		if (!m_victim || !isAlive() || getUInt32Value(unit_fields::ChannelSpell))
 		{
 			return;
 		}

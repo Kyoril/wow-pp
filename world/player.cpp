@@ -2419,6 +2419,8 @@ namespace wowpp
 		// Add the looting flag to our character
 		m_character->addFlag(unit_fields::UnitFlags, game::unit_flags::Looting);
 
+		m_character->cancelCast(game::spell_interrupt_flags::None);
+
 		// If the source despawns, we will close the loot window
 		m_onLootInvalidate = source.despawned.connect([this](GameObject &despawned)
 		{
