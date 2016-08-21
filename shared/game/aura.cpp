@@ -138,6 +138,16 @@ namespace wowpp
 		return false;
 	}
 
+	void Aura::setAuraApplication(UInt32 slot, Int8 count)
+	{
+		UInt32 index = slot / 4;
+		UInt32 byte = (slot % 4) * 8;
+		UInt32 val = m_target.getUInt32Value(unit_fields::AuraApplications + index);
+		val &= ~(0xFF << byte);
+		val |= ((UInt8(count)) << byte);
+		m_target.setUInt32Value(unit_fields::AuraApplications + index, val);
+	}
+
 	void Aura::handleModifier(bool apply)
 	{
 		namespace aura = game::aura_type;
@@ -394,8 +404,13 @@ namespace wowpp
 		if (m_procCharges > 0 && canRemove)
 		{
 			m_procCharges--;
-			if (m_procCharges == 0) {
+			if (m_procCharges == 0) 
+			{
 				m_destroy(*this);
+			}
+			else if (m_slot != 0xFF)
+			{
+				setAuraApplication(m_slot, static_cast<Int8>(m_procCharges) - 1);
 			}
 		}
 	}
@@ -1464,14 +1479,16 @@ namespace wowpp
 
 	bool Aura::isPositive() const
 	{
-		for (const auto &effect : m_spell.effects())
+		return isPositive(m_spell, m_effect);
+
+		/*for (const auto &effect : m_spell.effects())
 		{
 			if (!isPositive(m_spell, effect)) {
 				return false;
 			}
 		}
 
-		return true;
+		return true;*/
 	}
 
 	bool Aura::isPositive(const proto::SpellEntry &spell, const proto::SpellEffect &effect)
@@ -1723,12 +1740,7 @@ namespace wowpp
 		case game::aura_type::ProcTriggerSpellWithValue:
 		case game::aura_type::AuraType_247:
 		default:
-			if (hasPositiveTarget(effect)) {
-				return true;
-			}
-			else {
-				return false;
-			}
+			return hasPositiveTarget(effect);
 		}
 	}
 
@@ -2250,6 +2262,11 @@ namespace wowpp
 		if (newSlot != m_slot)
 		{
 			m_slot = newSlot;
+
+			if (m_slot != 0xFF)
+			{
+				setAuraApplication(m_slot, static_cast<Int8>(m_procCharges) - 1);
+			}
 		}
 	}
 
