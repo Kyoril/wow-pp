@@ -276,27 +276,19 @@ namespace wowpp
 	void Editor::handleEntryUpdate(pp::IncomingPacket & packet)
 	{
 		std::map<pp::editor_team::DataEntryType, std::map<UInt32, pp::editor_team::DataEntryChangeType>> changes;
-		if (!pp::editor_team::editor_read::entryUpdate(packet, changes))
+		if (!pp::editor_team::editor_read::entryUpdate(packet, changes, m_project))
 		{
 			WLOG("Could not read packet from editor.");
 			return;
 		}
 
-		static const String changeTypeStrings[] = {
-			"Added",
-			"Modified",
-			"Removed"
-		};
-
-		// Output changelog for now
-		DLOG("Editor " << getName() << " sent updated entries");
-		for (auto &pair : changes)
+		// Save project
+		if (!m_project.save(m_project.getLastPath()))
 		{
-			DLOG("\tEntry type: " << static_cast<UInt32>(pair.first));
-			for (auto &pair2 : pair.second)
-			{
-				DLOG("\t\tEntry " << pair2.first << ": " << changeTypeStrings[static_cast<UInt32>(pair2.second)]);
-			}
+			ELOG("Error saving updated project!");
+			return;
 		}
+
+		// TODO: Resend packet
 	}
 }

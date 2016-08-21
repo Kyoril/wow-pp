@@ -148,7 +148,7 @@ namespace wowpp
 			// TODO
 
 			m_connection->sendSinglePacket(
-				std::bind(editor_write::entryUpdate, std::placeholders::_1, std::cref(changes)));
+				std::bind(editor_write::entryUpdate, std::placeholders::_1, std::cref(changes), std::cref(project)));
 		}
 
 		void TeamConnector::tryConnect()

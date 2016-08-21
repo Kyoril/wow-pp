@@ -22,6 +22,7 @@
 #include "pch.h"
 #include "wowpp_editor_team.h"
 #include "log/default_log_levels.h"
+#include "proto_data/project.h"
 
 namespace wowpp
 {
@@ -29,6 +30,111 @@ namespace wowpp
 	{
 		namespace editor_team
 		{
+			static const google::protobuf::Message *getEntry(const proto::Project &project, UInt32 entry, DataEntryType type)
+			{
+				switch (type)
+				{
+					case data_entry_type::Spells:
+						return project.spells.getById(entry);
+					case data_entry_type::Units:
+						return project.units.getById(entry);
+					case data_entry_type::Objects:
+						return project.objects.getById(entry);
+					case data_entry_type::Maps:
+						return project.maps.getById(entry);
+					case data_entry_type::Emotes:
+						return project.emotes.getById(entry);
+					case data_entry_type::UnitLoot:
+						return project.unitLoot.getById(entry);
+					case data_entry_type::ObjectLoot:
+						return project.objectLoot.getById(entry);
+					case data_entry_type::ItemLoot:
+						return project.itemLoot.getById(entry);
+					case data_entry_type::SkinningLoot:
+						return project.skinningLoot.getById(entry);
+					case data_entry_type::Skills:
+						return project.skills.getById(entry);
+					case data_entry_type::Trainers:
+						return project.trainers.getById(entry);
+					case data_entry_type::Vendors:
+						return project.vendors.getById(entry);
+					case data_entry_type::Talents:
+						return project.talents.getById(entry);
+					case data_entry_type::Items:
+						return project.items.getById(entry);
+					case data_entry_type::ItemSets:
+						return project.itemSets.getById(entry);
+					case data_entry_type::Classes:
+						return project.classes.getById(entry);
+					case data_entry_type::Races:
+						return project.races.getById(entry);
+					case data_entry_type::Levels:
+						return project.levels.getById(entry);
+					case data_entry_type::Triggers:
+						return project.triggers.getById(entry);
+					case data_entry_type::Zones:
+						return project.zones.getById(entry);
+					case data_entry_type::Quests:
+						return project.quests.getById(entry);
+					case data_entry_type::Factions:
+						return project.factions.getById(entry);
+					case data_entry_type::FactionTemplates:
+						return project.factionTemplates.getById(entry);
+					case data_entry_type::AreaTriggers:
+						return project.areaTriggers.getById(entry);
+					case data_entry_type::SpellCategories:
+						return project.spellCategories.getById(entry);
+				}
+
+				return nullptr;
+			}
+
+			static google::protobuf::Message *getOrCreateEntry(proto::Project &project, UInt32 entry, DataEntryType type)
+			{
+				switch (type)
+				{
+#define WOWPP_ENTRY_WRAPPER(name, type) \
+					case data_entry_type::name: \
+					{ \
+						auto *e = project.type.getById(entry); \
+						if (!e) \
+						{ \
+							e = project.type.add(entry); \
+						} \
+						return e; \
+					}
+
+					WOWPP_ENTRY_WRAPPER(Spells, spells)
+					WOWPP_ENTRY_WRAPPER(Units, units)
+					WOWPP_ENTRY_WRAPPER(Objects, objects)
+					WOWPP_ENTRY_WRAPPER(Maps, maps)
+					WOWPP_ENTRY_WRAPPER(Emotes, emotes)
+					WOWPP_ENTRY_WRAPPER(UnitLoot, unitLoot)
+					WOWPP_ENTRY_WRAPPER(ObjectLoot, objectLoot)
+					WOWPP_ENTRY_WRAPPER(ItemLoot, itemLoot)
+					WOWPP_ENTRY_WRAPPER(SkinningLoot, skinningLoot)
+					WOWPP_ENTRY_WRAPPER(Skills, skills)
+					WOWPP_ENTRY_WRAPPER(Trainers, trainers)
+					WOWPP_ENTRY_WRAPPER(Vendors, vendors)
+					WOWPP_ENTRY_WRAPPER(Talents, talents)
+					WOWPP_ENTRY_WRAPPER(Items, items)
+					WOWPP_ENTRY_WRAPPER(ItemSets, itemSets)
+					WOWPP_ENTRY_WRAPPER(Classes, classes)
+					WOWPP_ENTRY_WRAPPER(Races, races)
+					WOWPP_ENTRY_WRAPPER(Levels, levels)
+					WOWPP_ENTRY_WRAPPER(Triggers, triggers)
+					WOWPP_ENTRY_WRAPPER(Zones, zones)
+					WOWPP_ENTRY_WRAPPER(Quests, quests)
+					WOWPP_ENTRY_WRAPPER(Factions, factions)
+					WOWPP_ENTRY_WRAPPER(FactionTemplates, factionTemplates)
+					WOWPP_ENTRY_WRAPPER(AreaTriggers, areaTriggers)
+					WOWPP_ENTRY_WRAPPER(SpellCategories, spellCategories)
+#undef WOWPP_ENTRY_WRAPPER
+				}
+
+				return nullptr;
+			}
+
 			namespace editor_write
 			{
 				void login(pp::OutgoingPacket &out_packet, const String &internalName, const SHA1Hash &password)
@@ -60,7 +166,7 @@ namespace wowpp
 					}
 					out_packet.finish();
 				}
-				void entryUpdate(pp::OutgoingPacket & out_packet, const std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>>& changes)
+				void entryUpdate(pp::OutgoingPacket & out_packet, const std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>>& changes, const proto::Project &project)
 				{
 					out_packet.start(editor_packet::EntryUpdate);
 					out_packet << io::write<NetUInt32>(changes.size());
@@ -74,6 +180,23 @@ namespace wowpp
 							out_packet
 								<< io::write<NetUInt32>(pair2.first)
 								<< io::write<NetUInt32>(pair2.second);
+
+							// Write data entry if not deleted
+							if (pair2.second != data_entry_change_type::Removed)
+							{
+								// Look for the entry
+								const auto *entry = getEntry(project, pair2.first, pair.first);
+								if (!entry)
+								{
+									// TODO!!!
+									assert(false);
+								}
+
+								// Serialize data
+								auto data = entry->SerializeAsString();
+								out_packet
+									<< io::write_dynamic_range<NetUInt32>(data);
+							}
 						}
 					}
 					out_packet.finish();
@@ -128,7 +251,7 @@ namespace wowpp
 					out_packet.finish();
 				}
 
-				void entryUpdate(pp::OutgoingPacket & out_packet, const std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>>& changes)
+				void entryUpdate(pp::OutgoingPacket & out_packet, const std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>>& changes, const proto::Project &project)
 				{
 					out_packet.start(team_packet::EntryUpdate);
 					out_packet << io::write<NetUInt32>(changes.size());
@@ -142,6 +265,23 @@ namespace wowpp
 							out_packet
 								<< io::write<NetUInt32>(pair2.first)
 								<< io::write<NetUInt32>(pair2.second);
+
+							// Write data entry if not deleted
+							if (pair2.second != data_entry_change_type::Removed)
+							{
+								// Look for the entry
+								const auto *entry = getEntry(project, pair2.first, pair.first);
+								if (!entry)
+								{
+									// TODO!!!
+									assert(false);
+								}
+
+								// Serialize data
+								auto data = entry->SerializeAsString();
+								out_packet
+									<< io::write_dynamic_range<NetUInt32>(data);
+							}
 						}
 					}
 					out_packet.finish();
@@ -187,7 +327,7 @@ namespace wowpp
 
 					return packet;
 				}
-				bool entryUpdate(io::Reader & packet, std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>>& out_changes)
+				bool entryUpdate(io::Reader & packet, std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>>& out_changes, proto::Project &out_project)
 				{
 					UInt32 entries = 0;
 					packet
@@ -211,6 +351,35 @@ namespace wowpp
 								>> io::read<NetUInt32>(key)
 								>> io::read<NetUInt32>(value);
 							data[key] = value;
+
+							// Deserialize content
+							if (value != data_entry_change_type::Removed)
+							{
+								String data;
+								packet
+									>> io::read_container<NetUInt32>(data);
+
+								// Create new object from this content
+								if (value == data_entry_change_type::Modified)
+								{
+									auto *entry = getOrCreateEntry(out_project, key, key1);
+									if (!entry)
+									{
+										// ERROR!
+										return false;
+									}
+
+									if (!entry->ParseFromString(data))
+									{
+										return false;
+									}
+								}
+							}
+							else
+							{
+								// TODO: Remove selected entry
+								
+							}
 						}
 					}
 
@@ -273,7 +442,7 @@ namespace wowpp
 				{
 					return true;
 				}
-				bool entryUpdate(io::Reader & packet, std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>>& out_changes)
+				bool entryUpdate(io::Reader & packet, std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>>& out_changes, proto::Project &out_project)
 				{
 					UInt32 entries = 0;
 					packet
@@ -297,6 +466,35 @@ namespace wowpp
 								>> io::read<NetUInt32>(key)
 								>> io::read<NetUInt32>(value);
 							data[key] = value;
+
+							// Deserialize content
+							if (value != data_entry_change_type::Removed)
+							{
+								String data;
+								packet
+									>> io::read_container<NetUInt32>(data);
+
+								// Create new object from this content
+								if (value == data_entry_change_type::Modified)
+								{
+									auto *entry = getOrCreateEntry(out_project, key, key1);
+									if (!entry)
+									{
+										// ERROR!
+										return false;
+									}
+
+									if (!entry->ParseFromString(data))
+									{
+										return false;
+									}
+								}
+							}
+							else
+							{
+								// TODO: Remove selected entry
+
+							}
 						}
 					}
 
