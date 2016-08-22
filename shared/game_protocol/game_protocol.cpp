@@ -1348,12 +1348,21 @@ namespace wowpp
 				        << io::write<NetUInt32>(item.bagfamily())
 				        << io::write<NetUInt32>(item.totemcategory())
 				        ;
-				// TODO: Sockets
 				for (size_t i = 0; i < 3; ++i)
 				{
-					out_packet
-					        << io::write<NetUInt32>(0)
-					        << io::write<NetUInt32>(0);
+					if (i >= item.sockets_size())
+					{
+						out_packet
+							<< io::write<NetUInt32>(0)
+							<< io::write<NetUInt32>(0);
+					}
+					else
+					{
+						const auto &socket = item.sockets(i);
+						out_packet
+							<< io::write<NetUInt32>(socket.color())
+							<< io::write<NetUInt32>(socket.content());
+					}
 				}
 				out_packet
 				        << io::write<NetUInt32>(item.socketbonus())
