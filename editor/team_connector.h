@@ -63,6 +63,7 @@ namespace wowpp
 			explicit TeamConnector(
 				boost::asio::io_service &ioService,
 				const Configuration &config,
+				proto::Project &project,
 				TimerQueue &timer);
 			~TeamConnector();
 
@@ -86,7 +87,7 @@ namespace wowpp
 			/// @param hashes The hash map. Key value is the manager name, value is the hash string.
 			void projectHashMap(const std::map<String, String> &hashes);
 			/// Sends all changed entries to the server.
-			void sendEntryChanges(const std::map<pp::editor_team::DataEntryType, std::map<UInt32, pp::editor_team::DataEntryChangeType>> &changes, const proto::Project &project);
+			void sendEntryChanges(const std::map<pp::editor_team::DataEntryType, std::map<UInt32, pp::editor_team::DataEntryChangeType>> &changes);
 
 			/// Tries to connect with the team server and schedules a new attempt if failed.
 			void tryConnect();
@@ -106,11 +107,13 @@ namespace wowpp
 			void handleLoginResult(pp::Protocol::IncomingPacket &packet);
 			void handleCompressedFile(pp::Protocol::IncomingPacket &packet);
 			void handleEditorUpToDate(pp::Protocol::IncomingPacket &packet);
+			void handleEntryUpdate(pp::Protocol::IncomingPacket &packet);
 
 		private:
 
 			boost::asio::io_service &m_ioService;
 			const Configuration &m_config;
+			proto::Project &m_project;
 			TimerQueue &m_timer;
 			std::shared_ptr<pp::Connector> m_connection;
 			String m_host;
