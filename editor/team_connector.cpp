@@ -271,6 +271,9 @@ namespace wowpp
 			{
 				return;
 			}
+
+			// Save changes
+			m_project.save(m_project.getLastPath());
 		}
 
 	}

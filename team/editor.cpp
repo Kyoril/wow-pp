@@ -289,6 +289,31 @@ namespace wowpp
 			return;
 		}
 
-		// TODO: Resend packet
+		// Prepare packet
+		wowpp::Buffer tmpBuffer;
+		io::StringSink sink(tmpBuffer);
+		pp::OutgoingPacket outPacket(sink);
+		pp::editor_team::team_write::entryUpdate(outPacket, changes, m_project);
+
+		// Send packet to all other connected and authentificated editors
+		getManager().forEachEditor([this, &tmpBuffer](Editor &editor)
+		{
+			// Don't send to ourself
+			if (&editor == this)
+			{
+				return;
+			}
+
+			if (editor.isAuthentificated())
+			{
+				// Write native packet
+				wowpp::Buffer &sendBuffer = editor.getConnection().getSendBuffer();
+				io::StringSink sink(sendBuffer);
+				sink.write(&tmpBuffer[0], tmpBuffer.size());
+
+				// Flush buffers
+				editor.getConnection().flush();
+			}
+		});
 	}
 }

@@ -53,6 +53,15 @@ namespace wowpp
 		/// Adds a new player instance to the manager.
 		void addEditor(std::shared_ptr<Editor> added);
 
+		template<class T>
+		void forEachEditor(T functor)
+		{
+			for (auto editor : m_editors)
+			{
+				functor(*editor);
+			}
+		}
+
 	private:
 
 		Editors m_editors;

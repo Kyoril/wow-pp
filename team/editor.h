@@ -90,9 +90,6 @@ namespace wowpp
 			wowpp::Buffer &sendBuffer = m_connection->getSendBuffer();
 			io::StringSink sink(sendBuffer);
 
-			// Get the end of the buffer (needed for encryption)
-			size_t bufferPos = sink.position();
-
 			typename pp::OutgoingPacket packet(sink);
 			generator(packet);
 
