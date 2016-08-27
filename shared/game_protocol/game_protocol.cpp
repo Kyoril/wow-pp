@@ -654,27 +654,13 @@ namespace wowpp
 			)
 			{
 				out_packet.start(server_packet::MonsterMove);
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-				for (UInt8 i = 0; guid != 0; ++i)
-				{
-					if (guid & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guid & 0xFF);
-						++size;
-					}
-
-					guid >>= 8;
-				}
 				out_packet
-				        << io::write_range(&packGUID[0], &packGUID[size])
-				        << io::write<float>(oldPosition.x)
-				        << io::write<float>(oldPosition.y)
-				        << io::write<float>(oldPosition.z)
-				        << io::write<NetUInt32>(mTimeStamp())
-				        << io::write<NetUInt8>(0);
+					<< io::write_packed_guid(guid)
+				    << io::write<float>(oldPosition.x)
+				    << io::write<float>(oldPosition.y)
+				    << io::write<float>(oldPosition.z)
+				    << io::write<NetUInt32>(mTimeStamp())
+				    << io::write<NetUInt8>(0);
 				// Movement flags
 				out_packet
 					<< io::write<NetUInt32>(256)
@@ -804,25 +790,8 @@ namespace wowpp
 			{
 				//TODO: Check given op-code
 				out_packet.start(opCode);
-
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-
-				for (UInt8 i = 0; guid != 0; ++i)
-				{
-					if (guid & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guid & 0xFF);
-						++size;
-					}
-
-					guid >>= 8;
-				}
-
 				out_packet
-				        << io::write_range(&packGUID[0], &packGUID[size])
+				        << io::write_packed_guid(guid)
 				        << movement;
 				out_packet.finish();
 			}
@@ -831,25 +800,8 @@ namespace wowpp
 			void moveTeleportAck(game::OutgoingPacket &out_packet, UInt64 guid, const MovementInfo &movement)
 			{
 				out_packet.start(game::server_packet::MoveTeleportAck);
-
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-
-				for (UInt8 i = 0; guid != 0; ++i)
-				{
-					if (guid & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guid & 0xFF);
-						++size;
-					}
-
-					guid >>= 8;
-				}
-
 				out_packet
-				        << io::write_range(&packGUID[0], &packGUID[size])
+						<< io::write_packed_guid(guid)
 				        << io::write<NetUInt32>(0)
 				        << movement;
 				out_packet.finish();
@@ -944,55 +896,14 @@ namespace wowpp
 				out_packet.start(game::server_packet::SpellStart);
 
 				// Cast item GUID (or caster GUID if not caused by item)
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; casterItemGUID != 0; ++i)
-					{
-						if (casterItemGUID & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(casterItemGUID & 0xFF);
-							++size;
-						}
-
-						casterItemGUID >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
-
-				// Cast GUID
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; casterGUID != 0; ++i)
-					{
-						if (casterGUID & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(casterGUID & 0xFF);
-							++size;
-						}
-
-						casterGUID >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
-
 				out_packet
-				        << io::write<NetUInt32>(spell.id())
-				        << io::write<NetUInt8>(castCount)
-				        << io::write<NetUInt16>(castFlags)
-				        << io::write<NetInt32>(castTime)
-				        << targets;
+					<< io::write_packed_guid(casterItemGUID)
+					<< io::write_packed_guid(casterGUID)
+				    << io::write<NetUInt32>(spell.id())
+				    << io::write<NetUInt8>(castCount)
+				    << io::write<NetUInt16>(castFlags)
+				    << io::write<NetInt32>(castTime)
+				    << targets;
 
 				if (castFlags && game::spell_cast_flags::Ammo)
 				{
@@ -1004,54 +915,12 @@ namespace wowpp
 			void spellGo(game::OutgoingPacket &out_packet, UInt64 casterGUID, UInt64 casterItemGUID, const proto::SpellEntry &spell, const SpellTargetMap &targets, game::SpellCastFlags castFlags /*TODO: HitInformation */ /*TODO: AmmoInformation */)
 			{
 				out_packet.start(game::server_packet::SpellGo);
-				// Cast item GUID (or caster GUID if not caused by item)
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; casterItemGUID != 0; ++i)
-					{
-						if (casterItemGUID & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(casterItemGUID & 0xFF);
-							++size;
-						}
-
-						casterItemGUID >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
-
-				// Cast GUID
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; casterGUID != 0; ++i)
-					{
-						if (casterGUID & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(casterGUID & 0xFF);
-							++size;
-						}
-
-						casterGUID >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
-
 				out_packet
-				        << io::write<NetUInt32>(spell.id())
-				        << io::write<NetUInt16>(castFlags)
-				        << io::write<NetUInt32>(mTimeStamp());
+					<< io::write_packed_guid(casterItemGUID)
+					<< io::write_packed_guid(casterGUID)
+				    << io::write<NetUInt32>(spell.id())
+				    << io::write<NetUInt16>(castFlags)
+				    << io::write<NetUInt32>(mTimeStamp());
 
 				// TODO: Hit information
 				{
@@ -1098,27 +967,8 @@ namespace wowpp
 			void spellFailedOther(game::OutgoingPacket &out_packet, UInt64 casterGUID, UInt32 spellId)
 			{
 				out_packet.start(game::server_packet::SpellFailedOther);
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; casterGUID != 0; ++i)
-					{
-						if (casterGUID & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(casterGUID & 0xFF);
-							++size;
-						}
-
-						casterGUID >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
 				out_packet
+						<< io::write_packed_guid(casterGUID)
 				        << io::write<NetUInt32>(spellId);
 				out_packet.finish();
 			}
@@ -1159,59 +1009,19 @@ namespace wowpp
 			void spellNonMeleeDamageLog(game::OutgoingPacket &out_packet, UInt64 targetGuid, UInt64 casterGuid, UInt32 spellID, UInt32 damage, UInt8 damageSchoolMask, UInt32 absorbedDamage, UInt32 resistedDamage, bool PhysicalDamage, UInt32 blockedDamage, bool criticalHit)
 			{
 				out_packet.start(game::server_packet::SpellNonMeleeDamageLog);
-				// Target GUID
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; targetGuid != 0; ++i)
-					{
-						if (targetGuid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(targetGuid & 0xFF);
-							++size;
-						}
-
-						targetGuid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
-				// Caster GUID
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; casterGuid != 0; ++i)
-					{
-						if (casterGuid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(casterGuid & 0xFF);
-							++size;
-						}
-
-						casterGuid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
 				out_packet
-				        << io::write<NetUInt32>(spellID)
-				        << io::write<NetUInt32>(damage - absorbedDamage - resistedDamage - blockedDamage)
-				        << io::write<NetUInt8>(damageSchoolMask)
-				        << io::write<NetUInt32>(absorbedDamage)
-				        << io::write<NetUInt32>(resistedDamage)
-				        << io::write<NetUInt8>(PhysicalDamage)
-				        << io::write<NetUInt8>(0)
-				        << io::write<NetUInt32>(blockedDamage)
-				        << io::write<NetUInt32>(criticalHit ? 0x27 : 0x25)
-				        << io::write<NetUInt8>(0);
+					<< io::write_packed_guid(targetGuid)
+					<< io::write_packed_guid(casterGuid)
+				    << io::write<NetUInt32>(spellID)
+				    << io::write<NetUInt32>(damage - absorbedDamage - resistedDamage - blockedDamage)
+				    << io::write<NetUInt8>(damageSchoolMask)
+				    << io::write<NetUInt32>(absorbedDamage)
+				    << io::write<NetUInt32>(resistedDamage)
+				    << io::write<NetUInt8>(PhysicalDamage)
+				    << io::write<NetUInt8>(0)
+				    << io::write<NetUInt32>(blockedDamage)
+				    << io::write<NetUInt32>(criticalHit ? 0x27 : 0x25)
+				    << io::write<NetUInt8>(0);
 				out_packet.finish();
 			}
 
@@ -1376,52 +1186,12 @@ namespace wowpp
 			void spellEnergizeLog(game::OutgoingPacket &out_packet, UInt64 targetGuid, UInt64 casterGuid, UInt32 spellID, UInt8 powerType, UInt32 amount)
 			{
 				out_packet.start(game::server_packet::SpellEnergizeLog);
-				// Target GUID
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; targetGuid != 0; ++i)
-					{
-						if (targetGuid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(targetGuid & 0xFF);
-							++size;
-						}
-
-						targetGuid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
-				// Caster GUID
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; casterGuid != 0; ++i)
-					{
-						if (casterGuid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(casterGuid & 0xFF);
-							++size;
-						}
-
-						casterGuid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
 				out_packet
-				        << io::write<NetUInt32>(spellID)
-				        << io::write<NetUInt32>(powerType)
-				        << io::write<NetUInt32>(amount);
+					<< io::write_packed_guid(targetGuid)
+					<< io::write_packed_guid(casterGuid)
+				    << io::write<NetUInt32>(spellID)
+				    << io::write<NetUInt32>(powerType)
+				    << io::write<NetUInt32>(amount);
 				out_packet.finish();
 			}
 
@@ -1437,48 +1207,10 @@ namespace wowpp
 			void attackStop(game::OutgoingPacket &out_packet, UInt64 attackerGUID, UInt64 attackedGUID)
 			{
 				out_packet.start(game::server_packet::AttackStop);
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; attackerGUID != 0; ++i)
-					{
-						if (attackerGUID & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(attackerGUID & 0xFF);
-							++size;
-						}
-
-						attackerGUID >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; attackedGUID != 0; ++i)
-					{
-						if (attackedGUID & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(attackedGUID & 0xFF);
-							++size;
-						}
-
-						attackedGUID >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
 				out_packet
-				        << io::write<NetUInt32>(0);		// TODO
+					<< io::write_packed_guid(attackerGUID)
+					<< io::write_packed_guid(attackedGUID)
+				    << io::write<NetUInt32>(0);		// TODO
 				out_packet.finish();
 			}
 
@@ -1487,61 +1219,23 @@ namespace wowpp
 				out_packet.start(game::server_packet::AttackerStateUpdate);
 				out_packet
 				        << io::write<NetUInt32>(hitInfo);
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; attackerGUID != 0; ++i)
-					{
-						if (attackerGUID & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(attackerGUID & 0xFF);
-							++size;
-						}
-
-						attackerGUID >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; attackedGUID != 0; ++i)
-					{
-						if (attackedGUID & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(attackedGUID & 0xFF);
-							++size;
-						}
-
-						attackedGUID >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
 
 				const UInt32 realDamage = (totalDamage - absorbedDamage - resistedDamage - blockedDamage);
 
 				out_packet
-				        << io::write<NetUInt32>(realDamage)
-				        << io::write<NetUInt8>(1)
-				        << io::write<NetUInt32>(damageSchool)
-				        << io::write<float>(realDamage)				// WTF?
-				        << io::write<NetUInt32>(realDamage)
-				        << io::write<NetUInt32>(absorbedDamage)
-				        << io::write<NetUInt32>(resistedDamage)
-				        << io::write<NetUInt32>(targetState)
-				        << io::write<NetUInt32>(absorbedDamage == 0 ? 0 : -1)
-				        << io::write<NetUInt32>(0)					// Generated rage?
-				        << io::write<NetUInt32>(blockedDamage);
+					<< io::write_packed_guid(attackerGUID)
+					<< io::write_packed_guid(attackedGUID)
+				    << io::write<NetUInt32>(realDamage)
+				    << io::write<NetUInt8>(1)
+				    << io::write<NetUInt32>(damageSchool)
+				    << io::write<float>(realDamage)				// WTF?
+				    << io::write<NetUInt32>(realDamage)
+				    << io::write<NetUInt32>(absorbedDamage)
+				    << io::write<NetUInt32>(resistedDamage)
+				    << io::write<NetUInt32>(targetState)
+				    << io::write<NetUInt32>(absorbedDamage == 0 ? 0 : -1)
+				    << io::write<NetUInt32>(0)					// Generated rage?
+				    << io::write<NetUInt32>(blockedDamage);
 				out_packet.finish();
 			}
 
@@ -1604,236 +1298,65 @@ namespace wowpp
 			void updateComboPoints(game::OutgoingPacket &out_packet, UInt64 targetGuid, UInt8 comboPoints)
 			{
 				out_packet.start(game::server_packet::UpdateComboPoints);
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; targetGuid != 0; ++i)
-					{
-						if (targetGuid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(targetGuid & 0xFF);
-							++size;
-						}
-
-						targetGuid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
 				out_packet
-				        << io::write<NetUInt8>(comboPoints);
+					<< io::write_packed_guid(targetGuid)
+				    << io::write<NetUInt8>(comboPoints);
 				out_packet.finish();
 			}
 
 			void spellHealLog(game::OutgoingPacket &out_packet, UInt64 targetGuid, UInt64 casterGuid, UInt32 spellId, UInt32 amount, bool critical)
 			{
 				out_packet.start(game::server_packet::SpellHealLog);
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; targetGuid != 0; ++i)
-					{
-						if (targetGuid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(targetGuid & 0xFF);
-							++size;
-						}
-
-						targetGuid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; casterGuid != 0; ++i)
-					{
-						if (casterGuid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(casterGuid & 0xFF);
-							++size;
-						}
-
-						casterGuid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
 				out_packet
-				        << io::write<NetUInt32>(spellId)
-				        << io::write<NetUInt32>(amount)
-				        << io::write<NetUInt8>(critical ? 1 : 0)
-				        << io::write<NetUInt8>(0);
+					<< io::write_packed_guid(targetGuid)
+					<< io::write_packed_guid(casterGuid)
+				    << io::write<NetUInt32>(spellId)
+				    << io::write<NetUInt32>(amount)
+				    << io::write<NetUInt8>(critical ? 1 : 0)
+				    << io::write<NetUInt8>(0);
 				out_packet.finish();
 			}
 
 			void periodicAuraLog(game::OutgoingPacket &out_packet, UInt64 targetGuid, UInt64 casterGuid, UInt32 spellId, UInt32 auraType, UInt32 damage, UInt32 dmgSchool, UInt32 absorbed, UInt32 resisted)
 			{
 				out_packet.start(game::server_packet::PeriodicAuraLog);
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; targetGuid != 0; ++i)
-					{
-						if (targetGuid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(targetGuid & 0xFF);
-							++size;
-						}
-
-						targetGuid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; casterGuid != 0; ++i)
-					{
-						if (casterGuid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(casterGuid & 0xFF);
-							++size;
-						}
-
-						casterGuid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
 				out_packet
-				        << io::write<NetUInt32>(spellId)
-				        << io::write<NetUInt32>(1)
-				        << io::write<NetUInt32>(auraType)
-				        << io::write<NetUInt32>(damage)
-				        << io::write<NetUInt32>(dmgSchool)
-				        << io::write<NetUInt32>(absorbed)
-				        << io::write<NetUInt32>(resisted);
+					<< io::write_packed_guid(targetGuid)
+					<< io::write_packed_guid(casterGuid)
+				    << io::write<NetUInt32>(spellId)
+				    << io::write<NetUInt32>(1)
+				    << io::write<NetUInt32>(auraType)
+				    << io::write<NetUInt32>(damage)
+				    << io::write<NetUInt32>(dmgSchool)
+				    << io::write<NetUInt32>(absorbed)
+				    << io::write<NetUInt32>(resisted);
 				out_packet.finish();
 			}
 
 			void periodicAuraLog(game::OutgoingPacket &out_packet, UInt64 targetGuid, UInt64 casterGuid, UInt32 spellId, UInt32 auraType, UInt32 heal)
 			{
 				out_packet.start(game::server_packet::PeriodicAuraLog);
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; targetGuid != 0; ++i)
-					{
-						if (targetGuid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(targetGuid & 0xFF);
-							++size;
-						}
-
-						targetGuid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; casterGuid != 0; ++i)
-					{
-						if (casterGuid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(casterGuid & 0xFF);
-							++size;
-						}
-
-						casterGuid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
 				out_packet
-				        << io::write<NetUInt32>(spellId)
-				        << io::write<NetUInt32>(1)
-				        << io::write<NetUInt32>(auraType)
-				        << io::write<NetUInt32>(heal);
+					<< io::write_packed_guid(targetGuid)
+					<< io::write_packed_guid(casterGuid)
+				    << io::write<NetUInt32>(spellId)
+				    << io::write<NetUInt32>(1)
+				    << io::write<NetUInt32>(auraType)
+				    << io::write<NetUInt32>(heal);
 				out_packet.finish();
 			}
 
 			void periodicAuraLog(game::OutgoingPacket &out_packet, UInt64 targetGuid, UInt64 casterGuid, UInt32 spellId, UInt32 auraType, UInt32 powerType, UInt32 amount)
 			{
 				out_packet.start(game::server_packet::PeriodicAuraLog);
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; targetGuid != 0; ++i)
-					{
-						if (targetGuid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(targetGuid & 0xFF);
-							++size;
-						}
-
-						targetGuid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; casterGuid != 0; ++i)
-					{
-						if (casterGuid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(casterGuid & 0xFF);
-							++size;
-						}
-
-						casterGuid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
 				out_packet
-				        << io::write<NetUInt32>(spellId)
-				        << io::write<NetUInt32>(1)
-				        << io::write<NetUInt32>(auraType)
-				        << io::write<NetUInt32>(powerType)
-				        << io::write<NetUInt32>(amount);
+					<< io::write_packed_guid(targetGuid)
+					<< io::write_packed_guid(casterGuid)
+				    << io::write<NetUInt32>(spellId)
+				    << io::write<NetUInt32>(1)
+				    << io::write<NetUInt32>(auraType)
+				    << io::write<NetUInt32>(powerType)
+				    << io::write<NetUInt32>(amount);
 				out_packet.finish();
 			}
 
@@ -1849,62 +1372,24 @@ namespace wowpp
 			void setExtraAuraInfo(game::OutgoingPacket &out_packet, UInt64 targetGuid, UInt8 slot, UInt32 spellId, UInt32 maxDurationMS, UInt32 durationMS)
 			{
 				out_packet.start(game::server_packet::SetExtraAuraInfo);
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; targetGuid != 0; ++i)
-					{
-						if (targetGuid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(targetGuid & 0xFF);
-							++size;
-						}
-
-						targetGuid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
 				out_packet
-				        << io::write<NetUInt8>(slot)
-				        << io::write<NetUInt32>(spellId)
-				        << io::write<NetUInt32>(maxDurationMS)
-				        << io::write<NetUInt32>(durationMS);
+					<< io::write_packed_guid(targetGuid)
+				    << io::write<NetUInt8>(slot)
+				    << io::write<NetUInt32>(spellId)
+				    << io::write<NetUInt32>(maxDurationMS)
+				    << io::write<NetUInt32>(durationMS);
 				out_packet.finish();
 			}
 
 			void setExtraAuraInfoNeedUpdate(game::OutgoingPacket &out_packet, UInt64 targetGuid, UInt8 slot, UInt32 spellId, UInt32 maxDurationMS, UInt32 durationMS)
 			{
 				out_packet.start(game::server_packet::SetExtraAuraInfoNeedUpdate);
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; targetGuid != 0; ++i)
-					{
-						if (targetGuid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(targetGuid & 0xFF);
-							++size;
-						}
-
-						targetGuid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
 				out_packet
-				        << io::write<NetUInt8>(slot)
-				        << io::write<NetUInt32>(spellId)
-				        << io::write<NetUInt32>(maxDurationMS)
-				        << io::write<NetUInt32>(durationMS);
+					<< io::write_packed_guid(targetGuid)
+				    << io::write<NetUInt8>(slot)
+				    << io::write<NetUInt32>(spellId)
+				    << io::write<NetUInt32>(maxDurationMS)
+				    << io::write<NetUInt32>(durationMS);
 				out_packet.finish();
 			}
 
@@ -1949,30 +1434,11 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::PartyMemberStats);
 
-				UInt64 guid = character.getGuid();
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; guid != 0; ++i)
-					{
-						if (guid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guid & 0xFF);
-							++size;
-						}
-
-						guid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
+				UInt64 charGuid = character.getGuid();
 				auto updateFlags = character.getGroupUpdateFlags();
 				out_packet
-				        << io::write<NetUInt32>(updateFlags);
+					<< io::write_packed_guid(charGuid)
+				    << io::write<NetUInt32>(updateFlags);
 
 				if (updateFlags & group_update_flags::Status)
 				{
@@ -2083,33 +1549,14 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::PartyMemberStatsFull);
 
-				UInt64 guid = character.getGuid();
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; guid != 0; ++i)
-					{
-						if (guid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guid & 0xFF);
-							++size;
-						}
-
-						guid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
+				UInt64 charGuid = character.getGuid();
 
 				// Full player update
 				auto updateFlags = group_update_flags::Full;
 				updateFlags = static_cast<GroupUpdateFlags>(updateFlags & ~group_update_flags::Pet);
 				out_packet
-				        << io::write<NetUInt32>(updateFlags);
+					<< io::write_packed_guid(charGuid)
+				    << io::write<NetUInt32>(updateFlags);
 
 				if (updateFlags & group_update_flags::Status)
 				{
@@ -2219,29 +1666,10 @@ namespace wowpp
 			void partyMemberStatsFullOffline(game::OutgoingPacket &out_packet, UInt64 offlineGUID)
 			{
 				out_packet.start(game::server_packet::PartyMemberStatsFull);
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; offlineGUID != 0; ++i)
-					{
-						if (offlineGUID & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(offlineGUID & 0xFF);
-							++size;
-						}
-
-						offlineGUID >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
 				out_packet
-				        << io::write<NetUInt32>(group_update_flags::Status)
-				        << io::write<NetUInt16>(group_member_status::Offline);
+					<< io::write_packed_guid(offlineGUID)
+				    << io::write<NetUInt32>(group_update_flags::Status)
+				    << io::write<NetUInt16>(group_member_status::Offline);
 				out_packet.finish();
 			}
 
@@ -2411,56 +1839,18 @@ namespace wowpp
 			void forceMoveRoot(game::OutgoingPacket &out_packet, UInt64 guid, UInt32 unknown)
 			{
 				out_packet.start(game::server_packet::ForceMoveRoot);
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; guid != 0; ++i)
-					{
-						if (guid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guid & 0xFF);
-							++size;
-						}
-
-						guid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
 				out_packet
-				        << io::write<NetUInt32>(unknown);
+					<< io::write_packed_guid(guid)
+				    << io::write<NetUInt32>(unknown);
 				out_packet.finish();
 			}
 
 			void forceMoveUnroot(game::OutgoingPacket &out_packet, UInt64 guid, UInt32 unknown)
 			{
 				out_packet.start(game::server_packet::ForceMoveUnroot);
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; guid != 0; ++i)
-					{
-						if (guid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guid & 0xFF);
-							++size;
-						}
-
-						guid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
 				out_packet
-				        << io::write<NetUInt32>(unknown);
+					<< io::write_packed_guid(guid)
+				    << io::write<NetUInt32>(unknown);
 				out_packet.finish();
 			}
 
@@ -2862,36 +2252,16 @@ namespace wowpp
 					return;
 				}
 
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; guid != 0; ++i)
-					{
-						if (guid & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(guid & 0xFF);
-							++size;
-						}
-
-						guid >>= 8;
-					}
-
-					out_packet
-					        << io::write_range(&packGUID[0], &packGUID[size]);
-				}
-
 				out_packet
-				        << io::write<NetUInt32>(0);
+					<< io::write_packed_guid(guid)
+				    << io::write<NetUInt32>(0);
 				if (moveType == movement_type::Run)
 				{
 					out_packet
 					        << io::write<NetUInt8>(0);
 				}
 				out_packet
-				        << float(speed);
+				    << float(speed);
 				out_packet.finish();
 			}
 
@@ -3282,23 +2652,8 @@ namespace wowpp
 			void spellDelayed(game::OutgoingPacket &out_packet, UInt64 guid, UInt32 delayTimeMS)
 			{
 				out_packet.start(game::server_packet::SpellDelayed);
-
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-				for (UInt8 i = 0; guid != 0; ++i)
-				{
-					if (guid & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guid & 0xFF);
-						++size;
-					}
-
-					guid >>= 8;
-				}
 				out_packet
-					<< io::write_range(&packGUID[0], &packGUID[size])
+					<< io::write_packed_guid(guid)
 					<< io::write<NetUInt32>(delayTimeMS)
 					;
 				out_packet.finish();
@@ -3329,23 +2684,8 @@ namespace wowpp
 			void moveTimeSkipped(game::OutgoingPacket & out_packet, UInt64 guid, UInt32 timeSkipped)
 			{
 				out_packet.start(game::server_packet::MoveTimeSkipped);
-
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-				for (UInt8 i = 0; guid != 0; ++i)
-				{
-					if (guid & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guid & 0xFF);
-						++size;
-					}
-
-					guid >>= 8;
-				}
 				out_packet
-					<< io::write_range(&packGUID[0], &packGUID[size])
+					<< io::write_packed_guid(guid)
 					<< io::write<NetUInt32>(timeSkipped);
 				out_packet.finish();
 			}
@@ -3506,23 +2846,8 @@ namespace wowpp
 			void moveSetCanFly(game::OutgoingPacket & out_packet, UInt64 guid)
 			{
 				out_packet.start(game::server_packet::MoveSetCanFly);
-
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-				for (UInt8 i = 0; guid != 0; ++i)
-				{
-					if (guid & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guid & 0xFF);
-						++size;
-					}
-
-					guid >>= 8;
-				}
 				out_packet
-					<< io::write_range(&packGUID[0], &packGUID[size])
+					<< io::write_packed_guid(guid)
 					<< io::write<NetUInt32>(0);
 				out_packet.finish();
 			}
@@ -3530,23 +2855,8 @@ namespace wowpp
 			void moveUnsetCanFly(game::OutgoingPacket & out_packet, UInt64 guid)
 			{
 				out_packet.start(game::server_packet::MoveUnsetCanFly);
-
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-				for (UInt8 i = 0; guid != 0; ++i)
-				{
-					if (guid & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guid & 0xFF);
-						++size;
-					}
-
-					guid >>= 8;
-				}
 				out_packet
-					<< io::write_range(&packGUID[0], &packGUID[size])
+					<< io::write_packed_guid(guid)
 					<< io::write<NetUInt32>(0);
 				out_packet.finish();
 			}
@@ -3554,23 +2864,8 @@ namespace wowpp
 			void moveFeatherFall(game::OutgoingPacket & out_packet, UInt64 guid)
 			{
 				out_packet.start(game::server_packet::MoveFeatherFall);
-
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-				for (UInt8 i = 0; guid != 0; ++i)
-				{
-					if (guid & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guid & 0xFF);
-						++size;
-					}
-
-					guid >>= 8;
-				}
 				out_packet
-					<< io::write_range(&packGUID[0], &packGUID[size])
+					<< io::write_packed_guid(guid)
 					<< io::write<NetUInt32>(0);
 				out_packet.finish();
 			}
@@ -3578,23 +2873,8 @@ namespace wowpp
 			void moveNormalFall(game::OutgoingPacket & out_packet, UInt64 guid)
 			{
 				out_packet.start(game::server_packet::MoveNormalFall);
-
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-				for (UInt8 i = 0; guid != 0; ++i)
-				{
-					if (guid & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guid & 0xFF);
-						++size;
-					}
-
-					guid >>= 8;
-				}
 				out_packet
-					<< io::write_range(&packGUID[0], &packGUID[size])
+					<< io::write_packed_guid(guid)
 					<< io::write<NetUInt32>(0);
 				out_packet.finish();
 			}
@@ -3602,23 +2882,8 @@ namespace wowpp
 			void moveSetHover(game::OutgoingPacket & out_packet, UInt64 guid)
 			{
 				out_packet.start(game::server_packet::MoveSetHover);
-
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-				for (UInt8 i = 0; guid != 0; ++i)
-				{
-					if (guid & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guid & 0xFF);
-						++size;
-					}
-
-					guid >>= 8;
-				}
 				out_packet
-					<< io::write_range(&packGUID[0], &packGUID[size])
+					<< io::write_packed_guid(guid)
 					<< io::write<NetUInt32>(0);
 				out_packet.finish();
 			}
@@ -3626,23 +2891,8 @@ namespace wowpp
 			void moveUnsetHover(game::OutgoingPacket & out_packet, UInt64 guid)
 			{
 				out_packet.start(game::server_packet::MoveUnsetHover);
-
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-				for (UInt8 i = 0; guid != 0; ++i)
-				{
-					if (guid & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guid & 0xFF);
-						++size;
-					}
-
-					guid >>= 8;
-				}
 				out_packet
-					<< io::write_range(&packGUID[0], &packGUID[size])
+					<< io::write_packed_guid(guid)
 					<< io::write<NetUInt32>(0);
 				out_packet.finish();
 			}
@@ -3650,23 +2900,8 @@ namespace wowpp
 			void moveWaterWalk(game::OutgoingPacket & out_packet, UInt64 guid)
 			{
 				out_packet.start(game::server_packet::MoveWaterWalk);
-
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-				for (UInt8 i = 0; guid != 0; ++i)
-				{
-					if (guid & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guid & 0xFF);
-						++size;
-					}
-
-					guid >>= 8;
-				}
 				out_packet
-					<< io::write_range(&packGUID[0], &packGUID[size])
+					<< io::write_packed_guid(guid)
 					<< io::write<NetUInt32>(0);
 				out_packet.finish();
 			}
@@ -3674,23 +2909,8 @@ namespace wowpp
 			void moveLandWalk(game::OutgoingPacket & out_packet, UInt64 guid)
 			{
 				out_packet.start(game::server_packet::MoveLandWalk);
-
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-				for (UInt8 i = 0; guid != 0; ++i)
-				{
-					if (guid & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guid & 0xFF);
-						++size;
-					}
-
-					guid >>= 8;
-				}
 				out_packet
-					<< io::write_range(&packGUID[0], &packGUID[size])
+					<< io::write_packed_guid(guid)
 					<< io::write<NetUInt32>(0);
 				out_packet.finish();
 			}
@@ -3732,29 +2952,8 @@ namespace wowpp
 			void channelStart(game::OutgoingPacket & out_packet, UInt64 casterGUID, UInt32 spellId, Int32 duration)
 			{
 				out_packet.start(game::server_packet::ChannelStart);
-
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; casterGUID != 0; ++i)
-					{
-						if (casterGUID & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(casterGUID & 0xFF);
-							++size;
-						}
-
-						casterGUID >>= 8;
-					}
-
-					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
-				}
-
 				out_packet
+					<< io::write_packed_guid(casterGUID)
 					<< io::write<NetUInt32>(spellId)
 					<< io::write<NetInt32>(duration);
 
@@ -3764,29 +2963,8 @@ namespace wowpp
 			void channelUpdate(game::OutgoingPacket & out_packet, UInt64 casterGUID, Int32 castTime)
 			{
 				out_packet.start(game::server_packet::ChannelUpdate);
-				
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; casterGUID != 0; ++i)
-					{
-						if (casterGUID & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(casterGUID & 0xFF);
-							++size;
-						}
-
-						casterGUID >>= 8;
-					}
-
-					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
-				}
-
 				out_packet
+					<< io::write_packed_guid(casterGUID)
 					<< io::write<NetInt32>(castTime);
 
 				out_packet.finish();
@@ -3795,29 +2973,8 @@ namespace wowpp
 			void moveKnockBack(game::OutgoingPacket & out_packet, UInt64 targetGUID, float vcos, float vsin, float speedxy, float speedz)
 			{
 				out_packet.start(game::server_packet::MoveKnockBack);
-
-				{
-					UInt8 packGUID[8 + 1];
-					packGUID[0] = 0;
-					size_t size = 1;
-
-					for (UInt8 i = 0; targetGUID != 0; ++i)
-					{
-						if (targetGUID & 0xFF)
-						{
-							packGUID[0] |= UInt8(1 << i);
-							packGUID[size] = UInt8(targetGUID & 0xFF);
-							++size;
-						}
-
-						targetGUID >>= 8;
-					}
-
-					out_packet
-						<< io::write_range(&packGUID[0], &packGUID[size]);
-				}
-
 				out_packet
+					<< io::write_packed_guid(targetGUID)
 					<< io::write<NetUInt32>(0)
 					<< io::write<float>(vcos)
 					<< io::write<float>(vsin)
