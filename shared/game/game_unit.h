@@ -581,7 +581,7 @@ namespace wowpp
 		/// 
 		void notifyStealthChanged();
 		/// 
-		virtual bool canDetectStealth(GameUnit &target);
+		virtual bool canDetectStealth(GameUnit &target) const;
 
 		/// 
 		float getMissChance(GameUnit &attacker, UInt8 school, bool isWhiteDamage);
