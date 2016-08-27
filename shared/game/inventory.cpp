@@ -1296,26 +1296,10 @@ namespace wowpp
 
 				// Header with object guid and type
 				createItemWriter
-				        << io::write<NetUInt8>(updateType);
-				UInt64 guidCopy = guid;
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-				for (UInt8 i = 0; guidCopy != 0; ++i)
-				{
-					if (guidCopy & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guidCopy & 0xFF);
-						++size;
-					}
-
-					guidCopy >>= 8;
-				}
-				createItemWriter.sink().write((const char *)&packGUID[0], size);
-				createItemWriter
-				        << io::write<NetUInt8>(objectTypeId)
-				        << io::write<NetUInt8>(updateFlags);
+				    << io::write<NetUInt8>(updateType)
+					<< io::write_packed_guid(guid)
+				    << io::write<NetUInt8>(objectTypeId)
+				    << io::write<NetUInt8>(updateFlags);
 				if (updateFlags & 0x08)
 				{
 					createItemWriter

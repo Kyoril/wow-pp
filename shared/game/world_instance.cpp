@@ -65,24 +65,8 @@ namespace wowpp
 				// Header with object guid and type
 				UInt64 guid = object.getGuid();
 				writer
-				        << io::write<NetUInt8>(updateType);
-
-				UInt64 guidCopy = guid;
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-				for (UInt8 i = 0; guidCopy != 0; ++i)
-				{
-					if (guidCopy & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guidCopy & 0xFF);
-						++size;
-					}
-
-					guidCopy >>= 8;
-				}
-				writer.sink().write((const char *)&packGUID[0], size);
+				    << io::write<NetUInt8>(updateType)
+					<< io::write_packed_guid(guid);
 
 				// Write values update
 				object.writeValueUpdateBlock(writer, receiver, false);
