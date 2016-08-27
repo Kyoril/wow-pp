@@ -319,8 +319,8 @@ namespace io
 			{
 				if (guid & 0xFF)
 				{
-					packGUID[0] |= unsigned char(1 << i);
-					packGUID[size] = unsigned char(guid & 0xFF);
+					packGUID[0] |= static_cast<unsigned char>(1 << i);
+					packGUID[size] = static_cast<unsigned char>(guid & 0xFF);
 					++size;
 				}
 
