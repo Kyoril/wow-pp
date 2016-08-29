@@ -539,7 +539,16 @@ namespace wowpp
 					case 28809:
 						it->mutable_effects(0)->set_triggerspell(28810);
 						break;
-
+						// Blessed Recovery
+					case 27811:
+						it->mutable_effects(0)->set_triggerspell(27813);
+						break;
+					case 27815:
+						it->mutable_effects(0)->set_triggerspell(27817);
+						break;
+					case 27816:
+						it->mutable_effects(0)->set_triggerspell(27818);
+						break;
 						////////////////////////////// Shaman ////////////////////////////////////
 
 						// Lightning Shield
@@ -2029,13 +2038,13 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 
-#if 0
 	if (!addSpellLinks(protoProject))
 	{
 		ELOG("Failed to add spell links");
 		return 1;
 	}
 
+#if 0
 	if (!importSpellFocus(protoProject, connection))
 	{
 		ELOG("Failed to load spell focus object");
@@ -2077,14 +2086,13 @@ int main(int argc, char* argv[])
 		WLOG("Could not set base id for spells");
 		return 1;
 	}
-#endif
 
 	if (!importItemSockets(protoProject, connection))
 	{
 		WLOG("Could not import item sockets");
 		return 1;
 	}
-
+#endif
 	// Save project
 	if (!protoProject.save(configuration.dataPath))
 	{

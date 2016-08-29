@@ -244,7 +244,7 @@ namespace wowpp
 		/// 15
 		void handleDamageShieldProc(GameUnit *attacker);
 		/// 42
-		void handleTriggerSpellProc(GameUnit *attacker);
+		void handleTriggerSpellProc(GameUnit *attacker, UInt32 amount);
 
 	private:
 

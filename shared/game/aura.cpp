@@ -390,12 +390,12 @@ namespace wowpp
 			}
 		case aura::ProcTriggerSpell:
 			{
-				handleTriggerSpellProc(target);
+				handleTriggerSpellProc(target, amount);
 				break;
 			}
 		case aura::AddTargetTrigger:
 			{
-				handleTriggerSpellProc(target);
+				handleTriggerSpellProc(target, amount);
 				break;
 			}
 		case aura::ModResistance:
@@ -1280,7 +1280,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleTriggerSpellProc(GameUnit *target)
+	void Aura::handleTriggerSpellProc(GameUnit *target, UInt32 amount)
 	{
 		if (!target)
 		{
@@ -1296,10 +1296,22 @@ namespace wowpp
 		targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
 		targetMap.m_unitTarget = target->getGuid();
 
+		game::SpellPointsArray basePoints;
+
+		if (m_spell.family() == game::spell_family::Priest)
+		{
+			// Blessed Recovery
+			if (m_spell.baseid() == 27811)
+			{
+				basePoints[0] = amount * m_effect.basepoints() / 100 / 3;
+				//targetMap.m_unitTarget = target->getGuid();
+			}
+		}
+
 		UInt32 triggerSpell = m_effect.triggerspell();
 		if (triggerSpell != 0)
 		{
-			m_target.castSpell(targetMap, m_effect.triggerspell(), { 0, 0, 0 }, 0, true);
+			m_target.castSpell(targetMap, m_effect.triggerspell(), basePoints, 0, true);
 		}
 		else
 		{
