@@ -1304,7 +1304,6 @@ namespace wowpp
 			if (m_spell.baseid() == 27811)
 			{
 				basePoints[0] = amount * m_effect.basepoints() / 100 / 3;
-				//targetMap.m_unitTarget = target->getGuid();
 			}
 		}
 
