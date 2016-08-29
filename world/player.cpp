@@ -549,7 +549,7 @@ namespace wowpp
 		{
 			if (spell->attributes(0) & game::spell_attributes::Passive)
 			{
-				m_character->castSpell(target, spell->id(), -1, 0, true);
+				m_character->castSpell(target, spell->id(), { 0, 0, 0 }, 0, true);
 			}
 			else
 			{
@@ -1902,7 +1902,7 @@ namespace wowpp
 			}
 
 			UInt64 time = spellEntry->casttime();
-			m_character->castSpell(std::move(targetMap), spell.spell(), -1, time, false, itemGuid, [this, spellEntry](game::SpellCastResult result) {
+			m_character->castSpell(std::move(targetMap), spell.spell(), { 0, 0, 0 }, time, false, itemGuid, [this, spellEntry](game::SpellCastResult result) {
 				if (result != game::spell_cast_result::CastOkay)
 				{
 					sendProxyPacket(

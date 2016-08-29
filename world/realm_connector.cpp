@@ -1029,7 +1029,7 @@ namespace wowpp
 		sender.getCharacter()->castSpell(
 			std::move(targetMap),
 			spell->id(),
-			-1,
+			{ 0, 0, 0 },
 			castTime,
 			false,
 			0,

@@ -486,7 +486,7 @@ namespace wowpp
 		virtual const String &getName() const;
 
 		/// Starts to cast a spell using the given target map.
-		void castSpell(SpellTargetMap target, UInt32 spell, Int32 basePoints = -1, GameTime castTime = 0, bool isProc = false, UInt64 itemGuid = 0, SpellSuccessCallback callback = SpellSuccessCallback());
+		void castSpell(SpellTargetMap target, UInt32 spell, const game::SpellPointsArray &basePoints = { 0, 0, 0 }, GameTime castTime = 0, bool isProc = false, UInt64 itemGuid = 0, SpellSuccessCallback callback = SpellSuccessCallback());
 		/// Stops the current cast (if any).
 		/// @param interruptCooldown Interrupt cooldown time in milliseconds (or 0 if no cooldown).
 		void cancelCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown = 0);

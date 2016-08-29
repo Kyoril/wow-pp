@@ -79,7 +79,7 @@ namespace wowpp
 		}
 	}
 
-	SingleCastState::SingleCastState(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool isProc/* = false*/, UInt64 itemGuid/* = 0*/)
+	SingleCastState::SingleCastState(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, const game::SpellPointsArray &basePoints, GameTime castTime, bool isProc/* = false*/, UInt64 itemGuid/* = 0*/)
 		: m_cast(cast)
 		, m_spell(spell)
 		, m_target(std::move(target))
@@ -88,7 +88,7 @@ namespace wowpp
 		, m_impactCountdown(cast.getTimers())
 		, m_castTime(castTime)
 		, m_castEnd(0)
-		, m_basePoints(basePoints)
+		, m_basePoints(std::move(basePoints))
 		, m_isProc(isProc)
 		, m_attackTable()
 		, m_itemGuid(itemGuid)
@@ -250,7 +250,7 @@ namespace wowpp
 		}
 	}
 
-	std::pair<game::SpellCastResult, SpellCasting *> SingleCastState::startCast(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool doReplacePreviousCast, UInt64 itemGuid)
+	std::pair<game::SpellCastResult, SpellCasting *> SingleCastState::startCast(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, const game::SpellPointsArray &basePoints, GameTime castTime, bool doReplacePreviousCast, UInt64 itemGuid)
 	{
 		if (!m_hasFinished &&
 		        !doReplacePreviousCast)
@@ -263,7 +263,7 @@ namespace wowpp
 		                            cast,
 		                            spell,
 		                            std::move(target),
-		                            basePoints,
+		                            std::move(basePoints),
 		                            castTime,
 		                            itemGuid);
 
@@ -387,6 +387,7 @@ namespace wowpp
 		}
 		else
 		{
+			
 			sendPacketFromCaster(executer,
 			                     std::bind(game::server_write::spellFailure, std::placeholders::_1,
 			                               executer.getGuid(),
@@ -876,13 +877,13 @@ namespace wowpp
 			m_affectedTargets.insert(unitTarget->shared_from_this());
 		}
 
-		if (m_spell.family() == 4)	// Warrior
+		if (m_spell.family() == game::spell_family::Warrior)
 		{
-			if (m_spell.familyflags() == 0x20000000)		// Execute
+			if (m_spell.familyflags() & 0x20000000)		// Execute
 			{
 				// Rage has already been reduced by executing this spell, though the remaining value is the rest
 				m_cast.getExecuter().castSpell(
-					m_target, 20647, m_basePoints + m_cast.getExecuter().getUInt32Value(unit_fields::Power2) * effect.dmgmultiplier());
+					m_target, 20647, { static_cast<Int32>(m_basePoints[0] + m_cast.getExecuter().getUInt32Value(unit_fields::Power2) * effect.dmgmultiplier()), 0, 0 });
 				m_cast.getExecuter().setUInt32Value(unit_fields::Power2, 0);
 			}
 		}
@@ -1295,7 +1296,7 @@ namespace wowpp
 					SpellTargetMap targetMap;
 					targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
 					targetMap.m_unitTarget = character->getGuid();
-					character->castSpell(std::move(targetMap), effect.triggerspell(), -1, 0, true);
+					character->castSpell(std::move(targetMap), effect.triggerspell(), { 0, 0, 0 }, 0, true);
 				}
 
 				// TODO: Send packets
@@ -1361,7 +1362,7 @@ namespace wowpp
 			}
 			if (castTime < 0) castTime = 0;
 
-			m_cast.getExecuter().castSpell(m_target, spellId, -1, castTime, false);
+			m_cast.getExecuter().castSpell(m_target, spellId, { 0, 0, 0 }, castTime, false);
 		}
 	}
 
@@ -1691,7 +1692,7 @@ namespace wowpp
 		// Calculate the damage done
 		const float basePointsPerLevel = effect.pointsperlevel();
 		const float randomPointsPerLevel = effect.diceperlevel();
-		const Int32 basePoints = (m_basePoints == -1 ? effect.basepoints() : m_basePoints) + level * basePointsPerLevel;
+		const Int32 basePoints = (m_basePoints.empty() ? effect.basepoints() : m_basePoints[effect.index()]) + level * basePointsPerLevel;
 		const Int32 randomPoints = effect.diesides() + level * randomPointsPerLevel;
 		const Int32 comboDamage = effect.pointspercombopoint() * comboPoints;
 
@@ -2586,7 +2587,7 @@ namespace wowpp
 		// Cast all additional spells if available
 		for (const auto &spell : m_spell.additionalspells())
 		{
-			strongCaster->castSpell(m_target, spell, -1, 0, true);
+			strongCaster->castSpell(m_target, spell, { 0, 0, 0 }, 0, true);
 		}
 
 		if (strongCaster->isGameCharacter())
@@ -2743,7 +2744,7 @@ namespace wowpp
 		}
 
 		GameUnit &caster = m_cast.getExecuter();
-		caster.castSpell(m_target, effect.triggerspell(), -1, 0, true);
+		caster.castSpell(m_target, effect.triggerspell(), { 0, 0, 0 }, 0, true);
 	}
 
 	void SingleCastState::spellEffectEnergize(const proto::SpellEffect &effect)

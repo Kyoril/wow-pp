@@ -40,7 +40,7 @@ namespace wowpp
 	{
 	}
 
-	std::pair<game::SpellCastResult, SpellCasting *> SpellCast::startCast(const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool isProc, UInt64 itemGuid)
+	std::pair<game::SpellCastResult, SpellCasting *> SpellCast::startCast(const proto::SpellEntry &spell, SpellTargetMap target, const game::SpellPointsArray &basePoints, GameTime castTime, bool isProc, UInt64 itemGuid)
 	{
 		assert(m_castState);
 
@@ -246,7 +246,7 @@ namespace wowpp
 		if (isProc)
 		{
 			std::shared_ptr<SingleCastState> newState(
-			    new SingleCastState(*this, spell, std::move(target), basePoints, castTime, true, itemGuid)
+			    new SingleCastState(*this, spell, std::move(target), std::move(basePoints), castTime, true, itemGuid)
 			);
 			newState->activate();
 
@@ -269,7 +269,7 @@ namespace wowpp
 			       (*this,
 			        spell,
 			        std::move(target),
-			        basePoints,
+			        std::move(basePoints),
 			        castTime,
 			        false,
 			        itemGuid);
@@ -362,10 +362,10 @@ namespace wowpp
 		return cost;
 	}
 
-	SpellCasting &castSpell(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, UInt64 itemGuid)
+	SpellCasting &castSpell(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, const game::SpellPointsArray &basePoints, GameTime castTime, UInt64 itemGuid)
 	{
 		std::shared_ptr<SingleCastState> newState(
-		    new SingleCastState(cast, spell, std::move(target), basePoints, castTime, false, itemGuid)
+		    new SingleCastState(cast, spell, std::move(target), std::move(basePoints), castTime, false, itemGuid)
 		);
 
 		auto &casting = newState->getCasting();

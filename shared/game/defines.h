@@ -33,6 +33,8 @@ namespace wowpp
 		typedef float Distance;
 		typedef Vector<Distance, 2> Point;
 
+		typedef std::array<Int32, 3> SpellPointsArray;
+
 		inline Vector<Distance, 2> planar(const math::Vector3 &point)
 		{
 			return Vector<Distance, 2>(

@@ -296,7 +296,7 @@ namespace wowpp
 					SpellTargetMap targetMap;
 					targetMap.m_unitTarget = getGuid();
 					targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
-					castSpell(std::move(targetMap), questEntry->srcspell(), -1, 0, true);
+					castSpell(std::move(targetMap), questEntry->srcspell(), { 0, 0, 0 }, 0, true);
 				}
 
 				// Quest timer
@@ -758,7 +758,7 @@ namespace wowpp
 			SpellTargetMap targetMap;
 			targetMap.m_unitTarget = getGuid();
 			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
-			castSpell(std::move(targetMap), entry->rewardspellcast(), -1, 0, true);
+			castSpell(std::move(targetMap), entry->rewardspellcast(), { 0, 0, 0 }, 0, true);
 		}
 
 		// Quest was rewarded
@@ -2202,7 +2202,7 @@ namespace wowpp
 				// Trigger == onEquip?
 				if (spell.trigger() == 1)
 				{
-					castSpell(targetMap, spell.spell(), -1, 0, true, item.getGuid());
+					castSpell(targetMap, spell.spell(), { 0, 0, 0 }, 0, true, item.getGuid());
 				}
 			}
 		}

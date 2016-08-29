@@ -35,7 +35,7 @@ namespace wowpp
 		    SpellCast &cast,
 		    const proto::SpellEntry &spell,
 		    SpellTargetMap target,
-		    Int32 basePoints,
+			const game::SpellPointsArray &basePoints,
 		    GameTime castTime,
 		    bool doReplacePreviousCast,
 		    UInt64 itemGuid

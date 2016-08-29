@@ -63,7 +63,7 @@ namespace wowpp
 		std::pair<game::SpellCastResult, SpellCasting *> startCast(
 		    const proto::SpellEntry &spell,
 		    SpellTargetMap target,
-		    Int32 basePoints,
+			const game::SpellPointsArray &basePoints,
 		    GameTime castTime,
 		    bool isProc,
 		    UInt64 itemGuid);
@@ -93,7 +93,7 @@ namespace wowpp
 		    SpellCast &cast,
 		    const proto::SpellEntry &spell,
 		    SpellTargetMap target,
-		    Int32 basePoints,
+			const game::SpellPointsArray &basePoints,
 		    GameTime castTime,
 		    bool doReplacePreviousCast,
 		    UInt64 itemGuid
@@ -107,7 +107,7 @@ namespace wowpp
 	    SpellCast &cast,
 	    const proto::SpellEntry &spell,
 	    SpellTargetMap target,
-	    Int32 basePoints,
+		const game::SpellPointsArray &basePoints,
 	    GameTime castTime,
 	    UInt64 itemGuid
 	);

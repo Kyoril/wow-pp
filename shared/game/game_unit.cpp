@@ -373,7 +373,7 @@ namespace wowpp
 		}
 	}
 
-	void GameUnit::castSpell(SpellTargetMap target, UInt32 spellId, Int32 basePoints, GameTime castTime, bool isProc, UInt64 itemGuid, SpellSuccessCallback callback)
+	void GameUnit::castSpell(SpellTargetMap target, UInt32 spellId, const game::SpellPointsArray &basePoints, GameTime castTime, bool isProc, UInt64 itemGuid, SpellSuccessCallback callback)
 	{
 		// Resolve spell
 		const auto *spell = getProject().spells.getById(spellId);
@@ -383,7 +383,7 @@ namespace wowpp
 			return;
 		}
 
-		auto result = m_spellCast->startCast(*spell, std::move(target), basePoints, castTime, isProc, itemGuid);
+		auto result = m_spellCast->startCast(*spell, std::move(target), std::move(basePoints), castTime, isProc, itemGuid);
 		if (result.first == game::spell_cast_result::CastOkay)
 		{
 			if (!isProc) {

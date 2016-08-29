@@ -341,7 +341,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleProcModifier(UInt8 attackType, bool canRemove, GameUnit *target/* = nullptr*/)
+	void Aura::handleProcModifier(UInt8 attackType, bool canRemove, UInt32 amount, GameUnit *target/* = nullptr*/)
 	{
 		namespace aura = game::aura_type;
 
@@ -380,7 +380,7 @@ namespace wowpp
 		{
 		case aura::Dummy:
 			{
-				handleDummyProc(target);
+				handleDummyProc(target, amount);
 				break;
 			}
 		case aura::DamageShield:
@@ -888,14 +888,14 @@ namespace wowpp
 								SpellTargetMap targetMap;
 								targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
 								targetMap.m_unitTarget = m_target.getGuid();
-								m_target.castSpell(targetMap, 17099, -1, 0, true);
+								m_target.castSpell(targetMap, 17099, { 0, 0, 0 }, 0, true);
 							}
 							else	// Bears
 							{
 								SpellTargetMap targetMap;
 								targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
 								targetMap.m_unitTarget = m_target.getGuid();
-								m_target.castSpell(targetMap, 17057, -1, 0, true);
+								m_target.castSpell(targetMap, 17057, { 0, 0, 0 }, 0, true);
 							}
 						}
 					}
@@ -964,10 +964,10 @@ namespace wowpp
 			targetMap.m_unitTarget = m_target.getGuid();
 
 			if (spell1 != 0) {
-				m_target.castSpell(targetMap, spell1, -1, 0, true);
+				m_target.castSpell(targetMap, spell1, { 0, 0, 0 }, 0, true);
 			}
 			if (spell2 != 0) {
-				m_target.castSpell(targetMap, spell2, -1, 0, true);
+				m_target.castSpell(targetMap, spell2, { 0, 0, 0 }, 0, true);
 			}
 		}
 		else
@@ -1171,7 +1171,7 @@ namespace wowpp
 
 	}
 
-	void Aura::handleDummyProc(GameUnit *victim)
+	void Aura::handleDummyProc(GameUnit *victim, UInt32 amount)
 	{
 		if (!victim)
 		{
@@ -1183,10 +1183,47 @@ namespace wowpp
 			return;
 		}
 
-		/*SpellTargetMap target;
+		SpellTargetMap target;
 		target.m_targetMap = game::spell_cast_target_flags::Unit;
 		target.m_unitTarget = victim->getGuid();
 
+		game::SpellPointsArray basePoints;
+
+		if (m_spell.family() == game::spell_family::Mage)
+		{
+			// Ignite
+			if (m_spell.baseid() == 11119)
+			{
+				if (m_spell.id() == 11119)
+				{
+					basePoints[0] = static_cast<Int32>(0.04 * amount);
+				}
+				else if (m_spell.id() == 11120)
+				{
+					basePoints[0] = static_cast<Int32>(0.08 * amount);
+				}
+				else if (m_spell.id() == 12846)
+				{
+					basePoints[0] = static_cast<Int32>(0.12 * amount);
+				}
+				else if (m_spell.id() == 12847)
+				{
+					basePoints[0] = static_cast<Int32>(0.16 * amount);
+				}
+				else if (m_spell.id() == 12848)
+				{
+					basePoints[0] = static_cast<Int32>(0.20 * amount);
+				}
+			}
+		}
+
+		// Cast the triggered spell with custom damage value
+		if (m_effect.triggerspell() != 0)
+		{
+			m_caster->castSpell(std::move(target), m_effect.triggerspell(), std::move(basePoints), 0, true);
+		}
+
+		/*
 		if (m_effect.triggerspell() != 0)
 		{
 			// TODO: Do this only for Seal of Righteousness, however: I have no clude about
@@ -1214,10 +1251,8 @@ namespace wowpp
 			// Calculate damage based on blizzards formula
 			const Int32 damage =
 			    scaleFactor * (m_basePoints * 1.2f * 1.03f * weaponSpeed / 100) + 0.03f * (maxWeaponDmg + minWeaponDmg) / 2 + 1;
-
-			// Cast the triggered spell with custom damage value
-			m_caster->castSpell(std::move(target), m_effect.triggerspell(), damage, 0, true);
-		}*/
+		}
+		*/
 	}
 
 	void Aura::handleDamageShieldProc(GameUnit *attacker)
@@ -1264,7 +1299,7 @@ namespace wowpp
 		UInt32 triggerSpell = m_effect.triggerspell();
 		if (triggerSpell != 0)
 		{
-			m_target.castSpell(targetMap, m_effect.triggerspell(), -1, 0, true);
+			m_target.castSpell(targetMap, m_effect.triggerspell(), { 0, 0, 0 }, 0, true);
 		}
 		else
 		{
@@ -2009,7 +2044,7 @@ namespace wowpp
 					targetMap.m_unitTarget = m_caster->getUInt64Value(unit_fields::ChannelObject);
 				}
 
-				m_target.castSpell(targetMap, m_effect.triggerspell(), -1, 0, true);
+				m_target.castSpell(targetMap, m_effect.triggerspell(), { 0, 0, 0 }, 0, true);
 
 				if (!m_expired)
 				{
@@ -2169,7 +2204,7 @@ namespace wowpp
 			[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType, bool canRemove) {
 				if (checkProc(amount != 0, target, procFlag, procEx, procSpell, attackType, isVictim))
 				{
-					handleProcModifier(attackType, canRemove, target);
+					handleProcModifier(attackType, canRemove, amount, target);
 				}
 			});
 			
@@ -2185,7 +2220,7 @@ namespace wowpp
 			{
 				m_procKilled = m_caster->killed.connect(
 				[&](GameUnit * killer) {
-					handleProcModifier(0, true, killer);
+					handleProcModifier(0, true, 0, killer);
 				});
 			}
 			
@@ -2196,7 +2231,7 @@ namespace wowpp
 			[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType, bool canRemove) {
 				if (procSpell && m_spell.family() == procSpell->family() && m_effect.itemtype() & procSpell->familyflags())
 				{
-					handleProcModifier(attackType, canRemove, target);
+					handleProcModifier(attackType, canRemove, amount, target);
 				}
 				else
 				{

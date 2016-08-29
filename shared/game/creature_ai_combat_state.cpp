@@ -752,7 +752,7 @@ namespace wowpp
 					}
 
 					m_isCasting = true;
-					controlled.castSpell(std::move(targetMap), validSpellEntry->spellid(), -1, m_lastCastTime, false, 0, 
+					controlled.castSpell(std::move(targetMap), validSpellEntry->spellid(), { 0, 0, 0 }, m_lastCastTime, false, 0,
 						std::bind(&CreatureAICombatState::onSpellCast, this, std::placeholders::_1));
 					return;
 				}

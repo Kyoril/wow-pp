@@ -1400,7 +1400,7 @@ namespace wowpp
 			if (spell.itemcount() == counter + 1)
 			{
 				// Apply spell
-				m_owner.castSpell(targetMap, spell.spell(), -1, 0, true);
+				m_owner.castSpell(targetMap, spell.spell(), { 0, 0, 0 }, 0, true);
 			}
 		}
 

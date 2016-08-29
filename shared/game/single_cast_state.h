@@ -55,7 +55,7 @@ namespace wowpp
 		    SpellCast &cast,
 		    const proto::SpellEntry &spell,
 		    SpellTargetMap target,
-		    Int32 basePoints,
+			const game::SpellPointsArray &basePoints,
 		    GameTime castTime,
 		    bool isProc = false,
 		    UInt64 itemGuid = 0);
@@ -64,7 +64,7 @@ namespace wowpp
 		    SpellCast &cast,
 		    const proto::SpellEntry &spell,
 		    SpellTargetMap target,
-		    Int32 basePoints,
+			const game::SpellPointsArray &basePoints,
 		    GameTime castTime,
 		    bool doReplacePreviousCast,
 		    UInt64 itemGuid) override;
@@ -148,7 +148,7 @@ namespace wowpp
 		float m_x, m_y, m_z;
 		GameTime m_castTime;
 		GameTime m_castEnd;
-		Int32 m_basePoints;
+		game::SpellPointsArray m_basePoints;
 		bool m_isProc;
 		UInt64 m_itemGuid;
 		GameTime m_projectileStart, m_projectileEnd;
