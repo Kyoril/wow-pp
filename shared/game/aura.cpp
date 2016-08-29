@@ -36,7 +36,7 @@
 
 namespace wowpp
 {
-	Aura::Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, SpellTargetMap targetMap, UInt64 itemGuid, PostFunction post, std::function<void(Aura &)> onDestroy)
+	Aura::Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, SpellTargetMap targetMap, UInt64 itemGuid, bool isPersistent, PostFunction post, std::function<void(Aura &)> onDestroy)
 		: m_spell(spell)
 		, m_effect(effect)
 		, m_caster(&caster)
@@ -57,14 +57,18 @@ namespace wowpp
 		, m_duration(spell.duration())
 		, m_itemGuid(itemGuid)
 		, m_targetMap(targetMap)
+		, m_isPersistent(isPersistent)
 	{
 		// Subscribe to caster despawn event so that we don't hold an invalid pointer
 		m_casterDespawned = caster.despawned.connect(
-		                        std::bind(&Aura::onCasterDespawned, this, std::placeholders::_1));
+			std::bind(&Aura::onCasterDespawned, this, std::placeholders::_1));
 		m_onExpire = m_expireCountdown.ended.connect(
-		                 std::bind(&Aura::onExpired, this));
-		m_onTick = m_tickCountdown.ended.connect(
-		               std::bind(&Aura::onTick, this));
+			std::bind(&Aura::onExpired, this));
+		if (!m_isPersistent)
+		{
+			m_onTick = m_tickCountdown.ended.connect(
+				std::bind(&Aura::onTick, this));
+		}
 
 		// Adjust aura duration
 		if (m_caster &&
@@ -136,6 +140,11 @@ namespace wowpp
 		}
 
 		return false;
+	}
+
+	void Aura::update()
+	{
+		onTick();
 	}
 
 	void Aura::handleModifier(bool apply)
@@ -1829,6 +1838,15 @@ namespace wowpp
 					reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(spell_mod_op::Threat, m_spell.id(), threat);
 				}
 
+				UInt32 procAttacker = game::spell_proc_flags::TakenPeriodic;
+				UInt32 procVictim = game::spell_proc_flags::DonePeriodic;
+
+				if (damage)
+				{
+					procVictim |= game::spell_proc_flags::TakenDamage;
+				}
+
+				m_caster->procEvent(&m_target, procAttacker, procVictim, game::spell_proc_flags_ex::NormalHit, damage - resisted - absorbed, game::weapon_attack::BaseAttack, &m_spell, false /*check this*/);
 				m_target.dealDamage(damage - resisted - absorbed, school, m_caster, threat);
 				break;
 			}
@@ -2000,7 +2018,7 @@ namespace wowpp
 		}
 
 		// Should next tick be triggered?
-		if (!m_expired)
+		if (!m_expired && !m_isPersistent)
 		{
 			startPeriodicTimer();
 		}
@@ -2242,7 +2260,7 @@ namespace wowpp
 	{
 		// Start timer
 		m_tickCountdown.setEnd(
-		    getCurrentTime() + m_effect.amplitude());
+			getCurrentTime() + m_effect.amplitude());
 	}
 
 	void Aura::setSlot(UInt8 newSlot)

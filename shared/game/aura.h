@@ -41,7 +41,16 @@ namespace wowpp
 	public:
 
 		/// Initializes a new instance of the Aura class.
-		explicit Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, SpellTargetMap targetMap, UInt64 itemGuid, PostFunction post, std::function<void(Aura &)> onDestroy);
+		explicit Aura(const proto::SpellEntry &spell, 
+					  const proto::SpellEffect &effect, 
+					  Int32 basePoints, 
+					  GameUnit &caster, 
+					  GameUnit &target, 
+					  SpellTargetMap targetMap, 
+					  UInt64 itemGuid,
+					  bool isPersistent,
+					  PostFunction post, 
+					  std::function<void(Aura &)> onDestroy);
 		~Aura();
 
 		/// Gets the unit target.
@@ -111,6 +120,7 @@ namespace wowpp
 
 		bool isStealthAura() const;
 
+		void update();
 	protected:
 
 		/// 0
@@ -273,5 +283,6 @@ namespace wowpp
 		UInt32 m_totalTicks;
 		Int32 m_duration;
 		UInt64 m_itemGuid;
+		bool m_isPersistent;
 	};
 }

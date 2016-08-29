@@ -413,8 +413,8 @@ namespace wowpp
 
 		/// Creates a new instance of the GameUnit object, which will still be uninitialized.
 		explicit GameUnit(
-		    proto::Project &project,
-		    TimerQueue &timers);
+			proto::Project &project,
+			TimerQueue &timers);
 		~GameUnit();
 
 		/// @copydoc GameObject::initialize()

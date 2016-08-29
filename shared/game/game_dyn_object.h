@@ -24,6 +24,8 @@
 #include "game_object.h"
 #include "common/timer_queue.h"
 #include "common/countdown.h"
+#include "tiled_unit_watcher.h"
+#include "aura.h"
 
 namespace wowpp
 {
@@ -105,15 +107,23 @@ namespace wowpp
 		const proto::SpellEntry &getEntry() const { return m_entry; }
 		/// Gets the spell effect that created this dynamic object.
 		const proto::SpellEffect &getEffect() const { return m_effect; }
+		/// Starts the unit watcher if needed.
+		void startUnitWatcher();
+		///
+		void updatePeriodicTimer();
 
 	protected:
+		typedef std::unordered_map<GameUnit *, std::shared_ptr<Aura>> AuraMap;
 
+		std::unique_ptr<UnitWatcher> m_unitWatcher;
 		TimerQueue &m_timers;
 		GameUnit &m_caster;
 		const proto::SpellEntry &m_entry;
 		const proto::SpellEffect &m_effect;
 		Countdown m_despawnTimer;
-		boost::signals2::scoped_connection m_onDespawn;
+		Countdown m_tickCountdown;
+		boost::signals2::scoped_connection m_onDespawn, m_onTick;
+		AuraMap m_auras;
 	};
 
 	io::Writer &operator << (io::Writer &w, DynObject const &object);

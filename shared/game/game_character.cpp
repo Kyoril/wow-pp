@@ -2125,22 +2125,22 @@ namespace wowpp
 						updateModifierValue(unit_mods::Mana, unit_mod_type::BaseValue, entry.value(), apply);
 						break;
 					case game::item_stat::Health:
-						updateModifierValue(unit_mods::Health, unit_mod_type::BaseValue, entry.value(), apply);
+						updateModifierValue(unit_mods::Health, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
 					case game::item_stat::Agility:
-						updateModifierValue(unit_mods::StatAgility, unit_mod_type::BaseValue, entry.value(), apply);
+						updateModifierValue(unit_mods::StatAgility, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
 					case game::item_stat::Strength:
-						updateModifierValue(unit_mods::StatStrength, unit_mod_type::BaseValue, entry.value(), apply);
+						updateModifierValue(unit_mods::StatStrength, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
 					case game::item_stat::Intellect:
-						updateModifierValue(unit_mods::StatIntellect, unit_mod_type::BaseValue, entry.value(), apply);
+						updateModifierValue(unit_mods::StatIntellect, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
 					case game::item_stat::Spirit:
-						updateModifierValue(unit_mods::StatSpirit, unit_mod_type::BaseValue, entry.value(), apply);
+						updateModifierValue(unit_mods::StatSpirit, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
 					case game::item_stat::Stamina:
-						updateModifierValue(unit_mods::StatStamina, unit_mod_type::BaseValue, entry.value(), apply);
+						updateModifierValue(unit_mods::StatStamina, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
 					default:
 						break;

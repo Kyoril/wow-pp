@@ -471,6 +471,7 @@ namespace wowpp
 			}
 			break;
 		case game::targets::UnitAreaEnemyDst:	//16
+		case game::targets::DestDynObjEnemy:	//24
 			{
 				math::Vector3 location;
 				targetMap.getDestLocation(location.x, location.y, location.z);
