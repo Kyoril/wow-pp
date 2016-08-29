@@ -276,62 +276,17 @@ namespace wowpp
 			if (targetMap.m_targetMap & scf::Unit)
 			{
 				// Write packed Unit GUID
-				UInt64 guidCopy = targetMap.m_unitTarget;
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-				for (UInt8 i = 0; guidCopy != 0; ++i)
-				{
-					if (guidCopy & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guidCopy & 0xFF);
-						++size;
-					}
-
-					guidCopy >>= 8;
-				}
-				w.sink().write((const char *)&packGUID[0], size);
+				w << io::write_packed_guid(targetMap.m_unitTarget);
 			}
 			else if (targetMap.m_targetMap & (scf::Object | scf::ObjectUnknown))
 			{
 				// Write packed GO GUID
-				UInt64 guidCopy = targetMap.m_goTarget;
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-				for (UInt8 i = 0; guidCopy != 0; ++i)
-				{
-					if (guidCopy & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guidCopy & 0xFF);
-						++size;
-					}
-
-					guidCopy >>= 8;
-				}
-				w.sink().write((const char *)&packGUID[0], size);
+				w << io::write_packed_guid(targetMap.m_goTarget);
 			}
 			else if (targetMap.m_targetMap & (scf::Corpse | scf::PvPCorpse))
 			{
 				// Write packed corpse GUID
-				UInt64 guidCopy = targetMap.m_corpseTarget;
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-				for (UInt8 i = 0; guidCopy != 0; ++i)
-				{
-					if (guidCopy & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guidCopy & 0xFF);
-						++size;
-					}
-
-					guidCopy >>= 8;
-				}
-				w.sink().write((const char *)&packGUID[0], size);
+				w << io::write_packed_guid(targetMap.m_corpseTarget);
 			}
 			else
 			{
@@ -344,47 +299,32 @@ namespace wowpp
 		if (targetMap.m_targetMap & (scf::Item | scf::TradeItem))
 		{
 			// Write packed item GUID
-			UInt64 guidCopy = targetMap.m_itemTarget;
-			UInt8 packGUID[8 + 1];
-			packGUID[0] = 0;
-			size_t size = 1;
-			for (UInt8 i = 0; guidCopy != 0; ++i)
-			{
-				if (guidCopy & 0xFF)
-				{
-					packGUID[0] |= UInt8(1 << i);
-					packGUID[size] = UInt8(guidCopy & 0xFF);
-					++size;
-				}
-
-				guidCopy >>= 8;
-			}
-			w.sink().write((const char *)&packGUID[0], size);
+			w << io::write_packed_guid(targetMap.m_itemTarget);
 		}
 
 		// Source location
 		if (targetMap.m_targetMap & scf::SourceLocation)
 		{
 			w
-			        << io::write<float>(targetMap.m_srcX)
-			        << io::write<float>(targetMap.m_srcY)
-			        << io::write<float>(targetMap.m_srcZ);
+			    << io::write<float>(targetMap.m_srcX)
+			    << io::write<float>(targetMap.m_srcY)
+			    << io::write<float>(targetMap.m_srcZ);
 		}
 
 		// Dest location
 		if (targetMap.m_targetMap & scf::DestLocation)
 		{
 			w
-			        << io::write<float>(targetMap.m_dstX)
-			        << io::write<float>(targetMap.m_dstY)
-			        << io::write<float>(targetMap.m_dstZ);
+			    << io::write<float>(targetMap.m_dstX)
+			    << io::write<float>(targetMap.m_dstY)
+			    << io::write<float>(targetMap.m_dstZ);
 		}
 
 		// String target
 		if (targetMap.m_targetMap & scf::String)
 		{
 			w
-			        << io::write_range(targetMap.m_stringTarget) << io::write<NetUInt8>(0);
+			     << io::write_range(targetMap.m_stringTarget) << io::write<NetUInt8>(0);
 		}
 
 		return w;

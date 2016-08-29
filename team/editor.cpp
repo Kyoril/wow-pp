@@ -276,27 +276,44 @@ namespace wowpp
 	void Editor::handleEntryUpdate(pp::IncomingPacket & packet)
 	{
 		std::map<pp::editor_team::DataEntryType, std::map<UInt32, pp::editor_team::DataEntryChangeType>> changes;
-		if (!pp::editor_team::editor_read::entryUpdate(packet, changes))
+		if (!pp::editor_team::editor_read::entryUpdate(packet, changes, m_project))
 		{
 			WLOG("Could not read packet from editor.");
 			return;
 		}
 
-		static const String changeTypeStrings[] = {
-			"Added",
-			"Modified",
-			"Removed"
-		};
-
-		// Output changelog for now
-		DLOG("Editor " << getName() << " sent updated entries");
-		for (auto &pair : changes)
+		// Save project
+		if (!m_project.save(m_project.getLastPath()))
 		{
-			DLOG("\tEntry type: " << static_cast<UInt32>(pair.first));
-			for (auto &pair2 : pair.second)
-			{
-				DLOG("\t\tEntry " << pair2.first << ": " << changeTypeStrings[static_cast<UInt32>(pair2.second)]);
-			}
+			ELOG("Error saving updated project!");
+			return;
 		}
+
+		// Prepare packet
+		wowpp::Buffer tmpBuffer;
+		io::StringSink sink(tmpBuffer);
+		pp::OutgoingPacket outPacket(sink);
+		pp::editor_team::team_write::entryUpdate(outPacket, changes, m_project);
+
+		// Send packet to all other connected and authentificated editors
+		getManager().forEachEditor([this, &tmpBuffer](Editor &editor)
+		{
+			// Don't send to ourself
+			if (&editor == this)
+			{
+				return;
+			}
+
+			if (editor.isAuthentificated())
+			{
+				// Write native packet
+				wowpp::Buffer &sendBuffer = editor.getConnection().getSendBuffer();
+				io::StringSink sink(sendBuffer);
+				sink.write(&tmpBuffer[0], tmpBuffer.size());
+
+				// Flush buffers
+				editor.getConnection().flush();
+			}
+		});
 	}
 }

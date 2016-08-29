@@ -182,7 +182,7 @@ namespace wowpp
 */
 
 			// Setup team connector
-			m_teamConnector = make_unique<TeamConnector>(m_ioService, m_configuration, m_timers);
+			m_teamConnector = make_unique<TeamConnector>(m_ioService, m_configuration, m_project, m_timers);
 			
 			// Load login window
 			LoginDialog loginDialog(*this);
@@ -351,7 +351,7 @@ namespace wowpp
 				// Send changes to the team server
 				if (m_teamConnector)
 				{
-					m_teamConnector->sendEntryChanges(m_changes, m_project);
+					m_teamConnector->sendEntryChanges(m_changes);
 				}
 
 				// Clear changes

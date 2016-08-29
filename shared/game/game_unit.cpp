@@ -1819,7 +1819,7 @@ namespace wowpp
 		}
 	}
 
-	bool GameUnit::canDetectStealth(GameUnit &target)
+	bool GameUnit::canDetectStealth(GameUnit &target) const
 	{
 		// Can't detect anything if stunned
 		if (isStunned() || isConfused() || isFeared()) {

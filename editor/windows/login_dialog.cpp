@@ -28,6 +28,8 @@
 #include "log/default_log_levels.h"
 #include "proto_data/project.h"
 #include "common/sha1.h"
+#include <QApplication>
+#include <QSettings>
 #include <QDesktopServices>
 #include <QUrl>
 
@@ -40,6 +42,8 @@ namespace wowpp
 			, m_ui(new Ui::LoginDialog)
 			, m_app(app)
 		{
+			m_settingsString = QApplication::applicationDirPath() + "/Settings.ini";
+
 			// Setup auto generated ui
 			m_ui->setupUi(this);
 
@@ -113,6 +117,15 @@ namespace wowpp
 					setLoginUiState(true);
 				});
 			}
+
+			QSettings settings(m_settingsString, QSettings::IniFormat);
+			QString userName = settings.value("Username", "").toString();
+			if (!userName.isEmpty())
+			{
+				m_ui->lineEdit->setText(userName);
+				m_ui->checkBox->setChecked(true);
+				m_ui->lineEdit_2->setFocus();
+			}
 		}
 
 		void LoginDialog::on_loginBtn_clicked()
@@ -121,6 +134,16 @@ namespace wowpp
 			if (!connector)
 			{
 				return;
+			}
+
+			QSettings settings(m_settingsString, QSettings::IniFormat);
+			if (m_ui->checkBox->isChecked())
+			{
+				settings.setValue("Username", m_ui->lineEdit->text());
+			}
+			else
+			{
+				settings.remove("Username");
 			}
 
 			// Disable form input

@@ -123,6 +123,11 @@ namespace wowpp
 		void update();
 	protected:
 
+		/// Updates the counter display (stack) of this aura.
+		void setAuraApplication(UInt32 slot, Int8 count);
+
+	protected:
+
 		/// 0
 		void handleModNull(bool apply);
 		/// 3

@@ -28,6 +28,11 @@
 
 namespace wowpp
 {
+	namespace proto
+	{
+		class Project;
+	}
+
 	namespace pp
 	{
 		namespace editor_team
@@ -171,7 +176,8 @@ namespace wowpp
 				/// 
 				void entryUpdate(
 					pp::OutgoingPacket &out_packet,
-					const std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>> &changes
+					const std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>> &changes,
+					const proto::Project &project
 				);
 			}
 
@@ -198,7 +204,8 @@ namespace wowpp
 
 				void entryUpdate(
 					pp::OutgoingPacket &out_packet,
-					const std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>> &changes
+					const std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>> &changes,
+					const proto::Project &project
 				);
 			}
 
@@ -236,7 +243,8 @@ namespace wowpp
 				/// 
 				bool entryUpdate(
 					io::Reader &packet,
-					std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>> &out_changes
+					std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>> &out_changes,
+					proto::Project &out_project
 				);
 			}
 
@@ -270,7 +278,8 @@ namespace wowpp
 				/// 
 				bool entryUpdate(
 					io::Reader &packet,
-					std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>> &out_changes
+					std::map<DataEntryType, std::map<UInt32, DataEntryChangeType>> &out_changes,
+					proto::Project &out_project
 				);
 			}
 		}

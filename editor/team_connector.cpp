@@ -32,9 +32,10 @@ namespace wowpp
 		static const auto ReconnectDelay = (constants::OneSecond * 4);
 		static const auto KeepAliveDelay = (constants::OneMinute / 2);
 
-		TeamConnector::TeamConnector(boost::asio::io_service &ioService, const Configuration &config, TimerQueue &timer)
+		TeamConnector::TeamConnector(boost::asio::io_service &ioService, const Configuration &config, proto::Project &project, TimerQueue &timer)
 			: m_ioService(ioService)
 			, m_config(config)
+			, m_project(project)
 			, m_timer(timer)
 			, m_host(m_config.teamAddress)
 			, m_port(m_config.teamPort)
@@ -84,6 +85,12 @@ namespace wowpp
 				case pp::editor_team::team_packet::EditorUpToDate:
 				{
 					handleEditorUpToDate(packet);
+					break;
+				}
+
+				case pp::editor_team::team_packet::EntryUpdate:
+				{
+					handleEntryUpdate(packet);
 					break;
 				}
 
@@ -141,14 +148,14 @@ namespace wowpp
 				std::bind(editor_write::projectHashMap, std::placeholders::_1, std::cref(hashes)));
 		}
 
-		void TeamConnector::sendEntryChanges(const std::map<pp::editor_team::DataEntryType, std::map<UInt32, pp::editor_team::DataEntryChangeType>>& changes, const proto::Project & project)
+		void TeamConnector::sendEntryChanges(const std::map<pp::editor_team::DataEntryType, std::map<UInt32, pp::editor_team::DataEntryChangeType>>& changes)
 		{
 			using namespace pp::editor_team;
 
 			// TODO
 
 			m_connection->sendSinglePacket(
-				std::bind(editor_write::entryUpdate, std::placeholders::_1, std::cref(changes)));
+				std::bind(editor_write::entryUpdate, std::placeholders::_1, std::cref(changes), std::cref(m_project)));
 		}
 
 		void TeamConnector::tryConnect()
@@ -254,6 +261,19 @@ namespace wowpp
 		{
 			// Fire signal to notify UI
 			editorUpToDate();
+		}
+
+		void TeamConnector::handleEntryUpdate(pp::Protocol::IncomingPacket & packet)
+		{
+			// Receive changes and also patch local project
+			std::map<pp::editor_team::DataEntryType, std::map<UInt32, pp::editor_team::DataEntryChangeType>> changes;
+			if (!pp::editor_team::team_read::entryUpdate(packet, changes, m_project))
+			{
+				return;
+			}
+
+			// Save changes
+			m_project.save(m_project.getLastPath());
 		}
 
 	}

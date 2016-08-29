@@ -1859,6 +1859,94 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importSpellNames(proto::Project &project, MySQL::Connection &conn)
+	{
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `Id`, `SpellName1` FROM `dbc_spell`;");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					// Get row data
+					UInt32 entry = 0, index = 0;
+					String name;
+					row.getField(index++, entry);
+					row.getField(index++, name);
+
+					auto *spell = project.spells.getById(entry);
+					if (!spell)
+					{
+						WLOG("Could not find spell " << entry);
+						row = row.next(select);
+						continue;
+					}
+
+					spell->set_name(name);
+					row = row.next(select);
+				}
+			}
+			else
+			{
+				ELOG("Error: " << conn.getErrorMessage());
+			}
+		}
+
+		return true;
+	}
+
+	static bool importItemSockets(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `entry`, `socketColor_1`, `socketContent_1`, `socketColor_2`, `socketContent_2`, `socketColor_3`, `socketContent_3` FROM `tbcdb`.`item_template`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				UInt32 entry = 0, index = 0, color = 0, content = 0;
+
+				row.getField(index++, entry);
+				auto *item = project.items.getById(entry);
+				if (!item)
+				{
+					WLOG("Could not find item " << entry << ": Skipping socket import");
+
+					row = row.next(select);
+					continue;
+				}
+
+				// First remove all sockets of this item
+				item->clear_sockets();
+
+				// Now insert the new ones
+				for (UInt32 i = 0; i < 3; ++i)
+				{
+					row.getField(index++, color);
+					row.getField(index++, content);
+					if (color != 0 || content != 0)
+					{
+						auto *added = item->add_sockets();
+						if (added)
+						{
+							added->set_color(color);
+							added->set_content(content);
+						}
+					}
+				}
+
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			ELOG("Error: " << conn.getErrorMessage());
+			return false;
+		}
+
+		return true;
+	}
+
+
 #if 0
 	static void fixTriggerEvents(proto::Project &project)
 	{
@@ -1991,9 +2079,9 @@ int main(int argc, char* argv[])
 	}
 #endif
 
-	if (!importSpellChannelInterrupt(protoProject, connection))
+	if (!importItemSockets(protoProject, connection))
 	{
-		WLOG("Could not import channel interrupt flags");
+		WLOG("Could not import item sockets");
 		return 1;
 	}
 

@@ -293,4 +293,47 @@ namespace io
 	{
 		return detail::WriteRangeWithLengthAndConversion<L, typename R::const_iterator, E>(range.begin(), range.end());
 	}
+
+
+	namespace detail
+	{
+		struct PackedGuid
+		{
+			const unsigned long long &guid;
+
+			PackedGuid(const unsigned long long &guid_)
+				: guid(guid_)
+			{
+			}
+		};
+
+		inline Writer &operator << (Writer &w, const PackedGuid &surr)
+		{
+			unsigned long long guid = surr.guid;
+
+			unsigned char packGUID[8 + 1];
+			packGUID[0] = 0;
+			size_t size = 1;
+
+			for (unsigned char  i = 0; guid != 0; ++i)
+			{
+				if (guid & 0xFF)
+				{
+					packGUID[0] |= static_cast<unsigned char>(1 << i);
+					packGUID[size] = static_cast<unsigned char>(guid & 0xFF);
+					++size;
+				}
+
+				guid >>= 8;
+			}
+
+			return w
+				<< io::write_range(&packGUID[0], &packGUID[size]);
+		}
+	}
+
+	inline detail::PackedGuid write_packed_guid(const unsigned long long &plain_guid)
+	{
+		return detail::PackedGuid(plain_guid);
+	}
 }

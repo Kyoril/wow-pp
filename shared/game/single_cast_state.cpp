@@ -2531,7 +2531,7 @@ namespace wowpp
 		};
 
 		// Make sure that the executer exists after all effects have been executed
-		std::weak_ptr<GameObject> weakExecuter(m_cast.getExecuter().shared_from_this());
+		auto strongCaster = std::static_pointer_cast<GameUnit>(m_cast.getExecuter().shared_from_this());
 		for (std::vector<std::pair<UInt32, EffectHandler>>::iterator it = effectMap.begin(); it != effectMap.end(); ++it)
 		{
 			for (int k = 0; k < effects.size(); ++k)
@@ -2572,49 +2572,37 @@ namespace wowpp
 								canRemove = false;
 							}
 
-							m_cast.getExecuter().procEvent(target, itr->second.procAttacker, itr->second.procVictim, itr->second.procEx, itr->second.amount, m_attackType, &m_spell, canRemove);
+							strongCaster->procEvent(target, itr->second.procAttacker, itr->second.procVictim, itr->second.procEx, itr->second.amount, m_attackType, &m_spell, canRemove);
 						}
 					}
 				}
 			}
 			else
 			{
-				m_cast.getExecuter().procEvent(nullptr, m_attackerProc, m_victimProc, 0, 0, m_attackType, &m_spell, m_isProc ? false : true);
+				strongCaster->procEvent(nullptr, m_attackerProc, m_victimProc, 0, 0, m_attackType, &m_spell, m_isProc ? false : true);
 			}
 		}
 
-		if (auto strong = weakExecuter.lock())
+		// Cast all additional spells if available
+		for (const auto &spell : m_spell.additionalspells())
 		{
-			// Cast all additional spells if available
-			auto strongUnit = std::dynamic_pointer_cast<GameUnit>(strong);
-			assert(strongUnit);
-
-			for (const auto &spell : m_spell.additionalspells())
-			{
-				strongUnit->castSpell(m_target, spell, -1, 0, true);
-			}
+			strongCaster->castSpell(m_target, spell, -1, 0, true);
 		}
 
-		if (auto strong = weakExecuter.lock())
+		if (strongCaster->isGameCharacter())
 		{
-			auto strongUnit = std::dynamic_pointer_cast<GameUnit>(strong);
-			assert(strongUnit);
-
-			if (strongUnit->isGameCharacter())
+			for (const auto &target : m_affectedTargets)
 			{
-				for (const auto &target : m_affectedTargets)
+				auto strongTarget = target.lock();
+				if (strongTarget)
 				{
-					auto strongTarget = target.lock();
-					if (strongTarget)
+					if (strongTarget->isCreature())
 					{
-						if (strongTarget->isCreature())
-						{
-							std::static_pointer_cast<GameCreature>(strongTarget)->raiseTrigger(
-								trigger_event::OnSpellHit, { m_spell.id() });
-						}
-
-						reinterpret_cast<GameCharacter&>(*strongUnit).onQuestSpellCastCredit(m_spell.id(), *strongTarget);
+						std::static_pointer_cast<GameCreature>(strongTarget)->raiseTrigger(
+							trigger_event::OnSpellHit, { m_spell.id() });
 					}
+
+					reinterpret_cast<GameCharacter&>(*strongCaster).onQuestSpellCastCredit(m_spell.id(), *strongTarget);
 				}
 			}
 		}

@@ -455,28 +455,9 @@ namespace wowpp
 
 			// Header with object guid and type
 			writer
-				<< io::write<NetUInt8>(updateType);
-
-			UInt64 guidCopy = guid;
-			UInt8 packGUID[8 + 1];
-			packGUID[0] = 0;
-			size_t size = 1;
-			for (UInt8 i = 0; guidCopy != 0; ++i)
-			{
-				if (guidCopy & 0xFF)
-				{
-					packGUID[0] |= UInt8(1 << i);
-					packGUID[size] = UInt8(guidCopy & 0xFF);
-					++size;
-				}
-
-				guidCopy >>= 8;
-			}
-			writer.sink().write((const char*)&packGUID[0], size);
-			writer
-				<< io::write<NetUInt8>(objectTypeId);
-
-			writer
+				<< io::write<NetUInt8>(updateType)
+				<< io::write_packed_guid(guid)
+				<< io::write<NetUInt8>(objectTypeId)
 				<< io::write<NetUInt8>(updateFlags);
 
 			// Write movement update
@@ -1437,23 +1418,8 @@ namespace wowpp
 
 			// Header with object guid and type
 			createItemWriter
-				<< io::write<NetUInt8>(updateType);
-			UInt64 guidCopy = guid;
-			UInt8 packGUID[8 + 1];
-			packGUID[0] = 0;
-			size_t size = 1;
-			for (UInt8 i = 0; guidCopy != 0; ++i)
-			{
-				if (guidCopy & 0xFF)
-				{
-					packGUID[0] |= UInt8(1 << i);
-					packGUID[size] = UInt8(guidCopy & 0xFF);
-					++size;
-				}
-				guidCopy >>= 8;
-			}
-			createItemWriter.sink().write((const char*)&packGUID[0], size);
-			createItemWriter
+				<< io::write<NetUInt8>(updateType)
+				<< io::write_packed_guid(guid)
 				<< io::write<NetUInt8>(objectTypeId)
 				<< io::write<NetUInt8>(updateFlags);
 			if (updateFlags & 0x08)
@@ -1487,24 +1453,8 @@ namespace wowpp
 			UInt8 updateType = 0x00;						// Update type (0x00 = UPDATE_VALUES)
 			UInt64 guid = item->getGuid();
 			writer
-				<< io::write<NetUInt8>(updateType);
-
-			UInt64 guidCopy = guid;
-			UInt8 packGUID[8 + 1];
-			packGUID[0] = 0;
-			size_t size = 1;
-			for (UInt8 i = 0; guidCopy != 0; ++i)
-			{
-				if (guidCopy & 0xFF)
-				{
-					packGUID[0] |= UInt8(1 << i);
-					packGUID[size] = UInt8(guidCopy & 0xFF);
-					++size;
-				}
-
-				guidCopy >>= 8;
-			}
-			writer.sink().write((const char*)&packGUID[0], size);
+				<< io::write<NetUInt8>(updateType)
+				<< io::write_packed_guid(guid);
 			item->writeValueUpdateBlock(writer, *m_character, false);
 		}
 
@@ -3341,8 +3291,6 @@ namespace wowpp
 		m_tradeData->getTrader()->sendUpdateTrade();
 	}
 
-
-
 	void Player::moveItems(std::vector<std::shared_ptr<GameItem>> my_Items, std::vector<std::shared_ptr<GameItem>> his_Items)
 	{
 		UInt8 bag, slot;
@@ -3375,9 +3323,6 @@ namespace wowpp
 				inventory.removeItem(trader->m_tradeData->getAbsSlot(i));
 			}
 		}
-
-
-
 	}
 
 	void Player::sendTradeStatus(TradeStatusInfo info)
