@@ -173,7 +173,7 @@ namespace wowpp
 
 				auto *world = m_caster.getWorldInstance();
 				auto &universe = world->getUniverse();
-				std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_entry, m_effect, m_effect.basepoints(), m_caster, target, targetMap, getGuid(), true, [&universe](std::function<void()> work)
+				std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_entry, m_effect, m_effect.basepoints(), m_caster, target, targetMap, 0, true, [&universe](std::function<void()> work)
 				{
 					universe.post(work);
 				}, [&universe](Aura & self)

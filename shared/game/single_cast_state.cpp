@@ -642,7 +642,7 @@ namespace wowpp
 
 		const UInt32 spellAttributesA = m_spell.attributes(1);
 		// Consume combo points if required
-		if ((spellAttributesA & game::spell_attributes_ex_a::ReqComboPoints_1) && character)
+		if ((spellAttributesA & (game::spell_attributes_ex_a::ReqComboPoints_1 | game::spell_attributes_ex_a::ReqComboPoints_2)) && character)
 		{
 			// 0 will reset combo points
 			character->addComboPoints(0, 0);
@@ -877,14 +877,16 @@ namespace wowpp
 			m_affectedTargets.insert(unitTarget->shared_from_this());
 		}
 
+		GameUnit &caster = m_cast.getExecuter();
+
 		if (m_spell.family() == game::spell_family::Warrior)
 		{
 			if (m_spell.familyflags() & 0x20000000)		// Execute
 			{
 				// Rage has already been reduced by executing this spell, though the remaining value is the rest
-				m_cast.getExecuter().castSpell(
-					m_target, 20647, { static_cast<Int32>(m_basePoints[0] + m_cast.getExecuter().getUInt32Value(unit_fields::Power2) * effect.dmgmultiplier()), 0, 0 });
-				m_cast.getExecuter().setUInt32Value(unit_fields::Power2, 0);
+				caster.castSpell(
+					m_target, 20647, { static_cast<Int32>(m_basePoints[0] + caster.getUInt32Value(unit_fields::Power2) * effect.dmgmultiplier()), 0, 0 });
+				caster.setUInt32Value(unit_fields::Power2, 0);
 			}
 		}
 
@@ -892,7 +894,7 @@ namespace wowpp
 		if (m_spell.id() == 5581)
 		{
 			// Show targets aura infos
-			m_cast.getExecuter().getAuras().logAuraInfos();
+			caster.getAuras().logAuraInfos();
 		}
 	}
 

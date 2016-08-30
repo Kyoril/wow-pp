@@ -59,6 +59,11 @@ namespace wowpp
 		, m_targetMap(targetMap)
 		, m_isPersistent(isPersistent)
 	{
+		if (spell.duration() != spell.maxduration() && isPlayerGUID(m_caster->getGuid()))
+		{
+			m_duration += static_cast<Int32>((spell.maxduration() - m_duration) * (reinterpret_cast<GameCharacter *>(m_caster)->getComboPoints() / 5.0f));
+		}
+
 		// Subscribe to caster despawn event so that we don't hold an invalid pointer
 		m_casterDespawned = caster.despawned.connect(
 			std::bind(&Aura::onCasterDespawned, this, std::placeholders::_1));
