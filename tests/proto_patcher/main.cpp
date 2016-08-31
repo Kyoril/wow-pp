@@ -662,6 +662,13 @@ namespace wowpp
 
 						////////////////////////////// Druid /////////////////////////////////////
 
+						// Enrage
+					case 5229:
+						it->mutable_effects(1)->set_basedice(0);
+						it->mutable_effects(1)->set_diesides(0);
+						it->mutable_effects(1)->set_targeta(1);
+						it->mutable_effects(1)->set_aura(142);
+						it->mutable_effects(1)->set_miscvaluea(1);
 						// T3 set bonus
 					case 28719:
 						it->mutable_effects(0)->set_triggerspell(28742);

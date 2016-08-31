@@ -889,6 +889,22 @@ namespace wowpp
 				caster.setUInt32Value(unit_fields::Power2, 0);
 			}
 		}
+		else if (m_spell.family() == game::spell_family::Druid)
+		{
+			if (m_spell.id() == 5229)		// Enrage
+			{
+				if (caster.getByteValue(unit_fields::Bytes2, 3) == 5)
+				{
+					m_basePoints[1] = -27;
+				}
+				else if (caster.getByteValue(unit_fields::Bytes2, 3) == 8)
+				{
+					m_basePoints[1] = -16;
+				}
+
+				spellEffectApplyAura(effect);
+			}
+		}
 
 		// Lys test spell
 		if (m_spell.id() == 5581)
