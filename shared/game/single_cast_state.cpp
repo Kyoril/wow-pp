@@ -886,6 +886,7 @@ namespace wowpp
 
 		if (m_spell.family() == game::spell_family::Generic)
 		{
+			// Berserking (racial)
 			if (m_spell.id() == 20554 ||
 				m_spell.id() == 26296 ||
 				m_spell.id() == 26297)
@@ -909,6 +910,7 @@ namespace wowpp
 				targetMap.m_targetMap = game::spell_cast_target_flags::Self;
 				targetMap.m_unitTarget = caster.getGuid();
 
+				caster.addFlag(unit_fields::AuraState, game::aura_state::Berserking);
 				caster.castSpell(targetMap, 26635, std::move(basePoints), 0, true);
 			}
 		}
