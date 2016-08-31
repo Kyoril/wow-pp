@@ -1383,10 +1383,13 @@ namespace wowpp
 			}
 
 			UInt64 familyFlags = spell->familyflags();
+			/*
+			// Should this be like this? affectmask is for familyflags not class (eg. Improve Gouge affectmask's 8, rogue family is 8 so it affects everything)
 			if (!familyFlags)
 			{
 				familyFlags = spell->family();
 			}
+			*/
 			if (familyFlags & mod.mask)
 			{
 				total += mod.value;
