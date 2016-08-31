@@ -2067,6 +2067,8 @@ namespace wowpp
 				}
 			}
 
+			attackTime *= getAttackSpeedPctModifier(game::weapon_attack::RangedAttack);
+
 			setFloatValue(unit_fields::MinRangedDamage, minDamage);
 			setFloatValue(unit_fields::MaxRangedDamage, maxDamage);
 			setUInt32Value(unit_fields::RangedAttackTime, attackTime);
@@ -2122,7 +2124,7 @@ namespace wowpp
 					switch (entry.type())
 					{
 					case game::item_stat::Mana:
-						updateModifierValue(unit_mods::Mana, unit_mod_type::BaseValue, entry.value(), apply);
+						updateModifierValue(unit_mods::Mana, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
 					case game::item_stat::Health:
 						updateModifierValue(unit_mods::Health, unit_mod_type::TotalValue, entry.value(), apply);
@@ -2153,32 +2155,32 @@ namespace wowpp
 
 			if (item.getEntry().holyres() != 0)
 			{
-				updateModifierValue(unit_mods::ResistanceHoly, unit_mod_type::BaseValue, item.getEntry().holyres(), apply);
+				updateModifierValue(unit_mods::ResistanceHoly, unit_mod_type::TotalValue, item.getEntry().holyres(), apply);
 				shouldUpdateResi[0] = true;
 			}
 			if (item.getEntry().fireres() != 0)
 			{
-				updateModifierValue(unit_mods::ResistanceFire, unit_mod_type::BaseValue, item.getEntry().fireres(), apply);
+				updateModifierValue(unit_mods::ResistanceFire, unit_mod_type::TotalValue, item.getEntry().fireres(), apply);
 				shouldUpdateResi[1] = true;
 			}
 			if (item.getEntry().natureres() != 0)
 			{
-				updateModifierValue(unit_mods::ResistanceNature, unit_mod_type::BaseValue, item.getEntry().natureres(), apply);
+				updateModifierValue(unit_mods::ResistanceNature, unit_mod_type::TotalValue, item.getEntry().natureres(), apply);
 				shouldUpdateResi[2] = true;
 			}
 			if (item.getEntry().frostres() != 0)
 			{
-				updateModifierValue(unit_mods::ResistanceFrost, unit_mod_type::BaseValue, item.getEntry().frostres(), apply);
+				updateModifierValue(unit_mods::ResistanceFrost, unit_mod_type::TotalValue, item.getEntry().frostres(), apply);
 				shouldUpdateResi[3] = true;
 			}
 			if (item.getEntry().shadowres() != 0)
 			{
-				updateModifierValue(unit_mods::ResistanceShadow, unit_mod_type::BaseValue, item.getEntry().shadowres(), apply);
+				updateModifierValue(unit_mods::ResistanceShadow, unit_mod_type::TotalValue, item.getEntry().shadowres(), apply);
 				shouldUpdateResi[4] = true;
 			}
 			if (item.getEntry().arcaneres() != 0)
 			{
-				updateModifierValue(unit_mods::ResistanceArcane, unit_mod_type::BaseValue, item.getEntry().arcaneres(), apply);
+				updateModifierValue(unit_mods::ResistanceArcane, unit_mod_type::TotalValue, item.getEntry().arcaneres(), apply);
 				shouldUpdateResi[5] = true;
 			}
 

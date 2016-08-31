@@ -180,6 +180,8 @@ namespace wowpp
 		void handleTrackResources(bool apply);
 		/// 56
 		void handleTransform(bool apply);
+		/// 65
+		void handleModCastingSpeed(bool apply);
 		/// 69
 		void handleSchoolAbsorb(bool apply);
 		/// 72
@@ -226,6 +228,8 @@ namespace wowpp
 		void handleModTotalStatPercentage(bool apply);
 		/// 138
 		void handleModHaste(bool apply);
+		/// 140
+		void handleModRangedHaste(bool apply);
 		/// 142
 		void handleModBaseResistancePct(bool apply);
 		/// 143

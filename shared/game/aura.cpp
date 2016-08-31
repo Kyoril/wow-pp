@@ -241,8 +241,14 @@ namespace wowpp
 		case aura::ModTotalStatPercentage:
 			handleModTotalStatPercentage(apply);
 			break;
+		case aura::ModCastingSpeed:
+			handleModCastingSpeed(apply);
+			break;
 		case aura::ModHaste:
 			handleModHaste(apply);
+			break;
+		case aura::ModRangedHaste:
+			handleModRangedHaste(apply);
 			break;
 		case aura::ModTargetResistance:
 			handleModTargetResistance(apply);
@@ -670,7 +676,7 @@ namespace wowpp
 		{
 			if (m_effect.miscvaluea() & Int32(1 << i))
 			{
-				m_target.updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), unit_mod_type::TotalValue, m_basePoints, apply);
+				m_target.updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), unit_mod_type::BaseValue, m_basePoints, apply);
 			}
 		}
 	}
@@ -1038,6 +1044,14 @@ namespace wowpp
 		}
 	}
 
+	void Aura::handleModCastingSpeed(bool apply)
+	{
+		float castSpeed = m_target.getFloatValue(unit_fields::ModCastSpeed);
+		float amount = apply ? (100.0f - m_basePoints) / 100.0f : 100.0f / (100.0f - m_basePoints);
+
+		m_target.setFloatValue(unit_fields::ModCastSpeed, castSpeed * amount);
+	}
+
 	void Aura::handleModHealingPct(bool apply)
 	{
 		//TODO
@@ -1118,13 +1132,23 @@ namespace wowpp
 	{
 		UInt32 baseAttackTime = m_target.getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::BaseAttack);
 		UInt32 offHandAttackTime = m_target.getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack);
-		float amount = (apply ? (100.0f - m_basePoints) / 100.0f : 100.0f / (100.0f - m_basePoints));
+		float amount = apply ? (100.0f - m_basePoints) / 100.0f : 100.0f / (100.0f - m_basePoints);
 
 		m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::BaseAttack, baseAttackTime * amount);
 		m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack, offHandAttackTime * amount);
 
 		m_target.getAttackSpeedPctModifier(game::weapon_attack::BaseAttack) *= amount;
 		m_target.getAttackSpeedPctModifier(game::weapon_attack::OffhandAttack) *= amount;
+	}
+
+	void Aura::handleModRangedHaste(bool apply)
+	{
+		UInt32 rangedAttackTime = m_target.getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::RangedAttack);
+		float amount = apply ? (100.0f - m_basePoints) / 100.0f : 100.0f / (100.0f - m_basePoints);
+
+		m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::RangedAttack, rangedAttackTime * amount);
+
+		m_target.getAttackSpeedPctModifier(game::weapon_attack::RangedAttack) *= amount;
 	}
 
 	void Aura::handleModBaseResistancePct(bool apply)
@@ -1308,6 +1332,9 @@ namespace wowpp
 			// Blessed Recovery
 			if (m_spell.baseid() == 27811)
 			{
+				targetMap.m_targetMap = game::spell_cast_target_flags::Self;
+				targetMap.m_unitTarget = m_caster->getGuid();
+
 				basePoints[0] = amount * m_effect.basepoints() / 100 / 3;
 			}
 		}

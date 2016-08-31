@@ -106,6 +106,11 @@ namespace wowpp
 		auto &executer = m_cast.getExecuter();
 		auto *worldInstance = executer.getWorldInstance();
 
+		if (!m_itemGuid)
+		{
+			m_castTime *= executer.getFloatValue(unit_fields::ModCastSpeed);
+		}
+
 		auto const casterId = executer.getGuid();
 
 		if (worldInstance && !(m_spell.attributes(0) & game::spell_attributes::Passive) && !m_isProc)
@@ -119,7 +124,7 @@ namespace wowpp
 			              std::cref(m_spell),						// Spell cref
 			              std::cref(m_target),					// Target map cref
 			              game::spell_cast_flags::Unknown1,		// Cast flags
-			              static_cast<Int32>(castTime),			// Cast time in ms
+			              static_cast<Int32>(m_castTime),			// Cast time in ms
 			              0)										// Cast count (unknown)
 			);
 		}
@@ -879,7 +884,35 @@ namespace wowpp
 
 		GameUnit &caster = m_cast.getExecuter();
 
-		if (m_spell.family() == game::spell_family::Warrior)
+		if (m_spell.family() == game::spell_family::Generic)
+		{
+			if (m_spell.id() == 20554 ||
+				m_spell.id() == 26296 ||
+				m_spell.id() == 26297)
+			{
+				UInt32 health = caster.getUInt32Value(unit_fields::Health);
+				UInt32 maxHealth = caster.getUInt32Value(unit_fields::MaxHealth);
+				UInt32 healthPct = static_cast<UInt32>(static_cast<float>(health / maxHealth) * 100);
+
+				Int32 meleeMod = 10;
+				if (healthPct <= 40)
+				{
+					meleeMod = 30;
+				}
+				else if (healthPct < 100 && healthPct > 40)
+				{
+					meleeMod = 10 + (100 - healthPct) / 3;
+				}
+
+				game::SpellPointsArray basePoints = { meleeMod, 5 - meleeMod, 5 };
+				SpellTargetMap targetMap;
+				targetMap.m_targetMap = game::spell_cast_target_flags::Self;
+				targetMap.m_unitTarget = caster.getGuid();
+
+				caster.castSpell(targetMap, 26635, std::move(basePoints), 0, true);
+			}
+		}
+		else if (m_spell.family() == game::spell_family::Warrior)
 		{
 			if (m_spell.familyflags() & 0x20000000)		// Execute
 			{
@@ -1710,14 +1743,14 @@ namespace wowpp
 		// Calculate the damage done
 		const float basePointsPerLevel = effect.pointsperlevel();
 		const float randomPointsPerLevel = effect.diceperlevel();
-		const Int32 basePoints = (m_basePoints.empty() ? effect.basepoints() : m_basePoints[effect.index()]) + level * basePointsPerLevel;
+		const Int32 basePoints = (m_basePoints[effect.index()] == 0 ? effect.basepoints() : m_basePoints[effect.index()]) + level * basePointsPerLevel;
 		const Int32 randomPoints = effect.diesides() + level * randomPointsPerLevel;
 		const Int32 comboDamage = effect.pointspercombopoint() * comboPoints;
 
 		std::uniform_int_distribution<int> distribution(effect.basedice(), randomPoints);
 		const Int32 randomValue = (effect.basedice() >= randomPoints ? effect.basedice() : distribution(randomGenerator));
 
-		Int32 outBasePoints = basePoints + randomValue + comboDamage;
+		Int32 outBasePoints = m_basePoints[effect.index()] == 0 ? basePoints + randomValue + comboDamage : basePoints;
 		if (m_cast.getExecuter().isGameCharacter())
 		{
 			switch (effect.index())
