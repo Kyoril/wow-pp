@@ -894,17 +894,17 @@ namespace wowpp
 				UInt32 maxHealth = caster.getUInt32Value(unit_fields::MaxHealth);
 				UInt32 healthPct = static_cast<UInt32>(static_cast<float>(health / maxHealth) * 100);
 
-				Int32 meleeMod = 10;
+				Int32 speedMod = 10;
 				if (healthPct <= 40)
 				{
-					meleeMod = 30;
+					speedMod = 30;
 				}
 				else if (healthPct < 100 && healthPct > 40)
 				{
-					meleeMod = 10 + (100 - healthPct) / 3;
+					speedMod = 10 + (100 - healthPct) / 3;
 				}
 
-				game::SpellPointsArray basePoints = { meleeMod, 5 - meleeMod, 5 };
+				game::SpellPointsArray basePoints = { speedMod, speedMod, speedMod };
 				SpellTargetMap targetMap;
 				targetMap.m_targetMap = game::spell_cast_target_flags::Self;
 				targetMap.m_unitTarget = caster.getGuid();
