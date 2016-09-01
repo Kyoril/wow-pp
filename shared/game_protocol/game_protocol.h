@@ -719,6 +719,7 @@ namespace wowpp
 				UpdateComboPoints			= 0x39D,
 				SetExtraAuraInfo			= 0x3A4,
 				SetExtraAuraInfoNeedUpdate	= 0x3A5,
+				ClearExtraAuraInfo			= 0x3A6,
 				RaidReadyCheckConfirm		= 0x3AE,
 				RaidReadyCheckFinished		= 0x3C5,
 				FeatureSystemStatus			= 0x3C8,
@@ -1834,6 +1835,12 @@ namespace wowpp
 			    UInt32 spellId,
 			    UInt32 maxDurationMS,
 			    UInt32 durationMS
+			);
+
+			void clearExtraAuraInfo(
+				game::OutgoingPacket &out_packet,
+				UInt64 casterGuid,
+				UInt32 spellId
 			);
 
 			void logXPGain(

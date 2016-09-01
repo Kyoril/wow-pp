@@ -870,9 +870,9 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::CastFailed);
 				out_packet
-				        << io::write<NetUInt32>(spell.id())
-				        << io::write<NetUInt8>(result)
-				        << io::write<NetUInt8>(castCount);
+						<< io::write<NetUInt32>(spell.id())
+						<< io::write<NetUInt8>(result)
+						<< io::write<NetUInt8>(castCount);
 				switch (result)
 				{
 					case game::spell_cast_result::FailedPreventedByMechanic:
@@ -958,9 +958,10 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::SpellFailure);
 				out_packet
-						<< io::write<NetUInt64>(casterGUID)
-				        << io::write<NetUInt32>(spellId)
-				        << io::write<NetUInt8>(result);
+						<< io::write_packed_guid(casterGUID)
+						<< io::write<NetUInt32>(spellId)
+						<< io::write<NetUInt8>(result);
+					
 				out_packet.finish();
 			}
 
@@ -968,8 +969,8 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::SpellFailedOther);
 				out_packet
-						<< io::write_packed_guid(casterGUID)
-				        << io::write<NetUInt32>(spellId);
+					<< io::write_packed_guid(casterGUID)
+					<< io::write<NetUInt32>(spellId);
 				out_packet.finish();
 			}
 
@@ -1390,6 +1391,15 @@ namespace wowpp
 				    << io::write<NetUInt32>(spellId)
 				    << io::write<NetUInt32>(maxDurationMS)
 				    << io::write<NetUInt32>(durationMS);
+				out_packet.finish();
+			}
+
+			void clearExtraAuraInfo(game::OutgoingPacket & out_packet, UInt64 casterGuid, UInt32 spellId)
+			{
+				out_packet.start(game::server_packet::ClearExtraAuraInfo);
+				out_packet
+					<< io::write_packed_guid(casterGuid)
+					<< io::write<NetUInt32>(spellId);
 				out_packet.finish();
 			}
 

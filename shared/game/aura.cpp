@@ -1928,8 +1928,8 @@ namespace wowpp
 					reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(spell_mod_op::Threat, m_spell.id(), threat);
 				}
 
-				UInt32 procAttacker = game::spell_proc_flags::TakenPeriodic;
-				UInt32 procVictim = game::spell_proc_flags::DonePeriodic;
+				UInt32 procAttacker = game::spell_proc_flags::DonePeriodic;
+				UInt32 procVictim = game::spell_proc_flags::TakenPeriodic;
 
 				if (damage)
 				{
@@ -2136,6 +2136,11 @@ namespace wowpp
 					if (!target)
 						return;
 
+					if (procSpell && m_spell.id() == procSpell->id()) 
+					{
+						return;
+					}
+
 					if (!(procFlag & game::spell_proc_flags::TakenDamage &&
 						procEx & (game::spell_proc_flags_ex::NormalHit | game::spell_proc_flags_ex::CriticalHit)))
 					{
@@ -2285,17 +2290,17 @@ namespace wowpp
 
 		if (m_spell.attributes(5) & game::spell_attributes_ex_e::SingleTargetSpell)
 		{
-			std::unordered_map<UInt32, GameUnit *> & trackedAuras = m_caster->getTrackedAuras();
+			std::unordered_map<UInt32, GameUnit *> &trackedAuras = m_caster->getTrackedAuras();
 
-			if (trackedAuras.find(m_spell.baseid()) != trackedAuras.end())
+			if (trackedAuras.find(m_spell.mechanic()) != trackedAuras.end())
 			{
-				if (trackedAuras[m_spell.baseid()] != &m_target)
+				if (trackedAuras[m_spell.mechanic()] != &m_target)
 				{
-					trackedAuras[m_spell.baseid()]->getAuras().removeAllAurasDueToSpell(m_spell.id());
+					trackedAuras[m_spell.mechanic()]->getAuras().removeAllAurasDueToMechanic(m_spell.mechanic());
 				}
 			}
 
-			trackedAuras[m_spell.baseid()] = &m_target;
+			trackedAuras[m_spell.mechanic()] = &m_target;
 		}
 
 		// Apply modifiers now
@@ -2342,7 +2347,7 @@ namespace wowpp
 
 		if (m_spell.attributes(5) & game::spell_attributes_ex_e::SingleTargetSpell)
 		{
-			m_caster->getTrackedAuras().erase(m_spell.baseid());
+			m_caster->getTrackedAuras().erase(m_spell.mechanic());
 		}
 	}
 

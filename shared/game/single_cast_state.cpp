@@ -397,7 +397,7 @@ namespace wowpp
 			                     std::bind(game::server_write::spellFailure, std::placeholders::_1,
 			                               executer.getGuid(),
 			                               m_spell.id(),
-			                               game::spell_cast_result::FailedBadTargets));
+										   game::spell_cast_result::FailedBadTargets));
 
 			sendPacketFromCaster(executer,
 			                     std::bind(game::server_write::spellFailedOther, std::placeholders::_1,

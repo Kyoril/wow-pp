@@ -1040,6 +1040,11 @@ namespace wowpp
 					sender.sendProxyPacket(
 						std::bind(game::server_write::castFailed, std::placeholders::_1, result, *spell, castCount));
 				}
+				else
+				{
+					sender.sendProxyPacket(
+						std::bind(game::server_write::clearExtraAuraInfo, std::placeholders::_1, sender.getCharacterGuid(), spell->id()));
+				}
 			});
 	}
 
