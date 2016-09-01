@@ -235,7 +235,7 @@ namespace wowpp
 				m_damaged = m_cast.getExecuter().takenDamage.connect([this](GameUnit *attacker, UInt32 damage) {
 					if (m_countdown.running)
 					{
-						if (m_spell.interruptflags() & game::spell_interrupt_flags::PushBack &&
+						if (m_spell.channelinterruptflags() & game::spell_channel_interrupt_flags::Delay &&
 							m_delayCounter < 2 &&
 							m_cast.getExecuter().isGameCharacter())	// Pushback only works on characters
 						{
