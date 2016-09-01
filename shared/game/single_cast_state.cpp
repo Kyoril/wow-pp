@@ -232,6 +232,45 @@ namespace wowpp
 			{
 				m_castEnd = getCurrentTime() + m_spell.duration();
 				m_countdown.setEnd(m_castEnd);
+				m_damaged = m_cast.getExecuter().takenDamage.connect([this](GameUnit *attacker, UInt32 damage) {
+					if (m_countdown.running)
+					{
+						if (m_spell.interruptflags() & game::spell_interrupt_flags::PushBack &&
+							m_delayCounter < 2 &&
+							m_cast.getExecuter().isGameCharacter())	// Pushback only works on characters
+						{
+							Int32 resistChance = 100;
+
+							// GameCharacter type already checked above, as the pushback mechanic should only work on
+							// player characters and not on creatures.
+							reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
+								spell_mod_op::PreventSpellDelay, m_spell.id(), resistChance);
+							resistChance += m_cast.getExecuter().getAuras().getTotalBasePoints(game::aura_type::ResistPushback) - 100;
+							if (resistChance >= 100)
+								return;
+
+							std::uniform_int_distribution<Int32> resistRoll(0, 99);
+							if (resistChance > resistRoll(randomGenerator))
+							{
+								return;
+							}
+
+							m_castEnd -= 500;
+							m_countdown.setEnd(m_castEnd);
+
+							// Notify about spell delay
+							sendPacketFromCaster(m_cast.getExecuter(),
+								std::bind(game::server_write::channelUpdate, std::placeholders::_1,
+									m_cast.getExecuter().getGuid(),
+									m_castEnd - getCurrentTime()));
+							m_delayCounter++;
+						}
+						if (m_spell.interruptflags() & game::spell_interrupt_flags::Damage)
+						{
+							stopCast(game::spell_interrupt_flags::Damage);
+						}
+					}
+				});
 
 				//m_damaged = m_cast.getExecuter().takenDamage.connect([this](GameUnit *attacker, UInt32 damage) { });
 
