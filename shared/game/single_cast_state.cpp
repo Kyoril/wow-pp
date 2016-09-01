@@ -2112,6 +2112,23 @@ namespace wowpp
 					{
 						totalPoints = calculateEffectBasePoints(effect);
 					}
+
+					if (effect.aura() == game::aura_type::PeriodicDamage &&
+						m_spell.attributes(4) & game::spell_attributes_ex_d::StackDotModifier)
+					{
+						targetUnit->getAuras().forEachAuraOfType(game::aura_type::PeriodicDamage, [&totalPoints, this](Aura &aura) -> bool
+						{
+							if (aura.getSpell().id() == m_spell.id())
+							{
+								Int32 remainingTicks = aura.getMaxTickCount() - aura.getTickCount();
+								Int32 remainingDamage = aura.getBasePoints() * remainingTicks;
+
+								totalPoints += remainingDamage / aura.getMaxTickCount();
+							}
+
+							return true;
+						});
+					}
 				}
 			}
 

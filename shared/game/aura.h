@@ -121,6 +121,14 @@ namespace wowpp
 		bool isStealthAura() const;
 
 		void update();
+
+		UInt32 getTickCount() {
+			return m_tickCount;
+		}
+
+		UInt32 getMaxTickCount() {
+			return m_duration > 0 && m_effect.amplitude() > 0 ? m_duration / m_effect.amplitude() : 0;
+		}
 	protected:
 
 		/// Updates the counter display (stack) of this aura.
