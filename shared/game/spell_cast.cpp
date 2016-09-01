@@ -235,7 +235,8 @@ namespace wowpp
 		{
 			if (m_executer.getMovementInfo().moveFlags)
 			{
-				if (spell.interruptflags() & game::spell_interrupt_flags::Movement)
+				if (spell.interruptflags() & game::spell_interrupt_flags::Movement &&
+					castTime)
 				{
 					return std::make_pair(game::spell_cast_result::FailedMoving, nullptr);
 				}
