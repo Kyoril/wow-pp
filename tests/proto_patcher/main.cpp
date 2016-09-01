@@ -625,7 +625,7 @@ namespace wowpp
 						// Blazing Speed (fire talent)
 					case 31641:
 					case 31642:
-						it->mutable_effects(0)->set_triggerspell(28682);
+						it->mutable_effects(0)->set_triggerspell(31643);
 						break;
 
 						////////////////////////////// Warlock ///////////////////////////////////
