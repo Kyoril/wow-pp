@@ -1216,7 +1216,7 @@ namespace wowpp
 		target.m_targetMap = game::spell_cast_target_flags::Unit;
 		target.m_unitTarget = victim->getGuid();
 
-		game::SpellPointsArray basePoints;
+		game::SpellPointsArray basePoints{};
 
 		if (m_spell.family() == game::spell_family::Mage)
 		{
@@ -1325,7 +1325,7 @@ namespace wowpp
 		targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
 		targetMap.m_unitTarget = target->getGuid();
 
-		game::SpellPointsArray basePoints;
+		game::SpellPointsArray basePoints{};
 
 		if (m_spell.family() == game::spell_family::Priest)
 		{

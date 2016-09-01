@@ -891,9 +891,9 @@ namespace wowpp
 				m_spell.id() == 26296 ||
 				m_spell.id() == 26297)
 			{
-				UInt32 health = caster.getUInt32Value(unit_fields::Health);
-				UInt32 maxHealth = caster.getUInt32Value(unit_fields::MaxHealth);
-				UInt32 healthPct = static_cast<UInt32>(static_cast<float>(health / maxHealth) * 100);
+				float health = static_cast<float>(caster.getUInt32Value(unit_fields::Health));
+				float maxHealth = static_cast<float>(caster.getUInt32Value(unit_fields::MaxHealth));
+				UInt32 healthPct = static_cast<UInt32>(health / maxHealth * 100);
 
 				Int32 speedMod = 10;
 				if (healthPct <= 40)
@@ -905,13 +905,14 @@ namespace wowpp
 					speedMod = 10 + (100 - healthPct) / 3;
 				}
 
-				game::SpellPointsArray basePoints = { speedMod, speedMod, speedMod };
+				game::SpellPointsArray basePoints;
+				basePoints.fill(speedMod);
 				SpellTargetMap targetMap;
 				targetMap.m_targetMap = game::spell_cast_target_flags::Self;
 				targetMap.m_unitTarget = caster.getGuid();
 
 				caster.addFlag(unit_fields::AuraState, game::aura_state::Berserking);
-				caster.castSpell(targetMap, 26635, std::move(basePoints), 0, true);
+				caster.castSpell(std::move(targetMap), 26635, std::move(basePoints), 0, true);
 			}
 		}
 		else if (m_spell.family() == game::spell_family::Warrior)
