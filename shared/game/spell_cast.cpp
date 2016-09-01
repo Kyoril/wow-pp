@@ -202,6 +202,7 @@ namespace wowpp
 				else if (maxrange > 0.0f && distance > maxrange + combatReach)
 				{
 					return std::make_pair(game::spell_cast_result::FailedOutOfRange, nullptr);
+					finishChanneling(true);
 				}
 			}
 		}

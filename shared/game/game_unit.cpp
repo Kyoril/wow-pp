@@ -1170,6 +1170,24 @@ namespace wowpp
 			return true;
 		});
 
+		getAuras().forEachAuraOfType(game::aura_type::ModDamagePercentTaken, [&damage, schoolMask, tickCount](Aura &aura) -> bool {
+			if (aura.getEffect().miscvaluea() & schoolMask)
+			{
+				Int32 bonus = aura.getBasePoints();
+				if (tickCount > 1)
+				{
+					bonus /= static_cast<Int32>(tickCount);
+				}
+
+				if (bonus != 0)
+				{
+					damage = UInt32(damage * (float(100.0f + bonus) / 100.0f));
+				}
+			}
+
+			return true;
+		});
+
 		getAuras().forEachAuraOfType(game::aura_type::ModMeleeDamageTakenPct, [&damage, schoolMask, tickCount](Aura &aura) -> bool {
 			if (aura.getEffect().miscvaluea() & schoolMask)
 			{
