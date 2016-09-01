@@ -622,6 +622,11 @@ namespace wowpp
 					case 11129:
 						it->mutable_effects(0)->set_triggerspell(28682);
 						break;
+						// Blazing Speed (fire talent)
+					case 31641:
+					case 31642:
+						it->mutable_effects(0)->set_triggerspell(28682);
+						break;
 
 						////////////////////////////// Warlock ///////////////////////////////////
 
@@ -753,6 +758,24 @@ namespace wowpp
 			}
 		}
 
+		return true;
+	}
+
+	static bool checkSpellAttributes(proto::Project &project)
+	{
+		auto *spellEntries = project.spells.getTemplates().mutable_entry();
+		if (spellEntries)
+		{
+			auto it = spellEntries->begin();
+			while (it != spellEntries->end())
+			{
+				if (it->attributes(5) & game::spell_attributes_ex_e::Unknown_17)
+				{
+					DLOG("id is " << it->id());
+				}
+				it++;
+			}
+		}
 		return true;
 	}
 
@@ -2099,6 +2122,13 @@ int main(int argc, char* argv[])
 		WLOG("Could not import item sockets");
 		return 1;
 	}
+
+	if (!checkSpellAttributes(protoProject))
+	{
+		WLOG("Could not check spell attributes");
+		return 1;
+	}
+
 #endif
 	// Save project
 	if (!protoProject.save(configuration.dataPath))
