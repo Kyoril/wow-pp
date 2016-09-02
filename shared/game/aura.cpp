@@ -940,7 +940,7 @@ namespace wowpp
 		switch (form)
 		{
 		case game::shapeshift_form::Cat:
-			spellId1 = 3025;
+			spell1 = 3025;
 			break;
 		case game::shapeshift_form::Tree:
 			spell1 = 5420;
@@ -967,7 +967,7 @@ namespace wowpp
 			spell1 = 7381;
 			break;
 		case game::shapeshift_form::Moonkin:
-			spellId1 = 24905;
+			spell1 = 24905;
 			break;
 		}
 
