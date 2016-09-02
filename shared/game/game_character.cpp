@@ -1894,17 +1894,14 @@ namespace wowpp
 				switch (getByteValue(unit_fields::Bytes2, 3))
 				{
 				case game::shapeshift_form::Cat:
-					atkPower = getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue) + getUInt32Value(unit_fields::Stat0) * 2.0f + getUInt32Value(unit_fields::Stat1) - 20.0f;
-					setModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue, 0);
+					atkPower = getUInt32Value(unit_fields::Stat0) * 2.0f + getUInt32Value(unit_fields::Stat1) - 20.0f;
 					break;
 				case game::shapeshift_form::Bear:
 				case game::shapeshift_form::DireBear:
-					atkPower = getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue) + getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
-					setModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue, 0);
+					atkPower = getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
 					break;
 				case game::shapeshift_form::Moonkin:
-					atkPower = getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue) + getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
-					setModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue, 0);
+					atkPower = getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
 					break;
 				default:
 					atkPower = getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
