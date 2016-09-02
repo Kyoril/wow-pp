@@ -968,11 +968,11 @@ namespace wowpp
 		{
 			if (m_spell.id() == 5229)		// Enrage
 			{
-				if (caster.getByteValue(unit_fields::Bytes2, 3) == 5)
+				if (caster.getByteValue(unit_fields::Bytes2, 3) == game::shapeshift_form::Bear)
 				{
 					m_basePoints[1] = -27;
 				}
-				else if (caster.getByteValue(unit_fields::Bytes2, 3) == 8)
+				else if (caster.getByteValue(unit_fields::Bytes2, 3) == game::shapeshift_form::DireBear)
 				{
 					m_basePoints[1] = -16;
 				}

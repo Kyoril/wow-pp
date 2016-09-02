@@ -773,74 +773,74 @@ namespace wowpp
 			UInt32 powerType = m_target.getByteValue(unit_fields::Bytes0, 3);
 			switch (form)
 			{
-			case 1:			// Cat
+			case game::shapeshift_form::Cat:
 				{
 					modelId = (isAlliance ? 892 : 8571);
 					powerType = game::power_type::Energy;
 					break;
 				}
-			case 2:			// Tree
+			case game::shapeshift_form::Tree:
 				{
 					modelId = 864;
 					break;
 				}
-			case 3:			// Travel
+			case game::shapeshift_form::Travel:
 				{
 					modelId = 632;
 					break;
 				}
-			case 4:			// Aqua
+			case game::shapeshift_form::Aqua:
 				{
 					modelId = 2428;
 					break;
 				}
-			case 5:			// Bear
-			case 8:
+			case game::shapeshift_form::Bear:
+			case game::shapeshift_form::DireBear:
 				{
 					modelId = (isAlliance ? 2281 : 2289);
 					powerType = game::power_type::Rage;
 					break;
 				}
-			case 7:			// Ghoul
+			case game::shapeshift_form::Ghoul:
 				{
 					if (isAlliance) {
 						modelId = 10045;
 					}
 					break;
 				}
-			case 14:		// Creature Bear
+			case game::shapeshift_form::CreatureBear:
 				{
 					modelId = 902;
 					break;
 				}
-			case 16:		// Ghost wolf
+			case game::shapeshift_form::GhostWolf:
 				{
 					modelId = 4613;
 					break;
 				}
-			case 17:		// Battle stance
-			case 18:		// Defensive stance
-			case 19:		// Berserker stance
+			case game::shapeshift_form::BattleStance:
+			case game::shapeshift_form::DefensiveStance:
+			case game::shapeshift_form::BerserkerStance:
 				{
 					powerType = game::power_type::Rage;
 					break;
 				}
-			case 27:		// Epic flight form
+			case game::shapeshift_form::FlightEpic:
 				{
 					modelId = (isAlliance ? 21243 : 21244);
 					break;
 				}
-			case 29:		// Flight form
+			case game::shapeshift_form::Flight:
 				{
 					modelId = (isAlliance ? 20857 : 20872);
 					break;
 				}
-			case 30:		// Rogue stealth
+			case game::shapeshift_form::Stealth:
 				{
 					powerType = game::power_type::Energy;
 					break;
 				}
-			case 31:		// Moonkin
+			case game::shapeshift_form::Moonkin:
 				{
 					modelId = (isAlliance ? 15374 : 15375);
 					break;
@@ -867,9 +867,9 @@ namespace wowpp
 			switch (form)
 			{
 			// Druid: Furor
-			case 1:			// Cat
-			case 5:			// Bear
-			case 8:
+			case game::shapeshift_form::Cat:
+			case game::shapeshift_form::Bear:
+			case game::shapeshift_form::DireBear:
 				{
 					UInt32 ProcChance = 0;
 					m_target.getAuras().forEachAuraOfType(game::aura_type::Dummy, [&ProcChance](Aura &aura) -> bool
@@ -913,9 +913,9 @@ namespace wowpp
 				}
 				break;
 			// TODO: Warrior
-			case 17:		// Battle stance
-			case 18:		// Defensive stance
-			case 19:		// Berserker stance
+			case game::shapeshift_form::BattleStance:
+			case game::shapeshift_form::DefensiveStance:
+			case game::shapeshift_form::BerserkerStance:
 				m_target.setUInt32Value(unit_fields::Power2, 0);
 				break;
 			}
@@ -939,25 +939,28 @@ namespace wowpp
 		UInt32 spell1 = 0, spell2 = 0;
 		switch (form)
 		{
-		case 2:
+		case game::shapeshift_form::Tree:
 			spell1 = 5420;
 			spell2 = 34123;
 			break;
-		case 5:
+		case game::shapeshift_form::Travel:
+			spell1 = 5419;
+			break;
+		case game::shapeshift_form::Bear:
 			spell1 = 1178;
 			spell2 = 21178;
 			break;
-		case 8:
+		case game::shapeshift_form::DireBear:
 			spell1 = 9635;
 			spell2 = 21178;
 			break;
-		case 17:		// Battle stance
+		case game::shapeshift_form::BattleStance:
 			spell1 = 21156;
 			break;
-		case 18:		// Defensive stance
+		case game::shapeshift_form::DefensiveStance:
 			spell1 = 7376;
 			break;
-		case 19:		// Berserker stance
+		case game::shapeshift_form::BerserkerStance:
 			spell1 = 7381;
 			break;
 		}
