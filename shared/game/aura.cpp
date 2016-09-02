@@ -939,6 +939,9 @@ namespace wowpp
 		UInt32 spell1 = 0, spell2 = 0;
 		switch (form)
 		{
+		case game::shapeshift_form::Cat:
+			spellId1 = 3025;
+			break;
 		case game::shapeshift_form::Tree:
 			spell1 = 5420;
 			spell2 = 34123;
@@ -962,6 +965,9 @@ namespace wowpp
 			break;
 		case game::shapeshift_form::BerserkerStance:
 			spell1 = 7381;
+			break;
+		case game::shapeshift_form::Moonkin:
+			spellId1 = 24905;
 			break;
 		}
 

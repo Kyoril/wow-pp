@@ -1893,15 +1893,15 @@ namespace wowpp
 			case game::char_class::Druid:
 				switch (getByteValue(unit_fields::Bytes2, 3))
 				{
-				case 1:		// Cat
-					atkPower = level * 2.0f + getUInt32Value(unit_fields::Stat0) * 2.0f + getUInt32Value(unit_fields::Stat1) - 20.0f;
+				case game::shapeshift_form::Cat:
+					atkPower = getUInt32Value(unit_fields::Stat0) * 2.0f + getUInt32Value(unit_fields::Stat1) - 20.0f;
 					break;
-				case 5:
-				case 8:
-					atkPower = level * 3.0f + getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
+				case game::shapeshift_form::Bear:
+				case game::shapeshift_form::DireBear:
+					atkPower = getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
 					break;
-				case 31:
-					atkPower = level * 1.5f + getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
+				case game::shapeshift_form::Moonkin:
+					atkPower = getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
 					break;
 				default:
 					atkPower = getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
@@ -1968,9 +1968,9 @@ namespace wowpp
 			// TODO: Check druid form etc.
 
 			UInt8 form = getByteValue(unit_fields::Bytes2, 3);
-			if (form == 1 || form == 5 || form == 8)
+			if (form == game::shapeshift_form::Cat || form == game::shapeshift_form::Bear || form == game::shapeshift_form::DireBear)
 			{
-				attackTime = (form == 1 ? 1000 : 2500);
+				attackTime = (form == game::shapeshift_form::Cat ? 1000 : 2500);
 			}
 			else
 			{
@@ -1998,9 +1998,9 @@ namespace wowpp
 
 			switch (form)
 			{
-				case 1:
-				case 5:
-				case 8:
+				case game::shapeshift_form::Cat:
+				case game::shapeshift_form::Bear:
+				case game::shapeshift_form::DireBear:
 					minDamage = (level > 60 ? 60 : level) * 0.85f * att_speed;
 					maxDamage = (level > 60 ? 60 : level) * 1.25f * att_speed;
 					break;
