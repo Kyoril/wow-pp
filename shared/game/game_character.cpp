@@ -1858,8 +1858,8 @@ namespace wowpp
 		const float totalPct = getModifierValue(unit_mods::Armor, unit_mod_type::TotalPct);
 
 		// Add armor from agility
-		baseArmor += getUInt32Value(unit_fields::Stat1) * 2;
 		float value = ((baseArmor * basePct) + totalArmor) * totalPct;
+		value += getUInt32Value(unit_fields::Stat1) * 2;
 
 		setUInt32Value(unit_fields::Resistances, value);
 		setUInt32Value(unit_fields::ResistancesBuffModsPositive, totalArmor);
