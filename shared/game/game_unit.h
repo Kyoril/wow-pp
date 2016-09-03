@@ -250,8 +250,12 @@ namespace wowpp
 			DamageOffHand			= 21,
 			/// Ranged weapon damage modifier.
 			DamageRanged			= 22,
+			/// Main hand weapon attack speed modifier.
+			AttackSpeed				= 23,
+			/// Ranged weapon attack speed modifier.
+			AttackSpeedRanged		= 24,
 
-			End						= 23,
+			End						= 25,
 
 			/// Start of stat value modifiers. Used for iteration.
 			StatStart				= StatStrength,
@@ -716,6 +720,8 @@ namespace wowpp
 		virtual void updateStats(UInt8 stat);
 		/// 
 		virtual void updateResistance(UInt8 resistance);
+		///
+		virtual void updateAttackSpeed();
 
 		virtual void applyDamageDoneBonus(UInt32 schoolMask, UInt32 tickCount, UInt32 &damage);
 
@@ -757,11 +763,6 @@ namespace wowpp
 		/// @param enable Whether flight mode will be enabled.
 		void setFlightMode(bool enable);
 
-		///
-		float &getAttackSpeedPctModifier(UInt8 attackType) {
-			return m_attackSpeedPctModifier[attackType];
-		}
-		
 		///
 		void procEvent(GameUnit *target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount, UInt8 attackType, const proto::SpellEntry *procSpell, bool canRemove);
 		///
@@ -866,7 +867,6 @@ namespace wowpp
 		UnitStandState m_standState;
 		std::vector<std::shared_ptr<WorldObject>> m_worldObjects;
 		math::Vector3 m_confusedLoc;
-		std::array<float, 3> m_attackSpeedPctModifier;
 		TrackAuraTargetsMap m_trackAuraTargets;
 		std::map<UInt64, std::shared_ptr<DynObject>> m_dynamicObjects;
 	};

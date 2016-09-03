@@ -1963,16 +1963,11 @@ namespace wowpp
 		{
 			float minDamage = 1.0f;
 			float maxDamage = 2.0f;
-			UInt32 attackTime = 2000;
 
 			// TODO: Check druid form etc.
 
 			UInt8 form = getByteValue(unit_fields::Bytes2, 3);
-			if (form == game::shapeshift_form::Cat || form == game::shapeshift_form::Bear || form == game::shapeshift_form::DireBear)
-			{
-				attackTime = (form == game::shapeshift_form::Cat ? 1000 : 2500);
-			}
-			else
+			if (!(form == game::shapeshift_form::Cat || form == game::shapeshift_form::Bear || form == game::shapeshift_form::DireBear))
 			{
 				// Check if we are wearing a weapon in our main hand
 				auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
@@ -1986,14 +1981,10 @@ namespace wowpp
 					if (entry.damage(0).maxdmg() != 0.0f) {
 						maxDamage = entry.damage(0).maxdmg();
 					}
-					if (entry.delay() != 0) {
-						attackTime = entry.delay();
-					}
 				}
 			}
 
-			attackTime *= getAttackSpeedPctModifier(game::weapon_attack::BaseAttack);
-			const float att_speed = attackTime / 1000.0f;
+			const float att_speed = getUInt32Value(unit_fields::BaseAttackTime) / 1000.0f;
 			const float base_value = (getUInt32Value(unit_fields::AttackPower) + getUInt32Value(unit_fields::AttackPowerMods)) / 14.0f * att_speed;
 
 			switch (form)
@@ -2010,14 +2001,12 @@ namespace wowpp
 
 			setFloatValue(unit_fields::MinDamage, base_value + minDamage);
 			setFloatValue(unit_fields::MaxDamage, base_value + maxDamage);
-			setUInt32Value(unit_fields::BaseAttackTime, attackTime);
 		}
 
 		// Offhand damage
 		{
 			float minDamage = 1.0f;
 			float maxDamage = 2.0f;
-			UInt32 attackTime = 2000;
 
 			// TODO: Check druid form etc.
 
@@ -2033,25 +2022,19 @@ namespace wowpp
 				if (entry.damage(0).maxdmg() != 0.0f) {
 					maxDamage = entry.damage(0).maxdmg();
 				}
-				if (entry.delay() != 0) {
-					attackTime = entry.delay();
-				}
 			}
 
-			attackTime *= getAttackSpeedPctModifier(game::weapon_attack::OffhandAttack);
-			const float att_speed = attackTime / 1000.0f;
+			const float att_speed = getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack) / 1000.0f;
 			const float base_value = (getUInt32Value(unit_fields::AttackPower) + getUInt32Value(unit_fields::AttackPowerMods)) / 14.0f * att_speed;
 
 			setFloatValue(unit_fields::MinOffHandDamage, base_value + minDamage);
 			setFloatValue(unit_fields::MaxOffHandDamage, base_value + maxDamage);
-			setUInt32Value(unit_fields::BaseAttackTime + 1, attackTime);
 		}
 		
 		// Ranged damage
 		{
 			float minDamage = 1.0f;
 			float maxDamage = 2.0f;
-			UInt32 attackTime = 2000;
 
 			// Check if we are wearing a weapon in the ranged slot
 			auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Ranged));
@@ -2065,16 +2048,90 @@ namespace wowpp
 				if (entry.damage(0).maxdmg() != 0.0f) {
 					maxDamage = entry.damage(0).maxdmg();
 				}
-				if (entry.delay() != 0) {
+			}
+
+			setFloatValue(unit_fields::MinRangedDamage, minDamage);
+			setFloatValue(unit_fields::MaxRangedDamage, maxDamage);
+		}
+
+		updateAttackSpeed();
+	}
+
+	void GameCharacter::updateAttackSpeed()
+	{
+		// Melee attack speed
+		{
+			UInt32 attackTime = 2000;
+
+			// TODO: Check druid form etc.
+
+			UInt8 form = getByteValue(unit_fields::Bytes2, 3);
+			if (form == game::shapeshift_form::Cat || form == game::shapeshift_form::Bear || form == game::shapeshift_form::DireBear)
+			{
+				attackTime = (form == game::shapeshift_form::Cat ? 1000 : 2500);
+			}
+			else
+			{
+				// Check if we are wearing a weapon in our main hand
+				auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
+				if (item)
+				{
+					// Get weapon attack speed values
+					const auto &entry = item->getEntry();
+					if (entry.delay() != 0) 
+					{
+						attackTime = entry.delay();
+					}
+				}
+			}
+
+			const float att_speed = attackTime * getModifierValue(unit_mods::AttackSpeed, unit_mod_type::BasePct);
+
+			setUInt32Value(unit_fields::BaseAttackTime, att_speed);
+		}
+
+		// Offhand attack speed
+		{
+			UInt32 attackTime = 2000;
+
+			// TODO: Check druid form etc.
+
+			// Check if we are wearing a weapon in our main hand
+			auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
+			if (item)
+			{
+				// Get weapon attack speed values
+				const auto &entry = item->getEntry();
+				if (entry.delay() != 0)
+				{
 					attackTime = entry.delay();
 				}
 			}
 
-			attackTime *= getAttackSpeedPctModifier(game::weapon_attack::RangedAttack);
+			const float att_speed = attackTime * getModifierValue(unit_mods::AttackSpeed, unit_mod_type::BasePct);
 
-			setFloatValue(unit_fields::MinRangedDamage, minDamage);
-			setFloatValue(unit_fields::MaxRangedDamage, maxDamage);
-			setUInt32Value(unit_fields::RangedAttackTime, attackTime);
+			setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack, att_speed);
+		}
+
+		// Ranged attack speed
+		{
+			UInt32 attackTime = 2000;
+
+			// Check if we are wearing a weapon in the ranged slot
+			auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Ranged));
+			if (item)
+			{
+				// Get weapon attack speed values
+				const auto &entry = item->getEntry();
+				if (entry.delay() != 0)
+				{
+					attackTime = entry.delay();
+				}
+			}
+
+			const float att_speed = attackTime * getModifierValue(unit_mods::AttackSpeedRanged, unit_mod_type::BasePct);
+
+			setUInt32Value(unit_fields::RangedAttackTime, att_speed);
 		}
 	}
 

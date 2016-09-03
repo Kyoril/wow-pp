@@ -676,7 +676,7 @@ namespace wowpp
 		{
 			if (m_effect.miscvaluea() & Int32(1 << i))
 			{
-				m_target.updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), unit_mod_type::BaseValue, m_basePoints, apply);
+				m_target.updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), isPassive() && !m_itemGuid ? unit_mod_type::BaseValue : unit_mod_type::TotalValue, m_basePoints, apply);
 			}
 		}
 	}
@@ -742,7 +742,7 @@ namespace wowpp
 		{
 			if (stat < 0 || stat == i)
 			{
-				m_target.updateModifierValue(GameUnit::getUnitModByStat(i), unit_mod_type::TotalValue, m_basePoints, apply);
+				m_target.updateModifierValue(GameUnit::getUnitModByStat(i), isPassive() && !m_itemGuid ? unit_mod_type::BaseValue : unit_mod_type::TotalValue, m_basePoints, apply);
 			}
 		}
 	}
@@ -1139,25 +1139,12 @@ namespace wowpp
 
 	void Aura::handleModHaste(bool apply)
 	{
-		UInt32 baseAttackTime = m_target.getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::BaseAttack);
-		UInt32 offHandAttackTime = m_target.getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack);
-		float amount = apply ? (100.0f - m_basePoints) / 100.0f : 100.0f / (100.0f - m_basePoints);
-
-		m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::BaseAttack, baseAttackTime * amount);
-		m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack, offHandAttackTime * amount);
-
-		m_target.getAttackSpeedPctModifier(game::weapon_attack::BaseAttack) *= amount;
-		m_target.getAttackSpeedPctModifier(game::weapon_attack::OffhandAttack) *= amount;
+		m_target.updateModifierValue(unit_mods::AttackSpeed, unit_mod_type::BasePct, -m_basePoints, apply);
 	}
 
 	void Aura::handleModRangedHaste(bool apply)
 	{
-		UInt32 rangedAttackTime = m_target.getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::RangedAttack);
-		float amount = apply ? (100.0f - m_basePoints) / 100.0f : 100.0f / (100.0f - m_basePoints);
-
-		m_target.setUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::RangedAttack, rangedAttackTime * amount);
-
-		m_target.getAttackSpeedPctModifier(game::weapon_attack::RangedAttack) *= amount;
+		m_target.updateModifierValue(unit_mods::AttackSpeedRanged, unit_mod_type::BasePct, m_basePoints, apply);
 	}
 
 	void Aura::handleModBaseResistancePct(bool apply)
@@ -1362,10 +1349,7 @@ namespace wowpp
 
 	void Aura::handleModAttackPower(bool apply)
 	{
-		if (m_spell.id() == 3025 ||
-			m_spell.id() == 1178 ||
-			m_spell.id() == 9635 ||
-			m_spell.id() == 24905)
+		if (isPassive() && !m_itemGuid)
 		{
 			m_target.setModifierValue(unit_mods::AttackPower, unit_mod_type::BaseValue, 0.0f);
 			m_target.updateModifierValue(unit_mods::AttackPower, unit_mod_type::BaseValue, m_basePoints, apply);
@@ -1383,7 +1367,7 @@ namespace wowpp
 		{
 			if (m_effect.miscvaluea() & Int32(1 << i))
 			{
-				m_target.updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), unit_mod_type::BasePct, m_basePoints, apply);
+				m_target.updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), unit_mod_type::TotalPct, m_basePoints, apply);
 			}
 		}
 	}

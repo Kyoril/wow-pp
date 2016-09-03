@@ -689,6 +689,8 @@ namespace wowpp
 		virtual void updateArmor() override;
 		/// @copydoc GameUnit::updateDamage
 		virtual void updateDamage() override;
+		/// @copydoc GameUnit::updateAttackSpeed
+		virtual void updateAttackSpeed() override;
 		/// @copydoc GameUnit::updateManaRegen
 		virtual void updateManaRegen() override;
 		/// @copydoc GameUnit::regenerateHealth

@@ -145,8 +145,6 @@ namespace wowpp
 		// Not in fight
 		removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 		addFlag(unit_fields::UnitFlags, game::unit_flags::PvP);
-
-		m_attackSpeedPctModifier.fill(1.0f);
 	}
 
 	void GameUnit::raceUpdated()
@@ -1105,6 +1103,11 @@ namespace wowpp
 		}
 	}
 
+	void GameUnit::updateAttackSpeed()
+	{
+		// Nothing to do here.
+	}
+
 	void GameUnit::applyDamageDoneBonus(UInt32 schoolMask, UInt32 tickCount, UInt32 & damage)
 	{
 		getAuras().forEachAuraOfType(game::aura_type::ModDamageDone, [&damage, schoolMask, tickCount](Aura &aura) -> bool {
@@ -1452,6 +1455,13 @@ namespace wowpp
 				break;
 			}
 
+		case unit_mods::AttackSpeed:
+		case unit_mods::AttackSpeedRanged:
+			{
+				updateAttackSpeed();
+				break;
+			}
+
 		default:
 			break;
 		}
@@ -1480,21 +1490,21 @@ namespace wowpp
 		// Update values which are related to the stat change
 		switch (stat)
 		{
-		case 0:
+		case unit_mods::StatStrength:
 			updateDamage();
 			break;
-		case 1:
+		case unit_mods::StatAgility:
 			updateArmor();
 			updateDamage();
 			break;
-		case 2:
+		case unit_mods::StatStamina:
 			updateMaxHealth();
 			break;
-		case 3:
+		case unit_mods::StatIntellect:
 			updateMaxPower(game::power_type::Mana);
 			updateManaRegen();
 			break;
-		case 4:
+		case unit_mods::StatSpirit:
 			updateManaRegen();
 			break;
 
@@ -2048,7 +2058,9 @@ namespace wowpp
 
 	UInt32 GameUnit::getAttackTime(UInt8 attackType)
 	{
-		return getUInt32Value(unit_fields::BaseAttackTime + attackType) / m_attackSpeedPctModifier[attackType];
+		const UnitMods modType = attackType == game::weapon_attack::RangedAttack ? unit_mods::AttackSpeedRanged : unit_mods::AttackSpeed;
+
+		return getUInt32Value(unit_fields::BaseAttackTime + attackType) / getModifierValue(modType, unit_mod_type::BasePct);
 	}
 
 	UInt32 GameUnit::getBonus(UInt8 school)

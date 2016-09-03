@@ -288,6 +288,15 @@ namespace wowpp
 		setFloatValue(unit_fields::MaxDamage, base_value + entry->maxmeleedmg());
 	}
 
+	void GameCreature::updateAttackSpeed()
+	{
+		const auto *entry = (m_entry ? m_entry : &m_originalEntry);
+		// TODO: offhand? ranged?
+
+		const float att_speed = entry->meleeattacktime() * getModifierValue(unit_mods::AttackSpeed, unit_mod_type::BasePct);
+		setUInt32Value(unit_fields::BaseAttackTime, att_speed);
+	}
+
 	void GameCreature::regenerateHealth()
 	{
 		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
