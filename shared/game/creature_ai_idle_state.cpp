@@ -83,7 +83,9 @@ namespace wowpp
 		}
 
 		// If the unit is passive, it should not attack by itself
-		if (!(controlled.getUInt32Value(unit_fields::UnitFlags) & game::unit_flags::Passive))
+		UInt32 unitFlags = controlled.getUInt32Value(unit_fields::UnitFlags);
+		if (!(unitFlags & game::unit_flags::Passive) &&
+			!(unitFlags & game::unit_flags::NotSelectable))	// Not sure about this one...
 		{
 			Circle circle(location.x, location.y, 40.0f);
 			m_aggroWatcher = worldInstance->getUnitFinder().watchUnits(circle);
