@@ -389,7 +389,7 @@ namespace wowpp
 						break;
 
 						//////////////////////////////////////////////////////////////////////////
-						/////////////////////// AURA TRIGGER SPELLS //////////////////////////////
+						/////////////////////////// SPELLS CHANGES ///////////////////////////////
 						//////////////////////////////////////////////////////////////////////////
 
 						////////////////////////////// Warrior ///////////////////////////////////
@@ -691,6 +691,13 @@ namespace wowpp
 					case 44835:	// druid pvp set bonus
 					case 32748:	// rogue pvp hand effect
 						it->mutable_effects(0)->set_triggerspell(32747);
+						break;
+						// Pounce
+					case 9005:
+					case 9823:
+					case 9827:
+					case 27006:
+						it->set_attributes(2, 0);
 						break;
 
 						////////////////////////////// Creature Spells ///////////////////////////
@@ -2068,13 +2075,14 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 
+
+#if 0
 	if (!addSpellLinks(protoProject))
 	{
 		ELOG("Failed to add spell links");
 		return 1;
 	}
 
-#if 0
 	if (!importSpellFocus(protoProject, connection))
 	{
 		ELOG("Failed to load spell focus object");
@@ -2122,14 +2130,13 @@ int main(int argc, char* argv[])
 		WLOG("Could not import item sockets");
 		return 1;
 	}
-
+#endif
 	if (!checkSpellAttributes(protoProject))
 	{
 		WLOG("Could not check spell attributes");
 		return 1;
 	}
 
-#endif
 	// Save project
 	if (!protoProject.save(configuration.dataPath))
 	{
