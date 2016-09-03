@@ -353,7 +353,7 @@ namespace wowpp
 			}
 		}
 
-		cost = Int32(cost * (float(m_executer.getFloatValue(unit_fields::PowerCostMultiplier + school) + 100) / 100.0f));
+		cost = Int32(cost * (1.0f + m_executer.getFloatValue(unit_fields::PowerCostMultiplier + school)));
 
 		if (m_executer.isGameCharacter())
 		{

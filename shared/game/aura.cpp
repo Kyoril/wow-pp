@@ -1463,11 +1463,14 @@ namespace wowpp
 
 	void Aura::handleModPowerCostSchoolPct(bool apply)
 	{
-		float amount = m_basePoints / 100.0f;
+		const float amount = m_basePoints / 100.0f;
 		for (UInt8 i = 0; i < 7; ++i)
 		{
 			if (m_effect.miscvaluea() & (1 << i)) {
-				m_target.setFloatValue(unit_fields::PowerCostMultiplier + i, amount);
+				float value = m_target.getFloatValue(unit_fields::PowerCostMultiplier + i);
+				value += (apply ? amount : -amount);
+
+				m_target.setFloatValue(unit_fields::PowerCostMultiplier + i, value);
 			}
 		}
 	}
