@@ -1144,7 +1144,7 @@ namespace wowpp
 
 	void Aura::handleModRangedHaste(bool apply)
 	{
-		m_target.updateModifierValue(unit_mods::AttackSpeedRanged, unit_mod_type::BasePct, m_basePoints, apply);
+		m_target.updateModifierValue(unit_mods::AttackSpeedRanged, unit_mod_type::BasePct, -m_basePoints, apply);
 	}
 
 	void Aura::handleModBaseResistancePct(bool apply)
