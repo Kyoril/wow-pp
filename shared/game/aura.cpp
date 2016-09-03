@@ -1362,7 +1362,18 @@ namespace wowpp
 
 	void Aura::handleModAttackPower(bool apply)
 	{
-		m_target.updateModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue, m_basePoints, apply);
+		if (m_spell.id() == 3025 ||
+			m_spell.id() == 1178 ||
+			m_spell.id() == 9635 ||
+			m_spell.id() == 24905)
+		{
+			m_target.setModifierValue(unit_mods::AttackPower, unit_mod_type::BaseValue, 0.0f);
+			m_target.updateModifierValue(unit_mods::AttackPower, unit_mod_type::BaseValue, m_basePoints, apply);
+		}
+		else
+		{
+			m_target.updateModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue, m_basePoints, apply);
+		}
 	}
 
 	void Aura::handleModResistancePct(bool apply)
