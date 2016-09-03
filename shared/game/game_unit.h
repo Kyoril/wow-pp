@@ -776,6 +776,8 @@ namespace wowpp
 		///
 		void finishChanneling(bool cancel);
 
+		bool isAttackable() const;
+
 	public:
 
 		/// 
