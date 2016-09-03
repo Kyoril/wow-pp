@@ -329,6 +329,27 @@ namespace wowpp
 		m_spellCast->finishChanneling(cancel);
 	}
 
+	bool GameUnit::isAttackable() const
+	{
+		const UInt32 flags = getUInt32Value(unit_fields::UnitFlags);
+
+		// Not attackable at all
+		if (flags & game::unit_flags::NotAttackable)
+			return false;
+
+		// Not sure about this one
+		if (flags & game::unit_flags::NotSelectable)
+			return false;
+
+		// Only attackable when in combat
+		if (flags & game::unit_flags::OOCNotAttackable)
+		{
+			return isInCombat();
+		}
+
+		return true;
+	}
+
 	void GameUnit::levelChanged(const proto::LevelEntry &levelInfo)
 	{
 		// Get race and class

@@ -485,6 +485,11 @@ namespace wowpp
 						const auto &faction = attacker.getFactionTemplate();
 						if (!unit.isFriendlyTo(faction) && unit.isAlive() && unit.isInLineOfSight(location))
 						{
+							if (!unit.isAttackable())
+							{
+								return true;
+							}
+
 							targets.push_back(&unit);
 							if (maxtargets > 0 &&
 								targets.size() >= maxtargets)
@@ -561,6 +566,11 @@ namespace wowpp
 						const auto &faction = attacker.getFactionTemplate();
 						if (!unit.isFriendlyTo(faction) && unit.isAlive() && attacker.isInLineOfSight(unit))
 						{
+							if (!unit.isAttackable())
+							{
+								return true;
+							}
+
 							targets.push_back(&unit);
 							if (maxtargets > 0 &&
 								targets.size() >= maxtargets)
@@ -593,6 +603,11 @@ namespace wowpp
 						const auto &faction = attacker.getFactionTemplate();
 						if (!unit.isFriendlyTo(faction) && unit.isAlive() && attacker.isInLineOfSight(unit.getLocation()))
 						{
+							if (!unit.isAttackable())
+							{
+								return true;
+							}
+
 							targets.push_back(&unit);
 							if (maxtargets > 0 &&
 								targets.size() >= maxtargets)
