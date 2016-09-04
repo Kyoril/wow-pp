@@ -77,6 +77,54 @@ std::map<UInt32, LinearSet<UInt32>> tilesByMap;
 // Helper functions
 namespace
 {
+	// Class taken from tripleslash @: https://gist.github.com/tripleslash/d85416827bb05c88873f3d926d796221
+	class MeshSettings
+	{
+	public:
+		static constexpr int ChunksPerTile = 4;
+		static constexpr int TileVoxelSize = 450;
+
+		static constexpr float CellHeight = 0.5f;
+		static constexpr float WalkableHeight = 1.6f;           // agent height in world units (yards)
+		static constexpr float WalkableRadius = 0.3f;           // narrowest allowable hallway in world units (yards)
+		static constexpr float WalkableSlope = 50.f;            // maximum walkable slope, in degrees
+		static constexpr float WalkableClimb = 1.f;             // maximum 'step' height for which slope is ignored (yards)
+		static constexpr float DetailSampleDistance = 3.f;      // heightfield detail mesh sample distance (yards)
+		static constexpr float DetailSampleMaxError = 0.75f;    // maximum distance detail mesh surface should deviate from heightfield (yards)
+
+																// NOTE: If Recast warns "Walk towards polygon center failed to reach center", try lowering this value
+		static constexpr float MaxSimplificationError = 0.5f;
+
+		static constexpr int MinRegionSize = 1600;
+		static constexpr int MergeRegionSize = 400;
+		static constexpr int VerticesPerPolygon = 6;
+
+		// Nothing below here should ever have to change
+
+		static constexpr int Adts = 64;
+		static constexpr int ChunksPerAdt = 16;
+		static constexpr int TilesPerADT = ChunksPerAdt / ChunksPerTile;
+		static constexpr int TileCount = Adts * TilesPerADT;
+		static constexpr int ChunkCount = Adts * ChunksPerAdt;
+
+		static constexpr float AdtSize = 533.f + (1.f / 3.f);
+		static constexpr float AdtChunkSize = AdtSize / ChunksPerAdt;
+
+		static constexpr float TileSize = AdtChunkSize * ChunksPerTile;
+		static constexpr float CellSize = TileSize / TileVoxelSize;
+		static constexpr int VoxelWalkableRadius = static_cast<int>(WalkableRadius / CellSize);
+		static constexpr int VoxelWalkableHeight = static_cast<int>(WalkableHeight / CellHeight);
+		static constexpr int VoxelWalkableClimb = static_cast<int>(WalkableClimb / CellHeight);
+
+		static_assert(WalkableRadius > CellSize, "CellSize must be able to approximate walkable radius");
+		static_assert(WalkableHeight > CellSize, "CellSize must be able to approximate walkable height");
+		static_assert(ChunksPerAdt % ChunksPerTile == 0, "Chunks per tile must divide chunks per ADT (16)");
+		static_assert(VoxelWalkableRadius > 0, "VoxelWalkableRadius must be a positive integer");
+		static_assert(VoxelWalkableHeight > 0, "VoxelWalkableHeight must be a positive integer");
+		static_assert(VoxelWalkableClimb >= 0, "VoxelWalkableClimb must be non-negative integer");
+		static_assert(CellSize > 0.f, "CellSize must be positive");
+	};
+
 	/// This is the length of an edge of a map file in ingame units where one unit 
 	/// represents one meter.
 	const float GridSize = 533.3333f;
@@ -465,6 +513,8 @@ namespace
 
 		return true;
 	}
+
+	// Code taken from tripleslash
 	static void selectivelyEnforceWalkableClimb(rcCompactHeightfield &chf, int walkableClimb)
 	{
 		for (int y = 0; y < chf.height; ++y)
@@ -649,6 +699,9 @@ namespace
 		std::memset(&config, 0, sizeof(rcConfig));
 		rcVcopy(config.bmin, bmin);
 		rcVcopy(config.bmax, bmax);
+		
+#if 0
+		// OLD CODE!
 		config.maxVertsPerPoly = DT_VERTS_PER_POLYGON;
 		config.cs = BaseUnitDim;
 		config.ch = BaseUnitDim;
@@ -665,6 +718,39 @@ namespace
 		config.detailSampleDist = config.cs * 64;
 		config.detailSampleMaxError = config.ch * 2;
 		rcCalcGridSize(config.bmin, config.bmax, config.cs, &config.width, &config.height);
+#else
+		// Code taken from tripleslash https://gist.github.com/tripleslash/1c860a9de260c1b4b9a987906da4453a#file-mapbuilder-cpp-L564-L575
+		config.cs = MeshSettings::CellSize;
+		config.ch = MeshSettings::CellHeight;
+		config.walkableSlopeAngle = MeshSettings::WalkableSlope;
+		config.walkableClimb = MeshSettings::VoxelWalkableClimb;
+		config.walkableHeight = MeshSettings::VoxelWalkableHeight;
+		config.walkableRadius = MeshSettings::VoxelWalkableRadius;
+		config.maxEdgeLen = config.walkableRadius * 4;
+		config.maxSimplificationError = MeshSettings::MaxSimplificationError;
+		config.minRegionArea = MeshSettings::MinRegionSize;
+		config.mergeRegionArea = MeshSettings::MergeRegionSize;
+		config.maxVertsPerPoly = MeshSettings::VerticesPerPolygon;
+		config.tileSize = MeshSettings::TileVoxelSize;
+		config.borderSize = config.walkableRadius + 3;
+		config.width = config.tileSize + config.borderSize * 2;
+		config.height = config.tileSize + config.borderSize * 2;
+		config.detailSampleDist = MeshSettings::DetailSampleDistance;
+		config.detailSampleMaxError = MeshSettings::DetailSampleMaxError;
+
+		config.bmin[0] = (tileX * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
+		//config.bmin[1] = minZ;
+		config.bmin[2] = (tileY * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
+
+		config.bmax[0] = ((tileX + 1) * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
+		//config.bmax[1] = maxZ;
+		config.bmax[2] = ((tileY + 1) * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
+
+		config.bmin[0] -= config.borderSize * config.cs;
+		config.bmin[2] -= config.borderSize * config.cs;
+		config.bmax[0] += config.borderSize * config.cs;
+		config.bmax[2] += config.borderSize * config.cs;
+#endif
 
 		// Initialize per tile config.
 		rcConfig tileCfg;
@@ -714,7 +800,21 @@ namespace
 				delete[] triFlags;
 
 				rcFilterLowHangingWalkableObstacles(&context, config.walkableClimb, *tile.solid);
+
+				// Save flags
+				std::vector<rcSpan *> adtSpans;
+				adtSpans.reserve(tile.solid->width*tile.solid->height);
+				for (int i = 0; i < tile.solid->width * tile.solid->height; ++i)
+					for (rcSpan *s = tile.solid->spans[i]; s; s = s->next)
+						if (!!(s->area & NAV_TERRAIN))
+							adtSpans.push_back(s);
+
 				rcFilterLedgeSpans(&context, tileCfg.walkableHeight, tileCfg.walkableClimb, *tile.solid);
+
+				// Restore flags
+				for (auto s : adtSpans)
+					s->area |= NAV_TERRAIN;
+
 				rcFilterWalkableLowHeightSpans(&context, tileCfg.walkableHeight, *tile.solid);
 
 				// compact heightfield spans
@@ -725,14 +825,14 @@ namespace
 					continue;
 				}
 
-				selectivelyEnforceWalkableClimb(*tile.chf, 4 /*config.walkableClimb*/);
+				selectivelyEnforceWalkableClimb(*tile.chf, config.walkableClimb);
 
 				// build polymesh intermediates
-				if (!rcErodeWalkableArea(&context, config.walkableRadius, *tile.chf))
+				/*if (!rcErodeWalkableArea(&context, config.walkableRadius, *tile.chf))
 				{
 					ELOG("Failed eroding area!");
 					continue;
-				}
+				}*/
 				if (!rcBuildDistanceField(&context, *tile.chf))
 				{
 					ELOG("Failed building distance field!");
@@ -920,7 +1020,7 @@ namespace
 			const float* orig = iv.polyMesh->bmin;
 			int nIndex = 0;
 			
-#if 0
+#if 1
 			if (iv.polyMesh->npolys > 0)
 			{
 				std::ostringstream strm;
@@ -959,7 +1059,7 @@ namespace
 		}
 		while (0);
 
-#if 0
+#if 1
 		// restore padding so that the debug visualization is correct
 		for (int i = 0; i < iv.polyMesh->nverts; ++i)
 		{
@@ -988,16 +1088,23 @@ namespace
 		const UInt32 cellX = tileIndex / 64;
 		const UInt32 cellY = tileIndex % 64;
 
-#if 0
-		if (mapId == 1)
+#if 1
+		switch (mapId)
 		{
-			if (cellY != 31 || cellX != 19)
-				return false;
-		}
-		else if (mapId == 0)
-		{
-			if (cellY != 36 || cellX != 26)
-				return false;
+			case 0:
+				if (cellY != 36 || cellX != 26)
+					return false;
+				break;
+			case 1:
+				if (cellY != 31 || cellX != 19)
+					return false;
+				break;
+			case 489:
+				if (cellY != 29 || cellX != 29)
+					return false;
+				break;
+			default:
+				break;
 		}
 #endif
 
@@ -1214,8 +1321,8 @@ namespace
 			return false;
 		}
 
-#if 0
-		if (mapId != 1)
+#if 1
+		if (mapId != 489)
 		{
 			return true;
 		}
