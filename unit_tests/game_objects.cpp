@@ -33,7 +33,8 @@ namespace wowpp
 		GameObject object(project);
 		object.initialize();
 
-		object.setInt32Value(object_fields::Entry, -25);
-		BOOST_CHECK(object.getInt32Value(object_fields::Entry) == -25);
+		object.setInt32Value(object_fields::Entry, -1);
+		BOOST_CHECK(object.getInt32Value(object_fields::Entry) == -1);
+		BOOST_CHECK(object.getUInt32Value(object_fields::Entry) == 0xFFFFFFFF);
 	}
 }
