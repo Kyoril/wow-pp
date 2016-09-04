@@ -443,23 +443,9 @@ namespace wowpp
 
 	void Aura::handlePeriodicDamage(bool apply)
 	{
-		if (!apply) {
-			return;
-		}
-
-		// Toggle periodic flag
-		m_isPeriodic = true;
-
-		// First tick at apply
-		if (m_spell.attributes(5) & 0x00000200)
+		if (apply)
 		{
-			// First tick
-			onTick();
-		}
-		else
-		{
-			// Start timer
-			startPeriodicTimer();
+			handlePeriodicBase();
 		}
 	}
 
@@ -484,23 +470,9 @@ namespace wowpp
 
 	void Aura::handlePeriodicHeal(bool apply)
 	{
-		if (!apply) {
-			return;
-		}
-
-		// Toggle periodic flag
-		m_isPeriodic = true;
-
-		// First tick at apply
-		if (m_spell.attributes(5) & 0x00000200)
+		if (apply)
 		{
-			// First tick
-			onTick();
-		}
-		else
-		{
-			// Start timer
-			startPeriodicTimer();
+			handlePeriodicBase();
 		}
 	}
 
@@ -627,45 +599,17 @@ namespace wowpp
 
 	void Aura::handleObsModHealth(bool apply)
 	{
-		if (!apply) {
-			return;
-		}
-
-		// Toggle periodic flag
-		m_isPeriodic = true;
-
-		// First tick at apply
-		if (m_spell.attributes(5) & 0x00000200)
+		if (apply)
 		{
-			// First tick
-			onTick();
-		}
-		else
-		{
-			// Start timer
-			startPeriodicTimer();
+			handlePeriodicBase();
 		}
 	}
 
 	void Aura::handleObsModMana(bool apply)
 	{
-		if (!apply) {
-			return;
-		}
-
-		// Toggle periodic flag
-		m_isPeriodic = true;
-
-		// First tick at apply
-		if (m_spell.attributes(5) & 0x00000200)
+		if (apply)
 		{
-			// First tick
-			onTick();
-		}
-		else
-		{
-			// Start timer
-			startPeriodicTimer();
+			handlePeriodicBase();
 		}
 	}
 
@@ -683,43 +627,17 @@ namespace wowpp
 
 	void Aura::handlePeriodicTriggerSpell(bool apply)
 	{
-		if (!apply) {
-			return;
-		}
-
-		m_isPeriodic = true;
-
-		// First tick at apply
-		if (m_spell.attributes(5) & 0x00000200)
+		if (apply)
 		{
-			// First tick
-			onTick();
-		}
-		else
-		{
-			// Start timer
-			startPeriodicTimer();
+			handlePeriodicBase();
 		}
 	}
 
 	void Aura::handlePeriodicEnergize(bool apply)
 	{
-		if (!apply) {
-			return;
-		}
-
-		m_isPeriodic = true;
-
-		// First tick at apply
-		if (m_spell.attributes(5) & 0x00000200)
+		if (apply)
 		{
-			// First tick
-			onTick();
-		}
-		else
-		{
-			// Start timer
-			startPeriodicTimer();
+			handlePeriodicBase();
 		}
 	}
 
@@ -2555,5 +2473,22 @@ namespace wowpp
 		}
 
 		return true;
+	}
+	void wowpp::Aura::handlePeriodicBase()
+	{
+		// Toggle periodic flag
+		m_isPeriodic = true;
+
+		// First tick at apply
+		if (m_spell.attributes(5) & game::spell_attributes_ex_e::StartPeriodicAtApply)
+		{
+			// First tick
+			onTick();
+		}
+		else
+		{
+			// Start timer
+			startPeriodicTimer();
+		}
 	}
 }

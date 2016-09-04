@@ -274,7 +274,8 @@ namespace wowpp
 		void setRemoved(GameUnit *remover);
 		/// 
 		bool checkProc(bool active, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell, UInt8 attackType, bool isVictim);
-
+		/// Starts periodic ticks.
+		void handlePeriodicBase();
 
 	private:
 
