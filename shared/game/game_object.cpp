@@ -69,6 +69,13 @@ namespace wowpp
 		return *((reinterpret_cast<const UInt16 *>(&m_values[index])) + offset);
 	}
 
+	Int16 GameObject::getInt16Value(UInt16 index, UInt8 offset) const
+	{
+		assert(offset < 2);
+		assert(index < m_values.size());
+		return *((reinterpret_cast<const Int16 *>(&m_values[index])) + offset);
+	}
+
 	wowpp::Int32 GameObject::getInt32Value(UInt16 index) const
 	{
 		assert(index < m_values.size());
@@ -119,6 +126,26 @@ namespace wowpp
 		assert(offset < 2);
 
 		if (UInt16(m_values[index] >> (offset * 16)) != value)
+		{
+			m_values[index] &= ~UInt32(UInt32(0xFFFF) << (offset * 16));
+			m_values[index] |= UInt32(UInt32(value) << (offset * 16));
+
+			UInt16 bitIndex = index >> 3;
+
+			// Mark bit as changed
+			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
+			changed |= 1 << (index & 0x7);
+
+			markForUpdate();
+		}
+	}
+
+	void GameObject::setInt16Value(UInt16 index, UInt8 offset, Int16 value)
+	{
+		assert(index < m_values.size());
+		assert(offset < 2);
+
+		if (Int16(m_values[index] >> (offset * 16)) != value)
 		{
 			m_values[index] &= ~UInt32(UInt32(0xFFFF) << (offset * 16));
 			m_values[index] |= UInt32(UInt32(value) << (offset * 16));

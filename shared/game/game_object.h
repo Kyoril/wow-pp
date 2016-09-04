@@ -271,6 +271,10 @@ namespace wowpp
 		/// @param index The searched field index.
 		/// @param offset The byte offset, ranging from 0-1 (1 field = 32 bits)
 		UInt16 getUInt16Value(UInt16 index, UInt8 offset) const;
+		/// Gets given unsigned 16 bit value from the field list.
+		/// @param index The searched field index.
+		/// @param offset The byte offset, ranging from 0-1 (1 field = 32 bits)
+		Int16 getInt16Value(UInt16 index, UInt8 offset) const;
 		/// Gets given signed 32 bit value from the field list.
 		/// @param index The searched field index.
 		Int32 getInt32Value(UInt16 index) const;
@@ -293,6 +297,11 @@ namespace wowpp
 		/// @param offset The byte offset, ranging from 0-1 (1 field = 32 bits)
 		/// @param value The new value to set.
 		void setUInt16Value(UInt16 index, UInt8 offset, UInt16 value);
+		/// Sets an signed 16 bit value in the field list.
+		/// @param index The field index to update.
+		/// @param offset The byte offset, ranging from 0-1 (1 field = 32 bits)
+		/// @param value The new value to set.
+		void setInt16Value(UInt16 index, UInt8 offset, Int16 value);
 		/// Sets an unsigned 32 bit value in the field list.
 		/// @param index The field index to update.
 		/// @param value The new value to set.
