@@ -960,7 +960,7 @@ namespace wowpp
 			{
 				// Rage has already been reduced by executing this spell, though the remaining value is the rest
 				caster.castSpell(
-					m_target, 20647, { static_cast<Int32>(m_basePoints[0] + caster.getUInt32Value(unit_fields::Power2) * effect.dmgmultiplier()), 0, 0 });
+					m_target, 20647, { static_cast<Int32>(calculateEffectBasePoints(effect) + caster.getUInt32Value(unit_fields::Power2) * effect.dmgmultiplier()), 0, 0 });
 				caster.setUInt32Value(unit_fields::Power2, 0);
 			}
 		}
