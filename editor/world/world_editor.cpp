@@ -318,7 +318,7 @@ namespace wowpp
 			float convertedY = (constants::MapWidth * 32.0f) + camPos.y;
 
 			paging::PagePosition pos(63 - static_cast<size_t>(convertedX / constants::MapWidth), 63 - static_cast<size_t>(convertedY / constants::MapWidth));
-
+			
 			m_memoryPointOfView->updateCenter(pos);
 			m_visibleSection->updateCenter(pos);
 
@@ -379,7 +379,7 @@ namespace wowpp
 					add.added.page = &m_pages[pos];
 					add.added.position = pos;
 					m_worldRenderer->handleEvent(terrain::editing::TerrainChangeEvent(add));
-
+					
 					std::unique_ptr<Map> mapInst(new Map(
 						m_map, m_app.getConfiguration().dataPath));
 					auto *tile = mapInst->getTile(TileIndex2D(pos[0], pos[1]));
