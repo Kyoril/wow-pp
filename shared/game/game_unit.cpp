@@ -1089,7 +1089,8 @@ namespace wowpp
 		}
 
 		setUInt32Value(unit_fields::Resistances, baseArmor);
-		setUInt32Value(unit_fields::ResistancesBuffModsPositive, totalArmor);
+		setUInt32Value(unit_fields::ResistancesBuffModsPositive, totalArmor > 0 ? UInt32(totalArmor) : 0);
+		setUInt32Value(unit_fields::ResistancesBuffModsNegative, totalArmor < 0 ? UInt32(totalArmor) : 0);
 	}
 
 	void GameUnit::updateDamage()
@@ -1116,7 +1117,8 @@ namespace wowpp
 			float value = ((baseVal * basePct) + totalVal) * totalPct;
 
 			setUInt32Value(unit_fields::Resistances + resistance, UInt32(value));
-			setUInt32Value(unit_fields::ResistancesBuffModsPositive + resistance, UInt32(totalVal));
+			setUInt32Value(unit_fields::ResistancesBuffModsPositive + resistance, totalVal > 0 ? UInt32(totalVal) : 0);
+			setUInt32Value(unit_fields::ResistancesBuffModsNegative + resistance, totalVal < 0 ? UInt32(totalVal) : 0);
 		}
 		else
 		{
@@ -1533,7 +1535,8 @@ namespace wowpp
 
 		float value = ((baseVal * basePct) + totalVal) * totalPct;
 		setInt32Value(unit_fields::Stat0 + stat, Int32(value));
-		setInt32Value(unit_fields::PosStat0 + stat, Int32(totalVal));
+		setInt32Value(unit_fields::PosStat0 + stat, totalVal > 0 ? Int32(totalVal) : 0);
+		setInt32Value(unit_fields::NegStat0 + stat, totalVal < 0 ? Int32(totalVal) : 0);
 
 		// Update values which are related to the stat change
 		switch (stat)

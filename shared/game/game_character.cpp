@@ -108,7 +108,8 @@ namespace wowpp
 		setFloatValue(unit_fields::MaxRangedDamage, 0.0f);
 
 		setInt32Value(unit_fields::AttackPower, 0);
-		setInt32Value(unit_fields::AttackPowerMods, 0);
+		setUInt16Value(unit_fields::AttackPowerMods, 0, 0);
+		setUInt16Value(unit_fields::AttackPowerMods, 1, 0);
 		setFloatValue(unit_fields::AttackPowerMultiplier, 0.0f);
 		setInt32Value(unit_fields::RangedAttackPower, 0);
 		setInt32Value(unit_fields::RangedAttackPowerMods, 0);
@@ -1863,7 +1864,8 @@ namespace wowpp
 		value *= totalPct;
 
 		setUInt32Value(unit_fields::Resistances, value);
-		setUInt32Value(unit_fields::ResistancesBuffModsPositive, totalArmor);
+		setUInt32Value(unit_fields::ResistancesBuffModsPositive, totalArmor > 0 ? UInt32(totalArmor) : 0);
+		setUInt32Value(unit_fields::ResistancesBuffModsNegative, totalArmor < 0 ? UInt32(totalArmor) : 0);
 	}
 
 	void GameCharacter::updateDamage()
@@ -1921,11 +1923,12 @@ namespace wowpp
 			}
 
 			setModifierValue(unit_mods::AttackPower, unit_mod_type::BaseValue, atkPower);
-			float base_attPower = atkPower * getModifierValue(unit_mods::AttackPower, unit_mod_type::BasePct);
-			float attPowerMod = getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue);
-			float attPowerMultiplier = getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalPct) - 1.0f;	// In display, 0.0 = 100% (unmodified)
+			const float base_attPower = atkPower * getModifierValue(unit_mods::AttackPower, unit_mod_type::BasePct);
+			const float attPowerMod = getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue);
+			const float attPowerMultiplier = getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalPct) - 1.0f;	// In display, 0.0 = 100% (unmodified)
 			setInt32Value(unit_fields::AttackPower, UInt32(base_attPower));
-			setInt32Value(unit_fields::AttackPowerMods, UInt32(attPowerMod));
+			setUInt16Value(unit_fields::AttackPowerMods, 0, attPowerMod > 0 ? UInt16(attPowerMod) : 0);
+			setUInt16Value(unit_fields::AttackPowerMods, 1, attPowerMod < 0 ? UInt16(attPowerMod) : 0);
 			setFloatValue(unit_fields::AttackPowerMultiplier, attPowerMultiplier);
 		}
 
@@ -1956,7 +1959,8 @@ namespace wowpp
 			float attPowerMod = getModifierValue(unit_mods::AttackPowerRanged, unit_mod_type::TotalValue);
 			float attPowerMultiplier = getModifierValue(unit_mods::AttackPowerRanged, unit_mod_type::TotalPct) - 1.0f;
 			setInt32Value(unit_fields::RangedAttackPower, UInt32(base_attPower));
-			setInt32Value(unit_fields::RangedAttackPowerMods, UInt32(attPowerMod));
+			setUInt16Value(unit_fields::RangedAttackPowerMods, 0, attPowerMod > 0 ? UInt16(attPowerMod) : 0);
+			setUInt16Value(unit_fields::RangedAttackPowerMods, 1, attPowerMod < 0 ? UInt16(attPowerMod) : 0);
 			setFloatValue(unit_fields::RangedAttackPowerMultiplier, attPowerMultiplier);
 		}
 
@@ -1986,7 +1990,8 @@ namespace wowpp
 			}
 
 			const float att_speed = getUInt32Value(unit_fields::BaseAttackTime) / 1000.0f;
-			const float base_value = (getUInt32Value(unit_fields::AttackPower) + getUInt32Value(unit_fields::AttackPowerMods)) / 14.0f * att_speed;
+			const Int32 att_power = getInt32Value(unit_fields::AttackPower) + getUInt16Value(unit_fields::AttackPowerMods, 0) + getInt16Value(unit_fields::AttackPowerMods, 1);
+			const float base_value = (att_power > 0 ? att_power : 0) / 14.0f * att_speed;
 
 			switch (form)
 			{
@@ -2026,7 +2031,8 @@ namespace wowpp
 			}
 
 			const float att_speed = getUInt32Value(unit_fields::BaseAttackTime + game::weapon_attack::OffhandAttack) / 1000.0f;
-			const float base_value = (getUInt32Value(unit_fields::AttackPower) + getUInt32Value(unit_fields::AttackPowerMods)) / 14.0f * att_speed;
+			const Int32 att_power = getInt32Value(unit_fields::AttackPower) + getUInt16Value(unit_fields::AttackPowerMods, 0) + getInt16Value(unit_fields::AttackPowerMods, 1);
+			const float base_value = (att_power > 0 ? att_power : 0) / 14.0f * att_speed;
 
 			setFloatValue(unit_fields::MinOffHandDamage, base_value + minDamage);
 			setFloatValue(unit_fields::MaxOffHandDamage, base_value + maxDamage);

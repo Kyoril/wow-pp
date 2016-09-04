@@ -36,5 +36,8 @@ namespace wowpp
 		object.setInt32Value(object_fields::Entry, -1);
 		BOOST_CHECK(object.getInt32Value(object_fields::Entry) == -1);
 		BOOST_CHECK(object.getUInt32Value(object_fields::Entry) == 0xFFFFFFFF);
+
+		object.setUInt16Value(object_fields::Entry, 1, -1);
+		BOOST_CHECK(object.getInt16Value(object_fields::Entry, 1) == -1);
 	}
 }
