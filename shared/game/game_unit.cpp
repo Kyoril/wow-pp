@@ -1140,13 +1140,16 @@ namespace wowpp
 					bonus /= static_cast<Int32>(tickCount);
 				}
 
-				if (bonus < 0 && -bonus >= damage)
+				if (bonus < 0)
 				{
+					if (UInt32(::abs(bonus)) > damage)
+					{
+						damage = 0;
+						return true;
+					}
 				}
-				else
-				{
-					damage += bonus;
-				}
+
+				damage += bonus;
 			}
 
 			return true;
@@ -1182,13 +1185,16 @@ namespace wowpp
 					bonus /= static_cast<Int32>(tickCount);
 				}
 
-				if (bonus < 0 && -bonus >= damage)
+				if (bonus < 0)
 				{
+					if (UInt32(::abs(bonus)) > damage)
+					{
+						damage = 0;
+						return true;
+					}
 				}
-				else
-				{
-					damage += bonus;
-				}
+
+				damage += bonus;
 			}
 
 			return true;
@@ -1239,12 +1245,19 @@ namespace wowpp
 			bonus /= static_cast<Int32>(tickCount);
 		}
 
-		if (bonus < 0 && -bonus >= healing)
+		for (;;)
 		{
-		}
-		else
-		{
+			if (bonus < 0)
+			{
+				if (UInt32(::abs(bonus)) > healing)
+				{
+					healing = 0;
+					break;
+				}
+			}
+
 			healing += bonus;
+			break;
 		}
 
 		getAuras().forEachAuraOfType(game::aura_type::ModHealingPct, [&healing, tickCount](Aura &aura) -> bool {
@@ -1270,12 +1283,19 @@ namespace wowpp
 			bonus /= static_cast<Int32>(tickCount);
 		}
 
-		if (bonus < 0 && -bonus >= healing)
+		for (;;)
 		{
-		}
-		else
-		{
+			if (bonus < 0)
+			{
+				if (UInt32(::abs(bonus)) > healing)
+				{
+					healing = 0;
+					break;
+				}
+			}
+
 			healing += bonus;
+			break;
 		}
 
 		getAuras().forEachAuraOfType(game::aura_type::ModHealingDonePct, [&healing, tickCount](Aura &aura) -> bool {
@@ -1304,12 +1324,19 @@ namespace wowpp
 		// Adjust bonus based on spell level / player level
 		bonus = Int32(float(bonus) * float(spellLevel + 6) / float(playerLevel));
 
-		if (bonus < 0 && -bonus >= healing)
+		for (;;)
 		{
-		}
-		else
-		{
+			if (bonus < 0)
+			{
+				if (UInt32(::abs(bonus)) > healing)
+				{
+					healing = 0;
+					break;
+				}
+			}
+
 			healing += bonus;
+			break;
 		}
 
 		getAuras().forEachAuraOfType(game::aura_type::ModHealingDonePct, [&healing, tickCount](Aura &aura) -> bool {
