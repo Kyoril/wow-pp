@@ -248,7 +248,7 @@ namespace
 		bmax[2] = (32 - int(tileY)) * GridSize;
 
 		bmin[0] = bmax[0] - GridSize;
-		bmin[1] = std::numeric_limits<float>::min();
+		bmin[1] = -1000.0f;
 		bmin[2] = bmax[2] - GridSize;
 	}
 
@@ -652,13 +652,13 @@ namespace
 		config.maxVertsPerPoly = DT_VERTS_PER_POLYGON;
 		config.cs = BaseUnitDim;
 		config.ch = BaseUnitDim;
-		config.walkableSlopeAngle = 60.0f;
+		config.walkableSlopeAngle = 90.0f;	// Infinite value as we want to be able to charge up terrains
 		config.tileSize = VerticesPerTile;
 		config.walkableRadius = 2;
 		config.borderSize = config.walkableRadius + 3;
 		config.maxEdgeLen = VerticesPerTile + 1;        //anything bigger than tileSize
 		config.walkableHeight = 6;
-		config.walkableClimb = 4;   // keep less than walkableHeight
+		config.walkableClimb = 999;   // Set this to an "infinite" value as we want to be able to charge up terrain (we will fix models later manually)
 		config.minRegionArea = rcSqr(60);
 		config.mergeRegionArea = rcSqr(50);
 		config.maxSimplificationError = 2.0f;       // eliminates most jagged edges (tinny polygons)
@@ -725,7 +725,7 @@ namespace
 					continue;
 				}
 
-				//selectivelyEnforceWalkableClimb(*tile.chf, config.walkableClimb);
+				selectivelyEnforceWalkableClimb(*tile.chf, 4 /*config.walkableClimb*/);
 
 				// build polymesh intermediates
 				if (!rcErodeWalkableArea(&context, config.walkableRadius, *tile.chf))
@@ -1464,7 +1464,7 @@ int main(int argc, char* argv[])
 	// Determine the amount of available cpu cores, and use just as many. However,
 	// right now, this will only convert multiple maps at the same time, not multiple
 	// tiles - but still A LOT faster than single threaded.
-	std::size_t concurrency = boost::thread::hardware_concurrency();
+	std::size_t concurrency = 1;//boost::thread::hardware_concurrency();
 	concurrency = std::max<size_t>(1, concurrency - 1);
 	ILOG("Using " << concurrency << " threads");
 
