@@ -37,7 +37,7 @@ cmake_minimum_required(VERSION 2.8)
 	target_link_libraries(unit_tests common log game_protocol wowpp_protocol sql_wrapper mysql_wrapper virtual_directory game base64 http web_services proto_data math detour)
 	
 	# Link dependency libraries
-	target_link_libraries(unit_tests ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY} ${PROTOBUF_LIBRARIES} cppformat)
+	target_link_libraries(unit_tests ${Boost_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY} ${PROTOBUF_LIBRARIES} cppformat)
 	if(UNIX AND NOT APPLE)
 		target_link_libraries(unit_tests z)
 	endif(UNIX AND NOT APPLE)

@@ -106,7 +106,7 @@ project(WoW)
 	
 	# Find boost
 	set(Boost_USE_STATIC_LIBS ON)
-	find_package(Boost 1.54.0 REQUIRED COMPONENTS system date_time thread iostreams filesystem regex chrono program_options)
+	find_package(Boost 1.54.0 REQUIRED COMPONENTS system date_time thread iostreams filesystem regex chrono program_options unit_test_framework)
 	
 	# Find protobuf
 	find_package(Protobuf REQUIRED)
@@ -170,7 +170,6 @@ project(WoW)
 	add_subdirectory(realm)
 	add_subdirectory(world)
 	add_subdirectory(team)
-	add_subdirectory(unit_tests)
 	if (WOWPP_BUILD_TOOLS)
 		add_subdirectory(extractor)
 		add_subdirectory(update_compiler)
@@ -180,4 +179,5 @@ project(WoW)
 	endif()
 	if (WOWPP_BUILD_TESTS)
 		add_subdirectory(tests)
+		add_subdirectory(unit_tests)
 	endif()
