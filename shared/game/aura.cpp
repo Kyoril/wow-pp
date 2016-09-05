@@ -615,12 +615,14 @@ namespace wowpp
 
 	void Aura::handleModResistance(bool apply)
 	{
+		bool isAbility = m_spell.attributes(0) & game::spell_attributes::Ability;
+
 		// Apply all resistances
 		for (UInt8 i = 0; i < 7; ++i)
 		{
 			if (m_effect.miscvaluea() & Int32(1 << i))
 			{
-				m_target.updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), isPassive() && !m_itemGuid ? unit_mod_type::BaseValue : unit_mod_type::TotalValue, m_basePoints, apply);
+				m_target.updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), isPassive() && isAbility ? unit_mod_type::BaseValue : unit_mod_type::TotalValue, m_basePoints, apply);
 			}
 		}
 	}
@@ -655,12 +657,14 @@ namespace wowpp
 			return;
 		}
 
+		bool isAbility = m_spell.attributes(0) & game::spell_attributes::Ability;
+
 		// Apply all stats
 		for (Int32 i = 0; i < 5; ++i)
 		{
 			if (stat < 0 || stat == i)
 			{
-				m_target.updateModifierValue(GameUnit::getUnitModByStat(i), isPassive() && !m_itemGuid ? unit_mod_type::BaseValue : unit_mod_type::TotalValue, m_basePoints, apply);
+				m_target.updateModifierValue(GameUnit::getUnitModByStat(i), isPassive() && isAbility ? unit_mod_type::BaseValue : unit_mod_type::TotalValue, m_basePoints, apply);
 			}
 		}
 	}
@@ -1267,7 +1271,9 @@ namespace wowpp
 
 	void Aura::handleModAttackPower(bool apply)
 	{
-		if (isPassive() && !m_itemGuid)
+		bool isAbility = m_spell.attributes(0) & game::spell_attributes::Ability;
+
+		if (isPassive() && isAbility)
 		{
 			m_target.setModifierValue(unit_mods::AttackPower, unit_mod_type::BaseValue, 0.0f);
 			m_target.updateModifierValue(unit_mods::AttackPower, unit_mod_type::BaseValue, m_basePoints, apply);

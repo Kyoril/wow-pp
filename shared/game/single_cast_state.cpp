@@ -2522,7 +2522,8 @@ namespace wowpp
 			effects.push_back(m_spell.effects(i).type());
 		}
 
-		if (!m_isProc && !m_itemGuid)
+		if (!m_isProc && !m_itemGuid &&
+			!(m_spell.attributes(3) & game::spell_attributes_ex_c::DisableProc))
 		{
 			m_canTrigger = true;
 		}

@@ -758,7 +758,7 @@ namespace wowpp
 				Unknown_13				= 0x00010000,
 				NoInitialAggro			= 0x00020000,
 				CantMiss				= 0x00040000,
-				Unknown_14				= 0x00080000,
+				DisableProc				= 0x00080000,
 				DeathPersistent			= 0x00100000,
 				Unknown_15				= 0x00200000,
 				ReqWand					= 0x00400000,
