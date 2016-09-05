@@ -281,7 +281,8 @@ namespace wowpp
 	void GameCreature::updateDamage()
 	{
 		const float att_speed = static_cast<float>(getUInt32Value(unit_fields::BaseAttackTime)) / 1000.0f;
-		const float base_value = static_cast<float>(getUInt32Value(unit_fields::AttackPower)) / 14.0f * att_speed;
+		const Int32 att_power = getInt32Value(unit_fields::AttackPower) + getUInt16Value(unit_fields::AttackPowerMods, 0) + getInt16Value(unit_fields::AttackPowerMods, 1);
+		const float base_value = (att_power > 0 ? att_power : 0) / 14.0f * att_speed;
 
 		const auto *entry = (m_entry ? m_entry : &m_originalEntry);
 		setFloatValue(unit_fields::MinDamage, base_value + entry->minmeleedmg());
