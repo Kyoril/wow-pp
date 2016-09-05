@@ -1244,6 +1244,7 @@ namespace wowpp
 		targetMap.m_unitTarget = target->getGuid();
 
 		game::SpellPointsArray basePoints{};
+		basePoints[m_effect.index()] = m_basePoints;
 
 		if (m_spell.family() == game::spell_family::Priest)
 		{
@@ -1253,7 +1254,7 @@ namespace wowpp
 				targetMap.m_targetMap = game::spell_cast_target_flags::Self;
 				targetMap.m_unitTarget = m_caster->getGuid();
 
-				basePoints[0] = amount * m_effect.basepoints() / 100 / 3;
+				basePoints[0] *= amount / 100 / 3;
 			}
 		}
 

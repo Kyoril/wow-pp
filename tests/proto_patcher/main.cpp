@@ -776,7 +776,7 @@ namespace wowpp
 			auto it = spellEntries->begin();
 			while (it != spellEntries->end())
 			{
-				if (it->attributes(5) & game::spell_attributes_ex_e::Unknown_17)
+				if (it->attributes(3) & game::spell_attributes_ex_c::DisableProc)
 				{
 					DLOG("id is " << it->id());
 				}
@@ -2075,7 +2075,6 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 
-
 #if 0
 	if (!addSpellLinks(protoProject))
 	{
@@ -2130,6 +2129,7 @@ int main(int argc, char* argv[])
 		WLOG("Could not import item sockets");
 		return 1;
 	}
+
 #endif
 	if (!checkSpellAttributes(protoProject))
 	{
