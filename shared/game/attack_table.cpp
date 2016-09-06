@@ -470,8 +470,41 @@ namespace wowpp
 				});
 			}
 			break;
+		case game::targets::UnitConeEnemy:		//24
+			{
+				math::Vector3 location = attacker.getLocation();
+				auto &finder = attacker.getWorldInstance()->getUnitFinder();
+				const float realRad = radius + attacker.getMeleeReach();
+				finder.findUnits(Circle(location.x, location.y, realRad), [this, &location, &realRad, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
+				{
+					const float distSq = realRad * realRad;
+					if (distSq >= (location - unit.getLocation()).squared_length())
+					{
+						const auto &faction = attacker.getFactionTemplate();
+						if (!unit.isFriendlyTo(faction) && unit.isAlive() && unit.isInLineOfSight(location) &&
+							attacker.isInArc(3.1415927f * 0.5f, unit.getLocation().x, unit.getLocation().y))
+						{
+							if (!unit.isAttackable())
+							{
+								return true;
+							}
+
+							targets.push_back(&unit);
+							if (maxtargets > 0 &&
+								targets.size() >= maxtargets)
+							{
+								// No more units
+								return false;
+							}
+						}
+					}
+
+					return true;
+				});
+			}
+			break;
 		case game::targets::UnitAreaEnemyDst:	//16
-		case game::targets::DestDynObjEnemy:	//24
+		case game::targets::DestDynObjEnemy:	//28
 			{
 				math::Vector3 location;
 				targetMap.getDestLocation(location.x, location.y, location.z);

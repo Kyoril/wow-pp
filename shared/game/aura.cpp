@@ -1489,6 +1489,7 @@ namespace wowpp
 		case game::targets::UnitTargetEnemy:
 		case game::targets::UnitAreaEnemyDst:
 		//case game::targets::UnitTargetAny:
+		case game::targets::UnitConeEnemy:
 		case game::targets::DestDynObjEnemy:
 			return false;
 		default:
