@@ -83,7 +83,6 @@ std::map<UInt32, LinearSet<UInt32>> tilesByMap;
 // Helper functions
 namespace
 {
-	// Class taken from tripleslash @: https://gist.github.com/tripleslash/d85416827bb05c88873f3d926d796221
 	class MeshSettings
 	{
 	public:
@@ -311,13 +310,13 @@ namespace
 	/// system.
 	static void calculateTileBounds(UInt32 tileX, UInt32 tileY, float* bmin, float* bmax)
 	{
-		bmax[0] = (32 - int(tileX)) * MeshSettings::AdtSize;
-		bmax[1] = std::numeric_limits<float>::max();
-		bmax[2] = (32 - int(tileY)) * MeshSettings::AdtSize;
+		bmin[0] = (32 - int(tileX)) * -MeshSettings::AdtSize;
+		bmin[1] = std::numeric_limits<float>::max();
+		bmin[2] = (32 - int(tileY)) * -MeshSettings::AdtSize;
 
-		bmin[0] = bmax[0] - MeshSettings::AdtSize;
-		bmin[1] = -1000.0f;
-		bmin[2] = bmax[2] - MeshSettings::AdtSize;
+		bmax[0] = bmin[0] + MeshSettings::AdtSize;
+		bmax[1] = -1000.0f;
+		bmax[2] = bmin[2] + MeshSettings::AdtSize;
 	}
 
 	static UInt16 holetab_h[4] = { 0x1111, 0x2222, 0x4444, 0x8888 };
@@ -354,54 +353,35 @@ namespace
 		rcPolyMesh* pmesh;
 		rcPolyMeshDetail* dmesh;
 	};
-	// this class gathers all debug info holding and output
-	struct IntermediateValues
+	
+	/// Writes data of a certain map mesh to an obj file.
+	static void serializeMeshData(UInt32 mapID, UInt32 tileX, UInt32 tileY, MeshData& meshData)
 	{
-		rcHeightfield* heightfield;
-		rcCompactHeightfield* compactHeightfield;
-		rcContourSet* contours;
-		rcPolyMesh* polyMesh;
-		rcPolyMeshDetail* polyMeshDetail;
+		char objFileName[255];
+		sprintf(objFileName, "meshes/map%03u%02u%02u.obj", mapID, tileY, tileX);
 
-		IntermediateValues()
-			: compactHeightfield(nullptr)
-			, heightfield(nullptr)
-			, contours(nullptr)
-			, polyMesh(nullptr)
-			, polyMeshDetail(nullptr)
+		FILE* objFile = fopen(objFileName, "wb");
+		if (!objFile)
 		{
+			char message[1024];
+			sprintf(message, "Failed to open %s for writing!\n", objFileName);
+			perror(message);
+			return;
 		}
-		~IntermediateValues()
-		{
-		}
-		void generateObjFile(UInt32 mapID, UInt32 tileX, UInt32 tileY, MeshData& meshData)
-		{
-			char objFileName[255];
-			sprintf(objFileName, "meshes/map%03u%02u%02u.obj", mapID, tileY, tileX);
 
-			FILE* objFile = fopen(objFileName, "wb");
-			if (!objFile)
-			{
-				char message[1024];
-				sprintf(message, "Failed to open %s for writing!\n", objFileName);
-				perror(message);
-				return;
-			}
+		float* verts = &meshData.solidVerts[0];
+		int vertCount = meshData.solidVerts.size() / 3;
+		int* tris = &meshData.solidTris[0];
+		int triCount = meshData.solidTris.size() / 3;
 
-			float* verts = &meshData.solidVerts[0];
-			int vertCount = meshData.solidVerts.size() / 3;
-			int* tris = &meshData.solidTris[0];
-			int triCount = meshData.solidTris.size() / 3;
+		for (int i = 0; i < meshData.solidVerts.size() / 3; i++)
+			fprintf(objFile, "v %f %f %f\n", verts[i * 3], verts[i * 3 + 1], verts[i * 3 + 2]);
 
-			for (int i = 0; i < meshData.solidVerts.size() / 3; i++)
-				fprintf(objFile, "v %f %f %f\n", verts[i * 3], verts[i * 3 + 1], verts[i * 3 + 2]);
+		for (int i = 0; i < meshData.solidTris.size() / 3; i++)
+			fprintf(objFile, "f %i %i %i\n", tris[i * 3] + 1, tris[i * 3 + 1] + 1, tris[i * 3 + 2] + 1);
 
-			for (int i = 0; i < meshData.solidTris.size() / 3; i++)
-				fprintf(objFile, "f %i %i %i\n", tris[i * 3] + 1, tris[i * 3 + 1] + 1, tris[i * 3 + 2] + 1);
-
-			fclose(objFile);
-		}
-	};
+		fclose(objFile);
+	}
 
 	// Code taken from tripleslash
 	static void selectivelyEnforceWalkableClimb(rcCompactHeightfield &chf, int walkableClimb)
@@ -739,16 +719,16 @@ namespace
 		for (int i = 0; i < V9_SIZE_SQ; ++i)
 		{
 			getHeightCoord(i, GRID_V9, xoffset, yoffset, coord, V9.data());
-			mesh.solidVerts.push_back(coord[0]);
+			mesh.solidVerts.push_back(-coord[1]);
 			mesh.solidVerts.push_back(coord[2]);
-			mesh.solidVerts.push_back(coord[1]);
+			mesh.solidVerts.push_back(-coord[0]);
 		}
 		for (int i = 0; i < V8_SIZE_SQ; ++i)
 		{
 			getHeightCoord(i, GRID_V8, xoffset, yoffset, coord, V8.data());
-			mesh.solidVerts.push_back(coord[0]);
+			mesh.solidVerts.push_back(-coord[1]);
 			mesh.solidVerts.push_back(coord[2]);
-			mesh.solidVerts.push_back(coord[1]);
+			mesh.solidVerts.push_back(-coord[0]);
 		}
 
 		int loopStart, loopEnd, loopInc;
@@ -762,9 +742,9 @@ namespace
 				if (!isHole(i, adt))
 				{
 					getHeightTriangle(i, Spot(j), indices);
-					mesh.solidTris.push_back(indices[2] + count);
-					mesh.solidTris.push_back(indices[1] + count);
 					mesh.solidTris.push_back(indices[0] + count);
+					mesh.solidTris.push_back(indices[1] + count);
+					mesh.solidTris.push_back(indices[2] + count);
 					mesh.triangleFlags.push_back(AreaFlags::ADT);
 				}
 			}
@@ -902,6 +882,9 @@ namespace
 		}
 #endif
 
+		// Serialize adt data
+		serializeMeshData(mapId, tileX, tileY, adtMesh);
+
 		// Adjust min and max z values
 		for (UInt32 i = 0; i < adtMesh.solidVerts.size(); i += 3)
 		{
@@ -981,6 +964,7 @@ namespace
 
 		return result;
 	}
+	
 	/// Converts an ADT tile of a WDT file.
 	static bool convertADT(UInt32 mapId, const String &mapName, WDTFile &wdt, UInt32 tileIndex, dtNavMesh &navMesh)
 	{
@@ -996,7 +980,7 @@ namespace
 		const UInt32 cellX = tileIndex / 64;
 		const UInt32 cellY = tileIndex % 64;
 
-#if 0
+#if 1
 		switch (mapId)
 		{
 			case 0:
@@ -1217,6 +1201,7 @@ namespace
 
 		return true;
 	}
+	
 	/// Converts a map.
 	static bool convertMap(UInt32 dbcRow)
 	{
@@ -1318,6 +1303,7 @@ namespace
 
 		return true;
 	}
+	
 	/// Detects the client locale by checking files for existance.
 	/// @returns False if the client localization couldn't be detected.
 	static bool detectLocale(String &out_locale)
@@ -1353,6 +1339,7 @@ namespace
 
 		return false;
 	}
+	
 	/// Loads all MPQ files which are available, including localized ones and patch archives.
 	/// @param localeString Client locale string like 'enUS'.
 	static void loadMPQFiles(const String &localeString)
@@ -1395,6 +1382,7 @@ namespace
 			}
 		}
 	}
+	
 	/// Loads all required dbc files.
 	/// @returns False if an error occurred.
 	static bool loadDBCFiles()
