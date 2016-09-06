@@ -283,7 +283,6 @@ namespace wowpp
 				{
 					m_onTargetDied = unitTarget->killed.connect(std::bind(&SingleCastState::onTargetRemovedOrDead, this));
 					m_onTargetRemoved = unitTarget->despawned.connect(std::bind(&SingleCastState::onTargetRemovedOrDead, this));
-					unitTarget->threaten(m_cast.getExecuter(), 0.0f);
 				}
 
 				m_onUserMoved = m_cast.getExecuter().moved.connect(
