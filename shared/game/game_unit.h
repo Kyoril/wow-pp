@@ -774,7 +774,7 @@ namespace wowpp
 		}
 
 		///
-		void finishChanneling(bool cancel);
+		void finishChanneling();
 
 		bool isAttackable() const;
 

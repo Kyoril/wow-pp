@@ -70,7 +70,7 @@ namespace wowpp
 		void stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown = 0);
 		void onUserStartsMoving();
 		void setState(std::shared_ptr<CastState> castState);
-		void finishChanneling(bool cancel);
+		void finishChanneling();
 
 		Int32 calculatePowerCost(const proto::SpellEntry &spell) const;
 
@@ -100,7 +100,7 @@ namespace wowpp
 		) = 0;
 		virtual void stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown = 0) = 0;
 		virtual void onUserStartsMoving() = 0;
-		virtual void finishChanneling(bool cancel);
+		virtual void finishChanneling();
 	};
 
 	SpellCasting &castSpell(

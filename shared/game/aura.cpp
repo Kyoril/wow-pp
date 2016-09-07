@@ -1910,7 +1910,7 @@ namespace wowpp
 				UInt32 procAttacker = game::spell_proc_flags::DonePeriodic;
 				UInt32 procVictim = game::spell_proc_flags::TakenPeriodic;
 
-				if (damage)
+				if (damage - resisted - absorbed)
 				{
 					procVictim |= game::spell_proc_flags::TakenDamage;
 				}

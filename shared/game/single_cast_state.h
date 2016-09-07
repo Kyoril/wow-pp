@@ -29,22 +29,6 @@
 
 namespace wowpp
 {
-	struct HitResult final
-	{
-		UInt32 procAttacker;
-		UInt32 procVictim;
-		UInt32 procEx;
-		UInt32 amount;
-		
-		explicit HitResult(UInt32 procAttacker = 0, UInt32 procVictim = 0, UInt32 procEx = 0, UInt32 amount = 0)
-			: procAttacker(procAttacker)
-			, procVictim(procVictim)
-			, procEx(procEx)
-			, amount(amount)
-		{
-		}
-	};
-
 	typedef std::map<UInt64, HitResult> HitResultMap;
 	///
 	class SingleCastState final : public SpellCast::CastState, public std::enable_shared_from_this<SingleCastState>, public boost::noncopyable
@@ -70,7 +54,7 @@ namespace wowpp
 		    UInt64 itemGuid) override;
 		void stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown = 0) override;
 		void onUserStartsMoving() override;
-		void finishChanneling(bool cancel);
+		void finishChanneling();
 		SpellCasting &getCasting() {
 			return m_casting;
 		}

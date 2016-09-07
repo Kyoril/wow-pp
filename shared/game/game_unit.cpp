@@ -324,9 +324,9 @@ namespace wowpp
 		spellProcEvent(isVictim, target, procFlag, procEx, procSpell, amount, attackType, canRemove);
 	}
 
-	void GameUnit::finishChanneling(bool cancel)
+	void GameUnit::finishChanneling()
 	{
-		m_spellCast->finishChanneling(cancel);
+		m_spellCast->finishChanneling();
 	}
 
 	bool GameUnit::isAttackable() const
@@ -707,8 +707,6 @@ namespace wowpp
 							break;
 					}
 
-					UInt32 procEx = game::spell_proc_flags_ex::None;
-
 					UInt32 totalDamage = 0;
 					UInt32 blocked = 0;
 					bool crit = false;
@@ -716,22 +714,18 @@ namespace wowpp
 					UInt32 absorbed = 0;
 					if (victimStates[i] == game::victim_state::IsImmune)
 					{
-						procEx |= game::spell_proc_flags_ex::Immune;
 						totalDamage = 0;
 					}
 					else if (hitInfos[i] == game::hit_info::Miss)
 					{
-						procEx |= game::spell_proc_flags_ex::Miss;
 						totalDamage = 0;
 					}
 					else if (victimStates[i] == game::victim_state::Dodge)
 					{
-						procEx |= game::spell_proc_flags_ex::Dodge;
 						totalDamage = 0;
 					}
 					else if (victimStates[i] == game::victim_state::Parry)
 					{
-						procEx |= game::spell_proc_flags_ex::Parry;
 						totalDamage = 0;
 						//TODO accelerate next m_victim autohit
 					}
@@ -750,8 +744,6 @@ namespace wowpp
 
 						if (hitInfos[i] == game::hit_info::Glancing)
 						{
-							procEx |= game::spell_proc_flags_ex::NormalHit;
-
 							bool attackerIsCaster = false;	//TODO check it
 							float attackerRating = getLevel() * 5.0f;	//TODO get real rating
 							float victimRating = targetUnit->getLevel() * 5.0f;
@@ -791,7 +783,6 @@ namespace wowpp
 						}
 						else if (victimStates[i] == game::victim_state::Blocks)
 						{
-							procEx |= game::spell_proc_flags_ex::Block;
 							UInt32 blockValue = 50;	//TODO get from m_victim
 							if (blockValue >= totalDamage)	//avoid negative damage when blockValue is high
 							{
@@ -806,18 +797,12 @@ namespace wowpp
 						}
 						else if (hitInfos[i] == game::hit_info::CriticalHit)
 						{
-							procEx |= game::spell_proc_flags_ex::CriticalHit;
 							crit = true;
 							totalDamage *= 2.0f;
 						}
 						else if (hitInfos[i] == game::hit_info::Crushing)
 						{
-							procEx |= game::spell_proc_flags_ex::NormalHit;
 							totalDamage *= 1.5f;
-						}
-						else
-						{
-							procEx |= game::spell_proc_flags_ex::NormalHit;
 						}
 
 						resisted = totalDamage * (resists[i] / 100.0f);
@@ -825,7 +810,6 @@ namespace wowpp
 						if (absorbed > 0 && absorbed == totalDamage)
 						{
 							hitInfos[i] = static_cast<game::HitInfo>(hitInfos[i] | game::hit_info::Absorb);
-							procEx |= game::spell_proc_flags_ex::Absorb;
 						}
 					}
 
@@ -878,7 +862,6 @@ namespace wowpp
 					// Deal damage (Note: m_victim can become nullptr, if the target dies)
 					if (totalDamage > 0)
 					{
-						procVictim |= game::spell_proc_flags::TakenDamage;
 
 						victim->dealDamage(totalDamage - resisted - absorbed, (1 << 0), this, totalDamage - resisted - absorbed);
 					}
@@ -888,7 +871,8 @@ namespace wowpp
 						victim->threaten(*this, 0.0f);
 					}
 
-					procEvent(targetUnit, procAttacker, procVictim, procEx, totalDamage - resisted - absorbed, static_cast<UInt8>(m_weaponAttack), nullptr, true);
+					HitResult procInfo(procAttacker, procVictim, hitInfos[i], victimStates[i], resists[i], totalDamage, absorbed, true);
+					procEvent(targetUnit, procInfo.procAttacker, procInfo.procVictim, procInfo.procEx, procInfo.amount, static_cast<UInt8>(m_weaponAttack), nullptr, true);
 				}
 			}
 		}

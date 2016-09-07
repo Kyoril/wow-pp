@@ -3537,6 +3537,6 @@ namespace wowpp
 			return;
 		}
 
-		m_character->finishChanneling(true);
+		m_character->finishChanneling();
 	}
 }

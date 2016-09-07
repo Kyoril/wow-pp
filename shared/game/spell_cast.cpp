@@ -201,7 +201,7 @@ namespace wowpp
 				}
 				else if (maxrange > 0.0f && distance > maxrange + combatReach)
 				{
-					finishChanneling(true);
+					finishChanneling();
 					return std::make_pair(game::spell_cast_result::FailedOutOfRange, nullptr);
 				}
 			}
@@ -299,11 +299,11 @@ namespace wowpp
 		m_castState->activate();
 	}
 
-	void SpellCast::finishChanneling(bool cancel)
+	void SpellCast::finishChanneling()
 	{
 		assert(m_castState);
 
-		m_castState->finishChanneling(cancel);
+		m_castState->finishChanneling();
 	}
 
 	Int32 SpellCast::calculatePowerCost(const proto::SpellEntry & spell) const
@@ -374,7 +374,7 @@ namespace wowpp
 		cast.setState(std::move(newState));
 		return casting;
 	}
-	void SpellCast::CastState::finishChanneling(bool cancel)
+	void SpellCast::CastState::finishChanneling()
 	{
 	}
 }
