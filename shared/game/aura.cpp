@@ -1138,6 +1138,20 @@ namespace wowpp
 
 		if (m_spell.family() == game::spell_family::Mage)
 		{
+			// Magic Absorption
+			if (m_spell.baseid() == 29441)
+			{
+				if (m_caster->getPowerTypeByUnitMod(unit_mods::Mana) != game::power_type::Mana)
+				{
+					return;
+				}
+
+				UInt32 maxMana = m_caster->getUInt32Value(unit_fields::MaxPower1 + game::power_type::Mana);
+				basePoints[0] = m_basePoints * maxMana  / 100;
+				target.m_targetMap = game::spell_cast_target_flags::Self;
+				target.m_unitTarget = m_caster->getGuid();
+			}
+
 			// Ignite
 			if (m_spell.baseid() == 11119)
 			{
@@ -1164,7 +1178,7 @@ namespace wowpp
 			}
 		}
 
-		// Cast the triggered spell with custom damage value
+		// Cast the triggered spell with custom basepoints value
 		if (m_effect.triggerspell() != 0)
 		{
 			m_caster->castSpell(std::move(target), m_effect.triggerspell(), std::move(basePoints), 0, true);
@@ -1822,7 +1836,12 @@ namespace wowpp
 				// we use m_target (the target itself) as the level calculation. This should be used otherwise however.
 				UInt32 school = m_spell.schoolmask();
 				Int32 damage = m_basePoints;
-				UInt32 resisted = damage * (m_target.getResiPercentage(school, m_attackerLevel, false) / 100.0f);
+				Int8 resistChanceMod = 0;
+				if (m_caster->isGameCharacter())
+				{
+					reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(spell_mod_op::ResistMissChance, m_spell.id(), resistChanceMod);
+				}
+				UInt32 resisted = damage * (m_target.getResiPercentage(school, m_attackerLevel, false, resistChanceMod) / 100.0f);
 				UInt32 absorbed = m_target.consumeAbsorb(damage - resisted, m_spell.schoolmask());
 
 				// Reduce by armor if physical

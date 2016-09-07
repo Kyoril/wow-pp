@@ -1127,11 +1127,20 @@ namespace wowpp
 				resisted = totalDamage * (resists[i] / 100.0f);
 				absorbed = targetUnit->consumeAbsorb(totalDamage - resisted, school);
 
-				if (absorbed)
+				if (resists[i] == 100.0f)
+				{
+					procEx |= game::spell_proc_flags_ex::Resist;
+				}
+
+				if (absorbed > 0 && absorbed == totalDamage)
 				{
 					procEx |= game::spell_proc_flags_ex::Absorb;
 				}
-				procVictim |= game::spell_proc_flags::TakenDamage;
+
+				if (totalDamage - resisted - absorbed > 0)
+				{
+					procVictim |= game::spell_proc_flags::TakenDamage;
+				}
 			}
 			
 			// Update health value
