@@ -2531,7 +2531,8 @@ namespace wowpp
 		}
 
 		if (!m_isProc && !m_itemGuid &&
-			!(m_spell.attributes(3) & game::spell_attributes_ex_c::DisableProc))
+			!(m_spell.attributes(3) & game::spell_attributes_ex_c::DisableProc) &&
+			!(m_spell.attributes(0) & game::spell_attributes::Passive))
 		{
 			m_canTrigger = true;
 		}
