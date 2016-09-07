@@ -1243,16 +1243,7 @@ namespace wowpp
 
 	void Aura::handleDamageShieldProc(GameUnit *attacker)
 	{
-		std::uniform_int_distribution<int> distribution(m_effect.basedice(), m_effect.diesides());
-		const Int32 randomValue = (m_effect.basedice() >= m_effect.diesides() ? m_effect.basedice() : distribution(randomGenerator));
-		UInt32 damage = m_effect.basepoints() + randomValue;
-
-		if (m_caster->isGameCharacter())
-		{
-			reinterpret_cast<GameCharacter&>(*m_caster).applySpellMod(spell_mod_op::Damage, m_spell.id(), damage);
-		}
-
-		attacker->dealDamage(damage, m_spell.schoolmask(), &m_target, 0.0f);
+		attacker->dealDamage(m_basePoints, m_spell.schoolmask(), &m_target, 0.0f);
 
 		auto *world = attacker->getWorldInstance();
 		if (world)
@@ -1263,7 +1254,7 @@ namespace wowpp
 			std::vector<char> buffer;
 			io::VectorSink sink(buffer);
 			wowpp::game::OutgoingPacket packet(sink);
-			wowpp::game::server_write::spellDamageShield(packet, m_target.getGuid(), attacker->getGuid(), m_spell.id(), damage, m_spell.schoolmask());
+			wowpp::game::server_write::spellDamageShield(packet, m_target.getGuid(), attacker->getGuid(), m_spell.id(), m_basePoints, m_spell.schoolmask());
 
 			forEachSubscriberInSight(world->getGrid(), tileIndex, [&packet, &buffer](ITileSubscriber & subscriber)
 			{
