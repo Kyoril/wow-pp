@@ -1246,6 +1246,12 @@ namespace wowpp
 		std::uniform_int_distribution<int> distribution(m_effect.basedice(), m_effect.diesides());
 		const Int32 randomValue = (m_effect.basedice() >= m_effect.diesides() ? m_effect.basedice() : distribution(randomGenerator));
 		UInt32 damage = m_effect.basepoints() + randomValue;
+
+		if (m_caster->isGameCharacter())
+		{
+			reinterpret_cast<GameCharacter&>(m_caster).applySpellMod(spell_mod_op::Damage, m_spell.id(), damage);
+		}
+
 		attacker->dealDamage(damage, m_spell.schoolmask(), &m_target, 0.0f);
 
 		auto *world = attacker->getWorldInstance();
