@@ -346,6 +346,9 @@ namespace wowpp
 		case aura::WaterWalk:
 			handleWaterWalk(apply);
 			break;
+		case aura::ModResistanceOfStatPercent:
+			handleModResistanceOfStatPercent(apply);
+			break;
 		default:
 			//			WLOG("Unhandled aura type: " << m_effect.aura());
 			break;
@@ -990,9 +993,6 @@ namespace wowpp
 
 	void Aura::handleModTargetResistance(bool apply)
 	{
-		// applied to damage as HandleNoImmediateEffect in Unit::CalculateAbsorbAndResist and Unit::CalcArmorReducedDamage
-		// show armor penetration
-		
 		if (m_target.isGameCharacter() && (m_effect.miscvaluea() & game::spell_school_mask::Normal))
 		{
 			Int32 value = m_target.getInt32Value(character_fields::ModTargetPhysicalResistance);
@@ -1099,6 +1099,16 @@ namespace wowpp
 	void Aura::handleModResistanceExclusive(bool apply)
 	{
 		handleModResistance(apply);
+	}
+
+	void Aura::handleModResistanceOfStatPercent(bool apply)
+	{
+		if (!m_target.isGameCharacter())
+		{
+			return;
+		}
+
+		m_target.updateArmor();
 	}
 
 	void Aura::handleFly(bool apply)

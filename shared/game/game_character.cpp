@@ -1858,6 +1858,11 @@ namespace wowpp
 		const float totalArmor = getModifierValue(unit_mods::Armor, unit_mod_type::TotalValue);
 		const float totalPct = getModifierValue(unit_mods::Armor, unit_mod_type::TotalPct);
 
+		getAuras().forEachAuraOfType(game::aura_type::ModResistanceOfStatPercent, [&baseArmor, this](Aura &aura) -> bool {
+			baseArmor += getUInt32Value(unit_fields::Stat0 + aura.getEffect().miscvalueb()) * aura.getBasePoints() / 100.0f;
+			return true;
+		});
+
 		float value = (baseArmor * basePct) + totalArmor;
 		// Add armor from agility
 		value += getUInt32Value(unit_fields::Stat1) * 2;

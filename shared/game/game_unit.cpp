@@ -1554,6 +1554,7 @@ namespace wowpp
 		case unit_mods::StatIntellect:
 			updateMaxPower(game::power_type::Mana);
 			updateManaRegen();
+			updateArmor(); // Arcane Fortitude
 			break;
 		case unit_mods::StatSpirit:
 			updateManaRegen();
