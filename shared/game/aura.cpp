@@ -1249,7 +1249,7 @@ namespace wowpp
 
 		if (m_caster->isGameCharacter())
 		{
-			reinterpret_cast<GameCharacter&>(m_caster).applySpellMod(spell_mod_op::Damage, m_spell.id(), damage);
+			reinterpret_cast<GameCharacter&>(*m_caster).applySpellMod(spell_mod_op::Damage, m_spell.id(), damage);
 		}
 
 		attacker->dealDamage(damage, m_spell.schoolmask(), &m_target, 0.0f);
