@@ -171,7 +171,8 @@ namespace wowpp
 				{
 					if (m_spell.interruptflags() & game::spell_interrupt_flags::PushBack &&
 						m_delayCounter < 2 &&
-						m_cast.getExecuter().isGameCharacter())	// Pushback only works on characters
+						m_cast.getExecuter().isGameCharacter() &&
+						damage > 0)	// Pushback only works on characters
 					{
 						Int32 resistChance = 100;
 
@@ -237,7 +238,8 @@ namespace wowpp
 					{
 						if (m_spell.channelinterruptflags() & game::spell_channel_interrupt_flags::Delay &&
 							m_delayCounter < 2 &&
-							m_cast.getExecuter().isGameCharacter())	// Pushback only works on characters
+							m_cast.getExecuter().isGameCharacter() &&
+							damage > 0)	// Pushback only works on characters
 						{
 							Int32 resistChance = 100;
 
@@ -255,7 +257,8 @@ namespace wowpp
 								return;
 							}
 
-							m_castEnd -= 500;
+							const float delay = m_spell.duration() * 0.25f;
+							m_castEnd -= m_castEnd - getCurrentTime() >= delay ? delay : m_castEnd - getCurrentTime();
 							m_countdown.setEnd(m_castEnd);
 
 							// Notify about spell delay
@@ -271,8 +274,6 @@ namespace wowpp
 						}
 					}
 				});
-
-				//m_damaged = m_cast.getExecuter().takenDamage.connect([this](GameUnit *attacker, UInt32 damage) { });
 
 				WorldInstance *world = m_cast.getExecuter().getWorldInstance();
 				assert(world);
