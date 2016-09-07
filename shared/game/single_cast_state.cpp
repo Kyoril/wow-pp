@@ -3378,6 +3378,12 @@ namespace wowpp
 					totalDamage = 0;
 				}
 
+				if (attacker.isGameCharacter())
+				{
+					reinterpret_cast<GameCharacter&>(attacker).applySpellMod(
+						spell_mod_op::Damage, m_spell.id(), totalDamage);
+				}
+
 				if (basepointsArePct)
 				{
 					totalDamage *= (calculateEffectBasePoints(effect) / 100.0);
