@@ -990,7 +990,22 @@ namespace wowpp
 
 	void Aura::handleModTargetResistance(bool apply)
 	{
-		//TODO
+		// applied to damage as HandleNoImmediateEffect in Unit::CalculateAbsorbAndResist and Unit::CalcArmorReducedDamage
+		// show armor penetration
+		
+		if (m_target.isGameCharacter() && (m_effect.miscvaluea() & game::spell_school_mask::Normal))
+		{
+			Int32 value = m_target.getInt32Value(character_fields::ModTargetPhysicalResistance);
+			value += (apply ? m_basePoints : -m_basePoints);
+			m_target.setInt32Value(character_fields::ModTargetPhysicalResistance, value);
+		}
+
+		if (m_target.isGameCharacter() && (m_effect.miscvaluea() & game::spell_school_mask::Spell))
+		{
+			Int32 value = m_target.getInt32Value(character_fields::ModTargetResistance);
+			value += (apply ? m_basePoints : -m_basePoints);
+			m_target.setInt32Value(character_fields::ModTargetResistance, value);
+		}
 	}
 
 	void Aura::handleModEnergyPercentage(bool apply)
@@ -1837,11 +1852,13 @@ namespace wowpp
 				UInt32 school = m_spell.schoolmask();
 				Int32 damage = m_basePoints;
 				Int8 resistChanceMod = 0;
+				UInt32 spellPenetration = 0;
 				if (m_caster->isGameCharacter())
 				{
 					reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(spell_mod_op::ResistMissChance, m_spell.id(), resistChanceMod);
+					spellPenetration = -m_caster->getInt32Value(character_fields::ModTargetResistance);
 				}
-				UInt32 resisted = damage * (m_target.getResiPercentage(school, m_attackerLevel, false, resistChanceMod) / 100.0f);
+				UInt32 resisted = damage * (m_target.getResiPercentage(school, m_attackerLevel, resistChanceMod, spellPenetration, false) / 100.0f);
 				UInt32 absorbed = m_target.consumeAbsorb(damage - resisted, m_spell.schoolmask());
 
 				// Reduce by armor if physical

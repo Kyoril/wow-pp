@@ -601,7 +601,7 @@ namespace wowpp
 		/// 
 		float getCrushChance(GameUnit &attacker);
 		/// 
-		float getResiPercentage(UInt8 school, UInt32 attackerLevel, bool isBinary, Int8 resistChanceMod);
+		float getResiPercentage(UInt8 school, UInt32 attackerLevel, Int8 resistChanceMod, UInt32 spellPenetration, bool isBinary);
 		/// 
 		float getCritChance(GameUnit &attacker, UInt8 school);
 		///

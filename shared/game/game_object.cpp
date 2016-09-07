@@ -69,7 +69,7 @@ namespace wowpp
 		return *((reinterpret_cast<const UInt16 *>(&m_values[index])) + offset);
 	}
 
-	Int16 GameObject::getInt16Value(UInt16 index, UInt8 offset) const
+	wowpp::Int16 GameObject::getInt16Value(UInt16 index, UInt8 offset) const
 	{
 		assert(offset < 2);
 		assert(index < m_values.size());

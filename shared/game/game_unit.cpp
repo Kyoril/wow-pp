@@ -2065,7 +2065,7 @@ namespace wowpp
 		}
 	}
 
-	float GameUnit::getResiPercentage(UInt8 school, UInt32 attackerLevel, bool isBinary, Int8 resistChanceMod)
+	float GameUnit::getResiPercentage(UInt8 school, UInt32 attackerLevel, Int8 resistChanceMod, UInt32 spellPenetration, bool isBinary)
 	{
 		if (school <= 1)
 		{
@@ -2073,7 +2073,7 @@ namespace wowpp
 		}
 
 		std::uniform_real_distribution<float> resiDistribution(0.0f, 99.9f);
-		UInt32 spellPen = 0;
+		UInt32 spellPen = spellPenetration;
 		UInt32 resiOffset = static_cast<UInt32>(log2(school));
 		UInt32 baseResi = getUInt32Value(unit_fields::Resistances + resiOffset);
 		UInt32 casterLevel = attackerLevel;
