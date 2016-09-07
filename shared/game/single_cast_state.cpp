@@ -3372,16 +3372,16 @@ namespace wowpp
 				std::uniform_real_distribution<float> distribution(weaponMin, weaponMax);
 				totalDamage += UInt32(distribution(randomGenerator));
 
-				// Armor reduction
-				totalDamage = targetUnit->calculateArmorReducedDamage(attacker.getLevel(), totalDamage);
-				if (totalDamage < 0) {	//avoid negative damage when blockValue is high
-					totalDamage = 0;
-				}
-
 				if (attacker.isGameCharacter())
 				{
 					reinterpret_cast<GameCharacter&>(attacker).applySpellMod(
 						spell_mod_op::Damage, m_spell.id(), totalDamage);
+				}
+
+				// Armor reduction
+				totalDamage = targetUnit->calculateArmorReducedDamage(attacker.getLevel(), totalDamage);
+				if (totalDamage < 0) {	//avoid negative damage when blockValue is high
+					totalDamage = 0;
 				}
 
 				if (basepointsArePct)
