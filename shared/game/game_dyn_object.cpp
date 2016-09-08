@@ -187,11 +187,7 @@ namespace wowpp
 				});
 
 				const bool success = target.getAuras().addAura(aura);
-				if (!success)
-				{
-					WLOG("Aura could not be added to unit target!");
-				}
-				else
+				if (success)
 				{
 					m_auras[&target] = std::move(aura);
 				}

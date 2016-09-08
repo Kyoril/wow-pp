@@ -206,7 +206,7 @@ namespace wowpp
 		/// @param targetB
 		/// @param radius
 		/// @param maxtargets
-		void refreshTargets(GameUnit &attacker, SpellTargetMap &targetMap, UInt32 targetA, UInt32 targetB, float radius, UInt32 maxtargets);
+		void refreshTargets(GameUnit &attacker, SpellTargetMap &targetMap, UInt32 targetA, UInt32 targetB, float radius, UInt32 maxtargets, UInt32 effect);
 
 	private:
 

@@ -2167,12 +2167,7 @@ namespace wowpp
 				}
 
 				// TODO: Add aura to unit target
-				const bool success = targetUnit->getAuras().addAura(std::move(aura));
-				if (!success)
-				{
-					// TODO: What should we do here? Just ignore?
-					WLOG("Aura could not be added to unit target!");
-				}
+				targetUnit->getAuras().addAura(std::move(aura));
 
 				// We need to be sitting for this aura to work
 				if (m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::NotSeated)

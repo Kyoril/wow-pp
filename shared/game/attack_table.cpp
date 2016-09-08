@@ -41,7 +41,7 @@ namespace wowpp
 			SpellTargetMap targetMap;
 			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
 			targetMap.m_unitTarget = target->getGuid();
-			refreshTargets(*attacker, targetMap, targetA, targetB, 0.0f, 0.0f);
+			refreshTargets(*attacker, targetMap, targetA, targetB, 0.0f, 0.0f, 0);
 			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
 
 			for (GameUnit *targetUnit : m_targets[targetA][targetB])
@@ -106,7 +106,7 @@ namespace wowpp
 		UInt32 targetB = game::targets::None;
 		if (!checkIndex(targetA, targetB))
 		{
-			refreshTargets(*attacker, targetMap, targetA, targetB, 0.0f, 0.0f);
+			refreshTargets(*attacker, targetMap, targetA, targetB, 0.0f, 0.0f, 0);
 			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
 
 			for (GameUnit *targetUnit : m_targets[targetA][targetB])
@@ -184,7 +184,7 @@ namespace wowpp
 		UInt32 targetB = game::targets::None;
 		if (!checkIndex(targetA, targetB))
 		{
-			refreshTargets(*attacker, targetMap, targetA, targetB, 0.0f, 0.0f);
+			refreshTargets(*attacker, targetMap, targetA, targetB, 0.0f, 0.0f, 0);
 			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
 
 			for (GameUnit *targetUnit : m_targets[targetA][targetB])
@@ -241,7 +241,7 @@ namespace wowpp
 		if (!checkIndex(targetA, targetB))
 		{
 			UInt8 school = spell.schoolmask();
-			refreshTargets(*attacker, targetMap, targetA, targetB, effect.radius(), spell.maxtargets());
+			refreshTargets(*attacker, targetMap, targetA, targetB, effect.radius(), spell.maxtargets(), effect.type());
 			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
 
 			for (GameUnit *targetUnit : m_targets[targetA][targetB])
@@ -291,7 +291,7 @@ namespace wowpp
 		if (!checkIndex(targetA, targetB))
 		{
 			UInt8 school = spell.schoolmask();
-			refreshTargets(*attacker, targetMap, targetA, targetB, effect.radius(), spell.maxtargets());
+			refreshTargets(*attacker, targetMap, targetA, targetB, effect.radius(), spell.maxtargets(), effect.type());
 
 			for (GameUnit *targetUnit : m_targets[targetA][targetB])
 			{
@@ -340,7 +340,7 @@ namespace wowpp
 			}
 
 			UInt8 school = spell.schoolmask();
-			refreshTargets(*attacker, targetMap, targetA, targetB, radius, maxTargets);
+			refreshTargets(*attacker, targetMap, targetA, targetB, radius, maxTargets, effectType);
 			std::uniform_real_distribution<float> hitTableDistribution(0.0f, 99.9f);
 
 			for (GameUnit *targetUnit : m_targets[targetA][targetB])
@@ -389,7 +389,7 @@ namespace wowpp
 		resists = m_resists[targetA][targetB];
 	}
 
-	void AttackTable::refreshTargets(GameUnit &attacker, SpellTargetMap &targetMap, UInt32 targetA, UInt32 targetB, float radius, UInt32 maxtargets)
+	void AttackTable::refreshTargets(GameUnit &attacker, SpellTargetMap &targetMap, UInt32 targetA, UInt32 targetB, float radius, UInt32 maxtargets, UInt32 effect)
 	{
 		std::vector<GameUnit *> targets;
 		GameUnit *unitTarget = nullptr;
@@ -402,6 +402,25 @@ namespace wowpp
 		else if (world && targetMap.hasUnitTarget())
 		{
 			unitTarget = dynamic_cast<GameUnit *>(world->findObjectByGUID(targetMap.getUnitTarget()));
+		}
+
+		if (!targetA && !targetB)
+		{
+			// Check target based on effect (TODO: Fill this with more effects)
+			switch (effect)
+			{
+				WLOG("Target of spell hasn't been found.");
+				case game::spell_effects::ApplyAura:
+					targets.push_back(&attacker);
+					break;
+				default:
+					WLOG("Target has to be scripted.");
+					break;
+			}
+
+			m_targets[targetA][targetB] = targets;
+
+			return;
 		}
 
 		switch (targetA)

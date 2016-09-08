@@ -1829,11 +1829,6 @@ namespace wowpp
 			}
 		}
 
-		if (m_caster->isGameCharacter())
-		{
-			reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(spell_mod_op::Dot, m_spell.id(), m_basePoints);
-		}
-
 		namespace aura = game::aura_type;
 		switch (m_effect.aura())
 		{
