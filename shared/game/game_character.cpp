@@ -1395,10 +1395,6 @@ namespace wowpp
 			{
 				total += mod.value;
 			}
-			else
-			{
-				WLOG("Spell modifier " << mod.spellId << " affectmask doesn't check with spell " << spellId << " familyflags.");
-			}
 		}
 
 		return total;
