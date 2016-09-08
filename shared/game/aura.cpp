@@ -1259,7 +1259,6 @@ namespace wowpp
 		targetMap.m_unitTarget = target->getGuid();
 
 		game::SpellPointsArray basePoints{};
-		basePoints[m_effect.index()] = m_basePoints;
 
 		if (m_spell.family() == game::spell_family::Priest)
 		{
