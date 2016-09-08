@@ -1699,7 +1699,7 @@ namespace wowpp
 			caster.setUInt32Value(unit_fields::Power1 + casterPowerType, casterPower + powerToDrain);
 		}
 
-		if (m_hitResults.find(unitTarget->getGuid()) != m_hitResults.end())
+		if (m_hitResults.find(unitTarget->getGuid()) == m_hitResults.end())
 		{
 			HitResult procInfo(m_attackerProc, m_victimProc, game::hit_info::NoAction, game::victim_state::Normal);
 			m_hitResults.emplace(unitTarget->getGuid(), procInfo);
@@ -2274,7 +2274,7 @@ namespace wowpp
 		// Add this object to the unit (this will also sawn it)
 		caster.addDynamicObject(dynObj);
 
-		if (m_hitResults.find(caster.getGuid()) != m_hitResults.end())
+		if (m_hitResults.find(caster.getGuid()) == m_hitResults.end())
 		{
 			HitResult procInfo(m_attackerProc, m_victimProc, game::hit_info::NoAction, game::victim_state::Normal);
 			m_hitResults.emplace(caster.getGuid(), procInfo);
@@ -3223,7 +3223,7 @@ namespace wowpp
 		spawned->setUInt32Value(unit_fields::PetNumber, guidLowerPart(spawned->getGuid()));
 		world->addGameObject(*spawned);
 
-		if (m_hitResults.find(spawned->getGuid()) != m_hitResults.end())
+		if (m_hitResults.find(spawned->getGuid()) == m_hitResults.end())
 		{
 			HitResult procInfo(m_attackerProc, m_victimProc, game::hit_info::NoAction, game::victim_state::Normal);
 			m_hitResults.emplace(spawned->getGuid(), procInfo);
@@ -3253,7 +3253,7 @@ namespace wowpp
 			auto &mover = caster.getMover();
 			mover.moveTo(firstTarget.getLocation(), 25.0f);
 
-			if (m_hitResults.find(firstTarget.getGuid()) != m_hitResults.end())
+			if (m_hitResults.find(firstTarget.getGuid()) == m_hitResults.end())
 			{
 				HitResult procInfo(m_attackerProc, m_victimProc, hitInfos[0], victimStates[0], resists[0]);
 				m_hitResults.emplace(firstTarget.getGuid(), procInfo);
