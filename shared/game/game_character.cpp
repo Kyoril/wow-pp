@@ -1397,7 +1397,7 @@ namespace wowpp
 			}
 			else
 			{
-				WLOG("Spell modifier affectmask doesn't check with spell " << spellId << " familyflags.");
+				WLOG("Spell modifier " << mod.spellId << " affectmask doesn't check with spell " << spellId << " familyflags.");
 			}
 		}
 
