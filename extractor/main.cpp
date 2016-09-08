@@ -46,6 +46,7 @@
 #include "detour/DetourNavMesh.h"
 #include "detour/DetourNavMeshBuilder.h"
 #include "recast/Recast.h"
+#include "debug_utils/RecastDump.h"
 #include "common/linear_set.h"
 using namespace std;
 using namespace wowpp;
@@ -83,6 +84,71 @@ std::map<UInt32, LinearSet<UInt32>> tilesByMap;
 // Helper functions
 namespace
 {
+
+	/// Class taken from SampleInterfaces of RecastDemo application. Used to dump
+	/// navigation data into obj files.
+	class FileIO : public duFileIO
+	{
+		FILE* m_fp;
+		int m_mode;
+
+	public:
+		FileIO() :
+			m_fp(0),
+			m_mode(-1)
+		{
+		}
+		virtual ~FileIO()
+		{
+			if (m_fp) fclose(m_fp);
+		}
+		bool openForWrite(const char* path)
+		{
+			if (m_fp) return false;
+			m_fp = fopen(path, "wb");
+			if (!m_fp) return false;
+			m_mode = 1;
+			return true;
+		}
+		bool openForRead(const char* path)
+		{
+			if (m_fp) return false;
+			m_fp = fopen(path, "rb");
+			if (!m_fp) return false;
+			m_mode = 2;
+			return true;
+		}
+		virtual bool isWriting() const
+		{
+			return m_mode == 1;
+		}
+		virtual bool isReading() const
+		{
+			return m_mode == 2;
+		}
+		virtual bool write(const void* ptr, const size_t size)
+		{
+			if (!m_fp || m_mode != 1) return false;
+			fwrite(ptr, size, 1, m_fp);
+			return true;
+		}
+		virtual bool read(void* ptr, const size_t size)
+		{
+			if (!m_fp || m_mode != 2) return false;
+			size_t readLen = fread(ptr, size, 1, m_fp);
+			return readLen == 1;
+		}
+	private:
+		// Explicitly disabled copy constructor and copy assignment operator.
+		FileIO(const FileIO&)
+		{
+		}
+		FileIO& operator=(const FileIO&)
+		{
+		}
+	};
+
+	/// Contains NavMesh settings and checks.
 	class MeshSettings
 	{
 	public:
@@ -538,44 +604,14 @@ namespace
 		out_chunk.tileRef = 0;
 
 #if 1
-		const int nvp = polyMesh->nvp;
-		const float cs = polyMesh->cs;
-		const float ch = polyMesh->ch;
-		const float* orig = polyMesh->bmin;
-		int nIndex = 0;
+		std::unique_ptr<FileIO> debugFile(new FileIO());
 
-		if (polyMesh->npolys > 0)
-		{
-			std::ostringstream strm;
-			strm << "meshes/tile_" << tileX << "_" << tileY << ".obj";
-			std::ofstream outFile(strm.str().c_str(), std::ios::out);
-			for (int i = 0; i < polyMesh->npolys; ++i) // go through all polygons
-			{
-				const unsigned short* p = &polyMesh->polys[i*nvp * 2];
+		std::ostringstream strm;
+		strm << "meshes/tile_" << tileX << "_" << tileY << ".obj";
 
-				unsigned short vi[3];
-				for (int j = 2; j < nvp; ++j) // go through all verts in the polygon
-				{
-					if (p[j] == RC_MESH_NULL_IDX) break;
-
-					vi[0] = p[0];
-					vi[1] = p[j - 1];
-					vi[2] = p[j];
-
-					for (int k = 0; k < 3; ++k) // create a 3-vert triangle for each 3 verts in the polygon.
-					{
-						const unsigned short* v = &polyMesh->verts[vi[k] * 3];
-						const float x = orig[0] + v[0] * cs;
-						const float y = orig[1] + (v[1] + 1)*ch;
-						const float z = orig[2] + v[2] * cs;
-						outFile << "v " << x << " " << y << " " << z << std::endl;
-					}
-
-					outFile << "f " << nIndex + 1 << " " << nIndex + 2 << " " << nIndex + 3 << std::endl;
-					nIndex += 3;
-				}
-			}
-		}
+		debugFile->openForWrite(strm.str().c_str());
+		//duDumpPolyMeshToObj(*polyMesh, debugFile.get());
+		duDumpPolyMeshDetailToObj(*polyMeshDetail, debugFile.get());
 #endif
 
 		dtFree(outData);
