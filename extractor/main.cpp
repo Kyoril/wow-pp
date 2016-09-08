@@ -379,9 +379,9 @@ namespace
 	/// system.
 	static void calculateTileBounds(UInt32 tileX, UInt32 tileY, float* bmin, float* bmax)
 	{
-		bmin[0] = (32 - int(tileX)) * -MeshSettings::AdtSize;
+		bmin[0] = (32 - int(tileY)) * -MeshSettings::AdtSize;
 		bmin[1] = std::numeric_limits<float>::max();
-		bmin[2] = (32 - int(tileY)) * -MeshSettings::AdtSize;
+		bmin[2] = (32 - int(tileX)) * -MeshSettings::AdtSize;
 
 		bmax[0] = bmin[0] + MeshSettings::AdtSize / MeshSettings::ChunksPerTile;
 		bmax[1] = -1000.0f;
@@ -603,7 +603,7 @@ namespace
 		std::memcpy(&out_chunk.data[0], outData, outDataSize);
 		out_chunk.tileRef = 0;
 
-#if 1
+#ifdef _DEBUG
 		std::unique_ptr<FileIO> debugFile(new FileIO());
 
 		std::ostringstream strm;
@@ -946,13 +946,18 @@ namespace
 		UInt32 convertedTileX = tileX * MeshSettings::ChunksPerTile;
 		UInt32 convertedTileY = tileY * MeshSettings::ChunksPerTile;
 
+		float bmin[3], bmax[3];
+		calculateTileBounds(tileX, tileY, bmin, bmax);
+		rcVcopy(config.bmin, bmin);
+		rcVcopy(config.bmax, bmax);
+
 		// Use only this tiles bounding box
-		config.bmin[0] = (convertedTileX * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
+		//config.bmin[0] = (convertedTileX * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
 		config.bmin[1] = minZ;
-		config.bmin[2] = (convertedTileY * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
-		config.bmax[0] = ((convertedTileX + 1) * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
+		//config.bmin[2] = (convertedTileY * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
+		//config.bmax[0] = ((convertedTileX + 1) * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
 		config.bmax[1] = maxZ;
-		config.bmax[2] = ((convertedTileY + 1) * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
+		//config.bmax[2] = ((convertedTileY + 1) * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
 
 		// Apply border size
 		config.bmin[0] -= config.borderSize * config.cs;
@@ -1028,7 +1033,7 @@ namespace
 		const UInt32 cellX = tileIndex / 64;
 		const UInt32 cellY = tileIndex % 64;
 
-#if 1
+#ifdef _DEBUG
 		switch (mapId)
 		{
 			case 0:
@@ -1266,8 +1271,8 @@ namespace
 			return false;
 		}
 
-#if 1
-		if (mapId != 489)
+#ifdef _DEBUG
+		if (mapId != 0)
 		{
 			return true;
 		}
