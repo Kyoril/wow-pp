@@ -438,7 +438,7 @@ namespace
 	/// Finishes the nav mesh generation.
 	bool finishMesh(rcContext &ctx, const rcConfig &config, int tileX, int tileY, MapNavigationChunk &out_chunk, rcHeightfield &solid)
 	{
-		// initialize compact height field
+		// Allocate and build compact height field
 		SmartCompactHeightFieldPtr chf(rcAllocCompactHeightfield(), rcFreeCompactHeightfield);
 		if (!rcBuildCompactHeightfield(&ctx, config.walkableHeight, std::numeric_limits<int>::max(), solid, *chf))
 		{
@@ -446,20 +446,25 @@ namespace
 			return false;
 		}
 
+		// Since we used infinite walkable climb, we need to manually cut connections for everything non-ADT and 
+		// non-Liquid-related polygons
 		selectivelyEnforceWalkableClimb(*chf, config.walkableClimb);
 
+		// Build distance field
 		if (!rcBuildDistanceField(&ctx, *chf))
 		{
 			ELOG("Could not build distance field (rcBuildDistanceField failed)");
 			return false;
 		}
 
+		// Build regions
 		if (!rcBuildRegions(&ctx, *chf, config.borderSize, config.minRegionArea, config.mergeRegionArea))
 		{
 			ELOG("Could not build regions (rcBuildRegions failed)");
 			return false;
 		}
 
+		// Allocate contour set and generate contours
 		SmartContourSetPtr cset(rcAllocContourSet(), rcFreeContourSet);
 		if (!rcBuildContours(&ctx, *chf, config.maxSimplificationError, config.maxEdgeLen, *cset))
 		{
@@ -467,8 +472,10 @@ namespace
 			return false;
 		}
 
+		// If this happens, it's most likely because no geometry was inside the bounding box...
 		assert(!!cset->nconts);
 
+		// Allocate and build poly mesh
 		SmartPolyMeshPtr polyMesh(rcAllocPolyMesh(), rcFreePolyMesh);
 		if (!rcBuildPolyMesh(&ctx, *cset, config.maxVertsPerPoly, *polyMesh))
 		{
@@ -476,6 +483,7 @@ namespace
 			return false;
 		}
 
+		// Allocate and build poly mesh details
 		SmartPolyMeshDetailPtr polyMeshDetail(rcAllocPolyMeshDetail(), rcFreePolyMeshDetail);
 		if (!rcBuildPolyMeshDetail(&ctx, *polyMesh, *chf, config.detailSampleDist, config.detailSampleMaxError, *polyMeshDetail))
 		{
@@ -483,16 +491,18 @@ namespace
 			return false;
 		}
 
+		// Free no longer needed objects manually simply to be more memory-friendly (would be removed later anyway)
 		chf.reset(nullptr);
 		cset.reset(nullptr);
 
-		// too many vertices?
+		// Check for too many vertices
 		if (polyMesh->nverts >= 0xFFFF)
 		{
 			ELOG("Too many mesh vertices produces for tile (" << tileX << ", " << tileY << ")");
 			return false;
 		}
 
+		// Mark these flags walkable and apply custom flags, too
 		for (int i = 0; i < polyMesh->npolys; ++i)
 		{
 			if (!polyMesh->areas[i])
@@ -528,6 +538,7 @@ namespace
 		params.ch = config.ch;
 		params.buildBvTree = true;
 
+		// Finally, serialize our mesh data
 		unsigned char *outData;
 		int outDataSize;
 		if (!dtCreateNavMeshData(&params, &outData, &outDataSize))
@@ -536,6 +547,7 @@ namespace
 			return false;
 		}
 
+		// Write the serialized data into the navigation chunk of the map
 		out_chunk.data.resize(outDataSize);
 		std::memcpy(&out_chunk.data[0], outData, outDataSize);
 		out_chunk.tileRef = 0;
@@ -560,9 +572,11 @@ namespace
 				for (int j = 2; j < nvp; ++j) // go through all verts in the polygon
 				{
 					if (p[j] == RC_MESH_NULL_IDX) break;
+
 					vi[0] = p[0];
 					vi[1] = p[j - 1];
 					vi[2] = p[j];
+
 					for (int k = 0; k < 3; ++k) // create a 3-vert triangle for each 3 verts in the polygon.
 					{
 						const unsigned short* v = &polyMesh->verts[vi[k] * 3];
@@ -928,7 +942,10 @@ namespace
 		config.bmax[0] += config.borderSize * config.cs;
 		config.bmax[2] += config.borderSize * config.cs;
 
+		// Create the context object
 		rcContext ctx(false);
+
+		// Allocate and build the recast heightfield
 		SmartHeightFieldPtr solid(rcAllocHeightfield(), rcFreeHeightField);
 		if (!rcCreateHeightfield(&ctx, *solid, config.width, config.height, config.bmin, config.bmax, config.cs, config.ch))
 		{
@@ -936,30 +953,39 @@ namespace
 			return false;
 		}
 
-		// Rasterize adt mesh
+		// Rasterize adt terrain mesh
 		if (!rasterize(ctx, *solid, false, config.walkableSlopeAngle, adtMesh, AreaFlags::ADT))
 		{
 			ELOG("Could not rasterize ADT data");
 			return false;
 		}
+
+		// Rasterize adt wmo object meshes
 		if (!rasterize(ctx, *solid, true, config.walkableSlopeAngle, wmoMesh, AreaFlags::WMO))
 		{
 			ELOG("Could not rasterize WMO data");
 			return false;
 		}
 
+		// Remember all ADT flagged spans as the information may get lost after the next step
 		std::vector<rcSpan *> adtSpans;
 		adtSpans.reserve(solid->width*solid->height);
 		for (int i = 0; i < solid->width * solid->height; ++i)
 			for (rcSpan *s = solid->spans[i]; s; s = s->next)
 				if (!!(s->area & AreaFlags::ADT))
 					adtSpans.push_back(s);
+
+		// Filter ledge spans
 		rcFilterLedgeSpans(&ctx, config.walkableHeight, config.walkableClimb, *solid);
+
+		// Restore ADT flags for previously remembered spans
 		restoreAdtSpans(adtSpans);
 
+		// Apply more geometry filtering
 		rcFilterWalkableLowHeightSpans(&ctx, config.walkableHeight, *solid);
 		rcFilterLowHangingWalkableObstacles(&ctx, config.walkableClimb, *solid);
 
+		// Finalize the mesh
 		auto const result = finishMesh(ctx, config, tileX, tileY, out_chunk, *solid);
 		if (!result)
 		{
