@@ -203,25 +203,27 @@ namespace
 	static const float GRID_SIZE = 533.33333f;
 	static const float GRID_PART_SIZE = GRID_SIZE / V8_SIZE;
 
-	static void getHeightCoord(UInt32 index, Grid grid, float xOffset, float yOffset, float* coord, const float* v)
+	/// This method gets the height of a given coordinate.
+	static void getHeightCoord(UInt32 index, Grid grid, float xOffset, float yOffset, float* out_coord, const float* v)
 	{
 		// wow coords: x, y, height
 		// coord is mirroed about the horizontal axes
 		switch (grid)
 		{
 			case GRID_V9:
-				coord[0] = (xOffset + index % (V9_SIZE)* GRID_PART_SIZE) * -1.f;
-				coord[1] = (yOffset + (int)(index / (V9_SIZE)) * GRID_PART_SIZE) * -1.f;
-				coord[2] = v[index];
+				out_coord[0] = (xOffset + index % (V9_SIZE)* GRID_PART_SIZE) * -1.f;
+				out_coord[1] = (yOffset + (int)(index / (V9_SIZE)) * GRID_PART_SIZE) * -1.f;
+				out_coord[2] = v[index];
 				break;
 			case GRID_V8:
-				coord[0] = (xOffset + index % (V8_SIZE)* GRID_PART_SIZE + GRID_PART_SIZE / 2.f) * -1.f;
-				coord[1] = (yOffset + (int)(index / (V8_SIZE)) * GRID_PART_SIZE + GRID_PART_SIZE / 2.f) * -1.f;
-				coord[2] = v[index];
+				out_coord[0] = (xOffset + index % (V8_SIZE)* GRID_PART_SIZE + GRID_PART_SIZE / 2.f) * -1.f;
+				out_coord[1] = (yOffset + (int)(index / (V8_SIZE)) * GRID_PART_SIZE + GRID_PART_SIZE / 2.f) * -1.f;
+				out_coord[2] = v[index];
 				break;
 		}
 	}
 	
+	/// This method gets the indices of a triangle depending on it's index.
 	static void getHeightTriangle(UInt32 square, Spot triangle, int* indices)
 	{
 		int rowOffset = square / V8_SIZE;
@@ -320,9 +322,12 @@ namespace
 		bmax[2] = bmin[2] + MeshSettings::AdtSize / MeshSettings::ChunksPerTile;
 	}
 
-	static UInt16 holetab_h[4] = { 0x1111, 0x2222, 0x4444, 0x8888 };
-	static UInt16 holetab_v[4] = { 0x000F, 0x00F0, 0x0F00, 0xF000 };
+	// Used for ADT hole packing
+	static const UInt16 holetab_h[4] = { 0x1111, 0x2222, 0x4444, 0x8888 };
+	static const UInt16 holetab_v[4] = { 0x000F, 0x00F0, 0x0F00, 0xF000 };
 
+	/// Checks if a certain ADT square index is a hole (players can walk through and navigation should
+	/// recognize it as well).
 	static bool isHole(int square, const ADTFile& adt)
 	{
 		int row = square / 128;
@@ -851,7 +856,7 @@ namespace
 				const auto &verts = m2->getVertices();
 				const auto &inds = m2->getIndices();
 
-				UInt32 count = mesh.solidVerts.size() / 3;
+				UInt32 count = doodadMesh.solidVerts.size() / 3;
 				for (auto &vert : verts)
 				{
 					// Transform vertex and push it to the list
@@ -902,14 +907,10 @@ namespace
 		initializeRecastConfig(config);
 
 		// Setup boundaries
-		float bmin[3], bmax[3];
-		calculateTileBounds(tileX, tileY, bmin, bmax);
-		rcVcopy(config.bmin, bmin);
-		rcVcopy(config.bmax, bmax);
-
 		UInt32 convertedTileX = tileX * MeshSettings::ChunksPerTile;
 		UInt32 convertedTileY = tileY * MeshSettings::ChunksPerTile;
 
+		// Use only this tiles bounding box
 		config.bmin[0] = (convertedTileX * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
 		config.bmin[1] = minZ;
 		config.bmin[2] = (convertedTileY * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
@@ -917,6 +918,7 @@ namespace
 		config.bmax[1] = maxZ;
 		config.bmax[2] = ((convertedTileY + 1) * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
 
+		// Apply border size
 		config.bmin[0] -= config.borderSize * config.cs;
 		config.bmin[2] -= config.borderSize * config.cs;
 		config.bmax[0] += config.borderSize * config.cs;
