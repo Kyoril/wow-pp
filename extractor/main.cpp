@@ -314,9 +314,9 @@ namespace
 		bmin[1] = std::numeric_limits<float>::max();
 		bmin[2] = (32 - int(tileY)) * -MeshSettings::AdtSize;
 
-		bmax[0] = bmin[0] + MeshSettings::AdtSize;
+		bmax[0] = bmin[0] + MeshSettings::AdtSize / MeshSettings::ChunksPerTile;
 		bmax[1] = -1000.0f;
-		bmax[2] = bmin[2] + MeshSettings::AdtSize;
+		bmax[2] = bmin[2] + MeshSettings::AdtSize / MeshSettings::ChunksPerTile;
 	}
 
 	static UInt16 holetab_h[4] = { 0x1111, 0x2222, 0x4444, 0x8888 };
@@ -647,14 +647,14 @@ namespace
 		calculateTileBounds(maxX, maxY, bmin, bmax);
 
 		//int polyBits = 20;
-		int maxTiles = tiles.size();
+		int maxTiles = tiles.size() * (MeshSettings::TilesPerADT * MeshSettings::TilesPerADT);
 		int maxPolysPerTile = 1 << DT_POLY_BITS;
 
 		// Setup navigation mesh creation parameters
 		dtNavMeshParams navMeshParams;
 		memset(&navMeshParams, 0, sizeof(dtNavMeshParams));
-		navMeshParams.tileWidth = GridSize;
-		navMeshParams.tileHeight = GridSize;
+		navMeshParams.tileWidth = MeshSettings::TileSize;// GridSize;
+		navMeshParams.tileHeight = MeshSettings::TileSize;
 		rcVcopy(navMeshParams.orig, bmin);
 		navMeshParams.maxTiles = maxTiles;
 		navMeshParams.maxPolys = maxPolysPerTile;
@@ -913,12 +913,16 @@ namespace
 		rcVcopy(config.bmin, bmin);
 		rcVcopy(config.bmax, bmax);
 
-		//config.bmin[0] = (tileX * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
+		UInt32 convertedTileX = tileX * MeshSettings::ChunksPerTile;
+		UInt32 convertedTileY = tileY * MeshSettings::ChunksPerTile;
+
+		config.bmin[0] = (convertedTileX * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
 		config.bmin[1] = minZ;
-		//config.bmin[2] = (tileY * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
-		//config.bmax[0] = ((tileX + 1) * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
+		config.bmin[2] = (convertedTileY * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
+		config.bmax[0] = ((convertedTileX + 1) * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
 		config.bmax[1] = maxZ;
-		//config.bmax[2] = ((tileY + 1) * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
+		config.bmax[2] = ((convertedTileY + 1) * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
+
 		config.bmin[0] -= config.borderSize * config.cs;
 		config.bmin[2] -= config.borderSize * config.cs;
 		config.bmax[0] += config.borderSize * config.cs;
