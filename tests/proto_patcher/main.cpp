@@ -776,9 +776,12 @@ namespace wowpp
 			auto it = spellEntries->begin();
 			while (it != spellEntries->end())
 			{
-				if (it->attributes(3) & game::spell_attributes_ex_c::DisableProc)
+				for (const auto & effect : it->effects())
 				{
-					DLOG("id is " << it->id());
+					if (effect.type() == 11)
+					{
+						DLOG("id is " << it->id());
+					}
 				}
 				it++;
 			}
@@ -1160,6 +1163,38 @@ namespace wowpp
 					{
 						WLOG("Unable to find unit by id: " << entry);
 					}
+				}
+
+				// Next row
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
+	static bool importSpellStackAmount(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `Id`, `StackAmount` FROM `dbc_spell`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 id = 0, stackAmount = 0;
+				row.getField(0, id);
+				row.getField(1, stackAmount);
+
+				// Find spell by id
+				auto * spell = project.spells.getById(id);
+				if (spell)
+				{
+					spell->set_stackamount(stackAmount);
+				}
+				else
+				{
+					WLOG("Unable to find spell by id: " << id);
 				}
 
 				// Next row
@@ -2130,10 +2165,16 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-#endif
 	if (!checkSpellAttributes(protoProject))
 	{
 		WLOG("Could not check spell attributes");
+		return 1;
+	}
+#endif
+
+	if (!importSpellStackAmount(protoProject, connection))
+	{
+		WLOG("Could not import item sockets");
 		return 1;
 	}
 

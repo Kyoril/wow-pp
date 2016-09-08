@@ -58,6 +58,7 @@ namespace wowpp
 		, m_itemGuid(itemGuid)
 		, m_targetMap(targetMap)
 		, m_isPersistent(isPersistent)
+		, m_stackCount(1)
 	{
 		if (spell.duration() != spell.maxduration() && isPlayerGUID(m_caster->getGuid()))
 		{
@@ -111,10 +112,6 @@ namespace wowpp
 
 	void Aura::setBasePoints(Int32 basePoints) {
 		m_basePoints = basePoints;
-
-		if (basePoints < 1) {
-			m_destroy(*this);
-		}
 	}
 
 	UInt32 Aura::getEffectSchoolMask()
@@ -152,13 +149,41 @@ namespace wowpp
 		onTick();
 	}
 
-	void Aura::setAuraApplication(UInt32 slot, Int8 count)
+	void Aura::updateStackCount(Int32 points)
 	{
-		UInt32 index = slot / 4;
-		UInt32 byte = (slot % 4) * 8;
+		if (m_spell.stackamount() != m_stackCount)
+		{
+			m_stackCount++;
+			updateAuraApplication();
+			handleModifier(false);
+
+			Int32 basePoints = m_stackCount * points;
+
+			if (basePoints != m_basePoints)
+			{
+				setBasePoints(basePoints);
+			}
+
+			if (m_duration > 0)
+			{
+				// Get spell duration
+				m_expireCountdown.setEnd(
+					getCurrentTime() + m_duration);
+			}
+
+			handleModifier(true);
+		}
+	}
+
+	void Aura::updateAuraApplication()
+	{
+		UInt32 stackCount = m_procCharges > 0 ? m_procCharges * m_stackCount : m_stackCount;
+
+		UInt32 index = m_slot / 4;
+		UInt32 byte = (m_slot % 4) * 8;
 		UInt32 val = m_target.getUInt32Value(unit_fields::AuraApplications + index);
 		val &= ~(0xFF << byte);
-		val |= ((UInt8(count)) << byte);
+		val |= ((UInt8(stackCount <= 255 ? stackCount - 1 : 255 - 1)) << byte);
 		m_target.setUInt32Value(unit_fields::AuraApplications + index, val);
 	}
 
@@ -433,7 +458,7 @@ namespace wowpp
 			}
 			else if (m_slot != 0xFF)
 			{
-				setAuraApplication(m_slot, static_cast<Int8>(m_procCharges) - 1);
+				updateAuraApplication();
 			}
 		}
 	}
@@ -503,7 +528,6 @@ namespace wowpp
 		}
 
 		//TODO: apply physical dmg (attack power)?
-		
 
 		if (apply)
 		{
@@ -2342,7 +2366,7 @@ namespace wowpp
 
 			if (m_slot != 0xFF)
 			{
-				setAuraApplication(m_slot, static_cast<Int8>(m_procCharges) - 1);
+				updateAuraApplication();
 			}
 		}
 	}

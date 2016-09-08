@@ -116,7 +116,9 @@ namespace wowpp
 
 		UInt32 getEffectSchoolMask();
 
-		Int32 getTotalDuration() const { return m_duration; }
+		Int32 getTotalDuration() const { 
+			return m_duration; 
+		}
 
 		bool isStealthAura() const;
 
@@ -127,12 +129,19 @@ namespace wowpp
 		}
 
 		UInt32 getMaxTickCount() {
-			return m_duration > 0 && m_effect.amplitude() > 0 ? m_duration / m_effect.amplitude() : 0;
+			return m_totalTicks;
 		}
-	protected:
 
+		UInt32 getStackCount() {
+			return m_stackCount;
+		}
+
+		void updateStackCount(Int32 points);
+
+	protected:
+		
 		/// Updates the counter display (stack) of this aura.
-		void setAuraApplication(UInt32 slot, Int8 count);
+		void updateAuraApplication();
 
 	protected:
 
@@ -304,5 +313,6 @@ namespace wowpp
 		Int32 m_duration;
 		UInt64 m_itemGuid;
 		bool m_isPersistent;
+		UInt32 m_stackCount;
 	};
 }

@@ -102,6 +102,7 @@ message SpellEntry {
 	optional uint32 proccustomflags = 51;
 	optional uint32 baseid = 52;
 	optional uint32 channelinterruptflags = 53;
+	optional uint32 stackamount = 54;
 }
 
 message Spells {

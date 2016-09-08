@@ -74,6 +74,22 @@ namespace wowpp
 				newSlot = a->getSlot();
 				isReplacement = true;
 
+				if (a->getSpell().stackamount())
+				{
+					a->updateStackCount(aura->getBasePoints());
+					
+					// Notify caster
+					m_owner.auraUpdated(newSlot, a->getSpell().id(), a->getTotalDuration(), a->getTotalDuration());
+
+					if (a->getCaster())
+					{
+						a->getCaster()->targetAuraUpdated(m_owner.getGuid(), newSlot,
+							a->getSpell().id(), a->getTotalDuration(), a->getTotalDuration());
+					}
+					
+					return false;
+				}
+
 				// Replace old aura instance if not higher base points
 				if (a->getEffect().aura() == aura->getEffect().aura() &&
 					a->getEffect().index() == aura->getEffect().index())
