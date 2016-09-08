@@ -306,6 +306,7 @@ namespace
 			if (tileY > out_maxY) out_maxY = tileY;
 		}
 	}
+	
 	/// Calculates tile boundaries in world units, but converted to the recast coordinate
 	/// system.
 	static void calculateTileBounds(UInt32 tileX, UInt32 tileY, float* bmin, float* bmax)
@@ -335,37 +336,18 @@ namespace
 		return (hole & holetab_v[holeCol] & holetab_h[holeRow]) != 0;
 	}
 
-	/// 
-	struct NavTile
-	{
-		NavTile() : chf(NULL), solid(NULL), cset(NULL), pmesh(NULL), dmesh(NULL) {}
-		~NavTile()
-		{
-			rcFreeCompactHeightfield(chf);
-			rcFreeContourSet(cset);
-			rcFreeHeightField(solid);
-			rcFreePolyMesh(pmesh);
-			rcFreePolyMeshDetail(dmesh);
-		}
-		rcCompactHeightfield* chf;
-		rcHeightfield* solid;
-		rcContourSet* cset;
-		rcPolyMesh* pmesh;
-		rcPolyMeshDetail* dmesh;
-	};
-	
 	/// Writes data of a certain map mesh to an obj file.
-	static void serializeMeshData(UInt32 mapID, UInt32 tileX, UInt32 tileY, MeshData& meshData)
+	static void serializeMeshData(const std::string &suffix, UInt32 mapID, UInt32 tileX, UInt32 tileY, MeshData& meshData)
 	{
-		char objFileName[255];
-		sprintf(objFileName, "meshes/map%03u%02u%02u.obj", mapID, tileY, tileX);
+		std::stringstream nameStrm;
+		nameStrm << "meshes/map" << std::setw(3) << std::setfill('0') << mapID << std::setw(2) << tileY << tileX << suffix << ".obj";
 
-		FILE* objFile = fopen(objFileName, "wb");
+		auto const fileName = nameStrm.str();
+
+		std::ofstream objFile(fileName.c_str(), std::ios::out);
 		if (!objFile)
 		{
-			char message[1024];
-			sprintf(message, "Failed to open %s for writing!\n", objFileName);
-			perror(message);
+			ELOG("Failed to open " << fileName << " for writing");
 			return;
 		}
 
@@ -375,12 +357,10 @@ namespace
 		int triCount = meshData.solidTris.size() / 3;
 
 		for (int i = 0; i < meshData.solidVerts.size() / 3; i++)
-			fprintf(objFile, "v %f %f %f\n", verts[i * 3], verts[i * 3 + 1], verts[i * 3 + 2]);
+			objFile << "v " << verts[i * 3] << " " << verts[i * 3 + 1] << " " << verts[i * 3 + 2] << "\n";
 
 		for (int i = 0; i < meshData.solidTris.size() / 3; i++)
-			fprintf(objFile, "f %i %i %i\n", tris[i * 3] + 1, tris[i * 3 + 1] + 1, tris[i * 3 + 2] + 1);
-
-		fclose(objFile);
+			objFile << "f " << tris[i * 3] + 1 << " " << tris[i * 3 + 1] + 1 << " " << tris[i * 3 + 2] + 1 << "\n";
 	}
 
 	// Code taken from tripleslash
@@ -583,7 +563,6 @@ namespace
 						const float x = orig[0] + v[0] * cs;
 						const float y = orig[1] + (v[1] + 1)*ch;
 						const float z = orig[2] + v[2] * cs;
-
 						outFile << "v " << x << " " << y << " " << z << std::endl;
 					}
 
@@ -662,7 +641,7 @@ namespace
 
 		//int polyBits = 20;
 		int maxTiles = tiles.size() * (MeshSettings::TilesPerADT * MeshSettings::TilesPerADT);
-		int maxPolysPerTile = 1 << DT_POLY_BITS;
+		const int maxPolysPerTile = 1 << DT_POLY_BITS;
 
 		// Setup navigation mesh creation parameters
 		dtNavMeshParams navMeshParams;
@@ -784,16 +763,16 @@ namespace
 			// Add vertices
 			for (auto &vert : collision.vertices)
 			{
-				wmoMesh.solidVerts.push_back(vert.x);
+				wmoMesh.solidVerts.push_back(-vert.y);
 				wmoMesh.solidVerts.push_back(vert.z);
-				wmoMesh.solidVerts.push_back(vert.y);
+				wmoMesh.solidVerts.push_back(-vert.x);
 			}
 			// Add triangles
 			for (auto &tri : collision.triangles)
 			{
-				wmoMesh.solidTris.push_back(tri.indexC);
-				wmoMesh.solidTris.push_back(tri.indexB);
 				wmoMesh.solidTris.push_back(tri.indexA);
+				wmoMesh.solidTris.push_back(tri.indexB);
+				wmoMesh.solidTris.push_back(tri.indexC);
 				wmoMesh.triangleFlags.push_back(AreaFlags::WMO);
 			}
 		}
@@ -897,7 +876,8 @@ namespace
 #endif
 
 		// Serialize adt data
-		serializeMeshData(mapId, tileX, tileY, adtMesh);
+		serializeMeshData("_adt", mapId, tileX, tileY, adtMesh);
+		serializeMeshData("_wmo", mapId, tileX, tileY, wmoMesh);
 
 		// Adjust min and max z values
 		for (UInt32 i = 0; i < adtMesh.solidVerts.size(); i += 3)
