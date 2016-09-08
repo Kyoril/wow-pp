@@ -529,54 +529,17 @@ namespace wowpp
 
 		//TODO: apply physical dmg (attack power)?
 
-		if (apply)
+		for (UInt8 school = 1; school < 7; ++school)
 		{
-			if (m_basePoints >= 0)
+			if ((m_effect.miscvaluea() & (1 << school)) != 0)
 			{
-				for (UInt8 school = 1; school < 7; ++school)
-				{
-					if ((m_effect.miscvaluea() & (1 << school)) != 0)
-					{
-						UInt32 spellDmg = m_target.getUInt32Value(character_fields::ModDamageDonePos + school);
-						m_target.setUInt32Value(character_fields::ModDamageDonePos + school, spellDmg + m_basePoints);
-					}
-				}
-			}
-			else
-			{
-				for (UInt8 school = 1; school < 7; ++school)
-				{
-					if ((m_effect.miscvaluea() & (1 << school)) != 0)
-					{
-						UInt32 spellDmg = m_target.getUInt32Value(character_fields::ModDamageDonePos + school);
-						m_target.setUInt32Value(character_fields::ModDamageDoneNeg + school, spellDmg - m_basePoints);
-					}
-				}
-			}
-		}
-		else
-		{
-			if (m_basePoints >= 0)
-			{
-				for (UInt8 school = 1; school < 7; ++school)
-				{
-					if ((m_effect.miscvaluea() & (1 << school)) != 0)
-					{
-						UInt32 spellDmg = m_target.getUInt32Value(character_fields::ModDamageDonePos + school);
-						m_target.setUInt32Value(character_fields::ModDamageDonePos + school, spellDmg - m_basePoints);
-					}
-				}
-			}
-			else
-			{
-				for (UInt8 school = 1; school < 7; ++school)
-				{
-					if ((m_effect.miscvaluea() & (1 << school)) != 0)
-					{
-						UInt32 spellDmg = m_target.getUInt32Value(character_fields::ModDamageDonePos + school);
-						m_target.setUInt32Value(character_fields::ModDamageDoneNeg + school, spellDmg + m_basePoints);
-					}
-				}
+				UInt32 spellDmgPos = m_target.getUInt32Value(character_fields::ModDamageDonePos + school);
+				UInt32 spellDmgNeg = m_target.getUInt32Value(character_fields::ModDamageDoneNeg + school);
+				float spellDmgPct = m_target.getFloatValue(character_fields::ModDamageDonePct + school);
+				Int32 spellDmg = (spellDmgPos - spellDmgNeg) * spellDmgPct + (apply ? m_basePoints : -m_basePoints);
+
+				m_target.setUInt32Value(character_fields::ModDamageDonePos + school, spellDmg > 0 ? spellDmg : 0);
+				m_target.setUInt32Value(character_fields::ModDamageDoneNeg + school, spellDmg < 0 ? spellDmg : 0);
 			}
 		}
 	}
@@ -1067,16 +1030,8 @@ namespace wowpp
 			return;
 		}
 
-		if (apply)
-		{
-			UInt32 spellHeal = m_target.getUInt32Value(character_fields::ModHealingDonePos);
-			m_target.setUInt32Value(character_fields::ModHealingDonePos, spellHeal + m_basePoints);
-		}
-		else
-		{
-			UInt32 spellHeal = m_target.getUInt32Value(character_fields::ModHealingDonePos);
-			m_target.setUInt32Value(character_fields::ModHealingDonePos, spellHeal - m_basePoints);
-		}
+		UInt32 spellHeal = m_target.getUInt32Value(character_fields::ModHealingDonePos);
+		m_target.setUInt32Value(character_fields::ModHealingDonePos, spellHeal + (apply ? m_basePoints : -m_basePoints));
 	}
 
 	void Aura::handleModTotalStatPercentage(bool apply)
