@@ -1395,6 +1395,10 @@ namespace wowpp
 			{
 				total += mod.value;
 			}
+			else
+			{
+				WLOG("Spell modifier affectmask doesn't check with spell " << spellId << " familyflags.");
+			}
 		}
 
 		return total;
