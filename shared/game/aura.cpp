@@ -155,24 +155,27 @@ namespace wowpp
 		{
 			m_stackCount++;
 			updateAuraApplication();
-			handleModifier(false);
-
-			Int32 basePoints = m_stackCount * points;
-
-			if (basePoints != m_basePoints)
-			{
-				setBasePoints(basePoints);
-			}
-
-			if (m_duration > 0)
-			{
-				// Get spell duration
-				m_expireCountdown.setEnd(
-					getCurrentTime() + m_duration);
-			}
-
-			handleModifier(true);
 		}
+
+		handleModifier(false);
+
+		Int32 basePoints = m_stackCount * points;
+
+		if (basePoints != m_basePoints)
+		{
+			setBasePoints(basePoints);
+		}
+
+		m_tickCount = 0;
+
+		if (m_duration > 0)
+		{
+			// Get spell duration
+			m_expireCountdown.setEnd(
+				getCurrentTime() + m_duration);
+		}
+
+		handleModifier(true);
 	}
 
 	void Aura::updateAuraApplication()
