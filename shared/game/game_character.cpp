@@ -1904,13 +1904,6 @@ namespace wowpp
 				case game::shapeshift_form::Cat:
 					atkPower = getModifierValue(unit_mods::AttackPower, unit_mod_type::BaseValue) + getUInt32Value(unit_fields::Stat0) * 2.0f + getUInt32Value(unit_fields::Stat1) - 20.0f;
 					break;
-				case game::shapeshift_form::Bear:
-				case game::shapeshift_form::DireBear:
-					atkPower = getModifierValue(unit_mods::AttackPower, unit_mod_type::BaseValue) + getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
-					break;
-				case game::shapeshift_form::Moonkin:
-					atkPower = getModifierValue(unit_mods::AttackPower, unit_mod_type::BaseValue) + getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
-					break;
 				default:
 					atkPower = getUInt32Value(unit_fields::Stat0) * 2.0f - 20.0f;
 					break;
@@ -1927,7 +1920,7 @@ namespace wowpp
 				break;
 			}
 
-			setModifierValue(unit_mods::AttackPower, unit_mod_type::BaseValue, atkPower);
+			atkPower += getModifierValue(unit_mods::AttackPower, unit_mod_type::BaseValue);
 			const float base_attPower = atkPower * getModifierValue(unit_mods::AttackPower, unit_mod_type::BasePct);
 			const float attPowerMod = getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalValue);
 			const float attPowerMultiplier = getModifierValue(unit_mods::AttackPower, unit_mod_type::TotalPct) - 1.0f;	// In display, 0.0 = 100% (unmodified)
@@ -1959,7 +1952,7 @@ namespace wowpp
 				break;
 			}
 
-			setModifierValue(unit_mods::AttackPowerRanged, unit_mod_type::BaseValue, atkPower);
+			atkPower += getModifierValue(unit_mods::AttackPowerRanged, unit_mod_type::BaseValue);
 			float base_attPower = atkPower * getModifierValue(unit_mods::AttackPowerRanged, unit_mod_type::BasePct);
 			float attPowerMod = getModifierValue(unit_mods::AttackPowerRanged, unit_mod_type::TotalValue);
 			float attPowerMultiplier = getModifierValue(unit_mods::AttackPowerRanged, unit_mod_type::TotalPct) - 1.0f;

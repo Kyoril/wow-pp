@@ -155,16 +155,16 @@ namespace wowpp
 		{
 			m_stackCount++;
 			updateAuraApplication();
+
+			Int32 basePoints = m_stackCount * points;
+
+			if (basePoints != m_basePoints)
+			{
+				setBasePoints(basePoints);
+			}
 		}
 
 		handleModifier(false);
-
-		Int32 basePoints = m_stackCount * points;
-
-		if (basePoints != m_basePoints)
-		{
-			setBasePoints(basePoints);
-		}
 
 		m_tickCount = 0;
 
@@ -1293,7 +1293,6 @@ namespace wowpp
 
 		if (isPassive() && isAbility)
 		{
-			m_target.setModifierValue(unit_mods::AttackPower, unit_mod_type::BaseValue, 0.0f);
 			m_target.updateModifierValue(unit_mods::AttackPower, unit_mod_type::BaseValue, m_basePoints, apply);
 		}
 		else
@@ -1828,6 +1827,11 @@ namespace wowpp
 			{
 				isArea = true;
 			}
+		}
+
+		if (m_caster->isGameCharacter())
+		{
+			reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(spell_mod_op::Dot, m_spell.id(), m_basePoints);
 		}
 
 		namespace aura = game::aura_type;
