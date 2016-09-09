@@ -2238,12 +2238,12 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-#endif
 	if (!importAffectMask(protoProject, connection))
 	{
 		WLOG("Could not import affect masks");
 		return 1;
 	}
+#endif
 
 	if (!addSpellLinks(protoProject))
 	{

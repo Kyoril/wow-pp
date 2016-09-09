@@ -2233,7 +2233,7 @@ namespace wowpp
 		{
 			m_onProc = m_caster->spellProcEvent.connect(
 			[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType, bool canRemove) {
-				if (procSpell && m_spell.family() == procSpell->family() && m_effect.itemtype() & procSpell->familyflags())
+				if (procSpell && m_spell.family() == procSpell->family() && (m_effect.itemtype() ? m_effect.itemtype() : m_effect.affectmask()) & procSpell->familyflags())
 				{
 					handleProcModifier(attackType, canRemove, amount, target);
 				}
