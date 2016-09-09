@@ -2252,7 +2252,7 @@ namespace wowpp
 			{
 				if (trackedAuras[m_spell.mechanic()] != &m_target)
 				{
-					trackedAuras[m_spell.mechanic()]->getAuras().removeAllAurasDueToMechanic(m_spell.mechanic());
+					trackedAuras[m_spell.mechanic()]->getAuras().removeAllAurasDueToMechanic(1 << m_spell.mechanic());
 				}
 			}
 
