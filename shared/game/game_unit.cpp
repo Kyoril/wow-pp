@@ -2089,8 +2089,7 @@ namespace wowpp
 		if (isBinary)
 		{
 			float reductionPct = (effectiveResistance / (casterLevel * 5.0f)) * 75.0f;
-			reductionPct -= resistChanceMod;
-			if (resiDistribution(randomGenerator) > reductionPct)
+			if ((resiDistribution(randomGenerator) + resistChanceMod) > reductionPct)
 			{
 				return 0.0f;
 			}

@@ -604,7 +604,7 @@ namespace wowpp
 
 		switch (targetB)
 		{
-		case game::targets::UnitAreaEnemySrc:
+		case game::targets::UnitAreaEnemySrc: //15
 			{
 				math::Vector3 location = attacker.getLocation();
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
@@ -674,7 +674,7 @@ namespace wowpp
 				});
 			}
 			break;
-		case game::targets::AreaPartySrc:
+		case game::targets::AreaPartySrc: //33
 			{
 				math::Vector3 location = attacker.getLocation();
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
