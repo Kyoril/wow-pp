@@ -370,14 +370,7 @@ namespace wowpp
 					hitInfo = game::hit_info::CriticalHit;
 				}
 
-				Int8 resistChanceMod = 0;
-				UInt32 spellPenetration = 0;
-				if (attacker->isGameCharacter())
-				{
-					reinterpret_cast<GameCharacter*>(attacker)->applySpellMod(spell_mod_op::ResistMissChance, spell.id(), resistChanceMod);
-					spellPenetration = -attacker->getInt32Value(character_fields::ModTargetResistance);
-				}
-				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(school, attacker->getLevel(), resistChanceMod, spellPenetration, isBinary));
+				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(spell, effect, *attacker, isBinary));
 				m_hitInfos[targetA][targetB].push_back(hitInfo);
 				m_victimStates[targetA][targetB].push_back(victimState);
 			}

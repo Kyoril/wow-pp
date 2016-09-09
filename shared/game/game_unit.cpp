@@ -2050,18 +2050,35 @@ namespace wowpp
 		}
 	}
 
-	float GameUnit::getResiPercentage(UInt8 school, UInt32 attackerLevel, Int8 resistChanceMod, UInt32 spellPenetration, bool isBinary)
+	float GameUnit::getResiPercentage(const proto::SpellEntry &spell, const proto::SpellEffect &effect, GameUnit &attacker, bool isBinary)
 	{
+		UInt8 school = spell.schoolmask();
 		if (school <= 1)
 		{
 			return 0.0f;
 		}
 
+		Int8 resistChanceMod = 0;
+		UInt32 spellPen = 0;
+		if (attacker.isGameCharacter())
+		{
+			reinterpret_cast<GameCharacter&>(attacker).applySpellMod(spell_mod_op::ResistMissChance, spell.id(), resistChanceMod);
+			spellPen = -attacker.getInt32Value(character_fields::ModTargetResistance);
+		}
+
+		UInt32 mechanic = effect.mechanic() ? effect.mechanic() : spell.mechanic();
+		m_auras.forEachAuraOfType(game::aura_type::ModMechanicResistance, [&resistChanceMod, mechanic](Aura &aura) -> bool {
+			if (aura.getEffect().miscvaluea() == mechanic)
+			{
+				resistChanceMod -= aura.getBasePoints();
+			}
+			return true;
+		});
+
 		std::uniform_real_distribution<float> resiDistribution(0.0f, 99.9f);
-		UInt32 spellPen = spellPenetration;
 		UInt32 resiOffset = static_cast<UInt32>(log2(school));
 		UInt32 baseResi = getUInt32Value(unit_fields::Resistances + resiOffset);
-		UInt32 casterLevel = attackerLevel;
+		UInt32 casterLevel = attacker.getLevel();
 		UInt32 victimLevel = getLevel();
 		float levelBasedResistance = 0.0f;
 		if (victimLevel > casterLevel)

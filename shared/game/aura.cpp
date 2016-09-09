@@ -49,7 +49,6 @@ namespace wowpp
 		, m_tickCountdown(target.getTimers())
 		, m_isPeriodic(false)
 		, m_expired(false)
-		, m_attackerLevel(caster.getLevel())
 		, m_slot(0xFF)
 		, m_post(std::move(post))
 		, m_destroy(std::move(onDestroy))
@@ -1838,21 +1837,14 @@ namespace wowpp
 				// we use m_target (the target itself) as the level calculation. This should be used otherwise however.
 				UInt32 school = m_spell.schoolmask();
 				Int32 damage = m_basePoints;
-				Int8 resistChanceMod = 0;
-				UInt32 spellPenetration = 0;
-				if (m_caster->isGameCharacter())
-				{
-					reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(spell_mod_op::ResistMissChance, m_spell.id(), resistChanceMod);
-					spellPenetration = -m_caster->getInt32Value(character_fields::ModTargetResistance);
-				}
-				UInt32 resisted = damage * (m_target.getResiPercentage(school, m_attackerLevel, resistChanceMod, spellPenetration, false) / 100.0f);
+				UInt32 resisted = damage * (m_target.getResiPercentage(m_spell, m_effect, *m_caster, false) / 100.0f);
 				UInt32 absorbed = m_target.consumeAbsorb(damage - resisted, m_spell.schoolmask());
 
 				// Reduce by armor if physical
 				if (school & 1 &&
 				        m_effect.mechanic() != 15)	// Bleeding
 				{
-					m_target.calculateArmorReducedDamage(m_attackerLevel, damage);
+					m_target.calculateArmorReducedDamage(m_caster->getLevel(), damage);
 				}
 
 				m_target.applyDamageTakenBonus(school, m_totalTicks, reinterpret_cast<UInt32&>(damage));

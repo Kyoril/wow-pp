@@ -305,7 +305,6 @@ namespace wowpp
 		Countdown m_tickCountdown;
 		bool m_isPeriodic;
 		bool m_expired;
-		UInt32 m_attackerLevel;		// Needed for damage calculation
 		UInt8 m_slot;
 		PostFunction m_post;
 		std::function<void(Aura &)> m_destroy;
