@@ -699,6 +699,10 @@ namespace wowpp
 					case 27006:
 						it->set_attributes(2, 0);
 						break;
+						// Savage Fury
+					case 16998:
+					case 16999:
+						it->mutable_effects(2)->set_affectmask(4398046511104);
 
 						////////////////////////////// Creature Spells ///////////////////////////
 
@@ -768,22 +772,51 @@ namespace wowpp
 		return true;
 	}
 
-	static bool checkSpellAttributes(proto::Project &project)
+	static bool checkSpells(proto::Project &project, MySQL::Connection &conn)
 	{
-		auto *spellEntries = project.spells.getTemplates().mutable_entry();
-		if (spellEntries)
+		wowpp::MySQL::Select select(conn, "SELECT `entry`,`effectId`, `SpellFamilyMask` FROM `world`.`spell_affect`;");
+		if (select.success())
 		{
-			auto it = spellEntries->begin();
-			while (it != spellEntries->end())
+			wowpp::MySQL::Row row(select);
+			auto *spellEntries = project.spells.getTemplates().mutable_entry();
+			while (row)
 			{
-				for (const auto & effect : it->effects())
+				// Get row data
+				UInt32 entry = 0, effectId = 0, index = 0;
+				UInt64 familyFlags = 0;
+				row.getField(index++, entry);
+				row.getField(index++, effectId);
+				row.getField(index++, familyFlags);
+				
+				if (spellEntries)
 				{
-					if (effect.type() == 11)
+					auto it = spellEntries->begin();
+					while (it != spellEntries->end())
 					{
-						DLOG("id is " << it->id());
+						for (const auto & effect : it->effects())
+						{
+							if (entry == 12472 &&
+								it->id() == 12472 &&
+								effect.index() == effectId &&
+								effect.affectmask() != familyFlags)
+							{
+								DLOG(familyFlags);
+								DLOG(effect.affectmask());
+							}
+							/*
+							if (it->id() == entry &&
+								effect.index() == effectId &&
+								effect.affectmask() != familyFlags)
+							{
+								DLOG("difference is " << familyFlags - effect.affectmask());
+								DLOG("id is " << it->id());
+							}*/
+						}
+						it++;
 					}
 				}
-				it++;
+
+				row = row.next(select);
 			}
 		}
 		return true;
@@ -1191,6 +1224,40 @@ namespace wowpp
 				if (spell)
 				{
 					spell->set_stackamount(stackAmount);
+				}
+				else
+				{
+					WLOG("Unable to find spell by id: " << id);
+				}
+
+				// Next row
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
+	static bool importAffectMask(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `entry`, `effectId`, `SpellFamilyMask` FROM `world`.`spell_affect`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				// Get row data
+				UInt32 id = 0, effectId = 0;
+				UInt64 familyFlags = 0;
+				row.getField(0, id);
+				row.getField(1, effectId);
+				row.getField(2, familyFlags);
+
+				// Find spell by id
+				auto * spell = project.spells.getById(id);
+				if (spell)
+				{
+					spell->mutable_effects(effectId)->set_affectmask(familyFlags);
 				}
 				else
 				{
@@ -2111,12 +2178,6 @@ int main(int argc, char* argv[])
 	}
 
 #if 0
-	if (!addSpellLinks(protoProject))
-	{
-		ELOG("Failed to add spell links");
-		return 1;
-	}
-
 	if (!importSpellFocus(protoProject, connection))
 	{
 		ELOG("Failed to load spell focus object");
@@ -2165,16 +2226,28 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	if (!checkSpellAttributes(protoProject))
-	{
-		WLOG("Could not check spell attributes");
-		return 1;
-	}
-#endif
-
 	if (!importSpellStackAmount(protoProject, connection))
 	{
-		WLOG("Could not import item sockets");
+		WLOG("Could not import stack amount");
+		return 1;
+	}
+
+	if (!checkSpells(protoProject, connection))
+	{
+		WLOG("Could not check spells");
+		return 1;
+	}
+
+#endif
+	if (!importAffectMask(protoProject, connection))
+	{
+		WLOG("Could not import affect masks");
+		return 1;
+	}
+
+	if (!addSpellLinks(protoProject))
+	{
+		ELOG("Failed to add spell links");
 		return 1;
 	}
 
