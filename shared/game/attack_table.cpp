@@ -681,6 +681,37 @@ namespace wowpp
 				});
 			}
 			break;
+		case game::targets::AreaPartySrc:
+			{
+				math::Vector3 location = attacker.getLocation();
+				auto &finder = attacker.getWorldInstance()->getUnitFinder();
+				finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
+				{
+					if (unit.getTypeId() != object_type::Character)
+						return true;
+
+					if (radius * radius >= (location - unit.getLocation()).squared_length())
+					{
+						GameCharacter *unitChar = dynamic_cast<GameCharacter *>(&unit);
+						GameCharacter *attackerChar = dynamic_cast<GameCharacter *>(&attacker);
+						if (unitChar == attackerChar ||
+							(unitChar->getGroupId() != 0 &&
+								unitChar->getGroupId() == attackerChar->getGroupId()))
+						{
+							targets.push_back(&unit);
+							if (maxtargets > 0 &&
+								targets.size() >= maxtargets)
+							{
+								// No more units
+								return false;
+							}
+						}
+					}
+
+					return true;
+				});
+			}
+			break;
 		default:
 			break;
 		}
