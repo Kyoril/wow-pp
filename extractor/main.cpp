@@ -952,9 +952,9 @@ namespace
 		rcVcopy(config.bmax, bmax);
 
 		// Use only this tiles bounding box
-		//config.bmin[0] = (convertedTileX * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
+		config.bmin[0] = (convertedTileX * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
 		config.bmin[1] = minZ;
-		//config.bmin[2] = (convertedTileY * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
+		config.bmin[2] = (convertedTileY * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
 		//config.bmax[0] = ((convertedTileX + 1) * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
 		config.bmax[1] = maxZ;
 		//config.bmax[2] = ((convertedTileY + 1) * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;

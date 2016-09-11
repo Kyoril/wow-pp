@@ -39,7 +39,6 @@ namespace wowpp
 	Aura::Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, SpellTargetMap targetMap, UInt64 itemGuid, bool isPersistent, PostFunction post, std::function<void(Aura &)> onDestroy)
 		: m_spell(spell)
 		, m_effect(effect)
-		, m_caster(&caster)
 		, m_target(target)
 		, m_tickCount(0)
 		, m_applyTime(getCurrentTime())
@@ -59,14 +58,14 @@ namespace wowpp
 		, m_isPersistent(isPersistent)
 		, m_stackCount(1)
 	{
-		if (spell.duration() != spell.maxduration() && isPlayerGUID(m_caster->getGuid()))
+		m_caster = std::static_pointer_cast<GameUnit>(caster.shared_from_this());
+
+		if (spell.duration() != spell.maxduration() && m_caster->isGameCharacter())
 		{
-			m_duration += static_cast<Int32>((spell.maxduration() - m_duration) * (reinterpret_cast<GameCharacter *>(m_caster)->getComboPoints() / 5.0f));
+			m_duration += static_cast<Int32>((spell.maxduration() - m_duration) * (std::static_pointer_cast<GameCharacter>(m_caster)->getComboPoints() / 5.0f));
 		}
 
 		// Subscribe to caster despawn event so that we don't hold an invalid pointer
-		m_casterDespawned = caster.despawned.connect(
-			std::bind(&Aura::onCasterDespawned, this, std::placeholders::_1));
 		m_onExpire = m_expireCountdown.ended.connect(
 			std::bind(&Aura::onExpired, this));
 		if (!m_isPersistent)
@@ -79,14 +78,14 @@ namespace wowpp
 		if (m_caster &&
 			m_caster->isGameCharacter())
 		{
-			GameCharacter *casterChar = reinterpret_cast<GameCharacter*>(m_caster);
+			auto casterChar = std::static_pointer_cast<GameCharacter>(m_caster);
 			casterChar->applySpellMod(spell_mod_op::Duration, m_spell.id(), m_duration);
 			if (m_effect.aura() == game::aura_type::PeriodicDamage ||
 				m_effect.aura() == game::aura_type::PeriodicDamagePercent ||
 				m_effect.aura() == game::aura_type::PeriodicHeal)
 			{
 				float basePoints = m_basePoints;
-				reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(spell_mod_op::Dot, m_spell.id(), basePoints);
+				casterChar->applySpellMod(spell_mod_op::Dot, m_spell.id(), basePoints);
 				m_basePoints = static_cast<UInt32>(ceilf(basePoints));
 
 				if (m_effect.aura() == game::aura_type::PeriodicHeal)
@@ -404,7 +403,7 @@ namespace wowpp
 
 		if (m_caster && m_caster->isGameCharacter())
 		{
-			reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(
+			std::static_pointer_cast<GameCharacter>(m_caster)->applySpellMod(
 				spell_mod_op::ChanceOfSuccess, m_spell.id(), procChance);
 		}
 
@@ -1779,13 +1778,6 @@ namespace wowpp
 		}
 	}
 
-	void Aura::onCasterDespawned(GameObject &object)
-	{
-		// Reset caster
-		m_casterDespawned.disconnect();
-		m_caster = nullptr;
-	}
-
 	void Aura::onExpired()
 	{
 		// Expired
@@ -1873,7 +1865,7 @@ namespace wowpp
 				float threat = noThreat ? 0.0f : damage - resisted - absorbed;
 				if (!noThreat && m_caster->isGameCharacter())
 				{
-					reinterpret_cast<GameCharacter*>(m_caster)->applySpellMod(spell_mod_op::Threat, m_spell.id(), threat);
+					std::static_pointer_cast<GameCharacter>(m_caster)->applySpellMod(spell_mod_op::Threat, m_spell.id(), threat);
 				}
 
 				UInt32 procAttacker = game::spell_proc_flags::DonePeriodic;
@@ -1885,7 +1877,7 @@ namespace wowpp
 				}
 
 				m_caster->procEvent(&m_target, procAttacker, procVictim, game::spell_proc_flags_ex::NormalHit, damage - resisted - absorbed, game::weapon_attack::BaseAttack, &m_spell, false /*check this*/);
-				m_target.dealDamage(damage - resisted - absorbed, school, m_caster, threat);
+				m_target.dealDamage(damage - resisted - absorbed, school, m_caster.get(), threat);
 				break;
 			}
 		case aura::PeriodicDamagePercent:
@@ -1962,7 +1954,7 @@ namespace wowpp
 				}
 
 				// Update health value
-				m_target.heal(heal, m_caster);
+				m_target.heal(heal, m_caster.get());
 				break;
 			}
 		case aura::ObsModMana:
@@ -2404,23 +2396,24 @@ namespace wowpp
 				return false;
 			}
 			
-			if (!isVictim && isPlayerGUID(m_caster->getGuid()))
+			if (!isVictim && m_caster->isGameCharacter())
 			{
+				auto casterChar = std::static_pointer_cast<GameCharacter>(m_caster);
 				if (m_spell.itemclass() == game::item_class::Weapon)
 				{
 					std::shared_ptr<GameItem> item;
 
 					if (attackType == game::weapon_attack::OffhandAttack)
 					{
-						item = reinterpret_cast<GameCharacter*>(m_caster)->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
+						item = casterChar->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
 					}
 					else if (attackType == game::weapon_attack::RangedAttack)
 					{
-						item = reinterpret_cast<GameCharacter*>(m_caster)->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Ranged));
+						item = casterChar->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Ranged));
 					}
 					else if (attackType == game::weapon_attack::BaseAttack)
 					{
-						item = reinterpret_cast<GameCharacter*>(m_caster)->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
+						item = casterChar->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
 					}
 
 					if (!item || item->getEntry().itemclass() != game::item_class::Weapon || !(m_spell.itemsubclassmask() & (1 << item->getEntry().subclass())))
@@ -2433,7 +2426,7 @@ namespace wowpp
 					//Shield
 					std::shared_ptr<GameItem> item;
 
-					item = reinterpret_cast<GameCharacter*>(m_caster)->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
+					item = casterChar->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
 
 					if (!item || item->getEntry().itemclass() != game::item_class::Armor || !(m_spell.itemsubclassmask() & (1 << item->getEntry().subclass())))
 					{

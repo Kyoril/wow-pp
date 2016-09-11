@@ -59,7 +59,7 @@ namespace wowpp
 		}
 		/// Gets the caster of this aura (if exists).
 		GameUnit *getCaster() {
-			return m_caster;
+			return m_caster.get();
 		}
 		UInt64 getItemGuid() const {
 			return m_itemGuid;
@@ -273,8 +273,6 @@ namespace wowpp
 
 		/// Starts the periodic tick timer.
 		void startPeriodicTimer();
-		/// Executed if the caster of this aura is about to despawn.
-		void onCasterDespawned(GameObject &object);
 		/// Executed when the aura expires.
 		void onExpired();
 		/// Executed when this aura ticks.
@@ -292,9 +290,9 @@ namespace wowpp
 
 		const proto::SpellEntry &m_spell;
 		const proto::SpellEffect &m_effect;
-		boost::signals2::scoped_connection m_casterDespawned, m_targetMoved, m_targetEnteredWater, m_targetStartedAttacking, m_targetStartedCasting, m_onExpire, m_onTick, m_onTargetKilled;
+		boost::signals2::scoped_connection m_targetMoved, m_targetEnteredWater, m_targetStartedAttacking, m_targetStartedCasting, m_onExpire, m_onTick, m_onTargetKilled;
 		boost::signals2::scoped_connection m_takenDamage, m_procKilled, m_onDamageBreak, m_onProc, m_onTakenAutoAttack;
-		GameUnit *m_caster;
+		std::shared_ptr<GameUnit> m_caster;
 		GameUnit &m_target;
 		SpellTargetMap m_targetMap;
 		UInt32 m_tickCount;
