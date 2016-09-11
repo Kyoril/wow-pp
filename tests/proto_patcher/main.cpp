@@ -549,6 +549,28 @@ namespace wowpp
 					case 27816:
 						it->mutable_effects(0)->set_triggerspell(27818);
 						break;
+						// Touch of Weakness
+					case 2652:
+						it->mutable_effects(0)->set_triggerspell(2943);
+						break;
+					case 19261:
+						it->mutable_effects(0)->set_triggerspell(19249);
+						break;
+					case 19262:
+						it->mutable_effects(0)->set_triggerspell(19251);
+						break;
+					case 19264:
+						it->mutable_effects(0)->set_triggerspell(19252);
+						break;
+					case 19265:
+						it->mutable_effects(0)->set_triggerspell(19253);
+						break;
+					case 19266:
+						it->mutable_effects(0)->set_triggerspell(19254);
+						break;
+					case 25461:
+						it->mutable_effects(0)->set_triggerspell(25460);
+						break;
 						////////////////////////////// Shaman ////////////////////////////////////
 
 						// Lightning Shield

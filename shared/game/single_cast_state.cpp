@@ -2859,6 +2859,7 @@ namespace wowpp
 			m_affectedTargets.insert(targetUnit->shared_from_this());
 
 			UInt8 school = m_spell.schoolmask();
+			Int32 powerType = effect.miscvaluea();
 			UInt32 burn;
 			UInt32 damage = 0;
 			UInt32 resisted = 0;
@@ -2876,7 +2877,7 @@ namespace wowpp
 				burn = calculateEffectBasePoints(effect);
 				resisted = burn * (resists[i] / 100.0f);
 				burn -= resisted;
-				burn = 0 - targetUnit->addPower(game::power_type::Mana, 0 - burn);
+				burn = 0 - targetUnit->addPower(game::PowerType(powerType), 0 - burn);
 				damage = burn * effect.multiplevalue();
 				absorbed = targetUnit->consumeAbsorb(damage, school);
 			}

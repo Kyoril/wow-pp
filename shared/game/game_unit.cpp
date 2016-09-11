@@ -2088,7 +2088,9 @@ namespace wowpp
 		float effectiveResistance = levelBasedResistance + baseResi - std::min(spellPen, baseResi);
 		if (isBinary)
 		{
-			float reductionPct = (effectiveResistance / (casterLevel * 5.0f)) * 75.0f;
+			if (casterLevel < 20)
+				casterLevel = 20;
+			float reductionPct = std::min((effectiveResistance / (casterLevel * 5.0f)) * 75.0f, 75.0f);
 			if ((resiDistribution(randomGenerator) + resistChanceMod) > reductionPct)
 			{
 				return 0.0f;
