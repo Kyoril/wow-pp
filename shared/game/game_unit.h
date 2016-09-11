@@ -644,6 +644,10 @@ namespace wowpp
 		bool isConfused() const {
 			return (m_state & unit_state::Confused);
 		}
+		///
+		bool canAutoAttack() const {
+			return isAlive() && !isFeared() && !isStunned() && !isConfused(); 
+		}
 		/// 
 		bool canMove() const {
 			return isAlive() && !isStunned() && !isRooted();

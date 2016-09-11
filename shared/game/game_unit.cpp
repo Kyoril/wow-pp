@@ -498,7 +498,7 @@ namespace wowpp
 
 	void GameUnit::startAttack()
 	{
-		if (isFeared() || isStunned())
+		if (!canAutoAttack())
 			return;
 
 		// No victim?
@@ -2672,9 +2672,9 @@ namespace wowpp
 
 	void GameUnit::notifyConfusedChanged()
 	{
-		const bool wasFeared = isFeared();
-		const bool isFeared = m_auras.hasAura(game::aura_type::ModConfuse);
-		if (isFeared)
+		const bool wasConfused = isConfused();
+		const bool isConfused = m_auras.hasAura(game::aura_type::ModConfuse);
+		if (isConfused)
 		{
 			m_state |= unit_state::Confused;
 		}
@@ -2683,7 +2683,7 @@ namespace wowpp
 			m_state &= ~unit_state::Confused;
 		}
 
-		if (wasFeared && !isFeared)
+		if (wasConfused && !isConfused)
 		{
 			unitStateChanged(unit_state::Confused, false);
 
@@ -2691,7 +2691,7 @@ namespace wowpp
 			getMover().stopMovement();
 			m_fearMoved.disconnect();
 		}
-		else if (!wasFeared && isFeared)
+		else if (!wasConfused && isConfused)
 		{
 			m_confusedLoc = getMover().getCurrentLocation();
 
