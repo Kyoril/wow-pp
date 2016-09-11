@@ -54,7 +54,7 @@ namespace wowpp
 		    UInt64 itemGuid) override;
 		void stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown = 0) override;
 		void onUserStartsMoving() override;
-		void finishChanneling();
+		void finishChanneling() override;
 		SpellCasting &getCasting() {
 			return m_casting;
 		}

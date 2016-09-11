@@ -100,7 +100,7 @@ namespace wowpp
 		) = 0;
 		virtual void stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown = 0) = 0;
 		virtual void onUserStartsMoving() = 0;
-		virtual void finishChanneling();
+		virtual void finishChanneling() = 0;
 	};
 
 	SpellCasting &castSpell(
