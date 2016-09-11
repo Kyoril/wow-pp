@@ -2389,53 +2389,50 @@ namespace wowpp
 		}
 		*/
 
-		if (!procSpell)
+		if (m_spell.procschool() && !(m_spell.procschool() & game::spell_school_mask::Normal))
 		{
-			if (m_spell.procschool() && !(m_spell.procschool() & game::spell_school_mask::Normal))
-			{
-				return false;
-			}
+			return false;
+		}
 			
-			if (!isVictim && m_caster->isGameCharacter())
+		if (!isVictim && m_caster->isGameCharacter())
+		{
+			auto casterChar = std::static_pointer_cast<GameCharacter>(m_caster);
+			if (m_spell.itemclass() == game::item_class::Weapon)
 			{
-				auto casterChar = std::static_pointer_cast<GameCharacter>(m_caster);
-				if (m_spell.itemclass() == game::item_class::Weapon)
+				std::shared_ptr<GameItem> item;
+
+				if (attackType == game::weapon_attack::OffhandAttack)
 				{
-					std::shared_ptr<GameItem> item;
-
-					if (attackType == game::weapon_attack::OffhandAttack)
-					{
-						item = casterChar->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
-					}
-					else if (attackType == game::weapon_attack::RangedAttack)
-					{
-						item = casterChar->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Ranged));
-					}
-					else if (attackType == game::weapon_attack::BaseAttack)
-					{
-						item = casterChar->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
-					}
-
-					if (!item || item->getEntry().itemclass() != game::item_class::Weapon || !(m_spell.itemsubclassmask() & (1 << item->getEntry().subclass())))
-					{
-						return false;
-					}
-				}
-				else if (m_spell.itemclass() == game::item_class::Armor)
-				{
-					//Shield
-					std::shared_ptr<GameItem> item;
-
 					item = casterChar->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
+				}
+				else if (attackType == game::weapon_attack::RangedAttack)
+				{
+					item = casterChar->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Ranged));
+				}
+				else if (attackType == game::weapon_attack::BaseAttack)
+				{
+						item = casterChar->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
+				}
 
-					if (!item || item->getEntry().itemclass() != game::item_class::Armor || !(m_spell.itemsubclassmask() & (1 << item->getEntry().subclass())))
-					{
-						return false;
-					}
+				if (!item || item->getEntry().itemclass() != game::item_class::Weapon || !(m_spell.itemsubclassmask() & (1 << item->getEntry().subclass())))
+				{
+					return false;
+				}
+			}
+			else if (m_spell.itemclass() == game::item_class::Armor)
+			{
+				//Shield
+				std::shared_ptr<GameItem> item;
+
+				item = casterChar->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
+
+				if (!item || item->getEntry().itemclass() != game::item_class::Armor || !(m_spell.itemsubclassmask() & (1 << item->getEntry().subclass())))
+				{
+					return false;
 				}
 			}
 		}
-		else
+		if (procSpell)
 		{
 			if (m_spell.procschool() && !(m_spell.procschool() & procSpell->schoolmask()))
 			{
@@ -2451,7 +2448,6 @@ namespace wowpp
 			{
 				return false;
 			}
-			
 		}
 
 		if (m_spell.procexflags() != game::spell_proc_flags_ex::None &&
