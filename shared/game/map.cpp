@@ -153,7 +153,7 @@ namespace wowpp
 					ELOG("Could not load map file " << file << ": Unexpected header chunk size (" << (sizeof(MapHeaderChunk) - 8) << " expected)!");
 					return nullptr;
 				}
-				if (mapHeaderChunk.version != 0x120)
+				if (mapHeaderChunk.version != 0x130)
 				{
 					ELOG("Could not load map file " << file << ": Unsupported file format version!");
 					return nullptr;
@@ -204,21 +204,30 @@ namespace wowpp
 					// Read collision header
 					mapFile.read(reinterpret_cast<char *>(&tile->navigation.fourCC), sizeof(UInt32));
 					mapFile.read(reinterpret_cast<char *>(&tile->navigation.size), sizeof(UInt32));
-					mapFile.read(reinterpret_cast<char *>(&tile->navigation.tileRef), sizeof(UInt32));
+					mapFile.read(reinterpret_cast<char *>(&tile->navigation.tileCount), sizeof(UInt32));
 					
-					// Read navigation mesh data
-					const UInt32 dataSize = tile->navigation.size - sizeof(UInt32);
-					if (dataSize)
+					// Read navigation meshes if any
+					tile->navigation.tiles.resize(tile->navigation.tileCount);
+					for (UInt32 i = 0; i < tile->navigation.tileCount; ++i)
 					{
-						tile->navigation.data.resize(dataSize, 0);
-						mapFile.read(tile->navigation.data.data(), dataSize);
+						auto &data = tile->navigation.tiles[i];
+						mapFile.read(reinterpret_cast<char *>(&data.size), sizeof(UInt32));
 
-						dtTileRef ref = 0;
-						dtStatus status = m_navMesh->addTile(reinterpret_cast<unsigned char*>(tile->navigation.data.data()),
-							tile->navigation.data.size(), DT_TILE_FREE_DATA, 0, &ref);
-						if (dtStatusFailed(status))
+						// Finally read tile data
+						if (data.size)
 						{
-							ELOG("Failed adding nav tile at " << position << ": 0x" << std::hex << (status & DT_STATUS_DETAIL_MASK));
+							// Reserver and read
+							data.data.resize(data.size);
+							mapFile.read(data.data.data(), data.size);
+
+							// Add tile to navmesh
+							dtTileRef ref = 0;
+							dtStatus status = m_navMesh->addTile(reinterpret_cast<unsigned char*>(data.data.data()),
+								data.data.size(), DT_TILE_FREE_DATA, 0, &ref);
+							if (dtStatusFailed(status))
+							{
+								ELOG("Failed adding nav tile at " << position << ": 0x" << std::hex << (status & DT_STATUS_DETAIL_MASK));
+							}
 						}
 					}
 				}

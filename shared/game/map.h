@@ -115,15 +115,26 @@ namespace wowpp
 
 	struct MapNavigationChunk
 	{
+		struct TileData
+		{
+			UInt32 size;
+			std::vector<char> data;
+
+			TileData()
+				: size(0)
+			{
+			}
+		};
+
 		UInt32 fourCC;
 		UInt32 size;
-		dtTileRef tileRef;
-		std::vector<char> data;
+		UInt32 tileCount;
+		std::vector<TileData> tiles;
 
 		explicit MapNavigationChunk()
 			: fourCC(0)
 			, size(0)
-			, tileRef(0)
+			, tileCount(0)
 		{
 		}
 	};
