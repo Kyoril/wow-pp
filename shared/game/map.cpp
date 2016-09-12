@@ -294,8 +294,8 @@ namespace wowpp
 	
 	bool Map::calculatePath(const math::Vector3 & source, math::Vector3 dest, std::vector<math::Vector3>& out_path)
 	{
-		math::Vector3 dtStart(source.x, source.z, source.y);
-		math::Vector3 dtEnd(dest.x, dest.z, dest.y);
+		math::Vector3 dtStart(-source.y, source.z, -source.x);
+		math::Vector3 dtEnd(-dest.y, dest.z, -dest.x);
 
 		// No nav mesh loaded for this map?
 		if (!m_navMesh || !m_navQuery)
@@ -471,7 +471,7 @@ namespace wowpp
 
 	bool Map::getRandomPointOnGround(const math::Vector3 & center, float radius, math::Vector3 & out_point)
 	{
-		math::Vector3 dtCenter(center.x, center.z, center.y);
+		math::Vector3 dtCenter(-center.y, center.z, -center.x);
 
 		// No nav mesh loaded for this map?
 		if (!m_navMesh || !m_navQuery)
@@ -515,7 +515,7 @@ namespace wowpp
 		dtStatus dtResult = m_navQuery->findRandomPointAroundCircle(startPoly, &dtCenter.x, radius, &m_filter, frand, &endPoly, &out.x);
 		if (dtStatusSucceed(dtResult))
 		{
-			out_point = math::Vector3(out.x, out.z, out.y);
+			out_point = math::Vector3(-out.y, out.z, -out.x);
 			return true;
 		}
 

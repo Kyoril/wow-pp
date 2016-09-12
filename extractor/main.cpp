@@ -487,7 +487,7 @@ namespace
 	}
 
 	/// Finishes the nav mesh generation.
-	bool finishMesh(rcContext &ctx, const rcConfig &config, int tileX, int tileY, MapNavigationChunk &out_chunk, rcHeightfield &solid)
+	bool finishMesh(rcContext &ctx, const rcConfig &config, int tileX, int tileY, size_t tx, size_t ty, MapNavigationChunk &out_chunk, rcHeightfield &solid)
 	{
 		// Allocate and build compact height field
 		SmartCompactHeightFieldPtr chf(rcAllocCompactHeightfield(), rcFreeCompactHeightfield);
@@ -580,8 +580,8 @@ namespace
 		params.walkableHeight = MeshSettings::WalkableHeight;
 		params.walkableRadius = MeshSettings::WalkableRadius;
 		params.walkableClimb = MeshSettings::WalkableClimb;
-		params.tileX = tileX;
-		params.tileY = tileY;
+		params.tileX = (tileX * MeshSettings::TilesPerADT) + tx;
+		params.tileY = (tileY * MeshSettings::TilesPerADT) + ty;
 		params.tileLayer = 0;
 		memcpy(params.bmin, polyMesh->bmin, sizeof(polyMesh->bmin));
 		memcpy(params.bmax, polyMesh->bmax, sizeof(polyMesh->bmax));
@@ -615,7 +615,7 @@ namespace
 		std::unique_ptr<FileIO> debugFile(new FileIO());
 
 		std::ostringstream strm;
-		strm << "meshes/tile_" << tileX << "_" << tileY << ".obj";
+		strm << "meshes/tile_" << tileX << "_" << tileY << "-" << tx << "_" << ty << ".obj";
 
 		debugFile->openForWrite(strm.str().c_str());
 		//duDumpPolyMeshToObj(*polyMesh, debugFile.get());
@@ -963,17 +963,22 @@ namespace
 		{
 			for (size_t tx = 0; tx < MeshSettings::TilesPerADT; ++tx)
 			{
-				// TODO: Determine global tile position and build this tile
-				UInt32 globalTileX = 0;
-				UInt32 globalTileY = 0;
-
 				ILOG("\t\tTile [" << tx << "," << ty << "] ...");
 
 				// Calculate tile bounds and apply them
 				float bmin[3], bmax[3];
 				calculateADTTileBounds(tileX, tileY, bmin, bmax);
+
+				// Adjust to tile position
+				bmin[0] += MeshSettings::TileSize * tx;
+				bmin[2] += MeshSettings::TileSize * ty;
+				bmax[0] += MeshSettings::TileSize * tx;
+				bmax[2] += MeshSettings::TileSize * ty;
+
 				rcVcopy(config.bmin, bmin);
 				rcVcopy(config.bmax, bmax);
+				config.bmin[1] = minZ;
+				config.bmax[1] = maxZ;
 
 				// Apply border size
 				config.bmin[0] -= config.borderSize * config.cs;
@@ -1025,7 +1030,7 @@ namespace
 				rcFilterLowHangingWalkableObstacles(&ctx, config.walkableClimb, *solid);
 
 				// Finalize the mesh
-				auto const result = finishMesh(ctx, config, tileX, tileY, out_chunk, *solid);
+				auto const result = finishMesh(ctx, config, tileX, tileY, tx, ty, out_chunk, *solid);
 				if (!result)
 				{
 					ELOG("\t\t\tCould not finish mesh");
