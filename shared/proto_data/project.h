@@ -84,6 +84,7 @@ namespace wowpp
 		typedef TemplateManager<wowpp::proto::AreaTriggers, wowpp::proto::AreaTriggerEntry> AreaTriggerManager;
 		typedef TemplateManager<wowpp::proto::SpellCategories, wowpp::proto::SpellCategoryEntry> SpellCategoryManager;
 		typedef TemplateManager<wowpp::proto::CombatRatings, wowpp::proto::CombatRatingEntry> CombatRatingsManager;
+		typedef TemplateManager<wowpp::proto::MeleeCritChance, wowpp::proto::MeleeCritChanceEntry> MeleeCritChanceManager;
 
 		class Project : public boost::noncopyable
 		{
@@ -115,6 +116,7 @@ namespace wowpp
 			AreaTriggerManager areaTriggers;
 			SpellCategoryManager spellCategories;
 			CombatRatingsManager combatRatings;
+			MeleeCritChanceManager meleeCritChance;
 
 		private:
 
@@ -179,6 +181,7 @@ namespace wowpp
 				managers.push_back(ManagerEntry("area_triggers", areaTriggers));
 				managers.push_back(ManagerEntry("spell_categories", spellCategories));
 				managers.push_back(ManagerEntry("combat_ratings", combatRatings));
+				managers.push_back(ManagerEntry("melee_crit_chance", meleeCritChance));
 
 				virtual_dir::FileSystemReader virtualDirectory(realmDataPath);
 				if (!RealmProjectLoader::load(
@@ -238,6 +241,7 @@ namespace wowpp
 				managers.push_back(ManagerEntry("area_triggers", "area_triggers", areaTriggers));
 				managers.push_back(ManagerEntry("spell_categories", "spell_categories", spellCategories));
 				managers.push_back(ManagerEntry("combat_ratings", "combat_ratings", combatRatings));
+				managers.push_back(ManagerEntry("melee_crit_chance", "melee_crit_chance", meleeCritChance));
 
 				if (!RealmProjectSaver::save(realmDataPath, managers))
 				{

@@ -1319,6 +1319,41 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importMeleeCritChance(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `field0` FROM `tbcdb`.`dbc_gtchancetomeleecrit`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			UInt32 id = 0;
+			while (row)
+			{
+				// Get row data
+				float meleeCritChance = 0;
+				row.getField(0, meleeCritChance);
+
+				// Find spell by id
+				auto * meleeCritChances = project.meleeCritChance.getById(id);
+				if (meleeCritChances)
+				{
+					meleeCritChances->clear_chanceperlevel();
+					meleeCritChances->add_chanceperlevel(meleeCritChance);
+					DLOG(meleeCritChances->chanceperlevel(0));
+				}
+				else
+				{
+					WLOG("Unable to meleeCritChance by id: " << id);
+				}
+
+				// Next row
+				id++;
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
 	static bool importCategories(proto::Project &project, MySQL::Connection &conn)
 	{
 		project.spellCategories.clear();
@@ -2301,6 +2336,12 @@ int main(int argc, char* argv[])
 	if (!importCombatRatings(protoProject, connection))
 	{
 		WLOG("Could not import combat ratings");
+		return 1;
+	}
+
+	if (!importMeleeCritChance(protoProject, connection))
+	{
+		WLOG("Could not import melee crit chance");
 		return 1;
 	}
 
