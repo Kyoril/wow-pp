@@ -682,13 +682,6 @@ namespace wowpp
 		}
 
 		const UInt32 spellAttributesA = m_spell.attributes(1);
-		// Consume combo points if required
-		if ((spellAttributesA & (game::spell_attributes_ex_a::ReqComboPoints_1 | game::spell_attributes_ex_a::ReqComboPoints_2)) && character)
-		{
-			// 0 will reset combo points
-			character->addComboPoints(0, 0);
-		}
-
 		// Start auto attack if required
 		if (spellAttributesA & game::spell_attributes_ex_a::MeleeCombatStart)
 		{
@@ -2590,6 +2583,13 @@ namespace wowpp
 		}
 
 		completedEffects();
+
+		// Consume combo points if required
+		if ((m_spell.attributes(1) & (game::spell_attributes_ex_a::ReqComboPoints_1 | game::spell_attributes_ex_a::ReqComboPoints_2)))
+		{
+			// 0 will reset combo points
+			reinterpret_cast<GameCharacter&>(*strongCaster).addComboPoints(0, 0);
+		}
 
 		if (m_canTrigger)
 		{

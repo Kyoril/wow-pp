@@ -68,6 +68,13 @@ namespace wowpp
 			// Cancel update timer
 			m_moveUpdated.cancel();
 
+			// Check if we are still in the world
+			auto *world = getMoved().getWorldInstance();
+			if (!world)
+			{
+				return;
+			}
+
 			// Fire signal since we reached our target
 			targetReached();
 

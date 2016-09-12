@@ -601,7 +601,7 @@ namespace wowpp
 		/// 
 		float getCrushChance(GameUnit &attacker);
 		/// 
-		float getResiPercentage(const proto::SpellEntry &spell, const proto::SpellEffect &effect, GameUnit &attacker, bool isBinary);
+		float getResiPercentage(const proto::SpellEntry &spell, GameUnit &attacker, bool isBinary);
 		/// 
 		float getCritChance(GameUnit &attacker, UInt8 school);
 		///
@@ -643,6 +643,10 @@ namespace wowpp
 		/// Determines whether this unit is confused.
 		bool isConfused() const {
 			return (m_state & unit_state::Confused);
+		}
+		///
+		bool canAutoAttack() const {
+			return isAlive() && !isFeared() && !isStunned() && !isConfused(); 
 		}
 		/// 
 		bool canMove() const {

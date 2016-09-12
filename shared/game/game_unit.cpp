@@ -498,7 +498,7 @@ namespace wowpp
 
 	void GameUnit::startAttack()
 	{
-		if (isFeared() || isStunned())
+		if (!canAutoAttack())
 			return;
 
 		// No victim?
@@ -2050,7 +2050,7 @@ namespace wowpp
 		}
 	}
 
-	float GameUnit::getResiPercentage(const proto::SpellEntry &spell, const proto::SpellEffect &effect, GameUnit &attacker, bool isBinary)
+	float GameUnit::getResiPercentage(const proto::SpellEntry &spell, GameUnit &attacker, bool isBinary)
 	{
 		UInt8 school = spell.schoolmask();
 		if (school <= 1)
@@ -2066,14 +2066,22 @@ namespace wowpp
 			spellPen = -attacker.getInt32Value(character_fields::ModTargetResistance);
 		}
 
-		UInt32 mechanic = effect.mechanic() ? effect.mechanic() : spell.mechanic();
-		m_auras.forEachAuraOfType(game::aura_type::ModMechanicResistance, [&resistChanceMod, mechanic](Aura &aura) -> bool {
-			if (aura.getEffect().miscvaluea() == mechanic)
-			{
-				resistChanceMod -= aura.getBasePoints();
-			}
-			return true;
-		});
+		std::array<Int8, 3> mechanicResistance{};
+		for (const auto &effect : spell.effects())
+		{
+			Int8 &resistMod = mechanicResistance[effect.index()];
+			UInt32 mechanic = effect.mechanic() ? effect.mechanic() : spell.mechanic();
+
+			m_auras.forEachAuraOfType(game::aura_type::ModMechanicResistance, [&resistMod, mechanic](Aura &aura) -> bool {
+				if (aura.getEffect().miscvaluea() == mechanic)
+				{
+					resistMod += aura.getBasePoints();
+				}
+				return true;
+			});
+		}
+
+		resistChanceMod -= *std::max_element(mechanicResistance.begin(), mechanicResistance.end());
 
 		std::uniform_real_distribution<float> resiDistribution(0.0f, 99.9f);
 		UInt32 resiOffset = static_cast<UInt32>(log2(school));
@@ -2664,9 +2672,9 @@ namespace wowpp
 
 	void GameUnit::notifyConfusedChanged()
 	{
-		const bool wasFeared = isFeared();
-		const bool isFeared = m_auras.hasAura(game::aura_type::ModConfuse);
-		if (isFeared)
+		const bool wasConfused = isConfused();
+		const bool isConfused = m_auras.hasAura(game::aura_type::ModConfuse);
+		if (isConfused)
 		{
 			m_state |= unit_state::Confused;
 		}
@@ -2675,7 +2683,7 @@ namespace wowpp
 			m_state &= ~unit_state::Confused;
 		}
 
-		if (wasFeared && !isFeared)
+		if (wasConfused && !isConfused)
 		{
 			unitStateChanged(unit_state::Confused, false);
 
@@ -2683,7 +2691,7 @@ namespace wowpp
 			getMover().stopMovement();
 			m_fearMoved.disconnect();
 		}
-		else if (!wasFeared && isFeared)
+		else if (!wasConfused && isConfused)
 		{
 			m_confusedLoc = getMover().getCurrentLocation();
 

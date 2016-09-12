@@ -374,7 +374,4 @@ namespace wowpp
 		cast.setState(std::move(newState));
 		return casting;
 	}
-	void SpellCast::CastState::finishChanneling()
-	{
-	}
 }

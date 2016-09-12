@@ -370,7 +370,7 @@ namespace wowpp
 					hitInfo = game::hit_info::CriticalHit;
 				}
 
-				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(spell, effect, *attacker, isBinary));
+				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(spell, *attacker, isBinary));
 				m_hitInfos[targetA][targetB].push_back(hitInfo);
 				m_victimStates[targetA][targetB].push_back(victimState);
 			}

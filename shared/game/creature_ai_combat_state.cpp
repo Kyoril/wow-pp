@@ -524,7 +524,7 @@ namespace wowpp
 	void CreatureAICombatState::updateVictim()
 	{
 		GameCreature &controlled = getControlled();
-		if (controlled.isStunned() || controlled.isFeared() || controlled.isConfused())
+		if (!controlled.canAutoAttack())
 		{
 			controlled.setVictim(nullptr);
 			return;
