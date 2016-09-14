@@ -292,6 +292,238 @@ namespace wowpp
 		return true;
 	}
 	
+	UInt32 Map::fixupCorridor(std::vector<dtPolyRef> &path, UInt32 maxPath, const std::vector<dtPolyRef> &visited)
+	{
+		Int32 furthestPath = -1;
+		Int32 furthestVisited = -1;
+
+		// Find furthest common polygon.
+		for (Int32 i = path.size() - 1; i >= 0; --i)
+		{
+			bool found = false;
+			for (Int32 j = visited.size() - 1; j >= 0; --j)
+			{
+				if (path[i] == visited[j])
+				{
+					furthestPath = i;
+					furthestVisited = j;
+					found = true;
+				}
+			}
+			if (found)
+				break;
+		}
+
+		// If no intersection found just return current path.
+		if (furthestPath == -1 || furthestVisited == -1)
+			return path.size();
+
+		// Adjust beginning of the buffer to include the visited.
+		UInt32 req = visited.size() - furthestVisited;
+		UInt32 orig = UInt32(furthestPath + 1) < path.size() ? furthestPath + 1 : path.size();
+		UInt32 size = path.size() - orig > 0 ? path.size() - orig : 0;
+		if (req + size > maxPath)
+			size = maxPath - req;
+
+		if (size)
+			memmove(&path[req], &path[orig], size * sizeof(dtPolyRef));
+
+		// Store visited
+		for (UInt32 i = 0; i < req; ++i)
+			path[i] = visited[(visited.size() - 1) - i];
+
+		return req + size;
+	}
+
+	namespace
+	{
+		static bool isInRangeRecast(const math::Vector3 &posA, const math::Vector3 &posB, float r, float h)
+		{
+			const float dx = posB[0] - posA[0];
+			const float dy = posB[1] - posA[1]; // elevation
+			const float dz = posB[2] - posA[2];
+			return (dx * dx + dz * dz) < r * r && fabsf(dy) < h;
+		}
+	}
+
+	bool Map::getSteerTarget(const math::Vector3 &startPos, const math::Vector3 &endPos, float minTargetDist, const std::vector<dtPolyRef> &path, math::Vector3 &out_steerPos, unsigned char &out_steerPosFlag, dtPolyRef &out_steerPosRef)
+	{
+		static const UInt32 MAX_STEER_POINTS = 3;
+
+		std::vector<math::Vector3> steerPath(MAX_STEER_POINTS);
+		unsigned char steerPathFlags[MAX_STEER_POINTS];
+		dtPolyRef steerPathPolys[MAX_STEER_POINTS];
+
+		UInt32 nsteerPath = 0;
+		dtStatus dtResult = m_navQuery->findStraightPath(
+			&startPos.x, 
+			&endPos.x, 
+			&path[0], 
+			path.size(),
+			&steerPath[0].x, 
+			steerPathFlags, 
+			steerPathPolys, 
+			(int*)&nsteerPath, 
+			MAX_STEER_POINTS);
+
+		if (!nsteerPath || dtStatusFailed(dtResult))
+			return false;
+
+		// Find vertex far enough to steer to.
+		UInt32 ns = 0;
+		while (ns < nsteerPath)
+		{
+			// Stop at Off-Mesh link or when point is further than slop away.
+			if ((steerPathFlags[ns] & DT_STRAIGHTPATH_OFFMESH_CONNECTION) ||
+				!isInRangeRecast(steerPath[ns], startPos, minTargetDist, 1000.0f))
+				break;
+			ns++;
+		}
+
+		// Failed to find good point to steer to.
+		if (ns >= nsteerPath)
+			return false;
+
+		out_steerPos = steerPath[ns];
+		out_steerPos.y = startPos.y;  // keep height value
+		out_steerPosFlag = steerPathFlags[ns];
+		out_steerPosRef = steerPathPolys[ns];
+
+		return true;
+	}
+
+	dtStatus Map::getSmoothPath(const math::Vector3 & dtStart, const math::Vector3 & dtEnd, std::vector<dtPolyRef> &polyPath, std::vector<math::Vector3> out_smoothPath, UInt32 maxPathSize)
+	{
+		const float SMOOTH_PATH_STEP_SIZE = 4.0f;
+		const float SMOOTH_PATH_SLOP = 0.3f;
+
+		// Do we have something to do?
+		if (polyPath.empty() || maxPathSize < 2)
+		{
+			return DT_FAILURE;
+		}
+
+		// This is the maximum amount of allowed points. This also has something to do with how
+		// the WoW protocol packs coordinates: We only have 11 bits per horizontal axis, where 1 bit
+		// is the sign. Since we iterate with a distance of 4 yards, the max path length generated
+		// is limited by this value properly.
+		const UInt32 MAX_PATH_LENGTH = 74;
+		if (maxPathSize > MAX_PATH_LENGTH)
+		{
+			maxPathSize = MAX_PATH_LENGTH;
+		}
+
+		// Speed allocation up a bit
+		out_smoothPath.clear();
+		out_smoothPath.reserve(maxPathSize);
+
+		// Get as close as possible src and target position on polygons
+		math::Vector3 iterPos, targetPos;
+		if (dtStatusFailed(m_navQuery->closestPointOnPolyBoundary(polyPath.front(), &dtStart.x, &iterPos.x)))
+			return DT_FAILURE;
+		if (dtStatusFailed(m_navQuery->closestPointOnPolyBoundary(polyPath.back(), &dtEnd.x, &targetPos.x)))
+			return DT_FAILURE;
+
+		// Add first point (starting point)
+		out_smoothPath.push_back(std::move(iterPos));
+
+		// Move towards target a small advancement at a time until target reached or
+		// when ran out of memory to store the path.
+		UInt32 npolys = polyPath.size();
+		while (npolys && out_smoothPath.size() < maxPathSize)
+		{
+			// Find location to steer towards.
+			math::Vector3 steerPos;
+			unsigned char steerPosFlag = 0;
+			dtPolyRef steerPosRef = 0;
+			if (!getSteerTarget(iterPos, targetPos, SMOOTH_PATH_SLOP, polyPath, steerPos, steerPosFlag, steerPosRef))
+				break;
+
+			const bool endOfPath = (steerPosFlag & DT_STRAIGHTPATH_END);
+			const bool offMeshConnection = (steerPosFlag & DT_STRAIGHTPATH_OFFMESH_CONNECTION);
+
+			// Find movement delta.
+			math::Vector3 delta;
+			dtVsub(&delta.x, &steerPos.x, &iterPos.x);
+			float len = dtSqr(dtVdot(&delta.x, &delta.x));
+
+			// If the steer target is end of path or off-mesh link, do not move past the location.
+			if ((endOfPath || offMeshConnection) && len < SMOOTH_PATH_STEP_SIZE)
+				len = 1.0f;
+			else
+				len = SMOOTH_PATH_STEP_SIZE / len;
+
+			math::Vector3 moveTgt;
+			dtVmad(&moveTgt.x, &iterPos.x, &delta.x, len);
+
+			// Move
+			math::Vector3 result;
+			std::vector<dtPolyRef> visited;
+			visited.reserve(16);
+
+			UInt32 nvisited = 0;
+			m_navQuery->moveAlongSurface(polyPath[0], &iterPos.x, &moveTgt.x, &m_filter, &result.x, &visited[0], (int*)&nvisited, visited.capacity());
+			npolys = fixupCorridor(polyPath, MAX_PATH_LENGTH, visited);
+
+			m_navQuery->getPolyHeight(polyPath[0], &result.x, &result.y);
+			//result.y += 0.5f;
+			iterPos = result;
+
+			// Handle end of path and off-mesh links when close enough.
+			if (endOfPath && isInRangeRecast(iterPos, steerPos, SMOOTH_PATH_SLOP, 1.0f))
+			{
+				// Reached end of path.
+				iterPos = targetPos;
+				if (out_smoothPath.size() < maxPathSize)
+				{
+					out_smoothPath.push_back(std::move(iterPos));
+				}
+				break;
+			}
+			else if (offMeshConnection && isInRangeRecast(iterPos, steerPos, SMOOTH_PATH_SLOP, 1.0f))
+			{
+				// Advance the path up to and over the off-mesh connection.
+				dtPolyRef prevRef = 0;
+				dtPolyRef polyRef = polyPath[0];
+				UInt32 npos = 0;
+				while (npos < npolys && polyRef != steerPosRef)
+				{
+					prevRef = polyRef;
+					polyRef = polyPath[npos];
+					npos++;
+				}
+
+				for (UInt32 i = npos; i < npolys; ++i)
+					polyPath[i - npos] = polyPath[i];
+
+				npolys -= npos;
+
+				// Handle the connection.
+				math::Vector3 startPos, endPos;
+				if (dtStatusSucceed(m_navMesh->getOffMeshConnectionPolyEndPoints(prevRef, polyRef, &startPos.x, &endPos.x)))
+				{
+					if (out_smoothPath.size() < maxPathSize)
+					{
+						out_smoothPath.push_back(std::move(startPos));
+					}
+
+					// Move position at the other side of the off-mesh link.
+					iterPos = endPos;
+					m_navQuery->getPolyHeight(polyPath[0], &iterPos.x, &iterPos.y);
+					//iterPos.y += 0.5f;
+				}
+			}
+
+			// Store results
+			if (out_smoothPath.size() < maxPathSize)
+			{
+				out_smoothPath.push_back(std::move(iterPos));
+			}
+		}
+
+		return out_smoothPath.size() <= MAX_PATH_LENGTH ? DT_SUCCESS : DT_FAILURE;
+	}
+
 	bool Map::calculatePath(const math::Vector3 & source, math::Vector3 dest, std::vector<math::Vector3>& out_path)
 	{
 		// Convert the given start and end point into recast coordinate system
@@ -415,25 +647,35 @@ namespace wowpp
 		tempPath.resize(pathLength);
 
 		// Buffer to store path coordinates
-		std::vector<float> tempPathCoords(maxPathLength * 3);
+		std::vector<math::Vector3> tempPathCoords(maxPathLength);
 		int tempPathCoordsCount = 0;
 
 		// Set to true to generate straight path
-		const bool useStraightPath = true;
+		const bool useStraightPath = false;
 		if (useStraightPath)
 		{
 			dtResult = m_navQuery->findStraightPath(
 				&dtStart.x,							// Start position
 				&dtEnd.x,							// End position
-				tempPath.data(),					// 
-				static_cast<int>(tempPath.size()),	// 
-				tempPathCoords.data(),				// 
-				0,									// 
-				0,									// 
-				&tempPathCoordsCount,				// 
-				maxPathLength,						// 
-				DT_STRAIGHTPATH_ALL_CROSSINGS		// 
+				tempPath.data(),					// Polygon path
+				static_cast<int>(tempPath.size()),	// Number of polygons in path
+				&tempPathCoords[0].x,				// [out] Path points
+				nullptr,							// [out] unused
+				nullptr,							// [out] unused
+				&tempPathCoordsCount,				// [out] used coordinate count in vertices (3 floats = 1 vert)
+				maxPathLength,						// max coordinate count
+				DT_STRAIGHTPATH_ALL_CROSSINGS		// options
 				);
+		}
+		else
+		{
+			dtResult = getSmoothPath(dtStart, 
+				dtEnd,
+				tempPath,
+				tempPathCoords,
+				maxPathLength);
+
+			tempPathCoordsCount = tempPathCoords.size();
 		}
 
 		// Not enough waypoints generated or waypoint generation completely failed?
@@ -446,11 +688,10 @@ namespace wowpp
 		}
 		
 		// Append waypoints
-		for (size_t i = 0; i < tempPathCoordsCount; ++i)
+		for (const auto &p : tempPathCoords)
 		{
-			float *p = &tempPathCoords[i * 3];
 			out_path.push_back(
-				recastToWoWCoord(math::Vector3(p[0], p[1], p[2])));
+				recastToWoWCoord(p));
 		}
 		
 		return true;

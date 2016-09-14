@@ -25,6 +25,7 @@
 #include "tile_index.h"
 #include "common/grid.h"
 #include "math/ray.h"
+#include "detour/DetourCommon.h"
 #include "detour/DetourNavMesh.h"
 #include "detour/DetourNavMeshQuery.h"
 
@@ -217,9 +218,24 @@ namespace wowpp
 		bool calculatePath(const math::Vector3 &source, math::Vector3 dest, std::vector<math::Vector3> &out_path);
 		/// 
 		dtPolyRef getPolyByLocation(const math::Vector3 &point, float &out_distance) const;
-
+		/// 
 		bool getRandomPointOnGround(const math::Vector3 &center, float radius, math::Vector3 &out_point);
 
+	private:
+
+		/// 
+		UInt32 fixupCorridor(std::vector<dtPolyRef> &path, UInt32 maxPath, const std::vector<dtPolyRef> &visited);
+		/// 
+		bool getSteerTarget(const math::Vector3 &startPos, const math::Vector3 &endPos, float minTargetDist, const std::vector<dtPolyRef> &path, math::Vector3 &out_steerPos, unsigned char &out_steerPosFlag, dtPolyRef &out_steerPosRef);
+		/// Build a smooth path with corrected height values based on the detail mesh. This method
+		/// operates in the recast coordinate system, so all inputs and outputs are in this system.
+		/// @param dtStart Start position of the path.
+		/// @param dtEnd End position of the path.
+		/// @param polyPath List of polygons determined already for this path.
+		/// @param out_smoothPath The calculated waypoints in recast space on success.
+		/// @param maxPathSize Can be used to limit the amount of waypoints to generate. [1 < maxPathSize <= 74]
+		dtStatus getSmoothPath(const math::Vector3 &dtStart, const math::Vector3 &dtEnd, std::vector<dtPolyRef> &polyPath, std::vector<math::Vector3> out_smoothPath, UInt32 maxPathSize);
+		
 	private:
 
 		const proto::MapEntry &m_entry;
