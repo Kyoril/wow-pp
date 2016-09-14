@@ -184,6 +184,11 @@ namespace wowpp
 		}
 	};
 
+	/// Converts a vertex from the recast coordinate system into WoW's coordinate system.
+	Vertex recastToWoWCoord(const Vertex &in_recastCoord);
+	/// Converts a vertex from the WoW coordinate system into recasts coordinate system.
+	Vertex wowToRecastCoord(const Vertex &in_wowCoord);
+
 	/// This class represents a map with additional geometry and navigation data.
 	class Map final
 	{

@@ -294,8 +294,9 @@ namespace wowpp
 	
 	bool Map::calculatePath(const math::Vector3 & source, math::Vector3 dest, std::vector<math::Vector3>& out_path)
 	{
-		math::Vector3 dtStart(-source.y, source.z, -source.x);
-		math::Vector3 dtEnd(-dest.y, dest.z, -dest.x);
+		// Convert the given start and end point into recast coordinate system
+		math::Vector3 dtStart = wowToRecastCoord(source);
+		math::Vector3 dtEnd = wowToRecastCoord(dest);
 
 		// No nav mesh loaded for this map?
 		if (!m_navMesh || !m_navQuery)
@@ -305,54 +306,68 @@ namespace wowpp
 			return true;
 		}
 
-		// Load source tile
-		TileIndex2D startIndex(
-			static_cast<Int32>(floor((32.0 - (static_cast<double>(source.x) / 533.3333333)))),
-			static_cast<Int32>(floor((32.0 - (static_cast<double>(source.y) / 533.3333333))))
-			);
-		auto *startTile = getTile(startIndex);
-		if (!startTile)
+		// TODO: Better solution for this, as there could be more tiles between which could eventually
+		// still be unloaded after this block
 		{
-			out_path.push_back(dest);
-			return true;
-		}
-
-		// Load dest tile
-		TileIndex2D destIntex(
-			static_cast<Int32>(floor((32.0 - (static_cast<double>(dest.x) / 533.3333333)))),
-			static_cast<Int32>(floor((32.0 - (static_cast<double>(dest.y) / 533.3333333))))
+			// Load source tile
+			TileIndex2D startIndex(
+				static_cast<Int32>(floor((32.0 - (static_cast<double>(source.x) / 533.3333333)))),
+				static_cast<Int32>(floor((32.0 - (static_cast<double>(source.y) / 533.3333333))))
 			);
-		auto *dstTile = getTile(destIntex);
-		if (!dstTile)
-		{
-			out_path.push_back(dest);
-			return true;
-		}
+			if (!getTile(startIndex))
+			{
+				out_path.push_back(dest);
+				return true;
+			}
 
+			// Load dest tile
+			TileIndex2D destIndex(
+				static_cast<Int32>(floor((32.0 - (static_cast<double>(dest.x) / 533.3333333)))),
+				static_cast<Int32>(floor((32.0 - (static_cast<double>(dest.y) / 533.3333333))))
+			);
+			if (destIndex != startIndex)
+			{
+				if (!getTile(destIndex))
+				{
+					out_path.push_back(dest);
+					return true;
+				}
+			}
+		}
+		
+		// Make sure that source cell is loaded
 		int tx, ty;
 		m_navMesh->calcTileLoc(&dtStart.x, &tx, &ty);
 		if (!m_navMesh->getTileAt(tx, ty, 0))
 		{
-			out_path.push_back(dest);
-			return true;
-		}
-		m_navMesh->calcTileLoc(&dtEnd.x, &tx, &ty);
-		if (!m_navMesh->getTileAt(tx, ty, 0))
-		{
+			// Not loaded (TODO: Handle this error?)
 			out_path.push_back(dest);
 			return true;
 		}
 
-		// Pathfinding
+		// Make sure that target cell is loaded
+		m_navMesh->calcTileLoc(&dtEnd.x, &tx, &ty);
+		if (!m_navMesh->getTileAt(tx, ty, 0))
+		{
+			// Not loaded (TODO: Handle this error?)
+			out_path.push_back(dest);
+			return true;
+		}
+
+		// Find polygon on start and end point
 		float distToStartPoly, distToEndPoly;
 		dtPolyRef startPoly = getPolyByLocation(dtStart, distToStartPoly);
 		dtPolyRef endPoly = getPolyByLocation(dtEnd, distToEndPoly);
 		if (startPoly == 0 || endPoly == 0)
 		{
+			// Either start or target does not have a valid polygon, so we can't walk
+			// from the start point or to the target point at all! (TODO: Handle this error?)
 			out_path.push_back(dest);
 			return true;
 		}
 
+		// We check if the distance to the start or end polygon is too far and eventually correct the target
+		// location
 		const bool isFarFromPoly = distToStartPoly > 7.0f || distToEndPoly > 7.0f;
 		if (isFarFromPoly)
 		{
@@ -360,32 +375,38 @@ namespace wowpp
 			if (dtStatusSucceed(m_navQuery->closestPointOnPoly(endPoly, &dtEnd.x, &closestPoint.x, nullptr)))
 			{
 				dtEnd = closestPoint;
-				dest.y = dtEnd.z;
-				dest.z = dtEnd.y;
+				dest = recastToWoWCoord(dtEnd);
 			}
 		}
 
+		// Both points are on the same polygon, so build a shortcut
+		// TODO: We don't want to build a shortcut here, but we still want to
+		// create a smooth path so that z value will be corrected
 		if (startPoly == endPoly)
 		{
 			out_path.push_back(dest);
 			return true;
 		}
 
+		// Buffer to store polygons that need to be used for our path
 		const int maxPathLength = 74;
 		std::vector<dtPolyRef> tempPath(maxPathLength, 0);
-		int pathLength;
+
+		// This will store the resulting path length (number of polygons)
+		int pathLength = 0;
 		dtStatus dtResult = m_navQuery->findPath(
-			startPoly,          // start polygon
-			endPoly,            // end polygon
-			&source.x,         // start position
-			&dest.x,           // end position
-			&m_filter,           // polygon search filter
-			tempPath.data(),     // [out] path
-			&pathLength,
-			maxPathLength);   // max number of polygons in output path
+			startPoly,				// start polygon
+			endPoly,				// end polygon
+			&source.x,				// start position
+			&dest.x,				// end position
+			&m_filter,				// polygon search filter
+			tempPath.data(),		// [out] path
+			&pathLength,			// number of polygons used by path (<= maxPathLength)
+			maxPathLength);			// max number of polygons in output path
 		if (!pathLength ||
 			dtStatusFailed(dtResult))
 		{
+			// Could not find path... TODO?
 			out_path.push_back(dest);
 			return true;
 		}
@@ -393,6 +414,7 @@ namespace wowpp
 		// Resize path
 		tempPath.resize(pathLength);
 
+		// Buffer to store path coordinates
 		std::vector<float> tempPathCoords(maxPathLength * 3);
 		int tempPathCoordsCount = 0;
 
@@ -401,33 +423,36 @@ namespace wowpp
 		if (useStraightPath)
 		{
 			dtResult = m_navQuery->findStraightPath(
-				&dtStart.x,
-				&dtEnd.x,
-				tempPath.data(),
-				static_cast<int>(tempPath.size()),
-				tempPathCoords.data(),
-				0,
-				0,
-				&tempPathCoordsCount,
-				maxPathLength,
-				DT_STRAIGHTPATH_ALL_CROSSINGS
+				&dtStart.x,							// Start position
+				&dtEnd.x,							// End position
+				tempPath.data(),					// 
+				static_cast<int>(tempPath.size()),	// 
+				tempPathCoords.data(),				// 
+				0,									// 
+				0,									// 
+				&tempPathCoordsCount,				// 
+				maxPathLength,						// 
+				DT_STRAIGHTPATH_ALL_CROSSINGS		// 
 				);
 		}
 
+		// Not enough waypoints generated or waypoint generation completely failed?
 		if (tempPathCoordsCount < 1 ||
 			dtStatusFailed(dtResult))
 		{
+			// TODO: Handle this error?
 			out_path.push_back(dest);
 			return true;
 		}
 		
-		tempPathCoords.resize(tempPathCoordsCount * 3);
-		for (auto p = tempPathCoords.begin(); p != tempPathCoords.end(); p += 3)
+		// Append waypoints
+		for (size_t i = 0; i < tempPathCoordsCount; ++i)
 		{
-			auto v = math::Vector3(p[0], p[2], p[1]);
-			out_path.push_back(v);
+			float *p = &tempPathCoords[i * 3];
+			out_path.push_back(
+				recastToWoWCoord(math::Vector3(p[0], p[1], p[2])));
 		}
-
+		
 		return true;
 	}
 
@@ -515,10 +540,20 @@ namespace wowpp
 		dtStatus dtResult = m_navQuery->findRandomPointAroundCircle(startPoly, &dtCenter.x, radius, &m_filter, frand, &endPoly, &out.x);
 		if (dtStatusSucceed(dtResult))
 		{
-			out_point = math::Vector3(-out.y, out.z, -out.x);
+			out_point = math::Vector3(-out.z, -out.x, out.y);
 			return true;
 		}
 
 		return false;
+	}
+
+	Vertex recastToWoWCoord(const Vertex & in_recastCoord)
+	{
+		return Vertex(-in_recastCoord.z, -in_recastCoord.x, in_recastCoord.y);
+	}
+
+	Vertex wowToRecastCoord(const Vertex & in_wowCoord)
+	{
+		return Vertex(-in_wowCoord.y, in_wowCoord.z, -in_wowCoord.x);
 	}
 }

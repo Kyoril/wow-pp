@@ -580,8 +580,11 @@ namespace
 		params.walkableHeight = MeshSettings::WalkableHeight;
 		params.walkableRadius = MeshSettings::WalkableRadius;
 		params.walkableClimb = MeshSettings::WalkableClimb;
-		params.tileX = (tileX * MeshSettings::TilesPerADT) + tx;
-		params.tileY = (tileY * MeshSettings::TilesPerADT) + ty;
+		params.tileX = (tileY * MeshSettings::TilesPerADT) + tx;
+		params.tileY = (tileX * MeshSettings::TilesPerADT) + ty;
+#ifdef _DEBUG
+		DLOG("TILE IS AT " << params.tileX << "x" << params.tileY);
+#endif
 		params.tileLayer = 0;
 		memcpy(params.bmin, polyMesh->bmin, sizeof(polyMesh->bmin));
 		memcpy(params.bmax, polyMesh->bmax, sizeof(polyMesh->bmax));
@@ -687,6 +690,9 @@ namespace
 
 		float bmin[3], bmax[3];
 		calculateADTTileBounds(minX, minY, bmin, bmax);
+
+		bmin[0] = -(32 * MeshSettings::AdtSize);
+		bmin[2] = -(32 * MeshSettings::AdtSize);
 
 		int maxTiles = tiles.size() * (MeshSettings::TilesPerADT * MeshSettings::TilesPerADT);
 		const int maxPolysPerTile = 1 << DT_POLY_BITS;
@@ -985,6 +991,13 @@ namespace
 				config.bmin[2] -= config.borderSize * config.cs;
 				config.bmax[0] += config.borderSize * config.cs;
 				config.bmax[2] += config.borderSize * config.cs;
+
+#ifdef _DEBUG
+				float testPos[3] = { bmin[0] + MeshSettings::TileSize * 0.5f, 0.0f, bmin[2] + MeshSettings::TileSize * 0.5f };
+				int sx = 0, sy = 0;
+				navMesh.calcTileLoc(testPos, &sx, &sy);
+				DLOG("TILE SHOULD BE AT " << sx << "x" << sy);
+#endif
 
 				// Create the context object
 				rcContext ctx(false);
