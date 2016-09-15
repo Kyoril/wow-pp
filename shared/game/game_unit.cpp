@@ -2094,12 +2094,16 @@ namespace wowpp
 			levelBasedResistance = (victimLevel - casterLevel) * 5.0f;
 		}
 		float effectiveResistance = levelBasedResistance + baseResi - std::min(spellPen, baseResi);
+
+		if (casterLevel < 20)
+			casterLevel = 20;
+
+		float randomNum = resiDistribution(randomGenerator) + resistChanceMod;
+		float reductionPct = std::min((effectiveResistance / (casterLevel * 5.0f)) * 75.0f, 75.0f);
+
 		if (isBinary)
 		{
-			if (casterLevel < 20)
-				casterLevel = 20;
-			float reductionPct = std::min((effectiveResistance / (casterLevel * 5.0f)) * 75.0f, 75.0f);
-			if ((resiDistribution(randomGenerator) + resistChanceMod) > reductionPct)
+			if (randomNum > reductionPct)
 			{
 				return 0.0f;
 			}
@@ -2110,7 +2114,19 @@ namespace wowpp
 		}
 		else
 		{
-			return 0.0f;
+			UInt8 i = 0;
+
+			for (; i < 4; ++i)
+			{
+				float resistChance = boost::math::cdf(boost::math::binomial_distribution<>(4, reductionPct / 100.0f), i) * 100;
+
+				if (randomNum < resistChance)
+				{
+					break;
+				}
+			}
+
+			return (i / 4.0f) * 100;
 		}
 	}
 
