@@ -392,7 +392,7 @@ namespace wowpp
 		return true;
 	}
 
-	dtStatus Map::getSmoothPath(const math::Vector3 & dtStart, const math::Vector3 & dtEnd, std::vector<dtPolyRef> &polyPath, std::vector<math::Vector3> out_smoothPath, UInt32 maxPathSize)
+	dtStatus Map::getSmoothPath(const math::Vector3 & dtStart, const math::Vector3 & dtEnd, std::vector<dtPolyRef> &polyPath, std::vector<math::Vector3> &out_smoothPath, UInt32 maxPathSize)
 	{
 		const float SMOOTH_PATH_STEP_SIZE = 4.0f;
 		const float SMOOTH_PATH_SLOP = 0.3f;
@@ -651,7 +651,7 @@ namespace wowpp
 		int tempPathCoordsCount = 0;
 
 		// Set to true to generate straight path
-		const bool useStraightPath = false;
+		const bool useStraightPath = true;
 		if (useStraightPath)
 		{
 			dtResult = m_navQuery->findStraightPath(
@@ -666,6 +666,9 @@ namespace wowpp
 				maxPathLength,						// max coordinate count
 				DT_STRAIGHTPATH_ALL_CROSSINGS		// options
 				);
+
+			// Correct actual path length
+			tempPathCoords.resize(tempPathCoordsCount);
 		}
 		else
 		{
@@ -737,7 +740,7 @@ namespace wowpp
 
 	bool Map::getRandomPointOnGround(const math::Vector3 & center, float radius, math::Vector3 & out_point)
 	{
-		math::Vector3 dtCenter(-center.y, center.z, -center.x);
+		math::Vector3 dtCenter = wowToRecastCoord(center);
 
 		// No nav mesh loaded for this map?
 		if (!m_navMesh || !m_navQuery)
@@ -781,7 +784,7 @@ namespace wowpp
 		dtStatus dtResult = m_navQuery->findRandomPointAroundCircle(startPoly, &dtCenter.x, radius, &m_filter, frand, &endPoly, &out.x);
 		if (dtStatusSucceed(dtResult))
 		{
-			out_point = math::Vector3(-out.z, -out.x, out.y);
+			out_point = recastToWoWCoord(out);
 			return true;
 		}
 

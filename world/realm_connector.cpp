@@ -36,6 +36,7 @@
 #include "game/each_tile_in_region.h"
 #include "game/universe.h"
 #include "game/each_tile_in_sight.h"
+#include "game/unit_mover.h"
 #include "binary_io/vector_sink.h"
 #include "log/default_log_levels.h"
 
@@ -923,6 +924,11 @@ namespace wowpp
 				targetObj->getTypeId() == object_type::Unit))
 			{
 				unitTarget = reinterpret_cast<GameUnit*>(targetObj);
+			}
+
+			if (unitTarget)
+			{
+				unitTarget->getMover().setDebugOutput(true);
 			}
 
 			sender.getCharacter()->setVictim(unitTarget);

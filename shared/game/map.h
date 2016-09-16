@@ -234,7 +234,7 @@ namespace wowpp
 		/// @param polyPath List of polygons determined already for this path.
 		/// @param out_smoothPath The calculated waypoints in recast space on success.
 		/// @param maxPathSize Can be used to limit the amount of waypoints to generate. [1 < maxPathSize <= 74]
-		dtStatus getSmoothPath(const math::Vector3 &dtStart, const math::Vector3 &dtEnd, std::vector<dtPolyRef> &polyPath, std::vector<math::Vector3> out_smoothPath, UInt32 maxPathSize);
+		dtStatus getSmoothPath(const math::Vector3 &dtStart, const math::Vector3 &dtEnd, std::vector<dtPolyRef> &polyPath, std::vector<math::Vector3> &out_smoothPath, UInt32 maxPathSize);
 		
 	private:
 
