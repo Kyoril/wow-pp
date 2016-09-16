@@ -2115,10 +2115,11 @@ namespace wowpp
 		else
 		{
 			UInt8 i = 0;
+			auto d = boost::math::binomial_distribution<>(4, reductionPct / 100.0f);
 
 			for (; i < 4; ++i)
 			{
-				float resistChance = boost::math::cdf(boost::math::binomial_distribution<>(4, reductionPct / 100.0f), i) * 100;
+				float resistChance = boost::math::cdf(d, i) * 100;
 
 				if (randomNum < resistChance)
 				{
