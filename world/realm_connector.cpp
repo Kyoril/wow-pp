@@ -926,10 +926,13 @@ namespace wowpp
 				unitTarget = reinterpret_cast<GameUnit*>(targetObj);
 			}
 
+#if 0
+			// TODO: Remove code if no longer needed for debugging purposes
 			if (unitTarget)
 			{
 				unitTarget->getMover().setDebugOutput(true);
 			}
+#endif
 
 			sender.getCharacter()->setVictim(unitTarget);
 			return;

@@ -223,10 +223,6 @@ namespace wowpp
 
 	private:
 
-		/// 
-		UInt32 fixupCorridor(std::vector<dtPolyRef> &path, UInt32 maxPath, const std::vector<dtPolyRef> &visited);
-		/// 
-		bool getSteerTarget(const math::Vector3 &startPos, const math::Vector3 &endPos, float minTargetDist, const std::vector<dtPolyRef> &path, math::Vector3 &out_steerPos, unsigned char &out_steerPosFlag, dtPolyRef &out_steerPosRef);
 		/// Build a smooth path with corrected height values based on the detail mesh. This method
 		/// operates in the recast coordinate system, so all inputs and outputs are in this system.
 		/// @param dtStart Start position of the path.

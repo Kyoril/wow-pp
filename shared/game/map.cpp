@@ -27,6 +27,7 @@
 #include "math/vector3.h"
 #include "common/clock.h"
 #include "detour/DetourCommon.h"
+#include "recast/Recast.h"
 
 namespace wowpp
 {
@@ -292,104 +293,157 @@ namespace wowpp
 		return true;
 	}
 	
-	UInt32 Map::fixupCorridor(std::vector<dtPolyRef> &path, UInt32 maxPath, const std::vector<dtPolyRef> &visited)
-	{
-		Int32 furthestPath = -1;
-		Int32 furthestVisited = -1;
-
-		// Find furthest common polygon.
-		for (Int32 i = path.size() - 1; i >= 0; --i)
-		{
-			bool found = false;
-			for (Int32 j = visited.size() - 1; j >= 0; --j)
-			{
-				if (path[i] == visited[j])
-				{
-					furthestPath = i;
-					furthestVisited = j;
-					found = true;
-				}
-			}
-			if (found)
-				break;
-		}
-
-		// If no intersection found just return current path.
-		if (furthestPath == -1 || furthestVisited == -1)
-			return path.size();
-
-		// Adjust beginning of the buffer to include the visited.
-		UInt32 req = visited.size() - furthestVisited;
-		UInt32 orig = UInt32(furthestPath + 1) < path.size() ? furthestPath + 1 : path.size();
-		UInt32 size = path.size() - orig > 0 ? path.size() - orig : 0;
-		if (req + size > maxPath)
-			size = maxPath - req;
-
-		if (size)
-			memmove(&path[req], &path[orig], size * sizeof(dtPolyRef));
-
-		// Store visited
-		for (UInt32 i = 0; i < req; ++i)
-			path[i] = visited[(visited.size() - 1) - i];
-
-		return req + size;
-	}
-
 	namespace
 	{
-		static bool isInRangeRecast(const math::Vector3 &posA, const math::Vector3 &posB, float r, float h)
+		inline bool inRange(const float* v1, const float* v2, const float r, const float h)
 		{
-			const float dx = posB[0] - posA[0];
-			const float dy = posB[1] - posA[1]; // elevation
-			const float dz = posB[2] - posA[2];
-			return (dx * dx + dz * dz) < r * r && fabsf(dy) < h;
-		}
-	}
-
-	bool Map::getSteerTarget(const math::Vector3 &startPos, const math::Vector3 &endPos, float minTargetDist, const std::vector<dtPolyRef> &path, math::Vector3 &out_steerPos, unsigned char &out_steerPosFlag, dtPolyRef &out_steerPosRef)
-	{
-		static const UInt32 MAX_STEER_POINTS = 3;
-
-		std::vector<math::Vector3> steerPath(MAX_STEER_POINTS);
-		unsigned char steerPathFlags[MAX_STEER_POINTS];
-		dtPolyRef steerPathPolys[MAX_STEER_POINTS];
-
-		UInt32 nsteerPath = 0;
-		dtStatus dtResult = m_navQuery->findStraightPath(
-			&startPos.x, 
-			&endPos.x, 
-			&path[0], 
-			path.size(),
-			&steerPath[0].x, 
-			steerPathFlags, 
-			steerPathPolys, 
-			(int*)&nsteerPath, 
-			MAX_STEER_POINTS);
-
-		if (!nsteerPath || dtStatusFailed(dtResult))
-			return false;
-
-		// Find vertex far enough to steer to.
-		UInt32 ns = 0;
-		while (ns < nsteerPath)
-		{
-			// Stop at Off-Mesh link or when point is further than slop away.
-			if ((steerPathFlags[ns] & DT_STRAIGHTPATH_OFFMESH_CONNECTION) ||
-				!isInRangeRecast(steerPath[ns], startPos, minTargetDist, 1000.0f))
-				break;
-			ns++;
+			const float dx = v2[0] - v1[0];
+			const float dy = v2[1] - v1[1];
+			const float dz = v2[2] - v1[2];
+			return (dx*dx + dz*dz) < r*r && fabsf(dy) < h;
 		}
 
-		// Failed to find good point to steer to.
-		if (ns >= nsteerPath)
-			return false;
+		static int fixupCorridor(dtPolyRef* path, const int npath, const int maxPath,
+			const dtPolyRef* visited, const int nvisited)
+		{
+			int furthestPath = -1;
+			int furthestVisited = -1;
 
-		out_steerPos = steerPath[ns];
-		out_steerPos.y = startPos.y;  // keep height value
-		out_steerPosFlag = steerPathFlags[ns];
-		out_steerPosRef = steerPathPolys[ns];
+			// Find furthest common polygon.
+			for (int i = npath - 1; i >= 0; --i)
+			{
+				bool found = false;
+				for (int j = nvisited - 1; j >= 0; --j)
+				{
+					if (path[i] == visited[j])
+					{
+						furthestPath = i;
+						furthestVisited = j;
+						found = true;
+					}
+				}
+				if (found)
+					break;
+			}
 
-		return true;
+			// If no intersection found just return current path. 
+			if (furthestPath == -1 || furthestVisited == -1)
+				return npath;
+
+			// Concatenate paths.	
+
+			// Adjust beginning of the buffer to include the visited.
+			const int req = nvisited - furthestVisited;
+			const int orig = rcMin(furthestPath + 1, npath);
+			int size = rcMax(0, npath - orig);
+			if (req + size > maxPath)
+				size = maxPath - req;
+			if (size)
+				memmove(path + req, path + orig, size * sizeof(dtPolyRef));
+
+			// Store visited
+			for (int i = 0; i < req; ++i)
+				path[i] = visited[(nvisited - 1) - i];
+
+			return req + size;
+		}
+
+		static int fixupShortcuts(dtPolyRef* path, int npath, dtNavMeshQuery* navQuery)
+		{
+			if (npath < 3)
+				return npath;
+
+			// Get connected polygons
+			static const int maxNeis = 16;
+			dtPolyRef neis[maxNeis];
+			int nneis = 0;
+
+			const dtMeshTile* tile = 0;
+			const dtPoly* poly = 0;
+			if (dtStatusFailed(navQuery->getAttachedNavMesh()->getTileAndPolyByRef(path[0], &tile, &poly)))
+				return npath;
+
+			for (unsigned int k = poly->firstLink; k != DT_NULL_LINK; k = tile->links[k].next)
+			{
+				const dtLink* link = &tile->links[k];
+				if (link->ref != 0)
+				{
+					if (nneis < maxNeis)
+						neis[nneis++] = link->ref;
+				}
+			}
+
+			// If any of the neighbour polygons is within the next few polygons
+			// in the path, short cut to that polygon directly.
+			static const int maxLookAhead = 6;
+			int cut = 0;
+			for (int i = dtMin(maxLookAhead, npath) - 1; i > 1 && cut == 0; i--) {
+				for (int j = 0; j < nneis; j++)
+				{
+					if (path[i] == neis[j]) {
+						cut = i;
+						break;
+					}
+				}
+			}
+			if (cut > 1)
+			{
+				int offset = cut - 1;
+				npath -= offset;
+				for (int i = 1; i < npath; i++)
+					path[i] = path[i + offset];
+			}
+
+			return npath;
+		}
+
+		static bool getSteerTarget(dtNavMeshQuery* navQuery, const float* startPos, const float* endPos,
+			const float minTargetDist,
+			const dtPolyRef* path, const int pathSize,
+			float* steerPos, unsigned char& steerPosFlag, dtPolyRef& steerPosRef,
+			float* outPoints = 0, int* outPointCount = 0)
+		{
+			// Find steer target.
+			static const int MAX_STEER_POINTS = 3;
+			float steerPath[MAX_STEER_POINTS * 3];
+			unsigned char steerPathFlags[MAX_STEER_POINTS];
+			dtPolyRef steerPathPolys[MAX_STEER_POINTS];
+			int nsteerPath = 0;
+			navQuery->findStraightPath(startPos, endPos, path, pathSize,
+				steerPath, steerPathFlags, steerPathPolys, &nsteerPath, MAX_STEER_POINTS);
+			if (!nsteerPath)
+				return false;
+
+			if (outPoints && outPointCount)
+			{
+				*outPointCount = nsteerPath;
+				for (int i = 0; i < nsteerPath; ++i)
+					dtVcopy(&outPoints[i * 3], &steerPath[i * 3]);
+			}
+
+
+			// Find vertex far enough to steer to.
+			int ns = 0;
+			while (ns < nsteerPath)
+			{
+				// Stop at Off-Mesh link or when point is further than slop away.
+				if ((steerPathFlags[ns] & DT_STRAIGHTPATH_OFFMESH_CONNECTION) ||
+					!inRange(&steerPath[ns * 3], startPos, minTargetDist, 1000.0f))
+					break;
+				ns++;
+			}
+			// Failed to find good point to steer to.
+			if (ns >= nsteerPath)
+				return false;
+
+			dtVcopy(steerPos, &steerPath[ns * 3]);
+			steerPos[1] = startPos[1];
+			steerPosFlag = steerPathFlags[ns];
+			steerPosRef = steerPathPolys[ns];
+
+			return true;
+		}
+
 	}
 
 	dtStatus Map::getSmoothPath(const math::Vector3 & dtStart, const math::Vector3 & dtEnd, std::vector<dtPolyRef> &polyPath, std::vector<math::Vector3> &out_smoothPath, UInt32 maxPathSize)
@@ -403,6 +457,8 @@ namespace wowpp
 			return DT_FAILURE;
 		}
 
+		static const UInt32 MAX_POLYS = 74;
+
 		// This is the maximum amount of allowed points. This also has something to do with how
 		// the WoW protocol packs coordinates: We only have 11 bits per horizontal axis, where 1 bit
 		// is the sign. Since we iterate with a distance of 4 yards, the max path length generated
@@ -413,115 +469,126 @@ namespace wowpp
 			maxPathSize = MAX_PATH_LENGTH;
 		}
 
+		// Iterate over the path to find smooth path on the detail mesh surface.
+		dtPolyRef polys[MAX_POLYS];
+		memcpy(polys, &polyPath[0], sizeof(dtPolyRef) * polyPath.size());
+		int npolys = polyPath.size();
+
+		float iterPos[3], targetPos[3];
+		m_navQuery->closestPointOnPoly(polyPath.front(), &dtStart.x, iterPos, 0);
+		m_navQuery->closestPointOnPoly(polyPath.back(), &dtEnd.x, targetPos, 0);
+
 		// Speed allocation up a bit
 		out_smoothPath.clear();
 		out_smoothPath.reserve(maxPathSize);
 
-		// Get as close as possible src and target position on polygons
-		math::Vector3 iterPos, targetPos;
-		if (dtStatusFailed(m_navQuery->closestPointOnPolyBoundary(polyPath.front(), &dtStart.x, &iterPos.x)))
-			return DT_FAILURE;
-		if (dtStatusFailed(m_navQuery->closestPointOnPolyBoundary(polyPath.back(), &dtEnd.x, &targetPos.x)))
-			return DT_FAILURE;
-
 		// Add first point (starting point)
-		out_smoothPath.push_back(iterPos);
+		out_smoothPath.push_back(math::Vector3(iterPos[0], iterPos[1], iterPos[2]));
 
 		// Move towards target a small advancement at a time until target reached or
 		// when ran out of memory to store the path.
-		UInt32 npolys = polyPath.size();
-		while (npolys && out_smoothPath.size() < maxPathSize)
+		// Move towards target a small advancement at a time until target reached or
+		// when ran out of memory to store the path.
+		while (npolys && out_smoothPath.size() < MAX_PATH_LENGTH)
 		{
 			// Find location to steer towards.
-			math::Vector3 steerPos;
-			unsigned char steerPosFlag = 0;
-			dtPolyRef steerPosRef = 0;
-			if (!getSteerTarget(iterPos, targetPos, SMOOTH_PATH_SLOP, polyPath, steerPos, steerPosFlag, steerPosRef))
+			float steerPos[3];
+			unsigned char steerPosFlag;
+			dtPolyRef steerPosRef;
+			if (!getSteerTarget(m_navQuery.get(), iterPos, targetPos, SMOOTH_PATH_SLOP,
+				polys, npolys, steerPos, steerPosFlag, steerPosRef))
 				break;
 
 			const bool endOfPath = (steerPosFlag & DT_STRAIGHTPATH_END);
 			const bool offMeshConnection = (steerPosFlag & DT_STRAIGHTPATH_OFFMESH_CONNECTION);
 
 			// Find movement delta.
-			math::Vector3 delta;
-			dtVsub(&delta.x, &steerPos.x, &iterPos.x);
-			float len = sqrtf(dtVdot(&delta.x, &delta.x));
-
+			float delta[3], len;
+			dtVsub(delta, steerPos, iterPos);
+			len = dtMathSqrtf(dtVdot(delta, delta));
 			// If the steer target is end of path or off-mesh link, do not move past the location.
 			if ((endOfPath || offMeshConnection) && len < SMOOTH_PATH_STEP_SIZE)
-				len = 1.0f;
+				len = 1;
 			else
 				len = SMOOTH_PATH_STEP_SIZE / len;
-
-			math::Vector3 moveTgt;
-			dtVmad(&moveTgt.x, &iterPos.x, &delta.x, len);
+			float moveTgt[3];
+			dtVmad(moveTgt, iterPos, delta, len);
 
 			// Move
-			math::Vector3 result;
-			std::vector<dtPolyRef> visited;
-			visited.reserve(16);
+			float result[3];
+			dtPolyRef visited[16];
+			int nvisited = 0;
+			m_navQuery->moveAlongSurface(polys[0], iterPos, moveTgt, &m_filter,
+				result, visited, &nvisited, 16);
 
-			UInt32 nvisited = 0;
-			m_navQuery->moveAlongSurface(polyPath[0], &iterPos.x, &moveTgt.x, &m_filter, &result.x, &visited[0], (int*)&nvisited, visited.capacity());
-			npolys = fixupCorridor(polyPath, MAX_PATH_LENGTH, visited);
+			npolys = fixupCorridor(polys, npolys, MAX_POLYS, visited, nvisited);
+			npolys = fixupShortcuts(polys, npolys, m_navQuery.get());
 
-			m_navQuery->getPolyHeight(polyPath[0], &result.x, &result.y);
-			//result.y += 0.5f;
-			iterPos = result;
+			float h = 0;
+			m_navQuery->getPolyHeight(polys[0], result, &h);
+			dtVcopy(iterPos, result);
 
 			// Handle end of path and off-mesh links when close enough.
-			if (endOfPath && isInRangeRecast(iterPos, steerPos, SMOOTH_PATH_SLOP, 1.0f))
+			if (endOfPath && inRange(iterPos, steerPos, SMOOTH_PATH_SLOP, 1.0f))
 			{
 				// Reached end of path.
-				iterPos = targetPos;
-				if (out_smoothPath.size() < maxPathSize)
+				dtVcopy(iterPos, targetPos);
+				if (out_smoothPath.size() < MAX_PATH_LENGTH)
 				{
-					out_smoothPath.push_back(iterPos);
+					out_smoothPath.push_back(math::Vector3(iterPos[0], iterPos[1], iterPos[2]));
+					//dtVcopy(&m_smoothPath[m_nsmoothPath * 3], iterPos);
 				}
 				break;
 			}
-			else if (offMeshConnection && isInRangeRecast(iterPos, steerPos, SMOOTH_PATH_SLOP, 1.0f))
+			else if (offMeshConnection && inRange(iterPos, steerPos, SMOOTH_PATH_SLOP, 1.0f))
 			{
+				// Reached off-mesh connection.
+				float startPos[3], endPos[3];
+
 				// Advance the path up to and over the off-mesh connection.
-				dtPolyRef prevRef = 0;
-				dtPolyRef polyRef = polyPath[0];
-				UInt32 npos = 0;
+				dtPolyRef prevRef = 0, polyRef = polys[0];
+				int npos = 0;
 				while (npos < npolys && polyRef != steerPosRef)
 				{
 					prevRef = polyRef;
-					polyRef = polyPath[npos];
+					polyRef = polys[npos];
 					npos++;
 				}
-
-				for (UInt32 i = npos; i < npolys; ++i)
-					polyPath[i - npos] = polyPath[i];
-
+				for (int i = npos; i < npolys; ++i)
+					polys[i - npos] = polys[i];
 				npolys -= npos;
 
 				// Handle the connection.
-				math::Vector3 startPos, endPos;
-				if (dtStatusSucceed(m_navMesh->getOffMeshConnectionPolyEndPoints(prevRef, polyRef, &startPos.x, &endPos.x)))
+				dtStatus status = m_navMesh->getOffMeshConnectionPolyEndPoints(prevRef, polyRef, startPos, endPos);
+				if (dtStatusSucceed(status))
 				{
-					if (out_smoothPath.size() < maxPathSize)
+					if (out_smoothPath.size() < MAX_PATH_LENGTH)
 					{
-						out_smoothPath.push_back(startPos);
+						out_smoothPath.push_back(math::Vector3(startPos[0], startPos[1], startPos[2]));
+
+						// Hack to make the dotted path not visible during off-mesh connection.
+						if (out_smoothPath.size() & 1)
+						{
+							out_smoothPath.push_back(math::Vector3(startPos[0], startPos[1], startPos[2]));
+						}
 					}
 
 					// Move position at the other side of the off-mesh link.
-					iterPos = endPos;
-					m_navQuery->getPolyHeight(polyPath[0], &iterPos.x, &iterPos.y);
-					//iterPos.y += 0.5f;
+					dtVcopy(iterPos, endPos);
+					float eh = 0.0f;
+					m_navQuery->getPolyHeight(polys[0], iterPos, &eh);
+					iterPos[1] = eh;
 				}
 			}
 
 			// Store results
 			if (out_smoothPath.size() < maxPathSize)
 			{
-				out_smoothPath.push_back(iterPos);
+				out_smoothPath.push_back(math::Vector3(iterPos[0], iterPos[1], iterPos[2]));
 			}
 		}
 
-		return out_smoothPath.size() <= MAX_PATH_LENGTH ? DT_SUCCESS : DT_FAILURE;
+		return DT_SUCCESS;
 	}
 
 	bool Map::calculatePath(const math::Vector3 & source, math::Vector3 dest, std::vector<math::Vector3>& out_path)
