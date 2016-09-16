@@ -796,7 +796,7 @@ namespace wowpp
 
 	static bool checkSpells(proto::Project &project, MySQL::Connection &conn)
 	{
-		wowpp::MySQL::Select select(conn, "SELECT `entry`,`effectId`, `SpellFamilyMask` FROM `world`.`spell_affect`;");
+		wowpp::MySQL::Select select(conn, "SELECT `entry`,`effectId`, `SpellFamilyMask` FROM `mangos`.`spell_affect`;");
 		if (select.success())
 		{
 			wowpp::MySQL::Row row(select);
@@ -817,22 +817,13 @@ namespace wowpp
 					{
 						for (const auto & effect : it->effects())
 						{
-							if (entry == 12472 &&
-								it->id() == 12472 &&
-								effect.index() == effectId &&
-								effect.affectmask() != familyFlags)
-							{
-								DLOG(familyFlags);
-								DLOG(effect.affectmask());
-							}
-							/*
 							if (it->id() == entry &&
 								effect.index() == effectId &&
 								effect.affectmask() != familyFlags)
 							{
-								DLOG("difference is " << familyFlags - effect.affectmask());
+								DLOG("difference is " << familyFlags);
 								DLOG("id is " << it->id());
-							}*/
+							}
 						}
 						it++;
 					}
@@ -1287,6 +1278,75 @@ namespace wowpp
 				}
 
 				// Next row
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
+	static bool importCombatRatings(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `field0` FROM `tbcdb`.`dbc_gtcombatratings`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			UInt32 id = 0;
+			while (row)
+			{
+				// Get row data
+				float crMultiplier = 0;
+				row.getField(0, crMultiplier);
+
+				// Find spell by id
+				auto * combatRatings = project.combatRatings.getById(id);
+				if (combatRatings)
+				{
+					combatRatings->clear_ratingsperlevel();
+					combatRatings->add_ratingsperlevel(crMultiplier);
+				}
+				else
+				{
+					WLOG("Unable to combatRating by id: " << id);
+				}
+
+				// Next row
+				id++;
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
+	static bool importMeleeCritChance(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `field0` FROM `tbcdb`.`dbc_gtchancetomeleecrit`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			UInt32 id = 0;
+			while (row)
+			{
+				// Get row data
+				float meleeCritChance = 0;
+				row.getField(0, meleeCritChance);
+
+				// Find spell by id
+				auto * meleeCritChances = project.meleeCritChance.getById(id);
+				if (meleeCritChances)
+				{
+					meleeCritChances->clear_chanceperlevel();
+					meleeCritChances->add_chanceperlevel(meleeCritChance);
+					DLOG(meleeCritChances->chanceperlevel(0));
+				}
+				else
+				{
+					WLOG("Unable to meleeCritChance by id: " << id);
+				}
+
+				// Next row
+				id++;
 				row = row.next(select);
 			}
 		}
@@ -2254,22 +2314,34 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	if (!checkSpells(protoProject, connection))
-	{
-		WLOG("Could not check spells");
-		return 1;
-	}
-
 	if (!importAffectMask(protoProject, connection))
 	{
 		WLOG("Could not import affect masks");
 		return 1;
 	}
-#endif
 
 	if (!addSpellLinks(protoProject))
 	{
 		ELOG("Failed to add spell links");
+		return 1;
+	}
+
+	if (!checkSpells(protoProject, connection))
+	{
+		WLOG("Could not check spells");
+		return 1;
+	}
+#endif
+
+	if (!importCombatRatings(protoProject, connection))
+	{
+		WLOG("Could not import combat ratings");
+		return 1;
+	}
+
+	if (!importMeleeCritChance(protoProject, connection))
+	{
+		WLOG("Could not import melee crit chance");
 		return 1;
 	}
 
