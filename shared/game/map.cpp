@@ -425,7 +425,7 @@ namespace wowpp
 			return DT_FAILURE;
 
 		// Add first point (starting point)
-		out_smoothPath.push_back(std::move(iterPos));
+		out_smoothPath.push_back(iterPos);
 
 		// Move towards target a small advancement at a time until target reached or
 		// when ran out of memory to store the path.
@@ -445,7 +445,7 @@ namespace wowpp
 			// Find movement delta.
 			math::Vector3 delta;
 			dtVsub(&delta.x, &steerPos.x, &iterPos.x);
-			float len = dtSqr(dtVdot(&delta.x, &delta.x));
+			float len = sqrtf(dtVdot(&delta.x, &delta.x));
 
 			// If the steer target is end of path or off-mesh link, do not move past the location.
 			if ((endOfPath || offMeshConnection) && len < SMOOTH_PATH_STEP_SIZE)
@@ -476,7 +476,7 @@ namespace wowpp
 				iterPos = targetPos;
 				if (out_smoothPath.size() < maxPathSize)
 				{
-					out_smoothPath.push_back(std::move(iterPos));
+					out_smoothPath.push_back(iterPos);
 				}
 				break;
 			}
@@ -504,7 +504,7 @@ namespace wowpp
 				{
 					if (out_smoothPath.size() < maxPathSize)
 					{
-						out_smoothPath.push_back(std::move(startPos));
+						out_smoothPath.push_back(startPos);
 					}
 
 					// Move position at the other side of the off-mesh link.
@@ -517,7 +517,7 @@ namespace wowpp
 			// Store results
 			if (out_smoothPath.size() < maxPathSize)
 			{
-				out_smoothPath.push_back(std::move(iterPos));
+				out_smoothPath.push_back(iterPos);
 			}
 		}
 
@@ -651,7 +651,7 @@ namespace wowpp
 		int tempPathCoordsCount = 0;
 
 		// Set to true to generate straight path
-		const bool useStraightPath = true;
+		const bool useStraightPath = false;
 		if (useStraightPath)
 		{
 			dtResult = m_navQuery->findStraightPath(
