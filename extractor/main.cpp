@@ -862,7 +862,6 @@ namespace
 		}
 
 		// Process Doodads
-#if 0
 		MeshData doodadMesh;
 		{
 			DLOG("\tTile has " << adt.getMDDFChunk().entries.size() << " doodads");
@@ -899,7 +898,7 @@ namespace
 				
 #define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * (x) / -180.0)
 				math::Matrix3 rotMat = math::Matrix3::fromEulerAnglesXYZ(
-					WOWPP_DEG_TO_RAD(-entry.rotation[2]), WOWPP_DEG_TO_RAD(-entry.rotation[0]), WOWPP_DEG_TO_RAD(-entry.rotation[1] - 180));
+					WOWPP_DEG_TO_RAD(-entry.rotation[2]), WOWPP_DEG_TO_RAD(entry.rotation[0]), WOWPP_DEG_TO_RAD(-entry.rotation[1]));
 
 				math::Vector3 position(entry.position.z, entry.position.x, entry.position.y);
 				position.x = (32 * 533.3333f) - position.x;
@@ -914,10 +913,10 @@ namespace
 				for (auto &vert : verts)
 				{
 					// Transform vertex and push it to the list
-					math::Vector3 transformed = rotMat * (vert * (float(entry.scale) / 1024.0f));
-					doodadMesh.solidVerts.push_back(transformed.x + position.x);
-					doodadMesh.solidVerts.push_back(transformed.y + position.y);
-					doodadMesh.solidVerts.push_back(transformed.z + position.z);
+					math::Vector3 transformed = (rotMat * vert) + position;
+					doodadMesh.solidVerts.push_back(-transformed.y);
+					doodadMesh.solidVerts.push_back(transformed.z);
+					doodadMesh.solidVerts.push_back(-transformed.x);
 				}
 				for (UInt32 i = 0; i < inds.size(); i += 3)
 				{
@@ -932,12 +931,12 @@ namespace
 				}
 			}
 		}
-#endif
 
 #ifdef _DEBUG
 		// Serialize mesh data for debugging purposes
 		serializeMeshData("_adt", mapId, tileX, tileY, adtMesh);
 		serializeMeshData("_wmo", mapId, tileX, tileY, wmoMesh);
+		serializeMeshData("_doodad", mapId, tileX, tileY, doodadMesh);
 #endif
 
 		// Adjust min and max z values
@@ -952,6 +951,14 @@ namespace
 		for (UInt32 i = 0; i < wmoMesh.solidVerts.size(); i += 3)
 		{
 			const float &z = wmoMesh.solidVerts[i + 1];
+			if (z < minZ)
+				minZ = z;
+			if (z > maxZ)
+				maxZ = z;
+		}
+		for (UInt32 i = 0; i < doodadMesh.solidVerts.size(); i += 3)
+		{
+			const float &z = doodadMesh.solidVerts[i + 1];
 			if (z < minZ)
 				minZ = z;
 			if (z > maxZ)
@@ -1024,6 +1031,13 @@ namespace
 					return false;
 				}
 
+				// Rasterize adt doodad object meshes
+				if (!rasterize(ctx, *solid, true, config.walkableSlopeAngle, doodadMesh, AreaFlags::Doodad))
+				{
+					ELOG("\t\t\tCould not rasterize DOODAD data");
+					return false;
+				}
+
 				// Remember all ADT flagged spans as the information may get lost after the next step
 				std::vector<rcSpan *> adtSpans;
 				adtSpans.reserve(solid->width*solid->height);
@@ -1074,7 +1088,7 @@ namespace
 		switch (mapId)
 		{
 			case 0:
-				if (cellY != 36 || cellX != 26)
+				if (cellY != 31 || cellX != 50)
 					return false;
 				break;
 			case 1:
