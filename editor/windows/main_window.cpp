@@ -211,7 +211,7 @@ namespace wowpp
 					new WorldEditor(m_application, *sceneMgr, *camera, *entry, m_application.getProject()));
 
 				m_onPageChanged = scene->pageChanged.connect([this](paging::PagePosition position) {
-					this->m_pageLabel->setText(QString("ADT Tile: %0%x%1%").arg(position[0]).arg(position[1]));
+					this->m_pageLabel->setText(QString("ADT Tile: %0 x %1").arg(position[0]).arg(position[1]));
 				});
 
 				m_ogreWindow->setScene(std::move(scene));
