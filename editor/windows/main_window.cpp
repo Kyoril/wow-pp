@@ -49,6 +49,10 @@ namespace wowpp
 			connect(m_ui->actionObjectEditor, SIGNAL(triggered()), &m_application, SLOT(showObjectEditor()));
 			connect(m_ui->actionTriggerEditor, SIGNAL(triggered()), &m_application, SLOT(showTriggerEditor()));
 
+			// Create new label with this form as parent (qt will handle destruction)
+			m_pageLabel = new QLabel(this);
+			m_ui->statusBar->addWidget(m_pageLabel);
+
 			// Layout will be deleted automatically on window destruction
 			QVBoxLayout *layout = new QVBoxLayout(m_ui->renderWidget);
 			layout->setMargin(0);
@@ -205,11 +209,12 @@ namespace wowpp
 
 				std::unique_ptr<WorldEditor> scene(
 					new WorldEditor(m_application, *sceneMgr, *camera, *entry, m_application.getProject()));
-				m_ogreWindow->setScene(std::move(scene));
 
 				m_onPageChanged = scene->pageChanged.connect([this](paging::PagePosition position) {
-					this->m_ui->statusBar->setWindowTitle(QString("ADT Tile: %0%x%1%").arg(position[0]).arg(position[1]));
+					this->m_pageLabel->setText(QString("ADT Tile: %0%x%1%").arg(position[0]).arg(position[1]));
 				});
+
+				m_ogreWindow->setScene(std::move(scene));
 
 				// TODO: Remove this as it should be data driven. Also, there should be support for favorite locations
 				// in the editor.
