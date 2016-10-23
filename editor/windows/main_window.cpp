@@ -186,6 +186,7 @@ namespace wowpp
 					return;
 
 				// Reset scene
+				m_onPageChanged.disconnect();
 				m_ogreWindow->setScene(std::unique_ptr<IScene>());
 
 				auto list = Ogre::ResourceGroupManager::getSingleton().getResourceGroups();
@@ -206,13 +207,20 @@ namespace wowpp
 					new WorldEditor(m_application, *sceneMgr, *camera, *entry, m_application.getProject()));
 				m_ogreWindow->setScene(std::move(scene));
 
+				m_onPageChanged = scene->pageChanged.connect([this](paging::PagePosition position) {
+					this->m_ui->statusBar->setWindowTitle(QString("ADT Tile: %0%x%1%").arg(position[0]).arg(position[1]));
+				});
+
+				// TODO: Remove this as it should be data driven. Also, there should be support for favorite locations
+				// in the editor.
 				if (entry->id() == 1)
 				{
 					camera->setPosition(6516.0f, 448.0f, 17.0f);
 				}
 				else if (entry->id() == 0)
 				{
-					camera->setPosition(1762.19995f, -1244.80005f, 62.2191010f);
+					camera->setPosition(-8785.63f, -16.8718f, 113.702f);
+					//camera->setPosition(1762.19995f, -1244.80005f, 62.2191010f);
 				}
 				else if (entry->id() == 530)
 				{

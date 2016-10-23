@@ -51,6 +51,7 @@ namespace wowpp
 			, m_work(new boost::asio::io_service::work(m_workQueue))
             , m_light(nullptr)
 			, m_project(project)
+			, m_previousPage(std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max())
 		{
 			// Create worker thread
 			boost::asio::io_service &workQueue = m_workQueue;
@@ -318,9 +319,15 @@ namespace wowpp
 			float convertedY = (constants::MapWidth * 32.0f) + camPos.y;
 
 			paging::PagePosition pos(63 - static_cast<size_t>(convertedX / constants::MapWidth), 63 - static_cast<size_t>(convertedY / constants::MapWidth));
-			
-			m_memoryPointOfView->updateCenter(pos);
-			m_visibleSection->updateCenter(pos);
+			if (m_previousPage != pos)
+			{
+				m_previousPage = pos;
+
+				m_memoryPointOfView->updateCenter(pos);
+				m_visibleSection->updateCenter(pos);
+
+				pageChanged(pos);
+			}
 
 			// Update paging
 			m_dispatcher.poll();

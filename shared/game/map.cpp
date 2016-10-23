@@ -421,7 +421,6 @@ namespace wowpp
 					dtVcopy(&outPoints[i * 3], &steerPath[i * 3]);
 			}
 
-
 			// Find vertex far enough to steer to.
 			int ns = 0;
 			while (ns < nsteerPath)
@@ -696,8 +695,8 @@ namespace wowpp
 		dtStatus dtResult = m_navQuery->findPath(
 			startPoly,				// start polygon
 			endPoly,				// end polygon
-			&source.x,				// start position
-			&dest.x,				// end position
+			&dtStart.x,				// start position
+			&dtEnd.x,				// end position
 			&m_filter,				// polygon search filter
 			tempPath.data(),		// [out] path
 			&pathLength,			// number of polygons used by path (<= maxPathLength)
@@ -718,7 +717,7 @@ namespace wowpp
 		int tempPathCoordsCount = 0;
 
 		// Set to true to generate straight path
-		const bool useStraightPath = false;
+		const bool useStraightPath = true;
 		if (useStraightPath)
 		{
 			dtResult = m_navQuery->findStraightPath(

@@ -69,6 +69,7 @@ namespace wowpp
 			QtOgreWindow *m_ogreWindow;
 			QSortFilterProxyModel *m_unitFilter;
 			QSortFilterProxyModel *m_objectFilter;
+			boost::signals2::scoped_connection m_onPageChanged;
 		};
 	}
 }
