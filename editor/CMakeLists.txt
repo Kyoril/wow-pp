@@ -48,6 +48,8 @@ cmake_minimum_required(VERSION 2.8.11)
 		find_package(Qt5MacExtras REQUIRED)
 	endif()
 	
+	mark_as_advanced(Qt5Concurrent_DIR Qt5Core_DIR Qt5Gui_DIR Qt5Multimedia_DIR Qt5Network_DIR Qt5OpenGL_DIR Qt5Widgets_DIR OGRE_FRAMEWORK_PATH)
+	
 	include_directories(${OPENGL_INCLUDE_DIR})
 
 	file(GLOB srcFiles "*.cpp" "*.h")

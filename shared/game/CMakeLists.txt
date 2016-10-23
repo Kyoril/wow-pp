@@ -33,7 +33,7 @@ source_group(src FILES ${srcFiles})
 add_library(game ${srcFiles})
 add_precompiled_header(game "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
 
-target_link_libraries(game math ${OPENSSL_LIBRARIES})
+target_link_libraries(game proto_data math ${OPENSSL_LIBRARIES})
 
 # Solution folder
 if(MSVC)

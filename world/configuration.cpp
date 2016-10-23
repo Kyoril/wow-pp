@@ -186,27 +186,32 @@ namespace wowpp
 			mysqlDatabaseTable.finish();
 		}
 
-		//TODO
-// 		global.writer.newLine();
-// 
-// 		{
-// 			sff::write::Table<Char> realmConnector(global, "realmConnector", sff::write::MultiLine);
-// 			realmConnector.addKey("address", realmAddress);
-// 			realmConnector.addKey("port", realmPort);
-// 			realmConnector.addKey("maxCount", maxPlayers);
-// 			
-// 			sff::write::Array<char> mapsArray(realmConnector, "hosted_maps", sff::write::Comma);
-// 			{
-// 				for (const auto &mapId : hostedMaps)
-// 				{
-// 					mapsArray.addElement(mapId);
-// 				}
-// 			}
-// 			mapsArray.finish();
-// 
-// 			realmConnector.finish();
-// 		}
+		global.writer.newLine();
 
+		{
+			sff::write::Array<Char> realmsArray(global, "realms", sff::write::MultiLine);
+			{
+				sff::write::Table<Char> realmTable(realmsArray, sff::write::Comma);
+				realmTable.addKey("address", "127.0.0.1");
+				realmTable.addKey("port", constants::DefaultRealmWorldPort);
+				realmTable.addKey("maxCount", std::numeric_limits<size_t>::max());
+				{
+					sff::write::Array<Char> realmMapArray(realmTable, "hosted_maps", sff::write::Comma);
+					// Global maps
+					realmMapArray.addElement(0);		// Eastern kingdoms
+					realmMapArray.addElement(1);		// Kalimdor
+					realmMapArray.addElement(530);		// Outland
+					// Instances
+					realmMapArray.addElement(36);		// Deadmines Instance
+					realmMapArray.addElement(289);		// 
+					realmMapArray.addElement(389);		// 
+					realmMapArray.finish();
+				}
+				realmTable.finish();
+			}
+			realmsArray.finish();
+		}
+		
 		global.writer.newLine();
 
 		{
