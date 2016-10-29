@@ -2099,10 +2099,12 @@ namespace wowpp
 			casterLevel = 20;
 
 		float randomNum = resiDistribution(randomGenerator) + resistChanceMod;
-		float reductionPct = std::min((effectiveResistance / (casterLevel * 5.0f)) * 75.0f, 75.0f);
+		float reductionPct = (effectiveResistance / (casterLevel * 5.0f)) * 75.0f;
 
 		if (isBinary)
 		{
+			reductionPct = std::min(reductionPct, 75.0f);
+
 			if (randomNum > reductionPct)
 			{
 				return 0.0f;
@@ -2114,6 +2116,8 @@ namespace wowpp
 		}
 		else
 		{
+			reductionPct = std::min(std::max(static_cast<Int32>(victimLevel - casterLevel), 0) * 2.0f + reductionPct, 75.0f);
+
 			UInt8 i = 0;
 			auto d = boost::math::binomial_distribution<>(4, reductionPct / 100.0f);
 
