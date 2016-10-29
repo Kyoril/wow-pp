@@ -2088,15 +2088,7 @@ namespace wowpp
 		UInt32 baseResi = getUInt32Value(unit_fields::Resistances + resiOffset);
 		UInt32 casterLevel = attacker.getLevel();
 		UInt32 victimLevel = getLevel();
-		float levelBasedResistance = 0.0f;
-		if (victimLevel > casterLevel)
-		{
-			levelBasedResistance = (victimLevel - casterLevel) * 5.0f;
-		}
-		float effectiveResistance = levelBasedResistance + baseResi - std::min(spellPen, baseResi);
-
-		if (casterLevel < 20)
-			casterLevel = 20;
+		UInt32 effectiveResistance = baseResi - std::min(spellPen, baseResi);
 
 		float randomNum = resiDistribution(randomGenerator) + resistChanceMod;
 		float reductionPct = (effectiveResistance / (casterLevel * 5.0f)) * 75.0f;
