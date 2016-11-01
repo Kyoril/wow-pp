@@ -293,14 +293,21 @@ namespace wowpp
 		return true;
 	}
 	
+#define MAX_PATH_LENGTH         74
+#define MAX_POINT_PATH_LENGTH   74
+#define SMOOTH_PATH_STEP_SIZE   4.0f
+#define SMOOTH_PATH_SLOP        0.3f
+#define VERTEX_SIZE       3
+#define INVALID_POLYREF   0
+
 	namespace
 	{
-		inline bool inRange(const float* v1, const float* v2, const float r, const float h)
+		bool inRangeYZX(const float* v1, const float* v2, float r, float h)
 		{
 			const float dx = v2[0] - v1[0];
-			const float dy = v2[1] - v1[1];
+			const float dy = v2[1] - v1[1]; // elevation
 			const float dz = v2[2] - v1[2];
-			return (dx*dx + dz*dz) < r*r && fabsf(dy) < h;
+			return (dx * dx + dz * dz) < r * r && fabsf(dy) < h;
 		}
 
 		static int fixupCorridor(dtPolyRef* path, const int npath, const int maxPath,
@@ -397,197 +404,172 @@ namespace wowpp
 			return npath;
 		}
 
-		static bool getSteerTarget(dtNavMeshQuery* navQuery, const float* startPos, const float* endPos,
-			const float minTargetDist,
-			const dtPolyRef* path, const int pathSize,
-			float* steerPos, unsigned char& steerPosFlag, dtPolyRef& steerPosRef,
-			float* outPoints = 0, int* outPointCount = 0)
+		static bool getSteerTarget(dtNavMeshQuery *navQuery, const float* startPos, const float* endPos,
+			float minTargetDist, const dtPolyRef* path, UInt32 pathSize,
+			float* steerPos, unsigned char& steerPosFlag, dtPolyRef& steerPosRef)
 		{
 			// Find steer target.
-			static const int MAX_STEER_POINTS = 3;
-			float steerPath[MAX_STEER_POINTS * 3];
+			static const UInt32 MAX_STEER_POINTS = 3;
+			float steerPath[MAX_STEER_POINTS * VERTEX_SIZE];
 			unsigned char steerPathFlags[MAX_STEER_POINTS];
 			dtPolyRef steerPathPolys[MAX_STEER_POINTS];
-			int nsteerPath = 0;
-			navQuery->findStraightPath(startPos, endPos, path, pathSize,
-				steerPath, steerPathFlags, steerPathPolys, &nsteerPath, MAX_STEER_POINTS);
-			if (!nsteerPath)
+			UInt32 nsteerPath = 0;
+			dtStatus dtResult = navQuery->findStraightPath(startPos, endPos, path, pathSize,
+				steerPath, steerPathFlags, steerPathPolys, (int*)&nsteerPath, MAX_STEER_POINTS);
+			if (!nsteerPath || dtStatusFailed(dtResult))
 				return false;
 
-			if (outPoints && outPointCount)
-			{
-				*outPointCount = nsteerPath;
-				for (int i = 0; i < nsteerPath; ++i)
-					dtVcopy(&outPoints[i * 3], &steerPath[i * 3]);
-			}
-
 			// Find vertex far enough to steer to.
-			int ns = 0;
+			UInt32 ns = 0;
 			while (ns < nsteerPath)
 			{
 				// Stop at Off-Mesh link or when point is further than slop away.
 				if ((steerPathFlags[ns] & DT_STRAIGHTPATH_OFFMESH_CONNECTION) ||
-					!inRange(&steerPath[ns * 3], startPos, minTargetDist, 1000.0f))
+					!inRangeYZX(&steerPath[ns * VERTEX_SIZE], startPos, minTargetDist, 1000.0f))
 					break;
-				ns++;
+				++ns;
 			}
 			// Failed to find good point to steer to.
 			if (ns >= nsteerPath)
 				return false;
 
-			dtVcopy(steerPos, &steerPath[ns * 3]);
-			steerPos[1] = startPos[1];
+			dtVcopy(steerPos, &steerPath[ns * VERTEX_SIZE]);
+			steerPos[1] = startPos[1];  // keep Z value
 			steerPosFlag = steerPathFlags[ns];
 			steerPosRef = steerPathPolys[ns];
 
 			return true;
 		}
-
 	}
 
-	dtStatus Map::getSmoothPath(const math::Vector3 & dtStart, const math::Vector3 & dtEnd, std::vector<dtPolyRef> &polyPath, std::vector<math::Vector3> &out_smoothPath, UInt32 maxPathSize)
+	dtStatus findSmoothPath(dtNavMeshQuery *query, dtNavMesh *navMesh, dtQueryFilter *filter, const float* startPos, const float* endPos,
+		const dtPolyRef* polyPath, UInt32 polyPathSize,
+		float* smoothPath, int* smoothPathSize, UInt32 maxSmoothPathSize)
 	{
-		const float SMOOTH_PATH_STEP_SIZE = 4.0f;
-		const float SMOOTH_PATH_SLOP = 0.3f;
+		*smoothPathSize = 0;
+		UInt32 nsmoothPath = 0;
 
-		// Do we have something to do?
-		if (polyPath.empty() || maxPathSize < 2)
+		dtPolyRef polys[MAX_PATH_LENGTH];
+		memcpy(polys, polyPath, sizeof(dtPolyRef)*polyPathSize);
+		UInt32 npolys = polyPathSize;
+
+		float iterPos[VERTEX_SIZE], targetPos[VERTEX_SIZE];
+		dtStatus dtResult = query->closestPointOnPolyBoundary(polys[0], startPos, iterPos);
+		if (dtStatusFailed(dtResult))
 		{
 			return DT_FAILURE;
 		}
 
-		static const UInt32 MAX_POLYS = 74;
-
-		// This is the maximum amount of allowed points. This also has something to do with how
-		// the WoW protocol packs coordinates: We only have 11 bits per horizontal axis, where 1 bit
-		// is the sign. Since we iterate with a distance of 4 yards, the max path length generated
-		// is limited by this value properly.
-		const UInt32 MAX_PATH_LENGTH = 74;
-		if (maxPathSize > MAX_PATH_LENGTH)
+		dtResult = query->closestPointOnPolyBoundary(polys[npolys - 1], endPos, targetPos);
+		if (dtStatusFailed(dtResult))
 		{
-			maxPathSize = MAX_PATH_LENGTH;
+			return DT_FAILURE;
 		}
 
-		// Iterate over the path to find smooth path on the detail mesh surface.
-		dtPolyRef polys[MAX_POLYS];
-		memcpy(polys, &polyPath[0], sizeof(dtPolyRef) * polyPath.size());
-		int npolys = polyPath.size();
-
-		float iterPos[3], targetPos[3];
-		m_navQuery->closestPointOnPoly(polyPath.front(), &dtStart.x, iterPos, 0);
-		m_navQuery->closestPointOnPoly(polyPath.back(), &dtEnd.x, targetPos, 0);
-
-		// Speed allocation up a bit
-		out_smoothPath.clear();
-		out_smoothPath.reserve(maxPathSize);
-
-		// Add first point (starting point)
-		out_smoothPath.push_back(math::Vector3(iterPos[0], iterPos[1], iterPos[2]));
+		dtVcopy(&smoothPath[nsmoothPath * VERTEX_SIZE], iterPos);
+		++nsmoothPath;
 
 		// Move towards target a small advancement at a time until target reached or
 		// when ran out of memory to store the path.
-		// Move towards target a small advancement at a time until target reached or
-		// when ran out of memory to store the path.
-		while (npolys && out_smoothPath.size() < MAX_PATH_LENGTH)
+		while (npolys && nsmoothPath < maxSmoothPathSize)
 		{
 			// Find location to steer towards.
-			float steerPos[3];
+			float steerPos[VERTEX_SIZE];
 			unsigned char steerPosFlag;
-			dtPolyRef steerPosRef;
-			if (!getSteerTarget(m_navQuery.get(), iterPos, targetPos, SMOOTH_PATH_SLOP,
-				polys, npolys, steerPos, steerPosFlag, steerPosRef))
+			dtPolyRef steerPosRef = 0;
+
+			if (!getSteerTarget(query, iterPos, targetPos, SMOOTH_PATH_SLOP, polys, npolys, steerPos, steerPosFlag, steerPosRef))
 				break;
 
-			const bool endOfPath = (steerPosFlag & DT_STRAIGHTPATH_END);
-			const bool offMeshConnection = (steerPosFlag & DT_STRAIGHTPATH_OFFMESH_CONNECTION);
+			const bool endOfPath = !!(steerPosFlag & DT_STRAIGHTPATH_END);
+			const bool offMeshConnection = !!(steerPosFlag & DT_STRAIGHTPATH_OFFMESH_CONNECTION);
 
 			// Find movement delta.
-			float delta[3], len;
+			float delta[VERTEX_SIZE];
 			dtVsub(delta, steerPos, iterPos);
-			len = dtMathSqrtf(dtVdot(delta, delta));
+			float len = sqrtf(dtVdot(delta, delta));
 			// If the steer target is end of path or off-mesh link, do not move past the location.
 			if ((endOfPath || offMeshConnection) && len < SMOOTH_PATH_STEP_SIZE)
-				len = 1;
+				len = 1.0f;
 			else
 				len = SMOOTH_PATH_STEP_SIZE / len;
-			float moveTgt[3];
+
+			float moveTgt[VERTEX_SIZE];
 			dtVmad(moveTgt, iterPos, delta, len);
 
 			// Move
-			float result[3];
-			dtPolyRef visited[16];
-			int nvisited = 0;
-			m_navQuery->moveAlongSurface(polys[0], iterPos, moveTgt, &m_filter,
-				result, visited, &nvisited, 16);
+			float result[VERTEX_SIZE];
+			const static UInt32 MAX_VISIT_POLY = 16;
+			dtPolyRef visited[MAX_VISIT_POLY];
 
-			npolys = fixupCorridor(polys, npolys, MAX_POLYS, visited, nvisited);
-			npolys = fixupShortcuts(polys, npolys, m_navQuery.get());
+			UInt32 nvisited = 0;
+			query->moveAlongSurface(polys[0], iterPos, moveTgt, filter, result, visited, (int*)&nvisited, MAX_VISIT_POLY);
+			npolys = fixupCorridor(polys, npolys, MAX_PATH_LENGTH, visited, nvisited);
 
-			float h = 0;
-			m_navQuery->getPolyHeight(polys[0], result, &h);
+			query->getPolyHeight(polys[0], result, &result[1]);
+			result[1] += 0.5f;
 			dtVcopy(iterPos, result);
 
 			// Handle end of path and off-mesh links when close enough.
-			if (endOfPath && inRange(iterPos, steerPos, SMOOTH_PATH_SLOP, 1.0f))
+			if (endOfPath && inRangeYZX(iterPos, steerPos, SMOOTH_PATH_SLOP, 1.0f))
 			{
 				// Reached end of path.
 				dtVcopy(iterPos, targetPos);
-				if (out_smoothPath.size() < MAX_PATH_LENGTH)
+				if (nsmoothPath < maxSmoothPathSize)
 				{
-					out_smoothPath.push_back(math::Vector3(iterPos[0], iterPos[1], iterPos[2]));
-					//dtVcopy(&m_smoothPath[m_nsmoothPath * 3], iterPos);
+					dtVcopy(&smoothPath[nsmoothPath * VERTEX_SIZE], iterPos);
+					++nsmoothPath;
 				}
 				break;
 			}
-			else if (offMeshConnection && inRange(iterPos, steerPos, SMOOTH_PATH_SLOP, 1.0f))
+			else if (offMeshConnection && inRangeYZX(iterPos, steerPos, SMOOTH_PATH_SLOP, 1.0f))
 			{
-				// Reached off-mesh connection.
-				float startPos[3], endPos[3];
-
 				// Advance the path up to and over the off-mesh connection.
-				dtPolyRef prevRef = 0, polyRef = polys[0];
-				int npos = 0;
+				dtPolyRef prevRef = INVALID_POLYREF;
+				dtPolyRef polyRef = polys[0];
+				UInt32 npos = 0;
 				while (npos < npolys && polyRef != steerPosRef)
 				{
 					prevRef = polyRef;
 					polyRef = polys[npos];
-					npos++;
+					++npos;
 				}
-				for (int i = npos; i < npolys; ++i)
+
+				for (UInt32 i = npos; i < npolys; ++i)
 					polys[i - npos] = polys[i];
+
 				npolys -= npos;
 
 				// Handle the connection.
-				dtStatus status = m_navMesh->getOffMeshConnectionPolyEndPoints(prevRef, polyRef, startPos, endPos);
-				if (dtStatusSucceed(status))
+				float newStartPos[VERTEX_SIZE], newEndPos[VERTEX_SIZE];
+				dtResult = navMesh->getOffMeshConnectionPolyEndPoints(prevRef, polyRef, newStartPos, newEndPos);
+				if (dtStatusSucceed(dtResult))
 				{
-					if (out_smoothPath.size() < MAX_PATH_LENGTH)
+					if (nsmoothPath < maxSmoothPathSize)
 					{
-						out_smoothPath.push_back(math::Vector3(startPos[0], startPos[1], startPos[2]));
-
-						// Hack to make the dotted path not visible during off-mesh connection.
-						if (out_smoothPath.size() & 1)
-						{
-							out_smoothPath.push_back(math::Vector3(startPos[0], startPos[1], startPos[2]));
-						}
+						dtVcopy(&smoothPath[nsmoothPath * VERTEX_SIZE], newStartPos);
+						++nsmoothPath;
 					}
-
 					// Move position at the other side of the off-mesh link.
-					dtVcopy(iterPos, endPos);
-					float eh = 0.0f;
-					m_navQuery->getPolyHeight(polys[0], iterPos, &eh);
-					iterPos[1] = eh;
+					dtVcopy(iterPos, newEndPos);
+
+					query->getPolyHeight(polys[0], iterPos, &iterPos[1]);
+					iterPos[1] += 0.5f;
 				}
 			}
 
-			// Store results
-			if (out_smoothPath.size() < maxPathSize)
+			// Store results.
+			if (nsmoothPath < maxSmoothPathSize)
 			{
-				out_smoothPath.push_back(math::Vector3(iterPos[0], iterPos[1], iterPos[2]));
+				dtVcopy(&smoothPath[nsmoothPath * VERTEX_SIZE], iterPos);
+				++nsmoothPath;
 			}
 		}
 
-		return DT_SUCCESS;
+		*smoothPathSize = nsmoothPath;
+
+		// this is most likely a loop
+		return nsmoothPath < MAX_POINT_PATH_LENGTH ? DT_SUCCESS : DT_FAILURE;
 	}
 
 	bool Map::calculatePath(const math::Vector3 & source, math::Vector3 dest, std::vector<math::Vector3>& out_path)
@@ -677,16 +659,21 @@ namespace wowpp
 			}
 		}
 
-#if 0
-		// Both points are on the same polygon, so build a shortcut
-		// TODO: We don't want to build a shortcut here, but we still want to
-		// create a smooth path so that z value will be corrected
-		if (startPoly == endPoly)
+
+		// Set to true to generate straight path
+		const bool correctPathHeights = true;
+
+		if (!correctPathHeights)
 		{
-			out_path.push_back(dest);
-			return true;
+			// Both points are on the same polygon, so build a shortcut
+			// TODO: We don't want to build a shortcut here, but we still want to
+			// create a smooth path so that z value will be corrected
+			if (startPoly == endPoly)
+			{
+				out_path.push_back(dest);
+				return true;
+			}
 		}
-#endif
 
 		// Buffer to store polygons that need to be used for our path
 		const int maxPathLength = 74;
@@ -714,96 +701,71 @@ namespace wowpp
 		// Resize path
 		tempPath.resize(pathLength);
 
-		// Buffer to store path coordinates
-		std::vector<math::Vector3> tempPathCoords(maxPathLength);
-		std::vector<dtPolyRef> tempPathPolys(maxPathLength);
-		int tempPathCoordsCount = 0;
-
-		// Set to true to generate straight path
-		const bool correctPathHeights = true;
-		
-		dtResult = m_navQuery->findStraightPath(
-			&dtStart.x,							// Start position
-			&dtEnd.x,							// End position
-			tempPath.data(),					// Polygon path
-			static_cast<int>(tempPath.size()),	// Number of polygons in path
-			&tempPathCoords[0].x,				// [out] Path points
-			nullptr,							// [out] unused
-			&tempPathPolys[0],					// [out] Polygon id for each point.
-			&tempPathCoordsCount,				// [out] used coordinate count in vertices (3 floats = 1 vert)
-			maxPathLength,						// max coordinate count
-			DT_STRAIGHTPATH_ALL_CROSSINGS		// options
-			);
-
-		// Correct actual path length
-		tempPathCoords.resize(tempPathCoordsCount);
-		tempPathPolys.resize(tempPathCoordsCount);
-
-		if (correctPathHeights)
+		if (!correctPathHeights)
 		{
-			// We don't need to fix the first point as this is our starting point
-			for (size_t index = 1; index < tempPathCoords.size(); ++index)
+			// Buffer to store path coordinates
+			std::vector<math::Vector3> tempPathCoords(maxPathLength);
+			std::vector<dtPolyRef> tempPathPolys(maxPathLength);
+			int tempPathCoordsCount = 0;
+
+			dtResult = m_navQuery->findStraightPath(
+				&dtStart.x,							// Start position
+				&dtEnd.x,							// End position
+				tempPath.data(),					// Polygon path
+				static_cast<int>(tempPath.size()),	// Number of polygons in path
+				&tempPathCoords[0].x,				// [out] Path points
+				nullptr,							// [out] Path point flags (unused)
+				&tempPathPolys[0],					// [out] Polygon id for each point.
+				&tempPathCoordsCount,				// [out] used coordinate count in vertices (3 floats = 1 vert)
+				maxPathLength,						// max coordinate count
+				DT_STRAIGHTPATH_ALL_CROSSINGS		// options
+			);
+			if (dtStatusFailed(dtResult))
 			{
-				// Get polygon
-				dtPolyRef &poly = tempPathPolys[index++];
+				out_path.push_back(dest);
+				return false;
+			}
 
-				// Get points
-				auto &thisPoint = tempPathCoords[index];
-				const auto &lastPoint = tempPathCoords[index - 1];
+			// Correct actual path length
+			tempPathCoords.resize(tempPathCoordsCount);
+			tempPathPolys.resize(tempPathCoordsCount);
 
-				// First, fix this points height
-				float height = thisPoint.y;
-				if (m_navQuery->getPolyHeight(poly, &thisPoint.x, &height) == DT_SUCCESS)
+			// Not enough waypoints generated or waypoint generation completely failed?
+			if (tempPathCoordsCount < 1)
+			{
+				// TODO: Handle this error?
+				out_path.push_back(dest);
+				return true;
+			}
+
+			// Append waypoints
+			for (const auto &p : tempPathCoords)
+			{
+				out_path.push_back(
+					recastToWoWCoord(p));
+			}
+		}
+		else
+		{
+			int smoothPathSize = 0;
+			float smoothPath[VERTEX_SIZE * MAX_POINT_PATH_LENGTH];
+			dtResult = findSmoothPath(m_navQuery.get(), m_navMesh, &m_filter, &dtStart.x, &dtEnd.x, &tempPath[0], pathLength, smoothPath, &smoothPathSize, 74);
+			if (dtStatusFailed(dtResult))
+			{
+				//ELOG("Could not get smooth path");
+				return false;
+			}
+			else
+			{
+				for (int i = 0; i < smoothPathSize * VERTEX_SIZE; i += VERTEX_SIZE)
 				{
-					thisPoint.y = height;
+					out_path.push_back(
+						recastToWoWCoord(math::Vector3(smoothPath[i], smoothPath[i + 1], smoothPath[i + 2])));
 				}
-
-				// Now calculate distance if there is anything to calculate at all
-				if (lastPoint != thisPoint)
-				{
-					const float dist = (lastPoint - thisPoint).length();
-					const size_t iterCount = std::min<size_t>(74, static_cast<size_t>(dist / 4.0f));
-					const float iterStep = 1.0f / static_cast<float>(iterCount);
-
-					// Again: We don't need the first point as it is the last point
-					for (size_t i = 1; i < iterCount; ++i)
-					{
-						// Insert new waypoint
-						math::Vector3 newPoint = lastPoint.lerp(thisPoint, iterStep * static_cast<float>(i));
-
-						// Fix height for this point, too
-						float newHeight = newPoint.y;
-						if (m_navQuery->getPolyHeight(poly, &newPoint.x, &newHeight) == DT_SUCCESS)
-						{
-							newPoint.y = newHeight;
-						}
-
-						// Push back
-						tempPathCoords.insert(tempPathCoords.begin() + index, std::move(newPoint));
-						tempPathPolys.insert(tempPathPolys.begin() + index, poly);
-						tempPathCoordsCount++;
-						index++;
-					}
-				}
+				return true;
 			}
 		}
 
-		// Not enough waypoints generated or waypoint generation completely failed?
-		if (tempPathCoordsCount < 1 ||
-			dtStatusFailed(dtResult))
-		{
-			// TODO: Handle this error?
-			out_path.push_back(dest);
-			return true;
-		}
-		
-		// Append waypoints
-		for (const auto &p : tempPathCoords)
-		{
-			out_path.push_back(
-				recastToWoWCoord(p));
-		}
-		
 		return true;
 	}
 
