@@ -119,6 +119,7 @@ namespace wowpp
 			m_map = &mapIt->second;
 		}
 
+#if 1
 		// Add object spawners
 		for (int i = 0; i < m_mapEntry.objectspawns_size(); ++i)
 		{
@@ -145,6 +146,7 @@ namespace wowpp
 				m_objectSpawnsByName[spawn.name()] = m_objectSpawners.back().get();
 			}
 		}
+#endif
 
 		// Add creature spawners
 		for (int i = 0; i < m_mapEntry.unitspawns_size(); ++i)
@@ -155,20 +157,20 @@ namespace wowpp
 			const auto *unitEntry = m_project.units.getById(spawn.unitentry());
 			assert(unitEntry);
 
+#if 0
+			// Only spawn timber wolf
+			if (unitEntry->id() != 69)
+				continue;
+
+			// Limit wolf spawn even more!
+			if (spawn.positionx() > -8752.0f || spawn.positionx() < -8754.0f)
+				continue;
+#endif
+
 			std::unique_ptr<CreatureSpawner> spawner(new CreatureSpawner(
 				*this,
 				*unitEntry,
 				spawn));
-			/*
-			            spawn.maxcount(),
-			            spawn.respawndelay(),
-			            math::Vector3(spawn.positionx(), spawn.positiony(), spawn.positionz()),
-			            spawn.rotation(),
-			            spawn.defaultemote(),
-			            spawn.radius(),
-			            spawn.isactive(),
-			            spawn.respawn(),
-						movement));*/
 
 			m_creatureSpawners.push_back(std::move(spawner));
 

@@ -51,6 +51,7 @@ namespace wowpp
 			, m_work(new boost::asio::io_service::work(m_workQueue))
             , m_light(nullptr)
 			, m_project(project)
+			, m_previousPage(std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max())
 		{
 			// Create worker thread
 			boost::asio::io_service &workQueue = m_workQueue;
@@ -67,6 +68,10 @@ namespace wowpp
 				m_camera.setPosition(spawn->positionx(), spawn->positiony(), spawn->positionz() + 5.0f);
 			}
 
+			OgreDBCFilePtr displayDbc = OgreDBCFileManager::getSingleton().load("DBFilesClient\\CreatureDisplayInfo.dbc", "WoW");
+			OgreDBCFilePtr modelDbc = OgreDBCFileManager::getSingleton().load("DBFilesClient\\CreatureModelData.dbc", "WoW");
+			OgreDBCFilePtr objDisplayDbc = OgreDBCFileManager::getSingleton().load("DBFilesClient\\GameObjectDisplayInfo.dbc", "WoW");
+
 			// Spawn all entities
 			UInt32 i = 0;
 			for (auto &spawn : *m_map.mutable_unitspawns())
@@ -74,7 +79,6 @@ namespace wowpp
 				const auto *unit = m_project.units.getById(spawn.unitentry());
 				assert(unit);
 
-				OgreDBCFilePtr displayDbc = OgreDBCFileManager::getSingleton().load("DBFilesClient\\CreatureDisplayInfo.dbc", "WoW");
 				UInt32 row = displayDbc->getRowByIndex(unit->malemodel());
 				if (row == UInt32(-1))
 				{
@@ -85,7 +89,6 @@ namespace wowpp
 				UInt32 modelId = displayDbc->getField<UInt32>(row, 1);
 				UInt32 textureId = displayDbc->getField<UInt32>(row, 3);
 
-				OgreDBCFilePtr modelDbc = OgreDBCFileManager::getSingleton().load("DBFilesClient\\CreatureModelData.dbc", "WoW");
 				UInt32 modelRow = modelDbc->getRowByIndex(modelId);
 				if (modelRow == UInt32(-1))
 				{
@@ -180,15 +183,14 @@ namespace wowpp
 				const auto *object = m_project.objects.getById(spawn.objectentry());
 				assert(object);
 
-				OgreDBCFilePtr displayDbc = OgreDBCFileManager::getSingleton().load("DBFilesClient\\GameObjectDisplayInfo.dbc", "WoW");
-				UInt32 row = displayDbc->getRowByIndex(object->displayid());
+				UInt32 row = objDisplayDbc->getRowByIndex(object->displayid());
 				if (row == UInt32(-1))
 				{
 					//WLOG("Could not find object display id " << object->displayid());
 					continue;
 				}
 
-				String objectFileName = displayDbc->getField(row, 1);
+				String objectFileName = objDisplayDbc->getField(row, 1);
 				if (objectFileName.empty())
 				{
 					WLOG("Could not find object display ID file!");
@@ -318,9 +320,15 @@ namespace wowpp
 			float convertedY = (constants::MapWidth * 32.0f) + camPos.y;
 
 			paging::PagePosition pos(63 - static_cast<size_t>(convertedX / constants::MapWidth), 63 - static_cast<size_t>(convertedY / constants::MapWidth));
-			
-			m_memoryPointOfView->updateCenter(pos);
-			m_visibleSection->updateCenter(pos);
+			if (m_previousPage != pos)
+			{
+				m_previousPage = pos;
+
+				m_memoryPointOfView->updateCenter(pos);
+				m_visibleSection->updateCenter(pos);
+
+				pageChanged(pos);
+			}
 
 			// Update paging
 			m_dispatcher.poll();
@@ -387,6 +395,43 @@ namespace wowpp
 					{
 						WLOG("Could not load tile!");
 						return;
+					}
+
+					math::Vector3 start(-8752.376953f, -27.426413f, 92.981216f);
+					math::Vector3 end(-8780.809570f, -34.739071f, 104.998360f);
+					std::vector<math::Vector3> points;
+					if (!mapInst->calculatePath(start, end, points))
+					{
+						ELOG("Could not calculate path");
+					}
+					else
+					{
+						if (points.size() > 1)
+						{
+							// Create collision for this map
+							Ogre::ManualObject *obj = m_sceneMgr.createManualObject(objName.str() + "_path");
+							obj->begin("Editor/PathLine", Ogre::RenderOperation::OT_LINE_STRIP);
+							for (auto &p : points)
+							{
+								obj->position(p.x, p.y, p.z);
+							}
+							obj->end();
+
+							obj->begin("Editor/PathPoint", Ogre::RenderOperation::OT_POINT_LIST);
+							for (auto &p : points)
+							{
+								obj->position(p.x, p.y, p.z);
+							}
+							obj->end();
+
+							Ogre::SceneNode *child = m_sceneMgr.getRootSceneNode()->createChildSceneNode(objName.str() + "_pathnode");
+							child->attachObject(obj);
+							DLOG("Path added with " << points.size() << " points");
+						}
+						else
+						{
+							ELOG("No points found!");
+						}
 					}
 
 					if (tile->collision.triangleCount == 0)

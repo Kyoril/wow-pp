@@ -56,6 +56,10 @@ namespace wowpp
 		{
 		public:
 
+			boost::signals2::signal<void(paging::PagePosition)> pageChanged;
+
+		public:
+
 			explicit WorldEditor(EditorApplication &app, Ogre::SceneManager &sceneMgr, Ogre::Camera &camera, proto::MapEntry &map, proto::Project &project);
 			~WorldEditor();
 
@@ -97,6 +101,7 @@ namespace wowpp
 			std::vector<wowpp::ogre_utils::EntityPtr> m_spawnEntities;
 			std::unique_ptr<TransformWidget> m_transformWidget;
 			boost::signals2::scoped_connection m_onTransformChanged;
+			paging::PagePosition m_previousPage;
 		};
 	}
 }

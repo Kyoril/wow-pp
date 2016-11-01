@@ -41,6 +41,7 @@ namespace wowpp
 		, m_moveStart(0)
 		, m_moveEnd(0)
 		, m_customSpeed(false)
+		, m_debugOutputEnabled(false)
 	{
 		m_moveUpdated.ended.connect([this]()
 		{
@@ -122,6 +123,11 @@ namespace wowpp
 		// Get current location
 		m_customSpeed = true;
 		auto currentLoc = getCurrentLocation();
+
+		if (m_debugOutputEnabled)
+		{
+			DLOG("New target: " << target << " (Current: " << currentLoc << ")");
+		}
 
 		auto &moved = getMoved();
 
@@ -237,6 +243,11 @@ namespace wowpp
 
 		// Raise signal
 		targetChanged();
+
+		if (m_debugOutputEnabled)
+		{
+			m_path.printDebugInfo();
+		}
 
 		return true;
 	}

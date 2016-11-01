@@ -51,6 +51,9 @@
 using namespace std;
 using namespace wowpp;
 
+// Uncomment below to supress debug output
+#define TILE_DEBUG_OUTPUT 1
+
 //////////////////////////////////////////////////////////////////////////
 // Calls:
 //	For Each Map... (separate thread for each map, up to #cpu-cores)
@@ -377,15 +380,15 @@ namespace
 	
 	/// Calculates tile boundaries in world units, but converted to the recast coordinate
 	/// system.
-	static void calculateTileBounds(UInt32 tileX, UInt32 tileY, float* bmin, float* bmax)
+	static void calculateADTTileBounds(UInt32 tileX, UInt32 tileY, float* bmin, float* bmax)
 	{
 		bmin[0] = (32 - int(tileY)) * -MeshSettings::AdtSize;
-		bmin[1] = std::numeric_limits<float>::max();
+		bmin[1] = std::numeric_limits<float>::lowest();
 		bmin[2] = (32 - int(tileX)) * -MeshSettings::AdtSize;
 
-		bmax[0] = bmin[0] + MeshSettings::AdtSize / MeshSettings::ChunksPerTile;
-		bmax[1] = -1000.0f;
-		bmax[2] = bmin[2] + MeshSettings::AdtSize / MeshSettings::ChunksPerTile;
+		bmax[0] = bmin[0] + MeshSettings::AdtSize;
+		bmax[1] = std::numeric_limits<float>::max();
+		bmax[2] = bmin[2] + MeshSettings::AdtSize;
 	}
 
 	// Used for ADT hole packing
@@ -487,7 +490,7 @@ namespace
 	}
 
 	/// Finishes the nav mesh generation.
-	bool finishMesh(rcContext &ctx, const rcConfig &config, int tileX, int tileY, MapNavigationChunk &out_chunk, rcHeightfield &solid)
+	bool finishMesh(rcContext &ctx, const rcConfig &config, int tileX, int tileY, size_t tx, size_t ty, MapNavigationChunk &out_chunk, rcHeightfield &solid)
 	{
 		// Allocate and build compact height field
 		SmartCompactHeightFieldPtr chf(rcAllocCompactHeightfield(), rcFreeCompactHeightfield);
@@ -580,8 +583,8 @@ namespace
 		params.walkableHeight = MeshSettings::WalkableHeight;
 		params.walkableRadius = MeshSettings::WalkableRadius;
 		params.walkableClimb = MeshSettings::WalkableClimb;
-		params.tileX = tileX;
-		params.tileY = tileY;
+		params.tileX = (tileY * MeshSettings::TilesPerADT) + tx;
+		params.tileY = (tileX * MeshSettings::TilesPerADT) + ty;
 		params.tileLayer = 0;
 		memcpy(params.bmin, polyMesh->bmin, sizeof(polyMesh->bmin));
 		memcpy(params.bmax, polyMesh->bmax, sizeof(polyMesh->bmax));
@@ -598,20 +601,37 @@ namespace
 			return false;
 		}
 
-		// Write the serialized data into the navigation chunk of the map
-		out_chunk.data.resize(outDataSize);
-		std::memcpy(&out_chunk.data[0], outData, outDataSize);
-		out_chunk.tileRef = 0;
+		// Create tile data
+		MapNavigationChunk::TileData tile;
+		tile.size = outDataSize;
+		tile.data.resize(outDataSize);
+		std::memcpy(&tile.data[0], outData, outDataSize);
 
-#ifdef _DEBUG
+		// Add tile to the list of tiles
+		out_chunk.tiles.push_back(std::move(tile));
+
+		// Increase and validate tile count
+		out_chunk.tileCount++;
+		assert(out_chunk.tileCount == out_chunk.tiles.size() && "Navigation chunks tile count does not match the actual tile count!");
+
+#ifdef TILE_DEBUG_OUTPUT
 		std::unique_ptr<FileIO> debugFile(new FileIO());
 
 		std::ostringstream strm;
-		strm << "meshes/tile_" << tileX << "_" << tileY << ".obj";
+		strm << "meshes/tile_" << tileX << "_" << tileY << "-" << tx << "_" << ty << "_poly.obj";
 
 		debugFile->openForWrite(strm.str().c_str());
-		//duDumpPolyMeshToObj(*polyMesh, debugFile.get());
-		duDumpPolyMeshDetailToObj(*polyMeshDetail, debugFile.get());
+		duDumpPolyMeshToObj(*polyMesh, debugFile.get());
+#endif
+
+#ifdef TILE_DEBUG_OUTPUT
+		std::unique_ptr<FileIO> debugFileDetail(new FileIO());
+
+		std::ostringstream strmDetail;
+		strmDetail << "meshes/tile_" << tileX << "_" << tileY << "-" << tx << "_" << ty << "_detail.obj";
+
+		debugFileDetail->openForWrite(strmDetail.str().c_str());
+		duDumpPolyMeshDetailToObj(*polyMeshDetail, debugFileDetail.get());
 #endif
 
 		dtFree(outData);
@@ -678,9 +698,11 @@ namespace
 		calculateMapBounds(mapId, minX, minY, maxX, maxY);
 
 		float bmin[3], bmax[3];
-		calculateTileBounds(maxX, maxY, bmin, bmax);
+		calculateADTTileBounds(minX, minY, bmin, bmax);
 
-		//int polyBits = 20;
+		bmin[0] = -(32 * MeshSettings::AdtSize);
+		bmin[2] = -(32 * MeshSettings::AdtSize);
+
 		int maxTiles = tiles.size() * (MeshSettings::TilesPerADT * MeshSettings::TilesPerADT);
 		const int maxPolysPerTile = 1 << DT_POLY_BITS;
 
@@ -699,6 +721,11 @@ namespace
 		{
 			ELOG("[Map " << mapId << "] Failed to create navigation mesh!")
 			return false;
+		}
+		else
+		{
+			DLOG("\t[Map " << mapId << "] bounds: " << minX << "x" << minY << " - " << maxX << "x" << maxY);
+			DLOG("\t[Map " << mapId << "] origin: " << bmin[0] << " " << bmin[1] << " " << bmin[2]);
 		}
 
 		return true;
@@ -794,9 +821,9 @@ namespace
 		float minZ = std::numeric_limits<float>::max(), maxZ = std::numeric_limits<float>::lowest();
 
 		// Reset chunk data
-		out_chunk.data.clear();
+		out_chunk.tiles.clear();
 		out_chunk.size = 0;
-		out_chunk.tileRef = 0;
+		out_chunk.tileCount = 0;
 
 		// Process WMOs
 		MeshData wmoMesh;
@@ -844,8 +871,8 @@ namespace
 		}
 
 		// Process Doodads
-#if 0
 		MeshData doodadMesh;
+#if 0
 		{
 			DLOG("\tTile has " << adt.getMDDFChunk().entries.size() << " doodads");
 
@@ -881,7 +908,7 @@ namespace
 				
 #define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * (x) / -180.0)
 				math::Matrix3 rotMat = math::Matrix3::fromEulerAnglesXYZ(
-					WOWPP_DEG_TO_RAD(-entry.rotation[2]), WOWPP_DEG_TO_RAD(-entry.rotation[0]), WOWPP_DEG_TO_RAD(-entry.rotation[1] - 180));
+					WOWPP_DEG_TO_RAD(-entry.rotation[2]), WOWPP_DEG_TO_RAD(entry.rotation[0]), WOWPP_DEG_TO_RAD(-entry.rotation[1]));
 
 				math::Vector3 position(entry.position.z, entry.position.x, entry.position.y);
 				position.x = (32 * 533.3333f) - position.x;
@@ -896,10 +923,10 @@ namespace
 				for (auto &vert : verts)
 				{
 					// Transform vertex and push it to the list
-					math::Vector3 transformed = rotMat * (vert * (float(entry.scale) / 1024.0f));
-					doodadMesh.solidVerts.push_back(transformed.x + position.x);
-					doodadMesh.solidVerts.push_back(transformed.y + position.y);
-					doodadMesh.solidVerts.push_back(transformed.z + position.z);
+					math::Vector3 transformed = (rotMat * vert) + position;
+					doodadMesh.solidVerts.push_back(-transformed.y);
+					doodadMesh.solidVerts.push_back(transformed.z);
+					doodadMesh.solidVerts.push_back(-transformed.x);
 				}
 				for (UInt32 i = 0; i < inds.size(); i += 3)
 				{
@@ -916,9 +943,12 @@ namespace
 		}
 #endif
 
-		// Serialize adt data
+#ifdef TILE_DEBUG_OUTPUT
+		// Serialize mesh data for debugging purposes
 		serializeMeshData("_adt", mapId, tileX, tileY, adtMesh);
 		serializeMeshData("_wmo", mapId, tileX, tileY, wmoMesh);
+		//serializeMeshData("_doodad", mapId, tileX, tileY, doodadMesh);
+#endif
 
 		// Adjust min and max z values
 		for (UInt32 i = 0; i < adtMesh.solidVerts.size(); i += 3)
@@ -937,85 +967,110 @@ namespace
 			if (z > maxZ)
 				maxZ = z;
 		}
+		for (UInt32 i = 0; i < doodadMesh.solidVerts.size(); i += 3)
+		{
+			const float &z = doodadMesh.solidVerts[i + 1];
+			if (z < minZ)
+				minZ = z;
+			if (z > maxZ)
+				maxZ = z;
+		}
 
 		// Initialize config
 		rcConfig config;
 		initializeRecastConfig(config);
-
-		// Setup boundaries
-		UInt32 convertedTileX = tileX * MeshSettings::ChunksPerTile;
-		UInt32 convertedTileY = tileY * MeshSettings::ChunksPerTile;
-
-		float bmin[3], bmax[3];
-		calculateTileBounds(tileX, tileY, bmin, bmax);
-		rcVcopy(config.bmin, bmin);
-		rcVcopy(config.bmax, bmax);
-
-		// Use only this tiles bounding box
-		config.bmin[0] = (convertedTileX * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
 		config.bmin[1] = minZ;
-		config.bmin[2] = (convertedTileY * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
-		//config.bmax[0] = ((convertedTileX + 1) * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
 		config.bmax[1] = maxZ;
-		//config.bmax[2] = ((convertedTileY + 1) * MeshSettings::ChunksPerTile) * MeshSettings::AdtChunkSize - 32.f * MeshSettings::AdtSize;
 
-		// Apply border size
-		config.bmin[0] -= config.borderSize * config.cs;
-		config.bmin[2] -= config.borderSize * config.cs;
-		config.bmax[0] += config.borderSize * config.cs;
-		config.bmax[2] += config.borderSize * config.cs;
-
-		// Create the context object
-		rcContext ctx(false);
-
-		// Allocate and build the recast heightfield
-		SmartHeightFieldPtr solid(rcAllocHeightfield(), rcFreeHeightField);
-		if (!rcCreateHeightfield(&ctx, *solid, config.width, config.height, config.bmin, config.bmax, config.cs, config.ch))
+		// Determine all nav tiles of this ADT cell
+		for (size_t ty = 0; ty < MeshSettings::TilesPerADT; ++ty)
 		{
-			ELOG("Could not create heightfield (rcCreateHeightfield failed)");
-			return false;
+			for (size_t tx = 0; tx < MeshSettings::TilesPerADT; ++tx)
+			{
+				ILOG("\t\tTile [" << tx << "," << ty << "] ...");
+
+				// Calculate tile bounds and apply them
+				float bmin[3], bmax[3];
+				calculateADTTileBounds(tileX, tileY, bmin, bmax);
+
+				// Adjust to tile position
+				bmin[0] += MeshSettings::TileSize * tx;
+				bmin[2] += MeshSettings::TileSize * ty;
+				bmax[0] += MeshSettings::TileSize * tx;
+				bmax[2] += MeshSettings::TileSize * ty;
+
+				rcVcopy(config.bmin, bmin);
+				rcVcopy(config.bmax, bmax);
+				config.bmin[1] = minZ;
+				config.bmax[1] = maxZ;
+
+				// Apply border size
+				config.bmin[0] -= config.borderSize * config.cs;
+				config.bmin[2] -= config.borderSize * config.cs;
+				config.bmax[0] += config.borderSize * config.cs;
+				config.bmax[2] += config.borderSize * config.cs;
+
+				// Create the context object
+				rcContext ctx(false);
+
+				// Allocate and build the recast heightfield
+				SmartHeightFieldPtr solid(rcAllocHeightfield(), rcFreeHeightField);
+				if (!rcCreateHeightfield(&ctx, *solid, config.width, config.height, config.bmin, config.bmax, config.cs, config.ch))
+				{
+					ELOG("\t\t\tCould not create heightfield (rcCreateHeightfield failed)");
+					return false;
+				}
+
+				// Rasterize adt terrain mesh
+				if (!rasterize(ctx, *solid, false, config.walkableSlopeAngle, adtMesh, AreaFlags::ADT))
+				{
+					ELOG("\t\t\tCould not rasterize ADT data");
+					return false;
+				}
+
+				// Rasterize adt wmo object meshes
+				if (!rasterize(ctx, *solid, true, config.walkableSlopeAngle, wmoMesh, AreaFlags::WMO))
+				{
+					ELOG("\t\t\tCould not rasterize WMO data");
+					return false;
+				}
+
+				// Rasterize adt doodad object meshes
+				if (!rasterize(ctx, *solid, true, config.walkableSlopeAngle, doodadMesh, AreaFlags::Doodad))
+				{
+					ELOG("\t\t\tCould not rasterize DOODAD data");
+					return false;
+				}
+
+				// Remember all ADT flagged spans as the information may get lost after the next step
+				std::vector<rcSpan *> adtSpans;
+				adtSpans.reserve(solid->width*solid->height);
+				for (int i = 0; i < solid->width * solid->height; ++i)
+					for (rcSpan *s = solid->spans[i]; s; s = s->next)
+						if (!!(s->area & AreaFlags::ADT))
+							adtSpans.push_back(s);
+
+				// Filter ledge spans
+				rcFilterLedgeSpans(&ctx, config.walkableHeight, config.walkableClimb, *solid);
+
+				// Restore ADT flags for previously remembered spans
+				restoreAdtSpans(adtSpans);
+
+				// Apply more geometry filtering
+				rcFilterWalkableLowHeightSpans(&ctx, config.walkableHeight, *solid);
+				rcFilterLowHangingWalkableObstacles(&ctx, config.walkableClimb, *solid);
+
+				// Finalize the mesh
+				auto const result = finishMesh(ctx, config, tileX, tileY, tx, ty, out_chunk, *solid);
+				if (!result)
+				{
+					ELOG("\t\t\tCould not finish mesh");
+					return false;
+				}
+			}
 		}
 
-		// Rasterize adt terrain mesh
-		if (!rasterize(ctx, *solid, false, config.walkableSlopeAngle, adtMesh, AreaFlags::ADT))
-		{
-			ELOG("Could not rasterize ADT data");
-			return false;
-		}
-
-		// Rasterize adt wmo object meshes
-		if (!rasterize(ctx, *solid, true, config.walkableSlopeAngle, wmoMesh, AreaFlags::WMO))
-		{
-			ELOG("Could not rasterize WMO data");
-			return false;
-		}
-
-		// Remember all ADT flagged spans as the information may get lost after the next step
-		std::vector<rcSpan *> adtSpans;
-		adtSpans.reserve(solid->width*solid->height);
-		for (int i = 0; i < solid->width * solid->height; ++i)
-			for (rcSpan *s = solid->spans[i]; s; s = s->next)
-				if (!!(s->area & AreaFlags::ADT))
-					adtSpans.push_back(s);
-
-		// Filter ledge spans
-		rcFilterLedgeSpans(&ctx, config.walkableHeight, config.walkableClimb, *solid);
-
-		// Restore ADT flags for previously remembered spans
-		restoreAdtSpans(adtSpans);
-
-		// Apply more geometry filtering
-		rcFilterWalkableLowHeightSpans(&ctx, config.walkableHeight, *solid);
-		rcFilterLowHangingWalkableObstacles(&ctx, config.walkableClimb, *solid);
-
-		// Finalize the mesh
-		auto const result = finishMesh(ctx, config, tileX, tileY, out_chunk, *solid);
-		if (!result)
-		{
-			ELOG("Could not finish mesh");
-		}
-
-		return result;
+		return true;
 	}
 	
 	/// Converts an ADT tile of a WDT file.
@@ -1033,11 +1088,11 @@ namespace
 		const UInt32 cellX = tileIndex / 64;
 		const UInt32 cellY = tileIndex % 64;
 
-#ifdef _DEBUG
+#ifdef TILE_DEBUG_OUTPUT
 		switch (mapId)
 		{
 			case 0:
-				if (cellY != 36 || cellX != 26)
+				if (cellY != 32 || cellX != 48)
 					return false;
 				break;
 			case 1:
@@ -1062,7 +1117,7 @@ namespace
 			((outputPath / (fmt::format("{0}", mapId))) / (fmt::format("{0}_{1}.map", cellX, cellY))).string();
 
 		// Build NavMesh tiles
-		ILOG("\tBuilding tile [" << cellX << "," << cellY << "] ...");
+		ILOG("\tBuilding adt cell [" << cellX << "," << cellY << "] ...");
 
 		// Load ADT file
 		ADTFile adt(adtFile);
@@ -1101,7 +1156,7 @@ namespace
         MapHeaderChunk header;
         header.fourCC = 0x50414D57;				// WMAP		- WoW Map
         header.size = sizeof(MapHeaderChunk) - 8;
-        header.version = 0x120;
+        header.version = 0x130;
         header.offsAreaTable = 0;
         header.areaTableSize = 0;
 		header.offsCollision = 0;
@@ -1223,32 +1278,46 @@ namespace
 			header.collisionSize = sink.position() - header.offsCollision;
 		}
 
-		// Build nav mesh
+		// Remember possible start of nav chunk offset
+		size_t possibleNavChunkOffset = sink.position();
+
+		// Prepare navigation chunk
 		MapNavigationChunk navigationChunk;
 		navigationChunk.fourCC = 0x564E4D57;		// WMNV		- WoW Map Navigation
 		navigationChunk.size = 0;
 		if (creaveNavTile(mapName, mapId, cellX, cellY, navMesh, adt, collisionChunk, navigationChunk))
 		{
-			if (!navigationChunk.data.empty())
+			if (!navigationChunk.tiles.empty())
 			{
 				// Calculate real chunk size
-				navigationChunk.size = sizeof(dtTileRef) + navigationChunk.data.size();
+				navigationChunk.size = sizeof(UInt32);
+				for (const auto &tile : navigationChunk.tiles)
+				{
+					navigationChunk.size += tile.size + sizeof(UInt32);
+				}
 
-				// Fix header
-				header.offsNavigation = sink.position();
-				header.navigationSize = sizeof(UInt32) * 2 + navigationChunk.size;
+				// Fix header data
+				header.offsNavigation = possibleNavChunkOffset;
+				header.navigationSize += sizeof(UInt32) * 2 + navigationChunk.size;
+
+				// Write chunk data
 				writer
 					<< io::write<UInt32>(navigationChunk.fourCC)
 					<< io::write<UInt32>(navigationChunk.size)
-					<< io::write<UInt32>(navigationChunk.tileRef)
-					<< io::write_range(navigationChunk.data);
+					<< io::write<UInt32>(navigationChunk.tileCount);
+				for (const auto &tile : navigationChunk.tiles)
+				{
+					writer
+						<< io::write<UInt32>(tile.size)
+						<< io::write_range(tile.data);
+				}
 			}
 		}
 		else
 		{
 			ELOG("Could not create navigation data for tile " << cellX << "," << cellY);
 		}
-		
+
 		// Overwrite header settings
 		writer.writePOD(headerPos, header);
 
@@ -1271,7 +1340,7 @@ namespace
 			return false;
 		}
 
-#ifdef _DEBUG
+#ifdef TILE_DEBUG_OUTPUT
 		if (mapId != 0)
 		{
 			return true;
@@ -1318,7 +1387,7 @@ namespace
 			}
 		}
 
-		ILOG("Found " << tilesByMap[mapId].size() << " tiles");
+		ILOG("Found " << tilesByMap[mapId].size() << " adt tiles");
 		
 		// Create nav mesh
 		auto freeNavMesh = [](dtNavMesh* ptr) { dtFreeNavMesh(ptr); };

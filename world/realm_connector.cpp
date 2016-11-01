@@ -36,6 +36,7 @@
 #include "game/each_tile_in_region.h"
 #include "game/universe.h"
 #include "game/each_tile_in_sight.h"
+#include "game/unit_mover.h"
 #include "binary_io/vector_sink.h"
 #include "log/default_log_levels.h"
 
@@ -924,6 +925,14 @@ namespace wowpp
 			{
 				unitTarget = reinterpret_cast<GameUnit*>(targetObj);
 			}
+
+#if 0
+			// TODO: Remove code if no longer needed for debugging purposes
+			if (unitTarget)
+			{
+				unitTarget->getMover().setDebugOutput(true);
+			}
+#endif
 
 			sender.getCharacter()->setVictim(unitTarget);
 			return;

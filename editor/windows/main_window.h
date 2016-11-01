@@ -22,6 +22,7 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QLabel>
 #include <QSortFilterProxyModel>
 #include "ogre_wrappers/qt_ogre_window.h"
 
@@ -69,6 +70,8 @@ namespace wowpp
 			QtOgreWindow *m_ogreWindow;
 			QSortFilterProxyModel *m_unitFilter;
 			QSortFilterProxyModel *m_objectFilter;
+			QLabel *m_pageLabel;
+			boost::signals2::scoped_connection m_onPageChanged;
 		};
 	}
 }
