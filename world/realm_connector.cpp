@@ -926,7 +926,7 @@ namespace wowpp
 				unitTarget = reinterpret_cast<GameUnit*>(targetObj);
 			}
 
-#if 0
+#if 1
 			// TODO: Remove code if no longer needed for debugging purposes
 			if (unitTarget)
 			{

@@ -51,6 +51,9 @@
 using namespace std;
 using namespace wowpp;
 
+// Uncomment below to supress debug output
+#define TILE_DEBUG_OUTPUT 1
+
 //////////////////////////////////////////////////////////////////////////
 // Calls:
 //	For Each Map... (separate thread for each map, up to #cpu-cores)
@@ -582,9 +585,6 @@ namespace
 		params.walkableClimb = MeshSettings::WalkableClimb;
 		params.tileX = (tileY * MeshSettings::TilesPerADT) + tx;
 		params.tileY = (tileX * MeshSettings::TilesPerADT) + ty;
-#ifdef _DEBUG
-		DLOG("TILE IS AT " << params.tileX << "x" << params.tileY);
-#endif
 		params.tileLayer = 0;
 		memcpy(params.bmin, polyMesh->bmin, sizeof(polyMesh->bmin));
 		memcpy(params.bmax, polyMesh->bmax, sizeof(polyMesh->bmax));
@@ -614,15 +614,24 @@ namespace
 		out_chunk.tileCount++;
 		assert(out_chunk.tileCount == out_chunk.tiles.size() && "Navigation chunks tile count does not match the actual tile count!");
 
-#ifdef _DEBUG
+#ifdef TILE_DEBUG_OUTPUT
 		std::unique_ptr<FileIO> debugFile(new FileIO());
 
 		std::ostringstream strm;
-		strm << "meshes/tile_" << tileX << "_" << tileY << "-" << tx << "_" << ty << ".obj";
+		strm << "meshes/tile_" << tileX << "_" << tileY << "-" << tx << "_" << ty << "_poly.obj";
 
 		debugFile->openForWrite(strm.str().c_str());
-		//duDumpPolyMeshToObj(*polyMesh, debugFile.get());
-		duDumpPolyMeshDetailToObj(*polyMeshDetail, debugFile.get());
+		duDumpPolyMeshToObj(*polyMesh, debugFile.get());
+#endif
+
+#ifdef TILE_DEBUG_OUTPUT
+		std::unique_ptr<FileIO> debugFileDetail(new FileIO());
+
+		std::ostringstream strmDetail;
+		strmDetail << "meshes/tile_" << tileX << "_" << tileY << "-" << tx << "_" << ty << "_detail.obj";
+
+		debugFileDetail->openForWrite(strmDetail.str().c_str());
+		duDumpPolyMeshDetailToObj(*polyMeshDetail, debugFileDetail.get());
 #endif
 
 		dtFree(outData);
@@ -863,6 +872,7 @@ namespace
 
 		// Process Doodads
 		MeshData doodadMesh;
+#if 0
 		{
 			DLOG("\tTile has " << adt.getMDDFChunk().entries.size() << " doodads");
 
@@ -931,12 +941,13 @@ namespace
 				}
 			}
 		}
+#endif
 
-#ifdef _DEBUG
+#ifdef TILE_DEBUG_OUTPUT
 		// Serialize mesh data for debugging purposes
 		serializeMeshData("_adt", mapId, tileX, tileY, adtMesh);
 		serializeMeshData("_wmo", mapId, tileX, tileY, wmoMesh);
-		serializeMeshData("_doodad", mapId, tileX, tileY, doodadMesh);
+		//serializeMeshData("_doodad", mapId, tileX, tileY, doodadMesh);
 #endif
 
 		// Adjust min and max z values
@@ -998,13 +1009,6 @@ namespace
 				config.bmin[2] -= config.borderSize * config.cs;
 				config.bmax[0] += config.borderSize * config.cs;
 				config.bmax[2] += config.borderSize * config.cs;
-
-#ifdef _DEBUG
-				float testPos[3] = { bmin[0] + MeshSettings::TileSize * 0.5f, 0.0f, bmin[2] + MeshSettings::TileSize * 0.5f };
-				int sx = 0, sy = 0;
-				navMesh.calcTileLoc(testPos, &sx, &sy);
-				DLOG("TILE SHOULD BE AT " << sx << "x" << sy);
-#endif
 
 				// Create the context object
 				rcContext ctx(false);
@@ -1084,11 +1088,11 @@ namespace
 		const UInt32 cellX = tileIndex / 64;
 		const UInt32 cellY = tileIndex % 64;
 
-#ifdef _DEBUG
+#ifdef TILE_DEBUG_OUTPUT
 		switch (mapId)
 		{
 			case 0:
-				if (cellY != 31 || cellX != 50)
+				if (cellY != 32 || cellX != 48)
 					return false;
 				break;
 			case 1:
@@ -1336,7 +1340,7 @@ namespace
 			return false;
 		}
 
-#ifdef _DEBUG
+#ifdef TILE_DEBUG_OUTPUT
 		if (mapId != 0)
 		{
 			return true;

@@ -677,6 +677,7 @@ namespace wowpp
 			}
 		}
 
+#if 0
 		// Both points are on the same polygon, so build a shortcut
 		// TODO: We don't want to build a shortcut here, but we still want to
 		// create a smooth path so that z value will be corrected
@@ -685,6 +686,7 @@ namespace wowpp
 			out_path.push_back(dest);
 			return true;
 		}
+#endif
 
 		// Buffer to store polygons that need to be used for our path
 		const int maxPathLength = 74;
@@ -714,37 +716,76 @@ namespace wowpp
 
 		// Buffer to store path coordinates
 		std::vector<math::Vector3> tempPathCoords(maxPathLength);
+		std::vector<dtPolyRef> tempPathPolys(maxPathLength);
 		int tempPathCoordsCount = 0;
 
 		// Set to true to generate straight path
-		const bool useStraightPath = true;
-		if (useStraightPath)
-		{
-			dtResult = m_navQuery->findStraightPath(
-				&dtStart.x,							// Start position
-				&dtEnd.x,							// End position
-				tempPath.data(),					// Polygon path
-				static_cast<int>(tempPath.size()),	// Number of polygons in path
-				&tempPathCoords[0].x,				// [out] Path points
-				nullptr,							// [out] unused
-				nullptr,							// [out] unused
-				&tempPathCoordsCount,				// [out] used coordinate count in vertices (3 floats = 1 vert)
-				maxPathLength,						// max coordinate count
-				DT_STRAIGHTPATH_ALL_CROSSINGS		// options
-				);
+		const bool correctPathHeights = true;
+		
+		dtResult = m_navQuery->findStraightPath(
+			&dtStart.x,							// Start position
+			&dtEnd.x,							// End position
+			tempPath.data(),					// Polygon path
+			static_cast<int>(tempPath.size()),	// Number of polygons in path
+			&tempPathCoords[0].x,				// [out] Path points
+			nullptr,							// [out] unused
+			&tempPathPolys[0],					// [out] Polygon id for each point.
+			&tempPathCoordsCount,				// [out] used coordinate count in vertices (3 floats = 1 vert)
+			maxPathLength,						// max coordinate count
+			DT_STRAIGHTPATH_ALL_CROSSINGS		// options
+			);
 
-			// Correct actual path length
-			tempPathCoords.resize(tempPathCoordsCount);
-		}
-		else
-		{
-			dtResult = getSmoothPath(dtStart, 
-				dtEnd,
-				tempPath,
-				tempPathCoords,
-				maxPathLength);
+		// Correct actual path length
+		tempPathCoords.resize(tempPathCoordsCount);
+		tempPathPolys.resize(tempPathCoordsCount);
 
-			tempPathCoordsCount = tempPathCoords.size();
+		if (correctPathHeights)
+		{
+			// We don't need to fix the first point as this is our starting point
+			for (size_t index = 1; index < tempPathCoords.size(); ++index)
+			{
+				// Get polygon
+				dtPolyRef &poly = tempPathPolys[index++];
+
+				// Get points
+				auto &thisPoint = tempPathCoords[index];
+				const auto &lastPoint = tempPathCoords[index - 1];
+
+				// First, fix this points height
+				float height = thisPoint.y;
+				if (m_navQuery->getPolyHeight(poly, &thisPoint.x, &height) == DT_SUCCESS)
+				{
+					thisPoint.y = height;
+				}
+
+				// Now calculate distance if there is anything to calculate at all
+				if (lastPoint != thisPoint)
+				{
+					const float dist = (lastPoint - thisPoint).length();
+					const size_t iterCount = std::min<size_t>(74, static_cast<size_t>(dist / 4.0f));
+					const float iterStep = 1.0f / static_cast<float>(iterCount);
+
+					// Again: We don't need the first point as it is the last point
+					for (size_t i = 1; i < iterCount; ++i)
+					{
+						// Insert new waypoint
+						math::Vector3 newPoint = lastPoint.lerp(thisPoint, iterStep * static_cast<float>(i));
+
+						// Fix height for this point, too
+						float newHeight = newPoint.y;
+						if (m_navQuery->getPolyHeight(poly, &newPoint.x, &newHeight) == DT_SUCCESS)
+						{
+							newPoint.y = newHeight;
+						}
+
+						// Push back
+						tempPathCoords.insert(tempPathCoords.begin() + index, std::move(newPoint));
+						tempPathPolys.insert(tempPathPolys.begin() + index, poly);
+						tempPathCoordsCount++;
+						index++;
+					}
+				}
+			}
 		}
 
 		// Not enough waypoints generated or waypoint generation completely failed?
