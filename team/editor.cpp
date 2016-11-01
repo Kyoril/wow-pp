@@ -222,6 +222,9 @@ namespace wowpp
 		localHashs["faction_templates"] = m_project.factionTemplates.hashString;
 		localHashs["area_triggers"] = m_project.areaTriggers.hashString;
 		localHashs["spell_categories"] = m_project.spellCategories.hashString;
+		localHashs["combat_ratings"] = m_project.combatRatings.hashString;
+		localHashs["melee_crit_chance"] = m_project.meleeCritChance.hashString;
+		localHashs["resistance_percentages"] = m_project.resistancePcts.hashString;
 
 		// Compare both
 		for (const auto &local : localHashs)

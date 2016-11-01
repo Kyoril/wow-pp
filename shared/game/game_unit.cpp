@@ -2083,18 +2083,19 @@ namespace wowpp
 
 		resistChanceMod -= *std::max_element(mechanicResistance.begin(), mechanicResistance.end());
 
-		std::uniform_real_distribution<float> resiDistribution(0.0f, 99.9f);
 		UInt32 resiOffset = static_cast<UInt32>(log2(school));
 		UInt32 baseResi = getUInt32Value(unit_fields::Resistances + resiOffset);
 		UInt32 casterLevel = attacker.getLevel();
 		UInt32 victimLevel = getLevel();
 		UInt32 effectiveResistance = baseResi - std::min(spellPen, baseResi);
 
-		float randomNum = resiDistribution(randomGenerator) + resistChanceMod;
 		float reductionPct = (effectiveResistance / (casterLevel * 5.0f)) * 75.0f;
 
 		if (isBinary)
 		{
+			std::uniform_real_distribution<float> resiDistribution(0.0f, 99.9f);
+			float randomNum = resiDistribution(randomGenerator) + resistChanceMod;
+
 			reductionPct = std::min(reductionPct, 75.0f);
 
 			if (randomNum > reductionPct)
@@ -2109,18 +2110,18 @@ namespace wowpp
 		else
 		{
 			reductionPct = std::min(std::max(static_cast<Int32>(victimLevel - casterLevel), 0) * 2.0f + reductionPct, 75.0f);
+			const auto &resistancePcts = getProject().resistancePcts.getById(static_cast<UInt32>(reductionPct * 100));
+
+			std::uniform_real_distribution<float> resiDistribution(0.0f, 99.9f - resistancePcts->percentages(4));
+			float randomNum = resiDistribution(randomGenerator) + resistChanceMod;
 
 			UInt8 i = 0;
-			auto d = boost::math::binomial_distribution<>(4, reductionPct / 100.0f);
+			float resistChance = resistancePcts->percentages(i);
 
-			for (; i < 4; ++i)
+			while (i < 4 && randomNum < resistChance)
 			{
-				float resistChance = boost::math::cdf(d, i) * 100;
-
-				if (randomNum < resistChance)
-				{
-					break;
-				}
+				resistChance += resistancePcts->percentages(i);
+				++i;
 			}
 
 			return (i / 4.0f) * 100;

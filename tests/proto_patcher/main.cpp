@@ -696,6 +696,7 @@ namespace wowpp
 						it->mutable_effects(1)->set_targeta(1);
 						it->mutable_effects(1)->set_aura(142);
 						it->mutable_effects(1)->set_miscvaluea(1);
+						break;
 						// T3 set bonus
 					case 28719:
 						it->mutable_effects(0)->set_triggerspell(28742);
@@ -725,6 +726,7 @@ namespace wowpp
 					case 16998:
 					case 16999:
 						it->mutable_effects(2)->set_affectmask(4398046511104);
+						break;
 
 						////////////////////////////// Creature Spells ///////////////////////////
 
@@ -1298,7 +1300,6 @@ namespace wowpp
 				float crMultiplier = 0;
 				row.getField(0, crMultiplier);
 
-				// Find spell by id
 				auto * combatRatings = project.combatRatings.getById(id);
 				if (combatRatings)
 				{
@@ -1332,7 +1333,6 @@ namespace wowpp
 				float meleeCritChance = 0;
 				row.getField(0, meleeCritChance);
 
-				// Find spell by id
 				auto * meleeCritChances = project.meleeCritChance.getById(id);
 				if (meleeCritChances)
 				{
@@ -2177,6 +2177,53 @@ namespace wowpp
 	}
 
 
+	static bool importResistancePercentages(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `percentages_0`, `percentages_25`, `percentages_50`, `percentages_75`, `percentages_100` FROM `tbcdb`.`resistance_values`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+
+			for (int i = 0; i < 10001; ++i)
+			{	
+				project.resistancePcts.add(i);
+			}
+
+			UInt32 id = 0;
+
+			while (row)
+			{
+				std::array<UInt32, 5> pcts = { 0 };
+				UInt32 index = 0;
+
+				auto * values = project.resistancePcts.getById(id);
+				if (values)
+				{
+					values->clear_percentages();
+
+					for (UInt8 i = 0; i < 5; ++i)
+					{
+						row.getField(index++, pcts[i]);
+						values->set_percentages(i, pcts[i]);
+					}
+				}
+				else
+				{
+					WLOG("Unable to resistancePcts by id: " << id);
+				}
+
+				id++;
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			return false;
+		}
+
+		return true;
+	}
+
 #if 0
 	static void fixTriggerEvents(proto::Project &project)
 	{
@@ -2237,14 +2284,14 @@ int main(int argc, char* argv[])
 			ELOG("Could not open log file '" << fileName << "'");
 		}
 	}
-
+	
 	// Load existing project
 	wowpp::proto::Project protoProject;
 	if (!protoProject.load(configuration.dataPath))
 	{
 		return 1;
 	}
-
+	
 	// Load all spell mechanics
 	MySQL::DatabaseInfo connectionInfo(configuration.mysqlHost, configuration.mysqlPort, configuration.mysqlUser, configuration.mysqlPassword, configuration.mysqlDatabase);
 	MySQL::Connection connection;
@@ -2258,7 +2305,7 @@ int main(int argc, char* argv[])
 	{
 		ILOG("MySQL connection established!");
 	}
-
+	
 #if 0
 	if (!importSpellFocus(protoProject, connection))
 	{
@@ -2331,7 +2378,6 @@ int main(int argc, char* argv[])
 		WLOG("Could not check spells");
 		return 1;
 	}
-#endif
 
 	if (!importCombatRatings(protoProject, connection))
 	{
@@ -2342,6 +2388,12 @@ int main(int argc, char* argv[])
 	if (!importMeleeCritChance(protoProject, connection))
 	{
 		WLOG("Could not import melee crit chance");
+		return 1;
+	}
+#endif
+	if (!importResistancePercentages(protoProject, connection))
+	{
+		WLOG("Could not import resistance percentages");
 		return 1;
 	}
 

@@ -39,3 +39,12 @@ message MeleeCritChanceEntry {
 message MeleeCritChance {
     repeated MeleeCritChanceEntry entry = 1;
 }
+
+message ResistancePercentageEntry {
+	required uint32 id = 1;
+    repeated float percentages = 2;
+}
+
+message ResistancePercentage {
+	repeated ResistancePercentageEntry entry = 1;
+}

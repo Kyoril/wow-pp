@@ -63,4 +63,3 @@
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/type_traits/is_float.hpp>
-#include <boost/math/distributions/binomial.hpp>
