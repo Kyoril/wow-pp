@@ -26,6 +26,7 @@
 #include "shared/proto_data/spells.pb.h"
 #include "common/countdown.h"
 #include "spell_target_map.h"
+#include "common/simple.hpp"
 
 namespace wowpp
 {
@@ -290,7 +291,9 @@ namespace wowpp
 
 		const proto::SpellEntry &m_spell;
 		const proto::SpellEffect &m_effect;
-		boost::signals2::scoped_connection m_targetMoved, m_targetEnteredWater, m_targetStartedAttacking, m_targetStartedCasting, m_onExpire, m_onTick, m_onTargetKilled;
+		simple::scoped_connection m_targetMoved;
+		simple::scoped_connection m_onExpire, m_onTick;
+		boost::signals2::scoped_connection m_targetEnteredWater, m_targetStartedAttacking, m_targetStartedCasting, m_onTargetKilled;
 		boost::signals2::scoped_connection m_takenDamage, m_procKilled, m_onDamageBreak, m_onProc, m_onTakenAutoAttack;
 		std::shared_ptr<GameUnit> m_caster;
 		GameUnit &m_target;

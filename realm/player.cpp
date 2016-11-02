@@ -796,6 +796,19 @@ namespace wowpp
 		m_actionButtons.clear();
 		m_database.getCharacterActionButtons(m_characterId, m_actionButtons);
 
+		// When the world node disconnects while we try to log in, send error packet
+		m_worldDisconnected = worldNode->onConnectionLost.connect([this]()
+		{
+			m_gameCharacter.reset();
+			m_worldNode = nullptr;
+			m_instanceId = std::numeric_limits<UInt32>::max();
+
+			sendPacket(
+				std::bind(game::server_write::charLoginFailed, std::placeholders::_1, game::response_code::CharLoginNoWorld));
+
+			m_worldDisconnected.disconnect();
+		});
+
 		// There should be an instance
 		worldNode->enterWorldInstance(charEntry->id, groupInstanceId, *m_gameCharacter);
 	}

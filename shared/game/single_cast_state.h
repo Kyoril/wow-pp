@@ -26,6 +26,7 @@
 #include "common/countdown.h"
 #include "game_object.h"
 #include "shared/proto_data/spells.pb.h"
+#include "common/simple.hpp"
 
 namespace wowpp
 {
@@ -126,8 +127,9 @@ namespace wowpp
 		boost::signals2::signal<void()> completedEffects;
 		std::unordered_map<UInt64, boost::signals2::scoped_connection> m_completedEffectsExecution;
 		boost::signals2::scoped_connection m_onTargetDied, m_onTargetRemoved;
-		boost::signals2::scoped_connection m_onUserMoved, m_onThreatened;
-		boost::signals2::scoped_connection m_onTargetMoved, m_damaged;
+		boost::signals2::scoped_connection m_onThreatened;
+		simple::scoped_connection m_onUserMoved, m_onTargetMoved;
+		boost::signals2::scoped_connection m_damaged;
 		boost::signals2::scoped_connection m_onAttackError, m_removeAurasOnImmunity;
 		float m_x, m_y, m_z;
 		GameTime m_castTime;

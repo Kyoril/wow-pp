@@ -28,6 +28,7 @@
 #include "shared/proto_data/spells.pb.h"
 #include "shared/proto_data/units.pb.h"
 #include "defines.h"
+#include "common/simple.hpp"
 
 namespace wowpp
 {
@@ -87,10 +88,12 @@ namespace wowpp
 		ThreatList m_threat;
 		UnitSignals m_killedSignals;
 		UnitSignals m_despawnedSignals;
-		boost::signals2::scoped_connection m_onThreatened, m_onVictimMoved, m_onMoveTargetChanged;
+		simple::scoped_connection m_onVictimMoved;
+		boost::signals2::scoped_connection m_onThreatened, m_onMoveTargetChanged;
 		boost::signals2::scoped_connection m_getThreat, m_setThreat, m_getTopThreatener;
 		boost::signals2::scoped_connection m_onUnitStateChanged;
-		boost::signals2::scoped_connection m_onAutoAttackDone, m_onControlledMoved;
+		boost::signals2::scoped_connection m_onAutoAttackDone;
+		simple::scoped_connection m_onControlledMoved;
 		GameTime m_lastThreatTime;
 		Countdown m_nextActionCountdown;
 

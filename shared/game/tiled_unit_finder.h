@@ -25,6 +25,7 @@
 #include "tile_index.h"
 #include "common/grid.h"
 #include "defines.h"
+#include "common/simple.hpp"
 
 namespace wowpp
 {
@@ -48,7 +49,7 @@ namespace wowpp
 
 		struct UnitRecord
 		{
-			boost::signals2::scoped_connection moved;
+			simple::scoped_connection moved;
 			Tile *lastTile;
 		};
 
