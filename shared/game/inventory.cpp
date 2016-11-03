@@ -1018,7 +1018,7 @@ namespace wowpp
 			auto bagItem = getItemAtSlot(slot);
 			if (bagItem)
 			{
-				if (bagItem->getTypeId() != type_id::Container)
+				if (bagItem->getTypeId() != object_type::Container)
 				{
 					// Return code valid? ...
 					return game::inventory_change_failure::NotABag;
