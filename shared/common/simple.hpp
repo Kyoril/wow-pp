@@ -37,7 +37,7 @@
 #endif
 
 /// Define this if you want to disable exceptions.
-//#define SIMPLE_NO_EXCEPTIONS
+#define SIMPLE_NO_EXCEPTIONS
 
 namespace simple
 {
