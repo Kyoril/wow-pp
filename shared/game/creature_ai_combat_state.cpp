@@ -60,6 +60,8 @@ namespace wowpp
 
 	CreatureAICombatState::~CreatureAICombatState()
 	{
+		// Disconnect all connected slots
+		m_nextActionCountdown.ended.disconnect_all_slots();
 	}
 
 	void CreatureAICombatState::onEnter()
@@ -361,7 +363,7 @@ namespace wowpp
 	void CreatureAICombatState::onLeave()
 	{
 		// Reset all events here to prevent them being fired in another ai state
-		m_nextActionCountdown.ended.clear();
+		m_nextActionCountdown.ended.disconnect_all_slots();
 
 		m_nextActionCountdown.cancel();
 		m_onThreatened.disconnect();

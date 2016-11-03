@@ -22,7 +22,6 @@
 #pragma once
 
 #include "clock.h"
-#include "simple.hpp"
 
 namespace wowpp
 {
@@ -33,7 +32,7 @@ namespace wowpp
 	{
 	public:
 
-		typedef simple::signal<void ()> EndSignal;
+		typedef boost::signals2::signal<void ()> EndSignal;
 
 		/// This signal is fired when the countdown ended.
 		EndSignal ended;

@@ -23,7 +23,6 @@
 
 #include "creature_ai_state.h"
 #include "common/countdown.h"
-#include "common/simple.hpp"
 
 namespace wowpp
 {
@@ -66,8 +65,7 @@ namespace wowpp
 	private:
 
 		std::unique_ptr<UnitWatcher> m_aggroWatcher;
-		simple::scoped_connection m_onOwnerMoved, m_onMoved;
-		boost::signals2::scoped_connection m_onThreatened, onTargetReached;
+		boost::signals2::scoped_connection m_onThreatened, m_onOwnerMoved, m_onMoved, onTargetReached;
 		Countdown m_aggroDelay, m_nextMove;
 	};
 }

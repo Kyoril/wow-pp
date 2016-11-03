@@ -156,7 +156,6 @@ namespace wowpp
 						}
 
 						getAI().enterCombat(unit);
-						simple::abort_emission();
 						return true;
 					}
 
@@ -182,7 +181,6 @@ namespace wowpp
 								}
 
 								getAI().enterCombat(*victim);
-								simple::abort_emission();
 								return true;
 							}
 						}

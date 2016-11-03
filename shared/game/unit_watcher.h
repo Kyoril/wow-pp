@@ -22,7 +22,6 @@
 #pragma once
 
 #include "circle.h"
-#include "common/simple.hpp"
 
 namespace wowpp
 {
@@ -57,7 +56,7 @@ namespace wowpp
 	{
 	public:
 
-		simple::signal<bool(GameUnit &, bool)> visibilityChanged;
+		boost::signals2::signal<bool(GameUnit &, bool), detail::StopOnTrue> visibilityChanged;
 
 		/// Creates a new instance of the UnitWatcher class and assigns a circle shape.
 		explicit UnitWatcher(const Circle &shape);

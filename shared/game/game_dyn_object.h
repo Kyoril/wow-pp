@@ -122,7 +122,7 @@ namespace wowpp
 		const proto::SpellEffect &m_effect;
 		Countdown m_despawnTimer;
 		Countdown m_tickCountdown;
-		simple::scoped_connection m_onDespawn, m_onTick;
+		boost::signals2::scoped_connection m_onDespawn, m_onTick;
 		AuraMap m_auras;
 	};
 
