@@ -2124,7 +2124,7 @@ namespace wowpp
 				++i;
 			}
 
-			return (i / 4.0f) * 100;
+			return ((4 - i) / 4.0f) * 100;
 		}
 	}
 
