@@ -37,7 +37,7 @@
 #endif
 
 /// Define this if you want to disable exceptions.
-#define SIMPLE_NO_EXCEPTIONS
+//#define SIMPLE_NO_EXCEPTIONS
 
 namespace simple
 {
@@ -1211,10 +1211,10 @@ namespace simple
             void disconnect() override
             {
                 if (slot != nullptr) {
+                    slot = nullptr;
+
                     next->prev = prev;
                     prev->next = next;
-
-                    slot = nullptr;
                 }
             }
 
@@ -1228,6 +1228,7 @@ namespace simple
         struct thread_local_data
         {
             connection_base* current_connection;
+            bool emission_aborted;
         };
 
         inline thread_local_data* get_thread_local_data()
@@ -1354,18 +1355,24 @@ namespace simple
 
         scoped_connection& operator = (connection&& rhs)
         {
+            disconnect();
+
             connection::operator=(std::move(rhs));
             return *this;
         }
 
         scoped_connection& operator = (scoped_connection&& rhs)
         {
+            disconnect();
+
             connection::operator=(std::move(rhs));
             return *this;
         }
 
         scoped_connection& operator = (connection const& rhs)
         {
+            disconnect();
+
             connection::operator=(rhs);
             return *this;
         }
@@ -1427,9 +1434,30 @@ namespace simple
         std::forward_list<scoped_connection> connections;
     };
 
+    struct trackable
+    {
+        void add_tracked_connection(connection const& conn)
+        {
+            container.append(conn);
+        }
+
+        void disconnect_tracked_connections()
+        {
+            container.disconnect();
+        }
+
+    private:
+        scoped_connection_container container;
+    };
+
     inline connection current_connection()
     {
         return connection{ detail::get_thread_local_data()->current_connection };
+    }
+
+    inline void abort_emission()
+    {
+        detail::get_thread_local_data()->emission_aborted = true;
     }
 
     template <
@@ -1505,17 +1533,25 @@ namespace simple
         template <class Instance, class Class, class R1, class... Args1>
         connection connect(Instance& object, R1(Class::*method)(Args1...), bool first = false)
         {
-            return connect([&object, method](Args... args) {
-                return R((object.*method)(Args1(args)...));
-            }, first);
+            connection c{
+                connect([&object, method](Args... args) {
+                    return R((object.*method)(Args1(args)...));
+                }, first)
+            };
+            maybe_add_tracked_connection(&object, c);
+            return c;
         }
 
         template <class Instance, class Class, class R1, class... Args1>
         connection connect(Instance* object, R1(Class::*method)(Args1...), bool first = false)
         {
-            return connect([object, method](Args... args) {
-                return R((object->*method)(Args1(args)...));
-            }, first);
+            connection c{
+                connect([object, method](Args... args) {
+                    return R((object->*method)(Args1(args)...));
+                }, first)
+            };
+            maybe_add_tracked_connection(object, c);
+            return c;
         }
 
         connection operator += (slot_type slot)
@@ -1571,6 +1607,11 @@ namespace simple
                         error = true;
                     }
 #endif
+                    if (th->emission_aborted) {
+                        th->emission_aborted = false;
+                        break;
+                    }
+
                     current = current->next;
                 }
             }
@@ -1608,6 +1649,11 @@ namespace simple
                         error = true;
                     }
 #endif
+                    if (th->emission_aborted) {
+                        th->emission_aborted = false;
+                        break;
+                    }
+
                     current = current->next;
                 }
             }
@@ -1663,6 +1709,19 @@ namespace simple
             link->prev->next = link;
             link->next->prev = link;
             return link;
+        }
+
+        template <class Instance>
+        std::enable_if_t<!std::is_base_of<trackable, Instance>::value, void>
+            maybe_add_tracked_connection(Instance*, connection)
+        {
+        }
+
+        template <class Instance>
+        std::enable_if_t<std::is_base_of<trackable, Instance>::value, void>
+            maybe_add_tracked_connection(Instance* inst, connection conn)
+        {
+            static_cast<trackable*>(inst)->add_tracked_connection(conn);
         }
 
         intrusive_ptr<connection_base> head;

@@ -160,6 +160,8 @@ namespace wowpp
 		void addUpdateObject(GameObject &object);
 		/// 
 		void removeUpdateObject(GameObject &object);
+		/// 
+		void notifyObjectMove(GameObject &object, const math::Vector3 &previousPosition);
 
 		/// Calls a specific callback method for every game object added to the world.
 		/// An object can be everything, from a player over a creature to a chest.

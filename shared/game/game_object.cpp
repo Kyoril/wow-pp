@@ -310,7 +310,14 @@ namespace wowpp
             auto lastFiredPosition = m_lastFiredPosition;
             m_lastFiredPosition = m_position;
     
-			moved(*this, lastFiredPosition, oldO);
+			// Notify grid
+			if (m_worldInstance)
+			{
+				m_worldInstance->notifyObjectMove(*this, lastFiredPosition);
+			}
+
+			// Notify others (TOOD: Remove this)
+			//moved(*this, lastFiredPosition, oldO);
         }
 	}
 

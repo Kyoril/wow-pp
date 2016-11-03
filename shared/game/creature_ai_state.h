@@ -57,6 +57,8 @@ namespace wowpp
 		virtual void onCombatMovementChanged();
 		/// 
 		virtual void onCreatureMovementChanged();
+		/// Executed when the controlled unit moved.
+		virtual void onControlledMoved();
 
 	private:
 

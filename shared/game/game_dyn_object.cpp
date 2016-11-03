@@ -114,15 +114,13 @@ namespace wowpp
 		assert(worldInstance);
 
 		Circle circle(m_position.x, m_position.y, getFloatValue(dyn_object_fields::Radius));
-		m_unitWatcher = worldInstance->getUnitFinder().watchUnits(circle);
-		m_unitWatcher->start();
-		m_unitWatcher->visibilityChanged.connect([this](GameUnit & target, bool isInside) -> bool
+		m_unitWatcher = worldInstance->getUnitFinder().watchUnits(circle, [this](GameUnit & target, bool isInside) -> bool
 		{
 			if (isInside && m_auras.find(&target) != m_auras.end())
 			{
 				return false;
 			}
-			
+
 			if (!target.isAlive())
 			{
 				return false;
@@ -164,7 +162,7 @@ namespace wowpp
 			{
 				return false;
 			}
-			
+
 			if (isInside)
 			{
 				SpellTargetMap targetMap;
@@ -200,6 +198,7 @@ namespace wowpp
 
 			return false;
 		});
+		m_unitWatcher->start();
 		
 		updatePeriodicTimer();
 		m_onTick = m_tickCountdown.ended.connect([this]()

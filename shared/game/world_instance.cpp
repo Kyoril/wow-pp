@@ -355,8 +355,8 @@ namespace wowpp
 		}
 
 		// Watch for object location changes
-		added.moved.connect(
-		    std::bind(&WorldInstance::onObjectMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+		/*added.moved.connect(
+		    std::bind(&WorldInstance::onObjectMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));*/
 	}
 
 	void WorldInstance::removeGameObject(GameObject &remove)
@@ -616,6 +616,17 @@ namespace wowpp
 	void WorldInstance::removeUpdateObject(GameObject & object)
 	{
 		m_objectUpdates.erase(&object);
+	}
+
+	void WorldInstance::notifyObjectMove(GameObject & object, const math::Vector3 & previousPosition)
+	{
+		onObjectMoved(object, previousPosition, 0.0f);
+
+		if (object.getTypeId() == object_type::Unit ||
+			object.getTypeId() == object_type::Character)
+		{
+			m_unitFinder->updatePosition(reinterpret_cast<GameUnit&>(object), previousPosition);
+		}
 	}
 
 	CreatureSpawner *WorldInstance::findCreatureSpawner(const String &name)

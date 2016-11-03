@@ -23,6 +23,7 @@
 
 #include "tiled_unit_finder.h"
 #include "common/linear_set.h"
+#include "common/simple.hpp"
 
 namespace wowpp
 {
@@ -31,7 +32,7 @@ namespace wowpp
 	public:
 
 		typedef LinearSet<GameUnit *> UnitSet;
-		typedef boost::signals2::signal<void (GameUnit &)> MoveSignal;
+		typedef simple::signal<void (GameUnit &)> MoveSignal;
 
 		//unique_ptr, so that Tile is movable
 		std::unique_ptr<MoveSignal> moved;

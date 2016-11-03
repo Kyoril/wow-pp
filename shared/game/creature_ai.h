@@ -87,6 +87,8 @@ namespace wowpp
 		void onCombatMovementChanged();
 		/// 
 		void onCreatureMovementChanged();
+		/// Called when the controlled unit moved.
+		void onControlledMoved();
 
 	public:
 

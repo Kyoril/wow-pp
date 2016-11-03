@@ -1671,7 +1671,7 @@ namespace wowpp
 		}
 
 		// Update position
-		m_character->relocate(math::Vector3(info.x, info.y, info.z), info.o);
+		m_character->relocate(math::Vector3(info.x, info.y, info.z), info.o, true);
 	}
 
 	void Player::handleTimeSyncResponse(game::Protocol::IncomingPacket &packet)

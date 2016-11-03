@@ -74,4 +74,7 @@ namespace wowpp
 	{
 		// Does nothing
 	}
+	void CreatureAIState::onControlledMoved()
+	{
+	}
 }

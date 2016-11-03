@@ -54,7 +54,7 @@ namespace wowpp
 			if (!boost::filesystem::exists(file))
 			{
 				// File does not exist
-				DLOG("Could not load map file " << file << ": File does not exist");
+				//DLOG("Could not load map file " << file << ": File does not exist");
 				return;
 			}
 
@@ -62,7 +62,7 @@ namespace wowpp
 			std::ifstream mapFile(file.c_str(), std::ios::in | std::ios::binary);
 			if (!mapFile)
 			{
-				ELOG("Could not load map file " << file);
+				//ELOG("Could not load map file " << file);
 				return;
 			}
 
@@ -107,6 +107,15 @@ namespace wowpp
 
 			navMeshsPerMap[entry.id()] = std::move(navMesh);
 			ILOG("Navigation mesh for map " << m_entry.id() << " initialized");
+
+			// Load all tiles
+			for (size_t x = 0; x < 64; ++x)
+			{
+				for (size_t y = 0; y < 64; ++y)
+				{
+					getTile(TileIndex2D(x, y));
+				}
+			}
 		}
 	}
 
@@ -129,7 +138,7 @@ namespace wowpp
 				if (!boost::filesystem::exists(file))
 				{
 					// File does not exist
-					DLOG("Could not load map file " << file << ": File does not exist");
+					//DLOG("Could not load map file " << file << ": File does not exist");
 					return nullptr;
 				}
 
@@ -247,6 +256,8 @@ namespace wowpp
 
 	bool Map::isInLineOfSight(const math::Vector3 &posA, const math::Vector3 &posB)
 	{
+		return true;
+
 		if (posA == posB) {
 			return true;
 		}

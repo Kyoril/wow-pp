@@ -135,6 +135,12 @@ namespace wowpp
 
 		void setWaypoints(const std::vector<proto::Waypoint> &waypoints);
 
+	public:
+
+		/// @copydoc GameObject::relocate
+		virtual void relocate(const math::Vector3 &position, float o, bool fire = true) override;
+
+	public:
 
 		/// Executes a callback function for every valid loot recipient.
 		template<typename OnRecipient>

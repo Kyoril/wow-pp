@@ -485,6 +485,16 @@ namespace wowpp
 		m_waypoints = waypoints;
 	}
 
+	void GameCreature::relocate(const math::Vector3 & position, float o, bool fire)
+	{
+		GameObject::relocate(position, o, fire);
+
+		if (fire)
+		{
+			m_ai->onControlledMoved();
+		}
+	}
+
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)
 	{
 		if (killerLevel < 8) {

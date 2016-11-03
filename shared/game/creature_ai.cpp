@@ -127,6 +127,14 @@ namespace wowpp
 		}
 	}
 
+	void CreatureAI::onControlledMoved()
+	{
+		if (m_state)
+		{
+			m_state->onControlledMoved();
+		}
+	}
+
 	void CreatureAI::setHome(Home home)
 	{
 		m_home = std::move(home);
