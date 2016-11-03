@@ -1568,7 +1568,7 @@ namespace wowpp
 			return;
 		}
 
-		float angle = targetUnit->getGuid() == caster.getGuid() ? caster.getOrientation() : caster.getAngle(reinterpret_cast<GameObject &>(targetUnit));
+		float angle = targetUnit->getGuid() == caster.getGuid() ? caster.getOrientation() : caster.getAngle(*targetUnit);
 		float vcos = std::cos(angle);
 		float vsin = std::sin(angle);
 
