@@ -83,20 +83,20 @@ project(WoW)
 
 	# Enable C++14 if needed
 	if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-		list(APPEND CMAKE_CXX_FLAGS "-std=c++11 -stdlib=libc++")
-		#list(APPEND CMAKE_C_FLAGS "-std=c++11 -stdlib=libc++")
+		list(APPEND CMAKE_CXX_FLAGS "-std=c++1y -stdlib=libc++")
+		#list(APPEND CMAKE_C_FLAGS "-std=c++14 -stdlib=libc++")
 		if(APPLE)
-			set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++11")
+			set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++14")
 			set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
 		endif()
 	elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 		execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
                 OUTPUT_VARIABLE GCC_VERSION)
-		if (NOT (GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8))
-			message(FATAL_ERROR "GCC 4.8 or newer is required in order to build WoW++. Please consider an update or switch over to clang.")
+		if (NOT (GCC_VERSION VERSION_GREATER 4.9 OR GCC_VERSION VERSION_EQUAL 4.9))
+			message(FATAL_ERROR "GCC 4.9 or newer is required in order to build WoW++. Please consider an update or switch over to clang.")
 		endif()
 	
-		list(APPEND CMAKE_CXX_FLAGS "-std=c++11 -pthread")
+		list(APPEND CMAKE_CXX_FLAGS "-std=c++1y -pthread")
 	endif()
 
 	# Include additional cmake modules
