@@ -24,7 +24,7 @@ package wowpp.proto;
 
 message CombatRatingEntry {
     required uint32 id = 1;
-    repeated float ratingsPerLevel = 2;
+    optional float ratingsPerLevel = 2;
 }
 
 message CombatRatings {
@@ -33,7 +33,8 @@ message CombatRatings {
 
 message MeleeCritChanceEntry {
     required uint32 id = 1;
-    repeated float chancePerLevel = 2;
+    optional float chancePerLevel = 2;
+	optional float baseChancePerLevel = 3;
 }
 
 message MeleeCritChance {

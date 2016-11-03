@@ -1304,7 +1304,7 @@ namespace wowpp
 				if (combatRatings)
 				{
 					combatRatings->clear_ratingsperlevel();
-					combatRatings->add_ratingsperlevel(crMultiplier);
+					combatRatings->set_ratingsperlevel(crMultiplier);
 				}
 				else
 				{
@@ -1326,19 +1326,42 @@ namespace wowpp
 		if (select.success())
 		{
 			wowpp::MySQL::Row row(select);
+
 			UInt32 id = 0;
+			float meleeCritChance = 0;
+			std::array<float, 11> meleeCritChanceBase = 
+			{
+				0.0114f,
+				0.00652f,
+				-0.01532f,
+				-0.00295f,
+				0.03183f,
+				0.2f,
+				0.01675f,
+				0.034575f,
+				0.02f,
+				0.2f,
+				0.00961f
+			};
+
+			for (int i = 0; i < 11; ++i)
+			{
+				for (int j = 0; j < 100; ++j)
+				{
+					project.meleeCritChance.getById(i * 100 + j)->set_basechanceperlevel(meleeCritChanceBase[i]);
+				}
+			}
+
 			while (row)
 			{
 				// Get row data
-				float meleeCritChance = 0;
 				row.getField(0, meleeCritChance);
 
 				auto * meleeCritChances = project.meleeCritChance.getById(id);
 				if (meleeCritChances)
 				{
 					meleeCritChances->clear_chanceperlevel();
-					meleeCritChances->add_chanceperlevel(meleeCritChance);
-					DLOG(meleeCritChances->chanceperlevel(0));
+					meleeCritChances->set_chanceperlevel(meleeCritChance);
 				}
 				else
 				{
@@ -2379,6 +2402,12 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
+	if (!importResistancePercentages(protoProject, connection))
+	{
+		WLOG("Could not import resistance percentages");
+		return 1;
+	}
+#endif
 	if (!importCombatRatings(protoProject, connection))
 	{
 		WLOG("Could not import combat ratings");
@@ -2388,12 +2417,6 @@ int main(int argc, char* argv[])
 	if (!importMeleeCritChance(protoProject, connection))
 	{
 		WLOG("Could not import melee crit chance");
-		return 1;
-	}
-#endif
-	if (!importResistancePercentages(protoProject, connection))
-	{
-		WLOG("Could not import resistance percentages");
 		return 1;
 	}
 
