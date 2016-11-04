@@ -2110,7 +2110,18 @@ namespace wowpp
 		else
 		{
 			reductionPct = std::min(std::max(static_cast<Int32>(victimLevel - casterLevel), 0) * 2.0f + reductionPct, 75.0f);
-			const auto &resistancePcts = getProject().resistancePcts.getById(static_cast<UInt32>(reductionPct * 100));
+			const auto *resistancePcts = getProject().resistancePcts.getById(static_cast<UInt32>(reductionPct * 100));
+			if (!resistancePcts)
+			{
+				ELOG("Failed to lookup resistance percentage for key " << static_cast<UInt32>(reductionPct * 100));
+				return 0.0f;
+			}
+
+			if (resistancePcts->percentages_size() < 5)
+			{
+				ELOG("Resistance percentage for key " << static_cast<UInt32>(reductionPct * 100) << " has not enough entries (5 expected, " << resistancePcts->percentages_size() << " found)");
+				return 0.0f;
+			}
 
 			std::uniform_real_distribution<float> resiDistribution(0.0f, 99.9f - resistancePcts->percentages(4));
 			float randomNum = resiDistribution(randomGenerator) + resistChanceMod;
