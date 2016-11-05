@@ -191,12 +191,15 @@ namespace wowpp
 
 	void LoginConnector::onScheduledKeepAlive()
 	{
-		// Write packets
-		io::StringSink sink(m_connection->getSendBuffer());
-		pp::OutgoingPacket packet(sink);
-		pp::realm_login::realm_write::keepAlive(packet);
-		m_connection->flush();
-
+		if (m_connection)
+		{
+			// Write packets
+			io::StringSink sink(m_connection->getSendBuffer());
+			pp::OutgoingPacket packet(sink);
+			pp::realm_login::realm_write::keepAlive(packet);
+			m_connection->flush();
+		}
+		
 		// Reconnect
 		scheduleKeepAlive();
 	}
