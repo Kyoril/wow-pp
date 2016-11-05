@@ -54,6 +54,17 @@ namespace wowpp
 		/// @param V Reference to a BigNumber representing V.
 		/// @returns true if the values were written successfully, false otherwise.
 		virtual bool setSVFields(const UInt32 &userId, const BigNumber &S, const BigNumber &V) = 0;
+		/// Gets a players session key from the database.
+		/// @param userName User name of the player in uppercase letters.
+		/// @param out_id Reference to a UInt32 where the account identifier will be stored.
+		/// @param out_K Reference to a BigNumber where the session key will be stored.
+		/// @returns false if the user name does not exist or if there was a database error.
+		virtual bool getKey(const String &userName, UInt32 &out_id, BigNumber &out_K) = 0;
+		/// Sets a players session key value to store in the database.
+		/// @param userId Account identifier.
+		/// @param K Reference to a BigNumber representing K.
+		/// @returns true if the value was written successfully, false otherwise.
+		virtual bool setKey(const UInt32 &userId, const BigNumber &K) = 0;
 		/// Validates a realm login try and returns a result code.
 		/// @param out_id Realm identifier.
 		/// @param name Internal realm name used to validate if the realm is valid.

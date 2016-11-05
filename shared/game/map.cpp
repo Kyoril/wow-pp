@@ -597,6 +597,7 @@ namespace wowpp
 			return true;
 		}
 
+#if 1
 		// TODO: Better solution for this, as there could be more tiles between which could eventually
 		// still be unloaded after this block
 		{
@@ -625,6 +626,7 @@ namespace wowpp
 				}
 			}
 		}
+#endif
 		
 		// Make sure that source cell is loaded
 		int tx, ty;
@@ -674,7 +676,7 @@ namespace wowpp
 		// Set to true to generate straight path
 		const bool correctPathHeights = true;
 
-		if (!correctPathHeights)
+		//if (!correctPathHeights)
 		{
 			// Both points are on the same polygon, so build a shortcut
 			// TODO: We don't want to build a shortcut here, but we still want to

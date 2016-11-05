@@ -34,17 +34,30 @@ using namespace std;
 namespace wowpp
 {
 	Player::Player(PlayerManager &manager, RealmManager &realmManager, IDatabase &database, SessionFactory createSession, std::shared_ptr<Client> connection,
-	               const String &address)
+	               const String &address, TimerQueue &timerQueue)
 		: m_manager(manager)
 		, m_realmManager(realmManager)
 		, m_database(database)
 		, m_connection(std::move(connection))
 		, m_address(address)
         , m_createSession(createSession)
+		, m_accountId(0)
+		, m_challenged(false)
+		, m_timeout(timerQueue)
 	{
 		assert(m_connection);
 
 		m_connection->setListener(*this);
+		m_onTimeout = m_timeout.ended.connect([this]() 
+		{
+			WLOG("Client connection timed out!");
+			m_connection->close();
+
+			destroy();
+			return;
+		});
+
+		m_timeout.setEnd(getCurrentTime() + constants::OneMinute);
 	}
 
 	void Player::connectionLost()
@@ -105,6 +118,7 @@ namespace wowpp
 	void Player::connectionPacketReceived(auth::IncomingPacket &packet)
 	{
 		const auto packetId = packet.getId();
+		bool isValid = true;
 
 		switch (packetId)
 		{
@@ -139,6 +153,7 @@ namespace wowpp
 
 			default:
 			{
+				isValid = false;
 				WLOG("Unknown packet received from " << m_address 
 					<< " - ID: " << static_cast<UInt32>(packetId) 
 					<< "; Size: " << packet.getSource()->size() << " bytes");
@@ -146,6 +161,11 @@ namespace wowpp
 			}
 		}
 
+		if (isValid)
+		{
+			// Update timeout event
+			m_timeout.setEnd(getCurrentTime() + constants::OneMinute);
+		}
 	}
 
 	void Player::handleLogonChallenge(auth::IncomingPacket &packet)
@@ -157,10 +177,14 @@ namespace wowpp
 			return;
 		}
 
+		if (m_accountId != 0)
+		{
+			WLOG("Player tried to log in again!");
+			return;
+		}
+
 		// The temporary result
 		auth::AuthResult result = auth::auth_result::FailUnknownAccount;
-
-		m_accountId = 0;
 
 		// Try to get user settings
 		String dbPassword;
@@ -185,9 +209,6 @@ namespace wowpp
 				// We are NOT banned so continue
 				result = auth::auth_result::Success;
 
-				// TODO: Try to get V and S from the database instead of calculating them everytime
-				setVSFields(dbPassword);
-
 				m_b.setRand(19 * 8);
 				BigNumber gmod = constants::srp::g.modExp(m_b, constants::srp::N);
 				m_B = ((m_v * 3) + gmod) % constants::srp::N;
@@ -195,6 +216,7 @@ namespace wowpp
 				assert(gmod.getNumBytes() <= 32);
 
 				m_unk3.setRand(16 * 8);
+				m_challenged = true;
 			}
 		}
 
@@ -213,6 +235,18 @@ namespace wowpp
 
 	void Player::handleLogonProof(auth::IncomingPacket &packet)
 	{
+		if (m_accountId == 0)
+		{
+			WLOG("Tried to send logon proof before challenge");
+			return;
+		}
+
+		if (m_session)
+		{
+			WLOG("Tried to send proof when already proofed!");
+			return;
+		}
+
 		// Read packet data and save it
 		std::array<UInt8, 32> rec_A;
 		std::array<UInt8, 20> rec_M1;
@@ -224,6 +258,7 @@ namespace wowpp
 		if (!auth::client_read::logonProof(packet, rec_A, rec_M1, rec_crc_hash, number_of_keys, securityFlags))
 		{
 			ELOG("Could not read packet CMD_AUTH_LOGON_PROOF");
+			destroy();
 			return;
 		}
 
@@ -244,7 +279,6 @@ namespace wowpp
 					std::cref(constants::srp::N),
 					std::cref(m_s),
 					std::cref(m_unk3)));
-
 			return;
 		}
 
@@ -263,6 +297,7 @@ namespace wowpp
 				std::placeholders::_1,
 				auth::auth_result::FailInvalidServer,
 				std::cref(hash)));
+			m_connection->close();
 			return;
 		}
 
@@ -362,6 +397,7 @@ namespace wowpp
 
 			// Create session
 			m_session = m_createSession(K, m_accountId, m_userName, m_v, m_s);
+			m_database.setKey(m_accountId, K);
 
 			// Send proof
 			proofResult = auth::auth_result::Success;
@@ -389,14 +425,85 @@ namespace wowpp
 			return;
 		}
 
-		WLOG("TODO: Reconnect challenge");
-		DLOG("Account-ID: " << m_accountId);
-		DLOG("Is authentificated: " << isAuthentificated());
+		if (m_accountId != 0)
+		{
+			WLOG("Player tried to reconnect again!");
+			return;
+		}
+
+		// Get account informations (TODO: We need a session key)
+		if (!m_database.getKey(m_userName, m_accountId, m_reconnectKey) ||
+			m_accountId == 0)
+		{
+			WLOG("Unknown account!");
+			destroy();
+			return;
+		}
+
+		// Build some random reconnect proof
+		m_reconnectProof.setRand(16 * 8);
+
+		// Send proof result
+		m_connection->sendSinglePacket(
+			std::bind(
+				auth::server_write::reconnectChallenge,
+				std::placeholders::_1,
+				std::cref(m_reconnectProof)));
 	}
 
 	void Player::handleReconnectProof(auth::IncomingPacket & packet)
 	{
-		WLOG("TODO: Reconnect proof");
+		if (m_accountId == 0 || !m_reconnectProof.getNumBytes() || m_userName.empty())
+		{
+			WLOG("Tried to send logon proof before challenge");
+			return;
+		}
+
+		if (m_session)
+		{
+			WLOG("Tried to send proof when already proofed!");
+			return;
+		}
+
+		// Read packet data and save it
+		std::array<unsigned char, 16> R1;
+		SHA1Hash R2, R3;
+		UInt8 keyNum = 0;
+		if (!auth::client_read::reconnectProof(packet, R1, R2, R3, keyNum))
+		{
+			ELOG("Could not read packet CMD_AUTH_RECONNECT_PROOF");
+			return;
+		}
+
+		BigNumber t1;
+		t1.setBinary(R1.data(), R1.size());
+
+		Boost_SHA1HashSink sha;
+		sha.write(m_userName.c_str(), m_userName.size());
+		std::vector<unsigned char> tArr = t1.asByteArray();
+		sha.write(reinterpret_cast<const char*>(tArr.data()), tArr.size());
+		tArr = m_reconnectProof.asByteArray();
+		sha.write(reinterpret_cast<const char*>(tArr.data()), tArr.size());
+		tArr = m_reconnectKey.asByteArray();
+		sha.write(reinterpret_cast<const char*>(tArr.data()), tArr.size());
+		auto hash = sha.finalizeHash();
+
+		if (hash != R2)
+		{
+			WLOG("User " << m_userName << " tried to log in, but session is invalid!");
+			destroy();
+			return;
+		}
+
+		// Create session
+		m_session = m_createSession(m_reconnectKey, m_accountId, m_userName, m_v, m_s);
+		m_reconnectKey.setUInt32(0);
+		
+		// Send proof
+		m_connection->sendSinglePacket(
+			std::bind(
+				auth::server_write::reconnectProof,
+				std::placeholders::_1));
 	}
 
 	void Player::handleRealmList(auth::IncomingPacket &packet)

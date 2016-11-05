@@ -220,7 +220,7 @@ namespace wowpp
 				// in the editor.
 				if (entry->id() == 1)
 				{
-					camera->setPosition(6516.0f, 448.0f, 17.0f);
+					camera->setPosition(10304.0f, 870.033f, 1336.65f);
 				}
 				else if (entry->id() == 0)
 				{

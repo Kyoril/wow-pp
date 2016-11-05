@@ -25,6 +25,7 @@
 #include "auth_protocol/auth_server.h"
 #include "wowpp_protocol/wowpp_server.h"
 #include "common/background_worker.h"
+#include "common/timer_queue.h"
 #include "log/log_std_stream.h"
 #include "log/log_entry.h"
 #include "log/default_log_levels.h"
@@ -207,7 +208,9 @@ namespace wowpp
 			return std::unique_ptr<Session>(new Session(key, userId, std::move(userName), v, s));
 		};
 
-		auto const createPlayer = [&PlayerManager, &RealmManager, &Database, createSession](std::shared_ptr<wowpp::Player::Client> connection)
+		TimerQueue timerQueue(m_ioService);
+
+		auto const createPlayer = [&PlayerManager, &RealmManager, &Database, createSession, &timerQueue](std::shared_ptr<wowpp::Player::Client> connection)
 		{
 			connection->startReceiving();
 			boost::asio::ip::address address;
@@ -223,7 +226,7 @@ namespace wowpp
 				return;
 			}
 
-			std::unique_ptr<wowpp::Player> player(new wowpp::Player(*PlayerManager, *RealmManager, Database, createSession, std::move(connection), address.to_string()));
+			std::unique_ptr<wowpp::Player> player(new wowpp::Player(*PlayerManager, *RealmManager, Database, createSession, std::move(connection), address.to_string(), timerQueue));
 
 			DLOG("Incoming player connection from " << address);
 			PlayerManager->addPlayer(std::move(player));

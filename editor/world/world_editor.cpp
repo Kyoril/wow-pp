@@ -397,40 +397,46 @@ namespace wowpp
 						return;
 					}
 
-					math::Vector3 start(-8752.376953f, -27.426413f, 92.981216f);
-					math::Vector3 end(-8780.809570f, -34.739071f, 104.998360f);
-					std::vector<math::Vector3> points;
-					if (!mapInst->calculatePath(start, end, points))
+					static bool added = false;
+					if (!added)
 					{
-						ELOG("Could not calculate path");
-					}
-					else
-					{
-						if (points.size() > 1)
+						math::Vector3 start(10303.5f, 889.999f, 1331.54f);
+						math::Vector3 end(10304.0f, 870.033f, 1334.65f);
+						std::vector<math::Vector3> points;
+						if (!mapInst->calculatePath(start, end, points))
 						{
-							// Create collision for this map
-							Ogre::ManualObject *obj = m_sceneMgr.createManualObject(objName.str() + "_path");
-							obj->begin("Editor/PathLine", Ogre::RenderOperation::OT_LINE_STRIP);
-							for (auto &p : points)
-							{
-								obj->position(p.x, p.y, p.z);
-							}
-							obj->end();
-
-							obj->begin("Editor/PathPoint", Ogre::RenderOperation::OT_POINT_LIST);
-							for (auto &p : points)
-							{
-								obj->position(p.x, p.y, p.z);
-							}
-							obj->end();
-
-							Ogre::SceneNode *child = m_sceneMgr.getRootSceneNode()->createChildSceneNode(objName.str() + "_pathnode");
-							child->attachObject(obj);
-							DLOG("Path added with " << points.size() << " points");
+							ELOG("Could not calculate path");
 						}
 						else
 						{
-							ELOG("No points found!");
+							if (points.size() > 1)
+							{
+								// Create collision for this map
+								Ogre::ManualObject *obj = m_sceneMgr.createManualObject(objName.str() + "_path");
+								obj->begin("Editor/PathLine", Ogre::RenderOperation::OT_LINE_STRIP);
+								for (auto &p : points)
+								{
+									obj->position(p.x, p.y, p.z);
+								}
+								obj->end();
+
+								obj->begin("Editor/PathPoint", Ogre::RenderOperation::OT_POINT_LIST);
+								for (auto &p : points)
+								{
+									obj->position(p.x, p.y, p.z);
+								}
+								obj->end();
+
+								Ogre::SceneNode *child = m_sceneMgr.getRootSceneNode()->createChildSceneNode(objName.str() + "_pathnode");
+								child->attachObject(obj);
+								DLOG("Path added with " << points.size() << " points");
+
+								added = true;
+							}
+							else
+							{
+								ELOG("No points found!");
+							}
 						}
 					}
 
