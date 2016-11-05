@@ -200,11 +200,11 @@ namespace wowpp
 			auto now = getCurrentTime();
 			if (now > m_nextUpdate)
 			{
-				const auto &loc = getControlled().getLocation();
-				m_aggroWatcher->setShape(Circle(loc.x, loc.y, 40.0f));
-
 				// Should be enough
 				m_nextUpdate = now + (constants::OneSecond * 1.5f);
+
+				const auto &loc = getControlled().getLocation();
+				m_aggroWatcher->setShape(Circle(loc.x, loc.y, 40.0f));
 			}
 		}
 	}
