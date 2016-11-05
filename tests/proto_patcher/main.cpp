@@ -852,6 +852,53 @@ namespace wowpp
 		return true;
 	}
 
+	static bool addItemSkill(proto::Project &project)
+	{
+		namespace st = game::skill_type;
+
+		const UInt32 itemWeaponSkills[21] =
+		{
+			st::Axes,     st::TwoHAxes,  st::Bows,          st::Guns,      st::Maces,
+			st::TwoHMaces, st::Polearms, st::Swords,        st::TwoHSwords, 0,
+			st::Staves,   0,              0,                   st::Unarmed,   0,
+			st::Daggers,  st::Thrown,   st::Assassination, st::Crossbows, st::Wands,
+			st::Fishing
+		};
+
+		const UInt32 itemArmorSkills[10] =
+		{
+			0, st::Cloth, st::Leather, st::Mail, st::PlateMail, 0, st::Shield, 0, 0, 0
+		};
+
+		auto &tpls = project.items.getTemplates();
+		for (int i = 0; i < tpls.entry_size(); ++i)
+		{
+			auto *entry = tpls.mutable_entry(i);
+			if (entry)
+			{
+				switch (entry->itemclass())
+				{
+					case game::item_class::Weapon:
+						if (entry->subclass() >= 21)
+							entry->set_skill(0);
+						else
+							entry->set_skill(itemWeaponSkills[entry->subclass()]);
+						break;
+					case game::item_class::Armor:
+						if (entry->subclass() >= 10)
+							entry->set_skill(0);
+						else
+							entry->set_skill(itemArmorSkills[entry->subclass()]);
+						break;
+					default:
+						entry->set_skill(0);
+				}
+			}
+		}
+
+		return true;
+	}
+
 	static UInt32 findMatchingRankOneSpell(const proto::SpellEntry &spell, const std::vector<proto::SpellEntry*> &rankOneSpells)
 	{
 		std::set<UInt32> blacklist;
@@ -2407,7 +2454,7 @@ int main(int argc, char* argv[])
 		WLOG("Could not import resistance percentages");
 		return 1;
 	}
-#endif
+
 	if (!importCombatRatings(protoProject, connection))
 	{
 		WLOG("Could not import combat ratings");
@@ -2417,6 +2464,12 @@ int main(int argc, char* argv[])
 	if (!importMeleeCritChance(protoProject, connection))
 	{
 		WLOG("Could not import melee crit chance");
+		return 1;
+	}
+#endif
+	if (!addItemSkill(protoProject))
+	{
+		WLOG("Could not add item skill");
 		return 1;
 	}
 
