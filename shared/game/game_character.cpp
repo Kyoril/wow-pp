@@ -1451,6 +1451,74 @@ namespace wowpp
 		// TODO: spawn corpse bones (not implemented yet)
 	}
 
+	void GameCharacter::updateRating(CombatRatingType combatRating)
+	{
+		setUInt32Value(character_fields::CombatRating_1 + combatRating, UInt32(m_combatRatings[combatRating]));
+
+		switch (combatRating)
+		{
+		case combat_rating::CritMelee:
+			updateCritChance(game::weapon_attack::BaseAttack);
+			updateCritChance(game::weapon_attack::OffhandAttack);
+			break;
+		case combat_rating::CritRanged:
+			updateCritChance(game::weapon_attack::RangedAttack);
+			break;
+		}
+	}
+
+	float GameCharacter::getRatingMultiplier(CombatRatingType combatRating) const
+	{
+		UInt32 level = getLevel();
+		
+		if (level > 100)
+		{
+			level = 100;
+		}
+
+		const auto &ratio = getProject().combatRatings.getById(combatRating * 100 + level - 1)->ratingsperlevel();
+
+		if (!ratio)
+		{
+			return 1.0f;
+		}
+
+		return 1.0f / ratio;
+	}
+
+	void GameCharacter::updateCritChance(game::WeaponAttack attackType)
+	{
+		BaseModGroup modGroup;
+		UInt16 index;
+		CombatRatingType combatRating;
+
+		switch (attackType)
+		{
+			case game::weapon_attack::OffhandAttack:
+				modGroup = base_mod_group::OffHandCritPercentage;
+				index = character_fields::OffHandCritPercentage;
+				combatRating = combat_rating::CritMelee;
+				break;
+			case game::weapon_attack::RangedAttack:
+				modGroup = base_mod_group::RangedCritPercentage;
+				index = character_fields::RangedCritPercentage;
+				combatRating = combat_rating::CritRanged;
+				break;
+			default:
+				modGroup = base_mod_group::CritPercentage;
+				index = character_fields::CritPercentage;
+				combatRating = combat_rating::CritMelee;
+				break;
+		}
+
+		float value = getRatingBonusValue(combatRating) + getTotalPercentageModValue(modGroup);
+
+		value += (static_cast<Int32>(getWeaponSkillValue(nullptr, attackType)) - static_cast<Int32>(getMaxSkillValueForLevel())) * 0.04f;
+		value = value < 0.0f ? 0.0f : value;
+		
+		setFloatValue(index, value);
+	}
+
 	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData &data)
 	{
 		m_quests[quest] = data;
@@ -2449,6 +2517,47 @@ namespace wowpp
 				removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 			}
 		}
+	}
+
+	UInt32 GameCharacter::getWeaponSkillValue(const GameUnit * target, game::WeaponAttack attackType) const
+	{
+		std::shared_ptr<GameItem> item = m_inventory.getWeaponByAttackType(attackType, true, true);
+
+		if (attackType != game::weapon_attack::BaseAttack && !item)
+		{
+			return 0;
+		}
+
+		if (isInFeralForm())
+		{
+			return getMaxSkillValueForLevel();
+		}
+
+		UInt32 skill = item ? item->getEntry().skill() : static_cast<UInt32>(game::skill_type::Unarmed);
+
+		UInt16 maxSkillValue, skillValue;
+		getSkillValue(skill, skillValue, maxSkillValue);
+
+		UInt32 value = (target && target->isGameCharacter()) ? maxSkillValue : skillValue;
+
+		CombatRatingType combatRating = combat_rating::WeaponSkill;
+
+		value += getRatingBonusValue(combatRating);
+
+		switch (attackType)
+		{
+			case game::weapon_attack::BaseAttack:
+				combatRating = combat_rating::WeaponSkillMainhand;
+				value += getRatingBonusValue(combatRating);
+			case game::weapon_attack::OffhandAttack:
+				combatRating = combat_rating::WeaponSkillOffhand;
+				value += getRatingBonusValue(combatRating);
+			case game::weapon_attack::RangedAttack:
+				combatRating = combat_rating::WeaponSkillRanged;
+				value += getRatingBonusValue(combatRating);
+		}
+
+		return value;
 	}
 
 	void GameCharacter::classUpdated()

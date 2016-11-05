@@ -92,6 +92,11 @@ namespace wowpp
 			return m_loot.get();
 		}
 
+		///
+		bool isBroken() const {
+			return getUInt32Value(item_fields::MaxDurability) > 0 && getUInt32Value(item_fields::Durability) == 0;
+		}
+
 	private:
 
 		void generateLoot();

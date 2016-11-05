@@ -350,6 +350,30 @@ namespace wowpp
 		return true;
 	}
 
+	bool GameUnit::isInFeralForm() const
+	{
+		game::ShapeshiftForm form = static_cast<game::ShapeshiftForm>(getByteValue(unit_fields::Bytes2, 3));
+
+		return form == game::shapeshift_form::Cat || form == game::shapeshift_form::Bear || form == game::shapeshift_form::DireBear;
+	}
+
+	bool GameUnit::canUseWeapon(game::WeaponAttack attackType)
+	{
+		if (isInFeralForm())
+		{
+			return false;
+		}
+
+		switch (attackType)
+		{
+			case game::weapon_attack::OffhandAttack:
+			case game::weapon_attack::RangedAttack:
+				return true;
+			default:
+				return !hasFlag(unit_fields::UnitFlags, game::unit_flags::Disarmed);
+		}
+	}
+
 	void GameUnit::levelChanged(const proto::LevelEntry &levelInfo)
 	{
 		// Get race and class

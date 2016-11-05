@@ -1105,6 +1105,42 @@ namespace wowpp
 
 		return std::shared_ptr<GameBag>();
 	}
+	std::shared_ptr<GameItem> Inventory::getWeaponByAttackType(game::WeaponAttack attackType, bool nonbroken, bool useable) const
+	{
+		UInt8 slot;
+
+		switch (attackType)
+		{
+			case game::weapon_attack::BaseAttack:
+				slot = game::inventory_type::MainHandWeapon;
+				break;
+			case game::weapon_attack::OffhandAttack:
+				slot = game::inventory_type::OffHandWeapon;
+				break;
+			case game::weapon_attack::RangedAttack:
+				slot = game::inventory_type::Ranged;
+				break;
+		}
+
+		std::shared_ptr<GameItem> item = getItemAtSlot(getAbsoluteSlot(player_inventory_slots::Bag_0, slot));
+
+		if (!item || item->getEntry().itemclass() != game::item_class::Weapon)
+		{
+			return nullptr;
+		}
+
+		if (nonbroken && item->isBroken())
+		{
+			return nullptr;
+		}
+
+		if (useable && m_owner.canUseWeapon(attackType))
+		{
+			return nullptr;
+		}
+
+		return item;
+	}
 	bool Inventory::findItemByGUID(UInt64 guid, UInt16 &out_slot) const
 	{
 		for (auto &item : m_itemsBySlot)

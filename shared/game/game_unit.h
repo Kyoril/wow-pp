@@ -737,6 +737,9 @@ namespace wowpp
 
 		virtual void applyHealingDoneBonus(UInt32 spellLevel, UInt32 playerLevel, UInt32 tickCount, UInt32 &healing);
 
+		/// TODO: Do this properly, return level of target if found (can be a boss, not sure how it'll be done)
+		virtual UInt32 getWeaponSkillValue(const GameUnit *target = nullptr, game::WeaponAttack attackType = game::weapon_attack::BaseAttack) const = 0;
+
 		/// Gets the current unit mover.
 		UnitMover &getMover() {
 			return *m_mover;
@@ -780,7 +783,19 @@ namespace wowpp
 		///
 		void finishChanneling();
 
+		///
 		bool isAttackable() const;
+
+		///
+		bool isInFeralForm() const;
+
+		///
+		bool canUseWeapon(game::WeaponAttack attackType);
+
+		/// Something something bosses
+		UInt16 getMaxSkillValueForLevel(const GameUnit *target = nullptr) const {
+			return (target ? target->getLevel() : getLevel()) * 5;
+		}
 
 	public:
 

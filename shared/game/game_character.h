@@ -561,6 +561,40 @@ namespace wowpp
 
 	typedef spell_mod_op::Type SpellModOp;
 
+	namespace combat_rating
+	{
+		enum Type
+		{
+			WeaponSkill			= 0,
+			DefenseSkill		= 1,
+			Dodge				= 2,
+			Parry				= 3,
+			Block				= 4,
+			HitMelee			= 5,
+			HitRanged			= 6,
+			HitSpell			= 7,
+			CritMelee			= 8,
+			CritRanged			= 9,
+			CritSpell			= 10,
+			HitTakenMelee		= 11,
+			HitTakenRanged		= 12,
+			HitTakenSpell		= 13,
+			CritTakenMelee		= 14,
+			CritTakenRanged		= 15,
+			CritTakenSpell		= 16,
+			HasteMelee			= 17,
+			HasteRanged			= 18,
+			HasteSpell			= 19,
+			WeaponSkillMainhand = 20,
+			WeaponSkillOffhand	= 21,
+			WeaponSkillRanged	= 22,
+			Expertise			= 23,
+			End					= 24
+		};
+	}
+
+	typedef combat_rating::Type CombatRatingType;
+
 	namespace spell_mod_type
 	{
 		enum Type
@@ -699,6 +733,8 @@ namespace wowpp
 		void onThreat(GameUnit &threatener, float amount) override;
 		/// @copydoc GameUnit::onRegeneration
 		virtual void onRegeneration() override;
+		/// @copydoc GameUnit::getWeaponSkillValue
+		UInt32 getWeaponSkillValue(const GameUnit *target = nullptr, game::WeaponAttack attackType = game::weapon_attack::BaseAttack) const override;
 
 	private:
 
@@ -870,11 +906,25 @@ namespace wowpp
 		/// Updates the resurrect target information.
 		void setResurrectRequestData(UInt64 guid, UInt32 mapId, const math::Vector3 &location, UInt32 health, UInt32 mana);
 		/// Checks whether a resurrect has been requested or not.
-		bool isResurrectRequested() const { return m_resurrectGuid == 0 ? 0 : 1; }
+		bool isResurrectRequested() const { return bool(m_resurrectGuid); }
 		/// Checks whether a resurrect has been requested by the character guid provided.
 		bool isResurrectRequestedBy(UInt64 guid) const { return m_resurrectGuid == guid; }
 		/// Resurrects the player using resurrect info. (This method might not be needed once proper resurrection is implemented)
 		void resurrectUsingRequestData();
+		///
+		float getTotalPercentageModValue(BaseModGroup modGroup) const { 
+			return m_baseCRMod[modGroup][base_mod_type::Flat] + m_baseCRMod[modGroup][base_mod_type::Percentage]; 
+		}
+		/// Updates specified combat rating
+		void updateRating(CombatRatingType combatRating);
+		///
+		float getRatingMultiplier(CombatRatingType combatRating) const;
+		///
+		float getRatingBonusValue(CombatRatingType combatRating) const {
+			return getUInt32Value(character_fields::CombatRating_1 + combatRating) * getRatingMultiplier(combatRating);
+		}
+		///
+		void updateCritChance(game::WeaponAttack attackType);
 	public:
 
 		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT
@@ -895,6 +945,9 @@ namespace wowpp
 		void updateNearbyQuestObjects();
 
 	private:
+
+		typedef std::array<Int16, combat_rating::End> CombatRatingsArray;
+		typedef std::array<std::array<float, base_mod_group::End>, base_mod_type::End> BaseCRModArray;
 
 		// Variables
 
@@ -932,6 +985,8 @@ namespace wowpp
 		UInt32 m_resurrectMap;
 		math::Vector3 m_resurrectLocation;
 		UInt32 m_resurrectHealth, m_resurrectMana;
+		CombatRatingsArray m_combatRatings;
+		BaseCRModArray m_baseCRMod;
 	};
 
 	/// Serializes a GameCharacter to an io::Writer object for the wow++ protocol.
