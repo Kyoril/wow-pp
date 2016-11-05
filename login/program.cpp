@@ -141,7 +141,9 @@ namespace wowpp
 		std::unique_ptr<wowpp::PlayerManager> PlayerManager(new wowpp::PlayerManager(m_configuration.maxPlayers));
 		std::unique_ptr<wowpp::TeamServerManager> TeamServerManager(new wowpp::TeamServerManager(m_configuration.maxTeamServers));
 
-		auto const createRealm = [&RealmManager, &PlayerManager, &Database](std::shared_ptr<wowpp::Realm::Client> connection)
+		TimerQueue timerQueue(m_ioService);
+
+		auto const createRealm = [&RealmManager, &PlayerManager, &Database, &timerQueue](std::shared_ptr<wowpp::Realm::Client> connection)
 		{
 			connection->startReceiving();
 			boost::asio::ip::address address;
@@ -157,7 +159,7 @@ namespace wowpp
 				return;
 			}
 
-			std::unique_ptr<wowpp::Realm> realm(new wowpp::Realm(*RealmManager, *PlayerManager, Database, std::move(connection), address.to_string()));
+			std::unique_ptr<wowpp::Realm> realm(new wowpp::Realm(*RealmManager, *PlayerManager, Database, std::move(connection), address.to_string(), timerQueue));
 
 			DLOG("Incoming realm connection from " << address);
 			RealmManager->addRealm(std::move(realm));
@@ -207,8 +209,6 @@ namespace wowpp
 		{
 			return std::unique_ptr<Session>(new Session(key, userId, std::move(userName), v, s));
 		};
-
-		TimerQueue timerQueue(m_ioService);
 
 		auto const createPlayer = [&PlayerManager, &RealmManager, &Database, createSession, &timerQueue](std::shared_ptr<wowpp::Player::Client> connection)
 		{

@@ -26,6 +26,7 @@
 #include "player.h"
 #include "wowpp_protocol/wowpp_realm_login.h"
 #include "common/sha1.h"
+#include "common/timer_queue.h"
 #include "log/default_log_levels.h"
 #include "database.h"
 
@@ -33,17 +34,27 @@ using namespace std;
 
 namespace wowpp
 {
-	Realm::Realm(RealmManager &manager, PlayerManager &playerManager, IDatabase &database, std::shared_ptr<Client> connection, const String &address)
+	Realm::Realm(RealmManager &manager, PlayerManager &playerManager, IDatabase &database, std::shared_ptr<Client> connection, const String &address, TimerQueue &timerQueue)
 		: m_manager(manager)
 		, m_playerManager(playerManager)
 		, m_database(database)
 		, m_connection(std::move(connection))
 		, m_address(address)
 		, m_authed(false)
+		, m_timeout(timerQueue)
 	{
 		assert(m_connection);
 
 		m_connection->setListener(*this);
+
+		m_onTimeOut = m_timeout.ended.connect([this]() 
+		{
+			WLOG("Realm connection timed out!");
+			m_connection->close();
+			destroy();
+		});
+
+		m_timeout.setEnd(getCurrentTime() + constants::OneSecond * 30);
 	}
 
 	void Realm::connectionLost()
@@ -94,6 +105,12 @@ namespace wowpp
 			case pp::realm_login::realm_packet::TutorialData:
 			{
 				handleTutorialData(packet);
+				break;
+			}
+
+			case pp::realm_login::realm_packet::KeepAlive:
+			{
+				m_timeout.setEnd(getCurrentTime() + constants::OneSecond * 30);
 				break;
 			}
 

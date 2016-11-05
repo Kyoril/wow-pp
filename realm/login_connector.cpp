@@ -26,6 +26,7 @@
 #include "player_manager.h"
 #include "player.h"
 #include "common/clock.h"
+#include "common/timer_queue.h"
 #include "log/default_log_levels.h"
 
 namespace wowpp
@@ -42,8 +43,12 @@ namespace wowpp
 		, m_host(m_config.loginAddress)
 		, m_port(m_config.loginPort)
 		, m_realmID(m_config.realmID)
+		, m_keepAliveCountdown(timer)
 	{
 		tryConnect();
+
+		m_onKeepAlive = m_keepAliveCountdown.ended.connect(
+			std::bind(&LoginConnector::onScheduledKeepAlive, this));
 	}
 
 	LoginConnector::~LoginConnector()
@@ -181,12 +186,19 @@ namespace wowpp
 
 	void LoginConnector::scheduleKeepAlive()
 	{
-
+		m_keepAliveCountdown.setEnd(getCurrentTime() + constants::OneSecond * 15);
 	}
 
 	void LoginConnector::onScheduledKeepAlive()
 	{
+		// Write packets
+		io::StringSink sink(m_connection->getSendBuffer());
+		pp::OutgoingPacket packet(sink);
+		pp::realm_login::realm_write::keepAlive(packet);
+		m_connection->flush();
 
+		// Reconnect
+		scheduleKeepAlive();
 	}
 
 	void LoginConnector::handleLoginResult(pp::Protocol::IncomingPacket &packet)
