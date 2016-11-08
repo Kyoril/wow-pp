@@ -24,6 +24,7 @@
 #include "auth_protocol/auth_protocol.h"
 #include "auth_protocol/auth_connection.h"
 #include "common/big_number.h"
+#include "common/countdown.h"
 #include "session.h"
 
 namespace wowpp
@@ -49,7 +50,8 @@ namespace wowpp
 						IDatabase &database,
 						SessionFactory createSession,
 		                std::shared_ptr<Client> connection,
-						const String &address);
+						const String &address,
+						TimerQueue &m_timerQueue);
 
 		/// Gets the player connection class used to send packets to the client.
 		Client &getConnection() { assert(m_connection); return *m_connection; }
@@ -87,13 +89,17 @@ namespace wowpp
 		UInt32 m_accountId;						// Account ID
 		SessionFactory m_createSession;
 		std::unique_ptr<Session> m_session;		// Session
-		
+		bool m_challenged;						// Logon challenge sent?
+		Countdown m_timeout;					// Timeout countdown
+		boost::signals2::scoped_connection m_onTimeout;
+
 	private:
 
 		BigNumber m_s, m_v;
 		BigNumber m_b, m_B;
 		BigNumber m_unk3;
 		BigNumber m_reconnectProof;
+		BigNumber m_reconnectKey;
 
 		/// Number of bytes used to store m_s.
 		const static int ByteCountS = 32;

@@ -22,6 +22,7 @@
 #pragma once
 
 #include "common/typedefs.h"
+#include "common/countdown.h"
 #include "wowpp_protocol/wowpp_protocol.h"
 #include "wowpp_protocol/wowpp_connection.h"
 #include "auth_protocol/auth_protocol.h"
@@ -47,7 +48,8 @@ namespace wowpp
 						PlayerManager &playerManager,
 						IDatabase &database,
 		                std::shared_ptr<Client> connection,
-						const String &address);
+						const String &address,
+						TimerQueue &timerQueue);
 
 		/// Gets the player connection class used to send packets to the client.
 		Client &getConnection() { assert(m_connection); return *m_connection; }
@@ -71,6 +73,8 @@ namespace wowpp
 		String m_name;
 		bool m_authed;							// True if the user has been successfully authentificated.
 		auth::RealmEntry m_entry;				// Realm list entry
+		Countdown m_timeout;
+		boost::signals2::scoped_connection m_onTimeOut;
 
 	private:
 

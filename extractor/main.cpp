@@ -52,7 +52,7 @@ using namespace std;
 using namespace wowpp;
 
 // Uncomment below to supress debug output
-#define TILE_DEBUG_OUTPUT 1
+//#define TILE_DEBUG_OUTPUT
 
 //////////////////////////////////////////////////////////////////////////
 // Calls:
@@ -1096,7 +1096,7 @@ namespace
 					return false;
 				break;
 			case 1:
-				if (cellY != 31 || cellX != 19)
+				if (cellY != 30 || cellX != 12)
 					return false;
 				break;
 			case 489:
@@ -1341,7 +1341,7 @@ namespace
 		}
 
 #ifdef TILE_DEBUG_OUTPUT
-		if (mapId != 0)
+		if (mapId != 1)
 		{
 			return true;
 		}

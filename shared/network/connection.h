@@ -99,6 +99,7 @@ namespace wowpp
 			, m_listener(Listener_)
 			, m_isParsingIncomingData(false)
 			, m_isClosedOnParsing(false)
+			, m_isClosedOnSend(false)
 		{
 		}
 
@@ -161,18 +162,27 @@ namespace wowpp
 
 		void close() override
 		{
+			if (!m_sending.empty())
+			{
+				m_isClosedOnSend = true;
+			}
+
 			if (m_isParsingIncomingData)
 			{
 				m_isClosedOnParsing = true;
+			}
+
+			if (m_isClosedOnSend ||
+				m_isClosedOnParsing)
+			{
 				return;
 			}
-			else
+
+			m_isClosedOnParsing = true;
+			m_isClosedOnSend = true;
+			if (m_socket->is_open())
 			{
-				m_isClosedOnParsing = true;
-				if (m_socket->is_open())
-				{
-					m_socket->close();
-				}
+				m_socket->close();
 			}
 		}
 
@@ -207,6 +217,7 @@ namespace wowpp
 		ReceiveBuffer m_receiving;
 		bool m_isParsingIncomingData;
 		bool m_isClosedOnParsing;
+		bool m_isClosedOnSend;
 
 		void beginSend()
 		{
@@ -228,6 +239,12 @@ namespace wowpp
 
 			m_sending.clear();
 			flush();
+
+			if (m_isClosedOnSend && m_sending.empty())
+			{
+				disconnected();
+				return;
+			}
 		}
 
 		void beginReceive()

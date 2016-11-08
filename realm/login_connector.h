@@ -24,7 +24,7 @@
 #include "common/constants.h"
 #include "network/connector.h"
 #include "wowpp_protocol/wowpp_connector.h"
-#include "common/timer_queue.h"
+#include "common/countdown.h"
 
 namespace wowpp
 {
@@ -127,5 +127,7 @@ namespace wowpp
 		NetPort m_port;
 		std::vector<PlayerLoginRequest> m_loginRequests;
 		UInt32 m_realmID;
+		Countdown m_keepAliveCountdown;
+		boost::signals2::scoped_connection m_onKeepAlive;
 	};
 }

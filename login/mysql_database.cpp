@@ -215,6 +215,59 @@ namespace wowpp
 		return false;
 	}
 
+	bool MySQLDatabase::getKey(const String & userName, UInt32 & out_id, BigNumber & out_K)
+	{
+		// Escape string to avoid sql injection
+		const wowpp::String safeName = m_connection.escapeString(userName);
+
+		wowpp::MySQL::Select select(m_connection, fmt::format(
+			"SELECT id,k FROM account WHERE username='{0}' LIMIT 1", safeName));
+		if (select.success())
+		{
+			wowpp::String K;
+			wowpp::MySQL::Row row(select);
+			if (row)
+			{
+				// Account exists: Get id and password
+				row.getField(0, out_id);
+				row.getField(1, K);
+
+				out_K.setHexStr(K);
+			}
+			else
+			{
+				// No row found: Account does not exist
+				return false;
+			}
+		}
+		else
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+
+		return true;
+	}
+
+	bool MySQLDatabase::setKey(const UInt32 & userId, const BigNumber & K)
+	{
+		const String safeK = m_connection.escapeString(K.asHexStr());
+
+		if (m_connection.execute(fmt::format("UPDATE account SET k='{0}' WHERE id={1}"
+			, safeK		// 0
+			, userId)))	// 1
+		{
+			return true;
+		}
+		else
+		{
+			printDatabaseError();
+		}
+
+		return false;
+	}
+
 	pp::realm_login::LoginResult MySQLDatabase::realmLogIn(UInt32 &out_id, const String &name, const String &password)
 	{
 		using namespace pp::realm_login;

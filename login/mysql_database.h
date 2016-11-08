@@ -48,6 +48,10 @@ namespace wowpp
 		bool getSVFields(const UInt32 &userId, BigNumber &out_S, BigNumber &out_V) override;
 		/// @copydoc wow::IDatabase::setSVFields
 		bool setSVFields(const UInt32 &userId, const BigNumber &S, const BigNumber &V) override;
+		/// @copydoc wow::IDatabase::getKey
+		bool getKey(const String &userName, UInt32 &out_id, BigNumber &out_K) override;
+		/// @copydoc wow::IDatabase::setKey
+		bool setKey(const UInt32 &userId, const BigNumber &K) override;
 		/// @copydoc wow::IDatabase::realmLogIn
 		pp::realm_login::LoginResult realmLogIn(UInt32 &out_id, const String &name, const String &password) override;
 		/// @copydoc wow::IDatabase::setAllRealmsOffline

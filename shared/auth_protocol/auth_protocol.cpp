@@ -454,6 +454,34 @@ namespace wowpp
 			out_packet.finish();
 		}
 
+		void server_write::reconnectChallenge(auth::OutgoingPacket & out_packet, const BigNumber &proof)
+		{
+			out_packet.start(server_packet::ReconnectChallenge);
+			out_packet
+				<< io::write<NetUInt8>(0);
+			
+			// Write proof with 16 byte length
+			std::vector<UInt8> proof_ = proof.asByteArray(16);
+			out_packet
+				<< io::write_range(proof_.begin(), proof_.end());
+
+			// 16 zero-bytes
+			out_packet
+				<< io::write<NetUInt64>(0)
+				<< io::write<NetUInt64>(0);
+
+			out_packet.finish();
+		}
+
+		void server_write::reconnectProof(auth::OutgoingPacket & out_packet)
+		{
+			out_packet.start(server_packet::ReconnectProof);
+			out_packet
+				<< io::write<NetUInt8>(0)
+				<< io::write<NetUInt16>(0);
+			out_packet.finish();
+		}
+
 		void server_write::realmList(auth::OutgoingPacket &out_packet, const std::vector<RealmEntry> &realmList)
 		{
 			out_packet.start(server_packet::RealmList);

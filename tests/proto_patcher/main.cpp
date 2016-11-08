@@ -2249,12 +2249,14 @@ namespace wowpp
 
 	static bool importResistancePercentages(proto::Project &project, MySQL::Connection &conn)
 	{
-		wowpp::MySQL::Select select(conn, "SELECT `percentages_0`, `percentages_25`, `percentages_50`, `percentages_75`, `percentages_100` FROM `tbcdb`.`resistance_values`;");
+		wowpp::MySQL::Select select(conn, "SELECT `percentages_0`, `percentages_25`, `percentages_50`, `percentages_75`, `percentages_100` FROM `dbc`.`resistance_values`;");
 		if (select.success())
 		{
 			wowpp::MySQL::Row row(select);
 
-			for (int i = 0; i < 10001; ++i)
+			// First cleanup
+			project.resistancePcts.clear();
+			for (int i = 0; i <= 10000; ++i)
 			{	
 				project.resistancePcts.add(i);
 			}
@@ -2269,12 +2271,10 @@ namespace wowpp
 				auto * values = project.resistancePcts.getById(id);
 				if (values)
 				{
-					values->clear_percentages();
-
 					for (UInt8 i = 0; i < 5; ++i)
 					{
 						row.getField(index++, pcts[i]);
-						values->set_percentages(i, pcts[i]);
+						values->add_percentages(pcts[i]);
 					}
 				}
 				else
