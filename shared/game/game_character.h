@@ -734,7 +734,7 @@ namespace wowpp
 		/// @copydoc GameUnit::onRegeneration
 		virtual void onRegeneration() override;
 		/// @copydoc GameUnit::getWeaponSkillValue
-		UInt32 getWeaponSkillValue(const GameUnit *target = nullptr, game::WeaponAttack attackType = game::weapon_attack::BaseAttack) const override;
+		virtual UInt32 getWeaponSkillValue(const GameUnit *target = nullptr, game::WeaponAttack attackType = game::weapon_attack::BaseAttack) override;
 
 	private:
 

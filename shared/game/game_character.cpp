@@ -2519,7 +2519,7 @@ namespace wowpp
 		}
 	}
 
-	UInt32 GameCharacter::getWeaponSkillValue(const GameUnit * target, game::WeaponAttack attackType) const
+	UInt32 GameCharacter::getWeaponSkillValue(const GameUnit * target, game::WeaponAttack attackType)
 	{
 		std::shared_ptr<GameItem> item = m_inventory.getWeaponByAttackType(attackType, true, true);
 

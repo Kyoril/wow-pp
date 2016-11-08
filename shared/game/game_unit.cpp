@@ -2134,7 +2134,7 @@ namespace wowpp
 		else
 		{
 			reductionPct = std::min(std::max(static_cast<Int32>(victimLevel - casterLevel), 0) * 2.0f + reductionPct, 75.0f);
-			const auto &resistancePcts = getProject().resistancePcts.getById(static_cast<UInt32>(reductionPct * 100));
+			const auto *resistancePcts = getProject().resistancePcts.getById(static_cast<UInt32>(reductionPct * 100));
 
 			std::uniform_real_distribution<float> resiDistribution(0.0f, 99.9f - resistancePcts->percentages(4));
 			float randomNum = resiDistribution(randomGenerator) + resistChanceMod;
