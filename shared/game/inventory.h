@@ -157,6 +157,8 @@ namespace wowpp
 		std::shared_ptr<GameItem> getItemAtSlot(UInt16 absoluteSlot) const;
 		/// Returns a bag at a specified absolute slot.
 		std::shared_ptr<GameBag> getBagAtSlot(UInt16 absoluteSlot) const;
+		/// Returns the weapon at a specified slot.
+		std::shared_ptr<GameItem> getWeaponByAttackType(game::WeaponAttack attackType, bool nonbroken, bool useable) const;
 		/// Finds an item by it's guid.
 		/// @param guid The GUID of the searched item.
 		/// @param out_slot The absolute item slot will be stored there.
