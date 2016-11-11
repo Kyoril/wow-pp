@@ -303,17 +303,10 @@ namespace wowpp
 		BigNumber A;
 		A.setBinary(rec_A.data(), rec_A.size());
 
-		// SRP safeguard: abort if A==0
-		if (A.isZero())
+		// SRP safeguard: abort if A % N == 0
+		if ((A % constants::srp::N).isZero())
 		{
-			//TODO: Error
-			ELOG("SRP error (A == 0)!");
-			m_connection->sendSinglePacket(
-				std::bind(
-				auth::server_write::logonProof,
-				std::placeholders::_1,
-				auth::auth_result::FailInvalidServer,
-				std::cref(hash)));
+			ELOG("Detected invalid A value from client");
 			m_connection->close();
 			return;
 		}
