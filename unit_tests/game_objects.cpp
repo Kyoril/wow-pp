@@ -28,8 +28,10 @@ namespace wowpp
 {
 	BOOST_AUTO_TEST_CASE(GameObject_signed_fields)
 	{
-		// Empty proto project
+		// Empty project
 		proto::Project project;
+
+		// Construct new object
 		GameObject object(project);
 		object.initialize();
 
