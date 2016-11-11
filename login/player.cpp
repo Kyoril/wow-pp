@@ -42,7 +42,8 @@ namespace wowpp
 		, m_address(address)
         , m_createSession(createSession)
 		, m_accountId(0)
-		, m_challenged(false)
+		, m_loginChallenge(false)
+		, m_reconnectChallenge(false)
 		, m_timeout(timerQueue)
 	{
 		assert(m_connection);
@@ -182,6 +183,14 @@ namespace wowpp
 			WLOG("Player tried to log in again!");
 			return;
 		}
+		
+		if (m_reconnectChallenge)
+		{
+			WLOG("Already sent reconnect challenge, so can't send login challenge");
+			m_connection->close();
+			destroy();
+			return;
+		}
 
 		// The temporary result
 		auth::AuthResult result = auth::auth_result::FailUnknownAccount;
@@ -216,7 +225,7 @@ namespace wowpp
 				assert(gmod.getNumBytes() <= 32);
 
 				m_unk3.setRand(16 * 8);
-				m_challenged = true;
+				m_loginChallenge = true;
 			}
 		}
 
@@ -244,6 +253,14 @@ namespace wowpp
 		if (m_session)
 		{
 			WLOG("Tried to send proof when already proofed!");
+			return;
+		}
+		
+		if (!m_loginChallenge || m_reconnectChallenge)
+		{
+			WLOG("Received logon proof without proper challenge packet!");
+			m_connection->close();
+			destroy();
 			return;
 		}
 
@@ -430,6 +447,14 @@ namespace wowpp
 			WLOG("Player tried to reconnect again!");
 			return;
 		}
+		
+		if (m_loginChallenge)
+		{
+			WLOG("Already sent login challenge, so can't send reconnect challenge");
+			m_connection->close();
+			destroy();
+			return;
+		}
 
 		// Get account informations (TODO: We need a session key)
 		if (!m_database.getKey(m_userName, m_accountId, m_reconnectKey) ||
@@ -442,7 +467,8 @@ namespace wowpp
 
 		// Build some random reconnect proof
 		m_reconnectProof.setRand(16 * 8);
-
+		m_reconnectChallenge = true;
+		
 		// Send proof result
 		m_connection->sendSinglePacket(
 			std::bind(
@@ -462,6 +488,12 @@ namespace wowpp
 		if (m_session)
 		{
 			WLOG("Tried to send proof when already proofed!");
+			return;
+		}
+		
+		if (!m_reconnectChallenge || m_loginChallenge)
+		{
+			WLOG("Tried to send reconnect proof without proper challenge request");
 			return;
 		}
 

@@ -89,7 +89,8 @@ namespace wowpp
 		UInt32 m_accountId;						// Account ID
 		SessionFactory m_createSession;
 		std::unique_ptr<Session> m_session;		// Session
-		bool m_challenged;						// Logon challenge sent?
+		bool m_loginChallenge;					// Logon challenge sent?
+		bool m_reconnectChallenge;				// Reconnect challenge sent?
 		Countdown m_timeout;					// Timeout countdown
 		boost::signals2::scoped_connection m_onTimeout;
 
