@@ -121,9 +121,6 @@ namespace wowpp
 						}
 						else
 						{
-							// Do not watch for unit motion
-							m_onVictimMoved.disconnect();
-
 							// No longer attack unit if stunned
 							m_isCasting = false;
 							getControlled().cancelCast(game::spell_interrupt_flags::None);
@@ -154,9 +151,6 @@ namespace wowpp
 						}
 						else
 						{
-							// Do not watch for unit motion
-							m_onVictimMoved.disconnect();
-
 							// No longer attack unit if stunned
 							m_isCasting = false;
 							getControlled().cancelCast(game::spell_interrupt_flags::None);
@@ -188,9 +182,6 @@ namespace wowpp
 						}
 						else
 						{
-							// Do not watch for unit motion
-							m_onVictimMoved.disconnect();
-
 							// No longer attack unit if stunned
 							m_isCasting = false;
 							getControlled().cancelCast(game::spell_interrupt_flags::None);
@@ -311,7 +302,6 @@ namespace wowpp
 		m_getTopThreatener.disconnect();
 		m_onMoveTargetChanged.disconnect();
 		m_onUnitStateChanged.disconnect();
-		m_onVictimMoved.disconnect();
 
 		auto &controlled = getControlled();
 
@@ -892,7 +882,6 @@ namespace wowpp
 					(victim->getLocation() - getControlled().getLocation()).squared_length();
 				if (distance <= (getControlled().getMeleeReach() * getControlled().getMeleeReach()))
 				{
-					m_onVictimMoved.disconnect();
 					getControlled().getMover().stopMovement();
 
 					m_nextActionCountdown.setEnd(getCurrentTime() + 500);
