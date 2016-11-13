@@ -22,35 +22,10 @@
 #pragma once
 
 #include "circle.h"
-#include "common/simple.hpp"
 
 namespace wowpp
 {
 	class GameUnit;
-
-	namespace detail
-	{
-		struct StopOnTrue final
-		{
-			typedef bool result_type;
-
-			template<class InputIterator>
-			bool operator ()(InputIterator begin, InputIterator end) const
-			{
-				while (begin != end)
-				{
-					if (*begin)
-					{
-						return true;
-					}
-
-					++begin;
-				}
-
-				return false;
-			}
-		};
-	}
 
 	/// Abstract base class to watch for units in a specified area.
 	class UnitWatcher

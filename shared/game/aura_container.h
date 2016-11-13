@@ -21,11 +21,12 @@
 
 #pragma once
 
-#include "aura.h"
+#include "game/defines.h"
 
 namespace wowpp
 {
 	class GameUnit;
+	class Aura;
 
 	/// Holds and manages instances of auras for one unit.
 	class AuraContainer final

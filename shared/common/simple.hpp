@@ -19,17 +19,6 @@
 #ifndef SIMPLE_HPP_INCLUDED
 #define SIMPLE_HPP_INCLUDED
 
-#include <iterator>
-#include <exception>
-#include <type_traits>
-#include <cassert>
-#include <utility>
-#include <functional>
-#include <list>
-#include <forward_list>
-#include <initializer_list>
-#include <atomic>
-
 /// Redefine this if your compiler doesn't support the thread_local keyword
 /// For VS < 2015 you can define it to __declspec(thread) for example.
 #ifndef SIMPLE_THREAD_LOCAL

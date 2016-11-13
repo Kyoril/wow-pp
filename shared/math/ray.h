@@ -23,9 +23,6 @@
 
 #include "common/typedefs.h"
 #include "vector3.h"
-#include <utility>
-#include <cassert>
-#include <cmath>
 
 namespace wowpp
 {

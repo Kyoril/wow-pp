@@ -21,6 +21,7 @@
 
 #include "pch.h"
 #include "aura_container.h"
+#include "aura.h"
 #include "game_unit.h"
 #include "log/default_log_levels.h"
 #include "common/linear_set.h"

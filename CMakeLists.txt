@@ -101,7 +101,8 @@ project(WoW)
 
 	# Include additional cmake modules
 	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
+	
+	option(WOWPP_UNITY_BUILD "combine cpp files to accelerate compilation" OFF)
 	include(Macros)
 	
 	# Find boost
@@ -120,7 +121,7 @@ project(WoW)
 
 	# Since boost 1.58 to make boost::variant::get<U>(...) happy
 	add_definitions("-DBOOST_VARIANT_USE_RELAXED_GET_BY_DEFAULT")
-	
+
 	# Find OpenSSL
 	find_package(OpenSSL REQUIRED)
 	

@@ -21,8 +21,6 @@
 
 #pragma once
 
-#include "common/typedefs.h"
-#include "defines.h"
 #include "shared/proto_data/spells.pb.h"
 #include "common/countdown.h"
 #include "spell_target_map.h"
