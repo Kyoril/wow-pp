@@ -69,6 +69,8 @@ namespace wowpp
 		virtual void onDamage(GameUnit &attacker) override;
 		/// 
 		virtual void onCombatMovementChanged() override;
+		/// 
+		virtual void onControlledMoved() override;
 
 	private:
 
@@ -87,10 +89,10 @@ namespace wowpp
 		ThreatList m_threat;
 		UnitSignals m_killedSignals;
 		UnitSignals m_despawnedSignals;
-		boost::signals2::scoped_connection m_onThreatened, m_onVictimMoved, m_onMoveTargetChanged;
+		boost::signals2::scoped_connection m_onThreatened, m_onMoveTargetChanged;
 		boost::signals2::scoped_connection m_getThreat, m_setThreat, m_getTopThreatener;
 		boost::signals2::scoped_connection m_onUnitStateChanged;
-		boost::signals2::scoped_connection m_onAutoAttackDone, m_onControlledMoved;
+		boost::signals2::scoped_connection m_onAutoAttackDone;
 		GameTime m_lastThreatTime;
 		Countdown m_nextActionCountdown;
 

@@ -88,67 +88,6 @@ namespace wowpp
 		{
 			return getTopThreatener();
 		});
-		m_onControlledMoved = controlled.moved.connect([this](GameObject &, const math::Vector3 & position, float rotation)
-		{
-			if (!getControlled().isCombatMovementEnabled())
-			{
-				return;
-			}
-
-			if (m_lastSpellEntry != nullptr && m_lastSpell != nullptr)
-			{
-				// Check if we are able to cast that spell now, and if so: Do it!
-				GameUnit *victim = getControlled().getVictim();
-				if (!victim) {
-					return;
-				}
-
-				// Check power requirement
-
-				// Check distance and line of sight
-				if (m_lastSpell->minrange() != 0.0f || m_lastSpell->maxrange() != 0.0f)
-				{
-					const float combatReach = victim->getFloatValue(unit_fields::CombatReach) + getControlled().getFloatValue(unit_fields::CombatReach);
-					const float distance = getControlled().getDistanceTo(*victim);
-					if ((m_lastSpell->minrange() > 0.0f && distance < m_lastSpell->minrange()) ||
-					        (m_lastSpell->maxrange() > 0.0f && distance > m_lastSpell->maxrange() + combatReach))
-					{
-						// Still out of range, do nothing
-						return;
-					}
-				}
-
-				// Check for line of sight
-				if (!getControlled().isInLineOfSight(*victim))
-				{
-					// Still not in line of sight
-					return;
-				}
-
-				// Reset variables and choose next action (should automatically be old action in most cases)
-				m_customCooldown = 0;
-				m_lastSpellEntry = nullptr;
-				m_lastSpell = nullptr;
-				m_lastCastTime = 0;
-				chooseNextAction();
-			}
-			else
-			{
-				GameUnit *victim = getControlled().getVictim();
-				if (victim)
-				{
-					const float distance =
-						(victim->getLocation() - getControlled().getLocation()).squared_length();
-					if (distance <= (getControlled().getMeleeReach() * getControlled().getMeleeReach()))
-					{
-						m_onVictimMoved.disconnect();
-						getControlled().getMover().stopMovement();
-
-						m_nextActionCountdown.setEnd(getCurrentTime() + 500);
-					}
-				}
-			}
-		});
 		
 		// Reset AI eventually
 		m_onMoveTargetChanged = getControlled().getMover().targetChanged.connect([this]
@@ -370,7 +309,6 @@ namespace wowpp
 		m_getThreat.disconnect();
 		m_setThreat.disconnect();
 		m_getTopThreatener.disconnect();
-		m_onControlledMoved.disconnect();
 		m_onMoveTargetChanged.disconnect();
 		m_onUnitStateChanged.disconnect();
 		m_onVictimMoved.disconnect();
@@ -610,8 +548,6 @@ namespace wowpp
 			return;
 		}
 
-		m_onVictimMoved.disconnect();
-
 		// First, determine our current victim
 		updateVictim();
 
@@ -763,13 +699,10 @@ namespace wowpp
 			}
 		}
 
-		// Watch for victim move signal
+		// Repeat this frequently
 		if (!m_isRanged)
 		{
-			m_onVictimMoved = victim->moved.connect([this](GameObject & moved, math::Vector3 oldPosition, float oldO)
-			{
-				chaseTarget(static_cast<GameUnit &>(moved));
-			});
+			m_nextActionCountdown.setEnd(getCurrentTime() + 500);
 		}
 		
 		// No spell cast - start auto attack
@@ -904,6 +837,67 @@ namespace wowpp
 		{
 			auto &controlled = getControlled();
 			controlled.setVictim(nullptr);
+		}
+	}
+	void CreatureAICombatState::onControlledMoved()
+	{
+		if (!getControlled().isCombatMovementEnabled())
+		{
+			return;
+		}
+
+		if (m_lastSpellEntry != nullptr && m_lastSpell != nullptr)
+		{
+			// Check if we are able to cast that spell now, and if so: Do it!
+			GameUnit *victim = getControlled().getVictim();
+			if (!victim) {
+				return;
+			}
+
+			// Check power requirement
+
+			// Check distance and line of sight
+			if (m_lastSpell->minrange() != 0.0f || m_lastSpell->maxrange() != 0.0f)
+			{
+				const float combatReach = victim->getFloatValue(unit_fields::CombatReach) + getControlled().getFloatValue(unit_fields::CombatReach);
+				const float distance = getControlled().getDistanceTo(*victim);
+				if ((m_lastSpell->minrange() > 0.0f && distance < m_lastSpell->minrange()) ||
+					(m_lastSpell->maxrange() > 0.0f && distance > m_lastSpell->maxrange() + combatReach))
+				{
+					// Still out of range, do nothing
+					return;
+				}
+			}
+
+			// Check for line of sight
+			if (!getControlled().isInLineOfSight(*victim))
+			{
+				// Still not in line of sight
+				return;
+			}
+
+			// Reset variables and choose next action (should automatically be old action in most cases)
+			m_customCooldown = 0;
+			m_lastSpellEntry = nullptr;
+			m_lastSpell = nullptr;
+			m_lastCastTime = 0;
+			chooseNextAction();
+		}
+		else
+		{
+			GameUnit *victim = getControlled().getVictim();
+			if (victim)
+			{
+				const float distance =
+					(victim->getLocation() - getControlled().getLocation()).squared_length();
+				if (distance <= (getControlled().getMeleeReach() * getControlled().getMeleeReach()))
+				{
+					m_onVictimMoved.disconnect();
+					getControlled().getMover().stopMovement();
+
+					m_nextActionCountdown.setEnd(getCurrentTime() + 500);
+				}
+			}
 		}
 	}
 }
