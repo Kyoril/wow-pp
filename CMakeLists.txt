@@ -103,6 +103,7 @@ project(WoW)
 	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 	
 	option(WOWPP_UNITY_BUILD "combine cpp files to accelerate compilation" OFF)
+	set(WOWPP_UNITY_FILES_PER_UNIT "50" CACHE STRING "Number of files per compilation unit in Unity build.")
 	include(Macros)
 	
 	# Find boost
