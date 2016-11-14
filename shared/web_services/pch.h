@@ -31,6 +31,13 @@
 #include <vector>
 #include <utility>
 #include <functional>
+#include <atomic>
+#include <forward_list>
+#include <initializer_list>
+#include <list>
+#include <iterator>
+#include <exception>
+#include <type_traits>
 
 // Boost Libraies
 #include <boost/noncopyable.hpp>

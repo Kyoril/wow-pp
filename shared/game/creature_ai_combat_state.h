@@ -52,6 +52,7 @@ namespace wowpp
 
 		typedef std::map<UInt64, ThreatEntry> ThreatList;
 		typedef std::map<UInt64, boost::signals2::scoped_connection> UnitSignals;
+		typedef std::map<UInt64, simple::scoped_connection> UnitSignals2;
 
 	public:
 
@@ -88,7 +89,7 @@ namespace wowpp
 
 		ThreatList m_threat;
 		UnitSignals m_killedSignals;
-		UnitSignals m_despawnedSignals;
+		UnitSignals2 m_despawnedSignals;
 		boost::signals2::scoped_connection m_onThreatened, m_onMoveTargetChanged;
 		boost::signals2::scoped_connection m_getThreat, m_setThreat, m_getTopThreatener;
 		boost::signals2::scoped_connection m_onUnitStateChanged;

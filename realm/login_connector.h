@@ -128,6 +128,6 @@ namespace wowpp
 		std::vector<PlayerLoginRequest> m_loginRequests;
 		UInt32 m_realmID;
 		Countdown m_keepAliveCountdown;
-		boost::signals2::scoped_connection m_onKeepAlive;
+		simple::scoped_connection m_onKeepAlive;
 	};
 }

@@ -2333,7 +2333,7 @@ int main(int argc, char* argv[])
 	LogStreamOptions logFileOptions = g_DefaultFileLogOptions;
 	logFileOptions.alwaysFlush = !configuration.isLogFileBuffering;
 
-	boost::signals2::scoped_connection genericLogConnection;
+	simple::scoped_connection genericLogConnection;
 	if (configuration.isLogActive)
 	{
 		const String fileName = configuration.logFileName;

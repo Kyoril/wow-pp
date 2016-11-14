@@ -374,6 +374,31 @@ namespace wowpp
 		}
 	}
 
+	void GameUnit::relocate(const math::Vector3 & position, float o, bool fire)
+	{
+		// Grab last fired location
+		auto lastPosition = getLastPosition();
+		auto lastO = getLastOrientation();
+
+		// Relocate the object
+		GameObject::relocate(position, o, fire);
+
+		if (fire)
+		{
+			// Stop spell casts that need to be stopped on movement
+			if (lastPosition != position)
+			{
+				m_spellCast->stopCast(game::spell_interrupt_flags::Movement);
+			}
+
+			// Notify auras about movement
+			getAuras().forEachAura([&lastPosition, &lastO](Aura &aura) -> bool {
+				aura.onTargetMoved(lastPosition, lastO);
+				return true;
+			});
+		}
+	}
+
 	void GameUnit::levelChanged(const proto::LevelEntry &levelInfo)
 	{
 		// Get race and class
@@ -1874,7 +1899,7 @@ namespace wowpp
 
 		// Raise moved event for aggro etc.
 		location.z -= 0.1f;
-		moved(*this, location, o);
+		//moved(*this, location, o);
 	}
 
 	void GameUnit::rewardExperience(GameUnit *victim, UInt32 experience)

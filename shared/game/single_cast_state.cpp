@@ -217,8 +217,8 @@ namespace wowpp
 			}
 
 			// Subscribe to damage events if the spell is cancelled on damage
-			m_onUserMoved = m_cast.getExecuter().moved.connect(
-			                    std::bind(&SingleCastState::onUserStartsMoving, this));
+			/*m_onUserMoved = m_cast.getExecuter().moved.connect(
+			                    std::bind(&SingleCastState::onUserStartsMoving, this));*/
 
 			// TODO: Subscribe to target removed and died events (in both cases, the cast may be interrupted)
 
@@ -286,8 +286,8 @@ namespace wowpp
 					m_onTargetRemoved = unitTarget->despawned.connect(std::bind(&SingleCastState::onTargetRemovedOrDead, this));
 				}
 
-				m_onUserMoved = m_cast.getExecuter().moved.connect(
-					std::bind(&SingleCastState::onUserStartsMoving, this));
+				/*m_onUserMoved = m_cast.getExecuter().moved.connect(
+					std::bind(&SingleCastState::onUserStartsMoving, this));*/
 			}
 
 			onCastFinished();
@@ -627,46 +627,43 @@ namespace wowpp
 						const GameTime timeMS = (dist / m_spell.speed()) * 1000;
 						if (timeMS >= 50)
 						{
+							// Calculate spell impact delay
+							auto strongTarget = std::static_pointer_cast<GameUnit>(unitTarget->shared_from_this());
+
 							// This will be executed on the impact
 							m_impactCountdown.ended.connect(
-							    [strongThis]() mutable
+							    [this, strongThis, strongTarget]() mutable
 							{
-								strongThis->applyAllEffects();
-								strongThis.reset();
+								const auto currentTime = getCurrentTime();
+								const auto &targetLoc = strongTarget->getLocation();
+
+								float percentage = static_cast<float>(currentTime - m_projectileStart) / static_cast<float>(m_projectileEnd - m_projectileStart);
+								math::Vector3 projectilePos = m_projectileOrigin.lerp(m_projectileDest, percentage);
+								const float dist = (targetLoc - projectilePos).length();
+								const GameTime timeMS = (dist / m_spell.speed()) * 1000;
+
+								m_projectileOrigin = projectilePos;
+								m_projectileDest = targetLoc;
+								m_projectileStart = currentTime;
+								m_projectileEnd = currentTime + timeMS;
+
+								if (timeMS >= 50)
+								{
+									m_impactCountdown.setEnd(currentTime + std::min<GameTime>(timeMS, 400));
+								}
+								else
+								{
+									strongThis->applyAllEffects();
+									strongTarget.reset();
+									strongThis.reset();
+								}
 							});
 
 							m_projectileStart = getCurrentTime();
 							m_projectileEnd = m_projectileStart + timeMS;
 							m_projectileOrigin = m_cast.getExecuter().getLocation();
-
-							m_onTargetMoved = unitTarget->moved.connect([this](GameObject & target, const math::Vector3 & oldPosition, float oldO) {
-								if (m_impactCountdown.running)
-								{
-									const auto currentTime = getCurrentTime();
-									auto targetLoc = target.getLocation();
-
-									float percentage = static_cast<float>(currentTime - m_projectileStart) / static_cast<float>(m_projectileEnd - m_projectileStart);
-									math::Vector3 projectilePos = m_projectileOrigin.lerp(oldPosition, percentage);
-									const float dist = (targetLoc - projectilePos).length();
-									const GameTime timeMS = (dist / m_spell.speed()) * 1000;
-
-									m_projectileOrigin = projectilePos;
-									m_projectileStart = currentTime;
-									m_projectileEnd = currentTime + timeMS;
-
-									if (timeMS >= 50)
-									{
-										m_impactCountdown.setEnd(currentTime + timeMS);
-									}
-									else
-									{
-										m_impactCountdown.cancel();
-										applyAllEffects();
-									}
-								}
-							});
-
-							m_impactCountdown.setEnd(m_projectileEnd);
+							m_projectileDest = unitTarget->getLocation();
+							m_impactCountdown.setEnd(m_projectileStart + std::min<GameTime>(timeMS, 400));
 						}
 						else
 						{
@@ -718,8 +715,6 @@ namespace wowpp
 	void SingleCastState::onTargetRemovedOrDead()
 	{
 		stopCast(game::spell_interrupt_flags::None);
-
-		m_onTargetMoved.disconnect();
 	}
 
 	void SingleCastState::onUserDamaged()

@@ -28,6 +28,13 @@
 #include <boost/date_time.hpp>
 #include <boost/iostreams/concepts.hpp>
 #include <boost/uuid/sha1.hpp>
+#include <atomic>
+#include <forward_list>
+#include <initializer_list>
+#include <list>
+#include <iterator>
+#include <exception>
+#include <type_traits>
 #include "common/sha1.h"
 
 #include "project_saver.h"

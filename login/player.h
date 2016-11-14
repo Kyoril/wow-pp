@@ -92,7 +92,7 @@ namespace wowpp
 		bool m_loginChallenge;					// Logon challenge sent?
 		bool m_reconnectChallenge;				// Reconnect challenge sent?
 		Countdown m_timeout;					// Timeout countdown
-		boost::signals2::scoped_connection m_onTimeout;
+		simple::scoped_connection m_onTimeout;
 
 	private:
 

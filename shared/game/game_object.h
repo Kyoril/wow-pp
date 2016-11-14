@@ -30,6 +30,7 @@
 #include "tile_index.h"
 #include "math/vector3.h"
 #include "common/macros.h"
+#include "common/simple.hpp"
 
 namespace wowpp
 {
@@ -234,18 +235,18 @@ namespace wowpp
 	public:
 
 		/// Fired when the object was added to a world instance and spawned.
-		boost::signals2::signal<void()> spawned;
+		simple::signal<void()> spawned;
 		/// Fired when the object was removed from a world instance and despawned.
 		/// WARNING: DO NOT DESTROY THE OBJECT HERE, AS MORE SIGNALS MAY BE CONNECTED WHICH WANT TO BE EXECUTED,
-		boost::signals2::signal<void(GameObject &)> despawned;
+		simple::signal<void(GameObject &)> despawned;
 		/// Fired when the object should be destroyed. The object should be destroyed after this call.
 		std::function<void(GameObject &)> destroy;
 		/// Fired when the object moved, but before it's tile changed. Note that this will trigger a tile change.
-		boost::signals2::signal<void(GameObject &, const math::Vector3 &, float)> moved;
+		//boost::signals2::signal<void(GameObject &, const math::Vector3 &, float)> moved;
 		/// Fired when a tile change is pending for this object, after it has been moved. Note that at this time,
 		/// the object does not belong to any tile and it's position already points to the new tile.
 		/// First parameter is a reference of the old tile, second references the new tile.
-		boost::signals2::signal<void(VisibilityTile &, VisibilityTile &)> tileChangePending;
+		simple::signal<void(VisibilityTile &, VisibilityTile &)> tileChangePending;
 
 	public:
 
@@ -461,6 +462,14 @@ namespace wowpp
 		/// Executed when this object is destroyed.
 		void onWorldInstanceDestroyed();
 
+		const math::Vector3 &getLastPosition() const {
+			return m_lastFiredPosition;
+		}
+
+		const float getLastOrientation() const {
+			return m_lastFiredO;
+		}
+
 	protected:
 
 		proto::Project &m_project;		// TODO: Maybe move this, but right now, it's comfortable to use this
@@ -469,7 +478,7 @@ namespace wowpp
 		UInt32 m_mapId;
 		math::Vector3 m_position;
 		math::Vector3 m_lastFiredPosition;	// This is needed for move signal
-		float m_o;
+		float m_o, m_lastFiredO;
 		UInt32 m_objectType;
 		UInt32 m_objectTypeId;
 		bool m_updated;

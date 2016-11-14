@@ -40,9 +40,15 @@
 #include <functional>
 #include <iomanip>
 #include <deque>
+#include <atomic>
+#include <forward_list>
+#include <initializer_list>
+#include <list>
+#include <iterator>
+#include <exception>
+#include <type_traits>
 
 // Boost Libraies
-#include <boost/signals2.hpp>
 #include <boost/optional.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/noncopyable.hpp>

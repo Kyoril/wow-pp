@@ -23,6 +23,7 @@
 
 #include "defines.h"
 #include "math/vector3.h"
+#include "common/simple.hpp"
 
 namespace wowpp
 {
@@ -105,6 +106,7 @@ namespace wowpp
 		GameCreature &m_controlled;
 		std::unique_ptr<CreatureAIState> m_state;
 		Home m_home;
-		boost::signals2::scoped_connection m_onSpawned, m_onKilled, m_onDamaged;
+		simple::scoped_connection m_onSpawned;
+		boost::signals2::scoped_connection m_onKilled, m_onDamaged;
 	};
 }

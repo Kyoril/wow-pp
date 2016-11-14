@@ -23,6 +23,7 @@
 
 #include "common/typedefs.h"
 #include "game/defines.h"
+#include "common/simple.hpp"
 
 namespace io
 {
@@ -220,7 +221,7 @@ namespace wowpp
 		/// will be created and this map will be cleared.
 		std::vector<ItemData> m_realmData;
 
-		std::map<UInt64, boost::signals2::scoped_connection> m_itemDespawnSignals;
+		std::map<UInt64, simple::scoped_connection> m_itemDespawnSignals;
 
 		std::map<UInt32, UInt8> m_setItems;
 	};

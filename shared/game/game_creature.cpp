@@ -487,7 +487,8 @@ namespace wowpp
 
 	void GameCreature::relocate(const math::Vector3 & position, float o, bool fire)
 	{
-		GameObject::relocate(position, o, fire);
+		// Relocate the object
+		GameUnit::relocate(position, o, fire);
 
 		if (fire)
 		{

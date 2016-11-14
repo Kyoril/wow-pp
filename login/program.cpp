@@ -70,7 +70,7 @@ namespace wowpp
 		LogStreamOptions logFileOptions = g_DefaultFileLogOptions;
 		logFileOptions.alwaysFlush = !m_configuration.isLogFileBuffering;
 
-		boost::signals2::scoped_connection genericLogConnection;
+		simple::scoped_connection genericLogConnection;
 		if (m_configuration.isLogActive)
 		{
 			const String fileName = m_configuration.logFileName;

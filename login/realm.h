@@ -74,7 +74,7 @@ namespace wowpp
 		bool m_authed;							// True if the user has been successfully authentificated.
 		auth::RealmEntry m_entry;				// Realm list entry
 		Countdown m_timeout;
-		boost::signals2::scoped_connection m_onTimeOut;
+		simple::scoped_connection m_onTimeOut;
 
 	private:
 

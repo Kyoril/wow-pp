@@ -174,7 +174,7 @@ namespace wowpp
 		const proto::UnitEntry &m_originalEntry;
 		const proto::UnitEntry *m_entry;
 		std::unique_ptr<CreatureAI> m_ai;
-		boost::signals2::scoped_connection m_onSpawned;
+		simple::scoped_connection m_onSpawned;
 		LootRecipients m_lootRecipients;
 		std::unique_ptr<LootInstance> m_unitLoot;
 		bool m_combatMovement;

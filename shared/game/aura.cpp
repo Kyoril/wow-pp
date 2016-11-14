@@ -2104,14 +2104,6 @@ namespace wowpp
 			});
 		}
 
-		// Watch for unit's movement if the aura should interrupt in this case
-		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Move) != 0 ||
-			(m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Turning) != 0)
-		{
-			m_targetMoved = m_target.moved.connect(
-				std::bind(&Aura::onTargetMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-		}
-
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Damage) != 0)
 		{
 			auto strongThis = shared_from_this();
@@ -2311,7 +2303,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::onTargetMoved(GameObject & /*unused*/, math::Vector3 oldPosition, float oldO)
+	void Aura::onTargetMoved(const math::Vector3 &oldPosition, float oldO)
 	{
 		// Determine flags
 		const bool removeOnMove = (m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Move) != 0;

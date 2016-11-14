@@ -801,6 +801,11 @@ namespace wowpp
 
 	public:
 
+		/// @copydoc GameObject::relocate
+		virtual void relocate(const math::Vector3 &position, float o, bool fire = true) override;
+
+	public:
+
 		/// 
 		virtual void levelChanged(const proto::LevelEntry &levelInfo);
 		/// 
@@ -871,7 +876,8 @@ namespace wowpp
 		const proto::FactionTemplateEntry *m_factionTemplate;
 		std::unique_ptr<SpellCast> m_spellCast;
 		Countdown m_despawnCountdown;
-		boost::signals2::scoped_connection m_victimDespawned, m_victimDied, m_fearMoved;
+		simple::scoped_connection m_victimDespawned;
+		boost::signals2::scoped_connection m_victimDied, m_fearMoved;
 		GameUnit *m_victim;
 		Countdown m_attackSwingCountdown;
 		GameTime m_lastMainHand, m_lastOffHand;

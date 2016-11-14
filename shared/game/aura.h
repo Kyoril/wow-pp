@@ -136,6 +136,9 @@ namespace wowpp
 
 		void updateStackCount(Int32 points);
 
+		/// Executed when the target of this aura moved.
+		void onTargetMoved(const math::Vector3 &oldPosition, float oldO);
+
 	protected:
 		
 		/// Updates the counter display (stack) of this aura.
@@ -275,8 +278,6 @@ namespace wowpp
 		void onExpired();
 		/// Executed when this aura ticks.
 		void onTick();
-		/// Executed when the target of this aura moved.
-		void onTargetMoved(GameObject &, math::Vector3 oldPosition, float oldO);
 		///
 		void setRemoved(GameUnit *remover);
 		/// 
@@ -288,7 +289,7 @@ namespace wowpp
 
 		const proto::SpellEntry &m_spell;
 		const proto::SpellEffect &m_effect;
-		boost::signals2::scoped_connection m_onExpire, m_onTick;
+		simple::scoped_connection m_onExpire, m_onTick;
 		boost::signals2::scoped_connection m_targetMoved, m_targetEnteredWater, m_targetStartedAttacking, m_targetStartedCasting, m_onTargetKilled;
 		boost::signals2::scoped_connection m_takenDamage, m_procKilled, m_onDamageBreak, m_onProc, m_onTakenAutoAttack;
 		std::shared_ptr<GameUnit> m_caster;

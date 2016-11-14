@@ -379,6 +379,17 @@ namespace wowpp
 		return multiplier;
 	}
 
+	void AuraContainer::forEachAura(std::function<bool(Aura&)> functor)
+	{
+		for (auto &aura : m_auras)
+		{
+			if (!functor(*aura))
+			{
+				return;
+			}
+		}
+	}
+
 	void AuraContainer::forEachAuraOfType(game::AuraType type, std::function<bool(Aura&)> functor)
 	{
 		for (auto &aura : m_auras)

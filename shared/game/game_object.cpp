@@ -38,6 +38,7 @@ namespace wowpp
 		: m_project(project)
 		, m_mapId(0)
 		, m_o(0.0f)
+		, m_lastFiredO(0.0f)
 		, m_objectType(0x01)
 		, m_objectTypeId(0x01)
 		, m_worldInstance(nullptr)
@@ -309,6 +310,7 @@ namespace wowpp
 		{
             auto lastFiredPosition = m_lastFiredPosition;
             m_lastFiredPosition = m_position;
+			m_lastFiredO = m_o;
     
 			// Notify grid
 			if (m_worldInstance)
@@ -327,7 +329,12 @@ namespace wowpp
 
 		m_o = o;
 
-		moved(*this, m_position, oldO);
+		// Notify grid
+		if (m_worldInstance)
+		{
+			m_worldInstance->notifyObjectMove(*this, m_lastFiredPosition);
+		}
+		//moved(*this, m_position, oldO);
 	}
 
 	void GameObject::setMapId(UInt32 mapId)

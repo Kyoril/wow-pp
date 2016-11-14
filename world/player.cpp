@@ -64,12 +64,17 @@ namespace wowpp
 	{
 		m_logoutCountdown.ended.connect(
 			std::bind(&Player::onLogout, this));
-		m_onSpawn = m_character->spawned.connect(
-			std::bind(&Player::onSpawn, this));
-		m_onDespawn = m_character->despawned.connect(
-			std::bind(&Player::onDespawn, this));
-		m_onTileChange = m_character->tileChangePending.connect(
-			std::bind(&Player::onTileChangePending, this, std::placeholders::_1, std::placeholders::_2));
+
+		// Connect character signals
+		m_characterSignals.append({
+			m_character->spawned.connect(
+				std::bind(&Player::onSpawn, this)),
+			m_character->despawned.connect(
+				std::bind(&Player::onDespawn, this)),
+			m_character->tileChangePending.connect(
+				std::bind(&Player::onTileChangePending, this, std::placeholders::_1, std::placeholders::_2))
+		});
+
 		m_onProfChanged = m_character->proficiencyChanged.connect(
 			std::bind(&Player::onProficiencyChanged, this, std::placeholders::_1, std::placeholders::_2));
 		m_onAtkSwingErr = m_character->autoAttackError.connect(
