@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1036</width>
-    <height>693</height>
+    <width>1342</width>
+    <height>838</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -62,7 +62,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1036</width>
+     <width>1342</width>
      <height>21</height>
     </rect>
    </property>
@@ -107,6 +107,7 @@
      <string>&amp;View</string>
     </property>
     <addaction name="actionUnit_Palette"/>
+    <addaction name="actionOutput_Log"/>
    </widget>
    <widget class="QMenu" name="menu_Tools">
     <property name="tearOffEnabled">
@@ -290,6 +291,46 @@
     </layout>
    </widget>
   </widget>
+  <widget class="QDockWidget" name="outputLogWidget">
+   <property name="windowTitle">
+    <string>Output Log</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_2">
+    <layout class="QVBoxLayout" name="verticalLayout_3">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QTextEdit" name="outputLogBox">
+       <property name="font">
+        <font>
+         <family>Consolas</family>
+         <pointsize>10</pointsize>
+        </font>
+       </property>
+       <property name="verticalScrollBarPolicy">
+        <enum>Qt::ScrollBarAlwaysOn</enum>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
   <action name="actionText">
    <property name="text">
     <string>Text</string>
@@ -383,6 +424,11 @@
   <action name="actionManage_Bookmarks">
    <property name="text">
     <string>Manage Bookmarks</string>
+   </property>
+  </action>
+  <action name="actionOutput_Log">
+   <property name="text">
+    <string>Output Log</string>
    </property>
   </action>
   <actiongroup name="Movement">

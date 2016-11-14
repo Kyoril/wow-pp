@@ -56,6 +56,7 @@ namespace wowpp
 						*m_sceneMgr.getRootSceneNode()
 						);
 
+#if 0
 					for (const auto &placement : addEvent->added.page->m2Placements)
 					{
 						// Code below not yet ready
@@ -128,6 +129,7 @@ namespace wowpp
 
 						node->scale(Ogre::Vector3(placement.scale / 1024.0f));
 					}
+#endif
 
 					m_terrainPages[addEvent->added.position] = page;
 				}

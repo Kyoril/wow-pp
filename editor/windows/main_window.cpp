@@ -44,6 +44,28 @@ namespace wowpp
 		{
 			m_ui->setupUi(this);
 
+			m_onLog = wowpp::g_DefaultLog.signal().connect(
+				[this](const wowpp::LogEntry & entry)
+			{
+				QString colorString;
+				switch (entry.level->color)
+				{
+					case log_color::Black: colorString = "#000"; break;
+					case log_color::White: colorString = "#fff"; break;
+					case log_color::Blue: colorString = "#0096ff"; break;
+					case log_color::Green: colorString = "#00ff1e"; break;
+					case log_color::Grey: colorString = "#ccc"; break;
+					case log_color::Purple: colorString = "#d800ff"; break;
+					case log_color::Red: colorString = "#ff0024"; break;
+					case log_color::Yellow: colorString = "#ffea00"; break;
+					default:
+						colorString = "#fff";
+						break;
+				}
+
+				m_ui->outputLogBox->insertHtml(QString("<font color=\"%0\">%1</font><br>").arg(colorString).arg(entry.message.c_str()));
+			});
+
 			// Connect slots
 			connect(m_ui->actionSave, SIGNAL(triggered()), &m_application, SLOT(saveUnsavedChanges()));
 			connect(m_ui->actionObjectEditor, SIGNAL(triggered()), &m_application, SLOT(showObjectEditor()));
@@ -172,6 +194,11 @@ namespace wowpp
 			QRegExp regExp(m_ui->unitPaletteFilter->text(), caseSensitivity, syntax);
 			m_objectFilter->setFilterRegExp(regExp);
 			m_unitFilter->setFilterRegExp(regExp);
+		}
+
+		void MainWindow::on_actionOutput_Log_triggered()
+		{
+			m_ui->outputLogWidget->show();
 		}
 
 		void MainWindow::on_actionLoadMap_triggered()
