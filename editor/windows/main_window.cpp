@@ -63,8 +63,11 @@ namespace wowpp
 						break;
 				}
 
-				m_ui->outputLogBox->insertHtml(QString("<font color=\"%0\">%1</font><br>").arg(colorString).arg(entry.message.c_str()));
+				QString text = QString("<font color=\"%0\">%1</font><br>").arg(colorString).arg(entry.message.c_str());
+				emit addLogEntry(text);
 			});
+
+			connect(this, SIGNAL(addLogEntry(const QString&)), this, SLOT(on_addLogEntry(const QString&)));
 
 			// Connect slots
 			connect(m_ui->actionSave, SIGNAL(triggered()), &m_application, SLOT(saveUnsavedChanges()));
@@ -199,6 +202,14 @@ namespace wowpp
 		void MainWindow::on_actionOutput_Log_triggered()
 		{
 			m_ui->outputLogWidget->show();
+		}
+
+		void MainWindow::on_addLogEntry(const QString &string)
+		{
+			QTextCursor cursor = m_ui->outputLogBox->textCursor();
+			cursor.movePosition(QTextCursor::End, QTextCursor::MoveAnchor);
+			m_ui->outputLogBox->insertHtml(string);
+			cursor.movePosition(QTextCursor::End, QTextCursor::MoveAnchor);
 		}
 
 		void MainWindow::on_actionLoadMap_triggered()

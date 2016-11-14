@@ -56,17 +56,20 @@ void QtOgreWindow::render(QPainter *painter)
 
 void QtOgreWindow::render()
 {
-	/*
-	How we tied in the render function for OGre3D with QWindow's render function. This is what gets call
-	repeatedly. Note that we don't call this function directly; rather we use the renderNow() function
-	to call this method as we don't want to render the Ogre3D scene unless everything is set up first.
-	That is what renderNow() does.
+	if (m_ogreRoot && m_ogreWindow && m_ogreCamera)
+	{
+		/*
+		How we tied in the render function for OGre3D with QWindow's render function. This is what gets call
+		repeatedly. Note that we don't call this function directly; rather we use the renderNow() function
+		to call this method as we don't want to render the Ogre3D scene unless everything is set up first.
+		That is what renderNow() does.
 
-	Theoretically you can have one function that does this check but from my experience it seems better
-	to keep things separate and keep the render function as simple as possible.
-	*/
-	Ogre::WindowEventUtilities::messagePump();
-	m_ogreRoot->renderOneFrame();
+		Theoretically you can have one function that does this check but from my experience it seems better
+		to keep things separate and keep the render function as simple as possible.
+		*/
+		Ogre::WindowEventUtilities::messagePump();
+		m_ogreRoot->renderOneFrame();
+	}
 }
 
 void QtOgreWindow::initialize()

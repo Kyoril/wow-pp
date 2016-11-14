@@ -48,6 +48,10 @@ namespace wowpp
 
 			explicit MainWindow(EditorApplication &app);
 
+		signals:
+
+			void addLogEntry(const QString &string);
+
 		private slots:
 
 			void on_actionLoadMap_triggered();
@@ -58,6 +62,8 @@ namespace wowpp
 			void on_actionUnit_Palette_triggered();
 			void on_unitPaletteFilter_editingFinished();
 			void on_actionOutput_Log_triggered();
+			
+			void on_addLogEntry(const QString &string);
 
 		protected:
 

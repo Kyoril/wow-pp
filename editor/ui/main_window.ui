@@ -53,7 +53,11 @@
      <number>0</number>
     </property>
     <item>
-     <widget class="QWidget" name="renderWidget" native="true"/>
+     <widget class="QWidget" name="renderWidget" native="true">
+      <property name="styleSheet">
+       <string notr="true">background-color: rgb(0, 0, 0);</string>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>
