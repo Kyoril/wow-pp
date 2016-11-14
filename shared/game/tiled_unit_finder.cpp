@@ -31,22 +31,15 @@ namespace wowpp
 {
 	namespace
 	{
-		size_t getGridLength(game::Distance worldLength, game::Distance tileWidth)
+		size_t getFinderGridLength(game::Distance worldLength, game::Distance tileWidth)
 		{
 			return std::max<size_t>(1, static_cast<size_t>(worldLength / tileWidth) * 64);
-		}
-
-		math::Vector3 getUnitPosition(const GameUnit &unit)
-		{
-			math::Vector3 location(unit.getLocation());
-
-			return location;
 		}
 	}
 
 	TiledUnitFinder::TiledUnitFinder(const proto::MapEntry &map, game::Distance tileWidth)
 		: UnitFinder(map)
-		, m_grid(getGridLength(533.33333f, tileWidth), getGridLength(533.33333f, tileWidth))
+		, m_grid(getFinderGridLength(533.33333f, tileWidth), getFinderGridLength(533.33333f, tileWidth))
 		, m_tileWidth(tileWidth)
 	{
 	}
@@ -54,7 +47,7 @@ namespace wowpp
 	void TiledUnitFinder::addUnit(GameUnit &findable)
 	{
 		assert(m_units.count(&findable) == 0);
-		const math::Vector3 unitPos = getUnitPosition(findable);
+		const math::Vector3 &unitPos = findable.getLocation();
 		const auto position = getTilePosition(game::planar(unitPos));
 		auto &tile = m_grid(position[0], position[1]);
 
@@ -165,7 +158,7 @@ namespace wowpp
 
 	TiledUnitFinder::Tile &TiledUnitFinder::getUnitsTile(const GameUnit &findable)
 	{
-		const math::Vector3 position = getUnitPosition(findable);
+		const math::Vector3 &position = findable.getLocation();
 		const TileIndex2D index = getTilePosition(game::planar(position));
 		return getTile(index);
 	}

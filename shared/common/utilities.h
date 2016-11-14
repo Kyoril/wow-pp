@@ -35,6 +35,24 @@ namespace wowpp
 		return std::min(max, std::max(value, min));
 	}
 
+	static int hexDigitValue(char c)
+	{
+		if (c >= '0' && c <= '9')
+		{
+			return (c - '0');
+		}
+
+		std::locale loc;
+		c = static_cast<char>(std::tolower(c, loc));
+
+		if (c >= 'a' && c <= 'f')
+		{
+			return (c - 'a') + 10;
+		}
+
+		return -1;
+	}
+
 	static inline std::string randomText(UInt32 length)
 	{
 		std::ostringstream strm;
