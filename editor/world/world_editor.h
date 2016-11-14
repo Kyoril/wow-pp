@@ -44,6 +44,8 @@ namespace Ogre
 
 namespace wowpp
 {
+	class Map;
+
 	namespace proto
 	{
 		class Project;
@@ -102,6 +104,7 @@ namespace wowpp
 			std::unique_ptr<TransformWidget> m_transformWidget;
 			boost::signals2::scoped_connection m_onTransformChanged;
 			paging::PagePosition m_previousPage;
+			std::unique_ptr<Map> m_mapInst;
 		};
 	}
 }

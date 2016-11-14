@@ -208,8 +208,9 @@ namespace wowpp
 		{
 			QTextCursor cursor = m_ui->outputLogBox->textCursor();
 			cursor.movePosition(QTextCursor::End, QTextCursor::MoveAnchor);
+			m_ui->outputLogBox->setTextCursor(cursor);
+
 			m_ui->outputLogBox->insertHtml(string);
-			cursor.movePosition(QTextCursor::End, QTextCursor::MoveAnchor);
 		}
 
 		void MainWindow::on_actionLoadMap_triggered()

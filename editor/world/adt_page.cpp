@@ -305,7 +305,7 @@ namespace wowpp
 				if (numLayers > 3)
 				{
 					ptr->seek(endPos);
-					return false;
+					return true;
 				}
 
 				// Calculate tile index

@@ -281,6 +281,8 @@ namespace wowpp
 			m_sceneMgr.setFog(Ogre::FOG_LINEAR, m_camera.getViewport()->getBackgroundColour(),
 				0.001f, 450.0f, 512.0f);
 
+			m_mapInst.reset(new Map(m_map, m_app.getConfiguration().dataPath));
+
 			// Create transform widget
 			m_transformWidget.reset(new TransformWidget(
 				m_app.getSelection(),
@@ -388,9 +390,7 @@ namespace wowpp
 					add.added.position = pos;
 					m_worldRenderer->handleEvent(terrain::editing::TerrainChangeEvent(add));
 					
-					std::unique_ptr<Map> mapInst(new Map(
-						m_map, m_app.getConfiguration().dataPath));
-					auto *tile = mapInst->getTile(TileIndex2D(pos[0], pos[1]));
+					auto *tile = m_mapInst->getTile(TileIndex2D(pos[0], pos[1]));
 					if (!tile)
 					{
 						WLOG("Could not load tile!");
@@ -403,7 +403,7 @@ namespace wowpp
 						math::Vector3 start(10303.5f, 889.999f, 1331.54f);
 						math::Vector3 end(10304.0f, 870.033f, 1334.65f);
 						std::vector<math::Vector3> points;
-						if (!mapInst->calculatePath(start, end, points))
+						if (!m_mapInst->calculatePath(start, end, points))
 						{
 							ELOG("Could not calculate path");
 						}
