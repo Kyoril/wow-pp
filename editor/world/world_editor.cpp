@@ -38,6 +38,7 @@
 #include "selected_creature_spawn.h"
 #include "selected_object_spawn.h"
 #include "windows/spawn_dialog.h"
+#include "deps/debug_utils/DetourDebugDraw.h"
 
 namespace wowpp
 {
@@ -60,6 +61,8 @@ namespace wowpp
 			{
 				workQueue.run();
 			});
+
+			m_debugDraw.reset(new OgreDebugDraw(m_sceneMgr));
 
 			// Move camera to first spawn position (if any)
 			if (!m_map.unitspawns().empty())
@@ -396,6 +399,15 @@ namespace wowpp
 						WLOG("Could not load tile!");
 						return;
 					}
+
+#if 0
+					const auto *navMesh = m_mapInst->getNavMesh();
+					if (navMesh)
+					{
+						m_debugDraw->clear();
+						duDebugDrawNavMesh(m_debugDraw.get(), *navMesh, 0);
+					}
+#endif
 
 					static bool added = false;
 					if (!added)

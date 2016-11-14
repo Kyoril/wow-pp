@@ -54,7 +54,7 @@ namespace wowpp
 			if (!boost::filesystem::exists(file))
 			{
 				// File does not exist
-				//DLOG("Could not load map file " << file << ": File does not exist");
+				DLOG("Could not load map file " << file << ": File does not exist");
 				return;
 			}
 
@@ -62,7 +62,7 @@ namespace wowpp
 			std::ifstream mapFile(file.c_str(), std::ios::in | std::ios::binary);
 			if (!mapFile)
 			{
-				//ELOG("Could not load map file " << file);
+				ELOG("Could not load map file " << file);
 				return;
 			}
 
@@ -103,18 +103,21 @@ namespace wowpp
 			}
 
 			// Setup filter
-			m_filter.setIncludeFlags(NAV_GROUND);
+			m_filter.setIncludeFlags(1 | 2 | 4 | 8 | 16);		// Testing...
 
 			navMeshsPerMap[entry.id()] = std::move(navMesh);
 			ILOG("Navigation mesh for map " << m_entry.id() << " initialized");
+		}
+	}
 
-			// Load all tiles
-			for (size_t x = 0; x < 64; ++x)
+	void Map::loadAllTiles()
+	{
+		// Load all tiles
+		for (size_t x = 0; x < 64; ++x)
+		{
+			for (size_t y = 0; y < 64; ++y)
 			{
-				for (size_t y = 0; y < 64; ++y)
-				{
-					getTile(TileIndex2D(x, y));
-				}
+				getTile(TileIndex2D(x, y));
 			}
 		}
 	}
@@ -590,14 +593,12 @@ namespace wowpp
 		math::Vector3 dtEnd = wowToRecastCoord(dest);
 
 		// No nav mesh loaded for this map?
-		if (!m_navMesh || !m_navQuery)
+		if (!m_navMesh)
 		{
-			// Build straight line from start to dest
-			out_path.push_back(dest);
-			return true;
+			ELOG("Could not find nav mesh!");
+			return false;
 		}
 
-#if 1
 		// TODO: Better solution for this, as there could be more tiles between which could eventually
 		// still be unloaded after this block
 		{
@@ -608,8 +609,8 @@ namespace wowpp
 			);
 			if (!getTile(startIndex))
 			{
-				out_path.push_back(dest);
-				return true;
+				//ELOG("Could not get source tile!");
+				return false;
 			}
 
 			// Load dest tile
@@ -621,12 +622,11 @@ namespace wowpp
 			{
 				if (!getTile(destIndex))
 				{
-					out_path.push_back(dest);
-					return true;
+					//ELOG("Could not get dest tile!");
+					return false;
 				}
 			}
 		}
-#endif
 		
 		// Make sure that source cell is loaded
 		int tx, ty;
@@ -634,8 +634,8 @@ namespace wowpp
 		if (!m_navMesh->getTileAt(tx, ty, 0))
 		{
 			// Not loaded (TODO: Handle this error?)
-			out_path.push_back(dest);
-			return true;
+			//ELOG("Could not get source tile on nav mesh");
+			return false;
 		}
 
 		// Make sure that target cell is loaded
@@ -643,8 +643,8 @@ namespace wowpp
 		if (!m_navMesh->getTileAt(tx, ty, 0))
 		{
 			// Not loaded (TODO: Handle this error?)
-			out_path.push_back(dest);
-			return true;
+			//ELOG("Could not get dest tile on nav mesh");
+			return false;
 		}
 
 		// Find polygon on start and end point
@@ -655,8 +655,8 @@ namespace wowpp
 		{
 			// Either start or target does not have a valid polygon, so we can't walk
 			// from the start point or to the target point at all! (TODO: Handle this error?)
-			out_path.push_back(dest);
-			return true;
+			//ELOG("Could not get source poly or dest poly");
+			return false;
 		}
 
 		// We check if the distance to the start or end polygon is too far and eventually correct the target
@@ -676,7 +676,7 @@ namespace wowpp
 		// Set to true to generate straight path
 		const bool correctPathHeights = true;
 
-		//if (!correctPathHeights)
+		if (!correctPathHeights)
 		{
 			// Both points are on the same polygon, so build a shortcut
 			// TODO: We don't want to build a shortcut here, but we still want to
@@ -707,8 +707,8 @@ namespace wowpp
 			dtStatusFailed(dtResult))
 		{
 			// Could not find path... TODO?
-			out_path.push_back(dest);
-			return true;
+			//ELOG("findPath failed with result " << dtResult);
+			return false;
 		}
 
 		// Resize path
@@ -765,7 +765,7 @@ namespace wowpp
 			dtResult = findSmoothPath(m_navQuery.get(), m_navMesh, &m_filter, &dtStart.x, &dtEnd.x, &tempPath[0], pathLength, smoothPath, &smoothPathSize, 74);
 			if (dtStatusFailed(dtResult))
 			{
-				//ELOG("Could not get smooth path");
+				//ELOG("Could not get smooth path: " << dtResult);
 				return false;
 			}
 			else

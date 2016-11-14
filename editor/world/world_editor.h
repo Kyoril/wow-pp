@@ -35,6 +35,7 @@
 #include "ogre_wrappers/entity_ptr.h"
 #include "transform_widget.h"
 #include "editor_application.h"
+#include "ogre_wrappers/debug_drawer.h"
 
 namespace Ogre
 {
@@ -105,6 +106,7 @@ namespace wowpp
 			boost::signals2::scoped_connection m_onTransformChanged;
 			paging::PagePosition m_previousPage;
 			std::unique_ptr<Map> m_mapInst;
+			std::unique_ptr<OgreDebugDraw> m_debugDraw;
 		};
 	}
 }

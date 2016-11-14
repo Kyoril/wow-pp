@@ -198,6 +198,8 @@ namespace wowpp
 		/// Creates a new instance of the map class and initializes it.
 		/// @entry The base entry of this map.
 		explicit Map(const proto::MapEntry &entry, boost::filesystem::path dataPath);
+		/// Loads all tiles at once.
+		void loadAllTiles();
 		/// Gets the map entry data of this map.
 		const proto::MapEntry &getEntry() const {
 			return m_entry;
@@ -220,6 +222,10 @@ namespace wowpp
 		dtPolyRef getPolyByLocation(const math::Vector3 &point, float &out_distance) const;
 		/// 
 		bool getRandomPointOnGround(const math::Vector3 &center, float radius, math::Vector3 &out_point);
+		/// Gets the nav mesh of this map id.
+		const dtNavMesh *getNavMesh() const {
+			return m_navMesh;
+		}
 
 	private:
 

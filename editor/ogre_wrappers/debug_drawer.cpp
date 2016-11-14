@@ -21,17 +21,33 @@
 
 #include "pch.h"
 #include "debug_drawer.h"
+#include "game/map.h"
+#include "log/default_log_levels.h"
+#include "DebugDraw.h"
 
 namespace wowpp
 {
 	OgreDebugDraw::OgreDebugDraw(Ogre::SceneManager & sceneManager)
 		: m_manager(sceneManager)
+		, m_type(DU_DRAW_POINTS)
 	{
 		m_node.reset(m_manager.getRootSceneNode()->createChildSceneNode());
 		m_object.reset(m_manager.createManualObject());
+		m_node->attachObject(m_object.get());
+
+		m_vertices.reserve(4);
+		m_colors.reserve(4);
+	}
+	void OgreDebugDraw::clear()
+	{
+		m_object->clear();
+		m_vertices.clear();
+		m_colors.clear();
 	}
 	void OgreDebugDraw::begin(duDebugDrawPrimitives prim, float size)
 	{
+		m_type = prim;
+
 		Ogre::RenderOperation::OperationType ot;
 		switch (prim)
 		{
@@ -40,26 +56,69 @@ namespace wowpp
 			case DU_DRAW_TRIS: ot = Ogre::RenderOperation::OT_TRIANGLE_LIST;	break;
 			case DU_DRAW_QUADS: ot = Ogre::RenderOperation::OT_TRIANGLE_LIST;	break;
 			default:
-				ot = Ogre::RenderOperation::OT_TRIANGLE_LIST;
+				ot = Ogre::RenderOperation::OT_POINT_LIST;
 				break;
 		}
-		m_object->begin("", ot);
+		m_object->begin("Editor/DetourDebug", ot);
 	}
 	void OgreDebugDraw::vertex(const float * pos, unsigned int color)
 	{
-		m_object->position(pos[0], pos[1], pos[2]);
+		vertex(pos[0], pos[1], pos[2], color);
 	}
 	void OgreDebugDraw::vertex(const float x, const float y, const float z, unsigned int color)
 	{
-		m_object->position(x, y, z);
+		Vertex v = recastToWoWCoord(Vertex(x, y, z));
+
+		Ogre::ColourValue c;
+		duIntToCol(color, &c.r);
+
+		switch (m_type)
+		{
+			case DU_DRAW_LINES:
+			case DU_DRAW_POINTS:
+			case DU_DRAW_TRIS:
+				m_object->position(v.x, v.y, v.z);
+				m_object->colour(c);
+				break;
+			case DU_DRAW_QUADS:
+			{
+				// Append to the list
+				m_vertices.push_back(std::move(v));
+				m_colors.push_back(std::move(c));
+
+				if (m_vertices.size() == 4)
+				{
+					// Append data
+					m_object->position(m_vertices[0].x, m_vertices[0].y, m_vertices[0].z);
+					m_object->colour(m_colors[0]);
+					m_object->position(m_vertices[1].x, m_vertices[1].y, m_vertices[1].z);
+					m_object->colour(m_colors[1]);
+					m_object->position(m_vertices[2].x, m_vertices[2].y, m_vertices[2].z);
+					m_object->colour(m_colors[2]);
+
+					m_object->position(m_vertices[0].x, m_vertices[0].y, m_vertices[0].z);
+					m_object->colour(m_colors[0]);
+					m_object->position(m_vertices[2].x, m_vertices[2].y, m_vertices[2].z);
+					m_object->colour(m_colors[2]);
+					m_object->position(m_vertices[3].x, m_vertices[3].y, m_vertices[3].z);
+					m_object->colour(m_colors[3]);
+
+					// Empty list
+					m_vertices.clear();
+					m_colors.clear();
+				}
+
+				break;
+			}
+		}
 	}
 	void OgreDebugDraw::vertex(const float * pos, unsigned int color, const float * uv)
 	{
-		m_object->position(pos[0], pos[1], pos[2]);
+		vertex(pos[0], pos[1], pos[2], color);
 	}
 	void OgreDebugDraw::vertex(const float x, const float y, const float z, unsigned int color, const float u, const float v)
 	{
-		m_object->position(x, y, z);
+		vertex(x, y, z, color);
 	}
 	void OgreDebugDraw::end()
 	{

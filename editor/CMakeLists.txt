@@ -28,6 +28,11 @@ cmake_minimum_required(VERSION 2.8.11)
 	
 	find_package(OGRE REQUIRED)
 	include_directories(${OGRE_INCLUDE_DIRS})
+	
+	# Needed for debug usage
+	include_directories("${CMAKE_SOURCE_DIR}/deps/debug_utils")
+	include_directories("${CMAKE_SOURCE_DIR}/deps/detour")
+	include_directories("${CMAKE_SOURCE_DIR}/deps/detour_tile_cache")
 		
 	# Enable CMake automatic moc file generation
 	set(CMAKE_AUTOMOC OFF)

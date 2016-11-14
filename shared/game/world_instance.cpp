@@ -113,6 +113,9 @@ namespace wowpp
 			if (mapIt != MapData.end()) {
 				m_map = &mapIt->second;
 			}
+
+			assert(m_map);
+			m_map->loadAllTiles();
 		}
 		else
 		{

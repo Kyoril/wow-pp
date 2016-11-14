@@ -25,8 +25,18 @@
 #include "scene_node_ptr.h"
 #include "manual_object_ptr.h"
 
+namespace Ogre
+{
+	class ColourValue;
+}
+
 namespace wowpp
 {
+	namespace math
+	{
+		struct Vector3;
+	}
+
 	/// This class implements detours debug drawer interface and translates this into Ogre3D.
 	class OgreDebugDraw : public duDebugDraw
 	{
@@ -35,6 +45,8 @@ namespace wowpp
 		/// Default constructor.
 		/// @param sceneManager The scene manager which renders everything.
 		OgreDebugDraw(Ogre::SceneManager &sceneManager);
+
+		void clear();
 
 		/// @copydoc duDebugDraw::depthMask(bool state)
 		virtual void depthMask(bool state) override {}
@@ -59,5 +71,8 @@ namespace wowpp
 		Ogre::SceneManager &m_manager;
 		ogre_utils::SceneNodePtr m_node;
 		ogre_utils::ManualObjectPtr m_object;
+		std::vector<math::Vector3> m_vertices;
+		std::vector<Ogre::ColourValue> m_colors;
+		duDebugDrawPrimitives m_type;
 	};
 }
