@@ -117,7 +117,7 @@ namespace wowpp
 				for (GameUnit *const element : iterationCopyTile.getElements())
 				{
 					assert(element);
-					const math::Vector3 elementPos = getUnitPosition(*element);
+					const math::Vector3 &elementPos = element->getLocation();
 					if (shape.isPointInside(game::planar(elementPos)))
 					{
 						if (!resultHandler(*element))
