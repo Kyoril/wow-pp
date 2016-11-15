@@ -872,7 +872,6 @@ namespace
 
 		// Process Doodads
 		MeshData doodadMesh;
-#if 0
 		{
 			DLOG("\tTile has " << adt.getMDDFChunk().entries.size() << " doodads");
 
@@ -906,13 +905,24 @@ namespace
 				// Entry placement
 				auto &m2 = m2s[entry.mmidEntry];
 				
-#define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * (x) / -180.0)
-				math::Matrix3 rotMat = math::Matrix3::fromEulerAnglesXYZ(
-					WOWPP_DEG_TO_RAD(-entry.rotation[2]), WOWPP_DEG_TO_RAD(entry.rotation[0]), WOWPP_DEG_TO_RAD(-entry.rotation[1]));
+#define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * (x) / 180.0)
+				constexpr float mid = 32.f * MeshSettings::AdtSize;
 
-				math::Vector3 position(entry.position.z, entry.position.x, entry.position.y);
-				position.x = (32 * 533.3333f) - position.x;
-				position.y = (32 * 533.3333f) - position.y;
+				const float rotX = WOWPP_DEG_TO_RAD(entry.rotation[2]);
+				const float rotY = WOWPP_DEG_TO_RAD(entry.rotation[0]);
+				const float rotZ = WOWPP_DEG_TO_RAD(entry.rotation[1] + 180.0f);
+
+				const float scale = entry.scale / 1024.0f;
+
+				math::Matrix4 matZ; matZ.fromAngleAxis(math::Vector3(0.0f, 0.0f, 1.0f), rotZ);
+				math::Matrix4 matY; matY.fromAngleAxis(math::Vector3(0.0f, 1.0f, 0.0f), rotY);
+				math::Matrix4 matX; matX.fromAngleAxis(math::Vector3(1.0f, 0.0f, 0.0f), rotX);
+				math::Matrix4 matFinal = 
+					math::Matrix4::getTranslation(mid - entry.position[2], mid - entry.position[0], entry.position[1]) * 
+					math::Matrix4::getScale(scale, scale, scale) * 
+					matZ * 
+					matY * 
+					matX;
 #undef WOWPP_DEG_TO_RAD
 				
 				// Transform vertices
@@ -923,7 +933,7 @@ namespace
 				for (auto &vert : verts)
 				{
 					// Transform vertex and push it to the list
-					math::Vector3 transformed = (rotMat * vert) + position;
+					math::Vector3 transformed = (matFinal * vert);
 					doodadMesh.solidVerts.push_back(-transformed.y);
 					doodadMesh.solidVerts.push_back(transformed.z);
 					doodadMesh.solidVerts.push_back(-transformed.x);
@@ -941,13 +951,12 @@ namespace
 				}
 			}
 		}
-#endif
 
 #ifdef TILE_DEBUG_OUTPUT
 		// Serialize mesh data for debugging purposes
 		serializeMeshData("_adt", mapId, tileX, tileY, adtMesh);
 		serializeMeshData("_wmo", mapId, tileX, tileY, wmoMesh);
-		//serializeMeshData("_doodad", mapId, tileX, tileY, doodadMesh);
+		serializeMeshData("_doodad", mapId, tileX, tileY, doodadMesh);
 #endif
 
 		// Adjust min and max z values
@@ -1092,7 +1101,7 @@ namespace
 		switch (mapId)
 		{
 			case 0:
-				if (cellY != 32 || cellX != 48)
+				if (cellY != 29 || cellX != 28)
 					return false;
 				break;
 			case 1:
@@ -1341,7 +1350,7 @@ namespace
 		}
 
 #ifdef TILE_DEBUG_OUTPUT
-		if (mapId != 1)
+		if (mapId != 0)
 		{
 			return true;
 		}

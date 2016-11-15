@@ -57,7 +57,7 @@ namespace wowpp
 				math::Vector3 vOrig;
 				m_reader.readPOD(vOrig);
 
-				v = math::Vector3(vOrig.x, vOrig.z, -vOrig.y);
+				v = math::Vector3(vOrig.x, vOrig.y, vOrig.z);
 			}
 
 			m_indices.resize(header.nBoundingTriangles);		// Number of indices, not number of triangles
