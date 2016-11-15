@@ -509,7 +509,7 @@ namespace wowpp
 		// If we are moving, check if the current TARGET LOCATION is not in range instead of checking
 		// if the current location is not in attack range. Only THEN we need to calculate a new movement
 		// path.
-		currentLocation = (mover.isMoving() ? mover.getTarget() : mover.getCurrentLocation());
+		currentLocation = mover.getTarget();// (mover.isMoving() ? mover.getTarget() : mover.getCurrentLocation());
 
 		math::Vector3 newTargetLocation = target.getLocation();
 		const float distance =

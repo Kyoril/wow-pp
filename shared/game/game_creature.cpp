@@ -485,6 +485,12 @@ namespace wowpp
 		m_waypoints = waypoints;
 	}
 
+	float GameCreature::getBaseSpeed(MovementType type) const
+	{
+		// TODO: Speed modifier setup in unit entry and/or unit spawn point settings
+		return GameUnit::getBaseSpeed(type) * (type == movement_type::Run ? 1.14286f : 1.0f);
+	}
+
 	void GameCreature::relocate(const math::Vector3 & position, float o, bool fire)
 	{
 		// Relocate the object

@@ -33,6 +33,7 @@
 #include "unit_finder.h"
 #include "unit_watcher.h"
 #include "common/make_unique.h"
+#include "unit_mover.h"
 
 namespace wowpp
 {
@@ -65,6 +66,10 @@ namespace wowpp
 				m_state->onDamage(*attacker);
 			}
 		});
+
+		// Initialize the units mover
+		auto &mover = m_controlled.getMover();
+		mover.moveTo(mover.getCurrentLocation());
 
 		// Enter the preparation state
 		auto state = make_unique<CreatureAIPrepareState>(*this);

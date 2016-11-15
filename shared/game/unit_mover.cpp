@@ -120,6 +120,14 @@ namespace wowpp
 
 	bool UnitMover::moveTo(const math::Vector3 &target, float customSpeed)
 	{
+		auto &moved = getMoved();
+
+		// Dead units can't move
+		if (!moved.canMove())
+		{
+			return false;
+		}
+
 		// Get current location
 		m_customSpeed = true;
 		auto currentLoc = getCurrentLocation();
@@ -129,11 +137,12 @@ namespace wowpp
 			DLOG("New target: " << target << " (Current: " << currentLoc << ")");
 		}
 
-		auto &moved = getMoved();
+		m_start = currentLoc;
 
 		// Do we really need to move?
 		if (target == currentLoc)
 		{
+			m_target = target;
 			stopMovement();
 
 			// Fire signal since we reached our target
@@ -159,12 +168,6 @@ namespace wowpp
 			// we won't notify the grid about this for performance reasons (since the next
 			// movement update tick will do this for us automatically).
 			moved.relocate(currentLoc, o, false);
-		}
-
-		// Dead units can't move
-		if (!moved.canMove())
-		{
-			return false;
 		}
 
 		auto *world = moved.getWorldInstance();

@@ -135,6 +135,8 @@ namespace wowpp
 
 		void setWaypoints(const std::vector<proto::Waypoint> &waypoints);
 
+		virtual float getBaseSpeed(MovementType type) const override;
+
 	public:
 
 		/// @copydoc GameObject::relocate

@@ -665,7 +665,7 @@ namespace wowpp
 		/// 
 		float getSpeed(MovementType type) const;
 		/// 
-		float getBaseSpeed(MovementType type) const;
+		virtual float getBaseSpeed(MovementType type) const;
 
 		/// 
 		void addMechanicImmunity(UInt32 mechanic);
