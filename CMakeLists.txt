@@ -25,6 +25,17 @@ cmake_minimum_required(VERSION 2.8)
 # This is the main project which contains all subprojects
 project(WoW)
 
+	option(WOWPP_WITH_RELEASE_ASSERTS "Enables assertions in release builds." OFF)
+	if (WOWPP_WITH_RELEASE_ASSERTS)
+		if(MSVC)
+			set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "")
+			set(CMAKE_CXX_FLAGS_RELEASE "")
+		else()
+			set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3")
+			set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+		endif()
+	endif()
+
 	# Enable solution folders in msvc
 	if(MSVC)
 		set_property(GLOBAL PROPERTY USE_FOLDERS ON)

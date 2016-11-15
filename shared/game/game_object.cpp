@@ -313,28 +313,20 @@ namespace wowpp
 			m_lastFiredO = m_o;
     
 			// Notify grid
-			if (m_worldInstance)
+			if (m_worldInstance &&
+				lastFiredPosition != m_position)
 			{
 				m_worldInstance->notifyObjectMove(*this, lastFiredPosition);
 			}
-
-			// Notify others (TOOD: Remove this)
-			//moved(*this, lastFiredPosition, oldO);
         }
 	}
 
 	void GameObject::setOrientation(float o)
 	{
 		float oldO = m_o;
-
 		m_o = o;
 
-		// Notify grid
-		if (m_worldInstance)
-		{
-			m_worldInstance->notifyObjectMove(*this, m_lastFiredPosition);
-		}
-		//moved(*this, m_position, oldO);
+		// TODO
 	}
 
 	void GameObject::setMapId(UInt32 mapId)

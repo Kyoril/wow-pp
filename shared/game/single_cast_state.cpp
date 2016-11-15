@@ -402,6 +402,9 @@ namespace wowpp
 			return;
 		}
 
+		// Raise event
+		getCasting().ended(success);
+
 		if (success)
 		{
 			// Instead of self-targeting, use unit target

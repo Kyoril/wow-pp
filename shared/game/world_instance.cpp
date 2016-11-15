@@ -45,10 +45,8 @@ namespace wowpp
 	{
 		static TileIndex2D getObjectTile(GameObject &object, VisibilityGrid &grid)
 		{
-			math::Vector3 location(object.getLocation());
-
 			TileIndex2D gridIndex;
-			grid.getTilePosition(location, gridIndex[0], gridIndex[1]);
+			grid.getTilePosition(object.getLocation(), gridIndex[0], gridIndex[1]);
 
 			return gridIndex;
 		}
@@ -356,10 +354,6 @@ namespace wowpp
 				m_unitFinder->addUnit(*unit);
 			}
 		}
-
-		// Watch for object location changes
-		/*added.moved.connect(
-		    std::bind(&WorldInstance::onObjectMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));*/
 	}
 
 	void WorldInstance::removeGameObject(GameObject &remove)

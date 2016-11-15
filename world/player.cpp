@@ -691,6 +691,7 @@ namespace wowpp
 		{
 			for (auto *object : tile.getGameObjects().getElements())
 			{
+				assert(object);
 				if (!object->canSpawnForCharacter(*m_character))
 				{
 					continue;
@@ -720,6 +721,8 @@ namespace wowpp
 		{
 			for (auto *obj : tile.getGameObjects().getElements())
 			{
+				assert(obj);
+
 				if (!obj->canSpawnForCharacter(*m_character))
 				{
 					continue;
