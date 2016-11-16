@@ -142,7 +142,7 @@ namespace wowpp
 		// Do we really need to move?
 		if (target == currentLoc)
 		{
-			m_target = target;
+			m_target = target + math::Vector3(0.0f, 0.0f, 0.4f);
 			stopMovement();
 
 			// Fire signal since we reached our target
@@ -209,7 +209,7 @@ namespace wowpp
 
 		// Use new values
 		m_start = currentLoc;
-		m_target = path.back();
+		m_target = path.back() + math::Vector3(0.0f, 0.0f, 0.4f);
 
 		// Calculate time of arrival
 		m_moveEnd = moveTime;

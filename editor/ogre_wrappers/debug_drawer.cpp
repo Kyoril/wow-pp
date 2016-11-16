@@ -51,7 +51,7 @@ namespace wowpp
 		Ogre::RenderOperation::OperationType ot;
 		switch (prim)
 		{
-			case DU_DRAW_LINES: ot = Ogre::RenderOperation::OT_LINE_STRIP;		break;
+			case DU_DRAW_LINES: ot = Ogre::RenderOperation::OT_LINE_LIST;		break;
 			case DU_DRAW_POINTS: ot = Ogre::RenderOperation::OT_POINT_LIST;		break;
 			case DU_DRAW_TRIS: ot = Ogre::RenderOperation::OT_TRIANGLE_LIST;	break;
 			case DU_DRAW_QUADS: ot = Ogre::RenderOperation::OT_TRIANGLE_LIST;	break;

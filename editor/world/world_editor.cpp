@@ -296,6 +296,15 @@ namespace wowpp
 			m_onTransformChanged = m_app.transformToolChanged.connect(
 				std::bind(&WorldEditor::onTransformToolChanged, this, std::placeholders::_1));
 			onTransformToolChanged(m_app.getTransformTool());
+
+			m_onShowNavMesh = m_app.showNavMesh.connect([this]() {
+				const auto *navMesh = m_mapInst->getNavMesh();
+				if (navMesh)
+				{
+					m_debugDraw->clear();
+					duDebugDrawNavMesh(m_debugDraw.get(), *navMesh, 0);
+				}
+			});
 		}
 
 		WorldEditor::~WorldEditor()
@@ -401,14 +410,6 @@ namespace wowpp
 					}
 
 #if 0
-					const auto *navMesh = m_mapInst->getNavMesh();
-					if (navMesh)
-					{
-						m_debugDraw->clear();
-						duDebugDrawNavMesh(m_debugDraw.get(), *navMesh, 0);
-					}
-#endif
-
 					static bool added = false;
 					if (!added)
 					{
@@ -451,6 +452,7 @@ namespace wowpp
 							}
 						}
 					}
+#endif
 
 					if (tile->collision.triangleCount == 0)
 					{

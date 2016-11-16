@@ -125,6 +125,8 @@
     </property>
     <addaction name="actionExtractDBC"/>
     <addaction name="actionBuildNav"/>
+    <addaction name="separator"/>
+    <addaction name="actionDisplayNavMesh"/>
    </widget>
    <widget class="QMenu" name="menu_Help">
     <property name="tearOffEnabled">
@@ -433,6 +435,11 @@
   <action name="actionOutput_Log">
    <property name="text">
     <string>Output Log</string>
+   </property>
+  </action>
+  <action name="actionDisplayNavMesh">
+   <property name="text">
+    <string>Display Navigation Mesh</string>
    </property>
   </action>
   <actiongroup name="Movement">

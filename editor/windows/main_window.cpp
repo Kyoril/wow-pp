@@ -204,6 +204,11 @@ namespace wowpp
 			m_ui->outputLogWidget->show();
 		}
 
+		void MainWindow::on_actionDisplayNavMesh_triggered()
+		{
+			m_application.showNavMesh();
+		}
+
 		void MainWindow::on_addLogEntry(const QString &string)
 		{
 			QTextCursor cursor = m_ui->outputLogBox->textCursor();

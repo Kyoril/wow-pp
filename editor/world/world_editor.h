@@ -107,6 +107,7 @@ namespace wowpp
 			paging::PagePosition m_previousPage;
 			std::unique_ptr<Map> m_mapInst;
 			std::unique_ptr<OgreDebugDraw> m_debugDraw;
+			simple::scoped_connection m_onShowNavMesh;
 		};
 	}
 }
