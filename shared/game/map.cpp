@@ -310,7 +310,7 @@ namespace wowpp
 #define MAX_PATH_LENGTH         74
 #define MAX_POINT_PATH_LENGTH   74
 #define SMOOTH_PATH_STEP_SIZE   4.0f
-#define SMOOTH_PATH_SLOP        0.3f
+#define SMOOTH_PATH_SLOP        0.08f
 #define VERTEX_SIZE       3
 #define INVALID_POLYREF   0
 
@@ -492,7 +492,7 @@ namespace wowpp
 			unsigned char steerPosFlag;
 			dtPolyRef steerPosRef = 0;
 
-			if (!getSteerTarget(query, iterPos, targetPos, SMOOTH_PATH_SLOP, polys, npolys, steerPos, steerPosFlag, steerPosRef))
+			if (!getSteerTarget(query, iterPos, targetPos, SMOOTH_PATH_STEP_SIZE, polys, npolys, steerPos, steerPosFlag, steerPosRef))
 				break;
 
 			const bool endOfPath = !!(steerPosFlag & DT_STRAIGHTPATH_END);
@@ -586,6 +586,84 @@ namespace wowpp
 		return nsmoothPath < MAX_POINT_PATH_LENGTH ? DT_SUCCESS : DT_FAILURE;
 	}
 
+	dtStatus smoothPath(dtNavMeshQuery &query, dtNavMesh &navMesh, dtQueryFilter &filter, std::vector<dtPolyRef> &polyPath, std::vector<math::Vector3> &waypoints)
+	{
+		static constexpr float PointDist = 4.0f;	// One point every PointDist units
+		static constexpr float Extents[3] = { 1.0f, 80.0f, 1.0f };
+
+		// Travel along the path and insert new points in between, start with the second point
+		size_t polyIndex = 0;
+		for (size_t p = 1; p < waypoints.size(); ++p)
+		{
+			// Get the previous point
+			const auto &prevPoint = waypoints[p - 1];
+			const auto thisPoint = waypoints[p];		// Copy this one as we will insert waypoints before this point eventually
+
+			// Get the direction vector and the distance
+			auto dir = thisPoint - prevPoint;
+			auto dist = dir.normalize();
+			const Int32 count = dist / PointDist;
+			const float step = dist / count;
+
+			// Now insert new points
+			for (Int32 n = 1; n < count; n++)
+			{
+				const float d = n * step;
+
+				auto newPoint = prevPoint + (dir * d);
+
+				math::Vector3 closestPoint;
+				dtPolyRef nearestPoly = 0;
+				if (dtStatusFailed(query.findNearestPoly(&newPoint.x, Extents, &filter, &nearestPoly, &closestPoint.x)))
+				{
+					//WLOG("Could not find nearest poly");
+				}
+
+				// Now do the height correction
+				if (dtStatusFailed(query.getPolyHeight(nearestPoly, &closestPoint.x, &newPoint.y)))
+				{
+					int resultCount = 0;
+					std::vector<dtPolyRef> refs(10);
+					if (dtStatusFailed(query.findPolysAroundCircle(nearestPoly, &closestPoint.x, 4.0f, &filter, &refs[0], nullptr, nullptr, &resultCount, refs.size())))
+					{
+						//WLOG("Failed to find polys around circle!");
+					}
+					else
+					{
+						bool found = false;
+						for (int i = 0; i < resultCount; ++i)
+						{
+							if (!dtStatusFailed(query.getPolyHeight(refs[i], &closestPoint.x, &newPoint.y)))
+							{
+								newPoint.y += 0.375f;
+								found = true;
+								break;
+							}
+						}
+
+						if (!found)
+						{
+							//WLOG("Could not find height on neighbor polys...");
+						}
+					}
+				}
+				else
+				{
+					newPoint.y += 0.375f;
+				}
+
+				waypoints.insert(waypoints.begin() + p, newPoint);
+
+				// Next point
+				p++;
+			}
+
+			polyIndex++;
+		}
+
+		return DT_SUCCESS;
+	}
+
 	bool Map::calculatePath(const math::Vector3 & source, math::Vector3 dest, std::vector<math::Vector3>& out_path)
 	{
 		// Convert the given start and end point into recast coordinate system
@@ -672,21 +750,9 @@ namespace wowpp
 			}
 		}
 
-
 		// Set to true to generate straight path
-		const bool correctPathHeights = true;
-
-		if (!correctPathHeights)
-		{
-			// Both points are on the same polygon, so build a shortcut
-			// TODO: We don't want to build a shortcut here, but we still want to
-			// create a smooth path so that z value will be corrected
-			if (startPoly == endPoly)
-			{
-				out_path.push_back(dest);
-				return true;
-			}
-		}
+		const bool correctPathHeights = false;
+		dtStatus dtResult;
 
 		// Buffer to store polygons that need to be used for our path
 		const int maxPathLength = 74;
@@ -694,7 +760,7 @@ namespace wowpp
 
 		// This will store the resulting path length (number of polygons)
 		int pathLength = 0;
-		dtStatus dtResult = m_navQuery->findPath(
+		dtResult = m_navQuery->findPath(
 			startPoly,				// start polygon
 			endPoly,				// end polygon
 			&dtStart.x,				// start position
@@ -707,13 +773,13 @@ namespace wowpp
 			dtStatusFailed(dtResult))
 		{
 			// Could not find path... TODO?
-			//ELOG("findPath failed with result " << dtResult);
+			ELOG("findPath failed with result " << dtResult);
 			return false;
 		}
 
 		// Resize path
 		tempPath.resize(pathLength);
-
+		
 		if (!correctPathHeights)
 		{
 			// Buffer to store path coordinates
@@ -721,6 +787,7 @@ namespace wowpp
 			std::vector<dtPolyRef> tempPathPolys(maxPathLength);
 			int tempPathCoordsCount = 0;
 
+			// Find a straight path
 			dtResult = m_navQuery->findStraightPath(
 				&dtStart.x,							// Start position
 				&dtEnd.x,							// End position
@@ -731,11 +798,11 @@ namespace wowpp
 				&tempPathPolys[0],					// [out] Polygon id for each point.
 				&tempPathCoordsCount,				// [out] used coordinate count in vertices (3 floats = 1 vert)
 				maxPathLength,						// max coordinate count
-				DT_STRAIGHTPATH_ALL_CROSSINGS		// options
+				0									// options
 			);
 			if (dtStatusFailed(dtResult))
 			{
-				out_path.push_back(dest);
+				ELOG("findStraightPath failed");
 				return false;
 			}
 
@@ -743,12 +810,12 @@ namespace wowpp
 			tempPathCoords.resize(tempPathCoordsCount);
 			tempPathPolys.resize(tempPathCoordsCount);
 
-			// Not enough waypoints generated or waypoint generation completely failed?
-			if (tempPathCoordsCount < 1)
+			// Smooth out the path
+			dtResult = smoothPath(*m_navQuery, *m_navMesh, m_filter, tempPathPolys, tempPathCoords);
+			if (dtStatusFailed(dtResult))
 			{
-				// TODO: Handle this error?
-				out_path.push_back(dest);
-				return true;
+				ELOG("Failed to smooth out existing path.");
+				return false;
 			}
 
 			// Append waypoints

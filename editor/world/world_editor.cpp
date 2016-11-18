@@ -53,6 +53,7 @@ namespace wowpp
             , m_light(nullptr)
 			, m_project(project)
 			, m_previousPage(std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max())
+			, m_startSet(false)
 		{
 			// Create worker thread
 			boost::asio::io_service &workQueue = m_workQueue;
@@ -409,51 +410,6 @@ namespace wowpp
 						return;
 					}
 
-#if 0
-					static bool added = false;
-					if (!added)
-					{
-						math::Vector3 start(10303.5f, 889.999f, 1331.54f);
-						math::Vector3 end(10304.0f, 870.033f, 1334.65f);
-						std::vector<math::Vector3> points;
-						if (!m_mapInst->calculatePath(start, end, points))
-						{
-							ELOG("Could not calculate path");
-						}
-						else
-						{
-							if (points.size() > 1)
-							{
-								// Create collision for this map
-								Ogre::ManualObject *obj = m_sceneMgr.createManualObject(objName.str() + "_path");
-								obj->begin("Editor/PathLine", Ogre::RenderOperation::OT_LINE_STRIP);
-								for (auto &p : points)
-								{
-									obj->position(p.x, p.y, p.z);
-								}
-								obj->end();
-
-								obj->begin("Editor/PathPoint", Ogre::RenderOperation::OT_POINT_LIST);
-								for (auto &p : points)
-								{
-									obj->position(p.x, p.y, p.z);
-								}
-								obj->end();
-
-								Ogre::SceneNode *child = m_sceneMgr.getRootSceneNode()->createChildSceneNode(objName.str() + "_pathnode");
-								child->attachObject(obj);
-								DLOG("Path added with " << points.size() << " points");
-
-								added = true;
-							}
-							else
-							{
-								ELOG("No points found!");
-							}
-						}
-					}
-#endif
-
 					if (tile->collision.triangleCount == 0)
 					{
 						return;
@@ -669,6 +625,55 @@ namespace wowpp
 				else
 				{
 					ELOG("TYPE: " << any.getType().name());
+				}
+			}
+		}
+		void WorldEditor::onSetPoint(const Ogre::Vector3 & point)
+		{
+			if (!m_startSet)
+			{
+				m_start = point;
+				m_startSet = true;
+			}
+			else
+			{
+				m_target = point;
+				m_startSet = false;
+
+				// Pathfinding
+				math::Vector3 start(m_start.x, m_start.y, m_start.z);
+				math::Vector3 end(m_target.x, m_target.y, m_target.z);
+				std::vector<math::Vector3> points;
+				if (!m_mapInst->calculatePath(start, end, points))
+				{
+					ELOG("Could not calculate path");
+				}
+				else
+				{
+					if (points.size() > 1)
+					{
+						// Create collision for this map
+						if (!m_pathObj.get())
+						{
+							m_pathObj.reset(m_sceneMgr.createManualObject());
+							m_sceneMgr.getRootSceneNode()->attachObject(m_pathObj.get());
+						}
+						m_pathObj->clear();
+
+						m_pathObj->begin("Editor/PathLine", Ogre::RenderOperation::OT_LINE_STRIP);
+						for (auto &p : points)
+						{
+							m_pathObj->position(p.x, p.y, p.z);
+						}
+						m_pathObj->end();
+
+						m_pathObj->begin("Editor/PathPoint", Ogre::RenderOperation::OT_POINT_LIST);
+						for (auto &p : points)
+						{
+							m_pathObj->position(p.x, p.y, p.z);
+						}
+						m_pathObj->end();
+					}
 				}
 			}
 		}

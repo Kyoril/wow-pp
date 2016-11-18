@@ -68,6 +68,8 @@ namespace wowpp
 			void visitRenderables(Ogre::Renderable::Visitor *visitor, bool debugRenderables) override;
 			bool getCastsShadows() const override;
 
+			void getVertexData(std::vector<Ogre::Vector3> &out_vertices, std::vector<UInt32> &out_indices);
+
 		private:
 
 			void createVertexData();

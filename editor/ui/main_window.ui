@@ -127,6 +127,7 @@
     <addaction name="actionBuildNav"/>
     <addaction name="separator"/>
     <addaction name="actionDisplayNavMesh"/>
+    <addaction name="actionGoTo"/>
    </widget>
    <widget class="QMenu" name="menu_Help">
     <property name="tearOffEnabled">
@@ -440,6 +441,11 @@
   <action name="actionDisplayNavMesh">
    <property name="text">
     <string>Display Navigation Mesh</string>
+   </property>
+  </action>
+  <action name="actionGoTo">
+   <property name="text">
+    <string>Go To...</string>
    </property>
   </action>
   <actiongroup name="Movement">

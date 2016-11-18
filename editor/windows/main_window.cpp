@@ -28,6 +28,7 @@
 #include "ogre_wrappers/ogre_blp_codec.h"
 #include "ogre_wrappers/ogre_mpq_archive.h"
 #include "world/world_editor.h"
+#include "go_to_dialog.h"
 #include <QCloseEvent>
 #include <QVBoxLayout>
 #include <QSettings>
@@ -207,6 +208,22 @@ namespace wowpp
 		void MainWindow::on_actionDisplayNavMesh_triggered()
 		{
 			m_application.showNavMesh();
+		}
+
+		void MainWindow::on_actionGoTo_triggered()
+		{
+			GoToDialog dialog(m_application);
+			if (dialog.exec() == 0)
+			{
+				auto *camera = m_ogreWindow->getCamera();
+				if (!camera)
+					return;
+
+				float x, y, z;
+				dialog.getLocation(x, y, z);
+
+				camera->setPosition(x, y, z);
+			}
 		}
 
 		void MainWindow::on_addLogEntry(const QString &string)

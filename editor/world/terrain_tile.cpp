@@ -160,6 +160,87 @@ namespace wowpp
 		{
 			return false;
 		}
+
+		static UInt16 holetab_h[4] = { 0x1111, 0x2222, 0x4444, 0x8888 };
+		static UInt16 holetab_v[4] = { 0x000F, 0x00F0, 0x0F00, 0xF000 };
+
+		void TerrainTile::getVertexData(std::vector<Ogre::Vector3>& out_vertices, std::vector<UInt32>& out_indices)
+		{
+			const auto &worldPos = getParentNode()->_getDerivedPosition();
+
+			const VertexID startX = m_tileX * 8;
+			const VertexID startY = m_tileY * 8;
+			const VertexID endX = startX + 9;
+			const VertexID endY = startY + 9;
+			const float scale = -((constants::MapWidth / static_cast<float>(constants::TilesPerPage)) / 8.0f);
+
+			size_t index = 0;
+			for (VertexID j = startY; j < endY - 1; ++j)
+			{
+				for (VertexID i = startX; i < endX; ++i)
+				{
+					float height = m_tileHeights[index++];
+					out_vertices.push_back(
+						Ogre::Vector3(scale * static_cast<Ogre::Real>(j), scale * static_cast<Ogre::Real>(i), height) + worldPos);
+				}
+
+				for (VertexID i = startX; i < endX - 1; ++i)
+				{
+					float height = m_tileHeights[index++];
+					out_vertices.push_back(
+						Ogre::Vector3(scale * static_cast<Ogre::Real>(j) + scale * 0.5, scale * static_cast<Ogre::Real>(i) + scale * 0.5, height) + worldPos);
+				}
+			}
+
+			// One last row
+			VertexID j = endY - 1;
+			for (VertexID i = startX; i < endX; ++i)
+			{
+				float height = m_tileHeights[index++];
+				out_vertices.push_back(
+					Ogre::Vector3(scale * static_cast<Ogre::Real>(j), scale * static_cast<Ogre::Real>(i), height) + worldPos);
+			}
+
+			// Indices
+			for (UInt32 i = 0; i < 8; ++i)
+			{
+				for (UInt32 j = 0; j < 8; ++j)
+				{
+					const bool isHole =
+						(m_holes & holetab_h[i / 2] & holetab_v[j / 2]) != 0;
+					if (isHole)
+					{
+						continue;
+					}
+
+					UInt16 topLeftInd = i + j * 9 + j * 8;
+					UInt16 topRightInd = topLeftInd + 1;
+					UInt16 centerInd = topLeftInd + 9;
+					UInt16 bottomLeftInd = centerInd + 8;
+					UInt16 bottomRightInd = bottomLeftInd + 1;
+
+					// Top
+					out_indices.push_back(topRightInd);
+					out_indices.push_back(topLeftInd);
+					out_indices.push_back(centerInd);
+
+					// Right
+					out_indices.push_back(bottomRightInd);
+					out_indices.push_back(topRightInd);
+					out_indices.push_back(centerInd);
+
+					// Bottom
+					out_indices.push_back(bottomLeftInd);
+					out_indices.push_back(bottomRightInd);
+					out_indices.push_back(centerInd);
+
+					// Left
+					out_indices.push_back(topLeftInd);
+					out_indices.push_back(bottomLeftInd);
+					out_indices.push_back(centerInd);
+				}
+			}
+		}
 		
 		void TerrainTile::createVertexData()
 		{
@@ -312,9 +393,6 @@ namespace wowpp
 			m_center = m_bounds.getCenter();
 			m_boundingRadius = (m_bounds.getMaximum() - m_center).length();
 		}
-
-		static UInt16 holetab_h[4] = { 0x1111, 0x2222, 0x4444, 0x8888 };
-		static UInt16 holetab_v[4] = { 0x000F, 0x00F0, 0x0F00, 0xF000 };
 
 		void TerrainTile::createIndexes()
 		{

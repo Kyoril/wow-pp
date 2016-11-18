@@ -75,6 +75,7 @@ namespace wowpp
 			void onMouseMoved(const QMouseEvent *e) override;
 			void onDoubleClick(const QMouseEvent *e) override;
 			void onSelection(Ogre::Entity &entity) override;
+			void onSetPoint(const Ogre::Vector3 &point) override;
 
 		private:
 
@@ -108,6 +109,9 @@ namespace wowpp
 			std::unique_ptr<Map> m_mapInst;
 			std::unique_ptr<OgreDebugDraw> m_debugDraw;
 			simple::scoped_connection m_onShowNavMesh;
+			Ogre::Vector3 m_start, m_target;
+			bool m_startSet;
+			ogre_utils::ManualObjectPtr m_pathObj;
 		};
 	}
 }

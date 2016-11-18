@@ -27,6 +27,7 @@
 #include "common/make_unique.h"
 #include <QPainter>
 #include "log/default_log_levels.h"
+#include "world/terrain_tile.h"
 
 QtOgreWindow::QtOgreWindow(QWindow *parent /*= nullptr*/)
 	: QWindow(parent)
@@ -410,6 +411,44 @@ void QtOgreWindow::mouseReleaseEvent(QMouseEvent *e)
 		{
 			if (vResult[ui].movable)
 			{
+				if (vResult[ui].movable->getMovableType().compare("WoW++ Terrain Tile") != 0)
+				{
+					continue;
+				}
+
+				wowpp::view::TerrainTile* tile = static_cast<wowpp::view::TerrainTile*>(vResult[ui].movable);
+				std::vector<Ogre::Vector3> verts;
+				std::vector<wowpp::UInt32> inds;
+				tile->getVertexData(verts, inds);
+
+				Ogre::Real closest_distance = -1.0f;
+				// test for hitting individual triangles on the mesh
+				bool new_closest_found = false;
+				for (int i = 0; i < static_cast<int>(inds.size()); i += 3)
+				{
+					// check for a hit against this triangle
+					std::pair<bool, Ogre::Real> hit = Ogre::Math::intersects(mouseRay, verts[inds[i]],
+						verts[inds[i + 1]], verts[inds[i + 2]], true, true);
+					if (hit.first)
+					{
+						if ((closest_distance < 0.0f) ||
+							(hit.second < closest_distance))
+						{
+							// this is the closest so far, save it off
+							closest_distance = hit.second;
+							new_closest_found = true;
+						}
+					}
+				}
+
+				if (new_closest_found)
+				{
+					if (m_scene)
+						m_scene->onSetPoint(mouseRay.getPoint(closest_distance));
+					break;
+				}
+
+				/*
 				if (vResult[ui].movable->getMovableType().compare("Entity") == 0)
 				{
 					if (!vResult[ui].movable->getUserAny().isEmpty())
@@ -418,6 +457,7 @@ void QtOgreWindow::mouseReleaseEvent(QMouseEvent *e)
 						break;
 					}
 				}
+				*/
 			}
 		}
 		m_ogreSceneMgr->destroyQuery(pSceneQuery);
