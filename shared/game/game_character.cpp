@@ -2393,6 +2393,13 @@ namespace wowpp
 					case game::item_stat::CritMeleeRating:
 						applyCombatRatingMod(combat_rating::CritMelee, entry.value(), apply);
 						break;
+					case game::item_stat::CritRangedRating:
+						applyCombatRatingMod(combat_rating::CritRanged, entry.value(), apply);
+						break;
+					case game::item_stat::CritRating:
+						applyCombatRatingMod(combat_rating::CritMelee, entry.value(), apply);
+						applyCombatRatingMod(combat_rating::CritRanged, entry.value(), apply);
+						break;
 					default:
 						break;
 					}
