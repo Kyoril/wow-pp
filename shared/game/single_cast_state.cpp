@@ -2520,6 +2520,9 @@ namespace wowpp
 			break;
 		}
 
+		// Needed for combat ratings
+		m_cast.getExecuter().setWeaponAttack(m_attackType);
+
 		// Execute spell immediatly
 		namespace se = game::spell_effects;
 		std::vector<std::pair<UInt32, EffectHandler>> effectMap {

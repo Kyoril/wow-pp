@@ -142,6 +142,10 @@ namespace wowpp
 		// Reset threat modifiers
 		m_threatModifier.fill(1.0f);
 
+		// Reset base combat rating modifiers
+		m_baseCRMod[base_mod_type::Flat].fill(0.0f);
+		m_baseCRMod[base_mod_type::Percentage].fill(1.0f);
+
 		// Watch for own death and fail all quests that require the player to stay alive
 		killed.connect([this](GameUnit *killer)
 		{
@@ -1467,6 +1471,14 @@ namespace wowpp
 		}
 	}
 
+	void GameCharacter::updateAllRatings()
+	{
+		for (UInt8 cr = 0; cr < combat_rating::End; ++cr)
+		{
+			updateRating(static_cast<CombatRatingType>(cr));
+		}
+	}
+
 	float GameCharacter::getRatingMultiplier(CombatRatingType combatRating) const
 	{
 		UInt32 level = getLevel();
@@ -1513,10 +1525,102 @@ namespace wowpp
 
 		float value = getRatingBonusValue(combatRating) + getTotalPercentageModValue(modGroup);
 
-		value += (static_cast<Int32>(getWeaponSkillValue(nullptr, attackType)) - static_cast<Int32>(getMaxSkillValueForLevel())) * 0.04f;
-		value = value < 0.0f ? 0.0f : value;
-		
-		setFloatValue(index, value);
+		value += (static_cast<Int32>(getWeaponSkillValue(attackType)) - static_cast<Int32>(getMaxSkillValueForLevel())) * 0.04f;
+		setFloatValue(index, value < 0.0f ? 0.0f : value);
+	}
+
+	void GameCharacter::updateAllCritChances()
+	{
+		UInt32 level = getLevel();
+		UInt32 charClass = getClass();
+
+		if (level > 100)
+		{
+			level = 100;
+		}
+
+		const auto *critEntry = getProject().meleeCritChance.getById((charClass - 1) * 100 + level - 1);
+		const auto &critBase = critEntry->basechanceperlevel();
+		const auto &critRatio = critEntry->chanceperlevel();
+
+		float value = (critBase + getUInt32Value(unit_fields::Stat0 + unit_mods::StatAgility) * critRatio) * 100.0f;
+
+		m_baseCRMod[base_mod_group::CritPercentage][base_mod_type::Percentage] = value;
+		m_baseCRMod[base_mod_group::OffHandCritPercentage][base_mod_type::Percentage] = value;
+		m_baseCRMod[base_mod_group::RangedCritPercentage][base_mod_type::Percentage] = value;
+
+		updateCritChance(game::weapon_attack::BaseAttack);
+		updateCritChance(game::weapon_attack::OffhandAttack);
+		updateCritChance(game::weapon_attack::RangedAttack);
+	}
+
+	void GameCharacter::applyWeaponCritMod(std::shared_ptr<GameItem> item, game::WeaponAttack attackType, const proto::SpellEntry & spell, float amount, bool apply)
+	{
+		if (spell.itemclass() != -1)
+		{
+			BaseModGroup mod = base_mod_group::End;
+
+			switch (attackType)
+			{
+				case game::weapon_attack::BaseAttack:
+					mod = base_mod_group::CritPercentage;
+					break;
+				case game::weapon_attack::OffhandAttack:
+					mod = base_mod_group::OffHandCritPercentage;
+					break;
+				case game::weapon_attack::RangedAttack:
+					mod = base_mod_group::RangedCritPercentage;
+					break;
+				default:
+					return;
+			}
+
+			if (item->isCompatibleWithSpell(spell))
+			{
+				handleBaseCRMod(mod, base_mod_type::Flat, amount, apply);
+			}
+		}
+	}
+
+	void GameCharacter::handleBaseCRMod(BaseModGroup modGroup, BaseModType modType, float amount, bool apply)
+	{
+		float value;
+
+		switch (modType)
+		{
+			case base_mod_type::Flat:
+				m_baseCRMod[modGroup][modType] += apply ? amount : -amount;
+				break;
+			case base_mod_type::Percentage:
+				if (amount <= -100.0f)
+				{
+					amount = -200.0f;
+				}
+
+				value = (100.0f + amount) / 100.0f;
+				m_baseCRMod[modGroup][modType] *= apply ? value : (1.0f / value);
+				break;
+			default:
+				break;
+		}
+
+		switch (modGroup)
+		{
+			case base_mod_group::CritPercentage:
+				updateCritChance(game::weapon_attack::BaseAttack);
+				break;
+			case base_mod_group::RangedCritPercentage:
+				updateCritChance(game::weapon_attack::RangedAttack);
+				break;
+			case base_mod_group::OffHandCritPercentage:
+				updateCritChance(game::weapon_attack::OffhandAttack);
+				break;
+			case base_mod_group::ShieldBlockValue:
+				// TODO
+				break;
+			default:
+				break;
+		}
 	}
 
 	void GameCharacter::setQuestData(UInt32 quest, const QuestStatusData &data)
@@ -1836,6 +1940,7 @@ namespace wowpp
 				const UInt32 tmp = getUInt32Value(skillIndex + 1);
 				out_current = UInt16(UInt32(tmp) & 0x0000FFFF);
 				out_max = UInt16((UInt32(tmp) >> 16) & 0x0000FFFF);
+				
 				return true;
 			}
 		}
@@ -2128,6 +2233,7 @@ namespace wowpp
 		}
 
 		updateAttackSpeed();
+		updateAllCritChances();
 	}
 
 	void GameCharacter::updateAttackSpeed()
@@ -2519,7 +2625,7 @@ namespace wowpp
 		}
 	}
 
-	UInt32 GameCharacter::getWeaponSkillValue(const GameUnit * target, game::WeaponAttack attackType)
+	UInt32 GameCharacter::getWeaponSkillValue(game::WeaponAttack attackType, const GameUnit * target)
 	{
 		std::shared_ptr<GameItem> item = m_inventory.getWeaponByAttackType(attackType, true, true);
 
@@ -2556,6 +2662,17 @@ namespace wowpp
 				combatRating = combat_rating::WeaponSkillRanged;
 				value += getRatingBonusValue(combatRating);
 		}
+
+		return value;
+	}
+
+	UInt32 GameCharacter::getDefenseSkillValue(const GameUnit * target)
+	{
+		UInt16 maxSkillValue, skillValue;
+		getSkillValue(game::skill_type::Defense, skillValue, maxSkillValue);
+
+		UInt32 value = target && target->isGameCharacter() ? maxSkillValue : skillValue;
+		value += static_cast<UInt32>(getRatingBonusValue(combat_rating::DefenseSkill));
 
 		return value;
 	}

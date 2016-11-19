@@ -1112,13 +1112,13 @@ namespace wowpp
 		switch (attackType)
 		{
 			case game::weapon_attack::BaseAttack:
-				slot = game::inventory_type::MainHandWeapon;
+				slot = player_equipment_slots::Mainhand;
 				break;
 			case game::weapon_attack::OffhandAttack:
-				slot = game::inventory_type::OffHandWeapon;
+				slot = player_equipment_slots::Offhand;
 				break;
 			case game::weapon_attack::RangedAttack:
-				slot = game::inventory_type::Ranged;
+				slot = player_equipment_slots::Ranged;
 				break;
 		}
 
@@ -1134,7 +1134,7 @@ namespace wowpp
 			return nullptr;
 		}
 
-		if (useable && m_owner.canUseWeapon(attackType))
+		if (useable && !m_owner.canUseWeapon(attackType))
 		{
 			return nullptr;
 		}

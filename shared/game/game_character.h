@@ -727,6 +727,10 @@ namespace wowpp
 		virtual void updateAttackSpeed() override;
 		/// @copydoc GameUnit::updateManaRegen
 		virtual void updateManaRegen() override;
+		/// @copydoc GameUnit::updateCritChance
+		virtual void updateCritChance(game::WeaponAttack attackType) override;
+		/// @copydoc GameUnit::updateAllCritChances
+		virtual void updateAllCritChances() override;
 		/// @copydoc GameUnit::regenerateHealth
 		virtual void regenerateHealth() override;
 		/// @copydoc GameUnit::onThreaten
@@ -734,7 +738,9 @@ namespace wowpp
 		/// @copydoc GameUnit::onRegeneration
 		virtual void onRegeneration() override;
 		/// @copydoc GameUnit::getWeaponSkillValue
-		virtual UInt32 getWeaponSkillValue(const GameUnit *target = nullptr, game::WeaponAttack attackType = game::weapon_attack::BaseAttack) override;
+		virtual UInt32 getWeaponSkillValue(game::WeaponAttack attackType, const GameUnit *target = nullptr) override;
+		/// @copydoc GameUnit::getDefenseSkillValue
+		virtual UInt32 getDefenseSkillValue(const GameUnit *target = nullptr) override;
 
 	private:
 
@@ -916,7 +922,9 @@ namespace wowpp
 			return m_baseCRMod[modGroup][base_mod_type::Flat] + m_baseCRMod[modGroup][base_mod_type::Percentage]; 
 		}
 		/// Updates specified combat rating
-		void updateRating(CombatRatingType combatRating);
+		virtual void updateRating(CombatRatingType combatRating);
+		///
+		virtual void updateAllRatings() override;
 		///
 		float getRatingMultiplier(CombatRatingType combatRating) const;
 		///
@@ -924,7 +932,10 @@ namespace wowpp
 			return getUInt32Value(character_fields::CombatRating_1 + combatRating) * getRatingMultiplier(combatRating);
 		}
 		///
-		void updateCritChance(game::WeaponAttack attackType);
+		void applyWeaponCritMod(std::shared_ptr<GameItem> item, game::WeaponAttack attackType, const proto::SpellEntry &spell, float amount, bool apply);
+		///
+		void handleBaseCRMod(BaseModGroup modGroup, BaseModType modType, float amount, bool apply);
+
 	public:
 
 		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT

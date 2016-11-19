@@ -375,6 +375,9 @@ namespace wowpp
 		case aura::ModResistanceOfStatPercent:
 			handleModResistanceOfStatPercent(apply);
 			break;
+		case aura::ModCritPercent:
+			handleModCritPercent(apply);
+			break;
 		default:
 			//			WLOG("Unhandled aura type: " << m_effect.aura());
 			break;
@@ -936,6 +939,32 @@ namespace wowpp
 		const UInt32 resourceType = UInt32(m_effect.miscvaluea() - 1);
 		m_target.setUInt32Value(character_fields::Track_Resources,
 			apply ? UInt32(UInt32(1) << resourceType) : 0);
+	}
+
+	void Aura::handleModCritPercent(bool apply)
+	{
+		if (m_target.isGameCharacter())
+		{
+			auto &character = reinterpret_cast<GameCharacter&>(m_target);
+
+			// 1 for each attack type
+			for (UInt8 i = 0; i < 3; ++i)
+			{
+				std::shared_ptr<GameItem> item = character.getInventory().getWeaponByAttackType(static_cast<game::WeaponAttack>(i), true, false);
+				
+				if (item)
+				{
+					character.applyWeaponCritMod(item, static_cast<game::WeaponAttack>(i), m_spell, static_cast<float>(m_basePoints), apply);
+				}
+			}
+
+			if (m_spell.itemclass() == -1)
+			{
+				character.handleBaseCRMod(base_mod_group::CritPercentage, base_mod_type::Flat, static_cast<float>(m_basePoints), apply);
+				character.handleBaseCRMod(base_mod_group::OffHandCritPercentage, base_mod_type::Flat, static_cast<float>(m_basePoints), apply);
+				character.handleBaseCRMod(base_mod_group::RangedCritPercentage, base_mod_type::Flat, static_cast<float>(m_basePoints), apply);
+			}
+		}
 	}
 
 	void Aura::handleTransform(bool apply)

@@ -1059,6 +1059,7 @@ namespace wowpp
 		}
 
 		updateManaRegen();
+		updateAllRatings();
 	}
 
 	void GameUnit::updateMaxHealth()
@@ -1160,6 +1161,21 @@ namespace wowpp
 	}
 
 	void GameUnit::updateAttackSpeed()
+	{
+		// Nothing to do here.
+	}
+
+	void GameUnit::updateCritChance(game::WeaponAttack attackType)
+	{
+		// Nothing to do here.
+	}
+
+	void GameUnit::updateAllCritChances()
+	{
+		// Nothing to do here.
+	}
+
+	void GameUnit::updateAllRatings()
 	{
 		// Nothing to do here.
 	}
@@ -2190,7 +2206,69 @@ namespace wowpp
 
 	float GameUnit::getCritChance(GameUnit &attacker, UInt8 school)
 	{
-		return 10.0f;
+		if (school == game::spell_school_mask::Normal)
+		{
+			float crit;
+			game::WeaponAttack attackType = attacker.getWeaponAttack();
+
+			if (attacker.isGameCharacter())
+			{
+				switch (attackType)
+				{
+				case game::weapon_attack::BaseAttack:
+					crit = getFloatValue(character_fields::CritPercentage);
+					break;
+				case game::weapon_attack::OffhandAttack:
+					crit = getFloatValue(character_fields::OffHandCritPercentage);
+					break;
+				case game::weapon_attack::RangedAttack:
+					crit = getFloatValue(character_fields::RangedCritPercentage);
+					break;
+				default:
+					crit = 0.0f;
+					break;
+				}
+			}
+			else
+			{
+				crit = 5.0f;
+				crit += attacker.getAuras().getTotalBasePoints(game::aura_type::ModCritPercent);
+			}
+
+			if (game::weapon_attack::RangedAttack)
+			{
+				crit += m_auras.getTotalBasePoints(game::aura_type::ModAttackerRangedCritChance);
+			}
+			else
+			{
+				crit += m_auras.getTotalBasePoints(game::aura_type::ModAttackerMeleeCritChance);
+			}
+
+			crit += m_auras.getTotalBasePoints(game::aura_type::ModAttackerSpellAndWeaponCritChance);
+
+			if (isGameCharacter())
+			{
+				auto *character = reinterpret_cast<GameCharacter*>(this);
+
+				if (attackType == game::weapon_attack::RangedAttack)
+				{
+					crit -= character->getRatingBonusValue(combat_rating::CritTakenRanged);
+				}
+				else
+				{
+					crit -= character->getRatingBonusValue(combat_rating::CritTakenMelee);
+				}
+			}
+
+			crit += (static_cast<Int32>(getMaxSkillValueForLevel(this)) - static_cast<Int32>(getDefenseSkillValue(&attacker))) * 0.04f;
+
+			return crit < 0.0f ? 0.0f : crit;
+		}
+		else
+		{
+			// TODO: Spell crit chance
+			return 10.0f;
+		}
 	}
 
 	UInt32 GameUnit::getAttackTime(UInt8 attackType)

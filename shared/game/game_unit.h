@@ -431,7 +431,7 @@ namespace wowpp
 
 		/// 
 		void threaten(GameUnit &threatener, float amount);
-		
+
 		/// Updates the race index and will also update the race entry object.
 		void setRace(UInt8 raceId);
 		/// Updates the class index and will also update the class entry object.
@@ -646,7 +646,7 @@ namespace wowpp
 		}
 		///
 		bool canAutoAttack() const {
-			return isAlive() && !isFeared() && !isStunned() && !isConfused(); 
+			return isAlive() && !isFeared() && !isStunned() && !isConfused();
 		}
 		/// 
 		bool canMove() const {
@@ -726,6 +726,12 @@ namespace wowpp
 		virtual void updateResistance(UInt8 resistance);
 		///
 		virtual void updateAttackSpeed();
+		///
+		virtual void updateCritChance(game::WeaponAttack attackType);
+		///
+		virtual void updateAllCritChances();
+		///
+		virtual void updateAllRatings();
 
 		virtual void applyDamageDoneBonus(UInt32 schoolMask, UInt32 tickCount, UInt32 &damage);
 
@@ -737,9 +743,12 @@ namespace wowpp
 
 		virtual void applyHealingDoneBonus(UInt32 spellLevel, UInt32 playerLevel, UInt32 tickCount, UInt32 &healing);
 
-		/// TODO: Do this properly, return level of target if found (can be a boss, not sure how it'll be done)
-		virtual UInt32 getWeaponSkillValue(const GameUnit *target = nullptr, game::WeaponAttack attackType = game::weapon_attack::BaseAttack) {
-			return (target ? target->getLevel() : getLevel()) * 5;
+		virtual UInt32 getWeaponSkillValue(game::WeaponAttack attackType, const GameUnit *target = nullptr) {
+			return getUnitMeleeSkill(target);
+		}
+
+		virtual UInt32 getDefenseSkillValue(const GameUnit *target = nullptr) {
+			return getUnitMeleeSkill(target);
 		}
 
 		/// Gets the current unit mover.
@@ -796,6 +805,21 @@ namespace wowpp
 
 		/// Something something bosses
 		UInt16 getMaxSkillValueForLevel(const GameUnit *target = nullptr) const {
+			return (target ? target->getLevel() : getLevel()) * 5;
+		}
+
+		///
+		game::WeaponAttack getWeaponAttack() const {
+			return m_weaponAttack;
+		}
+
+		///
+		void setWeaponAttack(game::WeaponAttack weaponAttack) {
+			m_weaponAttack = weaponAttack;
+		}
+
+		/// TODO: Do this properly, return level of target if found (can be a boss, not sure how it'll be done)
+		UInt32 getUnitMeleeSkill(const GameUnit *target = nullptr) const {
 			return (target ? target->getLevel() : getLevel()) * 5;
 		}
 
