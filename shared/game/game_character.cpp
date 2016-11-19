@@ -36,6 +36,9 @@
 
 namespace wowpp
 {
+	static constexpr UInt8 MaxQuestsOnLog = 25;
+	static constexpr UInt8 MaxSkills = 127;
+
 	GameCharacter::GameCharacter(
 	    proto::Project &project,
 	    TimerQueue &timers)
@@ -88,11 +91,11 @@ namespace wowpp
 		setInt32Value(character_fields::WatchedFactionIndex, -1);
 		setUInt32Value(character_fields::CharacterPoints_2, 2);
 		setUInt32Value(character_fields::ModHealingDonePos, 0);
-		for (UInt8 i = 0; i < 7; ++i)
+		for (UInt8 i = game::spell_school::Normal; i < game::spell_school::End; ++i)
 		{
 			setUInt32Value(character_fields::ModDamageDoneNeg + i, 0);
 			setUInt32Value(character_fields::ModDamageDonePos + i, 0);
-			setFloatValue(character_fields::ModDamageDonePct + i, 1.00f);
+			setFloatValue(character_fields::ModDamageDonePct + i, 1.0f);
 		}
 
 		//reset attack power, damage and attack speed fields
@@ -121,7 +124,7 @@ namespace wowpp
 		setFloatValue(character_fields::RangedCritPercentage, 0.0f);
 
 		// Init spell schools (will be recalculated in UpdateAllStats() at loading and in _ApplyAllStatBonuses() at reset
-		for (UInt8 i = 0; i < 7; ++i) {
+		for (UInt8 i = game::spell_school::Normal; i < game::spell_school::End; ++i) {
 			setFloatValue(character_fields::SpellCritPercentage + i, 0.0f);
 		}
 
@@ -142,7 +145,8 @@ namespace wowpp
 		// Reset threat modifiers
 		m_threatModifier.fill(1.0f);
 
-		// Reset base combat rating modifiers
+		// Reset base combat rating and modifiers
+		m_combatRatings.fill(0);
 		m_baseCRMod[base_mod_type::Flat].fill(0.0f);
 		m_baseCRMod[base_mod_type::Percentage].fill(1.0f);
 
@@ -150,7 +154,7 @@ namespace wowpp
 		killed.connect([this](GameUnit *killer)
 		{
 			bool updateQuestObjects = false;
-			for (UInt32 i = 0; i < 25; ++i)
+			for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
 			{
 				auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
 
@@ -265,7 +269,7 @@ namespace wowpp
 		}
 
 		// Find next free quest log
-		for (UInt32 i = 0; i < 25; ++i)
+		for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
 			if (logId == 0 || logId == quest)
@@ -361,7 +365,7 @@ namespace wowpp
 	bool GameCharacter::abandonQuest(UInt32 quest)
 	{
 		// Find next free quest log
-		for (UInt32 i = 0; i < 25; ++i)
+		for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
 			if (logId == quest)
@@ -495,7 +499,7 @@ namespace wowpp
 	{
 		// Check all quests in the quest log
 		bool updateQuestObjects = false;
-		for (UInt32 i = 0; i < 25; ++i)
+		for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
 			if (logId != quest)
@@ -567,7 +571,7 @@ namespace wowpp
 
 	bool GameCharacter::failQuest(UInt32 questId)
 	{
-		for (UInt32 i = 0; i < 25; ++i)
+		for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
 			if (logId != questId)
@@ -744,7 +748,7 @@ namespace wowpp
 			}
 		}
 
-		for (UInt32 i = 0; i < 25; ++i)
+		for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
 			if (logId == quest)
@@ -782,7 +786,7 @@ namespace wowpp
 	{
 		// Check all quests in the quest log
 		bool updateQuestObjects = false;
-		for (UInt32 i = 0; i < 25; ++i)
+		for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
 			if (logId == 0) {
@@ -932,7 +936,7 @@ namespace wowpp
 
 	bool GameCharacter::isQuestlogFull() const
 	{
-		for (int i = 0; i < 25; ++i)
+		for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
 		{
 			// If this quest log slot is empty, we can stop as there is at least one
 			// free quest slot available
@@ -950,7 +954,7 @@ namespace wowpp
 	{
 		// If this is set to true, all nearby objects will be updated
 		bool updateNearbyObjects = false;
-		for (int i = 0; i < 25; ++i)
+		for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
 		{
 			// Check if there is a quest in that slot
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
@@ -1006,7 +1010,7 @@ namespace wowpp
 	{
 		// If this is set to true, all nearby objects will be updated
 		bool updateNearbyObjects = false;
-		for (int i = 0; i < 25; ++i)
+		for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
 		{
 			// Check if there is a quest in that slot
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
@@ -1083,7 +1087,7 @@ namespace wowpp
 	void GameCharacter::onQuestItemRemovedCredit(const proto::ItemEntry &entry, UInt32 amount)
 	{
 		bool updateNearbyObjects = false;
-		for (int i = 0; i < 25; ++i)
+		for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
 			if (logId == 0) {
@@ -1151,7 +1155,7 @@ namespace wowpp
 	void GameCharacter::onQuestSpellCastCredit(UInt32 spellId, GameObject & target)
 	{
 		bool updateNearbyObjects = false;
-		for (int i = 0; i < 25; ++i)
+		for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
 			if (logId == 0) {
@@ -1241,7 +1245,7 @@ namespace wowpp
 	{
 		// Check all quests in the quest log
 		bool updateQuestObjects = false;
-		for (UInt32 i = 0; i < 25; ++i)
+		for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
 			if (logId == 0) {
@@ -1471,6 +1475,13 @@ namespace wowpp
 		}
 	}
 
+	void GameCharacter::applyCombatRatingMod(CombatRatingType combatRating, Int32 amount, bool apply)
+	{
+		m_combatRatings[combatRating] = apply ? amount : -amount;
+
+		updateRating(combatRating);
+	}
+
 	void GameCharacter::updateAllRatings()
 	{
 		for (UInt8 cr = 0; cr < combat_rating::End; ++cr)
@@ -1636,7 +1647,7 @@ namespace wowpp
 		    data.status == game::quest_status::Complete ||
 		    data.status == game::quest_status::Failed)
 		{
-			for (UInt32 i = 0; i < 25; ++i)
+			for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
 			{
 				auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
 				if (logId == 0 || logId == quest)
@@ -1902,8 +1913,7 @@ namespace wowpp
 		}
 
 		// Find the next usable skill slot
-		const UInt32 maxSkills = 127;
-		for (UInt32 i = 0; i < maxSkills; ++i)
+		for (UInt8 i = 0; i < MaxSkills; ++i)
 		{
 			// Unit field values
 			const UInt32 skillIndex = character_fields::SkillInfo1_1 + (i * 3);
@@ -1928,8 +1938,7 @@ namespace wowpp
 
 	bool GameCharacter::getSkillValue(UInt32 skillId, UInt16 & out_current, UInt16 & out_max) const
 	{
-		const UInt32 maxSkills = 127;
-		for (UInt32 i = 0; i < maxSkills; ++i)
+		for (UInt8 i = 0; i < MaxSkills; ++i)
 		{
 			// Unit field values
 			const UInt32 skillIndex = character_fields::SkillInfo1_1 + (i * 3);
@@ -1964,8 +1973,7 @@ namespace wowpp
 	void GameCharacter::removeSkill(UInt32 skillId)
 	{
 		// Find the next usable skill slot
-		const UInt32 maxSkills = 127;
-		for (UInt32 i = 0; i < maxSkills; ++i)
+		for (UInt8 i = 0; i < MaxSkills; ++i)
 		{
 			// Unit field values
 			const UInt32 skillIndex = character_fields::SkillInfo1_1 + (i * 3);
@@ -1996,8 +2004,7 @@ namespace wowpp
 	void GameCharacter::setSkillValue(UInt32 skillId, UInt16 current, UInt16 maximum)
 	{
 		// Find the next usable skill slot
-		const UInt32 maxSkills = 127;
-		for (UInt32 i = 0; i < maxSkills; ++i)
+		for (UInt8 i = 0; i < MaxSkills; ++i)
 		{
 			// Unit field values
 			const UInt32 skillIndex = character_fields::SkillInfo1_1 + (i * 3);
@@ -2382,6 +2389,9 @@ namespace wowpp
 						break;
 					case game::item_stat::Stamina:
 						updateModifierValue(unit_mods::StatStamina, unit_mod_type::TotalValue, entry.value(), apply);
+						break;
+					case game::item_stat::CritMeleeRating:
+						applyCombatRatingMod(combat_rating::CritMelee, entry.value(), apply);
 						break;
 					default:
 						break;

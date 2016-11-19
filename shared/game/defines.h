@@ -2171,7 +2171,8 @@ namespace wowpp
 				Nature		= 3,
 				Frost		= 4,
 				Shadow		= 5,
-				Arcane		= 6
+				Arcane		= 6,
+				End			= 7
 			};
 		}
 

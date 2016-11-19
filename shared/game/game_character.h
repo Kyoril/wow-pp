@@ -926,6 +926,8 @@ namespace wowpp
 		///
 		virtual void updateAllRatings() override;
 		///
+		void applyCombatRatingMod(CombatRatingType combatRating, Int32 amount, bool apply);
+		///
 		float getRatingMultiplier(CombatRatingType combatRating) const;
 		///
 		float getRatingBonusValue(CombatRatingType combatRating) const {
