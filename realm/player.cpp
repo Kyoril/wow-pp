@@ -728,7 +728,7 @@ namespace wowpp
 		}
 
 		// Write something to the log just for informations
-		ILOG("Player " << m_accountName << " tries to enter the world with character 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << m_characterId);
+		ILOG("Player " << m_accountName << " tries to enter the world with character 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << characterId);
 
 		// Load the player character data from the database
 		std::shared_ptr<GameCharacter> character(new GameCharacter(m_project, m_manager.getTimers()));
