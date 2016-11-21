@@ -20,7 +20,9 @@
 //
 
 #include "pch.h"
+#include "common/timer_queue.h"
 #include "game/game_object.h"
+#include "game/game_character.h"
 #include "proto_data/project.h"
 #include <boost/test/unit_test.hpp>
 
@@ -41,5 +43,19 @@ namespace wowpp
 
 		object.setUInt16Value(object_fields::Entry, 1, -1);
 		BOOST_CHECK(object.getInt16Value(object_fields::Entry, 1) == -1);
+	}
+
+	BOOST_AUTO_TEST_CASE(GameCharacter_destructor)
+	{
+		boost::asio::io_service ioService;
+
+		// Empty project
+		TimerQueue timers(ioService);
+		proto::Project project;
+
+		// Construct new object
+		auto testCharacter = std::make_shared<GameCharacter>(project, timers);
+		testCharacter->initialize();
+		testCharacter.reset();
 	}
 }

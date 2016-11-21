@@ -136,10 +136,6 @@ namespace wowpp
 		// Set database instance
 		m_database = std::move(db);
 
-		auto testUnit = std::make_shared<GameCharacter>(project, timer);
-		testUnit->initialize();
-		testUnit.reset();
-		
 		// Setup async database requester
 		boost::asio::io_service databaseWorkQueue;
 		boost::asio::io_service::work databaseWork(databaseWorkQueue);
