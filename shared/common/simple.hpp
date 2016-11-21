@@ -19,6 +19,17 @@
 #ifndef SIMPLE_HPP_INCLUDED
 #define SIMPLE_HPP_INCLUDED
 
+#include <iterator>
+#include <exception>
+#include <type_traits>
+#include <cassert>
+#include <utility>
+#include <functional>
+#include <list>
+#include <forward_list>
+#include <initializer_list>
+#include <atomic>
+
 /// Redefine this if your compiler doesn't support the thread_local keyword
 /// For VS < 2015 you can define it to __declspec(thread) for example.
 #ifndef SIMPLE_THREAD_LOCAL
@@ -1585,20 +1596,23 @@ namespace simple
                 intrusive_ptr<connection_base> end{ tail };
 
                 while (current != end) {
-                    detail::connection_scope scope{ current, th };
+                    assert(current != nullptr);
 
+                    if (current->slot != nullptr) {
+                        detail::connection_scope scope{ current, th };
 #ifndef SIMPLE_NO_EXCEPTIONS
-                    try {
+                        try {
 #endif
-                        current->slot(args...);
+                            current->slot(args...);
 #ifndef SIMPLE_NO_EXCEPTIONS
-                    } catch(...) {
-                        error = true;
-                    }
+                        } catch (...) {
+                            error = true;
+                        }
 #endif
-                    if (th->emission_aborted) {
-                        th->emission_aborted = false;
-                        break;
+                        if (th->emission_aborted) {
+                            th->emission_aborted = false;
+                            break;
+                        }
                     }
 
                     current = current->next;
@@ -1627,20 +1641,23 @@ namespace simple
                 intrusive_ptr<connection_base> end{ tail };
 
                 while (current != end) {
-                    detail::connection_scope scope{ current, th };
+                    assert(current != nullptr);
 
+                    if (current->slot != nullptr) {
+                        detail::connection_scope scope{ current, th };
 #ifndef SIMPLE_NO_EXCEPTIONS
-                    try {
+                        try {
 #endif
-                        selector(current->slot(args...));
+                            selector(current->slot(args...));
 #ifndef SIMPLE_NO_EXCEPTIONS
-                    } catch(...) {
-                        error = true;
-                    }
+                        } catch (...) {
+                            error = true;
+                        }
 #endif
-                    if (th->emission_aborted) {
-                        th->emission_aborted = false;
-                        break;
+                        if (th->emission_aborted) {
+                            th->emission_aborted = false;
+                            break;
+                        }
                     }
 
                     current = current->next;
