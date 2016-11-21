@@ -727,9 +727,6 @@ namespace wowpp
 			return;
 		}
 
-		// Store character id
-		m_characterId = characterId;
-
 		// Write something to the log just for informations
 		ILOG("Player " << m_accountName << " tries to enter the world with character 0x" << std::hex << std::setw(16) << std::setfill('0') << std::uppercase << m_characterId);
 
@@ -777,6 +774,9 @@ namespace wowpp
 				std::bind(game::server_write::charLoginFailed, std::placeholders::_1, game::response_code::CharLoginNoWorld));
 			return;
 		}
+
+		// Store character id
+		m_characterId = characterId;
 
 		// Use the new character
 		m_gameCharacter = std::move(character);

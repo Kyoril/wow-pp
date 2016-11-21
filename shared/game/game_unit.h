@@ -419,7 +419,7 @@ namespace wowpp
 		explicit GameUnit(
 			proto::Project &project,
 			TimerQueue &timers);
-		~GameUnit();
+		virtual ~GameUnit();
 
 		/// @copydoc GameObject::initialize()
 		virtual void initialize() override;

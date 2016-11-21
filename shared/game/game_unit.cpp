@@ -84,7 +84,10 @@ namespace wowpp
 		// Despawn all assigned world objects
 		for (auto it : m_worldObjects)
 		{
-			it->getWorldInstance()->removeGameObject(*it);
+			if (it->getWorldInstance())
+			{
+				it->getWorldInstance()->removeGameObject(*it);
+			}
 		}
 	}
 
