@@ -940,6 +940,11 @@ namespace wowpp
 
 	public:
 
+		/// @copydoc GameUnit::onKilled(GameUnit*)
+		virtual void onKilled(GameUnit *killer) override;
+
+	public:
+
 		// WARNING: THESE METHODS ARE ONLY CALLED WHEN LOADED FROM THE DATABASE. THEY SHOULD NOT
 		// BE CALLED ANYWHERE ELSE!
 

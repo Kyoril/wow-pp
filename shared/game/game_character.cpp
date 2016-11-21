@@ -149,34 +149,6 @@ namespace wowpp
 		m_combatRatings.fill(0);
 		m_baseCRMod[base_mod_type::Flat].fill(0.0f);
 		m_baseCRMod[base_mod_type::Percentage].fill(1.0f);
-
-		// Watch for own death and fail all quests that require the player to stay alive
-		killed.connect([this](GameUnit *killer)
-		{
-			bool updateQuestObjects = false;
-			for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
-			{
-				auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
-
-				// Find quest
-				const auto *quest = getProject().quests.getById(logId);
-				if (!quest)
-					continue;
-
-				if (quest->flags() & game::quest_flags::StayAlive)
-				{
-					if (failQuest(logId))
-					{
-						updateQuestObjects = true;
-					}
-				}
-			}
-
-			if (updateQuestObjects)
-			{
-				updateNearbyQuestObjects();
-			}
-		});
 	}
 
 	game::QuestStatus GameCharacter::getQuestStatus(UInt32 quest) const
@@ -1633,6 +1605,35 @@ namespace wowpp
 				break;
 			default:
 				break;
+		}
+	}
+
+	void GameCharacter::onKilled(GameUnit * killer)
+	{
+		GameUnit::onKilled(killer);
+
+		bool updateQuestObjects = false;
+		for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
+		{
+			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
+
+			// Find quest
+			const auto *quest = getProject().quests.getById(logId);
+			if (!quest)
+				continue;
+
+			if (quest->flags() & game::quest_flags::StayAlive)
+			{
+				if (failQuest(logId))
+				{
+					updateQuestObjects = true;
+				}
+			}
+		}
+
+		if (updateQuestObjects)
+		{
+			updateNearbyQuestObjects();
 		}
 	}
 
