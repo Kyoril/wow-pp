@@ -41,6 +41,7 @@ namespace wowpp
 		, m_lastFiredO(0.0f)
 		, m_objectType(0x01)
 		, m_objectTypeId(0x01)
+		, m_updated(false)
 		, m_worldInstance(nullptr)
 	{
 		m_values.resize(object_fields::ObjectFieldCount, 0);

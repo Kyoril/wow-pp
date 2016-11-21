@@ -965,7 +965,7 @@ namespace wowpp
 	private:
 
 		typedef std::array<Int16, combat_rating::End> CombatRatingsArray;
-		typedef std::array<std::array<float, base_mod_group::End>, base_mod_type::End> BaseCRModArray;
+		typedef std::array<std::array<float, base_mod_type::End>, base_mod_group::End> BaseCRModArray;
 
 		// Variables
 

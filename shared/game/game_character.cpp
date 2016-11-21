@@ -75,6 +75,14 @@ namespace wowpp
 
 	void GameCharacter::initialize()
 	{
+		// Reset base combat rating and modifiers
+		m_combatRatings.fill(0);
+		for (auto &group : m_baseCRMod)
+		{
+			group[base_mod_type::Flat] = 0.0f;
+			group[base_mod_type::Percentage] = 1.0f;
+		}
+		
 		GameUnit::initialize();
 
 		setUInt32Value(object_fields::Type, 25);					//OBJECT_FIELD_TYPE				(TODO: Flags)
@@ -144,11 +152,6 @@ namespace wowpp
 
 		// Reset threat modifiers
 		m_threatModifier.fill(1.0f);
-
-		// Reset base combat rating and modifiers
-		m_combatRatings.fill(0);
-		m_baseCRMod[base_mod_type::Flat].fill(0.0f);
-		m_baseCRMod[base_mod_type::Percentage].fill(1.0f);
 	}
 
 	game::QuestStatus GameCharacter::getQuestStatus(UInt32 quest) const
@@ -1471,14 +1474,14 @@ namespace wowpp
 			level = 100;
 		}
 
-		const auto &ratio = getProject().combatRatings.getById(combatRating * 100 + level - 1)->ratingsperlevel();
-
-		if (!ratio)
+		const auto *entry = getProject().combatRatings.getById(combatRating * 100 + level - 1);
+		if (!entry)
 		{
+			ELOG("ERR");
 			return 1.0f;
 		}
 
-		return 1.0f / ratio;
+		return 1.0f / entry->ratingsperlevel();
 	}
 
 	void GameCharacter::updateCritChance(game::WeaponAttack attackType)
