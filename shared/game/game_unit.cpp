@@ -2219,13 +2219,13 @@ namespace wowpp
 				switch (attackType)
 				{
 				case game::weapon_attack::BaseAttack:
-					crit = getFloatValue(character_fields::CritPercentage);
+					crit = attacker.getFloatValue(character_fields::CritPercentage);
 					break;
 				case game::weapon_attack::OffhandAttack:
-					crit = getFloatValue(character_fields::OffHandCritPercentage);
+					crit = attacker.getFloatValue(character_fields::OffHandCritPercentage);
 					break;
 				case game::weapon_attack::RangedAttack:
-					crit = getFloatValue(character_fields::RangedCritPercentage);
+					crit = attacker.getFloatValue(character_fields::RangedCritPercentage);
 					break;
 				default:
 					crit = 0.0f;
