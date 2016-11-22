@@ -582,8 +582,7 @@ namespace wowpp
 			return 0.0f;
 		}
 
-		math::Vector3 position = other.getLocation();
-		return getDistanceTo(position, use3D);
+		return getDistanceTo(other.getLocation(), use3D);
 	}
 
 	float GameObject::getDistanceTo(const math::Vector3 &position, bool use3D /*= true*/) const
@@ -593,6 +592,25 @@ namespace wowpp
 		}
 		else {
 			return (sqrtf(((position.x - m_position.x) * (position.x - m_position.x)) + ((position.y - m_position.y) * (position.y - m_position.y))));
+		}
+	}
+
+	float GameObject::getSquaredDistanceTo(const GameObject & other, bool use3D) const
+	{
+		if (&other == this) {
+			return 0.0f;
+		}
+
+		return getSquaredDistanceTo(other.getLocation(), use3D);
+	}
+
+	float GameObject::getSquaredDistanceTo(const math::Vector3 & position, bool use3D) const
+	{
+		if (use3D) {
+			return (((position.x - m_position.x) * (position.x - m_position.x)) + ((position.y - m_position.y) * (position.y - m_position.y)) + ((position.z - m_position.z) * (position.z - m_position.z)));
+		}
+		else {
+			return (((position.x - m_position.x) * (position.x - m_position.x)) + ((position.y - m_position.y) * (position.y - m_position.y)));
 		}
 	}
 

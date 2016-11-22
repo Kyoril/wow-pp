@@ -90,11 +90,16 @@ namespace wowpp
 		});
 		
 		// Reset AI eventually
-		m_onMoveTargetChanged = getControlled().getMover().targetChanged.connect([this]
+		m_onMoveTargetChanged = getControlled().getMover().targetChanged.connect([this]()
 		{
 			auto &homePos = getAI().getHome().position;
+			
+			const bool outOfRange = 
+				getControlled().getSquaredDistanceTo(homePos, false) >= 60.0f * 60.0f ||
+				getControlled().getSquaredDistanceTo(getControlled().getMover().getTarget(), true) >= 60.0f * 60.0f;
+
 			if (getCurrentTime() >= (m_lastThreatTime + constants::OneSecond * 10) &&
-			getControlled().getDistanceTo(homePos, false) >= 60.0f)
+				outOfRange)
 			{
 				getAI().reset();
 			}
@@ -471,8 +476,11 @@ namespace wowpp
 			// If we are rooted, we need to check for nearby targets to start attacking them
 			if (rooted)
 			{
-				isInRange =
-				    (controlled.getDistanceTo(*entry.second.threatener, true) <= entry.second.threatener->getMeleeReach() + controlled.getMeleeReach());
+				const float distSq = controlled.getSquaredDistanceTo(*entry.second.threatener, true);
+				const float combatRangeSq =
+					::powf(entry.second.threatener->getMeleeReach() + controlled.getMeleeReach(), 2.0f);
+
+				isInRange = (distSq <= combatRangeSq);
 			}
 
 			if (entry.second.amount > highestThreat && isInRange)

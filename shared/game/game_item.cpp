@@ -99,7 +99,8 @@ namespace wowpp
 				return false;
 			}
 
-			if (spell.itemsubclassmask() != 0 && spell.itemsubclassmask() & (1 << m_entry.subclass()) == 0)
+			if (spell.itemsubclassmask() != 0 && 
+				(spell.itemsubclassmask() & (1 << m_entry.subclass())) == 0)
 			{
 				return false;
 			}

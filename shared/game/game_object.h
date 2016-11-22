@@ -421,6 +421,16 @@ namespace wowpp
 		/// @param use3D If true, the distance will be caluclated using 3d coordinates. Otherwise,
 		///              only 2d coordinates are used (x,y).
 		float getDistanceTo(const math::Vector3 &position, bool use3D = true) const;
+		/// Calculates the squared distance of this object to another object.
+		/// @param other The destination object, whose location will be used.
+		/// @param use3D If true, the distance will be calculated using 3d coordinates. Otherwise,
+		///              only 2d coordinates are used (x,y).
+		float getSquaredDistanceTo(const GameObject &other, bool use3D = true) const;
+		/// Calculates the squared distance of this object to a specific location.
+		/// @param position The destination location.
+		/// @param use3D If true, the distance will be caluclated using 3d coordinates. Otherwise,
+		///              only 2d coordinates are used (x,y).
+		float getSquaredDistanceTo(const math::Vector3 &position, bool use3D = true) const;
 		/// Gets the angle (in radians) which can be used to make this object look at another
 		/// object using the setOrientation method.
 		/// @param other The target object to look at.
