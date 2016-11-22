@@ -522,4 +522,15 @@ namespace wowpp
 		}
 	}
 
+	void AuraContainer::removeAllAuras()
+	{
+		auto it = m_auras.begin();
+		while(it != m_auras.end())
+		{
+			std::shared_ptr<Aura> aura = *it;
+			m_auras.erase(it);
+
+			aura->misapplyAura();
+		}
+	}
 }

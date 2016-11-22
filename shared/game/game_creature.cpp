@@ -491,6 +491,17 @@ namespace wowpp
 		return GameUnit::getBaseSpeed(type) * (type == movement_type::Run ? 1.14286f : 1.0f);
 	}
 
+	bool GameCreature::isEvading() const
+	{
+		// If the AI has not yet been initialized, we consider this unit being in evade mode as well
+		if (!m_ai.get())
+		{
+			return true;
+		}
+
+		return m_ai->isEvading();
+	}
+
 	void GameCreature::relocate(const math::Vector3 & position, float o, bool fire)
 	{
 		// Relocate the object

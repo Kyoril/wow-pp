@@ -137,6 +137,9 @@ namespace wowpp
 
 		virtual float getBaseSpeed(MovementType type) const override;
 
+		/// @copydoc GameUnit::isEvading()
+		virtual bool isEvading() const override;
+
 	public:
 
 		/// @copydoc GameObject::relocate

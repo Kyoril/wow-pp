@@ -90,6 +90,8 @@ namespace wowpp
 		void onCreatureMovementChanged();
 		/// Called when the controlled unit moved.
 		void onControlledMoved();
+		/// Determines if this creature's AI is currently in evade mode.
+		bool isEvading() const { return m_evading; }
 
 	public:
 
@@ -108,5 +110,6 @@ namespace wowpp
 		Home m_home;
 		simple::scoped_connection m_onSpawned;
 		boost::signals2::scoped_connection m_onKilled, m_onDamaged;
+		bool m_evading;
 	};
 }

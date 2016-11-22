@@ -823,6 +823,11 @@ namespace wowpp
 			return (target ? target->getLevel() : getLevel()) * 5;
 		}
 
+		/// Determines if this unit is in evade mode.
+		virtual bool isEvading() const {
+			return false;
+		}
+
 	public:
 
 		/// @copydoc GameObject::relocate

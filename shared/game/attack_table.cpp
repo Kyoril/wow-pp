@@ -50,40 +50,48 @@ namespace wowpp
 				const bool targetLookingAtUs = targetUnit->isInArc(2.0f * 3.1415927f / 3.0f, attacker->getLocation().x, attacker->getLocation().y);
 				game::HitInfo hitInfo = game::hit_info::NormalSwing2;
 				game::VictimState victimState = game::victim_state::Normal;
-				float attackTableRoll = hitTableDistribution(randomGenerator);
-				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school, true)) < 0.0f)
-				{
-					hitInfo = game::hit_info::Miss;
-				}
-				else if (targetUnit->isImmune(school))
-				{
-					victimState = game::victim_state::IsImmune;
-				}
-				else if ((targetLookingAtUs || (targetUnit->getTypeId() != object_type::Character)) && (attackTableRoll -= targetUnit->getDodgeChance(*attacker)) < 0.0f)
-				{
-					victimState = game::victim_state::Dodge;
-				}
-				else if (targetLookingAtUs && targetUnit->canParry() && (attackTableRoll -= targetUnit->getParryChance(*attacker)) < 0.0f)
-				{
-					victimState = game::victim_state::Parry;
-				}
-				else if ((attackTableRoll -= targetUnit->getGlancingChance(*attacker)) < 0.0f)
-				{
-					hitInfo = game::hit_info::Glancing;
-				}
-				else if (targetLookingAtUs && targetUnit->canBlock() && (attackTableRoll -= targetUnit->getBlockChance()) < 0.0f)
-				{
-					victimState = game::victim_state::Blocks;
-				}
-				else if ((attackTableRoll -= targetUnit->getCritChance(*attacker, school)) < 0.0f)
-				{
-					hitInfo = game::hit_info::CriticalHit;
-				}
-				else if ((attackTableRoll -= targetUnit->getCrushChance(*attacker)) < 0.0f)
-				{
-					hitInfo = game::hit_info::Crushing;
-				}
 
+				if (targetUnit->isEvading())
+				{
+					victimState = game::victim_state::Evades;
+				}
+				else
+				{
+					float attackTableRoll = hitTableDistribution(randomGenerator);
+					if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school, true)) < 0.0f)
+					{
+						hitInfo = game::hit_info::Miss;
+					}
+					else if (targetUnit->isImmune(school))
+					{
+						victimState = game::victim_state::IsImmune;
+					}
+					else if ((targetLookingAtUs || (targetUnit->getTypeId() != object_type::Character)) && (attackTableRoll -= targetUnit->getDodgeChance(*attacker)) < 0.0f)
+					{
+						victimState = game::victim_state::Dodge;
+					}
+					else if (targetLookingAtUs && targetUnit->canParry() && (attackTableRoll -= targetUnit->getParryChance(*attacker)) < 0.0f)
+					{
+						victimState = game::victim_state::Parry;
+					}
+					else if ((attackTableRoll -= targetUnit->getGlancingChance(*attacker)) < 0.0f)
+					{
+						hitInfo = game::hit_info::Glancing;
+					}
+					else if (targetLookingAtUs && targetUnit->canBlock() && (attackTableRoll -= targetUnit->getBlockChance()) < 0.0f)
+					{
+						victimState = game::victim_state::Blocks;
+					}
+					else if ((attackTableRoll -= targetUnit->getCritChance(*attacker, school)) < 0.0f)
+					{
+						hitInfo = game::hit_info::CriticalHit;
+					}
+					else if ((attackTableRoll -= targetUnit->getCrushChance(*attacker)) < 0.0f)
+					{
+						hitInfo = game::hit_info::Crushing;
+					}
+				}
+				
 				//				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(effect, *attacker));
 				m_resists[targetA][targetB].push_back(0.0f);
 				m_hitInfos[targetA][targetB].push_back(hitInfo);
@@ -114,54 +122,62 @@ namespace wowpp
 				const bool targetLookingAtUs = targetUnit->isInArc(2.0f * 3.1415927f / 3.0f, attacker->getLocation().x, attacker->getLocation().y);
 				game::HitInfo hitInfo = game::hit_info::NormalSwing2;
 				game::VictimState victimState = game::victim_state::Normal;
-				float attackTableRoll = hitTableDistribution(randomGenerator);
-				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school, false)) < 0.0f)
+
+				if (targetUnit->isEvading())
 				{
-					hitInfo = game::hit_info::Miss;
-				}
-				else if (targetUnit->isImmune(school))
-				{
-					victimState = game::victim_state::IsImmune;
-				}
-				else if ((targetLookingAtUs || targetUnit->getTypeId() != object_type::Character) && (spell.attributes(0) & game::spell_attributes::NoDefense) == 0 && (attackTableRoll -= targetUnit->getDodgeChance(*attacker)) < 0.0f)
-				{
-					victimState = game::victim_state::Dodge;
-				}
-				else if (targetLookingAtUs && targetUnit->canParry() && (spell.attributes(0) & game::spell_attributes::NoDefense) == 0 && (attackTableRoll -= targetUnit->getParryChance(*attacker)) < 0.0f)
-				{
-					victimState = game::victim_state::Parry;
-				}
-				else if (targetLookingAtUs && targetUnit->canBlock() && (spell.attributes(0) & game::spell_attributes::NoDefense) == 0 && (attackTableRoll -= targetUnit->getBlockChance()) < 0.0f)
-				{
-					victimState = game::victim_state::Blocks;
+					victimState = game::victim_state::Evades;
 				}
 				else
 				{
-					if (attacker->getTypeId() == wowpp::object_type::Character)
+					float attackTableRoll = hitTableDistribution(randomGenerator);
+					if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school, false)) < 0.0f)
 					{
-						attackTableRoll = hitTableDistribution(randomGenerator);
-
-						float critChance = targetUnit->getCritChance(*attacker, school);
-						if (attacker)
-						{
-							reinterpret_cast<GameCharacter*>(attacker)->applySpellMod(
-								spell_mod_op::CritChance, spell.id(), critChance);
-						}
-
-						if ((attackTableRoll -= critChance) < 0.0f)
-						{
-							hitInfo = game::hit_info::CriticalHit;
-						}
+						hitInfo = game::hit_info::Miss;
+					}
+					else if (targetUnit->isImmune(school))
+					{
+						victimState = game::victim_state::IsImmune;
+					}
+					else if ((targetLookingAtUs || targetUnit->getTypeId() != object_type::Character) && (spell.attributes(0) & game::spell_attributes::NoDefense) == 0 && (attackTableRoll -= targetUnit->getDodgeChance(*attacker)) < 0.0f)
+					{
+						victimState = game::victim_state::Dodge;
+					}
+					else if (targetLookingAtUs && targetUnit->canParry() && (spell.attributes(0) & game::spell_attributes::NoDefense) == 0 && (attackTableRoll -= targetUnit->getParryChance(*attacker)) < 0.0f)
+					{
+						victimState = game::victim_state::Parry;
+					}
+					else if (targetLookingAtUs && targetUnit->canBlock() && (spell.attributes(0) & game::spell_attributes::NoDefense) == 0 && (attackTableRoll -= targetUnit->getBlockChance()) < 0.0f)
+					{
+						victimState = game::victim_state::Blocks;
 					}
 					else
 					{
-						if ((attackTableRoll -= targetUnit->getCritChance(*attacker, school)) < 0.0f)
+						if (attacker->getTypeId() == wowpp::object_type::Character)
 						{
-							hitInfo = game::hit_info::CriticalHit;
+							attackTableRoll = hitTableDistribution(randomGenerator);
+
+							float critChance = targetUnit->getCritChance(*attacker, school);
+							if (attacker)
+							{
+								reinterpret_cast<GameCharacter*>(attacker)->applySpellMod(
+									spell_mod_op::CritChance, spell.id(), critChance);
+							}
+
+							if ((attackTableRoll -= critChance) < 0.0f)
+							{
+								hitInfo = game::hit_info::CriticalHit;
+							}
+						}
+						else
+						{
+							if ((attackTableRoll -= targetUnit->getCritChance(*attacker, school)) < 0.0f)
+							{
+								hitInfo = game::hit_info::CriticalHit;
+							}
 						}
 					}
 				}
-
+				
 				//				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(effect, *attacker));
 				m_resists[targetA][targetB].push_back(0.0f);
 				m_hitInfos[targetA][targetB].push_back(hitInfo);
@@ -192,28 +208,36 @@ namespace wowpp
 				const bool targetLookingAtUs = targetUnit->isInArc(2.0f * 3.1415927f / 3.0f, attacker->getLocation().x, attacker->getLocation().y);
 				game::HitInfo hitInfo = game::hit_info::NormalSwing;
 				game::VictimState victimState = game::victim_state::Normal;
-				float attackTableRoll = hitTableDistribution(randomGenerator);
-				if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school, false)) < 0.0f)
-				{
-					hitInfo = game::hit_info::Miss;
-				}
-				else if (targetUnit->isImmune(school))
-				{
-					victimState = game::victim_state::IsImmune;
-				}
-				else if ((targetLookingAtUs || targetUnit->getTypeId() != object_type::Character) && (attackTableRoll -= targetUnit->getDodgeChance(*attacker)) < 0.0f)
-				{
-					victimState = game::victim_state::Dodge;
-				}
-				else if (targetLookingAtUs && targetUnit->canParry() && (attackTableRoll -= targetUnit->getParryChance(*attacker)) < 0.0f)
-				{
-					victimState = game::victim_state::Parry;
-				}
-				else if (targetLookingAtUs && targetUnit->canBlock() && (attackTableRoll -= targetUnit->getBlockChance()) < 0.0f)
-				{
-					victimState = game::victim_state::Blocks;
-				}
 
+				if (targetUnit->isEvading())
+				{
+					victimState = game::victim_state::Evades;
+				}
+				else
+				{
+					float attackTableRoll = hitTableDistribution(randomGenerator);
+					if ((attackTableRoll -= targetUnit->getMissChance(*attacker, school, false)) < 0.0f)
+					{
+						hitInfo = game::hit_info::Miss;
+					}
+					else if (targetUnit->isImmune(school))
+					{
+						victimState = game::victim_state::IsImmune;
+					}
+					else if ((targetLookingAtUs || targetUnit->getTypeId() != object_type::Character) && (attackTableRoll -= targetUnit->getDodgeChance(*attacker)) < 0.0f)
+					{
+						victimState = game::victim_state::Dodge;
+					}
+					else if (targetLookingAtUs && targetUnit->canParry() && (attackTableRoll -= targetUnit->getParryChance(*attacker)) < 0.0f)
+					{
+						victimState = game::victim_state::Parry;
+					}
+					else if (targetLookingAtUs && targetUnit->canBlock() && (attackTableRoll -= targetUnit->getBlockChance()) < 0.0f)
+					{
+						victimState = game::victim_state::Blocks;
+					}
+				}
+				
 				//				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(effect, *attacker));
 				m_resists[targetA][targetB].push_back(0.0f);
 				m_hitInfos[targetA][targetB].push_back(hitInfo);
@@ -250,28 +274,36 @@ namespace wowpp
 				game::VictimState victimState = game::victim_state::Normal;
 				float attackTableRoll = hitTableDistribution(randomGenerator);
 
-				float critChance = targetUnit->getCritChance(*attacker, school);
-				if (spell.attributes(2) & game::spell_attributes_ex_b::CantCrit)
+				if (targetUnit->isEvading())
 				{
-					critChance = 0.0f;
+					victimState = game::victim_state::Evades;
 				}
 				else
 				{
-					if (attacker && attacker->isGameCharacter())
+					float critChance = targetUnit->getCritChance(*attacker, school);
+					if (spell.attributes(2) & game::spell_attributes_ex_b::CantCrit)
 					{
-						reinterpret_cast<GameCharacter*>(attacker)->applySpellMod(
-							spell_mod_op::CritChance, spell.id(), critChance);
+						critChance = 0.0f;
+					}
+					else
+					{
+						if (attacker && attacker->isGameCharacter())
+						{
+							reinterpret_cast<GameCharacter*>(attacker)->applySpellMod(
+								spell_mod_op::CritChance, spell.id(), critChance);
+						}
+					}
+
+					if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(effect.mechanic()))
+					{
+						victimState = game::victim_state::IsImmune;
+					}
+					else if (critChance > 0.0f && (attackTableRoll -= critChance) < 0.0f)
+					{
+						hitInfo = game::hit_info::CriticalHit;
 					}
 				}
-
-				if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(effect.mechanic()))
-				{
-					victimState = game::victim_state::IsImmune;
-				}
-				else if (critChance > 0.0f && (attackTableRoll -= critChance) < 0.0f)
-				{
-					hitInfo = game::hit_info::CriticalHit;
-				}
+				
 				m_resists[targetA][targetB].push_back(0.0f);
 				m_hitInfos[targetA][targetB].push_back(hitInfo);
 				m_victimStates[targetA][targetB].push_back(victimState);
@@ -297,7 +329,12 @@ namespace wowpp
 			{
 				game::HitInfo hitInfo = game::hit_info::NoAction;
 				game::VictimState victimState = game::victim_state::Normal;
-				if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(effect.mechanic()))
+
+				if (targetUnit->isEvading())
+				{
+					victimState = game::victim_state::Evades;
+				}
+				else if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(effect.mechanic()))
 				{
 					victimState = game::victim_state::IsImmune;
 				}
@@ -347,27 +384,35 @@ namespace wowpp
 			{
 				game::HitInfo hitInfo = game::hit_info::NoAction;
 				game::VictimState victimState = game::victim_state::Normal;
-				float attackTableRoll = hitTableDistribution(randomGenerator);
-				
-				float critChance = targetUnit->getCritChance(*attacker, school);
-				if (attacker && attacker->isGameCharacter())
-				{
-					reinterpret_cast<GameCharacter*>(attacker)->applySpellMod(
-						spell_mod_op::CritChance, spell.id(), critChance);
-				}
 
-				// AE spells should always hit if in radius
-				if (radius <= 0.0f && (attackTableRoll -= targetUnit->getMissChance(*attacker, school, false)) < 0.0f)
+				if (targetUnit->isEvading())
 				{
-					hitInfo = game::hit_info::Miss;
+					victimState = game::victim_state::Evades;
 				}
-				else if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(1 << spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(1 << effect.mechanic()))
+				else
 				{
-					victimState = game::victim_state::IsImmune;
-				}
-				else if ((attackTableRoll -= critChance) < 0.0f)
-				{
-					hitInfo = game::hit_info::CriticalHit;
+					float attackTableRoll = hitTableDistribution(randomGenerator);
+				
+					float critChance = targetUnit->getCritChance(*attacker, school);
+					if (attacker && attacker->isGameCharacter())
+					{
+						reinterpret_cast<GameCharacter*>(attacker)->applySpellMod(
+							spell_mod_op::CritChance, spell.id(), critChance);
+					}
+
+					// AE spells should always hit if in radius
+					if (radius <= 0.0f && (attackTableRoll -= targetUnit->getMissChance(*attacker, school, false)) < 0.0f)
+					{
+						hitInfo = game::hit_info::Miss;
+					}
+					else if (targetUnit->isImmune(school) || targetUnit->isImmuneAgainstMechanic(1 << spell.mechanic()) || targetUnit->isImmuneAgainstMechanic(1 << effect.mechanic()))
+					{
+						victimState = game::victim_state::IsImmune;
+					}
+					else if ((attackTableRoll -= critChance) < 0.0f)
+					{
+						hitInfo = game::hit_info::CriticalHit;
+					}
 				}
 
 				m_resists[targetA][targetB].push_back(targetUnit->getResiPercentage(spell, *attacker, isBinary));

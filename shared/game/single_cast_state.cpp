@@ -301,7 +301,7 @@ namespace wowpp
 		{
 			return std::make_pair(game::spell_cast_result::FailedSpellInProgress, &m_casting);
 		}
-
+		
 		finishChanneling();
 		SpellCasting &casting = castSpell(
 		                            cast,
@@ -785,7 +785,11 @@ namespace wowpp
 			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, &attacker, threat))
 			{
 				std::map<UInt64, game::SpellMissInfo> missedTargets;
-				if (state == game::victim_state::IsImmune)
+				if (state == game::victim_state::Evades)
+				{
+					missedTargets[targetUnit->getGuid()] = game::spell_miss_info::Evade;
+				}
+				else if (state == game::victim_state::IsImmune)
 				{
 					missedTargets[targetUnit->getGuid()] = game::spell_miss_info::Immune;
 				}
@@ -857,9 +861,12 @@ namespace wowpp
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
-			m_affectedTargets.insert(targetUnit->shared_from_this());
+			if (victimStates[i] != game::victim_state::Evades)
+			{
+				m_affectedTargets.insert(targetUnit->shared_from_this());
 
-			targetUnit->dealDamage(targetUnit->getUInt32Value(unit_fields::Health), m_spell.schoolmask(), &caster, 0.0f);
+				targetUnit->dealDamage(targetUnit->getUInt32Value(unit_fields::Health), m_spell.schoolmask(), &caster, 0.0f);
+			}
 
 			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
 			{
@@ -1052,7 +1059,8 @@ namespace wowpp
 			bool crit = false;
 			UInt32 resisted = 0;
 			UInt32 absorbed = 0;
-			if (state == game::victim_state::IsImmune)
+			if (state == game::victim_state::IsImmune || 
+				state == game::victim_state::Evades)
 			{
 				totalDamage = 0;
 			}
@@ -1109,7 +1117,11 @@ namespace wowpp
 				m_completedEffectsExecution[targetUnit->getGuid()] = completedEffects.connect([this, &caster, targetUnit, totalDamage, school, absorbed, resisted, crit, state]()
 				{
 					std::map<UInt64, game::SpellMissInfo> missedTargets;
-					if (state == game::victim_state::IsImmune)
+					if (state == game::victim_state::Evades)
+					{
+						missedTargets[targetUnit->getGuid()] = game::spell_miss_info::Evade;
+					}
+					else if (state == game::victim_state::IsImmune)
 					{
 						missedTargets[targetUnit->getGuid()] = game::spell_miss_info::Immune;
 					}
@@ -2071,6 +2083,10 @@ namespace wowpp
 			if (hitInfos[i] == game::hit_info::Miss)
 			{
 				missInfo = game::spell_miss_info::Miss;
+			}
+			else if (victimStates[i] == game::victim_state::Evades)
+			{
+				missInfo = game::spell_miss_info::Evade;
 			}
 			else if (victimStates[i] == game::victim_state::IsImmune)
 			{
@@ -3330,22 +3346,16 @@ namespace wowpp
 
 			UInt32 totalDamage;
 			const game::VictimState &state = victimStates[i];
-			if (state == game::victim_state::IsImmune)
+			if (state == game::victim_state::IsImmune ||
+				state == game::victim_state::Evades ||
+				state == game::victim_state::Dodge ||
+				state == game::victim_state::Parry)
 			{
 				totalDamage = 0;
 			}
 			else if (hitInfos[i] == game::hit_info::Miss)
 			{
 				totalDamage = 0;
-			}
-			else if (state == game::victim_state::Dodge)
-			{
-				totalDamage = 0;
-			}
-			else if (state == game::victim_state::Parry)
-			{
-				totalDamage = 0;
-				//TODO accelerate next m_victim autohit
 			}
 			else
 			{

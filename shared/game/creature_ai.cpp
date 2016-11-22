@@ -89,6 +89,9 @@ namespace wowpp
 			m_state->onLeave();
 		}
 
+		// Every state change causes the creature to leave evade mode
+		m_evading = false;
+
 		assert(state.get());
 		m_state = std::move(state);
 		m_state->onEnter();
@@ -114,6 +117,9 @@ namespace wowpp
 	{
 		auto state = make_unique<CreatureAIResetState>(*this);
 		setState(std::move(state));
+
+		// We are now evading
+		m_evading = true;
 	}
 
 	void CreatureAI::onCombatMovementChanged()
