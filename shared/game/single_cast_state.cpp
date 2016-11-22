@@ -56,10 +56,8 @@ namespace wowpp
 				return;
 			}
 
-			math::Vector3 location(caster.getLocation());
-
 			TileIndex2D tileIndex;
-			worldInstance->getGrid().getTilePosition(location, tileIndex[0], tileIndex[1]);
+			worldInstance->getGrid().getTilePosition(caster.getLocation(), tileIndex[0], tileIndex[1]);
 
 			std::vector<char> buffer;
 			io::VectorSink sink(buffer);
@@ -75,6 +73,39 @@ namespace wowpp
 				    packet,
 				    buffer
 				);
+			});
+		}
+
+		template <class T>
+		void sendPacketToCaster(GameUnit &caster, T generator)
+		{
+			auto *worldInstance = caster.getWorldInstance();
+			if (!worldInstance)
+			{
+				return;
+			}
+
+			TileIndex2D tileIndex;
+			worldInstance->getGrid().getTilePosition(caster.getLocation(), tileIndex[0], tileIndex[1]);
+
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket packet(sink);
+			generator(packet);
+
+			forEachSubscriberInSight(
+				worldInstance->getGrid(),
+				tileIndex,
+				[&buffer, &packet, &caster](ITileSubscriber & subscriber)
+			{
+				if (subscriber.getControlledObject() == &caster)
+				{
+					subscriber.sendPacket(
+						packet,
+						buffer
+					);
+				}
+				
 			});
 		}
 	}
@@ -146,7 +177,7 @@ namespace wowpp
 			executer.setUInt32Value(unit_fields::ChannelSpell, m_spell.id());
 		}
 
-		math::Vector3 location(m_cast.getExecuter().getLocation());
+		const math::Vector3 &location = m_cast.getExecuter().getLocation();
 		m_x = location.x, m_y = location.y, m_z = location.z;
 
 		m_countdown.ended.connect([this]()
@@ -1553,11 +1584,11 @@ namespace wowpp
 	{
 		if (!isPlayerGUID(m_target.getUnitTarget()))
 		{
+			WLOG("TODO: KnockBack on creatures");
 			return;
 		}
 
 		auto *world = m_cast.getExecuter().getWorldInstance();
-
 		if (!world)
 		{
 			return;
@@ -1589,7 +1620,7 @@ namespace wowpp
 
 		targetUnit->cancelCast(game::spell_interrupt_flags::Movement);
 
-		sendPacketFromCaster(caster,
+		sendPacketToCaster(caster,
 							 std::bind(game::server_write::moveKnockBack, std::placeholders::_1,
 									   targetUnit->getGuid(),
 									   vcos,
