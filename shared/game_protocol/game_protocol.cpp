@@ -2993,6 +2993,18 @@ namespace wowpp
 
 				out_packet.finish();
 			}
+			void moveKnockBackWithInfo(game::OutgoingPacket & out_packet, UInt64 targetGUID, const MovementInfo & movementInfo)
+			{
+				out_packet.start(game::server_packet::MoveKnockBack2);
+				out_packet
+					<< io::write_packed_guid(targetGUID)
+					<< movementInfo
+					<< io::write<float>(movementInfo.jumpSinAngle)
+					<< io::write<float>(movementInfo.jumpCosAngle)
+					<< io::write<float>(movementInfo.jumpXYSpeed)
+					<< io::write<float>(movementInfo.jumpVelocity);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

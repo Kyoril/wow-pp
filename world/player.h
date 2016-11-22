@@ -128,7 +128,7 @@ namespace wowpp
 		/// Converts a timestamp value from another player to this players timestamp value.
 		/// @param otherTimestamp The other players timestamp values.
 		/// @param otherTick The other players tick count.
-		WOWPP_DEPRECATED UInt32 convertTimestamp(UInt32 otherTimestamp, UInt32 otherTick) const override;
+		UInt32 convertTimestamp(UInt32 otherTimestamp, UInt32 otherTick) const override;
 		/// Updates the player characters group id.
 		/// @param group The new group id or 0, if not in a group.
 		void updateCharacterGroup(UInt64 group);
@@ -254,6 +254,7 @@ namespace wowpp
 		void handleResurrectResponse(game::Protocol::IncomingPacket &packet);
 		void handleCancelChanneling(game::Protocol::IncomingPacket &packet);
 		void handlePlayedTime(game::Protocol::IncomingPacket &packet);
+		void handleAckCode(game::Protocol::IncomingPacket &packet, UInt16 opCode);
 
 	private:
 
@@ -322,7 +323,8 @@ namespace wowpp
 		GameObject *m_lootSource;
 		UInt32 m_clientDelayMs;
 		GameTime m_nextDelayReset;
-		UInt32 m_clientTicks;
+		Int32 m_clientTimeDiff;
+		UInt32 m_prevTimestamp;
 		LinearSet<UInt64> m_ignoredGUIDs;
 		Countdown m_groupUpdate;
 		TradeStatusInfo m_tradeStatusInfo;

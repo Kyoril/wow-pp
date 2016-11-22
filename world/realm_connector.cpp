@@ -755,6 +755,12 @@ namespace wowpp
 				sender->handleMovementCode(clientPacket, opCode);
 				break;
 			}
+			// TODO: Add more ACK handlers
+			case game::client_packet::MoveKnockBackAck:
+			{
+				sender->handleAckCode(clientPacket, opCode);
+				break;
+			}
 			default:
 			{
 				// Unhandled packet

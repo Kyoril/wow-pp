@@ -1620,7 +1620,7 @@ namespace wowpp
 
 		targetUnit->cancelCast(game::spell_interrupt_flags::Movement);
 
-		sendPacketToCaster(caster,
+		sendPacketToCaster(*targetUnit,
 							 std::bind(game::server_write::moveKnockBack, std::placeholders::_1,
 									   targetUnit->getGuid(),
 									   vcos,

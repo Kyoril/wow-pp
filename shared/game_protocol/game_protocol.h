@@ -453,6 +453,7 @@ namespace wowpp
 				MoveHeartBeat			= 0x0EE,
 				ForceMoveRootAck		= 0x0E9,
 				ForceMoveUnrootAck		= 0x0EB,
+				MoveKnockBackAck		= 0x0F0,
 				CompleteCinematic		= 0x0FC,
 				TutorialFlag			= 0x0FE,
 				TutorialClear			= 0x0FF,
@@ -603,7 +604,8 @@ namespace wowpp
 				MoveRoot					= 0x0EC,
 				MoveUnroot					= 0x0ED,
 				MoveHeartBeat				= 0x0EE,
-				MoveKnockBack				= 0x0EF,
+				MoveKnockBack				= 0x0EF,	// Sent ONLY to affected client
+				MoveKnockBack2				= 0x0F1,	// Sent to other clients that are not affected
 				MoveFeatherFall				= 0x0F2,
 				MoveNormalFall				= 0x0F3,
 				MoveSetHover				= 0x0F4,
@@ -2393,6 +2395,12 @@ namespace wowpp
 				float vsin,
 				float speedxy,
 				float speedz
+			);
+
+			void moveKnockBackWithInfo(
+				game::OutgoingPacket &out_packet,
+				UInt64 targetGUID,
+				const MovementInfo &movementInfo
 			);
 		};
 	}

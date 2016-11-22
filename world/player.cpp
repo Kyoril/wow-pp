@@ -59,9 +59,10 @@ namespace wowpp
 		, m_loot(nullptr)
 		, m_clientDelayMs(0)
 		, m_nextDelayReset(0)
-		, m_clientTicks(0)
+		, m_clientTimeDiff(0)
 		, m_groupUpdate(instance.getUniverse().getTimers())
 		, m_lastPlayTimeUpdate(0)
+		, m_prevTimestamp(0)
 	{
 		m_logoutCountdown.ended.connect(
 			std::bind(&Player::onLogout, this));
@@ -475,7 +476,7 @@ namespace wowpp
 				writer
 					<< io::write<NetUInt32>(moveFlags)
 					<< io::write<NetUInt8>(0x00)
-					<< io::write<NetUInt32>(mTimeStamp());	//TODO: Time
+					<< io::write<NetUInt32>(getCurrentTime());
 
 															// Position & Rotation
 				float o = m_character->getOrientation();
@@ -1529,7 +1530,7 @@ namespace wowpp
 	void Player::handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode)
 	{
 		// Can't receive player input when in one of these CC states
-		if (m_character->isFeared() || m_character->isStunned() || m_character->isRooted() || m_character->isConfused())
+		if (m_character->isFeared() || m_character->isConfused())
 			return;
 
 		MovementInfo info;
@@ -1539,15 +1540,16 @@ namespace wowpp
 			return;
 		}
 
-		UInt64 currentTime = getCurrentTime();
-		if (m_nextDelayReset <= currentTime)
-		{
-			m_clientDelayMs = 0;
-			m_nextDelayReset = currentTime + constants::OneSecond * 30;
-		}
+		// We really need to keep the same diff!
+		const UInt32 m_prevDiff = info.time - m_prevTimestamp;
+		m_prevTimestamp = info.time;
 
 		if (opCode != game::client_packet::MoveStop)
 		{
+			// Don't accept these when it's not a move-stop
+			if (m_character->isStunned() || m_character->isRooted())
+				return;
+
 			auto flags = m_character->getUInt32Value(unit_fields::UnitFlags);
 			if ((flags & 0x00040000) != 0 ||
 				(flags & 0x00000004) != 0)
@@ -1561,7 +1563,7 @@ namespace wowpp
 		auto guid = m_character->getGuid();
 
 		// Get object location
-		math::Vector3 location(m_character->getLocation());
+		const math::Vector3 &location = m_character->getLocation();
 
 		// Player started swimming
 		if ((info.moveFlags & game::movement_flags::Swimming) != 0 &&
@@ -1587,31 +1589,23 @@ namespace wowpp
 			ELOG("Could not resolve grid location!");
 			return;
 		}
-
-		UInt32 msTime = mTimeStamp();
-		if (m_clientDelayMs == 0)
-		{
-			m_clientDelayMs = msTime - info.time;
-		}
-
-		// Convert movement time packet
-		Int32 move_time = 
-			(info.time - (msTime - m_clientDelayMs)) + MovementPacketTimeDelay + msTime;
-
+		
 		// Get grid tile
 		(void)grid.requireTile(gridIndex);
-		info.time = move_time;
 
 		// Notify all watchers about the new object
 		forEachTileInSight(
 			getWorldInstance().getGrid(),
 			gridIndex,
-			[this, &info, opCode, guid, move_time](VisibilityTile &tile)
+			[this, &info, opCode, guid](VisibilityTile &tile)
 		{
 			for (auto &watcher : tile.getWatchers())
 			{
 				if (watcher != this)
 				{
+					// Convert time stamp
+					info.time = watcher->convertTimestamp(info.time, 0) + 50;
+
 					// Create the chat packet
 					std::vector<char> buffer;
 					io::VectorSink sink(buffer);
@@ -1624,7 +1618,6 @@ namespace wowpp
 		});
 
 		//TODO: Verify new location
-
 		UInt32 lastFallTime = 0;
 		float lastFallZ = 0.0f;
 		getFallInfo(lastFallTime, lastFallZ);
@@ -1698,14 +1691,14 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("TIME SYNC RESPONSE " << m_character->getName() << ": Counter " << counter << "; Ticks: " << ticks);
-		m_clientTicks = ticks;
+		GameTime currentTicks = getCurrentTime();
+		m_clientTimeDiff = Int32((Int64)currentTicks - (Int64)ticks);
+		DLOG("TIME SYNC RESPONSE " << m_character->getName() << ": Diff " << m_clientTimeDiff);
 	}
 
 	UInt32 Player::convertTimestamp(UInt32 otherTimestamp, UInt32 otherTick) const
 	{
-		UInt32 otherDiff = otherTimestamp - otherTick;
-		return m_clientTicks + otherDiff;
+		return (UInt32)(otherTimestamp - m_clientTimeDiff);
 	}
 
 	void Player::addIgnore(UInt64 guid)
@@ -3588,5 +3581,90 @@ namespace wowpp
 				m_character->getPlayTime(player_time_index::LevelPlayTime)	// Time on characters level in seconds
 			)
 		);
+	}
+	void Player::handleAckCode(game::Protocol::IncomingPacket & packet, UInt16 opCode)
+	{
+		// Read the guid values first
+		UInt64 guid = 0;
+		UInt32 index = 0;
+		if (!(packet
+			>> io::read<NetUInt64>(guid)
+			>> io::read<NetUInt32>(index)))
+		{
+			WLOG("Could not read ack opcode 0x" << std::hex << opCode);
+			return;
+		}
+
+		if (guid != m_character->getGuid())
+		{
+			WLOG("Received ack opcode from other character!");
+			return;
+		}
+
+		// Next data depends on opCode
+		switch (opCode)
+		{
+			case wowpp::game::client_packet::MoveKnockBackAck:
+			{
+				MovementInfo info;
+				if (!(packet >> info))
+				{
+					WLOG("Could not read movement info from CMSG_MOVE_KNOCK_BACK_ACK!");
+					return;
+				}
+
+				UInt32 msTime = getCurrentTime();
+				m_clientDelayMs = msTime - info.time;
+
+				//const auto &location = m_character->getLocation();
+				auto location = math::Vector3(info.x, info.y, info.z);
+
+				// Store movement information
+				m_character->setMovementInfo(info);
+				m_character->relocate(location, info.o, true);
+
+				// Transform into grid location
+				TileIndex2D gridIndex;
+				if (!m_character->getTileIndex(gridIndex))
+				{
+					ELOG("Could not resolve grid location!");
+					return;
+				}
+
+				auto &grid = getWorldInstance().getGrid();
+				(void)grid.requireTile(gridIndex);
+
+				// Notify all watchers
+				forEachTileInSight(
+					getWorldInstance().getGrid(),
+					gridIndex,
+					[this, &info](VisibilityTile &tile)
+				{
+					for (auto &watcher : tile.getWatchers())
+					{
+						if (watcher != this)
+						{
+							info.time = watcher->convertTimestamp(info.time, 0) + 50;
+
+							// Create the chat packet
+							std::vector<char> buffer;
+							io::VectorSink sink(buffer);
+							game::Protocol::OutgoingPacket movePacket(sink);
+							game::server_write::moveKnockBackWithInfo(movePacket, m_character->getGuid(), info);
+							watcher->sendPacket(movePacket, buffer);
+						}
+					}
+				});
+
+				break;
+			}
+
+			default:
+			{
+				WLOG("Unhandled Ack packet received: " << opCode);
+				break;
+			}
+		}
+
 	}
 }
