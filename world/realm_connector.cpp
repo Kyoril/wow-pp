@@ -720,7 +720,7 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(MailSend)
 			WOWPP_HANDLE_PLAYER_PACKET(ResurrectResponse)
 			WOWPP_HANDLE_PLAYER_PACKET(CancelChanneling)
-
+			WOWPP_HANDLE_PLAYER_PACKET(PlayedTime)
 #undef WOWPP_HANDLE_PLAYER_PACKET
 
 			// Movement packets get special treatment

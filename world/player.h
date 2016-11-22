@@ -194,6 +194,10 @@ namespace wowpp
 		///
 		void moveItems(std::vector<std::shared_ptr<GameItem>> my_Items, std::vector<std::shared_ptr<GameItem>> his_Items);
 
+	private:
+
+		void updatePlayerTime(bool resetLevelTime = false);
+
 	public:
 
 		/// @copydoc ITileSubscriber::getControlledObject()
@@ -249,6 +253,7 @@ namespace wowpp
 		void handleMailSend(game::Protocol::IncomingPacket &packet);
 		void handleResurrectResponse(game::Protocol::IncomingPacket &packet);
 		void handleCancelChanneling(game::Protocol::IncomingPacket &packet);
+		void handlePlayedTime(game::Protocol::IncomingPacket &packet);
 
 	private:
 
@@ -322,5 +327,6 @@ namespace wowpp
 		Countdown m_groupUpdate;
 		TradeStatusInfo m_tradeStatusInfo;
 		std::shared_ptr<TradeData> m_tradeData;
+		GameTime m_lastPlayTimeUpdate;
 	};
 }

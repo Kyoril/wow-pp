@@ -63,13 +63,15 @@ namespace wowpp
 
 		/// Determines if this spell is a channeled spell.
 		bool isChanneled() const { return (m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1) || (m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_2); }
+		/// Determines if this spell has a charge effect.
+		bool hasChargeEffect() const;
 
 	private:
 
 		bool consumeItem(bool delayed = true);
 		bool consumePower();
 		void applyCooldown(UInt64 cooldownTimeMS, UInt64 catCooldownTimeMS);
-		void applyAllEffects();
+		void applyAllEffects(bool executeInstants, bool executeDelayed);
 		Int32 calculateEffectBasePoints(const proto::SpellEffect &effect);
 		UInt32 getSpellPointsTotal(const proto::SpellEffect &effect, UInt32 spellPower, UInt32 bonusPct);
 		void spellEffectInstantKill(const proto::SpellEffect &effect);
@@ -147,6 +149,7 @@ namespace wowpp
 		HitResultMap m_hitResults;
 		game::WeaponAttack m_attackType;
 		std::vector<UInt64> m_dynObjectsToDespawn;
+		bool m_instantsCast, m_delayedCast;
 
 		void sendEndCast(bool success);
 		void onCastFinished();

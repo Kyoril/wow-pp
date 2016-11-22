@@ -61,6 +61,7 @@ namespace wowpp
 		, m_nextDelayReset(0)
 		, m_clientTicks(0)
 		, m_groupUpdate(instance.getUniverse().getTimers())
+		, m_lastPlayTimeUpdate(0)
 	{
 		m_logoutCountdown.ended.connect(
 			std::bind(&Player::onLogout, this));
@@ -226,6 +227,9 @@ namespace wowpp
 
 		// Trigger regeneration for our character
 		m_character->startRegeneration();
+
+		// Initialize value
+		m_lastPlayTimeUpdate = getCurrentTime();
 	}
 
 	void Player::logoutRequest()
@@ -582,6 +586,7 @@ namespace wowpp
 
 	void Player::onDespawn()
 	{
+		updatePlayerTime();
 		saveCharacterData();
 
 		// Find our tile
@@ -1336,6 +1341,8 @@ namespace wowpp
 
 	void Player::onLevelGained(UInt32 previousLevel, Int32 healthDiff, Int32 manaDiff, Int32 statDiff0, Int32 statDiff1, Int32 statDiff2, Int32 statDiff3, Int32 statDiff4)
 	{
+		updatePlayerTime(true);
+
 		UInt32 level = getCharacter()->getLevel();
 		sendProxyPacket(
 			std::bind(game::server_write::levelUpInfo, 
@@ -3333,6 +3340,31 @@ namespace wowpp
 		}
 	}
 
+	void Player::updatePlayerTime(bool resetLevelTime/* = false*/)
+	{
+		// Get current time
+		const GameTime now = getCurrentTime();
+
+		// Calculate delta in milliseconds
+		const UInt32 diff = static_cast<UInt32>((now - m_lastPlayTimeUpdate) / constants::OneSecond);
+
+		// Reset player time value
+		m_lastPlayTimeUpdate = getCurrentTime();
+		if (resetLevelTime)
+		{
+			m_character->setPlayTime(player_time_index::LevelPlayTime, 0);
+		}
+		else
+		{
+			m_character->setPlayTime(player_time_index::LevelPlayTime,
+				m_character->getPlayTime(player_time_index::LevelPlayTime) + diff);
+		}
+
+		m_character->setPlayTime(player_time_index::TotalPlayTime, 
+			m_character->getPlayTime(player_time_index::TotalPlayTime) + diff);
+
+	}
+
 	void Player::sendTradeStatus(TradeStatusInfo info)
 	{
 		sendProxyPacket(
@@ -3546,5 +3578,15 @@ namespace wowpp
 		}
 
 		m_character->finishChanneling();
+	}
+	void Player::handlePlayedTime(game::Protocol::IncomingPacket & packet)
+	{
+		updatePlayerTime();
+		sendProxyPacket(
+			std::bind(game::server_write::playedTime, std::placeholders::_1,
+				m_character->getPlayTime(player_time_index::TotalPlayTime),	// Total time played in seconds
+				m_character->getPlayTime(player_time_index::LevelPlayTime)	// Time on characters level in seconds
+			)
+		);
 	}
 }

@@ -101,6 +101,8 @@ namespace wowpp
 		, m_victimProc(0)
 		, m_canTrigger(false)
 		, m_attackType(game::weapon_attack::BaseAttack)
+		, m_instantsCast(false)
+		, m_delayedCast(false)
 	{
 		// Check if the executer is in the world
 		auto &executer = m_cast.getExecuter();
@@ -599,7 +601,7 @@ namespace wowpp
 				}
 
 				strongThis->sendEndCast(true);
-				strongThis->applyAllEffects();
+				strongThis->applyAllEffects(true, true);
 				return true;
 			});
 		}
@@ -617,6 +619,9 @@ namespace wowpp
 
 			if (m_spell.speed() > 0.0f)
 			{
+				// Apply all instant effects
+				applyAllEffects(true, false);
+
 				// Calculate distance to target
 				GameUnit *unitTarget = nullptr;
 				auto *world = m_cast.getExecuter().getWorldInstance();
@@ -656,7 +661,7 @@ namespace wowpp
 								}
 								else
 								{
-									strongThis->applyAllEffects();
+									strongThis->applyAllEffects(false, true);
 									strongTarget.reset();
 									strongThis.reset();
 								}
@@ -670,14 +675,14 @@ namespace wowpp
 						}
 						else
 						{
-							applyAllEffects();
+							applyAllEffects(false, true);
 						}
 					}
 				}
 			}
 			else
 			{
-				applyAllEffects();
+				applyAllEffects(true, true);
 			}
 		}
 
@@ -2397,9 +2402,10 @@ namespace wowpp
 		}
 	}
 
-	void SingleCastState::applyAllEffects()
+	void SingleCastState::applyAllEffects(bool executeInstants, bool executeDelayed)
 	{
 		// Add spell cooldown if any
+		if (!m_instantsCast && !m_delayedCast)
 		{
 			UInt64 spellCatCD = m_spell.categorycooldown();
 			UInt64 spellCD = m_spell.cooldown();
@@ -2541,7 +2547,11 @@ namespace wowpp
 
 		// Execute spell immediatly
 		namespace se = game::spell_effects;
-		std::vector<std::pair<UInt32, EffectHandler>> effectMap {
+		std::vector<std::pair<UInt32, EffectHandler>> instantMap{
+			{ se::Charge,				std::bind(&SingleCastState::spellEffectCharge, this, std::placeholders::_1) },
+		};
+
+		std::vector<std::pair<UInt32, EffectHandler>> delayedMap {
 			//ordered pairs to avoid 25% resists for binary spells like frostnova
 			{se::Dummy,					std::bind(&SingleCastState::spellEffectDummy, this, std::placeholders::_1) },
 			{se::InstantKill,			std::bind(&SingleCastState::spellEffectInstantKill, this, std::placeholders::_1)},
@@ -2560,7 +2570,6 @@ namespace wowpp
 			{se::Energize,				std::bind(&SingleCastState::spellEffectEnergize, this, std::placeholders::_1)},
 			{se::WeaponPercentDamage,	std::bind(&SingleCastState::spellEffectWeaponPercentDamage, this, std::placeholders::_1)},
 			{se::PowerBurn,				std::bind(&SingleCastState::spellEffectPowerBurn, this, std::placeholders::_1)},
-			{se::Charge,				std::bind(&SingleCastState::spellEffectCharge, this, std::placeholders::_1)},
 			{se::OpenLock,				std::bind(&SingleCastState::spellEffectOpenLock, this, std::placeholders::_1)},
 			{se::OpenLockItem,			std::bind(&SingleCastState::spellEffectOpenLock, this, std::placeholders::_1) },
 			{se::ApplyAreaAuraParty,	std::bind(&SingleCastState::spellEffectApplyAreaAuraParty, this, std::placeholders::_1)},
@@ -2587,16 +2596,44 @@ namespace wowpp
 
 		// Make sure that the executer exists after all effects have been executed
 		auto strongCaster = std::static_pointer_cast<GameUnit>(m_cast.getExecuter().shared_from_this());
-		for (std::vector<std::pair<UInt32, EffectHandler>>::iterator it = effectMap.begin(); it != effectMap.end(); ++it)
+
+		if (executeInstants && !m_instantsCast)
 		{
-			for (int k = 0; k < effects.size(); ++k)
+			for (auto &effect : instantMap)
 			{
-				if (it->first == effects[k])
+				for (int k = 0; k < effects.size(); ++k)
 				{
-					assert(it->second);
-					it->second(m_spell.effects(k));
+					if (effect.first == effects[k])
+					{
+						assert(it->second);
+						effect.second(m_spell.effects(k));
+					}
 				}
 			}
+
+			m_instantsCast = true;
+		}
+
+		if (executeDelayed && !m_delayedCast)
+		{
+			for (auto &effect : delayedMap)
+			{
+				for (int k = 0; k < effects.size(); ++k)
+				{
+					if (effect.first == effects[k])
+					{
+						assert(it->second);
+						effect.second(m_spell.effects(k));
+					}
+				}
+			}
+
+			m_delayedCast = true;
+		}
+
+		if (!m_instantsCast || !m_delayedCast)
+		{
+			return;
 		}
 
 		completedEffects();
@@ -2668,6 +2705,17 @@ namespace wowpp
 				}
 			}
 		}
+	}
+
+	bool wowpp::SingleCastState::hasChargeEffect() const
+	{
+		for (const auto &eff : m_spell.effects())
+		{
+			if (eff.type() == game::spell_effects::Charge) 
+				return true;
+		}
+
+		return false;
 	}
 
 	bool SingleCastState::consumeItem(bool delayed/* = true*/)

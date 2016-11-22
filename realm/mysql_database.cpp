@@ -485,8 +485,10 @@ namespace wowpp
 			"SELECT `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`xp`, `gold`, `map`,"
 			//       10     11           12           13           14
 				   "`zone`,`position_x`,`position_y`,`position_z`,`orientation`,"
-            //       15        16       17       18       19	   20					21			  22		 23				24
-				   "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`,`explored_zones`, `last_save`, `last_group`, `actionbars`, `flags` FROM `character` WHERE `id`={0} LIMIT 1"
+            //       15        16       17       18       19	   20					21			  22		 23				
+				   "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`,`explored_zones`, `last_save`, `last_group`, `actionbars`,"
+			//		 24	      25             26
+				   "`flags`, `played_time`, `level_time` FROM `character` WHERE `id`={0} LIMIT 1"
 			, characterId));
 		if (select.success())
 		{
@@ -607,6 +609,13 @@ namespace wowpp
 				UInt64 lastGroup = 0;
 				row.getField(22, lastGroup);
 				out_character.setGroupId(lastGroup);
+
+				// Load play time values
+				UInt32 totalTime = 0, levelTime = 0;
+				row.getField(25, totalTime);
+				row.getField(26, levelTime);
+				out_character.setPlayTime(player_time_index::TotalPlayTime, totalTime);
+				out_character.setPlayTime(player_time_index::LevelPlayTime, levelTime);
 
 				// Load character spells
 				wowpp::MySQL::Select spellSelect(m_connection, fmt::format(
@@ -774,7 +783,8 @@ namespace wowpp
 
 		if (!m_connection.execute(fmt::format(
 			"UPDATE `character` SET `map`={1}, `zone`={2}, `position_x`={3}, `position_y`={4}, `position_z`={5}, `orientation`={6}, `level`={7}, `xp`={8}, `gold`={9}, "
-			"`home_map`={10}, `home_x`={11}, `home_y`={12}, `home_z`={13}, `home_o`={14}, `explored_zones`='{15}', `last_save`={16}, `last_group`={17}, `actionbars`={18}, `flags`={19} WHERE `id`={0};"
+			"`home_map`={10}, `home_x`={11}, `home_y`={12}, `home_z`={13}, `home_o`={14}, `explored_zones`='{15}', `last_save`={16}, `last_group`={17}, `actionbars`={18}, `flags`={19},"
+			"`played_time`={20}, `level_time`={21} WHERE `id`={0};"
 			, lowerGuid															// 0
 			, character.getMapId()												// 1
 			, character.getZone()												// 2
@@ -789,6 +799,8 @@ namespace wowpp
 			, character.getGroupId()											// 17
 			, UInt32(character.getByteValue(character_fields::FieldBytes, 2))	// 18
 			, character.getUInt32Value(character_fields::CharacterFlags)		// 19
+			, character.getPlayTime(player_time_index::TotalPlayTime)			// 20
+			, character.getPlayTime(player_time_index::LevelPlayTime)			// 21
 			)))
 		{
 			// There was an error

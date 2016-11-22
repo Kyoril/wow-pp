@@ -405,6 +405,21 @@ namespace wowpp
 
 	typedef player_key_ring_slots::Enum PlayerKeyRingSlots;
 
+	namespace player_time_index
+	{
+		enum Enum
+		{
+			/// Characters total play time in seconds.
+			TotalPlayTime	= 0,
+			/// Character play time on current level in seconds.
+			LevelPlayTime	= 1,
+
+			Count_			= 2
+		};
+	}
+
+	typedef player_time_index::Enum PlayerTimeIndex;
+
 	namespace group_update_flags
 	{
 		enum Type
@@ -938,6 +953,17 @@ namespace wowpp
 		///
 		void handleBaseCRMod(BaseModGroup modGroup, BaseModType modType, float amount, bool apply);
 
+		/// Sets the characters play time value.
+		/// @param index Determines which time value to set.
+		/// @param value The new time value in seconds.
+		void setPlayTime(PlayerTimeIndex index, UInt32 value);
+		/// Gets the characters play time value in seconds.
+		/// @param index Determines which time value to retrieve.
+		/// @returns Time value in seconds.
+		UInt32 getPlayTime(PlayerTimeIndex index) const {
+			return m_playedTime[index];
+		}
+
 	public:
 
 		/// @copydoc GameUnit::onKilled(GameUnit*)
@@ -1005,6 +1031,7 @@ namespace wowpp
 		UInt32 m_resurrectHealth, m_resurrectMana;
 		CombatRatingsArray m_combatRatings;
 		BaseCRModArray m_baseCRMod;
+		std::array<UInt32, player_time_index::Count_> m_playedTime;
 	};
 
 	/// Serializes a GameCharacter to an io::Writer object for the wow++ protocol.

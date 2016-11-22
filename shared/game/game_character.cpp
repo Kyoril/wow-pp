@@ -67,6 +67,9 @@ namespace wowpp
 		m_valueBitset.resize((character_fields::CharacterFieldCount + 31) / 32, 0);
 
 		m_objectType |= type_mask::Player;
+
+		// Reset time values
+		m_playedTime.fill(0);
 	}
 
 	GameCharacter::~GameCharacter()
@@ -82,7 +85,7 @@ namespace wowpp
 			group[base_mod_type::Flat] = 0.0f;
 			group[base_mod_type::Percentage] = 1.0f;
 		}
-		
+
 		GameUnit::initialize();
 
 		setUInt32Value(object_fields::Type, 25);					//OBJECT_FIELD_TYPE				(TODO: Flags)
@@ -1611,6 +1614,11 @@ namespace wowpp
 		}
 	}
 
+	void GameCharacter::setPlayTime(PlayerTimeIndex index, UInt32 value)
+	{
+		m_playedTime[index] = value;
+	}
+
 	void GameCharacter::onKilled(GameUnit * killer)
 	{
 		GameUnit::onKilled(killer);
@@ -2821,8 +2829,11 @@ namespace wowpp
 
 	io::Writer &operator<<(io::Writer &w, GameCharacter const &object)
 	{
+		// Write super class data
+		w << reinterpret_cast<GameUnit const &>(object);
+
+		// Write character-specific values
 		w
-			<< reinterpret_cast<GameUnit const &>(object)
 			<< io::write_dynamic_range<NetUInt8>(object.m_name)
 			<< io::write<NetUInt32>(object.m_zoneIndex)
 			<< io::write<float>(object.m_healthRegBase)
@@ -2834,15 +2845,17 @@ namespace wowpp
 			<< io::write<float>(object.m_homePos[2])
 			<< io::write<float>(object.m_homeRotation)
 			<< object.m_inventory
-			<< io::write<NetUInt64>(object.m_groupId)
-			<< io::write<NetUInt16>(object.m_spells.size());
+			<< io::write<NetUInt64>(object.m_groupId);
+
+		// Write spell data
+		w << io::write<NetUInt16>(object.m_spells.size());
 		for (const auto &spell : object.m_spells)
 		{
-			w
-				<< io::write<NetUInt32>(spell->id());
+			w << io::write<NetUInt32>(spell->id());
 		}
-		w
-		        << io::write<NetUInt16>(object.m_quests.size());
+
+		// Write quest data
+		w << io::write<NetUInt16>(object.m_quests.size());
 		for (const auto &pair : object.m_quests)
 		{
 			w
@@ -2855,14 +2868,21 @@ namespace wowpp
 			        << io::write_range(pair.second.items);
 		}
 
+		// Write play-time
+		w << io::write_range(object.m_playedTime);
+
 		return w;
 	}
 
 	io::Reader &operator>>(io::Reader &r, GameCharacter &object)
 	{
 		object.initialize();
+		
+		// Read super class values
+		r >> reinterpret_cast<GameUnit &>(object);
+
+		// Read character specific values
 		r
-			>> reinterpret_cast<GameUnit &>(object)
 			>> io::read_container<NetUInt8>(object.m_name)
 			>> io::read<NetUInt32>(object.m_zoneIndex)
 			>> io::read<float>(object.m_healthRegBase)
@@ -2875,15 +2895,15 @@ namespace wowpp
 			>> io::read<float>(object.m_homeRotation)
 			>> object.m_inventory
 			>> io::read<NetUInt64>(object.m_groupId);
+
+		// Read spell values
 		UInt16 spellCount = 0;
-		r
-			>> io::read<NetUInt16>(spellCount);
+		r >> io::read<NetUInt16>(spellCount);
 		object.m_spells.clear();
 		for (UInt16 i = 0; i < spellCount; ++i)
 		{
 			UInt32 spellId = 0;
-			r
-				>> io::read<NetUInt32>(spellId);
+			r >> io::read<NetUInt32>(spellId);
 
 			// Add character spell
 			const auto *spell = object.getProject().spells.getById(spellId);
@@ -2892,15 +2912,15 @@ namespace wowpp
 				object.addSpell(*spell);
 			}
 		}
+
+		// Read quest values
 		UInt16 questCount = 0;
-		r
-		        >> io::read<NetUInt16>(questCount);
+		r >> io::read<NetUInt16>(questCount);
 		object.m_quests.clear();
 		for (UInt16 i = 0; i < questCount; ++i)
 		{
 			UInt32 questId = 0;
-			r
-			        >> io::read<NetUInt32>(questId);
+			r >> io::read<NetUInt32>(questId);
 			auto &questData = object.m_quests[questId];
 			r
 			        >> io::read<NetUInt8>(questData.status)
@@ -2930,6 +2950,9 @@ namespace wowpp
 				}
 			}
 		}
+
+		// Read play-time
+		r >> io::read_range(object.m_playedTime);
 
 		// Reset all auras
 		for (UInt32 i = 0; i < 56; ++i)
