@@ -1593,18 +1593,20 @@ namespace wowpp
 		// Get grid tile
 		(void)grid.requireTile(gridIndex);
 
+		UInt32 serverMoveTime = (UInt32)(info.time + m_clientTimeDiff);
+
 		// Notify all watchers about the new object
 		forEachTileInSight(
 			getWorldInstance().getGrid(),
 			gridIndex,
-			[this, &info, opCode, guid](VisibilityTile &tile)
+			[this, &info, opCode, guid, &serverMoveTime](VisibilityTile &tile)
 		{
 			for (auto &watcher : tile.getWatchers())
 			{
 				if (watcher != this)
 				{
 					// Convert time stamp
-					info.time = watcher->convertTimestamp(info.time, 0) + 50;
+					info.time = watcher->convertTimestamp(serverMoveTime, 0) + 50;
 
 					// Create the chat packet
 					std::vector<char> buffer;
@@ -3634,17 +3636,19 @@ namespace wowpp
 				auto &grid = getWorldInstance().getGrid();
 				(void)grid.requireTile(gridIndex);
 
+				UInt32 serverMoveTime = (UInt32)(info.time + m_clientTimeDiff);
+
 				// Notify all watchers
 				forEachTileInSight(
 					getWorldInstance().getGrid(),
 					gridIndex,
-					[this, &info](VisibilityTile &tile)
+					[this, &info, &serverMoveTime](VisibilityTile &tile)
 				{
 					for (auto &watcher : tile.getWatchers())
 					{
 						if (watcher != this)
 						{
-							info.time = watcher->convertTimestamp(info.time, 0) + 50;
+							info.time = watcher->convertTimestamp(serverMoveTime, 0) + 50;
 
 							// Create the chat packet
 							std::vector<char> buffer;
