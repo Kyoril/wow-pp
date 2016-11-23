@@ -1578,7 +1578,7 @@ namespace wowpp
 		m_character->setMovementInfo(info);
 
 		// Convert timestamp into server time
-		info.time = m_serverSync + (info.time - m_clientSync) + 500;
+		info.time = m_serverSync + (info.time - m_clientSync);
 
 		// Transform into grid location
 		TileIndex2D gridIndex;
