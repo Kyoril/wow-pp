@@ -1540,6 +1540,9 @@ namespace wowpp
 			return;
 		}
 
+		DLOG("Incoming movement packet: " << opCode);
+		DLOG(">>> " << m_character->getName() << ": " << info.time);
+
 		// We really need to keep the same diff!
 		const UInt32 m_prevDiff = info.time - m_prevTimestamp;
 		m_prevTimestamp = info.time;
@@ -1607,6 +1610,7 @@ namespace wowpp
 				{
 					// Convert time stamp
 					info.time = watcher->convertTimestamp(serverMoveTime, 0) + 50;
+					DLOG("\t" << info.time << ": " << watcher->getControlledObject()->getName());
 
 					// Create the chat packet
 					std::vector<char> buffer;
