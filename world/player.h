@@ -263,7 +263,7 @@ namespace wowpp
 		/// Executed when the player character spawned.
 		void onSpawn();
 		/// Executed when the player character despawned.
-		void onDespawn();
+		void onDespawn(GameObject &/*despawning*/);
 		/// Executed when an auto attack error occurred.
 		void onAttackSwingError(AttackSwingError error);
 		/// Executed when the player character will move from one grid tile to another one.

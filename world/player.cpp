@@ -576,7 +576,7 @@ namespace wowpp
 			std::bind(&Player::onSpellLearned, this, std::placeholders::_1));
 	}
 
-	void Player::onDespawn()
+	void Player::onDespawn(GameObject &/*despawning*/)
 	{
 		updatePlayerTime();
 		saveCharacterData();
