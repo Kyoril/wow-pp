@@ -57,12 +57,10 @@ namespace wowpp
 		, m_lastFallZ(0.0f)
 		, m_project(project)
 		, m_loot(nullptr)
-		, m_clientDelayMs(0)
-		, m_nextDelayReset(0)
-		, m_clientTimeDiff(0)
 		, m_groupUpdate(instance.getUniverse().getTimers())
 		, m_lastPlayTimeUpdate(0)
-		, m_prevTimestamp(0)
+		, m_serverSync(0)
+		, m_clientSync(0)
 	{
 		m_logoutCountdown.ended.connect(
 			std::bind(&Player::onLogout, this));
@@ -1540,13 +1538,6 @@ namespace wowpp
 			return;
 		}
 
-		DLOG("Incoming movement packet: " << opCode);
-		DLOG(">>> " << m_character->getName() << ": " << info.time);
-
-		// We really need to keep the same diff!
-		const UInt32 m_prevDiff = info.time - m_prevTimestamp;
-		m_prevTimestamp = info.time;
-
 		if (opCode != game::client_packet::MoveStop)
 		{
 			// Don't accept these when it's not a move-stop
@@ -1583,6 +1574,9 @@ namespace wowpp
 		// Store movement information
 		m_character->setMovementInfo(info);
 
+		// Convert timestamp into server time
+		info.time = m_serverSync + (info.time - m_clientSync);
+
 		// Transform into grid location
 		TileIndex2D gridIndex;
 		auto &grid = getWorldInstance().getGrid();
@@ -1596,22 +1590,16 @@ namespace wowpp
 		// Get grid tile
 		(void)grid.requireTile(gridIndex);
 
-		UInt32 serverMoveTime = (UInt32)(info.time + m_clientTimeDiff);
-
 		// Notify all watchers about the new object
 		forEachTileInSight(
 			getWorldInstance().getGrid(),
 			gridIndex,
-			[this, &info, opCode, guid, &serverMoveTime](VisibilityTile &tile)
+			[this, &info, opCode, guid](VisibilityTile &tile)
 		{
 			for (auto &watcher : tile.getWatchers())
 			{
 				if (watcher != this)
 				{
-					// Convert time stamp
-					info.time = watcher->convertTimestamp(serverMoveTime, 0) + 50;
-					DLOG("\t" << info.time << ": " << watcher->getControlledObject()->getName());
-
 					// Create the chat packet
 					std::vector<char> buffer;
 					io::VectorSink sink(buffer);
@@ -1697,14 +1685,14 @@ namespace wowpp
 			return;
 		}
 
-		GameTime currentTicks = getCurrentTime();
-		m_clientTimeDiff = Int32((Int64)currentTicks - (Int64)ticks);
-		DLOG("TIME SYNC RESPONSE " << m_character->getName() << ": Diff " << m_clientTimeDiff);
+		m_serverSync = static_cast<UInt32>(getCurrentTime());
+		m_clientSync = ticks;
+		DLOG("TIME SYNC RESPONSE " << m_character->getName() << ": Client Sync " << m_clientSync << "; Server Sync: " << m_serverSync);
 	}
 
 	UInt32 Player::convertTimestamp(UInt32 otherTimestamp, UInt32 otherTick) const
 	{
-		return (UInt32)(otherTimestamp - m_clientTimeDiff);
+		return otherTimestamp;//return (UInt32)(otherTimestamp - m_clientTimeDiff);
 	}
 
 	void Player::addIgnore(UInt64 guid)
@@ -3619,15 +3607,13 @@ namespace wowpp
 					return;
 				}
 
-				UInt32 msTime = getCurrentTime();
-				m_clientDelayMs = msTime - info.time;
-
 				//const auto &location = m_character->getLocation();
 				auto location = math::Vector3(info.x, info.y, info.z);
 
 				// Store movement information
 				m_character->setMovementInfo(info);
 				m_character->relocate(location, info.o, true);
+				info.time = m_serverSync + (info.time - m_clientSync);
 
 				// Transform into grid location
 				TileIndex2D gridIndex;
@@ -3640,20 +3626,16 @@ namespace wowpp
 				auto &grid = getWorldInstance().getGrid();
 				(void)grid.requireTile(gridIndex);
 
-				UInt32 serverMoveTime = (UInt32)(info.time + m_clientTimeDiff);
-
 				// Notify all watchers
 				forEachTileInSight(
 					getWorldInstance().getGrid(),
 					gridIndex,
-					[this, &info, &serverMoveTime](VisibilityTile &tile)
+					[this, &info](VisibilityTile &tile)
 				{
 					for (auto &watcher : tile.getWatchers())
 					{
 						if (watcher != this)
 						{
-							info.time = watcher->convertTimestamp(serverMoveTime, 0) + 50;
-
 							// Create the chat packet
 							std::vector<char> buffer;
 							io::VectorSink sink(buffer);

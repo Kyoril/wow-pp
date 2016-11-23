@@ -321,14 +321,11 @@ namespace wowpp
 		proto::Project &m_project;
 		LootInstance *m_loot;
 		GameObject *m_lootSource;
-		UInt32 m_clientDelayMs;
-		GameTime m_nextDelayReset;
-		Int32 m_clientTimeDiff;
-		UInt32 m_prevTimestamp;
 		LinearSet<UInt64> m_ignoredGUIDs;
 		Countdown m_groupUpdate;
 		TradeStatusInfo m_tradeStatusInfo;
 		std::shared_ptr<TradeData> m_tradeData;
 		GameTime m_lastPlayTimeUpdate;
+		UInt32 m_clientSync, m_serverSync;
 	};
 }
