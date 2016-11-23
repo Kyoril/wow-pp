@@ -296,6 +296,8 @@ namespace wowpp
 		void onSpellLearned(const proto::SpellEntry &spell);
 		/// Executed when a resurrect is being requested.
 		void onResurrectRequest(UInt64 objectGUID, const String &sentName, UInt8 typeId);
+		/// Executed when the next client sync should be requested.
+		void onClientSync();
 
 	private:
 
@@ -327,5 +329,7 @@ namespace wowpp
 		std::shared_ptr<TradeData> m_tradeData;
 		GameTime m_lastPlayTimeUpdate;
 		UInt32 m_clientSync, m_serverSync;
+		Countdown m_nextClientSync;
+		UInt32 m_timeSyncCounter;
 	};
 }

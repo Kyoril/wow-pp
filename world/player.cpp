@@ -39,10 +39,6 @@ using namespace std;
 namespace wowpp
 {
 	TradeStatusInfo::TradeStatusInfo(UInt64 guid = 0) {}
-	/// The time in milliseconds to delay a movement packet so that the client
-	/// won't lag too hard when receiving movement packets with timestamps that
-	/// are in the past.
-	static const UInt64 MovementPacketTimeDelay = 500;
 
 	Player::Player(PlayerManager &manager, RealmConnector &realmConnector, WorldInstanceManager &worldInstanceManager, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance, proto::Project &project)
 		: m_manager(manager)
@@ -61,18 +57,16 @@ namespace wowpp
 		, m_lastPlayTimeUpdate(0)
 		, m_serverSync(0)
 		, m_clientSync(0)
+		, m_nextClientSync(instance.getUniverse().getTimers())
+		, m_timeSyncCounter(0)
 	{
-		m_logoutCountdown.ended.connect(
-			std::bind(&Player::onLogout, this));
-
 		// Connect character signals
 		m_characterSignals.append({
-			m_character->spawned.connect(
-				std::bind(&Player::onSpawn, this)),
-			m_character->despawned.connect(
-				std::bind(&Player::onDespawn, this)),
-			m_character->tileChangePending.connect(
-				std::bind(&Player::onTileChangePending, this, std::placeholders::_1, std::placeholders::_2))
+			m_character->spawned.connect(this, &Player::onSpawn),
+			m_character->despawned.connect(this, &Player::onDespawn),
+			m_character->tileChangePending.connect(this, &Player::onTileChangePending),
+			m_logoutCountdown.ended.connect(this, &Player::onLogout),
+			m_nextClientSync.ended.connect(this, &Player::onClientSync)
 		});
 
 		m_onProfChanged = m_character->proficiencyChanged.connect(
@@ -542,8 +536,7 @@ namespace wowpp
 			std::bind(game::server_write::compressedUpdateObject, std::placeholders::_1, std::cref(blocks)));
 
 		// Send time sync request packet (this will also enable character movement at the client)
-		sendProxyPacket(
-			std::bind(game::server_write::timeSyncReq, std::placeholders::_1, 0));
+		onClientSync();
 
 		// Find our tile
 		VisibilityTile &tile = m_instance.getGrid().requireTile(getTileIndex());
@@ -1498,6 +1491,16 @@ namespace wowpp
 			std::bind(game::server_write::resurrectRequest, std::placeholders::_1, objectGUID, std::cref(sentName), typeId));
 	}
 
+	void Player::onClientSync()
+	{
+		// Send packet
+		sendProxyPacket(
+			std::bind(game::server_write::timeSyncReq, std::placeholders::_1, m_timeSyncCounter++));
+
+		// Next sync in 30 seconds
+		m_nextClientSync.setEnd(getCurrentTime() + constants::OneSecond * 30);
+	}
+
 	void Player::handleRepopRequest(game::Protocol::IncomingPacket &packet)
 	{
 		if (!m_character)
@@ -1685,8 +1688,15 @@ namespace wowpp
 			return;
 		}
 
+		if (counter != m_timeSyncCounter - 1)
+		{
+			// TODO: What to do here?
+			WLOG("TIME SYNC mismatch: Received response for #" << counter << ", but expected " << m_timeSyncCounter - 1);
+		}
+
 		m_serverSync = static_cast<UInt32>(getCurrentTime());
 		m_clientSync = ticks;
+
 		DLOG("TIME SYNC RESPONSE " << m_character->getName() << ": Client Sync " << m_clientSync << "; Server Sync: " << m_serverSync);
 	}
 
