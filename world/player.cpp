@@ -1498,7 +1498,7 @@ namespace wowpp
 			std::bind(game::server_write::timeSyncReq, std::placeholders::_1, m_timeSyncCounter++));
 
 		// Next sync in 30 seconds
-		m_nextClientSync.setEnd(getCurrentTime() + constants::OneSecond * 30);
+		//m_nextClientSync.setEnd(getCurrentTime() + constants::OneSecond * 30);
 	}
 
 	void Player::handleRepopRequest(game::Protocol::IncomingPacket &packet)
