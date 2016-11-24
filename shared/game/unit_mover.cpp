@@ -134,7 +134,7 @@ namespace wowpp
 
 		if (m_debugOutputEnabled)
 		{
-			DLOG("New target: " << target << " (Current: " << currentLoc << ")");
+			DLOG("New target: " << target << " (Current: " << currentLoc << "; Speed: " << customSpeed << ")");
 		}
 
 		m_start = currentLoc;

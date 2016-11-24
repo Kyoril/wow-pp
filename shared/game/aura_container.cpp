@@ -531,6 +531,7 @@ namespace wowpp
 			m_auras.erase(it);
 
 			aura->misapplyAura();
+			it = m_auras.begin();
 		}
 	}
 }

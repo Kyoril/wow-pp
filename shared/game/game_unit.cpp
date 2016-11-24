@@ -671,9 +671,16 @@ namespace wowpp
 			// Get target location
 			const math::Vector3 & location = victim->getLocation();
 
+			const bool moving =
+				m_movementInfo.moveFlags & game::movement_flags::Moving ||
+				getMover().isMoving();
+			const bool victimIsMoving = 
+				m_victim->getMovementInfo().moveFlags & game::movement_flags::Moving || 
+				m_victim->getMover().isMoving();
+
 			// Distance check
 			const float distance = getDistanceTo(*victim);
-			const float combatRange = getMeleeReach() + victim->getMeleeReach();
+			const float combatRange = getMeleeReach() + victim->getMeleeReach() + (moving || victimIsMoving ? 2.0f : 0.0f);
 			if (distance > combatRange)
 			{
 				autoAttackError(attack_swing_error::OutOfRange);
