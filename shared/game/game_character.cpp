@@ -2969,11 +2969,29 @@ namespace wowpp
 			object.setFloatValue(character_fields::ModDamageDonePct + i, 1.00f);
 		}
 
+		// Reset mount
+		object.setUInt32Value(unit_fields::MountDisplayId, 0);
+
 		// Remove "InCombat" flag
 		object.removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
 
+		// Remember health and powers
+		UInt32 health = object.getUInt32Value(unit_fields::Health);
+		UInt32 power[5];
+		for (Int32 i = 0; i < 5; ++i)
+		{
+			power[i] = object.getUInt32Value(unit_fields::Power1 + i);
+		}
+
 		// Update all stats
 		object.setLevel(object.getLevel());
+
+		// Overwrite health and powers for later use
+		object.setUInt32Value(unit_fields::Health, health);
+		for (Int32 i = 0; i < 5; ++i)
+		{
+			object.setUInt32Value(unit_fields::Power1 + i, power[i]);
+		}
 
 		return r;
 	}

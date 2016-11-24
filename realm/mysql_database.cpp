@@ -219,9 +219,9 @@ namespace wowpp
 		if (m_connection.execute(fmt::format(
 			//                        0         1      2      3       4        5       6        7     8      9            10           11           12			  13		  
 			"INSERT INTO `character` (`account`,`name`,`race`,`class`,`gender`,`bytes`,`bytes2`,`map`,`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic`,"
-			//						  14		 15		  16	   17		18		  19	  20
-									 "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`,`level`, `at_login`) "
-			"VALUES ({0}, '{1}', {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20})"
+			//						  14		 15		  16	   17		18		  19	  20		  21		22		  23		24		  25		26
+									 "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`,`level`, `at_login`, `health`, `power1`, `power2`, `power3`, `power4`, `power5`) "
+			"VALUES ({0}, '{1}', {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, {22}, {23}, {24}, {25}, {26})"
 			, accountId										// 0
 			, safeName										// 1
 			, static_cast<UInt32>(character.race)			// 2
@@ -243,6 +243,12 @@ namespace wowpp
 			, character.o									// 18
 			, static_cast<UInt32>(character.level)			// 19
 			, static_cast<UInt32>(character.atLogin)		// 20
+			, 1000											// 21
+			, 1000											// 22
+			, 0												// 23
+			, 0												// 24
+			, 100											// 25
+			, 0												// 26
 			)))
 		{
 			// Retrieve id of the newly created character
@@ -487,8 +493,9 @@ namespace wowpp
 				   "`zone`,`position_x`,`position_y`,`position_z`,`orientation`,"
             //       15        16       17       18       19	   20					21			  22		 23				
 				   "`home_map`,`home_x`,`home_y`,`home_z`,`home_o`,`explored_zones`, `last_save`, `last_group`, `actionbars`,"
-			//		 24	      25             26
-				   "`flags`, `played_time`, `level_time` FROM `character` WHERE `id`={0} LIMIT 1"
+			//		 24	      25             26			  27       28       29        30       31      32
+				   "`flags`, `played_time`, `level_time`, `health`,`power1`,`power2`,`power3`,`power4`,`power5` "
+			"FROM `character` WHERE `id`={0} LIMIT 1"
 			, characterId));
 		if (select.success())
 		{
@@ -616,6 +623,15 @@ namespace wowpp
 				row.getField(26, levelTime);
 				out_character.setPlayTime(player_time_index::TotalPlayTime, totalTime);
 				out_character.setPlayTime(player_time_index::LevelPlayTime, levelTime);
+
+				UInt32 value = 0;
+				row.getField(27, value);
+				out_character.setUInt32Value(unit_fields::Health, value);
+				for (int powerIndex = 0; powerIndex < 5; ++powerIndex)
+				{
+					row.getField(28 + powerIndex, value);
+					out_character.setUInt32Value(unit_fields::Power1 + powerIndex, value);
+				}
 
 				// Load character spells
 				wowpp::MySQL::Select spellSelect(m_connection, fmt::format(
@@ -784,7 +800,7 @@ namespace wowpp
 		if (!m_connection.execute(fmt::format(
 			"UPDATE `character` SET `map`={1}, `zone`={2}, `position_x`={3}, `position_y`={4}, `position_z`={5}, `orientation`={6}, `level`={7}, `xp`={8}, `gold`={9}, "
 			"`home_map`={10}, `home_x`={11}, `home_y`={12}, `home_z`={13}, `home_o`={14}, `explored_zones`='{15}', `last_save`={16}, `last_group`={17}, `actionbars`={18}, `flags`={19},"
-			"`played_time`={20}, `level_time`={21} WHERE `id`={0};"
+			"`played_time`={20}, `level_time`={21}, `health`={22},`power1`={23},`power2`={24},`power3`={25},`power4`={26},`power5`={27} WHERE `id`={0};"
 			, lowerGuid															// 0
 			, character.getMapId()												// 1
 			, character.getZone()												// 2
@@ -801,6 +817,12 @@ namespace wowpp
 			, character.getUInt32Value(character_fields::CharacterFlags)		// 19
 			, character.getPlayTime(player_time_index::TotalPlayTime)			// 20
 			, character.getPlayTime(player_time_index::LevelPlayTime)			// 21
+			, character.getUInt32Value(unit_fields::Health)						// 22
+			, character.getUInt32Value(unit_fields::Power1)						// 23
+			, character.getUInt32Value(unit_fields::Power2)						// 24
+			, character.getUInt32Value(unit_fields::Power3)						// 25
+			, character.getUInt32Value(unit_fields::Power4)						// 26
+			, character.getUInt32Value(unit_fields::Power5)						// 27
 			)))
 		{
 			// There was an error

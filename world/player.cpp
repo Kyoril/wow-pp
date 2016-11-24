@@ -218,9 +218,6 @@ namespace wowpp
 			m_groupUpdate.setEnd(getCurrentTime() + constants::OneSecond * 3);
 		});
 
-		// Trigger regeneration for our character
-		m_character->startRegeneration();
-
 		// Initialize value
 		m_lastPlayTimeUpdate = getCurrentTime();
 	}
@@ -437,6 +434,14 @@ namespace wowpp
 		// Create object blocks used in spawn packet
 		std::vector<std::vector<char>> blocks;
 
+		// Remember health and power values from before
+		UInt32 health = m_character->getUInt32Value(unit_fields::Health);
+		UInt32 power[5];
+		for (Int32 i = 0; i < 5; ++i)
+		{
+			power[i] = m_character->getUInt32Value(unit_fields::Power1 + i);
+		}
+
 		// Create item spawn packets - this actually creates the item instances
 		// Note: We create these blocks first, so that the character item fields can be set properly
 		// since we want the right values in the spawn packet and we don't want to send another update 
@@ -568,12 +573,24 @@ namespace wowpp
 			}
 		}
 
+		// Restore health and power values, but limit them
+		m_character->setUInt32Value(unit_fields::Health,
+			std::min(m_character->getUInt32Value(unit_fields::MaxHealth), health));
+		for (Int32 i = 0; i < 5; ++i)
+		{
+			m_character->setUInt32Value(unit_fields::Power1 + i,
+				std::min(m_character->getUInt32Value(unit_fields::MaxPower1 + i), power[i]));
+		}
+
 		// Notify realm about this for post-spawn packets
 		m_realmConnector.sendCharacterSpawnNotification(m_character->getGuid());
 
 		// Subscribe for spell notifications
 		m_onSpellLearned = m_character->spellLearned.connect(
 			std::bind(&Player::onSpellLearned, this, std::placeholders::_1));
+
+		// Trigger regeneration for our character
+		m_character->startRegeneration();
 	}
 
 	void Player::onDespawn(GameObject &/*despawning*/)

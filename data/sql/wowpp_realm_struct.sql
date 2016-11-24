@@ -49,6 +49,12 @@ CREATE TABLE `character` (
   `actionbars` int(10) unsigned DEFAULT '0' COMMENT 'Characters visible action bars.',
   `played_time` bigint(20) unsigned DEFAULT '0',
   `level_time` bigint(20) unsigned DEFAULT '0',
+  `health` int(10) unsigned DEFAULT '0',
+  `power1` int(10) unsigned DEFAULT '0',
+  `power2` int(10) unsigned DEFAULT '0',
+  `power3` int(10) unsigned DEFAULT '0',
+  `power4` int(10) unsigned DEFAULT '0',
+  `power5` int(10) unsigned DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
 
