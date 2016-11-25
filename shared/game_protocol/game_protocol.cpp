@@ -659,13 +659,13 @@ namespace wowpp
 				    << io::write<float>(oldPosition.x)
 				    << io::write<float>(oldPosition.y)
 				    << io::write<float>(oldPosition.z)
-				    << io::write<NetUInt32>(mTimeStamp())
+				    << io::write<NetUInt32>(getCurrentTime())
 				    << io::write<NetUInt8>(0);
 				// Movement flags
 				out_packet
 					<< io::write<NetUInt32>(256)
 					<< io::write<NetUInt32>(time)
-					<< io::write<NetUInt32>(path.empty() ? 1 : path.size());
+					<< io::write<NetUInt32>(path.empty() ? 1 : path.size() - 1);
 				if (path.size() > 0)
 				{
 					// Write destination
@@ -678,7 +678,7 @@ namespace wowpp
 					{
 						// all other points are relative to the center of the path
 						const math::Vector3 mid = (oldPosition + pt) * 0.5f;
-						for (UInt32 i = 0; i < path.size() - 1; ++i)
+						for (UInt32 i = 1; i < path.size() - 1; ++i)
 						{
 							auto &p = path[i];
 							UInt32 packed = 0;
