@@ -528,10 +528,9 @@ namespace wowpp
 		while(it != m_auras.end())
 		{
 			std::shared_ptr<Aura> aura = *it;
-			m_auras.erase(it);
+			it = m_auras.erase(it);
 
 			aura->misapplyAura();
-			it = m_auras.begin();
 		}
 	}
 }
