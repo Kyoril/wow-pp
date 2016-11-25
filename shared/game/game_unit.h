@@ -827,6 +827,12 @@ namespace wowpp
 		virtual bool isEvading() const {
 			return false;
 		}
+		/// Determines if this unit is currently in walk mode.
+		bool isInWalkMode() const { 
+			return (m_movementInfo.moveFlags & game::movement_flags::WalkMode) != 0;
+		}
+		/// Determines if this unit is moving at all.
+		bool isMoving() const;
 
 	public:
 

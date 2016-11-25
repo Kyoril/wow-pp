@@ -28,10 +28,20 @@
 
 namespace wowpp
 {
+	inline proto::Project &getProject() 
+	{
+		static proto::Project project; 
+		static bool loaded; 
+		if (!loaded)
+		{
+			loaded = project.load(".");
+		} 
+		return project;
+	}
+
 	BOOST_AUTO_TEST_CASE(GameObject_signed_fields)
 	{
-		// Empty project
-		proto::Project project;
+		auto &project = getProject();
 
 		// Construct new object
 		GameObject object(project);
@@ -51,7 +61,7 @@ namespace wowpp
 
 		// Empty project
 		TimerQueue timers(ioService);
-		proto::Project project;
+		auto &project = getProject();
 
 		// Construct new object
 		auto testCharacter = std::make_shared<GameCharacter>(project, timers);

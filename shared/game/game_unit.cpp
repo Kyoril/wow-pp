@@ -377,6 +377,11 @@ namespace wowpp
 		}
 	}
 
+	bool GameUnit::isMoving() const
+	{
+		return (m_movementInfo.moveFlags & game::movement_flags::Moving) != 0 || m_mover->isMoving();
+	}
+
 	void GameUnit::relocate(const math::Vector3 & position, float o, bool fire)
 	{
 		// Grab last fired location
@@ -671,17 +676,24 @@ namespace wowpp
 			// Get target location
 			const math::Vector3 & location = victim->getLocation();
 
-			const bool moving =
-				m_movementInfo.moveFlags & game::movement_flags::Moving ||
-				getMover().isMoving();
-			const bool victimIsMoving = 
-				m_victim->getMovementInfo().moveFlags & game::movement_flags::Moving || 
-				m_victim->getMover().isMoving();
+			float rangeBonus = 0.0f;
+			if (isMoving() && victim->isMoving())
+			{
+				if (!isInWalkMode() && !victim->isInWalkMode())
+				{
+					if (getSpeed(movement_type::Run) > getBaseSpeed(movement_type::Run) * 0.7f &&
+						victim->getSpeed(movement_type::Run) > victim->getBaseSpeed(movement_type::Run) * 0.7f)
+					{
+						rangeBonus = 2.5f;
+					}
+				}
+			}
 
 			// Distance check
-			const float distance = getDistanceTo(*victim);
-			const float combatRange = getMeleeReach() + victim->getMeleeReach() + (moving || victimIsMoving ? 2.0f : 0.0f);
-			if (distance > combatRange)
+			const float distanceSq = getSquaredDistanceTo(*victim);
+			const float combatRangeSq = 
+				::powf(getMeleeReach() + victim->getMeleeReach() + rangeBonus, 2.0f);
+			if (distanceSq > combatRangeSq)
 			{
 				autoAttackError(attack_swing_error::OutOfRange);
 
