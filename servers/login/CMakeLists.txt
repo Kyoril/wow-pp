@@ -49,6 +49,6 @@ cmake_minimum_required(VERSION 2.8)
 			
 	# Solution folder
 	if(MSVC)
-		set_property(TARGET login PROPERTY FOLDER "programs")
+		set_property(TARGET login PROPERTY FOLDER "servers")
 	endif(MSVC)
 	

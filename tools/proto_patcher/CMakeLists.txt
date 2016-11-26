@@ -46,5 +46,5 @@ install(TARGETS proto_patcher
 		
 # Solution folder
 if(MSVC)
-	set_property(TARGET proto_patcher PROPERTY FOLDER "programs/tests")
+	set_property(TARGET proto_patcher PROPERTY FOLDER "tools")
 endif(MSVC)

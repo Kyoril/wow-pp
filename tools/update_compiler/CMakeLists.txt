@@ -44,7 +44,7 @@ install(TARGETS update_compiler
 		
 # Solution folder
 if(MSVC)
-	set_property(TARGET update_compiler PROPERTY FOLDER "programs")
+	set_property(TARGET update_compiler PROPERTY FOLDER "tools")
 endif(MSVC)
 
 if(MINGW)

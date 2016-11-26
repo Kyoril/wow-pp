@@ -50,5 +50,5 @@ cmake_minimum_required(VERSION 2.8)
 
 	# Solution folder
 	if(MSVC)
-		set_property(TARGET unit_tests PROPERTY FOLDER "programs")
+		set_property(TARGET unit_tests PROPERTY FOLDER "tools")
 	endif(MSVC)

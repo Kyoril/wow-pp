@@ -46,5 +46,5 @@ install(TARGETS extractor
 		
 # Solution folder
 if(MSVC)
-	set_property(TARGET extractor PROPERTY FOLDER "programs")
+	set_property(TARGET extractor PROPERTY FOLDER "tools")
 endif(MSVC)
