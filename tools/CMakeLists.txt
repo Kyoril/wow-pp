@@ -2,8 +2,8 @@
 # This file is part of the WoW++ project.
 # 
 # This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU Genral Public License as published by
-# the Free Software Foudnation; either version 2 of the Licanse, or
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -19,4 +19,14 @@
 # and lore are copyrighted by Blizzard Entertainment, Inc.
 # 
 
-add_subdirectory(proto_patcher)
+if (WOWPP_BUILD_TOOLS)
+	add_subdirectory(extractor)
+	add_subdirectory(proto_patcher)
+	add_subdirectory(update_compiler)
+endif()
+if (WOWPP_BUILD_EDITOR)
+	add_subdirectory(editor)
+endif()
+if (WOWPP_BUILD_TESTS)
+	add_subdirectory(unit_tests)
+endif()
