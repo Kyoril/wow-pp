@@ -21,6 +21,7 @@
 
 #include "pch.h"
 #include "aura_container.h"
+#include "aura.h"
 #include "game_unit.h"
 #include "log/default_log_levels.h"
 #include "common/linear_set.h"
@@ -43,25 +44,26 @@ namespace wowpp
 			auto a = *it;
 
 			// Checks if both auras are from the same caster
-			const bool isSameCaster = a->getCaster() == aura->getCaster();
+			const bool isSameCaster = a->getCaster() == aura->getCaster() && a->getItemGuid() == aura->getItemGuid();
 
 			// Checks if both auras have the same spell family (&flags)
 			const bool isSameFamily = 
 				(a->getSpell().family() == aura->getSpell().family() && a->getSpell().familyflags() == aura->getSpell().familyflags());
 
 			// Check if this spell has a specific family set
-			const bool hasFamily =
-				(a->getSpell().family() != 0);
+			//const bool hasFamily =
+			//	(a->getSpell().family() != 0);
 
 			// Check if this is the same spell (even if they don't have the same spell id)
 			const bool isSameSpell = 
 				(a->getSpell().baseid() == aura->getSpell().baseid() &&
-				(hasFamily && isSameFamily)) &&
+				(/*hasFamily && */isSameFamily)) &&
 				a->isPassive() == aura->isPassive();
 
 			// Checks if the new aura stacks for different casters (can have multiple auras by different casters even though it's the same spell)
 			const bool stackForDiffCasters =
-				aura->getSpell().attributes(3) & game::spell_attributes_ex_c::StackForDiffCasters;
+				aura->getSpell().attributes(3) & game::spell_attributes_ex_c::StackForDiffCasters ||
+				aura->getItemGuid() != 0;
 
 			// Perform checks
 			if (isSameSpell &&
@@ -77,11 +79,29 @@ namespace wowpp
 				if (a->getEffect().aura() == aura->getEffect().aura() &&
 					a->getEffect().index() == aura->getEffect().index())
 				{
-					// Remove aura - new aura will be added
-					it = m_auras.erase(it);
-					a->misapplyAura();
+					if (a->getSpell().stackamount())
+					{
+						a->updateStackCount(aura->getBasePoints());
+
+						// Notify caster
+						m_owner.auraUpdated(newSlot, a->getSpell().id(), a->getTotalDuration(), a->getTotalDuration());
+
+						if (a->getCaster())
+						{
+							a->getCaster()->targetAuraUpdated(m_owner.getGuid(), newSlot,
+								a->getSpell().id(), a->getTotalDuration(), a->getTotalDuration());
+						}
+
+						return false;
+					}
+					else
+					{
+						// Remove aura - new aura will be added
+						it = m_auras.erase(it);
+						a->misapplyAura();
+						break;
+					}
 				}
-				break;
 			}
 		}
 
@@ -359,6 +379,17 @@ namespace wowpp
 		return multiplier;
 	}
 
+	void AuraContainer::forEachAura(std::function<bool(Aura&)> functor)
+	{
+		for (auto &aura : m_auras)
+		{
+			if (!functor(*aura))
+			{
+				return;
+			}
+		}
+	}
+
 	void AuraContainer::forEachAuraOfType(game::AuraType type, std::function<bool(Aura&)> functor)
 	{
 		for (auto &aura : m_auras)
@@ -370,6 +401,15 @@ namespace wowpp
 					return;
 				}
 			}
+		}
+	}
+
+	void AuraContainer::logAuraInfos()
+	{
+		DLOG("AURA LIST OF TARGET 0x" << std::hex << std::setw(16) << std::uppercase << std::setfill('0') << m_owner.getGuid() << " - " << m_owner.getName())
+		for (auto aura : m_auras)
+		{
+			DLOG("\tAURA " << game::constant_literal::auraTypeNames.getName(static_cast<game::AuraType>(aura->getEffect().aura())) << "\tSPELL " << aura->getSpell().id() << "\tITEM 0x" << std::hex << aura->getItemGuid());
 		}
 	}
 
@@ -482,4 +522,15 @@ namespace wowpp
 		}
 	}
 
+	void AuraContainer::removeAllAuras()
+	{
+		auto it = m_auras.begin();
+		while(it != m_auras.end())
+		{
+			std::shared_ptr<Aura> aura = *it;
+			it = m_auras.erase(it);
+
+			aura->misapplyAura();
+		}
+	}
 }

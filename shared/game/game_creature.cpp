@@ -281,11 +281,21 @@ namespace wowpp
 	void GameCreature::updateDamage()
 	{
 		const float att_speed = static_cast<float>(getUInt32Value(unit_fields::BaseAttackTime)) / 1000.0f;
-		const float base_value = static_cast<float>(getUInt32Value(unit_fields::AttackPower)) / 14.0f * att_speed;
+		const Int32 att_power = getInt32Value(unit_fields::AttackPower) + getUInt16Value(unit_fields::AttackPowerMods, 0) + getInt16Value(unit_fields::AttackPowerMods, 1);
+		const float base_value = (att_power > 0 ? att_power : 0) / 14.0f * att_speed;
 
 		const auto *entry = (m_entry ? m_entry : &m_originalEntry);
 		setFloatValue(unit_fields::MinDamage, base_value + entry->minmeleedmg());
 		setFloatValue(unit_fields::MaxDamage, base_value + entry->maxmeleedmg());
+	}
+
+	void GameCreature::updateAttackSpeed()
+	{
+		const auto *entry = (m_entry ? m_entry : &m_originalEntry);
+		// TODO: offhand? ranged?
+
+		const float att_speed = entry->meleeattacktime() * getModifierValue(unit_mods::AttackSpeed, unit_mod_type::BasePct);
+		setUInt32Value(unit_fields::BaseAttackTime, att_speed);
 	}
 
 	void GameCreature::regenerateHealth()
@@ -473,6 +483,34 @@ namespace wowpp
 	{
 		// Copy waypoints
 		m_waypoints = waypoints;
+	}
+
+	float GameCreature::getBaseSpeed(MovementType type) const
+	{
+		// TODO: Speed modifier setup in unit entry and/or unit spawn point settings
+		return GameUnit::getBaseSpeed(type) * (type == movement_type::Run ? 1.14286f : 1.0f);
+	}
+
+	bool GameCreature::isEvading() const
+	{
+		// If the AI has not yet been initialized, we consider this unit being in evade mode as well
+		if (!m_ai.get())
+		{
+			return true;
+		}
+
+		return m_ai->isEvading();
+	}
+
+	void GameCreature::relocate(const math::Vector3 & position, float o, bool fire)
+	{
+		// Relocate the object
+		GameUnit::relocate(position, o, fire);
+
+		if (fire)
+		{
+			m_ai->onControlledMoved();
+		}
 	}
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel)

@@ -22,18 +22,7 @@
 # We want at least CMake 2.8
 cmake_minimum_required(VERSION 2.8)
 
-	# Collect source and header files
-	file(GLOB srcFiles "./*.cpp" "./*.h" "./*.hpp")
-	remove_pch_cpp(srcFiles "${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp")
-	
-	# Add source groups
-	source_group(src FILES ${srcFiles})
-	
-	# Add library project
-	add_library(log ${srcFiles})
-	add_precompiled_header(log "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
-	
-	# Link shared libraries
+	add_lib(log)
 	target_link_libraries(log common)
 
 	# Solution folder

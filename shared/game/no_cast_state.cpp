@@ -29,13 +29,13 @@ namespace wowpp
 
 	}
 
-	std::pair<game::SpellCastResult, SpellCasting *> NoCastState::startCast(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool doReplacePreviousCast, UInt64 itemGuid)
+	std::pair<game::SpellCastResult, SpellCasting *> NoCastState::startCast(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, const game::SpellPointsArray &basePoints, GameTime castTime, bool doReplacePreviousCast, UInt64 itemGuid)
 	{
 		SpellCasting &casting = castSpell(
 		                            cast,
 		                            spell,
 		                            std::move(target),
-		                            basePoints,
+		                            std::move(basePoints),
 		                            castTime,
 		                            itemGuid
 		                        );
@@ -49,6 +49,10 @@ namespace wowpp
 	}
 
 	void NoCastState::onUserStartsMoving()
+	{
+
+	}
+	void NoCastState::finishChanneling()
 	{
 
 	}

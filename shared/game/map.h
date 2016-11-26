@@ -25,6 +25,7 @@
 #include "tile_index.h"
 #include "common/grid.h"
 #include "math/ray.h"
+#include "detour/DetourCommon.h"
 #include "detour/DetourNavMesh.h"
 #include "detour/DetourNavMeshQuery.h"
 
@@ -115,15 +116,26 @@ namespace wowpp
 
 	struct MapNavigationChunk
 	{
+		struct TileData
+		{
+			UInt32 size;
+			std::vector<char> data;
+
+			TileData()
+				: size(0)
+			{
+			}
+		};
+
 		UInt32 fourCC;
 		UInt32 size;
-		dtTileRef tileRef;
-		std::vector<char> data;
+		UInt32 tileCount;
+		std::vector<TileData> tiles;
 
 		explicit MapNavigationChunk()
 			: fourCC(0)
 			, size(0)
-			, tileRef(0)
+			, tileCount(0)
 		{
 		}
 	};
@@ -173,6 +185,11 @@ namespace wowpp
 		}
 	};
 
+	/// Converts a vertex from the recast coordinate system into WoW's coordinate system.
+	Vertex recastToWoWCoord(const Vertex &in_recastCoord);
+	/// Converts a vertex from the WoW coordinate system into recasts coordinate system.
+	Vertex wowToRecastCoord(const Vertex &in_wowCoord);
+
 	/// This class represents a map with additional geometry and navigation data.
 	class Map final
 	{
@@ -181,6 +198,8 @@ namespace wowpp
 		/// Creates a new instance of the map class and initializes it.
 		/// @entry The base entry of this map.
 		explicit Map(const proto::MapEntry &entry, boost::filesystem::path dataPath);
+		/// Loads all tiles at once.
+		void loadAllTiles();
 		/// Gets the map entry data of this map.
 		const proto::MapEntry &getEntry() const {
 			return m_entry;
@@ -201,9 +220,24 @@ namespace wowpp
 		bool calculatePath(const math::Vector3 &source, math::Vector3 dest, std::vector<math::Vector3> &out_path);
 		/// 
 		dtPolyRef getPolyByLocation(const math::Vector3 &point, float &out_distance) const;
-
+		/// 
 		bool getRandomPointOnGround(const math::Vector3 &center, float radius, math::Vector3 &out_point);
+		/// Gets the nav mesh of this map id.
+		const dtNavMesh *getNavMesh() const {
+			return m_navMesh;
+		}
 
+	private:
+
+		/// Build a smooth path with corrected height values based on the detail mesh. This method
+		/// operates in the recast coordinate system, so all inputs and outputs are in this system.
+		/// @param dtStart Start position of the path.
+		/// @param dtEnd End position of the path.
+		/// @param polyPath List of polygons determined already for this path.
+		/// @param out_smoothPath The calculated waypoints in recast space on success.
+		/// @param maxPathSize Can be used to limit the amount of waypoints to generate. [1 < maxPathSize <= 74]
+		dtStatus getSmoothPath(const math::Vector3 &dtStart, const math::Vector3 &dtEnd, std::vector<dtPolyRef> &polyPath, std::vector<math::Vector3> &out_smoothPath, UInt32 maxPathSize);
+		
 	private:
 
 		const proto::MapEntry &m_entry;

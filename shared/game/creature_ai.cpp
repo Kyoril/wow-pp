@@ -33,6 +33,7 @@
 #include "unit_finder.h"
 #include "unit_watcher.h"
 #include "common/make_unique.h"
+#include "unit_mover.h"
 
 namespace wowpp
 {
@@ -66,6 +67,10 @@ namespace wowpp
 			}
 		});
 
+		// Initialize the units mover
+		auto &mover = m_controlled.getMover();
+		mover.moveTo(mover.getCurrentLocation());
+
 		// Enter the preparation state
 		auto state = make_unique<CreatureAIPrepareState>(*this);
 		setState(std::move(state));
@@ -83,6 +88,9 @@ namespace wowpp
 		{
 			m_state->onLeave();
 		}
+
+		// Every state change causes the creature to leave evade mode
+		m_evading = false;
 
 		assert(state.get());
 		m_state = std::move(state);
@@ -109,6 +117,9 @@ namespace wowpp
 	{
 		auto state = make_unique<CreatureAIResetState>(*this);
 		setState(std::move(state));
+
+		// We are now evading
+		m_evading = true;
 	}
 
 	void CreatureAI::onCombatMovementChanged()
@@ -124,6 +135,14 @@ namespace wowpp
 		if (m_state)
 		{
 			m_state->onCreatureMovementChanged();
+		}
+	}
+
+	void CreatureAI::onControlledMoved()
+	{
+		if (m_state)
+		{
+			m_state->onControlledMoved();
 		}
 	}
 

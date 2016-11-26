@@ -21,6 +21,7 @@
 
 #include "pch.h"
 #include "sha1.h"
+#include "utilities.h"
 
 namespace wowpp
 {
@@ -88,27 +89,6 @@ namespace wowpp
 			        << std::setfill('0')
 			        << std::setw(2)
 			        << (static_cast<unsigned>(e) & 0xff);
-		}
-	}
-
-	namespace
-	{
-		int hexDigitValue(char c)
-		{
-			if (c >= '0' && c <= '9')
-			{
-				return (c - '0');
-			}
-
-			std::locale loc;
-			c = static_cast<char>(std::tolower(c, loc));
-
-			if (c >= 'a' && c <= 'f')
-			{
-				return (c - 'a') + 10;
-			}
-
-			return -1;
 		}
 	}
 

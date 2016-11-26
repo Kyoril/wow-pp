@@ -29,22 +29,6 @@
 
 namespace wowpp
 {
-	struct HitResult final
-	{
-		UInt32 procAttacker;
-		UInt32 procVictim;
-		UInt32 procEx;
-		UInt32 amount;
-		
-		explicit HitResult(UInt32 procAttacker = 0, UInt32 procVictim = 0, UInt32 procEx = 0, UInt32 amount = 0)
-			: procAttacker(procAttacker)
-			, procVictim(procVictim)
-			, procEx(procEx)
-			, amount(amount)
-		{
-		}
-	};
-
 	typedef std::map<UInt64, HitResult> HitResultMap;
 	///
 	class SingleCastState final : public SpellCast::CastState, public std::enable_shared_from_this<SingleCastState>, public boost::noncopyable
@@ -55,7 +39,7 @@ namespace wowpp
 		    SpellCast &cast,
 		    const proto::SpellEntry &spell,
 		    SpellTargetMap target,
-		    Int32 basePoints,
+			const game::SpellPointsArray &basePoints,
 		    GameTime castTime,
 		    bool isProc = false,
 		    UInt64 itemGuid = 0);
@@ -64,22 +48,30 @@ namespace wowpp
 		    SpellCast &cast,
 		    const proto::SpellEntry &spell,
 		    SpellTargetMap target,
-		    Int32 basePoints,
+			const game::SpellPointsArray &basePoints,
 		    GameTime castTime,
 		    bool doReplacePreviousCast,
 		    UInt64 itemGuid) override;
 		void stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown = 0) override;
 		void onUserStartsMoving() override;
+		void finishChanneling() override;
 		SpellCasting &getCasting() {
 			return m_casting;
 		}
+
+	public:
+
+		/// Determines if this spell is a channeled spell.
+		bool isChanneled() const { return (m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_1) || (m_spell.attributes(1) & game::spell_attributes_ex_a::Channeled_2); }
+		/// Determines if this spell has a charge effect.
+		bool hasChargeEffect() const;
 
 	private:
 
 		bool consumeItem(bool delayed = true);
 		bool consumePower();
 		void applyCooldown(UInt64 cooldownTimeMS, UInt64 catCooldownTimeMS);
-		void applyAllEffects();
+		void applyAllEffects(bool executeInstants, bool executeDelayed);
 		Int32 calculateEffectBasePoints(const proto::SpellEffect &effect);
 		UInt32 getSpellPointsTotal(const proto::SpellEffect &effect, UInt32 spellPower, UInt32 bonusPct);
 		void spellEffectInstantKill(const proto::SpellEffect &effect);
@@ -87,6 +79,7 @@ namespace wowpp
 		void spellEffectSchoolDamage(const proto::SpellEffect &effect);
 		void spellEffectTeleportUnits(const proto::SpellEffect &effect);
 		void spellEffectApplyAura(const proto::SpellEffect &effect);
+		void spellEffectPersistentAreaAura(const proto::SpellEffect &effect);
 		void spellEffectDrainPower(const proto::SpellEffect &effect);
 		void spellEffectHeal(const proto::SpellEffect &effect);
 		void spellEffectBind(const proto::SpellEffect &effect);
@@ -117,6 +110,7 @@ namespace wowpp
 		void spellEffectDispelMechanic(const proto::SpellEffect &effect);
 		void spellEffectResurrect(const proto::SpellEffect &effect);
 		void spellEffectResurrectNew(const proto::SpellEffect &effect);
+		void spellEffectKnockBack(const proto::SpellEffect &effect);
 
 		void meleeSpecialAttack(const proto::SpellEffect &effect, bool basepointsArePct);
 
@@ -133,18 +127,18 @@ namespace wowpp
 		Countdown m_impactCountdown;
 		boost::signals2::signal<void()> completedEffects;
 		std::unordered_map<UInt64, boost::signals2::scoped_connection> m_completedEffectsExecution;
-		boost::signals2::scoped_connection m_onTargetDied, m_onTargetRemoved;
-		boost::signals2::scoped_connection m_onUserMoved;
-		boost::signals2::scoped_connection m_onTargetMoved, m_damaged;
+		boost::signals2::scoped_connection m_onTargetDied;
+		simple::scoped_connection m_onTargetRemoved;
+		boost::signals2::scoped_connection m_onThreatened, m_damaged;
 		boost::signals2::scoped_connection m_onAttackError, m_removeAurasOnImmunity;
 		float m_x, m_y, m_z;
 		GameTime m_castTime;
 		GameTime m_castEnd;
-		Int32 m_basePoints;
+		game::SpellPointsArray m_basePoints;
 		bool m_isProc;
 		UInt64 m_itemGuid;
 		GameTime m_projectileStart, m_projectileEnd;
-		math::Vector3 m_projectileOrigin;
+		math::Vector3 m_projectileOrigin, m_projectileDest;
 		bool m_connectedMeleeSignal;
 		UInt32 m_delayCounter;
 		std::set<std::weak_ptr<GameObject>, std::owner_less<std::weak_ptr<GameObject>>> m_affectedTargets;
@@ -153,7 +147,9 @@ namespace wowpp
 		UInt32 m_victimProc;
 		bool m_canTrigger;
 		HitResultMap m_hitResults;
-		UInt8 m_attackType;
+		game::WeaponAttack m_attackType;
+		std::vector<UInt64> m_dynObjectsToDespawn;
+		bool m_instantsCast, m_delayedCast;
 
 		void sendEndCast(bool success);
 		void onCastFinished();

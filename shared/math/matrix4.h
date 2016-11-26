@@ -216,48 +216,21 @@ namespace wowpp
 
 			inline static Matrix4 getTranslation(const Vector3 &v)
 			{
-				Matrix4 r;
-
-				r.m[0][0] = 1.0;
-				r.m[0][1] = 0.0;
-				r.m[0][2] = 0.0;
-				r.m[0][3] = v.x;
-				r.m[1][0] = 0.0;
-				r.m[1][1] = 1.0;
-				r.m[1][2] = 0.0;
-				r.m[1][3] = v.y;
-				r.m[2][0] = 0.0;
-				r.m[2][1] = 0.0;
-				r.m[2][2] = 1.0;
-				r.m[2][3] = v.z;
-				r.m[3][0] = 0.0;
-				r.m[3][1] = 0.0;
-				r.m[3][2] = 0.0;
-				r.m[3][3] = 1.0;
-
-				return r;
+				return getTranslation(v.x, v.y, v.z);
 			}
 
 			inline static Matrix4 getTranslation(float t_x, float t_y, float t_z)
 			{
 				Matrix4 r;
 
-				r.m[0][0] = 1.0;
-				r.m[0][1] = 0.0;
-				r.m[0][2] = 0.0;
+				for (int y = 0; y < 4; ++y)
+					for (int x = 0; x < 4; ++x)
+						r.m[y][x] = 0.f;
+
+				r.m[0][0] = r.m[1][1] = r.m[2][2] = r.m[3][3] = 1.f;
 				r.m[0][3] = t_x;
-				r.m[1][0] = 0.0;
-				r.m[1][1] = 1.0;
-				r.m[1][2] = 0.0;
 				r.m[1][3] = t_y;
-				r.m[2][0] = 0.0;
-				r.m[2][1] = 0.0;
-				r.m[2][2] = 1.0;
 				r.m[2][3] = t_z;
-				r.m[3][0] = 0.0;
-				r.m[3][1] = 0.0;
-				r.m[3][2] = 0.0;
-				r.m[3][3] = 1.0;
 
 				return r;
 			}
@@ -376,29 +349,21 @@ namespace wowpp
 
 			void fromAngleAxis(const Vector3 &rkAxis, float fRadians)
 			{
-				float fCos = ::cosf(fRadians);
-				float fSin = ::sinf(fRadians);
-				float fOneMinusCos = 1.0f - fCos;
-				float fX2 = rkAxis.x * rkAxis.x;
-				float fY2 = rkAxis.y * rkAxis.y;
-				float fZ2 = rkAxis.z * rkAxis.z;
-				float fXYM = rkAxis.x * rkAxis.y * fOneMinusCos;
-				float fXZM = rkAxis.x * rkAxis.z * fOneMinusCos;
-				float fYZM = rkAxis.y * rkAxis.z * fOneMinusCos;
-				float fXSin = rkAxis.x * fSin;
-				float fYSin = rkAxis.y * fSin;
-				float fZSin = rkAxis.z * fSin;
+				const float c = cosf(fRadians);
+				const float ic = 1.f - c;
+				const float s = sinf(fRadians);
 
-				m[0][0] = fX2 * fOneMinusCos + fCos;
-				m[0][1] = fXYM - fZSin;
-				m[0][2] = fXZM + fYSin;
-				m[1][0] = fXYM + fZSin;
-				m[1][1] = fY2 * fOneMinusCos + fCos;
-				m[1][2] = fYZM - fXSin;
-				m[2][0] = fXZM - fYSin;
-				m[2][1] = fYZM + fXSin;
-				m[2][2] = fZ2 * fOneMinusCos + fCos;
-				m[3][3] = 1.0f;
+				m[0][3] = m[1][3] = m[2][3] = m[3][0] = m[3][1] = m[3][2] = 0.f;
+				m[3][3] = 1.f;
+				m[0][0] = rkAxis.x * rkAxis.x * ic + c;
+				m[0][1] = rkAxis.x * rkAxis.y * ic - rkAxis.z * s;
+				m[0][2] = rkAxis.x * rkAxis.z * ic + rkAxis.y * s;
+				m[1][0] = rkAxis.y * rkAxis.x * ic + rkAxis.z * s;
+				m[1][1] = rkAxis.y * rkAxis.y * ic + c;
+				m[1][2] = rkAxis.y * rkAxis.z * ic - rkAxis.x * s;
+				m[2][0] = rkAxis.x * rkAxis.z * ic - rkAxis.y * s;
+				m[2][1] = rkAxis.y * rkAxis.z * ic + rkAxis.x * s;
+				m[2][2] = rkAxis.z * rkAxis.z * ic + c;
 			}
 
 

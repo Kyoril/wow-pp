@@ -1018,8 +1018,19 @@ namespace wowpp
 			auto bagItem = getItemAtSlot(slot);
 			if (bagItem)
 			{
-				// TODO: Check if destination bag is not empty
-				return game::inventory_change_failure::CanOnlyDoWithEmptyBags;
+				if (bagItem->getTypeId() != object_type::Container)
+				{
+					// Return code valid? ...
+					return game::inventory_change_failure::NotABag;
+				}
+
+				auto castedBag = std::static_pointer_cast<GameBag>(bagItem);
+				assert(castedBag);
+
+				if (!castedBag->isEmpty())
+				{
+					return game::inventory_change_failure::CanOnlyDoWithEmptyBags;
+				}
 			}
 
 			return game::inventory_change_failure::Okay;
@@ -1093,6 +1104,42 @@ namespace wowpp
 		}
 
 		return std::shared_ptr<GameBag>();
+	}
+	std::shared_ptr<GameItem> Inventory::getWeaponByAttackType(game::WeaponAttack attackType, bool nonbroken, bool useable) const
+	{
+		UInt8 slot;
+
+		switch (attackType)
+		{
+			case game::weapon_attack::BaseAttack:
+				slot = player_equipment_slots::Mainhand;
+				break;
+			case game::weapon_attack::OffhandAttack:
+				slot = player_equipment_slots::Offhand;
+				break;
+			case game::weapon_attack::RangedAttack:
+				slot = player_equipment_slots::Ranged;
+				break;
+		}
+
+		std::shared_ptr<GameItem> item = getItemAtSlot(getAbsoluteSlot(player_inventory_slots::Bag_0, slot));
+
+		if (!item || item->getEntry().itemclass() != game::item_class::Weapon)
+		{
+			return nullptr;
+		}
+
+		if (nonbroken && item->isBroken())
+		{
+			return nullptr;
+		}
+
+		if (useable && !m_owner.canUseWeapon(attackType))
+		{
+			return nullptr;
+		}
+
+		return item;
 	}
 	bool Inventory::findItemByGUID(UInt64 guid, UInt16 &out_slot) const
 	{
@@ -1285,26 +1332,10 @@ namespace wowpp
 
 				// Header with object guid and type
 				createItemWriter
-				        << io::write<NetUInt8>(updateType);
-				UInt64 guidCopy = guid;
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-				for (UInt8 i = 0; guidCopy != 0; ++i)
-				{
-					if (guidCopy & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guidCopy & 0xFF);
-						++size;
-					}
-
-					guidCopy >>= 8;
-				}
-				createItemWriter.sink().write((const char *)&packGUID[0], size);
-				createItemWriter
-				        << io::write<NetUInt8>(objectTypeId)
-				        << io::write<NetUInt8>(updateFlags);
+				    << io::write<NetUInt8>(updateType)
+					<< io::write_packed_guid(guid)
+				    << io::write<NetUInt8>(objectTypeId)
+				    << io::write<NetUInt8>(updateFlags);
 				if (updateFlags & 0x08)
 				{
 					createItemWriter
@@ -1405,7 +1436,7 @@ namespace wowpp
 			if (spell.itemcount() == counter + 1)
 			{
 				// Apply spell
-				m_owner.castSpell(targetMap, spell.spell(), -1, 0, true);
+				m_owner.castSpell(targetMap, spell.spell(), { 0, 0, 0 }, 0, true);
 			}
 		}
 

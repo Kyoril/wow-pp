@@ -25,6 +25,7 @@
 #include "shared/proto_data/spells.pb.h"
 #include "spell_target_map.h"
 #include "common/timer_queue.h"
+#include "common/simple.hpp"
 
 namespace wowpp
 {
@@ -35,7 +36,7 @@ namespace wowpp
 	{
 	public:
 
-		typedef boost::signals2::signal<void(bool)> EndSignal;
+		typedef simple::signal<void(bool)> EndSignal;
 
 	public:
 
@@ -63,13 +64,14 @@ namespace wowpp
 		std::pair<game::SpellCastResult, SpellCasting *> startCast(
 		    const proto::SpellEntry &spell,
 		    SpellTargetMap target,
-		    Int32 basePoints,
+			const game::SpellPointsArray &basePoints,
 		    GameTime castTime,
 		    bool isProc,
 		    UInt64 itemGuid);
 		void stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown = 0);
 		void onUserStartsMoving();
 		void setState(std::shared_ptr<CastState> castState);
+		void finishChanneling();
 
 		Int32 calculatePowerCost(const proto::SpellEntry &spell) const;
 
@@ -92,20 +94,21 @@ namespace wowpp
 		    SpellCast &cast,
 		    const proto::SpellEntry &spell,
 		    SpellTargetMap target,
-		    Int32 basePoints,
+			const game::SpellPointsArray &basePoints,
 		    GameTime castTime,
 		    bool doReplacePreviousCast,
 		    UInt64 itemGuid
 		) = 0;
 		virtual void stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown = 0) = 0;
 		virtual void onUserStartsMoving() = 0;
+		virtual void finishChanneling() = 0;
 	};
 
 	SpellCasting &castSpell(
 	    SpellCast &cast,
 	    const proto::SpellEntry &spell,
 	    SpellTargetMap target,
-	    Int32 basePoints,
+		const game::SpellPointsArray &basePoints,
 	    GameTime castTime,
 	    UInt64 itemGuid
 	);

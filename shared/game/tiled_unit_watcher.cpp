@@ -29,15 +29,16 @@ namespace wowpp
 {
 	TiledUnitFinder::TiledUnitWatcher::TiledUnitWatcher(
 	    const Circle &shape,
-	    TiledUnitFinder &finder)
-		: UnitWatcher(shape)
+	    TiledUnitFinder &finder,
+		UnitWatcher::VisibilityChange visibilityChanged)
+		: UnitWatcher(shape, std::move(visibilityChanged))
 		, m_finder(finder)
 	{
 	}
 
 	TiledUnitFinder::TiledUnitWatcher::~TiledUnitWatcher()
 	{
-		for (const auto &conn : m_connections)
+		for (auto &conn : m_connections)
 		{
 			conn.second.disconnect();
 		}
@@ -89,7 +90,7 @@ namespace wowpp
 
 			if (getShape().isPointInside(game::Point(location.x, location.y)))
 			{
-				if (visibilityChanged(*unit, true))
+				if (m_visibilityChanged(*unit, true))
 				{
 					return true;
 				}
@@ -116,7 +117,7 @@ namespace wowpp
 			const math::Vector3 &location = unit->getLocation();
 			if (getShape().isPointInside(game::Point(location.x, location.y)))
 			{
-				if (visibilityChanged(*unit, false))
+				if (m_visibilityChanged(*unit, false))
 				{
 					return true;
 				}
@@ -131,25 +132,20 @@ namespace wowpp
 		const math::Vector3 &location = unit.getLocation();
 
 		const bool isInside = getShape().isPointInside(game::Point(location.x, location.y));
-		visibilityChanged(unit, isInside);
+		m_visibilityChanged(unit, isInside);
 	}
 
 	bool TiledUnitFinder::TiledUnitWatcher::updateTile(Tile &tile)
 	{
 		for (GameUnit *const unit : tile.getUnits().getElements())
 		{
-			math::Vector3 location(unit->getLocation());
-
+			const auto &location = unit->getLocation();
 			const auto planarPos = game::Point(location.x, location.y);
-			//const bool wasInside = m_previousShape.isPointInside(planarPos);
 			const bool isInside = getShape().isPointInside(planarPos);
 
-			//if (wasInside != isInside)
+			if (m_visibilityChanged(*unit, isInside))
 			{
-				if (visibilityChanged(*unit, isInside))
-				{
-					return true;
-				}
+				return true;
 			}
 		}
 

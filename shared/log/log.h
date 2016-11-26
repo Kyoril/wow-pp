@@ -22,6 +22,7 @@
 #pragma once
 
 #include "common/typedefs.h"
+#include "common/simple.hpp"
 #include "log_level.h"
 
 namespace wowpp
@@ -33,7 +34,7 @@ namespace wowpp
 	{
 	public:
 
-		typedef boost::signals2::signal<void (const LogEntry &)> Signal;
+		typedef simple::signal<void (const LogEntry &)> Signal;
 		typedef std::basic_ostringstream<char> Formatter;
 
 

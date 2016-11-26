@@ -47,25 +47,24 @@ namespace wowpp
 		/// Default destructor.
 		virtual ~CreatureAIIdleState();
 
-		///
+		/// @copydoc CreatureAIState::onEnter
 		virtual void onEnter() override;
-		///
+		/// @copydoc CreatureAIState::onLeave
 		virtual void onLeave() override;
-		/// 
+		/// @copydoc CreatureAIState::onCreatureMovementChanged
 		virtual void onCreatureMovementChanged() override;
+		/// @copydoc CreatureAIState::onControlledMoved
+		virtual void onControlledMoved() override;
 
 	private:
 
-		void onMoved(GameObject &object, const math::Vector3 &oldLocation, float oldRotation);
-
 		void onChooseNextMove();
-
-		void onStartAggroWatcher();
 
 	private:
 
 		std::unique_ptr<UnitWatcher> m_aggroWatcher;
-		boost::signals2::scoped_connection m_onThreatened, m_onOwnerMoved, m_onMoved, onTargetReached;
-		Countdown m_aggroDelay, m_nextMove;
+		boost::signals2::scoped_connection m_onThreatened, onTargetReached;
+		Countdown m_nextMove;
+		GameTime m_nextUpdate;
 	};
 }

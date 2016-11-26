@@ -19,8 +19,12 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
-#include "vector3.h"
 #include <iomanip>
+#include <cmath>
+#include <cstddef>
+#include <ostream>
+#include <cassert>
+#include "vector3.h"
 
 namespace wowpp
 {

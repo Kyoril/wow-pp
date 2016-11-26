@@ -27,39 +27,15 @@ namespace wowpp
 {
 	class GameUnit;
 
-	namespace detail
-	{
-		struct StopOnTrue final
-		{
-			typedef bool result_type;
-
-			template<class InputIterator>
-			bool operator ()(InputIterator begin, InputIterator end) const
-			{
-				while (begin != end)
-				{
-					if (*begin)
-					{
-						return true;
-					}
-
-					++begin;
-				}
-
-				return false;
-			}
-		};
-	}
-
 	/// Abstract base class to watch for units in a specified area.
 	class UnitWatcher
 	{
 	public:
 
-		boost::signals2::signal<bool(GameUnit &, bool), detail::StopOnTrue> visibilityChanged;
+		typedef std::function<bool(GameUnit &, bool)> VisibilityChange;
 
 		/// Creates a new instance of the UnitWatcher class and assigns a circle shape.
-		explicit UnitWatcher(const Circle &shape);
+		explicit UnitWatcher(const Circle &shape, VisibilityChange visibilityChanged);
 		/// Default destructor.
 		virtual ~UnitWatcher();
 		/// Gets the current shape.
@@ -70,6 +46,10 @@ namespace wowpp
 		void setShape(const Circle &shape);
 		/// Starts watching for units in the specified shape.
 		virtual void start() = 0;
+
+	protected:
+
+		VisibilityChange m_visibilityChanged;
 
 	private:
 

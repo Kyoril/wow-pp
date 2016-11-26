@@ -21,10 +21,9 @@
 
 #pragma once
 
-#include "common/typedefs.h"
-#include "defines.h"
 #include "shared/proto_data/spells.pb.h"
 #include "common/countdown.h"
+#include "spell_target_map.h"
 
 namespace wowpp
 {
@@ -40,7 +39,16 @@ namespace wowpp
 	public:
 
 		/// Initializes a new instance of the Aura class.
-		explicit Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, UInt64 itemGuid, PostFunction post, std::function<void(Aura &)> onDestroy);
+		explicit Aura(const proto::SpellEntry &spell, 
+					  const proto::SpellEffect &effect, 
+					  Int32 basePoints, 
+					  GameUnit &caster, 
+					  GameUnit &target, 
+					  SpellTargetMap targetMap, 
+					  UInt64 itemGuid,
+					  bool isPersistent,
+					  PostFunction post, 
+					  std::function<void(Aura &)> onDestroy);
 		~Aura();
 
 		/// Gets the unit target.
@@ -49,7 +57,7 @@ namespace wowpp
 		}
 		/// Gets the caster of this aura (if exists).
 		GameUnit *getCaster() {
-			return m_caster;
+			return m_caster.get();
 		}
 		UInt64 getItemGuid() const {
 			return m_itemGuid;
@@ -63,7 +71,7 @@ namespace wowpp
 		/// Executes the aura modifier and applies or removes the aura effects to/from the target.
 		void handleModifier(bool apply);
 		///
-		void handleProcModifier(UInt8 attackType, bool canRemove, GameUnit *attacker = nullptr);
+		void handleProcModifier(UInt8 attackType, bool canRemove, UInt32 amount, GameUnit *attacker = nullptr);
 		/// Determines whether this is a passive spell aura.
 		bool isPassive() const {
 			return (m_spell.attributes(0) & game::spell_attributes::Passive) != 0;
@@ -106,9 +114,35 @@ namespace wowpp
 
 		UInt32 getEffectSchoolMask();
 
-		Int32 getTotalDuration() const { return m_duration; }
+		Int32 getTotalDuration() const { 
+			return m_duration; 
+		}
 
 		bool isStealthAura() const;
+
+		void update();
+
+		UInt32 getTickCount() {
+			return m_tickCount;
+		}
+
+		UInt32 getMaxTickCount() {
+			return m_totalTicks;
+		}
+
+		UInt32 getStackCount() {
+			return m_stackCount;
+		}
+
+		void updateStackCount(Int32 points);
+
+		/// Executed when the target of this aura moved.
+		void onTargetMoved(const math::Vector3 &oldPosition, float oldO);
+
+	protected:
+		
+		/// Updates the counter display (stack) of this aura.
+		void updateAuraApplication();
 
 	protected:
 
@@ -162,8 +196,12 @@ namespace wowpp
 		void handleTrackCreatures(bool apply);
 		/// 45
 		void handleTrackResources(bool apply);
+		/// 52
+		void handleModCritPercent(bool apply);
 		/// 56
 		void handleTransform(bool apply);
+		/// 65
+		void handleModCastingSpeed(bool apply);
 		/// 69
 		void handleSchoolAbsorb(bool apply);
 		/// 72
@@ -210,10 +248,14 @@ namespace wowpp
 		void handleModTotalStatPercentage(bool apply);
 		/// 138
 		void handleModHaste(bool apply);
+		/// 140
+		void handleModRangedHaste(bool apply);
 		/// 142
 		void handleModBaseResistancePct(bool apply);
 		/// 143
 		void handleModResistanceExclusive(bool apply);
+		/// 182
+		void handleModResistanceOfStatPercent(bool apply);
 		/// 201
 		void handleFly(bool apply);
 		/// 226
@@ -224,38 +266,37 @@ namespace wowpp
 		/// general
 		void handleTakenDamage(GameUnit *attacker);
 		/// 4
-		void handleDummyProc(GameUnit *victim);
+		void handleDummyProc(GameUnit *victim, UInt32 amount);
 		/// 15
 		void handleDamageShieldProc(GameUnit *attacker);
 		/// 42
-		void handleTriggerSpellProc(GameUnit *attacker);
+		void handleTriggerSpellProc(GameUnit *attacker, UInt32 amount);
 
 	private:
 
 		/// Starts the periodic tick timer.
 		void startPeriodicTimer();
-		/// Executed if the caster of this aura is about to despawn.
-		void onCasterDespawned(GameObject &object);
 		/// Executed when the aura expires.
 		void onExpired();
 		/// Executed when this aura ticks.
 		void onTick();
-		/// Executed when the target of this aura moved.
-		void onTargetMoved(GameObject &, math::Vector3 oldPosition, float oldO);
 		///
 		void setRemoved(GameUnit *remover);
 		/// 
-		bool checkProc(bool active, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell);
-
+		bool checkProc(bool active, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell, UInt8 attackType, bool isVictim);
+		/// Starts periodic ticks.
+		void handlePeriodicBase();
 
 	private:
 
 		const proto::SpellEntry &m_spell;
 		const proto::SpellEffect &m_effect;
-		boost::signals2::scoped_connection m_casterDespawned, m_targetMoved, m_targetEnteredWater, m_targetStartedAttacking, m_targetStartedCasting, m_onExpire, m_onTick, m_onTargetKilled;
+		simple::scoped_connection m_onExpire, m_onTick;
+		boost::signals2::scoped_connection m_targetMoved, m_targetEnteredWater, m_targetStartedAttacking, m_targetStartedCasting, m_onTargetKilled;
 		boost::signals2::scoped_connection m_takenDamage, m_procKilled, m_onDamageBreak, m_onProc, m_onTakenAutoAttack;
-		GameUnit *m_caster;
+		std::shared_ptr<GameUnit> m_caster;
 		GameUnit &m_target;
+		SpellTargetMap m_targetMap;
 		UInt32 m_tickCount;
 		GameTime m_applyTime;
 		Int32 m_basePoints;
@@ -264,12 +305,13 @@ namespace wowpp
 		Countdown m_tickCountdown;
 		bool m_isPeriodic;
 		bool m_expired;
-		UInt32 m_attackerLevel;		// Needed for damage calculation
 		UInt8 m_slot;
 		PostFunction m_post;
 		std::function<void(Aura &)> m_destroy;
 		UInt32 m_totalTicks;
 		Int32 m_duration;
 		UInt64 m_itemGuid;
+		bool m_isPersistent;
+		UInt32 m_stackCount;
 	};
 }

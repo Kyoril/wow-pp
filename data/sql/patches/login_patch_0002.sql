@@ -1,0 +1,1 @@
+ALTER TABLE `account` ADD COLUMN `k` longtext COLLATE latin1_german1_ci;

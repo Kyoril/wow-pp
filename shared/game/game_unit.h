@@ -35,6 +35,7 @@
 #include "attack_table.h"
 #include "proto_data/trigger_helper.h"
 #include "game_world_object.h"
+#include "game_dyn_object.h"
 
 namespace wowpp
 {
@@ -249,8 +250,12 @@ namespace wowpp
 			DamageOffHand			= 21,
 			/// Ranged weapon damage modifier.
 			DamageRanged			= 22,
+			/// Main hand weapon attack speed modifier.
+			AttackSpeed				= 23,
+			/// Ranged weapon attack speed modifier.
+			AttackSpeedRanged		= 24,
 
-			End						= 23,
+			End						= 25,
 
 			/// Start of stat value modifiers. Used for iteration.
 			StatStart				= StatStrength,
@@ -323,39 +328,6 @@ namespace wowpp
 		};
 	}
 
-	namespace combat_rating
-	{
-		enum Type
-		{
-			WeaponSkill = 0,
-			DefenseSkill = 1,
-			Dodge = 2,
-			Parry = 3,
-			Block = 4,
-			HitMelee = 5,
-			HitRanged = 6,
-			HitSpell = 7,
-			CritMelee = 8,
-			CritRanged = 9,
-			CritSpell = 10,
-			HitTakenMelee = 11,
-			HitTakenRanged = 12,
-			HitTakenSpell = 13,
-			CritTakenMelee = 14,
-			CritTakenRanged = 15,
-			CritTakenSpell = 16,
-			HasteMelee = 17,
-			HasteRanged = 18,
-			HasteSpell = 19,
-			WeaponSkillMainhand = 20,
-			WeaponSkillOffhand = 21,
-			WeaponSkillRanged = 22,
-			Expertise = 23
-		};
-	}
-
-	typedef combat_rating::Type CombatRating;
-
 	namespace proto
 	{
 		class ClassEntry;
@@ -418,8 +390,6 @@ namespace wowpp
 		boost::signals2::signal<void(GameUnit *, game::VictimState)> doneMeleeAttack;
 		/// Fired when hit by a melee attack (include miss/dodge...)
 		boost::signals2::signal<void(GameUnit *, game::VictimState)> takenMeleeAttack;
-		/// Fired when done any magic damage
-		boost::signals2::signal<void(GameUnit *, UInt32)> doneSpellMagicDmgClassNeg;
 		/// Fired when hit by any damage.
 		boost::signals2::signal<void(GameUnit *, UInt32)> takenDamage;
 		/// Fired when unit enters water
@@ -447,12 +417,13 @@ namespace wowpp
 
 		/// Creates a new instance of the GameUnit object, which will still be uninitialized.
 		explicit GameUnit(
-		    proto::Project &project,
-		    TimerQueue &timers);
-		~GameUnit();
+			proto::Project &project,
+			TimerQueue &timers);
+		virtual ~GameUnit();
 
 		/// @copydoc GameObject::initialize()
 		virtual void initialize() override;
+
 		/// @copydoc GameObject::getTypeId()
 		virtual ObjectType getTypeId() const override {
 			return object_type::Unit;
@@ -460,7 +431,7 @@ namespace wowpp
 
 		/// 
 		void threaten(GameUnit &threatener, float amount);
-		
+
 		/// Updates the race index and will also update the race entry object.
 		void setRace(UInt8 raceId);
 		/// Updates the class index and will also update the class entry object.
@@ -519,7 +490,7 @@ namespace wowpp
 		virtual const String &getName() const;
 
 		/// Starts to cast a spell using the given target map.
-		void castSpell(SpellTargetMap target, UInt32 spell, Int32 basePoints = -1, GameTime castTime = 0, bool isProc = false, UInt64 itemGuid = 0, SpellSuccessCallback callback = SpellSuccessCallback());
+		void castSpell(SpellTargetMap target, UInt32 spell, const game::SpellPointsArray &basePoints = { 0, 0, 0 }, GameTime castTime = 0, bool isProc = false, UInt64 itemGuid = 0, SpellSuccessCallback callback = SpellSuccessCallback());
 		/// Stops the current cast (if any).
 		/// @param interruptCooldown Interrupt cooldown time in milliseconds (or 0 if no cooldown).
 		void cancelCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown = 0);
@@ -614,7 +585,7 @@ namespace wowpp
 		/// 
 		void notifyStealthChanged();
 		/// 
-		virtual bool canDetectStealth(GameUnit &target);
+		virtual bool canDetectStealth(GameUnit &target) const;
 
 		/// 
 		float getMissChance(GameUnit &attacker, UInt8 school, bool isWhiteDamage);
@@ -630,7 +601,7 @@ namespace wowpp
 		/// 
 		float getCrushChance(GameUnit &attacker);
 		/// 
-		float getResiPercentage(UInt8 school, UInt32 attackerLevel, bool isBinary);
+		float getResiPercentage(const proto::SpellEntry &spell, GameUnit &attacker, bool isBinary);
 		/// 
 		float getCritChance(GameUnit &attacker, UInt8 school);
 		///
@@ -673,6 +644,10 @@ namespace wowpp
 		bool isConfused() const {
 			return (m_state & unit_state::Confused);
 		}
+		///
+		bool canAutoAttack() const {
+			return isAlive() && !isFeared() && !isStunned() && !isConfused();
+		}
 		/// 
 		bool canMove() const {
 			return isAlive() && !isStunned() && !isRooted();
@@ -690,7 +665,7 @@ namespace wowpp
 		/// 
 		float getSpeed(MovementType type) const;
 		/// 
-		float getBaseSpeed(MovementType type) const;
+		virtual float getBaseSpeed(MovementType type) const;
 
 		/// 
 		void addMechanicImmunity(UInt32 mechanic);
@@ -749,6 +724,14 @@ namespace wowpp
 		virtual void updateStats(UInt8 stat);
 		/// 
 		virtual void updateResistance(UInt8 resistance);
+		///
+		virtual void updateAttackSpeed();
+		///
+		virtual void updateCritChance(game::WeaponAttack attackType);
+		///
+		virtual void updateAllCritChances();
+		///
+		virtual void updateAllRatings();
 
 		virtual void applyDamageDoneBonus(UInt32 schoolMask, UInt32 tickCount, UInt32 &damage);
 
@@ -759,6 +742,14 @@ namespace wowpp
 		virtual void applyHealingDoneBonus(UInt32 tickCount, UInt32 &healing);
 
 		virtual void applyHealingDoneBonus(UInt32 spellLevel, UInt32 playerLevel, UInt32 tickCount, UInt32 &healing);
+
+		virtual UInt32 getWeaponSkillValue(game::WeaponAttack attackType, const GameUnit *target = nullptr) {
+			return getUnitMeleeSkill(target);
+		}
+
+		virtual UInt32 getDefenseSkillValue(const GameUnit *target = nullptr) {
+			return getUnitMeleeSkill(target);
+		}
 
 		/// Gets the current unit mover.
 		UnitMover &getMover() {
@@ -790,16 +781,6 @@ namespace wowpp
 		/// @param enable Whether flight mode will be enabled.
 		void setFlightMode(bool enable);
 
-		/// Modifies the bonus attack speed percentage for that character.
-		/// @param attackType The weapon attack type affected.
-		/// @param modifier The bonus percentage.
-		/// @param apply Wheter to apply or misapply the bonus.
-		void modifyAttackSpeedPctModifier(UInt8 attackType, float modifier, bool apply);
-		///
-		float getAttackSpeedPctModifier(UInt8 attackType) {
-			return m_attackSpeedPctModifier[attackType];
-		}
-		
 		///
 		void procEvent(GameUnit *target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount, UInt8 attackType, const proto::SpellEntry *procSpell, bool canRemove);
 		///
@@ -809,6 +790,54 @@ namespace wowpp
 		TrackAuraTargetsMap &getTrackedAuras() {
 			return m_trackAuraTargets;
 		}
+
+		///
+		void finishChanneling();
+
+		///
+		bool isAttackable() const;
+
+		///
+		bool isInFeralForm() const;
+
+		///
+		bool canUseWeapon(game::WeaponAttack attackType);
+
+		/// Something something bosses
+		UInt16 getMaxSkillValueForLevel(const GameUnit *target = nullptr) const {
+			return (target ? target->getLevel() : getLevel()) * 5;
+		}
+
+		///
+		game::WeaponAttack getWeaponAttack() const {
+			return m_weaponAttack;
+		}
+
+		///
+		void setWeaponAttack(game::WeaponAttack weaponAttack) {
+			m_weaponAttack = weaponAttack;
+		}
+
+		/// TODO: Do this properly, return level of target if found (can be a boss, not sure how it'll be done)
+		UInt32 getUnitMeleeSkill(const GameUnit *target = nullptr) const {
+			return (target ? target->getLevel() : getLevel()) * 5;
+		}
+
+		/// Determines if this unit is in evade mode.
+		virtual bool isEvading() const {
+			return false;
+		}
+		/// Determines if this unit is currently in walk mode.
+		bool isInWalkMode() const { 
+			return (m_movementInfo.moveFlags & game::movement_flags::WalkMode) != 0;
+		}
+		/// Determines if this unit is moving at all.
+		bool isMoving() const;
+
+	public:
+
+		/// @copydoc GameObject::relocate
+		virtual void relocate(const math::Vector3 &position, float o, bool fire = true) override;
 
 	public:
 
@@ -858,6 +887,15 @@ namespace wowpp
 		/// 
 		void triggerNextFearMove();
 
+	public:
+
+		/// Adds a new dynamic object instance and spawns it in the units world (if any).
+		void addDynamicObject(std::shared_ptr<DynObject> object);
+		/// Despawns and probably deletes a dynamic object instance by it's guid.
+		void removeDynamicObject(UInt64 objectGuid);
+		/// Despawns and probably deletes all dynamic object instances.
+		void removeAllDynamicObjects();
+
 	private:
 
 		typedef std::array<float, unit_mod_type::End> UnitModTypeArray;
@@ -873,7 +911,8 @@ namespace wowpp
 		const proto::FactionTemplateEntry *m_factionTemplate;
 		std::unique_ptr<SpellCast> m_spellCast;
 		Countdown m_despawnCountdown;
-		boost::signals2::scoped_connection m_victimDespawned, m_victimDied, m_fearMoved;
+		simple::scoped_connection m_victimDespawned;
+		boost::signals2::scoped_connection m_victimDied, m_fearMoved;
 		GameUnit *m_victim;
 		Countdown m_attackSwingCountdown;
 		GameTime m_lastMainHand, m_lastOffHand;
@@ -892,8 +931,8 @@ namespace wowpp
 		UnitStandState m_standState;
 		std::vector<std::shared_ptr<WorldObject>> m_worldObjects;
 		math::Vector3 m_confusedLoc;
-		std::array<float, 3> m_attackSpeedPctModifier;
 		TrackAuraTargetsMap m_trackAuraTargets;
+		std::map<UInt64, std::shared_ptr<DynObject>> m_dynamicObjects;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameUnit const &object);

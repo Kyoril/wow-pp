@@ -453,6 +453,7 @@ namespace wowpp
 				MoveHeartBeat			= 0x0EE,
 				ForceMoveRootAck		= 0x0E9,
 				ForceMoveUnrootAck		= 0x0EB,
+				MoveKnockBackAck		= 0x0F0,
 				CompleteCinematic		= 0x0FC,
 				TutorialFlag			= 0x0FE,
 				TutorialClear			= 0x0FF,
@@ -482,6 +483,7 @@ namespace wowpp
 				CastSpell				= 0x12E,
 				CancelCast				= 0x12F,
 				CancelAura				= 0x136,
+				CancelChanneling		= 0x13B,
 				SetSelection			= 0x13D,
 				AttackSwing				= 0x141,
 				AttackStop				= 0x142,
@@ -602,6 +604,8 @@ namespace wowpp
 				MoveRoot					= 0x0EC,
 				MoveUnroot					= 0x0ED,
 				MoveHeartBeat				= 0x0EE,
+				MoveKnockBack				= 0x0EF,	// Sent ONLY to affected client
+				MoveKnockBack2				= 0x0F1,	// Sent to other clients that are not affected
 				MoveFeatherFall				= 0x0F2,
 				MoveNormalFall				= 0x0F3,
 				MoveSetHover				= 0x0F4,
@@ -624,6 +628,8 @@ namespace wowpp
 				SpellCooldown				= 0x134,
 				CooldownEvent				= 0x135,
 				UpdateAuraDuration			= 0x137,
+				ChannelStart				= 0x139,
+				ChannelUpdate				= 0x13A,
 				AiReaction					= 0x13C,
 				AttackStart					= 0x143,
 				AttackStop					= 0x144,
@@ -715,6 +721,7 @@ namespace wowpp
 				UpdateComboPoints			= 0x39D,
 				SetExtraAuraInfo			= 0x3A4,
 				SetExtraAuraInfoNeedUpdate	= 0x3A5,
+				ClearExtraAuraInfo			= 0x3A6,
 				RaidReadyCheckConfirm		= 0x3AE,
 				RaidReadyCheckFinished		= 0x3C5,
 				FeatureSystemStatus			= 0x3C8,
@@ -1372,6 +1379,10 @@ namespace wowpp
 				UInt64 &out_guid,
 				UInt8 &out_status
 				);
+
+			bool cancelChanneling(
+				io::Reader &packet
+				);
 		};
 
 		namespace server_write
@@ -1828,6 +1839,12 @@ namespace wowpp
 			    UInt32 durationMS
 			);
 
+			void clearExtraAuraInfo(
+				game::OutgoingPacket &out_packet,
+				UInt64 casterGuid,
+				UInt32 spellId
+			);
+
 			void logXPGain(
 			    game::OutgoingPacket &out_packet,
 			    UInt64 victimGUID,
@@ -2275,7 +2292,8 @@ namespace wowpp
 				UInt32 next_slot, 
 				UInt32 prev_slot, 
 				UInt32 gold, 
-				UInt32 spell
+				UInt32 spell,
+				std::vector<std::shared_ptr<GameItem>> item
 				);
 
 			void petNameQueryResponse(
@@ -2355,6 +2373,34 @@ namespace wowpp
 				UInt64 objectGUID,
 				const String &sentName,
 				UInt8 typeId
+			);
+
+			void channelStart(
+				game::OutgoingPacket &out_packet,
+				UInt64 casterGUID,
+				UInt32 spellId,
+				Int32 duration
+			);
+
+			void channelUpdate(
+				game::OutgoingPacket &out_packet,
+				UInt64 casterGUID,
+				Int32 castTime
+			);
+
+			void moveKnockBack(
+				game::OutgoingPacket &out_packet,
+				UInt64 targetGUID,
+				float vcos,
+				float vsin,
+				float speedxy,
+				float speedz
+			);
+
+			void moveKnockBackWithInfo(
+				game::OutgoingPacket &out_packet,
+				UInt64 targetGUID,
+				const MovementInfo &movementInfo
 			);
 		};
 	}

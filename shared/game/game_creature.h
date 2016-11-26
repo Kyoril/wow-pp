@@ -88,6 +88,8 @@ namespace wowpp
 		bool canDualWield() const override;
 		///
 		void updateDamage() override;
+		///
+		void updateAttackSpeed() override;
 		/// Updates the creatures loot recipient. Values of 0 mean no recipient.
 		void addLootRecipient(UInt64 guid);
 		/// Removes all loot recipients.
@@ -133,6 +135,17 @@ namespace wowpp
 
 		void setWaypoints(const std::vector<proto::Waypoint> &waypoints);
 
+		virtual float getBaseSpeed(MovementType type) const override;
+
+		/// @copydoc GameUnit::isEvading()
+		virtual bool isEvading() const override;
+
+	public:
+
+		/// @copydoc GameObject::relocate
+		virtual void relocate(const math::Vector3 &position, float o, bool fire = true) override;
+
+	public:
 
 		/// Executes a callback function for every valid loot recipient.
 		template<typename OnRecipient>
@@ -166,7 +179,7 @@ namespace wowpp
 		const proto::UnitEntry &m_originalEntry;
 		const proto::UnitEntry *m_entry;
 		std::unique_ptr<CreatureAI> m_ai;
-		boost::signals2::scoped_connection m_onSpawned;
+		simple::scoped_connection m_onSpawned;
 		LootRecipients m_lootRecipients;
 		std::unique_ptr<LootInstance> m_unitLoot;
 		bool m_combatMovement;

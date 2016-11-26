@@ -28,6 +28,13 @@
 #include <boost/date_time.hpp>
 #include <boost/iostreams/concepts.hpp>
 #include <boost/uuid/sha1.hpp>
+#include <atomic>
+#include <forward_list>
+#include <initializer_list>
+#include <list>
+#include <iterator>
+#include <exception>
+#include <type_traits>
 #include "common/sha1.h"
 
 #include "project_saver.h"
@@ -38,7 +45,7 @@ namespace wowpp
 {
 	namespace proto
 	{
-		static bool saveAndAddManagerToTable(sff::write::Table<char> &fileTable, const boost::filesystem::path &directory, const ProjectSaver::Manager &manager)
+		static bool saveAndAddManagerToTable(sff::write::Table<char> &fileTable, const boost::filesystem::path &directory, ProjectSaver::Manager &manager)
 		{
 			const String managerRelativeFileName = (manager.fileName + ".wppdat");
 			const String managerAbsoluteFileName = (directory / managerRelativeFileName).string();
@@ -55,20 +62,24 @@ namespace wowpp
 			{
 				std::ostringstream formatter;
 				sha1PrintHex(formatter, sha1(srcFile));
-				table.addKey("sha1", formatter.str());
+
+				String hashString = formatter.str();
+				table.addKey("sha1", hashString);
+
+				manager.hash(hashString);
 			}
 			table.finish();
 
 			return true;
 		}
 
-		static bool saveProjectToTable(sff::write::Table<char> &fileTable, const boost::filesystem::path &directory, const ProjectSaver::Managers &managers)
+		static bool saveProjectToTable(sff::write::Table<char> &fileTable, const boost::filesystem::path &directory, ProjectSaver::Managers &managers)
 		{
 			fileTable.addKey("version", 6);
 
 			bool success = true;
 
-			for (const ProjectSaver::Manager &manager : managers)
+			for (ProjectSaver::Manager &manager : managers)
 			{
 				success =
 				    saveAndAddManagerToTable(fileTable, directory, manager) &&
@@ -78,12 +89,12 @@ namespace wowpp
 			return success;
 		}
 
-		bool ProjectSaver::save(const boost::filesystem::path &directory, const Managers &managers)
+		bool ProjectSaver::save(const boost::filesystem::path &directory, Managers &managers)
 		{
 			const String projectFileName = (directory / "project.txt").string();
 
 			return
-			    sff::save_file(projectFileName, std::bind(saveProjectToTable, std::placeholders::_1, directory, std::cref(managers)));
+			    sff::save_file(projectFileName, std::bind(saveProjectToTable, std::placeholders::_1, directory, std::ref(managers)));
 		}
 	}
 }

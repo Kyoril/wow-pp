@@ -25,6 +25,17 @@ cmake_minimum_required(VERSION 2.8)
 # This is the main project which contains all subprojects
 project(WoW)
 
+	option(WOWPP_WITH_RELEASE_ASSERTS "Enables assertions in release builds." OFF)
+	if (WOWPP_WITH_RELEASE_ASSERTS)
+		if(MSVC)
+			set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "")
+			set(CMAKE_CXX_FLAGS_RELEASE "")
+		else()
+			set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3")
+			set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+		endif()
+	endif()
+
 	# Enable solution folders in msvc
 	if(MSVC)
 		set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -83,30 +94,32 @@ project(WoW)
 
 	# Enable C++14 if needed
 	if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-		list(APPEND CMAKE_CXX_FLAGS "-std=c++11 -stdlib=libc++")
-		#list(APPEND CMAKE_C_FLAGS "-std=c++11 -stdlib=libc++")
+		list(APPEND CMAKE_CXX_FLAGS "-std=c++1y -stdlib=libc++")
+		#list(APPEND CMAKE_C_FLAGS "-std=c++14 -stdlib=libc++")
 		if(APPLE)
-			set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++11")
+			set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++14")
 			set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
 		endif()
 	elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 		execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
                 OUTPUT_VARIABLE GCC_VERSION)
-		if (NOT (GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8))
-			message(FATAL_ERROR "GCC 4.8 or newer is required in order to build WoW++. Please consider an update or switch over to clang.")
+		if (NOT (GCC_VERSION VERSION_GREATER 4.9 OR GCC_VERSION VERSION_EQUAL 4.9))
+			message(FATAL_ERROR "GCC 4.9 or newer is required in order to build WoW++. Please consider an update or switch over to clang.")
 		endif()
 	
-		list(APPEND CMAKE_CXX_FLAGS "-std=c++11 -pthread")
+		list(APPEND CMAKE_CXX_FLAGS "-std=c++1y -pthread")
 	endif()
 
 	# Include additional cmake modules
 	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
+	
+	option(WOWPP_UNITY_BUILD "combine cpp files to accelerate compilation" OFF)
+	set(WOWPP_UNITY_FILES_PER_UNIT "50" CACHE STRING "Number of files per compilation unit in Unity build.")
 	include(Macros)
 	
 	# Find boost
 	set(Boost_USE_STATIC_LIBS ON)
-	find_package(Boost 1.54.0 REQUIRED COMPONENTS system date_time thread iostreams filesystem regex chrono program_options)
+	find_package(Boost 1.54.0 REQUIRED COMPONENTS system date_time thread iostreams filesystem regex chrono program_options unit_test_framework)
 	
 	# Find protobuf
 	find_package(Protobuf REQUIRED)
@@ -120,7 +133,7 @@ project(WoW)
 
 	# Since boost 1.58 to make boost::variant::get<U>(...) happy
 	add_definitions("-DBOOST_VARIANT_USE_RELAXED_GET_BY_DEFAULT")
-	
+
 	# Find OpenSSL
 	find_package(OpenSSL REQUIRED)
 	
@@ -147,7 +160,7 @@ project(WoW)
 	endif(WIN32)
 	
 	if(MSVC)
-		add_definitions("/D_CRT_SECURE_NO_WARNINGS /D_SCL_SECURE_NO_WARNINGS /wd4267 /wd4244 /wd4800 /MP /D_WINSOCK_DEPRECATED_NO_WARNINGS /bigobj")
+		add_definitions("/D_CRT_SECURE_NO_WARNINGS /D_SCL_SECURE_NO_WARNINGS /wd4267 /wd4244 /wd4800 /MP /D_WINSOCK_DEPRECATED_NO_WARNINGS /bigobj /Gy")
 	endif(MSVC)
 	
 	# Editor option
@@ -166,17 +179,5 @@ project(WoW)
 	# Include subdirectories which contain multiple subprojects
 	add_subdirectory(deps)
 	add_subdirectory(shared)
-	add_subdirectory(login)
-	add_subdirectory(realm)
-	add_subdirectory(world)
-	add_subdirectory(team)
-	if (WOWPP_BUILD_TOOLS)
-		add_subdirectory(extractor)
-		add_subdirectory(update_compiler)
-	endif()
-	if (WOWPP_BUILD_EDITOR)
-		add_subdirectory(editor)
-	endif()
-	if (WOWPP_BUILD_TESTS)
-		add_subdirectory(tests)
-	endif()
+	add_subdirectory(servers)
+	add_subdirectory(tools)

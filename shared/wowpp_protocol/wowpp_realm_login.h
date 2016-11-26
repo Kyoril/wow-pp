@@ -32,7 +32,7 @@ namespace wowpp
 	{
 		namespace realm_login
 		{
-			static const UInt32 ProtocolVersion = 0x04;
+			static const UInt32 ProtocolVersion = 0x05;
 
 			namespace realm_packet
 			{

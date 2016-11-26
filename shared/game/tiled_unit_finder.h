@@ -39,7 +39,7 @@ namespace wowpp
 		                            const math::Vector3 &previousPos) override;
 		virtual void findUnits(const Circle &shape,
 		                       const std::function<bool(GameUnit &)> &resultHandler) override;
-		virtual std::unique_ptr<UnitWatcher> watchUnits(const Circle &shape) override;
+		virtual std::unique_ptr<UnitWatcher> watchUnits(const Circle &shape, std::function<bool(GameUnit &, bool)> visibilityChanged) override;
 
 	private:
 

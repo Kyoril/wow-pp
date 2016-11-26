@@ -41,6 +41,7 @@
 #include "universe.h"
 #include "aura.h"
 #include "unit_mover.h"
+#include "game_dyn_object.h"
 
 namespace wowpp
 {
@@ -55,10 +56,8 @@ namespace wowpp
 				return;
 			}
 
-			math::Vector3 location(caster.getLocation());
-
 			TileIndex2D tileIndex;
-			worldInstance->getGrid().getTilePosition(location, tileIndex[0], tileIndex[1]);
+			worldInstance->getGrid().getTilePosition(caster.getLocation(), tileIndex[0], tileIndex[1]);
 
 			std::vector<char> buffer;
 			io::VectorSink sink(buffer);
@@ -76,9 +75,42 @@ namespace wowpp
 				);
 			});
 		}
+
+		template <class T>
+		void sendPacketToCaster(GameUnit &caster, T generator)
+		{
+			auto *worldInstance = caster.getWorldInstance();
+			if (!worldInstance)
+			{
+				return;
+			}
+
+			TileIndex2D tileIndex;
+			worldInstance->getGrid().getTilePosition(caster.getLocation(), tileIndex[0], tileIndex[1]);
+
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket packet(sink);
+			generator(packet);
+
+			forEachSubscriberInSight(
+				worldInstance->getGrid(),
+				tileIndex,
+				[&buffer, &packet, &caster](ITileSubscriber & subscriber)
+			{
+				if (subscriber.getControlledObject() == &caster)
+				{
+					subscriber.sendPacket(
+						packet,
+						buffer
+					);
+				}
+				
+			});
+		}
 	}
 
-	SingleCastState::SingleCastState(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool isProc/* = false*/, UInt64 itemGuid/* = 0*/)
+	SingleCastState::SingleCastState(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, const game::SpellPointsArray &basePoints, GameTime castTime, bool isProc/* = false*/, UInt64 itemGuid/* = 0*/)
 		: m_cast(cast)
 		, m_spell(spell)
 		, m_target(std::move(target))
@@ -87,7 +119,7 @@ namespace wowpp
 		, m_impactCountdown(cast.getTimers())
 		, m_castTime(castTime)
 		, m_castEnd(0)
-		, m_basePoints(basePoints)
+		, m_basePoints(std::move(basePoints))
 		, m_isProc(isProc)
 		, m_attackTable()
 		, m_itemGuid(itemGuid)
@@ -99,11 +131,18 @@ namespace wowpp
 		, m_attackerProc(0)
 		, m_victimProc(0)
 		, m_canTrigger(false)
-		, m_attackType(0)
+		, m_attackType(game::weapon_attack::BaseAttack)
+		, m_instantsCast(false)
+		, m_delayedCast(false)
 	{
 		// Check if the executer is in the world
 		auto &executer = m_cast.getExecuter();
 		auto *worldInstance = executer.getWorldInstance();
+
+		if (!m_itemGuid)
+		{
+			m_castTime *= executer.getFloatValue(unit_fields::ModCastSpeed);
+		}
 
 		auto const casterId = executer.getGuid();
 
@@ -118,17 +157,39 @@ namespace wowpp
 			              std::cref(m_spell),						// Spell cref
 			              std::cref(m_target),					// Target map cref
 			              game::spell_cast_flags::Unknown1,		// Cast flags
-			              static_cast<Int32>(castTime),			// Cast time in ms
+			              static_cast<Int32>(m_castTime),			// Cast time in ms
 			              0)										// Cast count (unknown)
 			);
 		}
 
-		math::Vector3 location(m_cast.getExecuter().getLocation());
+		if (worldInstance && isChanneled())
+		{
+			sendPacketFromCaster(
+				executer,
+				std::bind(game::server_write::channelStart,
+						  std::placeholders::_1,
+						  casterId,
+						  m_spell.id(),
+						  m_spell.duration())
+			);
+			
+			executer.setUInt64Value(unit_fields::ChannelObject, m_target.getUnitTarget());
+			executer.setUInt32Value(unit_fields::ChannelSpell, m_spell.id());
+		}
+
+		const math::Vector3 &location = m_cast.getExecuter().getLocation();
 		m_x = location.x, m_y = location.y, m_z = location.z;
 
 		m_countdown.ended.connect([this]()
 		{
-			this->onCastFinished();
+			if (isChanneled())
+			{
+				this->finishChanneling();
+			}
+			else
+			{
+				this->onCastFinished();
+			}
 		});
 	}
 
@@ -143,7 +204,8 @@ namespace wowpp
 				{
 					if (m_spell.interruptflags() & game::spell_interrupt_flags::PushBack &&
 						m_delayCounter < 2 &&
-						m_cast.getExecuter().isGameCharacter())	// Pushback only works on characters
+						m_cast.getExecuter().isGameCharacter() &&
+						damage > 0)	// Pushback only works on characters
 					{
 						Int32 resistChance = 100;
 
@@ -188,30 +250,97 @@ namespace wowpp
 			}
 
 			// Subscribe to damage events if the spell is cancelled on damage
-			m_onUserMoved = m_cast.getExecuter().moved.connect(
-			                    std::bind(&SingleCastState::onUserStartsMoving, this));
+			/*m_onUserMoved = m_cast.getExecuter().moved.connect(
+			                    std::bind(&SingleCastState::onUserStartsMoving, this));*/
 
 			// TODO: Subscribe to target removed and died events (in both cases, the cast may be interrupted)
+
+			if (m_spell.attributes(0) & game::spell_attributes::NotInCombat)
+			{
+				m_onThreatened = m_cast.getExecuter().threatened.connect(std::bind(&SingleCastState::stopCast, this, game::spell_interrupt_flags::None, 0));
+			}
 		}
 		else
 		{
+			if (isChanneled())
+			{
+				m_castEnd = getCurrentTime() + m_spell.duration();
+				m_countdown.setEnd(m_castEnd);
+				m_damaged = m_cast.getExecuter().takenDamage.connect([this](GameUnit *attacker, UInt32 damage) {
+					if (m_countdown.running)
+					{
+						if (m_spell.channelinterruptflags() & game::spell_channel_interrupt_flags::Delay &&
+							m_delayCounter < 2 &&
+							m_cast.getExecuter().isGameCharacter() &&
+							damage > 0)	// Pushback only works on characters
+						{
+							Int32 resistChance = 100;
+
+							// GameCharacter type already checked above, as the pushback mechanic should only work on
+							// player characters and not on creatures.
+							reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(
+								spell_mod_op::PreventSpellDelay, m_spell.id(), resistChance);
+							resistChance += m_cast.getExecuter().getAuras().getTotalBasePoints(game::aura_type::ResistPushback) - 100;
+							if (resistChance >= 100)
+								return;
+
+							std::uniform_int_distribution<Int32> resistRoll(0, 99);
+							if (resistChance > resistRoll(randomGenerator))
+							{
+								return;
+							}
+
+							const float delay = m_spell.duration() * 0.25f;
+							m_castEnd -= m_castEnd - getCurrentTime() >= delay ? delay : m_castEnd - getCurrentTime();
+							m_countdown.setEnd(m_castEnd);
+
+							// Notify about spell delay
+							sendPacketFromCaster(m_cast.getExecuter(),
+								std::bind(game::server_write::channelUpdate, std::placeholders::_1,
+									m_cast.getExecuter().getGuid(),
+									m_castEnd - getCurrentTime()));
+							m_delayCounter++;
+						}
+						if (m_spell.interruptflags() & game::spell_interrupt_flags::Damage)
+						{
+							stopCast(game::spell_interrupt_flags::Damage);
+						}
+					}
+				});
+
+				WorldInstance *world = m_cast.getExecuter().getWorldInstance();
+				assert(world);
+
+				GameUnit *unitTarget = nullptr;
+				m_target.resolvePointers(*world, &unitTarget, nullptr, nullptr, nullptr);
+				if (unitTarget)
+				{
+					m_onTargetDied = unitTarget->killed.connect(std::bind(&SingleCastState::onTargetRemovedOrDead, this));
+					m_onTargetRemoved = unitTarget->despawned.connect(std::bind(&SingleCastState::onTargetRemovedOrDead, this));
+				}
+
+				/*m_onUserMoved = m_cast.getExecuter().moved.connect(
+					std::bind(&SingleCastState::onUserStartsMoving, this));*/
+			}
+
 			onCastFinished();
 		}
 	}
 
-	std::pair<game::SpellCastResult, SpellCasting *> SingleCastState::startCast(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool doReplacePreviousCast, UInt64 itemGuid)
+	std::pair<game::SpellCastResult, SpellCasting *> SingleCastState::startCast(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, const game::SpellPointsArray &basePoints, GameTime castTime, bool doReplacePreviousCast, UInt64 itemGuid)
 	{
 		if (!m_hasFinished &&
 		        !doReplacePreviousCast)
 		{
 			return std::make_pair(game::spell_cast_result::FailedSpellInProgress, &m_casting);
 		}
-
+		
+		finishChanneling();
 		SpellCasting &casting = castSpell(
 		                            cast,
 		                            spell,
 		                            std::move(target),
-		                            basePoints,
+		                            std::move(basePoints),
 		                            castTime,
 		                            itemGuid);
 
@@ -220,6 +349,8 @@ namespace wowpp
 
 	void SingleCastState::stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown/* = 0*/)
 	{
+		finishChanneling();
+
 		// Nothing to cancel
 		if (m_hasFinished)
 			return;
@@ -264,6 +395,37 @@ namespace wowpp
 		}
 	}
 
+	void SingleCastState::finishChanneling()
+	{
+		if (isChanneled())
+		{
+			m_cast.getExecuter().getAuras().removeAllAurasDueToSpell(m_spell.id());
+			GameUnit *target = reinterpret_cast<GameUnit *>(m_cast.getExecuter().getWorldInstance()->findObjectByGUID(m_target.getUnitTarget()));
+			if (target && target->isAlive())
+			{
+				target->getAuras().removeAllAurasDueToSpell(m_spell.id());
+			}
+
+			sendPacketFromCaster(m_cast.getExecuter(),
+				std::bind(game::server_write::channelUpdate, std::placeholders::_1,
+					m_cast.getExecuter().getGuid(),
+					0));
+
+			m_cast.getExecuter().setUInt64Value(unit_fields::ChannelObject, 0);
+			m_cast.getExecuter().setUInt32Value(unit_fields::ChannelSpell, 0);
+
+			m_casting.ended(true);
+
+			// Destroy dynamic objects
+			for (auto &obj : m_dynObjectsToDespawn)
+			{
+				m_cast.getExecuter().removeDynamicObject(obj);
+			}
+
+			m_dynObjectsToDespawn.clear();
+		}
+	}
+
 	void SingleCastState::sendEndCast(bool success)
 	{
 		auto &executer = m_cast.getExecuter();
@@ -272,6 +434,9 @@ namespace wowpp
 		{
 			return;
 		}
+
+		// Raise event
+		getCasting().ended(success);
 
 		if (success)
 		{
@@ -299,16 +464,19 @@ namespace wowpp
 		}
 		else
 		{
+			
 			sendPacketFromCaster(executer,
 			                     std::bind(game::server_write::spellFailure, std::placeholders::_1,
 			                               executer.getGuid(),
 			                               m_spell.id(),
-			                               game::spell_cast_result::FailedBadTargets));
+										   game::spell_cast_result::FailedBadTargets));
 
 			sendPacketFromCaster(executer,
 			                     std::bind(game::server_write::spellFailedOther, std::placeholders::_1,
 			                               executer.getGuid(),
 			                               m_spell.id()));
+
+			executer.spellCastError(m_spell, game::spell_cast_result::FailedInterrupted);
 		}
 	}
 
@@ -464,7 +632,7 @@ namespace wowpp
 				}
 
 				strongThis->sendEndCast(true);
-				strongThis->applyAllEffects();
+				strongThis->applyAllEffects(true, true);
 				return true;
 			});
 		}
@@ -482,6 +650,9 @@ namespace wowpp
 
 			if (m_spell.speed() > 0.0f)
 			{
+				// Apply all instant effects
+				applyAllEffects(true, false);
+
 				// Calculate distance to target
 				GameUnit *unitTarget = nullptr;
 				auto *world = m_cast.getExecuter().getWorldInstance();
@@ -495,68 +666,58 @@ namespace wowpp
 						const GameTime timeMS = (dist / m_spell.speed()) * 1000;
 						if (timeMS >= 50)
 						{
+							// Calculate spell impact delay
+							auto strongTarget = std::static_pointer_cast<GameUnit>(unitTarget->shared_from_this());
+
 							// This will be executed on the impact
 							m_impactCountdown.ended.connect(
-							    [strongThis]() mutable
+							    [this, strongThis, strongTarget]() mutable
 							{
-								strongThis->applyAllEffects();
-								strongThis.reset();
+								const auto currentTime = getCurrentTime();
+								const auto &targetLoc = strongTarget->getLocation();
+
+								float percentage = static_cast<float>(currentTime - m_projectileStart) / static_cast<float>(m_projectileEnd - m_projectileStart);
+								math::Vector3 projectilePos = m_projectileOrigin.lerp(m_projectileDest, percentage);
+								const float dist = (targetLoc - projectilePos).length();
+								const GameTime timeMS = (dist / m_spell.speed()) * 1000;
+
+								m_projectileOrigin = projectilePos;
+								m_projectileDest = targetLoc;
+								m_projectileStart = currentTime;
+								m_projectileEnd = currentTime + timeMS;
+
+								if (timeMS >= 50)
+								{
+									m_impactCountdown.setEnd(currentTime + std::min<GameTime>(timeMS, 400));
+								}
+								else
+								{
+									strongThis->applyAllEffects(false, true);
+									strongTarget.reset();
+									strongThis.reset();
+								}
 							});
 
 							m_projectileStart = getCurrentTime();
 							m_projectileEnd = m_projectileStart + timeMS;
 							m_projectileOrigin = m_cast.getExecuter().getLocation();
-
-							m_onTargetMoved = unitTarget->moved.connect([this](GameObject & target, const math::Vector3 & oldPosition, float oldO) {
-								if (m_impactCountdown.running)
-								{
-									const auto currentTime = getCurrentTime();
-									auto targetLoc = target.getLocation();
-
-									float percentage = static_cast<float>(currentTime - m_projectileStart) / static_cast<float>(m_projectileEnd - m_projectileStart);
-									math::Vector3 projectilePos = m_projectileOrigin.lerp(oldPosition, percentage);
-									const float dist = (targetLoc - projectilePos).length();
-									const GameTime timeMS = (dist / m_spell.speed()) * 1000;
-
-									m_projectileOrigin = projectilePos;
-									m_projectileStart = currentTime;
-									m_projectileEnd = currentTime + timeMS;
-
-									if (timeMS >= 50)
-									{
-										m_impactCountdown.setEnd(currentTime + timeMS);
-									}
-									else
-									{
-										m_impactCountdown.cancel();
-										applyAllEffects();
-									}
-								}
-							});
-
-							m_impactCountdown.setEnd(m_projectileEnd);
+							m_projectileDest = unitTarget->getLocation();
+							m_impactCountdown.setEnd(m_projectileStart + std::min<GameTime>(timeMS, 400));
 						}
 						else
 						{
-							applyAllEffects();
+							applyAllEffects(false, true);
 						}
 					}
 				}
 			}
 			else
 			{
-				applyAllEffects();
+				applyAllEffects(true, true);
 			}
 		}
 
 		const UInt32 spellAttributesA = m_spell.attributes(1);
-		// Consume combo points if required
-		if ((spellAttributesA & game::spell_attributes_ex_a::ReqComboPoints_1) && character)
-		{
-			// 0 will reset combo points
-			character->addComboPoints(0, 0);
-		}
-
 		// Start auto attack if required
 		if (spellAttributesA & game::spell_attributes_ex_a::MeleeCombatStart)
 		{
@@ -583,7 +744,7 @@ namespace wowpp
 			m_cast.getExecuter().stopAttack();
 		}
 
-		if (weakThis.lock())
+		if (weakThis.lock() && !isChanneled())
 		{
 			//may destroy this, too
 			m_casting.ended(true);
@@ -593,8 +754,6 @@ namespace wowpp
 	void SingleCastState::onTargetRemovedOrDead()
 	{
 		stopCast(game::spell_interrupt_flags::None);
-
-		m_onTargetMoved.disconnect();
 	}
 
 	void SingleCastState::onUserDamaged()
@@ -618,10 +777,6 @@ namespace wowpp
 			GameUnit *targetUnit = targets[i];
 			m_affectedTargets.insert(targetUnit->shared_from_this());
 
-			UInt32 procVictim = m_victimProc;
-			UInt32 procAttacker = m_attackerProc;
-			UInt32 procEx = game::spell_proc_flags_ex::None;
-
 			UInt32 totalDamage = m_meleeDamage[i];
 			UInt32 blocked = 0;
 			bool crit = false;
@@ -631,7 +786,6 @@ namespace wowpp
 			const game::VictimState &state = victimStates[i];
 			if (state == game::victim_state::Blocks)
 			{
-				procEx |= game::spell_proc_flags_ex::Block;
 				UInt32 blockValue = 50;	//TODO get from m_victim
 				if (blockValue >= totalDamage)	//avoid negative damage when blockValue is high
 				{
@@ -646,26 +800,16 @@ namespace wowpp
 			}
 			else if (hitInfos[i] == game::hit_info::CriticalHit)
 			{
-				procEx |= game::spell_proc_flags_ex::CriticalHit;
 				crit = true;
 				totalDamage *= 2.0f;
 			}
 			else if (hitInfos[i] == game::hit_info::Crushing)
 			{
-				procEx |= game::spell_proc_flags_ex::NormalHit;
 				totalDamage *= 1.5f;
 			}
-			else
-			{
-				procEx |= game::spell_proc_flags_ex::NormalHit;
-			}
+
 			resisted = totalDamage * (resists[i] / 100.0f);
 			absorbed = targetUnit->consumeAbsorb(totalDamage - resisted, school);
-			if (absorbed > 0 && absorbed == totalDamage)
-			{
-				procEx |= game::spell_proc_flags_ex::Absorb;
-				hitInfos[i] = static_cast<game::HitInfo>(hitInfos[i] | game::hit_info::Absorb);
-			}
 
 			// Apply damage bonus
 			m_cast.getExecuter().applyDamageDoneBonus(school, 1, totalDamage);
@@ -677,31 +821,29 @@ namespace wowpp
 			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, &attacker, threat))
 			{
 				std::map<UInt64, game::SpellMissInfo> missedTargets;
-				if (state == game::victim_state::IsImmune)
+				if (state == game::victim_state::Evades)
 				{
-					procEx |= game::spell_proc_flags_ex::Immune;
+					missedTargets[targetUnit->getGuid()] = game::spell_miss_info::Evade;
+				}
+				else if (state == game::victim_state::IsImmune)
+				{
 					missedTargets[targetUnit->getGuid()] = game::spell_miss_info::Immune;
 				}
 				else if (state == game::victim_state::Dodge)
 				{
-					procEx |= game::spell_proc_flags_ex::Dodge;
 					missedTargets[targetUnit->getGuid()] = game::spell_miss_info::Dodge;
 				}
 				else if (hitInfos[i] == game::hit_info::Miss)
 				{
-					procEx |= game::spell_proc_flags_ex::Miss;
 					missedTargets[targetUnit->getGuid()] = game::spell_miss_info::Miss;
 				}
 				else if (state == game::victim_state::Parry)
 				{
-					procEx |= game::spell_proc_flags_ex::Parry;
 					missedTargets[targetUnit->getGuid()] = game::spell_miss_info::Parry;
 				}
 
 				if (missedTargets.empty())
 				{
-					procVictim |= game::spell_proc_flags::TakenDamage;
-
 					sendPacketFromCaster(attacker,
 						std::bind(game::server_write::spellNonMeleeDamageLog, std::placeholders::_1,
 							targetUnit->getGuid(),
@@ -730,20 +872,16 @@ namespace wowpp
 				//targetUnit->takenDamage(&attacker, totalDamage - resisted - absorbed);
 			}
 
-			if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
+			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
 			{
-				HitResult procInfo(procAttacker, procVictim, procEx, totalDamage - resisted - absorbed);
-				m_hitResults[targetUnit->getGuid()] = procInfo;
+				HitResult procInfo(m_attackerProc, m_victimProc, hitInfos[i], victimStates[i], resists[i], totalDamage, absorbed, true);
+				m_hitResults.emplace(targetUnit->getGuid(), procInfo);
 			}
 			else
 			{
-				HitResult &procInfo = m_hitResults[targetUnit->getGuid()];
-				procInfo.procAttacker |= procAttacker;
-				procInfo.procVictim |= procVictim;
-				procInfo.procEx |= procEx;
-				procInfo.amount += totalDamage - resisted - absorbed;
+				HitResult &procInfo = m_hitResults.at(targetUnit->getGuid());
+				procInfo.add(hitInfos[i], victimStates[i], resists[i], totalDamage, absorbed, true);
 			}
-
 		}
 	}
 
@@ -759,14 +897,22 @@ namespace wowpp
 		for (UInt32 i = 0; i < targets.size(); i++)
 		{
 			GameUnit *targetUnit = targets[i];
-			m_affectedTargets.insert(targetUnit->shared_from_this());
-
-			targetUnit->dealDamage(targetUnit->getUInt32Value(unit_fields::Health), m_spell.schoolmask(), &caster, 0.0f);
-
-			if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
+			if (victimStates[i] != game::victim_state::Evades)
 			{
-				HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-				m_hitResults[targetUnit->getGuid()] = procInfo;
+				m_affectedTargets.insert(targetUnit->shared_from_this());
+
+				targetUnit->dealDamage(targetUnit->getUInt32Value(unit_fields::Health), m_spell.schoolmask(), &caster, 0.0f);
+			}
+
+			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
+			{
+				HitResult procInfo(m_attackerProc, m_victimProc, hitInfos[i], victimStates[i], resists[i], targetUnit->getUInt32Value(unit_fields::Health), 0, true);
+				m_hitResults.emplace(targetUnit->getGuid(), procInfo);
+			}
+			else
+			{
+				HitResult &procInfo = m_hitResults.at(targetUnit->getGuid());
+				procInfo.add(hitInfos[i], victimStates[i], resists[i], targetUnit->getUInt32Value(unit_fields::Health), 0, true);
 			}
 		}
 	}
@@ -786,15 +932,71 @@ namespace wowpp
 			m_affectedTargets.insert(unitTarget->shared_from_this());
 		}
 
-		if (m_spell.family() == 4)	// Warrior
+		GameUnit &caster = m_cast.getExecuter();
+
+		if (m_spell.family() == game::spell_family::Generic)
 		{
-			if (m_spell.familyflags() == 0x20000000)		// Execute
+			// Berserking (racial)
+			if (m_spell.id() == 20554 ||
+				m_spell.id() == 26296 ||
+				m_spell.id() == 26297)
+			{
+				float health = static_cast<float>(caster.getUInt32Value(unit_fields::Health));
+				float maxHealth = static_cast<float>(caster.getUInt32Value(unit_fields::MaxHealth));
+				UInt32 healthPct = static_cast<UInt32>(health / maxHealth * 100);
+
+				Int32 speedMod = 10;
+				if (healthPct <= 40)
+				{
+					speedMod = 30;
+				}
+				else if (healthPct < 100 && healthPct > 40)
+				{
+					speedMod = 10 + (100 - healthPct) / 3;
+				}
+
+				game::SpellPointsArray basePoints;
+				basePoints.fill(speedMod);
+				SpellTargetMap targetMap;
+				targetMap.m_targetMap = game::spell_cast_target_flags::Self;
+				targetMap.m_unitTarget = caster.getGuid();
+
+				caster.addFlag(unit_fields::AuraState, game::aura_state::Berserking);
+				caster.castSpell(std::move(targetMap), 26635, std::move(basePoints), 0, true);
+			}
+		}
+		else if (m_spell.family() == game::spell_family::Warrior)
+		{
+			if (m_spell.familyflags() & 0x20000000)		// Execute
 			{
 				// Rage has already been reduced by executing this spell, though the remaining value is the rest
-				m_cast.getExecuter().castSpell(
-					m_target, 20647, m_basePoints + m_cast.getExecuter().getUInt32Value(unit_fields::Power2) * effect.dmgmultiplier());
-				m_cast.getExecuter().setUInt32Value(unit_fields::Power2, 0);
+				caster.castSpell(
+					m_target, 20647, { static_cast<Int32>(calculateEffectBasePoints(effect) + caster.getUInt32Value(unit_fields::Power2) * effect.dmgmultiplier()), 0, 0 });
+				caster.setUInt32Value(unit_fields::Power2, 0);
 			}
+		}
+		else if (m_spell.family() == game::spell_family::Druid)
+		{
+			if (m_spell.id() == 5229)		// Enrage
+			{
+				if (caster.getByteValue(unit_fields::Bytes2, 3) == game::shapeshift_form::Bear)
+				{
+					m_basePoints[1] = -27;
+				}
+				else if (caster.getByteValue(unit_fields::Bytes2, 3) == game::shapeshift_form::DireBear)
+				{
+					m_basePoints[1] = -16;
+				}
+
+				spellEffectApplyAura(effect);
+			}
+		}
+
+		// Lys test spell
+		if (m_spell.id() == 5581)
+		{
+			// Show targets aura infos
+			caster.getAuras().logAuraInfos();
 		}
 	}
 
@@ -860,10 +1062,15 @@ namespace wowpp
 				targetUnit->relocate(targetPos, targetO);
 			}
 
-			if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
+			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
 			{
-				HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-				m_hitResults[targetUnit->getGuid()] = procInfo;
+				HitResult procInfo(m_attackerProc, m_victimProc, hitInfos[i], victimStates[i], resists[i]);
+				m_hitResults.emplace(targetUnit->getGuid(), procInfo);
+			}
+			else
+			{
+				HitResult &procInfo = m_hitResults.at(targetUnit->getGuid());
+				procInfo.add(hitInfos[i], victimStates[i], resists[i]);
 			}
 		}
 	}
@@ -883,23 +1090,18 @@ namespace wowpp
 			GameUnit *targetUnit = targets[i];
 			m_affectedTargets.insert(targetUnit->shared_from_this());
 
-			UInt32 procVictim = m_victimProc;
-			UInt32 procAttacker = m_attackerProc;
-			UInt32 procEx = game::spell_proc_flags_ex::None;
-
 			const game::VictimState &state = victimStates[i];
 			UInt32 totalDamage;
 			bool crit = false;
 			UInt32 resisted = 0;
 			UInt32 absorbed = 0;
-			if (state == game::victim_state::IsImmune)
+			if (state == game::victim_state::IsImmune || 
+				state == game::victim_state::Evades)
 			{
-				procEx |= game::spell_proc_flags_ex::Immune;
 				totalDamage = 0;
 			}
 			else if (hitInfos[i] == game::hit_info::Miss)
 			{
-				procEx |= game::spell_proc_flags_ex::Miss;
 				totalDamage = 0;
 			}
 			else
@@ -920,7 +1122,6 @@ namespace wowpp
 
 				if (hitInfos[i] == game::hit_info::CriticalHit)
 				{
-					procEx |= game::spell_proc_flags_ex::CriticalHit;
 					crit = true;
 					totalDamage *= 2.0f;
 
@@ -930,18 +1131,9 @@ namespace wowpp
 							spell_mod_op::CritDamageBonus, m_spell.id(), totalDamage);
 					}
 				}
-				else
-				{
-					procEx |= game::spell_proc_flags_ex::NormalHit;
-				}
+
 				resisted = totalDamage * (resists[i] / 100.0f);
 				absorbed = targetUnit->consumeAbsorb(totalDamage - resisted, school);
-
-				if (absorbed)
-				{
-					procEx |= game::spell_proc_flags_ex::Absorb;
-				}
-				procVictim |= game::spell_proc_flags::TakenDamage;
 			}
 			
 			// Update health value
@@ -961,7 +1153,11 @@ namespace wowpp
 				m_completedEffectsExecution[targetUnit->getGuid()] = completedEffects.connect([this, &caster, targetUnit, totalDamage, school, absorbed, resisted, crit, state]()
 				{
 					std::map<UInt64, game::SpellMissInfo> missedTargets;
-					if (state == game::victim_state::IsImmune)
+					if (state == game::victim_state::Evades)
+					{
+						missedTargets[targetUnit->getGuid()] = game::spell_miss_info::Evade;
+					}
+					else if (state == game::victim_state::IsImmune)
 					{
 						missedTargets[targetUnit->getGuid()] = game::spell_miss_info::Immune;
 					}
@@ -998,18 +1194,15 @@ namespace wowpp
 				});	// End connect
 			}
 
-			if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
+			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
 			{
-				HitResult procInfo(procAttacker, procVictim, procEx, totalDamage - resisted - absorbed);
-				m_hitResults[targetUnit->getGuid()] = procInfo;
+				HitResult procInfo(m_attackerProc, m_victimProc, hitInfos[i], victimStates[i], resists[i], totalDamage, absorbed, true);
+				m_hitResults.emplace(targetUnit->getGuid(), procInfo);
 			}
 			else
 			{
-				HitResult &procInfo = m_hitResults[targetUnit->getGuid()];
-				procInfo.procAttacker |= procAttacker;
-				procInfo.procVictim |= procVictim;
-				procInfo.procEx |= procEx;
-				procInfo.amount += totalDamage - resisted - absorbed;
+				HitResult &procInfo = m_hitResults.at(targetUnit->getGuid());
+				procInfo.add(hitInfos[i], victimStates[i], resists[i], totalDamage, absorbed, true);
 			}
 		}
 	}
@@ -1034,28 +1227,21 @@ namespace wowpp
 			GameUnit *targetUnit = targets[i];
 			m_affectedTargets.insert(targetUnit->shared_from_this());
 
-			UInt32 procVictim = m_victimProc;
-			UInt32 procAttacker = m_attackerProc;
-			UInt32 procEx = game::spell_proc_flags_ex::None;
-
 			UInt32 totalPoints = 0;
 			bool spellFailed = false;
 
 			if (hitInfos[i] == game::hit_info::Miss)
 			{
-				procEx |= game::spell_proc_flags_ex::Miss;
 				spellFailed = true;
 			}
 			else if (victimStates[i] == game::victim_state::IsImmune)
 			{
-				procEx |= game::spell_proc_flags_ex::Immune;
 				spellFailed = true;
 			}
 			else if (victimStates[i] == game::victim_state::Normal)
 			{
 				if (resists[i] == 100.0f)
 				{
-					procEx |= game::spell_proc_flags_ex::Resist;
 					spellFailed = true;
 				}
 				else
@@ -1095,7 +1281,7 @@ namespace wowpp
 
 						auto *world = caster.getWorldInstance();
 						auto &universe = world->getUniverse();
-						std::shared_ptr<Aura> aura = std::make_shared<Aura>(spell, effect, basepoints, caster, caster, m_itemGuid, [&universe](std::function<void()> work)
+						std::shared_ptr<Aura> aura = std::make_shared<Aura>(spell, effect, basepoints, caster, caster, m_target, m_itemGuid, false, [&universe](std::function<void()> work)
 						{
 							universe.post(work);
 						}, [](Aura & self)
@@ -1115,17 +1301,15 @@ namespace wowpp
 				}
 			}
 
-			if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
+			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
 			{
-				HitResult procInfo(procAttacker, procVictim, procEx, 0);
-				m_hitResults[targetUnit->getGuid()] = procInfo;
+				HitResult procInfo(m_attackerProc, m_victimProc, hitInfos[i], victimStates[i], resists[i]);
+				m_hitResults.emplace(targetUnit->getGuid(), procInfo);
 			}
 			else
 			{
-				HitResult &procInfo = m_hitResults[targetUnit->getGuid()];
-				procInfo.procAttacker |= procAttacker;
-				procInfo.procVictim |= procVictim;
-				procInfo.procEx |= procEx;
+				HitResult &procInfo = m_hitResults.at(targetUnit->getGuid());
+				procInfo.add(hitInfos[i], victimStates[i], resists[i]);
 			}
 		}
 	}
@@ -1146,10 +1330,15 @@ namespace wowpp
 
 			targetUnit->cancelCast(game::spell_interrupt_flags::Interrupt, m_spell.duration());
 
-			if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
+			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
 			{
-				HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-				m_hitResults[targetUnit->getGuid()] = procInfo;
+				HitResult procInfo(m_attackerProc, m_victimProc, hitInfos[i], victimStates[i], resists[i]);
+				m_hitResults.emplace(targetUnit->getGuid(), procInfo);
+			}
+			else
+			{
+				HitResult &procInfo = m_hitResults.at(targetUnit->getGuid());
+				procInfo.add(hitInfos[i], victimStates[i], resists[i]);
 			}
 		}
 	}
@@ -1198,17 +1387,11 @@ namespace wowpp
 					SpellTargetMap targetMap;
 					targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
 					targetMap.m_unitTarget = character->getGuid();
-					character->castSpell(std::move(targetMap), effect.triggerspell(), -1, 0, true);
+					character->castSpell(std::move(targetMap), effect.triggerspell(), { 0, 0, 0 }, 0, true);
 				}
 
 				// TODO: Send packets
 			}
-		}
-
-		if (m_hitResults.find(unitTarget->getGuid()) != m_hitResults.end())
-		{
-			HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-			m_hitResults[unitTarget->getGuid()] = procInfo;
 		}
 	}
 
@@ -1264,7 +1447,7 @@ namespace wowpp
 			}
 			if (castTime < 0) castTime = 0;
 
-			m_cast.getExecuter().castSpell(m_target, spellId, -1, castTime, false);
+			m_cast.getExecuter().castSpell(m_target, spellId, { 0, 0, 0 }, castTime, false);
 		}
 	}
 
@@ -1284,10 +1467,15 @@ namespace wowpp
 
 			targetUnit->getAuras().removeAllAurasDueToMechanic(1 << effect.miscvaluea());
 
-			if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
+			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
 			{
-				HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-				m_hitResults[targetUnit->getGuid()] = procInfo;
+				HitResult procInfo(m_attackerProc, m_victimProc, hitInfos[i], victimStates[i], resists[i]);
+				m_hitResults.emplace(targetUnit->getGuid(), procInfo);
+			}
+			else
+			{
+				HitResult &procInfo = m_hitResults.at(targetUnit->getGuid());
+				procInfo.add(hitInfos[i], victimStates[i], resists[i]);
 			}
 		}
 	}
@@ -1330,13 +1518,18 @@ namespace wowpp
 		target->setResurrectRequestData(caster.getGuid(), caster.getMapId(), caster.getLocation(), health, mana);
 		target->resurrectRequested(caster.getGuid(), caster.getName(), caster.isGameCharacter() ? object_type::Character : object_type::Unit);
 
-		if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
+		if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
 		{
-			HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-			m_hitResults[targetUnit->getGuid()] = procInfo;
+			HitResult procInfo(m_attackerProc, m_victimProc, game::hit_info::NoAction, game::victim_state::Normal);
+			m_hitResults.emplace(targetUnit->getGuid(), procInfo);
+		}
+		else
+		{
+			HitResult &procInfo = m_hitResults.at(targetUnit->getGuid());
+			procInfo.add(game::hit_info::NoAction, game::victim_state::Normal);
 		}
 	}
-
+	
 	void SingleCastState::spellEffectResurrectNew(const proto::SpellEffect & effect)
 	{
 		if (!isPlayerGUID(m_target.getUnitTarget()))
@@ -1375,10 +1568,75 @@ namespace wowpp
 		target->setResurrectRequestData(caster.getGuid(), caster.getMapId(), caster.getLocation(), health, mana);
 		target->resurrectRequested(caster.getGuid(), caster.getName(), caster.isGameCharacter() ? object_type::Character : object_type::Unit);
 
-		if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
+		if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
 		{
-			HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-			m_hitResults[targetUnit->getGuid()] = procInfo;
+			HitResult procInfo(m_attackerProc, m_victimProc, game::hit_info::NoAction, game::victim_state::Normal);
+			m_hitResults.emplace(targetUnit->getGuid(), procInfo);
+		}
+		else
+		{
+			HitResult &procInfo = m_hitResults.at(targetUnit->getGuid());
+			procInfo.add(game::hit_info::NoAction, game::victim_state::Normal);
+		}
+	}
+
+	void SingleCastState::spellEffectKnockBack(const proto::SpellEffect & effect)
+	{
+		if (!isPlayerGUID(m_target.getUnitTarget()))
+		{
+			WLOG("TODO: KnockBack on creatures");
+			return;
+		}
+
+		auto *world = m_cast.getExecuter().getWorldInstance();
+		if (!world)
+		{
+			return;
+		}
+
+		GameUnit *targetUnit = nullptr;
+		m_target.resolvePointers(*world, &targetUnit, nullptr, nullptr, nullptr);
+
+		if (targetUnit->isRooted() || targetUnit->isStunned())
+		{
+			return;
+		}
+
+		m_affectedTargets.insert(targetUnit->shared_from_this());
+
+		GameUnit &caster = m_cast.getExecuter();
+
+		float speedxy = static_cast<float>(effect.miscvaluea() * 0.1f);
+		float speedz = static_cast<float>(calculateEffectBasePoints(effect) * 0.1f);
+
+		if (speedxy < 0.1f && speedz < 0.1f)
+		{
+			return;
+		}
+
+		float angle = targetUnit->getGuid() == caster.getGuid() ? caster.getOrientation() : caster.getAngle(*targetUnit);
+		float vcos = std::cos(angle);
+		float vsin = std::sin(angle);
+
+		targetUnit->cancelCast(game::spell_interrupt_flags::Movement);
+
+		sendPacketToCaster(*targetUnit,
+							 std::bind(game::server_write::moveKnockBack, std::placeholders::_1,
+									   targetUnit->getGuid(),
+									   vcos,
+									   vsin,
+									   speedxy,
+									   speedz));
+
+		if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
+		{
+			HitResult procInfo(m_attackerProc, m_victimProc, game::hit_info::NoAction, game::victim_state::Normal);
+			m_hitResults.emplace(targetUnit->getGuid(), procInfo);
+		}
+		else
+		{
+			HitResult &procInfo = m_hitResults.at(targetUnit->getGuid());
+			procInfo.add(game::hit_info::NoAction, game::victim_state::Normal);
 		}
 	}
 
@@ -1480,10 +1738,15 @@ namespace wowpp
 			caster.setUInt32Value(unit_fields::Power1 + casterPowerType, casterPower + powerToDrain);
 		}
 
-		if (m_hitResults.find(unitTarget->getGuid()) != m_hitResults.end())
+		if (m_hitResults.find(unitTarget->getGuid()) == m_hitResults.end())
 		{
-			HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-			m_hitResults[unitTarget->getGuid()] = procInfo;
+			HitResult procInfo(m_attackerProc, m_victimProc, game::hit_info::NoAction, game::victim_state::Normal);
+			m_hitResults.emplace(unitTarget->getGuid(), procInfo);
+		}
+		else
+		{
+			HitResult &procInfo = m_hitResults.at(unitTarget->getGuid());
+			procInfo.add(game::hit_info::NoAction, game::victim_state::Normal);
 		}
 	}
 
@@ -1513,12 +1776,6 @@ namespace wowpp
 		{
 			character->addArmorProficiency(mask);
 		}
-
-		if (m_hitResults.find(character->getGuid()) != m_hitResults.end())
-		{
-			HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-			m_hitResults[character->getGuid()] = procInfo;
-		}
 	}
 
 	Int32 SingleCastState::calculateEffectBasePoints(const proto::SpellEffect &effect)
@@ -1545,14 +1802,14 @@ namespace wowpp
 		// Calculate the damage done
 		const float basePointsPerLevel = effect.pointsperlevel();
 		const float randomPointsPerLevel = effect.diceperlevel();
-		const Int32 basePoints = (m_basePoints == -1 ? effect.basepoints() : m_basePoints) + level * basePointsPerLevel;
+		const Int32 basePoints = (m_basePoints[effect.index()] == 0 ? effect.basepoints() : m_basePoints[effect.index()]) + level * basePointsPerLevel;
 		const Int32 randomPoints = effect.diesides() + level * randomPointsPerLevel;
 		const Int32 comboDamage = effect.pointspercombopoint() * comboPoints;
 
 		std::uniform_int_distribution<int> distribution(effect.basedice(), randomPoints);
 		const Int32 randomValue = (effect.basedice() >= randomPoints ? effect.basedice() : distribution(randomGenerator));
 
-		Int32 outBasePoints = basePoints + randomValue + comboDamage;
+		Int32 outBasePoints = m_basePoints[effect.index()] == 0 ? basePoints + randomValue + comboDamage : basePoints;
 		if (m_cast.getExecuter().isGameCharacter())
 		{
 			switch (effect.index())
@@ -1642,12 +1899,6 @@ namespace wowpp
 
 		UInt64 comboTarget = m_target.getUnitTarget();
 		character->addComboPoints(comboTarget, UInt8(calculateEffectBasePoints(effect)));
-
-		if (m_hitResults.find(character->getGuid()) != m_hitResults.end())
-		{
-			HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-			m_hitResults[character->getGuid()] = procInfo;
-		}
 	}
 
 	void SingleCastState::spellEffectDuel(const proto::SpellEffect &effect)
@@ -1734,12 +1985,6 @@ namespace wowpp
 			targetUnit->setUInt64Value(character_fields::DuelArbiter, flagObject->getGuid());
 			DLOG("Duel arbiter spawned: " << flagObject->getGuid());
 		}
-
-		if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
-		{
-			HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-			m_hitResults[targetUnit->getGuid()] = procInfo;
-		}
 	}
 
 	void SingleCastState::spellEffectWeaponDamageNoSchool(const proto::SpellEffect &effect)
@@ -1819,12 +2064,6 @@ namespace wowpp
 					}
 				}
 			}
-
-			if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
-			{
-				HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-				m_hitResults[targetUnit->getGuid()] = procInfo;
-			}
 		}
 	}
 
@@ -1873,29 +2112,26 @@ namespace wowpp
 			GameUnit *targetUnit = targets[i];
 			m_affectedTargets.insert(targetUnit->shared_from_this());
 
-			UInt32 procVictim = m_victimProc;
-			UInt32 procAttacker = m_attackerProc;
-			UInt32 procEx = game::spell_proc_flags_ex::None;
-
 			UInt32 totalPoints = 0;
 			game::SpellMissInfo missInfo = game::spell_miss_info::None;
 			bool spellFailed = false;
 
 			if (hitInfos[i] == game::hit_info::Miss)
 			{
-				procEx |= game::spell_proc_flags_ex::Miss;
 				missInfo = game::spell_miss_info::Miss;
+			}
+			else if (victimStates[i] == game::victim_state::Evades)
+			{
+				missInfo = game::spell_miss_info::Evade;
 			}
 			else if (victimStates[i] == game::victim_state::IsImmune)
 			{
-				procEx |= game::spell_proc_flags_ex::Immune;
 				missInfo = game::spell_miss_info::Immune;
 			}
 			else if (victimStates[i] == game::victim_state::Normal)
 			{
 				if (resists[i] == 100.0f)
 				{
-					procEx |= game::spell_proc_flags_ex::Resist;
 					missInfo = game::spell_miss_info::Resist;
 				}
 				else
@@ -1910,6 +2146,23 @@ namespace wowpp
 					else
 					{
 						totalPoints = calculateEffectBasePoints(effect);
+					}
+
+					if (effect.aura() == game::aura_type::PeriodicDamage &&
+						m_spell.attributes(4) & game::spell_attributes_ex_d::StackDotModifier)
+					{
+						targetUnit->getAuras().forEachAuraOfType(game::aura_type::PeriodicDamage, [&totalPoints, this](Aura &aura) -> bool
+						{
+							if (aura.getSpell().id() == m_spell.id())
+							{
+								Int32 remainingTicks = aura.getMaxTickCount() - aura.getTickCount();
+								Int32 remainingDamage = aura.getBasePoints() * remainingTicks;
+
+								totalPoints += remainingDamage / aura.getMaxTickCount();
+							}
+
+							return true;
+						});
 					}
 				}
 			}
@@ -1931,7 +2184,7 @@ namespace wowpp
 			}
 			else if (targetUnit->isAlive())
 			{
-				std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *targetUnit, m_itemGuid, [&universe](std::function<void()> work)
+				std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *targetUnit, m_target, m_itemGuid, false ,[&universe](std::function<void()> work)
 				{
 					universe.post(work);
 				}, [&universe](Aura & self)
@@ -1957,12 +2210,7 @@ namespace wowpp
 				}
 
 				// TODO: Add aura to unit target
-				const bool success = targetUnit->getAuras().addAura(std::move(aura));
-				if (!success)
-				{
-					// TODO: What should we do here? Just ignore?
-					WLOG("Aura could not be added to unit target!");
-				}
+				targetUnit->getAuras().addAura(std::move(aura));
 
 				// We need to be sitting for this aura to work
 				if (m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::NotSeated)
@@ -1972,17 +2220,15 @@ namespace wowpp
 				}
 			}
 
-			if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
+			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
 			{
-				HitResult procInfo(procAttacker, procVictim, procEx, 0);
-				m_hitResults[targetUnit->getGuid()] = procInfo;
+				HitResult procInfo(m_attackerProc, m_victimProc, hitInfos[i], victimStates[i], resists[i]);
+				m_hitResults.emplace(targetUnit->getGuid(), procInfo);
 			}
 			else
 			{
-				HitResult &procInfo = m_hitResults[targetUnit->getGuid()];
-				procInfo.procAttacker |= procAttacker;
-				procInfo.procVictim |= procVictim;
-				procInfo.procEx |= procEx;
+				HitResult &procInfo = m_hitResults.at(targetUnit->getGuid());
+				procInfo.add(hitInfos[i], victimStates[i], resists[i]);
 			}
 		}
 
@@ -2017,6 +2263,67 @@ namespace wowpp
 		}
 	}
 
+	void SingleCastState::spellEffectPersistentAreaAura(const proto::SpellEffect & effect)
+	{
+		// Check targets
+		GameUnit &caster = m_cast.getExecuter();
+		if (!m_target.hasDestTarget())
+		{
+			WLOG("SPELL_EFFECT_APPLY_AREA_AURA: No dest target info found!");
+			return;
+		}
+
+		math::Vector3 dstLoc;
+		m_target.getDestLocation(dstLoc.x, dstLoc.y, dstLoc.z);
+
+		static UInt64 lowGuid = 1;
+
+		// Create a new dynamic object
+		auto dynObj = std::make_shared<DynObject>(
+			caster.getProject(),
+			caster.getTimers(),
+			caster,
+			m_spell,
+			effect
+			);
+		// TODO: Add lower guid counter
+		auto guid = createEntryGUID(lowGuid++, m_spell.id(), guid_type::Player);
+		dynObj->setGuid(guid);
+		dynObj->relocate(dstLoc, 0.0f, false);
+		dynObj->initialize();
+
+		// Remember to destroy this object on end of channeling
+		if (isChanneled())
+		{
+			m_dynObjectsToDespawn.push_back(guid);
+		}
+		else
+		{
+			// Timed despawn
+			dynObj->triggerDespawnTimer(m_spell.duration());
+		}
+
+		if (effect.amplitude())
+		{
+			dynObj->startUnitWatcher();
+			spellEffectApplyAura(effect);
+		}
+
+		// Add this object to the unit (this will also sawn it)
+		caster.addDynamicObject(dynObj);
+
+		if (m_hitResults.find(caster.getGuid()) == m_hitResults.end())
+		{
+			HitResult procInfo(m_attackerProc, m_victimProc, game::hit_info::NoAction, game::victim_state::Normal);
+			m_hitResults.emplace(caster.getGuid(), procInfo);
+		}
+		else
+		{
+			HitResult &procInfo = m_hitResults.at(caster.getGuid());
+			procInfo.add(game::hit_info::NoAction, game::victim_state::Normal);
+		}
+	}
+
 	void SingleCastState::spellEffectHeal(const proto::SpellEffect &effect)
 	{
 		GameUnit &caster = m_cast.getExecuter();
@@ -2031,16 +2338,11 @@ namespace wowpp
 			GameUnit *targetUnit = targets[i];
 			m_affectedTargets.insert(targetUnit->shared_from_this());
 
-			UInt32 procVictim = m_victimProc;
-			UInt32 procAttacker = m_attackerProc;
-			UInt32 procEx = game::spell_proc_flags_ex::None;
-
 			UInt8 school = m_spell.schoolmask();
 			UInt32 totalPoints;
 			bool crit = false;
 			if (victimStates[i] == game::victim_state::IsImmune)
 			{
-				procEx |= game::spell_proc_flags_ex::Immune;
 				totalPoints = 0;
 			}
 			else
@@ -2054,13 +2356,8 @@ namespace wowpp
 
 				if (hitInfos[i] == game::hit_info::CriticalHit)
 				{
-					procEx |= game::spell_proc_flags_ex::CriticalHit;
 					crit = true;
 					totalPoints *= 2.0f;
-				}
-				else
-				{
-					procEx |= game::spell_proc_flags_ex::NormalHit;
 				}
 			}
 
@@ -2078,18 +2375,15 @@ namespace wowpp
 				                               crit));
 			}
 
-			if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
+			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
 			{
-				HitResult procInfo(procAttacker, procVictim, procEx, totalPoints);
-				m_hitResults[targetUnit->getGuid()] = procInfo;
+				HitResult procInfo(m_attackerProc, m_victimProc, hitInfos[i], victimStates[i], resists[i], totalPoints);
+				m_hitResults.emplace(targetUnit->getGuid(), procInfo);
 			}
 			else
 			{
-				HitResult &procInfo = m_hitResults[targetUnit->getGuid()];
-				procInfo.procAttacker |= procAttacker;
-				procInfo.procVictim |= procVictim;
-				procInfo.procEx |= procEx;
-				procInfo.amount += totalPoints;
+				HitResult &procInfo = m_hitResults.at(targetUnit->getGuid());
+				procInfo.add(hitInfos[i], victimStates[i], resists[i], totalPoints);
 			}
 		}
 	}
@@ -2114,12 +2408,6 @@ namespace wowpp
 				GameCharacter *character = dynamic_cast<GameCharacter *>(targetUnit);
 				character->setHome(caster.getMapId(), caster.getLocation(), caster.getOrientation());
 			}
-
-			if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
-			{
-				HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-				m_hitResults[targetUnit->getGuid()] = procInfo;
-			}
 		}
 	}
 
@@ -2142,18 +2430,13 @@ namespace wowpp
 			{
 				reinterpret_cast<GameCharacter*>(targetUnit)->completeQuest(effect.miscvaluea());
 			}
-
-			if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
-			{
-				HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-				m_hitResults[targetUnit->getGuid()] = procInfo;
-			}
 		}
 	}
 
-	void SingleCastState::applyAllEffects()
+	void SingleCastState::applyAllEffects(bool executeInstants, bool executeDelayed)
 	{
 		// Add spell cooldown if any
+		if (!m_instantsCast && !m_delayedCast)
 		{
 			UInt64 spellCatCD = m_spell.categorycooldown();
 			UInt64 spellCD = m_spell.cooldown();
@@ -2215,11 +2498,14 @@ namespace wowpp
 			effects.push_back(m_spell.effects(i).type());
 		}
 
-		if (m_itemGuid)
+		if (!m_isProc && !m_itemGuid &&
+			!(m_spell.attributes(3) & game::spell_attributes_ex_c::DisableProc) &&
+			!(m_spell.attributes(0) & game::spell_attributes::Passive))
 		{
-			m_canTrigger = false;
+			m_canTrigger = true;
 		}
-		else if (!m_isProc)
+		else if (m_spell.attributes(2) & game::spell_attributes_ex_b::TriggeredCanProc ||
+			m_spell.attributes(3) & game::spell_attributes_ex_c::TriggeredCanProc2)
 		{
 			m_canTrigger = true;
 		}
@@ -2229,6 +2515,7 @@ namespace wowpp
 		case game::spell_dmg_class::Melee:
 			m_attackerProc = game::spell_proc_flags::DoneSpellMeleeDmgClass;
 			m_victimProc = game::spell_proc_flags::TakenSpellMeleeDmgClass;
+			m_attackType = game::weapon_attack::BaseAttack;
 
 			if (m_spell.attributes(3) & game::spell_attributes_ex_c::ReqOffhand)
 			{
@@ -2286,9 +2573,16 @@ namespace wowpp
 			break;
 		}
 
+		// Needed for combat ratings
+		m_cast.getExecuter().setWeaponAttack(m_attackType);
+
 		// Execute spell immediatly
 		namespace se = game::spell_effects;
-		std::vector<std::pair<UInt32, EffectHandler>> effectMap {
+		std::vector<std::pair<UInt32, EffectHandler>> instantMap{
+			{ se::Charge,				std::bind(&SingleCastState::spellEffectCharge, this, std::placeholders::_1) },
+		};
+
+		std::vector<std::pair<UInt32, EffectHandler>> delayedMap {
 			//ordered pairs to avoid 25% resists for binary spells like frostnova
 			{se::Dummy,					std::bind(&SingleCastState::spellEffectDummy, this, std::placeholders::_1) },
 			{se::InstantKill,			std::bind(&SingleCastState::spellEffectInstantKill, this, std::placeholders::_1)},
@@ -2307,7 +2601,6 @@ namespace wowpp
 			{se::Energize,				std::bind(&SingleCastState::spellEffectEnergize, this, std::placeholders::_1)},
 			{se::WeaponPercentDamage,	std::bind(&SingleCastState::spellEffectWeaponPercentDamage, this, std::placeholders::_1)},
 			{se::PowerBurn,				std::bind(&SingleCastState::spellEffectPowerBurn, this, std::placeholders::_1)},
-			{se::Charge,				std::bind(&SingleCastState::spellEffectCharge, this, std::placeholders::_1)},
 			{se::OpenLock,				std::bind(&SingleCastState::spellEffectOpenLock, this, std::placeholders::_1)},
 			{se::OpenLockItem,			std::bind(&SingleCastState::spellEffectOpenLock, this, std::placeholders::_1) },
 			{se::ApplyAreaAuraParty,	std::bind(&SingleCastState::spellEffectApplyAreaAuraParty, this, std::placeholders::_1)},
@@ -2324,27 +2617,64 @@ namespace wowpp
 			{se::DispelMechanic,		std::bind(&SingleCastState::spellEffectDispelMechanic, this, std::placeholders::_1) },
 			{se::Resurrect,				std::bind(&SingleCastState::spellEffectResurrect, this, std::placeholders::_1) },
 			{se::ResurrectNew,			std::bind(&SingleCastState::spellEffectResurrectNew, this, std::placeholders::_1) },
+			{se::KnockBack,				std::bind(&SingleCastState::spellEffectKnockBack, this, std::placeholders::_1) },
 			// Add all effects above here
 			{se::ApplyAura,				std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
+			{se::PersistentAreaAura,	std::bind(&SingleCastState::spellEffectPersistentAreaAura, this, std::placeholders::_1) },
 			{se::ApplyAreaAuraParty,	std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
 			{se::SchoolDamage,			std::bind(&SingleCastState::spellEffectSchoolDamage, this, std::placeholders::_1)}
 		};
 
 		// Make sure that the executer exists after all effects have been executed
-		std::weak_ptr<GameObject> weakExecuter(m_cast.getExecuter().shared_from_this());
-		for (std::vector<std::pair<UInt32, EffectHandler>>::iterator it = effectMap.begin(); it != effectMap.end(); ++it)
+		auto strongCaster = std::static_pointer_cast<GameUnit>(m_cast.getExecuter().shared_from_this());
+
+		if (executeInstants && !m_instantsCast)
 		{
-			for (int k = 0; k < effects.size(); ++k)
+			for (auto &effect : instantMap)
 			{
-				if (it->first == effects[k])
+				for (int k = 0; k < effects.size(); ++k)
 				{
-					assert(it->second);
-					it->second(m_spell.effects(k));
+					if (effect.first == effects[k])
+					{
+						assert(it->second);
+						effect.second(m_spell.effects(k));
+					}
 				}
 			}
+
+			m_instantsCast = true;
+		}
+
+		if (executeDelayed && !m_delayedCast)
+		{
+			for (auto &effect : delayedMap)
+			{
+				for (int k = 0; k < effects.size(); ++k)
+				{
+					if (effect.first == effects[k])
+					{
+						assert(it->second);
+						effect.second(m_spell.effects(k));
+					}
+				}
+			}
+
+			m_delayedCast = true;
+		}
+
+		if (!m_instantsCast || !m_delayedCast)
+		{
+			return;
 		}
 
 		completedEffects();
+
+		// Consume combo points if required
+		if ((m_spell.attributes(1) & (game::spell_attributes_ex_a::ReqComboPoints_1 | game::spell_attributes_ex_a::ReqComboPoints_2)))
+		{
+			// 0 will reset combo points
+			reinterpret_cast<GameCharacter&>(*strongCaster).addComboPoints(0, 0);
+		}
 
 		if (m_canTrigger)
 		{
@@ -2360,60 +2690,63 @@ namespace wowpp
 						{
 							GameObject *targetObj = world->findObjectByGUID(itr->first);
 							auto *target = reinterpret_cast<GameUnit *>(targetObj);
+							bool canRemove = false;
 
 							if (itr == m_hitResults.begin())
 							{
-								m_cast.getExecuter().procEvent(target, itr->second.procAttacker, itr->second.procVictim, itr->second.procEx, itr->second.amount, m_attackType, &m_spell, true);
+								canRemove = true;
 							}
-							else
+
+							if (m_isProc)
 							{
-								m_cast.getExecuter().procEvent(target, itr->second.procAttacker, itr->second.procVictim, itr->second.procEx, itr->second.amount, m_attackType, &m_spell, false);
+								canRemove = false;
 							}
+
+							strongCaster->procEvent(target, itr->second.procAttacker, itr->second.procVictim, itr->second.procEx, itr->second.amount, m_attackType, &m_spell, canRemove);
 						}
 					}
 				}
 			}
 			else
 			{
-				m_cast.getExecuter().procEvent(nullptr, m_attackerProc, m_victimProc, 0, 0, m_attackType, &m_spell, true);
+				strongCaster->procEvent(nullptr, m_attackerProc, m_victimProc, 0, 0, m_attackType, &m_spell, m_isProc ? false : true);
 			}
 		}
 
-		if (auto strong = weakExecuter.lock())
+		// Cast all additional spells if available
+		for (const auto &spell : m_spell.additionalspells())
 		{
-			// Cast all additional spells if available
-			auto strongUnit = std::dynamic_pointer_cast<GameUnit>(strong);
-			assert(strongUnit);
-
-			for (const auto &spell : m_spell.additionalspells())
-			{
-				strongUnit->castSpell(m_target, spell, -1, 0, true);
-			}
+			strongCaster->castSpell(m_target, spell, { 0, 0, 0 }, 0, true);
 		}
 
-		if (auto strong = weakExecuter.lock())
+		if (strongCaster->isGameCharacter())
 		{
-			auto strongUnit = std::dynamic_pointer_cast<GameUnit>(strong);
-			assert(strongUnit);
-
-			if (strongUnit->isGameCharacter())
+			for (const auto &target : m_affectedTargets)
 			{
-				for (const auto &target : m_affectedTargets)
+				auto strongTarget = target.lock();
+				if (strongTarget)
 				{
-					auto strongTarget = target.lock();
-					if (strongTarget)
+					if (strongTarget->isCreature())
 					{
-						if (strongTarget->isCreature())
-						{
-							std::static_pointer_cast<GameCreature>(strongTarget)->raiseTrigger(
-								trigger_event::OnSpellHit, { m_spell.id() });
-						}
-
-						reinterpret_cast<GameCharacter&>(*strongUnit).onQuestSpellCastCredit(m_spell.id(), *strongTarget);
+						std::static_pointer_cast<GameCreature>(strongTarget)->raiseTrigger(
+							trigger_event::OnSpellHit, { m_spell.id() });
 					}
+
+					reinterpret_cast<GameCharacter&>(*strongCaster).onQuestSpellCastCredit(m_spell.id(), *strongTarget);
 				}
 			}
 		}
+	}
+
+	bool wowpp::SingleCastState::hasChargeEffect() const
+	{
+		for (const auto &eff : m_spell.effects())
+		{
+			if (eff.type() == game::spell_effects::Charge) 
+				return true;
+		}
+
+		return false;
 	}
 
 	bool SingleCastState::consumeItem(bool delayed/* = true*/)
@@ -2551,7 +2884,7 @@ namespace wowpp
 		}
 
 		GameUnit &caster = m_cast.getExecuter();
-		caster.castSpell(m_target, effect.triggerspell(), -1, 0, true);
+		caster.castSpell(m_target, effect.triggerspell(), { 0, 0, 0 }, 0, true);
 	}
 
 	void SingleCastState::spellEffectEnergize(const proto::SpellEffect &effect)
@@ -2573,14 +2906,9 @@ namespace wowpp
 			GameUnit *targetUnit = targets[i];
 			m_affectedTargets.insert(targetUnit->shared_from_this());
 
-			UInt32 procVictim = m_victimProc;
-			UInt32 procAttacker = m_attackerProc;
-			UInt32 procEx = game::spell_proc_flags_ex::None;
-
 			UInt32 power = calculateEffectBasePoints(effect);
 			if (victimStates[i] == game::victim_state::IsImmune)
 			{
-				procEx |= game::spell_proc_flags_ex::Immune;
 				power = 0;
 			}
 
@@ -2599,17 +2927,15 @@ namespace wowpp
 			                     std::bind(game::server_write::spellEnergizeLog, std::placeholders::_1,
 			                               m_cast.getExecuter().getGuid(), targetUnit->getGuid(), m_spell.id(), static_cast<UInt8>(powerType), power));
 
-			if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
+			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
 			{
-				HitResult procInfo(procAttacker, procVictim, procEx, 0);
-				m_hitResults[targetUnit->getGuid()] = procInfo;
+				HitResult procInfo(m_attackerProc, m_victimProc, hitInfos[i], victimStates[i], resists[i]);
+				m_hitResults.emplace(targetUnit->getGuid(), procInfo);
 			}
 			else
 			{
-				HitResult &procInfo = m_hitResults[targetUnit->getGuid()];
-				procInfo.procAttacker |= procAttacker;
-				procInfo.procVictim |= procVictim;
-				procInfo.procEx |= procEx;
+				HitResult &procInfo = m_hitResults.at(targetUnit->getGuid());
+				procInfo.add(hitInfos[i], victimStates[i], resists[i]);
 			}
 		}
 	}
@@ -2628,23 +2954,18 @@ namespace wowpp
 			GameUnit *targetUnit = targets[i];
 			m_affectedTargets.insert(targetUnit->shared_from_this());
 
-			UInt32 procVictim = m_victimProc;
-			UInt32 procAttacker = m_attackerProc;
-			UInt32 procEx = game::spell_proc_flags_ex::None;
-
 			UInt8 school = m_spell.schoolmask();
+			Int32 powerType = effect.miscvaluea();
 			UInt32 burn;
 			UInt32 damage = 0;
 			UInt32 resisted = 0;
 			UInt32 absorbed = 0;
 			if (victimStates[i] == game::victim_state::IsImmune)
 			{
-				procEx |= game::spell_proc_flags_ex::Immune;
 				burn = 0;
 			}
 			if (hitInfos[i] == game::hit_info::Miss)
 			{
-				procEx |= game::spell_proc_flags_ex::Miss;
 				burn = 0;
 			}
 			else
@@ -2652,16 +2973,9 @@ namespace wowpp
 				burn = calculateEffectBasePoints(effect);
 				resisted = burn * (resists[i] / 100.0f);
 				burn -= resisted;
-				burn = 0 - targetUnit->addPower(game::power_type::Mana, 0 - burn);
+				burn = 0 - targetUnit->addPower(game::PowerType(powerType), 0 - burn);
 				damage = burn * effect.multiplevalue();
 				absorbed = targetUnit->consumeAbsorb(damage, school);
-
-				if (absorbed)
-				{
-					procEx |= game::spell_proc_flags_ex::Absorb;
-				}
-
-				procVictim |= game::spell_proc_flags::TakenDamage;
 			}
 
 			// Update health value
@@ -2688,18 +3002,15 @@ namespace wowpp
 				                               false));	//crit
 			}
 
-			if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
+			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
 			{
-				HitResult procInfo(procAttacker, procVictim, procEx, damage - absorbed);
-				m_hitResults[targetUnit->getGuid()] = procInfo;
+				HitResult procInfo(m_attackerProc, m_victimProc, hitInfos[i], victimStates[i], resists[i], damage, absorbed, damage ? true : false);
+				m_hitResults.emplace(targetUnit->getGuid(), procInfo);
 			}
 			else
 			{
-				HitResult &procInfo = m_hitResults[targetUnit->getGuid()];
-				procInfo.procAttacker |= procAttacker;
-				procInfo.procVictim |= procVictim;
-				procInfo.procEx |= procEx;
-				procInfo.amount += damage - absorbed;
+				HitResult &procInfo = m_hitResults.at(targetUnit->getGuid());
+				procInfo.add(hitInfos[i], victimStates[i], resists[i], damage, absorbed, damage ? true : false);
 			}
 		}
 	}
@@ -2829,12 +3140,6 @@ namespace wowpp
 
 		// Raise interaction triggers
 		obj->raiseTrigger(trigger_event::OnInteraction);
-
-		if (m_hitResults.find(obj->getGuid()) != m_hitResults.end())
-		{
-			HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-			m_hitResults[obj->getGuid()] = procInfo;
-		}
 	}
 
 	void SingleCastState::spellEffectApplyAreaAuraParty(const proto::SpellEffect &effect)
@@ -2857,28 +3162,21 @@ namespace wowpp
 			GameUnit *targetUnit = targets[i];
 			m_affectedTargets.insert(targetUnit->shared_from_this());
 
-			UInt32 procVictim = m_victimProc;
-			UInt32 procAttacker = m_attackerProc;
-			UInt32 procEx = game::spell_proc_flags_ex::None;
-
 			UInt32 totalPoints = 0;
 			bool spellFailed = false;
 
 			if (hitInfos[i] == game::hit_info::Miss)
 			{
-				procEx |= game::spell_proc_flags_ex::Miss;
 				spellFailed = true;
 			}
 			else if (victimStates[i] == game::victim_state::IsImmune)
 			{
-				procEx |= game::spell_proc_flags_ex::Immune;
 				spellFailed = true;
 			}
 			else if (victimStates[i] == game::victim_state::Normal)
 			{
 				if (resists[i] == 100.0f)
 				{
-					procEx |= game::spell_proc_flags_ex::Resist;
 					spellFailed = true;
 				}
 				else
@@ -2921,17 +3219,15 @@ namespace wowpp
 				}
 			}
 
-			if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
+			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
 			{
-				HitResult procInfo(procAttacker, procVictim, procEx, 0);
-				m_hitResults[targetUnit->getGuid()] = procInfo;
+				HitResult procInfo(m_attackerProc, m_victimProc, hitInfos[i], victimStates[i], resists[i]);
+				m_hitResults.emplace(targetUnit->getGuid(), procInfo);
 			}
 			else
 			{
-				HitResult &procInfo = m_hitResults[targetUnit->getGuid()];
-				procInfo.procAttacker |= procAttacker;
-				procInfo.procVictim |= procVictim;
-				procInfo.procEx |= procEx;
+				HitResult &procInfo = m_hitResults.at(targetUnit->getGuid());
+				procInfo.add(hitInfos[i], victimStates[i], resists[i]);
 			}
 		}
 	}
@@ -2969,12 +3265,6 @@ namespace wowpp
 		if (executer.getVictim())
 		{
 			spawned->threaten(*executer.getVictim(), 0.0001f);
-		}
-
-		if (m_hitResults.find(spawned->getGuid()) != m_hitResults.end())
-		{
-			HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-			m_hitResults[spawned->getGuid()] = procInfo;
 		}
 	}
 
@@ -3025,10 +3315,15 @@ namespace wowpp
 		spawned->setUInt32Value(unit_fields::PetNumber, guidLowerPart(spawned->getGuid()));
 		world->addGameObject(*spawned);
 
-		if (m_hitResults.find(spawned->getGuid()) != m_hitResults.end())
+		if (m_hitResults.find(spawned->getGuid()) == m_hitResults.end())
 		{
-			HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-			m_hitResults[spawned->getGuid()] = procInfo;
+			HitResult procInfo(m_attackerProc, m_victimProc, game::hit_info::NoAction, game::victim_state::Normal);
+			m_hitResults.emplace(spawned->getGuid(), procInfo);
+		}
+		else
+		{
+			HitResult &procInfo = m_hitResults.at(spawned->getGuid());
+			procInfo.add(game::hit_info::NoAction, game::victim_state::Normal);
 		}
 	}
 
@@ -3050,10 +3345,15 @@ namespace wowpp
 			auto &mover = caster.getMover();
 			mover.moveTo(firstTarget.getLocation(), 25.0f);
 
-			if (m_hitResults.find(firstTarget.getGuid()) != m_hitResults.end())
+			if (m_hitResults.find(firstTarget.getGuid()) == m_hitResults.end())
 			{
-				HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-				m_hitResults[firstTarget.getGuid()] = procInfo;
+				HitResult procInfo(m_attackerProc, m_victimProc, hitInfos[0], victimStates[0], resists[0]);
+				m_hitResults.emplace(firstTarget.getGuid(), procInfo);
+			}
+			else
+			{
+				HitResult &procInfo = m_hitResults.at(firstTarget.getGuid());
+				procInfo.add(hitInfos[0], victimStates[0], resists[0]);
 			}
 		}
 	}
@@ -3082,10 +3382,15 @@ namespace wowpp
 				}
 			}
 
-			if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
+			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
 			{
-				HitResult procInfo(m_attackerProc, m_victimProc, 0, 0);
-				m_hitResults[targetUnit->getGuid()] = procInfo;
+				HitResult procInfo(m_attackerProc, m_victimProc, hitInfos[i], victimStates[i], resists[i]);
+				m_hitResults.emplace(targetUnit->getGuid(), procInfo);
+			}
+			else
+			{
+				HitResult &procInfo = m_hitResults.at(targetUnit->getGuid());
+				procInfo.add(hitInfos[i], victimStates[i], resists[i]);
 			}
 		}
 	}
@@ -3118,32 +3423,18 @@ namespace wowpp
 			GameUnit *targetUnit = targets[i];
 			m_affectedTargets.insert(targetUnit->shared_from_this());
 
-			UInt32 procVictim = m_victimProc;
-			UInt32 procAttacker = m_attackerProc;
-			UInt32 procEx = game::spell_proc_flags_ex::None;
-
 			UInt32 totalDamage;
 			const game::VictimState &state = victimStates[i];
-			if (state == game::victim_state::IsImmune)
+			if (state == game::victim_state::IsImmune ||
+				state == game::victim_state::Evades ||
+				state == game::victim_state::Dodge ||
+				state == game::victim_state::Parry)
 			{
-				procEx |= game::spell_proc_flags_ex::Immune;
 				totalDamage = 0;
 			}
 			else if (hitInfos[i] == game::hit_info::Miss)
 			{
-				procEx |= game::spell_proc_flags_ex::Miss;
 				totalDamage = 0;
-			}
-			else if (state == game::victim_state::Dodge)
-			{
-				procEx |= game::spell_proc_flags_ex::Dodge;
-				totalDamage = 0;
-			}
-			else if (state == game::victim_state::Parry)
-			{
-				procEx |= game::spell_proc_flags_ex::Parry;
-				totalDamage = 0;
-				//TODO accelerate next m_victim autohit
 			}
 			else
 			{
@@ -3167,6 +3458,12 @@ namespace wowpp
 				std::uniform_real_distribution<float> distribution(weaponMin, weaponMax);
 				totalDamage += UInt32(distribution(randomGenerator));
 
+				if (attacker.isGameCharacter())
+				{
+					reinterpret_cast<GameCharacter&>(attacker).applySpellMod(
+						spell_mod_op::Damage, m_spell.id(), totalDamage);
+				}
+
 				// Armor reduction
 				totalDamage = targetUnit->calculateArmorReducedDamage(attacker.getLevel(), totalDamage);
 				if (totalDamage < 0) {	//avoid negative damage when blockValue is high
@@ -3177,8 +3474,6 @@ namespace wowpp
 				{
 					totalDamage *= (calculateEffectBasePoints(effect) / 100.0);
 				}
-
-				procVictim |= game::spell_proc_flags::TakenDamage;
 			}
 			if (i < m_meleeDamage.size())
 			{
@@ -3194,18 +3489,15 @@ namespace wowpp
 				m_completedEffectsExecution[targetUnit->getGuid()] = completedEffects.connect(std::bind(&SingleCastState::executeMeleeAttack, this));
 			}
 
-			if (m_hitResults.find(targetUnit->getGuid()) != m_hitResults.end())
+			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
 			{
-				HitResult procInfo(procAttacker, procVictim, procEx, totalDamage);
-				m_hitResults[targetUnit->getGuid()] = procInfo;
+				HitResult procInfo(m_attackerProc, m_victimProc, hitInfos[i], victimStates[i], resists[i], totalDamage, 0, true);
+				m_hitResults.emplace(targetUnit->getGuid(), procInfo);
 			}
 			else
 			{
-				HitResult &procInfo = m_hitResults[targetUnit->getGuid()];
-				procInfo.procAttacker |= procAttacker;
-				procInfo.procVictim |= procVictim;
-				procInfo.procEx |= procEx;
-				procInfo.amount += totalDamage;
+				HitResult &procInfo = m_hitResults.at(targetUnit->getGuid());
+				procInfo.add(hitInfos[i], victimStates[i], resists[i], totalDamage, 0, true);
 			}
 		}
 	}

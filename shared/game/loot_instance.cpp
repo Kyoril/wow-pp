@@ -131,7 +131,7 @@ namespace wowpp
 
 		if (dropCount > lootItem->maxstack())
 		{
-			WLOG("Item drop count was " << dropCount << " but max item stack count is " << lootItem->maxstack());
+			WLOG("Loot entry: Item's " << def.item() << " drop count was " << dropCount << " but max item stack count is " << lootItem->maxstack());
 			dropCount = lootItem->maxstack();
 		}
 

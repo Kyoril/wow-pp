@@ -65,7 +65,7 @@ namespace wowpp
 		virtual void findUnits(const Circle &shape, const std::function<bool(GameUnit &)> &resultHandler) = 0;
 		///
 		/// @param shape
-		virtual std::unique_ptr<UnitWatcher> watchUnits(const Circle &shape) = 0;
+		virtual std::unique_ptr<UnitWatcher> watchUnits(const Circle &shape, std::function<bool(GameUnit &, bool)> visibilityChanged) = 0;
 
 	private:
 

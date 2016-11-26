@@ -115,6 +115,8 @@ message ItemEntry {
 	optional uint32 questentry = 63;
 	// Percentage of default ranged range (100.0 = 30 yards).
 	optional float rangedrange = 64;
+	// Item skill type (weapons or armor)
+	optional uint32 skill = 65;
 }
 
 message Items {

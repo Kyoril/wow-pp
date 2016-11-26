@@ -19,6 +19,10 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include <cmath>
+#include <cstddef>
+#include <ostream>
+#include <cassert>
 #include "quaternion.h"
 #include "vector3.h"
 

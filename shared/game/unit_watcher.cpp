@@ -24,8 +24,9 @@
 
 namespace wowpp
 {
-	UnitWatcher::UnitWatcher(const Circle &shape)
+	UnitWatcher::UnitWatcher(const Circle &shape, VisibilityChange visibilityChanged)
 		: m_shape(shape)
+		, m_visibilityChanged(std::move(visibilityChanged))
 	{
 	}
 
