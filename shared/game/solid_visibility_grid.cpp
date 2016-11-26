@@ -33,7 +33,7 @@ namespace wowpp
 
 	namespace
 	{
-		size_t getGridLength(size_t worldWidth, float tileWidth)
+		size_t getVisibilityGridLength(size_t worldWidth, float tileWidth)
 		{
 			return std::max<size_t>(1,
 			                        static_cast<size_t>(static_cast<float>(worldWidth) * constants::MapWidth / tileWidth));
@@ -42,7 +42,7 @@ namespace wowpp
 
 	SolidVisibilityGrid::SolidVisibilityGrid(const TileIndex2D &worldSize)
 		: VisibilityGrid()
-		, m_tiles(getGridLength(worldSize[0], constants::MapWidth / 16.0f), getGridLength(worldSize[1], constants::MapWidth / 16.0f))
+		, m_tiles(getVisibilityGridLength(worldSize[0], constants::MapWidth / 16.0f), getVisibilityGridLength(worldSize[1], constants::MapWidth / 16.0f))
 	{
 		/*for (size_t y = 0; y < m_tiles.height(); ++y)
 		{

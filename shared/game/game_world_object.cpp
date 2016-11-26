@@ -77,6 +77,16 @@ namespace wowpp
 
 		// Generate object loot
 		generateObjectLoot();
+
+		switch (m_entry.type())
+		{
+			case world_object_type::Transport:
+			{
+				setUInt32Value(world_object_fields::Level, m_entry.data(0));
+				setUInt32Value(world_object_fields::State, m_entry.data(1) ? 0 : 1);
+				break;
+			}
+		}
 	}
 
 	void WorldObject::writeCreateObjectBlocks(std::vector<std::vector<char>> &out_blocks, bool creation /*= true*/) const

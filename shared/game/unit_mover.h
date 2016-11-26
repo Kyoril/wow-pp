@@ -85,6 +85,8 @@ namespace wowpp
 		};
 		/// 
 		math::Vector3 getCurrentLocation() const;
+		/// Enables or disables debug output of generated waypoints and other events.
+		void setDebugOutput(bool enable) { m_debugOutputEnabled = enable; }
 
 	public:
 
@@ -99,6 +101,7 @@ namespace wowpp
 		math::Vector3 m_start, m_target;
 		GameTime m_moveStart, m_moveEnd;
 		bool m_customSpeed;
+		bool m_debugOutputEnabled;
 		MovementPath m_path;
 	};
 }

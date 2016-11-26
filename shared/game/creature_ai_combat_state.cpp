@@ -61,7 +61,7 @@ namespace wowpp
 	CreatureAICombatState::~CreatureAICombatState()
 	{
 		// Disconnect all connected slots
-		m_nextActionCountdown.ended.disconnect_all_slots();
+		m_nextActionCountdown.ended.clear();
 	}
 
 	void CreatureAICombatState::onEnter()
@@ -88,74 +88,18 @@ namespace wowpp
 		{
 			return getTopThreatener();
 		});
-		m_onControlledMoved = controlled.moved.connect([this](GameObject &, const math::Vector3 & position, float rotation)
-		{
-			if (!getControlled().isCombatMovementEnabled())
-			{
-				return;
-			}
-
-			if (m_lastSpellEntry != nullptr && m_lastSpell != nullptr)
-			{
-				// Check if we are able to cast that spell now, and if so: Do it!
-				GameUnit *victim = getControlled().getVictim();
-				if (!victim) {
-					return;
-				}
-
-				// Check power requirement
-
-				// Check distance and line of sight
-				if (m_lastSpell->minrange() != 0.0f || m_lastSpell->maxrange() != 0.0f)
-				{
-					const float combatReach = victim->getFloatValue(unit_fields::CombatReach) + getControlled().getFloatValue(unit_fields::CombatReach);
-					const float distance = getControlled().getDistanceTo(*victim);
-					if ((m_lastSpell->minrange() > 0.0f && distance < m_lastSpell->minrange()) ||
-					        (m_lastSpell->maxrange() > 0.0f && distance > m_lastSpell->maxrange() + combatReach))
-					{
-						// Still out of range, do nothing
-						return;
-					}
-				}
-
-				// Check for line of sight
-				if (!getControlled().isInLineOfSight(*victim))
-				{
-					// Still not in line of sight
-					return;
-				}
-
-				// Reset variables and choose next action (should automatically be old action in most cases)
-				m_customCooldown = 0;
-				m_lastSpellEntry = nullptr;
-				m_lastSpell = nullptr;
-				m_lastCastTime = 0;
-				chooseNextAction();
-			}
-			else
-			{
-				GameUnit *victim = getControlled().getVictim();
-				if (victim)
-				{
-					const float distance =
-						(victim->getLocation() - getControlled().getLocation()).squared_length();
-					if (distance <= (getControlled().getMeleeReach() * getControlled().getMeleeReach()))
-					{
-						m_onVictimMoved.disconnect();
-						getControlled().getMover().stopMovement();
-
-						m_nextActionCountdown.setEnd(getCurrentTime() + 500);
-					}
-				}
-			}
-		});
 		
 		// Reset AI eventually
-		m_onMoveTargetChanged = getControlled().getMover().targetChanged.connect([this]
+		m_onMoveTargetChanged = getControlled().getMover().targetChanged.connect([this]()
 		{
 			auto &homePos = getAI().getHome().position;
+			
+			const bool outOfRange = 
+				getControlled().getSquaredDistanceTo(homePos, false) >= 60.0f * 60.0f ||
+				getControlled().getSquaredDistanceTo(getControlled().getMover().getTarget(), true) >= 60.0f * 60.0f;
+
 			if (getCurrentTime() >= (m_lastThreatTime + constants::OneSecond * 10) &&
-			getControlled().getDistanceTo(homePos, false) >= 60.0f)
+				outOfRange)
 			{
 				getAI().reset();
 			}
@@ -182,9 +126,6 @@ namespace wowpp
 						}
 						else
 						{
-							// Do not watch for unit motion
-							m_onVictimMoved.disconnect();
-
 							// No longer attack unit if stunned
 							m_isCasting = false;
 							getControlled().cancelCast(game::spell_interrupt_flags::None);
@@ -215,9 +156,6 @@ namespace wowpp
 						}
 						else
 						{
-							// Do not watch for unit motion
-							m_onVictimMoved.disconnect();
-
 							// No longer attack unit if stunned
 							m_isCasting = false;
 							getControlled().cancelCast(game::spell_interrupt_flags::None);
@@ -249,9 +187,6 @@ namespace wowpp
 						}
 						else
 						{
-							// Do not watch for unit motion
-							m_onVictimMoved.disconnect();
-
 							// No longer attack unit if stunned
 							m_isCasting = false;
 							getControlled().cancelCast(game::spell_interrupt_flags::None);
@@ -363,17 +298,15 @@ namespace wowpp
 	void CreatureAICombatState::onLeave()
 	{
 		// Reset all events here to prevent them being fired in another ai state
-		m_nextActionCountdown.ended.disconnect_all_slots();
+		m_nextActionCountdown.ended.clear();
 
 		m_nextActionCountdown.cancel();
 		m_onThreatened.disconnect();
 		m_getThreat.disconnect();
 		m_setThreat.disconnect();
 		m_getTopThreatener.disconnect();
-		m_onControlledMoved.disconnect();
 		m_onMoveTargetChanged.disconnect();
 		m_onUnitStateChanged.disconnect();
-		m_onVictimMoved.disconnect();
 
 		auto &controlled = getControlled();
 
@@ -524,7 +457,7 @@ namespace wowpp
 	void CreatureAICombatState::updateVictim()
 	{
 		GameCreature &controlled = getControlled();
-		if (controlled.isStunned() || controlled.isFeared() || controlled.isConfused())
+		if (!controlled.canAutoAttack())
 		{
 			controlled.setVictim(nullptr);
 			return;
@@ -543,8 +476,11 @@ namespace wowpp
 			// If we are rooted, we need to check for nearby targets to start attacking them
 			if (rooted)
 			{
-				isInRange =
-				    (controlled.getDistanceTo(*entry.second.threatener, true) <= entry.second.threatener->getMeleeReach() + controlled.getMeleeReach());
+				const float distSq = controlled.getSquaredDistanceTo(*entry.second.threatener, true);
+				const float combatRangeSq =
+					::powf(entry.second.threatener->getMeleeReach() + controlled.getMeleeReach(), 2.0f);
+
+				isInRange = (distSq <= combatRangeSq);
 			}
 
 			if (entry.second.amount > highestThreat && isInRange)
@@ -581,7 +517,7 @@ namespace wowpp
 		// If we are moving, check if the current TARGET LOCATION is not in range instead of checking
 		// if the current location is not in attack range. Only THEN we need to calculate a new movement
 		// path.
-		currentLocation = (mover.isMoving() ? mover.getTarget() : mover.getCurrentLocation());
+		currentLocation = mover.getTarget();// (mover.isMoving() ? mover.getTarget() : mover.getCurrentLocation());
 
 		math::Vector3 newTargetLocation = target.getLocation();
 		const float distance =
@@ -609,8 +545,6 @@ namespace wowpp
 		{
 			return;
 		}
-
-		m_onVictimMoved.disconnect();
 
 		// First, determine our current victim
 		updateVictim();
@@ -752,7 +686,7 @@ namespace wowpp
 					}
 
 					m_isCasting = true;
-					controlled.castSpell(std::move(targetMap), validSpellEntry->spellid(), -1, m_lastCastTime, false, 0, 
+					controlled.castSpell(std::move(targetMap), validSpellEntry->spellid(), { 0, 0, 0 }, m_lastCastTime, false, 0,
 						std::bind(&CreatureAICombatState::onSpellCast, this, std::placeholders::_1));
 					return;
 				}
@@ -763,13 +697,10 @@ namespace wowpp
 			}
 		}
 
-		// Watch for victim move signal
+		// Repeat this frequently
 		if (!m_isRanged)
 		{
-			m_onVictimMoved = victim->moved.connect([this](GameObject & moved, math::Vector3 oldPosition, float oldO)
-			{
-				chaseTarget(static_cast<GameUnit &>(moved));
-			});
+			m_nextActionCountdown.setEnd(getCurrentTime() + 500);
 		}
 		
 		// No spell cast - start auto attack
@@ -904,6 +835,66 @@ namespace wowpp
 		{
 			auto &controlled = getControlled();
 			controlled.setVictim(nullptr);
+		}
+	}
+	void CreatureAICombatState::onControlledMoved()
+	{
+		if (!getControlled().isCombatMovementEnabled())
+		{
+			return;
+		}
+
+		if (m_lastSpellEntry != nullptr && m_lastSpell != nullptr)
+		{
+			// Check if we are able to cast that spell now, and if so: Do it!
+			GameUnit *victim = getControlled().getVictim();
+			if (!victim) {
+				return;
+			}
+
+			// Check power requirement
+
+			// Check distance and line of sight
+			if (m_lastSpell->minrange() != 0.0f || m_lastSpell->maxrange() != 0.0f)
+			{
+				const float combatReach = victim->getFloatValue(unit_fields::CombatReach) + getControlled().getFloatValue(unit_fields::CombatReach);
+				const float distance = getControlled().getDistanceTo(*victim);
+				if ((m_lastSpell->minrange() > 0.0f && distance < m_lastSpell->minrange()) ||
+					(m_lastSpell->maxrange() > 0.0f && distance > m_lastSpell->maxrange() + combatReach))
+				{
+					// Still out of range, do nothing
+					return;
+				}
+			}
+
+			// Check for line of sight
+			if (!getControlled().isInLineOfSight(*victim))
+			{
+				// Still not in line of sight
+				return;
+			}
+
+			// Reset variables and choose next action (should automatically be old action in most cases)
+			m_customCooldown = 0;
+			m_lastSpellEntry = nullptr;
+			m_lastSpell = nullptr;
+			m_lastCastTime = 0;
+			chooseNextAction();
+		}
+		else
+		{
+			GameUnit *victim = getControlled().getVictim();
+			if (victim)
+			{
+				const float distance =
+					(victim->getLocation() - getControlled().getLocation()).squared_length();
+				if (distance <= (getControlled().getMeleeReach() * getControlled().getMeleeReach()))
+				{
+					getControlled().getMover().stopMovement();
+
+					m_nextActionCountdown.setEnd(getCurrentTime() + 500);
+				}
+			}
 		}
 	}
 }

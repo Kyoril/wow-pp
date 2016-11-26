@@ -41,6 +41,7 @@ namespace wowpp
 		, m_moveStart(0)
 		, m_moveEnd(0)
 		, m_customSpeed(false)
+		, m_debugOutputEnabled(false)
 	{
 		m_moveUpdated.ended.connect([this]()
 		{
@@ -67,6 +68,13 @@ namespace wowpp
 		{
 			// Cancel update timer
 			m_moveUpdated.cancel();
+
+			// Check if we are still in the world
+			auto *world = getMoved().getWorldInstance();
+			if (!world)
+			{
+				return;
+			}
 
 			// Fire signal since we reached our target
 			targetReached();
@@ -112,15 +120,29 @@ namespace wowpp
 
 	bool UnitMover::moveTo(const math::Vector3 &target, float customSpeed)
 	{
+		auto &moved = getMoved();
+
+		// Dead units can't move
+		if (!moved.canMove())
+		{
+			return false;
+		}
+
 		// Get current location
 		m_customSpeed = true;
 		auto currentLoc = getCurrentLocation();
 
-		auto &moved = getMoved();
+		if (m_debugOutputEnabled)
+		{
+			DLOG("New target: " << target << " (Current: " << currentLoc << "; Speed: " << customSpeed << ")");
+		}
+
+		m_start = currentLoc;
 
 		// Do we really need to move?
 		if (target == currentLoc)
 		{
+			m_target = target + math::Vector3(0.0f, 0.0f, 0.4f);
 			stopMovement();
 
 			// Fire signal since we reached our target
@@ -146,12 +168,6 @@ namespace wowpp
 			// we won't notify the grid about this for performance reasons (since the next
 			// movement update tick will do this for us automatically).
 			moved.relocate(currentLoc, o, false);
-		}
-
-		// Dead units can't move
-		if (!moved.canMove())
-		{
-			return false;
 		}
 
 		auto *world = moved.getWorldInstance();
@@ -193,7 +209,7 @@ namespace wowpp
 
 		// Use new values
 		m_start = currentLoc;
-		m_target = path.back();
+		m_target = path.back() + math::Vector3(0.0f, 0.0f, 0.4f);
 
 		// Calculate time of arrival
 		m_moveEnd = moveTime;
@@ -230,6 +246,11 @@ namespace wowpp
 
 		// Raise signal
 		targetChanged();
+
+		if (m_debugOutputEnabled)
+		{
+			m_path.printDebugInfo();
+		}
 
 		return true;
 	}
@@ -291,10 +312,6 @@ namespace wowpp
 
 		// Determine the current waypoints
 		return m_path.getPosition(getCurrentTime());
-
-		/*// Linear interpolation
-		const float t = static_cast<float>(static_cast<double>(getCurrentTime() - m_moveStart) / static_cast<double>(m_moveEnd - m_moveStart));
-		return m_start.lerp(m_target, t);*/
 	}
 
 	void UnitMover::sendMovementPackets(ITileSubscriber &subscriber)

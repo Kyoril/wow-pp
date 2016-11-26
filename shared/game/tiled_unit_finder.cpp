@@ -31,22 +31,15 @@ namespace wowpp
 {
 	namespace
 	{
-		size_t getGridLength(game::Distance worldLength, game::Distance tileWidth)
+		size_t getFinderGridLength(game::Distance worldLength, game::Distance tileWidth)
 		{
 			return std::max<size_t>(1, static_cast<size_t>(worldLength / tileWidth) * 64);
-		}
-
-		math::Vector3 getUnitPosition(const GameUnit &unit)
-		{
-			math::Vector3 location(unit.getLocation());
-
-			return location;
 		}
 	}
 
 	TiledUnitFinder::TiledUnitFinder(const proto::MapEntry &map, game::Distance tileWidth)
 		: UnitFinder(map)
-		, m_grid(getGridLength(533.33333f, tileWidth), getGridLength(533.33333f, tileWidth))
+		, m_grid(getFinderGridLength(533.33333f, tileWidth), getFinderGridLength(533.33333f, tileWidth))
 		, m_tileWidth(tileWidth)
 	{
 	}
@@ -54,7 +47,7 @@ namespace wowpp
 	void TiledUnitFinder::addUnit(GameUnit &findable)
 	{
 		assert(m_units.count(&findable) == 0);
-		const math::Vector3 unitPos = getUnitPosition(findable);
+		const math::Vector3 &unitPos = findable.getLocation();
 		const auto position = getTilePosition(game::planar(unitPos));
 		auto &tile = m_grid(position[0], position[1]);
 
@@ -64,14 +57,13 @@ namespace wowpp
 		tile->addUnit(findable);
 
 		UnitRecord &record = *m_units.insert(std::make_pair(&findable, make_unique<UnitRecord>())).first->second;
-		record.moved = findable.moved.connect([this, &findable](GameObject & obj, math::Vector3 position, float o)
+		/*record.moved = findable.moved.connect([this, &findable](GameObject & obj, math::Vector3 position, float o)
 		{
-			math::Vector3 location(findable.getLocation());
-			if (location.x != position.x || location.y != position.y || location.z != position.z)
+			if (findable.getLocation() != position)
 			{
-				this->onUnitMoved(findable);
+				onUnitMoved(findable);
 			}
-		});
+		});*/
 		record.lastTile = tile.get();
 	}
 
@@ -86,6 +78,10 @@ namespace wowpp
 
 	void TiledUnitFinder::updatePosition(GameUnit &updated, const math::Vector3 &previousPos)
 	{
+		if (updated.getLocation() != previousPos)
+		{
+			onUnitMoved(updated);
+		}
 	}
 
 	void TiledUnitFinder::findUnits(
@@ -121,7 +117,7 @@ namespace wowpp
 				for (GameUnit *const element : iterationCopyTile.getElements())
 				{
 					assert(element);
-					const math::Vector3 elementPos = getUnitPosition(*element);
+					const math::Vector3 &elementPos = element->getLocation();
 					if (shape.isPointInside(game::planar(elementPos)))
 					{
 						if (!resultHandler(*element))
@@ -134,9 +130,9 @@ namespace wowpp
 		}
 	}
 
-	std::unique_ptr<UnitWatcher> TiledUnitFinder::watchUnits(const Circle &shape)
+	std::unique_ptr<UnitWatcher> TiledUnitFinder::watchUnits(const Circle &shape, std::function<bool(GameUnit &, bool)> visibilityChanged)
 	{
-		return make_unique<TiledUnitWatcher>(shape, *this);
+		return make_unique<TiledUnitWatcher>(shape, *this, std::move(visibilityChanged));
 	}
 
 	TiledUnitFinder::Tile &TiledUnitFinder::getTile(const TileIndex2D &position)
@@ -162,7 +158,7 @@ namespace wowpp
 
 	TiledUnitFinder::Tile &TiledUnitFinder::getUnitsTile(const GameUnit &findable)
 	{
-		const math::Vector3 position = getUnitPosition(findable);
+		const math::Vector3 &position = findable.getLocation();
 		const TileIndex2D index = getTilePosition(game::planar(position));
 		return getTile(index);
 	}

@@ -26,6 +26,88 @@
 
 namespace wowpp
 {
+	struct HitResult final
+	{
+		UInt32 procAttacker;
+		UInt32 procVictim;
+		UInt32 procEx;
+		UInt32 amount;
+
+		explicit HitResult(UInt32 attackerProc, UInt32 victimProc, const game::HitInfo &hitInfo, const game::VictimState &victimState, float resisted = 0.0f, UInt32 damage = 0, UInt32 absorbed = 0, bool isDamage = false)
+			: procAttacker(attackerProc)
+			, procVictim(victimProc)
+			, procEx(game::spell_proc_flags_ex::None)
+			, amount(0)
+		{
+			add(hitInfo, victimState, resisted, damage, absorbed, isDamage);
+		}
+
+		void add(const game::HitInfo &hitInfo, const game::VictimState &victimState, float resisted = 0.0f, UInt32 damage = 0, UInt32 absorbed = 0, bool isDamage = false)
+		{
+			using namespace game;
+			amount += damage - absorbed;
+			amount += damage * (resisted / 100.0f);
+
+			switch (hitInfo)
+			{
+			case hit_info::Miss:
+				procEx |= spell_proc_flags_ex::Miss;
+				break;
+			case hit_info::CriticalHit:
+				procEx |= spell_proc_flags_ex::CriticalHit;
+				break;
+			default:
+				procEx |= spell_proc_flags_ex::NormalHit;
+				break;
+			}
+
+			switch (victimState)
+			{
+			case victim_state::Dodge:
+				procEx |= spell_proc_flags_ex::Dodge;
+				break;
+			case victim_state::Parry:
+				procEx |= spell_proc_flags_ex::Parry;
+				break;
+			case victim_state::Interrupt:
+				procEx |= spell_proc_flags_ex::Interrupt;
+				break;
+			case victim_state::Blocks:
+				procEx |= spell_proc_flags_ex::Block;
+				break;
+			case victim_state::Evades:
+				procEx |= spell_proc_flags_ex::Evade;
+				break;
+			case victim_state::IsImmune:
+				procEx |= spell_proc_flags_ex::Immune;
+				break;
+			case victim_state::Deflects:
+				procEx |= spell_proc_flags_ex::Deflect;
+				break;
+			default:
+				break;
+			}
+
+			if (resisted == 100.0f)
+			{
+				procEx |= spell_proc_flags_ex::Resist;
+				procEx &= ~spell_proc_flags_ex::NormalHit;
+			}
+			else if (damage && absorbed)
+			{
+				if (absorbed == damage)
+				{
+					procEx &= ~spell_proc_flags_ex::NormalHit;
+				}
+				procEx |= spell_proc_flags_ex::Absorb;
+			}
+			else if (amount && isDamage)
+			{
+				procVictim |= spell_proc_flags::TakenDamage;
+			}
+		}
+	};
+
 	// Forwards
 	class GameUnit;
 	class WorldInstance;
@@ -124,7 +206,7 @@ namespace wowpp
 		/// @param targetB
 		/// @param radius
 		/// @param maxtargets
-		void refreshTargets(GameUnit &attacker, SpellTargetMap &targetMap, UInt32 targetA, UInt32 targetB, float radius, UInt32 maxtargets);
+		void refreshTargets(GameUnit &attacker, SpellTargetMap &targetMap, UInt32 targetA, UInt32 targetB, float radius, UInt32 maxtargets, UInt32 effect, UInt32 spellId);
 
 	private:
 

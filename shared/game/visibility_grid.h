@@ -37,7 +37,7 @@ namespace wowpp
 		explicit VisibilityGrid();
 		virtual ~VisibilityGrid();
 
-		bool getTilePosition(math::Vector3 position, Int32 &outX, Int32 &outY) const;
+		bool getTilePosition(const math::Vector3 &position, Int32 &outX, Int32 &outY) const;
 		virtual VisibilityTile *getTile(const TileIndex2D &position) = 0;
 		virtual VisibilityTile &requireTile(const TileIndex2D &position) = 0;
 	};

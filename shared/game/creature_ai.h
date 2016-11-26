@@ -23,6 +23,7 @@
 
 #include "defines.h"
 #include "math/vector3.h"
+#include "common/simple.hpp"
 
 namespace wowpp
 {
@@ -87,6 +88,10 @@ namespace wowpp
 		void onCombatMovementChanged();
 		/// 
 		void onCreatureMovementChanged();
+		/// Called when the controlled unit moved.
+		void onControlledMoved();
+		/// Determines if this creature's AI is currently in evade mode.
+		bool isEvading() const { return m_evading; }
 
 	public:
 
@@ -103,6 +108,8 @@ namespace wowpp
 		GameCreature &m_controlled;
 		std::unique_ptr<CreatureAIState> m_state;
 		Home m_home;
-		boost::signals2::scoped_connection m_onSpawned, m_onKilled, m_onDamaged;
+		simple::scoped_connection m_onSpawned;
+		boost::signals2::scoped_connection m_onKilled, m_onDamaged;
+		bool m_evading;
 	};
 }

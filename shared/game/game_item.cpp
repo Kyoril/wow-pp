@@ -90,6 +90,27 @@ namespace wowpp
 		equipped();
 	}
 
+	bool GameItem::isCompatibleWithSpell(const proto::SpellEntry & spell)
+	{
+		if (spell.itemclass() != -1)
+		{
+			if (spell.itemclass() != static_cast<Int32>(m_entry.itemclass()))
+			{
+				return false;
+			}
+
+			if (spell.itemsubclassmask() != 0 && 
+				(spell.itemsubclassmask() & (1 << m_entry.subclass())) == 0)
+			{
+				return false;
+			}
+		}
+
+		// TODO: Check enchantments;
+
+		return true;
+	}
+
 	void GameItem::generateLoot()
 	{
 		auto lootEntryId = m_entry.lootentry();

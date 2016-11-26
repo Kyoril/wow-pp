@@ -64,6 +64,9 @@ namespace wowpp
 		controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::OtherTagger);
 		controlled.raiseTrigger(trigger_event::OnReset);
 
+		// Remove all auras from this unit
+		controlled.getAuras().removeAllAuras();
+
 		m_onStateChanged = getControlled().unitStateChanged.connect([this](UInt32 state, bool stunned)
 		{
 			auto &controlled = getControlled();

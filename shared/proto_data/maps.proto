@@ -29,14 +29,35 @@ message Waypoint {
 	optional uint32 waittime = 4;
 }
 
+message UnitSpawnLocation {
+	required float positionx = 1;
+	required float positiony = 2;
+	required float positionz = 3;
+	optional float rotation = 4;
+}
+
+message ObjectSpawnLocation {
+	required float positionx = 1;
+	required float positiony = 2;
+	required float positionz = 3;
+	optional float rotationw = 4;
+	optional float rotationx = 5;
+	optional float rotationy = 6;
+	optional float rotationz = 7;
+	optional float rotation = 8;
+}
+
 message UnitSpawnEntry {
 	optional string name = 1;
 	optional bool respawn = 2 [default = true];
 	optional uint64 respawndelay = 3;
+
+	// Obsolete: Will be removed soon
 	required float positionx = 4;
 	required float positiony = 5;
 	required float positionz = 6;
 	optional float rotation = 7;
+
 	optional float radius = 8;
 	optional uint32 maxcount = 9 [default = 1];
 	required uint32 unitentry = 10;
@@ -45,12 +66,15 @@ message UnitSpawnEntry {
 	repeated Waypoint waypoints = 13;
 	optional uint32 movement = 14;
 	optional uint32 standstate = 15;
+	repeated UnitSpawnLocation locations = 16;
 }
 
 message ObjectSpawnEntry {
 	optional string name = 1;
 	optional bool respawn = 2 [default = true];
 	optional uint64 respawndelay = 3;
+
+	// Obsolete: Will be removed soon
 	required float positionx = 4;
 	required float positiony = 5;
 	required float positionz = 6;
@@ -58,13 +82,18 @@ message ObjectSpawnEntry {
 	optional float rotationx = 8;
 	optional float rotationy = 9;
 	optional float rotationz = 10;
+
 	optional float radius = 11;
 	optional uint32 animProgress = 12 [default = 100];
 	optional uint32 state = 13 [default = 1];
 	optional uint32 maxcount = 14 [default = 1];
 	required uint32 objectentry = 15;
 	optional bool isactive = 16 [default = true];
+
+	// Obsolete: Will be removed soon
 	optional float orientation = 17;
+
+	repeated ObjectSpawnLocation locations = 18;
 }
 
 message MapEntry {

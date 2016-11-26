@@ -38,8 +38,10 @@ namespace wowpp
 		: m_project(project)
 		, m_mapId(0)
 		, m_o(0.0f)
+		, m_lastFiredO(0.0f)
 		, m_objectType(0x01)
 		, m_objectTypeId(0x01)
+		, m_updated(false)
 		, m_worldInstance(nullptr)
 	{
 		m_values.resize(object_fields::ObjectFieldCount, 0);
@@ -67,6 +69,13 @@ namespace wowpp
 		assert(offset < 2);
 		assert(index < m_values.size());
 		return *((reinterpret_cast<const UInt16 *>(&m_values[index])) + offset);
+	}
+
+	wowpp::Int16 GameObject::getInt16Value(UInt16 index, UInt8 offset) const
+	{
+		assert(offset < 2);
+		assert(index < m_values.size());
+		return *((reinterpret_cast<const Int16 *>(&m_values[index])) + offset);
 	}
 
 	wowpp::Int32 GameObject::getInt32Value(UInt16 index) const
@@ -119,6 +128,26 @@ namespace wowpp
 		assert(offset < 2);
 
 		if (UInt16(m_values[index] >> (offset * 16)) != value)
+		{
+			m_values[index] &= ~UInt32(UInt32(0xFFFF) << (offset * 16));
+			m_values[index] |= UInt32(UInt32(value) << (offset * 16));
+
+			UInt16 bitIndex = index >> 3;
+
+			// Mark bit as changed
+			UInt8 &changed = (reinterpret_cast<UInt8 *>(&m_valueBitset[0]))[bitIndex];
+			changed |= 1 << (index & 0x7);
+
+			markForUpdate();
+		}
+	}
+
+	void GameObject::setInt16Value(UInt16 index, UInt8 offset, Int16 value)
+	{
+		assert(index < m_values.size());
+		assert(offset < 2);
+
+		if (Int16(m_values[index] >> (offset * 16)) != value)
 		{
 			m_values[index] &= ~UInt32(UInt32(0xFFFF) << (offset * 16));
 			m_values[index] |= UInt32(UInt32(value) << (offset * 16));
@@ -201,6 +230,12 @@ namespace wowpp
 		}
 	}
 
+	bool GameObject::hasFlag(UInt16 index, UInt32 flag)
+	{
+		assert(index < m_values.size()); //TODO
+		return (m_values[index] & flag) != 0;
+	}
+
 	void GameObject::markForUpdate()
 	{
 		if (!m_updated)
@@ -276,18 +311,23 @@ namespace wowpp
 		{
             auto lastFiredPosition = m_lastFiredPosition;
             m_lastFiredPosition = m_position;
+			m_lastFiredO = m_o;
     
-			moved(*this, lastFiredPosition, oldO);
+			// Notify grid
+			if (m_worldInstance &&
+				lastFiredPosition != m_position)
+			{
+				m_worldInstance->notifyObjectMove(*this, lastFiredPosition);
+			}
         }
 	}
 
 	void GameObject::setOrientation(float o)
 	{
 		float oldO = m_o;
-
 		m_o = o;
 
-		moved(*this, m_position, oldO);
+		// TODO
 	}
 
 	void GameObject::setMapId(UInt32 mapId)
@@ -542,8 +582,7 @@ namespace wowpp
 			return 0.0f;
 		}
 
-		math::Vector3 position = other.getLocation();
-		return getDistanceTo(position, use3D);
+		return getDistanceTo(other.getLocation(), use3D);
 	}
 
 	float GameObject::getDistanceTo(const math::Vector3 &position, bool use3D /*= true*/) const
@@ -553,6 +592,25 @@ namespace wowpp
 		}
 		else {
 			return (sqrtf(((position.x - m_position.x) * (position.x - m_position.x)) + ((position.y - m_position.y) * (position.y - m_position.y))));
+		}
+	}
+
+	float GameObject::getSquaredDistanceTo(const GameObject & other, bool use3D) const
+	{
+		if (&other == this) {
+			return 0.0f;
+		}
+
+		return getSquaredDistanceTo(other.getLocation(), use3D);
+	}
+
+	float GameObject::getSquaredDistanceTo(const math::Vector3 & position, bool use3D) const
+	{
+		if (use3D) {
+			return (((position.x - m_position.x) * (position.x - m_position.x)) + ((position.y - m_position.y) * (position.y - m_position.y)) + ((position.z - m_position.z) * (position.z - m_position.z)));
+		}
+		else {
+			return (((position.x - m_position.x) * (position.x - m_position.x)) + ((position.y - m_position.y) * (position.y - m_position.y)));
 		}
 	}
 
@@ -712,7 +770,8 @@ namespace wowpp
 
 			UInt8 updateFlags = 0x10 | 0x20 | 0x40;			// UPDATEFLAG_ALL | UPDATEFLAG_LIVING | UPDATEFLAG_HAS_POSITION
 			UInt8 objectTypeId = object.getTypeId();		//
-			if (objectTypeId == object_type::GameObject)
+			if (objectTypeId == object_type::GameObject ||
+				objectTypeId == object_type::DynamicObject)
 			{
 				updateFlags = 0x08 | 0x10 | 0x40;	// Low-GUID, High-GUID & HasPosition
 			}
@@ -726,27 +785,10 @@ namespace wowpp
 			// Header with object guid and type
 			UInt64 guid = object.getGuid();
 			writer
-			        << io::write<NetUInt8>(updateType);
-
-			UInt64 guidCopy = guid;
-			UInt8 packGUID[8 + 1];
-			packGUID[0] = 0;
-			size_t size = 1;
-			for (UInt8 i = 0; guidCopy != 0; ++i)
-			{
-				if (guidCopy & 0xFF)
-				{
-					packGUID[0] |= UInt8(1 << i);
-					packGUID[size] = UInt8(guidCopy & 0xFF);
-					++size;
-				}
-
-				guidCopy >>= 8;
-			}
-			writer.sink().write((const char *)&packGUID[0], size);
-			writer
-			        << io::write<NetUInt8>(objectTypeId)
-			        << io::write<NetUInt8>(updateFlags);
+				<< io::write<NetUInt8>(updateType)
+				<< io::write_packed_guid(guid)
+				<< io::write<NetUInt8>(objectTypeId)
+				<< io::write<NetUInt8>(updateFlags);
 
 			// Write movement update
 			auto &movement = object.getMovementInfo();
@@ -756,7 +798,7 @@ namespace wowpp
 				writer
 				        << io::write<NetUInt32>(moveFlags)
 				        << io::write<NetUInt8>(0x00)
-				        << io::write<NetUInt32>(mTimeStamp());
+				        << io::write<NetUInt32>(getCurrentTime());
 			}
 
 			if (updateFlags & 0x40)

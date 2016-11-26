@@ -40,7 +40,7 @@ namespace wowpp
 	{
 	}
 
-	std::pair<game::SpellCastResult, SpellCasting *> SpellCast::startCast(const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, bool isProc, UInt64 itemGuid)
+	std::pair<game::SpellCastResult, SpellCasting *> SpellCast::startCast(const proto::SpellEntry &spell, SpellTargetMap target, const game::SpellPointsArray &basePoints, GameTime castTime, bool isProc, UInt64 itemGuid)
 	{
 		assert(m_castState);
 
@@ -201,13 +201,15 @@ namespace wowpp
 				}
 				else if (maxrange > 0.0f && distance > maxrange + combatReach)
 				{
+					finishChanneling();
 					return std::make_pair(game::spell_cast_result::FailedOutOfRange, nullptr);
 				}
 			}
 		}
 
 		// Check facing (Need to have the target in front of us)
-		if (spell.facing() & 0x01)
+		if (spell.facing() & 0x01 &&
+			!(spell.attributes(2) & game::spell_attributes_ex_b::CantReflect))
 		{
 			const auto *world = m_executer.getWorldInstance();
 			if (world)
@@ -229,11 +231,24 @@ namespace wowpp
 			}
 		}
 
+		// Can't use while moving (this needs to be researched)
+		if (m_executer.getTypeId() == object_type::Character)
+		{
+			if (m_executer.getMovementInfo().moveFlags)
+			{
+				if (spell.interruptflags() & game::spell_interrupt_flags::Movement &&
+					castTime)
+				{
+					return std::make_pair(game::spell_cast_result::FailedMoving, nullptr);
+				}
+			}
+		}
+
 		// Check if we have enough resources for that spell
 		if (isProc)
 		{
 			std::shared_ptr<SingleCastState> newState(
-			    new SingleCastState(*this, spell, std::move(target), basePoints, castTime, true, itemGuid)
+			    new SingleCastState(*this, spell, std::move(target), std::move(basePoints), castTime, true, itemGuid)
 			);
 			newState->activate();
 
@@ -256,7 +271,7 @@ namespace wowpp
 			       (*this,
 			        spell,
 			        std::move(target),
-			        basePoints,
+			        std::move(basePoints),
 			        castTime,
 			        false,
 			        itemGuid);
@@ -282,6 +297,13 @@ namespace wowpp
 
 		m_castState = std::move(castState);
 		m_castState->activate();
+	}
+
+	void SpellCast::finishChanneling()
+	{
+		assert(m_castState);
+
+		m_castState->finishChanneling();
 	}
 
 	Int32 SpellCast::calculatePowerCost(const proto::SpellEntry & spell) const
@@ -331,7 +353,7 @@ namespace wowpp
 			}
 		}
 
-		cost = Int32(cost * (float(m_executer.getFloatValue(unit_fields::PowerCostMultiplier + school) + 100) / 100.0f));
+		cost = Int32(cost * (1.0f + m_executer.getFloatValue(unit_fields::PowerCostMultiplier + school)));
 
 		if (m_executer.isGameCharacter())
 		{
@@ -342,10 +364,10 @@ namespace wowpp
 		return cost;
 	}
 
-	SpellCasting &castSpell(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, Int32 basePoints, GameTime castTime, UInt64 itemGuid)
+	SpellCasting &castSpell(SpellCast &cast, const proto::SpellEntry &spell, SpellTargetMap target, const game::SpellPointsArray &basePoints, GameTime castTime, UInt64 itemGuid)
 	{
 		std::shared_ptr<SingleCastState> newState(
-		    new SingleCastState(cast, spell, std::move(target), basePoints, castTime, false, itemGuid)
+		    new SingleCastState(cast, spell, std::move(target), std::move(basePoints), castTime, false, itemGuid)
 		);
 
 		auto &casting = newState->getCasting();

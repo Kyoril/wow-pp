@@ -21,11 +21,12 @@
 
 #pragma once
 
-#include "aura.h"
+#include "game/defines.h"
 
 namespace wowpp
 {
 	class GameUnit;
+	class Aura;
 
 	/// Holds and manages instances of auras for one unit.
 	class AuraContainer final
@@ -48,6 +49,7 @@ namespace wowpp
 		void removeAurasByType(UInt32 auraType);
 		Aura *popBack(UInt8 dispelType, bool positive);
 		void removeAllAurasDueToInterrupt(game::SpellAuraInterruptFlags flags);
+		void removeAllAuras();
 
 		GameUnit &getOwner() {
 			return m_owner;
@@ -62,7 +64,11 @@ namespace wowpp
 		Int32 getTotalBasePoints(game::AuraType type) const;
 		float getTotalMultiplier(game::AuraType type) const;
 
+		void forEachAura(std::function<bool(Aura &)> functor);
 		void forEachAuraOfType(game::AuraType type, std::function<bool(Aura &)> functor);
+
+		/// Used for debugging.
+		void logAuraInfos();
 
 	private:
 

@@ -320,6 +320,15 @@ namespace wowpp
 			    const std::array<UInt8, 20> &hash
 			);
 
+			static void reconnectChallenge(
+				auth::OutgoingPacket &out_packet,
+				const BigNumber &proof
+			);
+
+			static void reconnectProof(
+				auth::OutgoingPacket &out_packet
+			);
+
 			static void realmList(
 			    auth::OutgoingPacket &out_packet,
 			    const std::vector<RealmEntry> &realmList

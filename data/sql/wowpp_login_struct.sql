@@ -24,6 +24,7 @@ CREATE TABLE `account` (
   `password` varchar(40) COLLATE latin1_german1_ci NOT NULL COMMENT 'Password hash sha1 encrypted',
   `v` longtext COLLATE latin1_german1_ci,
   `s` longtext COLLATE latin1_german1_ci,
+  `k` longtext COLLATE latin1_german1_ci,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
 

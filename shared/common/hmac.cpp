@@ -21,6 +21,7 @@
 
 #include "pch.h"
 #include "hmac.h"
+#include "utilities.h"
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
 
@@ -133,28 +134,7 @@ namespace wowpp
 			        << (static_cast<unsigned>(e) & 0xff);
 		}
 	}
-
-	namespace
-	{
-		int hexDigitValue(char c)
-		{
-			if (c >= '0' && c <= '9')
-			{
-				return (c - '0');
-			}
-
-			std::locale loc;
-			c = static_cast<char>(std::tolower(c, loc));
-
-			if (c >= 'a' && c <= 'f')
-			{
-				return (c - 'a') + 10;
-			}
-
-			return -1;
-		}
-	}
-
+	
 	HMACHash hmacParseHex(std::istream &source)
 	{
 		boost::io::ios_all_saver saver(source);

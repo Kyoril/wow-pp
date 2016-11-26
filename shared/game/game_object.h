@@ -30,6 +30,7 @@
 #include "tile_index.h"
 #include "math/vector3.h"
 #include "common/macros.h"
+#include "common/simple.hpp"
 
 namespace wowpp
 {
@@ -234,18 +235,18 @@ namespace wowpp
 	public:
 
 		/// Fired when the object was added to a world instance and spawned.
-		boost::signals2::signal<void()> spawned;
+		simple::signal<void()> spawned;
 		/// Fired when the object was removed from a world instance and despawned.
 		/// WARNING: DO NOT DESTROY THE OBJECT HERE, AS MORE SIGNALS MAY BE CONNECTED WHICH WANT TO BE EXECUTED,
-		boost::signals2::signal<void(GameObject &)> despawned;
+		simple::signal<void(GameObject &)> despawned;
 		/// Fired when the object should be destroyed. The object should be destroyed after this call.
 		std::function<void(GameObject &)> destroy;
 		/// Fired when the object moved, but before it's tile changed. Note that this will trigger a tile change.
-		boost::signals2::signal<void(GameObject &, const math::Vector3 &, float)> moved;
+		//boost::signals2::signal<void(GameObject &, const math::Vector3 &, float)> moved;
 		/// Fired when a tile change is pending for this object, after it has been moved. Note that at this time,
 		/// the object does not belong to any tile and it's position already points to the new tile.
 		/// First parameter is a reference of the old tile, second references the new tile.
-		boost::signals2::signal<void(VisibilityTile &, VisibilityTile &)> tileChangePending;
+		simple::signal<void(VisibilityTile &, VisibilityTile &)> tileChangePending;
 
 	public:
 
@@ -271,6 +272,10 @@ namespace wowpp
 		/// @param index The searched field index.
 		/// @param offset The byte offset, ranging from 0-1 (1 field = 32 bits)
 		UInt16 getUInt16Value(UInt16 index, UInt8 offset) const;
+		/// Gets given unsigned 16 bit value from the field list.
+		/// @param index The searched field index.
+		/// @param offset The byte offset, ranging from 0-1 (1 field = 32 bits)
+		Int16 getInt16Value(UInt16 index, UInt8 offset) const;
 		/// Gets given signed 32 bit value from the field list.
 		/// @param index The searched field index.
 		Int32 getInt32Value(UInt16 index) const;
@@ -293,6 +298,11 @@ namespace wowpp
 		/// @param offset The byte offset, ranging from 0-1 (1 field = 32 bits)
 		/// @param value The new value to set.
 		void setUInt16Value(UInt16 index, UInt8 offset, UInt16 value);
+		/// Sets an signed 16 bit value in the field list.
+		/// @param index The field index to update.
+		/// @param offset The byte offset, ranging from 0-1 (1 field = 32 bits)
+		/// @param value The new value to set.
+		void setInt16Value(UInt16 index, UInt8 offset, Int16 value);
 		/// Sets an unsigned 32 bit value in the field list.
 		/// @param index The field index to update.
 		/// @param value The new value to set.
@@ -318,6 +328,7 @@ namespace wowpp
 		/// @param flag The flags to add.
 		void removeFlag(UInt16 index, UInt32 flag);
 		/// 
+		bool hasFlag(UInt16 index, UInt32 flag);
 		void markForUpdate();
 		/// Marks a field as changed even if it's value ramains the same. Useful for dynamic fields which have
 		/// values depending on the receiver.
@@ -410,6 +421,16 @@ namespace wowpp
 		/// @param use3D If true, the distance will be caluclated using 3d coordinates. Otherwise,
 		///              only 2d coordinates are used (x,y).
 		float getDistanceTo(const math::Vector3 &position, bool use3D = true) const;
+		/// Calculates the squared distance of this object to another object.
+		/// @param other The destination object, whose location will be used.
+		/// @param use3D If true, the distance will be calculated using 3d coordinates. Otherwise,
+		///              only 2d coordinates are used (x,y).
+		float getSquaredDistanceTo(const GameObject &other, bool use3D = true) const;
+		/// Calculates the squared distance of this object to a specific location.
+		/// @param position The destination location.
+		/// @param use3D If true, the distance will be caluclated using 3d coordinates. Otherwise,
+		///              only 2d coordinates are used (x,y).
+		float getSquaredDistanceTo(const math::Vector3 &position, bool use3D = true) const;
 		/// Gets the angle (in radians) which can be used to make this object look at another
 		/// object using the setOrientation method.
 		/// @param other The target object to look at.
@@ -451,6 +472,14 @@ namespace wowpp
 		/// Executed when this object is destroyed.
 		void onWorldInstanceDestroyed();
 
+		const math::Vector3 &getLastPosition() const {
+			return m_lastFiredPosition;
+		}
+
+		const float getLastOrientation() const {
+			return m_lastFiredO;
+		}
+
 	protected:
 
 		proto::Project &m_project;		// TODO: Maybe move this, but right now, it's comfortable to use this
@@ -459,7 +488,7 @@ namespace wowpp
 		UInt32 m_mapId;
 		math::Vector3 m_position;
 		math::Vector3 m_lastFiredPosition;	// This is needed for move signal
-		float m_o;
+		float m_o, m_lastFiredO;
 		UInt32 m_objectType;
 		UInt32 m_objectTypeId;
 		bool m_updated;

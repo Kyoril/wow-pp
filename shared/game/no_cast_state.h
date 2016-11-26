@@ -35,12 +35,13 @@ namespace wowpp
 		    SpellCast &cast,
 		    const proto::SpellEntry &spell,
 		    SpellTargetMap target,
-		    Int32 basePoints,
+			const game::SpellPointsArray &basePoints,
 		    GameTime castTime,
 		    bool doReplacePreviousCast,
 		    UInt64 itemGuid
 		) override;
 		void stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown = 0) override;
 		void onUserStartsMoving() override;
+		void finishChanneling() override;
 	};
 }

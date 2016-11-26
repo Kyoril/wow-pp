@@ -24,6 +24,7 @@
 #include "unit_watcher.h"
 #include "tile_area.h"
 #include "tiled_unit_finder.h"
+#include "common/simple.hpp"
 
 namespace wowpp
 {
@@ -31,14 +32,14 @@ namespace wowpp
 	{
 	public:
 
-		explicit TiledUnitWatcher(const Circle &shape, TiledUnitFinder &finder);
+		explicit TiledUnitWatcher(const Circle &shape, TiledUnitFinder &finder, UnitWatcher::VisibilityChange visibilityChanged);
 		~TiledUnitWatcher();
 		virtual void start() override;
 
 	private:
 
 		typedef TiledUnitFinder::Tile Tile;
-		typedef std::unordered_map<Tile *, boost::signals2::connection> ConnectionsByTile;
+		typedef std::unordered_map<Tile *, simple::connection> ConnectionsByTile;
 
 		TiledUnitFinder &m_finder;
 		Circle m_previousShape;

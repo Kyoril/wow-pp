@@ -45,10 +45,8 @@ namespace wowpp
 	{
 		static TileIndex2D getObjectTile(GameObject &object, VisibilityGrid &grid)
 		{
-			math::Vector3 location(object.getLocation());
-
 			TileIndex2D gridIndex;
-			grid.getTilePosition(location, gridIndex[0], gridIndex[1]);
+			grid.getTilePosition(object.getLocation(), gridIndex[0], gridIndex[1]);
 
 			return gridIndex;
 		}
@@ -65,24 +63,8 @@ namespace wowpp
 				// Header with object guid and type
 				UInt64 guid = object.getGuid();
 				writer
-				        << io::write<NetUInt8>(updateType);
-
-				UInt64 guidCopy = guid;
-				UInt8 packGUID[8 + 1];
-				packGUID[0] = 0;
-				size_t size = 1;
-				for (UInt8 i = 0; guidCopy != 0; ++i)
-				{
-					if (guidCopy & 0xFF)
-					{
-						packGUID[0] |= UInt8(1 << i);
-						packGUID[size] = UInt8(guidCopy & 0xFF);
-						++size;
-					}
-
-					guidCopy >>= 8;
-				}
-				writer.sink().write((const char *)&packGUID[0], size);
+				    << io::write<NetUInt8>(updateType)
+					<< io::write_packed_guid(guid);
 
 				// Write values update
 				object.writeValueUpdateBlock(writer, receiver, false);
@@ -129,12 +111,16 @@ namespace wowpp
 			if (mapIt != MapData.end()) {
 				m_map = &mapIt->second;
 			}
+
+			assert(m_map);
+			m_map->loadAllTiles();
 		}
 		else
 		{
 			m_map = &mapIt->second;
 		}
 
+#if 1
 		// Add object spawners
 		for (int i = 0; i < m_mapEntry.objectspawns_size(); ++i)
 		{
@@ -161,6 +147,7 @@ namespace wowpp
 				m_objectSpawnsByName[spawn.name()] = m_objectSpawners.back().get();
 			}
 		}
+#endif
 
 		// Add creature spawners
 		for (int i = 0; i < m_mapEntry.unitspawns_size(); ++i)
@@ -171,20 +158,20 @@ namespace wowpp
 			const auto *unitEntry = m_project.units.getById(spawn.unitentry());
 			assert(unitEntry);
 
+#if 0
+			// Only spawn timber wolf
+			if (unitEntry->id() != 69)
+				continue;
+
+			// Limit wolf spawn even more!
+			if (spawn.positionx() > -8752.0f || spawn.positionx() < -8754.0f)
+				continue;
+#endif
+
 			std::unique_ptr<CreatureSpawner> spawner(new CreatureSpawner(
 				*this,
 				*unitEntry,
 				spawn));
-			/*
-			            spawn.maxcount(),
-			            spawn.respawndelay(),
-			            math::Vector3(spawn.positionx(), spawn.positiony(), spawn.positionz()),
-			            spawn.rotation(),
-			            spawn.defaultemote(),
-			            spawn.radius(),
-			            spawn.isactive(),
-			            spawn.respawn(),
-						movement));*/
 
 			m_creatureSpawners.push_back(std::move(spawner));
 
@@ -367,22 +354,23 @@ namespace wowpp
 				m_unitFinder->addUnit(*unit);
 			}
 		}
-
-		// Watch for object location changes
-		added.moved.connect(
-		    std::bind(&WorldInstance::onObjectMoved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	}
 
 	void WorldInstance::removeGameObject(GameObject &remove)
 	{
 		auto guid = remove.getGuid();
 
-		// Remove from unit finder if it is a unit
+		// Unit specific despawn logic
 		if (remove.isCreature() || remove.isGameCharacter())
 		{
 			GameUnit *unit = dynamic_cast<GameUnit *>(&remove);
-			if (unit) {
+			if (unit) 
+			{
+				// Remove unit from the unit finder
 				m_unitFinder->removeUnit(*unit);
+
+				// Also remove all dynamic objects
+				unit->removeAllDynamicObjects();
 			}
 		}
 
@@ -625,6 +613,17 @@ namespace wowpp
 	void WorldInstance::removeUpdateObject(GameObject & object)
 	{
 		m_objectUpdates.erase(&object);
+	}
+
+	void WorldInstance::notifyObjectMove(GameObject & object, const math::Vector3 & previousPosition)
+	{
+		onObjectMoved(object, previousPosition, 0.0f);
+
+		if (object.getTypeId() == object_type::Unit ||
+			object.getTypeId() == object_type::Character)
+		{
+			m_unitFinder->updatePosition(reinterpret_cast<GameUnit&>(object), previousPosition);
+		}
 	}
 
 	CreatureSpawner *WorldInstance::findCreatureSpawner(const String &name)
