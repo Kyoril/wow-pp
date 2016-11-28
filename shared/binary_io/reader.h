@@ -26,8 +26,13 @@
 
 namespace io
 {
-	class Reader : public boost::noncopyable
+	class Reader
 	{
+	private:
+
+		Reader(const Reader &other) = delete;
+		Reader &operator=(const Reader &other) = delete;
+
 	public:
 
 		Reader()

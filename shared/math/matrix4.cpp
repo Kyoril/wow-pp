@@ -24,6 +24,8 @@
 #include <ostream>
 #include <cassert>
 #include "matrix4.h"
+#include "binary_io/reader.h"
+#include "binary_io/writer.h"
 
 namespace wowpp
 {
@@ -39,5 +41,18 @@ namespace wowpp
 		    0.0f, 1.0f, 0.0f, 0.0f,
 		    0.0f, 0.0f, 1.0f, 0.0f,
 		    0.0f, 0.0f, 0.0f, 1.0f);
+
+		io::Writer &operator << (io::Writer &w, Matrix4 const &mat)
+		{
+			w.sink().write(reinterpret_cast<const char*>(&mat.m_[0]), sizeof(float) * 16);
+			return w;
+		}
+
+		io::Reader &operator >> (io::Reader &r, Matrix4 &mat)
+		{
+			assert(r.getSource());
+			r.getSource()->read(reinterpret_cast<char*>(&mat.m_[0]), sizeof(float) * 16);
+			return r;
+		}
 	}
 }

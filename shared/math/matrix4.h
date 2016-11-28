@@ -27,6 +27,12 @@
 #include <cmath>
 #include <cstddef>
 
+namespace io
+{
+	class Reader;
+	class Writer;
+}
+
 namespace wowpp
 {
 	namespace math
@@ -456,5 +462,8 @@ namespace wowpp
 				           m[3][0] != m2.m[3][0] || m[3][1] != m2.m[3][1] || m[3][2] != m2.m[3][2] || m[3][3] != m2.m[3][3]);
 			}
 		};
+
+		io::Writer &operator << (io::Writer &w, Matrix4 const &mat);
+		io::Reader &operator >> (io::Reader &r, Matrix4 &mat);
 	}
 }

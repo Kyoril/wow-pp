@@ -183,6 +183,7 @@ namespace wowpp
 					return nullptr;
 				}
 
+#if 0
 				// Read collision data
 				if (mapHeaderChunk.offsCollision)
 				{
@@ -208,6 +209,7 @@ namespace wowpp
 					tile->collision.triangles.resize(tile->collision.triangleCount);
 					mapFile.read(reinterpret_cast<char *>(tile->collision.triangles.data()), sizeof(Triangle) * tile->collision.triangleCount);
 				}
+#endif
 
 				// Read navigation data
 				if (m_navMesh && mapHeaderChunk.offsNavigation)

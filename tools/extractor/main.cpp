@@ -1165,13 +1165,7 @@ namespace
         MapHeaderChunk header;
         header.fourCC = 0x50414D57;				// WMAP		- WoW Map
         header.size = sizeof(MapHeaderChunk) - 8;
-        header.version = 0x130;
-        header.offsAreaTable = 0;
-        header.areaTableSize = 0;
-		header.offsCollision = 0;
-		header.collisionSize = 0;
-		header.offsNavigation = 0;
-		header.navigationSize = 0;
+        header.version = MapHeaderChunk::MapFormat;
 		writer.writePOD(header);
 
 		// Mark area header chunk
@@ -1202,6 +1196,7 @@ namespace
 		collisionChunk.size = sizeof(UInt32) * 4;
 		collisionChunk.vertexCount = 0;
 		collisionChunk.triangleCount = 0;
+#if 0
 		for (const auto &entry : adt.getMODFChunk().entries)
 		{
 			// Entry placement
@@ -1286,6 +1281,7 @@ namespace
 			}
 			header.collisionSize = sink.position() - header.offsCollision;
 		}
+#endif
 
 		// Remember possible start of nav chunk offset
 		size_t possibleNavChunkOffset = sink.position();

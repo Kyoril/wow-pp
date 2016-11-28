@@ -45,8 +45,6 @@ namespace wowpp
 		UInt32 wmoSize;
 		UInt32 offsDoodads;
 		UInt32 doodadSize;
-		//UInt32 offsCollision;
-		//UInt32 collisionSize;
 		UInt32 offsNavigation;
 		UInt32 navigationSize;
 
@@ -60,8 +58,6 @@ namespace wowpp
 			, wmoSize(0)
 			, offsDoodads(0)
 			, doodadSize(0)
-			, offsCollision(0)
-			, collisionSize(0)
 			, offsNavigation(0)
 			, navigationSize(0)
 		{
