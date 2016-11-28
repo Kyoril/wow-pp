@@ -21,6 +21,12 @@
 
 #pragma once
 
+namespace io
+{
+	class Reader;
+	class Writer;
+}
+
 namespace wowpp
 {
 	namespace math
@@ -178,5 +184,26 @@ namespace wowpp
 		};
 
 		std::ostream &operator << (std::ostream &os, const Vector3 &right);
+
+		io::Writer &operator << (io::Writer &w, Vector3 const &vector);
+		io::Reader &operator >> (io::Reader &r, Vector3 &vector);
+
+		template <typename Vector>
+		Vector takeMinimum(const Vector& a, const Vector& b) {
+			return Vector{
+				std::min(a.x, b.x),
+				std::min(a.y, b.y),
+				std::min(a.z, b.z)
+			};
+		}
+
+		template <typename Vector>
+		Vector takeMaximum(const Vector& a, const Vector& b) {
+			return Vector{
+				std::max(a.x, b.x),
+				std::max(a.y, b.y),
+				std::max(a.z, b.z)
+			};
+		}
 	}
 }

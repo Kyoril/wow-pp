@@ -34,15 +34,19 @@ namespace wowpp
 	/// Header
 	struct MapHeaderChunk
 	{
+		static constexpr UInt32 MapFormat = 0x140;
+
 		UInt32 fourCC;
 		UInt32 size;
 		UInt32 version;
 		UInt32 offsAreaTable;
 		UInt32 areaTableSize;
-		//		UInt32 offsHeight;
-		//		UInt32 heightSize;
-		UInt32 offsCollision;
-		UInt32 collisionSize;
+		UInt32 offsWMOs;
+		UInt32 wmoSize;
+		UInt32 offsDoodads;
+		UInt32 doodadSize;
+		//UInt32 offsCollision;
+		//UInt32 collisionSize;
 		UInt32 offsNavigation;
 		UInt32 navigationSize;
 
@@ -52,8 +56,10 @@ namespace wowpp
 			, version(0)
 			, offsAreaTable(0)
 			, areaTableSize(0)
-			  //			, offsHeight(0)
-			  //			, heightSize(0)
+			, offsWMOs(0)
+			, wmoSize(0)
+			, offsDoodads(0)
+			, doodadSize(0)
 			, offsCollision(0)
 			, collisionSize(0)
 			, offsNavigation(0)

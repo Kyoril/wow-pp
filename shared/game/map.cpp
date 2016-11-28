@@ -166,7 +166,7 @@ namespace wowpp
 					ELOG("Could not load map file " << file << ": Unexpected header chunk size (" << (sizeof(MapHeaderChunk) - 8) << " expected)!");
 					return nullptr;
 				}
-				if (mapHeaderChunk.version != 0x130)
+				if (mapHeaderChunk.version != MapHeaderChunk::MapFormat)
 				{
 					ELOG("Could not load map file " << file << ": Unsupported file format version!");
 					return nullptr;
@@ -180,7 +180,7 @@ namespace wowpp
 				if (tile->areas.fourCC != 0x52414D57 || tile->areas.size != sizeof(MapAreaChunk) - 8)
 				{
 					WLOG("Map file " << file << " seems to be corrupted: Wrong area chunk");
-					//TODO: Should we cancel the loading process?
+					return nullptr;
 				}
 
 				// Read collision data
@@ -196,7 +196,7 @@ namespace wowpp
 					if (tile->collision.fourCC != 0x4C434D57 || tile->collision.size < sizeof(UInt32) * 4)
 					{
 						WLOG("Map file " << file << " seems to be corrupted: Wrong collision chunk (Size: " << tile->collision.size);
-						//TODO: Should we cancel the loading process?
+						return nullptr;
 					}
 
 					// Read all vertices
