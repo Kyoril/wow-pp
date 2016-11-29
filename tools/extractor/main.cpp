@@ -830,7 +830,7 @@ namespace
 		MeshData wmoMesh;
 		{
 			// Add vertices
-			for (auto &vert : collision.vertices)
+			/*for (auto &vert : collision.vertices)
 			{
 				wmoMesh.solidVerts.push_back(-vert.y);
 				wmoMesh.solidVerts.push_back(vert.z);
@@ -843,7 +843,7 @@ namespace
 				wmoMesh.solidTris.push_back(tri.indexB);
 				wmoMesh.solidTris.push_back(tri.indexC);
 				wmoMesh.triangleFlags.push_back(AreaFlags::WMO);
-			}
+			}*/
 		}
 
 		// Process ADTs
@@ -1346,7 +1346,7 @@ namespace
 		MapNavigationChunk navigationChunk;
 		navigationChunk.fourCC = 0x564E4D57;		// WMNV		- WoW Map Navigation
 		navigationChunk.size = 0;
-		if (creaveNavTile(mapName, mapId, cellX, cellY, navMesh, adt, collisionChunk, navigationChunk))
+		if (creaveNavTile(mapName, mapId, cellX, cellY, navMesh, adt, navigationChunk))
 		{
 			if (!navigationChunk.tiles.empty())
 			{
