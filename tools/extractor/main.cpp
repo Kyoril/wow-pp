@@ -855,7 +855,6 @@ namespace
 			{
 				std::unique_ptr<ADTFile> adtInst;
 
-				/*adtFile = fmt::sprintf("World\\Maps\\%s\\%s_%d_%d.adt", mapName, mapName, (y), (x));*/ \
 #define LOAD_TERRAIN(x, y, spot) \
 				adtPath = boost::filesystem::path("World\\Maps") / mapName / mapName; \
 				adtInst = make_unique<ADTFile>(adtPath.leaf().append(fmt::sprintf("%d_%d.adt", y, x)).string()); \
@@ -875,8 +874,6 @@ namespace
 		// Process Doodads
 		MeshData doodadMesh;
 		{
-			DLOG("\tTile has " << adt.getMDDFChunk().entries.size() << " doodads");
-
 			// Now load all required M2 files
 			std::vector<std::unique_ptr<M2File>> m2s;
 			for (UInt32 i = 0; i < adt.getMDXCount(); ++i)
@@ -1001,8 +998,6 @@ namespace
 		{
 			for (size_t tx = 0; tx < MeshSettings::TilesPerADT; ++tx)
 			{
-				ILOG("\t\tTile [" << tx << "," << ty << "] ...");
-
 				// Calculate tile bounds and apply them
 				float bmin[3], bmax[3];
 				calculateADTTileBounds(tileX, tileY, bmin, bmax);
@@ -1084,8 +1079,8 @@ namespace
 		return true;
 	}
 
-	std::mutex wmoMutex;
-	LinearSet<String> serializedWMOs;
+	std::mutex wmoMutex, doodadMutex;
+	LinearSet<String> serializedWMOs, serializedDoodads;
 	
 	/// Converts an ADT tile of a WDT file.
 	static bool convertADT(UInt32 mapId, const String &mapName, WDTFile &wdt, UInt32 tileIndex, dtNavMesh &navMesh)
@@ -1141,7 +1136,7 @@ namespace
 			return false;
 		}
 
-		// Now load all required WMO files
+		// Load all required WMO files
 		for (UInt32 i = 0; i < adt.getWMOCount(); ++i)
 		{
 			std::lock_guard<std::mutex> lock(wmoMutex);
@@ -1155,7 +1150,7 @@ namespace
 				auto wmoFile = std::make_shared<WMOFile>(filename);
 				if (!wmoFile->load())
 				{
-					ELOG("Error loading WMO: " << filename);
+					ELOG("Error loading wmo: " << filename);
 					return false;
 				}
 
@@ -1163,7 +1158,7 @@ namespace
 				fs::path filePath = bvhOutputPath / ("WMO_" + wmoFile->getBaseName() + ".bvh");
 				
 				// Build AABBTree and serialize it
-				ILOG("Building AABB for WMO " << wmoFile->getBaseName());
+				ILOG("\tBuilding WMO " << wmoFile->getBaseName());
 				std::vector<math::AABBTree::Vertex> vertices;
 				std::vector<math::AABBTree::Index> indices;
 				if (wmoFile->isRootWMO())
@@ -1206,6 +1201,45 @@ namespace
 				io::StreamSink fileSink(file);
 				io::Writer fileWriter(fileSink);
 				fileWriter << wmoTree;
+			}
+		}
+
+		// Load all required Doodads
+		for (UInt32 i = 0; i < adt.getMDXCount(); ++i)
+		{
+			std::lock_guard<std::mutex> lock(doodadMutex);
+
+			// Retrieve Doodad file name
+			const String filename = fs::path(adt.getMDX(i)).replace_extension(".m2").string();
+			if (!serializedDoodads.contains(filename))
+			{
+				serializedDoodads.add(filename);
+
+				auto doodadFile = std::make_shared<M2File>(filename);
+				if (!doodadFile->load())
+				{
+					ELOG("Error loading M2: " << filename);
+					return false;
+				}
+
+				// Build file path
+				fs::path filePath = bvhOutputPath / ("Doodad_" + doodadFile->getBaseName() + ".bvh");
+
+				// Build AABBTree and serialize it
+				ILOG("\tBuilding doodad " << doodadFile->getBaseName());
+				math::AABBTree doodadTree(doodadFile->getVertices(), doodadFile->getIndices());
+
+				// Serialize it
+				std::ofstream file(filePath.string().c_str(), std::ios::out | std::ios::binary);
+				if (!file)
+				{
+					ELOG("Failed to create output file " << filePath);
+					return false;
+				}
+
+				io::StreamSink fileSink(file);
+				io::Writer fileWriter(fileSink);
+				fileWriter << doodadTree;
 			}
 		}
 

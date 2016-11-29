@@ -65,7 +65,7 @@ namespace wowpp
 			m_source->seek(header.ofsBoundingTriangles);
 			for (auto &i : m_indices)
 			{
-				m_reader >> io::read<UInt16>(i);
+				m_reader >> io::read<UInt16, UInt32>(i);
 			}
 		}
 #if 0
