@@ -21,12 +21,6 @@
 
 #pragma once
 
-#include <iosfwd>
-#include <cstddef>
-#include <cmath>
-#include <cassert>
-#include <algorithm>
-
 namespace io
 {
 	class Reader;

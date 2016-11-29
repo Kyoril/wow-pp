@@ -19,9 +19,16 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
+#include <iomanip>
+#include <iosfwd>
+#include <cstddef>
+#include <cmath>
+#include <cassert>
+#include <algorithm>
+#include <vector>
+#include <limits>
 #include "bounding_box.h"
 #include "matrix4.h"
-#include <limits>
 
 namespace wowpp
 {
@@ -95,8 +102,8 @@ namespace wowpp
 
 		std::ostream & operator << (std::ostream &o, const BoundingBox &b)
 		{
-			o << b.min << b.max;
-			return o;
+			return o 
+				<< "(Min: " << b.min << " Max: " << b.max << ")";
 		}
 
 		io::Writer &operator << (io::Writer &w, BoundingBox const &vector)

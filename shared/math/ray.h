@@ -22,18 +22,13 @@
 #pragma once
 
 #include "common/typedefs.h"
+#include "bounding_box.h"
 #include "vector3.h"
 
 namespace wowpp
 {
 	namespace math
 	{
-		struct BoundingBox final
-		{
-			Vector3 min;
-			Vector3 max;
-		};
-
 		/// Represents a ray, which is used to determine line of sight collision or blink.
 		struct Ray final
 		{
@@ -43,6 +38,8 @@ namespace wowpp
 			Vector3 destination;
 			/// Normalized direction of the ray.
 			Vector3 direction;
+			/// Perctual hit distance or 1.0f if nothing was hit.
+			float hitDistance = 1.0f;
 
 			/// Initializes the ray by providing a start point and an end point. This
 			/// will automatically calculate the direction of the ray.
@@ -68,6 +65,16 @@ namespace wowpp
 				assert(maxDistance > 0.0f);
 				assert(direction.length() >= 0.9999f && direction.length() <= 1.0001f);
 				destination = origin + (direction * maxDistance);
+			}
+			/// Gets the vector representation of this ray.
+			/// @returns Vector representation of this ray.
+			Vector3 getVector() const {
+				return destination - origin;
+			}
+			/// Gets the maximum length of the vector (so distance between origin and destination).
+			/// @returns Maximum length of the ray in world units.
+			float getLength() const {
+				return getVector().length();
 			}
 
 			/// Checks whether this ray intersects with a triangle.
@@ -171,124 +178,35 @@ namespace wowpp
 			/// @param box The bounding box to check.
 			/// @returns First paramater is true if ray cast intersects. Second parameter returns the
 			///          hit distance, which can be used to calculate the hit point (if first parameter is true).
-			std::pair<bool, float> intersectsAABB(const BoundingBox &box)
+			std::pair<bool, float> intersectsAABB(const BoundingBox &box) const
 			{
-				// Check if origin is inside the bounding box
-				if (origin > box.min && origin < box.max)
-				{
-					return std::pair<bool, float>(true, 0.0f);
+				const Vector3 invDir{
+					1.0f / direction.x,
+					1.0f / direction.y,
+					1.0f / direction.z
+				};
+				
+				float t1 = (box.min.x - origin.x) * invDir.x;
+				float t2 = (box.max.x - origin.x) * invDir.x;
+				float t3 = (box.min.y - origin.y) * invDir.y;
+				float t4 = (box.max.y - origin.y) * invDir.y;
+				float t5 = (box.min.z - origin.z) * invDir.z;
+				float t6 = (box.max.z - origin.z) * invDir.z;
+
+				float tmin = std::max(std::max(std::min(t1, t2), std::min(t3, t4)), std::min(t5, t6));
+				float tmax = std::min(std::min(std::max(t1, t2), std::max(t3, t4)), std::max(t5, t6));
+
+				// if tmax < 0, ray (line) is intersecting AABB, but whole AABB is behind us
+				if (tmax < 0) {
+					return std::make_pair(false, 0.0f);
 				}
 
-				float lowt = 0.0f;
-				float t = 0.0f;
-				bool hit = false;
-				Vector3 hitpoint;
-
-				// Check each face in turn, only check closest 3
-				// Min x
-				if (origin.x <= box.min.x && direction.x > 0)
-				{
-					t = (box.min.x - origin.x) / direction.x;
-					if (t >= 0)
-					{
-						// Substitute t back into ray and check bounds and dist
-						hitpoint = origin + direction * t;
-						if (hitpoint.y >= box.min.y && hitpoint.y <= box.max.y &&
-						        hitpoint.z >= box.min.z && hitpoint.z <= box.max.z &&
-						        (!hit || t < lowt))
-						{
-							hit = true;
-							lowt = t;
-						}
-					}
-				}
-				// Max x
-				if (origin.x >= box.max.x && direction.x < 0)
-				{
-					t = (box.max.x - origin.x) / direction.x;
-					if (t >= 0)
-					{
-						// Substitute t back into ray and check bounds and dist
-						hitpoint = origin + direction * t;
-						if (hitpoint.y >= box.min.y && hitpoint.y <= box.max.y &&
-						        hitpoint.z >= box.min.z && hitpoint.z <= box.max.z &&
-						        (!hit || t < lowt))
-						{
-							hit = true;
-							lowt = t;
-						}
-					}
-				}
-				// Min y
-				if (origin.y <= box.min.y && direction.y > 0)
-				{
-					t = (box.min.y - origin.y) / direction.y;
-					if (t >= 0)
-					{
-						// Substitute t back into ray and check bounds and dist
-						hitpoint = origin + direction * t;
-						if (hitpoint.x >= box.min.x && hitpoint.x <= box.max.x &&
-						        hitpoint.z >= box.min.z && hitpoint.z <= box.max.z &&
-						        (!hit || t < lowt))
-						{
-							hit = true;
-							lowt = t;
-						}
-					}
-				}
-				// Max y
-				if (origin.y >= box.max.y && direction.y < 0)
-				{
-					t = (box.max.y - origin.y) / direction.y;
-					if (t >= 0)
-					{
-						// Substitute t back into ray and check bounds and dist
-						hitpoint = origin + direction * t;
-						if (hitpoint.x >= box.min.x && hitpoint.x <= box.max.x &&
-						        hitpoint.z >= box.min.z && hitpoint.z <= box.max.z &&
-						        (!hit || t < lowt))
-						{
-							hit = true;
-							lowt = t;
-						}
-					}
-				}
-				// Min z
-				if (origin.z <= box.min.z && direction.z > 0)
-				{
-					t = (box.min.z - origin.z) / direction.z;
-					if (t >= 0)
-					{
-						// Substitute t back into ray and check bounds and dist
-						hitpoint = origin + direction * t;
-						if (hitpoint.x >= box.min.x && hitpoint.x <= box.max.x &&
-						        hitpoint.y >= box.min.y && hitpoint.y <= box.max.y &&
-						        (!hit || t < lowt))
-						{
-							hit = true;
-							lowt = t;
-						}
-					}
-				}
-				// Max z
-				if (origin.z >= box.max.z && direction.z < 0)
-				{
-					t = (box.max.z - origin.z) / direction.z;
-					if (t >= 0)
-					{
-						// Substitute t back into ray and check bounds and dist
-						hitpoint = origin + direction * t;
-						if (hitpoint.x >= box.min.x && hitpoint.x <= box.max.x &&
-						        hitpoint.y >= box.min.y && hitpoint.y <= box.max.y &&
-						        (!hit || t < lowt))
-						{
-							hit = true;
-							lowt = t;
-						}
-					}
+				// if tmin > tmax, ray doesn't intersect AABB
+				if (tmin > tmax) {
+					return std::make_pair(false, 0.0f);
 				}
 
-				return std::pair<bool, float>(hit, lowt);
+				return std::make_pair(true, tmin / getLength());
 			}
 		};
 	}

@@ -89,6 +89,11 @@ namespace io
 			m_success = true;
 		}
 
+		void setFailure()
+		{
+			m_success = false;
+		}
+
 	private:
 
 		ISource *m_source;
