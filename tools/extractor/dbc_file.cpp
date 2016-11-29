@@ -70,6 +70,18 @@ namespace wowpp
 		m_recordOffset = m_source->position();
 		m_stringOffset = m_recordOffset + (m_recordCount * m_recordSize);
 
+		// Load records
+		m_dataRecords.resize(m_recordCount * m_fieldCount);
+		for (auto &r : m_dataRecords)
+		{
+			m_reader.readPOD(r);
+		}
+
+		// Load string table
+		m_source->seek(m_stringOffset);
+		m_stringData.resize(m_stringSize);
+		m_source->read(&m_stringData[0], m_stringSize);
+
 		// File structure seems to be valid
 		m_isValid = true;
 		return true;

@@ -42,6 +42,7 @@
 #include "math/matrix4.h"
 #include "math/vector3.h"
 #include "math/quaternion.h"
+#include "math/aabb_tree.h"
 #include "detour/DetourCommon.h"
 #include "detour/DetourNavMesh.h"
 #include "detour/DetourNavMeshBuilder.h"
@@ -71,6 +72,7 @@ namespace fs = boost::filesystem;
 // Path variables
 static const fs::path inputPath(".");
 static const fs::path outputPath("maps");
+static const fs::path bvhOutputPath("bvh");
 
 //////////////////////////////////////////////////////////////////////////
 // DBC files
@@ -87,7 +89,6 @@ std::map<UInt32, LinearSet<UInt32>> tilesByMap;
 // Helper functions
 namespace
 {
-
 	/// Class taken from SampleInterfaces of RecastDemo application. Used to dump
 	/// navigation data into obj files.
 	class FileIO : public duFileIO
@@ -815,7 +816,7 @@ namespace
 	}
 
 	/// Generates a navigation tile.
-	static bool creaveNavTile(const String &mapName, UInt32 mapId, UInt32 tileX, UInt32 tileY, dtNavMesh &navMesh, const ADTFile &adt, const MapCollisionChunk &collision, MapNavigationChunk &out_chunk)
+	static bool creaveNavTile(const String &mapName, UInt32 mapId, UInt32 tileX, UInt32 tileY, dtNavMesh &navMesh, const ADTFile &adt, MapNavigationChunk &out_chunk)
 	{
 		// Min and max height values used for recast
 		float minZ = std::numeric_limits<float>::max(), maxZ = std::numeric_limits<float>::lowest();
@@ -849,14 +850,15 @@ namespace
 		MeshData adtMesh;
 		{
 			// Now we add adts
+			boost::filesystem::path adtPath;
 			if (addTerrainMesh(adt, tileX, tileY, ENTIRE, adtMesh))
 			{
-				String adtFile;
 				std::unique_ptr<ADTFile> adtInst;
 
+				/*adtFile = fmt::sprintf("World\\Maps\\%s\\%s_%d_%d.adt", mapName, mapName, (y), (x));*/ \
 #define LOAD_TERRAIN(x, y, spot) \
-				adtFile = fmt::format("World\\Maps\\{0}\\{0}_{1}_{2}.adt", mapName, (y), (x)); \
-					adtInst = make_unique<ADTFile>(adtFile); \
+				adtPath = boost::filesystem::path("World\\Maps") / mapName / mapName; \
+				adtInst = make_unique<ADTFile>(adtPath.leaf().append(fmt::sprintf("%d_%d.adt", y, x)).string()); \
 				if (adtInst->load()) \
 				{ \
 					addTerrainMesh(*adtInst, (x), (y), spot, adtMesh); \
@@ -985,6 +987,9 @@ namespace
 				maxZ = z;
 		}
 
+		// Create the context object
+		rcContext ctx(false);
+
 		// Initialize config
 		rcConfig config;
 		initializeRecastConfig(config);
@@ -1018,9 +1023,6 @@ namespace
 				config.bmin[2] -= config.borderSize * config.cs;
 				config.bmax[0] += config.borderSize * config.cs;
 				config.bmax[2] += config.borderSize * config.cs;
-
-				// Create the context object
-				rcContext ctx(false);
 
 				// Allocate and build the recast heightfield
 				SmartHeightFieldPtr solid(rcAllocHeightfield(), rcFreeHeightField);
@@ -1081,6 +1083,9 @@ namespace
 
 		return true;
 	}
+
+	std::mutex wmoMutex;
+	LinearSet<String> serializedWMOs;
 	
 	/// Converts an ADT tile of a WDT file.
 	static bool convertADT(UInt32 mapId, const String &mapName, WDTFile &wdt, UInt32 tileIndex, dtNavMesh &navMesh)
@@ -1137,20 +1142,71 @@ namespace
 		}
 
 		// Now load all required WMO files
-		std::vector<std::unique_ptr<WMOFile>> wmos;
 		for (UInt32 i = 0; i < adt.getWMOCount(); ++i)
 		{
+			std::lock_guard<std::mutex> lock(wmoMutex);
+
 			// Retrieve WMO file name
 			const String filename = adt.getWMO(i);
-			auto wmoFile = make_unique<WMOFile>(filename);
-			if (!wmoFile->load())
+			if (!serializedWMOs.contains(filename))
 			{
-				ELOG("Error loading WMO: " << filename);
-				return false;
-			}
+				serializedWMOs.add(filename);
 
-			// Push back to the list of WMO files
-			wmos.push_back(std::move(wmoFile));
+				auto wmoFile = std::make_shared<WMOFile>(filename);
+				if (!wmoFile->load())
+				{
+					ELOG("Error loading WMO: " << filename);
+					return false;
+				}
+
+				// Build file path
+				fs::path filePath = bvhOutputPath / ("WMO_" + wmoFile->getBaseName() + ".bvh");
+				
+				// Build AABBTree and serialize it
+				ILOG("Building AABB for WMO " << wmoFile->getBaseName());
+				std::vector<math::AABBTree::Vertex> vertices;
+				std::vector<math::AABBTree::Index> indices;
+				if (wmoFile->isRootWMO())
+				{
+					for (const auto &group : wmoFile->getGroups())
+					{
+						vertices.reserve(vertices.size() + group->getVertices().size());
+						indices.reserve(indices.size() + group->getIndices().size());
+
+						math::AABBTree::Index offset = vertices.size();
+						for (const auto &v : group->getVertices())
+						{
+							vertices.push_back(v);
+						}
+
+						for (UInt32 index = 0; index < group->getIndices().size(); index += 3)
+						{
+							if (!group->isCollisionTriangle(index / 3))
+							{
+								continue;
+							}
+
+							const auto &groupInds = group->getIndices();
+							indices.push_back(groupInds[index + 0] + offset);
+							indices.push_back(groupInds[index + 1] + offset);
+							indices.push_back(groupInds[index + 2] + offset);
+						}
+					}
+				}
+				math::AABBTree wmoTree(vertices, indices);
+
+				// Serialize it
+				std::ofstream file(filePath.string().c_str(), std::ios::out | std::ios::binary);
+				if (!file)
+				{
+					ELOG("Failed to create output file " << filePath);
+					return false;
+				}
+
+				io::StreamSink fileSink(file);
+				io::Writer fileWriter(fileSink);
+				fileWriter << wmoTree;
+			}
 		}
 
 		// Create files
@@ -1393,7 +1449,7 @@ namespace
 		}
 
 		ILOG("Found " << tilesByMap[mapId].size() << " adt tiles");
-		
+
 		// Create nav mesh
 		auto freeNavMesh = [](dtNavMesh* ptr) { dtFreeNavMesh(ptr); };
 		std::unique_ptr<dtNavMesh, decltype(freeNavMesh)> navMesh(dtAllocNavMesh(), freeNavMesh);
@@ -1545,10 +1601,10 @@ namespace
 int main(int argc, char* argv[])
 {
 	// Multithreaded log support
-	boost::mutex logMutex;
+	std::mutex logMutex;
 	wowpp::g_DefaultLog.signal().connect([&logMutex](const wowpp::LogEntry &entry)
 	{
-		boost::mutex::scoped_lock lock(logMutex);
+		std::lock_guard<std::mutex> lock(logMutex);
 		wowpp::printLogEntry(std::cout, entry, wowpp::g_DefaultConsoleLogOptions);
 	});
 
@@ -1558,6 +1614,16 @@ int main(int argc, char* argv[])
 		if (!fs::create_directory(outputPath))
 		{
 			ELOG("Could not create output path directory: " << outputPath);
+			return 1;
+		}
+	}
+
+	// Try to create BVH directory
+	if (!fs::is_directory(bvhOutputPath))
+	{
+		if (!fs::create_directory(bvhOutputPath))
+		{
+			ELOG("Could not create bvh path: " << bvhOutputPath);
 			return 1;
 		}
 	}
@@ -1598,15 +1664,15 @@ int main(int argc, char* argv[])
 	// Determine the amount of available cpu cores, and use just as many. However,
 	// right now, this will only convert multiple maps at the same time, not multiple
 	// tiles - but still A LOT faster than single threaded.
-	std::size_t concurrency = 1;//boost::thread::hardware_concurrency();
+	std::size_t concurrency = std::thread::hardware_concurrency();
 	concurrency = std::max<size_t>(1, concurrency - 1);
 	ILOG("Using " << concurrency << " threads");
 
 	// Do the work!
-	std::vector<std::unique_ptr<boost::thread>> workers;
+	std::vector<std::unique_ptr<std::thread>> workers;
 	for (size_t i = 1, c = concurrency; i < c; ++i)
 	{
-		workers.push_back(make_unique<boost::thread>(
+		workers.push_back(make_unique<std::thread>(
 			[&dispatcher]()
 		{
 			dispatcher.run();

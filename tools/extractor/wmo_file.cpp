@@ -102,7 +102,10 @@ namespace wowpp
 					case 0x4D4F5649:		// MOVI
 					{
 						m_indices.resize(size / sizeof(UInt16));
-						m_reader >> io::read_range(m_indices);
+						for (auto &index : m_indices)
+						{
+							m_reader >> io::read<UInt16, UInt32>(index);
+						}
 						break;
 					}
 					case 0x4D4F5654:		// MOVT

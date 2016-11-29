@@ -47,14 +47,11 @@ namespace wowpp
 			if (!m_isValid) return false;
 			if (row >= m_recordCount || column >= m_fieldCount) return false;
 
-			// Go to that position
-			const size_t rowOffset = row * m_recordSize;
-			const size_t colOffset = column * 4;
-			m_source->seek(m_recordOffset + rowOffset + colOffset);
+			const size_t rowOffset = row * m_fieldCount;
+			const size_t colOffset = column;
 
-			// Read value
-			return m_reader
-				>> io::read<T>(out_value);
+			out_value = *reinterpret_cast<T*>(&m_dataRecords[rowOffset + colOffset]);
+			return true;
 		}
 		bool getValue(UInt32 row, UInt32 column, String &out_value)
 		{
@@ -64,17 +61,11 @@ namespace wowpp
 				return false;
 			}
 
-			m_source->seek(m_stringOffset + stringOffset);
-
 			out_value.clear();
 			char c = 0;
 			do
 			{
-				if (!(m_reader >> io::read<char>(c)))
-				{
-					return false;
-				}
-
+				c = m_stringData[stringOffset++];
 				if (c != 0) out_value.push_back(c);
 			} while (c != 0);
 
@@ -90,5 +81,7 @@ namespace wowpp
 		UInt32 m_stringSize;
 		size_t m_recordOffset;
 		size_t m_stringOffset;
+		std::vector<UInt32> m_dataRecords;
+		std::vector<char> m_stringData;
 	};
 }

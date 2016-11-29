@@ -94,6 +94,10 @@ namespace wowpp
 			/// @returns Bounding box of this tree.
 			BoundingBox getBoundingBox() const;
 
+			const std::vector<Node> &getNodes() const { return m_nodes; }
+			const std::vector<Vertex> &getVertices() const { return m_vertices; }
+			const std::vector<Index> &getIndices() const { return m_indices; }
+
 		private:
 
 			/// 
