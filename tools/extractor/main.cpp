@@ -91,16 +91,21 @@ std::map<unsigned int, std::shared_ptr<M2File>> doodadModels;
 // Helper functions
 namespace
 {
+	enum AreaFlags : unsigned char
+	{
+		Walkable = 1 << 0,
+		ADT = 1 << 1,
+		Liquid = 1 << 2,
+		WMO = 1 << 3,
+		Doodad = 1 << 4,
+	};
+	using PolyFlags = AreaFlags;
+
 	using SmartHeightFieldPtr = std::unique_ptr<rcHeightfield, decltype(&rcFreeHeightField)>;
 	using SmartCompactHeightFieldPtr = std::unique_ptr<rcCompactHeightfield, decltype(&rcFreeCompactHeightfield)>;
 	using SmartContourSetPtr = std::unique_ptr<rcContourSet, decltype(&rcFreeContourSet)>;
 	using SmartPolyMeshPtr = std::unique_ptr<rcPolyMesh, decltype(&rcFreePolyMesh)>;
 	using SmartPolyMeshDetailPtr = std::unique_ptr<rcPolyMeshDetail, decltype(&rcFreePolyMeshDetail)>;
-
-	/// This is the length of an edge of a map file in ingame units where one unit 
-	/// represents one meter.
-	const float GridSize = 533.3333f;
-	const float GridPart = GridSize / 128;
 
 	/// Converts a tiles x and y coordinate into a single number (tile id).
 	/// @param tileX The x coordinate of the tile.
@@ -118,121 +123,6 @@ namespace
 	{ 
 		out_x = tile >> 16;
 		out_y = tile & 0xFF;
-	}
-
-	enum Spot
-	{
-		TOP = 1,
-		RIGHT = 2,
-		LEFT = 3,
-		BOTTOM = 4,
-		ENTIRE = 5
-	};
-
-	enum Grid
-	{
-		GRID_V8,
-		GRID_V9
-	};
-
-	enum AreaFlags : unsigned char
-	{
-		Walkable	= 1 << 0,
-		ADT			= 1 << 1,
-		Liquid		= 1 << 2,
-		WMO			= 1 << 3,
-		Doodad		= 1 << 4,
-	};
-
-	using PolyFlags = AreaFlags;
-
-	static const int V9_SIZE = 129;
-	static const int V9_SIZE_SQ = V9_SIZE * V9_SIZE;
-	static const int V8_SIZE = 128;
-	static const int V8_SIZE_SQ = V8_SIZE * V8_SIZE;
-	static const float GRID_SIZE = 533.33333f;
-	static const float GRID_PART_SIZE = GRID_SIZE / V8_SIZE;
-
-	/// This method gets the height of a given coordinate.
-	static void getHeightCoord(UInt32 index, Grid grid, float xOffset, float yOffset, float* out_coord, const float* v)
-	{
-		// wow coords: x, y, height
-		// coord is mirroed about the horizontal axes
-		switch (grid)
-		{
-			case GRID_V9:
-				out_coord[0] = (xOffset + index % (V9_SIZE)* GRID_PART_SIZE) * -1.f;
-				out_coord[1] = (yOffset + (int)(index / (V9_SIZE)) * GRID_PART_SIZE) * -1.f;
-				out_coord[2] = v[index];
-				break;
-			case GRID_V8:
-				out_coord[0] = (xOffset + index % (V8_SIZE)* GRID_PART_SIZE + GRID_PART_SIZE / 2.f) * -1.f;
-				out_coord[1] = (yOffset + (int)(index / (V8_SIZE)) * GRID_PART_SIZE + GRID_PART_SIZE / 2.f) * -1.f;
-				out_coord[2] = v[index];
-				break;
-		}
-	}
-	
-	/// This method gets the indices of a triangle depending on it's index.
-	static void getHeightTriangle(UInt32 square, Spot triangle, int* indices)
-	{
-		int rowOffset = square / V8_SIZE;
-		switch (triangle)
-		{
-			case TOP:
-				indices[0] = square + rowOffset;                //           0-----1 .... 128
-				indices[1] = square + 1 + rowOffset;            //           |\ T /|
-				indices[2] = (V9_SIZE_SQ)+square;				//           | \ / |
-				break;                                          //           |L 0 R| .. 127
-			case LEFT:                                          //           | / \ |
-				indices[0] = square + rowOffset;                //           |/ B \|
-				indices[1] = (V9_SIZE_SQ)+square;				//          129---130 ... 386
-				indices[2] = square + V9_SIZE + rowOffset;      //           |\   /|
-				break;                                          //           | \ / |
-			case RIGHT:                                         //           | 128 | .. 255
-				indices[0] = square + 1 + rowOffset;            //           | / \ |
-				indices[1] = square + V9_SIZE + 1 + rowOffset;  //           |/   \|
-				indices[2] = (V9_SIZE_SQ)+square;				//          258---259 ... 515
-				break;
-			case BOTTOM:
-				indices[0] = (V9_SIZE_SQ)+square;
-				indices[1] = square + V9_SIZE + 1 + rowOffset;
-				indices[2] = square + V9_SIZE + rowOffset;
-				break;
-			default: break;
-		}
-	}
-	
-	static void getLoopVars(Spot portion, int& loopStart, int& loopEnd, int& loopInc)
-	{
-		switch (portion)
-		{
-			case ENTIRE:
-				loopStart = 0;
-				loopEnd = V8_SIZE_SQ;
-				loopInc = 1;
-				break;
-			case TOP:
-				loopStart = 0;
-				loopEnd = V8_SIZE;
-				loopInc = 1;
-				break;
-			case LEFT:
-				loopStart = 0;
-				loopEnd = V8_SIZE_SQ - V8_SIZE + 1;
-				loopInc = V8_SIZE;
-				break;
-			case RIGHT:
-				loopStart = V8_SIZE - 1;
-				loopEnd = V8_SIZE_SQ;
-				loopInc = V8_SIZE;
-				break;
-			case BOTTOM:
-				loopStart = V8_SIZE_SQ - V8_SIZE;
-				loopEnd = V8_SIZE_SQ;
-				loopInc = 1;
-				break;
-		}
 	}
 
 	/// This method calculates the boundaries of a given map.
@@ -270,25 +160,6 @@ namespace
 		bmax[0] = bmin[0] + MeshSettings::AdtSize;
 		bmax[1] = std::numeric_limits<float>::max();
 		bmax[2] = bmin[2] + MeshSettings::AdtSize;
-	}
-
-	// Used for ADT hole packing
-	static const UInt16 holetab_h[4] = { 0x1111, 0x2222, 0x4444, 0x8888 };
-	static const UInt16 holetab_v[4] = { 0x000F, 0x00F0, 0x0F00, 0xF000 };
-
-	/// Checks if a certain ADT square index is a hole (players can walk through and navigation should
-	/// recognize it as well).
-	static bool isHole(int square, const ADTFile& adt)
-	{
-		int row = square / 128;
-		int col = square % 128;
-		int cellRow = row / 8;     // 8 squares per cell
-		int cellCol = col / 8;
-		int holeRow = row % 8 / 2;
-		int holeCol = (square - (row * 128 + cellCol * 8)) / 2;
-
-		const UInt16 &hole = adt.getMCNKChunk(cellRow + cellCol * 16).holes;
-		return (hole & holetab_v[holeCol] & holetab_h[holeRow]) != 0;
 	}
 
 	// Code taken from tripleslash
@@ -563,7 +434,7 @@ namespace
 		// Setup navigation mesh creation parameters
 		dtNavMeshParams navMeshParams;
 		memset(&navMeshParams, 0, sizeof(dtNavMeshParams));
-		navMeshParams.tileWidth = MeshSettings::TileSize;// GridSize;
+		navMeshParams.tileWidth = MeshSettings::TileSize;
 		navMeshParams.tileHeight = MeshSettings::TileSize;
 		rcVcopy(navMeshParams.orig, bmin);
 		navMeshParams.maxTiles = maxTiles;
@@ -580,89 +451,6 @@ namespace
 		{
 			DLOG("\t[Map " << mapId << "] bounds: " << minX << "x" << minY << " - " << maxX << "x" << maxY);
 			DLOG("\t[Map " << mapId << "] origin: " << bmin[0] << " " << bmin[1] << " " << bmin[2]);
-		}
-
-		return true;
-	}
-
-	/// Serializes the terrain mesh of a given ADT file and adds it's vertices to the provided mesh object.
-	static bool addTerrainMesh(const ADTFile &adt, UInt32 tileX, UInt32 tileY, Spot spot, MeshData &mesh)
-	{
-		static_assert(V8_SIZE == 128, "V8_SIZE has to equal 128");
-		std::array<float, 128 * 128> V8;
-		V8.fill(0.0f);
-		static_assert(V9_SIZE == 129, "V9_SIZE has to equal 129");
-		std::array<float, 129 * 129> V9;
-		V9.fill(0.0f);
-
-		UInt32 chunkIndex = 0;
-		for (UInt32 i = 0; i < 16; ++i)
-		{
-			for (UInt32 j = 0; j < 16; ++j)
-			{
-				auto &MCNK = adt.getMCNKChunk(j + i * 16);
-				auto &MCVT = adt.getMCVTChunk(j + i * 16);
-
-				// get V9 height map
-				for (int y = 0; y <= 8; y++)
-				{
-					int cy = i * 8 + y;
-					for (int x = 0; x <= 8; x++)
-					{
-						int cx = j * 8 + x;
-						V9[cy + cx * V9_SIZE] = MCVT.heights[y * (8 * 2 + 1) + x] + MCNK.ypos;
-					}
-				}
-				// get V8 height map
-				for (int y = 0; y < 8; y++)
-				{
-					int cy = i * 8 + y;
-					for (int x = 0; x < 8; x++)
-					{
-						int cx = j * 8 + x;
-						V8[cy + cx * V8_SIZE] = MCVT.heights[y * (8 * 2 + 1) + 8 + 1 + x] + MCNK.ypos;
-					}
-				}
-			}
-		}
-
-		int count = mesh.solidVerts.size() / 3;
-		float xoffset = (float(tileX) - 32) * GridSize;
-		float yoffset = (float(tileY) - 32) * GridSize;
-
-		float coord[3];
-		for (int i = 0; i < V9_SIZE_SQ; ++i)
-		{
-			getHeightCoord(i, GRID_V9, xoffset, yoffset, coord, V9.data());
-			mesh.solidVerts.push_back(-coord[1]);
-			mesh.solidVerts.push_back(coord[2]);
-			mesh.solidVerts.push_back(-coord[0]);
-		}
-		for (int i = 0; i < V8_SIZE_SQ; ++i)
-		{
-			getHeightCoord(i, GRID_V8, xoffset, yoffset, coord, V8.data());
-			mesh.solidVerts.push_back(-coord[1]);
-			mesh.solidVerts.push_back(coord[2]);
-			mesh.solidVerts.push_back(-coord[0]);
-		}
-
-		int loopStart, loopEnd, loopInc;
-		int indices[3];
-
-		getLoopVars(spot, loopStart, loopEnd, loopInc);
-		for (int i = loopStart; i < loopEnd; i += loopInc)
-		{
-			for (int j = TOP; j <= BOTTOM; j += 1)
-			{
-				if (!isHole(i, adt))
-				{
-					getHeightTriangle(i, Spot(j), indices);
-					mesh.solidTris.push_back(indices[0] + count);
-					mesh.solidTris.push_back(indices[1] + count);
-					mesh.solidTris.push_back(indices[2] + count);
-					mesh.triangleFlags.push_back(AreaFlags::ADT);
-				}
-			}
 		}
 
 		return true;

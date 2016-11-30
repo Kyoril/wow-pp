@@ -5,6 +5,8 @@
 
 namespace wowpp
 {
+	class ADTFile;
+
 	/// Represents mesh data used for navigation mesh generation
 	struct MeshData final
 	{
@@ -23,4 +25,16 @@ namespace wowpp
 	/// @param tileY Y coordinate of the tile in the grid. Used to name the output file.
 	/// @param meshData Mesh which should be serialized.
 	void serializeMeshData(const std::string &suffix, UInt32 mapID, UInt32 tileX, UInt32 tileY, const MeshData& meshData);
+
+	enum Spot
+	{
+		TOP = 1,
+		RIGHT = 2,
+		LEFT = 3,
+		BOTTOM = 4,
+		ENTIRE = 5
+	};
+
+	/// Serializes the terrain mesh of a given ADT file and adds it's vertices to the provided mesh object.
+	bool addTerrainMesh(const ADTFile &adt, UInt32 tileX, UInt32 tileY, Spot spot, MeshData &mesh);
 }
