@@ -23,6 +23,7 @@ cmake_minimum_required(VERSION 2.8.11)
 
 # Collect source and header files
 file(GLOB srcFiles "./*.cpp" "./*.h" "./*.hpp")
+remove_pch_cpp(srcFiles "${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp")
 file(GLOB sffFiles "./../shared/simple_file_format/*.h")
 
 # Add source groups
@@ -31,6 +32,7 @@ source_group(src\\sff FILES ${sffFiles})
 
 # Add library project
 add_executable(extractor ${srcFiles} ${sffFiles})
+add_precompiled_header(extractor "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
 
 # Link required shared libs
 target_link_libraries(extractor common log auth_protocol wowpp_protocol sql_wrapper mysql_wrapper stormlib math recast detour debug_utils)

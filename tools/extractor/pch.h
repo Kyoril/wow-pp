@@ -63,4 +63,12 @@
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/type_traits/is_float.hpp>
 
+// Cppformat
 #include "cppformat/cppformat/format.h"
+
+// Recast
+#include "recast/Recast.h"
+#include "detour/DetourCommon.h"
+#include "detour/DetourNavMesh.h"
+#include "detour/DetourNavMeshBuilder.h"
+#include "debug_utils/RecastDump.h"

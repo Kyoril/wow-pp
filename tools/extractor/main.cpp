@@ -34,6 +34,9 @@
 #include "adt_file.h"
 #include "wmo_file.h"
 #include "m2_file.h"
+#include "mesh_settings.h"
+#include "mesh_data.h"
+#include "file_io.h"
 #include "binary_io/writer.h"
 #include "binary_io/stream_sink.h"
 #include "common/make_unique.h"
@@ -43,11 +46,6 @@
 #include "math/vector3.h"
 #include "math/quaternion.h"
 #include "math/aabb_tree.h"
-#include "detour/DetourCommon.h"
-#include "detour/DetourNavMesh.h"
-#include "detour/DetourNavMeshBuilder.h"
-#include "recast/Recast.h"
-#include "debug_utils/RecastDump.h"
 #include "common/linear_set.h"
 using namespace std;
 using namespace wowpp;
@@ -85,132 +83,14 @@ static std::unique_ptr<DBCFile> dbcLiquidType;
 std::map<UInt32, UInt32> areaFlags;
 std::map<UInt32, LinearSet<UInt32>> tilesByMap;
 
+// Loaded WMO and M2 models used for navigation mesh calculations
+std::map<unsigned int, std::shared_ptr<WMOFile>> wmoModels;
+std::map<unsigned int, std::shared_ptr<M2File>> doodadModels;
+
 //////////////////////////////////////////////////////////////////////////
 // Helper functions
 namespace
 {
-	/// Class taken from SampleInterfaces of RecastDemo application. Used to dump
-	/// navigation data into obj files.
-	class FileIO : public duFileIO
-	{
-		FILE* m_fp;
-		int m_mode;
-
-	public:
-		FileIO() :
-			m_fp(0),
-			m_mode(-1)
-		{
-		}
-		virtual ~FileIO()
-		{
-			if (m_fp) fclose(m_fp);
-		}
-		bool openForWrite(const char* path)
-		{
-			if (m_fp) return false;
-			m_fp = fopen(path, "wb");
-			if (!m_fp) return false;
-			m_mode = 1;
-			return true;
-		}
-		bool openForRead(const char* path)
-		{
-			if (m_fp) return false;
-			m_fp = fopen(path, "rb");
-			if (!m_fp) return false;
-			m_mode = 2;
-			return true;
-		}
-		virtual bool isWriting() const
-		{
-			return m_mode == 1;
-		}
-		virtual bool isReading() const
-		{
-			return m_mode == 2;
-		}
-		virtual bool write(const void* ptr, const size_t size)
-		{
-			if (!m_fp || m_mode != 1) return false;
-			fwrite(ptr, size, 1, m_fp);
-			return true;
-		}
-		virtual bool read(void* ptr, const size_t size)
-		{
-			if (!m_fp || m_mode != 2) return false;
-			size_t readLen = fread(ptr, size, 1, m_fp);
-			return readLen == 1;
-		}
-	private:
-		// Explicitly disabled copy constructor and copy assignment operator.
-		FileIO(const FileIO&)
-		{
-		}
-		FileIO& operator=(const FileIO&)
-		{
-		}
-	};
-
-	/// Contains NavMesh settings and checks.
-	class MeshSettings
-	{
-	public:
-		static constexpr int ChunksPerTile = 4;
-		static constexpr int TileVoxelSize = 450;
-
-		static constexpr float CellHeight = 0.5f;
-		static constexpr float WalkableHeight = 1.6f;           // agent height in world units (yards)
-		static constexpr float WalkableRadius = 0.3f;           // narrowest allowable hallway in world units (yards)
-		static constexpr float WalkableSlope = 50.f;            // maximum walkable slope, in degrees
-		static constexpr float WalkableClimb = 1.f;             // maximum 'step' height for which slope is ignored (yards)
-		static constexpr float DetailSampleDistance = 3.f;      // heightfield detail mesh sample distance (yards)
-		static constexpr float DetailSampleMaxError = 0.75f;    // maximum distance detail mesh surface should deviate from heightfield (yards)
-
-																// NOTE: If Recast warns "Walk towards polygon center failed to reach center", try lowering this value
-		static constexpr float MaxSimplificationError = 0.5f;
-
-		static constexpr int MinRegionSize = 1600;
-		static constexpr int MergeRegionSize = 400;
-		static constexpr int VerticesPerPolygon = 6;
-
-		// Nothing below here should ever have to change
-
-		static constexpr int Adts = 64;
-		static constexpr int ChunksPerAdt = 16;
-		static constexpr int TilesPerADT = ChunksPerAdt / ChunksPerTile;
-		static constexpr int TileCount = Adts * TilesPerADT;
-		static constexpr int ChunkCount = Adts * ChunksPerAdt;
-
-		static constexpr float AdtSize = 533.f + (1.f / 3.f);
-		static constexpr float AdtChunkSize = AdtSize / ChunksPerAdt;
-
-		static constexpr float TileSize = AdtChunkSize * ChunksPerTile;
-		static constexpr float CellSize = TileSize / TileVoxelSize;
-		static constexpr int VoxelWalkableRadius = static_cast<int>(WalkableRadius / CellSize);
-		static constexpr int VoxelWalkableHeight = static_cast<int>(WalkableHeight / CellHeight);
-		static constexpr int VoxelWalkableClimb = static_cast<int>(WalkableClimb / CellHeight);
-
-		static_assert(WalkableRadius > CellSize, "CellSize must be able to approximate walkable radius");
-		static_assert(WalkableHeight > CellSize, "CellSize must be able to approximate walkable height");
-		static_assert(ChunksPerAdt % ChunksPerTile == 0, "Chunks per tile must divide chunks per ADT (16)");
-		static_assert(VoxelWalkableRadius > 0, "VoxelWalkableRadius must be a positive integer");
-		static_assert(VoxelWalkableHeight > 0, "VoxelWalkableHeight must be a positive integer");
-		static_assert(VoxelWalkableClimb >= 0, "VoxelWalkableClimb must be non-negative integer");
-		static_assert(CellSize > 0.f, "CellSize must be positive");
-	};
-
-	/// Represents mesh data used for navigation mesh generation
-	struct MeshData final
-	{
-		/// Three coordinates represent one vertex (x, y, z)
-		std::vector<float> solidVerts;
-		/// Three indices represent one triangle (v1, v2, v3)
-		std::vector<int> solidTris;
-		/// Triangle flags
-		std::vector<unsigned char> triangleFlags;
-	};
-
 	using SmartHeightFieldPtr = std::unique_ptr<rcHeightfield, decltype(&rcFreeHeightField)>;
 	using SmartCompactHeightFieldPtr = std::unique_ptr<rcCompactHeightfield, decltype(&rcFreeCompactHeightfield)>;
 	using SmartContourSetPtr = std::unique_ptr<rcContourSet, decltype(&rcFreeContourSet)>;
@@ -409,33 +289,6 @@ namespace
 
 		const UInt16 &hole = adt.getMCNKChunk(cellRow + cellCol * 16).holes;
 		return (hole & holetab_v[holeCol] & holetab_h[holeRow]) != 0;
-	}
-
-	/// Writes data of a certain map mesh to an obj file.
-	static void serializeMeshData(const std::string &suffix, UInt32 mapID, UInt32 tileX, UInt32 tileY, MeshData& meshData)
-	{
-		std::stringstream nameStrm;
-		nameStrm << "meshes/map" << std::setw(3) << std::setfill('0') << mapID << std::setw(2) << tileY << tileX << suffix << ".obj";
-
-		auto const fileName = nameStrm.str();
-
-		std::ofstream objFile(fileName.c_str(), std::ios::out);
-		if (!objFile)
-		{
-			ELOG("Failed to open " << fileName << " for writing");
-			return;
-		}
-
-		float* verts = &meshData.solidVerts[0];
-		int vertCount = meshData.solidVerts.size() / 3;
-		int* tris = &meshData.solidTris[0];
-		int triCount = meshData.solidTris.size() / 3;
-
-		for (int i = 0; i < meshData.solidVerts.size() / 3; i++)
-			objFile << "v " << verts[i * 3] << " " << verts[i * 3 + 1] << " " << verts[i * 3 + 2] << "\n";
-
-		for (int i = 0; i < meshData.solidTris.size() / 3; i++)
-			objFile << "f " << tris[i * 3] + 1 << " " << tris[i * 3 + 1] + 1 << " " << tris[i * 3 + 2] + 1 << "\n";
 	}
 
 	// Code taken from tripleslash
