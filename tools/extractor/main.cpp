@@ -50,7 +50,7 @@
 using namespace std;
 using namespace wowpp;
 
-// Uncomment below to supress debug output
+// Uncomment below to write debug output in form of objs
 //#define TILE_DEBUG_OUTPUT
 
 //////////////////////////////////////////////////////////////////////////
@@ -921,12 +921,6 @@ namespace
 		writer.writePOD(areaHeader);
 		header.areaTableSize = sink.position() - header.offsAreaTable;
 
-		// Collision chunk
-		MapCollisionChunk collisionChunk;
-		collisionChunk.fourCC = 0x4C434D57;			// WMCL		- WoW Map Collision
-		collisionChunk.size = sizeof(UInt32) * 4;
-		collisionChunk.vertexCount = 0;
-		collisionChunk.triangleCount = 0;
 #if 0
 		for (const auto &entry : adt.getMODFChunk().entries)
 		{
@@ -1075,13 +1069,6 @@ namespace
 		{
 			return false;
 		}
-
-#ifdef TILE_DEBUG_OUTPUT
-		if (mapId != 0)
-		{
-			return true;
-		}
-#endif
 
 		// Build map
 		ILOG("Building map " << mapId << " - " << mapName << "...");
