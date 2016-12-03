@@ -230,11 +230,11 @@ namespace wowpp
 			if (((*it)->getSpell().attributes(3) & game::spell_attributes_ex_c::DeathPersistent) != 0 || 
 				(*it)->isPassive())
 			{
-				removeAura(it);
+				++it;
 			}
 			else
 			{
-				it++;
+				removeAura(it);
 			}
 		}
 	}
