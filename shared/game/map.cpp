@@ -760,26 +760,37 @@ namespace wowpp
 
 		// This will store the resulting path length (number of polygons)
 		int pathLength = 0;
-		dtResult = m_navQuery->findPath(
-			startPoly,				// start polygon
-			endPoly,				// end polygon
-			&dtStart.x,				// start position
-			&dtEnd.x,				// end position
-			&m_filter,				// polygon search filter
-			tempPath.data(),		// [out] path
-			&pathLength,			// number of polygons used by path (<= maxPathLength)
-			maxPathLength);			// max number of polygons in output path
-		if (!pathLength ||
-			dtStatusFailed(dtResult))
-		{
-			// Could not find path... TODO?
-			ELOG("findPath failed with result " << dtResult);
-			return false;
-		}
 
+		if (startPoly != endPoly)
+		{
+			dtResult = m_navQuery->findPath(
+				startPoly,				// start polygon
+				endPoly,				// end polygon
+				&dtStart.x,				// start position
+				&dtEnd.x,				// end position
+				&m_filter,				// polygon search filter
+				tempPath.data(),		// [out] path
+				&pathLength,			// number of polygons used by path (<= maxPathLength)
+				maxPathLength);			// max number of polygons in output path
+			if (!pathLength ||
+				dtStatusFailed(dtResult))
+			{
+				// Could not find path... TODO?
+				ELOG("findPath failed with result " << dtResult);
+				return false;
+			}
+		}
+		else
+		{
+			// Build shortcut
+			tempPath[0] = startPoly;
+			tempPath[1] = endPoly;
+			pathLength = 2;
+		}
+		
 		// Resize path
 		tempPath.resize(pathLength);
-		
+
 		if (!correctPathHeights)
 		{
 			// Buffer to store path coordinates
@@ -787,23 +798,35 @@ namespace wowpp
 			std::vector<dtPolyRef> tempPathPolys(maxPathLength);
 			int tempPathCoordsCount = 0;
 
-			// Find a straight path
-			dtResult = m_navQuery->findStraightPath(
-				&dtStart.x,							// Start position
-				&dtEnd.x,							// End position
-				tempPath.data(),					// Polygon path
-				static_cast<int>(tempPath.size()),	// Number of polygons in path
-				&tempPathCoords[0].x,				// [out] Path points
-				nullptr,							// [out] Path point flags (unused)
-				&tempPathPolys[0],					// [out] Polygon id for each point.
-				&tempPathCoordsCount,				// [out] used coordinate count in vertices (3 floats = 1 vert)
-				maxPathLength,						// max coordinate count
-				0									// options
-			);
-			if (dtStatusFailed(dtResult))
+			if (startPoly != endPoly)
 			{
-				ELOG("findStraightPath failed");
-				return false;
+				// Find a straight path
+				dtResult = m_navQuery->findStraightPath(
+					&dtStart.x,							// Start position
+					&dtEnd.x,							// End position
+					tempPath.data(),					// Polygon path
+					static_cast<int>(tempPath.size()),	// Number of polygons in path
+					&tempPathCoords[0].x,				// [out] Path points
+					nullptr,							// [out] Path point flags (unused)
+					&tempPathPolys[0],					// [out] Polygon id for each point.
+					&tempPathCoordsCount,				// [out] used coordinate count in vertices (3 floats = 1 vert)
+					maxPathLength,						// max coordinate count
+					0									// options
+				);
+				if (dtStatusFailed(dtResult))
+				{
+					ELOG("findStraightPath failed");
+					return false;
+				}
+			}
+			else
+			{
+				// Build shortcut
+				tempPathCoords[0] = dtStart;
+				tempPathCoords[1] = dtEnd;				
+				tempPathPolys[0] = startPoly;
+				tempPathPolys[1] = endPoly;
+				tempPathCoordsCount = 2;
 			}
 
 			// Correct actual path length
