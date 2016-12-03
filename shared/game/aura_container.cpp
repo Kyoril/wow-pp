@@ -229,16 +229,16 @@ namespace wowpp
 		                   std::end(m_auras),
 		                   [](const std::shared_ptr<Aura> &instance)
 		{
-			return (instance->getSpell().attributes(3) & 0x00100000) != 0 || instance->isPassive();
+			return (instance->getSpell().attributes(3) & game::spell_attributes_ex_c::DeathPersistent) != 0 || instance->isPassive();
 		});
 
-		for (auto i = newEnd; i != std::end(m_auras); ++i)
+		for (auto i = newEnd; i != std::end(m_auras);)
 		{
-			//TODO handle exceptions somehow?
-			(*i)->onForceRemoval();
-		}
+			auto strong = *i;
+			i = m_auras.erase(newEnd, std::end(m_auras));
 
-		//m_auras.erase(newEnd, std::end(m_auras));
+			strong->misapplyAura();
+		}
 	}
 
 	bool AuraContainer::hasAura(game::AuraType type) const

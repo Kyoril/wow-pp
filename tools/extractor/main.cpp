@@ -87,6 +87,9 @@ std::map<UInt32, LinearSet<UInt32>> tilesByMap;
 std::map<unsigned int, std::shared_ptr<WMOFile>> wmoModels;
 std::map<unsigned int, std::shared_ptr<M2File>> doodadModels;
 
+std::mutex wmoMutex, doodadMutex;
+LinearSet<String> serializedWMOs, serializedDoodads;
+
 //////////////////////////////////////////////////////////////////////////
 // Helper functions
 namespace
@@ -115,6 +118,7 @@ namespace
 	{
 		return tileX << 16 | tileY;
 	}
+	
 	/// Converts a tile id into x and y coordinates.
 	/// @param tile The packed tile id.
 	/// @param out_x Tile x coordinate will be stored here.
@@ -133,9 +137,9 @@ namespace
 			return;
 
 		out_minX = std::numeric_limits<UInt32>::max();
-		out_maxX = std::numeric_limits<UInt32>::min();
+		out_maxX = std::numeric_limits<UInt32>::lowest();
 		out_minY = std::numeric_limits<UInt32>::max();
-		out_maxY = std::numeric_limits<UInt32>::min();
+		out_maxY = std::numeric_limits<UInt32>::lowest();
 
 		for (auto &tile : it->second)
 		{
@@ -149,8 +153,7 @@ namespace
 		}
 	}
 	
-	/// Calculates tile boundaries in world units, but converted to the recast coordinate
-	/// system.
+	/// Calculates tile boundaries in world units, but converted to the recast coordinate system.
 	static void calculateADTTileBounds(UInt32 tileX, UInt32 tileY, float* bmin, float* bmax)
 	{
 		bmin[0] = (32 - int(tileY)) * -MeshSettings::AdtSize;
@@ -720,9 +723,6 @@ namespace
 		return true;
 	}
 
-	std::mutex wmoMutex, doodadMutex;
-	LinearSet<String> serializedWMOs, serializedDoodads;
-	
 	/// Converts an ADT tile of a WDT file.
 	static bool convertADT(UInt32 mapId, const String &mapName, WDTFile &wdt, UInt32 tileIndex, dtNavMesh &navMesh)
 	{
