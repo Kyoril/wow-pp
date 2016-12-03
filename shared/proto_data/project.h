@@ -53,6 +53,7 @@
 #include "shared/proto_data/area_triggers.pb.h"
 #include "shared/proto_data/spell_categories.pb.h"
 #include "shared/proto_data/gtvalues.pb.h"
+#include "shared/proto_data/variables.pb.h"
 
 namespace wowpp
 {
@@ -86,6 +87,8 @@ namespace wowpp
 		typedef TemplateManager<wowpp::proto::CombatRatings, wowpp::proto::CombatRatingEntry> CombatRatingsManager;
 		typedef TemplateManager<wowpp::proto::MeleeCritChance, wowpp::proto::MeleeCritChanceEntry> MeleeCritChanceManager;
 		typedef TemplateManager<wowpp::proto::ResistancePercentage, wowpp::proto::ResistancePercentageEntry> ResistancePercentageManager;
+		typedef TemplateManager<wowpp::proto::ResistancePercentage, wowpp::proto::ResistancePercentageEntry> ResistancePercentageManager;
+		typedef TemplateManager<wowpp::proto::Variables, wowpp::proto::VariableEntry> VariableManager;
 
 		class Project : public boost::noncopyable
 		{
@@ -119,6 +122,7 @@ namespace wowpp
 			CombatRatingsManager combatRatings;
 			MeleeCritChanceManager meleeCritChance;
 			ResistancePercentageManager resistancePcts;
+			VariableManager variables;
 
 		private:
 
@@ -185,6 +189,7 @@ namespace wowpp
 				managers.push_back(ManagerEntry("combat_ratings", combatRatings));
 				managers.push_back(ManagerEntry("melee_crit_chance", meleeCritChance));
 				managers.push_back(ManagerEntry("resistance_percentages", resistancePcts));
+				managers.push_back(ManagerEntry("variables", variables));
 
 				virtual_dir::FileSystemReader virtualDirectory(realmDataPath);
 				if (!RealmProjectLoader::load(
@@ -246,6 +251,7 @@ namespace wowpp
 				managers.push_back(ManagerEntry("combat_ratings", "combat_ratings", combatRatings));
 				managers.push_back(ManagerEntry("melee_crit_chance", "melee_crit_chance", meleeCritChance));
 				managers.push_back(ManagerEntry("resistance_percentages", "resistance_percentages", resistancePcts));
+				managers.push_back(ManagerEntry("variables", "variables", variables));
 
 				if (!RealmProjectSaver::save(realmDataPath, managers))
 				{

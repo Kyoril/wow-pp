@@ -22,25 +22,12 @@
 syntax = "proto2";
 package wowpp.proto;
 
-message ObjectEntry {
+message VariableEntry {
 	required uint32 id = 1;
-	required string name = 2;
-	optional string caption = 3;
-	optional uint32 mingold = 4;
-	optional uint32 maxgold = 5;
-	required uint32 type = 6;
-	required uint32 displayid = 7;
-	required uint32 factionid = 8;
-	optional float scale = 9 [default = 1.0];
-	optional uint32 flags = 10;
-	repeated uint32 data = 11;
-	repeated uint32 quests = 12;
-	repeated uint32 end_quests = 13;
-	optional uint32 objectlootentry = 14;
-	repeated uint32 triggers = 15;
-	repeated uint32 variables = 16;
+	optional string name = 2;
+	optional float defaultvalue = 3 [default = 0.0];
 }
 
-message Objects {
-	repeated ObjectEntry entry = 1;
+message Variables {
+	repeated VariableEntry entry = 1;
 }
