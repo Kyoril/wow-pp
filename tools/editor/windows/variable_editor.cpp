@@ -19,21 +19,20 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-syntax = "proto2";
-package wowpp.proto;
+#include "pch.h"
+#include "variable_editor.h"
+#include "editor_application.h"
+#include <QRegExp>
 
-enum VariableType {
-	INTEGER	= 0;
-	FLOAT = 1;
-}
-
-message VariableEntry {
-	required uint32 id = 1;
-	required string name = 2;
-	optional VariableType type = 3 [default = INTEGER];
-	optional float defaultvalue = 4 [default = 0.0];
-}
-
-message Variables {
-	repeated VariableEntry entry = 1;
+namespace wowpp
+{
+	namespace editor
+	{
+		VariableEditor::VariableEditor(EditorApplication &app)
+			: QMainWindow()
+			, m_application(app)
+			, m_ui(new Ui::VariableEditor())
+		{
+			m_ui->setupUi(this);
+		}
 }

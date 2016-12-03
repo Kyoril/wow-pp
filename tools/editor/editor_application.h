@@ -52,6 +52,7 @@ namespace wowpp
 		class MainWindow;		// main_window.h
 		class ObjectEditor;		// object_editor.h
 		class TriggerEditor;	// trigger_editor.h
+		class VariableEditor;	// variable_editor.h
 		class TeamConnector;
 
 		/// Manages and contains all major application objects.
@@ -104,6 +105,8 @@ namespace wowpp
 
 			/// Displays the object editor window (and activates it if it is in the background).
 			void showObjectEditor();
+			/// Displays the variable editor window (and activates it if it is in the background).
+			void showVariableEditor();
 			/// 
 			void showTriggerEditor();
 			/// 
@@ -118,6 +121,7 @@ namespace wowpp
 			/// Fired when the object editor window was showed or activated.
 			void objectEditorShown();
 			void triggerEditorShown();
+			void variableEditorShown();
 
 
 		private:
@@ -133,6 +137,7 @@ namespace wowpp
 			MainWindow *m_mainWindow;
 			ObjectEditor *m_objectEditor;
 			TriggerEditor *m_triggerEditor;
+			VariableEditor *m_variableEditor;
 			proto::Project m_project;
 			std::unique_ptr<ItemListModel> m_itemListModel;
 			std::unique_ptr<SpellListModel> m_spellListModel;

@@ -24,6 +24,7 @@
 #include "windows/main_window.h"
 #include "windows/object_editor.h"
 #include "windows/trigger_editor.h"
+#include "windows/variable_editor.h"
 #include "windows/login_dialog.h"
 #include "windows/update_dialog.h"
 #include "team_connector.h"
@@ -151,6 +152,7 @@ namespace wowpp
 
         EditorApplication::~EditorApplication()
         {
+			delete m_variableEditor;
             delete m_triggerEditor;
             delete m_objectEditor;
             delete m_mainWindow;
@@ -231,6 +233,9 @@ namespace wowpp
 
 			// Setup the trigger editor
 			m_triggerEditor = new TriggerEditor(*this);
+
+			// Create variable editor
+			m_variableEditor = new VariableEditor(*this);
 			
 			return true;
 		}
@@ -249,6 +254,16 @@ namespace wowpp
 		{
 			m_transformTool = tool;
 			transformToolChanged(tool);
+		}
+
+		void EditorApplication::showVariableEditor()
+		{
+			assert(m_variableEditor);
+
+			m_variableEditor->show();
+			m_variableEditor->activateWindow();
+
+			emit variableEditorShown();
 		}
 
 		void EditorApplication::showTriggerEditor()

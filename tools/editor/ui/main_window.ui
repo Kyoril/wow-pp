@@ -200,6 +200,7 @@
    </attribute>
    <addaction name="actionObjectEditor"/>
    <addaction name="actionTriggerEditor"/>
+   <addaction name="actionVariables"/>
   </widget>
   <widget class="QToolBar" name="toolBar_2">
    <property name="windowTitle">
@@ -446,6 +447,15 @@
   <action name="actionGoTo">
    <property name="text">
     <string>Go To...</string>
+   </property>
+  </action>
+  <action name="actionVariables">
+   <property name="icon">
+    <iconset resource="../qrc/editor.qrc">
+     <normaloff>:/Variables.png</normaloff>:/Variables.png</iconset>
+   </property>
+   <property name="text">
+    <string>Variables</string>
    </property>
   </action>
   <actiongroup name="Movement">

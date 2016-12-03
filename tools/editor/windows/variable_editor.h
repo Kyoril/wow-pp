@@ -19,21 +19,46 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-syntax = "proto2";
-package wowpp.proto;
+#pragma once
 
-enum VariableType {
-	INTEGER	= 0;
-	FLOAT = 1;
+#include <QMainWindow>
+#include <QSortFilterProxyModel>
+#include <QAbstractTableModel>
+#include <QItemSelection>
+#include <QTreeWidgetItem>
+#include "proto_data/project.h"
+
+// Forwards
+namespace Ui
+{
+	class VariableEditor;
 }
 
-message VariableEntry {
-	required uint32 id = 1;
-	required string name = 2;
-	optional VariableType type = 3 [default = INTEGER];
-	optional float defaultvalue = 4 [default = 0.0];
-}
+namespace wowpp
+{
+	namespace editor
+	{
+		class EditorApplication;
 
-message Variables {
-	repeated VariableEntry entry = 1;
+		/// 
+		class VariableEditor final : public QMainWindow
+		{
+			Q_OBJECT
+
+		public:
+
+			explicit VariableEditor(EditorApplication &app);
+
+		private:
+
+
+
+		private slots:
+			
+		private:
+				
+			EditorApplication &m_application;
+			Ui::VariableEditor *m_ui;
+		};
+	}
 }

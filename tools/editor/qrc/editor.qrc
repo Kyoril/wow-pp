@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="/">
+    <file>Variables.png</file>
     <file>logo.png</file>
     <file>ActiveQuestIcon.png</file>
     <file>AvailableQuestIcon.png</file>
