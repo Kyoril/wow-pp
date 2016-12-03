@@ -834,6 +834,8 @@ namespace wowpp
 		/// Determines if this unit is moving at all.
 		bool isMoving() const;
 
+		void modifyAuraState(game::AuraState state, bool apply);
+
 	public:
 
 		/// @copydoc GameObject::relocate

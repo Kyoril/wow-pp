@@ -483,11 +483,10 @@ namespace wowpp
 
 	void Aura::handleDummy(bool apply)
 	{
-		if (!apply) {
-			return;
+		if (isSealSpell(m_spell))
+		{
+			m_target.modifyAuraState(game::aura_state::Judgement, apply);
 		}
-
-
 	}
 
 	void Aura::handleModConfuse(bool apply)

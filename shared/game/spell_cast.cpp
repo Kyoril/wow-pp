@@ -33,6 +33,15 @@
 
 namespace wowpp
 {
+	bool isSealSpell(const proto::SpellEntry & spell)
+	{
+		// Collection of all the seal family flags. No other paladin spell has any of those.
+		return spell.family() == game::spell_family::Paladin &&
+			(spell.familyflags() & 0x000004000A000200ULL) != 0 &&
+			spell.effects_size() > 0 &&
+			spell.effects(0).targeta() == game::targets::UnitCaster;
+	}
+
 	SpellCast::SpellCast(TimerQueue &timers, GameUnit &executer)
 		: m_timers(timers)
 		, m_executer(executer)
