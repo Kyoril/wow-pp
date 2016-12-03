@@ -382,6 +382,25 @@ namespace wowpp
 		return (m_movementInfo.moveFlags & game::movement_flags::Moving) != 0 || m_mover->isMoving();
 	}
 
+	void GameUnit::modifyAuraState(game::AuraState state, bool apply)
+	{
+		const UInt32 flag = 1 << (state - 1);
+		if (apply)
+		{
+			if (!hasFlag(unit_fields::AuraState, flag))
+			{
+				addFlag(unit_fields::AuraState, flag);
+			}
+		}
+		else
+		{
+			if (hasFlag(unit_fields::AuraState, flag))
+			{
+				removeFlag(unit_fields::AuraState, flag);
+			}
+		}
+	}
+
 	void GameUnit::relocate(const math::Vector3 & position, float o, bool fire)
 	{
 		// Grab last fired location

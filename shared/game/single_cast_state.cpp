@@ -1399,8 +1399,10 @@ namespace wowpp
 	{
 		// TODO: Do something here...
 		UInt32 spellId = 0;
+
 		switch (m_spell.id())
 		{
+			// Translocation orb handling
 			case 25140:
 				spellId = 32571;
 				break;
@@ -1425,9 +1427,64 @@ namespace wowpp
 			case 35727:
 				spellId = 35730;
 				break;
-			default:
-				WLOG("Unhandled SPELL_EFFECT_SCRIPT_EFFECT for spell " << m_spell.id());
-				return;
+
+			// Judgement
+			case 20271:
+				// Find respective seal dummy aura
+				{
+					// Cast custom spell on current target
+					GameUnit *unitTarget = nullptr;
+					m_target.resolvePointers(*m_cast.getExecuter().getWorldInstance(), &unitTarget, nullptr, nullptr, nullptr);
+					if (!unitTarget || !unitTarget->isAlive())
+					{
+						ELOG("Invalid unit target for judgement spell!");
+						break;
+					}
+
+					Aura *sealAura = nullptr;
+					m_cast.getExecuter().getAuras().forEachAuraOfType(game::aura_type::Dummy, [this, &sealAura](Aura &aura) -> bool {
+						if (aura.getCaster() == &m_cast.getExecuter() &&
+							aura.getEffect().index() > 0 &&	// Never the first effect!
+							isSealSpell(aura.getSpell()))
+						{
+							// Found the seal aura
+							sealAura = &aura;
+							return false;
+						}
+
+						return true;
+					});
+
+					if (!sealAura)
+					{
+						ELOG("Could not find seal aura!");
+						break;
+					}
+
+					// Try to find judgement spell
+					const UInt32 judgementSpellId = sealAura->getBasePoints();
+					const auto *spell = m_cast.getExecuter().getProject().spells.getById(judgementSpellId);
+
+					// Remove seal aura now as it is no longer needed
+					m_cast.getExecuter().getAuras().removeAllAurasDueToSpell(sealAura->getSpell().id());
+					sealAura = nullptr;
+
+					// Found a spell?
+					if (!spell)
+					{
+						ELOG("Could not find judgement spell for seal " << judgementSpellId);
+						break;
+					}
+
+					if (spell->family() != game::spell_family::Paladin)
+					{
+						ELOG("Judgement spell " << spell->id() << " is not a paladin spell");
+						break;
+					}
+
+					m_cast.getExecuter().castSpell(m_target, spell->id(), { 0, 0, 0 }, 0, true);
+				}
+				break;
 		}
 
 		if (spellId != 0)

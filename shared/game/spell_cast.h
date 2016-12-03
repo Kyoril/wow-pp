@@ -31,6 +31,8 @@ namespace wowpp
 {
 	class GameUnit;
 
+	bool isSealSpell(const proto::SpellEntry &spell);
+
 	///
 	class SpellCasting final
 	{
