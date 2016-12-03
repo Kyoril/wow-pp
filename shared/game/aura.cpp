@@ -2033,7 +2033,6 @@ namespace wowpp
 			{
 				if (!m_target.isAlive())
 				{
-					DLOG("TARGET NOT ALIVE!");
 					break;
 				}
 
@@ -2042,14 +2041,12 @@ namespace wowpp
 				UInt32 maxHealth = m_target.getUInt32Value(unit_fields::MaxHealth);
 				if (maxHealth == 0)
 				{
-					DLOG("MAX_HEALTH == 0");
 					break;
 				}
 
 				UInt32 currentHealth = m_target.getUInt32Value(unit_fields::Health);
 				if (currentHealth == maxHealth)
 				{
-					DLOG("CURRENT_HEALTH == MAX_HEALTH")
 					break;
 				}
 
@@ -2065,7 +2062,7 @@ namespace wowpp
 					std::vector<char> buffer;
 					io::VectorSink sink(buffer);
 					wowpp::game::OutgoingPacket packet(sink);
-					game::server_write::periodicAuraLog(packet, m_target.getGuid(), (m_caster ? m_caster->getGuid() : 0), m_spell.id(), m_effect.aura(), 0, value);
+					game::server_write::periodicAuraLog(packet, m_target.getGuid(), (m_caster ? m_caster->getGuid() : 0), m_spell.id(), m_effect.aura(), value);
 
 					forEachSubscriberInSight(world->getGrid(), tileIndex, [&packet, &buffer](ITileSubscriber & subscriber)
 					{
@@ -2073,7 +2070,6 @@ namespace wowpp
 					});
 				}
 
-				DLOG("Healing for " << value);
 				m_target.setUInt32Value(unit_fields::Health,
 					std::min(maxHealth, currentHealth + value));
 				break;
