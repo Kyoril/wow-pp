@@ -80,6 +80,13 @@ namespace wowpp
 			{
 				return x * x + y * y + z * z;
 			}
+			const bool isCloseTo(const Vector3 &other, float epsilon = 0.1f) const
+			{
+				return (
+					::fabs(x - other.x) <= epsilon &&
+					::fabs(y - other.y) <= epsilon &&
+					::fabs(z - other.z) <= epsilon);
+			}
 			/// Normalizes this vector. Has no effect if the length of this vector
 			/// is equal to zero.
 			/// @returns The magnitude of this vector.

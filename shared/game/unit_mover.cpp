@@ -140,13 +140,16 @@ namespace wowpp
 		m_start = currentLoc;
 
 		// Do we really need to move?
-		if (target == currentLoc)
+		if (target.isCloseTo(currentLoc, 0.1f))
 		{
-			m_target = target + math::Vector3(0.0f, 0.0f, 0.4f);
-			stopMovement();
+			m_target = target;
 
-			// Fire signal since we reached our target
-			targetReached();
+			if (isMoving())
+			{
+				// Fire signal since we reached our target
+				stopMovement();
+				targetReached();
+			}
 
 			return true;
 		}
