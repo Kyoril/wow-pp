@@ -22,6 +22,7 @@
 #include "pch.h"
 #include "variable_editor.h"
 #include "editor_application.h"
+#include "ui_variable_editor.h"
 #include <QRegExp>
 
 namespace wowpp
@@ -35,4 +36,5 @@ namespace wowpp
 		{
 			m_ui->setupUi(this);
 		}
+	}
 }
