@@ -35,6 +35,13 @@ namespace wowpp
 			, m_ui(new Ui::VariableEditor())
 		{
 			m_ui->setupUi(this);
+
+			m_viewModel = new VariableViewModel(m_application.getProject(), this);
+			m_ui->variableWidget->setModel(m_viewModel);
+
+			m_ui->variableWidget->setColumnWidth(0, 25);
+			m_ui->variableWidget->setColumnWidth(1, 250);
+			m_ui->variableWidget->setColumnWidth(2, 75);
 		}
 	}
 }

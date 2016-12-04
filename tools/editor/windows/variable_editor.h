@@ -27,6 +27,7 @@
 #include <QItemSelection>
 #include <QTreeWidgetItem>
 #include "proto_data/project.h"
+#include "variable_view_model.h"
 
 // Forwards
 namespace Ui
@@ -59,6 +60,7 @@ namespace wowpp
 				
 			EditorApplication &m_application;
 			Ui::VariableEditor *m_ui;
+			VariableViewModel *m_viewModel;
 		};
 	}
 }
