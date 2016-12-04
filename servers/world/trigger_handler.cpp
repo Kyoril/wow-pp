@@ -203,7 +203,7 @@ namespace wowpp
 			game::chat_msg::MonsterSay,
 			game::language::Universal,
 			"",
-			0, 
+			0,			// TODO: Make parameter dependant
 			getActionText(action, 0), 
 			reinterpret_cast<GameUnit*>(target)
 			);
@@ -259,9 +259,9 @@ namespace wowpp
 		game::server_write::messageChat(
 			packet, 
 			game::chat_msg::MonsterYell, 
-			game::language::Universal, 
-			"", 
-			0, 
+			game::language::Universal,
+			"",
+			0,			// TODO: Make parameter dependant
 			getActionText(action, 0), 
 			reinterpret_cast<GameUnit*>(target)
 			);
