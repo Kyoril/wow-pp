@@ -80,8 +80,7 @@ namespace wowpp
 			const int row = index.row();
 			const int col = index.column();
 
-			if (role == Qt::DisplayRole &&
-				row >= 0 &&
+			if (row >= 0 &&
 				row <= m_project.variables.getTemplates().entry_size())
 			{
 				const auto &variable = m_project.variables.getTemplates().entry(row);
@@ -89,44 +88,73 @@ namespace wowpp
 				{
 					case 0:
 					{
-						return QString("%0%").arg(variable.id());
-					}
+						if (role == Qt::DisplayRole)
+							return QString("%0").arg(variable.id());
 
+						break;
+					}
 					case 1:
 					{
-						return QString(variable.name().c_str());
-					}
+						if (role == Qt::DisplayRole)
+							return QString(variable.name().c_str());
 
+						break;
+					}
 					case 2:
 					{
-						switch (variable.data_case())
+						if (role == Qt::DisplayRole)
 						{
-							case proto::VariableEntry::kFloatvalue:
-								return QString("FLOAT");
-							case proto::VariableEntry::kIntvalue:
-								return QString("INTEGER");
-							case proto::VariableEntry::kLongvalue:
-								return QString("LONG");
-							case proto::VariableEntry::kStringvalue:
-								return QString("STRING");
-							default:
-								return QString("UNKNOWN");
+							switch (variable.data_case())
+							{
+								case proto::VariableEntry::kFloatvalue:
+									return QString("FLOAT");
+								case proto::VariableEntry::kIntvalue:
+									return QString("INTEGER");
+								case proto::VariableEntry::kLongvalue:
+									return QString("LONG");
+								case proto::VariableEntry::kStringvalue:
+									return QString("STRING");
+								default:
+									return QString("UNKNOWN");
+							}
 						}
-					}
+						else if(role == Qt::EditRole)
+						{
+							switch (variable.data_case())
+							{
+								case proto::VariableEntry::kFloatvalue:
+									return 2;
+								case proto::VariableEntry::kIntvalue:
+									return 0;
+								case proto::VariableEntry::kLongvalue:
+									return 1;
+								case proto::VariableEntry::kStringvalue:
+									return 3;
+								default:
+									return 0;
+							}
+						}
 
+						break;
+					}
 					case 3:
 					{
-						switch (variable.data_case())
+						if (role == Qt::DisplayRole)
 						{
-							case proto::VariableEntry::kFloatvalue:
-								return QString("%0%").arg(variable.floatvalue());
-							case proto::VariableEntry::kIntvalue:
-								return QString("%0%").arg(variable.intvalue());
-							case proto::VariableEntry::kLongvalue:
-								return QString("%0%").arg(variable.longvalue());
-							case proto::VariableEntry::kStringvalue:
-								return QString(variable.stringvalue().c_str());
+							switch (variable.data_case())
+							{
+								case proto::VariableEntry::kFloatvalue:
+									return QString("%0").arg(variable.floatvalue());
+								case proto::VariableEntry::kIntvalue:
+									return QString("%0").arg(variable.intvalue());
+								case proto::VariableEntry::kLongvalue:
+									return QString("%0").arg(variable.longvalue());
+								case proto::VariableEntry::kStringvalue:
+									return QString(variable.stringvalue().c_str());
+							}
 						}
+
+						break;
 					}
 				}
 			}

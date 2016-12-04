@@ -225,6 +225,7 @@ namespace wowpp
 		localHashs["combat_ratings"] = m_project.combatRatings.hashString;
 		localHashs["melee_crit_chance"] = m_project.meleeCritChance.hashString;
 		localHashs["resistance_percentages"] = m_project.resistancePcts.hashString;
+		localHashs["variables"] = m_project.variables.hashString;
 
 		// Compare both
 		for (const auto &local : localHashs)

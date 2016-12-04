@@ -22,7 +22,9 @@
 #include "pch.h"
 #include "variable_editor.h"
 #include "editor_application.h"
+#include "variable_type_delegate.h"
 #include "ui_variable_editor.h"
+#include "add_variable_dialog.h"
 #include <QRegExp>
 
 namespace wowpp
@@ -42,6 +44,21 @@ namespace wowpp
 			m_ui->variableWidget->setColumnWidth(0, 25);
 			m_ui->variableWidget->setColumnWidth(1, 250);
 			m_ui->variableWidget->setColumnWidth(2, 75);
+
+			m_ui->variableWidget->setItemDelegateForColumn(2, new VariableTypeDelegate(this));
+		}
+
+		void VariableEditor::on_addVariableBtn_clicked()
+		{
+			AddVariableDialog dlg(m_application.getProject());
+			if (dlg.exec() == QDialog::Accepted)
+			{
+				// Refresh view as the variable has been added already
+				m_viewModel->layoutChanged();
+
+				// Mark as changed
+				m_application.markAsChanged(dlg.getAddedId(), pp::editor_team::data_entry_type::Variables, pp::editor_team::data_entry_change_type::Added);
+			}
 		}
 	}
 }

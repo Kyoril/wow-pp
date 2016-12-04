@@ -21,44 +21,47 @@
 
 #pragma once
 
-#include <QMainWindow>
-#include <QSortFilterProxyModel>
-#include <QAbstractTableModel>
-#include <QItemSelection>
-#include <QTreeWidgetItem>
-#include "proto_data/project.h"
-#include "variable_view_model.h"
+#include "common/typedefs.h"
+#include <QDialog>
 
 // Forwards
 namespace Ui
 {
-	class VariableEditor;
+	class AddVariableDialog;
 }
 
 namespace wowpp
 {
+	namespace proto
+	{
+		class Project;
+	}
+
 	namespace editor
 	{
-		class EditorApplication;
-
 		/// 
-		class VariableEditor final : public QMainWindow
+		class AddVariableDialog : public QDialog
 		{
 			Q_OBJECT
 
 		public:
 
-			explicit VariableEditor(EditorApplication &app);
+			/// 
+			explicit AddVariableDialog(proto::Project &project);
+
+			const UInt32 getAddedId() const {
+				return m_addedId;
+			}
 
 		private slots:
 
-			void on_addVariableBtn_clicked();
-			
+			void on_buttonBox_accepted();
+
 		private:
-				
-			EditorApplication &m_application;
-			Ui::VariableEditor *m_ui;
-			VariableViewModel *m_viewModel;
+
+			Ui::AddVariableDialog *m_ui;
+			proto::Project &m_project;
+			UInt32 m_addedId;
 		};
 	}
 }

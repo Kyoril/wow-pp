@@ -87,7 +87,6 @@ namespace wowpp
 		typedef TemplateManager<wowpp::proto::CombatRatings, wowpp::proto::CombatRatingEntry> CombatRatingsManager;
 		typedef TemplateManager<wowpp::proto::MeleeCritChance, wowpp::proto::MeleeCritChanceEntry> MeleeCritChanceManager;
 		typedef TemplateManager<wowpp::proto::ResistancePercentage, wowpp::proto::ResistancePercentageEntry> ResistancePercentageManager;
-		typedef TemplateManager<wowpp::proto::ResistancePercentage, wowpp::proto::ResistancePercentageEntry> ResistancePercentageManager;
 		typedef TemplateManager<wowpp::proto::Variables, wowpp::proto::VariableEntry> VariableManager;
 
 		class Project : public boost::noncopyable
