@@ -53,6 +53,7 @@ namespace wowpp
 		private slots:
 
 			void on_addVariableBtn_clicked();
+			void on_removeVariableBtn_clicked();
 			
 		private:
 				

@@ -60,5 +60,76 @@ namespace wowpp
 				m_application.markAsChanged(dlg.getAddedId(), pp::editor_team::data_entry_type::Variables, pp::editor_team::data_entry_change_type::Added);
 			}
 		}
+		void VariableEditor::on_removeVariableBtn_clicked()
+		{
+			auto &project = m_application.getProject();
+
+			std::vector<UInt32> entriesToRemove;
+
+			// Selected variable
+			auto selected = m_ui->variableWidget->selectionModel()->selectedIndexes();
+			for (const auto &index : selected)
+			{
+				if (index.row() < 0)
+				{
+					// Skip this
+					continue;
+				}
+
+				// Get id of selected item
+				auto *entry = project.variables.getTemplates().mutable_entry(index.row());
+				if (entry)
+				{
+					// Remove this variable from all associated units
+					auto *mutableUnits = project.units.getTemplates().mutable_entry();
+					for (auto &unit : *mutableUnits)
+					{
+						for (int i = 0; i < unit.variables_size();)
+						{
+							if (unit.variables(i) == entry->id())
+							{
+								unit.mutable_variables()->erase(
+									unit.mutable_variables()->begin() + i);
+							}
+							else
+							{
+								++i;
+							}
+						}
+					}
+
+					// Remove this variable from all associated objects
+					auto *mutableObjects = project.objects.getTemplates().mutable_entry();
+					for (auto &object : *mutableObjects)
+					{
+						for (int i = 0; i < object.variables_size();)
+						{
+							if (object.variables(i) == entry->id())
+							{
+								object.mutable_variables()->erase(
+									object.mutable_variables()->begin() + i);
+							}
+							else
+							{
+								++i;
+							}
+						}
+					}
+
+					entriesToRemove.push_back(entry->id());
+				}
+			}
+
+			for (auto &id : entriesToRemove)
+			{
+				m_application.getProject().variables.remove(id);
+				m_application.markAsChanged(id, pp::editor_team::data_entry_type::Variables, pp::editor_team::data_entry_change_type::Removed);
+			}
+
+			if (!entriesToRemove.empty())
+			{
+				m_viewModel->layoutChanged();
+			}
+		}
 	}
 }
