@@ -62,7 +62,6 @@ namespace wowpp
 			void on_actionAddAction_triggered();
 			void on_actionRemove_triggered();
 			void on_triggerNameBox_editingFinished();
-			void on_triggerPathBox_editingFinished();
 			void on_functionView_itemDoubleClicked(QTreeWidgetItem*, int);
 			void onTriggerSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 

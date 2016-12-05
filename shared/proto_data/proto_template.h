@@ -133,9 +133,19 @@ namespace wowpp
 					m_templatesById.erase(it);
 				}
 
-				// TODO: Remove entry from m_data. This is tricky, because
-				// removing an item can invalidate the whole m_templatesById
-				// map.
+				// Remove entry from m_data
+				for (int i = 0; i < m_data.entry_size();)
+				{
+					if (m_data.entry(i).id() == id)
+					{
+						m_data.mutable_entry()->erase(
+							m_data.mutable_entry()->begin() + i);
+					}
+					else
+					{
+						++i;
+					}
+				}
 			}
 
 			/// Retrieves a pointer to an object by its id.

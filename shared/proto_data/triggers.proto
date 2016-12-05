@@ -22,19 +22,63 @@
 syntax = "proto2";
 package wowpp.proto;
 
-message TriggerExpression {
-	// Type. Can be: VALUE, VARIABLE or FUNCTION.
-	required uint32 type = 1;
-	// Depends on type. If VALUE, this is the value. if VARIABLE, this is the variable id. And if FUNCTION, this is t
-	required uint32 value = 2;
-	// Only used if type is set to FUNCTION. Values depends on used function.
-	repeated uint32 data = 3;
+message TriggerCategoryEntry {
+	required uint32 id = 1;
+	required string name = 2;
+	optional uint32 parent = 3 [default = 0];
+}
+
+message TriggerCategories {
+	repeated TriggerCategoryEntry entry = 1;
+}
+
+
+enum TriggerComparisonOperator {
+	Equal = 0;
+	NotEqual = 1;
+	Greater = 2;
+	GreaterEqual = 3;
+	Less = 4;
+	LessEqual = 5;
+}
+
+enum TriggerFunction {
+	Phase = 0;
+	Health = 1;
+	HealthPct = 2;
+	Mana = 3;
+	ManaPct = 4;
+	IsInCombat = 5;
+}
+
+enum TriggerConditionType {
+	BoolComparison = 0;
+	IntegerComparison = 1;
+	FloatComparison = 2;
+	StringComparison = 3;
+	AndCondition = 4;
+	OrCondition = 5;
 }
 
 message TriggerCondition {
-	required uint32 type = 1;
-	optional uint32 value_1 = 2;
-	optional uint32 value_2 = 3;
+	required TriggerConditionType type = 1;
+	required TriggerComparisonOperator operator = 2;
+
+	oneof leftvalue {
+		int64 leftlong = 4;
+		float leftfloat = 5;
+		string leftstring = 6;
+		TriggerFunction leftfunction = 7;
+		TriggerCondition leftcondition = 8;
+	}
+
+	oneof rightvalue {
+		int64 rightlong = 10;
+		float rightfloat = 11;
+		string rightstring = 12;
+		TriggerFunction rightfunction = 13;
+		TriggerCondition rightcondition = 14;
+	}
 }
 
 message TriggerAction {
@@ -53,8 +97,8 @@ message TriggerEvent {
 message TriggerEntry {
 	required uint32 id = 1;
 	required string name = 2;
-	optional string category = 3;
-	reserved 4;
+	reserved 3;
+	optional uint32 categoryid = 4;
 	repeated TriggerAction actions = 5;
 	repeated TriggerEvent newevents = 6;
 }

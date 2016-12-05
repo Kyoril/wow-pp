@@ -146,45 +146,6 @@ namespace wowpp
 		};
 	}
 
-	namespace trigger_variables
-	{
-		enum Type
-		{
-			/// Current creature AI phase. Defaults to 0 at combat beginning.
-			/// Will be reset automatically when combat ends.
-			Phase = 0,
-			/// Current health as absolute number.
-			Health = 1,
-			/// Current health as percentage (0-100).
-			HealthPct = 2,
-			/// Current mana as absolute number.
-			Mana = 3,
-			/// Current mana as percentage (0-100).
-			ManaPct = 4,
-			/// Whether the unit is in combat (0-1).
-			IsInCombat = 5,
-
-			Invalid,
-			Count_ = Invalid
-		};
-	}
-
-	namespace trigger_operator
-	{
-		enum Type
-		{
-			Equal = 0,
-			Not = 1,
-			Lesser = 2,
-			Greater = 3,
-			LesserEqual = 4,
-			GreaterEqual = 5,
-
-			Invalid,
-			Count_ = Invalid
-		};
-	}
-
 	namespace trigger_action_target
 	{
 		enum Type
