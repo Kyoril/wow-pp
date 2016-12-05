@@ -140,6 +140,9 @@ namespace wowpp
 			/// Sets spell cooldown for a unit.
 			/// Targets: PLAYER; Data: <QUEST-ID>; Texts: NONE;
 			QuestEventOrExploration = 17,
+			/// Sets an object variable.
+			/// Targets: OBJECT; Data: <VARIABLE-ID>, [<NUMERIC-VALUE>]; Texts: [<STRING_VALUE>];
+			SetVariable = 18,
 
 			Invalid,
 			Count_ = Invalid

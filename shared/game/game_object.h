@@ -224,6 +224,7 @@ namespace wowpp
 	namespace proto
 	{
 		class Project;
+		class VariableEntry;
 	}
 
 	/// Base class for any object in the world. This class is abstract and shouldn't be initialized.
@@ -258,6 +259,45 @@ namespace wowpp
 
 		/// Initializes this object, setting up all basic fields etc.
 		virtual void initialize();
+
+	public:
+
+		/// Adds a new variable to the list of variables of this object.
+		/// @param entry Entry id of the variable.
+		void addVariable(UInt32 entry);
+		/// Determines if this object has an instance of the specified variable id.
+		/// @param entry Entry id of the variable.
+		/// @returns True, if this object owns an instance of this variable, false otherwise.
+		const bool hasVariable(UInt32 entry) const;
+		/// Sets the value of a specific variable.
+		/// @param entry Entry id of the variable.
+		/// @param value Value to set.
+		/// @returns false if the object does not own an instance of the variable.
+		template<typename T>
+		bool setVariable(UInt32 entry, const T &value)
+		{
+
+
+			// Unit does not own this variable
+			return false;
+		}
+		/// Gets the value of a specific variable instance of this object.
+		/// @param entry Entry id of the variable.
+		/// @param out_value Reference of an object where the value will be copied to.
+		/// @returns false if this object does not own an instance of the variable.
+		template<typename T>
+		bool getVariable(UInt32 entry, T &out_value)
+		{
+
+
+			// Unit does not own this variable
+			return false;
+		}
+		/// Removes an instance of a variable from this object.
+		/// @param entry Entry id of the variable.
+		void removeVariable(UInt32 entry);
+
+	public:
 
 		/// Gets the number of values of this object.
 		UInt32 getValueCount() const {
@@ -495,6 +535,7 @@ namespace wowpp
 		MovementInfo m_movementInfo;
 		WorldInstance *m_worldInstance;
 		boost::signals2::scoped_connection m_worldInstanceDestroyed;
+		
 	};
 
 	io::Writer &operator << (io::Writer &w, GameObject const &object);

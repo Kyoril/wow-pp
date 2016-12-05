@@ -193,6 +193,12 @@ namespace wowpp
 		// Setup new entry
 		m_entry = &entry;
 
+		// Add all required variables
+		for (const auto &variable : m_entry->variables())
+		{
+			addVariable(variable);
+		}
+
 		// Emit signal
 		if (!isInitialize)
 		{

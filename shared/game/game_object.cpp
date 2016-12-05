@@ -57,6 +57,21 @@ namespace wowpp
 		// TODO
 	}
 
+	void GameObject::addVariable(UInt32 entry)
+	{
+		// TODO
+	}
+
+	const bool GameObject::hasVariable(UInt32 entry) const
+	{
+		return false;
+	}
+
+	void GameObject::removeVariable(UInt32 entry)
+	{
+		// TODO
+	}
+
 	wowpp::UInt8 GameObject::getByteValue(UInt16 index, UInt8 offset) const
 	{
 		assert(offset < 4);
