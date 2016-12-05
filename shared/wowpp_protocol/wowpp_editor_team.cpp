@@ -84,6 +84,14 @@ namespace wowpp
 						return project.areaTriggers.getById(entry);
 					case data_entry_type::SpellCategories:
 						return project.spellCategories.getById(entry);
+					case data_entry_type::CombatRatings:
+						return project.combatRatings.getById(entry);
+					case data_entry_type::MeleeCritChance:
+						return project.meleeCritChance.getById(entry);
+					case data_entry_type::ResistancePercentage:
+						return project.resistancePcts.getById(entry);
+					case data_entry_type::Variables:
+						return project.variables.getById(entry);
 				}
 
 				return nullptr;
@@ -186,11 +194,7 @@ namespace wowpp
 							{
 								// Look for the entry
 								const auto *entry = getEntry(project, pair2.first, pair.first);
-								if (!entry)
-								{
-									// TODO!!!
-									assert(false);
-								}
+								assert(entry);
 
 								// Serialize data
 								auto data = entry->SerializeAsString();

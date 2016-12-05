@@ -143,6 +143,7 @@ namespace wowpp
             , m_mainWindow(nullptr)
             , m_objectEditor(nullptr)
             , m_triggerEditor(nullptr)
+			, m_variableEditor(nullptr)
 			, m_transformTool(transform_tool::Select)
 		{
 			m_pollTimer = new QTimer(this);
