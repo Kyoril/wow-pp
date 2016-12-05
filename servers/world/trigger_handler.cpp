@@ -103,6 +103,7 @@ namespace wowpp
 			WOWPP_HANDLE_TRIGGER_ACTION(SetSpellCooldown)
 			WOWPP_HANDLE_TRIGGER_ACTION(QuestKillCredit)
 			WOWPP_HANDLE_TRIGGER_ACTION(QuestEventOrExploration)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetVariable)
 #undef WOWPP_HANDLE_TRIGGER_ACTION
 
 				case trigger_actions::Delay:
@@ -676,6 +677,49 @@ namespace wowpp
 
 		UInt32 questId = getActionData(action, 0);
 		reinterpret_cast<GameCharacter*>(target)->completeQuest(questId);
+	}
+
+	void TriggerHandler::handleSetVariable(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_SET_VARIABLE: No target found, action will be ignored");
+			return;
+		}
+
+		// Get variable
+		UInt32 entryId = getActionData(action, 0);
+		if (entryId == 0)
+		{
+			WLOG("TRIGGER_ACTION_SET_VARIABLE: Needs a valid variable entry - action ignored");
+			return;
+		}
+
+		const auto *entry = target->getProject().variables.getById(entryId);
+		if (!entry)
+		{
+			WLOG("TRIGGER_ACTION_SET_VARIABLE: Unknown variable id " << entryId << " - action ignored");
+			return;
+		}
+
+		// Determine variable type
+		switch (entry->data_case())
+		{
+			// TODO
+			case proto::VariableEntry::kIntvalue:
+			case proto::VariableEntry::kLongvalue:
+			case proto::VariableEntry::kFloatvalue:
+			{
+				target->setVariable(entryId, getActionData(action, 1));
+				break;
+			}
+			case proto::VariableEntry::kStringvalue:
+			{
+				target->setVariable(entryId, getActionText(action, 0));
+				break;
+			}
+		}
 	}
 
 	Int32 TriggerHandler::getActionData(const proto::TriggerAction &action, UInt32 index) const

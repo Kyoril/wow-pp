@@ -72,6 +72,7 @@ namespace wowpp
 		void handleSetSpellCooldown(const proto::TriggerAction &action, game::TriggerContext &context);
 		void handleQuestKillCredit(const proto::TriggerAction &action, game::TriggerContext &context);
 		void handleQuestEventOrExploration(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetVariable(const proto::TriggerAction &action, game::TriggerContext &context);
 
 	private:
 
