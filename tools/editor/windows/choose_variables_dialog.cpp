@@ -43,7 +43,7 @@ namespace wowpp
 
 			connect(m_ui->variableView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
-				this, SLOT(onSpellSelectionChanged(QItemSelection, QItemSelection)));
+				this, SLOT(onVariableSelectionChanged(QItemSelection, QItemSelection)));
 		}
 
 		void ChooseVariablesDialog::on_buttonBox_accepted()
@@ -69,7 +69,9 @@ namespace wowpp
 
 			QItemSelection source = m_variableFilter->mapSelectionToSource(selection);
 			if (source.isEmpty())
+			{
 				return;
+			}
 
 			for (const auto &i : source.indexes())
 			{

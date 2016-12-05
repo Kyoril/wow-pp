@@ -26,7 +26,14 @@
     </widget>
    </item>
    <item>
-    <widget class="QListView" name="variableView"/>
+    <widget class="QListView" name="variableView">
+     <property name="alternatingRowColors">
+      <bool>true</bool>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::MultiSelection</enum>
+     </property>
+    </widget>
    </item>
    <item>
     <widget class="QLineEdit" name="variableFilter">
