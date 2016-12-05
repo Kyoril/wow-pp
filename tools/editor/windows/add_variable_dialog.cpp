@@ -22,6 +22,7 @@
 #include "pch.h"
 #include "add_variable_dialog.h"
 #include "ui_add_variable_dialog.h"
+#include "editor_application.h"
 #include "proto_data/project.h"
 #include "log/default_log_levels.h"
 
@@ -29,10 +30,10 @@ namespace wowpp
 {
 	namespace editor
 	{
-		AddVariableDialog::AddVariableDialog(proto::Project &project)
+		AddVariableDialog::AddVariableDialog(EditorApplication &app)
 			: QDialog()
 			, m_ui(new Ui::AddVariableDialog)
-			, m_project(project)
+			, m_app(app)
 			, m_addedId(0)
 		{
 			// Setup auto generated ui
@@ -45,7 +46,7 @@ namespace wowpp
 
 			// Determine highest trigger id
 			UInt32 newId = 1;
-			while (m_project.variables.getById(newId) && newId != maxId)
+			while (m_app.getProject().variables.getById(newId) && newId != maxId)
 			{
 				newId++;
 			}
@@ -57,7 +58,7 @@ namespace wowpp
 			}
 
 			// Create new variable
-			auto *added = m_project.variables.add(newId);
+			auto *added = m_app.getProject().variables.add(newId);
 			if (!added)
 			{
 				ELOG("Could not add new variable!");

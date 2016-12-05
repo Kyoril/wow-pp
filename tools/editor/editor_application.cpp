@@ -214,6 +214,7 @@ namespace wowpp
 			m_triggerListModel.reset(new TriggerListModel(m_project.triggers));
 			m_questListModel.reset(new QuestListModel(m_project.quests));
 			m_objectListModel.reset(new ObjectListModel(m_project.objects));
+			m_variableListModel.reset(new VariableListModel(m_project.variables));
 
 			// Show the main window (will be deleted when this class is deleted by QT)
 			m_mainWindow = new MainWindow(*this);

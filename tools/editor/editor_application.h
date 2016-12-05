@@ -68,6 +68,7 @@ namespace wowpp
 			typedef TemplateListModel<proto::UnitManager> UnitListModel;
 			typedef TemplateListModel<proto::QuestManager> QuestListModel;
 			typedef TemplateListModel<proto::ObjectManager> ObjectListModel;
+			typedef TemplateListModel<proto::VariableManager> VariableListModel;
 
 		public:
 
@@ -94,6 +95,7 @@ namespace wowpp
 			TriggerListModel *getTriggerListModel() { return m_triggerListModel.get(); }
 			QuestListModel *getQuestListModel() { return m_questListModel.get(); }
 			ObjectListModel *getObjectListModel() { return m_objectListModel.get(); }
+			VariableListModel *getVariableListModel() { return m_variableListModel.get(); }
 			proto::Project &getProject() { return m_project; }
 			Configuration &getConfiguration() { return m_configuration; }
 			Selection &getSelection() { return m_selection; }
@@ -146,6 +148,7 @@ namespace wowpp
 			std::unique_ptr<TriggerListModel> m_triggerListModel;
 			std::unique_ptr<QuestListModel> m_questListModel;
 			std::unique_ptr<ObjectListModel> m_objectListModel;
+			std::unique_ptr<VariableListModel> m_variableListModel;
 			TransformTool m_transformTool;
 			std::unique_ptr<TeamConnector> m_teamConnector;
 			EntryTypeChangeMap m_changes;

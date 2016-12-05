@@ -50,7 +50,7 @@ namespace wowpp
 
 		void VariableEditor::on_addVariableBtn_clicked()
 		{
-			AddVariableDialog dlg(m_application.getProject());
+			AddVariableDialog dlg(m_application);
 			if (dlg.exec() == QDialog::Accepted)
 			{
 				// Refresh view as the variable has been added already

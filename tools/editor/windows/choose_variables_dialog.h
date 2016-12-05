@@ -22,12 +22,15 @@
 #pragma once
 
 #include "common/typedefs.h"
+#include "proto_data/project.h"
 #include <QDialog>
+#include <QItemSelection>
+#include <QSortFilterProxyModel>
 
 // Forwards
 namespace Ui
 {
-	class AddVariableDialog;
+	class ChooseVariablesDialog;
 }
 
 namespace wowpp
@@ -37,28 +40,31 @@ namespace wowpp
 		class EditorApplication;
 
 		/// 
-		class AddVariableDialog : public QDialog
+		class ChooseVariablesDialog : public QDialog
 		{
 			Q_OBJECT
 
 		public:
 
 			/// 
-			explicit AddVariableDialog(EditorApplication &app);
+			explicit ChooseVariablesDialog(EditorApplication &app);
 
-			const UInt32 getAddedId() const {
-				return m_addedId;
+			const std::vector<const proto::VariableEntry *> &getSelected() const {
+				return m_selected; 
 			}
 
 		private slots:
 
 			void on_buttonBox_accepted();
+			void onVariableSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
+			void on_variableFilter_textChanged(QString);
 
 		private:
 
-			Ui::AddVariableDialog *m_ui;
+			Ui::ChooseVariablesDialog *m_ui;
 			EditorApplication &m_app;
-			UInt32 m_addedId;
+			std::vector<const proto::VariableEntry *> m_selected;
+			QSortFilterProxyModel *m_variableFilter;
 		};
 	}
 }
