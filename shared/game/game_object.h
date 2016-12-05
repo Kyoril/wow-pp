@@ -31,6 +31,7 @@
 #include "math/vector3.h"
 #include "common/macros.h"
 #include "common/simple.hpp"
+#include "shared/proto_data/variables.pb.h"
 
 namespace wowpp
 {
@@ -224,8 +225,14 @@ namespace wowpp
 	namespace proto
 	{
 		class Project;
-		class VariableEntry;
 	}
+
+
+	struct VariableInstance
+	{
+		proto::VariableEntry::DataCase dataCase;
+		boost::variant<String, Int64, float> value;
+	};
 
 	/// Base class for any object in the world. This class is abstract and shouldn't be initialized.
 	class GameObject : public std::enable_shared_from_this<GameObject>
@@ -272,14 +279,23 @@ namespace wowpp
 		/// Sets the value of a specific variable.
 		/// @param entry Entry id of the variable.
 		/// @param value Value to set.
-		/// @returns false if the object does not own an instance of the variable.
+		/// @returns false if the object does not own an instance of the variable or the type is not supported.
 		template<typename T>
 		bool setVariable(UInt32 entry, const T &value)
 		{
+			auto it = m_variables.find(entry);
+			if (it == m_variables.end())
+				return false;
 
-
-			// Unit does not own this variable
-			return false;
+			try
+			{
+				it->second.value = value;
+				return true;
+			}
+			catch(...)
+			{
+				return false;
+			}
 		}
 		/// Gets the value of a specific variable instance of this object.
 		/// @param entry Entry id of the variable.
@@ -288,10 +304,19 @@ namespace wowpp
 		template<typename T>
 		bool getVariable(UInt32 entry, T &out_value)
 		{
+			auto it = m_variables.find(entry);
+			if (it == m_variables.end())
+				return false;
 
-
-			// Unit does not own this variable
-			return false;
+			try
+			{
+				out_value = boost::get<T>(it->second.value);
+				return true;
+			}
+			catch(...)
+			{
+				return false;
+			}
 		}
 		/// Removes an instance of a variable from this object.
 		/// @param entry Entry id of the variable.
@@ -535,6 +560,7 @@ namespace wowpp
 		MovementInfo m_movementInfo;
 		WorldInstance *m_worldInstance;
 		boost::signals2::scoped_connection m_worldInstanceDestroyed;
+		std::map<UInt32, VariableInstance> m_variables;
 		
 	};
 

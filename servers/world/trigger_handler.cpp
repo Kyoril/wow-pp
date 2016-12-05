@@ -711,7 +711,7 @@ namespace wowpp
 			case proto::VariableEntry::kLongvalue:
 			case proto::VariableEntry::kFloatvalue:
 			{
-				target->setVariable(entryId, getActionData(action, 1));
+				target->setVariable(entryId, static_cast<Int64>(getActionData(action, 1)));
 				break;
 			}
 			case proto::VariableEntry::kStringvalue:
