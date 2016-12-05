@@ -137,6 +137,11 @@ namespace wowpp
 					WOWPP_ENTRY_WRAPPER(FactionTemplates, factionTemplates)
 					WOWPP_ENTRY_WRAPPER(AreaTriggers, areaTriggers)
 					WOWPP_ENTRY_WRAPPER(SpellCategories, spellCategories)
+					WOWPP_ENTRY_WRAPPER(CombatRatings, combatRatings)
+					WOWPP_ENTRY_WRAPPER(MeleeCritChance, meleeCritChance)
+					WOWPP_ENTRY_WRAPPER(ResistancePercentage, resistancePcts)
+					WOWPP_ENTRY_WRAPPER(Variables, variables)
+
 #undef WOWPP_ENTRY_WRAPPER
 				}
 
