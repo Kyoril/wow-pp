@@ -1514,8 +1514,10 @@ namespace wowpp
 		sendProxyPacket(
 			std::bind(game::server_write::timeSyncReq, std::placeholders::_1, m_timeSyncCounter++));
 
+		m_lastTimeSync = getCurrentTime();
+
 		// Next sync in 30 seconds
-		//m_nextClientSync.setEnd(getCurrentTime() + constants::OneSecond * 30);
+		m_nextClientSync.setEnd(m_lastTimeSync + constants::OneSecond * 30);
 	}
 
 	void Player::handleRepopRequest(game::Protocol::IncomingPacket &packet)
@@ -1711,7 +1713,13 @@ namespace wowpp
 			WLOG("TIME SYNC mismatch: Received response for #" << counter << ", but expected " << m_timeSyncCounter - 1);
 		}
 
-		m_serverSync = static_cast<UInt32>(getCurrentTime());
+		GameTime current = getCurrentTime();
+
+		// Determine latency
+		Int64 latency = static_cast<Int64>(current) - m_lastTimeSync;
+		Int64 halfLatency = latency / 2;
+
+		m_serverSync = static_cast<UInt32>(current) + halfLatency;
 		m_clientSync = ticks;
 
 		DLOG("TIME SYNC RESPONSE " << m_character->getName() << ": Client Sync " << m_clientSync << "; Server Sync: " << m_serverSync);

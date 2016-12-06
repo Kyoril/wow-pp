@@ -285,6 +285,14 @@ bool QtOgreWindow::eventFilter(QObject *target, QEvent *e)
 				m_ogreWindow->resize(this->width(), this->height());
 			}
 		}
+		else if (e->type() == QEvent::FocusIn)
+		{
+			setAnimating(true);
+		}
+		else if (e->type() == QEvent::FocusOut)
+		{
+			setAnimating(false);
+		}
 	}
 
 	return false;

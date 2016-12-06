@@ -331,5 +331,6 @@ namespace wowpp
 		UInt32 m_clientSync, m_serverSync;
 		Countdown m_nextClientSync;
 		UInt32 m_timeSyncCounter;
+		GameTime m_lastTimeSync;
 	};
 }
