@@ -232,9 +232,10 @@ namespace wowpp
 		// Send packet
 		m_connection->sendSinglePacket(
 			std::bind(
-				auth::server_write::logonChallenge, 
+				auth::server_write::logonChallenge,
 				std::placeholders::_1,
 				result,
+				auth::security_flags::None, //(auth::SecurityFlags)(auth::security_flags::PinInput | auth::security_flags::MatrixInput),
 				std::cref(m_B),
 				std::cref(constants::srp::g),
 				std::cref(constants::srp::N),
@@ -291,6 +292,7 @@ namespace wowpp
 					auth::server_write::logonChallenge,
 					std::placeholders::_1,
 					auth::auth_result::FailVersionInvalid,
+					auth::security_flags::None,
 					std::cref(m_B),
 					std::cref(constants::srp::g),
 					std::cref(constants::srp::N),
