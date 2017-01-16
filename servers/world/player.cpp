@@ -2960,6 +2960,9 @@ namespace wowpp
 			return;
 		}
 
+		// Remove all auras that have to be removed when interacting with game objects
+		m_character->getAuras().removeAllAurasDueToInterrupt(game::spell_aura_interrupt_flags::Use);
+
 		sendGossipMenu(guid);
 
 		WorldObject &wobj = reinterpret_cast<WorldObject&>(*obj);
@@ -2970,6 +2973,18 @@ namespace wowpp
 
 			// Check if spell cast is needed
 			UInt32 spellId = wobj.getEntry().data(10);
+			if (spellId)
+			{
+				// Cast spell
+				SpellTargetMap target;
+				target.m_unitTarget = m_character->getGuid();
+				target.m_targetMap = game::spell_cast_target_flags::Unit;
+				m_character->castSpell(std::move(target), spellId);
+			}
+		}
+		else if (wobj.getEntry().type() == world_object_type::SpellCaster)
+		{
+			UInt32 spellId = wobj.getEntry().data(0);
 			if (spellId)
 			{
 				// Cast spell
