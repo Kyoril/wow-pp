@@ -128,13 +128,11 @@ namespace wowpp
 				handleLogonChallenge(packet);
 				break;
 			}
-
 			case auth::client_packet::LogonProof:
 			{
 				handleLogonProof(packet);
 				break;
 			}
-
 			case auth::client_packet::ReconnectChallenge:
 			{
 				handleReconnectChallenge(packet);
@@ -145,13 +143,11 @@ namespace wowpp
 				handleReconnectProof(packet);
 				break;
 			}
-
 			case auth::client_packet::RealmList:
 			{
 				handleRealmList(packet);
 				break;
 			}
-
 			default:
 			{
 				isValid = false;
@@ -191,7 +187,7 @@ namespace wowpp
 			destroy();
 			return;
 		}
-
+		
 		// The temporary result
 		auth::AuthResult result = auth::auth_result::FailUnknownAccount;
 
@@ -235,7 +231,7 @@ namespace wowpp
 				auth::server_write::logonChallenge,
 				std::placeholders::_1,
 				result,
-				auth::security_flags::None, //(auth::SecurityFlags)(auth::security_flags::PinInput | auth::security_flags::MatrixInput),
+				(auth::SecurityFlags)(auth::security_flags::None /*| auth::security_flags::MatrixInput*/),
 				std::cref(m_B),
 				std::cref(constants::srp::g),
 				std::cref(constants::srp::N),
@@ -279,6 +275,26 @@ namespace wowpp
 			destroy();
 			return;
 		}
+
+		// TODO: Read pin input
+
+		// Read Matrix hash
+		if (securityFlags & auth::security_flags::MatrixInput)
+		{
+			SHA1Hash matrixHash;
+			if (!(packet >> io::read_range(matrixHash)))
+			{
+				ELOG("Could not read matrix card hash");
+				destroy();
+				return;
+			}
+
+			// TODO: Make sure that the hash matches...
+			//sha1PrintHex(std::cout, matrixHash);
+			//std::cout << std::endl;
+		}
+
+		// TODO: Token
 
 		SHA1Hash hash;
 

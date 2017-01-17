@@ -21,6 +21,7 @@
 
 #include "pch.h"
 #include "auth_protocol.h"
+#include "common/utilities.h"
 
 namespace wowpp
 {
@@ -403,13 +404,14 @@ namespace wowpp
 
 				if (securityFlags & security_flags::MatrixInput)
 				{
+					std::uniform_int_distribution<UInt64> dist(1, std::numeric_limits<UInt64>::max());
 					out_packet
-					        << io::write<NetUInt8>(8)						// Width of the field	(A-H = 0-7)
-					        << io::write<NetUInt8>(10)						// Height of the field	(1-10 = 0-9)
-					        << io::write<NetUInt8>(16)						// ???
-					        << io::write<NetUInt8>(4)						// Number of fields the player has to enter
-					        << io::write<NetUInt64>(0xFEDA3466FF997645);	// This field encodes the key indices and should be random generated per login attempt
-																			// I still need to understand how this works so that I am able to evaluate the clients input correctly
+					        << io::write<NetUInt8>(8)							// Width of the field	(A-H = 0-7)
+					        << io::write<NetUInt8>(10)							// Height of the field	(1-10 = 0-9)
+					        << io::write<NetUInt8>(1)							// ???
+					        << io::write<NetUInt8>(3)							// Number of fields the player has to enter
+					        << io::write<NetUInt64>(dist(randomGenerator));		// This field encodes the key indices and should be random generated per login attempt
+																				// I still need to understand how this works so that I am able to evaluate the clients input correctly
 				}
 
 				if (securityFlags & security_flags::TokenInput)
