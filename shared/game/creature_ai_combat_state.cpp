@@ -365,6 +365,8 @@ namespace wowpp
 				removeThreat(threatener);
 			});
 
+			std::weak_ptr<GameUnit> weakThreatener = std::static_pointer_cast<GameUnit>(threatener.shared_from_this());
+
 			// Watch for unit despawned signal
 			m_miscSignals[guid] +=
 				threatener.despawned.connect([this, &threatener](GameObject & despawned)
@@ -372,11 +374,21 @@ namespace wowpp
 					removeThreat(threatener);
 				});
 			m_miscSignals[guid] +=
-				threatener.healed.connect([this](GameUnit *healer, UInt32 amount) {
+				threatener.healed.connect([this, weakThreatener](GameUnit *healer, UInt32 amount) {
 					if (healer && !this->getControlled().isFriendlyTo(*healer))
 					{
-						const float threat = static_cast<float>(amount) * 0.5f;
-						DLOG("Adding " << threat << " threat for healer " << healer->getName());
+						// Calculate base threat amount
+						float threat = static_cast<float>(amount) * 0.5f;
+
+						// Threat is equally shared between all attacking units
+						auto threatener = weakThreatener.lock();
+						if (threatener)
+						{
+							UInt32 attackerCount = std::max<UInt32>(1, threatener->attackingUnitCount());
+							threat /= static_cast<float>(attackerCount);
+						}
+						
+						// Add final threat amount
 						addThreat(*healer, threat);
 					}
 				});

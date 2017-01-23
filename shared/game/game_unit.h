@@ -688,6 +688,8 @@ namespace wowpp
 		void removeAttackingUnit(GameUnit &removed);
 		/// Determines whether this unit is attacked by other units.
 		bool hasAttackingUnits() const;
+		/// Gets the number of attacking units.
+		UInt32 attackingUnitCount() const;
 
 		/// Calculates the stat based on the specified modifier.
 		static UInt8 getStatByUnitMod(UnitMods mod);

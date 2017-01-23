@@ -2714,6 +2714,11 @@ namespace wowpp
 		return !m_attackingUnits.empty();
 	}
 
+	UInt32 GameUnit::attackingUnitCount() const
+	{
+		return static_cast<UInt32>(m_attackingUnits.size());
+	}
+
 	io::Writer &operator<<(io::Writer &w, GameUnit const &object)
 	{
 		w
