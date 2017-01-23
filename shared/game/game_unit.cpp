@@ -1880,11 +1880,13 @@ namespace wowpp
 
 		UInt32 realAmount = amount;
 		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
-		if (health + amount >= maxHealth) {
-			health = maxHealth;
+		if (health + amount >= maxHealth) 
+		{
 			realAmount = maxHealth - health;
+			health = maxHealth;
 		}
-		else {
+		else
+		{
 			health += amount;
 		}
 
