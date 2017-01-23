@@ -1878,9 +1878,11 @@ namespace wowpp
 			return false;
 		}
 
+		UInt32 realAmount = amount;
 		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
 		if (health + amount >= maxHealth) {
 			health = maxHealth;
+			realAmount = maxHealth - health;
 		}
 		else {
 			health += amount;
@@ -1900,8 +1902,7 @@ namespace wowpp
 
 		if (healer && !noThreat)
 		{
-			// TODO: Add threat to all units who are in fight with the healed target, but only
-			// if the units are not friendly towards the healer!
+			healed(healer, realAmount);
 		}
 		return true;
 	}
