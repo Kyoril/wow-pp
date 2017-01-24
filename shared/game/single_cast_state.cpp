@@ -2080,6 +2080,7 @@ namespace wowpp
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
+		bool wasCreated = false;
 
 		m_attackTable.checkPositiveSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 		const auto itemCount = calculateEffectBasePoints(effect);
@@ -2101,6 +2102,8 @@ namespace wowpp
 					charUnit->inventoryChangeFailure(result, nullptr, nullptr);
 					continue;
 				}
+
+				wasCreated = true;
 
 				// Send item notification
 				for (auto &slot : addedBySlot)
@@ -2134,6 +2137,58 @@ namespace wowpp
 							});
 						}
 					}
+				}
+			}
+		}
+		
+		// Increase crafting skill eventually
+		if (wasCreated && caster.isGameCharacter())
+		{
+			GameCharacter &casterChar = reinterpret_cast<GameCharacter&>(caster);
+			if (m_spell.skill() != 0)
+			{
+				// Increase skill point if possible
+				UInt16 current = 0, max = 0;
+				if (casterChar.getSkillValue(m_spell.skill(), current, max))
+				{
+					const UInt32 yellowLevel = m_spell.trivialskilllow();
+					const UInt32 greenLevel = m_spell.trivialskilllow() + (m_spell.trivialskillhigh() - m_spell.trivialskilllow()) / 2;
+					const UInt32 grayLevel = m_spell.trivialskillhigh();
+
+					// Determine current rank
+					UInt32 successChance = 0;
+					if (current < yellowLevel)
+					{
+						// Orange
+						successChance = 100;
+					}
+					else if (current < greenLevel)
+					{
+						// Yellow
+						successChance = 75;
+					}
+					else if (current < grayLevel)
+					{
+						// Green
+						successChance = 25;
+					}
+
+					// Do we need to roll?
+					if (successChance > 0 && successChance != 100)
+					{
+						// Roll
+						std::uniform_int_distribution<UInt32> roll(0, 100);
+						UInt32 val = roll(randomGenerator);
+						if (val >= successChance)
+						{
+							// No luck - exit here
+							return;
+						}
+					}
+
+					// Increase spell value
+					current = std::min<UInt16>(max, current + 1);
+					casterChar.setSkillValue(m_spell.skill(), current, max);
 				}
 			}
 		}

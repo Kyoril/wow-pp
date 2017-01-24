@@ -103,6 +103,11 @@ message SpellEntry {
 	optional uint32 baseid = 52;
 	optional uint32 channelinterruptflags = 53;
 	optional uint32 stackamount = 54;
+	optional uint32 skill = 55;
+	optional uint32 trivialskilllow = 56;
+	optional uint32 trivialskillhigh = 57;
+	optional uint32 racemask = 58;
+	optional uint32 classmask = 59;
 }
 
 message Spells {
