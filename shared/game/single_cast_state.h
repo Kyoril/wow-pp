@@ -117,6 +117,10 @@ namespace wowpp
 
 	private:
 
+		std::shared_ptr<GameItem> getItem() const;
+
+	private:
+
 		SpellCast &m_cast;
 		const proto::SpellEntry &m_spell;
 		SpellTargetMap m_target;

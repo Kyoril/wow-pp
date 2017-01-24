@@ -846,7 +846,10 @@ namespace wowpp
 			return;
 		}
 
+
 		auto &entry = item->getEntry();
+		
+		// Find all OnUse spells
 		for (int i = 0; i < entry.spells_size(); ++i)
 		{
 			const auto &spell = entry.spells(i);
@@ -857,19 +860,20 @@ namespace wowpp
 			}
 
 			// Spell effect has to be triggered "on use", not "on equip" etc.
-			if (spell.trigger() != 0 && spell.trigger() != 5)
+			if (spell.trigger() != game::item_spell_trigger::OnUse && spell.trigger() != game::item_spell_trigger::OnUseNoDelay)
 			{
-				WLOG("No onUse entry");
 				continue;
 			}
 
+			// Look for the spell entry
 			const auto *spellEntry = m_project.spells.getById(spell.spell());
 			if (!spellEntry)
 			{
 				WLOG("Could not find spell by id " << spell.spell());
 				continue;
 			}
-
+			
+			// Cast the spell
 			UInt64 time = spellEntry->casttime();
 			m_character->castSpell(std::move(targetMap), spell.spell(), { 0, 0, 0 }, time, false, itemGuid, [this, spellEntry](game::SpellCastResult result) {
 				if (result != game::spell_cast_result::CastOkay)

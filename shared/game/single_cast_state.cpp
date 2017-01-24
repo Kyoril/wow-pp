@@ -1345,52 +1345,67 @@ namespace wowpp
 
 	void SingleCastState::spellEffectLearnSpell(const proto::SpellEffect & effect)
 	{
-		if (!effect.triggerspell())
+		UInt32 spellId = effect.triggerspell();
+		if (!spellId)
 		{
-			ELOG("SPELL_EFFECT_LEARN_SPELL: Missing trigger spell entry for effect #" << effect.index());
-			return;
+			// Check item
+			auto item = getItem();
+			if (item)
+			{
+				// Look for spell id
+				for (const auto &spellCastEntry : item->getEntry().spells())
+				{
+					if (spellCastEntry.trigger() == game::item_spell_trigger::LearnSpellId)
+					{
+						spellId = spellCastEntry.spell();
+						break;
+					}
+				}
+
+				if (!spellId)
+				{
+					ELOG("SPELL_EFFECT_LEARN_SPELL: Unable to get spell id to learn");
+					return;
+				}
+			}
 		}
 
 		// Look for spell
-		const auto *spell = m_cast.getExecuter().getProject().spells.getById(effect.triggerspell());
+		const auto *spell = m_cast.getExecuter().getProject().spells.getById(spellId);
 		if (!spell)
 		{
-			ELOG("SPELL_EFFECT_LEARN_SPELL: Could not find spell " << effect.triggerspell());
+			ELOG("SPELL_EFFECT_LEARN_SPELL: Could not find spell " << spellId);
 			return;
 		}
 
-		GameUnit *unitTarget = nullptr;
-		if (!m_target.resolvePointers(
-			*m_cast.getExecuter().getWorldInstance(),
-			&unitTarget,
-			nullptr,
-			nullptr,
-			nullptr))
-		{
-			return;
-		}
+		GameUnit &caster = m_cast.getExecuter();
+		std::vector<GameUnit *> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkPositiveSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 
-		if (!unitTarget)
+		for (UInt32 i = 0; i < targets.size(); i++)
 		{
-			return;
-		}
+			GameUnit *targetUnit = targets[i];
+			m_affectedTargets.insert(targetUnit->shared_from_this());
 
-		m_affectedTargets.insert(unitTarget->shared_from_this());
-		if (unitTarget->isGameCharacter())
-		{
-			auto *character = reinterpret_cast<GameCharacter*>(unitTarget);
-			if (character->addSpell(*spell))
+			if (targetUnit->isGameCharacter())
 			{
-				// Activate passive spell if it is one
-				if (spell->attributes(0) & game::spell_attributes::Passive)
+				auto *character = reinterpret_cast<GameCharacter*>(targetUnit);
+				if (character->addSpell(*spell))
 				{
-					SpellTargetMap targetMap;
-					targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
-					targetMap.m_unitTarget = character->getGuid();
-					character->castSpell(std::move(targetMap), effect.triggerspell(), { 0, 0, 0 }, 0, true);
-				}
+					// Activate passive spell if it is one
+					if (spell->attributes(0) & game::spell_attributes::Passive)
+					{
+						SpellTargetMap targetMap;
+						targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+						targetMap.m_unitTarget = character->getGuid();
+						character->castSpell(std::move(targetMap), effect.triggerspell(), { 0, 0, 0 }, 0, true);
+					}
 
-				// TODO: Send packets
+					// TODO: Send packets
+				}
 			}
 		}
 	}
@@ -2499,32 +2514,22 @@ namespace wowpp
 			UInt64 spellCD = m_spell.cooldown();
 
 			// If cast by an item, the item cooldown is used instead of the spell cooldown
-			if (m_itemGuid && m_cast.getExecuter().isGameCharacter())
+			auto item = getItem();
+			if (item)
 			{
-				auto *character = reinterpret_cast<GameCharacter *>(&m_cast.getExecuter());
-				auto &inv = character->getInventory();
-
-				UInt16 itemSlot = 0;
-				if (inv.findItemByGUID(m_itemGuid, itemSlot))
+				for (auto &spell : item->getEntry().spells())
 				{
-					auto item = inv.getItemAtSlot(itemSlot);
-					if (item)
+					if (spell.spell() == m_spell.id() &&
+						(spell.trigger() == game::item_spell_trigger::OnUse || spell.trigger() == game::item_spell_trigger::OnUseNoDelay))
 					{
-						for (auto &spell : item->getEntry().spells())
+						if (spell.categorycooldown() > 0 ||
+							spell.cooldown() > 0)
 						{
-							if (spell.spell() == m_spell.id() &&
-								(spell.trigger() == 0 || spell.trigger() == 5))
-							{
-								if (spell.categorycooldown() > 0 ||
-									spell.cooldown() > 0)
-								{
-									// Use item cooldown instead of spell cooldown
-									spellCatCD = spell.categorycooldown();
-									spellCD = spell.cooldown();
-								}
-								break;
-							}
+							// Use item cooldown instead of spell cooldown
+							spellCatCD = spell.categorycooldown();
+							spellCD = spell.cooldown();
 						}
+						break;
 					}
 				}
 			}
@@ -3557,5 +3562,23 @@ namespace wowpp
 				procInfo.add(hitInfos[i], victimStates[i], resists[i], totalDamage, 0, true);
 			}
 		}
+	}
+
+	std::shared_ptr<GameItem> wowpp::SingleCastState::getItem() const
+	{
+		// If cast by an item, the item cooldown is used instead of the spell cooldown
+		if (m_itemGuid && m_cast.getExecuter().isGameCharacter())
+		{
+			auto *character = reinterpret_cast<GameCharacter *>(&m_cast.getExecuter());
+			auto &inv = character->getInventory();
+
+			UInt16 itemSlot = 0;
+			if (inv.findItemByGUID(m_itemGuid, itemSlot))
+			{
+				return inv.getItemAtSlot(itemSlot);
+			}
+		}
+
+		return std::shared_ptr<GameItem>();
 	}
 }
