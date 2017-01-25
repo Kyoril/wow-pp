@@ -128,6 +128,7 @@ namespace wowpp
 		, m_connectedMeleeSignal(false)
 		, m_delayCounter(0)
 		, m_tookCastItem(false)
+		, m_tookReagents(false)
 		, m_attackerProc(0)
 		, m_victimProc(0)
 		, m_canTrigger(false)
@@ -624,6 +625,13 @@ namespace wowpp
 					return false;
 				}
 
+				if (!strongThis->consumeReagents())
+				{
+					m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedReagents);
+					strongThis->sendEndCast(false);
+					return false;
+				}
+
 				if (!strongThis->consumeItem())
 				{
 					m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedItemNotFound);
@@ -639,6 +647,10 @@ namespace wowpp
 		else
 		{
 			if (!consumePower()) {
+				return;
+			}
+
+			if (!consumeReagents()) {
 				return;
 			}
 
@@ -1712,6 +1724,11 @@ namespace wowpp
 		}
 	}
 
+	void SingleCastState::spellEffectSkill(const proto::SpellEffect & effect)
+	{
+
+	}
+
 	void SingleCastState::spellEffectDrainPower(const proto::SpellEffect &effect)
 	{
 		// Calculate the power to drain
@@ -2184,6 +2201,10 @@ namespace wowpp
 							// No luck - exit here
 							return;
 						}
+					}
+					else if (successChance == 0)
+					{
+						return;
 					}
 
 					// Increase spell value
@@ -2855,7 +2876,7 @@ namespace wowpp
 		}
 	}
 
-	bool wowpp::SingleCastState::hasChargeEffect() const
+	bool SingleCastState::hasChargeEffect() const
 	{
 		for (const auto &eff : m_spell.effects())
 		{
@@ -2927,6 +2948,16 @@ namespace wowpp
 				}
 			}
 		}
+
+		return true;
+	}
+
+	bool SingleCastState::consumeReagents(bool delayed/* = true*/)
+	{
+		if (m_tookReagents && delayed)
+			return true;
+
+
 
 		return true;
 	}

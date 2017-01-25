@@ -70,6 +70,7 @@ namespace wowpp
 	private:
 
 		bool consumeItem(bool delayed = true);
+		bool consumeReagents(bool delayed = true);
 		bool consumePower();
 		void applyCooldown(UInt64 cooldownTimeMS, UInt64 catCooldownTimeMS);
 		void applyAllEffects(bool executeInstants, bool executeDelayed);
@@ -112,6 +113,7 @@ namespace wowpp
 		void spellEffectResurrect(const proto::SpellEffect &effect);
 		void spellEffectResurrectNew(const proto::SpellEffect &effect);
 		void spellEffectKnockBack(const proto::SpellEffect &effect);
+		void spellEffectSkill(const proto::SpellEffect &effect);
 
 		void meleeSpecialAttack(const proto::SpellEffect &effect, bool basepointsArePct);
 
@@ -148,6 +150,7 @@ namespace wowpp
 		UInt32 m_delayCounter;
 		std::set<std::weak_ptr<GameObject>, std::owner_less<std::weak_ptr<GameObject>>> m_affectedTargets;
 		bool m_tookCastItem;
+		bool m_tookReagents;
 		UInt32 m_attackerProc;
 		UInt32 m_victimProc;
 		bool m_canTrigger;

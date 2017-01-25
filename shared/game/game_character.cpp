@@ -1753,7 +1753,17 @@ namespace wowpp
 		setUInt32Value(unit_fields::Power3, getUInt32Value(unit_fields::MaxPower3));
 
 		// Update maximum of all skills if needed
+		for (const auto *skill : m_skills)
+		{
+			if (skill->category() == game::skill_category::Weapon)
+			{
+				UInt16 current = 0, max = 0;
+				getSkillValue(skill->id(), current, max);
 
+				max = static_cast<UInt16>(getLevel() * 5);
+				setSkillValue(skill->id(), std::min(current, max), max);
+			}
+		}
 	}
 
 	void GameCharacter::setName(const String &name)
@@ -1810,6 +1820,34 @@ namespace wowpp
 
 		// Fire signal
 		spellLearned(spell);
+
+		// If it is a trade skill...
+		bool isTradeSkill = false;
+		Int32 skillIndex = 0, skillPoint = 0;
+		for (const auto &effect : spell.effects())
+		{
+			if (effect.type() == game::spell_effects::TradeSkill)
+			{
+				isTradeSkill = true;
+			}
+			else if (effect.type() == game::spell_effects::Skill)
+			{
+				skillIndex = effect.miscvaluea();
+				skillPoint = effect.basepoints() + effect.basedice();
+			}
+		}
+
+		if (isTradeSkill && skillIndex > 0)
+		{
+			const auto *skill = m_project.skills.getById(skillIndex);
+			if (skill) {
+				// Add dependent skill
+				addSkill(*skill);
+				UInt16 current = 1, max = 1;
+				getSkillValue(skillIndex, current, max);
+				setSkillValue(skillIndex, current, 75 * skillPoint);
+			}
+		}
 
 		return true;
 	}
