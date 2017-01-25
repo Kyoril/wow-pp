@@ -78,7 +78,7 @@ namespace wowpp
 			}
 
 			m_ui->triggerNameBox->setText(trigger->name().c_str());
-			m_ui->triggerPathBox->setText((trigger->category().empty() ? "(Default)" : trigger->category().c_str()));
+			//m_ui->triggerPathBox->setText((trigger->category().empty() ? "(Default)" : trigger->category().c_str()));
 			m_ui->splitter->setEnabled(true);
 
 			auto *rootItem = m_ui->functionView->topLevelItem(0);
@@ -305,14 +305,25 @@ namespace wowpp
 			}
 			else if (m_ui->triggerView->hasFocus())
 			{
-				// Unlink trigger
-				auto &unitEntries = m_application.getProject().units.getTemplates().entry();
-				//for (auto &unit : unitEntries)
-				//{
-				//unit->unlinkTrigger(m_selectedTrigger->id);
-				//}
-
 				UInt32 triggerId = m_selectedTrigger->id();
+
+				// Unlink trigger from all referencing units
+				auto &unitEntries = *m_application.getProject().units.getTemplates().mutable_entry();
+				for (auto &unit : unitEntries)
+				{
+					for (int i = 0; i < unit.triggers_size();)
+					{
+						if (unit.triggers(i) == triggerId)
+						{
+							unit.mutable_triggers()->erase(
+								unit.mutable_triggers()->begin() + i);
+						}
+						else
+						{
+							++i;
+						}
+					}
+				}
 
 				// Remove selected trigger
 				m_application.getProject().triggers.remove(triggerId);
@@ -343,19 +354,6 @@ namespace wowpp
 
 			// Rename
 			m_selectedTrigger->set_name(m_ui->triggerNameBox->text().toStdString());
-
-			// This will update all views
-			emit m_application.getTriggerListModel()->layoutChanged();
-			m_application.markAsChanged(m_selectedTrigger->id(), pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Modified);
-		}
-
-		void TriggerEditor::on_triggerPathBox_editingFinished()
-		{
-			if (!m_selectedTrigger)
-				return;
-
-			// Move
-			m_selectedTrigger->set_category(m_ui->triggerPathBox->text().toStdString());
 
 			// This will update all views
 			emit m_application.getTriggerListModel()->layoutChanged();

@@ -52,6 +52,7 @@ namespace wowpp
 		class MainWindow;		// main_window.h
 		class ObjectEditor;		// object_editor.h
 		class TriggerEditor;	// trigger_editor.h
+		class VariableEditor;	// variable_editor.h
 		class TeamConnector;
 
 		/// Manages and contains all major application objects.
@@ -67,6 +68,7 @@ namespace wowpp
 			typedef TemplateListModel<proto::UnitManager> UnitListModel;
 			typedef TemplateListModel<proto::QuestManager> QuestListModel;
 			typedef TemplateListModel<proto::ObjectManager> ObjectListModel;
+			typedef TemplateListModel<proto::VariableManager> VariableListModel;
 
 		public:
 
@@ -93,6 +95,7 @@ namespace wowpp
 			TriggerListModel *getTriggerListModel() { return m_triggerListModel.get(); }
 			QuestListModel *getQuestListModel() { return m_questListModel.get(); }
 			ObjectListModel *getObjectListModel() { return m_objectListModel.get(); }
+			VariableListModel *getVariableListModel() { return m_variableListModel.get(); }
 			proto::Project &getProject() { return m_project; }
 			Configuration &getConfiguration() { return m_configuration; }
 			Selection &getSelection() { return m_selection; }
@@ -104,6 +107,8 @@ namespace wowpp
 
 			/// Displays the object editor window (and activates it if it is in the background).
 			void showObjectEditor();
+			/// Displays the variable editor window (and activates it if it is in the background).
+			void showVariableEditor();
 			/// 
 			void showTriggerEditor();
 			/// 
@@ -118,6 +123,7 @@ namespace wowpp
 			/// Fired when the object editor window was showed or activated.
 			void objectEditorShown();
 			void triggerEditorShown();
+			void variableEditorShown();
 
 
 		private:
@@ -133,6 +139,7 @@ namespace wowpp
 			MainWindow *m_mainWindow;
 			ObjectEditor *m_objectEditor;
 			TriggerEditor *m_triggerEditor;
+			VariableEditor *m_variableEditor;
 			proto::Project m_project;
 			std::unique_ptr<ItemListModel> m_itemListModel;
 			std::unique_ptr<SpellListModel> m_spellListModel;
@@ -141,6 +148,7 @@ namespace wowpp
 			std::unique_ptr<TriggerListModel> m_triggerListModel;
 			std::unique_ptr<QuestListModel> m_questListModel;
 			std::unique_ptr<ObjectListModel> m_objectListModel;
+			std::unique_ptr<VariableListModel> m_variableListModel;
 			TransformTool m_transformTool;
 			std::unique_ptr<TeamConnector> m_teamConnector;
 			EntryTypeChangeMap m_changes;

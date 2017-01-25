@@ -74,6 +74,7 @@ namespace wowpp
 			connect(m_ui->actionSave, SIGNAL(triggered()), &m_application, SLOT(saveUnsavedChanges()));
 			connect(m_ui->actionObjectEditor, SIGNAL(triggered()), &m_application, SLOT(showObjectEditor()));
 			connect(m_ui->actionTriggerEditor, SIGNAL(triggered()), &m_application, SLOT(showTriggerEditor()));
+			connect(m_ui->actionVariables, SIGNAL(triggered()), &m_application, SLOT(showVariableEditor()));
 
 			// Create new label with this form as parent (qt will handle destruction)
 			m_pageLabel = new QLabel(this);

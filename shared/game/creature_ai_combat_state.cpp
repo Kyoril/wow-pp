@@ -316,7 +316,11 @@ namespace wowpp
 		// All remaining threateners are no longer in combat with this unit
 		for (auto &pair : m_threat)
 		{
-			pair.second.threatener->removeAttackingUnit(getControlled());
+			auto threatener = pair.second.threatener.lock();
+			if (threatener)
+			{
+				threatener->removeAttackingUnit(getControlled());
+			}
 		}
 
 		// Unit is no longer flagged for combat
@@ -353,7 +357,7 @@ namespace wowpp
 		if (it == m_threat.end())
 		{
 			// Insert new entry
-			it = m_threat.insert(m_threat.begin(), std::make_pair(guid, ThreatEntry(&threatener, 0.0f)));
+			it = m_threat.insert(m_threat.begin(), std::make_pair(guid, ThreatEntry(threatener, 0.0f)));
 
 			// Watch for unit killed signal
 			m_killedSignals[guid] = threatener.killed.connect([this, guid, &threatener](GameUnit * killer)
@@ -361,11 +365,33 @@ namespace wowpp
 				removeThreat(threatener);
 			});
 
+			std::weak_ptr<GameUnit> weakThreatener = std::static_pointer_cast<GameUnit>(threatener.shared_from_this());
+
 			// Watch for unit despawned signal
-			m_despawnedSignals[guid] = threatener.despawned.connect([this, &threatener](GameObject & despawned)
-			{
-				removeThreat(threatener);
-			});
+			m_miscSignals[guid] +=
+				threatener.despawned.connect([this, &threatener](GameObject & despawned)
+				{
+					removeThreat(threatener);
+				});
+			m_miscSignals[guid] +=
+				threatener.healed.connect([this, weakThreatener](GameUnit *healer, UInt32 amount) {
+					if (healer && !this->getControlled().isFriendlyTo(*healer))
+					{
+						// Calculate base threat amount
+						float threat = static_cast<float>(amount) * 0.5f;
+
+						// Threat is equally shared between all attacking units
+						auto threatener = weakThreatener.lock();
+						if (threatener)
+						{
+							UInt32 attackerCount = std::max<UInt32>(1, threatener->attackingUnitCount());
+							threat /= static_cast<float>(attackerCount);
+						}
+						
+						// Add final threat amount
+						addThreat(*healer, threat);
+					}
+				});
 
 			// Add this unit to the list of attacking units
 			threatener.addAttackingUnit(getControlled());
@@ -396,10 +422,10 @@ namespace wowpp
 			m_killedSignals.erase(killedIt);
 		}
 
-		auto despawnedIt = m_despawnedSignals.find(guid);
-		if (despawnedIt != m_despawnedSignals.end())
+		auto despawnedIt = m_miscSignals.find(guid);
+		if (despawnedIt != m_miscSignals.end())
 		{
-			m_despawnedSignals.erase(despawnedIt);
+			m_miscSignals.erase(despawnedIt);
 		}
 
 		auto &controlled = getControlled();
@@ -447,8 +473,11 @@ namespace wowpp
 		{
 			if (entry.second.amount > highestThreat)
 			{
-				topThreatener = entry.second.threatener;
-				highestThreat = entry.second.amount;
+				topThreatener = entry.second.threatener.lock().get();
+				if (topThreatener)
+				{
+					highestThreat = entry.second.amount;
+				}
 			}
 		}
 		return topThreatener;
@@ -471,21 +500,27 @@ namespace wowpp
 		GameUnit *newVictim = nullptr;
 		for (auto &entry : m_threat)
 		{
+			auto threatener = entry.second.threatener.lock();
+			if (!threatener)
+			{
+				continue;
+			}
+
 			bool isInRange = true;
 
 			// If we are rooted, we need to check for nearby targets to start attacking them
 			if (rooted)
 			{
-				const float distSq = controlled.getSquaredDistanceTo(*entry.second.threatener, true);
+				const float distSq = controlled.getSquaredDistanceTo(*threatener.get(), true);
 				const float combatRangeSq =
-					::powf(entry.second.threatener->getMeleeReach() + controlled.getMeleeReach(), 2.0f);
+					::powf(threatener->getMeleeReach() + controlled.getMeleeReach(), 2.0f);
 
 				isInRange = (distSq <= combatRangeSq);
 			}
 
 			if (entry.second.amount > highestThreat && isInRange)
 			{
-				newVictim = entry.second.threatener;
+				newVictim = threatener.get();
 				highestThreat = entry.second.amount;
 			}
 		}

@@ -24,6 +24,7 @@
 #include "windows/main_window.h"
 #include "windows/object_editor.h"
 #include "windows/trigger_editor.h"
+#include "windows/variable_editor.h"
 #include "windows/login_dialog.h"
 #include "windows/update_dialog.h"
 #include "team_connector.h"
@@ -142,6 +143,7 @@ namespace wowpp
             , m_mainWindow(nullptr)
             , m_objectEditor(nullptr)
             , m_triggerEditor(nullptr)
+			, m_variableEditor(nullptr)
 			, m_transformTool(transform_tool::Select)
 		{
 			m_pollTimer = new QTimer(this);
@@ -151,6 +153,7 @@ namespace wowpp
 
         EditorApplication::~EditorApplication()
         {
+			delete m_variableEditor;
             delete m_triggerEditor;
             delete m_objectEditor;
             delete m_mainWindow;
@@ -212,6 +215,7 @@ namespace wowpp
 			m_triggerListModel.reset(new TriggerListModel(m_project.triggers));
 			m_questListModel.reset(new QuestListModel(m_project.quests));
 			m_objectListModel.reset(new ObjectListModel(m_project.objects));
+			m_variableListModel.reset(new VariableListModel(m_project.variables));
 
 			// Show the main window (will be deleted when this class is deleted by QT)
 			m_mainWindow = new MainWindow(*this);
@@ -231,6 +235,9 @@ namespace wowpp
 
 			// Setup the trigger editor
 			m_triggerEditor = new TriggerEditor(*this);
+
+			// Create variable editor
+			m_variableEditor = new VariableEditor(*this);
 			
 			return true;
 		}
@@ -249,6 +256,16 @@ namespace wowpp
 		{
 			m_transformTool = tool;
 			transformToolChanged(tool);
+		}
+
+		void EditorApplication::showVariableEditor()
+		{
+			assert(m_variableEditor);
+
+			m_variableEditor->show();
+			m_variableEditor->activateWindow();
+
+			emit variableEditorShown();
 		}
 
 		void EditorApplication::showTriggerEditor()

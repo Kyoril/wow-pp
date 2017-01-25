@@ -30,6 +30,7 @@
 #include "loot_dialog.h"
 #include "choose_trigger_dialog.h"
 #include "creature_spell_dialog.h"
+#include "choose_variables_dialog.h"
 #include "spell_effect_dialog.h"
 #include "game/defines.h"
 #include "import_dialog.h"
@@ -571,6 +572,17 @@ namespace wowpp
 				{
 					m_ui->unitTriggerWidget->addItem(
 						QString(triggerEntry->name().c_str()));
+				}
+			}
+
+			m_ui->unitVariableWidget->clear();
+			for (const auto &variableId : unit->variables())
+			{
+				const auto *variableEntry = m_application.getProject().variables.getById(variableId);
+				if (variableEntry)
+				{
+					m_ui->unitVariableWidget->addItem(
+						QString(variableEntry->name().c_str()));
 				}
 			}
 
@@ -1289,6 +1301,17 @@ namespace wowpp
 #undef WOWPP_STR_PROPERTY
 #undef WOWPP_NUM_PROPERTY
 
+			m_ui->objectVariableWidget->clear();
+			for (const auto &variableId : object->variables())
+			{
+				const auto *variableEntry = m_application.getProject().variables.getById(variableId);
+				if (variableEntry)
+				{
+					m_ui->objectVariableWidget->addItem(
+						QString(variableEntry->name().c_str()));
+				}
+			}
+
 			// Update the view 
 			m_objectViewModel->layoutChanged();
 		}
@@ -1373,6 +1396,70 @@ namespace wowpp
 							QString(newTrigger->name().c_str()));
 
 						m_application.markAsChanged(m_selectedObject->id(), pp::editor_team::data_entry_type::Objects, pp::editor_team::data_entry_change_type::Modified);
+					}
+				}
+			}
+		}
+
+		void ObjectEditor::on_unitAddVarBtn_clicked()
+		{
+			if (!m_selectedUnit)
+				return;
+
+			ChooseVariablesDialog dialog(m_application);
+			auto result = dialog.exec();
+			if (result == QDialog::Accepted)
+			{
+				const auto &selected  = dialog.getSelected();
+				for (const auto *newVar : selected)
+				{
+					if (newVar)
+					{
+						auto it = std::find_if(m_selectedUnit->variables().begin(), m_selectedUnit->variables().end(), [&newVar](const UInt32 &variable) -> bool
+						{
+							return (variable == newVar->id());
+						});
+
+						if (it == m_selectedUnit->variables().end())
+						{
+							m_selectedUnit->mutable_variables()->Add(newVar->id());
+							m_ui->unitVariableWidget->addItem(
+								QString(newVar->name().c_str()));
+
+							m_application.markAsChanged(m_selectedUnit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
+						}
+					}
+				}
+			}
+		}
+
+		void ObjectEditor::on_objectAddVarBtn_clicked()
+		{
+			if (!m_selectedObject)
+				return;
+
+			ChooseVariablesDialog dialog(m_application);
+			auto result = dialog.exec();
+			if (result == QDialog::Accepted)
+			{
+				const auto &selected = dialog.getSelected();
+				for (const auto *newVar : selected)
+				{
+					if (newVar)
+					{
+						auto it = std::find_if(m_selectedObject->variables().begin(), m_selectedObject->variables().end(), [&newVar](const UInt32 &variable) -> bool
+						{
+							return (variable == newVar->id());
+						});
+
+						if (it == m_selectedObject->variables().end())
+						{
+							m_selectedObject->mutable_variables()->Add(newVar->id());
+							m_ui->objectVariableWidget->addItem(
+								QString(newVar->name().c_str()));
+
+							m_application.markAsChanged(m_selectedUnit->id(), pp::editor_team::data_entry_type::Objects, pp::editor_team::data_entry_change_type::Modified);
+						}
 					}
 				}
 			}

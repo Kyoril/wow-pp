@@ -3321,5 +3321,20 @@ namespace wowpp
 		}
 
 		typedef shapeshift_form::Type ShapeshiftForm;
+
+		namespace item_spell_trigger
+		{
+			enum Type
+			{
+				OnUse			= 0,
+				OnEquip			= 1,
+				OnHitChance		= 2,
+				Soulstone		= 4,
+				OnUseNoDelay	= 5,
+				LearnSpellId	= 6
+			};
+		}
+
+		typedef item_spell_trigger::Type ItemSpellTrigger;
 	}
 }

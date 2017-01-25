@@ -128,6 +128,7 @@ namespace wowpp
 		, m_connectedMeleeSignal(false)
 		, m_delayCounter(0)
 		, m_tookCastItem(false)
+		, m_tookReagents(false)
 		, m_attackerProc(0)
 		, m_victimProc(0)
 		, m_canTrigger(false)
@@ -624,6 +625,13 @@ namespace wowpp
 					return false;
 				}
 
+				if (!strongThis->consumeReagents())
+				{
+					m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedReagents);
+					strongThis->sendEndCast(false);
+					return false;
+				}
+
 				if (!strongThis->consumeItem())
 				{
 					m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedItemNotFound);
@@ -639,6 +647,10 @@ namespace wowpp
 		else
 		{
 			if (!consumePower()) {
+				return;
+			}
+
+			if (!consumeReagents()) {
 				return;
 			}
 
@@ -1345,52 +1357,67 @@ namespace wowpp
 
 	void SingleCastState::spellEffectLearnSpell(const proto::SpellEffect & effect)
 	{
-		if (!effect.triggerspell())
+		UInt32 spellId = effect.triggerspell();
+		if (!spellId)
 		{
-			ELOG("SPELL_EFFECT_LEARN_SPELL: Missing trigger spell entry for effect #" << effect.index());
-			return;
+			// Check item
+			auto item = getItem();
+			if (item)
+			{
+				// Look for spell id
+				for (const auto &spellCastEntry : item->getEntry().spells())
+				{
+					if (spellCastEntry.trigger() == game::item_spell_trigger::LearnSpellId)
+					{
+						spellId = spellCastEntry.spell();
+						break;
+					}
+				}
+
+				if (!spellId)
+				{
+					ELOG("SPELL_EFFECT_LEARN_SPELL: Unable to get spell id to learn");
+					return;
+				}
+			}
 		}
 
 		// Look for spell
-		const auto *spell = m_cast.getExecuter().getProject().spells.getById(effect.triggerspell());
+		const auto *spell = m_cast.getExecuter().getProject().spells.getById(spellId);
 		if (!spell)
 		{
-			ELOG("SPELL_EFFECT_LEARN_SPELL: Could not find spell " << effect.triggerspell());
+			ELOG("SPELL_EFFECT_LEARN_SPELL: Could not find spell " << spellId);
 			return;
 		}
 
-		GameUnit *unitTarget = nullptr;
-		if (!m_target.resolvePointers(
-			*m_cast.getExecuter().getWorldInstance(),
-			&unitTarget,
-			nullptr,
-			nullptr,
-			nullptr))
-		{
-			return;
-		}
+		GameUnit &caster = m_cast.getExecuter();
+		std::vector<GameUnit *> targets;
+		std::vector<game::VictimState> victimStates;
+		std::vector<game::HitInfo> hitInfos;
+		std::vector<float> resists;
+		m_attackTable.checkPositiveSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 
-		if (!unitTarget)
+		for (UInt32 i = 0; i < targets.size(); i++)
 		{
-			return;
-		}
+			GameUnit *targetUnit = targets[i];
+			m_affectedTargets.insert(targetUnit->shared_from_this());
 
-		m_affectedTargets.insert(unitTarget->shared_from_this());
-		if (unitTarget->isGameCharacter())
-		{
-			auto *character = reinterpret_cast<GameCharacter*>(unitTarget);
-			if (character->addSpell(*spell))
+			if (targetUnit->isGameCharacter())
 			{
-				// Activate passive spell if it is one
-				if (spell->attributes(0) & game::spell_attributes::Passive)
+				auto *character = reinterpret_cast<GameCharacter*>(targetUnit);
+				if (character->addSpell(*spell))
 				{
-					SpellTargetMap targetMap;
-					targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
-					targetMap.m_unitTarget = character->getGuid();
-					character->castSpell(std::move(targetMap), effect.triggerspell(), { 0, 0, 0 }, 0, true);
-				}
+					// Activate passive spell if it is one
+					if (spell->attributes(0) & game::spell_attributes::Passive)
+					{
+						SpellTargetMap targetMap;
+						targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+						targetMap.m_unitTarget = character->getGuid();
+						character->castSpell(std::move(targetMap), effect.triggerspell(), { 0, 0, 0 }, 0, true);
+					}
 
-				// TODO: Send packets
+					// TODO: Send packets
+				}
 			}
 		}
 	}
@@ -1695,6 +1722,11 @@ namespace wowpp
 			HitResult &procInfo = m_hitResults.at(targetUnit->getGuid());
 			procInfo.add(game::hit_info::NoAction, game::victim_state::Normal);
 		}
+	}
+
+	void SingleCastState::spellEffectSkill(const proto::SpellEffect & effect)
+	{
+
 	}
 
 	void SingleCastState::spellEffectDrainPower(const proto::SpellEffect &effect)
@@ -2065,6 +2097,7 @@ namespace wowpp
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
+		bool wasCreated = false;
 
 		m_attackTable.checkPositiveSpellNoCrit(&caster, m_target, m_spell, effect, targets, victimStates, hitInfos, resists);
 		const auto itemCount = calculateEffectBasePoints(effect);
@@ -2086,6 +2119,8 @@ namespace wowpp
 					charUnit->inventoryChangeFailure(result, nullptr, nullptr);
 					continue;
 				}
+
+				wasCreated = true;
 
 				// Send item notification
 				for (auto &slot : addedBySlot)
@@ -2119,6 +2154,62 @@ namespace wowpp
 							});
 						}
 					}
+				}
+			}
+		}
+		
+		// Increase crafting skill eventually
+		if (wasCreated && caster.isGameCharacter())
+		{
+			GameCharacter &casterChar = reinterpret_cast<GameCharacter&>(caster);
+			if (m_spell.skill() != 0)
+			{
+				// Increase skill point if possible
+				UInt16 current = 0, max = 0;
+				if (casterChar.getSkillValue(m_spell.skill(), current, max))
+				{
+					const UInt32 yellowLevel = m_spell.trivialskilllow();
+					const UInt32 greenLevel = m_spell.trivialskilllow() + (m_spell.trivialskillhigh() - m_spell.trivialskilllow()) / 2;
+					const UInt32 grayLevel = m_spell.trivialskillhigh();
+
+					// Determine current rank
+					UInt32 successChance = 0;
+					if (current < yellowLevel)
+					{
+						// Orange
+						successChance = 100;
+					}
+					else if (current < greenLevel)
+					{
+						// Yellow
+						successChance = 75;
+					}
+					else if (current < grayLevel)
+					{
+						// Green
+						successChance = 25;
+					}
+
+					// Do we need to roll?
+					if (successChance > 0 && successChance != 100)
+					{
+						// Roll
+						std::uniform_int_distribution<UInt32> roll(0, 100);
+						UInt32 val = roll(randomGenerator);
+						if (val >= successChance)
+						{
+							// No luck - exit here
+							return;
+						}
+					}
+					else if (successChance == 0)
+					{
+						return;
+					}
+
+					// Increase spell value
+					current = std::min<UInt16>(max, current + 1);
+					casterChar.setSkillValue(m_spell.skill(), current, max);
 				}
 			}
 		}
@@ -2499,32 +2590,22 @@ namespace wowpp
 			UInt64 spellCD = m_spell.cooldown();
 
 			// If cast by an item, the item cooldown is used instead of the spell cooldown
-			if (m_itemGuid && m_cast.getExecuter().isGameCharacter())
+			auto item = getItem();
+			if (item)
 			{
-				auto *character = reinterpret_cast<GameCharacter *>(&m_cast.getExecuter());
-				auto &inv = character->getInventory();
-
-				UInt16 itemSlot = 0;
-				if (inv.findItemByGUID(m_itemGuid, itemSlot))
+				for (auto &spell : item->getEntry().spells())
 				{
-					auto item = inv.getItemAtSlot(itemSlot);
-					if (item)
+					if (spell.spell() == m_spell.id() &&
+						(spell.trigger() == game::item_spell_trigger::OnUse || spell.trigger() == game::item_spell_trigger::OnUseNoDelay))
 					{
-						for (auto &spell : item->getEntry().spells())
+						if (spell.categorycooldown() > 0 ||
+							spell.cooldown() > 0)
 						{
-							if (spell.spell() == m_spell.id() &&
-								(spell.trigger() == 0 || spell.trigger() == 5))
-							{
-								if (spell.categorycooldown() > 0 ||
-									spell.cooldown() > 0)
-								{
-									// Use item cooldown instead of spell cooldown
-									spellCatCD = spell.categorycooldown();
-									spellCD = spell.cooldown();
-								}
-								break;
-							}
+							// Use item cooldown instead of spell cooldown
+							spellCatCD = spell.categorycooldown();
+							spellCD = spell.cooldown();
 						}
+						break;
 					}
 				}
 			}
@@ -2795,7 +2876,7 @@ namespace wowpp
 		}
 	}
 
-	bool wowpp::SingleCastState::hasChargeEffect() const
+	bool SingleCastState::hasChargeEffect() const
 	{
 		for (const auto &eff : m_spell.effects())
 		{
@@ -2867,6 +2948,16 @@ namespace wowpp
 				}
 			}
 		}
+
+		return true;
+	}
+
+	bool SingleCastState::consumeReagents(bool delayed/* = true*/)
+	{
+		if (m_tookReagents && delayed)
+			return true;
+
+
 
 		return true;
 	}
@@ -3557,5 +3648,23 @@ namespace wowpp
 				procInfo.add(hitInfos[i], victimStates[i], resists[i], totalDamage, 0, true);
 			}
 		}
+	}
+
+	std::shared_ptr<GameItem> wowpp::SingleCastState::getItem() const
+	{
+		// If cast by an item, the item cooldown is used instead of the spell cooldown
+		if (m_itemGuid && m_cast.getExecuter().isGameCharacter())
+		{
+			auto *character = reinterpret_cast<GameCharacter *>(&m_cast.getExecuter());
+			auto &inv = character->getInventory();
+
+			UInt16 itemSlot = 0;
+			if (inv.findItemByGUID(m_itemGuid, itemSlot))
+			{
+				return inv.getItemAtSlot(itemSlot);
+			}
+		}
+
+		return std::shared_ptr<GameItem>();
 	}
 }

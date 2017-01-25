@@ -87,6 +87,12 @@ namespace wowpp
 				break;
 			}
 		}
+
+		// Add all required variables
+		for (const auto &variable : m_entry.variables())
+		{
+			addVariable(variable);
+		}
 	}
 
 	void WorldObject::writeCreateObjectBlocks(std::vector<std::vector<char>> &out_blocks, bool creation /*= true*/) const

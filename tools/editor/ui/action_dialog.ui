@@ -165,6 +165,11 @@
        <string>Player - Quest Event / Exploration</string>
       </property>
      </item>
+     <item>
+      <property name="text">
+       <string>Object - Set Variable</string>
+      </property>
+     </item>
     </widget>
    </item>
    <item>

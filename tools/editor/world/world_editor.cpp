@@ -302,8 +302,16 @@ namespace wowpp
 				const auto *navMesh = m_mapInst->getNavMesh();
 				if (navMesh)
 				{
-					m_debugDraw->clear();
-					duDebugDrawNavMesh(m_debugDraw.get(), *navMesh, 0);
+					if (m_debugDraw.get())
+					{
+						m_debugDraw->clear();
+						m_debugDraw.reset();
+					}
+					else
+					{
+						m_debugDraw.reset(new OgreDebugDraw(m_sceneMgr));
+						duDebugDrawNavMesh(m_debugDraw.get(), *navMesh, 0);
+					}
 				}
 			});
 		}

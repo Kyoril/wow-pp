@@ -91,6 +91,7 @@ message UnitEntry {
 	optional uint32 mechanicimmunity = 52;
 	optional uint32 schoolimmunity = 53;
 	optional uint32 skinninglootentry = 54;
+	repeated uint32 variables = 55;
 }
 
 message Units {

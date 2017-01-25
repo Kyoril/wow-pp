@@ -21,55 +21,50 @@
 
 #pragma once
 
-#include <QMainWindow>
+#include "common/typedefs.h"
+#include "proto_data/project.h"
+#include <QDialog>
 #include <QItemSelection>
-#include <QTreeWidgetItem>
+#include <QSortFilterProxyModel>
 
 // Forwards
 namespace Ui
 {
-	class TriggerEditor;
+	class ChooseVariablesDialog;
 }
 
 namespace wowpp
 {
-	namespace proto
-	{
-		class TriggerEntry;
-	}
-
 	namespace editor
 	{
 		class EditorApplication;
 
 		/// 
-		class TriggerEditor final : public QMainWindow
+		class ChooseVariablesDialog : public QDialog
 		{
 			Q_OBJECT
 
 		public:
 
-			explicit TriggerEditor(EditorApplication &app);
+			/// 
+			explicit ChooseVariablesDialog(EditorApplication &app);
 
-		private:
-
-			void updateSelection(bool enabled);
+			const std::vector<const proto::VariableEntry *> &getSelected() const {
+				return m_selected; 
+			}
 
 		private slots:
 
-			void on_actionNewTrigger_triggered();
-			void on_actionAddEvent_triggered();
-			void on_actionAddAction_triggered();
-			void on_actionRemove_triggered();
-			void on_triggerNameBox_editingFinished();
-			void on_functionView_itemDoubleClicked(QTreeWidgetItem*, int);
-			void onTriggerSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
+			void on_buttonBox_accepted();
+			void onVariableSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
+			void on_variableFilter_textChanged(QString);
 
 		private:
-				
-			EditorApplication &m_application;
-			Ui::TriggerEditor *m_ui;
-			proto::TriggerEntry *m_selectedTrigger;
+
+			Ui::ChooseVariablesDialog *m_ui;
+			EditorApplication &m_app;
+			std::vector<const proto::VariableEntry *> m_selected;
+			QSortFilterProxyModel *m_variableFilter;
 		};
 	}
 }

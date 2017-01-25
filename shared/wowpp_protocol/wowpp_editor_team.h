@@ -68,6 +68,10 @@ namespace wowpp
 					FactionTemplates,
 					AreaTriggers,
 					SpellCategories,
+					CombatRatings,
+					MeleeCritChance,
+					ResistancePercentage,
+					Variables,
 				};
 			}
 

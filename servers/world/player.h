@@ -54,7 +54,11 @@ namespace wowpp
 
 	struct TradeStatusInfo
 	{
-		TradeStatusInfo(UInt64 guid);
+		TradeStatusInfo(UInt64 guid_ = 0)
+			: guid(guid_)
+		{
+		}
+
 		TradeStatus tradestatus;
 		UInt64 guid;
 		Player *thisplayer;
@@ -331,5 +335,6 @@ namespace wowpp
 		UInt32 m_clientSync, m_serverSync;
 		Countdown m_nextClientSync;
 		UInt32 m_timeSyncCounter;
+		GameTime m_lastTimeSync;
 	};
 }

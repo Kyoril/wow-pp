@@ -2246,7 +2246,6 @@ namespace wowpp
 		return true;
 	}
 
-
 	static bool importResistancePercentages(proto::Project &project, MySQL::Connection &conn)
 	{
 		wowpp::MySQL::Select select(conn, "SELECT `percentages_0`, `percentages_25`, `percentages_50`, `percentages_75`, `percentages_100` FROM `dbc`.`resistance_values`;");
@@ -2289,6 +2288,64 @@ namespace wowpp
 		else
 		{
 			return false;
+		}
+
+		return true;
+	}
+
+	static bool importSkillLines(proto::Project &project, MySQL::Connection &conn)
+	{
+		for (auto &skill : *project.skills.getTemplates().mutable_entry())
+		{
+			skill.clear_spells();
+		}
+
+		wowpp::MySQL::Select select(conn, "SELECT `skill_line`, `spell`, `race_mask`, `class_mask`, `aquire_method`, `trivial_skill_line_high`, `trivial_skill_line_low` FROM `dbc`.`dbc_skilllineability`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				UInt32 skillId = 0, spellId = 0, raceMask = 0, classMask = 0, aquire = 0, high = 0, low = 0;
+				row.getField(0, skillId);
+				row.getField(1, spellId);
+				row.getField(2, raceMask);
+				row.getField(3, classMask);
+				row.getField(4, aquire);
+				row.getField(5, high);
+				row.getField(6, low);
+
+				do
+				{
+					// Find spell and skill
+					auto *spell = project.spells.getById(spellId);
+					if (!spell)
+					{
+						WLOG("Unable to find spell " << spellId);
+						break;
+					}
+					auto *skill = project.skills.getById(skillId);
+					if (!skill)
+					{
+						WLOG("Unable to find skill " << skillId);
+						break;
+					}
+
+					spell->set_skill(skillId);
+					spell->set_trivialskilllow(low);
+					spell->set_trivialskillhigh(high);
+					spell->set_racemask(raceMask);
+					spell->set_classmask(classMask);
+
+					// Add spell to the list of spells to learn when getting this skill
+					if (aquire > 0)
+					{
+						skill->add_spells(spellId);
+					}
+				} while (false);
+
+				row = row.next(select);
+			}
 		}
 
 		return true;
@@ -2376,100 +2433,9 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 	
-#if 0
-	if (!importSpellFocus(protoProject, connection))
+	if (!importSkillLines(protoProject, connection))
 	{
-		ELOG("Failed to load spell focus object");
-		return 1;
-	}
-
-	if (!importTrainerLinks(protoProject, connection))
-	{
-		ELOG("Failed to import trainer links");
-		return 1;
-	}
-
-	if (!importSpellMultipliers(protoProject, connection))
-	{
-		ELOG("Failed to import spell damage multipliers");
-		return 1;
-	}
-
-	if (!importSpellFamilyFlags(protoProject, connection))
-	{
-		ELOG("Failed to import spell family flags multipliers");
-		return 1;
-	}
-
-	if (!importSpellFocus(protoProject, connection))
-	{
-		ELOG("Failed to import spell focus targets");
-		return 1;
-	}
-
-	if (!importSpellProcs(protoProject, connection))
-	{
-		ELOG("Failed to import spell proc events");
-		return 1;
-	}
-
-	if (!addSpellBaseId(protoProject))
-	{
-		WLOG("Could not set base id for spells");
-		return 1;
-	}
-
-	if (!importItemSockets(protoProject, connection))
-	{
-		WLOG("Could not import item sockets");
-		return 1;
-	}
-
-	if (!importSpellStackAmount(protoProject, connection))
-	{
-		WLOG("Could not import stack amount");
-		return 1;
-	}
-
-	if (!importAffectMask(protoProject, connection))
-	{
-		WLOG("Could not import affect masks");
-		return 1;
-	}
-
-	if (!addSpellLinks(protoProject))
-	{
-		ELOG("Failed to add spell links");
-		return 1;
-	}
-
-	if (!checkSpells(protoProject, connection))
-	{
-		WLOG("Could not check spells");
-		return 1;
-	}
-
-	if (!importResistancePercentages(protoProject, connection))
-	{
-		WLOG("Could not import resistance percentages");
-		return 1;
-	}
-
-	if (!importCombatRatings(protoProject, connection))
-	{
-		WLOG("Could not import combat ratings");
-		return 1;
-	}
-
-	if (!importMeleeCritChance(protoProject, connection))
-	{
-		WLOG("Could not import melee crit chance");
-		return 1;
-	}
-#endif
-	if (!addItemSkill(protoProject))
-	{
-		WLOG("Could not add item skill");
+		WLOG("Could not import skill lines");
 		return 1;
 	}
 

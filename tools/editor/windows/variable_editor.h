@@ -22,54 +22,44 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QSortFilterProxyModel>
+#include <QAbstractTableModel>
 #include <QItemSelection>
 #include <QTreeWidgetItem>
+#include "proto_data/project.h"
+#include "variable_view_model.h"
 
 // Forwards
 namespace Ui
 {
-	class TriggerEditor;
+	class VariableEditor;
 }
 
 namespace wowpp
 {
-	namespace proto
-	{
-		class TriggerEntry;
-	}
-
 	namespace editor
 	{
 		class EditorApplication;
 
 		/// 
-		class TriggerEditor final : public QMainWindow
+		class VariableEditor final : public QMainWindow
 		{
 			Q_OBJECT
 
 		public:
 
-			explicit TriggerEditor(EditorApplication &app);
-
-		private:
-
-			void updateSelection(bool enabled);
+			explicit VariableEditor(EditorApplication &app);
 
 		private slots:
 
-			void on_actionNewTrigger_triggered();
-			void on_actionAddEvent_triggered();
-			void on_actionAddAction_triggered();
-			void on_actionRemove_triggered();
-			void on_triggerNameBox_editingFinished();
-			void on_functionView_itemDoubleClicked(QTreeWidgetItem*, int);
-			void onTriggerSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
-
+			void on_addVariableBtn_clicked();
+			void on_removeVariableBtn_clicked();
+			
 		private:
 				
 			EditorApplication &m_application;
-			Ui::TriggerEditor *m_ui;
-			proto::TriggerEntry *m_selectedTrigger;
+			Ui::VariableEditor *m_ui;
+			VariableViewModel *m_viewModel;
 		};
 	}
 }

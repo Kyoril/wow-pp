@@ -216,6 +216,19 @@ namespace wowpp
 
 		typedef realm_flags::Type RealmFlags;
 
+		namespace security_flags
+		{
+			enum Type
+			{
+				None		= 0x00,
+				PinInput	= 0x01,
+				MatrixInput	= 0x02,
+				TokenInput	= 0x04
+			};
+		}
+
+		typedef security_flags::Type SecurityFlags;
+
 		struct RealmEntry
 		{
 			String name;
@@ -307,6 +320,7 @@ namespace wowpp
 			static void logonChallenge(
 			    auth::OutgoingPacket &out_packet,
 			    auth_result::Type result,
+				SecurityFlags securityFlags,
 			    const BigNumber &B,
 			    const BigNumber &g,
 			    const BigNumber &N,

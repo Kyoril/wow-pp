@@ -285,6 +285,14 @@ bool QtOgreWindow::eventFilter(QObject *target, QEvent *e)
 				m_ogreWindow->resize(this->width(), this->height());
 			}
 		}
+		else if (e->type() == QEvent::FocusIn)
+		{
+			setAnimating(true);
+		}
+		else if (e->type() == QEvent::FocusOut)
+		{
+			setAnimating(false);
+		}
 	}
 
 	return false;
@@ -411,6 +419,7 @@ void QtOgreWindow::mouseReleaseEvent(QMouseEvent *e)
 		{
 			if (vResult[ui].movable)
 			{
+#if 0
 				if (vResult[ui].movable->getMovableType().compare("WoW++ Terrain Tile") != 0)
 				{
 					continue;
@@ -448,7 +457,8 @@ void QtOgreWindow::mouseReleaseEvent(QMouseEvent *e)
 					break;
 				}
 
-				/*
+#else
+
 				if (vResult[ui].movable->getMovableType().compare("Entity") == 0)
 				{
 					if (!vResult[ui].movable->getUserAny().isEmpty())
@@ -457,7 +467,8 @@ void QtOgreWindow::mouseReleaseEvent(QMouseEvent *e)
 						break;
 					}
 				}
-				*/
+
+#endif
 			}
 		}
 		m_ogreSceneMgr->destroyQuery(pSceneQuery);

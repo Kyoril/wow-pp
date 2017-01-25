@@ -21,55 +21,44 @@
 
 #pragma once
 
-#include <QMainWindow>
-#include <QItemSelection>
-#include <QTreeWidgetItem>
+#include "common/typedefs.h"
+#include <QDialog>
 
 // Forwards
 namespace Ui
 {
-	class TriggerEditor;
+	class AddVariableDialog;
 }
 
 namespace wowpp
 {
-	namespace proto
-	{
-		class TriggerEntry;
-	}
-
 	namespace editor
 	{
 		class EditorApplication;
 
 		/// 
-		class TriggerEditor final : public QMainWindow
+		class AddVariableDialog : public QDialog
 		{
 			Q_OBJECT
 
 		public:
 
-			explicit TriggerEditor(EditorApplication &app);
+			/// 
+			explicit AddVariableDialog(EditorApplication &app);
 
-		private:
-
-			void updateSelection(bool enabled);
+			const UInt32 getAddedId() const {
+				return m_addedId;
+			}
 
 		private slots:
 
-			void on_actionNewTrigger_triggered();
-			void on_actionAddEvent_triggered();
-			void on_actionAddAction_triggered();
-			void on_actionRemove_triggered();
-			void on_triggerNameBox_editingFinished();
-			void on_functionView_itemDoubleClicked(QTreeWidgetItem*, int);
-			void onTriggerSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
+			void on_buttonBox_accepted();
 
 		private:
-				
-			EditorApplication &m_application;
-			Ui::TriggerEditor *m_ui;
-			proto::TriggerEntry *m_selectedTrigger;
+
+			Ui::AddVariableDialog *m_ui;
+			EditorApplication &m_app;
+			UInt32 m_addedId;
 		};
 	}
 }

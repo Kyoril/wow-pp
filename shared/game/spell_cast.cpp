@@ -110,22 +110,20 @@ namespace wowpp
 				tileIndex,
 				[this, &foundObject, &spell](VisibilityTile &tile)
 			{
-				for (auto &object : tile.getGameObjects())
+				for (const auto *object : tile.getGameObjects())
 				{
 					if (!object->isWorldObject())
-					{
-						return;
-					}
+						continue;
 
-					WorldObject *worldObject = reinterpret_cast<WorldObject*>(object);
+					const auto *worldObject = reinterpret_cast<const WorldObject*>(object);
 					if (worldObject->getUInt32Value(world_object_fields::TypeID) != world_object_type::SpellFocus)
 					{
-						return;
+						continue;
 					}
 
 					if (worldObject->getEntry().data(0) != spell.focusobject())
 					{
-						return;
+						continue;
 					}
 
 					float distance = float(worldObject->getEntry().data(1));

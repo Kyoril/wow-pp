@@ -1751,6 +1751,19 @@ namespace wowpp
 		// Maximize mana and energy
 		setUInt32Value(unit_fields::Power1, getUInt32Value(unit_fields::MaxPower1));
 		setUInt32Value(unit_fields::Power3, getUInt32Value(unit_fields::MaxPower3));
+
+		// Update maximum of all skills if needed
+		for (const auto *skill : m_skills)
+		{
+			if (skill->category() == game::skill_category::Weapon)
+			{
+				UInt16 current = 0, max = 0;
+				getSkillValue(skill->id(), current, max);
+
+				max = static_cast<UInt16>(getLevel() * 5);
+				setSkillValue(skill->id(), std::min(current, max), max);
+			}
+		}
 	}
 
 	void GameCharacter::setName(const String &name)
@@ -1807,6 +1820,34 @@ namespace wowpp
 
 		// Fire signal
 		spellLearned(spell);
+
+		// If it is a trade skill...
+		bool isTradeSkill = false;
+		Int32 skillIndex = 0, skillPoint = 0;
+		for (const auto &effect : spell.effects())
+		{
+			if (effect.type() == game::spell_effects::TradeSkill)
+			{
+				isTradeSkill = true;
+			}
+			else if (effect.type() == game::spell_effects::Skill)
+			{
+				skillIndex = effect.miscvaluea();
+				skillPoint = effect.basepoints() + effect.basedice();
+			}
+		}
+
+		if (isTradeSkill && skillIndex > 0)
+		{
+			const auto *skill = m_project.skills.getById(skillIndex);
+			if (skill) {
+				// Add dependent skill
+				addSkill(*skill);
+				UInt16 current = 1, max = 1;
+				getSkillValue(skillIndex, current, max);
+				setSkillValue(skillIndex, current, 75 * skillPoint);
+			}
+		}
 
 		return true;
 	}
@@ -1942,7 +1983,16 @@ namespace wowpp
 				setUInt32Value(skillIndex + 1, minMaxValue);
 				m_skills.push_back(&skill);
 
-				// TODO: Learn dependant spells if any
+				// Learn dependant spells if any
+				for (const auto &spell : skill.spells())
+				{
+					const auto *spellEntry = getProject().spells.getById(spell);
+					if (spellEntry)
+					{
+						addSpell(*spellEntry);
+					}
+				}
+
 				return;
 			}
 		}
@@ -2028,9 +2078,11 @@ namespace wowpp
 			{
 				const UInt32 minMaxValue = UInt32(UInt16(current) | (UInt32(maximum) << 16));
 				setUInt32Value(skillIndex + 1, minMaxValue);
-				break;
+				return;
 			}
 		}
+
+		WLOG("Character does not know skill " << skillId);
 	}
 
 	void GameCharacter::updateArmor()
@@ -2859,13 +2911,13 @@ namespace wowpp
 		for (const auto &pair : object.m_quests)
 		{
 			w
-			        << io::write<NetUInt32>(pair.first)
-			        << io::write<NetUInt8>(pair.second.status)
-			        << io::write<NetUInt64>(pair.second.expiration)
-			        << io::write<NetUInt8>(pair.second.explored)
-			        << io::write_range(pair.second.creatures)
-			        << io::write_range(pair.second.objects)
-			        << io::write_range(pair.second.items);
+			    << io::write<NetUInt32>(pair.first)
+			    << io::write<NetUInt8>(pair.second.status)
+			    << io::write<NetUInt64>(pair.second.expiration)
+			    << io::write<NetUInt8>(pair.second.explored)
+			    << io::write_range(pair.second.creatures)
+			    << io::write_range(pair.second.objects)
+			    << io::write_range(pair.second.items);
 		}
 
 		// Write play-time
@@ -2895,6 +2947,21 @@ namespace wowpp
 			>> io::read<float>(object.m_homeRotation)
 			>> object.m_inventory
 			>> io::read<NetUInt64>(object.m_groupId);
+
+		// Add skills to the list of known skills
+		for (UInt8 i = 0; i < MaxSkills; ++i)
+		{
+			const UInt16 skillIndex = character_fields::SkillInfo1_1 + (i * 3);
+			const UInt32 skillId = object.getUInt32Value(skillIndex);
+			if (skillId != 0 && !object.hasSkill(skillId))
+			{
+				const auto *skill = object.getProject().skills.getById(skillId);
+				if (skill)
+				{
+					object.m_skills.push_back(skill);
+				}
+			}
+		}
 
 		// Read spell values
 		UInt16 spellCount = 0;

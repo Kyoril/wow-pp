@@ -57,6 +57,56 @@ namespace wowpp
 		// TODO
 	}
 
+	void GameObject::addVariable(UInt32 entry)
+	{
+		// Find variable
+		const auto *var = m_project.variables.getById(entry);
+		if (!var)
+		{
+			return;
+		}
+
+		if (!hasVariable(entry))
+		{
+			VariableInstance instance;
+			instance.dataCase = var->data_case();
+
+			// Initialize using default value
+			switch (instance.dataCase)
+			{
+				case proto::VariableEntry::kIntvalue:
+					instance.value = static_cast<Int64>(var->intvalue());
+					break;
+				case proto::VariableEntry::kLongvalue:
+					instance.value = static_cast<Int64>(var->longvalue());
+					break;
+				case proto::VariableEntry::kFloatvalue:
+					instance.value = static_cast<float>(var->floatvalue());
+					break;
+				case proto::VariableEntry::kStringvalue:
+					instance.value = static_cast<String>(var->stringvalue());
+					break;
+			}
+
+			// Save
+			m_variables[entry] = std::move(instance);
+		}
+	}
+
+	const bool GameObject::hasVariable(UInt32 entry) const
+	{
+		return (m_variables.find(entry) != m_variables.end());
+	}
+
+	void GameObject::removeVariable(UInt32 entry)
+	{
+		auto it = m_variables.find(entry);
+		if (it != m_variables.end())
+		{
+			it = m_variables.erase(it);
+		}
+	}
+
 	wowpp::UInt8 GameObject::getByteValue(UInt16 index, UInt8 offset) const
 	{
 		assert(offset < 4);

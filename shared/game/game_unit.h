@@ -392,6 +392,8 @@ namespace wowpp
 		boost::signals2::signal<void(GameUnit *, game::VictimState)> takenMeleeAttack;
 		/// Fired when hit by any damage.
 		boost::signals2::signal<void(GameUnit *, UInt32)> takenDamage;
+		/// Fired when this unit was healed by another unit.
+		simple::signal<void(GameUnit *, UInt32)> healed;
 		/// Fired when unit enters water
 		boost::signals2::signal<void()> enteredWater;
 		/// Fired when unit started attacking
@@ -686,6 +688,8 @@ namespace wowpp
 		void removeAttackingUnit(GameUnit &removed);
 		/// Determines whether this unit is attacked by other units.
 		bool hasAttackingUnits() const;
+		/// Gets the number of attacking units.
+		UInt32 attackingUnitCount() const;
 
 		/// Calculates the stat based on the specified modifier.
 		static UInt8 getStatByUnitMod(UnitMods mod);

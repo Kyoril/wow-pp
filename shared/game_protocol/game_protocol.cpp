@@ -755,14 +755,21 @@ namespace wowpp
 					{
 						assert(speaker);
 						out_packet
-						        << io::write<NetUInt64>(speaker->getGuid())
-						        << io::write<NetUInt32>(0x00)
-						        << io::write<NetUInt32>(speakerName.size() + 1)
-						        << io::write_range(speakerName) << io::write<NetUInt8>(0)
-						        << io::write<NetUInt64>(0)				// listener guid
-						        << io::write<NetUInt32>(message.size() + 1)
-						        << io::write_range(message) << io::write<NetUInt8>(0)
-						        << io::write<NetUInt8>(0);				// Chat-Tag always 0 since it's a creature which can't be AFK, DND etc.
+							<< io::write<NetUInt64>(speaker->getGuid())
+							<< io::write<NetUInt32>(0x00)
+							<< io::write<NetUInt32>(speakerName.size() + 1)
+							<< io::write_range(speakerName) << io::write<NetUInt8>(0)
+							<< io::write<NetUInt64>(targetGUID);				// listener guid
+						if (targetGUID && !isPlayerGUID(targetGUID) && !isPetGUID(targetGUID))
+						{
+							out_packet
+								<< io::write<NetUInt32>(channelname.size() + 1)
+								<< io::write_range(channelname) << io::write<NetUInt8>(0);
+						}
+						out_packet
+						    << io::write<NetUInt32>(message.size() + 1)
+						    << io::write_range(message) << io::write<NetUInt8>(0)
+						    << io::write<NetUInt8>(0);				// Chat-Tag always 0 since it's a creature which can't be AFK, DND etc.
 						out_packet.finish();
 						return;
 					}
