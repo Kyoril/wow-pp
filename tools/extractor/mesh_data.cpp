@@ -106,7 +106,7 @@ namespace wowpp
 		}
 	}
 
-	void serializeMeshData(const std::string &suffix, UInt32 mapID, UInt32 tileX, UInt32 tileY, MeshData& meshData)
+	void serializeMeshData(const std::string &suffix, UInt32 mapID, UInt32 tileX, UInt32 tileY, const MeshData& meshData)
 	{
 		std::stringstream nameStrm;
 		nameStrm << "meshes/map" << std::setw(3) << std::setfill('0') << mapID << std::setw(2) << tileY << tileX << suffix << ".obj";
@@ -120,9 +120,9 @@ namespace wowpp
 			return;
 		}
 
-		float* verts = &meshData.solidVerts[0];
+		const float* verts = &meshData.solidVerts[0];
 		int vertCount = meshData.solidVerts.size() / 3;
-		int* tris = &meshData.solidTris[0];
+		const int* tris = &meshData.solidTris[0];
 		int triCount = meshData.solidTris.size() / 3;
 
 		for (int i = 0; i < meshData.solidVerts.size() / 3; i++)

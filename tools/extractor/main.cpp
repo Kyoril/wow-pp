@@ -51,7 +51,7 @@ using namespace std;
 using namespace wowpp;
 
 // Uncomment below to write debug output in form of objs
-//#define TILE_DEBUG_OUTPUT
+#define TILE_DEBUG_OUTPUT 1
 
 //////////////////////////////////////////////////////////////////////////
 // Calls:
@@ -84,8 +84,8 @@ std::map<UInt32, UInt32> areaFlags;
 std::map<UInt32, LinearSet<UInt32>> tilesByMap;
 
 // Loaded WMO and M2 models used for navigation mesh calculations
-std::map<unsigned int, std::shared_ptr<WMOFile>> wmoModels;
-std::map<unsigned int, std::shared_ptr<M2File>> doodadModels;
+std::map<UInt32, std::shared_ptr<math::AABBTree>> wmoTrees;
+std::map<UInt32, std::shared_ptr<M2File>> doodadModels;
 
 std::mutex wmoMutex, doodadMutex;
 LinearSet<String> serializedWMOs, serializedDoodads;
@@ -346,7 +346,7 @@ namespace
 		std::unique_ptr<FileIO> debugFile(new FileIO());
 
 		std::ostringstream strm;
-		strm << "meshes/tile_" << tileX << "_" << tileY << "-" << tx << "_" << ty << "_poly.obj";
+		strm << "meshes/nav/poly/tile_" << tileX << "_" << tileY << "-" << tx << "_" << ty << "_poly.obj";
 
 		debugFile->openForWrite(strm.str().c_str());
 		duDumpPolyMeshToObj(*polyMesh, debugFile.get());
@@ -356,7 +356,7 @@ namespace
 		std::unique_ptr<FileIO> debugFileDetail(new FileIO());
 
 		std::ostringstream strmDetail;
-		strmDetail << "meshes/tile_" << tileX << "_" << tileY << "-" << tx << "_" << ty << "_detail.obj";
+		strmDetail << "meshes/nav/detail/tile_" << tileX << "_" << tileY << "-" << tx << "_" << ty << "_detail.obj";
 
 		debugFileDetail->openForWrite(strmDetail.str().c_str());
 		duDumpPolyMeshDetailToObj(*polyMeshDetail, debugFileDetail.get());
@@ -518,6 +518,7 @@ namespace
 		// Process Doodads
 		MeshData doodadMesh;
 		{
+#if 0
 			// Now load all required M2 files
 			std::vector<std::unique_ptr<M2File>> m2s;
 			for (UInt32 i = 0; i < adt.getMDXCount(); ++i)
@@ -593,13 +594,14 @@ namespace
 					doodadMesh.triangleFlags.push_back(AreaFlags::Doodad);
 				}
 			}
+#endif
 		}
 
 #ifdef TILE_DEBUG_OUTPUT
 		// Serialize mesh data for debugging purposes
-		serializeMeshData("_adt", mapId, tileX, tileY, adtMesh);
-		serializeMeshData("_wmo", mapId, tileX, tileY, wmoMesh);
-		serializeMeshData("_doodad", mapId, tileX, tileY, doodadMesh);
+		wowpp::serializeMeshData("_adt", mapId, tileX, tileY, adtMesh);
+		wowpp::serializeMeshData("_wmo", mapId, tileX, tileY, wmoMesh);
+		wowpp::serializeMeshData("_doodad", mapId, tileX, tileY, doodadMesh);
 #endif
 
 		// Adjust min and max z values
@@ -778,12 +780,18 @@ namespace
 		}
 
 		// Load all required WMO files
-		for (UInt32 i = 0; i < adt.getWMOCount(); ++i)
+		for (const auto &chunk : adt.getMODFChunk().entries)
 		{
-			std::lock_guard<std::mutex> lock(wmoMutex);
-
 			// Retrieve WMO file name
-			const String filename = adt.getWMO(i);
+			const String filename = adt.getWMO(chunk.mwidEntry);
+			if (filename.empty())
+			{
+				WLOG("Could not resolve WMO name of wmo entry " << chunk.uniqueId);
+				continue;
+			}
+
+			// Load wmo if not happened already
+			std::lock_guard<std::mutex> lock(wmoMutex);
 			if (!serializedWMOs.contains(filename))
 			{
 				serializedWMOs.add(filename);
@@ -829,8 +837,10 @@ namespace
 						}
 					}
 				}
-				math::AABBTree wmoTree(vertices, indices);
 
+				auto wmoTree = std::make_shared<math::AABBTree>(vertices, indices);
+				wmoTrees[chunk.uniqueId] = wmoTree;
+				
 				// Serialize it
 				std::ofstream file(filePath.string().c_str(), std::ios::out | std::ios::binary);
 				if (!file)
@@ -841,7 +851,7 @@ namespace
 
 				io::StreamSink fileSink(file);
 				io::Writer fileWriter(fileSink);
-				fileWriter << wmoTree;
+				fileWriter << *wmoTree;
 			}
 		}
 
@@ -1069,6 +1079,13 @@ namespace
 		{
 			return false;
 		}
+
+#ifdef TILE_DEBUG_OUTPUT
+		if (mapId != 36)
+		{
+			return true;
+		}
+#endif
 
 		// Build map
 		ILOG("Building map " << mapId << " - " << mapName << "...");
