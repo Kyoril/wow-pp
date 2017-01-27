@@ -170,6 +170,16 @@
        <string>Object - Set Variable</string>
       </property>
      </item>
+     <item>
+      <property name="text">
+       <string>Unit - Dismount</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Unit - Set Mount</string>
+      </property>
+     </item>
     </widget>
    </item>
    <item>

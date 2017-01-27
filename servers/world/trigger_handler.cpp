@@ -104,6 +104,8 @@ namespace wowpp
 			WOWPP_HANDLE_TRIGGER_ACTION(QuestKillCredit)
 			WOWPP_HANDLE_TRIGGER_ACTION(QuestEventOrExploration)
 			WOWPP_HANDLE_TRIGGER_ACTION(SetVariable)
+			WOWPP_HANDLE_TRIGGER_ACTION(Dismount)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetMount)
 #undef WOWPP_HANDLE_TRIGGER_ACTION
 
 				case trigger_actions::Delay:
@@ -720,6 +722,51 @@ namespace wowpp
 				break;
 			}
 		}
+	}
+
+	void TriggerHandler::handleDismount(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_DISMOUNT: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameCharacter class
+		if (!target->isGameCharacter() && !target->isCreature())
+		{
+			WLOG("TRIGGER_ACTION_DISMOUNT: Needs a unit target - action ignored");
+			return;
+		}
+
+		target->setUInt32Value(unit_fields::MountDisplayId, 0);
+	}
+
+	void TriggerHandler::handleSetMount(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_SET_MOUNT: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameCharacter class
+		if (!target->isGameCharacter() && !target->isCreature())
+		{
+			WLOG("TRIGGER_ACTION_SET_MOUNT: Needs a unit target - action ignored");
+			return;
+		}
+
+		UInt32 mountId = getActionData(action, 0);
+		if (!mountId)
+		{
+			WLOG("TRIGGER_ACTION_SET_MOUNT: Invalid mount id 0 used. If you want to dismount a unit, use the Dismount action!");
+			return;
+		}
+
+		target->setUInt32Value(unit_fields::MountDisplayId, mountId);
 	}
 
 	Int32 TriggerHandler::getActionData(const proto::TriggerAction &action, UInt32 index) const

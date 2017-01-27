@@ -143,6 +143,12 @@ namespace wowpp
 			/// Sets an object variable.
 			/// Targets: OBJECT; Data: <VARIABLE-ID>, [<NUMERIC-VALUE>]; Texts: [<STRING_VALUE>];
 			SetVariable = 18,
+			/// Dismounts a unit if mounted.
+			/// Targets: UNIT; Data: NONE; Texts: NONE;
+			Dismount = 19,
+			/// Sets the mount display id of a unit and makes it enter the mounted state.
+			/// Targets: UNIT; Data: <MOUNT-ID>; Texts: NONE;
+			SetMount = 20,
 
 			Invalid,
 			Count_ = Invalid

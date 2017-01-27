@@ -73,6 +73,8 @@ namespace wowpp
 		void handleQuestKillCredit(const proto::TriggerAction &action, game::TriggerContext &context);
 		void handleQuestEventOrExploration(const proto::TriggerAction &action, game::TriggerContext &context);
 		void handleSetVariable(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleDismount(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetMount(const proto::TriggerAction &action, game::TriggerContext &context);
 
 	private:
 
