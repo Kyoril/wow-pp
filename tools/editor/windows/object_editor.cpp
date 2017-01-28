@@ -846,6 +846,7 @@ namespace wowpp
 			m_ui->spellTeleportZBox->setValue(spell->targetz());
 			m_ui->spellTeleportOBox->setValue(spell->targeto());
 
+			// Add linked spells
 			m_ui->spellLinkedSpellList->clear();
 			for (const auto &spellId : spell->additionalspells())
 			{
@@ -853,6 +854,17 @@ namespace wowpp
 				if (linkedSpell)
 				{
 					m_ui->spellLinkedSpellList->addItem(QString("%1 - %2").arg(spellId).arg(linkedSpell->name().c_str()));
+				}
+			}
+
+			// Add spell reagents
+			m_ui->spellReagentList->clear();
+			for (const auto &reagent : spell->reagents())
+			{
+				const auto *reagentItem = m_application.getProject().items.getById(reagent.item());
+				if (reagentItem)
+				{
+					m_ui->spellReagentList->addItem(QString("%1x %2 [%3]").arg(reagent.count()).arg(reagentItem->name().c_str()).arg(reagent.item()));
 				}
 			}
 

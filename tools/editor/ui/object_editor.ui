@@ -4228,6 +4228,23 @@ QGroupBox::indicator:unchecked:disabled
                 </item>
                </layout>
               </widget>
+              <widget class="QWidget" name="reagentTab">
+               <attribute name="title">
+                <string>Reagents</string>
+               </attribute>
+               <layout class="QVBoxLayout" name="verticalLayout_53">
+                <item>
+                 <widget class="QListWidget" name="spellReagentList">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
              </widget>
             </item>
            </layout>
