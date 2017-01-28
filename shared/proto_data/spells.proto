@@ -22,6 +22,11 @@
 syntax = "proto2";
 package wowpp.proto;
 
+message SpellReagent {
+	required uint32 item = 1;
+	optional uint32 count = 2 [default = 1];
+}
+
 message SpellEffect {
 	required uint32 index = 1;
 	required uint32 type = 2;
@@ -108,6 +113,7 @@ message SpellEntry {
 	optional uint32 trivialskillhigh = 57;
 	optional uint32 racemask = 58;
 	optional uint32 classmask = 59;
+	repeated SpellReagent reagents = 60;
 }
 
 message Spells {

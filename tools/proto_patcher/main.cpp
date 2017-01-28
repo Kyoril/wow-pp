@@ -2351,6 +2351,61 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importSpellReagents(proto::Project &project, MySQL::Connection &conn)
+	{
+		for (auto &spell : *project.spells.getTemplates().mutable_entry())
+		{
+			spell.clear_reagents();
+		}
+
+		wowpp::MySQL::Select select(conn, "SELECT `id`, `Reagent1`, `ReagentCount1`, `Reagent2`, `ReagentCount2`, `Reagent3`, `ReagentCount3`"
+			", `Reagent4`, `ReagentCount4`, `Reagent5`, `ReagentCount5`, `Reagent6`, `ReagentCount6`, `Reagent7`, `ReagentCount7`, `Reagent8`, `ReagentCount8` FROM `dbc_8606`.`dbc_spell`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				UInt32 spellId = 0;
+				Int32 reagent = 0, count = 0;
+				row.getField(0, spellId);
+
+				do
+				{
+					// Find spell and skill
+					auto *spell = project.spells.getById(spellId);
+					if (!spell)
+					{
+						WLOG("Unable to find spell " << spellId);
+						break;
+					}
+
+					Int32 fieldIndex = 1;
+					for (UInt32 i = 0; i < 8; ++i)
+					{
+						row.getField(fieldIndex++, reagent);
+						row.getField(fieldIndex++, count);
+						if (reagent > 0 && count > 0)
+						{
+							auto *added = spell->add_reagents();
+							if (!added)
+								continue;
+
+							added->set_item(reagent);
+							if (count > 1)
+							{
+								added->set_count(count);
+							}
+						}
+					}
+				} while (false);
+
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
 #if 0
 	static void fixTriggerEvents(proto::Project &project)
 	{
@@ -2433,9 +2488,9 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 	
-	if (!importSkillLines(protoProject, connection))
+	if (!importSpellReagents(protoProject, connection))
 	{
-		WLOG("Could not import skill lines");
+		WLOG("Could not import spell reagents");
 		return 1;
 	}
 
