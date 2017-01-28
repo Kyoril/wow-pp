@@ -110,6 +110,8 @@ namespace wowpp
 		void logoutRequest();
 		/// Cancels the 20 second logout timer if it has been set up.
 		void cancelLogoutRequest();
+		/// Disconnects this player.
+		void kick();
 		/// 
 		void chatMessage(game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message);
 		/// 

@@ -61,23 +61,22 @@ enum TriggerConditionType {
 }
 
 message TriggerCondition {
-	required TriggerConditionType type = 1;
-	required TriggerComparisonOperator operator = 2;
+	required TriggerComparisonOperator operator = 1;
 
 	oneof leftvalue {
-		int64 leftlong = 4;
-		float leftfloat = 5;
-		string leftstring = 6;
-		TriggerFunction leftfunction = 7;
-		TriggerCondition leftcondition = 8;
+		int64 leftlong = 2;
+		float leftfloat = 3;
+		string leftstring = 4;
+		TriggerFunction leftfunction = 5;
+		TriggerCondition leftcondition = 6;
 	}
 
 	oneof rightvalue {
-		int64 rightlong = 10;
-		float rightfloat = 11;
-		string rightstring = 12;
-		TriggerFunction rightfunction = 13;
-		TriggerCondition rightcondition = 14;
+		int64 rightlong = 7;
+		float rightfloat = 8;
+		string rightstring = 9;
+		TriggerFunction rightfunction = 10;
+		TriggerCondition rightcondition = 11;
 	}
 }
 

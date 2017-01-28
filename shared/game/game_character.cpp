@@ -61,6 +61,8 @@ namespace wowpp
 		, m_resurrectMap(0)
 		, m_resurrectHealth(0)
 		, m_resurrectMana(0)
+		, m_restType(rest_type::None)
+		, m_restTrigger(nullptr)
 	{
 		// Resize values field
 		m_values.resize(character_fields::CharacterFieldCount, 0);
@@ -155,6 +157,9 @@ namespace wowpp
 
 		// Reset threat modifiers
 		m_threatModifier.fill(1.0f);
+
+		// On login, the character's state should be falling
+		m_movementInfo.moveFlags = game::movement_flags::Falling;
 	}
 
 	game::QuestStatus GameCharacter::getQuestStatus(UInt32 quest) const
@@ -1617,6 +1622,80 @@ namespace wowpp
 	void GameCharacter::setPlayTime(PlayerTimeIndex index, UInt32 value)
 	{
 		m_playedTime[index] = value;
+	}
+
+	void GameCharacter::setRestType(RestType type, const proto::AreaTriggerEntry *trigger)
+	{
+		// Update rest type
+		m_restType = type;
+
+		// Update character flags and state
+		if (type == rest_type::None)
+		{
+			// Remove the resting flag
+			removeFlag(character_fields::CharacterFlags, game::char_flags::Resting);
+			m_restTrigger = nullptr;
+		}
+		else
+		{
+			// Add the resting flag (if not set already)
+			addFlag(character_fields::CharacterFlags, game::char_flags::Resting);
+			m_restTrigger = trigger;
+		}
+	}
+
+	bool GameCharacter::isInRestAreaTrigger() const
+	{
+		// Was a trigger set properly?
+		if (!m_restTrigger)
+			return false;
+
+		return isInAreaTrigger(*m_restTrigger, 5.0f);
+	}
+
+	bool GameCharacter::isInAreaTrigger(const proto::AreaTriggerEntry & entry, float delta) const 
+	{
+		const math::Vector3 &position = getLocation();
+		if (getMapId() != entry.map())
+			return false;
+
+		if (entry.radius() > 0)
+		{
+			// Sphere radius check
+			const math::Vector3 pt(entry.x(), entry.y(), entry.z());
+			const float distSq = (position - pt).squared_length();
+			const float tolerated = entry.radius() + delta;
+			if (distSq > tolerated * tolerated)
+				return false;
+		}
+		else
+		{
+			// Box check
+
+			// 2PI = 360, keep in mind that ingame orientation is counter-clockwise
+			const double rotation = 2 * 3.1415927 - entry.box_o();
+			const double sinVal = sin(rotation);
+			const double cosVal = cos(rotation);
+
+			float playerBoxDistX = position.x - entry.x();
+			float playerBoxDistY = position.y - entry.y();
+
+			float rotPlayerX = float(entry.x() + playerBoxDistX * cosVal - playerBoxDistY * sinVal);
+			float rotPlayerY = float(entry.y() + playerBoxDistY * cosVal + playerBoxDistX * sinVal);
+
+			// box edges are parallel to coordiante axis, so we can treat every dimension independently :D
+			float dz = position.z - entry.z();
+			float dx = rotPlayerX - entry.x();
+			float dy = rotPlayerY - entry.y();
+			if ((fabs(dx) > entry.box_x() / 2 + delta) ||
+				(fabs(dy) > entry.box_y() / 2 + delta) ||
+				(fabs(dz) > entry.box_z() / 2 + delta))
+			{
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	void GameCharacter::onKilled(GameUnit * killer)

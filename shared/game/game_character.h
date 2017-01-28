@@ -648,6 +648,21 @@ namespace wowpp
 	/// Stores spell modifiers by it's operation.
 	typedef std::map<SpellModOp, SpellModList> SpellModsByOp;
 
+	namespace rest_type
+	{
+		enum Type
+		{
+			/// Player is not resting.
+			None		= 0,
+			/// Player is resting in a tavern.
+			Tavern		= 1,
+			/// Player is resting in a city.
+			City		= 2
+		};
+	}
+
+	typedef rest_type::Type RestType;
+
 	/// Represents a players character in the world.
 	class GameCharacter : public GameUnit
 	{
@@ -964,6 +979,15 @@ namespace wowpp
 			return m_playedTime[index];
 		}
 
+		/// Updates the players rest type.
+		void setRestType(RestType type, const class proto::AreaTriggerEntry *trigger);
+		/// Gets the players rest type.
+		RestType getRestType() const { return m_restType; }
+		/// Determines if this character is still inside it's rest area trigger.
+		bool isInRestAreaTrigger() const;
+		/// Determines if this character is inside an area trigger.
+		bool isInAreaTrigger(const class proto::AreaTriggerEntry &entry, float delta) const;
+
 	public:
 
 		/// @copydoc GameUnit::onKilled(GameUnit*)
@@ -1032,6 +1056,8 @@ namespace wowpp
 		CombatRatingsArray m_combatRatings;
 		BaseCRModArray m_baseCRMod;
 		std::array<UInt32, player_time_index::Count_> m_playedTime;
+		RestType m_restType;
+		const class proto::AreaTriggerEntry *m_restTrigger;
 	};
 
 	/// Serializes a GameCharacter to an io::Writer object for the wow++ protocol.

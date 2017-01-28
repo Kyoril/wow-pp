@@ -861,10 +861,6 @@ namespace wowpp
 
 		//TODO check if the player is allowed to log out (is in combat? is moving? is frozen by gm? etc.)
 
-		// Send answer and engage logout process
-		sender.sendProxyPacket(
-			std::bind(game::server_write::logoutResponse, std::placeholders::_1, true));
-
 		// Start logout countdown or something? ...
 		sender.logoutRequest();
 	}
@@ -1151,34 +1147,20 @@ namespace wowpp
 		const auto *trigger = m_project.areaTriggers.getById(triggerId);
 		if (!trigger)
 		{
+			WLOG("Unknown trigger " << trigger->id());
 			return;
 		}
 
 		// Check if the players character could really have triggered that trigger
 		auto character = sender.getCharacter();
-		if (trigger->map() != character->getMapId())
+		if (!character->isInAreaTrigger(*trigger, 5.0f))
 		{
+			WLOG("[CHEAT] Player is not in area trigger volume");
+			sender.kick();
 			return;
 		}
 
-		// Get player location for distance checks
-		math::Vector3 location(character->getLocation());
-		if (trigger->radius() > 0.0f)
-		{
-			const float dist = 
-				::sqrtf(((location.x - trigger->x()) * (location.x - trigger->x())) + ((location.y - trigger->y()) * (location.y - trigger->y())) + ((location.z - trigger->z()) * (location.z - trigger->z())));
-			if (dist > trigger->radius())
-			{
-				return;
-			}
-		}
-		else
-		{
-			// TODO: Box check
-		}
-
 		// Check if this is a teleport trigger
-
 		if (trigger->has_questid() && trigger->questid() > 0)
 		{
 			// Handle quest exploration
@@ -1188,6 +1170,8 @@ namespace wowpp
 		if (trigger->has_tavern() && trigger->tavern())
 		{
 			// Handle tavern
+			if (character->getRestType() != rest_type::City)
+				character->setRestType(rest_type::Tavern, trigger);
 		}
 
 		// TODO: Optimize this, create a trigger type

@@ -222,17 +222,29 @@ namespace wowpp
 
 	void Player::logoutRequest()
 	{
-		// Make our character sit down
-		m_character->setStandState(unit_stand_state::Sit);
+		GameTime logoutTime = getCurrentTime();
 
-		// Root our character
-		m_character->addFlag(unit_fields::UnitFlags, 0x00040000);
-		sendProxyPacket(
-			std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));
+		bool instantLogout = (m_character->getRestType() != rest_type::None);
+		if (!instantLogout)
+		{
+			// Make our character sit down
+			m_character->setStandState(unit_stand_state::Sit);
 
+			// Root our character
+			m_character->addFlag(unit_fields::UnitFlags, 0x00040000);
+			sendProxyPacket(
+				std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));
+
+			// Send answer and engage logout process
+			sendProxyPacket(
+				std::bind(game::server_write::logoutResponse, std::placeholders::_1, true));
+
+			// Player has to wait 20 seconds
+			logoutTime += 20 * constants::OneSecond;
+		}
+		
 		// Setup the logout countdown
-		m_logoutCountdown.setEnd(
-			getCurrentTime() + (20 * constants::OneSecond));
+		m_logoutCountdown.setEnd(logoutTime);
 	}
 
 	void Player::cancelLogoutRequest()
@@ -247,6 +259,19 @@ namespace wowpp
 
 		// Cancel the countdown
 		m_logoutCountdown.cancel();
+	}
+
+	void Player::kick()
+	{
+		// Remove the character from the world
+		m_instance.removeGameObject(*m_character);
+		m_character.reset();
+
+		// Notify the realm
+		m_realmConnector.notifyWorldInstanceLeft(m_characterId, pp::world_realm::world_left_reason::Disconnect);
+
+		// Remove player
+		m_manager.playerDisconnected(*this);
 	}
 
 	void Player::onLogout()
