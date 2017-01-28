@@ -2031,6 +2031,7 @@ namespace wowpp
 			    game::OutgoingPacket &out_packet,
 			    UInt64 guid,
 			    loot_type::Type type,
+				UInt64 playerGuid,
 			    const LootInstance &loot
 			);
 

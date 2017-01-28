@@ -1455,6 +1455,14 @@ namespace wowpp
 			closeLootDialog();
 		});
 
+		m_lootSignals.append({
+			m_loot->itemRemoved.connect([this](UInt8 slot)
+			{
+				sendProxyPacket(
+					std::bind(game::server_write::lootRemoved, std::placeholders::_1, slot));
+			})
+		});
+
 		// Send the actual loot data (TODO: Determine loot type)
 		auto guid = source.getGuid();
 		auto lootType = game::loot_type::Corpse;
@@ -1462,14 +1470,19 @@ namespace wowpp
 		{
 			m_character->getAuras().removeAurasByType(game::aura_type::Mounted);
 		}
+
+		UInt64 playerGuid = m_character->getGuid();
 		sendProxyPacket(
-			std::bind(game::server_write::lootResponse, std::placeholders::_1, guid, lootType, std::cref(loot)));
+			std::bind(game::server_write::lootResponse, std::placeholders::_1, guid, lootType, playerGuid, std::cref(loot)));
 	}
 
 	void Player::closeLootDialog()
 	{
+		// Disconnect all signals
+		m_lootSignals.disconnect();
+
 		if (m_loot)
-		{
+		{			
 			// Notify the client
 			sendProxyPacket(
 				std::bind(game::server_write::lootReleaseResponse, std::placeholders::_1, m_loot->getLootGuid()));

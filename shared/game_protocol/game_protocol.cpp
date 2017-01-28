@@ -1967,13 +1967,13 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void lootResponse(game::OutgoingPacket &out_packet, UInt64 guid, loot_type::Type type, const LootInstance &loot)
+			void lootResponse(game::OutgoingPacket &out_packet, UInt64 guid, loot_type::Type type, UInt64 playerGuid, const LootInstance &loot)
 			{
 				out_packet.start(game::server_packet::LootResponse);
 				out_packet
-				        << io::write<NetUInt64>(guid)
-				        << io::write<NetUInt8>(type)
-				        << loot;
+					<< io::write<NetUInt64>(guid)
+					<< io::write<NetUInt8>(type);
+				loot.serialize(out_packet, playerGuid);
 				out_packet.finish();
 			}
 

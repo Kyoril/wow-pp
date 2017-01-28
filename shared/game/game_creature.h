@@ -136,6 +136,8 @@ namespace wowpp
 		void setWaypoints(const std::vector<proto::Waypoint> &waypoints);
 
 		virtual float getBaseSpeed(MovementType type) const override;
+		/// Enables skinning loot of this creature if possible.
+		void activateSkinningLoot();
 
 		/// @copydoc GameUnit::isEvading()
 		virtual bool isEvading() const override;

@@ -22,6 +22,7 @@
 #pragma once
 
 #include "common/typedefs.h"
+#include "common/simple.hpp"
 #include "game/defines.h"
 #include "binary_io/writer.h"
 #include "shared/proto_data/loot_entry.pb.h"
@@ -54,6 +55,19 @@ namespace wowpp
 	public:
 
 		boost::signals2::signal<void()> cleared;
+		/// Fired when gold was looted.
+		simple::signal<void()> goldRemoved;
+		/// Fired when an item has been removed.
+		simple::signal<void(UInt8)> itemRemoved;
+
+	public:
+
+		// Some items exist once for every party member. Because of this, we use the data
+		// structures below to keep track of the players who already looted their shared item
+		// to prevent them from looting it twice
+
+		typedef std::map<UInt32, UInt32> PlayerItemLootEntry;
+		typedef std::map<UInt64, PlayerItemLootEntry> PlayerLootEntries;
 
 	public:
 
@@ -76,14 +90,18 @@ namespace wowpp
 		}
 		///
 		void takeGold();
+		/// Determines if there is gold available to loot.
+		bool hasGold() const { return m_gold != 0; }
 		/// Get loot item definition from the requested slot.
 		const LootItem *getLootDefinition(UInt8 slot) const;
 		///
-		void takeItem(UInt8 slot);
+		void takeItem(UInt8 slot, UInt64 receiver);
 		/// Gets the number of items.
 		UInt32 getItemCount() const {
 			return m_items.size();
 		}
+
+		void serialize(io::Writer &writer, UInt64 receiver) const;
 
 	private:
 
@@ -95,7 +113,7 @@ namespace wowpp
 		UInt64 m_lootGuid;
 		UInt32 m_gold;
 		std::vector<LootItem> m_items;
+		std::vector<UInt64> m_recipients;
+		PlayerLootEntries m_playerLootData;
 	};
-
-	io::Writer &operator << (io::Writer &w, LootInstance const &loot);
 }

@@ -130,7 +130,9 @@ namespace wowpp
 			}
 		}
 
-		m_loot->takeItem(lootSlot);
+		// Consume this item
+		auto playerGuid = m_character->getGuid();
+		m_loot->takeItem(lootSlot, playerGuid);
 	}
 
 	void Player::handleAutoEquipItem(game::Protocol::IncomingPacket &packet)

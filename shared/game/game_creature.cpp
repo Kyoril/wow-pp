@@ -497,6 +497,15 @@ namespace wowpp
 		return GameUnit::getBaseSpeed(type) * (type == movement_type::Run ? 1.14286f : 1.0f);
 	}
 
+	void GameCreature::activateSkinningLoot()
+	{
+		if (getEntry().skinninglootentry())
+		{
+			// It can be skinned
+			addFlag(unit_fields::UnitFlags, game::unit_flags::Skinnable);
+		}
+	}
+
 	bool GameCreature::isEvading() const
 	{
 		// If the AI has not yet been initialized, we consider this unit being in evade mode as well
