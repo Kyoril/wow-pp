@@ -733,7 +733,7 @@ namespace wowpp
 		m_serverSync = static_cast<UInt32>(current) + halfLatency;
 		m_clientSync = ticks;
 
-		DLOG("TIME SYNC RESPONSE " << m_character->getName() << ": Client Sync " << m_clientSync << "; Server Sync: " << m_serverSync);
+		//DLOG("TIME SYNC RESPONSE " << m_character->getName() << ": Client Sync " << m_clientSync << "; Server Sync: " << m_serverSync);
 	}
 
 	void Player::handleLearnTalent(game::Protocol::IncomingPacket &packet)

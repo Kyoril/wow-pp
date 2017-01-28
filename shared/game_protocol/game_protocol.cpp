@@ -2778,7 +2778,7 @@ namespace wowpp
 					     UInt32 prev_slot,
 					     UInt32 gold,
 					     UInt32 spell,
-						 std::vector<std::shared_ptr<GameItem>> item)
+						 std::array<std::shared_ptr<GameItem>, 7> items)
 			{
 				out_packet.start(game::server_packet::TradeStatusExtended);
 				out_packet 
@@ -2788,46 +2788,42 @@ namespace wowpp
 					<< io::write<NetUInt32>(prev_slot)
 					<< io::write<NetUInt32>(gold)
 					<< io::write<NetUInt32>(spell);
-				
-				
-				for (UInt8 i = 0; i < 1; i++)
+				for (UInt8 i = 0; i < items.size(); i++)
 				{
 					out_packet << io::write<NetUInt8>(i);
-					if (nullptr != item[i])
-					{
-						auto const &item_entry = item[i]->getEntry();
 
-						out_packet << io::write<NetUInt32>(item_entry.id());
-						out_packet << io::write<NetUInt32>(item_entry.displayid());
-						out_packet << io::write<NetUInt32>(item[i]->getStackCount());
-						out_packet << io::write<NetUInt32>(item[i]->hasFlag(ItemFields::Flags, ItemFlags::Wrapped) ? 1 : 0 );
-						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::GiftCreator)); 
-																											  //enchantment
-						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::Enchantment));
+					auto item = items[i];
+					if (item)
+					{
+						auto const &entry = item->getEntry();
+
+						out_packet << io::write<NetUInt32>(entry.id());
+						out_packet << io::write<NetUInt32>(entry.displayid());
+						out_packet << io::write<NetUInt32>(item->getStackCount());
+						out_packet << io::write<NetUInt32>(item->hasFlag(ItemFields::Flags, ItemFlags::Wrapped) ? 1 : 0 );
+						out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemFields::GiftCreator)); //enchantment
+						out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemFields::Enchantment));
 
 						for (UInt32 enchant_slot = 2; enchant_slot < 2 + 3; ++enchant_slot)
 						{
-							out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemEnchantmentType(enchant_slot))); //TODO
+							out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemEnchantmentType(enchant_slot))); //TODO
 						}
 
-						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::Creator));
-						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::SpellCharges)); //spell charges
-						out_packet << io::write<NetUInt32>(item_entry.randomsuffix()); //suffix
-						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::RandomPropertiesID));
-						out_packet << io::write<NetUInt32>(item_entry.lockid());
-						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::MaxDurability));
-						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::Durability));
+						out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemFields::Creator));
+						out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemFields::SpellCharges)); //spell charges
+						out_packet << io::write<NetUInt32>(entry.randomsuffix()); //suffix
+						out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemFields::RandomPropertiesID));
+						out_packet << io::write<NetUInt32>(entry.lockid());
+						out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemFields::MaxDurability));
+						out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemFields::Durability));
 					}
 					else
 					{
+						// Write empty fields
 						for (UInt8 j = 0; j < 18; ++j)
-						{
 							out_packet << io::write<NetUInt32>(0);
-						}
 					}
-					
 				}
-				
 				out_packet.finish();
 			}
 

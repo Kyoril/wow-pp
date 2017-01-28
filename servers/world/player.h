@@ -52,20 +52,6 @@ namespace wowpp
 	typedef game::trade_status::Type TradeStatus;
 	typedef trade_slots::Type TradeSlots;
 
-	struct TradeStatusInfo
-	{
-		TradeStatusInfo(UInt64 guid_ = 0)
-			: guid(guid_)
-		{
-		}
-
-		TradeStatus tradestatus;
-		UInt64 guid;
-		Player *thisplayer;
-		Player *tradeplayer;
-	};
-
-
 	// Forwards
 	class PlayerManager;
 	class WorldInstanceManager;
@@ -194,11 +180,21 @@ namespace wowpp
 		/// Saves the characters data.
 		void saveCharacterData() const;
 		/// 
-		void sendTradeStatus(TradeStatusInfo info);
+		void sendTradeStatus(TradeStatus status, UInt64 guid = 0);
 		/// 
 		void sendUpdateTrade();
 		///
 		void moveItems(std::vector<std::shared_ptr<GameItem>> my_Items, std::vector<std::shared_ptr<GameItem>> his_Items);
+		/// Determines if there is a pending logout request.
+		bool isLogoutPending() const { return m_logoutCountdown.running; }
+		/// Determines if this player is currently trading.
+		bool isTrading() const { return (m_tradeData.get() != nullptr); }
+		/// Tries to initiate a trade with the target, if possible.
+		void initiateTrade(UInt64 target);
+		/// Tries to cancel the current trade (if any).
+		void cancelTrade();
+
+		void setTradeSession(std::shared_ptr<TradeData> data);
 
 	private:
 
@@ -251,6 +247,8 @@ namespace wowpp
 		void handleInitateTrade(game::Protocol::IncomingPacket &packet);
 		void handleBeginTrade(game::Protocol::IncomingPacket &packet);
 		void handleAcceptTrade(game::Protocol::IncomingPacket &packet);
+		void handleUnacceptTrade(game::Protocol::IncomingPacket &packet);
+		void handleCancelTrade(game::Protocol::IncomingPacket &packet);
 		void handleSetTradeGold(game::Protocol::IncomingPacket &packet);
 		void handleSetTradeItem(game::Protocol::IncomingPacket &packet);
 		void handleSetActionBarToggles(game::Protocol::IncomingPacket &packet);
@@ -332,7 +330,6 @@ namespace wowpp
 		GameObject *m_lootSource;
 		LinearSet<UInt64> m_ignoredGUIDs;
 		Countdown m_groupUpdate;
-		TradeStatusInfo m_tradeStatusInfo;
 		std::shared_ptr<TradeData> m_tradeData;
 		GameTime m_lastPlayTimeUpdate;
 		UInt32 m_clientSync, m_serverSync;

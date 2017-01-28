@@ -135,6 +135,8 @@ namespace wowpp
 			};
 		}
 
+		typedef trade_status::Type TradeStatus;
+
 		namespace quest_status
 		{
 			enum Type

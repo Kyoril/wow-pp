@@ -618,6 +618,9 @@ namespace wowpp
 
 	void Player::onDespawn(GameObject &/*despawning*/)
 	{
+		// Cancel trade (if any)
+		cancelTrade();
+
 		updatePlayerTime();
 		saveCharacterData();
 
@@ -1502,6 +1505,7 @@ namespace wowpp
 
 	void Player::moveItems(std::vector<std::shared_ptr<GameItem>> my_Items, std::vector<std::shared_ptr<GameItem>> his_Items)
 	{
+#if 0
 		UInt8 bag = 0, slot = 0;
 		auto trader = m_tradeData->getTrader();
 		if (trader == nullptr)
@@ -1532,6 +1536,136 @@ namespace wowpp
 				inventory.removeItem(trader->m_tradeData->getAbsSlot(i));
 			}
 		}
+#endif
+	}
+
+	void Player::initiateTrade(UInt64 target)
+	{
+		// Cancel current trade if any
+		if (isTrading())
+			cancelTrade();
+
+		// Check for character existance
+		if (!m_character)
+			return;
+
+		// Can't trade while dead
+		if (!m_character->isAlive())
+		{
+			WLOG("Player is dead and thus can't trade");
+			sendTradeStatus(game::trade_status::YouDead);
+			return;
+		}
+
+		// Can't trade while stunned as well
+		if (m_character->isStunned())
+		{
+			WLOG("Player is stunned and thus can't trade");
+			sendTradeStatus(game::trade_status::YouStunned);
+			return;
+		}
+
+		// Can't trade while logout is pending
+		if (isLogoutPending())
+		{
+			WLOG("Player has a pending logout and thus can't trade");
+			sendTradeStatus(game::trade_status::YouLogout);
+			return;
+		}
+
+		auto *worldInstance = m_character->getWorldInstance();
+		if (!worldInstance)
+		{
+			return;
+		}
+
+		UInt64 thisguid = m_character->getGuid();
+
+		// Find other player instance
+		auto *otherPlayer = m_manager.getPlayerByCharacterGuid(target);
+		if (!otherPlayer)
+		{
+			WLOG("Can't find target player");
+			sendTradeStatus(game::trade_status::NoTarget);
+			return;
+		}
+
+		// Get other players character (should never be nullptr, but just in case...)
+		auto otherCharacter = otherPlayer->getCharacter();
+		if (!otherCharacter)
+		{
+			WLOG("Can't find target players character");
+			sendTradeStatus(game::trade_status::NoTarget);
+			return;
+		}
+
+		// Target has to be alive
+		if (!otherCharacter->isAlive())
+		{
+			WLOG("Target is dead and thus can't trade");
+			sendTradeStatus(game::trade_status::TargetDead);
+			return;
+		}
+
+		// Target may not be stunned
+		if (otherCharacter->isStunned())
+		{
+			WLOG("Target is stunned and thus can't trade");
+			sendTradeStatus(game::trade_status::TargetStunned);
+			return;
+		}
+
+		// Target logout check
+		if (otherPlayer->isLogoutPending())
+		{
+			WLOG("Target has a pending logout and thus can't trade");
+			sendTradeStatus(game::trade_status::TargetLogout);
+			return;
+		}
+
+		// Check if target is busy
+		if (otherPlayer->isTrading())
+		{
+			WLOG("Target is already trading and thus can't trade");
+			sendTradeStatus(game::trade_status::Busy2);
+			return;
+		}
+
+		// Trade distance check (100 = 10*10 because of squared check for performance reasons)
+		// TODO: Is this the correct trade distance?
+		if (otherCharacter->getSquaredDistanceTo(*m_character, false) > 100.0f)
+		{
+			WLOG("Player is too far away from target and thus can't trade");
+			sendTradeStatus(game::trade_status::TargetTooFar);
+			return;
+		}
+
+		// Begin trade (both players share the same trade data session)
+		auto tradeData = std::make_shared<TradeData>(*this, *otherPlayer);
+		setTradeSession(tradeData);
+		otherPlayer->setTradeSession(tradeData);
+		otherPlayer->sendTradeStatus(game::trade_status::BeginTrade, m_character->getGuid());
+	}
+
+	void Player::cancelTrade()
+	{
+		// Reset trade data
+		if (m_tradeData)
+		{
+			// Calling the cancel-method will automatically reset m_tradeData in this method
+			m_tradeData->cancel();
+		}
+	}
+
+	void Player::setTradeSession(std::shared_ptr<TradeData> data)
+	{
+		// TODO: Disconnect signals
+
+		m_tradeData = std::move(data);
+		if (m_tradeData)
+		{
+			// TODO: Connect the respective signals
+		}
 	}
 
 	void Player::updatePlayerTime(bool resetLevelTime/* = false*/)
@@ -1559,25 +1693,15 @@ namespace wowpp
 
 	}
 
-	void Player::sendTradeStatus(TradeStatusInfo info)
+	void Player::sendTradeStatus(TradeStatus status, UInt64 guid/* = 0*/)
 	{
 		sendProxyPacket(
-			std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, static_cast<UInt32>(info.tradestatus), info.guid));
+			std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, static_cast<UInt32>(status), guid));
 	}
 	
 	void Player::sendUpdateTrade()
 	{
-		//TODO maybe build a struct for all of this informations.
-		sendProxyPacket(
-			std::bind(game::server_write::sendUpdateTrade, std::placeholders::_1,
-				1,
-				0,
-				trade_slots::Count,
-				trade_slots::Count,
-				m_tradeData->getTrader()->m_tradeData->getGold(),
-				0,
-				m_tradeData->getTrader()->m_tradeData->getItem()
-				));
+
 	}
 
 }
