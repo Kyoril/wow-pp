@@ -2957,7 +2957,33 @@ namespace wowpp
 		if (m_tookReagents && delayed)
 			return true;
 
+		if (m_cast.getExecuter().isGameCharacter())
+		{
+			// First check if all items are available (TODO: Create transactions to avoid two loops)
+			auto &character = reinterpret_cast<GameCharacter&>(m_cast.getExecuter());
+			for (const auto &reagent : m_spell.reagents())
+			{
+				if (character.getInventory().getItemCount(reagent.item()) < reagent.count())
+				{
+					return false;
+				}
+			}
 
+			// Now consume all reagents
+			for (const auto &reagent : m_spell.reagents())
+			{
+				const auto *item = character.getProject().items.getById(reagent.item());
+				if (!item)
+					return false;
+
+				auto result = character.getInventory().removeItems(*item, reagent.count());
+				if (result != game::inventory_change_failure::Okay)
+				{
+					ELOG("Could not consume reagents: " << result);
+					return false;
+				}
+			}
+		}
 
 		return true;
 	}
