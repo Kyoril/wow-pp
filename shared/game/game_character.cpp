@@ -1853,9 +1853,15 @@ namespace wowpp
 	bool GameCharacter::addSpell(const proto::SpellEntry &spell)
 	{
 		if (hasSpell(spell.id()))
-		{
 			return false;
-		}
+
+		// Check race requirement
+		if (spell.racemask() != 0 && !(spell.racemask() & (1 << (getRace() - 1))))
+			return false;
+
+		// Check class requirement
+		if (spell.classmask() != 0 && !(spell.classmask() & (1 << (getClass() - 1))))
+			return false;
 
 		// Evaluate parry and block spells
 		for (int i = 0; i < spell.effects_size(); ++i)
@@ -2068,6 +2074,7 @@ namespace wowpp
 					const auto *spellEntry = getProject().spells.getById(spell);
 					if (spellEntry)
 					{
+						// Spell may be learned
 						addSpell(*spellEntry);
 					}
 				}

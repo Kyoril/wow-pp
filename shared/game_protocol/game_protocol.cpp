@@ -32,6 +32,7 @@
 #include "binary_io/writer.h"
 #include "binary_io/vector_sink.h"
 #include "game/game_character.h"
+#include "proto_data/project.h"
 
 namespace wowpp
 {
@@ -2146,17 +2147,43 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::TrainerList);
 				out_packet
-				        << io::write<NetUInt64>(trainerGuid)
-				        << io::write<NetUInt32>(trainerEntry.type())
-				        << io::write<NetUInt32>(trainerEntry.spells_size());
+					<< io::write<NetUInt64>(trainerGuid)
+					<< io::write<NetUInt32>(trainerEntry.type());
+
+				size_t spellCountPos = out_packet.sink().position();
+				out_packet
+					<< io::write<NetUInt32>(trainerEntry.spells_size());
 
 				const UInt8 GreenSpell = 0;
 				const UInt8 RedSpell = 1;
 				const UInt8 GreySpell = 2;
 
+				UInt32 spellCount = trainerEntry.spells_size();
 				for (int i = 0; i < trainerEntry.spells_size(); ++i)
 				{
 					const auto &spell = trainerEntry.spells(i);
+					const auto *entry = character.getProject().spells.getById(spell.spell());
+					if (!entry)
+					{
+						WLOG("Unable to find spell " << spell.spell());
+						spellCount--;
+						continue;
+					}
+
+					const UInt32 raceMask = 1 << (character.getRace() - 1);
+					if (entry->racemask() != 0 && (entry->racemask() & raceMask) == 0)
+					{
+						spellCount--;
+						continue;
+					}
+
+					const UInt32 classMask = 1 << (character.getClass() - 1);
+					if (entry->classmask() != 0 && (entry->classmask() & classMask) == 0)
+					{
+						spellCount--;
+						continue;
+					}
+
 					UInt8 state = GreenSpell;
 					if (character.hasSpell(spell.spell())) {
 						state = GreySpell;
@@ -2190,6 +2217,7 @@ namespace wowpp
 				}
 
 				out_packet << io::write_range(trainerEntry.title()) << io::write<NetUInt8>(0);
+				out_packet.writePOD(spellCountPos, spellCount);
 				out_packet.finish();
 			}
 
