@@ -873,6 +873,16 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void minimapPing(game::OutgoingPacket & out_packet, UInt64 senderGuid, float x, float y)
+			{
+				out_packet.start(game::server_packet::MinimapPing);
+				out_packet
+					<< io::write<NetUInt64>(senderGuid)
+					<< io::write<float>(x)
+					<< io::write<float>(y);
+				out_packet.finish();
+			}
+
 			void castFailed(game::OutgoingPacket &out_packet, game::SpellCastResult result, const proto::SpellEntry &spell, UInt8 castCount)
 			{
 				out_packet.start(game::server_packet::CastFailed);
@@ -3196,6 +3206,13 @@ namespace wowpp
 			{
 				return packet
 				       >> io::read<NetUInt64>(out_targetGUID);
+			}
+
+			bool minimapPing(io::Reader & packet, float & out_x, float & out_y)
+			{
+				return packet
+					>> io::read<float>(out_x)
+					>> io::read<float>(out_y);
 			}
 
 			bool standStateChange(io::Reader &packet, UnitStandState &out_standState)

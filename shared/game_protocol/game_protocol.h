@@ -509,6 +509,7 @@ namespace wowpp
 				BuyItemInSlot			= 0x1A3,
 				TrainerBuySpell			= 0x1B2,
 				PlayedTime				= 0x1CC,
+				MinimapPing				= 0x1D5,
 				Ping					= 0x1DC,
 				SetSheathed				= 0x1E0,
 				AuthSession				= 0x1ED,
@@ -670,6 +671,7 @@ namespace wowpp
 				TrainerBuyFailed			= 0x1B4,
 				PlayedTime					= 0x1CD,
 				LogXPGain					= 0x1D0,
+				MinimapPing					= 0x1D5,
 				Pong						= 0x1DD,
 				ClearCooldown				= 0x1DE,
 				LevelUpInfo					= 0x1D4,
@@ -923,6 +925,12 @@ namespace wowpp
 			bool setSelection(
 			    io::Reader &packet,
 			    UInt64 &out_targetGUID
+			);
+
+			bool minimapPing(
+				io::Reader &packet,
+				float &out_x,
+				float &out_y
 			);
 
 			bool standStateChange(
@@ -1458,6 +1466,13 @@ namespace wowpp
 			void chatPlayerNotFound(
 			    game::OutgoingPacket &out_packet,
 			    const String &name
+			);
+
+			void minimapPing(
+				game::OutgoingPacket &out_packet,
+				UInt64 senderGuid,
+				float x,
+				float y
 			);
 
 			void tutorialFlags(

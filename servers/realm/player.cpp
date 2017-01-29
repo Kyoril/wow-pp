@@ -328,6 +328,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(CharRename, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(QuestQuery, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(Who, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(MinimapPing, game::session_status::LoggedIn)
 #undef WOWPP_HANDLE_PACKET
 #undef QUOTE
 
@@ -2613,6 +2614,31 @@ namespace wowpp
 		// Match Count is request count right now (TODO)
 		sendPacket(
 			std::bind(game::server_write::whoRequestResponse, std::placeholders::_1, response, response.entries.size()));
+	}
 
+	void Player::handleMinimapPing(game::IncomingPacket & packet)
+	{
+		float x = 0.0f, y = 0.0f;
+		if (!(game::client_read::minimapPing(packet, x, y)))
+		{
+			WLOG("Could not read minimap ping packet");
+			return;
+		}
+
+		// Only accepted while in group
+		if (!m_group)
+		{
+			WLOG("Player is not in a group");
+			return;
+		}
+
+		// TODO: Only send to group members in the same map instance?
+
+		std::vector<UInt64> excludeGuids;
+		excludeGuids.push_back(m_gameCharacter->getGuid());
+
+		// Broadcast packet to group
+		auto generator = std::bind(game::server_write::minimapPing, std::placeholders::_1, m_gameCharacter->getGuid(), x, y);
+		m_group->broadcastPacket(generator, &excludeGuids);
 	}
 }
