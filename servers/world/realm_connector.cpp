@@ -1002,6 +1002,12 @@ namespace wowpp
 				return;
 			}
 
+			// Remove rest state on teleport as we don't know if the new location will be a rest area as well
+			if (reason == pp::world_realm::world_left_reason::Teleport)
+			{
+				player->getCharacter()->setRestType(rest_type::None, nullptr);
+			}
+
 			// Remove the character
 			player->getWorldInstance().removeGameObject(*player->getCharacter());
 
