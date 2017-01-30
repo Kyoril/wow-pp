@@ -55,6 +55,8 @@ namespace wowpp
 	public:
 
 		boost::signals2::signal<void()> cleared;
+		/// Fired when a looting player closes the loot dialog.
+		simple::signal<void(UInt64)> closed;
 		/// Fired when gold was looted.
 		simple::signal<void()> goldRemoved;
 		/// Fired when an item has been removed.

@@ -60,22 +60,7 @@ namespace wowpp
 		m_data[index].gold = gold;
 
 		// Send data
-		auto formatter = std::bind(game::server_write::sendUpdateTrade, std::placeholders::_1,
-			1,
-			0,
-			MaxTradeSlots,
-			MaxTradeSlots,
-			m_data[index].gold,
-			0,
-			std::cref(m_data[index].items));
-		if (index == Owner)
-		{
-			m_other.sendProxyPacket(formatter);
-		}
-		else
-		{
-			m_initiator.sendProxyPacket(formatter);
-		}
+		sendTradeData(index);
 
 		// Refresh trade state
 		setAcceptedState(Owner, false);
@@ -95,6 +80,7 @@ namespace wowpp
 		// If no more accepted, send back to trade
 		if (wasAccepted)
 		{
+			// Notify both players about the cancellation
 			m_initiator.sendTradeStatus(game::trade_status::BackToTrade);
 			m_other.sendTradeStatus(game::trade_status::BackToTrade);
 			return;
@@ -108,40 +94,45 @@ namespace wowpp
 			if (m_data[Owner].accepted && m_data[Target].accepted)
 			{
 				// TODO: Do the trade
-				DLOG("TRADE TIME");
-				
+
+				// Get both characters
 				auto ownerChar = m_initiator.getCharacter();
 				assert(ownerChar);
 				auto otherChar = m_other.getCharacter();
 				assert(otherChar);
 
-				// Check owner gold
-				UInt32 ownerMoney = ownerChar->getUInt32Value(character_fields::Coinage);
-				if (ownerMoney < m_data[Owner].gold)
-					return;
+				const UInt32 ownerMoney = ownerChar->getUInt32Value(character_fields::Coinage);
+				const UInt32 otherMoney = otherChar->getUInt32Value(character_fields::Coinage);
 
-				// Check other gold
-				UInt32 otherMoney = otherChar->getUInt32Value(character_fields::Coinage);
-				if (otherMoney < m_data[Target].gold)
-					return;
+				// Perform some checks, some of them again
+				{
+					// Check owner gold
+					if (ownerMoney < m_data[Owner].gold)
+						return;
 
-				// Increment gold values
-				ownerChar->setUInt32Value(character_fields::Coinage, ownerMoney - m_data[Owner].gold + m_data[Target].gold);
-				otherChar->setUInt32Value(character_fields::Coinage, otherMoney - m_data[Target].gold + m_data[Owner].gold);
-
-				// Trade is done
+					// Check other gold
+					if (otherMoney < m_data[Target].gold)
+						return;
+				}
+				
+				// Perform gold trade
+				{
+					// Increment gold values
+					ownerChar->setUInt32Value(character_fields::Coinage, ownerMoney - m_data[Owner].gold + m_data[Target].gold);
+					otherChar->setUInt32Value(character_fields::Coinage, otherMoney - m_data[Target].gold + m_data[Owner].gold);
+				}
+				
+				// Finalize trade, which will close the trade window on both clients
 				m_initiator.sendTradeStatus(game::trade_status::TradeComplete);
 				m_other.sendTradeStatus(game::trade_status::TradeComplete);
 
-				// Close this trade session
+				// Destroy this trade session
 				m_initiator.setTradeSession(nullptr);
 				m_other.setTradeSession(nullptr);
-
-				// Just a security thing as this class instance no longer exists at this point
-				return;
 			}
 			else
 			{
+				// Notify the other client about the acceptance
 				target->sendTradeStatus(game::trade_status::TradeAccept);
 			}
 		}
@@ -152,10 +143,46 @@ namespace wowpp
 		assert(index > Trader::Count_);
 		assert(tradeSlot < MaxTradeSlots);
 
+		// First remove that item from any other trade slot where it eventually is
+		if (item != nullptr)
+		{
+			for (auto &oldItem : m_data[index].items)
+			{
+				if (oldItem && oldItem->getGuid() == item->getGuid())
+				{
+					oldItem = nullptr;
+				}
+			}
+		}
+		
+		// Now set the new one
 		m_data[index].items[tradeSlot] = item;
 
-		// Refresh trade state
+		// Send new items to other client
+		sendTradeData(index);
+
+		// Reset trade state
 		setAcceptedState(Owner, false);
 		setAcceptedState(Target, false);
+	}
+	void TradeData::sendTradeData(Trader index)
+	{
+		// Send data
+		auto formatter = std::bind(game::server_write::sendUpdateTrade, std::placeholders::_1,
+			1,
+			0,
+			MaxTradeSlots,
+			MaxTradeSlots,
+			m_data[index].gold,
+			0,
+			std::cref(m_data[index].items));
+		if (index == Owner)
+		{
+			m_other.sendProxyPacket(formatter);
+		}
+		else
+		{
+			m_initiator.sendProxyPacket(formatter);
+		}
 	}
 }

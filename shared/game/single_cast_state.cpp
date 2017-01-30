@@ -578,6 +578,30 @@ namespace wowpp
 			}
 		}
 
+		// Check some effect-dependant errors
+		for (const auto &effect : m_spell.effects())
+		{
+			switch (effect.type())
+			{
+				case game::spell_effects::OpenLock:
+				{
+					// Check if object is currently in use by another player
+					GameObject *obj = nullptr;
+					m_target.resolvePointers(*m_cast.getExecuter().getWorldInstance(), nullptr, nullptr, &obj, nullptr);
+					if (obj && obj->isWorldObject())
+					{
+						if (obj->getUInt32Value(world_object_fields::State) != 1)
+						{
+							m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedChestInUse);
+							strongThis->sendEndCast(false);
+							return;
+						}
+					}
+					break;
+				}
+			}
+		}
+
 		m_hasFinished = true;
 
 		const std::weak_ptr<SingleCastState> weakThis = strongThis;
@@ -3289,8 +3313,7 @@ namespace wowpp
 
 				// Open chest loot window
 				auto *loot = obj->getObjectLoot();
-				if (loot &&
-				        !loot->isEmpty())
+				if (loot && !loot->isEmpty())
 				{
 					// Start inspecting the loot
 					if (m_cast.getExecuter().isGameCharacter())

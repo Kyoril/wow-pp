@@ -227,6 +227,8 @@ namespace wowpp
 				{
 					m_onLootCleared = m_objectLoot->cleared.connect([this]()
 					{
+						m_onLootClosed.disconnect();
+
 						// Remove this object from the world (despawn it)
 						// REMEMBER: THIS WILL MOST LIKELY DESTROY THIS INSTANCE
 						auto *world = getWorldInstance();
@@ -236,6 +238,15 @@ namespace wowpp
 							world->removeGameObject(*this);
 						}
 					});
+
+					// If this is a chest...
+					if (m_entry.type() == world_object_type::Chest)
+					{
+						m_onLootClosed = m_objectLoot->closed.connect([this](UInt64)
+						{
+							setUInt32Value(world_object_fields::State, 1);
+						});
+					}
 				}
 			}
 		}

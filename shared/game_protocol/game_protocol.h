@@ -1364,7 +1364,10 @@ namespace wowpp
 				UInt8 &bag,
 				UInt8 &slot
 				);
-
+			bool clearTradeItem(
+				io::Reader &packet,
+				UInt8 &slot
+			);
 			bool petNameRequest(
 				io::Reader &packet,
 				UInt32 &out_petNumber,

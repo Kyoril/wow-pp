@@ -2834,20 +2834,20 @@ namespace wowpp
 					if (item)
 					{
 						auto const &entry = item->getEntry();
-
 						out_packet << io::write<NetUInt32>(entry.id());
 						out_packet << io::write<NetUInt32>(entry.displayid());
 						out_packet << io::write<NetUInt32>(item->getStackCount());
 						out_packet << io::write<NetUInt32>(item->hasFlag(ItemFields::Flags, ItemFlags::Wrapped) ? 1 : 0 );
-						out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemFields::GiftCreator)); //enchantment
+						out_packet << io::write<NetUInt64>(item->getUInt32Value(ItemFields::GiftCreator));
 						out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemFields::Enchantment));
 
+						// Sockets
 						for (UInt32 enchant_slot = 2; enchant_slot < 2 + 3; ++enchant_slot)
 						{
 							out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemEnchantmentType(enchant_slot))); //TODO
 						}
 
-						out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemFields::Creator));
+						out_packet << io::write<NetUInt64>(item->getUInt32Value(ItemFields::Creator));
 						out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemFields::SpellCharges)); //spell charges
 						out_packet << io::write<NetUInt32>(entry.randomsuffix()); //suffix
 						out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemFields::RandomPropertiesID));
@@ -3872,6 +3872,12 @@ namespace wowpp
 				return packet
 					>> io::read<NetUInt8>(tradeSlot)
 					>> io::read<NetUInt8>(bag)
+					>> io::read<NetUInt8>(slot);
+			}
+
+			bool clearTradeItem(io::Reader & packet, UInt8 & slot)
+			{
+				return packet
 					>> io::read<NetUInt8>(slot);
 			}
 			

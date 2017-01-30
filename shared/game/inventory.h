@@ -103,6 +103,11 @@ namespace wowpp
 		/// @param out_slots If not nullptr, a map, containing all slots and counters will be filled.
 		/// @returns game::inventory_change_failure::Okay if succeeded.
 		game::InventoryChangeFailure createItems(const proto::ItemEntry &entry, UInt16 amount = 1, std::map<UInt16, UInt16> *out_addedBySlot = nullptr);
+		/// Tries to add multiple existing items of the same entry to the inventory.
+		/// @param entry The item template to be used for creating new items.
+		/// @param out_slot If not nullptr, a slot number that will be used by the item.
+		/// @returns game::inventory_change_failure::Okay if succeeded.
+		game::InventoryChangeFailure addItem(std::shared_ptr<GameItem> item, UInt16 *out_slot = nullptr);
 		/// Tries to remove multiple items of the same entry.
 		/// @param entry The item template to delete.
 		/// @param amount The amount of items to delete. If 0, ALL items of that entry are deleted.

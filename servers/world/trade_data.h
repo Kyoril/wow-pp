@@ -105,6 +105,8 @@ namespace wowpp
 		void setAcceptedState(Trader index, bool accept);
 		/// Sets an item for the given player.
 		void setItem(Trader Index, UInt8 tradeSlot, ItemPtr item);
+		/// Sends trade data to one of the players.
+		void sendTradeData(Trader index);
 
 	private:
 

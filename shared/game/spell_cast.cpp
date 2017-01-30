@@ -241,7 +241,7 @@ namespace wowpp
 		// Can't use while moving (this needs to be researched)
 		if (m_executer.getTypeId() == object_type::Character)
 		{
-			if (m_executer.getMovementInfo().moveFlags)
+			if (m_executer.getMovementInfo().moveFlags & game::movement_flags::Moving)
 			{
 				if (spell.interruptflags() & game::spell_interrupt_flags::Movement &&
 					castTime)

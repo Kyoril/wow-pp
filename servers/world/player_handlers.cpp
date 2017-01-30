@@ -564,8 +564,17 @@ namespace wowpp
 		if (opCode != game::client_packet::MoveStop)
 		{
 			// Don't accept these when it's not a move-stop
-			if (m_character->isStunned() || m_character->isRooted())
+			if (m_character->isStunned())
+			{
+				WLOG("Ignored packet " << opCode << " because of stuns");
 				return;
+			}
+
+			if (m_character->isRooted() && info.moveFlags & game::movement_flags::Moving)
+			{
+				WLOG("Ignored packet " << opCode << " because of roots");
+				return;
+			}
 
 			auto flags = m_character->getUInt32Value(unit_fields::UnitFlags);
 			if ((flags & 0x00040000) != 0 ||

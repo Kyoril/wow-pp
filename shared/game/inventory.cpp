@@ -318,6 +318,27 @@ namespace wowpp
 		// Everything okay
 		return game::inventory_change_failure::Okay;
 	}
+	game::InventoryChangeFailure Inventory::addItem(std::shared_ptr<GameItem> item, UInt16 * out_slot)
+	{
+		assert(item);
+		
+		const auto &entry = item->getEntry();
+
+		// Limit the total amount of items
+		const UInt16 itemCount = getItemCount(entry.id());
+		if (entry.maxcount() > 0 &&
+			UInt32(itemCount + item->getStackCount()) > entry.maxcount())
+		{
+			return game::inventory_change_failure::CantCarryMoreOfThis;
+		}
+
+		if (m_freeSlots < 1)
+		{
+			return game::inventory_change_failure::InventoryFull;
+		}
+
+		return game::InventoryChangeFailure();
+	}
 	game::InventoryChangeFailure Inventory::removeItems(const proto::ItemEntry &entry, UInt16 amount)
 	{
 		// If amount equals 0, remove ALL items of that entry.

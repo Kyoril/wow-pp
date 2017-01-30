@@ -1485,7 +1485,10 @@ namespace wowpp
 		m_lootSignals.disconnect();
 
 		if (m_loot)
-		{			
+		{
+			// Notify loot watchers about this
+			m_loot->closed(m_character->getGuid());
+
 			// Notify the client
 			sendProxyPacket(
 				std::bind(game::server_write::lootReleaseResponse, std::placeholders::_1, m_loot->getLootGuid()));

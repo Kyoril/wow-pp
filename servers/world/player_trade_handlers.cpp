@@ -109,10 +109,44 @@ namespace wowpp
 		UInt8 bag;
 		UInt8 slot;
 		if (!(game::client_read::setTradeItem(packet, tradeSlot, bag, slot)))
+			return;
+
+		if (!m_tradeData || !m_character)
 		{
+			WLOG("No trade data found");
 			return;
 		}
 
-		DLOG("TODO: handle SetTradeItem packet");
+		// Look for item
+		auto &inventory = m_character->getInventory();
+		auto item = inventory.getItemAtSlot(inventory.getAbsoluteSlot(bag, slot));
+		if (!item)
+		{
+			WLOG("Item not found");
+			return;
+		}
+
+		// Set item
+		TradeData::Trader index =
+			(&m_tradeData->getInitiator() == this) ? TradeData::Owner : TradeData::Target;
+		m_tradeData->setItem(index, tradeSlot, item);
+	}
+
+	void Player::handleClearTradeItem(game::Protocol::IncomingPacket & packet)
+	{
+		UInt8 slot;
+		if (!(game::client_read::clearTradeItem(packet, slot)))
+			return;
+
+		if (!m_tradeData || !m_character)
+		{
+			WLOG("No trade data found");
+			return;
+		}
+
+		// Set item
+		TradeData::Trader index =
+			(&m_tradeData->getInitiator() == this) ? TradeData::Owner : TradeData::Target;
+		m_tradeData->setItem(index, slot, nullptr);
 	}
 }
