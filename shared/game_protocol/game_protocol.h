@@ -2301,7 +2301,10 @@ namespace wowpp
 			void sendTradeStatus(
 				game::OutgoingPacket &out_packet,
 				UInt32 status,
-				UInt64 guid
+				UInt64 guid,
+				bool sendError = false,
+				UInt32 errorCode = 0,
+				UInt32 itemCategoryEntry = 0
 				);
 
 			void sendUpdateTrade(

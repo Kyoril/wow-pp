@@ -29,6 +29,7 @@ namespace wowpp
 {
 	class Player;
 	class GameItem;
+	class Inventory;
 
 	/// This class represents a trade session between two player characters.
 	class TradeData final
@@ -95,6 +96,10 @@ namespace wowpp
 		void openWindows();
 		/// Cancels this trade.
 		void cancel();
+		/// Performs the trade.
+		void performTrade();
+		/// Gets the amount of traded items of the specified trader.
+		UInt32 getTradedItemCount(Trader index) const;
 		/// Gets the trade data of the specific player. This method is constant, because changing any of these
 		/// values has to generate packets and changes the trade state.
 		/// @param index Player index.
@@ -107,6 +112,17 @@ namespace wowpp
 		void setItem(Trader Index, UInt8 tradeSlot, ItemPtr item);
 		/// Sends trade data to one of the players.
 		void sendTradeData(Trader index);
+		/// Sends a trade error and closes the trade window.
+		void sendTradeError(UInt32 errorCode, UInt32 itemCategory = 0);
+		
+	private:
+
+		/// Destroys this trade session.
+		void destroy();
+		/// Removes items of one trader from the given inventory.
+		void removeItems(Trader index, Inventory &inventory);
+		/// Adds items of one trader to the given inventory.
+		void addItems(Trader index, Inventory &inventory);
 
 	private:
 

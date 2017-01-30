@@ -113,7 +113,6 @@ namespace wowpp
 
 		if (!m_tradeData || !m_character)
 		{
-			WLOG("No trade data found");
 			return;
 		}
 
@@ -140,7 +139,6 @@ namespace wowpp
 
 		if (!m_tradeData || !m_character)
 		{
-			WLOG("No trade data found");
 			return;
 		}
 

@@ -2782,7 +2782,7 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void sendTradeStatus(game::OutgoingPacket &out_packet, UInt32 status, UInt64 guid)
+			void sendTradeStatus(game::OutgoingPacket &out_packet, UInt32 status, UInt64 guid, bool sendError/* = false*/, UInt32 errorCode/* = 0*/, UInt32 itemCategoryEntry/* = 0*/)
 			{
 				out_packet.start(game::server_packet::TradeStatus);
 				out_packet << io::write<NetUInt32>(status);
@@ -2796,9 +2796,9 @@ namespace wowpp
 						break;
 					case game::trade_status::CloseWindow:
 						out_packet 
-							<< io::write<NetUInt32>(0)
-							<< io::write<NetUInt8>(0)
-							<< io::write<NetUInt32>(0);
+							<< io::write<NetUInt32>(errorCode)				// Error-Code
+							<< io::write<NetUInt8>(sendError ? 1 : 0)		// Display error code? (1:0)
+							<< io::write<NetUInt32>(itemCategoryEntry);		// ItemLimitCategory dbc entry id in case error code is EQUIP_ERR_ITEM_MAX_LIMIT_CATEGORY_COUNT_EXCEEDED
 						break;
 					case game::trade_status::WrongRealm:
 						out_packet << io::write<NetUInt8>(0);

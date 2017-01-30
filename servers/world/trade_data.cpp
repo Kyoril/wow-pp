@@ -48,8 +48,99 @@ namespace wowpp
 
 		// Resetting the trade session field for both player instances will destroy this
 		// instance
-		m_initiator.setTradeSession(nullptr);
-		m_other.setTradeSession(nullptr);
+		destroy();
+	}
+
+	void TradeData::performTrade()
+	{
+		// Get both characters
+		auto ownerChar = m_initiator.getCharacter();
+		assert(ownerChar);
+		auto otherChar = m_other.getCharacter();
+		assert(otherChar);
+
+		const UInt32 ownerMoney = ownerChar->getUInt32Value(character_fields::Coinage);
+		const UInt32 otherMoney = otherChar->getUInt32Value(character_fields::Coinage);
+
+		// Perform some checks, some of them again
+		{
+			// Check owner gold
+			if (ownerMoney < m_data[Owner].gold)
+			{
+				sendTradeError(game::inventory_change_failure::NotEnoughMoney);
+				return;
+			}
+
+			// Check other gold
+			if (otherMoney < m_data[Target].gold)
+			{
+				sendTradeError(game::inventory_change_failure::NotEnoughMoney);
+				return;
+			}
+		}
+
+		// Used for inventory checks
+		auto &ownerInv = ownerChar->getInventory();
+		auto &otherInv = otherChar->getInventory();
+
+		// Calculate the amount of inventory slots that are required for both players
+		const UInt32 targetItemCount = getTradedItemCount(Target);
+		const UInt32 ownerItemCount = getTradedItemCount(Owner);
+		const Int32 requiredOwnerSlots = targetItemCount - ownerItemCount;
+		const Int32 requiredTargetSlots = ownerItemCount - targetItemCount;
+
+		// Check if both players have enough space in their inventory
+		if (ownerInv.getFreeSlotCount() < requiredOwnerSlots)
+		{
+			WLOG("Not enough space in initiators inventory.");
+			sendTradeError(game::inventory_change_failure::InventoryFull);
+			return;
+		}
+		if (otherInv.getFreeSlotCount() < requiredTargetSlots)
+		{
+			WLOG("Not enough space in targets inventory.");
+			sendTradeError(game::inventory_change_failure::InventoryFull);
+			return;
+		}
+
+		// Now remove all items from the inventory first - don't worry: They won't be deleted from memory
+		// since we use shared_ptrs which are also stored in the m_data field. We remove these items from
+		// the inventory first, so that there is enough space in each inventory in case it is needed (overflow
+		// was checked before, so it is safe here)
+
+		removeItems(Owner, ownerInv);
+		removeItems(Target, otherInv);
+
+		// Now add items to the others inventory
+		addItems(Owner, otherInv);
+		addItems(Target, ownerInv);
+
+		// Perform gold trade
+		{
+			// Increment gold values
+			ownerChar->setUInt32Value(character_fields::Coinage, ownerMoney - m_data[Owner].gold + m_data[Target].gold);
+			otherChar->setUInt32Value(character_fields::Coinage, otherMoney - m_data[Target].gold + m_data[Owner].gold);
+		}
+
+		// Finalize trade, which will close the trade window on both clients
+		m_initiator.sendTradeStatus(game::trade_status::TradeComplete);
+		m_other.sendTradeStatus(game::trade_status::TradeComplete);
+
+		// Destroy this trade session
+		destroy();
+	}
+
+	UInt32 TradeData::getTradedItemCount(Trader index) const
+	{
+		UInt32 count = MaxTradeSlots - 1;
+		for (const auto &item : m_data[index].items)
+		{
+			if (!item)
+			{
+				count--;
+			}
+		}
+		return count;
 	}
 
 	void TradeData::setGold(Trader index, UInt32 gold)
@@ -87,51 +178,16 @@ namespace wowpp
 		}
 		else
 		{
-			Player *target = (index == Owner ? &m_other : &m_initiator);
-			assert(target);
-
 			// Did both accept?
 			if (m_data[Owner].accepted && m_data[Target].accepted)
 			{
-				// TODO: Do the trade
-
-				// Get both characters
-				auto ownerChar = m_initiator.getCharacter();
-				assert(ownerChar);
-				auto otherChar = m_other.getCharacter();
-				assert(otherChar);
-
-				const UInt32 ownerMoney = ownerChar->getUInt32Value(character_fields::Coinage);
-				const UInt32 otherMoney = otherChar->getUInt32Value(character_fields::Coinage);
-
-				// Perform some checks, some of them again
-				{
-					// Check owner gold
-					if (ownerMoney < m_data[Owner].gold)
-						return;
-
-					// Check other gold
-					if (otherMoney < m_data[Target].gold)
-						return;
-				}
-				
-				// Perform gold trade
-				{
-					// Increment gold values
-					ownerChar->setUInt32Value(character_fields::Coinage, ownerMoney - m_data[Owner].gold + m_data[Target].gold);
-					otherChar->setUInt32Value(character_fields::Coinage, otherMoney - m_data[Target].gold + m_data[Owner].gold);
-				}
-				
-				// Finalize trade, which will close the trade window on both clients
-				m_initiator.sendTradeStatus(game::trade_status::TradeComplete);
-				m_other.sendTradeStatus(game::trade_status::TradeComplete);
-
-				// Destroy this trade session
-				m_initiator.setTradeSession(nullptr);
-				m_other.setTradeSession(nullptr);
+				performTrade();
 			}
 			else
 			{
+				Player *target = (index == Owner ? &m_other : &m_initiator);
+				assert(target);
+
 				// Notify the other client about the acceptance
 				target->sendTradeStatus(game::trade_status::TradeAccept);
 			}
@@ -183,6 +239,52 @@ namespace wowpp
 		else
 		{
 			m_initiator.sendProxyPacket(formatter);
+		}
+	}
+	void TradeData::sendTradeError(UInt32 errorCode, UInt32 itemCategory)
+	{
+		// Send new items to other client
+		m_initiator.sendTradeStatus(game::trade_status::CloseWindow, 0, errorCode, itemCategory);
+		m_other.sendTradeStatus(game::trade_status::CloseWindow, 0, errorCode, itemCategory);
+
+		destroy();
+	}
+
+	void TradeData::destroy()
+	{
+		// Destroy trade data
+		m_initiator.setTradeSession(nullptr);
+		m_other.setTradeSession(nullptr);
+	}
+
+	void TradeData::removeItems(Trader index, Inventory & inventory)
+	{
+		for (const auto &item : m_data[index].items)
+		{
+			if (item)
+			{
+				if (inventory.removeItemByGUID(item->getGuid()) != game::inventory_change_failure::Okay)
+				{
+					ELOG("Could not remove item from inventory!");
+					assert(false);
+					return;
+				}
+			}
+		}
+	}
+	void TradeData::addItems(Trader index, Inventory & inventory)
+	{
+		for (auto item : m_data[index].items)
+		{
+			if (item)
+			{
+				if (inventory.addItem(item) != game::inventory_change_failure::Okay)
+				{
+					ELOG("Could not add item to inventory!");
+					assert(false);
+					return;
+				}
+			}
 		}
 	}
 }

@@ -180,7 +180,7 @@ namespace wowpp
 		/// Saves the characters data.
 		void saveCharacterData() const;
 		/// 
-		void sendTradeStatus(TradeStatus status, UInt64 guid = 0);
+		void sendTradeStatus(TradeStatus status, UInt64 guid = 0, UInt32 errorCode = 0, UInt32 itemCategory = 0);
 		/// 
 		void sendUpdateTrade();
 		///

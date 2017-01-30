@@ -1696,10 +1696,10 @@ namespace wowpp
 
 	}
 
-	void Player::sendTradeStatus(TradeStatus status, UInt64 guid/* = 0*/)
+	void Player::sendTradeStatus(TradeStatus status, UInt64 guid/* = 0*/, UInt32 errorCode/* = 0*/, UInt32 itemCategory/* = 0*/)
 	{
 		sendProxyPacket(
-			std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, static_cast<UInt32>(status), guid));
+			std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, static_cast<UInt32>(status), guid, errorCode != 0, errorCode, itemCategory));
 	}
 	
 	void Player::sendUpdateTrade()

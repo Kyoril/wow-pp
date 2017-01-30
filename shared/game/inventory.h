@@ -119,6 +119,12 @@ namespace wowpp
 		///               so that if stacks >= actual item stacks, simply all stacks will be removed as well.
 		/// @returns game::inventory_change_failure::Okay if succeeded.
 		game::InventoryChangeFailure removeItem(UInt16 absoluteSlot, UInt16 stacks = 0);
+		/// Tries to remove an item by it's guid. This is basically just a shortcut to findItemByGUID() and removeItem().
+		/// @param guid The item guid.
+		/// @param stacks The number of stacks to remove. If 0, ALL stacks will be removed. Stacks are capped automatically,
+		///               so that if stacks >= actual item stacks, simply all stacks will be removed as well.
+		/// @returns game::inventory_change_failure::Okay if succeeded.
+		game::InventoryChangeFailure removeItemByGUID(UInt64 guid, UInt16 stacks = 0);
 		/// Tries to swap two slots. Can also be used to move items, if one of the slots is
 		/// empty.
 		/// @param slotA The first (source) slot.
