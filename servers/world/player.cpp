@@ -1506,42 +1506,6 @@ namespace wowpp
 		}
 	}
 
-	void Player::moveItems(std::vector<std::shared_ptr<GameItem>> my_Items, std::vector<std::shared_ptr<GameItem>> his_Items)
-	{
-#if 0
-		UInt8 bag = 0, slot = 0;
-		auto trader = m_tradeData->getTrader();
-		if (trader == nullptr)
-		{
-			return;
-		}
-
-		for (int i = 0; i < TradeSlots::TradedCount; i++)
-		{
-			//TODO: check if items exists and can be traded/stored
-			
-			if (my_Items[i])
-			{
-				auto &inventory = this->getCharacter()->getInventory();
-
-				auto &traderInventory = m_tradeData->getTrader()->getCharacter()->getInventory();
-				traderInventory.createItems(my_Items[i]->getEntry(), my_Items[i]->getStackCount());
-				inventory.removeItem(inventory.getAbsoluteSlot(bag, slot));
-
-			}
-
-			if (his_Items[i])
-			{
-				auto &inventory = trader->getCharacter()->getInventory();
-				
-				auto &myInventory = this->getCharacter()->getInventory();
-				myInventory.createItems(his_Items[i]->getEntry(), his_Items[i]->getStackCount());
-				inventory.removeItem(trader->m_tradeData->getAbsSlot(i));
-			}
-		}
-#endif
-	}
-
 	void Player::initiateTrade(UInt64 target)
 	{
 		// Cancel current trade if any
@@ -1701,10 +1665,4 @@ namespace wowpp
 		sendProxyPacket(
 			std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, static_cast<UInt32>(status), guid, errorCode != 0, errorCode, itemCategory));
 	}
-	
-	void Player::sendUpdateTrade()
-	{
-
-	}
-
 }

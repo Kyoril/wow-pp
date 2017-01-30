@@ -39,18 +39,7 @@
 
 namespace wowpp
 {
-	namespace trade_slots
-	{
-		enum Type
-		{
-			Count = 7,
-			TradedCount = 6,
-			NonTraded = 6
-		};
-	}
-
 	typedef game::trade_status::Type TradeStatus;
-	typedef trade_slots::Type TradeSlots;
 
 	// Forwards
 	class PlayerManager;
@@ -181,10 +170,6 @@ namespace wowpp
 		void saveCharacterData() const;
 		/// 
 		void sendTradeStatus(TradeStatus status, UInt64 guid = 0, UInt32 errorCode = 0, UInt32 itemCategory = 0);
-		/// 
-		void sendUpdateTrade();
-		///
-		void moveItems(std::vector<std::shared_ptr<GameItem>> my_Items, std::vector<std::shared_ptr<GameItem>> his_Items);
 		/// Determines if there is a pending logout request.
 		bool isLogoutPending() const { return m_logoutCountdown.running; }
 		/// Determines if this player is currently trading.
