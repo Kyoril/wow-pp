@@ -299,6 +299,11 @@ namespace wowpp
 					data.expiration = questTimer;
 				}
 
+				if (questEntry->timelimit() > 0)
+				{
+
+				}
+
 				// Set quest log
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 0, quest);
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 1, 0);

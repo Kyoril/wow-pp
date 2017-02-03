@@ -594,8 +594,8 @@ namespace wowpp
 		for (size_t p = 1; p < waypoints.size(); ++p)
 		{
 			// Get the previous point
-			const auto &prevPoint = waypoints[p - 1];
-			const auto thisPoint = waypoints[p];		// Copy this one as we will insert waypoints before this point eventually
+			const auto prevPoint = waypoints[p - 1];
+			const auto thisPoint = waypoints[p];
 
 			// Get the direction vector and the distance
 			auto dir = thisPoint - prevPoint;
@@ -607,7 +607,6 @@ namespace wowpp
 			for (Int32 n = 1; n < count; n++)
 			{
 				const float d = n * step;
-
 				auto newPoint = prevPoint + (dir * d);
 
 				math::Vector3 closestPoint;
