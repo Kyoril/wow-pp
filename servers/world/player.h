@@ -192,7 +192,8 @@ namespace wowpp
 		/// @copydoc ITileSubscriber::sendPacket()
 		void sendPacket(game::Protocol::OutgoingPacket &packet, const std::vector<char> &buffer) override;
 
-		// Network packet handlers
+		// Network packet handlers (implemented in separate cpp files like player_XXX_handler.cpp)
+
 		void handleAutoStoreLootItem(game::Protocol::IncomingPacket &packet);
 		void handleAutoEquipItem(game::Protocol::IncomingPacket &packet);
 		void handleAutoStoreBagItem(game::Protocol::IncomingPacket &packet);
@@ -245,6 +246,7 @@ namespace wowpp
 		void handleCancelChanneling(game::Protocol::IncomingPacket &packet);
 		void handlePlayedTime(game::Protocol::IncomingPacket &packet);
 		void handleAckCode(game::Protocol::IncomingPacket &packet, UInt16 opCode);
+		void handleZoneUpdate(game::Protocol::IncomingPacket &packet);
 
 	private:
 

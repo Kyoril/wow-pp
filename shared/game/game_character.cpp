@@ -1855,6 +1855,41 @@ namespace wowpp
 		m_name = name;
 	}
 
+	void GameCharacter::setZone(UInt32 zoneIndex)
+	{
+		const auto *entry = getProject().zones.getById(zoneIndex);
+		if (!entry)
+		{
+			WLOG("Unknown zone id " << zoneIndex);
+			return;
+		}
+
+		m_zoneIndex = zoneIndex;
+
+		// Get area of zone
+		const proto::ZoneEntry *area = entry;
+		if (entry->parentzone() != 0)
+		{
+			area = getProject().zones.getById(entry->parentzone());
+		}
+
+		if (area == nullptr)
+		{
+			WLOG("No area belongs to zone " << zoneIndex);
+			return;
+		}
+
+		// Eventually update rest zone
+		if (area->flags() & game::area_flags::Capital)
+		{
+			setRestType(rest_type::City, nullptr);
+		}
+		else if (m_restType == rest_type::City)
+		{
+			setRestType(rest_type::None, nullptr);
+		}
+	}
+
 	bool GameCharacter::addSpell(const proto::SpellEntry &spell)
 	{
 		if (hasSpell(spell.id()))

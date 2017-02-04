@@ -724,6 +724,7 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(ResurrectResponse)
 			WOWPP_HANDLE_PLAYER_PACKET(CancelChanneling)
 			WOWPP_HANDLE_PLAYER_PACKET(PlayedTime)
+			WOWPP_HANDLE_PLAYER_PACKET(ZoneUpdate)
 #undef WOWPP_HANDLE_PLAYER_PACKET
 
 			// Movement packets get special treatment

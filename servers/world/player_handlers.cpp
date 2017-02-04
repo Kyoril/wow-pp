@@ -1552,4 +1552,17 @@ namespace wowpp
 			}
 		}
 	}
+
+	void Player::handleZoneUpdate(game::Protocol::IncomingPacket & packet)
+	{
+		UInt32 zoneId = 0;
+		if (!(game::client_read::zoneUpdate(packet, zoneId)))
+		{
+			return;
+		}
+
+		// TODO: Validate zone id
+
+		m_character->setZone(zoneId);
+	}
 }

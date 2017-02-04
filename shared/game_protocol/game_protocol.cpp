@@ -3599,6 +3599,12 @@ namespace wowpp
 				       >> io::read<NetUInt64>(out_targetGuid);
 			}
 
+			bool zoneUpdate(io::Reader & packet, UInt32 & out_zoneId)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_zoneId);
+			}
+
 			bool lootMoney(io::Reader &packet /*TODO */)
 			{
 				return true;

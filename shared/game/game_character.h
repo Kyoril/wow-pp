@@ -794,7 +794,7 @@ namespace wowpp
 		void setName(const String &name);
 		/// Updates the zone where this character is. This variable is used by
 		/// the friend list and the /who list.
-		void setZone(UInt32 zoneIndex) { m_zoneIndex = zoneIndex; }
+		void setZone(UInt32 zoneIndex);
 		/// Gets the zone index where this character is.
 		UInt32 getZone() const { return m_zoneIndex; }
 		/// Gets a list of all known spells of this character.
