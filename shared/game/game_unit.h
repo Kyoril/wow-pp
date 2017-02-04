@@ -811,7 +811,7 @@ namespace wowpp
 		///
 		bool canUseWeapon(game::WeaponAttack attackType);
 
-		/// Something something bosses
+		/// TODO: Do this properly, return level of target if found (can be a boss, not sure how it'll be done)
 		UInt16 getMaxSkillValueForLevel(const GameUnit *target = nullptr) const {
 			return (target ? target->getLevel() : getLevel()) * 5;
 		}
