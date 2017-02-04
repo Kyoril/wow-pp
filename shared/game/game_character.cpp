@@ -1524,8 +1524,7 @@ namespace wowpp
 
 		float value = getRatingBonusValue(combatRating) + getTotalPercentageModValue(modGroup);
 
-		// Commented out for testing purposes; skill values not implemented yet
-		// value += (static_cast<Int32>(getWeaponSkillValue(attackType)) - static_cast<Int32>(getMaxSkillValueForLevel())) * 0.04f;
+		value += (static_cast<Int32>(getWeaponSkillValue(attackType)) - static_cast<Int32>(getMaxSkillValueForLevel())) * 0.04f;
 
 		setFloatValue(index, value < 0.0f ? 0.0f : value);
 	}
