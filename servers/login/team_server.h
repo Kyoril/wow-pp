@@ -33,8 +33,12 @@ namespace wowpp
 	/// Player connection class.
 	class TeamServer final
 			: public pp::IConnectionListener
-			, public boost::noncopyable
 	{
+	private:
+
+		TeamServer(const TeamServer &Other) = delete;
+		TeamServer &operator=(const TeamServer &Other) = delete;
+
 	public:
 
 		typedef AbstractConnection<pp::Protocol> Client;

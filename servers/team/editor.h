@@ -54,9 +54,13 @@ namespace wowpp
 	/// Editor connection class.
 	class Editor final
 		: public pp::IConnectionListener
-		, public boost::noncopyable
 		, public std::enable_shared_from_this<Editor>
 	{
+	private:
+
+		Editor(const Editor &Other) = delete;
+		Editor &operator=(const Editor &Other) = delete;
+
 	public:
 
 		typedef AbstractConnection<pp::Protocol> Client;

@@ -27,8 +27,13 @@
 namespace wowpp
 {
 	/// This class manages all components of the world server.
-	class Program final : public boost::noncopyable
+	class Program final
 	{
+	private:
+
+		Program(const Program &Other) = delete;
+		Program &operator=(const Program &Other) = delete;
+
 	public:
 
 		/// Creates a new instance of the Program class.

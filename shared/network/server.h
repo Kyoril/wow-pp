@@ -34,8 +34,13 @@ namespace wowpp
 
 	/// Basic server class which manages connection.
 	template<typename C>
-	class Server : boost::noncopyable
+	class Server
 	{
+	private:
+
+		Server<C>(const Server<C> &Other) = delete;
+		Server &operator=(const Server<C> &Other) = delete;
+
 	public:
 
 		typedef C Connection;

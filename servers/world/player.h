@@ -50,8 +50,14 @@ namespace wowpp
 	}
 
 	/// Player connection class.
-	class Player final : public boost::noncopyable, public ITileSubscriber
+	class Player final
+		: public ITileSubscriber
 	{
+	private:
+
+		Player(const Player &Other) = delete;
+		Player &operator=(const Player &Other) = delete;
+
 	public:
 
 		/// Creates a new instance of the player class and registers itself as the

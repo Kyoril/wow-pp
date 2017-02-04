@@ -29,8 +29,13 @@ namespace wowpp
 	/// a crash occurs. This can be used to finish some work (like saving all characters or flush
 	/// logs) before the application will exit. This class also supports creating a dump
 	/// file and call stack log. This class uses the singleton pattern.
-	class CrashHandler : public boost::noncopyable
+	class CrashHandler
 	{
+	private:
+
+		CrashHandler(const CrashHandler &Other) = delete;
+		CrashHandler &operator=(const CrashHandler &Other) = delete;
+
 	public:
 
 		typedef boost::signals2::signal<void ()> CrashSignal;

@@ -89,9 +89,19 @@ namespace wowpp
 		typedef TemplateManager<wowpp::proto::ResistancePercentage, wowpp::proto::ResistancePercentageEntry> ResistancePercentageManager;
 		typedef TemplateManager<wowpp::proto::Variables, wowpp::proto::VariableEntry> VariableManager;
 
-		class Project : public boost::noncopyable
+		/// This class contains contains all the static game data like item templates.
+		class Project final
 		{
+		private:
+
+			// Make this class non-copyable
+
+			Project(const Project &Other) = delete;
+			Project &operator=(const Project &Other) = delete;
+
 		public:
+
+			// Data managers
 
 			ObjectManager objects;
 			UnitManager units;
@@ -129,9 +139,14 @@ namespace wowpp
 
 		public:
 
+			/// Gets the path that was used to load this project.
 			const String &getLastPath() const { return m_lastPath; }
 
+			Project()
+			{
+			}
 			/// Loads the project.
+			/// @param directory The path to load this project from.
 			bool load(
 			    const String &directory)
 			{
@@ -206,6 +221,7 @@ namespace wowpp
 				return true;
 			}
 			/// Saves the project.
+			/// @param directory The path to save this project to.
 			bool save(
 			    const String &directory)
 			{

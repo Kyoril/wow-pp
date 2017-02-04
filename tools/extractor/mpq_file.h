@@ -34,8 +34,13 @@ namespace mpq
 namespace wowpp
 {
 	/// This class represents a file which will be loaded from an MPQ archive.
-	class MPQFile : public boost::noncopyable
+	class MPQFile
 	{
+	private:
+
+		MPQFile(const MPQFile &Other) = delete;
+		MPQFile &operator=(const MPQFile &Other) = delete;
+
 	public:
 
 		static boost::mutex MPQMutex;

@@ -32,8 +32,13 @@ namespace wowpp
 {
 	namespace view
 	{
-		class WorldRenderer : public boost::noncopyable
+		class WorldRenderer
 		{
+		private:
+
+			WorldRenderer(const WorldRenderer &Other) = delete;
+			WorldRenderer &operator=(const WorldRenderer &Other) = delete;
+
 		public:
 
 			explicit WorldRenderer(Ogre::SceneManager &sceneMgr, Ogre::Camera &camera);

@@ -26,8 +26,13 @@ namespace wowpp
 	/// This class delays the assignment of a value to the moment
 	/// of it's destruction.
 	template<typename T>
-	class AssignOnExit final : boost::noncopyable
+	class AssignOnExit final
 	{
+	private:
+
+		AssignOnExit<T>(const AssignOnExit<T> &Other) = delete;
+		AssignOnExit<T> &operator=(const AssignOnExit<T> &Other) = delete;
+
 	public:
 
 		/// Initializes a new instance of this class.

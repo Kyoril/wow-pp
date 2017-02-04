@@ -83,9 +83,13 @@ namespace wowpp
 	template<class P, class MySocket = boost::asio::ip::tcp::socket>
 	class Connection
 		: public AbstractConnection<P>
-		, public boost::noncopyable
 		, public std::enable_shared_from_this<Connection<P, MySocket> >
 	{
+	private:
+
+		Connection<P, MySocket>(const Connection<P, MySocket> &Other) = delete;
+		Connection<P, MySocket> &operator=(const Connection<P, MySocket> &Other) = delete;
+
 	public:
 
 		typedef MySocket Socket;

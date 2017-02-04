@@ -26,8 +26,13 @@
 
 namespace io
 {
-	class Writer : public boost::noncopyable
+	class Writer
 	{
+	private:
+
+		Writer(const Writer &Other) = delete;
+		Writer &operator=(const Writer &Other) = delete;
+
 	public:
 
 		explicit Writer(ISink &sink)

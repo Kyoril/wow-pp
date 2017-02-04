@@ -32,8 +32,15 @@ namespace wowpp
 	typedef std::map<UInt64, HitResult> HitResultMap;
 
 	///
-	class SingleCastState final : public SpellCast::CastState, public std::enable_shared_from_this<SingleCastState>, public boost::noncopyable
+	class SingleCastState final
+		: public SpellCast::CastState
+		, public std::enable_shared_from_this<SingleCastState>
 	{
+	private:
+
+		SingleCastState(const SingleCastState& Other) = delete;
+		SingleCastState &operator=(const SingleCastState &Other) = delete;
+
 	public:
 
 		explicit SingleCastState(

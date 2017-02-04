@@ -73,10 +73,15 @@ namespace wowpp
 
 	/// Represents a characters inventory and provides functionalities like
 	/// adding and organizing items.
-	class Inventory : public boost::noncopyable
+	class Inventory
 	{
 		friend io::Writer &operator << (io::Writer &w, Inventory const &object);
 		friend io::Reader &operator >> (io::Reader &r, Inventory &object);
+
+	private:
+
+		Inventory(const Inventory &Other) = delete;
+		Inventory &operator=(const Inventory &Other) = delete;
 
 	public:
 

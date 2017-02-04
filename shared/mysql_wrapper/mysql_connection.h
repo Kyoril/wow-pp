@@ -47,9 +47,15 @@ namespace wowpp
 
 
 		struct Connection
-			: boost::noncopyable
-			, boost::spirit::classic::safe_bool<Connection>
+			: boost::spirit::classic::safe_bool<Connection>
 		{
+		private:
+
+			Connection(const Connection &Other) = delete;
+			Connection &operator=(const Connection &Other) = delete;
+
+		public:
+
 			Connection();
 			Connection(Connection  &&other);
 			explicit Connection(const DatabaseInfo &info);
@@ -74,8 +80,15 @@ namespace wowpp
 		};
 
 
-		struct Transaction : boost::noncopyable
+		struct Transaction
 		{
+		private:
+
+			Transaction(const Transaction &Other) = delete;
+			Transaction &operator=(const Transaction &Other) = delete;
+
+		public:
+
 			explicit Transaction(Connection &connection);
 			~Transaction();
 			void commit();
