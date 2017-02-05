@@ -729,19 +729,23 @@ namespace wowpp
 		// GameUnit overrides
 
 		/// @copydoc GameUnit::hasMainHandWeapon
-		bool hasMainHandWeapon() const override;
+		virtual bool hasMainHandWeapon() const override;
 		/// @copydoc GameUnit::hasOffHandWeapon
-		bool hasOffHandWeapon() const override;
+		virtual bool hasOffHandWeapon() const override;
+		/// @copydoc GameUnit::getMainHandWeapon
+		virtual std::shared_ptr<GameItem> getMainHandWeapon() const override;
+		/// @copydoc GameUnit::getOffHandWeapon
+		virtual std::shared_ptr<GameItem> getOffHandWeapon() const override;
 		/// @copydoc GameUnit::canBlock
-		bool canBlock() const override;
+		virtual bool canBlock() const override;
 		/// @copydoc GameUnit::canParry
-		bool canParry() const override;
+		virtual bool canParry() const override;
 		/// @copydoc GameUnit::canDodge
-		bool canDodge() const override;
+		virtual bool canDodge() const override;
 		/// @copydoc GameUnit::canDualWield
-		bool canDualWield() const override;
+		virtual bool canDualWield() const override;
 		/// @copydoc GameUnit::rewardExperience()
-		void rewardExperience(GameUnit *victim, UInt32 experience) override;
+		virtual void rewardExperience(GameUnit *victim, UInt32 experience) override;
 
 	protected:
 

@@ -2230,7 +2230,7 @@ namespace wowpp
 		// Perform a roll to see if we should increase the skill value
 		std::uniform_int_distribution<UInt32> dist(0, 512);
 		const UInt32 roll = dist(randomGenerator);
-		if (static_cast<UInt32>(current) * 512 < roll)
+		if (static_cast<UInt32>(current) * 512 < static_cast<UInt32>(max) * roll)
 		{
 			// Increase skill value
 			setSkillValue(skillId, current + 1, max);
@@ -3041,14 +3041,24 @@ namespace wowpp
 
 	bool GameCharacter::hasMainHandWeapon() const
 	{
-		auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
+		auto item = getMainHandWeapon();
 		return item != nullptr;
 	}
 
 	bool GameCharacter::hasOffHandWeapon() const
 	{
-		auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
+		auto item = getOffHandWeapon();
 		return (item && item->getEntry().inventorytype() != game::inventory_type::Shield);
+	}
+
+	std::shared_ptr<GameItem> GameCharacter::getMainHandWeapon() const
+	{
+		return m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
+	}
+
+	std::shared_ptr<GameItem> GameCharacter::getOffHandWeapon() const
+	{
+		return m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
 	}
 
 	io::Writer &operator<<(io::Writer &w, GameCharacter const &object)

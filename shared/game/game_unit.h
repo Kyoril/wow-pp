@@ -626,9 +626,13 @@ namespace wowpp
 		virtual bool canDualWield() const = 0;
 
 		/// 
-		virtual bool hasMainHandWeapon() const = 0;
+		virtual bool hasMainHandWeapon() const { return false; }
 		/// 
-		virtual bool hasOffHandWeapon() const = 0;
+		virtual bool hasOffHandWeapon() const { return false; }
+		/// 
+		virtual std::shared_ptr<GameItem> getMainHandWeapon() const { return nullptr; }
+		/// 
+		virtual std::shared_ptr<GameItem> getOffHandWeapon() const { return nullptr; }
 
 		/// 
 		bool isStunned() const {

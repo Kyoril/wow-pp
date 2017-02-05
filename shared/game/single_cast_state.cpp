@@ -42,6 +42,7 @@
 #include "aura.h"
 #include "unit_mover.h"
 #include "game_dyn_object.h"
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {

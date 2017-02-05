@@ -803,6 +803,7 @@ namespace wowpp
 					bool crit = false;
 					UInt32 resisted = 0;
 					UInt32 absorbed = 0;
+
 					if (victimStates[i] == game::victim_state::IsImmune)
 					{
 						totalDamage = 0;
@@ -948,6 +949,29 @@ namespace wowpp
 							currentRage += addRage;
 						}
 						setUInt32Value(unit_fields::Power2, currentRage);
+					}
+
+					// Update attacking characters weapon skill
+					if (isGameCharacter() && hitInfos[i] != game::hit_info::Miss && (victimStates[i] & game::victim_state::Normal | game::victim_state::Parry | game::victim_state::Blocks))
+					{
+						std::shared_ptr<GameItem> weapon;
+						switch (m_weaponAttack)
+						{
+							case game::weapon_attack::BaseAttack:
+								weapon = getMainHandWeapon();
+								break;
+							case game::weapon_attack::OffhandAttack:
+								weapon = getOffHandWeapon();
+								break;
+							case game::weapon_attack::RangedAttack:
+								// TODO
+								break;
+						}
+
+						UInt32 weaponSkill = 162;	// No weapon
+						if (weapon) 
+							weaponSkill = weapon->getEntry().skill();
+						reinterpret_cast<GameCharacter*>(this)->updateWeaponSkill(weaponSkill);
 					}
 
 					// Deal damage (Note: m_victim can become nullptr, if the target dies)
