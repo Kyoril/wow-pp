@@ -1148,8 +1148,8 @@ namespace wowpp
 			);
 
 			void initializeFactions(
-			    game::OutgoingPacket &out_packet
-			    //TODO
+			    game::OutgoingPacket &out_packet,
+				const GameCharacter &character
 			);
 
 			void setProficiency(

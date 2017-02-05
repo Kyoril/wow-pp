@@ -999,6 +999,20 @@ namespace wowpp
 
 	public:
 
+		// Reputation
+
+		/// Gets the default faction flags of the given faction.
+		/// @param faction Faction id.
+		game::FactionFlags getBaseFlags(UInt32 faction) const;
+		/// Gets the default reputation value for the specific faction.
+		/// @param faction Faction id.
+		Int32 getBaseReputation(UInt32 faction) const;
+		/// Gets the characters reputation value for the specific faction.
+		/// @param faction Faction id.
+		Int32 getReputation(UInt32 faction) const;
+
+	public:
+
 		/// @copydoc GameUnit::onKilled(GameUnit*)
 		virtual void onKilled(GameUnit *killer) override;
 

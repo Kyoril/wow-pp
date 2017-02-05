@@ -3265,6 +3265,7 @@ namespace wowpp
 		{
 			enum Type
 			{
+				None			= 0x00,
 				/// Makes visible in client (set or can be set at interaction with target of this faction)
 				Visible			= 0x01,
 				/// Enable AtWar button in client. Player controlled (except opposition team always war state). Flag only set on initial creation.
@@ -3281,6 +3282,8 @@ namespace wowpp
 				Rival			= 0x40
 			};
 		}
+
+		typedef faction_flags::Type FactionFlags;
 
 		namespace reputation_rank
 		{

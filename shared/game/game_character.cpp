@@ -1703,6 +1703,52 @@ namespace wowpp
 		return true;
 	}
 
+	game::FactionFlags GameCharacter::getBaseFlags(UInt32 faction) const
+	{
+		const auto *entry = getProject().factions.getById(faction);
+		if (!entry)
+			return game::faction_flags::None;
+
+		const UInt32 classMask = 1 << (getClass() - 1);
+		const UInt32 raceMask = 1 << (getRace() - 1);
+		for (const auto &rep : entry->baserep())
+		{
+			if ((rep.racemask() == 0 || rep.racemask() & raceMask) &&
+				(rep.classmask() == 0 || rep.classmask() & classMask))
+			{
+				return static_cast<game::FactionFlags>(rep.flags());
+			}
+		}
+
+		return game::faction_flags::None;
+	}
+
+	Int32 GameCharacter::getBaseReputation(UInt32 faction) const
+	{
+		const auto *entry = getProject().factions.getById(faction);
+		if (!entry)
+			return 0;
+
+		const UInt32 classMask = 1 << (getClass() - 1);
+		const UInt32 raceMask = 1 << (getRace() - 1);
+		for (const auto &rep : entry->baserep())
+		{
+			if ((rep.racemask() == 0 || rep.racemask() & raceMask) &&
+				(rep.classmask() == 0 || rep.classmask() & classMask))
+			{
+				return rep.value();
+			}
+		}
+
+		return 0;
+	}
+
+	Int32 GameCharacter::getReputation(UInt32 faction) const
+	{
+		// TODO
+		return getBaseReputation(faction);
+	}
+
 	void GameCharacter::onKilled(GameUnit * killer)
 	{
 		GameUnit::onKilled(killer);

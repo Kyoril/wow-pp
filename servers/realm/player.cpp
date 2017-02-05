@@ -902,7 +902,7 @@ namespace wowpp
 				std::bind(game::server_write::actionButtons, std::placeholders::_1, std::cref(m_actionButtons)));
 		
 			sendPacket(
-				std::bind(game::server_write::initializeFactions, std::placeholders::_1));
+				std::bind(game::server_write::initializeFactions, std::placeholders::_1, std::cref(*m_gameCharacter)));
 
 			// Trigger intro cinematic based on the characters race
 			game::CharEntry *charEntry = getCharacterById(m_characterId);
