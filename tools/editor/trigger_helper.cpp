@@ -193,7 +193,7 @@ namespace wowpp
 			case trigger_actions::SetMount:
 				return QString("Unit - Set mount id of %1 to %2")
 					.arg(getTriggerTargetName(action, withLinks))
-					.arg(actionDataEntry(project.units, action, 0, withLinks));
+					.arg(getTriggerActionData(action, 0, withLinks));
 			case trigger_actions::SetVariable:
 			{
 				QString format("Object - Set %1's variable %2 to %3");
