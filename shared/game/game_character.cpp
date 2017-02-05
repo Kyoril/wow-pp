@@ -2190,6 +2190,53 @@ namespace wowpp
 		}
 	}
 
+	void GameCharacter::updateWeaponSkill(UInt32 skillId)
+	{
+		// Check if we have that skill
+		const proto::SkillEntry *weaponSkill = nullptr;
+		for (const auto *skill : m_skills)
+		{
+			if (skill->id() == skillId)
+			{
+				weaponSkill = skill;
+				break;
+			}
+		}
+
+		if (!weaponSkill)
+		{
+			WLOG("Player doesn't know skill " << skillId);
+			return;
+		}
+
+		if (weaponSkill->category() != game::skill_category::Weapon)
+		{
+			WLOG("Skill " << skillId << " - " << weaponSkill->name() << " is not a weapon skill");
+			return;
+		}
+
+		// Get skill value
+		UInt16 current = 0, max = 0;
+		if (!getSkillValue(skillId, current, max))
+		{
+			WLOG("Could not get skill values for skill " << skillId);
+			return;
+		}
+
+		// Something to increase?
+		if (current == 0 || max == 0 || current >= max)
+			return;
+
+		// Perform a roll to see if we should increase the skill value
+		std::uniform_int_distribution<UInt32> dist(0, 512);
+		const UInt32 roll = dist(randomGenerator);
+		if (static_cast<UInt32>(current) * 512 < roll)
+		{
+			// Increase skill value
+			setSkillValue(skillId, current + 1, max);
+		}
+	}
+
 	void GameCharacter::setSkillValue(UInt32 skillId, UInt16 current, UInt16 maximum)
 	{
 		// Find the next usable skill slot

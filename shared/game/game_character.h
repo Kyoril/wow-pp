@@ -831,6 +831,11 @@ namespace wowpp
 		void addSkill(const proto::SkillEntry &skill);
 		/// Removes a skill from the list of known skills.
 		void removeSkill(UInt32 skillId);
+		/// Updates a weapon skill. This method should be called once per auto attack / weapon skill and also
+		/// for the defense skill - so when a target gets hit by a melee attack / melee spell to eventually
+		/// increase it's defense skill value.
+		/// @param skillId Id of the weapon skill.
+		void updateWeaponSkill(UInt32 skillId);
 		/// Updates the skill values for a given skill of this character.
 		void setSkillValue(UInt32 skillId, UInt16 current, UInt16 maximum);
 		/// Gets the current skill value and max value of a given spell.
