@@ -259,6 +259,8 @@ namespace wowpp
 		UInt32 absorbed = 0;
 		UInt32 ownerMana = m_owner.getUInt32Value(unit_fields::Power1);
 		UInt32 manaShielded = 0;
+
+		std::list<std::shared_ptr<Aura>> toRemove;
 		for (auto &it : m_auras)
 		{
 			if (it->getEffect().aura() == game::aura_type::SchoolAbsorb
@@ -274,7 +276,7 @@ namespace wowpp
 				else
 				{
 					absorbed += toConsume;
-					it->setBasePoints(0);
+					toRemove.push_back(it);
 				}
 			}
 			else if (it->getEffect().aura() == game::aura_type::ManaShield
@@ -299,7 +301,7 @@ namespace wowpp
 						manaShielded += toConsume;
 						const Int32 manaToConsume = (toConsume * it->getEffect().multiplevalue());
 						ownerMana -= manaToConsume;
-						it->setBasePoints(0);
+						toRemove.push_back(it);
 					}
 					else
 					{
@@ -316,6 +318,12 @@ namespace wowpp
 		{
 			m_owner.setUInt32Value(unit_fields::Power1, ownerMana);
 		}
+
+		for (auto &aura : toRemove)
+		{
+			removeAura(*aura);
+		}
+
 		return absorbed;
 	}
 

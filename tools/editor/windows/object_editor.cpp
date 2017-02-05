@@ -1582,7 +1582,6 @@ namespace wowpp
 			}
 		}
 
-
 		void ObjectEditor::on_lootSimulatorButton_clicked()
 		{
 			if (!m_selectedUnit)
