@@ -2229,7 +2229,7 @@ namespace wowpp
 
 		// Intellect increases the chance to get a skill-levelup
 		const UInt32 maxFactor = 512;
-		const UInt32 minFactor = 450;
+		const UInt32 minFactor = 50;
 		const UInt32 bonusInt = getUInt32Value(unit_fields::Stat3) - getModifierValue(unit_mods::StatIntellect, unit_mod_type::BaseValue);
 		const UInt32 levelInt = getLevel() * 5;
 
@@ -2241,7 +2241,7 @@ namespace wowpp
 		std::uniform_int_distribution<UInt32> dist(0, maxFactor);
 		const UInt32 roll = dist(randomGenerator);
 		
-		// Formular: current * (512 - (256 * 0..1)) < max * random(0,512)
+		// Formular: current * (512 - (50 * 0..1)) < max * random(0,512)
 		if (static_cast<UInt32>(current) * (maxFactor - (static_cast<float>(minFactor) * factor)) < static_cast<UInt32>(max) * roll)
 		{
 			// Increase skill value
