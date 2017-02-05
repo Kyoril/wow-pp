@@ -2227,10 +2227,22 @@ namespace wowpp
 		if (current == 0 || max == 0 || current >= max)
 			return;
 
+		// Intellect increases the chance to get a skill-levelup
+		const UInt32 maxFactor = 512;
+		const UInt32 minFactor = 450;
+		const UInt32 bonusInt = getUInt32Value(unit_fields::Stat3) - getModifierValue(unit_mods::StatIntellect, unit_mod_type::BaseValue);
+		const UInt32 levelInt = getLevel() * 5;
+
+		// Calculate reduction factor in percent and clamp to 0..1
+		float factor = static_cast<float>(bonusInt) / static_cast<float>(levelInt);	// 50 bonus int at level 20 would be 50 / 100
+		factor = std::min(1.0f, std::max(0.0f, factor));
+
 		// Perform a roll to see if we should increase the skill value
-		std::uniform_int_distribution<UInt32> dist(0, 512);
+		std::uniform_int_distribution<UInt32> dist(0, maxFactor);
 		const UInt32 roll = dist(randomGenerator);
-		if (static_cast<UInt32>(current) * 512 < static_cast<UInt32>(max) * roll)
+		
+		// Formular: current * (512 - (256 * 0..1)) < max * random(0,512)
+		if (static_cast<UInt32>(current) * (maxFactor - (static_cast<float>(minFactor) * factor)) < static_cast<UInt32>(max) * roll)
 		{
 			// Increase skill value
 			setSkillValue(skillId, current + 1, max);
@@ -3048,7 +3060,7 @@ namespace wowpp
 	bool GameCharacter::hasOffHandWeapon() const
 	{
 		auto item = getOffHandWeapon();
-		return (item && item->getEntry().inventorytype() != game::inventory_type::Shield);
+		return (item && item->getEntry().inventorytype() != game::inventory_type::Shield && item->getEntry().inventorytype() != game::inventory_type::Holdable);
 	}
 
 	std::shared_ptr<GameItem> GameCharacter::getMainHandWeapon() const
