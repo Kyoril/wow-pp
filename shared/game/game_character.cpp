@@ -146,11 +146,12 @@ namespace wowpp
 		setUInt32Value(character_fields::ShieldBlock, 0);
 
 		// Flag for pvp
-		addFlag(character_fields::CharacterFlags, 512);
 		addFlag(unit_fields::UnitFlags, game::unit_flags::PvP);
-
+		addFlag(unit_fields::UnitFlags, game::unit_flags::PvPMode);
+		addFlag(character_fields::CharacterFlags, game::char_flags::PvP);
 		removeFlag(unit_fields::UnitFlags, game::unit_flags::NotAttackable);
 		removeFlag(unit_fields::UnitFlags, game::unit_flags::NotAttackablePvP);
+
 
 		// Dodge percentage
 		setFloatValue(character_fields::DodgePercentage, 0.0f);

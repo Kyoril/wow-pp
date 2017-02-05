@@ -179,8 +179,6 @@ namespace wowpp
 					}
 					ibuf->unlock();
 
-					DLOG("View 0 ntex: " << view.nTextures);
-
 					// Load all submeshs
 					ptr->seek(view.ofsSubMeshs);
 					for (UInt32 i = 0; i < view.nSubMeshs; ++i)
@@ -203,8 +201,11 @@ namespace wowpp
 						String textureToUse;
 						if (!textureNames.empty())
 						{
+							textureNames[0];
+							/*
 							UInt32 texIndex = i % textureNames.size();
 							textureToUse = textureNames[i];
+							*/
 						}
 
 						if (!textureToUse.empty())

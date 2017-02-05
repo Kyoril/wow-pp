@@ -211,6 +211,7 @@ namespace wowpp
 			m_mapListModel.reset(new MapListModel(m_project.maps));
 			m_unitListModel.reset(new UnitListModel(m_project.units));
 			m_spellListModel.reset(new SpellListModel(m_project.spells));
+			m_skillListModel.reset(new SkillListModel(m_project.skills));
 			m_itemListModel.reset(new ItemListModel(m_project.items));
 			m_triggerListModel.reset(new TriggerListModel(m_project.triggers));
 			m_questListModel.reset(new QuestListModel(m_project.quests));

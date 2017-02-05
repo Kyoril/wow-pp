@@ -46,6 +46,7 @@ namespace wowpp
 			, m_ui(new Ui::ObjectEditor())
 			, m_selectedUnit(nullptr)
 			, m_selectedSpell(nullptr)
+			, m_selectedSkill(nullptr)
 			, m_selectedQuest(nullptr)
 			, m_selectedObject(nullptr)
 			, m_selectedItem(nullptr)
@@ -87,6 +88,10 @@ namespace wowpp
 			m_objectFilter->setSourceModel(app.getObjectListModel());
 			m_ui->objectsListView->setModel(m_objectFilter);
 
+			m_skillFilter = new QSortFilterProxyModel;
+			m_skillFilter->setSourceModel(app.getSkillListModel());
+			m_ui->skillsListView->setModel(m_skillFilter);
+
 			// Map selection box
 			m_ui->spellTeleportMapBox->setModel(app.getMapListModel());
 
@@ -96,6 +101,9 @@ namespace wowpp
 			connect(m_ui->spellsListView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
 				this, SLOT(onSpellSelectionChanged(QItemSelection, QItemSelection)));
+			connect(m_ui->skillsListView->selectionModel(),
+				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+				this, SLOT(onSkillSelectionChanged(QItemSelection, QItemSelection)));
 			connect(m_ui->itemsListView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
 				this, SLOT(onItemSelectionChanged(QItemSelection, QItemSelection)));
@@ -125,6 +133,15 @@ namespace wowpp
 
 			QRegExp regExp(m_ui->spellFilter->text(), caseSensitivity, syntax);
 			m_spellFilter->setFilterRegExp(regExp);
+		}
+
+		void ObjectEditor::on_skillFilter_editingFinished()
+		{
+			QRegExp::PatternSyntax syntax = QRegExp::RegExp;
+			Qt::CaseSensitivity caseSensitivity = Qt::CaseInsensitive;
+
+			QRegExp regExp(m_ui->skillFilter->text(), caseSensitivity, syntax);
+			m_skillFilter->setFilterRegExp(regExp);
 		}
 
 		void ObjectEditor::on_itemFilter_editingFinished()
@@ -868,6 +885,28 @@ namespace wowpp
 				}
 			}
 
+			// Race list
+			for (UInt32 i = 1; i <= game::race::Max; ++i)
+			{
+				QCheckBox *box = m_ui->spellRaceBox->findChild<QCheckBox*>(QString("race_%1").arg(i));
+				if (box)
+				{
+					const bool hasAttribute = spell->racemask() == 0 || (spell->racemask() & (1 << (i - 1))) != 0;
+					box->setChecked(hasAttribute);
+				}
+			}
+
+			// Class list
+			for (UInt32 i = 1; i <= game::char_class::Max; ++i)
+			{
+				QCheckBox *box = m_ui->spellClassBox->findChild<QCheckBox*>(QString("class_%1").arg(i));
+				if (box)
+				{
+					const bool hasAttribute = spell->classmask() == 0 || (spell->classmask() & (1 << (i - 1))) != 0;
+					box->setChecked(hasAttribute);
+				}
+			}
+
 			// Check all spell buttons
 			for (size_t i = 0; i < 3; ++i)
 			{
@@ -936,6 +975,45 @@ namespace wowpp
 					}
 
 					button->setText(effectName);
+				}
+			}
+		}
+
+		void ObjectEditor::onSkillSelectionChanged(const QItemSelection & selection, const QItemSelection & old)
+		{
+			// Get the selected unit
+			m_selectedSkill = nullptr;
+			if (selection.isEmpty())
+				return;
+
+			QItemSelection source = m_skillFilter->mapSelectionToSource(selection);
+			if (source.isEmpty())
+				return;
+
+			int index = source.indexes().first().row();
+			if (index < 0)
+			{
+				return;
+			}
+
+			// Get skill entry
+			auto *skill = m_application.getProject().skills.getTemplates().mutable_entry(index);
+			if (!skill)
+				return;
+
+			m_selectedSkill = skill;
+
+			m_ui->skillIdField->setText(QString::number(skill->id()));
+			m_ui->skillNameField->setText(skill->name().c_str());
+
+			// Add linked spells
+			m_ui->skillLearnedSpellList->clear();
+			for (const auto &spellId : skill->spells())
+			{
+				const auto *linkedSpell = m_application.getProject().spells.getById(spellId);
+				if (linkedSpell)
+				{
+					m_ui->skillLearnedSpellList->addItem(QString("%1 - %2").arg(spellId).arg(linkedSpell->name().c_str()));
 				}
 			}
 		}

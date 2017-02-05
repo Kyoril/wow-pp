@@ -60,6 +60,7 @@ namespace wowpp
 
 			void on_unitFilter_editingFinished();
 			void on_spellFilter_editingFinished();
+			void on_skillFilter_editingFinished();
 			void on_itemFilter_editingFinished();
 			void on_questFilter_editingFinished();
 			void on_objectFilter_editingFinished();
@@ -72,6 +73,7 @@ namespace wowpp
 			void on_objectPropertyWidget_doubleClicked(QModelIndex index);
 			void on_treeWidget_doubleClicked(QModelIndex index);
 			void onSpellSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
+			void onSkillSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void onItemSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void onQuestSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void onObjectSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
@@ -102,6 +104,7 @@ namespace wowpp
 			Ui::ObjectEditor *m_ui;
 			QSortFilterProxyModel *m_unitFilter;
 			QSortFilterProxyModel *m_spellFilter;
+			QSortFilterProxyModel *m_skillFilter;
 			QSortFilterProxyModel *m_itemFilter;
 			QSortFilterProxyModel *m_questFilter;
 			QSortFilterProxyModel *m_objectFilter;
@@ -113,6 +116,7 @@ namespace wowpp
 			PropertyViewModel *m_itemViewModel;
 			proto::UnitEntry *m_selectedUnit;
 			proto::SpellEntry *m_selectedSpell;
+			proto::SkillEntry *m_selectedSkill;
 			proto::QuestEntry *m_selectedQuest;
 			proto::ObjectEntry *m_selectedObject;
 			proto::ItemEntry *m_selectedItem;
