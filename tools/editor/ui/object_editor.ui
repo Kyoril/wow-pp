@@ -799,6 +799,20 @@
                        </property>
                       </widget>
                      </item>
+                     <item row="5" column="0">
+                      <widget class="QLabel" name="label_36">
+                       <property name="text">
+                        <string>Skill</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="5" column="1">
+                      <widget class="QLineEdit" name="spellSkillField">
+                       <property name="readOnly">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
                     </layout>
                    </item>
                    <item>
@@ -4234,7 +4248,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="0" column="0">
                     <widget class="QCheckBox" name="race_1">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -4256,7 +4270,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="0" column="1">
                     <widget class="QCheckBox" name="race_2">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -4278,7 +4292,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="0" column="2">
                     <widget class="QCheckBox" name="race_3">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -4300,7 +4314,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="1" column="0">
                     <widget class="QCheckBox" name="race_4">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="styleSheet">
                       <string notr="true">QCheckBox:disabled
@@ -4316,7 +4330,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="1" column="1">
                     <widget class="QCheckBox" name="race_5">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -4338,7 +4352,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="1" column="2">
                     <widget class="QCheckBox" name="race_6">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -4360,7 +4374,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="2" column="0">
                     <widget class="QCheckBox" name="race_7">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -4382,7 +4396,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="2" column="1">
                     <widget class="QCheckBox" name="race_8">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -4404,7 +4418,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="2" column="2">
                     <widget class="QCheckBox" name="race_9">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -4426,7 +4440,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="3" column="0">
                     <widget class="QCheckBox" name="race_10">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -4448,7 +4462,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="3" column="1">
                     <widget class="QCheckBox" name="race_11">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -4488,7 +4502,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="0" column="0">
                     <widget class="QCheckBox" name="class_1">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -4510,7 +4524,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="0" column="1">
                     <widget class="QCheckBox" name="class_2">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -4532,7 +4546,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="0" column="2">
                     <widget class="QCheckBox" name="class_3">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -4554,7 +4568,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="1" column="0">
                     <widget class="QCheckBox" name="class_4">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="styleSheet">
                       <string notr="true">QCheckBox:disabled
@@ -4570,7 +4584,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="1" column="1">
                     <widget class="QCheckBox" name="class_5">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -4592,7 +4606,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="1" column="2">
                     <widget class="QCheckBox" name="class_7">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -4614,7 +4628,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="2" column="0">
                     <widget class="QCheckBox" name="class_8">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -4636,7 +4650,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="2" column="1">
                     <widget class="QCheckBox" name="class_9">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -4658,7 +4672,7 @@ QGroupBox::indicator:unchecked:disabled
                    <item row="2" column="2">
                     <widget class="QCheckBox" name="class_11">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="toolTip">
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indicates that this spell is categorized as a player ability in the players spell book. Only affects the client.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>

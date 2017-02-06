@@ -50,6 +50,7 @@ namespace wowpp
 			, m_selectedQuest(nullptr)
 			, m_selectedObject(nullptr)
 			, m_selectedItem(nullptr)
+			, m_selectionChanging(false)
 		{
 			m_ui->setupUi(this);
 
@@ -94,6 +95,28 @@ namespace wowpp
 
 			// Map selection box
 			m_ui->spellTeleportMapBox->setModel(app.getMapListModel());
+
+			// Connect checkbox signals
+			for (UInt32 i = 1; i <= game::race::Max; ++i)
+			{
+				QCheckBox *box = m_ui->spellRaceBox->findChild<QCheckBox*>(QString("race_%1").arg(i));
+				if (box)
+				{
+					connect(box,
+						SIGNAL(stateChanged(int)),
+						this, SLOT(onRaceClassChanged(int)));
+				}
+			}
+			for (UInt32 i = 1; i <= game::char_class::Max; ++i)
+			{
+				QCheckBox *box = m_ui->spellClassBox->findChild<QCheckBox*>(QString("class_%1").arg(i));
+				if (box)
+				{
+					connect(box,
+						SIGNAL(stateChanged(int)),
+						this, SLOT(onRaceClassChanged(int)));
+				}
+			}
 
 			connect(m_ui->unitsListView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
@@ -762,6 +785,7 @@ namespace wowpp
 			if (!spell)
 				return;
 
+			m_selectionChanging = true;
 			m_selectedSpell = spell;
 
 			m_ui->spellIdField->setText(QString::number(spell->id()));
@@ -777,6 +801,7 @@ namespace wowpp
 			m_ui->costField->setText(QString::number(spell->cost()));
 			m_ui->lineEdit_6->setText(QString::number(spell->family()));
 			m_ui->lineEdit_7->setText(QString("0x") + QString::number(spell->familyflags(), 16).toUpper().rightJustified(16, QLatin1Char('0')));
+			m_ui->spellSkillField->setText(QString::number(spell->skill()));
 
 			const bool hasBaseId = (spell->id() != spell->baseid());
 			m_ui->txtBaseSpell->setText(QString("%1").arg(spell->baseid()));
@@ -977,6 +1002,8 @@ namespace wowpp
 					button->setText(effectName);
 				}
 			}
+
+			m_selectionChanging = false;
 		}
 
 		void ObjectEditor::onSkillSelectionChanged(const QItemSelection & selection, const QItemSelection & old)
@@ -1553,6 +1580,68 @@ namespace wowpp
 					}
 				}
 			}
+		}
+
+		void ObjectEditor::onRaceClassChanged(int state)
+		{
+			if (!m_selectedSpell)
+				return;
+
+			if (m_selectionChanging)
+				return;
+
+			bool hasMissingEntry = false;
+
+			// Build spells race mask
+			UInt32 raceMask = 0;
+			for (UInt32 i = 1; i <= game::race::Max; ++i)
+			{
+				QCheckBox *box = m_ui->spellRaceBox->findChild<QCheckBox*>(QString("race_%1").arg(i));
+				if (box)
+				{
+					const bool hasAttribute = box->isChecked();
+					if (hasAttribute)
+					{
+						raceMask |= (1 << (i - 1));
+					}
+					else
+					{
+						hasMissingEntry = true;
+					}
+				}
+			}
+
+			if (!hasMissingEntry)
+				raceMask = 0;
+
+			hasMissingEntry = false;
+
+			// Build spells class mask
+			UInt32 classMask = 0;
+			for (UInt32 i = 1; i <= game::char_class::Max; ++i)
+			{
+				QCheckBox *box = m_ui->spellClassBox->findChild<QCheckBox*>(QString("class_%1").arg(i));
+				if (box)
+				{
+					const bool hasAttribute = box->isChecked();
+					if (hasAttribute)
+					{
+						classMask |= (1 << (i - 1));
+					}
+					else
+					{
+						hasMissingEntry = true;
+					}
+				}
+			}
+
+			if (!hasMissingEntry)
+				classMask = 0;
+
+			// Update spell
+			m_selectedSpell->set_racemask(raceMask);
+			m_selectedSpell->set_classmask(classMask);
+			m_application.markAsChanged(m_selectedSpell->id(), pp::editor_team::data_entry_type::Spells, pp::editor_team::data_entry_change_type::Modified);
 		}
 
 		void ObjectEditor::on_objectRemoveTriggerBtn_clicked()

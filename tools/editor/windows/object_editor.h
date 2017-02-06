@@ -97,6 +97,7 @@ namespace wowpp
 			void on_effectButton3_clicked();
 			void on_unitAddVarBtn_clicked();
 			void on_objectAddVarBtn_clicked();
+			void onRaceClassChanged(int state);
 
 		private:
 				
@@ -120,6 +121,7 @@ namespace wowpp
 			proto::QuestEntry *m_selectedQuest;
 			proto::ObjectEntry *m_selectedObject;
 			proto::ItemEntry *m_selectedItem;
+			bool m_selectionChanging;
 		};
 	}
 }
