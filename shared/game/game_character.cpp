@@ -1525,7 +1525,9 @@ namespace wowpp
 
 		float value = getRatingBonusValue(combatRating) + getTotalPercentageModValue(modGroup);
 
-		value += (static_cast<Int32>(getWeaponSkillValue(attackType, *this)) - static_cast<Int32>(getMaxWeaponSkillValueForLevel())) * 0.04f;
+		const Int32 weaponSkillVal = getWeaponSkillValue(attackType, *this);
+		const Int32 maxWeaponSkillVal = getMaxWeaponSkillValueForLevel();
+		value += (weaponSkillVal - maxWeaponSkillVal) * 0.04f;
 
 		setFloatValue(index, value < 0.0f ? 0.0f : value);
 	}
@@ -2293,6 +2295,10 @@ namespace wowpp
 		{
 			// Increase skill value
 			setSkillValue(skillId, current + 1, max);
+
+			// Update combat ratings...
+			updateAllRatings();
+			updateAllCritChances();
 		}
 	}
 
@@ -2962,8 +2968,8 @@ namespace wowpp
 		UInt16 maxSkillValue, skillValue;
 		getSkillValue(skillId, skillValue, maxSkillValue);
 
-		// Use max skill value against players (pvp), real skill value otherwise
-		UInt32 value = (target.isGameCharacter() ? maxSkillValue : skillValue);
+		// TODO: Use max skill value against players (pvp), real skill value otherwise
+		UInt32 value = skillValue;//(target.isGameCharacter() ? maxSkillValue : skillValue);
 
 		// Increase value based on combat ratings (this seems completely useless)
 		CombatRatingType combatRating = combat_rating::WeaponSkill;

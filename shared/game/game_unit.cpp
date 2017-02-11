@@ -968,7 +968,7 @@ namespace wowpp
 								break;
 						}
 
-						UInt32 weaponSkill = 162;	// No weapon
+						UInt32 weaponSkill = game::skill_type::Unarmed;	// No weapon
 						if (weapon) 
 							weaponSkill = weapon->getEntry().skill();
 						reinterpret_cast<GameCharacter*>(this)->updateWeaponSkill(weaponSkill);
