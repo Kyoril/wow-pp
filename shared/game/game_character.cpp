@@ -2298,7 +2298,7 @@ namespace wowpp
 
 			// Update combat ratings...
 			updateAllRatings();
-			updateAllCritChances();
+			//updateAllCritChances();
 		}
 	}
 
