@@ -751,12 +751,12 @@ namespace wowpp
 
 		virtual void applyHealingDoneBonus(UInt32 spellLevel, UInt32 playerLevel, UInt32 tickCount, UInt32 &healing);
 
-		virtual UInt32 getWeaponSkillValue(game::WeaponAttack attackType, const GameUnit *target = nullptr) {
+		virtual UInt32 getWeaponSkillValue(game::WeaponAttack attackType, const GameUnit &target) const {
 			return getUnitMeleeSkill(target);
 		}
 
-		virtual UInt32 getDefenseSkillValue(const GameUnit *target = nullptr) {
-			return getUnitMeleeSkill(target);
+		virtual UInt32 getDefenseSkillValue(const GameUnit &attacker) const {
+			return getMaxWeaponSkillValueForLevel();
 		}
 
 		/// Gets the current unit mover.
@@ -812,8 +812,8 @@ namespace wowpp
 		bool canUseWeapon(game::WeaponAttack attackType);
 
 		/// TODO: Do this properly, return level of target if found (can be a boss, not sure how it'll be done)
-		UInt16 getMaxSkillValueForLevel(const GameUnit *target = nullptr) const {
-			return (target ? target->getLevel() : getLevel()) * 5;
+		UInt16 getMaxWeaponSkillValueForLevel() const {
+			return static_cast<UInt16>(getLevel() * 5);
 		}
 
 		///
@@ -827,8 +827,8 @@ namespace wowpp
 		}
 
 		/// TODO: Do this properly, return level of target if found (can be a boss, not sure how it'll be done)
-		UInt32 getUnitMeleeSkill(const GameUnit *target = nullptr) const {
-			return (target ? target->getLevel() : getLevel()) * 5;
+		UInt32 getUnitMeleeSkill(const GameUnit &target) const {
+			return target.getLevel() * 5;
 		}
 
 		/// Determines if this unit is in evade mode.

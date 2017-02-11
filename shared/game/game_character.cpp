@@ -1525,7 +1525,7 @@ namespace wowpp
 
 		float value = getRatingBonusValue(combatRating) + getTotalPercentageModValue(modGroup);
 
-		value += (static_cast<Int32>(getWeaponSkillValue(attackType)) - static_cast<Int32>(getMaxSkillValueForLevel())) * 0.04f;
+		value += (static_cast<Int32>(getWeaponSkillValue(attackType, *this)) - static_cast<Int32>(getMaxWeaponSkillValueForLevel())) * 0.04f;
 
 		setFloatValue(index, value < 0.0f ? 0.0f : value);
 	}
@@ -2939,29 +2939,34 @@ namespace wowpp
 		}
 	}
 
-	UInt32 GameCharacter::getWeaponSkillValue(game::WeaponAttack attackType, const GameUnit * target)
+	UInt32 GameCharacter::getWeaponSkillValue(game::WeaponAttack attackType, const GameUnit &target) const
 	{
+		// Try to get the respective weapon
 		std::shared_ptr<GameItem> item = m_inventory.getWeaponByAttackType(attackType, true, true);
-
 		if (attackType != game::weapon_attack::BaseAttack && !item)
 		{
+			// Not sure about this one... needs research
 			return 0;
 		}
 
+		// Feral druids don't use weapon skills so always return max here for calculations
 		if (isInFeralForm())
 		{
-			return getMaxSkillValueForLevel();
+			return getMaxWeaponSkillValueForLevel();
 		}
 
-		UInt32 skill = item ? item->getEntry().skill() : static_cast<UInt32>(game::skill_type::Unarmed);
+		// Get the weapon skill index to check
+		const UInt32 skillId = item ? item->getEntry().skill() : static_cast<UInt32>(game::skill_type::Unarmed);
 
+		// Request current weapon skill (or unarmed skill of no weapon)
 		UInt16 maxSkillValue, skillValue;
-		getSkillValue(skill, skillValue, maxSkillValue);
+		getSkillValue(skillId, skillValue, maxSkillValue);
 
-		UInt32 value = (target && target->isGameCharacter()) ? maxSkillValue : skillValue;
+		// Use max skill value against players (pvp), real skill value otherwise
+		UInt32 value = (target.isGameCharacter() ? maxSkillValue : skillValue);
 
+		// Increase value based on combat ratings (this seems completely useless)
 		CombatRatingType combatRating = combat_rating::WeaponSkill;
-
 		value += getRatingBonusValue(combatRating);
 
 		switch (attackType)
@@ -2980,12 +2985,16 @@ namespace wowpp
 		return value;
 	}
 
-	UInt32 GameCharacter::getDefenseSkillValue(const GameUnit * target)
+	UInt32 GameCharacter::getDefenseSkillValue(const GameUnit &attacker) const 
 	{
-		UInt16 maxSkillValue, skillValue;
+		// In case of failure of getSkillValue, initialize these
+		UInt16 maxSkillValue = getMaxWeaponSkillValueForLevel(), skillValue = 1;
 		getSkillValue(game::skill_type::Defense, skillValue, maxSkillValue);
 
-		UInt32 value = target && target->isGameCharacter() ? maxSkillValue : skillValue;
+		// Always use max value in pvp
+		UInt32 value = attacker.isGameCharacter() ? maxSkillValue : skillValue;
+
+		// TODO: DefenseSkill value has to be implemented
 		value += static_cast<UInt32>(getRatingBonusValue(combat_rating::DefenseSkill));
 
 		return value;

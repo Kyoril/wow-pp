@@ -2304,7 +2304,7 @@ namespace wowpp
 				crit += attacker.getAuras().getTotalBasePoints(game::aura_type::ModCritPercent);
 			}
 
-			if (game::weapon_attack::RangedAttack)
+			if (attackType == game::weapon_attack::RangedAttack)
 			{
 				crit += m_auras.getTotalBasePoints(game::aura_type::ModAttackerRangedCritChance);
 			}
@@ -2315,7 +2315,8 @@ namespace wowpp
 
 			crit += m_auras.getTotalBasePoints(game::aura_type::ModAttackerSpellAndWeaponCritChance);
 
-			if (isGameCharacter())
+			const bool victimIsCharacter = isGameCharacter();
+			if (victimIsCharacter)
 			{
 				auto *character = reinterpret_cast<GameCharacter*>(this);
 
@@ -2329,7 +2330,9 @@ namespace wowpp
 				}
 			}
 
-			crit += (static_cast<Int32>(getMaxSkillValueForLevel(this)) - static_cast<Int32>(getDefenseSkillValue(&attacker))) * 0.04f;
+			const Int32 attackerWeaponSkill = attacker.getMaxWeaponSkillValueForLevel();
+			const Int32 victimDefenseSkill = getDefenseSkillValue(attacker);
+			crit += (attackerWeaponSkill - victimDefenseSkill) * 0.04f;
 
 			return crit < 0.0f ? 0.0f : crit;
 		}
