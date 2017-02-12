@@ -381,6 +381,9 @@ namespace wowpp
 		case aura::ModDodgePercent:
 			handleModDodgePercent(apply);
 			break;
+		case aura::ModParryPercent:
+			handleModParryPercent(apply);
+			break;
 		default:
 			//			WLOG("Unhandled aura type: " << m_effect.aura());
 			break;
@@ -941,6 +944,11 @@ namespace wowpp
 		const UInt32 resourceType = UInt32(m_effect.miscvaluea() - 1);
 		m_target.setUInt32Value(character_fields::Track_Resources,
 			apply ? UInt32(UInt32(1) << resourceType) : 0);
+	}
+
+	void Aura::handleModParryPercent(bool apply)
+	{
+		m_target.updateParryPercentage();
 	}
 
 	void Aura::handleModDodgePercent(bool apply)

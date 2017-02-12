@@ -745,6 +745,8 @@ namespace wowpp
 		///
 		virtual void updateDodgePercentage();
 		///
+		virtual void updateParryPercentage();
+		///
 		virtual void updateAllRatings();
 
 		virtual void applyDamageDoneBonus(UInt32 schoolMask, UInt32 tickCount, UInt32 &damage);

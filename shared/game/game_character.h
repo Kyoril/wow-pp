@@ -771,6 +771,8 @@ namespace wowpp
 		virtual void updateAllSpellCritChances() override;
 		/// @coypdoc GameUnit::updateDodgePerecentage
 		virtual void updateDodgePercentage() override;
+		/// @copydoc GameUnit::updateParryPercentage
+		virtual void updateParryPercentage() override;
 		/// @copydoc GameUnit::regenerateHealth
 		virtual void regenerateHealth() override;
 		/// @copydoc GameUnit::onThreaten

@@ -1454,6 +1454,9 @@ namespace wowpp
 
 		switch (combatRating)
 		{
+		case combat_rating::Parry:
+			updateParryPercentage();
+			break;
 		case combat_rating::Dodge:
 			updateDodgePercentage();
 			break;
@@ -1551,6 +1554,26 @@ namespace wowpp
 		value += getRatingBonusValue(combat_rating::Dodge);
 
 		setFloatValue(character_fields::DodgePercentage, value < 0.0f ? 0.0f : value);
+	}
+
+	void GameCharacter::updateParryPercentage()
+	{
+		float value = 0.0f;
+
+		if (canParry())
+		{
+			value = 5.0f;
+
+			const Int32 defenseSkillVal = getDefenseSkillValue(*this);
+			const Int32 maxWeaponSkillVal = getMaxWeaponSkillValueForLevel();
+			value += (defenseSkillVal - maxWeaponSkillVal) * 0.04f;
+
+			value += getAuras().getTotalBasePoints(game::aura_type::ModParryPercent);
+
+			value += getRatingBonusValue(combat_rating::Parry);
+		}
+
+		setFloatValue(character_fields::ParryPercentage, value < 0.0f ? 0.0f : value);
 	}
 
 	void GameCharacter::updateAllCritChances()
@@ -2729,6 +2752,9 @@ namespace wowpp
 						break;
 					case game::item_stat::DodgeRating:
 						applyCombatRatingMod(combat_rating::Dodge, entry.value(), apply);
+						break;
+					case game::item_stat::ParryRating:
+						applyCombatRatingMod(combat_rating::Parry, entry.value(), apply);
 						break;
 					case game::item_stat::CritMeleeRating:
 						applyCombatRatingMod(combat_rating::CritMelee, entry.value(), apply);

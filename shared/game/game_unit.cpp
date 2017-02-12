@@ -1261,6 +1261,11 @@ namespace wowpp
 		// Nothing to do here.
 	}
 
+	void GameUnit::updateParryPercentage()
+	{
+		// Nothing to do here.
+	}
+
 	void GameUnit::updateAllRatings()
 	{
 		// Nothing to do here.
@@ -2162,7 +2167,43 @@ namespace wowpp
 
 	float GameUnit::getParryChance(GameUnit &attacker)
 	{
-		return isStunned() ? 0.0f : 5.0f;
+		float chance = 0.0f;
+
+		if (!isStunned())
+		{ 
+			if (isGameCharacter())
+			{
+				auto &character = reinterpret_cast<GameCharacter &>(*this);
+
+				if (character.canParry())
+				{
+					const auto &inventory = character.getInventory();
+					auto item = inventory.getWeaponByAttackType(game::weapon_attack::BaseAttack, true, true);
+
+					if (!item)
+					{
+						item = inventory.getWeaponByAttackType(game::weapon_attack::OffhandAttack, true, true);
+					}
+
+					if (item)
+					{
+						chance = getFloatValue(character_fields::ParryPercentage);
+					}
+				}
+			}
+			else if (isCreature())
+			{
+				if (reinterpret_cast<GameCreature &>(*this).getEntry().creaturetypeflags() == game::creature_type::Humanoid)
+				{
+					chance = 5.0f;
+
+					chance += getAuras().getTotalBasePoints(game::aura_type::ModParryPercent);
+				}
+			}
+		}
+
+
+		return chance < 0.0f ? 0.0f : chance;
 	}
 
 	float GameUnit::getGlancingChance(GameUnit &attacker)
