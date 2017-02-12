@@ -951,27 +951,32 @@ namespace wowpp
 						setUInt32Value(unit_fields::Power2, currentRage);
 					}
 
-					// Update attacking characters weapon skill
-					if (isGameCharacter() && hitInfos[i] != game::hit_info::Miss && (victimStates[i] & game::victim_state::Normal | game::victim_state::Parry | game::victim_state::Blocks))
+					// Update skills in case of a hit
+					if (hitInfos[i] != game::hit_info::Miss && (victimStates[i] & game::victim_state::Normal | game::victim_state::Parry | game::victim_state::Blocks))
 					{
-						std::shared_ptr<GameItem> weapon;
-						switch (m_weaponAttack)
+						const bool victimIsCharacter = victim->isGameCharacter();
+						const bool attackerIsCharacter = isGameCharacter();
+
+						// Increase attackers weapon skill 
+						if (attackerIsCharacter && !victimIsCharacter)
 						{
-							case game::weapon_attack::BaseAttack:
-								weapon = getMainHandWeapon();
-								break;
-							case game::weapon_attack::OffhandAttack:
-								weapon = getOffHandWeapon();
-								break;
-							case game::weapon_attack::RangedAttack:
-								// TODO
-								break;
+							// Get the respective weapon
+							auto weapon = reinterpret_cast<GameCharacter*>(this)->getInventory().getWeaponByAttackType(m_weaponAttack, true, true);
+
+							// Determine weapon skill
+							UInt32 weaponSkill = game::skill_type::Unarmed;	// No weapon
+							if (weapon)
+								weaponSkill = weapon->getEntry().skill();
+
+							// Increase weapon skill
+							reinterpret_cast<GameCharacter*>(this)->updateWeaponSkill(weaponSkill);
 						}
 
-						UInt32 weaponSkill = game::skill_type::Unarmed;	// No weapon
-						if (weapon) 
-							weaponSkill = weapon->getEntry().skill();
-						reinterpret_cast<GameCharacter*>(this)->updateWeaponSkill(weaponSkill);
+						// Increase targets defense skill (only if not pvp)
+						if (victimIsCharacter && !attackerIsCharacter)
+						{
+							reinterpret_cast<GameCharacter*>(victim)->updateWeaponSkill(game::skill_type::Defense);
+						}
 					}
 
 					// Deal damage (Note: m_victim can become nullptr, if the target dies)
