@@ -1424,6 +1424,63 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importSpellCritChance(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `field0` FROM `tbcdb`.`dbc_gtchancetospellcrit`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+
+			UInt32 id = 0;
+			float spellCritChance = 0;
+			std::array<float, 11> spellCritChanceBase =
+			{
+				0.0f,
+				0.033355f,
+				0.03602f,
+				0.0f,
+				0.012375f,
+				0.2f,
+				0.02201f,
+				0.009075f,
+				0.017f,
+				0.2f,
+				0.018515f
+			};
+
+			for (int i = 0; i < 11; ++i)
+			{
+				for (int j = 0; j < 100; ++j)
+				{
+					project.spellCritChance.getById(i * 100 + j)->set_basechanceperlevel(spellCritChanceBase[i]);
+				}
+			}
+
+			while (row)
+			{
+				// Get row data
+				row.getField(0, spellCritChance);
+
+				auto * spellCritChances = project.spellCritChance.getById(id);
+				if (spellCritChances)
+				{
+					spellCritChances->clear_chanceperlevel();
+					spellCritChances->set_chanceperlevel(spellCritChance);
+				}
+				else
+				{
+					WLOG("Unable to spellCritChance by id: " << id);
+				}
+
+				// Next row
+				id++;
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
 	static bool importDodgeChance(proto::Project &project)
 	{
 		std::array<float, 11> dodgeChanceBase =
@@ -2530,9 +2587,9 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 	
-	if (!importDodgeChance(protoProject))
+	if (!importSpellCritChance(protoProject, connection))
 	{
-		WLOG("Couldn't import dodge chances");
+		WLOG("Couldn't import spell crit chances");
 		return 1;
 	}
 

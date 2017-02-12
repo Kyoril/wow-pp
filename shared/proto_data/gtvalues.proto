@@ -41,6 +41,16 @@ message MeleeCritChance {
     repeated MeleeCritChanceEntry entry = 1;
 }
 
+message SpellCritChanceEntry {
+	required uint32 id = 1;
+	optional float chancePerLevel = 2;
+	optional float baseChancePerLevel = 3;
+}
+
+message SpellCritChance {
+	repeated SpellCritChanceEntry entry = 1;
+}
+
 message DodgeChanceEntry {
 	required uint32 id = 1;
 	optional float baseDodge = 2;

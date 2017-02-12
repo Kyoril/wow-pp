@@ -86,6 +86,7 @@ namespace wowpp
 		typedef TemplateManager<wowpp::proto::SpellCategories, wowpp::proto::SpellCategoryEntry> SpellCategoryManager;
 		typedef TemplateManager<wowpp::proto::CombatRatings, wowpp::proto::CombatRatingEntry> CombatRatingsManager;
 		typedef TemplateManager<wowpp::proto::MeleeCritChance, wowpp::proto::MeleeCritChanceEntry> MeleeCritChanceManager;
+		typedef TemplateManager<wowpp::proto::SpellCritChance, wowpp::proto::SpellCritChanceEntry> SpellCritChanceManager;
 		typedef TemplateManager<wowpp::proto::DodgeChance, wowpp::proto::DodgeChanceEntry> DodgeChanceManager;
 		typedef TemplateManager<wowpp::proto::ResistancePercentage, wowpp::proto::ResistancePercentageEntry> ResistancePercentageManager;
 		typedef TemplateManager<wowpp::proto::Variables, wowpp::proto::VariableEntry> VariableManager;
@@ -131,6 +132,7 @@ namespace wowpp
 			SpellCategoryManager spellCategories;
 			CombatRatingsManager combatRatings;
 			MeleeCritChanceManager meleeCritChance;
+			SpellCritChanceManager spellCritChance;
 			DodgeChanceManager dodgeChance;
 			ResistancePercentageManager resistancePcts;
 			VariableManager variables;
@@ -204,6 +206,7 @@ namespace wowpp
 				managers.push_back(ManagerEntry("spell_categories", spellCategories));
 				managers.push_back(ManagerEntry("combat_ratings", combatRatings));
 				managers.push_back(ManagerEntry("melee_crit_chance", meleeCritChance));
+				managers.push_back(ManagerEntry("spell_crit_chance", spellCritChance));
 				managers.push_back(ManagerEntry("dodge_chance", dodgeChance));
 				managers.push_back(ManagerEntry("resistance_percentages", resistancePcts));
 				managers.push_back(ManagerEntry("variables", variables));
@@ -268,6 +271,7 @@ namespace wowpp
 				managers.push_back(ManagerEntry("spell_categories", "spell_categories", spellCategories));
 				managers.push_back(ManagerEntry("combat_ratings", "combat_ratings", combatRatings));
 				managers.push_back(ManagerEntry("melee_crit_chance", "melee_crit_chance", meleeCritChance));
+				managers.push_back(ManagerEntry("spell_crit_chance", "spell_crit_chance", spellCritChance));
 				managers.push_back(ManagerEntry("dodge_chance", "dodge_chance", dodgeChance));
 				managers.push_back(ManagerEntry("resistance_percentages", "resistance_percentages", resistancePcts));
 				managers.push_back(ManagerEntry("variables", "variables", variables));

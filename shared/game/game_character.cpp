@@ -1464,6 +1464,9 @@ namespace wowpp
 		case combat_rating::CritRanged:
 			updateCritChance(game::weapon_attack::RangedAttack);
 			break;
+		case combat_rating::CritSpell:
+			updateAllSpellCritChances();
+			break;
 		}
 	}
 
@@ -1561,6 +1564,32 @@ namespace wowpp
 		updateCritChance(game::weapon_attack::BaseAttack);
 		updateCritChance(game::weapon_attack::OffhandAttack);
 		updateCritChance(game::weapon_attack::RangedAttack);
+	}
+
+	void GameCharacter::updateSpellCritChance(game::SpellSchool spellSchool)
+	{
+		float crit = 0.0f;
+
+		if (spellSchool != game::spell_school::Normal)
+		{
+			crit += getSpellCritFromIntellect();
+
+			crit += getAuras().getTotalBasePoints(game::aura_type::ModSpellCritChance);
+
+			// TODO: ModSpellCritChanceSchool aura
+
+			crit += getRatingBonusValue(combat_rating::CritSpell);
+		}
+
+		setFloatValue(character_fields::SpellCritPercentage + spellSchool, crit);
+	}
+
+	void GameCharacter::updateAllSpellCritChances()
+	{
+		for (UInt8 i = game::spell_school::Normal; i < game::spell_school::End; ++i)
+		{
+			updateSpellCritChance(game::SpellSchool(i));
+		}
 	}
 
 	void GameCharacter::applyWeaponCritMod(std::shared_ptr<GameItem> item, game::WeaponAttack attackType, const proto::SpellEntry & spell, float amount, bool apply)
@@ -2711,6 +2740,9 @@ namespace wowpp
 						applyCombatRatingMod(combat_rating::CritMelee, entry.value(), apply);
 						applyCombatRatingMod(combat_rating::CritRanged, entry.value(), apply);
 						break;
+					case game::item_stat::CritSpellRating:
+						applyCombatRatingMod(combat_rating::CritSpell, entry.value(), apply);
+						break;
 					default:
 						break;
 					}
@@ -3141,6 +3173,25 @@ namespace wowpp
 		float dodge = baseDodge + getUInt32Value(unit_fields::Stat0 + unit_mods::StatAgility) * dodgeEntry->chanceperlevel() * critToDodge * 100.0f;
 
 		return dodge;
+	}
+
+	float GameCharacter::getSpellCritFromIntellect()
+	{
+		UInt32 level = getLevel();
+		UInt32 charClass = getClass();
+
+		if (level > 100)
+		{
+			level = 100;
+		}
+
+		const auto *critEntry = getProject().spellCritChance.getById((charClass - 1) * 100 + level - 1);
+		const auto &critBase = critEntry->basechanceperlevel();
+		const auto &critRatio = critEntry->chanceperlevel();
+
+		float value = (critBase + getUInt32Value(unit_fields::Stat0 + unit_mods::StatIntellect) * critRatio) * 100.0f;
+
+		return value;
 	}
 
 	void GameCharacter::getHome(UInt32 &out_map, math::Vector3 &out_pos, float &out_rot) const

@@ -1246,6 +1246,16 @@ namespace wowpp
 		// Nothing to do here.
 	}
 
+	void GameUnit::updateSpellCritChance(game::SpellSchool spellSchool)
+	{
+		// Nothing to do here.
+	}
+
+	void GameUnit::updateAllSpellCritChances()
+	{
+		// Nothing to do here.
+	}
+
 	void GameUnit::updateDodgePercentage()
 	{
 		// Nothing to do here.

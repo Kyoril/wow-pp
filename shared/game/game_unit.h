@@ -739,6 +739,10 @@ namespace wowpp
 		///
 		virtual void updateAllCritChances();
 		///
+		virtual void updateSpellCritChance(game::SpellSchool spellSchool);
+		///
+		virtual void updateAllSpellCritChances();
+		///
 		virtual void updateDodgePercentage();
 		///
 		virtual void updateAllRatings();

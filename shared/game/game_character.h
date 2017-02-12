@@ -763,10 +763,14 @@ namespace wowpp
 		virtual void updateManaRegen() override;
 		/// @copydoc GameUnit::updateCritChance
 		virtual void updateCritChance(game::WeaponAttack attackType) override;
-		/// @coypdoc GameUnit::updateDodgePerecentage
-		virtual void updateDodgePercentage() override;
 		/// @copydoc GameUnit::updateAllCritChances
 		virtual void updateAllCritChances() override;
+		/// @copydoc GameUnit::updateSpellCritChance
+		virtual void updateSpellCritChance(game::SpellSchool spellSchool) override;
+		/// @copydoc GameUnit::updateAllSpellCritChances()
+		virtual void updateAllSpellCritChances() override;
+		/// @coypdoc GameUnit::updateDodgePerecentage
+		virtual void updateDodgePercentage() override;
 		/// @copydoc GameUnit::regenerateHealth
 		virtual void regenerateHealth() override;
 		/// @copydoc GameUnit::onThreaten
@@ -1040,6 +1044,8 @@ namespace wowpp
 		float getMeleeCritFromAgility();
 		/// Returns dodge value from agility
 		float getDodgeFromAgility();
+		/// Returns spell crit value from intellect
+		float getSpellCritFromIntellect();
 
 	private:
 
