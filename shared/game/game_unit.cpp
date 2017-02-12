@@ -1241,6 +1241,11 @@ namespace wowpp
 		// Nothing to do here.
 	}
 
+	void GameUnit::updateDodgePercentage()
+	{
+		// Nothing to do here.
+	}
+
 	void GameUnit::updateAllRatings()
 	{
 		// Nothing to do here.
@@ -2130,7 +2135,14 @@ namespace wowpp
 
 	float GameUnit::getDodgeChance(GameUnit &attacker)
 	{
-		return isStunned() ? 0.0f : 5.0f;
+		float dodgeChance = 5.0f;
+
+		if (isGameCharacter())
+		{
+			dodgeChance = getFloatValue(character_fields::DodgePercentage);
+		}
+
+		return isStunned() ? 0.0f : dodgeChance;
 	}
 
 	float GameUnit::getParryChance(GameUnit &attacker)

@@ -224,6 +224,7 @@ namespace wowpp
 		localHashs["spell_categories"] = m_project.spellCategories.hashString;
 		localHashs["combat_ratings"] = m_project.combatRatings.hashString;
 		localHashs["melee_crit_chance"] = m_project.meleeCritChance.hashString;
+		localHashs["dodge_chance"] = m_project.dodgeChance.hashString;
 		localHashs["resistance_percentages"] = m_project.resistancePcts.hashString;
 		localHashs["variables"] = m_project.variables.hashString;
 

@@ -196,6 +196,8 @@ namespace wowpp
 		void handleTrackCreatures(bool apply);
 		/// 45
 		void handleTrackResources(bool apply);
+		/// 49
+		void handleModDodgePercent(bool apply);
 		/// 52
 		void handleModCritPercent(bool apply);
 		/// 56

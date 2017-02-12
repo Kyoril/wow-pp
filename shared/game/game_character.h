@@ -763,6 +763,8 @@ namespace wowpp
 		virtual void updateManaRegen() override;
 		/// @copydoc GameUnit::updateCritChance
 		virtual void updateCritChance(game::WeaponAttack attackType) override;
+		/// @coypdoc GameUnit::updateDodgePerecentage
+		virtual void updateDodgePercentage() override;
 		/// @copydoc GameUnit::updateAllCritChances
 		virtual void updateAllCritChances() override;
 		/// @copydoc GameUnit::regenerateHealth
@@ -1034,6 +1036,10 @@ namespace wowpp
 		/// Updates nearby game objects after a quest change happened (some game objects are only
 		/// lootable and/or shining when certain quests are incomplete).
 		void updateNearbyQuestObjects();
+		/// Returns melee crit value from agility
+		float getMeleeCritFromAgility();
+		/// Returns dodge value from agility
+		float getDodgeFromAgility();
 
 	private:
 

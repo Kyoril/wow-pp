@@ -1454,6 +1454,9 @@ namespace wowpp
 
 		switch (combatRating)
 		{
+		case combat_rating::Dodge:
+			updateDodgePercentage();
+			break;
 		case combat_rating::CritMelee:
 			updateCritChance(game::weapon_attack::BaseAttack);
 			updateCritChance(game::weapon_attack::OffhandAttack);
@@ -1466,7 +1469,7 @@ namespace wowpp
 
 	void GameCharacter::applyCombatRatingMod(CombatRatingType combatRating, Int32 amount, bool apply)
 	{
-		m_combatRatings[combatRating] = apply ? amount : -amount;
+		m_combatRatings[combatRating] += apply ? amount : -amount;
 
 		updateRating(combatRating);
 	}
@@ -1532,21 +1535,24 @@ namespace wowpp
 		setFloatValue(index, value < 0.0f ? 0.0f : value);
 	}
 
+	void GameCharacter::updateDodgePercentage()
+	{
+		float value = getDodgeFromAgility();
+
+		const Int32 defenseSkillVal = getDefenseSkillValue(*this);
+		const Int32 maxWeaponSkillVal = getMaxWeaponSkillValueForLevel();
+		value += (defenseSkillVal - maxWeaponSkillVal) * 0.04f;
+
+		value += getAuras().getTotalBasePoints(game::aura_type::ModDodgePercent);
+
+		value += getRatingBonusValue(combat_rating::Dodge);
+
+		setFloatValue(character_fields::DodgePercentage, value < 0.0f ? 0.0f : value);
+	}
+
 	void GameCharacter::updateAllCritChances()
 	{
-		UInt32 level = getLevel();
-		UInt32 charClass = getClass();
-
-		if (level > 100)
-		{
-			level = 100;
-		}
-
-		const auto *critEntry = getProject().meleeCritChance.getById((charClass - 1) * 100 + level - 1);
-		const auto &critBase = critEntry->basechanceperlevel();
-		const auto &critRatio = critEntry->chanceperlevel();
-
-		float value = (critBase + getUInt32Value(unit_fields::Stat0 + unit_mods::StatAgility) * critRatio) * 100.0f;
+		float value = getMeleeCritFromAgility();
 
 		m_baseCRMod[base_mod_group::CritPercentage][base_mod_type::Percentage] = value;
 		m_baseCRMod[base_mod_group::OffHandCritPercentage][base_mod_type::Percentage] = value;
@@ -2693,6 +2699,9 @@ namespace wowpp
 					case game::item_stat::Stamina:
 						updateModifierValue(unit_mods::StatStamina, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
+					case game::item_stat::DodgeRating:
+						applyCombatRatingMod(combat_rating::Dodge, entry.value(), apply);
+						break;
 					case game::item_stat::CritMeleeRating:
 						applyCombatRatingMod(combat_rating::CritMelee, entry.value(), apply);
 						break;
@@ -2997,8 +3006,8 @@ namespace wowpp
 		UInt16 maxSkillValue = getMaxWeaponSkillValueForLevel(), skillValue = 1;
 		getSkillValue(game::skill_type::Defense, skillValue, maxSkillValue);
 
-		// Always use max value in pvp
-		UInt32 value = attacker.isGameCharacter() ? maxSkillValue : skillValue;
+		// TODO: Use max skill value against players (pvp), real skill value otherwise
+		UInt32 value = skillValue;//(target.isGameCharacter() ? maxSkillValue : skillValue);
 
 		// TODO: DefenseSkill value has to be implemented
 		value += static_cast<UInt32>(getRatingBonusValue(combat_rating::DefenseSkill));
@@ -3093,6 +3102,46 @@ namespace wowpp
 				}
 			}
 		});
+	}
+
+	float GameCharacter::getMeleeCritFromAgility()
+	{
+		UInt32 level = getLevel();
+		UInt32 charClass = getClass();
+
+		if (level > 100)
+		{
+			level = 100;
+		}
+
+		const auto *critEntry = getProject().meleeCritChance.getById((charClass - 1) * 100 + level - 1);
+		const auto &critBase = critEntry->basechanceperlevel();
+		const auto &critRatio = critEntry->chanceperlevel();
+
+		float value = (critBase + getUInt32Value(unit_fields::Stat0 + unit_mods::StatAgility) * critRatio) * 100.0f;
+
+		return value;
+	}
+
+	float GameCharacter::getDodgeFromAgility()
+	{
+		UInt32 level = getLevel();
+		UInt32 charClass = getClass();
+
+		if (level > 100)
+		{
+			level = 100;
+		}
+
+		const auto &project = getProject();
+		const auto *dodgeEntry = project.meleeCritChance.getById((charClass - 1) * 100 + level - 1);
+		
+		const float baseDodge = project.dodgeChance.getById(charClass)->basedodge();
+		const float critToDodge = project.dodgeChance.getById(charClass)->crittododge();
+
+		float dodge = baseDodge + getUInt32Value(unit_fields::Stat0 + unit_mods::StatAgility) * dodgeEntry->chanceperlevel() * critToDodge * 100.0f;
+
+		return dodge;
 	}
 
 	void GameCharacter::getHome(UInt32 &out_map, math::Vector3 &out_pos, float &out_rot) const

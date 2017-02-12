@@ -1424,6 +1424,48 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importDodgeChance(proto::Project &project)
+	{
+		std::array<float, 11> dodgeChanceBase =
+		{
+			0.0075f,   // Warrior
+			0.00652f,  // Paladin
+			-0.0545f,   // Hunter
+			-0.0059f,   // Rogue
+			0.03183f,  // Priest
+			0.0114f,   // DK
+			0.0167f,   // Shaman
+			0.034575f, // Mage
+			0.02011f,  // Warlock
+			0.0f,      // ??
+			-0.0187f    // Druid
+		};
+
+		std::array<float, 11> critToDodge =
+		{
+			1.1f,      // Warrior
+			1.0f,      // Paladin
+			1.6f,      // Hunter
+			2.0f,      // Rogue
+			1.0f,      // Priest
+			1.0f,      // DK?
+			1.0f,      // Shaman
+			1.0f,      // Mage
+			1.0f,      // Warlock
+			0.0f,      // ??
+			1.7f       // Druid
+		};
+
+		for (int i = 0; i < 11; ++i)
+		{
+			auto * dodgeChances = project.dodgeChance.getById(i);
+			dodgeChances->set_basedodge(dodgeChanceBase[i]);
+			dodgeChances->set_crittododge(critToDodge[i]);
+		}
+
+		return true;
+	}
+
 	static bool importCategories(proto::Project &project, MySQL::Connection &conn)
 	{
 		project.spellCategories.clear();
@@ -2488,9 +2530,9 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 	
-	if (!importSpellReagents(protoProject, connection))
+	if (!importDodgeChance(protoProject))
 	{
-		WLOG("Could not import spell reagents");
+		WLOG("Couldn't import dodge chances");
 		return 1;
 	}
 
