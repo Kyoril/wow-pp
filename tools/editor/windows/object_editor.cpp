@@ -2623,6 +2623,44 @@ namespace wowpp
 			dialog.exec();
 		}
 
+		void ObjectEditor::on_actionImport_Gold_Loot_triggered()
+		{
+			ImportTask task;
+			task.countQuery = "SELECT COUNT(*) FROM `creature_template`;";
+			task.selectQuery = "SELECT `entry`, `mingold`, `maxgold` FROM `creature_template` WHERE `mingold` > 0 OR `maxgold` > 0 ORDER BY `entry`;";
+			task.beforeImport = [this]() {
+				for (int i = 0; i < m_application.getProject().units.getTemplates().entry_size(); ++i)
+				{
+					auto *unit = m_application.getProject().units.getTemplates().mutable_entry(i);
+					unit->clear_minlootgold();
+					unit->clear_maxlootgold();
+				}
+			};
+			task.onImport = [this](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0, minGold = 0, maxGold = 0;
+				UInt32 index = 0;
+				row.getField(index++, entry);
+				row.getField(index++, minGold);
+				row.getField(index++, maxGold);
+
+				// Find creature
+				auto *unit = m_application.getProject().units.getById(entry);
+				if (!unit)
+				{
+					ELOG("Skipping unit " << entry << " as it couldn't be found!");
+					return true;
+				}
+
+				unit->set_minlootgold(minGold);
+				unit->set_maxlootgold(maxGold);
+				return true;
+			};
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
+			dialog.exec();
+		}
+
 		void ObjectEditor::on_actionImport_Object_Spawns_triggered()
 		{
 			ImportTask task;

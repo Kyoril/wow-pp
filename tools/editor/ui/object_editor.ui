@@ -6556,6 +6556,7 @@ QGroupBox::indicator:unchecked:disabled
      <string>&amp;Tools</string>
     </property>
     <addaction name="actionImport"/>
+    <addaction name="actionImport_Gold_Loot"/>
     <addaction name="actionImport_Object_Loot"/>
     <addaction name="actionImport_Item_Loot"/>
     <addaction name="actionImportSkinningLoot"/>
@@ -6662,6 +6663,11 @@ QGroupBox::indicator:unchecked:disabled
   <action name="actionImportSkinningLoot">
    <property name="text">
     <string>Import Skinning Loot</string>
+   </property>
+  </action>
+  <action name="actionImport_Gold_Loot">
+   <property name="text">
+    <string>Import Gold Loot</string>
    </property>
   </action>
   <actiongroup name="LootImport">

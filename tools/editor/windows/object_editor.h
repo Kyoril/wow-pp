@@ -92,6 +92,7 @@ namespace wowpp
 			void on_actionImport_Object_Spawns_triggered();
 			void on_actionImport_Item_Loot_triggered();
 			void on_actionImport_Units_triggered();
+			void on_actionImport_Gold_Loot_triggered();
 			void on_effectButton1_clicked();
 			void on_effectButton2_clicked();
 			void on_effectButton3_clicked();
