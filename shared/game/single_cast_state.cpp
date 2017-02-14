@@ -233,8 +233,11 @@ namespace wowpp
 							std::bind(game::server_write::spellDelayed, std::placeholders::_1, m_cast.getExecuter().getGuid(), 500));
 						m_delayCounter++;
 					}
-					if (m_spell.interruptflags() & game::spell_interrupt_flags::Damage)
+					if (m_spell.interruptflags() & game::spell_interrupt_flags::Damage &&
+						m_cast.getExecuter().isGameCharacter())
 					{
+						// This interrupt flag seems to only be used on players as there is at least one spell (5514), which
+						// definetly has this flag set but is NOT interrupt on any damage, and never was (NPC Dark Sprite)
 						stopCast(game::spell_interrupt_flags::Damage);
 					}
 				}
