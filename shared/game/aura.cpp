@@ -2325,6 +2325,8 @@ namespace wowpp
 		{
 			m_caster->getTrackedAuras().erase(m_spell.mechanic());
 		}
+
+		misapplied();
 	}
 
 	void Aura::startPeriodicTimer()

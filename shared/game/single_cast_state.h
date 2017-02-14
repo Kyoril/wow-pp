@@ -165,6 +165,7 @@ namespace wowpp
 		game::WeaponAttack m_attackType;
 		std::vector<UInt64> m_dynObjectsToDespawn;
 		bool m_instantsCast, m_delayedCast;
+		simple::scoped_connection m_onChannelAuraRemoved;
 
 		void sendEndCast(bool success);
 		void onCastFinished();

@@ -24,6 +24,7 @@
 #include "shared/proto_data/spells.pb.h"
 #include "common/countdown.h"
 #include "spell_target_map.h"
+#include "common/simple.hpp"
 
 namespace wowpp
 {
@@ -35,6 +36,10 @@ namespace wowpp
 	class Aura : public std::enable_shared_from_this<Aura>
 	{
 		typedef std::function<void(std::function<void()>)> PostFunction;
+
+	public:
+
+		simple::signal<void()> misapplied;
 
 	public:
 

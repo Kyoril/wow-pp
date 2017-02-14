@@ -2386,6 +2386,13 @@ namespace wowpp
 				}
 
 				// TODO: Add aura to unit target
+				if (isChanneled())
+				{
+					m_onChannelAuraRemoved = aura->misapplied.connect([this]() {
+						stopCast(game::spell_interrupt_flags::None);
+					});
+				}
+
 				targetUnit->getAuras().addAura(std::move(aura));
 
 				// We need to be sitting for this aura to work
