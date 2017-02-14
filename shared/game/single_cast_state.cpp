@@ -202,7 +202,7 @@ namespace wowpp
 			m_castEnd = getCurrentTime() + m_castTime;
 			m_countdown.setEnd(m_castEnd);
 			m_damaged = m_cast.getExecuter().takenDamage.connect([this](GameUnit *attacker, UInt32 damage, game::DamageType type) {
-				if (!m_hasFinished && m_countdown.running)
+				if (!m_hasFinished && m_countdown.running && type == game::DamageType::Direct)
 				{
 					if (m_spell.interruptflags() & game::spell_interrupt_flags::PushBack &&
 						m_delayCounter < 2 &&
@@ -234,8 +234,7 @@ namespace wowpp
 						m_delayCounter++;
 					}
 					if (m_spell.interruptflags() & game::spell_interrupt_flags::Damage &&
-						m_cast.getExecuter().isGameCharacter() &&
-						type == game::DamageType::Direct)
+						m_cast.getExecuter().isGameCharacter())
 					{
 						// This interrupt flag seems to only be used on players as there is at least one spell (5514), which
 						// definetly has this flag set but is NOT interrupt on any damage, and never was (NPC Dark Sprite)
