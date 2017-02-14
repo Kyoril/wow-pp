@@ -399,6 +399,11 @@ namespace wowpp
 						reinterpret_cast<GameCharacter*>(attacker)->applySpellMod(
 							spell_mod_op::CritChance, spell.id(), critChance);
 					}
+					else
+					{
+						// Creatures can't crit with spells
+						critChance = 0.0f;
+					}
 
 					// AE spells should always hit if in radius
 					if (radius <= 0.0f && (attackTableRoll -= targetUnit->getMissChance(*attacker, school, false)) < 0.0f)
