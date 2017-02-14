@@ -26,22 +26,22 @@
 
 namespace wowpp
 {
-	//für Einträge, die für Entwickler hilfreich sind
+	//For events that are useful for developers
 	extern const LogLevel g_DebugLevel;
 
-	//für alle gewöhnlichen Ereignisse, die von Interesse sind
-	// - Verbindung hergestellt
-	// - Spieler angemeldet
+	//For common events
+	// - Connected
+	// - User signed in
 	extern const LogLevel g_InfoLevel;
 
-	//für unerwartete, aber unkritische Ereignisse
-	// - optionale, aber sinnvolle Einstellung nicht vorhanden
-	// - unsinnige Spielereingabe
+	//For unexpected events
+	// - optional but useful setting not found
+	// - unexpected user input
 	extern const LogLevel g_WarningLevel;
 
-	//für Probleme, die zur Laufzeit entstehen
-	// - Datei nicht gefunden
-	// - Verbindung verloren
+	//For runtime errors
+	// - File not found
+	// - Connection lost
 	extern const LogLevel g_ErrorLevel;
 
 
