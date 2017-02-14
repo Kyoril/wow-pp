@@ -391,7 +391,7 @@ namespace wowpp
 		/// Fired when hit by a melee attack (include miss/dodge...)
 		boost::signals2::signal<void(GameUnit *, game::VictimState)> takenMeleeAttack;
 		/// Fired when hit by any damage.
-		boost::signals2::signal<void(GameUnit *, UInt32)> takenDamage;
+		simple::signal<void(GameUnit *, UInt32, game::DamageType)> takenDamage;
 		/// Fired when this unit was healed by another unit.
 		simple::signal<void(GameUnit *, UInt32)> healed;
 		/// Fired when unit enters water
@@ -545,7 +545,7 @@ namespace wowpp
 		/// @param school The damage school mask.
 		/// @param attacker The attacking unit or nullptr, if unknown. If nullptr, no threat will be generated.
 		/// @param noThreat If set to true, no threat will be generated from this damage.
-		bool dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, float threat);
+		bool dealDamage(UInt32 damage, UInt32 school, game::DamageType damageType, GameUnit *attacker, float threat);
 		/// Heals this unit. Does not work on dead units! Use the revive method for this one.
 		/// @param amount The amount of damage to heal.
 		/// @param healer The healing unit or nullptr, if unknown. If nullptr, no threat will be generated.

@@ -983,7 +983,7 @@ namespace wowpp
 					if (totalDamage > 0)
 					{
 
-						victim->dealDamage(totalDamage - resisted - absorbed, (1 << 0), this, totalDamage - resisted - absorbed);
+						victim->dealDamage(totalDamage - resisted - absorbed, (1 << 0), game::DamageType::Direct, this, totalDamage - resisted - absorbed);
 					}
 					else
 					{
@@ -1870,7 +1870,7 @@ namespace wowpp
 		}
 	}
 
-	bool GameUnit::dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, float threat)
+	bool GameUnit::dealDamage(UInt32 damage, UInt32 school, game::DamageType damageType, GameUnit *attacker, float threat)
 	{
 		UInt32 health = getUInt32Value(unit_fields::Health);
 		if (health < 1)
@@ -1897,7 +1897,7 @@ namespace wowpp
 		}
 
 		setUInt32Value(unit_fields::Health, health);
-		takenDamage(attacker, damage);
+		takenDamage(attacker, damage, damageType);
 
 		UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
 		float healthPct = float(health) / float(maxHealth);

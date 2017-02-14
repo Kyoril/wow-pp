@@ -201,7 +201,7 @@ namespace wowpp
 		{
 			m_castEnd = getCurrentTime() + m_castTime;
 			m_countdown.setEnd(m_castEnd);
-			m_damaged = m_cast.getExecuter().takenDamage.connect([this](GameUnit *attacker, UInt32 damage) {
+			m_damaged = m_cast.getExecuter().takenDamage.connect([this](GameUnit *attacker, UInt32 damage, game::DamageType type) {
 				if (!m_hasFinished && m_countdown.running)
 				{
 					if (m_spell.interruptflags() & game::spell_interrupt_flags::PushBack &&
@@ -234,7 +234,8 @@ namespace wowpp
 						m_delayCounter++;
 					}
 					if (m_spell.interruptflags() & game::spell_interrupt_flags::Damage &&
-						m_cast.getExecuter().isGameCharacter())
+						m_cast.getExecuter().isGameCharacter() &&
+						type == game::DamageType::Direct)
 					{
 						// This interrupt flag seems to only be used on players as there is at least one spell (5514), which
 						// definetly has this flag set but is NOT interrupt on any damage, and never was (NPC Dark Sprite)
@@ -271,7 +272,7 @@ namespace wowpp
 			{
 				m_castEnd = getCurrentTime() + m_spell.duration();
 				m_countdown.setEnd(m_castEnd);
-				m_damaged = m_cast.getExecuter().takenDamage.connect([this](GameUnit *attacker, UInt32 damage) {
+				m_damaged = m_cast.getExecuter().takenDamage.connect([this](GameUnit *attacker, UInt32 damage, game::DamageType type) {
 					if (m_countdown.running)
 					{
 						if (m_spell.channelinterruptflags() & game::spell_channel_interrupt_flags::Delay &&
@@ -858,7 +859,7 @@ namespace wowpp
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
 			float threat = noThreat ? 0.0f : totalDamage - resisted - absorbed;
-			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, &attacker, threat))
+			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, game::DamageType::Direct, &attacker, threat))
 			{
 				std::map<UInt64, game::SpellMissInfo> missedTargets;
 				if (state == game::victim_state::Evades)
@@ -941,7 +942,7 @@ namespace wowpp
 			{
 				m_affectedTargets.insert(targetUnit->shared_from_this());
 
-				targetUnit->dealDamage(targetUnit->getUInt32Value(unit_fields::Health), m_spell.schoolmask(), &caster, 0.0f);
+				targetUnit->dealDamage(targetUnit->getUInt32Value(unit_fields::Health), m_spell.schoolmask(), game::DamageType::Direct, &caster, 0.0f);
 			}
 
 			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
@@ -1183,7 +1184,7 @@ namespace wowpp
 			{
 				reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(spell_mod_op::Threat, m_spell.id(), threat);
 			}
-			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, &caster, threat))
+			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, game::DamageType::Direct, &caster, threat))
 			{
 				if (totalDamage == 0 && resisted == 0) {
 					totalDamage = resisted = 1;
@@ -3194,7 +3195,7 @@ namespace wowpp
 			{
 				reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(spell_mod_op::Threat, m_spell.id(), threat);
 			}
-			if (targetUnit->dealDamage(damage - absorbed, school, &caster, threat))
+			if (targetUnit->dealDamage(damage - absorbed, school, game::DamageType::Direct, &caster, threat))
 			{
 				// Send spell damage packet
 				sendPacketFromCaster(caster,

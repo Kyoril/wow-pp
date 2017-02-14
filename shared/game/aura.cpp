@@ -1267,7 +1267,7 @@ namespace wowpp
 
 	void Aura::handleDamageShieldProc(GameUnit *attacker)
 	{
-		attacker->dealDamage(m_basePoints, m_spell.schoolmask(), &m_target, 0.0f);
+		attacker->dealDamage(m_basePoints, m_spell.schoolmask(), game::DamageType::Indirect, &m_target, 0.0f);
 
 		auto *world = attacker->getWorldInstance();
 		if (world)
@@ -1921,7 +1921,7 @@ namespace wowpp
 				}
 
 				m_caster->procEvent(&m_target, procAttacker, procVictim, game::spell_proc_flags_ex::NormalHit, damage - resisted - absorbed, game::weapon_attack::BaseAttack, &m_spell, false /*check this*/);
-				m_target.dealDamage(damage - resisted - absorbed, school, m_caster.get(), threat);
+				m_target.dealDamage(damage - resisted - absorbed, school, game::DamageType::Dot, m_caster.get(), threat);
 				break;
 			}
 		case aura::PeriodicDamagePercent:
@@ -2160,8 +2160,12 @@ namespace wowpp
 				if (strong)
 				{
 					strong->m_takenDamage = strong->m_target.takenDamage.connect(
-						[strong](GameUnit * victim, UInt32 damage) {
-							strong->setRemoved(victim);
+						[strong](GameUnit * victim, UInt32 damage, game::DamageType type) 
+						{
+							if (type == game::DamageType::Direct)
+							{
+								strong->setRemoved(victim);
+							}
 						}
 					);
 				}
@@ -2235,7 +2239,7 @@ namespace wowpp
 			if ((m_spell.procflags() & game::spell_proc_flags::TakenDamage))
 			{
 				m_takenDamage = m_caster->takenDamage.connect(
-				[&](GameUnit * victim, UInt32 damage) {
+				[&](GameUnit * victim, UInt32 damage, game::DamageType type) {
 					handleTakenDamage(victim);
 				});
 			}

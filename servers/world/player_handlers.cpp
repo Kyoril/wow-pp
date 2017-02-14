@@ -684,7 +684,7 @@ namespace wowpp
 								}
 							});
 
-							m_character->dealDamage(damage, 0, nullptr, true);
+							m_character->dealDamage(damage, 0, game::DamageType::Indirect, nullptr, true);
 							if (!m_character->isAlive())
 							{
 								WLOG("TODO: Durability damage!");

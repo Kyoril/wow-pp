@@ -300,9 +300,9 @@ namespace wowpp
 
 		const proto::SpellEntry &m_spell;
 		const proto::SpellEffect &m_effect;
-		simple::scoped_connection m_onExpire, m_onTick;
+		simple::scoped_connection m_onExpire, m_onTick, m_takenDamage;
 		boost::signals2::scoped_connection m_targetMoved, m_targetEnteredWater, m_targetStartedAttacking, m_targetStartedCasting, m_onTargetKilled;
-		boost::signals2::scoped_connection m_takenDamage, m_procKilled, m_onDamageBreak, m_onProc, m_onTakenAutoAttack;
+		boost::signals2::scoped_connection m_procKilled, m_onDamageBreak, m_onProc, m_onTakenAutoAttack;
 		std::shared_ptr<GameUnit> m_caster;
 		GameUnit &m_target;
 		SpellTargetMap m_targetMap;

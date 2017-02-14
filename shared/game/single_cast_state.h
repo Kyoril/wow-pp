@@ -142,8 +142,8 @@ namespace wowpp
 		boost::signals2::signal<void()> completedEffects;
 		std::unordered_map<UInt64, boost::signals2::scoped_connection> m_completedEffectsExecution;
 		boost::signals2::scoped_connection m_onTargetDied;
-		simple::scoped_connection m_onTargetRemoved;
-		boost::signals2::scoped_connection m_onThreatened, m_damaged;
+		simple::scoped_connection m_onTargetRemoved, m_damaged;
+		boost::signals2::scoped_connection m_onThreatened;
 		boost::signals2::scoped_connection m_onAttackError, m_removeAurasOnImmunity;
 		float m_x, m_y, m_z;
 		GameTime m_castTime;

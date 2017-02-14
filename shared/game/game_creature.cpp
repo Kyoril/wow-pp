@@ -82,7 +82,7 @@ namespace wowpp
 						{
 							if (e.data_size() > 0)
 							{
-								takenDamage.connect([this, trigger, &e](GameUnit *, UInt32 damage) {
+								takenDamage.connect([this, trigger, &e](GameUnit *, UInt32 damage, game::DamageType type) {
 									const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
 									const UInt32 health = getUInt32Value(unit_fields::Health);
 									

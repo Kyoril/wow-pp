@@ -582,6 +582,13 @@ namespace wowpp
 			extern const PowerTypeStrings powerType;
 		}
 
+		enum class DamageType
+		{
+			Direct		= 0x00,
+			Dot			= 0x01,
+			Indirect	= 0x02,
+		};
+
 		namespace spell_attributes
 		{
 			enum Type
