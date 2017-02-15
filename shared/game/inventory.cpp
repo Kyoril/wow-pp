@@ -507,10 +507,7 @@ namespace wowpp
 
 		// WARNING: There should never be any items left here!
 		assert(itemsToDelete == 0);
-		if (itemsToDelete > 0)
-		{
-			ELOG("Could not remove all items, something went really wrong! " << __FUNCTION__);
-		}
+		assert(m_itemCounter[entry.id()] == itemCount - itemsToDelete);
 
 		return game::inventory_change_failure::Okay;
 	}

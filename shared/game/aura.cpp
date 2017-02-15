@@ -688,7 +688,8 @@ namespace wowpp
 		UInt8 form = m_effect.miscvaluea();
 		if (apply)
 		{
-			const bool isAlliance = ((game::race::Alliance & (1 << (m_target.getRace() - 1))) == (1 << (m_target.getRace() - 1)));
+			const bool isAlliance = m_target.getRace() == 0 ? true : 
+				((game::race::Alliance & (1 << (m_target.getRace() - 1))) == (1 << (m_target.getRace() - 1)));
 
 			UInt32 modelId = 0;
 			UInt32 powerType = m_target.getByteValue(unit_fields::Bytes0, 3);
