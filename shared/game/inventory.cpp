@@ -489,7 +489,7 @@ namespace wowpp
 				{
 					// Reduce stack count
 					it->second->setUInt32Value(item_fields::StackCount, stackCount - itemsToDelete);
-					m_itemCounter[entry.id()] -= (stackCount - itemsToDelete);
+					m_itemCounter[entry.id()] -= itemsToDelete;
 					itemsToDelete = 0;
 
 					// Notify client about this update
