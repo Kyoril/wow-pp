@@ -3000,6 +3000,7 @@ namespace wowpp
 			{
 				if (character.getInventory().getItemCount(reagent.item()) < reagent.count())
 				{
+					WLOG("Not enough items in inventory!");
 					return false;
 				}
 			}
@@ -3020,6 +3021,7 @@ namespace wowpp
 			}
 		}
 
+		m_tookReagents = true;
 		return true;
 	}
 
