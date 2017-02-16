@@ -38,6 +38,7 @@ namespace wowpp
 		    const UpdateListProperties &listProperties,
 		    const sff::read::tree::Table<std::string::const_iterator> &entryDescription,
 		    const std::string &source,
+			const std::string &parseDir,
 		    const std::string &destination,
 		    IFileEntryHandler &handler
 		);

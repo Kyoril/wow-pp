@@ -33,6 +33,7 @@ namespace wowpp
 	namespace updating
 	{
 		PreparedUpdate prepareUpdate(
+			const std::string &parseDir,
 		    const std::string &outputDir,
 		    const PrepareParameters &parameters
 		)
@@ -59,6 +60,7 @@ namespace wowpp
 				           listProperties,
 				           *root,
 				           "",
+						   parseDir,
 				           outputDir,
 				           fileSystem
 				       );

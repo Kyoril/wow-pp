@@ -174,7 +174,6 @@ namespace wowpp
 				return false;
 			}
 
-/*
 			// Load update window
 			UpdateDialog updateDialog(*this);
 			if (updateDialog.exec() != QDialog::Accepted)
@@ -182,7 +181,6 @@ namespace wowpp
 				// TODO
 				return false;
 			}
-*/
 
 			// Setup team connector
 			m_teamConnector = make_unique<TeamConnector>(m_ioService, m_configuration, m_project, m_timers);
