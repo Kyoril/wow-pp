@@ -33,6 +33,10 @@ cmake_minimum_required(VERSION 2.8.11)
 	include_directories("${CMAKE_SOURCE_DIR}/deps/debug_utils")
 	include_directories("${CMAKE_SOURCE_DIR}/deps/detour")
 	include_directories("${CMAKE_SOURCE_DIR}/deps/detour_tile_cache")
+	
+	if (WOWPP_EDITOR_WITH_PATCH_SUPPORT)
+		add_definitions("-DWOWPP_EDITOR_WITH_PATCH")
+	endif()
 		
 	# Enable CMake automatic moc file generation
 	set(CMAKE_AUTOMOC OFF)

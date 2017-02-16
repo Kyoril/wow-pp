@@ -172,6 +172,9 @@ project(WoW)
 	# Tests option
 	option(WOWPP_BUILD_TESTS "If checked, will try to test programs." OFF)
 	
+	# Editor option
+	option(WOWPP_EDITOR_WITH_PATCH_SUPPORT "If checked, the editor will be built with patch support (checks for patches on startup)" OFF)
+	
 	# Add the shared-directory to the list of local include directories
 	include_directories(deps)
 	include_directories(shared)

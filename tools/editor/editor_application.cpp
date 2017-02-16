@@ -174,13 +174,14 @@ namespace wowpp
 				return false;
 			}
 
+#ifdef WOWPP_EDITOR_WITH_PATCH
 			// Load update window
 			UpdateDialog updateDialog(*this);
 			if (updateDialog.exec() != QDialog::Accepted)
 			{
-				// TODO
 				return false;
 			}
+#endif
 
 			// Setup team connector
 			m_teamConnector = make_unique<TeamConnector>(m_ioService, m_configuration, m_project, m_timers);
