@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
 		("service,s", "run the realm as a background process")
 #endif
 		;
-
+	
 	po::variables_map vm;
 	try
 	{

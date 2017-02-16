@@ -156,7 +156,7 @@ namespace wowpp
 			{
 				// Open the source from the target url by downloading it from the server
 				auto source = wowpp::updating::openSourceFromUrl(
-					wowpp::updating::UpdateURL("http://127.0.0.1/wowpp_editor")
+					wowpp::updating::UpdateURL("http://patch.wow-pp.eu")
 				);
 
 				// Prepare the downloaded data
@@ -227,9 +227,10 @@ namespace wowpp
 
 				DLOG("Updated " << m_loaded << " / " << updateSize << " bytes");
 			}
-			catch (const std::exception &)
+			catch (const std::exception &e)
 			{
-
+				emit setStatusMessage(e.what());
+				return;
 			}
 
 			emit finishedUpdates(m_loaded != 0);
@@ -260,9 +261,9 @@ namespace wowpp
 #endif
 
 				std::vector<std::string> arguments;
-				arguments.push_back("-pid");
+				arguments.push_back("--pid");
 				arguments.push_back(std::to_string(processId));
-				arguments.push_back("-dir");
+				arguments.push_back("--dir");
 				arguments.push_back("update");
 				createProcess(process, arguments);
 
