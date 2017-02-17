@@ -42,6 +42,7 @@ namespace wowpp
 		, m_moveEnd(0)
 		, m_customSpeed(false)
 		, m_debugOutputEnabled(false)
+		, m_canWalkOnTerrain(true)
 	{
 		m_moveUpdated.ended.connect([this]()
 		{
@@ -190,7 +191,7 @@ namespace wowpp
 		
 		// Calculate path
 		std::vector<math::Vector3> path;
-		if (!map->calculatePath(currentLoc, target, path))
+		if (!map->calculatePath(currentLoc, target, path, m_canWalkOnTerrain))
 		{
 			return false;
 		}

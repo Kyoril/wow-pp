@@ -67,6 +67,8 @@ namespace wowpp
 		// Remove all auras from this unit
 		controlled.getAuras().removeAllAuras();
 
+		controlled.getMover().setTerrainMovement(true);
+
 		m_onStateChanged = getControlled().unitStateChanged.connect([this](UInt32 state, bool stunned)
 		{
 			auto &controlled = getControlled();

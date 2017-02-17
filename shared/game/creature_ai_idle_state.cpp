@@ -48,6 +48,8 @@ namespace wowpp
 	{
 		auto &controlled = getControlled();
 
+		controlled.getMover().setTerrainMovement(false);
+
 		// Handle incoming threat
 		auto &ai = getAI();
 		m_onThreatened = controlled.threatened.connect(std::bind(&CreatureAI::onThreatened, &ai, std::placeholders::_1, std::placeholders::_2));

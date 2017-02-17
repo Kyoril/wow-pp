@@ -219,7 +219,7 @@ namespace wowpp
 		/// @returns true, if nothing prevents the line of sight, false otherwise.
 		bool isInLineOfSight(const math::Vector3 &posA, const math::Vector3 &posB);
 		/// Calculates a path from start point to the destination point.
-		bool calculatePath(const math::Vector3 &source, math::Vector3 dest, std::vector<math::Vector3> &out_path);
+		bool calculatePath(const math::Vector3 &source, math::Vector3 dest, std::vector<math::Vector3> &out_path, bool ignoreAdtSlope = true);
 		/// 
 		dtPolyRef getPolyByLocation(const math::Vector3 &point, float &out_distance) const;
 		/// 
@@ -253,6 +253,8 @@ namespace wowpp
 		std::unique_ptr<dtNavMeshQuery, NavQueryDeleter> m_navQuery;
 		/// Filter to determine what kind of navigation polygons to use.
 		dtQueryFilter m_filter;
+		/// This filter avoids unwalkable adt areas.
+		dtQueryFilter m_adtSlopeFilter;
 
 		// Holds all loaded navigation meshes, keyed by map id.
 		static std::map<UInt32, std::unique_ptr<dtNavMesh, NavMeshDeleter>> navMeshsPerMap;

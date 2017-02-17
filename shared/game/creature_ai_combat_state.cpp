@@ -67,6 +67,7 @@ namespace wowpp
 	void CreatureAICombatState::onEnter()
 	{
 		auto &controlled = getControlled();
+		controlled.getMover().setTerrainMovement(true);
 
 		// Flag controlled unit for combat
 		controlled.addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);

@@ -103,7 +103,9 @@ namespace wowpp
 			}
 
 			// Setup filter
-			m_filter.setIncludeFlags(1 | 2 | 4 | 8 | 16);		// Testing...
+			m_filter.setIncludeFlags(1 | 2 | 4 | 8 | 16 | 32);		// Testing...
+			m_adtSlopeFilter.setIncludeFlags(1 | 2 | 4 | 8 | 16);
+			m_adtSlopeFilter.setExcludeFlags(32);
 
 			navMeshsPerMap[entry.id()] = std::move(navMesh);
 			ILOG("Navigation mesh for map " << m_entry.id() << " initialized");
@@ -664,7 +666,7 @@ namespace wowpp
 		return DT_SUCCESS;
 	}
 
-	bool Map::calculatePath(const math::Vector3 & source, math::Vector3 dest, std::vector<math::Vector3>& out_path)
+	bool Map::calculatePath(const math::Vector3 & source, math::Vector3 dest, std::vector<math::Vector3>& out_path, bool ignoreAdtSlope/* = true*/)
 	{
 		// Convert the given start and end point into recast coordinate system
 		math::Vector3 dtStart = wowToRecastCoord(source);
@@ -764,14 +766,14 @@ namespace wowpp
 		if (startPoly != endPoly)
 		{
 			dtResult = m_navQuery->findPath(
-				startPoly,				// start polygon
-				endPoly,				// end polygon
-				&dtStart.x,				// start position
-				&dtEnd.x,				// end position
-				&m_filter,				// polygon search filter
-				tempPath.data(),		// [out] path
-				&pathLength,			// number of polygons used by path (<= maxPathLength)
-				maxPathLength);			// max number of polygons in output path
+				startPoly,											// start polygon
+				endPoly,											// end polygon
+				&dtStart.x,											// start position
+				&dtEnd.x,											// end position
+				ignoreAdtSlope ? &m_filter : &m_adtSlopeFilter,		// polygon search filter
+				tempPath.data(),									// [out] path
+				&pathLength,										// number of polygons used by path (<= maxPathLength)
+				maxPathLength);										// max number of polygons in output path
 			if (!pathLength ||
 				dtStatusFailed(dtResult))
 			{
@@ -834,7 +836,7 @@ namespace wowpp
 			tempPathPolys.resize(tempPathCoordsCount);
 
 			// Smooth out the path
-			dtResult = smoothPath(*m_navQuery, *m_navMesh, m_filter, tempPathPolys, tempPathCoords);
+			dtResult = smoothPath(*m_navQuery, *m_navMesh, ignoreAdtSlope ? m_filter : m_adtSlopeFilter, tempPathPolys, tempPathCoords);
 			if (dtStatusFailed(dtResult))
 			{
 				ELOG("Failed to smooth out existing path.");
@@ -852,7 +854,7 @@ namespace wowpp
 		{
 			int smoothPathSize = 0;
 			float smoothPath[VERTEX_SIZE * MAX_POINT_PATH_LENGTH];
-			dtResult = findSmoothPath(m_navQuery.get(), m_navMesh, &m_filter, &dtStart.x, &dtEnd.x, &tempPath[0], pathLength, smoothPath, &smoothPathSize, 74);
+			dtResult = findSmoothPath(m_navQuery.get(), m_navMesh, ignoreAdtSlope ? &m_filter : &m_adtSlopeFilter, &dtStart.x, &dtEnd.x, &tempPath[0], pathLength, smoothPath, &smoothPathSize, 74);
 			if (dtStatusFailed(dtResult))
 			{
 				//ELOG("Could not get smooth path: " << dtResult);
@@ -953,7 +955,7 @@ namespace wowpp
 		}
 
 		math::Vector3 out;
-		dtStatus dtResult = m_navQuery->findRandomPointAroundCircle(startPoly, &dtCenter.x, radius, &m_filter, frand, &endPoly, &out.x);
+		dtStatus dtResult = m_navQuery->findRandomPointAroundCircle(startPoly, &dtCenter.x, radius, &m_adtSlopeFilter, frand, &endPoly, &out.x);
 		if (dtStatusSucceed(dtResult))
 		{
 			out_point = recastToWoWCoord(out);
