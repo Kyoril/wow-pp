@@ -42,6 +42,7 @@
 #include "aura.h"
 #include "unit_mover.h"
 #include "game_dyn_object.h"
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -200,8 +201,8 @@ namespace wowpp
 		{
 			m_castEnd = getCurrentTime() + m_castTime;
 			m_countdown.setEnd(m_castEnd);
-			m_damaged = m_cast.getExecuter().takenDamage.connect([this](GameUnit *attacker, UInt32 damage) {
-				if (!m_hasFinished && m_countdown.running)
+			m_damaged = m_cast.getExecuter().takenDamage.connect([this](GameUnit *attacker, UInt32 damage, game::DamageType type) {
+				if (!m_hasFinished && m_countdown.running && type == game::DamageType::Direct)
 				{
 					if (m_spell.interruptflags() & game::spell_interrupt_flags::PushBack &&
 						m_delayCounter < 2 &&
@@ -232,8 +233,11 @@ namespace wowpp
 							std::bind(game::server_write::spellDelayed, std::placeholders::_1, m_cast.getExecuter().getGuid(), 500));
 						m_delayCounter++;
 					}
-					if (m_spell.interruptflags() & game::spell_interrupt_flags::Damage)
+					if (m_spell.interruptflags() & game::spell_interrupt_flags::Damage &&
+						m_cast.getExecuter().isGameCharacter())
 					{
+						// This interrupt flag seems to only be used on players as there is at least one spell (5514), which
+						// definetly has this flag set but is NOT interrupt on any damage, and never was (NPC Dark Sprite)
 						stopCast(game::spell_interrupt_flags::Damage);
 					}
 				}
@@ -267,7 +271,7 @@ namespace wowpp
 			{
 				m_castEnd = getCurrentTime() + m_spell.duration();
 				m_countdown.setEnd(m_castEnd);
-				m_damaged = m_cast.getExecuter().takenDamage.connect([this](GameUnit *attacker, UInt32 damage) {
+				m_damaged = m_cast.getExecuter().takenDamage.connect([this](GameUnit *attacker, UInt32 damage, game::DamageType type) {
 					if (m_countdown.running)
 					{
 						if (m_spell.channelinterruptflags() & game::spell_channel_interrupt_flags::Delay &&
@@ -578,6 +582,30 @@ namespace wowpp
 			}
 		}
 
+		// Check some effect-dependant errors
+		for (const auto &effect : m_spell.effects())
+		{
+			switch (effect.type())
+			{
+				case game::spell_effects::OpenLock:
+				{
+					// Check if object is currently in use by another player
+					GameObject *obj = nullptr;
+					m_target.resolvePointers(*m_cast.getExecuter().getWorldInstance(), nullptr, nullptr, &obj, nullptr);
+					if (obj && obj->isWorldObject())
+					{
+						if (obj->getUInt32Value(world_object_fields::State) != 1)
+						{
+							m_cast.getExecuter().spellCastError(m_spell, game::spell_cast_result::FailedChestInUse);
+							strongThis->sendEndCast(false);
+							return;
+						}
+					}
+					break;
+				}
+			}
+		}
+
 		m_hasFinished = true;
 
 		const std::weak_ptr<SingleCastState> weakThis = strongThis;
@@ -830,7 +858,7 @@ namespace wowpp
 			// Update health value
 			const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
 			float threat = noThreat ? 0.0f : totalDamage - resisted - absorbed;
-			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, &attacker, threat))
+			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, game::DamageType::Direct, &attacker, threat))
 			{
 				std::map<UInt64, game::SpellMissInfo> missedTargets;
 				if (state == game::victim_state::Evades)
@@ -913,7 +941,7 @@ namespace wowpp
 			{
 				m_affectedTargets.insert(targetUnit->shared_from_this());
 
-				targetUnit->dealDamage(targetUnit->getUInt32Value(unit_fields::Health), m_spell.schoolmask(), &caster, 0.0f);
+				targetUnit->dealDamage(targetUnit->getUInt32Value(unit_fields::Health), m_spell.schoolmask(), game::DamageType::Direct, &caster, 0.0f);
 			}
 
 			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())
@@ -1155,7 +1183,7 @@ namespace wowpp
 			{
 				reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(spell_mod_op::Threat, m_spell.id(), threat);
 			}
-			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, &caster, threat))
+			if (targetUnit->dealDamage(totalDamage - resisted - absorbed, school, game::DamageType::Direct, &caster, threat))
 			{
 				if (totalDamage == 0 && resisted == 0) {
 					totalDamage = resisted = 1;
@@ -2358,6 +2386,13 @@ namespace wowpp
 				}
 
 				// TODO: Add aura to unit target
+				if (isChanneled())
+				{
+					m_onChannelAuraRemoved = aura->misapplied.connect([this]() {
+						stopCast(game::spell_interrupt_flags::None);
+					});
+				}
+
 				targetUnit->getAuras().addAura(std::move(aura));
 
 				// We need to be sitting for this aura to work
@@ -2957,8 +2992,36 @@ namespace wowpp
 		if (m_tookReagents && delayed)
 			return true;
 
+		if (m_cast.getExecuter().isGameCharacter())
+		{
+			// First check if all items are available (TODO: Create transactions to avoid two loops)
+			auto &character = reinterpret_cast<GameCharacter&>(m_cast.getExecuter());
+			for (const auto &reagent : m_spell.reagents())
+			{
+				if (character.getInventory().getItemCount(reagent.item()) < reagent.count())
+				{
+					WLOG("Not enough items in inventory!");
+					return false;
+				}
+			}
 
+			// Now consume all reagents
+			for (const auto &reagent : m_spell.reagents())
+			{
+				const auto *item = character.getProject().items.getById(reagent.item());
+				if (!item)
+					return false;
 
+				auto result = character.getInventory().removeItems(*item, reagent.count());
+				if (result != game::inventory_change_failure::Okay)
+				{
+					ELOG("Could not consume reagents: " << result);
+					return false;
+				}
+			}
+		}
+
+		m_tookReagents = true;
 		return true;
 	}
 
@@ -3133,7 +3196,7 @@ namespace wowpp
 			{
 				reinterpret_cast<GameCharacter&>(m_cast.getExecuter()).applySpellMod(spell_mod_op::Threat, m_spell.id(), threat);
 			}
-			if (targetUnit->dealDamage(damage - absorbed, school, &caster, threat))
+			if (targetUnit->dealDamage(damage - absorbed, school, game::DamageType::Direct, &caster, threat))
 			{
 				// Send spell damage packet
 				sendPacketFromCaster(caster,
@@ -3263,8 +3326,7 @@ namespace wowpp
 
 				// Open chest loot window
 				auto *loot = obj->getObjectLoot();
-				if (loot &&
-				        !loot->isEmpty())
+				if (loot && !loot->isEmpty())
 				{
 					// Start inspecting the loot
 					if (m_cast.getExecuter().isGameCharacter())

@@ -42,8 +42,15 @@ namespace wowpp
 		typedef boost::variant<Null, Int64, double, std::string, ConstStringPtr> Bind;
 
 
-		struct Statement : boost::noncopyable
+		struct Statement
 		{
+		private:
+
+			Statement(const Statement &Other) = delete;
+			Statement &operator=(const Statement &Other) = delete;
+
+		public:
+
 			Statement();
 			Statement(Statement  &&other);
 			explicit Statement(MYSQL &mysql);
@@ -73,8 +80,15 @@ namespace wowpp
 		};
 
 
-		struct StatementResult : boost::noncopyable
+		struct StatementResult
 		{
+		private:
+
+			StatementResult(const StatementResult &Other) = delete;
+			StatementResult &operator=(const StatementResult &Other) = delete;
+
+		public:
+
 			StatementResult();
 			StatementResult(StatementResult &&other);
 			explicit StatementResult(MYSQL_STMT &statementWithResults);

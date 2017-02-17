@@ -83,8 +83,12 @@ namespace wowpp
 	/// Player connection class.
 	class Player final
 			: public game::IConnectionListener
-			, public boost::noncopyable
 	{
+	private:
+
+		Player(const Player &Other) = delete;
+		Player &operator=(const Player &Other) = delete;
+
 	public:
 
 		typedef AbstractConnection<game::Protocol> Client;
@@ -301,5 +305,6 @@ namespace wowpp
 		void handleCharRename(game::IncomingPacket &packet);
 		void handleQuestQuery(game::IncomingPacket &packet);
 		void handleWho(game::IncomingPacket &packet);
+		void handleMinimapPing(game::IncomingPacket &packet);
 	};
 }

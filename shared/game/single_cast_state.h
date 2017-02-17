@@ -32,8 +32,15 @@ namespace wowpp
 	typedef std::map<UInt64, HitResult> HitResultMap;
 
 	///
-	class SingleCastState final : public SpellCast::CastState, public std::enable_shared_from_this<SingleCastState>, public boost::noncopyable
+	class SingleCastState final
+		: public SpellCast::CastState
+		, public std::enable_shared_from_this<SingleCastState>
 	{
+	private:
+
+		SingleCastState(const SingleCastState& Other) = delete;
+		SingleCastState &operator=(const SingleCastState &Other) = delete;
+
 	public:
 
 		explicit SingleCastState(
@@ -135,8 +142,8 @@ namespace wowpp
 		boost::signals2::signal<void()> completedEffects;
 		std::unordered_map<UInt64, boost::signals2::scoped_connection> m_completedEffectsExecution;
 		boost::signals2::scoped_connection m_onTargetDied;
-		simple::scoped_connection m_onTargetRemoved;
-		boost::signals2::scoped_connection m_onThreatened, m_damaged;
+		simple::scoped_connection m_onTargetRemoved, m_damaged;
+		boost::signals2::scoped_connection m_onThreatened;
 		boost::signals2::scoped_connection m_onAttackError, m_removeAurasOnImmunity;
 		float m_x, m_y, m_z;
 		GameTime m_castTime;
@@ -158,6 +165,7 @@ namespace wowpp
 		game::WeaponAttack m_attackType;
 		std::vector<UInt64> m_dynObjectsToDespawn;
 		bool m_instantsCast, m_delayedCast;
+		simple::scoped_connection m_onChannelAuraRemoved;
 
 		void sendEndCast(bool success);
 		void onCastFinished();

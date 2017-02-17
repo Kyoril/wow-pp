@@ -648,6 +648,21 @@ namespace wowpp
 	/// Stores spell modifiers by it's operation.
 	typedef std::map<SpellModOp, SpellModList> SpellModsByOp;
 
+	namespace rest_type
+	{
+		enum Type
+		{
+			/// Player is not resting.
+			None		= 0,
+			/// Player is resting in a tavern.
+			Tavern		= 1,
+			/// Player is resting in a city.
+			City		= 2
+		};
+	}
+
+	typedef rest_type::Type RestType;
+
 	/// Represents a players character in the world.
 	class GameCharacter : public GameUnit
 	{
@@ -714,19 +729,23 @@ namespace wowpp
 		// GameUnit overrides
 
 		/// @copydoc GameUnit::hasMainHandWeapon
-		bool hasMainHandWeapon() const override;
+		virtual bool hasMainHandWeapon() const override;
 		/// @copydoc GameUnit::hasOffHandWeapon
-		bool hasOffHandWeapon() const override;
+		virtual bool hasOffHandWeapon() const override;
+		/// @copydoc GameUnit::getMainHandWeapon
+		virtual std::shared_ptr<GameItem> getMainHandWeapon() const override;
+		/// @copydoc GameUnit::getOffHandWeapon
+		virtual std::shared_ptr<GameItem> getOffHandWeapon() const override;
 		/// @copydoc GameUnit::canBlock
-		bool canBlock() const override;
+		virtual bool canBlock() const override;
 		/// @copydoc GameUnit::canParry
-		bool canParry() const override;
+		virtual bool canParry() const override;
 		/// @copydoc GameUnit::canDodge
-		bool canDodge() const override;
+		virtual bool canDodge() const override;
 		/// @copydoc GameUnit::canDualWield
-		bool canDualWield() const override;
+		virtual bool canDualWield() const override;
 		/// @copydoc GameUnit::rewardExperience()
-		void rewardExperience(GameUnit *victim, UInt32 experience) override;
+		virtual void rewardExperience(GameUnit *victim, UInt32 experience) override;
 
 	protected:
 
@@ -746,6 +765,14 @@ namespace wowpp
 		virtual void updateCritChance(game::WeaponAttack attackType) override;
 		/// @copydoc GameUnit::updateAllCritChances
 		virtual void updateAllCritChances() override;
+		/// @copydoc GameUnit::updateSpellCritChance
+		virtual void updateSpellCritChance(game::SpellSchool spellSchool) override;
+		/// @copydoc GameUnit::updateAllSpellCritChances()
+		virtual void updateAllSpellCritChances() override;
+		/// @coypdoc GameUnit::updateDodgePerecentage
+		virtual void updateDodgePercentage() override;
+		/// @copydoc GameUnit::updateParryPercentage
+		virtual void updateParryPercentage() override;
 		/// @copydoc GameUnit::regenerateHealth
 		virtual void regenerateHealth() override;
 		/// @copydoc GameUnit::onThreaten
@@ -753,9 +780,9 @@ namespace wowpp
 		/// @copydoc GameUnit::onRegeneration
 		virtual void onRegeneration() override;
 		/// @copydoc GameUnit::getWeaponSkillValue
-		virtual UInt32 getWeaponSkillValue(game::WeaponAttack attackType, const GameUnit *target = nullptr) override;
+		virtual UInt32 getWeaponSkillValue(game::WeaponAttack attackType, const GameUnit &target) const override;
 		/// @copydoc GameUnit::getDefenseSkillValue
-		virtual UInt32 getDefenseSkillValue(const GameUnit *target = nullptr) override;
+		virtual UInt32 getDefenseSkillValue(const GameUnit &attacker) const override;
 
 	private:
 
@@ -779,7 +806,7 @@ namespace wowpp
 		void setName(const String &name);
 		/// Updates the zone where this character is. This variable is used by
 		/// the friend list and the /who list.
-		void setZone(UInt32 zoneIndex) { m_zoneIndex = zoneIndex; }
+		void setZone(UInt32 zoneIndex);
 		/// Gets the zone index where this character is.
 		UInt32 getZone() const { return m_zoneIndex; }
 		/// Gets a list of all known spells of this character.
@@ -816,6 +843,11 @@ namespace wowpp
 		void addSkill(const proto::SkillEntry &skill);
 		/// Removes a skill from the list of known skills.
 		void removeSkill(UInt32 skillId);
+		/// Updates a weapon skill. This method should be called once per auto attack / weapon skill and also
+		/// for the defense skill - so when a target gets hit by a melee attack / melee spell to eventually
+		/// increase it's defense skill value.
+		/// @param skillId Id of the weapon skill.
+		void updateWeaponSkill(UInt32 skillId);
 		/// Updates the skill values for a given skill of this character.
 		void setSkillValue(UInt32 skillId, UInt16 current, UInt16 maximum);
 		/// Gets the current skill value and max value of a given spell.
@@ -964,6 +996,29 @@ namespace wowpp
 			return m_playedTime[index];
 		}
 
+		/// Updates the players rest type.
+		void setRestType(RestType type, const class proto::AreaTriggerEntry *trigger);
+		/// Gets the players rest type.
+		RestType getRestType() const { return m_restType; }
+		/// Determines if this character is still inside it's rest area trigger.
+		bool isInRestAreaTrigger() const;
+		/// Determines if this character is inside an area trigger.
+		bool isInAreaTrigger(const class proto::AreaTriggerEntry &entry, float delta) const;
+
+	public:
+
+		// Reputation
+
+		/// Gets the default faction flags of the given faction.
+		/// @param faction Faction id.
+		game::FactionFlags getBaseFlags(UInt32 faction) const;
+		/// Gets the default reputation value for the specific faction.
+		/// @param faction Faction id.
+		Int32 getBaseReputation(UInt32 faction) const;
+		/// Gets the characters reputation value for the specific faction.
+		/// @param faction Faction id.
+		Int32 getReputation(UInt32 faction) const;
+
 	public:
 
 		/// @copydoc GameUnit::onKilled(GameUnit*)
@@ -987,6 +1042,12 @@ namespace wowpp
 		/// Updates nearby game objects after a quest change happened (some game objects are only
 		/// lootable and/or shining when certain quests are incomplete).
 		void updateNearbyQuestObjects();
+		/// Returns melee crit value from agility
+		float getMeleeCritFromAgility();
+		/// Returns dodge value from agility
+		float getDodgeFromAgility();
+		/// Returns spell crit value from intellect
+		float getSpellCritFromIntellect();
 
 	private:
 
@@ -1032,6 +1093,8 @@ namespace wowpp
 		CombatRatingsArray m_combatRatings;
 		BaseCRModArray m_baseCRMod;
 		std::array<UInt32, player_time_index::Count_> m_playedTime;
+		RestType m_restType;
+		const class proto::AreaTriggerEntry *m_restTrigger;
 	};
 
 	/// Serializes a GameCharacter to an io::Writer object for the wow++ protocol.

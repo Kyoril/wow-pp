@@ -803,6 +803,7 @@ namespace wowpp
 					bool crit = false;
 					UInt32 resisted = 0;
 					UInt32 absorbed = 0;
+
 					if (victimStates[i] == game::victim_state::IsImmune)
 					{
 						totalDamage = 0;
@@ -950,11 +951,39 @@ namespace wowpp
 						setUInt32Value(unit_fields::Power2, currentRage);
 					}
 
+					// Update skills in case of a hit
+					if (hitInfos[i] != game::hit_info::Miss && (victimStates[i] & game::victim_state::Normal | game::victim_state::Parry | game::victim_state::Blocks))
+					{
+						const bool victimIsCharacter = victim->isGameCharacter();
+						const bool attackerIsCharacter = isGameCharacter();
+
+						// Increase attackers weapon skill 
+						if (attackerIsCharacter && !victimIsCharacter)
+						{
+							// Get the respective weapon
+							auto weapon = reinterpret_cast<GameCharacter*>(this)->getInventory().getWeaponByAttackType(m_weaponAttack, true, true);
+
+							// Determine weapon skill
+							UInt32 weaponSkill = game::skill_type::Unarmed;	// No weapon
+							if (weapon)
+								weaponSkill = weapon->getEntry().skill();
+
+							// Increase weapon skill
+							reinterpret_cast<GameCharacter*>(this)->updateWeaponSkill(weaponSkill);
+						}
+
+						// Increase targets defense skill (only if not pvp)
+						if (victimIsCharacter && !attackerIsCharacter)
+						{
+							reinterpret_cast<GameCharacter*>(victim)->updateWeaponSkill(game::skill_type::Defense);
+						}
+					}
+
 					// Deal damage (Note: m_victim can become nullptr, if the target dies)
 					if (totalDamage > 0)
 					{
 
-						victim->dealDamage(totalDamage - resisted - absorbed, (1 << 0), this, totalDamage - resisted - absorbed);
+						victim->dealDamage(totalDamage - resisted - absorbed, (1 << 0), game::DamageType::Direct, this, totalDamage - resisted - absorbed);
 					}
 					else
 					{
@@ -1213,6 +1242,26 @@ namespace wowpp
 	}
 
 	void GameUnit::updateAllCritChances()
+	{
+		// Nothing to do here.
+	}
+
+	void GameUnit::updateSpellCritChance(game::SpellSchool spellSchool)
+	{
+		// Nothing to do here.
+	}
+
+	void GameUnit::updateAllSpellCritChances()
+	{
+		// Nothing to do here.
+	}
+
+	void GameUnit::updateDodgePercentage()
+	{
+		// Nothing to do here.
+	}
+
+	void GameUnit::updateParryPercentage()
 	{
 		// Nothing to do here.
 	}
@@ -1821,7 +1870,7 @@ namespace wowpp
 		}
 	}
 
-	bool GameUnit::dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, float threat)
+	bool GameUnit::dealDamage(UInt32 damage, UInt32 school, game::DamageType damageType, GameUnit *attacker, float threat)
 	{
 		UInt32 health = getUInt32Value(unit_fields::Health);
 		if (health < 1)
@@ -1848,7 +1897,7 @@ namespace wowpp
 		}
 
 		setUInt32Value(unit_fields::Health, health);
-		takenDamage(attacker, damage);
+		takenDamage(attacker, damage, damageType);
 
 		UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
 		float healthPct = float(health) / float(maxHealth);
@@ -2106,12 +2155,55 @@ namespace wowpp
 
 	float GameUnit::getDodgeChance(GameUnit &attacker)
 	{
-		return isStunned() ? 0.0f : 5.0f;
+		float dodgeChance = 5.0f;
+
+		if (isGameCharacter())
+		{
+			dodgeChance = getFloatValue(character_fields::DodgePercentage);
+		}
+
+		return isStunned() ? 0.0f : dodgeChance;
 	}
 
 	float GameUnit::getParryChance(GameUnit &attacker)
 	{
-		return isStunned() ? 0.0f : 5.0f;
+		float chance = 0.0f;
+
+		if (!isStunned())
+		{ 
+			if (isGameCharacter())
+			{
+				auto &character = reinterpret_cast<GameCharacter &>(*this);
+
+				if (character.canParry())
+				{
+					const auto &inventory = character.getInventory();
+					auto item = inventory.getWeaponByAttackType(game::weapon_attack::BaseAttack, true, true);
+
+					if (!item)
+					{
+						item = inventory.getWeaponByAttackType(game::weapon_attack::OffhandAttack, true, true);
+					}
+
+					if (item)
+					{
+						chance = getFloatValue(character_fields::ParryPercentage);
+					}
+				}
+			}
+			else if (isCreature())
+			{
+				if (reinterpret_cast<GameCreature &>(*this).getEntry().creaturetypeflags() == game::creature_type::Humanoid)
+				{
+					chance = 5.0f;
+
+					chance += getAuras().getTotalBasePoints(game::aura_type::ModParryPercent);
+				}
+			}
+		}
+
+
+		return chance < 0.0f ? 0.0f : chance;
 	}
 
 	float GameUnit::getGlancingChance(GameUnit &attacker)
@@ -2280,7 +2372,7 @@ namespace wowpp
 				crit += attacker.getAuras().getTotalBasePoints(game::aura_type::ModCritPercent);
 			}
 
-			if (game::weapon_attack::RangedAttack)
+			if (attackType == game::weapon_attack::RangedAttack)
 			{
 				crit += m_auras.getTotalBasePoints(game::aura_type::ModAttackerRangedCritChance);
 			}
@@ -2291,7 +2383,8 @@ namespace wowpp
 
 			crit += m_auras.getTotalBasePoints(game::aura_type::ModAttackerSpellAndWeaponCritChance);
 
-			if (isGameCharacter())
+			const bool victimIsCharacter = isGameCharacter();
+			if (victimIsCharacter)
 			{
 				auto *character = reinterpret_cast<GameCharacter*>(this);
 
@@ -2305,7 +2398,9 @@ namespace wowpp
 				}
 			}
 
-			crit += (static_cast<Int32>(getMaxSkillValueForLevel(this)) - static_cast<Int32>(getDefenseSkillValue(&attacker))) * 0.04f;
+			const Int32 attackerWeaponSkill = attacker.getMaxWeaponSkillValueForLevel();
+			const Int32 victimDefenseSkill = getDefenseSkillValue(attacker);
+			crit += (attackerWeaponSkill - victimDefenseSkill) * 0.04f;
 
 			return crit < 0.0f ? 0.0f : crit;
 		}

@@ -73,10 +73,15 @@ namespace wowpp
 
 	/// Represents a characters inventory and provides functionalities like
 	/// adding and organizing items.
-	class Inventory : public boost::noncopyable
+	class Inventory
 	{
 		friend io::Writer &operator << (io::Writer &w, Inventory const &object);
 		friend io::Reader &operator >> (io::Reader &r, Inventory &object);
+
+	private:
+
+		Inventory(const Inventory &Other) = delete;
+		Inventory &operator=(const Inventory &Other) = delete;
 
 	public:
 
@@ -103,6 +108,11 @@ namespace wowpp
 		/// @param out_slots If not nullptr, a map, containing all slots and counters will be filled.
 		/// @returns game::inventory_change_failure::Okay if succeeded.
 		game::InventoryChangeFailure createItems(const proto::ItemEntry &entry, UInt16 amount = 1, std::map<UInt16, UInt16> *out_addedBySlot = nullptr);
+		/// Tries to add multiple existing items of the same entry to the inventory.
+		/// @param entry The item template to be used for creating new items.
+		/// @param out_slot If not nullptr, a slot number that will be used by the item.
+		/// @returns game::inventory_change_failure::Okay if succeeded.
+		game::InventoryChangeFailure addItem(std::shared_ptr<GameItem> item, UInt16 *out_slot = nullptr);
 		/// Tries to remove multiple items of the same entry.
 		/// @param entry The item template to delete.
 		/// @param amount The amount of items to delete. If 0, ALL items of that entry are deleted.
@@ -114,6 +124,12 @@ namespace wowpp
 		///               so that if stacks >= actual item stacks, simply all stacks will be removed as well.
 		/// @returns game::inventory_change_failure::Okay if succeeded.
 		game::InventoryChangeFailure removeItem(UInt16 absoluteSlot, UInt16 stacks = 0);
+		/// Tries to remove an item by it's guid. This is basically just a shortcut to findItemByGUID() and removeItem().
+		/// @param guid The item guid.
+		/// @param stacks The number of stacks to remove. If 0, ALL stacks will be removed. Stacks are capped automatically,
+		///               so that if stacks >= actual item stacks, simply all stacks will be removed as well.
+		/// @returns game::inventory_change_failure::Okay if succeeded.
+		game::InventoryChangeFailure removeItemByGUID(UInt64 guid, UInt16 stacks = 0);
 		/// Tries to swap two slots. Can also be used to move items, if one of the slots is
 		/// empty.
 		/// @param slotA The first (source) slot.

@@ -88,8 +88,15 @@ namespace wowpp
 		};
 	}
 
-	struct AsyncDatabase : boost::noncopyable
+	struct AsyncDatabase
 	{
+	private:
+
+		AsyncDatabase(const AsyncDatabase &Other) = delete;
+		AsyncDatabase &operator=(const AsyncDatabase &Other) = delete;
+
+	public:
+
 		typedef std::function<void(const std::function<void()> &)> ActionDispatcher;
 
 		explicit AsyncDatabase(IDatabase &database,

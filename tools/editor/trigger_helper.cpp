@@ -187,6 +187,13 @@ namespace wowpp
 				return QString("Player - Raise quest event or exploration of quest %2 for %1")
 					.arg(getTriggerTargetName(action, withLinks))
 					.arg(actionDataEntry(project.quests, action, 0, withLinks));
+			case trigger_actions::Dismount:
+				return QString("Unit - Dismount %1")
+					.arg(getTriggerTargetName(action, withLinks));
+			case trigger_actions::SetMount:
+				return QString("Unit - Set mount id of %1 to %2")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(getTriggerActionData(action, 0, withLinks));
 			case trigger_actions::SetVariable:
 			{
 				QString format("Object - Set %1's variable %2 to %3");

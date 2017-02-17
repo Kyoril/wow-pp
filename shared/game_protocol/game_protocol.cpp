@@ -32,6 +32,7 @@
 #include "binary_io/writer.h"
 #include "binary_io/vector_sink.h"
 #include "game/game_character.h"
+#include "proto_data/project.h"
 
 namespace wowpp
 {
@@ -327,18 +328,40 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void initializeFactions(game::OutgoingPacket &out_packet /*TODO */)
+			void initializeFactions(game::OutgoingPacket &out_packet, const GameCharacter &character)
 			{
+				const UInt32 factionCount = 128;
 				out_packet.start(game::server_packet::InitializeFactions);
 				out_packet
-				        << io::write<NetUInt32>(0x00000080);
+				        << io::write<NetUInt32>(factionCount);
 
-				UInt32 factionCount = 0;
-				for (UInt32 a = factionCount; a != 128; ++a)
+				// Build faction rep list (TODO: Build this statically somewhere)
+				std::map<UInt32, UInt32> factionRepList;
+				for (const auto &faction : character.getProject().factions.getTemplates().entry())
 				{
-					out_packet
-					        << io::write<NetUInt8>(0x00)
-					        << io::write<NetUInt32>(0x00000000);
+					if (faction.replistid() >= 0)
+						factionRepList[faction.replistid()] = faction.id();
+				}
+
+				// For each faction...
+				for (UInt32 i = 0; i < factionCount; ++i)
+				{
+					auto it = factionRepList.find(i);
+					if (it == factionRepList.end())
+					{
+						out_packet
+							<< io::write<NetUInt8>(0x00)
+							<< io::write<NetUInt32>(0x00000000);
+					}
+					else
+					{
+						// Get flags and reputation
+						game::FactionFlags flags = character.getBaseFlags(it->second);
+						Int32 repValue = character.getBaseReputation(it->second);
+						out_packet
+							<< io::write<NetUInt8>(flags)
+							<< io::write<NetUInt32>(repValue);
+					}
 				}
 
 				out_packet.finish();
@@ -870,6 +893,16 @@ namespace wowpp
 				out_packet.start(game::server_packet::ChatPlayerNotFound);
 				out_packet
 				        << io::write_range(name) << io::write<NetUInt8>(0);
+				out_packet.finish();
+			}
+
+			void minimapPing(game::OutgoingPacket & out_packet, UInt64 senderGuid, float x, float y)
+			{
+				out_packet.start(game::server_packet::MinimapPing);
+				out_packet
+					<< io::write<NetUInt64>(senderGuid)
+					<< io::write<float>(x)
+					<< io::write<float>(y);
 				out_packet.finish();
 			}
 
@@ -1967,13 +2000,13 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void lootResponse(game::OutgoingPacket &out_packet, UInt64 guid, loot_type::Type type, const LootInstance &loot)
+			void lootResponse(game::OutgoingPacket &out_packet, UInt64 guid, loot_type::Type type, UInt64 playerGuid, const LootInstance &loot)
 			{
 				out_packet.start(game::server_packet::LootResponse);
 				out_packet
-				        << io::write<NetUInt64>(guid)
-				        << io::write<NetUInt8>(type)
-				        << loot;
+					<< io::write<NetUInt64>(guid)
+					<< io::write<NetUInt8>(type);
+				loot.serialize(out_packet, playerGuid);
 				out_packet.finish();
 			}
 
@@ -2136,17 +2169,43 @@ namespace wowpp
 			{
 				out_packet.start(game::server_packet::TrainerList);
 				out_packet
-				        << io::write<NetUInt64>(trainerGuid)
-				        << io::write<NetUInt32>(trainerEntry.type())
-				        << io::write<NetUInt32>(trainerEntry.spells_size());
+					<< io::write<NetUInt64>(trainerGuid)
+					<< io::write<NetUInt32>(trainerEntry.type());
+
+				size_t spellCountPos = out_packet.sink().position();
+				out_packet
+					<< io::write<NetUInt32>(trainerEntry.spells_size());
 
 				const UInt8 GreenSpell = 0;
 				const UInt8 RedSpell = 1;
 				const UInt8 GreySpell = 2;
 
+				UInt32 spellCount = trainerEntry.spells_size();
 				for (int i = 0; i < trainerEntry.spells_size(); ++i)
 				{
 					const auto &spell = trainerEntry.spells(i);
+					const auto *entry = character.getProject().spells.getById(spell.spell());
+					if (!entry)
+					{
+						WLOG("Unable to find spell " << spell.spell());
+						spellCount--;
+						continue;
+					}
+
+					const UInt32 raceMask = 1 << (character.getRace() - 1);
+					if (entry->racemask() != 0 && (entry->racemask() & raceMask) == 0)
+					{
+						spellCount--;
+						continue;
+					}
+
+					const UInt32 classMask = 1 << (character.getClass() - 1);
+					if (entry->classmask() != 0 && (entry->classmask() & classMask) == 0)
+					{
+						spellCount--;
+						continue;
+					}
+
 					UInt8 state = GreenSpell;
 					if (character.hasSpell(spell.spell())) {
 						state = GreySpell;
@@ -2180,6 +2239,7 @@ namespace wowpp
 				}
 
 				out_packet << io::write_range(trainerEntry.title()) << io::write<NetUInt8>(0);
+				out_packet.writePOD(spellCountPos, spellCount);
 				out_packet.finish();
 			}
 
@@ -2744,7 +2804,7 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void sendTradeStatus(game::OutgoingPacket &out_packet, UInt32 status, UInt64 guid)
+			void sendTradeStatus(game::OutgoingPacket &out_packet, UInt32 status, UInt64 guid, bool sendError/* = false*/, UInt32 errorCode/* = 0*/, UInt32 itemCategoryEntry/* = 0*/)
 			{
 				out_packet.start(game::server_packet::TradeStatus);
 				out_packet << io::write<NetUInt32>(status);
@@ -2758,9 +2818,9 @@ namespace wowpp
 						break;
 					case game::trade_status::CloseWindow:
 						out_packet 
-							<< io::write<NetUInt32>(0)
-							<< io::write<NetUInt8>(0)
-							<< io::write<NetUInt32>(0);
+							<< io::write<NetUInt32>(errorCode)				// Error-Code
+							<< io::write<NetUInt8>(sendError ? 1 : 0)		// Display error code? (1:0)
+							<< io::write<NetUInt32>(itemCategoryEntry);		// ItemLimitCategory dbc entry id in case error code is EQUIP_ERR_ITEM_MAX_LIMIT_CATEGORY_COUNT_EXCEEDED
 						break;
 					case game::trade_status::WrongRealm:
 						out_packet << io::write<NetUInt8>(0);
@@ -2778,7 +2838,7 @@ namespace wowpp
 					     UInt32 prev_slot,
 					     UInt32 gold,
 					     UInt32 spell,
-						 std::vector<std::shared_ptr<GameItem>> item)
+						 std::array<std::shared_ptr<GameItem>, 7> items)
 			{
 				out_packet.start(game::server_packet::TradeStatusExtended);
 				out_packet 
@@ -2788,46 +2848,42 @@ namespace wowpp
 					<< io::write<NetUInt32>(prev_slot)
 					<< io::write<NetUInt32>(gold)
 					<< io::write<NetUInt32>(spell);
-				
-				
-				for (UInt8 i = 0; i < 1; i++)
+				for (UInt8 i = 0; i < items.size(); i++)
 				{
 					out_packet << io::write<NetUInt8>(i);
-					if (nullptr != item[i])
+
+					auto item = items[i];
+					if (item)
 					{
-						auto const &item_entry = item[i]->getEntry();
+						auto const &entry = item->getEntry();
+						out_packet << io::write<NetUInt32>(entry.id());
+						out_packet << io::write<NetUInt32>(entry.displayid());
+						out_packet << io::write<NetUInt32>(item->getStackCount());
+						out_packet << io::write<NetUInt32>(item->hasFlag(ItemFields::Flags, ItemFlags::Wrapped) ? 1 : 0 );
+						out_packet << io::write<NetUInt64>(item->getUInt32Value(ItemFields::GiftCreator));
+						out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemFields::Enchantment));
 
-						out_packet << io::write<NetUInt32>(item_entry.id());
-						out_packet << io::write<NetUInt32>(item_entry.displayid());
-						out_packet << io::write<NetUInt32>(item[i]->getStackCount());
-						out_packet << io::write<NetUInt32>(item[i]->hasFlag(ItemFields::Flags, ItemFlags::Wrapped) ? 1 : 0 );
-						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::GiftCreator)); 
-																											  //enchantment
-						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::Enchantment));
-
+						// Sockets
 						for (UInt32 enchant_slot = 2; enchant_slot < 2 + 3; ++enchant_slot)
 						{
-							out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemEnchantmentType(enchant_slot))); //TODO
+							out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemEnchantmentType(enchant_slot))); //TODO
 						}
 
-						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::Creator));
-						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::SpellCharges)); //spell charges
-						out_packet << io::write<NetUInt32>(item_entry.randomsuffix()); //suffix
-						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::RandomPropertiesID));
-						out_packet << io::write<NetUInt32>(item_entry.lockid());
-						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::MaxDurability));
-						out_packet << io::write<NetUInt32>(item[i]->getUInt32Value(ItemFields::Durability));
+						out_packet << io::write<NetUInt64>(item->getUInt32Value(ItemFields::Creator));
+						out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemFields::SpellCharges)); //spell charges
+						out_packet << io::write<NetUInt32>(entry.randomsuffix()); //suffix
+						out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemFields::RandomPropertiesID));
+						out_packet << io::write<NetUInt32>(entry.lockid());
+						out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemFields::MaxDurability));
+						out_packet << io::write<NetUInt32>(item->getUInt32Value(ItemFields::Durability));
 					}
 					else
 					{
+						// Write empty fields
 						for (UInt8 j = 0; j < 18; ++j)
-						{
 							out_packet << io::write<NetUInt32>(0);
-						}
 					}
-					
 				}
-				
 				out_packet.finish();
 			}
 
@@ -3202,6 +3258,13 @@ namespace wowpp
 				       >> io::read<NetUInt64>(out_targetGUID);
 			}
 
+			bool minimapPing(io::Reader & packet, float & out_x, float & out_y)
+			{
+				return packet
+					>> io::read<float>(out_x)
+					>> io::read<float>(out_y);
+			}
+
 			bool standStateChange(io::Reader &packet, UnitStandState &out_standState)
 			{
 				return packet
@@ -3558,6 +3621,12 @@ namespace wowpp
 				       >> io::read<NetUInt64>(out_targetGuid);
 			}
 
+			bool zoneUpdate(io::Reader & packet, UInt32 & out_zoneId)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_zoneId);
+			}
+
 			bool lootMoney(io::Reader &packet /*TODO */)
 			{
 				return true;
@@ -3831,6 +3900,12 @@ namespace wowpp
 				return packet
 					>> io::read<NetUInt8>(tradeSlot)
 					>> io::read<NetUInt8>(bag)
+					>> io::read<NetUInt8>(slot);
+			}
+
+			bool clearTradeItem(io::Reader & packet, UInt8 & slot)
+			{
+				return packet
 					>> io::read<NetUInt8>(slot);
 			}
 			

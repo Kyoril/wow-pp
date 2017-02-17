@@ -31,6 +31,7 @@ namespace wowpp
 
 
 		PreparedUpdate prepareUpdate(
+			const std::string &parseDir,
 		    const std::string &outputDir,
 		    const PrepareParameters &parameters
 		);

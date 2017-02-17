@@ -391,7 +391,7 @@ namespace wowpp
 		/// Fired when hit by a melee attack (include miss/dodge...)
 		boost::signals2::signal<void(GameUnit *, game::VictimState)> takenMeleeAttack;
 		/// Fired when hit by any damage.
-		boost::signals2::signal<void(GameUnit *, UInt32)> takenDamage;
+		simple::signal<void(GameUnit *, UInt32, game::DamageType)> takenDamage;
 		/// Fired when this unit was healed by another unit.
 		simple::signal<void(GameUnit *, UInt32)> healed;
 		/// Fired when unit enters water
@@ -545,7 +545,7 @@ namespace wowpp
 		/// @param school The damage school mask.
 		/// @param attacker The attacking unit or nullptr, if unknown. If nullptr, no threat will be generated.
 		/// @param noThreat If set to true, no threat will be generated from this damage.
-		bool dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, float threat);
+		bool dealDamage(UInt32 damage, UInt32 school, game::DamageType damageType, GameUnit *attacker, float threat);
 		/// Heals this unit. Does not work on dead units! Use the revive method for this one.
 		/// @param amount The amount of damage to heal.
 		/// @param healer The healing unit or nullptr, if unknown. If nullptr, no threat will be generated.
@@ -626,9 +626,13 @@ namespace wowpp
 		virtual bool canDualWield() const = 0;
 
 		/// 
-		virtual bool hasMainHandWeapon() const = 0;
+		virtual bool hasMainHandWeapon() const { return false; }
 		/// 
-		virtual bool hasOffHandWeapon() const = 0;
+		virtual bool hasOffHandWeapon() const { return false; }
+		/// 
+		virtual std::shared_ptr<GameItem> getMainHandWeapon() const { return nullptr; }
+		/// 
+		virtual std::shared_ptr<GameItem> getOffHandWeapon() const { return nullptr; }
 
 		/// 
 		bool isStunned() const {
@@ -735,6 +739,14 @@ namespace wowpp
 		///
 		virtual void updateAllCritChances();
 		///
+		virtual void updateSpellCritChance(game::SpellSchool spellSchool);
+		///
+		virtual void updateAllSpellCritChances();
+		///
+		virtual void updateDodgePercentage();
+		///
+		virtual void updateParryPercentage();
+		///
 		virtual void updateAllRatings();
 
 		virtual void applyDamageDoneBonus(UInt32 schoolMask, UInt32 tickCount, UInt32 &damage);
@@ -747,12 +759,12 @@ namespace wowpp
 
 		virtual void applyHealingDoneBonus(UInt32 spellLevel, UInt32 playerLevel, UInt32 tickCount, UInt32 &healing);
 
-		virtual UInt32 getWeaponSkillValue(game::WeaponAttack attackType, const GameUnit *target = nullptr) {
+		virtual UInt32 getWeaponSkillValue(game::WeaponAttack attackType, const GameUnit &target) const {
 			return getUnitMeleeSkill(target);
 		}
 
-		virtual UInt32 getDefenseSkillValue(const GameUnit *target = nullptr) {
-			return getUnitMeleeSkill(target);
+		virtual UInt32 getDefenseSkillValue(const GameUnit &attacker) const {
+			return getMaxWeaponSkillValueForLevel();
 		}
 
 		/// Gets the current unit mover.
@@ -807,9 +819,9 @@ namespace wowpp
 		///
 		bool canUseWeapon(game::WeaponAttack attackType);
 
-		/// Something something bosses
-		UInt16 getMaxSkillValueForLevel(const GameUnit *target = nullptr) const {
-			return (target ? target->getLevel() : getLevel()) * 5;
+		/// TODO: Do this properly, return level of target if found (can be a boss, not sure how it'll be done)
+		UInt16 getMaxWeaponSkillValueForLevel() const {
+			return static_cast<UInt16>(getLevel() * 5);
 		}
 
 		///
@@ -823,8 +835,8 @@ namespace wowpp
 		}
 
 		/// TODO: Do this properly, return level of target if found (can be a boss, not sure how it'll be done)
-		UInt32 getUnitMeleeSkill(const GameUnit *target = nullptr) const {
-			return (target ? target->getLevel() : getLevel()) * 5;
+		UInt32 getUnitMeleeSkill(const GameUnit &target) const {
+			return target.getLevel() * 5;
 		}
 
 		/// Determines if this unit is in evade mode.

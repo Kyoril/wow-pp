@@ -82,7 +82,7 @@ namespace wowpp
 						{
 							if (e.data_size() > 0)
 							{
-								takenDamage.connect([this, trigger, &e](GameUnit *, UInt32 damage) {
+								takenDamage.connect([this, trigger, &e](GameUnit *, UInt32 damage, game::DamageType type) {
 									const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
 									const UInt32 health = getUInt32Value(unit_fields::Health);
 									
@@ -495,6 +495,15 @@ namespace wowpp
 	{
 		// TODO: Speed modifier setup in unit entry and/or unit spawn point settings
 		return GameUnit::getBaseSpeed(type) * (type == movement_type::Run ? 1.14286f : 1.0f);
+	}
+
+	void GameCreature::activateSkinningLoot()
+	{
+		if (getEntry().skinninglootentry())
+		{
+			// It can be skinned
+			addFlag(unit_fields::UnitFlags, game::unit_flags::Skinnable);
+		}
 	}
 
 	bool GameCreature::isEvading() const

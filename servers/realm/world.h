@@ -41,8 +41,12 @@ namespace wowpp
 	/// World connection class.
 	class World final
 			: public pp::IConnectionListener
-			, public boost::noncopyable
 	{
+	private:
+
+		World(const World &Other) = delete;
+		World &operator=(const World &Other) = delete;
+
 	public:
 
 		typedef AbstractConnection<pp::Protocol> Client;

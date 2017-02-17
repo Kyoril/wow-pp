@@ -208,6 +208,8 @@ namespace wowpp
 					projectHashs["spell_categories"] = project.spellCategories.hashString;
 					projectHashs["combat_ratings"] = project.combatRatings.hashString;
 					projectHashs["melee_crit_chance"] = project.meleeCritChance.hashString;
+					projectHashs["spell_crit_chance"] = project.spellCritChance.hashString;
+					projectHashs["dodge_chance"] = project.dodgeChance.hashString;
 					projectHashs["resistance_percentages"] = project.resistancePcts.hashString;
 					projectHashs["variables"] = project.variables.hashString;
 				}

@@ -24,6 +24,7 @@
 #include "shared/proto_data/spells.pb.h"
 #include "common/countdown.h"
 #include "spell_target_map.h"
+#include "common/simple.hpp"
 
 namespace wowpp
 {
@@ -35,6 +36,10 @@ namespace wowpp
 	class Aura : public std::enable_shared_from_this<Aura>
 	{
 		typedef std::function<void(std::function<void()>)> PostFunction;
+
+	public:
+
+		simple::signal<void()> misapplied;
 
 	public:
 
@@ -196,6 +201,10 @@ namespace wowpp
 		void handleTrackCreatures(bool apply);
 		/// 45
 		void handleTrackResources(bool apply);
+		/// 47
+		void handleModParryPercent(bool apply);
+		/// 49
+		void handleModDodgePercent(bool apply);
 		/// 52
 		void handleModCritPercent(bool apply);
 		/// 56
@@ -291,9 +300,9 @@ namespace wowpp
 
 		const proto::SpellEntry &m_spell;
 		const proto::SpellEffect &m_effect;
-		simple::scoped_connection m_onExpire, m_onTick;
+		simple::scoped_connection m_onExpire, m_onTick, m_takenDamage;
 		boost::signals2::scoped_connection m_targetMoved, m_targetEnteredWater, m_targetStartedAttacking, m_targetStartedCasting, m_onTargetKilled;
-		boost::signals2::scoped_connection m_takenDamage, m_procKilled, m_onDamageBreak, m_onProc, m_onTakenAutoAttack;
+		boost::signals2::scoped_connection m_procKilled, m_onDamageBreak, m_onProc, m_onTakenAutoAttack;
 		std::shared_ptr<GameUnit> m_caster;
 		GameUnit &m_target;
 		SpellTargetMap m_targetMap;

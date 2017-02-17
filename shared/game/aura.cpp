@@ -378,6 +378,12 @@ namespace wowpp
 		case aura::ModCritPercent:
 			handleModCritPercent(apply);
 			break;
+		case aura::ModDodgePercent:
+			handleModDodgePercent(apply);
+			break;
+		case aura::ModParryPercent:
+			handleModParryPercent(apply);
+			break;
 		default:
 			//			WLOG("Unhandled aura type: " << m_effect.aura());
 			break;
@@ -682,7 +688,8 @@ namespace wowpp
 		UInt8 form = m_effect.miscvaluea();
 		if (apply)
 		{
-			const bool isAlliance = ((game::race::Alliance & (1 << (m_target.getRace() - 1))) == (1 << (m_target.getRace() - 1)));
+			const bool isAlliance = m_target.getRace() == 0 ? true : 
+				((game::race::Alliance & (1 << (m_target.getRace() - 1))) == (1 << (m_target.getRace() - 1)));
 
 			UInt32 modelId = 0;
 			UInt32 powerType = m_target.getByteValue(unit_fields::Bytes0, 3);
@@ -938,6 +945,16 @@ namespace wowpp
 		const UInt32 resourceType = UInt32(m_effect.miscvaluea() - 1);
 		m_target.setUInt32Value(character_fields::Track_Resources,
 			apply ? UInt32(UInt32(1) << resourceType) : 0);
+	}
+
+	void Aura::handleModParryPercent(bool apply)
+	{
+		m_target.updateParryPercentage();
+	}
+
+	void Aura::handleModDodgePercent(bool apply)
+	{
+		m_target.updateDodgePercentage();
 	}
 
 	void Aura::handleModCritPercent(bool apply)
@@ -1251,7 +1268,7 @@ namespace wowpp
 
 	void Aura::handleDamageShieldProc(GameUnit *attacker)
 	{
-		attacker->dealDamage(m_basePoints, m_spell.schoolmask(), &m_target, 0.0f);
+		attacker->dealDamage(m_basePoints, m_spell.schoolmask(), game::DamageType::Indirect, &m_target, 0.0f);
 
 		auto *world = attacker->getWorldInstance();
 		if (world)
@@ -1909,7 +1926,7 @@ namespace wowpp
 				}
 
 				m_caster->procEvent(&m_target, procAttacker, procVictim, game::spell_proc_flags_ex::NormalHit, damage - resisted - absorbed, game::weapon_attack::BaseAttack, &m_spell, false /*check this*/);
-				m_target.dealDamage(damage - resisted - absorbed, school, m_caster.get(), threat);
+				m_target.dealDamage(damage - resisted - absorbed, school, game::DamageType::Dot, m_caster.get(), threat);
 				break;
 			}
 		case aura::PeriodicDamagePercent:
@@ -2195,8 +2212,12 @@ namespace wowpp
 				if (strong)
 				{
 					strong->m_takenDamage = strong->m_target.takenDamage.connect(
-						[strong](GameUnit * victim, UInt32 damage) {
-							strong->setRemoved(victim);
+						[strong](GameUnit * victim, UInt32 damage, game::DamageType type) 
+						{
+							if (type == game::DamageType::Direct)
+							{
+								strong->setRemoved(victim);
+							}
 						}
 					);
 				}
@@ -2270,7 +2291,7 @@ namespace wowpp
 			if ((m_spell.procflags() & game::spell_proc_flags::TakenDamage))
 			{
 				m_takenDamage = m_caster->takenDamage.connect(
-				[&](GameUnit * victim, UInt32 damage) {
+				[&](GameUnit * victim, UInt32 damage, game::DamageType type) {
 					handleTakenDamage(victim);
 				});
 			}
@@ -2360,6 +2381,8 @@ namespace wowpp
 		{
 			m_caster->getTrackedAuras().erase(m_spell.mechanic());
 		}
+
+		misapplied();
 	}
 
 	void Aura::startPeriodicTimer()

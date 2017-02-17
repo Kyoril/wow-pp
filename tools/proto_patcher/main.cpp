@@ -1424,6 +1424,105 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importSpellCritChance(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `field0` FROM `tbcdb`.`dbc_gtchancetospellcrit`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+
+			UInt32 id = 0;
+			float spellCritChance = 0;
+			std::array<float, 11> spellCritChanceBase =
+			{
+				0.0f,
+				0.033355f,
+				0.03602f,
+				0.0f,
+				0.012375f,
+				0.2f,
+				0.02201f,
+				0.009075f,
+				0.017f,
+				0.2f,
+				0.018515f
+			};
+
+			for (int i = 0; i < 11; ++i)
+			{
+				for (int j = 0; j < 100; ++j)
+				{
+					project.spellCritChance.getById(i * 100 + j)->set_basechanceperlevel(spellCritChanceBase[i]);
+				}
+			}
+
+			while (row)
+			{
+				// Get row data
+				row.getField(0, spellCritChance);
+
+				auto * spellCritChances = project.spellCritChance.getById(id);
+				if (spellCritChances)
+				{
+					spellCritChances->clear_chanceperlevel();
+					spellCritChances->set_chanceperlevel(spellCritChance);
+				}
+				else
+				{
+					WLOG("Unable to spellCritChance by id: " << id);
+				}
+
+				// Next row
+				id++;
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
+	static bool importDodgeChance(proto::Project &project)
+	{
+		std::array<float, 11> dodgeChanceBase =
+		{
+			0.0075f,   // Warrior
+			0.00652f,  // Paladin
+			-0.0545f,   // Hunter
+			-0.0059f,   // Rogue
+			0.03183f,  // Priest
+			0.0114f,   // DK
+			0.0167f,   // Shaman
+			0.034575f, // Mage
+			0.02011f,  // Warlock
+			0.0f,      // ??
+			-0.0187f    // Druid
+		};
+
+		std::array<float, 11> critToDodge =
+		{
+			1.1f,      // Warrior
+			1.0f,      // Paladin
+			1.6f,      // Hunter
+			2.0f,      // Rogue
+			1.0f,      // Priest
+			1.0f,      // DK?
+			1.0f,      // Shaman
+			1.0f,      // Mage
+			1.0f,      // Warlock
+			0.0f,      // ??
+			1.7f       // Druid
+		};
+
+		for (int i = 0; i < 11; ++i)
+		{
+			auto * dodgeChances = project.dodgeChance.getById(i);
+			dodgeChances->set_basedodge(dodgeChanceBase[i]);
+			dodgeChances->set_crittododge(critToDodge[i]);
+		}
+
+		return true;
+	}
+
 	static bool importCategories(proto::Project &project, MySQL::Connection &conn)
 	{
 		project.spellCategories.clear();
@@ -2351,6 +2450,61 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importSpellReagents(proto::Project &project, MySQL::Connection &conn)
+	{
+		for (auto &spell : *project.spells.getTemplates().mutable_entry())
+		{
+			spell.clear_reagents();
+		}
+
+		wowpp::MySQL::Select select(conn, "SELECT `id`, `Reagent1`, `ReagentCount1`, `Reagent2`, `ReagentCount2`, `Reagent3`, `ReagentCount3`"
+			", `Reagent4`, `ReagentCount4`, `Reagent5`, `ReagentCount5`, `Reagent6`, `ReagentCount6`, `Reagent7`, `ReagentCount7`, `Reagent8`, `ReagentCount8` FROM `dbc_8606`.`dbc_spell`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				UInt32 spellId = 0;
+				Int32 reagent = 0, count = 0;
+				row.getField(0, spellId);
+
+				do
+				{
+					// Find spell and skill
+					auto *spell = project.spells.getById(spellId);
+					if (!spell)
+					{
+						WLOG("Unable to find spell " << spellId);
+						break;
+					}
+
+					Int32 fieldIndex = 1;
+					for (UInt32 i = 0; i < 8; ++i)
+					{
+						row.getField(fieldIndex++, reagent);
+						row.getField(fieldIndex++, count);
+						if (reagent > 0 && count > 0)
+						{
+							auto *added = spell->add_reagents();
+							if (!added)
+								continue;
+
+							added->set_item(reagent);
+							if (count > 1)
+							{
+								added->set_count(count);
+							}
+						}
+					}
+				} while (false);
+
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
 #if 0
 	static void fixTriggerEvents(proto::Project &project)
 	{
@@ -2433,9 +2587,9 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 	
-	if (!importSkillLines(protoProject, connection))
+	if (!importSpellCritChance(protoProject, connection))
 	{
-		WLOG("Could not import skill lines");
+		WLOG("Couldn't import spell crit chances");
 		return 1;
 	}
 

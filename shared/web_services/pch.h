@@ -40,7 +40,6 @@
 #include <type_traits>
 
 // Boost Libraies
-#include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/signals2.hpp>

@@ -33,6 +33,7 @@
 #include <QDesktopWidget>
 #include <QMessageBox>
 #include <cassert>
+#include "editor_config.h"
 
 namespace wowpp
 {
@@ -174,15 +175,14 @@ namespace wowpp
 				return false;
 			}
 
-/*
+#if WOWPP_EDITOR_WITH_PATCH == CMAKE_ON
 			// Load update window
 			UpdateDialog updateDialog(*this);
 			if (updateDialog.exec() != QDialog::Accepted)
 			{
-				// TODO
 				return false;
 			}
-*/
+#endif
 
 			// Setup team connector
 			m_teamConnector = make_unique<TeamConnector>(m_ioService, m_configuration, m_project, m_timers);
@@ -211,6 +211,7 @@ namespace wowpp
 			m_mapListModel.reset(new MapListModel(m_project.maps));
 			m_unitListModel.reset(new UnitListModel(m_project.units));
 			m_spellListModel.reset(new SpellListModel(m_project.spells));
+			m_skillListModel.reset(new SkillListModel(m_project.skills));
 			m_itemListModel.reset(new ItemListModel(m_project.items));
 			m_triggerListModel.reset(new TriggerListModel(m_project.triggers));
 			m_questListModel.reset(new QuestListModel(m_project.quests));
@@ -342,8 +343,17 @@ namespace wowpp
 				}
 				else
 				{
-					// Entry was either removed or modified. In both cases, we simply override...
-					typeMap[entry] = changeType;
+					// If item was removed before but a new item was added now, convert this into a modify-packet
+					if (it->second == pp::editor_team::data_entry_change_type::Removed &&
+						changeType != pp::editor_team::data_entry_change_type::Removed)
+					{
+						typeMap[entry] = pp::editor_team::data_entry_change_type::Modified;
+					}
+					else
+					{
+						// Entry was either removed or modified. In both cases, we simply override...
+						typeMap[entry] = changeType;
+					}
 				}
 			}
 		}

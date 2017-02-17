@@ -44,8 +44,14 @@ namespace wowpp
 	}
 
 	/// This class manages the connection to the realm server.
-	class RealmConnector : public pp::IConnectorListener, boost::noncopyable
+	class RealmConnector final
+		: public pp::IConnectorListener
 	{
+	private:
+
+		RealmConnector(const RealmConnector &Other) = delete;
+		RealmConnector &operator=(const RealmConnector &Other) = delete;
+
 	public:
 
 		boost::signals2::signal<void (RealmConnector &connector, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance)> worldInstanceEntered;

@@ -135,6 +135,8 @@ namespace wowpp
 			};
 		}
 
+		typedef trade_status::Type TradeStatus;
+
 		namespace quest_status
 		{
 			enum Type
@@ -579,6 +581,13 @@ namespace wowpp
 			        power_type::Invalid_> PowerTypeStrings;
 			extern const PowerTypeStrings powerType;
 		}
+
+		enum class DamageType
+		{
+			Direct		= 0x00,
+			Dot			= 0x01,
+			Indirect	= 0x02,
+		};
 
 		namespace spell_attributes
 		{
@@ -3210,10 +3219,60 @@ namespace wowpp
 			};
 		}
 
+		namespace char_flags
+		{
+			enum Type
+			{
+				/// No flags set.
+				None				= 0x00000000,
+				/// This character is a group leader.
+				GroupLeader			= 0x00000001,
+				/// This character is afk.
+				Afk					= 0x00000002,
+				/// This character doesn't want to be disturbed right now.
+				Dnd					= 0x00000004,
+				/// This character is a game master.
+				GameMaster			= 0x00000008,
+				/// This character is a ghost.
+				Ghost				= 0x00000010,
+				/// This character is currently collecting rest bonus.
+				Resting				= 0x00000020,
+				/// Unknown
+				Unknown				= 0x00000040,
+				/// This character is flagged for free for all pvp.
+				FFAPvp				= 0x00000080,
+				/// This character has attacked players in a contested area and will be attacked by guards.
+				ContestedPvP		= 0x00000100,
+				/// This character has pvp mode enabled.
+				PvP					= 0x00000200,
+				/// This character has hidden it's helmet.
+				HideHelm			= 0x00000400,
+				/// This character hs hidden it's cloak.
+				HideCloak			= 0x00000800,
+				/// This character will only receive half xp / loot / gold etc.. Was only used in China.
+				PartialPlayTime		= 0x00001000,
+				/// This character will not get any xp / loot / gold etc.. Was only used in China.
+				NoPlayTime			= 0x00002000,
+				/// Unknown
+				Unknown2			= 0x00004000,
+				/// Unknown
+				Unknown3			= 0x00008000,
+				/// This character is in a sanctuary.
+				Sanctuary			= 0x00010000,
+				/// This character has enabled taxi benchmark mode.
+				TaxiBenchmark		= 0x00020000,
+				/// This character has a pvp timer displayed (5 min) after which he will leave pvp mode.
+				PvPTimer			= 0x00040000
+			};
+		}
+
+		typedef char_flags::Type CharFlags;
+
 		namespace faction_flags
 		{
 			enum Type
 			{
+				None			= 0x00,
 				/// Makes visible in client (set or can be set at interaction with target of this faction)
 				Visible			= 0x01,
 				/// Enable AtWar button in client. Player controlled (except opposition team always war state). Flag only set on initial creation.
@@ -3230,6 +3289,8 @@ namespace wowpp
 				Rival			= 0x40
 			};
 		}
+
+		typedef faction_flags::Type FactionFlags;
 
 		namespace reputation_rank
 		{

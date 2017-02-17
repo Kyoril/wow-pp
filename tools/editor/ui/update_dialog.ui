@@ -17,6 +17,9 @@
    <iconset resource="../qrc/editor.qrc">
     <normaloff>:/ico101.ico</normaloff>:/ico101.ico</iconset>
   </property>
+  <property name="styleSheet">
+   <string notr="true"/>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QLabel" name="label">

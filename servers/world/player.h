@@ -39,32 +39,7 @@
 
 namespace wowpp
 {
-	namespace trade_slots
-	{
-		enum Type
-		{
-			Count = 7,
-			TradedCount = 6,
-			NonTraded = 6
-		};
-	}
-
 	typedef game::trade_status::Type TradeStatus;
-	typedef trade_slots::Type TradeSlots;
-
-	struct TradeStatusInfo
-	{
-		TradeStatusInfo(UInt64 guid_ = 0)
-			: guid(guid_)
-		{
-		}
-
-		TradeStatus tradestatus;
-		UInt64 guid;
-		Player *thisplayer;
-		Player *tradeplayer;
-	};
-
 
 	// Forwards
 	class PlayerManager;
@@ -75,8 +50,14 @@ namespace wowpp
 	}
 
 	/// Player connection class.
-	class Player final : public boost::noncopyable, public ITileSubscriber
+	class Player final
+		: public ITileSubscriber
 	{
+	private:
+
+		Player(const Player &Other) = delete;
+		Player &operator=(const Player &Other) = delete;
+
 	public:
 
 		/// Creates a new instance of the player class and registers itself as the
@@ -110,6 +91,8 @@ namespace wowpp
 		void logoutRequest();
 		/// Cancels the 20 second logout timer if it has been set up.
 		void cancelLogoutRequest();
+		/// Disconnects this player.
+		void kick();
 		/// 
 		void chatMessage(game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message);
 		/// 
@@ -192,11 +175,17 @@ namespace wowpp
 		/// Saves the characters data.
 		void saveCharacterData() const;
 		/// 
-		void sendTradeStatus(TradeStatusInfo info);
-		/// 
-		void sendUpdateTrade();
-		///
-		void moveItems(std::vector<std::shared_ptr<GameItem>> my_Items, std::vector<std::shared_ptr<GameItem>> his_Items);
+		void sendTradeStatus(TradeStatus status, UInt64 guid = 0, UInt32 errorCode = 0, UInt32 itemCategory = 0);
+		/// Determines if there is a pending logout request.
+		bool isLogoutPending() const { return m_logoutCountdown.running; }
+		/// Determines if this player is currently trading.
+		bool isTrading() const { return (m_tradeData.get() != nullptr); }
+		/// Tries to initiate a trade with the target, if possible.
+		void initiateTrade(UInt64 target);
+		/// Tries to cancel the current trade (if any).
+		void cancelTrade();
+
+		void setTradeSession(std::shared_ptr<TradeData> data);
 
 	private:
 
@@ -209,7 +198,8 @@ namespace wowpp
 		/// @copydoc ITileSubscriber::sendPacket()
 		void sendPacket(game::Protocol::OutgoingPacket &packet, const std::vector<char> &buffer) override;
 
-		// Network packet handlers
+		// Network packet handlers (implemented in separate cpp files like player_XXX_handler.cpp)
+
 		void handleAutoStoreLootItem(game::Protocol::IncomingPacket &packet);
 		void handleAutoEquipItem(game::Protocol::IncomingPacket &packet);
 		void handleAutoStoreBagItem(game::Protocol::IncomingPacket &packet);
@@ -249,8 +239,11 @@ namespace wowpp
 		void handleInitateTrade(game::Protocol::IncomingPacket &packet);
 		void handleBeginTrade(game::Protocol::IncomingPacket &packet);
 		void handleAcceptTrade(game::Protocol::IncomingPacket &packet);
+		void handleUnacceptTrade(game::Protocol::IncomingPacket &packet);
+		void handleCancelTrade(game::Protocol::IncomingPacket &packet);
 		void handleSetTradeGold(game::Protocol::IncomingPacket &packet);
 		void handleSetTradeItem(game::Protocol::IncomingPacket &packet);
+		void handleClearTradeItem(game::Protocol::IncomingPacket &packet);
 		void handleSetActionBarToggles(game::Protocol::IncomingPacket &packet);
 		void handleToggleHelm(game::Protocol::IncomingPacket &packet);
 		void handleToggleCloak(game::Protocol::IncomingPacket &packet);
@@ -259,6 +252,7 @@ namespace wowpp
 		void handleCancelChanneling(game::Protocol::IncomingPacket &packet);
 		void handlePlayedTime(game::Protocol::IncomingPacket &packet);
 		void handleAckCode(game::Protocol::IncomingPacket &packet, UInt16 opCode);
+		void handleZoneUpdate(game::Protocol::IncomingPacket &packet);
 
 	private:
 
@@ -321,6 +315,7 @@ namespace wowpp
 		boost::signals2::scoped_connection m_itemCreated, m_itemUpdated, m_itemDestroyed, m_objectInteraction;
 		boost::signals2::scoped_connection m_onLootCleared, m_onLootInspect, m_spellModChanged;
 		boost::signals2::scoped_connection m_onSpellLearned, m_onItemAdded, m_onResurrectRequest;
+		simple::scoped_connection_container m_lootSignals;
 		AttackSwingError m_lastError;
 		UInt32 m_lastFallTime;
 		float m_lastFallZ;
@@ -329,7 +324,6 @@ namespace wowpp
 		GameObject *m_lootSource;
 		LinearSet<UInt64> m_ignoredGUIDs;
 		Countdown m_groupUpdate;
-		TradeStatusInfo m_tradeStatusInfo;
 		std::shared_ptr<TradeData> m_tradeData;
 		GameTime m_lastPlayTimeUpdate;
 		UInt32 m_clientSync, m_serverSync;

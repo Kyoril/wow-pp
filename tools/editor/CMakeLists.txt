@@ -63,8 +63,8 @@ cmake_minimum_required(VERSION 2.8.11)
 	file(GLOB wndSrcFiles "windows/*.cpp")
 	file(GLOB worldSrcFiles "world/*.cpp" "world/*.h")
 	file(GLOB ogreSrcFiles "ogre_wrappers/*.cpp" "ogre_wrappers/*.h")
-	QT5_WRAP_CPP(MOC_SOURCES "${mocFiles}" OPTIONS "-bpch.h")
-	
+	QT5_WRAP_CPP(MOC_SOURCES "${mocFiles}" OPTIONS "-b" "pch.h")
+
 	# Include ui files
 	file(GLOB uiFiles "ui/*.ui")
 	

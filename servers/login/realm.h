@@ -36,8 +36,12 @@ namespace wowpp
 	/// Player connection class.
 	class Realm final
 			: public pp::IConnectionListener
-			, public boost::noncopyable
 	{
+	private:
+
+		Realm(const Realm &Other) = delete;
+		Realm &operator=(const Realm &Other) = delete;
+
 	public:
 
 		typedef AbstractConnection<pp::Protocol> Client;

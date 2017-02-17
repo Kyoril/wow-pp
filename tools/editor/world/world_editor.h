@@ -36,6 +36,7 @@
 #include "transform_widget.h"
 #include "editor_application.h"
 #include "ogre_wrappers/debug_drawer.h"
+#include "ogre_wrappers/ogre_dbc_file_manager.h"
 
 namespace Ogre
 {
@@ -76,6 +77,7 @@ namespace wowpp
 			void onDoubleClick(const QMouseEvent *e) override;
 			void onSelection(Ogre::Entity &entity) override;
 			void onSetPoint(const Ogre::Vector3 &point) override;
+			void onAddUnitSpawn(wowpp::UInt32 entry, const Ogre::Vector3 &point) override;
 
 		private:
 
@@ -83,6 +85,8 @@ namespace wowpp
 			void onPageAvailabilityChanged(const paging::PageNeighborhood &page, bool isAvailable) override;
 			terrain::model::Page *getTerrainPage(terrain::model::PagePosition position);
 			void onTransformToolChanged(TransformTool tool);
+
+			void addUnitSpawn(proto::UnitSpawnEntry &entry, bool select = false);
 
 		private:
 
@@ -112,6 +116,10 @@ namespace wowpp
 			Ogre::Vector3 m_start, m_target;
 			bool m_startSet;
 			ogre_utils::ManualObjectPtr m_pathObj;
+			OgreDBCFilePtr m_displayDbc;
+			OgreDBCFilePtr m_modelDbc;
+			OgreDBCFilePtr m_objDisplayDbc;
+			UInt32 m_nextUnitSpawn;
 		};
 	}
 }

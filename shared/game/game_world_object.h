@@ -25,6 +25,7 @@
 #include "loot_instance.h"
 #include "common/timer_queue.h"
 #include "common/countdown.h"
+#include "common/simple.hpp"
 #include "proto_data/trigger_helper.h"
 
 namespace wowpp
@@ -215,6 +216,7 @@ namespace wowpp
 		const proto::ObjectEntry &m_entry;
 		std::unique_ptr<LootInstance> m_objectLoot;
 		boost::signals2::scoped_connection m_onLootCleared;
+		simple::scoped_connection m_onLootClosed;
 	};
 
 	io::Writer &operator << (io::Writer &w, WorldObject const &object);

@@ -19,15 +19,32 @@
 # and lore are copyrighted by Blizzard Entertainment, Inc.
 # 
 
-if (WOWPP_BUILD_TOOLS)
-	add_subdirectory(extractor)
-	add_subdirectory(proto_patcher)
-	add_subdirectory(update_compiler)
-endif()
-if (WOWPP_BUILD_EDITOR)
-	add_subdirectory(editor)
-	add_subdirectory(update_helper)
-endif()
-if (WOWPP_BUILD_TESTS)
-	add_subdirectory(unit_tests)
-endif()
+cmake_minimum_required(VERSION 2.8.11)
+
+# Collect source and header files
+file(GLOB srcFiles "./*.cpp" "./*.h" "./*.hpp")
+remove_pch_cpp(srcFiles "${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp")
+
+# Add source groups
+source_group(src FILES ${srcFiles})
+
+# Add library project
+add_executable(update_helper ${srcFiles} ${sffFiles})
+add_precompiled_header(update_helper "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
+
+# Link required shared libs
+target_link_libraries(update_helper common log virtual_directory)
+
+# Link dependency libraries
+target_link_libraries(update_helper ${Boost_LIBRARIES})
+
+# Install target
+install(TARGETS update_helper
+		RUNTIME DESTINATION bin
+		LIBRARY DESTINATION lib
+		ARCHIVE DESTINATION lib/static)
+		
+# Solution folder
+if(MSVC)
+	set_property(TARGET update_helper PROPERTY FOLDER "tools")
+endif(MSVC)

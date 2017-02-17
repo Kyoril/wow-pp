@@ -565,10 +565,6 @@ namespace wowpp
 		if (creation)
 		{
 			const bool isWorldGO = isWorldObject();
-			//			if (isWorldGO)
-			//			{
-			//				ILOG("CREATE_OBJECT_VALUES");
-			//			}
 
 			// Create a new bitset which has set all bits to one where the field value
 			// isn't equal to 0, since this will be for a CREATE_OBJECT block (spawn) and not

@@ -38,9 +38,13 @@ namespace wowpp
 		template<class P, class MySocket = boost::asio::ip::tcp::socket>
 		class CryptedConnection
 			: public AbstractConnection<P>
-			, public boost::noncopyable
 			, public std::enable_shared_from_this<CryptedConnection<P, MySocket> >
 		{
+		private:
+
+			CryptedConnection<P, MySocket>(const CryptedConnection<P, MySocket> &Other) = delete;
+			CryptedConnection<P, MySocket> &operator=(const CryptedConnection<P, MySocket> &Other) = delete;
+
 		public:
 
 			typedef MySocket Socket;

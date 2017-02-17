@@ -66,8 +66,13 @@ namespace wowpp
 		typedef axis_id::Type AxisID;
 
 		/// 
-		class TransformWidget final : public boost::noncopyable
+		class TransformWidget final
 		{
+		private:
+
+			TransformWidget(const TransformWidget &Other) = delete;
+			TransformWidget &operator=(const TransformWidget &Other) = delete;
+
 		public:
 			
 			typedef boost::signals2::signal<void()> ModeChangeSignal;

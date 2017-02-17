@@ -51,8 +51,16 @@ namespace wowpp
 			}
 		};
 
-		struct ITriggerHandler : boost::noncopyable
+		struct ITriggerHandler
 		{
+		private:
+
+			ITriggerHandler(const ITriggerHandler &Other) = delete;
+			ITriggerHandler &operator=(const ITriggerHandler &) = delete;
+
+		public:
+
+			ITriggerHandler() {};
 			virtual ~ITriggerHandler() {};
 
 			/// Executes a unit trigger.

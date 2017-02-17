@@ -130,7 +130,9 @@ namespace wowpp
 			}
 		}
 
-		m_loot->takeItem(lootSlot);
+		// Consume this item
+		auto playerGuid = m_character->getGuid();
+		m_loot->takeItem(lootSlot, playerGuid);
 	}
 
 	void Player::handleAutoEquipItem(game::Protocol::IncomingPacket &packet)
@@ -549,12 +551,30 @@ namespace wowpp
 			WLOG("Could not read packet data");
 			return;
 		}
+		
+		// TODO: There need to be a lot of movement packet checks, and these should probably be done in a separate class
+		// No heartbeat if not started to move
+		if (opCode == game::client_packet::MoveHeartBeat && !(m_character->getMovementInfo().moveFlags & game::movement_flags::Moving))
+		{
+			WLOG("Received MSG_MOVE_HEARTBEAT while not in moving state!");
+			kick();
+			return;
+		}
 
 		if (opCode != game::client_packet::MoveStop)
 		{
 			// Don't accept these when it's not a move-stop
-			if (m_character->isStunned() || m_character->isRooted())
+			if (m_character->isStunned())
+			{
+				WLOG("Ignored packet " << opCode << " because of stuns");
 				return;
+			}
+
+			if (m_character->isRooted() && info.moveFlags & game::movement_flags::Moving)
+			{
+				WLOG("Ignored packet " << opCode << " because of roots");
+				return;
+			}
 
 			auto flags = m_character->getUInt32Value(unit_fields::UnitFlags);
 			if ((flags & 0x00040000) != 0 ||
@@ -664,7 +684,7 @@ namespace wowpp
 								}
 							});
 
-							m_character->dealDamage(damage, 0, nullptr, true);
+							m_character->dealDamage(damage, 0, game::DamageType::Indirect, nullptr, true);
 							if (!m_character->isAlive())
 							{
 								WLOG("TODO: Durability damage!");
@@ -686,6 +706,16 @@ namespace wowpp
 
 		// Update position
 		m_character->relocate(math::Vector3(info.x, info.y, info.z), info.o, true);
+
+		// On Heartbeat, check for taverns
+		if (opCode == game::client_packet::MoveHeartBeat)
+		{
+			// If the player left the tavern, remove rest state
+			if (m_character->getRestType() == rest_type::Tavern && !m_character->isInRestAreaTrigger())
+			{
+				m_character->setRestType(rest_type::None, nullptr);
+			}
+		}
 	}
 
 	void Player::handleTimeSyncResponse(game::Protocol::IncomingPacket &packet)
@@ -712,7 +742,7 @@ namespace wowpp
 		m_serverSync = static_cast<UInt32>(current) + halfLatency;
 		m_clientSync = ticks;
 
-		DLOG("TIME SYNC RESPONSE " << m_character->getName() << ": Client Sync " << m_clientSync << "; Server Sync: " << m_serverSync);
+		//DLOG("TIME SYNC RESPONSE " << m_character->getName() << ": Client Sync " << m_clientSync << "; Server Sync: " << m_serverSync);
 	}
 
 	void Player::handleLearnTalent(game::Protocol::IncomingPacket &packet)
@@ -1521,5 +1551,18 @@ namespace wowpp
 				break;
 			}
 		}
+	}
+
+	void Player::handleZoneUpdate(game::Protocol::IncomingPacket & packet)
+	{
+		UInt32 zoneId = 0;
+		if (!(game::client_read::zoneUpdate(packet, zoneId)))
+		{
+			return;
+		}
+
+		// TODO: Validate zone id
+
+		m_character->setZone(zoneId);
 	}
 }

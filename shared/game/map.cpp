@@ -589,15 +589,15 @@ namespace wowpp
 	dtStatus smoothPath(dtNavMeshQuery &query, dtNavMesh &navMesh, dtQueryFilter &filter, std::vector<dtPolyRef> &polyPath, std::vector<math::Vector3> &waypoints)
 	{
 		static constexpr float PointDist = 4.0f;	// One point every PointDist units
-		static constexpr float Extents[3] = { 1.0f, 80.0f, 1.0f };
+		static constexpr float Extents[3] = { 1.0f, 50.0f, 1.0f };
 
 		// Travel along the path and insert new points in between, start with the second point
 		size_t polyIndex = 0;
 		for (size_t p = 1; p < waypoints.size(); ++p)
 		{
 			// Get the previous point
-			const auto &prevPoint = waypoints[p - 1];
-			const auto thisPoint = waypoints[p];		// Copy this one as we will insert waypoints before this point eventually
+			const auto prevPoint = waypoints[p - 1];
+			const auto thisPoint = waypoints[p];
 
 			// Get the direction vector and the distance
 			auto dir = thisPoint - prevPoint;
@@ -609,7 +609,6 @@ namespace wowpp
 			for (Int32 n = 1; n < count; n++)
 			{
 				const float d = n * step;
-
 				auto newPoint = prevPoint + (dir * d);
 
 				math::Vector3 closestPoint;
@@ -622,6 +621,7 @@ namespace wowpp
 				// Now do the height correction
 				if (dtStatusFailed(query.getPolyHeight(nearestPoly, &closestPoint.x, &newPoint.y)))
 				{
+					/*
 					int resultCount = 0;
 					std::vector<dtPolyRef> refs(10);
 					if (dtStatusFailed(query.findPolysAroundCircle(nearestPoly, &closestPoint.x, 4.0f, &filter, &refs[0], nullptr, nullptr, &resultCount, refs.size())))
@@ -645,7 +645,7 @@ namespace wowpp
 						{
 							//WLOG("Could not find height on neighbor polys...");
 						}
-					}
+					}*/
 				}
 				else
 				{

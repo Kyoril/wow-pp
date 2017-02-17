@@ -23,13 +23,23 @@
  */
 
 QProgressBar:horizontal {
-    border: 1px solid #3A3939;
+    border-width: 1px;
+    border-color: #4A4949;
+    border-style: solid;
+    border-radius: 2px;
     text-align: center;
     padding: 1px;
     background: #201F1F;
+	color: #303030;
+	text-color: #303030;
 }
 QProgressBar::chunk:horizontal {
-    background-color: qlineargradient(spread:reflect, x1:1, y1:0.545, x2:1, y2:0, stop:0 rgba(28, 66, 111, 255), stop:1 rgba(37, 87, 146, 255));
+   background-color: qlineargradient(spread:reflect, x1:1, y1:0.545, x2:1, y2:0, stop:0 rgb(255, 180, 30), stop:1 rgb(211, 129, 13));
+    border-width: 0px;
+    border-color: #4A4949;
+    border-style: none;
+    border-radius: 2px;
+	color: #303030;
 }
 
 QToolTip

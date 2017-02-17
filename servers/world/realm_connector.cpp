@@ -712,6 +712,9 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(InitateTrade)
 			WOWPP_HANDLE_PLAYER_PACKET(BeginTrade)
 			WOWPP_HANDLE_PLAYER_PACKET(AcceptTrade)
+			WOWPP_HANDLE_PLAYER_PACKET(UnacceptTrade)
+			WOWPP_HANDLE_PLAYER_PACKET(CancelTrade)
+			WOWPP_HANDLE_PLAYER_PACKET(ClearTradeItem)
 			WOWPP_HANDLE_PLAYER_PACKET(SetTradeGold)
 			WOWPP_HANDLE_PLAYER_PACKET(SetTradeItem)
 			WOWPP_HANDLE_PLAYER_PACKET(SetActionBarToggles)
@@ -721,6 +724,7 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(ResurrectResponse)
 			WOWPP_HANDLE_PLAYER_PACKET(CancelChanneling)
 			WOWPP_HANDLE_PLAYER_PACKET(PlayedTime)
+			WOWPP_HANDLE_PLAYER_PACKET(ZoneUpdate)
 #undef WOWPP_HANDLE_PLAYER_PACKET
 
 			// Movement packets get special treatment
@@ -861,10 +865,6 @@ namespace wowpp
 
 		//TODO check if the player is allowed to log out (is in combat? is moving? is frozen by gm? etc.)
 
-		// Send answer and engage logout process
-		sender.sendProxyPacket(
-			std::bind(game::server_write::logoutResponse, std::placeholders::_1, true));
-
 		// Start logout countdown or something? ...
 		sender.logoutRequest();
 	}
@@ -1002,6 +1002,12 @@ namespace wowpp
 			{
 				WLOG("Could not find requested character.");
 				return;
+			}
+
+			// Remove rest state on teleport as we don't know if the new location will be a rest area as well
+			if (reason == pp::world_realm::world_left_reason::Teleport)
+			{
+				player->getCharacter()->setRestType(rest_type::None, nullptr);
 			}
 
 			// Remove the character
@@ -1151,34 +1157,20 @@ namespace wowpp
 		const auto *trigger = m_project.areaTriggers.getById(triggerId);
 		if (!trigger)
 		{
+			WLOG("Unknown trigger " << trigger->id());
 			return;
 		}
 
 		// Check if the players character could really have triggered that trigger
 		auto character = sender.getCharacter();
-		if (trigger->map() != character->getMapId())
+		if (!character->isInAreaTrigger(*trigger, 5.0f))
 		{
+			WLOG("[CHEAT] Player is not in area trigger volume");
+			sender.kick();
 			return;
 		}
 
-		// Get player location for distance checks
-		math::Vector3 location(character->getLocation());
-		if (trigger->radius() > 0.0f)
-		{
-			const float dist = 
-				::sqrtf(((location.x - trigger->x()) * (location.x - trigger->x())) + ((location.y - trigger->y()) * (location.y - trigger->y())) + ((location.z - trigger->z()) * (location.z - trigger->z())));
-			if (dist > trigger->radius())
-			{
-				return;
-			}
-		}
-		else
-		{
-			// TODO: Box check
-		}
-
 		// Check if this is a teleport trigger
-
 		if (trigger->has_questid() && trigger->questid() > 0)
 		{
 			// Handle quest exploration
@@ -1188,6 +1180,8 @@ namespace wowpp
 		if (trigger->has_tavern() && trigger->tavern())
 		{
 			// Handle tavern
+			if (character->getRestType() != rest_type::City)
+				character->setRestType(rest_type::Tavern, trigger);
 		}
 
 		// TODO: Optimize this, create a trigger type

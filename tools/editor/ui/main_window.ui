@@ -54,6 +54,9 @@
     </property>
     <item>
      <widget class="QWidget" name="renderWidget" native="true">
+      <property name="acceptDrops">
+       <bool>true</bool>
+      </property>
       <property name="styleSheet">
        <string notr="true">background-color: rgb(0, 0, 0);</string>
       </property>
@@ -282,6 +285,15 @@
      </item>
      <item>
       <widget class="QTreeView" name="unitPaletteView">
+       <property name="dragEnabled">
+        <bool>true</bool>
+       </property>
+       <property name="dragDropOverwriteMode">
+        <bool>true</bool>
+       </property>
+       <property name="dragDropMode">
+        <enum>QAbstractItemView::DragOnly</enum>
+       </property>
        <property name="alternatingRowColors">
         <bool>true</bool>
        </property>

@@ -19,40 +19,5 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
-#pragma once
+#include "pch.h"
 
-// C Runtime Library
-#include <cassert>
-#include <cmath>
-
-// STL Libraries
-#include <map>
-#include <unordered_map>
-#include <algorithm>
-#include <array>
-#include <memory>
-#include <string>
-#include <vector>
-#include <utility>
-#include <random>
-#include <functional>
-#include <sstream>
-#include <exception>
-#include <ostream>
-#include <atomic>
-#include <forward_list>
-#include <initializer_list>
-#include <list>
-#include <iterator>
-#include <exception>
-#include <type_traits>
-
-// Boost Libraies
-#include <boost/signals2.hpp>
-#include <boost/optional.hpp>
-#include <boost/iterator/indirect_iterator.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/range/iterator_range.hpp>
-#include <boost/asio.hpp>
-#include <boost/date_time.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>

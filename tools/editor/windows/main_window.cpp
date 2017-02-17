@@ -152,6 +152,9 @@ namespace wowpp
 			{
 				m_application.setTransformTool(transform_tool::Scale);
 			}
+
+			// Refresh render window
+			QApplication::postEvent(m_ui->renderWidget, new QEvent(QEvent::UpdateRequest));
 		}
 
 		void MainWindow::on_actionDelete_triggered()

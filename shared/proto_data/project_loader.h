@@ -33,8 +33,15 @@ namespace wowpp
 	namespace proto
 	{
 		/// Context for several functionalities during the load process.
-		struct DataLoadContext : boost::noncopyable
+		struct DataLoadContext
 		{
+		private:
+
+			DataLoadContext(const DataLoadContext &Other) = delete;
+			DataLoadContext &operator=(const DataLoadContext &Other) = delete;
+
+		public:
+
 			typedef std::function<void(const String &)> OnError;
 			typedef std::function<bool()> LoadLaterFunction;
 			typedef std::vector<LoadLaterFunction> LoadLater;
@@ -44,6 +51,9 @@ namespace wowpp
 			LoadLater loadLater;
 			UInt32 version;
 
+			DataLoadContext()
+			{
+			}
 			virtual ~DataLoadContext()
 			{
 

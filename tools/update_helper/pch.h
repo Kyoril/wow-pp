@@ -26,6 +26,8 @@
 #include <cmath>
 
 // STL Libraries
+#include <iostream>
+#include <fstream>
 #include <map>
 #include <unordered_map>
 #include <algorithm>
@@ -36,9 +38,6 @@
 #include <utility>
 #include <random>
 #include <functional>
-#include <sstream>
-#include <exception>
-#include <ostream>
 #include <atomic>
 #include <forward_list>
 #include <initializer_list>
@@ -54,5 +53,9 @@
 #include <boost/filesystem.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/asio.hpp>
-#include <boost/date_time.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/ptr_container/ptr_map.hpp>
+#include <boost/type_traits/is_float.hpp>
+#include <boost/spirit/include/classic.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/program_options.hpp>
