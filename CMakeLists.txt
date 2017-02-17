@@ -86,9 +86,13 @@ project(WoW)
 			set(WOWPP_GIT_BRANCH "UNKNOWN")
 		endif(GIT_FOUND)
 	endif()
+	
+	# Editor option
+	option(WOWPP_EDITOR_WITH_PATCH_SUPPORT "If checked, the editor will be built with patch support (checks for patches on startup)" OFF)
 
 	include_directories(${PROJECT_BINARY_DIR})
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.h.in ${PROJECT_BINARY_DIR}/version.h @ONLY)
+	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/editor_config.h.in ${PROJECT_BINARY_DIR}/editor_config.h @ONLY)
 	
 	include_directories (${CMAKE_BINARY_DIR})
 
@@ -171,9 +175,6 @@ project(WoW)
 	
 	# Tests option
 	option(WOWPP_BUILD_TESTS "If checked, will try to test programs." OFF)
-	
-	# Editor option
-	option(WOWPP_EDITOR_WITH_PATCH_SUPPORT "If checked, the editor will be built with patch support (checks for patches on startup)" OFF)
 	
 	# Add the shared-directory to the list of local include directories
 	include_directories(deps)

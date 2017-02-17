@@ -33,6 +33,7 @@
 #include <QDesktopWidget>
 #include <QMessageBox>
 #include <cassert>
+#include "editor_config.h"
 
 namespace wowpp
 {
@@ -174,7 +175,7 @@ namespace wowpp
 				return false;
 			}
 
-#ifdef WOWPP_EDITOR_WITH_PATCH
+#if WOWPP_EDITOR_WITH_PATCH == CMAKE_ON
 			// Load update window
 			UpdateDialog updateDialog(*this);
 			if (updateDialog.exec() != QDialog::Accepted)

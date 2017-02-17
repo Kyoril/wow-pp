@@ -82,6 +82,10 @@ void QtOgreWindow::initialize()
 
 	wowpp::editor::BLPCodec::startup();
 
+	// Enable anisotropic texture filtering
+	Ogre::MaterialManager::getSingleton().setDefaultTextureFiltering(Ogre::TFO_ANISOTROPIC);
+	Ogre::MaterialManager::getSingleton().setDefaultAnisotropy(16);
+
 	m_mpqArchives = OGRE_NEW wowpp::editor::MPQArchiveFactory();
 	Ogre::ArchiveManager::getSingleton().addArchiveFactory(m_mpqArchives);
 
@@ -144,6 +148,7 @@ void QtOgreWindow::initialize()
 	rs->setConfigOption("Video Mode", dimensions.toStdString());
 	rs->setConfigOption("Full Screen", "No");
 	rs->setConfigOption("VSync", "Yes");
+	rs->setConfigOption("FSAA", "8");
 	m_ogreRoot->setRenderSystem(rs);
 	m_ogreRoot->initialise(false);
 
