@@ -101,6 +101,7 @@ namespace
 		Liquid = 1 << 2,
 		WMO = 1 << 3,
 		Doodad = 1 << 4,
+		ADTUnwalkable = 1 << 5,
 	};
 	using PolyFlags = AreaFlags;
 
@@ -292,7 +293,7 @@ namespace
 
 			polyMesh->flags[i] = static_cast<unsigned short>(PolyFlags::Walkable | polyMesh->areas[i]);
 		}
-
+		
 		// Prepare detour navmesh parameters
 		dtNavMeshCreateParams params;
 		memset(&params, 0, sizeof(params));
@@ -367,10 +368,10 @@ namespace
 	}
 
 	/// Restores the area flags of all listed ADT spans in case there flags have been changed.
-	void restoreAdtSpans(const std::vector<rcSpan *> &spans)
+	void restoreAdtSpans(const std::vector<rcSpan *> &spans, unsigned int area)
 	{
 		for (auto s : spans)
-			s->area |= AreaFlags::ADT;
+			s->area |= area;
 	}
 
 	/// Initializes a rcConfig struct without settings it's boundaries.
@@ -396,6 +397,15 @@ namespace
 		config.detailSampleMaxError = MeshSettings::DetailSampleMaxError;
 	}
 
+	static void calcTriNormal(const float* v0, const float* v1, const float* v2, float* norm)
+	{
+		float e0[3], e1[3];
+		rcVsub(e0, v1, v0);
+		rcVsub(e1, v2, v0);
+		rcVcross(norm, e0, e1);
+		rcVnormalize(norm);
+	}
+
 	/// 
 	bool rasterize(rcContext &ctx, rcHeightfield &heightField, bool filterWalkable, float slope, const MeshData &mesh, unsigned char areaFlags)
 	{
@@ -403,6 +413,24 @@ namespace
 			return true;
 
 		std::vector<unsigned char> areas(mesh.solidTris.size() / 3, areaFlags);
+		if (areaFlags == ADT)
+		{
+			// Special case for ADT: Mark unwalkable ADT triangles as a special area for filter usage
+			const float walkableThr = cosf(slope / 180.0f*RC_PI);
+
+			float norm[3];
+			for (int i = 0; i < areas.size(); ++i)
+			{
+				const int* tri = &mesh.solidTris[i * 3];
+				calcTriNormal(&mesh.solidVerts[tri[0] * 3], &mesh.solidVerts[tri[1] * 3], &mesh.solidVerts[tri[2] * 3], norm);
+
+				// Check if the face is walkable.
+				if (norm[1] <= walkableThr)
+				{
+					areas[i] = ADTUnwalkable;
+				}
+			}
+		}
 
 		if (filterWalkable)
 			rcClearUnwalkableTriangles(&ctx, slope, &mesh.solidVerts[0], static_cast<int>(mesh.solidVerts.size() / 3), &mesh.solidTris[0], static_cast<int>(mesh.solidTris.size() / 3), &areas[0]);
@@ -695,18 +723,23 @@ namespace
 				}
 
 				// Remember all ADT flagged spans as the information may get lost after the next step
-				std::vector<rcSpan *> adtSpans;
+				std::vector<rcSpan *> adtSpans, unwalkableAdtSpans;
 				adtSpans.reserve(solid->width*solid->height);
 				for (int i = 0; i < solid->width * solid->height; ++i)
 					for (rcSpan *s = solid->spans[i]; s; s = s->next)
+					{
 						if (!!(s->area & AreaFlags::ADT))
 							adtSpans.push_back(s);
+						else if (!!(s->area & AreaFlags::ADTUnwalkable))
+							unwalkableAdtSpans.push_back(s);
+					}
 
 				// Filter ledge spans
 				rcFilterLedgeSpans(&ctx, config.walkableHeight, config.walkableClimb, *solid);
 
 				// Restore ADT flags for previously remembered spans
-				restoreAdtSpans(adtSpans);
+				restoreAdtSpans(adtSpans, AreaFlags::ADT);
+				restoreAdtSpans(unwalkableAdtSpans, AreaFlags::ADTUnwalkable);
 
 				// Apply more geometry filtering
 				rcFilterWalkableLowHeightSpans(&ctx, config.walkableHeight, *solid);
@@ -1081,7 +1114,7 @@ namespace
 		}
 
 #ifdef TILE_DEBUG_OUTPUT
-		if (mapId != 36)
+		if (mapId != 1)
 		{
 			return true;
 		}
