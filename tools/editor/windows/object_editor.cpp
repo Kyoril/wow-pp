@@ -1755,6 +1755,11 @@ namespace wowpp
 				{
 					auto *unit = m_application.getProject().units.getTemplates().mutable_entry(i);
 					unit->set_unitlootentry(0);
+					m_application.markAsChanged(unit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
+				}
+				for (const auto &it : m_application.getProject().unitLoot.getTemplates().entry())
+				{
+					m_application.markAsChanged(it.id(), pp::editor_team::data_entry_type::UnitLoot, pp::editor_team::data_entry_change_type::Removed);
 				}
 				m_application.getProject().unitLoot.clear();
 			};
@@ -1783,7 +1788,8 @@ namespace wowpp
 				bool created = false;
 				if (entry > lastEntry)
 				{
-					m_application.getProject().unitLoot.add(entry);
+					auto *added = m_application.getProject().unitLoot.add(entry);
+					m_application.markAsChanged(added->id(), pp::editor_team::data_entry_type::UnitLoot, pp::editor_team::data_entry_change_type::Added);
 
 					lastEntry = entry;
 					lastGroup = groupId;
@@ -1809,6 +1815,7 @@ namespace wowpp
 					else
 					{
 						unitEntry->set_unitlootentry(lootEntry->id());
+						m_application.markAsChanged(unitEntry->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
 					}
 				}
 
@@ -1859,6 +1866,11 @@ namespace wowpp
 				{
 					auto *unit = m_application.getProject().units.getTemplates().mutable_entry(i);
 					unit->set_vendorentry(0);
+					m_application.markAsChanged(unit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
+				}
+				for (const auto &it : m_application.getProject().vendors.getTemplates().entry())
+				{
+					m_application.markAsChanged(it.id(), pp::editor_team::data_entry_type::Vendors, pp::editor_team::data_entry_change_type::Removed);
 				}
 				m_application.getProject().vendors.clear();
 			};
@@ -1882,7 +1894,8 @@ namespace wowpp
 				bool created = false;
 				if (entry > lastEntry)
 				{
-					m_application.getProject().vendors.add(entry);
+					auto *added = m_application.getProject().vendors.add(entry);
+					m_application.markAsChanged(added->id(), pp::editor_team::data_entry_type::Vendors, pp::editor_team::data_entry_change_type::Added);
 
 					lastEntry = entry;
 					created = true;
@@ -1914,6 +1927,7 @@ namespace wowpp
 					else
 					{
 						unitEntry->set_vendorentry(vendorEntry->id());
+						m_application.markAsChanged(unitEntry->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
 					}
 				}
 
@@ -1936,6 +1950,11 @@ namespace wowpp
 				{
 					auto *unit = m_application.getProject().units.getTemplates().mutable_entry(i);
 					unit->set_trainerentry(0);
+					m_application.markAsChanged(unit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
+				}
+				for (const auto &it : m_application.getProject().trainers.getTemplates().entry())
+				{
+					m_application.markAsChanged(it.id(), pp::editor_team::data_entry_type::Trainers, pp::editor_team::data_entry_change_type::Removed);
 				}
 				m_application.getProject().trainers.clear();
 			};
@@ -1960,7 +1979,8 @@ namespace wowpp
 				bool created = false;
 				if (entry > lastEntry)
 				{
-					m_application.getProject().trainers.add(entry);
+					auto *added = m_application.getProject().trainers.add(entry);
+					m_application.markAsChanged(added->id(), pp::editor_team::data_entry_type::Trainers, pp::editor_team::data_entry_change_type::Added);
 
 					lastEntry = entry;
 					created = true;
@@ -2006,6 +2026,10 @@ namespace wowpp
 				"`PointMapId`, `PointX`, `PointY`, `PointOpt`, `RequiredRaces`, `RequiredClasses`, `RequiredSkill`, `RequiredSkillValue`"
 				" FROM `wowpp_quests` ORDER BY `entry`;";
 			task.beforeImport = [this]() {
+				for (const auto &it : m_application.getProject().quests.getTemplates().entry())
+				{
+					m_application.markAsChanged(it.id(), pp::editor_team::data_entry_type::Quests, pp::editor_team::data_entry_change_type::Removed);
+				}
 				m_application.getProject().quests.clear();
 			};
 			task.onImport = [this](wowpp::MySQL::Row &row) -> bool {
@@ -2026,6 +2050,7 @@ namespace wowpp
 				row.getField(index++, end);
 
 				auto *added = m_application.getProject().quests.add(entry);
+				m_application.markAsChanged(added->id(), pp::editor_team::data_entry_type::Quests, pp::editor_team::data_entry_change_type::Added);
 				added->set_name(title.c_str());
 				added->set_method(method);
 				added->set_minlevel(minlevel);
@@ -2242,6 +2267,11 @@ namespace wowpp
 				{
 					auto *object = m_application.getProject().objects.getTemplates().mutable_entry(i);
 					object->set_objectlootentry(0);
+					m_application.markAsChanged(object->id(), pp::editor_team::data_entry_type::Objects, pp::editor_team::data_entry_change_type::Modified);
+				}
+				for (const auto &it : m_application.getProject().objectLoot.getTemplates().entry())
+				{
+					m_application.markAsChanged(it.id(), pp::editor_team::data_entry_type::ObjectLoot, pp::editor_team::data_entry_change_type::Removed);
 				}
 				m_application.getProject().objectLoot.clear();
 			};
@@ -2270,7 +2300,8 @@ namespace wowpp
 				bool created = false;
 				if (entry > lastEntry)
 				{
-					m_application.getProject().objectLoot.add(entry);
+					auto *added = m_application.getProject().objectLoot.add(entry);
+					m_application.markAsChanged(added->id(), pp::editor_team::data_entry_type::ObjectLoot, pp::editor_team::data_entry_change_type::Added);
 
 					lastEntry = entry;
 					lastGroup = groupId;
@@ -2296,6 +2327,7 @@ namespace wowpp
 					else
 					{
 						objectEntry->set_objectlootentry(lootEntry->id());
+						m_application.markAsChanged(objectEntry->id(), pp::editor_team::data_entry_type::Objects, pp::editor_team::data_entry_change_type::Modified);
 					}
 				}
 
@@ -2358,6 +2390,11 @@ namespace wowpp
 				{
 					auto *unit = m_application.getProject().units.getTemplates().mutable_entry(i);
 					unit->set_skinninglootentry(0);
+					m_application.markAsChanged(unit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
+				}
+				for (const auto &it : m_application.getProject().skinningLoot.getTemplates().entry())
+				{
+					m_application.markAsChanged(it.id(), pp::editor_team::data_entry_type::SkinningLoot, pp::editor_team::data_entry_change_type::Removed);
 				}
 				m_application.getProject().skinningLoot.clear();
 			};
@@ -2386,7 +2423,8 @@ namespace wowpp
 				bool created = false;
 				if (entry > lastEntry)
 				{
-					m_application.getProject().skinningLoot.add(entry);
+					auto *added = m_application.getProject().skinningLoot.add(entry);
+					m_application.markAsChanged(added->id(), pp::editor_team::data_entry_type::SkinningLoot, pp::editor_team::data_entry_change_type::Added);
 
 					lastEntry = entry;
 					lastGroup = groupId;
@@ -2412,6 +2450,7 @@ namespace wowpp
 					else
 					{
 						unitEntry->set_skinninglootentry(lootEntry->id());
+						m_application.markAsChanged(unitEntry->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
 					}
 				}
 
@@ -2468,6 +2507,11 @@ namespace wowpp
 				{
 					auto *object = m_application.getProject().items.getTemplates().mutable_entry(i);
 					object->set_lootentry(0);
+					m_application.markAsChanged(object->id(), pp::editor_team::data_entry_type::Items, pp::editor_team::data_entry_change_type::Modified);
+				}
+				for (const auto &it : m_application.getProject().itemLoot.getTemplates().entry())
+				{
+					m_application.markAsChanged(it.id(), pp::editor_team::data_entry_type::ItemLoot, pp::editor_team::data_entry_change_type::Removed);
 				}
 				m_application.getProject().itemLoot.clear();
 			};
@@ -2496,7 +2540,8 @@ namespace wowpp
 				bool created = false;
 				if (entry > lastEntry)
 				{
-					m_application.getProject().itemLoot.add(entry);
+					auto *added = m_application.getProject().itemLoot.add(entry);
+					m_application.markAsChanged(added->id(), pp::editor_team::data_entry_type::ItemLoot, pp::editor_team::data_entry_change_type::Added);
 
 					lastEntry = entry;
 					lastGroup = groupId;
@@ -2522,6 +2567,7 @@ namespace wowpp
 					else
 					{
 						objectEntry->set_lootentry(lootEntry->id());
+						m_application.markAsChanged(lootEntry->id(), pp::editor_team::data_entry_type::Items, pp::editor_team::data_entry_change_type::Modified);
 					}
 				}
 
@@ -2572,6 +2618,7 @@ namespace wowpp
 			task.countQuery = "SELECT COUNT(*) FROM `creature_template`;";
 			task.selectQuery = "SELECT `entry`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `mechanic_immune_mask` FROM `creature_template` ORDER BY `entry`;";
 			task.beforeImport = [this]() {
+				
 			};
 			task.onImport = [this](wowpp::MySQL::Row &row) -> bool {
 				UInt32 entry = 0;
@@ -2586,6 +2633,8 @@ namespace wowpp
 					ELOG("Skipping unit " << entry << " as it couldn't be found!");
 					return true;
 				}
+
+				m_application.markAsChanged(unit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
 
 				UInt32 schoolImmunity = 0;
 
@@ -2632,6 +2681,11 @@ namespace wowpp
 				for (int i = 0; i < m_application.getProject().units.getTemplates().entry_size(); ++i)
 				{
 					auto *unit = m_application.getProject().units.getTemplates().mutable_entry(i);
+					if (unit->has_minlootgold() || unit->has_maxlootgold())
+					{
+						m_application.markAsChanged(unit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
+					}
+
 					unit->clear_minlootgold();
 					unit->clear_maxlootgold();
 				}
@@ -2651,8 +2705,12 @@ namespace wowpp
 					return true;
 				}
 
-				unit->set_minlootgold(minGold);
-				unit->set_maxlootgold(maxGold);
+				if (unit->minlootgold() != minGold || unit->maxlootgold() != maxGold)
+				{
+					unit->set_minlootgold(minGold);
+					unit->set_maxlootgold(maxGold);
+					m_application.markAsChanged(unit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
+				}
 				return true;
 			};
 
@@ -2671,6 +2729,7 @@ namespace wowpp
 				{
 					auto *map = m_application.getProject().maps.getTemplates().mutable_entry(i);
 					map->clear_objectspawns();
+					m_application.markAsChanged(map->id(), pp::editor_team::data_entry_type::Maps, pp::editor_team::data_entry_change_type::Modified);
 				}
 			};
 			task.onImport = [this](wowpp::MySQL::Row &row) -> bool {

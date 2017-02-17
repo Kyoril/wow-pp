@@ -343,8 +343,17 @@ namespace wowpp
 				}
 				else
 				{
-					// Entry was either removed or modified. In both cases, we simply override...
-					typeMap[entry] = changeType;
+					// If item was removed before but a new item was added now, convert this into a modify-packet
+					if (it->second == pp::editor_team::data_entry_change_type::Removed &&
+						changeType != pp::editor_team::data_entry_change_type::Removed)
+					{
+						typeMap[entry] = pp::editor_team::data_entry_change_type::Modified;
+					}
+					else
+					{
+						// Entry was either removed or modified. In both cases, we simply override...
+						typeMap[entry] = changeType;
+					}
 				}
 			}
 		}
