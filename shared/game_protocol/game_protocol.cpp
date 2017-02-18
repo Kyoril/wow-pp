@@ -3996,8 +3996,8 @@ namespace wowpp
 				>> io::read_string(out_mail.receiver)
 				>> io::read_string(out_mail.subject)
 				>> io::read_string(out_mail.body)
-				>> io::read<NetUInt32>(out_mail.unk1)
-				>> io::read<NetUInt32>(out_mail.unk2);
+				>> io::skip(sizeof(UInt32))
+				>> io::skip(sizeof(UInt32));
 
 			// Read items on mail list, 12 being the client limit
 			r >> io::read<UInt8>(out_mail.itemsCount);
@@ -4018,7 +4018,7 @@ namespace wowpp
 			r
 				>> io::read<NetUInt32>(out_mail.money)
 				>> io::read<NetUInt32>(out_mail.COD)
-				>> io::skip(sizeof(UInt8))
+				>> io::skip(sizeof(UInt64))
 				>> io::skip(sizeof(UInt8));
 
 			return r;

@@ -269,8 +269,6 @@ namespace wowpp
 
 				void mailDraft(
 					pp::OutgoingPacket &out_packet,
-					UInt32 unk1,
-					UInt32 unk2,
 					String sender,
 					String receiver,
 					String subject,

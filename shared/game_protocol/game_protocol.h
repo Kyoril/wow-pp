@@ -445,16 +445,13 @@ namespace wowpp
 
 		struct MailData final
 		{
-			UInt32 unk1, unk2;
 			String receiver, subject, body;
 			UInt32 money, COD;
 			UInt8 itemsCount;
 			std::array<ObjectGuid, 12> itemsGuids;
 
 			MailData()
-				: unk1(0)
-				, unk2(0)
-				, money(0)
+				: money(0)
 				, COD(0)
 				, itemsCount(0)
 			{

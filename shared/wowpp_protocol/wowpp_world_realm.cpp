@@ -167,12 +167,10 @@ namespace wowpp
 						<< io::write<NetUInt64>(characterId);
 					out_packet.finish();
 				}
-				void mailDraft(pp::OutgoingPacket & out_packet, UInt32 unk1, UInt32 unk2, String sender, String receiver, String subject, String body, UInt32 money, UInt32 COD, UInt32 cost, const std::vector<std::shared_ptr<GameItem>>& items)
+				void mailDraft(pp::OutgoingPacket & out_packet, String sender, String receiver, String subject, String body, UInt32 money, UInt32 COD, UInt32 cost, const std::vector<std::shared_ptr<GameItem>>& items)
 				{
 					out_packet.start(world_packet::MailDraft);
 					out_packet
-						<< io::write<NetUInt32>(unk1)
-						<< io::write<NetUInt32>(unk2)
 						<< io::write_range(sender)
 						<< io::write_range(receiver)
 						<< io::write_range(subject)
