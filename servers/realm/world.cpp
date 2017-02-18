@@ -522,6 +522,8 @@ namespace wowpp
 
 	void World::handleMailDraft(pp::IncomingPacket & packet)
 	{
+		// TODO!
+#if 0
 		game::MailData mailDraft;
 		String sender;
 		UInt32 cost;
@@ -547,6 +549,7 @@ namespace wowpp
 		}
 
 		auto faction = senderPl->getGameCharacter();
+#endif
 	}
 
 	void World::characterGroupChanged(UInt64 characterGuid, UInt64 groupId)
