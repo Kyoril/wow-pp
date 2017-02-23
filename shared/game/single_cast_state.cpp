@@ -2809,7 +2809,6 @@ namespace wowpp
 				{
 					if (effect.first == effects[k])
 					{
-						assert(it->second);
 						effect.second(m_spell.effects(k));
 					}
 				}
@@ -2826,7 +2825,6 @@ namespace wowpp
 				{
 					if (effect.first == effects[k])
 					{
-						assert(it->second);
 						effect.second(m_spell.effects(k));
 					}
 				}

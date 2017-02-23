@@ -148,6 +148,51 @@ namespace wowpp
 				return nullptr;
 			}
 
+			static void removeEntry(proto::Project &project, UInt32 entry, DataEntryType type)
+			{
+				switch (type)
+				{
+#define WOWPP_ENTRY_WRAPPER(name, type) \
+					case data_entry_type::name: \
+					{ \
+						project.type.remove(entry); \
+						break; \
+					}
+
+					WOWPP_ENTRY_WRAPPER(Spells, spells)
+					WOWPP_ENTRY_WRAPPER(Units, units)
+					WOWPP_ENTRY_WRAPPER(Objects, objects)
+					WOWPP_ENTRY_WRAPPER(Maps, maps)
+					WOWPP_ENTRY_WRAPPER(Emotes, emotes)
+					WOWPP_ENTRY_WRAPPER(UnitLoot, unitLoot)
+					WOWPP_ENTRY_WRAPPER(ObjectLoot, objectLoot)
+					WOWPP_ENTRY_WRAPPER(ItemLoot, itemLoot)
+					WOWPP_ENTRY_WRAPPER(SkinningLoot, skinningLoot)
+					WOWPP_ENTRY_WRAPPER(Skills, skills)
+					WOWPP_ENTRY_WRAPPER(Trainers, trainers)
+					WOWPP_ENTRY_WRAPPER(Vendors, vendors)
+					WOWPP_ENTRY_WRAPPER(Talents, talents)
+					WOWPP_ENTRY_WRAPPER(Items, items)
+					WOWPP_ENTRY_WRAPPER(ItemSets, itemSets)
+					WOWPP_ENTRY_WRAPPER(Classes, classes)
+					WOWPP_ENTRY_WRAPPER(Races, races)
+					WOWPP_ENTRY_WRAPPER(Levels, levels)
+					WOWPP_ENTRY_WRAPPER(Triggers, triggers)
+					WOWPP_ENTRY_WRAPPER(Zones, zones)
+					WOWPP_ENTRY_WRAPPER(Quests, quests)
+					WOWPP_ENTRY_WRAPPER(Factions, factions)
+					WOWPP_ENTRY_WRAPPER(FactionTemplates, factionTemplates)
+					WOWPP_ENTRY_WRAPPER(AreaTriggers, areaTriggers)
+					WOWPP_ENTRY_WRAPPER(SpellCategories, spellCategories)
+					WOWPP_ENTRY_WRAPPER(CombatRatings, combatRatings)
+					WOWPP_ENTRY_WRAPPER(MeleeCritChance, meleeCritChance)
+					WOWPP_ENTRY_WRAPPER(ResistancePercentage, resistancePcts)
+					WOWPP_ENTRY_WRAPPER(Variables, variables)
+
+#undef WOWPP_ENTRY_WRAPPER
+				}
+			}
+
 			namespace editor_write
 			{
 				void login(pp::OutgoingPacket &out_packet, const String &internalName, const SHA1Hash &password)
@@ -369,25 +414,22 @@ namespace wowpp
 									>> io::read_container<NetUInt32>(data);
 
 								// Create new object from this content
-								if (value == data_entry_change_type::Modified)
+								auto *entry = getOrCreateEntry(out_project, key, key1);
+								if (!entry)
 								{
-									auto *entry = getOrCreateEntry(out_project, key, key1);
-									if (!entry)
-									{
-										// ERROR!
-										return false;
-									}
+									// ERROR!
+									return false;
+								}
 
-									if (!entry->ParseFromString(data))
-									{
-										return false;
-									}
+								if (!entry->ParseFromString(data))
+								{
+									return false;
 								}
 							}
 							else
 							{
-								// TODO: Remove selected entry
-								
+								// Remove selected entry
+								removeEntry(out_project, key, key1);
 							}
 						}
 					}
@@ -484,25 +526,22 @@ namespace wowpp
 									>> io::read_container<NetUInt32>(data);
 
 								// Create new object from this content
-								if (value == data_entry_change_type::Modified)
+								auto *entry = getOrCreateEntry(out_project, key, key1);
+								if (!entry)
 								{
-									auto *entry = getOrCreateEntry(out_project, key, key1);
-									if (!entry)
-									{
-										// ERROR!
-										return false;
-									}
+									// ERROR!
+									return false;
+								}
 
-									if (!entry->ParseFromString(data))
-									{
-										return false;
-									}
+								if (!entry->ParseFromString(data))
+								{
+									return false;
 								}
 							}
 							else
 							{
-								// TODO: Remove selected entry
-
+								// Remove selected entry
+								removeEntry(out_project, key, key1);
 							}
 						}
 					}

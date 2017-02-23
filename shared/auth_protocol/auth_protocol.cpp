@@ -524,7 +524,7 @@ namespace wowpp
 				        << io::write<NetUInt8>(0)									// C-Style string terminator
 				        << io::write_range(address.begin(), address.end())
 				        << io::write<NetUInt8>(0)									// C-Style string terminator
-				        << io::write<float>(0.0f)
+				        << io::write<float>(0.1f)
 				        << io::write<NetUInt8>(AmountOfCharacters)
 				        << io::write<NetUInt8>(1)									// Timezone (Cfg_Categories.dbc)
 #if SUPPORTED_CLIENT_BUILD >= 6546

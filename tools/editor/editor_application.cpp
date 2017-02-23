@@ -32,6 +32,8 @@
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QMessageBox>
+#include <QVBoxLayout>
+#include <QProgressBar>
 #include <cassert>
 #include "editor_config.h"
 
@@ -358,6 +360,27 @@ namespace wowpp
 			}
 		}
 
+		static std::shared_ptr<QDialog> showUploadDialog(QWidget *parent)
+		{
+			// Create dialog via code as it is a minor dialog
+			auto dialog = std::make_shared<QDialog>(parent);
+			dialog->setWindowTitle("Uploading");
+
+			// Create label
+			QLabel *label = new QLabel("Uploading data...");
+
+			// Create progress bar
+			QProgressBar *progressBar = new QProgressBar(dialog.get());
+			progressBar->setRange(0, 0);
+
+			// Create dialog layout
+			QVBoxLayout *dialogLayout = new QVBoxLayout(dialog.get());
+			dialogLayout->addWidget(label);
+			dialogLayout->addWidget(progressBar);
+			dialog->setLayout(dialogLayout);
+			return dialog;
+		}
+
 		void EditorApplication::saveUnsavedChanges()
 		{
 			// Save data project
@@ -375,9 +398,22 @@ namespace wowpp
 			// Eventually send changes to the server
 			if (!m_changes.empty())
 			{
+				// Display dialog
+				auto dialog = showUploadDialog(m_mainWindow);
+				dialog->setModal(true);
+				dialog->show();
+
 				// Send changes to the team server
 				if (m_teamConnector)
 				{
+					m_teamConnector->dataSent.connect([dialog](size_t) {
+						// Close dialog
+						dialog->close();
+
+						// Disconnect this connection slot
+						simple::current_connection().disconnect();
+					});
+
 					m_teamConnector->sendEntryChanges(m_changes);
 				}
 

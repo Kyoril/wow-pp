@@ -22,6 +22,7 @@
 #pragma once
 
 #include "common/constants.h"
+#include "common/simple.hpp"
 #include "network/connector.h"
 #include "wowpp_protocol/wowpp_connector.h"
 #include "wowpp_protocol/wowpp_editor_team.h"
@@ -42,15 +43,17 @@ namespace wowpp
 		public:
 
 			/// 
-			boost::signals2::signal<void(bool)> connected;
+			simple::signal<void(bool)> connected;
 			/// 
-			boost::signals2::signal<void()> disconnected;
+			simple::signal<void()> disconnected;
 			/// 
-			boost::signals2::signal<void(UInt32, UInt32)> loginResult;
+			simple::signal<void(UInt32, UInt32)> loginResult;
 			/// 
-			boost::signals2::signal<void(const String&)> fileUpdate;
+			simple::signal<void(const String&)> fileUpdate;
 			/// 
-			boost::signals2::signal<void()> editorUpToDate;
+			simple::signal<void()> editorUpToDate;
+			///
+			simple::signal<void(size_t)> dataSent;
 
 		public:
 
@@ -75,6 +78,8 @@ namespace wowpp
 			void connectionPacketReceived(pp::Protocol::IncomingPacket &packet) override;
 			/// @copydoc wowpp::pp::IConnectorListener::connectionEstablished()
 			bool connectionEstablished(bool success) override;
+			/// @copydoc wowpp::pp::IConnectorListener::connectionDataSent()
+			void connectionDataSent(size_t size) override;
 
 			/// Notifies the login server about a login request of a player on this realm. The
 			/// login server will check if this request is valid. This is done so that no one

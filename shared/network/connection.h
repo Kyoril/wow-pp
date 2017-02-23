@@ -43,6 +43,7 @@ namespace wowpp
 		virtual void connectionLost() = 0;
 		virtual void connectionMalformedPacket() = 0;
 		virtual void connectionPacketReceived(typename Protocol::IncomingPacket &packet) = 0;
+		virtual void connectionDataSent(size_t size) {};
 	};
 
 
@@ -239,6 +240,11 @@ namespace wowpp
 			{
 				disconnected();
 				return;
+			}
+
+			if (m_listener)
+			{
+				m_listener->connectionDataSent(m_sending.size());
 			}
 
 			m_sending.clear();
