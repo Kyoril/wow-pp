@@ -2780,12 +2780,12 @@ namespace wowpp
 #define WOWPP_IMPORT_INT_VAL(name) \
 				iTmp = 0; \
 				row.getField(index++, iTmp); \
-				if (iTmp != itemEntry->##name()) { wasModified = true; DLOG("Field "#name" changed: " << itemEntry->##name() << " | " << iTmp); } \
+				if (iTmp != itemEntry->##name()) { wasModified = true; /*DLOG("Field "#name" changed: " << itemEntry->##name() << " | " << iTmp);*/ } \
 				itemEntry->set_##name(iTmp);
 #define WOWPP_IMPORT_STR_VAL(name) \
 				sVal.clear(); \
 				row.getField(index++, sVal); \
-				if (sVal != itemEntry->##name()) { wasModified = true; DLOG("Field "#name" changed: " << itemEntry->##name() << " | " << sVal); } \
+				if (sVal != itemEntry->##name()) { wasModified = true; /*DLOG("Field "#name" changed: " << itemEntry->##name() << " | " << sVal);*/ } \
 				itemEntry->set_##name(sVal);
 
 				WOWPP_IMPORT_INT_VAL(itemclass);
@@ -2859,8 +2859,8 @@ namespace wowpp
 #undef WOWPP_IMPORT_STR_VAL
 #undef WOWPP_IMPORT_INT_VAL
 
-				if (!wasAdded && wasModified)
-					ILOG("Item modified: " << entry);
+				/*if (!wasAdded && wasModified)
+					ILOG("Item modified: " << entry);*/
 
 				// Mark entry as changed
 				if (wasAdded)
