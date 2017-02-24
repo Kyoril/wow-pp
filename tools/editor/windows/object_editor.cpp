@@ -2719,6 +2719,166 @@ namespace wowpp
 			dialog.exec();
 		}
 
+		void ObjectEditor::on_actionImport_Items_triggered()
+		{
+			ImportTask task;
+			task.countQuery = "SELECT COUNT(*) FROM `item_template`;";
+			task.selectQuery = "SELECT `entry`, `class`, `subclass`, `name`, `displayid`, `Quality`, `Flags`, `BuyCount`, `BuyPrice`,"
+				"`SellPrice`, `InventoryType`, `AllowableClass`, `AllowableRace`, `ItemLevel`,"
+				"`RequiredLevel`, `RequiredSkill`, `RequiredSkillRank`, `requiredspell`, `requiredhonorrank`,"
+				"`RequiredCityRank`, `RequiredReputationFaction`, `RequiredReputationRank`, `maxcount`, `stackable`,"
+				"`ContainerSlots`, `stat_type1`, `stat_value1`, `stat_type2`, `stat_value2`,"
+				"`stat_type3`, `stat_value3`, `stat_type4`, `stat_value4`, `stat_type5`,"
+				"`stat_value5`, `stat_type6`, `stat_value6`, `stat_type7`, `stat_value7`,"
+				"`stat_type8`, `stat_value8`, `stat_type9`, `stat_value9`, `stat_type10`,"
+				"`stat_value10`, `dmg_min1`, `dmg_max1`, `dmg_type1`, `dmg_min2`,"
+				"`dmg_max2`, `dmg_type2`, `dmg_min3`, `dmg_max3`, `dmg_type3`,"
+				"`dmg_min4`, `dmg_max4`, `dmg_type4`, `dmg_min5`, `dmg_max5`,"
+				"`dmg_type5`, `armor`, `holy_res`, `fire_res`, `nature_res`,"
+				"`frost_res`, `shadow_res`, `arcane_res`, `delay`, `ammo_type`,"
+				"`RangedModRange`, `spellid_1`, `spelltrigger_1`, `spellcharges_1`, `spellppmRate_1`,"
+				"`spellcooldown_1`, `spellcategory_1`, `spellcategorycooldown_1`,"
+				"`spellid_2`, `spelltrigger_2`, `spellcharges_2`, `spellppmRate_2`,"
+				"`spellcooldown_2`, `spellcategory_2`, `spellcategorycooldown_2`,"
+				"`spellid_3`, `spelltrigger_3`, `spellcharges_3`, `spellppmRate_3`,"
+				"`spellcooldown_3`, `spellcategory_3`, `spellcategorycooldown_3`,"
+				"`spellid_4`, `spelltrigger_4`, `spellcharges_4`, `spellppmRate_4`,"
+				"`spellcooldown_4`, `spellcategory_4`, `spellcategorycooldown_4`,"
+				"`spellid_5`, `spelltrigger_5`, `spellcharges_5`, `spellppmRate_5`,"
+				"`spellcooldown_5`, `spellcategory_5`, `spellcategorycooldown_5`,"
+				"`bonding`, `description`, `PageText`, `LanguageID`, `PageMaterial`,"
+				"`startquest`, `lockid`, `Material`, `sheath`, `RandomProperty`,"
+				"`RandomSuffix`, `block`, `itemset`, `MaxDurability`, `area`,"
+				"`Map`, `BagFamily`, `TotemCategory`, `socketColor_1`, `socketContent_1`,"
+				"`socketColor_2`, `socketContent_2`, `socketColor_3`, `socketContent_3`,"
+				"`socketBonus`, `GemProperties`, `RequiredDisenchantSkill`, `ArmorDamageModifier`, `ScriptName`,"
+				"`DisenchantID`, `FoodType`, `minMoneyLoot`, `maxMoneyLoot`, `Duration`, `ExtraFlags`"
+				" FROM `item_template`;";
+			task.beforeImport = [this]() {
+			};
+			task.onImport = [this](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0;
+				UInt32 index = 0;
+				row.getField(index++, entry);
+
+				bool wasAdded = false;
+				bool wasModified = false;
+
+				// Find item by entry
+				auto *itemEntry = m_application.getProject().items.getById(entry);
+				if (!itemEntry)
+				{
+					// Item doesn't exist yet
+					itemEntry = m_application.getProject().items.add(entry);
+					wasAdded = true;
+					ILOG("New item added: " << entry);
+				}
+
+				Int32 iTmp = 0;
+				String sVal;
+
+#define WOWPP_IMPORT_INT_VAL(name) \
+				iTmp = 0; \
+				row.getField(index++, iTmp); \
+				if (iTmp != itemEntry->##name()) { wasModified = true; DLOG("Field "#name" changed: " << itemEntry->##name() << " | " << iTmp); } \
+				itemEntry->set_##name(iTmp);
+#define WOWPP_IMPORT_STR_VAL(name) \
+				sVal.clear(); \
+				row.getField(index++, sVal); \
+				if (sVal != itemEntry->##name()) { wasModified = true; DLOG("Field "#name" changed: " << itemEntry->##name() << " | " << sVal); } \
+				itemEntry->set_##name(sVal);
+
+				WOWPP_IMPORT_INT_VAL(itemclass);
+				WOWPP_IMPORT_INT_VAL(subclass);
+				WOWPP_IMPORT_STR_VAL(name);
+				WOWPP_IMPORT_INT_VAL(displayid);
+				WOWPP_IMPORT_INT_VAL(quality);
+				WOWPP_IMPORT_INT_VAL(flags);
+				WOWPP_IMPORT_INT_VAL(buycount);
+				WOWPP_IMPORT_INT_VAL(buyprice);
+				WOWPP_IMPORT_INT_VAL(sellprice);
+				WOWPP_IMPORT_INT_VAL(inventorytype);
+				WOWPP_IMPORT_INT_VAL(allowedclasses);
+				WOWPP_IMPORT_INT_VAL(allowedraces);
+				WOWPP_IMPORT_INT_VAL(itemlevel);
+				WOWPP_IMPORT_INT_VAL(requiredlevel);
+				WOWPP_IMPORT_INT_VAL(requiredskill);
+				WOWPP_IMPORT_INT_VAL(requiredskillrank);
+				WOWPP_IMPORT_INT_VAL(requiredspell);
+				WOWPP_IMPORT_INT_VAL(requiredhonorrank);
+				WOWPP_IMPORT_INT_VAL(requiredcityrank);
+				WOWPP_IMPORT_INT_VAL(requiredrep);
+				WOWPP_IMPORT_INT_VAL(requiredreprank);
+				WOWPP_IMPORT_INT_VAL(maxcount);
+				WOWPP_IMPORT_INT_VAL(maxstack);
+				WOWPP_IMPORT_INT_VAL(containerslots);
+				index += 2 * 10;	// Stats
+				index += 3 * 5;		// Damage
+				WOWPP_IMPORT_INT_VAL(armor);
+				WOWPP_IMPORT_INT_VAL(holyres);
+				WOWPP_IMPORT_INT_VAL(fireres);
+				WOWPP_IMPORT_INT_VAL(natureres);
+				WOWPP_IMPORT_INT_VAL(frostres);
+				WOWPP_IMPORT_INT_VAL(shadowres);
+				WOWPP_IMPORT_INT_VAL(arcaneres);
+				WOWPP_IMPORT_INT_VAL(delay);
+				WOWPP_IMPORT_INT_VAL(ammotype);
+				index++;			// RangedModRange
+				index += 7 * 5;		// Spells
+				WOWPP_IMPORT_INT_VAL(bonding);
+				WOWPP_IMPORT_STR_VAL(description);
+				index++;			// PageText
+				index++;			// LanguageID
+				index++;			// PageMaterial
+				WOWPP_IMPORT_INT_VAL(questentry);
+				WOWPP_IMPORT_INT_VAL(lockid);
+				WOWPP_IMPORT_INT_VAL(material);
+				WOWPP_IMPORT_INT_VAL(sheath);
+				WOWPP_IMPORT_INT_VAL(randomproperty);
+				WOWPP_IMPORT_INT_VAL(randomsuffix);
+				WOWPP_IMPORT_INT_VAL(block);
+				WOWPP_IMPORT_INT_VAL(itemset);
+				WOWPP_IMPORT_INT_VAL(durability);
+				WOWPP_IMPORT_INT_VAL(area);
+				WOWPP_IMPORT_INT_VAL(map);
+				WOWPP_IMPORT_INT_VAL(bagfamily);
+				WOWPP_IMPORT_INT_VAL(totemcategory);
+				index += 2 * 3;		// Sockets
+				WOWPP_IMPORT_INT_VAL(socketbonus);
+				WOWPP_IMPORT_INT_VAL(gemproperties);
+				WOWPP_IMPORT_INT_VAL(disenchantskillval);
+				index++;			// ArmorDamageModified (float)
+				index++;			// ScriptName
+				WOWPP_IMPORT_INT_VAL(disenchantid);
+				WOWPP_IMPORT_INT_VAL(foodtype);
+				WOWPP_IMPORT_INT_VAL(minlootgold);
+				WOWPP_IMPORT_INT_VAL(maxlootgold);
+				WOWPP_IMPORT_INT_VAL(duration);
+				WOWPP_IMPORT_INT_VAL(extraflags);
+
+#undef WOWPP_IMPORT_STR_VAL
+#undef WOWPP_IMPORT_INT_VAL
+
+				if (!wasAdded && wasModified)
+					ILOG("Item modified: " << entry);
+
+				// Mark entry as changed
+				if (wasAdded)
+					m_application.markAsChanged(entry, pp::editor_team::data_entry_type::Items, pp::editor_team::data_entry_change_type::Added);
+				else if (wasModified)
+					m_application.markAsChanged(entry, pp::editor_team::data_entry_type::Items, pp::editor_team::data_entry_change_type::Modified);
+
+				return true;
+			};
+			task.afterImport = [this]() {
+				emit m_application.getItemListModel()->dataChanged(QModelIndex(), QModelIndex());
+			};
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
+			dialog.exec();
+		}
+
 		void ObjectEditor::on_actionImport_Object_Spawns_triggered()
 		{
 			ImportTask task;

@@ -6569,6 +6569,7 @@ QGroupBox::indicator:unchecked:disabled
     <addaction name="actionImport_Object_Spawns"/>
     <addaction name="separator"/>
     <addaction name="actionImport_Units"/>
+    <addaction name="actionImport_Items"/>
    </widget>
    <addaction name="menu_Project"/>
    <addaction name="menu_Edit"/>
@@ -6668,6 +6669,11 @@ QGroupBox::indicator:unchecked:disabled
   <action name="actionImport_Gold_Loot">
    <property name="text">
     <string>Import Gold Loot</string>
+   </property>
+  </action>
+  <action name="actionImport_Items">
+   <property name="text">
+    <string>Import Items</string>
    </property>
   </action>
   <actiongroup name="LootImport">
