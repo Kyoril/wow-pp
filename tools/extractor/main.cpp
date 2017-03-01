@@ -50,9 +50,6 @@
 using namespace std;
 using namespace wowpp;
 
-// Uncomment below to write debug output in form of objs
-#define TILE_DEBUG_OUTPUT 1
-
 //////////////////////////////////////////////////////////////////////////
 // Calls:
 //	For Each Map... (separate thread for each map, up to #cpu-cores)
@@ -65,6 +62,7 @@ using namespace wowpp;
 //////////////////////////////////////////////////////////////////////////
 // Shortcuts
 namespace fs = boost::filesystem;
+namespace po = boost::program_options;
 
 //////////////////////////////////////////////////////////////////////////
 // Path variables
@@ -77,6 +75,13 @@ static const fs::path bvhOutputPath("bvh");
 static std::unique_ptr<DBCFile> dbcMap;
 static std::unique_ptr<DBCFile> dbcAreaTable;
 static std::unique_ptr<DBCFile> dbcLiquidType;
+
+//////////////////////////////////////////////////////////////////////////
+// Command line arguments
+static Int32 buildOnlyMap = -1;
+static Int32 buildOnlyTileX = -1;
+static Int32 buildOnlyTileY = -1;
+static bool generateDebugFiles = false;
 
 //////////////////////////////////////////////////////////////////////////
 // Caches
@@ -343,25 +348,23 @@ namespace
 		out_chunk.tileCount++;
 		assert(out_chunk.tileCount == out_chunk.tiles.size() && "Navigation chunks tile count does not match the actual tile count!");
 
-#ifdef TILE_DEBUG_OUTPUT
-		std::unique_ptr<FileIO> debugFile(new FileIO());
+		// Eventually generate debug files
+		if (generateDebugFiles)
+		{
+			std::unique_ptr<FileIO> debugFile(new FileIO());
+			std::ostringstream strm;
+			strm << "meshes/nav/poly/tile_" << tileX << "_" << tileY << "-" << tx << "_" << ty << "_poly.obj";
 
-		std::ostringstream strm;
-		strm << "meshes/nav/poly/tile_" << tileX << "_" << tileY << "-" << tx << "_" << ty << "_poly.obj";
+			debugFile->openForWrite(strm.str().c_str());
+			duDumpPolyMeshToObj(*polyMesh, debugFile.get());
 
-		debugFile->openForWrite(strm.str().c_str());
-		duDumpPolyMeshToObj(*polyMesh, debugFile.get());
-#endif
+			std::unique_ptr<FileIO> debugFileDetail(new FileIO());
+			std::ostringstream strmDetail;
+			strmDetail << "meshes/nav/detail/tile_" << tileX << "_" << tileY << "-" << tx << "_" << ty << "_detail.obj";
 
-#ifdef TILE_DEBUG_OUTPUT
-		std::unique_ptr<FileIO> debugFileDetail(new FileIO());
-
-		std::ostringstream strmDetail;
-		strmDetail << "meshes/nav/detail/tile_" << tileX << "_" << tileY << "-" << tx << "_" << ty << "_detail.obj";
-
-		debugFileDetail->openForWrite(strmDetail.str().c_str());
-		duDumpPolyMeshDetailToObj(*polyMeshDetail, debugFileDetail.get());
-#endif
+			debugFileDetail->openForWrite(strmDetail.str().c_str());
+			duDumpPolyMeshDetailToObj(*polyMeshDetail, debugFileDetail.get());
+		}
 
 		dtFree(outData);
 		return true;
@@ -625,12 +628,13 @@ namespace
 #endif
 		}
 
-#ifdef TILE_DEBUG_OUTPUT
-		// Serialize mesh data for debugging purposes
-		wowpp::serializeMeshData("_adt", mapId, tileX, tileY, adtMesh);
-		wowpp::serializeMeshData("_wmo", mapId, tileX, tileY, wmoMesh);
-		wowpp::serializeMeshData("_doodad", mapId, tileX, tileY, doodadMesh);
-#endif
+		if (generateDebugFiles)
+		{
+			// Serialize mesh data for debugging purposes
+			wowpp::serializeMeshData("_adt", mapId, tileX, tileY, adtMesh);
+			wowpp::serializeMeshData("_wmo", mapId, tileX, tileY, wmoMesh);
+			wowpp::serializeMeshData("_doodad", mapId, tileX, tileY, doodadMesh);
+		}
 
 		// Adjust min and max z values
 		for (UInt32 i = 0; i < adtMesh.solidVerts.size(); i += 3)
@@ -773,25 +777,16 @@ namespace
 		const UInt32 cellX = tileIndex / 64;
 		const UInt32 cellY = tileIndex % 64;
 
-#ifdef TILE_DEBUG_OUTPUT
-		switch (mapId)
+		// Only filter cells if we are on the specified map id (and if a map id has been specified)
+		if (buildOnlyMap >= 0 && mapId == buildOnlyMap)
 		{
-			case 0:
-				if (cellY != 29 || cellX != 28)
+			if (buildOnlyTileX >= 0 && buildOnlyTileY >= 0)
+			{
+				// Not our tile to build
+				if (cellX != buildOnlyTileX || cellY != buildOnlyTileY)
 					return false;
-				break;
-			case 1:
-				if (cellY != 30 || cellX != 12)
-					return false;
-				break;
-			case 489:
-				if (cellY != 29 || cellX != 29)
-					return false;
-				break;
-			default:
-				break;
+			}
 		}
-#endif
 
 		// Build file names
 		const String cellName =
@@ -1113,12 +1108,11 @@ namespace
 			return false;
 		}
 
-#ifdef TILE_DEBUG_OUTPUT
-		if (mapId != 1)
+		// Skip this map eventually
+		if (buildOnlyMap >= 0 && mapId != buildOnlyMap)
 		{
 			return true;
 		}
-#endif
 
 		// Build map
 		ILOG("Building map " << mapId << " - " << mapName << "...");
@@ -1312,6 +1306,44 @@ namespace
 /// Procedural entry point of the application.
 int main(int argc, char* argv[])
 {
+	std::size_t concurrency = std::thread::hardware_concurrency();
+	concurrency = std::max<size_t>(1, concurrency - 1);
+
+	po::options_description desc("WoW++ data extractor, available options");
+	desc.add_options()
+		("help,h", "produce help message")
+		("concurrency,j", po::value(&concurrency), fmt::format("the number of threads to use (defaults to {0} on this machine)", concurrency).c_str())
+		("map,m", po::value(&buildOnlyMap), "build only this specific map id")
+		("tileX,x", po::value(&buildOnlyTileX), "build only this specific x tile of the specified map")
+		("tileY,y", po::value(&buildOnlyTileY), "build only this specific y tile of the specified map")
+		("debug,d", po::value(&generateDebugFiles), "produce *.obj mesh files for debugging")
+		;
+
+	po::variables_map vm;
+	po::positional_options_description p;
+	try
+	{
+		po::store(
+			po::command_line_parser(argc, argv).options(desc).positional(p).run(),
+			vm);
+		po::notify(vm);
+	}
+	catch (const po::error &e)
+	{
+		std::cerr << e.what() << '\n';
+		return 1;
+	}
+
+	// Limit cpu count
+	concurrency = std::max<size_t>(1, concurrency);
+
+	// Display help message
+	if (vm.count("help"))
+	{
+		std::cerr << desc << '\n';
+		return 0;
+	}
+
 	// Multithreaded log support
 	std::mutex logMutex;
 	wowpp::g_DefaultLog.signal().connect([&logMutex](const wowpp::LogEntry &entry)
@@ -1376,8 +1408,6 @@ int main(int argc, char* argv[])
 	// Determine the amount of available cpu cores, and use just as many. However,
 	// right now, this will only convert multiple maps at the same time, not multiple
 	// tiles - but still A LOT faster than single threaded.
-	std::size_t concurrency = std::thread::hardware_concurrency();
-	concurrency = std::max<size_t>(1, concurrency - 1);
 	ILOG("Using " << concurrency << " threads");
 
 	// Do the work!

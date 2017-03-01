@@ -24,14 +24,18 @@ cmake_minimum_required(VERSION 2.8.11)
 # Collect source and header files
 file(GLOB srcFiles "./*.cpp" "./*.h" "./*.hpp")
 remove_pch_cpp(srcFiles "${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp")
-file(GLOB sffFiles "./../shared/simple_file_format/*.h")
+file(GLOB sffFiles "../../shared/simple_file_format/*.h")
+file(GLOB parserFiles "./parser/*.cpp" "./parser/*.h" "./parser/*.hpp")
+
+include_directories("parser")
 
 # Add source groups
 source_group(src FILES ${srcFiles})
+source_group(src\\parser FILES ${parserFiles})
 source_group(src\\sff FILES ${sffFiles})
 
 # Add library project
-add_executable(extractor ${srcFiles} ${sffFiles})
+add_executable(extractor ${srcFiles} ${sffFiles} ${parserFiles})
 add_precompiled_header(extractor "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
 
 # Link required shared libs
