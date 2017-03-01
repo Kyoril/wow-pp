@@ -762,52 +762,11 @@ namespace
 		return true;
 	}
 
-	/// Converts an ADT tile of a WDT file.
-	static bool convertADT(UInt32 mapId, const String &mapName, WDTFile &wdt, UInt32 tileIndex, dtNavMesh &navMesh)
+	/// Loads all WMOs of a given ADT file into the global wmo storage and builds their
+	/// bvh trees.
+	/// @param adt The parsed adt file infos.
+	static bool loadADTWmos(const ADTFile &adt)
 	{
-		// Check tile
-		auto &adtTiles = wdt.getMAINChunk().adt;
-		if (adtTiles[tileIndex].exist == 0)
-		{
-			// Nothing to do here since there is no ADT file for this map tile
-			return true;
-		}
-
-		// Calcualte cell index
-		const UInt32 cellX = tileIndex / 64;
-		const UInt32 cellY = tileIndex % 64;
-
-		// Only filter cells if we are on the specified map id (and if a map id has been specified)
-		if (buildOnlyMap >= 0 && mapId == buildOnlyMap)
-		{
-			if (buildOnlyTileX >= 0 && buildOnlyTileY >= 0)
-			{
-				// Not our tile to build
-				if (cellX != buildOnlyTileX || cellY != buildOnlyTileY)
-					return false;
-			}
-		}
-
-		// Build file names
-		const String cellName =
-			fmt::format("{0}_{1}_{2}", mapName, cellY, cellX);
-		const String adtFile =
-			fmt::format("World\\Maps\\{0}\\{1}.adt", mapName, cellName);
-		const String mapFile =
-			((outputPath / (fmt::format("{0}", mapId))) / (fmt::format("{0}_{1}.map", cellX, cellY))).string();
-
-		// Build NavMesh tiles
-		ILOG("\tBuilding adt cell [" << cellX << "," << cellY << "] ...");
-
-		// Load ADT file
-		ADTFile adt(adtFile);
-		if (!adt.load())
-		{
-			ELOG("Could not load file " << adtFile);
-			return false;
-		}
-
-		// Load all required WMO files
 		for (const auto &chunk : adt.getMODFChunk().entries)
 		{
 			// Retrieve WMO file name
@@ -833,7 +792,7 @@ namespace
 
 				// Build file path
 				fs::path filePath = bvhOutputPath / ("WMO_" + wmoFile->getBaseName() + ".bvh");
-				
+
 				// Build AABBTree and serialize it
 				ILOG("\tBuilding WMO " << wmoFile->getBaseName());
 				std::vector<math::AABBTree::Vertex> vertices;
@@ -868,7 +827,7 @@ namespace
 
 				auto wmoTree = std::make_shared<math::AABBTree>(vertices, indices);
 				wmoTrees[chunk.uniqueId] = wmoTree;
-				
+
 				// Serialize it
 				std::ofstream file(filePath.string().c_str(), std::ios::out | std::ios::binary);
 				if (!file)
@@ -883,7 +842,14 @@ namespace
 			}
 		}
 
-		// Load all required Doodads
+		return true;
+	}
+
+	/// Loads all Doodads of a given ADT file into the global doodad storage and builds
+	/// their bvh trees.
+	/// @param adt The parsed adt file infos.
+	static bool loadADTDoodads(const ADTFile &adt)
+	{
 		for (UInt32 i = 0; i < adt.getMDXCount(); ++i)
 		{
 			std::lock_guard<std::mutex> lock(doodadMutex);
@@ -922,8 +888,60 @@ namespace
 			}
 		}
 
-		// Create files
-		std::ofstream fileStrm(mapFile, std::ios::out | std::ios::binary);
+		return true;
+	}
+
+	/// Converts an ADT tile of a WDT file.
+	static bool convertADT(UInt32 mapId, const String &mapName, WDTFile &wdt, UInt32 tileIndex, dtNavMesh &navMesh)
+	{
+		// Check tile
+		auto &adtTiles = wdt.getMAINChunk().adt;
+		if (adtTiles[tileIndex].exist == 0)
+		{
+			// Nothing to do here since there is no ADT file for this map tile
+			return true;
+		}
+
+		// Calcualte cell index
+		const UInt32 cellX = tileIndex / 64;
+		const UInt32 cellY = tileIndex % 64;
+
+		// Only filter cells if we are on the specified map id (and if a map id has been specified)
+		if (buildOnlyMap >= 0 && mapId == buildOnlyMap)
+		{
+			if (buildOnlyTileX >= 0 && buildOnlyTileY >= 0)
+			{
+				// Not our tile to build
+				if (cellX != buildOnlyTileX || cellY != buildOnlyTileY)
+					return false;
+			}
+		}
+
+		// Build NavMesh tiles
+		ILOG("\tBuilding adt cell [" << cellX << "," << cellY << "] ...");
+
+		// File name formattings
+		const String cellName = fmt::format("{0}_{1}_{2}", mapName, cellY, cellX);
+		const String adtFileName = fmt::format("World\\Maps\\{0}\\{1}.adt", mapName, cellName);
+
+		// Prase ADT file
+		ADTFile adt(adtFileName);
+		if (!adt.load())
+		{
+			ELOG("Could not load file " << adtFileName);
+			return false;
+		}
+
+		// Load WMOs and Doodads
+		if (!loadADTWmos(adt))
+			return false;
+		if (!loadADTDoodads(adt))
+			return false;
+
+		// Create map file
+		const String mapFileName =
+			((outputPath / (fmt::format("{0}", mapId))) / (fmt::format("{0}_{1}.map", cellX, cellY))).string();
+		std::ofstream fileStrm(mapFileName, std::ios::out | std::ios::binary);
 		io::StreamSink sink(fileStrm);
 		io::Writer writer(sink);
 		
