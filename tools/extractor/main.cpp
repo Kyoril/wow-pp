@@ -1376,6 +1376,7 @@ namespace
 /// Procedural entry point of the application.
 int main(int argc, char* argv[])
 {
+	// Handle program options
 	std::size_t concurrency = std::thread::hardware_concurrency();
 	concurrency = std::max<size_t>(1, concurrency - 1);
 
@@ -1414,13 +1415,17 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	// Multithreaded log support
+
+
+	// Initialize the log system with support for multithreading
 	std::mutex logMutex;
 	wowpp::g_DefaultLog.signal().connect([&logMutex](const wowpp::LogEntry &entry)
 	{
 		std::lock_guard<std::mutex> lock(logMutex);
 		wowpp::printLogEntry(std::cout, entry, wowpp::g_DefaultConsoleLogOptions);
 	});
+
+
 
 	// Try to create output path
 	if (!fs::is_directory(outputPath))
@@ -1466,6 +1471,8 @@ int main(int argc, char* argv[])
 	ILOG("Found " << dbcMap->getRecordCount() << " maps");
 	ILOG("Found " << dbcAreaTable->getRecordCount() << " areas");
 	ILOG("Found " << dbcLiquidType->getRecordCount() << " liquid types");
+
+
 
 	// Create work jobs for every map that exists
 	boost::asio::io_service dispatcher;
