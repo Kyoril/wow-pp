@@ -158,12 +158,12 @@ namespace wowpp
 				// Read map header
 				MapHeaderChunk mapHeaderChunk;
 				mapFile.read(reinterpret_cast<char *>(&mapHeaderChunk), sizeof(MapHeaderChunk));
-				if (mapHeaderChunk.fourCC != 0x50414D57)
+				if (mapHeaderChunk.header.fourCC != MapHeaderChunkCC)
 				{
 					ELOG("Could not load map file " << file << ": Invalid four-cc code!");
 					return nullptr;
 				}
-				if (mapHeaderChunk.size != sizeof(MapHeaderChunk) - 8)
+				if (mapHeaderChunk.header.size != sizeof(MapHeaderChunk) - 8)
 				{
 					ELOG("Could not load map file " << file << ": Unexpected header chunk size (" << (sizeof(MapHeaderChunk) - 8) << " expected)!");
 					return nullptr;
@@ -179,48 +179,25 @@ namespace wowpp
 
 				// Create new tile and read area data
 				mapFile.read(reinterpret_cast<char *>(&tile->areas), sizeof(MapAreaChunk));
-				if (tile->areas.fourCC != 0x52414D57 || tile->areas.size != sizeof(MapAreaChunk) - 8)
+				if (tile->areas.header.fourCC != MapAreaChunkCC || tile->areas.header.size != sizeof(MapAreaChunk) - 8)
 				{
 					WLOG("Map file " << file << " seems to be corrupted: Wrong area chunk");
 					return nullptr;
 				}
-
-#if 0
-				// Read collision data
-				if (mapHeaderChunk.offsCollision)
-				{
-					mapFile.seekg(mapHeaderChunk.offsCollision, std::ios::beg);
-
-					// Read collision header
-					mapFile.read(reinterpret_cast<char *>(&tile->collision.fourCC), sizeof(UInt32));
-					mapFile.read(reinterpret_cast<char *>(&tile->collision.size), sizeof(UInt32));
-					mapFile.read(reinterpret_cast<char *>(&tile->collision.vertexCount), sizeof(UInt32));
-					mapFile.read(reinterpret_cast<char *>(&tile->collision.triangleCount), sizeof(UInt32));
-					if (tile->collision.fourCC != 0x4C434D57 || tile->collision.size < sizeof(UInt32) * 4)
-					{
-						WLOG("Map file " << file << " seems to be corrupted: Wrong collision chunk (Size: " << tile->collision.size);
-						return nullptr;
-					}
-
-					// Read all vertices
-					tile->collision.vertices.resize(tile->collision.vertexCount);
-					size_t numBytes = sizeof(float) * 3 * tile->collision.vertexCount;
-					mapFile.read(reinterpret_cast<char *>(tile->collision.vertices.data()), numBytes);
-
-					// Read all indices
-					tile->collision.triangles.resize(tile->collision.triangleCount);
-					mapFile.read(reinterpret_cast<char *>(tile->collision.triangles.data()), sizeof(Triangle) * tile->collision.triangleCount);
-				}
-#endif
 
 				// Read navigation data
 				if (m_navMesh && mapHeaderChunk.offsNavigation)
 				{
 					mapFile.seekg(mapHeaderChunk.offsNavigation, std::ios::beg);
 
-					// Read collision header
-					mapFile.read(reinterpret_cast<char *>(&tile->navigation.fourCC), sizeof(UInt32));
-					mapFile.read(reinterpret_cast<char *>(&tile->navigation.size), sizeof(UInt32));
+					// Read chunk header
+					mapFile.read(reinterpret_cast<char *>(&tile->navigation.header.fourCC), sizeof(UInt32));
+					if (tile->navigation.header.fourCC != MapNavChunkCC)
+					{
+						WLOG("Map file " << file << " seems to be corrupted: Wrong nav chunk header chunk");
+						return nullptr;
+					}
+					mapFile.read(reinterpret_cast<char *>(&tile->navigation.header.size), sizeof(UInt32));
 					mapFile.read(reinterpret_cast<char *>(&tile->navigation.tileCount), sizeof(UInt32));
 					
 					// Read navigation meshes if any
@@ -279,6 +256,7 @@ namespace wowpp
 			return true;
 		}
 
+#if 0
 		if (startTile->collision.triangleCount == 0)
 		{
 			return true;
@@ -304,6 +282,7 @@ namespace wowpp
 
 			triangleIndex++;
 		}
+#endif
 
 		// Target is in line of sight
 		return true;

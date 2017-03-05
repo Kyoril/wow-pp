@@ -31,58 +31,25 @@
 
 namespace wowpp
 {
-	/// Header
-	struct MapHeaderChunk
+	// Foward declarations
+
+	namespace proto
 	{
-		static constexpr UInt32 MapFormat = 0x140;
+		class MapEntry;
+	}
 
-		UInt32 fourCC;
-		UInt32 size;
-		UInt32 version;
-		UInt32 offsAreaTable;
-		UInt32 areaTableSize;
-		UInt32 offsWMOs;
-		UInt32 wmoSize;
-		UInt32 offsDoodads;
-		UInt32 doodadSize;
-		UInt32 offsNavigation;
-		UInt32 navigationSize;
 
-		MapHeaderChunk()
-			: fourCC(0)
-			, size(0)
-			, version(0)
-			, offsAreaTable(0)
-			, areaTableSize(0)
-			, offsWMOs(0)
-			, wmoSize(0)
-			, offsDoodads(0)
-			, doodadSize(0)
-			, offsNavigation(0)
-			, navigationSize(0)
-		{
-		}
-	};
+	// Chunk serialization constants
 
-	/// Map area chunk.
-	struct MapAreaChunk
-	{
-		UInt32 fourCC;
-		UInt32 size;
-		struct AreaInfo
-		{
-			UInt32 areaId;
-			UInt32 flags;
+	/// Used as map header chunk signature.
+	static constexpr UInt32 MapHeaderChunkCC = 0x50414D57;
+	/// Used as map area chunk signature.
+	static constexpr UInt32 MapAreaChunkCC = 0x52414D57;
+	/// Used as map nav chunk signature.
+	static constexpr UInt32 MapNavChunkCC = 0x564E4D57;
 
-			///
-			AreaInfo()
-				: areaId(0)
-				, flags(0)
-			{
-			}
-		};
-		std::array<AreaInfo, 16 * 16> cellAreas;
-	};
+
+	// Helper types
 
 	struct Triangle
 	{
@@ -98,22 +65,79 @@ namespace wowpp
 
 	typedef math::Vector3 Vertex;
 
-	struct MapCollisionChunk
+	enum NavTerrain
+	{
+		NAV_EMPTY = 0x00,
+		NAV_GROUND = 0x01,
+		NAV_MAGMA = 0x02,
+		NAV_SLIME = 0x04,
+		NAV_WATER = 0x08,
+		NAV_UNUSED1 = 0x10,
+		NAV_UNUSED2 = 0x20,
+		NAV_UNUSED3 = 0x40,
+		NAV_UNUSED4 = 0x80
+	};
+
+	struct MapChunkHeader
 	{
 		UInt32 fourCC;
 		UInt32 size;
-		UInt32 vertexCount;
-		UInt32 triangleCount;
-		std::vector<Vertex> vertices;
-		std::vector<Triangle> triangles;
 
-		explicit MapCollisionChunk()
+		MapChunkHeader()
 			: fourCC(0)
 			, size(0)
-			, vertexCount(0)
-			, triangleCount(0)
 		{
 		}
+	};
+
+
+	// Map chunks
+
+	struct MapHeaderChunk
+	{
+		static constexpr UInt32 MapFormat = 0x140;
+
+		MapChunkHeader header;
+		UInt32 version;
+		UInt32 offsAreaTable;
+		UInt32 areaTableSize;
+		UInt32 offsWMOs;
+		UInt32 wmoSize;
+		UInt32 offsDoodads;
+		UInt32 doodadSize;
+		UInt32 offsNavigation;
+		UInt32 navigationSize;
+
+		MapHeaderChunk()
+			: version(0)
+			, offsAreaTable(0)
+			, areaTableSize(0)
+			, offsWMOs(0)
+			, wmoSize(0)
+			, offsDoodads(0)
+			, doodadSize(0)
+			, offsNavigation(0)
+			, navigationSize(0)
+		{
+		}
+	};
+
+	struct MapAreaChunk
+	{
+		MapChunkHeader header;
+		struct AreaInfo
+		{
+			UInt32 areaId;
+			UInt32 flags;
+
+			///
+			AreaInfo()
+				: areaId(0)
+				, flags(0)
+			{
+			}
+		};
+		std::array<AreaInfo, 16 * 16> cellAreas;
 	};
 
 	struct MapNavigationChunk
@@ -129,43 +153,25 @@ namespace wowpp
 			}
 		};
 
-		UInt32 fourCC;
-		UInt32 size;
+		MapChunkHeader header;
 		UInt32 tileCount;
 		std::vector<TileData> tiles;
 
 		explicit MapNavigationChunk()
-			: fourCC(0)
-			, size(0)
-			, tileCount(0)
+			: tileCount(0)
 		{
 		}
 	};
 
-	enum NavTerrain
-	{
-		NAV_EMPTY = 0x00,
-		NAV_GROUND = 0x01,
-		NAV_MAGMA = 0x02,
-		NAV_SLIME = 0x04,
-		NAV_WATER = 0x08,
-		NAV_UNUSED1 = 0x10,
-		NAV_UNUSED2 = 0x20,
-		NAV_UNUSED3 = 0x40,
-		NAV_UNUSED4 = 0x80
-	};
 
-	namespace proto
-	{
-		class MapEntry;
-	}
+	// More helpers
 
 	/// Stores map-specific tiled data informations like nav mesh data, height maps and such things.
 	struct MapDataTile final
 	{
 		MapAreaChunk areas;
 		//MapHeightChunk heights;
-		MapCollisionChunk collision;
+		//MapCollisionChunk collision;
 		MapNavigationChunk navigation;
 
 		~MapDataTile() {}
@@ -191,6 +197,7 @@ namespace wowpp
 	Vertex recastToWoWCoord(const Vertex &in_recastCoord);
 	/// Converts a vertex from the WoW coordinate system into recasts coordinate system.
 	Vertex wowToRecastCoord(const Vertex &in_wowCoord);
+
 
 	/// This class represents a map with additional geometry and navigation data.
 	class Map final

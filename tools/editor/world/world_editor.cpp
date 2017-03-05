@@ -320,6 +320,7 @@ namespace wowpp
 						return;
 					}
 
+#if 0
 					if (tile->collision.triangleCount == 0)
 					{
 						return;
@@ -359,6 +360,7 @@ namespace wowpp
 
 					Ogre::SceneNode *child = m_sceneMgr.getRootSceneNode()->createChildSceneNode(objName.str());
 					child->attachObject(obj);
+#endif
 				}
 			}
 			else

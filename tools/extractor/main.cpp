@@ -533,14 +533,15 @@ namespace
 	/// @param out_chunk Navigation chunk which will hold the serialized nav mesh data of this till and
 	///                  will be written to the generated map file.
 	/// @return false on error, true on success.
-	static bool creaveNavTile(const String &mapName, UInt32 mapId, UInt32 tileX, UInt32 tileY, dtNavMesh &navMesh, const ADTFile &adt, MapNavigationChunk &out_chunk)
+	static bool createNavChunk(const String &mapName, UInt32 mapId, UInt32 tileX, UInt32 tileY, dtNavMesh &navMesh, const ADTFile &adt, MapNavigationChunk &out_chunk)
 	{
 		// Min and max height values used for recast
 		float minZ = std::numeric_limits<float>::max(), maxZ = std::numeric_limits<float>::lowest();
 
 		// Reset chunk data
+		out_chunk.header.fourCC = MapNavChunkCC;
+		out_chunk.header.size = 0;
 		out_chunk.tiles.clear();
-		out_chunk.size = 0;
 		out_chunk.tileCount = 0;
 
 		// Process WMOs
@@ -933,6 +934,32 @@ namespace
 		return true;
 	}
 
+	static void createHeaderChunk(MapHeaderChunk &out_chunk)
+	{
+		memset(&out_chunk, 0, sizeof(MapHeaderChunk));
+		out_chunk.header.fourCC = MapHeaderChunkCC;
+		out_chunk.header.size = sizeof(MapHeaderChunk) - 8;
+		out_chunk.version = MapHeaderChunk::MapFormat;
+	}
+
+	static void createAreaChunk(const ADTFile &adt, MapAreaChunk &out_chunk)
+	{
+		out_chunk.header.fourCC = MapAreaChunkCC;
+		out_chunk.header.size = sizeof(MapAreaChunk) - 8;
+		for (size_t i = 0; i < 16 * 16; ++i)
+		{
+			UInt32 areaId = adt.getMCNKChunk(i).areaid;
+			UInt32 flags = 0;
+			auto it = areaFlags.find(areaId);
+			if (it != areaFlags.end())
+			{
+				flags = it->second;
+			}
+			out_chunk.cellAreas[i].areaId = areaId;
+			out_chunk.cellAreas[i].flags = flags;
+		}
+	}
+
 	/// Generates all required map files of a given ADT cell.
 	/// @param mapId The map id of the wdt file.
 	/// @param mapName Name of the map used for file name generation.
@@ -972,19 +999,13 @@ namespace
 		const String cellName = fmt::format("{0}_{1}_{2}", mapName, cellY, cellX);
 		const String adtFileName = fmt::format("World\\Maps\\{0}\\{1}.adt", mapName, cellName);
 
-		// Prase ADT file
+		// Parse ADT file
 		ADTFile adt(adtFileName);
 		if (!adt.load())
 		{
 			ELOG("Could not load file " << adtFileName);
 			return false;
 		}
-
-		// Load WMOs and Doodads
-		if (!loadADTWmos(adt))
-			return false;
-		if (!loadADTDoodads(adt))
-			return false;
 
 		// Create map file
 		const String mapFileName =
@@ -994,167 +1015,63 @@ namespace
 		io::Writer writer(sink);
 		
 		// Mark header position
-		const size_t headerPos = sink.position();
+		const auto headerChunkPos = sink.position();
 
         // Create map header chunk
         MapHeaderChunk header;
-        header.fourCC = 0x50414D57;				// WMAP		- WoW Map
-        header.size = sizeof(MapHeaderChunk) - 8;
-        header.version = MapHeaderChunk::MapFormat;
+		createHeaderChunk(header);
 		writer.writePOD(header);
 
-		// Mark area header chunk
-		header.offsAreaTable = sink.position();
-
-        // Area header chunk
+        // Create map adt area chunk
         MapAreaChunk areaHeader;
-        areaHeader.fourCC = 0x52414D57;			// WMAR		- WoW Map Areas
-        areaHeader.size = sizeof(MapAreaChunk) - 8;
-        for (size_t i = 0; i < 16 * 16; ++i)
-        {
-            UInt32 areaId = adt.getMCNKChunk(i).areaid;
-            UInt32 flags = 0;
-            auto it = areaFlags.find(areaId);
-            if (it != areaFlags.end())
-            {
-                flags = it->second;
-            }
-            areaHeader.cellAreas[i].areaId = areaId;
-            areaHeader.cellAreas[i].flags = flags;
-        }
+		createAreaChunk(adt, areaHeader);
+		header.offsAreaTable = sink.position();
 		writer.writePOD(areaHeader);
 		header.areaTableSize = sink.position() - header.offsAreaTable;
 
-#if 0
-		for (const auto &entry : adt.getMODFChunk().entries)
-		{
-			// Entry placement
-			auto &wmo = wmos[entry.mwidEntry];
-			if (!wmo->isRootWMO())
-			{
-				WLOG("Group wmo placed, but root wmo expected");
-				continue;
-			}
-
-#define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * (x) / -180.0)
-			math::Matrix3 rotMat = math::Matrix3::fromEulerAnglesXYZ(
-				WOWPP_DEG_TO_RAD(-entry.rotation[2]), WOWPP_DEG_TO_RAD(-entry.rotation[0]), WOWPP_DEG_TO_RAD(-entry.rotation[1] - 180));
-			
-			math::Vector3 position(entry.position.z, entry.position.x, entry.position.y);
-			position.x = (32 * 533.3333f) - position.x;
-			position.y = (32 * 533.3333f) - position.y;
-#undef WOWPP_DEG_TO_RAD
-
-			// Transform vertices
-			for (auto &group : wmo->getGroups())
-			{
-				UInt32 groupStartIndex = collisionChunk.vertexCount;
-
-				const auto &verts = group->getVertices();
-				const auto &inds = group->getIndices();
-
-				collisionChunk.vertexCount += verts.size();
-				UInt32 groupTris = inds.size() / 3;
-				for (auto &vert : verts)
-				{
-					// Transform vertex and push it to the list
-					math::Vector3 transformed = (rotMat * vert) + position;
-					collisionChunk.vertices.push_back(transformed);
-				}
-				for (UInt32 i = 0; i < inds.size(); i += 3)
-				{
-					if (!group->isCollisionTriangle(i / 3))
-					{
-						// Skip this triangle
-						groupTris--;
-						continue;
-					}
-
-					Triangle tri;
-					tri.indexA = inds[i] + groupStartIndex;
-					tri.indexB = inds[i+1] + groupStartIndex;
-					tri.indexC = inds[i+2] + groupStartIndex;
-					collisionChunk.triangles.emplace_back(std::move(tri));
-				}
-
-				collisionChunk.triangleCount += groupTris;
-			}
-		}
-		collisionChunk.size += sizeof(math::Vector3) * collisionChunk.vertexCount;
-		collisionChunk.size += sizeof(UInt32) * 3 * collisionChunk.triangleCount;
-		header.collisionSize = collisionChunk.size;
-		if (collisionChunk.vertexCount > 0)
-		{
-			header.offsCollision = sink.position();
-			if (header.offsCollision)
-			{
-				writer
-					<< io::write<UInt32>(collisionChunk.fourCC)
-					<< io::write<UInt32>(collisionChunk.size)
-					<< io::write<UInt32>(collisionChunk.vertexCount)
-					<< io::write<UInt32>(collisionChunk.triangleCount);
-				for (auto &vert : collisionChunk.vertices)
-				{
-					writer
-						<< io::write<float>(vert.x)
-						<< io::write<float>(vert.y)
-						<< io::write<float>(vert.z);
-				}
-				for (auto &triangle : collisionChunk.triangles)
-				{
-					writer
-						<< io::write<UInt32>(triangle.indexA)
-						<< io::write<UInt32>(triangle.indexB)
-						<< io::write<UInt32>(triangle.indexC);
-				}
-			}
-			header.collisionSize = sink.position() - header.offsCollision;
-		}
-#endif
+		// Load WMOs and Doodads
+		if (!loadADTWmos(adt))
+			return false;
+		if (!loadADTDoodads(adt))
+			return false;
 
 		// Remember possible start of nav chunk offset
-		size_t possibleNavChunkOffset = sink.position();
+		const auto possibleNavChunkOffset = sink.position();
 
 		// Prepare navigation chunk
-		MapNavigationChunk navigationChunk;
-		navigationChunk.fourCC = 0x564E4D57;		// WMNV		- WoW Map Navigation
-		navigationChunk.size = 0;
-		if (creaveNavTile(mapName, mapId, cellX, cellY, navMesh, adt, navigationChunk))
+		MapNavigationChunk navChunk;
+		if (!createNavChunk(mapName, mapId, cellX, cellY, navMesh, adt, navChunk))
 		{
-			if (!navigationChunk.tiles.empty())
+			ELOG("Could not create nav chunk for cell " << cellX << "," << cellY);
+		}
+		else if (!navChunk.tiles.empty())
+		{
+			// Calculate real chunk size
+			navChunk.header.size = sizeof(UInt32);
+			for (const auto &tile : navChunk.tiles)
 			{
-				// Calculate real chunk size
-				navigationChunk.size = sizeof(UInt32);
-				for (const auto &tile : navigationChunk.tiles)
-				{
-					navigationChunk.size += tile.size + sizeof(UInt32);
-				}
+				navChunk.header.size += tile.size + sizeof(UInt32);
+			}
 
-				// Fix header data
-				header.offsNavigation = possibleNavChunkOffset;
-				header.navigationSize += sizeof(UInt32) * 2 + navigationChunk.size;
+			// Fix header data
+			header.offsNavigation = possibleNavChunkOffset;
+			header.navigationSize += sizeof(MapChunkHeader) + navChunk.header.size;
 
-				// Write chunk data
+			// Write chunk data
+			writer
+				<< io::write<UInt32>(navChunk.header.fourCC)
+				<< io::write<UInt32>(navChunk.header.size)
+				<< io::write<UInt32>(navChunk.tileCount);
+			for (const auto &tile : navChunk.tiles)
+			{
 				writer
-					<< io::write<UInt32>(navigationChunk.fourCC)
-					<< io::write<UInt32>(navigationChunk.size)
-					<< io::write<UInt32>(navigationChunk.tileCount);
-				for (const auto &tile : navigationChunk.tiles)
-				{
-					writer
-						<< io::write<UInt32>(tile.size)
-						<< io::write_range(tile.data);
-				}
+					<< io::write<UInt32>(tile.size)
+					<< io::write_range(tile.data);
 			}
 		}
-		else
-		{
-			ELOG("Could not create navigation data for tile " << cellX << "," << cellY);
-		}
 
-		// Overwrite header settings
-		writer.writePOD(headerPos, header);
-
+		// Overwrite header chunk with new values
+		writer.writePOD(headerChunkPos, header);
 		return true;
 	}
 	
