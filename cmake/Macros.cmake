@@ -79,6 +79,7 @@ MACRO(ADD_PRECOMPILED_HEADER _targetName _input)
 				SET(_compile_FLAGS ${${_flags_var_name}})
 
 				GET_DIRECTORY_PROPERTY(_directory_flags INCLUDE_DIRECTORIES)
+				list(REMOVE_ITEM _directory_flags /usr/include) #/usr/include is not needed in this list and can cause problems with gcc
 				foreach(d ${_directory_flags})
                                         #-isystem to ignore warnings in foreign headers
 					list(APPEND _compile_FLAGS "-isystem${d}")
