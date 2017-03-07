@@ -112,6 +112,8 @@ project(WoW)
 		endif()
 	
 		list(APPEND CMAKE_CXX_FLAGS "-std=c++1y -pthread")
+		
+		find_package(ZLIB REQUIRED)
 	endif()
 
 	# Include additional cmake modules
