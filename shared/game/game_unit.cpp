@@ -952,15 +952,14 @@ namespace wowpp
 					}
 
 					//give rage when player get's damage
-					if (victim -> isGameCharacter() && victim -> getByteValue(unit_fields::Bytes0, 3) == game::power_type::Rage)
+					if (victim->isGameCharacter() && victim->getByteValue(unit_fields::Bytes0, 3) == game::power_type::Rage)
 					{
-						const UInt32 level = victim -> getLevel();
+						const UInt32 level = victim->getLevel();
 						//float addRage = (5 * totalDamage) / (2 * 274,7); //274,4 is the value for level 70 TODO: check the value for other levels
-						float addRage = (5 * totalDamage) / (2 * (3.9242 * level)); //??
+						float addRage = (5 * totalDamage) / (2 * (3.9242f * level)); //??
+						UInt32 currentRage = victim->getUInt32Value(unit_fields::Power2);
+						UInt32 maxRage = victim->getUInt32Value(unit_fields::MaxPower2);
 						
-						UInt32 currentRage = victim -> getUInt32Value(unit_fields::Power2);
-						UInt32 maxRage = victim -> getUInt32Value(unit_fields::MaxPower2);
-
 						if (currentRage + addRage > maxRage)
 						{
 							currentRage = maxRage;
@@ -969,7 +968,7 @@ namespace wowpp
 						{
 							currentRage += addRage;
 						}
-						victim -> setUInt32Value(unit_fields::Power2, currentRage);
+						victim->setUInt32Value(unit_fields::Power2, currentRage);
 					}
 
 
