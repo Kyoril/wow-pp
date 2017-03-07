@@ -951,7 +951,30 @@ namespace wowpp
 						setUInt32Value(unit_fields::Power2, currentRage);
 					}
 
-					// Update skills in case of a hit
+					//give rage when player get's damage
+					if (victim -> isGameCharacter() && victim -> getByteValue(unit_fields::Bytes0, 3) == game::power_type::Rage)
+					{
+						const UInt32 level = victim -> getLevel();
+						//float addRage = (5 * totalDamage) / (2 * 274,7); //274,4 is the value for level 70 TODO: check the value for other levels
+						float addRage = (5 * totalDamage) / (2 * (3.9242 * level)); //??
+						
+						UInt32 currentRage = victim -> getUInt32Value(unit_fields::Power2);
+						UInt32 maxRage = victim -> getUInt32Value(unit_fields::MaxPower2);
+
+						if (currentRage + addRage > maxRage)
+						{
+							currentRage = maxRage;
+						}
+						else
+						{
+							currentRage += addRage;
+						}
+						victim -> setUInt32Value(unit_fields::Power2, currentRage);
+					}
+
+
+
+                                        // Update skills in case of a hit
 					if (hitInfos[i] != game::hit_info::Miss && (victimStates[i] & game::victim_state::Normal | game::victim_state::Parry | game::victim_state::Blocks))
 					{
 						const bool victimIsCharacter = victim->isGameCharacter();
