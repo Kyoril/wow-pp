@@ -28,7 +28,9 @@
 
 
 namespace wowpp
-{	
+{
+	constexpr size_t TradeData::MaxTradeSlots;
+	
 	TradeData::TradeData(Player &player, Player &trader)
 		: m_initiator(player)
 		, m_other(trader)
