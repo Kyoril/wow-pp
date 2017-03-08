@@ -458,6 +458,11 @@ namespace wowpp
 		UInt32 getLevel() const {
 			return getUInt32Value(unit_fields::Level);
 		}
+		/// Gets Power Type
+		UInt8 getPowerType() const {
+			return getByteValue(unit_fields::Bytes0, 3);
+		}
+		
 		/// Gets this units faction template.
 		const proto::FactionTemplateEntry &getFactionTemplate() const;
 		///
