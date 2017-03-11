@@ -3192,12 +3192,27 @@ namespace wowpp
 
 		const auto &project = getProject();
 		const auto *dodgeEntry = project.meleeCritChance.getById((charClass - 1) * 100 + level - 1);
-		
-		const float baseDodge = project.dodgeChance.getById(charClass)->basedodge();
-		const float critToDodge = project.dodgeChance.getById(charClass)->crittododge();
+		if (!dodgeEntry)
+		{
+			ELOG("GameCharacter::getDodgeFromAgility(): dodgeEntry == nullptr");
+			return 0.0f;
+		}
 
-		float dodge = baseDodge + getUInt32Value(unit_fields::Stat0 + unit_mods::StatAgility) * dodgeEntry->chanceperlevel() * critToDodge * 100.0f;
+		const auto * classDodge = project.dodgeChance.getById(charClass);
+		if (!classDodge)
+		{
+			ELOG("GameCharacter::getDodgeFromAgility(): classDodge == nullptr");
+			return 0.0f;
+		}
 
+		const float baseDodge = classDodge->basedodge();
+		const float critToDodge = classDodge->crittododge();
+
+		const float dodge = baseDodge + 
+			getUInt32Value(unit_fields::Stat0 + unit_mods::StatAgility) * 
+			dodgeEntry->chanceperlevel() * 
+			critToDodge *
+			100.0f;
 		return dodge;
 	}
 
