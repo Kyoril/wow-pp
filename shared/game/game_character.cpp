@@ -3198,7 +3198,7 @@ namespace wowpp
 			return 0.0f;
 		}
 
-		const auto * classDodge = project.dodgeChance.getById(charClass);
+		const auto * classDodge = project.dodgeChance.getById(charClass - 1);
 		if (!classDodge)
 		{
 			ELOG("GameCharacter::getDodgeFromAgility(): classDodge == nullptr");
