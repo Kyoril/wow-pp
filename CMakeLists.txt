@@ -106,7 +106,7 @@ project(WoW)
 		endif()
 	
 		set (CMAKE_CXX_STANDARD 14)
-		list(APPEND CMAKE_CXX_FLAGS "-pthread")
+		list(APPEND CMAKE_CXX_FLAGS "-std=c++14 -pthread")
 		
 		find_package(ZLIB REQUIRED)
 	endif()
