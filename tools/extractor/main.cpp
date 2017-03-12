@@ -448,7 +448,7 @@ namespace
 			return true;
 
 		std::vector<unsigned char> areas(mesh.solidTris.size() / 3, areaFlags);
-		if (areaFlags == ADT)
+		if (!!(areaFlags & ADT))
 		{
 			// Special case for ADT: Mark unwalkable ADT triangles as a special area for filter usage
 			const float walkableThr = cosf(slope / 180.0f*RC_PI);
