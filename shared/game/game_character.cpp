@@ -3172,12 +3172,16 @@ namespace wowpp
 		}
 
 		const auto *critEntry = getProject().meleeCritChance.getById((charClass - 1) * 100 + level - 1);
-		const auto &critBase = critEntry->basechanceperlevel();
-		const auto &critRatio = critEntry->chanceperlevel();
+		if (!critEntry)
+		{
+			ELOG("GameCharacter::getMeleeCritFromAgility(): critEntry == nullptr");
+			return 0.0f;
+		}
 
-		float value = (critBase + getUInt32Value(unit_fields::Stat0 + unit_mods::StatAgility) * critRatio) * 100.0f;
+		const float critBase = critEntry->basechanceperlevel();
+		const float critRatio = critEntry->chanceperlevel();
 
-		return value;
+		return (critBase + getUInt32Value(unit_fields::Stat0 + unit_mods::StatAgility) * critRatio) * 100.0f;
 	}
 
 	float GameCharacter::getDodgeFromAgility()
@@ -3208,12 +3212,11 @@ namespace wowpp
 		const float baseDodge = classDodge->basedodge();
 		const float critToDodge = classDodge->crittododge();
 
-		const float dodge = baseDodge + 
+		return baseDodge + 
 			getUInt32Value(unit_fields::Stat0 + unit_mods::StatAgility) * 
 			dodgeEntry->chanceperlevel() * 
 			critToDodge *
 			100.0f;
-		return dodge;
 	}
 
 	float GameCharacter::getSpellCritFromIntellect()
@@ -3227,12 +3230,15 @@ namespace wowpp
 		}
 
 		const auto *critEntry = getProject().spellCritChance.getById((charClass - 1) * 100 + level - 1);
-		const auto &critBase = critEntry->basechanceperlevel();
-		const auto &critRatio = critEntry->chanceperlevel();
+		if (!critEntry)
+		{
+			ELOG("GameCharacter::getSpellCritFromIntellect(): critEntry == nullptr");
+			return 0.0f;
+		}
 
-		float value = (critBase + getUInt32Value(unit_fields::Stat0 + unit_mods::StatIntellect) * critRatio) * 100.0f;
-
-		return value;
+		const float critBase = critEntry->basechanceperlevel();
+		const float critRatio = critEntry->chanceperlevel();
+		return (critBase + getUInt32Value(unit_fields::Stat0 + unit_mods::StatIntellect) * critRatio) * 100.0f;
 	}
 
 	void GameCharacter::getHome(UInt32 &out_map, math::Vector3 &out_pos, float &out_rot) const
