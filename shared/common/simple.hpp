@@ -372,27 +372,27 @@ namespace simple
 
         value_type* object()
         {
-			ASSERT(initialized == true);
+			assert(initialized == true);
             return static_cast<value_type*>(storage());
         }
 
         value_type const* object() const
         {
-			ASSERT(initialized == true);
+			assert(initialized == true);
             return static_cast<value_type const*>(storage());
         }
 
         template <class U>
         void engage(U&& val)
         {
-			ASSERT(initialized == false);
+			assert(initialized == false);
             new (storage()) value_type{ std::forward<U>(val) };
             initialized = true;
         }
 
         void disengage()
         {
-			ASSERT(initialized == true);
+			assert(initialized == true);
             object()->~value_type();
             initialized = false;
         }
