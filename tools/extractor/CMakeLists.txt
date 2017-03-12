@@ -39,7 +39,7 @@ add_executable(extractor ${srcFiles} ${sffFiles} ${parserFiles})
 add_precompiled_header(extractor "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
 
 # Link required shared libs
-target_link_libraries(extractor common log auth_protocol wowpp_protocol sql_wrapper mysql_wrapper stormlib math recast detour debug_utils)
+target_link_libraries(extractor common log game auth_protocol wowpp_protocol sql_wrapper mysql_wrapper stormlib math recast detour debug_utils)
 
 # Link dependency libraries
 target_link_libraries(extractor ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY} cppformat)

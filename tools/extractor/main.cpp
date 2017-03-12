@@ -90,10 +90,11 @@ std::map<UInt32, LinearSet<UInt32>> tilesByMap;
 
 // Loaded WMO and M2 models used for navigation mesh calculations
 std::map<UInt32, std::shared_ptr<math::AABBTree>> wmoTrees;
-std::map<UInt32, std::shared_ptr<M2File>> doodadModels;
+std::map<UInt32, std::shared_ptr<math::AABBTree>> doodadTrees;
 
 std::mutex wmoMutex, doodadMutex;
 LinearSet<String> serializedWMOs, serializedDoodads;
+std::map<String, std::shared_ptr<math::AABBTree>> doodadIdsByFile, wmoIdsByFile;
 
 //////////////////////////////////////////////////////////////////////////
 // Helper functions
@@ -535,7 +536,7 @@ namespace
 	/// @param out_chunk Navigation chunk which will hold the serialized nav mesh data of this till and
 	///                  will be written to the generated map file.
 	/// @return false on error, true on success.
-	static bool createNavChunk(const String &mapName, UInt32 mapId, UInt32 tileX, UInt32 tileY, dtNavMesh &navMesh, const ADTFile &adt, MapNavigationChunk &out_chunk)
+	static bool createNavChunk(const String &mapName, UInt32 mapId, UInt32 tileX, UInt32 tileY, dtNavMesh &navMesh, const ADTFile &adt, const MapWMOChunk &wmos, const MapDoodadChunk &doodads, MapNavigationChunk &out_chunk)
 	{
 		// Min and max height values used for recast
 		float minZ = std::numeric_limits<float>::max(), maxZ = std::numeric_limits<float>::lowest();
@@ -549,21 +550,48 @@ namespace
 		// Process WMOs
 		MeshData wmoMesh;
 		{
-			// Add vertices
-			/*for (auto &vert : collision.vertices)
+			size_t indexOffset = 0;
+			for (const auto &wmo : wmos.entries)
 			{
-				wmoMesh.solidVerts.push_back(-vert.y);
-				wmoMesh.solidVerts.push_back(vert.z);
-				wmoMesh.solidVerts.push_back(-vert.x);
+#define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * (x) / -180.0)
+				math::Matrix3 rotMat = math::Matrix3::fromEulerAnglesXYZ(
+					WOWPP_DEG_TO_RAD(-wmo.rotation[2]), WOWPP_DEG_TO_RAD(-wmo.rotation[0]), WOWPP_DEG_TO_RAD(-wmo.rotation[1] - 180));
+
+				math::Vector3 position(wmo.position.z, wmo.position.x, wmo.position.y);
+				position.x = (32 * 533.3333f) - position.x;
+				position.y = (32 * 533.3333f) - position.y;
+#undef WOWPP_DEG_TO_RAD
+
+				auto it = wmoTrees.find(wmo.uniqueId);
+				if (it != wmoTrees.end())
+				{
+					for (const auto &vert : it->second->getVertices())
+					{
+						math::Vector3 transformed = (rotMat * vert) + position;
+						auto recastCoord = wowToRecastCoord(transformed);
+						wmoMesh.solidVerts.push_back(recastCoord.x);
+						wmoMesh.solidVerts.push_back(recastCoord.y);
+						wmoMesh.solidVerts.push_back(recastCoord.z);
+					}
+
+					size_t i = 0;
+					for (auto &tri : it->second->getIndices())
+					{
+						wmoMesh.solidTris.push_back(tri + indexOffset);
+						if (++i == 3)
+						{
+							wmoMesh.triangleFlags.push_back(AreaFlags::WMO);
+							i = 0;
+						}
+					}
+				}
+				else
+				{
+					WLOG("Could not find WMO by unique id " << wmo.uniqueId);
+				}
+
+				indexOffset = wmoMesh.solidVerts.size() / 3;
 			}
-			// Add triangles
-			for (auto &tri : collision.triangles)
-			{
-				wmoMesh.solidTris.push_back(tri.indexA);
-				wmoMesh.solidTris.push_back(tri.indexB);
-				wmoMesh.solidTris.push_back(tri.indexC);
-				wmoMesh.triangleFlags.push_back(AreaFlags::WMO);
-			}*/
 		}
 
 		// Process ADTs
@@ -594,83 +622,58 @@ namespace
 		// Process Doodads
 		MeshData doodadMesh;
 		{
-#if 0
-			// Now load all required M2 files
-			std::vector<std::unique_ptr<M2File>> m2s;
-			for (UInt32 i = 0; i < adt.getMDXCount(); ++i)
+			size_t indexOffset = 0;
+			for (const auto &doodad : doodads.entries)
 			{
-				// Retrieve MDX file name and replace *.mdx with *.m2
-				String filename = adt.getMDX(i);
-				if (filename.length() > 4)
-				{
-					filename = filename.substr(0, filename.length() - 3);
-					filename.append("m2");
-				}
-
-				// Try to load the respective m2 file
-				auto m2File = make_unique<M2File>(filename);
-				if (!m2File->load())
-				{
-					ELOG("Error loading MDX: " << filename);
-					return false;
-				}
-
-				// Push back to the list of MDX files
-				m2s.push_back(std::move(m2File));
-			}
-
-			// Load MDDF entries now that we loaded all mesh files
-			for (const auto &entry : adt.getMDDFChunk().entries)
-			{
-				// Entry placement
-				auto &m2 = m2s[entry.mmidEntry];
-				
 #define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * (x) / 180.0)
 				constexpr float mid = 32.f * MeshSettings::AdtSize;
 
-				const float rotX = WOWPP_DEG_TO_RAD(entry.rotation[2]);
-				const float rotY = WOWPP_DEG_TO_RAD(entry.rotation[0]);
-				const float rotZ = WOWPP_DEG_TO_RAD(entry.rotation[1] + 180.0f);
-
-				const float scale = entry.scale / 1024.0f;
+				const float rotX = WOWPP_DEG_TO_RAD(doodad.rotation[2]);
+				const float rotY = WOWPP_DEG_TO_RAD(doodad.rotation[0]);
+				const float rotZ = WOWPP_DEG_TO_RAD(doodad.rotation[1] + 180.0f);
+				const float scale = doodad.scale;
 
 				math::Matrix4 matZ; matZ.fromAngleAxis(math::Vector3(0.0f, 0.0f, 1.0f), rotZ);
 				math::Matrix4 matY; matY.fromAngleAxis(math::Vector3(0.0f, 1.0f, 0.0f), rotY);
 				math::Matrix4 matX; matX.fromAngleAxis(math::Vector3(1.0f, 0.0f, 0.0f), rotX);
-				math::Matrix4 matFinal = 
-					math::Matrix4::getTranslation(mid - entry.position[2], mid - entry.position[0], entry.position[1]) * 
-					math::Matrix4::getScale(scale, scale, scale) * 
-					matZ * 
-					matY * 
+				math::Matrix4 matFinal =
+					math::Matrix4::getTranslation(mid - doodad.position[2], mid - doodad.position[0], doodad.position[1]) *
+					math::Matrix4::getScale(scale, scale, scale) *
+					matZ *
+					matY *
 					matX;
 #undef WOWPP_DEG_TO_RAD
-				
-				// Transform vertices
-				const auto &verts = m2->getVertices();
-				const auto &inds = m2->getIndices();
 
-				UInt32 count = doodadMesh.solidVerts.size() / 3;
-				for (auto &vert : verts)
+				auto it = doodadTrees.find(doodad.uniqueId);
+				if (it != doodadTrees.end())
 				{
-					// Transform vertex and push it to the list
-					math::Vector3 transformed = (matFinal * vert);
-					doodadMesh.solidVerts.push_back(-transformed.y);
-					doodadMesh.solidVerts.push_back(transformed.z);
-					doodadMesh.solidVerts.push_back(-transformed.x);
+					for (const auto &vert : it->second->getVertices())
+					{
+						math::Vector3 transformed = (matFinal * vert);
+						auto recastCoord = wowToRecastCoord(transformed);
+						doodadMesh.solidVerts.push_back(recastCoord.x);
+						doodadMesh.solidVerts.push_back(recastCoord.y);
+						doodadMesh.solidVerts.push_back(recastCoord.z);
+					}
+
+					size_t i = 0;
+					for (auto &tri : it->second->getIndices())
+					{
+						doodadMesh.solidTris.push_back(tri + indexOffset);
+						if (++i == 3)
+						{
+							doodadMesh.triangleFlags.push_back(AreaFlags::Doodad);
+							i = 0;
+						}
+					}
+
+					indexOffset = doodadMesh.solidVerts.size() / 3;
 				}
-				for (UInt32 i = 0; i < inds.size(); i += 3)
+				else
 				{
-					Triangle tri;
-					tri.indexA = inds[i] + count;
-					tri.indexB = inds[i + 1] + count;
-					tri.indexC = inds[i + 2] + count;
-					doodadMesh.solidTris.push_back(tri.indexA);
-					doodadMesh.solidTris.push_back(tri.indexB);
-					doodadMesh.solidTris.push_back(tri.indexC);
-					doodadMesh.triangleFlags.push_back(AreaFlags::Doodad);
+					WLOG("Could not find doodad by unique id " << doodad.uniqueId);
 				}
 			}
-#endif
 		}
 
 		if (generateDebugFiles)
@@ -679,6 +682,7 @@ namespace
 			wowpp::serializeMeshData("_adt", mapId, tileX, tileY, adtMesh);
 			wowpp::serializeMeshData("_wmo", mapId, tileX, tileY, wmoMesh);
 			wowpp::serializeMeshData("_doodad", mapId, tileX, tileY, doodadMesh);
+			DLOG("Serialized!");
 		}
 
 		// Adjust min and max z values
@@ -878,6 +882,7 @@ namespace
 
 				auto wmoTree = std::make_shared<math::AABBTree>(vertices, indices);
 				wmoTrees[chunk.uniqueId] = wmoTree;
+				wmoIdsByFile[filename] = wmoTree;
 
 				// Serialize it
 				std::ofstream file(filePath.string().c_str(), std::ios::out | std::ios::binary);
@@ -890,6 +895,16 @@ namespace
 				io::StreamSink fileSink(file);
 				io::Writer fileWriter(fileSink);
 				fileWriter << *wmoTree;
+			}
+			else
+			{
+				auto it = wmoIdsByFile.find(filename);
+				if (it == wmoIdsByFile.end())
+				{
+					WLOG("Could not find wmo id for file " << filename);
+				}
+
+				wmoTrees[chunk.uniqueId] = it->second;
 			}
 
 			// Add a new WMO entry
@@ -939,7 +954,9 @@ namespace
 
 				// Build AABBTree and serialize it
 				ILOG("\tBuilding doodad " << doodadFile->getBaseName());
-				math::AABBTree doodadTree(doodadFile->getVertices(), doodadFile->getIndices());
+				auto doodadTree = std::make_shared<math::AABBTree>(doodadFile->getVertices(), doodadFile->getIndices());
+				doodadTrees[chunk.uniqueId] = doodadTree;
+				doodadIdsByFile[filename] = doodadTree;
 
 				// Serialize it
 				std::ofstream file(filePath.string().c_str(), std::ios::out | std::ios::binary);
@@ -951,7 +968,17 @@ namespace
 
 				io::StreamSink fileSink(file);
 				io::Writer fileWriter(fileSink);
-				fileWriter << doodadTree;
+				fileWriter << *doodadTree;
+			}
+			else
+			{
+				auto it = doodadIdsByFile.find(filename);
+				if (it == doodadIdsByFile.end())
+				{
+					WLOG("Could not find doodad id for file " << filename);
+				}
+
+				doodadTrees[chunk.uniqueId] = it->second;
 			}
 
 			// Add a new Doodad entry
@@ -1112,7 +1139,7 @@ namespace
 
 		// Prepare navigation chunk
 		MapNavigationChunk navChunk;
-		if (!createNavChunk(mapName, mapId, cellX, cellY, navMesh, adt, navChunk))
+		if (!createNavChunk(mapName, mapId, cellX, cellY, navMesh, adt, wmoChunk, doodadChunk, navChunk))
 		{
 			ELOG("Could not create nav chunk for cell " << cellX << "," << cellY);
 		}
