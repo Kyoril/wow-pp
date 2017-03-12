@@ -27,13 +27,7 @@ project(WoW)
 
 	option(WOWPP_WITH_RELEASE_ASSERTS "Enables assertions in release builds." OFF)
 	if (WOWPP_WITH_RELEASE_ASSERTS)
-		if(MSVC)
-			set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "")
-			set(CMAKE_CXX_FLAGS_RELEASE "")
-		else()
-			set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3")
-			set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-		endif()
+		add_definitions("-DWOWPP_ALWAYS_ASSERT")
 	endif()
 
 	# Enable solution folders in msvc

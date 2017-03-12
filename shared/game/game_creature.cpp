@@ -130,7 +130,7 @@ namespace wowpp
 
 		// TODO
 		const auto *faction = getProject().factionTemplates.getById(entry.alliancefaction());
-		assert(faction);
+		ASSERT(faction);
 		setFactionTemplate(*faction);
 
 		setLevel(creatureLevel);

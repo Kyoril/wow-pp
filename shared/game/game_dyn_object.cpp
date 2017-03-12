@@ -111,7 +111,7 @@ namespace wowpp
 	void DynObject::startUnitWatcher()
 	{
 		auto *worldInstance = m_caster.getWorldInstance();
-		assert(worldInstance);
+		ASSERT(worldInstance);
 
 		Circle circle(m_position.x, m_position.y, getFloatValue(dyn_object_fields::Radius));
 		m_unitWatcher = worldInstance->getUnitFinder().watchUnits(circle, [this](GameUnit & target, bool isInside) -> bool

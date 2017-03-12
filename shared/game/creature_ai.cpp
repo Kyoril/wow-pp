@@ -92,7 +92,7 @@ namespace wowpp
 		// Every state change causes the creature to leave evade mode
 		m_evading = false;
 
-		assert(state.get());
+		ASSERT(state.get());
 		m_state = std::move(state);
 		m_state->onEnter();
 	}
@@ -160,7 +160,7 @@ namespace wowpp
 		}
 
 		auto *worldInstance = controlled.getWorldInstance();
-		assert(worldInstance);
+		ASSERT(worldInstance);
 
 		// Check if we are hostile against this unit
 		const auto &unitFaction = threat.getFactionTemplate();

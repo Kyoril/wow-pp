@@ -20,6 +20,7 @@
 //
 
 #include "pch.h"
+#include "macros.h"
 #include "countdown.h"
 #include "timer_queue.h"
 
@@ -58,7 +59,7 @@ namespace wowpp
 
 		void kill()
 		{
-			assert(m_countdown);
+			ASSERT(m_countdown);
 			m_countdown = nullptr;
 		}
 

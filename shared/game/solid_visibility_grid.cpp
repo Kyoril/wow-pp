@@ -79,8 +79,8 @@ namespace wowpp
 	}
 	VisibilityTile &SolidVisibilityGrid::requireTile(const TileIndex2D &position)
 	{
-		assert(m_tiles.width());
-		assert(m_tiles.height());
+		ASSERT(m_tiles.width());
+		ASSERT(m_tiles.height());
 
 		auto &tile = m_tiles(position[0], position[1]);
 		if (!tile)

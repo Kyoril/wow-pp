@@ -72,7 +72,7 @@ namespace wowpp
 
 	void WorldObjectSpawner::spawnOne()
 	{
-		assert(m_currentlySpawned < m_maxCount);
+		ASSERT(m_currentlySpawned < m_maxCount);
 
 		// TODO: Generate random point and if needed, random rotation
 		const math::Vector3 position(m_center);
@@ -122,7 +122,7 @@ namespace wowpp
 			return (element.get() == &removed);
 		});
 
-		assert(i != m_objects.end());
+		ASSERT(i != m_objects.end());
 		eraseByMove(m_objects, i);
 
 		setRespawnTimer();

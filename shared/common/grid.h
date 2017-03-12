@@ -22,6 +22,7 @@
 #pragma once
 
 #include "typedefs.h"
+#include "macros.h"
 #include "vector.h"
 
 namespace wowpp
@@ -193,19 +194,19 @@ namespace wowpp
 
 		value_type &get(size_type index)
 		{
-			assert(index < m_contents.size());
+			ASSERT(index < m_contents.size());
 			return m_contents[index];
 		}
 
 		const value_type &get(size_type index) const
 		{
-			assert(index < m_contents.size());
+			ASSERT(index < m_contents.size());
 			return m_contents[index];
 		}
 
 		size_type getIndex(size_type x, size_type y) const
 		{
-			assert(x < m_width);
+			ASSERT(x < m_width);
 			return (x + y * width());
 		}
 	};

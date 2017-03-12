@@ -247,7 +247,7 @@ namespace wowpp
 
 		void EditorApplication::showObjectEditor()
 		{
-			assert(m_objectEditor);
+			ASSERT(m_objectEditor);
 
 			m_objectEditor->show();
 			m_objectEditor->activateWindow();
@@ -263,7 +263,7 @@ namespace wowpp
 
 		void EditorApplication::showVariableEditor()
 		{
-			assert(m_variableEditor);
+			ASSERT(m_variableEditor);
 
 			m_variableEditor->show();
 			m_variableEditor->activateWindow();
@@ -273,7 +273,7 @@ namespace wowpp
 
 		void EditorApplication::showTriggerEditor()
 		{
-			assert(m_triggerEditor);
+			ASSERT(m_triggerEditor);
 
 			m_triggerEditor->show();
 			m_triggerEditor->activateWindow();

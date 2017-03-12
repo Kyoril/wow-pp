@@ -31,7 +31,7 @@ source_group(src FILES ${srcFiles})
 add_executable(update_compiler ${srcFiles} ${sffFiles})
 
 # Link required shared libs
-target_link_libraries(update_compiler update_compilation)
+target_link_libraries(update_compiler common log update_compilation)
 
 # Link dependency libraries
 target_link_libraries(update_compiler ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY} ${PROTOBUF_LIBRARIES} cppformat)

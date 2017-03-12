@@ -322,7 +322,7 @@ namespace wowpp
 		}
 
 		// We really need an instance now
-		assert(instance);
+		ASSERT(instance);
 		
 		// Fire signal which should create a player instance for us
 		character->setWorldInstance(instance);	// This is required for spell auras
@@ -347,7 +347,7 @@ namespace wowpp
 			));
 
 		// Add character to the world
-		assert(instance);
+		ASSERT(instance);
 		instance->addGameObject(*character);
 
 		// Spawn objects

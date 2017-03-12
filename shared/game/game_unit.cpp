@@ -153,10 +153,10 @@ namespace wowpp
 	void GameUnit::raceUpdated()
 	{
 		m_raceEntry = getProject().races.getById(getRace());// m_getRace(getRace());
-		assert(m_raceEntry);
+		ASSERT(m_raceEntry);
 
 		const auto *factionTemplate = getProject().factionTemplates.getById(m_raceEntry->faction());
-		assert(factionTemplate);
+		ASSERT(factionTemplate);
 
 		setFactionTemplate(*factionTemplate);
 	}
@@ -164,7 +164,7 @@ namespace wowpp
 	void GameUnit::classUpdated()
 	{
 		m_classEntry = m_project.classes.getById(getClass());
-		assert(m_classEntry);
+		ASSERT(m_classEntry);
 
 		// Update power type
 		setByteValue(unit_fields::Bytes0, 3, m_classEntry->powertype());
@@ -2610,7 +2610,7 @@ namespace wowpp
 	void GameUnit::addDynamicObject(std::shared_ptr<DynObject> object)
 	{
 		// We need a valid object!
-		assert(object);
+		ASSERT(object);
 
 		// Save this pointer instance in the map (increase ref counter and thus prevent
 		// deletion of this object as long as this unit exists)
@@ -2671,7 +2671,7 @@ namespace wowpp
 
 	const proto::FactionTemplateEntry &GameUnit::getFactionTemplate() const
 	{
-		assert(m_factionTemplate);
+		ASSERT(m_factionTemplate);
 		return *m_factionTemplate;
 	}
 
@@ -2788,7 +2788,7 @@ namespace wowpp
 	void GameUnit::addAttackingUnit(GameUnit &attacker)
 	{
 		// Add attacking unit to the list of attackers
-		assert(!m_attackingUnits.contains(&attacker));
+		ASSERT(!m_attackingUnits.contains(&attacker));
 		m_attackingUnits.add(&attacker);
 
 		// If wasn't in combat, remove auras which should be removed when entering combat
@@ -2809,7 +2809,7 @@ namespace wowpp
 	void GameUnit::removeAttackingUnit(GameUnit &removed)
 	{
 		// Remove attacking unit
-		assert(m_attackingUnits.contains(&removed));
+		ASSERT(m_attackingUnits.contains(&removed));
 		m_attackingUnits.remove(&removed);
 
 		// Remove combat flag for player characters if no attacking unit is left
@@ -3076,7 +3076,7 @@ namespace wowpp
 			slow = slow < slowNonStack ? slow : slowNonStack;
 
 			// Slow has to be <= 0
-			assert(slow <= 0);
+			ASSERT(slow <= 0);
 			if (slow)
 			{
 				speed += (speed * static_cast<float>(slow) / 100.0f);

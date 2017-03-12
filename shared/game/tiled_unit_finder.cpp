@@ -46,7 +46,7 @@ namespace wowpp
 
 	void TiledUnitFinder::addUnit(GameUnit &findable)
 	{
-		assert(m_units.count(&findable) == 0);
+		ASSERT(m_units.count(&findable) == 0);
 		const math::Vector3 &unitPos = findable.getLocation();
 		const auto position = getTilePosition(game::planar(unitPos));
 		auto &tile = m_grid(position[0], position[1]);
@@ -70,7 +70,7 @@ namespace wowpp
 	void TiledUnitFinder::removeUnit(GameUnit &findable)
 	{
 		const auto i = m_units.find(&findable);
-		assert(i != m_units.end());
+		ASSERT(i != m_units.end());
 		UnitRecord &record = *i->second;
 		record.lastTile->removeUnit(findable);
 		m_units.erase(i);
@@ -116,7 +116,7 @@ namespace wowpp
 
 				for (GameUnit *const element : iterationCopyTile.getElements())
 				{
-					assert(element);
+					ASSERT(element);
 					const math::Vector3 &elementPos = element->getLocation();
 					if (shape.isPointInside(game::planar(elementPos)))
 					{
@@ -181,7 +181,7 @@ namespace wowpp
 	TiledUnitFinder::UnitRecord &TiledUnitFinder::requireRecord(GameUnit &findable)
 	{
 		const auto i = m_units.find(&findable);
-		assert(i != m_units.end());
+		ASSERT(i != m_units.end());
 		UnitRecord &record = *i->second;
 		return record;
 	}

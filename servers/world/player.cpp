@@ -731,7 +731,7 @@ namespace wowpp
 		{
 			for (auto *object : tile.getGameObjects().getElements())
 			{
-				assert(object);
+				ASSERT(object);
 				if (!object->canSpawnForCharacter(*m_character))
 				{
 					continue;
@@ -761,7 +761,7 @@ namespace wowpp
 		{
 			for (auto *obj : tile.getGameObjects().getElements())
 			{
-				assert(obj);
+				ASSERT(obj);
 
 				if (!obj->canSpawnForCharacter(*m_character))
 				{
@@ -1277,7 +1277,7 @@ namespace wowpp
 					questStatus == game::quest_status::Complete)
 				{
 					const auto *quest = m_project.quests.getById(questid);
-					assert(quest);
+					ASSERT(quest);
 
 					game::QuestMenuItem item;
 					item.quest = quest;
@@ -1294,7 +1294,7 @@ namespace wowpp
 				if (questStatus == game::quest_status::Available)
 				{
 					const auto *quest = m_project.quests.getById(questid);
-					assert(quest);
+					ASSERT(quest);
 
 					game::QuestMenuItem item;
 					item.quest = quest;

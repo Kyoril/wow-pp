@@ -45,7 +45,7 @@ namespace wowpp
 		{
 			return (&realm == p.get());
 		});
-		assert(p != m_realms.end());
+		ASSERT(p != m_realms.end());
 		m_realms.erase(p);
 	}
 
@@ -61,7 +61,7 @@ namespace wowpp
 
 	void RealmManager::addRealm(std::unique_ptr<Realm> added)
 	{
-		assert(added);
+		ASSERT(added);
 		m_realms.push_back(std::move(added));
 	}
 

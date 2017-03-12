@@ -48,7 +48,7 @@ namespace wowpp
 		, m_authed(false)
 		, m_realmName(std::move(realmName))
 	{
-		assert(m_connection);
+		ASSERT(m_connection);
 
 		m_connection->setListener(*this);
 	}

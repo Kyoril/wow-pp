@@ -21,6 +21,51 @@
 
 #pragma once
 
+#define WOWPP_HELPER_STRINGIFY(x) #x
+#define WOWPP_STRINGIFY(x) WOWPP_HELPER_STRINGIFY(x)
+
+#ifdef _MSC_VER
+#	define WOWPP_DEBUG_BREAK() __debugbreak()
+#else
+//assuming GCC
+#	define WOWPP_DEBUG_BREAK() __builtin_trap()
+#endif
+
+#if defined(DEBUG) || !defined(NDEBUG) || defined(_DEBUG)
+#	ifndef WOWPP_DEBUG
+#		define WOWPP_DEBUG
+#	endif
+#endif
+
+#ifdef _MSC_VER
+#	define WOWPP_ASSUME(booleanExpr) __assume((booleanExpr))
+#else
+#	define WOWPP_ASSUME(booleanExpr) do { if (!(booleanExpr)) { __builtin_unreachable(); } } while(false)
+#endif
+
+namespace wowpp
+{
+	//from crash_handler.h for ASSERT
+	void printCallStack(std::ostream &out);
+}
+
+#if defined(WOWPP_DEBUG) || defined(WOWPP_ALWAYS_ASSERT)
+#	include <iostream>
+#	include "log/default_log_levels.h"
+#	define WOWPP_HELPER_MAKE_ASSERT_FAIL_MESSAGE(expression) "ASSERT(" #expression ") failed in " __FILE__ ":" WOWPP_STRINGIFY(__LINE__)
+#	define ASSERT(booleanExpr) \
+	{ \
+		bool const isWrong = !(booleanExpr); \
+		if (isWrong) { \
+			ELOG(WOWPP_HELPER_MAKE_ASSERT_FAIL_MESSAGE(booleanExpr)); \
+			::wowpp::printCallStack(::std::cerr); \
+			WOWPP_DEBUG_BREAK(); \
+		} \
+	}
+#else
+#	define ASSERT(booleanExpr) WOWPP_ASSUME(booleanExpr)
+#endif
+
 // Use as follows: WOWPP_DEPRECATED void MyFunc(...);
 // Will generate a compiler warning when this method is being used.
 #ifndef WOWPP_DEPRECATED
@@ -33,3 +78,5 @@
 #		define WOWPP_DEPRECATED
 #	endif
 #endif
+
+

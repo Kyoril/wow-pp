@@ -21,8 +21,8 @@
 
 #include "pch.h"
 #include "session.h"
+#include "common/macros.h"
 #include "common/clock.h"
-#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -40,13 +40,13 @@ namespace wowpp
 	{
 		const GameTime current = getCurrentTime();
 
-		assert(current >= getStartTime());
+		ASSERT(current >= getStartTime());
 		return (current - getStartTime());
 	}
 
 	bool Session::tryEnterRealm(UInt32 realm)
 	{
-		assert(realm != constants::InvalidId);
+		ASSERT(realm != constants::InvalidId);
 
 		realmEntered(realm);
 		return true;
@@ -54,7 +54,7 @@ namespace wowpp
 
 	void Session::realmLeft()
 	{
-		assert(getRealm() != constants::InvalidId);
+		ASSERT(getRealm() != constants::InvalidId);
 
 		m_realm = constants::InvalidId;
 

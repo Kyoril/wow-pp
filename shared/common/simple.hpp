@@ -372,27 +372,27 @@ namespace simple
 
         value_type* object()
         {
-            assert(initialized == true);
+			ASSERT(initialized == true);
             return static_cast<value_type*>(storage());
         }
 
         value_type const* object() const
         {
-            assert(initialized == true);
+			ASSERT(initialized == true);
             return static_cast<value_type const*>(storage());
         }
 
         template <class U>
         void engage(U&& val)
         {
-            assert(initialized == false);
+			ASSERT(initialized == false);
             new (storage()) value_type{ std::forward<U>(val) };
             initialized = true;
         }
 
         void disengage()
         {
-            assert(initialized == true);
+			ASSERT(initialized == true);
             object()->~value_type();
             initialized = false;
         }
@@ -487,19 +487,19 @@ namespace simple
 
         pointer_type operator -> () const
         {
-            assert(ptr != nullptr);
+			assert(ptr != nullptr);
             return ptr;
         }
 
         reference_type operator * () const
         {
-            assert(ptr != nullptr);
+			assert(ptr != nullptr);
             return *ptr;
         }
 
         pointer_type* operator & ()
         {
-            assert(ptr == nullptr);
+			assert(ptr == nullptr);
             return &ptr;
         }
 
@@ -1515,7 +1515,7 @@ namespace simple
 
         connection connect(slot_type slot, bool first = false)
         {
-            assert(slot != nullptr);
+			assert(slot != nullptr);
 
             detail::connection_base* base = make_link(
                 first ? head->next : tail, std::move(slot));

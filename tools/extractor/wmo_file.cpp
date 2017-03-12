@@ -21,8 +21,8 @@
 
 #include "pch.h"
 #include "wmo_file.h"
+#include "common/macros.h"
 #include "common/make_unique.h"
-#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -57,7 +57,7 @@ namespace wowpp
 			m_reader.readPOD(m_rootHeader);
 
 			auto extensionPos = getFileName().find_last_of('.');
-			assert(extensionPos != std::string::npos);
+			ASSERT(extensionPos != std::string::npos);
 
 			const String baseFileName = getFileName().substr(0, extensionPos);
 			const String extension = getFileName().substr(extensionPos);

@@ -1016,7 +1016,7 @@ namespace wowpp
 	void MySQLDatabase::printDatabaseError()
 	{
 		ELOG("Realm database error: " << m_connection.getErrorMessage());
-		assert(false);
+		ASSERT(false);
 	}
 
 	bool MySQLDatabase::getCharacterById(DatabaseId id, game::CharEntry &out_character)

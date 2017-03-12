@@ -109,53 +109,53 @@ namespace wowpp
 
 	wowpp::UInt8 GameObject::getByteValue(UInt16 index, UInt8 offset) const
 	{
-		assert(offset < 4);
-		assert(index < m_values.size());
+		ASSERT(offset < 4);
+		ASSERT(index < m_values.size());
 		return *((reinterpret_cast<const UInt8 *>(&m_values[index])) + offset);
 	}
 
 	wowpp::UInt16 GameObject::getUInt16Value(UInt16 index, UInt8 offset) const
 	{
-		assert(offset < 2);
-		assert(index < m_values.size());
+		ASSERT(offset < 2);
+		ASSERT(index < m_values.size());
 		return *((reinterpret_cast<const UInt16 *>(&m_values[index])) + offset);
 	}
 
 	wowpp::Int16 GameObject::getInt16Value(UInt16 index, UInt8 offset) const
 	{
-		assert(offset < 2);
-		assert(index < m_values.size());
+		ASSERT(offset < 2);
+		ASSERT(index < m_values.size());
 		return *((reinterpret_cast<const Int16 *>(&m_values[index])) + offset);
 	}
 
 	wowpp::Int32 GameObject::getInt32Value(UInt16 index) const
 	{
-		assert(index < m_values.size());
+		ASSERT(index < m_values.size());
 		return *(reinterpret_cast<const Int32 *>(&m_values[index]));
 	}
 
 	wowpp::UInt32 GameObject::getUInt32Value(UInt16 index) const
 	{
-		assert(index < m_values.size());
+		ASSERT(index < m_values.size());
 		return m_values[index];
 	}
 
 	wowpp::UInt64 GameObject::getUInt64Value(UInt16 index) const
 	{
-		assert(index + 1 < m_values.size());
+		ASSERT(index + 1 < m_values.size());
 		return *(reinterpret_cast<const UInt64 *>(&m_values[index]));
 	}
 
 	float GameObject::getFloatValue(UInt16 index) const
 	{
-		assert(index < m_values.size());
+		ASSERT(index < m_values.size());
 		return *(reinterpret_cast<const float *>(&m_values[index]));
 	}
 
 	void GameObject::setByteValue(UInt16 index, UInt8 offset, UInt8 value)
 	{
-		assert(index < m_values.size());
-		assert(offset < 4);
+		ASSERT(index < m_values.size());
+		ASSERT(offset < 4);
 
 		if (UInt8(m_values[index] >> (offset * 8)) != value)
 		{
@@ -174,8 +174,8 @@ namespace wowpp
 
 	void GameObject::setUInt16Value(UInt16 index, UInt8 offset, UInt16 value)
 	{
-		assert(index < m_values.size());
-		assert(offset < 2);
+		ASSERT(index < m_values.size());
+		ASSERT(offset < 2);
 
 		if (UInt16(m_values[index] >> (offset * 16)) != value)
 		{
@@ -194,8 +194,8 @@ namespace wowpp
 
 	void GameObject::setInt16Value(UInt16 index, UInt8 offset, Int16 value)
 	{
-		assert(index < m_values.size());
-		assert(offset < 2);
+		ASSERT(index < m_values.size());
+		ASSERT(offset < 2);
 
 		if (Int16(m_values[index] >> (offset * 16)) != value)
 		{
@@ -214,7 +214,7 @@ namespace wowpp
 
 	void GameObject::setUInt32Value(UInt16 index, UInt32 value)
 	{
-		assert(index < m_values.size());
+		ASSERT(index < m_values.size());
 
 		if (m_values[index] != value)
 		{
@@ -233,7 +233,7 @@ namespace wowpp
 
 	void GameObject::forceFieldUpdate(UInt16 index)
 	{
-		assert(index < m_values.size());
+		ASSERT(index < m_values.size());
 		UInt16 bitIndex = index >> 3;
 
 		// Mark bit as changed
@@ -245,7 +245,7 @@ namespace wowpp
 
 	void GameObject::addFlag(UInt16 index, UInt32 flag)
 	{
-		assert(index < m_values.size());
+		ASSERT(index < m_values.size());
 
 		UInt32 newValue = m_values[index] | flag;
 		if (newValue != m_values[index])
@@ -264,7 +264,7 @@ namespace wowpp
 
 	void GameObject::removeFlag(UInt16 index, UInt32 flag)
 	{
-		assert(index < m_values.size());
+		ASSERT(index < m_values.size());
 
 		UInt32 newValue = m_values[index] & ~flag;
 		if (newValue != m_values[index])
@@ -282,7 +282,7 @@ namespace wowpp
 
 	bool GameObject::hasFlag(UInt16 index, UInt32 flag)
 	{
-		assert(index < m_values.size()); //TODO
+		ASSERT(index < m_values.size()); //TODO
 		return (m_values[index] & flag) != 0;
 	}
 
@@ -300,7 +300,7 @@ namespace wowpp
 
 	void GameObject::setInt32Value(UInt16 index, Int32 value)
 	{
-		assert(index < m_values.size());
+		ASSERT(index < m_values.size());
 
 		Int32 *tmp = reinterpret_cast<Int32 *>(&m_values[index]);
 		if (*tmp != value)
@@ -320,7 +320,7 @@ namespace wowpp
 
 	void GameObject::setUInt64Value(UInt16 index, UInt64 value)
 	{
-		assert(index + 1 < m_values.size());
+		ASSERT(index + 1 < m_values.size());
 
 		UInt64 *tmp = reinterpret_cast<UInt64 *>(&m_values[index]);
 		if (*tmp != value)
@@ -332,7 +332,7 @@ namespace wowpp
 
 	void GameObject::setFloatValue(UInt16 index, float value)
 	{
-		assert(index < m_values.size());
+		ASSERT(index < m_values.size());
 
 		float *tmp = reinterpret_cast<float *>(&m_values[index]);
 		if (*tmp != value)
@@ -937,7 +937,7 @@ namespace wowpp
 					unitObject = reinterpret_cast<GameUnit *>(&object);
 				}
 
-				assert(unitObject);
+				ASSERT(unitObject);
 
 				// TODO: Speed values
 				writer

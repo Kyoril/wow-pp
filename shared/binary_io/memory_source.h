@@ -23,6 +23,7 @@
 #pragma once
 
 #include "source.h"
+#include "common/macros.h"
 
 namespace io
 {
@@ -42,7 +43,7 @@ namespace io
 			, m_end(end)
 			, m_pos(begin)
 		{
-			assert(begin <= end);
+			ASSERT(begin <= end);
 		}
 
 		explicit MemorySource(const std::string &buffer)

@@ -49,7 +49,7 @@ namespace wowpp
 			, m_data(data)
 			, m_camera(camera)
 		{
-			assert(m_data.page);
+			ASSERT(m_data.page);
 
 			m_sceneNode = worldNode.createChildSceneNode();
 			m_sceneNode->setPosition(
@@ -122,7 +122,7 @@ namespace wowpp
 					}
 				}
 
-				assert(tileIndexToLoad >= 0);
+				ASSERT(tileIndexToLoad >= 0);
 				tileDistanceToCamera[tileIndexToLoad] = -1.0f;
 
 				// Load the next tile

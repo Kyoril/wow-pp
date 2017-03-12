@@ -3172,11 +3172,7 @@ namespace wowpp
 		}
 
 		const auto *critEntry = getProject().meleeCritChance.getById((charClass - 1) * 100 + level - 1);
-		if (!critEntry)
-		{
-			ELOG("GameCharacter::getMeleeCritFromAgility(): critEntry == nullptr");
-			return 0.0f;
-		}
+		ASSERT(critEntry);
 
 		const float critBase = critEntry->basechanceperlevel();
 		const float critRatio = critEntry->chanceperlevel();
@@ -3196,18 +3192,10 @@ namespace wowpp
 
 		const auto &project = getProject();
 		const auto *dodgeEntry = project.meleeCritChance.getById((charClass - 1) * 100 + level - 1);
-		if (!dodgeEntry)
-		{
-			ELOG("GameCharacter::getDodgeFromAgility(): dodgeEntry == nullptr");
-			return 0.0f;
-		}
+		ASSERT(dodgeEntry);
 
 		const auto * classDodge = project.dodgeChance.getById(charClass - 1);
-		if (!classDodge)
-		{
-			ELOG("GameCharacter::getDodgeFromAgility(): classDodge == nullptr");
-			return 0.0f;
-		}
+		ASSERT(classDodge);
 
 		const float baseDodge = classDodge->basedodge();
 		const float critToDodge = classDodge->crittododge();
@@ -3230,11 +3218,7 @@ namespace wowpp
 		}
 
 		const auto *critEntry = getProject().spellCritChance.getById((charClass - 1) * 100 + level - 1);
-		if (!critEntry)
-		{
-			ELOG("GameCharacter::getSpellCritFromIntellect(): critEntry == nullptr");
-			return 0.0f;
-		}
+		ASSERT(critEntry);
 
 		const float critBase = critEntry->basechanceperlevel();
 		const float critRatio = critEntry->chanceperlevel();

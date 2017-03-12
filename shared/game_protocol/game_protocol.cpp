@@ -776,7 +776,7 @@ namespace wowpp
 				case chat_msg::RaidBossWhisper:
 				case chat_msg::RaidBossEmote:
 					{
-						assert(speaker);
+						ASSERT(speaker);
 						out_packet
 							<< io::write<NetUInt64>(speaker->getGuid())
 							<< io::write<NetUInt32>(0x00)
@@ -2362,7 +2362,7 @@ namespace wowpp
 				        << io::write<NetUInt8>(menu.size());
 				for (const auto &menuItem : menu)
 				{
-					assert(menuItem.quest);
+					ASSERT(menuItem.quest);
 					out_packet
 					        << io::write<NetUInt32>(menuItem.quest->id())
 					        << io::write<NetUInt32>(menuItem.menuIcon)

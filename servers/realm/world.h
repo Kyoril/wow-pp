@@ -77,7 +77,7 @@ namespace wowpp
 						String realmName);
 
 		/// Gets the player connection class used to send packets to the client.
-		Client &getConnection() { assert(m_connection); return *m_connection; }
+		Client &getConnection() { ASSERT(m_connection); return *m_connection; }
 		/// Gets the player manager which manages all connected worlds.
 		WorldManager &getManager() const { return m_manager; }
 		/// Determines whether a specific map id is supported by this world node.

@@ -43,7 +43,7 @@ namespace wowpp
 		, m_authed(false)
 		, m_timeout(timerQueue)
 	{
-		assert(m_connection);
+		ASSERT(m_connection);
 
 		m_connection->setListener(*this);
 
@@ -222,7 +222,7 @@ namespace wowpp
 		{
 			// Session is always valid here since getPlayerByAccount already checks it
 			const auto session = player->getSession();
-			assert(session != nullptr);
+			ASSERT(session != nullptr);
 			
 			// Check if the player is not already logged in to a realm
 			if (session->hasEnteredRealm())

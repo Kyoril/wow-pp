@@ -143,7 +143,7 @@ namespace wowpp
 		void commitTransfer();
 
 		/// Gets the player connection class used to send packets to the client.
-		Client &getConnection() { assert(m_connection); return *m_connection; }
+		Client &getConnection() { ASSERT(m_connection); return *m_connection; }
 		/// Gets the player manager which manages all connected players.
 		PlayerManager &getManager() const { return m_manager; }
 		/// Gets the user name sent by the client.

@@ -199,7 +199,7 @@ namespace wowpp
 	void AuraContainer::removeAura(AuraList::iterator &it)
 	{
 		// Make sure that the aura is not destroy when releasing
-		assert(it != m_auras.end());
+		ASSERT(it != m_auras.end());
 		auto strong = *it;
 
 		// Remove the aura from the list of auras

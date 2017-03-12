@@ -53,7 +53,7 @@ namespace wowpp
 		m_onThreatened = controlled.threatened.connect(std::bind(&CreatureAI::onThreatened, &ai, std::placeholders::_1, std::placeholders::_2));
 
 		auto *worldInstance = controlled.getWorldInstance();
-		assert(worldInstance);
+		ASSERT(worldInstance);
 
 		// Check if it is a pet
 		UInt64 ownerGUID = controlled.getUInt64Value(unit_fields::SummonedBy);

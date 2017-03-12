@@ -87,7 +87,7 @@ namespace wowpp
 			for (auto &spawn : *m_map.mutable_objectspawns())
 			{
 				const auto *object = m_project.objects.getById(spawn.objectentry());
-				assert(object);
+				ASSERT(object);
 
 				UInt32 row = m_objDisplayDbc->getRowByIndex(object->displayid());
 				if (row == UInt32(-1))
@@ -434,7 +434,7 @@ namespace wowpp
 		void WorldEditor::addUnitSpawn(proto::UnitSpawnEntry & spawn, bool select)
 		{
 			const auto *unit = m_project.units.getById(spawn.unitentry());
-			assert(unit);
+			ASSERT(unit);
 
 			UInt32 row = m_displayDbc->getRowByIndex(unit->malemodel());
 			if (row == UInt32(-1))

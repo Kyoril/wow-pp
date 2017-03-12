@@ -104,7 +104,7 @@ namespace wowpp
 	    boost::asio::io_service &ioService)
 	{
 		setListener(listener);
-		assert(getListener());
+		ASSERT(getListener());
 
 		m_port = port;
 
@@ -116,7 +116,7 @@ namespace wowpp
 		    "");
 
 		const auto this_ = std::static_pointer_cast<Connector<P, MySocket> >(this->shared_from_this());
-		assert(this_);
+		ASSERT(this_);
 
 		m_resolver->async_resolve(query,
 		                          bind_weak_ptr_2(this_,
@@ -142,7 +142,7 @@ namespace wowpp
 	{
 		if (error)
 		{
-			assert(getListener());
+			ASSERT(getListener());
 			getListener()->connectionEstablished(false);
 			this->resetListener();
 			return;
@@ -162,7 +162,7 @@ namespace wowpp
 		);
 
 		const auto this_ = std::static_pointer_cast<Connector<P, MySocket> >(this->shared_from_this());
-		assert(this_);
+		ASSERT(this_);
 
 		this->getSocket().lowest_layer().async_connect(endpoint,
 		        bind_weak_ptr_1(this_,

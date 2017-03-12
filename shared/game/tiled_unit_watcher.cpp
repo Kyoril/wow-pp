@@ -47,8 +47,8 @@ namespace wowpp
 	void TiledUnitFinder::TiledUnitWatcher::start()
 	{
 		const auto shapeArea = getTileIndexArea(getShape());
-		assert(shapeArea.topLeft[1] <= shapeArea.bottomRight[1]);
-		assert(shapeArea.topLeft[0] <= shapeArea.bottomRight[0]);
+		ASSERT(shapeArea.topLeft[1] <= shapeArea.bottomRight[1]);
+		ASSERT(shapeArea.topLeft[0] <= shapeArea.bottomRight[0]);
 
 		for (TileIndex y = shapeArea.topLeft[1]; y <= shapeArea.bottomRight[1]; ++y)
 		{
@@ -76,7 +76,7 @@ namespace wowpp
 
 	bool TiledUnitFinder::TiledUnitWatcher::watchTile(Tile &tile)
 	{
-		assert(m_connections.count(&tile) == 0);
+		ASSERT(m_connections.count(&tile) == 0);
 
 		auto connection = tile.moved->connect(
 		                      std::bind(&TiledUnitWatcher::onUnitMoved,
@@ -102,11 +102,11 @@ namespace wowpp
 
 	bool TiledUnitFinder::TiledUnitWatcher::unwatchTile(Tile &tile)
 	{
-		assert(m_connections.count(&tile) == 1);
+		ASSERT(m_connections.count(&tile) == 1);
 
 		{
 			const auto i = m_connections.find(&tile);
-			assert(i != m_connections.end());
+			ASSERT(i != m_connections.end());
 
 			i->second.disconnect();
 			m_connections.erase(i);

@@ -46,7 +46,7 @@ namespace wowpp
 		, m_reconnectChallenge(false)
 		, m_timeout(timerQueue)
 	{
-		assert(m_connection);
+		ASSERT(m_connection);
 
 		m_connection->setListener(*this);
 		m_onTimeout = m_timeout.ended.connect([this]() 
@@ -218,7 +218,7 @@ namespace wowpp
 				BigNumber gmod = constants::srp::g.modExp(m_b, constants::srp::N);
 				m_B = ((m_v * 3) + gmod) % constants::srp::N;
 
-				assert(gmod.getNumBytes() <= 32);
+				ASSERT(gmod.getNumBytes() <= 32);
 
 				m_unk3.setRand(16 * 8);
 				m_loginChallenge = true;
@@ -575,7 +575,7 @@ namespace wowpp
 		}
 
 		// It seems that vanilla wow does not support more than 255 realms
-		assert(realms.size() < std::numeric_limits<UInt8>::max());
+		ASSERT(realms.size() < std::numeric_limits<UInt8>::max());
 
 		// Send realm list
 		m_connection->sendSinglePacket(
