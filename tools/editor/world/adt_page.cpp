@@ -442,12 +442,14 @@ namespace wowpp
 				if (!(file->read(&chunkHeader, sizeof(UInt32))) ||
 					chunkHeader == 0)
 				{
+					WLOG("Could not read chunk header");
 					break;
 				}
 
 				// Read chunk size
 				if (!(file->read(&chunkSize, sizeof(UInt32))))
 				{
+					WLOG("Could not read chunk size for chunk " << chunkHeader);
 					break;
 				}
 
@@ -540,7 +542,10 @@ namespace wowpp
             for (auto &entry : MCINEntries)
             {
                 file->seek(entry.offsMCNK + 8);
-                read::readMCNKChunk(out_page, file, entry.size);
+				if (!read::readMCNKChunk(out_page, file, entry.size))
+				{
+					WLOG("Could not read MCNK chunk");
+				}
             }
 		}
 

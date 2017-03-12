@@ -108,6 +108,9 @@ namespace wowpp
 
 	void serializeMeshData(const std::string &suffix, UInt32 mapID, UInt32 tileX, UInt32 tileY, const MeshData& meshData)
 	{
+		if (meshData.solidTris.empty())
+			return;
+
 		std::stringstream nameStrm;
 		nameStrm << "meshes/map" << std::setw(3) << std::setfill('0') << mapID << std::setw(2) << tileY << tileX << suffix << ".obj";
 

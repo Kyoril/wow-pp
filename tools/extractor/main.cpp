@@ -216,7 +216,9 @@ namespace
 						const NavTerrain neighborSpanArea = static_cast<NavTerrain>(chf.areas[k + neighborCell.index]);
 
 						// if both the current span and the neighbor span are ADTs, do nothing
-						if ((spanArea & PolyFlags::ADT) != 0 && (neighborSpanArea & PolyFlags::ADT) != 0)
+						const bool thisIsAdt = (spanArea & PolyFlags::ADT) != 0 || (spanArea & PolyFlags::ADTUnwalkable) != 0;
+						const bool otherIsAdt = (neighborSpanArea & PolyFlags::ADT) != 0 || (neighborSpanArea & PolyFlags::ADTUnwalkable) != 0;
+						if (thisIsAdt && otherIsAdt)
 							continue;
 
 						//std::cout << "Removing connection for span " << i << " dir " << dir << " to " << k << std::endl;
@@ -808,8 +810,14 @@ namespace
 	/// Loads all WMOs of a given ADT file into the global wmo storage and builds their
 	/// bvh trees.
 	/// @param adt The parsed adt file infos.
-	static bool loadADTWmos(const ADTFile &adt)
+	static bool loadADTWmos(const ADTFile &adt, MapWMOChunk &out_chunk)
 	{
+		// Reset chunk structure
+		out_chunk.entries.clear();
+		out_chunk.header.fourCC = MapWMOChunkCC;
+		out_chunk.header.size = 0;
+
+		// Now for every referenced WMO chunk in the parsed ADT file...
 		for (const auto &chunk : adt.getMODFChunk().entries)
 		{
 			// Retrieve WMO file name
@@ -819,6 +827,9 @@ namespace
 				WLOG("Could not resolve WMO name of wmo entry " << chunk.uniqueId);
 				continue;
 			}
+
+			// Build file path
+			fs::path filePath = bvhOutputPath / ("WMO_" + fs::path(filename).stem().string() + ".bvh");
 
 			// Load wmo if not happened already
 			std::lock_guard<std::mutex> lock(wmoMutex);
@@ -832,9 +843,6 @@ namespace
 					ELOG("Error loading wmo: " << filename);
 					return false;
 				}
-
-				// Build file path
-				fs::path filePath = bvhOutputPath / ("WMO_" + wmoFile->getBaseName() + ".bvh");
 
 				// Build AABBTree and serialize it
 				ILOG("\tBuilding WMO " << wmoFile->getBaseName());
@@ -883,6 +891,16 @@ namespace
 				io::Writer fileWriter(fileSink);
 				fileWriter << *wmoTree;
 			}
+
+			// Add a new WMO entry
+			MapWMOChunk::WMOEntry entry;
+			entry.uniqueId = chunk.uniqueId;
+			entry.fileName = filePath.stem().string();
+			entry.position = chunk.position;
+			entry.rotation = chunk.rotation;
+			out_chunk.entries.push_back(std::move(entry));
+			// Position+Rotation+UniqueId+StrLen+Filename
+			out_chunk.header.size += sizeof(math::Vector3) * 2 + sizeof(UInt32) + sizeof(UInt16) + entry.fileName.length();
 		}
 
 		return true;
@@ -891,14 +909,23 @@ namespace
 	/// Loads all Doodads of a given ADT file into the global doodad storage and builds
 	/// their bvh trees.
 	/// @param adt The parsed adt file infos.
-	static bool loadADTDoodads(const ADTFile &adt)
+	static bool loadADTDoodads(const ADTFile &adt, MapDoodadChunk &out_chunk)
 	{
-		for (UInt32 i = 0; i < adt.getMDXCount(); ++i)
+		// Reset chunk structure
+		out_chunk.entries.clear();
+		out_chunk.header.fourCC = MapDoodadChunkCC;
+		out_chunk.header.size = 0;
+
+		for (const auto &chunk : adt.getMDDFChunk().entries)
 		{
 			std::lock_guard<std::mutex> lock(doodadMutex);
 
 			// Retrieve Doodad file name
-			const String filename = fs::path(adt.getMDX(i)).replace_extension(".m2").string();
+			const String filename = fs::path(adt.getMDX(chunk.mmidEntry)).replace_extension(".m2").string();
+
+			// Build file path
+			const fs::path filePath = bvhOutputPath / ("Doodad_" + fs::path(filename).stem().string() + ".bvh");
+
 			if (!serializedDoodads.contains(filename))
 			{
 				serializedDoodads.add(filename);
@@ -909,9 +936,6 @@ namespace
 					ELOG("Error loading M2: " << filename);
 					return false;
 				}
-
-				// Build file path
-				fs::path filePath = bvhOutputPath / ("Doodad_" + doodadFile->getBaseName() + ".bvh");
 
 				// Build AABBTree and serialize it
 				ILOG("\tBuilding doodad " << doodadFile->getBaseName());
@@ -929,6 +953,17 @@ namespace
 				io::Writer fileWriter(fileSink);
 				fileWriter << doodadTree;
 			}
+
+			// Add a new Doodad entry
+			MapDoodadChunk::DoodadEntry entry;
+			entry.uniqueId = chunk.uniqueId;
+			entry.fileName = filePath.stem().string();
+			entry.position = chunk.position;
+			entry.rotation = chunk.rotation;
+			entry.scale = static_cast<float>(chunk.scale) / 1024.0f;
+			out_chunk.entries.push_back(std::move(entry));
+			// Position+Rotation+Scale+UniqueId+StrLen+Filename
+			out_chunk.header.size += sizeof(math::Vector3) * 2 + sizeof(float) + sizeof(UInt32) + sizeof(UInt16) + entry.fileName.length();
 		}
 
 		return true;
@@ -1030,10 +1065,47 @@ namespace
 		header.areaTableSize = sink.position() - header.offsAreaTable;
 
 		// Load WMOs and Doodads
-		if (!loadADTWmos(adt))
+		MapWMOChunk wmoChunk;
+		if (!loadADTWmos(adt, wmoChunk))
 			return false;
-		if (!loadADTDoodads(adt))
+		MapDoodadChunk doodadChunk;
+		if (!loadADTDoodads(adt, doodadChunk))
 			return false;
+
+		// Serialize WMO chunk
+		header.offsWmos = sink.position();
+		header.wmoSize = wmoChunk.header.size;
+		{
+			writer.writePOD(wmoChunk.header);
+			writer
+				<< io::write<NetUInt32>(wmoChunk.entries.size());
+			for (const auto &entry : wmoChunk.entries)
+			{
+				writer
+					<< io::write<NetUInt32>(entry.uniqueId)
+					<< io::write_dynamic_range<UInt16>(entry.fileName);
+				writer.writePOD(entry.position);
+				writer.writePOD(entry.rotation);
+			}
+		}
+
+		// Serialize Doodad chunk
+		header.offsDoodads = sink.position();
+		header.doodadSize = doodadChunk.header.size;
+		{
+			writer.writePOD(doodadChunk.header);
+			writer
+				<< io::write<NetUInt32>(doodadChunk.entries.size());
+			for (const auto &entry : doodadChunk.entries)
+			{
+				writer
+					<< io::write<NetUInt32>(entry.uniqueId)
+					<< io::write_dynamic_range<UInt16>(entry.fileName);
+				writer.writePOD(entry.position);
+				writer.writePOD(entry.rotation);
+				writer << io::write<float>(entry.scale);
+			}
+		}
 
 		// Remember possible start of nav chunk offset
 		const auto possibleNavChunkOffset = sink.position();

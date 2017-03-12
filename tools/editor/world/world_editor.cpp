@@ -276,11 +276,12 @@ namespace wowpp
 			{
 				const Ogre::String fileName =
 					"World\\Maps\\" + m_map.directory() + "\\" + m_map.directory() + "_" +
-					Ogre::StringConverter::toString(pos[1], 2, '0') + "_" +
-					Ogre::StringConverter::toString(pos[0], 2, '0') + ".adt";
+					Ogre::StringConverter::toString(pos[1], 1, '0') + "_" +
+					Ogre::StringConverter::toString(pos[0], 1, '0') + ".adt";
 
 				if (!Ogre::ResourceGroupManager::getSingleton().resourceExistsInAnyGroup(fileName))
 				{
+					//WLOG("Page not found: " << fileName);
 					return;
 				}
 
@@ -361,6 +362,10 @@ namespace wowpp
 					Ogre::SceneNode *child = m_sceneMgr.getRootSceneNode()->createChildSceneNode(objName.str());
 					child->attachObject(obj);
 #endif
+				}
+				else
+				{
+					WLOG("Page not loaded: " << pos);
 				}
 			}
 			else

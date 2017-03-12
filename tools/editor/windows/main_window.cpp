@@ -285,7 +285,11 @@ namespace wowpp
 				// in the editor.
 				if (entry->id() == 1)
 				{
-					camera->setPosition(10304.0f, 870.033f, 1336.65f);
+					// GM Island
+					camera->setPosition(16226.2f, 16257.0f, 13.2022f);
+
+					// Night Elf Starting Zone
+					//camera->setPosition(10304.0f, 870.033f, 1336.65f);
 				}
 				else if (entry->id() == 0)
 				{

@@ -47,7 +47,10 @@ namespace wowpp
 	static constexpr UInt32 MapAreaChunkCC = 0x52414D57;
 	/// Used as map nav chunk signature.
 	static constexpr UInt32 MapNavChunkCC = 0x564E4D57;
-
+	/// Used as map wmo chunk signature.
+	static constexpr UInt32 MapWMOChunkCC = 0x4D574D4F;
+	/// Used as map doodad chunk signature.
+	static constexpr UInt32 MapDoodadChunkCC = 0x4D57444F;
 
 	// Helper types
 
@@ -90,7 +93,6 @@ namespace wowpp
 		}
 	};
 
-
 	// Map chunks
 
 	struct MapHeaderChunk
@@ -101,7 +103,7 @@ namespace wowpp
 		UInt32 version;
 		UInt32 offsAreaTable;
 		UInt32 areaTableSize;
-		UInt32 offsWMOs;
+		UInt32 offsWmos;
 		UInt32 wmoSize;
 		UInt32 offsDoodads;
 		UInt32 doodadSize;
@@ -112,7 +114,7 @@ namespace wowpp
 			: version(0)
 			, offsAreaTable(0)
 			, areaTableSize(0)
-			, offsWMOs(0)
+			, offsWmos(0)
 			, wmoSize(0)
 			, offsDoodads(0)
 			, doodadSize(0)
@@ -163,6 +165,42 @@ namespace wowpp
 		}
 	};
 
+	struct MapWMOChunk
+	{
+		struct WMOEntry
+		{
+			UInt32 uniqueId;
+			String fileName;
+			math::Vector3 position;
+			math::Vector3 rotation;
+		};
+
+		MapChunkHeader header;
+		std::vector<WMOEntry> entries;
+
+		explicit MapWMOChunk()
+		{
+		}
+	};
+
+	struct MapDoodadChunk
+	{
+		struct DoodadEntry
+		{
+			UInt32 uniqueId;
+			String fileName;
+			math::Vector3 position;
+			math::Vector3 rotation;
+			float scale;
+		};
+
+		MapChunkHeader header;
+		std::vector<DoodadEntry> entries;
+
+		explicit MapDoodadChunk()
+		{
+		}
+	};
 
 	// More helpers
 
@@ -170,9 +208,9 @@ namespace wowpp
 	struct MapDataTile final
 	{
 		MapAreaChunk areas;
-		//MapHeightChunk heights;
-		//MapCollisionChunk collision;
 		MapNavigationChunk navigation;
+		MapWMOChunk wmos;
+		MapDoodadChunk doodads;
 
 		~MapDataTile() {}
 	};

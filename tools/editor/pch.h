@@ -19,7 +19,9 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 //
 
-#pragma once
+#ifdef _MSC_VER
+#	pragma once
+#endif
 
 // C Runtime Library
 #include <cassert>
