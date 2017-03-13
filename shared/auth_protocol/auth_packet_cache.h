@@ -46,7 +46,7 @@ namespace wowpp
 					io::VectorSink bufferSink(m_buffer);
 					wowpp::auth::OutgoingPacket packet(bufferSink);
 					m_createPacket(packet);
-					assert(!m_buffer.empty());
+					ASSERT(!m_buffer.empty());
 				}
 
 				io::Writer sinkWriter(sink);

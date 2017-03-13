@@ -225,7 +225,7 @@ namespace wowpp
 
 				// We need a valid world instance for this
 				auto *world = m_owner.getWorldInstance();
-				assert(world);
+				ASSERT(world);
 
 				// Determine slot
 				UInt8 bag = 0, subslot = 0;
@@ -305,7 +305,7 @@ namespace wowpp
 		}
 
 		// WARNING: There should never be any items left here!
-		assert(amountLeft == 0);
+		ASSERT(amountLeft == 0);
 		if (amountLeft > 0)
 		{
 			ELOG("Could not add all items, something went really wrong! " << __FUNCTION__);
@@ -320,7 +320,7 @@ namespace wowpp
 	}
 	game::InventoryChangeFailure Inventory::addItem(std::shared_ptr<GameItem> item, UInt16 * out_slot)
 	{
-		assert(item);
+		ASSERT(item);
 		
 		const auto &entry = item->getEntry();
 
@@ -373,7 +373,7 @@ namespace wowpp
 		if (isBagSlot(targetSlot))
 		{
 			auto bagInst = getBagAtSlot(targetSlot);
-			assert(bagInst);
+			ASSERT(bagInst);
 			item->setUInt64Value(item_fields::Contained, bagInst ? bagInst->getGuid() : m_owner.getGuid());
 		}
 		else
@@ -506,8 +506,8 @@ namespace wowpp
 		});
 
 		// WARNING: There should never be any items left here!
-		assert(itemsToDelete == 0);
-		assert(m_itemCounter[entry.id()] == itemCount - itemsToDelete);
+		ASSERT(itemsToDelete == 0);
+		ASSERT(m_itemCounter[entry.id()] == itemCount - itemsToDelete);
 
 		return game::inventory_change_failure::Okay;
 	}
@@ -806,7 +806,7 @@ namespace wowpp
 			else if ((isInventorySlot(slotB) || isBagSlot(slotB)) &&
 			         !(isInventorySlot(slotA) || isBagSlot(slotA)))
 			{
-				assert(m_freeSlots >= 1);
+				ASSERT(m_freeSlots >= 1);
 				m_freeSlots--;
 			}
 		}
@@ -1144,7 +1144,7 @@ namespace wowpp
 				}
 
 				auto castedBag = std::static_pointer_cast<GameBag>(bagItem);
-				assert(castedBag);
+				ASSERT(castedBag);
 
 				if (!castedBag->isEmpty())
 				{

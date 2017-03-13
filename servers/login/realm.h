@@ -56,7 +56,7 @@ namespace wowpp
 						TimerQueue &timerQueue);
 
 		/// Gets the player connection class used to send packets to the client.
-		Client &getConnection() { assert(m_connection); return *m_connection; }
+		Client &getConnection() { ASSERT(m_connection); return *m_connection; }
 		/// Gets the player manager which manages all connected players.
 		RealmManager &getManager() const { return m_manager; }
 		/// Determines whether this realm is authentificated.

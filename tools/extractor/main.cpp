@@ -205,7 +205,7 @@ namespace
 						auto const ny = y + rcGetDirOffsetY(dir);
 
 						// this should never happen since we already know there is a connection in this direction
-						assert(nx >= 0 && ny >= 0 && nx < chf.width && ny < chf.height);
+						ASSERT(nx >= 0 && ny >= 0 && nx < chf.width && ny < chf.height);
 
 						auto const &neighborCell = chf.cells[ny*chf.width + nx];
 						auto const &neighborSpan = chf.spans[k + neighborCell.index];
@@ -277,7 +277,7 @@ namespace
 		}
 
 		// If this happens, it's most likely because no geometry was inside the bounding box...
-		assert(!!cset->nconts);
+		ASSERT(!!cset->nconts);
 
 		// Allocate and build poly mesh
 		SmartPolyMeshPtr polyMesh(rcAllocPolyMesh(), rcFreePolyMesh);
@@ -362,7 +362,7 @@ namespace
 
 		// Increase and validate tile count
 		out_chunk.tileCount++;
-		assert(out_chunk.tileCount == out_chunk.tiles.size() && "Navigation chunks tile count does not match the actual tile count!");
+		ASSERT(out_chunk.tileCount == out_chunk.tiles.size() && "Navigation chunks tile count does not match the actual tile count!");
 
 		// Eventually generate debug files
 		if (generateDebugFiles)

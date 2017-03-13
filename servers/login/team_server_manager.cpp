@@ -45,7 +45,7 @@ namespace wowpp
 		{
 			return (&teamServer == p.get());
 		});
-		assert(p != m_teamServers.end());
+		ASSERT(p != m_teamServers.end());
 		m_teamServers.erase(p);
 	}
 
@@ -61,7 +61,7 @@ namespace wowpp
 
 	void TeamServerManager::addTeamServer(std::unique_ptr<TeamServer> added)
 	{
-		assert(added);
+		ASSERT(added);
 		m_teamServers.push_back(std::move(added));
 	}
 

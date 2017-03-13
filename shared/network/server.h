@@ -59,7 +59,7 @@ namespace wowpp
 			: mCreateConn(std::move(CreateConnection))
 			, mState(new State(std::unique_ptr<AcceptorType>(new AcceptorType(IOService))))
 		{
-			assert(mCreateConn);
+			ASSERT(mCreateConn);
 
 			try
 			{
@@ -102,7 +102,7 @@ namespace wowpp
 		/// Starts waiting for incoming connections to accept.
 		void startAccept()
 		{
-			assert(mState);
+			ASSERT(mState);
 			const std::shared_ptr<Connection> Conn = mCreateConn(mState->Acceptor->get_io_service());
 
 			mState->Acceptor->async_accept(
@@ -128,8 +128,8 @@ namespace wowpp
 
 		void Accepted(std::shared_ptr<Connection> Conn, const boost::system::error_code &Error)
 		{
-			assert(Conn);
-			assert(mState);
+			ASSERT(Conn);
+			ASSERT(mState);
 
 			if (Error)
 			{

@@ -775,7 +775,7 @@ namespace wowpp
 		if (talent->dependson())
 		{
 			const auto *dependson = m_project.talents.getById(talentId);
-			assert(dependson);
+			ASSERT(dependson);
 
 			// Check if we have learned the requested talent rank
 			auto dependantRank = dependson->ranks(talent->dependsonrank());

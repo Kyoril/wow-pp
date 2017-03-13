@@ -21,6 +21,7 @@
 
 #include "pch.h"
 #include "selection.h"
+#include "common/macros.h"
 
 namespace wowpp
 {
@@ -47,7 +48,7 @@ namespace wowpp
 
 	void Selection::removeSelected(Index index)
 	{
-		assert(index < m_selected.size());
+		ASSERT(index < m_selected.size());
 
 		auto it = m_selected.begin();
 		std::advance(it, index);

@@ -22,6 +22,7 @@
 #pragma once
 
 #include "common/typedefs.h"
+#include "common/simple.hpp"
 #include <QDialog>
 
 // Forwards
@@ -60,7 +61,7 @@ namespace wowpp
 
 			Ui::LoginDialog *m_ui;
 			EditorApplication &m_app;
-			boost::signals2::scoped_connection m_onConnected, m_onDisconnect, m_onLoginResult, m_onUpToDate, m_onUpdateFile;
+			simple::scoped_connection m_onConnected, m_onDisconnect, m_onLoginResult, m_onUpToDate, m_onUpdateFile;
 			QString m_settingsString;
 		};
 	}

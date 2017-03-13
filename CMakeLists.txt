@@ -19,21 +19,15 @@
 # and lore are copyrighted by Blizzard Entertainment, Inc.
 # 
 
-# We want at least CMake 2.8
-cmake_minimum_required(VERSION 2.8)
+# We want at least CMake 3.1
+cmake_minimum_required(VERSION 3.1)
 
 # This is the main project which contains all subprojects
 project(WoW)
 
 	option(WOWPP_WITH_RELEASE_ASSERTS "Enables assertions in release builds." OFF)
 	if (WOWPP_WITH_RELEASE_ASSERTS)
-		if(MSVC)
-			set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "")
-			set(CMAKE_CXX_FLAGS_RELEASE "")
-		else()
-			set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3")
-			set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-		endif()
+		add_definitions("-DWOWPP_ALWAYS_ASSERT")
 	endif()
 
 	# Enable solution folders in msvc
@@ -111,7 +105,10 @@ project(WoW)
 			message(FATAL_ERROR "GCC 4.9 or newer is required in order to build WoW++. Please consider an update or switch over to clang.")
 		endif()
 	
-		list(APPEND CMAKE_CXX_FLAGS "-std=c++1y -pthread")
+		set (CMAKE_CXX_STANDARD 14)
+		list(APPEND CMAKE_CXX_FLAGS "-std=c++14 -pthread")
+		
+		find_package(ZLIB REQUIRED)
 	endif()
 
 	# Include additional cmake modules

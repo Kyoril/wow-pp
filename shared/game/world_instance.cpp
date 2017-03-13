@@ -112,7 +112,7 @@ namespace wowpp
 				m_map = &mapIt->second;
 			}
 
-			assert(m_map);
+			ASSERT(m_map);
 			m_map->loadAllTiles();
 		}
 		else
@@ -128,7 +128,7 @@ namespace wowpp
 			const auto &spawn = m_mapEntry.objectspawns(i);
 
 			const auto *objectEntry = m_project.objects.getById(spawn.objectentry());
-			assert(objectEntry);
+			ASSERT(objectEntry);
 
 			std::unique_ptr<WorldObjectSpawner> spawner(new WorldObjectSpawner(
 			            *this,
@@ -156,7 +156,7 @@ namespace wowpp
 			const auto &spawn = m_mapEntry.unitspawns(i);
 
 			const auto *unitEntry = m_project.units.getById(spawn.unitentry());
-			assert(unitEntry);
+			ASSERT(unitEntry);
 
 #if 0
 			// Only spawn timber wolf
@@ -444,9 +444,9 @@ namespace wowpp
 		{
 			// Get the tiles
 			VisibilityTile *oldTile = m_visibilityGrid->getTile(oldIndex);
-			assert(oldTile);
+			ASSERT(oldTile);
 			VisibilityTile *newTile = m_visibilityGrid->getTile(newIndex);
-			assert(newTile);
+			ASSERT(newTile);
             
 			// Remove the object
 			oldTile->getGameObjects().remove(&object);

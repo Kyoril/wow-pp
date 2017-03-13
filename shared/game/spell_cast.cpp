@@ -51,7 +51,7 @@ namespace wowpp
 
 	std::pair<game::SpellCastResult, SpellCasting *> SpellCast::startCast(const proto::SpellEntry &spell, SpellTargetMap target, const game::SpellPointsArray &basePoints, GameTime castTime, bool isProc, UInt64 itemGuid)
 	{
-		assert(m_castState);
+		ASSERT(m_castState);
 
 		GameUnit *unitTarget = nullptr;
 		target.resolvePointers(*m_executer.getWorldInstance(), &unitTarget, nullptr, nullptr, nullptr);
@@ -287,20 +287,20 @@ namespace wowpp
 
 	void SpellCast::stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown/* = 0*/)
 	{
-		assert(m_castState);
+		ASSERT(m_castState);
 		m_castState->stopCast(reason, interruptCooldown);
 	}
 
 	void SpellCast::onUserStartsMoving()
 	{
-		assert(m_castState);
+		ASSERT(m_castState);
 		m_castState->onUserStartsMoving();
 	}
 
 	void SpellCast::setState(std::shared_ptr<CastState> castState)
 	{
-		assert(castState);
-		assert(m_castState);
+		ASSERT(castState);
+		ASSERT(m_castState);
 
 		m_castState = std::move(castState);
 		m_castState->activate();
@@ -308,7 +308,7 @@ namespace wowpp
 
 	void SpellCast::finishChanneling()
 	{
-		assert(m_castState);
+		ASSERT(m_castState);
 
 		m_castState->finishChanneling();
 	}

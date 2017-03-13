@@ -22,6 +22,7 @@
 #pragma once
 
 #include "common/typedefs.h"
+#include "common/macros.h"
 #include "common/simple.hpp"
 #include "proto_data/project.h"
 
@@ -103,7 +104,7 @@ namespace wowpp
 		/// Gets the trade data of the specific player. This method is constant, because changing any of these
 		/// values has to generate packets and changes the trade state.
 		/// @param index Player index.
-		const PlayerData &getData(Trader index) const { assert(index < Trader::Count_); return m_data[index]; }
+		const PlayerData &getData(Trader index) const { ASSERT(index < Trader::Count_); return m_data[index]; }
 		/// Sets the amount of gold for the given player.
 		void setGold(Trader index, UInt32 gold);
 		/// Sets the accept state for the given player.

@@ -21,6 +21,7 @@
 
 #include "pch.h"
 #include "map.h"
+#include "common/macros.h"
 #include "shared/proto_data/maps.pb.h"
 #include "log/default_log_levels.h"
 #include "common/make_unique.h"
@@ -94,7 +95,7 @@ namespace wowpp
 
 			// allocate mesh query
 			m_navQuery.reset(dtAllocNavMeshQuery());
-			assert(m_navQuery);
+			ASSERT(m_navQuery);
 
 			dtStatus dtResult = m_navQuery->init(m_navMesh, 1024);
 			if (dtStatusFailed(dtResult))

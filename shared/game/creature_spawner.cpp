@@ -117,7 +117,7 @@ namespace wowpp
 			return (element.get() == &removed);
 		});
 
-		assert(i != m_creatures.end());
+		ASSERT(i != m_creatures.end());
 		eraseByMove(m_creatures, i);
 
 		setRespawnTimer();

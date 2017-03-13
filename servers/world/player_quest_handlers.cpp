@@ -281,7 +281,7 @@ namespace wowpp
 					// Worst case! Player has lost the quest item... this may NEVER EVER happen (need for an inventory transaction system)
 					ELOG("PLAYER " << m_character->getGuid() << " ITEM LOSS SINCE QUEST " << questId << " COULD NOT BE ACCEPTED AND QUESTGIVER ITEM "
 						<< itemQuestgiver->getStackCount() << "x " << itemQuestgiver->getEntry().id() << " COULD NOT BE RECREATED!");
-					assert(false);
+					ASSERT(false);
 				}
 			}
 

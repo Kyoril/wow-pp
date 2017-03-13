@@ -68,7 +68,7 @@ namespace wowpp
 		std::uniform_int_distribution<UInt32> dist;
 		m_seed = dist(randomGenerator);
 
-		assert(m_connection);
+		ASSERT(m_connection);
 
 		m_connection->setListener(*this);
 		m_social.reset(new PlayerSocial(m_manager, *this));
@@ -815,7 +815,7 @@ namespace wowpp
 
 	void Player::worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, math::Vector3 location, float o)
 	{
-		assert(m_gameCharacter);
+		ASSERT(m_gameCharacter);
 
 		// Watch for world node disconnection
 		m_worldNode = &world;
@@ -896,7 +896,7 @@ namespace wowpp
 				std::bind(game::server_write::unlearnSpells, std::placeholders::_1));
 
 			auto raceEntry = m_gameCharacter->getRaceEntry();
-			assert(raceEntry);
+			ASSERT(raceEntry);
 
 			sendPacket(
 				std::bind(game::server_write::actionButtons, std::placeholders::_1, std::cref(m_actionButtons)));

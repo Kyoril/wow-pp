@@ -28,7 +28,9 @@
 
 
 namespace wowpp
-{	
+{
+	constexpr size_t TradeData::MaxTradeSlots;
+	
 	TradeData::TradeData(Player &player, Player &trader)
 		: m_initiator(player)
 		, m_other(trader)
@@ -55,9 +57,9 @@ namespace wowpp
 	{
 		// Get both characters
 		auto ownerChar = m_initiator.getCharacter();
-		assert(ownerChar);
+		ASSERT(ownerChar);
 		auto otherChar = m_other.getCharacter();
-		assert(otherChar);
+		ASSERT(otherChar);
 
 		const UInt32 ownerMoney = ownerChar->getUInt32Value(character_fields::Coinage);
 		const UInt32 otherMoney = otherChar->getUInt32Value(character_fields::Coinage);
@@ -145,7 +147,7 @@ namespace wowpp
 
 	void TradeData::setGold(Trader index, UInt32 gold)
 	{
-		assert(index > Trader::Count_);
+		ASSERT(index > Trader::Count_);
 
 		// Update gold value and acceptance state
 		m_data[index].gold = gold;
@@ -160,7 +162,7 @@ namespace wowpp
 
 	void TradeData::setAcceptedState(Trader index, bool accept)
 	{
-		assert(index > Trader::Count_);
+		ASSERT(index > Trader::Count_);
 
 		bool wasAccepted = m_data[index].accepted;
 		if (accept == wasAccepted)
@@ -186,7 +188,7 @@ namespace wowpp
 			else
 			{
 				Player *target = (index == Owner ? &m_other : &m_initiator);
-				assert(target);
+				ASSERT(target);
 
 				// Notify the other client about the acceptance
 				target->sendTradeStatus(game::trade_status::TradeAccept);
@@ -196,8 +198,8 @@ namespace wowpp
 
 	void TradeData::setItem(Trader index, UInt8 tradeSlot, ItemPtr item)
 	{
-		assert(index > Trader::Count_);
-		assert(tradeSlot < MaxTradeSlots);
+		ASSERT(index > Trader::Count_);
+		ASSERT(tradeSlot < MaxTradeSlots);
 
 		// First remove that item from any other trade slot where it eventually is
 		if (item != nullptr)
@@ -266,7 +268,7 @@ namespace wowpp
 				if (inventory.removeItemByGUID(item->getGuid()) != game::inventory_change_failure::Okay)
 				{
 					ELOG("Could not remove item from inventory!");
-					assert(false);
+					ASSERT(false);
 					return;
 				}
 			}
@@ -281,7 +283,7 @@ namespace wowpp
 				if (inventory.addItem(item) != game::inventory_change_failure::Okay)
 				{
 					ELOG("Could not add item to inventory!");
-					assert(false);
+					ASSERT(false);
 					return;
 				}
 			}

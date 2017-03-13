@@ -196,7 +196,7 @@ namespace wowpp
 			return false;
 		}
 
-		assert(!path.empty());
+		ASSERT(!path.empty());
 		
 		// Update timing
 		m_moveStart = getCurrentTime();

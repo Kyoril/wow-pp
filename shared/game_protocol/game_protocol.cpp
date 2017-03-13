@@ -776,7 +776,7 @@ namespace wowpp
 				case chat_msg::RaidBossWhisper:
 				case chat_msg::RaidBossEmote:
 					{
-						assert(speaker);
+						ASSERT(speaker);
 						out_packet
 							<< io::write<NetUInt64>(speaker->getGuid())
 							<< io::write<NetUInt32>(0x00)
@@ -2362,7 +2362,7 @@ namespace wowpp
 				        << io::write<NetUInt8>(menu.size());
 				for (const auto &menuItem : menu)
 				{
-					assert(menuItem.quest);
+					ASSERT(menuItem.quest);
 					out_packet
 					        << io::write<NetUInt32>(menuItem.quest->id())
 					        << io::write<NetUInt32>(menuItem.menuIcon)
@@ -3996,8 +3996,8 @@ namespace wowpp
 				>> io::read_string(out_mail.receiver)
 				>> io::read_string(out_mail.subject)
 				>> io::read_string(out_mail.body)
-				>> io::read<NetUInt32>(out_mail.unk1)
-				>> io::read<NetUInt32>(out_mail.unk2);
+				>> io::skip(sizeof(UInt32))
+				>> io::skip(sizeof(UInt32));
 
 			// Read items on mail list, 12 being the client limit
 			r >> io::read<UInt8>(out_mail.itemsCount);
@@ -4018,7 +4018,7 @@ namespace wowpp
 			r
 				>> io::read<NetUInt32>(out_mail.money)
 				>> io::read<NetUInt32>(out_mail.COD)
-				>> io::skip(sizeof(UInt8))
+				>> io::skip(sizeof(UInt64))
 				>> io::skip(sizeof(UInt8));
 
 			return r;

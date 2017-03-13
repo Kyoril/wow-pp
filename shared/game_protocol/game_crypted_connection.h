@@ -118,8 +118,8 @@ namespace wowpp
 				m_sending = m_sendBuffer;
 				m_sendBuffer.clear();
 
-				assert(m_sendBuffer.empty());
-				assert(!m_sending.empty());
+				ASSERT(m_sendBuffer.empty());
+				ASSERT(!m_sending.empty());
 
 				beginSend();
 			}
@@ -177,7 +177,7 @@ namespace wowpp
 
 			void beginSend()
 			{
-				assert(!m_sending.empty());
+				ASSERT(!m_sending.empty());
 
 				boost::asio::async_write(
 				    *m_socket,
@@ -206,7 +206,7 @@ namespace wowpp
 
 			void received(std::size_t size)
 			{
-				assert(size <= m_receiving.size());
+				ASSERT(size <= m_receiving.size());
 
 				if (size == 0)
 				{
@@ -291,7 +291,7 @@ namespace wowpp
 
 				if (parsedUntil)
 				{
-					assert(parsedUntil <= m_received.size());
+					ASSERT(parsedUntil <= m_received.size());
 
 					m_received.erase(
 					    m_received.begin(),

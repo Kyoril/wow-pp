@@ -244,7 +244,7 @@ namespace wowpp
 			});
 
 			WorldInstance *world = m_cast.getExecuter().getWorldInstance();
-			assert(world);
+			ASSERT(world);
 
 			GameUnit *unitTarget = nullptr;
 			m_target.resolvePointers(*world, &unitTarget, nullptr, nullptr, nullptr);
@@ -314,7 +314,7 @@ namespace wowpp
 				});
 
 				WorldInstance *world = m_cast.getExecuter().getWorldInstance();
-				assert(world);
+				ASSERT(world);
 
 				GameUnit *unitTarget = nullptr;
 				m_target.resolvePointers(*world, &unitTarget, nullptr, nullptr, nullptr);
@@ -2043,7 +2043,7 @@ namespace wowpp
 
 		// Get the first target
 		GameUnit *targetUnit = targets.front();
-		assert(targetUnit);
+		ASSERT(targetUnit);
 
 		// Check if target is a character
 		if (!targetUnit->isGameCharacter())
@@ -2809,7 +2809,7 @@ namespace wowpp
 				{
 					if (effect.first == effects[k])
 					{
-						assert(effect.second);
+						ASSERT(effect.second);
 						effect.second(m_spell.effects(k));
 					}
 				}
@@ -2826,7 +2826,7 @@ namespace wowpp
 				{
 					if (effect.first == effects[k])
 					{
-						assert(effect.second);
+						ASSERT(effect.second);
 						effect.second(m_spell.effects(k));
 					}
 				}

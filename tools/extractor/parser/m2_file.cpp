@@ -21,8 +21,8 @@
 
 #include "pch.h"
 #include "m2_file.h"
+#include "common/macros.h"
 #include "common/make_unique.h"
-#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -61,7 +61,7 @@ namespace wowpp
 			}
 
 			m_indices.resize(header.nBoundingTriangles);		// Number of indices, not number of triangles
-			assert(header.nBoundingTriangles % 3 == 0);
+			ASSERT(header.nBoundingTriangles % 3 == 0);
 			m_source->seek(header.ofsBoundingTriangles);
 			for (auto &i : m_indices)
 			{

@@ -21,9 +21,9 @@
 
 #include "pch.h"
 #include "game_outgoing_packet.h"
+#include "common/macros.h"
 #include "game_crypt.h"
 #include "common/endian_convert.h"
-#include "log/default_log_levels.h"
 
 namespace wowpp
 {
@@ -63,10 +63,10 @@ namespace wowpp
 			if (!m_proxy)
 			{
 				const std::size_t end = sink().position();
-				assert(end >= m_bodyPosition);
+				ASSERT(end >= m_bodyPosition);
 
 				m_size = (end - m_bodyPosition);
-				assert(m_size <= std::numeric_limits<NetUInt16>::max());
+				ASSERT(m_size <= std::numeric_limits<NetUInt16>::max());
 
 				UInt16 convertedSize = static_cast<UInt16>(m_size);
 				EndianConvertReverse(convertedSize);
