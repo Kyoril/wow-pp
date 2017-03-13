@@ -271,6 +271,8 @@ namespace wowpp
 				return r;
 			}
 
+			Matrix4 inverse() const;
+
 			inline static Matrix4 getScale(float s_x, float s_y, float s_z)
 			{
 				Matrix4 r;

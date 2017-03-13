@@ -553,21 +553,12 @@ namespace
 			size_t indexOffset = 0;
 			for (const auto &wmo : wmos.entries)
 			{
-#define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * (x) / -180.0)
-				math::Matrix3 rotMat = math::Matrix3::fromEulerAnglesXYZ(
-					WOWPP_DEG_TO_RAD(-wmo.rotation[2]), WOWPP_DEG_TO_RAD(-wmo.rotation[0]), WOWPP_DEG_TO_RAD(-wmo.rotation[1] - 180));
-
-				math::Vector3 position(wmo.position.z, wmo.position.x, wmo.position.y);
-				position.x = (32 * 533.3333f) - position.x;
-				position.y = (32 * 533.3333f) - position.y;
-#undef WOWPP_DEG_TO_RAD
-
 				auto it = wmoTrees.find(wmo.uniqueId);
 				if (it != wmoTrees.end())
 				{
 					for (const auto &vert : it->second->getVertices())
 					{
-						math::Vector3 transformed = (rotMat * vert) + position;
+						math::Vector3 transformed = (wmo.transform * vert);
 						auto recastCoord = wowToRecastCoord(transformed);
 						wmoMesh.solidVerts.push_back(recastCoord.x);
 						wmoMesh.solidVerts.push_back(recastCoord.y);
@@ -625,31 +616,12 @@ namespace
 			size_t indexOffset = 0;
 			for (const auto &doodad : doodads.entries)
 			{
-#define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * (x) / 180.0)
-				constexpr float mid = 32.f * MeshSettings::AdtSize;
-
-				const float rotX = WOWPP_DEG_TO_RAD(doodad.rotation[2]);
-				const float rotY = WOWPP_DEG_TO_RAD(doodad.rotation[0]);
-				const float rotZ = WOWPP_DEG_TO_RAD(doodad.rotation[1] + 180.0f);
-				const float scale = doodad.scale;
-
-				math::Matrix4 matZ; matZ.fromAngleAxis(math::Vector3(0.0f, 0.0f, 1.0f), rotZ);
-				math::Matrix4 matY; matY.fromAngleAxis(math::Vector3(0.0f, 1.0f, 0.0f), rotY);
-				math::Matrix4 matX; matX.fromAngleAxis(math::Vector3(1.0f, 0.0f, 0.0f), rotX);
-				math::Matrix4 matFinal =
-					math::Matrix4::getTranslation(mid - doodad.position[2], mid - doodad.position[0], doodad.position[1]) *
-					math::Matrix4::getScale(scale, scale, scale) *
-					matZ *
-					matY *
-					matX;
-#undef WOWPP_DEG_TO_RAD
-
 				auto it = doodadTrees.find(doodad.uniqueId);
 				if (it != doodadTrees.end())
 				{
 					for (const auto &vert : it->second->getVertices())
 					{
-						math::Vector3 transformed = (matFinal * vert);
+						math::Vector3 transformed = (doodad.transform * vert);
 						auto recastCoord = wowToRecastCoord(transformed);
 						doodadMesh.solidVerts.push_back(recastCoord.x);
 						doodadMesh.solidVerts.push_back(recastCoord.y);
@@ -682,7 +654,6 @@ namespace
 			wowpp::serializeMeshData("_adt", mapId, tileX, tileY, adtMesh);
 			wowpp::serializeMeshData("_wmo", mapId, tileX, tileY, wmoMesh);
 			wowpp::serializeMeshData("_doodad", mapId, tileX, tileY, doodadMesh);
-			DLOG("Serialized!");
 		}
 
 		// Adjust min and max z values
@@ -911,11 +882,32 @@ namespace
 			MapWMOChunk::WMOEntry entry;
 			entry.uniqueId = chunk.uniqueId;
 			entry.fileName = filePath.stem().string();
-			entry.position = chunk.position;
-			entry.rotation = chunk.rotation;
+
+#define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * (x) / 180.0)
+			constexpr float mid = 32.f * MeshSettings::AdtSize;
+
+			const float rotX = WOWPP_DEG_TO_RAD(chunk.rotation[2]);
+			const float rotY = WOWPP_DEG_TO_RAD(chunk.rotation[0]);
+			const float rotZ = WOWPP_DEG_TO_RAD(chunk.rotation[1] + 180.0f);
+
+			math::Matrix4 matZ; matZ.fromAngleAxis(math::Vector3(0.0f, 0.0f, 1.0f), rotZ);
+			math::Matrix4 matY; matY.fromAngleAxis(math::Vector3(0.0f, 1.0f, 0.0f), rotY);
+			math::Matrix4 matX; matX.fromAngleAxis(math::Vector3(1.0f, 0.0f, 0.0f), rotX);
+			math::Matrix4 matFinal =
+				math::Matrix4::getTranslation(mid - chunk.position[2], mid - chunk.position[0], chunk.position[1]) *
+				matZ *
+				matY *
+				matX;
+#undef WOWPP_DEG_TO_RAD
+
+			entry.transform = matFinal;
+			entry.inverse = matFinal.inverse();
+			entry.bounds = wmoTrees[chunk.uniqueId]->getBoundingBox();
+			entry.bounds.transform(entry.transform);
+
 			out_chunk.entries.push_back(std::move(entry));
-			// Position+Rotation+UniqueId+StrLen+Filename
-			out_chunk.header.size += sizeof(math::Vector3) * 2 + sizeof(UInt32) + sizeof(UInt16) + entry.fileName.length();
+			// Inverse+Bounds+UniqueId+StrLen+Filename
+			out_chunk.header.size += sizeof(math::Matrix4) + sizeof(math::Vector3) * 2 + sizeof(UInt32) + sizeof(UInt16) + entry.fileName.length();
 		}
 
 		return true;
@@ -958,6 +950,7 @@ namespace
 				doodadTrees[chunk.uniqueId] = doodadTree;
 				doodadIdsByFile[filename] = doodadTree;
 
+/*
 				// Serialize it
 				std::ofstream file(filePath.string().c_str(), std::ios::out | std::ios::binary);
 				if (!file)
@@ -969,6 +962,7 @@ namespace
 				io::StreamSink fileSink(file);
 				io::Writer fileWriter(fileSink);
 				fileWriter << *doodadTree;
+*/
 			}
 			else
 			{
@@ -985,12 +979,34 @@ namespace
 			MapDoodadChunk::DoodadEntry entry;
 			entry.uniqueId = chunk.uniqueId;
 			entry.fileName = filePath.stem().string();
-			entry.position = chunk.position;
-			entry.rotation = chunk.rotation;
-			entry.scale = static_cast<float>(chunk.scale) / 1024.0f;
+
+#define WOWPP_DEG_TO_RAD(x) (3.14159265358979323846 * (x) / 180.0)
+			constexpr float mid = 32.f * MeshSettings::AdtSize;
+
+			const float rotX = WOWPP_DEG_TO_RAD(chunk.rotation[2]);
+			const float rotY = WOWPP_DEG_TO_RAD(chunk.rotation[0]);
+			const float rotZ = WOWPP_DEG_TO_RAD(chunk.rotation[1] + 180.0f);
+			const float scale = static_cast<float>(chunk.scale) / 1024.0f;
+
+			math::Matrix4 matZ; matZ.fromAngleAxis(math::Vector3(0.0f, 0.0f, 1.0f), rotZ);
+			math::Matrix4 matY; matY.fromAngleAxis(math::Vector3(0.0f, 1.0f, 0.0f), rotY);
+			math::Matrix4 matX; matX.fromAngleAxis(math::Vector3(1.0f, 0.0f, 0.0f), rotX);
+			math::Matrix4 matFinal =
+				math::Matrix4::getTranslation(mid - chunk.position[2], mid - chunk.position[0], chunk.position[1]) *
+				math::Matrix4::getScale(scale, scale, scale) *
+				matZ *
+				matY *
+				matX;
+#undef WOWPP_DEG_TO_RAD
+
+			entry.transform = matFinal;
+			entry.inverse = matFinal.inverse();
+			entry.bounds = doodadTrees[chunk.uniqueId]->getBoundingBox();
+			entry.bounds.transform(entry.transform);
+
 			out_chunk.entries.push_back(std::move(entry));
-			// Position+Rotation+Scale+UniqueId+StrLen+Filename
-			out_chunk.header.size += sizeof(math::Vector3) * 2 + sizeof(float) + sizeof(UInt32) + sizeof(UInt16) + entry.fileName.length();
+			// Inverse+Bounds+UniqueId+StrLen+Filename
+			out_chunk.header.size += sizeof(math::Matrix4) + sizeof(math::Vector3) * 2 + sizeof(UInt32) + sizeof(UInt16) + entry.fileName.length();
 		}
 
 		return true;
@@ -1111,8 +1127,8 @@ namespace
 				writer
 					<< io::write<NetUInt32>(entry.uniqueId)
 					<< io::write_dynamic_range<UInt16>(entry.fileName);
-				writer.writePOD(entry.position);
-				writer.writePOD(entry.rotation);
+				writer.writePOD(entry.inverse);
+				writer.writePOD(entry.bounds);
 			}
 		}
 
@@ -1128,9 +1144,8 @@ namespace
 				writer
 					<< io::write<NetUInt32>(entry.uniqueId)
 					<< io::write_dynamic_range<UInt16>(entry.fileName);
-				writer.writePOD(entry.position);
-				writer.writePOD(entry.rotation);
-				writer << io::write<float>(entry.scale);
+				writer.writePOD(entry.inverse);
+				writer.writePOD(entry.bounds);
 			}
 		}
 

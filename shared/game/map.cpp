@@ -26,6 +26,7 @@
 #include "log/default_log_levels.h"
 #include "common/make_unique.h"
 #include "math/vector3.h"
+#include "math/aabb_tree.h"
 #include "common/clock.h"
 #include "detour/DetourCommon.h"
 #include "recast/Recast.h"

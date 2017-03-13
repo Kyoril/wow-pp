@@ -25,6 +25,7 @@
 #include "tile_index.h"
 #include "common/grid.h"
 #include "math/ray.h"
+#include "math/matrix4.h"
 #include "detour/DetourCommon.h"
 #include "detour/DetourNavMesh.h"
 #include "detour/DetourNavMeshQuery.h"
@@ -171,8 +172,9 @@ namespace wowpp
 		{
 			UInt32 uniqueId;
 			String fileName;
-			math::Vector3 position;
-			math::Vector3 rotation;
+			math::Matrix4 transform;	// Not serialized!
+			math::Matrix4 inverse;
+			math::BoundingBox bounds;
 		};
 
 		MapChunkHeader header;
@@ -189,9 +191,9 @@ namespace wowpp
 		{
 			UInt32 uniqueId;
 			String fileName;
-			math::Vector3 position;
-			math::Vector3 rotation;
-			float scale;
+			math::Matrix4 transform;	// Not serialized!
+			math::Matrix4 inverse;
+			math::BoundingBox bounds;
 		};
 
 		MapChunkHeader header;
