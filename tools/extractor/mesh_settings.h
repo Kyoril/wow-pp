@@ -35,14 +35,14 @@ namespace wowpp
 		static constexpr float WalkableRadius = 0.3f;           // narrowest allowable hallway in world units (yards)
 		static constexpr float WalkableSlope = 50.f;            // maximum walkable slope, in degrees
 		static constexpr float WalkableClimb = 1.f;             // maximum 'step' height for which slope is ignored (yards)
-		static constexpr float DetailSampleDistance = 3.f;      // heightfield detail mesh sample distance (yards)
-		static constexpr float DetailSampleMaxError = 0.75f;    // maximum distance detail mesh surface should deviate from heightfield (yards)
+		static constexpr float DetailSampleDistance = 2.f;      // heightfield detail mesh sample distance (yards)
+		static constexpr float DetailSampleMaxError = 0.5f;    // maximum distance detail mesh surface should deviate from heightfield (yards)
 
 																// NOTE: If Recast warns "Walk towards polygon center failed to reach center", try lowering this value
-		static constexpr float MaxSimplificationError = 0.5f;
+		static constexpr float MaxSimplificationError = 1.8f;
 
-		static constexpr int MinRegionSize = 1600;
-		static constexpr int MergeRegionSize = 400;
+		static constexpr int MinRegionSize = 900 /*1600*/;
+		static constexpr int MergeRegionSize = 100 /*400*/;
 		static constexpr int VerticesPerPolygon = 6;
 
 		// Nothing below here should ever have to change

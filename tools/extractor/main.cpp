@@ -662,7 +662,7 @@ namespace
 						doodadMesh.solidTris.push_back(tri + indexOffset);
 						if (++i == 3)
 						{
-							doodadMesh.triangleFlags.push_back(AreaFlags::Doodad);
+							doodadMesh.triangleFlags.push_back(AreaFlags::WMO);
 							i = 0;
 						}
 					}
@@ -769,7 +769,7 @@ namespace
 				}
 
 				// Rasterize adt doodad object meshes
-				if (!rasterize(ctx, *solid, true, config.walkableSlopeAngle, doodadMesh, AreaFlags::Doodad))
+				if (!rasterize(ctx, *solid, true, config.walkableSlopeAngle, doodadMesh, AreaFlags::WMO))
 				{
 					ELOG("\t\t\tCould not rasterize DOODAD data");
 					return false;
@@ -1184,7 +1184,23 @@ namespace
 		UInt32 mapId = 0;
 		if (!dbcMap->getValue(dbcRow, 0, mapId))
 		{
-			return false;;
+			return false;
+		}
+
+		// Skip maps that aren't used ingame
+		switch (mapId)
+		{
+			case 13:	// Testing
+			case 25:	// Scott Test
+			case 29:	// Test
+			case 35:	// Old Stockades
+			case 37:	// Azshara Crater
+			case 42:	// Collin's Test
+			case 44:	// <unused> Scarlet Monestary
+			case 169:	// Emerald Dream
+			case 451:	// Development World
+			case 598:	// Sunwell Fix (Unused)
+				return true;
 		}
 
 		String mapName;

@@ -22,6 +22,7 @@
 #include "pch.h"
 #include "adt_page.h"
 #include "common/macros.h"
+#include "log/default_log_levels.h"
 #include "OgreMatrix4.h"
 #include "OgreVector3.h"
 #include "OgreQuaternion.h"

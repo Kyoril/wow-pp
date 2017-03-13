@@ -23,6 +23,7 @@
 #include "wmo_file.h"
 #include "common/macros.h"
 #include "common/make_unique.h"
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {

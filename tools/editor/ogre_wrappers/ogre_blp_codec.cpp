@@ -111,8 +111,10 @@ namespace wowpp
 			// Pixel format
 			if (header.compression == 1)	// BLP Compression
 			{
-				OGRE_EXCEPT(Ogre::Exception::ERR_INVALIDPARAMS,
-					"BLP compression is unsupported right now!", "BLPCodec::decode");
+				imgData->format = Ogre::PixelFormat::PF_A8R8G8B8;
+				
+				//OGRE_EXCEPT(Ogre::Exception::ERR_INVALIDPARAMS,
+				//	"BLP compression is unsupported right now!", "BLPCodec::decode");
 			}
 			else if (header.compression == 2)	// DXT Compression
 			{

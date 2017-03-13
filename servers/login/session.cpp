@@ -23,6 +23,7 @@
 #include "session.h"
 #include "common/macros.h"
 #include "common/clock.h"
+#include "log/default_log_levels.h"
 
 namespace wowpp
 {
