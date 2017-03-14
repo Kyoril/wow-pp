@@ -25,6 +25,8 @@
 #include <ostream>
 #include <cassert>
 #include "vector3.h"
+#include "binary_io/reader.h"
+#include "binary_io/writer.h"
 
 namespace wowpp
 {
@@ -38,6 +40,21 @@ namespace wowpp
 				os << std::fixed << right[i] << ' ';
 			}
 			return os;
+		}
+
+		io::Writer &operator << (io::Writer &w, Vector3 const &vector)
+		{
+			return w
+				<< io::write<float>(vector.x)
+				<< io::write<float>(vector.y)
+				<< io::write<float>(vector.z);
+		}
+		io::Reader &operator >> (io::Reader &r, Vector3 &vector)
+		{
+			return r
+				>> io::read<float>(vector.x)
+				>> io::read<float>(vector.y)
+				>> io::read<float>(vector.z);
 		}
 	}
 }

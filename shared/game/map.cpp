@@ -22,17 +22,24 @@
 #include "pch.h"
 #include "map.h"
 #include "common/macros.h"
+#include "common/linear_set.h"
+#include "game/constants.h"
 #include "shared/proto_data/maps.pb.h"
 #include "log/default_log_levels.h"
 #include "common/make_unique.h"
 #include "math/vector3.h"
+#include "math/aabb_tree.h"
 #include "common/clock.h"
 #include "detour/DetourCommon.h"
 #include "recast/Recast.h"
+#include "binary_io/stream_source.h"
+#include "binary_io/reader.h"
+#include "cppformat/cppformat/format.h"
 
 namespace wowpp
 {
 	std::map<UInt32, std::unique_ptr<dtNavMesh, NavMeshDeleter>> Map::navMeshsPerMap;
+	std::map<String, std::shared_ptr<math::AABBTree>> aabbTreeById;
 
 	Map::Map(const proto::MapEntry &entry, boost::filesystem::path dataPath)
 		: m_entry(entry)
@@ -41,12 +48,15 @@ namespace wowpp
 		, m_navMesh(nullptr)
 		, m_navQuery(nullptr)
 	{
+		setupNavMesh();
+	}
+
+	void Map::setupNavMesh()
+	{
 		// Allocate navigation mesh
-		auto it = navMeshsPerMap.find(entry.id());
+		auto it = navMeshsPerMap.find(m_entry.id());
 		if (it == navMeshsPerMap.end())
 		{
-			ILOG("Creating navigation mesh instance");
-
 			// Build file name
 			std::ostringstream strm;
 			strm << (m_dataPath / "maps").string() << "/" << m_entry.id() << ".map";
@@ -104,10 +114,11 @@ namespace wowpp
 			}
 
 			// Setup filter
-			m_filter.setIncludeFlags(1 | 2 | 4 | 8 | 16);		// Testing...
+			m_filter.setIncludeFlags(1 | 2 | 4 | 8 | 16 | 32);		// Testing...
+			m_adtSlopeFilter.setIncludeFlags(1 | 2 | 4 | 8 | 16);
+			m_adtSlopeFilter.setExcludeFlags(32);
 
-			navMeshsPerMap[entry.id()] = std::move(navMesh);
-			ILOG("Navigation mesh for map " << m_entry.id() << " initialized");
+			navMeshsPerMap[m_entry.id()] = std::move(navMesh);
 		}
 	}
 
@@ -120,6 +131,22 @@ namespace wowpp
 			{
 				getTile(TileIndex2D(x, y));
 			}
+		}
+	}
+
+	void Map::unloadAllTiles()
+	{
+		// Remove all loaded tile data
+		m_tiles.clear();
+
+		// Destroy nav mesh
+		auto it = navMeshsPerMap.find(m_entry.id());
+		if (it != navMeshsPerMap.end())
+		{
+			it = navMeshsPerMap.erase(it);
+
+			// Reconstruct a new empty nav mesh
+			setupNavMesh();
 		}
 	}
 
@@ -154,90 +181,124 @@ namespace wowpp
 					return nullptr;
 				}
 
+				// Create reader object
+				io::StreamSource fileSource(mapFile);
+				io::Reader reader(fileSource);
+
 				// Read map header
 				MapHeaderChunk mapHeaderChunk;
-				mapFile.read(reinterpret_cast<char *>(&mapHeaderChunk), sizeof(MapHeaderChunk));
-				if (mapHeaderChunk.fourCC != 0x50414D57)
+				reader.readPOD(mapHeaderChunk);
+				if (mapHeaderChunk.header.fourCC != MapHeaderChunkCC)
 				{
 					ELOG("Could not load map file " << file << ": Invalid four-cc code!");
 					return nullptr;
 				}
-				if (mapHeaderChunk.size != sizeof(MapHeaderChunk) - 8)
+				if (mapHeaderChunk.header.size != sizeof(MapHeaderChunk) - 8)
 				{
 					ELOG("Could not load map file " << file << ": Unexpected header chunk size (" << (sizeof(MapHeaderChunk) - 8) << " expected)!");
 					return nullptr;
 				}
-				if (mapHeaderChunk.version != 0x130)
+				if (mapHeaderChunk.version != MapHeaderChunk::MapFormat)
 				{
 					ELOG("Could not load map file " << file << ": Unsupported file format version!");
 					return nullptr;
 				}
 
 				// Read area table
-				mapFile.seekg(mapHeaderChunk.offsAreaTable, std::ios::beg);
-
-				// Create new tile and read area data
-				mapFile.read(reinterpret_cast<char *>(&tile->areas), sizeof(MapAreaChunk));
-				if (tile->areas.fourCC != 0x52414D57 || tile->areas.size != sizeof(MapAreaChunk) - 8)
+				fileSource.seek(mapHeaderChunk.offsAreaTable);
+				reader.readPOD(tile->areas);
+				if (tile->areas.header.fourCC != MapAreaChunkCC || tile->areas.header.size != sizeof(MapAreaChunk) - sizeof(MapChunkHeader))
 				{
 					WLOG("Map file " << file << " seems to be corrupted: Wrong area chunk");
-					//TODO: Should we cancel the loading process?
+					return nullptr;
 				}
 
-				// Read collision data
-				if (mapHeaderChunk.offsCollision)
+				// Read wmos for line of sight checks
+				if (mapHeaderChunk.offsWmos)
 				{
-					mapFile.seekg(mapHeaderChunk.offsCollision, std::ios::beg);
-
-					// Read collision header
-					mapFile.read(reinterpret_cast<char *>(&tile->collision.fourCC), sizeof(UInt32));
-					mapFile.read(reinterpret_cast<char *>(&tile->collision.size), sizeof(UInt32));
-					mapFile.read(reinterpret_cast<char *>(&tile->collision.vertexCount), sizeof(UInt32));
-					mapFile.read(reinterpret_cast<char *>(&tile->collision.triangleCount), sizeof(UInt32));
-					if (tile->collision.fourCC != 0x4C434D57 || tile->collision.size < sizeof(UInt32) * 4)
+					fileSource.seek(mapHeaderChunk.offsWmos);
+					reader.readPOD(tile->wmos.header);
+					if (tile->wmos.header.fourCC != MapWMOChunkCC)
 					{
-						WLOG("Map file " << file << " seems to be corrupted: Wrong collision chunk (Size: " << tile->collision.size);
-						//TODO: Should we cancel the loading process?
+						WLOG("Map file " << file << " seems to be corrupted: Wrong wmo chunk header");
+						return nullptr;
 					}
 
-					// Read all vertices
-					tile->collision.vertices.resize(tile->collision.vertexCount);
-					size_t numBytes = sizeof(float) * 3 * tile->collision.vertexCount;
-					mapFile.read(reinterpret_cast<char *>(tile->collision.vertices.data()), numBytes);
+					UInt32 wmoCount = 0;
+					reader >> io::read<UInt32>(wmoCount);
 
-					// Read all indices
-					tile->collision.triangles.resize(tile->collision.triangleCount);
-					mapFile.read(reinterpret_cast<char *>(tile->collision.triangles.data()), sizeof(Triangle) * tile->collision.triangleCount);
+					tile->wmos.entries.resize(wmoCount);
+					for (auto &wmo : tile->wmos.entries)
+					{
+						reader
+							>> io::read<NetUInt32>(wmo.uniqueId)
+							>> io::read_container<UInt16>(wmo.fileName);
+						reader.readPOD(wmo.inverse);
+						reader.readPOD(wmo.bounds);
+
+						// Load aabbtree
+						auto it = aabbTreeById.find(wmo.fileName);
+						if (it == aabbTreeById.end())
+						{
+							auto treeFilePath = m_dataPath / "bvh" / (wmo.fileName + ".bvh");
+
+							std::ifstream bvhFile(treeFilePath.string().c_str(), std::ios::in | std::ios::binary);
+							if (!bvhFile)
+							{
+								ELOG("Could not load bvh file " << treeFilePath.string());
+								return nullptr;
+							}
+
+							// Create reader object
+							io::StreamSource bvhSrc(bvhFile);
+							io::Reader bvhRead(bvhSrc);
+
+							// Read bvh tree data from file
+							auto tree = std::make_shared<math::AABBTree>();
+							bvhRead >> *tree;
+
+							// Check if empty
+							if (tree->getIndices().empty())
+							{
+								WLOG("BVH tree " << wmo.fileName << " has no triangles (empty)!");
+							}
+
+							// Store tree
+							aabbTreeById[wmo.fileName] = tree;
+						}
+					}
 				}
 
 				// Read navigation data
 				if (m_navMesh && mapHeaderChunk.offsNavigation)
 				{
-					mapFile.seekg(mapHeaderChunk.offsNavigation, std::ios::beg);
+					fileSource.seek(mapHeaderChunk.offsNavigation);
+					reader.readPOD(tile->navigation.header);
+					if (tile->navigation.header.fourCC != MapNavChunkCC)
+					{
+						WLOG("Map file " << file << " seems to be corrupted: Wrong nav chunk header chunk");
+						return nullptr;
+					}
 
-					// Read collision header
-					mapFile.read(reinterpret_cast<char *>(&tile->navigation.fourCC), sizeof(UInt32));
-					mapFile.read(reinterpret_cast<char *>(&tile->navigation.size), sizeof(UInt32));
-					mapFile.read(reinterpret_cast<char *>(&tile->navigation.tileCount), sizeof(UInt32));
-					
 					// Read navigation meshes if any
+					reader >> io::read<UInt32>(tile->navigation.tileCount);
 					tile->navigation.tiles.resize(tile->navigation.tileCount);
 					for (UInt32 i = 0; i < tile->navigation.tileCount; ++i)
 					{
 						auto &data = tile->navigation.tiles[i];
-						mapFile.read(reinterpret_cast<char *>(&data.size), sizeof(UInt32));
+						fileSource.read(reinterpret_cast<char *>(&data.size), sizeof(UInt32));
 
 						// Finally read tile data
 						if (data.size)
 						{
 							// Reserver and read
 							data.data.resize(data.size);
-							mapFile.read(data.data.data(), data.size);
+							fileSource.read(data.data.data(), data.size);
 
 							// Add tile to navmesh
 							dtTileRef ref = 0;
 							dtStatus status = m_navMesh->addTile(reinterpret_cast<unsigned char*>(data.data.data()),
-								data.data.size(), DT_TILE_FREE_DATA, 0, &ref);
+								data.data.size(), 0, 0, &ref);
 							if (dtStatusFailed(status))
 							{
 								ELOG("Failed adding nav tile at " << position << ": 0x" << std::hex << (status & DT_STATUS_DETAIL_MASK));
@@ -260,50 +321,69 @@ namespace wowpp
 
 	bool Map::isInLineOfSight(const math::Vector3 &posA, const math::Vector3 &posB)
 	{
-		if (posA == posB) {
+		if (posA == posB)
 			return true;
-		}
-
-		// Calculate grid x coordinates
-		TileIndex2D startTileIdx;
-		startTileIdx[0] = static_cast<Int32>(floor((32.0 - (static_cast<double>(posA.x) / 533.3333333))));
-		startTileIdx[1] = static_cast<Int32>(floor((32.0 - (static_cast<double>(posA.y) / 533.3333333))));
-
-		auto *startTile = getTile(startTileIdx);
-		if (!startTile)
-		{
-			// Unable to get / load tile - always in line of sight
-			return true;
-		}
-
-		if (startTile->collision.triangleCount == 0)
-		{
-			return true;
-		}
 
 		// Create a ray
 		math::Ray ray(posA, posB);
 
-		const float dist = (posB - posA).length();
+		// False if blocked
+		bool inLineOfSight = true;
+		
+		// Keep track of checked WMO ids - this is required since multiple tiles might reference the same
+		// WMOs and we don't want to check WMO's twice for the same ray cast (especially large cities!)
+		LinearSet<UInt32> checkedWmos;
 
-		// Test: Check every triangle (TODO: Use octree nodes)
-		UInt32 triangleIndex = 0;
-		for (const auto &triangle : startTile->collision.triangles)
-		{
-			auto &vA = startTile->collision.vertices[triangle.indexA];
-			auto &vB = startTile->collision.vertices[triangle.indexB];
-			auto &vC = startTile->collision.vertices[triangle.indexC];
-			auto result = ray.intersectsTriangle(vA, vB, vC);
-			if (result.first && result.second <= dist)
+		// Now process every tile on the way
+		forEachTileInRayXY(ray, constants::MapWidth, [&](Int32 x, Int32 y) -> bool {
+			auto tileIndex = TileIndex2D(static_cast<Int32>(floor(31.0f - x)), static_cast<Int32>(floor(31.0f - y)));
+			auto *tile = getTile(tileIndex);
+			if (!tile)
 			{
-				return false;
+				// Failed to obtain tile, skip
+				WLOG("Failed to obtain tile " << tileIndex);
+				return true;
 			}
 
-			triangleIndex++;
-		}
+			// Now check each wmo
+			for (const auto &wmo : tile->wmos.entries)
+			{
+				// Check if we already checked this wmo once
+				if (checkedWmos.contains(wmo.uniqueId))
+					continue;
 
-		// Target is in line of sight
-		return true;
+				// Do a bounding box check to see if this wmo is hit by the ray cast
+				auto result = ray.intersectsAABB(wmo.bounds);
+				if (result.first)
+				{
+					// WMO was hit - keep track of it
+					checkedWmos.add(wmo.uniqueId);
+
+					// WMO was hit, now we transform the ray into WMO coordinate space and do the check again
+					math::Ray transformedRay(
+						wmo.inverse * posA,
+						wmo.inverse * posB
+					);
+
+					// Find AABBTree instance and execute raycast
+					auto treeIt = aabbTreeById.find(wmo.fileName);
+					if (treeIt != aabbTreeById.end())
+					{
+						if (treeIt->second->intersectRay(transformedRay))
+						{
+							// We hit something, so stop iterating here
+							inLineOfSight = false;
+							return false;
+						}
+					}
+				}
+			}
+
+			// Process next tile
+			return true;
+		});
+
+		return inLineOfSight;
 	}
 	
 #define MAX_PATH_LENGTH         74
@@ -663,7 +743,7 @@ namespace wowpp
 		return DT_SUCCESS;
 	}
 
-	bool Map::calculatePath(const math::Vector3 & source, math::Vector3 dest, std::vector<math::Vector3>& out_path)
+	bool Map::calculatePath(const math::Vector3 & source, math::Vector3 dest, std::vector<math::Vector3>& out_path, bool ignoreAdtSlope/* = true*/)
 	{
 		// Convert the given start and end point into recast coordinate system
 		math::Vector3 dtStart = wowToRecastCoord(source);
@@ -759,26 +839,37 @@ namespace wowpp
 
 		// This will store the resulting path length (number of polygons)
 		int pathLength = 0;
-		dtResult = m_navQuery->findPath(
-			startPoly,				// start polygon
-			endPoly,				// end polygon
-			&dtStart.x,				// start position
-			&dtEnd.x,				// end position
-			&m_filter,				// polygon search filter
-			tempPath.data(),		// [out] path
-			&pathLength,			// number of polygons used by path (<= maxPathLength)
-			maxPathLength);			// max number of polygons in output path
-		if (!pathLength ||
-			dtStatusFailed(dtResult))
-		{
-			// Could not find path... TODO?
-			ELOG("findPath failed with result " << dtResult);
-			return false;
-		}
 
+		if (startPoly != endPoly)
+		{
+			dtResult = m_navQuery->findPath(
+				startPoly,											// start polygon
+				endPoly,											// end polygon
+				&dtStart.x,											// start position
+				&dtEnd.x,											// end position
+				ignoreAdtSlope ? &m_filter : &m_adtSlopeFilter,		// polygon search filter
+				tempPath.data(),									// [out] path
+				&pathLength,										// number of polygons used by path (<= maxPathLength)
+				maxPathLength);										// max number of polygons in output path
+			if (!pathLength ||
+				dtStatusFailed(dtResult))
+			{
+				// Could not find path... TODO?
+				ELOG("findPath failed with result " << dtResult);
+				return false;
+			}
+		}
+		else
+		{
+			// Build shortcut
+			tempPath[0] = startPoly;
+			tempPath[1] = endPoly;
+			pathLength = 2;
+		}
+		
 		// Resize path
 		tempPath.resize(pathLength);
-		
+
 		if (!correctPathHeights)
 		{
 			// Buffer to store path coordinates
@@ -786,23 +877,35 @@ namespace wowpp
 			std::vector<dtPolyRef> tempPathPolys(maxPathLength);
 			int tempPathCoordsCount = 0;
 
-			// Find a straight path
-			dtResult = m_navQuery->findStraightPath(
-				&dtStart.x,							// Start position
-				&dtEnd.x,							// End position
-				tempPath.data(),					// Polygon path
-				static_cast<int>(tempPath.size()),	// Number of polygons in path
-				&tempPathCoords[0].x,				// [out] Path points
-				nullptr,							// [out] Path point flags (unused)
-				&tempPathPolys[0],					// [out] Polygon id for each point.
-				&tempPathCoordsCount,				// [out] used coordinate count in vertices (3 floats = 1 vert)
-				maxPathLength,						// max coordinate count
-				0									// options
-			);
-			if (dtStatusFailed(dtResult))
+			if (startPoly != endPoly)
 			{
-				ELOG("findStraightPath failed");
-				return false;
+				// Find a straight path
+				dtResult = m_navQuery->findStraightPath(
+					&dtStart.x,							// Start position
+					&dtEnd.x,							// End position
+					tempPath.data(),					// Polygon path
+					static_cast<int>(tempPath.size()),	// Number of polygons in path
+					&tempPathCoords[0].x,				// [out] Path points
+					nullptr,							// [out] Path point flags (unused)
+					&tempPathPolys[0],					// [out] Polygon id for each point.
+					&tempPathCoordsCount,				// [out] used coordinate count in vertices (3 floats = 1 vert)
+					maxPathLength,						// max coordinate count
+					0									// options
+				);
+				if (dtStatusFailed(dtResult))
+				{
+					ELOG("findStraightPath failed");
+					return false;
+				}
+			}
+			else
+			{
+				// Build shortcut
+				tempPathCoords[0] = dtStart;
+				tempPathCoords[1] = dtEnd;				
+				tempPathPolys[0] = startPoly;
+				tempPathPolys[1] = endPoly;
+				tempPathCoordsCount = 2;
 			}
 
 			// Correct actual path length
@@ -810,7 +913,7 @@ namespace wowpp
 			tempPathPolys.resize(tempPathCoordsCount);
 
 			// Smooth out the path
-			dtResult = smoothPath(*m_navQuery, *m_navMesh, m_filter, tempPathPolys, tempPathCoords);
+			dtResult = smoothPath(*m_navQuery, *m_navMesh, ignoreAdtSlope ? m_filter : m_adtSlopeFilter, tempPathPolys, tempPathCoords);
 			if (dtStatusFailed(dtResult))
 			{
 				ELOG("Failed to smooth out existing path.");
@@ -828,7 +931,7 @@ namespace wowpp
 		{
 			int smoothPathSize = 0;
 			float smoothPath[VERTEX_SIZE * MAX_POINT_PATH_LENGTH];
-			dtResult = findSmoothPath(m_navQuery.get(), m_navMesh, &m_filter, &dtStart.x, &dtEnd.x, &tempPath[0], pathLength, smoothPath, &smoothPathSize, 74);
+			dtResult = findSmoothPath(m_navQuery.get(), m_navMesh, ignoreAdtSlope ? &m_filter : &m_adtSlopeFilter, &dtStart.x, &dtEnd.x, &tempPath[0], pathLength, smoothPath, &smoothPathSize, 74);
 			if (dtStatusFailed(dtResult))
 			{
 				//ELOG("Could not get smooth path: " << dtResult);
@@ -929,7 +1032,7 @@ namespace wowpp
 		}
 
 		math::Vector3 out;
-		dtStatus dtResult = m_navQuery->findRandomPointAroundCircle(startPoly, &dtCenter.x, radius, &m_filter, frand, &endPoly, &out.x);
+		dtStatus dtResult = m_navQuery->findRandomPointAroundCircle(startPoly, &dtCenter.x, radius, &m_adtSlopeFilter, frand, &endPoly, &out.x);
 		if (dtStatusSucceed(dtResult))
 		{
 			out_point = recastToWoWCoord(out);

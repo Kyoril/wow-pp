@@ -25,7 +25,7 @@
 #include "log/default_log_levels.h"
 
 // Define MPQ lock mutex
-boost::mutex wowpp::MPQFile::MPQMutex;
+static std::mutex MPQMutex;
 
 namespace mpq
 {
@@ -42,7 +42,7 @@ namespace mpq
 
 	bool loadMPQFile(const std::string &file)
 	{
-		boost::mutex::scoped_lock lock(wowpp::MPQFile::MPQMutex);
+		std::lock_guard<std::mutex> lock(MPQMutex);
 
 		std::unique_ptr<HANDLE, HandleDeleter> mpqHandle(new HANDLE(nullptr));
 		if (!SFileOpenArchive(file.c_str(), 0, 0, mpqHandle.get()))
@@ -58,7 +58,7 @@ namespace mpq
 
 	static bool openFile(const std::string &file, std::vector<char> &out_buffer)
 	{
-		boost::mutex::scoped_lock lock(wowpp::MPQFile::MPQMutex);
+		std::lock_guard<std::mutex> lock(MPQMutex);
 		for (auto &handle : openedArchives)
 		{
 			// Open the file
@@ -100,8 +100,11 @@ namespace mpq
 namespace wowpp
 {
 	MPQFile::MPQFile(String fileName)
-		: m_fileName(std::move(fileName))
+		: m_fileName(fileName)
 	{
+		boost::filesystem::path p(fileName);
+		m_baseName = p.stem().string();
+
 		// Try to open the file
 		if (!mpq::openFile(m_fileName, m_buffer))
 		{
@@ -112,10 +115,5 @@ namespace wowpp
 		// Setup the source
 		m_source = make_unique<io::ContainerSource<std::vector<char>>>(m_buffer);
 		m_reader.setSource(m_source.get());
-	}
-
-	MPQFile::~MPQFile()
-	{
-		// Needed because this class will be inherited
 	}
 }

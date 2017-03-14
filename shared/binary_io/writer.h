@@ -30,8 +30,8 @@ namespace io
 	{
 	private:
 
-		Writer(const Writer &Other) = delete;
-		Writer &operator=(const Writer &Other) = delete;
+		Writer(const Writer &other) = delete;
+		Writer &operator=(const Writer &other) = delete;
 
 	public:
 

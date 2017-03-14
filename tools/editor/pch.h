@@ -20,7 +20,7 @@
 //
 
 #ifdef _MSC_VER
-#   pragma once
+#	pragma once
 #endif
 
 // C Runtime Library

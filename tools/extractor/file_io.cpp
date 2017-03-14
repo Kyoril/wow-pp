@@ -20,50 +20,61 @@
 // 
 
 #include "pch.h"
-#include "session.h"
-#include "common/macros.h"
-#include "common/clock.h"
-#include "log/default_log_levels.h"
+#include "file_io.h"
 
 namespace wowpp
 {
-	Session::Session(const Key &key, UInt32 userId, const String &userName, const BigNumber &v, const BigNumber &s)
-		: m_key(key)
-		, m_startTime(getCurrentTime())
-		, m_realm(constants::InvalidId)
-		, m_userId(userId)
-		, m_userName(userName)
-		, m_v(v)
-		, m_s(s)
+	FileIO::FileIO()
+		: m_fp(0)
+		, m_mode(-1)
 	{
 	}
-	GameTime Session::getDuration() const
-	{
-		const GameTime current = getCurrentTime();
 
-		ASSERT(current >= getStartTime());
-		return (current - getStartTime());
+	FileIO::~FileIO()
+	{
+		if (m_fp) 
+			fclose(m_fp);
 	}
 
-	bool Session::tryEnterRealm(UInt32 realm)
+	bool FileIO::openForWrite(const char * path)
 	{
-		ASSERT(realm != constants::InvalidId);
-
-		realmEntered(realm);
+		if (m_fp) return false;
+		m_fp = fopen(path, "wb");
+		if (!m_fp) return false;
+		m_mode = 1;
 		return true;
 	}
 
-	void Session::realmLeft()
+	bool FileIO::openForRead(const char * path)
 	{
-		ASSERT(getRealm() != constants::InvalidId);
-
-		m_realm = constants::InvalidId;
-
-		DLOG("Player " << m_userName << " left realm");
+		if (m_fp) return false;
+		m_fp = fopen(path, "rb");
+		if (!m_fp) return false;
+		m_mode = 2;
+		return true;
 	}
 
-	void Session::realmEntered(UInt32 realm)
+	bool FileIO::isWriting() const
 	{
-		m_realm = realm;
+		return m_mode == 1;
+	}
+
+	bool FileIO::isReading() const
+	{
+		return m_mode == 2;
+	}
+
+	bool FileIO::write(const void * ptr, const size_t size)
+	{
+		if (!m_fp || m_mode != 1) return false;
+		fwrite(ptr, size, 1, m_fp);
+		return true;
+	}
+
+	bool FileIO::read(void * ptr, const size_t size)
+	{
+		if (!m_fp || m_mode != 2) return false;
+		size_t readLen = fread(ptr, size, 1, m_fp);
+		return readLen == 1;
 	}
 }

@@ -1845,7 +1845,8 @@ namespace wowpp
 	void Aura::onTick()
 	{
 		// No more ticks
-		if (m_tickCount >= m_totalTicks) {
+		if (m_totalTicks > 0 &&
+			m_tickCount >= m_totalTicks) {
 			return;
 		}
 
@@ -1854,7 +1855,10 @@ namespace wowpp
 		auto strongThis = shared_from_this();
 
 		// Increase tick counter
-		m_tickCount++;
+		if (m_totalTicks > 0)
+		{
+			m_tickCount++;
+		}
 
 		bool isArea = false;
 		for (const auto &effect : m_spell.effects())
@@ -2004,10 +2008,17 @@ namespace wowpp
 			}
 		case aura::ObsModMana:
 			{
+				if (!m_target.isAlive())
+					break;
+
 				// ignore non positive values (can be result apply spellmods to aura damage
 				UInt32 amount = getBasePoints() > 0 ? getBasePoints() : 0;
 				UInt32 maxPower = m_target.getUInt32Value(unit_fields::MaxPower1);
 				if (maxPower == 0)
+					break;
+
+				UInt32 currentPower = m_target.getUInt32Value(unit_fields::Power1);
+				if (currentPower == maxPower)
 					break;
 
 				UInt32 value = UInt32(maxPower * amount / 100);
@@ -2031,12 +2042,52 @@ namespace wowpp
 				}
 
 				m_target.setUInt32Value(unit_fields::Power1,
-					std::min(maxPower, m_target.getUInt32Value(unit_fields::Power1) + value));
+					std::min(maxPower, currentPower + value));
 				break;
 			}
 		case aura::ObsModHealth:
 			{
+				if (!m_target.isAlive())
+				{
+					break;
+				}
 
+				// ignore non positive values (can be result apply spellmods to aura damage
+				UInt32 amount = getBasePoints() > 0 ? getBasePoints() : 0;
+				UInt32 maxHealth = m_target.getUInt32Value(unit_fields::MaxHealth);
+				if (maxHealth == 0)
+				{
+					break;
+				}
+
+				UInt32 currentHealth = m_target.getUInt32Value(unit_fields::Health);
+				if (currentHealth == maxHealth)
+				{
+					break;
+				}
+
+				UInt32 value = UInt32(maxHealth * amount / 100);
+
+				// Send event to all subscribers in sight
+				auto *world = m_target.getWorldInstance();
+				if (world)
+				{
+					TileIndex2D tileIndex;
+					m_target.getTileIndex(tileIndex);
+
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+					wowpp::game::OutgoingPacket packet(sink);
+					game::server_write::periodicAuraLog(packet, m_target.getGuid(), (m_caster ? m_caster->getGuid() : 0), m_spell.id(), m_effect.aura(), value);
+
+					forEachSubscriberInSight(world->getGrid(), tileIndex, [&packet, &buffer](ITileSubscriber & subscriber)
+					{
+						subscriber.sendPacket(packet, buffer);
+					});
+				}
+
+				m_target.setUInt32Value(unit_fields::Health,
+					std::min(maxHealth, currentHealth + value));
 				break;
 			}
 		case aura::PeriodicHealthFunnel:

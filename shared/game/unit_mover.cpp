@@ -42,6 +42,7 @@ namespace wowpp
 		, m_moveEnd(0)
 		, m_customSpeed(false)
 		, m_debugOutputEnabled(false)
+		, m_canWalkOnTerrain(true)
 	{
 		m_moveUpdated.ended.connect([this]()
 		{
@@ -140,13 +141,16 @@ namespace wowpp
 		m_start = currentLoc;
 
 		// Do we really need to move?
-		if (target == currentLoc)
+		if (target.isCloseTo(currentLoc, 0.1f))
 		{
-			m_target = target + math::Vector3(0.0f, 0.0f, 0.4f);
-			stopMovement();
+			m_target = target;
 
-			// Fire signal since we reached our target
-			targetReached();
+			if (isMoving())
+			{
+				// Fire signal since we reached our target
+				stopMovement();
+				targetReached();
+			}
 
 			return true;
 		}
@@ -187,7 +191,7 @@ namespace wowpp
 		
 		// Calculate path
 		std::vector<math::Vector3> path;
-		if (!map->calculatePath(currentLoc, target, path))
+		if (!map->calculatePath(currentLoc, target, path, m_canWalkOnTerrain))
 		{
 			return false;
 		}

@@ -58,6 +58,10 @@ namespace wowpp
 		/// 
 		virtual ~UnitMover();
 
+		/// Enables or disables movement at any angle on terrain. This is required for creatures
+		/// in combat, so that they can move up on terrain to get to players.
+		/// @param enabled true to enable terrain movement on any slope angle, false to disable it.
+		void setTerrainMovement(bool enabled) { m_canWalkOnTerrain = enabled; }
 		/// Called when the units movement speed changed.
 		void onMoveSpeedChanged(MovementType moveType);
 		/// Moves this unit to a specific location if possible. This does not teleport
@@ -102,6 +106,7 @@ namespace wowpp
 		GameTime m_moveStart, m_moveEnd;
 		bool m_customSpeed;
 		bool m_debugOutputEnabled;
+		bool m_canWalkOnTerrain;
 		MovementPath m_path;
 	};
 }

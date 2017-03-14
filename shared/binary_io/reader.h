@@ -30,8 +30,8 @@ namespace io
 	{
 	private:
 
-		Reader(const Reader &Other) = delete;
-		Reader &operator=(const Reader &Other) = delete;
+		Reader(const Reader &other) = delete;
+		Reader &operator=(const Reader &other) = delete;
 
 	public:
 
@@ -87,6 +87,11 @@ namespace io
 		void setSuccess()
 		{
 			m_success = true;
+		}
+
+		void setFailure()
+		{
+			m_success = false;
 		}
 
 	private:

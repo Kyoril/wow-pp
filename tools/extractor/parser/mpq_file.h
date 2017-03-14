@@ -43,19 +43,17 @@ namespace wowpp
 
 	public:
 
-		static boost::mutex MPQMutex;
-		
-	public:
-
 		/// Initializes the file and loads it's content from the loaded MPQ archive.
 		explicit MPQFile(String fileName);
-		virtual ~MPQFile();
+		virtual ~MPQFile() = default;
 
 		/// Called to load the file.
 		/// @returns False, if any errors occurred during the loading process.
 		virtual bool load() = 0;
 		/// Returns the file name of this MPQ file inside the archive.
 		const String &getFileName() const { return m_fileName; }
+		/// Returns the files base name (without path and extension).
+		const String &getBaseName() const { return m_baseName; }
 
 	protected:
 
@@ -65,6 +63,7 @@ namespace wowpp
 
 	private:
 
+		String m_baseName;
 		String m_fileName;
 	};
 }

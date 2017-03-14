@@ -25,62 +25,35 @@
 #include "tile_index.h"
 #include "common/grid.h"
 #include "math/ray.h"
+#include "math/matrix4.h"
 #include "detour/DetourCommon.h"
 #include "detour/DetourNavMesh.h"
 #include "detour/DetourNavMeshQuery.h"
 
 namespace wowpp
 {
-	/// Header
-	struct MapHeaderChunk
+	// Foward declarations
+
+	namespace proto
 	{
-		UInt32 fourCC;
-		UInt32 size;
-		UInt32 version;
-		UInt32 offsAreaTable;
-		UInt32 areaTableSize;
-		//		UInt32 offsHeight;
-		//		UInt32 heightSize;
-		UInt32 offsCollision;
-		UInt32 collisionSize;
-		UInt32 offsNavigation;
-		UInt32 navigationSize;
+		class MapEntry;
+	}
 
-		MapHeaderChunk()
-			: fourCC(0)
-			, size(0)
-			, version(0)
-			, offsAreaTable(0)
-			, areaTableSize(0)
-			  //			, offsHeight(0)
-			  //			, heightSize(0)
-			, offsCollision(0)
-			, collisionSize(0)
-			, offsNavigation(0)
-			, navigationSize(0)
-		{
-		}
-	};
 
-	/// Map area chunk.
-	struct MapAreaChunk
-	{
-		UInt32 fourCC;
-		UInt32 size;
-		struct AreaInfo
-		{
-			UInt32 areaId;
-			UInt32 flags;
+	// Chunk serialization constants
 
-			///
-			AreaInfo()
-				: areaId(0)
-				, flags(0)
-			{
-			}
-		};
-		std::array<AreaInfo, 16 * 16> cellAreas;
-	};
+	/// Used as map header chunk signature.
+	static constexpr UInt32 MapHeaderChunkCC = 0x50414D57;
+	/// Used as map area chunk signature.
+	static constexpr UInt32 MapAreaChunkCC = 0x52414D57;
+	/// Used as map nav chunk signature.
+	static constexpr UInt32 MapNavChunkCC = 0x564E4D57;
+	/// Used as map wmo chunk signature.
+	static constexpr UInt32 MapWMOChunkCC = 0x4D574D4F;
+	/// Used as map doodad chunk signature.
+	static constexpr UInt32 MapDoodadChunkCC = 0x4D57444F;
+
+	// Helper types
 
 	struct Triangle
 	{
@@ -96,22 +69,78 @@ namespace wowpp
 
 	typedef math::Vector3 Vertex;
 
-	struct MapCollisionChunk
+	enum NavTerrain
+	{
+		NAV_EMPTY = 0x00,
+		NAV_GROUND = 0x01,
+		NAV_MAGMA = 0x02,
+		NAV_SLIME = 0x04,
+		NAV_WATER = 0x08,
+		NAV_UNUSED1 = 0x10,
+		NAV_UNUSED2 = 0x20,
+		NAV_UNUSED3 = 0x40,
+		NAV_UNUSED4 = 0x80
+	};
+
+	struct MapChunkHeader
 	{
 		UInt32 fourCC;
 		UInt32 size;
-		UInt32 vertexCount;
-		UInt32 triangleCount;
-		std::vector<Vertex> vertices;
-		std::vector<Triangle> triangles;
 
-		explicit MapCollisionChunk()
+		MapChunkHeader()
 			: fourCC(0)
 			, size(0)
-			, vertexCount(0)
-			, triangleCount(0)
 		{
 		}
+	};
+
+	// Map chunks
+
+	struct MapHeaderChunk
+	{
+		static constexpr UInt32 MapFormat = 0x150;
+
+		MapChunkHeader header;
+		UInt32 version;
+		UInt32 offsAreaTable;
+		UInt32 areaTableSize;
+		UInt32 offsWmos;
+		UInt32 wmoSize;
+		UInt32 offsDoodads;
+		UInt32 doodadSize;
+		UInt32 offsNavigation;
+		UInt32 navigationSize;
+
+		MapHeaderChunk()
+			: version(0)
+			, offsAreaTable(0)
+			, areaTableSize(0)
+			, offsWmos(0)
+			, wmoSize(0)
+			, offsDoodads(0)
+			, doodadSize(0)
+			, offsNavigation(0)
+			, navigationSize(0)
+		{
+		}
+	};
+
+	struct MapAreaChunk
+	{
+		MapChunkHeader header;
+		struct AreaInfo
+		{
+			UInt32 areaId;
+			UInt32 flags;
+
+			///
+			AreaInfo()
+				: areaId(0)
+				, flags(0)
+			{
+			}
+		};
+		std::array<AreaInfo, 16 * 16> cellAreas;
 	};
 
 	struct MapNavigationChunk
@@ -127,44 +156,62 @@ namespace wowpp
 			}
 		};
 
-		UInt32 fourCC;
-		UInt32 size;
+		MapChunkHeader header;
 		UInt32 tileCount;
 		std::vector<TileData> tiles;
 
 		explicit MapNavigationChunk()
-			: fourCC(0)
-			, size(0)
-			, tileCount(0)
+			: tileCount(0)
 		{
 		}
 	};
 
-	enum NavTerrain
+	struct MapWMOChunk
 	{
-		NAV_EMPTY = 0x00,
-		NAV_GROUND = 0x01,
-		NAV_MAGMA = 0x02,
-		NAV_SLIME = 0x04,
-		NAV_WATER = 0x08,
-		NAV_UNUSED1 = 0x10,
-		NAV_UNUSED2 = 0x20,
-		NAV_UNUSED3 = 0x40,
-		NAV_UNUSED4 = 0x80
+		struct WMOEntry
+		{
+			UInt32 uniqueId;
+			String fileName;
+			math::Matrix4 transform;	// Not serialized!
+			math::Matrix4 inverse;
+			math::BoundingBox bounds;
+		};
+
+		MapChunkHeader header;
+		std::vector<WMOEntry> entries;
+
+		explicit MapWMOChunk()
+		{
+		}
 	};
 
-	namespace proto
+	struct MapDoodadChunk
 	{
-		class MapEntry;
-	}
+		struct DoodadEntry
+		{
+			UInt32 uniqueId;
+			String fileName;
+			math::Matrix4 transform;	// Not serialized!
+			math::Matrix4 inverse;
+			math::BoundingBox bounds;
+		};
+
+		MapChunkHeader header;
+		std::vector<DoodadEntry> entries;
+
+		explicit MapDoodadChunk()
+		{
+		}
+	};
+
+	// More helpers
 
 	/// Stores map-specific tiled data informations like nav mesh data, height maps and such things.
 	struct MapDataTile final
 	{
 		MapAreaChunk areas;
-		//MapHeightChunk heights;
-		MapCollisionChunk collision;
 		MapNavigationChunk navigation;
+		MapWMOChunk wmos;
 
 		~MapDataTile() {}
 	};
@@ -190,6 +237,7 @@ namespace wowpp
 	/// Converts a vertex from the WoW coordinate system into recasts coordinate system.
 	Vertex wowToRecastCoord(const Vertex &in_wowCoord);
 
+
 	/// This class represents a map with additional geometry and navigation data.
 	class Map final
 	{
@@ -198,8 +246,13 @@ namespace wowpp
 		/// Creates a new instance of the map class and initializes it.
 		/// @entry The base entry of this map.
 		explicit Map(const proto::MapEntry &entry, boost::filesystem::path dataPath);
+		/// Constructs a new nav mesh for this map id.
+		void setupNavMesh();
 		/// Loads all tiles at once.
 		void loadAllTiles();
+		/// Unloads all loaded map tiles of this map. Note that they may be reloaded if they
+		/// are required again after being unloaded.
+		void unloadAllTiles();
 		/// Gets the map entry data of this map.
 		const proto::MapEntry &getEntry() const {
 			return m_entry;
@@ -217,7 +270,7 @@ namespace wowpp
 		/// @returns true, if nothing prevents the line of sight, false otherwise.
 		bool isInLineOfSight(const math::Vector3 &posA, const math::Vector3 &posB);
 		/// Calculates a path from start point to the destination point.
-		bool calculatePath(const math::Vector3 &source, math::Vector3 dest, std::vector<math::Vector3> &out_path);
+		bool calculatePath(const math::Vector3 &source, math::Vector3 dest, std::vector<math::Vector3> &out_path, bool ignoreAdtSlope = true);
 		/// 
 		dtPolyRef getPolyByLocation(const math::Vector3 &point, float &out_distance) const;
 		/// 
@@ -251,6 +304,8 @@ namespace wowpp
 		std::unique_ptr<dtNavMeshQuery, NavQueryDeleter> m_navQuery;
 		/// Filter to determine what kind of navigation polygons to use.
 		dtQueryFilter m_filter;
+		/// This filter avoids unwalkable adt areas.
+		dtQueryFilter m_adtSlopeFilter;
 
 		// Holds all loaded navigation meshes, keyed by map id.
 		static std::map<UInt32, std::unique_ptr<dtNavMesh, NavMeshDeleter>> navMeshsPerMap;

@@ -234,6 +234,12 @@ namespace wowpp
 			m_work.reset();
 			m_workQueue.stop();
 			m_worker.join();
+
+			// Unload all nav meshs manually here to prevent a crash in the editor at shutdown
+			if (m_mapInst)
+			{
+				m_mapInst->unloadAllTiles();
+			}
 		}
 
 		void WorldEditor::update(float delta)
@@ -276,11 +282,12 @@ namespace wowpp
 			{
 				const Ogre::String fileName =
 					"World\\Maps\\" + m_map.directory() + "\\" + m_map.directory() + "_" +
-					Ogre::StringConverter::toString(pos[1], 2, '0') + "_" +
-					Ogre::StringConverter::toString(pos[0], 2, '0') + ".adt";
+					Ogre::StringConverter::toString(pos[1], 1, '0') + "_" +
+					Ogre::StringConverter::toString(pos[0], 1, '0') + ".adt";
 
 				if (!Ogre::ResourceGroupManager::getSingleton().resourceExistsInAnyGroup(fileName))
 				{
+					//WLOG("Page not found: " << fileName);
 					return;
 				}
 
@@ -320,6 +327,7 @@ namespace wowpp
 						return;
 					}
 
+#if 0
 					if (tile->collision.triangleCount == 0)
 					{
 						return;
@@ -359,6 +367,11 @@ namespace wowpp
 
 					Ogre::SceneNode *child = m_sceneMgr.getRootSceneNode()->createChildSceneNode(objName.str());
 					child->attachObject(obj);
+#endif
+				}
+				else
+				{
+					WLOG("Page not loaded: " << pos);
 				}
 			}
 			else
@@ -655,6 +668,7 @@ namespace wowpp
 				}
 			}
 		}
+
 		void WorldEditor::onSetPoint(const Ogre::Vector3 & point)
 		{
 			if (!m_startSet)

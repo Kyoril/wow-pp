@@ -70,6 +70,9 @@ namespace wowpp
 
 		m_objectType |= type_mask::Player;
 
+		// Players can charge up on terrain
+		getMover().setTerrainMovement(true);
+
 		// Reset time values
 		m_playedTime.fill(0);
 	}

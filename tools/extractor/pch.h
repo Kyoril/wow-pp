@@ -26,6 +26,7 @@
 #include <cmath>
 
 // STL Libraries
+#include <iostream>
 #include <fstream>
 #include <limits>
 #include <map>
@@ -47,6 +48,8 @@
 #include <iterator>
 #include <exception>
 #include <type_traits>
+#include <thread>
+#include <mutex>
 
 // Boost Libraies
 #include <boost/optional.hpp>
@@ -55,9 +58,16 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/asio.hpp>
 #include <boost/program_options.hpp>
-#include <boost/thread.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/type_traits/is_float.hpp>
 
+// Cppformat
 #include "cppformat/cppformat/format.h"
+
+// Recast
+#include "recast/Recast.h"
+#include "detour/DetourCommon.h"
+#include "detour/DetourNavMesh.h"
+#include "detour/DetourNavMeshBuilder.h"
+#include "debug_utils/RecastDump.h"

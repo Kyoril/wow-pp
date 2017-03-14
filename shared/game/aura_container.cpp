@@ -224,21 +224,19 @@ namespace wowpp
 
 	void AuraContainer::handleTargetDeath()
 	{
-		const auto newEnd =
-		    std::partition(std::begin(m_auras),
-		                   std::end(m_auras),
-		                   [](const std::shared_ptr<Aura> &instance)
+		AuraList::iterator it = m_auras.begin();
+		while (it != m_auras.end())
 		{
-			return (instance->getSpell().attributes(3) & 0x00100000) != 0 || instance->isPassive();
-		});
-
-		for (auto i = newEnd; i != std::end(m_auras); ++i)
-		{
-			//TODO handle exceptions somehow?
-			(*i)->onForceRemoval();
+			if (((*it)->getSpell().attributes(3) & game::spell_attributes_ex_c::DeathPersistent) != 0 || 
+				(*it)->isPassive())
+			{
+				++it;
+			}
+			else
+			{
+				removeAura(it);
+			}
 		}
-
-		//m_auras.erase(newEnd, std::end(m_auras));
 	}
 
 	bool AuraContainer::hasAura(game::AuraType type) const
