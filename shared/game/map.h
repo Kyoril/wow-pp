@@ -98,7 +98,7 @@ namespace wowpp
 
 	struct MapHeaderChunk
 	{
-		static constexpr UInt32 MapFormat = 0x140;
+		static constexpr UInt32 MapFormat = 0x150;
 
 		MapChunkHeader header;
 		UInt32 version;
