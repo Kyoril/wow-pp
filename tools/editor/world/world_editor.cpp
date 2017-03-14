@@ -234,6 +234,12 @@ namespace wowpp
 			m_work.reset();
 			m_workQueue.stop();
 			m_worker.join();
+
+			// Unload all nav meshs manually here to prevent a crash in the editor at shutdown
+			if (m_mapInst)
+			{
+				m_mapInst->unloadAllTiles();
+			}
 		}
 
 		void WorldEditor::update(float delta)
@@ -662,6 +668,7 @@ namespace wowpp
 				}
 			}
 		}
+
 		void WorldEditor::onSetPoint(const Ogre::Vector3 & point)
 		{
 			if (!m_startSet)

@@ -42,12 +42,15 @@ namespace wowpp
 		, m_navMesh(nullptr)
 		, m_navQuery(nullptr)
 	{
+		setupNavMesh();
+	}
+
+	void Map::setupNavMesh()
+	{
 		// Allocate navigation mesh
-		auto it = navMeshsPerMap.find(entry.id());
+		auto it = navMeshsPerMap.find(m_entry.id());
 		if (it == navMeshsPerMap.end())
 		{
-			ILOG("Creating navigation mesh instance");
-
 			// Build file name
 			std::ostringstream strm;
 			strm << (m_dataPath / "maps").string() << "/" << m_entry.id() << ".map";
@@ -109,8 +112,7 @@ namespace wowpp
 			m_adtSlopeFilter.setIncludeFlags(1 | 2 | 4 | 8 | 16);
 			m_adtSlopeFilter.setExcludeFlags(32);
 
-			navMeshsPerMap[entry.id()] = std::move(navMesh);
-			ILOG("Navigation mesh for map " << m_entry.id() << " initialized");
+			navMeshsPerMap[m_entry.id()] = std::move(navMesh);
 		}
 	}
 
@@ -123,6 +125,22 @@ namespace wowpp
 			{
 				getTile(TileIndex2D(x, y));
 			}
+		}
+	}
+
+	void Map::unloadAllTiles()
+	{
+		// Remove all loaded tile data
+		m_tiles.clear();
+
+		// Destroy nav mesh
+		auto it = navMeshsPerMap.find(m_entry.id());
+		if (it != navMeshsPerMap.end())
+		{
+			it = navMeshsPerMap.erase(it);
+
+			// Reconstruct a new empty nav mesh
+			setupNavMesh();
 		}
 	}
 
@@ -219,7 +237,7 @@ namespace wowpp
 							// Add tile to navmesh
 							dtTileRef ref = 0;
 							dtStatus status = m_navMesh->addTile(reinterpret_cast<unsigned char*>(data.data.data()),
-								data.data.size(), DT_TILE_FREE_DATA, 0, &ref);
+								data.data.size(), 0, 0, &ref);
 							if (dtStatusFailed(status))
 							{
 								ELOG("Failed adding nav tile at " << position << ": 0x" << std::hex << (status & DT_STATUS_DETAIL_MASK));

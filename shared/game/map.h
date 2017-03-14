@@ -247,8 +247,13 @@ namespace wowpp
 		/// Creates a new instance of the map class and initializes it.
 		/// @entry The base entry of this map.
 		explicit Map(const proto::MapEntry &entry, boost::filesystem::path dataPath);
+		/// Constructs a new nav mesh for this map id.
+		void setupNavMesh();
 		/// Loads all tiles at once.
 		void loadAllTiles();
+		/// Unloads all loaded map tiles of this map. Note that they may be reloaded if they
+		/// are required again after being unloaded.
+		void unloadAllTiles();
 		/// Gets the map entry data of this map.
 		const proto::MapEntry &getEntry() const {
 			return m_entry;
