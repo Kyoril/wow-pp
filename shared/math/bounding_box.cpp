@@ -45,9 +45,6 @@ namespace wowpp
 			float minVal = std::numeric_limits<float>::lowest();
 			float maxVal = std::numeric_limits<float>::max();
 
-			min = { maxVal, maxVal, maxVal };
-			max = { minVal, minVal, minVal };
-
 			Vector3 corners[8] = {
 				{ min.x, min.y, min.z },
 				{ max.x, min.y, min.z },
@@ -58,6 +55,9 @@ namespace wowpp
 				{ max.x, max.y, max.z },
 				{ min.x, max.y, max.z }
 			};
+
+			min = { maxVal, maxVal, maxVal };
+			max = { minVal, minVal, minVal };
 
 			for (auto& v : corners)
 			{

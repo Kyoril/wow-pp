@@ -903,7 +903,7 @@ namespace
 			entry.transform = matFinal;
 			entry.inverse = matFinal.inverse();
 			entry.bounds = wmoTrees[chunk.uniqueId]->getBoundingBox();
-			entry.bounds.transform(entry.transform);
+			entry.bounds.transform(matFinal);
 
 			out_chunk.entries.push_back(std::move(entry));
 			// Inverse+Bounds+UniqueId+StrLen+Filename
@@ -1126,9 +1126,9 @@ namespace
 			{
 				writer
 					<< io::write<NetUInt32>(entry.uniqueId)
-					<< io::write_dynamic_range<UInt16>(entry.fileName);
-				writer.writePOD(entry.inverse);
-				writer.writePOD(entry.bounds);
+					<< io::write_dynamic_range<UInt16>(entry.fileName)
+					<< entry.inverse
+					<< entry.bounds;
 			}
 		}
 
@@ -1143,9 +1143,9 @@ namespace
 			{
 				writer
 					<< io::write<NetUInt32>(entry.uniqueId)
-					<< io::write_dynamic_range<UInt16>(entry.fileName);
-				writer.writePOD(entry.inverse);
-				writer.writePOD(entry.bounds);
+					<< io::write_dynamic_range<UInt16>(entry.fileName)
+					<< entry.inverse
+					<< entry.bounds;
 			}
 		}
 

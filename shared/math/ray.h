@@ -86,93 +86,40 @@ namespace wowpp
 			///          a pair of false and 0 is returned.
 			std::pair<bool, float> intersectsTriangle(const Vector3 &a, const Vector3 &b, const Vector3 &c)
 			{
-				Vector3 normal = (b - a).cross(c - a);
+				const float upscaleFactor = 100.0f;
 
-				// Calculate intersection with plane.
-				float t;
-				{
-					float denom = normal.dot(direction);
+				Vector3 rayDir = direction * upscaleFactor;
+				Vector3 v0 = a * upscaleFactor;
+				Vector3 v1 = b * upscaleFactor - v0;
+				Vector3 v2 = c * upscaleFactor - v0;
 
-					// Check intersect side
-					if (denom > +std::numeric_limits<float>::epsilon())
-					{
-						// Back face hit
-						//return std::pair<bool, float>(false, 0.0f);
-					}
-					else if (denom < -std::numeric_limits<float>::epsilon())
-					{
-						// Front face hit
-					}
-					else
-					{
-						// Parallel or triangle area is close to zero when
-						// the plane normal not normalised.
-						return std::pair<bool, float>(false, 0.0f);
-					}
+				Vector3 p = rayDir.cross(v2);
+				float det = v1.dot(p);
 
-					t = normal.dot(a - origin) / denom;
-					if (t < 0)
-					{
-						// Intersection is behind origin
-						return std::pair<bool, float>(false, 0.0f);
-					}
+				if (::abs(det) < 1e-5) {
+					return std::make_pair<bool, float>(false, 0.0f);
 				}
 
-				// Calculate the largest area projection plane in X, Y or Z.
-				size_t i0, i1;
-				{
-					float n0 = ::fabs(normal.x);
-					float n1 = ::fabs(normal.y);
-					float n2 = ::fabs(normal.z);
+				Vector3 t = origin * upscaleFactor - v0;
+				float e1 = t.dot(p) / det;
 
-					i0 = 1;
-					i1 = 2;
-					if (n1 > n2)
-					{
-						if (n1 > n0) {
-							i0 = 0;
-						}
-					}
-					else
-					{
-						if (n2 > n0) {
-							i1 = 0;
-						}
-					}
+				if (e1 < 0.0f || e1 > 1.0f) {
+					return std::make_pair<bool, float>(false, 0.0f);
 				}
 
-				// Check the intersection point is inside the triangle.
-				{
-					float u1 = b[i0] - a[i0];
-					float v1 = b[i1] - a[i1];
-					float u2 = c[i0] - a[i0];
-					float v2 = c[i1] - a[i1];
-					float u0 = t * direction[i0] + origin[i0] - a[i0];
-					float v0 = t * direction[i1] + origin[i1] - a[i1];
+				Vector3 q = t.cross(v1);
+				float e2 = rayDir.dot(q) / det;
 
-					float alpha = u0 * v2 - u2 * v0;
-					float beta = u1 * v0 - u0 * v1;
-					float area = u1 * v2 - u2 * v1;
-
-					// epsilon to avoid float precision error
-					const float EPSILON = 1e-6f;
-					float tolerance = -EPSILON * area;
-
-					if (area > 0)
-					{
-						if (alpha < tolerance || beta < tolerance || alpha + beta > area - tolerance) {
-							return std::pair<bool, float>(false, 0.0f);
-						}
-					}
-					else
-					{
-						if (alpha > tolerance || beta > tolerance || alpha + beta < area - tolerance) {
-							return std::pair<bool, float>(false, 0.0f);
-						}
-					}
+				if (e2 < 0.0f || (e1 + e2) > 1.0f) {
+					return std::make_pair<bool, float>(false, 0.0f);
 				}
 
-				return std::pair<bool, float>(true, t);
+				float d = v2.dot(q) / det;
+				if (d < 1e-5) {
+					return std::make_pair<bool, float>(false, 0.0f);
+				}
+
+				return std::make_pair<bool, float>(true, d / getLength());
 			}
 
 			/// Checks whether this ray intersects with a bounding box.

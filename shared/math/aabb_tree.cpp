@@ -24,6 +24,7 @@
 // nav lib project, to allow units to walk on terrain of any slope angle.
 // 
 
+#include <iostream>
 #include <iomanip>
 #include <cmath>
 #include <cstddef>
@@ -124,7 +125,6 @@ namespace wowpp
 		{
 			float distance = ray.hitDistance;
 			trace(ray, faceIndex);
-			//traceRecursive(0, ray, faceIndex);
 			return ray.hitDistance < distance;
 		}
 
@@ -403,7 +403,9 @@ namespace wowpp
 				if (node.numFaces != 0)
 				{
 					// Write leaf node
-					w << io::write<UInt32>(node.startFace);
+					w 
+						<< io::write<UInt32>(node.startFace)
+						<< node.bounds;
 				}
 				else
 				{
@@ -451,7 +453,9 @@ namespace wowpp
 				if (numFaces != 0)
 				{
 					// Read leaf node
-					r >> io::read<UInt32>(tree.m_nodes[i].startFace);
+					r 
+						>> io::read<UInt32>(tree.m_nodes[i].startFace)
+						>> tree.m_nodes[i].bounds;
 				}
 				else
 				{

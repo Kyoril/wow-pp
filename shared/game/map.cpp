@@ -348,11 +348,6 @@ namespace wowpp
 			// Now check each wmo
 			for (const auto &wmo : tile->wmos.entries)
 			{
-				if (wmo.uniqueId == 35530)
-				{
-					DLOG("Moonbrook dungeon!");
-				}
-
 				// Check if we already checked this wmo once
 				if (checkedWmos.contains(wmo.uniqueId))
 					continue;
