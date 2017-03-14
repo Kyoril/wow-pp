@@ -27,6 +27,7 @@ remove_pch_cpp(srcFiles "${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp")
 file(GLOB sffFiles "../../shared/simple_file_format/*.h")
 file(GLOB parserFiles "./parser/*.cpp" "./parser/*.h" "./parser/*.hpp")
 
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories("parser")
 
 # Add source groups
