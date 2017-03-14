@@ -22,12 +22,12 @@
 #include "pch.h"
 #include "solid_visibility_grid.h"
 #include "game/visibility_tile.h"
+#include "game/constants.h"
 
 namespace wowpp
 {
 	namespace constants
 	{
-		static const float MapWidth = 533.3333f;
 		static const size_t MapZonesInParallel = 16;
 	}
 

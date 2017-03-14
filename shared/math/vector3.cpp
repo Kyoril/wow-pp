@@ -24,6 +24,7 @@
 #include <cstddef>
 #include <ostream>
 #include <cassert>
+#include <limits>
 #include "vector3.h"
 #include "binary_io/reader.h"
 #include "binary_io/writer.h"

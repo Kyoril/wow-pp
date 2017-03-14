@@ -94,7 +94,7 @@ namespace wowpp
 			m_faceBounds.reserve(numFaces);
 			m_faceIndices.reserve(numFaces);
 
-			for (unsigned int i = 0; i < unsigned int(numFaces); ++i)
+			for (unsigned int i = 0; i < (unsigned int)numFaces; ++i)
 			{
 				m_faceIndices.push_back(i);
 				m_faceBounds.push_back(calculateFaceBounds(&i, 1));
@@ -104,7 +104,7 @@ namespace wowpp
 			m_nodes.clear();
 			m_nodes.reserve(int(numFaces * 1.5f));
 
-			buildRecursive(0, m_faceIndices.data(), unsigned int(numFaces));
+			buildRecursive(0, m_faceIndices.data(), (unsigned int)numFaces);
 			m_faceBounds.clear();
 
 			// Reorder the model indices according to the face indices

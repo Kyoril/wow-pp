@@ -23,6 +23,7 @@
 #include <cstddef>
 #include <ostream>
 #include <cassert>
+#include <limits>
 #include "matrix4.h"
 #include "binary_io/reader.h"
 #include "binary_io/writer.h"
