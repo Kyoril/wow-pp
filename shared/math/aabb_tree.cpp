@@ -123,7 +123,8 @@ namespace wowpp
 		bool AABBTree::intersectRay(Ray& ray, Index* faceIndex/* = nullptr*/) const
 		{
 			float distance = ray.hitDistance;
-			traceRecursive(0, ray, faceIndex);
+			trace(ray, faceIndex);
+			//traceRecursive(0, ray, faceIndex);
 			return ray.hitDistance < distance;
 		}
 

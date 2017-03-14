@@ -212,7 +212,6 @@ namespace wowpp
 		MapAreaChunk areas;
 		MapNavigationChunk navigation;
 		MapWMOChunk wmos;
-		MapDoodadChunk doodads;
 
 		~MapDataTile() {}
 	};

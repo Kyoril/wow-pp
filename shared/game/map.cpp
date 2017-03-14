@@ -22,6 +22,8 @@
 #include "pch.h"
 #include "map.h"
 #include "common/macros.h"
+#include "common/linear_set.h"
+#include "game/constants.h"
 #include "shared/proto_data/maps.pb.h"
 #include "log/default_log_levels.h"
 #include "common/make_unique.h"
@@ -30,10 +32,14 @@
 #include "common/clock.h"
 #include "detour/DetourCommon.h"
 #include "recast/Recast.h"
+#include "binary_io/stream_source.h"
+#include "binary_io/reader.h"
+#include "cppformat/cppformat/format.h"
 
 namespace wowpp
 {
 	std::map<UInt32, std::unique_ptr<dtNavMesh, NavMeshDeleter>> Map::navMeshsPerMap;
+	std::map<String, std::shared_ptr<math::AABBTree>> aabbTreeById;
 
 	Map::Map(const proto::MapEntry &entry, boost::filesystem::path dataPath)
 		: m_entry(entry)
@@ -175,9 +181,13 @@ namespace wowpp
 					return nullptr;
 				}
 
+				// Create reader object
+				io::StreamSource fileSource(mapFile);
+				io::Reader reader(fileSource);
+
 				// Read map header
 				MapHeaderChunk mapHeaderChunk;
-				mapFile.read(reinterpret_cast<char *>(&mapHeaderChunk), sizeof(MapHeaderChunk));
+				reader.readPOD(mapHeaderChunk);
 				if (mapHeaderChunk.header.fourCC != MapHeaderChunkCC)
 				{
 					ELOG("Could not load map file " << file << ": Invalid four-cc code!");
@@ -195,44 +205,95 @@ namespace wowpp
 				}
 
 				// Read area table
-				mapFile.seekg(mapHeaderChunk.offsAreaTable, std::ios::beg);
-
-				// Create new tile and read area data
-				mapFile.read(reinterpret_cast<char *>(&tile->areas), sizeof(MapAreaChunk));
-				if (tile->areas.header.fourCC != MapAreaChunkCC || tile->areas.header.size != sizeof(MapAreaChunk) - 8)
+				fileSource.seek(mapHeaderChunk.offsAreaTable);
+				reader.readPOD(tile->areas);
+				if (tile->areas.header.fourCC != MapAreaChunkCC || tile->areas.header.size != sizeof(MapAreaChunk) - sizeof(MapChunkHeader))
 				{
 					WLOG("Map file " << file << " seems to be corrupted: Wrong area chunk");
 					return nullptr;
 				}
 
+				// Read wmos for line of sight checks
+				if (mapHeaderChunk.offsWmos)
+				{
+					fileSource.seek(mapHeaderChunk.offsWmos);
+					reader.readPOD(tile->wmos.header);
+					if (tile->wmos.header.fourCC != MapWMOChunkCC)
+					{
+						WLOG("Map file " << file << " seems to be corrupted: Wrong wmo chunk header");
+						return nullptr;
+					}
+
+					UInt32 wmoCount = 0;
+					reader >> io::read<UInt32>(wmoCount);
+
+					tile->wmos.entries.resize(wmoCount);
+					for (auto &wmo : tile->wmos.entries)
+					{
+						reader
+							>> io::read<NetUInt32>(wmo.uniqueId)
+							>> io::read_container<UInt16>(wmo.fileName);
+						reader.readPOD(wmo.inverse);
+						reader.readPOD(wmo.bounds);
+
+						// Load aabbtree
+						auto it = aabbTreeById.find(wmo.fileName);
+						if (it == aabbTreeById.end())
+						{
+							auto treeFilePath = m_dataPath / "bvh" / (wmo.fileName + ".bvh");
+
+							std::ifstream bvhFile(treeFilePath.string().c_str(), std::ios::in | std::ios::binary);
+							if (!bvhFile)
+							{
+								ELOG("Could not load bvh file " << treeFilePath.string());
+								return nullptr;
+							}
+
+							// Create reader object
+							io::StreamSource bvhSrc(bvhFile);
+							io::Reader bvhRead(bvhSrc);
+
+							// Read bvh tree data from file
+							auto tree = std::make_shared<math::AABBTree>();
+							bvhRead >> *tree;
+
+							// Check if empty
+							if (tree->getIndices().empty())
+							{
+								WLOG("BVH tree " << wmo.fileName << " has no triangles (empty)!");
+							}
+
+							// Store tree
+							aabbTreeById[wmo.fileName] = tree;
+						}
+					}
+				}
+
 				// Read navigation data
 				if (m_navMesh && mapHeaderChunk.offsNavigation)
 				{
-					mapFile.seekg(mapHeaderChunk.offsNavigation, std::ios::beg);
-
-					// Read chunk header
-					mapFile.read(reinterpret_cast<char *>(&tile->navigation.header.fourCC), sizeof(UInt32));
+					fileSource.seek(mapHeaderChunk.offsNavigation);
+					reader.readPOD(tile->navigation.header);
 					if (tile->navigation.header.fourCC != MapNavChunkCC)
 					{
 						WLOG("Map file " << file << " seems to be corrupted: Wrong nav chunk header chunk");
 						return nullptr;
 					}
-					mapFile.read(reinterpret_cast<char *>(&tile->navigation.header.size), sizeof(UInt32));
-					mapFile.read(reinterpret_cast<char *>(&tile->navigation.tileCount), sizeof(UInt32));
-					
+
 					// Read navigation meshes if any
+					reader >> io::read<UInt32>(tile->navigation.tileCount);
 					tile->navigation.tiles.resize(tile->navigation.tileCount);
 					for (UInt32 i = 0; i < tile->navigation.tileCount; ++i)
 					{
 						auto &data = tile->navigation.tiles[i];
-						mapFile.read(reinterpret_cast<char *>(&data.size), sizeof(UInt32));
+						fileSource.read(reinterpret_cast<char *>(&data.size), sizeof(UInt32));
 
 						// Finally read tile data
 						if (data.size)
 						{
 							// Reserver and read
 							data.data.resize(data.size);
-							mapFile.read(data.data.data(), data.size);
+							fileSource.read(data.data.data(), data.size);
 
 							// Add tile to navmesh
 							dtTileRef ref = 0;
@@ -260,52 +321,74 @@ namespace wowpp
 
 	bool Map::isInLineOfSight(const math::Vector3 &posA, const math::Vector3 &posB)
 	{
-		if (posA == posB) {
+		if (posA == posB)
 			return true;
-		}
-
-		// Calculate grid x coordinates
-		TileIndex2D startTileIdx;
-		startTileIdx[0] = static_cast<Int32>(floor((32.0 - (static_cast<double>(posA.x) / 533.3333333))));
-		startTileIdx[1] = static_cast<Int32>(floor((32.0 - (static_cast<double>(posA.y) / 533.3333333))));
-
-		auto *startTile = getTile(startTileIdx);
-		if (!startTile)
-		{
-			// Unable to get / load tile - always in line of sight
-			return true;
-		}
-
-#if 0
-		if (startTile->collision.triangleCount == 0)
-		{
-			return true;
-		}
 
 		// Create a ray
 		math::Ray ray(posA, posB);
 
-		const float dist = (posB - posA).length();
+		// False if blocked
+		bool inLineOfSight = true;
+		
+		// Keep track of checked WMO ids - this is required since multiple tiles might reference the same
+		// WMOs and we don't want to check WMO's twice for the same ray cast (especially large cities!)
+		LinearSet<UInt32> checkedWmos;
 
-		// Test: Check every triangle (TODO: Use octree nodes)
-		UInt32 triangleIndex = 0;
-		for (const auto &triangle : startTile->collision.triangles)
-		{
-			auto &vA = startTile->collision.vertices[triangle.indexA];
-			auto &vB = startTile->collision.vertices[triangle.indexB];
-			auto &vC = startTile->collision.vertices[triangle.indexC];
-			auto result = ray.intersectsTriangle(vA, vB, vC);
-			if (result.first && result.second <= dist)
+		// Now process every tile on the way
+		forEachTileInRayXY(ray, constants::MapWidth, [&](Int32 x, Int32 y) -> bool {
+			auto tileIndex = TileIndex2D(static_cast<Int32>(floor(31.0f - x)), static_cast<Int32>(floor(31.0f - y)));
+			auto *tile = getTile(tileIndex);
+			if (!tile)
 			{
-				return false;
+				// Failed to obtain tile, skip
+				WLOG("Failed to obtain tile " << tileIndex);
+				return true;
 			}
 
-			triangleIndex++;
-		}
-#endif
+			// Now check each wmo
+			for (const auto &wmo : tile->wmos.entries)
+			{
+				if (wmo.uniqueId == 35530)
+				{
+					DLOG("Moonbrook dungeon!");
+				}
 
-		// Target is in line of sight
-		return true;
+				// Check if we already checked this wmo once
+				if (checkedWmos.contains(wmo.uniqueId))
+					continue;
+
+				// Do a bounding box check to see if this wmo is hit by the ray cast
+				auto result = ray.intersectsAABB(wmo.bounds);
+				if (result.first)
+				{
+					// WMO was hit - keep track of it
+					checkedWmos.add(wmo.uniqueId);
+
+					// WMO was hit, now we transform the ray into WMO coordinate space and do the check again
+					math::Ray transformedRay(
+						wmo.inverse * posA,
+						wmo.inverse * posB
+					);
+
+					// Find AABBTree instance and execute raycast
+					auto treeIt = aabbTreeById.find(wmo.fileName);
+					if (treeIt != aabbTreeById.end())
+					{
+						if (treeIt->second->intersectRay(transformedRay))
+						{
+							// We hit something, so stop iterating here
+							inLineOfSight = false;
+							return false;
+						}
+					}
+				}
+			}
+
+			// Process next tile
+			return true;
+		});
+
+		return inLineOfSight;
 	}
 	
 #define MAX_PATH_LENGTH         74

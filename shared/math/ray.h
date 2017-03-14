@@ -24,6 +24,7 @@
 #include "common/typedefs.h"
 #include "bounding_box.h"
 #include "vector3.h"
+#include <cmath>
 
 namespace wowpp
 {
@@ -209,5 +210,31 @@ namespace wowpp
 				return std::make_pair(true, tmin / getLength());
 			}
 		};
+
+		/// Enumerates all tiles that a ray crosses.
+		template<typename Callback>
+		void forEachTileInRayXY(const Ray &ray, float cellSize, Callback callback)
+		{
+			Int32 x1 = floor(ray.origin.x / cellSize);
+			Int32 y1 = floor(ray.origin.y / cellSize);
+			Int32 x2 = floor(ray.destination.x / cellSize);
+			Int32 y2 = floor(ray.destination.y / cellSize);
+
+			Int32 dx = ::abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
+			Int32 dy = -::abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
+			Int32 e = dx + dy, e2;
+
+			while (true)
+			{
+				if (!callback(x1, y1))
+					return;
+
+				if (x1 == x2 && y1 == y2)
+					break;
+				e2 = 2 * e;
+				if (e2 > dy) { e += dy; x1 += sx; }
+				if (e2 < dx) { e += dx; y1 += sy; }
+			}
+		}
 	}
 }
