@@ -171,12 +171,16 @@ namespace wowpp
 		if (!auth::client_read::logonChallenge(packet, m_version1, m_version2, m_version3, m_build, m_platform, m_system, m_locale, m_userName))
 		{
 			ELOG("Could not read packet CMD_AUTH_LOGON_CHALLENGE");
+			m_connection->close();
+			destroy();
 			return;
 		}
 
 		if (m_accountId != 0)
 		{
 			WLOG("Player tried to log in again!");
+			m_connection->close();
+			destroy();
 			return;
 		}
 		
@@ -244,12 +248,16 @@ namespace wowpp
 		if (m_accountId == 0)
 		{
 			WLOG("Tried to send logon proof before challenge");
+			m_connection->close();
+			destroy();
 			return;
 		}
 
 		if (m_session)
 		{
 			WLOG("Tried to send proof when already proofed!");
+			m_connection->close();
+			destroy();
 			return;
 		}
 		
@@ -326,6 +334,7 @@ namespace wowpp
 		{
 			ELOG("Detected invalid A value from client");
 			m_connection->close();
+			destroy();
 			return;
 		}
 
@@ -450,12 +459,16 @@ namespace wowpp
 		if (!auth::client_read::reconnectChallenge(packet, m_version1, m_version2, m_version3, m_build, m_platform, m_system, m_locale, m_userName))
 		{
 			ELOG("Could not read packet CMD_AUTH_RECONNECT_CHALLENGE");
+			m_connection->close();
+			destroy();
 			return;
 		}
 
 		if (m_accountId != 0)
 		{
 			WLOG("Player tried to reconnect again!");
+			m_connection->close();
+			destroy();
 			return;
 		}
 		
@@ -472,6 +485,7 @@ namespace wowpp
 			m_accountId == 0)
 		{
 			WLOG("Unknown account!");
+			m_connection->close();
 			destroy();
 			return;
 		}
@@ -493,18 +507,24 @@ namespace wowpp
 		if (m_accountId == 0 || !m_reconnectProof.getNumBytes() || m_userName.empty())
 		{
 			WLOG("Tried to send logon proof before challenge");
+			m_connection->close();
+			destroy();
 			return;
 		}
 
 		if (m_session)
 		{
 			WLOG("Tried to send proof when already proofed!");
+			m_connection->close();
+			destroy();
 			return;
 		}
 		
 		if (!m_reconnectChallenge || m_loginChallenge)
 		{
 			WLOG("Tried to send reconnect proof without proper challenge request");
+			m_connection->close();
+			destroy();
 			return;
 		}
 
@@ -515,6 +535,8 @@ namespace wowpp
 		if (!auth::client_read::reconnectProof(packet, R1, R2, R3, keyNum))
 		{
 			ELOG("Could not read packet CMD_AUTH_RECONNECT_PROOF");
+			m_connection->close();
+			destroy();
 			return;
 		}
 
@@ -534,6 +556,7 @@ namespace wowpp
 		if (hash != R2)
 		{
 			WLOG("User " << m_userName << " tried to log in, but session is invalid!");
+			m_connection->close();
 			destroy();
 			return;
 		}
@@ -554,12 +577,16 @@ namespace wowpp
 		// Read realm list packet
 		if (!auth::client_read::realmList(packet))
 		{
+			m_connection->close();
+			destroy();
 			return;
 		}
 
 		// Are we authentificated?
 		if (!isAuthentificated())
 		{
+			m_connection->close();
+			destroy();
 			return;
 		}
 
