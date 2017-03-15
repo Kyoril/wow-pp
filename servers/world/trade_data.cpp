@@ -198,7 +198,7 @@ namespace wowpp
 
 	void TradeData::setItem(Trader index, UInt8 tradeSlot, ItemPtr item)
 	{
-		ASSERT(index > Trader::Count_);
+		ASSERT(index < Trader::Count_);
 		ASSERT(tradeSlot < MaxTradeSlots);
 
 		// First remove that item from any other trade slot where it eventually is
