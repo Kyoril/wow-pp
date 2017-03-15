@@ -163,6 +163,7 @@ namespace wowpp
 						String argValue = arg.substr(delimiterPos + 1);
 
 						UInt32 ringCount = 0, trinketCount = 0, bagCount = 0;
+						LinearSet<UInt32> usedEquipmentSlots;
 
 						std::stringstream spellarg;
 						spellarg << "spells%5B" << spellIndex << "%5D";
@@ -259,36 +260,44 @@ namespace wowpp
 											// Find preferred item slot based on inventory type
 											switch (item->inventorytype())
 											{
+#define WOWPP_EQUIPMENT_SLOT(slot) \
+	if (!usedEquipmentSlots.contains(player_equipment_slots::slot)) { \
+		preferredSlot = player_equipment_slots::slot | 0x0; \
+	} \
+	else { \
+		usedEquipmentSlots.add(player_equipment_slots::slot); \
+	} \
+
 												case game::inventory_type::Head:
-													preferredSlot = player_equipment_slots::Head | 0x0;
+													WOWPP_EQUIPMENT_SLOT(Head);
 													break;
 												case game::inventory_type::Neck:
-													preferredSlot = player_equipment_slots::Neck | 0x0;
+													WOWPP_EQUIPMENT_SLOT(Neck);
 													break;
 												case game::inventory_type::Shoulders:
-													preferredSlot = player_equipment_slots::Shoulders | 0x0;
+													WOWPP_EQUIPMENT_SLOT(Shoulders);
 													break;
 												case game::inventory_type::Body:
-													preferredSlot = player_equipment_slots::Body | 0x0;
+													WOWPP_EQUIPMENT_SLOT(Body);
 													break;
 												case game::inventory_type::Chest:
 												case game::inventory_type::Robe:
-													preferredSlot = player_equipment_slots::Chest | 0x0;
+													WOWPP_EQUIPMENT_SLOT(Chest);
 													break;
 												case game::inventory_type::Waist:
-													preferredSlot = player_equipment_slots::Waist | 0x0;
+													WOWPP_EQUIPMENT_SLOT(Waist);
 													break;
 												case game::inventory_type::Legs:
-													preferredSlot = player_equipment_slots::Legs | 0x0;
+													WOWPP_EQUIPMENT_SLOT(Legs);
 													break;
 												case game::inventory_type::Feet:
-													preferredSlot = player_equipment_slots::Feet | 0x0;
+													WOWPP_EQUIPMENT_SLOT(Feet);
 													break;
 												case game::inventory_type::Wrists:
-													preferredSlot = player_equipment_slots::Wrists | 0x0;
+													WOWPP_EQUIPMENT_SLOT(Wrists);
 													break;
 												case game::inventory_type::Hands:
-													preferredSlot = player_equipment_slots::Hands | 0x0;
+													WOWPP_EQUIPMENT_SLOT(Hands);
 													break;
 												case game::inventory_type::Finger:
 													{
@@ -321,24 +330,26 @@ namespace wowpp
 												case game::inventory_type::Weapon:
 												case game::inventory_type::TwoHandedWeapon:
 												case game::inventory_type::MainHandWeapon:
-													preferredSlot = player_equipment_slots::Mainhand | 0x0;
+													WOWPP_EQUIPMENT_SLOT(Mainhand);
 													break;
 												case game::inventory_type::Shield:
 												case game::inventory_type::OffHandWeapon:
 												case game::inventory_type::Holdable:
-													preferredSlot = player_equipment_slots::Offhand | 0x0;
+													WOWPP_EQUIPMENT_SLOT(Offhand);
 													break;
 												case game::inventory_type::Ranged:
 												case game::inventory_type::Thrown:
-													preferredSlot = player_equipment_slots::Ranged | 0x0;
+													WOWPP_EQUIPMENT_SLOT(Ranged);
 													break;
 												case game::inventory_type::Cloak:
-													preferredSlot = player_equipment_slots::Back | 0x0;
+													WOWPP_EQUIPMENT_SLOT(Back);
 													break;
 												case game::inventory_type::Tabard:
-													preferredSlot = player_equipment_slots::Tabard | 0x0;
+													WOWPP_EQUIPMENT_SLOT(Tabard);
 													break;
 											}
+
+#undef WOWPP_EQUIPMENT_SLOT
 
 											// Check if the item is equippable
 											if (preferredSlot != preferredBagSlot)
