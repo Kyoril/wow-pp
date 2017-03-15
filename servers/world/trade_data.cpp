@@ -147,7 +147,7 @@ namespace wowpp
 
 	void TradeData::setGold(Trader index, UInt32 gold)
 	{
-		ASSERT(index > Trader::Count_);
+		ASSERT(index < Trader::Count_);
 
 		// Update gold value and acceptance state
 		m_data[index].gold = gold;
@@ -162,7 +162,7 @@ namespace wowpp
 
 	void TradeData::setAcceptedState(Trader index, bool accept)
 	{
-		ASSERT(index > Trader::Count_);
+		ASSERT(index < Trader::Count_);
 
 		bool wasAccepted = m_data[index].accepted;
 		if (accept == wasAccepted)
