@@ -45,6 +45,7 @@ namespace wowpp
 		, m_loginChallenge(false)
 		, m_reconnectChallenge(false)
 		, m_timeout(timerQueue)
+		, m_nextRealmRequest(0)
 	{
 		ASSERT(m_connection);
 
@@ -154,7 +155,9 @@ namespace wowpp
 				WLOG("Unknown packet received from " << m_address 
 					<< " - ID: " << static_cast<UInt32>(packetId) 
 					<< "; Size: " << packet.getSource()->size() << " bytes");
-				break;
+				m_connection->close();
+				destroy();
+				return;
 			}
 		}
 
@@ -589,6 +592,18 @@ namespace wowpp
 			destroy();
 			return;
 		}
+
+		// Realm list request spam protection
+		GameTime now = getCurrentTime();
+		if (now < m_nextRealmRequest)
+		{
+			m_connection->close();
+			destroy();
+			return;
+		}
+
+		// Only one realm list request every 10 seconds
+		m_nextRealmRequest = now + constants::OneSecond * 10;
 
 		// Collect list of available realms
 		std::vector<auth::RealmEntry> entries;

@@ -97,6 +97,7 @@ namespace wowpp
 		bool m_reconnectChallenge;				// Reconnect challenge sent?
 		Countdown m_timeout;					// Timeout countdown
 		simple::scoped_connection m_onTimeout;
+		GameTime m_nextRealmRequest;
 
 	private:
 
