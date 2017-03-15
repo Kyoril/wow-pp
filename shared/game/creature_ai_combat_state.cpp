@@ -107,6 +107,9 @@ namespace wowpp
 		});
 		m_onUnitStateChanged = getControlled().unitStateChanged.connect([this](UInt32 state, bool apply)
 		{
+			if (!getControlled().isAlive())
+				return;
+
 			switch (state)
 			{
 				case unit_state::Feared:

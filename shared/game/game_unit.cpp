@@ -1004,7 +1004,6 @@ namespace wowpp
 					// Deal damage (Note: m_victim can become nullptr, if the target dies)
 					if (totalDamage > 0)
 					{
-
 						victim->dealDamage(totalDamage - resisted - absorbed, (1 << 0), game::DamageType::Direct, this, totalDamage - resisted - absorbed);
 					}
 					else

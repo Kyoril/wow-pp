@@ -2228,15 +2228,15 @@ namespace wowpp
 		{
 			m_targetEnteredWater = m_target.enteredWater.connect(
 			[&]() {
-				m_destroy(*this);
+				this->setRemoved(nullptr);
 			});
 		}
 
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Attack) != 0)
 		{
 			m_targetStartedAttacking = m_target.doneMeleeAttack.connect(
-			[&](GameUnit*, game::VictimState) {
-				m_destroy(*this);
+			[&](GameUnit* attacker, game::VictimState) {
+				this->setRemoved(attacker);
 			});
 		}
 
@@ -2257,7 +2257,7 @@ namespace wowpp
 							return;
 						}
 
-						strong->m_destroy(*strong);
+						strong->setRemoved(nullptr);
 					});
 				}
 			});
@@ -2320,15 +2320,17 @@ namespace wowpp
 			});
 		}
 
+		// If an aura of this spell may only be applied on one target at a time...
 		if (m_spell.attributes(5) & game::spell_attributes_ex_e::SingleTargetSpell)
 		{
-			std::unordered_map<UInt32, GameUnit *> &trackedAuras = m_caster->getTrackedAuras();
+			auto &trackedAuras = m_caster->getTrackedAuras();
 
-			if (trackedAuras.find(m_spell.mechanic()) != trackedAuras.end())
+			auto it = trackedAuras.find(m_spell.mechanic());
+			if (it != trackedAuras.end())
 			{
-				if (trackedAuras[m_spell.mechanic()] != &m_target)
+				if (it->second != &m_target)
 				{
-					trackedAuras[m_spell.mechanic()]->getAuras().removeAllAurasDueToMechanic(1 << m_spell.mechanic());
+					it->second->getAuras().removeAllAurasDueToMechanic(1 << m_spell.mechanic());
 				}
 			}
 

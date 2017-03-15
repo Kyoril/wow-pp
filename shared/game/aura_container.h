@@ -22,6 +22,7 @@
 #pragma once
 
 #include "game/defines.h"
+#include "common/simple.hpp"
 
 namespace wowpp
 {
@@ -33,7 +34,7 @@ namespace wowpp
 	{
 	private:
 
-		typedef std::list<std::shared_ptr<Aura>> AuraList;
+		typedef simple::stable_list<std::shared_ptr<Aura>> AuraList;
 
 	public:
 
@@ -54,9 +55,9 @@ namespace wowpp
 		GameUnit &getOwner() {
 			return m_owner;
 		}
-		size_t getSize() const {
+		/*size_t getSize() const {
 			return m_auras.size();
-		}
+		}*/
 		bool hasAura(game::AuraType type) const;
 		UInt32 consumeAbsorb(UInt32 damage, UInt8 school);
 		Int32 getMaximumBasePoints(game::AuraType type) const;
