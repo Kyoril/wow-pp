@@ -46,6 +46,7 @@ namespace wowpp
 		, m_reconnectChallenge(false)
 		, m_timeout(timerQueue)
 		, m_nextRealmRequest(0)
+		, m_realmRequestCount(0)
 	{
 		ASSERT(m_connection);
 
@@ -597,13 +598,23 @@ namespace wowpp
 		GameTime now = getCurrentTime();
 		if (now < m_nextRealmRequest)
 		{
-			m_connection->close();
-			destroy();
-			return;
-		}
+			// Increase realm request counter
+			m_realmRequestCount++;
 
-		// Only one realm list request every 10 seconds
-		m_nextRealmRequest = now + constants::OneSecond * 10;
+			// Limit to three requests every 10 seconds
+			if (m_realmRequestCount > 3)
+			{
+				m_connection->close();
+				destroy();
+				return;
+			}
+		}
+		else
+		{
+			// Only one realm list request every 10 seconds
+			m_nextRealmRequest = now + constants::OneSecond * 10;
+			m_realmRequestCount = 0;
+		}
 
 		// Collect list of available realms
 		std::vector<auth::RealmEntry> entries;

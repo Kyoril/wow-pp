@@ -251,8 +251,16 @@ namespace wowpp
 						std::cref(session->getV()),
 						std::cref(session->getS()),
 						std::cref(tutorialData)));
+
+				// Close client connection
+				player->getConnection().close();
+
 				return;
 			}
+		}
+		else
+		{
+			WLOG("Invalid login request for player " << accountName << ": Not connected");
 		}
 
 		// Send failure

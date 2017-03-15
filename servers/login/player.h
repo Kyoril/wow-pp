@@ -98,6 +98,7 @@ namespace wowpp
 		Countdown m_timeout;					// Timeout countdown
 		simple::scoped_connection m_onTimeout;
 		GameTime m_nextRealmRequest;
+		UInt8 m_realmRequestCount;
 
 	private:
 
