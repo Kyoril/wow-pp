@@ -473,6 +473,8 @@ namespace wowpp
 			return;
 		}
 
+		const auto *spellEntry = attacker.getProject().spells.getById(spellId);
+
 		switch (targetA)
 		{
 		case game::targets::UnitCaster:			//1
@@ -551,15 +553,30 @@ namespace wowpp
 				math::Vector3 location = attacker.getLocation();
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
 				const float realRad = radius + attacker.getMeleeReach();
-				finder.findUnits(Circle(location.x, location.y, realRad), [this, &location, &realRad, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
+				finder.findUnits(Circle(location.x, location.y, realRad), [this, spellEntry, &location, &realRad, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
+					// Only target player characters?
+					if ((spellEntry->attributes(3) & game::spell_attributes_ex_c::TargetOnlyPlayer) != 0)
+					{
+						if (!unit.isGameCharacter())
+							return true;
+					}
+
 					const float distSq = realRad * realRad;
 					if (distSq >= (location - unit.getLocation()).squared_length())
 					{
 						const auto &faction = attacker.getFactionTemplate();
-						if (!unit.isFriendlyTo(faction) && unit.isAlive() && unit.isInLineOfSight(location) &&
+						if (!unit.isFriendlyTo(faction) && unit.isAlive() &&
 							attacker.isInArc(3.1415927f * 0.5f, unit.getLocation().x, unit.getLocation().y))
 						{
+							if (spellEntry && (spellEntry->attributes(2) & game::spell_attributes_ex_b::IgnoreLineOfSight) == 0)
+							{
+								if (!unit.isInLineOfSight(attacker))
+								{
+									return true;
+								}
+							}
+
 							if (!unit.isAttackable())
 							{
 								return true;
@@ -585,15 +602,30 @@ namespace wowpp
 				math::Vector3 location;
 				targetMap.getDestLocation(location.x, location.y, location.z);
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
-				finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
+				finder.findUnits(Circle(location.x, location.y, radius), [this, spellEntry, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
+					// Only target player characters?
+					if ((spellEntry->attributes(3) & game::spell_attributes_ex_c::TargetOnlyPlayer) != 0)
+					{
+						if (!unit.isGameCharacter())
+							return true;
+					}
+
 					const float realRad = radius + attacker.getMeleeReach() + unit.getMeleeReach();
 					const float distSq = realRad * realRad;
 					if (distSq >= (location - unit.getLocation()).squared_length())
 					{
 						const auto &faction = attacker.getFactionTemplate();
-						if (!unit.isFriendlyTo(faction) && unit.isAlive() && unit.isInLineOfSight(location))
+						if (!unit.isFriendlyTo(faction) && unit.isAlive())
 						{
+							if (spellEntry && (spellEntry->attributes(2) & game::spell_attributes_ex_b::IgnoreLineOfSight) == 0)
+							{
+								if (!unit.isInLineOfSight(attacker))
+								{
+									return true;
+								}
+							}
+
 							if (!unit.isAttackable())
 							{
 								return true;
@@ -621,7 +653,7 @@ namespace wowpp
 					auto &finder = attacker.getWorldInstance()->getUnitFinder();
 					finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, unitTarget, &targets, maxtargets](GameUnit & unit) -> bool
 					{
-						if (unit.getTypeId() != object_type::Character)
+						if (!unit.isGameCharacter())
 							return true;
 
 						if (radius * radius >= (location - unit.getLocation()).squared_length())
@@ -665,16 +697,30 @@ namespace wowpp
 			{
 				math::Vector3 location = attacker.getLocation();
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
-				finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
+				finder.findUnits(Circle(location.x, location.y, radius), [this, spellEntry, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
+					// Only target player characters?
+					if ((spellEntry->attributes(3) & game::spell_attributes_ex_c::TargetOnlyPlayer) != 0)
+					{
+						if (!unit.isGameCharacter())
+							return true;
+					}
+
 					const float realRad = radius + attacker.getMeleeReach() + unit.getMeleeReach();
 
 					const float distSq = realRad * realRad;
 					if (distSq >= (location - unit.getLocation()).squared_length())
 					{
 						const auto &faction = attacker.getFactionTemplate();
-						if (!unit.isFriendlyTo(faction) && unit.isAlive() && attacker.isInLineOfSight(unit))
+						if (!unit.isFriendlyTo(faction) && unit.isAlive())
 						{
+							if (spellEntry && (spellEntry->attributes(2) & game::spell_attributes_ex_b::IgnoreLineOfSight) == 0)
+							{
+								if (!unit.isInLineOfSight(attacker))
+								{
+									return true;
+								}
+							}
 							if (!unit.isAttackable())
 							{
 								return true;
@@ -703,15 +749,29 @@ namespace wowpp
 				}
 
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
-				finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
+				finder.findUnits(Circle(location.x, location.y, radius), [this, spellEntry, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
+					// Only target player characters?
+					if ((spellEntry->attributes(3) & game::spell_attributes_ex_c::TargetOnlyPlayer) != 0)
+					{
+						if (!unit.isGameCharacter())
+							return true;
+					}
+
 					const float realRad = radius + attacker.getMeleeReach() + unit.getMeleeReach();
 					const float distSq = realRad * realRad;
 					if (distSq >= (location - unit.getLocation()).squared_length())
 					{
 						const auto &faction = attacker.getFactionTemplate();
-						if (!unit.isFriendlyTo(faction) && unit.isAlive() && attacker.isInLineOfSight(unit.getLocation()))
+						if (!unit.isFriendlyTo(faction) && unit.isAlive())
 						{
+							if (spellEntry && (spellEntry->attributes(2) & game::spell_attributes_ex_b::IgnoreLineOfSight) == 0)
+							{
+								if (!unit.isInLineOfSight(attacker))
+								{
+									return true;
+								}
+							}
 							if (!unit.isAttackable())
 							{
 								return true;
@@ -733,11 +793,12 @@ namespace wowpp
 			break;
 		case game::targets::AreaPartySrc: //33
 			{
+
 				math::Vector3 location = attacker.getLocation();
 				auto &finder = attacker.getWorldInstance()->getUnitFinder();
 				finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
-					if (unit.getTypeId() != object_type::Character)
+					if (!unit.isGameCharacter())
 						return true;
 
 					if (radius * radius >= (location - unit.getLocation()).squared_length())

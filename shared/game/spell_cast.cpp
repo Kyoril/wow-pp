@@ -216,7 +216,7 @@ namespace wowpp
 
 		// Check facing (Need to have the target in front of us)
 		if (spell.facing() & 0x01 &&
-			!(spell.attributes(2) & game::spell_attributes_ex_b::CantReflect))
+			!(spell.attributes(2) & game::spell_attributes_ex_b::IgnoreLineOfSight))
 		{
 			const auto *world = m_executer.getWorldInstance();
 			if (world)

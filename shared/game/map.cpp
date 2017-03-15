@@ -324,6 +324,11 @@ namespace wowpp
 		if (posA == posB)
 			return true;
 
+		// Skip checks if too much distance
+		const float maxCheckDistSq = constants::MapWidth * constants::MapWidth;
+		if ((posA - posB).squared_length() >= maxCheckDistSq)
+			return true;
+
 		// Create a ray
 		math::Ray ray(posA, posB);
 
