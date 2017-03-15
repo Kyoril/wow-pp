@@ -162,6 +162,8 @@ namespace wowpp
 						String argName = arg.substr(0, delimiterPos);
 						String argValue = arg.substr(delimiterPos + 1);
 
+						UInt32 ringCount = 0, trinketCount = 0, bagCount = 0;
+
 						std::stringstream spellarg;
 						spellarg << "spells%5B" << spellIndex << "%5D";
 						std::stringstream itemarg;
@@ -289,10 +291,32 @@ namespace wowpp
 													preferredSlot = player_equipment_slots::Hands | 0x0;
 													break;
 												case game::inventory_type::Finger:
-													preferredSlot = player_equipment_slots::Finger1 | 0x0;
+													{
+														switch (ringCount++)
+														{
+															case 0:
+																preferredSlot = player_equipment_slots::Finger1 | 0x0;
+																break;
+															case 1:
+																preferredSlot = player_equipment_slots::Finger2 | 0x0;
+																break;
+															default:
+																break;
+														}
+													}
 													break;
 												case game::inventory_type::Trinket:
-													preferredSlot = player_equipment_slots::Trinket1 | 0x0;
+													switch (trinketCount++)
+													{
+														case 0:
+															preferredSlot = player_equipment_slots::Trinket1 | 0x0;
+															break;
+														case 1:
+															preferredSlot = player_equipment_slots::Trinket2 | 0x0;
+															break;
+														default:
+															break;
+													}
 													break;
 												case game::inventory_type::Weapon:
 												case game::inventory_type::TwoHandedWeapon:
