@@ -507,7 +507,7 @@ namespace wowpp
 
 		// WARNING: There should never be any items left here!
 		ASSERT(itemsToDelete == 0);
-		ASSERT(m_itemCounter[entry.id()] == itemCount - itemsToDelete);
+		ASSERT(m_itemCounter[entry.id()] == itemCount - amount);
 
 		return game::inventory_change_failure::Okay;
 	}
