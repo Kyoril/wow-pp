@@ -156,14 +156,14 @@ namespace wowpp
 
 					UInt8 bagSlot = player_inventory_pack_slots::Start;
 
+					UInt32 ringCount = 0, trinketCount = 0, bagCount = 0;
+					LinearSet<UInt32> usedEquipmentSlots;
+
 					for (auto &arg : arguments)
 					{
 						auto delimiterPos = arg.find('=');
 						String argName = arg.substr(0, delimiterPos);
 						String argValue = arg.substr(delimiterPos + 1);
-
-						UInt32 ringCount = 0, trinketCount = 0, bagCount = 0;
-						LinearSet<UInt32> usedEquipmentSlots;
 
 						std::stringstream spellarg;
 						spellarg << "spells%5B" << spellIndex << "%5D";
