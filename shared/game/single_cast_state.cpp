@@ -404,8 +404,15 @@ namespace wowpp
 	{
 		if (isChanneled())
 		{
+			// Caster could have left the world
+			auto *world = m_cast.getExecuter().getWorldInstance();
+			if (!world)
+			{
+				return;
+			}
+
 			m_cast.getExecuter().getAuras().removeAllAurasDueToSpell(m_spell.id());
-			GameUnit *target = reinterpret_cast<GameUnit *>(m_cast.getExecuter().getWorldInstance()->findObjectByGUID(m_target.getUnitTarget()));
+			GameUnit *target = reinterpret_cast<GameUnit *>(world->findObjectByGUID(m_target.getUnitTarget()));
 			if (target && target->isAlive())
 			{
 				target->getAuras().removeAllAurasDueToSpell(m_spell.id());
