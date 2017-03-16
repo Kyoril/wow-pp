@@ -222,7 +222,7 @@ namespace wowpp
 				math::Vector3 targetPoint;
 				if (mapData->getRandomPointOnGround(getAI().getHome().position, 2.0f, targetPoint))
 				{
-					getControlled().getMover().moveTo(targetPoint, getControlled().getSpeed(movement_type::Walk));
+					getControlled().getMover().moveTo(targetPoint, getControlled().getSpeed(movement_type::Walk), UnitMover::InfiniteDistance);
 					return;
 				}
 			}

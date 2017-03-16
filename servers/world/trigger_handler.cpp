@@ -467,7 +467,8 @@ namespace wowpp
 			conn.disconnect();
 		});
 		mover.moveTo(
-			math::Vector3(static_cast<float>(getActionData(action, 0)), static_cast<float>(getActionData(action, 1)), static_cast<float>(getActionData(action, 2))));
+			math::Vector3(static_cast<float>(getActionData(action, 0)), static_cast<float>(getActionData(action, 1)), static_cast<float>(getActionData(action, 2))),
+			UnitMover::InfiniteDistance);
 	}
 
 	void TriggerHandler::handleSetCombatMovement(const proto::TriggerAction & action, game::TriggerContext & context)

@@ -76,7 +76,7 @@ namespace wowpp
 #else
         struct timeval tp;
         gettimeofday(&tp, nullptr);
-        return UInt32(
+        return UInt64(
             (tp.tv_sec * 1000) + (tp.tv_usec / 1000) % UInt64(0x00000000FFFFFFFF));
 #endif
     }

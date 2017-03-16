@@ -69,7 +69,7 @@ namespace wowpp
 
 		// Initialize the units mover
 		auto &mover = m_controlled.getMover();
-		mover.moveTo(mover.getCurrentLocation());
+		mover.moveTo(mover.getCurrentLocation(), UnitMover::InfiniteDistance);
 
 		// Enter the preparation state
 		auto state = make_unique<CreatureAIPrepareState>(*this);

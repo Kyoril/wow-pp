@@ -58,7 +58,7 @@ namespace wowpp
 
 			if (now >= next.time)
 			{
-				ASSERT(getCurrentTime() >= next.time);
+				//ASSERT(getCurrentTime() >= next.time);
 				const auto callback = next.callback;
 				m_queue.pop();
 				callback();

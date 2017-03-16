@@ -1004,17 +1004,6 @@ namespace wowpp
 			return false;
 		}
 
-		// Load source tile
-		TileIndex2D startIndex(
-			static_cast<Int32>(floor((32.0 - (static_cast<double>(center.x) / 533.3333333)))),
-			static_cast<Int32>(floor((32.0 - (static_cast<double>(center.y) / 533.3333333))))
-			);
-		auto *startTile = getTile(startIndex);
-		if (!startTile)
-		{
-			return false;
-		}
-
 		int tx, ty;
 		m_navMesh->calcTileLoc(&dtCenter.x, &tx, &ty);
 		if (!m_navMesh->getTileAt(tx, ty, 0))

@@ -41,6 +41,7 @@ namespace wowpp
 	public:
 
 		static const GameTime UpdateFrequency;
+		static const float InfiniteDistance;
 
 	public:
 
@@ -66,10 +67,10 @@ namespace wowpp
 		void onMoveSpeedChanged(MovementType moveType);
 		/// Moves this unit to a specific location if possible. This does not teleport
 		/// the unit, but makes it walk / fly / swim to the target.
-		bool moveTo(const math::Vector3 &target);
+		bool moveTo(const math::Vector3 &target, float maxDist);
 		/// Moves this unit to a specific location if possible. This does not teleport
 		/// the unit, but makes it walk / fly / swim to the target.
-		bool moveTo(const math::Vector3 &target, float customSpeed);
+		bool moveTo(const math::Vector3 &target, float customSpeed, float maxDist);
 		/// Stops the current movement if any.
 		void stopMovement();
 		/// Gets the new movement target.

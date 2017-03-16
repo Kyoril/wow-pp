@@ -2585,10 +2585,10 @@ namespace wowpp
 			return;
 
 		const float dist =
-			isFeared() ? 25.0f : 2.5f;
+			isFeared() ? 5.0f : 0.5f;
 		const math::Vector3 loc =
 			isFeared() ? getMover().getCurrentLocation() : m_confusedLoc;
-
+		
 		auto *world = getWorldInstance();
 		if (world)
 		{
@@ -2598,7 +2598,7 @@ namespace wowpp
 				math::Vector3 targetPoint;
 				if (mapData->getRandomPointOnGround(loc, dist, targetPoint))
 				{
-					getMover().moveTo(targetPoint);
+					getMover().moveTo(targetPoint, 5.0f);
 					return;
 				}
 			}
@@ -2963,12 +2963,11 @@ namespace wowpp
 
 		if (wasFeared && !isFeared)
 		{
-			unitStateChanged(unit_state::Feared, false);
-
 			// Stop movement in every case
 			getMover().stopMovement();
 			m_fearMoved.disconnect();
 
+			unitStateChanged(unit_state::Feared, false);
 		}
 		else if (!wasFeared && isFeared)
 		{
@@ -3003,11 +3002,11 @@ namespace wowpp
 
 		if (wasConfused && !isConfused)
 		{
-			unitStateChanged(unit_state::Confused, false);
-
 			// Stop movement in every case
 			getMover().stopMovement();
 			m_fearMoved.disconnect();
+
+			unitStateChanged(unit_state::Confused, false);
 		}
 		else if (!wasConfused && isConfused)
 		{

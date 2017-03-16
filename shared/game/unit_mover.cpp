@@ -33,6 +33,7 @@
 namespace wowpp
 {
 	const GameTime UnitMover::UpdateFrequency = constants::OneSecond / 2;
+	const float UnitMover::InfiniteDistance = 0.0f;
 
 	UnitMover::UnitMover(GameUnit &unit)
 		: m_unit(unit)
@@ -108,18 +109,18 @@ namespace wowpp
 		        m_moveReached.running)
 		{
 			// Restart move command
-			moveTo(m_target);
+			moveTo(m_target, InfiniteDistance);
 		}
 	}
 
-	bool UnitMover::moveTo(const math::Vector3 &target)
+	bool UnitMover::moveTo(const math::Vector3 &target, float maxDist)
 	{
-		bool result = moveTo(target, m_unit.getSpeed(movement_type::Run));
+		bool result = moveTo(target, m_unit.getSpeed(movement_type::Run), maxDist);
 		m_customSpeed = false;
 		return result;
 	}
 
-	bool UnitMover::moveTo(const math::Vector3 &target, float customSpeed)
+	bool UnitMover::moveTo(const math::Vector3 &target, float customSpeed, float maxDist)
 	{
 		auto &moved = getMoved();
 
@@ -202,18 +203,30 @@ namespace wowpp
 		m_moveStart = getCurrentTime();
 		m_path.addPosition(m_moveStart, currentLoc);
 
+		float pathLength = 0.0f;
 		GameTime moveTime = m_moveStart;
 		for (UInt32 i = 0; i < path.size(); ++i)
 		{
 			const float dist =
 				(i == 0) ? ((path[i] - currentLoc).length()) : (path[i] - path[i - 1]).length();
+
 			moveTime += (dist / customSpeed) * constants::OneSecond;
 			m_path.addPosition(moveTime, path[i]);
+
+			pathLength += dist;
+			if (maxDist > 0.0f)
+			{
+				if (pathLength >= maxDist && i < path.size() && i > 0)
+				{
+					path.resize(i);
+					break;
+				}
+			}
 		}
 
 		// Use new values
 		m_start = currentLoc;
-		m_target = path.back() + math::Vector3(0.0f, 0.0f, 0.4f);
+		m_target = path.back()/* + math::Vector3(0.0f, 0.0f, 0.4f)*/;
 
 		// Calculate time of arrival
 		m_moveEnd = moveTime;
