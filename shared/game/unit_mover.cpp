@@ -197,8 +197,9 @@ namespace wowpp
 			return false;
 		}
 
-		ASSERT(!path.empty());
-		
+		if (path.empty())
+			return false;
+
 		// Update timing
 		m_moveStart = getCurrentTime();
 		m_path.addPosition(m_moveStart, currentLoc);

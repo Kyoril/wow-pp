@@ -213,6 +213,10 @@ namespace wowpp
 
 	void CreatureAIIdleState::onChooseNextMove()
 	{
+		const float dist = 7.5f;
+		const auto &loc = getAI().getHome().position;
+		const Circle clipping(loc.x, loc.y, dist);
+
 		auto *world = getControlled().getWorldInstance();
 		if (world)
 		{
@@ -220,10 +224,12 @@ namespace wowpp
 			if (mapData)
 			{
 				math::Vector3 targetPoint;
-				if (mapData->getRandomPointOnGround(getAI().getHome().position, 2.0f, targetPoint))
+				if (mapData->getRandomPointOnGround(getAI().getHome().position, dist, targetPoint))
 				{
-					getControlled().getMover().moveTo(targetPoint, getControlled().getSpeed(movement_type::Walk));
-					return;
+					if (getControlled().getMover().moveTo(targetPoint, getControlled().getSpeed(movement_type::Walk), &clipping))
+					{
+						return;
+					}
 				}
 			}
 		}
