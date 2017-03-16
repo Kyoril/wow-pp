@@ -39,6 +39,8 @@ namespace wowpp
 		class MapEntry;
 	}
 
+	struct IShape;
+
 
 	// Chunk serialization constants
 
@@ -270,7 +272,7 @@ namespace wowpp
 		/// @returns true, if nothing prevents the line of sight, false otherwise.
 		bool isInLineOfSight(const math::Vector3 &posA, const math::Vector3 &posB);
 		/// Calculates a path from start point to the destination point.
-		bool calculatePath(const math::Vector3 &source, math::Vector3 dest, std::vector<math::Vector3> &out_path, bool ignoreAdtSlope = true);
+		bool calculatePath(const math::Vector3 &source, math::Vector3 dest, std::vector<math::Vector3> &out_path, bool ignoreAdtSlope = true, const IShape *clipping = nullptr);
 		/// 
 		dtPolyRef getPolyByLocation(const math::Vector3 &point, float &out_distance) const;
 		/// 

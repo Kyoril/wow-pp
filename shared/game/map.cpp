@@ -24,6 +24,7 @@
 #include "common/macros.h"
 #include "common/linear_set.h"
 #include "game/constants.h"
+#include "circle.h"
 #include "shared/proto_data/maps.pb.h"
 #include "log/default_log_levels.h"
 #include "common/make_unique.h"
@@ -748,7 +749,7 @@ namespace wowpp
 		return DT_SUCCESS;
 	}
 
-	bool Map::calculatePath(const math::Vector3 & source, math::Vector3 dest, std::vector<math::Vector3>& out_path, bool ignoreAdtSlope/* = true*/)
+	bool Map::calculatePath(const math::Vector3 & source, math::Vector3 dest, std::vector<math::Vector3>& out_path, bool ignoreAdtSlope/* = true*/, const IShape *clipping/* = nullptr*/)
 	{
 		// Convert the given start and end point into recast coordinate system
 		math::Vector3 dtStart = wowToRecastCoord(source);
@@ -925,11 +926,21 @@ namespace wowpp
 				return false;
 			}
 
-			// Append waypoints
+			// Append waypoints and eventually do shape clipping
 			for (const auto &p : tempPathCoords)
 			{
-				out_path.push_back(
-					recastToWoWCoord(p));
+				auto wowCoord = recastToWoWCoord(p);
+				if (clipping)
+				{
+					game::Point pos(wowCoord.x, wowCoord.y);
+					if (!clipping->isPointInside(pos))
+					{
+						// Stop here
+						break;
+					}
+				}
+
+				out_path.push_back(wowCoord);
 			}
 		}
 		else

@@ -121,7 +121,7 @@ namespace wowpp
 							{
 								// Try to continue last movement if we aren't there already
 								auto &mover = getControlled().getMover();
-								mover.moveTo(mover.getTarget(), UnitMover::InfiniteDistance);
+								mover.moveTo(mover.getTarget());
 
 								return;
 							}
@@ -151,7 +151,7 @@ namespace wowpp
 							{
 								// Try to continue last movement if we aren't there already
 								auto &mover = getControlled().getMover();
-								mover.moveTo(mover.getTarget(), UnitMover::InfiniteDistance);
+								mover.moveTo(mover.getTarget());
 
 								return;
 							}
@@ -182,7 +182,7 @@ namespace wowpp
 							{
 								// Try to continue last movement if we aren't there already
 								auto &mover = getControlled().getMover();
-								mover.moveTo(mover.getTarget(), UnitMover::InfiniteDistance);
+								mover.moveTo(mover.getTarget());
 
 								return;
 							}
@@ -212,7 +212,7 @@ namespace wowpp
 							{
 								// Try to continue last movement if we aren't there already
 								auto &mover = getControlled().getMover();
-								mover.moveTo(mover.getTarget(), UnitMover::InfiniteDistance);
+								mover.moveTo(mover.getTarget());
 
 								return;
 							}
@@ -573,7 +573,7 @@ namespace wowpp
 			}
 
 			// Chase the target
-			getControlled().getMover().moveTo(newTargetLocation, UnitMover::InfiniteDistance);
+			getControlled().getMover().moveTo(newTargetLocation);
 		}
 	}
 

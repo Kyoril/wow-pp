@@ -32,6 +32,7 @@ namespace wowpp
 {
 	class GameUnit;
 	struct ITileSubscriber;
+	struct IShape;
 
 	/// This class is meant to control a units movement. This class should be
 	/// inherited, so that, for example, a player character will be controlled
@@ -41,7 +42,6 @@ namespace wowpp
 	public:
 
 		static const GameTime UpdateFrequency;
-		static const float InfiniteDistance;
 
 	public:
 
@@ -67,10 +67,10 @@ namespace wowpp
 		void onMoveSpeedChanged(MovementType moveType);
 		/// Moves this unit to a specific location if possible. This does not teleport
 		/// the unit, but makes it walk / fly / swim to the target.
-		bool moveTo(const math::Vector3 &target, float maxDist);
+		bool moveTo(const math::Vector3 &target, const IShape *clipping = nullptr);
 		/// Moves this unit to a specific location if possible. This does not teleport
 		/// the unit, but makes it walk / fly / swim to the target.
-		bool moveTo(const math::Vector3 &target, float customSpeed, float maxDist);
+		bool moveTo(const math::Vector3 &target, float customSpeed, const IShape *clipping = nullptr);
 		/// Stops the current movement if any.
 		void stopMovement();
 		/// Gets the new movement target.

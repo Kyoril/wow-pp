@@ -23,6 +23,7 @@
 #include "game_unit.h"
 #include "log/default_log_levels.h"
 #include "world_instance.h"
+#include "universe.h"
 #include "each_tile_in_sight.h"
 #include "binary_io/vector_sink.h"
 #include "game_protocol/game_protocol.h"
@@ -2585,10 +2586,12 @@ namespace wowpp
 			return;
 
 		const float dist =
-			isFeared() ? 5.0f : 0.5f;
+			isFeared() ? 5.0f : 2.0f;
 		const math::Vector3 loc =
 			isFeared() ? getMover().getCurrentLocation() : m_confusedLoc;
 		
+		const Circle clipping(loc.x, loc.y, dist);
+
 		auto *world = getWorldInstance();
 		if (world)
 		{
@@ -2598,7 +2601,18 @@ namespace wowpp
 				math::Vector3 targetPoint;
 				if (mapData->getRandomPointOnGround(loc, dist, targetPoint))
 				{
-					getMover().moveTo(targetPoint, 5.0f);
+					if (!getMover().moveTo(targetPoint, getSpeed(isConfused() ? movement_type::Walk : movement_type::Run), &clipping))
+					{
+						// Try again next in next update cycle if possible
+						std::weak_ptr<GameObject> weakThis(shared_from_this());
+						world->getUniverse().post([weakThis]() {
+							auto strong = weakThis.lock();
+							if (strong)
+							{
+								std::static_pointer_cast<GameUnit>(strong)->triggerNextFearMove();
+							}
+						});
+					}
 					return;
 				}
 			}

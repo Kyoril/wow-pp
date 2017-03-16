@@ -74,11 +74,11 @@ namespace wowpp
 			auto &controlled = getControlled();
 			if (!controlled.isStunned() && !controlled.isRooted() && !controlled.isConfused() && !controlled.isFeared())
 			{
-				controlled.getMover().moveTo(getAI().getHome().position, UnitMover::InfiniteDistance);
+				controlled.getMover().moveTo(getAI().getHome().position);
 			}
 		});
 
-		controlled.getMover().moveTo(getAI().getHome().position, UnitMover::InfiniteDistance);
+		controlled.getMover().moveTo(getAI().getHome().position);
 	}
 
 	void CreatureAIResetState::onLeave()

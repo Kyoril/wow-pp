@@ -3553,7 +3553,7 @@ namespace wowpp
 
 			// TODO: Error checks and limit max path length
 			auto &mover = caster.getMover();
-			mover.moveTo(firstTarget.getLocation(), 25.0f, UnitMover::InfiniteDistance);
+			mover.moveTo(firstTarget.getLocation(), 25.0f);
 
 			if (m_hitResults.find(firstTarget.getGuid()) == m_hitResults.end())
 			{
