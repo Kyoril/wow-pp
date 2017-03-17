@@ -2519,6 +2519,59 @@ namespace wowpp
 		}
 	}
 #endif
+
+	static bool importSpellChain(proto::Project &project, MySQL::Connection &conn)
+	{
+		for (auto &spell : *project.spells.getTemplates().mutable_entry())
+		{
+			spell.clear_prevspell();
+			spell.clear_nextspell();
+			spell.clear_rank();
+		}
+
+		wowpp::MySQL::Select select(conn, "SELECT `spell_id`, `prev_spell`, `first_spell`, `rank` FROM `tbcdb`.`spell_chain`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				UInt32 spellId = 0, prevSpellId = 0, baseSpellId = 0, rank = 0;
+				row.getField(0, spellId);
+				row.getField(1, prevSpellId);
+				row.getField(2, baseSpellId);
+				row.getField(3, rank);
+
+				do
+				{
+					// Find spell
+					auto *spell = project.spells.getById(spellId);
+					if (!spell)
+					{
+						WLOG("Unable to find spell " << spellId);
+						break;
+					}
+
+					auto *prevSpell = 
+						prevSpellId != 0 ?
+						project.spells.getById(prevSpellId) : nullptr;
+
+					spell->set_rank(rank);
+					spell->set_baseid(baseSpellId);
+					spell->set_prevspell(prevSpellId);
+					
+					if (prevSpell)
+					{
+						prevSpell->set_nextspell(spellId);
+					}
+				} while (false);
+
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
 }
 
 /// Procedural entry point of the application.
@@ -2587,9 +2640,9 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 	
-	if (!importSpellCritChance(protoProject, connection))
+	if (!importSpellChain(protoProject, connection))
 	{
-		WLOG("Couldn't import spell crit chances");
+		WLOG("Couldn't import spell chain");
 		return 1;
 	}
 
