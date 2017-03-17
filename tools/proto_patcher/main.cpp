@@ -2591,7 +2591,7 @@ namespace wowpp
 					auto *nextSpell = project.spells.getById(nextSpellId);
 
 					// Enter next spell id
-					spell->set_nextspell(nextSpellId);
+					spell->set_nextspell(nextSpell ? nextSpellId : 0);
 
 					// Enter prev spell id of next spell (if any)
 					if (nextSpell) nextSpell->set_prevspell(spellId);
