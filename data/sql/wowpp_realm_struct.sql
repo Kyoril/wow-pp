@@ -109,6 +109,8 @@ DROP TABLE IF EXISTS `character_spells`;
 CREATE TABLE `character_spells` (
   `guid` int(10) unsigned NOT NULL,
   `spell` int(10) unsigned NOT NULL,
+  `active` TINYINT UNSIGNED DEFAULT 1 NOT NULL,
+  `disabled` TINYINT UNSIGNED DEFAULT 0 NOT NULL,
   PRIMARY KEY (`guid`,`spell`),
   CONSTRAINT `character_spells_ibfk_1` FOREIGN KEY (`guid`) REFERENCES `character` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
