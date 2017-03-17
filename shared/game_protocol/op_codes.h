@@ -306,6 +306,7 @@ namespace wowpp
 				TrainerList					= 0x1B1,
 				TrainerBuySucceeded			= 0x1B3,
 				TrainerBuyFailed			= 0x1B4,
+				Notification				= 0x1CB,
 				PlayedTime					= 0x1CD,
 				LogXPGain					= 0x1D0,
 				MinimapPing					= 0x1D5,

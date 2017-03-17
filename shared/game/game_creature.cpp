@@ -434,7 +434,11 @@ namespace wowpp
 			auto questStatus = character.getQuestStatus(quest);
 			if (questStatus == game::quest_status::Available)
 			{
-				return game::questgiver_status::Available;
+				const auto *entry = character.getProject().quests.getById(quest);
+				if (entry && entry->method() == game::quest_method::AutoComplete)
+					return game::questgiver_status::RewardRep;
+				else
+					return game::questgiver_status::Available;
 			}
 		}
 		return result;

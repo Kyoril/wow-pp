@@ -2098,6 +2098,11 @@ namespace wowpp
 				const String &name,
 				UInt32 inventoryType
 			);
+
+			void notification(
+				game::OutgoingPacket &out_packet,
+				const String &message
+			);
 		};
 	}
 }

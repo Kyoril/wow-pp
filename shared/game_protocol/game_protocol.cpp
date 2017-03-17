@@ -3081,6 +3081,13 @@ namespace wowpp
 					<< io::write<NetUInt32>(inventoryType);
 				out_packet.finish();
 			}
+			void notification(game::OutgoingPacket & out_packet, const String & message)
+			{
+				out_packet.start(game::server_packet::Notification);
+				out_packet
+					<< io::write_range(message) << io::write<NetUInt8>(0);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read

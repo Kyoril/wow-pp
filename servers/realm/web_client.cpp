@@ -263,10 +263,8 @@ namespace wowpp
 #define WOWPP_EQUIPMENT_SLOT(slot) \
 	if (!usedEquipmentSlots.contains(player_equipment_slots::slot)) { \
 		preferredSlot = player_equipment_slots::slot | 0x0; \
-	} \
-	else { \
 		usedEquipmentSlots.add(player_equipment_slots::slot); \
-	} \
+	}
 
 												case game::inventory_type::Head:
 													WOWPP_EQUIPMENT_SLOT(Head);

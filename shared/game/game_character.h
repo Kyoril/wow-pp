@@ -1097,6 +1097,11 @@ namespace wowpp
 		const class proto::AreaTriggerEntry *m_restTrigger;
 	};
 
+	/// Determines whether a given spell can exist with different ranks in the players
+	/// spell book (most likely spells that consume health and mana to let the player 
+	/// decide which spell rank to use to eventually save some mana)
+	bool canStackSpellRanksInSpellBook(const class proto::SpellEntry &spell);
+
 	/// Serializes a GameCharacter to an io::Writer object for the wow++ protocol.
 	/// @param w The writer used to write to.
 	/// @param object The GameCharacter object to serialize.
