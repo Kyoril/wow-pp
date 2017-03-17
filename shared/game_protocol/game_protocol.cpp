@@ -2236,7 +2236,7 @@ namespace wowpp
 					        << io::write<NetUInt8>(spell.reqlevel())			// Required character level
 					        << io::write<NetUInt32>(spell.reqskill())	// Required skill id
 					        << io::write<NetUInt32>(spell.reqskillval())	// Required skill value
-					        << io::write<NetUInt32>(0)						// Previous spell
+					        << io::write<NetUInt32>(entry->prevspell())		// Previous spell
 					        << io::write<NetUInt32>(0)						// Required spell
 					        << io::write<NetUInt32>(0)						// Unknown
 					        ;
