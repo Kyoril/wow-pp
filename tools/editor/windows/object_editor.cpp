@@ -791,6 +791,7 @@ namespace wowpp
 			m_ui->spellIdField->setText(QString::number(spell->id()));
 			m_ui->spellNameField->setText(spell->name().c_str());
 			m_ui->spellMechanicField->setText(QString::number(spell->mechanic()));
+			m_ui->spellRankField->setText(QString::number(spell->rank()));
 
 			// Determine the cast time of this spell
 			Int64 castTime = spell->casttime();
