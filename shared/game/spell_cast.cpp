@@ -144,7 +144,8 @@ namespace wowpp
 		if (spell.mechanic() != 0)
 		{
 			if (unitTarget &&
-				unitTarget->isImmuneAgainstMechanic(spell.mechanic()))
+				unitTarget->isImmuneAgainstMechanic(spell.mechanic()) &&
+				!unitTarget->isHostileTo(m_executer))
 			{
 				return std::make_pair(game::spell_cast_result::FailedPreventedByMechanic, nullptr);
 			}

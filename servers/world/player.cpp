@@ -614,6 +614,10 @@ namespace wowpp
 
 		// Trigger regeneration for our character
 		m_character->startRegeneration();
+
+		auto moveInfo = m_character->getMovementInfo();
+		moveInfo.moveFlags = game::movement_flags::Falling;
+		m_character->setMovementInfo(moveInfo);
 	}
 
 	void Player::onDespawn(GameObject &/*despawning*/)

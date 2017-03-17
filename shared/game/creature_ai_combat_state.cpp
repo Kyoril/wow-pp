@@ -683,7 +683,8 @@ namespace wowpp
 					controlled.setOrientation(controlled.getAngle(*victim));
 
 					// Save some variables which are needed in CreatureAICombatState::onSpellCast method
-					m_lastCastTime = spellEntry->casttime();
+					GameTime castTime = spellEntry->casttime();
+					m_lastCastTime = (spellEntry->attributes(1) & game::spell_attributes_ex_a::Channeled_1) ? spellEntry->duration() : spellEntry->casttime();
 					m_lastSpellEntry = validSpellEntry;
 					m_lastSpell = spellEntry;
 					m_customCooldown = 0;
@@ -719,13 +720,21 @@ namespace wowpp
 					SpellTargetMap targetMap;
 					targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
 					targetMap.m_unitTarget = victim->getGuid();
+					targetMap.m_dstX = victim->getLocation().x;
+					targetMap.m_dstY = victim->getLocation().y;
+					targetMap.m_dstZ = victim->getLocation().z;
 					if (validSpellEntry->target() == 0)
 					{
 						targetMap.m_unitTarget = controlled.getGuid();
 					}
+					if (spellEntry->effects_size() > 0 &&
+						spellEntry->effects(0).type() == game::spell_effects::PersistentAreaAura)
+					{
+						targetMap.m_targetMap = game::spell_cast_target_flags::DestLocation;
+					}
 
 					m_isCasting = true;
-					controlled.castSpell(std::move(targetMap), validSpellEntry->spellid(), { 0, 0, 0 }, m_lastCastTime, false, 0,
+					controlled.castSpell(std::move(targetMap), validSpellEntry->spellid(), { 0, 0, 0 }, castTime, false, 0,
 						std::bind(&CreatureAICombatState::onSpellCast, this, std::placeholders::_1));
 					return;
 				}

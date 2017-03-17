@@ -554,10 +554,9 @@ namespace wowpp
 		
 		// TODO: There need to be a lot of movement packet checks, and these should probably be done in a separate class
 		// No heartbeat if not started to move
-		if (opCode == game::client_packet::MoveHeartBeat && !(m_character->getMovementInfo().moveFlags & game::movement_flags::Moving))
+		if (opCode == game::client_packet::MoveHeartBeat && 
+			!(m_character->getMovementInfo().moveFlags & game::movement_flags::Moving))
 		{
-			WLOG("Received MSG_MOVE_HEARTBEAT while not in moving state!");
-			kick();
 			return;
 		}
 
