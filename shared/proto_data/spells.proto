@@ -114,6 +114,9 @@ message SpellEntry {
 	optional uint32 racemask = 58;
 	optional uint32 classmask = 59;
 	repeated SpellReagent reagents = 60;
+	optional uint32 rank = 61;
+	optional uint32 prevspell = 62;
+	optional uint32 nextspell = 63;
 }
 
 message Spells {
