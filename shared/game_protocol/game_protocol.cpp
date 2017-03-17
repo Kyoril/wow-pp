@@ -3068,6 +3068,15 @@ namespace wowpp
 					<< io::write<float>(movementInfo.jumpVelocity);
 				out_packet.finish();
 			}
+			void itemNameQueryResponse(game::OutgoingPacket & out_packet, UInt32 entryId, const String & name, UInt32 inventoryType)
+			{
+				out_packet.start(game::server_packet::ItemNameQueryResponse);
+				out_packet
+					<< io::write<NetUInt32>(entryId)
+					<< io::write_range(name) << io::write<NetUInt8>(0)
+					<< io::write<NetUInt32>(inventoryType);
+				out_packet.finish();
+			}
 		}
 
 		namespace client_read
@@ -3941,6 +3950,13 @@ namespace wowpp
 				packet.skip(packet.getSource()->size());
 
 				return true;
+			}
+			bool itemNameQuery(io::Reader & packet, UInt32 & out_entry, UInt64 & out_guid)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_entry)
+					>> io::read<NetUInt64>(out_guid);
+				return false;
 			}
 		}
 

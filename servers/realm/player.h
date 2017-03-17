@@ -306,5 +306,6 @@ namespace wowpp
 		void handleQuestQuery(game::IncomingPacket &packet);
 		void handleWho(game::IncomingPacket &packet);
 		void handleMinimapPing(game::IncomingPacket &packet);
+		void handleItemNameQuery(game::IncomingPacket &packet);
 	};
 }

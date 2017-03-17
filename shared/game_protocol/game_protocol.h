@@ -1055,6 +1055,12 @@ namespace wowpp
 			bool cancelChanneling(
 				io::Reader &packet
 				);
+
+			bool itemNameQuery(
+				io::Reader &packet,
+				UInt32 &out_entry,
+				UInt64 &out_guid
+			);
 		};
 
 		namespace server_write
@@ -2084,6 +2090,13 @@ namespace wowpp
 				game::OutgoingPacket &out_packet,
 				UInt64 targetGUID,
 				const MovementInfo &movementInfo
+			);
+
+			void itemNameQueryResponse(
+				game::OutgoingPacket &out_packet,
+				UInt32 entryId,
+				const String &name,
+				UInt32 inventoryType
 			);
 		};
 	}

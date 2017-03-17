@@ -329,6 +329,8 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(QuestQuery, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(Who, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(MinimapPing, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(ItemNameQuery, game::session_status::LoggedIn)
+
 #undef WOWPP_HANDLE_PACKET
 #undef QUOTE
 
@@ -2640,5 +2642,25 @@ namespace wowpp
 		// Broadcast packet to group
 		auto generator = std::bind(game::server_write::minimapPing, std::placeholders::_1, m_gameCharacter->getGuid(), x, y);
 		m_group->broadcastPacket(generator, &excludeGuids);
+	}
+
+	void Player::handleItemNameQuery(game::IncomingPacket & packet)
+	{
+		UInt32 itemEntry = 0;
+		UInt64 itemGuid = 0;
+		if (!(game::client_read::itemNameQuery(packet, itemEntry, itemGuid)))
+		{
+			return;
+		}
+
+		const auto *entry = m_project.items.getById(itemEntry);
+		if (!entry)
+		{
+			return;
+		}
+
+		// Match Count is request count right now
+		sendPacket(
+			std::bind(game::server_write::itemNameQueryResponse, std::placeholders::_1, itemEntry, entry->name(), entry->inventorytype()));
 	}
 }
