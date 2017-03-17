@@ -150,6 +150,7 @@ namespace wowpp
 					UInt32 mapId = 0xffffffff;
 					float x = 0.0f, y = 0.0f, z = 0.0f, o = 0.0f;
 					UInt32 accountId = 0, charRace = 0, charClass = 0, charLvl = 0;
+					LinearSet<UInt32> spellsToAdd;
 					std::vector<const proto::SpellEntry*> spells;
 					std::vector<ItemData> items;
 					UInt32 itemIndex = 0, spellIndex = 0;
@@ -215,8 +216,7 @@ namespace wowpp
 							UInt32 spellId = atoi(argValue.c_str());
 							if (spellId != 0)
 							{
-								auto *spell = project.spells.getById(spellId);
-								if (spell) spells.push_back(spell);
+								spellsToAdd.optionalAdd(spellId);
 							}
 						}
 						else if (argName == itemarg.str())
@@ -431,6 +431,28 @@ namespace wowpp
 						const auto *spell = project.spells.getById(spellid);
 						if (spell)
 						{
+							spellsToAdd.optionalAdd(spellid);
+							spells.push_back(spell);
+						}
+					}
+
+					// Filter by ranks
+					for (const auto &spellId : spellsToAdd)
+					{
+						const auto *spell = project.spells.getById(spellId);
+						if (spell)
+						{
+							if (spell->prevspell() != 0 && !spellsToAdd.contains(spell->prevspell()))
+							{
+								// Skip due to missing prevspell requirement
+								continue;
+							}
+							if (spell->talentcost() > 0)
+							{
+								// Skip talent spells
+								continue;
+							}
+
 							spells.push_back(spell);
 						}
 					}

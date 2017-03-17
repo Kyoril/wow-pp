@@ -2222,6 +2222,10 @@ namespace wowpp
 							state = RedSpell;
 						}
 					}
+					if (entry->prevspell() != 0 && !character.hasSpell(entry->prevspell()))
+					{
+						state = RedSpell;
+					}
 					// TODO More checks
 					out_packet
 					        << io::write<NetUInt32>(spell.spell())		// Spell ID

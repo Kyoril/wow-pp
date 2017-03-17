@@ -2569,6 +2569,49 @@ namespace wowpp
 			}
 		}
 
+		wowpp::MySQL::Select select2(conn, "SELECT `spell`, `superseded_by_spell` FROM `dbc`.`dbc_skilllineability`;");
+		if (select2.success())
+		{
+			wowpp::MySQL::Row row(select2);
+			while (row)
+			{
+				UInt32 spellId = 0, nextSpellId = 0;
+				row.getField(0, spellId);
+				row.getField(1, nextSpellId);
+
+				do
+				{
+					// Find spell and skill
+					auto *spell = project.spells.getById(spellId);
+					if (!spell)
+					{
+						WLOG("Unable to find spell " << spellId);
+						break;
+					}
+					auto *nextSpell = project.spells.getById(nextSpellId);
+
+					// Enter next spell id
+					spell->set_nextspell(nextSpellId);
+
+					// Enter prev spell id of next spell (if any)
+					if (nextSpell) nextSpell->set_prevspell(spellId);
+
+					// Determine spell rank
+					if (spell->baseid() == spell->id())
+					{
+						spell->set_rank(1);
+					}
+					else
+					{
+						const auto *prevSpell = project.spells.getById(spell->prevspell());
+						if (prevSpell) spell->set_rank(prevSpell->rank() + 1);
+					}
+				} while (false);
+
+				row = row.next(select2);
+			}
+		}
+
 		return true;
 	}
 
