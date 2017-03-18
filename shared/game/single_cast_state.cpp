@@ -1170,7 +1170,7 @@ namespace wowpp
 				if (hitInfos[i] == game::hit_info::CriticalHit)
 				{
 					crit = true;
-					totalDamage *= 2.0f;
+					totalDamage *= 1.5f;
 
 					if (caster.isGameCharacter())
 					{
@@ -1996,7 +1996,7 @@ namespace wowpp
 	UInt32 SingleCastState::getSpellPointsTotal(const proto::SpellEffect &effect, UInt32 spellPower, UInt32 bonusPct)
 	{
 		Int32 basePoints = calculateEffectBasePoints(effect);
-		float castTime = m_castTime;
+		float castTime = m_spell.casttime();
 		if (castTime < 1500) {
 			castTime = 1500;
 		}
