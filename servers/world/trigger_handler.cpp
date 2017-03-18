@@ -85,7 +85,7 @@ namespace wowpp
 
 			// Roll!
 			std::uniform_int_distribution<UInt32> roll(0, 99);
-			if (roll(randomGenerator) < entry.probability())
+			if (roll(randomGenerator) > entry.probability())
 				return;	 // Didn't pass probability check
 		}
 
