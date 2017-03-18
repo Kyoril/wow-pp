@@ -37,6 +37,10 @@ namespace wowpp
 	{
 	public:
 
+		typedef std::shared_ptr<CreatureAIState> CreatureAIStatePtr;
+
+	public:
+
 		/// Defines the home of a creature.
 		struct Home final
 		{
@@ -100,13 +104,13 @@ namespace wowpp
 
 	protected:
 
-		void setState(std::unique_ptr<CreatureAIState> state);
+		void setState(CreatureAIStatePtr state);
 		virtual void onSpawned();
 
 	private:
 
 		GameCreature &m_controlled;
-		std::unique_ptr<CreatureAIState> m_state;
+		CreatureAIStatePtr m_state;
 		Home m_home;
 		simple::scoped_connection m_onSpawned, m_onDamaged;
 		boost::signals2::scoped_connection m_onKilled;

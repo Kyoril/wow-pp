@@ -135,6 +135,7 @@ namespace wowpp
 
 	private:
 
+		GameUnit *m_combatInitiator;
 		ThreatList m_threat;
 		UnitSignals m_killedSignals;
 		UnitSignals2 m_miscSignals;

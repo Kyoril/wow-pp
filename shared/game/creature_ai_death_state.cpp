@@ -39,11 +39,12 @@ namespace wowpp
 
 	CreatureAIDeathState::~CreatureAIDeathState()
 	{
-
 	}
 
 	void CreatureAIDeathState::onEnter()
 	{
+		CreatureAIState::onEnter();
+
 		auto &controlled = getControlled();
 		controlled.raiseTrigger(trigger_event::OnKilled);
 
@@ -180,7 +181,7 @@ namespace wowpp
 
 	void CreatureAIDeathState::onLeave()
 	{
-
+		CreatureAIState::onLeave();
 	}
 
 }

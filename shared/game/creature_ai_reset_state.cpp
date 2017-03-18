@@ -39,6 +39,16 @@ namespace wowpp
 	CreatureAIResetState::CreatureAIResetState(CreatureAI &ai)
 		: CreatureAIState(ai)
 	{
+	}
+
+	CreatureAIResetState::~CreatureAIResetState()
+	{
+	}
+
+	void CreatureAIResetState::onEnter()
+	{
+		CreatureAIState::onEnter();
+
 		// Enter idle mode when home point was reached
 		m_onHomeReached = getControlled().getMover().targetReached.connect([this]() {
 			auto &ai = getAI();
@@ -51,14 +61,7 @@ namespace wowpp
 				});
 			}
 		});
-	}
 
-	CreatureAIResetState::~CreatureAIResetState()
-	{
-	}
-
-	void CreatureAIResetState::onEnter()
-	{
 		auto &controlled = getControlled();
 		controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
 		controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::OtherTagger);
@@ -94,6 +97,8 @@ namespace wowpp
 		}
 
 		controlled.raiseTrigger(trigger_event::OnReachedHome);
+
+		CreatureAIState::onLeave();
 	}
 
 }

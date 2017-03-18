@@ -23,11 +23,13 @@
 #include "creature_ai_state.h"
 #include "creature_ai.h"
 #include "game_creature.h"
+#include "common/macros.h"
 
 namespace wowpp
 {
 	CreatureAIState::CreatureAIState(CreatureAI &ai)
 		: m_ai(ai)
+		, m_isActive(false)
 	{
 	}
 
@@ -47,10 +49,14 @@ namespace wowpp
 
 	void CreatureAIState::onEnter()
 	{
+		ASSERT(!m_isActive);
+		m_isActive = true;
 	}
 
 	void CreatureAIState::onLeave()
 	{
+		ASSERT(m_isActive);
+		m_isActive = false;
 	}
 
 	void CreatureAIState::onDamage(GameUnit &attacker)

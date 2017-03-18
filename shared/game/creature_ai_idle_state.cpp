@@ -37,7 +37,6 @@ namespace wowpp
 		, m_nextMove(ai.getControlled().getTimers())
 		, m_nextUpdate(0)
 	{
-		m_nextMove.ended.connect(std::bind(&CreatureAIIdleState::onChooseNextMove, this));
 	}
 
 	CreatureAIIdleState::~CreatureAIIdleState()
@@ -46,6 +45,10 @@ namespace wowpp
 
 	void CreatureAIIdleState::onEnter()
 	{
+		CreatureAIState::onEnter();
+
+		m_nextMove.ended.connect(std::bind(&CreatureAIIdleState::onChooseNextMove, this));
+
 		auto &controlled = getControlled();
 
 		controlled.getMover().setTerrainMovement(false);
@@ -181,6 +184,8 @@ namespace wowpp
 
 		onTargetReached.disconnect();
 		m_aggroWatcher.reset();
+
+		CreatureAIState::onLeave();
 	}
 
 	void CreatureAIIdleState::onCreatureMovementChanged()

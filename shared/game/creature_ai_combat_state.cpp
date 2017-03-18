@@ -39,33 +39,35 @@ namespace wowpp
 {
 	CreatureAICombatState::CreatureAICombatState(CreatureAI &ai, GameUnit &victim)
 		: CreatureAIState(ai)
+		, m_combatInitiator(&victim)
 		, m_lastThreatTime(0)
 		, m_nextActionCountdown(ai.getControlled().getTimers())
+		, m_lastSpellEntry(nullptr)
+		, m_lastSpell(nullptr)
+		, m_lastCastTime(0)
+		, m_customCooldown(0)
+		, m_lastCastResult(game::spell_cast_result::CastOkay)
 		, m_isCasting(false)
 		, m_entered(false)
 		, m_isRanged(false)
 	{
-		// Setup
-		m_lastSpellEntry = nullptr;
-		m_lastSpell = nullptr;
-		m_customCooldown = 0;
-		m_lastCastTime = 0;
-		m_lastCastResult = game::spell_cast_result::CastOkay;
-
-		// Add initial threat
-		addThreat(victim, 0.0f);
-		m_nextActionCountdown.ended.connect(
-		    std::bind(&CreatureAICombatState::chooseNextAction, this));
 	}
 
 	CreatureAICombatState::~CreatureAICombatState()
 	{
-		// Disconnect all connected slots
-		m_nextActionCountdown.ended.clear();
 	}
 
 	void CreatureAICombatState::onEnter()
 	{
+		CreatureAIState::onEnter();
+
+		// Add initial threat
+		addThreat(*m_combatInitiator, 0.0f);
+		m_combatInitiator = nullptr;
+
+		m_nextActionCountdown.ended.connect(
+			std::bind(&CreatureAICombatState::chooseNextAction, this));
+
 		auto &controlled = getControlled();
 		controlled.getMover().setTerrainMovement(true);
 
@@ -91,20 +93,30 @@ namespace wowpp
 		});
 		
 		// Reset AI eventually
-		m_onMoveTargetChanged = getControlled().getMover().targetChanged.connect([this]()
+		if (auto *world = controlled.getWorldInstance())
 		{
-			auto &homePos = getAI().getHome().position;
-			
-			const bool outOfRange = 
-				getControlled().getSquaredDistanceTo(homePos, false) >= 60.0f * 60.0f ||
-				getControlled().getSquaredDistanceTo(getControlled().getMover().getTarget(), true) >= 60.0f * 60.0f;
-
-			if (getCurrentTime() >= (m_lastThreatTime + constants::OneSecond * 10) &&
-				outOfRange)
+			// Only reset if not in dungeon / raid map
+			const auto *map = controlled.getProject().maps.getById(world->getMapId());
+			if (map &&
+				map->instancetype() != proto::MapEntry_MapInstanceType_DUNGEON &&
+				map->instancetype() != proto::MapEntry_MapInstanceType_RAID)
 			{
-				getAI().reset();
+				m_onMoveTargetChanged = getControlled().getMover().targetChanged.connect([this]()
+				{
+					auto &homePos = getAI().getHome().position;
+
+					const bool outOfRange =
+						getControlled().getSquaredDistanceTo(homePos, false) >= 60.0f * 60.0f ||
+						getControlled().getSquaredDistanceTo(getControlled().getMover().getTarget(), true) >= 60.0f * 60.0f;
+
+					if (getCurrentTime() >= (m_lastThreatTime + constants::OneSecond * 10) &&
+						outOfRange)
+					{
+						getAI().reset();
+					}
+				});
 			}
-		});
+		}
 		m_onUnitStateChanged = getControlled().unitStateChanged.connect([this](UInt32 state, bool apply)
 		{
 			if (!getControlled().isAlive())
@@ -334,6 +346,8 @@ namespace wowpp
 		controlled.cancelCast(game::spell_interrupt_flags::None);
 		controlled.stopAttack();
 		controlled.setVictim(nullptr);
+
+		CreatureAIState::onLeave();
 	}
 
 	void CreatureAICombatState::addThreat(GameUnit &threatener, float amount)
@@ -369,13 +383,14 @@ namespace wowpp
 				removeThreat(threatener);
 			});
 
-			std::weak_ptr<GameUnit> weakThreatener = std::static_pointer_cast<GameUnit>(threatener.shared_from_this());
+			auto strongThreatener = std::static_pointer_cast<GameUnit>(threatener.shared_from_this());
+			std::weak_ptr<GameUnit> weakThreatener(strongThreatener);
 
 			// Watch for unit despawned signal
 			m_miscSignals[guid] +=
-				threatener.despawned.connect([this, &threatener](GameObject & despawned)
+				threatener.despawned.connect([this, strongThreatener](GameObject & despawned)
 				{
-					removeThreat(threatener);
+					removeThreat(*strongThreatener);
 				});
 			m_miscSignals[guid] +=
 				threatener.healed.connect([this, weakThreatener](GameUnit *healer, UInt32 amount) {
@@ -734,8 +749,15 @@ namespace wowpp
 					}
 
 					m_isCasting = true;
-					controlled.castSpell(std::move(targetMap), validSpellEntry->spellid(), { 0, 0, 0 }, castTime, false, 0,
-						std::bind(&CreatureAICombatState::onSpellCast, this, std::placeholders::_1));
+
+					auto strongThis = std::static_pointer_cast<CreatureAICombatState>(shared_from_this());
+					controlled.castSpell(std::move(targetMap), validSpellEntry->spellid(), { 0, 0, 0 }, castTime, false, 0, [strongThis](game::SpellCastResult result) 
+					{
+						if (strongThis->isActive())
+						{
+							strongThis->onSpellCast(result);
+						}
+					});
 					return;
 				}
 			}
@@ -772,6 +794,10 @@ namespace wowpp
 
 	void CreatureAICombatState::onSpellCast(game::SpellCastResult result)
 	{
+		// State no longer active
+		if (!isActive())
+			return;
+
 		m_lastCastResult = result;
 		m_isCasting = false;
 		
