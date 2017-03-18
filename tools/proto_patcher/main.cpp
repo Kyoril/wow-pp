@@ -2615,6 +2615,43 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importKillCredits(proto::Project &project, MySQL::Connection &conn)
+	{
+		for (auto &unit : *project.units.getTemplates().mutable_entry())
+		{
+			unit.clear_killcredit();
+		}
+
+		wowpp::MySQL::Select select(conn, "SELECT `entry`, `KillCredit1` FROM `tbcdb`.`creature_template` WHERE KillCredit1 != 0;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				UInt32 entryId = 0, killCredit = 0;
+				row.getField(0, entryId);
+				row.getField(1, killCredit);
+
+				do
+				{
+					// Find unit
+					auto *unit = project.units.getById(entryId);
+					if (!unit)
+					{
+						WLOG("Unable to find unit " << entryId);
+						break;
+					}
+
+					unit->set_killcredit(killCredit);
+				} while (false);
+
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
 }
 
 /// Procedural entry point of the application.
@@ -2683,7 +2720,7 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 	
-	if (!importSpellChain(protoProject, connection))
+	if (!importKillCredits(protoProject, connection))
 	{
 		WLOG("Couldn't import spell chain");
 		return 1;

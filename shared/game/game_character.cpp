@@ -817,6 +817,8 @@ namespace wowpp
 
 	void GameCharacter::onQuestKillCredit(UInt64 unitGuid, const proto::UnitEntry &entry)
 	{
+		const UInt32 creditEntry = (entry.killcredit() != 0) ? entry.killcredit() : entry.id();
+
 		// Check all quests in the quest log
 		bool updateQuestObjects = false;
 		for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
@@ -846,7 +848,7 @@ namespace wowpp
 			UInt8 reqIndex = 0;
 			for (const auto &req : quest->requirements())
 			{
-				if (req.creatureid() == entry.id())
+				if (req.creatureid() == creditEntry)
 				{
 					// Get current counter
 					UInt8 counter = getByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex);
@@ -857,7 +859,7 @@ namespace wowpp
 						it->second.creatures[reqIndex]++;
 
 						// Fire signal to update UI
-						questKillCredit(*quest, unitGuid, entry.id(), counter, req.creaturecount());
+						questKillCredit(*quest, unitGuid, creditEntry, counter, req.creaturecount());
 
 						// Check if this completed the quest
 						if (fulfillsQuestRequirements(*quest))

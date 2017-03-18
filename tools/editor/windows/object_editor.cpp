@@ -596,6 +596,7 @@ namespace wowpp
 			WOWPP_MIN_MAX_PROPERTY("Experience", UInt32, UInt32Ref, levelxp, false);
 			WOWPP_NUM_PROPERTY("Mechanic Immunity", UInt32, UInt32Ref, mechanicimmunity, false);
 			WOWPP_NUM_PROPERTY("School Immunity", UInt32, UInt32Ref, schoolimmunity, false);
+			WOWPP_NUM_PROPERTY("Kill Credit", UInt32, UInt32Ref, killcredit, false);
 
 #undef WOWPP_MIN_MAX_PROPERTY
 #undef WOWPP_STR_PROPERTY
