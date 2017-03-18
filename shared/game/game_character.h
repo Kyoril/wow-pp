@@ -746,6 +746,8 @@ namespace wowpp
 		virtual bool canDualWield() const override;
 		/// @copydoc GameUnit::rewardExperience()
 		virtual void rewardExperience(GameUnit *victim, UInt32 experience) override;
+		/// @copydoc GameUnit::rewardExperience()
+		virtual bool canDetectStealth(GameUnit &target) const override;
 
 	protected:
 

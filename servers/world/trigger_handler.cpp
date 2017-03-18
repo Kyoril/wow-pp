@@ -49,7 +49,7 @@ namespace wowpp
 	{
 	}
 
-	void TriggerHandler::executeTrigger(const proto::TriggerEntry &entry, game::TriggerContext context, UInt32 actionOffset)
+	void TriggerHandler::executeTrigger(const proto::TriggerEntry &entry, game::TriggerContext context, UInt32 actionOffset/* = 0*/, bool ignoreProbability/* = false*/)
 	{
 		// Keep owner alive if provided
 		std::shared_ptr<GameObject> strongOwner;
@@ -74,6 +74,19 @@ namespace wowpp
 		{
 			// Nothing to do here
 			return;
+		}
+
+		// Run probability roll
+		if (!ignoreProbability && entry.probability() < 100)
+		{
+			// Never execute?
+			if (entry.probability() <= 0)
+				return;
+
+			// Roll!
+			std::uniform_int_distribution<UInt32> roll(0, 99);
+			if (roll(randomGenerator) < entry.probability())
+				return;	 // Didn't pass probability check
 		}
 
 		for (int i = actionOffset; i < entry.actions_size(); ++i)
@@ -157,7 +170,7 @@ namespace wowpp
 							oldOwner = nullptr;
 						}
 
-						executeTrigger(entry, context, i + 1);
+						executeTrigger(entry, context, i + 1, true);
 					});
 					delayCountdown->setEnd(getCurrentTime() + timeMS);
 					m_delays.emplace_back(std::move(delayCountdown));

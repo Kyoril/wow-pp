@@ -65,6 +65,7 @@ namespace wowpp
 			void on_functionView_itemDoubleClicked(QTreeWidgetItem*, int);
 			void onTriggerSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
 			void onFlagChanged(int state);
+			void on_probabilityBox_valueChanged(int value);
 
 		private:
 				

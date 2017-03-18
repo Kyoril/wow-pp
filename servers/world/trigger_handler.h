@@ -45,7 +45,7 @@ namespace wowpp
 		explicit TriggerHandler(proto::Project &project, PlayerManager &playerManager, TimerQueue &timers);
 
 		/// Fires a trigger event.
-		virtual void executeTrigger(const proto::TriggerEntry &entry, game::TriggerContext context, UInt32 actionOffset = 0) override;
+		virtual void executeTrigger(const proto::TriggerEntry &entry, game::TriggerContext context, UInt32 actionOffset = 0, bool ignoreProbability = false) override;
 
 	private:
 

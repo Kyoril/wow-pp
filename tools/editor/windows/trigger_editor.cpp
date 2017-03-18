@@ -91,6 +91,7 @@ namespace wowpp
 			m_ui->triggerNameBox->setText(trigger->name().c_str());
 			//m_ui->triggerPathBox->setText((trigger->category().empty() ? "(Default)" : trigger->category().c_str()));
 			m_ui->splitter->setEnabled(true);
+			m_ui->probabilityBox->setValue(trigger->probability());
 
 			for (int i = 1; i < 2; ++i)
 			{
@@ -172,6 +173,18 @@ namespace wowpp
 
 			m_selectedTrigger->set_flags(flagMask);
 			m_application.markAsChanged(m_selectedTrigger->id(), pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Modified);
+		}
+
+		void TriggerEditor::on_probabilityBox_valueChanged(int value)
+		{
+			if (m_selectedTrigger == nullptr)
+				return;
+
+			if (m_selectedTrigger->probability() != value)
+			{
+				m_selectedTrigger->set_probability(value);
+				m_application.markAsChanged(m_selectedTrigger->id(), pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Modified);
+			}
 		}
 
 		void TriggerEditor::on_actionNewTrigger_triggered()

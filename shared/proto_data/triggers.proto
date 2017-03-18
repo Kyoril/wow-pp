@@ -100,6 +100,7 @@ message TriggerEntry {
 	optional uint32 categoryid = 4;
 	repeated TriggerAction actions = 5;
 	repeated TriggerEvent newevents = 6;
+	optional uint32 probability = 7 [default = 100];
 }
 
 message Triggers {

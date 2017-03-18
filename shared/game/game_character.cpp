@@ -2927,6 +2927,18 @@ namespace wowpp
 		setUInt32Value(character_fields::Xp, newXP);
 	}
 
+	bool GameCharacter::canDetectStealth(GameUnit & target) const
+	{
+		// Characters in the same party can see each other
+		if (target.isGameCharacter())
+		{
+			if (reinterpret_cast<GameCharacter&>(target).getGroupId() == m_groupId)
+				return true;
+		}
+
+		return GameUnit::canDetectStealth(target);
+	}
+
 	void GameCharacter::modifyGroupUpdateFlags(GroupUpdateFlags flags, bool apply)
 	{
 		if (apply)
