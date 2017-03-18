@@ -371,6 +371,7 @@ namespace wowpp
 					case trigger_event::OnSpellHit:
 					case trigger_event::OnSpellAuraRemoved:
 					case trigger_event::OnEmote:
+					case trigger_event::OnSpellCast:
 						if (triggerEvent.data(0) != 0)
 						{
 							if (data.empty() || data[0] != triggerEvent.data(0))
