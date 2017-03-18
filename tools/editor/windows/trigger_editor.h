@@ -64,6 +64,7 @@ namespace wowpp
 			void on_triggerNameBox_editingFinished();
 			void on_functionView_itemDoubleClicked(QTreeWidgetItem*, int);
 			void onTriggerSelectionChanged(const QItemSelection& selection, const QItemSelection& old);
+			void onFlagChanged(int state);
 
 		private:
 				

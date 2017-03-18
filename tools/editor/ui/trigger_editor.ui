@@ -146,6 +146,22 @@
          </widget>
         </item>
         <item>
+         <widget class="QGroupBox" name="flagBox">
+          <property name="title">
+           <string>Flags</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout">
+           <item row="0" column="0">
+            <widget class="QCheckBox" name="flag_1">
+             <property name="text">
+              <string>CANCEL_ON_OWNER_DEATH</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
          <widget class="QFrame" name="frame_2">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">

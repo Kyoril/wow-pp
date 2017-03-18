@@ -96,7 +96,7 @@ message TriggerEvent {
 message TriggerEntry {
 	required uint32 id = 1;
 	required string name = 2;
-	reserved 3;
+	optional uint32 flags = 3;
 	optional uint32 categoryid = 4;
 	repeated TriggerAction actions = 5;
 	repeated TriggerEvent newevents = 6;

@@ -48,6 +48,17 @@ namespace wowpp
 			connect(m_ui->triggerView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
 				this, SLOT(onTriggerSelectionChanged(QItemSelection, QItemSelection)));
+
+			for (UInt32 i = 1; i <= 1; ++i)
+			{
+				QCheckBox *box = m_ui->flagBox->findChild<QCheckBox*>(QString("flag_%1").arg(i));
+				if (box)
+				{
+					connect(box,
+						SIGNAL(stateChanged(int)),
+						this, SLOT(onFlagChanged(int)));
+				}
+			}
 		}
 
 		void TriggerEditor::onTriggerSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
@@ -80,6 +91,15 @@ namespace wowpp
 			m_ui->triggerNameBox->setText(trigger->name().c_str());
 			//m_ui->triggerPathBox->setText((trigger->category().empty() ? "(Default)" : trigger->category().c_str()));
 			m_ui->splitter->setEnabled(true);
+
+			for (int i = 1; i < 2; ++i)
+			{
+				auto *child = m_ui->flagBox->findChild<QCheckBox*>(QString("flag_%1").arg(i));
+				if (child)
+				{
+					child->setChecked(trigger->flags() & i);
+				}
+			}
 
 			auto *rootItem = m_ui->functionView->topLevelItem(0);
 			if (rootItem)
@@ -131,6 +151,27 @@ namespace wowpp
 
 			rootItem->setExpanded(true);
 			updateSelection(true);
+		}
+
+		void TriggerEditor::onFlagChanged(int state)
+		{
+			if (!m_selectedTrigger)
+				return;
+
+			// Build flag mask
+			UInt32 flagMask = 0;
+			for (UInt32 i = 1; i <= 1; ++i)
+			{
+				QCheckBox *box = m_ui->flagBox->findChild<QCheckBox*>(QString("flag_%1").arg(i));
+				if (box)
+				{
+					if (box->isChecked())
+						flagMask |= (1 << (i - 1));
+				}
+			}
+
+			m_selectedTrigger->set_flags(flagMask);
+			m_application.markAsChanged(m_selectedTrigger->id(), pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Modified);
 		}
 
 		void TriggerEditor::on_actionNewTrigger_triggered()

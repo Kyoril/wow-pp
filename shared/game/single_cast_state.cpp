@@ -676,6 +676,7 @@ namespace wowpp
 
 				strongThis->sendEndCast(true);
 				strongThis->applyAllEffects(true, true);
+
 				return true;
 			});
 		}
@@ -761,6 +762,12 @@ namespace wowpp
 			else
 			{
 				applyAllEffects(true, true);
+			}
+
+
+			if (m_cast.getExecuter().isCreature())
+			{
+				reinterpret_cast<GameCreature&>(m_cast.getExecuter()).raiseTrigger(trigger_event::OnSpellCast, { m_spell.id() });
 			}
 		}
 

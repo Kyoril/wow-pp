@@ -23,6 +23,17 @@
 
 namespace wowpp
 {
+	namespace trigger_flags
+	{
+		enum Type
+		{
+			/// No trigger flags set.
+			None				= 0x0000,
+			/// Trigger execution is cancelled as soon as the owner dies.
+			AbortOnOwnerDeath	= 0x0001
+		};
+	}
+
 	namespace trigger_event
 	{
 		enum Type
@@ -76,6 +87,9 @@ namespace wowpp
 			/// Executed when a unit is target of a specific emote.
 			/// Data: <EMOTE-ID>;
 			OnEmote = 15,
+			/// Executed when a unit successfully casted a specific spell.
+			/// Data: <SPELL-ID>;
+			OnSpellCast = 16,
 
 			Invalid,
 			Count_ = Invalid

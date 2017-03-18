@@ -78,6 +78,27 @@ namespace wowpp
 
 		for (int i = actionOffset; i < entry.actions_size(); ++i)
 		{
+			// Abort trigger on owner death?
+			if (entry.flags() & trigger_flags::AbortOnOwnerDeath)
+			{
+				if (strongOwner)
+				{
+					if (strongOwner->isCreature() || strongOwner->isGameCharacter())
+					{
+						if (!std::static_pointer_cast<GameUnit>(strongOwner)->isAlive())
+						{
+							// Stop trigger execution here
+							return;
+						}
+					}
+				}
+				else
+				{
+					// Stop trigger execution here
+					return;
+				}
+			}
+
 			const auto &action = entry.actions(i);
 			switch (action.action())
 			{

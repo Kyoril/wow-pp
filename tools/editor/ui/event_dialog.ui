@@ -155,6 +155,11 @@
        <string>Unit - On Emote</string>
       </property>
      </item>
+     <item>
+      <property name="text">
+       <string>Unit - On Spell Cast</string>
+      </property>
+     </item>
     </widget>
    </item>
    <item>

@@ -81,6 +81,6 @@ namespace wowpp
 		proto::Project &m_project;
 		PlayerManager &m_playerManager;
 		TimerQueue &m_timers;
-		std::vector<std::unique_ptr<Countdown>> m_delays;
+		std::list<std::unique_ptr<Countdown>> m_delays;
 	};
 }
