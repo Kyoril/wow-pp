@@ -116,126 +116,9 @@ namespace wowpp
 				});
 			}
 		}
-		m_onUnitStateChanged = getControlled().unitStateChanged.connect([this](UInt32 state, bool apply)
-		{
-			if (!getControlled().isAlive())
-				return;
 
-			switch (state)
-			{
-				case unit_state::Feared:
-					{
-						// If we are no longer feared, update victim again
-						if (!apply)
-						{
-							if (!getControlled().isCombatMovementEnabled())
-							{
-								// Try to continue last movement if we aren't there already
-								auto &mover = getControlled().getMover();
-								mover.moveTo(mover.getTarget());
-
-								return;
-							}
-
-							chooseNextAction();
-						}
-						else
-						{
-							// No longer attack unit if stunned
-							m_isCasting = false;
-							getControlled().cancelCast(game::spell_interrupt_flags::None);
-							getControlled().stopAttack();
-							getControlled().setVictim(nullptr);
-
-							m_customCooldown = 0;
-							m_lastSpellEntry = nullptr;
-							m_lastSpell = nullptr;
-							m_lastCastTime = 0;
-						}
-					}
-					break;
-				case unit_state::Confused:
-					{
-						if (!apply)
-						{
-							if (!getControlled().isCombatMovementEnabled())
-							{
-								// Try to continue last movement if we aren't there already
-								auto &mover = getControlled().getMover();
-								mover.moveTo(mover.getTarget());
-
-								return;
-							}
-
-							chooseNextAction();
-						}
-						else
-						{
-							// No longer attack unit if stunned
-							m_isCasting = false;
-							getControlled().cancelCast(game::spell_interrupt_flags::None);
-							getControlled().stopAttack();
-							getControlled().setVictim(nullptr);
-
-							m_customCooldown = 0;
-							m_lastSpellEntry = nullptr;
-							m_lastSpell = nullptr;
-							m_lastCastTime = 0;
-						}
-					}
-					break;
-				case unit_state::Stunned:
-					{
-						// If we are no longer stunned, update victim again
-						if (!apply)
-						{
-							if (!getControlled().isCombatMovementEnabled())
-							{
-								// Try to continue last movement if we aren't there already
-								auto &mover = getControlled().getMover();
-								mover.moveTo(mover.getTarget());
-
-								return;
-							}
-
-							chooseNextAction();
-						}
-						else
-						{
-							// No longer attack unit if stunned
-							m_isCasting = false;
-							getControlled().cancelCast(game::spell_interrupt_flags::None);
-							getControlled().stopAttack();
-							getControlled().setVictim(nullptr);
-
-							m_customCooldown = 0;
-							m_lastSpellEntry = nullptr;
-							m_lastSpell = nullptr;
-							m_lastCastTime = 0;
-						}
-					} 
-					break;
-				case unit_state::Rooted:
-					{
-						if (!apply)
-						{
-							if (!getControlled().isCombatMovementEnabled())
-							{
-								// Try to continue last movement if we aren't there already
-								auto &mover = getControlled().getMover();
-								mover.moveTo(mover.getTarget());
-
-								return;
-							}
-						}
-
-						chooseNextAction();
-					} 
-					break;
-				default:
-					break;
-			}
-		});
+		// React to unit state changes
+		m_onUnitStateChanged = getControlled().unitStateChanged.connect(this, &CreatureAICombatState::onUnitStateChanged);
 
 		// Process aggro event
 		TileIndex2D tile;
@@ -849,6 +732,137 @@ namespace wowpp
 		m_lastSpellEntry = nullptr;
 		m_lastSpell = nullptr;
 		m_lastCastTime = 0;
+	}
+
+	void CreatureAICombatState::onUnitStateChanged(UInt32 state, bool apply)
+	{
+		if (!getControlled().isAlive())
+			return;
+
+		switch (state)
+		{
+			case unit_state::Feared:
+				onFearStateChanged(apply);
+				break;
+			case unit_state::Confused:
+				onConfuseStateChanged(apply);
+				break;
+			case unit_state::Stunned:
+				onStunStateChanged(apply);
+				break;
+			case unit_state::Rooted:
+				onRootStateChanged(apply);
+				break;
+		}
+	}
+
+	void CreatureAICombatState::onStunStateChanged(bool apply)
+	{
+		// If we are no longer stunned, update victim again
+		if (!apply)
+		{
+			if (!getControlled().isCombatMovementEnabled())
+			{
+				// Try to continue last movement if we aren't there already
+				auto &mover = getControlled().getMover();
+				mover.moveTo(mover.getTarget());
+
+				return;
+			}
+
+			chooseNextAction();
+		}
+		else
+		{
+			// No longer attack unit if stunned
+			m_isCasting = false;
+			getControlled().cancelCast(game::spell_interrupt_flags::None);
+			getControlled().stopAttack();
+			getControlled().setVictim(nullptr);
+
+			m_customCooldown = 0;
+			m_lastSpellEntry = nullptr;
+			m_lastSpell = nullptr;
+			m_lastCastTime = 0;
+		}
+	}
+
+	void CreatureAICombatState::onConfuseStateChanged(bool apply)
+	{
+		if (!apply)
+		{
+			if (!getControlled().isCombatMovementEnabled())
+			{
+				// Try to continue last movement if we aren't there already
+				auto &mover = getControlled().getMover();
+				mover.moveTo(mover.getTarget());
+
+				return;
+			}
+
+			chooseNextAction();
+		}
+		else
+		{
+			// No longer attack unit if stunned
+			m_isCasting = false;
+			getControlled().cancelCast(game::spell_interrupt_flags::None);
+			getControlled().stopAttack();
+			getControlled().setVictim(nullptr);
+
+			m_customCooldown = 0;
+			m_lastSpellEntry = nullptr;
+			m_lastSpell = nullptr;
+			m_lastCastTime = 0;
+		}
+	}
+
+	void CreatureAICombatState::onFearStateChanged(bool apply)
+	{
+		// If we are no longer feared, update victim again
+		if (!apply)
+		{
+			if (!getControlled().isCombatMovementEnabled())
+			{
+				// Try to continue last movement if we aren't there already
+				auto &mover = getControlled().getMover();
+				mover.moveTo(mover.getTarget());
+
+				return;
+			}
+
+			chooseNextAction();
+		}
+		else
+		{
+			// No longer attack unit if stunned
+			m_isCasting = false;
+			getControlled().cancelCast(game::spell_interrupt_flags::None);
+			getControlled().stopAttack();
+			getControlled().setVictim(nullptr);
+
+			m_customCooldown = 0;
+			m_lastSpellEntry = nullptr;
+			m_lastSpell = nullptr;
+			m_lastCastTime = 0;
+		}
+	}
+
+	void CreatureAICombatState::onRootStateChanged(bool apply)
+	{
+		if (!apply)
+		{
+			if (!getControlled().isCombatMovementEnabled())
+			{
+				// Try to continue last movement if we aren't there already
+				auto &mover = getControlled().getMover();
+				mover.moveTo(mover.getTarget());
+
+				return;
+			}
+		}
+
+		chooseNextAction();
 	}
 
 	void CreatureAICombatState::onDamage(GameUnit &attacker)

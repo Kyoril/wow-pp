@@ -132,6 +132,22 @@ namespace wowpp
 		/// Executed after a spell cast was sucessfully executed.
 		/// @param result Result of the spell cast.
 		void onSpellCast(game::SpellCastResult result);
+		/// Executed when a unit state of the controlled creature was changed.
+		/// @param state The unit state which changed.
+		/// @param apply True if the state was applied, false if it was removed.
+		void onUnitStateChanged(UInt32 state, bool apply);
+		/// Executed when the controlled unit is now stunned or no longer stunned.
+		/// @param apply True if now stunned, false otherwise.
+		void onStunStateChanged(bool apply);
+		/// Executed when the controlled unit is now confused or no longer confused.
+		/// @param apply True if now confused, false otherwise.
+		void onConfuseStateChanged(bool apply);
+		/// Executed when the controlled unit is now feared or no longer feared.
+		/// @param apply True if now feared, false otherwise.
+		void onFearStateChanged(bool apply);
+		/// Executed when the controlled unit is now rooted or no longer rooted.
+		/// @param apply True if now stunned, false otherwise.
+		void onRootStateChanged(bool apply);
 
 	private:
 
