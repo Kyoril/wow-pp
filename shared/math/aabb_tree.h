@@ -153,7 +153,7 @@ namespace wowpp
 			/// @param node
 			/// @param ray
 			/// @param faceIndex
-			void traceLeafNode(const Node& node, Ray& ray, Index* faceIndex, RaycastFlags flags) const;
+			bool traceLeafNode(const Node& node, Ray& ray, Index* faceIndex, RaycastFlags flags) const;
 
 		private:
 

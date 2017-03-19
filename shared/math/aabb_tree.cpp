@@ -313,7 +313,8 @@ namespace wowpp
 					}
 				}
 				else
-					traceLeafNode(node, ray, faceIndex, flags);
+					if (traceLeafNode(node, ray, faceIndex, flags))
+						return;
 			}
 		}
 
@@ -321,7 +322,8 @@ namespace wowpp
 		{
 			auto& node = m_nodes.at(nodeIndex);
 			if (node.numFaces != 0)
-				traceLeafNode(node, ray, faceIndex, flags);
+				if (traceLeafNode(node, ray, faceIndex, flags))
+					return;
 			else
 				traceInnerNode(node, ray, faceIndex, flags);
 		}
@@ -352,7 +354,7 @@ namespace wowpp
 				traceRecursive(node.children + furthest, ray, faceIndex, flags);
 		}
 
-		void AABBTree::traceLeafNode(const Node& node, Ray& ray, Index* faceIndex, RaycastFlags flags) const
+		bool AABBTree::traceLeafNode(const Node& node, Ray& ray, Index* faceIndex, RaycastFlags flags) const
 		{
 			for (auto i = node.startFace; i < node.startFace + node.numFaces; ++i)
 			{
@@ -371,9 +373,11 @@ namespace wowpp
 						*faceIndex = i;
 
 					if (flags & raycast_flags::EarlyExit)
-						return;
+						return true;
 				}
 			}
+
+			return false;
 		}
 
 		unsigned int AABBTree::getLongestAxis(const Vector3& v)
