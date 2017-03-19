@@ -121,10 +121,10 @@ namespace wowpp
 			m_faceIndices.clear();
 		}
 
-		bool AABBTree::intersectRay(Ray& ray, Index* faceIndex/* = nullptr*/) const
+		bool AABBTree::intersectRay(Ray& ray, Index* faceIndex/* = nullptr*/, RaycastFlags flags/* = raycast_flags::None*/) const
 		{
 			float distance = ray.hitDistance;
-			trace(ray, faceIndex);
+			trace(ray, faceIndex, flags);
 			return ray.hitDistance < distance;
 		}
 
@@ -258,7 +258,7 @@ namespace wowpp
 			return BoundingBox(minExtents, maxExtents);
 		}
 
-		void AABBTree::trace(Ray& ray, Index* faceIndex) const
+		void AABBTree::trace(Ray& ray, Index* faceIndex, RaycastFlags flags) const
 		{
 			struct StackEntry
 			{
@@ -313,20 +313,20 @@ namespace wowpp
 					}
 				}
 				else
-					traceLeafNode(node, ray, faceIndex);
+					traceLeafNode(node, ray, faceIndex, flags);
 			}
 		}
 
-		void AABBTree::traceRecursive(unsigned int nodeIndex, Ray& ray, Index* faceIndex) const
+		void AABBTree::traceRecursive(unsigned int nodeIndex, Ray& ray, Index* faceIndex, RaycastFlags flags) const
 		{
 			auto& node = m_nodes.at(nodeIndex);
 			if (node.numFaces != 0)
-				traceLeafNode(node, ray, faceIndex);
+				traceLeafNode(node, ray, faceIndex, flags);
 			else
-				traceInnerNode(node, ray, faceIndex);
+				traceInnerNode(node, ray, faceIndex, flags);
 		}
 
-		void AABBTree::traceInnerNode(const Node& node, Ray& ray, Index* faceIndex) const
+		void AABBTree::traceInnerNode(const Node& node, Ray& ray, Index* faceIndex, RaycastFlags flags) const
 		{
 			auto& leftChild = m_nodes.at(node.children + 0);
 			auto& rightChild = m_nodes.at(node.children + 1);
@@ -346,13 +346,13 @@ namespace wowpp
 				std::swap(closest, furthest);
 
 			if (distance[closest] < ray.hitDistance)
-				traceRecursive(node.children + closest, ray, faceIndex);
+				traceRecursive(node.children + closest, ray, faceIndex, flags);
 
 			if (distance[furthest] < ray.hitDistance)
-				traceRecursive(node.children + furthest, ray, faceIndex);
+				traceRecursive(node.children + furthest, ray, faceIndex, flags);
 		}
 
-		void AABBTree::traceLeafNode(const Node& node, Ray& ray, Index* faceIndex) const
+		void AABBTree::traceLeafNode(const Node& node, Ray& ray, Index* faceIndex, RaycastFlags flags) const
 		{
 			for (auto i = node.startFace; i < node.startFace + node.numFaces; ++i)
 			{
@@ -360,7 +360,7 @@ namespace wowpp
 				auto& v1 = m_vertices[m_indices[i * 3 + 1]];
 				auto& v2 = m_vertices[m_indices[i * 3 + 2]];
 
-				auto result = ray.intersectsTriangle(v0, v1, v2);
+				auto result = ray.intersectsTriangle(v0, v1, v2, (flags & raycast_flags::IgnoreBackface) != 0);
 				if (!result.first)
 					continue;
 
@@ -369,6 +369,9 @@ namespace wowpp
 					ray.hitDistance = result.second;
 					if (faceIndex)
 						*faceIndex = i;
+
+					if (flags & raycast_flags::EarlyExit)
+						return;
 				}
 			}
 		}

@@ -160,11 +160,7 @@ namespace wowpp
 
 #if 0
 			// Only spawn timber wolf
-			if (unitEntry->id() != 69)
-				continue;
-
-			// Limit wolf spawn even more!
-			if (spawn.positionx() > -8752.0f || spawn.positionx() < -8754.0f)
+			if (unitEntry->id() != 17455)
 				continue;
 #endif
 

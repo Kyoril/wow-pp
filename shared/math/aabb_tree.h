@@ -40,7 +40,20 @@ namespace wowpp
 	{
 		struct Ray;
 
-		class AABBTree
+		namespace raycast_flags
+		{
+			enum Type
+			{
+				None			= 0,
+				EarlyExit		= 1,
+				IgnoreBackface	= 2
+			};
+		}
+
+		typedef raycast_flags::Type RaycastFlags;
+
+
+		class AABBTree final
 		{
 			friend io::Writer &operator << (io::Writer &w, AABBTree const &tree);
 			friend io::Reader &operator >> (io::Reader &r, AABBTree &tree);
@@ -89,7 +102,7 @@ namespace wowpp
 			/// @param ray 
 			/// @param faceIndex
 			/// @returns 
-			bool intersectRay(Ray& ray, Index* faceIndex = nullptr) const;
+			bool intersectRay(Ray& ray, Index* faceIndex = nullptr, RaycastFlags flags = raycast_flags::None) const;
 			/// Gets the bounding box of this tree.
 			/// @returns Bounding box of this tree.
 			BoundingBox getBoundingBox() const;
@@ -125,22 +138,22 @@ namespace wowpp
 			/// 
 			/// @param ray
 			/// @param faceIndex
-			void trace(Ray& ray, Index* faceIndex) const;
+			void trace(Ray& ray, Index* faceIndex, RaycastFlags flags) const;
 			/// 
 			/// @param nodeIndex
 			/// @param ray
 			/// @param faceIndex
-			void traceRecursive(unsigned int nodeIndex, Ray& ray, Index* faceIndex) const;
+			void traceRecursive(unsigned int nodeIndex, Ray& ray, Index* faceIndex, RaycastFlags flags) const;
 			/// 
 			/// @param node
 			/// @param ray
 			/// @param faceIndex
-			void traceInnerNode(const Node& node, Ray& ray, Index* faceIndex) const;
+			void traceInnerNode(const Node& node, Ray& ray, Index* faceIndex, RaycastFlags flags) const;
 			/// 
 			/// @param node
 			/// @param ray
 			/// @param faceIndex
-			void traceLeafNode(const Node& node, Ray& ray, Index* faceIndex) const;
+			void traceLeafNode(const Node& node, Ray& ray, Index* faceIndex, RaycastFlags flags) const;
 
 		private:
 

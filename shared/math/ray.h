@@ -84,7 +84,7 @@ namespace wowpp
 			/// @param c The third vertex of the triangle.
 			/// @returns A pair of true and the hit distance, if the ray intersects. Otherwise,
 			///          a pair of false and 0 is returned.
-			std::pair<bool, float> intersectsTriangle(const Vector3 &a, const Vector3 &b, const Vector3 &c)
+			std::pair<bool, float> intersectsTriangle(const Vector3 &a, const Vector3 &b, const Vector3 &c, bool ignoreBackface = false)
 			{
 				const float upscaleFactor = 100.0f;
 
@@ -96,30 +96,29 @@ namespace wowpp
 				Vector3 p = rayDir.cross(v2);
 				float det = v1.dot(p);
 
-				if (::abs(det) < 1e-5) {
-					return std::make_pair<bool, float>(false, 0.0f);
-				}
+				if ((ignoreBackface && det < 1e-5) || ::abs(det) < 1e-5)
+					return { false, 0.0f };
 
 				Vector3 t = origin * upscaleFactor - v0;
 				float e1 = t.dot(p) / det;
 
 				if (e1 < 0.0f || e1 > 1.0f) {
-					return std::make_pair<bool, float>(false, 0.0f);
+					return{ false, 0.0f };
 				}
 
 				Vector3 q = t.cross(v1);
 				float e2 = rayDir.dot(q) / det;
 
 				if (e2 < 0.0f || (e1 + e2) > 1.0f) {
-					return std::make_pair<bool, float>(false, 0.0f);
+					return{ false, 0.0f };
 				}
 
 				float d = v2.dot(q) / det;
 				if (d < 1e-5) {
-					return std::make_pair<bool, float>(false, 0.0f);
+					return{ false, 0.0f };
 				}
 
-				return std::make_pair<bool, float>(true, d / getLength());
+				return { true, d / getLength() };
 			}
 
 			/// Checks whether this ray intersects with a bounding box.

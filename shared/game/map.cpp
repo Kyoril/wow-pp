@@ -154,159 +154,14 @@ namespace wowpp
 	MapDataTile *Map::getTile(const TileIndex2D &position)
 	{
 		if ((position[0] >= 0) &&
-		        (position[0] < static_cast<TileIndex>(m_tiles.width()) &&
-		         (position[1] >= 0) &&
-		         (position[1] < static_cast<TileIndex>(m_tiles.height()))))
+			(position[0] < static_cast<TileIndex>(m_tiles.width())) &&
+			(position[1] >= 0) &&
+			(position[1] < static_cast<TileIndex>(m_tiles.height())))
 		{
-			auto &tile = m_tiles(position[0], position[1]);
+			auto tile = m_tiles(position[0], position[1]);
 			if (!tile)
 			{
-				tile.reset(new MapDataTile);
-
-				std::ostringstream strm;
-				strm << m_dataPath.string() << "/maps/" << m_entry.id() << "/" << position[0] << "_" << position[1] << ".map";
-
-				const String file = strm.str();
-				if (!boost::filesystem::exists(file))
-				{
-					// File does not exist
-					//DLOG("Could not load map file " << file << ": File does not exist");
-					return nullptr;
-				}
-
-				// Open file for reading
-				std::ifstream mapFile(file.c_str(), std::ios::in | std::ios::binary);
-				if (!mapFile)
-				{
-					ELOG("Could not load map file " << file);
-					return nullptr;
-				}
-
-				// Create reader object
-				io::StreamSource fileSource(mapFile);
-				io::Reader reader(fileSource);
-
-				// Read map header
-				MapHeaderChunk mapHeaderChunk;
-				reader.readPOD(mapHeaderChunk);
-				if (mapHeaderChunk.header.fourCC != MapHeaderChunkCC)
-				{
-					ELOG("Could not load map file " << file << ": Invalid four-cc code!");
-					return nullptr;
-				}
-				if (mapHeaderChunk.header.size != sizeof(MapHeaderChunk) - 8)
-				{
-					ELOG("Could not load map file " << file << ": Unexpected header chunk size (" << (sizeof(MapHeaderChunk) - 8) << " expected)!");
-					return nullptr;
-				}
-				if (mapHeaderChunk.version != MapHeaderChunk::MapFormat)
-				{
-					ELOG("Could not load map file " << file << ": Unsupported file format version!");
-					return nullptr;
-				}
-
-				// Read area table
-				fileSource.seek(mapHeaderChunk.offsAreaTable);
-				reader.readPOD(tile->areas);
-				if (tile->areas.header.fourCC != MapAreaChunkCC || tile->areas.header.size != sizeof(MapAreaChunk) - sizeof(MapChunkHeader))
-				{
-					WLOG("Map file " << file << " seems to be corrupted: Wrong area chunk");
-					return nullptr;
-				}
-
-				// Read wmos for line of sight checks
-				if (mapHeaderChunk.offsWmos)
-				{
-					fileSource.seek(mapHeaderChunk.offsWmos);
-					reader.readPOD(tile->wmos.header);
-					if (tile->wmos.header.fourCC != MapWMOChunkCC)
-					{
-						WLOG("Map file " << file << " seems to be corrupted: Wrong wmo chunk header");
-						return nullptr;
-					}
-
-					UInt32 wmoCount = 0;
-					reader >> io::read<UInt32>(wmoCount);
-
-					tile->wmos.entries.resize(wmoCount);
-					for (auto &wmo : tile->wmos.entries)
-					{
-						reader
-							>> io::read<NetUInt32>(wmo.uniqueId)
-							>> io::read_container<UInt16>(wmo.fileName);
-						reader.readPOD(wmo.inverse);
-						reader.readPOD(wmo.bounds);
-
-						// Load aabbtree
-						auto it = aabbTreeById.find(wmo.fileName);
-						if (it == aabbTreeById.end())
-						{
-							auto treeFilePath = m_dataPath / "bvh" / (wmo.fileName + ".bvh");
-
-							std::ifstream bvhFile(treeFilePath.string().c_str(), std::ios::in | std::ios::binary);
-							if (!bvhFile)
-							{
-								ELOG("Could not load bvh file " << treeFilePath.string());
-								return nullptr;
-							}
-
-							// Create reader object
-							io::StreamSource bvhSrc(bvhFile);
-							io::Reader bvhRead(bvhSrc);
-
-							// Read bvh tree data from file
-							auto tree = std::make_shared<math::AABBTree>();
-							bvhRead >> *tree;
-
-							// Check if empty
-							if (tree->getIndices().empty())
-							{
-								WLOG("BVH tree " << wmo.fileName << " has no triangles (empty)!");
-							}
-
-							// Store tree
-							aabbTreeById[wmo.fileName] = tree;
-						}
-					}
-				}
-
-				// Read navigation data
-				if (m_navMesh && mapHeaderChunk.offsNavigation)
-				{
-					fileSource.seek(mapHeaderChunk.offsNavigation);
-					reader.readPOD(tile->navigation.header);
-					if (tile->navigation.header.fourCC != MapNavChunkCC)
-					{
-						WLOG("Map file " << file << " seems to be corrupted: Wrong nav chunk header chunk");
-						return nullptr;
-					}
-
-					// Read navigation meshes if any
-					reader >> io::read<UInt32>(tile->navigation.tileCount);
-					tile->navigation.tiles.resize(tile->navigation.tileCount);
-					for (UInt32 i = 0; i < tile->navigation.tileCount; ++i)
-					{
-						auto &data = tile->navigation.tiles[i];
-						fileSource.read(reinterpret_cast<char *>(&data.size), sizeof(UInt32));
-
-						// Finally read tile data
-						if (data.size)
-						{
-							// Reserver and read
-							data.data.resize(data.size);
-							fileSource.read(data.data.data(), data.size);
-
-							// Add tile to navmesh
-							dtTileRef ref = 0;
-							dtStatus status = m_navMesh->addTile(reinterpret_cast<unsigned char*>(data.data.data()),
-								data.data.size(), 0, 0, &ref);
-							if (dtStatusFailed(status))
-							{
-								ELOG("Failed adding nav tile at " << position << ": 0x" << std::hex << (status & DT_STATUS_DETAIL_MASK));
-							}
-						}
-					}
-				}
+				tile = loadTile(position);
 			}
 
 			return tile.get();
@@ -315,9 +170,52 @@ namespace wowpp
 		return nullptr;
 	}
 
-	float Map::getHeightAt(float x, float y)
+	bool Map::getHeightAt(const math::Vector3 &pos, float &out_height, bool sampleADT, bool sampleWMO)
 	{
-		return 0.0f;
+		TileIndex2D tileIndex(
+			static_cast<Int32>(floor((32.0 - (static_cast<double>(pos.x) / 533.3333333)))),
+			static_cast<Int32>(floor((32.0 - (static_cast<double>(pos.y) / 533.3333333))))
+		);
+
+		bool hit = false;
+		float hitHeight = 0.0f;
+		auto *tile = getTile(tileIndex);
+		if (tile)
+		{
+			if (sampleWMO)
+			{
+				for (const auto &wmo : tile->wmos.entries)
+				{
+					auto rayStart = (pos + math::Vector3(0.0f, 0.0f, 0.5f));
+					auto rayEnd = (pos + math::Vector3(0.0f, 0.0f, -7.0f));
+
+					// WMO was hit, now we transform the ray into WMO coordinate space and do the check again
+					math::Ray transformedRay(
+						wmo.inverse * rayStart,
+						wmo.inverse * rayEnd
+					);
+
+					auto treeIt = aabbTreeById.find(wmo.fileName);
+					if (treeIt != aabbTreeById.end())
+					{
+						if (treeIt->second->intersectRay(transformedRay, nullptr, math::raycast_flags::IgnoreBackface))
+						{
+							hit = true;
+							hitHeight = rayStart.lerp(rayEnd, transformedRay.hitDistance).z;
+							break;
+						}
+					}
+				}
+			}
+			
+		}
+
+		if (hit)
+		{
+			out_height = hitHeight;
+		}
+
+		return hit;
 	}
 
 	bool Map::isInLineOfSight(const math::Vector3 &posA, const math::Vector3 &posB)
@@ -375,7 +273,7 @@ namespace wowpp
 					auto treeIt = aabbTreeById.find(wmo.fileName);
 					if (treeIt != aabbTreeById.end())
 					{
-						if (treeIt->second->intersectRay(transformedRay))
+						if (treeIt->second->intersectRay(transformedRay, nullptr, math::raycast_flags::EarlyExit))
 						{
 							// We hit something, so stop iterating here
 							inLineOfSight = false;
@@ -881,8 +779,10 @@ namespace wowpp
 			// Buffer to store path coordinates
 			std::vector<math::Vector3> tempPathCoords(maxPathLength);
 			std::vector<dtPolyRef> tempPathPolys(maxPathLength);
+			std::vector<unsigned char> tempPathFlags(maxPathLength);
 			int tempPathCoordsCount = 0;
 
+			bool targetIsADT = false;
 			if (startPoly != endPoly)
 			{
 				// Find a straight path
@@ -892,7 +792,7 @@ namespace wowpp
 					tempPath.data(),					// Polygon path
 					static_cast<int>(tempPath.size()),	// Number of polygons in path
 					&tempPathCoords[0].x,				// [out] Path points
-					nullptr,							// [out] Path point flags (unused)
+					&tempPathFlags[0],					// [out] Path point flags
 					&tempPathPolys[0],					// [out] Polygon id for each point.
 					&tempPathCoordsCount,				// [out] used coordinate count in vertices (3 floats = 1 vert)
 					maxPathLength,						// max coordinate count
@@ -903,13 +803,32 @@ namespace wowpp
 					ELOG("findStraightPath failed");
 					return false;
 				}
+
+				unsigned short polyFlags = 0;
+				if (tempPathCoordsCount > 0)
+				{
+					dtPolyRef poly = tempPathPolys[tempPathCoordsCount - 1];
+					if (dtStatusSucceed(m_navMesh->getPolyFlags(poly, &polyFlags)))
+					{
+						targetIsADT =
+							(polyFlags & (2 | 32)) != 0;
+					}
+				}
 			}
 			else
 			{
+
 				// Adjust end height to the poly height here
 				float newHeight = dtEnd.y;
 				if (dtStatusSucceed(m_navQuery->getPolyHeight(endPoly, &dtEnd.x, &newHeight)))
 					dtEnd.y = newHeight;
+
+				unsigned short polyFlags = 0;
+				if (dtStatusSucceed(m_navMesh->getPolyFlags(endPoly, &polyFlags)))
+				{
+					targetIsADT =
+						(polyFlags & (2 | 32)) != 0;
+				}
 
 				// Build shortcut
 				tempPathCoords[0] = dtStart;
@@ -922,6 +841,16 @@ namespace wowpp
 			// Correct actual path length
 			tempPathCoords.resize(tempPathCoordsCount);
 			tempPathPolys.resize(tempPathCoordsCount);
+
+			// Adjust height value
+			float newHeight = 0.0f;
+			auto wowCoord = recastToWoWCoord(tempPathCoords.back());
+
+			bool adjustHeight = getHeightAt(wowCoord, newHeight, targetIsADT, !targetIsADT);
+			if (adjustHeight)
+			{
+				tempPathCoords.back().y = newHeight;
+			}
 
 			// Smooth out the path
 			dtResult = smoothPath(*m_navQuery, *m_navMesh, ignoreAdtSlope ? m_filter : m_adtSlopeFilter, tempPathPolys, tempPathCoords);
@@ -1050,6 +979,160 @@ namespace wowpp
 		}
 
 		return false;
+	}
+
+	Map::MapDataTilePtr Map::loadTile(const TileIndex2D & tileIndex)
+	{
+		std::ostringstream strm;
+		strm << m_dataPath.string() << "/maps/" << m_entry.id() << "/" << tileIndex[0] << "_" << tileIndex[1] << ".map";
+
+		const String file = strm.str();
+		if (!boost::filesystem::exists(file))
+		{
+			// File does not exist
+			//DLOG("Could not load map file " << file << ": File does not exist");
+			return nullptr;
+		}
+
+		// Open file for reading
+		std::ifstream mapFile(file.c_str(), std::ios::in | std::ios::binary);
+		if (!mapFile)
+		{
+			ELOG("Could not load map file " << file);
+			return nullptr;
+		}
+
+		// Create reader object
+		io::StreamSource fileSource(mapFile);
+		io::Reader reader(fileSource);
+
+		// Read map header
+		MapHeaderChunk mapHeaderChunk;
+		reader.readPOD(mapHeaderChunk);
+		if (mapHeaderChunk.header.fourCC != MapHeaderChunkCC)
+		{
+			ELOG("Could not load map file " << file << ": Invalid four-cc code!");
+			return nullptr;
+		}
+		if (mapHeaderChunk.header.size != sizeof(MapHeaderChunk) - 8)
+		{
+			ELOG("Could not load map file " << file << ": Unexpected header chunk size (" << (sizeof(MapHeaderChunk) - 8) << " expected)!");
+			return nullptr;
+		}
+		if (mapHeaderChunk.version != MapHeaderChunk::MapFormat)
+		{
+			ELOG("Could not load map file " << file << ": Unsupported file format version!");
+			return nullptr;
+		}
+
+		// Allocate tile data
+		m_tiles(tileIndex[0], tileIndex[1]) = std::make_shared<MapDataTile>();
+		auto tile = m_tiles(tileIndex[0], tileIndex[1]);
+
+		// Read area table
+		fileSource.seek(mapHeaderChunk.offsAreaTable);
+		reader.readPOD(tile->areas);
+		if (tile->areas.header.fourCC != MapAreaChunkCC || tile->areas.header.size != sizeof(MapAreaChunk) - sizeof(MapChunkHeader))
+		{
+			WLOG("Map file " << file << " seems to be corrupted: Wrong area chunk");
+			return nullptr;
+		}
+
+		// Read wmos for line of sight checks
+		if (mapHeaderChunk.offsWmos)
+		{
+			fileSource.seek(mapHeaderChunk.offsWmos);
+			reader.readPOD(tile->wmos.header);
+			if (tile->wmos.header.fourCC != MapWMOChunkCC)
+			{
+				WLOG("Map file " << file << " seems to be corrupted: Wrong wmo chunk header");
+				return nullptr;
+			}
+
+			UInt32 wmoCount = 0;
+			reader >> io::read<UInt32>(wmoCount);
+
+			tile->wmos.entries.resize(wmoCount);
+			for (auto &wmo : tile->wmos.entries)
+			{
+				reader
+					>> io::read<NetUInt32>(wmo.uniqueId)
+					>> io::read_container<UInt16>(wmo.fileName);
+				reader.readPOD(wmo.inverse);
+				reader.readPOD(wmo.bounds);
+
+				// Load aabbtree
+				auto it = aabbTreeById.find(wmo.fileName);
+				if (it == aabbTreeById.end())
+				{
+					auto treeFilePath = m_dataPath / "bvh" / (wmo.fileName + ".bvh");
+
+					std::ifstream bvhFile(treeFilePath.string().c_str(), std::ios::in | std::ios::binary);
+					if (!bvhFile)
+					{
+						ELOG("Could not load bvh file " << treeFilePath.string());
+						return nullptr;
+					}
+
+					// Create reader object
+					io::StreamSource bvhSrc(bvhFile);
+					io::Reader bvhRead(bvhSrc);
+
+					// Read bvh tree data from file
+					auto tree = std::make_shared<math::AABBTree>();
+					bvhRead >> *tree;
+
+					// Check if empty
+					if (tree->getIndices().empty())
+					{
+						WLOG("BVH tree " << wmo.fileName << " has no triangles (empty)!");
+					}
+
+					// Store tree
+					aabbTreeById[wmo.fileName] = tree;
+				}
+			}
+		}
+
+		// Read navigation data
+		if (m_navMesh && mapHeaderChunk.offsNavigation)
+		{
+			fileSource.seek(mapHeaderChunk.offsNavigation);
+			reader.readPOD(tile->navigation.header);
+			if (tile->navigation.header.fourCC != MapNavChunkCC)
+			{
+				WLOG("Map file " << file << " seems to be corrupted: Wrong nav chunk header chunk");
+				return nullptr;
+			}
+
+			// Read navigation meshes if any
+			reader >> io::read<UInt32>(tile->navigation.tileCount);
+			tile->navigation.tiles.resize(tile->navigation.tileCount);
+			for (UInt32 i = 0; i < tile->navigation.tileCount; ++i)
+			{
+				auto &data = tile->navigation.tiles[i];
+				fileSource.read(reinterpret_cast<char *>(&data.size), sizeof(UInt32));
+
+				// Finally read tile data
+				if (data.size)
+				{
+					// Reserver and read
+					data.data.resize(data.size);
+					fileSource.read(data.data.data(), data.size);
+
+					// Add tile to navmesh
+					dtTileRef ref = 0;
+					dtStatus status = m_navMesh->addTile(reinterpret_cast<unsigned char*>(data.data.data()),
+						data.data.size(), 0, 0, &ref);
+					if (dtStatusFailed(status))
+					{
+						ELOG("Failed adding nav tile at " << tileIndex << ": 0x" << std::hex << (status & DT_STATUS_DETAIL_MASK));
+					}
+				}
+			}
+		}
+
+		return tile;
 	}
 
 	Vertex recastToWoWCoord(const Vertex & in_recastCoord)

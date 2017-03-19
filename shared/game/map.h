@@ -21,11 +21,10 @@
 
 #pragma once
 
-#include "common/typedefs.h"
+#include "map_data.h"
 #include "tile_index.h"
 #include "common/grid.h"
 #include "math/ray.h"
-#include "math/matrix4.h"
 #include "detour/DetourCommon.h"
 #include "detour/DetourNavMesh.h"
 #include "detour/DetourNavMeshQuery.h"
@@ -40,183 +39,6 @@ namespace wowpp
 	}
 
 	struct IShape;
-
-
-	// Chunk serialization constants
-
-	/// Used as map header chunk signature.
-	static constexpr UInt32 MapHeaderChunkCC = 0x50414D57;
-	/// Used as map area chunk signature.
-	static constexpr UInt32 MapAreaChunkCC = 0x52414D57;
-	/// Used as map nav chunk signature.
-	static constexpr UInt32 MapNavChunkCC = 0x564E4D57;
-	/// Used as map wmo chunk signature.
-	static constexpr UInt32 MapWMOChunkCC = 0x4D574D4F;
-	/// Used as map doodad chunk signature.
-	static constexpr UInt32 MapDoodadChunkCC = 0x4D57444F;
-
-	// Helper types
-
-	struct Triangle
-	{
-		UInt32 indexA, indexB, indexC;
-
-		explicit Triangle()
-			: indexA(0)
-			, indexB(0)
-			, indexC(0)
-		{
-		}
-	};
-
-	typedef math::Vector3 Vertex;
-
-	enum NavTerrain
-	{
-		NAV_EMPTY = 0x00,
-		NAV_GROUND = 0x01,
-		NAV_MAGMA = 0x02,
-		NAV_SLIME = 0x04,
-		NAV_WATER = 0x08,
-		NAV_UNUSED1 = 0x10,
-		NAV_UNUSED2 = 0x20,
-		NAV_UNUSED3 = 0x40,
-		NAV_UNUSED4 = 0x80
-	};
-
-	struct MapChunkHeader
-	{
-		UInt32 fourCC;
-		UInt32 size;
-
-		MapChunkHeader()
-			: fourCC(0)
-			, size(0)
-		{
-		}
-	};
-
-	// Map chunks
-
-	struct MapHeaderChunk
-	{
-		static constexpr UInt32 MapFormat = 0x150;
-
-		MapChunkHeader header;
-		UInt32 version;
-		UInt32 offsAreaTable;
-		UInt32 areaTableSize;
-		UInt32 offsWmos;
-		UInt32 wmoSize;
-		UInt32 offsDoodads;
-		UInt32 doodadSize;
-		UInt32 offsNavigation;
-		UInt32 navigationSize;
-
-		MapHeaderChunk()
-			: version(0)
-			, offsAreaTable(0)
-			, areaTableSize(0)
-			, offsWmos(0)
-			, wmoSize(0)
-			, offsDoodads(0)
-			, doodadSize(0)
-			, offsNavigation(0)
-			, navigationSize(0)
-		{
-		}
-	};
-
-	struct MapAreaChunk
-	{
-		MapChunkHeader header;
-		struct AreaInfo
-		{
-			UInt32 areaId;
-			UInt32 flags;
-
-			///
-			AreaInfo()
-				: areaId(0)
-				, flags(0)
-			{
-			}
-		};
-		std::array<AreaInfo, 16 * 16> cellAreas;
-	};
-
-	struct MapNavigationChunk
-	{
-		struct TileData
-		{
-			UInt32 size;
-			std::vector<char> data;
-
-			TileData()
-				: size(0)
-			{
-			}
-		};
-
-		MapChunkHeader header;
-		UInt32 tileCount;
-		std::vector<TileData> tiles;
-
-		explicit MapNavigationChunk()
-			: tileCount(0)
-		{
-		}
-	};
-
-	struct MapWMOChunk
-	{
-		struct WMOEntry
-		{
-			UInt32 uniqueId;
-			String fileName;
-			math::Matrix4 transform;	// Not serialized!
-			math::Matrix4 inverse;
-			math::BoundingBox bounds;
-		};
-
-		MapChunkHeader header;
-		std::vector<WMOEntry> entries;
-
-		explicit MapWMOChunk()
-		{
-		}
-	};
-
-	struct MapDoodadChunk
-	{
-		struct DoodadEntry
-		{
-			UInt32 uniqueId;
-			String fileName;
-			math::Matrix4 transform;	// Not serialized!
-			math::Matrix4 inverse;
-			math::BoundingBox bounds;
-		};
-
-		MapChunkHeader header;
-		std::vector<DoodadEntry> entries;
-
-		explicit MapDoodadChunk()
-		{
-		}
-	};
-
-	// More helpers
-
-	/// Stores map-specific tiled data informations like nav mesh data, height maps and such things.
-	struct MapDataTile final
-	{
-		MapAreaChunk areas;
-		MapNavigationChunk navigation;
-		MapWMOChunk wmos;
-
-		~MapDataTile() {}
-	};
 
 	struct NavMeshDeleter final
 	{
@@ -243,11 +65,14 @@ namespace wowpp
 	/// This class represents a map with additional geometry and navigation data.
 	class Map final
 	{
+		typedef std::shared_ptr<MapDataTile> MapDataTilePtr;
+
 	public:
 
 		/// Creates a new instance of the map class and initializes it.
 		/// @entry The base entry of this map.
 		explicit Map(const proto::MapEntry &entry, boost::filesystem::path dataPath);
+
 		/// Constructs a new nav mesh for this map id.
 		void setupNavMesh();
 		/// Loads all tiles at once.
@@ -262,10 +87,12 @@ namespace wowpp
 		/// Tries to get a specific data tile if it's loaded.
 		MapDataTile *getTile(const TileIndex2D &position);
 		/// Determines the height value at a given coordinate.
-		/// @param x The x coordinate to check.
-		/// @param y The y coordinate to check.
-		/// @returns The height value at the given coordinate, or quiet NaN if no valid height.
-		float getHeightAt(float x, float y);
+		/// @param pos The position in wow's coordinate system.
+		/// @param out_height The height value will be stored here in wow's coordinate space.
+		/// @param sampleADT If true, the terrain will be sampled.
+		/// @param sampleWMO If true, WMOs will be sampled.
+		/// @returns True if the height value could be sampled.
+		bool getHeightAt(const math::Vector3 &pos, float &out_height, bool sampleADT, bool sampleWMO);
 		/// Determines whether position B is in line of sight from position A.
 		/// @param posA The source position the raycast is fired off.
 		/// @param posB The destination position where the raycast is fired to.
@@ -284,6 +111,10 @@ namespace wowpp
 
 	private:
 
+		/// Loads the given data tile.
+		/// @param tileIndex Tile coordinates in the grid. Matches ADT cell coordinate system.
+		/// @returns nullptr if loading failed.
+		MapDataTilePtr loadTile(const TileIndex2D &tileIndex);
 		/// Build a smooth path with corrected height values based on the detail mesh. This method
 		/// operates in the recast coordinate system, so all inputs and outputs are in this system.
 		/// @param dtStart Start position of the path.
@@ -291,7 +122,12 @@ namespace wowpp
 		/// @param polyPath List of polygons determined already for this path.
 		/// @param out_smoothPath The calculated waypoints in recast space on success.
 		/// @param maxPathSize Can be used to limit the amount of waypoints to generate. [1 < maxPathSize <= 74]
-		dtStatus getSmoothPath(const math::Vector3 &dtStart, const math::Vector3 &dtEnd, std::vector<dtPolyRef> &polyPath, std::vector<math::Vector3> &out_smoothPath, UInt32 maxPathSize);
+		dtStatus getSmoothPath(
+			const math::Vector3 &dtStart, 
+			const math::Vector3 &dtEnd, 
+			std::vector<dtPolyRef> &polyPath, 
+			std::vector<math::Vector3> &out_smoothPath, 
+			UInt32 maxPathSize);
 		
 	private:
 
@@ -299,7 +135,7 @@ namespace wowpp
 		const boost::filesystem::path m_dataPath;
 		// Note: We use a pointer here, because we don't need to load ALL height data
 		// of all tiles, and Grid allocates them immediatly.
-		Grid<std::shared_ptr<MapDataTile>> m_tiles;
+		Grid<MapDataTilePtr> m_tiles;
 		/// Navigation mesh of this map. Note that this is shared between all map instanecs with the same map id.
 		dtNavMesh *m_navMesh;
 		/// Navigation mesh query for the current nav mesh (if any).
