@@ -648,7 +648,6 @@ namespace wowpp
 			}
 
 			WOWPP_HANDLE_PACKET(NameQuery)
-			WOWPP_HANDLE_PACKET(CreatureQuery)
 			WOWPP_HANDLE_PACKET(LogoutRequest)
 			WOWPP_HANDLE_PACKET(LogoutCancel)
 			WOWPP_HANDLE_PACKET(SetSelection)
@@ -823,35 +822,6 @@ namespace wowpp
 	{
 		m_connection->sendSinglePacket(
 			std::bind(pp::world_realm::world_write::teleportRequest, std::placeholders::_1, characterId, map, location, o));
-	}
-
-	void RealmConnector::handleCreatureQuery(Player &sender, game::Protocol::IncomingPacket &packet)
-	{
-		// Read the client packet
-		UInt32 creatureEntry;
-		UInt64 objectGuid;
-		if (!game::client_read::creatureQuery(packet, creatureEntry, objectGuid))
-		{
-			// Could not read packet
-			WLOG("Could not read packet data");
-			return;
-		}
-
-		//TODO: Find creature object and check if it exists
-
-		// Find creature info by entry
-		const auto *unit = m_project.units.getById(creatureEntry);
-		if (unit)
-		{
-			// Write answer packet
-			sender.sendProxyPacket(
-				std::bind(game::server_write::creatureQueryResponse, std::placeholders::_1, std::cref(*unit)));
-		}
-		else
-		{
-			//TODO: Send resulting packet SMSG_CREATURE_QUERY_RESPONSE with only one uin32 value
-			//which is creatureEntry | 0x80000000
-		}
 	}
 
 	void RealmConnector::handleLogoutRequest(Player &sender, game::Protocol::IncomingPacket &packet)

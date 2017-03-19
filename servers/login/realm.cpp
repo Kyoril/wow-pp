@@ -247,6 +247,7 @@ namespace wowpp
 						std::placeholders::_1, 
 						std::cref(session->getUserName()),
 						session->getUserId(), 
+						player->getLocale(),
 						std::cref(session->getKey()),
 						std::cref(session->getV()),
 						std::cref(session->getS()),

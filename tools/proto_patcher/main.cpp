@@ -2652,6 +2652,104 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importLocales(proto::Project &project, MySQL::Connection &conn)
+	{
+		for (auto &unit : *project.units.getTemplates().mutable_entry())
+		{
+			unit.clear_name_loc();
+			unit.clear_subname_loc();
+
+			// Fill with default name / subname
+			for (int i = 0; i < 12; ++i)
+			{
+				unit.add_name_loc();
+				unit.add_subname_loc();
+			}
+		}
+
+		for (auto &item : *project.items.getTemplates().mutable_entry())
+		{
+			item.clear_name_loc();
+			item.clear_description_loc();
+
+			// Fill with default name / subname
+			for (int i = 0; i < 12; ++i)
+			{
+				item.add_name_loc();
+				item.add_description_loc();
+			}
+		}
+
+		if (!conn.execute("SET NAMES 'UTF8';"))
+		{
+			ELOG("Database error: " << conn.getErrorMessage());
+		}
+
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `entry`, `name_loc3`, `subname_loc3` FROM `tbcdb`.`locales_creature` WHERE name_loc3 IS NOT NULL AND TRIM(name_loc3) <> '';");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					UInt32 entryId = 0;
+					String name_loc3, subname_loc3;
+					row.getField(0, entryId);
+					row.getField(1, name_loc3);
+					row.getField(2, subname_loc3);
+
+					do
+					{
+						// Find unit
+						auto *unit = project.units.getById(entryId);
+						if (!unit)
+						{
+							WLOG("Unable to find unit " << entryId);
+							break;
+						}
+
+						unit->set_name_loc(1, name_loc3);
+						if (!subname_loc3.empty()) unit->set_subname_loc(1, subname_loc3);
+					} while (false);
+
+					row = row.next(select);
+				}
+			}
+		}
+
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `entry`, `name_loc3`, `description_loc3` FROM `tbcdb`.`locales_item` WHERE name_loc3 IS NOT NULL AND TRIM(name_loc3) <> '';");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					UInt32 entryId = 0;
+					String name_loc3, description_loc3;
+					row.getField(0, entryId);
+					row.getField(1, name_loc3);
+					row.getField(2, description_loc3);
+
+					do
+					{
+						// Find item
+						auto *item = project.items.getById(entryId);
+						if (!item)
+						{
+							WLOG("Unable to find item " << entryId);
+							break;
+						}
+
+						item->set_name_loc(1, name_loc3);
+						if (!description_loc3.empty()) item->set_description_loc(1, description_loc3);
+					} while (false);
+
+					row = row.next(select);
+				}
+			}
+		}
+		return true;
+	}
 }
 
 /// Procedural entry point of the application.
@@ -2720,9 +2818,9 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 	
-	if (!importKillCredits(protoProject, connection))
+	if (!importLocales(protoProject, connection))
 	{
-		WLOG("Couldn't import spell chain");
+		WLOG("Couldn't import locales");
 		return 1;
 	}
 

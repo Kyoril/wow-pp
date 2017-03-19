@@ -135,7 +135,6 @@ namespace wowpp
 
 		// Proxy packet handlers
 		void handleNameQuery(Player &sender, game::Protocol::IncomingPacket &packet);
-		void handleCreatureQuery(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleLogoutRequest(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleLogoutCancel(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleSetSelection(Player &sender, game::Protocol::IncomingPacket &packet);

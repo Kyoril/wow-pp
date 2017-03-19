@@ -24,6 +24,7 @@
 #include "game_protocol/game_protocol.h"
 #include "game_protocol/game_connection.h"
 #include "game_protocol/game_crypted_connection.h"
+#include "auth_protocol/auth_protocol.h"
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "common/big_number.h"
 #include "common/id_generator.h"
@@ -126,7 +127,7 @@ namespace wowpp
 		/// @param key Sesskion key (K) of the client which was calculated by the login server.
 		/// @param v V value which was calculated by the login server.
 		/// @param s S value which was calculated by the login server.
-		void loginSucceeded(UInt32 accountId, const BigNumber &key, const BigNumber &v, const BigNumber &s, const std::array<UInt32, 8> &tutorialData);
+		void loginSucceeded(UInt32 accountId, auth::AuthLocale locale, const BigNumber &key, const BigNumber &v, const BigNumber &s, const std::array<UInt32, 8> &tutorialData);
 		/// The login server notified us that the player login failed. This can have several
 		/// different reasons (unknown account name, suspended account etc.),
 		void loginFailed();
@@ -244,6 +245,7 @@ namespace wowpp
 		ActionButtons m_actionButtons;
 		std::array<UInt32, 8> m_tutorialData;
 		GameTime m_nextWhoRequest;
+		auth::AuthLocale m_locale;
 
 	private:
 
@@ -307,5 +309,6 @@ namespace wowpp
 		void handleWho(game::IncomingPacket &packet);
 		void handleMinimapPing(game::IncomingPacket &packet);
 		void handleItemNameQuery(game::IncomingPacket &packet);
+		void handleCreatureQuery(game::IncomingPacket &packet);
 	};
 }

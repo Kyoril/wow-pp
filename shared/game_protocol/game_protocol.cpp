@@ -627,17 +627,21 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void creatureQueryResponse(game::OutgoingPacket &out_packet, const proto::UnitEntry &unit)
+			void creatureQueryResponse(game::OutgoingPacket &out_packet, Int32 localeIndex, const proto::UnitEntry &unit)
 			{
-				out_packet.start(server_packet::CreatureQueryResponse);
+				const String &name = (unit.name_loc_size() >= localeIndex) ?
+					unit.name_loc(localeIndex - 1) : unit.name();
+				const String &subname = (unit.subname_loc_size() >= localeIndex) ?
+					unit.subname_loc(localeIndex - 1) : unit.subname();
 
+				out_packet.start(server_packet::CreatureQueryResponse);
 				out_packet
 				        << io::write<NetUInt32>(unit.id())
-				        << io::write_range(unit.name()) << io::write<NetUInt8>(0x00)	// Terminator: name
+				        << io::write_range(name.empty() ? unit.name() : name) << io::write<NetUInt8>(0x00)	// Terminator: name
 				        << io::write<NetUInt8>(0x00)	// Terminator: name2 (always empty)
 				        << io::write<NetUInt8>(0x00)	// Terminator: name3 (always empty)
 				        << io::write<NetUInt8>(0x00)	// Terminator: name4 (always empty)
-				        << io::write_range(unit.subname()) << io::write<NetUInt8>(0x00)	// Terminator: name4 (always empty)
+				        << io::write_range(subname.empty() ? unit.subname() : subname) << io::write<NetUInt8>(0x00)	// Terminator: name4 (always empty)
 				        << io::write<NetUInt8>(0x00)
 				        << io::write<NetUInt32>(unit.creaturetypeflags())
 				        << io::write<NetUInt32>(unit.type())
@@ -1066,15 +1070,20 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void itemQuerySingleResponse(game::OutgoingPacket &out_packet, const proto::ItemEntry &item)
+			void itemQuerySingleResponse(game::OutgoingPacket &out_packet, Int32 localeIndex, const proto::ItemEntry &item)
 			{
+				const String &name = (item.name_loc_size() >= localeIndex) ?
+					item.name_loc(localeIndex - 1) : item.name();
+				const String &desc = (item.description_loc_size() >= localeIndex) ?
+					item.description_loc(localeIndex - 1) : item.description();
+
 				out_packet.start(game::server_packet::ItemQuerySingleResponse);
 				out_packet
 				        << io::write<NetUInt32>(item.id())
 				        << io::write<NetUInt32>(item.itemclass())
 				        << io::write<NetUInt32>(item.subclass())
 				        << io::write<NetUInt32>(-1)				// SoundClassOverride (TODO)
-				        << io::write_range(item.name()) << io::write<NetUInt8>(0)
+				        << io::write_range(name.empty() ? item.name() : name) << io::write<NetUInt8>(0)
 				        << io::write<NetUInt8>(0)				// Second name?
 				        << io::write<NetUInt8>(0)				// Third name?
 				        << io::write<NetUInt8>(0)				// Fourth name?
@@ -1181,7 +1190,7 @@ namespace wowpp
 				}
 				out_packet
 				        << io::write<NetUInt32>(item.bonding())
-				        << io::write_range(item.description()) << io::write<NetUInt8>(0)
+				        << io::write_range(desc.empty() ? item.description() : desc) << io::write<NetUInt8>(0)
 				        << io::write<NetUInt32>(0)					// TODO: Page Text
 				        << io::write<NetUInt32>(0)					// TODO: Language ID
 				        << io::write<NetUInt32>(0)					// TODO: Page Material

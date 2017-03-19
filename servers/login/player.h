@@ -74,6 +74,8 @@ namespace wowpp
 		const Session *getSession() const { return m_session.get(); }
 		/// 
 		UInt32 getAccountId() const { return m_accountId; }
+		/// Returns the client locale.
+		const auth::AuthLocale &getLocale() const { return m_locale; }
 
 	private:
 

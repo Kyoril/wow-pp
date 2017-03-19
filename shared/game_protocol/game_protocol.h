@@ -1107,6 +1107,7 @@ namespace wowpp
 
 			void itemQuerySingleResponse(
 			    game::OutgoingPacket &out_packet,
+				Int32 localeIndex,
 			    const proto::ItemEntry &item
 			);
 
@@ -1246,6 +1247,7 @@ namespace wowpp
 
 			void creatureQueryResponse(
 			    game::OutgoingPacket &out_packet,
+				Int32 localeIndex,
 			    const proto::UnitEntry &unit
 			);
 

@@ -81,7 +81,7 @@ namespace wowpp
 			std::bind(game::server_write::authChallenge, std::placeholders::_1, m_seed));
 	}
 
-	void Player::loginSucceeded(UInt32 accountId, const BigNumber &key, const BigNumber &v, const BigNumber &s, const std::array<UInt32, 8> &tutorialData)
+	void Player::loginSucceeded(UInt32 accountId, auth::AuthLocale locale, const BigNumber &key, const BigNumber &v, const BigNumber &s, const std::array<UInt32, 8> &tutorialData)
 	{
 		// Check that Key and account name are the same on client and server
 		Boost_SHA1HashSink sha;
@@ -107,10 +107,12 @@ namespace wowpp
 		m_sessionKey = key;
 		m_v = v;
 		m_s = s;
+		m_locale = locale;
 
 		//TODO Create session
 
 		ILOG("Client " << m_accountName << " authenticated successfully from " << m_address);
+		ILOG("Client locale: " << m_locale);
 		m_authed = true;
 
 		// Notify login connector
@@ -330,6 +332,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(Who, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(MinimapPing, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(ItemNameQuery, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(CreatureQuery, game::session_status::LoggedIn)
 
 #undef WOWPP_HANDLE_PACKET
 #undef QUOTE
@@ -1648,9 +1651,39 @@ namespace wowpp
 
 			// Write answer packet
 			sendPacket(
-				std::bind(game::server_write::itemQuerySingleResponse, std::placeholders::_1, std::cref(*item)));
+				std::bind(game::server_write::itemQuerySingleResponse, std::placeholders::_1, m_locale, std::cref(*item)));
 		}
 	}
+
+	void Player::handleCreatureQuery(game::IncomingPacket &packet)
+	{
+		// Read the client packet
+		UInt32 creatureEntry;
+		UInt64 objectGuid;
+		if (!game::client_read::creatureQuery(packet, creatureEntry, objectGuid))
+		{
+			// Could not read packet
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		//TODO: Find creature object and check if it exists
+
+		// Find creature info by entry
+		const auto *unit = m_project.units.getById(creatureEntry);
+		if (unit)
+		{
+			// Write answer packet
+			sendPacket(
+				std::bind(game::server_write::creatureQueryResponse, std::placeholders::_1, m_locale, std::cref(*unit)));
+		}
+		else
+		{
+			//TODO: Send resulting packet SMSG_CREATURE_QUERY_RESPONSE with only one uin32 value
+			//which is creatureEntry | 0x80000000
+		}
+	}
+
 	/*
 	void Player::saveCharacter()
 	{
@@ -2685,8 +2718,12 @@ namespace wowpp
 			return;
 		}
 
+		const String &name =
+			entry->name_loc_size() >= static_cast<Int32>(m_locale) ?
+			entry->name_loc(static_cast<Int32>(m_locale) - 1) : entry->name();
+
 		// Match Count is request count right now
 		sendPacket(
-			std::bind(game::server_write::itemNameQueryResponse, std::placeholders::_1, itemEntry, entry->name(), entry->inventorytype()));
+			std::bind(game::server_write::itemNameQueryResponse, std::placeholders::_1, itemEntry, std::cref(name), entry->inventorytype()));
 	}
 }
