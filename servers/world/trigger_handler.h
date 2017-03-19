@@ -78,6 +78,11 @@ namespace wowpp
 
 	private:
 
+		bool checkInCombatFlag(const proto::TriggerEntry &entry, const GameObject *owner);
+		bool checkOwnerAliveFlag(const proto::TriggerEntry &entry, const GameObject *owner);
+
+	private:
+
 		proto::Project &m_project;
 		PlayerManager &m_playerManager;
 		TimerQueue &m_timers;

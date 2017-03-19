@@ -92,25 +92,12 @@ namespace wowpp
 		for (int i = actionOffset; i < entry.actions_size(); ++i)
 		{
 			// Abort trigger on owner death?
-			if (entry.flags() & trigger_flags::AbortOnOwnerDeath)
-			{
-				if (strongOwner)
-				{
-					if (strongOwner->isCreature() || strongOwner->isGameCharacter())
-					{
-						if (!std::static_pointer_cast<GameUnit>(strongOwner)->isAlive())
-						{
-							// Stop trigger execution here
-							return;
-						}
-					}
-				}
-				else
-				{
-					// Stop trigger execution here
-					return;
-				}
-			}
+			if (!checkOwnerAliveFlag(entry, strongOwner.get()))
+				return;
+
+			// Abort trigger if not in combat
+			if (!checkInCombatFlag(entry, strongOwner.get()))
+				return;
 
 			const auto &action = entry.actions(i);
 			switch (action.action())
@@ -807,6 +794,56 @@ namespace wowpp
 		}
 
 		target->setUInt32Value(unit_fields::MountDisplayId, mountId);
+	}
+
+	bool TriggerHandler::checkInCombatFlag(const proto::TriggerEntry & entry, const GameObject * owner)
+	{
+		if (entry.flags() & trigger_flags::OnlyInCombat)
+		{
+			if (owner)
+			{
+				if (owner->isCreature() || owner->isGameCharacter())
+				{
+					if (!reinterpret_cast<const GameUnit*>(owner)->isInCombat())
+					{
+						// Stop trigger execution here
+						return false;
+					}
+				}
+			}
+			else
+			{
+				// Stop trigger execution here
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	bool TriggerHandler::checkOwnerAliveFlag(const proto::TriggerEntry & entry, const GameObject * owner)
+	{
+		if (entry.flags() & trigger_flags::AbortOnOwnerDeath)
+		{
+			if (owner)
+			{
+				if (owner->isCreature() || owner->isGameCharacter())
+				{
+					if (!reinterpret_cast<const GameUnit*>(owner)->isAlive())
+					{
+						// Stop trigger execution here
+						return false;
+					}
+				}
+			}
+			else
+			{
+				// Stop trigger execution here
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	Int32 TriggerHandler::getActionData(const proto::TriggerAction &action, UInt32 index) const

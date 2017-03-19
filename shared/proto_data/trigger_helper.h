@@ -30,7 +30,12 @@ namespace wowpp
 			/// No trigger flags set.
 			None				= 0x0000,
 			/// Trigger execution is cancelled as soon as the owner dies.
-			AbortOnOwnerDeath	= 0x0001
+			AbortOnOwnerDeath	= 0x0001,
+			/// Trigger is only executed while owner is in combat (and is aborted if owner leaves combat).
+			OnlyInCombat		= 0x0002,
+
+			/// Used for automatic enumeration.
+			Count_				= 2
 		};
 	}
 

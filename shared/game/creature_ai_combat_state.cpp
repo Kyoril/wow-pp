@@ -65,8 +65,7 @@ namespace wowpp
 		addThreat(*m_combatInitiator, 0.0f);
 		m_combatInitiator = nullptr;
 
-		m_nextActionCountdown.ended.connect(
-			std::bind(&CreatureAICombatState::chooseNextAction, this));
+		m_nextActionCountdown.ended.connect(this, &CreatureAICombatState::chooseNextAction);
 
 		auto &controlled = getControlled();
 		controlled.getMover().setTerrainMovement(true);

@@ -45,8 +45,7 @@ namespace wowpp
 		, m_home(home)
 	{
 		// Connect to spawn event
-		m_onSpawned = m_controlled.spawned.connect(
-		                  std::bind(&CreatureAI::onSpawned, this));
+		m_onSpawned = m_controlled.spawned.connect(this, &CreatureAI::onSpawned);
 	}
 
 	CreatureAI::~CreatureAI()

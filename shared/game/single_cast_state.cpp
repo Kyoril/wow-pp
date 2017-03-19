@@ -250,15 +250,9 @@ namespace wowpp
 			m_target.resolvePointers(*world, &unitTarget, nullptr, nullptr, nullptr);
 			if (unitTarget)
 			{
-				m_onTargetDied = unitTarget->killed.connect(std::bind(&SingleCastState::onTargetRemovedOrDead, this));
-				m_onTargetRemoved = unitTarget->despawned.connect(std::bind(&SingleCastState::onTargetRemovedOrDead, this));
+				m_onTargetDied = unitTarget->killed.connect(this, &SingleCastState::onTargetKilled);
+				m_onTargetRemoved = unitTarget->despawned.connect(this, &SingleCastState::onTargetDespawned);
 			}
-
-			// Subscribe to damage events if the spell is cancelled on damage
-			/*m_onUserMoved = m_cast.getExecuter().moved.connect(
-			                    std::bind(&SingleCastState::onUserStartsMoving, this));*/
-
-			// TODO: Subscribe to target removed and died events (in both cases, the cast may be interrupted)
 
 			if (m_spell.attributes(0) & game::spell_attributes::NotInCombat)
 			{
@@ -320,12 +314,9 @@ namespace wowpp
 				m_target.resolvePointers(*world, &unitTarget, nullptr, nullptr, nullptr);
 				if (unitTarget)
 				{
-					m_onTargetDied = unitTarget->killed.connect(std::bind(&SingleCastState::onTargetRemovedOrDead, this));
-					m_onTargetRemoved = unitTarget->despawned.connect(std::bind(&SingleCastState::onTargetRemovedOrDead, this));
+					m_onTargetDied = unitTarget->killed.connect(this, &SingleCastState::onTargetKilled);
+					m_onTargetRemoved = unitTarget->despawned.connect(this, &SingleCastState::onTargetDespawned);
 				}
-
-				/*m_onUserMoved = m_cast.getExecuter().moved.connect(
-					std::bind(&SingleCastState::onUserStartsMoving, this));*/
 			}
 
 			onCastFinished();
@@ -805,7 +796,12 @@ namespace wowpp
 		}
 	}
 
-	void SingleCastState::onTargetRemovedOrDead()
+	void SingleCastState::onTargetKilled(GameUnit * /*killer*/)
+	{
+		stopCast(game::spell_interrupt_flags::None);
+	}
+
+	void SingleCastState::onTargetDespawned(GameObject & /*target*/)
 	{
 		stopCast(game::spell_interrupt_flags::None);
 	}
@@ -3710,7 +3706,7 @@ namespace wowpp
 			if (!m_connectedMeleeSignal) 
 			{
 				m_connectedMeleeSignal = true;
-				m_completedEffectsExecution[targetUnit->getGuid()] = completedEffects.connect(std::bind(&SingleCastState::executeMeleeAttack, this));
+				m_completedEffectsExecution[targetUnit->getGuid()] = completedEffects.connect(this, &SingleCastState::executeMeleeAttack);
 			}
 
 			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())

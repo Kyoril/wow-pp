@@ -169,7 +169,8 @@ namespace wowpp
 
 		void sendEndCast(bool success);
 		void onCastFinished();
-		void onTargetRemovedOrDead();
+		void onTargetKilled(GameUnit *);
+		void onTargetDespawned(GameObject &);
 		void onUserDamaged();
 		void executeMeleeAttack();	// deal damage stored in m_meleeDamage
 

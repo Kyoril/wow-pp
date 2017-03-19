@@ -68,33 +68,21 @@ namespace wowpp
 			m_nextClientSync.ended.connect(this, &Player::onClientSync)
 		});
 
-		m_onProfChanged = m_character->proficiencyChanged.connect(
-			std::bind(&Player::onProficiencyChanged, this, std::placeholders::_1, std::placeholders::_2));
-		m_onAtkSwingErr = m_character->autoAttackError.connect(
-			std::bind(&Player::onAttackSwingError, this, std::placeholders::_1));
-		m_onInvFailure = m_character->inventoryChangeFailure.connect(
-			std::bind(&Player::onInventoryChangeFailure, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-		m_onComboPoints = m_character->comboPointsChanged.connect(
-			std::bind(&Player::onComboPointsChanged, this));
-		m_onXP = m_character->experienceGained.connect(
-			std::bind(&Player::onExperienceGained, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-		m_onCastError = m_character->spellCastError.connect(
-			std::bind(&Player::onSpellCastError, this, std::placeholders::_1, std::placeholders::_2));
-		m_onGainLevel = m_character->levelGained.connect(
-			std::bind(&Player::onLevelGained, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, 
-													std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, std::placeholders::_8));
-		m_onAuraUpdate = m_character->auraUpdated.connect(
-			std::bind(&Player::onAuraUpdated, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
-		m_onTargetAuraUpdate = m_character->targetAuraUpdated.connect(
-			std::bind(&Player::onTargetAuraUpdated, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
-		m_onTeleport = m_character->teleport.connect(
-			std::bind(&Player::onTeleport, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-		m_onResurrectRequest = m_character->resurrectRequested.connect(
-			std::bind(&Player::onResurrectRequest, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-		m_onCooldownEvent = m_character->cooldownEvent.connect([this](UInt32 spellId) {
-				sendProxyPacket(std::bind(game::server_write::cooldownEvent, std::placeholders::_1, spellId, m_character->getGuid()));
+		m_onProfChanged = m_character->proficiencyChanged.connect(this, &Player::onProficiencyChanged);
+		m_onAtkSwingErr = m_character->autoAttackError.connect(this, &Player::onAttackSwingError);
+		m_onInvFailure = m_character->inventoryChangeFailure.connect(this, &Player::onInventoryChangeFailure);
+		m_onComboPoints = m_character->comboPointsChanged.connect(this, &Player::onComboPointsChanged);
+		m_onXP = m_character->experienceGained.connect(this, &Player::onExperienceGained);
+		m_onCastError = m_character->spellCastError.connect(this, &Player::onSpellCastError);
+		m_onGainLevel = m_character->levelGained.connect(this, &Player::onLevelGained);
+		m_onAuraUpdate = m_character->auraUpdated.connect(this, &Player::onAuraUpdated);
+		m_onTargetAuraUpdate = m_character->targetAuraUpdated.connect(this, &Player::onTargetAuraUpdated);
+		m_onTeleport = m_character->teleport.connect(this, &Player::onTeleport);
+		m_onResurrectRequest = m_character->resurrectRequested.connect(this, &Player::onResurrectRequest);
+		m_onCooldownEvent = m_character->cooldownEvent.connect([&](UInt32 spellId) {
+			sendProxyPacket(std::bind(game::server_write::cooldownEvent, std::placeholders::_1, spellId, m_character->getGuid()));
 		});
-		m_questChanged = m_character->questDataChanged.connect([this](UInt32 questId, const QuestStatusData &data) {
+		m_questChanged = m_character->questDataChanged.connect([&](UInt32 questId, const QuestStatusData &data) {
 			m_realmConnector.sendQuestData(m_character->getGuid(), questId, data);
 			if (data.status == game::quest_status::Complete ||
 				(data.status == game::quest_status::Incomplete && data.explored == true))
@@ -102,20 +90,17 @@ namespace wowpp
 				sendProxyPacket(std::bind(game::server_write::questupdateComplete, std::placeholders::_1, questId));
 			}
 		});
-		m_questKill = m_character->questKillCredit.connect([this](const proto::QuestEntry &quest, UInt64 guid, UInt32 entry, UInt32 count, UInt32 total) {
+		m_questKill = m_character->questKillCredit.connect([&](const proto::QuestEntry &quest, UInt64 guid, UInt32 entry, UInt32 count, UInt32 total) {
 			sendProxyPacket(std::bind(game::server_write::questupdateAddKill, std::placeholders::_1, quest.id(), entry, count, total, guid));
 		});
-		m_standStateChanged = m_character->standStateChanged.connect([this](UnitStandState state) {
+		m_standStateChanged = m_character->standStateChanged.connect([&](UnitStandState state) {
 			sendProxyPacket(std::bind(game::server_write::standStateUpdate, std::placeholders::_1, state));
 		});
-
-		m_objectInteraction = m_character->objectInteraction.connect([this](WorldObject &object) {
+		m_objectInteraction = m_character->objectInteraction.connect([&](WorldObject &object)
+		{
 			if (object.getEntry().type() == world_object_type::QuestGiver)
-			{
 				sendGossipMenu(object.getGuid());
-			}
 		});
-
 		m_onItemAdded = m_character->itemAdded.connect([this](UInt16 slot, UInt16 amount, bool looted, bool created) {
 			auto inst = m_character->getInventory().getItemAtSlot(slot);
 			if (inst)
@@ -132,12 +117,12 @@ namespace wowpp
 
 		// Inventory change signals
 		auto &inventory = m_character->getInventory();
-		m_itemCreated = inventory.itemInstanceCreated.connect(std::bind(&Player::onItemCreated, this, std::placeholders::_1, std::placeholders::_2));
-		m_itemUpdated = inventory.itemInstanceUpdated.connect(std::bind(&Player::onItemUpdated, this, std::placeholders::_1, std::placeholders::_2));
-		m_itemDestroyed = inventory.itemInstanceDestroyed.connect(std::bind(&Player::onItemDestroyed, this, std::placeholders::_1, std::placeholders::_2));
+		m_itemCreated = inventory.itemInstanceCreated.connect(this, &Player::onItemCreated);
+		m_itemUpdated = inventory.itemInstanceUpdated.connect(this, &Player::onItemUpdated);
+		m_itemDestroyed = inventory.itemInstanceDestroyed.connect(this, &Player::onItemDestroyed);
 
 		// Loot signal
-		m_onLootInspect = m_character->lootinspect.connect([this](std::shared_ptr<LootInstance> instance) {
+		m_onLootInspect = m_character->lootinspect.connect([&](std::shared_ptr<LootInstance> instance) {
 			ASSERT(instance);
 
 			auto *object = m_instance.findObjectByGUID(instance->getLootGuid());
@@ -150,7 +135,7 @@ namespace wowpp
 		});
 
 		// Root / stun change signals
-		auto onRootOrStunUpdate = [this](UInt32 state, bool flag) {
+		auto onRootOrStunUpdate = [&](UInt32 state, bool flag) {
 			if (state == unit_state::Rooted || state == unit_state::Stunned)
 			{
 				if (flag || m_character->isRooted() || m_character->isStunned())
@@ -177,7 +162,7 @@ namespace wowpp
 		m_onUnitStateUpdate = m_character->unitStateChanged.connect(onRootOrStunUpdate);
 
 		// Spell modifier applied or misapplied (changed)
-		m_spellModChanged = m_character->spellModChanged.connect([this](SpellModType type, UInt8 bit, SpellModOp op, Int32 value) {
+		m_spellModChanged = m_character->spellModChanged.connect([&](SpellModType type, UInt8 bit, SpellModOp op, Int32 value) {
 			sendProxyPacket(
 				type == spell_mod_type::Flat ?
 					std::bind(game::server_write::setFlatSpellModifier, std::placeholders::_1, bit, op, value) :
@@ -186,7 +171,7 @@ namespace wowpp
 		});
 
 		// Group update signal
-		m_groupUpdate.ended.connect([this]()
+		m_groupUpdate.ended.connect([&]()
 		{
 			math::Vector3 location(m_character->getLocation());
 
@@ -612,8 +597,7 @@ namespace wowpp
 		m_realmConnector.sendCharacterSpawnNotification(m_character->getGuid());
 
 		// Subscribe for spell notifications
-		m_onSpellLearned = m_character->spellLearned.connect(
-			std::bind(&Player::onSpellLearned, this, std::placeholders::_1));
+		m_onSpellLearned = m_character->spellLearned.connect(this, &Player::onSpellLearned);
 
 		// Trigger regeneration for our character
 		m_character->startRegeneration();

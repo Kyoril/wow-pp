@@ -66,13 +66,9 @@ namespace wowpp
 		}
 
 		// Subscribe to caster despawn event so that we don't hold an invalid pointer
-		m_onExpire = m_expireCountdown.ended.connect(
-			std::bind(&Aura::onExpired, this));
+		m_onExpire = m_expireCountdown.ended.connect(this, &Aura::onExpired);
 		if (!m_isPersistent)
-		{
-			m_onTick = m_tickCountdown.ended.connect(
-				std::bind(&Aura::onTick, this));
-		}
+			m_onTick = m_tickCountdown.ended.connect(this, &Aura::onTick);
 
 		// Adjust aura duration
 		if (m_caster &&

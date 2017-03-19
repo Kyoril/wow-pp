@@ -49,7 +49,7 @@ namespace wowpp
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
 				this, SLOT(onTriggerSelectionChanged(QItemSelection, QItemSelection)));
 
-			for (UInt32 i = 1; i <= 1; ++i)
+			for (UInt32 i = 1; i <= trigger_flags::Count_; ++i)
 			{
 				QCheckBox *box = m_ui->flagBox->findChild<QCheckBox*>(QString("flag_%1").arg(i));
 				if (box)
@@ -93,12 +93,12 @@ namespace wowpp
 			m_ui->splitter->setEnabled(true);
 			m_ui->probabilityBox->setValue(trigger->probability());
 
-			for (int i = 1; i < 2; ++i)
+			for (int i = 1; i <= trigger_flags::Count_; ++i)
 			{
 				auto *child = m_ui->flagBox->findChild<QCheckBox*>(QString("flag_%1").arg(i));
 				if (child)
 				{
-					child->setChecked(trigger->flags() & i);
+					child->setChecked(trigger->flags() & (1 << (i - 1)));
 				}
 			}
 
@@ -161,7 +161,7 @@ namespace wowpp
 
 			// Build flag mask
 			UInt32 flagMask = 0;
-			for (UInt32 i = 1; i <= 1; ++i)
+			for (UInt32 i = 1; i <= trigger_flags::Count_; ++i)
 			{
 				QCheckBox *box = m_ui->flagBox->findChild<QCheckBox*>(QString("flag_%1").arg(i));
 				if (box)

@@ -196,8 +196,7 @@ namespace wowpp
 				m_camera));
 
 			// Watch for transform changes
-			m_onTransformChanged = m_app.transformToolChanged.connect(
-				std::bind(&WorldEditor::onTransformToolChanged, this, std::placeholders::_1));
+			m_onTransformChanged = m_app.transformToolChanged.connect(this, &WorldEditor::onTransformToolChanged);
 			onTransformToolChanged(m_app.getTransformTool());
 
 			m_onShowNavMesh = m_app.showNavMesh.connect([this]() {

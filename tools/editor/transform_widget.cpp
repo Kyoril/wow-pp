@@ -123,8 +123,7 @@ namespace wowpp
 			m_widgetNode->setVisible(false);
 
 			// Watch for selection changes
-			m_onSelectionChanged = m_selection.changed.connect(
-				boost::bind(&TransformWidget::onSelectionChanged, this));
+			m_onSelectionChanged = m_selection.changed.connect(this, &TransformWidget::onSelectionChanged);
 		}
 
 		TransformWidget::~TransformWidget()
@@ -1814,9 +1813,8 @@ namespace wowpp
 			if (!m_selection.empty())
 			{
 				// Connect
-				m_objectMovedCon = m_selection.getSelectedObjects().back()->positionChanged.connect(
-					boost::bind(&TransformWidget::onPositionChanged, this, _1)
-					);
+				m_objectMovedCon = 
+					m_selection.getSelectedObjects().back()->positionChanged.connect(this, &TransformWidget::onPositionChanged);
 
 				// Get position
 				const auto &pos = m_selection.getSelectedObjects().back()->getPosition();
