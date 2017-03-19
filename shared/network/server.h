@@ -45,7 +45,7 @@ namespace wowpp
 
 		typedef C Connection;
 		typedef boost::asio::ip::tcp::acceptor AcceptorType;
-		typedef boost::signals2::signal<void(const std::shared_ptr<Connection> &)> ConnectionSignal;
+		typedef simple::signal<void(const std::shared_ptr<Connection> &)> ConnectionSignal;
 		typedef std::function<std::shared_ptr<Connection>(boost::asio::io_service &)> ConnectionFactory;
 
 	public:

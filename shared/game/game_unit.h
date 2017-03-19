@@ -358,62 +358,62 @@ namespace wowpp
 
 		/// Fired when this unit was killed. Parameter: GameUnit* killer (may be nullptr if killer
 		/// information is not available (for example due to environmental damage))
-		boost::signals2::signal<void(GameUnit *)> killed;
+		simple::signal<void(GameUnit *)> killed;
 		/// Fired when an auto attack error occurred. Used in World Node by the Player class to
 		/// send network packets based on the error code.
-		boost::signals2::signal<void(AttackSwingError)> autoAttackError;
+		simple::signal<void(AttackSwingError)> autoAttackError;
 		/// Fired when a spell cast error occurred.
-		boost::signals2::signal<void(const proto::SpellEntry &, game::SpellCastResult)> spellCastError;
+		simple::signal<void(const proto::SpellEntry &, game::SpellCastResult)> spellCastError;
 		/// Fired when the unit level changed.
 		/// Parameters: Previous Level, Health gained, Mana gained, Stats gained (all 5 stats)
-		boost::signals2::signal<void(UInt32, Int32, Int32, Int32, Int32, Int32, Int32, Int32)> levelGained;
+		simple::signal<void(UInt32, Int32, Int32, Int32, Int32, Int32, Int32, Int32)> levelGained;
 		/// Fired when some aura information was updated.
 		/// Parameters: Slot, Spell-ID, Duration (ms), Max Duration (ms)
-		boost::signals2::signal<void(UInt8, UInt32, Int32, Int32)> auraUpdated;
+		simple::signal<void(UInt8, UInt32, Int32, Int32)> auraUpdated;
 		/// Fired when some aura information was updated on a target.
 		/// Parameters: Slot, Spell-ID, Duration (ms), Max Duration (ms)
-		boost::signals2::signal<void(UInt64, UInt8, UInt32, Int32, Int32)> targetAuraUpdated;
+		simple::signal<void(UInt64, UInt8, UInt32, Int32, Int32)> targetAuraUpdated;
 		/// Fired when the unit should be teleported. This event is only fired when the unit changes world.
 		/// Parameters: Target Map, X, Y, Z, O
-		boost::signals2::signal<void(UInt16, math::Vector3, float)> teleport;
+		simple::signal<void(UInt16, math::Vector3, float)> teleport;
 		/// Fired when the units faction changed. This might cause the unit to become friendly to attackers.
-		boost::signals2::signal<void(GameUnit &)> factionChanged;
+		simple::signal<void(GameUnit &)> factionChanged;
 		///
-		boost::signals2::signal<void(GameUnit &, float)> threatened;
+		simple::signal<void(GameUnit &, float)> threatened;
 		///
-		boost::signals2::signal<float(GameUnit &threatener)> getThreat;
+		simple::signal<float(GameUnit &threatener)> getThreat;
 		///
-		boost::signals2::signal<void(GameUnit &threatener, float amount)> setThreat;
+		simple::signal<void(GameUnit &threatener, float amount)> setThreat;
 		///
-		boost::signals2::signal<GameUnit *()> getTopThreatener;
+		simple::signal<GameUnit *()> getTopThreatener;
 		/// Fired when done an melee attack hit  (include miss/dodge...)
-		boost::signals2::signal<void(GameUnit *, game::VictimState)> doneMeleeAttack;
+		simple::signal<void(GameUnit *, game::VictimState)> doneMeleeAttack;
 		/// Fired when hit by a melee attack (include miss/dodge...)
-		boost::signals2::signal<void(GameUnit *, game::VictimState)> takenMeleeAttack;
+		simple::signal<void(GameUnit *, game::VictimState)> takenMeleeAttack;
 		/// Fired when hit by any damage.
 		simple::signal<void(GameUnit *, UInt32, game::DamageType)> takenDamage;
 		/// Fired when this unit was healed by another unit.
 		simple::signal<void(GameUnit *, UInt32)> healed;
 		/// Fired when unit enters water
-		boost::signals2::signal<void()> enteredWater;
+		simple::signal<void()> enteredWater;
 		/// Fired when unit started attacking
-		boost::signals2::signal<void()> startedAttacking;
+		simple::signal<void()> startedAttacking;
 		/// Fired when unit started active casting (excluding proc)
-		boost::signals2::signal<void(const proto::SpellEntry &)> startedCasting;
+		simple::signal<void(const proto::SpellEntry &)> startedCasting;
 		/// Fired when a unit trigger should be executed.
-		boost::signals2::signal<void(const proto::TriggerEntry &, GameUnit &)> unitTrigger;
+		simple::signal<void(const proto::TriggerEntry &, GameUnit &)> unitTrigger;
 		/// Fired when a unit state changed.
-		boost::signals2::signal<void(UInt32, bool)> unitStateChanged;
+		simple::signal<void(UInt32, bool)> unitStateChanged;
 		/// Fired when this unit enters or leaves stealth mode.
-		boost::signals2::signal<void(bool)> stealthStateChanged;
+		simple::signal<void(bool)> stealthStateChanged;
 		/// Fired when the movement speed of this unit changes.
-		boost::signals2::signal<void(MovementType)> speedChanged;
+		simple::signal<void(MovementType)> speedChanged;
 		/// Fired when a custom cooldown event was rised (for example, "Stealth" cooldown is only fired when stealth ends).
-		boost::signals2::signal<void(UInt32)> cooldownEvent;
+		simple::signal<void(UInt32)> cooldownEvent;
 		/// Fired when the units stand state changed.
-		boost::signals2::signal<void(UnitStandState)> standStateChanged;
+		simple::signal<void(UnitStandState)> standStateChanged;
 		/// Fired on any proc event (damage done, taken, healed, etc).
-		boost::signals2::signal<void(bool, GameUnit *, UInt32, UInt32, const proto::SpellEntry *, UInt32, UInt8, bool)> spellProcEvent;
+		simple::signal<void(bool, GameUnit *, UInt32, UInt32, const proto::SpellEntry *, UInt32, UInt8, bool)> spellProcEvent;
 
 	public:
 
@@ -935,7 +935,7 @@ namespace wowpp
 		std::unique_ptr<SpellCast> m_spellCast;
 		Countdown m_despawnCountdown;
 		simple::scoped_connection m_victimDespawned;
-		boost::signals2::scoped_connection m_victimDied, m_fearMoved;
+		simple::scoped_connection m_victimDied, m_fearMoved;
 		GameUnit *m_victim;
 		Countdown m_attackSwingCountdown;
 		GameTime m_lastMainHand, m_lastOffHand;

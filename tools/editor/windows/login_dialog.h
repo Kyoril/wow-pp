@@ -22,7 +22,6 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include "common/simple.hpp"
 #include <QDialog>
 
 // Forwards

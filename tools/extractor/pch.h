@@ -71,3 +71,5 @@
 #include "detour/DetourNavMesh.h"
 #include "detour/DetourNavMeshBuilder.h"
 #include "debug_utils/RecastDump.h"
+
+#include "simple/simple.hpp"

@@ -29,7 +29,6 @@
 #include "configuration.h"
 #include "selection.h"
 #include "common/timer_queue.h"
-#include "common/simple.hpp"
 #include "wowpp_protocol/wowpp_editor_team.h"
 
 namespace wowpp
@@ -73,7 +72,7 @@ namespace wowpp
 
 		public:
 
-			boost::signals2::signal<void(TransformTool)> transformToolChanged;
+			simple::signal<void(TransformTool)> transformToolChanged;
 			simple::signal<void()> showNavMesh;
 
 		public:

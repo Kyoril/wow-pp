@@ -22,7 +22,6 @@
 #pragma once
 
 #include "common/typedefs.h"
-#include "common/simple.hpp"
 #include "game/defines.h"
 #include "binary_io/writer.h"
 #include "shared/proto_data/loot_entry.pb.h"
@@ -54,7 +53,7 @@ namespace wowpp
 
 	public:
 
-		boost::signals2::signal<void()> cleared;
+		simple::signal<void()> cleared;
 		/// Fired when a looting player closes the loot dialog.
 		simple::signal<void(UInt64)> closed;
 		/// Fired when gold was looted.

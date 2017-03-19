@@ -23,7 +23,6 @@
 
 #include "common/typedefs.h"
 #include "game/defines.h"
-#include "common/simple.hpp"
 
 namespace io
 {
@@ -90,11 +89,11 @@ namespace wowpp
 		// until then.
 
 		/// Fired when a new item instance was created.
-		boost::signals2::signal<void(std::shared_ptr<GameItem>, UInt16)> itemInstanceCreated;
+		simple::signal<void(std::shared_ptr<GameItem>, UInt16)> itemInstanceCreated;
 		/// Fired when an item instance was updated (stack count changed for example).
-		boost::signals2::signal<void(std::shared_ptr<GameItem>, UInt16)> itemInstanceUpdated;
+		simple::signal<void(std::shared_ptr<GameItem>, UInt16)> itemInstanceUpdated;
 		/// Fired when an item instance is about to be destroyed.
-		boost::signals2::signal<void(std::shared_ptr<GameItem>, UInt16)> itemInstanceDestroyed;
+		simple::signal<void(std::shared_ptr<GameItem>, UInt16)> itemInstanceDestroyed;
 
 	public:
 

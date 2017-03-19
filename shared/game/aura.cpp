@@ -2119,8 +2119,15 @@ namespace wowpp
 				}
 				else
 				{
-					targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
-					targetMap.m_unitTarget = m_caster->getUInt64Value(unit_fields::ChannelObject);
+					if (m_effect.targeta() == game::targets::UnitCaster)
+					{
+						targetMap.m_targetMap = game::spell_cast_target_flags::Self;
+					}
+					else
+					{
+						targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+						targetMap.m_unitTarget = m_caster->getUInt64Value(unit_fields::ChannelObject);
+					}
 				}
 
 				m_target.castSpell(targetMap, m_effect.triggerspell(), { 0, 0, 0 }, 0, true);

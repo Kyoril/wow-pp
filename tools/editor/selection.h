@@ -30,7 +30,7 @@ namespace wowpp
 	{
 	public:
 
-		typedef boost::signals2::signal<void()> SelectionChangedSignal;
+		typedef simple::signal<void()> SelectionChangedSignal;
 
 		SelectionChangedSignal changed;
 

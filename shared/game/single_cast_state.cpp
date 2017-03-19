@@ -619,7 +619,7 @@ namespace wowpp
 		const UInt32 spellAttributes = m_spell.attributes(0);
 		if (spellAttributes & game::spell_attributes::OnNextSwing)
 		{
-			m_onAttackError = m_cast.getExecuter().autoAttackError.connect_extended([this](boost::signals2::connection c, AttackSwingError error) {
+			m_onAttackError = m_cast.getExecuter().autoAttackError.connect([this](AttackSwingError error) {
 				if (error != attack_swing_error::Success)
 				{
 					game::SpellCastResult result = game::spell_cast_result::FailedError;
@@ -645,7 +645,7 @@ namespace wowpp
 					sendEndCast(false);
 				}
 
-				c.disconnect();
+				simple::current_connection().disconnect();
 			});
 
 			// Execute on next weapon swing
@@ -2979,7 +2979,7 @@ namespace wowpp
 			{
 				// OnUse spell cast
 				if (spell.spell() == m_spell.id() &&
-					(spell.trigger() == 0 || spell.trigger() == 5))
+					(spell.trigger() == game::item_spell_trigger::OnUse || spell.trigger() == game::item_spell_trigger::OnUseNoDelay))
 				{
 					// Item is removed on use
 					if (spell.charges() == UInt32(-1))
@@ -3339,14 +3339,14 @@ namespace wowpp
 				obj->setUInt32Value(world_object_fields::State, (currentState == 1 ? 0 : 1));
 
 				// Open chest loot window
-				auto *loot = obj->getObjectLoot();
+				auto loot = obj->getObjectLoot();
 				if (loot && !loot->isEmpty())
 				{
 					// Start inspecting the loot
 					if (m_cast.getExecuter().isGameCharacter())
 					{
 						GameCharacter *character = reinterpret_cast<GameCharacter *>(&m_cast.getExecuter());
-						character->lootinspect(*loot);
+						character->lootinspect(loot);
 					}
 				}
 				break;
@@ -3596,11 +3596,11 @@ namespace wowpp
 			GameUnit *targetUnit = targets[i];
 			m_affectedTargets.insert(targetUnit->shared_from_this());
 
-			GameUnit *topThreatener = targetUnit->getTopThreatener().get();
+			GameUnit *topThreatener = targetUnit->getTopThreatener().value();
 			if (topThreatener)
 			{
-				float addThread = targetUnit->getThreat(*topThreatener).get();
-				addThread -= targetUnit->getThreat(caster).get();
+				float addThread = targetUnit->getThreat(*topThreatener).value();
+				addThread -= targetUnit->getThreat(caster).value();
 				if (addThread > 0.0f) {
 					targetUnit->threaten(caster, addThread);
 				}

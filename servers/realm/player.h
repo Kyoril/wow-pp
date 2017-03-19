@@ -233,7 +233,7 @@ namespace wowpp
 		DatabaseId m_characterId;
 		std::shared_ptr<GameCharacter> m_gameCharacter;
 		UInt32 m_instanceId;
-		boost::signals2::scoped_connection m_worldDisconnected;
+		simple::scoped_connection m_worldDisconnected;
 		UInt32 m_timeSyncCounter;
 		World *m_worldNode;
 		std::unique_ptr<PlayerSocial> m_social;

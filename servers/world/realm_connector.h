@@ -54,7 +54,7 @@ namespace wowpp
 
 	public:
 
-		boost::signals2::signal<void (RealmConnector &connector, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance)> worldInstanceEntered;
+		simple::signal<void (RealmConnector &connector, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance)> worldInstanceEntered;
 
 	public:
 

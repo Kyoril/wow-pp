@@ -39,7 +39,6 @@
 #include <fstream>
 
 // Boost Libraies
-#include <boost/signals2.hpp>
 #include <boost/optional.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/filesystem.hpp>
@@ -47,3 +46,5 @@
 #include <boost/asio.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/variant.hpp>
+
+#include "simple/simple.hpp"

@@ -56,7 +56,6 @@
 #include <type_traits>
 
 // Boost Libraies
-#include <boost/signals2.hpp>
 #include <boost/optional.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/filesystem.hpp>
@@ -81,3 +80,5 @@
 #include "mysql_wrapper/include_mysql.h"
 
 #include <Ogre.h>
+
+#include "simple/simple.hpp"

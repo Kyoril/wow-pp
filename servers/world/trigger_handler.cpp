@@ -493,12 +493,12 @@ namespace wowpp
 		}
 
 		auto &mover = reinterpret_cast<GameUnit*>(target)->getMover();
-		boost::signals2::connection reached = mover.targetReached.connect_extended([target](const boost::signals2::connection &conn) {
+		mover.targetReached.connect([target]() {
 			// Raise reached target trigger
 			reinterpret_cast<GameCreature*>(target)->raiseTrigger(trigger_event::OnReachedTriggeredTarget);
 
 			// This slot shall be executed only once
-			conn.disconnect();
+			simple::current_connection().disconnect();
 		});
 
 		mover.moveTo(

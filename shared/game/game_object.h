@@ -30,7 +30,6 @@
 #include "tile_index.h"
 #include "math/vector3.h"
 #include "common/macros.h"
-#include "common/simple.hpp"
 #include "shared/proto_data/variables.pb.h"
 
 namespace wowpp
@@ -250,7 +249,7 @@ namespace wowpp
 		/// Fired when the object should be destroyed. The object should be destroyed after this call.
 		std::function<void(GameObject &)> destroy;
 		/// Fired when the object moved, but before it's tile changed. Note that this will trigger a tile change.
-		//boost::signals2::signal<void(GameObject &, const math::Vector3 &, float)> moved;
+		//simple::signal<void(GameObject &, const math::Vector3 &, float)> moved;
 		/// Fired when a tile change is pending for this object, after it has been moved. Note that at this time,
 		/// the object does not belong to any tile and it's position already points to the new tile.
 		/// First parameter is a reference of the old tile, second references the new tile.
@@ -559,7 +558,7 @@ namespace wowpp
 		bool m_updated;
 		MovementInfo m_movementInfo;
 		WorldInstance *m_worldInstance;
-		boost::signals2::scoped_connection m_worldInstanceDestroyed;
+		simple::scoped_connection m_worldInstanceDestroyed;
 		std::map<UInt32, VariableInstance> m_variables;
 		
 	};

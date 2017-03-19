@@ -23,7 +23,6 @@
 
 #include "common/typedefs.h"
 #include "common/macros.h"
-#include "common/simple.hpp"
 #include "proto_data/project.h"
 
 namespace wowpp

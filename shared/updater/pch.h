@@ -48,7 +48,6 @@
 #include <set>
 
 // Boost Libraies
-#include <boost/signals2.hpp>
 #include <boost/optional.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/filesystem.hpp>
@@ -71,3 +70,5 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
+
+#include "simple/simple.hpp"

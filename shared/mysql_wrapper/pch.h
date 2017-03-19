@@ -35,12 +35,14 @@
 #include <sstream>
 
 // Boost Libraies
-#include <boost/signals2.hpp>
 #include <boost/optional.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/spirit/include/classic.hpp>
+#include <boost/variant.hpp>
 
 #include "include_mysql.h"
 
 #include "cppformat/cppformat/format.h"
+
+#include "simple/simple.hpp"

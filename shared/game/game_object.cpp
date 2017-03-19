@@ -427,7 +427,7 @@ namespace wowpp
 						UInt32 value = m_values[index] & ~game::unit_dynamic_flags::OtherTagger;
 
 						// Creature is lootable, but only as long as the creature has loot for us
-						auto *loot = creature->getUnitLoot();
+						auto loot = creature->getUnitLoot();
 						if (!loot ||
 							!loot->containsLootFor(receiver.getGuid()))
 						{

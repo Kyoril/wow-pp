@@ -22,6 +22,7 @@
 #include "pch.h"
 #include "player.h"
 #include "player_manager.h"
+#include "common/macros.h"
 #include "log/default_log_levels.h"
 #include "game/world_instance_manager.h"
 #include "game/world_instance.h"
@@ -136,11 +137,13 @@ namespace wowpp
 		m_itemDestroyed = inventory.itemInstanceDestroyed.connect(std::bind(&Player::onItemDestroyed, this, std::placeholders::_1, std::placeholders::_2));
 
 		// Loot signal
-		m_onLootInspect = m_character->lootinspect.connect([this](LootInstance &instance) {
-			auto *object = m_instance.findObjectByGUID(instance.getLootGuid());
+		m_onLootInspect = m_character->lootinspect.connect([this](std::shared_ptr<LootInstance> instance) {
+			ASSERT(instance);
+
+			auto *object = m_instance.findObjectByGUID(instance->getLootGuid());
 			if (!object)
 			{
-				WLOG("Could not find loot source object: 0x" << std::hex << instance.getLootGuid());
+				WLOG("Could not find loot source object: 0x" << std::hex << instance->getLootGuid());
 				return;
 			}
 			openLootDialog(instance, *object);
@@ -1436,13 +1439,15 @@ namespace wowpp
 		}
 	}
 
-	void Player::openLootDialog(LootInstance & loot, GameObject & source)
+	void Player::openLootDialog(std::shared_ptr<LootInstance> loot, GameObject & source)
 	{
+		ASSERT(loot);
+
 		// Close old dialog if any
 		closeLootDialog();
 
 		// Remember those parameters
-		m_loot = &loot;
+		m_loot = loot;
 		m_lootSource = &source;
 
 		// Add the looting flag to our character
@@ -1480,7 +1485,7 @@ namespace wowpp
 
 		UInt64 playerGuid = m_character->getGuid();
 		sendProxyPacket(
-			std::bind(game::server_write::lootResponse, std::placeholders::_1, guid, lootType, playerGuid, std::cref(loot)));
+			std::bind(game::server_write::lootResponse, std::placeholders::_1, guid, lootType, playerGuid, std::cref(*loot)));
 	}
 
 	void Player::closeLootDialog()

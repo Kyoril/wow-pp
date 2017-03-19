@@ -60,7 +60,7 @@ namespace wowpp
 		{
 		public:
 
-			boost::signals2::signal<void(paging::PagePosition)> pageChanged;
+			simple::signal<void(paging::PagePosition)> pageChanged;
 
 		public:
 
@@ -108,7 +108,7 @@ namespace wowpp
 			std::vector<wowpp::ogre_utils::SceneNodePtr> m_spawnNodes;
 			std::vector<wowpp::ogre_utils::EntityPtr> m_spawnEntities;
 			std::unique_ptr<TransformWidget> m_transformWidget;
-			boost::signals2::scoped_connection m_onTransformChanged;
+			simple::scoped_connection m_onTransformChanged;
 			paging::PagePosition m_previousPage;
 			std::unique_ptr<Map> m_mapInst;
 			std::unique_ptr<OgreDebugDraw> m_debugDraw;

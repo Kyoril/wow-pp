@@ -50,7 +50,7 @@ namespace wowpp
 	public:
 
 		typedef AbstractConnection<pp::Protocol> Client;
-		typedef boost::signals2::signal<void()> DisconnectedSignal;
+		typedef simple::signal<void()> DisconnectedSignal;
 
 		typedef std::vector<UInt32> MapList;
 		typedef LinearSet<UInt32> InstanceList;

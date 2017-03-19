@@ -126,7 +126,7 @@ namespace wowpp
 		/// Opens a loot window at the client, which will show the provided loot data.
 		/// @param loot The loot instance which holds the actual loot data.
 		/// @param source The game object which was the source of this loot window.
-		void openLootDialog(LootInstance &loot, GameObject &source);
+		void openLootDialog(std::shared_ptr<LootInstance> loot, GameObject &source);
 		/// Called when the opened loot was cleared or the loot source (object, corpse, whatever) despawns or
 		/// no longer provides this loot.
 		void closeLootDialog();
@@ -308,19 +308,19 @@ namespace wowpp
 		WorldInstance &m_instance;
 		simple::scoped_connection_container m_characterSignals;
 		simple::scoped_connection m_onLootInvalidate;
-		boost::signals2::scoped_connection m_onAtkSwingErr, m_onProfChanged, m_onInvFailure;
-		boost::signals2::scoped_connection m_onComboPoints, m_onXP, m_onCastError, m_onGainLevel;
-		boost::signals2::scoped_connection m_onAuraUpdate, m_onTargetAuraUpdate, m_onTeleport, m_standStateChanged;
-		boost::signals2::scoped_connection m_onUnitStateUpdate, m_onCooldownEvent, m_questChanged, m_questKill;
-		boost::signals2::scoped_connection m_itemCreated, m_itemUpdated, m_itemDestroyed, m_objectInteraction;
-		boost::signals2::scoped_connection m_onLootCleared, m_onLootInspect, m_spellModChanged;
-		boost::signals2::scoped_connection m_onSpellLearned, m_onItemAdded, m_onResurrectRequest;
+		simple::scoped_connection m_onAtkSwingErr, m_onProfChanged, m_onInvFailure;
+		simple::scoped_connection m_onComboPoints, m_onXP, m_onCastError, m_onGainLevel;
+		simple::scoped_connection m_onAuraUpdate, m_onTargetAuraUpdate, m_onTeleport, m_standStateChanged;
+		simple::scoped_connection m_onUnitStateUpdate, m_onCooldownEvent, m_questChanged, m_questKill;
+		simple::scoped_connection m_itemCreated, m_itemUpdated, m_itemDestroyed, m_objectInteraction;
+		simple::scoped_connection m_onLootCleared, m_onLootInspect, m_spellModChanged;
+		simple::scoped_connection m_onSpellLearned, m_onItemAdded, m_onResurrectRequest;
 		simple::scoped_connection_container m_lootSignals;
 		AttackSwingError m_lastError;
 		UInt32 m_lastFallTime;
 		float m_lastFallZ;
 		proto::Project &m_project;
-		LootInstance *m_loot;
+		std::shared_ptr<LootInstance> m_loot;
 		GameObject *m_lootSource;
 		LinearSet<UInt64> m_ignoredGUIDs;
 		Countdown m_groupUpdate;

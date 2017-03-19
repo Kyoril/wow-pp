@@ -74,7 +74,7 @@ namespace wowpp
 	public:
 
 		/// Fired when the world instance is about to be destroyed. TODO: Not fired at the moment.
-		boost::signals2::signal<void()> willBeDestroyed;
+		simple::signal<void()> willBeDestroyed;
 
 	public:
 

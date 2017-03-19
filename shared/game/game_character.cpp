@@ -2873,7 +2873,7 @@ namespace wowpp
 			for (auto &spell : item.getEntry().spells())
 			{
 				// Trigger == onEquip?
-				if (spell.trigger() == 1)
+				if (spell.trigger() == game::item_spell_trigger::OnEquip)
 				{
 					castSpell(targetMap, spell.spell(), { 0, 0, 0 }, 0, true, item.getGuid());
 				}
@@ -3206,9 +3206,9 @@ namespace wowpp
 				if (object->isWorldObject())
 				{
 					// We only need to check objects that have potential quest loot
-					auto *loot = reinterpret_cast<WorldObject *>(object)->getObjectLoot();
+					auto loot = reinterpret_cast<WorldObject *>(object)->getObjectLoot();
 					if (loot &&
-					        !loot->isEmpty())
+					    !loot->isEmpty())
 					{
 						// Force update of DynamicFlags field (TODO: This update only needs to be sent to OUR client,
 						// as every client will have a different DynamicFlags field)

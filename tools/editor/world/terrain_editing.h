@@ -54,7 +54,7 @@ namespace wowpp
 			};
 
 			typedef boost::variant<PageRemoved, PageAdded> TerrainChangeEvent;
-			typedef boost::signals2::signal<void(const TerrainChangeEvent &)> TerrainChangeSignal;
+			typedef simple::signal<void(const TerrainChangeEvent &)> TerrainChangeSignal;
 		}
 	}
 }

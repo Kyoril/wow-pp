@@ -38,7 +38,7 @@ namespace wowpp
 
 	public:
 
-		typedef boost::signals2::signal<void ()> CrashSignal;
+		typedef simple::signal<void ()> CrashSignal;
 
 		/// Fired if an application crash occurs.
 		CrashSignal onCrash;

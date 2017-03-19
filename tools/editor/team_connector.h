@@ -22,7 +22,6 @@
 #pragma once
 
 #include "common/constants.h"
-#include "common/simple.hpp"
 #include "network/connector.h"
 #include "wowpp_protocol/wowpp_connector.h"
 #include "wowpp_protocol/wowpp_editor_team.h"

@@ -46,11 +46,11 @@ namespace wowpp
 	public:
 
 		/// Fired when the unit reached it's target.
-		boost::signals2::signal<void()> targetReached;
+		simple::signal<void()> targetReached;
 		/// Fired when the movement was stopped.
-		boost::signals2::signal<void()> movementStopped;
+		simple::signal<void()> movementStopped;
 		/// Fired when the target changed.
-		boost::signals2::signal<void()> targetChanged;
+		simple::signal<void()> targetChanged;
 
 	public:
 

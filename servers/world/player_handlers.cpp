@@ -392,10 +392,10 @@ namespace wowpp
 			}
 
 			// Get loot from creature
-			auto *loot = creature->getUnitLoot();
+			auto loot = creature->getUnitLoot();
 			if (loot && !loot->isEmpty())
 			{
-				openLootDialog(*loot, *creature);
+				openLootDialog(loot, *creature);
 			}
 			else
 			{
@@ -1221,9 +1221,10 @@ namespace wowpp
 			return;
 		}
 
-		if (item->getLoot())
+		auto itemLoot = item->getLoot();
+		if (itemLoot && !itemLoot->isEmpty())
 		{
-			openLootDialog(*item->getLoot(), *item);
+			openLootDialog(itemLoot, *item);
 		}
 		else
 		{

@@ -123,15 +123,12 @@ namespace wowpp
 			m_widgetNode->setVisible(false);
 
 			// Watch for selection changes
-			m_selection.changed.connect(
+			m_onSelectionChanged = m_selection.changed.connect(
 				boost::bind(&TransformWidget::onSelectionChanged, this));
 		}
 
 		TransformWidget::~TransformWidget()
 		{
-			m_selection.changed.disconnect(
-				boost::bind(&TransformWidget::onSelectionChanged, this));
-
 			if (m_rotationCenter)
 			{
 				m_sceneMgr.destroySceneNode(m_rotationCenter);

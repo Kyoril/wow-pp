@@ -139,12 +139,12 @@ namespace wowpp
 		bool m_hasFinished;
 		Countdown m_countdown;
 		Countdown m_impactCountdown;
-		boost::signals2::signal<void()> completedEffects;
-		std::unordered_map<UInt64, boost::signals2::scoped_connection> m_completedEffectsExecution;
-		boost::signals2::scoped_connection m_onTargetDied;
+		simple::signal<void()> completedEffects;
+		std::unordered_map<UInt64, simple::scoped_connection> m_completedEffectsExecution;
+		simple::scoped_connection m_onTargetDied;
 		simple::scoped_connection m_onTargetRemoved, m_damaged;
-		boost::signals2::scoped_connection m_onThreatened;
-		boost::signals2::scoped_connection m_onAttackError, m_removeAurasOnImmunity;
+		simple::scoped_connection m_onThreatened;
+		simple::scoped_connection m_onAttackError, m_removeAurasOnImmunity;
 		float m_x, m_y, m_z;
 		GameTime m_castTime;
 		GameTime m_castEnd;

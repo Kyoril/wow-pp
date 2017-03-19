@@ -676,31 +676,31 @@ namespace wowpp
 		// Signals
 
 		/// Fired when a proficiency was changes (weapon & armor prof.)
-		boost::signals2::signal<void(Int32, UInt32)> proficiencyChanged;
+		simple::signal<void(Int32, UInt32)> proficiencyChanged;
 		/// Fired when an inventory error occurred. Used to send a packet to the owning players client.
-		boost::signals2::signal<void(game::InventoryChangeFailure, GameItem *, GameItem *)> inventoryChangeFailure;
+		simple::signal<void(game::InventoryChangeFailure, GameItem *, GameItem *)> inventoryChangeFailure;
 		/// Fired when an item was added to the inventory that the players client needs to notified of.
-		boost::signals2::signal<void(UInt16, UInt16, bool, bool)> itemAdded;
+		simple::signal<void(UInt16, UInt16, bool, bool)> itemAdded;
 		/// Fired when the characters combo points changes. Used to send a packet to the owning players client.
-		boost::signals2::signal<void()> comboPointsChanged;
+		simple::signal<void()> comboPointsChanged;
 		/// Fired when the character gained some experience points. Used to send a packet to the owning players client.
-		boost::signals2::signal<void(UInt64, UInt32, UInt32)> experienceGained;
+		simple::signal<void(UInt64, UInt32, UInt32)> experienceGained;
 		/// Fired when the characters home changed. Used to send a packet to the owning players client.
-		boost::signals2::signal<void()> homeChanged;
+		simple::signal<void()> homeChanged;
 		/// Fired when a quest status changed. Used to save quest status at the realm.
-		boost::signals2::signal<void(UInt32 questId, const QuestStatusData & data)> questDataChanged;
+		simple::signal<void(UInt32 questId, const QuestStatusData & data)> questDataChanged;
 		/// Fired when a kill credit for a specific quest was made. Used to send a packet to the owning players client.
-		boost::signals2::signal<void(const proto::QuestEntry &, UInt64 guid, UInt32 entry, UInt32 count, UInt32 total)> questKillCredit;
+		simple::signal<void(const proto::QuestEntry &, UInt64 guid, UInt32 entry, UInt32 count, UInt32 total)> questKillCredit;
 		/// Fired when the character want to inspect loot of an object. Used to send packets to the owning players client.
-		boost::signals2::signal<void(LootInstance &)> lootinspect;
+		simple::signal<void(std::shared_ptr<LootInstance>)> lootinspect;
 		/// Fired when a spell mod was applied or misapplied on the character. Used to send packets to the owning players client.
-		boost::signals2::signal<void(SpellModType, UInt8, SpellModOp, Int32)> spellModChanged;
+		simple::signal<void(SpellModType, UInt8, SpellModOp, Int32)> spellModChanged;
 		/// Fired when the character interacts with a game object.
-		boost::signals2::signal<void(WorldObject &)> objectInteraction;
+		simple::signal<void(WorldObject &)> objectInteraction;
 		/// Fired when a new spell was learned.
-		boost::signals2::signal<void(const proto::SpellEntry &)> spellLearned;
+		simple::signal<void(const proto::SpellEntry &)> spellLearned;
 		/// Fired when resurrection is requested by a spell. Used to send a packet to the owning players client.
-		boost::signals2::signal<void(UInt64, const String&, UInt8)> resurrectRequested;
+		simple::signal<void(UInt64, const String&, UInt8)> resurrectRequested;
 
 	public:
 
@@ -1077,7 +1077,7 @@ namespace wowpp
 		UInt32 m_homeMap;
 		math::Vector3 m_homePos;
 		float m_homeRotation;
-		boost::signals2::scoped_connection m_doneMeleeAttack;
+		simple::scoped_connection m_doneMeleeAttack;
 		std::map<UInt32, QuestStatusData> m_quests;
 		Inventory m_inventory;
 		/// We use a map here since multiple quests could require the same item and thus,

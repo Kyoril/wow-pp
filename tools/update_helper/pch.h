@@ -47,7 +47,6 @@
 #include <type_traits>
 
 // Boost Libraies
-#include <boost/signals2.hpp>
 #include <boost/optional.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/filesystem.hpp>
@@ -59,3 +58,5 @@
 #include <boost/spirit/include/classic.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/program_options.hpp>
+
+#include "simple/simple.hpp"

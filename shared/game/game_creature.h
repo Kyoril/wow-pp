@@ -46,7 +46,7 @@ namespace wowpp
 
 		/// Executed when the unit entry was changed after this creature has spawned. This
 		/// can happen if the unit transforms.
-		boost::signals2::signal<void()> entryChanged;
+		simple::signal<void()> entryChanged;
 
 	public:
 
@@ -101,8 +101,8 @@ namespace wowpp
 			return !m_lootRecipients.empty();
 		}
 		/// Get unit loot.
-		LootInstance *getUnitLoot() const {
-			return m_unitLoot.get();
+		std::shared_ptr<LootInstance> getUnitLoot() const {
+			return m_unitLoot;
 		}
 		void setUnitLoot(std::unique_ptr<LootInstance> unitLoot);
 		/// Gets the number of loot recipients.
@@ -183,7 +183,7 @@ namespace wowpp
 		std::unique_ptr<CreatureAI> m_ai;
 		simple::scoped_connection m_onSpawned;
 		LootRecipients m_lootRecipients;
-		std::unique_ptr<LootInstance> m_unitLoot;
+		std::shared_ptr<LootInstance> m_unitLoot;
 		bool m_combatMovement;
 		game::CreatureMovement m_movement;
 		std::vector<proto::Waypoint> m_waypoints;

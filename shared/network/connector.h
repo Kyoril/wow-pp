@@ -23,7 +23,6 @@
 
 #include "common/typedefs.h"
 #include "common/weak_ptr_function.h"
-#include "common/simple.hpp"
 #include "connection.h"
 
 namespace wowpp
