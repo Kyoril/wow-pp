@@ -63,11 +63,12 @@ namespace wowpp
 
 		void TriggerEditor::onTriggerSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
 		{
+			m_selectedTrigger = nullptr;
+
 			// Get the selected unit
 			if (selection.isEmpty())
 			{
 				updateSelection(false);
-				m_selectedTrigger = nullptr;
 				return;
 			}
 
@@ -75,13 +76,11 @@ namespace wowpp
 			if (index < 0)
 			{
 				updateSelection(false);
-				m_selectedTrigger = nullptr;
 				return;
 			}
 
 			// Get trigger entry
 			auto *trigger = m_application.getProject().triggers.getTemplates().mutable_entry(index);
-			m_selectedTrigger = trigger;
 			if (!trigger)
 			{
 				updateSelection(false);
@@ -152,6 +151,7 @@ namespace wowpp
 
 			rootItem->setExpanded(true);
 			updateSelection(true);
+			m_selectedTrigger = trigger;
 		}
 
 		void TriggerEditor::onFlagChanged(int state)
@@ -171,8 +171,11 @@ namespace wowpp
 				}
 			}
 
-			m_selectedTrigger->set_flags(flagMask);
-			m_application.markAsChanged(m_selectedTrigger->id(), pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Modified);
+			if (m_selectedTrigger->flags() != flagMask)
+			{
+				m_selectedTrigger->set_flags(flagMask);
+				m_application.markAsChanged(m_selectedTrigger->id(), pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Modified);
+			}
 		}
 
 		void TriggerEditor::on_probabilityBox_valueChanged(int value)
