@@ -713,8 +713,7 @@ namespace wowpp
 			const float distanceSq = getSquaredDistanceTo(*victim, false);
 			const float combatRangeSq = 
 				::powf(getMeleeReach() + victim->getMeleeReach() + rangeBonus, 2.0f);
-			if (distanceSq > combatRangeSq || 
-				::fabsf(victim->getLocation().z - getLocation().z) >= 2.0f)
+			if (distanceSq > combatRangeSq)
 			{
 				autoAttackError(attack_swing_error::OutOfRange);
 

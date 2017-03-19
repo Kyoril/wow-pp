@@ -202,7 +202,7 @@ namespace wowpp
 
 		// Update timing
 		m_moveStart = getCurrentTime();
-		m_path.addPosition(m_moveStart, currentLoc);
+		//m_path.addPosition(m_moveStart, currentLoc);
 
 		GameTime moveTime = m_moveStart;
 		for (UInt32 i = 0; i < path.size(); ++i)
@@ -217,7 +217,7 @@ namespace wowpp
 		// Use new values
 		m_start = currentLoc;
 		m_target = path.back()/* + math::Vector3(0.0f, 0.0f, 0.4f)*/;
-
+		
 		// Calculate time of arrival
 		m_moveEnd = moveTime;
 

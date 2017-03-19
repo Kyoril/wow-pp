@@ -906,9 +906,14 @@ namespace wowpp
 			}
 			else
 			{
+				// Adjust end height to the poly height here
+				float newHeight = dtEnd.y;
+				if (dtStatusSucceed(m_navQuery->getPolyHeight(endPoly, &dtEnd.x, &newHeight)))
+					dtEnd.y = newHeight;
+
 				// Build shortcut
 				tempPathCoords[0] = dtStart;
-				tempPathCoords[1] = dtEnd;				
+				tempPathCoords[1] = dtEnd;
 				tempPathPolys[0] = startPoly;
 				tempPathPolys[1] = endPoly;
 				tempPathCoordsCount = 2;
