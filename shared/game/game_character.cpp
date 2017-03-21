@@ -222,11 +222,6 @@ namespace wowpp
 			return game::quest_status::Unavailable;
 		}
 
-		if (entry->method() == game::quest_method::AutoComplete)
-		{
-			return game::quest_status::Available;
-		}
-
 		// Check if the quest is available for us
 		if (getLevel() < entry->minlevel())
 		{
