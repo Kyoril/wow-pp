@@ -436,9 +436,7 @@ namespace wowpp
 			if (questStatus == game::quest_status::Available)
 			{
 				const auto *entry = character.getProject().quests.getById(quest);
-				if (entry && entry->method() == game::quest_method::AutoComplete)
-					return game::questgiver_status::RewardRep;
-				else
+				if (entry)
 					return game::questgiver_status::Available;
 			}
 		}

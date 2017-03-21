@@ -225,17 +225,11 @@ namespace wowpp
 		auto *world = getControlled().getWorldInstance();
 		if (world)
 		{
-			auto *mapData = world->getMapData();
-			if (mapData)
+			auto &controlled = getControlled();
+			const auto &point = controlled.getRandomPoint();
+			if (controlled.getMover().moveTo(point, controlled.getSpeed(movement_type::Walk), &clipping))
 			{
-				math::Vector3 targetPoint;
-				if (mapData->getRandomPointOnGround(getAI().getHome().position, dist, targetPoint))
-				{
-					if (getControlled().getMover().moveTo(targetPoint, getControlled().getSpeed(movement_type::Walk), &clipping))
-					{
-						return;
-					}
-				}
+				return;
 			}
 		}
 

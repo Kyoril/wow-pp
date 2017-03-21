@@ -260,6 +260,9 @@ namespace wowpp
 
 		void AABBTree::trace(Ray& ray, Index* faceIndex, RaycastFlags flags) const
 		{
+			if (m_indices.empty())
+				return;
+
 			struct StackEntry
 			{
 				unsigned int node;

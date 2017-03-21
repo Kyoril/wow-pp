@@ -184,25 +184,29 @@ namespace wowpp
 		{
 			if (sampleWMO)
 			{
+				auto rayStart = (pos + math::Vector3(0.0f, 0.0f, 0.5f));
+				auto rayEnd = (pos + math::Vector3(0.0f, 0.0f, -7.0f));
+				math::Ray ray(rayStart, rayEnd);
+
 				for (const auto &wmo : tile->wmos.entries)
 				{
-					auto rayStart = (pos + math::Vector3(0.0f, 0.0f, 0.5f));
-					auto rayEnd = (pos + math::Vector3(0.0f, 0.0f, -7.0f));
-
-					// WMO was hit, now we transform the ray into WMO coordinate space and do the check again
-					math::Ray transformedRay(
-						wmo.inverse * rayStart,
-						wmo.inverse * rayEnd
-					);
-
-					auto treeIt = aabbTreeById.find(wmo.fileName);
-					if (treeIt != aabbTreeById.end())
+					if (ray.intersectsAABB(wmo.bounds).first)
 					{
-						if (treeIt->second->intersectRay(transformedRay, nullptr, math::raycast_flags::IgnoreBackface))
+						// WMO was hit, now we transform the ray into WMO coordinate space and do the check again
+						math::Ray transformedRay(
+							wmo.inverse * rayStart,
+							wmo.inverse * rayEnd
+						);
+
+						auto treeIt = aabbTreeById.find(wmo.fileName);
+						if (treeIt != aabbTreeById.end())
 						{
-							hit = true;
-							hitHeight = rayStart.lerp(rayEnd, transformedRay.hitDistance).z;
-							break;
+							if (treeIt->second->intersectRay(transformedRay, nullptr, math::raycast_flags::IgnoreBackface))
+							{
+								hit = true;
+								hitHeight = rayStart.lerp(rayEnd, transformedRay.hitDistance).z;
+								break;
+							}
 						}
 					}
 				}
@@ -843,14 +847,14 @@ namespace wowpp
 			tempPathPolys.resize(tempPathCoordsCount);
 
 			// Adjust height value
-			/*float newHeight = 0.0f;
+			float newHeight = 0.0f;
 			auto wowCoord = recastToWoWCoord(tempPathCoords.back());
 
 			bool adjustHeight = getHeightAt(wowCoord, newHeight, targetIsADT, !targetIsADT);
 			if (adjustHeight)
 			{
 				tempPathCoords.back().y = newHeight;
-			}*/
+			}
 
 			// Smooth out the path
 			dtResult = smoothPath(*m_navQuery, *m_navMesh, ignoreAdtSlope ? m_filter : m_adtSlopeFilter, tempPathPolys, tempPathCoords);

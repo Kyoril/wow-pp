@@ -40,7 +40,10 @@ namespace wowpp
 	/// Represents an AI controlled creature unit in the game.
 	class GameCreature final : public GameUnit
 	{
+	public:
+
 		typedef LinearSet<UInt64> LootRecipients;
+		typedef std::function<const math::Vector3 &()> RandomPointProc;
 
 	public:
 
@@ -142,6 +145,11 @@ namespace wowpp
 		/// @copydoc GameUnit::isEvading()
 		virtual bool isEvading() const override;
 
+		/// Sets the random movement point generator callback.
+		void setRandomPointGenerator(RandomPointProc proc) { m_randomPoint = proc; }
+		/// Gets a random movement point nearby.
+		const math::Vector3 &getRandomPoint() const { return m_randomPoint ? m_randomPoint() : getLocation(); }
+
 	public:
 
 		/// @copydoc GameObject::relocate
@@ -187,6 +195,7 @@ namespace wowpp
 		bool m_combatMovement;
 		game::CreatureMovement m_movement;
 		std::vector<proto::Waypoint> m_waypoints;
+		RandomPointProc m_randomPoint;
 	};
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel);
