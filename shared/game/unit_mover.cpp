@@ -218,6 +218,18 @@ namespace wowpp
 		m_start = currentLoc;
 		m_target = path.back()/* + math::Vector3(0.0f, 0.0f, 0.4f)*/;
 		
+		// Check if target path is really close to current path
+		if (m_target.isCloseTo(currentLoc, 0.1f))
+		{
+			if (isMoving())
+			{
+				// Fire signal since we reached our target
+				stopMovement();
+				targetReached();
+			}
+			return true;
+		}
+
 		// Calculate time of arrival
 		m_moveEnd = moveTime;
 

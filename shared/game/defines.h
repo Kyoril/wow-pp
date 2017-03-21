@@ -1451,7 +1451,7 @@ namespace wowpp
 
 				Moving =
 				    Forward | Backward | StrafeLeft | StrafeRight | PitchUp | PitchDown |
-				    Falling | FallingFar | Ascending | Flying2 | SplineElevation,
+				    Falling | FallingFar | Ascending | SplineElevation,
 				Turning =
 				    TurnLeft | TurnRight,
 

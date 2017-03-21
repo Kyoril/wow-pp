@@ -160,7 +160,7 @@ namespace wowpp
 
 #if 0
 			// Only spawn timber wolf
-			if (unitEntry->id() != 17455)
+			if (unitEntry->id() != 16517)
 				continue;
 #endif
 
