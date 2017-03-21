@@ -843,14 +843,14 @@ namespace wowpp
 			tempPathPolys.resize(tempPathCoordsCount);
 
 			// Adjust height value
-			float newHeight = 0.0f;
+			/*float newHeight = 0.0f;
 			auto wowCoord = recastToWoWCoord(tempPathCoords.back());
 
 			bool adjustHeight = getHeightAt(wowCoord, newHeight, targetIsADT, !targetIsADT);
 			if (adjustHeight)
 			{
 				tempPathCoords.back().y = newHeight;
-			}
+			}*/
 
 			// Smooth out the path
 			dtResult = smoothPath(*m_navQuery, *m_navMesh, ignoreAdtSlope ? m_filter : m_adtSlopeFilter, tempPathPolys, tempPathCoords);
