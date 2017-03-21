@@ -179,6 +179,7 @@ namespace wowpp
 		// Add aura to the list of auras of this unit and apply it's effects
 		// Note: We use auraPtr here, since std::move will make aura invalid
 		auraPtr->applyAura();
+		m_auraTypeCount[auraPtr->getEffect().type()]++;
 
 		return true;
 	}
@@ -201,9 +202,13 @@ namespace wowpp
 		// Make sure that the aura is not destroy when releasing
 		ASSERT(it != m_auras.end());
 		auto strong = *it;
-
+		
 		// Remove the aura from the list of auras
 		it = m_auras.erase(it);
+
+		// Reduce counter
+		ASSERT(m_auraTypeCount[strong->getEffect().type()] > 0);
+		m_auraTypeCount[strong->getEffect().type()]--;
 
 		// NOW misapply the aura. It is important to call this method AFTER the aura has been
 		// removed from the list of auras. First: To prevent a stack overflow when removing
@@ -241,15 +246,11 @@ namespace wowpp
 
 	bool AuraContainer::hasAura(game::AuraType type) const
 	{
-		for (auto &it : m_auras)
-		{
-			if (it->getEffect().aura() == type)
-			{
-				return true;
-			}
-		}
+		auto it = m_auraTypeCount.find(type);
+		if (it == m_auraTypeCount.end())
+			return false;
 
-		return false;
+		return it->second > 0;
 	}
 
 	UInt32 AuraContainer::consumeAbsorb(UInt32 damage, UInt8 school)

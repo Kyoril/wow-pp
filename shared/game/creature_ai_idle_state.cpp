@@ -218,7 +218,7 @@ namespace wowpp
 
 	void CreatureAIIdleState::onChooseNextMove()
 	{
-		const float dist = 7.5f;
+		const float dist = 15.0f;
 		const auto &loc = getAI().getHome().position;
 		const Circle clipping(loc.x, loc.y, dist);
 

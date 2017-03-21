@@ -710,7 +710,8 @@ namespace wowpp
 			}
 
 			// Distance check
-			const float distanceSq = getSquaredDistanceTo(*victim, false);
+			const bool isFlyingOrSwimming = victim->getMovementInfo().moveFlags & (game::movement_flags::Flying | game::movement_flags::Flying2 | game::movement_flags::Swimming);
+			const float distanceSq = getSquaredDistanceTo(*victim, isFlyingOrSwimming || isGameCharacter());
 			const float combatRangeSq = 
 				::powf(getMeleeReach() + victim->getMeleeReach() + rangeBonus, 2.0f);
 			if (distanceSq > combatRangeSq)

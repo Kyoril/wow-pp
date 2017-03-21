@@ -842,6 +842,9 @@ namespace wowpp
 				tempPathCoordsCount = 2;
 			}
 
+			if (tempPathCoordsCount == 0)
+				return false;
+
 			// Correct actual path length
 			tempPathCoords.resize(tempPathCoordsCount);
 			tempPathPolys.resize(tempPathCoordsCount);
@@ -849,7 +852,6 @@ namespace wowpp
 			// Adjust height value
 			float newHeight = 0.0f;
 			auto wowCoord = recastToWoWCoord(tempPathCoords.back());
-
 			bool adjustHeight = getHeightAt(wowCoord, newHeight, targetIsADT, !targetIsADT);
 			if (adjustHeight)
 			{

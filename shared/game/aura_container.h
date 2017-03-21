@@ -74,6 +74,7 @@ namespace wowpp
 
 		GameUnit &m_owner;
 		AuraList m_auras;
+		std::map<UInt16, UInt16> m_auraTypeCount;
 
 		AuraList::iterator findAura(Aura &aura);
 

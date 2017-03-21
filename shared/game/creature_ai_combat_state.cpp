@@ -103,10 +103,32 @@ namespace wowpp
 				m_onMoveTargetChanged = getControlled().getMover().targetChanged.connect([this]()
 				{
 					auto &homePos = getAI().getHome().position;
+					auto &controlled = getControlled();
+
+					auto *victim = controlled.getVictim();
+					if (victim)
+					{
+						// Target flying / swimming?
+						if (victim->getMovementInfo().moveFlags & (game::movement_flags::Flying | game::movement_flags::Flying2 | game::movement_flags::Swimming))
+						{
+							// TODO: Check if controlled unit can swim
+
+							// Check if move target would be in hit 3d hit range
+							const float combatRangeSq =
+								::powf(controlled.getMeleeReach() + victim->getMeleeReach(), 2.0f);
+							const float distSq =
+								(controlled.getMover().getTarget() - victim->getLocation()).squared_length();
+							if (distSq > combatRangeSq)
+							{
+								getAI().reset();
+								return;
+							}
+						}
+					}
 
 					const bool outOfRange =
-						getControlled().getSquaredDistanceTo(homePos, false) >= 60.0f * 60.0f ||
-						getControlled().getSquaredDistanceTo(getControlled().getMover().getTarget(), true) >= 60.0f * 60.0f;
+						controlled.getSquaredDistanceTo(homePos, false) >= 60.0f * 60.0f ||
+						controlled.getSquaredDistanceTo(controlled.getMover().getTarget(), true) >= 60.0f * 60.0f;
 
 					if (getCurrentTime() >= (m_lastThreatTime + constants::OneSecond * 10) &&
 						outOfRange)

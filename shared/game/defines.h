@@ -1454,6 +1454,7 @@ namespace wowpp
 				    Falling | FallingFar | Ascending | Flying2 | SplineElevation,
 				Turning =
 				    TurnLeft | TurnRight,
+
 			};
 		}
 

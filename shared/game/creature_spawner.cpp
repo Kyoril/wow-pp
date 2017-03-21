@@ -63,7 +63,7 @@ namespace wowpp
 					m_randomPoints.resize(4);
 					for (auto &pt : m_randomPoints)
 					{
-						mapData->getRandomPointOnGround(m_location, 8.0f, pt);
+						mapData->getRandomPointOnGround(m_location, 15.0f, pt);
 					}
 				}
 			}
