@@ -29,6 +29,7 @@
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "game/game_character.h"
 #include "common/timer_queue.h"
+#include "game/mail.h"
 
 namespace wowpp
 {
@@ -104,7 +105,9 @@ namespace wowpp
 		/// 
 		void sendCharacterSpawnNotification(UInt64 characterId);
 		///
-		void sendMailDraft(game::MailData mailDraft, String sender, UInt32 cost, const std::vector<std::shared_ptr<GameItem>> &items);
+		void sendMailDraft(Mail mail, String &receiver);
+		///
+		void getMailList(DatabaseId characterId);
 
 
 	private:

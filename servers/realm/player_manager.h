@@ -65,11 +65,11 @@ namespace wowpp
 		void addPlayer(std::unique_ptr<Player> added);
 		/// Gets a player by his account name.
 		Player *getPlayerByAccountName(const String &accountName);
-		/// Gets a player by his account name.
+		/// Gets a player by his character database id.
 		Player *getPlayerByCharacterId(DatabaseId id);
-		/// Gets a player by his account name.
+		/// Gets a player by his character guid.
 		Player *getPlayerByCharacterGuid(UInt64 id);
-		/// 
+		/// Gets a player by his character name.
 		Player *getPlayerByCharacterName(const String &name);
 		/// 
 		TimerQueue &getTimers() { return m_timers; }

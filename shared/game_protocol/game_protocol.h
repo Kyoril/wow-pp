@@ -34,6 +34,7 @@
 #include "game/spell_target_map.h"
 #include "proto_data/project.h"
 #include "op_codes.h"
+#include "game/mail.h"
 
 namespace wowpp
 {
@@ -442,23 +443,6 @@ namespace wowpp
 		};
 		
 		io::Reader &operator >>(io::Reader &r, WhoListRequest &out_whoList);
-
-		struct MailData final
-		{
-			String receiver, subject, body;
-			UInt32 money, COD;
-			UInt8 itemsCount;
-			std::array<ObjectGuid, 12> itemsGuids;
-
-			MailData()
-				: money(0)
-				, COD(0)
-				, itemsCount(0)
-			{
-			}
-		};
-
-		io::Reader &operator >>(io::Reader &r, MailData &out_mail);
 
 		namespace client_read
 		{
@@ -1044,6 +1028,11 @@ namespace wowpp
 				io::Reader &packet,
 				ObjectGuid &out_mailboxGuid,
 				MailData &out_mail
+				);
+
+			bool mailGetList(
+				io::Reader &packet,
+				ObjectGuid &out_mailboxGuid
 				);
 
 			bool resurrectResponse(
@@ -1999,8 +1988,9 @@ namespace wowpp
 				UInt64 petGUID
 				);
 
-			void mailSendResult(
-				game::OutgoingPacket &out_packet
+			void mailListResult(
+				game::OutgoingPacket &out_packet,
+				std::vector<Mail> mails
 				);
 
 			void moveSetCanFly(

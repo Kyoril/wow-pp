@@ -165,12 +165,16 @@ namespace wowpp
 		UInt32 getWorldInstanceId() const { return m_instanceId; }
 		/// Gets the connected world node
 		World *getWorldNode() { return m_worldNode; }
+		///
+		std::vector<Mail> getMails() { return m_mails; }
 		/// Declines a pending group invite (if available).
 		void declineGroupInvite();
 		/// 
 		void reloadCharacters();
 		/// 
 		void spawnedNotification();
+		/// Called when character receives a (valid) mail
+		void mailReceived(Mail mail);
 
 		/// Sends an encrypted packet to the game client
 		/// @param generator Packet writer function pointer.
@@ -246,6 +250,7 @@ namespace wowpp
 		std::array<UInt32, 8> m_tutorialData;
 		GameTime m_nextWhoRequest;
 		auth::AuthLocale m_locale;
+		std::vector<Mail> m_mails;
 
 	private:
 

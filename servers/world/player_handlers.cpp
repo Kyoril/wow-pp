@@ -33,6 +33,7 @@
 #include "game/game_bag.h"
 #include "trade_data.h"
 #include "game/unit_mover.h"
+#include "game/mail.h"
 
 using namespace std;
 
@@ -1306,7 +1307,7 @@ namespace wowpp
 	void Player::handleMailSend(game::Protocol::IncomingPacket & packet)
 	{
 		ObjectGuid currentMailbox;
-		game::MailData mailInfo;
+		MailData mailInfo;
 
 		if (!game::client_read::mailSend(packet, currentMailbox, mailInfo))
 		{
@@ -1325,18 +1326,14 @@ namespace wowpp
 		}
 
 		auto *target = world->findObjectByGUID(currentMailbox);
-		if (!target ||
-			target->getTypeId() != 19)
+		if (!target)
 		{
-			// Checks if object exists and if it's a mailbox
+			// Checks if object exists and if it's a mailbox (TODO)
 			return;
 		}
 
 		// TODO distance to mailbox
 		//float distance = m_character->getDistanceTo(target);
-
-		String receiverCap = mailInfo.receiver;
-		capitalize(receiverCap);
 
 		UInt32 cost = mailInfo.itemsCount ? 30 * mailInfo.itemsCount : 30;
 		UInt32 reqMoney = cost + mailInfo.money;
@@ -1414,11 +1411,43 @@ namespace wowpp
 		// Modify wallet of sender
 		m_character->setUInt32Value(character_fields::Coinage, plMoney - cost);
 
+		Mail mail(m_character->getGuid(), items, mailInfo, false);
+
+		m_realmConnector.sendMailDraft(std::move(mail), mailInfo.receiver);
 
 		//TODO
 
 		DLOG("CMSG_MAIL_SEND received from client");
+	}
 
+	void Player::handleMailGetList(game::Protocol::IncomingPacket & packet)
+	{
+		ObjectGuid currentMailbox;
+
+		if (!game::client_read::mailGetList(packet, currentMailbox))
+		{
+			return;
+		}
+
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+		{
+			return;
+		}
+
+		auto *target = world->findObjectByGUID(currentMailbox);
+		if (!target)
+		{
+			// Checks if object exists and if it's a mailbox (TODO)
+			return;
+		}
+
+		// TODO distance to mailbox
+		//float distance = m_character->getDistanceTo(target);
+
+		m_realmConnector.getMailList(m_characterId);
+
+		DLOG("CMSG_MAIL_GET_LIST receiver from client");
 	}
 
 	void Player::handleResurrectResponse(game::Protocol::IncomingPacket & packet)

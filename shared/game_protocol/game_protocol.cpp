@@ -2929,6 +2929,57 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void mailListResult(game::OutgoingPacket & out_packet, std::vector<Mail> mails)
+			{
+				out_packet.start(game::server_packet::MailListResult);
+
+				if (mails.empty())
+				{
+					out_packet
+						<< io::write<NetUInt8>(0);
+					out_packet.finish();
+				}
+				else
+				{
+					for (auto &mail : mails)
+					{
+						std::vector<std::shared_ptr<GameItem>> items = mail.getItems();
+						
+						size_t sizePos = out_packet.sink().position();
+						out_packet
+							<< io::write<NetUInt8>(mails.size())
+							// Placeholder for mailSize
+							<< io::write<NetUInt16>(0)
+							// TODO mail id
+							<< io::write<NetUInt32>(0x0E73)
+							// TODO mail type (auction, etc)
+							<< io::write<NetUInt8>(0)
+							// TODO handle auction or npc mails
+							<< io::write<NetUInt64>(mail.getSenderGuid())
+							<< io::write<NetUInt32>(mail.getCOD())
+							// TODO letter item id
+							<< io::write<NetUInt32>(0)
+							<< io::write<NetUInt32>(0)
+							// TODO stationery mail (GM, auction, etc, 41 is default)
+							<< io::write<NetUInt32>(41)
+							<< io::write<NetUInt32>(mail.getMoney())
+							// TODO check status (COD, read, etc)
+							<< io::write<NetUInt32>(mail.isRead())
+							// TODO time until expires
+							<< io::write<float>(10.0f)
+							// TOOD mail template from dbc
+							<< io::write<UInt32>(0)
+							<< io::write_range(mail.getSubject()) << io::write<NetUInt8>(0)
+							<< io::write<UInt8>(items.size());
+						// TODO handle items sent
+
+						UInt16 mailSize = static_cast<UInt16>(out_packet.sink().position() - sizePos);
+						out_packet.writePOD(sizePos + 1, mailSize);
+						out_packet.finish();
+					}
+				}
+			}
+
 			void moveSetCanFly(game::OutgoingPacket & out_packet, UInt64 guid)
 			{
 				out_packet.start(game::server_packet::MoveSetCanFly);
@@ -3958,6 +4009,12 @@ namespace wowpp
 					>> out_mail;
 			}
 
+			bool mailGetList(io::Reader & packet, ObjectGuid & out_mailboxGuid)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_mailboxGuid);
+			}
+
 			bool resurrectResponse(io::Reader & packet, UInt64 &out_guid, UInt8 &out_status)
 			{
 				return packet
@@ -4023,40 +4080,6 @@ namespace wowpp
 					r >> io::read_string(string);
 				}
 			}
-			return r;
-		}
-
-		io::Reader & operator>>(io::Reader & r, MailData & out_mail)
-		{
-			r
-				>> io::read_string(out_mail.receiver)
-				>> io::read_string(out_mail.subject)
-				>> io::read_string(out_mail.body)
-				>> io::skip(sizeof(UInt32))
-				>> io::skip(sizeof(UInt32));
-
-			// Read items on mail list, 12 being the client limit
-			r >> io::read<UInt8>(out_mail.itemsCount);
-			if (out_mail.itemsCount > 12)
-			{
-				// TODO Error message
-				return r;
-			}
-
-			// Read itemsGuid, skipping item slot in mail
-			for (UInt8 i = 0; i < out_mail.itemsCount; ++i)
-			{
-				r
-					>> io::skip(sizeof(UInt8))
-					>> io::read<NetObjectGuid>(out_mail.itemsGuids[i]);
-			}
-
-			r
-				>> io::read<NetUInt32>(out_mail.money)
-				>> io::read<NetUInt32>(out_mail.COD)
-				>> io::skip(sizeof(UInt64))
-				>> io::skip(sizeof(UInt8));
-
 			return r;
 		}
 	}

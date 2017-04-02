@@ -124,7 +124,7 @@ namespace wowpp
 				break;
 			case pp::world_realm::realm_packet::SpellLearned:
 				handleSpellLearned(packet);
-				break;
+				break; 
 			default:
 				// Log about unknown or unhandled packet
 				const auto &realm = m_config.realms[m_realmEntryIndex];
@@ -720,6 +720,7 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(ToggleHelm)
 			WOWPP_HANDLE_PLAYER_PACKET(ToggleCloak)
 			WOWPP_HANDLE_PLAYER_PACKET(MailSend)
+			WOWPP_HANDLE_PLAYER_PACKET(MailGetList)
 			WOWPP_HANDLE_PLAYER_PACKET(ResurrectResponse)
 			WOWPP_HANDLE_PLAYER_PACKET(CancelChanneling)
 			WOWPP_HANDLE_PLAYER_PACKET(PlayedTime)
@@ -1388,11 +1389,16 @@ namespace wowpp
 			std::bind(pp::world_realm::world_write::characterSpawned, std::placeholders::_1, characterId));
 	}
 
-	void RealmConnector::sendMailDraft(game::MailData mailDraft, String sender, UInt32 cost, const std::vector<std::shared_ptr<GameItem>>& items)
+	void RealmConnector::sendMailDraft(Mail mail, String &receiver)
 	{
 		m_connection->sendSinglePacket(
-			std::bind(pp::world_realm::world_write::mailDraft, std::placeholders::_1, sender,
-				 mailDraft.receiver, mailDraft.subject, mailDraft.body, mailDraft.money, mailDraft.COD, cost, items));
+			std::bind(pp::world_realm::world_write::mailDraft, std::placeholders::_1, std::move(mail), std::move(receiver)));
+	}
+
+	void RealmConnector::getMailList(DatabaseId characterId)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::world_write::mailGetList, std::placeholders::_1, characterId));
 	}
 
 }

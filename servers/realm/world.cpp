@@ -117,6 +117,9 @@ namespace wowpp
 			case world_packet::MailDraft:
 				handleMailDraft(packet);
 				break;
+			case world_packet::MailGetList:
+				handleMailGetList(packet);
+				break;
 			default:
 			{
 				WLOG("Unknown packet received from world " << m_address
@@ -522,20 +525,15 @@ namespace wowpp
 
 	void World::handleMailDraft(pp::IncomingPacket & packet)
 	{
-		// TODO!
-#if 0
-		game::MailData mailDraft;
-		String sender;
-		UInt32 cost;
-		std::vector<std::shared_ptr<GameItem>> items;
-		if (!(pp::world_realm::world_read::mailDraft(packet, mailDraft.unk1, mailDraft.unk2, sender, mailDraft.receiver,
-			mailDraft.subject, mailDraft.body, mailDraft.money, mailDraft.COD, cost, items)))
+		Mail mail;
+		String receiver;
+		if (!(pp::world_realm::world_read::mailDraft(packet, mail, receiver)))
 		{
 			return;
 		}
 
-		auto senderPl = m_playerManager.getPlayerByCharacterName(sender);
-		auto receiverPl = m_playerManager.getPlayerByCharacterName(mailDraft.receiver);
+		auto senderPl = m_playerManager.getPlayerByCharacterGuid(mail.getSenderGuid());
+		auto receiverPl = m_playerManager.getPlayerByCharacterName(receiver);
 		if (!receiverPl)
 		{
 			// TODO send error
@@ -548,8 +546,43 @@ namespace wowpp
 			return;
 		}
 
-		auto faction = senderPl->getGameCharacter();
-#endif
+		bool sameFaction = senderPl->getGameCharacter()->isFriendlyTo(receiverPl->getGameCharacter()->getFactionTemplate());
+		if (!sameFaction)
+		{
+			// TODO send error
+			return;
+		}
+
+		// TODO more checks, probably
+
+		receiverPl->mailReceived(std::move(mail));
+		// Inform world node? (probably not)
+	}
+
+	void World::handleMailGetList(pp::IncomingPacket & packet)
+	{
+		DatabaseId characterId;
+		if (!(pp::world_realm::world_read::mailGetList(packet, characterId)))
+		{
+			return;
+		}
+
+		auto player = m_playerManager.getPlayerByCharacterId(characterId);
+		if (!player)
+		{
+			// TODO send error
+			return;
+		}
+
+		auto character = player->getGameCharacter();
+		if (!character)
+		{
+			// TODO send error
+			return;
+		}
+
+		player->sendPacket(
+			std::bind(game::server_write::mailListResult, std::placeholders::_1, player->getMails()));
 	}
 
 	void World::characterGroupChanged(UInt64 characterGuid, UInt64 groupId)

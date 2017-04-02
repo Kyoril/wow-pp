@@ -2062,6 +2062,14 @@ namespace wowpp
 		}
 	}
 
+	void Player::mailReceived(Mail mail)
+	{
+		// TODO save to db
+		m_mails.push_back(mail);
+
+		DLOG("Mail stored");
+	}
+
 	void Player::handleRequestPartyMemberStats(game::IncomingPacket &packet)
 	{
 		UInt64 guid = 0;

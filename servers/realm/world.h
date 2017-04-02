@@ -26,6 +26,7 @@
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "game/game_character.h"
 #include "common/linear_set.h"
+#include "game/mail.h"
 
 namespace wowpp
 {
@@ -141,5 +142,6 @@ namespace wowpp
 		void handleQuestUpdate(pp::IncomingPacket &packet);
 		void handleCharacterSpawned(pp::IncomingPacket &packet);
 		void handleMailDraft(pp::IncomingPacket &packet);
+		void handleMailGetList(pp::IncomingPacket &packet);
 	};
 }
