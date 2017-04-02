@@ -867,17 +867,24 @@ namespace wowpp
 			}
 
 			// Append waypoints and eventually do shape clipping
+			bool wasInShape = false;
 			for (const auto &p : tempPathCoords)
 			{
 				auto wowCoord = recastToWoWCoord(p);
 				if (clipping)
 				{
 					game::Point pos(wowCoord.x, wowCoord.y);
-					if (!clipping->isPointInside(pos))
+					/*if (!clipping->isPointInside(pos))
 					{
-						// Stop here
-						break;
+						// Stop: We were in the shape already and wanted to exit it (eventually again)
+						if (wasInShape)
+							break;
 					}
+					else
+					{
+						// Entered the shape
+						wasInShape = true;
+					}*/
 				}
 
 				out_path.push_back(wowCoord);
