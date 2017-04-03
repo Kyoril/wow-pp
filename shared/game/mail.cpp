@@ -47,6 +47,18 @@ namespace wowpp
 	{
 	}
 
+	io::Writer & operator<<(io::Writer & w, const MailResult & out_mailResult)
+	{
+		w.writePOD(out_mailResult);
+		return w;
+	}
+
+	io::Reader & operator >> (io::Reader & r, MailResult & mailResult)
+	{
+		r.readPOD(mailResult);
+		return r;
+	}
+
 	io::Reader & operator >> (io::Reader & r, MailData & out_mail)
 	{
 		r

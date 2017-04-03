@@ -1339,9 +1339,20 @@ namespace wowpp
 		UInt32 reqMoney = cost + mailInfo.money;
 		UInt32 plMoney = m_character->getUInt32Value(character_fields::Coinage);
 
+		// 12 is the limit of items to send 
+		if (mailInfo.itemsCount > 12)
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+						  MailResult(0, mail::response_type::Send, mail::response_result::TooManyAttachments)));
+			return;
+		}
+
 		if (plMoney < reqMoney)
 		{
-			// TODO send error
+			sendProxyPacket(
+				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+					MailResult(0, mail::response_type::Send, mail::response_result::NotEnoughMoney)));
 			return;
 		}
 
@@ -1353,20 +1364,26 @@ namespace wowpp
 			UInt64 guid = mailInfo.itemsGuids[i];
 			if (!isItemGUID(guid))
 			{
-				// TODO send error
+				sendProxyPacket(
+					std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+						MailResult(0, mail::response_type::Send, mail::response_result::AttachmentInvalid)));
 				return;
 			}
 
 			if (!inventory.findItemByGUID(guid, itemSlot))
 			{
-				// Check if item is on player's inventory
+				sendProxyPacket(
+					std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+						MailResult(0, mail::response_type::Send, mail::response_result::AttachmentInvalid)));
 				return;
 			}
 
 			auto item = inventory.getItemAtSlot(itemSlot);
 			if (!item)
 			{
-				// TODO send error
+				sendProxyPacket(
+					std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+						MailResult(0, mail::response_type::Send, mail::response_result::AttachmentInvalid)));
 				return;
 			}
 
@@ -1374,7 +1391,9 @@ namespace wowpp
 
 			if (itemEntry.flags() & game::item_flags::Bound)
 			{
-				// TODO send error
+				sendProxyPacket(
+					std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+						MailResult(0, mail::response_type::Send, mail::response_result::Equip, game::inventory_change_failure::MailBoundItem)));
 				return;
 			}
 
@@ -1383,7 +1402,9 @@ namespace wowpp
 				auto bagPtr = std::static_pointer_cast<GameBag>(item);
 				if (bagPtr->isEmpty())
 				{
-					// TODO send error
+					sendProxyPacket(
+						std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+							MailResult(0, mail::response_type::Send, mail::response_result::Equip, game::inventory_change_failure::MailBoundItem)));
 					return;
 				}
 			}
@@ -1391,14 +1412,18 @@ namespace wowpp
 			if ((itemEntry.flags() & game::item_flags::Conjured) ||
 				(item->getUInt32Value(item_fields::Duration)))
 			{
-				// TODO send error
+				sendProxyPacket(
+					std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+						MailResult(0, mail::response_type::Send, mail::response_result::Equip, game::inventory_change_failure::MailBoundItem)));
 				return;
 			}
 
 			if ((mailInfo.COD) &&
 				(itemEntry.flags() & game::item_flags::Wrapped))
 			{
-				// TODO send error
+				sendProxyPacket(
+					std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+						MailResult(0, mail::response_type::Send, mail::response_result::CannotSendWrappedCOD)));
 				return;
 			}
 
@@ -1406,10 +1431,7 @@ namespace wowpp
 			items.push_back(item);
 		}
 
-		// TODO send mail OK message
-
-		// Modify wallet of sender
-		m_character->setUInt32Value(character_fields::Coinage, plMoney - cost);
+		// mail subject of more comprobations
 
 		Mail mail(m_character->getGuid(), items, mailInfo, false);
 
@@ -1445,7 +1467,7 @@ namespace wowpp
 		// TODO distance to mailbox
 		//float distance = m_character->getDistanceTo(target);
 
-		m_realmConnector.getMailList(m_characterId);
+		m_realmConnector.sendGetMailList(m_characterId);
 
 		DLOG("CMSG_MAIL_GET_LIST receiver from client");
 	}

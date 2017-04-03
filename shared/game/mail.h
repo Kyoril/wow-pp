@@ -32,7 +32,71 @@ namespace io
 
 namespace wowpp
 {
+	namespace mail
+	{
+		namespace response_type
+		{
+			enum Type
+			{
+				Send = 0,
+				MoneyTaken = 1,
+				ItemTaken = 2,
+				ReturnedToSender = 3,
+				Deleted = 4,
+				MadePermanent = 5
+			};
+		}
+
+		typedef response_type::Type ResponseType;
+
+		namespace response_result
+		{
+			enum Type
+			{
+				Ok = 0,
+				Equip = 1,
+				CannotSendToSelf = 2,
+				NotEnoughMoney = 3,
+				RecipientNotFound = 4,
+				NotYourTeam = 5,
+				Internal = 6,
+				DisabledForTrialAcc = 14,
+				RecipientCapReached = 15,
+				CannotSendWrappedCOD = 16,
+				AndChatSuspended = 17,
+				TooManyAttachments = 18,
+				AttachmentInvalid = 19,
+			};
+		}
+
+		typedef response_result::Type ResponseResult;
+	}
+
 	typedef std::vector<std::shared_ptr<GameItem>> ItemVector;
+
+	struct MailResult final
+	{
+		UInt32 mailId;
+		mail::ResponseType mailAction;
+		mail::ResponseResult mailError;
+		UInt32 equipError;
+		// guid might be 64b, will have to test
+		UInt32 itemGuid;
+		UInt32 itemsCount;
+
+		MailResult(UInt32 mId, mail::ResponseType mAction, mail::ResponseResult mError, UInt32 eqError = 0, UInt32 itGuid = 0, UInt32 itsCount = 0)
+			: mailId(mId)
+			, mailAction(mAction)
+			, mailError(mError)
+			, equipError(eqError)
+			, itemGuid(itGuid)
+			, itemsCount(itsCount)
+		{
+		}
+	};
+	
+	io::Writer &operator << (io::Writer &w, const MailResult &out_mailResult);
+	io::Reader &operator >> (io::Reader &r, MailResult &mailResult);
 
 	struct MailData final
 	{

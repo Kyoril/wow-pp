@@ -107,7 +107,7 @@ namespace wowpp
 		///
 		void sendMailDraft(Mail mail, String &receiver);
 		///
-		void getMailList(DatabaseId characterId);
+		void sendGetMailList(DatabaseId characterId);
 
 
 	private:

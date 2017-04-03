@@ -534,27 +534,56 @@ namespace wowpp
 
 		auto senderPl = m_playerManager.getPlayerByCharacterGuid(mail.getSenderGuid());
 		auto receiverPl = m_playerManager.getPlayerByCharacterName(receiver);
+		// TODO check if player guid/name exists, not just if it's online
 		if (!receiverPl)
 		{
-			// TODO send error
+			senderPl->sendPacket(
+				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+					MailResult(0, mail::response_type::Send, mail::response_result::RecipientNotFound)));
 			return;
 		}
 
 		if (senderPl->getCharacterId() == receiverPl->getCharacterId())
 		{
-			// TODO send error
+			senderPl->sendPacket(
+				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+					MailResult(0, mail::response_type::Send, mail::response_result::CannotSendToSelf)));
 			return;
 		}
 
 		bool sameFaction = senderPl->getGameCharacter()->isFriendlyTo(receiverPl->getGameCharacter()->getFactionTemplate());
 		if (!sameFaction)
 		{
-			// TODO send error
+			senderPl->sendPacket(
+				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+					MailResult(0, mail::response_type::Send, mail::response_result::NotYourTeam)));
+			return;
+		}
+
+		// 100 is max mails in box
+		if (receiverPl->getMails().size() > 100)
+		{
+			senderPl->sendPacket(
+				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+					MailResult(0, mail::response_type::Send, mail::response_result::RecipientCapReached)));
 			return;
 		}
 
 		// TODO more checks, probably
 
+		auto senderChar = senderPl->getGameCharacter();
+		if (senderChar)
+		{
+			size_t itemsCount = mail.getItems().size();
+			UInt32 cost = itemsCount > 0 ? 30 * itemsCount : 30;
+			UInt32 reqMoney = cost + mail.getMoney();
+			UInt32 plMoney = senderChar->getUInt32Value(character_fields::Coinage);
+			senderChar->setUInt32Value(character_fields::Coinage, plMoney - reqMoney);
+		}
+		
+		senderPl->sendPacket(
+			std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+				MailResult(0, mail::response_type::Send, mail::response_result::Ok)));
 		receiverPl->mailReceived(std::move(mail));
 		// Inform world node? (probably not)
 	}

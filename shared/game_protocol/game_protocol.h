@@ -1993,6 +1993,11 @@ namespace wowpp
 				std::vector<Mail> mails
 				);
 
+			void mailSendResult(
+				game::OutgoingPacket &out_packet,
+				MailResult mailResult
+				);
+
 			void moveSetCanFly(
 				game::OutgoingPacket &out_packet,
 				UInt64 guid

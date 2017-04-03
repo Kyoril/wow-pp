@@ -1395,10 +1395,9 @@ namespace wowpp
 			std::bind(pp::world_realm::world_write::mailDraft, std::placeholders::_1, std::move(mail), std::move(receiver)));
 	}
 
-	void RealmConnector::getMailList(DatabaseId characterId)
+	void RealmConnector::sendGetMailList(DatabaseId characterId)
 	{
 		m_connection->sendSinglePacket(
 			std::bind(pp::world_realm::world_write::mailGetList, std::placeholders::_1, characterId));
 	}
-
 }

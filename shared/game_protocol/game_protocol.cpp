@@ -2980,6 +2980,30 @@ namespace wowpp
 				}
 			}
 
+			void mailSendResult(game::OutgoingPacket & out_packet, MailResult mailResult)
+			{
+				out_packet.start(game::server_packet::MailSendResult);
+
+				out_packet
+					<< io::write<NetUInt32>(mailResult.mailId)
+					<< io::write<NetUInt32>(mailResult.mailAction)
+					<< io::write<NetUInt32>(mailResult.mailError);
+
+				if (mailResult.mailError == mail::response_result::Equip)
+				{
+					out_packet
+						<< io::write<NetUInt32>(mailResult.equipError);
+				}
+				else if (mailResult.mailAction == mail::response_type::ItemTaken)
+				{
+					out_packet
+						<< io::write<NetUInt32>(mailResult.itemGuid)
+						<< io::write<NetUInt32>(mailResult.itemsCount);
+				}
+
+				out_packet.finish();
+			}
+
 			void moveSetCanFly(game::OutgoingPacket & out_packet, UInt64 guid)
 			{
 				out_packet.start(game::server_packet::MoveSetCanFly);
