@@ -117,6 +117,26 @@ namespace wowpp
 						this, SLOT(onRaceClassChanged(int)));
 				}
 			}
+			for (UInt32 i = 1; i <= 30; ++i)
+			{
+				QCheckBox *box = m_ui->mechanicImmunityBox->findChild<QCheckBox*>(QString("mech_flag_%1").arg(i));
+				if (box)
+				{
+					connect(box,
+						SIGNAL(stateChanged(int)),
+						this, SLOT(onMechanicImmunityChanged(int)));
+				}
+			}
+			for (UInt32 i = 1; i <= game::spell_school::End; ++i)
+			{
+				QCheckBox *box = m_ui->schoolImmunityBox->findChild<QCheckBox*>(QString("school_flag_%1").arg(i));
+				if (box)
+				{
+					connect(box,
+						SIGNAL(stateChanged(int)),
+						this, SLOT(onSchoolImmunityChanged(int)));
+				}
+			}
 
 			connect(m_ui->unitsListView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
@@ -407,6 +427,8 @@ namespace wowpp
 			if (!unit)
 				return;
 
+			m_selectionChanging = true;
+
 			m_ui->unitQuestWidget->clear();
 			for (const auto &questid : unit->quests())
 			{
@@ -594,8 +616,8 @@ namespace wowpp
 			WOWPP_INDEXED_NUM_PROPERTY("Arcane Resistance", UInt32, UInt32Ref, resistances, 5, false);
 			WOWPP_MIN_MAX_PROPERTY("Loot Gold", UInt32, UInt32Ref, lootgold, false);
 			WOWPP_MIN_MAX_PROPERTY("Experience", UInt32, UInt32Ref, levelxp, false);
-			WOWPP_NUM_PROPERTY("Mechanic Immunity", UInt32, UInt32Ref, mechanicimmunity, false);
-			WOWPP_NUM_PROPERTY("School Immunity", UInt32, UInt32Ref, schoolimmunity, false);
+			//WOWPP_NUM_PROPERTY("Mechanic Immunity", UInt32, UInt32Ref, mechanicimmunity, false);
+			//WOWPP_NUM_PROPERTY("School Immunity", UInt32, UInt32Ref, schoolimmunity, false);
 			WOWPP_NUM_PROPERTY("Kill Credit", UInt32, UInt32Ref, killcredit, false);
 
 #undef WOWPP_MIN_MAX_PROPERTY
@@ -632,6 +654,31 @@ namespace wowpp
 			{
 				addSpellEntry(creatureSpell);
 			}
+
+			for (size_t i = 0; i < game::spell_school::End; ++i)
+			{
+				UInt32 flag = 1 << i;
+
+				QCheckBox *box = m_ui->schoolImmunityBox->findChild<QCheckBox*>(QString("school_flag_%1").arg(i + 1));
+				if (box)
+				{
+					const bool hasAttribute = (unit->schoolimmunity() & flag) != 0;
+					box->setChecked(hasAttribute);
+				}
+			}
+			for (size_t i = 0; i < 30; ++i)
+			{
+				UInt32 flag = 1 << i;
+
+				QCheckBox *box = m_ui->mechanicImmunityBox->findChild<QCheckBox*>(QString("mech_flag_%1").arg(i + 1));
+				if (box)
+				{
+					const bool hasAttribute = (unit->mechanicimmunity() & flag) != 0;
+					box->setChecked(hasAttribute);
+				}
+			}
+
+			m_selectionChanging = false;
 		}
 		
 		void ObjectEditor::on_unitPropertyWidget_doubleClicked(QModelIndex index)
@@ -1644,6 +1691,60 @@ namespace wowpp
 			m_selectedSpell->set_racemask(raceMask);
 			m_selectedSpell->set_classmask(classMask);
 			m_application.markAsChanged(m_selectedSpell->id(), pp::editor_team::data_entry_type::Spells, pp::editor_team::data_entry_change_type::Modified);
+		}
+
+		void ObjectEditor::onMechanicImmunityChanged(int state)
+		{
+			if (!m_selectedUnit)
+				return;
+
+			if (m_selectionChanging)
+				return;
+
+			// Build mask
+			UInt32 mask = 0;
+			for (UInt32 i = 1; i <= 30; ++i)
+			{
+				QCheckBox *box = m_ui->mechanicImmunityBox->findChild<QCheckBox*>(QString("mech_flag_%1").arg(i));
+				if (box)
+				{
+					const bool hasAttribute = box->isChecked();
+					if (hasAttribute)
+					{
+						mask |= (1 << (i - 1));
+					}
+				}
+			}
+
+			m_selectedUnit->set_mechanicimmunity(mask);
+			m_application.markAsChanged(m_selectedUnit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
+		}
+
+		void ObjectEditor::onSchoolImmunityChanged(int state)
+		{
+			if (!m_selectedUnit)
+				return;
+
+			if (m_selectionChanging)
+				return;
+
+			// Build mask
+			UInt32 mask = 0;
+			for (UInt32 i = 1; i <= game::spell_school::End; ++i)
+			{
+				QCheckBox *box = m_ui->schoolImmunityBox->findChild<QCheckBox*>(QString("school_flag_%1").arg(i));
+				if (box)
+				{
+					const bool hasAttribute = box->isChecked();
+					if (hasAttribute)
+					{
+						mask |= (1 << (i - 1));
+					}
+				}
+			}
+
+			m_selectedUnit->set_schoolimmunity(mask);
+			m_application.markAsChanged(m_selectedUnit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
 		}
 
 		void ObjectEditor::on_objectRemoveTriggerBtn_clicked()
@@ -2677,8 +2778,8 @@ namespace wowpp
 		void ObjectEditor::on_actionImport_Gold_Loot_triggered()
 		{
 			ImportTask task;
-			task.countQuery = "SELECT COUNT(*) FROM `creature_template`;";
-			task.selectQuery = "SELECT `entry`, `mingold`, `maxgold` FROM `creature_template` WHERE `mingold` > 0 OR `maxgold` > 0 ORDER BY `entry`;";
+			task.countQuery = "SELECT COUNT(*) FROM `wowpp_creature_coindrops`;";
+			task.selectQuery = "SELECT `Entry`, `min`, `max` FROM `wowpp_creature_coindrops` WHERE `min` > 0 OR `max` > 0 ORDER BY `Entry`;";
 			task.beforeImport = [this]() {
 				for (int i = 0; i < m_application.getProject().units.getTemplates().entry_size(); ++i)
 				{

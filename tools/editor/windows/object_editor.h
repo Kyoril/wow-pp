@@ -100,6 +100,8 @@ namespace wowpp
 			void on_unitAddVarBtn_clicked();
 			void on_objectAddVarBtn_clicked();
 			void onRaceClassChanged(int state);
+			void onMechanicImmunityChanged(int state);
+			void onSchoolImmunityChanged(int state);
 
 		private:
 				
