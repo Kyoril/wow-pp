@@ -3018,12 +3018,20 @@ namespace wowpp
 			addHealth *= 1.33f;
 		}
 
-		float auraRegen = getAuras().getTotalBasePoints(game::aura_type::ModRegen);
-		addHealth += auraRegen * 0.4f;
+		// No regeneration in combat
+		if (isInCombat())
+			addHealth = 0.0f;
 
-		if (addHealth < 0.0f) {
+		if (getAuras().hasAura(game::aura_type::ModRegen))
+			addHealth += getAuras().getTotalBasePoints(game::aura_type::ModRegen) * 0.4f;
+
+		// Apply regeneration which continues even in combat
+		if (getAuras().hasAura(game::aura_type::ModHealthRegenInCombat))
+			addHealth += (getAuras().getTotalBasePoints(game::aura_type::ModHealthRegenInCombat) * 0.4f);
+
+		// Anything to regenerate here?
+		if (addHealth < 0.0f)
 			return;
-		}
 
 		heal(static_cast<UInt32>(addHealth), nullptr, true);
 	}

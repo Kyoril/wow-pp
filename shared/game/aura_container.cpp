@@ -179,7 +179,7 @@ namespace wowpp
 		// Add aura to the list of auras of this unit and apply it's effects
 		// Note: We use auraPtr here, since std::move will make aura invalid
 		auraPtr->applyAura();
-		m_auraTypeCount[auraPtr->getEffect().type()]++;
+		m_auraTypeCount[auraPtr->getEffect().aura()]++;
 
 		return true;
 	}
@@ -207,8 +207,8 @@ namespace wowpp
 		it = m_auras.erase(it);
 
 		// Reduce counter
-		ASSERT(m_auraTypeCount[strong->getEffect().type()] > 0);
-		m_auraTypeCount[strong->getEffect().type()]--;
+		ASSERT(m_auraTypeCount[strong->getEffect().aura()] > 0);
+		m_auraTypeCount[strong->getEffect().aura()]--;
 
 		// NOW misapply the aura. It is important to call this method AFTER the aura has been
 		// removed from the list of auras. First: To prevent a stack overflow when removing

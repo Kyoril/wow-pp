@@ -306,6 +306,9 @@ namespace wowpp
 
 	void GameCreature::regenerateHealth()
 	{
+		if (isInCombat())
+			return;
+
 		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
 		const UInt32 addHealth = maxHealth / 3;
 		heal(addHealth, nullptr, false);

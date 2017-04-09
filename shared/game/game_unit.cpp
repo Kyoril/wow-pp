@@ -1063,9 +1063,9 @@ namespace wowpp
 		}
 
 		// Do this only while not in combat
+		regenerateHealth();
 		if (!isInCombat())
 		{
-			regenerateHealth();
 			if (!m_auras.hasAura(game::aura_type::InterruptRegen))
 			{
 				regeneratePower(game::power_type::Rage);

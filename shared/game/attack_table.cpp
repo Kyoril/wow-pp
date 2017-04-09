@@ -462,12 +462,12 @@ namespace wowpp
 			// Check target based on effect (TODO: Fill this with more effects)
 			switch (effect)
 			{
-				WLOG("Target of spell hasn't been found.");
 				case game::spell_effects::ApplyAura:
 					targets.push_back(&attacker);
 					break;
 				default:
-					WLOG("Target has to be scripted.");
+					if (unitTarget)
+						targets.push_back(unitTarget);
 					break;
 			}
 
