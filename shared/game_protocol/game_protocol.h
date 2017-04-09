@@ -1632,6 +1632,7 @@ namespace wowpp
 
 			void gameObjectQueryResponse(
 			    game::OutgoingPacket &out_packet,
+				Int32 localeIndex,
 			    const proto::ObjectEntry &entry
 			);
 

@@ -1868,19 +1868,24 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void gameObjectQueryResponse(game::OutgoingPacket &out_packet, const proto::ObjectEntry &entry)
+			void gameObjectQueryResponse(game::OutgoingPacket &out_packet, Int32 localeIndex, const proto::ObjectEntry &entry)
 			{
+				const String &name = (entry.name_loc_size() >= localeIndex) ?
+					entry.name_loc(localeIndex - 1) : entry.name();
+				const String &caption = (entry.caption_loc_size() >= localeIndex) ?
+					entry.caption_loc(localeIndex - 1) : entry.caption();
+
 				out_packet.start(game::server_packet::GameObjectQueryResponse);
 				out_packet
 				        << io::write<NetUInt32>(entry.id())
 				        << io::write<NetUInt32>(entry.type())
 				        << io::write<NetUInt32>(entry.displayid())
-				        << io::write_range(entry.name()) << io::write<NetUInt8>(0)
+				        << io::write_range(name.empty() ? entry.name() : name) << io::write<NetUInt8>(0)
 				        << io::write<NetUInt8>(0)
 				        << io::write<NetUInt8>(0)
 				        << io::write<NetUInt8>(0)
 				        << io::write<NetUInt8>(0)
-				        << io::write_range(entry.caption()) << io::write<NetUInt8>(0)
+				        << io::write_range(caption.empty() ? entry.caption() : caption) << io::write<NetUInt8>(0)
 				        << io::write<NetUInt8>(0)
 				        << io::write_range(entry.data())
 				        << io::write<float>(entry.scale());

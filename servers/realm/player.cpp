@@ -2239,7 +2239,7 @@ namespace wowpp
 
 		// Send response
 		sendPacket(
-			std::bind(game::server_write::gameObjectQueryResponse, std::placeholders::_1, std::cref(*objectEntry)));
+			std::bind(game::server_write::gameObjectQueryResponse, std::placeholders::_1, m_locale, std::cref(*objectEntry)));
 	}
 
 	void Player::handleTutorialFlag(game::IncomingPacket &packet)

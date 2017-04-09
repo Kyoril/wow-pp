@@ -2680,6 +2680,19 @@ namespace wowpp
 			}
 		}
 
+		for (auto &obj : *project.objects.getTemplates().mutable_entry())
+		{
+			obj.clear_name_loc();
+			obj.clear_caption_loc();
+
+			// Fill with default name / subname
+			for (int i = 0; i < 12; ++i)
+			{
+				obj.add_name_loc();
+				obj.add_caption_loc();
+			}
+		}
+
 		if (!conn.execute("SET NAMES 'UTF8';"))
 		{
 			ELOG("Database error: " << conn.getErrorMessage());
@@ -2748,6 +2761,39 @@ namespace wowpp
 				}
 			}
 		}
+
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `entry`, `name_loc3`, `castbarcaption_loc3` FROM `tbcdb`.`locales_gameobject` WHERE name_loc3 IS NOT NULL AND TRIM(name_loc3) <> '';");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					UInt32 entryId = 0;
+					String name_loc3, caption_loc3;
+					row.getField(0, entryId);
+					row.getField(1, name_loc3);
+					row.getField(2, caption_loc3);
+
+					do
+					{
+						// Find object
+						auto *obj = project.objects.getById(entryId);
+						if (!obj)
+						{
+							WLOG("Unable to find object " << entryId);
+							break;
+						}
+
+						obj->set_name_loc(1, name_loc3);
+						if (!caption_loc3.empty()) obj->set_caption_loc(1, caption_loc3);
+					} while (false);
+
+					row = row.next(select);
+				}
+			}
+		}
+
 		return true;
 	}
 }
