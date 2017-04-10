@@ -1055,6 +1055,9 @@ namespace wowpp
 				// we use m_target (the target itself) as the level calculation. This should be used otherwise however.
 				UInt32 school = m_spell.schoolmask();
 				Int32 damage = m_basePoints;
+				if (m_caster)
+					m_caster->applyDamageDoneBonus(school, m_totalTicks, reinterpret_cast<UInt32&>(damage));
+
 				UInt32 resisted = damage * (m_target.getResiPercentage(m_spell, *m_caster, false) / 100.0f);
 				UInt32 absorbed = m_target.consumeAbsorb(damage - resisted, m_spell.schoolmask());
 
