@@ -1571,7 +1571,7 @@ namespace wowpp
 			case game::spell_family::Warlock:
 			{
 				// Life Tap
-				if (m_spell.familyflags() & 0x0000000000040000Ui64)
+				if (m_spell.familyflags() & 0x0000000000040000ULL)
 				{
 					spellScriptEffectLifeTap(effect);
 				}
