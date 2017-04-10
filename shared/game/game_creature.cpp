@@ -187,9 +187,9 @@ namespace wowpp
 		// Apply resistances
 		for (UInt32 i = 0; i < 6; ++i)
 		{
-			if (entry.resistances(i) > 300)
+			if (entry.resistances(i) > 650)
 			{
-				WLOG("Unit " << entry.id() << " has a resistance value of " << entry.resistances(i) << " which seems wrong! Fix it!");
+				WLOG("Creature " << entry.id() << " has a resistance value of " << entry.resistances(i) << " which seems wrong! Consider fixing it...");
 			}
 
 			setModifierValue(static_cast<UnitMods>(unit_mods::ResistanceStart + i), unit_mod_type::BaseValue, entry.resistances(i));
