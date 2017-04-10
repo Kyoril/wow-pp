@@ -3144,22 +3144,28 @@ namespace wowpp
 
 	void GameCharacter::updateTalentPoints()
 	{
-		auto level = getLevel();
+		Int32 level = static_cast<Int32>(getLevel());
+		ASSERT(level > 0);
 
-		UInt32 talentPoints = 0;
+		Int32 talentPoints = 0;
 		if (level >= 10)
 		{
 			// This is the maximum number of talent points available at the current character level
 			talentPoints = level - 9;
-
-			// Now iterate through every learned spell and reduce the amount of talent points
-			for (auto &spell : m_spells)
+			if (talentPoints > 0)
 			{
-				talentPoints -= spell->talentcost();
+				// Now iterate through every learned spell and reduce the amount of talent points
+				for (auto &spell : m_spells)
+				{
+					talentPoints -= spell->talentcost();
+				}
+
+				if (talentPoints < 0)
+					talentPoints = 0;
 			}
 		}
 
-		setUInt32Value(character_fields::CharacterPoints_1, talentPoints);
+		setInt32Value(character_fields::CharacterPoints_1, talentPoints);
 	}
 
 	void GameCharacter::initClassEffects()

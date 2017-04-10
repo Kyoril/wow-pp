@@ -1694,9 +1694,10 @@ namespace wowpp
 		const float basePct = getModifierValue(mod, unit_mod_type::BasePct);
 		const float totalVal = getModifierValue(mod, unit_mod_type::TotalValue);
 		const float totalPct = getModifierValue(mod, unit_mod_type::TotalPct);
-
+		
 		float value = ((baseVal * basePct) + totalVal) * totalPct;
 		setInt32Value(unit_fields::Stat0 + stat, Int32(value));
+
 		setInt32Value(unit_fields::PosStat0 + stat, totalVal > 0 ? Int32(totalVal) : 0);
 		setInt32Value(unit_fields::NegStat0 + stat, totalVal < 0 ? Int32(totalVal) : 0);
 
