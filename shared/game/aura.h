@@ -208,6 +208,8 @@ namespace wowpp
 		void handleModDodgePercent(bool apply);
 		/// 52
 		void handleModCritPercent(bool apply);
+		/// 53
+		void handlePeriodicLeech(bool apply);
 		/// 56
 		void handleTransform(bool apply);
 		/// 65
@@ -268,6 +270,8 @@ namespace wowpp
 		void handleModResistanceExclusive(bool apply);
 		/// 182
 		void handleModResistanceOfStatPercent(bool apply);
+		/// 189
+		void handleModRating(bool apply);
 		/// 201
 		void handleFly(bool apply);
 		/// 226
@@ -283,6 +287,12 @@ namespace wowpp
 		void handleDamageShieldProc(GameUnit *attacker);
 		/// 42
 		void handleTriggerSpellProc(GameUnit *attacker, UInt32 amount);
+
+	protected:
+
+		// Periodic tick effects
+		void calculatePeriodicDamage(UInt32 &out_damage, UInt32 &out_absorbed, UInt32 &out_resisted);
+		void periodicLeechEffect();
 
 	private:
 

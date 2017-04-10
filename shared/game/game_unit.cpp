@@ -1710,6 +1710,7 @@ namespace wowpp
 		case unit_mods::StatAgility:
 			updateArmor();
 			updateDamage();
+			updateAllCritChances();
 			break;
 		case unit_mods::StatStamina:
 			updateMaxHealth();
@@ -1718,6 +1719,7 @@ namespace wowpp
 			updateMaxPower(game::power_type::Mana);
 			updateManaRegen();
 			updateArmor(); // Arcane Fortitude
+			updateAllSpellCritChances();
 			break;
 		case unit_mods::StatSpirit:
 			updateManaRegen();

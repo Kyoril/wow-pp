@@ -199,11 +199,17 @@ namespace wowpp
 		case aura::ChannelDeathItem:
 			handleChannelDeathItem(apply);
 			break;
+		case aura::PeriodicLeech:
+			handlePeriodicLeech(apply);
+			break;
 		case aura::TrackResources:
 			handleTrackResources(apply);
 			break;
 		case aura::Dummy:
 			handleDummy(apply);
+			break;
+		case aura::ModRating:
+			handleModRating(apply);
 			break;
 		case aura::ModFear:
 			handleModFear(apply);
@@ -639,6 +645,75 @@ namespace wowpp
 		}
 	}
 
+	void Aura::calculatePeriodicDamage(UInt32 & out_damage, UInt32 & out_absorbed, UInt32 & out_resisted)
+	{
+		out_damage = m_basePoints;
+
+		// Calculate absorption and resistance
+		out_resisted = out_damage * (m_target.getResiPercentage(m_spell, *m_caster, false) / 100.0f);
+		out_absorbed = m_target.consumeAbsorb(out_damage - out_resisted, m_spell.schoolmask());
+
+		// Armor reduction for physical, non-bleeding spells
+		if (m_spell.schoolmask() & 1 && m_effect.mechanic() != 15)
+			m_target.calculateArmorReducedDamage(m_caster->getLevel(), out_damage);
+	}
+
+	void Aura::periodicLeechEffect()
+	{
+		// If target is immune to this damage school, do nothing
+		if (m_spell.schoolmask() != 0 && m_target.isImmune(m_spell.schoolmask()))
+			return;
+
+		// Calculate the damage
+		UInt32 damage = 0, resisted = 0, absorbed = 0;
+		calculatePeriodicDamage(damage, absorbed, resisted);
+
+		// Apply damage bonus
+		m_target.applyDamageTakenBonus(m_spell.schoolmask(), m_totalTicks, reinterpret_cast<UInt32&>(damage));
+
+		// Apply damage done bonus
+		if (m_caster)
+			m_caster->applyDamageDoneBonus(m_spell.schoolmask(), m_totalTicks, damage);
+
+		// Check if target is still alive
+		UInt32 targetHp = m_target.getUInt32Value(unit_fields::Health);
+		if (targetHp == 0)
+			return;
+
+		// Clamp damage to target health value (do not consume more than possible)
+		if (damage > targetHp)
+			damage = targetHp;
+
+		// Deal damage to the target
+		m_target.dealDamage(damage, m_spell.schoolmask(), game::DamageType::Dot, m_caster.get(), damage);
+
+		// Heal the caster for the same amount
+		if (m_caster)
+			m_caster->heal(damage, m_caster.get());
+
+		// Notify subscribers
+		TileIndex2D tileIndex;
+		auto *world = m_target.getWorldInstance();
+		if (world && m_target.getTileIndex(tileIndex))
+		{
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			wowpp::game::OutgoingPacket packet(sink);
+			game::server_write::spellNonMeleeDamageLog(packet, m_target.getGuid(), (m_caster ? m_caster->getGuid() : 0), m_spell.id(), damage, m_spell.schoolmask(), absorbed, resisted, false, 0, false);
+
+			std::vector<char> healBuffer;
+			io::VectorSink healSink(healBuffer);
+			wowpp::game::OutgoingPacket healPacket(healSink);
+			game::server_write::spellHealLog(healPacket, m_caster->getGuid(), (m_caster ? m_caster->getGuid() : 0), m_spell.id(), damage, false);
+
+			forEachSubscriberInSight(world->getGrid(), tileIndex, [&](ITileSubscriber & subscriber)
+			{
+				subscriber.sendPacket(packet, buffer);
+				subscriber.sendPacket(healPacket, healBuffer);
+			});
+		}
+	}
+
 	bool Aura::hasPositiveTarget(const proto::SpellEffect &effect)
 	{
 		if (effect.targetb() == game::targets::UnitAreaEnemySrc) {
@@ -985,7 +1060,7 @@ namespace wowpp
 
 				// Reduce by armor if physical
 				if (school & 1 &&
-				        m_effect.mechanic() != 15)	// Bleeding
+				    m_effect.mechanic() != 15)	// Bleeding
 				{
 					m_target.calculateArmorReducedDamage(m_caster->getLevel(), damage);
 				}
@@ -1208,10 +1283,8 @@ namespace wowpp
 				break;
 			}
 		case aura::PeriodicLeech:
-			{
-				DLOG("TODO");
-				break;
-			}
+			periodicLeechEffect();
+			break;
 		case aura::PeriodicManaFunnel:
 			{
 				DLOG("TODO");

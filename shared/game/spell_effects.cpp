@@ -554,7 +554,13 @@ namespace wowpp
 				UInt32 spellBonusPct = caster.getBonusPct(school);
 				totalPoints = getSpellPointsTotal(effect, spellPower, spellBonusPct);
 
-				caster.applyHealingDoneBonus(m_spell.spelllevel(), caster.getLevel(), 1, totalPoints);
+				// Only apply healing done bonus if not caused by an item
+				if (m_itemGuid == 0)
+				{
+					caster.applyHealingDoneBonus(m_spell.spelllevel(), caster.getLevel(), 1, totalPoints);
+				}
+
+				// Always apply healing taken bonus
 				targetUnit->applyHealingTakenBonus(1, totalPoints);
 
 				if (hitInfos[i] == game::hit_info::CriticalHit)
@@ -1697,8 +1703,7 @@ namespace wowpp
 				UInt32 spellBonusPct = caster.getBonusPct(school);
 				totalDamage = getSpellPointsTotal(effect, spellPower, spellBonusPct);
 
-				// Apply damage bonus
-				caster.applyDamageDoneBonus(school, 1, totalDamage);
+				// Apply damage taken bonus
 				targetUnit->applyDamageTakenBonus(school, 1, totalDamage);
 
 				if (caster.isGameCharacter())

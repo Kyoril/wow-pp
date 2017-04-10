@@ -2726,9 +2726,10 @@ namespace wowpp
 			return;
 		}
 
-		const String &name =
+		String name =
 			entry->name_loc_size() >= static_cast<Int32>(m_locale) ?
 			entry->name_loc(static_cast<Int32>(m_locale) - 1) : entry->name();
+		if (name.empty()) name = entry->name();
 
 		// Match Count is request count right now
 		sendPacket(

@@ -548,6 +548,14 @@ namespace wowpp
 		}
 	}
 
+	void Aura::handlePeriodicLeech(bool apply)
+	{
+		if (apply)
+		{
+			handlePeriodicBase();
+		}
+	}
+
 	void Aura::handleTransform(bool apply)
 	{
 		if (apply)
@@ -699,6 +707,20 @@ namespace wowpp
 		}
 
 		m_target.updateArmor();
+	}
+
+	void Aura::handleModRating(bool apply)
+	{
+		if (!m_target.isGameCharacter())
+		{
+			return;
+		}
+
+		for (UInt32 rating = 0; rating < combat_rating::End; ++rating)
+		{
+			if (m_effect.miscvaluea() & (1 << rating))
+				reinterpret_cast<GameCharacter&>(m_target).applyCombatRatingMod(static_cast<CombatRatingType>(rating), m_basePoints, apply);
+		}
 	}
 
 	void Aura::handleFly(bool apply)
