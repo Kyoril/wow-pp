@@ -33,6 +33,7 @@
 #include "log/default_log_levels.h"
 #include "shared/proto_data/items.pb.h"
 #include "shared/proto_data/classes.pb.h"
+#include "experience.h"
 
 namespace wowpp
 {
@@ -911,6 +912,12 @@ namespace wowpp
 			// Target died, create item for caster
 			if (m_caster && m_caster->isGameCharacter())
 			{
+				// Only reward the caster with a soul shared if targets level isn't too low
+				const UInt32 greyLevel = xp::getGrayLevel(m_caster->getLevel());
+				if (m_target.getLevel() <= greyLevel) {
+					return;
+				}
+
 				const auto *itemEntry = m_target.getProject().items.getById(m_effect.itemtype());
 				if (!itemEntry)
 					return;
