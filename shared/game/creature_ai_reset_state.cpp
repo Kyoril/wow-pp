@@ -82,6 +82,10 @@ namespace wowpp
 		});
 
 		controlled.getMover().moveTo(getAI().getHome().position);
+
+		// Re-enable combat movement in cases where the creature reset
+		// during disabled state
+		controlled.setCombatMovement(true);
 	}
 
 	void CreatureAIResetState::onLeave()

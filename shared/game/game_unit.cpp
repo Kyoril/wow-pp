@@ -2308,7 +2308,9 @@ namespace wowpp
 
 		resistChanceMod -= *std::max_element(mechanicResistance.begin(), mechanicResistance.end());
 
-		UInt32 resiOffset = static_cast<UInt32>(log2(school));
+		UInt32 resiOffset = static_cast<UInt32>(log2(school) - 1);
+		ASSERT(unit_fields::Resistances + resiOffset < unit_fields::ResistancesBuffModsPositive);
+
 		UInt32 baseResi = getUInt32Value(unit_fields::Resistances + resiOffset);
 		UInt32 casterLevel = attacker.getLevel();
 		UInt32 victimLevel = getLevel();
@@ -2587,7 +2589,7 @@ namespace wowpp
 			return;
 
 		const float dist =
-			isFeared() ? 5.0f : 2.0f;
+			isFeared() ? 25.0f : 2.0f;
 		const math::Vector3 loc =
 			isFeared() ? getMover().getCurrentLocation() : m_confusedLoc;
 		
