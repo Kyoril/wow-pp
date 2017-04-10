@@ -990,6 +990,16 @@ namespace wowpp
 					m_target.calculateArmorReducedDamage(m_caster->getLevel(), damage);
 				}
 
+				// Curse of Agony damage-per-tick calculation
+				if (m_spell.family() == game::spell_family::Warlock &&
+					m_spell.familyflags() & 0x0000000000000400ULL)
+				{
+					if (m_tickCount <= 4)
+						damage /= 2;
+					else if (m_tickCount >= 9)
+						damage += (damage + 1) / 2;
+				}
+
 				m_target.applyDamageTakenBonus(school, m_totalTicks, reinterpret_cast<UInt32&>(damage));
 
 				// Send event to all subscribers in sight
