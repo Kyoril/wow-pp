@@ -202,51 +202,7 @@ namespace wowpp
 			if (targetUnit->isGameCharacter())
 			{
 				auto *charUnit = reinterpret_cast<GameCharacter *>(targetUnit);
-				auto &inv = charUnit->getInventory();
-
-				std::map<UInt16, UInt16> addedBySlot;
-				auto result = inv.createItems(*item, itemCount, &addedBySlot);
-				if (result != game::inventory_change_failure::Okay)
-				{
-					charUnit->inventoryChangeFailure(result, nullptr, nullptr);
-					continue;
-				}
-
-				wasCreated = true;
-
-				// Send item notification
-				for (auto &slot : addedBySlot)
-				{
-					auto inst = inv.getItemAtSlot(slot.first);
-					if (inst)
-					{
-						UInt8 bag = 0, subslot = 0;
-						Inventory::getRelativeSlots(slot.first, bag, subslot);
-						const auto totalCount = inv.getItemCount(item->id());
-
-						TileIndex2D tile;
-						if (charUnit->getTileIndex(tile))
-						{
-							std::vector<char> buffer;
-							io::VectorSink sink(buffer);
-							game::Protocol::OutgoingPacket itemPacket(sink);
-							game::server_write::itemPushResult(itemPacket, charUnit->getGuid(), std::cref(*inst), false, true, bag, subslot, slot.second, totalCount);
-							forEachSubscriberInSight(
-								charUnit->getWorldInstance()->getGrid(),
-								tile,
-								[&](ITileSubscriber & subscriber)
-							{
-								auto subscriberGroup = subscriber.getControlledObject()->getGroupId();
-								if ((charUnit->getGroupId() == 0 && subscriber.getControlledObject()->getGuid() == charUnit->getGuid()) ||
-									(charUnit->getGroupId() != 0 && subscriberGroup == charUnit->getGroupId())
-									)
-								{
-									subscriber.sendPacket(itemPacket, buffer);
-								}
-							});
-						}
-					}
-				}
+				wasCreated = createItems(reinterpret_cast<GameCharacter&>(*targetUnit), 0, 1);
 			}
 		}
 
@@ -2048,6 +2004,14 @@ namespace wowpp
 
 		switch (m_spell.id())
 		{
+			case  6201:                                 // Healthstone creating spells
+			case  6202:
+			case  5699:
+			case 11729:
+			case 11730:
+				spellScriptEffectCreateHealthstone(effect);
+				return;
+
 			// Translocation orb handling
 			case 25140:
 				spellId = 32571;

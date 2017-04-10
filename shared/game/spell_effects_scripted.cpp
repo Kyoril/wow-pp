@@ -86,4 +86,52 @@ namespace wowpp
 			executer.spellCastError(m_spell, game::spell_cast_result::FailedFizzle);
 		}
 	}
+
+	void SingleCastState::spellScriptEffectCreateHealthstone(const proto::SpellEffect &effect)
+	{
+		// Used frequently
+		auto &executer = m_cast.getExecuter();
+
+		// Only usable as character
+		if (!executer.isGameCharacter())
+			return;
+
+		auto &character = reinterpret_cast<GameCharacter&>(executer);
+
+		// Add support for improved healthstone talent
+		UInt32 itemtype = 0, rank = 0;
+		if (character.hasSpell(18693))
+			rank = 2;
+		else if (character.hasSpell(18692))
+			rank = 1;
+
+		// Enumerate item ids
+		static UInt32 const itypes[5][3] =
+		{
+			{ 5512, 19004, 19005 },              // Minor Healthstone
+			{ 5511, 19006, 19007 },              // Lesser Healthstone
+			{ 5509, 19008, 19009 },              // Healthstone
+			{ 5510, 19010, 19011 },              // Greater Healthstone
+			{ 9421, 19012, 19013 }               // Major Healthstone
+		};
+
+		switch (m_spell.id())
+		{
+			case  6201:
+				itemtype = itypes[0][rank]; break; // Minor Healthstone
+			case  6202:
+				itemtype = itypes[1][rank]; break; // Lesser Healthstone
+			case  5699:
+				itemtype = itypes[2][rank]; break; // Healthstone
+			case 11729:
+				itemtype = itypes[3][rank]; break; // Greater Healthstone
+			case 11730:
+				itemtype = itypes[4][rank]; break; // Major Healthstone
+			default:
+				return;
+		}
+
+		// Create the item
+		createItems(character, itemtype, 1);
+	}
 }

@@ -1540,6 +1540,62 @@ namespace wowpp
 		}
 	}
 
+	bool wowpp::SingleCastState::createItems(GameCharacter & target, UInt32 itemId, UInt32 amount)
+	{
+		// Check if item exists
+		const auto *itemEntry = target.getProject().items.getById(itemId);
+		if (!itemEntry)
+			return false;
+
+		// Inventory shortcut
+		auto &inv = target.getInventory();
+
+		// Try to create the items
+		std::map<UInt16, UInt16> addedBySlot;
+		auto result = inv.createItems(*itemEntry, amount, &addedBySlot);
+		if (result != game::inventory_change_failure::Okay)
+		{
+			target.inventoryChangeFailure(result, nullptr, nullptr);
+			return false;
+		}
+
+		// Send item notification
+		for (auto &slot : addedBySlot)
+		{
+			auto inst = inv.getItemAtSlot(slot.first);
+			if (inst)
+			{
+				UInt8 bag = 0, subslot = 0;
+				Inventory::getRelativeSlots(slot.first, bag, subslot);
+				const auto totalCount = inv.getItemCount(itemEntry->id());
+
+				TileIndex2D tile;
+				if (target.getTileIndex(tile))
+				{
+					std::vector<char> buffer;
+					io::VectorSink sink(buffer);
+					game::Protocol::OutgoingPacket itemPacket(sink);
+					game::server_write::itemPushResult(itemPacket, target.getGuid(), std::cref(*inst), false, true, bag, subslot, slot.second, totalCount);
+					forEachSubscriberInSight(
+						target.getWorldInstance()->getGrid(),
+						tile,
+						[&](ITileSubscriber & subscriber)
+					{
+						auto subscriberGroup = subscriber.getControlledObject()->getGroupId();
+						if ((target.getGroupId() == 0 && subscriber.getControlledObject()->getGuid() == target.getGuid()) ||
+							(target.getGroupId() != 0 && subscriberGroup == target.getGroupId())
+							)
+						{
+							subscriber.sendPacket(itemPacket, buffer);
+						}
+					});
+				}
+			}
+		}
+
+		return false;
+	}
+
 	std::shared_ptr<GameItem> wowpp::SingleCastState::getItem() const
 	{
 		// If cast by an item, the item cooldown is used instead of the spell cooldown

@@ -146,6 +146,7 @@ namespace wowpp
 		Int32 calculateEffectBasePoints(const proto::SpellEffect &effect);
 		UInt32 getSpellPointsTotal(const proto::SpellEffect &effect, UInt32 spellPower, UInt32 bonusPct);
 		void meleeSpecialAttack(const proto::SpellEffect &effect, bool basepointsArePct);
+		bool createItems(GameCharacter &target, UInt32 itemId, UInt32 amount = 1);
 
 		// Spell effect handlers implemented in spell_effects.cpp and spell_effects_scripted.cpp
 
@@ -194,6 +195,7 @@ namespace wowpp
 		void spellScriptEffectEnrage(const proto::SpellEffect &effect);
 		void spellScriptEffectExecute(const proto::SpellEffect &effect);
 		void spellScriptEffectLifeTap(const proto::SpellEffect &effect);
+		void spellScriptEffectCreateHealthstone(const proto::SpellEffect &effect);
 
 	private:
 
