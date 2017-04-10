@@ -67,6 +67,68 @@ namespace wowpp
 			return m_casting;
 		}
 
+		template <class T>
+		void sendPacketFromCaster(GameUnit &caster, T generator)
+		{
+			auto *worldInstance = caster.getWorldInstance();
+			if (!worldInstance)
+			{
+				return;
+			}
+
+			TileIndex2D tileIndex;
+			worldInstance->getGrid().getTilePosition(caster.getLocation(), tileIndex[0], tileIndex[1]);
+
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket packet(sink);
+			generator(packet);
+
+			forEachSubscriberInSight(
+				worldInstance->getGrid(),
+				tileIndex,
+				[&buffer, &packet](ITileSubscriber & subscriber)
+			{
+				subscriber.sendPacket(
+					packet,
+					buffer
+				);
+			});
+		}
+
+		template <class T>
+		void sendPacketToCaster(GameUnit &caster, T generator)
+		{
+			auto *worldInstance = caster.getWorldInstance();
+			if (!worldInstance)
+			{
+				return;
+			}
+
+			TileIndex2D tileIndex;
+			worldInstance->getGrid().getTilePosition(caster.getLocation(), tileIndex[0], tileIndex[1]);
+
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket packet(sink);
+			generator(packet);
+
+			forEachSubscriberInSight(
+				worldInstance->getGrid(),
+				tileIndex,
+				[&buffer, &packet, &caster](ITileSubscriber & subscriber)
+			{
+				if (subscriber.getControlledObject() == &caster)
+				{
+					subscriber.sendPacket(
+						packet,
+						buffer
+					);
+				}
+
+			});
+		}
+
 	public:
 
 		/// Determines if this spell is a channeled spell.
@@ -83,6 +145,10 @@ namespace wowpp
 		void applyAllEffects(bool executeInstants, bool executeDelayed);
 		Int32 calculateEffectBasePoints(const proto::SpellEffect &effect);
 		UInt32 getSpellPointsTotal(const proto::SpellEffect &effect, UInt32 spellPower, UInt32 bonusPct);
+		void meleeSpecialAttack(const proto::SpellEffect &effect, bool basepointsArePct);
+
+		// Spell effect handlers implemented in spell_effects.cpp and spell_effects_scripted.cpp
+
 		void spellEffectInstantKill(const proto::SpellEffect &effect);
 		void spellEffectDummy(const proto::SpellEffect &effect);
 		void spellEffectSchoolDamage(const proto::SpellEffect &effect);
@@ -122,7 +188,6 @@ namespace wowpp
 		void spellEffectKnockBack(const proto::SpellEffect &effect);
 		void spellEffectSkill(const proto::SpellEffect &effect);
 
-		void meleeSpecialAttack(const proto::SpellEffect &effect, bool basepointsArePct);
 
 	private:
 

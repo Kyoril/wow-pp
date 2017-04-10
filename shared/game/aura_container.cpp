@@ -399,6 +399,12 @@ namespace wowpp
 
 	void AuraContainer::forEachAuraOfType(game::AuraType type, std::function<bool(Aura&)> functor)
 	{
+		// Performance check before iteration
+		if (!hasAura(type))
+			return;
+
+		// TODO: Order auras differently so that we iterate as less auras as possible for
+		// performance reasons.
 		for (auto &aura : m_auras)
 		{
 			if (aura->getEffect().aura() == type)

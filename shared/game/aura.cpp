@@ -196,6 +196,9 @@ namespace wowpp
 		case aura::TrackCreatures:
 			handleTrackCreatures(apply);
 			break;
+		case aura::ChannelDeathItem:
+			handleChannelDeathItem(apply);
+			break;
 		case aura::TrackResources:
 			handleTrackResources(apply);
 			break;
@@ -1500,6 +1503,27 @@ namespace wowpp
 		if (m_target.isGameCharacter())
 		{
 			m_target.updateManaRegen();
+		}
+	}
+
+	void Aura::handleChannelDeathItem(bool apply)
+	{
+		if (!apply && !m_target.isAlive())
+		{
+			// Target died, create item for caster
+			if (m_caster && m_caster->isGameCharacter())
+			{
+				const auto *itemEntry = m_target.getProject().items.getById(m_effect.itemtype());
+				if (!itemEntry)
+					return;
+
+				Inventory &inv = reinterpret_cast<GameCharacter&>(*m_caster).getInventory();
+				auto result = inv.createItems(*itemEntry, m_basePoints);
+				if (result != game::inventory_change_failure::Okay)
+				{
+					// TODO: Send error message to player?
+				}
+			}
 		}
 	}
 

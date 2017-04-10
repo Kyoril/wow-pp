@@ -222,6 +222,8 @@ namespace wowpp
 		void handleModDamagePercentDone(bool apply);
 		/// 85
 		void handleModPowerRegen(bool apply);
+		/// 86
+		void handleChannelDeathItem(bool apply);
 		/// 97
 		void handleManaShield(bool apply);
 		/// 99
