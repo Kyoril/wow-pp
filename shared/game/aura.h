@@ -150,6 +150,8 @@ namespace wowpp
 
 	protected:
 
+		// Aura effect handlers implemented in aura_effects.cpp
+
 		/// 0
 		void handleModNull(bool apply);
 		/// 3
