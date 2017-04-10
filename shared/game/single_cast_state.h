@@ -188,6 +188,12 @@ namespace wowpp
 		void spellEffectKnockBack(const proto::SpellEffect &effect);
 		void spellEffectSkill(const proto::SpellEffect &effect);
 
+		// Custom scripted spell effects implemented in spell_effects_scripted.cpp
+		// These are executed from spellEffectDummy and spellEffectScriptEffect
+
+		void spellScriptEffectEnrage(const proto::SpellEffect &effect);
+		void spellScriptEffectExecute(const proto::SpellEffect &effect);
+		void spellScriptEffectLifeTap(const proto::SpellEffect &effect);
 
 	private:
 

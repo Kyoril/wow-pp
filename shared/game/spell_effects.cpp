@@ -1562,61 +1562,64 @@ namespace wowpp
 
 		GameUnit &caster = m_cast.getExecuter();
 
-		if (m_spell.family() == game::spell_family::Generic)
+		switch (m_spell.family())
 		{
-			// Berserking (racial)
-			if (m_spell.id() == 20554 ||
-				m_spell.id() == 26296 ||
-				m_spell.id() == 26297)
+			case game::spell_family::Generic:
 			{
-				float health = static_cast<float>(caster.getUInt32Value(unit_fields::Health));
-				float maxHealth = static_cast<float>(caster.getUInt32Value(unit_fields::MaxHealth));
-				UInt32 healthPct = static_cast<UInt32>(health / maxHealth * 100);
-
-				Int32 speedMod = 10;
-				if (healthPct <= 40)
+				// Berserking (racial)
+				if (m_spell.id() == 20554 ||
+					m_spell.id() == 26296 ||
+					m_spell.id() == 26297)
 				{
-					speedMod = 30;
-				}
-				else if (healthPct < 100 && healthPct > 40)
-				{
-					speedMod = 10 + (100 - healthPct) / 3;
-				}
+					float health = static_cast<float>(caster.getUInt32Value(unit_fields::Health));
+					float maxHealth = static_cast<float>(caster.getUInt32Value(unit_fields::MaxHealth));
+					UInt32 healthPct = static_cast<UInt32>(health / maxHealth * 100);
 
-				game::SpellPointsArray basePoints;
-				basePoints.fill(speedMod);
-				SpellTargetMap targetMap;
-				targetMap.m_targetMap = game::spell_cast_target_flags::Self;
-				targetMap.m_unitTarget = caster.getGuid();
+					Int32 speedMod = 10;
+					if (healthPct <= 40)
+					{
+						speedMod = 30;
+					}
+					else if (healthPct < 100 && healthPct > 40)
+					{
+						speedMod = 10 + (100 - healthPct) / 3;
+					}
 
-				caster.addFlag(unit_fields::AuraState, game::aura_state::Berserking);
-				caster.castSpell(std::move(targetMap), 26635, std::move(basePoints), 0, true);
+					game::SpellPointsArray basePoints;
+					basePoints.fill(speedMod);
+					SpellTargetMap targetMap;
+					targetMap.m_targetMap = game::spell_cast_target_flags::Self;
+					targetMap.m_unitTarget = caster.getGuid();
+
+					caster.addFlag(unit_fields::AuraState, game::aura_state::Berserking);
+					caster.castSpell(std::move(targetMap), 26635, std::move(basePoints), 0, true);
+				}
+				break;
 			}
-		}
-		else if (m_spell.family() == game::spell_family::Warrior)
-		{
-			if (m_spell.familyflags() & 0x20000000)		// Execute
+			case game::spell_family::Warrior:
 			{
-				// Rage has already been reduced by executing this spell, though the remaining value is the rest
-				caster.castSpell(
-					m_target, 20647, { static_cast<Int32>(calculateEffectBasePoints(effect) + caster.getUInt32Value(unit_fields::Power2) * effect.dmgmultiplier()), 0, 0 });
-				caster.setUInt32Value(unit_fields::Power2, 0);
+				if (m_spell.familyflags() & 0x20000000)		// Execute
+				{
+					spellScriptEffectExecute(effect);
+				}
+				break;
 			}
-		}
-		else if (m_spell.family() == game::spell_family::Druid)
-		{
-			if (m_spell.id() == 5229)		// Enrage
+			case game::spell_family::Druid:
 			{
-				if (caster.getByteValue(unit_fields::Bytes2, 3) == game::shapeshift_form::Bear)
+				if (m_spell.id() == 5229)		// Enrage
 				{
-					m_basePoints[1] = -27;
+					spellScriptEffectEnrage(effect);
 				}
-				else if (caster.getByteValue(unit_fields::Bytes2, 3) == game::shapeshift_form::DireBear)
+				break;
+			}
+			case game::spell_family::Warlock:
+			{
+				// Life Tap
+				if (m_spell.familyflags() & 0x0000000000040000Ui64)
 				{
-					m_basePoints[1] = -16;
+					spellScriptEffectLifeTap(effect);
 				}
-
-				spellEffectApplyAura(effect);
+				break;
 			}
 		}
 
