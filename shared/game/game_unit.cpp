@@ -2310,7 +2310,7 @@ namespace wowpp
 
 		resistChanceMod -= *std::max_element(mechanicResistance.begin(), mechanicResistance.end());
 
-		UInt32 resiOffset = static_cast<UInt32>(log2(school) - 1);
+		UInt32 resiOffset = static_cast<UInt32>(log2(school));
 		ASSERT(unit_fields::Resistances + resiOffset < unit_fields::ResistancesBuffModsPositive);
 
 		UInt32 baseResi = getUInt32Value(unit_fields::Resistances + resiOffset);
