@@ -189,6 +189,8 @@ namespace wowpp
 		static bool isInventorySlot(UInt16 absoluteSlot);
 		/// Determines whether the given slot is a slot in a bag (not the default bag).
 		static bool isBagSlot(UInt16 absoluteSlot);
+		/// Determines whether the given slot is a slot in a bag bar.
+		static bool isBagBarSlot(UInt16 absoluteSlot);
 
 	public:
 

@@ -280,6 +280,9 @@ namespace wowpp
 				if (bag == player_inventory_slots::Bag_0)
 				{
 					m_owner.setUInt64Value(character_fields::InvSlotHead + (subslot * 2), item->getGuid());
+					if (isBagBarSlot(slot))
+						m_owner.applyItemStats(*item, true);
+
 					if (isEquipmentSlot(slot))
 					{
 						m_owner.setUInt32Value(character_fields::VisibleItem1_0 + (subslot * 16), item->getEntry().id());
@@ -410,6 +413,9 @@ namespace wowpp
 		if (bag == player_inventory_slots::Bag_0)
 		{
 			m_owner.setUInt64Value(character_fields::InvSlotHead + (subslot * 2), item->getGuid());
+			if (isBagBarSlot(targetSlot))
+				m_owner.applyItemStats(*item, true);
+
 			if (isEquipmentSlot(targetSlot))
 			{
 				m_owner.setUInt32Value(character_fields::VisibleItem1_0 + (subslot * 16), item->getEntry().id());
@@ -544,6 +550,9 @@ namespace wowpp
 			if (bag == player_inventory_slots::Bag_0)
 			{
 				m_owner.setUInt64Value(character_fields::InvSlotHead + (subslot * 2), 0);
+				if (isBagBarSlot(absoluteSlot))
+					m_owner.applyItemStats(*item, false);
+
 				if (isEquipmentSlot(absoluteSlot))
 				{
 					m_owner.setUInt32Value(character_fields::VisibleItem1_0 + (subslot * 16), item->getEntry().id());
@@ -809,6 +818,24 @@ namespace wowpp
 			{
 				ASSERT(m_freeSlots >= 1);
 				m_freeSlots--;
+			}
+		}
+
+		// Apply bag stats (mainly for quivers so far...)
+		if (isBagBarSlot(slotA))
+		{
+			m_owner.applyItemStats(*srcItem, false);
+			if (dstItem)
+			{
+				m_owner.applyItemStats(*dstItem, true);
+			}
+		}
+		if (isBagBarSlot(slotB))
+		{
+			m_owner.applyItemStats(*srcItem, true);
+			if (dstItem)
+			{
+				m_owner.applyItemStats(*dstItem, false);
 			}
 		}
 
@@ -1310,6 +1337,14 @@ namespace wowpp
 		           absoluteSlot >> 8 >= player_inventory_slots::Start &&
 		           absoluteSlot >> 8 < player_inventory_slots::End);
 	}
+	bool Inventory::isBagBarSlot(UInt16 absoluteSlot)
+	{
+		return (
+			absoluteSlot >> 8 == player_inventory_slots::Bag_0 &&
+			(absoluteSlot & 0xFF) >= player_inventory_slots::Start &&
+			(absoluteSlot & 0xFF) < player_inventory_slots::End
+			);
+	}
 	void Inventory::addRealmData(const ItemData &data)
 	{
 		m_realmData.push_back(data);
@@ -1370,6 +1405,9 @@ namespace wowpp
 				getRelativeSlots(data.slot, bag, subslot);
 				if (bag == player_inventory_slots::Bag_0)
 				{
+					if (isBagBarSlot(data.slot))
+						m_owner.applyItemStats(*item, true);
+
 					if (isEquipmentSlot(data.slot))
 					{
 						m_owner.setUInt64Value(character_fields::InvSlotHead + (subslot * 2), item->getGuid());
