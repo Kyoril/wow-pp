@@ -326,6 +326,25 @@ namespace wowpp
 						return;
 					}
 
+					// Iterate through all wmos and check if they are loaded
+					for (const auto &entry : tile->wmos.entries)
+					{
+						auto countIt = m_wmoRefCount.find(entry.uniqueId);
+						if (countIt == m_wmoRefCount.end())
+						{
+							// TODO: Load wmo geometry from aabbtree
+
+
+							// Setup reference counter
+							m_wmoRefCount[entry.uniqueId] = 1;
+						}
+						else
+						{
+							// Simply increase reference counter
+							countIt->second++;
+						}
+					}
+
 #if 0
 					if (tile->collision.triangleCount == 0)
 					{
@@ -383,6 +402,28 @@ namespace wowpp
 					terrain::editing::PageRemoved remove;
 					remove.removed = pos;
 					m_worldRenderer->handleEvent(terrain::editing::TerrainChangeEvent(remove));
+
+					auto *tile = m_mapInst->getTile(TileIndex2D(pos[0], pos[1]));
+					if (tile)
+					{
+						// Iterate through all wmos and check if they are loaded
+						for (const auto &entry : tile->wmos.entries)
+						{
+							auto countIt = m_wmoRefCount.find(entry.uniqueId);
+							if (countIt != m_wmoRefCount.end())
+							{
+								// Simply decrese reference counter
+								countIt->second--;
+								if (countIt->second == 0)
+								{
+									// TODO: Destroy loaded geometry
+
+									// Remove
+									m_wmoRefCount.erase(countIt);
+								}
+							}
+						}
+					}
 
 					// Remove page from list
 					m_pages.erase(it);

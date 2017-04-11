@@ -120,6 +120,10 @@ namespace wowpp
 			OgreDBCFilePtr m_modelDbc;
 			OgreDBCFilePtr m_objDisplayDbc;
 			UInt32 m_nextUnitSpawn;
+			std::map<UInt32, UInt32> m_wmoRefCount;
+			std::map<UInt32, UInt32> m_doodadRefCount;
+			std::map<UInt32, wowpp::ogre_utils::ManualObjectPtr> m_wmoGeometry;
+			std::map<UInt32, wowpp::ogre_utils::ManualObjectPtr> m_doodadGeometry;
 		};
 	}
 }

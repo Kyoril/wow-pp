@@ -496,6 +496,10 @@ namespace wowpp
 		///
 		virtual const String &getName() const;
 
+		bool isPet() const {
+			return getUInt64Value(unit_fields::CreatedBy) != 0;
+		}
+
 		/// Starts to cast a spell using the given target map.
 		void castSpell(SpellTargetMap target, UInt32 spell, const game::SpellPointsArray &basePoints = { 0, 0, 0 }, GameTime castTime = 0, bool isProc = false, UInt64 itemGuid = 0, SpellSuccessCallback callback = SpellSuccessCallback());
 		/// Stops the current cast (if any).

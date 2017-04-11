@@ -437,36 +437,50 @@ namespace wowpp
 					// Filter by ranks
 					for (const auto &spellId : spellsToAdd)
 					{
+						// Check if spell exists
 						const auto *spell = project.spells.getById(spellId);
-						if (spell)
-						{
-							if (spell->prevspell() != 0 && !spellsToAdd.contains(spell->prevspell()))
-							{
-								// Skip due to missing prevspell requirement
-								continue;
-							}
-							if (spell->talentcost() > 0)
-							{
-								// Skip talent spells
-								continue;
-							}
+						if (!spell)
+							continue;
 
-							spells.push_back(spell);
+						// Skip talent spells
+						if (spell->talentcost() > 0)
+							continue;
+
+						// If spell has any dependant spells...
+						if (spell->prevspell() != 0)
+						{
+							// Find previous spell and skip if not existant
+							const auto *prevSpell = project.spells.getById(spell->prevspell());
+							if (!prevSpell)
+								continue;
+
+							// Skip if spell is not in list of spells to add
+							if (!spellsToAdd.contains(prevSpell->id()))
+								continue;
+
+							// Skip if previous spell's base spell isn't in list
+							if (prevSpell->baseid() != prevSpell->id() && !spellsToAdd.contains(prevSpell->baseid()))
+								continue;
 						}
+
+						// Really add spell
+						spells.push_back(spell);
 					}
 
 					std::uniform_int_distribution<> genderDist(0, 1);
 					auto gender = genderDist(randomGenerator);
 
+					std::uniform_int_distribution<> outfitDist(0, 3);
+
 					game::CharEntry characterData;
 					characterData.race = static_cast<game::Race>(charRace);
 					characterData.class_ = static_cast<game::CharClass>(charClass);
 					characterData.cinematic = false;
-					characterData.face = 0;
-					characterData.facialHair = 0;
-					characterData.hairColor = 0;
-					characterData.hairStyle = 0;
-					characterData.skin = 0;
+					characterData.face = outfitDist(randomGenerator);
+					characterData.facialHair = outfitDist(randomGenerator);
+					characterData.hairColor = outfitDist(randomGenerator);
+					characterData.hairStyle = outfitDist(randomGenerator);
+					characterData.skin = outfitDist(randomGenerator);
 					characterData.gender = static_cast<game::Gender>(gender);
 					characterData.id = 0;
 					characterData.name = randomText(12);
