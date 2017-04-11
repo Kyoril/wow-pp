@@ -2123,4 +2123,34 @@ namespace wowpp
 		}
 	}
 
+	void SingleCastState::spellEffectTransDoor(const proto::SpellEffect &effect)
+	{
+		// Find the requested game object
+		const auto *objectEntry = m_cast.getExecuter().getProject().objects.getById(effect.miscvaluea());
+		if (!objectEntry)
+			return;
+
+		// Determine object target location
+		math::Vector3 location = m_cast.getExecuter().getLocation() + math::Vector3(0.0f, 0.0f, 2.0f);
+		if (effect.targeta() == game::targets::DestCasterFront)
+		{
+			// TODO: Determine location in front of character
+			
+		}
+
+		// Spawn new object
+		auto *world = m_cast.getExecuter().getWorldInstance();
+		if (world)
+		{
+			auto spawned = world->spawnWorldObject(*objectEntry, location, 0.0f, 0.0f);
+
+			spawned->setUInt32Value(world_object_fields::AnimProgress, 255);
+			spawned->setUInt32Value(world_object_fields::State, 1);
+			spawned->setUInt64Value(world_object_fields::Createdby, m_cast.getExecuter().getGuid());
+			spawned->setUInt32Value(world_object_fields::Level, m_cast.getExecuter().getLevel());
+
+			m_cast.getExecuter().addWorldObject(spawned);
+			world->addGameObject(*spawned);
+		}
+	}
 }

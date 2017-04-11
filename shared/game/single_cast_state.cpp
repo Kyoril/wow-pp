@@ -1151,6 +1151,7 @@ namespace wowpp
 			{se::Resurrect,				std::bind(&SingleCastState::spellEffectResurrect, this, std::placeholders::_1) },
 			{se::ResurrectNew,			std::bind(&SingleCastState::spellEffectResurrectNew, this, std::placeholders::_1) },
 			{se::KnockBack,				std::bind(&SingleCastState::spellEffectKnockBack, this, std::placeholders::_1) },
+			{se::TransDoor,				std::bind(&SingleCastState::spellEffectTransDoor, this, std::placeholders::_1) },
 			// Add all effects above here
 			{se::ApplyAura,				std::bind(&SingleCastState::spellEffectApplyAura, this, std::placeholders::_1)},
 			{se::PersistentAreaAura,	std::bind(&SingleCastState::spellEffectPersistentAreaAura, this, std::placeholders::_1) },
