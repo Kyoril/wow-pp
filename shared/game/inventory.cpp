@@ -213,7 +213,8 @@ namespace wowpp
 			{
 				// Create a new item instance (or maybe a bag if it is a bag)
 				std::shared_ptr<GameItem> item;
-				if (entry.itemclass() == game::item_class::Container)
+				if (entry.itemclass() == game::item_class::Container ||
+					entry.itemclass() == game::item_class::Quiver)
 				{
 					item = std::make_shared<GameBag>(m_owner.getProject(), entry);
 				}
@@ -1124,12 +1125,19 @@ namespace wowpp
 			{
 				return game::inventory_change_failure::ItemDoesNotGoToSlot;
 			}
+			
+			if (bag->getEntry().itemclass() == game::item_class::Quiver &&
+				entry.inventorytype() != game::inventory_type::Ammo)
+			{
+				return game::inventory_change_failure::OnlyAmmoCanGoHere;
+			}
 
 			return game::inventory_change_failure::Okay;
 		}
 		else if (isBagPackSlot(slot))
 		{
-			if (entry.itemclass() != game::item_class::Container)
+			if (entry.itemclass() != game::item_class::Container &&
+				entry.itemclass() != game::item_class::Quiver)
 			{
 				return game::inventory_change_failure::NotABag;
 			}
@@ -1333,7 +1341,8 @@ namespace wowpp
 
 				// Create a new item instance
 				std::shared_ptr<GameItem> item;
-				if (entry->itemclass() == game::item_class::Container)
+				if (entry->itemclass() == game::item_class::Container ||
+					entry->itemclass() == game::item_class::Quiver)
 				{
 					item = std::make_shared<GameBag>(m_owner.getProject(), *entry);
 				}

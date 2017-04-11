@@ -224,7 +224,8 @@ namespace wowpp
 				targetSlot = player_equipment_slots::Ranged;
 				break;
 			default:
-				if (entry.itemclass() == game::item_class::Container)
+				if (entry.itemclass() == game::item_class::Container ||
+					entry.itemclass() == game::item_class::Quiver)
 				{
 					for (UInt16 slot = player_inventory_slots::Start; slot < player_inventory_slots::End; ++slot)
 					{
