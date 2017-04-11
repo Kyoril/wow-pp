@@ -38,6 +38,11 @@ namespace wowpp
 		class MapEntry;
 	}
 
+	namespace math
+	{
+		class AABBTree;
+	}
+
 	struct IShape;
 
 	struct NavMeshDeleter final
@@ -108,6 +113,9 @@ namespace wowpp
 		const dtNavMesh *getNavMesh() const {
 			return m_navMesh;
 		}
+
+		/// 
+		std::shared_ptr<math::AABBTree> getWMOTree(const String &filename) const;
 
 	private:
 

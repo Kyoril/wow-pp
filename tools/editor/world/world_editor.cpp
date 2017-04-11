@@ -38,6 +38,7 @@
 #include "selected_object_spawn.h"
 #include "windows/spawn_dialog.h"
 #include "deps/debug_utils/DetourDebugDraw.h"
+#include "math/aabb_tree.h"
 
 namespace wowpp
 {
@@ -332,8 +333,53 @@ namespace wowpp
 						auto countIt = m_wmoRefCount.find(entry.uniqueId);
 						if (countIt == m_wmoRefCount.end())
 						{
-							// TODO: Load wmo geometry from aabbtree
+							// Load wmo geometry from aabbtree
+							auto tree = m_mapInst->getWMOTree(entry.fileName);
+							if (tree.get())
+							{
+								const auto &verts = tree->getVertices();
+								const auto &inds = tree->getIndices();
 
+								// Build unique object name
+								std::ostringstream objStrm;
+								objStrm << "WMO_" << entry.uniqueId;
+
+								// Create collision render object
+								ogre_utils::ManualObjectPtr obj(m_sceneMgr.createManualObject(objStrm.str()));
+								{
+									obj->begin("LineOfSightBlock", Ogre::RenderOperation::OT_TRIANGLE_LIST);
+									obj->estimateVertexCount(verts.size());
+									obj->estimateIndexCount(inds.size() * 3);
+									for (auto &vert : verts)
+									{
+										obj->position(vert.x, vert.y, vert.z);
+										obj->colour(Ogre::ColourValue(0.5f, 0.5f, 0.5f));
+									}
+
+									UInt32 triIndex = 0;
+									for (UInt32 i = 0; i < inds.size(); i += 3)
+									{
+										obj->index(inds[i]);
+										obj->index(inds[i + 1]);
+										obj->index(inds[i + 2]);
+										triIndex++;
+									}
+									obj->end();
+								}
+
+								// TODO: Create scene node with proper transformation and attach the render object to it!
+#if 0
+								Ogre::SceneNode *child = m_sceneMgr.getRootSceneNode()->createChildSceneNode(objName.str());
+								child->attachObject(obj);
+#endif
+
+								// Assign geometry
+								m_wmoGeometry[entry.uniqueId] = std::move(obj);
+							}
+							else
+							{
+								WLOG("WMO tree " << entry.fileName << " not loaded");
+							}
 
 							// Setup reference counter
 							m_wmoRefCount[entry.uniqueId] = 1;
@@ -344,48 +390,6 @@ namespace wowpp
 							countIt->second++;
 						}
 					}
-
-#if 0
-					if (tile->collision.triangleCount == 0)
-					{
-						return;
-					}
-
-					Ogre::Vector3 vMin = Ogre::Vector3(99999.0f, 99999.0f, 99999.0f);
-					Ogre::Vector3 vMax = Ogre::Vector3(-99999.0f, -99999.0f, -99999.0f);
-
-					// Create collision for this map
-					Ogre::ManualObject *obj = m_sceneMgr.createManualObject(objName.str());
-					obj->begin("LineOfSightBlock", Ogre::RenderOperation::OT_TRIANGLE_LIST);
-					obj->estimateVertexCount(tile->collision.vertexCount);
-					obj->estimateIndexCount(tile->collision.triangleCount * 3);
-					for (auto &vert : tile->collision.vertices)
-					{
-						if (vert.x < vMin.x) vMin.x = vert.x;
-						if (vert.y < vMin.y) vMin.y = vert.y;
-						if (vert.z < vMin.z) vMin.z = vert.z;
-
-						if (vert.x > vMax.x) vMax.x = vert.x;
-						if (vert.y > vMax.y) vMax.y = vert.y;
-						if (vert.z > vMax.z) vMax.z = vert.z;
-
-						obj->position(vert.x, vert.y, vert.z);
-						obj->colour(Ogre::ColourValue(0.5f, 0.5f, 0.5f));
-					}
-
-					UInt32 triIndex = 0;
-					for (auto &tri : tile->collision.triangles)
-					{
-						obj->index(tri.indexA);
-						obj->index(tri.indexB);
-						obj->index(tri.indexC);
-						triIndex++;
-					}
-					obj->end();
-
-					Ogre::SceneNode *child = m_sceneMgr.getRootSceneNode()->createChildSceneNode(objName.str());
-					child->attachObject(obj);
-#endif
 				}
 				else
 				{
@@ -416,9 +420,14 @@ namespace wowpp
 								countIt->second--;
 								if (countIt->second == 0)
 								{
-									// TODO: Destroy loaded geometry
-
-									// Remove
+									// Destroy loaded geometry
+									auto geomIt = m_wmoGeometry.find(entry.uniqueId);
+									if (geomIt != m_wmoGeometry.end())
+									{
+										m_wmoGeometry.erase(geomIt);
+									}
+									
+									// Remove reference counter
 									m_wmoRefCount.erase(countIt);
 								}
 							}

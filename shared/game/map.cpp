@@ -994,6 +994,15 @@ namespace wowpp
 		return false;
 	}
 
+	std::shared_ptr<math::AABBTree> Map::getWMOTree(const String & filename) const
+	{
+		auto it = aabbTreeById.find(filename);
+		if (it == aabbTreeById.end())
+			return nullptr;
+
+		return it->second;
+	}
+
 	Map::MapDataTilePtr Map::loadTile(const TileIndex2D & tileIndex)
 	{
 		std::ostringstream strm;
