@@ -2716,7 +2716,9 @@ namespace wowpp
 				}
 			}
 
-			const float att_speed = attackTime * getModifierValue(unit_mods::AttackSpeedRanged, unit_mod_type::BasePct);
+			const float att_speed = 
+				(attackTime * getModifierValue(unit_mods::AttackSpeedRanged, unit_mod_type::BasePct) + 
+					getModifierValue(unit_mods::AttackSpeedRanged, unit_mod_type::TotalValue)) * getModifierValue(unit_mods::AttackSpeedRanged, unit_mod_type::TotalPct);
 
 			setUInt32Value(unit_fields::RangedAttackTime, att_speed);
 		}

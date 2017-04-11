@@ -264,6 +264,8 @@ namespace wowpp
 		void handleModHaste(bool apply);
 		/// 140
 		void handleModRangedHaste(bool apply);
+		/// 141
+		void handleModRangedAmmoHaste(bool apply);
 		/// 142
 		void handleModBaseResistancePct(bool apply);
 		/// 143

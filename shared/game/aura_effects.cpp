@@ -682,6 +682,11 @@ namespace wowpp
 		m_target.updateModifierValue(unit_mods::AttackSpeedRanged, unit_mod_type::BasePct, -m_basePoints, apply);
 	}
 
+	void Aura::handleModRangedAmmoHaste(bool apply)
+	{
+		m_target.updateModifierValue(unit_mods::AttackSpeedRanged, unit_mod_type::TotalPct, -m_basePoints, apply);
+	}
+
 	void Aura::handleModBaseResistancePct(bool apply)
 	{
 		// Apply all resistances

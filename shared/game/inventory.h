@@ -161,6 +161,11 @@ namespace wowpp
 		bool hasItem(UInt32 itemId) const {
 			return getItemCount(itemId) > 0;
 		}
+		/// Determines whether the character has equipped a quiver. This is useful because
+		/// players can only equip one quiver at a time, so this check might be used at multiple
+		/// locations.
+		/// @returns true if the player has equipped a quiver.
+		bool hasEquippedQuiver() const;
 		/// Gets an absolute slot position from a bag index and a bag slot.
 		static UInt16 getAbsoluteSlot(UInt8 bag, UInt8 slot);
 		/// Splits an absolute slot into a bag index and a bag slot.

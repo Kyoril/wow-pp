@@ -217,6 +217,9 @@ namespace wowpp
 		case aura::ModConfuse:
 			handleModConfuse(apply);
 			break;
+		case aura::ModRangedAmmoHaste:
+			handleModRangedAmmoHaste(apply);
+			break;
 		case aura::ModStat:
 			handleModStat(apply);
 			break;

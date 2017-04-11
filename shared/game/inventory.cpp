@@ -1169,6 +1169,13 @@ namespace wowpp
 				return game::inventory_change_failure::NotABag;
 			}
 
+			// Make sure that we have only up to one quiver equipped at a time
+			if (entry.itemclass() == game::item_class::Quiver)
+			{
+				if (hasEquippedQuiver())
+					return game::inventory_change_failure::CanEquipOnlyOneQuiver;
+			}
+
 			auto bagItem = getItemAtSlot(slot);
 			if (bagItem)
 			{
@@ -1223,6 +1230,17 @@ namespace wowpp
 	{
 		auto it = m_itemCounter.find(itemId);
 		return (it != m_itemCounter.end() ? it->second : 0);
+	}
+	bool Inventory::hasEquippedQuiver() const
+	{
+		for (UInt8 slot = player_inventory_slots::Start; slot < player_inventory_slots::End; ++slot)
+		{
+			auto testBag = getItemAtSlot(getAbsoluteSlot(player_inventory_slots::Bag_0, slot));
+			if (testBag && testBag->getEntry().itemclass() == game::item_class::Quiver)
+				return true;
+		}
+
+		return false;
 	}
 	UInt16 Inventory::getAbsoluteSlot(UInt8 bag, UInt8 slot)
 	{
