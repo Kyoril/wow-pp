@@ -202,7 +202,7 @@ namespace wowpp
 			if (targetUnit->isGameCharacter())
 			{
 				auto *charUnit = reinterpret_cast<GameCharacter *>(targetUnit);
-				wasCreated = createItems(reinterpret_cast<GameCharacter&>(*targetUnit), 0, 1);
+				wasCreated = createItems(reinterpret_cast<GameCharacter&>(*targetUnit), item->id(), itemCount);
 			}
 		}
 

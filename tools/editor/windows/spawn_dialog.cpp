@@ -35,50 +35,121 @@ namespace wowpp
 			: QDialog()
 			, m_ui(new Ui::SpawnDialog)
 			, m_app(app)
-			, m_spawn(spawn)
+			, m_unitSpawn(&spawn)
+			, m_objectSpawn(nullptr)
+		{
+			initialize();
+		}
+
+		SpawnDialog::SpawnDialog(EditorApplication &app, proto::ObjectSpawnEntry &spawn)
+			: QDialog()
+			, m_ui(new Ui::SpawnDialog)
+			, m_app(app)
+			, m_unitSpawn(nullptr)
+			, m_objectSpawn(&spawn)
+		{
+			initialize();
+		}
+
+		void SpawnDialog::initialize()
 		{
 			// Setup auto generated ui
 			m_ui->setupUi(this);
 
-			// Initialize values
-			m_ui->checkBox->setChecked(spawn.isactive());
-			m_ui->spawnNameBox->setChecked(spawn.has_name());
-			m_ui->lineEdit->setText(spawn.name().c_str());
-			m_ui->checkBox_2->setChecked(spawn.respawn());
-			m_ui->spinBox->setValue(spawn.respawndelay());
-			m_ui->spinBox_2->setValue(spawn.respawndelay());
-			m_ui->spinBox_3->setValue(spawn.radius());
-			m_ui->spinBox_4->setValue(spawn.maxcount());
-			m_ui->comboBox->setCurrentIndex(limit<UInt32>(spawn.movement(), 0, 2));
-			m_ui->comboBox_2->setCurrentIndex(limit<UInt32>(spawn.standstate(), 0, unit_stand_state::Count - 1));
+			if (m_unitSpawn)
+			{
+				// Initialize values
+				m_ui->checkBox->setChecked(m_unitSpawn->isactive());
+				m_ui->spawnNameBox->setChecked(m_unitSpawn->has_name());
+				m_ui->lineEdit->setText(m_unitSpawn->name().c_str());
+				m_ui->checkBox_2->setChecked(m_unitSpawn->respawn());
+				m_ui->spinBox->setValue(m_unitSpawn->respawndelay());
+				m_ui->spinBox_2->setValue(m_unitSpawn->respawndelay());
+				m_ui->spinBox_3->setValue(m_unitSpawn->radius());
+				m_ui->spinBox_4->setValue(m_unitSpawn->maxcount());
+				m_ui->comboBox->setCurrentIndex(limit<UInt32>(m_unitSpawn->movement(), 0, 2));
+				m_ui->comboBox_2->setCurrentIndex(limit<UInt32>(m_unitSpawn->standstate(), 0, unit_stand_state::Count - 1));
+				m_ui->comboBox->setEnabled(true);
+				m_ui->comboBox_2->setEnabled(true);
 
-			QTreeWidgetItem *item = new QTreeWidgetItem(m_ui->treeWidget);
-			item->setText(0, QString("%1").arg(spawn.unitentry()));
-			item->setText(1, "TODO");
-			item->setText(2, "100%");
+				QTreeWidgetItem *item = new QTreeWidgetItem(m_ui->treeWidget);
+				item->setText(0, QString("%1").arg(m_unitSpawn->unitentry()));
+				const auto *unitEntry = m_app.getProject().objects.getById(m_unitSpawn->unitentry());
+				if (unitEntry)
+					item->setText(1, unitEntry->name().c_str());
+				else
+					item->setText(1, "<INVALID ENTRY>");
+				item->setText(2, "100%");
 
-			QTreeWidgetItem *locItem = new QTreeWidgetItem(m_ui->treeWidget_2);
-			locItem->setText(1, QString("%1, %2, %3").arg(spawn.positionx()).arg(spawn.positiony()).arg(spawn.positionz()));
-			locItem->setText(2, "100%");
+				QTreeWidgetItem *locItem = new QTreeWidgetItem(m_ui->treeWidget_2);
+				locItem->setText(1, QString("%1, %2, %3").arg(m_unitSpawn->positionx()).arg(m_unitSpawn->positiony()).arg(m_unitSpawn->positionz()));
+				locItem->setText(2, "100%");
+			}
+			else if (m_objectSpawn)
+			{
+				// Initialize values
+				m_ui->checkBox->setChecked(m_objectSpawn->isactive());
+				m_ui->spawnNameBox->setChecked(m_objectSpawn->has_name());
+				m_ui->lineEdit->setText(m_objectSpawn->name().c_str());
+				m_ui->checkBox_2->setChecked(m_objectSpawn->respawn());
+				m_ui->spinBox->setValue(m_objectSpawn->respawndelay());
+				m_ui->spinBox_2->setValue(m_objectSpawn->respawndelay());
+				m_ui->spinBox_3->setValue(m_objectSpawn->radius());
+				m_ui->spinBox_4->setValue(m_objectSpawn->maxcount());
+				m_ui->comboBox->setEnabled(false);
+				m_ui->comboBox_2->setEnabled(false);
+
+				QTreeWidgetItem *item = new QTreeWidgetItem(m_ui->treeWidget);
+				item->setText(0, QString("%1").arg(m_objectSpawn->objectentry()));
+				const auto *objEntry = m_app.getProject().objects.getById(m_objectSpawn->objectentry());
+				if (objEntry)
+					item->setText(1, objEntry->name().c_str());
+				else
+					item->setText(1, "<INVALID ENTRY>");
+				item->setText(2, "100%");
+
+				QTreeWidgetItem *locItem = new QTreeWidgetItem(m_ui->treeWidget_2);
+				locItem->setText(1, QString("%1, %2, %3").arg(m_objectSpawn->positionx()).arg(m_objectSpawn->positiony()).arg(m_objectSpawn->positionz()));
+				locItem->setText(2, "100%");
+			}
 		}
 
 		void SpawnDialog::on_buttonBox_accepted()
 		{
-			m_spawn.set_isactive(m_ui->checkBox->isChecked());
-			if (!m_ui->spawnNameBox->isChecked())
+			if (m_unitSpawn)
 			{
-				m_spawn.clear_name();
+				m_unitSpawn->set_isactive(m_ui->checkBox->isChecked());
+				if (!m_ui->spawnNameBox->isChecked())
+				{
+					m_unitSpawn->clear_name();
+				}
+				else
+				{
+					m_unitSpawn->set_name(m_ui->lineEdit->text().toStdString());
+				}
+				m_unitSpawn->set_respawn(m_ui->checkBox_2->isChecked());
+				m_unitSpawn->set_respawndelay(m_ui->spinBox->value());
+				m_unitSpawn->set_radius(m_ui->spinBox_3->value());
+				m_unitSpawn->set_maxcount(m_ui->spinBox_4->value());
+				m_unitSpawn->set_movement(m_ui->comboBox->currentIndex());
+				m_unitSpawn->set_standstate(m_ui->comboBox_2->currentIndex());
 			}
-			else
+			else if (m_objectSpawn)
 			{
-				m_spawn.set_name(m_ui->lineEdit->text().toStdString());
+				m_objectSpawn->set_isactive(m_ui->checkBox->isChecked());
+				if (!m_ui->spawnNameBox->isChecked())
+				{
+					m_objectSpawn->clear_name();
+				}
+				else
+				{
+					m_objectSpawn->set_name(m_ui->lineEdit->text().toStdString());
+				}
+				m_objectSpawn->set_respawn(m_ui->checkBox_2->isChecked());
+				m_objectSpawn->set_respawndelay(m_ui->spinBox->value());
+				m_objectSpawn->set_radius(m_ui->spinBox_3->value());
+				m_objectSpawn->set_maxcount(m_ui->spinBox_4->value());
 			}
-			m_spawn.set_respawn(m_ui->checkBox_2->isChecked());
-			m_spawn.set_respawndelay(m_ui->spinBox->value());
-			m_spawn.set_radius(m_ui->spinBox_3->value());
-			m_spawn.set_maxcount(m_ui->spinBox_4->value());
-			m_spawn.set_movement(m_ui->comboBox->currentIndex());
-			m_spawn.set_standstate(m_ui->comboBox_2->currentIndex());
 		}
 	}
 }

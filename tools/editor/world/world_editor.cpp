@@ -615,7 +615,11 @@ namespace wowpp
 							else if (any.getType() == typeid(proto::ObjectSpawnEntry*)) 
 							{
 								auto *objspawn = Ogre::any_cast<proto::ObjectSpawnEntry*>(any);
-								// TODO
+								auto dialog = make_unique<SpawnDialog>(m_app, *objspawn);
+								if (dialog->exec())
+								{
+									m_app.markAsChanged(m_map.id(), pp::editor_team::data_entry_type::Maps, pp::editor_team::data_entry_change_type::Modified);
+								}
 							}
 
 							break;
